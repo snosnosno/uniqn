@@ -33,6 +33,11 @@ CREATE POLICY "reaction_delete" ON public.board_comment_reactions
   FOR DELETE USING (user_id = auth.uid());
 
 -- 2. increment_board_post_view_count RPC
+-- Fix (2026-05-10): board_posts.id 는 base_schema 부터 text 타입.
+-- check_function_bodies=on 환경 (CI fresh apply) 에서 text=uuid 비교
+-- 검증 실패하던 SQLSTATE 42883 해결을 위해 ::text 캐스팅 추가.
+-- 후속 migration 20260417123441 가 파라미터 자체를 text 로 재정의하므로
+-- 본 캐스팅은 fresh apply 의 첫 단계에서만 의미 있으며 functional 동일.
 CREATE OR REPLACE FUNCTION public.increment_board_post_view_count(p_post_id uuid)
 RETURNS void
 LANGUAGE sql
@@ -42,7 +47,7 @@ SET search_path = 'public'
 AS $$
   UPDATE public.board_posts
   SET view_count = COALESCE(view_count, 0) + 1
-  WHERE id = p_post_id;
+  WHERE id = p_post_id::text;
 $$;
 
 -- 3. toggle_comment_reaction RPC
