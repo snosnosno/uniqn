@@ -116,21 +116,31 @@ CREATE TABLE job_posting_collaborator_audit (
 CREATE INDEX idx_jpca_posting_id ON job_posting_collaborator_audit(job_posting_id, at DESC);
 CREATE INDEX idx_jpca_target_id  ON job_posting_collaborator_audit(target_user_id, at DESC);
 
--- AFTER INSERT/DELETE 트리거 → 자동 audit
+-- AFTER INSERT/DELETE 트리거 → 자동 audit (Codex outside-voice: actor_user_id 신뢰성 강화)
 CREATE FUNCTION log_collaborator_audit() RETURNS trigger AS $$
+DECLARE
+  v_actor uuid;
 BEGIN
+  -- auth.uid() 가 NULL (cascade/service role/백그라운드) 일 때 가짜 actor 저장 금지
+  v_actor := auth.uid();
   IF TG_OP = 'INSERT' THEN
     INSERT INTO job_posting_collaborator_audit
-      (job_posting_id, target_user_id, actor_user_id, action)
-    VALUES (NEW.job_posting_id, NEW.user_id, NEW.added_by, 'added');
+      (job_posting_id, target_user_id, actor_user_id, action, source)
+    VALUES (NEW.job_posting_id, NEW.user_id, NEW.added_by, 'added',
+            CASE WHEN v_actor IS NULL THEN 'system' ELSE 'user' END);
   ELSIF TG_OP = 'DELETE' THEN
     INSERT INTO job_posting_collaborator_audit
-      (job_posting_id, target_user_id, actor_user_id, action)
-    VALUES (OLD.job_posting_id, OLD.user_id, COALESCE(auth.uid(), OLD.added_by), 'removed');
+      (job_posting_id, target_user_id, actor_user_id, action, source)
+    VALUES (OLD.job_posting_id, OLD.user_id, v_actor, 'removed',
+            CASE WHEN v_actor IS NULL THEN 'cascade' ELSE 'user' END);
   END IF;
   RETURN NULL;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
+
+-- 위 함수가 사용하는 source 컬럼:
+ALTER TABLE job_posting_collaborator_audit
+  ADD COLUMN source text NOT NULL DEFAULT 'user' CHECK (source IN ('user','system','cascade'));
 
 CREATE TRIGGER trg_jpca_log
   AFTER INSERT OR DELETE ON job_posting_collaborators
@@ -195,16 +205,37 @@ DELETE 정책은 두 케이스 OR 로 단일 정책 작성. UPDATE 는 정책 �
 - `settlements` (D2 결정에 따라)
 - 기타 공고 종속 테이블 (audit 단계에서 확정)
 
-### Audit 단계 (마이그레이션 작성 전 필수)
+### 영향 받는 `workspaces` SELECT RLS (Codex outside-voice 발견)
 
-다음 항목을 사전 audit 하여 RLS 변경 대상 확정:
+`useSharedJobPostings` 가 `JOIN workspaces` 로 출처 워크스페이스 이름 표시. Collaborator 는 workspace_member 가 아니므로 기본 RLS 에 차단됨 → **`workspaces` SELECT 정책에 OR 추가 필요**:
+
+```sql
+-- workspaces SELECT 정책
+USING (
+  is_workspace_member(id, auth.uid())
+  OR EXISTS(
+    SELECT 1 FROM job_postings jp
+    JOIN job_posting_collaborators jpc ON jpc.job_posting_id = jp.id
+    WHERE jp.workspace_id = workspaces.id AND jpc.user_id = auth.uid()
+  )
+)
+```
+
+→ collaborator 는 자기가 협업하는 공고의 워크스페이스 row 만 SELECT 가능. 다른 워크스페이스는 여전히 차단.
+
+### Audit 단계 (마이그레이션 작성 전 필수, Codex 보강)
+
+다음 항목을 사전 audit 하여 RLS 변경 대상 확정. **테이블 inventory 가 아닌 권한 호출면 inventory 가 핵심** (Codex outside-voice 권고):
 
 1. `job_postings` 를 FK 로 참조하는 모든 테이블 목록 (`pg_constraint` 조회)
 2. 각 테이블의 현재 RLS 정책에서 `is_workspace_member` / `is_workspace_owner` 호출 위치
-3. 알림 발송 대상자 결정 로직 (trigger / edge function / RPC) 위치 및 collaborator 추가 위치
-4. PR3-A.2 가 변경하는 정책과의 충돌 여부
+3. **RPC 함수 안의 권한 체크** — `pg_proc` 에서 `is_workspace_member` 호출하는 모든 함수 (RPC, trigger function 포함)
+4. **View 정의** — `pg_views` 에서 `is_workspace_member` 호출 또는 workspace_id WHERE 조건 사용
+5. **Repository / hook 의 명시적 workspace_id 필터** — 클라이언트 코드에서 `eq('workspace_id', activeWorkspaceId)` 패턴 audit (collaborator 시 false 반환 위험)
+6. 알림 발송 대상자 결정 로직 (trigger / edge function / RPC) 위치 및 collaborator 추가 위치
+7. PR3-A.2 가 변경하는 정책과의 충돌 여부
 
-audit 결과는 본 spec 의 별도 섹션 또는 후속 plan 문서에 기록.
+audit 결과는 본 spec 의 별도 섹션 또는 후속 plan 문서에 기록. **권한 호출면 빠뜨리면 collaborator 가 중간 화면에서 막히거나 우회 노출 발생**.
 
 ## 헬퍼 함수
 
@@ -384,11 +415,15 @@ type NotificationEvent =
       job_posting_title: string }
 ```
 
-### Trigger 구현
+### Trigger 구현 (Codex outside-voice: cascade 가드 강화)
 
 ```sql
 CREATE FUNCTION notify_collaborator_added() RETURNS trigger AS $$
 BEGIN
+  -- auth.uid() NULL = service role / cascade / 백그라운드 → 알림 skip
+  IF auth.uid() IS NULL THEN
+    RETURN NEW;
+  END IF;
   INSERT INTO notification_outbox (user_id, event_type, payload)
   VALUES (
     NEW.user_id,
@@ -407,7 +442,9 @@ CREATE TRIGGER trg_jpc_added
   AFTER INSERT ON job_posting_collaborators
   FOR EACH ROW EXECUTE FUNCTION notify_collaborator_added();
 
--- DELETE trigger 도 동일 패턴 (제거됨 알림)
+-- DELETE trigger 도 동일 패턴 + cascade 가드 (제거됨 알림)
+-- cascade (공고 삭제, user 탈퇴, workspace 삭제) 시 auth.uid() 기준으로 skip
+-- → "공고 자체가 사라졌는데 '제외되었어요' 알림 전송" 모순 방지
 ```
 
 ### 새 지원자 알림 — 기존 로직 확장
@@ -436,13 +473,27 @@ SELECT user_id, 'application_submitted', ... FROM recipients;
 
 ## 엣지 케이스 & 정책
 
-### Cascade 삭제
+### Cascade 삭제 (Codex outside-voice: 알림 가드 명시)
 
-| 트리거 | 동작 |
-|--------|------|
-| 공고 삭제 | `ON DELETE CASCADE` → collaborators 자동 삭제 (push 알림 X) |
-| user 탈퇴 | `ON DELETE CASCADE` → 해당 user 의 모든 collaborator 행 삭제 |
-| workspace 삭제 | 공고 cascade → collaborators cascade (연쇄) |
+| 트리거 | 동작 | 알림 |
+|--------|------|------|
+| 공고 삭제 | `ON DELETE CASCADE` → collaborators 자동 삭제 | ❌ (`auth.uid() IS NULL` 가드) |
+| user 탈퇴 | `ON DELETE CASCADE` → 해당 user 의 모든 collaborator 행 삭제 | ❌ (가드) |
+| workspace 삭제 | 공고 cascade → collaborators cascade (연쇄) | ❌ (가드) |
+| owner 가 명시적 제거 | DELETE | ✅ (auth.uid() = owner) |
+| collaborator 자기 발 빼기 | DELETE | ❌ (자기가 해서 알 필요 없음 — service 단에서 outbox 미발생, 또는 trigger 가드 추가) |
+
+audit log 도 같은 가드 — `source` 컬럼이 'cascade' / 'system' / 'user' 구분 (위 § 데이터 모델).
+
+### Self-remove 후 화면/캐시/Realtime 정리 (Codex outside-voice: 권한 오류 루프 방지)
+
+Collaborator 본인이 "나가기" 시 권한이 즉시 사라짐. 다음 정리 동선 명시:
+
+1. **DELETE 성공 직후**: TanStack Query `queryClient.invalidateQueries(['shared-postings'])` + `removeQueries([해당 공고 id])`
+2. **현재 화면**: 모달이면 닫고 my-postings 로 이동. 이미 my-postings 에서 카드 → 상세 진입한 상태였다면 router.replace('/my-postings')
+3. **Realtime 채널**: 해당 공고 채널 unsubscribe (cleanup effect 가 자동 처리하나, 명시적 호출 권장)
+4. **빈 캐시 보호**: 다음 진입 시 RLS 가 차단하므로 무한 로딩 방지 — `useSharedJobPostings` 가 NotFound 응답 시 graceful fallback ("이 공고는 더 이상 접근할 수 없어요")
+5. **Push 알림 deep link**: 제거 후 들어오는 deep link → my-postings 로 fallback (handler 에서 try-catch)
 
 ### Workspace owner 변경 / 이양
 
@@ -570,15 +621,18 @@ last-write-wins (RN/Supabase 기본). MVP 에서 OT/CRDT 도입 안 함. 큰 충
 
 staging branch 에서 모든 신규 RLS 정책 4 페르소나 시드 → SELECT 실측. 헬퍼 함수는 `SELECT is_posting_collaborator(uuid, uuid) LIMIT 0` 호출 검증.
 
-### 7. Performance 모니터링 (eng-review 추가)
+### 7. Performance 모니터링 (eng-review + Codex 보강)
 
-마이그레이션 후 staging branch 에서 `EXPLAIN ANALYZE` 실측 항목:
-- `SELECT * FROM job_postings WHERE id = $1` (RLS OR 적용 후) — index 사용 확인
-- `SELECT * FROM applications WHERE job_posting_id = $1` (RLS OR 적용 후)
+마이그레이션 후 staging branch 에서 `EXPLAIN ANALYZE` 실측 항목 — **id=$1 SELECT 가 아닌 hot path / 목록 / 카운트 가 진짜 cost** (Codex 권고):
+
+- **목록 조회**: `SELECT * FROM job_postings WHERE workspace_id = $1 ORDER BY created_at DESC LIMIT 20` (RLS OR 적용 후) — index 사용 + plan 회귀 확인
+- **카운트**: `SELECT count(*) FROM applications WHERE job_posting_id = $1 AND status = 'pending'` — bitmap heap scan 회피
+- **Applicant feed**: `SELECT * FROM applications WHERE job_posting_id IN (...) ORDER BY submitted_at DESC LIMIT 50` (RLS OR 적용 후) — 다중 공고 필터
+- **per-row RLS hot tables**: work_logs / settlements / staff_assignments 의 list 쿼리
 - application INSERT trigger 의 UNION 쿼리 (3-way) — 행당 5ms 이하 목표
 - 1000 활성 공고 + 100 apps/공고 시나리오 시뮬레이션
 
-실측 결과 미달 시 인덱스 추가 (workspace_members.workspace_id, job_postings.workspace_id 사전 audit).
+실측 결과 미달 시 인덱스 추가 (workspace_members.workspace_id, job_postings.workspace_id 사전 audit). OR-RLS 회귀 잡기 위해 baseline (RLS OR 적용 전) 도 비교군으로 측정.
 
 ## 영향 범위 정량
 
@@ -607,15 +661,21 @@ staging branch 에서 모든 신규 RLS 정책 4 페르소나 시드 → SELECT 
 - 푸시 알림 backward compat 명시 (구현 상세에 위임 — eng-review)
 - User flow 엣지 케이스 (네트워크 끊김, 강제 종료 후 재실행, UNIQUE 충돌 친절 메시지) (TODOS 후보)
 
-## NOT in scope (eng-review 명시)
+## NOT in scope (eng-review + Codex outside-voice 명시)
 
 - **Realtime 외 동기화 모델** (CRDT, OT) — last-write-wins 로 충분
-- **Collaborator 권한 차등** (manager / viewer) — 풀 관리권만 (D2)
+- **Collaborator 권한 차등** (manager / viewer) — 풀 관리권만 (D2, Codex 가 과권한 우려 제기했으나 owner 신뢰 모델로 결정)
 - **Collaborator 본인이 다른 collaborator 추가** — owner 만 (D6)
 - **Workspace editor 의 collaborator 관리** — owner 만 (D6, MVP)
 - **외부 소셜 로그인을 통한 즉석 가입 + 초대** — UNIQN 가입자만 (D3)
 - **공고 템플릿 / 정산 등 다른 리소스 공유** — Approach C 기각, 추후 일반화 시 재검토 (D7)
 - **Cross-workspace collaborator 검색** (이메일 외 다른 사용자 발견 방법) — MVP 제외
+- **수락/거절 단계** (D4, Codex 우려) — 즉시 부여 + 푸시 알림 + 자기 발 빼기로 운영. 보안 인시던트 발생 시 D4 재고 후보
+- **이메일 검색 user enumeration 방어** (D3, Codex 우려) — exact match / rate limit / search audit 는 별도 보안 작업 후보
+- **Storage bucket RLS 정책** (Codex #16) — 공고 첨부 파일 체계 미확정. 도입 시 별도 작업 (`storage.objects` policy + collaborator 식별)
+- **Collaborator roster 중 다른 collaborator 이름/이메일 노출 차단** (Codex #14) — 함께 일하는 협업자는 서로 식별 가능해야 한다는 도메인 판단. 차단 시 별도 작업
+- **알림 mute / invalid push token 처리 정밀화** (Codex #17) — 기존 notification_outbox 기본 동작에 위임, 정교화는 별도 작업
+- **DB RPC 경계로 단순화** (Codex #11) — 현재 service+repository 패턴이 프로젝트 일관성, RPC-only 이전은 별도 리팩토링 후보
 
 ## What already exists (eng-review 명시)
 
