@@ -154,16 +154,20 @@ export async function loadJobPosting(jobPostingId: string): Promise<JobPosting> 
 }
 
 /**
- * 공고를 로드하고 호출자가 관리 권한을 가졌는지 확인.
+ * 공고를 로드하고 호출자가 관리 권한(access)을 가졌는지 확인.
  *
  * Phase 2A.후속 (2026-05-09) — owner 외에 워크스페이스 멤버 + admin 도 통과.
  * Phase 2A 에서 applications/job_postings RLS 가 workspace_member 분기로 풀렸으나
  * 클라이언트 헬퍼는 owner-only 였던 부분 마이그레이션을 일치시킨다.
  *
+ * Rename (2026-05-10) — owner-only 시절의 `loadAndVerifyJobPostingOwner` 에서 access
+ * 의미가 명확해진 `loadAndVerifyJobPostingAccess` 로 변경. 함수 의미와 시그니처는 동일,
+ * 호출자도 단순 import 변경.
+ *
  * 호출 비용: owner 본인이면 RPC 0회, 멤버면 1회, admin 이면 2회. 권한 에러 흐름은
  * cancellation/리뷰 같은 흔하지 않은 employer-side 액션이라 허용 가능.
  */
-export async function loadAndVerifyJobPostingOwner(
+export async function loadAndVerifyJobPostingAccess(
   jobPostingId: string,
   callerId: string,
   operation: string
