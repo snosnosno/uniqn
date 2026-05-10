@@ -325,6 +325,10 @@ describe('job posting submission helpers', () => {
     const serialized = serializeJobPostingV3(createInput, {
       ownerId: 'employer-1',
       ownerName: 'Owner',
+      // jobPostingDocumentSchema 가 workspaceId 를 required v4 uuid 로 요구.
+      // serializeJobPostingV3 는 options.workspaceId 미지정 시 필드 omit → zod 검증 실패.
+      // version digit 4, variant digit 8 인 valid uuid v4 사용.
+      workspaceId: '11111111-1111-4111-8111-111111111111',
       createdAt: new Date(),
       updatedAt: new Date(),
     });
