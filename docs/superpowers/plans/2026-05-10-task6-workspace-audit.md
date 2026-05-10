@@ -121,7 +121,21 @@ WHERE table_schema = 'public'
 
 ## 5. Sub-PR 로드맵
 
-### PR3-A: RLS admin global 분리 (4 테이블)
+### PR3-A: RLS admin global 분리 (4 테이블) — ✅ shipped (#82/#84/#85)
+
+### PR3-A.2: UPDATE/DELETE admin 분기 제거 + helper throw — ✅ shipped (2026-05-11)
+
+> spec: `docs/superpowers/plans/2026-05-11-pr3a2-admin-rls-update-delete-split.md`
+> migration: `pr3a2_admin_write_rls_split` (4 admin 분기 제거 + 2 deny-all + helper throw)
+
+### PR3-E: client write helper 통일 — ❎ no-op (2026-05-11)
+
+> ADR: `docs/decisions/2026-05-11-pr3e-client-write-helper-unification.md`
+> WorkLogRepository / EventQRRepository mutation 에 owner-only 클라이언트 가드 부재 → 진입 조건 미충족
+
+---
+
+### PR3-A (원본 spec 본문):
 
 > 별도 plan + eng-review. PR4 (Task 5) 와 동일 결정 트리 — **production migration**.
 

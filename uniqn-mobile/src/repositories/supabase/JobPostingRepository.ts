@@ -130,11 +130,17 @@ async function loadJobPostingForVerify(
  * Phase 2A.후속 (2026-05-10) — RLS jp_update_workspace_member (USING + WITH CHECK
  * 모두 `is_workspace_member(workspace_id, auth.uid()) OR is_admin()`) 와 일치.
  * 4 mutation flow (수정/마감/재오픈/정산설정) 가 본 헬퍼를 사용. owner-only 였던
- * 이전 동작에서 editor + admin 까지 풀어 Phase 1A editor role 활성화.
+ * 이전 동작에서 editor 까지 풀어 Phase 1A editor role 활성화.
  *
- * 호출 비용: owner 본인이면 RPC 0회, 멤버면 1회, admin 이면 2회.
+ * PR3-A.2 (2026-05-11) — admin 분기에서 PermissionError throw. 본 helper 가 적용되는
+ * mutation 흐름의 후속 RLS (app_update / wl_update 등) 가 admin 분기 제거됨에 따라
+ * helper 가 admin pass-through 시 후속 UPDATE 가 RLS silent no-op (0 row affected,
+ * exception 미발생) 으로 빠져 caller 가 false success 인식. helper 단계에서 명시적
+ * throw 하여 admin write 는 SECURITY DEFINER RPC (spec §2-C) 경유 강제.
  *
- * @see ApplicationRepositoryHelpers.loadAndVerifyJobPostingAccess (read-side 와 동일 분기)
+ * 호출 비용: owner 본인이면 RPC 0회, 멤버면 1회, admin/외부인이면 2회 (둘 다 throw).
+ *
+ * @see ApplicationRepositoryHelpers.loadAndVerifyJobPostingAccess (read-side 는 admin 통과 유지)
  */
 async function loadAndVerifyMutateAccess(
   jobPostingId: string,
@@ -160,11 +166,17 @@ async function loadAndVerifyMutateAccess(
   }
   if (memberResult.data === true) return jobPosting;
 
+  // PR3-A.2: admin 분기 silent no-op 차단. 향후 admin write UI 도입 시 SECURITY DEFINER
+  // RPC (admin_update_<table>_<column>) 경유하도록 강제.
   const adminResult = await supabase.rpc('is_admin');
   if (adminResult.error) {
     handleSupabaseError(adminResult.error, { operation, table: TABLE });
   }
-  if (adminResult.data === true) return jobPosting;
+  if (adminResult.data === true) {
+    throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
+      userMessage: `admin 직접 수정은 허용되지 않습니다. admin 전용 RPC 를 사용하세요: ${operation}`,
+    });
+  }
 
   throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
     userMessage: `워크스페이스 멤버만 수행할 수 있습니다: ${operation}`,

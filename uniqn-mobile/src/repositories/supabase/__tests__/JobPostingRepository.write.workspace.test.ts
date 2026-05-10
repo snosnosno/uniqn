@@ -1,20 +1,21 @@
 /**
  * Phase 2A.후속 — write-side workspace member + admin 호환
+ * PR3-A.2 (2026-05-11) — admin 분기 silent no-op 차단: loadAndVerifyMutateAccess admin throw
  *
  * @description JobPostingRepository.{update,delete,close,reopen,updateSettlementSettings}
- *              의 access verification 분기 검증. RLS jp_update_workspace_member 와 일치하는
- *              loadAndVerifyMutateAccess (owner|member|admin) 와 더 엄격한
- *              loadAndVerifyDeleteAccess (owner|admin only) 의 권한 매트릭스를 contract level
- *              에서 검증.
+ *              의 access verification 분기 검증. loadAndVerifyMutateAccess 는 PR3-A.2 후
+ *              owner|member 만 통과 (admin 은 PermissionError throw — RLS app_update/wl_update
+ *              admin 분기 제거 후 silent no-op 방지). loadAndVerifyDeleteAccess 는 unchanged
+ *              (job_postings.jp_delete 는 PR3-A.2 범위 외, admin pass-through 유지).
  *
- * 권한 매트릭스 (RLS 미러):
- * | flow              | owner | member | admin | outsider |
- * |-------------------|-------|--------|-------|----------|
- * | updateWith        | OK    | OK     | OK    | reject   |
- * | closeWith         | OK    | OK     | OK    | reject   |
- * | reopenWith        | OK    | OK     | OK    | reject   |
- * | updateSettlement  | OK    | OK     | OK    | reject   |
- * | deleteWith        | OK    | reject | OK    | reject   |
+ * 권한 매트릭스 (PR3-A.2 후):
+ * | flow              | owner | member | admin           | outsider |
+ * |-------------------|-------|--------|-----------------|----------|
+ * | updateWith        | OK    | OK     | reject (PR3-A.2)| reject   |
+ * | closeWith         | OK    | OK     | reject (PR3-A.2)| reject   |
+ * | reopenWith        | OK    | OK     | reject (PR3-A.2)| reject   |
+ * | updateSettlement  | OK    | OK     | reject (PR3-A.2)| reject   |
+ * | deleteWith        | OK    | reject | OK              | reject   |
  */
 
 import { SupabaseJobPostingRepository } from '../JobPostingRepository';
@@ -150,7 +151,7 @@ beforeEach(() => {
 // Mutate access (update/close/reopen/settlement)
 // ============================================================================
 
-describe('JobPostingRepository write-side — loadAndVerifyMutateAccess (owner|member|admin)', () => {
+describe('JobPostingRepository write-side — loadAndVerifyMutateAccess (owner|member, PR3-A.2 admin reject)', () => {
   const repo = new SupabaseJobPostingRepository();
 
   it('owner 본인의 close 호출은 RPC 0회로 통과한다', async () => {
@@ -180,7 +181,9 @@ describe('JobPostingRepository write-side — loadAndVerifyMutateAccess (owner|m
     expect(mockRpc).toHaveBeenCalledTimes(1);
   });
 
-  it('admin 호출 시 is_workspace_member=false → is_admin=true 분기로 통과', async () => {
+  // PR3-A.2 (2026-05-11): admin 분기 silent no-op 차단 — RLS app_update/wl_update admin
+  // 분기 제거 후 helper 통과 시 0 row affected 로 false success. helper 단계에서 throw.
+  it('admin 호출은 PermissionError 로 거절된다 (PR3-A.2 silent no-op 차단)', async () => {
     setupLoadAndUpdate();
     mockRpc.mockImplementation((fn: string) => {
       if (fn === 'is_workspace_member') return Promise.resolve({ data: false, error: null });
@@ -188,10 +191,32 @@ describe('JobPostingRepository write-side — loadAndVerifyMutateAccess (owner|m
       return Promise.resolve({ data: false, error: null });
     });
 
-    await repo.closeWithTransaction(POSTING_ID, ADMIN_ID).catch(() => {});
-
+    await expect(repo.closeWithTransaction(POSTING_ID, ADMIN_ID)).rejects.toThrow(PermissionError);
+    // is_workspace_member 호출 후 is_admin 호출 → throw
     expect(mockRpc).toHaveBeenCalledWith('is_workspace_member', expect.any(Object));
     expect(mockRpc).toHaveBeenCalledWith('is_admin');
+  });
+
+  it('admin 이지만 본인 owner 인 jobPosting 은 owner 분기 우선 (RPC 0회)', async () => {
+    setupLoadAndUpdate();
+    // ADMIN_ID 가 OWNER_ID 와 같으면 owner 분기로 통과
+    await repo.closeWithTransaction(POSTING_ID, OWNER_ID).catch(() => {});
+    // owner 분기로 short-circuit → admin RPC 호출 없음
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
+
+  it('admin 이지만 워크스페이스 멤버 인 사용자는 member 분기 우선 (admin RPC 미호출)', async () => {
+    setupLoadAndUpdate();
+    mockRpc.mockImplementation((fn: string) => {
+      if (fn === 'is_workspace_member') return Promise.resolve({ data: true, error: null });
+      return Promise.resolve({ data: false, error: null });
+    });
+
+    await repo.closeWithTransaction(POSTING_ID, ADMIN_ID).catch(() => {});
+
+    // member 통과 → is_admin 미호출
+    expect(mockRpc).toHaveBeenCalledWith('is_workspace_member', expect.any(Object));
+    expect(mockRpc).not.toHaveBeenCalledWith('is_admin');
   });
 
   it('외부인의 close 호출은 PermissionError 로 거절된다', async () => {
@@ -214,7 +239,7 @@ describe('JobPostingRepository write-side — loadAndVerifyMutateAccess (owner|m
     expect(mockRpc).toHaveBeenCalledWith('is_workspace_member', expect.any(Object));
   });
 
-  it('updateSettlementSettings 도 동일 분기 (admin 통과)', async () => {
+  it('updateSettlementSettings 의 admin 호출도 PR3-A.2 throw (silent no-op 차단)', async () => {
     setupLoadAndUpdate();
     mockRpc.mockImplementation((fn: string) => {
       if (fn === 'is_workspace_member') return Promise.resolve({ data: false, error: null });
@@ -222,14 +247,13 @@ describe('JobPostingRepository write-side — loadAndVerifyMutateAccess (owner|m
       return Promise.resolve({ data: false, error: null });
     });
 
-    await repo
-      .updateSettlementSettings(
+    await expect(
+      repo.updateSettlementSettings(
         POSTING_ID,
         { roles: [], allowances: {}, taxSettings: {} as never },
         ADMIN_ID
       )
-      .catch(() => {});
-
+    ).rejects.toThrow(PermissionError);
     expect(mockRpc).toHaveBeenCalledWith('is_admin');
   });
 
