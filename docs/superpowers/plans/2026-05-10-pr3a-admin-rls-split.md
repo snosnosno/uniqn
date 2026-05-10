@@ -207,8 +207,10 @@ BEGIN
   RETURN QUERY
   SELECT * FROM public.work_logs
   WHERE (p_status IS NULL OR status = p_status)
-    AND (p_date_from IS NULL OR date >= p_date_from)
-    AND (p_date_to IS NULL OR date <= p_date_to)
+    -- work_logs.date 는 timestamptz 전환 중인 text 컬럼 (Phase A 완료 — Phase B/C/D 잔여)
+    -- input(date) 을 text 로 캐스팅해 ISO YYYY-MM-DD 사전식 비교
+    AND (p_date_from IS NULL OR date >= p_date_from::text)
+    AND (p_date_to IS NULL OR date <= p_date_to::text)
   ORDER BY date DESC, created_at DESC;
 END;
 $$;
@@ -241,7 +243,8 @@ BEGIN
   RETURN QUERY
   SELECT * FROM public.workspace_members
   WHERE p_workspace_id IS NULL OR workspace_id = p_workspace_id
-  ORDER BY created_at DESC;
+  -- workspace_members 는 joined_at 만 보유 (created_at 컬럼 없음)
+  ORDER BY joined_at DESC;
 END;
 $$;
 
@@ -411,8 +414,10 @@ BEGIN
   RETURN QUERY
   SELECT * FROM public.work_logs
   WHERE (p_status IS NULL OR status = p_status)
-    AND (p_date_from IS NULL OR date >= p_date_from)
-    AND (p_date_to IS NULL OR date <= p_date_to)
+    -- work_logs.date 는 timestamptz 전환 중인 text 컬럼 (Phase A 완료 — Phase B/C/D 잔여)
+    -- input(date) 을 text 로 캐스팅해 ISO YYYY-MM-DD 사전식 비교
+    AND (p_date_from IS NULL OR date >= p_date_from::text)
+    AND (p_date_to IS NULL OR date <= p_date_to::text)
   ORDER BY date DESC, created_at DESC;
 END;
 $$;
@@ -445,7 +450,8 @@ BEGIN
   RETURN QUERY
   SELECT * FROM public.workspace_members
   WHERE p_workspace_id IS NULL OR workspace_id = p_workspace_id
-  ORDER BY created_at DESC;
+  -- workspace_members 는 joined_at 만 보유 (created_at 컬럼 없음)
+  ORDER BY joined_at DESC;
 END;
 $$;
 
@@ -632,3 +638,27 @@ PR3-A 가 더 단순한 이유: 기존 정책에 admin 분기만 OR 로 추가�
 5. **즉시 dogfooding** — 9 시나리오 검증 (review-admin 계정)
 6. **회귀 시 rollback** — 위 SQL 즉시 실행
 7. **PR3-A.2 후속 spec** — UPDATE/DELETE admin 분기 처리 (별도 세션)
+
+## 11. Apply 후 발견 + Hotfix (2026-05-10)
+
+PR3-A migration `pr3a_admin_rls_split` apply 직후 review-admin dogfooding(브라우저 supabase JS REST 호출) 으로 2개 RPC 에서 runtime 에러 발견. staging dry-run 은 DDL syntax 만 검증했고 함수 실제 실행은 안 했으므로 잡지 못한 결함.
+
+| RPC | Runtime 에러 | 원인 | Hotfix |
+|-----|-------------|------|--------|
+| `list_all_work_logs` | `operator does not exist: text >= date` (status 404) | `work_logs.date` 가 timestamptz 전환 중인 **text** 컬럼인데 `WHERE date >= p_date_from(date)` 비교 | input 을 text 로 캐스팅 — `date >= p_date_from::text` |
+| `list_all_workspace_members` | `column "created_at" does not exist` (status 400) | `workspace_members` 에 `created_at` 없음 (`joined_at` 만 존재) | `ORDER BY created_at` → `ORDER BY joined_at` |
+
+**파급 영향**: §4-B 에 명시된 대로 admin call site 부재라 **현재 사용자 영향 0**. 향후 admin 페이지 도입 시 두 RPC 호출 즉시 실패했을 결함.
+
+**Hotfix migration**: `pr3a_admin_rls_split_rpc_hotfix` (CREATE OR REPLACE 두 함수 + `NOTIFY pgrst, 'reload schema'`). 본 spec doc 의 §2-B / §3 RPC 본문은 hotfix 적용 후 상태로 정정됨 (sec doc = prod truth).
+
+**Apply 후 dogfooding 결과** (review-admin / review-employer 두 계정으로 검증):
+
+| 검증 항목 | 결과 |
+|----------|------|
+| RLS admin 분기 제거 (4 테이블 SELECT) | ✅ admin 사용자가 본인 + 워크스페이스 멤버 row 만 조회 |
+| 4 RPC admin 호출 (data 반환) | ✅ status 200, count 정상 (DB 실제 row 수 일치) |
+| 4 RPC non-admin (review-employer) 호출 | ✅ 4/4 status 400 + `P0001 PERMISSION_DENIED` |
+| RPC PostgREST 즉시 callable | ✅ NOTIFY 후 ~3 초 내 호출 가능 |
+
+**교훈** — staging dry-run 은 DDL 검증만으론 부족. 함수 본문이 schema 와 실제 일치하는지 확인하려면 함수 호출까지 포함한 검증이 필요. 추후 비슷한 RPC 추가 PR 에선 dry-run 단계에 `SELECT * FROM list_all_X() LIMIT 0;` 같은 호출 검증 추가 권장.
