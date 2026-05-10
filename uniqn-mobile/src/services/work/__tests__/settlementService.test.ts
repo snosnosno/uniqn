@@ -35,6 +35,7 @@ const mockSettleWorkLogWithTransaction = jest.fn();
 const mockBulkSettlementWithTransaction = jest.fn();
 const mockUpdatePayrollStatusWithTransaction = jest.fn();
 const mockUpdateWorkTimeWithTransaction = jest.fn();
+const mockLoadAndVerifyJobPostingAccess = jest.fn();
 
 jest.mock('@/repositories', () => ({
   jobPostingRepository: {
@@ -54,6 +55,13 @@ jest.mock('@/repositories', () => ({
     updateWorkTimeWithTransaction: (...args: unknown[]) =>
       mockUpdateWorkTimeWithTransaction(...args),
   },
+}));
+
+// P0 hotfix (PR #76) 후속: settlementQuery 가 ApplicationRepositoryHelpers 사용.
+// 기존 테스트는 mockJobPostingGetById + ownerId 비교 패턴으로 작성됐으므로
+// loadAndVerifyJobPostingAccess mock 이 그 동작을 mirror 하도록 shim.
+jest.mock('@/repositories/supabase/ApplicationRepositoryHelpers', () => ({
+  loadAndVerifyJobPostingAccess: (...args: unknown[]) => mockLoadAndVerifyJobPostingAccess(...args),
 }));
 
 // ============================================================================
@@ -166,6 +174,16 @@ jest.mock('@/constants', () => ({
     PAYROLL: {
       PENDING: 'pending',
       PROCESSING: 'processing',
+      COMPLETED: 'completed',
+    },
+    // P0 hotfix (PR #76) 후속: settlementQuery.ts → ApplicationRepositoryHelpers.ts 가
+    // STATUS.APPLICATION 의존 → transitive import 시 mock 누락으로 TypeError 회귀.
+    APPLICATION: {
+      APPLIED: 'applied',
+      CONFIRMED: 'confirmed',
+      CANCELLED: 'cancelled',
+      CANCELLATION_PENDING: 'cancellation_pending',
+      REJECTED: 'rejected',
       COMPLETED: 'completed',
     },
   },
@@ -360,6 +378,31 @@ describe('settlementService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     resetCounters();
+
+    // P0 hotfix (PR #76) shim — loadAndVerifyJobPostingAccess 가
+    // 기존 mockJobPostingGetById 흐름과 동일 시맨틱으로 동작하도록.
+    // 4 시나리오 (owner / member / admin / 외부인) 의 owner-only 경로 만 mirror —
+    // 기존 테스트가 owner 시나리오만 검증하므로 충분.
+    mockLoadAndVerifyJobPostingAccess.mockImplementation(
+      async (jobPostingId: string, callerId: string, _operation: string) => {
+        const result = await mockJobPostingGetById(jobPostingId);
+        if (!result) {
+          // BusinessError mock 재사용 (jest.mock '@/errors' factory 결과)
+          // userMessage 는 OLD 코드 ('존재하지 않는 공고입니다') 로 통일하여 회귀 테스트 보존
+          const { BusinessError, ERROR_CODES } = jest.requireMock('@/errors');
+          throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
+            userMessage: '존재하지 않는 공고입니다',
+          });
+        }
+        if (result.ownerId !== callerId) {
+          const { PermissionError, ERROR_CODES } = jest.requireMock('@/errors');
+          throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
+            userMessage: '본인의 공고만 조회할 수 있습니다',
+          });
+        }
+        return result;
+      }
+    );
   });
 
   // ==========================================================================
