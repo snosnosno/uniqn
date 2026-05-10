@@ -94,3 +94,29 @@ verify_jwt = false
 
 [functions.decrement-unread-counter]
 verify_jwt = false
+
+[functions.initialize-unread-counter]
+verify_jwt = false
+
+# trigger 발화 → service_role 자체 검증 (Authorization 헤더 직접 비교)
+[functions.send-push-notification]
+verify_jwt = false
+
+# 결제 webhook — RevenueCat 서명 자체 검증
+[functions.revenuecat-webhook]
+verify_jwt = false
+
+# 사용자 가입 흐름 — 함수 내부에서 service_role 검증
+[functions.verify-and-save-portone-profile]
+verify_jwt = false
+
+# pg_cron / 관리자 호출 — 함수 내부 인증
+[functions.cleanup-orphan-accounts]
+verify_jwt = false
+
+[functions.process-scheduled-deletions]
+verify_jwt = false
+
+# 명시적으로 verify_jwt = true 유지 (게이트웨이 검증)
+# - sync-schedule-board-outbox: pg_cron이 service_role JWT로 호출
+# - send-job-posting-announcement, send-system-announcement: 관리자 user JWT 호출
