@@ -1,0 +1,99 @@
+/**
+ * Shared helpers for verify-portone-identity / verify-and-save-portone-profile
+ * (그리고 향후 Apple/PortOne IdP caller binding 함수들).
+ *
+ * Web Crypto API + 표준 TextEncoder만 사용 — Deno deploy / Node 19+ / jsdom
+ * 모두에서 동일하게 동작 (jest 단위 테스트 가능).
+ */
+import { IDP_ERROR_CODES, type IdpErrorCode } from './idp-errors.ts';
+
+export const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+export function jsonResponse(data: unknown, status = 200): Response {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
+export function idpError(code: IdpErrorCode, detail?: string): Response {
+  const { status, message } = IDP_ERROR_CODES[code];
+  return new Response(JSON.stringify({ error: message, code, ...(detail ? { detail } : {}) }), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
+export function isVerificationRecent(
+  verifiedAt: string | undefined,
+  maxAgeMs = 5 * 60 * 1000
+): boolean {
+  if (!verifiedAt || typeof verifiedAt !== 'string') return false;
+  const ms = new Date(verifiedAt).getTime();
+  if (isNaN(ms)) return false;
+  const delta = Date.now() - ms;
+  // delta < 0 (미래 timestamp): clock skew 가능성 — 차단하지 않음 (window 내 간주)
+  // delta > maxAgeMs: 만료
+  return delta <= maxAgeMs;
+}
+
+export function normalizeBirthDate(value?: string): string | undefined {
+  if (!value) return undefined;
+  const cleaned = value.replace(/-/g, '');
+  if (!/^\d{8}$/.test(cleaned)) return undefined;
+  return cleaned;
+}
+
+export function normalizeGender(value?: string): 'male' | 'female' | undefined {
+  if (!value) return undefined;
+  const upper = value.toUpperCase();
+  if (upper === 'MALE') return 'male';
+  if (upper === 'FEMALE') return 'female';
+  return undefined;
+}
+
+export function toE164(phone: string): string {
+  const cleaned = phone.replace(/[^\d+]/g, '');
+  if (cleaned.startsWith('+82')) return cleaned;
+  if (cleaned.startsWith('010') || cleaned.startsWith('011')) {
+    return '+82' + cleaned.substring(1);
+  }
+  return cleaned;
+}
+
+export function validateAge(birthDate: string, minAge: number): boolean {
+  if (!/^\d{8}$/.test(birthDate)) return false;
+  const year = parseInt(birthDate.substring(0, 4), 10);
+  const month = parseInt(birthDate.substring(4, 6), 10) - 1;
+  const day = parseInt(birthDate.substring(6, 8), 10);
+  const birth = new Date(year, month, day);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age >= minAge;
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+  let out = '';
+  for (let i = 0; i < bytes.length; i++) {
+    out += bytes[i].toString(16).padStart(2, '0');
+  }
+  return out;
+}
+
+export async function createDeterministicHash(value: string, secret: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(value));
+  return bytesToHex(new Uint8Array(signature));
+}

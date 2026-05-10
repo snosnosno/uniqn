@@ -224,3 +224,15 @@ PortOne v2 `verifiedCustomer.di` 응답 여부는 PortOne support 직접 문의�
 **CROSS-MODEL CONSENSUS**: v3는 4개 리뷰 + prod 검증을 모두 수용. PR-A 단독 진행 가능.
 
 **VERDICT**: v3 ENG-REVIEW 진행 대기. 즉시 implementation 가능한 가장 작은 코어로 축소됨.
+
+---
+
+## PR-A 구현 완료 (2026-05-11)
+
+- `_shared/idp-errors.ts` + `_shared/idp-binding.ts` 신규
+- `verify-portone-identity/index.ts` + `verify-and-save-portone-profile/index.ts` 리팩토링 (timestamp 가드 + DRY + idpError 치환, authHeader 강제 추가 안 함 — codex F1 회피)
+- unit test 10건 (`__tests__/supabase-shared/idp-binding.test.ts`) — isVerificationRecent 4 + idpError 2 + 헬퍼 회귀 4 모두 통과
+- e2e skeleton 4건 (`e2e/tests/p1-important/portone-timestamp-guard.spec.ts`) — PortOne mock infrastructure 부재로 `test.skip` 처리, 인프라 도입 후 unskip
+- `tsconfig.json` `allowImportingTsExtensions: true` (Deno-style `.ts` 확장자 import 호환)
+- `npm run quality` + `npm test` (4054 pass) baseline 유지
+- 보류: Spec A (Sentry SDK 통합) / Spec B (Apple JWKS) / Spec C (di_hash dedup) — 트리거 충족 시 별도 진행

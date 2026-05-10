@@ -1,47 +1,15 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { crypto } from 'https://deno.land/std@0.224.0/crypto/mod.ts';
-import { encodeHex } from 'https://deno.land/std@0.224.0/encoding/hex.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
-}
-
-function normalizeBirthDate(value?: string): string | undefined {
-  if (!value) return undefined;
-  const cleaned = value.replace(/-/g, '');
-  if (!/^\d{8}$/.test(cleaned)) return undefined;
-  return cleaned;
-}
-
-function normalizeGender(value?: string): 'male' | 'female' | undefined {
-  if (!value) return undefined;
-  const upper = value.toUpperCase();
-  if (upper === 'MALE') return 'male';
-  if (upper === 'FEMALE') return 'female';
-  return undefined;
-}
-
-async function createDeterministicHash(value: string, secret: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(value));
-  return encodeHex(new Uint8Array(signature));
-}
+import {
+  corsHeaders,
+  createDeterministicHash,
+  idpError,
+  isVerificationRecent,
+  jsonResponse,
+  normalizeBirthDate,
+  normalizeGender,
+  toE164,
+} from '../_shared/idp-binding.ts';
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -63,13 +31,12 @@ Deno.serve(async (req: Request) => {
       typeof identityVerificationId !== 'string' ||
       identityVerificationId.length > 200
     ) {
-      return json({ error: 'identityVerificationId가 필요합니다' }, 400);
+      return jsonResponse({ error: 'identityVerificationId가 필요합니다' }, 400);
     }
 
-    // PortOne API 호출
     const portoneSecret = Deno.env.get('PORTONE_API_SECRET');
     if (!portoneSecret) {
-      return json({ error: 'PortOne 설정 오류' }, 500);
+      return jsonResponse({ error: 'PortOne 설정 오류' }, 500);
     }
 
     const portoneRes = await fetch(
@@ -78,37 +45,30 @@ Deno.serve(async (req: Request) => {
     );
 
     if (!portoneRes.ok) {
-      return json({ error: '본인인증 정보 조회 실패' }, 400);
+      return idpError('PORTONE_FETCH_FAILED');
     }
 
     const verification = await portoneRes.json();
     if (verification.status !== 'VERIFIED') {
-      return json({ error: '본인인증이 완료되지 않았습니다' }, 400);
+      return idpError('PORTONE_NOT_VERIFIED');
+    }
+    if (!isVerificationRecent(verification.verifiedAt)) {
+      return idpError('IV_TIMESTAMP_EXPIRED');
     }
 
     const identityData = verification.verifiedCustomer || {};
     const normalizedBirthDate = normalizeBirthDate(identityData.birthDate);
-    const normalizedGender = normalizeGender(identityData.gender);
+    const gender = normalizeGender(identityData.gender);
     const phone = identityData.phoneNumber;
 
-    // 전화번호 정규화 (E.164)
-    let normalizedPhone: string | undefined;
-    if (phone) {
-      const cleaned = phone.replace(/[^\d+]/g, '');
-      if (cleaned.startsWith('+82')) normalizedPhone = cleaned;
-      else if (cleaned.startsWith('010') || cleaned.startsWith('011'))
-        normalizedPhone = '+82' + cleaned.substring(1);
-      else normalizedPhone = cleaned;
-    }
+    const normalizedPhone = phone ? toE164(phone) : undefined;
 
-    // CI 해시
     let ciHash: string | undefined;
     const ci = identityData.ci;
     if (ci) {
       ciHash = await createDeterministicHash(ci, portoneSecret);
     }
 
-    // 중복 검사 (Supabase)
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -146,7 +106,7 @@ Deno.serve(async (req: Request) => {
     }
     await Promise.all(queries);
 
-    return json({
+    return jsonResponse({
       success: true,
       identityVerified: true,
       phoneVerified: Boolean(normalizedPhone),
@@ -159,7 +119,7 @@ Deno.serve(async (req: Request) => {
         verifiedAt: verification.verifiedAt || new Date().toISOString(),
         name: identityData.name,
         birthDate: normalizedBirthDate,
-        gender: normalizedGender,
+        gender,
         phoneNumber: normalizedPhone,
         ciHash,
         isForeigner: identityData.isForeigner ?? false,
@@ -167,6 +127,6 @@ Deno.serve(async (req: Request) => {
     });
   } catch (error) {
     console.error('PortOne identity verification error:', error);
-    return json({ error: error instanceof Error ? error.message : '알 수 없는 오류' }, 500);
+    return jsonResponse({ error: error instanceof Error ? error.message : '알 수 없는 오류' }, 500);
   }
 });
