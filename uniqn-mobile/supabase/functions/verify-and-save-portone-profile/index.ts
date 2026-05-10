@@ -6,6 +6,7 @@ import {
   idpError,
   isVerificationRecent,
   jsonResponse,
+  logDiDiagnostic,
   normalizeBirthDate,
   normalizeGender,
   toE164,
@@ -101,6 +102,7 @@ Deno.serve(async (req: Request) => {
     if (!isVerificationRecent(verification.verifiedAt)) return idpError('IV_TIMESTAMP_EXPIRED');
 
     const identityData = verification.verifiedCustomer || {};
+    logDiDiagnostic(identityData, 'verify-and-save-portone-profile');
     const verifiedName = identityData.name;
     const rawBirthDate = normalizeBirthDate(identityData.birthDate);
     const gender = normalizeGender(identityData.gender);

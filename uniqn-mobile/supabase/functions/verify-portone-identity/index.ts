@@ -6,6 +6,7 @@ import {
   idpError,
   isVerificationRecent,
   jsonResponse,
+  logDiDiagnostic,
   normalizeBirthDate,
   normalizeGender,
   toE164,
@@ -57,6 +58,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const identityData = verification.verifiedCustomer || {};
+    logDiDiagnostic(identityData, 'verify-portone-identity');
     const normalizedBirthDate = normalizeBirthDate(identityData.birthDate);
     const gender = normalizeGender(identityData.gender);
     const phone = identityData.phoneNumber;

@@ -9,6 +9,7 @@ import {
   createDeterministicHash,
   idpError,
   isVerificationRecent,
+  logDiDiagnostic,
   normalizeBirthDate,
   normalizeGender,
   toE164,
@@ -113,5 +114,44 @@ describe('validateAge (만 나이 회귀)', () => {
     expect(validateAge(adult, 14)).toBe(true);
     expect(validateAge(teen, 14)).toBe(false);
     expect(validateAge('not-a-date', 14)).toBe(false);
+  });
+});
+
+describe('logDiDiagnostic (Spec C — PortOne di 진단 로그, PII redact)', () => {
+  let spy: jest.SpyInstance;
+  beforeEach(() => {
+    spy = jest.spyOn(console, 'log').mockImplementation(() => undefined);
+  });
+  afterEach(() => {
+    spy.mockRestore();
+  });
+
+  it('di 존재 시 hasDi=true + diLength만 로깅 (di 값 자체는 로깅 안 함)', () => {
+    logDiDiagnostic({ di: 'abc123def-XYZ' }, 'unit-test');
+    expect(spy).toHaveBeenCalledWith(
+      '[di-diagnostic]',
+      expect.objectContaining({
+        context: 'unit-test',
+        hasDi: true,
+        diLength: 13,
+        diType: 'string',
+      })
+    );
+    const arg = spy.mock.calls[0][1];
+    expect(JSON.stringify(arg)).not.toContain('abc123def');
+  });
+
+  it('di 없음 시 hasDi=false', () => {
+    logDiDiagnostic({}, 'unit-test');
+    expect(spy).toHaveBeenCalledWith(
+      '[di-diagnostic]',
+      expect.objectContaining({ hasDi: false, diLength: 0, diType: 'undefined' })
+    );
+  });
+
+  it('null / undefined verifiedCustomer 입력 안전 처리', () => {
+    logDiDiagnostic(null, 'ctx');
+    logDiDiagnostic(undefined, 'ctx');
+    expect(spy).toHaveBeenCalledTimes(2);
   });
 });

@@ -85,6 +85,26 @@ function bytesToHex(bytes: Uint8Array): string {
   return out;
 }
 
+/**
+ * PortOne 응답의 `verifiedCustomer.di` 필드 존재/길이만 로깅 (Spec C 진단).
+ *
+ * INICIS/KCP 등 PG사가 `di`를 실제로 응답에 포함하는지 1-2주 운영 데이터로 검증
+ * 후 di_hash dedup 본 구현 결정. PII 자체는 로깅 안 함, 길이/타입만 기록.
+ */
+export function logDiDiagnostic(
+  verifiedCustomer: { di?: unknown } | null | undefined,
+  context: string
+): void {
+  const di = verifiedCustomer?.di;
+  const hasDi = typeof di === 'string' && di.length > 0;
+  console.log('[di-diagnostic]', {
+    context,
+    hasDi,
+    diLength: hasDi ? (di as string).length : 0,
+    diType: di === undefined ? 'undefined' : typeof di,
+  });
+}
+
 export async function createDeterministicHash(value: string, secret: string): Promise<string> {
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
