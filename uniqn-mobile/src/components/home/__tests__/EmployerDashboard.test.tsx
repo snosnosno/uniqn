@@ -30,13 +30,21 @@ jest.mock('@/components/home/widgets/RecentNoticesWidget', () => ({
   },
 }));
 
+jest.mock('@/components/home/widgets/SettlementSummaryWidget', () => ({
+  SettlementSummaryWidget: () => {
+    const { View } = jest.requireActual('react-native') as typeof import('react-native');
+    return <View testID="settlement-summary-widget" />;
+  },
+}));
+
 describe('EmployerDashboard', () => {
-  it('4개 위젯이 모두 렌더된다', () => {
+  it('5개 위젯이 모두 렌더된다', () => {
     const { getByTestId } = render(<EmployerDashboard />);
     expect(getByTestId('weekly-staff-widget')).toBeTruthy();
     expect(getByTestId('posting-overview-widget')).toBeTruthy();
     expect(getByTestId('cancellation-widget')).toBeTruthy();
     expect(getByTestId('recent-notices-widget')).toBeTruthy();
+    expect(getByTestId('settlement-summary-widget')).toBeTruthy();
   });
 
   it('ScrollView로 래핑되어 있다', () => {

@@ -179,9 +179,9 @@ async function loadAndVerifyMutateAccess(
  * 소유자와 공고 소유자가 일치하는 일반 케이스 모두 통과. member 는 거절(soft-delete
  * 도 거부).
  *
- * 알려진 갭(out-of-scope): 본 클라이언트가 UPDATE status=cancelled (soft-delete) 를
- * 쓰므로 RLS 는 jp_update_workspace_member 를 평가 → API 직접 호출 시 member 가 우회
- * 가능. DB-level enforcement 는 별도 status 전이 trigger/함수로 강화 필요.
+ * DB-level 보강 (2026-05-10, migration 20260514050000): trg_enforce_jp_status_transition
+ * BEFORE UPDATE trigger 가 active|closed → cancelled 전이를 workspace owner|admin 만
+ * 통과시키도록 차단한다. 본 클라이언트 가드는 즉시 UX 차단 (double defense) 으로 유지.
  */
 async function loadAndVerifyDeleteAccess(
   jobPostingId: string,
