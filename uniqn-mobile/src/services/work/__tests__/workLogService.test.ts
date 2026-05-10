@@ -407,11 +407,26 @@ describe('WorkLogService', () => {
 
       const result = await getMonthlyPayroll('staff-1', 2025, 1);
 
-      expect(mockRepo.getMonthlyPayroll).toHaveBeenCalledWith('staff-1', 2025, 1);
+      expect(mockRepo.getMonthlyPayroll).toHaveBeenCalledWith('staff-1', 2025, 1, undefined);
       expect(result.totalAmount).toBe(3000000);
       expect(result.pendingAmount).toBe(1000000);
       expect(result.completedAmount).toBe(2000000);
       expect(result.workLogs).toHaveLength(1);
+    });
+
+    // Phase 2A.후속 (PR3-B, 2026-05-10) — workspaceId pass-through 검증
+    it('should pass workspaceId 4th arg to repository when provided', async () => {
+      const mockSummary = {
+        totalAmount: 1500000,
+        pendingAmount: 0,
+        completedAmount: 1500000,
+        workLogs: [],
+      };
+      mockRepo.getMonthlyPayroll.mockResolvedValue(mockSummary as any);
+
+      await getMonthlyPayroll('staff-1', 2025, 5, 'ws-abc');
+
+      expect(mockRepo.getMonthlyPayroll).toHaveBeenCalledWith('staff-1', 2025, 5, 'ws-abc');
     });
 
     it('should return empty workLogs array when summary has no workLogs', async () => {

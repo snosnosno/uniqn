@@ -156,11 +156,15 @@ export async function getWorkLogStats(staffId: string): Promise<WorkLogStats> {
  * 월별 정산 정보 조회
  *
  * @description Repository 패턴 적용 - workLogRepository.getMonthlyPayroll 사용
+ *
+ * Phase 2A.후속 (PR3-B, 2026-05-10) — workspaceId? 추가, repository pass-through.
+ * Active workspace 별 정산 분리 지원.
  */
 export async function getMonthlyPayroll(
   staffId: string,
   year: number,
-  month: number
+  month: number,
+  workspaceId?: string
 ): Promise<{
   totalAmount: number;
   pendingAmount: number;
@@ -168,9 +172,14 @@ export async function getMonthlyPayroll(
   workLogs: WorkLog[];
 }> {
   try {
-    logger.info('월별 정산 조회', { staffId: maskSensitiveId(staffId), year, month });
+    logger.info('월별 정산 조회', {
+      staffId: maskSensitiveId(staffId),
+      year,
+      month,
+      workspaceId,
+    });
 
-    const summary = await workLogRepository.getMonthlyPayroll(staffId, year, month);
+    const summary = await workLogRepository.getMonthlyPayroll(staffId, year, month, workspaceId);
 
     return {
       totalAmount: summary.totalAmount,
@@ -182,7 +191,7 @@ export async function getMonthlyPayroll(
     throw handleServiceError(error, {
       operation: '월별 정산 조회',
       component: 'workLogService',
-      context: { staffId: maskSensitiveId(staffId), year, month },
+      context: { staffId: maskSensitiveId(staffId), year, month, workspaceId },
     });
   }
 }

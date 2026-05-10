@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { useActiveWorkspace } from '@/hooks/workspace/useActiveWorkspace';
 import { useAuthStore } from '@/stores/authStore';
 import { queryKeys, cachingPolicies, queryCachingOptions } from '@/lib/queryClient';
 import {
@@ -342,9 +343,18 @@ export function useWorkLogStats(enabled = true) {
   };
 }
 
+/**
+ * 월별 정산 요약 hook
+ *
+ * Phase 2A.후속 (PR3-B, 2026-05-10) — useActiveWorkspace 의존 추가. Staff 가
+ * 여러 워크스페이스(포커룸)에서 근무하는 경우 active workspace 별로 정산을
+ * 분리 (PR #71 useMyJobPostings 패턴 복제). queryKey 에 workspaceId 포함하여
+ * cache 격리, activeWorkspace 부재 시 enabled=false 로 ghost cache 회피.
+ */
 export function useMonthlyPayroll(year: number, month: number, enabled = true) {
   const user = useAuthStore((state) => state.user);
   const staffId = user?.uid;
+  const { activeWorkspace } = useActiveWorkspace();
   const { isOnline } = useNetworkStatus();
   const payrollQueryKey = [
     ...queryKeys.workLogs.all,
@@ -352,15 +362,16 @@ export function useMonthlyPayroll(year: number, month: number, enabled = true) {
     year,
     month,
     staffId ?? 'anonymous',
+    activeWorkspace?.id ?? 'no-workspace',
   ] as const;
 
   const query = useQuery({
     queryKey: payrollQueryKey,
     queryFn: async () => {
       if (!staffId) throw new Error(AUTH_REQUIRED_MESSAGE);
-      return getMonthlyPayroll(staffId, year, month);
+      return getMonthlyPayroll(staffId, year, month, activeWorkspace?.id);
     },
-    enabled: enabled && !!staffId && isOnline,
+    enabled: enabled && !!staffId && !!activeWorkspace?.id && isOnline,
     staleTime: cachingPolicies.stable,
   });
 
