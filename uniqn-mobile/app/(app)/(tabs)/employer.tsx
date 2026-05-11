@@ -10,7 +10,13 @@ import { EventQRModal } from '@/components/employer/qr/EventQRModal';
 import { JobPostingCard, NonEmployerView } from '@/components/employer';
 import { TabHeader } from '@/components/headers';
 import { WorkspaceContextBar } from '@/components/workspace';
-import { BriefcaseIcon, PlusIcon, UsersIcon } from '@/components/icons';
+import {
+  BriefcaseIcon,
+  ChevronRightIcon,
+  PlusIcon,
+  UserPlusIcon,
+  UsersIcon,
+} from '@/components/icons';
 import { getIconColor } from '@/constants';
 import { buildPostingFacts } from '@/domains/job-posting';
 import {
@@ -18,9 +24,11 @@ import {
   useMyJobPostings,
   useReopenJobPosting,
 } from '@/hooks/useJobManagement';
+import { useSharedJobPostings } from '@/hooks/job-posting/useSharedJobPostings';
 import { useHasRole } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
 import type { JobPosting } from '@/types';
+import type { SharedJobPosting } from '@/types/jobPostingCollaborator';
 
 type FilterStatus = 'all' | 'active' | 'closed';
 
@@ -221,6 +229,12 @@ function EmployerView() {
     router.push('/(employer)/my-postings/create');
   }, []);
 
+  // 공유받은 공고 (collaborator 본인 시점)
+  const { sharedPostings } = useSharedJobPostings();
+  const handleSharedPostingPress = useCallback((shared: SharedJobPosting) => {
+    router.push(`/(employer)/my-postings/${shared.jobPostingId}`);
+  }, []);
+
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
@@ -301,6 +315,39 @@ function EmployerView() {
       </View>
 
       <FilterTabs selected={filter} onChange={setFilter} counts={filterCounts} />
+
+      {sharedPostings.length > 0 ? (
+        <View className="mx-4 mb-3">
+          <View className="mb-2 flex-row items-center">
+            <UserPlusIcon size={16} color="#3B82F6" />
+            <Text className="ml-1.5 text-xs font-sans-semibold uppercase text-content-secondary">
+              공유받은 공고 ({sharedPostings.length})
+            </Text>
+          </View>
+          {sharedPostings.map((shared) => (
+            <Pressable
+              key={shared.jobPostingId}
+              onPress={() => handleSharedPostingPress(shared)}
+              className="mb-2 flex-row items-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 active:opacity-70 dark:border-blue-800/50 dark:bg-blue-900/20"
+              accessibilityRole="button"
+              accessibilityLabel={`공유받은 공고 ${shared.jobPostingTitle}`}
+            >
+              <View className="flex-1 min-w-0">
+                <Text
+                  className="text-sm font-sans-semibold text-content-primary dark:text-off-white"
+                  numberOfLines={1}
+                >
+                  🔗 {shared.jobPostingTitle}
+                </Text>
+                <Text className="mt-0.5 text-xs text-content-secondary" numberOfLines={1}>
+                  {shared.workspaceName} 워크스페이스
+                </Text>
+              </View>
+              <ChevronRightIcon size={16} color={SECONDARY_PALETTE[400]} />
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
 
       {filteredPostings.length === 0 ? (
         <PostingSurfaceState

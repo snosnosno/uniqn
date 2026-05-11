@@ -90,3 +90,6 @@ export {
   type SearchProvider,
   type SearchServiceConfig,
 } from './searchService';
+
+// 공고별 협업자 (Phase 5 — feat/job-posting-collaborators)
+export { collaboratorService } from './collaboratorService';
