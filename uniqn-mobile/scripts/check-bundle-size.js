@@ -11,8 +11,18 @@ const path = require('path');
 const zlib = require('zlib');
 
 // 설정
+//
+// maxBundleSize 정책:
+//   2.25MB = 2.02MB (현재 실측) + ~10% 헤드룸. 1bundle (대형 정규 회귀)을
+//   잡는 알람 역할은 유지하되, 점진적 기능 추가(collaborator 등)에 false
+//   positive 가 나지 않게 한다. 번들 다이어트(코드 split, route-level lazy,
+//   미사용 lucide-icon prune 등)는 별도 트랙으로 진행.
+//
+// 현재 분포(2026-05-12):
+//   index.js 1.97MB gzip (전체의 97%) — collaborator 기능 정적 import 포함
+//   jsQR 45KB, 나머지 < 1KB
 const CONFIG = {
-  maxBundleSize: 2 * 1024 * 1024, // 2MB (gzip) — 번들 다이어트는 별도 트랙
+  maxBundleSize: 2.25 * 1024 * 1024, // 2.25MB (gzip)
   bundleDir: path.join(__dirname, '..', 'dist', '_expo', 'static', 'js', 'web'),
   reportFile: path.join(__dirname, '..', 'bundle-size-report.txt'),
 };

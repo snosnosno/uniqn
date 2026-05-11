@@ -346,8 +346,10 @@ export class SupabaseUserRepository implements IUserRepository {
         });
       }
 
-      // 4. 탈퇴 철회
-      const { error: updateError } = await supabase
+      // 4. 탈퇴 철회 (C9 — affected rows 검증)
+      // pre-fetch와 update 사이 race: 다른 탭/관리자/자동잡이 row 상태를 바꾸면
+      // update가 0건이어도 error 없이 성공으로 보이므로 .select()로 반환 검사.
+      const { data: updatedRows, error: updateError } = await supabase
         .from(TABLES.USERS)
         .update({
           status: 'active',
@@ -355,13 +357,23 @@ export class SupabaseUserRepository implements IUserRepository {
           deletion_scheduled_for: null,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', userId);
+        .eq('id', userId)
+        .eq('status', 'pending') // race 가드: 우리가 본 그 상태일 때만 철회
+        .not('deletion_requested_at', 'is', null)
+        .select('id');
 
       if (updateError) {
         handleSupabaseError(updateError, { operation: '회원탈퇴 철회', table: TABLES.USERS });
       }
 
-      logger.info('회원탈퇴 철회 완료', { userId });
+      if (!updatedRows || updatedRows.length === 0) {
+        // race detected — 다른 곳에서 이미 처리됨
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '탈퇴 상태가 이미 변경되었습니다. 잠시 후 다시 시도해주세요.',
+        });
+      }
+
+      logger.info('회원탈퇴 철회 완료', { userId, affected: updatedRows.length });
     } catch (error) {
       if (isAppError(error)) throw error;
       logger.error('회원탈퇴 철회 실패', toError(error), { userId });

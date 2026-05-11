@@ -371,8 +371,11 @@ export async function signOut(): Promise<void> {
     // P0 #3 — 공용 디바이스 다음 사용자에게 자격증명 잔존 방지
     // C4 fix — bindingToken도 함께 정리 (PortOne 본인인증 도중 강제 signOut 대비)
     // 모두 idempotent. 한쪽 실패해도 signOut 계속 진행 (SecureStore 일시적 잠금 등)
-    clearPortOneIdentityBindingToken();
-    await Promise.allSettled([clearBiometricCredentials(), userSessionStorage.clearSession()]);
+    await Promise.allSettled([
+      clearPortOneIdentityBindingToken(),
+      clearBiometricCredentials(),
+      userSessionStorage.clearSession(),
+    ]);
 
     await supabase.auth.signOut();
 

@@ -23,6 +23,7 @@ export const SENSITIVE_STORAGE_KEYS = [
   'userId',
   'sessionId',
   'fcmToken', // 푸시 토큰 (사용자 식별 가능)
+  'portOneBindingToken', // P0 #1 caller binding token — XSS 시 본인인증 가로채기 방지
 ] as const;
 
 export type SensitiveStorageKey = (typeof SENSITIVE_STORAGE_KEYS)[number];
@@ -51,6 +52,7 @@ export const KNOWN_STORAGE_KEYS = [
   'biometricEnabled',
   'theme',
   'autoLoginEnabled',
+  'portOneBindingToken',
 ] as const;
 
 /**

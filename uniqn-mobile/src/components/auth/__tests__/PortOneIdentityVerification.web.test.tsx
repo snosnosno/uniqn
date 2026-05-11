@@ -15,7 +15,7 @@ const mockBuildRequest = jest.fn();
 const mockSavePending = jest.fn();
 const mockClearPending = jest.fn();
 const mockCallVerify = jest.fn();
-const mockSaveBindingToken = jest.fn();
+const mockSaveBindingToken = jest.fn().mockResolvedValue(undefined);
 
 jest.mock('@/services/auth/portOneIdentityService', () => ({
   buildPortOneInicisIdentityRequest: (...args: unknown[]) => mockBuildRequest(...args),

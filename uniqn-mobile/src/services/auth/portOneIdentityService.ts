@@ -2,9 +2,16 @@ import Constants from 'expo-constants';
 import type { Customer, IdentityVerificationRequest } from '@portone/browser-sdk/v2';
 import { invokeEdgeFunction } from '@/lib/supabaseFunctions';
 import { getStorageItem, removeStorageItem, setStorageItem, STORAGE_KEYS } from '@/lib/mmkvStorage';
+import { secureStorage } from '@/lib/secureStorage';
 import { ERROR_CODES, ValidationError, isRetryableError } from '@/errors';
 import { logger } from '@/utils/logger';
 import { generateUUID } from '@/utils/generateId';
+
+/**
+ * C4 — bindingToken은 SecureStore(iOS 키체인 / Android 키스토어 / 웹 sessionStorage)에 저장.
+ * 키 이름은 securityConfig.SENSITIVE_STORAGE_KEYS / KNOWN_STORAGE_KEYS와 일치해야 함.
+ */
+const BINDING_TOKEN_SECURE_KEY = 'portOneBindingToken';
 
 export type PortOneInicisDirectAgency =
   | 'PAYCO'
@@ -277,26 +284,53 @@ export function clearPortOneIdentityVerificationResult(): void {
 }
 
 /**
- * Caller binding token storage (P0 #1).
+ * Caller binding token storage (P0 #1, C4 hardening).
  *
  * 본인인증 success path에서 컴포넌트가 token을 storage에 박아두고,
  * 후속 `callVerifyAndSavePortOneProfile` 호출(signUp 후) 시 자동으로
  * payload에 포함된다. 컴포넌트 unmount 후에도 token이 유지되어야 한다.
+ *
+ * C4 — MMKV → SecureStore (iOS 키체인 / Android 키스토어). XSS·다른 앱에서
+ * 토큰 추출을 방지한다.
  */
-export function savePortOneIdentityBindingToken(token: string): void {
-  setStorageItem(STORAGE_KEYS.PORTONE_IDENTITY_BINDING_TOKEN, token);
+export async function savePortOneIdentityBindingToken(token: string): Promise<void> {
+  await secureStorage.setItem(BINDING_TOKEN_SECURE_KEY, token, {
+    keychainAccessible: 'WHEN_UNLOCKED_THIS_DEVICE_ONLY',
+  });
+  // legacy MMKV 값이 있으면 정리 (이전 빌드 잔존분)
+  removeStorageItem(STORAGE_KEYS.PORTONE_IDENTITY_BINDING_TOKEN);
 }
 
 /**
  * C3 fix — read-only로 token 조회. 명시적 clear는 호출자가 success 후 수행.
  * consume(read+remove) 패턴은 retry 시 두 번째 호출에서 token 누락 → binding
  * bypass 위험. 본 함수는 idempotent.
+ *
+ * C4 — SecureStore 우선 조회. 값이 없으면 legacy MMKV에서 1회 마이그레이션.
  */
-export function getPortOneIdentityBindingToken(): string | null {
-  return getStorageItem<string>(STORAGE_KEYS.PORTONE_IDENTITY_BINDING_TOKEN);
+export async function getPortOneIdentityBindingToken(): Promise<string | null> {
+  const secureValue = await secureStorage.getItem<string>(BINDING_TOKEN_SECURE_KEY);
+  if (secureValue) return secureValue;
+
+  // C4 migration — 이전 빌드가 MMKV에 저장한 토큰을 SecureStore로 옮긴다.
+  const legacyValue = getStorageItem<string>(STORAGE_KEYS.PORTONE_IDENTITY_BINDING_TOKEN);
+  if (legacyValue) {
+    await secureStorage.setItem(BINDING_TOKEN_SECURE_KEY, legacyValue, {
+      keychainAccessible: 'WHEN_UNLOCKED_THIS_DEVICE_ONLY',
+    });
+    removeStorageItem(STORAGE_KEYS.PORTONE_IDENTITY_BINDING_TOKEN);
+    logger.info('bindingToken MMKV → SecureStore migration 완료', {
+      component: 'portOneIdentityService',
+    });
+    return legacyValue;
+  }
+
+  return null;
 }
 
-export function clearPortOneIdentityBindingToken(): void {
+export async function clearPortOneIdentityBindingToken(): Promise<void> {
+  await secureStorage.deleteItem(BINDING_TOKEN_SECURE_KEY);
+  // legacy MMKV 값도 함께 제거 (방어적)
   removeStorageItem(STORAGE_KEYS.PORTONE_IDENTITY_BINDING_TOKEN);
 }
 
@@ -334,7 +368,10 @@ export async function callVerifyAndSavePortOneProfile(
 ): Promise<VerifyAndSavePortOneProfileResult> {
   // P0 #1 — caller가 payload에 token 명시 안 했으면 storage에서 자동 조회.
   // C3 fix: read-only로 가져옴. 성공 후 명시적 clear (실패 시 재시도 가능).
-  const tokenFromStorage = payload.expectedBindingToken ? null : getPortOneIdentityBindingToken();
+  // C4: SecureStore 비동기 조회.
+  const tokenFromStorage = payload.expectedBindingToken
+    ? null
+    : await getPortOneIdentityBindingToken();
   const resolvedPayload: VerifyAndSavePortOneProfilePayload = {
     ...payload,
     expectedBindingToken: payload.expectedBindingToken ?? tokenFromStorage ?? undefined,
@@ -355,7 +392,7 @@ export async function callVerifyAndSavePortOneProfile(
   try {
     const result = await invoke();
     // C3 fix — success 후에만 storage token clear (재시도 가능성 보존)
-    if (tokenFromStorage) clearPortOneIdentityBindingToken();
+    if (tokenFromStorage) await clearPortOneIdentityBindingToken();
     return result;
   } catch (error) {
     if (!isRetryableError(error)) {
@@ -368,7 +405,7 @@ export async function callVerifyAndSavePortOneProfile(
     });
     await new Promise((resolve) => setTimeout(resolve, 2000));
     const result = await invoke();
-    if (tokenFromStorage) clearPortOneIdentityBindingToken();
+    if (tokenFromStorage) await clearPortOneIdentityBindingToken();
     return result;
   }
 }

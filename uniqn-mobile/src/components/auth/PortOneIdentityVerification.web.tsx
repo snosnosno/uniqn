@@ -147,7 +147,8 @@ export function PortOneIdentityVerification({
       }
 
       // P0 #1 — 후속 callVerifyAndSavePortOneProfile (signUp 흐름)에서 자동 consume
-      savePortOneIdentityBindingToken(bindingToken);
+      // C4 — SecureStore 저장 (async, 웹은 sessionStorage)
+      await savePortOneIdentityBindingToken(bindingToken);
 
       setVerifiedIdentity(verification.identity);
       onVerified(verification.identity);

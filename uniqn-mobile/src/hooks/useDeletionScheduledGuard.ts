@@ -27,6 +27,18 @@ export interface DeletionScheduledGuardState {
   dismiss: () => void;
 }
 
+/**
+ * C8 — dismiss key: `${userId}::${requestedAt.toISOString()}`
+ *
+ * userId 단독은 동일 사용자가 새로 탈퇴 예약을 잡을 때 이전 dismiss가 영구
+ * 유지되어 새 탈퇴 모달을 가린다. requestedAt(또는 scheduledDeletionAt)을
+ * 포함해야 새 deletion 요청마다 모달이 다시 노출된다.
+ */
+function buildDismissKey(userId: string, requestedAt: Date | string): string {
+  const iso = typeof requestedAt === 'string' ? requestedAt : requestedAt.toISOString();
+  return `${userId}::${iso}`;
+}
+
 export function useDeletionScheduledGuard(): DeletionScheduledGuardState {
   const { user } = useAuth();
   const [deletion, setDeletion] = useState<DeletionRequest | null>(null);
@@ -42,11 +54,6 @@ export function useDeletionScheduledGuard(): DeletionScheduledGuardState {
       setError(null);
       return;
     }
-    if (dismissed.has(userId)) {
-      setDeletion(null);
-      setError(null);
-      return;
-    }
 
     let cancelled = false;
     setIsLoading(true);
@@ -54,7 +61,19 @@ export function useDeletionScheduledGuard(): DeletionScheduledGuardState {
     getDeletionStatus(userId)
       .then((result) => {
         if (cancelled) return;
-        setDeletion(result?.status === 'pending' ? result : null);
+        if (result?.status !== 'pending') {
+          setDeletion(null);
+          setError(null);
+          return;
+        }
+        // C8 — 이번 deletion 요청을 이미 dismiss 했는지 확인
+        const key = buildDismissKey(userId, result.requestedAt);
+        if (dismissed.has(key)) {
+          setDeletion(null);
+          setError(null);
+          return;
+        }
+        setDeletion(result);
         setError(null);
       })
       .catch((err) => {
@@ -82,10 +101,12 @@ export function useDeletionScheduledGuard(): DeletionScheduledGuardState {
 
   const dismiss = () => {
     const userId = user?.uid;
-    if (!userId) return;
+    if (!userId || !deletion) return;
+    // C8 — userId 단독이 아닌 (userId, requestedAt) 조합으로 dismiss 기록
+    const key = buildDismissKey(userId, deletion.requestedAt);
     setDismissed((prev) => {
       const next = new Set(prev);
-      next.add(userId);
+      next.add(key);
       return next;
     });
     setDeletion(null);

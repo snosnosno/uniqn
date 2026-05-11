@@ -117,7 +117,7 @@ jest.mock('@/lib/secureStorage', () => ({
 
 jest.mock('../portOneIdentityService', () => ({
   callVerifyAndSavePortOneProfile: jest.fn().mockResolvedValue(undefined),
-  clearPortOneIdentityBindingToken: jest.fn(),
+  clearPortOneIdentityBindingToken: jest.fn().mockResolvedValue(undefined),
 }));
 
 jest.mock('../userProfileService', () => ({
