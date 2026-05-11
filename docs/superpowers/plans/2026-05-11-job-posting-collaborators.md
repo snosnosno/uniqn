@@ -1695,22 +1695,113 @@ Expected: type-check 0 errors, lint clean, format clean.
 
 ---
 
-## § Audit Results (Phase 0 산출물)
+## § Audit Results (Phase 0 산출물 — 2026-05-12)
 
-> Phase 0 완료 시 채워짐. 비어있으면 Phase 1 시작 금지.
+> MCP `execute_sql` audit 완료. **prod DB** 기준.
 
-```
-[FK 참조 테이블 (Task 0.1)]
-- (Phase 0 후 채울 것)
+### Task 0.1 — FK 참조 테이블 inventory
 
-[권한 호출면 (Task 0.2)]
-- pg_proc:    (Phase 0 후 채울 것)
-- pg_views:   (Phase 0 후 채울 것)
-- repository: (Phase 0 후 채울 것)
+`pg_constraint` 조회 결과 — `public.job_postings` 를 FK 로 참조하는 테이블 **7개**:
 
-[PR3-A.2 충돌 (Task 0.3)]
-- (Phase 0 후 채울 것)
-```
+| referencing_table | column | on_delete | RLS workspace 의존 |
+|---|---|---|---|
+| `applications` | `job_posting_id` | NO ACTION | ✅ `app_select`/`app_update` (is_workspace_member) |
+| `board_memberships` | `job_posting_id` | NO ACTION | ❌ user_id scope only |
+| `board_posts` | `linked_job_posting_id` | NO ACTION | ❌ author/visibility scope only |
+| `event_qr_codes` | `job_posting_id` | NO ACTION | ✅ `qr_select`/`qr_update`/`qr_delete` (is_workspace_member) |
+| `reports` | `job_posting_id` | NO ACTION | ❌ reporter/admin scope only |
+| `reviews` | `job_posting_id` | NO ACTION | ❌ reviewer/reviewee/admin scope only |
+| `work_logs` | `job_posting_id` | NO ACTION | ✅ `wl_select`/`wl_update` (is_workspace_member) |
+
+**Phase 2 RLS OR 추가 대상 (workspace 의존 3 테이블 + jp 자체 + workspaces)**:
+- `job_postings` (jp_select_managed, jp_update_workspace_member)
+- `applications` (app_select, app_update)
+- `event_qr_codes` (qr_select, qr_update, qr_delete) — **Spec 누락! 추가 필요**
+- `work_logs` (wl_select, wl_update)
+- `workspaces` (workspaces_select_owner_or_member — useSharedJobPostings JOIN 용)
+
+**Phase 2 OR 추가 제외 (user-scope RLS — collaborator 권한과 무관)**:
+- `board_memberships`, `board_posts` (게시판은 공고 종속이 아닌 일반 컨텐츠)
+- `reports`, `reviews` (당사자 SoT — collaborator 가 자기 공고 신고/리뷰 조회 권한 없음, 의도된 격리)
+
+**⚠ Spec D2 가정 보정 필요**:
+- `staff_assignments` — **테이블 미존재** (spec 추정 오류, applications + work_logs 가 스태프 모델 대체)
+- `settlements` — **테이블 미존재** (work_logs.payroll_* 필드에 정산 데이터 저장. SettlementRepository.ts:13 명시. work_logs RLS OR 추가로 정산 권한 자동 부여)
+- D2 "스태프/work_logs/settlements" → 실제는 "applications + work_logs + event_qr_codes" 만 해당
+
+**⚠ on_delete=NO ACTION 영향**:
+- 공고 삭제 시 cascade 안 됨 — 의도된 정책 (공고가 응시 이력/리뷰를 끌고 가지 않음)
+- `job_posting_collaborators` 본 테이블은 spec 대로 `ON DELETE CASCADE` 유지
+
+### Task 0.2 — 권한 호출면 audit
+
+**pg_proc (2건)**:
+
+| function_name | uses | 영향 |
+|---|---|---|
+| `public.enforce_jp_status_transition` | inline owner check (function 미사용) | ⚠ collaborator status 변경 권한 검증 필요 |
+| `public.get_workspace_owner_profile` | calls `is_workspace_member` | ✅ 조회만, collaborator 안 봐도 됨 |
+
+**`enforce_jp_status_transition` 상세 분석 필요** — collaborator 가 공고 status (open/closed) 변경 가능해야 한다면 (D2 풀 관리권), 이 trigger function 안에서도 OR 추가 또는 collaborator 식별 분기 필요. **Phase 2 별도 task 로 분리**.
+
+**pg_views**: 0건 (workspace_id/is_workspace_member 호출 view 없음)
+
+**Client repository workspace_id 명시 필터 (7곳)**:
+- `src/repositories/supabase/JobPostingRepository.ts:397` — `if (workspaceId) query = query.eq('workspace_id', workspaceId)` ⚠ collaborator 시점에 workspaceId 미지정으로 호출 (useSharedJobPostings 별도 hook 사용)
+- `src/repositories/supabase/WorkLogRepository.ts`
+- `src/repositories/supabase/SettlementRepository.ts` ✅ (소스 확인 — `work_logs.payroll_*` 필드만 사용, 별도 `settlements` 테이블 없음. work_logs RLS OR 추가로 자동 적용됨)
+- `src/repositories/supabase/WorkspaceRepository.ts`
+- `src/repositories/supabase/WorkspaceMemberRepository.ts`
+- `src/repositories/supabase/WorkspaceInvitationRepository.ts`
+- `src/repositories/supabase/ApplicationRepositoryHelpers.ts`
+
+**Hooks (3건)**:
+- `src/hooks/workspace/useWorkspaces.ts`
+- `src/hooks/workspace/useWorkspaceRevocationGuard.ts`
+- 동 test 1건
+
+→ collaborator 시점에서 본인 workspace 컨텍스트 안에서만 조회되도록 useSharedJobPostings 가 명시적 우회 hook 으로 동작 (spec 설계대로). 기존 hook/repo 는 변경 불필요.
+
+### Task 0.3 — PR3-A.2 충돌 체크
+
+`git show 59b6a8d9b` (머지 완료, master):
+
+**PR3-A.2 변경분**:
+- 제거: `app_update`, `qr_update`, `qr_delete`, `wl_update` 의 admin 분기 4건
+- 추가: `workspace_members` deny-all 정책 2건
+- 변경: `JobPostingRepository.loadAndVerifyMutateAccess` admin 분기 throw
+
+**본 plan Phase 2 OR 추가 대상과 비교**:
+- `app_update`: PR3-A.2 admin 제거 → 본 작업 collaborator OR 추가 (**비충돌 — 다른 분기**)
+- `qr_update/qr_delete`: PR3-A.2 admin 제거 → 본 작업 collaborator OR 추가 (**비충돌**)
+- `wl_update`: PR3-A.2 admin 제거 → 본 작업 collaborator OR 추가 (**비충돌**)
+- `app_select`, `qr_select`, `wl_select`, `jp_select_managed`, `jp_update_workspace_member`, `workspaces_select_owner_or_member`: PR3-A.2 미변경 → 본 작업만 변경 (**비충돌**)
+
+**결론**: PR3-A.2 와 본 작업은 정책 분기가 서로 직교 (admin 제거 vs collaborator OR 추가). 마이그레이션 순서 의존성 없음.
+
+### 추가 발견 — Realtime publication 현황
+
+`pg_publication_tables` (supabase_realtime, 2026-05-12):
+- 포함: `applications`, `board_comments`, `board_posts`, `notification_counters`, `notifications`, `work_logs`, `workspace_members`
+- 미포함: `workspaces`, `job_postings`, `event_qr_codes` 등
+
+**Phase 4 작업** — `ALTER PUBLICATION supabase_realtime ADD TABLE public.job_posting_collaborators` 만 추가 (workspaces / job_postings 변경은 본 작업 범위 외).
+
+### Audit 결론 — Phase 2 변경 대상 확정
+
+| 테이블 | 변경 정책 | 비고 |
+|---|---|---|
+| workspaces | `workspaces_select_owner_or_member` | useSharedJobPostings JOIN |
+| job_postings | `jp_select_managed`, `jp_update_workspace_member` | D2 풀 관리권 |
+| applications | `app_select`, `app_update` | 지원자 보기/승인 |
+| work_logs | `wl_select`, `wl_update` | 근태 조회/편집 |
+| event_qr_codes | `qr_select`, `qr_update`, `qr_delete` | **Spec 누락 — 추가** |
+| (function) `enforce_jp_status_transition` | inline owner OR collaborator | **별도 task 로 분리 필요** |
+
+**Spec/Plan 보정 필요 항목** (Option 3 task 4):
+1. D2 의 "스태프/settlements" 표현 명확화 (settlements = work_logs.payroll 필드, 별도 테이블 아님)
+2. event_qr_codes 추가 (Phase 2 누락)
+3. enforce_jp_status_transition 변경 task 신설
 
 ## § Performance Results (Task 10.4 산출물)
 
