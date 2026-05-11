@@ -485,3 +485,14 @@ export {
   workspaceMemberRepository,
   workspaceInvitationRepository,
 } from './supabase';
+
+// ============================================================================
+// 공고별 협업자 (Phase 5 — feat/job-posting-collaborators)
+// ============================================================================
+
+export type { IJobPostingCollaboratorRepository } from './interfaces';
+
+export {
+  SupabaseJobPostingCollaboratorRepository,
+  jobPostingCollaboratorRepository,
+} from './supabase/JobPostingCollaboratorRepository';
