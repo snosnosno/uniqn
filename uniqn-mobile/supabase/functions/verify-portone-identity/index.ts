@@ -35,11 +35,15 @@ Deno.serve(async (req: Request) => {
     ) {
       return jsonResponse({ error: 'identityVerificationId가 필요합니다' }, 400);
     }
-    if (
-      expectedBindingToken !== undefined &&
-      (typeof expectedBindingToken !== 'string' || expectedBindingToken.length > 200)
-    ) {
-      return jsonResponse({ error: 'expectedBindingToken 형식 오류' }, 400);
+    if (expectedBindingToken !== undefined) {
+      // C2 fix — 빈 문자열은 binding bypass 통로가 됨. 명시적 거부.
+      if (
+        typeof expectedBindingToken !== 'string' ||
+        expectedBindingToken.length === 0 ||
+        expectedBindingToken.length > 200
+      ) {
+        return jsonResponse({ error: 'expectedBindingToken 형식 오류' }, 400);
+      }
     }
 
     const portoneSecret = Deno.env.get('PORTONE_API_SECRET');

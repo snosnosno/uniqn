@@ -103,8 +103,13 @@ export default function AppLayout() {
     permissionStatus !== null &&
     permissionStatus !== 'granted';
 
-  // P2 #5 — 탈퇴 grace period 중 재로그인 시 명시적 결정 강제
-  const { deletion: pendingDeletion, dismiss: dismissDeletion } = useDeletionScheduledGuard();
+  // P2 #5 — 탈퇴 grace period 중 재로그인 시 명시적 결정 강제 (C7: lookup error 시도 fail-closed)
+  const {
+    deletion: pendingDeletion,
+    error: deletionLookupError,
+    retry: retryDeletionLookup,
+    dismiss: dismissDeletion,
+  } = useDeletionScheduledGuard();
 
   return (
     <NetworkErrorBoundary name="AppLayout">
@@ -163,11 +168,13 @@ export default function AppLayout() {
           </View>
         )}
 
-        {pendingDeletion && (
+        {(pendingDeletion || deletionLookupError) && (
           <DeletionScheduledModal
             visible
-            scheduledFor={pendingDeletion.scheduledDeletionAt}
+            scheduledFor={pendingDeletion?.scheduledDeletionAt ?? null}
             onKept={dismissDeletion}
+            lookupError={deletionLookupError}
+            onRetry={retryDeletionLookup}
           />
         )}
       </View>

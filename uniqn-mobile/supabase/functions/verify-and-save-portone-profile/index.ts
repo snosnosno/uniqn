@@ -67,11 +67,15 @@ Deno.serve(async (req: Request) => {
     ) {
       return jsonResponse({ error: 'identityVerificationId가 필요합니다' }, 400);
     }
-    if (
-      expectedBindingToken !== undefined &&
-      (typeof expectedBindingToken !== 'string' || expectedBindingToken.length > 200)
-    ) {
-      return jsonResponse({ error: 'expectedBindingToken 형식 오류' }, 400);
+    if (expectedBindingToken !== undefined) {
+      // C2 fix — 빈 문자열은 binding bypass 통로가 됨. 명시적 거부.
+      if (
+        typeof expectedBindingToken !== 'string' ||
+        expectedBindingToken.length === 0 ||
+        expectedBindingToken.length > 200
+      ) {
+        return jsonResponse({ error: 'expectedBindingToken 형식 오류' }, 400);
+      }
     }
     if (
       nickname &&
@@ -144,26 +148,9 @@ Deno.serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // P1 — verification_id 멱등성 검사 (caller binding 통과 후 처음 1회만 처리).
-    // PRIMARY KEY 위반(23505)이면 이미 다른 호출에서 처리 완료 → 차단.
-    const { error: idempotencyError } = await supabase
-      .from('processed_identity_verifications')
-      .insert({
-        verification_id: identityVerificationId,
-        user_id: user.id,
-        function_name: 'verify-and-save-portone-profile',
-      });
-    if (idempotencyError) {
-      if (idempotencyError.code === '23505') {
-        console.warn('[idempotency] verification_id already processed', {
-          uid: user.id,
-        });
-        return idpError('IV_ALREADY_PROCESSED');
-      }
-      console.error('Idempotency insert failed:', idempotencyError);
-      return jsonResponse({ error: '멱등성 검사 실패' }, 500);
-    }
-
+    // C5 fix — duplicate / profile_completed 검사를 멱등성 INSERT 전에 수행.
+    // 그렇지 않으면 benign 실패(중복 phone/CI 등)가 멱등성 레코드를 영구로
+    // 남겨서 사용자가 같은 verification으로 재시도 못 함.
     const [phoneCheck, nickCheck, ciCheck] = await Promise.all([
       supabase.from('users').select('id').eq('phone', phoneE164).neq('id', user.id).limit(1),
       nickname
@@ -195,6 +182,26 @@ Deno.serve(async (req: Request) => {
       .eq('id', user.id)
       .single();
     if (existingUser?.profile_completed === true) return idpError('PROFILE_ALREADY_COMPLETED');
+
+    // P1 — verification_id 멱등성 검사 (모든 validation 통과 후 처음 1회만 처리).
+    // PRIMARY KEY 위반(23505)이면 이미 다른 호출에서 처리 완료 → 차단.
+    const { error: idempotencyError } = await supabase
+      .from('processed_identity_verifications')
+      .insert({
+        verification_id: identityVerificationId,
+        user_id: user.id,
+        function_name: 'verify-and-save-portone-profile',
+      });
+    if (idempotencyError) {
+      if (idempotencyError.code === '23505') {
+        console.warn('[idempotency] verification_id already processed', {
+          uid: user.id,
+        });
+        return idpError('IV_ALREADY_PROCESSED');
+      }
+      console.error('Idempotency insert failed:', idempotencyError);
+      return jsonResponse({ error: '멱등성 검사 실패' }, 500);
+    }
 
     const now = new Date().toISOString();
     const trimmedNickname = nickname?.trim() || null;
@@ -237,13 +244,22 @@ Deno.serve(async (req: Request) => {
       .from('users')
       .upsert(profileData, { onConflict: 'id' });
     if (upsertError) {
-      // P1 — upsert 실패 시 멱등성 레코드 롤백해서 사용자가 재시도 가능
-      // (같은 verification은 5분 timestamp 가드로 곧 만료되지만 그 전까지 시도 가능)
-      await supabase
+      // C6 fix — rollback DELETE 결과 명시적 처리. 실패 시 dangling row가
+      // 다음 재시도를 영구 차단하므로 logger.error로 visible하게 알림.
+      const { error: rollbackError } = await supabase
         .from('processed_identity_verifications')
         .delete()
         .eq('verification_id', identityVerificationId);
-      console.error('Profile upsert failed, idempotency rolled back:', upsertError);
+      if (rollbackError) {
+        console.error('[CRITICAL] idempotency rollback failed — dangling row may block retry', {
+          uid: user.id,
+          verificationId: identityVerificationId,
+          rollbackError,
+          upsertError,
+        });
+      } else {
+        console.error('Profile upsert failed, idempotency rolled back:', upsertError);
+      }
       return jsonResponse({ error: '프로필 저장에 실패했습니다' }, 500);
     }
 

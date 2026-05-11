@@ -287,10 +287,13 @@ export function savePortOneIdentityBindingToken(token: string): void {
   setStorageItem(STORAGE_KEYS.PORTONE_IDENTITY_BINDING_TOKEN, token);
 }
 
-export function consumePortOneIdentityBindingToken(): string | null {
-  const token = getStorageItem<string>(STORAGE_KEYS.PORTONE_IDENTITY_BINDING_TOKEN);
-  removeStorageItem(STORAGE_KEYS.PORTONE_IDENTITY_BINDING_TOKEN);
-  return token;
+/**
+ * C3 fix — read-only로 token 조회. 명시적 clear는 호출자가 success 후 수행.
+ * consume(read+remove) 패턴은 retry 시 두 번째 호출에서 token 누락 → binding
+ * bypass 위험. 본 함수는 idempotent.
+ */
+export function getPortOneIdentityBindingToken(): string | null {
+  return getStorageItem<string>(STORAGE_KEYS.PORTONE_IDENTITY_BINDING_TOKEN);
 }
 
 export function clearPortOneIdentityBindingToken(): void {
@@ -329,12 +332,12 @@ export async function callVerifyAndSavePortOneProfile(
   payload: VerifyAndSavePortOneProfilePayload,
   accessToken?: string
 ): Promise<VerifyAndSavePortOneProfileResult> {
-  // P0 #1 — caller가 payload에 token 명시 안 했으면 storage에서 자동 consume.
-  // signUp / completeSocialProfile 호출자 코드 수정 없이도 binding 검증 보장.
+  // P0 #1 — caller가 payload에 token 명시 안 했으면 storage에서 자동 조회.
+  // C3 fix: read-only로 가져옴. 성공 후 명시적 clear (실패 시 재시도 가능).
+  const tokenFromStorage = payload.expectedBindingToken ? null : getPortOneIdentityBindingToken();
   const resolvedPayload: VerifyAndSavePortOneProfilePayload = {
     ...payload,
-    expectedBindingToken:
-      payload.expectedBindingToken ?? consumePortOneIdentityBindingToken() ?? undefined,
+    expectedBindingToken: payload.expectedBindingToken ?? tokenFromStorage ?? undefined,
   };
   const invoke = async () => {
     const { data, error } = await invokeEdgeFunction<VerifyAndSavePortOneProfileResult>(
@@ -350,7 +353,10 @@ export async function callVerifyAndSavePortOneProfile(
   };
 
   try {
-    return await invoke();
+    const result = await invoke();
+    // C3 fix — success 후에만 storage token clear (재시도 가능성 보존)
+    if (tokenFromStorage) clearPortOneIdentityBindingToken();
+    return result;
   } catch (error) {
     if (!isRetryableError(error)) {
       throw error;
@@ -361,6 +367,8 @@ export async function callVerifyAndSavePortOneProfile(
       error: error instanceof Error ? error.message : String(error),
     });
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    return await invoke();
+    const result = await invoke();
+    if (tokenFromStorage) clearPortOneIdentityBindingToken();
+    return result;
   }
 }
