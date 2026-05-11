@@ -26,9 +26,14 @@
 
 워크스페이스 editor 는 기존 동작 유지(워크스페이스 모든 공고 자동 접근). 추가로 공고 단위로 외부 협업자를 지정 가능. 이중 구조이며 우선순위는 **OR** (둘 중 하나라도 만족하면 접근 허용).
 
-### D2: 협업자 권한 = 풀 관리권 (조회 + 수정 + 지원자 + 스태프 + work_logs + settlements)
+### D2: 협업자 권한 = 풀 관리권 (조회 + 수정 + 지원자 + work_logs + 정산 + QR)
 
 해당 공고의 운영 전반을 위임. **공고 삭제만 owner 전용** (워크스페이스 권한 경계 유지). 이는 "이 공고 운영을 통째로 맡긴다"는 시나리오 A 의 자연스러운 적용범위.
+
+**범위 명확화 (Phase 0 audit 2026-05-12 반영)**:
+- `staff_assignments` 테이블 미존재 — 스태프 데이터는 `applications` + `work_logs` 에 분산
+- `settlements` 테이블 미존재 — 정산은 `work_logs.payroll_*` 필드에 저장 (SettlementRepository 가 work_logs 직접 조작). work_logs RLS OR 추가로 정산 권한 자동 부여
+- QR 체크인은 `event_qr_codes` 테이블 (별도 RLS 필요)
 
 ### D3: 공유 대상 = 모든 UNIQN 가입자 (이메일로 검색)
 
@@ -194,23 +199,32 @@ export const AddCollaboratorInputSchema = z.object({
 
 DELETE 정책은 두 케이스 OR 로 단일 정책 작성. UPDATE 는 정책 없음 (행 immutable, 변경 시 DELETE+INSERT).
 
-### 영향 받는 기존 RLS 정책 (OR 추가)
+### 영향 받는 기존 RLS 정책 (OR 추가) — Phase 0 audit 2026-05-12 확정
 
-다음 테이블의 SELECT/UPDATE 정책에 `OR is_posting_collaborator(<해당 테이블의 job_posting_id>, auth.uid())` 추가 (헬퍼 함수는 아래 § 헬퍼 함수 섹션):
+다음 테이블의 정책에 `OR is_posting_collaborator(<해당 테이블의 job_posting_id>, auth.uid())` 추가 (헬퍼 함수는 아래 § 헬퍼 함수 섹션):
 
-- `job_postings` — `20260514010000_workspace_m3_consolidate_jp_rls.sql:14-21`
-- `applications`
-- `staff_assignments`
-- `work_logs` (D2 결정에 따라)
-- `settlements` (D2 결정에 따라)
-- 기타 공고 종속 테이블 (audit 단계에서 확정)
+| 테이블 | 정책 | 마이그레이션 ref |
+|---|---|---|
+| `job_postings` | `jp_select_managed`, `jp_update_workspace_member` | `20260514010000_workspace_m3_consolidate_jp_rls.sql:14-21` |
+| `applications` | `app_select`, `app_update` | `20260508150417_workspace_m4_applications_rls.sql` |
+| `work_logs` | `wl_select`, `wl_update` (정산은 payroll 필드) | `20260509000000_workspace_m4_work_logs_rls.sql` |
+| `event_qr_codes` | `qr_select`, `qr_update`, `qr_delete` | `20260509010000_workspace_m4_event_qr_codes_rls.sql` |
+| `workspaces` | `workspaces_select_owner_or_member` (useSharedJobPostings JOIN) | `20260430010400_workspace_rls_policies.sql` |
 
-### 영향 받는 `workspaces` SELECT RLS (Codex outside-voice 발견)
+**OR 추가 제외** (user-scope RLS — workspace 권한과 무관, audit 결과):
+- `board_memberships`, `board_posts` (게시판 = 일반 컨텐츠)
+- `reports`, `reviews` (당사자 SoT 격리)
 
-`useSharedJobPostings` 가 `JOIN workspaces` 로 출처 워크스페이스 이름 표시. Collaborator 는 workspace_member 가 아니므로 기본 RLS 에 차단됨 → **`workspaces` SELECT 정책에 OR 추가 필요**:
+### 영향 받는 trigger function — `enforce_jp_status_transition`
+
+`enforce_jp_status_transition` 은 공고 status 변경 시 (open ↔ closed) 권한 검증을 인라인 owner check 로 수행. D2 풀 관리권 결정에 따라 **collaborator 도 status 변경 가능해야 함** → 함수 내 권한 분기에 `is_posting_collaborator(NEW.id, auth.uid())` OR 추가 필요. Phase 2 별도 마이그레이션 task.
+
+### `workspaces` SELECT RLS 확장 패턴 (위 표 참조)
+
+`useSharedJobPostings` 가 `JOIN workspaces` 로 출처 워크스페이스 이름 표시. Collaborator 는 workspace_member 가 아니므로 기본 RLS 에 차단됨 → **`workspaces` SELECT 정책에 OR 추가**:
 
 ```sql
--- workspaces SELECT 정책
+-- workspaces_select_owner_or_member 정책
 USING (
   is_workspace_member(id, auth.uid())
   OR EXISTS(
@@ -521,14 +535,17 @@ last-write-wins (RN/Supabase 기본). MVP 에서 OT/CRDT 도입 안 함. 큰 충
 
 ## 마이그레이션 전략
 
-### 순서
+### 순서 (Phase 0 audit 2026-05-12 반영)
 
-1. **PR3-A.2 머지 대기** (필수)
-2. **Audit 단계** — 영향 받는 RLS / 알림 로직 / 의존 테이블 확정 (audit 결과 plan 문서에 기록)
-3. **마이그레이션 1**: `job_posting_collaborators` 테이블 + 헬퍼 함수 + 자체 RLS
-4. **마이그레이션 2**: 기존 RLS 정책 OR 추가 (job_postings, applications, staff_assignments, work_logs, settlements, ...)
-5. **마이그레이션 3**: trigger 추가 (notify_collaborator_added, notify_collaborator_removed) + 신규 지원자 알림 로직 확장
-6. **마이그레이션 4 (필요 시)**: 인덱스 최적화 (사용 패턴 보고)
+1. ~~**PR3-A.2 머지 대기**~~ — 완료 (commit `59b6a8d9b`, master)
+2. ~~**Audit 단계**~~ — 완료 (commit `37fcc06c7`, plan 의 § Audit Results 참조)
+3. **마이그레이션 1**: `job_posting_collaborators` 테이블 + `is_posting_collaborator` 헬퍼 + 자체 RLS
+4. **마이그레이션 2**: `job_posting_collaborator_audit` 테이블 + AFTER 트리거 (source 컬럼)
+5. **마이그레이션 3**: 기존 RLS 정책 OR 추가 (audit 결과 5 테이블 12 정책 — workspaces / job_postings / applications / work_logs / event_qr_codes)
+6. **마이그레이션 4**: `enforce_jp_status_transition` trigger function 에 collaborator 분기 추가 (status 변경 권한)
+7. **마이그레이션 5**: 알림 trigger (notify_collaborator_added/removed) + 신규 지원자 알림 수신자 UNION 확장 (`auth.uid() IS NULL` 가드)
+8. **마이그레이션 6**: `ALTER PUBLICATION supabase_realtime ADD TABLE public.job_posting_collaborators`
+9. **마이그레이션 7 (필요 시)**: 인덱스 최적화 (Phase 10 perf 측정 결과 보고)
 
 각 마이그레이션은 staging branch 에서 dry-run 검증 후 prod apply (메모리 학습 2026-05-10: plpgsql lazy 컴파일이 column mismatch 가림 → `SELECT * FROM rpc() LIMIT 0` 호출 검증 필수).
 
