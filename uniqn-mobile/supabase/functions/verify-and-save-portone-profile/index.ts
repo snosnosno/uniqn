@@ -67,15 +67,15 @@ Deno.serve(async (req: Request) => {
     ) {
       return jsonResponse({ error: 'identityVerificationId가 필요합니다' }, 400);
     }
-    if (expectedBindingToken !== undefined) {
-      // C2 fix — 빈 문자열은 binding bypass 통로가 됨. 명시적 거부.
-      if (
-        typeof expectedBindingToken !== 'string' ||
-        expectedBindingToken.length === 0 ||
-        expectedBindingToken.length > 200
-      ) {
-        return jsonResponse({ error: 'expectedBindingToken 형식 오류' }, 400);
-      }
+    // C1 fix — expectedBindingToken mandatory. AUTH layer 위에 추가 caller
+    // identity layer로 token 일치까지 강제 (defense in depth).
+    if (
+      !expectedBindingToken ||
+      typeof expectedBindingToken !== 'string' ||
+      expectedBindingToken.length === 0 ||
+      expectedBindingToken.length > 200
+    ) {
+      return idpError('IV_BINDING_MISMATCH');
     }
     if (
       nickname &&
@@ -113,8 +113,9 @@ Deno.serve(async (req: Request) => {
     if (verification.status !== 'VERIFIED') return idpError('PORTONE_NOT_VERIFIED');
     if (!isVerificationRecent(verification.verifiedAt)) return idpError('IV_TIMESTAMP_EXPIRED');
 
-    // P0 #1 — caller binding 검증. verify-portone-identity와 동일 layer.
-    if (expectedBindingToken) {
+    // C1 fix — caller binding 강제. mandatory token (위에서 검증) + customData
+    // 일치 모두 필수. defense in depth (AUTH + binding).
+    {
       const actualToken = extractBindingToken(verification.customData);
       if (!isBindingMatch(expectedBindingToken, actualToken)) {
         console.warn('[caller-binding] verify-and-save-portone-profile mismatch', {
