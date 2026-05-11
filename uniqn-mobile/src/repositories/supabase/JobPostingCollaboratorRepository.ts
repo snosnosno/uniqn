@@ -212,15 +212,16 @@ export class SupabaseJobPostingCollaboratorRepository implements IJobPostingColl
     emailQuery: string
   ): Promise<CollaboratorSearchCandidate[]> {
     try {
-      // 1) 이메일 prefix 매칭으로 후보 (자신 제외는 status 분류에서 처리)
-      const { data: candidates, error: userErr } = await supabase
-        .from('users')
-        .select('id, email, nickname, name, photo_url')
-        .ilike('email', `${emailQuery}%`)
-        .limit(10);
+      // 1) RPC 호출 — search_users_for_collaborator_invite 가 SECURITY DEFINER 로
+      //    users RLS 우회 + workspace owner 검증 + 와일드카드 이스케이프 + LIMIT 10
+      //    (users_select RLS 가 self/admin 만 허용해 직접 SELECT 는 빈 결과 반환)
+      const { data: candidates, error: rpcErr } = await supabase.rpc(
+        'search_users_for_collaborator_invite',
+        { p_job_posting_id: jobPostingId, p_email_query: emailQuery }
+      );
 
-      if (userErr) {
-        handleSupabaseError(userErr, { operation: '협업자 후보 검색', table: 'users' });
+      if (rpcErr) {
+        handleSupabaseError(rpcErr, { operation: '협업자 후보 검색', table: 'users' });
       }
 
       const candidateRows = (candidates ?? []) as UserEmailRow[];
@@ -228,50 +229,42 @@ export class SupabaseJobPostingCollaboratorRepository implements IJobPostingColl
 
       const candidateIds = candidateRows.map((c) => c.id);
 
-      // 2) 현재 사용자 (self 분류용)
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      const selfId = user?.id ?? null;
+      // 2) self / workspace_member / already_collaborator 분류용 병렬 조회
+      //    공고의 workspace_id 가 필요 — RLS 통과 (owner OR member OR collaborator)
+      const [authRes, jpRes, collabRes] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase.from('job_postings').select('workspace_id').eq('id', jobPostingId).single(),
+        supabase
+          .from(TABLE)
+          .select('user_id')
+          .eq('job_posting_id', jobPostingId)
+          .in('user_id', candidateIds),
+      ]);
 
-      // 3) 공고의 workspace_id 와 기존 멤버/협업자 한 번에 조회
-      const { data: jpRow } = await supabase
-        .from('job_postings')
-        .select('workspace_id')
-        .eq('id', jobPostingId)
-        .single();
-      const workspaceId = (jpRow as { workspace_id: string } | null)?.workspace_id ?? null;
+      const selfId = authRes.data.user?.id ?? null;
+      const workspaceId = (jpRes.data as { workspace_id: string } | null)?.workspace_id ?? null;
+      const collabIds = new Set<string>(
+        ((collabRes.data ?? []) as { user_id: string }[]).map((c) => c.user_id)
+      );
 
       const memberIds = new Set<string>();
       if (workspaceId) {
-        const { data: members } = await supabase
-          .from('workspace_members')
-          .select('user_id')
-          .eq('workspace_id', workspaceId)
-          .in('user_id', candidateIds);
-        ((members ?? []) as { user_id: string }[]).forEach((m) => memberIds.add(m.user_id));
-
-        // workspace owner 도 멤버로 간주
-        const { data: wsRow } = await supabase
-          .from('workspaces')
-          .select('owner_id')
-          .eq('id', workspaceId)
-          .single();
-        const ownerId = (wsRow as { owner_id: string } | null)?.owner_id ?? null;
+        const [membersRes, wsRes] = await Promise.all([
+          supabase
+            .from('workspace_members')
+            .select('user_id')
+            .eq('workspace_id', workspaceId)
+            .in('user_id', candidateIds),
+          supabase.from('workspaces').select('owner_id').eq('id', workspaceId).single(),
+        ]);
+        ((membersRes.data ?? []) as { user_id: string }[]).forEach((m) => memberIds.add(m.user_id));
+        const ownerId = (wsRes.data as { owner_id: string } | null)?.owner_id ?? null;
         if (ownerId && candidateIds.includes(ownerId)) {
           memberIds.add(ownerId);
         }
       }
 
-      const collabIds = new Set<string>();
-      const { data: existingCollabs } = await supabase
-        .from(TABLE)
-        .select('user_id')
-        .eq('job_posting_id', jobPostingId)
-        .in('user_id', candidateIds);
-      ((existingCollabs ?? []) as { user_id: string }[]).forEach((c) => collabIds.add(c.user_id));
-
-      // 4) 상태 분류
+      // 3) 상태 분류
       return candidateRows.map((row): CollaboratorSearchCandidate => {
         let status: CollaboratorSearchCandidate['status'];
         if (selfId && row.id === selfId) status = 'self';

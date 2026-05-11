@@ -37,6 +37,8 @@ export function CollaboratorAvatarStack({
   const overflow = Math.max(0, total - VISIBLE_AVATARS);
 
   if (total === 0) {
+    // owner / collaborator 본인만 "협업자 추가" CTA 노출 — 다른 멤버는 0명 시 미렌더
+    if (!canManage) return null;
     return (
       <Pressable
         onPress={onPress}
