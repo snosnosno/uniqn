@@ -335,6 +335,17 @@ export const queryKeys = {
       [...queryKeys.workspaces.all, 'invitations', 'received', userId] as const,
   },
 
+  // 공고별 협업자 (feat/job-posting-collaborators)
+  jobPostingCollaborators: {
+    all: ['jobPostingCollaborators'] as const,
+    list: (jobPostingId: string) =>
+      [...queryKeys.jobPostingCollaborators.all, 'list', jobPostingId] as const,
+    sharedForUser: (userId: string) =>
+      [...queryKeys.jobPostingCollaborators.all, 'shared', userId] as const,
+    candidates: (jobPostingId: string, emailQuery: string) =>
+      [...queryKeys.jobPostingCollaborators.all, 'candidates', jobPostingId, emailQuery] as const,
+  },
+
   // 공고 템플릿 (구인자)
   templates: {
     all: ['templates'] as const,

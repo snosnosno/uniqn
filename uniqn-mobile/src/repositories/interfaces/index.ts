@@ -133,3 +133,6 @@ export type {
   IWorkspaceMemberRepository,
   IWorkspaceInvitationRepository,
 } from './IWorkspaceRepository';
+
+// 공고별 협업자 (Phase 5 — feat/job-posting-collaborators)
+export type { IJobPostingCollaboratorRepository } from './IJobPostingCollaboratorRepository';
