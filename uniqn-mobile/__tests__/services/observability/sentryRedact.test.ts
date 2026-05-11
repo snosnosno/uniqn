@@ -24,14 +24,14 @@ describe('redactValue (key-match traversal)', () => {
   it('nested sensitive key → 깊이 무관 마스킹', () => {
     const out = redactValue({
       request: { headers: { Authorization: 'Bearer xyz', cookie: 'c=1' } },
-      body: { id_token: 'eyJhbGc...', email: 'a@b.com' },
+      body: { id_token: 'eyJhbGc...', userId: 'u-123' },
     }) as Record<string, unknown>;
     const request = out.request as Record<string, Record<string, string>>;
     const body = out.body as Record<string, string>;
     expect(request.headers.Authorization).toBe('[REDACTED]');
     expect(request.headers.cookie).toBe('c=1');
     expect(body.id_token).toBe('[REDACTED]');
-    expect(body.email).toBe('a@b.com');
+    expect(body.userId).toBe('u-123');
   });
 
   it('array 안 객체도 traversal', () => {
@@ -87,7 +87,7 @@ describe('applyRedactToEvent / applyRedactToBreadcrumb', () => {
 });
 
 describe('REDACT_KEYS coverage (회귀)', () => {
-  it('spec v2 명시 키 모두 포함', () => {
+  it('spec v2 명시 키 모두 포함 (token / code / hash)', () => {
     const required = [
       'authorizationCode',
       'identityVerificationId',
@@ -99,5 +99,39 @@ describe('REDACT_KEYS coverage (회귀)', () => {
     for (const k of required) {
       expect(REDACT_KEYS).toContain(k);
     }
+  });
+
+  it('PII 키 포함 (PortOne verifiedCustomer 자료)', () => {
+    const piiKeys = [
+      'phone',
+      'phoneNumber',
+      'birthDate',
+      'email',
+      'nickname',
+      'displayName',
+      'fullName',
+    ];
+    for (const k of piiKeys) {
+      expect(REDACT_KEYS).toContain(k);
+    }
+  });
+
+  it('PII 키도 redactValue가 마스킹 — 실제 동작 검증', () => {
+    const out = redactValue({
+      verifiedCustomer: {
+        name: '홍길동',
+        phoneNumber: '+821012345678',
+        birthDate: '19900101',
+        email: 'user@example.com',
+        nickname: 'gildong',
+      },
+    }) as Record<string, Record<string, string>>;
+    const vc = out.verifiedCustomer;
+    expect(vc.phoneNumber).toBe('[REDACTED]');
+    expect(vc.birthDate).toBe('[REDACTED]');
+    expect(vc.email).toBe('[REDACTED]');
+    expect(vc.nickname).toBe('[REDACTED]');
+    // 'name'은 false-positive 위험으로 제외 (Error.name 등) — verifiedCustomer.name은 마스킹 안 됨
+    expect(vc.name).toBe('홍길동');
   });
 });

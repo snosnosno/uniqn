@@ -25,12 +25,14 @@ function getJWKS(): ReturnType<typeof jose.createRemoteJWKSet> {
 
 /**
  * Apple id_token을 JWKS로 검증하고 sub 클레임을 반환한다.
- * signature / iss / aud / exp 모두 검증. sub 누락 시 throw.
+ * signature / iss / aud / exp 모두 검증 (clockTolerance 5s — Apple/서버 시계 어긋남 보정).
+ * sub 누락 시 throw.
  */
 export async function verifyAppleIdToken(idToken: string, audience: string): Promise<string> {
   const { payload } = await jose.jwtVerify(idToken, getJWKS(), {
     issuer: APPLE_ISSUER,
     audience,
+    clockTolerance: '5s',
   });
   if (typeof payload.sub !== 'string' || payload.sub.length === 0) {
     throw new Error('Apple id_token sub claim missing');

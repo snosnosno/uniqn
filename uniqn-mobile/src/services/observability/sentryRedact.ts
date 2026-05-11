@@ -13,6 +13,7 @@
 import type { Breadcrumb, ErrorEvent } from '@sentry/react-native';
 
 export const REDACT_KEYS: readonly string[] = [
+  // OAuth / IdP tokens & codes
   'authorizationCode',
   'authorization_code',
   'identityVerificationId',
@@ -24,15 +25,35 @@ export const REDACT_KEYS: readonly string[] = [
   'refresh_token',
   'refreshToken',
   'authorization',
+  // Identity / CI hashes
   'ci',
   'ciHash',
   'identity_ci_hash',
   'identityCiHash',
+  // Generic secrets
   'password',
   'apiKey',
   'api_key',
   'secret',
   'portoneSecret',
+  // PII — PortOne verifiedCustomer / user 자료 (REDACT_KEYS에 명시적 추가)
+  'phone',
+  'phoneNumber',
+  'phone_number',
+  'birthDate',
+  'birth_date',
+  'dateOfBirth',
+  'date_of_birth',
+  'email',
+  'emailAddress',
+  'email_address',
+  'nickname',
+  'displayName',
+  'display_name',
+  'fullName',
+  'full_name',
+  'userName',
+  'user_name',
 ] as const;
 
 const REDACTED = '[REDACTED]';
