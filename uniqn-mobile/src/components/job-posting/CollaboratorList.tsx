@@ -50,6 +50,7 @@ export function CollaboratorList({
     <FlashList<JobPostingCollaboratorWithUser>
       data={collaborators}
       keyExtractor={(item) => item.id}
+      // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
       estimatedItemSize={64}
       renderItem={({ item }) => (
         <CollaboratorRow

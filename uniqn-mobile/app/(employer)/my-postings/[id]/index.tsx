@@ -24,6 +24,7 @@ import {
   EditIcon,
   MapPinIcon,
   TrashIcon,
+  UserPlusIcon,
   UsersIcon,
   XCircleIcon,
 } from '@/components/icons';
@@ -153,6 +154,10 @@ export default function JobPostingDetailScreen() {
 
   const handleCancellationRequests = useCallback(() => {
     router.push(`/(employer)/my-postings/${id}/cancellation-requests`);
+  }, [id, router]);
+
+  const handleCollaborators = useCallback(() => {
+    router.push(`/(employer)/my-postings/${id}/collaborators`);
   }, [id, router]);
 
   const handleDeletePress = useCallback(() => {
@@ -480,6 +485,14 @@ export default function JobPostingDetailScreen() {
                 testID="job-posting-edit-button"
               />
             )}
+
+            <ActionCard
+              icon={<UserPlusIcon size={24} color="#3B82F6" />}
+              title="공유 관리"
+              description="이 공고를 함께 관리할 협업자를 추가하거나 제거합니다."
+              onPress={handleCollaborators}
+              testID="job-posting-manage-collaborators"
+            />
           </View>
         </View>
 
