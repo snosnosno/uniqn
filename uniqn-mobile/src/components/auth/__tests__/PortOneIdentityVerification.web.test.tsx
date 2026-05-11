@@ -15,12 +15,14 @@ const mockBuildRequest = jest.fn();
 const mockSavePending = jest.fn();
 const mockClearPending = jest.fn();
 const mockCallVerify = jest.fn();
+const mockSaveBindingToken = jest.fn();
 
 jest.mock('@/services/auth/portOneIdentityService', () => ({
   buildPortOneInicisIdentityRequest: (...args: unknown[]) => mockBuildRequest(...args),
   savePendingPortOneIdentityRequest: (...args: unknown[]) => mockSavePending(...args),
   clearPendingPortOneIdentityRequest: (...args: unknown[]) => mockClearPending(...args),
   callVerifyPortOneIdentity: (...args: unknown[]) => mockCallVerify(...args),
+  savePortOneIdentityBindingToken: (...args: unknown[]) => mockSaveBindingToken(...args),
   getPortOneInicisIdentityConfig: () => ({ isReady: true }),
 }));
 
@@ -74,9 +76,32 @@ describe('PortOneIdentityVerification (web)', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockBuildRequest.mockReturnValue(mockRequest);
+    mockBuildRequest.mockReturnValue({ request: mockRequest, bindingToken: 'binding-tok-test' });
     mockCallVerify.mockResolvedValue(mockVerification);
     mockRequestIdentityVerification.mockResolvedValue(mockSdkSuccess);
+  });
+
+  it('P0 #1 — 성공 시 bindingToken을 storage에 저장한다', async () => {
+    const { getByText } = render(<PortOneIdentityVerification {...defaultProps} />);
+    await act(async () => {
+      fireEvent.press(getByText('본인인증 시작'));
+    });
+    await waitFor(() => {
+      expect(mockSaveBindingToken).toHaveBeenCalledWith('binding-tok-test');
+    });
+  });
+
+  it('P0 #1 — callVerifyPortOneIdentity 호출 시 expectedBindingToken 전달', async () => {
+    const { getByText } = render(<PortOneIdentityVerification {...defaultProps} />);
+    await act(async () => {
+      fireEvent.press(getByText('본인인증 시작'));
+    });
+    await waitFor(() => {
+      expect(mockCallVerify).toHaveBeenCalledWith({
+        identityVerificationId: 'test-id-123',
+        expectedBindingToken: 'binding-tok-test',
+      });
+    });
   });
 
   it('본인인증 시작 버튼이 렌더링된다', () => {

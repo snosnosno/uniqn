@@ -11,6 +11,7 @@ import {
   normalizeGender,
   toE164,
 } from '../_shared/idp-binding.ts';
+import { extractBindingToken, isBindingMatch } from '../_shared/portone-caller-binding.ts';
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -26,13 +27,19 @@ Deno.serve(async (req: Request) => {
       data: { user },
     } = await userClient.auth.getUser();
 
-    const { identityVerificationId } = await req.json();
+    const { identityVerificationId, expectedBindingToken } = await req.json();
     if (
       !identityVerificationId ||
       typeof identityVerificationId !== 'string' ||
       identityVerificationId.length > 200
     ) {
       return jsonResponse({ error: 'identityVerificationId가 필요합니다' }, 400);
+    }
+    if (
+      expectedBindingToken !== undefined &&
+      (typeof expectedBindingToken !== 'string' || expectedBindingToken.length > 200)
+    ) {
+      return jsonResponse({ error: 'expectedBindingToken 형식 오류' }, 400);
     }
 
     const portoneSecret = Deno.env.get('PORTONE_API_SECRET');
@@ -55,6 +62,18 @@ Deno.serve(async (req: Request) => {
     }
     if (!isVerificationRecent(verification.verifiedAt)) {
       return idpError('IV_TIMESTAMP_EXPIRED');
+    }
+
+    // P0 #1 — caller binding 검증. expectedBindingToken 미제공은 legacy
+    // 호환 경로(예: 외부 통합)로 허용. 제공됐는데 mismatch면 차단.
+    if (expectedBindingToken) {
+      const actualToken = extractBindingToken(verification.customData);
+      if (!isBindingMatch(expectedBindingToken, actualToken)) {
+        console.warn('[caller-binding] verify-portone-identity mismatch', {
+          hasActual: actualToken !== undefined,
+        });
+        return idpError('IV_BINDING_MISMATCH');
+      }
     }
 
     const identityData = verification.verifiedCustomer || {};

@@ -10,6 +10,10 @@ export const IDP_ERROR_CODES = {
     message: '본인인증 세션이 만료되었습니다. 다시 진행해주세요.',
   },
   IV_INVALID: { status: 400, message: '본인인증 정보가 올바르지 않습니다.' },
+  IV_BINDING_MISMATCH: {
+    status: 400,
+    message: '본인인증 세션이 일치하지 않습니다. 다시 진행해주세요.',
+  },
   IV_DUPLICATE_PHONE: { status: 409, message: '이미 등록된 전화번호입니다' },
   IV_DUPLICATE_CI: { status: 409, message: '이미 인증된 신원입니다' },
   IV_DUPLICATE_NICKNAME: { status: 409, message: '이미 사용 중인 닉네임입니다' },

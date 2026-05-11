@@ -12,6 +12,7 @@ import {
   toE164,
   validateAge,
 } from '../_shared/idp-binding.ts';
+import { extractBindingToken, isBindingMatch } from '../_shared/portone-caller-binding.ts';
 
 const TERMS_VERSION = '1.0.0';
 const MIN_SIGNUP_AGE = 14;
@@ -42,6 +43,7 @@ Deno.serve(async (req: Request) => {
     const body = await req.json();
     const {
       identityVerificationId,
+      expectedBindingToken,
       nickname,
       region,
       experienceYears,
@@ -64,6 +66,12 @@ Deno.serve(async (req: Request) => {
       identityVerificationId.length > 200
     ) {
       return jsonResponse({ error: 'identityVerificationId가 필요합니다' }, 400);
+    }
+    if (
+      expectedBindingToken !== undefined &&
+      (typeof expectedBindingToken !== 'string' || expectedBindingToken.length > 200)
+    ) {
+      return jsonResponse({ error: 'expectedBindingToken 형식 오류' }, 400);
     }
     if (
       nickname &&
@@ -100,6 +108,18 @@ Deno.serve(async (req: Request) => {
     const verification = await portoneRes.json();
     if (verification.status !== 'VERIFIED') return idpError('PORTONE_NOT_VERIFIED');
     if (!isVerificationRecent(verification.verifiedAt)) return idpError('IV_TIMESTAMP_EXPIRED');
+
+    // P0 #1 — caller binding 검증. verify-portone-identity와 동일 layer.
+    if (expectedBindingToken) {
+      const actualToken = extractBindingToken(verification.customData);
+      if (!isBindingMatch(expectedBindingToken, actualToken)) {
+        console.warn('[caller-binding] verify-and-save-portone-profile mismatch', {
+          uid: user.id,
+          hasActual: actualToken !== undefined,
+        });
+        return idpError('IV_BINDING_MISMATCH');
+      }
+    }
 
     const identityData = verification.verifiedCustomer || {};
     logDiDiagnostic(identityData, 'verify-and-save-portone-profile');

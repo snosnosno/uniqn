@@ -14,6 +14,7 @@ import {
   callVerifyPortOneIdentity,
   clearPendingPortOneIdentityRequest,
   savePendingPortOneIdentityRequest,
+  savePortOneIdentityBindingToken,
   savePortOneIdentityVerificationResult,
 } from '@/services/auth/portOneIdentityService';
 import { logger } from '@/utils/logger';
@@ -54,6 +55,7 @@ export function PortOneIdentityVerification({
   const { height } = useWindowDimensions();
   const [modalVisible, setModalVisible] = useState(false);
   const [request, setRequest] = useState<PortOneInicisIdentityRequest | null>(null);
+  const [bindingToken, setBindingToken] = useState<string | null>(null);
   const [verifiedIdentity, setVerifiedIdentity] = useState<VerifiedPortOneIdentity | null>(
     initialIdentity
   );
@@ -108,6 +110,7 @@ export function PortOneIdentityVerification({
       try {
         const verification = await callVerifyPortOneIdentity({
           identityVerificationId: result.identityVerificationId,
+          expectedBindingToken: bindingToken ?? undefined,
         });
 
         if (verification.hasDuplicatePhone) {
@@ -126,6 +129,11 @@ export function PortOneIdentityVerification({
           throw new Error('본인인증 결과에 성별 정보가 없습니다. 인증 수단을 다시 선택해주세요.');
         }
 
+        // P0 #1 — 후속 callVerifyAndSavePortOneProfile (signUp 흐름)에서 자동 consume
+        if (bindingToken) {
+          savePortOneIdentityBindingToken(bindingToken);
+        }
+
         setVerifiedIdentity(verification.identity);
         onVerified(verification.identity);
       } catch (error) {
@@ -134,7 +142,7 @@ export function PortOneIdentityVerification({
         setIsProcessing(false);
       }
     },
-    [handleVerificationFailure, onVerified]
+    [bindingToken, handleVerificationFailure, onVerified]
   );
 
   const handleSdkError = useCallback(
@@ -146,14 +154,15 @@ export function PortOneIdentityVerification({
 
   const startVerification = useCallback(() => {
     try {
-      const nextRequest = buildPortOneInicisIdentityRequest({
+      const { request: nextRequest, bindingToken: nextToken } = buildPortOneInicisIdentityRequest({
         customerId,
         customerFullName,
         customerPhoneNumber,
       });
 
-      savePendingPortOneIdentityRequest(nextRequest);
+      savePendingPortOneIdentityRequest(nextRequest, nextToken);
       setRequest(nextRequest);
+      setBindingToken(nextToken);
       setErrorMessage(null);
       setVerifiedIdentity(null);
       setModalVisible(true);
