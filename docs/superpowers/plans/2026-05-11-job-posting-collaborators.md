@@ -445,36 +445,43 @@ git commit -m "test(supabase): job_posting_collaborators 자체 RLS pg_prove 16 
 
 ---
 
-## Phase 2: 기존 RLS 정책 OR 확장
+## Phase 2: 기존 RLS 정책 OR 확장 — Phase 0 audit 확정
 
-영향 받는 테이블은 **Phase 0 audit 결과**로 확정. 아래는 spec 의 baseline.
+영향 받는 테이블 **5개 / 12 정책 + 1 trigger function** (Phase 0 audit 2026-05-12).
 
-### Task 2.1: `job_postings` SELECT/UPDATE OR
+### Task 2.1: `job_postings` SELECT/UPDATE OR — audit 확정 정책명
 
 **Files:**
-- Create: `supabase/migrations/<timestamp>_jpc_extend_existing_rls.sql`
+- Create: `uniqn-mobile/supabase/migrations/<timestamp>_jpc_extend_existing_rls.sql`
 
-- [ ] **Step 1: 기존 정책 DROP + 재생성 (OR 추가)**
+- [ ] **Step 1: 기존 정책 DROP + 재생성 (audit 확정 이름: `jp_select_managed`, `jp_update_workspace_member`)**
 
 ```sql
--- 기존 정책 이름은 supabase/migrations/20260514010000_workspace_m3_consolidate_jp_rls.sql 참조
-DROP POLICY IF EXISTS "jp_select_ws_member"   ON public.job_postings;
-DROP POLICY IF EXISTS "jp_update_ws_member"   ON public.job_postings;
+-- audit ref: 20260514010000_workspace_m3_consolidate_jp_rls.sql
+DROP POLICY IF EXISTS "jp_select_managed"           ON public.job_postings;
+DROP POLICY IF EXISTS "jp_update_workspace_member"  ON public.job_postings;
 
-CREATE POLICY "jp_select_ws_or_collab"
+CREATE POLICY "jp_select_managed"
   ON public.job_postings FOR SELECT
   USING (
-    public.is_workspace_member(workspace_id, auth.uid())
-    OR public.is_posting_collaborator(id, auth.uid())
+    (owner_id = (SELECT auth.uid()))
+    OR public.is_workspace_member(workspace_id, (SELECT auth.uid()))
+    OR public.is_posting_collaborator(id, (SELECT auth.uid()))
   );
 
-CREATE POLICY "jp_update_ws_or_collab"
+CREATE POLICY "jp_update_workspace_member"
   ON public.job_postings FOR UPDATE
   USING (
-    public.is_workspace_member(workspace_id, auth.uid())
-    OR public.is_posting_collaborator(id, auth.uid())
+    public.is_workspace_member(workspace_id, (SELECT auth.uid()))
+    OR public.is_posting_collaborator(id, (SELECT auth.uid()))
+    OR (SELECT public.is_admin())
+  )
+  WITH CHECK (
+    public.is_workspace_member(workspace_id, (SELECT auth.uid()))
+    OR public.is_posting_collaborator(id, (SELECT auth.uid()))
+    OR (SELECT public.is_admin())
   );
--- DELETE 정책은 변경 없음 (owner 전용 유지)
+-- jp_delete_workspace_owner (owner-only) 변경 없음
 ```
 
 ### Task 2.2: `workspaces` SELECT OR (Codex fix)
@@ -499,37 +506,109 @@ CREATE POLICY "ws_select_member_or_collab_source"
   );
 ```
 
-### Task 2.3~2.6: applications / staff_assignments / work_logs / settlements OR
+### Task 2.3~2.5: applications / work_logs / event_qr_codes OR — Phase 0 audit 확정
 
 **Files:**
 - Edit: 같은 마이그레이션 파일
 
-- [ ] **Step 1: 각 테이블 SELECT/UPDATE 정책 DROP + 재생성** (4 테이블 × 2 작업 = 8 정책)
+> **audit 결과 보정**: `staff_assignments` / `settlements` 테이블 미존재. 정산 = work_logs.payroll 필드. event_qr_codes 가 Spec 누락이라 추가됨.
 
-각 테이블 패턴 동일 — Phase 0 audit 결과로 정확한 정책명 확정. 예시:
+- [ ] **Step 1: 각 테이블의 audit 확정 정책 DROP + 재생성**
+
+| 테이블 | 변경 정책 | 비고 |
+|---|---|---|
+| `applications` | `app_select`, `app_update` | SELECT + UPDATE |
+| `work_logs` | `wl_select`, `wl_update` | 정산 자동 포함 (payroll 필드) |
+| `event_qr_codes` | `qr_select`, `qr_update`, `qr_delete` | 3 정책 — Spec 누락 보정 |
+
+각 테이블 패턴 동일. 예시 (applications):
 
 ```sql
-DROP POLICY IF EXISTS "applications_select_ws_member" ON public.applications;
-CREATE POLICY "applications_select_ws_or_collab"
+DROP POLICY IF EXISTS "app_select" ON public.applications;
+CREATE POLICY "app_select"
   ON public.applications FOR SELECT
   USING (
-    public.is_workspace_member(
-      (SELECT workspace_id FROM public.job_postings WHERE id = job_posting_id),
-      auth.uid()
-    )
-    OR public.is_posting_collaborator(job_posting_id, auth.uid())
+    (applicant_id = (SELECT auth.uid()))
+    OR (job_posting_id IN (
+      SELECT id FROM public.job_postings
+      WHERE owner_id = (SELECT auth.uid())
+        OR public.is_workspace_member(workspace_id, (SELECT auth.uid()))
+        OR public.is_posting_collaborator(id, (SELECT auth.uid()))
+    ))
   );
--- UPDATE 동일 패턴
 ```
 
-→ work_logs / settlements / staff_assignments 도 동일.
+event_qr_codes 패턴 (3 정책 — qr_select / qr_update / qr_delete 모두 OR 추가):
+
+```sql
+DROP POLICY IF EXISTS "qr_select" ON public.event_qr_codes;
+CREATE POLICY "qr_select"
+  ON public.event_qr_codes FOR SELECT
+  USING (
+    (user_id = (SELECT auth.uid()))
+    OR (job_posting_id IN (
+      SELECT id FROM public.job_postings
+      WHERE owner_id = (SELECT auth.uid())
+        OR public.is_workspace_member(workspace_id, (SELECT auth.uid()))
+        OR public.is_posting_collaborator(id, (SELECT auth.uid()))
+    ))
+  );
+-- qr_update, qr_delete 도 동일 패턴 (existing policy SQL 유지 + OR 추가)
+```
 
 - [ ] **Step 2: staging dry-run — 4 페르소나 시드 + 각 테이블 SELECT 실측**
 - [ ] **Step 3: prod apply + commit**
 
 ```bash
-git add supabase/migrations/<ts>_jpc_extend_existing_rls.sql
-git commit -m "feat(supabase): 5개 테이블 + workspaces RLS OR 확장 (collaborator 접근)"
+git add uniqn-mobile/supabase/migrations/<ts>_jpc_extend_existing_rls.sql
+git commit -m "feat(supabase): 4 테이블 + workspaces RLS OR 확장 (collaborator 접근)"
+```
+
+### Task 2.6: `enforce_jp_status_transition` trigger function — collaborator 분기 (Phase 0 audit 신규)
+
+**Files:**
+- Create: `uniqn-mobile/supabase/migrations/<ts>_jpc_status_transition_collab.sql`
+
+> **audit 발견**: 공고 status 변경 trigger 가 인라인 owner check 만 수행. D2 풀 관리권 결정으로 collaborator 도 status 변경 가능해야 함.
+
+- [ ] **Step 1: 기존 함수 재정의 (CREATE OR REPLACE)**
+
+```sql
+-- 20260514050000_enforce_jp_status_transition.sql 참조
+-- v_is_workspace_owner 분기에 collaborator OR 추가
+CREATE OR REPLACE FUNCTION public.enforce_jp_status_transition()
+RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = ''
+AS $$
+DECLARE
+  v_is_workspace_owner boolean;
+  v_is_admin           boolean;
+  v_is_collaborator    boolean;
+BEGIN
+  -- 기존 owner / admin 체크 유지
+  SELECT EXISTS(
+    SELECT 1 FROM public.workspaces
+    WHERE id = NEW.workspace_id AND owner_id = (SELECT auth.uid())
+  ) INTO v_is_workspace_owner;
+
+  v_is_admin := public.is_admin();
+  v_is_collaborator := public.is_posting_collaborator(NEW.id, (SELECT auth.uid()));
+
+  IF NOT (v_is_workspace_owner OR v_is_admin OR v_is_collaborator) THEN
+    RAISE EXCEPTION 'permission_denied: status change requires workspace owner, admin, or collaborator';
+  END IF;
+  -- ... 기존 status transition 검증 로직 유지
+  RETURN NEW;
+END;
+$$;
+```
+
+- [ ] **Step 2: staging dry-run — collaborator 페르소나가 status 변경 가능한지 검증**
+- [ ] **Step 3: prod apply + commit**
+
+```bash
+git add uniqn-mobile/supabase/migrations/<ts>_jpc_status_transition_collab.sql
+git commit -m "feat(supabase): enforce_jp_status_transition collaborator 분기 추가"
 ```
 
 ### Task 2.7: pg_prove RLS 매트릭스 테스트 (5 테이블 × 4 페르소나 × 4 작업 = 80 케이스)
