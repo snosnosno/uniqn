@@ -144,6 +144,26 @@ Deno.serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
+    // P1 — verification_id 멱등성 검사 (caller binding 통과 후 처음 1회만 처리).
+    // PRIMARY KEY 위반(23505)이면 이미 다른 호출에서 처리 완료 → 차단.
+    const { error: idempotencyError } = await supabase
+      .from('processed_identity_verifications')
+      .insert({
+        verification_id: identityVerificationId,
+        user_id: user.id,
+        function_name: 'verify-and-save-portone-profile',
+      });
+    if (idempotencyError) {
+      if (idempotencyError.code === '23505') {
+        console.warn('[idempotency] verification_id already processed', {
+          uid: user.id,
+        });
+        return idpError('IV_ALREADY_PROCESSED');
+      }
+      console.error('Idempotency insert failed:', idempotencyError);
+      return jsonResponse({ error: '멱등성 검사 실패' }, 500);
+    }
+
     const [phoneCheck, nickCheck, ciCheck] = await Promise.all([
       supabase.from('users').select('id').eq('phone', phoneE164).neq('id', user.id).limit(1),
       nickname
@@ -217,7 +237,13 @@ Deno.serve(async (req: Request) => {
       .from('users')
       .upsert(profileData, { onConflict: 'id' });
     if (upsertError) {
-      console.error('Profile upsert failed:', upsertError);
+      // P1 — upsert 실패 시 멱등성 레코드 롤백해서 사용자가 재시도 가능
+      // (같은 verification은 5분 timestamp 가드로 곧 만료되지만 그 전까지 시도 가능)
+      await supabase
+        .from('processed_identity_verifications')
+        .delete()
+        .eq('verification_id', identityVerificationId);
+      console.error('Profile upsert failed, idempotency rolled back:', upsertError);
       return jsonResponse({ error: '프로필 저장에 실패했습니다' }, 500);
     }
 
