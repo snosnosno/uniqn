@@ -102,8 +102,22 @@ jest.mock('@/services/observability/sessionService', () => ({
   resetLoginAttempts: jest.fn(async () => undefined),
 }));
 
+const mockClearBiometricCredentials = jest.fn<Promise<void>, []>();
+const mockClearSession = jest.fn<Promise<void>, []>();
+
+jest.mock('../biometricService', () => ({
+  clearBiometricCredentials: () => mockClearBiometricCredentials(),
+}));
+
+jest.mock('@/lib/secureStorage', () => ({
+  userSessionStorage: {
+    clearSession: () => mockClearSession(),
+  },
+}));
+
 jest.mock('../portOneIdentityService', () => ({
   callVerifyAndSavePortOneProfile: jest.fn().mockResolvedValue(undefined),
+  clearPortOneIdentityBindingToken: jest.fn(),
 }));
 
 jest.mock('../userProfileService', () => ({
@@ -284,6 +298,18 @@ describe('authCoreService', () => {
     expect(mockSignOut).toHaveBeenCalled();
     expect(mockTrackLogout).toHaveBeenCalledTimes(1);
     expect(mockSetUserId).toHaveBeenCalledWith(null);
+    // P0 #3 — 공용 디바이스 자격증명 잔존 방지
+    expect(mockClearBiometricCredentials).toHaveBeenCalledTimes(1);
+    expect(mockClearSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('signs out even when biometric cleanup throws', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+    mockClearBiometricCredentials.mockRejectedValueOnce(new Error('SecureStore busy'));
+
+    await expect(signOut()).resolves.toBeUndefined();
+    expect(mockSignOut).toHaveBeenCalled();
+    expect(mockClearSession).toHaveBeenCalledTimes(1);
   });
 
   it('returns user profiles from the repository', async () => {

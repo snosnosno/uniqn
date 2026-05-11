@@ -12,6 +12,7 @@ import {
   toE164,
   validateAge,
 } from '../_shared/idp-binding.ts';
+import { extractBindingToken, isBindingMatch } from '../_shared/portone-caller-binding.ts';
 
 const TERMS_VERSION = '1.0.0';
 const MIN_SIGNUP_AGE = 14;
@@ -42,6 +43,7 @@ Deno.serve(async (req: Request) => {
     const body = await req.json();
     const {
       identityVerificationId,
+      expectedBindingToken,
       nickname,
       region,
       experienceYears,
@@ -64,6 +66,16 @@ Deno.serve(async (req: Request) => {
       identityVerificationId.length > 200
     ) {
       return jsonResponse({ error: 'identityVerificationId가 필요합니다' }, 400);
+    }
+    // C1 fix — expectedBindingToken mandatory. AUTH layer 위에 추가 caller
+    // identity layer로 token 일치까지 강제 (defense in depth).
+    if (
+      !expectedBindingToken ||
+      typeof expectedBindingToken !== 'string' ||
+      expectedBindingToken.length === 0 ||
+      expectedBindingToken.length > 200
+    ) {
+      return idpError('IV_BINDING_MISMATCH');
     }
     if (
       nickname &&
@@ -101,6 +113,19 @@ Deno.serve(async (req: Request) => {
     if (verification.status !== 'VERIFIED') return idpError('PORTONE_NOT_VERIFIED');
     if (!isVerificationRecent(verification.verifiedAt)) return idpError('IV_TIMESTAMP_EXPIRED');
 
+    // C1 fix — caller binding 강제. mandatory token (위에서 검증) + customData
+    // 일치 모두 필수. defense in depth (AUTH + binding).
+    {
+      const actualToken = extractBindingToken(verification.customData);
+      if (!isBindingMatch(expectedBindingToken, actualToken)) {
+        console.warn('[caller-binding] verify-and-save-portone-profile mismatch', {
+          uid: user.id,
+          hasActual: actualToken !== undefined,
+        });
+        return idpError('IV_BINDING_MISMATCH');
+      }
+    }
+
     const identityData = verification.verifiedCustomer || {};
     logDiDiagnostic(identityData, 'verify-and-save-portone-profile');
     const verifiedName = identityData.name;
@@ -124,6 +149,9 @@ Deno.serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
+    // C5 fix — duplicate / profile_completed 검사를 멱등성 INSERT 전에 수행.
+    // 그렇지 않으면 benign 실패(중복 phone/CI 등)가 멱등성 레코드를 영구로
+    // 남겨서 사용자가 같은 verification으로 재시도 못 함.
     const [phoneCheck, nickCheck, ciCheck] = await Promise.all([
       supabase.from('users').select('id').eq('phone', phoneE164).neq('id', user.id).limit(1),
       nickname
@@ -155,6 +183,26 @@ Deno.serve(async (req: Request) => {
       .eq('id', user.id)
       .single();
     if (existingUser?.profile_completed === true) return idpError('PROFILE_ALREADY_COMPLETED');
+
+    // P1 — verification_id 멱등성 검사 (모든 validation 통과 후 처음 1회만 처리).
+    // PRIMARY KEY 위반(23505)이면 이미 다른 호출에서 처리 완료 → 차단.
+    const { error: idempotencyError } = await supabase
+      .from('processed_identity_verifications')
+      .insert({
+        verification_id: identityVerificationId,
+        user_id: user.id,
+        function_name: 'verify-and-save-portone-profile',
+      });
+    if (idempotencyError) {
+      if (idempotencyError.code === '23505') {
+        console.warn('[idempotency] verification_id already processed', {
+          uid: user.id,
+        });
+        return idpError('IV_ALREADY_PROCESSED');
+      }
+      console.error('Idempotency insert failed:', idempotencyError);
+      return jsonResponse({ error: '멱등성 검사 실패' }, 500);
+    }
 
     const now = new Date().toISOString();
     const trimmedNickname = nickname?.trim() || null;
@@ -197,7 +245,22 @@ Deno.serve(async (req: Request) => {
       .from('users')
       .upsert(profileData, { onConflict: 'id' });
     if (upsertError) {
-      console.error('Profile upsert failed:', upsertError);
+      // C6 fix — rollback DELETE 결과 명시적 처리. 실패 시 dangling row가
+      // 다음 재시도를 영구 차단하므로 logger.error로 visible하게 알림.
+      const { error: rollbackError } = await supabase
+        .from('processed_identity_verifications')
+        .delete()
+        .eq('verification_id', identityVerificationId);
+      if (rollbackError) {
+        console.error('[CRITICAL] idempotency rollback failed — dangling row may block retry', {
+          uid: user.id,
+          verificationId: identityVerificationId,
+          rollbackError,
+          upsertError,
+        });
+      } else {
+        console.error('Profile upsert failed, idempotency rolled back:', upsertError);
+      }
       return jsonResponse({ error: '프로필 저장에 실패했습니다' }, 500);
     }
 

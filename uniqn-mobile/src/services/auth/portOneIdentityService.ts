@@ -44,9 +44,21 @@ export interface PortOneInicisIdentityRequestInput {
 
 export type PortOneInicisIdentityRequest = IdentityVerificationRequest;
 
+/**
+ * `buildPortOneInicisIdentityRequest` 반환. caller binding (P0 #1) 위해
+ * 클라이언트가 생성한 random `bindingToken`이 request.customData(JSON)와
+ * 별도 필드 양쪽에 들어있다. caller는 token을 verify API payload의
+ * `expectedBindingToken`으로 함께 전달해야 한다.
+ */
+export interface PortOneIdentityRequestBundle {
+  request: PortOneInicisIdentityRequest;
+  bindingToken: string;
+}
+
 export interface PendingPortOneIdentityRequest {
   provider: 'portone_inicis';
   request: PortOneInicisIdentityRequest;
+  bindingToken: string;
   createdAt: number;
 }
 
@@ -74,6 +86,8 @@ export interface VerifiedPortOneIdentity {
 
 export interface VerifyPortOneIdentityPayload {
   identityVerificationId: string;
+  /** P0 #1 caller binding — client가 PortOne SDK에 박은 token과 서버 검증 */
+  expectedBindingToken?: string;
 }
 
 export interface VerifyPortOneIdentityResult {
@@ -87,6 +101,8 @@ export interface VerifyPortOneIdentityResult {
 
 export interface VerifyAndSavePortOneProfilePayload {
   identityVerificationId: string;
+  /** P0 #1 caller binding — verify-portone-identity와 동일 검증 layer */
+  expectedBindingToken?: string;
   nickname?: string;
   region?: string;
   experienceYears?: number;
@@ -112,6 +128,22 @@ interface ExpoExtraWithPortOne {
     inicisLogoUrl?: string;
     inicisFrgndInfo?: string;
   };
+}
+
+/**
+ * Cryptographically random bindingToken 생성.
+ *
+ * RN/Web 모두 `crypto.getRandomValues`가 표준 — generateUUID()는 fallback
+ * 경로가 Math.random일 수 있으니 별도로 발급해 entropy 보장.
+ */
+function generateBindingToken(): string {
+  const bytes = new Uint8Array(32);
+  globalThis.crypto.getRandomValues(bytes);
+  let hex = '';
+  for (let i = 0; i < bytes.length; i++) {
+    hex += bytes[i].toString(16).padStart(2, '0');
+  }
+  return hex;
 }
 
 function sanitizePhoneNumber(phoneNumber?: string): string | undefined {
@@ -154,7 +186,7 @@ export function isPortOneInicisIdentityConfigured(): boolean {
 
 export function buildPortOneInicisIdentityRequest(
   input: PortOneInicisIdentityRequestInput = {}
-): PortOneInicisIdentityRequest {
+): PortOneIdentityRequestBundle {
   const config = getPortOneInicisIdentityConfig();
 
   if (!config.isReady) {
@@ -181,12 +213,18 @@ export function buildPortOneInicisIdentityRequest(
   const resolvedDirectAgency = input.directAgency ?? config.directAgency;
   const resolvedLogoUrl = input.logoUrl ?? config.logoUrl;
 
-  return {
+  // P0 #1 caller binding — client가 생성한 token을 customData(JSON)에 박고
+  // 같은 token을 verify API payload로 함께 보내 서버에서 일치 검증.
+  // caller가 customData 직접 지정 시 binding 비활성(legacy 호환).
+  const bindingToken = generateBindingToken();
+  const customData = input.customData ?? JSON.stringify({ bindingToken });
+
+  const request: PortOneInicisIdentityRequest = {
     storeId: config.storeId,
     channelKey: config.channelKey,
     identityVerificationId: input.identityVerificationId ?? createPortOneIdentityVerificationId(),
     customer: Object.keys(customer).length > 0 ? customer : undefined,
-    customData: input.customData,
+    customData,
     bypass: {
       inicisUnified: {
         flgFixedUser: 'N',
@@ -196,12 +234,18 @@ export function buildPortOneInicisIdentityRequest(
       },
     },
   };
+
+  return { request, bindingToken };
 }
 
-export function savePendingPortOneIdentityRequest(request: PortOneInicisIdentityRequest): void {
+export function savePendingPortOneIdentityRequest(
+  request: PortOneInicisIdentityRequest,
+  bindingToken: string
+): void {
   setStorageItem<PendingPortOneIdentityRequest>(STORAGE_KEYS.PORTONE_IDENTITY_REQUEST, {
     provider: 'portone_inicis',
     request,
+    bindingToken,
     createdAt: Date.now(),
   });
 }
@@ -230,6 +274,30 @@ export function consumePortOneIdentityVerificationResult(): PortOneIdentityVerif
 
 export function clearPortOneIdentityVerificationResult(): void {
   removeStorageItem(STORAGE_KEYS.PORTONE_IDENTITY_RESULT);
+}
+
+/**
+ * Caller binding token storage (P0 #1).
+ *
+ * 본인인증 success path에서 컴포넌트가 token을 storage에 박아두고,
+ * 후속 `callVerifyAndSavePortOneProfile` 호출(signUp 후) 시 자동으로
+ * payload에 포함된다. 컴포넌트 unmount 후에도 token이 유지되어야 한다.
+ */
+export function savePortOneIdentityBindingToken(token: string): void {
+  setStorageItem(STORAGE_KEYS.PORTONE_IDENTITY_BINDING_TOKEN, token);
+}
+
+/**
+ * C3 fix — read-only로 token 조회. 명시적 clear는 호출자가 success 후 수행.
+ * consume(read+remove) 패턴은 retry 시 두 번째 호출에서 token 누락 → binding
+ * bypass 위험. 본 함수는 idempotent.
+ */
+export function getPortOneIdentityBindingToken(): string | null {
+  return getStorageItem<string>(STORAGE_KEYS.PORTONE_IDENTITY_BINDING_TOKEN);
+}
+
+export function clearPortOneIdentityBindingToken(): void {
+  removeStorageItem(STORAGE_KEYS.PORTONE_IDENTITY_BINDING_TOKEN);
 }
 
 export async function callVerifyPortOneIdentity(
@@ -264,11 +332,18 @@ export async function callVerifyAndSavePortOneProfile(
   payload: VerifyAndSavePortOneProfilePayload,
   accessToken?: string
 ): Promise<VerifyAndSavePortOneProfileResult> {
+  // P0 #1 — caller가 payload에 token 명시 안 했으면 storage에서 자동 조회.
+  // C3 fix: read-only로 가져옴. 성공 후 명시적 clear (실패 시 재시도 가능).
+  const tokenFromStorage = payload.expectedBindingToken ? null : getPortOneIdentityBindingToken();
+  const resolvedPayload: VerifyAndSavePortOneProfilePayload = {
+    ...payload,
+    expectedBindingToken: payload.expectedBindingToken ?? tokenFromStorage ?? undefined,
+  };
   const invoke = async () => {
     const { data, error } = await invokeEdgeFunction<VerifyAndSavePortOneProfileResult>(
       'verify-and-save-portone-profile',
       {
-        body: payload,
+        body: resolvedPayload,
         // signUp 직후 AsyncStorage 미동기화 대비: 토큰 명시 전달
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
       }
@@ -278,7 +353,10 @@ export async function callVerifyAndSavePortOneProfile(
   };
 
   try {
-    return await invoke();
+    const result = await invoke();
+    // C3 fix — success 후에만 storage token clear (재시도 가능성 보존)
+    if (tokenFromStorage) clearPortOneIdentityBindingToken();
+    return result;
   } catch (error) {
     if (!isRetryableError(error)) {
       throw error;
@@ -289,6 +367,8 @@ export async function callVerifyAndSavePortOneProfile(
       error: error instanceof Error ? error.message : String(error),
     });
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    return await invoke();
+    const result = await invoke();
+    if (tokenFromStorage) clearPortOneIdentityBindingToken();
+    return result;
   }
 }

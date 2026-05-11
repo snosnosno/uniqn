@@ -13,6 +13,12 @@ import { logger } from '@/utils/logger';
 import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
 import { clearProtectedAuthFlow, protectAuthFlow } from '@/shared/auth/protectedAuthFlow';
 import { RealtimeManager } from '@/shared/realtime';
+import { userSessionStorage } from '@/lib/secureStorage';
+import { clearBiometricCredentials } from './biometricService';
+import {
+  clearPortOneIdentityBindingToken,
+  callVerifyAndSavePortOneProfile,
+} from './portOneIdentityService';
 import { AuthError, ERROR_CODES, isRetryableError } from '@/errors';
 import { createClientRateLimiter } from '@/utils/security';
 import { handleServiceError, maskValue } from '@/errors/serviceErrorHandler';
@@ -30,7 +36,6 @@ import {
 } from '@/services/observability/sessionService';
 import type { SignUpFormData, LoginFormData } from '@/schemas';
 import { type UserProfile, type AuthResult } from './authTypes';
-import { callVerifyAndSavePortOneProfile } from './portOneIdentityService';
 import { getUserProfile as fetchUserProfile } from './userProfileService';
 
 // ============================================================================
@@ -363,9 +368,14 @@ export async function signOut(): Promise<void> {
     RealtimeManager.unsubscribeAll();
     clearCounterSyncCache();
 
+    // P0 #3 — 공용 디바이스 다음 사용자에게 자격증명 잔존 방지
+    // C4 fix — bindingToken도 함께 정리 (PortOne 본인인증 도중 강제 signOut 대비)
+    // 모두 idempotent. 한쪽 실패해도 signOut 계속 진행 (SecureStore 일시적 잠금 등)
+    clearPortOneIdentityBindingToken();
+    await Promise.allSettled([clearBiometricCredentials(), userSessionStorage.clearSession()]);
+
     await supabase.auth.signOut();
 
-    // Analytics 이벤트
     trackLogout();
     setUserId(null);
 

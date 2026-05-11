@@ -12,6 +12,7 @@ import {
   callVerifyPortOneIdentity,
   clearPendingPortOneIdentityRequest,
   savePendingPortOneIdentityRequest,
+  savePortOneIdentityBindingToken,
 } from '@/services/auth/portOneIdentityService';
 import { logger } from '@/utils/logger';
 
@@ -78,19 +79,22 @@ export function PortOneIdentityVerification({
 
   const startVerification = useCallback(async () => {
     let request: PortOneInicisIdentityRequest;
+    let bindingToken: string;
 
     try {
-      request = buildPortOneInicisIdentityRequest({
+      const bundle = buildPortOneInicisIdentityRequest({
         customerId,
         customerFullName,
         customerPhoneNumber,
       });
+      request = bundle.request;
+      bindingToken = bundle.bindingToken;
     } catch (error) {
       handleVerificationFailure(error);
       return;
     }
 
-    savePendingPortOneIdentityRequest(request);
+    savePendingPortOneIdentityRequest(request, bindingToken);
     setIsProcessing(true);
     setErrorMessage(null);
     setVerifiedIdentity(null);
@@ -120,9 +124,10 @@ export function PortOneIdentityVerification({
         return; // finally가 cleanup 처리
       }
 
-      // Supabase Edge Function으로 검증
+      // Supabase Edge Function으로 검증 (P0 #1 caller binding)
       const verification = await callVerifyPortOneIdentity({
         identityVerificationId: result.identityVerificationId,
+        expectedBindingToken: bindingToken,
       });
 
       if (verification.hasDuplicatePhone) {
@@ -140,6 +145,9 @@ export function PortOneIdentityVerification({
       if (!verification.identity.gender) {
         throw new Error('본인인증 결과에 성별 정보가 없습니다. 인증 수단을 다시 선택해주세요.');
       }
+
+      // P0 #1 — 후속 callVerifyAndSavePortOneProfile (signUp 흐름)에서 자동 consume
+      savePortOneIdentityBindingToken(bindingToken);
 
       setVerifiedIdentity(verification.identity);
       onVerified(verification.identity);

@@ -11,6 +11,7 @@ import {
   normalizeGender,
   toE164,
 } from '../_shared/idp-binding.ts';
+import { extractBindingToken, isBindingMatch } from '../_shared/portone-caller-binding.ts';
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -26,13 +27,24 @@ Deno.serve(async (req: Request) => {
       data: { user },
     } = await userClient.auth.getUser();
 
-    const { identityVerificationId } = await req.json();
+    const { identityVerificationId, expectedBindingToken } = await req.json();
     if (
       !identityVerificationId ||
       typeof identityVerificationId !== 'string' ||
       identityVerificationId.length > 200
     ) {
       return jsonResponse({ error: 'identityVerificationId가 필요합니다' }, 400);
+    }
+    // C1 fix — expectedBindingToken은 mandatory. anon caller가 leaked
+    // verificationId만으로 신원 데이터 + duplicate flags를 harvest하는 PII
+    // oracle 경로를 차단한다. legacy 호환 경로 제거.
+    if (
+      !expectedBindingToken ||
+      typeof expectedBindingToken !== 'string' ||
+      expectedBindingToken.length === 0 ||
+      expectedBindingToken.length > 200
+    ) {
+      return idpError('IV_BINDING_MISMATCH');
     }
 
     const portoneSecret = Deno.env.get('PORTONE_API_SECRET');
@@ -55,6 +67,18 @@ Deno.serve(async (req: Request) => {
     }
     if (!isVerificationRecent(verification.verifiedAt)) {
       return idpError('IV_TIMESTAMP_EXPIRED');
+    }
+
+    // C1 fix — caller binding 강제. mandatory token (위에서 검증) + customData
+    // 일치 모두 필수. mismatch면 PII 노출 차단.
+    {
+      const actualToken = extractBindingToken(verification.customData);
+      if (!isBindingMatch(expectedBindingToken, actualToken)) {
+        console.warn('[caller-binding] verify-portone-identity mismatch', {
+          hasActual: actualToken !== undefined,
+        });
+        return idpError('IV_BINDING_MISMATCH');
+      }
     }
 
     const identityData = verification.verifiedCustomer || {};

@@ -371,6 +371,7 @@ export const STORAGE_KEYS = {
   RECENT_JOBS: 'recent-jobs',
   PORTONE_IDENTITY_REQUEST: 'portone-identity-request',
   PORTONE_IDENTITY_RESULT: 'portone-identity-result',
+  PORTONE_IDENTITY_BINDING_TOKEN: 'portone-identity-binding-token',
 
   // 토큰 갱신
   TOKEN_REFRESH_STATE: 'token-refresh-state',

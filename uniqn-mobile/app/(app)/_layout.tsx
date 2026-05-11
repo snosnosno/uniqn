@@ -7,9 +7,11 @@ import { StyleSheet, View } from 'react-native';
 import { Stack, useSegments } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NotificationPermissionScreen } from '@/components/onboarding';
+import { DeletionScheduledModal } from '@/components/auth/DeletionScheduledModal';
 import { NetworkErrorBoundary, Loading } from '@/components/ui';
 import { LAYOUT } from '@/constants';
 import { getLayoutColor } from '@/constants/colors';
+import { useDeletionScheduledGuard } from '@/hooks/useDeletionScheduledGuard';
 import { useNotificationHandler } from '@/hooks/useNotificationHandler';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { AUTH_ENTRY_ROUTES, getAuthenticatedEntryRoute } from '@/shared/navigation/authRedirect';
@@ -101,6 +103,14 @@ export default function AppLayout() {
     permissionStatus !== null &&
     permissionStatus !== 'granted';
 
+  // P2 #5 — 탈퇴 grace period 중 재로그인 시 명시적 결정 강제 (C7: lookup error 시도 fail-closed)
+  const {
+    deletion: pendingDeletion,
+    error: deletionLookupError,
+    retry: retryDeletionLookup,
+    dismiss: dismissDeletion,
+  } = useDeletionScheduledGuard();
+
   return (
     <NetworkErrorBoundary name="AppLayout">
       <View style={styles.container}>
@@ -156,6 +166,16 @@ export default function AppLayout() {
               isLoading={isRequestingPermission}
             />
           </View>
+        )}
+
+        {(pendingDeletion || deletionLookupError) && (
+          <DeletionScheduledModal
+            visible
+            scheduledFor={pendingDeletion?.scheduledDeletionAt ?? null}
+            onKept={dismissDeletion}
+            lookupError={deletionLookupError}
+            onRetry={retryDeletionLookup}
+          />
         )}
       </View>
     </NetworkErrorBoundary>
