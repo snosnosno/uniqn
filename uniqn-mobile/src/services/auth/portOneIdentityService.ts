@@ -389,10 +389,25 @@ export async function callVerifyAndSavePortOneProfile(
     return data!;
   };
 
+  // C4 — clear 실패는 swallow. invoke() 가 이미 성공했으면 orphan token 은
+  // 회복 가능한 부채(다음 get 호출에서 재정리)이지만, throw 시 caller 가 success
+  // 결과를 잃고 retry 하면 서버에 중복 프로필 생성 시도 발생.
+  const clearOnSuccess = async () => {
+    if (!tokenFromStorage) return;
+    try {
+      await clearPortOneIdentityBindingToken();
+    } catch (clearError) {
+      logger.warn('bindingToken clear 실패 - orphan token 잔존, 다음 호출에서 정리', {
+        component: 'portOneIdentityService',
+        error: clearError instanceof Error ? clearError.message : String(clearError),
+      });
+    }
+  };
+
   try {
     const result = await invoke();
     // C3 fix — success 후에만 storage token clear (재시도 가능성 보존)
-    if (tokenFromStorage) await clearPortOneIdentityBindingToken();
+    await clearOnSuccess();
     return result;
   } catch (error) {
     if (!isRetryableError(error)) {
@@ -405,7 +420,7 @@ export async function callVerifyAndSavePortOneProfile(
     });
     await new Promise((resolve) => setTimeout(resolve, 2000));
     const result = await invoke();
-    if (tokenFromStorage) await clearPortOneIdentityBindingToken();
+    await clearOnSuccess();
     return result;
   }
 }

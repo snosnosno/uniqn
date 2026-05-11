@@ -349,6 +349,11 @@ export class SupabaseUserRepository implements IUserRepository {
       // 4. 탈퇴 철회 (C9 — affected rows 검증)
       // pre-fetch와 update 사이 race: 다른 탭/관리자/자동잡이 row 상태를 바꾸면
       // update가 0건이어도 error 없이 성공으로 보이므로 .select()로 반환 검사.
+      //
+      // DB users.status 매핑:
+      //   'deactivated' + deletion_requested_at NOT NULL → DeletionRequest.status='pending'
+      //   'active'  → 'cancelled'  / 'deleted' → 'completed'
+      // 따라서 철회 가능한 row 는 status='deactivated' AND deletion_requested_at NOT NULL.
       const { data: updatedRows, error: updateError } = await supabase
         .from(TABLES.USERS)
         .update({
@@ -358,7 +363,7 @@ export class SupabaseUserRepository implements IUserRepository {
           updated_at: new Date().toISOString(),
         })
         .eq('id', userId)
-        .eq('status', 'pending') // race 가드: 우리가 본 그 상태일 때만 철회
+        .eq('status', 'deactivated') // race 가드: 우리가 본 그 상태일 때만 철회
         .not('deletion_requested_at', 'is', null)
         .select('id');
 
