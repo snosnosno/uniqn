@@ -75,9 +75,12 @@ jobs:
               ls supabase/functions | grep -v '^_' > /tmp/targets.txt
             else
               echo "Mode: detect changed functions"
-              git diff --name-only "$BEFORE" "${{ github.sha }}" -- supabase/functions/ \
-                | awk -F/ '/supabase\/functions\// {print $3}' \
-                | sort -u | grep -v '^$' > /tmp/targets.txt || true
+              # diff 결과 예시: uniqn-mobile/supabase/functions/<NAME>/<...>
+              # $1=uniqn-mobile $2=supabase $3=functions $4=<NAME>
+              # 이전 버전이 $3(="functions" 고정)을 출력해 항상 단일 잘못된 target → 모든 함수 skip 됨.
+              git diff --name-only "$BEFORE" "${{ github.sha }}" -- uniqn-mobile/supabase/functions/ \
+                | awk -F/ '/uniqn-mobile\/supabase\/functions\// {print $4}' \
+                | sort -u | grep -v '^$' | grep -v '^_' > /tmp/targets.txt || true
             fi
           fi
 
