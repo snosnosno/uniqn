@@ -219,8 +219,9 @@ export function buildPortOneInicisIdentityRequest(
   const config = getPortOneInicisIdentityConfig();
 
   if (!config.isReady) {
+    // B1: 운영자 메시지 → 사용자 친화적. 설정 누락은 사용자가 해결 불가 → 재시도 안내
     throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-      userMessage: '포트원 KG이니시스 본인인증 설정이 아직 완료되지 않았습니다.',
+      userMessage: '본인인증 서비스 일시 점검 중이에요. 잠시 후 다시 시도해주세요.',
     });
   }
 

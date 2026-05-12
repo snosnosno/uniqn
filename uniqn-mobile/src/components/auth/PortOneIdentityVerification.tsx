@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, useWindowDimensions } from 'react-native';
+import { Alert, View, Text, useColorScheme, useWindowDimensions } from 'react-native';
+import { setStatusBarStyle } from 'expo-status-bar';
 import { STATUS_COLORS } from '@/constants/colors';
 import { IdentityVerification } from '@portone/react-native-sdk';
 import { CheckCircleIcon, ShieldCheckIcon, XCircleIcon } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { useIsMounted } from '@/hooks/useIsMounted';
+import { triggerHaptic } from '@/utils/haptics';
 import { extractUserMessage } from '@/errors';
 import {
   type PortOneInicisIdentityRequest,
@@ -18,7 +20,7 @@ import {
   savePortOneIdentityBindingToken,
   savePortOneIdentityVerificationResult,
 } from '@/services/auth/portOneIdentityService';
-import { formatGenderLabel } from '@/utils/formatters';
+import { formatBirthDate, formatGenderLabel } from '@/utils/formatters';
 import { logger } from '@/utils/logger';
 
 export interface PortOneIdentityVerificationProps {
@@ -31,14 +33,6 @@ export interface PortOneIdentityVerificationProps {
   customerPhoneNumber?: string;
 }
 
-function formatBirthDate(value: string): string {
-  if (!/^\d{8}$/.test(value)) {
-    return value;
-  }
-
-  return `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}`;
-}
-
 export function PortOneIdentityVerification({
   onVerified,
   onError,
@@ -49,6 +43,7 @@ export function PortOneIdentityVerification({
   customerPhoneNumber,
 }: PortOneIdentityVerificationProps) {
   const { height } = useWindowDimensions();
+  const colorScheme = useColorScheme();
   const isMountedRef = useIsMounted();
   const [modalVisible, setModalVisible] = useState(false);
   const [request, setRequest] = useState<PortOneInicisIdentityRequest | null>(null);
@@ -62,6 +57,16 @@ export function PortOneIdentityVerification({
   useEffect(() => {
     setVerifiedIdentity(initialIdentity);
   }, [initialIdentity]);
+
+  // B8: PortOne iframe 은 항상 라이트 배경 → 다크 모드에서도 statusBar 를 dark 로 강제.
+  // 모달이 닫히면 시스템 테마 기반으로 원복.
+  useEffect(() => {
+    if (!modalVisible) return;
+    setStatusBarStyle('dark');
+    return () => {
+      setStatusBarStyle(colorScheme === 'dark' ? 'light' : 'dark');
+    };
+  }, [colorScheme, modalVisible]);
 
   const handleVerificationFailure = useCallback(
     (error: unknown, fallbackMessage?: string) => {
@@ -84,6 +89,8 @@ export function PortOneIdentityVerification({
       logger.error('PortOne identity verification failed', normalizedError, {
         component: 'PortOneIdentityVerification',
       });
+      // B5: 실패는 결정적 순간 — Warning haptic
+      void triggerHaptic('warning');
       onError?.(normalizedError);
     },
     [isMountedRef, onError]
@@ -114,20 +121,25 @@ export function PortOneIdentityVerification({
           expectedBindingToken: bindingToken ?? undefined,
         });
 
+        // B1: 에러 메시지 — 무엇 + 왜 + 어떻게 (다음 행동 명시)
         if (verification.hasDuplicatePhone) {
-          throw new Error('이미 가입된 휴대폰 번호입니다.');
+          throw new Error(
+            '이미 가입된 번호예요. 기존 계정으로 로그인하시거나 비밀번호를 찾아주세요.'
+          );
         }
 
         if (verification.hasDuplicateIdentity) {
-          throw new Error('이미 가입된 본인인증 정보입니다.');
+          throw new Error('동일한 명의로 가입된 계정이 있어요. 기존 계정으로 로그인해주세요.');
         }
 
         if (!verification.phoneVerified || !verification.identity.phoneNumber) {
-          throw new Error('본인인증 결과에 휴대폰 번호가 없습니다. 채널 설정을 확인해주세요.');
+          throw new Error(
+            '본인인증 결과에서 휴대폰 번호를 받지 못했어요. 다른 인증 수단(PASS·토스·카카오)으로 다시 시도해주세요.'
+          );
         }
 
         if (!verification.identity.gender) {
-          throw new Error('본인인증 결과에 성별 정보가 없습니다. 인증 수단을 다시 선택해주세요.');
+          throw new Error('성별 정보가 누락되었어요. 다른 인증 수단으로 다시 시도해주세요.');
         }
 
         // P0 #1 — 후속 callVerifyAndSavePortOneProfile (signUp 흐름)에서 자동 consume
@@ -139,6 +151,8 @@ export function PortOneIdentityVerification({
         // A11: 비동기 await 후 다시 mount 상태 확인 (조회 도중 unmount 가능)
         if (!isMountedRef.current) return;
         setVerifiedIdentity(verification.identity);
+        // B5: 본인인증 완료는 결정적 순간 — Success haptic
+        void triggerHaptic('success');
         onVerified(verification.identity);
       } catch (error) {
         handleVerificationFailure(error);
@@ -170,10 +184,24 @@ export function PortOneIdentityVerification({
       setErrorMessage(null);
       setVerifiedIdentity(null);
       setModalVisible(true);
+      // B5: 본인인증 진입은 결정적 순간 — Light haptic
+      void triggerHaptic('light');
     } catch (error) {
       handleVerificationFailure(error);
     }
   }, [customerFullName, customerId, customerPhoneNumber, handleVerificationFailure]);
+
+  // B3: 완료 상태에서 "다시 인증하기" 실수 클릭 방지 — confirm 후 재진행
+  const handleRetryPress = useCallback(() => {
+    Alert.alert(
+      '본인인증을 다시 하시겠어요?',
+      '이미 인증된 정보를 잃고 처음부터 다시 진행합니다.',
+      [
+        { text: '취소', style: 'cancel' },
+        { text: '다시 인증', style: 'destructive', onPress: () => startVerification() },
+      ]
+    );
+  }, [startVerification]);
 
   const modalHeight = Math.max(420, Math.floor(height * 0.7));
 
@@ -224,7 +252,7 @@ export function PortOneIdentityVerification({
           </View>
 
           <Button
-            onPress={startVerification}
+            onPress={handleRetryPress}
             variant="outline"
             disabled={disabled || isProcessing}
             className="mt-3"

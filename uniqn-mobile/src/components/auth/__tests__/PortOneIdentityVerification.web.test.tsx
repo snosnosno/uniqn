@@ -144,7 +144,7 @@ describe('PortOneIdentityVerification (web)', () => {
       fireEvent.press(getByText('본인인증 시작'));
     });
     await waitFor(() => {
-      expect(getByText(/본인인증 창이 닫혔습니다/)).toBeTruthy();
+      expect(getByText(/본인인증을 완료하지 못했어요/)).toBeTruthy();
     });
   });
 
@@ -173,7 +173,7 @@ describe('PortOneIdentityVerification (web)', () => {
       fireEvent.press(getByText('본인인증 시작'));
     });
     await waitFor(() => {
-      expect(getByText(/이미 가입된 휴대폰 번호/)).toBeTruthy();
+      expect(getByText(/이미 가입된 번호예요/)).toBeTruthy();
     });
   });
 
@@ -187,7 +187,7 @@ describe('PortOneIdentityVerification (web)', () => {
       fireEvent.press(getByText('본인인증 시작'));
     });
     await waitFor(() => {
-      expect(getByText(/이미 가입된 본인인증 정보/)).toBeTruthy();
+      expect(getByText(/동일한 명의로 가입된 계정/)).toBeTruthy();
     });
   });
 
@@ -210,7 +210,7 @@ describe('PortOneIdentityVerification (web)', () => {
       fireEvent.press(getByText('본인인증 시작'));
     });
     await waitFor(() => {
-      expect(getByText(/휴대폰 번호가 없습니다/)).toBeTruthy();
+      expect(getByText(/휴대폰 번호를 받지 못했어요/)).toBeTruthy();
     });
   });
 
@@ -224,7 +224,7 @@ describe('PortOneIdentityVerification (web)', () => {
       fireEvent.press(getByText('본인인증 시작'));
     });
     await waitFor(() => {
-      expect(getByText(/성별 정보가 없습니다/)).toBeTruthy();
+      expect(getByText(/성별 정보가 누락되었어요/)).toBeTruthy();
     });
   });
 });

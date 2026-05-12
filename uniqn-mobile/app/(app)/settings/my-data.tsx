@@ -235,18 +235,14 @@ export default function MyDataScreen() {
           <DataRow label="수정일" value={formatDate(userData?.updatedAt)} />
         </Card>
 
-        {/* 본인인증 정보 */}
+        {/* 본인인증 정보 — B12: 기본 정보와 중복되는 이름/연락처 제거. 인증 상태 + 생년월일/성별만 */}
         <Card className="mb-4">
           <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-4">
             본인인증 정보
           </Text>
 
+          <DataRow label="본인인증" value={userData?.identityVerified ? '인증 완료' : '미인증'} />
           <DataRow label="전화번호 인증" value={userData?.phoneVerified ? '인증 완료' : '미인증'} />
-          <DataRow label="이름" value={userData?.name ?? null} />
-          <DataRow
-            label="연락처"
-            value={userData?.phone ? formatE164ToDisplay(userData.phone) : null}
-          />
           <DataRow
             label="생년월일"
             value={userData?.birthDate ? formatBirthDate(userData.birthDate) : null}
