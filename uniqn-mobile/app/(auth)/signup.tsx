@@ -14,7 +14,13 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SignupForm } from '@/components/auth';
 import { markCurrentAutoLoginSession } from '@/lib/autoLoginSession';
-import { signUp, completeSocialProfile, getCurrentUserAsync } from '@/services';
+import {
+  signUp,
+  completeSocialProfile,
+  getCurrentUserAsync,
+  callReverifyIdentity,
+  getUserProfile,
+} from '@/services';
 import { ChevronLeftIcon } from '@/components/icons';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -27,9 +33,12 @@ import { toStoreProfile } from '@/utils/profileConverter';
 import { extractUserMessage } from '@/errors';
 import type { SignUpFormData } from '@/schemas';
 
+type SignupMode = 'social' | 'reverify';
+
 export default function SignUpScreen() {
-  const { mode, redirect } = useLocalSearchParams<{ mode?: 'social'; redirect?: string }>();
+  const { mode, redirect } = useLocalSearchParams<{ mode?: SignupMode; redirect?: string }>();
   const isSocialMode = mode === 'social';
+  const isReverifyMode = mode === 'reverify';
   const postAuthRedirect = normalizePostAuthRedirect(redirect);
   const [isLoading, setIsLoading] = useState(false);
   const { addToast, clearAllToasts } = useToastStore();
@@ -138,11 +147,68 @@ export default function SignUpScreen() {
     [addToast, clearAllToasts, postAuthRedirect, setUser, setProfile]
   );
 
+  // 본인인증 재인증 핸들러 (mode=reverify) — 약관/계정 스킵, 본인인증 핵심 필드만 update
+  const handleReverify = useCallback(
+    async (data: SignUpFormData) => {
+      setIsLoading(true);
+      try {
+        const user = await getCurrentUserAsync();
+        if (!user) {
+          addToast({ type: 'error', message: '인증 정보가 없습니다. 다시 로그인해주세요.' });
+          router.replace(
+            postAuthRedirect
+              ? `/(auth)/login?redirect=${encodeURIComponent(postAuthRedirect)}`
+              : '/(auth)/login'
+          );
+          return;
+        }
+
+        if (!data.identityVerificationId) {
+          addToast({ type: 'error', message: '본인인증을 완료해주세요.' });
+          return;
+        }
+
+        await callReverifyIdentity(data.identityVerificationId);
+
+        // 업데이트된 프로필 동기화
+        const refreshedProfile = await getUserProfile(user.id);
+        if (refreshedProfile) {
+          setProfile(toStoreProfile(refreshedProfile));
+        }
+
+        logger.info('본인인증 재인증 완료', { userId: user.id });
+        clearAllToasts();
+        addToast({ type: 'success', message: '본인인증이 완료되었습니다.' });
+        router.replace(
+          getResolvedAuthenticatedRoute({
+            socialProvider: refreshedProfile?.socialProvider,
+            phoneVerified: refreshedProfile?.phoneVerified,
+            profileCompleted: refreshedProfile?.profileCompleted,
+            identityVerified: refreshedProfile?.identityVerified,
+            redirect: postAuthRedirect,
+          })
+        );
+      } catch (error) {
+        logger.error('본인인증 재인증 실패', error as Error);
+        addToast({ type: 'error', message: extractUserMessage(error) });
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [addToast, clearAllToasts, postAuthRedirect, setProfile]
+  );
+
   const handleBack = () => {
     router.back();
   };
 
-  const headerTitle = isSocialMode ? '프로필 등록' : '회원가입';
+  const headerTitle = isReverifyMode ? '본인인증' : isSocialMode ? '프로필 등록' : '회원가입';
+  const formMode = isReverifyMode ? 'reverify' : isSocialMode ? 'social' : 'default';
+  const handleSubmitForMode = isReverifyMode
+    ? handleReverify
+    : isSocialMode
+      ? handleSocialSignUp
+      : handleSignUp;
 
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-surface-dark">
@@ -158,11 +224,7 @@ export default function SignUpScreen() {
       </View>
 
       {/* 회원가입 폼 */}
-      <SignupForm
-        onSubmit={isSocialMode ? handleSocialSignUp : handleSignUp}
-        isLoading={isLoading}
-        mode={isSocialMode ? 'social' : 'default'}
-      />
+      <SignupForm onSubmit={handleSubmitForMode} isLoading={isLoading} mode={formMode} />
     </SafeAreaView>
   );
 }

@@ -26,6 +26,7 @@ export interface AdminUser {
   createdAt: Date;
   updatedAt: Date;
   isActive: boolean;
+  /** PortOne 본인인증 완료 여부 (`users.identity_verified` 기준; phone_verified 와 분리) */
   isVerified: boolean;
   bubbleScore?: {
     score: number;
@@ -109,6 +110,7 @@ export interface AdminUserFilters {
   search?: string;
   role?: UserRole | 'all';
   isActive?: boolean;
+  /** PortOne 본인인증 완료 사용자 필터 (identity_verified 컬럼) */
   isVerified?: boolean;
   sortBy?: AdminUserSortField;
   sortOrder?: 'asc' | 'desc';

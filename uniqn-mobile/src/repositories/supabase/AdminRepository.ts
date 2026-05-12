@@ -34,7 +34,7 @@ const TABLES = {
   REPORTS: 'reports',
 } as const;
 const USER_COLUMNS =
-  'id,name,email,role,phone,photo_url,photo_url_blurhash,created_at,updated_at,is_active,phone_verified,bubble_score' as const;
+  'id,name,email,role,phone,photo_url,photo_url_blurhash,created_at,updated_at,is_active,phone_verified,identity_verified,bubble_score' as const;
 
 // ============================================================================
 // Helpers
@@ -65,7 +65,8 @@ function rowToAdminUser(row: Record<string, unknown>): AdminUser {
     createdAt: row.created_at ? new Date(row.created_at as string) : new Date(),
     updatedAt: row.updated_at ? new Date(row.updated_at as string) : new Date(),
     isActive: row.is_active !== false,
-    isVerified: row.phone_verified === true,
+    // 본인인증 = identity_verified (PortOne 본인인증 완료) ≠ phone_verified
+    isVerified: row.identity_verified === true,
     bubbleScore: rawBubbleScore
       ? {
           score: rawBubbleScore.score,
@@ -215,7 +216,7 @@ export class SupabaseAdminRepository implements IAdminRepository {
         query = query.eq('is_active', filters.isActive);
       }
       if (filters.isVerified !== undefined) {
-        query = query.eq('phone_verified', filters.isVerified);
+        query = query.eq('identity_verified', filters.isVerified);
       }
 
       const sortField = filters.sortBy ?? 'created_at';

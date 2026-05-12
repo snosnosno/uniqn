@@ -56,9 +56,10 @@ Deno.serve(async (req: Request) => {
       mode,
     } = body;
 
-    if (!mode || !['signup', 'social'].includes(mode))
+    if (!mode || !['signup', 'social', 'reverify'].includes(mode))
       return jsonResponse({ error: 'mode가 필요합니다' }, 400);
-    if (!termsAgreed || !privacyAgreed)
+    // reverify 는 기존 동의 유지 — 약관 재확인 스킵
+    if (mode !== 'reverify' && (!termsAgreed || !privacyAgreed))
       return jsonResponse({ error: '약관 동의가 필요합니다' }, 400);
     if (
       !identityVerificationId ||
@@ -179,10 +180,19 @@ Deno.serve(async (req: Request) => {
     // 기존 프로필 확인 (handle_new_user 트리거로 status='active' 자동 설정되므로 profile_completed로 판단)
     const { data: existingUser } = await supabase
       .from('users')
-      .select('id, profile_completed')
+      .select('id, profile_completed, identity_verified')
       .eq('id', user.id)
       .single();
-    if (existingUser?.profile_completed === true) return idpError('PROFILE_ALREADY_COMPLETED');
+    // reverify: 이미 완성된 프로필이라도 본인인증만 갱신 허용
+    if (mode !== 'reverify' && existingUser?.profile_completed === true)
+      return idpError('PROFILE_ALREADY_COMPLETED');
+    // reverify 진입 audit (identity_verified=false 또는 null 에서 재인증)
+    if (mode === 'reverify') {
+      console.info('[reverify] entered', {
+        uid: user.id,
+        prevIdentityVerified: existingUser?.identity_verified ?? null,
+      });
+    }
 
     // P1 — verification_id 멱등성 검사 (모든 validation 통과 후 처음 1회만 처리).
     // PRIMARY KEY 위반(23505)이면 이미 다른 호출에서 처리 완료 → 차단.
@@ -207,14 +217,13 @@ Deno.serve(async (req: Request) => {
     const now = new Date().toISOString();
     const trimmedNickname = nickname?.trim() || null;
 
-    const profileData: Record<string, unknown> = {
-      id: user.id,
+    // reverify: 본인인증 핵심 필드만 갱신 (nickname/region/career/note/email/role 등 미변경)
+    // signup/social: 기존 동작 유지 — 전체 프로필 upsert
+    const identityFields = {
       name: verifiedName,
       birth_date: rawBirthDate,
       gender,
       phone: phoneE164,
-      role: 'staff',
-      status: 'active',
       phone_verified: true,
       identity_verified: true,
       identity_provider: 'portone_inicis',
@@ -230,20 +239,33 @@ Deno.serve(async (req: Request) => {
         phoneNumber: phoneE164,
         isForeigner: identityData.isForeigner ?? false,
       },
-      profile_completed: Boolean(trimmedNickname),
-      is_active: true,
       updated_at: now,
     };
-    if (trimmedNickname) profileData.nickname = trimmedNickname;
-    if (email) profileData.email = email;
-    if (region) profileData.region = region;
-    if (experienceYears !== undefined) profileData.experience_years = experienceYears;
-    if (career) profileData.career = career;
-    if (note) profileData.note = note;
 
-    const { error: upsertError } = await supabase
-      .from('users')
-      .upsert(profileData, { onConflict: 'id' });
+    const profileData: Record<string, unknown> =
+      mode === 'reverify'
+        ? identityFields
+        : {
+            id: user.id,
+            ...identityFields,
+            role: 'staff',
+            status: 'active',
+            profile_completed: Boolean(trimmedNickname),
+            is_active: true,
+          };
+    if (mode !== 'reverify') {
+      if (trimmedNickname) profileData.nickname = trimmedNickname;
+      if (email) profileData.email = email;
+      if (region) profileData.region = region;
+      if (experienceYears !== undefined) profileData.experience_years = experienceYears;
+      if (career) profileData.career = career;
+      if (note) profileData.note = note;
+    }
+
+    const { error: upsertError } =
+      mode === 'reverify'
+        ? await supabase.from('users').update(profileData).eq('id', user.id)
+        : await supabase.from('users').upsert(profileData, { onConflict: 'id' });
     if (upsertError) {
       // C6 fix — rollback DELETE 결과 명시적 처리. 실패 시 dangling row가
       // 다음 재시도를 영구 차단하므로 logger.error로 visible하게 알림.
@@ -264,31 +286,40 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: '프로필 저장에 실패했습니다' }, 500);
     }
 
-    await supabase.from('user_consents').upsert(
-      {
-        user_id: user.id,
-        version: TERMS_VERSION,
-        terms_of_service: true,
-        privacy_policy: true,
-        marketing: marketingAgreed ?? false,
-        agreed_at: now,
-      },
-      { onConflict: 'user_id' }
-    );
+    // reverify: 기존 동의 유지, user_consents 미변경. signup/social 만 동의 기록.
+    if (mode !== 'reverify') {
+      await supabase.from('user_consents').upsert(
+        {
+          user_id: user.id,
+          version: TERMS_VERSION,
+          terms_of_service: true,
+          privacy_policy: true,
+          marketing: marketingAgreed ?? false,
+          agreed_at: now,
+        },
+        { onConflict: 'user_id' }
+      );
+    }
 
+    // reverify: role/app_metadata 미변경 — phone 만 갱신
+    const authUpdatePayload =
+      mode === 'reverify'
+        ? { phone: phoneE164, user_metadata: { display_name: verifiedName } }
+        : {
+            app_metadata: { role: 'staff' },
+            user_metadata: { display_name: verifiedName },
+            phone: phoneE164,
+          };
     await supabase.auth.admin
-      .updateUserById(user.id, {
-        app_metadata: { role: 'staff' },
-        user_metadata: { display_name: verifiedName },
-        phone: phoneE164,
-      })
+      .updateUserById(user.id, authUpdatePayload)
       .catch((e) => console.warn('Auth metadata update failed:', e));
 
     return jsonResponse({
       success: true,
       uid: user.id,
       role: 'staff',
-      profileCompleted: Boolean(trimmedNickname),
+      profileCompleted:
+        mode === 'reverify' ? Boolean(existingUser?.profile_completed) : Boolean(trimmedNickname),
       identityVerified: true,
     });
   } catch (error) {

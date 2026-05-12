@@ -32,8 +32,12 @@ import type {
 interface SignupFormProps {
   onSubmit: (data: SignUpFormData) => Promise<void>;
   isLoading?: boolean;
-  /** 모드: default(일반 회원가입), social(소셜 로그인 후 프로필 완성) */
-  mode?: 'default' | 'social';
+  /**
+   * - `default`: 일반 회원가입 (약관 → 계정 → 본인인증)
+   * - `social`: 소셜 로그인 후 프로필 완성 (약관 → 본인인증)
+   * - `reverify`: 본인인증만 재진행 (identity_verified=false 회복용)
+   */
+  mode?: 'default' | 'social' | 'reverify';
 }
 
 /** 일반 회원가입 스텝 (3단계: 약관 → 계정 → 본인인증) */
@@ -49,6 +53,9 @@ const SOCIAL_SIGNUP_STEPS: StepInfo[] = [
   { label: '본인인증', shortLabel: '인증' },
 ];
 
+/** Reverify 모드 — 본인인증 1단계만 (약관 동의 기존 유지) */
+const REVERIFY_STEPS: StepInfo[] = [{ label: '본인인증', shortLabel: '인증' }];
+
 interface FormDataState {
   terms?: SignUpTermsData; // Step 1: 약관동의
   account?: SignUpAccountData; // Step 2: 계정정보 (소셜 모드에서 생략)
@@ -61,14 +68,16 @@ interface FormDataState {
 
 export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: SignupFormProps) {
   const isSocial = mode === 'social';
-  // 양쪽 모두 Step 1(약관동의)부터 시작
-  const [currentStep, setCurrentStep] = useState(1);
+  const isReverify = mode === 'reverify';
+  // reverify 는 Step 3(본인인증)부터 시작 — 약관/계정 스킵
+  const [currentStep, setCurrentStep] = useState(isReverify ? 3 : 1);
   const [formData, setFormData] = useState<FormDataState>({});
   const toast = useToast();
 
-  // 소셜 모드: Step 2(계정) 건너뛰므로 displayStep 조정 (1→1, 3→2)
-  const steps = isSocial ? SOCIAL_SIGNUP_STEPS : DEFAULT_SIGNUP_STEPS;
-  const displayStep = isSocial && currentStep >= 3 ? currentStep - 1 : currentStep;
+  // 소셜: Step 2(계정) 건너뛰므로 displayStep 1→1, 3→2
+  // reverify: 단일 스텝이므로 항상 1
+  const steps = isReverify ? REVERIFY_STEPS : isSocial ? SOCIAL_SIGNUP_STEPS : DEFAULT_SIGNUP_STEPS;
+  const displayStep = isReverify ? 1 : isSocial && currentStep >= 3 ? currentStep - 1 : currentStep;
 
   // ──────────────────────────────────────────────────────────────────────────
   // Step 1: 약관동의
@@ -104,6 +113,25 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
     async (data: SignUpIdentityData) => {
       const updatedFormData = { ...formData, identity: data };
       setFormData(updatedFormData);
+
+      // reverify: 약관/계정 검증 모두 스킵 — identity 만 onSubmit
+      if (isReverify) {
+        await onSubmit({
+          email: '',
+          password: '',
+          name: data.name,
+          birthDate: data.birthDate,
+          gender: data.gender,
+          phoneVerified: data.phoneVerified as true,
+          verifiedPhone: data.verifiedPhone,
+          identityVerificationId: data.identityVerificationId,
+          // 서버에서 무시되지만 schema 충족용
+          termsAgreed: true,
+          privacyAgreed: true,
+          marketingAgreed: false,
+        });
+        return;
+      }
 
       // 소셜 모드에서는 이메일 중복 체크 불필요 (계정정보 없음)
       if (!isSocial) {
@@ -157,10 +185,14 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
 
       await onSubmit(completeData);
     },
-    [formData, onSubmit, toast, isSocial]
+    [formData, onSubmit, toast, isSocial, isReverify]
   );
 
   const handleIdentityBack = useCallback(() => {
+    if (isReverify) {
+      // reverify: 돌아갈 이전 step 없음. 상위 화면 헤더의 뒤로가기 사용
+      return;
+    }
     if (isSocial) {
       // 소셜 모드: identity 데이터 보존 (phone link 상태 유지)
       setCurrentStep(1);
@@ -169,7 +201,7 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
 
     setFormData((prev) => ({ ...prev, identity: undefined }));
     setCurrentStep(2); // 계정정보로 이동
-  }, [isSocial]);
+  }, [isReverify, isSocial]);
 
   // ──────────────────────────────────────────────────────────────────────────
   // Render
@@ -201,7 +233,8 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
             onBack={handleIdentityBack}
             initialData={formData.identity}
             isLoading={isLoading}
-            submitLabel={isSocial ? undefined : '가입완료'}
+            submitLabel={isReverify ? '본인인증 완료' : isSocial ? '프로필 등록' : '가입완료'}
+            hideBack={isReverify}
           />
         );
       default:

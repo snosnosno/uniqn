@@ -113,7 +113,8 @@ function ApplicationCard({ app }: { app: EmployerApplication }) {
   const applicant = app.applicant;
   const primaryName = applicant?.nickname || applicant?.name || `신청자 ${app.userId.slice(0, 8)}`;
   const subLine = applicant?.nickname && applicant?.name ? applicant.name : applicant?.email;
-  const phoneUnverified = applicant !== null && applicant.phoneVerified === false;
+  // 본인인증 미완료 = identity_verified 컬럼이 false (phone_verified 와는 의미 분리)
+  const identityNotVerified = applicant !== null && applicant.identityVerified === false;
 
   return (
     <Pressable
@@ -136,7 +137,7 @@ function ApplicationCard({ app }: { app: EmployerApplication }) {
                   </Text>
                 </View>
               ) : null}
-              {phoneUnverified ? (
+              {identityNotVerified ? (
                 <View className="rounded-sm bg-error-50 px-2.5 py-1 dark:bg-error-900/30">
                   <Text className="text-xs font-sans-medium text-error-700 dark:text-error-300">
                     본인인증 미완료

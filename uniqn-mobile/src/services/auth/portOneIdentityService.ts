@@ -115,11 +115,20 @@ export interface VerifyAndSavePortOneProfilePayload {
   experienceYears?: number;
   career?: string;
   note?: string;
+  /** reverify 모드에서는 무시 (기존 동의 유지) — true 전송 권장 */
   termsAgreed: boolean;
+  /** reverify 모드에서는 무시 (기존 동의 유지) — true 전송 권장 */
   privacyAgreed: boolean;
+  /** reverify 모드에서는 무시 (기존 동의 유지) */
   marketingAgreed: boolean;
   email?: string;
-  mode: 'signup' | 'social';
+  /**
+   * - `signup`: 일반 회원가입 (auth.users 신규 + 프로필 upsert)
+   * - `social`: 소셜 로그인(Apple) 후 프로필 완성
+   * - `reverify`: 기존 사용자가 identity_verified=false 상태에서 재인증
+   *               (본인인증 핵심 필드만 update; 약관/프로필/role 미변경)
+   */
+  mode: 'signup' | 'social' | 'reverify';
 }
 
 export interface VerifyAndSavePortOneProfileResult {
@@ -360,6 +369,26 @@ export async function callVerifyPortOneIdentity(
     await new Promise((resolve) => setTimeout(resolve, 2000));
     return await invoke();
   }
+}
+
+/**
+ * 본인인증 재인증 (identity_verified=false → true).
+ *
+ * `callVerifyAndSavePortOneProfile({ mode: 'reverify' })` 단축 호출. 약관 필드는
+ * 서버에서 무시되지만 schema 충족 위해 true 채움.
+ */
+export async function callReverifyIdentity(
+  identityVerificationId: string,
+  expectedBindingToken?: string
+): Promise<VerifyAndSavePortOneProfileResult> {
+  return callVerifyAndSavePortOneProfile({
+    identityVerificationId,
+    expectedBindingToken,
+    termsAgreed: true,
+    privacyAgreed: true,
+    marketingAgreed: false,
+    mode: 'reverify',
+  });
 }
 
 export async function callVerifyAndSavePortOneProfile(

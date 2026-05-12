@@ -164,7 +164,8 @@ export default function AdminEmployerApplicationDetailPage() {
   const isSeeded = snapshot._seeded === true;
   const applicant = app.applicant;
   const reviewer = app.reviewer;
-  const phoneVerified = applicant?.phoneVerified === true;
+  // 본인인증 완료 기준 = identity_verified (phone_verified 가 아님)
+  const identityVerified = applicant?.identityVerified === true;
   const primaryName = applicant?.nickname || applicant?.name || `신청자 ${app.userId.slice(0, 8)}`;
   const reviewerName = reviewer?.nickname || reviewer?.name;
 
@@ -189,7 +190,7 @@ export default function AdminEmployerApplicationDetailPage() {
             <View className={`rounded-sm px-2.5 py-1 ${getStatusClassName(app.status)}`}>
               <Text className="text-xs font-sans-medium">{getStatusLabel(app.status)}</Text>
             </View>
-            {!phoneVerified && applicant ? (
+            {!identityVerified && applicant ? (
               <View className="rounded-sm bg-error-50 px-2.5 py-1 dark:bg-error-900/30">
                 <Text className="text-xs font-sans-medium text-error-700 dark:text-error-300">
                   본인인증 미완료
@@ -243,7 +244,7 @@ export default function AdminEmployerApplicationDetailPage() {
         {applicant ? (
           <Card className="mb-4">
             <View className="mb-3 flex-row items-center">
-              {phoneVerified ? (
+              {identityVerified ? (
                 <CheckCircleIcon size={20} color={STATUS_COLORS.success} />
               ) : (
                 <ExclamationCircleIcon size={20} color={STATUS_COLORS.error} />
@@ -286,19 +287,19 @@ export default function AdminEmployerApplicationDetailPage() {
 
             <View
               className={`mt-2 rounded-md px-3 py-2 ${
-                phoneVerified
+                identityVerified
                   ? 'bg-success-50 dark:bg-success-900/20'
                   : 'bg-error-50 dark:bg-error-900/20'
               }`}
             >
               <Text
                 className={`text-sm font-sans ${
-                  phoneVerified
+                  identityVerified
                     ? 'text-success-700 dark:text-success-400'
                     : 'text-error-700 dark:text-error-400'
                 }`}
               >
-                {phoneVerified
+                {identityVerified
                   ? '본인인증이 완료된 신청자입니다'
                   : '본인인증이 완료되지 않았습니다'}
               </Text>

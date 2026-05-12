@@ -52,6 +52,7 @@ export {
 } from './authorizationService';
 export {
   buildPortOneInicisIdentityRequest,
+  callReverifyIdentity,
   callVerifyAndSavePortOneProfile,
   callVerifyPortOneIdentity,
   clearPendingPortOneIdentityRequest,

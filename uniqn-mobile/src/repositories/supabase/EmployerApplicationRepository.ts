@@ -40,6 +40,8 @@ export interface EmployerApplicationApplicant {
   email: string | null;
   phone: string | null;
   phoneVerified: boolean;
+  /** PortOne KG이니시스 본인인증 완료 여부 (phoneVerified 와 별개) */
+  identityVerified: boolean;
   photoURL: string | null;
 }
 
@@ -101,7 +103,7 @@ const TABLE_COLUMNS =
   'id,user_id,status,submitted_at,reviewed_at,reviewed_by,rejection_reason,rejection_category,agreements_snapshot,supersedes_id,created_at' as const;
 
 const APPLICANT_JOIN =
-  'applicant:users!employer_applications_user_id_fkey(name,nickname,email,phone,phone_verified,photo_url)' as const;
+  'applicant:users!employer_applications_user_id_fkey(name,nickname,email,phone,phone_verified,identity_verified,photo_url)' as const;
 
 const REVIEWER_JOIN =
   'reviewer:users!employer_applications_reviewed_by_fkey(name,nickname)' as const;
@@ -162,6 +164,7 @@ function rowToApplicant(
     email: (raw.email as string | null) ?? null,
     phone: (raw.phone as string | null) ?? null,
     phoneVerified: Boolean(raw.phone_verified),
+    identityVerified: Boolean(raw.identity_verified),
     photoURL: (raw.photo_url as string | null) ?? null,
   };
 }

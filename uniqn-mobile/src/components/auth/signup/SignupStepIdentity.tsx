@@ -24,6 +24,8 @@ interface SignupStepIdentityProps {
   initialData?: Partial<SignUpIdentityData>;
   isLoading?: boolean;
   submitLabel?: string;
+  /** reverify 등 이전 step 이 없는 경우 "이전" 버튼 숨김 */
+  hideBack?: boolean;
 }
 
 function createInitialPortOneIdentity(
@@ -56,6 +58,7 @@ export function SignupStepIdentity({
   initialData,
   isLoading = false,
   submitLabel = '다음',
+  hideBack = false,
 }: SignupStepIdentityProps) {
   const [portOneIdentity, setPortOneIdentity] = useState<VerifiedPortOneIdentity | null>(() =>
     createInitialPortOneIdentity(initialData)
@@ -128,9 +131,11 @@ export function SignupStepIdentity({
           {submitLabel}
         </Button>
 
-        <Button onPress={onBack} variant="ghost" disabled={isLoading} fullWidth>
-          이전
-        </Button>
+        {!hideBack && (
+          <Button onPress={onBack} variant="ghost" disabled={isLoading} fullWidth>
+            이전
+          </Button>
+        )}
       </View>
     </View>
   );

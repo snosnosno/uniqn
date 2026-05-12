@@ -119,8 +119,8 @@ export default function EmployerRegisterScreen() {
   // 로딩 상태
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 본인인증 여부
-  const isVerified = profile?.phoneVerified === true;
+  // 본인인증 여부 — identity_verified 컬럼이 본인인증 진위 기준 (phone_verified 와는 의미 분리)
+  const isVerified = profile?.identityVerified === true;
 
   // 모든 동의 완료 여부
   const canSubmit = isVerified && agreeToTerms && agreeToLiability;
@@ -178,12 +178,10 @@ export default function EmployerRegisterScreen() {
     }
   }, [canSubmit, isSubmitting, toast]);
 
-  // 본인인증 안내 (현재 별도 화면 없음 - 프로필에서 안내)
-  // 본인인증 전용 화면 구현 시 경로 변경 필요
+  // 본인인증 진행 — signup?mode=reverify 단일 진입점
   const handleGoToVerification = useCallback(() => {
-    toast.info('회원가입 시 본인인증이 완료되어야 합니다');
-    router.push('/(app)/settings/profile');
-  }, [toast]);
+    router.push('/(auth)/signup?mode=reverify');
+  }, []);
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
