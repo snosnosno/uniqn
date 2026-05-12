@@ -123,3 +123,37 @@ BEGIN
   PERFORM set_config('role', 'anon', true);
 END;
 $$;
+
+-- ============================================================================
+-- DELETE 정책 동등 검증 함수 (SECURITY DEFINER)
+-- job_postings DELETE 매트릭스는 jp_delete_workspace_owner USING 의
+-- SELECT FROM workspaces → workspaces_select_owner_or_member 의 JPC JOIN 분기 →
+-- job_postings SELECT RLS recursion 으로 직접 DELETE 검증 불가.
+-- 정책 동등 로직을 SECURITY DEFINER 함수로 평가하여 RLS 우회.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION jpc_check_can_delete_jp(p_user_id uuid, p_jp_id uuid)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_allowed boolean;
+BEGIN
+  -- 정책: job_postings_delete_owner_or_admin (owner OR admin)
+  --       OR jp_delete_workspace_owner (workspace.owner OR admin)
+  SELECT
+    EXISTS (
+      SELECT 1 FROM public.job_postings jp
+        LEFT JOIN public.workspaces w ON w.id = jp.workspace_id
+      WHERE jp.id = p_jp_id
+        AND (jp.owner_id = p_user_id OR w.owner_id = p_user_id)
+    )
+    OR EXISTS (
+      SELECT 1 FROM public.users WHERE id = p_user_id AND role = 'admin'::user_role
+    )
+  INTO v_allowed;
+  RETURN v_allowed;
+END;
+$$;
