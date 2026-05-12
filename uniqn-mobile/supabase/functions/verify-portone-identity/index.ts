@@ -2,7 +2,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import {
   corsHeaders,
-  createDeterministicHash,
+  createCiHash,
   idpError,
   isVerificationRecent,
   jsonResponse,
@@ -38,11 +38,11 @@ Deno.serve(async (req: Request) => {
     // C1 fix — expectedBindingToken은 mandatory. anon caller가 leaked
     // verificationId만으로 신원 데이터 + duplicate flags를 harvest하는 PII
     // oracle 경로를 차단한다. legacy 호환 경로 제거.
+    // A10: 정확 64자 hex (32 bytes random) 만 허용 — generateBindingToken 출력 형식
     if (
       !expectedBindingToken ||
       typeof expectedBindingToken !== 'string' ||
-      expectedBindingToken.length === 0 ||
-      expectedBindingToken.length > 200
+      !/^[0-9a-f]{64}$/.test(expectedBindingToken)
     ) {
       return idpError('IV_BINDING_MISMATCH');
     }
@@ -92,7 +92,8 @@ Deno.serve(async (req: Request) => {
     let ciHash: string | undefined;
     const ci = identityData.ci;
     if (ci) {
-      ciHash = await createDeterministicHash(ci, portoneSecret);
+      // A6: IDENTITY_HASH_PEPPER 사용 — PortOne secret 분리
+      ciHash = await createCiHash(ci, Deno.env.get('IDENTITY_HASH_PEPPER'));
     }
 
     const supabase = createClient(

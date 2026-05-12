@@ -4,6 +4,7 @@ import { STATUS_COLORS } from '@/constants/colors';
 import { requestIdentityVerification } from '@portone/browser-sdk/v2';
 import { CheckCircleIcon, ShieldCheckIcon, XCircleIcon } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
+import { useIsMounted } from '@/hooks/useIsMounted';
 import { extractUserMessage } from '@/errors';
 import {
   type PortOneInicisIdentityRequest,
@@ -41,6 +42,7 @@ export function PortOneIdentityVerification({
   customerFullName,
   customerPhoneNumber,
 }: PortOneIdentityVerificationProps) {
+  const isMountedRef = useIsMounted();
   const [verifiedIdentity, setVerifiedIdentity] = useState<VerifiedPortOneIdentity | null>(
     initialIdentity
   );
@@ -54,6 +56,11 @@ export function PortOneIdentityVerification({
   const handleVerificationFailure = useCallback(
     (error: unknown, fallbackMessage?: string) => {
       // cleanup은 startVerification의 finally 블록에서 담당
+      // A11: unmount 후 setState 차단 (onError 콜백은 caller 가 mount/unmount 관리)
+      if (!isMountedRef.current) {
+        onError?.(error instanceof Error ? error : new Error(fallbackMessage ?? 'unmounted'));
+        return;
+      }
       const resolvedMessage =
         fallbackMessage ??
         (error instanceof Error ? error.message : extractUserMessage(error)) ??
@@ -69,7 +76,7 @@ export function PortOneIdentityVerification({
       });
       onError?.(normalizedError);
     },
-    [onError]
+    [isMountedRef, onError]
   );
 
   const startVerification = useCallback(async () => {
@@ -145,15 +152,24 @@ export function PortOneIdentityVerification({
       // C4 — SecureStore 저장 (async, 웹은 sessionStorage)
       await savePortOneIdentityBindingToken(bindingToken);
 
+      // A11: 비동기 await 후 unmount 확인
+      if (!isMountedRef.current) return;
       setVerifiedIdentity(verification.identity);
       onVerified(verification.identity);
     } catch (error) {
       handleVerificationFailure(error);
     } finally {
       clearPendingPortOneIdentityRequest();
-      setIsProcessing(false);
+      if (isMountedRef.current) setIsProcessing(false);
     }
-  }, [customerId, customerFullName, customerPhoneNumber, handleVerificationFailure, onVerified]);
+  }, [
+    customerId,
+    customerFullName,
+    customerPhoneNumber,
+    handleVerificationFailure,
+    isMountedRef,
+    onVerified,
+  ]);
 
   return (
     <View className="w-full">

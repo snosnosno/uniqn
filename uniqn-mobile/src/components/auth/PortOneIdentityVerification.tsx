@@ -5,6 +5,7 @@ import { IdentityVerification } from '@portone/react-native-sdk';
 import { CheckCircleIcon, ShieldCheckIcon, XCircleIcon } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import { useIsMounted } from '@/hooks/useIsMounted';
 import { extractUserMessage } from '@/errors';
 import {
   type PortOneInicisIdentityRequest,
@@ -48,6 +49,7 @@ export function PortOneIdentityVerification({
   customerPhoneNumber,
 }: PortOneIdentityVerificationProps) {
   const { height } = useWindowDimensions();
+  const isMountedRef = useIsMounted();
   const [modalVisible, setModalVisible] = useState(false);
   const [request, setRequest] = useState<PortOneInicisIdentityRequest | null>(null);
   const [bindingToken, setBindingToken] = useState<string | null>(null);
@@ -64,6 +66,8 @@ export function PortOneIdentityVerification({
   const handleVerificationFailure = useCallback(
     (error: unknown, fallbackMessage?: string) => {
       clearPendingPortOneIdentityRequest();
+      // A11: unmount 이후 setState 호출 차단 — SDK 콜백이 뒤늦게 도달해도 안전
+      if (!isMountedRef.current) return;
       setModalVisible(false);
       setIsProcessing(false);
 
@@ -82,13 +86,15 @@ export function PortOneIdentityVerification({
       });
       onError?.(normalizedError);
     },
-    [onError]
+    [isMountedRef, onError]
   );
 
   const handleVerificationComplete = useCallback(
     async (result: PortOneIdentityVerificationResult) => {
       savePortOneIdentityVerificationResult(result);
       clearPendingPortOneIdentityRequest();
+      // A11: 콜백 도달 시 컴포넌트가 이미 unmount 되었을 수 있음 — storage 정리만 하고 종료
+      if (!isMountedRef.current) return;
       setModalVisible(false);
 
       if (result.code || result.message) {
@@ -130,15 +136,17 @@ export function PortOneIdentityVerification({
           await savePortOneIdentityBindingToken(bindingToken);
         }
 
+        // A11: 비동기 await 후 다시 mount 상태 확인 (조회 도중 unmount 가능)
+        if (!isMountedRef.current) return;
         setVerifiedIdentity(verification.identity);
         onVerified(verification.identity);
       } catch (error) {
         handleVerificationFailure(error);
       } finally {
-        setIsProcessing(false);
+        if (isMountedRef.current) setIsProcessing(false);
       }
     },
-    [bindingToken, handleVerificationFailure, onVerified]
+    [bindingToken, handleVerificationFailure, isMountedRef, onVerified]
   );
 
   const handleSdkError = useCallback(

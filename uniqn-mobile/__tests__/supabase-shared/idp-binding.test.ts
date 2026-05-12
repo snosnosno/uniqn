@@ -6,6 +6,7 @@
  * 사용하도록 작성되어 Node.js 19+ jest 환경에서도 동일하게 import/실행 가능.
  */
 import {
+  createCiHash,
   createDeterministicHash,
   idpError,
   isVerificationRecent,
@@ -75,6 +76,30 @@ describe('createDeterministicHash (HMAC-SHA256 회귀)', () => {
     expect(a).toBe(b);
     expect(a).not.toBe(c);
     expect(a).toMatch(/^[0-9a-f]{64}$/);
+  });
+});
+
+describe('createCiHash (A6 — IDENTITY_HASH_PEPPER 분리)', () => {
+  it('pepper 가 전달되면 deterministic 64자 hex 반환', async () => {
+    const pepper = 'a'.repeat(64); // 32 bytes hex
+    const a = await createCiHash('user-ci-12345', pepper);
+    const b = await createCiHash('user-ci-12345', pepper);
+    expect(a).toBe(b);
+    expect(a).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('pepper 가 undefined 이면 throw (즉시 cutover)', async () => {
+    await expect(createCiHash('user-ci-12345', undefined)).rejects.toThrow(/IDENTITY_HASH_PEPPER/);
+  });
+
+  it('pepper 길이가 32자 미만이면 throw', async () => {
+    await expect(createCiHash('user-ci-12345', 'short')).rejects.toThrow(/IDENTITY_HASH_PEPPER/);
+  });
+
+  it('동일 ci + 다른 pepper → 다른 hash', async () => {
+    const a = await createCiHash('user-ci-12345', 'a'.repeat(64));
+    const b = await createCiHash('user-ci-12345', 'b'.repeat(64));
+    expect(a).not.toBe(b);
   });
 });
 

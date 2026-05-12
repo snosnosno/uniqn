@@ -28,6 +28,14 @@ export const IDP_ERROR_CODES = {
   PORTONE_INCOMPLETE: { status: 400, message: '본인인증 데이터가 불완전합니다' },
   PORTONE_AGE_RESTRICTED: { status: 400, message: '14세 이상만 가입할 수 있습니다' },
   PROFILE_ALREADY_COMPLETED: { status: 409, message: '이미 프로필이 완료된 계정입니다' },
+  AUTH_METADATA_UPDATE_FAILED: {
+    status: 500,
+    message: '인증 정보 동기화에 실패했습니다. 잠시 후 다시 시도해주세요.',
+  },
+  IDEMPOTENCY_ROLLBACK_FAILED: {
+    status: 500,
+    message: '본인인증 처리 중 일시적 오류가 발생했습니다. 고객센터에 문의해주세요.',
+  },
 } as const;
 
 export type IdpErrorCode = keyof typeof IDP_ERROR_CODES;

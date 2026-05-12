@@ -2,7 +2,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import {
   corsHeaders,
-  createDeterministicHash,
+  createCiHash,
   idpError,
   isVerificationRecent,
   jsonResponse,
@@ -70,11 +70,11 @@ Deno.serve(async (req: Request) => {
     }
     // C1 fix — expectedBindingToken mandatory. AUTH layer 위에 추가 caller
     // identity layer로 token 일치까지 강제 (defense in depth).
+    // A10: 정확 64자 hex 만 허용 (generateBindingToken: 32 bytes → hex)
     if (
       !expectedBindingToken ||
       typeof expectedBindingToken !== 'string' ||
-      expectedBindingToken.length === 0 ||
-      expectedBindingToken.length > 200
+      !/^[0-9a-f]{64}$/.test(expectedBindingToken)
     ) {
       return idpError('IV_BINDING_MISMATCH');
     }
@@ -142,7 +142,8 @@ Deno.serve(async (req: Request) => {
     const phoneE164 = toE164(phone);
     let ciHash: string | undefined;
     if (identityData.ci) {
-      ciHash = await createDeterministicHash(identityData.ci, portoneSecret);
+      // A6: IDENTITY_HASH_PEPPER 사용 — PortOne secret 분리
+      ciHash = await createCiHash(identityData.ci, Deno.env.get('IDENTITY_HASH_PEPPER'));
     }
 
     const supabase = createClient(
@@ -274,15 +275,16 @@ Deno.serve(async (req: Request) => {
         .delete()
         .eq('verification_id', identityVerificationId);
       if (rollbackError) {
+        // A7: dangling row 발생 — 사용자에게도 명시 에러 코드 반환해 고객센터 안내 가능
         console.error('[CRITICAL] idempotency rollback failed — dangling row may block retry', {
           uid: user.id,
           verificationId: identityVerificationId,
           rollbackError,
           upsertError,
         });
-      } else {
-        console.error('Profile upsert failed, idempotency rolled back:', upsertError);
+        return idpError('IDEMPOTENCY_ROLLBACK_FAILED');
       }
+      console.error('Profile upsert failed, idempotency rolled back:', upsertError);
       return jsonResponse({ error: '프로필 저장에 실패했습니다' }, 500);
     }
 
@@ -310,9 +312,22 @@ Deno.serve(async (req: Request) => {
             user_metadata: { display_name: verifiedName },
             phone: phoneE164,
           };
-    await supabase.auth.admin
-      .updateUserById(user.id, authUpdatePayload)
-      .catch((e) => console.warn('Auth metadata update failed:', e));
+    // A5: 실패 시 명시 에러 — RLS/role 불일치로 후속 요청 차단되는 silent drift 방지.
+    // 멱등성 row 는 이미 INSERT 되었지만 profile upsert 도 이미 성공했으므로
+    // 다음 사용자 요청은 정상 동작 (auth.users.phone 만 drift). 그러나 app_metadata.role
+    // 동기화 실패 시 JWT 의 role 클레임이 'staff' 가 아니어서 RLS 위반 가능 → 즉시 알림.
+    const { error: authUpdateError } = await supabase.auth.admin.updateUserById(
+      user.id,
+      authUpdatePayload
+    );
+    if (authUpdateError) {
+      console.error('[CRITICAL] auth.admin.updateUserById failed', {
+        uid: user.id,
+        mode,
+        error: authUpdateError.message,
+      });
+      return idpError('AUTH_METADATA_UPDATE_FAILED');
+    }
 
     return jsonResponse({
       success: true,

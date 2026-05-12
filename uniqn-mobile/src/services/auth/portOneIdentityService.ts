@@ -13,6 +13,19 @@ import { generateUUID } from '@/utils/generateId';
  */
 const BINDING_TOKEN_SECURE_KEY = 'portOneBindingToken';
 
+/** A10: bindingToken 은 32바이트 random hex (64자). 서버도 동일 정규식으로 검증. */
+const BINDING_TOKEN_PATTERN = /^[0-9a-f]{64}$/;
+
+function assertValidBindingToken(token: string | undefined, context: string): void {
+  if (token === undefined) return; // optional path 에서는 통과
+  if (!BINDING_TOKEN_PATTERN.test(token)) {
+    throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+      userMessage: '본인인증 토큰 형식이 올바르지 않습니다. 다시 시도해주세요.',
+      metadata: { context },
+    });
+  }
+}
+
 export type PortOneInicisDirectAgency =
   | 'PAYCO'
   | 'PASS'
@@ -346,6 +359,7 @@ export async function clearPortOneIdentityBindingToken(): Promise<void> {
 export async function callVerifyPortOneIdentity(
   payload: VerifyPortOneIdentityPayload
 ): Promise<VerifyPortOneIdentityResult> {
+  assertValidBindingToken(payload.expectedBindingToken, 'callVerifyPortOneIdentity');
   const invoke = async () => {
     const { data, error } = await invokeEdgeFunction<VerifyPortOneIdentityResult>(
       'verify-portone-identity',
@@ -405,6 +419,7 @@ export async function callVerifyAndSavePortOneProfile(
     ...payload,
     expectedBindingToken: payload.expectedBindingToken ?? tokenFromStorage ?? undefined,
   };
+  assertValidBindingToken(resolvedPayload.expectedBindingToken, 'callVerifyAndSavePortOneProfile');
   const invoke = async () => {
     const { data, error } = await invokeEdgeFunction<VerifyAndSavePortOneProfileResult>(
       'verify-and-save-portone-profile',

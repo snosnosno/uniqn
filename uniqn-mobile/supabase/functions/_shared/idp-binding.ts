@@ -117,3 +117,21 @@ export async function createDeterministicHash(value: string, secret: string): Pr
   const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(value));
   return bytesToHex(new Uint8Array(signature));
 }
+
+/**
+ * A6: PortOne CI 해시 전용. pepper(IDENTITY_HASH_PEPPER) 를 HMAC key 로 사용.
+ *
+ * 기존 구현이 portoneSecret 을 그대로 HMAC key 로 사용해서 PortOne API 시크릿
+ * 회전 시 모든 기존 hash 가 무효화되어 중복 검사가 깨지는 문제(A6) 해결.
+ * pepper 는 PortOne 과 분리 회전 가능한 32바이트 random hex.
+ *
+ * 즉시 cutover 정책 — pepper 미설정·길이 부족 시 throw. Deploy 전 secret 등록 필수.
+ * caller 가 `Deno.env.get('IDENTITY_HASH_PEPPER')` 로 읽어서 전달 — pure 함수 유지로
+ * 단위 테스트 / Edge Function / 향후 다른 환경 호환.
+ */
+export async function createCiHash(ci: string, pepper: string | undefined): Promise<string> {
+  if (!pepper || pepper.length < 32) {
+    throw new Error('IDENTITY_HASH_PEPPER env not configured (min 32 chars)');
+  }
+  return createDeterministicHash(ci, pepper);
+}
