@@ -15,6 +15,7 @@
     "quality": "node scripts/check-css-vars-sync.js && npm run type-check && npm run lint && npm run format:check",
     "test": "jest",
     "test:coverage": "jest --coverage",
+    "test:db": "supabase test db",
     "prepare": "node ../scripts/setup-git-hooks.js",
     "build:web": "expo export -p web",
     "build:android": "expo prebuild --platform android",

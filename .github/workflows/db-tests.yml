@@ -1,0 +1,47 @@
+name: DB Tests (pg_prove)
+
+on:
+  pull_request:
+    branches: [main, master, develop]
+    paths:
+      - 'uniqn-mobile/supabase/**'
+      - '.github/workflows/db-tests.yml'
+  push:
+    branches: [main, master, develop]
+    paths:
+      - 'uniqn-mobile/supabase/**'
+      - '.github/workflows/db-tests.yml'
+
+defaults:
+  run:
+    working-directory: uniqn-mobile
+
+jobs:
+  db-tests:
+    name: DB Tests (pg_prove)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Supabase
+        run: supabase start
+
+      - name: Register pgTAP helpers
+        run: |
+          docker exec -i supabase_db_uniqn psql -U postgres -d postgres \
+            -f - < supabase/tests/jpc_helpers.sql
+
+      - name: Run pg_prove tests
+        run: supabase test db
+
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup || true
