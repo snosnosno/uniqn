@@ -63,7 +63,8 @@ export default defineConfig({
         storageState: './e2e/fixtures/storage-states/staff.json',
       },
       dependencies: ['setup'],
-      testIgnore: /.*(auth-login|auth-signup|auth-forgot|public|rbac|employer|admin).*\.spec\.ts/,
+      testIgnore:
+        /.*(auth-login|auth-signup|auth-forgot|public|rbac|employer|admin|collaborator).*\.spec\.ts/,
     },
     {
       name: 'chromium-employer',
@@ -82,6 +83,16 @@ export default defineConfig({
       },
       dependencies: ['setup'],
       testMatch: /.*admin.*\.spec\.ts/,
+    },
+    {
+      name: 'chromium-collaborator',
+      use: {
+        ...iPhone14Viewport,
+        storageState: './e2e/fixtures/storage-states/collaborator.json',
+      },
+      dependencies: ['setup'],
+      // PR #88 follow-up: collaborator 페르소나 — "공유받은 공고" + 자가 나가기
+      testMatch: /.*collaborator-(shared|self).*\.spec\.ts/,
     },
     {
       name: 'chromium-unauthenticated',

@@ -12,7 +12,7 @@ export interface TestAccount {
   readonly phoneNumber: string;
 }
 
-type TestAccountKey = 'staff' | 'employer' | 'admin';
+type TestAccountKey = 'staff' | 'employer' | 'admin' | 'collaborator';
 
 export const TEST_ACCOUNTS: Readonly<Record<TestAccountKey, TestAccount>> = {
   staff: {
@@ -38,5 +38,14 @@ export const TEST_ACCOUNTS: Readonly<Record<TestAccountKey, TestAccount>> = {
     displayName: 'QA관리자',
     role: 'admin',
     phoneNumber: '+82105555555',
+  },
+  // PR #88 follow-up: 공고별 협업자 — qa-employer 의 공고에 추가되어 "공유받은 공고" 섹션 검증용
+  collaborator: {
+    uid: 'c1a2b3c4-d5e6-4f7a-8b9c-d0e1f2a3b4c5',
+    email: 'qa-collaborator@uniqn.test',
+    password: 'TestPass1!',
+    displayName: 'QA협업자',
+    role: 'employer',
+    phoneNumber: '+82107777777',
   },
 } as const;
