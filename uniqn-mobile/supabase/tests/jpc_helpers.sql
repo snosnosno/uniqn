@@ -157,3 +157,33 @@ BEGIN
   RETURN v_allowed;
 END;
 $$;
+
+-- ============================================================================
+-- 추가 job_posting 시드 (SECURITY DEFINER — RLS 우회)
+-- 메모리: pitfall_set_config_role_not_role_switch — set_config('role', 'service_role')
+-- 은 GUC 만 셋, 실제 role switch 아님. 별도 jp 가 필요한 RLS 매트릭스 케이스
+-- (예: applications INSERT 의 outsider 본인 명의 jp2 INSERT) 는 이 함수 경유.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION jpc_seed_extra_jp(p_ws_id uuid, p_owner_id uuid)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_jp2 uuid := gen_random_uuid();
+  v_work_date date := current_date + 15;
+BEGIN
+  INSERT INTO public.job_postings (
+    id, owner_id, owner_name, workspace_id, title, status, posting_type,
+    work_date, work_dates, total_positions, filled_positions, view_count,
+    schema_version, contact_phone, created_at, updated_at
+  )
+  VALUES (
+    v_jp2, p_owner_id, 'jpc owner2', p_ws_id, 'jpc test posting 2', 'active', 'regular',
+    v_work_date::text, ARRAY[v_work_date::text], 2, 0, 0, 3, '+82102222222', now(), now()
+  );
+  RETURN v_jp2;
+END;
+$$;
