@@ -18,7 +18,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import { useEventQR } from '@/hooks/useEventQR';
 import { useJobDetail } from '@/hooks/useJobDetail';
-import { formatDate } from '@/utils/date';
+import { formatDate, getTodayString } from '@/utils/date';
 import { Modal } from '../../ui/Modal';
 import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
@@ -254,7 +254,7 @@ export function EventQRModal({
   timeSlot,
 }: EventQRModalProps) {
   const { width: windowWidth } = useWindowDimensions();
-  const today = useMemo(() => new Date().toISOString().split('T')[0] ?? '', []);
+  const today = useMemo(() => getTodayString(), []);
   const qrSize = Math.min(Math.max(windowWidth * 0.55, 180), 220);
   const { user } = useAuth();
   const createdBy = user?.uid || '';

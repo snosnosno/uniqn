@@ -107,11 +107,10 @@ export function SettlementEditModal({
   const { displayName, profilePhotoURL, profilePhotoURLBlurhash } = useUserProfile({
     userId: workLog?.staffId,
     enabled: visible,
-    fallbackName: (workLog as WorkLog & { staffName?: string })?.staffName,
-    fallbackNickname: (workLog as WorkLog & { staffNickname?: string })?.staffNickname,
-    fallbackPhotoURL: (workLog as WorkLog & { staffPhotoURL?: string })?.staffPhotoURL,
-    fallbackPhotoURLBlurhash: (workLog as WorkLog & { staffPhotoURLBlurhash?: string | null })
-      ?.staffPhotoURLBlurhash,
+    fallbackName: workLog?.staffName,
+    fallbackNickname: workLog?.staffNickname,
+    fallbackPhotoURL: workLog?.staffPhotoURL,
+    fallbackPhotoURLBlurhash: workLog?.staffPhotoURLBlurhash,
   });
 
   // 로컬 상태
@@ -235,13 +234,8 @@ export function SettlementEditModal({
               {displayName}
             </Text>
             <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-              {workLog.role
-                ? getRoleDisplayName(
-                    workLog.role,
-                    (workLog as WorkLog & { customRole?: string }).customRole
-                  )
-                : '역할 없음'}{' '}
-              • {workDate ? formatDate(workDate) : '날짜 없음'}
+              {workLog.role ? getRoleDisplayName(workLog.role, workLog.customRole) : '역할 없음'} •{' '}
+              {workDate ? formatDate(workDate) : '날짜 없음'}
             </Text>
           </View>
         </View>

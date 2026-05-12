@@ -17,6 +17,7 @@ import {
   savePortOneIdentityBindingToken,
   savePortOneIdentityVerificationResult,
 } from '@/services/auth/portOneIdentityService';
+import { formatGenderLabel } from '@/utils/formatters';
 import { logger } from '@/utils/logger';
 
 export interface PortOneIdentityVerificationProps {
@@ -35,12 +36,6 @@ function formatBirthDate(value: string): string {
   }
 
   return `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}`;
-}
-
-function getGenderLabel(value?: 'male' | 'female'): string {
-  if (value === 'male') return '남성';
-  if (value === 'female') return '여성';
-  return '확인 필요';
 }
 
 export function PortOneIdentityVerification({
@@ -207,7 +202,7 @@ export function PortOneIdentityVerification({
                 성별
               </Text>
               <Text className="font-sans-medium text-content-primary dark:text-off-white">
-                {getGenderLabel(verifiedIdentity.gender)}
+                {formatGenderLabel(verifiedIdentity.gender)}
               </Text>
             </View>
             <View className="flex-row justify-between">

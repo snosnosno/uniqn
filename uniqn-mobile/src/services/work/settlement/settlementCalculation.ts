@@ -17,7 +17,6 @@ import {
 } from '@/utils/settlement';
 import { IdNormalizer } from '@/shared/id';
 import { workLogRepository, jobPostingRepository } from '@/repositories';
-import type { WorkLog } from '@/types';
 import type {
   WorkLogWithOverrides,
   CalculateSettlementInput,
@@ -50,7 +49,7 @@ export async function calculateSettlement(
         userMessage: '근무 기록을 찾을 수 없습니다',
       });
     }
-    const workLog = parsedWorkLog as WorkLog & { customRole?: string };
+    const workLog = parsedWorkLog;
 
     // 2. 공고 조회 및 소유권 확인 (Repository 패턴 + IdNormalizer)
     const normalizedJobId = IdNormalizer.normalizeJobId(workLog);

@@ -404,11 +404,10 @@ export function useSettlement(jobPostingId: string) {
     if (filters.role) {
       // 커스텀 역할 지원: role이 'other'이면 customRole로 매칭
       result = result.filter((wl) => {
-        const wlWithCustomRole = wl as SettlementWorkLog & { customRole?: string };
         // 표준 역할 매칭
         if (wl.role === filters.role) return true;
         // 커스텀 역할 매칭: wl.role이 'other'이고 customRole이 filters.role과 일치
-        if (wl.role === 'other' && wlWithCustomRole.customRole === filters.role) return true;
+        if (wl.role === 'other' && wl.customRole === filters.role) return true;
         return false;
       });
     }

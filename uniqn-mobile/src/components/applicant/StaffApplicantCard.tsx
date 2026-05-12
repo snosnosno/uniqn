@@ -19,6 +19,7 @@ import type { Application, ApplicationStatus, Assignment } from '@/types';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 import { STATUS } from '@/constants';
 import { formatAppliedDate } from '@/utils/date';
+import { getRoleDisplayName } from '@/types/unified';
 
 // ============================================================================
 // Types
@@ -50,18 +51,9 @@ interface StaffApplicantCardProps {
 // ============================================================================
 
 const getRoleLabel = (role: string, customRole?: string): string => {
-  // 커스텀 역할이면 customRole 사용
-  if (role === 'other' && customRole) {
-    return customRole;
-  }
-  const roleMap: Record<string, string> = {
-    dealer: '딜러',
-    floor: '플로어',
-    serving: '서빙',
-    manager: '매니저',
-    staff: '직원',
-  };
-  return roleMap[role] ?? role;
+  // staff 키 충돌: getRoleDisplayName은 '일반'으로 매핑하므로 직무 컨텍스트에서는 '직원' 유지
+  if (role === 'staff') return '직원';
+  return getRoleDisplayName(role, customRole);
 };
 
 const getRoleBadgeVariant = (

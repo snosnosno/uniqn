@@ -25,12 +25,12 @@ export function getApplicationCountLabel(status: ApplicationStatus): string {
  * 스케줄 통계(forward-looking, 오늘 포함)용 라벨.
  * 홈 위젯(APPLICATION_COUNT_LABELS)은 전체 시점 집계이므로 cross-screen 숫자가 다를 수 있음.
  * 의미 차이를 라벨로 명시해 인지 혼선 차단.
- * - upcoming = 미래 applied = 앞으로 근무
+ * - upcoming = 미래 applied = 지원
  * - confirmed = 미래 confirmed = 확정 완료
  * - completed = 과거 completed = 근무 종료
  */
 export const SCHEDULE_STATS_LABELS = {
-  upcoming: '앞으로 근무',
+  upcoming: '지원',
   confirmed: '확정',
   completed: '완료',
 } as const;

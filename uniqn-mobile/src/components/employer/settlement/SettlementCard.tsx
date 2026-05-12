@@ -60,11 +60,10 @@ export const SettlementCard = React.memo(function SettlementCard({
   // 사용자 프로필 조회 (프로필 사진, 닉네임)
   const { displayName, profilePhotoURL, profilePhotoURLBlurhash } = useUserProfile({
     userId: workLog.staffId,
-    fallbackName: (workLog as WorkLog & { staffName?: string }).staffName,
-    fallbackNickname: (workLog as WorkLog & { staffNickname?: string }).staffNickname,
-    fallbackPhotoURL: (workLog as WorkLog & { staffPhotoURL?: string }).staffPhotoURL,
-    fallbackPhotoURLBlurhash: (workLog as WorkLog & { staffPhotoURLBlurhash?: string | null })
-      .staffPhotoURLBlurhash,
+    fallbackName: workLog.staffName,
+    fallbackNickname: workLog.staffNickname,
+    fallbackPhotoURL: workLog.staffPhotoURL,
+    fallbackPhotoURLBlurhash: workLog.staffPhotoURLBlurhash,
   });
 
   // 정산 계산 (수당 + 세금 포함)
@@ -118,10 +117,7 @@ export const SettlementCard = React.memo(function SettlementCard({
                 </Text>
                 <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                   {workLog.role
-                    ? getRoleDisplayName(
-                        workLog.role,
-                        (workLog as WorkLog & { customRole?: string }).customRole
-                      )
+                    ? getRoleDisplayName(workLog.role, workLog.customRole)
                     : '역할 없음'}
                 </Text>
               </View>

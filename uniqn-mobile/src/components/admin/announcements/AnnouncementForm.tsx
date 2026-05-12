@@ -36,6 +36,12 @@ import {
 } from '@/types/announcement';
 import type { UserRole } from '@/types/role';
 
+const TARGET_ROLE_LABELS: Record<UserRole, string> = {
+  admin: '관리자',
+  employer: '구인자',
+  staff: '스태프',
+};
+
 interface AnnouncementFormProps {
   initialData?: Partial<CreateAnnouncementInput> & {
     imageUrl?: string | null;
@@ -396,7 +402,7 @@ export function AnnouncementForm({
                         : 'text-secondary-700 dark:text-secondary-300'
                     }`}
                   >
-                    {role === 'admin' ? '관리자' : role === 'employer' ? '구인자' : '스태프'}
+                    {TARGET_ROLE_LABELS[role]}
                   </Text>
                 </Pressable>
               ))}

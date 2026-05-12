@@ -60,11 +60,10 @@ export function SettlementDetailModal({
   const { displayName, profilePhotoURL, profilePhotoURLBlurhash } = useUserProfile({
     userId: workLog?.staffId,
     enabled: visible,
-    fallbackName: (workLog as WorkLog & { staffName?: string })?.staffName,
-    fallbackNickname: (workLog as WorkLog & { staffNickname?: string })?.staffNickname,
-    fallbackPhotoURL: (workLog as WorkLog & { staffPhotoURL?: string })?.staffPhotoURL,
-    fallbackPhotoURLBlurhash: (workLog as WorkLog & { staffPhotoURLBlurhash?: string | null })
-      ?.staffPhotoURLBlurhash,
+    fallbackName: workLog?.staffName,
+    fallbackNickname: workLog?.staffNickname,
+    fallbackPhotoURL: workLog?.staffPhotoURL,
+    fallbackPhotoURLBlurhash: workLog?.staffPhotoURLBlurhash,
   });
 
   // 수정 이력 접기/펼치기 상태 (기본: 접힘)
@@ -148,7 +147,7 @@ export function SettlementDetailModal({
           displayName={displayName}
           payrollStatus={payrollStatus}
           role={workLog.role}
-          customRole={(workLog as WorkLog & { customRole?: string }).customRole}
+          customRole={workLog.customRole}
           workDate={workDate}
         />
 
@@ -198,10 +197,8 @@ export function SettlementDetailModal({
                         revieweeId: workLog.staffId,
                         revieweeName: getReviewTextFallback(
                           displayName,
-                          (workLog as WorkLog & { staffName?: string; staffNickname?: string })
-                            .staffName,
-                          (workLog as WorkLog & { staffName?: string; staffNickname?: string })
-                            .staffNickname,
+                          workLog.staffName,
+                          workLog.staffNickname,
                           '스태프'
                         ),
                         reviewerType: 'employer',

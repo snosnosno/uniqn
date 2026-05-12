@@ -10,6 +10,7 @@ import { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { useThemeStore } from '@/stores/themeStore';
 import { getTodayString, getWeekdayKo } from '@/utils/date';
+import { formatNumber } from '@/utils/formatters/currency';
 
 // ============================================================================
 // Types
@@ -118,7 +119,7 @@ export function TrendChart({
         </Text>
         <View className="px-2.5 py-1 rounded-sm" style={{ backgroundColor: `${color}20` }}>
           <Text style={{ color }} className="text-sm font-sans-bold">
-            총 {stats.total.toLocaleString()}
+            총 {formatNumber(stats.total)}
             {suffix}
           </Text>
         </View>
@@ -131,7 +132,7 @@ export function TrendChart({
             일평균
           </Text>
           <Text className="text-lg font-display text-content-primary dark:text-off-white">
-            {stats.average.toLocaleString()}
+            {formatNumber(stats.average)}
             {suffix}
           </Text>
         </View>
@@ -140,7 +141,7 @@ export function TrendChart({
             최고 ({stats.maxDate})
           </Text>
           <Text className="text-lg font-display text-success-700 dark:text-success-300">
-            {stats.max.toLocaleString()}
+            {formatNumber(stats.max)}
             {suffix}
           </Text>
         </View>
@@ -149,7 +150,7 @@ export function TrendChart({
             최저 ({stats.minDate})
           </Text>
           <Text className="text-lg font-display text-orange-700 dark:text-orange-300">
-            {stats.min.toLocaleString()}
+            {formatNumber(stats.min)}
             {suffix}
           </Text>
         </View>
@@ -212,7 +213,7 @@ export function TrendChart({
                     : 'text-secondary-700 dark:text-secondary-300'
                 }`}
               >
-                {item.count.toLocaleString()}
+                {formatNumber(item.count)}
                 {suffix}
               </Text>
             </View>

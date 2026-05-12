@@ -11,6 +11,7 @@ import { NumericText } from '@/components/ui';
 import { useMyJobPostings } from '@/hooks/useJobManagement';
 import { getConfirmedStaff } from '@/services';
 import { cachingPolicies, queryKeys } from '@/lib/queryClient';
+import { toDateString } from '@/utils/date';
 import type { JobPosting } from '@/types/jobPosting';
 import type { ConfirmedStaff } from '@/types/confirmedStaff';
 
@@ -40,7 +41,7 @@ function getWeekDates(): Record<DayKey, string> {
     (acc, day, i) => {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
-      return { ...acc, [day]: d.toISOString().split('T')[0] };
+      return { ...acc, [day]: toDateString(d) };
     },
     {} as Record<DayKey, string>
   );

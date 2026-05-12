@@ -150,3 +150,12 @@ export const formatBirthDate = (birthDate: string | undefined | null): string =>
   if (!birthDate || birthDate.length !== 8) return '-';
   return `${birthDate.substring(0, 4)}.${birthDate.substring(4, 6)}.${birthDate.substring(6, 8)}`;
 };
+
+/**
+ * 성별 라벨
+ */
+export const formatGenderLabel = (gender?: 'male' | 'female'): string => {
+  if (gender === 'male') return '남성';
+  if (gender === 'female') return '여성';
+  return '확인 필요';
+};
