@@ -20,6 +20,8 @@ RETURNS TABLE (
   qr_code_id      uuid
 )
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
   v_owner       uuid := gen_random_uuid();
@@ -186,4 +188,214 @@ BEGIN
   );
   RETURN v_jp2;
 END;
+$$;
+
+-- ============================================================================
+-- service_role 우회 헬퍼 (cascade/owner 이양 시나리오용)
+-- 메모리: pitfall_set_config_role_not_role_switch
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION jpc_test_create_user(p_role text DEFAULT 'staff')
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE v_id uuid := gen_random_uuid();
+BEGIN
+  INSERT INTO auth.users (id, email, raw_app_meta_data, raw_user_meta_data,
+                          created_at, updated_at,
+                          confirmation_token, recovery_token,
+                          email_change_token_new, email_change)
+  VALUES (v_id, 'jpc_extra_'||v_id||'@test.local',
+          jsonb_build_object('role', p_role), '{}'::jsonb,
+          now(), now(), '', '', '', '');
+
+  INSERT INTO public.users (id, email, name, role, is_active, created_at, updated_at)
+  VALUES (v_id, 'jpc_extra_'||v_id||'@test.local', 'jpc extra',
+          CASE p_role WHEN 'admin' THEN 'admin'::user_role
+                      WHEN 'employer' THEN 'employer'::user_role
+                      ELSE 'staff'::user_role END,
+          true, now(), now())
+  ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, is_active = EXCLUDED.is_active;
+
+  RETURN v_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION jpc_test_delete_user(p_user_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  DELETE FROM auth.users WHERE id = p_user_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION jpc_test_transfer_ws_owner(p_ws_id uuid, p_new_owner uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  UPDATE public.workspaces SET owner_id = p_new_owner WHERE id = p_ws_id;
+END;
+$$;
+
+-- workspaces.DELETE 는 정책 부재 = deny-all (Task 2.1 확인). RLS 우회로
+-- FK RESTRICT 동작 검증용 (C1 cascade 시나리오)
+CREATE OR REPLACE FUNCTION jpc_test_force_delete_workspace(p_ws_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  DELETE FROM public.workspaces WHERE id = p_ws_id;
+END;
+$$;
+
+-- ============================================================================
+-- 검증용 helpers (SECURITY DEFINER — RLS 우회로 cascade/trigger 효과 확인)
+-- audit/notifications 의 RLS 가 좁아서 invoker 권한으로 검증 불가.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION jpc_test_count_jpc(p_jp_id uuid, p_user_id uuid)
+RETURNS int
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT count(*)::int FROM public.job_posting_collaborators
+   WHERE job_posting_id = p_jp_id AND user_id = p_user_id;
+$$;
+
+CREATE OR REPLACE FUNCTION jpc_test_count_jpc_by_jp(p_jp_id uuid)
+RETURNS int
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT count(*)::int FROM public.job_posting_collaborators
+   WHERE job_posting_id = p_jp_id;
+$$;
+
+-- C3 cascade 시 owner 의 DELETE FROM job_postings 가 RLS recursion 트리거
+-- (jp_delete_workspace_owner USING → workspaces_select_owner_or_member 의
+-- JPC JOIN 분기 → job_postings SELECT RLS 재진입). SECURITY DEFINER 우회로
+-- cascade 동작 검증 가능 (Task 2.2 의 jpc_check_can_delete_jp 와 동일 패턴).
+CREATE OR REPLACE FUNCTION jpc_test_force_delete_jp(p_jp_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  DELETE FROM public.job_postings WHERE id = p_jp_id;
+END;
+$$;
+
+-- C4/C5 의 jpc DELETE 도 정책 USING (jpc_delete_owner_or_self) 의
+-- EXISTS (job_postings JOIN workspaces) → workspaces SELECT JPC JOIN 분기 →
+-- job_posting_collaborators SELECT RLS 재진입 → recursion.
+-- SECURITY DEFINER 우회로 DELETE 수행 + audit trigger (auth.uid() 는 invoker
+-- 의 jwt 를 그대로 읽음) 동작 검증.
+CREATE OR REPLACE FUNCTION jpc_test_force_delete_jpc(p_jp_id uuid, p_user_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  DELETE FROM public.job_posting_collaborators
+   WHERE job_posting_id = p_jp_id AND user_id = p_user_id;
+END;
+$$;
+
+-- C9 jpc INSERT 도 jpc_insert_ws_owner WITH CHECK 안 workspaces JOIN → 같은 recursion.
+-- SECURITY DEFINER 우회로 INSERT 수행 + trigger (notify_on_collaborator_added) 동작 검증.
+CREATE OR REPLACE FUNCTION jpc_test_force_insert_jpc(p_jp uuid, p_user uuid, p_added_by uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  INSERT INTO public.job_posting_collaborators (job_posting_id, user_id, added_by)
+  VALUES (p_jp, p_user, p_added_by);
+END;
+$$;
+
+-- C6 검증용 (workspaces.SELECT RLS 우회로 owner_id 확인)
+CREATE OR REPLACE FUNCTION jpc_test_get_ws_owner(p_ws_id uuid)
+RETURNS uuid
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT owner_id FROM public.workspaces WHERE id = p_ws_id;
+$$;
+
+-- C7 검증용 (applicantId 필터 — seed 의 outsider application 과 새 applicant 의 INSERT 구분)
+CREATE OR REPLACE FUNCTION jpc_test_count_notif_by_applicant(p_applicant uuid, p_type text)
+RETURNS int
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT count(*)::int FROM public.notifications
+   WHERE type = p_type
+     AND data->>'applicantId' = p_applicant::text;
+$$;
+
+CREATE OR REPLACE FUNCTION jpc_test_audit_source(p_jp_id uuid, p_target uuid, p_action text)
+RETURNS text
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT source FROM public.job_posting_collaborator_audit
+   WHERE job_posting_id = p_jp_id
+     AND target_user_id = p_target
+     AND action         = p_action
+   ORDER BY at DESC LIMIT 1;
+$$;
+
+CREATE OR REPLACE FUNCTION jpc_test_audit_actor(p_jp_id uuid, p_target uuid, p_action text)
+RETURNS uuid
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT actor_user_id FROM public.job_posting_collaborator_audit
+   WHERE job_posting_id = p_jp_id
+     AND target_user_id = p_target
+     AND action         = p_action
+   ORDER BY at DESC LIMIT 1;
+$$;
+
+CREATE OR REPLACE FUNCTION jpc_test_count_notif_by_jp(p_jp_id uuid, p_type text)
+RETURNS int
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT count(*)::int FROM public.notifications
+   WHERE type = p_type
+     AND data->>'jobPostingId' = p_jp_id::text;
+$$;
+
+CREATE OR REPLACE FUNCTION jpc_test_count_notif_for_user(p_recipient uuid, p_type text, p_jp_id uuid)
+RETURNS int
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT count(*)::int FROM public.notifications
+   WHERE recipient_id = p_recipient
+     AND type = p_type
+     AND data->>'jobPostingId' = p_jp_id::text;
 $$;
