@@ -15,7 +15,7 @@
     "quality": "node scripts/check-css-vars-sync.js && npm run type-check && npm run lint && npm run format:check",
     "test": "jest",
     "test:coverage": "jest --coverage",
-    "test:db:helpers": "docker exec -i supabase_db_uniqn psql -U postgres -d postgres -f - < supabase/tests/jpc_helpers.sql",
+    "test:db:helpers": "docker cp supabase/tests/jpc_helpers.sql supabase_db_uniqn:/tmp/jpc_helpers.sql && docker exec supabase_db_uniqn psql -U postgres -d postgres -f /tmp/jpc_helpers.sql",
     "test:db": "npm run test:db:helpers && supabase test db",
     "prepare": "node ../scripts/setup-git-hooks.js",
     "build:web": "expo export -p web",

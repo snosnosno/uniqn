@@ -472,5 +472,30 @@ describe('SupabaseJobPostingCollaboratorRepository', () => {
       const result = await repo.searchByEmail('jp-1', 'me');
       expect(result[0]?.status).toBe('self');
     });
+
+    // 분기 순서: self > workspace_member > already_collaborator > addable.
+    // self 가 아닌 후보가 동시에 member ∧ collaborator 일 때 member 가 이김.
+    // 구현 분기 (Repository line 267-273) 의 silent flip 방지.
+    it('우선순위: workspace_member > already_collaborator (self 아닌 member 가 collaborator 도 겸할 때 member 우선)', async () => {
+      setupSearchMocks({
+        candidates: [
+          {
+            id: 'editor-and-collab',
+            email: 'ec@test.local',
+            nickname: 'editor-collab',
+            name: null,
+            photo_url: null,
+          },
+        ],
+        selfId: 'caller',
+        workspaceId: 'ws-1',
+        collaboratorIds: ['editor-and-collab'],
+        memberIds: ['editor-and-collab'],
+        ownerId: null,
+      });
+
+      const result = await repo.searchByEmail('jp-1', 'ec');
+      expect(result[0]?.status).toBe('workspace_member');
+    });
   });
 });

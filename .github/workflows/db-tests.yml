@@ -35,9 +35,9 @@ jobs:
         run: supabase start
 
       - name: Register pgTAP helpers
-        run: |
-          docker exec -i supabase_db_uniqn psql -U postgres -d postgres \
-            -f - < supabase/tests/jpc_helpers.sql
+        # cross-platform 패턴 (Windows PowerShell 의 stdin redirect `<` 비호환 회피).
+        # `npm run test:db:helpers` 와 동일 — 단일 진실 소스로 npm script 직접 호출.
+        run: npm run test:db:helpers
 
       - name: Run pg_prove tests
         run: supabase test db

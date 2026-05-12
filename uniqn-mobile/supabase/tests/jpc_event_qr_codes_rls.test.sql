@@ -1,20 +1,35 @@
 -- uniqn-mobile/supabase/tests/jpc_event_qr_codes_rls.test.sql
 -- JPC 후속 PR — Task 2.5: event_qr_codes RLS 매트릭스 (16 케이스)
 --
--- 정책 분석 (plan 미독, 실제 정책 기준 매트릭스):
+-- ============================================================================
+-- ⚠️ SECURITY GAP INVARIANT — 이 파일은 의도된 정책이 아니라 *현재 갭* 을 잠근다
+-- ============================================================================
+-- 16/16 ALLOW 는 **정책 갭의 invariant 화** 이며, 향후 tightening 시 일부 케이스가
+-- 의도적으로 DENY 로 flip 되어야 한다. 그때까지 본 파일이 변경되면 regression 으로
+-- 오인 가능 — 변경 사유를 PR 에 명시 필수.
+--
+-- 갭 상세:
+--   1. INSERT: `event_qr_codes_insert_authenticated` (WITH CHECK auth.uid() IS NOT NULL)
+--      + `qr_insert` (WITH CHECK auth.uid()=user_id) 두 permissive 정책이 OR-union
+--      → 느슨한 쪽이 이김. ANY authenticated user 가 ANY user_id / ANY job_posting_id 로
+--      QR 삽입 가능. **realistic exploit**: outsider 가 owner 의 jp 에 자기 명의 QR 등록.
+--   2. UPDATE/DELETE: `qr_update/qr_delete` USING (user_id=self OR is_workspace_member
+--      OR is_posting_collaborator) — workspace_member 분기가 너무 넓어 ws_editor 가
+--      모든 jp 의 QR 을 변경 가능 (의도 불명).
+--
+-- 후속 tightening 후보 (별도 PR):
+--   - `event_qr_codes_insert_authenticated` 정책 DROP 또는 WITH CHECK 강화 (user_id 검증)
+--   - `qr_update/qr_delete` 의 workspace_member 분기 좁히기 (owner 만 또는 jp.owner_id=self)
+--
+-- 정책 분석 (실제 정책 기준 매트릭스, 갭 invariant):
 --   SELECT  : qr_select USING (user_id=self OR jp.owner=self
 --             OR is_workspace_member OR is_posting_collaborator)
 --             → 4/4 ALLOW
---   INSERT  : event_qr_codes_insert_authenticated WITH CHECK
---             (auth.uid() IS NOT NULL) → 4/4 ALLOW (어떤 user_id 든)
---   UPDATE  : qr_update USING (user_id=self OR is_workspace_member
---             OR is_posting_collaborator) → 4/4 ALLOW
---             (owner 는 workspace.owner → is_workspace_member 통과)
---   DELETE  : qr_delete USING (user_id=self OR is_workspace_member
---             OR is_posting_collaborator) → 4/4 ALLOW
+--   INSERT  : OR-union (auth.uid() IS NOT NULL ∪ auth.uid()=user_id) → 4/4 ALLOW
+--             ← SECURITY GAP. 후속 tightening 시 outsider 케이스 DENY 로 flip 예상.
+--   UPDATE  : qr_update — 4/4 ALLOW ← SECURITY GAP. tightening 시 일부 케이스 flip.
+--   DELETE  : qr_delete — 4/4 ALLOW ← SECURITY GAP. tightening 시 일부 케이스 flip.
 --
--- 주의: event_qr_codes 정책이 매우 느슨. PR description 에 후속 tightening
--- 후보로 명시 (예: INSERT 시 user_id 검증, workspace_member 분기 좁히기).
 -- DELETE 4 케이스는 SAVEPOINT 로 격리 (같은 row 1건이므로).
 
 BEGIN;
