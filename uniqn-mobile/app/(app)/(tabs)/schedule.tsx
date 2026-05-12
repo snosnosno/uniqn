@@ -3,7 +3,7 @@
  * 내 스케줄 화면
  */
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, Suspense, lazy } from 'react';
 import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -13,7 +13,6 @@ import {
   ScreenSkeleton,
   Skeleton,
 } from '@/components/ui';
-import { CalendarView } from '@/components/schedule/CalendarView';
 import { ScheduleCard, ScheduleDetailModal, GroupedScheduleCard } from '@/components/schedule';
 import { CancellationRequestForm } from '@/components/applications';
 import { QRCodeScanner } from '@/components/qr';
@@ -42,6 +41,9 @@ import type {
 } from '@/types';
 import type { BoardAuthorRole } from '@/types/board';
 import { isGroupedScheduleEvent } from '@/types/schedule';
+
+// react-native-calendars(112KB) + moment(60KB) + lodash(73KB) — schedule 탭 calendar 모드 진입 시점에만 로드.
+const CalendarView = lazy(() => import('@/components/schedule/CalendarViewLazyEntry'));
 
 // ============================================================================
 // Constants
@@ -632,13 +634,15 @@ export default function ScheduleScreen() {
         >
           {/* 0: 캘린더 — MonthNavigator border-b 바로 아래 붙임 */}
           <View>
-            <CalendarView
-              schedules={schedules}
-              selectedDate={selectedDate}
-              currentMonth={currentMonth}
-              onDateSelect={handleDateSelect}
-              onMonthChange={handleMonthChange}
-            />
+            <Suspense fallback={<Skeleton width="100%" height={320} />}>
+              <CalendarView
+                schedules={schedules}
+                selectedDate={selectedDate}
+                currentMonth={currentMonth}
+                onDateSelect={handleDateSelect}
+                onMonthChange={handleMonthChange}
+              />
+            </Suspense>
           </View>
 
           {selectedDateSchedules.length > 0 && (

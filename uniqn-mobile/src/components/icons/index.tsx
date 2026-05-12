@@ -44,13 +44,13 @@ import {
   Globe,
   Hash,
   Heart,
-  Home,
+  House,
   Image as LucideImage,
   Images,
   Inbox,
   Info,
   LayoutGrid,
-  Loader2,
+  LoaderCircle,
   Lock,
   LockOpen,
   LogIn,
@@ -59,7 +59,7 @@ import {
   MapPin,
   Megaphone,
   Menu,
-  MoreHorizontal,
+  Ellipsis,
   MessageCircle,
   MessageCircleMore,
   MessageSquare,
@@ -95,7 +95,7 @@ import {
   WifiOff as LucideWifiOff,
   Wrench,
   X,
-} from 'lucide-react-native';
+} from 'lucide-react-native/icons';
 import { useColorScheme } from 'nativewind';
 import React from 'react';
 import Svg, { Line, Polyline } from 'react-native-svg';
@@ -154,7 +154,7 @@ function createFilledIcon(Component: LucideIcon, defaultFill: string): IconCompo
 }
 
 // ─── Navigation / UI chrome ────────────────────────────────────────────────
-export const HomeIcon = createIcon(Home);
+export const HomeIcon = createIcon(House);
 export const SearchIcon = createIcon(Search);
 export const BellIcon = createIcon(Bell);
 export const BellSlashIcon = createIcon(BellOff);
@@ -164,7 +164,7 @@ export const UserPlusIcon = createIcon(UserPlus);
 export const UserMinusIcon = createIcon(UserMinus);
 export const SettingsIcon = createIcon(Settings);
 export const MenuIcon = createIcon(Menu);
-export const EllipsisHorizontalIcon = createIcon(MoreHorizontal);
+export const EllipsisHorizontalIcon = createIcon(Ellipsis);
 export const XMarkIcon = createIcon(X);
 export const ChevronLeftIcon = createIcon(ChevronLeft);
 export const ChevronRightIcon = createIcon(ChevronRight);
@@ -195,7 +195,7 @@ export const InformationCircleIcon = createIcon(Info);
 export const XCircleIcon = createIcon(CircleX);
 export const XIcon = createIcon(X);
 export const CloseCircleOutlineIcon = createIcon(CircleX);
-export const LoaderIcon = createIcon(Loader2);
+export const LoaderIcon = createIcon(LoaderCircle);
 
 // ─── Time / calendar / location ────────────────────────────────────────────
 export const CalendarIcon = createIcon(Calendar);

@@ -10,7 +10,7 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { format } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { ko } from 'date-fns/locale/ko';
 import { UserIcon, XIcon } from '@/components/icons';
 import type { JobPostingCollaboratorWithUser } from '@/types/jobPostingCollaborator';
 
