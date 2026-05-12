@@ -2,6 +2,23 @@
 -- pgTAP RLS 테스트 헬퍼 — JPC 후속 PR
 -- 메모리 학습: pitfall_rls_dynamic_verification_sparse_data — matching row count 사전 측정 필수
 --             pitfall_test_seed_zod_schema_first — JSONB raw INSERT 함정 회피
+--
+-- ============================================================================
+-- ⚠️ 경고: 이 파일은 supabase/tests/ 전용입니다. PROD 등록 금지.
+-- ============================================================================
+-- 이 파일에는 SECURITY DEFINER 함수 12개가 포함되어 RLS 를 완전히 우회합니다:
+--   - jpc_test_force_delete_workspace / _jp / _jpc / force_insert_jpc
+--   - jpc_test_create_user / delete_user / transfer_ws_owner
+--   - jpc_test_seed / count_jpc / audit_source / count_notif_* / get_ws_owner
+--
+-- 이 헬퍼들은 RLS 정책 검증의 부수효과 확인용 (cascade/trigger/audit) 입니다.
+-- migrations/ 폴더로 옮기거나 prod DB 에 직접 등록하면 ANY authenticated user 가
+-- workspace/jp/jpc 의 RLS 를 우회 가능 — catastrophic security incident.
+--
+-- 등록 방법 (로컬/CI 만):
+--   docker exec -i supabase_db_uniqn psql -U postgres -d postgres -f - < supabase/tests/jpc_helpers.sql
+--   또는 npm run test:db (자동 등록 + supabase test db)
+-- ============================================================================
 
 -- ============================================================================
 -- 4 페르소나 + 리소스 셋업 (트랜잭션 안에서만 호출, ROLLBACK 로 정리)
