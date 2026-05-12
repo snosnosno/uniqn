@@ -42,10 +42,16 @@ BEGIN
     (v_collab,   'jpc_collab_'   || v_collab   || '@test.local', '{"role":"employer"}'::jsonb, '{}'::jsonb, now(), now(), '', '', '', ''),
     (v_outsider, 'jpc_outsider_' || v_outsider || '@test.local', '{"role":"staff"}'::jsonb,    '{}'::jsonb, now(), now(), '', '', '', '');
 
-  -- public.users 동기화 (실제 트리거가 처리하지만 안전하게 명시)
-  INSERT INTO public.users (id, email, name, created_at, updated_at)
-  SELECT id, email, 'jpc test', now(), now() FROM auth.users WHERE id IN (v_owner, v_editor, v_collab, v_outsider)
-  ON CONFLICT (id) DO NOTHING;
+  -- public.users 동기화 + role 명시 (RPC create_workspace 의 PERMISSION_DENIED 회피)
+  -- helpers seed 의 owner/editor/collab 은 employer, outsider 는 staff.
+  -- ON CONFLICT 시 UPDATE: handle_new_user 트리거가 디폴트 'staff' 로 만들어둬도 보정.
+  INSERT INTO public.users (id, email, name, role, is_active, created_at, updated_at)
+  SELECT id, email, 'jpc test',
+    CASE WHEN id = v_outsider THEN 'staff'::user_role ELSE 'employer'::user_role END,
+    true, now(), now()
+  FROM auth.users
+  WHERE id IN (v_owner, v_editor, v_collab, v_outsider)
+  ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, is_active = EXCLUDED.is_active;
 
   -- workspace + 멤버
   INSERT INTO public.workspaces (id, name, owner_id, created_at, updated_at)
