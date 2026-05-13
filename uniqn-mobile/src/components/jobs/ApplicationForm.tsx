@@ -1,8 +1,9 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { buildPostingFacts } from '@/domains/job-posting';
 import { findUnansweredRequired, initializePreQuestionAnswers } from '@/domains/application';
+import { THIRD_PARTY_CONSENT_VERSION_TAG } from '@/constants/legal';
 import { FIXED_DATE_MARKER, FIXED_TIME_MARKER, type Assignment } from '@/types/assignment';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -14,14 +15,20 @@ import { PostingTypeBadge } from './PostingTypeBadge';
 import { PreQuestionForm } from './PreQuestionForm';
 import { RoleSalaryDisplay } from './RoleSalaryDisplay';
 
+export interface ProvisionConsent {
+  at: string; // ISO 8601
+  version: string;
+}
+
 interface ApplicationFormProps {
   job: JobPosting;
   visible: boolean;
   isSubmitting: boolean;
   onSubmit: (
     assignments: Assignment[],
-    message?: string,
-    preQuestionAnswers?: PreQuestionAnswer[]
+    message: string | undefined,
+    preQuestionAnswers: PreQuestionAnswer[] | undefined,
+    provisionConsent: ProvisionConsent
   ) => void;
   onClose: () => void;
 }
@@ -104,6 +111,15 @@ export function ApplicationForm({
   const [preQuestionAnswers, setPreQuestionAnswers] = useState<PreQuestionAnswer[]>(() =>
     initializePreQuestionAnswers(questions)
   );
+  // 개보법 §17 — 지원 시점 1-tap 제공 동의 (form state 아님, submit 1회용)
+  const [provisionConsentAgreed, setProvisionConsentAgreed] = useState(false);
+
+  // F3 회귀 방지 — 모달 재오픈 시 stale check 방지 (eng review)
+  useEffect(() => {
+    if (visible) {
+      setProvisionConsentAgreed(false);
+    }
+  }, [visible]);
 
   const isFixedMode = postingFacts.workflow.isFixed;
   const hasPreQuestions = questions.length > 0;
@@ -148,8 +164,18 @@ export function ApplicationForm({
       return false;
     }
 
+    if (!provisionConsentAgreed) {
+      return false;
+    }
+
     return true;
-  }, [assignmentsForSubmit.length, hasPreQuestions, isSubmitting, preQuestionAnswers]);
+  }, [
+    assignmentsForSubmit.length,
+    hasPreQuestions,
+    isSubmitting,
+    preQuestionAnswers,
+    provisionConsentAgreed,
+  ]);
 
   const handleSubmit = useCallback(() => {
     if (!canSubmit) {
@@ -167,7 +193,11 @@ export function ApplicationForm({
     onSubmit(
       assignmentsForSubmit,
       message.trim() || undefined,
-      hasPreQuestions ? preQuestionAnswers : undefined
+      hasPreQuestions ? preQuestionAnswers : undefined,
+      {
+        at: new Date().toISOString(),
+        version: THIRD_PARTY_CONSENT_VERSION_TAG,
+      }
     );
   }, [assignmentsForSubmit, canSubmit, hasPreQuestions, message, onSubmit, preQuestionAnswers]);
 
@@ -310,6 +340,39 @@ export function ApplicationForm({
           <Text className="mt-1 text-right text-xs text-content-placeholder font-sans">
             {message.length}/200
           </Text>
+        </View>
+
+        <View className="mb-4 rounded-lg bg-surface-page dark:bg-surface p-4 dark:bg-surface">
+          <Pressable
+            onPress={() => !isSubmitting && setProvisionConsentAgreed((prev) => !prev)}
+            disabled={isSubmitting}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: provisionConsentAgreed, disabled: isSubmitting }}
+            accessibilityLabel="필수 이 공고 구인자에게 내 이름·연락처가 전달되는 것에 동의"
+            testID="provision-consent-checkbox"
+            className="flex-row items-start"
+          >
+            <View
+              className={`mr-3 mt-0.5 h-5 w-5 items-center justify-center rounded border-2 ${
+                provisionConsentAgreed
+                  ? 'border-primary-500 bg-primary-500'
+                  : 'border-secondary-300 bg-white dark:border-surface-overlay dark:bg-surface'
+              } ${isSubmitting ? 'opacity-50' : ''}`}
+            >
+              {provisionConsentAgreed && (
+                <Text className="text-xs font-sans-bold text-surface-dark">{''}</Text>
+              )}
+            </View>
+            <View className="flex-1">
+              <Text className="text-sm leading-5 text-content-primary dark:text-off-white font-sans">
+                <Text className="text-error-500 font-sans">[필수]</Text> 이 공고 구인자에게 내
+                이름·연락처가 전달되는 것에 동의합니다.
+              </Text>
+              <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+                보유 기간: 채용 종료 후 3개월
+              </Text>
+            </View>
+          </Pressable>
         </View>
 
         <View className="mb-6 rounded-lg bg-surface-page dark:bg-surface p-4 dark:bg-surface">

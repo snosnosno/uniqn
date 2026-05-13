@@ -35,6 +35,10 @@ interface SubmitApplicationV2Params {
   assignments: Assignment[];
   preQuestionAnswers?: PreQuestionAnswer[];
   message?: string;
+  /** 개보법 §17 — 지원 시점 제3자 제공 동의 timestamp (ISO 8601) */
+  provisionConsentAt: string;
+  /** THIRD_PARTY_CONSENT_VERSION_TAG */
+  provisionConsentVersion: string;
 }
 
 interface RequestCancellationParams {
@@ -118,6 +122,8 @@ export function useApplications() {
           assignments: params.assignments,
           preQuestionAnswers: params.preQuestionAnswers,
           message: params.message,
+          provisionConsentAt: params.provisionConsentAt,
+          provisionConsentVersion: params.provisionConsentVersion,
         },
         user.uid,
         identity.preferredName || applicantName,

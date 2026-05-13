@@ -122,8 +122,9 @@ export default function ApplyScreen() {
   const handleSubmit = useCallback(
     async (
       assignments: Assignment[],
-      message?: string,
-      preQuestionAnswers?: PreQuestionAnswer[]
+      message: string | undefined,
+      preQuestionAnswers: PreQuestionAnswer[] | undefined,
+      provisionConsent: { at: string; version: string }
     ) => {
       if (!job) {
         return;
@@ -166,6 +167,8 @@ export default function ApplyScreen() {
           assignments,
           message,
           preQuestionAnswers,
+          provisionConsentAt: provisionConsent.at,
+          provisionConsentVersion: provisionConsent.version,
         },
         {
           onSuccess: () => {
