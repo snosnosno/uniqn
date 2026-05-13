@@ -216,6 +216,35 @@ END;
 $$;
 
 -- ============================================================================
+-- 추가 event_qr_code 시드 (SECURITY DEFINER — RLS 우회)
+-- DELETE 4 케이스 매트릭스 (jpc_event_qr_codes_rls) 가 같은 row 1건에 대해
+-- SAVEPOINT/ROLLBACK TO 로 격리하던 패턴이 pg_prove 환경에서 silent drop 됨.
+-- 4 페르소나 별 개별 qr_id 시드 → SAVEPOINT 불필요 → plan(16) 복원.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION jpc_seed_extra_qr(p_jp_id uuid, p_user_id uuid)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_qr uuid := gen_random_uuid();
+  v_work_date date := current_date + 14;
+BEGIN
+  INSERT INTO public.event_qr_codes (
+    id, job_posting_id, user_id, type, code, work_date, is_active, expires_at, created_at
+  )
+  VALUES (
+    v_qr, p_jp_id, p_user_id, 'checkIn',
+    encode(gen_random_bytes(16), 'hex'),
+    v_work_date::text, true, now() + interval '1 day', now()
+  );
+  RETURN v_qr;
+END;
+$$;
+
+-- ============================================================================
 -- service_role 우회 헬퍼 (cascade/owner 이양 시나리오용)
 -- 메모리: pitfall_set_config_role_not_role_switch
 -- ============================================================================

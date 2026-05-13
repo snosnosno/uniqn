@@ -33,15 +33,9 @@
 -- DELETE 4 케이스는 SAVEPOINT 로 격리 (같은 row 1건이므로).
 
 BEGIN;
--- plan(16) → plan(12): DELETE 4 케이스 (SAVEPOINT 패턴) 가 pg_prove 환경에서
--- silent drop 됨 (planned 16 / ran 12). 로컬 supabase 부팅 drift 로 디버그 path
--- 막힘 (memory: pitfall_local_supabase_helper_drift). 후속 PR 에서 추적.
---   - 가설: SAVEPOINT 안의 set_config local 이 ROLLBACK TO 시 reset 되어
---     `is()` 결과가 emit 안 됨
---   - 또는 WITH d AS (DELETE...) SELECT is() 패턴이 CTE 안 DELETE 의 RLS reject 시
---     pgTAP 카운트 안 됨
--- 디버그 후 복원 시 plan(16) + DELETE 4 케이스 주석 해제.
-SELECT plan(12);
+-- plan(16) 복원: DELETE 4 케이스를 4 개 개별 qr_id 시드로 분리하여 SAVEPOINT
+-- 패턴 silent drop 회피 (jpc_seed_extra_qr helper 추가, 메모리 권장 옵션 1).
+SELECT plan(16);
 
 DO $$
 DECLARE s RECORD;
@@ -53,6 +47,16 @@ BEGIN
   PERFORM set_config('jpc.outsider_id', s.outsider_id::text,     true);
   PERFORM set_config('jpc.jp_id',       s.job_posting_id::text,  true);
   PERFORM set_config('jpc.qr_id',       s.qr_code_id::text,      true);
+
+  -- DELETE 4 케이스용 추가 qr 시드 (각 페르소나 명의로 1개씩, SAVEPOINT 불필요)
+  PERFORM set_config('jpc.qr_id_owner',
+    jpc_seed_extra_qr(s.job_posting_id, s.owner_id)::text, true);
+  PERFORM set_config('jpc.qr_id_editor',
+    jpc_seed_extra_qr(s.job_posting_id, s.ws_editor_id)::text, true);
+  PERFORM set_config('jpc.qr_id_collab',
+    jpc_seed_extra_qr(s.job_posting_id, s.collaborator_id)::text, true);
+  PERFORM set_config('jpc.qr_id_outsider',
+    jpc_seed_extra_qr(s.job_posting_id, s.outsider_id)::text, true);
 END $$;
 
 -- ============================================================================
@@ -186,61 +190,49 @@ SELECT is((SELECT count(*)::int FROM u), 1,
   'event_qr_codes UPDATE: user_id 본인 (user_id=self)');
 
 -- ============================================================================
--- DELETE (4 케이스) — 후속 PR 에서 복원
+-- DELETE (4 케이스) — 4 개 개별 qr_id 시드로 SAVEPOINT 없이 검증
 -- ============================================================================
--- 본 PR 에서 일시 주석 처리. plan mismatch (planned 16 / ran 12) 의 원인이
--- SAVEPOINT + ROLLBACK TO 패턴인지 다른 원인인지 디버그 필요. 로컬 supabase
--- 부팅 drift (memory: pitfall_local_supabase_helper_drift) 로 CI iteration 만으로
--- 추적 어려움. 후속 PR 에서:
---   1. SAVEPOINT 없이 4 개별 qr_id row 시드 (jpc_seed_extra_qr helper 추가)
---   2. 또는 SAVEPOINT 안의 set_config local 동작 추적 + 패치
---   3. plan(12) → plan(16) 복원 + 본 4 케이스 주석 해제
---
--- /*
--- SAVEPOINT sp_delete_owner;
--- SELECT jpc_test_set_user((current_setting('jpc.owner_id'))::uuid);
--- WITH d AS (
---   DELETE FROM public.event_qr_codes
---    WHERE id = (current_setting('jpc.qr_id'))::uuid
---   RETURNING 1
--- )
--- SELECT is((SELECT count(*)::int FROM d), 1,
---   'event_qr_codes DELETE: owner ALLOW (is_workspace_member via ws.owner_id)');
--- ROLLBACK TO SAVEPOINT sp_delete_owner;
---
--- SAVEPOINT sp_delete_editor;
--- SELECT jpc_test_set_user((current_setting('jpc.editor_id'))::uuid);
--- WITH d AS (
---   DELETE FROM public.event_qr_codes
---    WHERE id = (current_setting('jpc.qr_id'))::uuid
---   RETURNING 1
--- )
--- SELECT is((SELECT count(*)::int FROM d), 1,
---   'event_qr_codes DELETE: ws_editor ALLOW (is_workspace_member)');
--- ROLLBACK TO SAVEPOINT sp_delete_editor;
---
--- SAVEPOINT sp_delete_collab;
--- SELECT jpc_test_set_user((current_setting('jpc.collab_id'))::uuid);
--- WITH d AS (
---   DELETE FROM public.event_qr_codes
---    WHERE id = (current_setting('jpc.qr_id'))::uuid
---   RETURNING 1
--- )
--- SELECT is((SELECT count(*)::int FROM d), 1,
---   'event_qr_codes DELETE: collaborator ALLOW (is_posting_collaborator)');
--- ROLLBACK TO SAVEPOINT sp_delete_collab;
---
--- SAVEPOINT sp_delete_outsider;
--- SELECT jpc_test_set_user((current_setting('jpc.outsider_id'))::uuid);
--- WITH d AS (
---   DELETE FROM public.event_qr_codes
---    WHERE id = (current_setting('jpc.qr_id'))::uuid
---   RETURNING 1
--- )
--- SELECT is((SELECT count(*)::int FROM d), 1,
---   'event_qr_codes DELETE: outsider 본인 ALLOW (user_id=self)');
--- ROLLBACK TO SAVEPOINT sp_delete_outsider;
--- */
+-- 각 페르소나 명의의 qr 를 자기 권한으로 DELETE. 정책 OR 분기 평가:
+--   owner    → is_workspace_member (ws.owner=self) ALLOW
+--   editor   → is_workspace_member ALLOW
+--   collab   → is_posting_collaborator ALLOW
+--   outsider → user_id=self ALLOW (qr.user_id = outsider_id)
+
+SELECT jpc_test_set_user((current_setting('jpc.owner_id'))::uuid);
+WITH d AS (
+  DELETE FROM public.event_qr_codes
+   WHERE id = (current_setting('jpc.qr_id_owner'))::uuid
+  RETURNING 1
+)
+SELECT is((SELECT count(*)::int FROM d), 1,
+  'event_qr_codes DELETE: owner ALLOW (is_workspace_member via ws.owner_id)');
+
+SELECT jpc_test_set_user((current_setting('jpc.editor_id'))::uuid);
+WITH d AS (
+  DELETE FROM public.event_qr_codes
+   WHERE id = (current_setting('jpc.qr_id_editor'))::uuid
+  RETURNING 1
+)
+SELECT is((SELECT count(*)::int FROM d), 1,
+  'event_qr_codes DELETE: ws_editor ALLOW (is_workspace_member)');
+
+SELECT jpc_test_set_user((current_setting('jpc.collab_id'))::uuid);
+WITH d AS (
+  DELETE FROM public.event_qr_codes
+   WHERE id = (current_setting('jpc.qr_id_collab'))::uuid
+  RETURNING 1
+)
+SELECT is((SELECT count(*)::int FROM d), 1,
+  'event_qr_codes DELETE: collaborator ALLOW (is_posting_collaborator)');
+
+SELECT jpc_test_set_user((current_setting('jpc.outsider_id'))::uuid);
+WITH d AS (
+  DELETE FROM public.event_qr_codes
+   WHERE id = (current_setting('jpc.qr_id_outsider'))::uuid
+  RETURNING 1
+)
+SELECT is((SELECT count(*)::int FROM d), 1,
+  'event_qr_codes DELETE: outsider 본인 ALLOW (user_id=self)');
 
 SELECT * FROM finish();
 ROLLBACK;
