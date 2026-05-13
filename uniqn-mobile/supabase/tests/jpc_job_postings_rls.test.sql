@@ -122,31 +122,31 @@ WITH u AS (UPDATE public.job_postings SET title='u-outsider' WHERE id=(current_s
 SELECT is((SELECT count(*)::int FROM u), 0, 'job_postings UPDATE: outsider denied');
 
 -- ============================================================================
--- DELETE (4 케이스) — jpc_check_can_delete_jp SECURITY DEFINER 함수로 정책 동등 평가.
--- 직접 DELETE 는 jp_delete_workspace_owner USING 의 SELECT FROM workspaces →
--- workspaces JPC JOIN 분기 → job_postings SELECT RLS recursion (42P17) 으로 검증 불가.
+-- DELETE (4 케이스) — C2 fix 후 cycle 해소 (PR #91, 20260515100000) 로 invoker
+-- 직접 DELETE 검증 가능 (editor/collab/outsider 3 case = RLS 차단으로 0 rows).
 -- 정책: job_postings_delete_owner_or_admin OR jp_delete_workspace_owner
 --      = (jp.owner = self) OR (ws.owner = self) OR is_admin
 -- seed: jp.owner = ws.owner = v_owner → owner 만 ALLOW
+--
+-- owner case 는 jpc_test_seed 의 applications/work_logs/event_qr_codes
+-- (FK ON DELETE NO ACTION) 로 인해 invoker 직접 DELETE 시 23503 발생.
+-- jpc_check_can_delete_jp 로 정책 동등 평가 유지 (cascade utility).
 -- ============================================================================
-SELECT is(
-  public.jpc_check_can_delete_jp((current_setting('jpc.editor_id'))::uuid, (current_setting('jpc.jp_id'))::uuid),
-  false, 'job_postings DELETE: ws_editor denied (ws.owner 아님)'
-);
+SELECT jpc_test_set_user((current_setting('jpc.editor_id'))::uuid);
+WITH d AS (DELETE FROM public.job_postings WHERE id=(current_setting('jpc.jp_id'))::uuid RETURNING 1)
+SELECT is((SELECT count(*)::int FROM d), 0, 'job_postings DELETE: ws_editor denied (ws.owner 아님)');
 
-SELECT is(
-  public.jpc_check_can_delete_jp((current_setting('jpc.collab_id'))::uuid, (current_setting('jpc.jp_id'))::uuid),
-  false, 'job_postings DELETE: collaborator denied (D2: 풀 관리권만)'
-);
+SELECT jpc_test_set_user((current_setting('jpc.collab_id'))::uuid);
+WITH d AS (DELETE FROM public.job_postings WHERE id=(current_setting('jpc.jp_id'))::uuid RETURNING 1)
+SELECT is((SELECT count(*)::int FROM d), 0, 'job_postings DELETE: collaborator denied (D2: 풀 관리권만)');
 
-SELECT is(
-  public.jpc_check_can_delete_jp((current_setting('jpc.outsider_id'))::uuid, (current_setting('jpc.jp_id'))::uuid),
-  false, 'job_postings DELETE: outsider denied'
-);
+SELECT jpc_test_set_user((current_setting('jpc.outsider_id'))::uuid);
+WITH d AS (DELETE FROM public.job_postings WHERE id=(current_setting('jpc.jp_id'))::uuid RETURNING 1)
+SELECT is((SELECT count(*)::int FROM d), 0, 'job_postings DELETE: outsider denied');
 
 SELECT is(
   public.jpc_check_can_delete_jp((current_setting('jpc.owner_id'))::uuid, (current_setting('jpc.jp_id'))::uuid),
-  true, 'job_postings DELETE: owner (jp.owner + ws.owner)'
+  true, 'job_postings DELETE: owner (jp.owner + ws.owner; FK cascade utility 로 SECDEF 유지)'
 );
 
 SELECT * FROM finish();
