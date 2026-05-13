@@ -226,7 +226,7 @@ CREATE OR REPLACE FUNCTION jpc_seed_extra_qr(p_jp_id uuid, p_user_id uuid)
 RETURNS uuid
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
   v_qr uuid := gen_random_uuid();
