@@ -1,8 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, View, Text } from 'react-native';
+import { AccessibilityInfo, Alert, View, Text } from 'react-native';
 import { STATUS_COLORS } from '@/constants/colors';
 import { requestIdentityVerification } from '@portone/browser-sdk/v2';
-import { CheckCircleIcon, ShieldCheckIcon, XCircleIcon } from '@/components/icons';
+import {
+  CheckCircleIcon,
+  ClockIcon,
+  LockIcon,
+  ShieldCheckIcon,
+  XCircleIcon,
+} from '@/components/icons';
 import { Button } from '@/components/ui/Button';
 import { useIsMounted } from '@/hooks/useIsMounted';
 import { extractUserMessage } from '@/errors';
@@ -47,6 +53,15 @@ export function PortOneIdentityVerification({
   useEffect(() => {
     setVerifiedIdentity(initialIdentity);
   }, [initialIdentity]);
+
+  // B15: 에러 메시지 5초 후 자동 dismiss. stale 메시지 carry-over 방지.
+  useEffect(() => {
+    if (!errorMessage) return;
+    const timer = setTimeout(() => {
+      if (isMountedRef.current) setErrorMessage(null);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [errorMessage, isMountedRef]);
 
   const handleVerificationFailure = useCallback(
     (error: unknown, fallbackMessage?: string) => {
@@ -155,6 +170,8 @@ export function PortOneIdentityVerification({
       // A11: 비동기 await 후 unmount 확인
       if (!isMountedRef.current) return;
       setVerifiedIdentity(verification.identity);
+      // B14: 스크린리더에게 자동 채움 완료 announce
+      AccessibilityInfo.announceForAccessibility('본인인증이 완료되었습니다');
       onVerified(verification.identity);
     } catch (error) {
       handleVerificationFailure(error);
@@ -194,36 +211,50 @@ export function PortOneIdentityVerification({
             </Text>
           </View>
 
+          {/* B10: Truncation 정책 — 이름은 tail, 다른 값은 overflow 안전망 */}
           <View className="gap-2 rounded-lg bg-white p-3 dark:bg-surface">
-            <View className="flex-row justify-between">
+            <View className="flex-row justify-between gap-3">
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 이름
               </Text>
-              <Text className="font-sans-medium text-content-primary dark:text-off-white">
+              <Text
+                className="font-sans-medium text-content-primary dark:text-off-white flex-1 min-w-0 text-right"
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
                 {verifiedIdentity.name}
               </Text>
             </View>
-            <View className="flex-row justify-between">
+            <View className="flex-row justify-between gap-3">
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 생년월일
               </Text>
-              <Text className="font-sans-medium text-content-primary dark:text-off-white">
+              <Text
+                className="font-sans-medium text-content-primary dark:text-off-white"
+                numberOfLines={1}
+              >
                 {formatBirthDate(verifiedIdentity.birthDate)}
               </Text>
             </View>
-            <View className="flex-row justify-between">
+            <View className="flex-row justify-between gap-3">
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 성별
               </Text>
-              <Text className="font-sans-medium text-content-primary dark:text-off-white">
+              <Text
+                className="font-sans-medium text-content-primary dark:text-off-white"
+                numberOfLines={1}
+              >
                 {formatGenderLabel(verifiedIdentity.gender)}
               </Text>
             </View>
-            <View className="flex-row justify-between">
+            <View className="flex-row justify-between gap-3">
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 휴대폰 번호
               </Text>
-              <Text className="font-sans-medium text-content-primary dark:text-off-white">
+              <Text
+                className="font-sans-medium text-content-primary dark:text-off-white"
+                numberOfLines={1}
+              >
                 {verifiedIdentity.phoneNumber}
               </Text>
             </View>
@@ -240,16 +271,48 @@ export function PortOneIdentityVerification({
           </Button>
         </View>
       ) : (
-        <View className="rounded-md border border-secondary-200 bg-surface-page dark:bg-surface p-4 dark:border-surface-overlay dark:bg-surface-elevated">
-          <View className="mb-3 flex-row items-center">
+        // B9: 빈 상태 = 온보딩 — (1) 인지(헤더) (2) 가치(소요시간·인증수단·프라이버시) (3) 행동(CTA)
+        <View className="rounded-md border border-secondary-200 bg-surface-page dark:bg-surface p-5 dark:border-surface-overlay dark:bg-surface-elevated gap-4">
+          <View className="flex-row items-center gap-2">
             <ShieldCheckIcon size={20} color="#2563EB" />
-            <Text className="ml-2 font-sans-semibold text-content-primary dark:text-off-white">
+            <Text className="font-sans-semibold text-content-primary dark:text-off-white">
               이니시스 본인인증
             </Text>
           </View>
-          <Text className="mb-4 text-sm leading-5 text-content-muted dark:text-secondary-300 font-sans">
-            PASS, 토스, 카카오, 네이버 등 이니시스 통합인증 수단으로 본인인증을 진행합니다.
-          </Text>
+
+          <View className="flex-row items-center gap-2">
+            <ClockIcon size={16} color="#6B7280" />
+            <Text className="text-sm text-content-muted dark:text-secondary-300 font-sans">
+              약 30초~1분이면 끝나요
+            </Text>
+          </View>
+
+          <View>
+            <Text className="mb-2 text-xs text-content-muted dark:text-secondary-400 font-sans-medium">
+              사용 가능한 인증 수단
+            </Text>
+            <View className="flex-row flex-wrap gap-2">
+              {['PASS', '토스', '카카오', '네이버', '신한', 'KB'].map((label) => (
+                <View
+                  key={label}
+                  className="px-3 py-1 rounded-full bg-secondary-100 dark:bg-surface"
+                >
+                  <Text className="text-xs text-content-secondary dark:text-secondary-300 font-sans-medium">
+                    {label}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <View className="flex-row items-start gap-2 rounded-lg bg-secondary-50 dark:bg-surface p-3">
+            <LockIcon size={14} color="#6B7280" />
+            <Text className="flex-1 text-xs leading-4 text-content-muted dark:text-secondary-400 font-sans">
+              인증 정보(이름, 생년월일, 성별, 휴대폰)는 본인 확인 목적으로만 사용되며 암호화되어
+              안전하게 처리됩니다.
+            </Text>
+          </View>
+
           <Button onPress={startVerification} disabled={disabled || isProcessing} fullWidth>
             {isProcessing ? '인증 확인 중...' : '본인인증 시작'}
           </Button>

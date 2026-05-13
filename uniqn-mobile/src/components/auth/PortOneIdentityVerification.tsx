@@ -1,9 +1,22 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, View, Text, useColorScheme, useWindowDimensions } from 'react-native';
+import {
+  AccessibilityInfo,
+  Alert,
+  View,
+  Text,
+  useColorScheme,
+  useWindowDimensions,
+} from 'react-native';
 import { setStatusBarStyle } from 'expo-status-bar';
 import { STATUS_COLORS } from '@/constants/colors';
 import { IdentityVerification } from '@portone/react-native-sdk';
-import { CheckCircleIcon, ShieldCheckIcon, XCircleIcon } from '@/components/icons';
+import {
+  CheckCircleIcon,
+  ClockIcon,
+  LockIcon,
+  ShieldCheckIcon,
+  XCircleIcon,
+} from '@/components/icons';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { useIsMounted } from '@/hooks/useIsMounted';
@@ -67,6 +80,15 @@ export function PortOneIdentityVerification({
       setStatusBarStyle(colorScheme === 'dark' ? 'light' : 'dark');
     };
   }, [colorScheme, modalVisible]);
+
+  // B15: 에러 메시지 5초 후 자동 dismiss. 모달 닫은 후에도 stale 메시지가 남는 carry-over 방지.
+  useEffect(() => {
+    if (!errorMessage) return;
+    const timer = setTimeout(() => {
+      if (isMountedRef.current) setErrorMessage(null);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [errorMessage, isMountedRef]);
 
   const handleVerificationFailure = useCallback(
     (error: unknown, fallbackMessage?: string) => {
@@ -153,6 +175,8 @@ export function PortOneIdentityVerification({
         setVerifiedIdentity(verification.identity);
         // B5: 본인인증 완료는 결정적 순간 — Success haptic
         void triggerHaptic('success');
+        // B14: 스크린리더에게 자동 채움 완료 announce
+        AccessibilityInfo.announceForAccessibility('본인인증이 완료되었습니다');
         onVerified(verification.identity);
       } catch (error) {
         handleVerificationFailure(error);
@@ -203,7 +227,13 @@ export function PortOneIdentityVerification({
     );
   }, [startVerification]);
 
-  const modalHeight = Math.max(420, Math.floor(height * 0.7));
+  // B18: iPhone SE 1세대(568px) 등 작은 기기에서 SafeAreaView 잘림 방지.
+  // Modal 헤더(~45px) + content 패딩(~40px) + SafeArea 버퍼(60px) 를 빼고 남는 영역만 iframe 에 할당.
+  // min 360px (PortOne iframe responsive 하한), max 640px (큰 화면 과도 expand 방지).
+  const MODAL_MAX_RATIO = 0.85;
+  const MODAL_CHROME = 45 + 40 + 60; // header + content padding + safe area buffer
+  const availableHeight = height * MODAL_MAX_RATIO - MODAL_CHROME;
+  const modalHeight = Math.max(360, Math.min(640, availableHeight));
 
   return (
     <View className="w-full">
@@ -216,36 +246,50 @@ export function PortOneIdentityVerification({
             </Text>
           </View>
 
+          {/* B10: Truncation 정책 — 이름은 numberOfLines=1 tail, 생년월일/성별/번호는 안전망 (overflow 방지) */}
           <View className="gap-2 rounded-lg bg-white p-3 dark:bg-surface">
-            <View className="flex-row justify-between">
+            <View className="flex-row justify-between gap-3">
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 이름
               </Text>
-              <Text className="font-sans-medium text-content-primary dark:text-off-white">
+              <Text
+                className="font-sans-medium text-content-primary dark:text-off-white flex-1 min-w-0 text-right"
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
                 {verifiedIdentity.name}
               </Text>
             </View>
-            <View className="flex-row justify-between">
+            <View className="flex-row justify-between gap-3">
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 생년월일
               </Text>
-              <Text className="font-sans-medium text-content-primary dark:text-off-white">
+              <Text
+                className="font-sans-medium text-content-primary dark:text-off-white"
+                numberOfLines={1}
+              >
                 {formatBirthDate(verifiedIdentity.birthDate)}
               </Text>
             </View>
-            <View className="flex-row justify-between">
+            <View className="flex-row justify-between gap-3">
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 성별
               </Text>
-              <Text className="font-sans-medium text-content-primary dark:text-off-white">
+              <Text
+                className="font-sans-medium text-content-primary dark:text-off-white"
+                numberOfLines={1}
+              >
                 {formatGenderLabel(verifiedIdentity.gender)}
               </Text>
             </View>
-            <View className="flex-row justify-between">
+            <View className="flex-row justify-between gap-3">
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 휴대폰 번호
               </Text>
-              <Text className="font-sans-medium text-content-primary dark:text-off-white">
+              <Text
+                className="font-sans-medium text-content-primary dark:text-off-white"
+                numberOfLines={1}
+              >
                 {verifiedIdentity.phoneNumber}
               </Text>
             </View>
@@ -262,17 +306,48 @@ export function PortOneIdentityVerification({
           </Button>
         </View>
       ) : (
-        <View className="rounded-md border border-secondary-200 bg-surface-page dark:bg-surface p-4 dark:border-surface-overlay dark:bg-surface-elevated">
-          <View className="mb-3 flex-row items-center">
+        // B9: 빈 상태 = 온보딩 — (1) 인지(헤더) (2) 가치(소요시간·인증수단·프라이버시) (3) 행동(CTA)
+        <View className="rounded-md border border-secondary-200 bg-surface-page dark:bg-surface p-5 dark:border-surface-overlay dark:bg-surface-elevated gap-4">
+          <View className="flex-row items-center gap-2">
             <ShieldCheckIcon size={20} color="#2563EB" />
-            <Text className="ml-2 font-sans-semibold text-content-primary dark:text-off-white">
+            <Text className="font-sans-semibold text-content-primary dark:text-off-white">
               이니시스 본인인증
             </Text>
           </View>
-          <Text className="mb-4 text-sm leading-5 text-content-muted dark:text-secondary-300 font-sans">
-            PASS, 토스, 카카오, 네이버 등 이니시스 통합인증 수단으로 본인인증을 진행합니다. 인증
-            완료 후 검증된 이름, 생년월일, 성별, 휴대폰 번호를 자동으로 반영합니다.
-          </Text>
+
+          <View className="flex-row items-center gap-2">
+            <ClockIcon size={16} color="#6B7280" />
+            <Text className="text-sm text-content-muted dark:text-secondary-300 font-sans">
+              약 30초~1분이면 끝나요
+            </Text>
+          </View>
+
+          <View>
+            <Text className="mb-2 text-xs text-content-muted dark:text-secondary-400 font-sans-medium">
+              사용 가능한 인증 수단
+            </Text>
+            <View className="flex-row flex-wrap gap-2">
+              {['PASS', '토스', '카카오', '네이버', '신한', 'KB'].map((label) => (
+                <View
+                  key={label}
+                  className="px-3 py-1 rounded-full bg-secondary-100 dark:bg-surface"
+                >
+                  <Text className="text-xs text-content-secondary dark:text-secondary-300 font-sans-medium">
+                    {label}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <View className="flex-row items-start gap-2 rounded-lg bg-secondary-50 dark:bg-surface p-3">
+            <LockIcon size={14} color="#6B7280" />
+            <Text className="flex-1 text-xs leading-4 text-content-muted dark:text-secondary-400 font-sans">
+              인증 정보(이름, 생년월일, 성별, 휴대폰)는 본인 확인 목적으로만 사용되며 암호화되어
+              안전하게 처리됩니다.
+            </Text>
+          </View>
+
           <Button onPress={startVerification} disabled={disabled || isProcessing} fullWidth>
             {isProcessing ? '인증 확인 중...' : '본인인증 시작'}
           </Button>
@@ -297,6 +372,8 @@ export function PortOneIdentityVerification({
           }}
           title="본인인증"
           size="full"
+          // B16: 진행 중 모달은 "취소" 시맨틱 — 자동 완료 시 모달이 사라지므로 항상 진행 컨텍스트.
+          closeAccessibilityLabel="본인인증 취소"
         >
           <View style={{ height: modalHeight }}>
             <IdentityVerification

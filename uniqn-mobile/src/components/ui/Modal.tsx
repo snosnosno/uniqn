@@ -46,6 +46,11 @@ export interface ModalProps {
   size?: 'sm' | 'md' | 'lg' | 'full';
   position?: 'center' | 'bottom';
   footer?: React.ReactNode;
+  /**
+   * 닫기 버튼 a11y 라벨. 컨텍스트별 분기용 (예: 진행 중 = "본인인증 취소", 완료 후 = "닫기").
+   * 미지정 시 기본 "닫기".
+   */
+  closeAccessibilityLabel?: string;
 }
 
 // ============================================================================
@@ -73,6 +78,7 @@ function WebModal({
   size = 'md',
   position = 'center',
   footer,
+  closeAccessibilityLabel = '닫기',
 }: ModalProps) {
   const { isDarkMode } = useThemeStore();
   const { height: windowHeight } = useWindowDimensions();
@@ -200,7 +206,7 @@ function WebModal({
                     onPress={onClose}
                     className="w-9 h-9 items-center justify-center rounded-sm bg-surface-card dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
                     accessibilityRole="button"
-                    accessibilityLabel="닫기"
+                    accessibilityLabel={closeAccessibilityLabel}
                     hitSlop={8}
                   >
                     <XMarkIcon size={18} color={getIconColor(isDarkMode, 'primary')} />
@@ -247,6 +253,7 @@ function NativeModal({
   size = 'md',
   position = 'center',
   footer,
+  closeAccessibilityLabel = '닫기',
 }: ModalProps) {
   const { isDarkMode } = useThemeStore();
   const { height: windowHeight } = useWindowDimensions();
@@ -397,7 +404,7 @@ function NativeModal({
                         onPress={onClose}
                         className="w-9 h-9 items-center justify-center rounded-sm bg-surface-card dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
                         accessibilityRole="button"
-                        accessibilityLabel="닫기"
+                        accessibilityLabel={closeAccessibilityLabel}
                         hitSlop={8}
                       >
                         <XMarkIcon size={18} color={getIconColor(isDarkMode, 'primary')} />
