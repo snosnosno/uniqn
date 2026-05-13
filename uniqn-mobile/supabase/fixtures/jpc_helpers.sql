@@ -1,11 +1,15 @@
--- uniqn-mobile/supabase/tests/jpc_helpers.sql
+-- uniqn-mobile/supabase/fixtures/jpc_helpers.sql
 -- pgTAP RLS 테스트 헬퍼 — JPC 후속 PR
 -- 메모리 학습: pitfall_rls_dynamic_verification_sparse_data — matching row count 사전 측정 필수
 --             pitfall_test_seed_zod_schema_first — JSONB raw INSERT 함정 회피
 --
 -- ============================================================================
--- ⚠️ 경고: 이 파일은 supabase/tests/ 전용입니다. PROD 등록 금지.
+-- ⚠️ 경고: 이 파일은 supabase/fixtures/ 전용입니다. PROD 등록 금지.
 -- ============================================================================
+-- ⚠️ 위치 주의: supabase/tests/ 안에 두면 pg_prove 가 plan 없는 helper 파일로
+--             보고 "No plan found in TAP output" 으로 fail. supabase/fixtures/
+--             분리. npm run test:db:helpers 가 docker cp 으로 등록.
+--
 -- 이 파일에는 SECURITY DEFINER 함수 12개가 포함되어 RLS 를 완전히 우회합니다:
 --   - jpc_test_force_delete_workspace / _jp / _jpc / force_insert_jpc
 --   - jpc_test_create_user / delete_user / transfer_ws_owner
@@ -16,7 +20,7 @@
 -- workspace/jp/jpc 의 RLS 를 우회 가능 — catastrophic security incident.
 --
 -- 등록 방법 (로컬/CI 만):
---   docker exec -i supabase_db_uniqn psql -U postgres -d postgres -f - < supabase/tests/jpc_helpers.sql
+--   docker exec -i supabase_db_uniqn psql -U postgres -d postgres -f - < supabase/fixtures/jpc_helpers.sql
 --   또는 npm run test:db (자동 등록 + supabase test db)
 -- ============================================================================
 
