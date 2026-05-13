@@ -47,6 +47,11 @@ BEGIN
     now(), now()
   );
 
+  -- public.users 명시 INSERT (handle_new_user 트리거 CI 미작동 대비)
+  INSERT INTO public.users (id, email, name, role, is_active, created_at, updated_at)
+  VALUES (v_owner_id, '__sql_fixture_total_owner@test.local', 'fixture', 'employer'::user_role, true, now(), now())
+  ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, is_active = EXCLUDED.is_active;
+
   -- workspace seed (job_postings.workspace_id NOT NULL 충족 — PR #88 schema 변경)
   INSERT INTO public.workspaces (id, name, owner_id, created_at, updated_at)
   VALUES (v_workspace_id, '__sql_fixture_total_ws', v_owner_id, now(), now());
