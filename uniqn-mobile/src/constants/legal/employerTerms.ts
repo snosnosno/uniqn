@@ -2,9 +2,9 @@ import type { LegalDocument } from './types';
 
 export const EMPLOYER_TERMS: LegalDocument = {
   title: 'UNIQN 구인자 이용약관',
-  version: '1.1',
-  publishDate: '2026-04-10',
-  effectiveDate: '2026-04-10',
+  version: '1.2',
+  publishDate: '2026-05-13',
+  effectiveDate: '2026-05-13',
   sections: [
     {
       title: '제1조 (목적)',
@@ -23,8 +23,8 @@ export const EMPLOYER_TERMS: LegalDocument = {
         '1. 구인자는 공고 내용을 정확하게 작성해야 합니다.\n' +
         '2. 확정된 스태프에 대한 급여를 약속된 기한 내에 지급해야 합니다.\n' +
         '3. 스태프의 안전한 근무 환경을 보장해야 합니다.\n' +
-        '4. 관련 법령(근로기준법 등)을 준수해야 합니다.\n' +
-        '5. 스태프의 개인정보를 보호하고 목적 외 사용을 금지합니다.',
+        '4. 관련 법령(근로기준법, 개인정보보호법 등)을 준수해야 합니다.\n' +
+        '5. 스태프의 개인정보 보호 의무는 제7조에서 별도로 정합니다.',
     },
     {
       title: '제4조 (공고 등록 및 관리)',
@@ -48,7 +48,21 @@ export const EMPLOYER_TERMS: LegalDocument = {
         '1. 허위 공고를 반복적으로 등록하는 경우\n' +
         '2. 스태프에게 급여를 지급하지 않는 경우\n' +
         '3. 스태프에 대한 부당한 대우가 확인되는 경우\n' +
-        '4. 기타 관련 법령 또는 이 약관을 위반하는 경우',
+        '4. 스태프 개인정보 보호 의무(제7조)를 위반하는 경우\n' +
+        '5. 기타 관련 법령 또는 이 약관을 위반하는 경우',
+    },
+    {
+      title: '제7조 (구직자 개인정보 보호)',
+      body:
+        '1. 구인자는 UNIQN을 통해 제공받은 구직자 개인정보(이름, 휴대폰 번호, 프로필 정보 등)를 ' +
+        '해당 공고의 채용·근무 관리 목적으로만 처리합니다.\n\n' +
+        '2. 보유 기간은 채용 종료 후 최대 3개월이며, 이후 자체 보관 중인 정보를 모두 파기합니다.\n\n' +
+        '3. 다음 행위는 목적 외 이용으로 금지됩니다.\n' +
+        '- 제3자(다른 업체·개인)에 대한 재제공 또는 재판매\n' +
+        '- 마케팅·홍보 활용\n' +
+        '- 다른 공고 안내 또는 외부 채용 정보 발송\n\n' +
+        '4. 본 조항 위반 시 회사는 서비스 이용을 제한할 수 있으며, 구인자는 개인정보보호법 ' +
+        '제17조 등 관련 법령에 따른 책임을 부담합니다.',
     },
   ],
 };
@@ -57,4 +71,4 @@ export const EMPLOYER_TERMS: LegalDocument = {
  * employer-register 화면에서 동의 시 DB에 기록할 버전 식별자.
  * 약관 본문 변경 시 EMPLOYER_TERMS.version과 동시에 bump.
  */
-export const EMPLOYER_TERMS_VERSION_TAG = `v4-${EMPLOYER_TERMS.effectiveDate}`;
+export const EMPLOYER_TERMS_VERSION_TAG = `v5-${EMPLOYER_TERMS.effectiveDate}`;
