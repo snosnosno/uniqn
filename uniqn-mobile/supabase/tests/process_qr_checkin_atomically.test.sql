@@ -140,7 +140,12 @@ BEGIN
   -- ----------------------------------------------------------
   -- S3: payroll completed → already_settled
   -- ----------------------------------------------------------
+  -- protect_work_log_payroll_columns trigger 가 staff 직접 payroll UPDATE 차단.
+  -- 본 fixture 는 superuser context (auth.jwt() null) 이라 v_role='' → staff 로 인식.
+  -- service_role 권한 설정 후 UPDATE (ROLLBACK 으로 무효화).
+  PERFORM set_config('request.jwt.claim.role', 'service_role', true);
   UPDATE public.work_logs SET payroll_status = 'completed' WHERE id = v_work_log_id;
+  PERFORM set_config('request.jwt.claim.role', '', true);
   v_result := public.process_qr_checkin_atomically(
     v_work_log_id, v_staff_id, v_job_id, 'checkIn', now(), NULL
   );

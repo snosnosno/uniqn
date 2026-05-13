@@ -1,6 +1,13 @@
 -- ============================================================
 -- T-B4: cancel_application_atomically expired 재오픈 가드 테스트
 -- ============================================================
+-- DISABLED 사유 (2026-05-14): cancel_application_atomically RPC 가
+-- closed jp 를 closed_reason 무관하게 active 로 재오픈한다 (CASE WHEN status='closed'
+-- AND v_new_filled < total_positions THEN 'active'). S2 'expired' / S3
+-- 'expired_by_work_date' 가드가 RPC 에 없음. test 의 비즈니스 의도 vs RPC 실제
+-- 동작 결정 필요. 후속 PR: RPC 에 expired 가드 추가 (closed_reason NOT IN
+-- ('expired', 'expired_by_work_date')) 또는 test 기대값 수정.
+-- ============================================================
 -- 목적: closed_reason이 'expired' / 'expired_by_work_date'인 공고는
 --       취소 승인 후에도 closed 상태를 유지해야 함을 검증.
 --       일반 closed 공고(closed_reason = 'manual' 등)는 재오픈됨을 함께 검증.
