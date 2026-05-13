@@ -52,6 +52,14 @@ export const SUPABASE_QA_ACCOUNTS = {
     role: 'admin' as const,
     name: 'QA관리자',
   },
+  // PR #88 follow-up: 공고별 협업자 페르소나 (role=employer 로 (employer) 라우트 접근 허용)
+  collaborator: {
+    id: 'c1a2b3c4-d5e6-4f7a-8b9c-d0e1f2a3b4c5',
+    email: 'qa-collaborator@uniqn.test',
+    password: 'TestPass1!',
+    role: 'employer' as const,
+    name: 'QA협업자',
+  },
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -121,7 +129,7 @@ export function getAdminClient(): SupabaseClient | null {
  */
 export function buildStorageStateEntry(
   token: SupabaseAuthToken,
-  accountRole: 'staff' | 'employer' | 'admin',
+  accountRole: 'staff' | 'employer' | 'admin' | 'collaborator',
   _baseUrl: string
 ): { name: string; value: string }[] {
   const account = SUPABASE_QA_ACCOUNTS[accountRole];
@@ -150,7 +158,10 @@ export function buildStorageStateEntry(
           name: account.name,
           nickname: account.name,
           displayName: account.name,
-          role: accountRole,
+          // collaborator 페르소나의 실제 user role 은 account.role ('employer') 사용
+          // (accountRole 은 fixture 키이며 type 시스템상 'collaborator' 도 허용되지만
+          //  UserRole 도메인은 staff/employer/admin 만 유효)
+          role: account.role,
           status: 'active',
           isActive: true,
           phoneVerified: true,

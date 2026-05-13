@@ -34,6 +34,7 @@ DO $$
 DECLARE
   v_owner_id uuid := gen_random_uuid();
   v_staff_id uuid := gen_random_uuid();
+  v_workspace_id uuid := gen_random_uuid();
 
   -- S1: manual closed
   v_job_manual_id  uuid := gen_random_uuid();
@@ -57,13 +58,25 @@ BEGIN
     (v_owner_id, '__sql_fixture_eg_owner@test.local', 'authenticated', 'authenticated', '', '{"role":"employer"}'::jsonb, '{"name":"EG_OWNER"}'::jsonb, now(), now()),
     (v_staff_id, '__sql_fixture_eg_staff@test.local', 'authenticated', 'authenticated', '', '{"role":"staff"}'::jsonb,    '{"name":"EG_STAFF"}'::jsonb, now(), now());
 
+  -- public.users 명시 INSERT (handle_new_user 트리거 CI 미작동 대비)
+  INSERT INTO public.users (id, email, name, role, is_active, created_at, updated_at)
+  SELECT id, email, 'fixture',
+    CASE WHEN id = v_owner_id THEN 'employer'::user_role ELSE 'staff'::user_role END,
+    true, now(), now()
+  FROM auth.users WHERE id IN (v_owner_id, v_staff_id)
+  ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, is_active = EXCLUDED.is_active;
+
+  -- workspace seed (job_postings.workspace_id NOT NULL 충족 — PR #88 schema 변경)
+  INSERT INTO public.workspaces (id, name, owner_id, created_at, updated_at)
+  VALUES (v_workspace_id, '__sql_fixture_eg_ws', v_owner_id, now(), now());
+
   -- ============================================================
   -- S1 fixture: closed + closed_reason = 'manual', filled=1, total=3
   -- ============================================================
   INSERT INTO public.job_postings (
-    id, owner_id, title, total_positions, filled_positions, status, closed_reason, created_at, updated_at
+    id, owner_id, workspace_id, title, total_positions, filled_positions, status, closed_reason, created_at, updated_at
   )
-  VALUES (v_job_manual_id, v_owner_id, '__sql_fixture: manual closed', 3, 1, 'closed', 'manual', now(), now());
+  VALUES (v_job_manual_id, v_owner_id, v_workspace_id, '__sql_fixture: manual closed', 3, 1, 'closed', 'manual', now(), now());
 
   INSERT INTO public.applications (
     id, job_posting_id, applicant_id, applicant_name, status, cancellation_request, confirmation_history, created_at, updated_at
@@ -83,9 +96,9 @@ BEGIN
   -- S2 fixture: closed + closed_reason = 'expired', filled=1, total=3
   -- ============================================================
   INSERT INTO public.job_postings (
-    id, owner_id, title, total_positions, filled_positions, status, closed_reason, created_at, updated_at
+    id, owner_id, workspace_id, title, total_positions, filled_positions, status, closed_reason, created_at, updated_at
   )
-  VALUES (v_job_expired_id, v_owner_id, '__sql_fixture: expired closed', 3, 1, 'closed', 'expired', now(), now());
+  VALUES (v_job_expired_id, v_owner_id, v_workspace_id, '__sql_fixture: expired closed', 3, 1, 'closed', 'expired', now(), now());
 
   INSERT INTO public.applications (
     id, job_posting_id, applicant_id, applicant_name, status, cancellation_request, confirmation_history, created_at, updated_at
@@ -105,9 +118,9 @@ BEGIN
   -- S3 fixture: closed + closed_reason = 'expired_by_work_date', filled=1, total=3
   -- ============================================================
   INSERT INTO public.job_postings (
-    id, owner_id, title, total_positions, filled_positions, status, closed_reason, created_at, updated_at
+    id, owner_id, workspace_id, title, total_positions, filled_positions, status, closed_reason, created_at, updated_at
   )
-  VALUES (v_job_expired_wd_id, v_owner_id, '__sql_fixture: expired_by_work_date closed', 3, 1, 'closed', 'expired_by_work_date', now(), now());
+  VALUES (v_job_expired_wd_id, v_owner_id, v_workspace_id, '__sql_fixture: expired_by_work_date closed', 3, 1, 'closed', 'expired_by_work_date', now(), now());
 
   INSERT INTO public.applications (
     id, job_posting_id, applicant_id, applicant_name, status, cancellation_request, confirmation_history, created_at, updated_at
@@ -185,6 +198,7 @@ BEGIN
   -- ============================================================
   DELETE FROM public.applications WHERE id IN (v_app_manual_id, v_app_expired_id, v_app_expired_wd_id);
   DELETE FROM public.job_postings WHERE id IN (v_job_manual_id, v_job_expired_id, v_job_expired_wd_id);
+  DELETE FROM public.workspaces WHERE id = v_workspace_id;
   DELETE FROM auth.users WHERE id IN (v_owner_id, v_staff_id);
 END $$;
 

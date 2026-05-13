@@ -20,6 +20,7 @@ DECLARE
   v_owner_id uuid := gen_random_uuid();
   v_staff1_id uuid := gen_random_uuid();
   v_staff2_id uuid := gen_random_uuid();
+  v_workspace_id uuid := gen_random_uuid();
   v_job_id uuid := gen_random_uuid();
   v_app1_id uuid := gen_random_uuid();
   v_app2_id uuid := gen_random_uuid();
@@ -43,10 +44,22 @@ BEGIN
     (v_staff1_id, '__sql_fixture_pb_staff1@test.local', '{"role":"staff"}'::jsonb,    '{"name":"PB_STAFF1"}'::jsonb, now(), now()),
     (v_staff2_id, '__sql_fixture_pb_staff2@test.local', '{"role":"staff"}'::jsonb,    '{"name":"PB_STAFF2"}'::jsonb, now(), now());
 
+  -- public.users 명시 INSERT (handle_new_user 트리거 CI 미작동 대비)
+  INSERT INTO public.users (id, email, name, role, is_active, created_at, updated_at)
+  SELECT id, email, 'fixture',
+    CASE WHEN id = v_owner_id THEN 'employer'::user_role ELSE 'staff'::user_role END,
+    true, now(), now()
+  FROM auth.users WHERE id IN (v_owner_id, v_staff1_id, v_staff2_id)
+  ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, is_active = EXCLUDED.is_active;
+
+  -- workspace seed (job_postings.workspace_id NOT NULL 충족 — PR #88 schema 변경)
+  INSERT INTO public.workspaces (id, name, owner_id, created_at, updated_at)
+  VALUES (v_workspace_id, '__sql_fixture_pb_ws', v_owner_id, now(), now());
+
   INSERT INTO public.job_postings (
-    id, owner_id, title, total_positions, filled_positions, status, stats, created_at, updated_at
+    id, owner_id, workspace_id, title, total_positions, filled_positions, status, stats, created_at, updated_at
   ) VALUES (
-    v_job_id, v_owner_id, '__sql_fixture: person basis', 10, 0, 'active',
+    v_job_id, v_owner_id, v_workspace_id, '__sql_fixture: person basis', 10, 0, 'active',
     '{"totalApplicants":0,"activeApplicants":0,"confirmedApplicants":0,"cancellationPendingApplicants":0,"filledPositions":0}'::jsonb,
     now(), now()
   );
@@ -222,6 +235,7 @@ BEGIN
   DELETE FROM public.work_logs WHERE job_posting_id = v_job_id;
   DELETE FROM public.applications WHERE id IN (v_app1_id, v_app2_id);
   DELETE FROM public.job_postings WHERE id = v_job_id;
+  DELETE FROM public.workspaces WHERE id = v_workspace_id;
   DELETE FROM auth.users WHERE id IN (v_owner_id, v_staff1_id, v_staff2_id);
 
   RAISE NOTICE 'PERSON_BASIS_TEST_PASSED';

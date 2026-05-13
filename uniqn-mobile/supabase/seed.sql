@@ -90,6 +90,25 @@ VALUES
     '',
     '',
     ''
+  ),
+  -- PR #88 follow-up: 공고별 협업자 페르소나 (role=employer, 자기 workspace 없음)
+  (
+    'c1a2b3c4-d5e6-4f7a-8b9c-d0e1f2a3b4c5'::uuid,
+    '00000000-0000-0000-0000-000000000000'::uuid,
+    'authenticated',
+    'authenticated',
+    'qa-collaborator@uniqn.test',
+    crypt('TestPass1!', gen_salt('bf', 10)),
+    now(),
+    now(),
+    now(),
+    '{"provider":"email","providers":["email"],"role":"employer"}'::jsonb,
+    '{"name":"QA협업자"}'::jsonb,
+    false,
+    '',
+    '',
+    '',
+    ''
   )
 ON CONFLICT (id) DO NOTHING;
 
@@ -148,6 +167,21 @@ VALUES
     jsonb_build_object(
       'sub', '95337a77-9700-427e-8ff3-bc7a14abb90e',
       'email', 'qa-admin@uniqn.test',
+      'email_verified', true,
+      'phone_verified', false
+    ),
+    'email',
+    now(),
+    now(),
+    now()
+  ),
+  (
+    gen_random_uuid(),
+    'qa-collaborator@uniqn.test',
+    'c1a2b3c4-d5e6-4f7a-8b9c-d0e1f2a3b4c5'::uuid,
+    jsonb_build_object(
+      'sub', 'c1a2b3c4-d5e6-4f7a-8b9c-d0e1f2a3b4c5',
+      'email', 'qa-collaborator@uniqn.test',
       'email_verified', true,
       'phone_verified', false
     ),
@@ -225,6 +259,23 @@ VALUES
     'active',
     true,
     '+82105555555',
+    true,
+    true,
+    true,
+    true,
+    false,
+    now(),
+    now()
+  ),
+  (
+    'c1a2b3c4-d5e6-4f7a-8b9c-d0e1f2a3b4c5'::uuid,
+    'qa-collaborator@uniqn.test',
+    'QA협업자',
+    'qa-collaborator',
+    'employer',
+    'active',
+    true,
+    '+82107777777',
     true,
     true,
     true,

@@ -66,11 +66,31 @@ npm run e2e
 
 ### Supabase (마이그레이션 변경 시)
 
+> **❗ prod 적용은 MCP `apply_migration` 전용 — `supabase db push` 금지.**
+>
+> prod `supabase_migrations.schema_migrations` 의 version 컬럼은 MCP 적용 시점
+> timestamp 로 등록되어 파일명 timestamp 와 디커플돼 있다. `db push` 호출 시
+> registry 와 git 파일 mismatch (~10건 이상) 가 모두 미적용 마이그레이션으로
+> 잡혀 재실행 시도 → 다수 충돌. 파일명 timestamp 변경 / rename 자체는 무해.
+
+로컬 검증:
+
 ```bash
 cd uniqn-mobile
-npx supabase db push
-npx supabase gen types typescript > src/lib/database.types.ts
+supabase start                  # 로컬 부팅 (마이그레이션 자동 적용)
+supabase test db                # pgTAP 테스트 (npm run test:db 도 동일)
+supabase gen types typescript --local > src/lib/database.types.ts
 ```
+
+prod 적용:
+
+- Claude Code 의 `mcp__supabase__apply_migration` 호출
+- 또는 Supabase Dashboard SQL Editor 수동 실행
+- 적용 후 `supabase gen types typescript --linked > src/lib/database.types.ts` 로 타입 재생성
+
+새 마이그레이션은 가장 최근 timestamp 로 추가하되, 더 이른 timestamp 라도 prod
+영향은 CREATE OR REPLACE / IF NOT EXISTS / IF EXISTS 패턴으로 idempotent 보장 시
+무해. registry 정합성은 MCP 가 자동 관리.
 
 ## 커밋 규칙
 

@@ -1,0 +1,47 @@
+name: DB Tests (pg_prove)
+
+on:
+  pull_request:
+    branches: [main, master, develop]
+    paths:
+      - 'uniqn-mobile/supabase/**'
+      - '.github/workflows/db-tests.yml'
+  push:
+    branches: [main, master, develop]
+    paths:
+      - 'uniqn-mobile/supabase/**'
+      - '.github/workflows/db-tests.yml'
+
+defaults:
+  run:
+    working-directory: uniqn-mobile
+
+jobs:
+  db-tests:
+    name: DB Tests (pg_prove)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Supabase
+        run: supabase start
+
+      - name: Register pgTAP helpers
+        # cross-platform 패턴 (Windows PowerShell 의 stdin redirect `<` 비호환 회피).
+        # `npm run test:db:helpers` 와 동일 — 단일 진실 소스로 npm script 직접 호출.
+        run: npm run test:db:helpers
+
+      - name: Run pg_prove tests
+        run: supabase test db
+
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup || true
