@@ -13,8 +13,61 @@ import {
 } from '../_shared/idp-binding.ts';
 import { extractBindingToken, isBindingMatch } from '../_shared/portone-caller-binding.ts';
 
+// A8: anon caller rate-limit (defense-in-depth, per-instance best-effort).
+// PortOne 호출은 비용/쿼터를 가지므로 가벼운 차단으로 비정상 폭증 방지.
+// Edge function 인스턴스 간 공유 X — 분산 공격엔 한계가 있으나 단일 IP 봇 제한엔 충분.
+const RATE_LIMIT_MAX = 20; // requests per window (IP 식별 가능)
+// IP 헤더 누락 시 'unknown' 공유 bucket — 정상 사용자 부작용 방지를 위해 더 보수적 limit 적용
+const RATE_LIMIT_MAX_NO_IP = 5;
+const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
+const NO_IP_KEY = '__no_ip__';
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_PRUNE_INTERVAL_MS = 5 * 60_000;
+let lastPruneAt = Date.now();
+
+function pruneExpired(now: number) {
+  if (now - lastPruneAt < RATE_LIMIT_PRUNE_INTERVAL_MS) return;
+  lastPruneAt = now;
+  for (const [key, entry] of rateLimitMap.entries()) {
+    if (entry.resetAt < now) rateLimitMap.delete(key);
+  }
+}
+
+function extractClientKey(req: Request): string {
+  // Supabase/Deno edge proxy 통상 x-forwarded-for / x-real-ip 헤더 제공.
+  // 첫 번째 IP만 사용(체인 위조 방지). 빈 경우 __no_ip__ 공유 bucket → 보수적 limit.
+  const xff = req.headers.get('x-forwarded-for');
+  if (xff) {
+    const first = xff.split(',')[0]?.trim();
+    if (first) return first.slice(0, 64);
+  }
+  const xri = req.headers.get('x-real-ip');
+  if (xri) return xri.slice(0, 64);
+  return NO_IP_KEY;
+}
+
+function checkRateLimit(req: Request): boolean {
+  const now = Date.now();
+  pruneExpired(now);
+  const key = extractClientKey(req);
+  const limit = key === NO_IP_KEY ? RATE_LIMIT_MAX_NO_IP : RATE_LIMIT_MAX;
+  const entry = rateLimitMap.get(key);
+  if (!entry || entry.resetAt < now) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= limit) return false;
+  entry.count += 1;
+  return true;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  // A8: rate limit 우선 — 본문 파싱 / PortOne API 호출 비용 방어
+  if (!checkRateLimit(req)) {
+    return idpError('IV_RATE_LIMITED');
+  }
 
   try {
     const authHeader = req.headers.get('Authorization');
