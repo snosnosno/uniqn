@@ -29,6 +29,7 @@ BEGIN;
 DO $$
 DECLARE
   v_owner_id uuid := gen_random_uuid();
+  v_workspace_id uuid := gen_random_uuid();
   v_t1 uuid := gen_random_uuid();  -- grouped 3일 dealer×2 + floor×1 → 3
   v_t2 uuid := gen_random_uuid();  -- 비그룹 3일 각 dealer×2 → 2
   v_t3 uuid := gen_random_uuid();  -- 혼합 dealer×2 + dealer×3 → 3
@@ -46,13 +47,17 @@ BEGIN
     now(), now()
   );
 
+  -- workspace seed (job_postings.workspace_id NOT NULL 충족 — PR #88 schema 변경)
+  INSERT INTO public.workspaces (id, name, owner_id, created_at, updated_at)
+  VALUES (v_workspace_id, '__sql_fixture_total_ws', v_owner_id, now(), now());
+
   -- ============================================================
   -- T1: grouped 3일, 각 timeSlot에 dealer×2 + floor×1 (3일 반복)
   --     역할별 MAX: dealer=2, floor=1 → SUM = 3
   -- ============================================================
-  INSERT INTO public.job_postings (id, owner_id, title, status, total_positions, filled_positions, schedule)
+  INSERT INTO public.job_postings (id, owner_id, workspace_id, title, status, total_positions, filled_positions, schedule)
   VALUES (
-    v_t1, v_owner_id, '__sql_fixture_total_t1', 'draft', 999, 0,
+    v_t1, v_owner_id, v_workspace_id, '__sql_fixture_total_t1', 'draft', 999, 0,
     jsonb_build_object(
       'kind', 'dated',
       'requirements', jsonb_build_array(
@@ -82,9 +87,9 @@ BEGIN
   -- T2: 비그룹 3일, 각 dealer×2 (동일 역할, 날짜만 다름)
   --     역할별 MAX: dealer=2 → SUM = 2
   -- ============================================================
-  INSERT INTO public.job_postings (id, owner_id, title, status, total_positions, filled_positions, schedule)
+  INSERT INTO public.job_postings (id, owner_id, workspace_id, title, status, total_positions, filled_positions, schedule)
   VALUES (
-    v_t2, v_owner_id, '__sql_fixture_total_t2', 'draft', 999, 0,
+    v_t2, v_owner_id, v_workspace_id, '__sql_fixture_total_t2', 'draft', 999, 0,
     jsonb_build_object(
       'kind', 'dated',
       'requirements', jsonb_build_array(
@@ -111,9 +116,9 @@ BEGIN
   -- T3: 혼합 — day1 dealer×2, day2 dealer×3
   --     dealer MAX = 3 → SUM = 3
   -- ============================================================
-  INSERT INTO public.job_postings (id, owner_id, title, status, total_positions, filled_positions, schedule)
+  INSERT INTO public.job_postings (id, owner_id, workspace_id, title, status, total_positions, filled_positions, schedule)
   VALUES (
-    v_t3, v_owner_id, '__sql_fixture_total_t3', 'draft', 999, 0,
+    v_t3, v_owner_id, v_workspace_id, '__sql_fixture_total_t3', 'draft', 999, 0,
     jsonb_build_object(
       'kind', 'dated',
       'requirements', jsonb_build_array(
@@ -135,9 +140,9 @@ BEGIN
   -- T4: 멀티역할 단일 날짜 — dealer×2 + floor×1 + serving×1
   --     → SUM = 4
   -- ============================================================
-  INSERT INTO public.job_postings (id, owner_id, title, status, total_positions, filled_positions, schedule)
+  INSERT INTO public.job_postings (id, owner_id, workspace_id, title, status, total_positions, filled_positions, schedule)
   VALUES (
-    v_t4, v_owner_id, '__sql_fixture_total_t4', 'draft', 999, 0,
+    v_t4, v_owner_id, v_workspace_id, '__sql_fixture_total_t4', 'draft', 999, 0,
     jsonb_build_object(
       'kind', 'dated',
       'requirements', jsonb_build_array(
@@ -155,9 +160,9 @@ BEGIN
   -- ============================================================
   -- T5: fixed roleRequirements [dealer×2, floor×1] → SUM = 3
   -- ============================================================
-  INSERT INTO public.job_postings (id, owner_id, title, status, total_positions, filled_positions, schedule)
+  INSERT INTO public.job_postings (id, owner_id, workspace_id, title, status, total_positions, filled_positions, schedule)
   VALUES (
-    v_t5, v_owner_id, '__sql_fixture_total_t5', 'draft', 999, 0,
+    v_t5, v_owner_id, v_workspace_id, '__sql_fixture_total_t5', 'draft', 999, 0,
     jsonb_build_object(
       'kind', 'fixed',
       'roleRequirements', jsonb_build_array(
@@ -170,9 +175,9 @@ BEGIN
   -- ============================================================
   -- T6: dated + requirements=[] → 0
   -- ============================================================
-  INSERT INTO public.job_postings (id, owner_id, title, status, total_positions, filled_positions, schedule)
+  INSERT INTO public.job_postings (id, owner_id, workspace_id, title, status, total_positions, filled_positions, schedule)
   VALUES (
-    v_t6, v_owner_id, '__sql_fixture_total_t6', 'draft', 999, 0,
+    v_t6, v_owner_id, v_workspace_id, '__sql_fixture_total_t6', 'draft', 999, 0,
     jsonb_build_object('kind', 'dated', 'requirements', '[]'::jsonb)
   );
 
@@ -180,9 +185,9 @@ BEGIN
   -- T7: role='other' customRole='translator' + dealer×2
   --     translator MAX = 1, dealer MAX = 2 → SUM = 3
   -- ============================================================
-  INSERT INTO public.job_postings (id, owner_id, title, status, total_positions, filled_positions, schedule)
+  INSERT INTO public.job_postings (id, owner_id, workspace_id, title, status, total_positions, filled_positions, schedule)
   VALUES (
-    v_t7, v_owner_id, '__sql_fixture_total_t7', 'draft', 999, 0,
+    v_t7, v_owner_id, v_workspace_id, '__sql_fixture_total_t7', 'draft', 999, 0,
     jsonb_build_object(
       'kind', 'dated',
       'requirements', jsonb_build_array(
@@ -335,6 +340,7 @@ BEGIN
   -- Cleanup (ROLLBACK이 모든 변경을 되돌리지만, 명시적으로도 삭제)
   -- ============================================================
   DELETE FROM public.job_postings WHERE id IN (v_t1, v_t2, v_t3, v_t4, v_t5, v_t6, v_t7);
+  DELETE FROM public.workspaces WHERE id = v_workspace_id;
   DELETE FROM auth.users WHERE id = v_owner_id;
 END $$;
 

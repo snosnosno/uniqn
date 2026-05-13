@@ -24,6 +24,7 @@ DECLARE
   v_owner_id uuid := gen_random_uuid();
   v_staff_id uuid := gen_random_uuid();
   v_other_user_id uuid := gen_random_uuid();
+  v_workspace_id uuid := gen_random_uuid();
   v_job_id uuid := gen_random_uuid();
   v_app_id uuid := gen_random_uuid();
   v_work_log_id uuid := gen_random_uuid();
@@ -37,10 +38,14 @@ BEGIN
     (v_staff_id,      '__sql_fixture_race_staff@test.local', '{"role":"staff"}'::jsonb,    '{"name":"STAFF"}'::jsonb, now(), now()),
     (v_other_user_id, '__sql_fixture_race_other@test.local', '{"role":"staff"}'::jsonb,    '{"name":"OTHER"}'::jsonb, now(), now());
 
+  -- workspace seed (job_postings.workspace_id NOT NULL 충족 — PR #88 schema 변경)
+  INSERT INTO public.workspaces (id, name, owner_id, created_at, updated_at)
+  VALUES (v_workspace_id, '__sql_fixture_race_ws', v_owner_id, now(), now());
+
   INSERT INTO public.job_postings (
-    id, owner_id, title, total_positions, filled_positions, status, created_at, updated_at
+    id, owner_id, workspace_id, title, total_positions, filled_positions, status, created_at, updated_at
   )
-  VALUES (v_job_id, v_owner_id, '__sql_fixture: race', 3, 1, 'active', now(), now());
+  VALUES (v_job_id, v_owner_id, v_workspace_id, '__sql_fixture: race', 3, 1, 'active', now(), now());
 
   INSERT INTO public.applications (
     id, job_posting_id, applicant_id, applicant_name, status, confirmation_history, created_at, updated_at
@@ -103,6 +108,7 @@ BEGIN
   DELETE FROM public.work_logs WHERE application_id = v_app_id;
   DELETE FROM public.applications WHERE id = v_app_id;
   DELETE FROM public.job_postings WHERE id = v_job_id;
+  DELETE FROM public.workspaces WHERE id = v_workspace_id;
   DELETE FROM auth.users WHERE id IN (v_owner_id, v_staff_id, v_other_user_id);
 END $$;
 
