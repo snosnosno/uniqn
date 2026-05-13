@@ -490,6 +490,9 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
         assignments: normalizedAssignments,
         ...(input.preQuestionAnswers && { pre_question_answers: input.preQuestionAnswers }),
         is_read: false,
+        // 개보법 §17 — 지원 시점 제3자 제공 동의 기록
+        applicant_provision_consent_at: input.provisionConsentAt,
+        applicant_provision_consent_version: input.provisionConsentVersion,
         updated_at: now,
         ...(existingStatus ? {} : { created_at: now }),
       };

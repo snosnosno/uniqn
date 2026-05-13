@@ -2,9 +2,9 @@ import type { LegalDocument } from './types';
 
 export const LIABILITY_WAIVER: LegalDocument = {
   title: 'UNIQN 구인자 서약서',
-  version: '1.1',
-  publishDate: '2026-04-10',
-  effectiveDate: '2026-04-10',
+  version: '1.2',
+  publishDate: '2026-05-13',
+  effectiveDate: '2026-05-13',
   prologue:
     '본 서약서는 UNIQN 플랫폼을 통한 구인자 활동과 관련하여 발생할 수 있는 책임 소재를 명확히 하기 위한 것입니다. 구인자로 등록하기 전에 아래 내용을 주의 깊게 읽어주시기 바랍니다.',
   sections: [
@@ -51,6 +51,22 @@ export const LIABILITY_WAIVER: LegalDocument = {
         '5. 제3자의 권리 침해\n\n' +
         '단, UNIQN은 분쟁 해결을 위한 중재 노력을 할 수 있으며, 이는 법적 책임의 인정을 의미하지 않습니다.',
     },
+    {
+      title: '제6조 (구직자 개인정보 보호 의무)',
+      body:
+        '1. 구인자는 UNIQN을 통해 제공받은 구직자 개인정보(이름, 연락처, 프로필 정보 등)를 ' +
+        '해당 공고의 채용·근무 관리 목적으로만 이용해야 합니다.\n\n' +
+        '2. 구인자는 다음 행위를 금지합니다.\n' +
+        '- 제3자(다른 업체·개인)에게 재제공 또는 재판매\n' +
+        '- 마케팅, 홍보, 다른 공고 안내 등 채용 외 목적 사용\n' +
+        '- 채용 종료 후 3개월을 초과하는 자체 보관\n\n' +
+        '3. 위반 사실이 확인되는 경우 회사는 사전 통지 없이 구인자 계정을 정지할 수 있으며, ' +
+        '구직자에 대한 손해배상 등 민·형사상 책임은 위반한 구인자가 부담합니다.\n\n' +
+        '4. 구인자는 구직자로부터 개인정보의 열람·정정·삭제 요청을 받은 경우 지체없이 응하고, ' +
+        '채용 종료 후 3개월 이내에 자체 보관 중인 정보를 모두 파기해야 합니다.\n\n' +
+        '5. 본 의무는 개인정보보호법 제17조(개인정보의 제공) 및 관련 법령에 따른 것이며, ' +
+        '본 서약서에 동의함으로써 구인자는 위 의무를 인지하고 이를 준수할 것을 확약합니다.',
+    },
   ],
   epilogue:
     '본 서약서에 동의함으로써, 구인자는 위 내용을 충분히 이해하였으며, 관련 책임이 구인자 본인 또는 해당 업체에게 있음을 인정합니다.',
@@ -60,4 +76,4 @@ export const LIABILITY_WAIVER: LegalDocument = {
  * employer-register 화면에서 동의 시 DB에 기록할 버전 식별자.
  * 본문 변경 시 LIABILITY_WAIVER.version과 동시에 bump.
  */
-export const LIABILITY_WAIVER_VERSION_TAG = `v4-${LIABILITY_WAIVER.effectiveDate}`;
+export const LIABILITY_WAIVER_VERSION_TAG = `v5-${LIABILITY_WAIVER.effectiveDate}`;

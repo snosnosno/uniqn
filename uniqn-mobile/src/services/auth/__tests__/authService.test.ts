@@ -213,6 +213,7 @@ describe('authCoreService', () => {
       identityVerificationId: 'imp_123',
       termsAgreed: true,
       privacyAgreed: true,
+      thirdPartyAgreed: true,
       marketingAgreed: false,
     } as never);
 
@@ -230,6 +231,7 @@ describe('authCoreService', () => {
         name: 'No PortOne',
         termsAgreed: true,
         privacyAgreed: true,
+        thirdPartyAgreed: true,
         marketingAgreed: false,
       } as never)
     ).rejects.toThrow();
@@ -260,6 +262,7 @@ describe('authCoreService', () => {
         identityVerificationId: 'imp_123',
         termsAgreed: true,
         privacyAgreed: true,
+        thirdPartyAgreed: true,
         marketingAgreed: false,
       } as never)
     ).rejects.toThrow();

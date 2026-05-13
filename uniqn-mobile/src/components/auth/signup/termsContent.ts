@@ -15,9 +15,11 @@ import {
   MARKETING_CONSENT as MARKETING_CONSENT_DOC,
   PRIVACY_POLICY as PRIVACY_POLICY_DOC,
   TERMS_OF_SERVICE as TERMS_OF_SERVICE_DOC,
+  THIRD_PARTY_CONSENT as THIRD_PARTY_CONSENT_DOC,
   toPlainText,
 } from '@/constants/legal';
 
 export const TERMS_OF_SERVICE: string = toPlainText(TERMS_OF_SERVICE_DOC);
 export const PRIVACY_POLICY: string = toPlainText(PRIVACY_POLICY_DOC);
 export const MARKETING_CONSENT: string = toPlainText(MARKETING_CONSENT_DOC);
+export const THIRD_PARTY_CONSENT: string = toPlainText(THIRD_PARTY_CONSENT_DOC);

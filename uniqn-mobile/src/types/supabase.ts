@@ -136,6 +136,8 @@ export type Database = {
           applicant_phone: string | null;
           applicant_photo_url: string | null;
           applicant_photo_url_blurhash: string | null;
+          applicant_provision_consent_at: string | null;
+          applicant_provision_consent_version: string | null;
           applicant_role: Database['public']['Enums']['staff_role'] | null;
           assignments: Json | null;
           cancellation_request: Json | null;
@@ -168,6 +170,8 @@ export type Database = {
           applicant_phone?: string | null;
           applicant_photo_url?: string | null;
           applicant_photo_url_blurhash?: string | null;
+          applicant_provision_consent_at?: string | null;
+          applicant_provision_consent_version?: string | null;
           applicant_role?: Database['public']['Enums']['staff_role'] | null;
           assignments?: Json | null;
           cancellation_request?: Json | null;
@@ -200,6 +204,8 @@ export type Database = {
           applicant_phone?: string | null;
           applicant_photo_url?: string | null;
           applicant_photo_url_blurhash?: string | null;
+          applicant_provision_consent_at?: string | null;
+          applicant_provision_consent_version?: string | null;
           applicant_role?: Database['public']['Enums']['staff_role'] | null;
           assignments?: Json | null;
           cancellation_request?: Json | null;
@@ -938,6 +944,68 @@ export type Database = {
           },
         ];
       };
+      job_posting_collaborator_audit: {
+        Row: {
+          action: string;
+          actor_user_id: string | null;
+          at: string;
+          id: string;
+          job_posting_id: string;
+          source: string;
+          target_user_id: string;
+        };
+        Insert: {
+          action: string;
+          actor_user_id?: string | null;
+          at?: string;
+          id?: string;
+          job_posting_id: string;
+          source?: string;
+          target_user_id: string;
+        };
+        Update: {
+          action?: string;
+          actor_user_id?: string | null;
+          at?: string;
+          id?: string;
+          job_posting_id?: string;
+          source?: string;
+          target_user_id?: string;
+        };
+        Relationships: [];
+      };
+      job_posting_collaborators: {
+        Row: {
+          added_at: string;
+          added_by: string;
+          id: string;
+          job_posting_id: string;
+          user_id: string;
+        };
+        Insert: {
+          added_at?: string;
+          added_by: string;
+          id?: string;
+          job_posting_id: string;
+          user_id: string;
+        };
+        Update: {
+          added_at?: string;
+          added_by?: string;
+          id?: string;
+          job_posting_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'job_posting_collaborators_job_posting_id_fkey';
+            columns: ['job_posting_id'];
+            isOneToOne: false;
+            referencedRelation: 'job_postings';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       job_posting_templates: {
         Row: {
           created_at: string | null;
@@ -1222,6 +1290,27 @@ export type Database = {
             referencedColumns: ['id'];
           },
         ];
+      };
+      processed_identity_verifications: {
+        Row: {
+          function_name: string;
+          processed_at: string;
+          user_id: string;
+          verification_id: string;
+        };
+        Insert: {
+          function_name: string;
+          processed_at?: string;
+          user_id: string;
+          verification_id: string;
+        };
+        Update: {
+          function_name?: string;
+          processed_at?: string;
+          user_id?: string;
+          verification_id?: string;
+        };
+        Relationships: [];
       };
       rate_limits: {
         Row: {
@@ -1532,6 +1621,9 @@ export type Database = {
           social_provider: string | null;
           status: string | null;
           terms_agreed: boolean | null;
+          third_party_agreed: boolean | null;
+          third_party_agreed_at: string | null;
+          third_party_agreed_version: string | null;
           updated_at: string | null;
         };
         Insert: {
@@ -1570,6 +1662,9 @@ export type Database = {
           social_provider?: string | null;
           status?: string | null;
           terms_agreed?: boolean | null;
+          third_party_agreed?: boolean | null;
+          third_party_agreed_at?: string | null;
+          third_party_agreed_version?: string | null;
           updated_at?: string | null;
         };
         Update: {
@@ -1608,6 +1703,9 @@ export type Database = {
           social_provider?: string | null;
           status?: string | null;
           terms_agreed?: boolean | null;
+          third_party_agreed?: boolean | null;
+          third_party_agreed_at?: string | null;
+          third_party_agreed_version?: string | null;
           updated_at?: string | null;
         };
         Relationships: [];
@@ -2113,6 +2211,23 @@ export type Database = {
         };
         Returns: Json;
       };
+      create_workspace: {
+        Args: { p_name: string };
+        Returns: {
+          created_at: string;
+          id: string;
+          member_count: number;
+          name: string;
+          owner_id: string;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: '*';
+          to: 'workspaces';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       credit_diamonds_atomically: {
         Args: {
           p_diamonds: number;
@@ -2160,6 +2275,15 @@ export type Database = {
         Returns: number;
       };
       get_wallet_summary: { Args: { p_user_id?: string }; Returns: Json };
+      get_workspace_owner_profile: {
+        Args: { _workspace_id: string };
+        Returns: {
+          id: string;
+          name: string;
+          nickname: string;
+          photo_url: string;
+        }[];
+      };
       grant_heart_atomically: {
         Args: {
           p_amount: number;
@@ -2189,9 +2313,205 @@ export type Database = {
       };
       is_admin: { Args: never; Returns: boolean };
       is_employer_or_admin: { Args: never; Returns: boolean };
+      is_posting_collaborator: {
+        Args: { p_posting_id: string; p_user_id: string };
+        Returns: boolean;
+      };
+      is_workspace_jpc_member: {
+        Args: { _user_id: string; _workspace_id: string };
+        Returns: boolean;
+      };
       is_workspace_member: {
         Args: { _user_id: string; _workspace_id: string };
         Returns: boolean;
+      };
+      list_all_applications: {
+        Args: { p_status?: Database['public']['Enums']['application_status'] };
+        Returns: {
+          applicant_email: string | null;
+          applicant_id: string;
+          applicant_name: string;
+          applicant_nickname: string | null;
+          applicant_phone: string | null;
+          applicant_photo_url: string | null;
+          applicant_photo_url_blurhash: string | null;
+          applicant_provision_consent_at: string | null;
+          applicant_provision_consent_version: string | null;
+          applicant_role: Database['public']['Enums']['staff_role'] | null;
+          assignments: Json | null;
+          cancellation_request: Json | null;
+          cancelled_at: string | null;
+          confirmation_history: Json | null;
+          confirmed_at: string | null;
+          created_at: string | null;
+          custom_role: string | null;
+          id: string;
+          is_read: boolean | null;
+          job_posting_date: string | null;
+          job_posting_id: string;
+          job_posting_title: string | null;
+          message: string | null;
+          notes: string | null;
+          original_application: Json | null;
+          pre_question_answers: Json | null;
+          processed_at: string | null;
+          processed_by: string | null;
+          recruitment_type: string | null;
+          rejection_reason: string | null;
+          status: Database['public']['Enums']['application_status'];
+          updated_at: string | null;
+        }[];
+        SetofOptions: {
+          from: '*';
+          to: 'applications';
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      list_all_event_qr_codes: {
+        Args: { p_active?: boolean };
+        Returns: {
+          assignment_group_id: string | null;
+          code: string;
+          created_at: string | null;
+          expires_at: string | null;
+          id: string;
+          is_active: boolean | null;
+          job_posting_id: string;
+          time_slot: string | null;
+          type: string;
+          user_id: string;
+          work_date: string | null;
+        }[];
+        SetofOptions: {
+          from: '*';
+          to: 'event_qr_codes';
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      list_all_managed_postings: {
+        Args: { p_status?: Database['public']['Enums']['posting_status'] };
+        Returns: {
+          closed_at: string | null;
+          closed_reason: string | null;
+          compensation: Json | null;
+          contact_phone: string | null;
+          created_at: string | null;
+          description: string | null;
+          filled_positions: number | null;
+          fixed_config: Json | null;
+          id: string;
+          is_featured: boolean | null;
+          last_work_date: string | null;
+          location: Json;
+          og_image_url: string | null;
+          og_image_url_blurhash: string | null;
+          owner_id: string | null;
+          owner_name: string | null;
+          posting_type: Database['public']['Enums']['posting_type'] | null;
+          questions: Json | null;
+          rejection_reason: string | null;
+          role_catalog: Json | null;
+          role_keys: string[] | null;
+          schedule: Json;
+          schema_version: number | null;
+          stats: Json | null;
+          status: Database['public']['Enums']['posting_status'];
+          tags: string[] | null;
+          title: string;
+          total_positions: number | null;
+          tournament_config: Json | null;
+          updated_at: string | null;
+          urgent_config: Json | null;
+          view_count: number | null;
+          work_date: string | null;
+          work_dates: string[] | null;
+          workspace_id: string;
+        }[];
+        SetofOptions: {
+          from: '*';
+          to: 'job_postings';
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      list_all_work_logs: {
+        Args: {
+          p_date_from?: string;
+          p_date_to?: string;
+          p_status?: Database['public']['Enums']['work_log_status'];
+        };
+        Returns: {
+          application_id: string | null;
+          assignment_group_id: string | null;
+          check_in_ts: string | null;
+          check_out_ts: string | null;
+          created_at: string | null;
+          custom_allowances: Json | null;
+          custom_role: string | null;
+          custom_salary_info: Json | null;
+          custom_tax_settings: Json | null;
+          date: string;
+          has_time_modification_logs: boolean | null;
+          id: string;
+          is_fixed_posting: boolean | null;
+          job_posting_id: string;
+          modification_history: Json | null;
+          no_show_at: Json | null;
+          no_show_reason: string | null;
+          notes: string | null;
+          owner_id: string | null;
+          payroll_amount: number | null;
+          payroll_date: string | null;
+          payroll_notes: string | null;
+          payroll_status: Database['public']['Enums']['payroll_status'] | null;
+          role: Database['public']['Enums']['staff_role'];
+          role_change_history: Json | null;
+          settlement_modification_history: Json | null;
+          staff_id: string;
+          staff_name: string | null;
+          staff_nickname: string | null;
+          staff_photo_url: string | null;
+          staff_photo_url_blurhash: string | null;
+          status: Database['public']['Enums']['work_log_status'];
+          time_slot: string | null;
+          updated_at: string | null;
+          work_duration: number | null;
+        }[];
+        SetofOptions: {
+          from: '*';
+          to: 'work_logs';
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      list_all_workspace_members: {
+        Args: { p_workspace_id?: string };
+        Returns: {
+          invited_by: string | null;
+          joined_at: string;
+          role: Database['public']['Enums']['workspace_role'];
+          user_id: string;
+          workspace_id: string;
+        }[];
+        SetofOptions: {
+          from: '*';
+          to: 'workspace_members';
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      list_my_workspaces: {
+        Args: never;
+        Returns: {
+          created_at: string;
+          id: string;
+          member_count: number;
+          name: string;
+          owner_id: string;
+          updated_at: string;
+        }[];
       };
       permanently_delete_user: { Args: { p_user_id: string }; Returns: Json };
       process_qr_checkin_atomically: {
@@ -2239,6 +2559,16 @@ export type Database = {
         Args: { p_invitation_id: string };
         Returns: undefined;
       };
+      search_users_for_collaborator_invite: {
+        Args: { p_email_query: string; p_job_posting_id: string };
+        Returns: {
+          email: string;
+          id: string;
+          name: string;
+          nickname: string;
+          photo_url: string;
+        }[];
+      };
       sync_schedule_board: { Args: { p_job_posting_id: string }; Returns: Json };
       toggle_board_post_vote: {
         Args: { p_post_id: string; p_user_id: string; p_vote_type: string };
@@ -2256,6 +2586,10 @@ export type Database = {
       update_user_role: {
         Args: { p_new_role: string; p_user_id: string };
         Returns: Json;
+      };
+      workspace_count_for_owner: {
+        Args: { _owner_id: string };
+        Returns: number;
       };
     };
     Enums: {

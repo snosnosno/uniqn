@@ -41,6 +41,7 @@ export interface SignUpRequest {
   // Step 1: 약관 동의
   termsAgreed: boolean;
   privacyAgreed: boolean;
+  thirdPartyAgreed: boolean;
   marketingAgreed: boolean;
 
   // Step 2: 계정 정보

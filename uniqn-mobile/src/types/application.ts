@@ -91,6 +91,10 @@ export interface CreateApplicationInput {
   assignments: Assignment[];
   preQuestionAnswers?: PreQuestionAnswer[];
   message?: string;
+  /** 개보법 §17 — 지원 시점 제3자 제공 동의 timestamp (ISO 8601) */
+  provisionConsentAt: string;
+  /** THIRD_PARTY_CONSENT_VERSION_TAG (예: v1-2026-05-13) */
+  provisionConsentVersion: string;
 }
 
 export interface ApplicationFilters {

@@ -205,6 +205,7 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
           // 서버에서 무시되지만 schema 충족용
           termsAgreed: true,
           privacyAgreed: true,
+          thirdPartyAgreed: true,
           marketingAgreed: false,
         });
         // A2: reverify 는 draft 사용 안 하지만, 혹시 잔존하면 정리 (defensive)
@@ -259,6 +260,7 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
         // 약관동의
         termsAgreed: updatedFormData.terms.termsAgreed,
         privacyAgreed: updatedFormData.terms.privacyAgreed,
+        thirdPartyAgreed: updatedFormData.terms.thirdPartyAgreed,
         marketingAgreed: updatedFormData.terms.marketingAgreed,
       };
 

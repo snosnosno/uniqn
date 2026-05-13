@@ -145,6 +145,7 @@ export default function SignUpScreen() {
           identityVerificationId: data.identityVerificationId,
           termsAgreed: data.termsAgreed,
           privacyAgreed: data.privacyAgreed,
+          thirdPartyAgreed: data.thirdPartyAgreed,
           marketingAgreed: data.marketingAgreed,
         });
 

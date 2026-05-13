@@ -15,6 +15,8 @@ import {
 import { extractBindingToken, isBindingMatch } from '../_shared/portone-caller-binding.ts';
 
 const TERMS_VERSION = '1.0.0';
+// 개보법 §17 별도 동의 — src/constants/legal/thirdPartyConsent.ts THIRD_PARTY_CONSENT_VERSION_TAG 와 동기화
+const THIRD_PARTY_CONSENT_VERSION = 'v1-2026-05-13';
 const MIN_SIGNUP_AGE = 14;
 const XSS_PATTERN = /<script|javascript:|on\w+=|<iframe|<object|<embed|<link\s|data:/i;
 
@@ -51,6 +53,7 @@ Deno.serve(async (req: Request) => {
       note,
       termsAgreed,
       privacyAgreed,
+      thirdPartyAgreed,
       marketingAgreed,
       email,
       mode,
@@ -59,7 +62,7 @@ Deno.serve(async (req: Request) => {
     if (!mode || !['signup', 'social', 'reverify'].includes(mode))
       return jsonResponse({ error: 'mode가 필요합니다' }, 400);
     // reverify 는 기존 동의 유지 — 약관 재확인 스킵
-    if (mode !== 'reverify' && (!termsAgreed || !privacyAgreed))
+    if (mode !== 'reverify' && (!termsAgreed || !privacyAgreed || !thirdPartyAgreed))
       return jsonResponse({ error: '약관 동의가 필요합니다' }, 400);
     if (
       !identityVerificationId ||
@@ -253,6 +256,10 @@ Deno.serve(async (req: Request) => {
             status: 'active',
             profile_completed: Boolean(trimmedNickname),
             is_active: true,
+            // 개보법 §17 별도 동의 — signup/social 시점에만 기록
+            third_party_agreed: true,
+            third_party_agreed_at: now,
+            third_party_agreed_version: THIRD_PARTY_CONSENT_VERSION,
           };
     if (mode !== 'reverify') {
       if (trimmedNickname) profileData.nickname = trimmedNickname;

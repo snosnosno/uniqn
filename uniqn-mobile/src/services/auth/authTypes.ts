@@ -41,5 +41,6 @@ export interface SocialProfileData {
   // 약관
   termsAgreed: boolean;
   privacyAgreed: boolean;
+  thirdPartyAgreed: boolean;
   marketingAgreed?: boolean;
 }
