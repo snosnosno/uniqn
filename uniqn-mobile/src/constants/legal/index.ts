@@ -13,3 +13,4 @@ export { PRIVACY_POLICY } from './privacyPolicy';
 export { MARKETING_CONSENT } from './marketingConsent';
 export { EMPLOYER_TERMS, EMPLOYER_TERMS_VERSION_TAG } from './employerTerms';
 export { LIABILITY_WAIVER, LIABILITY_WAIVER_VERSION_TAG } from './liabilityWaiver';
+export { THIRD_PARTY_CONSENT, THIRD_PARTY_CONSENT_VERSION_TAG } from './thirdPartyConsent';
