@@ -27,6 +27,12 @@
 --   - job_postings(title NOT NULL)
 --   - work_logs(staff_id, job_posting_id, date, role NOT NULL)
 -- ============================================================
+-- pgTAP wrap: pg_prove 호환을 위해 BEGIN/plan/finish/ROLLBACK 추가.
+-- DO block 내부 RAISE EXCEPTION 발생 시 pg_prove 가 fail 잡음.
+-- ============================================================
+
+BEGIN;
+SELECT plan(1);
 
 DO $$
 DECLARE
@@ -159,4 +165,6 @@ BEGIN
   DELETE FROM auth.users WHERE id IN (v_owner_id, v_staff_id, v_other_user_id);
 END $$;
 
-SELECT 'CANCEL_TEST_PASSED' AS result;
+SELECT pass('CANCEL_TEST_PASSED');
+SELECT * FROM finish();
+ROLLBACK;

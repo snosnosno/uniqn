@@ -23,8 +23,11 @@
 --   T6. dated + requirements=[] → total = 0
 --   T7. role='other' customRole='translator' + dealer → 분리 카운트 (translator=1, dealer=2 → total=3)
 -- ============================================================
+-- pgTAP wrap: pg_prove 호환을 위해 plan 추가 (BEGIN/ROLLBACK 은 기존 유지).
+-- ============================================================
 
 BEGIN;
+SELECT plan(1);
 
 DO $$
 DECLARE
@@ -349,6 +352,6 @@ BEGIN
   DELETE FROM auth.users WHERE id = v_owner_id;
 END $$;
 
+SELECT pass('TOTAL_POSITIONS_BACKFILL_TEST_PASSED');
+SELECT * FROM finish();
 ROLLBACK;
-
-SELECT 'TOTAL_POSITIONS_BACKFILL_TEST_PASSED' AS result;

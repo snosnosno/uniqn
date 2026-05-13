@@ -18,6 +18,11 @@
 --       RPC 자체의 SELECT FOR UPDATE는 PostgreSQL이 보장하므로 idempotency
 --       가지 검증으로 충분. 진정한 병렬 검증이 필요하면 별도 도구(pgbench 등) 사용.
 -- ============================================================
+-- pgTAP wrap: pg_prove 호환을 위해 BEGIN/plan/finish/ROLLBACK 추가.
+-- ============================================================
+
+BEGIN;
+SELECT plan(1);
 
 DO $$
 DECLARE
@@ -120,4 +125,6 @@ BEGIN
   DELETE FROM auth.users WHERE id IN (v_owner_id, v_staff_id, v_other_user_id);
 END $$;
 
-SELECT 'RACE_TEST_PASSED' AS result;
+SELECT pass('RACE_TEST_PASSED');
+SELECT * FROM finish();
+ROLLBACK;

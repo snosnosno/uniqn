@@ -14,6 +14,11 @@
 --   S3. 그룹 확정자 취소 → filled_positions=1 (slot 3 감소 아님)
 --   S4. 백필 쿼리 idempotency (재실행 시 0 rows affected)
 -- ============================================================
+-- pgTAP wrap: pg_prove 호환을 위해 BEGIN/plan/finish/ROLLBACK 추가.
+-- ============================================================
+
+BEGIN;
+SELECT plan(1);
 
 DO $$
 DECLARE
@@ -240,3 +245,7 @@ BEGIN
 
   RAISE NOTICE 'PERSON_BASIS_TEST_PASSED';
 END $$;
+
+SELECT pass('PERSON_BASIS_TEST_PASSED');
+SELECT * FROM finish();
+ROLLBACK;

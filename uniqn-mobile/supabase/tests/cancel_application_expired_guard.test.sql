@@ -27,8 +27,11 @@
 --   - job_postings(title NOT NULL, closed_reason text)
 --   - work_logs(staff_id, job_posting_id, date, role NOT NULL)
 -- ============================================================
+-- pgTAP wrap: pg_prove 호환을 위해 plan 추가 (BEGIN/ROLLBACK 은 기존 유지).
+-- ============================================================
 
 BEGIN;
+SELECT plan(1);
 
 DO $$
 DECLARE
@@ -202,5 +205,6 @@ BEGIN
   DELETE FROM auth.users WHERE id IN (v_owner_id, v_staff_id);
 END $$;
 
-SELECT 'EXPIRED_GUARD_TEST_PASSED' AS result;
+SELECT pass('EXPIRED_GUARD_TEST_PASSED');
+SELECT * FROM finish();
 ROLLBACK;
