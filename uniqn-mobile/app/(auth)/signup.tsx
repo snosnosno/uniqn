@@ -9,7 +9,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { Alert, View, Text, Pressable } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SignupForm } from '@/components/auth';
@@ -30,8 +30,36 @@ import {
 } from '@/shared/navigation/authRedirect';
 import { logger } from '@/utils/logger';
 import { toStoreProfile } from '@/utils/profileConverter';
-import { extractUserMessage } from '@/errors';
+import { extractUserMessage, isAppError } from '@/errors';
 import type { SignUpFormData } from '@/schemas';
+
+/**
+ * A3: 회원가입 시 기존 계정이 감지된 경우(PROFILE_ALREADY_COMPLETED) UI 분기.
+ * Toast 대신 Alert 으로 사용자에게 로그인 화면 이동/비밀번호 찾기 선택지 제공.
+ */
+function isProfileAlreadyCompletedError(error: unknown): boolean {
+  if (!isAppError(error)) return false;
+  const reason = (error.metadata as { reason?: string } | undefined)?.reason;
+  return reason === 'PROFILE_ALREADY_COMPLETED';
+}
+
+function showAlreadyRegisteredAlert(redirect?: string) {
+  Alert.alert(
+    '이미 가입된 계정입니다',
+    '이 이메일로 가입이 완료되어 있어요.\n로그인 화면에서 비밀번호로 로그인하거나 비밀번호 찾기를 이용해주세요.',
+    [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '로그인하기',
+        onPress: () =>
+          router.replace(
+            redirect ? `/(auth)/login?redirect=${encodeURIComponent(redirect)}` : '/(auth)/login'
+          ),
+      },
+    ],
+    { cancelable: true }
+  );
+}
 
 type SignupMode = 'social' | 'reverify';
 
@@ -72,10 +100,15 @@ export default function SignUpScreen() {
         }
       } catch (error) {
         logger.error('회원가입 실패', error as Error);
-        addToast({
-          type: 'error',
-          message: extractUserMessage(error),
-        });
+        // A3: 기존 계정 감지 — Toast 대신 Alert 으로 로그인 화면 안내
+        if (isProfileAlreadyCompletedError(error)) {
+          showAlreadyRegisteredAlert(postAuthRedirect ?? undefined);
+        } else {
+          addToast({
+            type: 'error',
+            message: extractUserMessage(error),
+          });
+        }
       } finally {
         setIsLoading(false);
       }
@@ -136,10 +169,15 @@ export default function SignUpScreen() {
         }
       } catch (error) {
         logger.error('소셜 프로필 등록 실패', error as Error);
-        addToast({
-          type: 'error',
-          message: extractUserMessage(error),
-        });
+        // A3: 소셜 모드에서도 같은 분기 — 같은 OAuth user 의 profile 이 이미 완료된 케이스
+        if (isProfileAlreadyCompletedError(error)) {
+          showAlreadyRegisteredAlert(postAuthRedirect ?? undefined);
+        } else {
+          addToast({
+            type: 'error',
+            message: extractUserMessage(error),
+          });
+        }
       } finally {
         setIsLoading(false);
       }

@@ -57,7 +57,6 @@ export {
   callVerifyPortOneIdentity,
   clearPendingPortOneIdentityRequest,
   clearPortOneIdentityVerificationResult,
-  consumePortOneIdentityVerificationResult,
   createPortOneIdentityVerificationId,
   getPendingPortOneIdentityRequest,
   getPortOneInicisIdentityConfig,
@@ -65,6 +64,14 @@ export {
   savePendingPortOneIdentityRequest,
   savePortOneIdentityVerificationResult,
 } from './portOneIdentityService';
+
+export {
+  clearSignupDraft,
+  loadSignupDraft,
+  saveSignupDraft,
+  type SignupDraftMode,
+  type SignupDraftPayload,
+} from './signupDraftService';
 
 // ============================================================================
 // Social Login Service (Apple, Google, 카카오)

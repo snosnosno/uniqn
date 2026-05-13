@@ -7,12 +7,18 @@
  * @version 3.0.0
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Platform } from 'react-native';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { StepIndicator, type StepInfo } from '@/components/auth/StepIndicator';
-import { checkEmailExists } from '@/services/auth';
+import {
+  checkEmailExists,
+  clearSignupDraft,
+  loadSignupDraft,
+  saveSignupDraft,
+} from '@/services/auth';
+import { useAuthStore } from '@/stores/authStore';
 import { useToast } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 import { SignupStepAccount } from './SignupStepAccount';
@@ -57,10 +63,19 @@ const SOCIAL_SIGNUP_STEPS: StepInfo[] = [
 const REVERIFY_STEPS: StepInfo[] = [{ label: '본인인증', shortLabel: '인증' }];
 
 interface FormDataState {
-  terms?: SignUpTermsData; // Step 1: 약관동의
-  account?: SignUpAccountData; // Step 2: 계정정보 (소셜 모드에서 생략)
-  identity?: SignUpIdentityData; // Step 3: 본인인증
+  terms?: SignUpTermsData; // 약관동의
+  account?: SignUpAccountData; // 계정정보 (소셜 모드에서 생략)
+  identity?: SignUpIdentityData; // 본인인증
 }
+
+// B13: stepKey 기반 — 모드별 flow 순서로 displayStep 도출, 1→3 점프 제거
+type StepKey = 'terms' | 'account' | 'identity';
+
+const STEP_FLOW: Record<'default' | 'social' | 'reverify', StepKey[]> = {
+  default: ['terms', 'account', 'identity'],
+  social: ['terms', 'identity'],
+  reverify: ['identity'],
+};
 
 // ============================================================================
 // Component
@@ -69,40 +84,102 @@ interface FormDataState {
 export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: SignupFormProps) {
   const isSocial = mode === 'social';
   const isReverify = mode === 'reverify';
-  // reverify 는 Step 3(본인인증)부터 시작 — 약관/계정 스킵
-  const [currentStep, setCurrentStep] = useState(isReverify ? 3 : 1);
+  const flow = STEP_FLOW[mode];
+  // B13: 항상 0-based linear index — 점프 없음. social: 0→1, default: 0→1→2
+  const [stepIndex, setStepIndex] = useState(0);
+  const currentStepKey = flow[stepIndex];
+  const displayStep = stepIndex + 1;
+
   const [formData, setFormData] = useState<FormDataState>({});
   const toast = useToast();
+  // A2: social 모드에서만 user 바인딩. reverify 는 단일 step 이므로 draft 불필요.
+  const socialUserId = useAuthStore((state) => state.user?.uid);
+  const draftHydratedRef = useRef(false);
 
-  // 소셜: Step 2(계정) 건너뛰므로 displayStep 1→1, 3→2
-  // reverify: 단일 스텝이므로 항상 1
   const steps = isReverify ? REVERIFY_STEPS : isSocial ? SOCIAL_SIGNUP_STEPS : DEFAULT_SIGNUP_STEPS;
-  const displayStep = isReverify ? 1 : isSocial && currentStep >= 3 ? currentStep - 1 : currentStep;
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // Step 1: 약관동의
-  // ──────────────────────────────────────────────────────────────────────────
-
-  const handleTermsNext = useCallback(
-    (data: SignUpTermsData) => {
-      setFormData((prev) => ({ ...prev, terms: data }));
-      // 소셜 모드: 계정정보 건너뛰고 본인인증(Step 3)으로
-      setCurrentStep(isSocial ? 3 : 2);
+  const goToStep = useCallback(
+    (key: StepKey) => {
+      const idx = flow.indexOf(key);
+      if (idx === -1) return;
+      setStepIndex(idx);
     },
-    [isSocial]
+    [flow]
   );
 
+  // A2: 마운트 시 draft 복원. reverify 는 단일 step 이라 draft 미사용.
+  useEffect(() => {
+    if (isReverify) return;
+    if (draftHydratedRef.current) return;
+    const draft = loadSignupDraft({
+      mode: isSocial ? 'social' : 'default',
+      socialUserId: isSocial ? socialUserId : undefined,
+    });
+    draftHydratedRef.current = true;
+    if (!draft) return;
+
+    // stepIndex 는 flow 범위 내로 clamp
+    const restoredIndex = Math.min(Math.max(0, draft.stepIndex), flow.length - 1);
+    setStepIndex(restoredIndex);
+
+    setFormData({
+      terms: draft.formData.terms as SignUpTermsData | undefined,
+      // 보안: password 는 저장되지 않으므로 email 만 복원, password 는 사용자가 재입력
+      account: draft.formData.accountEmail
+        ? ({ email: draft.formData.accountEmail, password: '' } as SignUpAccountData)
+        : undefined,
+      identity: draft.formData.identity as SignUpIdentityData | undefined,
+    });
+
+    logger.info('회원가입 draft 복원', {
+      component: 'SignupForm',
+      mode,
+      stepIndex: restoredIndex,
+      hasTerms: Boolean(draft.formData.terms),
+      hasAccountEmail: Boolean(draft.formData.accountEmail),
+      hasIdentity: Boolean(draft.formData.identity),
+    });
+  }, [flow.length, isReverify, isSocial, mode, socialUserId]);
+
+  // A2: formData / stepIndex 변경 시 draft 저장. reverify·hydration 이전엔 skip.
+  useEffect(() => {
+    if (isReverify) return;
+    if (!draftHydratedRef.current) return;
+    // 빈 상태(첫 진입) 은 저장 불필요 — 사용자가 약관 동의 후부터 의미 있음
+    const hasAnyData = formData.terms || formData.account || formData.identity || stepIndex > 0;
+    if (!hasAnyData) return;
+    saveSignupDraft({
+      mode: isSocial ? 'social' : 'default',
+      socialUserId: isSocial ? socialUserId : undefined,
+      stepIndex,
+      formData: {
+        terms: formData.terms,
+        accountEmail: formData.account?.email,
+        identity: formData.identity,
+      },
+    });
+  }, [formData, stepIndex, isReverify, isSocial, socialUserId]);
+
   // ──────────────────────────────────────────────────────────────────────────
-  // Step 2: 계정 정보 (소셜 모드에서는 렌더링되지 않음)
+  // 약관동의
+  // ──────────────────────────────────────────────────────────────────────────
+
+  const handleTermsNext = useCallback((data: SignUpTermsData) => {
+    setFormData((prev) => ({ ...prev, terms: data }));
+    setStepIndex((prev) => prev + 1);
+  }, []);
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // 계정 정보 (소셜 모드에서는 렌더링되지 않음)
   // ──────────────────────────────────────────────────────────────────────────
 
   const handleAccountNext = useCallback((data: SignUpAccountData) => {
     setFormData((prev) => ({ ...prev, account: data }));
-    setCurrentStep(3);
+    setStepIndex((prev) => prev + 1);
   }, []);
 
   const handleAccountBack = useCallback(() => {
-    setCurrentStep(1);
+    setStepIndex((prev) => Math.max(0, prev - 1));
   }, []);
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -130,6 +207,8 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
           privacyAgreed: true,
           marketingAgreed: false,
         });
+        // A2: reverify 는 draft 사용 안 하지만, 혹시 잔존하면 정리 (defensive)
+        clearSignupDraft();
         return;
       }
 
@@ -140,7 +219,7 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
           const emailExists = await checkEmailExists(updatedFormData.account!.email);
           if (emailExists) {
             toast.error('이미 사용 중인 이메일입니다. 다른 이메일을 입력해주세요.');
-            setCurrentStep(2); // 계정정보(Step 2)로 이동
+            goToStep('account');
             return;
           }
         } catch {
@@ -154,14 +233,14 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
       if (!updatedFormData.terms) {
         logger.error('필수 폼 데이터 누락', { component: 'SignupForm' });
         toast.error('입력 데이터가 누락되었습니다. 처음부터 다시 시작해주세요.');
-        setCurrentStep(1);
+        goToStep('terms');
         return;
       }
 
       if (!isSocial && !updatedFormData.account) {
         logger.error('계정 정보 누락', { component: 'SignupForm' });
         toast.error('계정 정보가 누락되었습니다. 다시 입력해주세요.');
-        setCurrentStep(2);
+        goToStep('account');
         return;
       }
 
@@ -183,33 +262,39 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
         marketingAgreed: updatedFormData.terms.marketingAgreed,
       };
 
-      await onSubmit(completeData);
+      try {
+        await onSubmit(completeData);
+        // A2: 성공 시 draft 정리. 실패 시 throw 되면 보존(다음 시도에 복원 가능).
+        clearSignupDraft();
+      } catch (error) {
+        // onSubmit 의 에러는 signup.tsx 에서 이미 toast 처리. 여기선 draft 만 유지.
+        logger.debug('회원가입 onSubmit 실패 — draft 유지', {
+          component: 'SignupForm',
+          message: error instanceof Error ? error.message : String(error),
+        });
+        throw error;
+      }
     },
-    [formData, onSubmit, toast, isSocial, isReverify]
+    [formData, onSubmit, toast, isSocial, isReverify, goToStep]
   );
 
+  // B11: 이전 버튼이 인증 결과 silent 폐기 방지 — identity 데이터는 항상 보존하고 step 만 이동.
+  // 사용자가 다시 본인인증 step으로 돌아오면 인증된 정보가 그대로 표시됨.
   const handleIdentityBack = useCallback(() => {
     if (isReverify) {
       // reverify: 돌아갈 이전 step 없음. 상위 화면 헤더의 뒤로가기 사용
       return;
     }
-    if (isSocial) {
-      // 소셜 모드: identity 데이터 보존 (phone link 상태 유지)
-      setCurrentStep(1);
-      return;
-    }
-
-    setFormData((prev) => ({ ...prev, identity: undefined }));
-    setCurrentStep(2); // 계정정보로 이동
-  }, [isReverify, isSocial]);
+    setStepIndex((prev) => Math.max(0, prev - 1));
+  }, [isReverify]);
 
   // ──────────────────────────────────────────────────────────────────────────
   // Render
   // ──────────────────────────────────────────────────────────────────────────
 
   const renderStep = () => {
-    switch (currentStep) {
-      case 1: // 약관동의
+    switch (currentStepKey) {
+      case 'terms':
         return (
           <SignupStepTerms
             onNext={handleTermsNext}
@@ -217,7 +302,7 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
             isLoading={isLoading}
           />
         );
-      case 2: // 계정정보 (소셜 모드에서는 건너뜀)
+      case 'account':
         return (
           <SignupStepAccount
             onNext={handleAccountNext}
@@ -226,7 +311,7 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
             isLoading={isLoading}
           />
         );
-      case 3: // 본인인증 (최종 제출)
+      case 'identity':
         return (
           <SignupStepIdentity
             onNext={handleIdentityNext}
@@ -261,7 +346,7 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
 
         {/* 현재 스텝 폼 (fade 애니메이션) */}
         <Animated.View
-          key={currentStep}
+          key={currentStepKey}
           entering={FadeInRight.duration(200).springify()}
           className="flex-1"
         >

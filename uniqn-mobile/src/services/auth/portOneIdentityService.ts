@@ -3,9 +3,38 @@ import type { Customer, IdentityVerificationRequest } from '@portone/browser-sdk
 import { invokeEdgeFunction } from '@/lib/supabaseFunctions';
 import { getStorageItem, removeStorageItem, setStorageItem, STORAGE_KEYS } from '@/lib/mmkvStorage';
 import { secureStorage } from '@/lib/secureStorage';
-import { ERROR_CODES, ValidationError, isRetryableError } from '@/errors';
+import { AuthError, ERROR_CODES, ValidationError, isRetryableError } from '@/errors';
 import { logger } from '@/utils/logger';
 import { generateUUID } from '@/utils/generateId';
+
+/**
+ * A3: Edge Function 에러 응답 body 의 `{ code, error }` 를 파싱한다.
+ * Supabase FunctionsHttpError 의 `context: Response` 에서 JSON 을 추출.
+ */
+async function parseEdgeFunctionErrorBody(
+  error: unknown
+): Promise<{ code?: string; error?: string } | null> {
+  if (!error || typeof error !== 'object') return null;
+  const ctx = (error as { context?: unknown }).context;
+  if (!ctx || typeof ctx !== 'object') return null;
+  // FunctionsHttpError.context 는 fetch Response.
+  const maybeResponse = ctx as { json?: () => Promise<unknown>; clone?: () => Response };
+  if (typeof maybeResponse.json !== 'function') return null;
+  try {
+    // Response body 는 1회 읽기 — clone 가능하면 그쪽 사용
+    const target =
+      typeof maybeResponse.clone === 'function' ? maybeResponse.clone() : maybeResponse;
+    const body = (await (target as { json: () => Promise<unknown> }).json()) as unknown;
+    if (!body || typeof body !== 'object') return null;
+    const obj = body as Record<string, unknown>;
+    return {
+      code: typeof obj.code === 'string' ? obj.code : undefined,
+      error: typeof obj.error === 'string' ? obj.error : undefined,
+    };
+  } catch {
+    return null;
+  }
+}
 
 /**
  * C4 — bindingToken은 SecureStore(iOS 키체인 / Android 키스토어 / 웹 sessionStorage)에 저장.
@@ -294,14 +323,6 @@ export function savePortOneIdentityVerificationResult(
   setStorageItem(STORAGE_KEYS.PORTONE_IDENTITY_RESULT, result);
 }
 
-export function consumePortOneIdentityVerificationResult(): PortOneIdentityVerificationResult | null {
-  const result = getStorageItem<PortOneIdentityVerificationResult>(
-    STORAGE_KEYS.PORTONE_IDENTITY_RESULT
-  );
-  removeStorageItem(STORAGE_KEYS.PORTONE_IDENTITY_RESULT);
-  return result;
-}
-
 export function clearPortOneIdentityVerificationResult(): void {
   removeStorageItem(STORAGE_KEYS.PORTONE_IDENTITY_RESULT);
 }
@@ -455,6 +476,20 @@ export async function callVerifyAndSavePortOneProfile(
     await clearOnSuccess();
     return result;
   } catch (error) {
+    // A3: PROFILE_ALREADY_COMPLETED — signUp 후 signInWithPassword fallback 가 기존 계정에 적중한 케이스.
+    // 사용자에게 명확한 안내를 위해 typed AuthError 로 변환 (signup.tsx 가 code 분기).
+    const parsed = await parseEdgeFunctionErrorBody(error);
+    if (parsed?.code === 'PROFILE_ALREADY_COMPLETED') {
+      logger.info('verifyAndSavePortOneProfile detected PROFILE_ALREADY_COMPLETED', {
+        component: 'portOneIdentityService',
+      });
+      throw new AuthError(ERROR_CODES.AUTH_EMAIL_ALREADY_EXISTS, {
+        userMessage:
+          '이미 가입된 계정입니다. 로그인 화면에서 비밀번호로 로그인하거나 비밀번호 찾기를 이용해주세요.',
+        metadata: { reason: 'PROFILE_ALREADY_COMPLETED' },
+      });
+    }
+
     if (!isRetryableError(error)) {
       throw error;
     }

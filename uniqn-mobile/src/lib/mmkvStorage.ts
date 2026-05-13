@@ -372,6 +372,7 @@ export const STORAGE_KEYS = {
   PORTONE_IDENTITY_REQUEST: 'portone-identity-request',
   PORTONE_IDENTITY_RESULT: 'portone-identity-result',
   PORTONE_IDENTITY_BINDING_TOKEN: 'portone-identity-binding-token',
+  SIGNUP_DRAFT: 'signup-draft-v1',
 
   // 토큰 갱신
   TOKEN_REFRESH_STATE: 'token-refresh-state',
