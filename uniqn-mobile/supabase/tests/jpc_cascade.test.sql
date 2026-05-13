@@ -83,12 +83,11 @@ BEGIN
 END $$;
 
 SELECT jpc_test_set_user((current_setting('jpc.c4_collab'))::uuid);
--- 직접 DELETE 는 jpc_delete_owner_or_self USING 의 workspaces JOIN → RLS recursion
--- (job_posting_collaborators). SECURITY DEFINER 우회 + auth.uid() 는 invoker context 유지.
-SELECT jpc_test_force_delete_jpc(
-  (current_setting('jpc.c4_jp'))::uuid,
-  (current_setting('jpc.c4_collab'))::uuid
-);
+-- C2 fix 후 (PR #91, 20260515100000) cycle 해소 — invoker 직접 DELETE 검증 가능.
+-- jpc_delete_owner_or_self USING 의 workspaces JOIN 이 cycle-free 가 됨.
+DELETE FROM public.job_posting_collaborators
+ WHERE job_posting_id = (current_setting('jpc.c4_jp'))::uuid
+   AND user_id        = (current_setting('jpc.c4_collab'))::uuid;
 
 SELECT is(
   jpc_test_audit_source(
@@ -111,10 +110,10 @@ BEGIN
 END $$;
 
 SELECT jpc_test_set_user((current_setting('jpc.c5_owner'))::uuid);
-SELECT jpc_test_force_delete_jpc(
-  (current_setting('jpc.c5_jp'))::uuid,
-  (current_setting('jpc.c5_collab'))::uuid
-);
+-- C2 fix 후 cycle 해소 — invoker 직접 DELETE.
+DELETE FROM public.job_posting_collaborators
+ WHERE job_posting_id = (current_setting('jpc.c5_jp'))::uuid
+   AND user_id        = (current_setting('jpc.c5_collab'))::uuid;
 
 SELECT is(
   jpc_test_audit_actor(
@@ -218,8 +217,10 @@ BEGIN
 END $$;
 
 SELECT jpc_test_set_user((current_setting('jpc.c9_owner'))::uuid);
--- jpc_insert_ws_owner WITH CHECK 안 workspaces JOIN → RLS recursion. SECURITY DEFINER 우회.
-SELECT jpc_test_force_insert_jpc(
+-- C2 fix 후 cycle 해소 — invoker 직접 INSERT.
+-- jpc_insert_ws_owner WITH CHECK 안 workspaces JOIN 이 cycle-free 가 됨.
+INSERT INTO public.job_posting_collaborators (job_posting_id, user_id, added_by)
+VALUES (
   (current_setting('jpc.c9_jp'))::uuid,
   (current_setting('jpc.c9_new_user'))::uuid,
   (current_setting('jpc.c9_owner'))::uuid
@@ -237,10 +238,10 @@ SELECT is(
 -- C10: owner 가 C9 collab 제거 → notifications removed 1행
 -- ============================================================================
 SELECT jpc_test_set_user((current_setting('jpc.c9_owner'))::uuid);
-SELECT jpc_test_force_delete_jpc(
-  (current_setting('jpc.c9_jp'))::uuid,
-  (current_setting('jpc.c9_new_user'))::uuid
-);
+-- C2 fix 후 cycle 해소 — invoker 직접 DELETE.
+DELETE FROM public.job_posting_collaborators
+ WHERE job_posting_id = (current_setting('jpc.c9_jp'))::uuid
+   AND user_id        = (current_setting('jpc.c9_new_user'))::uuid;
 
 SELECT is(
   jpc_test_count_notif_for_user(

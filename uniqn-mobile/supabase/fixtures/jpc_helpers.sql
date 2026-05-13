@@ -10,12 +10,16 @@
 --             보고 "No plan found in TAP output" 으로 fail. supabase/fixtures/
 --             분리. npm run test:db:helpers 가 docker cp 으로 등록.
 --
--- 이 파일에는 SECURITY DEFINER 함수 12개가 포함되어 RLS 를 완전히 우회합니다:
---   - jpc_test_force_delete_workspace / _jp / _jpc / force_insert_jpc
+-- 이 파일에는 SECURITY DEFINER 함수들이 포함되어 RLS 를 완전히 우회합니다:
+--   - jpc_test_force_delete_workspace (workspaces.DELETE 정책 부재 = deny-all 우회)
+--   - jpc_test_force_delete_jp (FK ON DELETE NO ACTION 시 app/wl/qr cascade utility)
+--   - jpc_check_can_delete_jp (jp DELETE owner case — FK cascade utility 로 정책 동등 평가)
 --   - jpc_test_create_user / delete_user / transfer_ws_owner
 --   - jpc_test_seed / count_jpc / audit_source / count_notif_* / get_ws_owner
 --
 -- 이 헬퍼들은 RLS 정책 검증의 부수효과 확인용 (cascade/trigger/audit) 입니다.
+-- 2026-05-13: C2 fix (PR #91) 후 jpc INSERT/DELETE cycle 해소 → invoker 패턴 복원.
+--             jpc_test_force_delete_jpc / jpc_test_force_insert_jpc 제거.
 -- migrations/ 폴더로 옮기거나 prod DB 에 직접 등록하면 ANY authenticated user 가
 -- workspace/jp/jpc 의 RLS 를 우회 가능 — catastrophic security incident.
 --
@@ -319,36 +323,10 @@ BEGIN
 END;
 $$;
 
--- C4/C5 의 jpc DELETE 도 정책 USING (jpc_delete_owner_or_self) 의
--- EXISTS (job_postings JOIN workspaces) → workspaces SELECT JPC JOIN 분기 →
--- job_posting_collaborators SELECT RLS 재진입 → recursion.
--- SECURITY DEFINER 우회로 DELETE 수행 + audit trigger (auth.uid() 는 invoker
--- 의 jwt 를 그대로 읽음) 동작 검증.
-CREATE OR REPLACE FUNCTION jpc_test_force_delete_jpc(p_jp_id uuid, p_user_id uuid)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-BEGIN
-  DELETE FROM public.job_posting_collaborators
-   WHERE job_posting_id = p_jp_id AND user_id = p_user_id;
-END;
-$$;
-
--- C9 jpc INSERT 도 jpc_insert_ws_owner WITH CHECK 안 workspaces JOIN → 같은 recursion.
--- SECURITY DEFINER 우회로 INSERT 수행 + trigger (notify_on_collaborator_added) 동작 검증.
-CREATE OR REPLACE FUNCTION jpc_test_force_insert_jpc(p_jp uuid, p_user uuid, p_added_by uuid)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-BEGIN
-  INSERT INTO public.job_posting_collaborators (job_posting_id, user_id, added_by)
-  VALUES (p_jp, p_user, p_added_by);
-END;
-$$;
+-- 2026-05-13: jpc_test_force_delete_jpc / jpc_test_force_insert_jpc 제거.
+-- C2 fix (PR #91, 20260515100000) 로 workspaces SELECT JPC JOIN cycle 해소 →
+-- jpc DELETE (jpc_delete_owner_or_self) / INSERT (jpc_insert_ws_owner) 가
+-- invoker 권한으로 직접 호출 가능. jpc_cascade.test.sql C4/C5/C9/C10 참조.
 
 -- C6 검증용 (workspaces.SELECT RLS 우회로 owner_id 확인)
 CREATE OR REPLACE FUNCTION jpc_test_get_ws_owner(p_ws_id uuid)
