@@ -52,14 +52,17 @@ jobs:
 
       - name: Determine functions to deploy
         id: targets
-        working-directory: uniqn-mobile
+        # 주의: 이 step 은 git diff pathspec 이 repo root 기준이라 working-directory 지정 X.
+        # 이전 버전이 `working-directory: uniqn-mobile` 였는데 pathspec
+        # `uniqn-mobile/supabase/functions/` 가 cwd 기준으로 해석되어 `uniqn-mobile/uniqn-mobile/...`
+        # 로 resolve → 매칭 0건 → "No functions to deploy" 로 silent skip 됐던 버그 (2026-05-13 fix).
         run: |
           set -euo pipefail
           INPUT="${{ github.event.inputs.function_name }}"
 
           if [ "$INPUT" = "all" ]; then
             echo "Mode: deploy ALL functions (manual)"
-            ls supabase/functions | grep -v '^_' > /tmp/targets.txt
+            ls uniqn-mobile/supabase/functions | grep -v '^_' > /tmp/targets.txt
           elif [ -n "$INPUT" ]; then
             echo "Mode: deploy single function ($INPUT)"
             echo "$INPUT" > /tmp/targets.txt
@@ -72,12 +75,13 @@ jobs:
             # config.toml 변경 → 메타데이터 전체 동기화
             if git diff --name-only "$BEFORE" "${{ github.sha }}" | grep -q '^uniqn-mobile/supabase/config.toml$'; then
               echo "Mode: config.toml changed → deploy ALL functions"
-              ls supabase/functions | grep -v '^_' > /tmp/targets.txt
+              ls uniqn-mobile/supabase/functions | grep -v '^_' > /tmp/targets.txt
             else
               echo "Mode: detect changed functions"
               # diff 결과 예시: uniqn-mobile/supabase/functions/<NAME>/<...>
               # $1=uniqn-mobile $2=supabase $3=functions $4=<NAME>
-              # 이전 버전이 $3(="functions" 고정)을 출력해 항상 단일 잘못된 target → 모든 함수 skip 됨.
+              # ceaea0136 (2026-05-12): $3 → $4 인덱스 수정 (functions 고정 문자열 회피)
+              # 2026-05-13: working-directory: uniqn-mobile 제거 (pathspec cwd 충돌 회피)
               git diff --name-only "$BEFORE" "${{ github.sha }}" -- uniqn-mobile/supabase/functions/ \
                 | awk -F/ '/uniqn-mobile\/supabase\/functions\// {print $4}' \
                 | sort -u | grep -v '^$' | grep -v '^_' > /tmp/targets.txt || true
