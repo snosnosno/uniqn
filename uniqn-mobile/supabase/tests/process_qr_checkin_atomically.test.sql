@@ -18,6 +18,13 @@
 --   S6. checkOut without checkIn → not_checked_in
 --   S3. payroll completed → already_settled
 -- =============================================================================
+-- pgTAP wrap: pg_prove 호환을 위해 BEGIN/plan/finish/ROLLBACK 추가.
+-- schema drift fix: check_in_time/check_out_time → check_in_ts/check_out_ts
+-- (2026-04-21 work_logs timestamptz 전환에서 jsonb 컬럼 DROP)
+-- =============================================================================
+
+BEGIN;
+SELECT plan(1);
 
 DO $$
 DECLARE
@@ -110,7 +117,7 @@ BEGIN
   -- S4: staff_id mismatch (work_log 재초기화)
   -- ----------------------------------------------------------
   UPDATE public.work_logs SET
-    status = 'scheduled', check_in_time = NULL, check_out_time = NULL, work_duration = 0
+    status = 'scheduled', check_in_ts = NULL, check_out_ts = NULL, work_duration = 0
   WHERE id = v_work_log_id;
 
   v_result := public.process_qr_checkin_atomically(
@@ -133,7 +140,12 @@ BEGIN
   -- ----------------------------------------------------------
   -- S3: payroll completed → already_settled
   -- ----------------------------------------------------------
+  -- protect_work_log_payroll_columns trigger 가 staff 직접 payroll UPDATE 차단.
+  -- 본 fixture 는 superuser context (auth.jwt() null) 이라 v_role='' → staff 로 인식.
+  -- service_role 권한 설정 후 UPDATE (ROLLBACK 으로 무효화).
+  PERFORM set_config('request.jwt.claim.role', 'service_role', true);
   UPDATE public.work_logs SET payroll_status = 'completed' WHERE id = v_work_log_id;
+  PERFORM set_config('request.jwt.claim.role', '', true);
   v_result := public.process_qr_checkin_atomically(
     v_work_log_id, v_staff_id, v_job_id, 'checkIn', now(), NULL
   );
@@ -149,4 +161,6 @@ BEGIN
   DELETE FROM auth.users WHERE id IN (v_owner_id, v_staff_id, v_other_staff_id);
 END $$;
 
-SELECT 'QR_TEST_PASSED' AS result;
+SELECT pass('QR_TEST_PASSED');
+SELECT * FROM finish();
+ROLLBACK;

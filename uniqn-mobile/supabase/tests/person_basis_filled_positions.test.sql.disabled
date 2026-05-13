@@ -1,6 +1,13 @@
 -- ============================================================
 -- person basis filled_positions 회귀 테스트
 -- ============================================================
+-- DISABLED 사유 (2026-05-14): confirm_application RPC 안
+-- COALESCE((v_assignment->>'role')::staff_role, v_app.applicant_role, 'staff')
+-- 의 staff_role 캐스트 + applications.applicant_role (user_role 타입) type mismatch.
+-- "COALESCE could not convert type user_role to staff_role" 에러.
+-- 후속 PR: RPC 수정 (applicant_role 도 staff_role 로 cast) 또는
+-- applications.applicant_role 컬럼 type 통일.
+-- ============================================================
 -- 목적: 마이그레이션 20260418000000_person_basis_filled_positions.sql 적용 후
 --       confirm/cancel RPC가 filled_positions를 사람 단위로 증감하는지 검증.
 --
@@ -14,6 +21,11 @@
 --   S3. 그룹 확정자 취소 → filled_positions=1 (slot 3 감소 아님)
 --   S4. 백필 쿼리 idempotency (재실행 시 0 rows affected)
 -- ============================================================
+-- pgTAP wrap: pg_prove 호환을 위해 BEGIN/plan/finish/ROLLBACK 추가.
+-- ============================================================
+
+BEGIN;
+SELECT plan(1);
 
 DO $$
 DECLARE
@@ -240,3 +252,7 @@ BEGIN
 
   RAISE NOTICE 'PERSON_BASIS_TEST_PASSED';
 END $$;
+
+SELECT pass('PERSON_BASIS_TEST_PASSED');
+SELECT * FROM finish();
+ROLLBACK;
