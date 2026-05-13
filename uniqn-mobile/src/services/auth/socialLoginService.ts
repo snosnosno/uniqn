@@ -587,6 +587,7 @@ export async function completeSocialProfile(
       identityVerificationId: data.identityVerificationId,
       termsAgreed: data.termsAgreed,
       privacyAgreed: data.privacyAgreed,
+      thirdPartyAgreed: data.thirdPartyAgreed,
       marketingAgreed: data.marketingAgreed ?? false,
       mode: 'social',
     });

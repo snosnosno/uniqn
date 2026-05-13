@@ -258,6 +258,9 @@ export const signUpTermsSchema = z.object({
   privacyAgreed: z.boolean().refine((val) => val === true, {
     message: '개인정보처리방침에 동의해주세요',
   }),
+  thirdPartyAgreed: z.boolean().refine((val) => val === true, {
+    message: '개인정보 제3자 제공에 동의해주세요',
+  }),
   marketingAgreed: z.boolean(),
 });
 

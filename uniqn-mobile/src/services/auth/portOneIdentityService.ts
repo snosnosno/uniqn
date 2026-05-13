@@ -161,6 +161,8 @@ export interface VerifyAndSavePortOneProfilePayload {
   termsAgreed: boolean;
   /** reverify 모드에서는 무시 (기존 동의 유지) — true 전송 권장 */
   privacyAgreed: boolean;
+  /** reverify 모드에서는 무시 (기존 동의 유지) — true 전송 권장 (개보법 §17 별도 동의) */
+  thirdPartyAgreed: boolean;
   /** reverify 모드에서는 무시 (기존 동의 유지) */
   marketingAgreed: boolean;
   email?: string;
@@ -422,6 +424,7 @@ export async function callReverifyIdentity(
     expectedBindingToken,
     termsAgreed: true,
     privacyAgreed: true,
+    thirdPartyAgreed: true,
     marketingAgreed: false,
     mode: 'reverify',
   });

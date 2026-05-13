@@ -295,6 +295,7 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
           identityVerificationId,
           termsAgreed: data.termsAgreed,
           privacyAgreed: data.privacyAgreed,
+          thirdPartyAgreed: data.thirdPartyAgreed,
           marketingAgreed: data.marketingAgreed,
           email: data.email,
           mode: 'signup',

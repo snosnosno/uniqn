@@ -14,10 +14,10 @@ interface SignupStepTermsProps {
 }
 
 interface TermItem {
-  key: 'termsAgreed' | 'privacyAgreed' | 'marketingAgreed';
+  key: 'termsAgreed' | 'privacyAgreed' | 'thirdPartyAgreed' | 'marketingAgreed';
   label: string;
   required: boolean;
-  contentKey: 'terms' | 'privacy' | 'marketing';
+  contentKey: 'terms' | 'privacy' | 'thirdParty' | 'marketing';
 }
 
 interface CheckboxProps {
@@ -44,6 +44,12 @@ const TERMS: TermItem[] = [
     contentKey: 'privacy',
   },
   {
+    key: 'thirdPartyAgreed',
+    label: '개인정보 제3자 제공 동의 (구인자에게 제공)',
+    required: true,
+    contentKey: 'thirdParty',
+  },
+  {
     key: 'marketingAgreed',
     label: '마케팅 정보 수신 동의',
     required: false,
@@ -55,13 +61,16 @@ const TERM_CONTENT_LOAD_ERROR_MESSAGE = '약관 내용을 불러오지 못했습
 const TERM_CONTENT_LOADING_MESSAGE = '약관 내용을 불러오는 중입니다...';
 
 async function loadTermContent(term: TermItem): Promise<string> {
-  const { MARKETING_CONSENT, PRIVACY_POLICY, TERMS_OF_SERVICE } = await import('./termsContent');
+  const { MARKETING_CONSENT, PRIVACY_POLICY, TERMS_OF_SERVICE, THIRD_PARTY_CONSENT } =
+    await import('./termsContent');
 
   switch (term.contentKey) {
     case 'terms':
       return TERMS_OF_SERVICE;
     case 'privacy':
       return PRIVACY_POLICY;
+    case 'thirdParty':
+      return THIRD_PARTY_CONSENT;
     case 'marketing':
       return MARKETING_CONSENT;
     default:
@@ -137,21 +146,24 @@ export function SignupStepTerms({ onNext, initialData, isLoading = false }: Sign
     defaultValues: {
       termsAgreed: initialData?.termsAgreed || false,
       privacyAgreed: initialData?.privacyAgreed || false,
+      thirdPartyAgreed: initialData?.thirdPartyAgreed || false,
       marketingAgreed: initialData?.marketingAgreed || false,
     },
   });
 
   const termsAgreed = watch('termsAgreed');
   const privacyAgreed = watch('privacyAgreed');
+  const thirdPartyAgreed = watch('thirdPartyAgreed');
   const marketingAgreed = watch('marketingAgreed');
 
-  const allChecked = termsAgreed && privacyAgreed && marketingAgreed;
-  const requiredChecked = termsAgreed && privacyAgreed;
+  const allChecked = termsAgreed && privacyAgreed && thirdPartyAgreed && marketingAgreed;
+  const requiredChecked = termsAgreed && privacyAgreed && thirdPartyAgreed;
 
   const handleAllAgree = () => {
     const newValue = !allChecked;
     setValue('termsAgreed', newValue, { shouldValidate: true });
     setValue('privacyAgreed', newValue, { shouldValidate: true });
+    setValue('thirdPartyAgreed', newValue, { shouldValidate: true });
     setValue('marketingAgreed', newValue);
   };
 
@@ -237,7 +249,7 @@ export function SignupStepTerms({ onNext, initialData, isLoading = false }: Sign
         ))}
       </View>
 
-      {(errors.termsAgreed || errors.privacyAgreed) && (
+      {(errors.termsAgreed || errors.privacyAgreed || errors.thirdPartyAgreed) && (
         <View className="rounded-lg bg-error-50 p-3 dark:bg-error-900/30">
           <Text className="text-center text-sm text-error-600 dark:text-error-400 font-sans">
             필수 약관에 동의해주세요.
