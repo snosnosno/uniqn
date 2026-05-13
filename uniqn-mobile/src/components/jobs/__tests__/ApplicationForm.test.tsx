@@ -137,4 +137,82 @@ describe('ApplicationForm', () => {
     );
     expect(onClose).not.toHaveBeenCalled();
   });
+
+  // T4 — P1 지원 시점 동의: 미체크 상태에서는 체크박스가 false 로 노출
+  it('initially renders the provision consent checkbox unchecked', () => {
+    const { getByTestId } = render(
+      <ApplicationForm
+        job={job}
+        visible
+        isSubmitting={false}
+        onSubmit={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+
+    const checkbox = getByTestId('provision-consent-checkbox');
+    expect(checkbox.props.accessibilityState).toEqual(expect.objectContaining({ checked: false }));
+  });
+
+  // T5 — 체크 → 동의 상태가 true 로 전환되어 다음 액션을 막지 않음
+  it('toggles provision consent when the checkbox is pressed', () => {
+    const { getByTestId } = render(
+      <ApplicationForm
+        job={job}
+        visible
+        isSubmitting={false}
+        onSubmit={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+
+    const checkbox = getByTestId('provision-consent-checkbox');
+    fireEvent.press(checkbox);
+
+    expect(checkbox.props.accessibilityState).toEqual(expect.objectContaining({ checked: true }));
+  });
+
+  // T6 (F3 회귀 방지) — 모달 닫았다가 다시 열면 동의 체크 상태 reset
+  it('resets provision consent when the modal is reopened (F3 regression guard)', () => {
+    const { getByTestId, rerender } = render(
+      <ApplicationForm
+        job={job}
+        visible
+        isSubmitting={false}
+        onSubmit={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+
+    fireEvent.press(getByTestId('provision-consent-checkbox'));
+    expect(getByTestId('provision-consent-checkbox').props.accessibilityState).toEqual(
+      expect.objectContaining({ checked: true })
+    );
+
+    // 모달 닫힘
+    rerender(
+      <ApplicationForm
+        job={job}
+        visible={false}
+        isSubmitting={false}
+        onSubmit={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+
+    // 모달 재오픈 — visible=true 진입 시 useEffect 가 false 로 reset
+    rerender(
+      <ApplicationForm
+        job={job}
+        visible
+        isSubmitting={false}
+        onSubmit={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+
+    expect(getByTestId('provision-consent-checkbox').props.accessibilityState).toEqual(
+      expect.objectContaining({ checked: false })
+    );
+  });
 });
