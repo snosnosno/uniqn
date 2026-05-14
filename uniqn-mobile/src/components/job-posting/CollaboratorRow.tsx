@@ -113,7 +113,7 @@ export function CollaboratorRow({
           }}
           disabled={disabled}
           hitSlop={12}
-          className="min-h-[44px] min-w-[44px] items-center justify-center rounded-md active:opacity-60"
+          className="min-h-[44px] min-w-[44px] items-center justify-center rounded-md active:bg-gray-100 dark:active:bg-surface-hover"
           accessibilityRole="button"
           accessibilityLabel="협업자 제거"
         >
