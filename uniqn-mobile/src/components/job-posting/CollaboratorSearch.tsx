@@ -13,6 +13,7 @@ import { SearchIcon, UserIcon } from '@/components/icons';
 import { useCollaboratorCandidates } from '@/hooks/job-posting/useJobPostingCollaborators';
 import { COLLABORATOR_LIMITS } from '@/types/jobPostingCollaborator';
 import type { CollaboratorSearchCandidate } from '@/types/jobPostingCollaborator';
+import { triggerHaptic } from '@/utils/haptics';
 
 export interface CollaboratorSearchProps {
   jobPostingId: string;
@@ -140,6 +141,7 @@ export function CollaboratorSearch({ jobPostingId, onAdd, isAdding }: Collaborat
             key={c.userId}
             candidate={c}
             onAdd={async (uid) => {
+              void triggerHaptic('light');
               await onAdd(uid);
               setEmailInput(''); // 추가 후 입력 초기화
             }}
