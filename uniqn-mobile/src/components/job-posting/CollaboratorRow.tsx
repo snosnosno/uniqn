@@ -12,6 +12,8 @@ import { Image } from 'expo-image';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
 import { UserIcon, XIcon } from '@/components/icons';
+import { confirmAction } from '@/utils/confirmAction';
+import { triggerHaptic } from '@/utils/haptics';
 import type { JobPostingCollaboratorWithUser } from '@/types/jobPostingCollaborator';
 
 export interface CollaboratorRowProps {
@@ -73,7 +75,19 @@ export function CollaboratorRow({
       {/* 액션 */}
       {isSelf ? (
         <Pressable
-          onPress={onLeave}
+          onPress={() => {
+            const label = collaborator.displayName ?? '이름 없음';
+            confirmAction({
+              title: '공고 관리에서 나가기',
+              message: `이 공고의 협업자 목록에서 ${label} 본인을 제거합니다. 더 이상 지원자 검토·승인을 할 수 없게 됩니다.`,
+              confirmText: '나가기',
+              destructive: true,
+              onConfirm: () => {
+                void triggerHaptic('warning');
+                onLeave?.();
+              },
+            });
+          }}
           disabled={disabled}
           hitSlop={8}
           className="min-h-[44px] min-w-[44px] px-3 items-center justify-center rounded-md border border-content-secondary/30 active:bg-gray-100 dark:active:bg-surface-elevated"
@@ -84,7 +98,19 @@ export function CollaboratorRow({
         </Pressable>
       ) : isOwner ? (
         <Pressable
-          onPress={() => onRemove?.(collaborator.userId)}
+          onPress={() => {
+            const label = collaborator.displayName ?? collaborator.email ?? '이 협업자';
+            confirmAction({
+              title: '협업자 제거',
+              message: `${label} 님을 이 공고의 협업자 목록에서 제거합니다. 더 이상 지원자 관리·정산에 참여할 수 없게 됩니다.`,
+              confirmText: '제거',
+              destructive: true,
+              onConfirm: () => {
+                void triggerHaptic('warning');
+                onRemove?.(collaborator.userId);
+              },
+            });
+          }}
           disabled={disabled}
           hitSlop={12}
           className="min-h-[44px] min-w-[44px] items-center justify-center rounded-md active:opacity-60"
