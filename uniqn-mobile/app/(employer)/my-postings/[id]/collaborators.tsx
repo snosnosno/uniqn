@@ -35,7 +35,7 @@ export default function CollaboratorsRoute() {
   const total = collaborators.length;
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-surface" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
       <Stack.Screen
         options={{
           title: '공유 관리',
@@ -43,7 +43,7 @@ export default function CollaboratorsRoute() {
         }}
       />
 
-      <View className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+      <View className="px-4 py-3 border-b border-divider">
         <Text className="text-base font-medium text-content-primary" numberOfLines={1}>
           {title}
         </Text>

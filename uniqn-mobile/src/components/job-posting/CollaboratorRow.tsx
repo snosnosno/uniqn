@@ -47,7 +47,7 @@ export function CollaboratorRow({
   })();
 
   return (
-    <View className="flex-row items-center gap-3 py-3 px-4 bg-white dark:bg-surface">
+    <View className="flex-row items-center gap-3 py-3 px-4 bg-surface-page">
       {/* Avatar */}
       <View className="w-10 h-10 rounded-full bg-gray-100 dark:bg-surface-elevated items-center justify-center overflow-hidden">
         {collaborator.photoUrl ? (

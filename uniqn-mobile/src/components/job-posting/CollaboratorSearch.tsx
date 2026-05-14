@@ -86,11 +86,9 @@ function CandidateRow({
         <Text className="text-xs text-content-secondary" numberOfLines={1}>
           {candidate.email}
         </Text>
-        {hint ? (
-          <Text className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">{hint}</Text>
-        ) : null}
+        {hint ? <Text className="text-xs text-warning-600 mt-0.5">{hint}</Text> : null}
       </View>
-      {!disabled ? <Text className="text-sm text-brand-primary font-medium">추가</Text> : null}
+      {!disabled ? <Text className="text-sm text-primary-500 font-medium">추가</Text> : null}
     </Pressable>
   );
 }
@@ -105,7 +103,7 @@ export function CollaboratorSearch({ jobPostingId, onAdd, isAdding }: Collaborat
 
   return (
     <View>
-      <View className="flex-row items-center gap-2 px-4 py-2 bg-white dark:bg-surface border-b border-gray-200 dark:border-gray-700">
+      <View className="flex-row items-center gap-2 px-4 py-2 bg-surface-page border-b border-divider">
         <SearchIcon size={18} color="#9CA3AF" />
         <TextInput
           value={emailInput}
