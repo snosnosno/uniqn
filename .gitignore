@@ -195,3 +195,7 @@ claude-forge/
 # Dead code analysis reports
 .reports/
 .session-followups/
+
+# QA / Design review temporary reports
+QA-REPORT-*.md
+DESIGN-AUDIT-*.md
