@@ -6,9 +6,10 @@
  */
 
 import React from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { View, Text } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { CollaboratorRow } from './CollaboratorRow';
+import { SkeletonListItem } from '@/components/ui/Skeleton';
 import type { JobPostingCollaboratorWithUser } from '@/types/jobPostingCollaborator';
 
 export interface CollaboratorListProps {
@@ -32,8 +33,10 @@ export function CollaboratorList({
 }: CollaboratorListProps) {
   if (isLoading) {
     return (
-      <View className="py-6 items-center">
-        <ActivityIndicator />
+      <View accessibilityRole="progressbar" accessibilityLabel="협업자 목록 로딩 중">
+        <SkeletonListItem />
+        <SkeletonListItem />
+        <SkeletonListItem />
       </View>
     );
   }
