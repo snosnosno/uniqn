@@ -47,9 +47,11 @@ export default function CollaboratorsRoute() {
         <Text className="text-base font-medium text-content-primary" numberOfLines={1}>
           {title}
         </Text>
-        <Text className="text-sm text-content-secondary mt-0.5">
-          {total > 0 ? `${total}명이 함께 관리 중` : '아직 협업자가 없습니다'}
-        </Text>
+        {total > 0 ? (
+          <Text className="text-sm text-content-secondary mt-0.5">
+            {`${total}명이 함께 관리 중`}
+          </Text>
+        ) : null}
       </View>
 
       {isOwner ? (
