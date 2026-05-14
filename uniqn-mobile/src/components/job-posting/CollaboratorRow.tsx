@@ -75,7 +75,8 @@ export function CollaboratorRow({
         <Pressable
           onPress={onLeave}
           disabled={disabled}
-          className="px-3 py-1.5 rounded-md border border-content-secondary/30 active:bg-gray-100 dark:active:bg-surface-elevated"
+          hitSlop={8}
+          className="min-h-[44px] min-w-[44px] px-3 items-center justify-center rounded-md border border-content-secondary/30 active:bg-gray-100 dark:active:bg-surface-elevated"
           accessibilityRole="button"
           accessibilityLabel="공고 관리에서 나가기"
         >
@@ -85,7 +86,8 @@ export function CollaboratorRow({
         <Pressable
           onPress={() => onRemove?.(collaborator.userId)}
           disabled={disabled}
-          className="p-2 active:opacity-60"
+          hitSlop={12}
+          className="min-h-[44px] min-w-[44px] items-center justify-center rounded-md active:opacity-60"
           accessibilityRole="button"
           accessibilityLabel="협업자 제거"
         >
