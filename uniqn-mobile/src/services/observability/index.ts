@@ -87,17 +87,8 @@ export {
   sessionService,
   initialize as initializeSession,
   cleanup as cleanupSession,
-  recordActivity,
-  isSessionActive,
   getSessionState,
-  refreshToken,
-  getValidToken,
-  checkLoginAttempts,
-  incrementLoginAttempts,
-  resetLoginAttempts,
-  getRemainingLoginAttempts,
   type SessionState,
-  type LoginAttempts,
 } from './sessionService';
 
 // Token Refresh Service

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { AppState, Platform, type AppStateStatus } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 import { useAuthStore, waitForHydration } from '@/stores/authStore';
 import { useAppStartupStore, type StartupPhase } from '@/stores/appStartupStore';
 import { validateEnv } from '@/lib/env';
@@ -877,14 +878,33 @@ export function useAppInitialize(): UseAppInitializeReturn {
   }, [reconcileIfNeeded]);
 
   useEffect(() => {
+    // Supabase RN: 백그라운드에서 JS 타이머가 멈추므로 autoRefreshToken도 함께
+    // 일시정지/재개해야 한다. Supabase 공식 RN 가이드 권고.
     const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
-      if (nextAppState === 'active' && state.isInitialized) {
-        void syncAuthStateOnForeground();
+      if (nextAppState === 'active') {
+        if (Platform.OS !== 'web') {
+          supabase.auth.startAutoRefresh();
+        }
+        if (state.isInitialized) {
+          void syncAuthStateOnForeground();
+        }
+      } else {
+        if (Platform.OS !== 'web') {
+          supabase.auth.stopAutoRefresh();
+        }
       }
     });
 
+    // 초기 mount 시 AppState 이벤트가 fire되지 않으므로 currentState 기반 1회 호출
+    if (Platform.OS !== 'web' && AppState.currentState === 'active') {
+      supabase.auth.startAutoRefresh();
+    }
+
     return () => {
       subscription.remove();
+      if (Platform.OS !== 'web') {
+        supabase.auth.stopAutoRefresh();
+      }
     };
   }, [state.isInitialized, syncAuthStateOnForeground]);
 

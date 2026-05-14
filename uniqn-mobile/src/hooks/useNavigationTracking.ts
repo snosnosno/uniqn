@@ -19,7 +19,6 @@ import {
   analyticsService,
   crashlyticsService,
   recordNavigationTime,
-  recordActivity,
 } from '@/services/observability';
 
 // ============================================================================
@@ -247,9 +246,6 @@ export function useNavigationTracking(): void {
     // 로깅 및 Analytics
     logNavigation(screenInfo, previousPath, pathname);
     trackScreenView(screenInfo, pathname);
-
-    // 세션 활동 기록 (세션 타임아웃 리셋)
-    recordActivity();
   }, [pathname, segments, logNavigation, trackScreenView]);
 }
 

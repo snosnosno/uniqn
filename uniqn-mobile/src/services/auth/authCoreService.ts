@@ -33,7 +33,7 @@ import {
   checkLoginAttempts,
   incrementLoginAttempts,
   resetLoginAttempts,
-} from '@/services/observability/sessionService';
+} from './loginAttemptService';
 import type { SignUpFormData, LoginFormData } from '@/schemas';
 import { type UserProfile, type AuthResult } from './authTypes';
 import { getUserProfile as fetchUserProfile } from './userProfileService';
