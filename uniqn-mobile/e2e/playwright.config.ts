@@ -31,7 +31,7 @@ export default defineConfig({
   workers: isCI ? 4 : 1,
   outputDir: testResultsDir,
   reporter: isCI
-    ? [['html', { open: 'never', outputFolder: htmlReportDir }], ['github']]
+    ? [['list'], ['html', { open: 'never', outputFolder: htmlReportDir }], ['github']]
     : [['html', { open: 'on-failure', outputFolder: htmlReportDir }]],
 
   globalSetup: require.resolve('./global-setup'),
