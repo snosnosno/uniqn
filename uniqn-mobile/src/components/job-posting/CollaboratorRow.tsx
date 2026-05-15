@@ -11,7 +11,7 @@ import { View, Text, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
-import { UserIcon, XIcon } from '@/components/icons';
+import { UserIcon } from '@/components/icons';
 import { confirmAction } from '@/utils/confirmAction';
 import { triggerHaptic } from '@/utils/haptics';
 import type { JobPostingCollaboratorWithUser } from '@/types/jobPostingCollaborator';
@@ -112,12 +112,12 @@ export function CollaboratorRow({
             });
           }}
           disabled={disabled}
-          hitSlop={12}
-          className="min-h-[44px] min-w-[44px] items-center justify-center rounded-md active:bg-gray-100 dark:active:bg-surface-hover"
+          hitSlop={8}
+          className="min-h-[44px] min-w-[44px] px-3 items-center justify-center rounded-md border border-error-500/30 active:bg-error-50 dark:active:bg-error-500/20"
           accessibilityRole="button"
-          accessibilityLabel="협업자 제거"
+          accessibilityLabel={`${collaborator.displayName ?? '이 협업자'} 제거`}
         >
-          <XIcon size={20} color="#9CA3AF" />
+          <Text className="text-sm font-medium text-error-500">제거</Text>
         </Pressable>
       ) : null}
     </View>
