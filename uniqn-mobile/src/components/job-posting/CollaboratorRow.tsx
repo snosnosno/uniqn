@@ -9,10 +9,9 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Image } from 'expo-image';
-import { format } from 'date-fns';
-import { ko } from 'date-fns/locale/ko';
 import { UserIcon } from '@/components/icons';
 import { confirmAction } from '@/utils/confirmAction';
+import { formatRelative } from '@/utils/formatters/date';
 import { triggerHaptic } from '@/utils/haptics';
 import type { JobPostingCollaboratorWithUser } from '@/types/jobPostingCollaborator';
 
@@ -38,13 +37,7 @@ export function CollaboratorRow({
   disabled,
 }: CollaboratorRowProps) {
   const isSelf = collaborator.userId === currentUserId;
-  const addedAtLabel = (() => {
-    try {
-      return format(new Date(collaborator.addedAt), 'yyyy-MM-dd', { locale: ko });
-    } catch {
-      return '';
-    }
-  })();
+  const addedAtLabel = collaborator.addedAt ? formatRelative(collaborator.addedAt) : '';
 
   return (
     <View className="flex-row items-center gap-3 py-3 px-4 bg-surface-page">
@@ -68,7 +61,7 @@ export function CollaboratorRow({
         </Text>
         <Text className="text-xs text-content-secondary" numberOfLines={1}>
           {collaborator.email ?? ''}
-          {addedAtLabel ? `  ·  ${addedAtLabel} 추가` : ''}
+          {addedAtLabel ? `  ·  ${addedAtLabel}` : ''}
         </Text>
       </View>
 
