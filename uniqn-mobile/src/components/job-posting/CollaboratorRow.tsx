@@ -9,9 +9,10 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Image } from 'expo-image';
-import { format } from 'date-fns';
-import { ko } from 'date-fns/locale/ko';
-import { UserIcon, XIcon } from '@/components/icons';
+import { UserIcon } from '@/components/icons';
+import { confirmAction } from '@/utils/confirmAction';
+import { formatRelative } from '@/utils/formatters/date';
+import { triggerHaptic } from '@/utils/haptics';
 import type { JobPostingCollaboratorWithUser } from '@/types/jobPostingCollaborator';
 
 export interface CollaboratorRowProps {
@@ -36,16 +37,10 @@ export function CollaboratorRow({
   disabled,
 }: CollaboratorRowProps) {
   const isSelf = collaborator.userId === currentUserId;
-  const addedAtLabel = (() => {
-    try {
-      return format(new Date(collaborator.addedAt), 'yyyy-MM-dd', { locale: ko });
-    } catch {
-      return '';
-    }
-  })();
+  const addedAtLabel = collaborator.addedAt ? formatRelative(collaborator.addedAt) : '';
 
   return (
-    <View className="flex-row items-center gap-3 py-3 px-4 bg-white dark:bg-surface">
+    <View className="flex-row items-center gap-3 py-3 px-4 bg-surface-page">
       {/* Avatar */}
       <View className="w-10 h-10 rounded-full bg-gray-100 dark:bg-surface-elevated items-center justify-center overflow-hidden">
         {collaborator.photoUrl ? (
@@ -66,16 +61,29 @@ export function CollaboratorRow({
         </Text>
         <Text className="text-xs text-content-secondary" numberOfLines={1}>
           {collaborator.email ?? ''}
-          {addedAtLabel ? `  ·  ${addedAtLabel} 추가` : ''}
+          {addedAtLabel ? `  ·  ${addedAtLabel}` : ''}
         </Text>
       </View>
 
       {/* 액션 */}
       {isSelf ? (
         <Pressable
-          onPress={onLeave}
+          onPress={() => {
+            const label = collaborator.displayName ?? '이름 없음';
+            confirmAction({
+              title: '공고 관리에서 나가기',
+              message: `이 공고의 협업자 목록에서 ${label} 본인을 제거합니다. 더 이상 지원자 검토·승인을 할 수 없게 됩니다.`,
+              confirmText: '나가기',
+              destructive: true,
+              onConfirm: () => {
+                void triggerHaptic('warning');
+                onLeave?.();
+              },
+            });
+          }}
           disabled={disabled}
-          className="px-3 py-1.5 rounded-md border border-content-secondary/30 active:bg-gray-100 dark:active:bg-surface-elevated"
+          hitSlop={8}
+          className="min-h-[44px] min-w-[44px] px-3 items-center justify-center rounded-md border border-content-secondary/30 active:bg-gray-100 dark:active:bg-surface-elevated"
           accessibilityRole="button"
           accessibilityLabel="공고 관리에서 나가기"
         >
@@ -83,13 +91,26 @@ export function CollaboratorRow({
         </Pressable>
       ) : isOwner ? (
         <Pressable
-          onPress={() => onRemove?.(collaborator.userId)}
+          onPress={() => {
+            const label = collaborator.displayName ?? collaborator.email ?? '이 협업자';
+            confirmAction({
+              title: '협업자 제거',
+              message: `${label} 님을 이 공고의 협업자 목록에서 제거합니다. 더 이상 지원자 관리·정산에 참여할 수 없게 됩니다.`,
+              confirmText: '제거',
+              destructive: true,
+              onConfirm: () => {
+                void triggerHaptic('warning');
+                onRemove?.(collaborator.userId);
+              },
+            });
+          }}
           disabled={disabled}
-          className="p-2 active:opacity-60"
+          hitSlop={8}
+          className="min-h-[44px] min-w-[44px] px-3 items-center justify-center rounded-md border border-error-500/30 active:bg-error-50 dark:active:bg-error-500/20"
           accessibilityRole="button"
-          accessibilityLabel="협업자 제거"
+          accessibilityLabel={`${collaborator.displayName ?? '이 협업자'} 제거`}
         >
-          <XIcon size={20} color="#9CA3AF" />
+          <Text className="text-sm font-medium text-error-500">제거</Text>
         </Pressable>
       ) : null}
     </View>

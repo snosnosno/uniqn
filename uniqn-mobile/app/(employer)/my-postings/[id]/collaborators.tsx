@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores/authStore';
@@ -35,7 +35,7 @@ export default function CollaboratorsRoute() {
   const total = collaborators.length;
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-surface" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
       <Stack.Screen
         options={{
           title: '공유 관리',
@@ -43,41 +43,56 @@ export default function CollaboratorsRoute() {
         }}
       />
 
-      <View className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+      <View className="px-4 py-3 border-b border-divider">
         <Text className="text-base font-medium text-content-primary" numberOfLines={1}>
           {title}
         </Text>
-        <Text className="text-sm text-content-secondary mt-0.5">
-          {total > 0 ? `${total}명이 함께 관리 중` : '아직 협업자가 없습니다'}
-        </Text>
+        {total > 0 ? (
+          <Text className="text-sm text-content-secondary mt-0.5">
+            {`${total}명이 함께 관리 중`}
+          </Text>
+        ) : null}
       </View>
 
       {isOwner ? (
-        <ScrollView className="flex-1">
-          <View className="py-2">
-            <Text className="px-4 pb-2 text-xs text-content-secondary uppercase">협업자 추가</Text>
-            <CollaboratorSearch
-              jobPostingId={jobPostingId!}
-              onAdd={async (userId) => {
-                await add(userId);
-              }}
-              isAdding={isAdding}
-            />
-          </View>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          className="flex-1"
+        >
+          <ScrollView
+            className="flex-1"
+            keyboardDismissMode="on-drag"
+            keyboardShouldPersistTaps="handled"
+          >
+            <View className="py-2">
+              <Text className="px-4 pb-2 text-xs font-medium text-content-secondary">
+                협업자 추가
+              </Text>
+              <CollaboratorSearch
+                jobPostingId={jobPostingId!}
+                onAdd={async (userId) => {
+                  await add(userId);
+                }}
+                isAdding={isAdding}
+              />
+            </View>
 
-          <View className="py-2 mt-2">
-            <Text className="px-4 pb-2 text-xs text-content-secondary uppercase">현재 협업자</Text>
-            <CollaboratorList
-              collaborators={collaborators}
-              isLoading={isLoading}
-              isOwner={true}
-              currentUserId={currentUserId}
-              onRemove={remove}
-              onLeave={leaveSelf}
-              actionDisabled={isRemoving}
-            />
-          </View>
-        </ScrollView>
+            <View className="py-2 mt-2">
+              <Text className="px-4 pb-2 text-xs font-medium text-content-secondary">
+                현재 협업자
+              </Text>
+              <CollaboratorList
+                collaborators={collaborators}
+                isLoading={isLoading}
+                isOwner={true}
+                currentUserId={currentUserId}
+                onRemove={remove}
+                onLeave={leaveSelf}
+                actionDisabled={isRemoving}
+              />
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       ) : (
         <View className="flex-1">
           <CollaboratorList
