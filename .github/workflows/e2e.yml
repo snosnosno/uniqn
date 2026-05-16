@@ -112,16 +112,16 @@ jobs:
         if: always()
         with:
           name: playwright-report
-          path: uniqn-mobile/playwright-report/
+          path: uniqn-mobile/output/playwright/report/
           retention-days: 14
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
-        if: failure()
+        if: always()
         with:
           name: e2e-test-results
           path: |
-            uniqn-mobile/e2e/test-results/
+            uniqn-mobile/output/playwright/test-results/
           retention-days: 7
 
       - name: Comment E2E Results on PR
