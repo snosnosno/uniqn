@@ -45,7 +45,7 @@ const TERMS: TermItem[] = [
   },
   {
     key: 'thirdPartyAgreed',
-    label: '개인정보 제3자 제공 동의 (구인자에게 제공)',
+    label: '개인정보 제3자 제공 동의',
     required: true,
     contentKey: 'thirdParty',
   },

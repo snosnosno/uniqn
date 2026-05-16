@@ -232,7 +232,7 @@ COMMENT ON COLUMN public.applications.applicant_provision_consent_version IS
   ```ts
   {
     key: 'thirdPartyAgreed',
-    label: '개인정보 제3자 제공 동의 (구인자에게 제공)',
+    label: '개인정보 제3자 제공 동의',
     required: true,
     contentKey: 'thirdParty',
   }
