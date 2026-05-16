@@ -10,12 +10,13 @@ const PUBLIC_SEED_JOB_TITLE = '긴급 딜러 모집';
 const staffState = path.join(__dirname, '../../fixtures/storage-states/staff.json');
 
 test.describe('퍼블릭 페이지', () => {
-  test('공개 공고 목록 페이지 접근 가능', async ({ page }) => {
+  test('비로그인 /jobs 진입 → 로그인 페이지로 리다이렉트', async ({ page }) => {
+    // a465d82c7 (2026-03-29) 이후 (public)/jobs 는 LegacyPublicJobsEntryRoute 로
+    // 비로그인 사용자를 무조건 /(auth)/login 으로 redirect 한다.
+    // 공개 목록은 더 이상 제공하지 않으며, 공개 상세(/jobs/:id) 만 비로그인 접근 가능.
     await page.goto('/jobs', { waitUntil: 'domcontentloaded' });
 
-    await expect(page.getByRole('heading', { name: '구인공고' })).toBeVisible({
-      timeout: 10_000,
-    });
+    await expect(page).toHaveURL(/\/login(?:[/?#]|$)/, { timeout: 10_000 });
   });
 
   test('공개 공고 상세 페이지에서 비로그인 사용자도 공고를 볼 수 있다', async ({ page }) => {
