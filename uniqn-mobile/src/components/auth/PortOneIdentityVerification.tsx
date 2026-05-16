@@ -375,7 +375,7 @@ export function PortOneIdentityVerification({
           // B16: 진행 중 모달은 "취소" 시맨틱 — 자동 완료 시 모달이 사라지므로 항상 진행 컨텍스트.
           closeAccessibilityLabel="본인인증 취소"
         >
-          <View style={{ height: modalHeight }}>
+          <View style={{ height: modalHeight, width: '100%' }}>
             <IdentityVerification
               request={request}
               onComplete={handleVerificationComplete}
