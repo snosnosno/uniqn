@@ -212,6 +212,8 @@ INSERT INTO public.users (
   terms_agreed,
   privacy_agreed,
   marketing_agreed,
+  identity_verified,
+  identity_verified_at,
   created_at,
   updated_at
 )
@@ -230,6 +232,8 @@ VALUES
     true,
     true,
     false,
+    true,
+    now(),
     now(),
     now()
   ),
@@ -247,6 +251,8 @@ VALUES
     true,
     true,
     false,
+    true,
+    now(),
     now(),
     now()
   ),
@@ -264,6 +270,8 @@ VALUES
     true,
     true,
     false,
+    true,
+    now(),
     now(),
     now()
   ),
@@ -281,6 +289,8 @@ VALUES
     true,
     true,
     false,
+    true,
+    now(),
     now(),
     now()
   )
