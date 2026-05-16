@@ -5,6 +5,7 @@ import { expect, test } from '@playwright/test';
 import path from 'path';
 import { JobDetailPage } from '../../pages/app/job-detail.page';
 import { getAdminClient, SUPABASE_QA_ACCOUNTS } from '../../helpers/supabase-admin';
+import { ensureE2EWorkspace } from '../../helpers/workspace-seed';
 
 const staffState = path.join(__dirname, '../../fixtures/storage-states/staff.json');
 const employerState = path.join(__dirname, '../../fixtures/storage-states/employer.json');
@@ -23,12 +24,14 @@ test.describe('공고 상세와 지원 흐름', () => {
     }
 
     const workDate = new Date(Date.now() + 10 * 86_400_000).toISOString().slice(0, 10);
+    const workspaceId = await ensureE2EWorkspace(admin, SUPABASE_QA_ACCOUNTS.employer.id);
 
     const { data, error } = await admin
       .from('job_postings')
       .insert({
         title: TEST_JOB_TITLE,
         status: 'active',
+        workspace_id: workspaceId,
         owner_id: SUPABASE_QA_ACCOUNTS.employer.id,
         owner_name: SUPABASE_QA_ACCOUNTS.employer.name,
         posting_type: 'regular',
