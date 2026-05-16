@@ -16,15 +16,11 @@ export class BasePage {
     await this.page.waitForLoadState('domcontentloaded');
 
     try {
-      const loadingTexts = ['앱 로딩 중...', '앱을 불러오는 중...'];
+      const loadingText = this.page.getByText('앱을 불러오는 중...');
+      const isVisible = await loadingText.isVisible().catch(() => false);
 
-      for (const text of loadingTexts) {
-        const loadingText = this.page.getByText(text);
-        const isVisible = await loadingText.isVisible().catch(() => false);
-
-        if (isVisible) {
-          await loadingText.waitFor({ state: 'hidden', timeout: 30_000 });
-        }
+      if (isVisible) {
+        await loadingText.waitFor({ state: 'hidden', timeout: 30_000 });
       }
     } catch {
       // 이미 사라졌거나 에러 화면으로 전환됨
@@ -40,7 +36,7 @@ export class BasePage {
    */
   async dismissNotificationOnboarding(): Promise<void> {
     try {
-      const skipButton = this.page.getByText('나중에 하기');
+      const skipButton = this.page.getByText('지금 닫기');
       const isVisible = await skipButton.isVisible().catch(() => false);
       if (isVisible) {
         await skipButton.click({ timeout: 3_000 });

@@ -14,7 +14,7 @@ import { config as loadDotenv } from 'dotenv';
 
 // .env.test 로드 (E2E_CONFIG가 EXPO_PUBLIC_SUPABASE_URL 등을 requireEnv로 읽기 때문에
 // config import 전에 반드시 선행되어야 함)
-loadDotenv({ path: path.join(__dirname, '.env.test') });
+loadDotenv({ path: path.join(__dirname, '.env.test'), quiet: true });
 
 // eslint-disable-next-line import/first
 import { TEST_ACCOUNTS, type TestAccount } from './fixtures/test-accounts';
