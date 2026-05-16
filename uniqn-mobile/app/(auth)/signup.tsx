@@ -8,8 +8,8 @@
  * @version 3.0.0
  */
 
-import { useState, useCallback } from 'react';
-import { Alert, View, Text, Pressable } from 'react-native';
+import { useState, useCallback, useEffect } from 'react';
+import { Alert, View, Text, Pressable, BackHandler } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SignupForm } from '@/components/auth';
@@ -20,6 +20,7 @@ import {
   getCurrentUserAsync,
   callReverifyIdentity,
   getUserProfile,
+  signOut,
 } from '@/services';
 import { ChevronLeftIcon } from '@/components/icons';
 import { useToastStore } from '@/stores/toastStore';
@@ -237,9 +238,60 @@ export default function SignUpScreen() {
     [addToast, clearAllToasts, postAuthRedirect, setProfile]
   );
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
+    // submit 진행 중에는 백 무시 — completeSocialProfile/callReverifyIdentity 와
+    // signOut 동시 진행 시 절반 저장된 프로필 + 세션 종료 race condition 방지.
+    if (isLoading) return;
+
+    // social/reverify 모드는 OAuth 세션이 이미 활성 상태라 router.back() 만으로는
+    // useAuthGuard 가 미완성 프로필을 감지해 다시 이 화면으로 redirect 한다.
+    // 로그인 화면으로 진짜 빠져나가려면 명시적 signOut 필요.
+    if (isSocialMode || isReverifyMode) {
+      Alert.alert(
+        '가입을 중단하시겠어요?',
+        '입력한 정보가 사라지고 로그인 화면으로 돌아갑니다.',
+        [
+          { text: '계속 진행', style: 'cancel' },
+          {
+            text: '중단하고 나가기',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await signOut();
+              } catch (error) {
+                logger.warn('가입 중단 signOut 실패', {
+                  component: 'SignUpScreen',
+                  error: error instanceof Error ? error.message : String(error),
+                });
+              } finally {
+                router.replace(
+                  postAuthRedirect
+                    ? `/(auth)/login?redirect=${encodeURIComponent(postAuthRedirect)}`
+                    : '/(auth)/login'
+                );
+              }
+            },
+          },
+        ],
+        { cancelable: true }
+      );
+      return;
+    }
     router.back();
-  };
+  }, [isLoading, isSocialMode, isReverifyMode, postAuthRedirect]);
+
+  // 안드로이드 하드웨어 백 버튼은 BackHandler 인터셉트 없으면 곧바로 router.back()
+  // 을 호출해 confirm 다이얼로그를 우회한다. social/reverify 모드에서만 가로채
+  // handleBack 으로 위임 (default 이메일 가입은 시스템 기본 동작 유지).
+  useEffect(() => {
+    if (!isSocialMode && !isReverifyMode) return;
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      handleBack();
+      return true;
+    });
+    return () => subscription.remove();
+  }, [isSocialMode, isReverifyMode, handleBack]);
 
   const headerTitle = isReverifyMode ? '본인인증' : isSocialMode ? '프로필 등록' : '회원가입';
   const formMode = isReverifyMode ? 'reverify' : isSocialMode ? 'social' : 'default';
@@ -253,7 +305,13 @@ export default function SignUpScreen() {
     <SafeAreaView className="flex-1 bg-white dark:bg-surface-dark">
       {/* 헤더 */}
       <View className="flex-row items-center justify-between px-4 py-2 border-b border-divider">
-        <Pressable onPress={handleBack} className="p-2 -ml-2" accessibilityLabel="뒤로가기">
+        <Pressable
+          onPress={handleBack}
+          disabled={isLoading}
+          className={`p-2 -ml-2 ${isLoading ? 'opacity-40' : ''}`}
+          accessibilityLabel="뒤로가기"
+          accessibilityState={{ disabled: isLoading }}
+        >
           <ChevronLeftIcon size={24} />
         </Pressable>
         <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white">
