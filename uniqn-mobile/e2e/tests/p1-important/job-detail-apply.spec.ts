@@ -144,7 +144,7 @@ test.describe('공고 상세와 지원 흐름', () => {
     await context.close();
   });
 
-  test.skip('마감 공고에는 비활성 상태 버튼이 보인다', async ({ browser }) => {
+  test('마감 공고에는 비활성 상태 버튼이 보인다', async ({ browser }) => {
     const admin = getAdminClient();
     if (!admin) {
       test.skip();
@@ -261,7 +261,7 @@ test.describe('공고 상세와 지원 흐름', () => {
     await context.close();
   });
 
-  test.skip('이미 지원한 공고는 중복 지원 안내가 보인다', async ({ browser }) => {
+  test('이미 지원한 공고는 중복 지원 안내가 보인다', async ({ browser }) => {
     const admin = getAdminClient();
     if (!admin) {
       test.skip();
