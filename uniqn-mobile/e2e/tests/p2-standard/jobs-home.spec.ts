@@ -7,12 +7,15 @@ import { HomePage } from '../../pages/app/tabs/home.page';
 
 // storageState는 chromium 프로젝트에서 staff.json으로 자동 설정됨
 
-// SKIP: featureFlags.home_dashboard_enabled=true(default) 도입 후 staff/employer 인증
-// entry route 가 `(app)/(tabs)`(=jobs) 에서 `(app)/home`(standalone dashboard) 으로 변경됨.
-// 이 spec 의 11 test 모두 "/ 진입 = jobs 페이지" 를 전제로 작성됐으나 실제 master 흐름은
-// home dashboard → "공고 보기" CTA / sidebar 진입 → tabs/index. CTA click 후에도
-// (app)/_layout 의 redirect 로직이 다시 (app)/home 으로 보내므로 page object level fix 불가.
-// jobs 페이지를 검증하는 새 spec 작성 (follow-up issue) 까지 .skip.
+// CI #120 fail: HomePage.goto() 의 HomeTabBar/CTA click 모두 (tabs) 로 navigation
+// 안 됨 — artifact 페이지 스냅샷이 /home 그대로. useAuthGuard.ts:213-225 의
+// `if (isRouterRootPath && isBrowserRootPath && isAuthenticated)` 분기가 root URL
+// '/' 진입을 항상 resolvedAuthenticatedRoute(=/home for staff) 로 replace.
+// HomeTabBar 의 router.push('/(app)/(tabs)') 가 URL `/` 로 해석되면서 same redirect 발동.
+// Fix 옵션 (별도 PR):
+//   1. useAuthGuard root redirect 에 segments 검사 추가 (이미 (app)/(tabs) 인 경우 skip)
+//   2. featureFlags.home_dashboard_enabled 에 E2E opt-out 추가
+//   3. NextWorkWidget empty-state CTA 와 HomeTabBar 의 '구인구직' route 를 deep-link 화
 test.describe.skip('구인구직 홈', () => {
   let homePage: HomePage;
 

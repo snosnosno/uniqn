@@ -183,9 +183,13 @@ test.describe('E2E 유저 저니', () => {
     }
   });
 
-  // SKIP: staff entry 가 `(app)/home` (standalone) 으로 변경되어 "프로필 탭" 접근 경로 무효.
-  // settings heading 매핑도 master UI 와 불일치. spec rewrite 필요 (follow-up issue).
-  test.skip('계정 생명주기: 로그인 → 프로필 접근 → 설정 접근', async ({ browser }) => {
+  // PR #119: staff entry 가 (app)/home (standalone) 으로 변경. HomeTabBar 의
+  // "프로필 탭으로 이동" button + 프로필 탭의 "설정센터" menu item 으로 selector 재작성.
+  //
+  // Note: 이전 시도는 `page.goto('/settings')` 사용 시 frame detached + RangeError
+  // (wrapApiCall Invalid string length) 발생 — /home 페이지 trace capture 가 트리거.
+  // UI 네비게이션(설정센터 click)으로 우회.
+  test('계정 생명주기: 로그인 → 프로필 접근 → 설정 접근', async ({ browser }) => {
     const context = await browser.newContext({ storageState: staffState });
     const page = await context.newPage();
 
@@ -193,23 +197,28 @@ test.describe('E2E 유저 저니', () => {
     await page.goto('/home', { waitUntil: 'domcontentloaded' });
     await waitForAppReady(page);
 
-    // 2. 프로필 탭 클릭
-    const profileTab = page.getByText('프로필');
-    if (await profileTab.isVisible()) {
-      await profileTab.click();
-      await page.waitForLoadState('domcontentloaded');
+    // 2. HomeTabBar 의 프로필 탭 click → (tabs)/profile
+    const profileTabButton = page.getByRole('button', { name: '프로필 탭으로 이동' });
+    await expect(profileTabButton).toBeVisible({ timeout: 10_000 });
+    await profileTabButton.click();
+    await page.waitForLoadState('domcontentloaded');
 
-      // 프로필 관련 콘텐츠가 보여야 함
-      await expect(page.getByRole('button', { name: /프로필 수정/ })).toBeVisible({
-        timeout: 10_000,
-      });
-    }
+    // 프로필 관련 콘텐츠가 보여야 함
+    await expect(page.getByRole('button', { name: /프로필 수정/ })).toBeVisible({
+      timeout: 10_000,
+    });
 
-    // 3. 설정 접근
-    await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await waitForAppReady(page);
+    // 3. "설정센터" menu item click → /(app)/settings 진입
+    // MenuItem 의 Pressable 내부 Text "설정센터" 클릭이 outer Pressable 의 sibling
+    // div (e.g. ChevronRightIcon container) 에 intercept 됨. dispatchEvent 로 우회.
+    const settingsMenuItem = page.getByText('설정센터');
+    await expect(settingsMenuItem).toBeVisible({ timeout: 5_000 });
+    await settingsMenuItem.dispatchEvent('click');
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(800);
 
-    await expect(page.getByRole('heading', { name: '설정' })).toBeVisible({ timeout: 10_000 });
+    // settings 페이지 URL 확인 (StackHeader title 은 heading role 없어서 text 매칭 신뢰도 낮음)
+    expect(page.url()).toContain('/settings');
 
     await context.close();
   });

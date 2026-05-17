@@ -22,11 +22,23 @@ export class HomePage extends BasePage {
     await this.page.goto('/', { waitUntil: 'domcontentloaded' });
     await this.waitForReady();
     // featureFlags.home_dashboard_enabled=true(default) → staff 가 (app)/home (standalone screen)
-    // 으로 redirect 됨. 이 화면엔 tab bar 가 없음 — NextWorkWidget 의 "공고 보기" button
-    // (router.push('/(app)/(tabs)')) 으로 jobs 페이지 진입.
+    // 으로 redirect 됨. /home 에서 (tabs) 진입 경로:
+    //   1) NextWorkWidget empty-state CTA "공고 보기" (스케줄 없는 경우)
+    //   2) HomeTabBar "구인구직 탭으로 이동" (스케줄 유무 무관 항상 표시)
+    // QA staff 는 데이터 상태에 따라 (1)이 없을 수 있으므로 (2) 우선 시도.
+    // 이미 (tabs) 페이지면 (구 entry 호환) 둘 다 없으므로 그대로 진행.
+    const jobsTabButton = this.page.getByRole('button', { name: '구인구직 탭으로 이동' }).first();
+    const tabBarVisible = await jobsTabButton.isVisible().catch(() => false);
+    if (tabBarVisible) {
+      await jobsTabButton.click();
+      await this.page.waitForLoadState('domcontentloaded');
+      await this.page.waitForTimeout(800);
+      return;
+    }
+
     const viewJobsButton = this.page.getByRole('button', { name: '공고 보기' }).first();
-    const buttonVisible = await viewJobsButton.isVisible().catch(() => false);
-    if (buttonVisible) {
+    const ctaVisible = await viewJobsButton.isVisible().catch(() => false);
+    if (ctaVisible) {
       await viewJobsButton.click();
       await this.page.waitForLoadState('domcontentloaded');
       await this.page.waitForTimeout(800);
