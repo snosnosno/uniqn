@@ -209,9 +209,11 @@ test.describe('E2E 유저 저니', () => {
     });
 
     // 3. "설정센터" menu item click → /(app)/settings 진입
+    // MenuItem 의 Pressable 내부 Text "설정센터" 클릭이 outer Pressable 의 sibling
+    // div (e.g. ChevronRightIcon container) 에 intercept 됨. dispatchEvent 로 우회.
     const settingsMenuItem = page.getByText('설정센터');
     await expect(settingsMenuItem).toBeVisible({ timeout: 5_000 });
-    await settingsMenuItem.click();
+    await settingsMenuItem.dispatchEvent('click');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(800);
 
