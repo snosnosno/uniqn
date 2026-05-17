@@ -65,14 +65,48 @@ async function seedPublicJob(): Promise<SeededPublicJob | null> {
     }
   }
 
-  // 활성 공고 생성 (status=active 여야 '지원하기' 버튼 노출)
+  // 활성 공고 생성 — `isCanonicalDatedPosting` 조건 충족 필수:
+  //   schema_version=3 + posting_type ∈ {regular, tournament, urgent} + schedule.kind='dated'
+  // (src/utils/jobPostingVisibility.ts:29-39)
+  // 미충족 시 PublicJobDetailAliasRoute 가 '고정 공고는 공개 상세 화면에서 아직 지원할 수 없습니다.' 안내
+  const workDate = new Date(Date.now() + 10 * 86_400_000).toISOString().slice(0, 10);
   const { data: jp, error: jpErr } = await adminClient
     .from('job_postings')
     .insert({
+      schema_version: 3,
       title: PUBLIC_SEED_JOB_TITLE,
+      description: 'E2E 비로그인 공개 상세 검증용 공고',
       owner_id: SUPABASE_QA_ACCOUNTS.employer.id,
+      owner_name: SUPABASE_QA_ACCOUNTS.employer.name,
       workspace_id: workspaceId,
       status: 'active',
+      posting_type: 'regular',
+      work_date: workDate,
+      work_dates: [workDate],
+      total_positions: 1,
+      filled_positions: 0,
+      view_count: 0,
+      contact_phone: '+82101234567',
+      location: { name: 'E2E테스트포커룸', district: '강남구', detailedAddress: '테스트로 123' },
+      schedule: {
+        kind: 'dated',
+        primaryDate: workDate,
+        allDates: [workDate],
+        requirements: [
+          {
+            date: workDate,
+            timeSlots: [
+              {
+                startTime: '18:00',
+                roles: [{ role: 'dealer', count: 1, filled: 0 }],
+              },
+            ],
+          },
+        ],
+      },
+      role_catalog: [{ role: 'dealer', salary: { type: 'daily', amount: 150000 } }],
+      compensation: { mode: 'shared', defaultSalary: { type: 'daily', amount: 150000 } },
+      questions: { items: [] },
     })
     .select('id')
     .single();
@@ -163,13 +197,17 @@ test.describe('퍼블릭 페이지', () => {
   });
 
   test('존재하지 않는 공고 경로도 앱이 깨지지 않고 렌더된다', async ({ page }) => {
-    await page.goto('/jobs/nonexistent-job-id-12345', { waitUntil: 'domcontentloaded' });
+    // job_postings.id 는 uuid 타입 — 비-UUID 문자열은 Supabase eq() 에서
+    // `invalid input syntax for type uuid` 로 useJobDetail query 가 무한 retry/멈춤.
+    // valid UUID 형식이지만 DB 에 존재하지 않는 ID 사용해 미존재 경로 검증.
+    const nonexistentValidUuid = '00000000-0000-0000-0000-000000000000';
+    await page.goto(`/jobs/${nonexistentValidUuid}`, { waitUntil: 'domcontentloaded' });
 
     // app/jobs/[id].tsx (PublicJobDetailAliasRoute) 는 비로그인 사용자도 접근 허용.
     // job 미존재 시 redirect 가 아닌 ErrorState 노출.
     await expect(page.locator('#root')).toBeAttached({ timeout: 10_000 });
     await expect(page.locator('body')).not.toBeEmpty();
     // 비로그인 redirect 가 없으므로 URL 보존
-    expect(page.url()).toContain('/jobs/nonexistent-job-id-12345');
+    expect(page.url()).toContain(`/jobs/${nonexistentValidUuid}`);
   });
 });
