@@ -21,13 +21,15 @@ export class HomePage extends BasePage {
   async goto(): Promise<void> {
     await this.page.goto('/', { waitUntil: 'domcontentloaded' });
     await this.waitForReady();
-    // staff/employer 가 인증 후 (app)/home 으로 redirect 되는 경우 구인구직 탭 click
-    // (jobs 페이지는 tabs/index — '구인구직' tab name)
-    const jobsTab = this.page.getByRole('tab', { name: '구인구직' });
-    const tabVisible = await jobsTab.isVisible().catch(() => false);
-    if (tabVisible) {
-      await jobsTab.click();
-      await this.page.waitForTimeout(500);
+    // featureFlags.home_dashboard_enabled=true(default) → staff 가 (app)/home (standalone screen)
+    // 으로 redirect 됨. 이 화면엔 tab bar 가 없음 — NextWorkWidget 의 "공고 보기" button
+    // (router.push('/(app)/(tabs)')) 으로 jobs 페이지 진입.
+    const viewJobsButton = this.page.getByRole('button', { name: '공고 보기' }).first();
+    const buttonVisible = await viewJobsButton.isVisible().catch(() => false);
+    if (buttonVisible) {
+      await viewJobsButton.click();
+      await this.page.waitForLoadState('domcontentloaded');
+      await this.page.waitForTimeout(800);
     }
   }
 
