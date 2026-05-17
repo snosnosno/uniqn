@@ -30,7 +30,11 @@ export default function ProfileSetupScreen() {
   const toast = useToast();
   const setProfile = useAuthStore((s) => s.setProfile);
   const user = useAuthStore((s) => s.user);
+  const profile = useAuthStore((s) => s.profile);
   const postAuthRedirect = normalizePostAuthRedirect(redirect);
+  // 2026-05-16: PortOne 본인인증에서 gender 가 누락된 사용자에게만 입력 필드 노출 + 필수 검증.
+  // 본인인증으로 이미 채워진 사용자는 SignupStepProfile 의 성별 섹션을 보지 않는다.
+  const requireGender = !profile?.gender;
 
   const handleSubmit = useCallback(
     async (data: SignUpProfileData) => {
@@ -46,13 +50,14 @@ export default function ProfileSetupScreen() {
           return;
         }
 
-        // 프로필 완성
+        // 프로필 완성 (gender 는 본인인증 누락 시에만 전달; 서비스 레이어가 set-once 보호)
         await completeProfile({
           nickname: data.nickname,
           region: data.region,
           experienceYears: data.experienceYears,
           career: data.career,
           note: data.note,
+          gender: requireGender ? data.gender : undefined,
         });
 
         // 프로필 갱신
@@ -72,7 +77,7 @@ export default function ProfileSetupScreen() {
         setIsLoading(false);
       }
     },
-    [postAuthRedirect, user, setProfile, toast]
+    [postAuthRedirect, user, setProfile, toast, requireGender]
   );
 
   // 뒤로가기 방지 (프로필 완성 필수)
@@ -104,7 +109,12 @@ export default function ProfileSetupScreen() {
           </View>
 
           {/* 프로필 폼 (기존 SignupStepProfile 재사용) */}
-          <SignupStepProfile onNext={handleSubmit} onBack={handleBack} isLoading={isLoading} />
+          <SignupStepProfile
+            onNext={handleSubmit}
+            onBack={handleBack}
+            isLoading={isLoading}
+            requireGender={requireGender}
+          />
         </View>
       </KeyboardAwareScrollView>
     </SafeAreaView>

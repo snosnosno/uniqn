@@ -152,6 +152,11 @@ export interface VerifyAndSavePortOneProfilePayload {
   identityVerificationId: string;
   /** P0 #1 caller binding — verify-portone-identity와 동일 검증 layer */
   expectedBindingToken?: string;
+  /**
+   * 2026-05-16: PortOne 이니시스 통합인증이 gender 를 응답하지 않을 때 클라가 사용자에게
+   * 받은 값. 서버는 PortOne 응답의 gender 가 우선이며, 없을 때만 이 값을 fallback 으로 사용.
+   */
+  gender?: 'male' | 'female';
   nickname?: string;
   region?: string;
   experienceYears?: number;
@@ -380,6 +385,49 @@ export async function clearPortOneIdentityBindingToken(): Promise<void> {
   removeStorageItem(STORAGE_KEYS.PORTONE_IDENTITY_BINDING_TOKEN);
 }
 
+/**
+ * 2026-05-16 — Edge Function `verify-portone-identity` 의 IdP 에러 코드를 사용자 친화
+ * 한글 메시지의 ValidationError 로 변환.
+ *
+ * Supabase FunctionsHttpError 는 `Edge Function returned a non-2xx status code` 영문
+ * generic 메시지만 가짐. 그대로 UI 노출되는 사고(2026-05-16 14:29 KST) 재발 방지.
+ * 매핑 대상: `supabase/functions/_shared/idp-errors.ts` 의 IDP_ERROR_CODES.
+ */
+function mapIdpErrorCodeToAppError(code: string, serverMessage?: string): ValidationError {
+  switch (code) {
+    case 'IV_BINDING_MISMATCH':
+    case 'IV_TIMESTAMP_EXPIRED':
+    case 'PORTONE_NOT_VERIFIED':
+    case 'PORTONE_INCOMPLETE':
+    case 'IV_INVALID':
+      return new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+        userMessage:
+          '본인인증을 완료하지 못했어요. 다른 인증 수단(PASS·토스·카카오·네이버·신한·KB)으로 다시 시도해주세요.',
+        metadata: { code, serverMessage },
+      });
+    case 'PORTONE_FETCH_FAILED':
+      return new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+        userMessage: '본인인증 정보 조회에 실패했어요. 잠시 후 다시 시도해주세요.',
+        metadata: { code, serverMessage },
+      });
+    case 'PORTONE_AGE_RESTRICTED':
+      return new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+        userMessage: '14세 이상만 가입할 수 있어요.',
+        metadata: { code, serverMessage },
+      });
+    case 'IV_RATE_LIMITED':
+      return new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+        userMessage: '요청이 너무 많아요. 잠시 후 다시 시도해주세요.',
+        metadata: { code, serverMessage },
+      });
+    default:
+      return new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+        userMessage: serverMessage ?? '본인인증 처리 중 오류가 발생했어요. 다시 시도해주세요.',
+        metadata: { code, serverMessage },
+      });
+  }
+}
+
 export async function callVerifyPortOneIdentity(
   payload: VerifyPortOneIdentityPayload
 ): Promise<VerifyPortOneIdentityResult> {
@@ -389,7 +437,18 @@ export async function callVerifyPortOneIdentity(
       'verify-portone-identity',
       { body: payload }
     );
-    if (error) throw error;
+    if (error) {
+      // FunctionsHttpError 의 영문 generic 메시지가 UI 에 노출되지 않도록 IdP code 로 typed 변환.
+      const parsed = await parseEdgeFunctionErrorBody(error);
+      if (parsed?.code) {
+        logger.info('verifyPortOneIdentity edge error mapped to ValidationError', {
+          component: 'portOneIdentityService',
+          code: parsed.code,
+        });
+        throw mapIdpErrorCodeToAppError(parsed.code, parsed.error);
+      }
+      throw error;
+    }
     return data!;
   };
 

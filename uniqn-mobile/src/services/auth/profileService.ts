@@ -86,7 +86,27 @@ export async function updateUserProfile(
       }
     }
 
-    await userRepository.updateFields(uid, updates);
+    // 2026-05-16: Set once — gender 는 본인인증 또는 최초 보완 입력 이후 변경 불가.
+    // DB 에 이미 값이 있으면 클라가 보낸 gender 를 drop 한다 (UI 도 read-only 지만 다중 방어).
+    const safeUpdates: Partial<EditableProfileFields> = { ...updates };
+    if (safeUpdates.gender !== undefined) {
+      const existing = await userRepository.getById(uid);
+      if (existing?.gender) {
+        delete safeUpdates.gender;
+        logger.info('updateUserProfile: gender 기존 값 보존 (set-once)', {
+          uid,
+          existingGender: existing.gender,
+        });
+      }
+    }
+
+    if (Object.keys(safeUpdates).length === 0) {
+      logger.info('updateUserProfile: 적용할 변경 없음', { uid });
+      void invalidateQueries.user();
+      return;
+    }
+
+    await userRepository.updateFields(uid, safeUpdates);
 
     void invalidateQueries.user();
     logger.info('프로필 업데이트 성공', { uid });
@@ -270,6 +290,12 @@ export interface CompleteProfileData {
   experienceYears?: number;
   career?: string;
   note?: string;
+  /**
+   * 2026-05-16: PortOne 본인인증에서 gender 가 누락된 사용자의 보완 입력.
+   * 이미 본인인증으로 값이 들어와 있으면 화면이 필드를 노출하지 않으므로 caller 가 undefined 전달.
+   * 서비스 레이어가 기존 값 덮어쓰기를 차단 (Set once 정책).
+   */
+  gender?: 'male' | 'female';
 }
 
 /**
@@ -299,6 +325,19 @@ export async function completeProfile(data: CompleteProfileData): Promise<void> 
     if (data.experienceYears !== undefined) firestoreUpdates.experienceYears = data.experienceYears;
     if (data.career !== undefined) firestoreUpdates.career = data.career;
     if (data.note !== undefined) firestoreUpdates.note = data.note;
+    // 2026-05-16: Set once — DB 에 이미 gender 가 있으면 클라가 보내도 무시.
+    // 본인인증으로 들어온 신뢰값을 사용자 수동 입력이 덮어쓰지 못하게 보호.
+    if (data.gender !== undefined) {
+      const existing = await userRepository.getById(uid);
+      if (!existing?.gender) {
+        firestoreUpdates.gender = data.gender;
+      } else {
+        logger.info('completeProfile: gender 기존 값 보존 (set-once)', {
+          uid,
+          existingGender: existing.gender,
+        });
+      }
+    }
 
     const { error: authUpdateError } = await supabase.auth.updateUser({
       data: { name: data.nickname },

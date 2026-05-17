@@ -585,6 +585,8 @@ export async function completeSocialProfile(
 
     await callVerifyAndSavePortOneProfile({
       identityVerificationId: data.identityVerificationId,
+      // 2026-05-16: PortOne 이니시스 통합인증이 gender 를 응답하지 않는 경우 client fallback.
+      gender: data.gender,
       termsAgreed: data.termsAgreed,
       privacyAgreed: data.privacyAgreed,
       thirdPartyAgreed: data.thirdPartyAgreed,

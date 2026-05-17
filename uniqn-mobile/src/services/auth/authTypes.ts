@@ -35,7 +35,9 @@ export interface SocialProfileData {
   /** 본인인증 결과 사본 — 서버는 PortOne API로 재조회하므로 표시용 */
   name: string;
   birthDate: string;
-  gender: 'male' | 'female';
+  /** 2026-05-16: PortOne 이니시스 통합인증이 인증수단별로 gender 응답이 달라 optional.
+   * 누락 시 가입 후 마이페이지/프로필 화면에서 사용자가 보완. */
+  gender?: 'male' | 'female';
   /** 전화번호 (E.164 형식: +821012345678) */
   phone: string;
   // 약관

@@ -41,7 +41,8 @@ export type GenderSchema = z.infer<typeof genderSchema>;
 /**
  * 프로필 업데이트 스키마
  *
- * @note name, phone, birthDate, gender는 회원가입 Step2 입력 정보이므로 수정 불가
+ * @note name, phone, birthDate는 본인인증 결과이므로 수정 불가.
+ *       gender는 본인인증에서 누락된 사용자의 set-once 입력만 허용 (서비스 레이어에서 기존 값 보호).
  */
 export const updateProfileSchema = z.object({
   nickname: z
@@ -57,6 +58,8 @@ export const updateProfileSchema = z.object({
     .refine((url) => isSafeUrl(url), { message: '허용되지 않는 URL 형식입니다' })
     .nullable()
     .optional(),
+  // 본인인증 누락 시 set-once 입력 (서비스 레이어에서 기존 값 덮어쓰기 차단)
+  gender: genderSchema.optional(),
   // 추가 정보 (본인인증 정보가 아닌 필드만)
   region: z
     .string()

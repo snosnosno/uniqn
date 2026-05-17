@@ -293,6 +293,9 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
       await callVerifyAndSavePortOneProfile(
         {
           identityVerificationId,
+          // 2026-05-16: PortOne 이니시스 통합인증이 gender 를 응답하지 않는 경우 client fallback.
+          // 서버는 PortOne 응답 우선, 없을 때만 이 값 사용.
+          gender: data.gender,
           termsAgreed: data.termsAgreed,
           privacyAgreed: data.privacyAgreed,
           thirdPartyAgreed: data.thirdPartyAgreed,
