@@ -21,15 +21,31 @@ export class HomePage extends BasePage {
   async goto(): Promise<void> {
     await this.page.goto('/', { waitUntil: 'domcontentloaded' });
     await this.waitForReady();
+    // featureFlags.home_dashboard_enabled=true(default) → staff 가 (app)/home (standalone screen)
+    // 으로 redirect 됨. 이 화면엔 tab bar 가 없음 — NextWorkWidget 의 "공고 보기" button
+    // (router.push('/(app)/(tabs)')) 으로 jobs 페이지 진입.
+    const viewJobsButton = this.page.getByRole('button', { name: '공고 보기' }).first();
+    const buttonVisible = await viewJobsButton.isVisible().catch(() => false);
+    if (buttonVisible) {
+      await viewJobsButton.click();
+      await this.page.waitForLoadState('domcontentloaded');
+      await this.page.waitForTimeout(800);
+    }
   }
 
-  async selectTypeChip(label: '긴급' | '당일' | '지인' | '고정' | '지원'): Promise<void> {
+  async selectTypeChip(label: '긴급' | '대회' | '일반' | '고정'): Promise<void> {
     await this.getTypeChip(label).click();
   }
 
+  /**
+   * PostingTypeChips a11y label:
+   *   - count 있음: `긴급 공고 12건`
+   *   - count 없음: `긴급 공고 필터`
+   * 둘 다 매칭하려면 regex 에 `(필터|\d+건)` 분기 필요.
+   */
   getTypeChip(label: string): Locator {
     return this.page.getByRole('button', {
-      name: new RegExp(`^${escapeRegExp(label)}\\s*공고\\s*필터$`),
+      name: new RegExp(`^${escapeRegExp(label)}\\s*공고\\s*(필터|\\d+건)$`),
     });
   }
 
