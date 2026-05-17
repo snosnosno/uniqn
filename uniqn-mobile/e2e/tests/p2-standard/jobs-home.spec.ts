@@ -28,7 +28,7 @@ test.describe('구인구직 홈', () => {
     // fixed 공고는 V3 canonical 전환 동안 공개 표면에서 제외된다.
     await expect(homePage.getTypeChip('긴급')).toBeVisible({ timeout: 10_000 });
     await expect(homePage.getTypeChip('대회')).toBeVisible();
-    await expect(homePage.getTypeChip('지원')).toBeVisible();
+    await expect(homePage.getTypeChip('일반')).toBeVisible();
     await expect(homePage.getTypeChip('고정')).toHaveCount(0);
   });
 
@@ -38,7 +38,7 @@ test.describe('구인구직 홈', () => {
 
     // 3개 공개 타입 칩 중 하나가 선택 상태여야 함 (정확한 선택 칩은 데이터에 따라 다름)
     const body = await page.locator('body').textContent();
-    const hasChips = body?.includes('긴급') || body?.includes('대회') || body?.includes('지원');
+    const hasChips = body?.includes('긴급') || body?.includes('대회') || body?.includes('일반');
     expect(hasChips).toBeTruthy();
   });
 
@@ -60,7 +60,7 @@ test.describe('구인구직 홈', () => {
 
   test('지원 타입 선택 시 날짜 슬라이더가 표시된다', async () => {
     await homePage.waitForJobsLoaded();
-    await homePage.selectTypeChip('지원');
+    await homePage.selectTypeChip('일반');
 
     // 날짜 관련 UI가 표시되어야 함 (DateCalendar 렌더링)
     await homePage.page.waitForTimeout(500);
@@ -178,7 +178,7 @@ test.describe('구인구직 홈', () => {
 
   test('지원 타입에서 DateCalendar가 에러 없이 렌더된다', async () => {
     await homePage.waitForJobsLoaded();
-    await homePage.selectTypeChip('지원');
+    await homePage.selectTypeChip('일반');
     await homePage.page.waitForTimeout(500);
 
     // web E2E 환경에서는 RN 네이티브 컴포넌트 가시성을 직접 검증하기 어려우므로

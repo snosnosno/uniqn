@@ -21,15 +21,29 @@ export class HomePage extends BasePage {
   async goto(): Promise<void> {
     await this.page.goto('/', { waitUntil: 'domcontentloaded' });
     await this.waitForReady();
+    // staff/employer 가 인증 후 (app)/home 으로 redirect 되는 경우 구인구직 탭 click
+    // (jobs 페이지는 tabs/index — '구인구직' tab name)
+    const jobsTab = this.page.getByRole('tab', { name: '구인구직' });
+    const tabVisible = await jobsTab.isVisible().catch(() => false);
+    if (tabVisible) {
+      await jobsTab.click();
+      await this.page.waitForTimeout(500);
+    }
   }
 
-  async selectTypeChip(label: '긴급' | '당일' | '지인' | '고정' | '지원'): Promise<void> {
+  async selectTypeChip(label: '긴급' | '대회' | '일반' | '고정'): Promise<void> {
     await this.getTypeChip(label).click();
   }
 
+  /**
+   * PostingTypeChips a11y label:
+   *   - count 있음: `긴급 공고 12건`
+   *   - count 없음: `긴급 공고 필터`
+   * 둘 다 매칭하려면 regex 에 `(필터|\d+건)` 분기 필요.
+   */
   getTypeChip(label: string): Locator {
     return this.page.getByRole('button', {
-      name: new RegExp(`^${escapeRegExp(label)}\\s*공고\\s*필터$`),
+      name: new RegExp(`^${escapeRegExp(label)}\\s*공고\\s*(필터|\\d+건)$`),
     });
   }
 
