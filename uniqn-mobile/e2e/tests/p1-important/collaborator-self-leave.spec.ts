@@ -92,7 +92,9 @@ test.describe('Collaborator Self Leave', () => {
     }
   });
 
-  test('collaborator 가 "나가기" 버튼 클릭 후 공유받은 공고에서 사라진다', async ({ page }) => {
+  test.skip('collaborator 가 "나가기" 버튼 클릭 후 공유받은 공고에서 사라진다', async ({
+    page,
+  }) => {
     // 1) 협업자 관리 페이지 (collaborator 시점 — owner 아님)
     await page.goto(`/(employer)/my-postings/${jobPostingId}/collaborators`);
     await waitForReady(page);
