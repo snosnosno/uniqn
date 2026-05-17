@@ -152,11 +152,13 @@ test.describe('공고 상세와 지원 흐름', () => {
     }
 
     const workDate = new Date(Date.now() + 10 * 86_400_000).toISOString().slice(0, 10);
+    const workspaceId = await ensureE2EWorkspace(admin, SUPABASE_QA_ACCOUNTS.employer.id);
     const { data: closedData, error: closedError } = await admin
       .from('job_postings')
       .insert({
         title: '마감상세테스트공고',
         status: 'closed',
+        workspace_id: workspaceId,
         owner_id: SUPABASE_QA_ACCOUNTS.employer.id,
         owner_name: SUPABASE_QA_ACCOUNTS.employer.name,
         posting_type: 'regular',
@@ -275,7 +277,7 @@ test.describe('공고 상세와 지원 흐름', () => {
         applicant_id: SUPABASE_QA_ACCOUNTS.staff.id,
         applicant_name: SUPABASE_QA_ACCOUNTS.staff.name,
         applicant_phone: '+82101234567',
-        applicant_role: 'dealer',
+        applicant_role: 'staff',
         job_posting_title: TEST_JOB_TITLE,
         status: 'applied',
         assignments: [
