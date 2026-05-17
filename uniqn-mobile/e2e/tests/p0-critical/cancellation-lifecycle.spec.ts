@@ -15,6 +15,12 @@ import { getAdminClient, SUPABASE_QA_ACCOUNTS } from '../../helpers/supabase-adm
 import { waitForAppReady } from '../../helpers/wait-helpers';
 import { ensureE2EWorkspace } from '../../helpers/workspace-seed';
 
+// PR #117: 각 describe 의 tests 는 beforeAll seed 를 공유하고 RPC 호출 → 상태 검증 순서로
+// 의존한다. fullyParallel:true 환경에서 describe 내부 tests 도 병렬 실행되면 RPC 호출 전에
+// DB-level filled_positions=0 검증이 먼저 실행되어 seed 상태 (filled=1) 를 검증하게 됨.
+// 따라서 파일 전체를 serial 모드로 고정하여 declaration 순서 보장.
+test.describe.configure({ mode: 'serial' });
+
 // ---------------------------------------------------------------------------
 // storageState 경로 (상대 경로)
 // ---------------------------------------------------------------------------
@@ -262,6 +268,8 @@ test.describe('WF-08-1 Staff 확정 취소 happy path', () => {
     const result = data as Record<string, unknown>;
     expect(result.success).toBe(true);
     expect(result.new_status).toBe('applied');
+    // PR #117: RPC return 값 trace — describe 3 의 :491 동일 assertion 으로 정렬
+    expect(result.new_filled_positions).toBe(0);
   });
 
   test('취소 후 application.status가 applied로 변경됐다', async () => {
@@ -280,10 +288,9 @@ test.describe('WF-08-1 Staff 확정 취소 happy path', () => {
     expect(data?.status).toBe('applied');
   });
 
-  // CI #115 fail: Expected 0, Received 1 — RPC :244 이전 호출 후에도 filled_positions 미감소.
-  // describe 3 의 :490 동일 검증은 PASS 하지만 describe 1/2 는 FAIL — 환경/seed 순서 mismatch.
-  // 후속 investigation: cancel_application_atomically RPC 가 describe 1/2 에서만 silent fail 하는 원인 추적.
-  test.skip('취소 후 job_posting.filled_positions가 복원됐다 (0으로 감소)', async () => {
+  // PR #117: RPC return assertion (:264) 추가로 silent fail 시 :244 에서 조기 노출.
+  // DB-level 검증 unskip — RPC return 통과 후 DB 상태 separation 확인.
+  test('취소 후 job_posting.filled_positions가 복원됐다 (0으로 감소)', async () => {
     if (!adminClient || !jobId) {
       test.skip(true, 'adminClient 또는 jobId 없음');
       return;
@@ -373,6 +380,8 @@ test.describe('WF-08-2 Employer 취소 요청 승인 happy path', () => {
     const result = data as Record<string, unknown>;
     expect(result.success).toBe(true);
     expect(result.new_status).toBe('cancelled');
+    // PR #117: RPC return 값 trace — staff_approves_cancel_request 도 person-basis -1
+    expect(result.new_filled_positions).toBe(0);
   });
 
   test('승인 후 application.status가 cancelled로 변경됐다', async () => {
@@ -391,8 +400,8 @@ test.describe('WF-08-2 Employer 취소 요청 승인 happy path', () => {
     expect(data?.status).toBe('cancelled');
   });
 
-  // CI #115 fail: 동일 패턴 (Expected 0, Received 1) — :283 와 같은 RPC silent fail.
-  test.skip('승인 후 job_posting.filled_positions가 복원됐다', async () => {
+  // PR #117: RPC return assertion (:380) 추가로 silent fail 시 :356 에서 조기 노출.
+  test('승인 후 job_posting.filled_positions가 복원됐다', async () => {
     if (!adminClient || !jobId) {
       test.skip(true, 'adminClient 또는 jobId 없음');
       return;
@@ -510,8 +519,8 @@ test.describe('WF-08-3 취소 후 capacity 복원 — DB 직접 검증', () => {
     expect(data?.filled_positions).toBeLessThan(data?.total_positions ?? 0);
   });
 
-  // CI #115 fail: filled_positions=1 (RPC silent fail 같은 원인) → 원자성 검증 무효.
-  test.skip('취소 후 application.status = applied, filled_positions = 0 동시 만족 (원자성 보장)', async () => {
+  // PR #117: describe 3 의 RPC return assertion(:491)이 이미 통과하므로 동일 원자성 검증 unskip
+  test('취소 후 application.status = applied, filled_positions = 0 동시 만족 (원자성 보장)', async () => {
     if (!adminClient || !applicationId || !jobId) {
       test.skip(true, 'adminClient 없음');
       return;
@@ -531,8 +540,8 @@ test.describe('WF-08-3 취소 후 capacity 복원 — DB 직접 검증', () => {
     expect(jobResult.data?.filled_positions).toBe(0);
   });
 
-  // CI #115 fail: 선행 RPC 가 silent fail 했으므로 status 가 applied 로 전환되지 않아 idempotency 검증 무효.
-  test.skip('idempotency: 동일 취소 RPC를 다시 호출해도 success 반환한다', async () => {
+  // PR #117: describe 3 의 :472 RPC + :494 DB 검증이 통과 후 idempotency 동작 검증
+  test('idempotency: 동일 취소 RPC를 다시 호출해도 success 반환한다', async () => {
     if (!adminClient || !applicationId) {
       test.skip(true, 'adminClient 없음');
       return;
