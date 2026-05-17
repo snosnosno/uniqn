@@ -221,11 +221,15 @@ test.describe('공고 상세와 지원 흐름', () => {
     }
   });
 
-  test.skip('존재하지 않는 공고는 에러 화면을 보여준다', async ({ browser }) => {
+  test('존재하지 않는 공고는 에러 화면을 보여준다', async ({ browser }) => {
     const context = await browser.newContext({ storageState: staffState });
     const page = await context.newPage();
 
-    await page.goto('/jobs/nonexistent-job-99999', { waitUntil: 'domcontentloaded' });
+    // job_postings.id 는 uuid 타입 — 비-UUID 문자열은 Supabase eq() 에서
+    // `invalid input syntax for type uuid` 로 useJobDetail query 가 hang.
+    // valid UUID 형식이지만 DB 에 존재하지 않는 ID 사용 (PR #112 public-pages:59 동일 패턴)
+    const nonexistentValidUuid = '00000000-0000-0000-0000-000000000000';
+    await page.goto(`/jobs/${nonexistentValidUuid}`, { waitUntil: 'domcontentloaded' });
     await expect(page.getByText(ERROR_TEXT).last()).toBeVisible({ timeout: 10_000 });
 
     await context.close();
