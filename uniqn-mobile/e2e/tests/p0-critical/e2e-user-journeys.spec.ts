@@ -183,9 +183,9 @@ test.describe('E2E 유저 저니', () => {
     }
   });
 
-  // SKIP: staff entry 가 `(app)/home` (standalone) 으로 변경되어 "프로필 탭" 접근 경로 무효.
-  // settings heading 매핑도 master UI 와 불일치. spec rewrite 필요 (follow-up issue).
-  test.skip('계정 생명주기: 로그인 → 프로필 접근 → 설정 접근', async ({ browser }) => {
+  // PR #119: staff entry 가 (app)/home (standalone) 으로 변경. HomeTabBar 의
+  // "프로필 탭으로 이동" button + StackHeader title (heading role 없음) 으로 selector 재작성.
+  test('계정 생명주기: 로그인 → 프로필 접근 → 설정 접근', async ({ browser }) => {
     const context = await browser.newContext({ storageState: staffState });
     const page = await context.newPage();
 
@@ -193,23 +193,23 @@ test.describe('E2E 유저 저니', () => {
     await page.goto('/home', { waitUntil: 'domcontentloaded' });
     await waitForAppReady(page);
 
-    // 2. 프로필 탭 클릭
-    const profileTab = page.getByText('프로필');
-    if (await profileTab.isVisible()) {
-      await profileTab.click();
-      await page.waitForLoadState('domcontentloaded');
+    // 2. HomeTabBar 의 프로필 탭 click → (tabs)/profile
+    const profileTabButton = page.getByRole('button', { name: '프로필 탭으로 이동' });
+    await expect(profileTabButton).toBeVisible({ timeout: 10_000 });
+    await profileTabButton.click();
+    await page.waitForLoadState('domcontentloaded');
 
-      // 프로필 관련 콘텐츠가 보여야 함
-      await expect(page.getByRole('button', { name: /프로필 수정/ })).toBeVisible({
-        timeout: 10_000,
-      });
-    }
+    // 프로필 관련 콘텐츠가 보여야 함
+    await expect(page.getByRole('button', { name: /프로필 수정/ })).toBeVisible({
+      timeout: 10_000,
+    });
 
     // 3. 설정 접근
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
     await waitForAppReady(page);
 
-    await expect(page.getByRole('heading', { name: '설정' })).toBeVisible({ timeout: 10_000 });
+    // StackHeader 의 title='설정' — heading role 없으므로 text 매칭
+    await expect(page.getByText('설정').first()).toBeVisible({ timeout: 10_000 });
 
     await context.close();
   });

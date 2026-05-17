@@ -7,13 +7,10 @@ import { HomePage } from '../../pages/app/tabs/home.page';
 
 // storageState는 chromium 프로젝트에서 staff.json으로 자동 설정됨
 
-// SKIP: featureFlags.home_dashboard_enabled=true(default) 도입 후 staff/employer 인증
-// entry route 가 `(app)/(tabs)`(=jobs) 에서 `(app)/home`(standalone dashboard) 으로 변경됨.
-// 이 spec 의 11 test 모두 "/ 진입 = jobs 페이지" 를 전제로 작성됐으나 실제 master 흐름은
-// home dashboard → "공고 보기" CTA / sidebar 진입 → tabs/index. CTA click 후에도
-// (app)/_layout 의 redirect 로직이 다시 (app)/home 으로 보내므로 page object level fix 불가.
-// jobs 페이지를 검증하는 새 spec 작성 (follow-up issue) 까지 .skip.
-test.describe.skip('구인구직 홈', () => {
+// PR #119: HomePage.goto() 가 home_dashboard_enabled 도입 후 새 entry flow 처리 —
+// /home → "공고 보기" CTA click → /(app)/(tabs) 진입. (app)/_layout / (tabs)/_layout
+// 에 강제 redirect 로직은 실제로 없으므로 page object 만으로 정상 nav 가능. unskip 시도.
+test.describe('구인구직 홈', () => {
   let homePage: HomePage;
 
   test.beforeEach(async ({ page }) => {

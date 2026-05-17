@@ -42,22 +42,24 @@ test.describe('홈 네비게이션 — Staff', () => {
     await expect(page.getByText('내 지원 현황').first()).toBeVisible({ timeout: 10_000 });
   });
 
-  // SKIP: staff entry 가 `(app)/home` 이라 tab 화면 미진입 — logo click 자기참조 navigation
-  // 으로 click handler stable check 미통과. spec rewrite 필요 (follow-up issue).
-  test.skip('탭에서 UNIQN 로고 탭 → 홈으로 이동', async ({ page }) => {
+  // PR #119: staff entry 가 (app)/home (standalone) 으로 변경됨. HomeTabBar 의
+  // "구인구직 탭으로 이동" button 으로 tab 화면 진입 후 logo click → home 복귀 flow 로 재작성.
+  test('홈 → 탭 진입 → UNIQN 로고 탭으로 홈 복귀', async ({ page }) => {
     await page.goto('/');
     await waitForAppInit(page);
     await dismissOnboarding(page);
 
-    // 먼저 구인구직 탭으로 이동 (탭 클릭)
-    const jobsTab = page.getByRole('tab', { name: '구인구직' });
-    const jobsTabVisible = await jobsTab.isVisible().catch(() => false);
-    if (jobsTabVisible) {
-      await jobsTab.click();
-      await page.waitForTimeout(500);
-    }
+    // 홈 진입 확인
+    await expect(page.getByText('다음 근무').first()).toBeVisible({ timeout: 15_000 });
 
-    // 헤더의 UNIQN 로고 클릭
+    // HomeTabBar 의 "구인구직 탭으로 이동" button click → /(app)/(tabs) 진입
+    const jobsTabButton = page.getByRole('button', { name: '구인구직 탭으로 이동' });
+    await expect(jobsTabButton).toBeVisible({ timeout: 10_000 });
+    await jobsTabButton.click();
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(800);
+
+    // 탭 헤더의 UNIQN 로고 click → home 복귀
     const logoButton = page.getByRole('button', { name: 'UNIQN 홈으로 이동' });
     await expect(logoButton).toBeVisible({ timeout: 10_000 });
     await logoButton.click();
