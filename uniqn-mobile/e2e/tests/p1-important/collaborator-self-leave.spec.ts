@@ -92,11 +92,10 @@ test.describe('Collaborator Self Leave', () => {
     }
   });
 
-  // CI #114 iter 1 fail: URL group prefix 제거 후에도 22.7s hang + RangeError.
-  // employer-collaborator-add.spec 와 동일 패턴 — useJobDetail/JPC RLS 추정.
-  test.skip('collaborator 가 "나가기" 버튼 클릭 후 공유받은 공고에서 사라진다', async ({
-    page,
-  }) => {
+  // PR #120 follow-up: 재시도. PR #114 iter 1 "RangeError" 진단 부정확. employer-
+  // collaborator-add 와 동일 path 라 함께 진단. collaborator-shared-postings 는
+  // 같은 qa-collaborator 로 통과하므로 auth path 는 정상 — 페이지 자체 이슈.
+  test('collaborator 가 "나가기" 버튼 클릭 후 공유받은 공고에서 사라진다', async ({ page }) => {
     // 1) 협업자 관리 페이지 (collaborator 시점 — owner 아님)
     await page.goto(`/my-postings/${jobPostingId}/collaborators`);
     await waitForReady(page);
