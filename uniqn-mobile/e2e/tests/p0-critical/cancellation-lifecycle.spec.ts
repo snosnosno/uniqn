@@ -280,7 +280,7 @@ test.describe('WF-08-1 Staff 확정 취소 happy path', () => {
     expect(data?.status).toBe('applied');
   });
 
-  test.skip('취소 후 job_posting.filled_positions가 복원됐다 (0으로 감소)', async () => {
+  test('취소 후 job_posting.filled_positions가 복원됐다 (0으로 감소)', async () => {
     if (!adminClient || !jobId) {
       test.skip(true, 'adminClient 또는 jobId 없음');
       return;
@@ -388,7 +388,7 @@ test.describe('WF-08-2 Employer 취소 요청 승인 happy path', () => {
     expect(data?.status).toBe('cancelled');
   });
 
-  test.skip('승인 후 job_posting.filled_positions가 복원됐다', async () => {
+  test('승인 후 job_posting.filled_positions가 복원됐다', async () => {
     if (!adminClient || !jobId) {
       test.skip(true, 'adminClient 또는 jobId 없음');
       return;
@@ -506,7 +506,7 @@ test.describe('WF-08-3 취소 후 capacity 복원 — DB 직접 검증', () => {
     expect(data?.filled_positions).toBeLessThan(data?.total_positions ?? 0);
   });
 
-  test.skip('취소 후 application.status = applied, filled_positions = 0 동시 만족 (원자성 보장)', async () => {
+  test('취소 후 application.status = applied, filled_positions = 0 동시 만족 (원자성 보장)', async () => {
     if (!adminClient || !applicationId || !jobId) {
       test.skip(true, 'adminClient 없음');
       return;
@@ -526,7 +526,7 @@ test.describe('WF-08-3 취소 후 capacity 복원 — DB 직접 검증', () => {
     expect(jobResult.data?.filled_positions).toBe(0);
   });
 
-  test.skip('idempotency: 동일 취소 RPC를 다시 호출해도 success 반환한다', async () => {
+  test('idempotency: 동일 취소 RPC를 다시 호출해도 success 반환한다', async () => {
     if (!adminClient || !applicationId) {
       test.skip(true, 'adminClient 없음');
       return;
