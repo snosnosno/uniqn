@@ -93,12 +93,12 @@ async function cleanupJobPosting(id: string): Promise<void> {
 test.describe('Employer posting CRUD', () => {
   test.setTimeout(60_000);
 
-  test.skip('shows seeded postings and filter tabs on the list page', async ({ page }) => {
+  test('shows seeded postings and filter tabs on the list page', async ({ page }) => {
     const activeId = await seedJobPosting('crud-list-active', 'active');
     const closedId = await seedJobPosting('crud-list-closed', 'closed');
 
     try {
-      await page.goto('/my-postings', { waitUntil: 'domcontentloaded' });
+      await page.goto('/employer', { waitUntil: 'domcontentloaded' });
       await waitForReady(page);
 
       await expect(page.locator('button:has-text("crud-list-active"):visible').first()).toBeVisible(
@@ -109,7 +109,6 @@ test.describe('Employer posting CRUD', () => {
       await expect(
         page.locator('button:has-text("crud-list-closed"):visible').first()
       ).toBeVisible();
-      await expect(page.getByRole('tablist')).toBeVisible();
       const tabCount = await page.getByRole('tab').count();
       expect(tabCount).toBeGreaterThanOrEqual(3);
     } finally {

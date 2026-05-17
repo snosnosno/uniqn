@@ -127,7 +127,7 @@ async function seedApplication(
       applicant_id: applicantId,
       applicant_name: SUPABASE_QA_ACCOUNTS.staff.name,
       applicant_phone: '+82101234567',
-      applicant_role: 'dealer',
+      applicant_role: 'staff',
       job_posting_title: '지원자관리 테스트공고',
       status,
       assignments: [
@@ -182,7 +182,7 @@ test.describe('구인자 지원자 관리', () => {
     await page.waitForURL(/applicants/, { timeout: 15_000 });
   });
 
-  test.skip('지원자 목록 페이지는 필터 탭과 카드 UI를 보여준다', async ({ page }) => {
+  test('지원자 목록 페이지는 필터 탭과 카드 UI를 보여준다', async ({ page }) => {
     const applicationId = await seedApplication(
       testJobId,
       SUPABASE_QA_ACCOUNTS.staff.id,
@@ -208,7 +208,7 @@ test.describe('구인자 지원자 관리', () => {
     }
   });
 
-  test.skip('지원자가 있으면 상태 액션 또는 상세 토글을 노출한다', async ({ page }) => {
+  test('지원자가 있으면 상태 액션 또는 상세 토글을 노출한다', async ({ page }) => {
     const applicationId = await seedApplication(
       testJobId,
       SUPABASE_QA_ACCOUNTS.staff.id,
@@ -239,7 +239,7 @@ test.describe('구인자 지원자 관리', () => {
     }
   });
 
-  test.skip('확정된 지원자는 확정 상태를 유지한다', async ({ page }) => {
+  test('확정된 지원자는 확정 상태를 유지한다', async ({ page }) => {
     const applicationId = await seedApplication(
       testJobId,
       SUPABASE_QA_ACCOUNTS.staff.id,
@@ -265,7 +265,7 @@ test.describe('구인자 지원자 관리', () => {
     }
   });
 
-  test.skip('거절된 지원자는 거절 상태나 사유를 보여준다', async ({ page }) => {
+  test('거절된 지원자는 거절 상태나 사유를 보여준다', async ({ page }) => {
     const applicationId = await seedApplication(
       testJobId,
       SUPABASE_QA_ACCOUNTS.staff.id,

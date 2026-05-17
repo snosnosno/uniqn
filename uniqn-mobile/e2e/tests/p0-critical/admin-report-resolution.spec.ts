@@ -219,9 +219,7 @@ test.describe('WF-17: 관리자 신고 처리', () => {
       }
     });
 
-    test.skip('admin이 신고 상세 페이지에 접근하면 신고 내용 섹션이 보인다', async ({
-      browser,
-    }) => {
+    test('admin이 신고 상세 페이지에 접근하면 신고 내용 섹션이 보인다', async ({ browser }) => {
       if (!seededReport) {
         test.skip(true, 'service_role key 미설정 또는 시드 실패 — 시나리오 2 건너뜀');
         return;
