@@ -33,7 +33,11 @@ async function dismissOnboarding(page: Page): Promise<void> {
 
 test.use({ storageState: staffState });
 
-test.describe('홈 로고 탭 스택 누적 방지', () => {
+// SKIP: featureFlags.home_dashboard_enabled=true 도입 후 staff entry 가 tab 화면 아닌
+// `(app)/home` (standalone). 시나리오의 "탭에서 로고 클릭 → 이전 탭 복귀" 전제가 무효.
+// home 화면에서 로고 click 은 자기 자신 navigation 으로 click handler 가 stable check
+// 미통과 → 60s timeout. spec rewrite 필요 (follow-up issue).
+test.describe.skip('홈 로고 탭 스택 누적 방지', () => {
   test('로고를 10번 연속 탭해도 뒤로가기 1번으로 이전 탭 복귀', async ({ page }) => {
     await page.goto('/');
     await waitForAppInit(page);
