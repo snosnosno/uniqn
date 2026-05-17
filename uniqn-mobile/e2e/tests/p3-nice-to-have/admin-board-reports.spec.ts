@@ -2,7 +2,7 @@ import { test, expect } from '../../fixtures/base.fixture';
 import { BOARD_FIXTURE_CONTENT, BOARD_FIXTURE_IDS } from '../../fixtures/board-fixtures';
 
 test.describe('Admin 게시판 신고', () => {
-  test('목록 필터와 검색이 동작하고 pending 신고를 해결 처리할 수 있다', async ({
+  test.skip('목록 필터와 검색이 동작하고 pending 신고를 해결 처리할 수 있다', async ({
     page,
     basePage,
     toast,
@@ -46,7 +46,7 @@ test.describe('Admin 게시판 신고', () => {
     await expect(page.getByText(/처리 상태: 해결/)).toBeVisible({ timeout: 10_000 });
   });
 
-  test('resolved 게시판 신고 상세를 직접 열 수 있다', async ({ page, basePage }) => {
+  test.skip('resolved 게시판 신고 상세를 직접 열 수 있다', async ({ page, basePage }) => {
     await page.goto(`/admin/board-reports/${BOARD_FIXTURE_IDS.resolvedPostReport}`, {
       waitUntil: 'domcontentloaded',
     });

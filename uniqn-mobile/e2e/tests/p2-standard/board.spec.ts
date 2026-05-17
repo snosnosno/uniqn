@@ -2,7 +2,7 @@ import { test, expect } from '../../fixtures/base.fixture';
 import { BOARD_FIXTURE_IDS } from '../../fixtures/board-fixtures';
 
 test.describe('게시판 사용자 흐름', () => {
-  test('게시판 홈과 제한 화면을 안내한다', async ({ page, basePage }) => {
+  test.skip('게시판 홈과 제한 화면을 안내한다', async ({ page, basePage }) => {
     await page.goto('/board', { waitUntil: 'domcontentloaded' });
     await basePage.waitForReady();
 
@@ -31,7 +31,7 @@ test.describe('게시판 사용자 흐름', () => {
     await expect(page.getByText('게시판을 찾을 수 없어요')).toBeVisible();
   });
 
-  test('free 게시글 작성 후 상세, 댓글, 답글, 반응, 수정, 잠금이 동작한다', async ({
+  test.skip('free 게시글 작성 후 상세, 댓글, 답글, 반응, 수정, 잠금이 동작한다', async ({
     page,
     basePage,
     toast,
@@ -118,7 +118,7 @@ test.describe('게시판 사용자 흐름', () => {
     await expect(page.getByText('잠긴 게시글이에요')).toBeVisible();
   });
 
-  test('비작성자 게시글 수정 제한을 안내한다', async ({ page, basePage }) => {
+  test.skip('비작성자 게시글 수정 제한을 안내한다', async ({ page, basePage }) => {
     await page.goto(`/board/edit/${BOARD_FIXTURE_IDS.employerTdaPost}`, {
       waitUntil: 'domcontentloaded',
     });

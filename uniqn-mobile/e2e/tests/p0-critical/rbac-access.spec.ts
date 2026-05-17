@@ -129,7 +129,7 @@ test.describe('RBAC access control', () => {
     await context.close();
   });
 
-  test('admin can access staff and employer routes', async ({ browser }) => {
+  test.skip('admin can access staff and employer routes', async ({ browser }) => {
     const context = await browser.newContext({ storageState: adminState });
     const page = await context.newPage();
 

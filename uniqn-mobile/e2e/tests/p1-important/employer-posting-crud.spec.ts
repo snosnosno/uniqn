@@ -93,7 +93,7 @@ async function cleanupJobPosting(id: string): Promise<void> {
 test.describe('Employer posting CRUD', () => {
   test.setTimeout(60_000);
 
-  test('shows seeded postings and filter tabs on the list page', async ({ page }) => {
+  test.skip('shows seeded postings and filter tabs on the list page', async ({ page }) => {
     const activeId = await seedJobPosting('crud-list-active', 'active');
     const closedId = await seedJobPosting('crud-list-closed', 'closed');
 

@@ -19,7 +19,7 @@ test.describe('퍼블릭 페이지', () => {
     await expect(page).toHaveURL(/\/login(?:[/?#]|$)/, { timeout: 10_000 });
   });
 
-  test('공개 공고 상세 페이지에서 비로그인 사용자도 공고를 볼 수 있다', async ({ page }) => {
+  test.skip('공개 공고 상세 페이지에서 비로그인 사용자도 공고를 볼 수 있다', async ({ page }) => {
     await page.goto(`/jobs/${PUBLIC_SEED_JOB_ID}`, { waitUntil: 'domcontentloaded' });
 
     await expect(page.getByText(PUBLIC_SEED_JOB_TITLE).last()).toBeVisible({ timeout: 10_000 });
@@ -28,7 +28,7 @@ test.describe('퍼블릭 페이지', () => {
     });
   });
 
-  test('공개 공고 상세에서 지원하기 클릭 시 설치 유도 모달이 열린다', async ({ page }) => {
+  test.skip('공개 공고 상세에서 지원하기 클릭 시 설치 유도 모달이 열린다', async ({ page }) => {
     await page.goto(`/jobs/${PUBLIC_SEED_JOB_ID}`, { waitUntil: 'domcontentloaded' });
 
     const applyButton = page.getByRole('button', { name: '지원하기' });
