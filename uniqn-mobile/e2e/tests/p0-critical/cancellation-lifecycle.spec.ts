@@ -15,6 +15,12 @@ import { getAdminClient, SUPABASE_QA_ACCOUNTS } from '../../helpers/supabase-adm
 import { waitForAppReady } from '../../helpers/wait-helpers';
 import { ensureE2EWorkspace } from '../../helpers/workspace-seed';
 
+// PR #117: 각 describe 의 tests 는 beforeAll seed 를 공유하고 RPC 호출 → 상태 검증 순서로
+// 의존한다. fullyParallel:true 환경에서 describe 내부 tests 도 병렬 실행되면 RPC 호출 전에
+// DB-level filled_positions=0 검증이 먼저 실행되어 seed 상태 (filled=1) 를 검증하게 됨.
+// 따라서 파일 전체를 serial 모드로 고정하여 declaration 순서 보장.
+test.describe.configure({ mode: 'serial' });
+
 // ---------------------------------------------------------------------------
 // storageState 경로 (상대 경로)
 // ---------------------------------------------------------------------------
