@@ -68,7 +68,7 @@ test.describe('Admin 공지사항 관리', () => {
     await announcementsPage.goto();
   });
 
-  test.skip('공지사항 목록 렌더링 → 헤더 및 상태 탭 표시', async () => {
+  test('공지사항 목록 렌더링 → 헤더 및 상태 탭 표시', async () => {
     await expect(announcementsPage.header).toBeVisible();
 
     // 상태 탭 확인
@@ -89,7 +89,7 @@ test.describe('Admin 공지사항 관리', () => {
     expect(typeof hasEmpty).toBe('boolean');
   });
 
-  test.skip('공지사항 작성 페이지 접근 → 폼 렌더링', async () => {
+  test('공지사항 작성 페이지 접근 → 폼 렌더링', async () => {
     await announcementsPage.gotoCreate();
 
     await expect(announcementsPage.createHeader).toBeVisible();

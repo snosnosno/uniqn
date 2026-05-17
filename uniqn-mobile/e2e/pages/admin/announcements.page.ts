@@ -13,7 +13,9 @@ export class AdminAnnouncementsPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.header = page.getByRole('heading', { name: '공지사항 관리' });
+    // StackHeader 는 plain <Text> 로 렌더 (accessibilityRole="header" 미적용)
+    // → getByRole('heading') 불가, getByText.first() 로 매칭
+    this.header = page.getByText('공지사항 관리', { exact: true }).first();
     this.createButton = page.locator('[aria-label*="추가"]');
     this.emptyState = page.getByText('공지사항이 없습니다', { exact: true });
     this.emptyCreateButton = page.getByText('공지사항 작성', { exact: true });
@@ -48,9 +50,9 @@ export class AdminAnnouncementsPage extends BasePage {
     await this.waitForReady();
   }
 
-  /** 작성 페이지 헤더 */
+  /** 작성 페이지 헤더 (StackHeader plain Text) */
   get createHeader(): Locator {
-    return this.page.getByRole('heading', { name: '공지사항 작성' });
+    return this.page.getByText('공지사항 작성', { exact: true }).first();
   }
 
   /** 저장 버튼 */

@@ -157,7 +157,7 @@ test.describe('WF-17: 관리자 신고 처리', () => {
   // ── 시나리오 1: admin role에서 신고 목록 메뉴 접근 ──────────────────────
 
   test.describe('시나리오 1: admin — 신고 관리 메뉴 접근', () => {
-    test.skip('admin 대시보드에서 신고 관리 메뉴 카드가 보인다', async ({ browser }) => {
+    test('admin 대시보드에서 신고 관리 메뉴 카드가 보인다', async ({ browser }) => {
       const context = await browser.newContext({ storageState: adminState });
       const page = await context.newPage();
 

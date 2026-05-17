@@ -20,7 +20,7 @@ test.describe('Admin 대시보드', () => {
     await dashboard.goto();
   });
 
-  test.skip('대시보드 메인 페이지 렌더링 → 제목 및 메뉴 카드 표시', async ({ page }) => {
+  test('대시보드 메인 페이지 렌더링 → 제목 및 메뉴 카드 표시', async ({ page }) => {
     // admin 페이지 도달 확인 (대시보드 또는 앱 메인)
     // master `(admin)/index.tsx` 의 StackHeader/title 은 '관리자' (단축됨)
     const anyContent = page.getByText('관리자').first().or(page.getByText('구인구직').first());
