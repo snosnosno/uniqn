@@ -13,6 +13,7 @@ import { test, expect } from '@playwright/test';
 import path from 'path';
 import { getAdminClient, SUPABASE_QA_ACCOUNTS } from '../../helpers/supabase-admin';
 import { waitForAppReady } from '../../helpers/wait-helpers';
+import { ensureE2EWorkspace } from '../../helpers/workspace-seed';
 
 // ---------------------------------------------------------------------------
 // storageState 경로 (상대 경로)
@@ -43,10 +44,14 @@ async function seedConfirmedApplication(
   const jobId = uniqueId('test-cancel-job');
   const applicationId = uniqueId('test-cancel-app');
 
+  // 0. workspace 보장 — 2026-05-14 migration 으로 job_postings.workspace_id NOT NULL
+  const workspaceId = await ensureE2EWorkspace(adminClient, SUPABASE_QA_ACCOUNTS.employer.id);
+
   // 1. job_posting 생성 (정원 1, filled_positions 1 — confirmed 상태 반영)
   const { error: jobError } = await adminClient.from('job_postings').insert({
     id: jobId,
     schema_version: 3,
+    workspace_id: workspaceId,
     title: '취소 라이프사이클 테스트 공고',
     description: 'E2E 취소 테스트용 공고',
     status: 'active',
