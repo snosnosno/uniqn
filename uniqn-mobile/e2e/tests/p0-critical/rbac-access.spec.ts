@@ -129,7 +129,7 @@ test.describe('RBAC access control', () => {
     await context.close();
   });
 
-  test.skip('admin can access staff and employer routes', async ({ browser }) => {
+  test('admin can access staff and employer routes', async ({ browser }) => {
     const context = await browser.newContext({ storageState: adminState });
     const page = await context.newPage();
 
@@ -146,8 +146,12 @@ test.describe('RBAC access control', () => {
     await page.goto('/admin', { waitUntil: 'domcontentloaded' });
     await waitForAppInit(page);
 
-    // 신고 관리 링크 카드가 보여야 함 (admin 대시보드의 기본 메뉴)
-    await expect(page.getByRole('link', { name: /신고 관리/ })).toBeVisible({ timeout: 15_000 });
+    // 신고 관리 카드가 보여야 함 (admin 대시보드의 기본 메뉴).
+    // app/(admin)/index.tsx DashboardCard 는 Pressable + accessibilityRole='button'.
+    // 같은 이름의 항목이 메뉴/링크에 여러 개일 수 있으므로 first() 사용.
+    await expect(page.getByRole('button', { name: '신고 관리' }).first()).toBeVisible({
+      timeout: 15_000,
+    });
 
     await context.close();
   });
