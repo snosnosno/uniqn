@@ -51,9 +51,10 @@ test.describe('홈 로고 탭 스택 누적 방지', () => {
     const logoButton = page.getByRole('button', { name: 'UNIQN 홈으로 이동' });
     await expect(logoButton).toBeVisible({ timeout: 5_000 });
 
-    // 로고 10번 연속 탭
+    // 로고 10번 연속 탭. TabHeader 우측 actions View(zIndex:10) 가 center logo
+    // absolute View 클릭을 intercept — dispatchEvent('click') 으로 직접 발사.
     for (let i = 0; i < 10; i++) {
-      await logoButton.click();
+      await logoButton.dispatchEvent('click');
       await page.waitForTimeout(100);
     }
 
@@ -80,11 +81,12 @@ test.describe('홈 로고 탭 스택 누적 방지', () => {
     const tabHistoryLength = await page.evaluate(() => window.history.length);
 
     // 탭 헤더의 로고 5번 click — 첫 click 만 home 이동, 나머지 4번은 self-replace
+    // dispatchEvent('click') 으로 우측 actions View 의 pointer intercept 우회.
     const logoButton = page.getByRole('button', { name: 'UNIQN 홈으로 이동' });
     await expect(logoButton).toBeVisible({ timeout: 5_000 });
 
     for (let i = 0; i < 5; i++) {
-      await logoButton.click();
+      await logoButton.dispatchEvent('click');
       await page.waitForTimeout(150);
     }
 

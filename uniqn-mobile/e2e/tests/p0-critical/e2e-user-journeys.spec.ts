@@ -184,7 +184,11 @@ test.describe('E2E 유저 저니', () => {
   });
 
   // PR #119: staff entry 가 (app)/home (standalone) 으로 변경. HomeTabBar 의
-  // "프로필 탭으로 이동" button + StackHeader title (heading role 없음) 으로 selector 재작성.
+  // "프로필 탭으로 이동" button + 프로필 탭의 "설정센터" menu item 으로 selector 재작성.
+  //
+  // Note: 이전 시도는 `page.goto('/settings')` 사용 시 frame detached + RangeError
+  // (wrapApiCall Invalid string length) 발생 — /home 페이지 trace capture 가 트리거.
+  // UI 네비게이션(설정센터 click)으로 우회.
   test('계정 생명주기: 로그인 → 프로필 접근 → 설정 접근', async ({ browser }) => {
     const context = await browser.newContext({ storageState: staffState });
     const page = await context.newPage();
@@ -204,12 +208,15 @@ test.describe('E2E 유저 저니', () => {
       timeout: 10_000,
     });
 
-    // 3. 설정 접근
-    await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await waitForAppReady(page);
+    // 3. "설정센터" menu item click → /(app)/settings 진입
+    const settingsMenuItem = page.getByText('설정센터');
+    await expect(settingsMenuItem).toBeVisible({ timeout: 5_000 });
+    await settingsMenuItem.click();
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(800);
 
-    // StackHeader 의 title='설정' — heading role 없으므로 text 매칭
-    await expect(page.getByText('설정').first()).toBeVisible({ timeout: 10_000 });
+    // settings 페이지 URL 확인 (StackHeader title 은 heading role 없어서 text 매칭 신뢰도 낮음)
+    expect(page.url()).toContain('/settings');
 
     await context.close();
   });

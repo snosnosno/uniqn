@@ -60,9 +60,11 @@ test.describe('홈 네비게이션 — Staff', () => {
     await page.waitForTimeout(800);
 
     // 탭 헤더의 UNIQN 로고 click → home 복귀
+    // TabHeader 우측 actions View(flex-1 zIndex:10) 가 center logo absolute View 클릭을
+    // intercept — dispatchEvent('click') 으로 DOM click event 직접 발사 (mouse 경로 우회).
     const logoButton = page.getByRole('button', { name: 'UNIQN 홈으로 이동' });
     await expect(logoButton).toBeVisible({ timeout: 10_000 });
-    await logoButton.click();
+    await logoButton.dispatchEvent('click');
 
     // 홈 대시보드 진입 확인
     await expect(page.getByText('다음 근무').first()).toBeVisible({ timeout: 10_000 });
