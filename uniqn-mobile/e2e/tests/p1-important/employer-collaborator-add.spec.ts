@@ -87,7 +87,7 @@ test.describe('Employer Collaborator Add', () => {
   });
 
   test('employer 가 collaborator 를 추가하면 "현재 협업자" 섹션에 표시된다', async ({ page }) => {
-    await page.goto(`/(employer)/my-postings/${jobPostingId}/collaborators`);
+    await page.goto(`/my-postings/${jobPostingId}/collaborators`);
     await waitForReady(page);
 
     // 협업자 추가 섹션 + 검색 입력

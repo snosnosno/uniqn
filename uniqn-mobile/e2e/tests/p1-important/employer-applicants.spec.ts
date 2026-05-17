@@ -127,7 +127,7 @@ async function seedApplication(
       applicant_id: applicantId,
       applicant_name: SUPABASE_QA_ACCOUNTS.staff.name,
       applicant_phone: '+82101234567',
-      applicant_role: 'dealer',
+      applicant_role: 'staff',
       job_posting_title: '지원자관리 테스트공고',
       status,
       assignments: [
