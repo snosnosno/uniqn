@@ -212,8 +212,18 @@ export function useAuthGuard(): void {
     if (!routeGroup) {
       const isRouterRootPath = pathname === '/' || pathname === '/index';
       const isBrowserRootPath = browserPathname === '/' || browserPathname === '/index';
+      // expo-router 의 route group erasure 로 URL '/' 이지만 segments 에 in-app
+      // 그룹 식별자(예: '(tabs)')가 남은 상태가 존재. 이 때 root redirect 가
+      // 발동하면 사용자가 (tabs) 진입 시 즉시 home 으로 튕긴다.
+      // 예: HomeTabBar 의 router.push('/(app)/(tabs)') → URL '/' 로 erase,
+      // segments=['(tabs)']. ROUTE_CONFIGS 에 '(tabs)' 없으므로 routeGroup=null,
+      // 이전엔 root branch 진입 → /home replace. 그룹 segment 가 하나라도 있으면
+      // 의도된 in-app 네비게이션으로 간주하고 redirect 건너뛴다.
+      const hasGroupSegments = segments.some(
+        (seg): seg is string => typeof seg === 'string' && seg.startsWith('(') && seg.endsWith(')')
+      );
 
-      if (isRouterRootPath && isBrowserRootPath && isAuthenticated) {
+      if (isRouterRootPath && isBrowserRootPath && isAuthenticated && !hasGroupSegments) {
         logger.debug('Authenticated user entered root route', {
           component: 'useAuthGuard',
           pathname,
