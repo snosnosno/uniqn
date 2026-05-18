@@ -338,6 +338,48 @@ describe('useAuthGuard', () => {
     });
   });
 
+  // PR #120 회귀 가드: HomeTabBar 의 router.push('/(app)/(tabs)') 가
+  // expo-router web 에서 URL '/' 로 group erasure 되는데, ROUTE_CONFIGS 에 없는
+  // '(tabs)' 만 segments 에 남으면 routeGroup=null 로 root 분기 진입.
+  // 이전엔 redirect 가 발동해 staff 가 (tabs) 에 도달 불가.
+  // group segment 가 하나라도 있으면 의도된 in-app 네비게이션이므로 redirect 건너뛴다.
+  it('does not redirect authenticated users to home when navigating into a tabs group at root URL', async () => {
+    mockPathname = '/';
+    mockSegments = ['(tabs)'];
+    mockAuthState.user = { uid: 'staff-1', email: 'staff@example.com', phoneNumber: null };
+    mockAuthState.profile = {
+      role: 'staff',
+      socialProvider: null,
+      phoneVerified: true,
+      profileCompleted: true,
+    };
+
+    renderHook(() => useAuthGuard());
+
+    await waitFor(() => {
+      // hook ran (effect synchronously dispatched)
+      expect(mockReplace).not.toHaveBeenCalled();
+    });
+  });
+
+  it('still redirects authenticated users to home on a true root entry with empty segments', async () => {
+    mockPathname = '/';
+    mockSegments = [];
+    mockAuthState.user = { uid: 'staff-1', email: 'staff@example.com', phoneNumber: null };
+    mockAuthState.profile = {
+      role: 'staff',
+      socialProvider: null,
+      phoneVerified: true,
+      profileCompleted: true,
+    };
+
+    renderHook(() => useAuthGuard());
+
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith('/(app)/home');
+    });
+  });
+
   it('normalizes phone-only sessions off the social signup flow', async () => {
     mockPathname = '/signup';
     mockSegments = ['(auth)', 'signup'];
