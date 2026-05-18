@@ -42,11 +42,8 @@ test.describe('홈 네비게이션 — Staff', () => {
     await expect(page.getByText('내 지원 현황').first()).toBeVisible({ timeout: 10_000 });
   });
 
-  // CI #120 fail: /home → "구인구직 탭으로 이동" click 후 페이지가 /(tabs) 로
-  // 이동 안 함 (artifact 페이지 스냅샷 /home 그대로). useAuthGuard 의 root '/' →
-  // resolvedAuthenticatedRoute (=/home) replace 가 의심됨. 별도 production-side fix
-  // 필요 (E2E opt-out 또는 useAuthGuard 의 root redirect 조건 재검토).
-  test.skip('홈 → 탭 진입 → UNIQN 로고 탭으로 홈 복귀', async ({ page }) => {
+  // PR #122 (useAuthGuard root redirect group segment guard) 머지로 (tabs) 진입 정상화.
+  test('홈 → 탭 진입 → UNIQN 로고 탭으로 홈 복귀', async ({ page }) => {
     await page.goto('/');
     await waitForAppInit(page);
     await dismissOnboarding(page);
