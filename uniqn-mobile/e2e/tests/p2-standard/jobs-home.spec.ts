@@ -7,16 +7,11 @@ import { HomePage } from '../../pages/app/tabs/home.page';
 
 // storageState는 chromium 프로젝트에서 staff.json으로 자동 설정됨
 
-// CI #120 fail: HomePage.goto() 의 HomeTabBar/CTA click 모두 (tabs) 로 navigation
-// 안 됨 — artifact 페이지 스냅샷이 /home 그대로. useAuthGuard.ts:213-225 의
-// `if (isRouterRootPath && isBrowserRootPath && isAuthenticated)` 분기가 root URL
-// '/' 진입을 항상 resolvedAuthenticatedRoute(=/home for staff) 로 replace.
-// HomeTabBar 의 router.push('/(app)/(tabs)') 가 URL `/` 로 해석되면서 same redirect 발동.
-// Fix 옵션 (별도 PR):
-//   1. useAuthGuard root redirect 에 segments 검사 추가 (이미 (app)/(tabs) 인 경우 skip)
-//   2. featureFlags.home_dashboard_enabled 에 E2E opt-out 추가
-//   3. NextWorkWidget empty-state CTA 와 HomeTabBar 의 '구인구직' route 를 deep-link 화
-test.describe.skip('구인구직 홈', () => {
+// 2026-05-19 fix: app/index.tsx (SplashScreen) 제거 + useAuthGuard 에 uid-ref
+// 기반 one-shot initial entry redirect 추가. URL '/' 가 (app)/(tabs)/index.tsx
+// 로 직결되며, HomeTabBar push 로 인한 '/' 재진입 시에는 ref 가 이미 set 되어
+// redirect skip. 13 tests 재활성화.
+test.describe('구인구직 홈', () => {
   let homePage: HomePage;
 
   test.beforeEach(async ({ page }) => {

@@ -86,12 +86,11 @@ test.describe('Employer Collaborator Add', () => {
     }
   });
 
-  // CI #114 iter 1 fail: URL group prefix 제거 후에도 1.2 min hang + RangeError.
-  // 페이지가 로드되나 '협업자 추가' 헤더가 render 되지 않음 (isOwner=false 또는 useJobDetail RLS 차단 추정).
-  // 별도 follow-up PR 에서 useJobPostingCollaborators RPC + RLS 검증 필요.
-  test.skip('employer 가 collaborator 를 추가하면 "현재 협업자" 섹션에 표시된다', async ({
-    page,
-  }) => {
+  // 2026-05-19 fix: my-postings/[id]/_layout 의 isManageableByUser client guard
+  // 제거 → RLS-only. employer (owner) 가 collaborators 페이지 진입 시 더 이상
+  // false redirect 안 됨 (이미 통과해야 했으나 layout 의 useWorkspaces race 로
+  // userWorkspaceIds=[] 인 첫 frame 에 isManageableByUser=false 가 잡혔던 추정).
+  test('employer 가 collaborator 를 추가하면 "현재 협업자" 섹션에 표시된다', async ({ page }) => {
     await page.goto(`/my-postings/${jobPostingId}/collaborators`);
     await waitForReady(page);
 

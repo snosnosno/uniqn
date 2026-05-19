@@ -338,31 +338,14 @@ describe('useAuthGuard', () => {
     });
   });
 
-  // PR #120 회귀 가드: HomeTabBar 의 router.push('/(app)/(tabs)') 가
-  // expo-router web 에서 URL '/' 로 group erasure 되는데, ROUTE_CONFIGS 에 없는
-  // '(tabs)' 만 segments 에 남으면 routeGroup=null 로 root 분기 진입.
-  // 이전엔 redirect 가 발동해 staff 가 (tabs) 에 도달 불가.
-  // group segment 가 하나라도 있으면 의도된 in-app 네비게이션이므로 redirect 건너뛴다.
-  it('does not redirect authenticated users to home when navigating into a tabs group at root URL', async () => {
-    mockPathname = '/';
-    mockSegments = ['(tabs)'];
-    mockAuthState.user = { uid: 'staff-1', email: 'staff@example.com', phoneNumber: null };
-    mockAuthState.profile = {
-      role: 'staff',
-      socialProvider: null,
-      phoneVerified: true,
-      profileCompleted: true,
-    };
-
-    renderHook(() => useAuthGuard());
-
-    await waitFor(() => {
-      // hook ran (effect synchronously dispatched)
-      expect(mockReplace).not.toHaveBeenCalled();
-    });
-  });
-
-  it('still redirects authenticated users to home on a true root entry with empty segments', async () => {
+  // PR #120/#122 + 2026-05-19 회귀 가드:
+  //   - 기존: app/index.tsx (SplashScreen) 가 URL '/' 점유 → HomeTabBar push
+  //     `/(app)/(tabs)` → URL '/' group erasure → SplashScreen redirect loop
+  //   - Fix: app/index.tsx 제거 + useAuthGuard 에 uid-ref 기반 one-shot
+  //     initial entry redirect 추가. URL '/' 가 (app)/(tabs)/index.tsx 로 직결.
+  //   - 회귀 가드 1: 첫 mount 시 URL '/' 에서 entry route 가 (tabs) 가 아니면
+  //     redirect 발동 (e.g., staff w/ home_dashboard_enabled → /home)
+  it('redirects authenticated staff users to home on initial mount at root URL', async () => {
     mockPathname = '/';
     mockSegments = [];
     mockAuthState.user = { uid: 'staff-1', email: 'staff@example.com', phoneNumber: null };
@@ -374,6 +357,78 @@ describe('useAuthGuard', () => {
     };
 
     renderHook(() => useAuthGuard());
+
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith('/(app)/home');
+    });
+  });
+
+  // 회귀 가드 2: 동일 uid 에 대해 initial redirect 후 root URL 재진입 (HomeTabBar
+  // push 시뮬레이션) 시 re-redirect 안 됨. uid-ref 가 이미 set 되어 있어 effect
+  // 가 early-return.
+  it('does not re-redirect on subsequent navigation back to root URL for the same uid', async () => {
+    mockPathname = '/';
+    mockSegments = [];
+    mockAuthState.user = { uid: 'staff-1', email: 'staff@example.com', phoneNumber: null };
+    mockAuthState.profile = {
+      role: 'staff',
+      socialProvider: null,
+      phoneVerified: true,
+      profileCompleted: true,
+    };
+
+    const { rerender } = renderHook(() => useAuthGuard());
+
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith('/(app)/home');
+    });
+
+    mockReplace.mockClear();
+
+    // HomeTabBar push → URL '/' 재진입, segments 는 (app)(tabs) 로 결정됨
+    mockPathname = '/';
+    mockSegments = ['(app)', '(tabs)'];
+    rerender(undefined);
+
+    // give effect time to potentially fire
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  // 회귀 가드 3: logout 후 다른 uid 로 login 시 initial redirect 재발동.
+  it('re-fires initial entry redirect when uid changes (logout → login flow)', async () => {
+    mockPathname = '/';
+    mockSegments = [];
+    mockAuthState.user = { uid: 'staff-1', email: 'staff@example.com', phoneNumber: null };
+    mockAuthState.profile = {
+      role: 'staff',
+      socialProvider: null,
+      phoneVerified: true,
+      profileCompleted: true,
+    };
+
+    const { rerender } = renderHook(() => useAuthGuard());
+
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith('/(app)/home');
+    });
+
+    mockReplace.mockClear();
+
+    // Logout: user/profile cleared, ref 가 null 로 reset
+    mockAuthState.user = null;
+    mockAuthState.profile = null;
+    rerender(undefined);
+
+    // Login as different uid
+    mockAuthState.user = { uid: 'staff-2', email: 'staff2@example.com', phoneNumber: null };
+    mockAuthState.profile = {
+      role: 'staff',
+      socialProvider: null,
+      phoneVerified: true,
+      profileCompleted: true,
+    };
+    rerender(undefined);
 
     await waitFor(() => {
       expect(mockReplace).toHaveBeenCalledWith('/(app)/home');

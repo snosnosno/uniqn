@@ -128,6 +128,59 @@ export function useAuthGuard(): void {
   routerRef.current = router;
   const isMountedRef = useIsMounted();
   const profileRetryCountRef = useRef(0);
+  // app/index.tsx (SplashScreen) 제거 후 URL '/' 가 (app)/(tabs)/index.tsx 로
+  // 직결됨. fresh cold-start 시 staff w/ home_dashboard_enabled 처럼 entry route
+  // 가 (tabs) 가 아닌 경우 명시적 redirect 가 필요. 단 HomeTabBar push 로 인한
+  // (tabs) 진입 (URL '/' 으로 group erasure) 시에는 redirect 발동 금지.
+  // uid 추적 ref 로 "auth 세션당 1회" 보장. logout/login 시 reset.
+  const initialEntryHandledForUidRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+    if (!isAuthenticated) {
+      initialEntryHandledForUidRef.current = null;
+      return;
+    }
+    if (!profile) {
+      return;
+    }
+
+    const currentUid = user?.uid ?? null;
+    if (!currentUid || initialEntryHandledForUidRef.current === currentUid) {
+      return;
+    }
+
+    const browserPathname = getBrowserPathname(pathname);
+    const isAtRoot =
+      (pathname === '/' || pathname === '/index') &&
+      (browserPathname === '/' || browserPathname === '/index');
+
+    if (!isAtRoot) {
+      // Initial mount 이 root 가 아니면 redirect 불필요. 단 ref 는 표시해서
+      // 이후 root 진입 시 (HomeTabBar push 등) 재발동을 막는다.
+      initialEntryHandledForUidRef.current = currentUid;
+      return;
+    }
+
+    initialEntryHandledForUidRef.current = currentUid;
+
+    // entry route 가 (tabs) 자체이면 URL '/' 와 동치 → no-op
+    if (
+      authenticatedEntryRoute === '/(app)/(tabs)' ||
+      authenticatedEntryRoute === '/(app)/(tabs)/'
+    ) {
+      return;
+    }
+
+    logger.debug('Initial entry redirect from root', {
+      component: 'useAuthGuard',
+      uid: currentUid,
+      entryRoute: authenticatedEntryRoute,
+    });
+    routerRef.current.replace(authenticatedEntryRoute);
+  }, [authenticatedEntryRoute, isAuthenticated, isLoading, pathname, profile, user?.uid]);
 
   useEffect(() => {
     const routeGroup = extractRouteGroup(segments);

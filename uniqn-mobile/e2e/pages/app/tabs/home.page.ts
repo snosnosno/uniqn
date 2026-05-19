@@ -21,12 +21,14 @@ export class HomePage extends BasePage {
   async goto(): Promise<void> {
     await this.page.goto('/', { waitUntil: 'domcontentloaded' });
     await this.waitForReady();
-    // featureFlags.home_dashboard_enabled=true(default) → staff 가 (app)/home (standalone screen)
-    // 으로 redirect 됨. /home 에서 (tabs) 진입 경로:
-    //   1) NextWorkWidget empty-state CTA "공고 보기" (스케줄 없는 경우)
-    //   2) HomeTabBar "구인구직 탭으로 이동" (스케줄 유무 무관 항상 표시)
-    // QA staff 는 데이터 상태에 따라 (1)이 없을 수 있으므로 (2) 우선 시도.
-    // 이미 (tabs) 페이지면 (구 entry 호환) 둘 다 없으므로 그대로 진행.
+    // 2026-05-19 fix 후 흐름:
+    //   1) page.goto('/') → useAuthGuard initial-entry effect 가 staff w/
+    //      home_dashboard_enabled 를 /home 으로 redirect (uid-ref 로 1회 한정)
+    //   2) /home 에서 (tabs) 진입 경로:
+    //      a) NextWorkWidget empty-state CTA "공고 보기" (스케줄 없는 경우)
+    //      b) HomeTabBar "구인구직 탭으로 이동" (스케줄 유무 무관 항상 표시)
+    //   3) HomeTabBar push → URL '/' (group erasure) → (app)/(tabs)/index.tsx
+    //      직결. useAuthGuard ref 가 set 되어 있으므로 /home 으로 재redirect 안 됨.
     const jobsTabButton = this.page.getByRole('button', { name: '구인구직 탭으로 이동' }).first();
     const tabBarVisible = await jobsTabButton.isVisible().catch(() => false);
     if (tabBarVisible) {
