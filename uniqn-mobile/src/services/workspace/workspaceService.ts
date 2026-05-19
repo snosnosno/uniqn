@@ -75,24 +75,46 @@ export const workspaceService = {
    * 무료 공고 생성 (`jobManagementService.createJobPosting`) 경로에서
    * `workspace_id NOT NULL` 제약 (M3) 충족용. M5 wallet RPC 와 동일 정책 (created_at ASC).
    *
-   * backfill 후 모든 active employer 는 워크스페이스 1+ 보유 가정.
-   * 0개인 경우 BUSINESS_INVALID_STATE — 사용자에게 재시도 안내.
+   * 2026-05-19 hotfix: 신규 employer (backfill 2026-05-07 이후 가입) + staff→employer 역할 변경자는
+   * default workspace 부재 가능. 0개 발견 시 자동 생성 + 재조회 (안전망).
+   * 영구 해결은 handle_new_user trigger 의 employer 자동 workspace 생성 (마이그레이션 20260519).
    *
-   * @throws BusinessError E6 워크스페이스 없음
+   * @throws BusinessError E6 워크스페이스 없음 (자동 생성도 실패한 경우)
    */
   async getDefaultWorkspaceIdForOwner(ownerId: string): Promise<string> {
+    const ownedId = await this.pickOwnedWorkspaceId(ownerId);
+    if (ownedId) return ownedId;
+
+    logger.warn('default workspace not found — auto-creating', { ownerId });
+    try {
+      await workspaceRepository.create('내 워크스페이스');
+    } catch (createError) {
+      logger.error('default workspace auto-create 실패', {
+        ownerId,
+        error: String(createError),
+      });
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+        userMessage: '워크스페이스를 찾을 수 없어요. 잠시 후 다시 시도해주세요.',
+        metadata: { ownerId, autoCreateFailed: true },
+      });
+    }
+
+    const retryId = await this.pickOwnedWorkspaceId(ownerId);
+    if (retryId) return retryId;
+
+    logger.error('default workspace not found after auto-create', { ownerId });
+    throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+      userMessage: '워크스페이스를 찾을 수 없어요. 잠시 후 다시 시도해주세요.',
+      metadata: { ownerId, retryAfterCreate: true },
+    });
+  },
+
+  async pickOwnedWorkspaceId(ownerId: string): Promise<string | null> {
     const workspaces = await workspaceRepository.findAllByMember(ownerId);
     const owned = workspaces
       .filter((w) => w.ownerId === ownerId)
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-    if (owned.length === 0) {
-      logger.warn('default workspace not found', { ownerId });
-      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: '워크스페이스를 찾을 수 없어요. 잠시 후 다시 시도해주세요.',
-        metadata: { ownerId },
-      });
-    }
-    return owned[0]!.id;
+    return owned[0]?.id ?? null;
   },
 
   /**
