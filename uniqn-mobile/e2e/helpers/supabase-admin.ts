@@ -32,33 +32,34 @@ export interface SupabaseAuthToken {
 
 export const SUPABASE_QA_ACCOUNTS = {
   staff: {
-    id: '4365e1ad-c9fb-416f-addb-d1b18b2a5ec8',
-    email: 'qa-staff@uniqn.test',
-    password: 'TestPass1!',
+    id: 'a1111111-1111-4111-a111-111111111111',
+    email: 'review-staff@uniqn.app',
+    password: 'Review2026!',
     role: 'staff' as const,
-    name: 'QA스태프',
+    name: '심사용 스태프',
   },
   employer: {
-    id: '9cf771e9-0e67-413d-8395-5b1d573ae64d',
-    email: 'qa-employer@uniqn.test',
-    password: 'TestPass1!',
+    id: 'b2222222-2222-4222-b222-222222222222',
+    email: 'review-employer@uniqn.app',
+    password: 'Review2026!',
     role: 'employer' as const,
-    name: 'QA구인자',
+    name: '심사용 구인자',
   },
   admin: {
-    id: '95337a77-9700-427e-8ff3-bc7a14abb90e',
-    email: 'qa-admin@uniqn.test',
-    password: 'TestPass1!',
+    id: 'c3333333-3333-4333-c333-333333333333',
+    email: 'review-admin@uniqn.app',
+    password: 'Review2026!',
     role: 'admin' as const,
-    name: 'QA관리자',
+    name: '심사용 관리자',
   },
   // PR #88 follow-up: 공고별 협업자 페르소나 (role=employer 로 (employer) 라우트 접근 허용)
+  // review-* 계정엔 collaborator 가 없어 별도 시드: 20260520205822_seed_review_collaborator_account.sql
   collaborator: {
-    id: 'c1a2b3c4-d5e6-4f7a-8b9c-d0e1f2a3b4c5',
-    email: 'qa-collaborator@uniqn.test',
-    password: 'TestPass1!',
+    id: 'e5555555-5555-4555-a555-555555555555',
+    email: 'review-collaborator@uniqn.app',
+    password: 'Review2026!',
     role: 'employer' as const,
-    name: 'QA협업자',
+    name: '심사용 협업자',
   },
 } as const;
 
