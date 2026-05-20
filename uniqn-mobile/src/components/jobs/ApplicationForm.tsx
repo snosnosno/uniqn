@@ -1,6 +1,6 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, Text, TextInput, View } from 'react-native';
 import { buildPostingFacts } from '@/domains/job-posting';
 import { findUnansweredRequired, initializePreQuestionAnswers } from '@/domains/application';
 import { THIRD_PARTY_CONSENT_VERSION_TAG } from '@/constants/legal';
@@ -8,7 +8,6 @@ import { FIXED_DATE_MARKER, FIXED_TIME_MARKER, type Assignment } from '@/types/a
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { SheetModal } from '@/components/ui/SheetModal';
-import { useModalStore } from '@/stores/modalStore';
 import type { JobPosting, PostingType, PreQuestionAnswer } from '@/types';
 import { AssignmentSelector } from './AssignmentSelector';
 import { PostingTypeBadge } from './PostingTypeBadge';
@@ -102,7 +101,6 @@ export function ApplicationForm({
   onClose,
 }: ApplicationFormProps) {
   const postingFacts = useMemo(() => buildPostingFacts(job), [job]);
-  const showConfirm = useModalStore((state) => state.showConfirm);
   const [message, setMessage] = useState('');
   const [selectedAssignments, setSelectedAssignments] = useState<Assignment[]>([]);
   const [selectedFixedRoleId, setSelectedFixedRoleId] = useState<string | null>(null);
@@ -224,12 +222,13 @@ export function ApplicationForm({
       return;
     }
 
-    showConfirm(
-      '작성을 그만할까요?',
-      '입력한 지원 내용은 저장되지 않고 바로 닫힙니다.',
-      handleClose
-    );
-  }, [handleClose, hasUnsavedChanges, isSubmitting, showConfirm]);
+    // 네이티브 Alert 사용 — modalStore 의 ConfirmModal 은 SheetModal(네이티브 RNModal) 뒤에
+    // 가려 안 보여서 사용자가 닫기 확인을 못 한다(= 화면에서 못 나가는 버그).
+    Alert.alert('작성을 그만할까요?', '입력한 지원 내용은 저장되지 않고 바로 닫힙니다.', [
+      { text: '계속 편집', style: 'cancel' },
+      { text: '닫기', style: 'destructive', onPress: handleClose },
+    ]);
+  }, [handleClose, hasUnsavedChanges, isSubmitting]);
 
   const footer = (
     <Button onPress={handleSubmit} disabled={!canSubmit} loading={isSubmitting} fullWidth>

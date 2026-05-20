@@ -1,15 +1,7 @@
 import React from 'react';
+import { Alert } from 'react-native';
 import { fireEvent, render } from '@testing-library/react-native';
 import { ApplicationForm } from '../ApplicationForm';
-
-const mockShowConfirm = jest.fn();
-
-jest.mock('@/stores/modalStore', () => ({
-  useModalStore: (selector: (state: { showConfirm: typeof mockShowConfirm }) => unknown) =>
-    selector({
-      showConfirm: mockShowConfirm,
-    }),
-}));
 
 jest.mock('@/domains/job-posting', () => ({
   buildPostingFacts: () => ({
@@ -87,8 +79,16 @@ const job = {
 } as any;
 
 describe('ApplicationForm', () => {
+  let alertSpy: jest.SpyInstance;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    // Alert.alert 은 네이티브 호출 — 테스트에서는 spy 로 가로채 buttons 를 검사한다.
+    alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    alertSpy.mockRestore();
   });
 
   it('closes immediately when there are no unsaved changes', () => {
@@ -107,10 +107,10 @@ describe('ApplicationForm', () => {
     fireEvent.press(getByTestId('sheet-request-close'));
 
     expect(onClose).toHaveBeenCalledTimes(1);
-    expect(mockShowConfirm).not.toHaveBeenCalled();
+    expect(alertSpy).not.toHaveBeenCalled();
   });
 
-  it('asks for confirmation before closing when the form is dirty', () => {
+  it('asks for confirmation (native Alert) before closing when the form is dirty', () => {
     const onClose = jest.fn();
 
     const { getByPlaceholderText, getByTestId } = render(
@@ -129,13 +129,21 @@ describe('ApplicationForm', () => {
     );
     fireEvent.press(getByTestId('sheet-request-close'));
 
-    expect(mockShowConfirm).toHaveBeenCalledTimes(1);
-    expect(mockShowConfirm).toHaveBeenCalledWith(
+    expect(alertSpy).toHaveBeenCalledTimes(1);
+    expect(alertSpy).toHaveBeenCalledWith(
       '작성을 그만할까요?',
       '입력한 지원 내용은 저장되지 않고 바로 닫힙니다.',
-      expect.any(Function)
+      expect.arrayContaining([
+        expect.objectContaining({ text: '계속 편집' }),
+        expect.objectContaining({ text: '닫기', onPress: expect.any(Function) }),
+      ])
     );
     expect(onClose).not.toHaveBeenCalled();
+
+    // '닫기' 버튼의 onPress 를 실행하면 실제로 닫힌다.
+    const buttons = alertSpy.mock.calls[0][2] as { text: string; onPress?: () => void }[];
+    buttons.find((b) => b.text === '닫기')?.onPress?.();
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   // T4 — P1 지원 시점 동의: 미체크 상태에서는 체크박스가 false 로 노출
