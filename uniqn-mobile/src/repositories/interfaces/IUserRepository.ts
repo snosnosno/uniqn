@@ -155,17 +155,6 @@ export interface IUserRepository {
   // ==========================================================================
 
   /**
-   * 고아 계정 마킹 (삭제 실패 시 DB에 기록)
-   *
-   * @description Cloud Function Scheduler가 주기적으로 정리
-   * @param uid - 사용자 ID
-   * @param reason - 마킹 사유
-   * @param phone - 전화번호 (선택)
-   * @param platform - 플랫폼 정보
-   */
-  markAsOrphan(uid: string, reason: string, phone?: string, platform?: string): Promise<void>;
-
-  /**
    * 구인자 등록 (Transaction으로 원자적 처리)
    *
    * @description staff → employer 역할 전환

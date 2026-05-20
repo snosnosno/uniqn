@@ -33,14 +33,13 @@ const TABLES = {
   APPLICATIONS: 'applications',
   WORK_LOGS: 'work_logs',
   NOTIFICATIONS: 'notifications',
-  ORPHAN_ACCOUNTS: 'orphan_accounts',
   CONSENTS: 'consents',
 } as const;
 // PostgREST alias `identity:identity_data` — DB 컬럼은 identity_data 이지만
 // 응답 필드명은 identity 로 받아 `FirestoreUserProfile.identity` 매핑 유지.
 // 마이그레이션 20260507144735 에서 컬럼이 rename 됨 (PR #56).
 const USER_COLUMNS =
-  'id,birth_date,bubble_score,career,created_at,deletion_requested_at,deletion_scheduled_for,email,employer_agreements,employer_registered_at,experience_years,fcm_tokens,gender,identity:identity_data,identity_provider,identity_verified,identity_verified_at,is_active,is_orphan,marketing_agreed,name,nickname,note,phone,phone_verified,photo_url,photo_url_blurhash,privacy_agreed,profile_completed,region,role,social_provider,status,terms_agreed,updated_at' as const;
+  'id,birth_date,bubble_score,career,created_at,deletion_requested_at,deletion_scheduled_for,email,employer_agreements,employer_registered_at,experience_years,fcm_tokens,gender,identity:identity_data,identity_provider,identity_verified,identity_verified_at,is_active,marketing_agreed,name,nickname,note,phone,phone_verified,photo_url,photo_url_blurhash,privacy_agreed,profile_completed,region,role,social_provider,status,terms_agreed,updated_at' as const;
 
 // ============================================================================
 // Helpers
@@ -389,32 +388,6 @@ export class SupabaseUserRepository implements IUserRepository {
   // ==========================================================================
   // 특수 작업 (Transaction)
   // ==========================================================================
-
-  async markAsOrphan(
-    uid: string,
-    reason: string,
-    _phone?: string,
-    platform?: string
-  ): Promise<void> {
-    try {
-      const { error } = await supabase.from(TABLES.ORPHAN_ACCOUNTS).upsert({
-        id: uid,
-        reason,
-        platform: platform ?? null,
-        created_at: new Date().toISOString(),
-      });
-
-      if (error) {
-        logger.error('고아 계정 마킹 실패 (Supabase)', toError(error), { uid, reason });
-        return; // 마킹 실패는 throw하지 않음 (원래 동작 유지)
-      }
-
-      logger.warn('고아 계정 마킹 완료 (수동 정리 필요)', { uid, reason });
-    } catch (error) {
-      logger.error('고아 계정 마킹 실패', toError(error), { uid, reason });
-      // 마킹 실패는 throw하지 않음
-    }
-  }
 
   async registerAsEmployer(
     userId: string,

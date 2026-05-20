@@ -40,9 +40,7 @@ export {
   checkEmailExists,
   checkNicknameExists,
   checkPhoneExists,
-  rollbackPhoneOnlyAccount,
   getLinkedPhoneNumber,
-  markOrphanAccount,
 } from './authCoreService';
 
 export {
