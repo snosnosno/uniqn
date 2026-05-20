@@ -1,13 +1,5 @@
-import {
-  getUserProfile,
-  login,
-  rollbackPhoneOnlyAccount,
-  signOut,
-  signUp,
-} from '../authCoreService';
-import { Platform } from 'react-native';
-
-import { userRepository } from '@/repositories';
+import { getUserProfile, login, signOut, signUp } from '../authCoreService';
+import { ERROR_CODES } from '@/errors';
 
 const mockSignInWithPassword = jest.fn();
 const mockSignUp = jest.fn();
@@ -47,7 +39,6 @@ jest.mock('@/shared/auth/protectedAuthFlow', () => ({
 jest.mock('@/repositories', () => ({
   userRepository: {
     getById: jest.fn(),
-    markAsOrphan: jest.fn(),
   },
 }));
 
@@ -124,7 +115,6 @@ jest.mock('../userProfileService', () => ({
   getUserProfile: jest.fn(),
 }));
 
-const mockUserRepository = userRepository as jest.Mocked<typeof userRepository>;
 const { getUserProfile: mockFetchUserProfile } = jest.requireMock('../userProfileService') as {
   getUserProfile: jest.Mock;
 };
@@ -137,7 +127,6 @@ describe('authCoreService', () => {
     jest.clearAllMocks();
     mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
     mockSignOut.mockResolvedValue({ error: null });
-    mockUserRepository.markAsOrphan.mockResolvedValue(undefined);
   });
 
   it('logs in with Supabase signInWithPassword', async () => {
@@ -223,6 +212,79 @@ describe('authCoreService', () => {
     expect(mockTrackSignup).toHaveBeenCalledWith('email');
   });
 
+  it('recovers when email already exists (orphan) by signing in and resuming profile save', async () => {
+    // 이메일 확인 OFF 환경: 중복 이메일은 하드 422 user_already_exists 로 옴
+    const existingUser = {
+      id: 'user-orphan',
+      email: 'dup@example.com',
+      user_metadata: {},
+      app_metadata: { providers: ['email'] },
+    };
+    const profile = {
+      uid: 'user-orphan',
+      email: 'dup@example.com',
+      name: 'Dup',
+      role: 'staff',
+      phoneVerified: true,
+      createdAt: new Date() as never,
+      updatedAt: new Date() as never,
+    };
+
+    mockSignUp.mockResolvedValue({
+      data: { user: null, session: null },
+      error: { code: 'user_already_exists', status: 422, message: 'User already registered' },
+    });
+    // 기존 orphan 계정, 입력 비번 일치 → signIn 성공 후 프로필 저장 이어서 완료
+    mockSignInWithPassword.mockResolvedValue({
+      data: { user: existingUser, session: { access_token: 'token' } },
+      error: null,
+    });
+    mockCallVerify.mockResolvedValue(undefined);
+    mockFetchUserProfile.mockResolvedValue(profile);
+
+    const result = await signUp({
+      email: 'dup@example.com',
+      password: 'Password123!',
+      name: 'Dup',
+      identityVerificationId: 'imp_dup',
+      termsAgreed: true,
+      privacyAgreed: true,
+      thirdPartyAgreed: true,
+      marketingAgreed: false,
+    } as never);
+
+    expect(mockSignInWithPassword).toHaveBeenCalled();
+    expect(mockCallVerify).toHaveBeenCalled();
+    expect(result).toEqual({ user: existingUser, profile });
+  });
+
+  it('throws AUTH_EMAIL_ALREADY_EXISTS when email exists but password mismatches', async () => {
+    mockSignUp.mockResolvedValue({
+      data: { user: null, session: null },
+      error: { code: 'user_already_exists', status: 422, message: 'User already registered' },
+    });
+    // 기존 계정이지만 비번 불일치 → 클라이언트 복구 불가, 로그인 안내
+    mockSignInWithPassword.mockResolvedValue({
+      data: { user: null, session: null },
+      error: { message: 'Invalid login credentials', status: 400 },
+    });
+
+    await expect(
+      signUp({
+        email: 'dup@example.com',
+        password: 'WrongPass1!',
+        name: 'Dup',
+        identityVerificationId: 'imp_dup',
+        termsAgreed: true,
+        privacyAgreed: true,
+        thirdPartyAgreed: true,
+        marketingAgreed: false,
+      } as never)
+    ).rejects.toMatchObject({ code: ERROR_CODES.AUTH_EMAIL_ALREADY_EXISTS });
+
+    expect(mockCallVerify).not.toHaveBeenCalled();
+  });
+
   it('rejects signUp when identityVerificationId is missing', async () => {
     await expect(
       signUp({
@@ -266,30 +328,6 @@ describe('authCoreService', () => {
         marketingAgreed: false,
       } as never)
     ).rejects.toThrow();
-
-    expect(mockSignOut).toHaveBeenCalled();
-  });
-
-  it('rollback marks orphan and signs out without throwing', async () => {
-    await expect(
-      rollbackPhoneOnlyAccount('user-rollback', 'native_signup_rollback_failed', '01012345678')
-    ).resolves.toBeUndefined();
-
-    expect(mockUserRepository.markAsOrphan).toHaveBeenCalledWith(
-      'user-rollback',
-      'native_signup_rollback_failed',
-      '01012345678',
-      Platform.OS
-    );
-    expect(mockSignOut).toHaveBeenCalled();
-  });
-
-  it('rollback does not throw when markAsOrphan fails', async () => {
-    mockUserRepository.markAsOrphan.mockRejectedValue(new Error('mark failed'));
-
-    await expect(
-      rollbackPhoneOnlyAccount('user-rollback', 'native_signup_rollback_failed', '01012345678')
-    ).resolves.toBeUndefined();
 
     expect(mockSignOut).toHaveBeenCalled();
   });
