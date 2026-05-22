@@ -445,8 +445,12 @@ export async function signInWithApple(): Promise<AuthResult> {
         return false;
       };
 
+      // 프로필 DB 쓰기가 실제로 확인됐는지 추적. 끝내 확인 못한 채 optimistic 반환하는
+      // 경로는 social signup 단계의 권위적 upsert 에 위임하되, 빈도 측정을 위해 구분 로깅한다.
+      let profileWriteConfirmed = false;
       try {
         await createProfileDocument(1);
+        profileWriteConfirmed = true;
       } catch (createError) {
         const createErrorCode = (createError as { code?: string })?.code ?? '';
         const isRetryableCreateError =
@@ -458,10 +462,13 @@ export async function signInWithApple(): Promise<AuthResult> {
         }
 
         const profileCreatedAfterFirstTimeout = await verifyProfileCreationSettled(1);
-        if (!profileCreatedAfterFirstTimeout) {
+        if (profileCreatedAfterFirstTimeout) {
+          profileWriteConfirmed = true;
+        } else {
           await sleep(APPLE_PROFILE_WRITE_RETRY_DELAY_MS);
           try {
             await createProfileDocument(2);
+            profileWriteConfirmed = true;
           } catch (retryCreateError) {
             const retryCode = (retryCreateError as { code?: string })?.code ?? '';
             const isRetryableRetry =
@@ -470,7 +477,9 @@ export async function signInWithApple(): Promise<AuthResult> {
 
             if (isRetryableRetry) {
               const settled = await verifyProfileCreationSettled(2);
-              if (!settled) {
+              if (settled) {
+                profileWriteConfirmed = true;
+              } else {
                 protectAuthFlow(user.id, 'social_signup', SOCIAL_SIGNUP_FLOW_PROTECTION_TTL_MS);
                 preserveProtectedAuthFlow = true;
               }
@@ -495,12 +504,26 @@ export async function signInWithApple(): Promise<AuthResult> {
         updatedAt: now,
       };
 
-      logger.info('Apple 신규 사용자 최소 프로필 생성', { uid: user.id });
-      leaveAppleLoginBreadcrumb('apple_login_flow', {
-        flowId,
-        status: 'success',
-        resultType: 'new_minimal_profile',
-      });
+      if (profileWriteConfirmed) {
+        logger.info('Apple 신규 사용자 최소 프로필 생성', { uid: user.id });
+        leaveAppleLoginBreadcrumb('apple_login_flow', {
+          flowId,
+          status: 'success',
+          resultType: 'new_minimal_profile',
+        });
+      } else {
+        // DB 쓰기 미확인 — social signup 단계의 upsert 가 권위적 source 이므로 흐름은 진행하되,
+        // 실제 발생 빈도를 측정해 근본 대응 여부를 판단하기 위해 visible warn + 구분 breadcrumb.
+        logger.warn(
+          'Apple 신규 프로필 DB 쓰기 미확인 — social signup upsert 에 위임 (optimistic 진행)',
+          { uid: user.id, flowId }
+        );
+        leaveAppleLoginBreadcrumb('apple_login_flow', {
+          flowId,
+          status: 'success',
+          resultType: 'new_minimal_profile_unconfirmed',
+        });
+      }
       return { user, profile: minimalProfile };
     }
 
