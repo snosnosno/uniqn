@@ -9,6 +9,7 @@ import {
   logDiDiagnostic,
   normalizeBirthDate,
   normalizeGender,
+  retryOnError,
   toE164,
   validateAge,
 } from '../_shared/idp-binding.ts';
@@ -108,7 +109,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const portoneSecret = Deno.env.get('PORTONE_API_SECRET');
-    if (!portoneSecret) return jsonResponse({ error: 'PortOne 설정 오류' }, 500);
+    // code 필드 포함 — 클라 parseEdgeFunctionErrorBody 게이트를 통과해 한글 메시지로 변환.
+    if (!portoneSecret) return idpError('PORTONE_CONFIG_MISSING');
 
     const portoneRes = await fetch(
       `https://api.portone.io/identity-verifications/${encodeURIComponent(identityVerificationId)}`,
@@ -299,10 +301,15 @@ Deno.serve(async (req: Request) => {
     if (upsertError) {
       // C6 fix — rollback DELETE 결과 명시적 처리. 실패 시 dangling row가
       // 다음 재시도를 영구 차단하므로 logger.error로 visible하게 알림.
-      const { error: rollbackError } = await supabase
-        .from('processed_identity_verifications')
-        .delete()
-        .eq('verification_id', identityVerificationId);
+      // A-2 하드닝 — 일시 장애로 1회 DELETE 가 실패해도 dangling row 가 남지 않도록 3회 재시도.
+      const { error: rollbackError } = await retryOnError(
+        () =>
+          supabase
+            .from('processed_identity_verifications')
+            .delete()
+            .eq('verification_id', identityVerificationId),
+        { attempts: 3, delayMs: 1000 }
+      );
       if (rollbackError) {
         // A7: dangling row 발생 — 사용자에게도 명시 에러 코드 반환해 고객센터 안내 가능
         console.error('[CRITICAL] idempotency rollback failed — dangling row may block retry', {

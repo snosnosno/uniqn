@@ -23,6 +23,10 @@ export const IDP_ERROR_CODES = {
   IV_DUPLICATE_NICKNAME: { status: 409, message: '이미 사용 중인 닉네임입니다' },
   AUTH_REQUIRED: { status: 401, message: '인증이 필요합니다' },
   AUTH_FAILED: { status: 401, message: '인증 실패' },
+  PORTONE_CONFIG_MISSING: {
+    status: 500,
+    message: '본인인증 서비스에 일시적인 문제가 발생했어요. 잠시 후 다시 시도해주세요.',
+  },
   PORTONE_FETCH_FAILED: { status: 400, message: '본인인증 정보 조회 실패' },
   PORTONE_NOT_VERIFIED: { status: 400, message: '본인인증이 완료되지 않았습니다' },
   PORTONE_INCOMPLETE: { status: 400, message: '본인인증 데이터가 불완전합니다' },
