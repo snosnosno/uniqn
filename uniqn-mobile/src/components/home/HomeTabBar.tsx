@@ -22,7 +22,7 @@ type TabItem = {
 };
 
 const TABS: TabItem[] = [
-  { label: '구인구직', route: '/(app)/(tabs)', Icon: HomeIcon },
+  { label: '구인구직', route: '/(app)/(tabs)/home-jobs', Icon: HomeIcon },
   { label: '내 스케줄', route: '/(app)/(tabs)/schedule', Icon: CalendarIcon },
   { label: '게시판', route: '/(app)/(tabs)/board', Icon: MessageIcon },
   { label: '내 공고', route: '/(app)/(tabs)/employer', Icon: BriefcaseIcon },

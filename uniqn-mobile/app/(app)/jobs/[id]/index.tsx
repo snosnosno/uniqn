@@ -102,7 +102,7 @@ export default function JobDetailScreen() {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <Stack.Screen options={{ headerShown: false }} />
-        <StackHeader title="공고 상세" fallbackHref="/(app)/(tabs)" />
+        <StackHeader title="공고 상세" fallbackHref="/(app)/(tabs)/home-jobs" />
         <Loading variant="layout" message="공고 정보를 불러오는 중..." />
       </SafeAreaView>
     );
@@ -112,7 +112,7 @@ export default function JobDetailScreen() {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <Stack.Screen options={{ headerShown: false }} />
-        <StackHeader title="공고 상세" fallbackHref="/(app)/(tabs)" />
+        <StackHeader title="공고 상세" fallbackHref="/(app)/(tabs)/home-jobs" />
         <ErrorState message={error?.message ?? '공고를 찾을 수 없습니다'} onRetry={refresh} />
       </SafeAreaView>
     );
@@ -128,7 +128,7 @@ export default function JobDetailScreen() {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <Stack.Screen options={{ headerShown: false }} />
-        <StackHeader title="공고 상세" fallbackHref="/(app)/(tabs)" />
+        <StackHeader title="공고 상세" fallbackHref="/(app)/(tabs)/home-jobs" />
         <Loading variant="layout" message="공고 정보를 불러오는 중..." />
       </SafeAreaView>
     );
@@ -151,7 +151,7 @@ export default function JobDetailScreen() {
         <StackHeader
           title="공고 상세"
           titleSuffix={titleSuffix}
-          fallbackHref="/(app)/(tabs)"
+          fallbackHref="/(app)/(tabs)/home-jobs"
           rightAction={shareAction}
         />
         <ErrorState
@@ -176,7 +176,7 @@ export default function JobDetailScreen() {
       <StackHeader
         title="공고 상세"
         titleSuffix={titleSuffix}
-        fallbackHref="/(app)/(tabs)"
+        fallbackHref="/(app)/(tabs)/home-jobs"
         rightAction={shareAction}
       />
 

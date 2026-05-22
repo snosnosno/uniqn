@@ -338,11 +338,11 @@ describe('useAuthGuard', () => {
     });
   });
 
-  // PR #120 회귀 가드: HomeTabBar 의 router.push('/(app)/(tabs)') 가
-  // expo-router web 에서 URL '/' 로 group erasure 되는데, ROUTE_CONFIGS 에 없는
-  // '(tabs)' 만 segments 에 남으면 routeGroup=null 로 root 분기 진입.
-  // 이전엔 redirect 가 발동해 staff 가 (tabs) 에 도달 불가.
-  // group segment 가 하나라도 있으면 의도된 in-app 네비게이션이므로 redirect 건너뛴다.
+  // PR #120 회귀 가드 (이제 방어용): Jobs 탭을 /home-jobs 로 분리(URL '/' 및 공개 '/jobs'
+  // 충돌 해소)한 뒤로는 HomeTabBar 가 '/(app)/(tabs)/home-jobs' (URL '/home-jobs') 로 push
+  // 하므로 이 시나리오는 자연 발생하지 않는다. 다만 정적 빌드 라우터가 '/'+segments=['(tabs)'] 로 재해석하는
+  // 잔여 경로를 대비해 가드는 유지. group segment 가 하나라도 있으면 의도된 in-app
+  // 네비게이션이므로 redirect 를 건너뛴다.
   it('does not redirect authenticated users to home when navigating into a tabs group at root URL', async () => {
     mockPathname = '/';
     mockSegments = ['(tabs)'];
