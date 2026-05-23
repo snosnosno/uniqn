@@ -30,10 +30,10 @@ describe('HomeTabBar', () => {
     mockPush.mockClear();
   });
 
-  it('구인구직 탭 press → /(app)/(tabs)로 이동', () => {
+  it('구인구직 탭 press → /(app)/(tabs)/home-jobs로 이동', () => {
     const { getByLabelText } = render(<HomeTabBar />);
     fireEvent.press(getByLabelText('구인구직 탭으로 이동'));
-    expect(mockPush).toHaveBeenCalledWith('/(app)/(tabs)');
+    expect(mockPush).toHaveBeenCalledWith('/(app)/(tabs)/home-jobs');
   });
 
   it('내 스케줄 탭 press → /(app)/(tabs)/schedule', () => {

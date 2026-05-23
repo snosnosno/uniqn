@@ -77,7 +77,7 @@ function StatusBadge({ status }: StatusBadgeProps) {
 function NoApplicationScreen() {
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
-      <StackHeader title="구인자 신청" fallbackHref="/(app)/(tabs)" />
+      <StackHeader title="구인자 신청" fallbackHref="/(app)/(tabs)/home-jobs" />
       <View className="flex-1 justify-center px-4">
         <Card variant="outlined" padding="lg" className="items-center">
           <Text className="mb-6 text-center text-base text-content-muted dark:text-secondary-400 font-sans">
@@ -99,7 +99,7 @@ function NoApplicationScreen() {
 function PendingScreen({ submittedAt }: { submittedAt: string }) {
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
-      <StackHeader title="구인자 신청 현황" fallbackHref="/(app)/(tabs)" />
+      <StackHeader title="구인자 신청 현황" fallbackHref="/(app)/(tabs)/home-jobs" />
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
@@ -145,7 +145,7 @@ function PendingScreen({ submittedAt }: { submittedAt: string }) {
 function ApprovedScreen() {
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
-      <StackHeader title="구인자 신청 현황" fallbackHref="/(app)/(tabs)" />
+      <StackHeader title="구인자 신청 현황" fallbackHref="/(app)/(tabs)/home-jobs" />
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
@@ -185,7 +185,7 @@ function RejectedScreen({
 }) {
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
-      <StackHeader title="구인자 신청 현황" fallbackHref="/(app)/(tabs)" />
+      <StackHeader title="구인자 신청 현황" fallbackHref="/(app)/(tabs)/home-jobs" />
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
@@ -249,7 +249,7 @@ export default function EmployerApplicationStatusScreen() {
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
-        <StackHeader title="구인자 신청 현황" fallbackHref="/(app)/(tabs)" />
+        <StackHeader title="구인자 신청 현황" fallbackHref="/(app)/(tabs)/home-jobs" />
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
         </View>

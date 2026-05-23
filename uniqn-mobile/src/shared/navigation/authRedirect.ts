@@ -2,8 +2,10 @@ import type { UserProfile } from '@/types';
 import { featureFlags } from '@/config/featureFlags';
 
 export const AUTH_ENTRY_ROUTES = {
-  appTabs: '/(app)/(tabs)',
-  appHome: (featureFlags.home_dashboard_enabled ? '/(app)/home' : '/(app)/(tabs)') as string,
+  appTabs: '/(app)/(tabs)/home-jobs',
+  appHome: (featureFlags.home_dashboard_enabled
+    ? '/(app)/home'
+    : '/(app)/(tabs)/home-jobs') as string,
   signup: '/(auth)/signup',
   socialSignup: '/(auth)/signup?mode=social',
   identityReverify: '/(auth)/signup?mode=reverify',

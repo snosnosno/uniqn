@@ -16,7 +16,7 @@ export function StackHeader({
   title,
   titleSuffix,
   showBack = true,
-  fallbackHref = '/(app)/(tabs)',
+  fallbackHref = '/(app)/(tabs)/home-jobs',
   rightAction,
 }: StackHeaderProps) {
   const isDarkMode = useThemeStore((state) => state.isDarkMode);

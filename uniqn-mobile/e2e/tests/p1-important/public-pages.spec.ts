@@ -189,8 +189,10 @@ test.describe('퍼블릭 페이지', () => {
 
     await page.goto('/jobs', { waitUntil: 'domcontentloaded' });
 
+    // 인증 사용자는 공개 /jobs 에서 인증 구인구직 탭(/home-jobs)으로 redirect 된다.
+    // (옵션 B: Jobs 탭이 URL '/' → '/home-jobs' 로 분리된 뒤 redirect 타깃도 이동)
     await expect(page).not.toHaveURL(/\/jobs(?:\/)?$/);
-    await expect(page).toHaveURL(/\/(?:[?#].*)?$/);
+    await expect(page).toHaveURL(/\/home-jobs(?:[?#].*)?$/);
     await expect(page.locator('input').first()).toBeVisible({ timeout: 10_000 });
 
     await context.close();

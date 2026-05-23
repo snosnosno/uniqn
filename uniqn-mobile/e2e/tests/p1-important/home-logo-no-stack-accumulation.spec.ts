@@ -66,11 +66,10 @@ test.describe('홈 로고 탭 스택 누적 방지', () => {
     expect(finalHistoryLength - initialHistoryLength).toBeLessThanOrEqual(2);
   });
 
-  // CI #120 fail: /home → "구인구직 탭으로 이동" click 후에도 페이지가 /(tabs) 로
-  // 이동 안 함 (artifact 페이지 스냅샷 /home 그대로). useAuthGuard 의 root '/' →
-  // resolvedAuthenticatedRoute (=/home) replace 가 의심됨. 별도 production-side fix
-  // 필요 (E2E opt-out 또는 useAuthGuard 의 root redirect 조건 재검토).
-  test.skip('탭에서 홈 로고 5번 탭 후 history 가 비정상 증가하지 않는다', async ({ page }) => {
+  // 해소(옵션 B): Jobs 탭 분리(/home-jobs)로 (tabs) 진입이 URL '/' 충돌 없이 안정 렌더.
+  // 로고 복귀는 router.push('/(app)/home') (화면 정상 표시). 첫 탭만 push(+1),
+  // 이후엔 isOnHome 가드로 no-op 이라 중복 스택이 누적되지 않는다(history ≤ 2).
+  test('탭에서 홈 로고 5번 탭 후 history 가 비정상 증가하지 않는다', async ({ page }) => {
     await page.goto('/');
     await waitForAppInit(page);
     await dismissOnboarding(page);
@@ -94,8 +93,10 @@ test.describe('홈 로고 탭 스택 누적 방지', () => {
       await page.waitForTimeout(150);
     }
 
-    // 홈 도착
-    await expect(page.getByText('다음 근무').first()).toBeVisible({ timeout: 10_000 });
+    // 홈 도착 — 이전 /home 인스턴스가 DOM 에 hidden 으로 남으므로 보이는 '다음 근무' 로 스코프.
+    await expect(page.getByText('다음 근무').filter({ visible: true }).first()).toBeVisible({
+      timeout: 10_000,
+    });
 
     // 탭 → 홈 push 1 회 만 발생 (+1) 예상, +5 가 아님
     const finalHistoryLength = await page.evaluate(() => window.history.length);
