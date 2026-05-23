@@ -198,24 +198,27 @@ test.describe('E2E 유저 저니', () => {
     await waitForAppReady(page);
 
     // 2. HomeTabBar 의 프로필 탭 click → (tabs)/profile
+    // 탭 버튼 click 은 앱 초기화 race 로 no-op 될 수 있어(클릭 시점에 라우터 미준비),
+    // navigation 확정(프로필 수정 버튼 가시)까지 click+assert 를 재시도한다.
     const profileTabButton = page.getByRole('button', { name: '프로필 탭으로 이동' });
     await expect(profileTabButton).toBeVisible({ timeout: 10_000 });
-    await profileTabButton.click();
-    await page.waitForLoadState('domcontentloaded');
-
-    // 프로필 관련 콘텐츠가 보여야 함
-    await expect(page.getByRole('button', { name: /프로필 수정/ })).toBeVisible({
-      timeout: 10_000,
-    });
+    await expect(async () => {
+      await profileTabButton.click();
+      await expect(page.getByRole('button', { name: /프로필 수정/ })).toBeVisible({
+        timeout: 5_000,
+      });
+    }).toPass({ timeout: 25_000 });
 
     // 3. "설정센터" menu item click → /(app)/settings 진입
     // MenuItem 의 Pressable 내부 Text "설정센터" 클릭이 outer Pressable 의 sibling
     // div (e.g. ChevronRightIcon container) 에 intercept 됨. dispatchEvent 로 우회.
+    // 고정 timeout 대신 URL 전이(/settings)를 명시적으로 대기하며 재시도.
     const settingsMenuItem = page.getByText('설정센터');
     await expect(settingsMenuItem).toBeVisible({ timeout: 5_000 });
-    await settingsMenuItem.dispatchEvent('click');
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(800);
+    await expect(async () => {
+      await settingsMenuItem.dispatchEvent('click');
+      await page.waitForURL(/\/settings/, { timeout: 5_000 });
+    }).toPass({ timeout: 20_000 });
 
     // settings 페이지 URL 확인 (StackHeader title 은 heading role 없어서 text 매칭 신뢰도 낮음)
     expect(page.url()).toContain('/settings');

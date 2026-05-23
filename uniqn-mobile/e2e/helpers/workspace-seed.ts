@@ -67,3 +67,35 @@ export async function ensureE2EWorkspace(
   }
   return data.id as string;
 }
+
+/**
+ * owner 의 **기본(현재) 워크스페이스** ID 를 반환 — 앱의 워크스페이스 선택과 일치.
+ *
+ * 앱은 `workspaceService.pickOwnedWorkspaceId` 에서 owned 워크스페이스를
+ * `created_at` 오름차순 정렬 후 가장 오래된 것을 현재 워크스페이스로 사용한다.
+ * /employer 리스트는 이 현재 워크스페이스로 필터링되므로, 리스트 가시성을
+ * 검증하는 테스트는 별도의 'E2E 테스트 워크스페이스' 가 아니라 이 기본
+ * 워크스페이스에 공고를 시드해야 한다.
+ *
+ * owned 워크스페이스가 하나도 없으면 `ensureE2EWorkspace` 로 생성 후 반환(폴백).
+ */
+export async function getDefaultWorkspaceId(
+  adminClient: SupabaseClient,
+  ownerId: string
+): Promise<string> {
+  const { data, error } = await adminClient
+    .from('workspaces')
+    .select('id')
+    .eq('owner_id', ownerId)
+    .order('created_at', { ascending: true })
+    .limit(1);
+
+  if (error) {
+    throw new Error(`default workspace SELECT 실패: ${error.message}`);
+  }
+  if (data && data.length > 0 && data[0]?.id) {
+    return data[0].id as string;
+  }
+  // owned 워크스페이스가 없으면 생성(폴백) — 앱도 동일하게 자동 생성한다.
+  return ensureE2EWorkspace(adminClient, ownerId);
+}
