@@ -171,6 +171,29 @@ describe('authCoreService', () => {
     await expect(login({ email: 'test@example.com', password: 'wrong' })).rejects.toThrow();
   });
 
+  it('signs out lingering session when profile is missing (orphan login)', async () => {
+    // signInWithPassword 는 세션을 생성하지만 public.users 프로필이 없는 orphan 계정.
+    // signUp/Apple 경로처럼 잔존 세션을 정리해야 authStore 가 끌려가지 않는다.
+    const supabaseUser = {
+      id: 'user-orphan',
+      email: 'orphan@example.com',
+      user_metadata: {},
+      app_metadata: { providers: ['email'] },
+    };
+
+    mockSignInWithPassword.mockResolvedValue({
+      data: { user: supabaseUser, session: { access_token: 'token' } },
+      error: null,
+    });
+    mockFetchUserProfile.mockResolvedValue(null);
+
+    await expect(
+      login({ email: 'orphan@example.com', password: 'Password123!' })
+    ).rejects.toMatchObject({ code: ERROR_CODES.AUTH_USER_NOT_FOUND });
+
+    expect(mockSignOut).toHaveBeenCalled();
+  });
+
   it('signs up with Supabase auth and edge function', async () => {
     const supabaseUser = {
       id: 'user-1',

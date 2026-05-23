@@ -91,8 +91,15 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
     const profile = await getUserProfile(user.id);
 
     if (!profile) {
+      // 세션은 이미 생성됐지만 public.users 프로필이 없는 orphan 계정.
+      // 잔존 세션을 정리해 authStore 가 끌려가지 않게 한다 (signUp/Apple 경로와 일관).
+      try {
+        await supabase.auth.signOut();
+      } catch {
+        // cleanup failure 무시 — 원래 에러가 우선
+      }
       throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
-        userMessage: '사용자 정보를 찾을 수 없습니다.',
+        userMessage: '가입이 완료되지 않은 계정이에요. 다시 회원가입을 진행해주세요.',
       });
     }
 
