@@ -552,6 +552,16 @@ export async function callVerifyAndSavePortOneProfile(
       });
     }
 
+    // A-1 — verify-identity 경로와 동일하게 IdP code 를 한글 ValidationError 로 변환.
+    // (PORTONE_CONFIG_MISSING 등 서버 설정/검증 에러의 영문 generic 메시지 UI 노출 방지.)
+    if (parsed?.code) {
+      logger.info('verifyAndSavePortOneProfile edge error mapped to ValidationError', {
+        component: 'portOneIdentityService',
+        code: parsed.code,
+      });
+      throw mapIdpErrorCodeToAppError(parsed.code, parsed.error);
+    }
+
     if (!isRetryableError(error)) {
       throw error;
     }

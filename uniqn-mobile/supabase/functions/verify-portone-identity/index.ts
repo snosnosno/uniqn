@@ -102,7 +102,8 @@ Deno.serve(async (req: Request) => {
 
     const portoneSecret = Deno.env.get('PORTONE_API_SECRET');
     if (!portoneSecret) {
-      return jsonResponse({ error: 'PortOne 설정 오류' }, 500);
+      // code 필드 포함 — 클라 parseEdgeFunctionErrorBody 게이트를 통과해 한글 메시지로 변환.
+      return idpError('PORTONE_CONFIG_MISSING');
     }
 
     const portoneRes = await fetch(

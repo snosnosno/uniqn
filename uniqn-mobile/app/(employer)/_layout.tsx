@@ -88,7 +88,7 @@ export default function EmployerLayout() {
 
   // 구인자 권한 없음 - 홈으로 리다이렉트
   if (!hasEmployerRole) {
-    return <Redirect href="/(app)/(tabs)" />;
+    return <Redirect href="/(app)/(tabs)/home-jobs" />;
   }
 
   return <EmployerStack />;

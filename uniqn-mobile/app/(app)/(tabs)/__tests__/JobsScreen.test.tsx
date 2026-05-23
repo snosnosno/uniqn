@@ -1,7 +1,7 @@
 import React from 'react';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { useQuery } from '@tanstack/react-query';
-import JobsScreen from '../index';
+import JobsScreen from '../home-jobs';
 
 const mockPostingTypeChips = jest.fn();
 const mockUsePostingTypeCounts = jest.fn();

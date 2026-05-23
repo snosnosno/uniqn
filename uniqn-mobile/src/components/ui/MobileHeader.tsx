@@ -45,7 +45,7 @@ export function MobileHeader({
   titleSuffix,
   showBack = false,
   onBack,
-  fallbackHref = '/(app)/(tabs)',
+  fallbackHref = '/(app)/(tabs)/home-jobs',
   leftAction,
   rightAction,
   subtitle,

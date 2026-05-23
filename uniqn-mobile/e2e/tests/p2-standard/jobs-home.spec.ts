@@ -7,16 +7,10 @@ import { HomePage } from '../../pages/app/tabs/home.page';
 
 // storageState는 chromium 프로젝트에서 staff.json으로 자동 설정됨
 
-// CI #120 fail: HomePage.goto() 의 HomeTabBar/CTA click 모두 (tabs) 로 navigation
-// 안 됨 — artifact 페이지 스냅샷이 /home 그대로. useAuthGuard.ts:213-225 의
-// `if (isRouterRootPath && isBrowserRootPath && isAuthenticated)` 분기가 root URL
-// '/' 진입을 항상 resolvedAuthenticatedRoute(=/home for staff) 로 replace.
-// HomeTabBar 의 router.push('/(app)/(tabs)') 가 URL `/` 로 해석되면서 same redirect 발동.
-// Fix 옵션 (별도 PR):
-//   1. useAuthGuard root redirect 에 segments 검사 추가 (이미 (app)/(tabs) 인 경우 skip)
-//   2. featureFlags.home_dashboard_enabled 에 E2E opt-out 추가
-//   3. NextWorkWidget empty-state CTA 와 HomeTabBar 의 '구인구직' route 를 deep-link 화
-test.describe.skip('구인구직 홈', () => {
+// 해소(옵션 B): Jobs 탭을 (tabs)/home-jobs.tsx 로 분리 → URL '/home-jobs'. HomeTabBar 가
+// '/(app)/(tabs)/home-jobs' 로 push 하므로 더 이상 URL '/' 로 group erase 되지 않고,
+// 공개 '/jobs'(공유 링크 라우트)와도 겹치지 않아 useAuthGuard redirect 가 발동하지 않는다.
+test.describe('구인구직 홈', () => {
   let homePage: HomePage;
 
   test.beforeEach(async ({ page }) => {
@@ -34,11 +28,11 @@ test.describe.skip('구인구직 홈', () => {
   });
 
   test('공고 타입 칩 필터가 표시된다', async () => {
-    // fixed 공고는 V3 canonical 전환 동안 공개 표면에서 제외된다.
+    // PostingTypeChips 는 4개 타입 칩(긴급/대회/일반/고정)을 항상 노출한다 — 고정도 의도적 표시.
     await expect(homePage.getTypeChip('긴급')).toBeVisible({ timeout: 10_000 });
     await expect(homePage.getTypeChip('대회')).toBeVisible();
     await expect(homePage.getTypeChip('일반')).toBeVisible();
-    await expect(homePage.getTypeChip('고정')).toHaveCount(0);
+    await expect(homePage.getTypeChip('고정')).toBeVisible();
   });
 
   test('초기 로드 시 공고가 있는 탭으로 자동 선택된다', async ({ page }) => {

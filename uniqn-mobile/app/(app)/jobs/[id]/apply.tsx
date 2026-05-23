@@ -215,7 +215,7 @@ export default function ApplyScreen() {
     router.replace(`/(app)/jobs/${id}`);
   }, [id]);
 
-  const fallbackHref = id ? (`/(app)/jobs/${id}` as const) : ('/(app)/(tabs)' as const);
+  const fallbackHref = id ? (`/(app)/jobs/${id}` as const) : ('/(app)/(tabs)/home-jobs' as const);
 
   if (isLoadingJob || shouldBlockForExistingApplicationCheck) {
     return (

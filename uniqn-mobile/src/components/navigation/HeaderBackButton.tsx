@@ -18,7 +18,7 @@ function stripRouteGroups(path: string): string {
 
 export function HeaderBackButton({
   tintColor,
-  fallbackHref = '/(app)/(tabs)',
+  fallbackHref = '/(app)/(tabs)/home-jobs',
   className,
 }: HeaderBackButtonProps) {
   const router = useRouter();

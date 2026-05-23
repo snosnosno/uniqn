@@ -173,6 +173,6 @@ describe('AUTH_ENTRY_ROUTES.appHome with feature flag', () => {
     }));
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { AUTH_ENTRY_ROUTES } = require('../authRedirect') as typeof import('../authRedirect');
-    expect(AUTH_ENTRY_ROUTES.appHome).toBe('/(app)/(tabs)');
+    expect(AUTH_ENTRY_ROUTES.appHome).toBe('/(app)/(tabs)/home-jobs');
   });
 });

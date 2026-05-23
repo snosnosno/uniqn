@@ -1,7 +1,7 @@
 export const EXPO_ROUTES = {
   root: '/',
 
-  home: '/(app)/(tabs)',
+  home: '/(app)/(tabs)/home-jobs',
   schedule: '/(app)/(tabs)/schedule',
   board: '/(app)/(tabs)/board',
   profile: '/(app)/(tabs)/profile',

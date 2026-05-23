@@ -703,7 +703,7 @@ export default function ScheduleScreen() {
                 title="아직 예정된 스케줄이 없어요"
                 description={`${currentMonth.year}년 ${currentMonth.month}월 일정이 비어있어요.\n공고에 지원하면 여기에 바로 표시돼요.`}
                 actionLabel="공고 둘러보기"
-                onAction={() => router.push('/(app)/(tabs)')}
+                onAction={() => router.push('/(app)/(tabs)/home-jobs')}
                 variant="content"
               />
             </View>

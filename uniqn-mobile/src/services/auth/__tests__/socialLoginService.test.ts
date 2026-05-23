@@ -20,6 +20,8 @@ const mockGetMMKVInstance = jest.fn();
 const mockLeaveBreadcrumb = jest.fn();
 const mockProtectAuthFlow = jest.fn();
 const mockClearProtectedAuthFlow = jest.fn();
+const mockLoggerInfo = jest.fn();
+const mockLoggerWarn = jest.fn();
 
 const mockMmkv = {
   set: jest.fn(),
@@ -81,8 +83,8 @@ jest.mock('@/repositories', () => ({
 
 jest.mock('@/utils/logger', () => ({
   logger: {
-    info: jest.fn(),
-    warn: jest.fn(),
+    info: (...args: unknown[]) => mockLoggerInfo(...args),
+    warn: (...args: unknown[]) => mockLoggerWarn(...args),
     error: jest.fn(),
     debug: jest.fn(),
   },
@@ -359,6 +361,53 @@ describe('socialLoginService signInWithApple', () => {
     );
     expect(result.profile.socialProvider).toBe('apple');
     expect(result.profile.phoneVerified).toBe(false);
+  });
+
+  // B-1 관측성: 프로필 DB 쓰기를 끝내 확인 못한 채 optimistic 반환하는 경로는
+  // 확인된 경로와 구분되는 logger.warn 을 남겨 실제 빈도를 측정할 수 있어야 한다.
+  it('warns that the profile write was unconfirmed when creation keeps timing out', async () => {
+    jest.useFakeTimers();
+
+    const timeoutError = new NetworkError(ERROR_CODES.NETWORK_TIMEOUT, {
+      userMessage: 'Apple 로그인 후 프로필 생성이 지연되고 있습니다.',
+    });
+
+    mockWithTimeout
+      .mockImplementationOnce((promise: Promise<unknown>) => promise) // signInWithIdToken
+      .mockImplementationOnce(() => Promise.resolve(null)) // lookup → null
+      .mockImplementationOnce(() => Promise.reject(timeoutError)) // create 1차 타임아웃
+      .mockImplementationOnce(() => Promise.resolve(null)) // verify1 attempt1
+      .mockImplementationOnce(() => Promise.resolve(null)) // verify1 attempt2
+      .mockImplementationOnce(() => Promise.reject(timeoutError)) // create 2차 타임아웃
+      .mockImplementationOnce(() => Promise.resolve(null)) // verify2 attempt1
+      .mockImplementationOnce(() => Promise.resolve(null)); // verify2 attempt2
+
+    const { signInWithApple } = loadModule();
+
+    const signInPromise = signInWithApple();
+    await Promise.resolve();
+    await Promise.resolve();
+    await jest.runAllTimersAsync();
+    await signInPromise;
+
+    expect(mockLoggerWarn).toHaveBeenCalledWith(
+      expect.stringContaining('미확인'),
+      expect.objectContaining({ uid: 'mock-user-id' })
+    );
+  });
+
+  it('does not warn when the new-user profile write is confirmed on first try', async () => {
+    mockGetUserProfile.mockResolvedValue(null);
+
+    const { signInWithApple } = loadModule();
+
+    await signInWithApple();
+
+    // 1차 createOrMerge 가 성공한 확인된 경로 → 미확인 warn 이 없어야 한다.
+    expect(mockLoggerWarn).not.toHaveBeenCalledWith(
+      expect.stringContaining('미확인'),
+      expect.anything()
+    );
   });
 
   it('rethrows a cancel event without signing out', async () => {

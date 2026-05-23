@@ -67,7 +67,7 @@ export default function ProfileSetupScreen() {
         }
 
         toast.success('프로필이 완성되었습니다!');
-        router.replace(postAuthRedirect ?? '/(app)/(tabs)');
+        router.replace(postAuthRedirect ?? '/(app)/(tabs)/home-jobs');
       } catch (error) {
         logger.error('프로필 완성 실패', error as Error, {
           component: 'ProfileSetupScreen',

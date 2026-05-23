@@ -124,7 +124,7 @@ export default function NotificationsScreen() {
             </Text>
           ) : null
         }
-        fallbackHref="/(app)/(tabs)"
+        fallbackHref="/(app)/(tabs)/home-jobs"
         rightAction={
           unreadCount > 0 ? (
             <Pressable
