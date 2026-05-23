@@ -3,7 +3,7 @@ import { render, fireEvent } from '@testing-library/react-native';
 import { TabHeader } from '../TabHeader';
 
 const mockPush = jest.fn();
-const mockPathname = jest.fn(() => '/(app)/(tabs)');
+const mockPathname = jest.fn(() => '/(app)/(tabs)/home-jobs');
 
 jest.mock('expo-router', () => ({
   router: { push: (...args: unknown[]) => mockPush(...args) },
@@ -41,7 +41,7 @@ jest.mock('@/constants', () => ({
 describe('TabHeader', () => {
   beforeEach(() => {
     mockPush.mockClear();
-    mockPathname.mockReturnValue('/(app)/(tabs)');
+    mockPathname.mockReturnValue('/(app)/(tabs)/home-jobs');
   });
 
   it('renders title text', () => {

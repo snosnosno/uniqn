@@ -100,7 +100,7 @@ export function NextWorkWidget() {
     message: '예정된 근무가 없습니다. 공고를 둘러볼까요?',
     cta: {
       label: '공고 보기',
-      onPress: () => router.push('/(app)/(tabs)'),
+      onPress: () => router.push('/(app)/(tabs)/home-jobs'),
     },
   };
 

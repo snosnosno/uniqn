@@ -2,7 +2,7 @@
  * UNIQN Mobile - Expo 동적 설정
  *
  * @description 환경별 설정, 버전 관리, 빌드 설정을 동적으로 관리
- * @version 1.0.1
+ * @version 1.0.2
  *
  * 사용법:
  * - EAS Build에서 EAS_BUILD_RUNNER 환경변수로 빌드 환경 자동 감지
@@ -16,10 +16,15 @@ import { ExpoConfig, ConfigContext } from 'expo/config';
 // 상수
 // ============================================================================
 
-const VERSION = '1.0.1';
+const VERSION = '1.0.2';
 const SLUG = 'uniqn';
 const DOMAIN = 'uniqn.app';
 const EAS_PROJECT_ID = '9bca3314-2a12-4654-ad9c-3ae43f8cf125';
+
+// PortOne 공개 식별자 — eas.json 에도 평문 commit 되어 있는 클라이언트 공개 값.
+// OTA 푸시 시 shell env 가 누락된 경우의 fallback. 진짜 시크릿(API secret)은 서버 Edge Function 에만 있음.
+const PORTONE_STORE_ID_FALLBACK = 'store-c1b44e1c-7620-445b-bb6c-9b6b62e7ab93';
+const PORTONE_INICIS_CHANNEL_KEY_FALLBACK = 'channel-key-2dc155c9-46a1-4710-a687-245f45497b0c';
 
 const BRAND_BG_COLOR = '#0B0B0E';
 const SPLASH_BG_COLOR = '#07070A'; // surface.dark — page 바로 아래 단계
@@ -341,10 +346,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     appleLoginEnabled: process.env.EXPO_PUBLIC_ENABLE_APPLE_LOGIN !== 'false',
     // reCAPTCHA v3 사이트 키 (웹 전용, 전화번호 중복체크 봇 방지)
     recaptchaSiteKey: process.env.EXPO_PUBLIC_RECAPTCHA_SITE_KEY || '',
-    // PortOne KG Inicis identity verification
+    // PortOne KG Inicis identity verification.
+    // storeId/channelKey 는 공개 식별자이므로 env 누락 시 fallback 으로 대응.
+    // 2026-05-16 OTA 푸시에서 EXPO_PUBLIC_PORTONE_* 가 빈 값으로 박혀 본인인증 전면 차단된 사건 재발 방지.
     portOne: {
-      storeId: process.env.EXPO_PUBLIC_PORTONE_STORE_ID || '',
-      inicisChannelKey: process.env.EXPO_PUBLIC_PORTONE_INICIS_CHANNEL_KEY || '',
+      storeId: process.env.EXPO_PUBLIC_PORTONE_STORE_ID || PORTONE_STORE_ID_FALLBACK,
+      inicisChannelKey:
+        process.env.EXPO_PUBLIC_PORTONE_INICIS_CHANNEL_KEY || PORTONE_INICIS_CHANNEL_KEY_FALLBACK,
       inicisDirectAgency: process.env.EXPO_PUBLIC_PORTONE_INICIS_DIRECT_AGENCY || '',
       inicisLogoUrl: process.env.EXPO_PUBLIC_PORTONE_INICIS_LOGO_URL || '',
       inicisFrgndInfo: process.env.EXPO_PUBLIC_PORTONE_INICIS_FRGND_INFO || 'N',

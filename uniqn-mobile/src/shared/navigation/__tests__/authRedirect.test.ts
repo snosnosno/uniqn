@@ -83,6 +83,20 @@ describe('getAuthenticatedEntryRoute', () => {
       })
     ).toBe(AUTH_ENTRY_ROUTES.socialSignup);
   });
+
+  it('routes email/password signup row with phoneVerified=false to plain signup (no socialProvider)', () => {
+    // 2026-05-16 사건 회귀 방지: handle_new_user trigger drift 또는 edge function
+    // 실패로 social_provider 가 NULL 인 상태에서 사용자가 재로그인하면 reverify trap
+    // 에 빠지던 버그. phone 인증조차 안 한 사용자는 reverify 가 아닌 가입 흐름으로
+    // 보내야 한다.
+    expect(
+      getAuthenticatedEntryRoute({
+        socialProvider: null,
+        phoneVerified: false,
+        identityVerified: false,
+      })
+    ).toBe(AUTH_ENTRY_ROUTES.signup);
+  });
 });
 
 describe('normalizePostAuthRedirect', () => {
@@ -159,6 +173,6 @@ describe('AUTH_ENTRY_ROUTES.appHome with feature flag', () => {
     }));
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { AUTH_ENTRY_ROUTES } = require('../authRedirect') as typeof import('../authRedirect');
-    expect(AUTH_ENTRY_ROUTES.appHome).toBe('/(app)/(tabs)');
+    expect(AUTH_ENTRY_ROUTES.appHome).toBe('/(app)/(tabs)/home-jobs');
   });
 });

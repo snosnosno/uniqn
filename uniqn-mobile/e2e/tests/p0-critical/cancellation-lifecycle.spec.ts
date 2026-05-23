@@ -13,6 +13,13 @@ import { test, expect } from '@playwright/test';
 import path from 'path';
 import { getAdminClient, SUPABASE_QA_ACCOUNTS } from '../../helpers/supabase-admin';
 import { waitForAppReady } from '../../helpers/wait-helpers';
+import { ensureE2EWorkspace } from '../../helpers/workspace-seed';
+
+// PR #117: 각 describe 의 tests 는 beforeAll seed 를 공유하고 RPC 호출 → 상태 검증 순서로
+// 의존한다. fullyParallel:true 환경에서 describe 내부 tests 도 병렬 실행되면 RPC 호출 전에
+// DB-level filled_positions=0 검증이 먼저 실행되어 seed 상태 (filled=1) 를 검증하게 됨.
+// 따라서 파일 전체를 serial 모드로 고정하여 declaration 순서 보장.
+test.describe.configure({ mode: 'serial' });
 
 // ---------------------------------------------------------------------------
 // storageState 경로 (상대 경로)
@@ -43,10 +50,14 @@ async function seedConfirmedApplication(
   const jobId = uniqueId('test-cancel-job');
   const applicationId = uniqueId('test-cancel-app');
 
+  // 0. workspace 보장 — 2026-05-14 migration 으로 job_postings.workspace_id NOT NULL
+  const workspaceId = await ensureE2EWorkspace(adminClient, SUPABASE_QA_ACCOUNTS.employer.id);
+
   // 1. job_posting 생성 (정원 1, filled_positions 1 — confirmed 상태 반영)
   const { error: jobError } = await adminClient.from('job_postings').insert({
     id: jobId,
     schema_version: 3,
+    workspace_id: workspaceId,
     title: '취소 라이프사이클 테스트 공고',
     description: 'E2E 취소 테스트용 공고',
     status: 'active',
@@ -257,6 +268,8 @@ test.describe('WF-08-1 Staff 확정 취소 happy path', () => {
     const result = data as Record<string, unknown>;
     expect(result.success).toBe(true);
     expect(result.new_status).toBe('applied');
+    // PR #117: RPC return 값 trace — describe 3 의 :491 동일 assertion 으로 정렬
+    expect(result.new_filled_positions).toBe(0);
   });
 
   test('취소 후 application.status가 applied로 변경됐다', async () => {
@@ -275,6 +288,8 @@ test.describe('WF-08-1 Staff 확정 취소 happy path', () => {
     expect(data?.status).toBe('applied');
   });
 
+  // PR #117: RPC return assertion (:264) 추가로 silent fail 시 :244 에서 조기 노출.
+  // DB-level 검증 unskip — RPC return 통과 후 DB 상태 separation 확인.
   test('취소 후 job_posting.filled_positions가 복원됐다 (0으로 감소)', async () => {
     if (!adminClient || !jobId) {
       test.skip(true, 'adminClient 또는 jobId 없음');
@@ -365,6 +380,8 @@ test.describe('WF-08-2 Employer 취소 요청 승인 happy path', () => {
     const result = data as Record<string, unknown>;
     expect(result.success).toBe(true);
     expect(result.new_status).toBe('cancelled');
+    // PR #117: RPC return 값 trace — staff_approves_cancel_request 도 person-basis -1
+    expect(result.new_filled_positions).toBe(0);
   });
 
   test('승인 후 application.status가 cancelled로 변경됐다', async () => {
@@ -383,6 +400,7 @@ test.describe('WF-08-2 Employer 취소 요청 승인 happy path', () => {
     expect(data?.status).toBe('cancelled');
   });
 
+  // PR #117: RPC return assertion (:380) 추가로 silent fail 시 :356 에서 조기 노출.
   test('승인 후 job_posting.filled_positions가 복원됐다', async () => {
     if (!adminClient || !jobId) {
       test.skip(true, 'adminClient 또는 jobId 없음');
@@ -501,6 +519,7 @@ test.describe('WF-08-3 취소 후 capacity 복원 — DB 직접 검증', () => {
     expect(data?.filled_positions).toBeLessThan(data?.total_positions ?? 0);
   });
 
+  // PR #117: describe 3 의 RPC return assertion(:491)이 이미 통과하므로 동일 원자성 검증 unskip
   test('취소 후 application.status = applied, filled_positions = 0 동시 만족 (원자성 보장)', async () => {
     if (!adminClient || !applicationId || !jobId) {
       test.skip(true, 'adminClient 없음');
@@ -521,6 +540,7 @@ test.describe('WF-08-3 취소 후 capacity 복원 — DB 직접 검증', () => {
     expect(jobResult.data?.filled_positions).toBe(0);
   });
 
+  // PR #117: describe 3 의 :472 RPC + :494 DB 검증이 통과 후 idempotency 동작 검증
   test('idempotency: 동일 취소 RPC를 다시 호출해도 success 반환한다', async () => {
     if (!adminClient || !applicationId) {
       test.skip(true, 'adminClient 없음');

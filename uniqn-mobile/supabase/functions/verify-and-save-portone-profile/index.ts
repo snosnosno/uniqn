@@ -9,6 +9,7 @@ import {
   logDiDiagnostic,
   normalizeBirthDate,
   normalizeGender,
+  retryOnError,
   toE164,
   validateAge,
 } from '../_shared/idp-binding.ts';
@@ -57,6 +58,9 @@ Deno.serve(async (req: Request) => {
       marketingAgreed,
       email,
       mode,
+      // 2026-05-16: PortOne 이니시스 통합인증이 gender 를 응답하지 않는 경우의 fallback.
+      // PortOne 응답에 gender 가 있으면 그것이 우선, 없을 때만 client 입력값 사용.
+      gender: clientGender,
     } = body;
 
     if (!mode || !['signup', 'social', 'reverify'].includes(mode))
@@ -105,7 +109,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const portoneSecret = Deno.env.get('PORTONE_API_SECRET');
-    if (!portoneSecret) return jsonResponse({ error: 'PortOne 설정 오류' }, 500);
+    // code 필드 포함 — 클라 parseEdgeFunctionErrorBody 게이트를 통과해 한글 메시지로 변환.
+    if (!portoneSecret) return idpError('PORTONE_CONFIG_MISSING');
 
     const portoneRes = await fetch(
       `https://api.portone.io/identity-verifications/${encodeURIComponent(identityVerificationId)}`,
@@ -117,14 +122,25 @@ Deno.serve(async (req: Request) => {
     if (verification.status !== 'VERIFIED') return idpError('PORTONE_NOT_VERIFIED');
     if (!isVerificationRecent(verification.verifiedAt)) return idpError('IV_TIMESTAMP_EXPIRED');
 
-    // C1 fix — caller binding 강제. mandatory token (위에서 검증) + customData
-    // 일치 모두 필수. defense in depth (AUTH + binding).
+    // C1 fix — caller binding (graceful skip 모드).
+    // 2026-05-16: PortOne 이니시스 통합인증이 verification.customData 를 echo 하지 않음.
+    // verify-portone-identity v11 과 동일 패턴 — token format 검증 + AUTH layer 가 1차 방어.
+    // customData 가 있을 때만 mismatch 검증, 없으면 graceful skip.
     {
-      const actualToken = extractBindingToken(verification.customData);
-      if (!isBindingMatch(expectedBindingToken, actualToken)) {
-        console.warn('[caller-binding] verify-and-save-portone-profile mismatch', {
+      const customDataRaw: unknown = (verification as { customData?: unknown }).customData;
+      const actualToken = extractBindingToken(customDataRaw);
+      if (actualToken === undefined) {
+        console.info(
+          '[caller-binding] verify-and-save-portone-profile customData not echoed - skip',
+          {
+            uid: user.id,
+            customDataType: typeof customDataRaw,
+          }
+        );
+      } else if (!isBindingMatch(expectedBindingToken, actualToken)) {
+        console.warn('[caller-binding] verify-and-save-portone-profile mismatch (echo path)', {
           uid: user.id,
-          hasActual: actualToken !== undefined,
+          hasActual: true,
         });
         return idpError('IV_BINDING_MISMATCH');
       }
@@ -134,10 +150,17 @@ Deno.serve(async (req: Request) => {
     logDiDiagnostic(identityData, 'verify-and-save-portone-profile');
     const verifiedName = identityData.name;
     const rawBirthDate = normalizeBirthDate(identityData.birthDate);
-    const gender = normalizeGender(identityData.gender);
+    // 2026-05-16: PortOne 이니시스 통합인증이 인증수단별로 gender 응답이 달라 본인인증 단계에서는 optional.
+    // 우선순위: PortOne 응답 > client body > undefined(가입 후 마이페이지 입력).
+    // users.gender 컬럼은 nullable text 이므로 null 저장 허용.
+    const portoneGender = normalizeGender(identityData.gender);
+    const fallbackGender =
+      clientGender === 'male' || clientGender === 'female' ? clientGender : undefined;
+    const gender = portoneGender ?? fallbackGender;
     const phone = identityData.phoneNumber;
 
-    if (!verifiedName || !rawBirthDate || !gender || !phone) {
+    // gender 는 가입 시 옵션 — 누락 시 null 로 저장하고 프로필 화면에서 보완.
+    if (!verifiedName || !rawBirthDate || !phone) {
       return idpError('PORTONE_INCOMPLETE');
     }
     if (!validateAge(rawBirthDate, MIN_SIGNUP_AGE)) return idpError('PORTONE_AGE_RESTRICTED');
@@ -226,7 +249,8 @@ Deno.serve(async (req: Request) => {
     const identityFields = {
       name: verifiedName,
       birth_date: rawBirthDate,
-      gender,
+      // 2026-05-16: gender 누락 시 null 저장. 가입 후 마이페이지/프로필 화면에서 사용자가 보완.
+      gender: gender ?? null,
       phone: phoneE164,
       phone_verified: true,
       identity_verified: true,
@@ -239,7 +263,7 @@ Deno.serve(async (req: Request) => {
         verifiedAt: verification.verifiedAt || now,
         name: verifiedName,
         birthDate: rawBirthDate,
-        gender,
+        gender: gender ?? null,
         phoneNumber: phoneE164,
         isForeigner: identityData.isForeigner ?? false,
       },
@@ -277,10 +301,15 @@ Deno.serve(async (req: Request) => {
     if (upsertError) {
       // C6 fix — rollback DELETE 결과 명시적 처리. 실패 시 dangling row가
       // 다음 재시도를 영구 차단하므로 logger.error로 visible하게 알림.
-      const { error: rollbackError } = await supabase
-        .from('processed_identity_verifications')
-        .delete()
-        .eq('verification_id', identityVerificationId);
+      // A-2 하드닝 — 일시 장애로 1회 DELETE 가 실패해도 dangling row 가 남지 않도록 3회 재시도.
+      const { error: rollbackError } = await retryOnError(
+        () =>
+          supabase
+            .from('processed_identity_verifications')
+            .delete()
+            .eq('verification_id', identityVerificationId),
+        { attempts: 3, delayMs: 1000 }
+      );
       if (rollbackError) {
         // A7: dangling row 발생 — 사용자에게도 명시 에러 코드 반환해 고객센터 안내 가능
         console.error('[CRITICAL] idempotency rollback failed — dangling row may block retry', {

@@ -92,6 +92,7 @@ export { FormField, FormSection, FormRow } from './FormField';
 export { FormSelect, type SelectOption } from './FormSelect';
 export { Checkbox, CheckboxGroup, type CheckboxProps, type CheckboxGroupProps } from './Checkbox';
 export { Radio, type RadioProps, type RadioOption } from './Radio';
+export { GenderSegment, type GenderValue } from './GenderSegment';
 export {
   DatePicker,
   DateRangePicker,

@@ -42,7 +42,7 @@ test.describe('Employer 뷰 전환 토글', () => {
     await expect(page.getByText('스태프로').first()).toBeVisible({ timeout: 5_000 });
 
     // Employer 대시보드 위젯 확인
-    await expect(page.getByText('이번 주 스태프 현황').first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('이번 주 스태프').first()).toBeVisible({ timeout: 10_000 });
   });
 
   test('"스태프로" 탭하면 Staff 대시보드로 전환된다', async ({ page }) => {
@@ -60,7 +60,7 @@ test.describe('Employer 뷰 전환 토글', () => {
     // Staff 대시보드 위젯 표시 확인
     await expect(page.getByText('다음 근무').first()).toBeVisible({ timeout: 10_000 });
     // Employer 위젯은 사라짐
-    await expect(page.getByText('이번 주 스태프 현황'))
+    await expect(page.getByText('이번 주 스태프'))
       .not.toBeVisible({ timeout: 3_000 })
       .catch(() => {});
   });
@@ -78,7 +78,7 @@ test.describe('Employer 뷰 전환 토글', () => {
     // Employer 뷰로 복귀
     await page.getByText('내 업무').first().click();
     await page.waitForTimeout(300);
-    await expect(page.getByText('이번 주 스태프 현황').first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('이번 주 스태프').first()).toBeVisible({ timeout: 10_000 });
   });
 
   test('홈 재진입 시 뷰가 기본값(employer)으로 리셋된다', async ({ page }) => {
@@ -106,6 +106,6 @@ test.describe('Employer 뷰 전환 토글', () => {
     }
 
     // Employer 대시보드가 기본값으로 표시
-    await expect(page.getByText('이번 주 스태프 현황').first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('이번 주 스태프').first()).toBeVisible({ timeout: 10_000 });
   });
 });

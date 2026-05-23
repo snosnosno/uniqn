@@ -78,8 +78,8 @@ export function SignupStepIdentity({
 
   const handlePortOneVerified = useCallback(
     (identity: VerifiedPortOneIdentity) => {
-      if (!identity.phoneNumber || !identity.gender) {
-        logger.warn('PortOne identity missing required fields', {
+      if (!identity.phoneNumber) {
+        logger.warn('PortOne identity missing phone', {
           component: 'SignupStepIdentity',
           identityVerificationId: identity.identityVerificationId,
         });
@@ -89,7 +89,11 @@ export function SignupStepIdentity({
       setPortOneIdentity(identity);
       setValue('name', identity.name, { shouldValidate: true });
       setValue('birthDate', identity.birthDate, { shouldValidate: true });
-      setValue('gender', identity.gender, { shouldValidate: true });
+      // 2026-05-16: gender 는 PortOne 응답에 있을 때만 form 에 채움.
+      // 없으면 가입 후 마이페이지/프로필 화면에서 사용자가 직접 선택해 보완한다.
+      if (identity.gender) {
+        setValue('gender', identity.gender, { shouldValidate: true });
+      }
       setValue('phoneVerified', true, { shouldValidate: true });
       setValue('verifiedPhone', identity.phoneNumber, { shouldValidate: true });
       setValue('identityVerificationId', identity.identityVerificationId, {
@@ -112,7 +116,8 @@ export function SignupStepIdentity({
     <View className="w-full flex-col gap-5">
       <View>
         <Text className="mb-3 text-sm leading-5 text-content-muted dark:text-secondary-300 font-sans">
-          본인인증을 진행하면 이름·생년월일·성별·휴대폰이 자동으로 확인됩니다.
+          본인인증을 진행하면 이름·생년월일·휴대폰이 자동으로 확인됩니다. 성별은 가입 후 프로필에서
+          입력합니다.
         </Text>
         <PortOneIdentityVerification
           onVerified={handlePortOneVerified}

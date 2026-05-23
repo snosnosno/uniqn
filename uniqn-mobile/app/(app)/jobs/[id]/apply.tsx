@@ -2,8 +2,8 @@
  * UNIQN Mobile - Job Apply Screen
  */
 
-import { useState, useCallback } from 'react';
-import { View, Text } from 'react-native';
+import { useState, useCallback, useRef } from 'react';
+import { Alert, View, Text } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
@@ -15,7 +15,7 @@ import { AlertTriangleIcon, CheckCircleIcon, InformationCircleIcon } from '@/com
 import { useJobDetail, useApplications, useHasAppliedToJob } from '@/hooks';
 import { resolveSessionUserId } from '@/hooks/internal/sessionUserId';
 import { getJobDetailQueryOptions } from '@/hooks/useJobDetail';
-import { useAuthStore, useToastStore } from '@/stores';
+import { useAuthStore } from '@/stores';
 import { STATUS } from '@/constants';
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
 import { isSupportedReleasePosting } from '@/utils/jobPostingVisibility';
@@ -94,9 +94,10 @@ export default function ApplyScreen() {
   const storeUserId = useAuthStore((state) => state.user?.uid);
   const isAuthInitialized = useAuthStore((state) => state.isInitialized);
   const userId = resolveSessionUserId(storeUserId, isAuthInitialized);
-  const { addToast } = useToastStore();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(true);
+  // 제출 in-flight 가드 (더블탭 중복 제출 방지). submitApplication 의 throttle 을 대체.
+  const submitInFlightRef = useRef(false);
 
   const {
     job,
@@ -105,7 +106,7 @@ export default function ApplyScreen() {
     refresh: refreshJob,
   } = useJobDetail(id ?? '');
 
-  const { submitApplication, isSubmitting, hasApplied } = useApplications();
+  const { submitApplicationAsync, isSubmitting, hasApplied } = useApplications();
   const {
     data: hasAppliedDirect = false,
     isLoading: isCheckingExistingApplication,
@@ -126,58 +127,70 @@ export default function ApplyScreen() {
       preQuestionAnswers: PreQuestionAnswer[] | undefined,
       provisionConsent: { at: string; version: string }
     ) => {
-      if (!job) {
+      // 중복 제출 방지 — fetchQuery await 동안 isSubmitting 이 아직 false 라 버튼이 활성이므로
+      // 더블탭 시 두 번 제출될 수 있다(unique 인덱스가 데이터 중복은 막지만 2번째는 에러 Alert 노출).
+      if (!job || submitInFlightRef.current) {
         return;
       }
-
-      logger.info('지원서 제출 시작', {
-        jobId: job.id,
-        assignmentsCount: assignments.length,
-        hasPreQuestions: !!preQuestionAnswers,
-      });
+      submitInFlightRef.current = true;
 
       try {
-        const latestJob = await queryClient.fetchQuery<JobPosting | null>({
-          ...getJobDetailQueryOptions(job.id, userId ?? undefined),
-          staleTime: 0,
+        logger.info('지원서 제출 시작', {
+          jobId: job.id,
+          assignmentsCount: assignments.length,
+          hasPreQuestions: !!preQuestionAnswers,
         });
 
-        if (!latestJob) {
-          addToast({ type: 'error', message: '공고를 찾을 수 없습니다' });
-          return;
+        try {
+          const latestJob = await queryClient.fetchQuery<JobPosting | null>({
+            ...getJobDetailQueryOptions(job.id, userId ?? undefined),
+            staleTime: 0,
+          });
+
+          if (!latestJob) {
+            Alert.alert('오류', '공고를 찾을 수 없습니다');
+            return;
+          }
+
+          if (latestJob.status !== STATUS.JOB_POSTING.ACTIVE) {
+            Alert.alert('지원 불가', '지원이 마감된 공고입니다');
+            return;
+          }
+
+          const { total, filled } = getClosingStatus(latestJob);
+          if (total > 0 && filled >= total) {
+            Alert.alert('지원 불가', '모집 인원이 마감되었습니다');
+            return;
+          }
+        } catch (error) {
+          logger.warn('지원 전 최신 공고 검증 실패', { error });
         }
 
-        if (latestJob.status !== STATUS.JOB_POSTING.ACTIVE) {
-          addToast({ type: 'error', message: '지원이 마감된 공고입니다' });
-          return;
+        // mutateAsync + try/catch — 에러 메시지를 네이티브 Alert 로 노출한다.
+        // (전역 onError 토스트는 네이티브 SheetModal 뒤에 가려 안 보이므로)
+        try {
+          await submitApplicationAsync({
+            jobPostingId: job.id,
+            assignments,
+            message,
+            preQuestionAnswers,
+            provisionConsentAt: provisionConsent.at,
+            provisionConsentVersion: provisionConsent.version,
+          });
+          setShowForm(false);
+        } catch (error) {
+          logger.error('지원서 제출 실패', error instanceof Error ? error : undefined);
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : '지원 중 오류가 발생했습니다. 다시 시도해 주세요.';
+          Alert.alert('지원 실패', errorMessage);
         }
-
-        const { total, filled } = getClosingStatus(latestJob);
-        if (total > 0 && filled >= total) {
-          addToast({ type: 'error', message: '모집 인원이 마감되었습니다' });
-          return;
-        }
-      } catch (error) {
-        logger.warn('지원 전 최신 공고 검증 실패', { error });
+      } finally {
+        submitInFlightRef.current = false;
       }
-
-      submitApplication(
-        {
-          jobPostingId: job.id,
-          assignments,
-          message,
-          preQuestionAnswers,
-          provisionConsentAt: provisionConsent.at,
-          provisionConsentVersion: provisionConsent.version,
-        },
-        {
-          onSuccess: () => {
-            setShowForm(false);
-          },
-        }
-      );
     },
-    [addToast, job, queryClient, submitApplication, userId]
+    [job, queryClient, submitApplicationAsync, userId]
   );
 
   const handleClose = useCallback(() => {
@@ -202,7 +215,7 @@ export default function ApplyScreen() {
     router.replace(`/(app)/jobs/${id}`);
   }, [id]);
 
-  const fallbackHref = id ? (`/(app)/jobs/${id}` as const) : ('/(app)/(tabs)' as const);
+  const fallbackHref = id ? (`/(app)/jobs/${id}` as const) : ('/(app)/(tabs)/home-jobs' as const);
 
   if (isLoadingJob || shouldBlockForExistingApplicationCheck) {
     return (

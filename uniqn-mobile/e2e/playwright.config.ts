@@ -2,7 +2,7 @@ import { config as loadDotenv } from 'dotenv';
 import path from 'path';
 
 // E2E_CONFIG의 requireEnv가 모듈 로드 시점에 실행되므로 반드시 먼저 로드
-loadDotenv({ path: path.join(__dirname, '.env.test') });
+loadDotenv({ path: path.join(__dirname, '.env.test'), quiet: true });
 
 // eslint-disable-next-line import/first
 import { defineConfig, devices } from '@playwright/test';
@@ -31,7 +31,7 @@ export default defineConfig({
   workers: isCI ? 4 : 1,
   outputDir: testResultsDir,
   reporter: isCI
-    ? [['html', { open: 'never', outputFolder: htmlReportDir }], ['github']]
+    ? [['list'], ['html', { open: 'never', outputFolder: htmlReportDir }], ['github']]
     : [['html', { open: 'on-failure', outputFolder: htmlReportDir }]],
 
   globalSetup: require.resolve('./global-setup'),

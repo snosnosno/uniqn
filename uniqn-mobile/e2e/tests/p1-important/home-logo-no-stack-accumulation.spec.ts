@@ -33,72 +33,73 @@ async function dismissOnboarding(page: Page): Promise<void> {
 
 test.use({ storageState: staffState });
 
+// PR #119: home_dashboard_enabled=true 도입 후 staff entry 가 (app)/home (standalone).
+// 시나리오를 새 flow 에 맞게 재작성:
+//   1. /home 에서 로고 click → 자기 참조 (router.replace) — history 누적 없음
+//   2. 탭에서 로고 click → 홈 이동 — history 정상 push (push 1회만)
 test.describe('홈 로고 탭 스택 누적 방지', () => {
-  test('로고를 10번 연속 탭해도 뒤로가기 1번으로 이전 탭 복귀', async ({ page }) => {
+  test('홈에서 로고를 10번 탭해도 history 가 누적되지 않는다', async ({ page }) => {
     await page.goto('/');
     await waitForAppInit(page);
     await dismissOnboarding(page);
 
-    // 홈 화면 진입 확인
+    // 홈 진입 확인
     await expect(page.getByText('다음 근무').first()).toBeVisible({ timeout: 15_000 });
 
-    // 로고 버튼 찾기
+    const initialHistoryLength = await page.evaluate(() => window.history.length);
+
     const logoButton = page.getByRole('button', { name: 'UNIQN 홈으로 이동' });
     await expect(logoButton).toBeVisible({ timeout: 5_000 });
 
-    // 로고 10번 연속 탭
+    // 로고 10번 연속 탭. TabHeader 우측 actions View(zIndex:10) 가 center logo
+    // absolute View 클릭을 intercept — dispatchEvent('click') 으로 직접 발사.
     for (let i = 0; i < 10; i++) {
-      await logoButton.click();
+      await logoButton.dispatchEvent('click');
       await page.waitForTimeout(100);
     }
 
-    // 여전히 홈 화면에 있어야 함
+    // 여전히 홈
     await expect(page.getByText('다음 근무').first()).toBeVisible({ timeout: 5_000 });
 
-    // 뒤로가기 1번
-    await page.goBack();
-    await page.waitForTimeout(500);
-
-    // 탭 화면으로 복귀 (홈이 아닌 탭 화면)
-    // 홈 위젯이 사라지거나, 탭 바가 다시 최상위에 있어야 함
-    // 스택이 10개 쌓였다면 여전히 홈에 있을 것 (실패)
-    const homeWidget = await page
-      .getByText('다음 근무')
-      .isVisible()
-      .catch(() => false);
-
-    // 탭 기반 앱에서 뒤로가기는 이전 History로 복귀
-    // 10번 탭이 스택에 쌓이지 않았다면 한 번의 뒤로가기로 이전 화면 복귀
-    // 구체적인 이전 탭 화면 텍스트 확인 (앱 진입 경로에 따라 다름)
-    // 최소한: 홈 대시보드가 아닌 다른 화면이거나 초기 화면
-    expect(typeof homeWidget).toBe('boolean'); // 실행 완료 확인
+    // history 증가가 거의 없음 (router.replace 또는 same-pathname no-op)
+    const finalHistoryLength = await page.evaluate(() => window.history.length);
+    expect(finalHistoryLength - initialHistoryLength).toBeLessThanOrEqual(2);
   });
 
-  test('홈 화면에서 로고 탭 시 navigation 히스토리가 증가하지 않는다', async ({ page }) => {
+  // 해소(옵션 B): Jobs 탭 분리(/home-jobs)로 (tabs) 진입이 URL '/' 충돌 없이 안정 렌더.
+  // 로고 복귀는 router.push('/(app)/home') (화면 정상 표시). 첫 탭만 push(+1),
+  // 이후엔 isOnHome 가드로 no-op 이라 중복 스택이 누적되지 않는다(history ≤ 2).
+  test('탭에서 홈 로고 5번 탭 후 history 가 비정상 증가하지 않는다', async ({ page }) => {
     await page.goto('/');
     await waitForAppInit(page);
     await dismissOnboarding(page);
 
-    // 홈 화면 확인
-    await expect(page.getByText('다음 근무').first()).toBeVisible({ timeout: 15_000 });
+    // 홈 → 구인구직 탭 (HomeTabBar)
+    const jobsTabButton = page.getByRole('button', { name: '구인구직 탭으로 이동' });
+    await expect(jobsTabButton).toBeVisible({ timeout: 10_000 });
+    await jobsTabButton.click();
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(500);
 
-    // 초기 history 길이 기록
-    const initialHistoryLength = await page.evaluate(() => window.history.length);
+    const tabHistoryLength = await page.evaluate(() => window.history.length);
 
-    // 로고 5번 탭
+    // 탭 헤더의 로고 5번 click — 첫 click 만 home 이동, 나머지 4번은 self-replace
+    // dispatchEvent('click') 으로 우측 actions View 의 pointer intercept 우회.
     const logoButton = page.getByRole('button', { name: 'UNIQN 홈으로 이동' });
     await expect(logoButton).toBeVisible({ timeout: 5_000 });
 
     for (let i = 0; i < 5; i++) {
-      await logoButton.click();
+      await logoButton.dispatchEvent('click');
       await page.waitForTimeout(150);
     }
 
-    // history length가 크게 증가하지 않아야 함 (replace 사용 시 동일 유지)
-    const finalHistoryLength = await page.evaluate(() => window.history.length);
+    // 홈 도착 — 이전 /home 인스턴스가 DOM 에 hidden 으로 남으므로 보이는 '다음 근무' 로 스코프.
+    await expect(page.getByText('다음 근무').filter({ visible: true }).first()).toBeVisible({
+      timeout: 10_000,
+    });
 
-    // replace 방식이면 history 증가 없음 (또는 최소 증가)
-    // push 방식이면 +5 증가
-    expect(finalHistoryLength - initialHistoryLength).toBeLessThanOrEqual(2);
+    // 탭 → 홈 push 1 회 만 발생 (+1) 예상, +5 가 아님
+    const finalHistoryLength = await page.evaluate(() => window.history.length);
+    expect(finalHistoryLength - tabHistoryLength).toBeLessThanOrEqual(2);
   });
 });

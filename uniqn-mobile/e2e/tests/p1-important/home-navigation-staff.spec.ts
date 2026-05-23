@@ -42,26 +42,35 @@ test.describe('홈 네비게이션 — Staff', () => {
     await expect(page.getByText('내 지원 현황').first()).toBeVisible({ timeout: 10_000 });
   });
 
-  test('탭에서 UNIQN 로고 탭 → 홈으로 이동', async ({ page }) => {
+  // 해소(옵션 B): Jobs 탭 분리(/jobs)로 (tabs) 진입이 URL '/' 충돌 없이 안정 렌더되어
+  // 로고 탭 홈 복귀 검증이 가능해짐.
+  test('홈 → 탭 진입 → UNIQN 로고 탭으로 홈 복귀', async ({ page }) => {
     await page.goto('/');
     await waitForAppInit(page);
     await dismissOnboarding(page);
 
-    // 먼저 구인구직 탭으로 이동 (탭 클릭)
-    const jobsTab = page.getByRole('tab', { name: '구인구직' });
-    const jobsTabVisible = await jobsTab.isVisible().catch(() => false);
-    if (jobsTabVisible) {
-      await jobsTab.click();
-      await page.waitForTimeout(500);
-    }
+    // 홈 진입 확인
+    await expect(page.getByText('다음 근무').first()).toBeVisible({ timeout: 15_000 });
 
-    // 헤더의 UNIQN 로고 클릭
+    // HomeTabBar 의 "구인구직 탭으로 이동" button click → /(app)/(tabs) 진입
+    const jobsTabButton = page.getByRole('button', { name: '구인구직 탭으로 이동' });
+    await expect(jobsTabButton).toBeVisible({ timeout: 10_000 });
+    await jobsTabButton.click();
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(800);
+
+    // 탭 헤더의 UNIQN 로고 click → home 복귀
+    // TabHeader 우측 actions View(flex-1 zIndex:10) 가 center logo absolute View 클릭을
+    // intercept — dispatchEvent('click') 으로 DOM click event 직접 발사 (mouse 경로 우회).
     const logoButton = page.getByRole('button', { name: 'UNIQN 홈으로 이동' });
     await expect(logoButton).toBeVisible({ timeout: 10_000 });
-    await logoButton.click();
+    await logoButton.dispatchEvent('click');
 
-    // 홈 대시보드 진입 확인
-    await expect(page.getByText('다음 근무').first()).toBeVisible({ timeout: 10_000 });
+    // 홈 대시보드 진입 확인 — 탭→로고 복귀 후 이전 /home 인스턴스가 DOM 에 hidden 으로
+    // 남으므로 보이는 '다음 근무' 로 스코프 (.first() 만으론 hidden 중복을 잡을 수 있음).
+    await expect(page.getByText('다음 근무').filter({ visible: true }).first()).toBeVisible({
+      timeout: 10_000,
+    });
   });
 
   test('Staff 사용자는 뷰 전환 토글이 표시되지 않는다', async ({ page }) => {

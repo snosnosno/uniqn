@@ -62,7 +62,7 @@ const ROUTE_NAMES: Record<string, string> = {
 
   // 메인 앱 - 탭
   '/(app)/(tabs)': '홈',
-  '/(app)/(tabs)/index': '홈',
+  '/(app)/(tabs)/home-jobs': '홈',
   '/(app)/(tabs)/schedule': '스케줄',
   '/(app)/(tabs)/qr': 'QR 코드',
   '/(app)/(tabs)/profile': '프로필',

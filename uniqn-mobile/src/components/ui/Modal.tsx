@@ -61,8 +61,12 @@ const MODAL_SIZES = {
   sm: 'w-[280px]',
   md: 'w-[340px]',
   lg: 'w-[400px]',
-  full: 'w-full mx-4',
+  // full 은 className 으로 처리 불가 (mx-4 + w-full 조합이 overflow 유발).
+  // inline style 에서 windowWidth - 32 로 직접 계산.
+  full: '',
 };
+
+const MODAL_FULL_MARGIN = 16; // 좌우 가장자리 여백 (px)
 
 // ============================================================================
 // Web Modal Component
@@ -81,7 +85,7 @@ function WebModal({
   closeAccessibilityLabel = '닫기',
 }: ModalProps) {
   const { isDarkMode } = useThemeStore();
-  const { height: windowHeight } = useWindowDimensions();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const [shouldRender, setShouldRender] = useState(visible);
   const [isAnimating, setIsAnimating] = useState(false);
   const previouslyFocusedRef = useRef<Element | null>(null);
@@ -177,6 +181,7 @@ function WebModal({
           <View
             style={[
               modalMaxHeightStyle,
+              size === 'full' ? { width: windowWidth - MODAL_FULL_MARGIN * 2 } : null,
               position === 'center'
                 ? {
                     opacity: isAnimating ? 1 : 0,
@@ -256,7 +261,7 @@ function NativeModal({
   closeAccessibilityLabel = '닫기',
 }: ModalProps) {
   const { isDarkMode } = useThemeStore();
-  const { height: windowHeight } = useWindowDimensions();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const fadeOpacity = useSharedValue(0);
   const scale = useSharedValue(0.9);
   const translateY = useSharedValue(100);
@@ -387,7 +392,16 @@ function NativeModal({
           </Pressable>
 
           {/* 모달 컨텐츠 - 백드롭과 형제 관계 */}
-          <Animated.View style={[modalAnimatedStyle, modalMaxHeightStyle, { flexShrink: 1 }]}>
+          {/* size='full' — items-center 가 cross-axis stretch 막으므로 windowWidth 기반 명시 폭 부여.
+              내부 child 는 align-items default stretch 로 자연스럽게 채워짐 (별도 w-full 불필요) */}
+          <Animated.View
+            style={[
+              modalAnimatedStyle,
+              modalMaxHeightStyle,
+              { flexShrink: 1 },
+              size === 'full' ? { width: windowWidth - MODAL_FULL_MARGIN * 2 } : null,
+            ]}
+          >
             <SafeAreaView
               edges={position === 'center' ? ['top', 'bottom'] : ['bottom']}
               style={{ flexShrink: 1 }}

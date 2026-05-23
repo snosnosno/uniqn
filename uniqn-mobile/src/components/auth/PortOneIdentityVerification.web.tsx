@@ -71,10 +71,15 @@ export function PortOneIdentityVerification({
         onError?.(error instanceof Error ? error : new Error(fallbackMessage ?? 'unmounted'));
         return;
       }
+      const rawMessage = error instanceof Error ? error.message : extractUserMessage(error);
+      // 2026-05-16: Supabase FunctionsHttpError 의 영문 generic 메시지가 UI 노출되지 않도록 차단.
+      // 정상 경로는 callVerifyPortOneIdentity 에서 typed ValidationError 로 변환되지만,
+      // SDK 측 직접 raw Error 누출에 대비한 defense-in-depth.
+      const safeMessage = rawMessage.startsWith('Edge Function returned')
+        ? '본인인증 처리 중 일시적 오류가 발생했어요. 잠시 후 다시 시도해주세요.'
+        : rawMessage;
       const resolvedMessage =
-        fallbackMessage ??
-        (error instanceof Error ? error.message : extractUserMessage(error)) ??
-        '본인인증 처리 중 오류가 발생했습니다.';
+        fallbackMessage ?? safeMessage ?? '본인인증 처리 중 오류가 발생했습니다.';
 
       setErrorMessage(resolvedMessage);
 
@@ -159,9 +164,8 @@ export function PortOneIdentityVerification({
         );
       }
 
-      if (!verification.identity.gender) {
-        throw new Error('성별 정보가 누락되었어요. 다른 인증 수단으로 다시 시도해주세요.');
-      }
+      // 2026-05-16: gender 는 PortOne 이니시스 통합인증에서 인증수단별로 응답이 다름.
+      // 누락 시 차단하지 않고 후속 step (SignupStepIdentity) 에서 사용자가 직접 선택.
 
       // P0 #1 — 후속 callVerifyAndSavePortOneProfile (signUp 흐름)에서 자동 consume
       // C4 — SecureStore 저장 (async, 웹은 sessionStorage)
@@ -236,17 +240,22 @@ export function PortOneIdentityVerification({
                 {formatBirthDate(verifiedIdentity.birthDate)}
               </Text>
             </View>
-            <View className="flex-row justify-between gap-3">
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-                성별
-              </Text>
-              <Text
-                className="font-sans-medium text-content-primary dark:text-off-white"
-                numberOfLines={1}
-              >
-                {formatGenderLabel(verifiedIdentity.gender)}
-              </Text>
-            </View>
+            {/* 2026-05-16: gender 누락은 PortOne 이니시스 통합인증에서 인증수단별로 발생.
+                "확인 필요" 표시로 사용자 혼란을 주지 않도록 응답에 있을 때만 렌더한다.
+                가입 후 마이페이지/프로필 화면에서 사용자가 직접 선택. */}
+            {verifiedIdentity.gender && (
+              <View className="flex-row justify-between gap-3">
+                <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                  성별
+                </Text>
+                <Text
+                  className="font-sans-medium text-content-primary dark:text-off-white"
+                  numberOfLines={1}
+                >
+                  {formatGenderLabel(verifiedIdentity.gender)}
+                </Text>
+              </View>
+            )}
             <View className="flex-row justify-between gap-3">
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 휴대폰 번호

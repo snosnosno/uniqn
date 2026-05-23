@@ -13,6 +13,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { GenderSegment } from '@/components/ui/GenderSegment';
 import { checkNicknameExists } from '@/services/auth';
 import { signUpProfileSchema, type SignUpProfileData } from '@/schemas';
 import { logger } from '@/utils/logger';
@@ -26,6 +27,11 @@ interface SignupStepProfileProps {
   onBack: () => void;
   initialData?: Partial<SignUpProfileData>;
   isLoading?: boolean;
+  /**
+   * 2026-05-16: PortOne 본인인증에서 gender 가 누락된 사용자에게만 입력 필드 노출 + 필수 검증.
+   * 이미 본인인증에서 들어온 사용자는 false (필드 노출 안 함).
+   */
+  requireGender?: boolean;
 }
 
 // ============================================================================
@@ -39,9 +45,11 @@ export function SignupStepProfile({
   onBack,
   initialData,
   isLoading = false,
+  requireGender = false,
 }: SignupStepProfileProps) {
   const [nicknameStatus, setNicknameStatus] = useState<NicknameStatus>('idle');
   const lastCheckedNickname = useRef('');
+  const [genderTouched, setGenderTouched] = useState(false);
 
   const {
     control,
@@ -49,6 +57,8 @@ export function SignupStepProfile({
     trigger,
     getValues,
     setError,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<SignUpProfileData>({
     resolver: zodResolver(signUpProfileSchema),
@@ -56,12 +66,23 @@ export function SignupStepProfile({
     defaultValues: {
       nickname: initialData?.nickname || '',
       role: 'staff' as const,
+      gender: initialData?.gender,
       region: initialData?.region || '',
       experienceYears: initialData?.experienceYears ?? undefined,
       career: initialData?.career || '',
       note: initialData?.note || '',
     },
   });
+
+  const genderValue = watch('gender');
+  const handleGenderChange = useCallback(
+    (next: 'male' | 'female') => {
+      setValue('gender', next, { shouldValidate: true, shouldDirty: true });
+      setGenderTouched(true);
+    },
+    [setValue]
+  );
+  const genderMissing = requireGender && !genderValue;
 
   // 닉네임 중복 검사 (onBlur 시 호출)
   const handleNicknameBlur = useCallback(
@@ -136,24 +157,41 @@ export function SignupStepProfile({
   // 가입 완료: 전체 폼 검증 + 중복 확인 후 제출
   const handleComplete = useCallback(
     async (data: SignUpProfileData) => {
+      if (requireGender && !data.gender) {
+        setGenderTouched(true);
+        return;
+      }
       const available = await ensureNicknameAvailable(data.nickname.trim());
       if (!available) return;
       onNext(data);
     },
-    [ensureNicknameAvailable, onNext]
+    [ensureNicknameAvailable, onNext, requireGender]
   );
 
   // 나중에 입력하기: 닉네임만 검증 후 선택 필드 없이 진행
+  // 단, gender 가 필수인 경우(본인인증에서 누락)에는 skip 불가 — 동일한 검증을 강제.
   const handleSkipOptional = useCallback(async () => {
     const isValid = await trigger('nickname');
     if (!isValid) return;
 
+    if (requireGender) {
+      const currentGender = getValues('gender');
+      if (!currentGender) {
+        setGenderTouched(true);
+        return;
+      }
+    }
+
     const nickname = getValues('nickname').trim();
     const available = await ensureNicknameAvailable(nickname);
     if (available) {
-      onNext({ nickname, role: 'staff' as const });
+      const next: SignUpProfileData = { nickname, role: 'staff' as const };
+      if (requireGender) {
+        next.gender = getValues('gender');
+      }
+      onNext(next);
     }
-  }, [trigger, getValues, onNext, ensureNicknameAvailable]);
+  }, [trigger, getValues, onNext, ensureNicknameAvailable, requireGender]);
 
   return (
     <View className="w-full flex-col gap-4">
@@ -162,6 +200,29 @@ export function SignupStepProfile({
         <Text className="mb-3 text-sm font-sans-semibold text-secondary-800 dark:text-secondary-200">
           필수 항목
         </Text>
+
+        {/* 성별 입력 — 본인인증에서 누락된 사용자에게만 노출 (필수) */}
+        {requireGender && (
+          <View className="mb-4">
+            <Text className="mb-2 text-sm font-sans-medium text-content-secondary">
+              성별 <Text className="text-error-500 font-sans">*</Text>
+            </Text>
+            <Text className="mb-2 text-xs text-content-muted dark:text-secondary-400 font-sans">
+              본인인증에서 자동으로 확인되지 않아 직접 선택이 필요합니다. 선택 후에는 변경할 수
+              없습니다.
+            </Text>
+            <GenderSegment
+              value={genderValue}
+              onChange={handleGenderChange}
+              hasError={genderTouched && genderMissing}
+              ariaLabel="성별 (필수)"
+              ariaHint="본인인증에서 자동 확인되지 않아 직접 선택이 필요합니다. 선택 후에는 변경할 수 없습니다."
+            />
+            {genderTouched && genderMissing && (
+              <Text className="mt-1 text-sm text-error-500 font-sans">성별을 선택해주세요</Text>
+            )}
+          </View>
+        )}
 
         {/* 닉네임 입력 */}
         <View>
@@ -339,13 +400,23 @@ export function SignupStepProfile({
       <View className="mt-4 flex-col gap-3">
         <Button
           onPress={handleSubmit(handleComplete)}
-          disabled={isLoading || nicknameStatus === 'taken' || nicknameStatus === 'checking'}
+          disabled={
+            isLoading ||
+            nicknameStatus === 'taken' ||
+            nicknameStatus === 'checking' ||
+            genderMissing
+          }
           fullWidth
         >
           가입 완료
         </Button>
 
-        <Button onPress={handleSkipOptional} variant="outline" disabled={isLoading} fullWidth>
+        <Button
+          onPress={handleSkipOptional}
+          variant="outline"
+          disabled={isLoading || genderMissing}
+          fullWidth
+        >
           나중에 입력하기
         </Button>
 

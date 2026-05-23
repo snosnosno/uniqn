@@ -41,9 +41,20 @@ interface QaAccount {
 }
 
 const SUPABASE_QA_ACCOUNTS: QaAccount[] = [
-  { label: 'staff', email: 'qa-staff@uniqn.test', password: 'TestPass1!', role: 'staff' },
-  { label: 'employer', email: 'qa-employer@uniqn.test', password: 'TestPass1!', role: 'employer' },
-  { label: 'admin', email: 'qa-admin@uniqn.test', password: 'TestPass1!', role: 'admin' },
+  { label: 'staff', email: 'review-staff@uniqn.app', password: 'Review2026!', role: 'staff' },
+  {
+    label: 'employer',
+    email: 'review-employer@uniqn.app',
+    password: 'Review2026!',
+    role: 'employer',
+  },
+  { label: 'admin', email: 'review-admin@uniqn.app', password: 'Review2026!', role: 'admin' },
+  {
+    label: 'collaborator',
+    email: 'review-collaborator@uniqn.app',
+    password: 'Review2026!',
+    role: 'employer',
+  },
 ];
 
 interface SignInResult {

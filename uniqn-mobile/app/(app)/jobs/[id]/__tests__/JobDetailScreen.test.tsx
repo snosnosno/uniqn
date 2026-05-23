@@ -116,7 +116,7 @@ describe('JobDetailScreen', () => {
     expect(mockStackHeader).toHaveBeenCalledWith(
       expect.objectContaining({
         title: '공고 상세',
-        fallbackHref: '/(app)/(tabs)',
+        fallbackHref: '/(app)/(tabs)/home-jobs',
       })
     );
 

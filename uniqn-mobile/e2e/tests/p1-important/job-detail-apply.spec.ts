@@ -5,6 +5,7 @@ import { expect, test } from '@playwright/test';
 import path from 'path';
 import { JobDetailPage } from '../../pages/app/job-detail.page';
 import { getAdminClient, SUPABASE_QA_ACCOUNTS } from '../../helpers/supabase-admin';
+import { ensureE2EWorkspace } from '../../helpers/workspace-seed';
 
 const staffState = path.join(__dirname, '../../fixtures/storage-states/staff.json');
 const employerState = path.join(__dirname, '../../fixtures/storage-states/employer.json');
@@ -23,12 +24,14 @@ test.describe('공고 상세와 지원 흐름', () => {
     }
 
     const workDate = new Date(Date.now() + 10 * 86_400_000).toISOString().slice(0, 10);
+    const workspaceId = await ensureE2EWorkspace(admin, SUPABASE_QA_ACCOUNTS.employer.id);
 
     const { data, error } = await admin
       .from('job_postings')
       .insert({
         title: TEST_JOB_TITLE,
         status: 'active',
+        workspace_id: workspaceId,
         owner_id: SUPABASE_QA_ACCOUNTS.employer.id,
         owner_name: SUPABASE_QA_ACCOUNTS.employer.name,
         posting_type: 'regular',
@@ -149,11 +152,13 @@ test.describe('공고 상세와 지원 흐름', () => {
     }
 
     const workDate = new Date(Date.now() + 10 * 86_400_000).toISOString().slice(0, 10);
+    const workspaceId = await ensureE2EWorkspace(admin, SUPABASE_QA_ACCOUNTS.employer.id);
     const { data: closedData, error: closedError } = await admin
       .from('job_postings')
       .insert({
         title: '마감상세테스트공고',
         status: 'closed',
+        workspace_id: workspaceId,
         owner_id: SUPABASE_QA_ACCOUNTS.employer.id,
         owner_name: SUPABASE_QA_ACCOUNTS.employer.name,
         posting_type: 'regular',
@@ -222,7 +227,11 @@ test.describe('공고 상세와 지원 흐름', () => {
     const context = await browser.newContext({ storageState: staffState });
     const page = await context.newPage();
 
-    await page.goto('/jobs/nonexistent-job-99999', { waitUntil: 'domcontentloaded' });
+    // job_postings.id 는 uuid 타입 — 비-UUID 문자열은 Supabase eq() 에서
+    // `invalid input syntax for type uuid` 로 useJobDetail query 가 hang.
+    // valid UUID 형식이지만 DB 에 존재하지 않는 ID 사용 (PR #112 public-pages:59 동일 패턴)
+    const nonexistentValidUuid = '00000000-0000-0000-0000-000000000000';
+    await page.goto(`/jobs/${nonexistentValidUuid}`, { waitUntil: 'domcontentloaded' });
     await expect(page.getByText(ERROR_TEXT).last()).toBeVisible({ timeout: 10_000 });
 
     await context.close();
@@ -268,7 +277,7 @@ test.describe('공고 상세와 지원 흐름', () => {
         applicant_id: SUPABASE_QA_ACCOUNTS.staff.id,
         applicant_name: SUPABASE_QA_ACCOUNTS.staff.name,
         applicant_phone: '+82101234567',
-        applicant_role: 'dealer',
+        applicant_role: 'staff',
         job_posting_title: TEST_JOB_TITLE,
         status: 'applied',
         assignments: [

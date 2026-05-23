@@ -154,11 +154,13 @@ export type FirestoreUserProfile = UserProfile;
  * 프로필 수정 가능 필드
  *
  * @description profile.tsx에서 수정 가능한 필드
- * @note name, phone, birthDate, gender는 회원가입 Step2 입력 정보이므로 수정 불가 (읽기 전용)
+ * @note name, phone, birthDate는 본인인증 결과이므로 수정 불가 (읽기 전용).
+ *       gender는 본인인증에서 누락된 경우(null)에 한해 최초 1회 사용자가 입력 보완.
+ *       이미 값이 있으면 settings/profile 화면이 read-only로 표시한다.
  */
 export type EditableProfileFields = Pick<
   UserProfile,
-  'nickname' | 'photoURL' | 'region' | 'experienceYears' | 'career' | 'note'
+  'nickname' | 'photoURL' | 'region' | 'experienceYears' | 'career' | 'note' | 'gender'
 >;
 
 /**

@@ -58,9 +58,9 @@ export class AdminReportsPage extends BasePage {
     await this.waitForReady();
   }
 
-  /** 신고 내용 섹션 */
+  /** 신고 내용 섹션 — 라디오 옵션 "신고 내용을 확인하고 조사 중" 과 중복 매치 회피 (.first) */
   get reportContentSection(): Locator {
-    return this.page.getByText('신고 내용');
+    return this.page.getByText('신고 내용').first();
   }
 
   /** 처리 이력 섹션 */

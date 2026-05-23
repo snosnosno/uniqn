@@ -1,4 +1,5 @@
 import type { Assignment, JobPosting } from '@/types';
+import { TBA_TIME_MARKER } from '@/types/assignment';
 import { WorkLogCreator } from '@/domains/schedule';
 
 export interface SlotCapacityIssue {
@@ -38,7 +39,11 @@ export function buildPostingSlotCapacityMap(posting: JobPosting): Map<string, Sl
 
   posting.schedule.requirements.forEach((requirement) => {
     requirement.timeSlots.forEach((slot) => {
-      const slotStartTime = WorkLogCreator.extractStartTime(slot.startTime ?? '');
+      // AssignmentSelector.getSlotSelectionTime 과 동일한 해석을 사용해야 한다.
+      // 시간 미정(isTimeToBeAnnounced) 슬롯은 startTime 이 없으므로 TBA_TIME_MARKER 로 키를 만든다.
+      // (이 줄이 startTime 만 보면 요청측 키 `date__미정__role` 과 영원히 불일치 → 빈자리도 마감 처리됨)
+      const slotSelectionTime = slot.isTimeToBeAnnounced ? TBA_TIME_MARKER : (slot.startTime ?? '');
+      const slotStartTime = WorkLogCreator.extractStartTime(slotSelectionTime);
 
       slot.roles.forEach((role) => {
         const roleId = getRoleId(role);

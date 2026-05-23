@@ -38,6 +38,9 @@ export function TabHeader({
     if (isOnHome) {
       return;
     }
+    // push 로 /home 진입(화면 정상 표시). 중복 스택 누적은 isOnHome 가드가 막는다
+    // — /home 도달 후 추가 로고 탭은 no-op 이므로 push 가 반복되지 않는다.
+    // (navigate 는 정적 웹 빌드에서 URL 만 갱신하고 /home 화면을 숨긴 채 두는 회귀가 있었음)
     router.push('/(app)/home');
   };
 

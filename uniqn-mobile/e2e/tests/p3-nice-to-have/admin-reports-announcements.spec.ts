@@ -20,9 +20,7 @@ test.describe('Admin 신고 관리', () => {
     // 상태 필터 확인
     const statusFilters = ['전체', '검토 대기', '검토 중', '처리 완료', '기각'];
     for (const status of statusFilters) {
-      await expect(
-        reportsPage.page.getByText(status, { exact: true }).first()
-      ).toBeVisible();
+      await expect(reportsPage.page.getByText(status, { exact: true }).first()).toBeVisible();
     }
   });
 
@@ -76,9 +74,7 @@ test.describe('Admin 공지사항 관리', () => {
     // 상태 탭 확인
     const statusTabs = ['전체', '초안', '발행됨', '보관됨'];
     for (const tab of statusTabs) {
-      await expect(
-        announcementsPage.getStatusTab(tab)
-      ).toBeVisible();
+      await expect(announcementsPage.getStatusTab(tab)).toBeVisible();
     }
   });
 
@@ -87,7 +83,8 @@ test.describe('Admin 공지사항 관리', () => {
     await announcementsPage.page.waitForTimeout(500);
 
     // 공지 목록 또는 빈 상태 확인
-    const hasEmpty = await announcementsPage.emptyState.isVisible();
+    // `.first()` 추가 — `공지사항이 없습니다` 가 page 에 2개 elements 매칭 (탭별 메시지)
+    const hasEmpty = await announcementsPage.emptyState.first().isVisible();
     // 빈 상태이거나 목록이 표시되어야 함
     expect(typeof hasEmpty).toBe('boolean');
   });

@@ -205,7 +205,9 @@ export const signupGenderSchema = z.enum(['male', 'female'], {
 export const signUpIdentitySchema = z.object({
   name: nameSchema,
   birthDate: birthDateSchema,
-  gender: signupGenderSchema,
+  // 2026-05-16: PortOne 이니시스 통합인증이 인증수단별로 gender 응답이 달라 본인인증 단계에서는 optional.
+  // 가입 후 마이페이지/프로필 화면에서 사용자가 직접 선택해서 보완한다.
+  gender: signupGenderSchema.optional(),
   phoneVerified: z.boolean().refine((val) => val === true, {
     message: '전화번호 인증이 필요합니다',
   }),
@@ -224,6 +226,12 @@ export type SignUpIdentityData = z.infer<typeof signUpIdentitySchema>;
 export const signUpProfileSchema = z.object({
   nickname: nicknameSchema,
   role: z.literal('staff'),
+  /**
+   * 2026-05-16: PortOne 본인인증에서 gender 가 누락된 사용자가 profile-setup 화면에서
+   * 보완 입력하는 값. 이미 본인인증으로 값이 들어와 있으면 화면에서 필드가 노출되지 않으므로
+   * 여기서는 optional. 필수 검증은 profile-setup.tsx 가 form-level 로 수행한다.
+   */
+  gender: signupGenderSchema.optional(),
   region: z
     .string()
     .max(50, { message: '지역은 50자를 초과할 수 없습니다' })

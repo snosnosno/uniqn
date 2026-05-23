@@ -51,14 +51,65 @@ async function waitForAppInit(page: Page): Promise<void> {
 // 테스트 데이터 시드 / 정리 헬퍼
 // ---------------------------------------------------------------------------
 
-async function seedTestReport(): Promise<string | null> {
+interface SeededReport {
+  reportId: string;
+  jobPostingId: string;
+}
+
+const E2E_TEST_WORKSPACE_NAME = 'E2E 테스트 워크스페이스';
+
+async function seedTestReport(): Promise<SeededReport | null> {
   const adminClient = getAdminClient();
   if (!adminClient) {
     console.warn('[seed] E2E_SUPABASE_SERVICE_ROLE_KEY 미설정 — 신고 시드 건너뜀');
     return null;
   }
 
-  const { data, error } = await adminClient
+  // 1) workspace 보장 (qa-employer 소유; 멱등 — 이름 + owner 매칭 시 재사용)
+  //    20260514000000 마이그레이션으로 job_postings.workspace_id NOT NULL → workspace 필수
+  let workspaceId: string | undefined;
+  const { data: existingWs } = await adminClient
+    .from('workspaces')
+    .select('id')
+    .eq('owner_id', SUPABASE_QA_ACCOUNTS.employer.id)
+    .eq('name', E2E_TEST_WORKSPACE_NAME)
+    .maybeSingle();
+  if (existingWs) {
+    workspaceId = existingWs.id;
+  } else {
+    const { data: newWs, error: wsErr } = await adminClient
+      .from('workspaces')
+      .insert({
+        name: E2E_TEST_WORKSPACE_NAME,
+        owner_id: SUPABASE_QA_ACCOUNTS.employer.id,
+      })
+      .select('id')
+      .single();
+    if (wsErr || !newWs) {
+      console.warn('[seed] workspace 생성 실패:', wsErr?.message);
+      return null;
+    }
+    workspaceId = newWs.id;
+  }
+
+  // 2) job_posting 생성 (FK 만족용; report 와 1:1 라이프사이클)
+  const { data: jp, error: jpErr } = await adminClient
+    .from('job_postings')
+    .insert({
+      title: 'E2E 테스트 공고',
+      owner_id: SUPABASE_QA_ACCOUNTS.employer.id,
+      workspace_id: workspaceId,
+      status: 'active',
+    })
+    .select('id')
+    .single();
+  if (jpErr || !jp) {
+    console.warn('[seed] job_posting 생성 실패:', jpErr?.message);
+    return null;
+  }
+
+  // 3) report 생성
+  const { data: report, error: reportErr } = await adminClient
     .from('reports')
     .insert({
       type: 'no_show',
@@ -67,7 +118,7 @@ async function seedTestReport(): Promise<string | null> {
       reporter_name: SUPABASE_QA_ACCOUNTS.employer.name,
       target_id: SUPABASE_QA_ACCOUNTS.staff.id,
       target_name: SUPABASE_QA_ACCOUNTS.staff.name,
-      job_posting_id: '00000000-0000-0000-0000-000000000001',
+      job_posting_id: jp.id,
       job_posting_title: 'E2E 테스트 공고',
       description: 'E2E 테스트용 노쇼 신고입니다.',
       evidence_urls: [],
@@ -76,20 +127,24 @@ async function seedTestReport(): Promise<string | null> {
     })
     .select('id')
     .single();
-
-  if (error) {
-    console.warn('[seed] 신고 INSERT 실패:', error.message);
+  if (reportErr || !report) {
+    console.warn('[seed] 신고 INSERT 실패:', reportErr?.message);
+    // 부분 시드 정리 — job_posting 만 dangling 으로 남지 않도록
+    await adminClient.from('job_postings').delete().eq('id', jp.id);
     return null;
   }
 
-  return (data as { id: string }).id;
+  return { reportId: report.id, jobPostingId: jp.id };
 }
 
-async function cleanupTestReport(reportId: string): Promise<void> {
+async function cleanupTestReport(seeded: SeededReport): Promise<void> {
   const adminClient = getAdminClient();
   if (!adminClient) return;
 
-  await adminClient.from('reports').delete().eq('id', reportId);
+  // reports.job_posting_id 가 ON DELETE CASCADE 라 job_posting 삭제로 report 도 정리되지만
+  // 실패 시나리오 대비 명시적 순서로 삭제 (workspace 는 재사용 위해 유지)
+  await adminClient.from('reports').delete().eq('id', seeded.reportId);
+  await adminClient.from('job_postings').delete().eq('id', seeded.jobPostingId);
 }
 
 // ---------------------------------------------------------------------------
@@ -152,21 +207,21 @@ test.describe('WF-17: 관리자 신고 처리', () => {
   // ── 시나리오 2: 신고 처리 흐름 ─────────────────────────────────────────
 
   test.describe('시나리오 2: 신고 상세 접근 및 처리 폼 확인', () => {
-    let testReportId: string | null = null;
+    let seededReport: SeededReport | null = null;
 
     test.beforeAll(async () => {
-      testReportId = await seedTestReport();
+      seededReport = await seedTestReport();
     });
 
     test.afterAll(async () => {
-      if (testReportId) {
-        await cleanupTestReport(testReportId);
+      if (seededReport) {
+        await cleanupTestReport(seededReport);
       }
     });
 
     test('admin이 신고 상세 페이지에 접근하면 신고 내용 섹션이 보인다', async ({ browser }) => {
-      if (!testReportId) {
-        test.skip(true, 'service_role key 미설정으로 신고 시드 불가 — 시나리오 2 건너뜀');
+      if (!seededReport) {
+        test.skip(true, 'service_role key 미설정 또는 시드 실패 — 시나리오 2 건너뜀');
         return;
       }
 
@@ -174,7 +229,7 @@ test.describe('WF-17: 관리자 신고 처리', () => {
       const page = await context.newPage();
 
       const reportsPage = new AdminReportsPage(page);
-      await reportsPage.gotoReportDetail(testReportId);
+      await reportsPage.gotoReportDetail(seededReport.reportId);
       await waitForAppInit(page);
 
       // 신고 내용 섹션 확인
@@ -184,8 +239,8 @@ test.describe('WF-17: 관리자 신고 처리', () => {
     });
 
     test('신고 상세 페이지에서 처리 폼(신고 처리하기 버튼)이 보인다', async ({ browser }) => {
-      if (!testReportId) {
-        test.skip(true, 'service_role key 미설정으로 신고 시드 불가 — 시나리오 2 건너뜀');
+      if (!seededReport) {
+        test.skip(true, 'service_role key 미설정 또는 시드 실패 — 시나리오 2 건너뜀');
         return;
       }
 
@@ -193,7 +248,7 @@ test.describe('WF-17: 관리자 신고 처리', () => {
       const page = await context.newPage();
 
       const reportsPage = new AdminReportsPage(page);
-      await reportsPage.gotoReportDetail(testReportId);
+      await reportsPage.gotoReportDetail(seededReport.reportId);
       await waitForAppInit(page);
 
       // 처리 폼 섹션 또는 처리하기 버튼 확인
@@ -208,8 +263,8 @@ test.describe('WF-17: 관리자 신고 처리', () => {
     });
 
     test('admin이 신고를 "검토 중"으로 처리하면 상태가 변경된다', async ({ browser }) => {
-      if (!testReportId) {
-        test.skip(true, 'service_role key 미설정으로 신고 시드 불가 — 시나리오 2 건너뜀');
+      if (!seededReport) {
+        test.skip(true, 'service_role key 미설정 또는 시드 실패 — 시나리오 2 건너뜀');
         return;
       }
 
@@ -217,7 +272,7 @@ test.describe('WF-17: 관리자 신고 처리', () => {
       const page = await context.newPage();
 
       const reportsPage = new AdminReportsPage(page);
-      await reportsPage.gotoReportDetail(testReportId);
+      await reportsPage.gotoReportDetail(seededReport.reportId);
       await waitForAppInit(page);
 
       // 처리 폼이 보이는지 확인

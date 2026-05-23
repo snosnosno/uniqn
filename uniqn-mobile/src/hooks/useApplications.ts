@@ -314,6 +314,9 @@ export function useApplications() {
     isRefreshing: isOnline ? myApplicationsQuery.isRefetching : false,
     error: isOnline ? myApplicationsQuery.error : null,
     submitApplication: useThrottledCallback(submitV2Mutation.mutate, 1000),
+    // mutateAsync — 호출부에서 await + try/catch 로 에러를 직접 표면화할 때 사용.
+    // (네이티브 모달 위 토스트가 가려지는 문제 회피: 호출부에서 Alert.alert 로 노출)
+    submitApplicationAsync: submitV2Mutation.mutateAsync,
     isSubmitting: submitV2Mutation.isPending,
     cancelApplication: cancelMutation.mutate,
     isCancelling: cancelMutation.isPending,

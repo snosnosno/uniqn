@@ -53,7 +53,7 @@ jest.mock('../analyticsService', () => ({
 const getMockExpoPath = (route: { name: string; params?: Record<string, string> }) => {
   switch (route.name) {
     case 'home':
-      return '/(app)/(tabs)';
+      return '/(app)/(tabs)/home-jobs';
     case 'jobs':
       return '/(public)/jobs';
     case 'job':
@@ -151,7 +151,7 @@ const getMockExpoPath = (route: { name: string; params?: Record<string, string> 
     case 'admin/tournaments':
       return '/(admin)/tournaments';
     default:
-      return '/(app)/(tabs)';
+      return '/(app)/(tabs)/home-jobs';
   }
 };
 

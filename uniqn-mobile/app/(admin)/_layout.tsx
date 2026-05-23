@@ -20,7 +20,7 @@ export default function AdminLayout() {
   }
 
   if (!isAdmin) {
-    return <Redirect href="/(app)/(tabs)" />;
+    return <Redirect href="/(app)/(tabs)/home-jobs" />;
   }
 
   return (

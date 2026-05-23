@@ -2,7 +2,9 @@
  * UNIQN Mobile - Employer Job Posting Detail Layout
  *
  * 하이브리드 레이아웃:
- * - 데이터(useJobDetail), 소유권 가드, EventQRModal은 레이아웃에서 유지
+ * - 데이터(useJobDetail), 포스팅 capability 가드, EventQRModal은 레이아웃에서 유지
+ * - 권한 게이트(owner/workspace/JPC 협업자)는 RLS 가 단일 진실 — client-side
+ *   isManageableByUser 가드는 JPC 협업자를 잘못 차단하므로 제거됨 (2026-05-19).
  * - 헤더는 각 자식 화면에서 StackHeader로 렌더링 (JobDetailContext 경유)
  */
 
@@ -12,12 +14,10 @@ import { Pressable, Text, View } from 'react-native';
 import { useJobDetail } from '@/hooks/useJobDetail';
 import { EventQRModal } from '@/components/employer/qr/EventQRModal';
 import { QRCodeIcon } from '@/components/icons';
-import { useAuthStore } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { useToastStore } from '@/stores/toastStore';
-import { useWorkspaces } from '@/hooks/workspace';
 import { getLayoutColor, SECONDARY_PALETTE } from '@/constants/colors';
-import { isEmployerManageablePosting, isManageableByUser } from '@/utils/jobPostingVisibility';
+import { isEmployerManageablePosting } from '@/utils/jobPostingVisibility';
 import type { JobPosting } from '@/types';
 
 // ============================================================================
@@ -106,12 +106,9 @@ export function JobTitleSuffix({ jobTitle }: { jobTitle?: string | null }) {
 export default function JobPostingDetailLayout() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const currentUserId = useAuthStore((state) => state.user?.uid);
   const isDark = useThemeStore((s) => s.isDarkMode);
   const { addToast } = useToastStore();
   const { job } = useJobDetail(id || '', { realtime: true });
-  const { workspaces } = useWorkspaces();
-  const userWorkspaceIds = useMemo(() => workspaces.map((w) => w.id), [workspaces]);
   const [showQRModal, setShowQRModal] = useState(false);
 
   const isFixed = job?.schedule.kind === 'fixed';
@@ -137,16 +134,10 @@ export default function JobPostingDetailLayout() {
       return;
     }
 
-    // Phase 2A — owner OR 워크스페이스 멤버 가능. RLS 가 진짜 게이트.
-    if (currentUserId && !isManageableByUser(job, currentUserId, userWorkspaceIds)) {
-      addToast({
-        type: 'warning',
-        message: '이 공고에 대한 관리 권한이 없어요.',
-      });
-      router.replace('/(app)/(tabs)/employer');
-      return;
-    }
-
+    // 권한 게이트는 RLS 단일 진실. 기존 isManageableByUser client guard 는 JPC
+    // 협업자를 잘못 차단했음 (2026-05-19). RLS 가 차단하면 useJobDetail 이 null
+    // 반환 → !job 분기로 자연스럽게 빈 화면 처리. 여기서는 capability(스키마/타입)
+    // 가드만 유지.
     if (isEmployerManageablePosting(job)) {
       return;
     }
@@ -156,7 +147,7 @@ export default function JobPostingDetailLayout() {
       message: '현재 관리 화면에서 지원하지 않는 공고입니다.',
     });
     router.replace('/(app)/(tabs)/employer');
-  }, [addToast, currentUserId, job, router, userWorkspaceIds]);
+  }, [addToast, job, router]);
 
   const contextValue = useMemo<JobDetailContextValue>(
     () => ({
@@ -167,11 +158,7 @@ export default function JobPostingDetailLayout() {
     [job, isFixed, handleShowQR]
   );
 
-  if (
-    job &&
-    ((currentUserId && !isManageableByUser(job, currentUserId, userWorkspaceIds)) ||
-      !isEmployerManageablePosting(job))
-  ) {
+  if (job && !isEmployerManageablePosting(job)) {
     return null;
   }
 

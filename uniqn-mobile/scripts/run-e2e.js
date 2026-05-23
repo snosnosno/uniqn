@@ -3,7 +3,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 
 // .env.test를 playwright.config.ts보다 먼저 로드 (import hoisting으로 config.ts가 먼저 평가되기 때문)
-require('dotenv').config({ path: path.join(__dirname, '../e2e/.env.test') });
+require('dotenv').config({ path: path.join(__dirname, '../e2e/.env.test'), quiet: true });
 
 const extraArgs = process.argv.slice(2);
 const appRoot = process.cwd();

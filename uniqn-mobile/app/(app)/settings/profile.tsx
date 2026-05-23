@@ -20,7 +20,7 @@ import { router } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { StackHeader } from '@/components/headers';
-import { Card, Loading } from '@/components/ui';
+import { Card, Loading, GenderSegment, type GenderValue } from '@/components/ui';
 import { ProfileImagePicker } from '@/components/profile';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
@@ -63,6 +63,10 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
   const [isSaving, setIsSaving] = useState(false);
   const [nicknameStatus, setNicknameStatus] = useState<NicknameStatus>('idle');
   const lastCheckedNickname = useRef(profile.nickname ?? '');
+  // 2026-05-16: PortOne 본인인증에서 gender 가 누락된 사용자의 set-once 보완 입력.
+  // 이미 값이 있으면 read-only 섹션이 유지되고, 이 state 는 사용되지 않는다.
+  const canEditGender = !profile.gender;
+  const [pendingGender, setPendingGender] = useState<GenderValue | undefined>(undefined);
 
   const {
     control,
@@ -184,6 +188,10 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
       if (normalize(data.note) !== normalize(profile.note)) {
         updates.note = data.note;
       }
+      // 2026-05-16: set-once gender 보완. canEditGender 가 true 인 동안 선택한 값만 반영.
+      if (canEditGender && pendingGender) {
+        updates.gender = pendingGender;
+      }
 
       if (Object.keys(updates).length > 0) {
         await updateUserProfile(user.uid, updates);
@@ -234,10 +242,10 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
             </Text>
           </Card>
 
-          {/* 기본 정보 (수정 불가) */}
+          {/* 기본 정보 (이름·생년월일·휴대폰은 본인인증 결과로 수정 불가, 성별은 본인인증 누락 시 최초 1회 입력 가능) */}
           <Card className="mb-4">
             <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-3">
-              기본 정보 (수정 불가)
+              기본 정보
             </Text>
 
             {/* 이름 (읽기 전용 - 회원가입 Step2) */}
@@ -283,14 +291,33 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
               </View>
             </View>
 
-            {/* 성별 (읽기 전용 - 회원가입 Step2) */}
+            {/* 성별 — 본인인증 결과 또는 set-once 보완 입력. 한 번 저장되면 read-only 로 고정 */}
             <View>
               <Text className="mb-1 text-sm text-content-muted font-sans">성별</Text>
-              <View className="rounded-lg bg-surface-card px-4 py-3 dark:bg-surface-elevated">
-                <Text className="text-content-primary font-sans">
-                  {profile.gender === 'male' ? '남성' : profile.gender === 'female' ? '여성' : '-'}
-                </Text>
-              </View>
+              {canEditGender ? (
+                <View>
+                  <Text className="mb-2 text-xs text-content-muted dark:text-secondary-400 font-sans">
+                    본인인증에서 자동 확인되지 않아 직접 선택이 필요합니다. 선택 후에는 변경할 수
+                    없습니다.
+                  </Text>
+                  <GenderSegment
+                    value={pendingGender}
+                    onChange={setPendingGender}
+                    ariaLabel="성별 (최초 1회 입력)"
+                    ariaHint="본인인증에서 자동 확인되지 않아 직접 선택이 필요합니다. 선택 후에는 변경할 수 없습니다."
+                  />
+                </View>
+              ) : (
+                <View className="rounded-lg bg-surface-card px-4 py-3 dark:bg-surface-elevated">
+                  <Text className="text-content-primary font-sans">
+                    {profile.gender === 'male'
+                      ? '남성'
+                      : profile.gender === 'female'
+                        ? '여성'
+                        : '-'}
+                  </Text>
+                </View>
+              )}
             </View>
           </Card>
 
@@ -486,12 +513,12 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
             </View>
           </Card>
 
-          {/* 저장 버튼 */}
+          {/* 저장 버튼 — gender 보완 입력이 있으면 폼이 untouched 여도 활성 */}
           <Pressable
             onPress={handleSubmit(onSubmit)}
-            disabled={isSaving || !isDirty || nicknameStatus === 'taken'}
+            disabled={isSaving || (!isDirty && !pendingGender) || nicknameStatus === 'taken'}
             className={`rounded-lg py-4 ${
-              isSaving || !isDirty || nicknameStatus === 'taken'
+              isSaving || (!isDirty && !pendingGender) || nicknameStatus === 'taken'
                 ? 'bg-secondary-300 dark:bg-surface'
                 : 'bg-primary-600 active:bg-primary-700'
             }`}

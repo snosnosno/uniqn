@@ -7,6 +7,9 @@ import { HomePage } from '../../pages/app/tabs/home.page';
 
 // storageState는 chromium 프로젝트에서 staff.json으로 자동 설정됨
 
+// 해소(옵션 B): Jobs 탭을 (tabs)/home-jobs.tsx 로 분리 → URL '/home-jobs'. HomeTabBar 가
+// '/(app)/(tabs)/home-jobs' 로 push 하므로 더 이상 URL '/' 로 group erase 되지 않고,
+// 공개 '/jobs'(공유 링크 라우트)와도 겹치지 않아 useAuthGuard redirect 가 발동하지 않는다.
 test.describe('구인구직 홈', () => {
   let homePage: HomePage;
 
@@ -25,11 +28,11 @@ test.describe('구인구직 홈', () => {
   });
 
   test('공고 타입 칩 필터가 표시된다', async () => {
-    // fixed 공고는 V3 canonical 전환 동안 공개 표면에서 제외된다.
+    // PostingTypeChips 는 4개 타입 칩(긴급/대회/일반/고정)을 항상 노출한다 — 고정도 의도적 표시.
     await expect(homePage.getTypeChip('긴급')).toBeVisible({ timeout: 10_000 });
     await expect(homePage.getTypeChip('대회')).toBeVisible();
-    await expect(homePage.getTypeChip('지원')).toBeVisible();
-    await expect(homePage.getTypeChip('고정')).toHaveCount(0);
+    await expect(homePage.getTypeChip('일반')).toBeVisible();
+    await expect(homePage.getTypeChip('고정')).toBeVisible();
   });
 
   test('초기 로드 시 공고가 있는 탭으로 자동 선택된다', async ({ page }) => {
@@ -38,7 +41,7 @@ test.describe('구인구직 홈', () => {
 
     // 3개 공개 타입 칩 중 하나가 선택 상태여야 함 (정확한 선택 칩은 데이터에 따라 다름)
     const body = await page.locator('body').textContent();
-    const hasChips = body?.includes('긴급') || body?.includes('대회') || body?.includes('지원');
+    const hasChips = body?.includes('긴급') || body?.includes('대회') || body?.includes('일반');
     expect(hasChips).toBeTruthy();
   });
 
@@ -60,7 +63,7 @@ test.describe('구인구직 홈', () => {
 
   test('지원 타입 선택 시 날짜 슬라이더가 표시된다', async () => {
     await homePage.waitForJobsLoaded();
-    await homePage.selectTypeChip('지원');
+    await homePage.selectTypeChip('일반');
 
     // 날짜 관련 UI가 표시되어야 함 (DateCalendar 렌더링)
     await homePage.page.waitForTimeout(500);
@@ -178,7 +181,7 @@ test.describe('구인구직 홈', () => {
 
   test('지원 타입에서 DateCalendar가 에러 없이 렌더된다', async () => {
     await homePage.waitForJobsLoaded();
-    await homePage.selectTypeChip('지원');
+    await homePage.selectTypeChip('일반');
     await homePage.page.waitForTimeout(500);
 
     // web E2E 환경에서는 RN 네이티브 컴포넌트 가시성을 직접 검증하기 어려우므로

@@ -23,6 +23,10 @@ export class SignupPage extends BasePage {
     return this.page.getByRole('checkbox', { name: /개인정보처리방침 동의/ }).first();
   }
 
+  get thirdPartyCheckbox(): Locator {
+    return this.page.getByRole('checkbox', { name: /개인정보 제3자 제공 동의/ }).first();
+  }
+
   get marketingCheckbox(): Locator {
     return this.page.getByRole('checkbox', { name: /마케팅 정보 수신 동의/ }).first();
   }
@@ -42,6 +46,7 @@ export class SignupPage extends BasePage {
   async acceptRequiredTermsOnly(): Promise<void> {
     await this.termsCheckbox.click();
     await this.privacyCheckbox.click();
+    await this.thirdPartyCheckbox.click();
   }
 
   async clickNext(): Promise<void> {

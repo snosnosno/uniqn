@@ -48,20 +48,22 @@ test.describe('FAQ', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/support/faq', { waitUntil: 'domcontentloaded' });
     await waitForAppBootstrap(page);
-    await expect(page.getByRole('heading', { name: '자주 묻는 질문' })).toBeVisible({
+    // StackHeader 는 plain <Text> 로 렌더 — getByRole('heading') 미적용
+    await expect(page.getByText('자주 묻는 질문', { exact: true }).first()).toBeVisible({
       timeout: 20_000,
     });
   });
 
   test('FAQ 화면은 카테고리와 CTA를 렌더링한다', async ({ page }) => {
+    // FAQ_DATA(src/types/inquiry.ts) 첫 일반 문의 — 정적 데이터 (seed 불필요)
     await expect(page.getByText('UNIQN은 어떤 서비스인가요?')).toBeVisible();
     await expect(page.getByText('원하는 답변을 찾지 못하셨나요?')).toBeVisible();
-    await expect(page.getByText('1:1 문의하기')).toBeVisible();
+    await expect(page.getByText('1:1 문의하기').first()).toBeVisible();
   });
 
   test('FAQ 하단 CTA가 있으면 1:1 문의 버튼이 같이 보인다', async ({ page }) => {
     const ctaText = page.getByText('원하는 답변을 찾지 못하셨나요?');
-    const ctaButton = page.getByText('1:1 문의하기');
+    const ctaButton = page.getByText('1:1 문의하기').first();
 
     const hasCta = await ctaText.isVisible().catch(() => false);
     if (hasCta) {

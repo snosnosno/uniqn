@@ -8,7 +8,6 @@
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 import { supabase } from '@/lib/supabase';
-import { userRepository } from '@/repositories';
 import { logger } from '@/utils/logger';
 import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
 import { clearProtectedAuthFlow, protectAuthFlow } from '@/shared/auth/protectedAuthFlow';
@@ -265,34 +264,64 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
       },
     });
 
-    if (signUpError || !signUpData.user) {
+    // 이미 가입된 이메일 처리 (orphan 락아웃 근본 해결):
+    //  - 이메일 확인 OFF 환경: 중복 이메일은 하드 422 user_already_exists 에러로 옴
+    //  - 이메일 확인 ON 환경: 에러 없이 session=null(obfuscated)로 옴
+    // 두 경우 모두 dead-end("회원가입 실패") 대신 기존 계정으로 signIn 해서,
+    // 프로필 미완성(orphan)이면 본인인증 저장을 이어 완료(self-heal)하고,
+    // 완성됐으면 edge function이 PROFILE_ALREADY_COMPLETED → 로그인 안내로 분기.
+    const alreadyExists =
+      !!signUpError &&
+      ((signUpError as { code?: string }).code === 'user_already_exists' ||
+        (signUpError as { status?: number }).status === 422 ||
+        /already\s*(registered|exists)/i.test(signUpError.message ?? ''));
+
+    if (signUpError && !alreadyExists) {
       throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
         userMessage: '회원가입에 실패했습니다. 다시 시도해주세요.',
-        originalError: signUpError ? new Error(signUpError.message) : undefined,
+        originalError: new Error(signUpError.message),
       });
     }
-
-    const user = signUpData.user;
-    protectAuthFlow(user.id, 'email_signup');
 
     // functions.invoke는 functions.headers.Authorization을 사용하는데,
     // SupabaseClient v2에서 onAuthStateChange가 functions.setAuth를 호출하지 않아
     // signUp 직후 항상 anon key로 요청됨 → 명시적으로 access token 전달 필요.
-    // signUpData.session이 null인 경우(이미 가입된 이메일 재시도 등)는 signIn으로 fallback.
-    let accessToken = signUpData.session?.access_token;
-    if (!accessToken) {
-      const { data: signInData } = await supabase.auth.signInWithPassword({
+    let user = signUpData?.user ?? null;
+    let accessToken = signUpData?.session?.access_token;
+
+    // user/세션이 없으면(이미 가입된 이메일) 기존 계정으로 로그인해 이어서 진행.
+    if (!user || !accessToken) {
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       });
-      accessToken = signInData.session?.access_token;
+      if (signInError || !signInData.user || !signInData.session) {
+        // 기존 계정이지만 비밀번호 불일치 → 클라이언트에서 복구 불가, 로그인 안내.
+        throw new AuthError(ERROR_CODES.AUTH_EMAIL_ALREADY_EXISTS, {
+          userMessage: '이미 가입된 이메일이에요. 로그인하거나 비밀번호 찾기를 이용해주세요.',
+          originalError: signInError ? new Error(signInError.message) : undefined,
+        });
+      }
+      user = signInData.user;
+      accessToken = signInData.session.access_token;
     }
+
+    if (!user) {
+      // 도달 불가 — 위 분기에서 user 확정 (TS narrowing 보조).
+      throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
+        userMessage: '회원가입에 실패했습니다. 다시 시도해주세요.',
+      });
+    }
+    protectAuthFlow(user.id, 'email_signup');
 
     try {
       // 2. Edge Function 호출: 서버사이드 PortOne 재조회 + DB 저장 + role 설정
       await callVerifyAndSavePortOneProfile(
         {
           identityVerificationId,
+          // 2026-05-16: PortOne 이니시스 통합인증이 gender 를 응답하지 않는 경우 client fallback.
+          // 서버는 PortOne 응답 우선, 없을 때만 이 값 사용.
+          gender: data.gender,
           termsAgreed: data.termsAgreed,
           privacyAgreed: data.privacyAgreed,
           thirdPartyAgreed: data.thirdPartyAgreed,
@@ -316,21 +345,8 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
 
       return { user, profile };
     } catch (error) {
-      // 실패 시 계정 정리: orphan 마킹 → signOut.
-      // orphan 레코드는 같은 이메일/전화번호 재가입 진단·복구 단서.
-      try {
-        await markOrphanAccount(
-          user.id,
-          error instanceof Error ? error.message : 'signup failed',
-          data.verifiedPhone
-        );
-      } catch (markError) {
-        logger.warn('orphan 마킹 실패', {
-          component: 'authService',
-          uid: user.id,
-          error: markError instanceof Error ? markError.message : String(markError),
-        });
-      }
+      // 실패 시 세션 정리: signOut. orphan auth 계정은 다음 시도에서 signUp 422 →
+      // signIn 재개로 self-heal 되고, 7일 후 cleanup-orphan-accounts cron 이 정리한다.
       try {
         await supabase.auth.signOut();
       } catch {
@@ -530,45 +546,4 @@ export async function checkPhoneExists(phone: string): Promise<boolean> {
 export async function getLinkedPhoneNumber(): Promise<string | null> {
   const { data } = await supabase.auth.getUser();
   return data.user?.phone ?? null;
-}
-
-/**
- * 고아 계정 마킹 (가입 실패 시 Firestore에 기록)
- */
-export async function markOrphanAccount(
-  uid: string,
-  reason: string,
-  phone?: string
-): Promise<void> {
-  await userRepository.markAsOrphan(uid, reason, phone, Platform.OS);
-}
-
-/**
- * Phone-only 계정 롤백
- *
- * Supabase에서는 단일 SDK이므로 단순히 signOut만 수행.
- */
-export async function rollbackPhoneOnlyAccount(
-  uid: string,
-  reason: string,
-  phone?: string
-): Promise<void> {
-  logger.warn('phone-only rollback started', { uid, reason, component: 'authService' });
-
-  try {
-    await markOrphanAccount(uid, reason, phone);
-  } catch {
-    logger.error('CRITICAL: failed to mark orphan account', {
-      uid,
-      reason,
-      component: 'authService',
-    });
-  }
-
-  clearProtectedAuthFlow(uid);
-  try {
-    await supabase.auth.signOut();
-  } catch {
-    // Ignore sign-out cleanup failures.
-  }
 }

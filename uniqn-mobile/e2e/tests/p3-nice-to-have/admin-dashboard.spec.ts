@@ -22,25 +22,28 @@ test.describe('Admin 대시보드', () => {
 
   test('대시보드 메인 페이지 렌더링 → 제목 및 메뉴 카드 표시', async ({ page }) => {
     // admin 페이지 도달 확인 (대시보드 또는 앱 메인)
-    const anyContent = page.getByText('관리자 대시보드').or(page.getByText('구인구직').first());
+    // master `(admin)/index.tsx` 의 StackHeader/title 은 '관리자' (단축됨)
+    const anyContent = page.getByText('관리자').first().or(page.getByText('구인구직').first());
     await expect(anyContent).toBeVisible({ timeout: 30_000 });
 
     // 대시보드가 표시되는 경우에만 메뉴 카드 확인
     const hasDashboard = await page
-      .getByText('관리자 대시보드')
+      .getByText('관리자')
+      .first()
       .isVisible()
       .catch(() => false);
     if (hasDashboard) {
       await expect(dashboard.subtitle).toBeVisible({ timeout: 10_000 });
 
+      // master `(admin)/index.tsx` 의 menuItems 와 일치 (2026-05 시점)
       const menuLabels = [
-        '대회공고 승인',
+        '대회공고 검토',
         '사용자 관리',
         '신고 관리',
+        '게시판 신고',
         '문의 관리',
-        '시스템 설정',
+        '구인자 신청',
         '통계',
-        '보안 로그',
         '공지사항 관리',
       ];
 
@@ -53,7 +56,8 @@ test.describe('Admin 대시보드', () => {
   test('메뉴 카드 클릭 → 해당 관리 페이지로 이동', async ({ page }) => {
     // 대시보드 렌더링 대기
     const hasDashboard = await page
-      .getByText('관리자 대시보드')
+      .getByText('관리자')
+      .first()
       .isVisible({ timeout: 30_000 })
       .catch(() => false);
 

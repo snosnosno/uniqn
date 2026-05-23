@@ -102,7 +102,8 @@ Deno.serve(async (req: Request) => {
 
     const portoneSecret = Deno.env.get('PORTONE_API_SECRET');
     if (!portoneSecret) {
-      return jsonResponse({ error: 'PortOne 설정 오류' }, 500);
+      // code 필드 포함 — 클라 parseEdgeFunctionErrorBody 게이트를 통과해 한글 메시지로 변환.
+      return idpError('PORTONE_CONFIG_MISSING');
     }
 
     const portoneRes = await fetch(
@@ -122,13 +123,29 @@ Deno.serve(async (req: Request) => {
       return idpError('IV_TIMESTAMP_EXPIRED');
     }
 
-    // C1 fix — caller binding 강제. mandatory token (위에서 검증) + customData
-    // 일치 모두 필수. mismatch면 PII 노출 차단.
+    // C1 fix — caller binding (graceful skip 모드).
+    // expectedBindingToken format 검증(위 line 95-101)으로 1차 caller 의 identity 보호.
+    // 2차 customData round-trip 검증은 PortOne 응답에 customData 가 있을 때만 적용.
+    //
+    // 2026-05-16 운영 데이터로 확인: PortOne 이니시스 통합인증은 verification.customData 를
+    // echo 하지 않음 → mandatory 검증 시 prod 본인인증 0/4일 100% 차단 사고 발생.
+    // PortOne 본인인증 API 의 customData echo 동작은 결제(payment) 흐름과 다름.
+    // 향후 PortOne 이 echo 시작하면 아래 else if 분기가 자동 활성화.
     {
-      const actualToken = extractBindingToken(verification.customData);
-      if (!isBindingMatch(expectedBindingToken, actualToken)) {
-        console.warn('[caller-binding] verify-portone-identity mismatch', {
-          hasActual: actualToken !== undefined,
+      const customDataRaw: unknown = (verification as { customData?: unknown }).customData;
+      const actualToken = extractBindingToken(customDataRaw);
+      if (actualToken === undefined) {
+        console.info(
+          '[caller-binding] customData not echoed by PortOne - skip (expected behavior)',
+          {
+            customDataType: typeof customDataRaw,
+            customDataLength: typeof customDataRaw === 'string' ? customDataRaw.length : null,
+          }
+        );
+      } else if (!isBindingMatch(expectedBindingToken, actualToken)) {
+        // customData 가 있는데 token 불일치 — 실제 caller 위조 의심
+        console.warn('[caller-binding] verify-portone-identity mismatch (echo path)', {
+          hasActual: true,
         });
         return idpError('IV_BINDING_MISMATCH');
       }

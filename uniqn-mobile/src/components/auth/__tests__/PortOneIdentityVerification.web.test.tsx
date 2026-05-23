@@ -214,17 +214,27 @@ describe('PortOneIdentityVerification (web)', () => {
     });
   });
 
-  it('gender 없을 시 에러 메시지를 표시한다', async () => {
+  // 2026-05-16: PortOne 이니시스 통합인증에서 인증수단별로 gender 응답이 다름
+  // (PASS/토스/카카오/네이버/신한/KB 등). 누락 시 차단하지 않고 후속 step
+  // (SignupStepIdentity / profile-setup) 에서 사용자가 직접 선택하는 정책.
+  it('gender 누락 시에도 인증을 통과시키고 성별 필드를 렌더링하지 않는다', async () => {
+    const onVerified = jest.fn();
     mockCallVerify.mockResolvedValue({
       ...mockVerification,
       identity: { ...mockIdentity, gender: undefined },
     });
-    const { getByText } = render(<PortOneIdentityVerification {...defaultProps} />);
+    const { getByText, queryByText } = render(
+      <PortOneIdentityVerification {...defaultProps} onVerified={onVerified} />
+    );
     await act(async () => {
       fireEvent.press(getByText('본인인증 시작'));
     });
     await waitFor(() => {
-      expect(getByText(/성별 정보가 누락되었어요/)).toBeTruthy();
+      expect(onVerified).toHaveBeenCalledWith(expect.objectContaining({ gender: undefined }));
     });
+    // 완료 화면 표시
+    expect(getByText('이니시스 본인인증 완료')).toBeTruthy();
+    // gender 필드는 conditional render → 누락 시 비표시
+    expect(queryByText('성별')).toBeNull();
   });
 });

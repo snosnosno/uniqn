@@ -2,8 +2,10 @@ import type { UserProfile } from '@/types';
 import { featureFlags } from '@/config/featureFlags';
 
 export const AUTH_ENTRY_ROUTES = {
-  appTabs: '/(app)/(tabs)',
-  appHome: (featureFlags.home_dashboard_enabled ? '/(app)/home' : '/(app)/(tabs)') as string,
+  appTabs: '/(app)/(tabs)/home-jobs',
+  appHome: (featureFlags.home_dashboard_enabled
+    ? '/(app)/home'
+    : '/(app)/(tabs)/home-jobs') as string,
   signup: '/(auth)/signup',
   socialSignup: '/(auth)/signup?mode=social',
   identityReverify: '/(auth)/signup?mode=reverify',
@@ -93,12 +95,24 @@ export function getLoginRoute(redirect?: string | null): string {
 export function getAuthenticatedEntryRoute(params: AuthenticatedEntryRouteParams): AuthEntryRoute {
   const { socialProvider, phoneVerified, profileCompleted, identityVerified } = params;
 
+  // 신규 가입 안전망 — phone 인증조차 안 한 사용자는 reverify 가 아니라 가입 흐름.
+  // 2026-05-16 사건: handle_new_user trigger 가 social_provider 누락 + edge function
+  // 실패 시 social_provider=null + phone_verified=false + identity_verified=false 인
+  // 신규 row 가 reverify trap 으로 빠지던 회귀. socialProvider truthy 의존만으로는
+  // 옛 사용자(phoneVerified=true, identityVerified=false)와 신규 미완성 사용자를
+  // 구분하지 못함.
+  if (phoneVerified !== true && identityVerified === false) {
+    return socialProvider ? AUTH_ENTRY_ROUTES.socialSignup : AUTH_ENTRY_ROUTES.signup;
+  }
+
   // 소셜 신규 사용자 — 본인인증 단계로 (signup?mode=social)
   if (socialProvider && phoneVerified !== true) {
     return AUTH_ENTRY_ROUTES.socialSignup;
   }
 
   // 본인인증 명시적 false — KG이니시스 재인증 강제 (signup?mode=reverify)
+  // phoneVerified=true 인 옛 사용자(Firebase 시절 phone 인증만 완료 + PortOne 미완료)
+  // 만 이 분기에 도달. 신규 미완성 사용자는 위 안전망에서 가입 흐름으로 분기.
   if (identityVerified === false) {
     return AUTH_ENTRY_ROUTES.identityReverify;
   }

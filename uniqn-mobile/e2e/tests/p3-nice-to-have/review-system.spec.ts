@@ -9,8 +9,9 @@ test.describe('리뷰 시스템', () => {
   test('리뷰 작성 폼 → 감정 선택기 3가지 옵션 표시', async ({ page }) => {
     // 리뷰 작성 페이지로 이동 (파라미터 포함)
     await page.goto(
-      '/reviews/write?workLogId=test&revieweeId=test&revieweeName=테스트&reviewerType=employer&jobPostingId=test&jobPostingTitle=테스트공고&workDate=2026-03-01'
-    , { waitUntil: 'domcontentloaded' });
+      '/reviews/write?workLogId=test&revieweeId=test&revieweeName=테스트&reviewerType=employer&jobPostingId=test&jobPostingTitle=테스트공고&workDate=2026-03-01',
+      { waitUntil: 'domcontentloaded' }
+    );
     await page.waitForLoadState('domcontentloaded');
 
     // 감정 선택기 옵션 확인
@@ -21,8 +22,9 @@ test.describe('리뷰 시스템', () => {
 
   test('리뷰 작성 → 감정 선택 시 해당 태그 표시', async ({ page }) => {
     await page.goto(
-      '/reviews/write?workLogId=test&revieweeId=test&revieweeName=테스트&reviewerType=employer&jobPostingId=test&jobPostingTitle=테스트공고&workDate=2026-03-01'
-    , { waitUntil: 'domcontentloaded' });
+      '/reviews/write?workLogId=test&revieweeId=test&revieweeName=테스트&reviewerType=employer&jobPostingId=test&jobPostingTitle=테스트공고&workDate=2026-03-01',
+      { waitUntil: 'domcontentloaded' }
+    );
     await page.waitForLoadState('domcontentloaded');
 
     // 긍정 감정 선택 (앱의 SENTIMENT_LABELS: positive → '좋았어요')
@@ -35,17 +37,16 @@ test.describe('리뷰 시스템', () => {
 
   test('리뷰 작성 → 코멘트 입력 및 글자수 카운터 표시', async ({ page }) => {
     await page.goto(
-      '/reviews/write?workLogId=test&revieweeId=test&revieweeName=테스트&reviewerType=employer&jobPostingId=test&jobPostingTitle=테스트공고&workDate=2026-03-01'
-    , { waitUntil: 'domcontentloaded' });
+      '/reviews/write?workLogId=test&revieweeId=test&revieweeName=테스트&reviewerType=employer&jobPostingId=test&jobPostingTitle=테스트공고&workDate=2026-03-01',
+      { waitUntil: 'domcontentloaded' }
+    );
     await page.waitForLoadState('domcontentloaded');
 
     // 코멘트 입력란은 감정 선택 후에만 표시됨
     await page.getByText('좋았어요', { exact: true }).click();
 
-    // 한줄 코멘트 입력
-    const commentInput = page.getByPlaceholder(
-      '추가로 전하고 싶은 말이 있나요?'
-    );
+    // 한줄 코멘트 입력 (ReviewForm.tsx placeholder 와 동일)
+    const commentInput = page.getByPlaceholder('추가로 남기고 싶은 말이 있나요?');
     await expect(commentInput).toBeVisible();
 
     await commentInput.fill('좋은 근무였습니다');
@@ -57,17 +58,16 @@ test.describe('리뷰 시스템', () => {
 
   test('리뷰 작성 → 제출 전 경고 메시지 표시', async ({ page }) => {
     await page.goto(
-      '/reviews/write?workLogId=test&revieweeId=test&revieweeName=테스트&reviewerType=employer&jobPostingId=test&jobPostingTitle=테스트공고&workDate=2026-03-01'
-    , { waitUntil: 'domcontentloaded' });
+      '/reviews/write?workLogId=test&revieweeId=test&revieweeName=테스트&reviewerType=employer&jobPostingId=test&jobPostingTitle=테스트공고&workDate=2026-03-01',
+      { waitUntil: 'domcontentloaded' }
+    );
     await page.waitForLoadState('domcontentloaded');
 
     // 경고 메시지는 감정 선택 후에만 표시됨
     await page.getByText('좋았어요', { exact: true }).click();
 
-    // 제출 불가 경고 메시지 확인
-    const warningText = page.getByText(
-      '평가는 제출 후 수정할 수 없습니다'
-    );
+    // 제출 불가 경고 메시지 (ReviewForm.tsx 와 동일한 부분 매칭)
+    const warningText = page.getByText('리뷰는 제출 후 수정할 수 없어요');
     await expect(warningText.first()).toBeVisible();
   });
 
@@ -87,7 +87,7 @@ test.describe('리뷰 시스템', () => {
     const hasPending = await pendingCount.isVisible().catch(() => false);
     const hasEmpty = await emptyState.isVisible().catch(() => false);
     // 앱이 정상 로드되면 (로딩 후) 둘 중 하나가 보이거나, 페이지가 정상 로드되면 통과
-    const pageLoaded = !await loadingText.isVisible().catch(() => false);
+    const pageLoaded = !(await loadingText.isVisible().catch(() => false));
     expect(hasPending || hasEmpty || pageLoaded).toBe(true);
   });
 
