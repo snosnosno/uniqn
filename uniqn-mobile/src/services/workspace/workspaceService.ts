@@ -15,6 +15,8 @@ import {
   createWorkspaceSchema,
   updateWorkspaceNameSchema,
   removeWorkspaceMemberSchema,
+  archiveWorkspaceSchema,
+  restoreWorkspaceSchema,
 } from '@/schemas/workspace.schema';
 import { ValidationError, BusinessError, ERROR_CODES, isAppError } from '@/errors';
 import { logger } from '@/utils/logger';
@@ -145,6 +147,40 @@ export const workspaceService = {
       });
     }
     await workspaceMemberRepository.removeViaRpc(parsed.data.workspaceId, parsed.data.userId);
+  },
+
+  /**
+   * 워크스페이스 아카이브 (owner 만 — RPC 권한 체크).
+   * 진행공고(active/approved/pending) 있으면 RPC 가 차단.
+   */
+  async archiveWorkspace(input: { workspaceId: string }): Promise<void> {
+    const parsed = archiveWorkspaceSchema.safeParse(input);
+    if (!parsed.success) {
+      throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+        userMessage: '입력값을 확인해주세요',
+      });
+    }
+    await workspaceRepository.archiveViaRpc(parsed.data.workspaceId);
+  },
+
+  /**
+   * 워크스페이스 복원 (owner 만). 활성 cap(10) 초과 시 RPC 가 차단.
+   */
+  async restoreWorkspace(input: { workspaceId: string }): Promise<void> {
+    const parsed = restoreWorkspaceSchema.safeParse(input);
+    if (!parsed.success) {
+      throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+        userMessage: '입력값을 확인해주세요',
+      });
+    }
+    await workspaceRepository.restoreViaRpc(parsed.data.workspaceId);
+  },
+
+  /**
+   * 내가 owner 인 아카이브된 워크스페이스 목록 (보관함).
+   */
+  async listArchivedWorkspaces(ownerId: string): Promise<Workspace[]> {
+    return workspaceRepository.findArchivedByOwner(ownerId);
   },
 
   /**
