@@ -60,6 +60,7 @@ export interface EmployerApplication {
   rejectionReason: string | null;
   rejectionCategory: EmployerApplicationRejectionCategory | null;
   agreementsSnapshot: Record<string, unknown>;
+  intro: string | null;
   supersedesId: string | null;
   createdAt: string;
   applicant: EmployerApplicationApplicant | null;
@@ -100,7 +101,7 @@ const TABLE = 'employer_applications';
 const COMPONENT = 'SupabaseEmployerApplicationRepository';
 
 const TABLE_COLUMNS =
-  'id,user_id,status,submitted_at,reviewed_at,reviewed_by,rejection_reason,rejection_category,agreements_snapshot,supersedes_id,created_at' as const;
+  'id,user_id,status,submitted_at,reviewed_at,reviewed_by,rejection_reason,rejection_category,agreements_snapshot,intro,supersedes_id,created_at' as const;
 
 const APPLICANT_JOIN =
   'applicant:users!employer_applications_user_id_fkey(name,nickname,email,phone,phone_verified,identity_verified,photo_url)' as const;
@@ -198,12 +199,16 @@ export class SupabaseEmployerApplicationRepository {
   // 신청 생성 (유저)
   // ==========================================================================
 
-  async register(agreementsSnapshot: Record<string, unknown>): Promise<RegisterAsEmployerResult> {
+  async register(
+    agreementsSnapshot: Record<string, unknown>,
+    intro: string
+  ): Promise<RegisterAsEmployerResult> {
     try {
       logger.info('구인자 신청 제출', { component: COMPONENT });
 
       const { data, error } = await supabase.rpc('register_as_employer', {
         p_employer_agreements: agreementsSnapshot,
+        p_intro: intro,
       });
 
       if (error) mapRpcError(error);
