@@ -18,22 +18,23 @@ import { formatRelative } from '@/utils/formatters/date';
 
 export default function ArchivedWorkspacesScreen() {
   const { addToast } = useToastStore();
-  const { archived, isLoading, error, refetch } = useArchivedWorkspaces();
+  const { archived, isLoading, error } = useArchivedWorkspaces();
   const restoreMutation = useRestoreWorkspace();
 
   const handleRestore = useCallback(
     async (workspaceId: string) => {
       try {
         await restoreMutation.mutateAsync(workspaceId);
+        // 복원 성공 시 useRestoreWorkspace onSuccess 가 archivedForUser 쿼리를
+        // invalidate → mount 된 이 화면 쿼리가 자동 refetch (수동 refetch 불필요).
         addToast({ type: 'success', message: '워크스페이스를 복원했어요' });
-        refetch();
       } catch (err) {
         logger.warn('워크스페이스 복원 실패', { error: String(err) });
         const message = isAppError(err) && err.userMessage ? err.userMessage : '복원에 실패했어요';
         addToast({ type: 'error', message });
       }
     },
-    [restoreMutation, addToast, refetch]
+    [restoreMutation, addToast]
   );
 
   return (
