@@ -32,6 +32,7 @@ export const WORKSPACE_ERROR_CODES = {
   WORKSPACE_CAP_REACHED: 'E6090',
   /** RLS INSERT 정책 위반 — cap/role/owner_id 중 어느 것이 fail 했는지 RPC 응답만으로 분간 불가 */
   WORKSPACE_INSERT_DENIED: 'E6091',
+  WORKSPACE_HAS_ACTIVE_POSTINGS: 'E6092',
 } as const;
 
 const WORKSPACE_ERROR_USER_MESSAGES: Record<string, string> = {
@@ -52,6 +53,8 @@ const WORKSPACE_ERROR_USER_MESSAGES: Record<string, string> = {
     '워크스페이스는 사용자당 최대 10개까지 만들 수 있어요. 사용하지 않는 워크스페이스를 정리해주세요.',
   [WORKSPACE_ERROR_CODES.WORKSPACE_INSERT_DENIED]:
     '워크스페이스를 만들 수 없어요. 권한이 부족하거나 최대 개수(10개)에 도달했을 수 있어요. 잠시 후 다시 시도해주세요.',
+  [WORKSPACE_ERROR_CODES.WORKSPACE_HAS_ACTIVE_POSTINGS]:
+    '진행 중인 공고가 있어 보관할 수 없어요. 먼저 공고를 마감해주세요.',
 };
 
 function makeWorkspaceError(code: string): AppError {
@@ -80,6 +83,15 @@ export function mapWorkspaceRpcError(error: unknown): AppError | null {
 
   // RAISE EXCEPTION 'CODE' → "CODE" 또는 "P0001: CODE" 패턴 모두 처리
   const upper = message.toUpperCase();
+
+  // archive_workspace RPC: 진행공고 차단 — 'WORKSPACE_HAS_ACTIVE_POSTINGS:N' (N = 개수)
+  const activePostingsMatch = upper.match(/WORKSPACE_HAS_ACTIVE_POSTINGS:?\s*(\d+)/);
+  if (activePostingsMatch) {
+    const count = activePostingsMatch[1] ?? '';
+    return new BusinessError(WORKSPACE_ERROR_CODES.WORKSPACE_HAS_ACTIVE_POSTINGS, {
+      userMessage: `진행 중인 공고 ${count}건을 먼저 마감해주세요.`,
+    });
+  }
 
   if (upper.includes('AUTH_REQUIRED'))
     return new AuthError(ERROR_CODES.AUTH_REQUIRED, {
