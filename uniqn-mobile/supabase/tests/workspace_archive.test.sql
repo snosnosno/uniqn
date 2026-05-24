@@ -7,7 +7,7 @@
 --       BEGIN/ROLLBACK 기능검증으로 별도 입증 (2026-05-24, 8/8 PASS).
 
 BEGIN;
-SELECT plan(6);
+SELECT plan(7);
 
 -- ============================================================================
 -- Seed — jpc_test_seed() 는 owner + workspace + active job_posting(status='active') 생성
@@ -54,6 +54,18 @@ SELECT isnt(
   (SELECT archived_at FROM public.workspaces WHERE id = (current_setting('wsa.ws_id'))::uuid),
   NULL,
   'T3 archived_at 세팅됨'
+);
+
+-- ============================================================================
+-- T3b: 아카이브된 워크스페이스는 cap 집계(workspace_count_for_owner)에서 제외
+--      seed 는 owner 당 워크스페이스 1개만 생성 → 아카이브 후 0 이어야 함.
+--      RLS workspaces_insert_employer_with_cap 와 create_workspace RPC 가 모두
+--      이 함수/동일 로직으로 cap 을 계산하므로, 아카이브 시 슬롯 회수가 보장됨(스펙 §5).
+-- ============================================================================
+SELECT is(
+  public.workspace_count_for_owner((current_setting('wsa.owner_id'))::uuid),
+  0,
+  'T3b cap: 아카이브된 ws 는 workspace_count_for_owner 에서 제외'
 );
 
 -- ============================================================================
