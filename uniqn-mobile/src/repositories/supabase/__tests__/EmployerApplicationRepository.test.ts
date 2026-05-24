@@ -11,7 +11,7 @@ jest.mock('@/utils/logger', () => ({
   logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn() },
 }));
 
-const mockSupabase = supabase as { rpc: jest.Mock };
+const mockSupabase = supabase as unknown as { rpc: jest.Mock };
 
 describe('SupabaseEmployerApplicationRepository.register', () => {
   beforeEach(() => {
