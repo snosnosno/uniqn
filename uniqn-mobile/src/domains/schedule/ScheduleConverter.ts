@@ -119,7 +119,10 @@ export class ScheduleConverter {
       sourceCollection: 'workLogs',
       sourceId: workLog.id,
       workLogId: workLog.id,
-      applicationId: `${jobPostingId}_${workLog.staffId}`,
+      // 실제 지원서 ID (applications.id). 취소/상세 조회가 이 값으로 UUID 조회하므로
+      // 합성키(`${jobPostingId}_${staffId}`)를 쓰면 invalid uuid(22P02)로 터진다.
+      // 레거시/수동 work_log로 applicationId가 없으면 undefined → 취소 버튼 숨김 + 그룹화 제외(안전).
+      applicationId: workLog.applicationId ?? undefined,
       customSalaryInfo: workLog.customSalaryInfo,
       customAllowances: workLog.customAllowances,
       customTaxSettings: workLog.customTaxSettings,

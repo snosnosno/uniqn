@@ -134,6 +134,7 @@ export const workLogDocumentSchema = z
     id: z.string(),
     staffId: z.string(),
     jobPostingId: z.string(),
+    applicationId: z.string().nullable().optional(),
     date: z.string().nullable(),
 
     // 스태프 정보

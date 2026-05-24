@@ -171,6 +171,25 @@ describe('ScheduleConverter.workLogToScheduleEvent', () => {
     expect(event.endTime).toBeNull();
   });
 
+  it('uses the real applications.id as applicationId (not a synthetic composite key)', () => {
+    const postingContext = createSchedulePostingContext(createPosting());
+    const event = ScheduleConverter.workLogToScheduleEvent(
+      createWorkLog({ applicationId: 'f9960cc9-7cf0-45ce-abe1-1e1b336213f7' }),
+      postingContext
+    );
+
+    // 취소/상세 조회가 이 값으로 applications.id = eq(...) UUID 조회를 한다.
+    // 합성키(`${jobPostingId}_${staffId}`)면 invalid uuid(22P02)로 400이 난다.
+    expect(event.applicationId).toBe('f9960cc9-7cf0-45ce-abe1-1e1b336213f7');
+  });
+
+  it('leaves applicationId undefined when the workLog has no source application', () => {
+    const postingContext = createSchedulePostingContext(createPosting());
+    const event = ScheduleConverter.workLogToScheduleEvent(createWorkLog(), postingContext);
+
+    expect(event.applicationId).toBeUndefined();
+  });
+
   it('preserves assignmentGroupId from the canonical workLog contract', () => {
     const postingContext = createSchedulePostingContext(createPosting());
     const event = ScheduleConverter.workLogToScheduleEvent(

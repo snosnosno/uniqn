@@ -412,6 +412,8 @@ export interface WorkLog extends FirebaseDocument {
   staffId: string;
   /** 공고 ID */
   jobPostingId: string;
+  /** 원본 지원서 ID (applications.id) — 확정 시 work_log 생성 경로에서 채워짐. 수동/레거시 work_log는 null */
+  applicationId?: string | null;
   assignmentGroupId?: string | null;
   hasTimeModificationLogs?: boolean;
   date: string;
