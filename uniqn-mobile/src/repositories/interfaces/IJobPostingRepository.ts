@@ -62,6 +62,17 @@ export interface CreateJobPostingResult {
 }
 
 /**
+ * 역할별 확정 집계 (H0 hydrate 용)
+ */
+export interface PostingFilledCount {
+  jobPostingId: string;
+  workDate: string;
+  timeSlot: string;
+  roleKey: string;
+  confirmedCount: number;
+}
+
+/**
  * 공고 통계
  */
 export interface JobPostingStats {
@@ -160,6 +171,13 @@ export interface IJobPostingRepository {
    * @returns 날짜→개수 맵 (0건 날짜는 키 없음)
    */
   getRegularDateCounts(startDate: string, endDate: string): Promise<Record<string, number>>;
+
+  /**
+   * 공고별 (date, timeSlot, role) 활성 확정 수 조회 (H0 역할별 표시 hydrate 용).
+   * @param jobPostingIds 가시 공고 ID 배열
+   * @returns Map<`${jobPostingId}__${date}__${timeSlot}__${roleKey}`, confirmedCount>. 실패 시 빈 맵.
+   */
+  getPostingFilledCounts(jobPostingIds: string[]): Promise<Map<string, number>>;
 
   // ==========================================================================
   // 변경 (Write) - 단순 업데이트
