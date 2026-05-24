@@ -17,11 +17,15 @@ export {
   useRemoveWorkspaceMember,
   useCreateWorkspace,
   useUpdateWorkspaceName,
+  useArchivedWorkspaces,
+  useArchiveWorkspace,
+  useRestoreWorkspace,
   type UseWorkspacesResult,
   type UseWorkspaceMembersResult,
   type UseWorkspaceOwnerProfileResult,
   type UseReceivedInvitationsResult,
   type UseSentInvitationsResult,
+  type UseArchivedWorkspacesResult,
 } from './useWorkspaces';
 
 export { useActiveWorkspace, type UseActiveWorkspaceResult } from './useActiveWorkspace';
