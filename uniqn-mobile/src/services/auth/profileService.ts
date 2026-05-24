@@ -184,10 +184,12 @@ export async function changePassword(currentPassword: string, newPassword: strin
  * - 이미 pending 신청 있으면 EmployerAppPendingExistsError 발생
  *
  * @param agreementsSnapshot 약관/서약 동의 스냅샷 (신청 당시 버전 고정)
+ * @param intro 구인자 소개글 (주로 구인하는 지역/매장/대회, 10~300자)
  * @returns 신청 결과 (applicationId, status='pending', submittedAt)
  */
 export async function registerAsEmployer(
-  agreementsSnapshot: Record<string, unknown>
+  agreementsSnapshot: Record<string, unknown>,
+  intro: string
 ): Promise<RegisterAsEmployerResult> {
   try {
     const {
@@ -202,7 +204,7 @@ export async function registerAsEmployer(
 
     logger.info('구인자 등록 신청', { uid: user.id });
 
-    const result = await employerApplicationRepository.register(agreementsSnapshot);
+    const result = await employerApplicationRepository.register(agreementsSnapshot, intro);
 
     void invalidateQueries.user();
     void invalidateQueries.employerApplications();
