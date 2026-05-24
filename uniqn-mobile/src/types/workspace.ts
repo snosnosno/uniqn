@@ -21,6 +21,8 @@ export interface Workspace {
   memberCount: number;
   createdAt: string;
   updatedAt: string;
+  /** 소프트 삭제 마커. null = 활성. 값 있으면 아카이브됨 (보관함). */
+  archivedAt: string | null;
 }
 
 /**
