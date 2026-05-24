@@ -350,6 +350,16 @@ export default function AdminEmployerApplicationDetailPage() {
           </Card>
         ) : null}
 
+        {/* Card — 구인 소개 */}
+        <Card className="mb-4">
+          <Text className="mb-3 text-base font-sans-semibold text-content-primary dark:text-off-white">
+            구인 소개
+          </Text>
+          <Text className="text-sm leading-5 text-content-primary dark:text-off-white font-sans">
+            {app.intro && app.intro.trim().length > 0 ? app.intro : '-'}
+          </Text>
+        </Card>
+
         {/* Card 2 — 약관 동의 스냅샷 */}
         <Card className="mb-4">
           <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-3">

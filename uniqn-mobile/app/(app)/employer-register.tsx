@@ -8,7 +8,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { StackHeader } from '@/components/headers';
@@ -25,6 +25,7 @@ import {
   EMPLOYER_TERMS_VERSION_TAG as EMPLOYER_TERMS_VERSION,
   LIABILITY_WAIVER_VERSION_TAG as EMPLOYER_LIABILITY_WAIVER_VERSION,
 } from '@/constants/legal';
+import { employerIntroSchema } from '@/schemas';
 
 // ============================================================================
 // Sub-components
@@ -116,6 +117,14 @@ export default function EmployerRegisterScreen() {
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [agreeToLiability, setAgreeToLiability] = useState(false);
 
+  // 구인 소개글 (주로 구인하는 지역/매장/대회)
+  const [intro, setIntro] = useState('');
+
+  const introResult = employerIntroSchema.safeParse(intro);
+  const introValid = introResult.success;
+  // 입력을 시작한 뒤에만 에러를 보여준다 (빈 상태에서 빨간 메시지 방지)
+  const introError = intro.length > 0 && !introValid ? introResult.error.issues[0]?.message : null;
+
   // 로딩 상태
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -123,7 +132,7 @@ export default function EmployerRegisterScreen() {
   const isVerified = profile?.identityVerified === true;
 
   // 모든 동의 완료 여부
-  const canSubmit = isVerified && agreeToTerms && agreeToLiability;
+  const canSubmit = isVerified && agreeToTerms && agreeToLiability && introValid;
 
   // 이미 구인자인 경우 또는 pending 신청 중인 경우 리다이렉트
   useEffect(() => {
@@ -162,7 +171,7 @@ export default function EmployerRegisterScreen() {
         liabilityWaiverAcceptedAt: now,
       };
 
-      await registerAsEmployer(agreementsSnapshot);
+      await registerAsEmployer(agreementsSnapshot, intro.trim());
 
       toast.success('구인자 등록 신청이 접수되었습니다. 관리자 승인 후 이용 가능합니다');
 
@@ -176,7 +185,7 @@ export default function EmployerRegisterScreen() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [canSubmit, isSubmitting, toast]);
+  }, [canSubmit, isSubmitting, toast, intro]);
 
   // 본인인증 진행 — signup?mode=reverify 단일 진입점
   const handleGoToVerification = useCallback(() => {
@@ -244,6 +253,35 @@ export default function EmployerRegisterScreen() {
           </Text>
           <InfoRow label="닉네임" value={profile?.nickname} />
           <InfoRow label="이메일" value={profile?.email} />
+        </Card>
+
+        {/* 구인 소개 */}
+        <Card variant="outlined" padding="md" className="mb-6">
+          <Text className="mb-1 text-base font-sans-semibold text-content-primary dark:text-off-white">
+            구인 소개
+          </Text>
+          <Text className="mb-3 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+            주로 구인하는 지역/매장/대회를 알려주세요. 관리자 심사에 참고됩니다.
+          </Text>
+
+          <TextInput
+            value={intro}
+            onChangeText={setIntro}
+            placeholder={'예) 강남 일대 홀덤펍, OO포커 대회 딜러를 주로 모집합니다'}
+            placeholderTextColor="#9CA3AF"
+            multiline
+            numberOfLines={5}
+            textAlignVertical="top"
+            maxLength={300}
+            className="min-h-[120px] rounded-md border border-secondary-300 bg-white px-3 py-2 text-base text-content-primary dark:border-surface-overlay dark:bg-surface dark:text-off-white font-sans"
+          />
+
+          <View className="mt-1 flex-row items-center justify-between">
+            <Text className="flex-1 text-xs text-error-500 dark:text-error-400 font-sans">
+              {introError ?? ''}
+            </Text>
+            <Text className="text-xs text-content-placeholder font-sans">{intro.length}/300</Text>
+          </View>
         </Card>
 
         {/* 동의 항목 */}

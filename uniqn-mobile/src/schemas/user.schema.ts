@@ -135,10 +135,24 @@ export const employerProfileSchema = z.object({
 export type EmployerProfileData = z.infer<typeof employerProfileSchema>;
 
 /**
+ * 구인자 소개글 스키마 (주로 구인하는 지역/매장/대회)
+ * @description 등록 신청 시 필수 입력. trim 후 10~300자, XSS 검증.
+ */
+export const employerIntroSchema = z
+  .string()
+  .trim()
+  .min(10, { message: '소개글은 최소 10자 이상 입력해주세요' })
+  .max(300, { message: '소개글은 300자를 초과할 수 없습니다' })
+  .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' });
+
+export type EmployerIntroData = z.infer<typeof employerIntroSchema>;
+
+/**
  * 구인자 등록 스키마 (staff → employer 역할 변경)
  * @description 본인인증 완료 후 동의만으로 구인자 등록
  */
 export const employerRegisterSchema = z.object({
+  intro: employerIntroSchema,
   agreeToEmployerTerms: z.literal(true, {
     message: '구인자 이용약관에 동의해주세요',
   }),
