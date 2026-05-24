@@ -333,6 +333,7 @@ export const queryKeys = {
       [...queryKeys.workspaces.all, 'invitations', 'workspace', workspaceId] as const,
     invitationsReceived: (userId: string) =>
       [...queryKeys.workspaces.all, 'invitations', 'received', userId] as const,
+    archivedForUser: (userId: string) => [...queryKeys.workspaces.all, 'archived', userId] as const,
   },
 
   // 공고별 협업자 (feat/job-posting-collaborators)

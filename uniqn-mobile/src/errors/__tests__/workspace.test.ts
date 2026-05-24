@@ -5,6 +5,8 @@
 import { mapWorkspaceRpcError, WORKSPACE_ERROR_CODES } from '@/errors/workspace';
 import { isAuthError, isPermissionError, isBusinessError, isValidationError } from '@/errors';
 
+import { BusinessError } from '@/errors/AppError';
+
 describe('mapWorkspaceRpcError (PR #2)', () => {
   it('AUTH_REQUIRED → AuthError', () => {
     const err = mapWorkspaceRpcError({ message: 'AUTH_REQUIRED' });
@@ -102,5 +104,19 @@ describe('mapWorkspaceRpcError (PR #2)', () => {
     expect(mapWorkspaceRpcError({ message: 'SOME_RANDOM_ERROR' })).toBeNull();
     expect(mapWorkspaceRpcError(null)).toBeNull();
     expect(mapWorkspaceRpcError({})).toBeNull();
+  });
+});
+
+describe('mapWorkspaceRpcError - 아카이브', () => {
+  it('WORKSPACE_HAS_ACTIVE_POSTINGS:3 → 개수 포함 BusinessError', () => {
+    const mapped = mapWorkspaceRpcError({ message: 'WORKSPACE_HAS_ACTIVE_POSTINGS:3' });
+    expect(mapped).toBeInstanceOf(BusinessError);
+    expect(mapped?.code).toBe(WORKSPACE_ERROR_CODES.WORKSPACE_HAS_ACTIVE_POSTINGS);
+    expect(mapped?.userMessage).toBe('진행 중인 공고 3건을 먼저 마감해주세요.');
+  });
+
+  it('WORKSPACE_CAP_REACHED → cap BusinessError (복원 차단)', () => {
+    const mapped = mapWorkspaceRpcError({ message: 'P0001: WORKSPACE_CAP_REACHED' });
+    expect(mapped?.code).toBe(WORKSPACE_ERROR_CODES.WORKSPACE_CAP_REACHED);
   });
 });

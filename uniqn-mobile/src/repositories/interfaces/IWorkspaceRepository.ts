@@ -38,6 +38,21 @@ export interface IWorkspaceRepository {
   getOwnerProfile(
     workspaceId: string
   ): Promise<{ id: string; displayName: string | null; photoUrl: string | null } | null>;
+
+  /**
+   * 워크스페이스 아카이브 (RPC archive_workspace 경유 — owner 전용, RPC가 권한/진행공고 체크)
+   * @throws AppError E5 권한 / E6092 진행공고 존재
+   */
+  archiveViaRpc(workspaceId: string): Promise<void>;
+
+  /**
+   * 워크스페이스 복원 (RPC restore_workspace 경유 — owner 전용, cap 재검사)
+   * @throws AppError E5 권한 / E6090 cap 도달
+   */
+  restoreViaRpc(workspaceId: string): Promise<void>;
+
+  /** 내가 owner 인 아카이브된 워크스페이스 목록 (보관함). 최근 아카이브순. */
+  findArchivedByOwner(ownerId: string): Promise<Workspace[]>;
 }
 
 export interface IWorkspaceMemberRepository {

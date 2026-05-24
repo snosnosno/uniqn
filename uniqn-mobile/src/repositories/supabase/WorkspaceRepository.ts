@@ -16,7 +16,7 @@ import type { Workspace } from '@/types/workspace';
 import type { IWorkspaceRepository } from '../interfaces/IWorkspaceRepository';
 
 const TABLE = 'workspaces' as const;
-const COLUMNS = 'id, name, owner_id, member_count, created_at, updated_at' as const;
+const COLUMNS = 'id, name, owner_id, member_count, created_at, updated_at, archived_at' as const;
 
 function rowToWorkspace(row: Record<string, unknown>): Workspace {
   return toCamelCase<Workspace>(row);
@@ -154,6 +154,53 @@ export class SupabaseWorkspaceRepository implements IWorkspaceRepository {
     } catch (error) {
       if (isAppError(error)) throw error;
       handleSupabaseError(error, { operation: '워크스페이스 소유자 조회', table: TABLE });
+    }
+  }
+
+  async archiveViaRpc(workspaceId: string): Promise<void> {
+    try {
+      const { error } = await supabase.rpc('archive_workspace', { p_workspace_id: workspaceId });
+      if (error) {
+        const mapped = mapWorkspaceRpcError(error);
+        if (mapped) throw mapped;
+        handleSupabaseError(error, { operation: '워크스페이스 보관', table: TABLE });
+      }
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      handleSupabaseError(error, { operation: '워크스페이스 보관', table: TABLE });
+    }
+  }
+
+  async restoreViaRpc(workspaceId: string): Promise<void> {
+    try {
+      const { error } = await supabase.rpc('restore_workspace', { p_workspace_id: workspaceId });
+      if (error) {
+        const mapped = mapWorkspaceRpcError(error);
+        if (mapped) throw mapped;
+        handleSupabaseError(error, { operation: '워크스페이스 복원', table: TABLE });
+      }
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      handleSupabaseError(error, { operation: '워크스페이스 복원', table: TABLE });
+    }
+  }
+
+  async findArchivedByOwner(ownerId: string): Promise<Workspace[]> {
+    try {
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select(COLUMNS)
+        .eq('owner_id', ownerId)
+        .not('archived_at', 'is', null)
+        .order('archived_at', { ascending: false });
+
+      if (error) {
+        handleSupabaseError(error, { operation: '보관함 조회', table: TABLE });
+      }
+      return ((data ?? []) as Record<string, unknown>[]).map(rowToWorkspace);
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      handleSupabaseError(error, { operation: '보관함 조회', table: TABLE });
     }
   }
 }

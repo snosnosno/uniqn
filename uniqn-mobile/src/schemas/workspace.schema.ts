@@ -95,3 +95,17 @@ export const respondInvitationSchema = z.object({
 });
 
 export type RespondInvitationData = z.infer<typeof respondInvitationSchema>;
+
+// ============================================================================
+// 아카이브 / 복원 (RPC 입력)
+// ============================================================================
+
+export const archiveWorkspaceSchema = z.object({
+  workspaceId: z.string().uuid({ message: '올바른 워크스페이스 ID 가 아닙니다' }),
+});
+export type ArchiveWorkspaceData = z.infer<typeof archiveWorkspaceSchema>;
+
+export const restoreWorkspaceSchema = z.object({
+  workspaceId: z.string().uuid({ message: '올바른 워크스페이스 ID 가 아닙니다' }),
+});
+export type RestoreWorkspaceData = z.infer<typeof restoreWorkspaceSchema>;

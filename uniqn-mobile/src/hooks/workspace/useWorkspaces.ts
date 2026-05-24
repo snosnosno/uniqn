@@ -335,3 +335,65 @@ export function useUpdateWorkspaceName(workspaceId: string | undefined) {
     },
   });
 }
+
+// ============================================================================
+// useArchivedWorkspaces — 보관함 (내가 owner 인 아카이브된 워크스페이스)
+// ============================================================================
+
+export interface UseArchivedWorkspacesResult {
+  archived: Workspace[];
+  isLoading: boolean;
+  error: unknown;
+  refetch: () => void;
+}
+
+export function useArchivedWorkspaces(): UseArchivedWorkspacesResult {
+  const { user } = useAuthStore();
+  const userId = user?.uid;
+
+  const query = useQuery({
+    queryKey: userId
+      ? queryKeys.workspaces.archivedForUser(userId)
+      : [...queryKeys.workspaces.all, 'archived', 'anonymous'],
+    queryFn: () => workspaceService.listArchivedWorkspaces(userId!),
+    enabled: !!userId,
+    staleTime: cachingPolicies.frequent,
+  });
+
+  return {
+    archived: query.data ?? [],
+    isLoading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
+}
+
+// ============================================================================
+// useArchiveWorkspace / useRestoreWorkspace
+// ============================================================================
+
+function useInvalidateWorkspaceLists() {
+  const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+  return () => {
+    if (!user?.uid) return;
+    queryClient.invalidateQueries({ queryKey: queryKeys.workspaces.listForUser(user.uid) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.workspaces.archivedForUser(user.uid) });
+  };
+}
+
+export function useArchiveWorkspace() {
+  const invalidate = useInvalidateWorkspaceLists();
+  return useMutation({
+    mutationFn: (workspaceId: string) => workspaceService.archiveWorkspace({ workspaceId }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useRestoreWorkspace() {
+  const invalidate = useInvalidateWorkspaceLists();
+  return useMutation({
+    mutationFn: (workspaceId: string) => workspaceService.restoreWorkspace({ workspaceId }),
+    onSuccess: invalidate,
+  });
+}

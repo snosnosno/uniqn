@@ -24,6 +24,7 @@ import {
   useRemoveWorkspaceMember,
   useCreateWorkspace,
   useWorkspaces,
+  useArchiveWorkspace,
 } from '@/hooks/workspace';
 import { WorkspaceContextBar } from '@/components/workspace';
 import { logger } from '@/utils/logger';
@@ -51,6 +52,26 @@ export default function WorkspaceSettingsScreen() {
   const updateNameMutation = useUpdateWorkspaceName(activeWorkspace?.id);
   const removeMemberMutation = useRemoveWorkspaceMember(activeWorkspace?.id);
   const createMutation = useCreateWorkspace();
+  const archiveMutation = useArchiveWorkspace();
+
+  const handleArchive = useCallback(() => {
+    if (!activeWorkspace) return;
+    showConfirm(
+      '워크스페이스 보관',
+      `'${activeWorkspace.name}' 워크스페이스를 보관할까요?\n공고와 기록은 보존되며 보관함에서 복원할 수 있어요.`,
+      async () => {
+        try {
+          await archiveMutation.mutateAsync(activeWorkspace.id);
+          addToast({ type: 'success', message: '워크스페이스를 보관했어요' });
+        } catch (err) {
+          logger.warn('워크스페이스 보관 실패', { error: String(err) });
+          const message =
+            isAppError(err) && err.userMessage ? err.userMessage : '보관에 실패했어요';
+          addToast({ type: 'error', message });
+        }
+      }
+    );
+  }, [activeWorkspace, archiveMutation, addToast, showConfirm]);
 
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
@@ -321,6 +342,26 @@ export default function WorkspaceSettingsScreen() {
             </>
           )}
         </View>
+
+        {/* 보관함 + 워크스페이스 보관 (owner 전용) */}
+        {isOwner && (
+          <View className="mt-8 gap-3 px-4">
+            <Pressable
+              onPress={() => router.push('/(employer)/workspace/archived')}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="보관함 열기"
+              className="min-h-[44px] flex-row items-center justify-between rounded-md bg-white px-4 py-3 dark:bg-surface-elevated"
+            >
+              <Text className="text-sm font-sans-medium text-content-primary">보관함</Text>
+              <Text className="text-sm text-content-secondary">보관한 워크스페이스 복원 ›</Text>
+            </Pressable>
+
+            <Button variant="secondary" onPress={handleArchive} loading={archiveMutation.isPending}>
+              이 워크스페이스 보관
+            </Button>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

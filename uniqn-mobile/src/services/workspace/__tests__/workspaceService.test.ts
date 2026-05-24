@@ -1,5 +1,6 @@
 import { workspaceService } from '@/services/workspace/workspaceService';
-import { BusinessError, ERROR_CODES } from '@/errors';
+import { BusinessError, ERROR_CODES, ValidationError } from '@/errors';
+import { workspaceRepository } from '@/repositories';
 import type { Workspace } from '@/types/workspace';
 
 const mockFindAllByMember = jest.fn();
@@ -9,6 +10,9 @@ jest.mock('@/repositories', () => ({
   workspaceRepository: {
     findAllByMember: (...args: unknown[]) => mockFindAllByMember(...args),
     create: (...args: unknown[]) => mockCreate(...args),
+    archiveViaRpc: jest.fn(),
+    restoreViaRpc: jest.fn(),
+    findArchivedByOwner: jest.fn(),
   },
   workspaceMemberRepository: {
     findByWorkspaceWithUser: jest.fn(),
@@ -44,6 +48,7 @@ function workspace(overrides: Partial<Workspace> = {}): Workspace {
     memberCount: 1,
     createdAt: '2026-05-01T00:00:00.000Z',
     updatedAt: '2026-05-01T00:00:00.000Z',
+    archivedAt: null,
     ...overrides,
   };
 }
@@ -113,5 +118,37 @@ describe('workspaceService.getDefaultWorkspaceIdForOwner', () => {
 
     expect(id).toBe('ws-auto');
     expect(mockCreate).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('workspaceService - archive/restore', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('archiveWorkspace 는 repository.archiveViaRpc 에 위임한다', async () => {
+    const spy = jest.spyOn(workspaceRepository, 'archiveViaRpc').mockResolvedValue(undefined);
+    await workspaceService.archiveWorkspace({
+      workspaceId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+    });
+    expect(spy).toHaveBeenCalledWith('f47ac10b-58cc-4372-a567-0e02b2c3d479');
+  });
+
+  it('archiveWorkspace 는 잘못된 ID 를 ValidationError 로 거부한다', async () => {
+    await expect(
+      workspaceService.archiveWorkspace({ workspaceId: 'not-a-uuid' })
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it('restoreWorkspace 는 repository.restoreViaRpc 에 위임한다', async () => {
+    const spy = jest.spyOn(workspaceRepository, 'restoreViaRpc').mockResolvedValue(undefined);
+    await workspaceService.restoreWorkspace({
+      workspaceId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+    });
+    expect(spy).toHaveBeenCalledWith('f47ac10b-58cc-4372-a567-0e02b2c3d479');
+  });
+
+  it('listArchivedWorkspaces 는 repository.findArchivedByOwner 에 위임한다', async () => {
+    const spy = jest.spyOn(workspaceRepository, 'findArchivedByOwner').mockResolvedValue([]);
+    await workspaceService.listArchivedWorkspaces('owner-1');
+    expect(spy).toHaveBeenCalledWith('owner-1');
   });
 });
