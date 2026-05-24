@@ -7,6 +7,7 @@
 
 import React, { useCallback } from 'react';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { STATUS_COLORS } from '@/constants/colors';
 import { WifiOff, RefreshCw } from '../icons';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
@@ -49,6 +50,7 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = React.memo(
   }) => {
     const { isOffline, isChecking, checkConnection } = useNetworkStatus();
     const [isRetrying, setIsRetrying] = React.useState(false);
+    const insets = useSafeAreaInsets();
 
     const handleRetry = useCallback(async () => {
       setIsRetrying(true);
@@ -67,7 +69,8 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = React.memo(
     if (variant === 'toast') {
       return (
         <View
-          className="absolute top-12 left-4 right-4 z-50"
+          className="absolute left-4 right-4 z-50"
+          style={{ top: insets.top + 8 }}
           accessibilityRole="alert"
           accessibilityLiveRegion="assertive"
         >
@@ -145,7 +148,8 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = React.memo(
     // 기본 배너 스타일
     return (
       <View
-        className="bg-error-600 dark:bg-error-700 px-4 py-3"
+        className="bg-error-600 dark:bg-error-700 px-4 pb-3"
+        style={{ paddingTop: insets.top + 12 }}
         accessibilityRole="alert"
         accessibilityLiveRegion="assertive"
       >
