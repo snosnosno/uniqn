@@ -671,8 +671,6 @@ export default function ScheduleScreen() {
                       key={item.id}
                       schedule={item}
                       onPress={() => handleOpenDetailSheet(item)}
-                      onCancelApplication={handleCancelApplication}
-                      onRequestCancellation={handleRequestCancellation}
                     />
                   );
                 })}
@@ -733,8 +731,6 @@ export default function ScheduleScreen() {
                       key={item.id}
                       schedule={item}
                       onPress={() => handleOpenDetailSheet(item)}
-                      onCancelApplication={handleCancelApplication}
-                      onRequestCancellation={handleRequestCancellation}
                     />
                   );
                 })}
