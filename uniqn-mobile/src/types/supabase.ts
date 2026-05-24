@@ -690,6 +690,7 @@ export type Database = {
           agreements_snapshot: Json;
           created_at: string | null;
           id: string;
+          intro: string | null;
           rejection_category: string | null;
           rejection_reason: string | null;
           reviewed_at: string | null;
@@ -703,6 +704,7 @@ export type Database = {
           agreements_snapshot: Json;
           created_at?: string | null;
           id?: string;
+          intro?: string | null;
           rejection_category?: string | null;
           rejection_reason?: string | null;
           reviewed_at?: string | null;
@@ -716,6 +718,7 @@ export type Database = {
           agreements_snapshot?: Json;
           created_at?: string | null;
           id?: string;
+          intro?: string | null;
           rejection_category?: string | null;
           rejection_reason?: string | null;
           reviewed_at?: string | null;
@@ -2530,7 +2533,7 @@ export type Database = {
         Returns: Json;
       };
       register_as_employer: {
-        Args: { p_employer_agreements?: Json };
+        Args: { p_employer_agreements?: Json; p_intro?: string };
         Returns: Json;
       };
       reject_employer_application: {
