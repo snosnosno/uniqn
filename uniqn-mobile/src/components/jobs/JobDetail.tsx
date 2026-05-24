@@ -3,6 +3,10 @@ import { Linking, Pressable, Text, View } from 'react-native';
 import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';
 import { Badge } from '@/components/ui/Badge';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import {
+  extractPostingFilledSubmap,
+  usePostingFilledCounts,
+} from '@/hooks/usePostingFilledCounts';
 import { buildPostingFacts, projectPostingSurface } from '@/domains/job-posting';
 import { useAuthStore } from '@/stores';
 import type { JobPosting, PostingDetailViewModel } from '@/types';
@@ -70,6 +74,12 @@ export function JobDetail({ job }: JobDetailProps) {
     userId: detail.ownerId || '',
     enabled: canReadOwnerProfile && Boolean(detail.ownerId),
   });
+
+  const { data: filledAll } = usePostingFilledCounts([job.id]);
+  const filledCounts = useMemo(
+    () => extractPostingFilledSubmap(filledAll, job.id),
+    [filledAll, job.id]
+  );
 
   const handleCall = () => {
     if (detail.contactPhone) {
@@ -153,6 +163,7 @@ export function JobDetail({ job }: JobDetailProps) {
                 isStartTimeNegotiable={detail.isStartTimeNegotiable}
                 requiredRolesWithCount={detail.requiredRolesWithCount}
                 showFilledCount={true}
+                filledCounts={filledCounts}
               />
             </View>
           </View>

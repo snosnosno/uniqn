@@ -43,6 +43,10 @@ import { buildPostingFacts, projectPostingSurface } from '@/domains/job-posting'
 import { useApplicantsByJobPosting } from '@/hooks/applicant';
 import { useJobDetail } from '@/hooks/useJobDetail';
 import { useDeleteJobPosting } from '@/hooks/useJobManagement';
+import {
+  extractPostingFilledSubmap,
+  usePostingFilledCounts,
+} from '@/hooks/usePostingFilledCounts';
 import { useThemeStore } from '@/stores/themeStore';
 import type { PostingManagementViewModel, PostingType, TournamentApprovalStatus } from '@/types';
 
@@ -138,6 +142,13 @@ export default function JobPostingDetailScreen() {
           }) as PostingManagementViewModel)
         : null,
     [postingFacts]
+  );
+
+  const postingId = id || '';
+  const { data: filledAll } = usePostingFilledCounts([postingId]);
+  const filledCounts = useMemo(
+    () => extractPostingFilledSubmap(filledAll, postingId),
+    [filledAll, postingId]
   );
 
   const handleApplicants = useCallback(() => {
@@ -321,6 +332,7 @@ export default function JobPostingDetailScreen() {
                       isStartTimeNegotiable={managementView.isStartTimeNegotiable}
                       requiredRolesWithCount={managementView.requiredRolesWithCount}
                       showFilledCount
+                      filledCounts={filledCounts}
                     />
                   </View>
                 </View>

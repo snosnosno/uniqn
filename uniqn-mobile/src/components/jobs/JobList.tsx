@@ -19,6 +19,7 @@ interface JobListProps {
   onJobPress: (jobId: string) => void;
   emptyMessage?: string;
   error?: Error | null;
+  filledCounts?: Map<string, number>;
 }
 
 export function JobList({
@@ -32,10 +33,13 @@ export function JobList({
   onJobPress,
   emptyMessage = '등록된 공고가 없습니다',
   error,
+  filledCounts,
 }: JobListProps) {
   const renderItem = useCallback(
-    ({ item }: { item: JobPostingCard }) => <JobCard job={item} onPress={onJobPress} />,
-    [onJobPress]
+    ({ item }: { item: JobPostingCard }) => (
+      <JobCard job={item} onPress={onJobPress} filledCounts={filledCounts} />
+    ),
+    [onJobPress, filledCounts]
   );
 
   const renderFooter = useCallback(() => {

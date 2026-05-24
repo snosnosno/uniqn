@@ -24,6 +24,7 @@ interface PostingCardSurfaceProps {
   accessibilityLabel?: string;
   accessibilityHint?: string;
   stripeTone?: CardStripeTone;
+  filledCounts?: Map<string, number>;
 }
 
 export function PostingCardSurface({
@@ -38,6 +39,7 @@ export function PostingCardSurface({
   accessibilityLabel,
   accessibilityHint,
   stripeTone,
+  filledCounts,
 }: PostingCardSurfaceProps) {
   const schedule = buildPostingScheduleModel(card);
   const compensation = buildPostingCompensationModel(card, { display: 'card' });
@@ -99,6 +101,7 @@ export function PostingCardSurface({
               startTime={card.startTime}
               requiredRolesWithCount={card.requiredRolesWithCount}
               displayContext={card.displayContext}
+              filledCounts={filledCounts}
             />
           </View>
 
