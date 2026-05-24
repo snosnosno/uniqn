@@ -309,7 +309,7 @@ function toRoleModels(
     const label = getRoleDisplayName(role.role || role.name || '', role.customRole);
     const count = role.count ?? role.headcount ?? 0;
     const hydrated = ctx?.filledCounts?.get(`${ctx.date}__${ctx.slotKey}__${roleMatchKey(role)}`);
-    const filled = hydrated ?? (role.filled ?? 0);
+    const filled = hydrated ?? role.filled ?? 0;
     const keySource =
       role.role === 'other' && role.customRole
         ? `other:${role.customRole}`

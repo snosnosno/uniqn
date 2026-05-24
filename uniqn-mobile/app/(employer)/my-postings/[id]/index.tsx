@@ -43,10 +43,7 @@ import { buildPostingFacts, projectPostingSurface } from '@/domains/job-posting'
 import { useApplicantsByJobPosting } from '@/hooks/applicant';
 import { useJobDetail } from '@/hooks/useJobDetail';
 import { useDeleteJobPosting } from '@/hooks/useJobManagement';
-import {
-  extractPostingFilledSubmap,
-  usePostingFilledCounts,
-} from '@/hooks/usePostingFilledCounts';
+import { extractPostingFilledSubmap, usePostingFilledCounts } from '@/hooks/usePostingFilledCounts';
 import { useThemeStore } from '@/stores/themeStore';
 import type { PostingManagementViewModel, PostingType, TournamentApprovalStatus } from '@/types';
 

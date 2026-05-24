@@ -295,6 +295,8 @@ function mapCancelErrorToMessage(errorCode: string): string {
       return '취소 권한이 없습니다.';
     case 'invalid_actor_type':
       return '취소 액션 유형이 올바르지 않습니다.';
+    case 'staff_already_checked_in':
+      return '이미 출근한 스태프예요. 정산 처리 후 취소할 수 있어요.';
     default:
       return '확정 취소에 실패했습니다.';
   }

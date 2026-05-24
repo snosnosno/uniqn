@@ -3,10 +3,7 @@ import { Linking, Pressable, Text, View } from 'react-native';
 import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';
 import { Badge } from '@/components/ui/Badge';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import {
-  extractPostingFilledSubmap,
-  usePostingFilledCounts,
-} from '@/hooks/usePostingFilledCounts';
+import { extractPostingFilledSubmap, usePostingFilledCounts } from '@/hooks/usePostingFilledCounts';
 import { buildPostingFacts, projectPostingSurface } from '@/domains/job-posting';
 import { useAuthStore } from '@/stores';
 import type { JobPosting, PostingDetailViewModel } from '@/types';
