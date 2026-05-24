@@ -6,14 +6,16 @@ import { buildPostingScheduleModel, FOCUSED_GROUP_DATE_HINT } from './postingSur
 interface PostingScheduleContentProps extends PostingScheduleSource {
   display: 'card' | 'detail';
   showFilledCount?: boolean;
+  filledCounts?: Map<string, number>;
 }
 
 export function PostingScheduleContent({
   display,
   showFilledCount = true,
+  filledCounts,
   ...source
 }: PostingScheduleContentProps) {
-  const schedule = buildPostingScheduleModel(source);
+  const schedule = buildPostingScheduleModel(source, filledCounts);
   const shouldShowFocusedGroupHint = display === 'card' && source.displayContext?.wasGroupedRange;
 
   if (schedule.variant === 'fixed') {

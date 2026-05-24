@@ -149,7 +149,10 @@ export function shouldShowUrgentBadge(
   return Boolean(isUrgent && postingType !== 'urgent');
 }
 
-export function buildPostingScheduleModel(source: PostingScheduleSource): PostingScheduleModel {
+export function buildPostingScheduleModel(
+  source: PostingScheduleSource,
+  filledCounts?: Map<string, number>
+): PostingScheduleModel {
   if (source.workflow.isFixed) {
     const fixed = source.scheduleDisplay.fixed;
     const roles = toRoleModels(fixed?.roles ?? source.requiredRolesWithCount ?? []);
@@ -182,12 +185,14 @@ export function buildPostingScheduleModel(source: PostingScheduleSource): Postin
               : formatDateRangeWithCount(group.startDate, group.endDate),
           dayCount: getDayCount(group.startDate, group.endDate),
           timeSlots: group.timeSlots,
+          matchDate: undefined as string | undefined,
         }))
       : source.scheduleDisplay.dateRequirements.map((requirement, index) => ({
           key: `${requirement.date}-${index}`,
           label: formatDateLabel(requirement.date),
           dayCount: 1,
           timeSlots: requirement.timeSlots,
+          matchDate: requirement.date as string | undefined,
         }));
 
   if (sectionSources.length > 0) {
@@ -198,7 +203,12 @@ export function buildPostingScheduleModel(source: PostingScheduleSource): Postin
         return {
           key: `${section.key}-${timeLabel}-${slotIndex}`,
           timeLabel,
-          roles: toRoleModels(slot.roles),
+          roles: toRoleModels(
+            slot.roles,
+            section.matchDate
+              ? { date: section.matchDate, slotKey: slotMatchKey(slot), filledCounts }
+              : undefined
+          ),
         };
       });
       const totalCount = timeSlots.reduce(
@@ -281,11 +291,25 @@ function pickMaxSalaryRowText(rows: readonly PostingSalaryRow[]): string | undef
   return best?.text;
 }
 
-function toRoleModels(roles: readonly RoleSource[]): PostingRoleDisplayModel[] {
+function slotMatchKey(slot: TimeSlotSource): string {
+  if (slot.isTimeToBeAnnounced) return UNKNOWN_TIME_LABEL;
+  return slot.startTime || slot.time || UNKNOWN_TIME_LABEL;
+}
+
+function roleMatchKey(role: RoleSource): string {
+  if (role.role === 'other' && role.customRole) return `other:${role.customRole}`;
+  return role.role || role.name || '';
+}
+
+function toRoleModels(
+  roles: readonly RoleSource[],
+  ctx?: { date: string; slotKey: string; filledCounts?: Map<string, number> }
+): PostingRoleDisplayModel[] {
   return roles.map((role, index) => {
     const label = getRoleDisplayName(role.role || role.name || '', role.customRole);
     const count = role.count ?? role.headcount ?? 0;
-    const filled = role.filled ?? 0;
+    const hydrated = ctx?.filledCounts?.get(`${ctx.date}__${ctx.slotKey}__${roleMatchKey(role)}`);
+    const filled = hydrated ?? (role.filled ?? 0);
     const keySource =
       role.role === 'other' && role.customRole
         ? `other:${role.customRole}`
