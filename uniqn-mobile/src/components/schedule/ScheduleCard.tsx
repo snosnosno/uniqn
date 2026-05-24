@@ -5,7 +5,7 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { CardStripe, Badge, FocusablePressable } from '@/components/ui';
+import { CardStripe, Badge } from '@/components/ui';
 import {
   CalendarIcon,
   ClockIcon,
@@ -38,29 +38,18 @@ import {
 import { STATUS } from '@/constants';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 import { WorkTimeDisplay } from '@/shared/time';
-import { useModalStore } from '@/stores/modalStore';
 import type { ScheduleEvent } from '@/types';
 
 export interface ScheduleCardProps {
   schedule: ScheduleEvent;
   onPress?: () => void;
-  /** applied 상태에서 "지원 취소" 액션 (applicationId 필요) */
-  onCancelApplication?: (applicationId: string) => void;
-  /** confirmed 상태에서 "취소 요청" 액션 (applicationId 필요) */
-  onRequestCancellation?: (applicationId: string) => void;
 }
 
-export const ScheduleCard = memo(function ScheduleCard({
-  schedule,
-  onPress,
-  onCancelApplication,
-  onRequestCancellation,
-}: ScheduleCardProps) {
+export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: ScheduleCardProps) {
   const status = statusConfig[schedule.type];
   const attendance = attendanceConfig[schedule.status];
   const ownerName = schedule.postingProjection?.ownerName;
   const hasPendingCancellation = Boolean(schedule.isCancellationPending);
-  const showConfirm = useModalStore((s) => s.showConfirm);
 
   const projectedSalary = useMemo(
     () =>
@@ -262,43 +251,6 @@ export const ScheduleCard = memo(function ScheduleCard({
               </View>
             </View>
           )}
-
-          {/* 인라인 액션 버튼 — applied/confirmed 상태에서 직접 취소 가능 */}
-          {schedule.applicationId &&
-            !hasPendingCancellation &&
-            !isCancelled &&
-            ((schedule.type === STATUS.SCHEDULE.APPLIED && onCancelApplication) ||
-              (schedule.type === STATUS.SCHEDULE.CONFIRMED && onRequestCancellation)) && (
-              <View className="mt-3 flex-row justify-end">
-                <FocusablePressable
-                  onPress={(event) => {
-                    event.stopPropagation();
-                    if (!schedule.applicationId) return;
-                    const id = schedule.applicationId;
-                    if (schedule.type === STATUS.SCHEDULE.APPLIED) {
-                      showConfirm(
-                        '지원 취소',
-                        '정말 지원을 취소하시겠습니까?\n취소 후에는 다시 지원해야 합니다.',
-                        () => onCancelApplication?.(id)
-                      );
-                    } else if (schedule.type === STATUS.SCHEDULE.CONFIRMED) {
-                      onRequestCancellation?.(id);
-                    }
-                  }}
-                  hitSlop={10}
-                  focusRingRadius={6}
-                  className="rounded-md border border-secondary-200 px-3 py-1.5 min-h-[36px] active:bg-secondary-50 dark:border-surface-overlay dark:active:bg-surface-overlay"
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    schedule.type === STATUS.SCHEDULE.APPLIED ? '지원 취소' : '취소 요청'
-                  }
-                >
-                  <Text className="text-xs font-sans-medium text-content-secondary dark:text-secondary-300">
-                    {schedule.type === STATUS.SCHEDULE.APPLIED ? '지원 취소' : '취소 요청'}
-                  </Text>
-                </FocusablePressable>
-              </View>
-            )}
 
           {hasPendingCancellation && (
             <View className="mt-3 rounded-lg bg-warning-50 px-3 py-2 dark:bg-warning-900/20">

@@ -38,6 +38,23 @@ describe('ScheduleCard', () => {
     expect(getByText('취소 요청 검토 중입니다.')).toBeTruthy();
   });
 
+  // 카드 안에 인라인 "지원 취소" 버튼을 두면 카드 전체 Pressable(웹 <button>)
+  // 안에 또 다른 Pressable(<button>)이 중첩되어 hydration 에러가 난다.
+  // 취소 기능은 ScheduleDetailModal 로 일원화했으므로 카드에는 없어야 한다.
+  it('does not render an inline cancel action inside the card', () => {
+    const schedule = {
+      ...createMockScheduleEvent({
+        type: 'applied',
+        applicationId: 'app-1',
+      }),
+    } as unknown as ScheduleEvent;
+
+    const { queryByText } = render(<ScheduleCard schedule={schedule} onPress={() => {}} />);
+
+    expect(queryByText('지원 취소')).toBeNull();
+    expect(queryByText('취소 요청')).toBeNull();
+  });
+
   it('drops the pending-cancellation notice once approval resolves to cancelled', () => {
     const schedule = createMockScheduleEvent({
       type: 'cancelled',
