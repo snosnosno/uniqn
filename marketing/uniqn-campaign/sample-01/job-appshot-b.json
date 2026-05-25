@@ -1,0 +1,28 @@
+[
+  {
+    "id": "3f3baa06-e4bb-498c-a8d5-c677377b07d2",
+    "status": "completed",
+    "display_name": "Nano Banana Pro",
+    "job_set_type": "nano_banana_2",
+    "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3Dn3uLivLnxVbq9ESqnYPV20SJY/hf_20260525_071327_3f3baa06-e4bb-498c-a8d5-c677377b07d2.png",
+    "created_at": 1779693207.20126,
+    "params": {
+      "width": 2048,
+      "height": 2048,
+      "aspect_ratio": "1:1",
+      "resolution": "2k",
+      "batch_size": 1,
+      "input_images": [
+        {
+          "id": "f1767930-11dd-4c11-91cb-7a4d1033e4b0",
+          "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_3Dn3uLivLnxVbq9ESqnYPV20SJY/f1767930-11dd-4c11-91cb-7a4d1033e4b0.png",
+          "type": "media_input"
+        }
+      ],
+      "input_image": null,
+      "application": null,
+      "surface": null,
+      "prompt": "Place the provided app screenshot exactly and legibly onto the screen of a modern smartphone, shown as a clean minimal product mockup floating at a slight angle with a soft drop shadow. Background: a smooth premium gradient from deep gold to near-black, subtle, no clutter. NO people, no hands, no extra objects. Keep the phone screen content identical to the reference image — do not alter, translate, or redraw the UI. Studio product photography, crisp, high detail, square 1:1 composition, phone centered and large."
+    }
+  }
+]

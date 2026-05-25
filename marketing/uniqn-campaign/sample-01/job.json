@@ -1,0 +1,22 @@
+[
+  {
+    "id": "98242ce2-d2da-4d28-b569-bf60437d34ca",
+    "status": "completed",
+    "display_name": "Seedream 4.5",
+    "job_set_type": "seedream_v4_5",
+    "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3Dn3uLivLnxVbq9ESqnYPV20SJY/hf_20260525_064009_98242ce2-d2da-4d28-b569-bf60437d34ca.png",
+    "created_at": 1779691209.966521,
+    "params": {
+      "prompt": "Bright modern Texas Hold'em poker tournament hall, multiple green felt poker tables in rows, tournament banners and overhead stage lighting, lively crowd of players and staff, candid energetic atmosphere. In the foreground, a poker room staff member (no clear face, three-quarter or side angle) holds a modern smartphone front-facing toward the camera; the phone screen is blank with a soft warm gold glow (leave the screen empty for later UI compositing). Bright clean lighting with subtle gold accents, premium but approachable, photorealistic, cinematic, shallow depth of field, high detail. Square 1:1 composition, the phone held large and unobstructed in frame.",
+      "batch_size": 1,
+      "quality": "basic",
+      "aspect_ratio": "1:1",
+      "seed": 891681,
+      "width": 2048,
+      "height": 2048,
+      "input_images": [],
+      "use_unlim": false,
+      "reference_elements": []
+    }
+  }
+]

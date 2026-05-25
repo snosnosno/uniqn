@@ -1,0 +1,28 @@
+[
+  {
+    "id": "2a5f6376-449a-49fd-bcdc-7567b94798fc",
+    "status": "completed",
+    "display_name": "Nano Banana Pro",
+    "job_set_type": "nano_banana_2",
+    "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3Dn3uLivLnxVbq9ESqnYPV20SJY/hf_20260525_075526_2a5f6376-449a-49fd-bcdc-7567b94798fc.png",
+    "created_at": 1779695726.281177,
+    "params": {
+      "width": 1856,
+      "height": 2304,
+      "aspect_ratio": "4:5",
+      "resolution": "2k",
+      "batch_size": 1,
+      "input_images": [
+        {
+          "id": "a6108901-307a-415b-b5b1-8b03c7f09079",
+          "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_3Dn3uLivLnxVbq9ESqnYPV20SJY/a6108901-307a-415b-b5b1-8b03c7f09079.png",
+          "type": "media_input"
+        }
+      ],
+      "input_image": null,
+      "application": null,
+      "surface": null,
+      "prompt": "Vertical 4:5 marketing composition for a premium app. Position a large smartphone on the RIGHT side of the frame so its center sits around 72 percent of the width; the ENTIRE phone is fully visible with comfortable margin from the top, right and bottom edges — do NOT crop the phone. The phone screen displays the provided app screenshot exactly and legibly — do not alter, translate, redraw or crop the on-screen UI. The LEFT 45 percent of the frame must be clean empty negative space: a smooth dark near-black to deep gold gradient with only very subtle soft bokeh, absolutely NO objects, chips, cards, or text on the left half. Place a few stacked gold poker chips and one or two playing cards ONLY in the bottom-right corner near the base of the phone. Black and Gold premium aesthetic, warm gold rim light. NO people, no hands, NO text or letters anywhere. Photorealistic, cinematic, high detail."
+    }
+  }
+]
