@@ -1,4 +1,4 @@
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import { Platform, Pressable, Text, View, type GestureResponderEvent } from 'react-native';
 import { STATUS_COLORS } from '@/constants/colors';
 import { HIT_SLOP } from '@/constants';
@@ -34,7 +34,10 @@ export const JobCard = memo(function JobCard({
 }: JobCardProps) {
   const { isBookmarked, toggleBookmark } = useBookmarks();
   const bookmarked = isBookmarked(job.id);
-  const cardFilledCounts = extractPostingFilledSubmap(filledCounts, job.id);
+  const cardFilledCounts = useMemo(
+    () => extractPostingFilledSubmap(filledCounts, job.id),
+    [filledCounts, job.id]
+  );
 
   const handlePress = useCallback(() => {
     onPress(job.id);
