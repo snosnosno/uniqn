@@ -1,5 +1,5 @@
 import type { Assignment, JobPosting } from '@/types';
-import { TBA_TIME_MARKER } from '@/types/assignment';
+import { FIXED_DATE_MARKER, TBA_TIME_MARKER } from '@/types/assignment';
 import { WorkLogCreator } from '@/domains/schedule';
 
 export interface SlotCapacityIssue {
@@ -33,11 +33,15 @@ function getCapacityKey(date: string, timeSlot: string, roleId: string): string 
 export function buildPostingSlotCapacityMap(posting: JobPosting): Map<string, SlotCapacityIssue> {
   const capacityMap = new Map<string, SlotCapacityIssue>();
 
-  if (posting.schedule.kind !== 'dated') {
+  if (posting.schedule.kind !== 'dated' && posting.schedule.kind !== 'fixed') {
     return capacityMap;
   }
 
-  posting.schedule.requirements.forEach((requirement) => {
+  (posting.schedule.requirements ?? []).forEach((requirement) => {
+    // fixed 스케줄의 requirement.date는 null — FIXED_DATE_MARKER로 정규화하여
+    // assignment 측 dates:['FIXED_SCHEDULE']과 키가 일치하도록 한다.
+    const effectiveDate = requirement.date ?? FIXED_DATE_MARKER;
+
     requirement.timeSlots.forEach((slot) => {
       // AssignmentSelector.getSlotSelectionTime 과 동일한 해석을 사용해야 한다.
       // 시간 미정(isTimeToBeAnnounced) 슬롯은 startTime 이 없으므로 TBA_TIME_MARKER 로 키를 만든다.
@@ -51,9 +55,9 @@ export function buildPostingSlotCapacityMap(posting: JobPosting): Map<string, Sl
           return;
         }
 
-        const key = getCapacityKey(requirement.date, slotStartTime, roleId);
+        const key = getCapacityKey(effectiveDate, slotStartTime, roleId);
         capacityMap.set(key, {
-          date: requirement.date,
+          date: effectiveDate,
           timeSlot: slotStartTime,
           roleId,
           count: role.count,
@@ -72,7 +76,7 @@ export function validateAssignmentSlotCapacity(
   posting: JobPosting,
   assignments: Assignment[]
 ): SlotCapacityValidationResult {
-  if (posting.schedule.kind !== 'dated') {
+  if (posting.schedule.kind !== 'dated' && posting.schedule.kind !== 'fixed') {
     return {
       available: false,
       issues: [

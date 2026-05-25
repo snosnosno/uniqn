@@ -307,48 +307,17 @@ function mapCancelErrorToMessage(errorCode: string): string {
 // ============================================================================
 
 function validateConfirmCapacity(
-  isFixedPosting: boolean,
+  _isFixedPosting: boolean,
   assignmentsToConfirm: Assignment[],
   jobData: JobPosting,
   applicationData: Application
 ): void {
-  if (isFixedPosting) {
-    const fixedRoleId = assignmentsToConfirm[0]?.roleIds?.[0];
-    if (
-      !fixedRoleId ||
-      assignmentsToConfirm.length !== 1 ||
-      assignmentsToConfirm[0].roleIds.length !== 1
-    ) {
-      throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-        userMessage: '고정공고는 역할 1개만 확정할 수 있습니다.',
-      });
-    }
-    const fixedSchedule = jobData.schedule as {
-      roleRequirements?: {
-        role?: string;
-        customRole?: string;
-        count: number;
-        filled?: number;
-      }[];
-    };
-    const targetRole = (fixedSchedule.roleRequirements ?? []).find(
-      (role) =>
-        role.role === fixedRoleId || (role.role === 'other' && role.customRole === fixedRoleId)
-    );
-    if (!targetRole || (targetRole.filled ?? 0) >= targetRole.count) {
-      throw new MaxCapacityReachedError({
-        userMessage: '선택한 역할의 모집 인원이 마감되었습니다.',
-        jobPostingId: applicationData.jobPostingId,
-      });
-    }
-  } else {
-    const slotCapacity = validateAssignmentSlotCapacity(jobData, assignmentsToConfirm);
-    if (!slotCapacity.available) {
-      throw new MaxCapacityReachedError({
-        userMessage: '모집 인원이 마감되었습니다.',
-        jobPostingId: applicationData.jobPostingId,
-      });
-    }
+  const slotCapacity = validateAssignmentSlotCapacity(jobData, assignmentsToConfirm);
+  if (!slotCapacity.available) {
+    throw new MaxCapacityReachedError({
+      userMessage: '모집 인원이 마감되었습니다.',
+      jobPostingId: applicationData.jobPostingId,
+    });
   }
 }
 
