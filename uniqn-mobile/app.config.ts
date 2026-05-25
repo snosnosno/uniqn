@@ -16,7 +16,10 @@ import { ExpoConfig, ConfigContext } from 'expo/config';
 // 상수
 // ============================================================================
 
-const VERSION = '1.0.2';
+// 버전 단일 소스: package.json. `npm version patch` 한 번으로 올리면 앱 전체가 따라온다.
+const VERSION =
+  (JSON.parse(fs.readFileSync(`${__dirname}/package.json`, 'utf-8')) as { version?: string })
+    .version ?? '0.0.0';
 const SLUG = 'uniqn';
 const DOMAIN = 'uniqn.app';
 const EAS_PROJECT_ID = '9bca3314-2a12-4654-ad9c-3ae43f8cf125';

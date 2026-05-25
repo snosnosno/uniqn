@@ -1,6 +1,6 @@
 {
   "name": "uniqn-mobile",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
@@ -26,6 +26,10 @@
     "audit": "npm audit",
     "audit:fix": "npm audit fix",
     "deploy:cloudflare": "node scripts/deploy-cloudflare.js",
+    "release:sync": "node scripts/sync-app-version.js",
+    "release:sync:dry": "node scripts/sync-app-version.js --dry-run",
+    "release:build": "eas build --platform all --profile production --auto-submit --non-interactive",
+    "release": "npm version patch -m \"chore(release): v%s\" && npm run release:build && npm run release:sync",
     "e2e": "node scripts/run-e2e.js",
     "e2e:ui": "node scripts/run-e2e.js --ui",
     "e2e:headed": "node scripts/run-e2e.js --headed",
