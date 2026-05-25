@@ -2,6 +2,8 @@ import type { JobPostingFormData, JobPostingTemplate } from '@/types';
 import { STAFF_ROLES } from '@/constants';
 import { buildSeedTimeSlots } from '@/utils/job-posting/draftRoles';
 import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types/jobPostingForm';
+import { INITIAL_JOB_POSTING_DRAFT } from '@/types/jobPostingDraft';
+import type { JobPostingDraft } from '@/types/jobPostingDraft';
 import { extractTemplateData, templateToFormData } from '@/types/jobTemplate';
 
 const DEALER_ROLE_NAME = STAFF_ROLES.find((role) => role.key === 'dealer')?.name ?? 'dealer';
@@ -17,6 +19,37 @@ function createTemplate(formData: JobPostingFormData): JobPostingTemplate {
     templateData: extractTemplateData(formData),
   };
 }
+
+describe('jobTemplate fixed schedule', () => {
+  // fixed 합성 슬롯 불변식: isTimeToBeAnnounced 가 소스에 없어도 템플릿 추출 시 false 로 고정돼야 한다.
+  // (buildFixedSyntheticRequirement 와 동일 — 누락 시 시간 미정 상태로 오인되는 발산 방지)
+  it('forces isTimeToBeAnnounced:false on fixed synthetic slot even when source omits it', () => {
+    const fixedDraft: JobPostingDraft = {
+      ...INITIAL_JOB_POSTING_DRAFT,
+      postingType: 'fixed',
+      schedule: {
+        kind: 'fixed',
+        daysPerWeek: 5,
+        startTime: '19:00',
+        requirements: [
+          {
+            date: null,
+            // isTimeToBeAnnounced 의도적 미설정
+            timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] }],
+          },
+        ],
+      },
+    } as JobPostingDraft;
+
+    const templateData = extractTemplateData(fixedDraft);
+    const schedule = templateData.schedule as
+      | { kind: string; requirements: { timeSlots: { isTimeToBeAnnounced?: boolean }[] }[] }
+      | undefined;
+
+    expect(schedule?.kind).toBe('fixed');
+    expect(schedule?.requirements[0].timeSlots[0].isTimeToBeAnnounced).toBe(false);
+  });
+});
 
 describe('jobTemplate dated template helpers', () => {
   it('stores a per-date seed schedule instead of aggregated role counts', () => {

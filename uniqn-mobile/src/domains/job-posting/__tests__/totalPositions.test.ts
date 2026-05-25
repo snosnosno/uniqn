@@ -41,6 +41,30 @@ describe('calculateTotalPositionsFromSchedule', () => {
       expect(calculateTotalPositionsFromSchedule(schedule)).toBe(0);
     });
 
+    // 같은 슬롯 안 동일 역할 중복 엔트리는 동시 필요 인원이므로 합산해야 한다.
+    // (peak-by-role 만 쓰면 [dealer:3, dealer:2] 가 max 3 으로 과소 집계되는 회귀)
+    it('sums duplicate same-role entries within one slot (dealer 3 + dealer 2 = 5)', () => {
+      const schedule: PostingSchedule = {
+        kind: 'fixed',
+        requirements: [
+          {
+            date: null,
+            timeSlots: [
+              {
+                startTime: '19:00',
+                isTimeToBeAnnounced: false,
+                roles: [
+                  { role: 'dealer', count: 3 },
+                  { role: 'dealer', count: 2 },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+      expect(calculateTotalPositionsFromSchedule(schedule)).toBe(5);
+    });
+
     // SP3: calculateFilledPositionsFromSchedule 제거됨 — filled 는 schedule 에서 파생하지 않음(컬럼·트리거 권위).
     // 관련 테스트는 삭제. capacity/총원 계산은 위 calculateTotalPositionsFromSchedule 로 충분히 커버됨.
   });

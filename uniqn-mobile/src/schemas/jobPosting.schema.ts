@@ -7,6 +7,7 @@ import { VALID_STAFF_ROLES } from '@/types/role';
 import type { JobPosting, JobPostingDocumentV3 } from '@/types';
 import {
   FIXED_POSTING_DURATION_DAYS,
+  buildFixedSyntheticRequirement,
   deriveWorkDateFieldsFromSchedule,
   deserializeJobPostingDocument,
   getCanonicalPostingType,
@@ -521,8 +522,38 @@ function toJobPostingDocumentV3(document: JobPostingDocumentData): JobPostingDoc
   } as unknown as JobPostingDocumentV3;
 }
 
+/**
+ * 레거시 fixed 스케줄(roleRequirements[]) 문서를 strict 스키마가 받아들일 수 있는
+ * 통일 구조(requirements[])로 입력 단계에서 정규화한다.
+ *
+ * @description SP1 통일 후 fixed 스키마는 `requirements` 필수 + `.strict()`라
+ * 레거시 `{kind:'fixed', roleRequirements:[...]}` 문서는 safeParse 에서 거부되어
+ * 읽기 경로가 null 을 반환(공고 증발)한다. deserialize 의 역호환 흡수는 parse 통과
+ * 후에만 실행되므로 도달 불가능 — 따라서 safeParse 이전에 합성 슬롯으로 변환한다.
+ *
+ * canonical 문서(roleRequirements 키 없음)는 원본 그대로 반환(무변경 통과).
+ */
+function normalizeLegacyFixedScheduleInput(data: unknown): unknown {
+  if (!data || typeof data !== 'object') return data;
+  const doc = data as Record<string, unknown>;
+  const schedule = doc.schedule;
+  if (!schedule || typeof schedule !== 'object') return data;
+  const s = schedule as Record<string, unknown>;
+  if (s.kind !== 'fixed' || !('roleRequirements' in s)) return data;
+
+  // 레거시 흡수: roleRequirements → 합성 requirements 1건 + roleRequirements 키 제거(strict 통과)
+  const { roleRequirements: _legacyRoleRequirements, ...restSchedule } = s;
+  return {
+    ...doc,
+    schedule: {
+      ...restSchedule,
+      requirements: [buildFixedSyntheticRequirement(s)],
+    },
+  };
+}
+
 export function parseJobPostingDocument(data: unknown): JobPosting | null {
-  const result = jobPostingDocumentSchema.safeParse(data);
+  const result = jobPostingDocumentSchema.safeParse(normalizeLegacyFixedScheduleInput(data));
 
   if (result.success) {
     return deserializeJobPostingDocument(toJobPostingDocumentV3(result.data));
@@ -542,5 +573,5 @@ export function parseJobPostingDocuments(data: unknown[]): JobPosting[] {
 }
 
 export function isJobPostingDocument(data: unknown): data is JobPosting {
-  return jobPostingDocumentSchema.safeParse(data).success;
+  return jobPostingDocumentSchema.safeParse(normalizeLegacyFixedScheduleInput(data)).success;
 }

@@ -495,6 +495,47 @@ describe('jobPosting schemas', () => {
       expect(isJobPostingDocument({ bad: true })).toBe(false);
     });
 
+    // SP1 역호환: 레거시 fixed 문서(roleRequirements[])는 strict 스키마가 거부하면 안 된다.
+    // safeParse 이전 입력 정규화로 통일 구조(requirements[])로 흡수해 읽기 경로에서 살아남아야 함.
+    // (fix 이전엔 .strict() + requirements 필수로 reject → parseJobPostingDocument 가 null 반환 = 공고 증발)
+    it('absorbs legacy fixed schedule (roleRequirements) on read instead of dropping it', () => {
+      const legacyFixedDocument = {
+        ...createValidDocument(),
+        id: 'legacy-fixed',
+        postingType: 'fixed' as const,
+        workDate: '',
+        workDates: undefined,
+        schedule: {
+          kind: 'fixed' as const,
+          daysPerWeek: 5,
+          startTime: '19:00',
+          roleRequirements: [
+            { role: 'dealer', count: 3, filled: 1 },
+            { role: 'floor', count: 2 },
+          ],
+        },
+      };
+
+      const parsed = parseJobPostingDocument(legacyFixedDocument);
+
+      expect(parsed).not.toBeNull();
+      expect(parsed?.id).toBe('legacy-fixed');
+      expect(parsed?.schedule.kind).toBe('fixed');
+      expect(parsed?.schedule.requirements).toHaveLength(1);
+      expect(parsed?.schedule.requirements[0]?.date).toBeNull();
+      expect(parsed?.schedule.requirements[0]?.timeSlots).toHaveLength(1);
+
+      const roles = parsed?.schedule.requirements[0]?.timeSlots[0]?.roles ?? [];
+      expect(roles).toHaveLength(2);
+      expect(roles.find((r) => r.role === 'dealer')?.count).toBe(3);
+      expect(roles.find((r) => r.role === 'floor')?.count).toBe(2);
+      // dead counter `filled`(SP3 제거)는 흡수 과정에서 복사되지 않는다.
+      expect(roles.every((r) => !('filled' in r))).toBe(true);
+
+      // type guard 도 동일하게 레거시 fixed 문서를 인정해야 한다.
+      expect(isJobPostingDocument(legacyFixedDocument)).toBe(true);
+    });
+
     it('rejects non-canonical top-level fields on read', () => {
       const parsed = parseJobPostingDocument({
         ...createValidDocument(),

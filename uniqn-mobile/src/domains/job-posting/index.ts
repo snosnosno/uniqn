@@ -1,5 +1,6 @@
 export {
   FIXED_POSTING_DURATION_DAYS,
+  buildFixedSyntheticRequirement,
   deriveWorkDateFieldsFromSchedule,
   getCanonicalPostingType,
   isScheduleKindCompatibleWithPostingType,

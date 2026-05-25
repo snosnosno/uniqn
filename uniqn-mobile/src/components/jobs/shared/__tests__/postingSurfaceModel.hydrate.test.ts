@@ -137,4 +137,38 @@ describe('buildPostingScheduleModel hydrate — fixed/grouped/dated 단일 소�
     expect(role.filled).toBe(2);
     expect(role.isFilled).toBe(true);
   });
+
+  // 슬롯 startTime 이 range 문자열("18:00~22:00")이어도 hydrate 키는 서버 _posting_slot_key 와 동일하게
+  // 시작시간(18:00)으로 정규화돼야 매칭된다. (정규화 누락 시 0/N 으로 영원히 표시되는 회귀)
+  it('dated: range startTime 슬롯도 시작시간으로 정규화해 hydrate 매칭한다', () => {
+    const datedSource = {
+      workflow: { isFixed: false, usesGroupedDateRanges: false },
+      scheduleDisplay: {
+        variant: 'dated_requirements',
+        fixed: undefined,
+        dateGroups: [],
+        dateRequirements: [
+          {
+            date: '2026-06-10',
+            timeSlots: [
+              {
+                id: 's1',
+                startTime: '18:00~22:00',
+                roles: [{ role: 'dealer', count: 2, filled: 0 }],
+              },
+            ],
+          },
+        ],
+        workDate: '',
+        timeSlot: '',
+      },
+    } as any;
+
+    const filledCounts = new Map<string, number>([['2026-06-10__18:00__dealer', 2]]);
+    const model = buildPostingScheduleModel(datedSource, filledCounts);
+
+    const role = (model as any).sections[0].timeSlots[0].roles[0];
+    expect(role.filled).toBe(2);
+    expect(role.isFilled).toBe(true);
+  });
 });

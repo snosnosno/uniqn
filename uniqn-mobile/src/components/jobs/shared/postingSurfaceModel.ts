@@ -9,6 +9,7 @@ import type {
   PostingSalaryDisplay,
 } from '@/types';
 import { FIXED_DATE_MARKER, FIXED_TIME_MARKER } from '@/types/assignment';
+import { WorkLogCreator } from '@/domains/schedule';
 import { getRoleDisplayName } from '@/types/unified';
 import { formatDateRangeWithCount, formatDateShortWithDay, getDayCount } from '@/utils/date';
 import { formatSalary } from '@/utils/formatters';
@@ -307,7 +308,10 @@ function pickMaxSalaryRowText(rows: readonly PostingSalaryRow[]): string | undef
 
 function slotMatchKey(slot: TimeSlotSource): string {
   if (slot.isTimeToBeAnnounced) return UNKNOWN_TIME_LABEL;
-  return slot.startTime || slot.time || UNKNOWN_TIME_LABEL;
+  // 서버 _posting_slot_key / apply 경로(slotCapacity)와 동일하게 range 문자열("14:00~22:00")에서
+  // 시작시간만 추출해 hydrate 키를 맞춘다. discrete HH:MM 값에는 항등(무변경).
+  const normalized = WorkLogCreator.extractStartTime(slot.startTime || slot.time || '');
+  return normalized || UNKNOWN_TIME_LABEL;
 }
 
 function roleMatchKey(role: RoleSource): string {
