@@ -151,14 +151,13 @@ function toCanonicalSlotRole(role: {
   role?: string;
   customRole?: string;
   headcount?: number;
-  filled?: number;
 }): PostingSlotRoleRequirement {
   return {
     ...(role.id ? { id: role.id } : {}),
     role: (role.role as PostingSlotRoleRequirement['role']) ?? 'dealer',
     ...(role.customRole ? { customRole: role.customRole } : {}),
     count: Math.max(1, role.headcount ?? 1),
-    ...(role.filled !== undefined ? { filled: role.filled } : {}),
+    // dead counter `filled`(SP3 제거) — canonical slot role 로 복사하지 않는다.
   };
 }
 
@@ -184,7 +183,8 @@ function toLegacyTimeSlotRole(
     ...(role.customRole ? { customRole: role.customRole } : {}),
     headcount: role.count,
     salary: roleCatalog.find((entry) => getRoleKey(entry) === getRoleKey(role))?.salary,
-    filled: role.filled ?? 0,
+    // dead counter `filled`(SP3 제거) — 레거시 슬롯 타입은 항상 0(미사용 카운터).
+    filled: 0,
   };
 }
 
@@ -517,7 +517,7 @@ export function draftToCreateJobPostingInput(draft: JobPostingDraft): CreateJobP
                   role: role.role ?? 'dealer',
                   ...(role.customRole ? { customRole: role.customRole } : {}),
                   count: role.count,
-                  ...(role.filled !== undefined ? { filled: role.filled } : {}),
+                  // dead counter `filled`(SP3 제거) — 복사하지 않는다.
                 })),
               })),
             })),
@@ -546,7 +546,7 @@ export function draftToCreateJobPostingInput(draft: JobPostingDraft): CreateJobP
                   role: role.role ?? 'dealer',
                   ...(role.customRole ? { customRole: role.customRole } : {}),
                   count: role.count,
-                  ...(role.filled !== undefined ? { filled: role.filled } : {}),
+                  // dead counter `filled`(SP3 제거) — 복사하지 않는다.
                 })),
               })),
             })),
@@ -618,7 +618,7 @@ function buildFixedDraftFromPosting(
               role: role.role ?? 'dealer',
               ...(role.customRole ? { customRole: role.customRole } : {}),
               count: role.count,
-              ...(role.filled !== undefined ? { filled: role.filled } : {}),
+              // dead counter `filled`(SP3 제거) — 복사하지 않는다.
             })),
           },
         ],
@@ -642,7 +642,7 @@ function buildDatedDraftFromPosting(posting: JobPosting): JobPostingDraftDatedSc
         role: role.role,
         ...(role.customRole ? { customRole: role.customRole } : {}),
         count: role.count,
-        ...(role.filled !== undefined ? { filled: role.filled } : {}),
+        // dead counter `filled`(SP3 제거) — 복사하지 않는다.
       })),
     })) ??
     (INITIAL_JOB_POSTING_DRAFT.schedule.kind === 'dated'
@@ -669,7 +669,7 @@ function buildDatedDraftFromPosting(posting: JobPosting): JobPostingDraftDatedSc
           role: role.role,
           ...(role.customRole ? { customRole: role.customRole } : {}),
           count: role.count,
-          ...(role.filled !== undefined ? { filled: role.filled } : {}),
+          // dead counter `filled`(SP3 제거) — 복사하지 않는다.
         })),
       })),
     })),

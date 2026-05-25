@@ -177,15 +177,14 @@ const postingRoleCatalogEntrySchema = z
   })
   .strict();
 
-const postingSlotRoleRequirementSchema = z
-  .object({
-    id: z.string().optional(),
-    role: roleSchema.optional(),
-    customRole: z.string().optional(),
-    count: z.number(),
-    filled: z.number().optional(),
-  })
-  .strict();
+// NOTE: .strict() 의도적 미사용 — 레거시 doc 의 slot role 에 박혀있는 dead counter `filled`(SP3 제거)를
+// 거부하지 않고 조용히 strip 하기 위함. strict 면 저장된 prod doc 이 검증 실패로 사라진다(읽기 호환 크럭스).
+const postingSlotRoleRequirementSchema = z.object({
+  id: z.string().optional(),
+  role: roleSchema.optional(),
+  customRole: z.string().optional(),
+  count: z.number(),
+});
 
 const postingTimeSlotSchema = z
   .object({

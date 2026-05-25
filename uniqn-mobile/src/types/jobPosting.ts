@@ -78,7 +78,6 @@ export interface PostingSlotRoleRequirement {
   role?: StaffRole | 'other';
   customRole?: string;
   count: number;
-  filled?: number;
 }
 
 export interface PostingTimeSlot {

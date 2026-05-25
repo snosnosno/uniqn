@@ -140,7 +140,6 @@ function buildFixedSyntheticRequirement(
       role?: string;
       customRole?: string;
       count: number;
-      filled?: number;
     }[];
   };
 
@@ -165,7 +164,7 @@ function buildFixedSyntheticRequirement(
           ...(role.role ? { role: role.role as StaffRole | 'other' } : {}),
           ...(role.customRole ? { customRole: role.customRole } : {}),
           count: role.count,
-          ...(role.filled !== undefined ? { filled: role.filled } : {}),
+          // dead counter `filled`(SP3 제거) — 레거시 소스에 있어도 출력으로 복사하지 않는다.
         })),
       },
     ],
@@ -191,7 +190,7 @@ function normalizeDatedRequirements(
           ...(role.role ? { role: role.role } : {}),
           ...(role.customRole ? { customRole: role.customRole } : {}),
           count: role.count,
-          ...(role.filled !== undefined ? { filled: role.filled } : {}),
+          // dead counter `filled`(SP3 제거) — 출력으로 복사하지 않는다.
         })),
       })),
     }))
@@ -404,7 +403,7 @@ export function deserializeJobPostingDocument(document: JobPostingDocumentV3): J
                 ...(role.role ? { role: role.role } : {}),
                 ...(role.customRole ? { customRole: role.customRole } : {}),
                 count: role.count,
-                ...(role.filled !== undefined ? { filled: role.filled } : {}),
+                // dead counter `filled`(SP3 제거) — 레거시 doc 에 있어도 출력으로 복사하지 않는다.
               })),
             })),
           })),
