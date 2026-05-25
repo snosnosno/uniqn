@@ -69,11 +69,6 @@ export {
 } from './ApplicationValidator';
 
 export {
-  updateDateSpecificRequirementsFilled,
-  updatePostingScheduleFilled,
-} from './DateRequirementUpdater';
-
-export {
   buildPostingSlotCapacityMap,
   validateAssignmentSlotCapacity,
   type SlotCapacityIssue,

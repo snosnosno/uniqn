@@ -14,9 +14,6 @@ import { applicationRepository } from '@/repositories';
 import { enqueueScheduleBoardSync } from '@/services/jobs/jobManagementService';
 import type { CancelConfirmationResult, ConfirmWithHistoryResult } from '@/repositories';
 
-// Re-export from domain for backward compatibility.
-export { updateDateSpecificRequirementsFilled } from '@/domains/application';
-
 // Re-export types from repository interfaces for backward compatibility.
 export type { CancelConfirmationResult, ConfirmWithHistoryResult } from '@/repositories';
 
