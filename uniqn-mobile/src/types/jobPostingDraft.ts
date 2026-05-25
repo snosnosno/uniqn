@@ -2,7 +2,6 @@ import { generateId } from '@/utils/generateId';
 import type { PostingType } from './postingConfig';
 import type {
   PostingCompensation,
-  PostingFixedRoleRequirement,
   PostingLocation,
   PostingQuestions,
   PostingRoleCatalogEntry,
@@ -15,9 +14,7 @@ export interface JobPostingDraftDatedSchedule extends Extract<PostingSchedule, {
   templateTimeSlots: PostingTimeSlot[];
 }
 
-export interface JobPostingDraftFixedSchedule extends Extract<PostingSchedule, { kind: 'fixed' }> {
-  roleRequirements: PostingFixedRoleRequirement[];
-}
+export type JobPostingDraftFixedSchedule = Extract<PostingSchedule, { kind: 'fixed' }>;
 
 export type JobPostingDraftSchedule = JobPostingDraftDatedSchedule | JobPostingDraftFixedSchedule;
 

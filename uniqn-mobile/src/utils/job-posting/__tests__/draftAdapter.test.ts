@@ -1,6 +1,11 @@
-import { applyFormDataPatch, draftToFormData } from '../draftAdapter';
+import {
+  applyFormDataPatch,
+  draftToCreateJobPostingInput,
+  draftToFormData,
+  formDataToDraft,
+} from '../draftAdapter';
 import { INITIAL_JOB_POSTING_DRAFT, type JobPostingDraft } from '@/types/jobPostingDraft';
-import type { FormRoleWithCount } from '@/types/jobPostingForm';
+import { INITIAL_JOB_POSTING_FORM_DATA, type FormRoleWithCount } from '@/types/jobPostingForm';
 
 function createDatedDraft(): JobPostingDraft {
   return {
@@ -234,9 +239,20 @@ describe('draftAdapter dated seed handling', () => {
         kind: 'fixed',
         daysPerWeek: 5,
         startTime: '10:00',
-        roleRequirements: [
-          { role: 'dealer', count: 1 },
-          { role: 'floor', count: 1 },
+        requirements: [
+          {
+            date: null,
+            timeSlots: [
+              {
+                startTime: '10:00',
+                isTimeToBeAnnounced: false,
+                roles: [
+                  { role: 'dealer', count: 1 },
+                  { role: 'floor', count: 1 },
+                ],
+              },
+            ],
+          },
         ],
       },
       roleCatalog: [
@@ -330,5 +346,46 @@ describe('draftAdapter dated seed handling', () => {
         count: 2,
       },
     ]);
+  });
+});
+
+describe('draftAdapter fixed (통일 구조)', () => {
+  const fixedForm = {
+    ...INITIAL_JOB_POSTING_FORM_DATA,
+    postingType: 'fixed' as const,
+    title: 'Fixed posting',
+    location: { name: 'Seoul' },
+    daysPerWeek: 5,
+    startTime: '19:00',
+    isStartTimeNegotiable: false,
+    roles: [
+      { name: '딜러', count: 3, isCustom: false },
+      { name: 'VIP Host', count: 2, isCustom: true },
+    ],
+  };
+
+  it('buildFixedDraft stores roles in synthetic requirements[0].timeSlots[0].roles', () => {
+    const draft = formDataToDraft(fixedForm);
+    expect(draft.schedule.kind).toBe('fixed');
+    const fixed = draft.schedule as Extract<typeof draft.schedule, { kind: 'fixed' }>;
+    expect(fixed.requirements).toHaveLength(1);
+    expect(fixed.requirements[0].date).toBeNull();
+    expect(fixed.requirements[0].timeSlots[0].roles.map((r) => r.count).sort()).toEqual([2, 3]);
+    expect((fixed as { roleRequirements?: unknown }).roleRequirements).toBeUndefined();
+  });
+
+  it('draftToCreateJobPostingInput emits requirements (no roleRequirements key)', () => {
+    const input = draftToCreateJobPostingInput(formDataToDraft(fixedForm));
+    expect(input.schedule.kind).toBe('fixed');
+    const fixed = input.schedule as Extract<typeof input.schedule, { kind: 'fixed' }>;
+    expect(fixed.requirements[0].timeSlots[0].roles).toHaveLength(2);
+    expect((fixed as { roleRequirements?: unknown }).roleRequirements).toBeUndefined();
+  });
+
+  it('round-trips fixed roles back to form (draft -> form)', () => {
+    const form = draftToFormData(formDataToDraft(fixedForm));
+    expect(form.roles.map((r) => r.count).sort()).toEqual([2, 3]);
+    expect(form.daysPerWeek).toBe(5);
+    expect(form.startTime).toBe('19:00');
   });
 });
