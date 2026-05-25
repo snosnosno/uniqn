@@ -23,6 +23,7 @@ import {
   DocumentIcon,
   EditIcon,
   MapPinIcon,
+  ShareIcon,
   TrashIcon,
   UserPlusIcon,
   UsersIcon,
@@ -42,6 +43,7 @@ import { getLayoutColor, SECONDARY_PALETTE } from '@/constants/colors';
 import { buildPostingFacts, projectPostingSurface } from '@/domains/job-posting';
 import { useApplicantsByJobPosting } from '@/hooks/applicant';
 import { useJobDetail } from '@/hooks/useJobDetail';
+import { useShare } from '@/hooks/useShare';
 import { useDeleteJobPosting } from '@/hooks/useJobManagement';
 import { extractPostingFilledSubmap, usePostingFilledCounts } from '@/hooks/usePostingFilledCounts';
 import { useThemeStore } from '@/stores/themeStore';
@@ -126,6 +128,7 @@ export default function JobPostingDetailScreen() {
     realtime: true,
   });
   const { mutate: deleteJobPosting, isPending: isDeleting } = useDeleteJobPosting();
+  const { shareJob, isSharing } = useShare();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isInfoExpanded, setIsInfoExpanded] = useState(false);
 
@@ -193,6 +196,14 @@ export default function JobPostingDetailScreen() {
     setIsInfoExpanded((prev) => !prev);
   }, []);
 
+  const handleShare = useCallback(() => {
+    if (!posting) {
+      return;
+    }
+
+    void shareJob(posting);
+  }, [posting, shareJob]);
+
   const handleRefresh = useCallback(async () => {
     await Promise.all([refresh(), refreshApplicants()]);
   }, [refresh, refreshApplicants]);
@@ -242,7 +253,19 @@ export default function JobPostingDetailScreen() {
         titleSuffix={<JobTitleSuffix jobTitle={posting.title} />}
         fallbackHref="/(app)/(tabs)/employer"
         rightAction={
-          !(contextIsFixed || isFixed) ? <HeaderQRAction onPress={handleShowQR} /> : null
+          <View className="flex-row items-center">
+            <Pressable
+              onPress={handleShare}
+              disabled={isSharing}
+              hitSlop={8}
+              className="p-2"
+              accessibilityRole="button"
+              accessibilityLabel="공고 공유하기"
+            >
+              <ShareIcon size={22} color={getLayoutColor(isDark, 'headerTint')} />
+            </Pressable>
+            {!(contextIsFixed || isFixed) ? <HeaderQRAction onPress={handleShowQR} /> : null}
+          </View>
         }
       />
       <ScrollView

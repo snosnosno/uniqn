@@ -30,6 +30,16 @@ jest.mock('@/components/jobs/FixedScheduleDisplay', () => ({
 jest.mock('@/components/icons', () => ({
   UsersIcon: () => null,
   QrCodeIcon: () => null,
+  ShareIcon: () => null,
+}));
+
+jest.mock('@/hooks/useShare', () => ({
+  useShare: () => ({
+    shareJob: jest.fn(),
+    shareJobById: jest.fn(),
+    share: jest.fn(),
+    isSharing: false,
+  }),
 }));
 
 describe('JobPostingCard', () => {
