@@ -9,6 +9,7 @@ FINAL = os.path.join(HERE, "appcomp-final.png")
 FINAL_HI = os.path.join(HERE, "appcomp-final-hi.png")
 APPLE = os.path.join(HERE, "assets", "apple-app-store.png")
 GOOGLE = os.path.join(HERE, "assets", "google-play-badge.png")
+LOGO = os.path.join(HERE, "assets", "uniqn-logo.png")
 
 MALGUNBD = "C:/Windows/Fonts/malgunbd.ttf"
 GOLD = (212, 175, 55, 255)
@@ -41,8 +42,11 @@ def draw_spaced(d, pos, text, font, fill, spacing):
 
 LX = int(W * 0.066)
 
-# 2) 브랜드 로고 (크게)
-draw_spaced(draw, (LX, int(H * 0.050)), "UNIQN", bold(int(W * 0.060)), GOLD, 12)
+# 2) 브랜드 로고 (실제 유니콘 로고)
+_logo = Image.open(LOGO).convert("RGBA")
+_lh = int(W * 0.090)
+_lw = int(_logo.width * _lh / _logo.height)
+base.alpha_composite(_logo.resize((_lw, _lh), Image.LANCZOS), (LX, int(H * 0.040)))
 
 # 3) 헤드라인 (정산 = 골드)
 hl = bold(int(W * 0.050))
