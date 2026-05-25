@@ -12,6 +12,7 @@ import { DateRequirementCard, DateRangeCard } from '../cards';
 import {
   groupRequirementsToDateRanges,
   groupConsecutiveDates,
+  hasGroupableDates,
   toDateString,
   type DateRangeGroup,
 } from '@/utils/date';
@@ -103,7 +104,9 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
     (dates: string[]) => {
       const sortedDates = [...dates].sort();
 
-      if (supportsGroupedDates && sortedDates.length > 1) {
+      // 연속 쌍이 하나라도 있을 때만 그룹화 선택 모달을 띄운다.
+      // 완전 비연속(예: 5/25, 5/27)이면 묶을 게 없으므로 바로 개별 등록.
+      if (supportsGroupedDates && hasGroupableDates(sortedDates)) {
         setPendingDates(sortedDates);
         setShowGroupingModal(true);
         return;

@@ -40,6 +40,7 @@ export {
   areDatesConsecutive,
   areAllDatesConsecutive,
   groupConsecutiveDates,
+  hasGroupableDates,
   formatDateRange,
   getDayCount,
   formatDateRangeWithCount,

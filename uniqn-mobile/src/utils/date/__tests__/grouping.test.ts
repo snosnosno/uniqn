@@ -10,6 +10,7 @@ import {
   areDatesConsecutive,
   areAllDatesConsecutive,
   groupConsecutiveDates,
+  hasGroupableDates,
   formatDateRange,
   getDayCount,
   formatDateRangeWithCount,
@@ -171,6 +172,40 @@ describe('groupConsecutiveDates', () => {
   it('모든 날짜가 비연속이면 각각 독립 그룹이 된다', () => {
     const result = groupConsecutiveDates(['2025-01-10', '2025-01-15', '2025-01-20']);
     expect(result).toEqual([['2025-01-10'], ['2025-01-15'], ['2025-01-20']]);
+  });
+});
+
+// ============================================================================
+// hasGroupableDates
+// ============================================================================
+
+describe('hasGroupableDates', () => {
+  it('빈 배열은 false를 반환한다', () => {
+    expect(hasGroupableDates([])).toBe(false);
+  });
+
+  it('단일 날짜는 false를 반환한다', () => {
+    expect(hasGroupableDates(['2025-01-15'])).toBe(false);
+  });
+
+  it('완전 비연속 날짜는 false를 반환한다', () => {
+    expect(hasGroupableDates(['2025-01-15', '2025-01-17'])).toBe(false);
+  });
+
+  it('모든 날짜가 비연속이면 false를 반환한다', () => {
+    expect(hasGroupableDates(['2025-01-10', '2025-01-15', '2025-01-20'])).toBe(false);
+  });
+
+  it('연속 쌍이 있으면 true를 반환한다', () => {
+    expect(hasGroupableDates(['2025-01-15', '2025-01-16'])).toBe(true);
+  });
+
+  it('일부만 연속이어도 true를 반환한다', () => {
+    expect(hasGroupableDates(['2025-01-15', '2025-01-16', '2025-01-18'])).toBe(true);
+  });
+
+  it('정렬되지 않은 연속 쌍도 true를 반환한다', () => {
+    expect(hasGroupableDates(['2025-01-18', '2025-01-15', '2025-01-16'])).toBe(true);
   });
 });
 

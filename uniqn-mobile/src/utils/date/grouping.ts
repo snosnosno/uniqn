@@ -98,6 +98,22 @@ export function groupConsecutiveDates(dates: string[]): string[][] {
   return groups;
 }
 
+/**
+ * 날짜 배열에 그룹으로 묶을 수 있는 연속 쌍이 하나라도 있는지 확인
+ *
+ * @description 연속된 날짜가 2개 이상 이어지는 구간이 하나라도 있으면 true.
+ * 완전 비연속(예: 5/25, 5/27)이면 묶을 게 없으므로 false → 그룹 선택 UI 생략.
+ *
+ * @example
+ * hasGroupableDates(['2025-01-15', '2025-01-17']) // => false (완전 비연속)
+ * hasGroupableDates(['2025-01-15', '2025-01-16']) // => true (연속)
+ * hasGroupableDates(['2025-01-15', '2025-01-16', '2025-01-18']) // => true (부분 연속)
+ */
+export function hasGroupableDates(dates: string[]): boolean {
+  if (dates.length <= 1) return false;
+  return groupConsecutiveDates(dates).some((group) => group.length > 1);
+}
+
 // ============================================================================
 // 날짜 범위 포맷팅
 // ============================================================================
