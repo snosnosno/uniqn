@@ -42,6 +42,8 @@ DECLARE
   v_appF1     uuid := gen_random_uuid();
   v_appF2     uuid := gen_random_uuid();
   v_appH5     uuid := gen_random_uuid();
+  v_assign_dealer jsonb := jsonb_build_array(jsonb_build_object('date','2026-05-23','timeSlot','미정','role','dealer'));
+  v_assign_floor  jsonb := jsonb_build_array(jsonb_build_object('date','2026-05-23','timeSlot','미정','role','floor'));
   -- 추가 시나리오용 (슬롯 정규화 / 커스텀 역할 / 중복행)
   v_job2      uuid := gen_random_uuid();
   v_job3      uuid := gen_random_uuid();
