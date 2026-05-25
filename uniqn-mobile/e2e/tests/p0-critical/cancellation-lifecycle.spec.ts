@@ -53,7 +53,10 @@ async function seedConfirmedApplication(
   // 0. workspace 보장 — 2026-05-14 migration 으로 job_postings.workspace_id NOT NULL
   const workspaceId = await ensureE2EWorkspace(adminClient, SUPABASE_QA_ACCOUNTS.employer.id);
 
-  // 1. job_posting 생성 (정원 1, filled_positions 1 — confirmed 상태 반영)
+  // 1. job_posting 생성 (정원 1).
+  //    SP3: filled_positions/stats 카운터는 fn_update_job_posting_stats 트리거가
+  //    applications status 로 관리한다. 0 으로 시드하면 아래 'confirmed' application INSERT 가
+  //    트리거를 발화시켜 1 이 된다(수동 1 시드 금지 — 트리거가 +1 추가해 이중카운트 2 가 됨).
   const { error: jobError } = await adminClient.from('job_postings').insert({
     id: jobId,
     schema_version: 3,
@@ -67,7 +70,7 @@ async function seedConfirmedApplication(
     work_date: new Date(Date.now() + 10 * 86_400_000).toISOString().slice(0, 10),
     work_dates: [new Date(Date.now() + 10 * 86_400_000).toISOString().slice(0, 10)],
     total_positions: 1,
-    filled_positions: 1,
+    filled_positions: 0,
     view_count: 0,
     contact_phone: '+82101234567',
     location: { name: 'E2E테스트포커룸', district: '강남구', detailedAddress: '테스트로 123' },
@@ -90,12 +93,13 @@ async function seedConfirmedApplication(
     role_catalog: [{ role: 'dealer', salary: { type: 'daily', amount: 150000 } }],
     compensation: { mode: 'shared', defaultSalary: { type: 'daily', amount: 150000 } },
     questions: { items: [] },
+    // 카운터는 0 시드 → application INSERT 트리거가 status 에 맞춰 establish (이중카운트 방지).
     stats: {
-      totalApplicants: 1,
+      totalApplicants: 0,
       activeApplicants: 0,
-      confirmedApplicants: 1,
+      confirmedApplicants: 0,
       cancellationPendingApplicants: 0,
-      filledPositions: 1,
+      filledPositions: 0,
     },
   });
 
