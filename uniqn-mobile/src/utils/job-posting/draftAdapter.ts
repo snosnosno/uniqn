@@ -448,7 +448,8 @@ export function draftToFormData(draft: JobPostingDraft): JobPostingFormData {
     dateSpecificRequirements:
       draft.schedule.kind === 'dated'
         ? draft.schedule.requirements.map((requirement) => ({
-            date: requirement.date,
+            // kind==='dated' 분기 — dated requirement.date는 항상 string (fixed만 null)
+            date: requirement.date ?? '',
             isGrouped: requirement.isGrouped,
             timeSlots: requirement.timeSlots.map((slot) =>
               toLegacyTimeSlot(slot, draft.roleCatalog)
@@ -524,7 +525,10 @@ export function draftToCreateJobPostingInput(draft: JobPostingDraft): CreateJobP
         : {
             kind: 'dated',
             primaryDate: draft.schedule.primaryDate,
-            allDates: draft.schedule.requirements.map((requirement) => requirement.date),
+            // kind==='dated' 분기 — dated requirement.date는 항상 string (fixed만 null)
+            allDates: draft.schedule.requirements
+              .map((r) => r.date)
+              .filter((d): d is string => d !== null),
             requirements: draft.schedule.requirements.map((requirement) => ({
               date: requirement.date,
               ...(requirement.isGrouped !== undefined ? { isGrouped: requirement.isGrouped } : {}),
@@ -648,7 +652,8 @@ function buildDatedDraftFromPosting(posting: JobPosting): JobPostingDraftDatedSc
   return {
     kind: 'dated',
     primaryDate: posting.workDate,
-    allDates: requirements.map((requirement) => requirement.date),
+    // dated posting.schedule.requirements.date는 항상 string (fixed만 null)
+    allDates: requirements.map((r) => r.date).filter((d): d is string => d !== null),
     requirements: requirements.map((requirement) => ({
       date: requirement.date,
       ...(requirement.isGrouped !== undefined ? { isGrouped: requirement.isGrouped } : {}),

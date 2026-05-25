@@ -12,6 +12,7 @@ import type {
   PostingType,
   UpdateJobPostingInput,
 } from '@/types/jobPosting';
+import type { StaffRole } from '@/types/role';
 import { JOB_POSTING_SCHEMA_VERSION } from '@/types/jobPosting';
 import { calculateTotalPositionsFromSchedule, normalizePostingAggregateStats } from './stats';
 
@@ -160,7 +161,8 @@ function buildFixedSyntheticRequirement(
         isTimeToBeAnnounced: false,
         roles: sourceRoles.map((role) => ({
           ...(role.id ? { id: role.id } : {}),
-          ...(role.role ? { role: role.role } : {}),
+          // 런타임 값은 이미 StaffRole | 'other' 문자열 — 소스타입이 string|undefined라 캐스트
+          ...(role.role ? { role: role.role as StaffRole | 'other' } : {}),
           ...(role.customRole ? { customRole: role.customRole } : {}),
           count: role.count,
           ...(role.filled !== undefined ? { filled: role.filled } : {}),
@@ -219,7 +221,8 @@ function normalizeSchedule(schedule: CreateJobPostingInput['schedule']): Posting
     allDates:
       schedule.allDates && schedule.allDates.length > 0
         ? schedule.allDates
-        : requirements.map((requirement) => requirement.date),
+        : // dated requirement.date는 normalizeDatedRequirements filter 뒤 항상 string
+          requirements.map((r) => r.date).filter((d): d is string => d !== null),
     requirements,
   };
 }
@@ -377,7 +380,7 @@ export function deserializeJobPostingDocument(document: JobPostingDocumentV3): J
             ? { isStartTimeNegotiable: document.schedule.isStartTimeNegotiable }
             : {}),
           requirements: [
-            buildFixedSyntheticRequirement(document.schedule as Record<string, unknown>),
+            buildFixedSyntheticRequirement(document.schedule as unknown as Record<string, unknown>),
           ],
         } satisfies PostingFixedSchedule)
       : {

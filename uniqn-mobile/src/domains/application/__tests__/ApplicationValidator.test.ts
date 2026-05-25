@@ -154,13 +154,26 @@ function createJobPosting(overrides: TestJobPostingOverrides = {}): JobPosting {
         }
       : {
           kind: 'fixed' as const,
-          roleRequirements: fixedRoles.length > 0 ? fixedRoles : undefined,
+          requirements: [
+            {
+              date: null,
+              timeSlots: [
+                {
+                  isTimeToBeAnnounced: false,
+                  roles: fixedRoles.length > 0 ? fixedRoles : [],
+                },
+              ],
+            },
+          ],
         });
 
   const totalPositions =
     overrides.totalPositions ??
     (schedule.kind === 'fixed'
-      ? (schedule.roleRequirements ?? []).reduce((sum, role) => sum + role.count, 0)
+      ? (schedule.requirements[0]?.timeSlots[0]?.roles ?? []).reduce(
+          (sum: number, role: { count: number }) => sum + role.count,
+          0
+        )
       : schedule.requirements.reduce(
           (sum, requirement) =>
             sum +
@@ -627,7 +640,18 @@ describe('ApplicationValidator', () => {
     });
 
     it('모든 조건이 유효하면 isValid: true, errors: []', () => {
-      const jobData = createJobPosting({ status: 'active' });
+      // dated 공고 + dealer 자리 여유 있음 — slotCapacity 검증이 통과해야 한다
+      const jobData = createJobPosting({
+        status: 'active',
+        dateSpecificRequirements: [
+          {
+            date: '2025-01-10',
+            timeSlots: [
+              { startTime: '19:00', roles: [{ role: 'dealer', headcount: 5, filled: 0 }] },
+            ],
+          },
+        ],
+      });
       const assignments = [createAssignment()];
 
       const result = validator.validateApplication(jobData, assignments);

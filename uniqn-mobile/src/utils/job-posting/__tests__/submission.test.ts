@@ -224,7 +224,10 @@ describe('job posting submission helpers', () => {
     if (result.schedule?.kind === 'fixed') {
       expect(result.schedule.daysPerWeek).toBe(3);
       expect(result.schedule.startTime).toBe('18:30');
-      expect(result.schedule.roleRequirements).toEqual([{ role: 'dealer', count: 3, filled: 0 }]);
+      // 통일 구조: requirements[0].timeSlots[0].roles로 역할 배열 확인 (filled는 formData 기반 미설정 시 생략)
+      expect(result.schedule.requirements?.[0]?.timeSlots?.[0]?.roles).toEqual(
+        expect.arrayContaining([expect.objectContaining({ role: 'dealer', count: 3 })])
+      );
     }
     expect(result.roleCatalog).toEqual([
       { role: 'dealer', salary: { type: 'hourly', amount: 14000 } },

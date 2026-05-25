@@ -393,7 +393,17 @@ describe('jobManagementService', () => {
           kind: 'fixed',
           daysPerWeek: 4,
           startTime: '19:00',
-          roleRequirements: [{ role: 'dealer', count: 5, filled: 2 }],
+          requirements: [
+            {
+              date: null,
+              timeSlots: [
+                {
+                  isTimeToBeAnnounced: false,
+                  roles: [{ role: 'dealer', count: 5, filled: 2 }],
+                },
+              ],
+            },
+          ],
         },
         roleCatalog: [{ role: 'dealer' }],
       };

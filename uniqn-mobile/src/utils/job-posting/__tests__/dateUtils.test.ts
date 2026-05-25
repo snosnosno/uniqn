@@ -546,13 +546,23 @@ describe('getClosingStatus', () => {
     expect(result.isClosed).toBe(true);
   });
 
-  it('schedule.kind=fixed인 경우 roleRequirements 합으로 total 계산', () => {
+  it('schedule.kind=fixed인 경우 requirements 합성 슬롯 합으로 total 계산', () => {
     const jobData = {
       schedule: {
         kind: 'fixed' as const,
-        roleRequirements: [
-          { role: 'dealer' as const, count: 2, filled: 0 },
-          { role: 'floor' as const, count: 1, filled: 0 },
+        requirements: [
+          {
+            date: null,
+            timeSlots: [
+              {
+                isTimeToBeAnnounced: false,
+                roles: [
+                  { role: 'dealer' as const, count: 2, filled: 0 },
+                  { role: 'floor' as const, count: 1, filled: 0 },
+                ],
+              },
+            ],
+          },
         ],
       },
       filledPositions: 0,

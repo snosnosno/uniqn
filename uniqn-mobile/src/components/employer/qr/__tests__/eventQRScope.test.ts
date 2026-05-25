@@ -114,7 +114,12 @@ describe('eventQRScope helpers', () => {
         kind: 'fixed',
         daysPerWeek: 3,
         startTime: '18:00',
-        roleRequirements: [{ role: 'dealer', count: 2 }],
+        requirements: [
+          {
+            date: null,
+            timeSlots: [{ isTimeToBeAnnounced: false, roles: [{ role: 'dealer', count: 2 }] }],
+          },
+        ],
       },
     });
 

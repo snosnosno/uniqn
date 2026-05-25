@@ -91,7 +91,9 @@ export function buildEventQRScopes(
     return [];
   }
 
+  // kind !== 'dated' 가드 뒤 — dated requirement.date는 항상 string (fixed만 null)
   const scopes = [...jobPosting.schedule.requirements]
+    .filter((r): r is typeof r & { date: string } => r.date !== null)
     .sort((left, right) => left.date.localeCompare(right.date))
     .flatMap((requirement) =>
       [...requirement.timeSlots].sort(sortScopeSlots).map((slot, index) => {
