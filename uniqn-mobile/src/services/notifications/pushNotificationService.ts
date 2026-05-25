@@ -398,17 +398,18 @@ function extractPayload(notification: NotificationsTypes.Notification): Notifica
 // Permission Management
 // ============================================================================
 
-const UNSUPPORTED_PERMISSION_STATUS: NotificationPermissionStatus = {
+// 모듈 싱글톤으로 공유되므로 동결하여 호출자 변이로 인한 aliasing 오염 방지
+const UNSUPPORTED_PERMISSION_STATUS: NotificationPermissionStatus = Object.freeze({
   granted: false,
   canAskAgain: false,
   status: 'denied',
-};
+});
 
-const UNDETERMINED_PERMISSION_STATUS: NotificationPermissionStatus = {
+const UNDETERMINED_PERMISSION_STATUS: NotificationPermissionStatus = Object.freeze({
   granted: false,
   canAskAgain: true,
   status: 'undetermined',
-};
+});
 
 function toPermissionStatus(result: {
   status: string;
