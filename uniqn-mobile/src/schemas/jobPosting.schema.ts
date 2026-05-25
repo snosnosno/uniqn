@@ -199,40 +199,51 @@ const postingTimeSlotSchema = z
 
 const postingDateRequirementSchema = z
   .object({
-    date: z.string(),
+    date: z.string().nullable(),
     timeSlots: z.array(postingTimeSlotSchema),
     isGrouped: z.boolean().optional(),
   })
   .strict();
 
-const postingFixedRoleRequirementSchema = z
+const postingFixedScheduleBaseSchema = z
   .object({
-    role: roleSchema.optional(),
-    customRole: z.string().optional(),
-    count: z.number(),
-    filled: z.number().optional(),
+    kind: z.literal('fixed'),
+    daysPerWeek: z.number().optional(),
+    startTime: z.string().optional(),
+    isStartTimeNegotiable: z.boolean().optional(),
+    requirements: z.array(postingDateRequirementSchema),
   })
   .strict();
 
-const postingScheduleSchema = z.discriminatedUnion('kind', [
-  z
-    .object({
-      kind: z.literal('dated'),
-      primaryDate: z.string(),
-      allDates: z.array(z.string()),
-      requirements: z.array(postingDateRequirementSchema),
-    })
-    .strict(),
-  z
-    .object({
-      kind: z.literal('fixed'),
-      daysPerWeek: z.number().optional(),
-      startTime: z.string().optional(),
-      isStartTimeNegotiable: z.boolean().optional(),
-      roleRequirements: z.array(postingFixedRoleRequirementSchema).optional(),
-    })
-    .strict(),
-]);
+const postingScheduleSchema = z
+  .discriminatedUnion('kind', [
+    z
+      .object({
+        kind: z.literal('dated'),
+        primaryDate: z.string(),
+        allDates: z.array(z.string()),
+        requirements: z.array(postingDateRequirementSchema),
+      })
+      .strict(),
+    postingFixedScheduleBaseSchema,
+  ])
+  .superRefine((schedule, ctx) => {
+    if (schedule.kind !== 'fixed') {
+      return;
+    }
+    const { requirements } = schedule;
+    if (
+      requirements.length !== 1 ||
+      requirements[0]?.date !== null ||
+      requirements[0]?.timeSlots.length !== 1
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['requirements'],
+        message: 'fixed schedule must have exactly one requirement (date:null) with one timeSlot',
+      });
+    }
+  });
 
 const postingCompensationSchema = z
   .object({

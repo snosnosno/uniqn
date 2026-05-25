@@ -90,16 +90,9 @@ export interface PostingTimeSlot {
 }
 
 export interface PostingDateRequirement {
-  date: string;
+  date: string | null;
   timeSlots: PostingTimeSlot[];
   isGrouped?: boolean;
-}
-
-export interface PostingFixedRoleRequirement {
-  role?: StaffRole | 'other';
-  customRole?: string;
-  count: number;
-  filled?: number;
 }
 
 export interface PostingDatedSchedule {
@@ -114,7 +107,7 @@ export interface PostingFixedSchedule {
   daysPerWeek?: number;
   startTime?: string;
   isStartTimeNegotiable?: boolean;
-  roleRequirements?: PostingFixedRoleRequirement[];
+  requirements: PostingDateRequirement[];
 }
 
 export type PostingSchedule = PostingDatedSchedule | PostingFixedSchedule;
