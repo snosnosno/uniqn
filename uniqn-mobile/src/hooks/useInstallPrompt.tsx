@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
+import { Linking } from 'react-native';
 import { router } from 'expo-router';
 import { InstallPromptContent } from '@/components/modals/InstallPromptContent';
-import { getStoreUrl } from '@/constants';
+import { resolveInstallStoreUrl } from '@/constants';
 import { getLoginRoute } from '@/shared/navigation/authRedirect';
 import { useModal } from '@/stores/modalStore';
 import { useToast } from '@/stores/toastStore';
@@ -67,6 +68,31 @@ export function useInstallPrompt() {
   const modal = useModal();
   const toast = useToast();
 
+  const openStore = useCallback(
+    async (source: InstallPromptSource) => {
+      const storeUrl = resolveInstallStoreUrl();
+
+      logger.info('Install CTA clicked', {
+        component: 'useInstallPrompt',
+        source,
+        storeUrl,
+      });
+
+      try {
+        await Linking.openURL(storeUrl);
+        modal.close();
+      } catch (error) {
+        logger.error('Failed to open store url from install prompt', error as Error, {
+          component: 'useInstallPrompt',
+          source,
+          storeUrl,
+        });
+        toast.error('스토어를 열 수 없어요. 잠시 후 다시 시도해주세요.');
+      }
+    },
+    [modal, toast]
+  );
+
   const openInstallPrompt = useCallback(
     (source: InstallPromptSource, options?: OpenInstallPromptOptions) => {
       const copy = getInstallPromptCopy(source);
@@ -103,15 +129,7 @@ export function useInstallPrompt() {
           label: '앱 설치',
           variant: 'primary',
           onPress: () => {
-            const storeUrl = getStoreUrl();
-
-            logger.info('Install CTA clicked before store links are connected', {
-              component: 'useInstallPrompt',
-              source,
-              storeUrl,
-            });
-
-            toast.info('앱 설치 링크는 준비 중입니다.');
+            void openStore(source);
           },
         },
         cancelButton: {
@@ -121,7 +139,7 @@ export function useInstallPrompt() {
         dismissible: true,
       });
     },
-    [modal, toast]
+    [modal, openStore]
   );
 
   return {

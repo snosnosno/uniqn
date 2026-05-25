@@ -1,9 +1,10 @@
 import { act, fireEvent, render, renderHook } from '@testing-library/react-native';
+import { Linking } from 'react-native';
 import { useInstallPrompt } from '../useInstallPrompt';
 
 const mockOpen = jest.fn();
 const mockClose = jest.fn();
-const mockInfo = jest.fn();
+const mockError = jest.fn();
 const mockPush = jest.fn();
 const expoRouter = jest.requireMock('expo-router') as { router?: { push?: jest.Mock } };
 
@@ -16,12 +17,12 @@ jest.mock('@/stores/modalStore', () => ({
 
 jest.mock('@/stores/toastStore', () => ({
   useToast: () => ({
-    info: mockInfo,
+    error: mockError,
   }),
 }));
 
 jest.mock('@/constants', () => ({
-  getStoreUrl: jest.fn(() => 'https://example.com/store'),
+  resolveInstallStoreUrl: jest.fn(() => 'https://apps.apple.com/kr/app/uniqn/id6758857038'),
 }));
 
 jest.mock('@/utils/logger', () => ({
@@ -37,15 +38,16 @@ describe('useInstallPrompt', () => {
   beforeEach(() => {
     mockOpen.mockReset();
     mockClose.mockReset();
-    mockInfo.mockReset();
+    mockError.mockReset();
     mockPush.mockReset();
+    (Linking.openURL as jest.Mock) = jest.fn().mockResolvedValue(undefined);
     expoRouter.router = {
       ...(expoRouter.router ?? {}),
       push: mockPush,
     };
   });
 
-  it('renders a login CTA and uses an explicit redirect for public job actions', async () => {
+  it('renders a login CTA and uses an explicit redirect for public job actions', () => {
     const { result } = renderHook(() => useInstallPrompt());
 
     act(() => {
@@ -69,12 +71,50 @@ describe('useInstallPrompt', () => {
 
     expect(mockClose).toHaveBeenCalled();
     expect(mockPush).toHaveBeenCalledWith('/(auth)/login?redirect=%2F(app)%2Fjobs%2Fjob-123');
+  });
+
+  it('opens the resolved store url when the install CTA is pressed', async () => {
+    const { result } = renderHook(() => useInstallPrompt());
+
+    act(() => {
+      result.current.openInstallPrompt('job-detail-cta', {
+        loginRedirect: '/(app)/jobs/job-123/apply',
+      });
+    });
+
+    const modalConfig = mockOpen.mock.calls[0][0];
 
     await act(async () => {
       await modalConfig.confirmButton.onPress();
     });
 
-    expect(mockInfo).toHaveBeenCalledWith('앱 설치 링크는 준비 중입니다.');
+    expect(Linking.openURL).toHaveBeenCalledWith(
+      'https://apps.apple.com/kr/app/uniqn/id6758857038'
+    );
+    expect(mockClose).toHaveBeenCalled();
+    expect(mockError).not.toHaveBeenCalled();
+  });
+
+  it('shows an error toast and keeps the modal open when the store fails to launch', async () => {
+    (Linking.openURL as jest.Mock).mockRejectedValueOnce(new Error('no handler'));
+
+    const { result } = renderHook(() => useInstallPrompt());
+
+    act(() => {
+      result.current.openInstallPrompt('job-detail-cta', {
+        loginRedirect: '/(app)/jobs/job-123/apply',
+      });
+    });
+
+    const modalConfig = mockOpen.mock.calls[0][0];
+
+    await act(async () => {
+      await modalConfig.confirmButton.onPress();
+    });
+
+    expect(Linking.openURL).toHaveBeenCalled();
+    expect(mockError).toHaveBeenCalledWith('스토어를 열 수 없어요. 잠시 후 다시 시도해주세요.');
+    expect(mockClose).not.toHaveBeenCalled();
   });
 
   it('uses the default protected redirect for public tabs', () => {
