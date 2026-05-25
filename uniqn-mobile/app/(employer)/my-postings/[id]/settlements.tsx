@@ -12,7 +12,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getPostingSettlementContext } from '@/domains/job-posting';
 import { SettlementList, StaffManagementTab } from '@/components/employer';
-import { SettlementModals } from '@/components/employer/settlements/SettlementModals';
+import { SettlementModals } from '@/features/employer/settlements/SettlementModals';
 import { Loading, ErrorState } from '@/components';
 import { StackHeader } from '@/components/headers';
 import { useSettlement } from '@/hooks/useSettlement';

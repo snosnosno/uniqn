@@ -1,32 +1,17 @@
-import { createContext, useContext, type RefObject } from 'react';
-import { type TextInput, View } from 'react-native';
+import { useContext } from 'react';
+import { View } from 'react-native';
 import { BoardCommentComposer } from '@/components/board/BoardCommentComposer';
 import { type BoardDetailComposerItem } from '@/components/board/boardDetailListItems';
-import { type BoardImageAttachment, type BoardMentionCandidate } from '@/types/board';
+import { type BoardMentionCandidate } from '@/types/board';
+import {
+  BoardDetailComposerContext,
+  type BoardDetailComposerContextValue,
+} from './boardPostDetailUtils';
 
-export interface BoardDetailComposerContextValue {
-  draftBody: string;
-  draftImages: BoardImageAttachment[];
-  inputRef: RefObject<TextInput | null>;
-  replyTargetName?: string;
-  canInteract: boolean;
-  mentionCandidates: BoardMentionCandidate[];
-  selectedMentionIds: string[];
-  isCommentSubmitting: boolean;
-  isUploadingCommentImages: boolean;
-  composerPlaceholder: string;
-  onChangeText: (value: string) => void;
-  onToggleMention: (userId: string) => void;
-  onRemoveImage: (imageId: string) => void;
-  onPickImages: () => void;
-  onSubmit: () => void;
-  onCancel: () => void;
-  onFocusItem: (itemKey: string) => void;
-}
-
-export const BoardDetailComposerContext = createContext<BoardDetailComposerContextValue | null>(
-  null
-);
+// 레이어 정합을 위해 컨텍스트 정의는 boardPostDetailUtils 로 이전했고,
+// 기존 import 경로(`./InlineComposerRow`) 호환을 위해 re-export 한다.
+export { BoardDetailComposerContext };
+export type { BoardDetailComposerContextValue };
 
 export function InlineComposerRow({ item }: { item: BoardDetailComposerItem }) {
   const composerContext = useContext(BoardDetailComposerContext);

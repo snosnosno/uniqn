@@ -46,7 +46,14 @@ import {
   archiveSubstitutePostByLinkedPosting,
 } from './board/boardSubstituteService';
 
-export * from './board/boardServiceShared';
+// boardServiceShared는 src/services/board/ 내부 전용 헬퍼·권한 가드·공통 조회를
+// 포함하므로 blanket re-export 대신 공개 API 형상 타입만 명시적으로 노출한다.
+// (헬퍼/가드/상수는 board/ 모듈에서 직접 import 한다.)
+export type {
+  BoardViewer,
+  BoardPostDetail,
+  MentionCandidateSource,
+} from './board/boardServiceShared';
 export * from './board/boardScheduleService';
 export * from './board/boardPostService';
 export * from './board/boardCommentService';

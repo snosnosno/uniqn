@@ -1,5 +1,35 @@
+import { createContext, type RefObject } from 'react';
+import { type TextInput } from 'react-native';
 import { ROLE_LABELS } from '@/constants';
-import { type BoardCommentNode } from '@/types/board';
+import {
+  type BoardCommentNode,
+  type BoardImageAttachment,
+  type BoardMentionCandidate,
+} from '@/types/board';
+
+export interface BoardDetailComposerContextValue {
+  draftBody: string;
+  draftImages: BoardImageAttachment[];
+  inputRef: RefObject<TextInput | null>;
+  replyTargetName?: string;
+  canInteract: boolean;
+  mentionCandidates: BoardMentionCandidate[];
+  selectedMentionIds: string[];
+  isCommentSubmitting: boolean;
+  isUploadingCommentImages: boolean;
+  composerPlaceholder: string;
+  onChangeText: (value: string) => void;
+  onToggleMention: (userId: string) => void;
+  onRemoveImage: (imageId: string) => void;
+  onPickImages: () => void;
+  onSubmit: () => void;
+  onCancel: () => void;
+  onFocusItem: (itemKey: string) => void;
+}
+
+export const BoardDetailComposerContext = createContext<BoardDetailComposerContextValue | null>(
+  null
+);
 
 export function getAuthorBadgeVariant(authorRole: string) {
   if (authorRole === 'admin') {

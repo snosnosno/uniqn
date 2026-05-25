@@ -36,8 +36,8 @@ import {
   getComposerPlaceholder,
   getPostFallbackHref,
   hasCommentWithId,
+  type BoardDetailComposerContextValue,
 } from './boardPostDetailUtils';
-import { type BoardDetailComposerContextValue } from './InlineComposerRow';
 
 export function useBoardPostDetailScreen() {
   const { postId } = useLocalSearchParams<{ postId: string }>();
