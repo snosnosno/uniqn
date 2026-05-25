@@ -108,6 +108,13 @@ function createMinimalJob(overrides: TestJobOverrides = {}): JobPosting {
         ]
       : [];
 
+  const fixedRoles = (overrides.requiredRolesWithCount ?? []).map((role) => ({
+    role: role.role ?? ('dealer' as const),
+    customRole: role.customRole,
+    count: role.count,
+    filled: role.filled ?? 0,
+  }));
+
   const schedule =
     overrides.postingType === 'fixed'
       ? {
@@ -115,12 +122,19 @@ function createMinimalJob(overrides: TestJobOverrides = {}): JobPosting {
           daysPerWeek: overrides.daysPerWeek,
           startTime,
           isStartTimeNegotiable: overrides.isStartTimeNegotiable,
-          roleRequirements: (overrides.requiredRolesWithCount ?? []).map((role) => ({
-            role: role.role ?? 'dealer',
-            customRole: role.customRole,
-            count: role.count,
-            filled: role.filled ?? 0,
-          })),
+          requirements: [
+            {
+              date: null as null,
+              timeSlots: [
+                {
+                  id: 'slot-fixed-0',
+                  startTime,
+                  isTimeToBeAnnounced: false,
+                  roles: fixedRoles,
+                },
+              ],
+            },
+          ],
         }
       : {
           kind: 'dated' as const,

@@ -83,16 +83,30 @@ function createMinimalJob(overrides: TestJobOverrides = {}): JobPosting {
     })),
   }));
 
+  const fixedRoles = (overrides.requiredRolesWithCount ?? []).map((role) => ({
+    role: role.role ?? ('dealer' as const),
+    customRole: role.customRole,
+    count: role.count,
+    filled: role.filled ?? 0,
+  }));
+
   const schedule =
     overrides.postingType === 'fixed'
       ? {
           kind: 'fixed' as const,
-          roleRequirements: (overrides.requiredRolesWithCount ?? []).map((role) => ({
-            role: role.role ?? 'dealer',
-            customRole: role.customRole,
-            count: role.count,
-            filled: role.filled ?? 0,
-          })),
+          requirements: [
+            {
+              date: null as null,
+              timeSlots: [
+                {
+                  id: 'slot-fixed-0',
+                  startTime: undefined as string | undefined,
+                  isTimeToBeAnnounced: false,
+                  roles: fixedRoles,
+                },
+              ],
+            },
+          ],
         }
       : {
           kind: 'dated' as const,

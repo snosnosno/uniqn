@@ -70,9 +70,21 @@ describe('job-posting workflow selectors', () => {
         kind: 'fixed',
         daysPerWeek: 5,
         startTime: '19:00',
-        roleRequirements: [
-          { role: 'dealer', count: 2, filled: 2 },
-          { role: 'floor', count: 1, filled: 0 },
+        isStartTimeNegotiable: false,
+        requirements: [
+          {
+            date: null,
+            timeSlots: [
+              {
+                startTime: '19:00',
+                isTimeToBeAnnounced: false,
+                roles: [
+                  { role: 'dealer', count: 2, filled: 2 },
+                  { role: 'floor', count: 1, filled: 0 },
+                ],
+              },
+            ],
+          },
         ],
       },
       roleCatalog: [
@@ -91,6 +103,7 @@ describe('job-posting workflow selectors', () => {
       isTournament: false,
       isUrgent: false,
       recruitmentType: 'fixed',
+      usesGroupedDateRanges: false,
     });
     expect(roleAvailability.availableItems.map((item) => item.role)).toEqual(['floor']);
     expect(application).toMatchObject({
@@ -107,6 +120,9 @@ describe('job-posting workflow selectors', () => {
         startTime: '19:00',
       }),
     });
+    // fixed 공고의 역할 목록이 합성 슬롯에서 올바르게 노출되는지 확인
+    expect(scheduleDisplay.fixed?.roles).toHaveLength(2);
+    expect(scheduleDisplay.fixed?.roles?.map((r) => r.role)).toEqual(['dealer', 'floor']);
   });
 
   it('keeps tournament grouping consistent across facts and projections', () => {
@@ -332,7 +348,19 @@ describe('job-posting workflow selectors', () => {
             kind: 'fixed',
             daysPerWeek: 5,
             startTime: '19:00',
-            roleRequirements: [{ role: 'dealer', count: 2, filled: 0 }],
+            isStartTimeNegotiable: false,
+            requirements: [
+              {
+                date: null,
+                timeSlots: [
+                  {
+                    startTime: '19:00',
+                    isTimeToBeAnnounced: false,
+                    roles: [{ role: 'dealer', count: 2, filled: 0 }],
+                  },
+                ],
+              },
+            ],
           },
         })
       )

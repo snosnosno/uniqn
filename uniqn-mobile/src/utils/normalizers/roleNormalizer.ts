@@ -1,6 +1,6 @@
 import type { JobPosting } from '@/types';
 import type { RoleRequirement as DateRoleRequirement } from '@/types/jobPosting/dateRequirement';
-import type { PostingFixedRoleRequirement, PostingSlotRoleRequirement } from '@/types/jobPosting';
+import type { PostingSlotRoleRequirement } from '@/types/jobPosting';
 import type { RoleWithCount } from '@/types/postingConfig';
 import {
   type RoleInfo,
@@ -30,10 +30,6 @@ export function normalizeRoleWithCount(role: RoleWithCount): RoleInfo {
   return createRoleInfo(role.role ?? role.name ?? 'other', role.count, role.filled ?? 0);
 }
 
-function normalizePostingFixedRoleRequirement(role: PostingFixedRoleRequirement): RoleInfo {
-  return createRoleInfo(role.role ?? 'other', role.count, role.filled ?? 0, role.customRole);
-}
-
 function normalizePostingSlotRoleRequirement(role: PostingSlotRoleRequirement): RoleInfo {
   return createRoleInfo(role.role ?? 'other', role.count, role.filled ?? 0, role.customRole);
 }
@@ -43,38 +39,37 @@ function getRoleAggregationKey(role: RoleInfo): string {
 }
 
 export function normalizeJobRoles(job: JobPosting): RoleInfo[] {
-  if (job.schedule.kind === 'fixed') {
-    return (job.schedule.roleRequirements ?? []).map(normalizePostingFixedRoleRequirement);
+  const requirements =
+    job.schedule.kind === 'fixed' || job.schedule.kind === 'dated' ? job.schedule.requirements : [];
+
+  if (requirements.length === 0) {
+    return [];
   }
 
-  if (job.schedule.kind === 'dated' && job.schedule.requirements.length > 0) {
-    const roleMap = new Map<string, RoleInfo>();
+  const roleMap = new Map<string, RoleInfo>();
 
-    for (const dateRequirement of job.schedule.requirements) {
-      for (const slot of dateRequirement.timeSlots) {
-        for (const role of slot.roles) {
-          const normalized = normalizePostingSlotRoleRequirement(role);
-          const roleKey = getRoleAggregationKey(normalized);
-          const existing = roleMap.get(roleKey);
+  for (const requirement of requirements) {
+    for (const slot of requirement.timeSlots) {
+      for (const role of slot.roles) {
+        const normalized = normalizePostingSlotRoleRequirement(role);
+        const roleKey = getRoleAggregationKey(normalized);
+        const existing = roleMap.get(roleKey);
 
-          if (existing) {
-            roleMap.set(roleKey, {
-              ...existing,
-              requiredCount: existing.requiredCount + normalized.requiredCount,
-              filledCount: existing.filledCount + normalized.filledCount,
-            });
-            continue;
-          }
-
-          roleMap.set(roleKey, normalized);
+        if (existing) {
+          roleMap.set(roleKey, {
+            ...existing,
+            requiredCount: existing.requiredCount + normalized.requiredCount,
+            filledCount: existing.filledCount + normalized.filledCount,
+          });
+          continue;
         }
+
+        roleMap.set(roleKey, normalized);
       }
     }
-
-    return Array.from(roleMap.values());
   }
 
-  return [];
+  return Array.from(roleMap.values());
 }
 
 export function getRolesForDateAndTime(

@@ -50,7 +50,17 @@ describe('updatePostingScheduleFilled', () => {
   it('matches fixed custom roles using the raw assignment role name', () => {
     const schedule: PostingSchedule = {
       kind: 'fixed',
-      roleRequirements: [{ role: 'other', customRole: '사회자', count: 1, filled: 0 }],
+      requirements: [
+        {
+          date: null,
+          timeSlots: [
+            {
+              startTime: FIXED_TIME_MARKER,
+              roles: [{ role: 'other', customRole: '사회자', count: 1, filled: 0 }],
+            },
+          ],
+        },
+      ],
     };
 
     const assignments: Assignment[] = [
@@ -64,7 +74,10 @@ describe('updatePostingScheduleFilled', () => {
 
     const updated = updatePostingScheduleFilled(schedule, assignments, 'increment');
     expect(updated.kind).toBe('fixed');
-    const filled = updated.kind === 'fixed' ? updated.roleRequirements?.[0]?.filled : undefined;
+    const filled =
+      updated.kind === 'fixed'
+        ? updated.requirements[0]?.timeSlots[0]?.roles[0]?.filled
+        : undefined;
     expect(filled).toBe(1);
   });
 });

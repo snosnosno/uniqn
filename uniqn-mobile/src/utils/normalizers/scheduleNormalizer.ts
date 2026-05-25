@@ -1,7 +1,6 @@
 import type { JobPosting } from '@/types';
 import type {
   PostingDateRequirement,
-  PostingFixedRoleRequirement,
   PostingFixedSchedule,
   PostingTimeSlot,
 } from '@/types/jobPosting';
@@ -39,24 +38,25 @@ function normalizeTimeSlot(slot: PostingTimeSlot, index: number): TimeSlotInfo {
 
 function normalizeDateRequirement(requirement: PostingDateRequirement): DatedScheduleInfo {
   return createDatedSchedule(
-    requirement.date,
+    // kind !== 'dated' 가드를 통과한 dated requirement만 도달 — date는 항상 string, null 런타임 미발생
+    requirement.date ?? '',
     requirement.timeSlots.map((slot, index) => normalizeTimeSlot(slot, index))
   );
 }
 
-function normalizeFixedRole(role: PostingFixedRoleRequirement): RoleInfo {
-  return normalizeRoleWithCount({
-    role: role.role ?? 'dealer',
-    name: role.customRole,
-    count: role.count,
-    filled: role.filled ?? 0,
-  });
-}
-
 function normalizeFixedSchedule(schedule: PostingFixedSchedule): FixedScheduleInfo {
+  // SP1 불변식: fixed schedule은 requirements 1개 · timeSlots 1개 (zod superRefine 강제)
+  const roles = schedule.requirements[0]?.timeSlots[0]?.roles ?? [];
   return createFixedSchedule(
     schedule.daysPerWeek ?? 0,
-    (schedule.roleRequirements ?? []).map(normalizeFixedRole),
+    roles.map((role) =>
+      normalizeRoleWithCount({
+        role: role.role ?? 'dealer',
+        name: role.customRole,
+        count: role.count,
+        filled: role.filled ?? 0,
+      })
+    ),
     {
       startTime: schedule.startTime ?? null,
       isStartTimeNegotiable: schedule.isStartTimeNegotiable,

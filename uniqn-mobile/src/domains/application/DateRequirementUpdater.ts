@@ -154,7 +154,14 @@ export function updatePostingScheduleFilled(
   operation: 'increment' | 'decrement'
 ): PostingSchedule {
   if (schedule.kind === 'fixed') {
-    const nextRoleRequirements = (schedule.roleRequirements ?? []).map((role) => ({ ...role }));
+    const nextRequirements = schedule.requirements.map((req) => ({
+      ...req,
+      timeSlots: req.timeSlots.map((ts) => ({
+        ...ts,
+        roles: ts.roles.map((role) => ({ ...role })),
+      })),
+    }));
+    const nextRoles = nextRequirements[0]?.timeSlots[0]?.roles ?? [];
 
     assignments.forEach((assignment) => {
       const targetRole = assignment.roleIds[0];
@@ -162,7 +169,7 @@ export function updatePostingScheduleFilled(
         return;
       }
 
-      const roleRequirement = nextRoleRequirements.find((role) => {
+      const roleRequirement = nextRoles.find((role) => {
         if (role.role === targetRole) return true;
         if (role.role === 'other' && role.customRole === targetRole) return true;
         return false;
@@ -178,10 +185,7 @@ export function updatePostingScheduleFilled(
         operation === 'increment' ? currentFilled + delta : Math.max(0, currentFilled - delta);
     });
 
-    return {
-      ...schedule,
-      roleRequirements: nextRoleRequirements,
-    };
+    return { ...schedule, requirements: nextRequirements };
   }
 
   const updatedRequirements = schedule.requirements.map((req) => ({
