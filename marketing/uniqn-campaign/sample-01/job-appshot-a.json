@@ -1,0 +1,28 @@
+[
+  {
+    "id": "0b5a44ee-8c79-4a45-a796-21fb535a0e73",
+    "status": "completed",
+    "display_name": "Nano Banana Pro",
+    "job_set_type": "nano_banana_2",
+    "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3Dn3uLivLnxVbq9ESqnYPV20SJY/hf_20260525_071215_0b5a44ee-8c79-4a45-a796-21fb535a0e73.png",
+    "created_at": 1779693135.187446,
+    "params": {
+      "width": 2048,
+      "height": 2048,
+      "aspect_ratio": "1:1",
+      "resolution": "2k",
+      "batch_size": 1,
+      "input_images": [
+        {
+          "id": "b5a78234-2847-41e3-8d5b-05a42a5ba4bb",
+          "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_3Dn3uLivLnxVbq9ESqnYPV20SJY/b5a78234-2847-41e3-8d5b-05a42a5ba4bb.png",
+          "type": "media_input"
+        }
+      ],
+      "input_image": null,
+      "application": null,
+      "surface": null,
+      "prompt": "Place the provided app screenshot exactly and legibly onto the screen of a modern smartphone. The phone stands upright as a premium product hero shot. Background: an out-of-focus upscale Texas Hold'em setting with stacked poker chips and a few playing cards on a dark surface, warm gold rim lighting and soft bokeh, Black and Gold premium aesthetic. NO people, no hands. Keep the phone screen content identical to the reference image — do not alter, translate, or redraw the UI. Photorealistic, cinematic, shallow depth of field, square 1:1 composition, phone centered and large."
+    }
+  }
+]

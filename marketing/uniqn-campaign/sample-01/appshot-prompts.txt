@@ -1,0 +1,5 @@
+PROMPT A (poker-world backdrop):
+Place the provided app screenshot exactly and legibly onto the screen of a modern smartphone. The phone stands upright as a premium product hero shot. Background: an out-of-focus upscale Texas Hold'em setting with stacked poker chips and a few playing cards on a dark surface, warm gold rim lighting and soft bokeh, Black and Gold premium aesthetic. NO people, no hands. Keep the phone screen content identical to the reference image — do not alter, translate, or redraw the UI. Photorealistic, cinematic, shallow depth of field, square 1:1 composition, phone centered and large.
+
+PROMPT B (minimal gradient):
+Place the provided app screenshot exactly and legibly onto the screen of a modern smartphone, shown as a clean minimal product mockup floating at a slight angle with a soft drop shadow. Background: a smooth premium gradient from deep gold to near-black, subtle, no clutter. NO people, no hands, no extra objects. Keep the phone screen content identical to the reference image — do not alter, translate, or redraw the UI. Studio product photography, crisp, high detail, square 1:1 composition, phone centered and large.
