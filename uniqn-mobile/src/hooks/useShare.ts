@@ -11,17 +11,12 @@ import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 import { trackEvent, createJobDeepLink } from '@/services/observability';
 import { useToast } from '@/stores/toastStore';
+import { buildJobShareText } from '@/utils/jobShareMessage';
+import type { JobPosting } from '@/types';
 
 // ============================================================================
 // Types
 // ============================================================================
-
-export interface ShareJobParams {
-  id: string;
-  title: string;
-  location: string;
-  workDate?: string;
-}
 
 export interface ShareResult {
   success: boolean;
@@ -30,8 +25,8 @@ export interface ShareResult {
 }
 
 export interface UseShareReturn {
-  /** 공고 공유 */
-  shareJob: (job: ShareJobParams) => Promise<ShareResult>;
+  /** 공고 공유 (근무 일정·역할·인원·급여 포함 본문 생성) */
+  shareJob: (job: JobPosting) => Promise<ShareResult>;
   /** 일반 콘텐츠 공유 */
   share: (options: { title: string; message: string; url?: string }) => Promise<ShareResult>;
   /** 공유 진행 중 여부 */
@@ -149,7 +144,7 @@ export function useShare(): UseShareReturn {
    * 공고 공유
    */
   const shareJob = useCallback(
-    async (job: ShareJobParams): Promise<ShareResult> => {
+    async (job: JobPosting): Promise<ShareResult> => {
       if (isSharing) {
         return { success: false, error: new Error('이미 공유 중입니다') };
       }
@@ -160,20 +155,20 @@ export function useShare(): UseShareReturn {
         // 웹 URL 생성 (외부 공유용)
         const url = createJobDeepLink(job.id, true);
 
-        // 공유 메시지 구성
-        const dateInfo = job.workDate ? `\n${job.workDate}` : '';
-        const message = `[UNIQN] ${job.title}\n${job.location}${dateInfo}\n\n${url}`;
+        // 공유 메시지 구성 (일정·역할·인원·급여 포함, url 은 본문 마지막 1회)
+        const message = buildJobShareText(job, url);
 
         let action: 'shared' | 'dismissed';
 
         if (Platform.OS === 'web') {
-          action = await webShare({ title: job.title, text: message, url });
+          // url 은 message 본문에 이미 포함 — 별도 url 미전달로 중복 미리보기 방지
+          action = await webShare({ title: job.title, text: message });
         } else {
+          // iOS 에서 url 을 별도 전달하면 카톡이 본문+링크를 이중 렌더 → message 만 전달
           const result = await Share.share(
             {
               title: job.title,
               message,
-              ...(Platform.OS === 'ios' ? { url } : {}),
             },
             {
               dialogTitle: '공고 공유하기',
