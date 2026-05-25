@@ -5,7 +5,7 @@ import { buildPostingScheduleModel } from '@/components/jobs/shared/postingSurfa
  * 키 형식: `${date}__${slotKey}__${roleKey}`
  *  - date: dated/grouped 는 실제 YYYY-MM-DD, fixed 는 'FIXED_SCHEDULE'
  *  - slotKey: 타임 슬롯 startTime(HH:MM) / TBA='미정' / fixed 협의='NEGOTIABLE'
- *  - roleKey: role (other 는 `other:${customRole}`)
+ *  - roleKey: role (other 는 `other:${customRole}`; customRole 없는 bare-other 도 `other:`)
  */
 describe('buildPostingScheduleModel hydrate — fixed/grouped/dated 단일 소스 (SP3 T4)', () => {
   // --- fixed: 합성 슬롯 startTime 없음 + TBA 아님 → slotKey='NEGOTIABLE' ---
@@ -34,6 +34,32 @@ describe('buildPostingScheduleModel hydrate — fixed/grouped/dated 단일 소�
     expect(role.count).toBe(2);
     expect(role.filled).toBe(1);
     expect((model as any).fixed.filledCount).toBe(1);
+  });
+
+  // --- bare-other(customRole 없음): roleKey 가 'other:' (SQL _posting_role_key 정합) ---
+  it('bare-other(customRole 없음): hydrate 키 other: 로 filled 를 표시한다 (회귀 가드)', () => {
+    const fixedSource = {
+      workflow: { isFixed: true, usesGroupedDateRanges: false },
+      scheduleDisplay: {
+        variant: 'fixed',
+        fixed: {
+          daysPerWeek: 5,
+          isStartTimeNegotiable: true,
+          roles: [{ role: 'other', count: 1, filled: 0 }], // customRole 없음
+        },
+        dateGroups: [],
+        dateRequirements: [],
+        workDate: '',
+        timeSlot: '',
+      },
+    } as any;
+
+    // 서버 _posting_role_key('other', NULL) = 'other:' (콜론 포함). 옛 코드는 'other'(콜론 없음)로 miss → 0/N.
+    const filledCounts = new Map<string, number>([['FIXED_SCHEDULE__NEGOTIABLE__other:', 1]]);
+    const model = buildPostingScheduleModel(fixedSource, filledCounts);
+
+    const role = (model as any).fixed.roles[0];
+    expect(role.filled).toBe(1);
   });
 
   // --- grouped 날짜범위: 범위 내 날짜 합산, 범위 밖 제외 ---
