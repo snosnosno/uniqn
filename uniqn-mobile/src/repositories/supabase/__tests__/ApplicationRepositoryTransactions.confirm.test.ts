@@ -41,6 +41,7 @@ const fixedAssignment = {
   dates: ['2026-06-01'],
   timeSlot: '10:00-18:00',
   roleIds: ['dealer'],
+  isGrouped: false,
   isTimeToBeAnnounced: false,
 };
 
