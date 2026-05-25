@@ -161,17 +161,7 @@ export async function executeReviewCancellation(
     }
 
     const applicationData = await loadApplication(input.applicationId);
-    const jobData = await loadAndVerifyJobPostingAccess(
-      applicationData.jobPostingId,
-      reviewerId,
-      '취소 요청 검토'
-    );
-
-    if (jobData.schedule.kind === 'fixed') {
-      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: '고정공고는 1차 범위에서 취소 요청을 지원하지 않습니다.',
-      });
-    }
+    await loadAndVerifyJobPostingAccess(applicationData.jobPostingId, reviewerId, '취소 요청 검토');
 
     if (applicationData.status !== STATUS.APPLICATION.CANCELLATION_PENDING) {
       throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
