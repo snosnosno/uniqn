@@ -200,8 +200,10 @@ function calculateTotalsFromSchedule(schedule: PostingSchedule): {
   workDates?: string[];
 } {
   // filledPositions는 RPC(confirm/cancel)가 job_postings.filled_positions 컬럼에
-  // 직접 쓰는 사람 단위 진실원이다. schedule의 slot-level role.filled는 dead counter라
-  // 추론하지 않는다. 신규 공고의 filledPositions는 serializeJobPostingV3에서 0으로 초기화.
+  // 직접 쓰는 사람 단위 진실원이다. schedule의 slot-level role.filled는 dead counter이며,
+  // 역할/슬롯별 (filled/count) 표시는 읽기 시 get_posting_filled_counts RPC로 hydrate한다(H0).
+  // 따라서 여기서는 schedule의 role.filled를 신뢰/추론하지 않는다.
+  // 신규 공고의 filledPositions는 serializeJobPostingV3에서 0으로 초기화.
   return {
     totalPositions: calculateTotalPositionsFromSchedule(schedule),
     ...deriveWorkDateFieldsFromSchedule(schedule),

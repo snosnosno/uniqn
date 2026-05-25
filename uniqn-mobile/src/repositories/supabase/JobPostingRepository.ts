@@ -275,6 +275,11 @@ function assertCanonical(doc: JobPosting, msg: string, ctx: Record<string, unkno
   throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, { userMessage: msg });
 }
 
+/** (date, timeSlot, roleKey) 매칭 키. work_logs raw 값 기준(TBA→'미정'). */
+export function buildSlotRoleKey(date: string, timeSlot: string, roleKey: string): string {
+  return `${date}__${timeSlot}__${roleKey}`;
+}
+
 // ── Repository ───────────────────────────────────────────────────────────────
 
 export class SupabaseJobPostingRepository implements IJobPostingRepository {
@@ -470,6 +475,34 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
     } catch (error) {
       rethrowOrHandle(error, '일반 공고 일자별 개수 조회', { startDate, endDate });
     }
+  }
+
+  async getPostingFilledCounts(jobPostingIds: string[]): Promise<Map<string, number>> {
+    const map = new Map<string, number>();
+    if (jobPostingIds.length === 0) return map;
+    try {
+      const { data, error } = await supabase.rpc('get_posting_filled_counts', {
+        p_job_posting_ids: jobPostingIds,
+      });
+      if (error) {
+        logger.warn('get_posting_filled_counts 실패 — 역할별 카운트 미표시', { error });
+        return map;
+      }
+      const rows = (data ?? []) as {
+        job_posting_id: string;
+        work_date: string;
+        time_slot: string;
+        role_key: string;
+        confirmed_count: number | string;
+      }[];
+      for (const row of rows) {
+        const key = `${row.job_posting_id}__${buildSlotRoleKey(row.work_date, row.time_slot, row.role_key)}`;
+        map.set(key, Number(row.confirmed_count));
+      }
+    } catch (e) {
+      logger.warn('get_posting_filled_counts 예외', { error: e });
+    }
+    return map;
   }
 
   // ── Simple Write ────────────────────────────────────────────────────────

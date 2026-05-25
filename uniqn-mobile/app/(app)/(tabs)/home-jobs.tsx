@@ -12,6 +12,7 @@ import { JobList, PostingTypeChips, DateCalendar, SearchBar } from '@/components
 import { TabHeader } from '@/components/headers';
 import { useJobPostings } from '@/hooks/useJobPostings';
 import { usePostingTypeCounts } from '@/hooks/usePostingTypeCounts';
+import { usePostingFilledCounts } from '@/hooks/usePostingFilledCounts';
 import { searchJobPostings, trackSearch } from '@/services';
 import {
   buildPostingFacts,
@@ -144,6 +145,12 @@ export default function JobsScreen() {
     return visibleJobs.map((job) => focusPostingCardToDate(job, selectedDateString));
   }, [searchQuery.data, selectedDateString, selectedType]);
 
+  const visibleJobIds = useMemo(
+    () => (isSearchMode ? filteredSearchJobs : jobs).map((job) => job.id),
+    [isSearchMode, filteredSearchJobs, jobs]
+  );
+  const filledCountsQuery = usePostingFilledCounts(visibleJobIds);
+
   useEffect(() => {
     if (debouncedSearch) {
       trackSearch(debouncedSearch);
@@ -189,6 +196,7 @@ export default function JobsScreen() {
           onRefresh={handleSearchRefresh}
           onLoadMore={noop}
           onJobPress={handleJobPress}
+          filledCounts={filledCountsQuery.data}
           emptyMessage={`'${debouncedSearch || normalizedSearchText}' 검색 결과가 없습니다`}
         />
       ) : (
@@ -202,6 +210,7 @@ export default function JobsScreen() {
           onRefresh={refresh}
           onLoadMore={loadMore}
           onJobPress={handleJobPress}
+          filledCounts={filledCountsQuery.data}
         />
       )}
 

@@ -21,6 +21,7 @@ export type {
   IJobPostingRepository,
   PaginatedJobPostings,
   PostingTypeCounts,
+  PostingFilledCount,
   CreateJobPostingContext,
   CreateJobPostingResult,
   JobPostingStats,

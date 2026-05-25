@@ -1,4 +1,4 @@
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import { Platform, Pressable, Text, View, type GestureResponderEvent } from 'react-native';
 import { STATUS_COLORS } from '@/constants/colors';
 import { HIT_SLOP } from '@/constants';
@@ -6,6 +6,7 @@ import { SCHEDULE_STATUS } from '@/constants/statusConfig';
 import { HeartFilledIcon, HeartOutlineIcon } from '@/components/icons';
 import { Badge, type CardStripeTone } from '@/components/ui';
 import { useBookmarks } from '@/hooks/useBookmarks';
+import { extractPostingFilledSubmap } from '@/hooks/usePostingFilledCounts';
 import type { JobPostingCard } from '@/types';
 import { PostingCardSurface } from './shared/PostingCardSurface';
 
@@ -22,11 +23,21 @@ interface JobCardProps {
   job: JobPostingCard;
   onPress: (jobId: string) => void;
   applicationStatus?: ApplicationStatusType;
+  filledCounts?: Map<string, number>;
 }
 
-export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }: JobCardProps) {
+export const JobCard = memo(function JobCard({
+  job,
+  onPress,
+  applicationStatus,
+  filledCounts,
+}: JobCardProps) {
   const { isBookmarked, toggleBookmark } = useBookmarks();
   const bookmarked = isBookmarked(job.id);
+  const cardFilledCounts = useMemo(
+    () => extractPostingFilledSubmap(filledCounts, job.id),
+    [filledCounts, job.id]
+  );
 
   const handlePress = useCallback(() => {
     onPress(job.id);
@@ -89,6 +100,7 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
       card={job}
       onPress={handlePress}
       stripeTone={stripeTone}
+      filledCounts={cardFilledCounts}
       topStatus={
         applicationStatus ? (
           <Badge variant="chip" dot>
