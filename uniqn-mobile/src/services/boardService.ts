@@ -472,6 +472,17 @@ async function getBoardPostInternal(postId: string): Promise<BoardPost | null> {
   return boardRepository.getPostById(postId);
 }
 
+async function getBoardPostOrThrow(
+  postId: string,
+  notFoundMessage = '게시글을 찾을 수 없습니다.'
+): Promise<BoardPost> {
+  const post = await getBoardPostInternal(postId);
+  if (!post) {
+    throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, { userMessage: notFoundMessage });
+  }
+  return post;
+}
+
 async function getScheduleMembership(
   postId: string,
   viewerId?: string
@@ -814,12 +825,7 @@ export async function getBoardPostDetail(
   viewer: BoardViewer
 ): Promise<BoardPostDetail> {
   try {
-    const post = await getBoardPostInternal(postId);
-    if (!post) {
-      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-        userMessage: '게시글을 찾을 수 없습니다.',
-      });
-    }
+    const post = await getBoardPostOrThrow(postId);
 
     const membership = await assertCanViewPost(post, viewer);
 
@@ -846,37 +852,38 @@ export async function getBoardPostDetail(
       throw commentsResult.reason;
     }
 
+    const resolveOptionalLookup = <TValue, TFallback>(
+      result: PromiseSettledResult<TValue>,
+      warnMessage: string,
+      transform: (value: TValue) => TFallback,
+      fallback: TFallback
+    ): TFallback => {
+      if (result.status === 'fulfilled') {
+        return transform(result.value);
+      }
+
+      logger.warn(warnMessage, {
+        component: COMPONENT,
+        postId,
+        viewerId: viewer.userId ?? null,
+        error: result.reason instanceof Error ? result.reason.message : String(result.reason),
+      });
+      return fallback;
+    };
+
     const comments = commentsResult.value;
-    const myVote =
-      myVoteResult.status === 'fulfilled'
-        ? (myVoteResult.value?.type ?? null)
-        : (() => {
-            logger.warn('Optional board detail vote lookup failed', {
-              component: COMPONENT,
-              postId,
-              viewerId: viewer.userId ?? null,
-              error:
-                myVoteResult.reason instanceof Error
-                  ? myVoteResult.reason.message
-                  : String(myVoteResult.reason),
-            });
-            return null;
-          })();
-    const myReactions =
-      myReactionsResult.status === 'fulfilled'
-        ? myReactionsResult.value
-        : (() => {
-            logger.warn('Optional board detail reaction lookup failed', {
-              component: COMPONENT,
-              postId,
-              viewerId: viewer.userId ?? null,
-              error:
-                myReactionsResult.reason instanceof Error
-                  ? myReactionsResult.reason.message
-                  : String(myReactionsResult.reason),
-            });
-            return {};
-          })();
+    const myVote = resolveOptionalLookup(
+      myVoteResult,
+      'Optional board detail vote lookup failed',
+      (vote) => vote?.type ?? null,
+      null
+    );
+    const myReactions = resolveOptionalLookup(
+      myReactionsResult,
+      'Optional board detail reaction lookup failed',
+      (reactions) => reactions,
+      {} as Record<string, CommentReactionType>
+    );
 
     return {
       post,
@@ -900,26 +907,23 @@ export async function getBoardMentionCandidates(
   viewer: BoardViewer
 ): Promise<BoardMentionCandidate[]> {
   try {
-    const post = await getBoardPostInternal(postId);
-    if (!post) {
-      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-        userMessage: '게시글을 찾을 수 없습니다.',
-      });
-    }
+    const post = await getBoardPostOrThrow(postId);
 
     await assertCanViewPost(post, viewer);
+
+    const authorCandidate: MentionCandidateSource = {
+      userId: post.authorId,
+      displayName: post.authorName,
+      role: post.authorRole,
+      isAuthor: true,
+    };
 
     if (post.boardType === 'schedule') {
       const memberships = (await boardRepository.getMembershipsByPost(post.id)).filter(
         (membership) => membership.canRead
       );
       return resolveMentionCandidates([
-        {
-          userId: post.authorId,
-          displayName: post.authorName,
-          role: post.authorRole,
-          isAuthor: true,
-        },
+        authorCandidate,
         ...memberships.map((membership) => ({
           userId: membership.userId,
           displayName: membership.displayName,
@@ -930,26 +934,14 @@ export async function getBoardMentionCandidates(
     }
 
     if (post.boardType === 'notice') {
-      return resolveMentionCandidates([
-        {
-          userId: post.authorId,
-          displayName: post.authorName,
-          role: post.authorRole,
-          isAuthor: true,
-        },
-      ]);
+      return resolveMentionCandidates([authorCandidate]);
     }
 
     const comments = (await boardRepository.getComments(post.id)).filter(
       (comment) => comment.status === 'active'
     );
     return resolveMentionCandidates([
-      {
-        userId: post.authorId,
-        displayName: post.authorName,
-        role: post.authorRole,
-        isAuthor: true,
-      },
+      authorCandidate,
       ...comments.map((comment) => ({
         userId: comment.authorId,
         displayName: comment.authorName,
@@ -1032,12 +1024,7 @@ export async function updateBoardPost(
   assertImageLimit(input.imageAttachments?.length ?? 0, MAX_BOARD_POST_IMAGES);
 
   try {
-    const post = await getBoardPostInternal(postId);
-    if (!post) {
-      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-        userMessage: '게시글을 찾을 수 없습니다.',
-      });
-    }
+    const post = await getBoardPostOrThrow(postId);
 
     assertCanManagePost(post, viewer);
 
@@ -1079,12 +1066,7 @@ export async function setBoardPostLock(
   }
 
   try {
-    const post = await getBoardPostInternal(postId);
-    if (!post) {
-      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-        userMessage: '게시글을 찾을 수 없습니다.',
-      });
-    }
+    const post = await getBoardPostOrThrow(postId);
 
     assertCanManagePost(post, viewer);
     await boardRepository.setPostLock(postId, isLocked, viewer.userId!);
@@ -1100,12 +1082,7 @@ export async function setBoardPostLock(
 export async function hideBoardPost(postId: string, adminUserId: string): Promise<void> {
   await requireAdminUser(adminUserId);
   try {
-    const post = await getBoardPostInternal(postId);
-    if (!post) {
-      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-        userMessage: '게시글을 찾을 수 없습니다.',
-      });
-    }
+    const post = await getBoardPostOrThrow(postId);
 
     if (post.boardType === 'notice') {
       throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
@@ -1134,12 +1111,7 @@ export async function createBoardComment(
   assertImageLimit(input.imageAttachments?.length ?? 0, MAX_BOARD_COMMENT_IMAGES);
 
   try {
-    const post = await getBoardPostInternal(input.postId);
-    if (!post) {
-      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-        userMessage: '게시글을 찾을 수 없습니다.',
-      });
-    }
+    const post = await getBoardPostOrThrow(input.postId);
 
     const mentionedUserIds = normalizeMentionIds(input.mentionedUserIds);
 
@@ -1389,12 +1361,7 @@ export async function toggleBoardPostVote(
 ): Promise<BoardVoteType | null> {
   await requireMatchingCurrentUser(viewer.userId);
   try {
-    const post = await getBoardPostInternal(postId);
-    if (!post) {
-      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-        userMessage: '게시글을 찾을 수 없습니다.',
-      });
-    }
+    const post = await getBoardPostOrThrow(postId);
 
     await assertCanInteractPost(post, viewer);
     return boardRepository.togglePostVote(postId, viewer.userId, type);
@@ -1415,12 +1382,7 @@ export async function toggleBoardCommentReaction(
 ): Promise<CommentReactionType | null> {
   await requireMatchingCurrentUser(viewer.userId);
   try {
-    const post = await getBoardPostInternal(postId);
-    if (!post) {
-      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-        userMessage: '게시글을 찾을 수 없습니다.',
-      });
-    }
+    const post = await getBoardPostOrThrow(postId);
 
     await assertCanInteractPost(post, viewer);
 
@@ -1449,12 +1411,7 @@ export async function createBoardReport(input: CreateBoardReportInput): Promise<
   }
 
   try {
-    const post = await getBoardPostInternal(input.postId);
-    if (!post) {
-      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-        userMessage: '신고 대상을 찾을 수 없습니다.',
-      });
-    }
+    const post = await getBoardPostOrThrow(input.postId, '신고 대상을 찾을 수 없습니다.');
 
     if (input.targetType === 'post') {
       if (post.boardType === 'notice') {

@@ -67,6 +67,25 @@ import {
 // Repository Implementation
 // ============================================================================
 
+/**
+ * 캐치 블록 공통 처리: AppError는 그대로 전파하고, 그 외 오류는 로깅 후
+ * handleSupabaseError로 위임한다. handleSupabaseError가 항상 throw하므로
+ * 반환 타입은 never.
+ */
+function rethrowRepositoryError(
+  error: unknown,
+  logMessage: string,
+  operation: string,
+  table: string,
+  context?: Record<string, unknown>
+): never {
+  if (isAppError(error)) throw error;
+  logger.error(logMessage, toError(error), context);
+  handleSupabaseError(error, { operation, table });
+  // handleSupabaseError는 항상 throw하지만 타입 시스템상 도달 불가 보장을 위해 재throw
+  throw error;
+}
+
 export class SupabaseBoardRepository implements IBoardRepository {
   // ==========================================================================
   // Post CRUD
@@ -86,9 +105,9 @@ export class SupabaseBoardRepository implements IBoardRepository {
 
       return data ? toBoardPost(data as Record<string, unknown>) : null;
     } catch (error) {
-      if (isAppError(error)) throw error;
-      logger.error('게시글 조회 실패', toError(error), { postId });
-      handleSupabaseError(error, { operation: '게시글 조회', table: TABLES.BOARD_POSTS });
+      rethrowRepositoryError(error, '게시글 조회 실패', '게시글 조회', TABLES.BOARD_POSTS, {
+        postId,
+      });
     }
   }
 
@@ -138,9 +157,12 @@ export class SupabaseBoardRepository implements IBoardRepository {
 
       return ((data ?? []) as Record<string, unknown>[]).map(toBoardPost);
     } catch (error) {
-      if (isAppError(error)) throw error;
-      logger.error('게시글 목록 조회 실패', toError(error));
-      handleSupabaseError(error, { operation: '게시글 목록 조회', table: TABLES.BOARD_POSTS });
+      rethrowRepositoryError(
+        error,
+        '게시글 목록 조회 실패',
+        '게시글 목록 조회',
+        TABLES.BOARD_POSTS
+      );
     }
   }
 
@@ -163,9 +185,12 @@ export class SupabaseBoardRepository implements IBoardRepository {
         (left, right) => (ordering.get(left.id) ?? 0) - (ordering.get(right.id) ?? 0)
       );
     } catch (error) {
-      if (isAppError(error)) throw error;
-      logger.error('게시글 배치 조회 실패', toError(error));
-      handleSupabaseError(error, { operation: '게시글 배치 조회', table: TABLES.BOARD_POSTS });
+      rethrowRepositoryError(
+        error,
+        '게시글 배치 조회 실패',
+        '게시글 배치 조회',
+        TABLES.BOARD_POSTS
+      );
     }
   }
 
@@ -209,9 +234,7 @@ export class SupabaseBoardRepository implements IBoardRepository {
       logger.info('Board post created', { component: 'BoardRepository', postId });
       return postId;
     } catch (error) {
-      if (isAppError(error)) throw error;
-      logger.error('게시글 생성 실패', toError(error));
-      handleSupabaseError(error, { operation: '게시글 생성', table: TABLES.BOARD_POSTS });
+      rethrowRepositoryError(error, '게시글 생성 실패', '게시글 생성', TABLES.BOARD_POSTS);
     }
   }
 
@@ -233,9 +256,9 @@ export class SupabaseBoardRepository implements IBoardRepository {
         handleSupabaseError(error, { operation: '게시글 수정', table: TABLES.BOARD_POSTS });
       }
     } catch (error) {
-      if (isAppError(error)) throw error;
-      logger.error('게시글 수정 실패', toError(error), { postId });
-      handleSupabaseError(error, { operation: '게시글 수정', table: TABLES.BOARD_POSTS });
+      rethrowRepositoryError(error, '게시글 수정 실패', '게시글 수정', TABLES.BOARD_POSTS, {
+        postId,
+      });
     }
   }
 
@@ -250,9 +273,16 @@ export class SupabaseBoardRepository implements IBoardRepository {
         handleSupabaseError(error, { operation: '게시글 상태 변경', table: TABLES.BOARD_POSTS });
       }
     } catch (error) {
-      if (isAppError(error)) throw error;
-      logger.error('게시글 상태 변경 실패', toError(error), { postId, status });
-      handleSupabaseError(error, { operation: '게시글 상태 변경', table: TABLES.BOARD_POSTS });
+      rethrowRepositoryError(
+        error,
+        '게시글 상태 변경 실패',
+        '게시글 상태 변경',
+        TABLES.BOARD_POSTS,
+        {
+          postId,
+          status,
+        }
+      );
     }
   }
 
@@ -274,9 +304,16 @@ export class SupabaseBoardRepository implements IBoardRepository {
         handleSupabaseError(error, { operation: '게시글 잠금 설정', table: TABLES.BOARD_POSTS });
       }
     } catch (error) {
-      if (isAppError(error)) throw error;
-      logger.error('게시글 잠금 설정 실패', toError(error), { postId, isLocked });
-      handleSupabaseError(error, { operation: '게시글 잠금 설정', table: TABLES.BOARD_POSTS });
+      rethrowRepositoryError(
+        error,
+        '게시글 잠금 설정 실패',
+        '게시글 잠금 설정',
+        TABLES.BOARD_POSTS,
+        {
+          postId,
+          isLocked,
+        }
+      );
     }
   }
 
@@ -327,9 +364,9 @@ export class SupabaseBoardRepository implements IBoardRepository {
 
       return ((data ?? []) as Record<string, unknown>[]).map(toBoardComment);
     } catch (error) {
-      if (isAppError(error)) throw error;
-      logger.error('댓글 조회 실패', toError(error), { postId });
-      handleSupabaseError(error, { operation: '댓글 조회', table: TABLES.BOARD_COMMENTS });
+      rethrowRepositoryError(error, '댓글 조회 실패', '댓글 조회', TABLES.BOARD_COMMENTS, {
+        postId,
+      });
     }
   }
 
@@ -348,9 +385,16 @@ export class SupabaseBoardRepository implements IBoardRepository {
 
       return data ? toBoardComment(data as Record<string, unknown>) : null;
     } catch (error) {
-      if (isAppError(error)) throw error;
-      logger.error('댓글 단건 조회 실패', toError(error), { postId, commentId });
-      handleSupabaseError(error, { operation: '댓글 단건 조회', table: TABLES.BOARD_COMMENTS });
+      rethrowRepositoryError(
+        error,
+        '댓글 단건 조회 실패',
+        '댓글 단건 조회',
+        TABLES.BOARD_COMMENTS,
+        {
+          postId,
+          commentId,
+        }
+      );
     }
   }
 
@@ -406,9 +450,9 @@ export class SupabaseBoardRepository implements IBoardRepository {
 
       return (data as Record<string, unknown>).id as string;
     } catch (error) {
-      if (isAppError(error)) throw error;
-      logger.error('댓글 생성 실패', toError(error), { postId: input.postId });
-      handleSupabaseError(error, { operation: '댓글 생성', table: TABLES.BOARD_COMMENTS });
+      rethrowRepositoryError(error, '댓글 생성 실패', '댓글 생성', TABLES.BOARD_COMMENTS, {
+        postId: input.postId,
+      });
     }
   }
 
@@ -435,9 +479,10 @@ export class SupabaseBoardRepository implements IBoardRepository {
         handleSupabaseError(error, { operation: '댓글 수정', table: TABLES.BOARD_COMMENTS });
       }
     } catch (error) {
-      if (isAppError(error)) throw error;
-      logger.error('댓글 수정 실패', toError(error), { postId, commentId });
-      handleSupabaseError(error, { operation: '댓글 수정', table: TABLES.BOARD_COMMENTS });
+      rethrowRepositoryError(error, '댓글 수정 실패', '댓글 수정', TABLES.BOARD_COMMENTS, {
+        postId,
+        commentId,
+      });
     }
   }
 
@@ -514,9 +559,17 @@ export class SupabaseBoardRepository implements IBoardRepository {
           .eq('id', postId);
       }
     } catch (error) {
-      if (isAppError(error)) throw error;
-      logger.error('댓글 상태 변경 실패', toError(error), { postId, commentId, status });
-      handleSupabaseError(error, { operation: '댓글 상태 변경', table: TABLES.BOARD_COMMENTS });
+      rethrowRepositoryError(
+        error,
+        '댓글 상태 변경 실패',
+        '댓글 상태 변경',
+        TABLES.BOARD_COMMENTS,
+        {
+          postId,
+          commentId,
+          status,
+        }
+      );
     }
   }
 
@@ -543,9 +596,17 @@ export class SupabaseBoardRepository implements IBoardRepository {
         handleSupabaseError(error, { operation: '댓글 고정 설정', table: TABLES.BOARD_COMMENTS });
       }
     } catch (error) {
-      if (isAppError(error)) throw error;
-      logger.error('댓글 고정 설정 실패', toError(error), { postId, commentId, isPinned });
-      handleSupabaseError(error, { operation: '댓글 고정 설정', table: TABLES.BOARD_COMMENTS });
+      rethrowRepositoryError(
+        error,
+        '댓글 고정 설정 실패',
+        '댓글 고정 설정',
+        TABLES.BOARD_COMMENTS,
+        {
+          postId,
+          commentId,
+          isPinned,
+        }
+      );
     }
   }
 
@@ -600,9 +661,10 @@ export class SupabaseBoardRepository implements IBoardRepository {
         updatedAt: row.updated_at ? new Date(row.updated_at as string) : undefined,
       };
     } catch (error) {
-      if (isAppError(error)) throw error;
-      logger.error('투표 조회 실패', toError(error), { postId, userId });
-      handleSupabaseError(error, { operation: '투표 조회', table: TABLES.BOARD_VOTES });
+      rethrowRepositoryError(error, '투표 조회 실패', '투표 조회', TABLES.BOARD_VOTES, {
+        postId,
+        userId,
+      });
     }
   }
 
@@ -664,12 +726,13 @@ export class SupabaseBoardRepository implements IBoardRepository {
         updatedAt: row.updated_at ? new Date(row.updated_at as string) : undefined,
       };
     } catch (error) {
-      if (isAppError(error)) throw error;
-      logger.error('댓글 리액션 조회 실패', toError(error), { postId, commentId, userId });
-      handleSupabaseError(error, {
-        operation: '댓글 리액션 조회',
-        table: TABLES.BOARD_COMMENT_REACTIONS,
-      });
+      rethrowRepositoryError(
+        error,
+        '댓글 리액션 조회 실패',
+        '댓글 리액션 조회',
+        TABLES.BOARD_COMMENT_REACTIONS,
+        { postId, commentId, userId }
+      );
     }
   }
 
@@ -702,12 +765,13 @@ export class SupabaseBoardRepository implements IBoardRepository {
         return acc;
       }, {});
     } catch (error) {
-      if (isAppError(error)) throw error;
-      logger.error('사용자 댓글 리액션 조회 실패', toError(error), { postId, userId });
-      handleSupabaseError(error, {
-        operation: '사용자 댓글 리액션 조회',
-        table: TABLES.BOARD_COMMENT_REACTIONS,
-      });
+      rethrowRepositoryError(
+        error,
+        '사용자 댓글 리액션 조회 실패',
+        '사용자 댓글 리액션 조회',
+        TABLES.BOARD_COMMENT_REACTIONS,
+        { postId, userId }
+      );
     }
   }
 
