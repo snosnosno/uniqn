@@ -1,4 +1,7 @@
-import { calculateTotalPositionsFromSchedule } from '@/domains/job-posting/stats';
+import {
+  calculateFilledPositionsFromSchedule,
+  calculateTotalPositionsFromSchedule,
+} from '@/domains/job-posting/stats';
 import type { PostingSchedule } from '@/types/jobPosting';
 
 // HANDOFF 알고리즘: 같은 사람이 여러 슬롯·날짜에 돌아가며 근무 가능하다고 가정하여
@@ -6,33 +9,61 @@ import type { PostingSchedule } from '@/types/jobPosting';
 
 describe('calculateTotalPositionsFromSchedule', () => {
   describe('fixed schedule', () => {
-    it('sums roleRequirements counts (dealer 2 + floor 1 = 3)', () => {
+    it('sums roles count in synthetic slot (dealer 2 + floor 1 = 3)', () => {
       const schedule: PostingSchedule = {
         kind: 'fixed',
-        roleRequirements: [
-          { role: 'dealer', count: 2 },
-          { role: 'floor', count: 1 },
+        requirements: [
+          {
+            date: null,
+            timeSlots: [
+              {
+                startTime: '19:00',
+                isTimeToBeAnnounced: false,
+                roles: [
+                  { role: 'dealer', count: 2 },
+                  { role: 'floor', count: 1 },
+                ],
+              },
+            ],
+          },
         ],
       };
-
       expect(calculateTotalPositionsFromSchedule(schedule)).toBe(3);
     });
 
-    it('returns 0 when roleRequirements is empty', () => {
+    it('returns 0 when synthetic slot roles is empty', () => {
       const schedule: PostingSchedule = {
         kind: 'fixed',
-        roleRequirements: [],
+        requirements: [
+          {
+            date: null,
+            timeSlots: [{ startTime: '19:00', isTimeToBeAnnounced: false, roles: [] }],
+          },
+        ],
       };
-
       expect(calculateTotalPositionsFromSchedule(schedule)).toBe(0);
     });
 
-    it('returns 0 when roleRequirements is undefined', () => {
+    it('calculateFilledPositionsFromSchedule sums filled in fixed synthetic slot', () => {
       const schedule: PostingSchedule = {
         kind: 'fixed',
+        requirements: [
+          {
+            date: null,
+            timeSlots: [
+              {
+                startTime: '19:00',
+                isTimeToBeAnnounced: false,
+                roles: [
+                  { role: 'dealer', count: 3, filled: 2 },
+                  { role: 'floor', count: 1, filled: 0 },
+                ],
+              },
+            ],
+          },
+        ],
       };
-
-      expect(calculateTotalPositionsFromSchedule(schedule)).toBe(0);
+      expect(calculateFilledPositionsFromSchedule(schedule)).toBe(2);
     });
   });
 

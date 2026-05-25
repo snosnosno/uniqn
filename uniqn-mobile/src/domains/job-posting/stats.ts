@@ -11,28 +11,7 @@ const CONFIRMED_APPLICATION_STATUSES = new Set<ApplicationStatus>(['confirmed'])
 const CANCELLATION_PENDING_STATUSES = new Set<ApplicationStatus>(['cancellation_pending']);
 
 export function calculateFilledPositionsFromSchedule(schedule: PostingSchedule): number {
-  // fixed schedule은 통일 구조(requirements)를 우선 읽고, 레거시(roleRequirements) 역호환
-  const requirements =
-    schedule.kind === 'fixed' ? (schedule.requirements ?? []) : schedule.requirements;
-
-  if (schedule.kind === 'fixed') {
-    const legacy = schedule as unknown as {
-      roleRequirements?: { filled?: number }[];
-    };
-    if (requirements.length === 0 && legacy.roleRequirements) {
-      return legacy.roleRequirements.reduce((sum, role) => sum + (role.filled ?? 0), 0);
-    }
-    return requirements.reduce((dateSum, requirement) => {
-      return (
-        dateSum +
-        requirement.timeSlots.reduce((slotSum, slot) => {
-          return slotSum + slot.roles.reduce((roleSum, role) => roleSum + (role.filled ?? 0), 0);
-        }, 0)
-      );
-    }, 0);
-  }
-
-  return requirements.reduce((dateSum, requirement) => {
+  return schedule.requirements.reduce((dateSum, requirement) => {
     return (
       dateSum +
       requirement.timeSlots.reduce((slotSum, slot) => {
@@ -62,26 +41,6 @@ function getRoleKey(role: { role?: string; customRole?: string }): string | null
  * (HANDOFF.md Phase 6 알고리즘 결정)
  */
 export function calculateTotalPositionsFromSchedule(schedule: PostingSchedule): number {
-  if (schedule.kind === 'fixed') {
-    // 통일 구조(requirements) 우선, 레거시(roleRequirements) 역호환
-    const requirements = schedule.requirements ?? [];
-    const legacy = schedule as unknown as { roleRequirements?: { count: number }[] };
-
-    if (requirements.length === 0 && legacy.roleRequirements) {
-      return legacy.roleRequirements.reduce((sum, role) => sum + role.count, 0);
-    }
-
-    // fixed는 날짜 없는 단일 슬롯 — peak 계산 없이 단순 합산
-    return requirements.reduce((dateSum, requirement) => {
-      return (
-        dateSum +
-        requirement.timeSlots.reduce((slotSum, slot) => {
-          return slotSum + slot.roles.reduce((roleSum, role) => roleSum + role.count, 0);
-        }, 0)
-      );
-    }, 0);
-  }
-
   const peakByRole = new Map<string, number>();
 
   schedule.requirements.forEach((requirement) => {
