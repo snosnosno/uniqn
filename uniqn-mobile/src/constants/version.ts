@@ -91,12 +91,12 @@ export const UPDATE_POLICY = {
   RECOMMENDED_DISMISS_DAYS: 3,
 
   /**
-   * 앱스토어 링크
-   * 스토어 등록 후 실제 ID로 교체 필요
+   * 앱스토어 링크 (출시 완료 — 실제 스토어 ID)
+   * iOS App Store ID: 6758857038 / Android package: com.uniqn.mobile
    */
   STORE_URLS: {
-    ios: 'https://apps.apple.com/app/uniqn/idXXXXXXXXXX', // 스토어 등록 후 실제 앱 ID로 교체
-    android: 'https://play.google.com/store/apps/details?id=com.uniqn.mobile', // 스토어 등록 후 확인
+    ios: 'https://apps.apple.com/kr/app/uniqn/id6758857038',
+    android: 'https://play.google.com/store/apps/details?id=com.uniqn.mobile',
     web: 'https://uniqn.app',
   },
 } as const;
@@ -190,6 +190,39 @@ export function getStoreUrl(platform: typeof Platform.OS = Platform.OS): string 
         : UPDATE_POLICY.STORE_URLS.web;
 
   return isStoreUrlConfigured(selectedUrl) ? selectedUrl : UPDATE_POLICY.STORE_URLS.web;
+}
+
+/**
+ * 앱 설치용 스토어 URL 해석
+ *
+ * @description 공유 링크는 카톡/SNS → 모바일 웹브라우저로 열리므로 `Platform.OS`가
+ * 'web'이 된다. 이때 `getStoreUrl`은 디바이스를 구분하지 못하고 웹 URL을 반환한다.
+ * 비로그인 사용자가 "앱 설치"를 눌렀을 때 기기에 맞는 스토어로 보내기 위해
+ * 웹에서는 userAgent로 iOS/Android를 판별한다(데스크톱은 웹사이트로 폴백).
+ * 네이티브 앱에서는 `Platform.OS` 기반 `getStoreUrl`을 그대로 사용한다.
+ *
+ * iPadOS 13+ Safari는 기본 UA를 'iPad'가 아닌 'Macintosh'(데스크톱)로 보고하므로
+ * 터치 지원(maxTouchPoints)을 함께 보고 iPad를 App Store로 라우팅한다.
+ */
+export function resolveInstallStoreUrl(
+  platform: typeof Platform.OS = Platform.OS,
+  userAgent: string = typeof navigator !== 'undefined' ? (navigator.userAgent ?? '') : '',
+  maxTouchPoints: number = typeof navigator !== 'undefined' ? (navigator.maxTouchPoints ?? 0) : 0
+): string {
+  if (platform === 'web') {
+    if (/android/i.test(userAgent)) {
+      return getStoreUrl('android');
+    }
+
+    const isIpadOsDesktopUa = /Macintosh/i.test(userAgent) && maxTouchPoints > 1;
+    if (/iphone|ipad|ipod/i.test(userAgent) || isIpadOsDesktopUa) {
+      return getStoreUrl('ios');
+    }
+
+    return UPDATE_POLICY.STORE_URLS.web;
+  }
+
+  return getStoreUrl(platform);
 }
 
 // ============================================================================

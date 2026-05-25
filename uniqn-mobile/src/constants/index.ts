@@ -22,6 +22,7 @@ export {
   isVersionAtLeast,
   checkUpdateRequired,
   getStoreUrl,
+  resolveInstallStoreUrl,
   versionInfo,
   type UpdateType,
 } from './version';
