@@ -45,15 +45,7 @@ export default function PublicJobDetailAliasRoute() {
       return;
     }
 
-    const locationStr =
-      typeof job.location === 'string' ? job.location : (job.location?.name ?? '');
-
-    void shareJob({
-      id: job.id,
-      title: job.title,
-      location: locationStr,
-      workDate: job.workDate,
-    });
+    void shareJob(job);
   }, [job, shareJob]);
 
   const shareAction = job ? (

@@ -7,21 +7,19 @@
 
 import { useState, useCallback } from 'react';
 import { Share, Platform } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 import { trackEvent, createJobDeepLink } from '@/services/observability';
 import { useToast } from '@/stores/toastStore';
+import { useAuthStore } from '@/stores/authStore';
+import { getJobDetailQueryOptions } from '@/hooks/useJobDetail';
+import { buildJobShareText } from '@/utils/jobShareMessage';
+import type { JobPosting } from '@/types';
 
 // ============================================================================
 // Types
 // ============================================================================
-
-export interface ShareJobParams {
-  id: string;
-  title: string;
-  location: string;
-  workDate?: string;
-}
 
 export interface ShareResult {
   success: boolean;
@@ -30,8 +28,13 @@ export interface ShareResult {
 }
 
 export interface UseShareReturn {
-  /** 공고 공유 */
-  shareJob: (job: ShareJobParams) => Promise<ShareResult>;
+  /** 공고 공유 (근무 일정·역할·인원·급여 포함 본문 생성) */
+  shareJob: (job: JobPosting) => Promise<ShareResult>;
+  /**
+   * 공고 ID 로 공유 — 완전한 JobPosting 을 보유하지 않은 화면(리스트 카드 등)에서
+   * id 로 상세를 조회한 뒤 shareJob 과 동일한 본문을 생성한다.
+   */
+  shareJobById: (jobId: string) => Promise<ShareResult>;
   /** 일반 콘텐츠 공유 */
   share: (options: { title: string; message: string; url?: string }) => Promise<ShareResult>;
   /** 공유 진행 중 여부 */
@@ -57,6 +60,8 @@ export interface UseShareReturn {
 export function useShare(): UseShareReturn {
   const [isSharing, setIsSharing] = useState(false);
   const toast = useToast();
+  const queryClient = useQueryClient();
+  const userId = useAuthStore((state) => state.user?.uid);
 
   /**
    * 웹 플랫폼 공유 (Web Share API → 클립보드 fallback)
@@ -146,34 +151,29 @@ export function useShare(): UseShareReturn {
   );
 
   /**
-   * 공고 공유
+   * 공고 공유 실행 코어 (isSharing 가드 없이 순수 공유만 수행).
+   * shareJob / shareJobById 가 공통으로 사용한다.
    */
-  const shareJob = useCallback(
-    async (job: ShareJobParams): Promise<ShareResult> => {
-      if (isSharing) {
-        return { success: false, error: new Error('이미 공유 중입니다') };
-      }
-
-      setIsSharing(true);
-
+  const runJobShare = useCallback(
+    async (job: JobPosting): Promise<ShareResult> => {
       try {
         // 웹 URL 생성 (외부 공유용)
         const url = createJobDeepLink(job.id, true);
 
-        // 공유 메시지 구성
-        const dateInfo = job.workDate ? `\n${job.workDate}` : '';
-        const message = `[UNIQN] ${job.title}\n${job.location}${dateInfo}\n\n${url}`;
+        // 공유 메시지 구성 (일정·역할·인원·급여 포함, url 은 본문 마지막 1회)
+        const message = buildJobShareText(job, url);
 
         let action: 'shared' | 'dismissed';
 
         if (Platform.OS === 'web') {
-          action = await webShare({ title: job.title, text: message, url });
+          // url 은 message 본문에 이미 포함 — 별도 url 미전달로 중복 미리보기 방지
+          action = await webShare({ title: job.title, text: message });
         } else {
+          // iOS 에서 url 을 별도 전달하면 카톡이 본문+링크를 이중 렌더 → message 만 전달
           const result = await Share.share(
             {
               title: job.title,
               message,
-              ...(Platform.OS === 'ios' ? { url } : {}),
             },
             {
               dialogTitle: '공고 공유하기',
@@ -196,15 +196,66 @@ export function useShare(): UseShareReturn {
       } catch (error) {
         logger.error('공고 공유 실패', toError(error), { jobId: job.id });
         return { success: false, error: toError(error) };
+      }
+    },
+    [webShare]
+  );
+
+  /**
+   * 공고 공유
+   */
+  const shareJob = useCallback(
+    async (job: JobPosting): Promise<ShareResult> => {
+      if (isSharing) {
+        return { success: false, error: new Error('이미 공유 중입니다') };
+      }
+
+      setIsSharing(true);
+      try {
+        return await runJobShare(job);
       } finally {
         setIsSharing(false);
       }
     },
-    [isSharing, webShare]
+    [isSharing, runJobShare]
+  );
+
+  /**
+   * 공고 ID 로 공유 — 리스트 카드처럼 완전한 JobPosting 을 갖지 못한 화면용.
+   * 상세 조회 쿼리를 재사용(캐시·dedupe)해 전체 JobPosting 을 확보한 뒤
+   * shareJob 과 동일한 본문으로 공유한다.
+   */
+  const shareJobById = useCallback(
+    async (jobId: string): Promise<ShareResult> => {
+      if (isSharing) {
+        return { success: false, error: new Error('이미 공유 중입니다') };
+      }
+
+      setIsSharing(true);
+      try {
+        const job = await queryClient.fetchQuery(getJobDetailQueryOptions(jobId, userId));
+
+        if (!job) {
+          logger.warn('공유할 공고를 찾지 못함', { jobId });
+          toast.error('공고 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.');
+          return { success: false, error: new Error('공고를 찾을 수 없습니다') };
+        }
+
+        return await runJobShare(job);
+      } catch (error) {
+        logger.error('공고 공유 실패 (조회 단계)', toError(error), { jobId });
+        toast.error('공고 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.');
+        return { success: false, error: toError(error) };
+      } finally {
+        setIsSharing(false);
+      }
+    },
+    [isSharing, queryClient, runJobShare, toast, userId]
   );
 
   return {
     shareJob,
+    shareJobById,
     share,
     isSharing,
   };

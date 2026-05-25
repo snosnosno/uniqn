@@ -71,7 +71,7 @@ export {
   usePendingDeepLink,
 } from './useDeepLink';
 
-export { useShare, type ShareJobParams, type ShareResult, type UseShareReturn } from './useShare';
+export { useShare, type ShareResult, type UseShareReturn } from './useShare';
 export { useInstallPrompt, type InstallPromptSource } from './useInstallPrompt';
 export { useClearCache, type UseClearCacheReturn } from './useClearCache';
 export { useBookmarks, type BookmarkJobParams, type UseBookmarksReturn } from './useBookmarks';

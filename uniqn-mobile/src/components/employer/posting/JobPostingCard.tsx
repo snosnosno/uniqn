@@ -2,10 +2,11 @@ import React, { memo, useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { TournamentStatusBadge } from '@/components/jobs/TournamentStatusBadge';
 import { PostingCardSurface } from '@/components/jobs/shared/PostingCardSurface';
-import { QrCodeIcon, UsersIcon } from '@/components/icons';
+import { QrCodeIcon, ShareIcon, UsersIcon } from '@/components/icons';
 import { Badge, NumericText, type CardStripeTone } from '@/components/ui';
 import { STATUS } from '@/constants';
 import { toJobPostingCard } from '@/domains/job-posting';
+import { useShare } from '@/hooks/useShare';
 import { getPostingStatusMeta } from '@/components/jobs/shared/postingSurfaceModel';
 import type { JobPosting, JobPostingStatus, TournamentApprovalStatus } from '@/types';
 
@@ -49,6 +50,7 @@ export const JobPostingCard = memo(function JobPostingCard({
   const card = useMemo(() => toJobPostingCard(posting), [posting]);
   const stripeTone = POSTING_STRIPE_TONE[posting.status];
   const statusLabel = getPostingStatusMeta(posting.status).label;
+  const { shareJob, isSharing } = useShare();
 
   return (
     <View className="mx-4 mb-3">
@@ -69,6 +71,19 @@ export const JobPostingCard = memo(function JobPostingCard({
             </View>
 
             <View className="flex-row items-center gap-2">
+              <Pressable
+                onPress={(event) => {
+                  event?.stopPropagation?.();
+                  void shareJob(posting);
+                }}
+                disabled={isSharing}
+                className="p-1.5 active:opacity-70"
+                accessibilityLabel="공고 공유하기"
+                accessibilityRole="button"
+              >
+                <ShareIcon size={18} />
+              </Pressable>
+
               <Pressable
                 onPress={() => onShowQR(posting)}
                 className="p-1.5 active:opacity-70"
