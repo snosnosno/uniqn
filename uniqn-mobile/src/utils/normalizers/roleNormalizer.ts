@@ -31,7 +31,8 @@ export function normalizeRoleWithCount(role: RoleWithCount): RoleInfo {
 }
 
 function normalizePostingSlotRoleRequirement(role: PostingSlotRoleRequirement): RoleInfo {
-  return createRoleInfo(role.role ?? 'other', role.count, role.filled ?? 0, role.customRole);
+  // SP3: schedule role.filled(dead counter) 제거 — filledCount 는 표시 시점 hydrate 가 덮어씀(0)
+  return createRoleInfo(role.role ?? 'other', role.count, 0, role.customRole);
 }
 
 function getRoleAggregationKey(role: RoleInfo): string {

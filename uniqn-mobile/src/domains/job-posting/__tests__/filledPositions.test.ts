@@ -13,7 +13,7 @@ const datedSchedule: PostingSchedule = {
       timeSlots: [
         {
           startTime: '10:00',
-          roles: [{ role: 'dealer', count: 2, filled: 1 }],
+          roles: [{ role: 'dealer', count: 2 }],
         },
       ],
     },
@@ -64,7 +64,9 @@ describe('filledPositions authority', () => {
     expect(facts.stats.filledPositions).toBe(2);
   });
 
-  it('falls back to schedule-derived filledPositions when top-level data is missing', () => {
+  it('defaults filledPositions to 0 (not schedule-derived) when authoritative data is missing', () => {
+    // SP3: schedule role.filled(dead counter) 제거 — schedule 파생 금지.
+    // authoritativeFilledPositions 미지정 시 0 (표시 시점 hydrate RPC 가 덮어씀).
     const stats = normalizePostingAggregateStats(
       {
         totalApplicants: 1,
@@ -76,6 +78,6 @@ describe('filledPositions authority', () => {
       datedSchedule
     );
 
-    expect(stats.filledPositions).toBe(1);
+    expect(stats.filledPositions).toBe(0);
   });
 });

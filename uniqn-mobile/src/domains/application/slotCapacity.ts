@@ -60,14 +60,16 @@ export function buildPostingSlotCapacityMap(posting: JobPosting): Map<string, Sl
         }
 
         const key = getCapacityKey(effectiveDate, slotStartTime, roleId);
+        // SP3: 클라이언트 capacity 맵은 정원(count)만 담는다. schedule role.filled(dead counter)는 제거됨.
+        // overfill/충원 강제는 서버측(SP2 H1 정원 가드)이 권위 — 클라이언트는 capacity 만 검증.
         capacityMap.set(key, {
           date: effectiveDate,
           timeSlot: slotStartTime,
           roleId,
           count: role.count,
-          filled: role.filled ?? 0,
+          filled: 0,
           requested: 0,
-          remaining: Math.max(0, role.count - (role.filled ?? 0)),
+          remaining: role.count,
         });
       });
     });

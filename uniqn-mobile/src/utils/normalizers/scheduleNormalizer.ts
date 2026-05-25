@@ -26,7 +26,8 @@ function normalizeTimeSlot(slot: PostingTimeSlot, index: number): TimeSlotInfo {
       role: role.role,
       customRole: role.customRole,
       headcount: role.count,
-      filled: role.filled ?? 0,
+      // SP3: schedule role.filled(dead counter) 제거 — 충원은 표시 시점 hydrate 가 덮어씀
+      filled: 0,
     })
   );
 
@@ -54,7 +55,8 @@ function normalizeFixedSchedule(schedule: PostingFixedSchedule): FixedScheduleIn
         role: role.role ?? 'dealer',
         name: role.customRole,
         count: role.count,
-        filled: role.filled ?? 0,
+        // SP3: schedule role.filled(dead counter) 제거 — 충원은 표시 시점 hydrate 가 덮어씀
+        filled: 0,
       })
     ),
     {

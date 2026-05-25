@@ -1,7 +1,4 @@
-import {
-  calculateFilledPositionsFromSchedule,
-  calculateTotalPositionsFromSchedule,
-} from '@/domains/job-posting/stats';
+import { calculateTotalPositionsFromSchedule } from '@/domains/job-posting/stats';
 import type { PostingSchedule } from '@/types/jobPosting';
 
 // HANDOFF 알고리즘: 같은 사람이 여러 슬롯·날짜에 돌아가며 근무 가능하다고 가정하여
@@ -44,27 +41,8 @@ describe('calculateTotalPositionsFromSchedule', () => {
       expect(calculateTotalPositionsFromSchedule(schedule)).toBe(0);
     });
 
-    it('calculateFilledPositionsFromSchedule sums filled in fixed synthetic slot', () => {
-      const schedule: PostingSchedule = {
-        kind: 'fixed',
-        requirements: [
-          {
-            date: null,
-            timeSlots: [
-              {
-                startTime: '19:00',
-                isTimeToBeAnnounced: false,
-                roles: [
-                  { role: 'dealer', count: 3, filled: 2 },
-                  { role: 'floor', count: 1, filled: 0 },
-                ],
-              },
-            ],
-          },
-        ],
-      };
-      expect(calculateFilledPositionsFromSchedule(schedule)).toBe(2);
-    });
+    // SP3: calculateFilledPositionsFromSchedule 제거됨 — filled 는 schedule 에서 파생하지 않음(컬럼·트리거 권위).
+    // 관련 테스트는 삭제. capacity/총원 계산은 위 calculateTotalPositionsFromSchedule 로 충분히 커버됨.
   });
 
   describe('dated schedule', () => {

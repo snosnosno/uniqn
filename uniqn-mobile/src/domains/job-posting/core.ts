@@ -54,13 +54,13 @@ function toRoleRequirement(role: {
   role?: string;
   customRole?: string;
   count: number;
-  filled?: number;
 }): RoleRequirement {
   return {
     role: (role.role ?? 'dealer') as RoleRequirement['role'],
     customRole: role.customRole,
     count: role.count,
-    filled: role.filled ?? 0,
+    // SP3: schedule role.filled(dead counter) 제거 — 충원은 표시 시점 hydrate 가 덮어씀
+    filled: 0,
   };
 }
 
@@ -71,7 +71,6 @@ function toCardRole(
     customRole?: string;
     count?: number;
     headcount?: number;
-    filled?: number;
   },
   salary?: SalaryInfo
 ): CardRole {
@@ -80,7 +79,8 @@ function toCardRole(
     role: role.role ?? 'dealer',
     customRole: role.customRole,
     count: role.count ?? role.headcount ?? 0,
-    filled: role.filled ?? 0,
+    // SP3: schedule role.filled 제거 — 충원은 표시 시점 hydrate 가 덮어씀
+    filled: 0,
     salary,
   };
 }
@@ -123,7 +123,8 @@ export function getPostingRoleStats(posting: JobPosting): JobRoleStats[] {
           totals.set(key, {
             ...existing,
             count: existing.count + role.count,
-            filled: existing.filled + (role.filled ?? 0),
+            // SP3: schedule role.filled 누적 제거 — 충원은 표시 시점 hydrate 가 덮어씀(0 유지)
+            filled: 0,
           });
           return;
         }
@@ -221,7 +222,7 @@ export function createPostingLegacyDateRequirements(
         role: role.role,
         customRole: role.customRole,
         headcount: role.count,
-        filled: role.filled ?? 0,
+        // SP3: schedule role.filled(dead counter) 제거
       })),
     })),
   }));
@@ -281,7 +282,7 @@ export function getPostingRequiredRolesWithCount(posting: JobPosting): RoleWithC
     role: role.role ?? 'dealer',
     name: role.customRole,
     count: role.count,
-    filled: role.filled ?? 0,
+    // SP3: schedule role.filled(dead counter) 제거 — RoleWithCount.filled 는 optional
   }));
 }
 

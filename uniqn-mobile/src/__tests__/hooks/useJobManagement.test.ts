@@ -177,7 +177,7 @@ function createInput(): CreateJobPostingInput {
           timeSlots: [
             {
               startTime: '18:00',
-              roles: [{ role: 'dealer', count: 2, filled: 0 }],
+              roles: [{ role: 'dealer', count: 2 }],
             },
           ],
         },

@@ -12,10 +12,7 @@
  */
 
 import type { JobPosting, PostingSchedule } from '@/types/jobPosting';
-import {
-  calculateFilledPositionsFromSchedule,
-  calculateTotalPositionsFromSchedule,
-} from '@/domains/job-posting/stats';
+import { calculateTotalPositionsFromSchedule } from '@/domains/job-posting/stats';
 import { getPostingRoleStats } from '@/domains/job-posting/core';
 import { buildPostingFacts } from '@/domains/job-posting';
 
@@ -37,8 +34,8 @@ function buildFixedPosting(): JobPosting {
             startTime: '18:00',
             isTimeToBeAnnounced: false,
             roles: [
-              { role: 'dealer', count: 3, filled: 1 },
-              { role: 'other', customRole: 'VIP', count: 2, filled: 0 },
+              { role: 'dealer', count: 3 },
+              { role: 'other', customRole: 'VIP', count: 2 },
             ],
           },
         ],
@@ -79,14 +76,16 @@ describe('SP1 fixed 통일 구조 동작 동치', () => {
     expect(calculateTotalPositionsFromSchedule(posting.schedule)).toBe(5);
   });
 
-  it('filledPositions: dealer filled(1) + VIP filled(0) = 1', () => {
-    expect(calculateFilledPositionsFromSchedule(posting.schedule)).toBe(1);
-  });
-
   it('getPostingRoleStats: 역할 2개, count 합이 [2,3]', () => {
     const stats = getPostingRoleStats(posting);
     const counts = stats.map((r) => r.count).sort((a, b) => a - b);
     expect(counts).toEqual([2, 3]);
+  });
+
+  it('getPostingRoleStats: schedule role.filled 미파생 — 모든 filled 는 0 (hydrate 가 표시 시점 덮어씀)', () => {
+    // SP3: dead counter 제거. roleStats.filled 는 schedule 에서 누적하지 않고 항상 0.
+    const stats = getPostingRoleStats(posting);
+    expect(stats.every((r) => r.filled === 0)).toBe(true);
   });
 
   it('buildPostingFacts: schedule.display.variant === fixed', () => {

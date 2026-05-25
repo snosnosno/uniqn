@@ -21,7 +21,7 @@ function createMinimalInput(): CreateJobPostingInput {
             {
               id: 'slot-1',
               startTime: '09:00',
-              roles: [{ id: 'dealer-1', role: 'dealer', count: 1, filled: 0 }],
+              roles: [{ id: 'dealer-1', role: 'dealer', count: 1 }],
             },
           ],
         },

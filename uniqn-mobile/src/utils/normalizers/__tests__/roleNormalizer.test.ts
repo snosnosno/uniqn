@@ -290,14 +290,16 @@ describe('normalizeJobRoles', () => {
       postingType: 'fixed',
       requiredRolesWithCount: [
         { role: 'dealer', count: 3 },
-        { role: 'floor', count: 2, filled: 1 },
+        { role: 'floor', count: 2 },
       ],
     });
     const result = normalizeJobRoles(job);
     expect(result).toHaveLength(2);
     expect(result[0].roleId).toBe('dealer');
     expect(result[1].roleId).toBe('floor');
-    expect(result[1].filledCount).toBe(1);
+    // SP3: schedule role.filled(dead counter) 제거 — normalizeJobRoles 의 filledCount 는 항상 0
+    // (충원은 표시 시점 hydrate 가 덮어씀).
+    expect(result[1].filledCount).toBe(0);
   });
 
   it('dateSpecificRequirements에서 역할을 추출한다', () => {
@@ -330,18 +332,19 @@ describe('normalizeJobRoles', () => {
       dateSpecificRequirements: [
         {
           date: '2025-01-28',
-          timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', headcount: 2, filled: 1 }] }],
+          timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', headcount: 2 }] }],
         },
         {
           date: '2025-01-29',
-          timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', headcount: 3, filled: 2 }] }],
+          timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', headcount: 3 }] }],
         },
       ],
     });
     const result = normalizeJobRoles(job);
     expect(result).toHaveLength(1);
     expect(result[0].requiredCount).toBe(5); // 2 + 3
-    expect(result[0].filledCount).toBe(3); // 1 + 2
+    // SP3: schedule role.filled(dead counter) 제거 — filledCount 는 항상 0
+    expect(result[0].filledCount).toBe(0);
   });
 
   it('customRole이 다르면 other 역할도 별도로 집계한다', () => {

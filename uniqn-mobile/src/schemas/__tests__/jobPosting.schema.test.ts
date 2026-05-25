@@ -526,7 +526,7 @@ describe('jobPosting schemas', () => {
                 timeSlots: [
                   {
                     startTime: '18:00',
-                    roles: [{ role: 'dealer', count: 1, filled: 0 }],
+                    roles: [{ role: 'dealer', count: 1 }],
                   },
                 ],
               },
