@@ -40,6 +40,10 @@ import type {
 } from '@/types';
 import type { BoardHomeData, BoardPost } from '@/types/board';
 
+function toErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
 interface BoardMutationUser {
   uid: string;
   displayName?: string | null;
@@ -221,10 +225,6 @@ async function requireBoardAuthorIdentity(
     ...actor,
     authorName,
     authorRole,
-    /*
-    authorName: profile?.nickname || profile?.name || user?.displayName || '사용자',
-    authorRole: role || 'staff',
-    */
   };
 }
 
@@ -345,7 +345,7 @@ export function useCreateBoardPost() {
     onError: (error) => {
       addToast({
         type: 'error',
-        message: error instanceof Error ? error.message : '게시글 등록에 실패했습니다.',
+        message: toErrorMessage(error, '게시글 등록에 실패했습니다.'),
       });
     },
   });
@@ -367,7 +367,7 @@ export function useUpdateBoardPost(postId: string) {
     onError: (error) => {
       addToast({
         type: 'error',
-        message: error instanceof Error ? error.message : '게시글 수정에 실패했습니다.',
+        message: toErrorMessage(error, '게시글 수정에 실패했습니다.'),
       });
     },
   });
@@ -423,7 +423,7 @@ export function useSetBoardPostLock(postId: string) {
       restoreBoardPostLockCaches(context);
       addToast({
         type: 'error',
-        message: error instanceof Error ? error.message : '게시글 잠금 변경에 실패했습니다.',
+        message: toErrorMessage(error, '게시글 잠금 변경에 실패했습니다.'),
       });
     },
   });
@@ -445,7 +445,7 @@ export function useHideBoardPost(postId: string) {
     onError: (error) => {
       addToast({
         type: 'error',
-        message: error instanceof Error ? error.message : '게시글 숨김에 실패했습니다.',
+        message: toErrorMessage(error, '게시글 숨김에 실패했습니다.'),
       });
     },
   });
@@ -481,7 +481,7 @@ export function useCreateBoardComment(postId: string) {
     onError: (error) => {
       addToast({
         type: 'error',
-        message: error instanceof Error ? error.message : '댓글 등록에 실패했습니다.',
+        message: toErrorMessage(error, '댓글 등록에 실패했습니다.'),
       });
     },
   });
@@ -503,7 +503,7 @@ export function useUpdateBoardComment(postId: string, commentId: string) {
     onError: (error) => {
       addToast({
         type: 'error',
-        message: error instanceof Error ? error.message : '댓글 수정에 실패했습니다.',
+        message: toErrorMessage(error, '댓글 수정에 실패했습니다.'),
       });
     },
   });
@@ -525,7 +525,7 @@ export function useBoardCommentMutations(postId: string) {
     onError: (error) => {
       addToast({
         type: 'error',
-        message: error instanceof Error ? error.message : '댓글 수정에 실패했습니다.',
+        message: toErrorMessage(error, '댓글 수정에 실패했습니다.'),
       });
     },
   });
@@ -545,7 +545,7 @@ export function useBoardCommentMutations(postId: string) {
     onError: (error) => {
       addToast({
         type: 'error',
-        message: error instanceof Error ? error.message : '댓글 상태 변경에 실패했습니다.',
+        message: toErrorMessage(error, '댓글 상태 변경에 실패했습니다.'),
       });
     },
   });
@@ -562,7 +562,7 @@ export function useBoardCommentMutations(postId: string) {
     onError: (error) => {
       addToast({
         type: 'error',
-        message: error instanceof Error ? error.message : '댓글 고정 상태 변경에 실패했습니다.',
+        message: toErrorMessage(error, '댓글 고정 상태 변경에 실패했습니다.'),
       });
     },
   });
@@ -578,7 +578,7 @@ export function useBoardCommentMutations(postId: string) {
     onError: (error) => {
       addToast({
         type: 'error',
-        message: error instanceof Error ? error.message : '댓글 반응 변경에 실패했습니다.',
+        message: toErrorMessage(error, '댓글 반응 변경에 실패했습니다.'),
       });
     },
   });
@@ -610,7 +610,7 @@ export function useSetBoardCommentStatus(postId: string, commentId: string) {
     onError: (error) => {
       addToast({
         type: 'error',
-        message: error instanceof Error ? error.message : '댓글 상태 변경에 실패했습니다.',
+        message: toErrorMessage(error, '댓글 상태 변경에 실패했습니다.'),
       });
     },
   });
@@ -632,7 +632,7 @@ export function useSetBoardCommentPinned(postId: string, commentId: string) {
     onError: (error) => {
       addToast({
         type: 'error',
-        message: error instanceof Error ? error.message : '댓글 고정 상태 변경에 실패했습니다.',
+        message: toErrorMessage(error, '댓글 고정 상태 변경에 실패했습니다.'),
       });
     },
   });
@@ -653,7 +653,7 @@ export function useToggleBoardPostVote(postId: string) {
     onError: (error) => {
       addToast({
         type: 'error',
-        message: error instanceof Error ? error.message : '게시글 반응 변경에 실패했습니다.',
+        message: toErrorMessage(error, '게시글 반응 변경에 실패했습니다.'),
       });
     },
   });
@@ -674,7 +674,7 @@ export function useToggleBoardCommentReaction(postId: string, commentId: string)
     onError: (error) => {
       addToast({
         type: 'error',
-        message: error instanceof Error ? error.message : '댓글 반응 변경에 실패했습니다.',
+        message: toErrorMessage(error, '댓글 반응 변경에 실패했습니다.'),
       });
     },
   });
@@ -699,7 +699,7 @@ export function useCreateBoardReport() {
     onError: (error) => {
       addToast({
         type: 'error',
-        message: error instanceof Error ? error.message : '신고 접수에 실패했습니다.',
+        message: toErrorMessage(error, '신고 접수에 실패했습니다.'),
       });
     },
   });

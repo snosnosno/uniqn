@@ -302,8 +302,7 @@ export default function BoardPostDetailScreen() {
   const addToast = useToastStore((state) => state.addToast);
   const { data, isLoading, error, refetch, isRefetching } = useBoardPostDetail(postId ?? '');
   const post = data?.post;
-  const mentionCandidatesEnabled =
-    Boolean(postId) &&
+  const canInteract =
     !!post &&
     post.boardType !== 'notice' &&
     !post.isLocked &&
@@ -312,6 +311,7 @@ export default function BoardPostDetailScreen() {
       isAdmin ||
       post.authorId === user.uid ||
       !!data?.membership?.canComment);
+  const mentionCandidatesEnabled = Boolean(postId) && canInteract;
   const mentionCandidatesQuery = useBoardMentionCandidates(postId ?? '', mentionCandidatesEnabled);
   const incrementViewCount = useIncrementBoardViewCount();
   const createComment = useCreateBoardComment(postId ?? '');
@@ -385,15 +385,6 @@ export default function BoardPostDetailScreen() {
 
   const canManagePost =
     !!post && post.boardType !== 'notice' && !!user?.uid && (isAdmin || post.authorId === user.uid);
-  const canInteract =
-    !!post &&
-    post.boardType !== 'notice' &&
-    !post.isLocked &&
-    !!user?.uid &&
-    (post.boardType !== 'schedule' ||
-      isAdmin ||
-      post.authorId === user.uid ||
-      !!data?.membership?.canComment);
   const isCommentSubmitting =
     createComment.isPending || commentMutations.updateComment.isPending || isUploadingCommentImages;
   const isReportSubmitting = createReport.isPending;
@@ -423,6 +414,12 @@ export default function BoardPostDetailScreen() {
     setReplyTarget(null);
     setEditingComment(null);
     setSelectedMentionIds([]);
+  }, []);
+
+  const resetReportForm = useCallback(() => {
+    setReportTarget(null);
+    setReportReason('');
+    setReportDetails('');
   }, []);
 
   const toggleMentionSelection = useCallback(
@@ -572,13 +569,11 @@ export default function BoardPostDetailScreen() {
         details: reportDetails,
       });
 
-      setReportTarget(null);
-      setReportReason('');
-      setReportDetails('');
+      resetReportForm();
     } catch {
       // Toast feedback is handled in the mutation hook.
     }
-  }, [createReport, post, reportDetails, reportReason, reportTarget]);
+  }, [createReport, post, reportDetails, reportReason, reportTarget, resetReportForm]);
 
   const handleDeleteComment = useCallback(
     (comment: BoardCommentNode) => {
@@ -1131,16 +1126,7 @@ export default function BoardPostDetailScreen() {
         onSelect={handlePostMenuSelect}
       />
 
-      <Modal
-        visible={Boolean(reportTarget)}
-        onClose={() => {
-          setReportTarget(null);
-          setReportReason('');
-          setReportDetails('');
-        }}
-        title="신고 접수"
-        size="md"
-      >
+      <Modal visible={Boolean(reportTarget)} onClose={resetReportForm} title="신고 접수" size="md">
         <Input
           label="신고 사유"
           value={reportReason}
@@ -1162,15 +1148,7 @@ export default function BoardPostDetailScreen() {
         </View>
 
         <View className="mt-6 flex-row gap-3">
-          <Button
-            variant="outline"
-            className="flex-1"
-            onPress={() => {
-              setReportTarget(null);
-              setReportReason('');
-              setReportDetails('');
-            }}
-          >
+          <Button variant="outline" className="flex-1" onPress={resetReportForm}>
             취소
           </Button>
           <Button
