@@ -8,6 +8,7 @@ import type {
   SalaryInfo,
   PostingSalaryDisplay,
 } from '@/types';
+import { FIXED_DATE_MARKER, FIXED_TIME_MARKER } from '@/types/assignment';
 import { getRoleDisplayName } from '@/types/unified';
 import { formatDateRangeWithCount, formatDateShortWithDay, getDayCount } from '@/utils/date';
 import { formatSalary } from '@/utils/formatters';
@@ -155,12 +156,18 @@ export function buildPostingScheduleModel(
 ): PostingScheduleModel {
   if (source.workflow.isFixed) {
     const fixed = source.scheduleDisplay.fixed;
-    const roles = toRoleModels(fixed?.roles ?? source.requiredRolesWithCount ?? []);
-    const totalCount = roles.reduce((sum, role) => sum + role.count, 0);
-    const filledCount = roles.reduce((sum, role) => sum + role.filled, 0);
     const daysValue = fixed?.daysPerWeek ?? source.daysPerWeek;
     const timeValue = fixed?.startTime ?? source.startTime;
     const isNegotiable = fixed?.isStartTimeNegotiable ?? source.isStartTimeNegotiable ?? !timeValue;
+    // 고정공고는 work_logs 키가 date='FIXED_SCHEDULE', slotKey=startTime ?? 'NEGOTIABLE'(협의) 로 정규화된다(SP2).
+    const fixedSlotKey = isNegotiable ? FIXED_TIME_MARKER : timeValue || FIXED_TIME_MARKER;
+    const roles = toRoleModels(fixed?.roles ?? source.requiredRolesWithCount ?? [], {
+      date: FIXED_DATE_MARKER,
+      slotKey: fixedSlotKey,
+      filledCounts,
+    });
+    const totalCount = roles.reduce((sum, role) => sum + role.count, 0);
+    const filledCount = roles.reduce((sum, role) => sum + role.filled, 0);
 
     return {
       variant: 'fixed',
@@ -186,6 +193,10 @@ export function buildPostingScheduleModel(
           dayCount: getDayCount(group.startDate, group.endDate),
           timeSlots: group.timeSlots,
           matchDate: undefined as string | undefined,
+          // grouped 는 단일 날짜가 아니라 범위 — 범위 내 hydrate 엔트리를 slot+role 별로 합산한다.
+          matchRange: { startDate: group.startDate, endDate: group.endDate } as
+            | { startDate: string; endDate: string }
+            | undefined,
         }))
       : source.scheduleDisplay.dateRequirements.map((requirement, index) => ({
           key: `${requirement.date}-${index}`,
@@ -193,6 +204,7 @@ export function buildPostingScheduleModel(
           dayCount: 1,
           timeSlots: requirement.timeSlots,
           matchDate: requirement.date as string | undefined,
+          matchRange: undefined as { startDate: string; endDate: string } | undefined,
         }));
 
   if (sectionSources.length > 0) {
@@ -207,7 +219,9 @@ export function buildPostingScheduleModel(
             slot.roles,
             section.matchDate
               ? { date: section.matchDate, slotKey: slotMatchKey(slot), filledCounts }
-              : undefined
+              : section.matchRange
+                ? { range: section.matchRange, slotKey: slotMatchKey(slot), filledCounts }
+                : undefined
           ),
         };
       });
@@ -301,14 +315,50 @@ function roleMatchKey(role: RoleSource): string {
   return role.role || role.name || '';
 }
 
+/**
+ * grouped 날짜범위 hydrate 합산: submap 키(`date__slot__role`)를 파싱하여
+ * startDate <= date <= endDate(YYYY-MM-DD 문자열 비교) + slot/role 일치 엔트리를 합산한다.
+ */
+function sumHydrateForRange(
+  submap: Map<string, number> | undefined,
+  range: { startDate: string; endDate: string },
+  slotKey: string,
+  roleKey: string
+): number {
+  if (!submap) return 0;
+  let total = 0;
+  for (const [key, value] of submap) {
+    const firstSep = key.indexOf('__');
+    if (firstSep < 0) continue;
+    const date = key.slice(0, firstSep);
+    const rest = key.slice(firstSep + 2);
+    if (date < range.startDate || date > range.endDate) continue;
+    if (rest !== `${slotKey}__${roleKey}`) continue;
+    total += value;
+  }
+  return total;
+}
+
+type RoleHydrateCtx =
+  | { date: string; slotKey: string; filledCounts?: Map<string, number> }
+  | {
+      range: { startDate: string; endDate: string };
+      slotKey: string;
+      filledCounts?: Map<string, number>;
+    };
+
 function toRoleModels(
   roles: readonly RoleSource[],
-  ctx?: { date: string; slotKey: string; filledCounts?: Map<string, number> }
+  ctx?: RoleHydrateCtx
 ): PostingRoleDisplayModel[] {
   return roles.map((role, index) => {
     const label = getRoleDisplayName(role.role || role.name || '', role.customRole);
     const count = role.count ?? role.headcount ?? 0;
-    const hydrated = ctx?.filledCounts?.get(`${ctx.date}__${ctx.slotKey}__${roleMatchKey(role)}`);
+    const hydrated = ctx
+      ? 'range' in ctx
+        ? sumHydrateForRange(ctx.filledCounts, ctx.range, ctx.slotKey, roleMatchKey(role))
+        : ctx.filledCounts?.get(`${ctx.date}__${ctx.slotKey}__${roleMatchKey(role)}`)
+      : undefined;
     const filled = hydrated ?? role.filled ?? 0;
     const keySource =
       role.role === 'other' && role.customRole

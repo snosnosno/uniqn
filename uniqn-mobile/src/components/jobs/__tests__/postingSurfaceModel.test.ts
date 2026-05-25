@@ -7,36 +7,42 @@ import {
 
 describe('postingSurfaceModel', () => {
   it('keeps grouped schedules with every time slot and role stat', () => {
-    const schedule = buildPostingScheduleModel({
-      workflow: { isFixed: false, usesGroupedDateRanges: true },
-      scheduleDisplay: {
-        variant: 'grouped_dates',
-        workDate: '2026-03-31',
-        timeSlot: '',
-        fixed: undefined,
-        dateRequirements: [],
-        dateGroups: [
-          {
-            id: 'group-1',
-            startDate: '2026-03-31',
-            endDate: '2026-04-01',
-            timeSlots: [
-              {
-                startTime: '09:00',
-                roles: [{ role: 'dealer', count: 1, filled: 0 }],
-              },
-              {
-                startTime: '13:00',
-                roles: [
-                  { role: 'dealer', count: 1, filled: 1 },
-                  { role: 'floor', count: 1, filled: 0 },
-                ],
-              },
-            ],
-          },
-        ],
+    // SP3: grouped 의 filled 는 schedule dead counter(role.filled)가 아니라
+    // work_logs hydrate 범위 합산에서 온다. 맵 적중 시 그 값을, 미적중 시 0 을 표시한다.
+    const filledCounts = new Map<string, number>([['2026-04-01__13:00__dealer', 1]]);
+    const schedule = buildPostingScheduleModel(
+      {
+        workflow: { isFixed: false, usesGroupedDateRanges: true },
+        scheduleDisplay: {
+          variant: 'grouped_dates',
+          workDate: '2026-03-31',
+          timeSlot: '',
+          fixed: undefined,
+          dateRequirements: [],
+          dateGroups: [
+            {
+              id: 'group-1',
+              startDate: '2026-03-31',
+              endDate: '2026-04-01',
+              timeSlots: [
+                {
+                  startTime: '09:00',
+                  roles: [{ role: 'dealer', count: 1, filled: 0 }],
+                },
+                {
+                  startTime: '13:00',
+                  roles: [
+                    { role: 'dealer', count: 1, filled: 1 },
+                    { role: 'floor', count: 1, filled: 0 },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
       },
-    });
+      filledCounts
+    );
 
     expect(schedule.variant).toBe('dated');
     if (schedule.variant !== 'dated') {
@@ -48,8 +54,10 @@ describe('postingSurfaceModel', () => {
       '09:00',
       '13:00',
     ]);
+    // hydrate 범위 합산(2026-04-01 은 범위 내)으로 dealer filled=1, floor 미적중=0
     expect(schedule.sections[0]?.timeSlots[1]?.roles[0]?.filled).toBe(1);
     expect(schedule.sections[0]?.timeSlots[1]?.roles[0]?.isFilled).toBe(true);
+    expect(schedule.sections[0]?.timeSlots[1]?.roles[1]?.filled).toBe(0);
   });
 
   it('uses preview salary rows on cards and full rows on detail', () => {

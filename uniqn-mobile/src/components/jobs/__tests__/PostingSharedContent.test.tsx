@@ -9,6 +9,13 @@ describe('Posting shared content', () => {
     const dealerLabel = getRoleDisplayName('dealer');
     const floorLabel = getRoleDisplayName('floor');
 
+    // SP3: grouped 의 filled 는 dead counter(role.filled)가 아니라 hydrate 범위 합산에서 온다.
+    // 범위 내 날짜 엔트리로 09:00 dealer=1, 13:00 dealer=0(미적중), floor=1 을 만든다.
+    const filledCounts = new Map<string, number>([
+      ['2026-03-31__09:00__dealer', 1],
+      ['2026-04-01__13:00__floor', 1],
+    ]);
+
     const { getByText } = render(
       <PostingScheduleContent
         display="detail"
@@ -41,6 +48,7 @@ describe('Posting shared content', () => {
           ],
         }}
         showFilledCount={true}
+        filledCounts={filledCounts}
       />
     );
 
