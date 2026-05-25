@@ -117,6 +117,7 @@
 ### 4.6 확정 정원 (`src/repositories/supabase/ApplicationRepositoryTransactions.ts`)
 
 - `validateConfirmCapacity`(310–353): fixed 분기(315–343) 제거 → 전 경로 `validateAssignmentSlotCapacity`.
+- **회귀 주의(플랜 작성 중 발견)**: `slotCapacity.ts` 의 `buildPostingSlotCapacityMap`/`validateAssignmentSlotCapacity` 는 현재 `kind !== 'dated'` 이면 즉시 빈 맵/unavailable 을 반환한다. fixed 를 단순 라우팅하면 **항상 마감 처리되는 회귀**가 난다. → 가드를 `kind === 'dated' || kind === 'fixed'` 로 완화 + capacity 키의 date 를 `requirement.date ?? ''` 로 정규화해야 한다(fixed = null-date 합성 슬롯).
 - **주의**: 이건 클라 가드일 뿐, dead `filled` 의존을 끊는 효과. 진짜 정원 enforcement(서버 원자적)는 SP2/SP3 소관. SP1 은 클라 가드가 통일 구조의 slotCapacity 를 읽도록만 정렬(동작 동치 + dead counter 의존 제거).
 - `createWorkLogsForConfirmation`: `assignment.dates` 가 fixed 에서 어떻게 채워지는지 SP1 변환과 정합 확인(회귀 방지). work_logs 스키마는 SP1 에서 미변경.
 
