@@ -74,7 +74,7 @@ export async function executeConfirmWithHistory(
     }
 
     // 정원 검증
-    validateConfirmCapacity(isFixedPosting, assignmentsToConfirm, jobData, applicationData);
+    validateConfirmCapacity(assignmentsToConfirm, jobData, applicationData);
 
     // 이력 생성
     let originalApplication = applicationData.originalApplication;
@@ -117,7 +117,6 @@ export async function executeConfirmWithHistory(
       p_original_application: originalApplication,
       p_confirmation_history: confirmationHistory,
       p_notes: notes ?? null,
-      p_is_fixed_posting: isFixedPosting,
       p_assignments_v3: assignmentsToConfirm,
     });
 
@@ -307,7 +306,6 @@ function mapCancelErrorToMessage(errorCode: string): string {
 // ============================================================================
 
 function validateConfirmCapacity(
-  _isFixedPosting: boolean,
   assignmentsToConfirm: Assignment[],
   jobData: JobPosting,
   applicationData: Application
