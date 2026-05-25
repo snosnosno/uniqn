@@ -28,11 +28,19 @@ def render(base_name, out_name, l1, l2, sub):
     draw = ImageDraw.Draw(base)
     LX = int(W * 0.066)
 
-    # 로고 (좌상단)
+    # 로고 (유니콘 엠블럼 + UNIQN 워드마크)
     logo = Image.open(LOGO).convert("RGBA")
-    lh = int(W * 0.115)
+    lh = int(W * 0.105)
     lw = int(logo.width * lh / logo.height)
-    base.alpha_composite(logo.resize((lw, lh), Image.LANCZOS), (LX, int(H * 0.045)))
+    ly = int(H * 0.045)
+    base.alpha_composite(logo.resize((lw, lh), Image.LANCZOS), (LX, ly))
+    wm = bold(int(W * 0.056))
+    wbb = wm.getbbox("UNIQN")
+    x0 = LX + lw + int(W * 0.018)
+    yy = ly + (lh - (wbb[3] - wbb[1])) // 2 - wbb[1]
+    for ch in "UNIQN":
+        draw.text((x0, yy), ch, font=wm, fill=GOLD)
+        x0 += draw.textlength(ch, font=wm) + 8
 
     # 헤드라인 2줄
     hl = bold(int(W * 0.064))

@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 """UNIQN 좌우 스플릿 마케팅 컷 — base2(폰 우측) 위에 한글 카피/아이콘/스토어 뱃지 오버레이."""
 import os
+import sys
 from PIL import Image, ImageDraw, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-BASE = os.path.join(HERE, "appcomp-base2.png")
-FINAL = os.path.join(HERE, "appcomp-final.png")
-FINAL_HI = os.path.join(HERE, "appcomp-final-hi.png")
+# 인자: [base_filename] [final_filename]  (기본 = base2 / appcomp-final)
+_base = sys.argv[1] if len(sys.argv) > 1 else "appcomp-base2.png"
+_final = sys.argv[2] if len(sys.argv) > 2 else "appcomp-final.png"
+BASE = os.path.join(HERE, _base)
+FINAL = os.path.join(HERE, _final)
+FINAL_HI = os.path.join(HERE, _final.replace(".png", "-hi.png"))
 APPLE = os.path.join(HERE, "assets", "apple-app-store.png")
 GOOGLE = os.path.join(HERE, "assets", "google-play-badge.png")
 LOGO = os.path.join(HERE, "assets", "uniqn-logo.png")
@@ -42,11 +46,16 @@ def draw_spaced(d, pos, text, font, fill, spacing):
 
 LX = int(W * 0.066)
 
-# 2) 브랜드 로고 (실제 유니콘 로고)
+# 2) 브랜드 로고 (유니콘 엠블럼 + UNIQN 워드마크)
 _logo = Image.open(LOGO).convert("RGBA")
 _lh = int(W * 0.090)
 _lw = int(_logo.width * _lh / _logo.height)
-base.alpha_composite(_logo.resize((_lw, _lh), Image.LANCZOS), (LX, int(H * 0.040)))
+_ly = int(H * 0.040)
+base.alpha_composite(_logo.resize((_lw, _lh), Image.LANCZOS), (LX, _ly))
+_wm = bold(int(W * 0.050))
+_bb = _wm.getbbox("UNIQN")
+draw_spaced(draw, (LX + _lw + int(W * 0.018), _ly + (_lh - (_bb[3] - _bb[1])) // 2 - _bb[1]),
+            "UNIQN", _wm, GOLD, 8)
 
 # 3) 헤드라인 (정산 = 골드)
 hl = bold(int(W * 0.050))
