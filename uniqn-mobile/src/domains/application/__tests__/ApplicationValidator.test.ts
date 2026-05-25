@@ -154,13 +154,26 @@ function createJobPosting(overrides: TestJobPostingOverrides = {}): JobPosting {
         }
       : {
           kind: 'fixed' as const,
-          roleRequirements: fixedRoles.length > 0 ? fixedRoles : undefined,
+          requirements: [
+            {
+              date: null,
+              timeSlots: [
+                {
+                  isTimeToBeAnnounced: false,
+                  roles: fixedRoles.length > 0 ? fixedRoles : [],
+                },
+              ],
+            },
+          ],
         });
 
   const totalPositions =
     overrides.totalPositions ??
     (schedule.kind === 'fixed'
-      ? (schedule.roleRequirements ?? []).reduce((sum, role) => sum + role.count, 0)
+      ? (schedule.requirements[0]?.timeSlots[0]?.roles ?? []).reduce(
+          (sum: number, role: { count: number }) => sum + role.count,
+          0
+        )
       : schedule.requirements.reduce(
           (sum, requirement) =>
             sum +
@@ -255,14 +268,14 @@ describe('ApplicationValidator', () => {
   // ==========================================================================
 
   describe('checkRoleCapacity', () => {
-    it('dateSpecificRequirements에서 역할 정원이 남아있으면 available: true', () => {
+    it('dateSpecificRequirements에서 역할 headcount가 양수면 available: true (currentFilled는 항상 0 — schedule filled 추적 제거)', () => {
       const jobData = createJobPosting({
         dateSpecificRequirements: [
           {
             date: '2025-01-10',
             timeSlots: [
               {
-                roles: [{ role: 'dealer', headcount: 3, filled: 1 }],
+                roles: [{ role: 'dealer', headcount: 3 }],
               },
             ],
           },
@@ -271,27 +284,31 @@ describe('ApplicationValidator', () => {
 
       const result = validator.checkRoleCapacity(jobData, 'dealer');
       expect(result.available).toBe(true);
-      expect(result.currentFilled).toBe(1);
+      // 역할별 충원 추적은 클라이언트에서 제거됨(dead counter). 실제 정원은 confirm 시 서버(H1)에서 강제.
+      expect(result.currentFilled).toBe(0);
       expect(result.maxCapacity).toBe(3);
     });
 
-    it('dateSpecificRequirements에서 역할 정원이 찼으면 available: false', () => {
+    it('dateSpecificRequirements에서 headcount가 양수면 클라이언트는 더 이상 역할 마감을 차단하지 않는다 (available: true)', () => {
       const jobData = createJobPosting({
         dateSpecificRequirements: [
           {
             date: '2025-01-10',
             timeSlots: [
               {
-                roles: [{ role: 'dealer', headcount: 2, filled: 2 }],
+                roles: [{ role: 'dealer', headcount: 2 }],
               },
             ],
           },
         ],
       });
 
+      // schedule role.filled dead counter 제거 후 역할별 사전 차단은 vacuous.
+      // 실제 역할 정원은 confirm 시 서버(SP2 H1)에서 강제된다.
       const result = validator.checkRoleCapacity(jobData, 'dealer');
-      expect(result.available).toBe(false);
-      expect(result.reason).toBe('해당 역할은 모집이 마감되었습니다.');
+      expect(result.available).toBe(true);
+      expect(result.currentFilled).toBe(0);
+      expect(result.maxCapacity).toBe(2);
     });
 
     it('dateSpecificRequirements에서 해당 역할이 없으면 available: false', () => {
@@ -349,24 +366,28 @@ describe('ApplicationValidator', () => {
       expect(result.available).toBe(true);
     });
 
-    it('레거시 roles 배열에서 정원이 남아있으면 available: true', () => {
+    it('레거시 roles 배열에서 count가 양수면 available: true (currentFilled는 항상 0 — schedule filled 추적 제거)', () => {
       const jobData = createJobPosting({
-        roles: [{ role: 'dealer', count: 3, filled: 1 }],
+        roles: [{ role: 'dealer', count: 3 }],
       });
 
       const result = validator.checkRoleCapacity(jobData, 'dealer');
       expect(result.available).toBe(true);
-      expect(result.currentFilled).toBe(1);
+      // 역할별 충원 추적은 클라이언트에서 제거됨(dead counter). 실제 정원은 confirm 시 서버(H1)에서 강제.
+      expect(result.currentFilled).toBe(0);
       expect(result.maxCapacity).toBe(3);
     });
 
-    it('레거시 roles 배열에서 정원이 찼으면 available: false', () => {
+    it('레거시 roles 배열에서 count가 양수면 클라이언트는 더 이상 역할 마감을 차단하지 않는다 (available: true)', () => {
       const jobData = createJobPosting({
-        roles: [{ role: 'dealer', count: 2, filled: 2 }],
+        roles: [{ role: 'dealer', count: 2 }],
       });
 
+      // schedule role.filled dead counter 제거 후 역할별 사전 차단은 vacuous.
       const result = validator.checkRoleCapacity(jobData, 'dealer');
-      expect(result.available).toBe(false);
+      expect(result.available).toBe(true);
+      expect(result.currentFilled).toBe(0);
+      expect(result.maxCapacity).toBe(2);
     });
 
     it('레거시 roles에서 해당 역할이 없으면 available: false', () => {
@@ -627,7 +648,18 @@ describe('ApplicationValidator', () => {
     });
 
     it('모든 조건이 유효하면 isValid: true, errors: []', () => {
-      const jobData = createJobPosting({ status: 'active' });
+      // dated 공고 + dealer 자리 여유 있음 — slotCapacity 검증이 통과해야 한다
+      const jobData = createJobPosting({
+        status: 'active',
+        dateSpecificRequirements: [
+          {
+            date: '2025-01-10',
+            timeSlots: [
+              { startTime: '19:00', roles: [{ role: 'dealer', headcount: 5, filled: 0 }] },
+            ],
+          },
+        ],
+      });
       const assignments = [createAssignment()];
 
       const result = validator.validateApplication(jobData, assignments);

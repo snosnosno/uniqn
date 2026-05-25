@@ -12,6 +12,7 @@ import type {
   PostingType,
   UpdateJobPostingInput,
 } from '@/types/jobPosting';
+import type { StaffRole } from '@/types/role';
 import { JOB_POSTING_SCHEMA_VERSION } from '@/types/jobPosting';
 import { calculateTotalPositionsFromSchedule, normalizePostingAggregateStats } from './stats';
 
@@ -120,6 +121,56 @@ function normalizeRoleCatalog(
   }));
 }
 
+/**
+ * fixed schedule의 합성 슬롯 빌더.
+ * 새 구조(requirements)와 레거시(roleRequirements) 양쪽을 모두 흡수해
+ * normalizeSchedule과 deserializeJobPostingDocument 양쪽에서 공유한다.
+ *
+ * 목표 불변식: requirements.length===1, requirements[0].date===null,
+ *              requirements[0].timeSlots.length===1, date:'' sentinel 금지.
+ */
+function buildFixedSyntheticRequirement(
+  schedule: Extract<CreateJobPostingInput['schedule'], { kind: 'fixed' }> | Record<string, unknown>
+): PostingDateRequirement {
+  const s = schedule as {
+    startTime?: string;
+    requirements?: PostingDateRequirement[];
+    roleRequirements?: {
+      id?: string;
+      role?: string;
+      customRole?: string;
+      count: number;
+    }[];
+  };
+
+  // 새 구조(requirements) 우선, 없으면 레거시(roleRequirements) 흡수
+  const existingRoles = s.requirements?.[0]?.timeSlots?.[0]?.roles;
+  const sourceRoles = existingRoles ?? s.roleRequirements ?? [];
+
+  // outer schedule.startTime 우선, 없으면 inner slot startTime 으로 fallback
+  // (새 구조 입력에서 outer 미지정 + inner 지정 시 시간 유실 방지)
+  const innerStartTime = s.requirements?.[0]?.timeSlots?.[0]?.startTime;
+  const resolvedStartTime = s.startTime ?? innerStartTime;
+
+  return {
+    date: null,
+    timeSlots: [
+      {
+        ...(resolvedStartTime ? { startTime: resolvedStartTime } : {}),
+        isTimeToBeAnnounced: false,
+        roles: sourceRoles.map((role) => ({
+          ...(role.id ? { id: role.id } : {}),
+          // 런타임 값은 이미 StaffRole | 'other' 문자열 — 소스타입이 string|undefined라 캐스트
+          ...(role.role ? { role: role.role as StaffRole | 'other' } : {}),
+          ...(role.customRole ? { customRole: role.customRole } : {}),
+          count: role.count,
+          // dead counter `filled`(SP3 제거) — 레거시 소스에 있어도 출력으로 복사하지 않는다.
+        })),
+      },
+    ],
+  };
+}
+
 function normalizeDatedRequirements(
   requirements: PostingDateRequirement[]
 ): PostingDateRequirement[] {
@@ -139,7 +190,7 @@ function normalizeDatedRequirements(
           ...(role.role ? { role: role.role } : {}),
           ...(role.customRole ? { customRole: role.customRole } : {}),
           count: role.count,
-          ...(role.filled !== undefined ? { filled: role.filled } : {}),
+          // dead counter `filled`(SP3 제거) — 출력으로 복사하지 않는다.
         })),
       })),
     }))
@@ -155,12 +206,7 @@ function normalizeSchedule(schedule: CreateJobPostingInput['schedule']): Posting
       ...(schedule.isStartTimeNegotiable !== undefined
         ? { isStartTimeNegotiable: schedule.isStartTimeNegotiable }
         : {}),
-      roleRequirements: (schedule.roleRequirements ?? []).map((role) => ({
-        ...(role.role ? { role: role.role } : {}),
-        ...(role.customRole ? { customRole: role.customRole } : {}),
-        count: role.count,
-        ...(role.filled !== undefined ? { filled: role.filled } : {}),
-      })),
+      requirements: [buildFixedSyntheticRequirement(schedule)],
     };
 
     return fixedSchedule;
@@ -174,7 +220,8 @@ function normalizeSchedule(schedule: CreateJobPostingInput['schedule']): Posting
     allDates:
       schedule.allDates && schedule.allDates.length > 0
         ? schedule.allDates
-        : requirements.map((requirement) => requirement.date),
+        : // dated requirement.date는 normalizeDatedRequirements filter 뒤 항상 string
+          requirements.map((r) => r.date).filter((d): d is string => d !== null),
     requirements,
   };
 }
@@ -322,7 +369,7 @@ export function deserializeJobPostingDocument(document: JobPostingDocumentV3): J
   const postingType = getCanonicalPostingType(document.postingType);
   const schedule =
     document.schedule.kind === 'fixed'
-      ? {
+      ? ({
           kind: 'fixed' as const,
           ...(document.schedule.daysPerWeek !== undefined
             ? { daysPerWeek: document.schedule.daysPerWeek }
@@ -331,13 +378,10 @@ export function deserializeJobPostingDocument(document: JobPostingDocumentV3): J
           ...(document.schedule.isStartTimeNegotiable !== undefined
             ? { isStartTimeNegotiable: document.schedule.isStartTimeNegotiable }
             : {}),
-          roleRequirements: (document.schedule.roleRequirements ?? []).map((role) => ({
-            ...(role.role ? { role: role.role } : {}),
-            ...(role.customRole ? { customRole: role.customRole } : {}),
-            count: role.count,
-            ...(role.filled !== undefined ? { filled: role.filled } : {}),
-          })),
-        }
+          requirements: [
+            buildFixedSyntheticRequirement(document.schedule as unknown as Record<string, unknown>),
+          ],
+        } satisfies PostingFixedSchedule)
       : {
           kind: 'dated' as const,
           primaryDate: document.schedule.primaryDate,
@@ -359,7 +403,7 @@ export function deserializeJobPostingDocument(document: JobPostingDocumentV3): J
                 ...(role.role ? { role: role.role } : {}),
                 ...(role.customRole ? { customRole: role.customRole } : {}),
                 count: role.count,
-                ...(role.filled !== undefined ? { filled: role.filled } : {}),
+                // dead counter `filled`(SP3 제거) — 레거시 doc 에 있어도 출력으로 복사하지 않는다.
               })),
             })),
           })),

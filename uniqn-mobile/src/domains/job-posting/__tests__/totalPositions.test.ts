@@ -6,34 +6,43 @@ import type { PostingSchedule } from '@/types/jobPosting';
 
 describe('calculateTotalPositionsFromSchedule', () => {
   describe('fixed schedule', () => {
-    it('sums roleRequirements counts (dealer 2 + floor 1 = 3)', () => {
+    it('sums roles count in synthetic slot (dealer 2 + floor 1 = 3)', () => {
       const schedule: PostingSchedule = {
         kind: 'fixed',
-        roleRequirements: [
-          { role: 'dealer', count: 2 },
-          { role: 'floor', count: 1 },
+        requirements: [
+          {
+            date: null,
+            timeSlots: [
+              {
+                startTime: '19:00',
+                isTimeToBeAnnounced: false,
+                roles: [
+                  { role: 'dealer', count: 2 },
+                  { role: 'floor', count: 1 },
+                ],
+              },
+            ],
+          },
         ],
       };
-
       expect(calculateTotalPositionsFromSchedule(schedule)).toBe(3);
     });
 
-    it('returns 0 when roleRequirements is empty', () => {
+    it('returns 0 when synthetic slot roles is empty', () => {
       const schedule: PostingSchedule = {
         kind: 'fixed',
-        roleRequirements: [],
+        requirements: [
+          {
+            date: null,
+            timeSlots: [{ startTime: '19:00', isTimeToBeAnnounced: false, roles: [] }],
+          },
+        ],
       };
-
       expect(calculateTotalPositionsFromSchedule(schedule)).toBe(0);
     });
 
-    it('returns 0 when roleRequirements is undefined', () => {
-      const schedule: PostingSchedule = {
-        kind: 'fixed',
-      };
-
-      expect(calculateTotalPositionsFromSchedule(schedule)).toBe(0);
-    });
+    // SP3: calculateFilledPositionsFromSchedule 제거됨 — filled 는 schedule 에서 파생하지 않음(컬럼·트리거 권위).
+    // 관련 테스트는 삭제. capacity/총원 계산은 위 calculateTotalPositionsFromSchedule 로 충분히 커버됨.
   });
 
   describe('dated schedule', () => {

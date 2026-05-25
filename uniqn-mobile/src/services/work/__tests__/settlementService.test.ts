@@ -328,12 +328,23 @@ function createMockJobPostingWithSalary(overrides: Record<string, unknown> = {})
       kind: 'fixed' as const,
       daysPerWeek: 5,
       startTime: '09:00',
-      roleRequirements: roles.map((role) => ({
-        role: role.role as 'dealer' | 'manager' | 'floor' | 'staff' | 'other',
-        ...(role.customRole ? { customRole: role.customRole } : {}),
-        count: role.count,
-        ...(role.filled !== undefined ? { filled: role.filled } : {}),
-      })),
+      requirements: [
+        {
+          date: null,
+          timeSlots: [
+            {
+              startTime: '09:00',
+              isTimeToBeAnnounced: false,
+              roles: roles.map((role) => ({
+                role: role.role as 'dealer' | 'manager' | 'floor' | 'staff' | 'other',
+                ...(role.customRole ? { customRole: role.customRole } : {}),
+                count: role.count,
+                ...(role.filled !== undefined ? { filled: role.filled } : {}),
+              })),
+            },
+          ],
+        },
+      ],
     },
     roleCatalog: roles.map((role) => ({
       role: role.role as 'dealer' | 'manager' | 'floor' | 'staff' | 'other',

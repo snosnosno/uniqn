@@ -7,7 +7,11 @@ import type {
   PostingRoleCatalogEntry,
   UpdateJobPostingInput,
 } from '@/types';
-import type { PostingSlotRoleRequirement, PostingTimeSlot } from '@/types/jobPosting';
+import type {
+  PostingDateRequirement,
+  PostingSlotRoleRequirement,
+  PostingTimeSlot,
+} from '@/types/jobPosting';
 import type { JobPostingDraft, JobPostingDraftDatedSchedule } from '@/types/jobPostingDraft';
 import { INITIAL_JOB_POSTING_DRAFT } from '@/types/jobPostingDraft';
 import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types/jobPostingForm';
@@ -147,14 +151,13 @@ function toCanonicalSlotRole(role: {
   role?: string;
   customRole?: string;
   headcount?: number;
-  filled?: number;
 }): PostingSlotRoleRequirement {
   return {
     ...(role.id ? { id: role.id } : {}),
     role: (role.role as PostingSlotRoleRequirement['role']) ?? 'dealer',
     ...(role.customRole ? { customRole: role.customRole } : {}),
     count: Math.max(1, role.headcount ?? 1),
-    ...(role.filled !== undefined ? { filled: role.filled } : {}),
+    // dead counter `filled`(SP3 제거) — canonical slot role 로 복사하지 않는다.
   };
 }
 
@@ -180,7 +183,8 @@ function toLegacyTimeSlotRole(
     ...(role.customRole ? { customRole: role.customRole } : {}),
     headcount: role.count,
     salary: roleCatalog.find((entry) => getRoleKey(entry) === getRoleKey(role))?.salary,
-    filled: role.filled ?? 0,
+    // dead counter `filled`(SP3 제거) — 레거시 슬롯 타입은 항상 0(미사용 카운터).
+    filled: 0,
   };
 }
 
@@ -272,9 +276,35 @@ function buildDatedDraft(formData: JobPostingFormData): JobPostingDraftDatedSche
   };
 }
 
+function buildFixedSyntheticRequirement(
+  roles: PostingSlotRoleRequirement[],
+  startTime?: string
+): PostingDateRequirement {
+  return {
+    date: null,
+    timeSlots: [
+      {
+        ...(startTime ? { startTime } : {}),
+        isTimeToBeAnnounced: false,
+        roles,
+      },
+    ],
+  };
+}
+
 function buildFixedDraft(
   formData: JobPostingFormData
 ): Extract<JobPostingDraft['schedule'], { kind: 'fixed' }> {
+  const roles: PostingSlotRoleRequirement[] = (formData.roles ?? []).map((role) => {
+    const catalogEntry = toCatalogEntry(role);
+
+    return {
+      role: catalogEntry.role,
+      ...(catalogEntry.customRole ? { customRole: catalogEntry.customRole } : {}),
+      count: role.count,
+    };
+  });
+
   return {
     kind: 'fixed',
     daysPerWeek: formData.daysPerWeek,
@@ -282,15 +312,7 @@ function buildFixedDraft(
     ...(formData.isStartTimeNegotiable !== undefined
       ? { isStartTimeNegotiable: formData.isStartTimeNegotiable }
       : {}),
-    roleRequirements: (formData.roles ?? []).map((role) => {
-      const catalogEntry = toCatalogEntry(role);
-
-      return {
-        role: catalogEntry.role,
-        ...(catalogEntry.customRole ? { customRole: catalogEntry.customRole } : {}),
-        count: role.count,
-      };
-    }),
+    requirements: [buildFixedSyntheticRequirement(roles, formData.startTime)],
   };
 }
 
@@ -343,7 +365,9 @@ function buildFixedFormRoles(draft: JobPostingDraft): FormRoleWithCount[] {
     return [];
   }
 
-  return (draft.schedule.roleRequirements ?? []).map((requirement) => {
+  const roles = draft.schedule.requirements[0]?.timeSlots[0]?.roles ?? [];
+
+  return roles.map((requirement) => {
     const catalogEntry = draft.roleCatalog.find(
       (entry) => getRoleKey(entry) === getRoleKey(requirement)
     ) ?? {
@@ -424,7 +448,8 @@ export function draftToFormData(draft: JobPostingDraft): JobPostingFormData {
     dateSpecificRequirements:
       draft.schedule.kind === 'dated'
         ? draft.schedule.requirements.map((requirement) => ({
-            date: requirement.date,
+            // kind==='dated' 분기 — dated requirement.date는 항상 string (fixed만 null)
+            date: requirement.date ?? '',
             isGrouped: requirement.isGrouped,
             timeSlots: requirement.timeSlots.map((slot) =>
               toLegacyTimeSlot(slot, draft.roleCatalog)
@@ -482,17 +507,28 @@ export function draftToCreateJobPostingInput(draft: JobPostingDraft): CreateJobP
             ...(draft.schedule.isStartTimeNegotiable !== undefined
               ? { isStartTimeNegotiable: draft.schedule.isStartTimeNegotiable }
               : {}),
-            roleRequirements: draft.schedule.roleRequirements.map((role) => ({
-              role: role.role,
-              ...(role.customRole ? { customRole: role.customRole } : {}),
-              count: role.count,
-              ...(role.filled !== undefined ? { filled: role.filled } : { filled: 0 }),
+            requirements: draft.schedule.requirements.map((requirement) => ({
+              date: null,
+              timeSlots: requirement.timeSlots.map((slot) => ({
+                ...(slot.startTime ? { startTime: slot.startTime } : {}),
+                isTimeToBeAnnounced: false,
+                roles: slot.roles.map((role) => ({
+                  ...(role.id ? { id: role.id } : {}),
+                  role: role.role ?? 'dealer',
+                  ...(role.customRole ? { customRole: role.customRole } : {}),
+                  count: role.count,
+                  // dead counter `filled`(SP3 제거) — 복사하지 않는다.
+                })),
+              })),
             })),
           }
         : {
             kind: 'dated',
             primaryDate: draft.schedule.primaryDate,
-            allDates: draft.schedule.requirements.map((requirement) => requirement.date),
+            // kind==='dated' 분기 — dated requirement.date는 항상 string (fixed만 null)
+            allDates: draft.schedule.requirements
+              .map((r) => r.date)
+              .filter((d): d is string => d !== null),
             requirements: draft.schedule.requirements.map((requirement) => ({
               date: requirement.date,
               ...(requirement.isGrouped !== undefined ? { isGrouped: requirement.isGrouped } : {}),
@@ -510,7 +546,7 @@ export function draftToCreateJobPostingInput(draft: JobPostingDraft): CreateJobP
                   role: role.role ?? 'dealer',
                   ...(role.customRole ? { customRole: role.customRole } : {}),
                   count: role.count,
-                  ...(role.filled !== undefined ? { filled: role.filled } : {}),
+                  // dead counter `filled`(SP3 제거) — 복사하지 않는다.
                 })),
               })),
             })),
@@ -561,6 +597,7 @@ function buildFixedDraftFromPosting(
   posting: JobPosting
 ): Extract<JobPostingDraft['schedule'], { kind: 'fixed' }> {
   const fixedSchedule = posting.schedule.kind === 'fixed' ? posting.schedule : undefined;
+  const roles = fixedSchedule?.requirements[0]?.timeSlots[0]?.roles ?? [];
 
   return {
     kind: 'fixed',
@@ -569,12 +606,24 @@ function buildFixedDraftFromPosting(
     ...(fixedSchedule?.isStartTimeNegotiable !== undefined
       ? { isStartTimeNegotiable: fixedSchedule.isStartTimeNegotiable }
       : {}),
-    roleRequirements: (fixedSchedule?.roleRequirements ?? []).map((role) => ({
-      role: role.role,
-      ...(role.customRole ? { customRole: role.customRole } : {}),
-      count: role.count,
-      ...(role.filled !== undefined ? { filled: role.filled } : {}),
-    })),
+    requirements: [
+      {
+        date: null,
+        timeSlots: [
+          {
+            ...(fixedSchedule?.startTime ? { startTime: fixedSchedule.startTime } : {}),
+            isTimeToBeAnnounced: false,
+            roles: roles.map((role) => ({
+              ...(role.id ? { id: role.id } : {}),
+              role: role.role ?? 'dealer',
+              ...(role.customRole ? { customRole: role.customRole } : {}),
+              count: role.count,
+              // dead counter `filled`(SP3 제거) — 복사하지 않는다.
+            })),
+          },
+        ],
+      },
+    ],
   };
 }
 
@@ -593,7 +642,7 @@ function buildDatedDraftFromPosting(posting: JobPosting): JobPostingDraftDatedSc
         role: role.role,
         ...(role.customRole ? { customRole: role.customRole } : {}),
         count: role.count,
-        ...(role.filled !== undefined ? { filled: role.filled } : {}),
+        // dead counter `filled`(SP3 제거) — 복사하지 않는다.
       })),
     })) ??
     (INITIAL_JOB_POSTING_DRAFT.schedule.kind === 'dated'
@@ -603,7 +652,8 @@ function buildDatedDraftFromPosting(posting: JobPosting): JobPostingDraftDatedSc
   return {
     kind: 'dated',
     primaryDate: posting.workDate,
-    allDates: requirements.map((requirement) => requirement.date),
+    // dated posting.schedule.requirements.date는 항상 string (fixed만 null)
+    allDates: requirements.map((r) => r.date).filter((d): d is string => d !== null),
     requirements: requirements.map((requirement) => ({
       date: requirement.date,
       ...(requirement.isGrouped !== undefined ? { isGrouped: requirement.isGrouped } : {}),
@@ -619,7 +669,7 @@ function buildDatedDraftFromPosting(posting: JobPosting): JobPostingDraftDatedSc
           role: role.role,
           ...(role.customRole ? { customRole: role.customRole } : {}),
           count: role.count,
-          ...(role.filled !== undefined ? { filled: role.filled } : {}),
+          // dead counter `filled`(SP3 제거) — 복사하지 않는다.
         })),
       })),
     })),

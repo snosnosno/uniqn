@@ -74,7 +74,7 @@ export async function executeConfirmWithHistory(
     }
 
     // 정원 검증
-    validateConfirmCapacity(isFixedPosting, assignmentsToConfirm, jobData, applicationData);
+    validateConfirmCapacity(assignmentsToConfirm, jobData, applicationData);
 
     // 이력 생성
     let originalApplication = applicationData.originalApplication;
@@ -117,7 +117,6 @@ export async function executeConfirmWithHistory(
       p_original_application: originalApplication,
       p_confirmation_history: confirmationHistory,
       p_notes: notes ?? null,
-      p_is_fixed_posting: isFixedPosting,
       p_assignments_v3: assignmentsToConfirm,
     });
 
@@ -162,17 +161,7 @@ export async function executeReviewCancellation(
     }
 
     const applicationData = await loadApplication(input.applicationId);
-    const jobData = await loadAndVerifyJobPostingAccess(
-      applicationData.jobPostingId,
-      reviewerId,
-      '취소 요청 검토'
-    );
-
-    if (jobData.schedule.kind === 'fixed') {
-      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: '고정공고는 1차 범위에서 취소 요청을 지원하지 않습니다.',
-      });
-    }
+    await loadAndVerifyJobPostingAccess(applicationData.jobPostingId, reviewerId, '취소 요청 검토');
 
     if (applicationData.status !== STATUS.APPLICATION.CANCELLATION_PENDING) {
       throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
@@ -307,48 +296,16 @@ function mapCancelErrorToMessage(errorCode: string): string {
 // ============================================================================
 
 function validateConfirmCapacity(
-  isFixedPosting: boolean,
   assignmentsToConfirm: Assignment[],
   jobData: JobPosting,
   applicationData: Application
 ): void {
-  if (isFixedPosting) {
-    const fixedRoleId = assignmentsToConfirm[0]?.roleIds?.[0];
-    if (
-      !fixedRoleId ||
-      assignmentsToConfirm.length !== 1 ||
-      assignmentsToConfirm[0].roleIds.length !== 1
-    ) {
-      throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-        userMessage: '고정공고는 역할 1개만 확정할 수 있습니다.',
-      });
-    }
-    const fixedSchedule = jobData.schedule as {
-      roleRequirements?: {
-        role?: string;
-        customRole?: string;
-        count: number;
-        filled?: number;
-      }[];
-    };
-    const targetRole = (fixedSchedule.roleRequirements ?? []).find(
-      (role) =>
-        role.role === fixedRoleId || (role.role === 'other' && role.customRole === fixedRoleId)
-    );
-    if (!targetRole || (targetRole.filled ?? 0) >= targetRole.count) {
-      throw new MaxCapacityReachedError({
-        userMessage: '선택한 역할의 모집 인원이 마감되었습니다.',
-        jobPostingId: applicationData.jobPostingId,
-      });
-    }
-  } else {
-    const slotCapacity = validateAssignmentSlotCapacity(jobData, assignmentsToConfirm);
-    if (!slotCapacity.available) {
-      throw new MaxCapacityReachedError({
-        userMessage: '모집 인원이 마감되었습니다.',
-        jobPostingId: applicationData.jobPostingId,
-      });
-    }
+  const slotCapacity = validateAssignmentSlotCapacity(jobData, assignmentsToConfirm);
+  if (!slotCapacity.available) {
+    throw new MaxCapacityReachedError({
+      userMessage: '모집 인원이 마감되었습니다.',
+      jobPostingId: applicationData.jobPostingId,
+    });
   }
 }
 

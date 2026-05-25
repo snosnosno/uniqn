@@ -1,6 +1,10 @@
 import { removeUndefined } from '@/utils/removeUndefined';
 import { draftToFormData, formDataToDraft } from '@/utils/job-posting/draftAdapter';
-import type { JobPostingDraft, JobPostingDraftDatedSchedule } from './jobPostingDraft';
+import type {
+  JobPostingDraft,
+  JobPostingDraftDatedSchedule,
+  JobPostingDraftFixedSchedule,
+} from './jobPostingDraft';
 import { INITIAL_JOB_POSTING_DRAFT } from './jobPostingDraft';
 import type { JobPostingFormData } from './jobPostingForm';
 import type {
@@ -121,8 +125,13 @@ export function extractTemplateData(
       draft.schedule.kind === 'fixed'
         ? {
             ...draft.schedule,
-            roleRequirements: draft.schedule.roleRequirements.map((role) => ({
-              ...role,
+            // TODO(SP1 후속): buildFixedSyntheticRequirement 공유 헬퍼로 통합
+            requirements: draft.schedule.requirements.map((requirement) => ({
+              date: null,
+              timeSlots: requirement.timeSlots.map((slot) => ({
+                ...slot,
+                roles: slot.roles.map((role) => ({ ...role })),
+              })),
             })),
           }
         : buildTemplateDatedSchedule(draft),
@@ -159,12 +168,47 @@ export function templateToDraft(template: JobPostingTemplate): JobPostingDraft {
     tags: templateData.tags ?? [],
     schedule:
       templateData.schedule?.kind === 'fixed'
-        ? {
-            ...templateData.schedule,
-            roleRequirements: (templateData.schedule.roleRequirements ?? []).map((role) => ({
-              ...role,
-            })),
-          }
+        ? (() => {
+            const legacyFixed = templateData.schedule as JobPostingDraftFixedSchedule & {
+              roleRequirements?: {
+                id?: string;
+                role?: PostingSlotRoleRequirement['role'];
+                customRole?: string;
+                count?: number;
+                filled?: number;
+              }[];
+            };
+            const legacyRoles = (legacyFixed.roleRequirements ?? []).map((role) => ({
+              ...(role.id ? { id: role.id } : {}),
+              ...(role.role ? { role: role.role } : {}),
+              ...(role.customRole ? { customRole: role.customRole } : {}),
+              count: role.count ?? 1,
+              ...(role.filled !== undefined ? { filled: role.filled } : {}),
+            }));
+            const sourceRoles = legacyFixed.requirements?.[0]?.timeSlots?.[0]?.roles ?? legacyRoles;
+
+            return {
+              kind: 'fixed' as const,
+              daysPerWeek: legacyFixed.daysPerWeek,
+              ...(legacyFixed.startTime ? { startTime: legacyFixed.startTime } : {}),
+              ...(legacyFixed.isStartTimeNegotiable !== undefined
+                ? { isStartTimeNegotiable: legacyFixed.isStartTimeNegotiable }
+                : {}),
+              // TODO(SP1 후속): buildFixedSyntheticRequirement 공유 헬퍼로 통합
+              requirements: [
+                {
+                  date: null,
+                  timeSlots: [
+                    {
+                      ...(legacyFixed.startTime ? { startTime: legacyFixed.startTime } : {}),
+                      isTimeToBeAnnounced: false,
+                      roles: sourceRoles.map((role) => ({ ...role })),
+                    },
+                  ],
+                },
+              ],
+            };
+          })()
         : templateData.schedule?.kind === 'dated'
           ? cloneDatedSchedule(templateData.schedule)
           : legacyTemplateData.datedTemplateTimeSlots

@@ -32,8 +32,8 @@ function createPosting(): JobPosting {
               id: 'slot-1',
               startTime: '09:00',
               roles: [
-                { id: 'dealer-role', role: 'dealer', count: 1, filled: 0 },
-                { id: 'floor-role', role: 'floor', count: 1, filled: 0 },
+                { id: 'dealer-role', role: 'dealer', count: 1 },
+                { id: 'floor-role', role: 'floor', count: 1 },
               ],
             },
           ],

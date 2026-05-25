@@ -66,10 +66,12 @@ BEGIN
   INSERT INTO public.workspaces (id, name, owner_id, created_at, updated_at)
   VALUES (v_workspace_id, '__sql_fixture_cancel_ws', v_owner_id, now(), now());
 
+  -- filled_positions 는 SP3 부터 fn_update_job_posting_stats 트리거가 applications status 로 관리한다.
+  -- 0 으로 시드하면 아래 'confirmed' application INSERT 가 트리거를 발화시켜 1 이 된다(수동 세팅 금지 — 이중카운트).
   INSERT INTO public.job_postings (
     id, owner_id, workspace_id, title, total_positions, filled_positions, status, created_at, updated_at
   )
-  VALUES (v_job_id, v_owner_id, v_workspace_id, '__sql_fixture: cancel atomicity', 5, 1, 'active', now(), now());
+  VALUES (v_job_id, v_owner_id, v_workspace_id, '__sql_fixture: cancel atomicity', 5, 0, 'active', now(), now());
 
   INSERT INTO public.applications (
     id, job_posting_id, applicant_id, applicant_name, status, confirmation_history, created_at, updated_at
@@ -143,7 +145,7 @@ BEGIN
       'cancelled_at', NULL
     ))
   WHERE id = v_app_id;
-  UPDATE public.job_postings SET filled_positions = 1 WHERE id = v_job_id;
+  -- filled_positions 수동 세팅 제거: 위 cancelled→cancellation_pending 전이가 트리거로 +1 시킨다.
 
   v_result := public.cancel_application_atomically(v_app_id, 'staff_approves_cancel_request', v_owner_id);
   IF NOT ((v_result->>'success')::bool) THEN RAISE EXCEPTION 'S2 fail: %', v_result; END IF;

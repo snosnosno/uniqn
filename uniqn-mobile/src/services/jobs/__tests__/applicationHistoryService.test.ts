@@ -5,14 +5,10 @@ import {
   getConfirmedSelections,
   getOriginalApplicationData,
   isV2Application,
-  updateDateSpecificRequirementsFilled,
 } from '../applicationHistoryService';
 import { isAppError } from '@/errors';
 import { applicationRepository } from '@/repositories';
-import {
-  findActiveConfirmation,
-  updateDateSpecificRequirementsFilled as updateDateSpecificRequirementsFilledDomain,
-} from '@/domains/application';
+import { findActiveConfirmation } from '@/domains/application';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 
 jest.mock('@/repositories', () => ({
@@ -25,13 +21,6 @@ jest.mock('@/repositories', () => ({
 
 jest.mock('@/domains/application', () => ({
   findActiveConfirmation: jest.fn(),
-  updateDateSpecificRequirementsFilled: jest.fn(
-    (requirements: unknown, assignments: unknown, direction: 'increment' | 'decrement') => ({
-      requirements,
-      assignments,
-      direction,
-    })
-  ),
 }));
 
 jest.mock('@/errors/serviceErrorHandler', () => ({
@@ -210,12 +199,6 @@ describe('applicationHistoryService', () => {
           context: { applicationId: 'app-1' },
         })
       );
-    });
-  });
-
-  describe('updateDateSpecificRequirementsFilled', () => {
-    it('re-exports the canonical domain helper', () => {
-      expect(updateDateSpecificRequirementsFilled).toBe(updateDateSpecificRequirementsFilledDomain);
     });
   });
 

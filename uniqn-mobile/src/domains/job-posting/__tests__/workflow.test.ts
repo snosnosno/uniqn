@@ -40,7 +40,7 @@ function createBasePosting(overrides: Partial<JobPosting> = {}): JobPosting {
             {
               id: 'slot-1',
               startTime: '09:00',
-              roles: [{ id: 'dealer-1', role: 'dealer', count: 2, filled: 0 }],
+              roles: [{ id: 'dealer-1', role: 'dealer', count: 2 }],
             },
           ],
         },
@@ -70,9 +70,21 @@ describe('job-posting workflow selectors', () => {
         kind: 'fixed',
         daysPerWeek: 5,
         startTime: '19:00',
-        roleRequirements: [
-          { role: 'dealer', count: 2, filled: 2 },
-          { role: 'floor', count: 1, filled: 0 },
+        isStartTimeNegotiable: false,
+        requirements: [
+          {
+            date: null,
+            timeSlots: [
+              {
+                startTime: '19:00',
+                isTimeToBeAnnounced: false,
+                roles: [
+                  { role: 'dealer', count: 2 },
+                  { role: 'floor', count: 1 },
+                ],
+              },
+            ],
+          },
         ],
       },
       roleCatalog: [
@@ -91,8 +103,11 @@ describe('job-posting workflow selectors', () => {
       isTournament: false,
       isUrgent: false,
       recruitmentType: 'fixed',
+      usesGroupedDateRanges: false,
     });
-    expect(roleAvailability.availableItems.map((item) => item.role)).toEqual(['floor']);
+    // SP3: schedule role.filled(dead counter) 제거 — 마감 여부를 schedule 에서 파생하지 않으므로
+    // 모든 역할(filled=0)이 available. 실제 마감/충원은 표시 시점 hydrate + 서버측 정원 가드가 결정.
+    expect(roleAvailability.availableItems.map((item) => item.role)).toEqual(['dealer', 'floor']);
     expect(application).toMatchObject({
       canApply: true,
       selectionMode: 'fixed_role',
@@ -107,6 +122,9 @@ describe('job-posting workflow selectors', () => {
         startTime: '19:00',
       }),
     });
+    // fixed 공고의 역할 목록이 합성 슬롯에서 올바르게 노출되는지 확인
+    expect(scheduleDisplay.fixed?.roles).toHaveLength(2);
+    expect(scheduleDisplay.fixed?.roles?.map((r) => r.role)).toEqual(['dealer', 'floor']);
   });
 
   it('keeps tournament grouping consistent across facts and projections', () => {
@@ -125,7 +143,7 @@ describe('job-posting workflow selectors', () => {
               {
                 id: 'slot-1',
                 startTime: '10:00',
-                roles: [{ id: 'dealer-1', role: 'dealer', count: 2, filled: 1 }],
+                roles: [{ id: 'dealer-1', role: 'dealer', count: 2 }],
               },
             ],
           },
@@ -136,7 +154,7 @@ describe('job-posting workflow selectors', () => {
               {
                 id: 'slot-2',
                 startTime: '10:00',
-                roles: [{ id: 'dealer-2', role: 'dealer', count: 2, filled: 0 }],
+                roles: [{ id: 'dealer-2', role: 'dealer', count: 2 }],
               },
             ],
           },
@@ -203,7 +221,7 @@ describe('job-posting workflow selectors', () => {
               {
                 id: 'slot-1',
                 startTime: '10:00',
-                roles: [{ id: 'dealer-1', role: 'dealer', count: 2, filled: 1 }],
+                roles: [{ id: 'dealer-1', role: 'dealer', count: 2 }],
               },
             ],
           },
@@ -214,7 +232,7 @@ describe('job-posting workflow selectors', () => {
               {
                 id: 'slot-2',
                 startTime: '10:00',
-                roles: [{ id: 'dealer-2', role: 'dealer', count: 2, filled: 0 }],
+                roles: [{ id: 'dealer-2', role: 'dealer', count: 2 }],
               },
             ],
           },
@@ -251,7 +269,7 @@ describe('job-posting workflow selectors', () => {
               {
                 id: 'slot-1',
                 startTime: '10:00',
-                roles: [{ id: 'dealer-1', role: 'dealer', count: 2, filled: 1 }],
+                roles: [{ id: 'dealer-1', role: 'dealer', count: 2 }],
               },
             ],
           },
@@ -262,7 +280,7 @@ describe('job-posting workflow selectors', () => {
               {
                 id: 'slot-2',
                 startTime: '09:00',
-                roles: [{ id: 'dealer-2', role: 'dealer', count: 2, filled: 0 }],
+                roles: [{ id: 'dealer-2', role: 'dealer', count: 2 }],
               },
             ],
           },
@@ -304,7 +322,7 @@ describe('job-posting workflow selectors', () => {
                   {
                     id: 'slot-1',
                     startTime: '11:00',
-                    roles: [{ id: 'dealer-1', role: 'dealer', count: 1, filled: 0 }],
+                    roles: [{ id: 'dealer-1', role: 'dealer', count: 1 }],
                   },
                 ],
               },
@@ -314,7 +332,7 @@ describe('job-posting workflow selectors', () => {
                   {
                     id: 'slot-2',
                     startTime: '12:00',
-                    roles: [{ id: 'dealer-2', role: 'dealer', count: 1, filled: 0 }],
+                    roles: [{ id: 'dealer-2', role: 'dealer', count: 1 }],
                   },
                 ],
               },
@@ -332,7 +350,19 @@ describe('job-posting workflow selectors', () => {
             kind: 'fixed',
             daysPerWeek: 5,
             startTime: '19:00',
-            roleRequirements: [{ role: 'dealer', count: 2, filled: 0 }],
+            isStartTimeNegotiable: false,
+            requirements: [
+              {
+                date: null,
+                timeSlots: [
+                  {
+                    startTime: '19:00',
+                    isTimeToBeAnnounced: false,
+                    roles: [{ role: 'dealer', count: 2 }],
+                  },
+                ],
+              },
+            ],
           },
         })
       )

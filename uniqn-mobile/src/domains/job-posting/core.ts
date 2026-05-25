@@ -54,13 +54,13 @@ function toRoleRequirement(role: {
   role?: string;
   customRole?: string;
   count: number;
-  filled?: number;
 }): RoleRequirement {
   return {
     role: (role.role ?? 'dealer') as RoleRequirement['role'],
     customRole: role.customRole,
     count: role.count,
-    filled: role.filled ?? 0,
+    // SP3: schedule role.filled(dead counter) 제거 — 충원은 표시 시점 hydrate 가 덮어씀
+    filled: 0,
   };
 }
 
@@ -71,7 +71,6 @@ function toCardRole(
     customRole?: string;
     count?: number;
     headcount?: number;
-    filled?: number;
   },
   salary?: SalaryInfo
 ): CardRole {
@@ -80,7 +79,8 @@ function toCardRole(
     role: role.role ?? 'dealer',
     customRole: role.customRole,
     count: role.count ?? role.headcount ?? 0,
-    filled: role.filled ?? 0,
+    // SP3: schedule role.filled 제거 — 충원은 표시 시점 hydrate 가 덮어씀
+    filled: 0,
     salary,
   };
 }
@@ -110,19 +110,6 @@ function toCardTimeSlot(slot: {
 }
 
 export function getPostingRoleStats(posting: JobPosting): JobRoleStats[] {
-  if (posting.schedule.kind === 'fixed') {
-    return (posting.schedule.roleRequirements ?? []).map((role) => {
-      const catalogEntry = posting.roleCatalog.find(
-        (entry) => getPostingRoleKey(entry) === getPostingRoleKey(role)
-      );
-
-      return {
-        ...toRoleRequirement(role),
-        salary: catalogEntry?.salary,
-      };
-    });
-  }
-
   const totals = new Map<string, JobRoleStats>();
 
   posting.schedule.requirements.forEach((requirement) => {
@@ -133,8 +120,12 @@ export function getPostingRoleStats(posting: JobPosting): JobRoleStats[] {
         const catalogEntry = posting.roleCatalog.find((entry) => getPostingRoleKey(entry) === key);
 
         if (existing) {
-          existing.count += role.count;
-          existing.filled += role.filled ?? 0;
+          totals.set(key, {
+            ...existing,
+            count: existing.count + role.count,
+            // SP3: schedule role.filled 누적 제거 — 충원은 표시 시점 hydrate 가 덮어씀(0 유지)
+            filled: 0,
+          });
           return;
         }
 
@@ -191,7 +182,8 @@ export function getPostingDateRequirements(posting: JobPosting): CardDateRequire
   }
 
   return posting.schedule.requirements.map((requirement) => ({
-    date: requirement.date,
+    // kind !== 'dated' 가드를 통과한 dated requirement만 도달 — date는 항상 string, null 런타임 미발생
+    date: requirement.date ?? '',
     isGrouped: requirement.isGrouped,
     timeSlots: requirement.timeSlots.map((slot) => ({
       id: slot.id,
@@ -217,7 +209,8 @@ export function createPostingLegacyDateRequirements(
   }
 
   return posting.schedule.requirements.map((requirement) => ({
-    date: requirement.date,
+    // kind !== 'dated' 가드를 통과한 dated requirement만 도달 — date는 항상 string, null 런타임 미발생
+    date: requirement.date ?? '',
     isGrouped: requirement.isGrouped,
     timeSlots: requirement.timeSlots.map((slot) => ({
       id: slot.id,
@@ -229,7 +222,7 @@ export function createPostingLegacyDateRequirements(
         role: role.role,
         customRole: role.customRole,
         headcount: role.count,
-        filled: role.filled ?? 0,
+        // SP3: schedule role.filled(dead counter) 제거
       })),
     })),
   }));
@@ -283,11 +276,13 @@ export function getPostingRequiredRolesWithCount(posting: JobPosting): RoleWithC
     return undefined;
   }
 
-  return posting.schedule.roleRequirements?.map((role) => ({
+  // SP1 불변식: fixed schedule은 requirements 1개 · timeSlots 1개 (zod superRefine 강제)
+  const roles = posting.schedule.requirements[0]?.timeSlots[0]?.roles ?? [];
+  return roles.map((role) => ({
     role: role.role ?? 'dealer',
     name: role.customRole,
     count: role.count,
-    filled: role.filled ?? 0,
+    // SP3: schedule role.filled(dead counter) 제거 — RoleWithCount.filled 는 optional
   }));
 }
 

@@ -68,13 +68,13 @@ describe('JobPostingCard', () => {
           timeSlots: [
             {
               startTime: '09:00',
-              roles: [{ role: 'dealer', count: 1, filled: 0 }],
+              roles: [{ role: 'dealer', count: 1 }],
             },
             {
               startTime: '13:00',
               roles: [
-                { role: 'dealer', count: 1, filled: 0 },
-                { role: 'floor', count: 1, filled: 0 },
+                { role: 'dealer', count: 1 },
+                { role: 'floor', count: 1 },
               ],
             },
           ],

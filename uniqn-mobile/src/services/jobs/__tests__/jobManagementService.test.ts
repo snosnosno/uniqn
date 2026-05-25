@@ -92,8 +92,8 @@ function createInput(overrides: Partial<CreateJobPostingInput> = {}): CreateJobP
             {
               startTime: '18:00',
               roles: [
-                { role: 'dealer' as StaffRole, count: 2, filled: 0 },
-                { role: 'manager' as StaffRole, count: 1, filled: 0 },
+                { role: 'dealer' as StaffRole, count: 2 },
+                { role: 'manager' as StaffRole, count: 1 },
               ],
             },
           ],
@@ -218,7 +218,7 @@ describe('jobManagementService', () => {
               timeSlots: [
                 {
                   startTime: '18:00',
-                  roles: [{ role: 'dealer' as StaffRole, count: 2, filled: 0 }],
+                  roles: [{ role: 'dealer' as StaffRole, count: 2 }],
                 },
               ],
             },
@@ -227,7 +227,7 @@ describe('jobManagementService', () => {
               timeSlots: [
                 {
                   startTime: '19:00',
-                  roles: [{ role: 'manager' as StaffRole, count: 1, filled: 0 }],
+                  roles: [{ role: 'manager' as StaffRole, count: 1 }],
                 },
               ],
             },
@@ -310,7 +310,7 @@ describe('jobManagementService', () => {
               timeSlots: [
                 {
                   startTime: '18:00',
-                  roles: [{ role: 'other', customRole: 'MC', count: 1, filled: 0 }],
+                  roles: [{ role: 'other', customRole: 'MC', count: 1 }],
                 },
               ],
             },
@@ -319,7 +319,7 @@ describe('jobManagementService', () => {
               timeSlots: [
                 {
                   startTime: '18:00',
-                  roles: [{ role: 'other', customRole: 'MC', count: 1, filled: 0 }],
+                  roles: [{ role: 'other', customRole: 'MC', count: 1 }],
                 },
               ],
             },
@@ -393,7 +393,17 @@ describe('jobManagementService', () => {
           kind: 'fixed',
           daysPerWeek: 4,
           startTime: '19:00',
-          roleRequirements: [{ role: 'dealer', count: 5, filled: 2 }],
+          requirements: [
+            {
+              date: null,
+              timeSlots: [
+                {
+                  isTimeToBeAnnounced: false,
+                  roles: [{ role: 'dealer', count: 5 }],
+                },
+              ],
+            },
+          ],
         },
         roleCatalog: [{ role: 'dealer' }],
       };

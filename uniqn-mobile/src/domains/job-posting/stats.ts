@@ -10,20 +10,9 @@ const CONFIRMED_APPLICATION_STATUSES = new Set<ApplicationStatus>(['confirmed'])
 
 const CANCELLATION_PENDING_STATUSES = new Set<ApplicationStatus>(['cancellation_pending']);
 
-export function calculateFilledPositionsFromSchedule(schedule: PostingSchedule): number {
-  if (schedule.kind === 'fixed') {
-    return (schedule.roleRequirements ?? []).reduce((sum, role) => sum + (role.filled ?? 0), 0);
-  }
-
-  return schedule.requirements.reduce((dateSum, requirement) => {
-    return (
-      dateSum +
-      requirement.timeSlots.reduce((slotSum, slot) => {
-        return slotSum + slot.roles.reduce((roleSum, role) => roleSum + (role.filled ?? 0), 0);
-      }, 0)
-    );
-  }, 0);
-}
+// SP3: calculateFilledPositionsFromSchedule 제거됨.
+// filled_positions 는 work_logs 기반 DB 컬럼·트리거(SP2)가 권위이며 schedule role 에서 파생하지 않는다.
+// 충원 수치는 표시 시점 hydrate RPC(SP3 Task 4)가 제공한다.
 
 function getRoleKey(role: { role?: string; customRole?: string }): string | null {
   // 빈 role 필드는 키 충돌·무의미 집계를 막기 위해 스킵
@@ -45,10 +34,6 @@ function getRoleKey(role: { role?: string; customRole?: string }): string | null
  * (HANDOFF.md Phase 6 알고리즘 결정)
  */
 export function calculateTotalPositionsFromSchedule(schedule: PostingSchedule): number {
-  if (schedule.kind === 'fixed') {
-    return (schedule.roleRequirements ?? []).reduce((sum, role) => sum + role.count, 0);
-  }
-
   const peakByRole = new Map<string, number>();
 
   schedule.requirements.forEach((requirement) => {
@@ -74,28 +59,30 @@ export function calculateTotalPositionsFromSchedule(schedule: PostingSchedule): 
   return total;
 }
 
-export function createInitialPostingStats(schedule: PostingSchedule): JobPostingAggregateStats {
+export function createInitialPostingStats(_schedule: PostingSchedule): JobPostingAggregateStats {
   return {
     totalApplicants: 0,
     activeApplicants: 0,
     confirmedApplicants: 0,
     cancellationPendingApplicants: 0,
-    filledPositions: calculateFilledPositionsFromSchedule(schedule),
+    // 신규 공고 충원 0 — filled_positions 는 work_logs 트리거(SP2)가 권위
+    filledPositions: 0,
   };
 }
 
 export function normalizePostingAggregateStats(
   stats: Partial<JobPostingAggregateStats> | undefined,
-  schedule: PostingSchedule,
+  _schedule: PostingSchedule,
   options?: {
     authoritativeFilledPositions?: number;
   }
 ): JobPostingAggregateStats {
-  const filledFromSchedule = calculateFilledPositionsFromSchedule(schedule);
+  // filled_positions 권위 = work_logs 트리거(SP2) 또는 DB 컬럼. schedule 파생 금지.
+  // authoritativeFilledPositions 미지정 시 0 (표시 시점 hydrate RPC 가 덮어씀).
   const filledPositions =
     typeof options?.authoritativeFilledPositions === 'number'
       ? options.authoritativeFilledPositions
-      : filledFromSchedule;
+      : 0;
 
   return {
     totalApplicants: stats?.totalApplicants ?? 0,

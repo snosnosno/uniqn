@@ -31,7 +31,6 @@ export {
   getPostingSettlementContext,
 } from './selectors';
 export {
-  calculateFilledPositionsFromSchedule,
   createInitialPostingStats,
   normalizePostingAggregateStats,
   transitionPostingAggregateStats,

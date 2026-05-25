@@ -332,7 +332,14 @@ describe('jobPosting schemas', () => {
           schedule: {
             kind: 'fixed',
             daysPerWeek: 5,
-            roleRequirements: [{ role: 'dealer', count: 1, filled: 0 }],
+            requirements: [
+              {
+                date: null,
+                timeSlots: [
+                  { startTime: '19:00', roles: [{ role: 'dealer', count: 1, filled: 0 }] },
+                ],
+              },
+            ],
           },
         }).success
       ).toBe(true);
@@ -346,7 +353,14 @@ describe('jobPosting schemas', () => {
           schedule: {
             kind: 'fixed',
             daysPerWeek: 5,
-            roleRequirements: [{ role: 'dealer', count: 1, filled: 0 }],
+            requirements: [
+              {
+                date: null,
+                timeSlots: [
+                  { startTime: '19:00', roles: [{ role: 'dealer', count: 1, filled: 0 }] },
+                ],
+              },
+            ],
           },
           fixedConfig: {
             durationDays: 30,
@@ -355,6 +369,89 @@ describe('jobPosting schemas', () => {
           },
         }).success
       ).toBe(false);
+    });
+  });
+
+  describe('postingScheduleSchema fixed (통일 구조)', () => {
+    const validFixed = {
+      kind: 'fixed' as const,
+      daysPerWeek: 5,
+      startTime: '19:00',
+      isStartTimeNegotiable: false,
+      requirements: [
+        {
+          date: null,
+          timeSlots: [
+            {
+              startTime: '19:00',
+              isTimeToBeAnnounced: false,
+              roles: [{ role: 'dealer', count: 3, filled: 1 }],
+            },
+          ],
+        },
+      ],
+    };
+
+    it('accepts fixed schedule with requirements[].timeSlots[].roles and date:null', () => {
+      const result = createJobPostingSchema.safeParse({
+        postingType: 'fixed',
+        title: 'Fixed posting',
+        location: { name: 'Seoul' },
+        schedule: validFixed,
+        roleCatalog: [{ role: 'dealer' }],
+        compensation: { mode: 'shared' },
+        questions: { items: [] },
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects fixed schedule when requirements.length !== 1', () => {
+      const result = createJobPostingSchema.safeParse({
+        postingType: 'fixed',
+        title: 'Fixed posting',
+        location: { name: 'Seoul' },
+        schedule: {
+          ...validFixed,
+          requirements: [...validFixed.requirements, ...validFixed.requirements],
+        },
+        roleCatalog: [{ role: 'dealer' }],
+        compensation: { mode: 'shared' },
+        questions: { items: [] },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects fixed schedule when requirements[0].date is not null', () => {
+      const result = createJobPostingSchema.safeParse({
+        postingType: 'fixed',
+        title: 'Fixed posting',
+        location: { name: 'Seoul' },
+        schedule: {
+          ...validFixed,
+          requirements: [{ ...validFixed.requirements[0], date: '2025-05-01' }],
+        },
+        roleCatalog: [{ role: 'dealer' }],
+        compensation: { mode: 'shared' },
+        questions: { items: [] },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects legacy roleRequirements key (strict)', () => {
+      const result = createJobPostingSchema.safeParse({
+        postingType: 'fixed',
+        title: 'Fixed posting',
+        location: { name: 'Seoul' },
+        schedule: {
+          kind: 'fixed',
+          daysPerWeek: 5,
+          roleRequirements: [{ role: 'dealer', count: 3 }],
+        },
+        roleCatalog: [{ role: 'dealer' }],
+        compensation: { mode: 'shared' },
+        questions: { items: [] },
+      });
+      expect(result.success).toBe(false);
     });
   });
 
@@ -429,7 +526,7 @@ describe('jobPosting schemas', () => {
                 timeSlots: [
                   {
                     startTime: '18:00',
-                    roles: [{ role: 'dealer', count: 1, filled: 0 }],
+                    roles: [{ role: 'dealer', count: 1 }],
                   },
                 ],
               },
