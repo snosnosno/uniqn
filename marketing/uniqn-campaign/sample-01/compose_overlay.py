@@ -115,17 +115,21 @@ for kind, label in items:
     y += S + int(H * 0.014)
 
 # 6) 스토어 뱃지 (좌하단, 세로 스택: 애플 → 구글)
+#    각 PNG의 투명 여백을 트림한 뒤 동일 높이로 정규화 → 크기 일치
 def paste_badge(path, x, y, target_h):
     b = Image.open(path).convert("RGBA")
+    bb = b.getbbox()
+    if bb:
+        b = b.crop(bb)
     w = int(b.width * target_h / b.height)
     b = b.resize((w, target_h), Image.LANCZOS)
     base.alpha_composite(b, (x, y))
     return w
 
-BH = int(H * 0.060)
-y_b = int(H * 0.705)
+BH = int(H * 0.050)        # pill 높이 (트림 후 기준)
+y_b = int(H * 0.715)
 paste_badge(APPLE, LX, y_b, BH)
-paste_badge(GOOGLE, LX, y_b + BH + int(H * 0.020), BH)
+paste_badge(GOOGLE, LX, y_b + BH + int(H * 0.022), BH)
 
 out = base.convert("RGB")
 out.save(FINAL_HI)
