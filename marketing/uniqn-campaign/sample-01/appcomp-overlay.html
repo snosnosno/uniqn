@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<style>
+  :root {
+    --gold: #D4AF37;
+    --dark: #07070A;
+    --off: #F5F3EC;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 2160px; height: 2700px; }
+  .stage {
+    position: relative;
+    width: 1080px;
+    height: 1350px;
+    zoom: 2;
+    overflow: hidden;
+    background: var(--dark) url('appcomp-base.png') center/cover no-repeat;
+    font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* 좌측 가독용 스크림 */
+  .scrim {
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg,
+      rgba(5,5,8,0.92) 0%,
+      rgba(5,5,8,0.82) 30%,
+      rgba(5,5,8,0.45) 48%,
+      rgba(5,5,8,0.0) 62%);
+  }
+  .content {
+    position: absolute;
+    left: 72px; top: 104px;
+    width: 540px;
+    color: var(--off);
+  }
+  .brand {
+    font-size: 46px; font-weight: 800; letter-spacing: 6px;
+    color: var(--gold);
+    margin-bottom: 104px;
+  }
+  .headline {
+    font-size: 62px; font-weight: 800; line-height: 1.28;
+    color: #ffffff;
+    letter-spacing: -1px;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+  }
+  .headline .hl-line { white-space: nowrap; }
+  .headline .accent { color: var(--gold); }
+  .divider {
+    width: 96px; height: 5px; background: var(--gold);
+    border-radius: 3px; margin: 40px 0 48px;
+  }
+  .feature {
+    display: flex; align-items: center; gap: 22px;
+    margin-bottom: 34px;
+  }
+  .feature .ico {
+    width: 70px; height: 70px; flex: 0 0 70px;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid var(--gold); border-radius: 18px;
+    font-size: 34px;
+    background: rgba(212,175,55,0.10);
+  }
+  .feature .label {
+    font-size: 38px; font-weight: 700; color: var(--off);
+    letter-spacing: -0.5px;
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="scrim"></div>
+    <div class="content">
+      <div class="brand">UNIQN</div>
+      <div class="headline"><div class="hl-line">구인부터 <span class="accent">정산</span>까지,</div><div class="hl-line">한 앱에서</div></div>
+      <div class="divider"></div>
+      <div class="feature"><div class="ico">🔍</div><div class="label">홀덤 전문 구인구직</div></div>
+      <div class="feature"><div class="ico">⏰</div><div class="label">QR 출퇴근</div></div>
+      <div class="feature"><div class="ico">💰</div><div class="label">자동 정산</div></div>
+    </div>
+  </div>
+</body>
+</html>
