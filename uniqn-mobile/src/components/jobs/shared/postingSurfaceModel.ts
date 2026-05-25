@@ -311,7 +311,9 @@ function slotMatchKey(slot: TimeSlotSource): string {
 }
 
 function roleMatchKey(role: RoleSource): string {
-  if (role.role === 'other' && role.customRole) return `other:${role.customRole}`;
+  // 서버 _posting_role_key 와 정합: role='other' 면 customRole 유무와 무관하게 'other:' 접두.
+  // (custom 없는 bare 'other' 도 SQL 은 'other:' 를 만들므로 hydrate 키가 일치해야 함)
+  if (role.role === 'other') return `other:${role.customRole ?? ''}`;
   return role.role || role.name || '';
 }
 
