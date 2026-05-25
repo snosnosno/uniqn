@@ -227,8 +227,6 @@ export default function StaffSettlementsScreen() {
   const headerBackHref = `/(employer)/my-postings/${jobPostingId ?? ''}`;
   const headerRightAction = !isFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;
 
-  // 튜토리얼
-
   // 탭 상태 (진입 동기 대부분이 "누가 왔나 확인" — 정산은 근무 종료 후 업무)
   const [activeTab, setActiveTab] = useState<TabType>('staff');
 
@@ -375,38 +373,38 @@ export default function StaffSettlementsScreen() {
   // 정산 관리 핸들러
   // ============================================================================
 
-  // 정산하기 클릭 (상세 모달에서)
-  const handleSettleFromDetail = useCallback(
-    (workLog: WorkLog) => {
-      const amount = calculateWorkLogAmount(
+  // 근무 기록 정산 금액 계산 (현재 급여 설정 적용)
+  const computeWorkLogAmount = useCallback(
+    (workLog: WorkLog) =>
+      calculateWorkLogAmount(
         workLog,
         rolesForList,
         salaryConfig.defaultSalary,
         salaryConfig.allowances
-      );
-      modals.openSettleFromDetail(workLog, amount);
+      ),
+    [rolesForList, salaryConfig]
+  );
+
+  // 정산하기 클릭 (상세 모달에서)
+  const handleSettleFromDetail = useCallback(
+    (workLog: WorkLog) => {
+      modals.openSettleFromDetail(workLog, computeWorkLogAmount(workLog));
     },
-    [salaryConfig, rolesForList, modals]
+    [computeWorkLogAmount, modals]
   );
 
   // 개별 정산 클릭 (v2.0 - 역할별 급여, 수당 적용)
   const handleSettle = useCallback(
     (workLog: WorkLog) => {
-      const amount = calculateWorkLogAmount(
-        workLog,
-        rolesForList,
-        salaryConfig.defaultSalary,
-        salaryConfig.allowances
-      );
       modals.openSettleConfirm({
         visible: true,
         workLog,
         workLogs: [],
-        amount,
+        amount: computeWorkLogAmount(workLog),
         isBulk: false,
       });
     },
-    [salaryConfig, rolesForList, modals]
+    [computeWorkLogAmount, modals]
   );
 
   // 일괄 정산 클릭 (v2.0 - 역할별 급여, 수당 적용)
@@ -414,17 +412,7 @@ export default function StaffSettlementsScreen() {
     (selectedWorkLogs: WorkLog[]) => {
       if (selectedWorkLogs.length === 0) return;
 
-      const totalAmount = selectedWorkLogs.reduce((sum, log) => {
-        return (
-          sum +
-          calculateWorkLogAmount(
-            log,
-            rolesForList,
-            salaryConfig.defaultSalary,
-            salaryConfig.allowances
-          )
-        );
-      }, 0);
+      const totalAmount = selectedWorkLogs.reduce((sum, log) => sum + computeWorkLogAmount(log), 0);
 
       modals.openSettleConfirm({
         visible: true,
@@ -434,7 +422,7 @@ export default function StaffSettlementsScreen() {
         isBulk: true,
       });
     },
-    [salaryConfig, rolesForList, modals]
+    [computeWorkLogAmount, modals]
   );
 
   // 정산 확인 모달에서 확인 클릭
@@ -620,15 +608,19 @@ export default function StaffSettlementsScreen() {
   // Render
   // ============================================================================
 
+  const stackHeader = (
+    <StackHeader
+      title="정산 관리"
+      titleSuffix={headerTitleSuffix}
+      fallbackHref={headerBackHref}
+      rightAction={headerRightAction}
+    />
+  );
+
   if (posting && !isCanonicalDatedPosting(posting)) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
-        <StackHeader
-          title="정산 관리"
-          titleSuffix={headerTitleSuffix}
-          fallbackHref={headerBackHref}
-          rightAction={headerRightAction}
-        />
+        {stackHeader}
         <ErrorState
           title="지원하지 않는 화면입니다"
           message="고정공고는 1차 범위에서 정산과 근무 운영을 지원하지 않습니다."
@@ -641,12 +633,7 @@ export default function StaffSettlementsScreen() {
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
-        <StackHeader
-          title="정산 관리"
-          titleSuffix={headerTitleSuffix}
-          fallbackHref={headerBackHref}
-          rightAction={headerRightAction}
-        />
+        {stackHeader}
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
           <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
@@ -661,12 +648,7 @@ export default function StaffSettlementsScreen() {
   if (error) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
-        <StackHeader
-          title="정산 관리"
-          titleSuffix={headerTitleSuffix}
-          fallbackHref={headerBackHref}
-          rightAction={headerRightAction}
-        />
+        {stackHeader}
         <ErrorState
           title="데이터를 불러올 수 없습니다"
           message={error.message}
@@ -684,12 +666,7 @@ export default function StaffSettlementsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
-      <StackHeader
-        title="정산 관리"
-        titleSuffix={headerTitleSuffix}
-        fallbackHref={headerBackHref}
-        rightAction={headerRightAction}
-      />
+      {stackHeader}
       {/* 탭 헤더 */}
       <TabHeader
         activeTab={activeTab}
@@ -838,8 +815,6 @@ export default function StaffSettlementsScreen() {
         taxSettings={postingSettlement?.taxSettings}
         onSave={handleSaveSettings}
       />
-
-      {/* 튜토리얼 오버레이 */}
     </SafeAreaView>
   );
 }

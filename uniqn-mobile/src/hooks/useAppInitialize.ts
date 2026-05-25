@@ -84,6 +84,10 @@ const NOOP_INITIALIZATION_TRACE: InitializationTrace = {
   stop: noopStopTrace,
 };
 
+function describeError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 function isDynamicImportUnsupported(error: unknown): boolean {
   return (
     error instanceof TypeError &&
@@ -232,7 +236,7 @@ async function initializeUnreadCount(uid: string): Promise<number> {
     logger.warn('Failed to initialize unread count, falling back to zero', {
       component: 'useAppInitialize',
       uid,
-      error: error instanceof Error ? error.message : String(error),
+      error: describeError(error),
     });
     return 0;
   }
@@ -308,7 +312,7 @@ async function signOutAndResetSession(options?: {
       {
         component: 'useAppInitialize',
         preservedUserId: options?.preservedUserId ?? null,
-        error: error instanceof Error ? error.message : String(error),
+        error: describeError(error),
       }
     );
 
@@ -432,7 +436,7 @@ export async function resolveSession({
     if (isFatalAuthError(error)) {
       logger.warn('Fatal auth error during initialization, signing user out', {
         component: 'useAppInitialize',
-        error: error instanceof Error ? error.message : String(error),
+        error: describeError(error),
       });
       await signOutAndResetSession();
       commitBootstrapSource('none', false);
@@ -446,7 +450,7 @@ export async function resolveSession({
     logger.warn('Token role resolution will be retried after initialization', {
       component: 'useAppInitialize',
       uid: authUser.id,
-      error: error instanceof Error ? error.message : String(error),
+      error: describeError(error),
     });
   }
 
@@ -596,7 +600,7 @@ async function runPostLoginTasks(context: DeferredInitContext): Promise<{ needsR
         logger.warn('Deferred auth profile reconciliation failed', {
           component: 'useAppInitialize',
           uid: activeUser.id,
-          error: error instanceof Error ? error.message : String(error),
+          error: describeError(error),
         });
       }
     }
@@ -613,7 +617,7 @@ async function runPostLoginTasks(context: DeferredInitContext): Promise<{ needsR
     needsRetry = true;
     logger.warn('Deferred initialization failed', {
       component: 'useAppInitialize',
-      error: error instanceof Error ? error.message : String(error),
+      error: describeError(error),
     });
   }
 
@@ -798,7 +802,7 @@ export function useAppInitialize(): UseAppInitializeReturn {
       trace.stop();
     } catch (error) {
       const appError = error instanceof Error ? error : new Error(String(error));
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage = describeError(error);
 
       setStartupPhase('error');
 
@@ -850,7 +854,7 @@ export function useAppInitialize(): UseAppInitializeReturn {
       } catch (error) {
         logger.warn('Failed to hide splash screen after initialization', {
           component: 'useAppInitialize',
-          error: error instanceof Error ? error.message : String(error),
+          error: describeError(error),
         });
       }
       isInitializing.current = false;
