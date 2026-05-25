@@ -21,14 +21,8 @@ export interface EnvironmentConfig {
   isDevelopment: boolean;
   isStaging: boolean;
   isProduction: boolean;
-  api: ApiConfig;
   features: FeatureFlags;
   logging: LoggingConfig;
-}
-
-export interface ApiConfig {
-  baseUrl: string;
-  timeout: number;
 }
 
 export interface FeatureFlags {
@@ -66,26 +60,6 @@ function detectEnvironment(): Environment {
 }
 
 const currentEnvironment = detectEnvironment();
-
-// ============================================================================
-// API Configuration
-// ============================================================================
-
-const apiConfigs: Record<Environment, ApiConfig> = {
-  development: {
-    // NOTE: 실제 디바이스에서는 로컬 IP 주소 사용 필요 (예: http://192.168.x.x:5001/...)
-    baseUrl: 'http://localhost:5001/tholdem-ebc18/asia-northeast3',
-    timeout: 30000,
-  },
-  staging: {
-    baseUrl: 'https://asia-northeast3-tholdem-ebc18.cloudfunctions.net',
-    timeout: 15000,
-  },
-  production: {
-    baseUrl: 'https://asia-northeast3-tholdem-ebc18.cloudfunctions.net',
-    timeout: 10000,
-  },
-};
 
 // ============================================================================
 // Feature Flags
@@ -154,7 +128,6 @@ export const env: EnvironmentConfig = {
   isDevelopment: currentEnvironment === 'development',
   isStaging: currentEnvironment === 'staging',
   isProduction: currentEnvironment === 'production',
-  api: apiConfigs[currentEnvironment],
   features: featureFlagsConfig[currentEnvironment],
   logging: loggingConfigs[currentEnvironment],
 };
