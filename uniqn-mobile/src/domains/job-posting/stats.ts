@@ -38,14 +38,22 @@ export function calculateTotalPositionsFromSchedule(schedule: PostingSchedule): 
 
   schedule.requirements.forEach((requirement) => {
     requirement.timeSlots.forEach((slot) => {
+      // 같은 슬롯 안 동일 역할 엔트리는 동시 필요 인원이므로 합산한다.
+      // (peak 를 바로 비교하면 [dealer:3, dealer:2] 같은 중복 역할이 5 아닌 3으로 과소 집계됨)
+      const slotSumByRole = new Map<string, number>();
       slot.roles.forEach((role) => {
         const key = getRoleKey(role);
         if (key === null) {
           return;
         }
+        slotSumByRole.set(key, (slotSumByRole.get(key) ?? 0) + role.count);
+      });
+
+      // 슬롯/날짜 간에는 같은 사람이 돌아가며 근무 가능 → 역할별 최대 동시 필요 인원(peak).
+      slotSumByRole.forEach((slotSum, key) => {
         const previous = peakByRole.get(key) ?? 0;
-        if (role.count > previous) {
-          peakByRole.set(key, role.count);
+        if (slotSum > previous) {
+          peakByRole.set(key, slotSum);
         }
       });
     });

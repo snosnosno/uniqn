@@ -129,7 +129,7 @@ function normalizeRoleCatalog(
  * 목표 불변식: requirements.length===1, requirements[0].date===null,
  *              requirements[0].timeSlots.length===1, date:'' sentinel 금지.
  */
-function buildFixedSyntheticRequirement(
+export function buildFixedSyntheticRequirement(
   schedule: Extract<CreateJobPostingInput['schedule'], { kind: 'fixed' }> | Record<string, unknown>
 ): PostingDateRequirement {
   const s = schedule as {

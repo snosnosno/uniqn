@@ -125,11 +125,13 @@ export function extractTemplateData(
       draft.schedule.kind === 'fixed'
         ? {
             ...draft.schedule,
-            // TODO(SP1 후속): buildFixedSyntheticRequirement 공유 헬퍼로 통합
             requirements: draft.schedule.requirements.map((requirement) => ({
               date: null,
               timeSlots: requirement.timeSlots.map((slot) => ({
                 ...slot,
+                // fixed 스케줄은 시간 미정 개념이 없다 — 합성 슬롯 불변식(isTimeToBeAnnounced:false)을
+                // buildFixedSyntheticRequirement 와 동일하게 명시 고정한다.
+                isTimeToBeAnnounced: false,
                 roles: slot.roles.map((role) => ({ ...role })),
               })),
             })),
