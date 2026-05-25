@@ -87,6 +87,11 @@ function rowsToJobPostings(rows: Record<string, unknown>[]): JobPosting[] {
   return items;
 }
 
+/** Supabase `data` (nullable, untyped row[]) → 파싱된 JobPosting[]. */
+function dataToJobPostings(data: unknown): JobPosting[] {
+  return rowsToJobPostings((data ?? []) as Record<string, unknown>[]);
+}
+
 /** 공통 catch 핸들러 — isAppError이면 rethrow, 아니면 로그 + handleSupabaseError */
 function rethrowOrHandle(
   error: unknown,
@@ -313,7 +318,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       const uniqueIds = [...new Set(jobPostingIds)];
       const { data, error } = await supabase.from(TABLE).select(TABLE_COLUMNS).in('id', uniqueIds);
       if (error) handleSupabaseError(error, { operation: '공고 배치 조회', table: TABLE });
-      const items = rowsToJobPostings((data ?? []) as Record<string, unknown>[]);
+      const items = dataToJobPostings(data);
       logger.info('공고 배치 조회 완료', { requested: jobPostingIds.length, found: items.length });
       return items;
     } catch (error) {
@@ -375,7 +380,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       query = query.order('created_at', { ascending: false });
       const { data, error } = await query;
       if (error) handleSupabaseError(error, { operation: '소유자별 공고 조회', table: TABLE });
-      const items = rowsToJobPostings((data ?? []) as Record<string, unknown>[]);
+      const items = dataToJobPostings(data);
       logger.info('소유자별 공고 조회 완료', { ownerId, count: items.length });
       return items;
     } catch (error) {
@@ -403,7 +408,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       query = query.order('created_at', { ascending: false });
       const { data, error } = await query;
       if (error) handleSupabaseError(error, { operation: '관리 가능 공고 조회', table: TABLE });
-      const items = rowsToJobPostings((data ?? []) as Record<string, unknown>[]);
+      const items = dataToJobPostings(data);
       logger.info('관리 가능 공고 조회 완료', { count: items.length });
       return items;
     } catch (error) {
@@ -508,27 +513,25 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
   // ── Simple Write ────────────────────────────────────────────────────────
 
   async incrementViewCount(jobPostingId: string): Promise<void> {
+    // 조회수 증가는 best-effort — 실패해도 사용자 흐름을 막지 않고 swallow.
+    const swallow = (message: string, errorText: string, loggedError: unknown) => {
+      logger.warn('공고 조회수 증가 실패', { jobPostingId, error: loggedError });
+      Sentry.addBreadcrumb({
+        category: 'swallow',
+        level: 'warning',
+        message,
+        data: { jobPostingId, error: errorText },
+      });
+    };
     try {
       const { error } = await supabase.rpc('increment_view_count', { posting_id: jobPostingId });
       if (error) {
-        logger.warn('공고 조회수 증가 실패', { jobPostingId, error: error.message });
-        Sentry.addBreadcrumb({
-          category: 'swallow',
-          level: 'warning',
-          message: '공고 조회수 증가 RPC 실패 — 무시됨',
-          data: { jobPostingId, error: error.message },
-        });
+        swallow('공고 조회수 증가 RPC 실패 — 무시됨', error.message, error.message);
         return;
       }
       logger.debug('공고 조회수 증가', { jobPostingId });
     } catch (error) {
-      logger.warn('공고 조회수 증가 실패', { jobPostingId, error: toError(error) });
-      Sentry.addBreadcrumb({
-        category: 'swallow',
-        level: 'warning',
-        message: '공고 조회수 증가 예외 — 무시됨',
-        data: { jobPostingId, error: String(error) },
-      });
+      swallow('공고 조회수 증가 예외 — 무시됨', String(error), toError(error));
     }
   }
 
@@ -848,7 +851,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
         .order('created_at', { ascending: false });
       if (error)
         handleSupabaseError(error, { operation: '공고 타입/승인상태별 조회', table: TABLE });
-      const postings = rowsToJobPostings((data ?? []) as Record<string, unknown>[]);
+      const postings = dataToJobPostings(data);
       logger.info('공고 타입/승인상태별 조회 완료', {
         postingType,
         approvalStatus,
@@ -875,7 +878,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
         .in('tournament_config->>approvalStatus', approvalStatuses)
         .order('created_at', { ascending: false });
       if (error) handleSupabaseError(error, { operation: '소유자/공고타입별 조회', table: TABLE });
-      const postings = rowsToJobPostings((data ?? []) as Record<string, unknown>[]);
+      const postings = dataToJobPostings(data);
       logger.info('소유자/공고타입별 조회 완료', { ownerId, postingType, count: postings.length });
       return postings;
     } catch (error) {
