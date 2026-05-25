@@ -17,6 +17,17 @@ jest.mock('@/hooks/useBookmarks', () => ({
   }),
 }));
 
+const mockShareJobById = jest.fn();
+
+jest.mock('@/hooks/useShare', () => ({
+  useShare: () => ({
+    shareJob: jest.fn(),
+    shareJobById: mockShareJobById,
+    share: jest.fn(),
+    isSharing: false,
+  }),
+}));
+
 jest.mock('@/components/ui/Badge', () => ({
   Badge: ({ children, variant }: { children: React.ReactNode; variant?: string }) => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
