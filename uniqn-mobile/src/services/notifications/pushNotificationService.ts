@@ -398,40 +398,55 @@ function extractPayload(notification: NotificationsTypes.Notification): Notifica
 // Permission Management
 // ============================================================================
 
+// 모듈 싱글톤으로 공유되므로 동결하여 호출자 변이로 인한 aliasing 오염 방지
+const UNSUPPORTED_PERMISSION_STATUS: NotificationPermissionStatus = Object.freeze({
+  granted: false,
+  canAskAgain: false,
+  status: 'denied',
+});
+
+const UNDETERMINED_PERMISSION_STATUS: NotificationPermissionStatus = Object.freeze({
+  granted: false,
+  canAskAgain: true,
+  status: 'undetermined',
+});
+
+function toPermissionStatus(result: {
+  status: string;
+  canAskAgain?: boolean;
+  ios?: {
+    allowsAlert?: boolean | null;
+    allowsBadge?: boolean | null;
+    allowsSound?: boolean | null;
+  } | null;
+}): NotificationPermissionStatus {
+  return {
+    granted: result.status === 'granted',
+    canAskAgain: result.canAskAgain ?? false,
+    status: result.status as NotificationPermissionStatus['status'],
+    ios: result.ios
+      ? {
+          allowsAlert: result.ios.allowsAlert ?? false,
+          allowsBadge: result.ios.allowsBadge ?? false,
+          allowsSound: result.ios.allowsSound ?? false,
+        }
+      : undefined,
+  };
+}
+
 /**
  * 푸시 알림 권한 확인
  */
 export async function checkPermission(): Promise<NotificationPermissionStatus> {
   if (Platform.OS === 'web' || !Notifications) {
-    return {
-      granted: false,
-      canAskAgain: false,
-      status: 'denied',
-    };
+    return UNSUPPORTED_PERMISSION_STATUS;
   }
 
   try {
-    const { status, canAskAgain, ios } = await Notifications.getPermissionsAsync();
-
-    return {
-      granted: status === 'granted',
-      canAskAgain: canAskAgain ?? false,
-      status: status as NotificationPermissionStatus['status'],
-      ios: ios
-        ? {
-            allowsAlert: ios.allowsAlert ?? false,
-            allowsBadge: ios.allowsBadge ?? false,
-            allowsSound: ios.allowsSound ?? false,
-          }
-        : undefined,
-    };
+    return toPermissionStatus(await Notifications.getPermissionsAsync());
   } catch (error) {
     logger.error('알림 권한 확인 실패', toError(error));
-    return {
-      granted: false,
-      canAskAgain: true,
-      status: 'undetermined',
-    };
+    return UNDETERMINED_PERMISSION_STATUS;
   }
 }
 
@@ -440,46 +455,27 @@ export async function checkPermission(): Promise<NotificationPermissionStatus> {
  */
 export async function requestPermission(): Promise<NotificationPermissionStatus> {
   if (Platform.OS === 'web' || !Notifications) {
-    return {
-      granted: false,
-      canAskAgain: false,
-      status: 'denied',
-    };
+    return UNSUPPORTED_PERMISSION_STATUS;
   }
 
   try {
     logger.info('푸시 알림 권한 요청');
 
-    const { status, canAskAgain, ios } = await Notifications.requestPermissionsAsync({
-      ios: {
-        allowAlert: true,
-        allowBadge: true,
-        allowSound: true,
-      },
-    });
-
-    const result: NotificationPermissionStatus = {
-      granted: status === 'granted',
-      canAskAgain: canAskAgain ?? false,
-      status: status as NotificationPermissionStatus['status'],
-      ios: ios
-        ? {
-            allowsAlert: ios.allowsAlert ?? false,
-            allowsBadge: ios.allowsBadge ?? false,
-            allowsSound: ios.allowsSound ?? false,
-          }
-        : undefined,
-    };
+    const result = toPermissionStatus(
+      await Notifications.requestPermissionsAsync({
+        ios: {
+          allowAlert: true,
+          allowBadge: true,
+          allowSound: true,
+        },
+      })
+    );
 
     logger.info('푸시 알림 권한 요청 결과', { status: result.status, granted: result.granted });
     return result;
   } catch (error) {
     logger.error('알림 권한 요청 실패', toError(error));
-    return {
-      granted: false,
-      canAskAgain: true,
-      status: 'undetermined',
-    };
+    return UNDETERMINED_PERMISSION_STATUS;
   }
 }
 

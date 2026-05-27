@@ -72,6 +72,44 @@ import {
 } from './ApplicationRepositoryTransactions';
 
 // ============================================================================
+// Helpers
+// ============================================================================
+
+/**
+ * 고정공고 지원의 assignment 정규화 + 정원 검증.
+ * 역할 1개 단일 선택 강제 → 전체/역할별 정원 확인 → canonical assignment 생성.
+ */
+function normalizeFixedAssignment(
+  jobData: JobPosting,
+  assignments: CreateApplicationInput['assignments']
+): Assignment[] {
+  if (assignments.length !== 1) {
+    throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+      userMessage: '고정공고는 역할 1개만 선택해 지원할 수 있습니다.',
+    });
+  }
+  const requestedRoleId = assignments[0]?.roleIds?.[0];
+  if (!requestedRoleId || assignments[0].roleIds.length !== 1) {
+    throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+      userMessage: '지원할 역할을 선택해 주세요.',
+    });
+  }
+  const totalCapacity = applicationValidator.checkTotalCapacity(jobData);
+  if (!totalCapacity.available) {
+    throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+      userMessage: totalCapacity.reason ?? '모집 인원이 마감되었습니다.',
+    });
+  }
+  const roleCapacity = applicationValidator.checkRoleCapacity(jobData, requestedRoleId);
+  if (!roleCapacity.available) {
+    throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+      userMessage: roleCapacity.reason ?? '선택한 역할은 마감되었습니다.',
+    });
+  }
+  return [buildCanonicalFixedAssignment(jobData, requestedRoleId)];
+}
+
+// ============================================================================
 // Repository Implementation
 // ============================================================================
 
@@ -380,32 +418,7 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
       // 2. Assignment 정규화 + 검증
       const isFixedPosting = jobData.schedule.kind === 'fixed';
       const normalizedAssignments = isFixedPosting
-        ? (() => {
-            if (input.assignments.length !== 1) {
-              throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-                userMessage: '고정공고는 역할 1개만 선택해 지원할 수 있습니다.',
-              });
-            }
-            const requestedRoleId = input.assignments[0]?.roleIds?.[0];
-            if (!requestedRoleId || input.assignments[0].roleIds.length !== 1) {
-              throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-                userMessage: '지원할 역할을 선택해 주세요.',
-              });
-            }
-            const totalCapacity = applicationValidator.checkTotalCapacity(jobData);
-            if (!totalCapacity.available) {
-              throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-                userMessage: totalCapacity.reason ?? '모집 인원이 마감되었습니다.',
-              });
-            }
-            const roleCapacity = applicationValidator.checkRoleCapacity(jobData, requestedRoleId);
-            if (!roleCapacity.available) {
-              throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-                userMessage: roleCapacity.reason ?? '선택한 역할은 마감되었습니다.',
-              });
-            }
-            return [buildCanonicalFixedAssignment(jobData, requestedRoleId)];
-          })()
+        ? normalizeFixedAssignment(jobData, input.assignments)
         : input.assignments;
 
       if (!isFixedPosting) {
@@ -444,13 +457,9 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
         .eq('job_posting_id', input.jobPostingId)
         .eq('applicant_id', context.applicantId)
         .maybeSingle();
-      const applicationId = (existingData as Record<string, unknown> | null)?.id as
-        | string
-        | undefined;
-
-      const existingStatus = existingData
-        ? ((existingData as Record<string, unknown>).status as ApplicationStatus)
-        : null;
+      const existingRow = existingData as Record<string, unknown> | null;
+      const applicationId = existingRow?.id as string | undefined;
+      const existingStatus = existingRow ? (existingRow.status as ApplicationStatus) : null;
 
       if (existingStatus && existingStatus !== STATUS.APPLICATION.CANCELLED) {
         throw new AlreadyAppliedError({

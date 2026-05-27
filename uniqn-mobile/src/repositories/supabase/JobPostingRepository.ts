@@ -8,15 +8,13 @@
 import * as Sentry from '@sentry/react-native';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
-import { toError, BusinessError, PermissionError, ERROR_CODES, isAppError } from '@/errors';
+import { toError, BusinessError, ERROR_CODES } from '@/errors';
 import {
   handleSupabaseError,
   toSnakeCase,
-  toCamelCase,
   paginatedQuery,
   createRealtimeSubscription,
 } from '@/utils/supabase';
-import { parseJobPostingDocument } from '@/schemas';
 import {
   createInitialPostingStats,
   mergeJobPostingInput,
@@ -33,9 +31,7 @@ import type {
   CreateJobPostingInput,
   UpdateJobPostingInput,
   TournamentApprovalStatus,
-  PostingRoleCatalogEntry,
 } from '@/types';
-import type { StaffRole } from '@/types/role';
 import type {
   IJobPostingRepository,
   PaginatedJobPostings,
@@ -45,240 +41,25 @@ import type {
   JobPostingStats,
   JobPostingSubscriptionCallbacks,
 } from '../interfaces';
+import {
+  TABLE,
+  DEFAULT_PAGE_SIZE,
+  TABLE_COLUMNS,
+  toJobPosting,
+  rowsToJobPostings,
+  dataToJobPostings,
+  rethrowOrHandle,
+  loadAndVerifyMutateAccess,
+  loadAndVerifyDeleteAccess,
+  assertCanonical,
+  buildSlotRoleKey,
+} from './JobPostingRepositoryHelpers';
+import {
+  mergeSettlementRoles,
+  hasRoleCatalogIdentityMutation,
+} from './JobPostingRepositorySettlement';
 
-const TABLE = 'job_postings';
-const DEFAULT_PAGE_SIZE = 20;
-const TABLE_COLUMNS =
-  'id,closed_at,closed_reason,compensation,contact_phone,created_at,description,filled_positions,fixed_config,location,owner_id,owner_name,posting_type,questions,role_catalog,role_keys,schedule,schema_version,stats,status,tags,title,total_positions,tournament_config,updated_at,urgent_config,view_count,work_date,work_dates,workspace_id' as const;
-
-// TABLE_COLUMNS를 camelCase로 변환한 허용 컬럼 Set (Realtime full-row 필터링용)
-const ALLOWED_CAMEL_COLUMNS: Set<string> = new Set(
-  TABLE_COLUMNS.split(',').map((col) => {
-    let c = col.trim().replace(/_([a-z])/g, (_, ch: string) => ch.toUpperCase());
-    if (c.endsWith('Url')) c = c.slice(0, -3) + 'URL';
-    if (c.endsWith('Urls')) c = c.slice(0, -4) + 'URLs';
-    return c;
-  })
-);
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function toJobPosting(row: Record<string, unknown>): JobPosting | null {
-  const camel = toCamelCase<Record<string, unknown>>(row);
-  // 1. Realtime은 전체 컬럼을 반환하므로 TABLE_COLUMNS 기준으로 필터링
-  // 2. Supabase는 optional 필드를 null로 반환하지만 Zod .optional()은 undefined만 허용
-  //    → null 값을 제거하여 undefined로 처리되게 함
-  const clean: Record<string, unknown> = { id: row.id };
-  for (const [key, val] of Object.entries(camel)) {
-    if (key === 'id') continue;
-    if (!ALLOWED_CAMEL_COLUMNS.has(key)) continue; // 스키마 미등록 컬럼 제외
-    if (val === null) continue; // null → undefined (Zod .optional() 호환)
-    clean[key] = val;
-  }
-  return parseJobPostingDocument(clean);
-}
-
-function rowsToJobPostings(rows: Record<string, unknown>[]): JobPosting[] {
-  const items: JobPosting[] = [];
-  for (const row of rows) {
-    const jp = toJobPosting(row);
-    if (jp) items.push(jp);
-  }
-  return items;
-}
-
-/** 공통 catch 핸들러 — isAppError이면 rethrow, 아니면 로그 + handleSupabaseError */
-function rethrowOrHandle(
-  error: unknown,
-  operation: string,
-  context?: Record<string, unknown>
-): never {
-  if (isAppError(error)) throw error;
-  logger.error(`${operation} 실패`, toError(error), context);
-  handleSupabaseError(error, { operation, table: TABLE });
-}
-
-async function loadJobPostingForVerify(
-  jobPostingId: string,
-  operation: string
-): Promise<JobPosting> {
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select(TABLE_COLUMNS)
-    .eq('id', jobPostingId)
-    .maybeSingle();
-
-  if (error) handleSupabaseError(error, { operation, table: TABLE });
-  if (!data) {
-    throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-      userMessage: '공고를 찾을 수 없습니다.',
-    });
-  }
-
-  const jobPosting = toJobPosting(data as Record<string, unknown>);
-  if (!jobPosting) {
-    throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-      userMessage: '공고 데이터가 올바르지 않습니다.',
-    });
-  }
-  return jobPosting;
-}
-
-/**
- * 공고를 로드하고 호출자가 update-style mutation 권한을 가졌는지 확인.
- *
- * Phase 2A.후속 (2026-05-10) — RLS jp_update_workspace_member (USING + WITH CHECK
- * 모두 `is_workspace_member(workspace_id, auth.uid()) OR is_admin()`) 와 일치.
- * 4 mutation flow (수정/마감/재오픈/정산설정) 가 본 헬퍼를 사용. owner-only 였던
- * 이전 동작에서 editor 까지 풀어 Phase 1A editor role 활성화.
- *
- * PR3-A.2 (2026-05-11) — admin 분기에서 PermissionError throw. 본 helper 가 적용되는
- * mutation 흐름의 후속 RLS (app_update / wl_update 등) 가 admin 분기 제거됨에 따라
- * helper 가 admin pass-through 시 후속 UPDATE 가 RLS silent no-op (0 row affected,
- * exception 미발생) 으로 빠져 caller 가 false success 인식. helper 단계에서 명시적
- * throw 하여 admin write 는 SECURITY DEFINER RPC (spec §2-C) 경유 강제.
- *
- * 호출 비용: owner 본인이면 RPC 0회, 멤버면 1회, admin/외부인이면 2회 (둘 다 throw).
- *
- * @see ApplicationRepositoryHelpers.loadAndVerifyJobPostingAccess (read-side 는 admin 통과 유지)
- */
-async function loadAndVerifyMutateAccess(
-  jobPostingId: string,
-  callerId: string,
-  operation: string
-): Promise<JobPosting> {
-  const jobPosting = await loadJobPostingForVerify(jobPostingId, operation);
-  if (jobPosting.ownerId === callerId) return jobPosting;
-
-  // workspaceId 없는 레거시 row 방어
-  if (!jobPosting.workspaceId) {
-    throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-      userMessage: `공고에 워크스페이스가 지정되지 않았습니다: ${operation}`,
-    });
-  }
-
-  const memberResult = await supabase.rpc('is_workspace_member', {
-    _workspace_id: jobPosting.workspaceId,
-    _user_id: callerId,
-  });
-  if (memberResult.error) {
-    handleSupabaseError(memberResult.error, { operation, table: TABLE });
-  }
-  if (memberResult.data === true) return jobPosting;
-
-  // PR3-A.2: admin 분기 silent no-op 차단. 향후 admin write UI 도입 시 SECURITY DEFINER
-  // RPC (admin_update_<table>_<column>) 경유하도록 강제.
-  const adminResult = await supabase.rpc('is_admin');
-  if (adminResult.error) {
-    handleSupabaseError(adminResult.error, { operation, table: TABLE });
-  }
-  if (adminResult.data === true) {
-    throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-      userMessage: `admin 직접 수정은 허용되지 않습니다. admin 전용 RPC 를 사용하세요: ${operation}`,
-    });
-  }
-
-  throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-    userMessage: `워크스페이스 멤버만 수행할 수 있습니다: ${operation}`,
-  });
-}
-
-/**
- * 공고를 로드하고 호출자가 delete 권한(더 엄격)을 가졌는지 확인.
- *
- * Phase 2A.후속 (2026-05-10) — RLS jp_delete_workspace_owner 의 의도(`workspace 소유자
- * 또는 admin`) 를 본 클라이언트는 `job posting owner 또는 admin` 으로 근사. 워크스페이스
- * 소유자와 공고 소유자가 일치하는 일반 케이스 모두 통과. member 는 거절(soft-delete
- * 도 거부).
- *
- * DB-level 보강 (2026-05-10, migration 20260514050000): trg_enforce_jp_status_transition
- * BEFORE UPDATE trigger 가 active|closed → cancelled 전이를 workspace owner|admin 만
- * 통과시키도록 차단한다. 본 클라이언트 가드는 즉시 UX 차단 (double defense) 으로 유지.
- */
-async function loadAndVerifyDeleteAccess(
-  jobPostingId: string,
-  callerId: string,
-  operation: string
-): Promise<JobPosting> {
-  const jobPosting = await loadJobPostingForVerify(jobPostingId, operation);
-  if (jobPosting.ownerId === callerId) return jobPosting;
-
-  const adminResult = await supabase.rpc('is_admin');
-  if (adminResult.error) {
-    handleSupabaseError(adminResult.error, { operation, table: TABLE });
-  }
-  if (adminResult.data === true) return jobPosting;
-
-  throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-    userMessage: `공고 소유자만 삭제할 수 있습니다: ${operation}`,
-  });
-}
-
-// ── Settlement Helpers ───────────────────────────────────────────────────────
-
-type SettlementRolePayload = {
-  role?: PostingRoleCatalogEntry['role'];
-  name?: string;
-  customRole?: string;
-  salary?: PostingRoleCatalogEntry['salary'];
-};
-
-function settlementRoleKey(r: { role?: string; name?: string; customRole?: string }): string {
-  const id = r.role ?? r.name ?? '';
-  return id === 'other' && r.customRole ? `other:${r.customRole}` : id;
-}
-
-function mergeSettlementRoles(
-  base: PostingRoleCatalogEntry[],
-  incoming: Record<string, unknown>[]
-): PostingRoleCatalogEntry[] {
-  const typed = incoming as SettlementRolePayload[];
-  if (base.length === 0) {
-    return typed.map((r) => ({
-      role: (r.role ?? r.name ?? 'dealer') as StaffRole | 'other',
-      ...(r.customRole ? { customRole: r.customRole } : {}),
-      ...(r.salary ? { salary: r.salary } : {}),
-    }));
-  }
-  const byKey = new Map(typed.map((r) => [settlementRoleKey(r), r] as const));
-  return base.map((r) => {
-    const inc = byKey.get(settlementRoleKey(r));
-    if (!inc || !Object.prototype.hasOwnProperty.call(inc, 'salary')) return r;
-    return { ...r, ...(inc.salary ? { salary: inc.salary } : { salary: undefined }) };
-  });
-}
-
-function normalizeRoleKeys(catalog?: PostingRoleCatalogEntry[]): string[] {
-  if (!catalog || catalog.length === 0) return [];
-  return catalog
-    .map((e) => (e.role === 'other' && e.customRole ? `other:${e.customRole}` : (e.role ?? '')))
-    .filter((k) => k.length > 0)
-    .sort();
-}
-
-function hasRoleCatalogIdentityMutation(
-  current?: PostingRoleCatalogEntry[],
-  next?: PostingRoleCatalogEntry[]
-): boolean {
-  if (next === undefined) return false;
-  const nextKeys = normalizeRoleKeys(next);
-  if (new Set(nextKeys).size !== nextKeys.length) return true;
-  const currentKeys = normalizeRoleKeys(current);
-  if (currentKeys.length !== nextKeys.length) return true;
-  return currentKeys.some((k, i) => k !== nextKeys[i]);
-}
-
-function assertCanonical(doc: JobPosting, msg: string, ctx: Record<string, unknown>): JobPosting {
-  const parsed = parseJobPostingDocument(doc);
-  if (parsed) return parsed;
-  logger.error('Canonical job posting validation failed before write', ctx);
-  throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, { userMessage: msg });
-}
-
-/** (date, timeSlot, roleKey) 매칭 키. work_logs raw 값 기준(TBA→'미정'). */
-export function buildSlotRoleKey(date: string, timeSlot: string, roleKey: string): string {
-  return `${date}__${timeSlot}__${roleKey}`;
-}
+export { buildSlotRoleKey } from './JobPostingRepositoryHelpers';
 
 // ── Repository ───────────────────────────────────────────────────────────────
 
@@ -313,7 +94,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       const uniqueIds = [...new Set(jobPostingIds)];
       const { data, error } = await supabase.from(TABLE).select(TABLE_COLUMNS).in('id', uniqueIds);
       if (error) handleSupabaseError(error, { operation: '공고 배치 조회', table: TABLE });
-      const items = rowsToJobPostings((data ?? []) as Record<string, unknown>[]);
+      const items = dataToJobPostings(data);
       logger.info('공고 배치 조회 완료', { requested: jobPostingIds.length, found: items.length });
       return items;
     } catch (error) {
@@ -375,7 +156,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       query = query.order('created_at', { ascending: false });
       const { data, error } = await query;
       if (error) handleSupabaseError(error, { operation: '소유자별 공고 조회', table: TABLE });
-      const items = rowsToJobPostings((data ?? []) as Record<string, unknown>[]);
+      const items = dataToJobPostings(data);
       logger.info('소유자별 공고 조회 완료', { ownerId, count: items.length });
       return items;
     } catch (error) {
@@ -403,7 +184,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       query = query.order('created_at', { ascending: false });
       const { data, error } = await query;
       if (error) handleSupabaseError(error, { operation: '관리 가능 공고 조회', table: TABLE });
-      const items = rowsToJobPostings((data ?? []) as Record<string, unknown>[]);
+      const items = dataToJobPostings(data);
       logger.info('관리 가능 공고 조회 완료', { count: items.length });
       return items;
     } catch (error) {
@@ -508,27 +289,25 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
   // ── Simple Write ────────────────────────────────────────────────────────
 
   async incrementViewCount(jobPostingId: string): Promise<void> {
+    // 조회수 증가는 best-effort — 실패해도 사용자 흐름을 막지 않고 swallow.
+    const swallow = (message: string, errorText: string, loggedError: unknown) => {
+      logger.warn('공고 조회수 증가 실패', { jobPostingId, error: loggedError });
+      Sentry.addBreadcrumb({
+        category: 'swallow',
+        level: 'warning',
+        message,
+        data: { jobPostingId, error: errorText },
+      });
+    };
     try {
       const { error } = await supabase.rpc('increment_view_count', { posting_id: jobPostingId });
       if (error) {
-        logger.warn('공고 조회수 증가 실패', { jobPostingId, error: error.message });
-        Sentry.addBreadcrumb({
-          category: 'swallow',
-          level: 'warning',
-          message: '공고 조회수 증가 RPC 실패 — 무시됨',
-          data: { jobPostingId, error: error.message },
-        });
+        swallow('공고 조회수 증가 RPC 실패 — 무시됨', error.message, error.message);
         return;
       }
       logger.debug('공고 조회수 증가', { jobPostingId });
     } catch (error) {
-      logger.warn('공고 조회수 증가 실패', { jobPostingId, error: toError(error) });
-      Sentry.addBreadcrumb({
-        category: 'swallow',
-        level: 'warning',
-        message: '공고 조회수 증가 예외 — 무시됨',
-        data: { jobPostingId, error: String(error) },
-      });
+      swallow('공고 조회수 증가 예외 — 무시됨', String(error), toError(error));
     }
   }
 
@@ -848,7 +627,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
         .order('created_at', { ascending: false });
       if (error)
         handleSupabaseError(error, { operation: '공고 타입/승인상태별 조회', table: TABLE });
-      const postings = rowsToJobPostings((data ?? []) as Record<string, unknown>[]);
+      const postings = dataToJobPostings(data);
       logger.info('공고 타입/승인상태별 조회 완료', {
         postingType,
         approvalStatus,
@@ -875,7 +654,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
         .in('tournament_config->>approvalStatus', approvalStatuses)
         .order('created_at', { ascending: false });
       if (error) handleSupabaseError(error, { operation: '소유자/공고타입별 조회', table: TABLE });
-      const postings = rowsToJobPostings((data ?? []) as Record<string, unknown>[]);
+      const postings = dataToJobPostings(data);
       logger.info('소유자/공고타입별 조회 완료', { ownerId, postingType, count: postings.length });
       return postings;
     } catch (error) {
