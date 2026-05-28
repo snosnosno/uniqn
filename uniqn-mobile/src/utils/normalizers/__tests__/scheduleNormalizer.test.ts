@@ -321,9 +321,9 @@ describe('normalizeJobSchedule', () => {
         requiredRolesWithCount: [{ role: 'dealer', count: 3, filled: 1 }],
       });
       const result = normalizeJobSchedule(job);
-      expect(result.type).toBe('fixed');
+      expect(result.kind).toBe('fixed');
       expect(result.items).toHaveLength(1);
-      expect(result.items[0].type).toBe('fixed');
+      expect(result.items[0].kind).toBe('fixed');
     });
 
     it('고정 공고의 daysPerWeek을 반영한다', () => {
@@ -334,7 +334,7 @@ describe('normalizeJobSchedule', () => {
       });
       const result = normalizeJobSchedule(job);
       const fixedItem = result.items[0];
-      if (fixedItem.type === 'fixed') {
+      if (fixedItem.kind === 'fixed') {
         expect(fixedItem.daysPerWeek).toBe(3);
       }
     });
@@ -349,7 +349,7 @@ describe('normalizeJobSchedule', () => {
       });
       const result = normalizeJobSchedule(job);
       const fixedItem = result.items[0];
-      if (fixedItem.type === 'fixed') {
+      if (fixedItem.kind === 'fixed') {
         expect(fixedItem.roles).toHaveLength(2);
       }
     });
@@ -362,7 +362,7 @@ describe('normalizeJobSchedule', () => {
       });
       const result = normalizeJobSchedule(job);
       const fixedItem = result.items[0];
-      if (fixedItem.type === 'fixed') {
+      if (fixedItem.kind === 'fixed') {
         expect(fixedItem.startTime).toBe('19:00');
       }
     });
@@ -375,7 +375,7 @@ describe('normalizeJobSchedule', () => {
       });
       const result = normalizeJobSchedule(job);
       const fixedItem = result.items[0];
-      if (fixedItem.type === 'fixed') {
+      if (fixedItem.kind === 'fixed') {
         expect(fixedItem.isStartTimeNegotiable).toBe(true);
       }
     });
@@ -397,7 +397,7 @@ describe('normalizeJobSchedule', () => {
         ],
       });
       const result = normalizeJobSchedule(job);
-      expect(result.type).toBe('dated');
+      expect(result.kind).toBe('dated');
       expect(result.items).toHaveLength(2);
     });
 
@@ -417,7 +417,7 @@ describe('normalizeJobSchedule', () => {
       const result = normalizeJobSchedule(job);
       expect(result.items).toHaveLength(1);
       const datedItem = result.items[0];
-      if (datedItem.type === 'dated') {
+      if (datedItem.kind === 'dated') {
         expect(datedItem.timeSlots).toHaveLength(2);
       }
     });
@@ -431,10 +431,10 @@ describe('normalizeJobSchedule', () => {
         roles: [{ role: 'dealer', count: 2, filled: 0 }],
       });
       const result = normalizeJobSchedule(job);
-      expect(result.type).toBe('dated');
+      expect(result.kind).toBe('dated');
       expect(result.items).toHaveLength(1);
       const datedItem = result.items[0];
-      if (datedItem.type === 'dated') {
+      if (datedItem.kind === 'dated') {
         expect(datedItem.date).toBe('2025-01-28');
         expect(datedItem.timeSlots).toHaveLength(1);
       }
@@ -451,7 +451,7 @@ describe('normalizeJobSchedule', () => {
       });
       const result = normalizeJobSchedule(job);
       const datedItem = result.items[0];
-      if (datedItem.type === 'dated') {
+      if (datedItem.kind === 'dated') {
         expect(datedItem.timeSlots[0].roles).toHaveLength(2);
       }
     });
@@ -464,7 +464,7 @@ describe('normalizeJobSchedule', () => {
         roles: [],
       });
       const result = normalizeJobSchedule(job);
-      expect(result.type).toBe('dated');
+      expect(result.kind).toBe('dated');
       expect(result.items).toEqual([]);
     });
   });
