@@ -44,7 +44,7 @@ test.describe('공고 상세와 지원 흐름', () => {
         description: '상세테스트공고 설명',
         contact_phone: '+82101234567',
         location: {
-          name: '테스트포커룸',
+          name: '테스트홀덤펍',
           district: '강남구',
           detailedAddress: '테스트로 123',
         },
@@ -170,7 +170,7 @@ test.describe('공고 상세와 지원 흐름', () => {
         schema_version: 3,
         description: '마감 테스트 공고',
         contact_phone: '+82101234567',
-        location: { name: '테스트포커룸', district: '강남구', detailedAddress: '테스트로 123' },
+        location: { name: '테스트홀덤펍', district: '강남구', detailedAddress: '테스트로 123' },
         schedule: {
           kind: 'dated',
           primaryDate: workDate,

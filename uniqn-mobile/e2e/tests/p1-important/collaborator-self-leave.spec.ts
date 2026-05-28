@@ -51,7 +51,7 @@ test.describe('Collaborator Self Leave', () => {
         description: 'E2E — self-leave scenario',
         contact_phone: '+82109999999',
         location: {
-          name: '테스트포커룸',
+          name: '테스트홀덤펍',
           district: '강남구',
           detailedAddress: '테스트로 100',
         },

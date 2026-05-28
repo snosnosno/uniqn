@@ -103,7 +103,7 @@ test.describe('E2E 유저 저니', () => {
           description: '저니 테스트 공고 설명',
           contact_phone: '+82101234567',
           location: {
-            name: '테스트포커룸',
+            name: '테스트홀덤펍',
             district: '강남구',
             detailedAddress: '테스트로 123',
           },
