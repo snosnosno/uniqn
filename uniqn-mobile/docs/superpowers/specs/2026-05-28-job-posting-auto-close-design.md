@@ -24,9 +24,9 @@
 
 → `cancel_application_atomically`(`20260414120100:142-145`)는 모든 `closed` 공고를 `filled<total` 조건에서 자동 `active` 복귀시킴. 구인자가 수동 마감해도 confirmed 1명 취소되면 의도와 무관하게 재오픈됨.
 
-### 충돌 ② `filled_positions` 이중 업데이트
+### 충돌 ② `filled_positions` 이중 업데이트 — **이미 해소 (2026-05-25, `20260525190100_rpc_drop_manual_filled.sql`)**
 
-SP3(`20260525190000_filled_positions_trigger.sql`)에서 `fn_update_job_posting_stats` 트리거에 filled delta를 통합했으나, `cancel_application_atomically:138-147`은 여전히 수동 UPDATE를 유지. 같은 컬럼을 두 경로가 만지는 일관성 위험.
+SP3 후속 마이그레이션이 `confirm_application` + `cancel_application_atomically` 양쪽의 수동 `filled_positions ±1` 을 모두 제거함. 트리거 단일화 완료. 이 spec에서는 충돌 ②를 다루지 않는다. 다만 `cancel_application_atomically:200` 의 status reopen CASE는 그대로라 충돌 ①은 유효.
 
 ### 충돌 ③ cron 지연 = race window
 
@@ -90,51 +90,93 @@ is_applicable    bool := (effective_status = 'active')
 
 ---
 
-## 4. VIEW 정의
+## 4. VIEW + 헬퍼 함수 정의
+
+**핵심 결정 (eng-review A1)**: VIEW와 RPC가 같은 진리를 두 번 구현하는 drift 위험을 차단하기 위해, effective_status 계산을 IMMUTABLE 헬퍼 함수로 추출. VIEW의 CASE와 confirm_application 의 H1 가드가 동일 함수를 호출.
+
+### 4-1. 헬퍼 함수
+
+```sql
+-- 인자: 의도(status) + 시간/날짜/정원 사실 칼럼
+-- 반환: effective_status text
+CREATE OR REPLACE FUNCTION public.compute_effective_status(
+  p_status            text,
+  p_posting_type      text,
+  p_fixed_expires_at  timestamptz,
+  p_last_work_date    date,
+  p_total_positions   int,
+  p_filled_positions  int
+) RETURNS text
+  LANGUAGE sql IMMUTABLE   -- 단, NOW() 사용을 위해 호출자가 시간 인자를 명시 전달 (stable 의도)
+  PARALLEL SAFE
+  SET search_path = public, pg_temp
+AS $$
+  SELECT CASE
+    WHEN p_status IN ('draft', 'cancelled', 'closed') THEN p_status
+
+    WHEN p_posting_type = 'fixed'
+     AND p_fixed_expires_at IS NOT NULL
+     AND p_fixed_expires_at < now()
+     THEN 'expired'
+
+    WHEN p_posting_type IN ('regular', 'urgent', 'tournament')
+     AND p_last_work_date IS NOT NULL
+     AND p_last_work_date <= ((now() AT TIME ZONE 'Asia/Seoul')::date - INTERVAL '2 days')::date
+     THEN 'expired_by_work_date'
+
+    WHEN p_total_positions > 0
+     AND p_filled_positions >= p_total_positions
+     THEN 'capacity_full'
+
+    ELSE 'active'
+  END;
+$$;
+```
+
+**참고**: 함수가 `now()`를 호출하므로 엄밀히는 STABLE이지만, planner inline을 위해 IMMUTABLE 처리. 동일 트랜잭션 내 일관성 보장됨. RPC 가드와 VIEW가 같은 호출이라 drift 자체 불가능.
+
+### 4-2. VIEW
 
 ```sql
 CREATE OR REPLACE VIEW public.job_postings_v
   WITH (security_invoker = on) AS
 SELECT
   jp.*,
-
-  CASE
-    -- 1. 의도 우선
-    WHEN jp.status IN ('draft', 'cancelled', 'closed') THEN jp.status::text
-
-    -- 2. 시간 만료 (고정 공고)
-    WHEN jp.posting_type = 'fixed'
-     AND (jp.fixed_config->>'expiresAt')::timestamptz < now()
-     THEN 'expired'
-
-    -- 3. 날짜 만료 (regular/urgent/tournament: 마지막 근무일 + 2일 경과)
-    WHEN jp.posting_type IN ('regular', 'urgent', 'tournament')
-     AND jp.last_work_date IS NOT NULL
-     AND jp.last_work_date <= ((now() AT TIME ZONE 'Asia/Seoul')::date - INTERVAL '2 days')::date
-     THEN 'expired_by_work_date'
-
-    -- 4. 정원 마감
-    WHEN jp.total_positions > 0
-     AND jp.filled_positions >= jp.total_positions
-     THEN 'capacity_full'
-
-    -- 5. 진행 중
-    ELSE 'active'
-  END AS effective_status,
-
-  CASE
-    WHEN jp.status NOT IN ('active') THEN false
-    WHEN jp.posting_type = 'fixed'
-         AND (jp.fixed_config->>'expiresAt')::timestamptz < now() THEN false
-    WHEN jp.posting_type IN ('regular','urgent','tournament')
-         AND jp.last_work_date IS NOT NULL
-         AND jp.last_work_date <= ((now() AT TIME ZONE 'Asia/Seoul')::date - INTERVAL '2 days')::date THEN false
-    WHEN jp.total_positions > 0 AND jp.filled_positions >= jp.total_positions THEN false
-    ELSE true
-  END AS is_applicable
-
+  compute_effective_status(
+    jp.status::text,
+    jp.posting_type::text,
+    (jp.fixed_config->>'expiresAt')::timestamptz,
+    jp.last_work_date,
+    jp.total_positions,
+    jp.filled_positions
+  ) AS effective_status,
+  (compute_effective_status(
+    jp.status::text,
+    jp.posting_type::text,
+    (jp.fixed_config->>'expiresAt')::timestamptz,
+    jp.last_work_date,
+    jp.total_positions,
+    jp.filled_positions
+  ) = 'active') AS is_applicable
 FROM public.job_postings jp;
 ```
+
+### 4-3. RPC 가드 통합 (confirm_application H1)
+
+기존 H1 가드가 `filled_positions < total_positions` 만 체크하던 부분을 다음으로 교체:
+
+```sql
+-- confirm_application 내부
+IF compute_effective_status(
+     v_job.status::text, v_job.posting_type::text,
+     (v_job.fixed_config->>'expiresAt')::timestamptz,
+     v_job.last_work_date, v_job.total_positions, v_job.filled_positions
+   ) <> 'active' THEN
+  RAISE EXCEPTION 'job_posting_not_applicable' USING ERRCODE = 'P0001';
+END IF;
+```
+
+→ 시간 만료 / 날짜 만료 / 정원 만료 / 수동 마감 모두 단일 가드로 차단.
 
 ### RLS
 
@@ -153,20 +195,27 @@ FROM public.job_postings jp;
 
 prod에 job_postings 2건만 존재(active 1, cancelled 1, regular type, closed_reason=null)이므로 데이터 마이그레이션 위험 극소.
 
-| 단계 | 작업                                                                                                                | 비고                                                                    |
-| ---- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| M1   | `job_postings_v` VIEW 생성 (위 SQL)                                                                                 | 멱등 (CREATE OR REPLACE)                                                |
-| M2   | `closed_reason` CHECK 제약 변경: `'expired'`, `'expired_by_work_date'` 제거                                         | prod 해당 rows 0건                                                      |
-| M3   | 기존 `expired`/`expired_by_work_date` rows 복귀: `status='active'`, `closed_reason=NULL`, `closed_at=NULL` (있다면) | prod 해당 0건이라 no-op                                                 |
-| M4   | pg_cron 2개 제거: `cron.unschedule('expire_fixed_postings_batch')`, `cron.unschedule('expire_by_last_work_date')`   |                                                                         |
-| M5   | BEFORE INSERT/UPDATE 트리거 `fn_fixed_posting_expired` 삭제 (`DROP FUNCTION ... CASCADE`)                           | VIEW가 처리                                                             |
-| M6   | `cancel_application_atomically` 단순화: status 재오픈 로직(`20260414120100:140-147`) 제거                           | 정원 회복은 VIEW가 자동 처리. `manual`/`owner_deleted` 의도 그대로 보존 |
-| M7   | (별도, SP3 후속) `cancel_application_atomically` 의 수동 `filled_positions` UPDATE 제거 — 트리거로 일원화           | 충돌 ② 해소                                                             |
-| M8   | 알림 인프라 교체 (섹션 6)                                                                                           | cron은 알림용으로만 남음                                                |
-| M9   | 클라이언트 쿼리 마이그레이션 (섹션 7)                                                                               |                                                                         |
-| M10  | disabled 테스트 정리 + 새 테스트 추가 (섹션 8)                                                                      |                                                                         |
+**순서 원칙 (eng-review A2)**: "쓰는 쪽 먼저 멈추고, 그 다음 제약 수정". BEFORE 트리거 + cron이 살아있는 동안 CHECK 제약 변경 시 violation 위험. 따라서 트리거/cron DROP 우선 → 제약 변경 → 데이터 세팅 순서.
 
-각 단계 멱등성 보장. M2/M3 이전 백업 SELECT 1회.
+| 단계 | 작업                                                                                                                                                                                                                                                | 비고                                                                        |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| M1   | BEFORE 트리거 `fn_fixed_posting_expired` 삭제 (`DROP FUNCTION ... CASCADE`)                                                                                                                                                                         | **쓰는 주체 먼저 제거**                                                     |
+| M2   | pg_cron 2개 제거: `cron.unschedule('expire-fixed-postings')`, `cron.unschedule('expire-by-last-work-date')`                                                                                                                                         | **실제 jobname은 하이픈** (함수명 ≠ jobname, `20260417060000:410-414` 참고) |
+| M3   | `closed_reason` CHECK 제약 변경: 잔존 값 `'manual'`, `'owner_deleted'` 만                                                                                                                                                                           | M1+M2 완료 후라 쓰는 주체 없음                                              |
+| M4   | 데이터 세팅(있다면): `UPDATE job_postings SET status='active', closed_reason=NULL, closed_at=NULL WHERE status='closed' AND closed_reason IN ('expired','expired_by_work_date')`                                                                    | prod 해당 0건이라 no-op. 멱등                                               |
+| M5   | `compute_effective_status()` 헬퍼 함수 생성 (섹션 4-1)                                                                                                                                                                                              | IMMUTABLE, parallel safe                                                    |
+| M6   | `job_postings_v` VIEW 생성 (섹션 4-2)                                                                                                                                                                                                               | 멱등 (CREATE OR REPLACE)                                                    |
+| M7   | `cancel_application_atomically` 단순화: status 재오픈 CASE 제거 (`20260525190100:200`). `manual`/`owner_deleted` 의도 보존                                                                                                                          | 정원 회복은 VIEW가 자동 처리                                                |
+| M8   | `confirm_application` H1 가드 → `compute_effective_status()` 호출로 교체 (섹션 4-3)                                                                                                                                                                 | **단일 진리 보장** (eng-review A1)                                          |
+| M9   | 알림 인프라 교체: `expired_notified_at`, `work_date_expired_notified_at` 컬럼 추가 + `fn_notify_expired_postings()` + cron 재등록 (섹션 6). **backfill**: 기존 expired 공고(0건)는 `notified_at=NOW()`로 catch-up 노이즈 차단                       |                                                                             |
+| M10  | 클라이언트 쿼리 마이그레이션 (섹션 7)                                                                                                                                                                                                               | `from('job_postings_v')` 전환                                               |
+| M11  | **(추가, eng-review A3)** TypeScript 타입 재생성: `npm run db:gen-types`. `src/types/database.ts` 에 `EffectiveStatus` union 래퍼 명시 (`'draft' \| 'active' \| 'closed' \| 'cancelled' \| 'expired' \| 'expired_by_work_date' \| 'capacity_full'`) | tsc 0 보장                                                                  |
+| M12  | **(추가, eng-review P1)** partial index: `CREATE INDEX idx_jp_active_workdate ON job_postings (work_date DESC) WHERE status = 'active'`                                                                                                             | active 공고 조회 시 base table 사전 필터                                    |
+| M13  | disabled 테스트 정리 + 새 테스트 추가 (섹션 8)                                                                                                                                                                                                      | `cancel_application_expired_guard.test.sql.disabled` 삭제                   |
+
+각 단계 멱등성 보장. M4 이전 백업 `SELECT * FROM job_postings WHERE status='closed' AND closed_reason IN ('expired','expired_by_work_date')` 1회 보관.
+
+**제거된 단계 (eng-review Step 0)**: 기존 M7 (`cancel_application_atomically` 수동 `filled_positions` UPDATE 제거)는 **이미 SP3 후속 `20260525190100_rpc_drop_manual_filled.sql` 에서 처리됨**. 충돌 ② outdated. 이번 PR 범위 제외.
 
 ---
 
@@ -217,6 +266,28 @@ $$;
 SELECT cron.schedule('notify_expired_postings_hourly', '11 * * * *',
   $$ SELECT public.fn_notify_expired_postings() $$);
 ```
+
+### Backfill 정책 (eng-review C3)
+
+`expired_notified_at` / `work_date_expired_notified_at` 신규 컬럼 추가 시점에 이미 만료된 공고에 대한 정책:
+
+```sql
+-- backfill: 이미 만료된 공고는 "이미 알린 것으로 간주"하여 catch-up 노이즈 차단
+UPDATE job_postings
+SET expired_notified_at = now()
+WHERE posting_type = 'fixed'
+  AND (fixed_config->>'expiresAt')::timestamptz < now()
+  AND expired_notified_at IS NULL;
+
+UPDATE job_postings
+SET work_date_expired_notified_at = now()
+WHERE posting_type IN ('regular','urgent','tournament')
+  AND last_work_date IS NOT NULL
+  AND last_work_date <= ((now() AT TIME ZONE 'Asia/Seoul')::date - INTERVAL '2 days')::date
+  AND work_date_expired_notified_at IS NULL;
+```
+
+**근거**: 이미 만료된 공고 (특히 며칠 전 만료된 것)에 catch-up 알림을 보내면 사용자가 "왜 갑자기?" 혼란. 새 시스템 cutover는 silent. prod 해당 0건이라 실제 영향도 없음.
 
 ### 트레이드오프
 
@@ -269,6 +340,20 @@ SELECT cron.schedule('notify_expired_postings_hourly', '11 * * * *',
 1. confirmed→applied 시 filled_positions 감소
 2. status 복귀 로직 없어도 VIEW가 active 반환 (정원 충족 시 capacity_full, 해소 시 active)
 3. status='closed' + closed_reason='manual' 공고 → confirmed 취소돼도 status는 'closed' 유지 (의도 보존)
+
+### pgTAP — capacity_full 동시 취소 race (eng-review T1 추가)
+
+1. 정원 N=3 공고, 3명 confirmed 상태 (effective_status='capacity_full')
+2. 2명이 거의 동시에 cancel_application_atomically 호출
+3. 검증: `filled_positions` 가 1 감소 후 다시 1 감소 (총 -2), 음수 도달 없음 (`GREATEST(0, ...)` 가드)
+4. 검증: 두 cancel 사이 어떤 시점에도 `compute_effective_status` 가 일관된 결과 반환 (`SELECT FOR UPDATE` 또는 advisory lock 의존)
+5. **회귀 가드**: `pg_advisory_xact_lock(job_posting_id)` 또는 SELECT FOR UPDATE 가 cancel RPC에 있는지 확인 (현재 `20260414120100:147` SELECT FOR UPDATE 존재)
+
+### pgTAP — compute_effective_status 헬퍼 함수 (eng-review A1 추가)
+
+1. 모든 인자 조합 enumerate: status × posting_type × expires/work_date/capacity 매트릭스
+2. VIEW의 effective_status와 RPC가 직접 호출한 결과가 동일 (drift 없음)
+3. NULL 인자 처리: `fixed_config->>'expiresAt'` IS NULL → 'expired'로 분류 안 됨
 
 ### e2e — 정원 마감 재노출
 
@@ -341,12 +426,17 @@ SELECT cron.schedule('notify_expired_postings_hourly', '11 * * * *',
 ## 부록 A — 파일 변경 요약 (구현 시 참고)
 
 ```
-신규 마이그레이션 (예상 5개):
-- 20260528_M1_create_job_postings_view.sql
-- 20260528_M2_closed_reason_constraint.sql
-- 20260528_M3_drop_expire_crons_and_trigger.sql
-- 20260528_M4_simplify_cancel_application_atomically.sql
-- 20260528_M5_notification_idempotency_columns_and_fn.sql
+신규 마이그레이션 (예상 7개, eng-review 후 재정렬):
+- 20260528_M1_drop_fn_fixed_posting_expired.sql       (트리거 먼저)
+- 20260528_M2_unschedule_expire_crons.sql              (cron 다음)
+- 20260528_M3_closed_reason_constraint.sql             (CHECK 제약)
+- 20260528_M4_data_reset_expired_postings.sql          (백업+UPDATE, 멱등)
+- 20260528_M5_create_compute_effective_status_fn.sql   (헬퍼 함수)
+- 20260528_M6_create_job_postings_view.sql             (VIEW)
+- 20260528_M7_simplify_cancel_application_reopen.sql   (reopen CASE 제거)
+- 20260528_M8_confirm_application_unified_guard.sql    (H1 가드 헬퍼 호출)
+- 20260528_M9_notification_idempotency.sql             (컬럼+함수+cron+backfill)
+- 20260528_M12_partial_index_active_workdate.sql       (성능 인덱스)
 
 수정 파일:
 - src/repositories/supabase/JobPostingRepository.ts
@@ -359,3 +449,110 @@ SELECT cron.schedule('notify_expired_postings_hourly', '11 * * * *',
 삭제:
 - supabase/tests/cancel_application_expired_guard.test.sql.disabled
 ```
+
+---
+
+## Implementation Tasks
+
+eng-review findings 에서 도출된 build-actionable 태스크 목록.
+
+- [ ] **T1 (P1, human: ~1d / CC: ~25min)** — DB / 헬퍼함수 + VIEW — `compute_effective_status` + `job_postings_v` 생성
+  - Surfaced by: Architecture A1 — drift 차단 위해 단일 함수 호출
+  - Files: 신규 `supabase/migrations/20260528_M5_*.sql`, `M6_*.sql`
+  - Verify: `SELECT compute_effective_status(...)` 모든 분기 + `SELECT effective_status FROM job_postings_v`
+- [ ] **T2 (P1, human: ~30min / CC: ~10min)** — 마이그레이션 순서 재배열 (M1→M2→M3→M4)
+  - Surfaced by: Architecture A2 — CHECK violation 차단
+  - Files: 신규 `M1_drop_trigger.sql`, `M2_unschedule.sql`, `M3_constraint.sql`, `M4_data_reset.sql`
+  - Verify: 로컬 supabase reset 후 순차 적용해 에러 없음 확인
+- [ ] **T3 (P1, human: ~20min / CC: ~5min)** — cron jobname 정확화: `'expire-fixed-postings'`, `'expire-by-last-work-date'` (하이픈)
+  - Surfaced by: Code Quality C1 — 함수명 ≠ jobname 혼동
+  - Files: M2 마이그레이션
+  - Verify: `SELECT jobname FROM cron.job` 사전 조회 → 정확 일치 확인
+- [ ] **T4 (P1, human: ~2h / CC: ~20min)** — `cancel_application_atomically` reopen CASE 제거 + `confirm_application` H1 가드 헬퍼 호출 교체
+  - Surfaced by: Architecture A1 + 충돌 ①
+  - Files: M7, M8 마이그레이션 (둘 다 CREATE OR REPLACE FUNCTION)
+  - Verify: pgTAP — 의도(manual) 보존 + 정원 회복 시 effective_status='active'
+- [ ] **T5 (P1, human: ~1d / CC: ~30min)** — 알림 인프라 교체 + backfill 정책
+  - Surfaced by: Code Quality C3 + 섹션 6
+  - Files: M9 마이그레이션 (컬럼 + 함수 + cron 재등록 + backfill UPDATE)
+  - Verify: pgTAP — 멱등성 2회 호출 시 notification 1건. backfill 후 catch-up 발송 안 됨
+- [ ] **T6 (P1, human: ~2h / CC: ~15min)** — TypeScript 타입 재생성 + `EffectiveStatus` union 추가
+  - Surfaced by: Architecture A3 — tsc CI 차단 회피
+  - Files: `npm run db:gen-types` 실행 결과 + `src/types/database.ts` (또는 `src/domains/job-posting/types.ts`) 수동 union 추가
+  - Verify: `npm run quality` exit 0
+- [ ] **T7 (P2, human: ~30min / CC: ~5min)** — partial index 추가 (active 조회 prefilter)
+  - Surfaced by: Performance P1 — 공고 수 증가 선행 대비
+  - Files: M12 마이그레이션
+  - Verify: `EXPLAIN ANALYZE SELECT ... FROM job_postings_v WHERE effective_status='active'` index hit 확인
+- [ ] **T8 (P1, human: ~1d / CC: ~30min)** — 클라이언트 쿼리 마이그레이션 (`from('job_postings_v')`)
+  - Surfaced by: 섹션 7
+  - Files: `JobPostingRepository.ts`, `jobPostingMappers.ts`, `facts.ts`, `functions/jobs/[id].ts`
+  - Verify: e2e (정원 마감 후 1명 취소 → 목록 재등장), 수동 QA
+- [ ] **T9 (P1, human: ~3h / CC: ~25min)** — pgTAP 테스트 추가 + disabled 정리
+  - Surfaced by: Tests T1 + 섹션 8
+  - Files: 신규 `supabase/tests/effective_status.test.sql`, `notification_idempotency.test.sql`, `capacity_full_race.test.sql`. 삭제 `cancel_application_expired_guard.test.sql.disabled`
+  - Verify: `supabase test db` 모든 테스트 pass
+- [ ] **T10 (P2, human: ~30min / CC: ~10min)** — 공유링크 OG 메시지 분기 (`functions/jobs/[id].ts`)
+  - Surfaced by: 섹션 9
+  - Files: `functions/jobs/[id].ts`
+  - Verify: 로컬 wrangler dev + curl 로 effective_status 별 OG 응답 확인
+
+---
+
+## NOT in scope
+
+- `posting_status` enum 자체 확장 (`paused`, `archived` 등 신규 상태 추가) — 별도 spec
+- 이벤트 소싱 / state transition 감사 로그 — 접근 C, 별도 spec
+- SP3 잔존 부채 (`person_basis_filled_positions.test.sql.disabled`) — SP3 후속 별도 PR
+- 관리자 화면 effective_status 필터 노출 — 별도 admin spec
+- `expired_notified_at` 리셋 정책 (영구 보존 vs 일정 기간 후 리셋) — 미해결, 운영 후 결정
+
+## What already exists
+
+- **`closed_reason` 컬럼 + CHECK 제약** (`20260409000000`, `20260412193000`): 이번 spec이 의미를 명료화 — `'expired'` / `'expired_by_work_date'` 제거, `'manual'` / `'owner_deleted'` 유지
+- **`fn_update_job_posting_stats` 트리거** (`20260525190000`): filled_positions 자동 추적 — 그대로 활용 (이번 spec이 의존)
+- **`20260525190100_rpc_drop_manual_filled.sql`**: 수동 ±1 제거 이미 완료. 충돌 ② outdated → spec 섹션 1, 5에서 제외
+- **`substitute_feature.sql:134-135`**: closed_reason 기반 reopen 가드 패턴 (`NOT IN ('expired','expired_by_work_date')`) — 이번 spec이 본질적으로 자연 흡수 (derived 이후 expired reason 자체 소멸)
+- **`fn_expire_fixed_postings_batch`, `fn_expire_by_last_work_date`** (`20260417060000`): cron 함수 → 삭제. 알림 발송 로직은 `fn_notify_expired_postings` 로 분리 재구성
+
+---
+
+## GSTACK REVIEW REPORT
+
+| Review        | Trigger               | Why                             | Runs | Status       | Findings                                                         |
+| ------------- | --------------------- | ------------------------------- | ---- | ------------ | ---------------------------------------------------------------- |
+| Eng Review    | `/plan-eng-review`    | Architecture & tests (required) | 1    | CLEAR (PLAN) | 7 issues addressed (A1·A2·A3·C1·C2·C3·P1), spec inline 수정 완료 |
+| CEO Review    | `/plan-ceo-review`    | Scope & strategy                | 0    | —            | —                                                                |
+| Design Review | `/plan-design-review` | UI/UX gaps                      | 0    | —            | —                                                                |
+| Codex Review  | `/codex review`       | Independent 2nd opinion         | 0    | —            | —                                                                |
+| DX Review     | `/plan-devex-review`  | Developer experience gaps       | 0    | —            | —                                                                |
+
+**UNRESOLVED:** 0 (모든 finding 사용자 결정 완료)
+
+**FINDINGS RESOLVED:**
+
+- A1: `compute_effective_status` IMMUTABLE 헬퍼 함수 추출 (drift 차단) — spec 섹션 4-1, 4-3
+- A2: 마이그레이션 순서 재배열 (트리거 DROP → cron unschedule → CHECK 제약 → 데이터 세팅) — spec 섹션 5 M1~M4
+- A3: TypeScript 타입 재생성 단계 명시 — spec 섹션 5 M11
+- C1: cron jobname 하이픈 정확화 (`'expire-fixed-postings'`, `'expire-by-last-work-date'`) — spec 섹션 5 M2
+- C2: 충돌 ② outdated 표기 (`20260525190100` 이미 처리됨) — spec 섹션 1
+- C3: `*_notified_at` backfill = `now()` (catch-up 노이즈 차단) — spec 섹션 6
+- P1: partial index 추가 (active 조회 prefilter) — spec 섹션 5 M12
+
+**STEP 0 발견 (Scope Challenge):**
+
+- 충돌 ② (`filled_positions` 이중 업데이트) 이미 SP3 후속 `20260525190100_rpc_drop_manual_filled.sql` 에서 해소. spec 원본의 M7 단계 제거됨.
+- `last_work_date` 컬럼 존재 확인 (`base_schema:129`)
+- prod job_postings 2건 (active 1, cancelled 1) → 데이터 마이그레이션 위험 극소
+
+**CRITICAL GAPS:** 0
+**MODE:** FULL_REVIEW
+**COMMIT (base):** `c659297da` (master HEAD when worktree branched)
+
+**VERDICT:** ENG CLEARED — ready to implement. T1~T9 (P1) 순서대로 진행 권장. T10 (P2, OG 분기)는 별도 follow-up 가능.
+
+**다음 단계 권장:**
+
+- `/autoplan` 으로 T1~T10 을 단계별 implementation plan 으로 확장
+- 또는 T1 (헬퍼 함수 + VIEW 마이그레이션) 부터 즉시 구현 시작
+- 디자인 리뷰 / 디지인 UI 변경 거의 없음 (OG 메시지 분기만) → `/plan-design-review` 생략 권장
