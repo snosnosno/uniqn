@@ -98,6 +98,7 @@ jest.mock('@/stores', () => ({
 
 jest.mock('@/utils/applicationStatusMessage', () => ({
   getApplicationStatusMessage: () => '지원 완료',
+  getCancelUnavailableReason: () => null,
 }));
 
 jest.mock('@/utils/jobPostingVisibility', () => ({

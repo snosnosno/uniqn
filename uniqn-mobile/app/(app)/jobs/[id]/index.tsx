@@ -20,7 +20,10 @@ import {
 import { resolveSessionUserId } from '@/hooks/internal/sessionUserId';
 import { trackJobView } from '@/services/observability';
 import { useThemeStore } from '@/stores';
-import { getApplicationStatusMessage } from '@/utils/applicationStatusMessage';
+import {
+  getApplicationStatusMessage,
+  getCancelUnavailableReason,
+} from '@/utils/applicationStatusMessage';
 import { isSupportedReleasePosting } from '@/utils/jobPostingVisibility';
 
 const DEFAULT_BOTTOM_ACTION_HEIGHT = 116;
@@ -161,6 +164,11 @@ export default function JobDetailScreen() {
     !isFixed &&
     applicationStatus?.status === STATUS.APPLICATION.CONFIRMED &&
     !applicationStatus?.cancellationRequest;
+  const cancelUnavailableReason = getCancelUnavailableReason({
+    status: applicationStatus?.status,
+    isFixed,
+    hasPendingCancellation: !!applicationStatus?.cancellationRequest,
+  });
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
@@ -202,6 +210,11 @@ export default function JobDetailScreen() {
               <Text className="mb-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 {getApplicationStatusMessage(applicationStatus?.status)}
               </Text>
+              {cancelUnavailableReason ? (
+                <Text className="mb-2 text-center text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+                  {cancelUnavailableReason}
+                </Text>
+              ) : null}
               <View className="w-full flex-row">
                 <View className="mr-2 flex-1">
                   <Button
