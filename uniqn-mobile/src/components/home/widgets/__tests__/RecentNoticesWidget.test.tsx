@@ -100,7 +100,7 @@ describe('RecentNoticesWidget', () => {
             {
               announcements: [
                 makeNotice('n1', '4월 운영 공지'),
-                makeNotice('n2', '포커룸 안전 수칙'),
+                makeNotice('n2', '홀덤펍 안전 수칙'),
                 makeNotice('n3', '신규 기능 업데이트'),
                 makeNotice('n4', '네 번째 공지 — 보이면 안됨'),
               ],
@@ -116,7 +116,7 @@ describe('RecentNoticesWidget', () => {
     render(<RecentNoticesWidget />);
 
     expect(screen.getByText('4월 운영 공지')).toBeTruthy();
-    expect(screen.getByText('포커룸 안전 수칙')).toBeTruthy();
+    expect(screen.getByText('홀덤펍 안전 수칙')).toBeTruthy();
     expect(screen.getByText('신규 기능 업데이트')).toBeTruthy();
     expect(screen.queryByText('네 번째 공지 — 보이면 안됨')).toBeNull();
   });

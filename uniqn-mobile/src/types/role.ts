@@ -11,7 +11,7 @@
  *    - employer: 구인자 (공고 관리, 지원자 관리)
  *    - staff: 스태프 (지원, 스케줄 확인)
  *
- * 2. **StaffRole** (직무 역할): 포커룸에서의 업무 역할
+ * 2. **StaffRole** (직무 역할): 매장(홀덤펍/대회장)에서의 업무 역할
  *    - dealer: 딜러
  *    - floor: 플로어
  *    - serving: 서빙
@@ -86,7 +86,7 @@ export const VALID_USER_ROLES: readonly UserRole[] = ['admin', 'employer', 'staf
 /**
  * 스태프 직무 역할
  *
- * @description 포커룸에서의 업무 역할
+ * @description 매장(홀덤펍/대회장)에서의 업무 역할
  *
  * - dealer: 딜러
  * - floor: 플로어

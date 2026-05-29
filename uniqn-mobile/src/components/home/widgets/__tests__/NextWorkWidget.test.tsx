@@ -54,7 +54,7 @@ const makeSchedule = (overrides = {}) => ({
   date: '2099-12-31',
   startTime: null,
   endTime: null,
-  location: '강남 포커룸',
+  location: '강남 홀덤펍',
   jobPostingName: '딜러 공고',
   role: 'dealer',
   type: 'confirmed' as const,

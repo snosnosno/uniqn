@@ -98,7 +98,7 @@ describe('SearchService', () => {
       }),
       createMockJobPosting({
         id: 'job-2',
-        title: '역삼 포커룸 플로어 구인',
+        title: '역삼 홀덤펍 플로어 구인',
         ownerName: '포커하우스',
         location: { name: '서울 역삼동', address: '역삼동 456' } as any,
         viewCount: 50,

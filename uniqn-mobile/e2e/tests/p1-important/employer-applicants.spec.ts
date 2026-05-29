@@ -60,7 +60,7 @@ async function seedJobPosting(title: string): Promise<string> {
       description: `${title} 설명`,
       contact_phone: '+82101234567',
       location: {
-        name: '테스트포커룸',
+        name: '테스트홀덤펍',
         district: '강남구',
         detailedAddress: '테스트로 123',
       },

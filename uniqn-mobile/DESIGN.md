@@ -2,9 +2,9 @@
 
 ## Product Context
 
-- **What this is:** 포커룸 스태프 관리 모바일 앱 (스케줄, 구인, 출퇴근, 정산)
-- **Who it's for:** 포커룸 사업주(employer) + 딜러/스태프(dealer, floor, serving)
-- **Space/industry:** 포커룸 / 유흥업 인력 관리
+- **What this is:** 홀덤펍·대회 스태프 관리 모바일 앱 (스케줄, 구인, 출퇴근, 정산)
+- **Who it's for:** 홀덤펍·대회 사업주(employer) + 딜러/스태프(dealer, floor, serving)
+- **Space/industry:** 홀덤펍 / 홀덤 대회 인력 관리
 - **Project type:** Mobile app (Expo / React Native / NativeWind)
 
 ## Aesthetic Direction

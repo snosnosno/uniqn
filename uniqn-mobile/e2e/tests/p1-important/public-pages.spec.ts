@@ -87,7 +87,7 @@ async function seedPublicJob(): Promise<SeededPublicJob | null> {
       filled_positions: 0,
       view_count: 0,
       contact_phone: '+82101234567',
-      location: { name: 'E2E테스트포커룸', district: '강남구', detailedAddress: '테스트로 123' },
+      location: { name: 'E2E테스트홀덤펍', district: '강남구', detailedAddress: '테스트로 123' },
       schedule: {
         kind: 'dated',
         primaryDate: workDate,
