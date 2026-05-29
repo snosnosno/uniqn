@@ -13,7 +13,7 @@ import type { JobPosting, JobPostingStatus, TournamentApprovalStatus } from '@/t
 /**
  * Job posting status → stripe tone.
  * gold: active (live) · approved (ready to publish)
- * muted: draft · closed · cancelled · expired
+ * muted: draft · capacity_full · closed · cancelled · expired
  * warning: pending (awaiting approval)
  * error: rejected
  */
@@ -22,6 +22,7 @@ const POSTING_STRIPE_TONE: Record<JobPostingStatus, CardStripeTone> = {
   pending: 'warning',
   approved: 'gold',
   active: 'gold',
+  capacity_full: 'muted',
   closed: 'muted',
   cancelled: 'muted',
   expired: 'muted',

@@ -31,6 +31,7 @@ export type JobPostingStatus =
   | 'pending'
   | 'approved'
   | 'active'
+  | 'capacity_full'
   | 'closed'
   | 'cancelled'
   | 'expired'

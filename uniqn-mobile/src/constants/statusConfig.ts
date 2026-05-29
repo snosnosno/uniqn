@@ -230,6 +230,7 @@ export type JobPostingStatusType =
   | 'pending'
   | 'approved'
   | 'active'
+  | 'capacity_full'
   | 'closed'
   | 'cancelled'
   | 'expired'
@@ -263,6 +264,13 @@ export const JOB_POSTING_STATUS: Record<JobPostingStatusType, StatusConfig> = {
     textColor: 'text-success-600 dark:text-success-400',
     bgColor: 'bg-success-100 dark:bg-success-900/30',
     hexColor: STATUS_COLORS.success,
+  },
+  capacity_full: {
+    label: '정원 마감',
+    variant: 'secondary',
+    textColor: 'text-secondary-600 dark:text-secondary-400',
+    bgColor: 'bg-secondary-100 dark:bg-surface',
+    hexColor: SECONDARY_PALETTE[500],
   },
   closed: {
     label: '마감',
