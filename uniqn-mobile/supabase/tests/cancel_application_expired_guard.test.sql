@@ -1,12 +1,12 @@
 -- ============================================================
 -- T-B4: cancel_application_atomically expired 재오픈 가드 테스트
 -- ============================================================
--- DISABLED 사유 (2026-05-14): cancel_application_atomically RPC 가
--- closed jp 를 closed_reason 무관하게 active 로 재오픈한다 (CASE WHEN status='closed'
--- AND v_new_filled < total_positions THEN 'active'). S2 'expired' / S3
--- 'expired_by_work_date' 가드가 RPC 에 없음. test 의 비즈니스 의도 vs RPC 실제
--- 동작 결정 필요. 후속 PR: RPC 에 expired 가드 추가 (closed_reason NOT IN
--- ('expired', 'expired_by_work_date')) 또는 test 기대값 수정.
+-- ACTIVATED 2026-05-28: 20260528120000_cancel_rpc_expired_reopen_guard.sql 가
+-- reopen 분기에 closed_reason NOT IN ('expired', 'expired_by_work_date') 가드 추가.
+-- 동시에 fixture 의 jp.filled_positions 를 1 → 0 으로 낮춤. SP3 트리거
+-- (20260525190000_filled_positions_trigger.sql) 가 application INSERT 시점에
+-- status='cancellation_pending' 을 filled +1 처리하므로, 의도한 시작값(1) 을
+-- 얻으려면 jp 시드를 0 으로 두고 트리거에 맡겨야 한다.
 -- ============================================================
 -- 목적: closed_reason이 'expired' / 'expired_by_work_date'인 공고는
 --       취소 승인 후에도 closed 상태를 유지해야 함을 검증.
@@ -86,7 +86,7 @@ BEGIN
   INSERT INTO public.job_postings (
     id, owner_id, workspace_id, title, total_positions, filled_positions, status, closed_reason, created_at, updated_at
   )
-  VALUES (v_job_manual_id, v_owner_id, v_workspace_id, '__sql_fixture: manual closed', 3, 1, 'closed', 'manual', now(), now());
+  VALUES (v_job_manual_id, v_owner_id, v_workspace_id, '__sql_fixture: manual closed', 3, 0, 'closed', 'manual', now(), now());
 
   INSERT INTO public.applications (
     id, job_posting_id, applicant_id, applicant_name, status, cancellation_request, confirmation_history, created_at, updated_at
@@ -108,7 +108,7 @@ BEGIN
   INSERT INTO public.job_postings (
     id, owner_id, workspace_id, title, total_positions, filled_positions, status, closed_reason, created_at, updated_at
   )
-  VALUES (v_job_expired_id, v_owner_id, v_workspace_id, '__sql_fixture: expired closed', 3, 1, 'closed', 'expired', now(), now());
+  VALUES (v_job_expired_id, v_owner_id, v_workspace_id, '__sql_fixture: expired closed', 3, 0, 'closed', 'expired', now(), now());
 
   INSERT INTO public.applications (
     id, job_posting_id, applicant_id, applicant_name, status, cancellation_request, confirmation_history, created_at, updated_at
@@ -130,7 +130,7 @@ BEGIN
   INSERT INTO public.job_postings (
     id, owner_id, workspace_id, title, total_positions, filled_positions, status, closed_reason, created_at, updated_at
   )
-  VALUES (v_job_expired_wd_id, v_owner_id, v_workspace_id, '__sql_fixture: expired_by_work_date closed', 3, 1, 'closed', 'expired_by_work_date', now(), now());
+  VALUES (v_job_expired_wd_id, v_owner_id, v_workspace_id, '__sql_fixture: expired_by_work_date closed', 3, 0, 'closed', 'expired_by_work_date', now(), now());
 
   INSERT INTO public.applications (
     id, job_posting_id, applicant_id, applicant_name, status, cancellation_request, confirmation_history, created_at, updated_at
