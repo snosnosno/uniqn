@@ -156,7 +156,7 @@ export interface IWorkLogRepository {
   /**
    * 월별 정산 요약 조회
    *
-   * Phase 2A.후속 (PR3-B, 2026-05-10) — staff 가 여러 워크스페이스(포커룸)에서
+   * Phase 2A.후속 (PR3-B, 2026-05-10) — staff 가 여러 워크스페이스(매장)에서
    * 근무하는 경우 active workspace 별로 정산을 분리하기 위해 workspaceId? 추가.
    * work_logs 테이블에 workspace_id 컬럼이 없어 job_postings.workspace_id 를
    * inner-join 으로 필터링한다.

@@ -347,7 +347,7 @@ export function useWorkLogStats(enabled = true) {
  * 월별 정산 요약 hook
  *
  * Phase 2A.후속 (PR3-B, 2026-05-10) — useActiveWorkspace 의존 추가. Staff 가
- * 여러 워크스페이스(포커룸)에서 근무하는 경우 active workspace 별로 정산을
+ * 여러 워크스페이스(매장)에서 근무하는 경우 active workspace 별로 정산을
  * 분리 (PR #71 useMyJobPostings 패턴 복제). queryKey 에 workspaceId 포함하여
  * cache 격리, activeWorkspace 부재 시 enabled=false 로 ghost cache 회피.
  */

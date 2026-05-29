@@ -43,7 +43,7 @@ describe('workspace schemas (PR #2)', () => {
     });
 
     it('이모지 포함 가능 (Unicode 안전)', () => {
-      const r = createWorkspaceSchema.safeParse({ name: '🎰 강남 포커룸' });
+      const r = createWorkspaceSchema.safeParse({ name: '🎰 강남 홀덤펍' });
       expect(r.success).toBe(true);
     });
   });

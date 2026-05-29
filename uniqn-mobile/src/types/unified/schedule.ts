@@ -28,7 +28,7 @@ export type JobScheduleType = 'dated' | 'fixed';
  */
 export interface DatedScheduleInfo {
   /** 일정 타입 (discriminator) */
-  type: 'dated';
+  kind: 'dated';
 
   /** 날짜 (YYYY-MM-DD) */
   date: string;
@@ -44,7 +44,7 @@ export interface DatedScheduleInfo {
  */
 export interface FixedScheduleInfo {
   /** 일정 타입 (discriminator) */
-  type: 'fixed';
+  kind: 'fixed';
 
   /** 주 출근일수 (0 = 협의, 1-7 = 일수) */
   daysPerWeek: number;
@@ -63,7 +63,7 @@ export interface FixedScheduleInfo {
  * 정규화된 일정 정보 (Discriminated Union)
  *
  * @description DatedScheduleInfo 또는 FixedScheduleInfo
- * type 필드로 구분하여 타입 가드 사용 가능
+ * kind 필드로 구분하여 타입 가드 사용 가능
  */
 export type NormalizedSchedule = DatedScheduleInfo | FixedScheduleInfo;
 
@@ -72,7 +72,7 @@ export type NormalizedSchedule = DatedScheduleInfo | FixedScheduleInfo;
  */
 export interface NormalizedScheduleList {
   /** 일정 타입 ('dated' | 'fixed') */
-  type: JobScheduleType;
+  kind: JobScheduleType;
 
   /** 일정 목록 */
   items: NormalizedSchedule[];
@@ -89,7 +89,7 @@ export interface NormalizedScheduleList {
  * @returns DatedScheduleInfo 여부
  */
 export function isDatedSchedule(schedule: NormalizedSchedule): schedule is DatedScheduleInfo {
-  return schedule.type === 'dated';
+  return schedule.kind === 'dated';
 }
 
 /**
@@ -99,7 +99,7 @@ export function isDatedSchedule(schedule: NormalizedSchedule): schedule is Dated
  * @returns FixedScheduleInfo 여부
  */
 export function isFixedSchedule(schedule: NormalizedSchedule): schedule is FixedScheduleInfo {
-  return schedule.type === 'fixed';
+  return schedule.kind === 'fixed';
 }
 
 // ============================================================================
@@ -116,7 +116,7 @@ export function isFixedSchedule(schedule: NormalizedSchedule): schedule is Fixed
  */
 export function createDatedSchedule(date: string, timeSlots: TimeSlotInfo[]): DatedScheduleInfo {
   return {
-    type: 'dated',
+    kind: 'dated',
     date,
     timeSlots,
   };
@@ -139,7 +139,7 @@ export function createFixedSchedule(
   }
 ): FixedScheduleInfo {
   return {
-    type: 'fixed',
+    kind: 'fixed',
     daysPerWeek,
     startTime: options?.isStartTimeNegotiable ? null : (options?.startTime ?? null),
     isStartTimeNegotiable: options?.isStartTimeNegotiable ?? false,
@@ -158,7 +158,7 @@ export function createFixedSchedule(
  * @returns 날짜 배열 (정렬됨)
  */
 export function extractAllDates(scheduleList: NormalizedScheduleList): string[] {
-  if (scheduleList.type === 'fixed') {
+  if (scheduleList.kind === 'fixed') {
     return [];
   }
 

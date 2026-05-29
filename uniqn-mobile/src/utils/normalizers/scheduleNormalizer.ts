@@ -90,27 +90,27 @@ function sortDatedSchedules(schedules: DatedScheduleInfo[]): DatedScheduleInfo[]
 export function normalizeJobSchedule(job: JobPosting): NormalizedScheduleList {
   if (job.schedule.kind === 'fixed') {
     return {
-      type: 'fixed',
+      kind: 'fixed',
       items: [normalizeFixedSchedule(job.schedule)],
     };
   }
 
   if (job.schedule.requirements.length > 0) {
     return {
-      type: 'dated',
+      kind: 'dated',
       items: sortDatedSchedules(job.schedule.requirements.map(normalizeDateRequirement)),
     };
   }
 
   if (job.workDate) {
     return {
-      type: 'dated',
+      kind: 'dated',
       items: [normalizeLegacySchedule(job)],
     };
   }
 
   return {
-    type: 'dated',
+    kind: 'dated',
     items: [],
   };
 }

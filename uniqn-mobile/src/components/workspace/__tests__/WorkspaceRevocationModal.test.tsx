@@ -26,7 +26,7 @@ describe('WorkspaceRevocationModal', () => {
   });
 
   it('visible=false 면 signOut 호출 안 함', () => {
-    render(<WorkspaceRevocationModal visible={false} workspaceName="포커룸 A" />);
+    render(<WorkspaceRevocationModal visible={false} workspaceName="홀덤펍 A" />);
     act(() => {
       jest.advanceTimersByTime(10_000);
     });
@@ -35,7 +35,7 @@ describe('WorkspaceRevocationModal', () => {
   });
 
   it('visible=true 후 카운트다운 0 도달 시 signOut + login 이동', async () => {
-    render(<WorkspaceRevocationModal visible workspaceName="포커룸 A" countdownSeconds={3} />);
+    render(<WorkspaceRevocationModal visible workspaceName="홀덤펍 A" countdownSeconds={3} />);
     act(() => {
       jest.advanceTimersByTime(3_000);
     });
@@ -61,7 +61,7 @@ describe('WorkspaceRevocationModal', () => {
 
   it('signOut 실패해도 fallback 으로 login 화면 강제 이동 (E5 보안)', async () => {
     mockSignOut.mockRejectedValueOnce(new Error('network down'));
-    render(<WorkspaceRevocationModal visible workspaceName="포커룸 A" countdownSeconds={1} />);
+    render(<WorkspaceRevocationModal visible workspaceName="홀덤펍 A" countdownSeconds={1} />);
     act(() => {
       jest.advanceTimersByTime(1_000);
     });

@@ -123,7 +123,7 @@ export function createTestJob(options: JobFactoryOptions = {}) {
     updatedAt,
     contactPhone: '+82101234567',
     location: {
-      name: options.locationName ?? '테스트포커룸',
+      name: options.locationName ?? '테스트홀덤펍',
       district: '강남구',
       detailedAddress: '테스트로 123',
     },

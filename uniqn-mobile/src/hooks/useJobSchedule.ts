@@ -87,7 +87,7 @@ export function useJobSchedule(job: JobPosting | null): UseJobScheduleResult {
     // 공고 없으면 빈 결과 반환
     if (!job) {
       return {
-        schedule: { type: 'dated', items: [] },
+        schedule: { kind: 'dated', items: [] },
         isFixed: false,
         isDated: true,
         allDates: [],
@@ -102,7 +102,7 @@ export function useJobSchedule(job: JobPosting | null): UseJobScheduleResult {
 
     // 일정 정규화
     const schedule = normalizeJobSchedule(job);
-    const isFixed = schedule.type === 'fixed';
+    const isFixed = schedule.kind === 'fixed';
 
     // 날짜/역할 추출
     const allDates = extractAllDates(schedule);

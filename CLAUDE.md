@@ -3,7 +3,7 @@
 > 언어: 한글 | 작업 디렉토리: uniqn-mobile/ | 배포 전: `npm run quality`
 
 ## 프로젝트
-포커룸 스태프 관리 앱 — Expo 55 / RN 0.83.4 / React 19.2 / TS strict / NativeWind 4.2 / Supabase
+홀덤 스태프 관리앱 — Expo 55 / RN 0.83.4 / React 19.2 / TS strict / NativeWind 4.2 / Supabase
 
 ## 핵심 규칙
 | 항목 | 필수 | 금지 |
