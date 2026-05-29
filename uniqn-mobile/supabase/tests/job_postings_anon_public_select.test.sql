@@ -20,7 +20,7 @@
 -- ============================================================
 
 BEGIN;
-SELECT plan(2);
+SELECT plan(3);
 
 -- TEST 1 (behavioral / 핵심 회귀): anon SELECT 가 함수 권한으로 abort 되지 않는다.
 -- lives_ok 본문에서만 anon 으로 전환(테스트 러너 자신은 anon 권한 불필요).
@@ -42,6 +42,21 @@ SELECT is(
      AND p.polname = 'jp_select_managed'),
   '{authenticated}',
   'jp_select_managed 는 authenticated 롤로만 적용되어야 한다(anon 제외)'
+);
+
+-- TEST 3 (구조 회귀 가드, M4): capacity_full 이 공개 SELECT 허용 status 집합에 포함.
+-- M2 트리거 자동 전이 후에도 anon/비관리자가 capacity_full 공고를 읽을 수 있어야 한다
+-- (공유 링크 + 확정 스태프 상세 조회). closed 만 있고 capacity_full 누락 시 회귀.
+-- 정책 이름 드리프트(prod=jp_select_public_search / repo=jp_select) 무관하게,
+-- 공개 status 허용집합 정책이 capacity_full 을 포함하는지 검사.
+SELECT ok(
+  EXISTS (
+    SELECT 1 FROM pg_policy
+    WHERE polrelid = 'public.job_postings'::regclass
+      AND polname IN ('jp_select_public_search', 'jp_select')
+      AND pg_get_expr(polqual, polrelid) LIKE '%capacity_full%'
+  ),
+  '공개 SELECT 정책(jp_select_public_search/jp_select)이 capacity_full 을 노출해야 한다(M4)'
 );
 
 SELECT finish();
