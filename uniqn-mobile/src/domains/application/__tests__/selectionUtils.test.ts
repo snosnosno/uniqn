@@ -62,7 +62,7 @@ function createTestTimeSlot(
  */
 function createTestSchedule(date: string, timeSlots: TimeSlotInfo[]): DatedScheduleInfo {
   return {
-    type: 'dated',
+    kind: 'dated',
     date,
     timeSlots,
   };

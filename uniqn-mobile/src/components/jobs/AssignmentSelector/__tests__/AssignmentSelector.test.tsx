@@ -39,7 +39,7 @@ function createBaseScheduleResult(
   overrides: Partial<UseJobScheduleResult> = {}
 ): UseJobScheduleResult {
   return {
-    schedule: { type: 'dated', items: [] },
+    schedule: { kind: 'dated', items: [] },
     isFixed: false,
     isDated: true,
     allDates: [],
@@ -56,7 +56,7 @@ function createBaseScheduleResult(
 function createSingleDateSchedule() {
   return [
     {
-      type: 'dated' as const,
+      kind: 'dated' as const,
       date: '2026-04-01',
       timeSlots: [
         {
@@ -136,7 +136,7 @@ describe('AssignmentSelector', () => {
       createBaseScheduleResult({
         datedSchedules: [
           {
-            type: 'dated',
+            kind: 'dated',
             date: '2026-04-01',
             timeSlots: [
               {
@@ -199,7 +199,7 @@ describe('AssignmentSelector', () => {
         label: '4/1 ~ 4/2',
         dates: [
           {
-            type: 'dated',
+            kind: 'dated',
             date: '2026-04-01',
             timeSlots: [
               {
@@ -218,7 +218,7 @@ describe('AssignmentSelector', () => {
             ],
           },
           {
-            type: 'dated',
+            kind: 'dated',
             date: '2026-04-02',
             timeSlots: [
               {
