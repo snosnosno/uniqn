@@ -107,7 +107,8 @@ export const JobPostingCard = memo(function JobPostingCard({
                 {statusLabel}
               </Badge>
 
-              {posting.status === STATUS.JOB_POSTING.ACTIVE ? (
+              {posting.status === STATUS.JOB_POSTING.ACTIVE ||
+              posting.status === STATUS.JOB_POSTING.CAPACITY_FULL ? (
                 <Pressable
                   onPress={() => onClose(posting.id)}
                   disabled={isClosing}

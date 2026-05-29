@@ -60,7 +60,9 @@ export function PostingOverviewWidget() {
   const gradientColors = isDarkMode ? HERO_GRADIENT_DARK : HERO_GRADIENT_LIGHT;
 
   const postings = data ?? [];
-  const activePostings = postings.filter((p) => p.status === 'active' || p.status === 'approved');
+  const activePostings = postings.filter(
+    (p) => p.status === 'active' || p.status === 'approved' || p.status === 'capacity_full'
+  );
   const closedPostings = postings.filter((p) => p.status === 'closed');
 
   const newApplicantCount = activePostings.reduce((sum, p) => {
