@@ -68,10 +68,6 @@ jest.mock('@/utils/security', () => ({
   })),
 }));
 
-jest.mock('@/utils/recaptcha', () => ({
-  getRecaptchaToken: jest.fn(async () => undefined),
-}));
-
 jest.mock('@/errors/serviceErrorHandler', () => ({
   handleServiceError: jest.fn((error: unknown) =>
     error instanceof Error ? error : new Error(String(error))

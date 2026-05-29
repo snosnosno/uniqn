@@ -347,8 +347,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     buildDate: new Date().toISOString(),
     // Apple 로그인 kill switch (기본 활성화)
     appleLoginEnabled: process.env.EXPO_PUBLIC_ENABLE_APPLE_LOGIN !== 'false',
-    // reCAPTCHA v3 사이트 키 (웹 전용, 전화번호 중복체크 봇 방지)
-    recaptchaSiteKey: process.env.EXPO_PUBLIC_RECAPTCHA_SITE_KEY || '',
     // PortOne KG Inicis identity verification.
     // storeId/channelKey 는 공개 식별자이므로 env 누락 시 fallback 으로 대응.
     // 2026-05-16 OTA 푸시에서 EXPO_PUBLIC_PORTONE_* 가 빈 값으로 박혀 본인인증 전면 차단된 사건 재발 방지.
