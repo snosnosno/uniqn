@@ -722,3 +722,49 @@ describe('Integration: 기존 utils/settlement와 결과 일치', () => {
     expect(newResult.totalPay).toBe(125000); // 120000 + 5000
   });
 });
+
+// ============================================================================
+// calculateBreakdown — 자정 넘는 야간 슬롯 정산 회귀 가드 (B2)
+// ============================================================================
+//
+// 홀덤펍/대회 표준 운영(18:00~익일 02:00)에서 timeSlot 문자열로부터 정산 금액을
+// 산출할 때 자정 보정이 정확한지 잠근다. 실제 출퇴근 기록(checkInTime/checkOutTime)이
+// 없는 estimate 경로는 parseTimeSlotToDate 로 timeSlot 을 해석하며, 이때 endTime <
+// startTime 이면 +1일 보정되어야 한다. (이미 동작하는 코드에 대한 특성화 테스트.)
+describe('SettlementCalculator.calculateBreakdown — 자정 넘는 야간 슬롯', () => {
+  it('18:00~02:00 야간 슬롯을 8시간으로 환산해 시급 정산한다 (자정 보정)', () => {
+    const breakdown = SettlementCalculator.calculateBreakdown({
+      timeSlot: '18:00~02:00',
+      date: '2025-01-20',
+      customSalaryInfo: { type: 'hourly', amount: 15000 },
+    });
+
+    expect(breakdown).not.toBeNull();
+    // 18:00 → 익일 02:00 = 8시간 (자정 보정 없으면 음수/NaN)
+    expect(breakdown?.hoursWorked).toBe(8);
+    expect(breakdown?.basePay).toBe(120000); // 8h × 15,000
+    expect(breakdown?.isEstimate).toBe(true); // 실제 출퇴근 기록 없음
+  });
+
+  it('19:00~04:00 슬롯도 9시간으로 환산한다', () => {
+    const breakdown = SettlementCalculator.calculateBreakdown({
+      timeSlot: '19:00~04:00',
+      date: '2025-01-20',
+      customSalaryInfo: { type: 'hourly', amount: 10000 },
+    });
+
+    expect(breakdown?.hoursWorked).toBe(9);
+    expect(breakdown?.basePay).toBe(90000); // 9h × 10,000
+  });
+
+  it('자정을 넘지 않는 09:00~18:00 슬롯은 보정 없이 9시간으로 계산한다', () => {
+    const breakdown = SettlementCalculator.calculateBreakdown({
+      timeSlot: '09:00~18:00',
+      date: '2025-01-20',
+      customSalaryInfo: { type: 'hourly', amount: 12000 },
+    });
+
+    expect(breakdown?.hoursWorked).toBe(9);
+    expect(breakdown?.basePay).toBe(108000); // 9h × 12,000
+  });
+});
