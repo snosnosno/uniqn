@@ -39,6 +39,7 @@ export const JOB_POSTING_STATUS_VALUES = {
   PENDING: 'pending',
   APPROVED: 'approved',
   ACTIVE: 'active',
+  CAPACITY_FULL: 'capacity_full',
   CLOSED: 'closed',
   CANCELLED: 'cancelled',
   EXPIRED: 'expired',

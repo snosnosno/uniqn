@@ -81,7 +81,12 @@ export function WeeklyStaffWidget() {
   const { data, isLoading, error, refetch } = useMyJobPostings();
 
   const activePostings = React.useMemo(
-    () => (data ?? []).filter((p) => p.status === 'active' || p.status === 'approved').slice(0, 3),
+    () =>
+      (data ?? [])
+        .filter(
+          (p) => p.status === 'active' || p.status === 'approved' || p.status === 'capacity_full'
+        )
+        .slice(0, 3),
     [data]
   );
 

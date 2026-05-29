@@ -24,7 +24,9 @@ export function CancellationWidget() {
   const activePostingIds = React.useMemo(
     () =>
       (postings ?? [])
-        .filter((p) => p.status === 'active' || p.status === 'approved')
+        .filter(
+          (p) => p.status === 'active' || p.status === 'approved' || p.status === 'capacity_full'
+        )
         .map((p) => p.id)
         .slice(0, 5),
     [postings]

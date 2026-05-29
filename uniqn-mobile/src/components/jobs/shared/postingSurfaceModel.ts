@@ -132,6 +132,8 @@ export function getPostingStatusMeta(status: JobPostingStatus): PostingStatusMet
       return { label: '승인대기', variant: 'warning' };
     case 'approved':
       return { label: '승인완료', variant: 'primary' };
+    case 'capacity_full':
+      return { label: '정원 마감', variant: 'default' };
     case 'closed':
     case 'expired':
       return { label: status === 'closed' ? '마감' : '만료됨', variant: 'default' };

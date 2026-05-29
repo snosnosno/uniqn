@@ -88,7 +88,13 @@ export function buildPostingFacts(posting: JobPosting): PostingFacts {
     useSameSalary: posting.compensation.mode === 'shared',
     hasRoleSpecificSalary: posting.compensation.mode === 'by_role' && salaryRows.length > 0,
   };
-  const postingFull = posting.totalPositions > 0 && filledPositions >= posting.totalPositions;
+  // capacity_full: 트리거 자동 전이로 마감된 정원. 미배포 구버전/미전이 active 공고 대비
+  // derived(filled>=total) 검사도 fallback 으로 유지.
+  const postingFull =
+    posting.status === 'capacity_full' ||
+    (posting.status === 'active' &&
+      posting.totalPositions > 0 &&
+      filledPositions >= posting.totalPositions);
   const unsupportedWorkflow = !isSupportedReleasePosting(posting);
   const canApply =
     posting.status === 'active' &&
@@ -98,10 +104,10 @@ export function buildPostingFacts(posting: JobPosting): PostingFacts {
   let applicationReason: PostingApplicationEligibility['reason'];
   if (unsupportedWorkflow) {
     applicationReason = 'unsupported_workflow';
-  } else if (posting.status !== 'active') {
-    applicationReason = 'inactive';
   } else if (postingFull) {
     applicationReason = 'posting_full';
+  } else if (posting.status !== 'active') {
+    applicationReason = 'inactive';
   } else if (!roleAvailability.hasAvailableRoles) {
     applicationReason = 'role_full';
   }

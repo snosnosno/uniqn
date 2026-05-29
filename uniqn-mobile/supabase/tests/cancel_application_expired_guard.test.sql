@@ -1,12 +1,15 @@
 -- ============================================================
 -- T-B4: cancel_application_atomically expired 재오픈 가드 테스트
 -- ============================================================
--- ACTIVATED 2026-05-28: 20260528120000_cancel_rpc_expired_reopen_guard.sql 가
--- reopen 분기에 closed_reason NOT IN ('expired', 'expired_by_work_date') 가드 추가.
--- 동시에 fixture 의 jp.filled_positions 를 1 → 0 으로 낮춤. SP3 트리거
--- (20260525190000_filled_positions_trigger.sql) 가 application INSERT 시점에
--- status='cancellation_pending' 을 filled +1 처리하므로, 의도한 시작값(1) 을
--- 얻으려면 jp 시드를 0 으로 두고 트리거에 맡겨야 한다.
+-- ACTIVATED: cancel_application_atomically 의 expired reopen 가드 테스트.
+-- 두 마이그레이션이 누적 적용된 상태를 검증한다:
+--   1) 20260528120000_cancel_rpc_expired_reopen_guard.sql (PR #153) —
+--      reopen 분기에 closed_reason IN ('expired','expired_by_work_date') → closed 유지.
+--   2) 20260529100200_M3_cancel_reopen_guard.sql (capacity_full PR) —
+--      위 가드 보존 + capacity_full→active 분기 추가(narrow, manual closed 는 active 재오픈 유지).
+-- fixture jp.filled_positions 는 1 → 0 으로 보정: SP3 트리거
+-- (20260525190000_filled_positions_trigger.sql) 가 cancellation_pending INSERT 시
+-- filled +1 하므로, jp 시드를 0 으로 두고 트리거가 채우게 한다(cancel 이 되돌림 → 최종 0).
 -- ============================================================
 -- 목적: closed_reason이 'expired' / 'expired_by_work_date'인 공고는
 --       취소 승인 후에도 closed 상태를 유지해야 함을 검증.

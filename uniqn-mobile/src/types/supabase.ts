@@ -2621,6 +2621,7 @@ export type Database = {
         | 'pending'
         | 'approved'
         | 'active'
+        | 'capacity_full'
         | 'closed'
         | 'cancelled'
         | 'expired'
@@ -2806,6 +2807,7 @@ export const Constants = {
         'pending',
         'approved',
         'active',
+        'capacity_full',
         'closed',
         'cancelled',
         'expired',

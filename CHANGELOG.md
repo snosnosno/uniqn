@@ -5,6 +5,22 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.0.0/)를 기반으로 하며,
 이 프로젝트는 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 준수합니다.
 
+## [Unreleased] - 2026-05-29
+
+### Added
+- 공고 자동마감(Approach B): `posting_status` enum에 `capacity_full` 추가 (M1). 정원 도달 시 자동 마감, 빈자리 발생 시 자동 복귀 대기 상태
+- `fn_update_job_posting_stats` 트리거에 인원마감 자동 전이 추가 (M2): `active`↔`capacity_full` (closed/cancelled/draft 불변)
+- 공고 카드/배지에 `capacity_full` "정원 마감" 회색 라벨 + 지원 버튼 비활성 (T7)
+- pgTAP `capacity_full_transition.test.sql` (전이 5시나리오) + e2e `posting-capacity-recovery.spec.ts` (T5/T6)
+
+### Fixed
+- `cancel_application_atomically` reopen 가드 강화 (M3): `closed_reason IN ('expired','expired_by_work_date')` 공고는 취소 후에도 `closed` 유지(cron 만료 의도 보존), `capacity_full`은 `active`로 자동 재노출. manual closed는 기존대로 재오픈(PR #153 정합)
+- `cancel_application_expired_guard` pgTAP 재활성화 (SP3 트리거 정합 위해 fixture `filled_positions` 1→0 보정)
+- (/review P0) `jobPosting.schema.ts` read/filter Zod enum에 `capacity_full` 추가 — 누락 시 M2 전이 공고가 `parseJobPostingDocument` safeParse 실패로 모든 read 경로에서 증발(PR #146 패턴 재발 차단)
+- (/review M4) 공개 SELECT RLS(`jp_select_public_search`/`jp_select`) 허용 status에 `capacity_full` 추가 — 공유 링크/확정 스태프 상세 조회 가능
+- (/review M5) 만료 cron 2종 + 소유자 만료 알림 + `get_job_posting_stats`에 `capacity_full` 포함 — 정원 마감 공고의 zombie(미만료)·통계 과소집계 방지
+- (/review) 구인자 카드 "마감하기" 버튼 + 홈 위젯(개요/주간스태프/취소요청) 필터에 `capacity_full` 포함
+
 ## [0.0.1.1] - 2026-04-18
 
 ### Fixed

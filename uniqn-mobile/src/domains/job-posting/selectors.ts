@@ -125,8 +125,12 @@ export function selectPostingApplicationEligibility(
 ): PostingApplicationEligibility {
   const workflow = selectPostingWorkflow(posting);
   const roleAvailability = selectPostingRoleAvailability(posting);
+  // capacity_full: 트리거 자동 전이로 마감된 정원. 미배포/미전이 active 공고 대비 derived fallback 유지.
   const postingFull =
-    posting.totalPositions > 0 && posting.filledPositions >= posting.totalPositions;
+    posting.status === 'capacity_full' ||
+    (posting.status === 'active' &&
+      posting.totalPositions > 0 &&
+      posting.filledPositions >= posting.totalPositions);
   const unsupportedWorkflow = !isSupportedReleasePosting(posting);
   const canApply =
     posting.status === 'active' &&
@@ -137,10 +141,10 @@ export function selectPostingApplicationEligibility(
   let reason: PostingApplicationEligibility['reason'];
   if (unsupportedWorkflow) {
     reason = 'unsupported_workflow';
-  } else if (posting.status !== 'active') {
-    reason = 'inactive';
   } else if (postingFull) {
     reason = 'posting_full';
+  } else if (posting.status !== 'active') {
+    reason = 'inactive';
   } else if (!roleAvailability.hasAvailableRoles) {
     reason = 'role_full';
   }
