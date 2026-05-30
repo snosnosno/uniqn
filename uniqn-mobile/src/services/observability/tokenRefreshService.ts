@@ -403,9 +403,13 @@ export function start(
   appStateSubscription = AppState.addEventListener('change', handleAppStateChange);
 
   // 초기 네트워크 상태 확인
-  NetInfo.fetch().then((netState) => {
-    isOnline = netState.isConnected === true && netState.isInternetReachable !== false;
-  });
+  NetInfo.fetch()
+    .then((netState) => {
+      isOnline = netState.isConnected === true && netState.isInternetReachable !== false;
+    })
+    .catch((error) => {
+      logger.warn('초기 네트워크 상태 조회 실패', { error: toError(error).message });
+    });
 
   // 초기 앱 상태
   appState = AppState.currentState;
