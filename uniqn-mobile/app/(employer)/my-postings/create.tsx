@@ -21,6 +21,7 @@ import { TemplateModal } from '@/components/employer/job-form/modals/TemplateMod
 import { LoadTemplateModal } from '@/components/employer/job-form/modals/LoadTemplateModal';
 import { StackHeader } from '@/components/headers';
 import { WalletBalanceBadge } from '@/components/wallet';
+import { usePostingCost } from '@/hooks/usePostingCost';
 
 export default function CreateJobPostingScreen() {
   const router = useRouter();
@@ -35,6 +36,7 @@ export default function CreateJobPostingScreen() {
 
   const createJobPosting = useCreateJobPosting();
   const templateManager = useTemplateManager();
+  const postingCost = usePostingCost(formData.postingType ?? 'regular', user?.uid);
 
   const updateFormData = useCallback((data: Partial<JobPostingFormData>) => {
     setIsDirty(true);
@@ -89,6 +91,18 @@ export default function CreateJobPostingScreen() {
           보유 잔액
         </Text>
         <WalletBalanceBadge testID="create-wallet-badge" />
+      </View>
+      <View className="flex-row items-center justify-between px-4 pb-2">
+        <Text className="text-xs font-sans text-secondary-500 dark:text-secondary-400">
+          게시 비용
+        </Text>
+        <Text className="text-sm font-sans-semibold text-content-primary dark:text-secondary-100">
+          {postingCost.data === null || postingCost.data === undefined
+            ? '—'
+            : postingCost.data.cost === 0
+              ? '무료'
+              : `${postingCost.data.cost}${postingCost.data.currency_hint === 'heart_first' ? '💖' : '💎'}`}
+        </Text>
       </View>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
