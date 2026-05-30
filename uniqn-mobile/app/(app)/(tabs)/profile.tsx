@@ -37,6 +37,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { getRoleDisplayName } from '@/types/unified';
 import { EmployerApplicationStatusBanner } from '@/components/employer-application';
+import { WalletBalanceBadge } from '@/components/wallet';
 
 interface MenuItemProps {
   icon: ReactNode;
@@ -175,6 +176,15 @@ export default function ProfileScreen() {
             </View>
             <EditIcon size={20} color={SECONDARY_PALETTE[400]} />
           </Pressable>
+        </Card>
+
+        <Card className="mb-4">
+          <View className="flex-row items-center justify-between py-1">
+            <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
+              내 지갑
+            </Text>
+            <WalletBalanceBadge testID="profile-wallet-badge" />
+          </View>
         </Card>
 
         <Card className="mb-4">

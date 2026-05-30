@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { KeyboardAvoidingView, Platform } from 'react-native';
+import { KeyboardAvoidingView, Platform, View, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,6 +20,7 @@ import { JobPostingScrollForm } from '@/components/employer/job-form';
 import { TemplateModal } from '@/components/employer/job-form/modals/TemplateModal';
 import { LoadTemplateModal } from '@/components/employer/job-form/modals/LoadTemplateModal';
 import { StackHeader } from '@/components/headers';
+import { WalletBalanceBadge } from '@/components/wallet';
 
 export default function CreateJobPostingScreen() {
   const router = useRouter();
@@ -83,6 +84,12 @@ export default function CreateJobPostingScreen() {
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="공고 작성" fallbackHref="/(app)/(tabs)/employer" />
+      <View className="flex-row items-center justify-between px-4 py-2">
+        <Text className="text-xs font-sans text-secondary-500 dark:text-secondary-400">
+          보유 잔액
+        </Text>
+        <WalletBalanceBadge testID="create-wallet-badge" />
+      </View>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
