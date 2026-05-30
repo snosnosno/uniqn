@@ -3,6 +3,7 @@
  */
 
 import { act, renderHook } from '@testing-library/react-native';
+import { ERROR_CODES } from '@/errors';
 import { createMockApplication, resetCounters } from '../mocks/factories';
 import {
   useApplicantManagement,
@@ -445,6 +446,7 @@ describe('useApplicantManagement Hooks', () => {
         successCount: 2,
         failedCount: 1,
         failedIds: ['app-3'],
+        failed: [{ applicationId: 'app-3', reason: '확정에 실패했습니다.' }],
         workLogIds: ['worklog-1', 'worklog-2'],
       });
 
@@ -457,6 +459,34 @@ describe('useApplicantManagement Hooks', () => {
       expect(mockAddToast).toHaveBeenCalledWith({
         type: 'warning',
         message: '1명 확정이 실패했습니다.',
+      });
+    });
+
+    it('should surface capacity-full reason in bulk confirm warning toast', async () => {
+      mockBulkConfirmApplications.mockResolvedValueOnce({
+        successCount: 1,
+        failedCount: 2,
+        failedIds: ['app-2', 'app-3'],
+        failed: [
+          {
+            applicationId: 'app-2',
+            code: ERROR_CODES.BUSINESS_MAX_CAPACITY_REACHED,
+            reason: '모집 인원이 마감되었습니다.',
+          },
+          { applicationId: 'app-3', reason: '확정에 실패했습니다.' },
+        ],
+        workLogIds: ['worklog-1'],
+      });
+
+      const { result } = renderHook(() => useBulkConfirmApplications());
+
+      await act(async () => {
+        result.current.mutate(['app-1', 'app-2', 'app-3']);
+      });
+
+      expect(mockAddToast).toHaveBeenCalledWith({
+        type: 'warning',
+        message: '2명 확정 실패 (정원 마감 1명).',
       });
     });
 
