@@ -10,6 +10,7 @@ import { FIXED_TIME_MARKER } from '@/types/assignment';
 import { getRoleDisplayName } from '@/types/unified';
 import { getAllowanceItems } from '@/utils/allowanceUtils';
 import { isSupportedReleasePosting } from '@/utils/jobPostingVisibility';
+import { logger } from '@/utils/logger';
 import {
   getPostingDefaultSalary,
   getPostingDateGroups,
@@ -23,6 +24,35 @@ import {
   getPostingTaxLabel,
 } from './core';
 import { selectPostingWorkflow } from './selectors';
+
+/**
+ * filledPositions 단일 권위 해소 (SP3)
+ *
+ * @description top-level filled_positions 컬럼이 권위(fn_update_job_posting_stats 트리거로 갱신).
+ * stats.filledPositions 는 부차 미러로, column 이 null/undefined 일 때만 fallback.
+ * 두 값이 모두 존재하고 서로 다르면 divergence 를 logger.warn 으로 관측(무성 불일치 방지).
+ */
+function resolveFilledPositions(posting: JobPosting): number {
+  // 타입상 number 이지만 레거시/부분 데이터 런타임 방어로 nullable 로 본다.
+  const column: number | null | undefined = posting.filledPositions;
+  const mirror: number | null | undefined = posting.stats?.filledPositions;
+
+  if (column === null || column === undefined) {
+    return mirror ?? 0;
+  }
+
+  if (mirror !== null && mirror !== undefined && mirror !== column) {
+    logger.warn('filledPositions divergence between column and stats mirror', {
+      component: 'job-posting/facts',
+      action: 'resolveFilledPositions',
+      postingId: posting.id,
+      columnFilledPositions: column,
+      statsFilledPositions: mirror,
+    });
+  }
+
+  return column;
+}
 
 export function buildPostingFacts(posting: JobPosting): PostingFacts {
   const workflow = selectPostingWorkflow(posting);
@@ -54,7 +84,7 @@ export function buildPostingFacts(posting: JobPosting): PostingFacts {
   };
   const salaryRows = getPostingSalaryRows(posting);
   const defaultSalary = getPostingDefaultSalary(posting);
-  const filledPositions = posting.filledPositions ?? posting.stats?.filledPositions ?? 0;
+  const filledPositions = resolveFilledPositions(posting);
   const allowanceLabels = getAllowanceItems(posting.compensation.allowances);
   const dateRequirements = getPostingDateRequirements(posting);
   const requiredRolesWithCount = getPostingRequiredRolesWithCount(posting);
