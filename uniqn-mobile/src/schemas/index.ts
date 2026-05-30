@@ -339,6 +339,18 @@ export type {
   ReportDocumentData,
 } from './report.schema';
 
+// 구인자 등록 신청 스키마
+export {
+  employerApplicationRejectionCategorySchema,
+  employerApplicationRejectReasonSchema,
+  rejectEmployerApplicationSchema,
+} from './employerApplication.schema';
+
+export type {
+  EmployerApplicationRejectionCategorySchema,
+  RejectEmployerApplicationData,
+} from './employerApplication.schema';
+
 // 게시판 메타데이터 스키마
 export { BoardJobSummarySchema, BoardPostMetadataSchema } from './boardMetadata.schema';
 

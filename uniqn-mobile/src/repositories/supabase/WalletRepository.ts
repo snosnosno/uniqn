@@ -16,6 +16,7 @@ import {
   type DiamondProduct,
   type WalletSummary,
 } from '@/types/wallet';
+import type { IWalletRepository } from '../interfaces';
 
 const TABLES = {
   DIAMOND_PRODUCTS: 'diamond_products',
@@ -24,7 +25,7 @@ const TABLES = {
 const DIAMOND_PRODUCT_COLUMNS =
   'product_id, diamonds, bonus_diamonds, price_krw, display_order, active' as const;
 
-export const WalletRepository = {
+export const WalletRepository: IWalletRepository = {
   /**
    * 현재 사용자(또는 지정 사용자)의 지갑 요약 조회.
    *

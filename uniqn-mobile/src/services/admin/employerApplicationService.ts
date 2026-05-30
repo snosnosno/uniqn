@@ -24,6 +24,7 @@ import type {
 } from '@/repositories';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { requireAdminUser } from '@/services/auth/authorizationService';
+import { rejectEmployerApplicationSchema } from '@/schemas/employerApplication.schema';
 
 // ============================================================================
 // Types
@@ -153,7 +154,8 @@ export async function rejectEmployerApplication(
 ): Promise<ApproveRejectResult> {
   await requireAdminUser();
 
-  const { applicationId, reason, category } = input;
+  // 거부 사유 자유 텍스트 XSS 방어 (시스템 경계 입력 검증)
+  const { applicationId, reason, category } = rejectEmployerApplicationSchema.parse(input);
 
   try {
     logger.info('구인자 신청 거부 처리', {

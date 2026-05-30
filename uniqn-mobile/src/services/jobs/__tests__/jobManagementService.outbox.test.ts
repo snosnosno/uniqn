@@ -3,6 +3,10 @@
  *
  * 기존 syncScheduleBoardSafely (fire-and-forget)가 outbox insert로 교체되었음을 확인.
  * 6개 mutation이 각각 올바른 action으로 outbox에 row를 enqueue하는지 검증.
+ *
+ * U4: outbox insert(snake_case 매핑)가 Repository.enqueueScheduleBoardSync 로 이관됨.
+ * Service 는 Repository 메서드만 호출하므로, 모킹된 repo 의 enqueueScheduleBoardSync 가
+ * snake_case row 를 supabase mock 에 insert 하도록 하여 기존 assertion 을 유지한다.
  */
 
 import {
@@ -35,6 +39,22 @@ jest.mock('@/repositories', () => ({
     getStatsByOwnerId: jest.fn(),
     getById: jest.fn(),
     updateStatus: jest.fn(),
+    // U4: Service 는 repo 메서드만 호출. 실제 구현과 동일한 snake_case 매핑으로
+    // outbox row 를 mock 에 insert 하여 enqueue 의도 assertion 을 검증한다.
+    enqueueScheduleBoardSync: (
+      jobPostingId: string,
+      action: string,
+      payload: Record<string, unknown> = {}
+    ) => {
+      mockOutboxInsert({
+        job_posting_id: jobPostingId,
+        action,
+        payload,
+        status: 'pending',
+        retry_count: 0,
+      });
+      return Promise.resolve();
+    },
   },
 }));
 

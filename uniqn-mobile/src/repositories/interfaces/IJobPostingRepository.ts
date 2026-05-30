@@ -89,6 +89,13 @@ export interface JobPostingSubscriptionCallbacks {
   onError?: (error: Error) => void;
 }
 
+/**
+ * schedule_board_sync_outbox action 종류.
+ *
+ * outbox CHECK 제약과 동일한 값 집합. Service 가 mutation 후 enqueue 시 사용.
+ */
+export type ScheduleBoardSyncAction = 'create' | 'update' | 'delete' | 'close' | 'reopen';
+
 // ============================================================================
 // Interface
 // ============================================================================
@@ -336,4 +343,25 @@ export interface IJobPostingRepository {
    * @returns 구독 해제 함수
    */
   subscribeById(jobPostingId: string, callbacks: JobPostingSubscriptionCallbacks): UnsubscribeFn;
+
+  // ==========================================================================
+  // Schedule Board Sync Outbox
+  // ==========================================================================
+
+  /**
+   * schedule_board_sync_outbox 에 sync 의도를 영속화 (enqueue).
+   *
+   * @description sync-schedule-board-outbox Edge Function 이 poll → sync_schedule_board
+   *   RPC 호출 → status 업데이트로 처리한다. snake_case 매핑은 Repository 내부에서 수행.
+   *   enqueue 실패는 main mutation 을 롤백시키지 않으며 warn 로그만 남긴다 (아키텍처 결정).
+   *
+   * @param jobPostingId - 공고 ID
+   * @param action - outbox action (create/update/delete/close/reopen)
+   * @param payload - sync RPC 가 참조할 부가 데이터 (기본 {})
+   */
+  enqueueScheduleBoardSync(
+    jobPostingId: string,
+    action: ScheduleBoardSyncAction,
+    payload?: Record<string, unknown>
+  ): Promise<void>;
 }

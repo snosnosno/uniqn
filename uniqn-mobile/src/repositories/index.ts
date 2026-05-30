@@ -62,6 +62,7 @@ export type {
   CreateJobPostingResult,
   JobPostingStats,
   JobPostingSubscriptionCallbacks,
+  ScheduleBoardSyncAction,
   // WorkLog
   IWorkLogRepository,
   WorkLogStats,
