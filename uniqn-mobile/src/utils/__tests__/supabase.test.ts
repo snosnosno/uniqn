@@ -1,4 +1,5 @@
-import { toCamelCase, toSnakeCase } from '@/utils/supabase';
+import { handleSupabaseError, toCamelCase, toSnakeCase } from '@/utils/supabase';
+import { ERROR_CODES, isMaxCapacityReachedError } from '@/errors';
 
 describe('toCamelCase', () => {
   describe('기본 변환', () => {
@@ -112,6 +113,48 @@ describe('toCamelCase', () => {
         nestedObj: nested, // 중첩 객체는 변환 안 함 (키만 camelCase)
       });
     });
+  });
+});
+
+describe('handleSupabaseError — P0001 (plpgsql RAISE EXCEPTION)', () => {
+  it('P0001 + MAX_CAPACITY_REACHED → MaxCapacityReachedError (클라 사전검사와 동일 메시지)', () => {
+    try {
+      handleSupabaseError(
+        {
+          code: 'P0001',
+          message: 'MAX_CAPACITY_REACHED: 모집 인원 5명 초과',
+          details: '',
+          hint: '',
+        },
+        { operation: 'rpc:confirm_application', table: 'applications' }
+      );
+      throw new Error('should have thrown');
+    } catch (error) {
+      expect(isMaxCapacityReachedError(error)).toBe(true);
+      const appError = error as { code: string; userMessage: string };
+      expect(appError.code).toBe(ERROR_CODES.BUSINESS_MAX_CAPACITY_REACHED);
+      // userMessage는 클라 사전검사 경로(MaxCapacityReachedError 기본값)와 일원화
+      expect(appError.userMessage).toBe('모집 인원이 마감되었습니다');
+    }
+  });
+
+  it('P0001 이지만 MAX_CAPACITY 메시지 아님 → 정원마감 매핑 안 함 (기존 동작 유지)', () => {
+    try {
+      handleSupabaseError(
+        {
+          code: 'P0001',
+          message: 'SOME_OTHER_BUSINESS_ERROR: 다른 사유',
+          details: '',
+          hint: '',
+        },
+        { operation: 'rpc:other', table: 'applications' }
+      );
+      throw new Error('should have thrown');
+    } catch (error) {
+      expect(isMaxCapacityReachedError(error)).toBe(false);
+      const appError = error as { code: string };
+      expect(appError.code).toBe(ERROR_CODES.UNKNOWN);
+    }
   });
 });
 

@@ -19,6 +19,7 @@ import { logger } from '@/utils/logger';
 import {
   AppError,
   BusinessError,
+  MaxCapacityReachedError,
   NetworkError,
   PermissionError,
   AuthError as AppAuthError,
@@ -95,6 +96,20 @@ export function handleSupabaseError(error: unknown, context: SupabaseErrorContex
   // PostgrestError 형태 ({ code, message, details, hint })
   if (isPostgrestError(error)) {
     metadata.supabaseCode = error.code;
+
+    // P0001 = plpgsql RAISE EXCEPTION (서버 RPC가 던지는 비즈니스 예외).
+    // 정원초과(`MAX_CAPACITY_REACHED: ...`)는 클라 사전검사(MaxCapacityReachedError)와
+    // 동일한 사용자 메시지로 일원화한다. POSTGREST_ERROR_MAP에는 P0001이 없으므로
+    // (없으면 UNKNOWN으로 raw 영문 노출) 매핑 조회 전에 우선 분기한다.
+    // 다른 P0001 메시지는 아래 일반 흐름(UNKNOWN/infrastructure)으로 처리한다.
+    if (error.code === 'P0001' && error.message.includes('MAX_CAPACITY')) {
+      throw new MaxCapacityReachedError({
+        message: error.message,
+        // userMessage 미지정 → ERROR_CODES 기반 기본 메시지('모집 인원이 마감되었습니다') 사용
+        // 으로 클라 사전검사 경로와 동일한 문구를 보장한다.
+      });
+    }
+
     const mapping = POSTGREST_ERROR_MAP[error.code];
 
     if (mapping) {
@@ -643,6 +658,12 @@ export function clearRealtimeRegistry(): void {
  * @param obj - camelCase 키를 가진 객체
  * @returns snake_case 키를 가진 새 객체 (원본 불변)
  *
+ * @remarks
+ * **계약: top-level 키만 변환한다(shallow, 재귀 없음).** 중첩 객체/배열의 내부 키는
+ * 변환하지 않으므로, JSONB 컬럼에 저장하는 값은 호출자가 직접 적절한 형태로 만들어야 한다.
+ * 권위(authority)는 camelCase이며, JSONB 컬럼 내부도 camelCase로 저장돼 있어야
+ * 읽기 시 Zod 파싱이 통과한다(읽기 경로는 JSONB 내부를 재귀 변환하지 않음).
+ *
  * @example
  * ```typescript
  * toSnakeCase({ userId: '1', createdAt: new Date() })
@@ -668,6 +689,12 @@ export function toSnakeCase(obj: Record<string, unknown>): Record<string, unknow
  *              Repository 레이어의 읽기 작업에서 사용.
  * @param obj - snake_case 키를 가진 객체
  * @returns camelCase 키를 가진 새 객체 (원본 불변)
+ *
+ * @remarks
+ * **계약: top-level 키만 변환한다(shallow, 재귀 없음).** JSONB 컬럼의 값은 객체/배열로
+ * 통째로 전달될 뿐 내부 키는 변환되지 않는다. 따라서 JSONB는 camelCase로 저장돼 있어야
+ * 후속 Zod 파싱이 통과한다(권위=camelCase). snake_case로 저장된 JSONB는 변환되지 않아
+ * 파싱에서 reject될 수 있다.
  *
  * @example
  * ```typescript
