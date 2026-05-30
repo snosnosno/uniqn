@@ -60,3 +60,25 @@ export const DiamondProductSchema = z.object({
   active: z.boolean(),
 });
 export type DiamondProduct = z.infer<typeof DiamondProductSchema>;
+
+// ============================================================================
+// claim_daily_attendance RPC 응답
+// ============================================================================
+
+export const ClaimAttendanceSuccessSchema = z.object({
+  success: z.literal(true),
+  lot_id: z.string().uuid(),
+  expires_at: z.string(),
+  amount: z.number().int().positive(),
+});
+
+export const ClaimAttendanceAlreadySchema = z.object({
+  success: z.literal(false),
+  error: z.literal('already_attended_today'),
+});
+
+export const ClaimAttendanceResponseSchema = z.discriminatedUnion('success', [
+  ClaimAttendanceSuccessSchema,
+  ClaimAttendanceAlreadySchema,
+]);
+export type ClaimAttendanceResponse = z.infer<typeof ClaimAttendanceResponseSchema>;
