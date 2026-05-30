@@ -558,6 +558,12 @@ export const queryKeys = {
     adminDetail: (id: string) =>
       [...queryKeys.employerApplications.all, 'admin', 'detail', id] as const,
   },
+
+  // 지갑 (wallet — 결제/적립)
+  wallet: {
+    all: ['wallet'] as const,
+    summary: (uid?: string) => [...queryKeys.wallet.all, 'summary', uid ?? 'me'] as const,
+  },
 } as const;
 
 // ============================================================================
@@ -656,6 +662,11 @@ export const queryCachingOptions = {
   reviews: {
     staleTime: cachingPolicies.standard,
     gcTime: 15 * 60 * 1000, // 15분
+  },
+  /** 지갑 잔액 - 5분 (차감/충전 시 동기 invalidate로 즉시 갱신) */
+  wallet: {
+    staleTime: cachingPolicies.frequent,
+    gcTime: 10 * 60 * 1000, // 10분
   },
 } as const;
 
