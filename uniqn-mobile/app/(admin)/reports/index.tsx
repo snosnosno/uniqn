@@ -15,7 +15,7 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useState, useMemo, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, TextInput, RefreshControl } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { AppFlashList } from '@/components/ui/AppFlashList';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { StackHeader } from '@/components/headers';
@@ -273,11 +273,10 @@ export default function AdminReportsPage() {
       </View>
 
       {/* 신고 목록 */}
-      <FlashList
+      <AppFlashList
         data={filteredReports}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
-        // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
         estimatedItemSize={140}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} />}
         ListEmptyComponent={

@@ -1,7 +1,7 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useCallback, useMemo } from 'react';
 import { View, Text, RefreshControl, ActivityIndicator, Pressable } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { AppFlashList } from '@/components/ui/AppFlashList';
 import { Badge, Skeleton, EmptyState } from '@/components/ui';
 import { useThemeStore } from '@/stores/themeStore';
 import { WorkTimeDisplay } from '@/shared/time';
@@ -274,11 +274,10 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
     }
 
     return (
-      <FlashList
+      <AppFlashList
         data={workLogs}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
-        // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
         estimatedItemSize={180}
         contentContainerStyle={{ padding: 16 }}
         showsVerticalScrollIndicator={false}

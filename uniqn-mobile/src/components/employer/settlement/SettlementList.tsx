@@ -8,7 +8,7 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, RefreshControl } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { AppFlashList } from '@/components/ui/AppFlashList';
 import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import { GroupedSettlementCard } from './GroupedSettlementCard';
 import { SettlementSummaryCard } from './SettlementSummaryCard';
@@ -348,11 +348,10 @@ export function SettlementList({
       )}
 
       {/* 목록 */}
-      <FlashList
+      <AppFlashList
         data={groupedSettlements}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
-        // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
         // 그룹 카드는 펼침 가능하여 높이가 가변적 (기본 약 200, 펼침 시 최대 ~500)
         estimatedItemSize={250}
         refreshControl={

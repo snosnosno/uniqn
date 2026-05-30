@@ -8,7 +8,7 @@ import { View, RefreshControl, ActivityIndicator } from 'react-native';
 import { PRIMARY_COLORS } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { FlashList } from '@shopify/flash-list';
+import { AppFlashList } from '@/components/ui/AppFlashList';
 import { EmptyState } from '@/components/ui';
 import { InquiryCard, INQUIRY_STATUS_STRIPE_TONE } from '@/components/support';
 import { StackHeader } from '@/components/headers';
@@ -87,10 +87,9 @@ export default function MyInquiriesScreen() {
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="문의 내역" fallbackHref="/(app)/support" />
-      <FlashList
+      <AppFlashList
         data={inquiries}
         renderItem={renderItem}
-        // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
         estimatedItemSize={100}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingTop: 16, paddingBottom: 16 }}
