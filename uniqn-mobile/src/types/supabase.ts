@@ -1007,6 +1007,13 @@ export type Database = {
             referencedRelation: 'job_postings';
             referencedColumns: ['id'];
           },
+          {
+            foreignKeyName: 'job_posting_collaborators_user_id_public_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
         ];
       };
       job_posting_templates: {
@@ -2047,6 +2054,7 @@ export type Database = {
       };
       workspaces: {
         Row: {
+          archived_at: string | null;
           created_at: string;
           id: string;
           member_count: number;
@@ -2055,6 +2063,7 @@ export type Database = {
           updated_at: string;
         };
         Insert: {
+          archived_at?: string | null;
           created_at?: string;
           id?: string;
           member_count?: number;
@@ -2063,6 +2072,7 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
+          archived_at?: string | null;
           created_at?: string;
           id?: string;
           member_count?: number;
@@ -2089,11 +2099,20 @@ export type Database = {
         Args: { p_jp: Database['public']['Tables']['job_postings']['Row'] };
         Returns: string;
       };
+      _calc_posting_cost: {
+        Args: { p_owner_id: string; p_type: string };
+        Returns: number;
+      };
       _fmt_worklog_time: { Args: { p_ts: string }; Returns: string };
       _format_compensation_label: {
         Args: { p_compensation: Json };
         Returns: string;
       };
+      _posting_role_key: {
+        Args: { p_custom_role: string; p_role: string };
+        Returns: string;
+      };
+      _posting_slot_key: { Args: { p_time_slot: string }; Returns: string };
       accept_workspace_invitation: {
         Args: { p_invitation_id: string };
         Returns: Json;
@@ -2122,6 +2141,11 @@ export type Database = {
         Args: { p_app_id: string };
         Returns: Json;
       };
+      archive_workspace: {
+        Args: { p_workspace_id: string };
+        Returns: undefined;
+      };
+      backfill_signup_hearts: { Args: never; Returns: number };
       cancel_application_atomically: {
         Args: {
           p_actor_id: string;
@@ -2187,12 +2211,21 @@ export type Database = {
         };
         Returns: Json;
       };
+      count_posting_confirmed_by_slot: {
+        Args: { p_job_posting_ids: string[] };
+        Returns: {
+          confirmed_count: number;
+          job_posting_id: string;
+          role_key: string;
+          time_slot: string;
+          work_date: string;
+        }[];
+      };
       create_job_posting_with_payment_atomically: {
         Args: {
-          p_cost_diamonds: number;
           p_owner_id: string;
           p_posting_payload: Json;
-          p_reason: Database['public']['Enums']['wallet_reason'];
+          p_reason?: Database['public']['Enums']['wallet_reason'];
         };
         Returns: Json;
       };
@@ -2217,6 +2250,7 @@ export type Database = {
       create_workspace: {
         Args: { p_name: string };
         Returns: {
+          archived_at: string | null;
           created_at: string;
           id: string;
           member_count: number;
@@ -2266,6 +2300,20 @@ export type Database = {
         Returns: Json;
       };
       get_my_role: { Args: never; Returns: string };
+      get_posting_cost: {
+        Args: { p_owner_id: string; p_type: string };
+        Returns: Json;
+      };
+      get_posting_filled_counts: {
+        Args: { p_job_posting_ids: string[] };
+        Returns: {
+          confirmed_count: number;
+          job_posting_id: string;
+          role_key: string;
+          time_slot: string;
+          work_date: string;
+        }[];
+      };
       get_regular_posting_date_counts: {
         Args: { p_end_date: string; p_start_date: string };
         Returns: {
@@ -2508,6 +2556,7 @@ export type Database = {
       list_my_workspaces: {
         Args: never;
         Returns: {
+          archived_at: string;
           created_at: string;
           id: string;
           member_count: number;
@@ -2549,6 +2598,10 @@ export type Database = {
         Returns: undefined;
       };
       reset_unread_counter: { Args: { p_user_id: string }; Returns: undefined };
+      restore_workspace: {
+        Args: { p_workspace_id: string };
+        Returns: undefined;
+      };
       review_report: {
         Args: {
           p_report_id: string;

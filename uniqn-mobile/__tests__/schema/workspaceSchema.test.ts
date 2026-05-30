@@ -27,6 +27,7 @@ describe('workspace schema (PR #1 — M1 migration)', () => {
       member_count: 0,
       created_at: '2026-04-30T00:00:00.000Z',
       updated_at: '2026-04-30T00:00:00.000Z',
+      archived_at: null,
     };
     expect(sample.member_count).toBe(0);
     expect(sample.name.length).toBeGreaterThan(0);
