@@ -8,7 +8,7 @@
 
 import { WalletRepository } from '@/repositories/supabase/WalletRepository';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
-import type { WalletSummary } from '@/types/wallet';
+import type { WalletSummary, PostingCost } from '@/types/wallet';
 
 export type ClaimAttendanceResult =
   | { status: 'claimed'; amount: number; expiresAt: string }
@@ -41,6 +41,20 @@ export async function claimDailyAttendance(): Promise<ClaimAttendanceResult> {
   } catch (error) {
     throw handleServiceError(error, {
       operation: '출석 적립',
+      component: 'walletService',
+    });
+  }
+}
+
+/**
+ * 공고 유형별 비용 조회 — 표시용 단일소스. flag off 시 cost=0.
+ */
+export async function getPostingCost(postingType: string, ownerId: string): Promise<PostingCost> {
+  try {
+    return await WalletRepository.getPostingCost(postingType, ownerId);
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '공고 비용 조회',
       component: 'walletService',
     });
   }

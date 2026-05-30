@@ -563,6 +563,8 @@ export const queryKeys = {
   wallet: {
     all: ['wallet'] as const,
     summary: (uid?: string) => [...queryKeys.wallet.all, 'summary', uid ?? 'me'] as const,
+    postingCost: (type: string, ownerId?: string) =>
+      [...queryKeys.wallet.all, 'posting-cost', type, ownerId ?? 'me'] as const,
   },
 } as const;
 

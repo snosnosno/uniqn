@@ -14,9 +14,11 @@ import {
   DiamondProductSchema,
   WalletSummarySchema,
   ClaimAttendanceResponseSchema,
+  PostingCostSchema,
   type DiamondProduct,
   type WalletSummary,
   type ClaimAttendanceResponse,
+  type PostingCost,
 } from '@/types/wallet';
 
 const TABLES = {
@@ -76,5 +78,25 @@ export const WalletRepository = {
       throw error;
     }
     return ClaimAttendanceResponseSchema.parse(data);
+  },
+
+  /**
+   * 공고 유형별 비용 조회 — 표시용 단일소스. flag off 시 cost=0.
+   *
+   * @param postingType 공고 유형 (예: 'urgent', 'regular')
+   * @param ownerId 공고 소유자 user_id
+   * @returns 비용 정보 (type, cost, is_paid, currency_hint)
+   * @throws Supabase RPC 에러 그대로 throw — Service 계층이 변환.
+   */
+  async getPostingCost(postingType: string, ownerId: string): Promise<PostingCost> {
+    const { data, error } = await supabase.rpc('get_posting_cost', {
+      p_type: postingType,
+      p_owner_id: ownerId,
+    });
+    if (error) {
+      logger.error('wallet.getPostingCost.failed', error, { postingType });
+      throw error;
+    }
+    return PostingCostSchema.parse(data);
   },
 };

@@ -1,12 +1,14 @@
-import { getWalletSummary, claimDailyAttendance } from '../walletService';
+import { getWalletSummary, claimDailyAttendance, getPostingCost } from '../walletService';
 
 const mockGetSummary = jest.fn();
 const mockClaimDailyAttendance = jest.fn();
+const mockGetPostingCost = jest.fn();
 
 jest.mock('@/repositories/supabase/WalletRepository', () => ({
   WalletRepository: {
     getSummary: (...args: unknown[]) => mockGetSummary(...args),
     claimDailyAttendance: (...args: unknown[]) => mockClaimDailyAttendance(...args),
+    getPostingCost: (...args: unknown[]) => mockGetPostingCost(...args),
   },
 }));
 
@@ -71,6 +73,27 @@ describe('walletService.getWalletSummary', () => {
     mockGetSummary.mockRejectedValue(new Error('boom'));
 
     await expect(getWalletSummary()).rejects.toMatchObject({
+      userMessage: expect.any(String),
+    });
+  });
+});
+
+describe('walletService.getPostingCost', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('Repository 결과를 그대로 반환', async () => {
+    mockGetPostingCost.mockResolvedValue({
+      type: 'urgent',
+      cost: 0,
+      is_paid: false,
+      currency_hint: 'diamond',
+    });
+    await expect(getPostingCost('urgent', 'owner-1')).resolves.toMatchObject({ cost: 0 });
+  });
+
+  it('에러를 AppError로 변환', async () => {
+    mockGetPostingCost.mockRejectedValue(new Error('boom'));
+    await expect(getPostingCost('urgent', 'owner-1')).rejects.toMatchObject({
       userMessage: expect.any(String),
     });
   });

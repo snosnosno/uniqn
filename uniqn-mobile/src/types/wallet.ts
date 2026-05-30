@@ -82,3 +82,15 @@ export const ClaimAttendanceResponseSchema = z.discriminatedUnion('success', [
   ClaimAttendanceAlreadySchema,
 ]);
 export type ClaimAttendanceResponse = z.infer<typeof ClaimAttendanceResponseSchema>;
+
+// ============================================================================
+// get_posting_cost RPC 응답
+// ============================================================================
+
+export const PostingCostSchema = z.object({
+  type: z.string(),
+  cost: z.number().int().nonnegative(),
+  is_paid: z.boolean(),
+  currency_hint: z.string(),
+});
+export type PostingCost = z.infer<typeof PostingCostSchema>;
