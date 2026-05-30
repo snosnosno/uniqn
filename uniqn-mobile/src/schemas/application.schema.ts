@@ -11,16 +11,16 @@ import { logger } from '@/utils/logger';
 import { timestampSchema, optionalTimestampSchema, optionalDurationSchema } from './common';
 import type { Application } from '@/types';
 import { VALID_STAFF_ROLES } from '@/types/role';
+import { Constants } from '@/types/supabase';
 
 /**
  * 지원 상태 스키마
+ *
+ * @description DB enum(application_status)을 단일출처로 파생 (인라인 하드코딩 제거, drift 가드).
  */
-export const applicationStatusSchema = z.enum(
-  ['applied', 'confirmed', 'rejected', 'cancelled', 'completed', 'cancellation_pending'],
-  {
-    error: '올바른 지원 상태가 아닙니다',
-  }
-);
+export const applicationStatusSchema = z.enum(Constants.public.Enums.application_status, {
+  error: '올바른 지원 상태가 아닙니다',
+});
 
 export type ApplicationStatusSchema = z.infer<typeof applicationStatusSchema>;
 

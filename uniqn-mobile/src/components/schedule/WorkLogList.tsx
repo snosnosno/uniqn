@@ -63,6 +63,11 @@ const PAYROLL_STATUS_CONFIG: Record<
     color: 'text-success-700 dark:text-success-300',
     bgColor: 'bg-success-50 dark:bg-success-900/30',
   },
+  failed: {
+    label: '정산 실패',
+    color: 'text-error-700 dark:text-error-300',
+    bgColor: 'bg-error-100 dark:bg-error-900/30',
+  },
 };
 
 function formatDate(dateString: string): string {

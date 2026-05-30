@@ -16,6 +16,7 @@ import {
 } from '../jobPosting.schema';
 import { serializeJobPostingV3 } from '@/domains/job-posting';
 import { JOB_POSTING_SCHEMA_VERSION } from '@/types/jobPosting';
+import { Constants } from '@/types/supabase';
 
 const createMockTimestamp = (seconds = 1700000000, nanoseconds = 0) => ({
   seconds,
@@ -607,5 +608,19 @@ describe('jobPosting schemas', () => {
         detailedAddress: 'Teheran-ro 123',
       });
     });
+  });
+});
+
+describe('jobFilterSchema posting_status SSOT drift guard', () => {
+  it('jobFilterSchema.status가 DB enum posting_status 전체 집합을 수용한다', () => {
+    for (const status of Constants.public.Enums.posting_status) {
+      const result = jobFilterSchema.safeParse({ status });
+      expect(result.success).toBe(true);
+    }
+  });
+
+  it('DB enum에 없는 status는 거부한다', () => {
+    const result = jobFilterSchema.safeParse({ status: 'weird_status' });
+    expect(result.success).toBe(false);
   });
 });
