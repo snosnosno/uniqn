@@ -6,7 +6,7 @@
 -- 안전: BEGIN/ROLLBACK
 -- ============================================================
 BEGIN;
-SELECT plan(8);
+SELECT plan(10);
 
 DO $$
 DECLARE
@@ -65,6 +65,7 @@ DECLARE
   v_owner uuid;
   v_ws uuid;
   v_payload jsonb;
+  v_res2 jsonb;
 BEGIN
   SELECT owner_id, workspace_id INTO v_owner, v_ws FROM public.job_postings WHERE id = current_setting('test.pid')::uuid;
   v_payload := jsonb_build_object(
@@ -75,11 +76,47 @@ BEGIN
     'status', 'active',
     'total_positions', 2
   );
-  PERFORM public.create_job_posting_with_payment_atomically(v_owner, v_payload, 'consume_job_posting'::wallet_reason);
+  v_res2 := public.create_job_posting_with_payment_atomically(v_owner, v_payload, 'consume_job_posting'::wallet_reason);
+  PERFORM set_config('test.res_idem', v_res2::text, false);
 END $$;
 SELECT is(
   (SELECT count(*)::int FROM public.job_postings WHERE id = current_setting('test.pid')::uuid), 1,
   'idempotent: same posting_id → still 1 posting');
+SELECT is(
+  (current_setting('test.res_idem')::jsonb)->>'idempotent', 'true',
+  'idempotent re-call returns idempotent:true');
+
+-- workspace_id 자동 주입 가드 (M5 회귀): payload에서 workspace_id 생략 시 owner workspace로 자동 채움
+DO $$
+DECLARE
+  v_owner2 uuid := gen_random_uuid();
+  v_ws2    uuid := gen_random_uuid();
+  v_pid2   uuid := gen_random_uuid();
+  v_payload jsonb;
+BEGIN
+  INSERT INTO auth.users (id, email, aud, role, encrypted_password, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+  VALUES (v_owner2, '__sql_fixture_cp_owner2@test.local', 'authenticated', 'authenticated', '', '{"role":"employer"}'::jsonb, '{"name":"CP2"}'::jsonb, now(), now());
+  INSERT INTO public.users (id, email, name, role, is_active, created_at, updated_at)
+  VALUES (v_owner2, '__sql_fixture_cp_owner2@test.local', 'fixture', 'employer', true, now(), now());
+  INSERT INTO public.workspaces (id, name, owner_id, created_at, updated_at)
+  VALUES (v_ws2, '__sql_fixture_cp_ws2', v_owner2, now(), now());
+
+  -- workspace_id 의도적 생략
+  v_payload := jsonb_build_object(
+    'id', v_pid2,
+    'title', '__sql_fixture: ws inject test',
+    'posting_type', 'urgent',
+    'status', 'active',
+    'total_positions', 1
+  );
+  PERFORM public.create_job_posting_with_payment_atomically(v_owner2, v_payload, 'consume_job_posting'::wallet_reason);
+  PERFORM set_config('test.pid2', v_pid2::text, false);
+  PERFORM set_config('test.ws2', v_ws2::text, false);
+END $$;
+SELECT is(
+  (SELECT workspace_id::text FROM public.job_postings WHERE id = current_setting('test.pid2')::uuid),
+  current_setting('test.ws2'),
+  'workspace_id auto-injected from owner workspace when omitted');
 
 -- 신규 시그니처는 p_cost_diamonds 인자 없음 (구 4-인자 시그니처는 제거됨)
 SELECT is(

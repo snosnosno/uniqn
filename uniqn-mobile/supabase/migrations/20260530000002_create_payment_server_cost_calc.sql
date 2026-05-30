@@ -28,6 +28,7 @@ DECLARE
   v_defaults          JSONB;
   v_final_payload     JSONB;
   v_inserted          INT := 0;
+  v_resolved_workspace_id UUID;
 BEGIN
   IF p_owner_id IS NULL THEN
     RAISE EXCEPTION 'INVALID_OWNER_ID: cannot be NULL';
@@ -39,6 +40,19 @@ BEGIN
   -- 멱등 posting_id: payload.id가 있으면 그것을, 없으면 신규 생성
   v_posting_id := COALESCE((p_posting_payload->>'id')::uuid, gen_random_uuid());
   v_type := COALESCE(p_posting_payload->>'posting_type', 'regular');
+
+  -- workspace_id 자동 주입: 페이로드에 없으면 owner 의 1번째 workspace 에서 lookup (M5 호환)
+  IF NOT (p_posting_payload ? 'workspace_id') OR (p_posting_payload->>'workspace_id') IS NULL THEN
+    SELECT id INTO v_resolved_workspace_id
+    FROM public.workspaces
+    WHERE owner_id = p_owner_id
+    ORDER BY created_at ASC
+    LIMIT 1;
+
+    IF v_resolved_workspace_id IS NULL THEN
+      RAISE EXCEPTION 'WORKSPACE_NOT_FOUND: owner % has no workspace — backfill 누락', p_owner_id;
+    END IF;
+  END IF;
 
   -- 서버 권위 비용 (flag off → 0)
   v_cost := public._calc_posting_cost(v_type, p_owner_id);
@@ -72,6 +86,11 @@ BEGIN
   v_final_payload := v_defaults
                      || p_posting_payload
                      || jsonb_build_object('id', v_posting_id, 'owner_id', p_owner_id);
+
+  -- workspace_id 자동 주입 적용 (M5 호환): payload에 없을 때만 resolved 값 병합
+  IF v_resolved_workspace_id IS NOT NULL THEN
+    v_final_payload := v_final_payload || jsonb_build_object('workspace_id', v_resolved_workspace_id);
+  END IF;
 
   INSERT INTO public.job_postings
   SELECT * FROM jsonb_populate_record(NULL::public.job_postings, v_final_payload)
