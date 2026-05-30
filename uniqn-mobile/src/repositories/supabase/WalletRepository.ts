@@ -13,8 +13,10 @@ import { logger } from '@/utils/logger';
 import {
   DiamondProductSchema,
   WalletSummarySchema,
+  ClaimAttendanceResponseSchema,
   type DiamondProduct,
   type WalletSummary,
+  type ClaimAttendanceResponse,
 } from '@/types/wallet';
 
 const TABLES = {
@@ -59,5 +61,20 @@ export const WalletRepository = {
       throw error;
     }
     return (data ?? []).map((row) => DiamondProductSchema.parse(row));
+  },
+
+  /**
+   * 본인 일일 출석 체크 — 하트 1개 적립(90일 만료). KST 기준 일일 1회.
+   *
+   * @returns 성공 시 lot 정보, 이미 출석 시 success:false. 미인증 등은 throw.
+   * @throws Supabase RPC 에러 그대로 throw — Service 계층이 변환.
+   */
+  async claimDailyAttendance(): Promise<ClaimAttendanceResponse> {
+    const { data, error } = await supabase.rpc('claim_daily_attendance', {});
+    if (error) {
+      logger.error('wallet.claimDailyAttendance.failed', error);
+      throw error;
+    }
+    return ClaimAttendanceResponseSchema.parse(data);
   },
 };
