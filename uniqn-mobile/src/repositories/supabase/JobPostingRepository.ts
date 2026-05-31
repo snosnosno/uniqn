@@ -454,6 +454,23 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
         .update({ status: STATUS.JOB_POSTING.CANCELLED, updated_at: new Date().toISOString() })
         .eq('id', jobPostingId);
       if (error) handleSupabaseError(error, { operation: '공고 삭제', table: TABLE });
+
+      // 취소 성립 후 환불(best-effort) — 비용 주체=posting owner(cur.ownerId).
+      // RPC가 caller(owner|협업자) 권한 검증 + owner 지갑 적립. 멱등.
+      // 무차감(no_consumption_found, flag off 등)은 success:false로 정상 no-op.
+      // RPC 실패가 취소를 되돌리지 않도록 swallow + 경고 로깅(멱등이라 후속 재시도 가능).
+      try {
+        const refund = await WalletRepository.refundJobCancellation(jobPostingId, cur.ownerId);
+        if (refund.success && !('idempotent' in refund && refund.idempotent)) {
+          logger.info('공고 취소 환불 완료', { jobPostingId, refunded: refund.refunded_diamonds });
+        }
+      } catch (refundError) {
+        logger.warn('공고 취소 환불 실패 — 취소는 성립, 환불 후속 필요', {
+          jobPostingId,
+          error: refundError instanceof Error ? refundError.message : String(refundError),
+        });
+      }
+
       logger.info('공고 삭제 완료', { jobPostingId });
     } catch (error) {
       rethrowOrHandle(error, '공고 삭제', { jobPostingId });
