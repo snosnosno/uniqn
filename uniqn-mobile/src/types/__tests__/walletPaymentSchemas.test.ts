@@ -46,17 +46,24 @@ describe('RefundResultSchema', () => {
       original_heart: 0,
     });
     expect(parsed.success).toBe(true);
-    expect(parsed.refunded_diamonds).toBe(5);
+    if (parsed.success) {
+      expect(parsed.refunded_diamonds).toBe(5);
+    }
   });
 
   it('무차감 응답(success:false)을 파싱한다', () => {
     const parsed = RefundResultSchema.parse({ success: false, error: 'no_consumption_found' });
     expect(parsed.success).toBe(false);
-    expect(parsed.error).toBe('no_consumption_found');
+    if (!parsed.success) {
+      expect(parsed.error).toBe('no_consumption_found');
+    }
   });
 
   it('멱등 응답(idempotent)을 파싱한다', () => {
     const parsed = RefundResultSchema.parse({ success: true, idempotent: true });
-    expect(parsed.idempotent).toBe(true);
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.idempotent).toBe(true);
+    }
   });
 });

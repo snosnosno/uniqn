@@ -128,5 +128,8 @@ const RefundFailureSchema = z.object({
   error: z.string(),
 });
 
-export const RefundResultSchema = z.union([RefundSuccessSchema, RefundFailureSchema]);
+export const RefundResultSchema = z.discriminatedUnion('success', [
+  RefundSuccessSchema,
+  RefundFailureSchema,
+]);
 export type RefundResult = z.infer<typeof RefundResultSchema>;
