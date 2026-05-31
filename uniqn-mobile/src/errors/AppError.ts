@@ -172,6 +172,9 @@ export const ERROR_CODES = {
   BUSINESS_EMPLOYER_APP_SELF_APPROVE: 'E6072', // 본인 신청 직접 처리 시도
   BUSINESS_EMPLOYER_APP_NOT_FOUND: 'E6073', // 신청 내역 없음
 
+  // 결제/지갑 (E608x)
+  BUSINESS_INSUFFICIENT_BALANCE: 'E6080',
+
   // 알 수 없는 에러 (E7xxx)
   UNKNOWN: 'E7000',
 } as const;
@@ -272,6 +275,8 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.BUSINESS_EMPLOYER_APP_ALREADY_PROCESSED]: '다른 관리자가 먼저 처리한 신청입니다',
   [ERROR_CODES.BUSINESS_EMPLOYER_APP_SELF_APPROVE]: '본인 신청을 직접 처리할 수 없습니다',
   [ERROR_CODES.BUSINESS_EMPLOYER_APP_NOT_FOUND]: '구인자 신청 내역을 찾을 수 없습니다',
+  [ERROR_CODES.BUSINESS_INSUFFICIENT_BALANCE]:
+    '하트/다이아 잔액이 부족해요. 충전 후 다시 시도해주세요',
 
   // 알 수 없는 에러
   [ERROR_CODES.UNKNOWN]: '알 수 없는 오류가 발생했습니다',
