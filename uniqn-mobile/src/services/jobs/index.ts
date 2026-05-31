@@ -48,6 +48,7 @@ export {
   deleteJobPosting,
   closeJobPosting,
   reopenJobPosting,
+  extendJobPosting,
   getMyJobPostingStats,
   bulkUpdateJobPostingStatus,
   updateJobPostingSettlementSettings,

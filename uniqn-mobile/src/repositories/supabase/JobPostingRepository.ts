@@ -110,6 +110,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
   ): Promise<PaginatedJobPostings> {
     try {
       logger.info('공고 목록 조회', { filters, pageSize });
+      // TODO(Lane D): 마이그 적용 후 priority DESC 정렬 추가
       const result = await paginatedQuery<Record<string, unknown>>(TABLE, {
         orderBy: 'work_date',
         ascending: false,
@@ -500,6 +501,40 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       logger.info('공고 재오픈 완료', { jobPostingId });
     } catch (error) {
       rethrowOrHandle(error, '공고 재오픈', { jobPostingId });
+    }
+  }
+
+  /**
+   * 공고 기간 연장 (Lane D — featured/extend, 마이그 미적용 DRAFT).
+   * 소유자 검증/다이아 차감/날짜 연장/재오픈은 모두 extend_job_posting RPC 내부에서 수행.
+   */
+  async extendWithTransaction(
+    jobPostingId: string,
+    ownerId: string,
+    extendDays?: number
+  ): Promise<void> {
+    try {
+      logger.info('공고 연장', { jobPostingId, ownerId, extendDays: extendDays ?? 7 });
+      // Lane D draft: RPC 미적용 → 타입 부재. 마이그 적용 후 generate types로 캐스트 제거.
+      const { error } = await (
+        supabase.rpc as unknown as (
+          fn: string,
+          args: Record<string, unknown>
+        ) => Promise<{ error: unknown }>
+      )('extend_job_posting', {
+        p_posting_id: jobPostingId,
+        p_owner_id: ownerId,
+        p_extend_days: extendDays ?? 7,
+      });
+      if (error) {
+        handleSupabaseError(error as Parameters<typeof handleSupabaseError>[0], {
+          operation: '공고 연장',
+          table: TABLE,
+        });
+      }
+      logger.info('공고 연장 완료', { jobPostingId });
+    } catch (error) {
+      rethrowOrHandle(error, '공고 연장', { jobPostingId });
     }
   }
 

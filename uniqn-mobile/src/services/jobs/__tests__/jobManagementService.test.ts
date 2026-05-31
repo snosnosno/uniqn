@@ -5,6 +5,7 @@ import {
   closeJobPosting,
   createJobPosting,
   deleteJobPosting,
+  extendJobPosting,
   getMyJobPostingStats,
   reopenJobPosting,
   updateJobPosting,
@@ -15,6 +16,7 @@ const mockUpdateWithTransaction = jest.fn();
 const mockDeleteWithTransaction = jest.fn();
 const mockCloseWithTransaction = jest.fn();
 const mockReopenWithTransaction = jest.fn();
+const mockExtendWithTransaction = jest.fn();
 const mockGetStatsByOwnerId = jest.fn();
 const mockBulkUpdateStatus = jest.fn();
 const mockGetById = jest.fn();
@@ -29,6 +31,7 @@ jest.mock('@/repositories', () => ({
     deleteWithTransaction: (...args: unknown[]) => mockDeleteWithTransaction(...args),
     closeWithTransaction: (...args: unknown[]) => mockCloseWithTransaction(...args),
     reopenWithTransaction: (...args: unknown[]) => mockReopenWithTransaction(...args),
+    extendWithTransaction: (...args: unknown[]) => mockExtendWithTransaction(...args),
     getStatsByOwnerId: (...args: unknown[]) => mockGetStatsByOwnerId(...args),
     bulkUpdateStatus: (...args: unknown[]) => mockBulkUpdateStatus(...args),
     getById: (...args: unknown[]) => mockGetById(...args),
@@ -438,6 +441,28 @@ describe('jobManagementService', () => {
       expect(mockDeleteWithTransaction).toHaveBeenCalledWith('job-1', 'employer-1');
       expect(mockCloseWithTransaction).toHaveBeenCalledWith('job-1', 'employer-1');
       expect(mockReopenWithTransaction).toHaveBeenCalledWith('job-1', 'employer-1');
+    });
+
+    // Lane D (featured/extend) — RPC 미적용 DRAFT
+    it('delegates extend to repository (default + 명시 days)', async () => {
+      mockExtendWithTransaction.mockResolvedValue(undefined);
+
+      await extendJobPosting('job-1', 'employer-1');
+      await extendJobPosting('job-1', 'employer-1', 14);
+
+      expect(mockExtendWithTransaction).toHaveBeenNthCalledWith(
+        1,
+        'job-1',
+        'employer-1',
+        undefined
+      );
+      expect(mockExtendWithTransaction).toHaveBeenNthCalledWith(2, 'job-1', 'employer-1', 14);
+    });
+
+    it('extend 실패 시 handleServiceError 로 래핑해 rethrow', async () => {
+      mockExtendWithTransaction.mockRejectedValue(new Error('INSUFFICIENT_BALANCE'));
+
+      await expect(extendJobPosting('job-1', 'employer-1')).rejects.toThrow('INSUFFICIENT_BALANCE');
     });
 
     it('delegates stats and bulk status queries', async () => {

@@ -254,6 +254,16 @@ export interface IJobPostingRepository {
   reopenWithTransaction(jobPostingId: string, ownerId: string): Promise<void>;
 
   /**
+   * 공고 기간 연장 (Lane D — featured/extend, 마이그 미적용 DRAFT)
+   *
+   * extend_job_posting RPC 를 호출해 다이아 차감 + 근무일/만료일 연장 + (필요 시) 재오픈.
+   * @param jobPostingId - 공고 ID
+   * @param ownerId - 연장 요청자(소유자) ID — RPC 내부에서 소유자 검증
+   * @param extendDays - 연장 일수(기본 7)
+   */
+  extendWithTransaction(jobPostingId: string, ownerId: string, extendDays?: number): Promise<void>;
+
+  /**
    * 소유자별 공고 통계 조회
    * @param ownerId - 소유자 ID
    * @returns 공고 통계

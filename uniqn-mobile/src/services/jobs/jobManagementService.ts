@@ -166,6 +166,30 @@ export async function reopenJobPosting(jobPostingId: string, ownerId: string): P
   }
 }
 
+/**
+ * 공고 기간 연장 (Lane D — featured/extend, 마이그 미적용 DRAFT).
+ * 다이아 차감 + 근무일/만료일 연장 + 재오픈은 extend_job_posting RPC 내부 처리.
+ * 날짜가 바뀌므로 보드 동기화는 'update' 액션으로 트리거.
+ */
+export async function extendJobPosting(
+  jobPostingId: string,
+  ownerId: string,
+  extendDays?: number
+): Promise<void> {
+  try {
+    logger.info('공고 연장 시작', { jobPostingId, ownerId, extendDays: extendDays ?? 7 });
+    await jobPostingRepository.extendWithTransaction(jobPostingId, ownerId, extendDays);
+    await enqueueScheduleBoardSync(jobPostingId, 'update', { jobPostingId, ownerId });
+    logger.info('공고 연장 완료', { jobPostingId });
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '공고 연장',
+      component: 'jobManagementService',
+      context: { jobPostingId },
+    });
+  }
+}
+
 export async function getMyJobPostingStats(ownerId: string): Promise<JobPostingStats> {
   try {
     logger.info('내 공고 통계 조회', { ownerId });
