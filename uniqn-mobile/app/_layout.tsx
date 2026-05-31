@@ -24,6 +24,7 @@ import {
   ScreenErrorBoundary,
   ToastManager,
 } from '@/components/ui';
+import { PurchaseSheet } from '@/components/wallet';
 import { getLayoutColor, getCssVarTokens } from '@/constants/colors';
 import { SheetProvider } from '@/components/app/SheetProvider';
 import { useAppInitialize } from '@/hooks/useAppInitialize';
@@ -193,6 +194,7 @@ function MainNavigator() {
       </Stack>
       <ToastManager />
       <ModalManager />
+      <PurchaseSheet />
     </View>
   );
 }
