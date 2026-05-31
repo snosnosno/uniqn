@@ -22,7 +22,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
 import { createMutationErrorHandler } from '@/shared/errors';
 import { buildCurrentUserIdentitySnapshot } from '@/shared/profile/identity';
-import { requireAuth } from '@/errors';
+import { requireAuth, isAppError, ERROR_CODES } from '@/errors';
 import {
   requireOnlineForMutation,
   shouldApplyOptimisticUpdate,
@@ -118,8 +118,16 @@ export function useCreateJobPosting() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobPostings.all,
       });
+      // 6A: 차감 반영 — 지갑 요약 동기 갱신(단일 queryKey)
+      queryClient.invalidateQueries({ queryKey: queryKeys.wallet.summary(user?.uid) });
     },
-    onError: createMutationErrorHandler('공고 생성', addToast),
+    onError: (error, variables, ctx) => {
+      // 잔액부족은 화면(create.tsx)의 PaywallModal이 처리 → 토스트 억제
+      if (isAppError(error) && error.code === ERROR_CODES.BUSINESS_INSUFFICIENT_BALANCE) {
+        return;
+      }
+      createMutationErrorHandler('공고 생성', addToast)(error, variables, ctx);
+    },
   });
 }
 
