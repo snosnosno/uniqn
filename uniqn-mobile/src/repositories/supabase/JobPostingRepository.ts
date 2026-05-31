@@ -21,6 +21,8 @@ import {
   serializeJobPostingV3,
 } from '@/domains/job-posting';
 import { removeUndefined } from '@/utils/removeUndefined';
+import { generateUUID } from '@/utils/generateId';
+import { WalletRepository } from '@/repositories/supabase/WalletRepository';
 import { STATUS } from '@/constants';
 import type { UnsubscribeFn, PaginationCursor } from '@/types/common';
 import type { TaxSettings } from '@/utils/settlement';
@@ -334,7 +336,10 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
     try {
       logger.info('공고 생성', { ownerId: context.ownerId, title: input.title });
       const now = new Date();
+      // 클라 생성 UUID — 결제 RPC의 멱등키(ON CONFLICT id)로 사용해 재시도 이중과금 방지
+      const postingId = generateUUID();
       const current: Partial<JobPosting> = {
+        id: postingId,
         viewCount: 0,
         filledPositions: 0,
         stats: createInitialPostingStats(input.schedule),
@@ -358,15 +363,30 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
         { ownerId: context.ownerId, title: input.title }
       );
 
-      const { id: _id, ...rest } = removeUndefined(
-        serialized as unknown as Record<string, unknown>
+      // 멱등 id를 payload에 유지(legacy는 제거했음) → 결제 RPC가 ON CONFLICT (id)로 멱등
+      const snakeData = toSnakeCase(
+        removeUndefined(serialized as unknown as Record<string, unknown>)
       );
-      const snakeData = toSnakeCase(rest);
 
-      const { data, error } = await supabase.from(TABLE).insert(snakeData).select('id').single();
-      if (error) handleSupabaseError(error, { operation: '공고 생성', table: TABLE });
-      const newId = (data as Record<string, unknown>).id as string;
-      logger.info('공고 생성 완료', { id: newId });
+      let result;
+      try {
+        result = await WalletRepository.createJobPostingWithPayment(
+          context.ownerId,
+          snakeData,
+          'consume_job_posting'
+        );
+      } catch (rpcError) {
+        if (rpcError instanceof Error && rpcError.message.includes('INSUFFICIENT_BALANCE')) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INSUFFICIENT_BALANCE, {
+            userMessage: '하트/다이아 잔액이 부족해요. 충전 후 다시 시도해주세요.',
+            metadata: { ownerId: context.ownerId },
+          });
+        }
+        throw rpcError;
+      }
+
+      const newId = result.posting_id;
+      logger.info('공고 생성 완료', { id: newId, consumed: result.total_consumed });
       return { id: newId, jobPosting: { ...jobPosting, id: newId } };
     } catch (error) {
       rethrowOrHandle(error, '공고 생성', { ownerId: context.ownerId });
