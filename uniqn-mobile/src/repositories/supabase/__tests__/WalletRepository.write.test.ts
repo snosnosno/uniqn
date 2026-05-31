@@ -58,3 +58,98 @@ describe('WalletRepository.claimDailyAttendance', () => {
     });
   });
 });
+
+const OWNER = '11111111-1111-4111-8111-111111111111';
+const POSTING = '22222222-2222-4222-8222-222222222222';
+
+describe('WalletRepository.createJobPostingWithPayment', () => {
+  beforeEach(() => mockRpc.mockReset());
+
+  it('결제 RPC를 (p_owner_id, p_posting_payload, p_reason)로 호출하고 결과를 파싱한다', async () => {
+    mockRpc.mockResolvedValue({
+      data: {
+        success: true,
+        posting_id: POSTING,
+        diamonds_consumed: 0,
+        hearts_consumed: 0,
+        total_consumed: 0,
+      },
+      error: null,
+    });
+    const payload = { id: POSTING, title: 't', posting_type: 'regular' };
+
+    const result = await WalletRepository.createJobPostingWithPayment(
+      OWNER,
+      payload,
+      'consume_job_posting'
+    );
+
+    expect(mockRpc).toHaveBeenCalledWith('create_job_posting_with_payment_atomically', {
+      p_owner_id: OWNER,
+      p_posting_payload: payload,
+      p_reason: 'consume_job_posting',
+    });
+    expect(result.posting_id).toBe(POSTING);
+  });
+
+  it('reason 미지정 시 consume_job_posting 기본값', async () => {
+    mockRpc.mockResolvedValue({ data: { success: true, posting_id: POSTING }, error: null });
+    await WalletRepository.createJobPostingWithPayment(OWNER, { id: POSTING });
+    expect(mockRpc).toHaveBeenCalledWith(
+      'create_job_posting_with_payment_atomically',
+      expect.objectContaining({ p_reason: 'consume_job_posting' })
+    );
+  });
+
+  it('RPC 에러를 그대로 throw한다 (호출자가 INSUFFICIENT_BALANCE 매핑)', async () => {
+    mockRpc.mockResolvedValue({
+      data: null,
+      error: { message: 'INSUFFICIENT_BALANCE: have 0h+0d, need 10' },
+    });
+    await expect(
+      WalletRepository.createJobPostingWithPayment(OWNER, { id: POSTING })
+    ).rejects.toMatchObject({
+      message: expect.stringContaining('INSUFFICIENT_BALANCE'),
+    });
+  });
+});
+
+describe('WalletRepository.refundJobCancellation', () => {
+  beforeEach(() => mockRpc.mockReset());
+
+  it('환불 RPC를 (p_posting_id, p_owner_id)로 호출하고 결과를 파싱한다', async () => {
+    mockRpc.mockResolvedValue({
+      data: {
+        success: true,
+        refunded_diamonds: 5,
+        refund_rate: 1,
+        hours_elapsed: 2,
+        original_diamond: 5,
+        original_heart: 0,
+      },
+      error: null,
+    });
+
+    const result = await WalletRepository.refundJobCancellation(POSTING, OWNER);
+
+    expect(mockRpc).toHaveBeenCalledWith('refund_job_cancellation_atomically', {
+      p_posting_id: POSTING,
+      p_owner_id: OWNER,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('success:false 응답(무차감)도 throw 없이 파싱해 반환', async () => {
+    mockRpc.mockResolvedValue({
+      data: { success: false, error: 'no_consumption_found' },
+      error: null,
+    });
+    const result = await WalletRepository.refundJobCancellation(POSTING, OWNER);
+    expect(result).toEqual({ success: false, error: 'no_consumption_found' });
+  });
+
+  it('RPC transport 에러는 throw', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'network down' } });
+    await expect(WalletRepository.refundJobCancellation(POSTING, OWNER)).rejects.toBeDefined();
+  });
+});

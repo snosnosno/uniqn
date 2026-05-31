@@ -15,10 +15,15 @@ import {
   WalletSummarySchema,
   ClaimAttendanceResponseSchema,
   PostingCostSchema,
+  CreatePostingPaymentResultSchema,
+  RefundResultSchema,
   type DiamondProduct,
   type WalletSummary,
   type ClaimAttendanceResponse,
   type PostingCost,
+  type CreatePostingPaymentResult,
+  type RefundResult,
+  type WalletReason,
 } from '@/types/wallet';
 
 const TABLES = {
@@ -98,5 +103,51 @@ export const WalletRepository = {
       throw error;
     }
     return PostingCostSchema.parse(data);
+  },
+
+  /**
+   * 공고 생성 + 서버 권위 비용 차감을 단일 트랜잭션으로 (결제 RPC).
+   *
+   * @param ownerId 비용 주체(워크스페이스 owner) user_id
+   * @param payload snake_case job_postings payload. **payload.id를 멱등키로 유지할 것.**
+   * @param reason 차감 사유 (기본 consume_job_posting)
+   * @returns posting_id + 차감량. flag off면 cost=0 → 차감 0.
+   * @throws Supabase RPC 에러 그대로 throw — 호출자가 INSUFFICIENT_BALANCE를 매핑.
+   */
+  async createJobPostingWithPayment(
+    ownerId: string,
+    payload: Record<string, unknown>,
+    reason: WalletReason = 'consume_job_posting'
+  ): Promise<CreatePostingPaymentResult> {
+    const { data, error } = await supabase.rpc('create_job_posting_with_payment_atomically', {
+      p_owner_id: ownerId,
+      p_posting_payload: payload,
+      p_reason: reason,
+    });
+    if (error) {
+      logger.error('wallet.createJobPostingWithPayment.failed', error, { ownerId });
+      throw error;
+    }
+    return CreatePostingPaymentResultSchema.parse(data);
+  },
+
+  /**
+   * 공고 취소 환불 (24h 100% / 이후 50%). 환불은 항상 owner 지갑에 적립.
+   *
+   * @param postingId 취소된 공고 id
+   * @param ownerId 비용 주체(owner) user_id — caller가 owner 또는 협업자여야 통과.
+   * @returns success + 환불량. 무차감/권한밖이면 success:false (throw 아님).
+   * @throws Supabase transport 에러만 throw.
+   */
+  async refundJobCancellation(postingId: string, ownerId: string): Promise<RefundResult> {
+    const { data, error } = await supabase.rpc('refund_job_cancellation_atomically', {
+      p_posting_id: postingId,
+      p_owner_id: ownerId,
+    });
+    if (error) {
+      logger.error('wallet.refundJobCancellation.failed', error, { postingId });
+      throw error;
+    }
+    return RefundResultSchema.parse(data);
   },
 };
