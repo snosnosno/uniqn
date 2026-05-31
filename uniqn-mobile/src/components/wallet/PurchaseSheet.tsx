@@ -13,6 +13,7 @@ import { WalletRepository } from '@/repositories/supabase/WalletRepository';
 import { usePurchaseDiamonds } from '@/hooks/usePurchaseDiamonds';
 import { usePurchaseSheetStore } from '@/stores/purchaseSheetStore';
 import { queryKeys } from '@/lib/queryClient';
+import { logger } from '@/utils/logger';
 
 export function PurchaseSheet() {
   const isOpen = usePurchaseSheetStore((s) => s.isOpen);
@@ -30,9 +31,17 @@ export function PurchaseSheet() {
   useEffect(() => {
     if (!isOpen || !available) return;
     let active = true;
-    purchasesService.getDiamondPackages().then((p) => {
-      if (active) setPackages(p);
-    });
+    purchasesService
+      .getDiamondPackages()
+      .then((p) => {
+        if (active) setPackages(p);
+      })
+      .catch((error) => {
+        // offering 조회 실패는 치명적 아님 — 패키지 빈 목록 유지(버튼 disabled), 로깅만.
+        logger.warn('purchaseSheet.getDiamondPackages.failed', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
     return () => {
       active = false;
     };
