@@ -2,7 +2,7 @@ import { SECONDARY_PALETTE, SURFACE_COLORS } from '@/constants/colors';
 import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, Text, View } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { AppFlashList } from '@/components/ui/AppFlashList';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, ConfirmModal, PostingSurfaceState } from '@/components';
@@ -362,7 +362,7 @@ function EmployerView() {
           message="새 공고를 작성해 보세요."
         />
       ) : (
-        <FlashList
+        <AppFlashList
           data={filteredPostings}
           renderItem={({ item }) => (
             <JobPostingCard
@@ -376,7 +376,6 @@ function EmployerView() {
             />
           )}
           keyExtractor={(item) => item.id}
-          // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
           estimatedItemSize={200}
           refreshControl={
             <RefreshControl refreshing={isRefetching} onRefresh={refetch} {...PTR_REFRESH_PROPS} />

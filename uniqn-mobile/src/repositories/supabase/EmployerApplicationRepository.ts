@@ -21,6 +21,7 @@ import {
   EmployerAppNotFoundError,
 } from '@/errors/BusinessErrors';
 import { handleSupabaseError, toCamelCase, paginatedQuery } from '@/utils/supabase';
+import type { IEmployerApplicationRepository } from '../interfaces';
 
 // ============================================================================
 // Types
@@ -194,7 +195,7 @@ function rowToApplication(row: Record<string, unknown>): EmployerApplication {
 // Repository
 // ============================================================================
 
-export class SupabaseEmployerApplicationRepository {
+export class SupabaseEmployerApplicationRepository implements IEmployerApplicationRepository {
   // ==========================================================================
   // 신청 생성 (유저)
   // ==========================================================================

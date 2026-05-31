@@ -153,7 +153,8 @@ export const workLogDocumentSchema = z
     customRole: z.string().nullable().optional(),
 
     // 정산 정보
-    payrollStatus: payrollStatusSchema.optional(),
+    // 미지 enum 값(DB enum 발산)에도 레코드가 drop되지 않도록 .catch(undefined)로 흡수
+    payrollStatus: payrollStatusSchema.optional().catch(undefined),
     payrollAmount: z.number().nullable().optional(),
     payrollDate: optionalTimestampSchema,
     payrollNotes: z.string().nullable().optional(),

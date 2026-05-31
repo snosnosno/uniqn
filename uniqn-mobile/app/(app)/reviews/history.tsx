@@ -6,7 +6,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FlashList } from '@shopify/flash-list';
+import { AppFlashList } from '@/components/ui/AppFlashList';
 import { StackHeader } from '@/components/headers';
 import { EmptyState, NumericText } from '@/components/ui';
 import ReviewCard from '@/components/review/ReviewCard';
@@ -79,13 +79,12 @@ export default function ReviewHistoryScreen() {
           <ActivityIndicator size="large" />
         </View>
       ) : (
-        <FlashList
+        <AppFlashList
           data={reviews}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
           onEndReached={handleEndReached}
           onEndReachedThreshold={0.5}
-          // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
           estimatedItemSize={140}
           contentContainerStyle={{ paddingVertical: 8 }}
           ListEmptyComponent={

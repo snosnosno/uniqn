@@ -19,4 +19,5 @@ export const PAYROLL_STATUS_CONFIG: Record<
   pending: { label: '미정산', variant: 'warning' },
   processing: { label: '처리중', variant: 'primary' },
   completed: { label: '정산완료', variant: 'success' },
+  failed: { label: '정산실패', variant: 'error' },
 };

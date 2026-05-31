@@ -6,6 +6,8 @@
 
 import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
+import { logger } from '@/utils/logger';
+import { toError, isAppError } from '@/errors';
 import { handleSupabaseError, safeParseJson } from '@/utils/supabase';
 import { BoardJobSummarySchema } from '@/schemas/boardMetadata.schema';
 import type {
@@ -184,6 +186,25 @@ export function toBoardReport(row: Record<string, unknown>): BoardReport {
 
 export function getMembershipId(postId: string, userId: string): string {
   return `${postId}_${userId}`;
+}
+
+/**
+ * 캐치 블록 공통 처리: AppError는 그대로 전파하고, 그 외 오류는 로깅 후
+ * handleSupabaseError로 위임한다. handleSupabaseError가 항상 throw하므로
+ * 반환 타입은 never.
+ */
+export function rethrowRepositoryError(
+  error: unknown,
+  logMessage: string,
+  operation: string,
+  table: string,
+  context?: Record<string, unknown>
+): never {
+  if (isAppError(error)) throw error;
+  logger.error(logMessage, toError(error), context);
+  handleSupabaseError(error, { operation, table });
+  // handleSupabaseError는 항상 throw하지만 타입 시스템상 도달 불가 보장을 위해 재throw
+  throw error;
 }
 
 // ============================================================================

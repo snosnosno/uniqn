@@ -52,10 +52,13 @@ export const INQUIRY_STATUS_VALUES = {
   CLOSED: 'closed',
 } as const satisfies Record<string, InquiryStatusType>;
 
+// DB enum payroll_status = ['pending','completed','failed']와 정합.
+// PROCESSING은 DB enum에 없는 UI 표시 전용 값(DB 컬럼에 직접 쓰지 않음).
 export const PAYROLL_STATUS_VALUES = {
   PENDING: 'pending',
   PROCESSING: 'processing',
   COMPLETED: 'completed',
+  FAILED: 'failed',
 } as const satisfies Record<string, PayrollStatus>;
 
 export const ANNOUNCEMENT_STATUS_VALUES = {

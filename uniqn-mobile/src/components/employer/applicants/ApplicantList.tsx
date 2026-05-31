@@ -8,7 +8,7 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, RefreshControl } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { AppFlashList } from '@/components/ui/AppFlashList';
 import { ApplicantCard } from './ApplicantCard';
 import { EmptyState } from '../../ui/EmptyState';
 import { ErrorState } from '../../ui/ErrorState';
@@ -159,11 +159,10 @@ export function ApplicantList({
           description="다른 필터를 선택해 보세요."
         />
       ) : (
-        <FlashList
+        <AppFlashList
           data={filteredApplicants}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
-          // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
           estimatedItemSize={180}
           refreshControl={
             onRefresh ? (

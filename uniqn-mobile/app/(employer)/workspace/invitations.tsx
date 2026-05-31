@@ -9,7 +9,7 @@
 import { useCallback } from 'react';
 import { View, Text, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FlashList } from '@shopify/flash-list';
+import { AppFlashList } from '@/components/ui/AppFlashList';
 import { router } from 'expo-router';
 import { StackHeader } from '@/components/headers';
 import { Avatar, Badge, Button, EmptyState, ErrorState } from '@/components/ui';
@@ -154,11 +154,10 @@ export default function WorkspaceInvitationsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="받은 초대" />
-      <FlashList
+      <AppFlashList
         data={invitations}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
         estimatedItemSize={140}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
         contentContainerClassName="pt-3 pb-8"

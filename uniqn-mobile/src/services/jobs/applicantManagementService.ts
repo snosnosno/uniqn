@@ -40,10 +40,23 @@ export interface ConfirmResult {
   message: string;
 }
 
+/** 일괄 확정 중 개별 실패 항목 (UI가 사유별로 구분 가능하도록 구조화) */
+export interface BulkConfirmFailure {
+  /** 실패한 지원 ID */
+  applicationId: string;
+  /** AppError 코드 (예: BUSINESS_MAX_CAPACITY_REACHED). 비-AppError 실패 시 undefined */
+  code?: string;
+  /** 사용자 노출용 실패 사유 메시지 */
+  reason: string;
+}
+
 export interface BulkConfirmResult {
   successCount: number;
   failedCount: number;
+  /** 실패한 지원 ID 목록 (호환용 — 사유는 failed 사용) */
   failedIds: string[];
+  /** 실패 항목별 사유 (정원마감 N건 등 구분용) */
+  failed: BulkConfirmFailure[];
   workLogIds: string[];
 }
 
@@ -175,6 +188,7 @@ export async function bulkConfirmApplications(
       successCount: 0,
       failedCount: 0,
       failedIds: [],
+      failed: [],
       workLogIds: [],
     };
 
@@ -186,7 +200,19 @@ export async function bulkConfirmApplications(
       } catch (error) {
         result.failedCount++;
         result.failedIds.push(applicationId);
-        logger.warn('일괄 확정 중 개별 확정 실패', { applicationId, error });
+        // AppError면 code/userMessage를 캡처해 UI가 사유별(정원마감 등) 구분 가능하게 한다.
+        const failure: BulkConfirmFailure = isAppError(error)
+          ? {
+              applicationId,
+              code: error.code,
+              reason: error.userMessage || error.message,
+            }
+          : {
+              applicationId,
+              reason: error instanceof Error ? error.message : String(error),
+            };
+        result.failed.push(failure);
+        logger.warn('일괄 확정 중 개별 확정 실패', { applicationId, code: failure.code, error });
       }
     }
 
@@ -230,13 +256,9 @@ export async function getApplicantStatsByRole(
     const { applicants } = await getApplicantsByJobPosting(jobPostingId, ownerId);
     const statsByRole: Record<string, ApplicationStats> = {};
 
-    applicants.forEach((application) => {
-      const primaryRole = application.assignments[0]?.roleIds?.[0] || 'other';
-      const effectiveRole =
-        primaryRole === 'other' && application.customRole ? application.customRole : primaryRole;
-
-      if (!statsByRole[effectiveRole]) {
-        statsByRole[effectiveRole] = {
+    const ensureBucket = (role: string): ApplicationStats => {
+      if (!statsByRole[role]) {
+        statsByRole[role] = {
           total: 0,
           applied: 0,
           confirmed: 0,
@@ -246,13 +268,27 @@ export async function getApplicantStatsByRole(
           cancellationPending: 0,
         };
       }
+      return statsByRole[role];
+    };
 
-      statsByRole[effectiveRole].total++;
+    applicants.forEach((application) => {
+      // 한 지원자가 여러 assignment·여러 역할을 선택할 수 있으므로 전체를 순회해
+      // 각 역할별로 카운트한다 (중복 역할은 1회만 집계).
+      const rawRoles = application.assignments.flatMap((assignment) => assignment.roleIds ?? []);
+      const effectiveRoles = (rawRoles.length > 0 ? rawRoles : ['other']).map((role) =>
+        role === 'other' && application.customRole ? application.customRole : role
+      );
+      const uniqueRoles = Array.from(new Set(effectiveRoles));
 
       const statsKey = STATUS_TO_STATS_KEY[application.status];
-      if (statsKey && statsKey !== 'total') {
-        statsByRole[effectiveRole][statsKey]++;
-      }
+
+      uniqueRoles.forEach((role) => {
+        const bucket = ensureBucket(role);
+        bucket.total++;
+        if (statsKey && statsKey !== 'total') {
+          bucket[statsKey]++;
+        }
+      });
     });
 
     logger.info('역할별 지원자 통계 조회 완료', { jobPostingId, statsByRole });

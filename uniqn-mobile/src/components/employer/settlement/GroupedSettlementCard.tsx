@@ -79,6 +79,11 @@ const PAYROLL_STATUS_CONFIG: Record<
     bgColor: 'bg-success-50 dark:bg-success-900/30',
     textColor: 'text-success-700 dark:text-success-300',
   },
+  failed: {
+    label: '정산실패',
+    bgColor: 'bg-error-100 dark:bg-error-900/30',
+    textColor: 'text-error-700 dark:text-error-300',
+  },
 };
 
 // ============================================================================

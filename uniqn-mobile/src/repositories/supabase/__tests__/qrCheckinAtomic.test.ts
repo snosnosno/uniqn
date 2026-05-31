@@ -68,6 +68,8 @@ describe('executeProcessQRCheckInOut — RPC 위임', () => {
     });
     expect(result.action).toBe('checkIn');
     expect(result.workDuration).toBe(0);
+    // U3: RPC가 check_in_time을 돌려주면 hasExistingCheckInTime=true로 도출
+    expect(result.hasExistingCheckInTime).toBe(true);
   });
 
   it('checkOut 호출 시 work_duration이 응답값을 그대로 반환', async () => {
@@ -92,6 +94,8 @@ describe('executeProcessQRCheckInOut — RPC 위임', () => {
 
     expect(result.action).toBe('checkOut');
     expect(result.workDuration).toBe(8.5);
+    // U3: RPC 응답에 check_in_time이 없으면 hasExistingCheckInTime=false
+    expect(result.hasExistingCheckInTime).toBe(false);
   });
 });
 

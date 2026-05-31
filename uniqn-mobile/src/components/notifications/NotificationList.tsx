@@ -6,7 +6,9 @@ import { SECONDARY_PALETTE } from '@/constants/colors';
 import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import React, { memo, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, RefreshControl } from 'react-native';
-import { FlashList, ListRenderItem } from '@shopify/flash-list';
+import { ListRenderItem } from '@shopify/flash-list';
+
+import { AppFlashList } from '@/components/ui/AppFlashList';
 import { BellSlashIcon } from '@/components/icons';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ScreenSkeleton } from '@/components/ui';
@@ -173,11 +175,10 @@ export const NotificationList = memo(function NotificationList({
         </View>
       ) : null}
 
-      <FlashList<NotificationListItem>
+      <AppFlashList<NotificationListItem>
         data={notifications}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
-        // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
         estimatedItemSize={85}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}

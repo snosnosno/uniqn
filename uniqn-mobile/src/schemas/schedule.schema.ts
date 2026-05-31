@@ -28,8 +28,12 @@ export type ScheduleTypeSchema = z.infer<typeof scheduleTypeSchema>;
 
 /**
  * 정산 상태 스키마
+ *
+ * @description DB enum(payroll_status = ['pending','completed','failed'])과 UI 전용 값('processing')의
+ * superset. 'processing'은 UI 표시 전용이며 DB 컬럼에 직접 쓰지 않는다(읽기 호환 목적).
+ * read 경로에서 미지 enum 값에 레코드가 drop되지 않도록 호출부(workLog.schema)에서 .catch 흡수.
  */
-export const payrollStatusSchema = z.enum(['pending', 'processing', 'completed']);
+export const payrollStatusSchema = z.enum(['pending', 'processing', 'completed', 'failed']);
 
 export type PayrollStatusSchema = z.infer<typeof payrollStatusSchema>;
 

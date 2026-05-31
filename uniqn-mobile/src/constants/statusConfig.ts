@@ -176,6 +176,13 @@ export const PAYROLL_STATUS: Record<PayrollStatusType, StatusConfig> = {
     bgColor: 'bg-success-100 dark:bg-success-900/30',
     hexColor: STATUS_COLORS.success,
   },
+  failed: {
+    label: PAYROLL_STATUS_LABELS.failed,
+    variant: 'error',
+    textColor: 'text-error-600 dark:text-error-400',
+    bgColor: 'bg-error-100 dark:bg-error-900/30',
+    hexColor: STATUS_COLORS.error,
+  },
 };
 
 export type ConfirmedStaffStatusType = ConfirmedStaffStatus;

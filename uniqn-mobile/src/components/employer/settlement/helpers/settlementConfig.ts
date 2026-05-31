@@ -30,4 +30,5 @@ export const PAYROLL_STATUS_CONFIG: Record<
   pending: { label: '미정산', variant: 'warning', stripeTone: 'gold' },
   processing: { label: '처리중', variant: 'primary', stripeTone: 'info' },
   completed: { label: '정산완료', variant: 'success', stripeTone: 'muted' },
+  failed: { label: '정산실패', variant: 'error', stripeTone: 'error' },
 };
