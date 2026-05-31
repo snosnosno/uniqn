@@ -479,7 +479,11 @@ test.describe('WF-08-3 취소 후 capacity 복원 — DB 직접 검증', () => {
     expect(error).toBeNull();
     expect(data?.filled_positions).toBe(1);
     expect(data?.total_positions).toBe(1);
-    expect(data?.status).toBe('active');
+    // PR #155(capacity_full, Approach B): 단일 슬롯(total=1)이 confirmed로 채워지면
+    // fn_update_job_posting_stats 트리거가 active → capacity_full 로 자동 전이한다.
+    // 따라서 '취소 전' 상태는 'active'가 아니라 'capacity_full'이 정상.
+    // (취소 후 active 재오픈은 이후 테스트에서 filled=0 복원으로 검증)
+    expect(data?.status).toBe('capacity_full');
   });
 
   test('RPC 취소 실행', async () => {
