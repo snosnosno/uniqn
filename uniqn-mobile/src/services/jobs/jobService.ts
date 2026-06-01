@@ -235,11 +235,15 @@ export async function getMyJobPostings(
     logger.info('관리 가능 공고 목록 조회', { ownerId, status, includeAll, workspaceId });
 
     if (includeAll && !status) {
+      // 관리 목록은 active + capacity_full(정원 마감) + closed 를 모두 노출한다.
+      // capacity_full 누락 시 정원이 찬 공고가 구인자 본인 관리 목록에서 사라진다
+      // (#155 capacity_full 도입 시 누락된 read 경로 — pitfall_enum_divergence_read_disappearance).
       const results = await Promise.all([
         jobPostingRepository.getManagedJobPostings(STATUS.JOB_POSTING.ACTIVE, workspaceId),
+        jobPostingRepository.getManagedJobPostings(STATUS.JOB_POSTING.CAPACITY_FULL, workspaceId),
         jobPostingRepository.getManagedJobPostings(STATUS.JOB_POSTING.CLOSED, workspaceId),
       ]);
-      return [...results[0], ...results[1]];
+      return [...results[0], ...results[1], ...results[2]];
     }
 
     return jobPostingRepository.getManagedJobPostings(
