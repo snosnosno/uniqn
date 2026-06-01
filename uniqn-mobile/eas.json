@@ -9,7 +9,9 @@
       "env": {
         "SENTRY_ORG": "129908fd396a",
         "SENTRY_PROJECT": "uniqn-mobile",
-        "RCT_NEW_ARCH_ENABLED": "1"
+        "RCT_NEW_ARCH_ENABLED": "1",
+        "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "appl_XiQzYCeHsEBFgRhRPiUQlbzJVcg",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "goog_AGqIYvWCfjHvDAHOOHPLZZnHZZF"
       }
     },
     "development": {
