@@ -165,7 +165,9 @@ export default function PublicJobDetailAliasRoute() {
         <SafeAreaView edges={['bottom']}>
           {job.status !== STATUS.JOB_POSTING.ACTIVE ? (
             <Button disabled fullWidth>
-              마감된 공고입니다
+              {job.status === STATUS.JOB_POSTING.CAPACITY_FULL
+                ? '정원이 마감되었어요'
+                : '마감된 공고입니다'}
             </Button>
           ) : (
             <View>

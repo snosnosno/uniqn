@@ -120,7 +120,15 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
         filters: (q) => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           let qr: any = q;
-          qr = qr.eq('status', filters?.status ?? STATUS.JOB_POSTING.ACTIVE);
+          // 명시적 status 가 없으면 구직자 브라우즈 기본값: active + capacity_full.
+          // capacity_full(정원 마감)은 spec §4/§6 + 공개 RLS(M4)상 "정원 마감" 라벨로
+          // 사용자에게 노출되어야 한다. active 만 필터하면 정원이 찬 공고가 목록에서
+          // 사라진다(pitfall_enum_divergence_read_disappearance).
+          if (filters?.status) {
+            qr = qr.eq('status', filters.status);
+          } else {
+            qr = qr.in('status', [STATUS.JOB_POSTING.ACTIVE, STATUS.JOB_POSTING.CAPACITY_FULL]);
+          }
           if (filters?.roles?.length) qr = qr.overlaps('role_keys', filters.roles.slice(0, 10));
           if (filters?.district) qr = qr.eq('location->>district', filters.district);
           if (filters?.ownerId) qr = qr.eq('owner_id', filters.ownerId);
