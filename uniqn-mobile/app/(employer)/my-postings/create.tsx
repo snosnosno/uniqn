@@ -23,6 +23,7 @@ import { StackHeader } from '@/components/headers';
 import { PaywallModal, WalletBalanceBadge } from '@/components/wallet';
 import { usePostingCost } from '@/hooks/usePostingCost';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
+import { usePurchaseSheetStore } from '@/stores/purchaseSheetStore';
 import { isAppError, ERROR_CODES } from '@/errors';
 
 export default function CreateJobPostingScreen() {
@@ -33,6 +34,7 @@ export default function CreateJobPostingScreen() {
   const [draft, setDraft] = useState<JobPostingDraft>(INITIAL_JOB_POSTING_DRAFT);
   const [isDirty, setIsDirty] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
+  const openPurchaseSheet = usePurchaseSheetStore((s) => s.open);
   const wallet = useWalletBalance();
   const formData = useMemo(() => draftToFormData(draft), [draft]);
 
@@ -162,8 +164,7 @@ export default function CreateJobPostingScreen() {
         onClose={() => setShowPaywall(false)}
         onCharge={() => {
           setShowPaywall(false);
-          // 충전(PurchaseSheet)은 Lane C(T10)에서 연결. 그 전까지 안내 토스트.
-          addToast({ type: 'info', message: '충전 기능은 곧 제공될 예정이에요.' });
+          openPurchaseSheet();
         }}
       />
     </SafeAreaView>
