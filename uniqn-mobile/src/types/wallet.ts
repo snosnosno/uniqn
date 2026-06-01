@@ -60,3 +60,76 @@ export const DiamondProductSchema = z.object({
   active: z.boolean(),
 });
 export type DiamondProduct = z.infer<typeof DiamondProductSchema>;
+
+// ============================================================================
+// claim_daily_attendance RPC 응답
+// ============================================================================
+
+export const ClaimAttendanceSuccessSchema = z.object({
+  success: z.literal(true),
+  lot_id: z.string().uuid(),
+  expires_at: z.string(),
+  amount: z.number().int().positive(),
+});
+
+export const ClaimAttendanceAlreadySchema = z.object({
+  success: z.literal(false),
+  error: z.literal('already_attended_today'),
+});
+
+export const ClaimAttendanceResponseSchema = z.discriminatedUnion('success', [
+  ClaimAttendanceSuccessSchema,
+  ClaimAttendanceAlreadySchema,
+]);
+export type ClaimAttendanceResponse = z.infer<typeof ClaimAttendanceResponseSchema>;
+
+// ============================================================================
+// get_posting_cost RPC 응답
+// ============================================================================
+
+export const PostingCostSchema = z.object({
+  type: z.string(),
+  cost: z.number().int().nonnegative(),
+  is_paid: z.boolean(),
+  currency_hint: z.string(),
+});
+export type PostingCost = z.infer<typeof PostingCostSchema>;
+
+// ============================================================================
+// create_job_posting_with_payment_atomically RPC 응답 (Lane B2)
+// ============================================================================
+
+export const CreatePostingPaymentResultSchema = z.object({
+  success: z.literal(true),
+  posting_id: z.string().uuid(),
+  idempotent: z.boolean().optional(),
+  diamonds_consumed: z.number().int().nonnegative().default(0),
+  hearts_consumed: z.number().int().nonnegative().default(0),
+  total_consumed: z.number().int().nonnegative().default(0),
+});
+export type CreatePostingPaymentResult = z.infer<typeof CreatePostingPaymentResultSchema>;
+
+// ============================================================================
+// refund_job_cancellation_atomically RPC 응답 (Lane B2)
+// ============================================================================
+
+const RefundSuccessSchema = z.object({
+  success: z.literal(true),
+  idempotent: z.boolean().optional(),
+  refunded_diamonds: z.number().int().nonnegative().optional(),
+  refund_rate: z.number().optional(),
+  hours_elapsed: z.number().optional(),
+  original_diamond: z.number().int().optional(),
+  original_heart: z.number().int().optional(),
+});
+
+const RefundFailureSchema = z.object({
+  success: z.literal(false),
+  error: z.string(),
+});
+
+export const RefundResultSchema = z.discriminatedUnion('success', [
+  RefundSuccessSchema,
+  RefundFailureSchema,
+]);
+export type RefundResult = z.infer<typeof RefundResultSchema>;

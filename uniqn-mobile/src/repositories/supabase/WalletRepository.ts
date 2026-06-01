@@ -13,8 +13,17 @@ import { logger } from '@/utils/logger';
 import {
   DiamondProductSchema,
   WalletSummarySchema,
+  ClaimAttendanceResponseSchema,
+  PostingCostSchema,
+  CreatePostingPaymentResultSchema,
+  RefundResultSchema,
   type DiamondProduct,
   type WalletSummary,
+  type ClaimAttendanceResponse,
+  type PostingCost,
+  type CreatePostingPaymentResult,
+  type RefundResult,
+  type WalletReason,
 } from '@/types/wallet';
 import type { IWalletRepository } from '../interfaces';
 
@@ -60,5 +69,86 @@ export const WalletRepository: IWalletRepository = {
       throw error;
     }
     return (data ?? []).map((row) => DiamondProductSchema.parse(row));
+  },
+
+  /**
+   * 본인 일일 출석 체크 — 하트 1개 적립(90일 만료). KST 기준 일일 1회.
+   *
+   * @returns 성공 시 lot 정보, 이미 출석 시 success:false. 미인증 등은 throw.
+   * @throws Supabase RPC 에러 그대로 throw — Service 계층이 변환.
+   */
+  async claimDailyAttendance(): Promise<ClaimAttendanceResponse> {
+    const { data, error } = await supabase.rpc('claim_daily_attendance', {});
+    if (error) {
+      logger.error('wallet.claimDailyAttendance.failed', error);
+      throw error;
+    }
+    return ClaimAttendanceResponseSchema.parse(data);
+  },
+
+  /**
+   * 공고 유형별 비용 조회 — 표시용 단일소스. flag off 시 cost=0.
+   *
+   * @param postingType 공고 유형 (예: 'urgent', 'regular')
+   * @param ownerId 공고 소유자 user_id
+   * @returns 비용 정보 (type, cost, is_paid, currency_hint)
+   * @throws Supabase RPC 에러 그대로 throw — Service 계층이 변환.
+   */
+  async getPostingCost(postingType: string, ownerId: string): Promise<PostingCost> {
+    const { data, error } = await supabase.rpc('get_posting_cost', {
+      p_type: postingType,
+      p_owner_id: ownerId,
+    });
+    if (error) {
+      logger.error('wallet.getPostingCost.failed', error, { postingType });
+      throw error;
+    }
+    return PostingCostSchema.parse(data);
+  },
+
+  /**
+   * 공고 생성 + 서버 권위 비용 차감을 단일 트랜잭션으로 (결제 RPC).
+   *
+   * @param ownerId 비용 주체(워크스페이스 owner) user_id
+   * @param payload snake_case job_postings payload. **payload.id를 멱등키로 유지할 것.**
+   * @param reason 차감 사유 (기본 consume_job_posting)
+   * @returns posting_id + 차감량. flag off면 cost=0 → 차감 0.
+   * @throws Supabase RPC 에러 그대로 throw — 호출자가 INSUFFICIENT_BALANCE를 매핑.
+   */
+  async createJobPostingWithPayment(
+    ownerId: string,
+    payload: Record<string, unknown>,
+    reason: WalletReason = 'consume_job_posting'
+  ): Promise<CreatePostingPaymentResult> {
+    const { data, error } = await supabase.rpc('create_job_posting_with_payment_atomically', {
+      p_owner_id: ownerId,
+      p_posting_payload: payload,
+      p_reason: reason,
+    });
+    if (error) {
+      logger.error('wallet.createJobPostingWithPayment.failed', error, { ownerId });
+      throw error;
+    }
+    return CreatePostingPaymentResultSchema.parse(data);
+  },
+
+  /**
+   * 공고 취소 환불 (24h 100% / 이후 50%). 환불은 항상 owner 지갑에 적립.
+   *
+   * @param postingId 취소된 공고 id
+   * @param ownerId 비용 주체(owner) user_id — caller가 owner 또는 협업자여야 통과.
+   * @returns success + 환불량. 무차감/권한밖이면 success:false (throw 아님).
+   * @throws Supabase transport 에러만 throw.
+   */
+  async refundJobCancellation(postingId: string, ownerId: string): Promise<RefundResult> {
+    const { data, error } = await supabase.rpc('refund_job_cancellation_atomically', {
+      p_posting_id: postingId,
+      p_owner_id: ownerId,
+    });
+    if (error) {
+      logger.error('wallet.refundJobCancellation.failed', error, { postingId });
+      throw error;
+    }
+    return RefundResultSchema.parse(data);
   },
 };

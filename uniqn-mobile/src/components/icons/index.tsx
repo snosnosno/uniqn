@@ -40,6 +40,7 @@ import {
   File,
   FileText,
   Flag,
+  Gem,
   Gift,
   Globe,
   Hash,
@@ -264,6 +265,7 @@ export const StarIcon = createIcon(Star);
 // ─── Toggle icons (outline + filled) ───────────────────────────────────────
 export const HeartIcon = createIcon(Heart);
 export const HeartFilledIcon = createFilledIcon(Heart, '#DC2626');
+export const GemIcon = createIcon(Gem);
 export const BookmarkOutlineIcon = createIcon(Bookmark);
 export const BookmarkFilledIcon = createFilledIcon(Bookmark, '#D4A017');
 

@@ -21,6 +21,8 @@ import {
   serializeJobPostingV3,
 } from '@/domains/job-posting';
 import { removeUndefined } from '@/utils/removeUndefined';
+import { generateUUID } from '@/utils/generateId';
+import { WalletRepository } from '@/repositories/supabase/WalletRepository';
 import { STATUS } from '@/constants';
 import type { UnsubscribeFn, PaginationCursor } from '@/types/common';
 import type { TaxSettings } from '@/utils/settlement';
@@ -335,7 +337,10 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
     try {
       logger.info('공고 생성', { ownerId: context.ownerId, title: input.title });
       const now = new Date();
+      // 클라 생성 UUID — 결제 RPC의 멱등키(ON CONFLICT id)로 사용해 재시도 이중과금 방지
+      const postingId = generateUUID();
       const current: Partial<JobPosting> = {
+        id: postingId,
         viewCount: 0,
         filledPositions: 0,
         stats: createInitialPostingStats(input.schedule),
@@ -359,15 +364,30 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
         { ownerId: context.ownerId, title: input.title }
       );
 
-      const { id: _id, ...rest } = removeUndefined(
-        serialized as unknown as Record<string, unknown>
+      // 멱등 id를 payload에 유지(legacy는 제거했음) → 결제 RPC가 ON CONFLICT (id)로 멱등
+      const snakeData = toSnakeCase(
+        removeUndefined(serialized as unknown as Record<string, unknown>)
       );
-      const snakeData = toSnakeCase(rest);
 
-      const { data, error } = await supabase.from(TABLE).insert(snakeData).select('id').single();
-      if (error) handleSupabaseError(error, { operation: '공고 생성', table: TABLE });
-      const newId = (data as Record<string, unknown>).id as string;
-      logger.info('공고 생성 완료', { id: newId });
+      let result;
+      try {
+        result = await WalletRepository.createJobPostingWithPayment(
+          context.ownerId,
+          snakeData,
+          'consume_job_posting'
+        );
+      } catch (rpcError) {
+        if (rpcError instanceof Error && rpcError.message.includes('INSUFFICIENT_BALANCE')) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INSUFFICIENT_BALANCE, {
+            userMessage: '하트/다이아 잔액이 부족해요. 충전 후 다시 시도해주세요.',
+            metadata: { ownerId: context.ownerId },
+          });
+        }
+        throw rpcError;
+      }
+
+      const newId = result.posting_id;
+      logger.info('공고 생성 완료', { id: newId, consumed: result.total_consumed });
       return { id: newId, jobPosting: { ...jobPosting, id: newId } };
     } catch (error) {
       rethrowOrHandle(error, '공고 생성', { ownerId: context.ownerId });
@@ -435,6 +455,23 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
         .update({ status: STATUS.JOB_POSTING.CANCELLED, updated_at: new Date().toISOString() })
         .eq('id', jobPostingId);
       if (error) handleSupabaseError(error, { operation: '공고 삭제', table: TABLE });
+
+      // 취소 성립 후 환불(best-effort) — 비용 주체=posting owner(cur.ownerId).
+      // RPC가 caller(owner|협업자) 권한 검증 + owner 지갑 적립. 멱등.
+      // 무차감(no_consumption_found, flag off 등)은 success:false로 정상 no-op.
+      // RPC 실패가 취소를 되돌리지 않도록 swallow + 경고 로깅(멱등이라 후속 재시도 가능).
+      try {
+        const refund = await WalletRepository.refundJobCancellation(jobPostingId, cur.ownerId);
+        if (refund.success && !('idempotent' in refund && refund.idempotent)) {
+          logger.info('공고 취소 환불 완료', { jobPostingId, refunded: refund.refunded_diamonds });
+        }
+      } catch (refundError) {
+        logger.warn('공고 취소 환불 실패 — 취소는 성립, 환불 후속 필요', {
+          jobPostingId,
+          error: refundError instanceof Error ? refundError.message : String(refundError),
+        });
+      }
+
       logger.info('공고 삭제 완료', { jobPostingId });
     } catch (error) {
       rethrowOrHandle(error, '공고 삭제', { jobPostingId });

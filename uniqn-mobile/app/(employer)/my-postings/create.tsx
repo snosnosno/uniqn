@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { KeyboardAvoidingView, Platform } from 'react-native';
+import { KeyboardAvoidingView, Platform, View, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,6 +20,10 @@ import { JobPostingScrollForm } from '@/components/employer/job-form';
 import { TemplateModal } from '@/components/employer/job-form/modals/TemplateModal';
 import { LoadTemplateModal } from '@/components/employer/job-form/modals/LoadTemplateModal';
 import { StackHeader } from '@/components/headers';
+import { PaywallModal, WalletBalanceBadge } from '@/components/wallet';
+import { usePostingCost } from '@/hooks/usePostingCost';
+import { useWalletBalance } from '@/hooks/useWalletBalance';
+import { isAppError, ERROR_CODES } from '@/errors';
 
 export default function CreateJobPostingScreen() {
   const router = useRouter();
@@ -28,12 +32,15 @@ export default function CreateJobPostingScreen() {
 
   const [draft, setDraft] = useState<JobPostingDraft>(INITIAL_JOB_POSTING_DRAFT);
   const [isDirty, setIsDirty] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const wallet = useWalletBalance();
   const formData = useMemo(() => draftToFormData(draft), [draft]);
 
   useUnsavedChangesGuard(isDirty);
 
   const createJobPosting = useCreateJobPosting();
   const templateManager = useTemplateManager();
+  const postingCost = usePostingCost(formData.postingType ?? 'regular', user?.uid);
 
   const updateFormData = useCallback((data: Partial<JobPostingFormData>) => {
     setIsDirty(true);
@@ -72,6 +79,10 @@ export default function CreateJobPostingScreen() {
       addToast({ type: 'success', message: successMessage });
       router.replace('/(app)/(tabs)/employer');
     } catch (error) {
+      if (isAppError(error) && error.code === ERROR_CODES.BUSINESS_INSUFFICIENT_BALANCE) {
+        setShowPaywall(true);
+        return;
+      }
       logger.error('공고 등록 실패', error as Error);
       addToast({
         type: 'error',
@@ -83,6 +94,24 @@ export default function CreateJobPostingScreen() {
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="공고 작성" fallbackHref="/(app)/(tabs)/employer" />
+      <View className="flex-row items-center justify-between px-4 py-2">
+        <Text className="text-xs font-sans text-secondary-500 dark:text-secondary-400">
+          보유 잔액
+        </Text>
+        <WalletBalanceBadge testID="create-wallet-badge" />
+      </View>
+      <View className="flex-row items-center justify-between px-4 pb-2">
+        <Text className="text-xs font-sans text-secondary-500 dark:text-secondary-400">
+          게시 비용
+        </Text>
+        <Text className="text-sm font-sans-semibold text-content-primary dark:text-secondary-100">
+          {postingCost.data === null || postingCost.data === undefined
+            ? '—'
+            : postingCost.data.cost === 0
+              ? '무료'
+              : `${postingCost.data.cost}${postingCost.data.currency_hint === 'heart_first' ? '💖' : '💎'}`}
+        </Text>
+      </View>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
@@ -123,6 +152,20 @@ export default function CreateJobPostingScreen() {
           isDeletingTemplate={templateManager.isDeletingTemplate}
         />
       ) : null}
+
+      <PaywallModal
+        visible={showPaywall}
+        cost={postingCost.data?.cost ?? 0}
+        currencyHint={postingCost.data?.currency_hint ?? 'diamond'}
+        heartBalance={wallet.data?.heart_balance ?? 0}
+        diamondBalance={wallet.data?.diamond_balance ?? 0}
+        onClose={() => setShowPaywall(false)}
+        onCharge={() => {
+          setShowPaywall(false);
+          // 충전(PurchaseSheet)은 Lane C(T10)에서 연결. 그 전까지 안내 토스트.
+          addToast({ type: 'info', message: '충전 기능은 곧 제공될 예정이에요.' });
+        }}
+      />
     </SafeAreaView>
   );
 }

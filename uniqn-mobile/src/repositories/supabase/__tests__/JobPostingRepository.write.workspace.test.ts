@@ -278,12 +278,15 @@ describe('JobPostingRepository write-side — loadAndVerifyMutateAccess (owner|m
 describe('JobPostingRepository write-side — loadAndVerifyDeleteAccess (owner|admin only)', () => {
   const repo = new SupabaseJobPostingRepository();
 
-  it('owner 본인의 delete 호출은 RPC 0회로 통과', async () => {
+  it('owner 본인의 delete 호출은 권한 검증 RPC 0회로 통과', async () => {
     setupLoadAndUpdate();
 
     await repo.deleteWithTransaction(POSTING_ID, OWNER_ID).catch(() => {});
 
-    expect(mockRpc).not.toHaveBeenCalled();
+    // owner 분기로 short-circuit → 권한 검증 RPC(is_admin/is_workspace_member) 미호출.
+    // (취소 후 best-effort 환불 RPC는 별개 — 권한 분기와 무관하므로 여기서 검증 대상 아님)
+    expect(mockRpc).not.toHaveBeenCalledWith('is_admin');
+    expect(mockRpc).not.toHaveBeenCalledWith('is_workspace_member', expect.any(Object));
   });
 
   it('워크스페이스 멤버의 delete 호출은 PermissionError (member 차단)', async () => {

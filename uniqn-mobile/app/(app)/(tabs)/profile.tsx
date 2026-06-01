@@ -37,6 +37,8 @@ import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { getRoleDisplayName } from '@/types/unified';
 import { EmployerApplicationStatusBanner } from '@/components/employer-application';
+import { WalletBalanceBadge } from '@/components/wallet';
+import { useClaimDailyAttendance } from '@/hooks/useClaimDailyAttendance';
 
 interface MenuItemProps {
   icon: ReactNode;
@@ -76,6 +78,7 @@ export default function ProfileScreen() {
   const addToast = useToastStore((state) => state.addToast);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const bubbleScore = useBubbleScore();
+  const claimAttendance = useClaimDailyAttendance();
   const currentUserIdentity = buildCurrentUserIdentitySnapshot({
     profile,
     authUser: user,
@@ -175,6 +178,27 @@ export default function ProfileScreen() {
             </View>
             <EditIcon size={20} color={SECONDARY_PALETTE[400]} />
           </Pressable>
+        </Card>
+
+        <Card className="mb-4">
+          <View className="flex-col">
+            <View className="flex-row items-center justify-between py-1">
+              <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
+                내 지갑
+              </Text>
+              <WalletBalanceBadge testID="profile-wallet-badge" />
+            </View>
+            <Pressable
+              testID="profile-attendance-button"
+              onPress={() => claimAttendance.mutate()}
+              disabled={claimAttendance.isPending}
+              className="mt-3 flex-row items-center justify-center rounded-xl bg-primary-500 py-2.5 active:opacity-80 disabled:opacity-50 dark:bg-primary-600"
+            >
+              <Text className="text-sm font-sans-semibold text-white">
+                {claimAttendance.isPending ? '처리 중…' : '출석 체크 (하트 +1)'}
+              </Text>
+            </Pressable>
+          </View>
         </Card>
 
         <Card className="mb-4">
