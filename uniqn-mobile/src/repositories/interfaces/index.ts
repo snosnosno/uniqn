@@ -26,6 +26,7 @@ export type {
   CreateJobPostingResult,
   JobPostingStats,
   JobPostingSubscriptionCallbacks,
+  ScheduleBoardSyncAction,
 } from './IJobPostingRepository';
 
 // WorkLog Repository
@@ -137,3 +138,9 @@ export type {
 
 // 공고별 협업자 (Phase 5 — feat/job-posting-collaborators)
 export type { IJobPostingCollaboratorRepository } from './IJobPostingCollaboratorRepository';
+
+// Wallet Repository (결제 — read-only)
+export type { IWalletRepository } from './IWalletRepository';
+
+// Employer Application Repository (구인자 등록 신청)
+export type { IEmployerApplicationRepository } from './IEmployerApplicationRepository';

@@ -219,9 +219,15 @@ export function useBulkConfirmApplications() {
       }
 
       if (result.failedCount > 0) {
+        const capacityFull = result.failed.filter(
+          (f) => f.code === ERROR_CODES.BUSINESS_MAX_CAPACITY_REACHED
+        ).length;
         addToast({
           type: 'warning',
-          message: `${result.failedCount}명 확정이 실패했습니다.`,
+          message:
+            capacityFull > 0
+              ? `${result.failedCount}명 확정 실패 (정원 마감 ${capacityFull}명).`
+              : `${result.failedCount}명 확정이 실패했습니다.`,
         });
       }
 

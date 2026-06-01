@@ -351,6 +351,7 @@ export function useUpdateSettlementStatus() {
         pending: '정산 대기로 변경되었습니다.',
         processing: '정산 처리 중으로 변경되었습니다.',
         completed: '정산이 완료되었습니다.',
+        failed: '정산이 실패 처리되었습니다.',
       };
 
       addToast({

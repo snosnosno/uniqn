@@ -291,7 +291,7 @@ export async function executeProcessQRCheckInOut(
 
     return {
       action: result.action ?? action,
-      hasExistingCheckInTime: false,
+      hasExistingCheckInTime: !!result.check_in_time,
       workDuration: result.work_duration ?? 0,
     };
   } catch (error) {

@@ -15,6 +15,13 @@ import {
 } from '@/domains/job-posting';
 import { JOB_POSTING_SCHEMA_VERSION } from '@/types/jobPosting';
 import { isWithinUrgentDateLimit } from '@/utils/date';
+import { Constants } from '@/types/supabase';
+
+/**
+ * 공고 상태 SSOT — DB enum(posting_status)을 단일출처로 파생.
+ * 인라인 z.enum 중복 하드코딩 제거 (drift 가드).
+ */
+const POSTING_STATUS_VALUES = Constants.public.Enums.posting_status;
 
 export const postingTypeSchema = z.enum(['regular', 'fixed', 'tournament', 'urgent'], {
   error: 'Select a valid posting type',
@@ -104,19 +111,7 @@ export const dateTimeSchema = z.object({
 export type DateTimeData = z.infer<typeof dateTimeSchema>;
 
 export const jobFilterSchema = z.object({
-  status: z
-    .enum([
-      'draft',
-      'pending',
-      'approved',
-      'active',
-      'capacity_full',
-      'closed',
-      'cancelled',
-      'expired',
-      'rejected',
-    ])
-    .optional(),
+  status: z.enum(POSTING_STATUS_VALUES).optional(),
   roles: z.array(roleSchema).optional(),
   district: z.string().optional(),
   dateRange: z
@@ -471,17 +466,7 @@ export const jobPostingDocumentSchema = z
     schemaVersion: z.literal(JOB_POSTING_SCHEMA_VERSION),
     title: z.string(),
     description: z.string().optional(),
-    status: z.enum([
-      'draft',
-      'pending',
-      'approved',
-      'active',
-      'capacity_full',
-      'closed',
-      'cancelled',
-      'expired',
-      'rejected',
-    ]),
+    status: z.enum(POSTING_STATUS_VALUES),
     ownerId: z.string(),
     ownerName: z.string().optional(),
     workspaceId: z.string().uuid({ message: '올바른 워크스페이스 ID 가 아닙니다' }),

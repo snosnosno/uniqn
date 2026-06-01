@@ -551,6 +551,45 @@ describe('applicantManagementService', () => {
       expect(result.failedCount).toBe(1);
       expect(result.failedIds).toContain('app-2');
       expect(result.workLogIds).toHaveLength(2);
+
+      // U3: 실패 항목별 사유 구조화 (code/reason 캡처)
+      // app-2는 getById가 null → confirmApplication이 INFRA_NOT_FOUND로 throw
+      expect(result.failed).toHaveLength(1);
+      expect(result.failed[0]).toMatchObject({
+        applicationId: 'app-2',
+        code: ERROR_CODES.INFRA_NOT_FOUND,
+        reason: '존재하지 않는 지원자입니다.',
+      });
+    });
+
+    it('정원 마감 실패 사유를 code로 구분할 수 있어야 함', async () => {
+      const { BusinessError, ERROR_CODES: MockCodes } = jest.requireMock('@/errors');
+
+      mockGetById.mockImplementation(async (id: string) => createMockApplication({ id }));
+      mockConfirmApplicationWithHistory.mockImplementation(async (id: string) => {
+        if (id === 'app-2') {
+          throw new BusinessError(MockCodes.BUSINESS_MAX_CAPACITY_REACHED, {
+            userMessage: '모집 인원이 마감되었습니다',
+          });
+        }
+        return {
+          applicationId: id,
+          workLogIds: [`work-${id}`],
+          message: '확정 완료',
+          historyEntry: {},
+        };
+      });
+
+      const result = await bulkConfirmApplications(['app-1', 'app-2'], 'employer-1');
+
+      expect(result.successCount).toBe(1);
+      expect(result.failedCount).toBe(1);
+      const capacityFailures = result.failed.filter(
+        (f) => f.code === MockCodes.BUSINESS_MAX_CAPACITY_REACHED
+      );
+      expect(capacityFailures).toHaveLength(1);
+      expect(capacityFailures[0]?.applicationId).toBe('app-2');
+      expect(capacityFailures[0]?.reason).toBe('모집 인원이 마감되었습니다');
     });
 
     it('모두 실패 시 빈 workLogIds를 반환해야 함', async () => {
@@ -802,6 +841,105 @@ describe('applicantManagementService', () => {
 
       expect((result as Record<string, ApplicationStats>).floor.total).toBe(1);
       expect((result as Record<string, ApplicationStats>).floor.confirmed).toBe(1);
+    });
+
+    it('한 지원자가 여러 역할을 선택하면 각 역할에 모두 집계해야 함', async () => {
+      const mockResult: ApplicantListWithStats = {
+        applications: [
+          createMockApplication({
+            id: 'app-1',
+            status: 'confirmed',
+            assignments: [
+              {
+                dates: ['2024-02-01'],
+                roleIds: ['dealer', 'floor'],
+                timeSlot: '09:00-18:00',
+                isGrouped: false,
+              },
+            ],
+          }),
+        ] as Application[],
+        stats: createMockStats({ total: 1, confirmed: 1 }),
+      };
+
+      mockFindByJobPostingWithStats.mockResolvedValue(mockResult);
+
+      const result = await getApplicantStatsByRole('job-1', 'employer-1');
+
+      // dealer/floor 각각 1건씩 집계되어야 함 (primaryRole만 보던 기존 버그 회귀 가드)
+      expect(result.dealer.total).toBe(1);
+      expect(result.dealer.confirmed).toBe(1);
+      expect((result as Record<string, ApplicationStats>).floor.total).toBe(1);
+      expect((result as Record<string, ApplicationStats>).floor.confirmed).toBe(1);
+    });
+
+    it('여러 assignment에 걸친 역할을 모두 집계해야 함', async () => {
+      const mockResult: ApplicantListWithStats = {
+        applications: [
+          createMockApplication({
+            id: 'app-1',
+            status: 'applied',
+            assignments: [
+              {
+                dates: ['2024-02-01'],
+                roleIds: ['dealer'],
+                timeSlot: '09:00-18:00',
+                isGrouped: false,
+              },
+              {
+                dates: ['2024-02-02'],
+                roleIds: ['manager'],
+                timeSlot: '09:00-18:00',
+                isGrouped: false,
+              },
+            ],
+          }),
+        ] as Application[],
+        stats: createMockStats({ total: 1, applied: 1 }),
+      };
+
+      mockFindByJobPostingWithStats.mockResolvedValue(mockResult);
+
+      const result = await getApplicantStatsByRole('job-1', 'employer-1');
+
+      expect(result.dealer.total).toBe(1);
+      expect(result.dealer.applied).toBe(1);
+      expect(result.manager.total).toBe(1);
+      expect(result.manager.applied).toBe(1);
+    });
+
+    it('동일 역할이 여러 assignment에 중복되면 1회만 집계해야 함', async () => {
+      const mockResult: ApplicantListWithStats = {
+        applications: [
+          createMockApplication({
+            id: 'app-1',
+            status: 'confirmed',
+            assignments: [
+              {
+                dates: ['2024-02-01'],
+                roleIds: ['dealer'],
+                timeSlot: '09:00-18:00',
+                isGrouped: false,
+              },
+              {
+                dates: ['2024-02-02'],
+                roleIds: ['dealer'],
+                timeSlot: '19:00-22:00',
+                isGrouped: false,
+              },
+            ],
+          }),
+        ] as Application[],
+        stats: createMockStats({ total: 1, confirmed: 1 }),
+      };
+
+      mockFindByJobPostingWithStats.mockResolvedValue(mockResult);
+
+      const result = await getApplicantStatsByRole('job-1', 'employer-1');
+
+      // 중복 역할은 지원자 단위로 1회만 집계 (총합 왜곡 방지)
+      expect(result.dealer.total).toBe(1);
+      expect(result.dealer.confirmed).toBe(1);
     });
   });
 

@@ -19,6 +19,7 @@ const mockGetStatsByOwnerId = jest.fn();
 const mockBulkUpdateStatus = jest.fn();
 const mockGetById = jest.fn();
 const mockUpdateStatus = jest.fn();
+const mockEnqueueScheduleBoardSync = jest.fn();
 const mockGetDefaultWorkspaceIdForOwner = jest.fn();
 
 jest.mock('@/repositories', () => ({
@@ -32,6 +33,7 @@ jest.mock('@/repositories', () => ({
     bulkUpdateStatus: (...args: unknown[]) => mockBulkUpdateStatus(...args),
     getById: (...args: unknown[]) => mockGetById(...args),
     updateStatus: (...args: unknown[]) => mockUpdateStatus(...args),
+    enqueueScheduleBoardSync: (...args: unknown[]) => mockEnqueueScheduleBoardSync(...args),
   },
 }));
 

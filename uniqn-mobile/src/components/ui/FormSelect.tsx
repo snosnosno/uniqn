@@ -12,7 +12,7 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback, useMemo, memo } from 'react';
 import { View, Text, Pressable, TextInput, type ViewProps } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { AppFlashList } from './AppFlashList';
 import { Modal } from './Modal';
 
 // ============================================================================
@@ -234,7 +234,7 @@ export function FormSelect<T = string>({
 
           {/* 옵션 목록 */}
           <View style={{ height: 320 }}>
-            <FlashList
+            <AppFlashList
               data={filteredOptions}
               keyExtractor={(item, index) => `${item.value}-${index}`}
               renderItem={({ item }) => (
@@ -263,7 +263,6 @@ export function FormSelect<T = string>({
                   )}
                 </View>
               }
-              // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
               estimatedItemSize={56}
             />
           </View>

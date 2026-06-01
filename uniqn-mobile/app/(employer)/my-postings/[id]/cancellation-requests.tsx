@@ -10,7 +10,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Modal, Pressable, RefreshControl, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FlashList } from '@shopify/flash-list';
+import { AppFlashList } from '@/components/ui/AppFlashList';
 import { CancellationRequestCard } from '@/components/employer';
 import { EmptyState, ErrorState, Loading } from '@/components';
 import { StackHeader } from '@/components/headers';
@@ -215,11 +215,10 @@ export default function CancellationRequestsScreen() {
           variant="content"
         />
       ) : (
-        <FlashList
+        <AppFlashList
           data={cancellationRequests}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
-          // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
           estimatedItemSize={200}
           contentContainerStyle={{ paddingVertical: 8 }}
           refreshControl={

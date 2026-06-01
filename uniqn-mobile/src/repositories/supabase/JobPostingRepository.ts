@@ -42,6 +42,7 @@ import type {
   CreateJobPostingResult,
   JobPostingStats,
   JobPostingSubscriptionCallbacks,
+  ScheduleBoardSyncAction,
 } from '../interfaces';
 import {
   TABLE,
@@ -732,5 +733,33 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
         callbacks.onError?.(toError(error));
       }
     });
+  }
+
+  // ── Schedule Board Sync Outbox ────────────────────────────────────────────
+
+  async enqueueScheduleBoardSync(
+    jobPostingId: string,
+    action: ScheduleBoardSyncAction,
+    payload: Record<string, unknown> = {}
+  ): Promise<void> {
+    const { error } = await supabase.from('schedule_board_sync_outbox').insert({
+      job_posting_id: jobPostingId,
+      action,
+      payload,
+      status: 'pending',
+      retry_count: 0,
+    });
+
+    if (error) {
+      // outbox insert 실패는 main mutation을 롤백시키지 않음.
+      // 사용자 경험 보호 차원에서 warn 로그만 남기고, outbox failed_retry_limit
+      // 모니터링 + 수동 백필이 안전망. 이는 아키텍처 결정.
+      logger.warn('Schedule board sync enqueue 실패', {
+        component: 'JobPostingRepository',
+        jobPostingId,
+        action,
+        error: error.message,
+      });
+    }
   }
 }

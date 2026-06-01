@@ -2,10 +2,13 @@ import { logger } from '@/utils/logger';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { jobPostingRepository } from '@/repositories';
 import { workspaceService } from '@/services/workspace';
-import { supabase } from '@/lib/supabase';
 import { BusinessError, ERROR_CODES } from '@/errors';
 import type { TaxSettings } from '@/utils/settlement';
-import type { CreateJobPostingResult, JobPostingStats } from '@/repositories';
+import type {
+  CreateJobPostingResult,
+  JobPostingStats,
+  ScheduleBoardSyncAction,
+} from '@/repositories';
 import type {
   CreateJobPostingInput,
   JobPosting,
@@ -13,7 +16,7 @@ import type {
   UpdateJobPostingInput,
 } from '@/types';
 
-export type { CreateJobPostingResult, JobPostingStats };
+export type { CreateJobPostingResult, JobPostingStats, ScheduleBoardSyncAction };
 
 // =============================================================================
 // T-B7+B8: schedule_board_sync_outbox 패턴
@@ -21,34 +24,18 @@ export type { CreateJobPostingResult, JobPostingStats };
 // fire-and-forget syncScheduleBoardSafely 제거. 모든 board sync 의도를
 // outbox 테이블에 영속화하고 sync-schedule-board-outbox Edge Function이
 // poll → sync_schedule_board RPC 호출 → status 업데이트로 처리.
+//
+// U4: outbox insert(snake_case 매핑)는 Repository 로 이관. Service 는 enqueue
+// 의도만 표현하며, enqueue 실패가 main mutation 을 롤백시키지 않는 동작은
+// Repository 내부에서 동일하게 유지된다.
 // =============================================================================
-
-export type ScheduleBoardSyncAction = 'create' | 'update' | 'delete' | 'close' | 'reopen';
 
 export async function enqueueScheduleBoardSync(
   jobPostingId: string,
   action: ScheduleBoardSyncAction,
   payload: Record<string, unknown> = {}
 ): Promise<void> {
-  const { error } = await supabase.from('schedule_board_sync_outbox').insert({
-    job_posting_id: jobPostingId,
-    action,
-    payload,
-    status: 'pending',
-    retry_count: 0,
-  });
-
-  if (error) {
-    // outbox insert 실패는 main mutation을 롤백시키지 않음.
-    // 사용자 경험 보호 차원에서 warn 로그만 남기고, outbox failed_retry_limit
-    // 모니터링 + 수동 백필이 안전망. 이는 아키텍처 결정.
-    logger.warn('Schedule board sync enqueue 실패', {
-      component: 'jobManagementService',
-      jobPostingId,
-      action,
-      error: error.message,
-    });
-  }
+  await jobPostingRepository.enqueueScheduleBoardSync(jobPostingId, action, payload);
 }
 
 /**

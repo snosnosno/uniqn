@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { View, Text } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { AppFlashList } from '@/components/ui/AppFlashList';
 import { CollaboratorRow } from './CollaboratorRow';
 import { SkeletonListItem } from '@/components/ui/Skeleton';
 import type { JobPostingCollaboratorWithUser } from '@/types/jobPostingCollaborator';
@@ -57,10 +57,9 @@ export function CollaboratorList({
   }
 
   return (
-    <FlashList<JobPostingCollaboratorWithUser>
+    <AppFlashList<JobPostingCollaboratorWithUser>
       data={collaborators}
       keyExtractor={(item) => item.id}
-      // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
       estimatedItemSize={64}
       renderItem={({ item }) => (
         <CollaboratorRow

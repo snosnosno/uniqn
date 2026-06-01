@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import { ActivityIndicator, RefreshControl, View } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { AppFlashList } from '@/components/ui/AppFlashList';
 import { LIST_CONTAINER_STYLES } from '@/constants';
 import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import type { JobPostingCard } from '@/types';
@@ -94,11 +94,10 @@ export function JobList({
         />
       ) : null}
 
-      <FlashList
+      <AppFlashList
         data={jobs}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
-        // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
         estimatedItemSize={160}
         contentContainerStyle={LIST_CONTAINER_STYLES.padding16}
         showsVerticalScrollIndicator={false}

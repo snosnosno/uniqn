@@ -8,7 +8,7 @@ import { View, Text, RefreshControl, ActivityIndicator, Pressable, ScrollView } 
 import { PRIMARY_COLORS } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { FlashList } from '@shopify/flash-list';
+import { AppFlashList } from '@/components/ui/AppFlashList';
 import { StackHeader } from '@/components/headers';
 import { EmptyState } from '@/components/ui';
 import { InquiryCard } from '@/components/support';
@@ -133,10 +133,9 @@ export default function AdminInquiriesScreen() {
           <ActivityIndicator size="large" color={PRIMARY_COLORS[300]} />
         </View>
       ) : (
-        <FlashList
+        <AppFlashList
           data={inquiries}
           renderItem={renderItem}
-          // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
           estimatedItemSize={120}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingTop: 16, paddingBottom: 16 }}

@@ -26,7 +26,8 @@ export type ApplicationStatus =
 
 export type ScheduleType = 'applied' | 'confirmed' | 'completed' | 'cancelled';
 
-export type PayrollStatus = 'pending' | 'processing' | 'completed';
+// DB enum payroll_status = ['pending','completed','failed']. 'processing'는 UI 표시 전용 값.
+export type PayrollStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
 export const ATTENDANCE_STATUS_LABELS: Record<AttendanceStatus, string> = {
   not_started: '출근 전',
@@ -72,4 +73,5 @@ export const PAYROLL_STATUS_LABELS: Record<PayrollStatus, string> = {
   pending: '대기',
   processing: '처리 중',
   completed: '완료',
+  failed: '실패',
 };
