@@ -13,6 +13,10 @@ import { TEST_ACCOUNTS } from '../../fixtures/test-accounts';
 //      → 목록에서 "모집중" 라벨 노출
 //
 // 주의:
+//   - 파일명 employer- 접두사 필수: playwright.config.ts 의 chromium-employer
+//     프로젝트(employer.json storageState, role=employer)로 라우팅되어야 /employer
+//     탭이 EmployerView 로 렌더된다. 접두사 없으면 기본 chromium(staff.json)으로
+//     실행되어 NonEmployerView 가 떠 UI 단언이 전부 실패한다.
 //   - state-dependent 순차 시나리오 → describe serial mode 필수
 //     (pitfall_e2e_fullyparallel_serial_mode)
 //   - review-* 계정 사용 (pitfall: project_e2e_review_accounts)
@@ -128,6 +132,23 @@ test.describe('공고 인원마감 자동 전이/복귀', () => {
     expect((row as { filled_positions: number }).filled_positions).toBe(1);
   });
 
+  // 구인자 UI 통합: capacity_full 공고가 목록에 "정원 마감" 라벨로 노출되는지.
+  // 파일명 employer- 접두사 → chromium-employer 프로젝트(employer.json storageState,
+  // role=employer)로 실행되어 /employer 탭에서 EmployerView 가 렌더된다.
+  // serial 순서상 capacity_full 마감 직후·active 복귀 전에 실행되어야 라벨이 유효하다.
+  // ("정원 마감"은 카드 상태 라벨에만 존재 — 필터 탭엔 없어 page-level 단언이 견고함)
+  test('구인자 UI: capacity_full 공고에 "정원 마감" 라벨 노출', async ({ page }) => {
+    if (!admin) return;
+    await page.goto('/employer', { waitUntil: 'domcontentloaded' });
+    await waitForReady(page);
+    await expect(page.locator(`button:has-text("${TITLE}"):visible`).first()).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByText('정원 마감', { exact: false }).first()).toBeVisible({
+      timeout: 10_000,
+    });
+  });
+
   test('빈자리 발생(취소) → active 자동 복귀 (DB 검증)', async () => {
     if (!admin) return;
     // confirmed → cancelled: 트리거가 filled -1 → capacity_full→active 복귀
@@ -144,25 +165,5 @@ test.describe('공고 인원마감 자동 전이/복귀', () => {
       .single();
     expect((row as { status: string }).status).toBe('active');
     expect((row as { filled_positions: number }).filled_positions).toBe(0);
-  });
-
-  // QUARANTINE — 구인자 UI 라벨(정원 마감/모집중) 통합 검증.
-  // 보류 사유: e2e employer 계정(review-employer)이 employer 탭에서 NonEmployerView로
-  // 렌더된다(useHasRole('employer')===false). 시드 마이그레이션은 role='employer'를
-  // 설정하지만 storageState 세션 복원 후 프로필 role 하이드레이션이 인식되지 않아
-  // 공고 리스트 자체가 표시되지 않는다 — capacity 기능과 무관한 e2e 인프라 이슈.
-  // capacity_full 전이/복귀는 위 DB 검증 + pgTAP(capacity_full_transition.test.sql)로 커버.
-  // TODO(backlog: e2e-employer-tab-role-hydration): employer 탭 role 인식 수정 후
-  // 아래 UI 단언을 test()로 복구.
-  test.fixme('구인자 UI: 공고 카드 + 정원 마감/모집중 라벨 노출', async ({ page }) => {
-    if (!admin) return;
-    await page.goto('/employer', { waitUntil: 'domcontentloaded' });
-    await waitForReady(page);
-    await expect(page.locator(`button:has-text("${TITLE}"):visible`).first()).toBeVisible({
-      timeout: 15_000,
-    });
-    await expect(page.getByText('정원 마감', { exact: false }).first()).toBeVisible({
-      timeout: 10_000,
-    });
   });
 });
