@@ -470,13 +470,38 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       // RPC 실패가 취소를 되돌리지 않도록 swallow + 경고 로깅(멱등이라 후속 재시도 가능).
       try {
         const refund = await WalletRepository.refundJobCancellation(jobPostingId, cur.ownerId);
-        if (refund.success && !('idempotent' in refund && refund.idempotent)) {
-          logger.info('공고 취소 환불 완료', { jobPostingId, refunded: refund.refunded_diamonds });
+        if (refund.success) {
+          if (!('idempotent' in refund && refund.idempotent)) {
+            logger.info('공고 취소 환불 완료', {
+              jobPostingId,
+              refunded: refund.refunded_diamonds,
+            });
+          }
+        } else if (refund.error === 'no_consumption_found') {
+          // 정상 no-op: 무과금(flag off)·미차감 공고는 환불 대상 없음 — 경보 아님.
+          logger.debug('공고 취소 — 환불 대상 차감 없음(no-op)', { jobPostingId });
+        } else {
+          // 예상치 못한 실패(unauthorized/invalid_args 등): 취소는 성립했으나 환불 미수행 → 관측 필요.
+          logger.warn('공고 취소 환불 미수행 — 취소 성립, 환불 후속 필요', {
+            jobPostingId,
+            error: refund.error,
+          });
+          Sentry.addBreadcrumb({
+            category: 'wallet.refund',
+            level: 'error',
+            message: 'refund_returned_failure_after_cancel',
+            data: { jobPostingId, error: refund.error },
+          });
         }
       } catch (refundError) {
+        // RPC transport/예외: 취소는 성립. 멱등이라 후속 재시도 안전하나 신호가 필요.
         logger.warn('공고 취소 환불 실패 — 취소는 성립, 환불 후속 필요', {
           jobPostingId,
           error: refundError instanceof Error ? refundError.message : String(refundError),
+        });
+        Sentry.captureException(refundError, {
+          tags: { domain: 'wallet', op: 'refund_after_cancel' },
+          extra: { jobPostingId, ownerId: cur.ownerId },
         });
       }
 
