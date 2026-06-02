@@ -148,8 +148,9 @@ BEGIN
     work_date = CASE WHEN work_date IS NOT NULL
                      THEN (work_date::date + v_interval)::date::text
                      ELSE work_date END,
+    -- last_work_date 는 date 컬럼 — text 캐스트 금지(CASE 타입 통일: date/date)
     last_work_date = CASE WHEN last_work_date IS NOT NULL
-                          THEN (last_work_date::date + v_interval)::date::text
+                          THEN (last_work_date + v_interval)::date
                           ELSE last_work_date END,
     work_dates = v_new_work_dates,
     fixed_config = CASE WHEN v_expires_at IS NOT NULL
