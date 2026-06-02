@@ -3,9 +3,17 @@
 -- 목적: 공고 기간 연장(extend) — 고정 비용 다이아 차감 + 근무일/만료일 p_extend_days 만큼
 --   뒤로 밀고, 마감/만료/정원마감 상태면 active 로 재오픈.
 --
--- 비용/멱등: consume_diamonds_atomically(owner, 5, 'consume_job_extend', posting_id, 'job_posting')
---   를 통해 5 다이아(하트 우선) 차감. consume 가 INSUFFICIENT_BALANCE 던지면 전체 롤백.
---   같은 트랜잭션 안에서 차감+연장이 atomic — 부분 적용 없음.
+-- 비용/멱등: 비용은 _calc_posting_cost 와 동일한 4단 게이트(base 5 → enabled → paid_types['extend']
+--   → rollout%)로 산정 → 무과금(현 prod paid_types.extend 부재) 시 0, 유료화 ON 시 5다이아.
+--   cost>0 일 때만 consume_diamonds_atomically(owner, cost, 'consume_job_extend', posting_id, 'job_posting').
+--   INSUFFICIENT_BALANCE 던지면 전체 롤백. 차감+연장이 같은 트랜잭션 안에서 atomic.
+--
+-- ⚠️ 무한 무료연장 차단 (적대적 리뷰 P0, docs/planning/2026-06-02-monetization-review-findings.md):
+--   consume 멱등키가 (user, ref_id=posting_id, 'consume_job_extend')라, 동일 공고 2회차 연장은
+--   차감 0(idempotent)인데도 날짜이동/재오픈이 무조건 실행되면 "1회 결제 후 무한 무료연장"이 된다.
+--   → consume 가 idempotent(이미 유료 연장 차감 존재)면 날짜이동/재오픈을 **재실행하지 않고** 멱등 반환.
+--   결과: 공고당 유료 연장은 1회(재시도 안전). 다회 연장은 향후 per-operation 멱등 토큰으로 확장.
+--   refund 는 ref_id=posting 으로 consume_job_extend 를 합산하므로 ref_id=posting 유지(환불 호환).
 --
 -- 날짜 연장 설계 결정(draft, 리뷰 시 재검토):
 --   1) work_date / last_work_date: NULL 이 아니면 + p_extend_days 일.
@@ -30,7 +38,8 @@ AS $$
 DECLARE
   v_posting        public.job_postings%ROWTYPE;
   v_consume_result jsonb;
-  v_extend_cost    constant integer := 5;
+  v_extend_cost    integer := 5;
+  v_config         jsonb;
   v_interval       interval;
   v_reopened       boolean := false;
   v_new_work_dates text[];
@@ -69,14 +78,43 @@ BEGIN
     RAISE EXCEPTION 'INVALID_STATE: 취소된 공고는 연장할 수 없습니다';
   END IF;
 
-  -- 2) 고정 비용 다이아 차감 (실패 시 전체 트랜잭션 롤백)
-  v_consume_result := public.consume_diamonds_atomically(
-    p_owner_id,
-    v_extend_cost,
-    'consume_job_extend',
-    p_posting_id,
-    'job_posting'
-  );
+  -- 2) 비용 산정: _calc_posting_cost 와 동일한 4단 게이트 (cost=0 불변식 보존, P1)
+  --    base 5 → enabled → paid_types['extend'] → rollout 버킷. 현 prod(paid_types.extend 부재)=0.
+  v_extend_cost := 5;
+  SELECT value INTO v_config FROM public.app_config WHERE key = 'monetization';
+  IF v_config IS NULL
+     OR NOT COALESCE((v_config->>'enabled')::boolean, false)
+     OR NOT COALESCE((v_config->'paid_types'->>'extend')::boolean, false)
+     OR (abs(hashtext(p_owner_id::text)) % 100) >= COALESCE((v_config->>'rollout_percentage')::int, 0)
+  THEN
+    v_extend_cost := 0;
+  END IF;
+
+  -- 2b) 유료 연장만 차감 + 무한 무료연장 차단 (P0).
+  --     consume 멱등(ref_id=posting): 이미 유료 연장 차감이 있으면 idempotent → 날짜이동/재오픈을
+  --     재실행하지 않고 멱등 반환(재시도 안전, 공고당 유료 연장 1회).
+  IF v_extend_cost > 0 THEN
+    v_consume_result := public.consume_diamonds_atomically(
+      p_owner_id,
+      v_extend_cost,
+      'consume_job_extend',
+      p_posting_id,
+      'job_posting'
+    );
+
+    IF COALESCE((v_consume_result->>'idempotent')::boolean, false) THEN
+      RETURN jsonb_build_object(
+        'success', true,
+        'posting_id', p_posting_id,
+        'idempotent', true,
+        'already_extended', true,
+        'extend_days', 0,
+        'reopened', false,
+        'diamonds_consumed', 0,
+        'hearts_consumed', 0
+      );
+    END IF;
+  END IF;
 
   -- 3) work_dates[] 각 원소 평행 이동
   IF v_posting.work_dates IS NOT NULL THEN
