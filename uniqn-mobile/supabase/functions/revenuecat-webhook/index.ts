@@ -16,37 +16,22 @@
 // 멱등성: event.id를 wallet_ledger.revenuecat_transaction_id에 저장 (UNIQUE).
 //   RC가 재시도해도 RPC가 idempotent 응답.
 //
-// 환불: REFUND/BILLING_ISSUE/CANCELLATION 이벤트는 음수 diamonds로 RPC 호출.
+// 환불: REFUND, CANCELLATION(소비성 환불 신호, BILLING_ERROR 제외) 이벤트는 음수 diamonds로 RPC 호출.
+//   BILLING_ISSUE 는 '갱신 청구 실패' 신호라 무시. SANDBOX 환경 결제는 실 재화 발권 금지(게이트).
 //   별도 event.id이므로 새로운 ledger row (refund_purchase reason)가 생성됨.
 //
-// Spec §5, Plan Phase 2
+// Spec §5, Plan Phase 2 / 하드닝: docs/planning/2026-06-02-monetization-review-findings.md
 // =============================================================================
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { classifyEvent, timingSafeEqualStr } from './eventClassifier.ts';
 
 const responseHeaders = {
   'Content-Type': 'application/json',
 };
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-// 잔액 증가 이벤트
-const CREDIT_TYPES = new Set<string>(['INITIAL_PURCHASE', 'NON_RENEWING_PURCHASE']);
-
-// 잔액 감소 이벤트 (환불 / 결제 실패 / 사용자 취소)
-const REFUND_TYPES = new Set<string>(['REFUND', 'BILLING_ISSUE', 'CANCELLATION']);
-
-// 무시할 이벤트 (구독 미사용 / 단순 정보)
-const IGNORE_TYPES = new Set<string>([
-  'RENEWAL',
-  'EXPIRATION',
-  'PRODUCT_CHANGE',
-  'TRANSFER',
-  'SUBSCRIBER_ALIAS',
-  'NON_SUBSCRIPTION_PURCHASE', // 일부 RC 버전 별칭
-  'TEST',
-]);
 
 interface RevenueCatEvent {
   type: string;
@@ -103,7 +88,8 @@ Deno.serve(async (req: Request) => {
     });
   }
   const authHeader = req.headers.get('Authorization');
-  if (!authHeader || authHeader !== `Bearer ${expectedSecret}`) {
+  // 상수시간 비교 — secret 비교의 타이밍 사이드채널 완화 (=== 단축평가 회피)
+  if (!authHeader || !timingSafeEqualStr(authHeader, `Bearer ${expectedSecret}`)) {
     return unauthorized();
   }
 
@@ -122,13 +108,21 @@ Deno.serve(async (req: Request) => {
   const event = payload.event;
   const eventType = event.type;
 
-  // 3) 무시 이벤트는 200으로 OK 응답 (RC가 retry 안 하도록)
-  if (IGNORE_TYPES.has(eventType)) {
-    return ok({ ignored: true, type: eventType });
-  }
+  // 3) 이벤트 분류: SANDBOX 게이트 + IGNORE(BILLING_ISSUE 포함) + credit/refund/unknown
+  const allowSandbox = Deno.env.get('REVENUECAT_ALLOW_SANDBOX') === 'true';
+  const decision = classifyEvent({
+    type: eventType,
+    environment: event.environment ?? null,
+    cancelReason: event.cancel_reason ?? null,
+    allowSandbox,
+  });
 
-  // 4) 알려지지 않은 이벤트도 200 (RC retry 폭주 방지) + 로그
-  if (!CREDIT_TYPES.has(eventType) && !REFUND_TYPES.has(eventType)) {
+  // 무시 대상(SANDBOX/구독/청구실패/BILLING_ERROR 취소 등)은 200 OK (RC retry 방지)
+  if (decision.action === 'ignore') {
+    return ok({ ignored: true, type: eventType, reason: decision.reason });
+  }
+  // 알려지지 않은 이벤트도 200 (RC retry 폭주 방지) + 로그
+  if (decision.action === 'unknown') {
     console.warn(`unknown_event_type: ${eventType}`);
     return ok({ ignored: true, type: eventType, reason: 'unknown_type' });
   }
@@ -183,7 +177,7 @@ Deno.serve(async (req: Request) => {
     return badRequest('invalid_product_amount', { product_id: event.product_id });
   }
 
-  const isRefund = REFUND_TYPES.has(eventType);
+  const isRefund = decision.action === 'refund';
   const diamondsToCredit = isRefund ? -totalDiamonds : totalDiamonds;
 
   // 8) credit_diamonds_atomically 호출 (음수=환불, 양수=구매)
