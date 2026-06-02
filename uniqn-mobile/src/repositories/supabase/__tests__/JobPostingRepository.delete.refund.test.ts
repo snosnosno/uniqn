@@ -1,5 +1,6 @@
 // src/repositories/supabase/__tests__/JobPostingRepository.delete.refund.test.ts
 import { SupabaseJobPostingRepository } from '../JobPostingRepository';
+import * as Sentry from '@sentry/react-native';
 
 const mockRefund = jest.fn();
 jest.mock('@/repositories/supabase/WalletRepository', () => ({
@@ -27,7 +28,11 @@ jest.mock('@/utils/supabase', () => {
     },
   };
 });
-jest.mock('@sentry/react-native', () => ({ __esModule: true, addBreadcrumb: jest.fn() }));
+jest.mock('@sentry/react-native', () => ({
+  __esModule: true,
+  addBreadcrumb: jest.fn(),
+  captureException: jest.fn(),
+}));
 
 const mockParseJobPosting = jest.fn();
 jest.mock('@/schemas', () => {
@@ -107,5 +112,37 @@ describe('deleteWithTransaction → 환불 연결', () => {
     mockRefund.mockRejectedValue(new Error('refund down'));
 
     await expect(repo.deleteWithTransaction(POSTING, OWNER)).resolves.toBeUndefined();
+  });
+
+  it('환불 RPC throw 시 Sentry.captureException 으로 관측 신호 기록', async () => {
+    setupOwnerDelete();
+    mockRefund.mockRejectedValue(new Error('refund down'));
+
+    await repo.deleteWithTransaction(POSTING, OWNER);
+
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+  });
+
+  it('환불 success:false(unauthorized 등 예상외)는 Sentry breadcrumb 로 관측 + 취소 성립', async () => {
+    setupOwnerDelete();
+    mockRefund.mockResolvedValue({ success: false, error: 'unauthorized' });
+
+    await expect(repo.deleteWithTransaction(POSTING, OWNER)).resolves.toBeUndefined();
+
+    expect(Sentry.addBreadcrumb).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'refund_returned_failure_after_cancel' })
+    );
+  });
+
+  it('환불 no_consumption_found(무과금 no-op)는 경보 없이 통과', async () => {
+    setupOwnerDelete();
+    (Sentry.addBreadcrumb as jest.Mock).mockClear();
+    (Sentry.captureException as jest.Mock).mockClear();
+    mockRefund.mockResolvedValue({ success: false, error: 'no_consumption_found' });
+
+    await repo.deleteWithTransaction(POSTING, OWNER);
+
+    expect(Sentry.addBreadcrumb).not.toHaveBeenCalled();
+    expect(Sentry.captureException).not.toHaveBeenCalled();
   });
 });
