@@ -70,6 +70,7 @@
     "expo-image": "~55.0.8",
     "expo-image-manipulator": "~55.0.15",
     "expo-image-picker": "~55.0.18",
+    "expo-intent-launcher": "~55.0.12",
     "expo-linear-gradient": "~55.0.13",
     "expo-linking": "~55.0.13",
     "expo-local-authentication": "~55.0.13",
@@ -160,7 +161,8 @@
   "knip": {
     "ignoreDependencies": [
       "react-native-mmkv",
-      "react-native-nitro-modules"
+      "react-native-nitro-modules",
+      "expo-intent-launcher"
     ]
   },
   "private": true
