@@ -322,7 +322,6 @@ export {
   // Badge colors (v1.1.0)
   type BadgeVariant,
   BADGE_CLASSES,
-  getBadgeClasses,
   // Text colors (v1.1.0)
   TEXT_CLASSES,
   // Card colors (v1.1.0)

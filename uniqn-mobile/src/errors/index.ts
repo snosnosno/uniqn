@@ -131,11 +131,6 @@ export {
   isReportNotFoundError,
   isReportAlreadyReviewedError,
   isCannotReportSelfError,
-  isAlreadyReviewedError,
-  isReviewPeriodExpiredError,
-  isCannotReviewSelfError,
-  isReviewNotFoundError,
-  isUnauthorizedReviewError,
 } from './BusinessErrors';
 
 // ============================================================================

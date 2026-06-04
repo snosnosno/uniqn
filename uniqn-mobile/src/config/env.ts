@@ -132,42 +132,6 @@ export const env: EnvironmentConfig = {
   logging: loggingConfigs[currentEnvironment],
 };
 
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * 특정 기능이 활성화되어 있는지 확인
- */
-export function isFeatureEnabled(feature: keyof FeatureFlags): boolean {
-  return env.features[feature];
-}
-
-/**
- * 현재 환경 확인
- */
-export function isEnvironment(environment: Environment): boolean {
-  return env.environment === environment;
-}
-
-/**
- * 개발 환경에서만 실행
- */
-export function runInDevelopment(fn: () => void): void {
-  if (env.isDevelopment) {
-    fn();
-  }
-}
-
-/**
- * 프로덕션 환경에서만 실행
- */
-export function runInProduction(fn: () => void): void {
-  if (env.isProduction) {
-    fn();
-  }
-}
-
 // lib/env.ts 유틸리티 re-export (하위 호환성)
 export { libIsDevelopment as isDevelopmentEnv, libIsProduction as isProductionEnv };
 

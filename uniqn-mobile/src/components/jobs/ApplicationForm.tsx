@@ -14,7 +14,7 @@ import { PostingTypeBadge } from './PostingTypeBadge';
 import { PreQuestionForm } from './PreQuestionForm';
 import { RoleSalaryDisplay } from './RoleSalaryDisplay';
 
-export interface ProvisionConsent {
+interface ProvisionConsent {
   at: string; // ISO 8601
   version: string;
 }
