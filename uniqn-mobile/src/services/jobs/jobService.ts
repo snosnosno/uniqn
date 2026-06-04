@@ -14,7 +14,7 @@
 
 import type { UnsubscribeFn, PaginationCursor } from '@/types/common';
 import { logger } from '@/utils/logger';
-import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
+import { isSearchVisiblePosting } from '@/utils/jobPostingVisibility';
 import { handleServiceError, handleSilentError } from '@/errors/serviceErrorHandler';
 import { startApiTrace } from '@/services/observability';
 import { jobPostingRepository, type PaginatedJobPostings } from '@/repositories';
@@ -181,8 +181,11 @@ export async function searchJobPostings(
     const { ClientSideSearchProvider } = await import('./searchService');
 
     const searchProvider = new ClientSideSearchProvider(async () => {
-      const { items } = await getJobPostings({ status: STATUS.JOB_POSTING.ACTIVE }, 300);
-      return items.filter(isCanonicalDatedPosting);
+      // 브라우즈(getList) 기본값과 정합: status 미지정 → active + capacity_full 노출.
+      // (EF-jobsearch-1: 정원 마감 공고가 검색에서 증발하던 read-disappearance 회귀)
+      const { items } = await getJobPostings(undefined, 300);
+      // 가시성 후처리도 브라우즈와 통일 — fixed 포함 + 미승인 대회 제외.
+      return items.filter(isSearchVisiblePosting);
     });
 
     const result = await searchProvider.search(trimmed, {

@@ -1,3 +1,4 @@
+import { STATUS } from '@/constants';
 import type { JobPosting, PostingType, SupportedReleasePostingType } from '@/types';
 
 export const SUPPORTED_RELEASE_POSTING_TYPES = [
@@ -36,6 +37,26 @@ export function isCanonicalDatedPosting(
     posting.schedule.kind === 'dated' &&
     SUPPORTED_RELEASE_POSTING_TYPES.includes(postingType as SupportedReleasePostingType)
   );
+}
+
+/**
+ * 검색 결과 가시성 — 브라우즈 목록(getList)과 동일 규칙으로 정합한다.
+ * - regular/urgent/fixed: release 가시성(isSupportedReleasePosting)
+ * - tournament: 승인(approved)된 공고만 (getList 의 approvalStatus 게이트와 일치)
+ *
+ * getList 는 status IN (active, capacity_full) + tournament approvalStatus=approved 를
+ * 적용하지만, 검색 dataFetcher 는 active + isCanonicalDatedPosting 만 걸러 fixed 가 전량
+ * 탈락하고 미승인 대회가 노출됐다. 본 함수로 후처리 가시성을 통일한다.
+ * (EF-jobsearch-2: fixed 검색 누락 / EF-jobsearch-3: 미승인 대회 노출 회귀 가드)
+ */
+export function isSearchVisiblePosting(
+  posting: Pick<JobPosting, 'schemaVersion' | 'postingType' | 'schedule' | 'tournamentConfig'>
+): boolean {
+  if (!isSupportedReleasePosting(posting)) return false;
+  if ((posting.postingType ?? 'regular') === 'tournament') {
+    return posting.tournamentConfig?.approvalStatus === STATUS.TOURNAMENT.APPROVED;
+  }
+  return true;
 }
 
 export function isEmployerManageablePosting(
