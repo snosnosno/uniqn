@@ -194,7 +194,7 @@ const GroupItem = memo(function GroupItem({
             const stats = calculateTimeSlotStats(requirement.timeSlots);
 
             return (
-              <View key={idx} className="flex-row items-center justify-between py-1.5">
+              <View key={dateStr || idx} className="flex-row items-center justify-between py-1.5">
                 <Text className="text-sm text-content-secondary font-sans">
                   {formatSingleDate(dateStr)}
                 </Text>
