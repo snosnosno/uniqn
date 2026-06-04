@@ -8,8 +8,8 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { Card } from '../../ui/Card';
-import { SettingsIcon } from '../../icons';
+import { Card } from '@/components/ui/Card';
+import { SettingsIcon } from '@/components/icons';
 import { formatCurrency } from '@/utils/settlement';
 
 // ============================================================================

@@ -9,7 +9,7 @@ import React, { useMemo, useCallback, useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { useSettlementDateNavigation } from '@/hooks';
-import { SheetModal } from '../../../ui/SheetModal';
+import { SheetModal } from '@/components/ui/SheetModal';
 import { useThemeStore } from '@/stores/themeStore';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { parseTimestamp, calculateSettlementFromWorkLog } from '@/utils/settlement';

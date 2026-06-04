@@ -7,7 +7,7 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { BanknotesIcon, ChevronDownIcon, ChevronUpIcon } from '../../../icons';
+import { BanknotesIcon, ChevronDownIcon, ChevronUpIcon } from '@/components/icons';
 import { formatTime, formatDate } from '@/utils/date';
 import { parseTimestamp } from '@/utils/settlement';
 import type { SalaryInfo, TaxSettings } from '@/utils/settlement';

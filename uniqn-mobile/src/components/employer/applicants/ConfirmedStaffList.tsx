@@ -9,11 +9,11 @@ import type {
   ConfirmedStaffStats,
   ConfirmedStaffStatus,
 } from '@/types';
-import { CalendarIcon, ChevronDownIcon, ChevronUpIcon, UsersIcon } from '../../icons';
-import { EmptyState } from '../../ui/EmptyState';
-import { ErrorState } from '../../ui/ErrorState';
-import { FilterTabs, type FilterTabOption } from '../../ui/FilterTabs';
-import { Loading } from '../../ui/Loading';
+import { CalendarIcon, ChevronDownIcon, ChevronUpIcon, UsersIcon } from '@/components/icons';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { FilterTabs, type FilterTabOption } from '@/components/ui/FilterTabs';
+import { Loading } from '@/components/ui/Loading';
 import { ConfirmedStaffCard } from './ConfirmedStaffCard';
 
 export interface ConfirmedStaffListProps {

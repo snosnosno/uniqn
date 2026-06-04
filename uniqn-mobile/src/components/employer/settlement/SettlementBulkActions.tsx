@@ -8,7 +8,7 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { BanknotesIcon, CheckIcon } from '../../icons';
+import { BanknotesIcon, CheckIcon } from '@/components/icons';
 import { formatCurrency } from '@/utils/settlement';
 import { triggerBatchStart } from '@/utils/haptics';
 

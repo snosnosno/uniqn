@@ -6,11 +6,17 @@ import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import type { WorkLogStatus } from '@/shared/status';
 import type { ConfirmedStaff, JobPosting, WorkLog } from '@/types';
 import { logger } from '@/utils/logger';
-import { CalendarIcon, CheckCircleIcon, ClockIcon, QRCodeIcon, RefreshIcon } from '../../icons';
-import { ActionSheet, type ActionSheetOption } from '../../ui/ActionSheet';
-import { ErrorState } from '../../ui/ErrorState';
-import { Loading } from '../../ui/Loading';
-import { ConfirmModal } from '../../ui/Modal';
+import {
+  CalendarIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  QRCodeIcon,
+  RefreshIcon,
+} from '@/components/icons';
+import { ActionSheet, type ActionSheetOption } from '@/components/ui/ActionSheet';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { Loading } from '@/components/ui/Loading';
+import { ConfirmModal } from '@/components/ui/Modal';
 import { ConfirmedStaffList } from './ConfirmedStaffList';
 import { StaffProfileModal } from './StaffProfileModal';
 import { WorkTimeEditor } from '../settlement/WorkTimeEditor';

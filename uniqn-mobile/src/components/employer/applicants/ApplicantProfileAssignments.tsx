@@ -5,7 +5,7 @@ import { getAssignmentRoles } from '@/types/assignment';
 import { getRoleDisplayName } from '@/types/unified';
 import { toDate } from '@/utils/date';
 import type { Assignment } from '@/types';
-import { BriefcaseIcon, CalendarIcon, ClockIcon } from '../../icons';
+import { BriefcaseIcon, CalendarIcon, ClockIcon } from '@/components/icons';
 
 export interface ApplicantProfileAssignmentsProps {
   assignments: Assignment[];

@@ -7,7 +7,7 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { ChevronLeftIcon, ChevronRightIcon } from '../../../icons';
+import { ChevronLeftIcon, ChevronRightIcon } from '@/components/icons';
 import { formatDate } from '@/utils/date';
 import { parseTimestamp } from '@/utils/settlement';
 

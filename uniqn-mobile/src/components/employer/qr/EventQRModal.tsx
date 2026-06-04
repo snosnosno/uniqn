@@ -19,10 +19,10 @@ import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import { useEventQR } from '@/hooks/useEventQR';
 import { useJobDetail } from '@/hooks/useJobDetail';
 import { formatDate, getTodayString } from '@/utils/date';
-import { Modal } from '../../ui/Modal';
-import { Button } from '../../ui/Button';
-import { Card } from '../../ui/Card';
-import { CircularProgress } from '../../ui/CircularProgress';
+import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { CircularProgress } from '@/components/ui/CircularProgress';
 import {
   QrCodeIcon,
   RefreshIcon,
@@ -31,7 +31,7 @@ import {
   XMarkIcon,
   LogInIcon,
   LogOutIcon,
-} from '../../icons';
+} from '@/components/icons';
 import { buildEventQRScopes, findPreferredEventQRScope, type EventQRScope } from './eventQRScope';
 
 export interface EventQRModalProps {

@@ -7,7 +7,7 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { DocumentIcon, ChevronDownIcon, ChevronUpIcon } from '../../../icons';
+import { DocumentIcon, ChevronDownIcon, ChevronUpIcon } from '@/components/icons';
 import { ModificationHistoryItem } from './ModificationHistoryItem';
 import type { ModificationHistoryItemProps } from './types';
 

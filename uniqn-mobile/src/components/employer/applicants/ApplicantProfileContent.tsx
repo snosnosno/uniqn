@@ -4,7 +4,7 @@ import { Text, View } from 'react-native';
 import { STATUS } from '@/constants';
 import { toDateString } from '@/utils/date';
 import type { ApplicantWithDetails, UserProfile } from '@/services';
-import { CheckCircleIcon, DocumentIcon, MessageIcon, XCircleIcon } from '../../icons';
+import { CheckCircleIcon, DocumentIcon, MessageIcon, XCircleIcon } from '@/components/icons';
 import { ContactInfoSection, formatProfileDate, ProfileInfoSection } from './ProfileInfoSections';
 
 export interface ApplicantProfileContentProps {
