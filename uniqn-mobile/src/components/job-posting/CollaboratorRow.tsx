@@ -28,7 +28,7 @@ export interface CollaboratorRowProps {
   disabled?: boolean;
 }
 
-export function CollaboratorRow({
+export const CollaboratorRow = React.memo(function CollaboratorRow({
   collaborator,
   isOwner,
   currentUserId,
@@ -115,4 +115,4 @@ export function CollaboratorRow({
       ) : null}
     </View>
   );
-}
+});
