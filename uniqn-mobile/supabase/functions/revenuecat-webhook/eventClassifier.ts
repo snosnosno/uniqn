@@ -53,10 +53,13 @@ export interface ClassifyResult {
 export function classifyEvent(input: ClassifyInput): ClassifyResult {
   const { type, environment, cancelReason, allowSandbox } = input;
 
-  // 1) SANDBOX 게이트 — 테스트 결제(무과금)로 실 재화가 발권되지 않도록 차단.
-  //    sandbox 빌드가 prod RC 프로젝트를 가리킬 때의 누출 경로를 봉쇄.
-  if (environment === 'SANDBOX' && !allowSandbox) {
-    return { action: 'ignore', reason: 'sandbox' };
+  // 1) 환경 게이트(화이트리스트, fail-closed) — PRODUCTION 만 실 재화 발권 허용.
+  //    SANDBOX·누락(null/undefined)·소문자·오타·미래 신규값은 전부 무시하여,
+  //    sandbox 빌드가 prod RC 를 가리키거나 environment 가 비/비표준일 때의 발권 누출을 봉쇄한다.
+  //    (블랙리스트 'SANDBOX만 차단'은 누락/오타 시 fail-open — 화이트리스트로 교정.)
+  //    allowSandbox=true(개발/검증)면 게이트를 우회해 정상 분류.
+  if (environment !== 'PRODUCTION' && !allowSandbox) {
+    return { action: 'ignore', reason: environment === 'SANDBOX' ? 'sandbox' : 'non_production' };
   }
 
   if (IGNORE_TYPES.has(type)) {
