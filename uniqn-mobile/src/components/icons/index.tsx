@@ -40,6 +40,7 @@ import {
   File,
   FileText,
   Flag,
+  Flashlight,
   Gem,
   Gift,
   Globe,
@@ -240,6 +241,7 @@ export const InboxIcon = createIcon(Inbox);
 // ─── QR / scan ─────────────────────────────────────────────────────────────
 export const QrCodeIcon = createIcon(QrCode);
 export const ScanIcon = createIcon(ScanLine);
+export const FlashlightIcon = createIcon(Flashlight);
 
 // ─── Device / system ───────────────────────────────────────────────────────
 export const MoonIcon = createIcon(Moon);

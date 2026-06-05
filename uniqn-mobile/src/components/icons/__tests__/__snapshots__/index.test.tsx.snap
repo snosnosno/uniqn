@@ -6484,6 +6484,130 @@ exports[`icons snapshots FlagOutlineIcon renders stable SVG output 1`] = `
 </RNSVGSvgView>
 `;
 
+exports[`icons snapshots FlashlightIcon renders stable SVG output 1`] = `
+<RNSVGSvgView
+  align="xMidYMid"
+  bbHeight={24}
+  bbWidth={24}
+  fill="none"
+  focusable={false}
+  height={24}
+  meetOrSlice={0}
+  minX={0}
+  minY={0}
+  stroke="#9898A0"
+  strokeLinecap="round"
+  strokeLinejoin="round"
+  strokeWidth={2}
+  style={
+    [
+      {
+        "backgroundColor": "transparent",
+        "borderWidth": 0,
+      },
+      {
+        "flex": 0,
+        "height": 24,
+        "width": 24,
+      },
+    ]
+  }
+  vbHeight={24}
+  vbWidth={24}
+  width={24}
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <RNSVGGroup
+    fill={null}
+    propList={
+      [
+        "fill",
+        "stroke",
+        "strokeWidth",
+        "strokeLinecap",
+        "strokeLinejoin",
+      ]
+    }
+    stroke={
+      {
+        "payload": 4288190624,
+        "type": 0,
+      }
+    }
+    strokeLinecap={1}
+    strokeLinejoin={1}
+    strokeWidth={2}
+  >
+    <RNSVGPath
+      d="M12 13v1"
+      fill={null}
+      propList={
+        [
+          "fill",
+          "stroke",
+          "strokeWidth",
+          "strokeLinecap",
+          "strokeLinejoin",
+        ]
+      }
+      stroke={
+        {
+          "payload": 4288190624,
+          "type": 0,
+        }
+      }
+      strokeLinecap={1}
+      strokeLinejoin={1}
+      strokeWidth={2}
+    />
+    <RNSVGPath
+      d="M17 2a1 1 0 0 1 1 1v4a3 3 0 0 1-.6 1.8l-.6.8A4 4 0 0 0 16 12v8a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-8a4 4 0 0 0-.8-2.4l-.6-.8A3 3 0 0 1 6 7V3a1 1 0 0 1 1-1z"
+      fill={null}
+      propList={
+        [
+          "fill",
+          "stroke",
+          "strokeWidth",
+          "strokeLinecap",
+          "strokeLinejoin",
+        ]
+      }
+      stroke={
+        {
+          "payload": 4288190624,
+          "type": 0,
+        }
+      }
+      strokeLinecap={1}
+      strokeLinejoin={1}
+      strokeWidth={2}
+    />
+    <RNSVGPath
+      d="M6 6h12"
+      fill={null}
+      propList={
+        [
+          "fill",
+          "stroke",
+          "strokeWidth",
+          "strokeLinecap",
+          "strokeLinejoin",
+        ]
+      }
+      stroke={
+        {
+          "payload": 4288190624,
+          "type": 0,
+        }
+      }
+      strokeLinecap={1}
+      strokeLinejoin={1}
+      strokeWidth={2}
+    />
+  </RNSVGGroup>
+</RNSVGSvgView>
+`;
+
 exports[`icons snapshots GemIcon renders stable SVG output 1`] = `
 <RNSVGSvgView
   align="xMidYMid"
