@@ -25,6 +25,7 @@ import { PasswordStrength } from '@/components/settings';
 import { EyeIcon, EyeSlashIcon } from '@/components/icons';
 import { useToastStore } from '@/stores/toastStore';
 import { changePassword } from '@/services';
+import { extractUserMessage } from '@/errors';
 import { passwordChangeSchema, type PasswordChangeData } from '@/schemas/user.schema';
 import { logger } from '@/utils/logger';
 
@@ -63,22 +64,15 @@ export default function ChangePasswordScreen() {
       addToast({ type: 'success', message: '비밀번호가 변경되었습니다' });
       router.back();
     } catch (error) {
-      const errorMessage = (error as Error).message;
       logger.error('비밀번호 변경 실패', error as Error);
 
-      // 에러 메시지 분기 처리
-      if (errorMessage.includes('wrong-password') || errorMessage.includes('invalid-credential')) {
-        addToast({ type: 'error', message: '현재 비밀번호가 올바르지 않습니다' });
-      } else if (errorMessage.includes('requires-recent-login')) {
-        addToast({
-          type: 'error',
-          message: '보안을 위해 다시 로그인 후 시도해주세요',
-        });
-      } else if (errorMessage.includes('weak-password')) {
-        addToast({ type: 'error', message: '비밀번호가 너무 약합니다' });
-      } else {
-        addToast({ type: 'error', message: '비밀번호 변경에 실패했습니다' });
-      }
+      // 백엔드는 Supabase Auth — 기존 Firebase 에러코드(wrong-password 등) 분기는 절대
+      // 매칭되지 않아 항상 generic 문구만 떴다. AppError userMessage(예: "현재 비밀번호가
+      // 올바르지 않습니다")를 그대로 노출한다.
+      addToast({
+        type: 'error',
+        message: extractUserMessage(error) || '비밀번호 변경에 실패했습니다',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -131,6 +125,8 @@ export default function ChangePasswordScreen() {
                   onPress={() => setShowCurrentPassword(!showCurrentPassword)}
                   className="absolute right-3 top-3"
                   hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel={showCurrentPassword ? '비밀번호 숨기기' : '비밀번호 표시'}
                 >
                   {showCurrentPassword ? (
                     <EyeSlashIcon size={22} color={SECONDARY_PALETTE[400]} />
@@ -171,6 +167,8 @@ export default function ChangePasswordScreen() {
                   onPress={() => setShowNewPassword(!showNewPassword)}
                   className="absolute right-3 top-3"
                   hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel={showNewPassword ? '비밀번호 숨기기' : '비밀번호 표시'}
                 >
                   {showNewPassword ? (
                     <EyeSlashIcon size={22} color={SECONDARY_PALETTE[400]} />
@@ -218,6 +216,8 @@ export default function ChangePasswordScreen() {
                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-3"
                   hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel={showConfirmPassword ? '비밀번호 숨기기' : '비밀번호 표시'}
                 >
                   {showConfirmPassword ? (
                     <EyeSlashIcon size={22} color={SECONDARY_PALETTE[400]} />
