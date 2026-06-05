@@ -4,8 +4,7 @@ import { ActivityIndicator, Text, View } from 'react-native';
 import { STATUS } from '@/constants';
 import { CONFIRMED_STAFF_STATUS } from '@/constants/statusConfig';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { TimeNormalizer, type TimeInput } from '@/shared/time';
-import { formatTime } from '@/utils/date';
+import { WorkTimeDisplay } from '@/shared/time';
 import type { ConfirmedStaff } from '@/types/confirmedStaff';
 import { getRoleDisplayName } from '@/types/unified';
 import { Avatar } from '../../ui/Avatar';
@@ -25,10 +24,6 @@ export interface StaffProfileModalProps {
   staff: ConfirmedStaff | null;
 }
 
-const parseTimestamp = (value: TimeInput): Date | null => {
-  return TimeNormalizer.parseTime(value);
-};
-
 export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModalProps) {
   const {
     userProfile,
@@ -45,23 +40,23 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
     fallbackPhotoURLBlurhash: staff?.staffPhotoURLBlurhash,
   });
 
-  const startTimeStr = useMemo(() => {
-    if (!staff?.checkInTime) {
-      return '미정';
-    }
+  // 근무시간 표시는 WorkTimeDisplay(SSOT)로 통일 — 실제 출퇴근 기록이 없으면
+  // 예정시간(timeSlot)을 폴백으로 보여준다(카드/스케줄/시간수정 화면과 일치).
+  const timeInfo = useMemo(
+    () =>
+      WorkTimeDisplay.getDisplayInfo({
+        checkInTime: staff?.checkInTime,
+        checkOutTime: staff?.checkOutTime,
+        timeSlot: staff?.timeSlot,
+        date: staff?.date,
+      }),
+    [staff?.checkInTime, staff?.checkOutTime, staff?.timeSlot, staff?.date]
+  );
 
-    const date = parseTimestamp(staff.checkInTime);
-    return date ? formatTime(date) : '미정';
-  }, [staff]);
-
-  const endTimeStr = useMemo(() => {
-    if (!staff?.checkOutTime) {
-      return '미정';
-    }
-
-    const date = parseTimestamp(staff.checkOutTime);
-    return date ? formatTime(date) : '미정';
-  }, [staff]);
+  const startTimeStr = timeInfo.effectiveStart;
+  const endTimeStr = timeInfo.effectiveEnd;
+  // 예정시간으로 표시 중인지(실제 기록 없음 + 예정시간 존재)
+  const isScheduledOnly = !timeInfo.hasActualTime && startTimeStr !== '미정';
 
   const isCheckedIn =
     staff?.status === STATUS.WORK_LOG.CHECKED_IN ||
@@ -122,9 +117,18 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
               <ClockIcon size={16} color={SECONDARY_PALETTE[500]} />
             </View>
             <View className="ml-2 flex-1">
-              <Text className="mb-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-                근무 시간
-              </Text>
+              <View className="mb-1 flex-row items-center gap-1.5">
+                <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+                  근무 시간
+                </Text>
+                {isScheduledOnly ? (
+                  <View className="rounded bg-info-100 px-1.5 py-0.5 dark:bg-info-900/30">
+                    <Text className="text-[10px] text-info-700 dark:text-info-300 font-sans-semibold">
+                      예정
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
               <View className="flex-row items-center">
                 <Text className="text-sm text-content-primary dark:text-off-white font-sans">
                   {startTimeStr} ~ {endTimeStr}

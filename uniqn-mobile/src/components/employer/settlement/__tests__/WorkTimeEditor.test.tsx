@@ -92,17 +92,21 @@ jest.mock('../TimeInputField', () => {
   return {
     TimeInputField: ({
       label,
+      value,
       isUndefined,
       onUndefinedChange,
       onOpenPicker,
     }: {
       label: string;
+      value?: string;
       isUndefined?: boolean;
       onUndefinedChange?: (value: boolean) => void;
       onOpenPicker: () => void;
     }) => (
       <View>
         <Text>{label}</Text>
+        <Text testID={`undef-${label}`}>{isUndefined ? 'undefined' : 'defined'}</Text>
+        <Text testID={`value-${label}`}>{value ?? ''}</Text>
         <Pressable testID={`toggle-${label}`} onPress={() => onUndefinedChange?.(!isUndefined)}>
           <Text>toggle</Text>
         </Pressable>
@@ -168,7 +172,7 @@ describe('WorkTimeEditor', () => {
     mockUseUserProfile.mockClear();
   });
 
-  it('enables saving when a previously undefined start time is set', async () => {
+  it('prefills the scheduled time (not 미정) and saves it as the actual time when there is no check-in', async () => {
     const onSave = jest.fn();
     const { getByTestId } = render(
       <WorkTimeEditor
@@ -179,10 +183,11 @@ describe('WorkTimeEditor', () => {
       />
     );
 
-    fireEvent.press(getByTestId('toggle-출근 시간'));
-    fireEvent.press(getByTestId('picker-출근 시간'));
-    fireEvent.press(getByTestId('confirm-time'));
+    // 예정시간(timeSlot)이 있으면 미정이 아니라 채워서 보여줘야 한다
+    expect(getByTestId('undef-출근 시간').props.children).toBe('defined');
+    expect(getByTestId('undef-퇴근 시간').props.children).toBe('defined');
 
+    // Q2: 예정시간을 실제시간으로 바로 저장할 수 있어야 한다 (열자마자 저장 활성화)
     await waitFor(() => {
       expect(getByTestId('submit-button').props.accessibilityState.disabled).toBe(false);
     });
@@ -193,9 +198,25 @@ describe('WorkTimeEditor', () => {
       expect(onSave).toHaveBeenCalledWith(
         expect.objectContaining({
           startTime: expect.any(Date),
+          endTime: expect.any(Date),
         })
       );
     });
+  });
+
+  it('shows 미정 only when neither an actual nor a scheduled time exists', () => {
+    const { getByTestId } = render(
+      <WorkTimeEditor
+        workLog={createWorkLog({ checkInTime: null, checkOutTime: null, timeSlot: undefined })}
+        visible={true}
+        onClose={jest.fn()}
+        onSave={jest.fn()}
+      />
+    );
+
+    expect(getByTestId('undef-출근 시간').props.children).toBe('undefined');
+    expect(getByTestId('undef-퇴근 시간').props.children).toBe('undefined');
+    expect(getByTestId('submit-button').props.accessibilityState.disabled).toBe(true);
   });
 
   it('allows saving when an existing end time is switched back to undefined', async () => {
