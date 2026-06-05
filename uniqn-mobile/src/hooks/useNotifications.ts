@@ -435,6 +435,15 @@ export function useSaveNotificationSettings() {
       await saveNotificationSettings(user.uid, settings);
       return settings;
     },
+    // 낙관적 업데이트: 토글 탭 즉시 반영 (컨트롤드 Switch가 서버 왕복 동안 옛 값으로
+    // 되돌아가 "안 눌린다"로 보이던 문제 해소). 쿼리 캐시 + 스토어 동시 패치 후 실패 시 롤백.
+    onMutate: async (settings) => {
+      await queryClient.cancelQueries({ queryKey: notificationKeys.settings() });
+      const previous = queryClient.getQueryData<NotificationSettings>(notificationKeys.settings());
+      queryClient.setQueryData(notificationKeys.settings(), settings);
+      setSettings(settings);
+      return { previous };
+    },
     onSuccess: (settings) => {
       setSettings(settings);
       queryClient.invalidateQueries({ queryKey: notificationKeys.settings() });
@@ -443,7 +452,13 @@ export function useSaveNotificationSettings() {
         message: '알림 설정이 저장되었습니다.',
       });
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _settings, context) => {
+      // 롤백: 낙관적으로 반영한 값을 이전 상태로 복원 후 서버 기준으로 재동기화
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(notificationKeys.settings(), context.previous);
+        setSettings(context.previous);
+      }
+      queryClient.invalidateQueries({ queryKey: notificationKeys.settings() });
       logger.error('알림 설정 저장 실패', error);
       addToast({
         type: 'error',
