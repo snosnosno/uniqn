@@ -14,7 +14,6 @@ import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';
 import { REVIEW_CONTEXT_STRIPE_TONE } from '@/components/review/helpers/reviewConfig';
 import { useReceivedReviews, useGivenReviews, useBubbleScore } from '@/hooks/useReviews';
 import { useAuthStore } from '@/stores/authStore';
-import { SENTIMENT_EMOJI } from '@/types/review';
 import type { Review } from '@/types/review';
 
 type TabType = 'received' | 'given';
@@ -136,18 +135,22 @@ function ScoreSummary({ bubbleScore }: { bubbleScore: ScoreSummaryData }) {
         </NumericText>
       </View>
       <View className="mt-3 flex-row gap-4">
-        <StatItem emoji={SENTIMENT_EMOJI.positive} count={bubbleScore.positiveCount} label="긍정" />
-        <StatItem emoji={SENTIMENT_EMOJI.neutral} count={bubbleScore.neutralCount} label="보통" />
-        <StatItem emoji={SENTIMENT_EMOJI.negative} count={bubbleScore.negativeCount} label="부정" />
+        <StatItem dotColor="bg-success-500" count={bubbleScore.positiveCount} label="긍정" />
+        <StatItem
+          dotColor="bg-secondary-400 dark:bg-secondary-500"
+          count={bubbleScore.neutralCount}
+          label="보통"
+        />
+        <StatItem dotColor="bg-error-500" count={bubbleScore.negativeCount} label="부정" />
       </View>
     </View>
   );
 }
 
-function StatItem({ emoji, count, label }: { emoji: string; count: number; label: string }) {
+function StatItem({ dotColor, count, label }: { dotColor: string; count: number; label: string }) {
   return (
-    <View className="flex-row items-center gap-1">
-      <Text className="text-sm font-sans">{emoji}</Text>
+    <View className="flex-row items-center gap-1.5">
+      <View className={`h-2 w-2 rounded-full ${dotColor}`} />
       <NumericText className="text-sm font-sans-bold text-content-secondary">{count}</NumericText>
       <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">{label}</Text>
     </View>
