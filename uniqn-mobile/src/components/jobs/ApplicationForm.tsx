@@ -8,6 +8,7 @@ import { FIXED_DATE_MARKER, FIXED_TIME_MARKER, type Assignment } from '@/types/a
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { SheetModal } from '@/components/ui/SheetModal';
+import { CheckIcon } from '@/components/icons';
 import type { JobPosting, PostingType, PreQuestionAnswer } from '@/types';
 import { AssignmentSelector } from './AssignmentSelector';
 import { PostingTypeBadge } from './PostingTypeBadge';
@@ -358,9 +359,7 @@ export function ApplicationForm({
                   : 'border-secondary-300 bg-white dark:border-surface-overlay dark:bg-surface'
               } ${isSubmitting ? 'opacity-50' : ''}`}
             >
-              {provisionConsentAgreed && (
-                <Text className="text-xs font-sans-bold text-surface-dark">{''}</Text>
-              )}
+              {provisionConsentAgreed && <CheckIcon size={14} color="#09090B" />}
             </View>
             <View className="flex-1">
               <Text className="text-sm leading-5 text-content-primary dark:text-off-white font-sans">
