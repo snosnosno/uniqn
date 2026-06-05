@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -5,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { STATUS_COLORS } from '@/constants/colors';
 import { StackHeader } from '@/components/headers';
 import { Avatar, Button, Card, EmptyState, Loading } from '@/components/ui';
+import { ApprovalModal } from '@/components/admin/ApprovalModal';
 import { CheckCircleIcon, ExclamationCircleIcon } from '@/components/icons';
 import { useToastStore } from '@/stores/toastStore';
 import { queryKeys } from '@/lib/queryClient';
@@ -82,6 +84,7 @@ export default function AdminEmployerApplicationDetailPage() {
   const { success: toastSuccess, error: toastError } = useToastStore();
 
   const { data: app, isLoading, error, refetch } = useApplicationDetail(applicationId);
+  const [showRejectModal, setShowRejectModal] = useState(false);
 
   const approveMutation = useMutation({
     mutationFn: () => approveEmployerApplication(applicationId),
@@ -97,7 +100,7 @@ export default function AdminEmployerApplicationDetailPage() {
   });
 
   const rejectMutation = useMutation({
-    mutationFn: () => rejectEmployerApplication({ applicationId }),
+    mutationFn: (reason?: string) => rejectEmployerApplication({ applicationId, reason }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.employerApplications.all });
       toastSuccess('구인자 신청을 거부했습니다.');
@@ -121,15 +124,9 @@ export default function AdminEmployerApplicationDetailPage() {
   };
 
   const handleReject = () => {
-    confirmAction({
-      title: '구인자 신청 거부',
-      message: '이 신청을 거부하시겠습니까?',
-      confirmText: '거부',
-      destructive: true,
-      onConfirm: async () => {
-        await rejectMutation.mutateAsync();
-      },
-    });
+    // 거부 사유 입력 모달 — 기존엔 confirmAction 단순 확인이라 reason이 항상 빈 값으로
+    // 전송돼 신청자가 거부 이유를 알 수 없었다.
+    setShowRejectModal(true);
   };
 
   if (isLoading) {
@@ -440,6 +437,18 @@ export default function AdminEmployerApplicationDetailPage() {
           </Card>
         )}
       </ScrollView>
+
+      <ApprovalModal
+        visible={showRejectModal}
+        mode="reject"
+        postingTitle={`${primaryName} 구인자 신청`}
+        isProcessing={rejectMutation.isPending}
+        onCancel={() => setShowRejectModal(false)}
+        onConfirm={(reason) => {
+          setShowRejectModal(false);
+          void rejectMutation.mutateAsync(reason);
+        }}
+      />
     </SafeAreaView>
   );
 }
