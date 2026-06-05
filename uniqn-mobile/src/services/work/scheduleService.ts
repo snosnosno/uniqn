@@ -147,6 +147,76 @@ function mergeAndDeduplicateSchedules(
 }
 
 /**
+ * WorkLogs·Applications를 공고 컨텍스트와 결합해 ScheduleEvent로 변환·병합한다.
+ * getMySchedules(1회 조회)와 subscribeToSchedules(실시간)의 공통 변환 경로.
+ */
+function buildScheduleEvents(
+  workLogs: WorkLog[],
+  applications: Application[],
+  jobPostingContextMap: Map<string, SchedulePostingContext>,
+  dateRange?: { start: string; end: string }
+): ScheduleEvent[] {
+  const workLogSchedules: ScheduleEvent[] = workLogs.map((workLog) => {
+    const normalizedId = IdNormalizer.normalizeJobId(workLog);
+    return ScheduleConverter.workLogToScheduleEvent(
+      workLog,
+      jobPostingContextMap.get(normalizedId)
+    );
+  });
+
+  const applicationSchedules: ScheduleEvent[] = applications.flatMap((app) => {
+    const normalizedId = IdNormalizer.normalizeJobId(app);
+    return ScheduleConverter.applicationToScheduleEvents(
+      app,
+      jobPostingContextMap.get(normalizedId)
+    );
+  });
+
+  return mergeAndDeduplicateSchedules(workLogSchedules, applicationSchedules, dateRange);
+}
+
+/**
+ * UI 출결 필터(filters.status)를 WorkLog 상태로 매핑한다. 미지정/미대응 시 undefined.
+ */
+function mapScheduleStatusFilter(status: ScheduleFilters['status']): WorkLogStatus | undefined {
+  if (!status) {
+    return undefined;
+  }
+  const statusMapping: Record<string, WorkLogStatus> = {
+    not_started: STATUS.WORK_LOG.SCHEDULED as WorkLogStatus,
+    checked_in: STATUS.WORK_LOG.CHECKED_IN as WorkLogStatus,
+    checked_out: STATUS.WORK_LOG.CHECKED_OUT as WorkLogStatus,
+  };
+  return statusMapping[status];
+}
+
+/**
+ * 클라이언트 사이드 필터(검색어·타입)를 적용한다. 불변(새 배열 반환).
+ */
+function applyScheduleFilters(
+  schedules: ScheduleEvent[],
+  filters?: ScheduleFilters
+): ScheduleEvent[] {
+  let filtered = schedules;
+
+  if (filters?.searchTerm) {
+    const term = filters.searchTerm.toLowerCase();
+    filtered = filtered.filter(
+      (s) =>
+        s.jobPostingName.toLowerCase().includes(term) ||
+        s.location.toLowerCase().includes(term) ||
+        s.role.toLowerCase().includes(term)
+    );
+  }
+
+  if (filters?.type) {
+    filtered = filtered.filter((s) => s.type === filters.type);
+  }
+
+  return filtered;
+}
+
+/**
  * 스케줄 통계 계산
  * @description 조회된 스케줄 데이터 기준으로 통계를 계산
  * - thisMonthEarnings: 조회된 데이터(선택된 월)의 completed 수익 합계
@@ -288,15 +358,7 @@ export async function getMySchedules(
     // ========================================
     // 1. 상태 매핑 (UI 상태 → Firestore 상태)
     // ========================================
-    let mappedStatus: WorkLogStatus | undefined;
-    if (filters?.status) {
-      const statusMapping: Record<string, WorkLogStatus> = {
-        not_started: STATUS.WORK_LOG.SCHEDULED as WorkLogStatus,
-        checked_in: STATUS.WORK_LOG.CHECKED_IN as WorkLogStatus,
-        checked_out: STATUS.WORK_LOG.CHECKED_OUT as WorkLogStatus,
-      };
-      mappedStatus = statusMapping[filters.status];
-    }
+    const mappedStatus = mapScheduleStatusFilter(filters?.status);
 
     // ========================================
     // 2. Repository를 통한 병렬 조회 (부분 실패 허용)
@@ -360,52 +422,19 @@ export async function getMySchedules(
     const jobPostingContextMap = await fetchJobPostingContextBatch(Array.from(allJobPostingIds));
 
     // ========================================
-    // 5. ScheduleEvent 변환
+    // 5-6. ScheduleEvent 변환 + 병합/중복 제거
     // ========================================
-    // WorkLogs → ScheduleEvent (IdNormalizer로 정규화된 ID 사용)
-    const workLogSchedules: ScheduleEvent[] = workLogs.map((workLog) => {
-      const normalizedId = IdNormalizer.normalizeJobId(workLog);
-      const postingContext = jobPostingContextMap.get(normalizedId);
-      return ScheduleConverter.workLogToScheduleEvent(workLog, postingContext);
-    });
-
-    // Applications → ScheduleEvent[] (다중 날짜 지원)
-    const applicationSchedules: ScheduleEvent[] = applications.flatMap((app) => {
-      const normalizedId = IdNormalizer.normalizeJobId(app);
-      const postingContext = jobPostingContextMap.get(normalizedId);
-      return ScheduleConverter.applicationToScheduleEvents(app, postingContext);
-    });
-
-    // ========================================
-    // 6. 병합 및 중복 제거
-    // ========================================
-    const mergedSchedules = mergeAndDeduplicateSchedules(
-      workLogSchedules,
-      applicationSchedules,
+    const mergedSchedules = buildScheduleEvents(
+      workLogs,
+      applications,
+      jobPostingContextMap,
       filters?.dateRange
     );
 
     // ========================================
     // 7. 클라이언트 사이드 필터링
     // ========================================
-    let filteredSchedules = mergedSchedules;
-
-    // 검색어 필터
-    if (filters?.searchTerm) {
-      const term = filters.searchTerm.toLowerCase();
-      filteredSchedules = filteredSchedules.filter(
-        (s) =>
-          s.jobPostingName.toLowerCase().includes(term) ||
-          s.location.toLowerCase().includes(term) ||
-          s.role.toLowerCase().includes(term)
-      );
-    }
-
-    // 타입 필터
-    if (filters?.type) {
-      filteredSchedules = filteredSchedules.filter((s) => s.type === filters.type);
-    }
-
+    const filteredSchedules = applyScheduleFilters(mergedSchedules, filters);
     const visibleSchedules = filteredSchedules.filter((schedule) => hasScheduleDate(schedule.date));
 
     // ========================================
@@ -416,8 +445,8 @@ export async function getMySchedules(
     const duration = Date.now() - startTime;
     logger.info('스케줄 목록 조회 완료', {
       count: visibleSchedules.length,
-      workLogsCount: workLogSchedules.length,
-      applicationsCount: applicationSchedules.length,
+      workLogsCount: workLogs.length,
+      applicationsCount: applications.length,
       durationMs: duration,
     });
 
@@ -594,23 +623,11 @@ export function subscribeToSchedules(
         const postingContextMap = await fetchJobPostingContextBatch(Array.from(jobPostingIds));
         if (hasErrored || emissionId !== latestEmissionId) return;
 
-        const workLogSchedules = workLogsSnapshot.map((workLog) => {
-          const normalizedId = IdNormalizer.normalizeJobId(workLog);
-          return ScheduleConverter.workLogToScheduleEvent(
-            workLog,
-            postingContextMap.get(normalizedId)
-          );
-        });
-
-        const applicationSchedules = applicationsSnapshot.flatMap((application) => {
-          const normalizedId = IdNormalizer.normalizeJobId(application);
-          return ScheduleConverter.applicationToScheduleEvents(
-            application,
-            postingContextMap.get(normalizedId)
-          );
-        });
-
-        const schedules = mergeAndDeduplicateSchedules(workLogSchedules, applicationSchedules);
+        const schedules = buildScheduleEvents(
+          workLogsSnapshot,
+          applicationsSnapshot,
+          postingContextMap
+        );
         if (hasErrored || emissionId !== latestEmissionId) return;
         onUpdate(schedules.filter((schedule) => hasScheduleDate(schedule.date)));
       } catch (error) {
