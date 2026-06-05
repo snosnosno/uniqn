@@ -8,9 +8,9 @@ import { WorkTimeDisplay } from '@/shared/time';
 import { useThemeStore } from '@/stores/themeStore';
 import { getRoleDisplayName } from '@/types/unified';
 import type { ConfirmedStaff } from '@/types/confirmedStaff';
-import { Avatar } from '../../ui/Avatar';
-import { Badge } from '../../ui/Badge';
-import { Card } from '../../ui/Card';
+import { Avatar } from '@/components/ui/Avatar';
+import { Badge } from '@/components/ui/Badge';
+import { Card } from '@/components/ui/Card';
 import {
   BriefcaseIcon,
   CheckCircleIcon,
@@ -19,7 +19,7 @@ import {
   EditIcon,
   ExclamationTriangleIcon,
   TrashIcon,
-} from '../../icons';
+} from '@/components/icons';
 
 export interface ConfirmedStaffCardProps {
   staff: ConfirmedStaff;

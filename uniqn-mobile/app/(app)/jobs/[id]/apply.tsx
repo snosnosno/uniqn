@@ -12,6 +12,7 @@ import { StackHeader } from '@/components/headers';
 import { Button } from '@/components/ui/Button';
 import { Loading } from '@/components/ui';
 import { AlertTriangleIcon, CheckCircleIcon, InformationCircleIcon } from '@/components/icons';
+import { PRIMARY_COLORS, STATUS_COLORS } from '@/constants/colors';
 import { useJobDetail, useApplications, useHasAppliedToJob } from '@/hooks';
 import { resolveSessionUserId } from '@/hooks/internal/sessionUserId';
 import { getJobDetailQueryOptions } from '@/hooks/useJobDetail';
@@ -30,7 +31,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
   return (
     <View className="flex-1 items-center justify-center bg-surface-page dark:bg-surface p-6">
       <View className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-error-50 dark:bg-error-900/30">
-        <AlertTriangleIcon size={40} color="#DC2626" />
+        <AlertTriangleIcon size={40} color={STATUS_COLORS.error} />
       </View>
       <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
         오류가 발생했습니다
@@ -49,7 +50,7 @@ function AlreadyAppliedState({ isFixed }: { isFixed: boolean }) {
   return (
     <View className="flex-1 items-center justify-center bg-surface-page dark:bg-surface p-6">
       <View className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-primary-50 dark:bg-primary-900/30">
-        <InformationCircleIcon size={40} color="#B8962E" />
+        <InformationCircleIcon size={40} color={PRIMARY_COLORS[600]} />
       </View>
       <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
         이미 지원한 공고입니다
@@ -266,7 +267,7 @@ export default function ApplyScreen() {
         <StackHeader title="지원 완료" fallbackHref={fallbackHref} />
         <View className="flex-1 items-center justify-center p-6">
           <View className="mb-4 h-24 w-24 items-center justify-center rounded-full bg-success-50 dark:bg-success-900/30">
-            <CheckCircleIcon size={56} color="#22C55E" />
+            <CheckCircleIcon size={56} color={STATUS_COLORS.success} />
           </View>
           <Text className="mb-2 text-center text-xl font-display text-content-primary dark:text-off-white">
             지원이 완료되었습니다

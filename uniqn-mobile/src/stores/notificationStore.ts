@@ -588,7 +588,7 @@ export const useNotificationStore = create<NotificationState>()(
               persistedUnreadCount < cachedUnread - 5
             ) {
               // 5개 이상 차이 시 서버 동기화 필요 표시
-              state.needsServerSync = true;
+              state.setNeedsServerSync(true);
             }
           }
         };

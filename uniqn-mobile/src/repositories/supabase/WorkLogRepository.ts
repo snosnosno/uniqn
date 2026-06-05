@@ -184,11 +184,18 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
         .from(TABLE)
         .select(TABLE_COLUMNS)
         .eq('job_posting_id', jobPostingId)
-        .order('date', { ascending: false });
+        .order('date', { ascending: false })
+        .limit(MAX_STATS_PAGE_SIZE);
 
       if (error) handleSupabaseError(error, { operation: '공고별 근무 기록 조회', table: TABLE });
 
       const items = rowsToWorkLogs((data ?? []) as Record<string, unknown>[]);
+      if (items.length === MAX_STATS_PAGE_SIZE) {
+        logger.warn('공고별 근무 기록 조회 상한 도달 — 페이지네이션 필요 가능', {
+          jobPostingId,
+          limit: MAX_STATS_PAGE_SIZE,
+        });
+      }
       logger.info('공고별 근무 기록 조회 완료', { jobPostingId, count: items.length });
       return items;
     } catch (error) {
@@ -213,7 +220,7 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
         query = query.gte('date', dateRange.start).lte('date', dateRange.end);
       }
 
-      query = query.order('date', { ascending: false });
+      query = query.order('date', { ascending: false }).limit(MAX_STATS_PAGE_SIZE);
 
       const { data, error } = await query;
 
@@ -221,6 +228,15 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
         handleSupabaseError(error, { operation: '구인자별 완료된 근무 기록 조회', table: TABLE });
 
       const items = rowsToWorkLogs((data ?? []) as Record<string, unknown>[]);
+      if (items.length === MAX_STATS_PAGE_SIZE) {
+        logger.warn(
+          '구인자별 완료 근무 기록 조회 상한 도달 — dateRange 축소/페이지네이션 필요 가능',
+          {
+            ownerId,
+            limit: MAX_STATS_PAGE_SIZE,
+          }
+        );
+      }
       logger.info('구인자별 완료된 근무 기록 조회 완료', { ownerId, count: items.length });
       return items;
     } catch (error) {

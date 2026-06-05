@@ -13,11 +13,11 @@ import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import { GroupedSettlementCard } from './GroupedSettlementCard';
 import { SettlementSummaryCard } from './SettlementSummaryCard';
 import { SettlementBulkActions } from './SettlementBulkActions';
-import { EmptyState } from '../../ui/EmptyState';
-import { ErrorState } from '../../ui/ErrorState';
-import { FilterTabs, type FilterTabOption } from '../../ui/FilterTabs';
-import { ScreenSkeleton } from '../../ui';
-import { BanknotesIcon, CheckIcon } from '../../icons';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { FilterTabs, type FilterTabOption } from '@/components/ui/FilterTabs';
+import { ScreenSkeleton } from '@/components/ui';
+import { BanknotesIcon, CheckIcon } from '@/components/icons';
 import {
   type SalaryType,
   type SalaryInfo,

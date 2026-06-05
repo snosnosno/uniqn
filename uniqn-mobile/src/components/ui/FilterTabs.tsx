@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import { SECONDARY_PALETTE } from '@/constants/colors';
+import { getLayoutColor, SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useThemeStore } from '@/stores/themeStore';
@@ -96,7 +96,9 @@ function FilterTabsInner<T extends string = string>({
               <Text
                 className={`${LABEL_SIZE_CLASS[labelSize]} font-sans-medium`}
                 style={{
-                  color: isSelected ? (isDarkMode ? '#D4AF37' : '#8A7228') : SECONDARY_PALETTE[500],
+                  color: isSelected
+                    ? getLayoutColor(isDarkMode, 'tabBarActive')
+                    : SECONDARY_PALETTE[500],
                 }}
               >
                 {option.label}

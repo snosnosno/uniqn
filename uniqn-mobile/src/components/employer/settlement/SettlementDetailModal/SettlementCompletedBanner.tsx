@@ -7,7 +7,7 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { STATUS_COLORS } from '@/constants/colors';
-import { CheckCircleIcon } from '../../../icons';
+import { CheckCircleIcon } from '@/components/icons';
 import { formatDate } from '@/utils/date';
 import { parseTimestamp } from '@/utils/settlement';
 

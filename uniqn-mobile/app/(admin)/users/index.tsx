@@ -5,7 +5,8 @@
  * @version 1.0.0
  */
 
-import { SECONDARY_PALETTE } from '@/constants/colors';
+import { getLayoutColor, getLoadingColor, SECONDARY_PALETTE } from '@/constants/colors';
+import { useThemeStore } from '@/stores/themeStore';
 import { useState, useCallback, useMemo } from 'react';
 import {
   View,
@@ -25,6 +26,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
 import { CardStripe, NumericText, type CardStripeTone } from '@/components/ui';
+import { AppFlashList } from '@/components/ui/AppFlashList';
 import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';
 import type { AdminUser, AdminUserFilters } from '@/types/admin';
 import type { UserRole } from '@/types/role';
@@ -176,6 +178,7 @@ export default function AdminUsersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState<UserRole | 'all'>('all');
   const [page, setPage] = useState(1);
+  const { isDarkMode } = useThemeStore();
 
   const filters: AdminUserFilters = useMemo(
     () => ({
@@ -214,12 +217,21 @@ export default function AdminUsersPage() {
     }
   }, [data?.hasNextPage, isLoading]);
 
+  const renderItem = useCallback(
+    ({ item }: { item: AdminUser }) => (
+      <UserCard user={item} onPress={() => handleUserPress(item.id)} />
+    ),
+    [handleUserPress]
+  );
+
+  const keyExtractor = useCallback((item: AdminUser) => item.id, []);
+
   if (isLoading && !data) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="사용자 관리" fallbackHref="/(admin)" />
         <View className="flex-1 bg-surface-page dark:bg-surface items-center justify-center">
-          <ActivityIndicator size="large" color="#D4AF37" />
+          <ActivityIndicator size="large" color={getLoadingColor(isDarkMode)} />
           <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
             사용자 목록을 불러오는 중...
           </Text>
@@ -285,48 +297,40 @@ export default function AdminUsersPage() {
         </Text>
       </View>
 
-      <ScrollView
-        className="flex-1 px-4"
+      <AppFlashList
+        data={users}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        estimatedItemSize={96}
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}
             onRefresh={() => refetch()}
-            tintColor="#D4AF37"
+            tintColor={getLayoutColor(isDarkMode, 'refreshTint')}
           />
         }
-        onScrollEndDrag={({ nativeEvent }) => {
-          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-          const isEndReached =
-            layoutMeasurement.height + contentOffset.y >= contentSize.height - 50;
-          if (isEndReached) handleLoadMore();
-        }}
-      >
-        {users.length === 0 ? (
+        ListEmptyComponent={
           <EmptyState title="검색 결과 없음" description="검색 조건에 맞는 사용자가 없습니다." />
-        ) : (
-          <>
-            {users.map((user) => (
-              <UserCard key={user.id} user={user} onPress={() => handleUserPress(user.id)} />
-            ))}
-            {data && (
-              <View className="py-4 items-center">
-                <Text className="text-sm text-content-placeholder font-sans">
-                  {data.page} / {data.totalPages} 페이지
-                </Text>
-                {data.hasNextPage && (
-                  <Pressable
-                    onPress={handleLoadMore}
-                    className="mt-2 px-4 py-2 bg-primary-600 rounded-lg"
-                  >
-                    <Text className="text-surface-dark font-sans-medium">더 보기</Text>
-                  </Pressable>
-                )}
-              </View>
-            )}
-          </>
-        )}
-        <View className="h-8" />
-      </ScrollView>
+        }
+        ListFooterComponent={
+          users.length > 0 && data ? (
+            <View className="py-4 items-center">
+              <Text className="text-sm text-content-placeholder font-sans">
+                {data.page} / {data.totalPages} 페이지
+              </Text>
+              {data.hasNextPage && (
+                <Pressable
+                  onPress={handleLoadMore}
+                  className="mt-2 px-4 py-2 bg-primary-600 rounded-lg"
+                >
+                  <Text className="text-surface-dark font-sans-medium">더 보기</Text>
+                </Pressable>
+              )}
+            </View>
+          ) : null
+        }
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}
+      />
     </SafeAreaView>
   );
 }

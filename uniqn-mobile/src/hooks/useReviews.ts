@@ -182,6 +182,68 @@ function getPendingReviewDateRange(now = new Date()): { startDate: string; endDa
   };
 }
 
+interface PendingReviewLookups {
+  givenSet: Set<string>;
+  jobPostingMap: Map<string, PendingReviewPostingInfo>;
+  currentUserId?: string;
+}
+
+// 스태프→구인자 리뷰 항목. 가드: id+ownerId(staffId 불요), 키 `_staff`, self-exclusion=ownerId,
+// title fallback 순서=jobPostingName 우선. 구인자 매퍼와 비대칭이므로 통합 금지.
+function buildStaffPendingReviewItem(
+  workLog: WorkLog,
+  { givenSet, jobPostingMap, currentUserId }: PendingReviewLookups
+): PendingReviewItem | null {
+  if (!workLog.id || !workLog.ownerId) return null;
+  if (!REVIEWABLE_STATUSES.has(workLog.status)) return null;
+  if (!isWithinReviewDeadline(workLog.checkOutTime, workLog.date)) return null;
+  if (givenSet.has(`${workLog.id}_staff`)) return null;
+  if (currentUserId && workLog.ownerId === currentUserId) return null;
+
+  const posting = jobPostingMap.get(workLog.jobPostingId);
+  const jobPostingName = (workLog as WorkLog & { jobPostingName?: string }).jobPostingName;
+
+  return {
+    workLogId: workLog.id,
+    jobPostingId: workLog.jobPostingId,
+    jobPostingTitle: getReviewTextFallback(jobPostingName, posting?.title, '공고')!,
+    workDate: workLog.date || '',
+    location: posting?.location?.name ?? '',
+    reviewerType: 'staff',
+    revieweeId: workLog.ownerId,
+    revieweeName: getReviewTextFallback(posting?.ownerName, '구인자')!,
+    checkOutTime: workLog.checkOutTime,
+  };
+}
+
+// 구인자→스태프 리뷰 항목. 가드: id+ownerId+staffId(staffId 추가), 키 `_employer`, self-exclusion=staffId,
+// title fallback 순서=posting.title 우선(스태프 매퍼와 역순). 비대칭이므로 통합 금지.
+function buildEmployerPendingReviewItem(
+  workLog: WorkLog,
+  { givenSet, jobPostingMap, currentUserId }: PendingReviewLookups
+): PendingReviewItem | null {
+  if (!workLog.id || !workLog.ownerId || !workLog.staffId) return null;
+  if (!REVIEWABLE_STATUSES.has(workLog.status)) return null;
+  if (!isWithinReviewDeadline(workLog.checkOutTime, workLog.date)) return null;
+  if (givenSet.has(`${workLog.id}_employer`)) return null;
+  if (currentUserId && workLog.staffId === currentUserId) return null;
+
+  const posting = jobPostingMap.get(workLog.jobPostingId);
+  const jobPostingName = (workLog as WorkLog & { jobPostingName?: string }).jobPostingName;
+
+  return {
+    workLogId: workLog.id,
+    jobPostingId: workLog.jobPostingId,
+    jobPostingTitle: getReviewTextFallback(posting?.title, jobPostingName, '공고')!,
+    workDate: workLog.date || '',
+    location: posting?.location?.name ?? '',
+    reviewerType: 'employer',
+    revieweeId: workLog.staffId,
+    revieweeName: getReviewTextFallback(workLog.staffName, workLog.staffNickname, '스태프')!,
+    checkOutTime: workLog.checkOutTime,
+  };
+}
+
 export function buildPendingReviewItems({
   staffWorkLogs,
   employerWorkLogs,
@@ -193,57 +255,20 @@ export function buildPendingReviewItems({
   const givenSet = new Set(
     givenReviews.map((review) => `${review.workLogId}_${review.reviewerType}`)
   );
-  const items: PendingReviewItem[] = [];
+  const lookups: PendingReviewLookups = { givenSet, jobPostingMap, currentUserId };
 
-  for (const workLog of staffWorkLogs) {
-    if (!workLog.id || !workLog.ownerId) continue;
-    if (!REVIEWABLE_STATUSES.has(workLog.status)) continue;
-    if (!isWithinReviewDeadline(workLog.checkOutTime, workLog.date)) continue;
-    if (givenSet.has(`${workLog.id}_staff`)) continue;
-    if (currentUserId && workLog.ownerId === currentUserId) continue;
+  const staffItems = staffWorkLogs
+    .map((workLog) => buildStaffPendingReviewItem(workLog, lookups))
+    .filter((item): item is PendingReviewItem => item !== null);
 
-    const posting = jobPostingMap.get(workLog.jobPostingId);
-    const jobPostingName = (workLog as WorkLog & { jobPostingName?: string }).jobPostingName;
+  const employerItems = isEmployerReviewer
+    ? employerWorkLogs
+        .map((workLog) => buildEmployerPendingReviewItem(workLog, lookups))
+        .filter((item): item is PendingReviewItem => item !== null)
+    : [];
 
-    items.push({
-      workLogId: workLog.id,
-      jobPostingId: workLog.jobPostingId,
-      jobPostingTitle: getReviewTextFallback(jobPostingName, posting?.title, '공고')!,
-      workDate: workLog.date || '',
-      location: posting?.location?.name ?? '',
-      reviewerType: 'staff',
-      revieweeId: workLog.ownerId,
-      revieweeName: getReviewTextFallback(posting?.ownerName, '구인자')!,
-      checkOutTime: workLog.checkOutTime,
-    });
-  }
-
-  if (isEmployerReviewer) {
-    for (const workLog of employerWorkLogs) {
-      if (!workLog.id || !workLog.ownerId || !workLog.staffId) continue;
-      if (!REVIEWABLE_STATUSES.has(workLog.status)) continue;
-      if (!isWithinReviewDeadline(workLog.checkOutTime, workLog.date)) continue;
-      if (givenSet.has(`${workLog.id}_employer`)) continue;
-      if (currentUserId && workLog.staffId === currentUserId) continue;
-
-      const posting = jobPostingMap.get(workLog.jobPostingId);
-      const jobPostingName = (workLog as WorkLog & { jobPostingName?: string }).jobPostingName;
-
-      items.push({
-        workLogId: workLog.id,
-        jobPostingId: workLog.jobPostingId,
-        jobPostingTitle: getReviewTextFallback(posting?.title, jobPostingName, '공고')!,
-        workDate: workLog.date || '',
-        location: posting?.location?.name ?? '',
-        reviewerType: 'employer',
-        revieweeId: workLog.staffId,
-        revieweeName: getReviewTextFallback(workLog.staffName, workLog.staffNickname, '스태프')!,
-        checkOutTime: workLog.checkOutTime,
-      });
-    }
-  }
-
-  return items.sort(comparePendingReviewItems);
+  // staff 전체 → employer 전체 concat 순서 보존 후 안정 정렬(원본 push 순서와 동일).
+  return [...staffItems, ...employerItems].sort(comparePendingReviewItems);
 }
 
 export function usePendingReviews() {

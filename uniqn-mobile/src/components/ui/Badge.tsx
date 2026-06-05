@@ -130,7 +130,7 @@ const textSizeStyles: Record<BadgeSize, string> = {
   md: 'text-sm font-sans',
 };
 
-export function Badge({
+export const Badge = React.memo(function Badge({
   children,
   variant: variantProp,
   size = 'md',
@@ -170,6 +170,6 @@ export function Badge({
       <Text className={textClass}>{displayContent}</Text>
     </View>
   );
-}
+});
 
 export default Badge;

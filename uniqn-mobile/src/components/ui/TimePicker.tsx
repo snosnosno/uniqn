@@ -98,7 +98,7 @@ const TimeSlotItem = memo(function TimeSlotItem({
     <Pressable
       onPress={() => onSelect(item.value)}
       className={`
-        flex-row items-center justify-between px-4 py-4
+        h-14 flex-row items-center justify-between px-4
         border-b border-secondary-100 dark:border-surface-overlay
         ${isSelected ? 'bg-primary-50 dark:bg-primary-900/30' : ''}
       `}

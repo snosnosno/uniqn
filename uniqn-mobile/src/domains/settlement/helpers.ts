@@ -54,6 +54,11 @@ export function calculateHoursWorked(startTime: TimeInput, endTime: TimeInput): 
 }
 
 export function calculatePayByType(salaryInfo: SalaryInfo, hoursWorked: number): number {
+  // 음수 금액 방어 (SettlementCalculator.calculateBasePay 와 동치)
+  if (salaryInfo.amount < 0) {
+    return 0;
+  }
+
   switch (salaryInfo.type) {
     case 'hourly':
       return Math.round(hoursWorked * salaryInfo.amount);
@@ -120,6 +125,11 @@ export function calculateAllowanceAmount(allowances?: Allowances): number {
     allowances.accommodation > 0
   ) {
     amount += allowances.accommodation;
+  }
+
+  // 추가 수당 (SettlementCalculator.calculateAllowances 와 동치)
+  if (allowances.additional && allowances.additional > 0) {
+    amount += allowances.additional;
   }
 
   return amount;

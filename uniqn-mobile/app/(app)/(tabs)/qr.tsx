@@ -7,7 +7,7 @@
  * @note 구인자의 QR 생성은 EventQRModal을 통해 이루어집니다.
  */
 
-import { SECONDARY_PALETTE } from '@/constants/colors';
+import { SECONDARY_PALETTE, STATUS_COLORS } from '@/constants/colors';
 import { useState, useCallback, useEffect } from 'react';
 import { View, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -99,7 +99,7 @@ export default function QRScreen() {
               }`}
             >
               {isWorking ? (
-                <ClockIcon size={24} color="#22C55E" />
+                <ClockIcon size={24} color={STATUS_COLORS.success} />
               ) : (
                 <CheckCircleIcon size={24} color={SECONDARY_PALETTE[400]} />
               )}

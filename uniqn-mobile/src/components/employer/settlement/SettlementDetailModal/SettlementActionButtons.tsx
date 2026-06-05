@@ -7,7 +7,7 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { ClockIcon, EditIcon, BanknotesIcon } from '../../../icons';
+import { ClockIcon, EditIcon, BanknotesIcon } from '@/components/icons';
 import { triggerHaptic } from '@/utils/haptics';
 
 export interface SettlementActionButtonsProps {

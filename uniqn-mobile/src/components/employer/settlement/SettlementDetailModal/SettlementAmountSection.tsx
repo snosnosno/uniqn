@@ -7,8 +7,8 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React from 'react';
 import { View, Text } from 'react-native';
-import { BanknotesIcon } from '../../../icons';
-import { Badge } from '../../../ui/Badge';
+import { BanknotesIcon } from '@/components/icons';
+import { Badge } from '@/components/ui/Badge';
 import { InfoRow } from './InfoRow';
 import {
   formatCurrency,

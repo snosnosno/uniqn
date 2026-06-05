@@ -28,6 +28,7 @@ import {
   type DeletionReason,
 } from '@/services';
 import { useIsAppleUser } from '@/hooks/auth/useCurrentUser';
+import { STATUS_COLORS } from '@/constants/colors';
 import { extractErrorMessage } from '@/shared/errors';
 import { logger } from '@/utils/logger';
 
@@ -327,7 +328,7 @@ export default function DeleteAccountScreen() {
               className="border-error-500"
             >
               {isSubmitting ? (
-                <ActivityIndicator size="small" color="#DC2626" />
+                <ActivityIndicator size="small" color={STATUS_COLORS.error} />
               ) : (
                 <Text className="text-error-600 dark:text-error-400 font-sans-semibold">
                   네, 탈퇴하겠습니다

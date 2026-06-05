@@ -14,7 +14,7 @@ import {
   PhoneIcon,
   StarIcon,
   UserIcon,
-} from '../../icons';
+} from '@/components/icons';
 
 const GENDER_LABELS: Record<string, string> = {
   male: '남성',

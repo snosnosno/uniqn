@@ -99,12 +99,7 @@ export {
   useReopenJobPosting,
   useBulkUpdateStatus,
 } from './useJobManagement';
-export {
-  useTemplateManager,
-  useTemplates,
-  useSaveTemplate,
-  useLoadTemplate,
-} from './useTemplateManager';
+export { useTemplateManager, useTemplates } from './useTemplateManager';
 export {
   useApplicantManagement,
   useApplicantsByJobPosting,
@@ -168,7 +163,6 @@ export {
 } from './useTournamentApproval';
 
 export { useJobSchedule, type UseJobScheduleResult } from './useJobSchedule';
-export { useJobRoles, type UseJobRolesResult } from './useJobRoles';
 export { useUserProfile } from './useUserProfile';
 export { useUnsavedChangesGuard } from './useUnsavedChangesGuard';
 export {

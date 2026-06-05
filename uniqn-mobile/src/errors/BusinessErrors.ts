@@ -435,40 +435,6 @@ export class EmployerAppNotFoundError extends AppError {
   }
 }
 
-// Type Guards — 구인자 등록 신청 관련
-export const isEmployerAppPendingExistsError = (
-  error: unknown
-): error is EmployerAppPendingExistsError => {
-  return (
-    error instanceof EmployerAppPendingExistsError ||
-    hasErrorName(error, 'EmployerAppPendingExistsError')
-  );
-};
-
-export const isEmployerAppAlreadyProcessedError = (
-  error: unknown
-): error is EmployerAppAlreadyProcessedError => {
-  return (
-    error instanceof EmployerAppAlreadyProcessedError ||
-    hasErrorName(error, 'EmployerAppAlreadyProcessedError')
-  );
-};
-
-export const isEmployerAppSelfApproveError = (
-  error: unknown
-): error is EmployerAppSelfApproveError => {
-  return (
-    error instanceof EmployerAppSelfApproveError ||
-    hasErrorName(error, 'EmployerAppSelfApproveError')
-  );
-};
-
-export const isEmployerAppNotFoundError = (error: unknown): error is EmployerAppNotFoundError => {
-  return (
-    error instanceof EmployerAppNotFoundError || hasErrorName(error, 'EmployerAppNotFoundError')
-  );
-};
-
 // ============================================================================
 // Type Guards
 // ============================================================================
@@ -798,26 +764,3 @@ export class UnauthorizedReviewError extends AppError {
     Object.setPrototypeOf(this, UnauthorizedReviewError.prototype);
   }
 }
-
-// Type Guards - 리뷰/평가 관련
-export const isAlreadyReviewedError = (error: unknown): error is AlreadyReviewedError => {
-  return error instanceof AlreadyReviewedError || hasErrorName(error, 'AlreadyReviewedError');
-};
-
-export const isReviewPeriodExpiredError = (error: unknown): error is ReviewPeriodExpiredError => {
-  return (
-    error instanceof ReviewPeriodExpiredError || hasErrorName(error, 'ReviewPeriodExpiredError')
-  );
-};
-
-export const isCannotReviewSelfError = (error: unknown): error is CannotReviewSelfError => {
-  return error instanceof CannotReviewSelfError || hasErrorName(error, 'CannotReviewSelfError');
-};
-
-export const isReviewNotFoundError = (error: unknown): error is ReviewNotFoundError => {
-  return error instanceof ReviewNotFoundError || hasErrorName(error, 'ReviewNotFoundError');
-};
-
-export const isUnauthorizedReviewError = (error: unknown): error is UnauthorizedReviewError => {
-  return error instanceof UnauthorizedReviewError || hasErrorName(error, 'UnauthorizedReviewError');
-};
