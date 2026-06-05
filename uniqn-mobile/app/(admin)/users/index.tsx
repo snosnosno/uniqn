@@ -5,7 +5,8 @@
  * @version 1.0.0
  */
 
-import { SECONDARY_PALETTE } from '@/constants/colors';
+import { getLayoutColor, getLoadingColor, SECONDARY_PALETTE } from '@/constants/colors';
+import { useThemeStore } from '@/stores/themeStore';
 import { useState, useCallback, useMemo } from 'react';
 import {
   View,
@@ -177,6 +178,7 @@ export default function AdminUsersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState<UserRole | 'all'>('all');
   const [page, setPage] = useState(1);
+  const { isDarkMode } = useThemeStore();
 
   const filters: AdminUserFilters = useMemo(
     () => ({
@@ -229,7 +231,7 @@ export default function AdminUsersPage() {
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="사용자 관리" fallbackHref="/(admin)" />
         <View className="flex-1 bg-surface-page dark:bg-surface items-center justify-center">
-          <ActivityIndicator size="large" color="#D4AF37" />
+          <ActivityIndicator size="large" color={getLoadingColor(isDarkMode)} />
           <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
             사용자 목록을 불러오는 중...
           </Text>
@@ -304,7 +306,7 @@ export default function AdminUsersPage() {
           <RefreshControl
             refreshing={isRefetching}
             onRefresh={() => refetch()}
-            tintColor="#D4AF37"
+            tintColor={getLayoutColor(isDarkMode, 'refreshTint')}
           />
         }
         ListEmptyComponent={

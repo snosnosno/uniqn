@@ -5,7 +5,13 @@
  * @version 1.0.0
  */
 
-import { SECONDARY_PALETTE, STATUS_COLORS, SURFACE_COLORS } from '@/constants/colors';
+import {
+  getLayoutColor,
+  getLoadingColor,
+  SECONDARY_PALETTE,
+  STATUS_COLORS,
+  SURFACE_COLORS,
+} from '@/constants/colors';
 import { useState, useCallback, memo, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -335,7 +341,7 @@ export default function AdminTournamentsPage() {
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="대회공고 검토" fallbackHref="/(admin)" />
         <View className="flex-1 bg-surface-page dark:bg-surface items-center justify-center">
-          <ActivityIndicator size="large" color="#D4AF37" />
+          <ActivityIndicator size="large" color={getLoadingColor(isDarkMode)} />
           <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
             대회공고 목록을 불러오는 중...
           </Text>
@@ -407,7 +413,7 @@ export default function AdminTournamentsPage() {
           <RefreshControl
             refreshing={isRefetching}
             onRefresh={() => refetch()}
-            tintColor="#D4AF37"
+            tintColor={getLayoutColor(isDarkMode, 'refreshTint')}
           />
         }
       >

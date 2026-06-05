@@ -5,7 +5,12 @@
  * @version 1.0.0
  */
 
-import { SECONDARY_PALETTE, STATUS_COLORS } from '@/constants/colors';
+import {
+  getLayoutColor,
+  getLoadingColor,
+  SECONDARY_PALETTE,
+  STATUS_COLORS,
+} from '@/constants/colors';
 import { useState, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,6 +31,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useToastStore } from '@/stores/toastStore';
 import { useModal } from '@/stores/modalStore';
+import { useThemeStore } from '@/stores/themeStore';
 import { formatE164ToDisplay } from '@/utils/phone';
 import type { UserRole } from '@/types/role';
 
@@ -65,6 +71,7 @@ export default function AdminUserDetailPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { addToast } = useToastStore();
   const { showConfirm } = useModal();
+  const { isDarkMode } = useThemeStore();
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
 
   const {
@@ -159,7 +166,7 @@ export default function AdminUserDetailPage() {
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="사용자 상세" fallbackHref="/(admin)/users" />
         <View className="flex-1 bg-surface-page dark:bg-surface items-center justify-center">
-          <ActivityIndicator size="large" color="#D4AF37" />
+          <ActivityIndicator size="large" color={getLoadingColor(isDarkMode)} />
           <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
             사용자 정보를 불러오는 중...
           </Text>
@@ -193,7 +200,7 @@ export default function AdminUserDetailPage() {
           <RefreshControl
             refreshing={isRefetching}
             onRefresh={() => refetch()}
-            tintColor="#D4AF37"
+            tintColor={getLayoutColor(isDarkMode, 'refreshTint')}
           />
         }
       >
