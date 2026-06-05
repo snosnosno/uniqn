@@ -48,6 +48,17 @@ export function selectPostingWorkflow(posting: JobPosting): PostingWorkflow {
   };
 }
 
+/**
+ * 공고 삭제 가능 여부 — 확정된 지원자가 1명이라도 있으면 삭제할 수 없다(EF-crud-4).
+ *
+ * 상세 화면의 캡션("확정된 지원자가 있는 공고는 삭제할 수 없습니다")과 삭제 버튼
+ * 활성 상태의 단일 근거. 이 규칙을 우회해 삭제 버튼을 항상 활성화하면 확정 인력이
+ * 배정된 공고가 흔적 없이 삭제될 수 있다.
+ */
+export function isPostingDeletable(confirmedApplicants: number): boolean {
+  return confirmedApplicants <= 0;
+}
+
 export function selectPostingRoleAvailability(posting: JobPosting): PostingRoleAvailability {
   const items = getPostingRoleStats(posting).map((role) => {
     const remaining = Math.max(0, role.count - role.filled);

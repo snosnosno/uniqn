@@ -23,6 +23,7 @@ export {
 export type { PostingSettlementContext } from './selectors';
 export {
   selectPostingWorkflow,
+  isPostingDeletable,
   selectPostingRoleAvailability,
   selectPostingSalaryDisplay,
   selectPostingScheduleDisplay,

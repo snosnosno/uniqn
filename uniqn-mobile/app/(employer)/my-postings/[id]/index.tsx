@@ -40,7 +40,11 @@ import {
 } from '@/components/jobs';
 import { STATUS } from '@/constants';
 import { getLayoutColor, SECONDARY_PALETTE } from '@/constants/colors';
-import { buildPostingFacts, projectPostingSurface } from '@/domains/job-posting';
+import {
+  buildPostingFacts,
+  isPostingDeletable,
+  projectPostingSurface,
+} from '@/domains/job-posting';
 import { useApplicantsByJobPosting } from '@/hooks/applicant';
 import { useJobDetail } from '@/hooks/useJobDetail';
 import { useShare } from '@/hooks/useShare';
@@ -243,6 +247,8 @@ export default function JobPostingDetailScreen() {
   const isFixed = posting.schedule.kind === 'fixed';
   const totalApplicants = applicantData?.stats.total ?? managementView.totalApplicants;
   const confirmedApplicants = applicantData?.stats.confirmed ?? managementView.confirmedApplicants;
+  // 확정 지원자가 있으면 삭제 불가(EF-crud-4) — 하단 캡션과 동일 근거.
+  const canDelete = isPostingDeletable(confirmedApplicants);
   const pendingApplicants = applicantData?.stats.applied ?? managementView.pendingApplicants;
   const cancellationPendingCount =
     applicantData?.stats.cancellationPending ?? posting.stats?.cancellationPendingApplicants ?? 0;
@@ -618,11 +624,13 @@ export default function JobPostingDetailScreen() {
         <View className="border-t border-secondary-200 px-4 pb-8 pt-4 dark:border-surface-overlay">
           <Pressable
             onPress={handleDeletePress}
-            disabled={isDeleting}
-            className="flex-row items-center justify-center rounded-md bg-error-50 py-4 active:bg-error-50 dark:bg-error-900/20 dark:active:bg-error-900/30"
+            disabled={isDeleting || !canDelete}
+            className={`flex-row items-center justify-center rounded-md bg-error-50 py-4 active:bg-error-50 dark:bg-error-900/20 dark:active:bg-error-900/30 ${
+              !canDelete ? 'opacity-40' : ''
+            }`}
             accessibilityRole="button"
             accessibilityLabel="공고 삭제"
-            accessibilityState={{ disabled: isDeleting }}
+            accessibilityState={{ disabled: isDeleting || !canDelete }}
             testID="job-posting-delete-button"
           >
             {isDeleting ? (
