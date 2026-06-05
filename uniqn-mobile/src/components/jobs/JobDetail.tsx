@@ -2,6 +2,14 @@ import React, { useMemo } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';
 import { Badge } from '@/components/ui/Badge';
+import {
+  BanknotesIcon,
+  CalendarIcon,
+  DocumentIcon,
+  MapPinIcon,
+  PhoneIcon,
+} from '@/components/icons';
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { extractPostingFilledSubmap, usePostingFilledCounts } from '@/hooks/usePostingFilledCounts';
 import { buildPostingFacts, projectPostingSurface } from '@/domains/job-posting';
@@ -34,11 +42,11 @@ function InfoRow({
 }: {
   label: string;
   value: string | React.ReactNode;
-  icon: string;
+  icon: React.ReactNode;
 }) {
   return (
     <View className="flex-row items-start border-b border-divider py-3">
-      <Text className="mr-3 text-lg font-sans">{icon}</Text>
+      <View className="mr-3 mt-0.5">{icon}</View>
       <View className="flex-1">
         <Text className="mb-1 text-[10px] uppercase tracking-wider text-content-muted font-sans-bold">
           {label}
@@ -140,11 +148,17 @@ export function JobDetail({ job }: JobDetailProps) {
       <View className="px-4 py-3 border-b border-divider">
         <SectionLabel>근무 정보</SectionLabel>
 
-        <InfoRow icon="" label="근무지" value={detail.locationLabel || '위치 정보 없음'} />
+        <InfoRow
+          icon={<MapPinIcon size={18} color={SECONDARY_PALETTE[400]} />}
+          label="근무지"
+          value={detail.locationLabel || '위치 정보 없음'}
+        />
 
         <View className="border-b border-divider py-3">
           <View className="flex-row items-start">
-            <Text className="mr-3 text-lg font-sans">{''}</Text>
+            <View className="mr-3 mt-0.5">
+              <CalendarIcon size={18} color={SECONDARY_PALETTE[400]} />
+            </View>
             <View className="flex-1">
               <Text className="mb-2 text-[10px] uppercase tracking-wider text-content-muted font-sans-bold">
                 근무 일정
@@ -168,14 +182,20 @@ export function JobDetail({ job }: JobDetailProps) {
 
         {detail.contactPhone ? (
           <Pressable onPress={handleCall}>
-            <InfoRow icon="" label="연락처" value={detail.contactPhone} />
+            <InfoRow
+              icon={<PhoneIcon size={18} color={SECONDARY_PALETTE[400]} />}
+              label="연락처"
+              value={detail.contactPhone}
+            />
           </Pressable>
         ) : null}
 
         {detail.allowanceLabels.length > 0 ? (
           <View className="border-b border-divider py-3">
             <View className="flex-row items-start">
-              <Text className="mr-3 text-lg font-sans">{''}</Text>
+              <View className="mr-3 mt-0.5">
+                <BanknotesIcon size={18} color={SECONDARY_PALETTE[400]} />
+              </View>
               <View className="flex-1">
                 <Text className="mb-1 text-[10px] uppercase tracking-wider text-content-muted font-sans-bold">
                   추가 수당
@@ -195,7 +215,13 @@ export function JobDetail({ job }: JobDetailProps) {
           </View>
         ) : null}
 
-        {detail.taxLabel ? <InfoRow icon="" label="세금" value={detail.taxLabel} /> : null}
+        {detail.taxLabel ? (
+          <InfoRow
+            icon={<DocumentIcon size={18} color={SECONDARY_PALETTE[400]} />}
+            label="세금"
+            value={detail.taxLabel}
+          />
+        ) : null}
       </View>
 
       {/* 사전질문 */}
