@@ -638,6 +638,59 @@ export function useSetBoardCommentPinned(postId: string, commentId: string) {
   });
 }
 
+interface BoardVoteMutationContext {
+  detailSnapshots: [readonly unknown[], BoardPostDetailQueryData | undefined][];
+}
+
+// like/dislike 토글 결과를 detail 캐시에 낙관적으로 반영. 같은 타입 재탭=취소,
+// 반대 타입=전환(상대 카운트 -1). 카운트는 음수 방지.
+function applyBoardVoteToggle(
+  data: BoardPostDetailQueryData,
+  type: BoardVoteType
+): BoardPostDetailQueryData {
+  const prev = data.myVote ?? null;
+  let likeDelta = 0;
+  let dislikeDelta = 0;
+  let nextVote: BoardPostDetailQueryData['myVote'];
+
+  if (prev === type) {
+    nextVote = null;
+    if (type === 'like') likeDelta = -1;
+    else dislikeDelta = -1;
+  } else {
+    nextVote = type;
+    if (type === 'like') {
+      likeDelta = 1;
+      if (prev === 'dislike') dislikeDelta = -1;
+    } else {
+      dislikeDelta = 1;
+      if (prev === 'like') likeDelta = -1;
+    }
+  }
+
+  return {
+    ...data,
+    myVote: nextVote,
+    post: {
+      ...data.post,
+      likeCount: Math.max(0, data.post.likeCount + likeDelta),
+      dislikeCount: Math.max(0, data.post.dislikeCount + dislikeDelta),
+    },
+  };
+}
+
+function updateBoardVoteCaches(postId: string, type: BoardVoteType) {
+  queryClient.setQueriesData<BoardPostDetailQueryData>(
+    { predicate: (query) => isBoardDetailQueryKey(query.queryKey, postId) },
+    (current) => {
+      if (!current || current.post.id !== postId) {
+        return current;
+      }
+      return applyBoardVoteToggle(current, type);
+    }
+  );
+}
+
 export function useToggleBoardPostVote(postId: string) {
   const { user, isAdmin } = useAuth();
   const addToast = useToastStore((state) => state.addToast);
@@ -647,10 +700,26 @@ export function useToggleBoardPostVote(postId: string) {
       const actor = requireBoardMutationActor(user, isAdmin);
       return toggleBoardPostVote(postId, actor, type);
     },
+    // 낙관적 업데이트: 좋아요/싫어요 탭 즉시 버튼 색·카운트 반영(서버 refetch 대기 제거).
+    onMutate: async (type) => {
+      await queryClient.cancelQueries({
+        predicate: (query) => isBoardDetailQueryKey(query.queryKey, postId),
+      });
+      const detailSnapshots = queryClient.getQueriesData<BoardPostDetailQueryData>({
+        predicate: (query) => isBoardDetailQueryKey(query.queryKey, postId),
+      });
+      updateBoardVoteCaches(postId, type);
+      return { detailSnapshots } satisfies BoardVoteMutationContext;
+    },
     onSuccess: () => {
       invalidateQueries.boards();
     },
-    onError: (error) => {
+    onError: (error, _type, context) => {
+      // 롤백 후 서버 기준 재동기화는 detail 무효화로 처리(invalidateQueries.boards 미호출 →
+      // 실패 시 낙관값만 되돌리고 다음 상호작용/포커스에서 정합).
+      context?.detailSnapshots.forEach(([queryKey, data]) => {
+        queryClient.setQueryData(queryKey, data);
+      });
       addToast({
         type: 'error',
         message: toErrorMessage(error, '게시글 반응 변경에 실패했습니다.'),
