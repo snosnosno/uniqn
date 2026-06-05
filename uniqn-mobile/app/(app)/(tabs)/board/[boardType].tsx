@@ -1,9 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { RefreshControl, Text, View } from 'react-native';
+import { RefreshControl, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TabHeader } from '@/components/headers';
 import { EmptyState, ErrorState } from '@/components/ui';
+import { SkeletonListItem } from '@/components/ui/Skeleton';
 import { DocumentTextOutlineIcon } from '@/components/icons';
 import { BoardPostCard } from '@/components/board/BoardPostCard';
 import { BoardTabBar, type BoardTabKey } from '@/components/board/BoardTabBar';
@@ -77,10 +78,12 @@ export default function BoardListScreen() {
           }
           ListEmptyComponent={
             isLoading ? (
-              <View className="flex-1 items-center justify-center py-20">
-                <Text className="text-sm font-sans text-secondary-500 dark:text-secondary-400">
-                  게시글을 불러오는 중이에요...
-                </Text>
+              <View accessibilityRole="progressbar" accessibilityLabel="게시글 목록 로딩 중">
+                <SkeletonListItem />
+                <SkeletonListItem />
+                <SkeletonListItem />
+                <SkeletonListItem />
+                <SkeletonListItem />
               </View>
             ) : (
               <EmptyState
