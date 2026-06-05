@@ -10,6 +10,7 @@ import { Share } from 'react-native';
 import { renderHook, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useShare } from '../useShare';
+import { jobPostingRepository } from '@/repositories';
 import type { JobPosting } from '@/types';
 
 // jest.setup.js 의 전역 react-query stub 을 실제 구현으로 복원 (useQueryClient/fetchQuery 필요)
@@ -64,9 +65,13 @@ describe('useShare.shareJobById', () => {
     jest.clearAllMocks();
   });
 
-  it('id 로 전체 공고를 조회한 뒤 공유 본문을 생성해 공유한다', async () => {
+  it('id 로 전체 공고를 조회한 뒤 실시간 확정수와 함께 공유 본문을 생성해 공유한다', async () => {
     const job = { id: 'job-1', title: '딜러 모집' } as JobPosting;
     mockGetJob.mockResolvedValue(job);
+    // 실시간 확정수 맵(posting-prefixed) — buildJobShareText 에는 prefix 제거 submap 이 전달돼야 함
+    jest
+      .spyOn(jobPostingRepository, 'getPostingFilledCounts')
+      .mockResolvedValue(new Map([['job-1__2026-06-06__19:00__dealer', 1]]));
     const shareSpy = jest.spyOn(Share, 'share').mockResolvedValue({ action: Share.sharedAction });
 
     const { result } = renderHook(() => useShare(), { wrapper: makeWrapper() });
@@ -77,9 +82,14 @@ describe('useShare.shareJobById', () => {
     });
 
     expect(mockGetJob).toHaveBeenCalledWith('job-1');
+    expect(jobPostingRepository.getPostingFilledCounts).toHaveBeenCalledWith(['job-1']);
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { buildJobShareText } = require('@/utils/jobShareMessage');
-    expect(buildJobShareText).toHaveBeenCalledWith(job, 'https://uniqn.app/jobs/job-1');
+    expect(buildJobShareText).toHaveBeenCalledWith(
+      job,
+      'https://uniqn.app/jobs/job-1',
+      new Map([['2026-06-06__19:00__dealer', 1]])
+    );
     expect(shareSpy).toHaveBeenCalledWith(
       { title: '딜러 모집', message: 'SHARE_BODY' },
       { dialogTitle: '공고 공유하기' }
