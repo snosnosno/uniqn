@@ -8,6 +8,7 @@ import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import type { PurchasesPackage } from 'react-native-purchases';
 import { Modal } from '@/components/ui';
+import { SkeletonListItem } from '@/components/ui/Skeleton';
 import { purchasesService } from '@/services/purchases';
 import { WalletRepository } from '@/repositories/supabase/WalletRepository';
 import { usePurchaseDiamonds } from '@/hooks/usePurchaseDiamonds';
@@ -74,6 +75,44 @@ export function PurchaseSheet() {
         <View className="py-6">
           <Text className="text-center font-sans text-content-primary dark:text-secondary-100">
             다이아 충전은 모바일 앱에서 가능해요.
+          </Text>
+        </View>
+      ) : productsQuery.isLoading ? (
+        <View
+          className="gap-2 py-2"
+          accessibilityRole="progressbar"
+          accessibilityLabel="충전 상품 불러오는 중"
+        >
+          <SkeletonListItem />
+          <SkeletonListItem />
+          <SkeletonListItem />
+        </View>
+      ) : productsQuery.isError ? (
+        <View className="py-6">
+          <Text className="text-center font-sans text-content-primary dark:text-secondary-100">
+            충전 상품을 불러오지 못했어요.
+          </Text>
+          <Text className="mt-1 text-center font-sans text-sm text-secondary-500 dark:text-secondary-400">
+            네트워크를 확인하고 다시 시도해주세요.
+          </Text>
+          <Pressable
+            onPress={() => productsQuery.refetch()}
+            className="mt-3 self-center rounded-md bg-surface-card px-4 py-2 dark:bg-secondary-800"
+            accessibilityRole="button"
+            accessibilityLabel="충전 상품 다시 불러오기"
+          >
+            <Text className="font-sans-medium text-primary-600 dark:text-primary-400">
+              다시 시도
+            </Text>
+          </Pressable>
+        </View>
+      ) : (productsQuery.data ?? []).length === 0 ? (
+        <View className="py-6">
+          <Text className="text-center font-sans text-content-primary dark:text-secondary-100">
+            현재 충전 상품이 없어요.
+          </Text>
+          <Text className="mt-1 text-center font-sans text-sm text-secondary-500 dark:text-secondary-400">
+            잠시 후 다시 시도해주세요.
           </Text>
         </View>
       ) : (
