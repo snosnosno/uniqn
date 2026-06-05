@@ -339,113 +339,116 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
           }
         }
 
-        // 4. 각 WorkLog 처리
-        for (const id of chunkIds) {
-          const workLog = workLogMap.get(id);
+        // 4. 각 WorkLog 처리 (청크 내 병렬 — 행 간 의존 없음, 각 UPDATE는 독립 auto-commit이라
+        //    부분 실패 의미(이전 성공분 커밋 유지·롤백 없음)가 직렬과 동일하게 보존된다.
+        //    순서·집계는 결과 배열에서 결정적으로 후처리해 카운터 경쟁을 제거한다.)
+        const chunkResults = await Promise.all(
+          chunkIds.map(async (id): Promise<SettlementResultDTO> => {
+            const workLog = workLogMap.get(id);
 
-          if (!workLog) {
-            results.push({
-              success: false,
+            if (!workLog) {
+              return {
+                success: false,
+                workLogId: id,
+                amount: 0,
+                message: '근무 기록을 찾을 수 없습니다',
+              };
+            }
+
+            const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
+            const jobPosting = jobPostingMap.get(normalizedJobId);
+
+            // 소유권 확인
+            if (!jobPosting || jobPosting.ownerId !== ownerId) {
+              return {
+                success: false,
+                workLogId: id,
+                amount: 0,
+                message: '본인의 공고가 아닙니다',
+              };
+            }
+
+            // 상태 확인
+            if (
+              workLog.status !== STATUS.WORK_LOG.CHECKED_OUT &&
+              workLog.status !== STATUS.WORK_LOG.COMPLETED
+            ) {
+              return {
+                success: false,
+                workLogId: id,
+                amount: 0,
+                message: '출퇴근이 완료되지 않았습니다',
+              };
+            }
+
+            // 이미 정산 완료
+            if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
+              return {
+                success: false,
+                workLogId: id,
+                amount: 0,
+                message: '이미 정산 완료되었습니다',
+              };
+            }
+
+            // 정산 금액 계산
+            const amount = this.calculateSettlementAmount(
+              workLog as WorkLogWithOverrides,
+              jobPosting
+            );
+
+            // 정산 처리
+            const now = new Date().toISOString();
+            const updateData: Record<string, unknown> = {
+              payroll_status: STATUS.PAYROLL.COMPLETED,
+              payroll_amount: amount,
+              payroll_date: now,
+              updated_at: now,
+            };
+
+            if (context.notes !== undefined) {
+              updateData.payroll_notes = context.notes;
+            }
+
+            // ES-003: allowance snapshot (customAllowances 비어있을 때만 공고값 복사)
+            const workLogWithOverridesBulk = workLog as WorkLogWithOverrides;
+            const postingAllowancesBulk = jobPosting.compensation?.allowances;
+            if (!workLogWithOverridesBulk.customAllowances && postingAllowancesBulk) {
+              updateData.custom_allowances = postingAllowancesBulk;
+            }
+
+            const { error: updateError } = await supabase
+              .from(WORK_LOGS_TABLE)
+              .update(updateData)
+              .eq('id', id);
+
+            if (updateError) {
+              return {
+                success: false,
+                workLogId: id,
+                amount: 0,
+                message: '정산 업데이트 실패',
+              };
+            }
+
+            return {
+              success: true,
               workLogId: id,
-              amount: 0,
-              message: '근무 기록을 찾을 수 없습니다',
-            });
+              amount,
+              message: '정산 완료',
+            };
+          })
+        );
+
+        // 집계 (Promise.all이 입력 순서를 보존하므로 results 순서는 직렬과 동일)
+        for (const chunkResult of chunkResults) {
+          results.push(chunkResult);
+          if (chunkResult.success) {
+            successCount++;
+            totalAmount += chunkResult.amount;
+          } else {
             failedCount++;
-            continue;
           }
-
-          const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
-          const jobPosting = jobPostingMap.get(normalizedJobId);
-
-          // 소유권 확인
-          if (!jobPosting || jobPosting.ownerId !== ownerId) {
-            results.push({
-              success: false,
-              workLogId: id,
-              amount: 0,
-              message: '본인의 공고가 아닙니다',
-            });
-            failedCount++;
-            continue;
-          }
-
-          // 상태 확인
-          if (
-            workLog.status !== STATUS.WORK_LOG.CHECKED_OUT &&
-            workLog.status !== STATUS.WORK_LOG.COMPLETED
-          ) {
-            results.push({
-              success: false,
-              workLogId: id,
-              amount: 0,
-              message: '출퇴근이 완료되지 않았습니다',
-            });
-            failedCount++;
-            continue;
-          }
-
-          // 이미 정산 완료
-          if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
-            results.push({
-              success: false,
-              workLogId: id,
-              amount: 0,
-              message: '이미 정산 완료되었습니다',
-            });
-            failedCount++;
-            continue;
-          }
-
-          // 정산 금액 계산
-          const amount = this.calculateSettlementAmount(
-            workLog as WorkLogWithOverrides,
-            jobPosting
-          );
-
-          // 정산 처리
-          const now = new Date().toISOString();
-          const updateData: Record<string, unknown> = {
-            payroll_status: STATUS.PAYROLL.COMPLETED,
-            payroll_amount: amount,
-            payroll_date: now,
-            updated_at: now,
-          };
-
-          if (context.notes !== undefined) {
-            updateData.payroll_notes = context.notes;
-          }
-
-          // ES-003: allowance snapshot (customAllowances 비어있을 때만 공고값 복사)
-          const workLogWithOverridesBulk = workLog as WorkLogWithOverrides;
-          const postingAllowancesBulk = jobPosting.compensation?.allowances;
-          if (!workLogWithOverridesBulk.customAllowances && postingAllowancesBulk) {
-            updateData.custom_allowances = postingAllowancesBulk;
-          }
-
-          const { error: updateError } = await supabase
-            .from(WORK_LOGS_TABLE)
-            .update(updateData)
-            .eq('id', id);
-
-          if (updateError) {
-            results.push({
-              success: false,
-              workLogId: id,
-              amount: 0,
-              message: '정산 업데이트 실패',
-            });
-            failedCount++;
-            continue;
-          }
-
-          results.push({
-            success: true,
-            workLogId: id,
-            amount,
-            message: '정산 완료',
-          });
-          successCount++;
-          totalAmount += amount;
         }
       }
 
