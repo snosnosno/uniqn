@@ -47,16 +47,20 @@ export function WorkTimeSection({
   scheduledEndTime = null,
   hoursWorked,
 }: WorkTimeSectionProps) {
-  const hasActualTimes = Boolean(startTime && endTime);
+  // 출근/퇴근 각각 실제 기록 여부를 개별 판단 (한쪽만 기록된 중간 상태 정확히 표시)
+  const startIsActual = Boolean(startTime);
+  const endIsActual = Boolean(endTime);
+  const hasActualTimes = startIsActual && endIsActual;
   const effectiveStart = startTime ?? scheduledStartTime;
   const effectiveEnd = endTime ?? scheduledEndTime;
   const hasAnyTimes = Boolean(effectiveStart && effectiveEnd);
-  // 실제 기록 없이 예정시간만으로 표시 중인 경우
-  const isScheduledOnly = !hasActualTimes && hasAnyTimes;
+  // 실제 기록이 전혀 없이 예정시간만으로 표시 중인 경우(확정·출근 전)에만 "예정"으로 안내
+  const isScheduledOnly = hasAnyTimes && !startIsActual && !endIsActual;
   const isOvernight =
     hasAnyTimes && effectiveEnd!.toDateString() !== effectiveStart!.toDateString();
 
-  // 표시용 근무 시간: 실제는 정산 기준(hoursWorked), 예정은 예정시간 간격(표시 전용)
+  // 표시용 근무 시간: 양쪽 실제는 정산 기준(hoursWorked), 순수 예정은 예정시간 간격(표시 전용),
+  // 한쪽만 기록된 중간 상태는 '-'(아직 확정 불가)
   const scheduledHours =
     isScheduledOnly && effectiveStart && effectiveEnd
       ? Math.max(0, (effectiveEnd.getTime() - effectiveStart.getTime()) / MS_PER_HOUR)
@@ -84,9 +88,9 @@ export function WorkTimeSection({
           <View className="flex-row items-center justify-between p-3 bg-surface-page dark:bg-surface rounded-lg">
             <View className="items-center">
               <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
-                {hasActualTimes ? '출근' : '시작'}
+                {startIsActual ? '출근' : '시작'}
               </Text>
-              {hasActualTimes ? (
+              {startIsActual ? (
                 <Text className="text-lg font-display-semibold text-success-600 dark:text-success-400">
                   {formatTime(effectiveStart)}
                 </Text>
@@ -100,7 +104,7 @@ export function WorkTimeSection({
             <View className="items-center">
               <View className="flex-row items-center mb-1 gap-1">
                 <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-                  {hasActualTimes ? '퇴근' : '종료'}
+                  {endIsActual ? '퇴근' : '종료'}
                 </Text>
                 {isOvernight ? (
                   <View className="rounded bg-info-100 px-1.5 py-0.5 dark:bg-info-900/30">
