@@ -547,8 +547,6 @@ export default function JobPostingDetailScreen() {
               icon={<EditIcon size={24} color={SECONDARY_PALETTE[500]} />}
               title="공고 수정"
               description="공고 내용과 상태를 수정합니다"
-              displayTitle="Edit Posting"
-              displayDescription="Update this fixed posting."
               onPress={handleEdit}
               testID="job-posting-edit-button"
             />
