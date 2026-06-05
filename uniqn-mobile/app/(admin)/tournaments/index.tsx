@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import { SECONDARY_PALETTE, SURFACE_COLORS } from '@/constants/colors';
+import { SECONDARY_PALETTE, STATUS_COLORS, SURFACE_COLORS } from '@/constants/colors';
 import { useState, useCallback, memo, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -219,10 +219,10 @@ const TournamentCard = memo(function TournamentCard({
             accessibilityLabel="거부"
           >
             {isProcessing ? (
-              <ActivityIndicator size="small" color="#DC2626" />
+              <ActivityIndicator size="small" color={STATUS_COLORS.error} />
             ) : (
               <>
-                <CloseCircleOutlineIcon size={18} color="#DC2626" />
+                <CloseCircleOutlineIcon size={18} color={STATUS_COLORS.error} />
                 <Text className="text-error-500 font-sans-medium ml-1">거부</Text>
               </>
             )}
@@ -235,10 +235,10 @@ const TournamentCard = memo(function TournamentCard({
             accessibilityLabel="승인"
           >
             {isProcessing ? (
-              <ActivityIndicator size="small" color="#22C55E" />
+              <ActivityIndicator size="small" color={STATUS_COLORS.success} />
             ) : (
               <>
-                <CheckmarkCircleOutlineIcon size={18} color="#22C55E" />
+                <CheckmarkCircleOutlineIcon size={18} color={STATUS_COLORS.success} />
                 <Text className="text-success-500 font-sans-medium ml-1">승인</Text>
               </>
             )}

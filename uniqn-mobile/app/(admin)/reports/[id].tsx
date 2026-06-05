@@ -11,7 +11,7 @@
  * - 상태 변경 및 메모 입력
  */
 
-import { SECONDARY_PALETTE } from '@/constants/colors';
+import { PRIMARY_COLORS, SECONDARY_PALETTE, STATUS_COLORS } from '@/constants/colors';
 import { useState, useCallback } from 'react';
 import {
   View,
@@ -162,7 +162,7 @@ function ReportContentSection({ report }: { report: Report }) {
   return (
     <View className="bg-white dark:bg-surface rounded-md p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-3">
-        <DocumentIcon size={18} color="#D4AF37" />
+        <DocumentIcon size={18} color={PRIMARY_COLORS[500]} />
         <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold ml-2">
           신고 내용
         </Text>
@@ -226,7 +226,7 @@ function ReviewHistorySection({ report }: { report: Report }) {
   return (
     <View className="bg-white dark:bg-surface rounded-md p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-3">
-        <CheckCircleIcon size={18} color="#22C55E" />
+        <CheckCircleIcon size={18} color={STATUS_COLORS.success} />
         <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold ml-2">
           처리 이력
         </Text>
@@ -297,7 +297,7 @@ function ReviewFormSection({
   return (
     <View className="bg-white dark:bg-surface rounded-md p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-4">
-        <AlertTriangleIcon size={18} color="#D4A017" />
+        <AlertTriangleIcon size={18} color={STATUS_COLORS.warning} />
         <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold ml-2">
           신고 처리
         </Text>

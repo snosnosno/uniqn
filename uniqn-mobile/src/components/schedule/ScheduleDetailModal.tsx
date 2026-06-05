@@ -7,7 +7,7 @@
  * @version 1.2.0
  */
 
-import { SECONDARY_PALETTE } from '@/constants/colors';
+import { getLayoutColor, SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Modal, Badge, Button } from '@/components/ui';
@@ -304,13 +304,13 @@ export function ScheduleDetailModal({
             activeOpacity={0.7}
             accessibilityLabel="이전 날짜"
           >
-            <ChevronLeftIcon size={20} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
+            <ChevronLeftIcon size={20} color={getLayoutColor(isDarkMode, 'tabBarActive')} />
           </TouchableOpacity>
 
           {/* 현재 날짜 표시 */}
           <View className="items-center">
             <View className="flex-row items-center">
-              <CalendarIcon size={14} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
+              <CalendarIcon size={14} color={getLayoutColor(isDarkMode, 'tabBarActive')} />
               <Text className="ml-1.5 text-sm font-sans-semibold text-primary-700 dark:text-primary-300">
                 {schedule?.date ? formatSingleDate(schedule.date) : ''}
               </Text>
@@ -335,7 +335,7 @@ export function ScheduleDetailModal({
             activeOpacity={0.7}
             accessibilityLabel="다음 날짜"
           >
-            <ChevronRightIcon size={20} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
+            <ChevronRightIcon size={20} color={getLayoutColor(isDarkMode, 'tabBarActive')} />
           </TouchableOpacity>
         </View>
       )}
@@ -407,7 +407,9 @@ export function ScheduleDetailModal({
             >
               <View style={{ opacity: isActive ? 1 : 0.6 }}>
                 {React.cloneElement(tab.icon as React.ReactElement<{ color?: string }>, {
-                  color: isActive ? (isDarkMode ? '#D4AF37' : '#8A7228') : SECONDARY_PALETTE[500],
+                  color: isActive
+                    ? getLayoutColor(isDarkMode, 'tabBarActive')
+                    : SECONDARY_PALETTE[500],
                 })}
               </View>
               <Text
@@ -416,7 +418,9 @@ export function ScheduleDetailModal({
                   fontSize: 14,
                   fontWeight: '500',
                   fontFamily: 'PlusJakartaSans_500Medium',
-                  color: isActive ? (isDarkMode ? '#D4AF37' : '#8A7228') : SECONDARY_PALETTE[500],
+                  color: isActive
+                    ? getLayoutColor(isDarkMode, 'tabBarActive')
+                    : SECONDARY_PALETTE[500],
                 }}
               >
                 {tab.label}

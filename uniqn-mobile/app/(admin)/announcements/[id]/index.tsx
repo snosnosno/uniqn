@@ -4,7 +4,7 @@
  * @description 공지사항 상세 보기 및 관리 (발행/보관/삭제)
  */
 
-import { SECONDARY_PALETTE } from '@/constants/colors';
+import { PRIMARY_COLORS, SECONDARY_PALETTE, STATUS_COLORS } from '@/constants/colors';
 import { useState, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -123,7 +123,7 @@ export default function AnnouncementDetailPage() {
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="공지사항 상세" fallbackHref="/(admin)/announcements" />
         <View className="flex-1 bg-surface-page dark:bg-surface items-center justify-center px-8">
-          <AlertCircleOutlineIcon size={64} color="#DC2626" />
+          <AlertCircleOutlineIcon size={64} color={STATUS_COLORS.error} />
           <Text className="text-lg font-sans-medium text-content-secondary mt-4">
             공지사항을 찾을 수 없습니다
           </Text>
@@ -149,7 +149,7 @@ export default function AnnouncementDetailPage() {
         fallbackHref="/(admin)/announcements"
         rightAction={
           <Pressable onPress={handleEdit} accessibilityLabel="공지사항 수정" hitSlop={8}>
-            <CreateOutlineIcon size={24} color="#B8962E" />
+            <CreateOutlineIcon size={24} color={PRIMARY_COLORS[600]} />
           </Pressable>
         }
       />
@@ -185,7 +185,7 @@ export default function AnnouncementDetailPage() {
             {/* Pinned */}
             {announcement.isPinned && (
               <View className="px-2 py-1 rounded bg-warning-100 dark:bg-warning-900/30 flex-row items-center">
-                <PinIcon size={12} color="#D4A017" />
+                <PinIcon size={12} color={STATUS_COLORS.warning} />
                 <Text className="text-xs font-sans-medium text-warning-700 dark:text-warning-300 ml-1">
                   고정
                 </Text>

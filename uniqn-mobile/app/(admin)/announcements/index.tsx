@@ -4,7 +4,7 @@
  * @description 공지사항 목록 조회 및 관리
  */
 
-import { SECONDARY_PALETTE } from '@/constants/colors';
+import { PRIMARY_COLORS, SECONDARY_PALETTE } from '@/constants/colors';
 import { useState, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -94,7 +94,7 @@ export default function AdminAnnouncementsPage() {
         fallbackHref="/(admin)"
         rightAction={
           <Pressable onPress={handleCreate} accessibilityLabel="공지사항 작성" hitSlop={8}>
-            <AddCircleOutlineIcon size={24} color="#B8962E" />
+            <AddCircleOutlineIcon size={24} color={PRIMARY_COLORS[600]} />
           </Pressable>
         }
       />

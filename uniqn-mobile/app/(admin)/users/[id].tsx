@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import { SECONDARY_PALETTE } from '@/constants/colors';
+import { SECONDARY_PALETTE, STATUS_COLORS } from '@/constants/colors';
 import { useState, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -259,9 +259,9 @@ export default function AdminUserDetailPage() {
           <InfoRow
             icon={
               user.isVerified ? (
-                <ShieldCheckIcon size={20} color="#22C55E" />
+                <ShieldCheckIcon size={20} color={STATUS_COLORS.success} />
               ) : (
-                <XCircleIcon size={20} color="#DC2626" />
+                <XCircleIcon size={20} color={STATUS_COLORS.error} />
               )
             }
             label="본인인증"

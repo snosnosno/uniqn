@@ -8,6 +8,7 @@
 import React, { memo } from 'react';
 import { Platform, View, Text } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import { STATUS_COLORS } from '@/constants/colors';
 
 export interface NotificationBadgeProps {
   /** 알림 수 */
@@ -77,7 +78,7 @@ export const NotificationBadge = memo(function NotificationBadge({
         minWidth: s.minWidth,
         height: s.height,
         paddingHorizontal: s.paddingHorizontal,
-        backgroundColor: '#DC2626',
+        backgroundColor: STATUS_COLORS.error,
         borderRadius: 999,
         alignItems: 'center',
         justifyContent: 'center',
