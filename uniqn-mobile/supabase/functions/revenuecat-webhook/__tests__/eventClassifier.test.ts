@@ -5,7 +5,9 @@
 import { classifyEvent, timingSafeEqualStr } from '../eventClassifier.ts';
 
 describe('classifyEvent', () => {
-  const base = { allowSandbox: false } as const;
+  // 실 RC 이벤트는 항상 environment 를 포함(PRODUCTION|SANDBOX). 분류 로직 테스트의
+  // 기본 환경을 PRODUCTION 으로 고정한다(환경 게이트는 아래 별도 케이스에서 검증).
+  const base = { allowSandbox: false, environment: 'PRODUCTION' } as const;
 
   it('INITIAL_PURCHASE (prod) → credit', () => {
     expect(
@@ -67,6 +69,39 @@ describe('classifyEvent', () => {
 
   it('알 수 없는 타입 → unknown', () => {
     expect(classifyEvent({ ...base, type: 'SOME_FUTURE_EVENT' }).action).toBe('unknown');
+  });
+
+  // --- 환경 게이트 화이트리스트(fail-closed) 회귀 — environment 누락/비표준값 차단 ---
+  it('environment 누락(undefined) + allowSandbox=false → ignore (fail-closed)', () => {
+    const r = classifyEvent({ type: 'INITIAL_PURCHASE', allowSandbox: false });
+    expect(r.action).toBe('ignore');
+    expect(r.reason).toBe('non_production');
+  });
+
+  it('environment null + allowSandbox=false → ignore (fail-closed)', () => {
+    const r = classifyEvent({ type: 'INITIAL_PURCHASE', environment: null, allowSandbox: false });
+    expect(r.action).toBe('ignore');
+    expect(r.reason).toBe('non_production');
+  });
+
+  it('environment 소문자/오타("sandbox") + allowSandbox=false → ignore (fail-closed)', () => {
+    const r = classifyEvent({
+      type: 'INITIAL_PURCHASE',
+      environment: 'sandbox',
+      allowSandbox: false,
+    });
+    expect(r.action).toBe('ignore');
+    expect(r.reason).toBe('non_production');
+  });
+
+  it('environment 미래 신규값("STAGING") + allowSandbox=false → ignore (fail-closed)', () => {
+    const r = classifyEvent({ type: 'REFUND', environment: 'STAGING', allowSandbox: false });
+    expect(r.action).toBe('ignore');
+    expect(r.reason).toBe('non_production');
+  });
+
+  it('environment 누락 + allowSandbox=true → credit (개발/검증 우회는 유지)', () => {
+    expect(classifyEvent({ type: 'INITIAL_PURCHASE', allowSandbox: true }).action).toBe('credit');
   });
 });
 

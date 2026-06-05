@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { formatRelativeTime } from '@/utils/date';
 import type { ApplicantWithDetails } from '@/services';
-import { SheetModal } from '../../ui/SheetModal';
+import { SheetModal } from '@/components/ui/SheetModal';
 import { ApplicantProfileAssignments } from './ApplicantProfileAssignments';
 import { ApplicantProfileContent } from './ApplicantProfileContent';
 import { ApplicantProfileHeader } from './ApplicantProfileHeader';

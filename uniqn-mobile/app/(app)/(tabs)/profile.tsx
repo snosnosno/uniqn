@@ -3,7 +3,7 @@
  * 프로필 화면
  */
 
-import { SECONDARY_PALETTE } from '@/constants/colors';
+import { SECONDARY_PALETTE, STATUS_COLORS } from '@/constants/colors';
 import {
   View,
   Text,
@@ -229,7 +229,7 @@ export default function ProfileScreen() {
             <>
               <Divider spacing="sm" />
               <MenuItem
-                icon={<ShieldIcon size={22} color="#DC2626" />}
+                icon={<ShieldIcon size={22} color={STATUS_COLORS.error} />}
                 label="관리자 대시보드"
                 onPress={() => router.push('/(admin)')}
               />
@@ -241,9 +241,9 @@ export default function ProfileScreen() {
           <MenuItem
             icon={
               isLoggingOut ? (
-                <ActivityIndicator size={22} color="#DC2626" />
+                <ActivityIndicator size={22} color={STATUS_COLORS.error} />
               ) : (
-                <LogOutIcon size={22} color="#DC2626" />
+                <LogOutIcon size={22} color={STATUS_COLORS.error} />
               )
             }
             label={isLoggingOut ? '로그아웃 중...' : '로그아웃'}

@@ -192,6 +192,9 @@ export async function bulkConfirmApplications(
       workLogIds: [],
     };
 
+    // 순차 유지(병렬화 금지): confirm_application RPC가 job_postings FOR UPDATE로 동시확정을
+    // 직렬화하므로 Promise.all은 처리량 이득 없이 확정 순서(선착순) 비결정성만 유발한다.
+    // 개별 실패는 failed[]에 code/reason으로 격리 보고된다.
     for (const applicationId of applicationIds) {
       try {
         const confirmResult = await confirmApplication({ applicationId }, ownerId);

@@ -3,7 +3,7 @@
  * 설정 메인 화면
  */
 
-import { SECONDARY_PALETTE } from '@/constants/colors';
+import { SECONDARY_PALETTE, STATUS_COLORS } from '@/constants/colors';
 import { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -282,11 +282,11 @@ export default function SettingsScreen() {
               onPress={handleOpenSettings}
               className="mb-3 p-3 bg-error-50 dark:bg-error-900/20 rounded-lg flex-row items-center"
             >
-              <BellSlashIcon size={20} color="#DC2626" />
+              <BellSlashIcon size={20} color={STATUS_COLORS.error} />
               <Text className="flex-1 ml-2 text-error-700 dark:text-error-300 text-sm font-sans">
                 알림 권한이 거부되었습니다. 탭하여 설정에서 허용해주세요.
               </Text>
-              <ChevronRightIcon size={16} color="#DC2626" />
+              <ChevronRightIcon size={16} color={STATUS_COLORS.error} />
             </Pressable>
           )}
           {permissionStatus === 'undetermined' && (
@@ -294,7 +294,7 @@ export default function SettingsScreen() {
               onPress={handleRequestPermission}
               className="mb-3 p-3 bg-warning-50 dark:bg-warning-900/20 rounded-lg flex-row items-center"
             >
-              <BellIcon size={20} color="#D4A017" />
+              <BellIcon size={20} color={STATUS_COLORS.warning} />
               <Text className="flex-1 ml-2 text-warning-700 dark:text-warning-300 text-sm font-sans">
                 푸시 알림이 꺼져있습니다. 탭하여 허용해주세요.
               </Text>

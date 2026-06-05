@@ -8,7 +8,7 @@ import { useThemeStore } from '@/stores/themeStore';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { formatRelativeTime } from '@/utils/date';
 import { CardStripe } from '@/components/ui';
-import { FixedScheduleDisplay } from '../../../jobs/FixedScheduleDisplay';
+import { FixedScheduleDisplay } from '@/components/jobs/FixedScheduleDisplay';
 import type { ApplicantCardProps, IconColors } from './types';
 import { STATUS_STRIPE_TONE } from './constants';
 import { useAssignmentSelection } from './useAssignmentSelection';

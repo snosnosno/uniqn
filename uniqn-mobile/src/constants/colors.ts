@@ -96,10 +96,6 @@ export const SURFACE_COLORS = {
   hover: '#2E2E34',
 } as const;
 
-export function getSurfaceColor(variant: keyof typeof SURFACE_COLORS = 'DEFAULT'): string {
-  return SURFACE_COLORS[variant];
-}
-
 // ============================================================================
 // 경계선 / 텍스트 토큰 (DESIGN.md 정렬)
 // ============================================================================
@@ -130,13 +126,6 @@ export const TEXT_COLORS = {
   /** Text On Gold — 골드 배경 위 */
   onGold: '#09090B',
 } as const;
-
-export function getTextColor(
-  isDarkMode: boolean,
-  variant: 'primary' | 'secondary' | 'muted' = 'primary'
-): string {
-  return isDarkMode ? TEXT_COLORS[variant].dark : TEXT_COLORS[variant].light;
-}
 
 // ============================================================================
 // Badge 색상 (v3.0)
@@ -180,18 +169,6 @@ export const BADGE_CLASSES = {
     info: 'bg-info-500',
   },
 } as const;
-
-export function getBadgeClasses(variant: BadgeVariant = 'default'): {
-  container: string;
-  text: string;
-  dot: string;
-} {
-  return {
-    container: BADGE_CLASSES.container[variant],
-    text: BADGE_CLASSES.text[variant],
-    dot: BADGE_CLASSES.dot[variant],
-  };
-}
 
 // ============================================================================
 // 텍스트 색상 (v3.0)

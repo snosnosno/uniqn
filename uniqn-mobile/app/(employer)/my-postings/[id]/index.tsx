@@ -39,7 +39,12 @@ import {
   TournamentStatusBadge,
 } from '@/components/jobs';
 import { STATUS } from '@/constants';
-import { getLayoutColor, SECONDARY_PALETTE } from '@/constants/colors';
+import {
+  getLayoutColor,
+  PRIMARY_COLORS,
+  SECONDARY_PALETTE,
+  STATUS_COLORS,
+} from '@/constants/colors';
 import {
   buildPostingFacts,
   isPostingDeletable,
@@ -340,7 +345,7 @@ export default function JobPostingDetailScreen() {
             {isInfoExpanded ? (
               <>
                 <View className="mb-3 flex-row items-center">
-                  <MapPinIcon size={18} color="#B8962E" />
+                  <MapPinIcon size={18} color={PRIMARY_COLORS[600]} />
                   <Text className="ml-2 text-base text-content-secondary font-sans">
                     {locationLabel}
                   </Text>
@@ -348,7 +353,7 @@ export default function JobPostingDetailScreen() {
 
                 <View className="mb-4">
                   <View className="mb-2 flex-row items-center">
-                    <ClockIcon size={18} color="#B8962E" />
+                    <ClockIcon size={18} color={PRIMARY_COLORS[600]} />
                     <Text className="ml-2 text-base font-sans-medium text-content-secondary">
                       근무 일정
                     </Text>
@@ -372,7 +377,7 @@ export default function JobPostingDetailScreen() {
 
                 <View className="mb-4">
                   <View className="mb-2 flex-row items-center">
-                    <CurrencyDollarIcon size={18} color="#B8962E" />
+                    <CurrencyDollarIcon size={18} color={PRIMARY_COLORS[600]} />
                     <Text className="ml-2 text-base font-sans-medium text-content-secondary">
                       급여
                     </Text>
@@ -405,7 +410,7 @@ export default function JobPostingDetailScreen() {
 
                 {managementView.taxLabel ? (
                   <View className="mb-4 flex-row items-center">
-                    <CurrencyDollarIcon size={18} color="#B8962E" />
+                    <CurrencyDollarIcon size={18} color={PRIMARY_COLORS[600]} />
                     <Text className="ml-2 text-base text-content-secondary font-sans">
                       {managementView.taxLabel}
                     </Text>
@@ -414,7 +419,7 @@ export default function JobPostingDetailScreen() {
 
                 {questionCount > 0 ? (
                   <View className="mb-4 flex-row items-center">
-                    <DocumentIcon size={18} color="#B8962E" />
+                    <DocumentIcon size={18} color={PRIMARY_COLORS[600]} />
                     <Text className="ml-2 text-base text-content-secondary font-sans">
                       사전질문 {questionCount}개 설정됨
                     </Text>
@@ -479,7 +484,7 @@ export default function JobPostingDetailScreen() {
 
           <View className="gap-3">
             <ActionCard
-              icon={<UsersIcon size={24} color="#B8962E" />}
+              icon={<UsersIcon size={24} color={PRIMARY_COLORS[600]} />}
               title="지원자 관리"
               description={`${pendingApplicants}명의 지원자가 대기중입니다.`}
               badge={
@@ -493,7 +498,7 @@ export default function JobPostingDetailScreen() {
 
             {!isFixed && (
               <ActionCard
-                icon={<XCircleIcon size={24} color="#DC2626" />}
+                icon={<XCircleIcon size={24} color={STATUS_COLORS.error} />}
                 title="취소 요청 관리"
                 description="스태프의 취소 요청을 검토합니다."
                 badge={
@@ -508,7 +513,7 @@ export default function JobPostingDetailScreen() {
 
             {!isFixed && (
               <ActionCard
-                icon={<BanknotesIcon size={24} color="#22C55E" />}
+                icon={<BanknotesIcon size={24} color={STATUS_COLORS.success} />}
                 title="스태프 정산 관리"
                 description="확정 스태프 관리와 정산을 진행합니다."
                 badge={
@@ -576,7 +581,7 @@ export default function JobPostingDetailScreen() {
               className="border-error-200 bg-error-50 dark:border-error-800 dark:bg-error-900/20"
             >
               <View className="mb-3 flex-row items-start">
-                <XCircleIcon size={20} color="#DC2626" />
+                <XCircleIcon size={20} color={STATUS_COLORS.error} />
                 <Text className="ml-2 text-base font-sans-semibold text-error-700 dark:text-error-400">
                   승인 반려되었습니다
                 </Text>
@@ -632,10 +637,10 @@ export default function JobPostingDetailScreen() {
             testID="job-posting-delete-button"
           >
             {isDeleting ? (
-              <ActivityIndicator size="small" color="#DC2626" />
+              <ActivityIndicator size="small" color={STATUS_COLORS.error} />
             ) : (
               <>
-                <TrashIcon size={20} color="#DC2626" />
+                <TrashIcon size={20} color={STATUS_COLORS.error} />
                 <Text className="ml-2 text-base font-sans-medium text-error-600 dark:text-error-400">
                   공고 삭제
                 </Text>

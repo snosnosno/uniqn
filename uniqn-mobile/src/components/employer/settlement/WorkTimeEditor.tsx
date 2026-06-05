@@ -9,12 +9,12 @@ import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, TextInput } from 'react-native';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { SheetModal } from '../../ui/SheetModal';
-import { ModalFooterButtons } from '../../ui/ModalFooterButtons';
-import { Avatar } from '../../ui/Avatar';
-import { Card } from '../../ui/Card';
-import { TimeWheelPicker, type TimeValue } from '../../ui/TimeWheelPicker';
-import { AlertCircleIcon } from '../../icons';
+import { SheetModal } from '@/components/ui/SheetModal';
+import { ModalFooterButtons } from '@/components/ui/ModalFooterButtons';
+import { Avatar } from '@/components/ui/Avatar';
+import { Card } from '@/components/ui/Card';
+import { TimeWheelPicker, type TimeValue } from '@/components/ui/TimeWheelPicker';
+import { AlertCircleIcon } from '@/components/icons';
 import { formatDate, parseTimeSlotToDate } from '@/utils/date';
 import { TimeInputField } from './TimeInputField';
 import {

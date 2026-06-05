@@ -5,8 +5,8 @@ import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 import { getRoleDisplayName } from '@/types/unified';
 import type { ApplicantWithDetails } from '@/services';
 import type { ApplicationStatus } from '@/types';
-import { Avatar } from '../../ui/Avatar';
-import { Badge } from '../../ui/Badge';
+import { Avatar } from '@/components/ui/Avatar';
+import { Badge } from '@/components/ui/Badge';
 
 export interface ApplicantProfileHeaderProps {
   applicant: ApplicantWithDetails;

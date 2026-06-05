@@ -7,10 +7,10 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import { WorkTimeDisplay } from '@/shared/time';
 import type { ConfirmedStaff } from '@/types/confirmedStaff';
 import { getRoleDisplayName } from '@/types/unified';
-import { Avatar } from '../../ui/Avatar';
-import { Badge } from '../../ui/Badge';
-import { SheetModal } from '../../ui/SheetModal';
-import { BriefcaseIcon, CalendarIcon, CheckCircleIcon, ClockIcon } from '../../icons';
+import { Avatar } from '@/components/ui/Avatar';
+import { Badge } from '@/components/ui/Badge';
+import { SheetModal } from '@/components/ui/SheetModal';
+import { BriefcaseIcon, CalendarIcon, CheckCircleIcon, ClockIcon } from '@/components/icons';
 import {
   ContactInfoSection,
   formatProfileDate,

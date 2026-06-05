@@ -45,9 +45,9 @@ export function useTemplates() {
 }
 
 /**
- * 템플릿 저장 뮤테이션입니다.
+ * 템플릿 저장 뮤테이션입니다. (useTemplateManager 내부 전용)
  */
-export function useSaveTemplate() {
+function useSaveTemplate() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
@@ -80,9 +80,9 @@ export function useSaveTemplate() {
 }
 
 /**
- * 템플릿 불러오기 뮤테이션입니다.
+ * 템플릿 불러오기 뮤테이션입니다. (useTemplateManager 내부 전용)
  */
-export function useLoadTemplate() {
+function useLoadTemplate() {
   const { addToast } = useToastStore();
 
   return useMutation({

@@ -7,7 +7,7 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React from 'react';
 import { View, Text } from 'react-native';
-import { ClockIcon } from '../../../icons';
+import { ClockIcon } from '@/components/icons';
 import { formatTime } from '@/utils/date';
 import { formatDuration } from '@/utils/settlement';
 

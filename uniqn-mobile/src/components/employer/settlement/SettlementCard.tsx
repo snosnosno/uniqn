@@ -8,11 +8,11 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useMemo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { CardStripe } from '../../ui/CardStripe';
-import { Badge } from '../../ui/Badge';
-import { Avatar } from '../../ui/Avatar';
-import { NumericText } from '../../ui/NumericText';
-import { BanknotesIcon, ChevronRightIcon } from '../../icons';
+import { CardStripe } from '@/components/ui/CardStripe';
+import { Badge } from '@/components/ui/Badge';
+import { Avatar } from '@/components/ui/Avatar';
+import { NumericText } from '@/components/ui/NumericText';
+import { BanknotesIcon, ChevronRightIcon } from '@/components/icons';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import {
   type SalaryType,

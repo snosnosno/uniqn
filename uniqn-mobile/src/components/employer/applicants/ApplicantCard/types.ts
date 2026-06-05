@@ -44,5 +44,3 @@ export interface IconColors {
   checked: string;
   unchecked: string;
 }
-
-export type StatusBadgeVariant = 'default' | 'primary' | 'success' | 'warning' | 'error';

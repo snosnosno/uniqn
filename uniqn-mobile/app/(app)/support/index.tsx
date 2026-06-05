@@ -1,4 +1,4 @@
-import { SECONDARY_PALETTE } from '@/constants/colors';
+import { PRIMARY_COLORS, SECONDARY_PALETTE, STATUS_COLORS } from '@/constants/colors';
 import type { ReactNode } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -86,7 +86,7 @@ export default function SupportScreen() {
 
         <Card>
           <MenuItem
-            icon={<InformationCircleIcon size={24} color="#D4AF37" />}
+            icon={<InformationCircleIcon size={24} color={PRIMARY_COLORS[500]} />}
             label="자주 묻는 질문"
             description="FAQ에서 빠르게 답을 찾아보세요"
             onPress={() => router.push('/(app)/support/faq')}
@@ -94,7 +94,7 @@ export default function SupportScreen() {
           />
           <Divider spacing="sm" />
           <MenuItem
-            icon={<MessageIcon size={24} color="#22C55E" />}
+            icon={<MessageIcon size={24} color={STATUS_COLORS.success} />}
             label="1:1 문의하기"
             description="직접 문의를 남겨 주세요"
             onPress={() => router.push('/(app)/support/create-inquiry')}
@@ -102,7 +102,7 @@ export default function SupportScreen() {
           />
           <Divider spacing="sm" />
           <MenuItem
-            icon={<DocumentTextOutlineIcon size={24} color="#8A7228" />}
+            icon={<DocumentTextOutlineIcon size={24} color={PRIMARY_COLORS[700]} />}
             label="문의 내역"
             description="내 문의와 답변을 확인하세요"
             onPress={() => router.push('/(app)/support/my-inquiries')}

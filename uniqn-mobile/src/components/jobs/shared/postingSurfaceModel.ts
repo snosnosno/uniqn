@@ -158,33 +158,52 @@ export function buildPostingScheduleModel(
   filledCounts?: Map<string, number>
 ): PostingScheduleModel {
   if (source.workflow.isFixed) {
-    const fixed = source.scheduleDisplay.fixed;
-    const daysValue = fixed?.daysPerWeek ?? source.daysPerWeek;
-    const timeValue = fixed?.startTime ?? source.startTime;
-    const isNegotiable = fixed?.isStartTimeNegotiable ?? source.isStartTimeNegotiable ?? !timeValue;
-    // 고정공고는 work_logs 키가 date='FIXED_SCHEDULE', slotKey=startTime ?? 'NEGOTIABLE'(협의) 로 정규화된다(SP2).
-    const fixedSlotKey = isNegotiable ? FIXED_TIME_MARKER : timeValue || FIXED_TIME_MARKER;
-    const roles = toRoleModels(fixed?.roles ?? source.requiredRolesWithCount ?? [], {
-      date: FIXED_DATE_MARKER,
-      slotKey: fixedSlotKey,
-      filledCounts,
-    });
-    const totalCount = roles.reduce((sum, role) => sum + role.count, 0);
-    const filledCount = roles.reduce((sum, role) => sum + role.filled, 0);
-
-    return {
-      variant: 'fixed',
-      fixed: {
-        daysLabel: formatDaysPerWeek(daysValue),
-        timeLabel: formatFixedTime(timeValue, isNegotiable),
-        roles,
-        totalCount,
-        filledCount,
-      },
-      isPartial: daysValue === undefined || isNegotiable,
-    };
+    return buildFixedScheduleModel(source, filledCounts);
   }
 
+  const dated = buildDatedScheduleModel(source, filledCounts);
+  if (dated) {
+    return dated;
+  }
+
+  return buildLegacyScheduleModel(source);
+}
+
+function buildFixedScheduleModel(
+  source: PostingScheduleSource,
+  filledCounts?: Map<string, number>
+): Extract<PostingScheduleModel, { variant: 'fixed' }> {
+  const fixed = source.scheduleDisplay.fixed;
+  const daysValue = fixed?.daysPerWeek ?? source.daysPerWeek;
+  const timeValue = fixed?.startTime ?? source.startTime;
+  const isNegotiable = fixed?.isStartTimeNegotiable ?? source.isStartTimeNegotiable ?? !timeValue;
+  // 고정공고는 work_logs 키가 date='FIXED_SCHEDULE', slotKey=startTime ?? 'NEGOTIABLE'(협의) 로 정규화된다(SP2).
+  const fixedSlotKey = isNegotiable ? FIXED_TIME_MARKER : timeValue || FIXED_TIME_MARKER;
+  const roles = toRoleModels(fixed?.roles ?? source.requiredRolesWithCount ?? [], {
+    date: FIXED_DATE_MARKER,
+    slotKey: fixedSlotKey,
+    filledCounts,
+  });
+  const totalCount = roles.reduce((sum, role) => sum + role.count, 0);
+  const filledCount = roles.reduce((sum, role) => sum + role.filled, 0);
+
+  return {
+    variant: 'fixed',
+    fixed: {
+      daysLabel: formatDaysPerWeek(daysValue),
+      timeLabel: formatFixedTime(timeValue, isNegotiable),
+      roles,
+      totalCount,
+      filledCount,
+    },
+    isPartial: daysValue === undefined || isNegotiable,
+  };
+}
+
+function buildDatedScheduleModel(
+  source: PostingScheduleSource,
+  filledCounts?: Map<string, number>
+): Extract<PostingScheduleModel, { variant: 'dated' }> | null {
   const sectionSources =
     source.workflow.usesGroupedDateRanges && source.scheduleDisplay.dateGroups.length > 0
       ? source.scheduleDisplay.dateGroups.map((group) => ({
@@ -210,53 +229,59 @@ export function buildPostingScheduleModel(
           matchRange: undefined as { startDate: string; endDate: string } | undefined,
         }));
 
-  if (sectionSources.length > 0) {
-    const sections = sectionSources.map((section) => {
-      const timeSlots = section.timeSlots.map((slot, slotIndex) => {
-        const timeLabel = formatTimeLabel(slot);
-
-        return {
-          key: `${section.key}-${timeLabel}-${slotIndex}`,
-          timeLabel,
-          roles: toRoleModels(
-            slot.roles,
-            section.matchDate
-              ? { date: section.matchDate, slotKey: slotMatchKey(slot), filledCounts }
-              : section.matchRange
-                ? { range: section.matchRange, slotKey: slotMatchKey(slot), filledCounts }
-                : undefined
-          ),
-        };
-      });
-      const totalCount = timeSlots.reduce(
-        (sum, slot) => sum + slot.roles.reduce((roleSum, role) => roleSum + role.count, 0),
-        0
-      );
-      const filledCount = timeSlots.reduce(
-        (sum, slot) => sum + slot.roles.reduce((roleSum, role) => roleSum + role.filled, 0),
-        0
-      );
-
-      return {
-        key: section.key,
-        label: section.label,
-        dayCount: section.dayCount,
-        totalCount,
-        filledCount,
-        timeSlots,
-      };
-    });
-
-    return {
-      variant: 'dated',
-      usesGroupedRanges: source.workflow.usesGroupedDateRanges,
-      sections,
-      isPartial: sections.some((section) =>
-        section.timeSlots.some((slot) => slot.timeLabel === UNKNOWN_TIME_LABEL)
-      ),
-    };
+  if (sectionSources.length === 0) {
+    return null;
   }
 
+  const sections = sectionSources.map((section) => {
+    const timeSlots = section.timeSlots.map((slot, slotIndex) => {
+      const timeLabel = formatTimeLabel(slot);
+
+      return {
+        key: `${section.key}-${timeLabel}-${slotIndex}`,
+        timeLabel,
+        roles: toRoleModels(
+          slot.roles,
+          section.matchDate
+            ? { date: section.matchDate, slotKey: slotMatchKey(slot), filledCounts }
+            : section.matchRange
+              ? { range: section.matchRange, slotKey: slotMatchKey(slot), filledCounts }
+              : undefined
+        ),
+      };
+    });
+    const totalCount = timeSlots.reduce(
+      (sum, slot) => sum + slot.roles.reduce((roleSum, role) => roleSum + role.count, 0),
+      0
+    );
+    const filledCount = timeSlots.reduce(
+      (sum, slot) => sum + slot.roles.reduce((roleSum, role) => roleSum + role.filled, 0),
+      0
+    );
+
+    return {
+      key: section.key,
+      label: section.label,
+      dayCount: section.dayCount,
+      totalCount,
+      filledCount,
+      timeSlots,
+    };
+  });
+
+  return {
+    variant: 'dated',
+    usesGroupedRanges: source.workflow.usesGroupedDateRanges,
+    sections,
+    isPartial: sections.some((section) =>
+      section.timeSlots.some((slot) => slot.timeLabel === UNKNOWN_TIME_LABEL)
+    ),
+  };
+}
+
+function buildLegacyScheduleModel(
+  source: PostingScheduleSource
+): Extract<PostingScheduleModel, { variant: 'legacy' }> {
   const dateLabel = formatDateLabel(source.scheduleDisplay.workDate || source.workDate);
   const timeLabel = source.scheduleDisplay.timeSlot || source.timeSlot || UNKNOWN_TIME_LABEL;
 
