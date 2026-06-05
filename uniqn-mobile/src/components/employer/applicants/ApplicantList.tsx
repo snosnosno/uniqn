@@ -34,6 +34,8 @@ export interface ApplicantListProps {
   isRefreshing?: boolean;
   onConfirm?: (applicant: ApplicantWithDetails) => void;
   onReject?: (applicant: ApplicantWithDetails) => void;
+  /** 확정 취소 (확정된 지원자 un-confirm) */
+  onCancelConfirmation?: (applicant: ApplicantWithDetails) => void;
   /** 프로필 상세보기 */
   onViewProfile?: (applicant: ApplicantWithDetails) => void;
 }
@@ -63,6 +65,7 @@ export function ApplicantList({
   isRefreshing,
   onConfirm,
   onReject,
+  onCancelConfirmation,
   onViewProfile,
 }: ApplicantListProps) {
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
@@ -107,11 +110,12 @@ export function ApplicantList({
           applicant={item}
           onConfirm={onConfirm}
           onReject={onReject}
+          onCancelConfirmation={onCancelConfirmation}
           onViewProfile={onViewProfile}
         />
       </View>
     ),
-    [onConfirm, onReject, onViewProfile]
+    [onConfirm, onReject, onCancelConfirmation, onViewProfile]
   );
 
   const keyExtractor = useCallback((item: ApplicantWithDetails) => item.id, []);

@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { STATUS } from '@/constants';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { jobPostingRepository } from '@/repositories';
 import type { PostingTypeCounts } from '@/repositories/interfaces/IJobPostingRepository';
@@ -26,7 +25,9 @@ export const AUTO_SELECT_PRIORITY: PostingType[] = ['urgent', 'tournament', 'reg
 
 async function fetchPostingTypeCounts(): Promise<PostingTypeCounts> {
   try {
-    return await jobPostingRepository.getTypeCounts({ status: STATUS.JOB_POSTING.ACTIVE });
+    // status 미지정 → 브라우즈 가시성 기본값(active + capacity_full)으로 집계.
+    // (EF-jobsearch-11: 정원 마감 공고가 칩 카운트에서 누락되던 회귀)
+    return await jobPostingRepository.getTypeCounts();
   } catch (error) {
     logger.warn('공고 타입 개수 조회 실패', { error });
     throw error;

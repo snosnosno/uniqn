@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getDashboardStats,
   getUsers,
@@ -45,17 +45,21 @@ export function useAdminDashboardStats() {
 
 interface UseAdminUsersOptions {
   filters?: AdminUserFilters;
-  page?: number;
   pageSize?: number;
   enabled?: boolean;
 }
 
+// 무한 스크롤/더보기: page-keyed useQuery는 페이지 증가 시 data가 통째 교체돼 이전 페이지가
+// 사라졌다. useInfiniteQuery로 페이지를 누적한다(화면은 pages.flatMap으로 렌더).
 export function useAdminUsers(options: UseAdminUsersOptions = {}) {
-  const { filters = {}, page = 1, pageSize = 20, enabled = true } = options;
+  const { filters = {}, pageSize = 20, enabled = true } = options;
 
-  return useQuery({
-    queryKey: queryKeys.admin.users({ ...filters, page, pageSize }),
-    queryFn: () => getUsers(filters, page, pageSize),
+  return useInfiniteQuery({
+    queryKey: queryKeys.admin.users({ ...filters, pageSize }),
+    queryFn: ({ pageParam }) => getUsers(filters, pageParam, pageSize),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage: PaginatedUsers) =>
+      lastPage.hasNextPage ? lastPage.page + 1 : undefined,
     staleTime: cachingPolicies.frequent,
     gcTime: 10 * 60 * 1000,
     enabled,

@@ -177,7 +177,6 @@ const ROLE_OPTIONS: { role: UserRole | 'all'; label: string }[] = [
 export default function AdminUsersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState<UserRole | 'all'>('all');
-  const [page, setPage] = useState(1);
   const { isDarkMode } = useThemeStore();
 
   const filters: AdminUserFilters = useMemo(
@@ -190,9 +189,17 @@ export default function AdminUsersPage() {
     [searchQuery, selectedRole]
   );
 
-  const { data, isLoading, isRefetching, error, refetch } = useAdminUsers({
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    isRefetching,
+    error,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+  } = useAdminUsers({
     filters,
-    page,
     pageSize: 20,
     enabled: true,
   });
@@ -203,19 +210,17 @@ export default function AdminUsersPage() {
 
   const handleRoleFilter = useCallback((role: UserRole | 'all') => {
     setSelectedRole(role);
-    setPage(1);
   }, []);
 
   const handleSearch = useCallback((text: string) => {
     setSearchQuery(text);
-    setPage(1);
   }, []);
 
   const handleLoadMore = useCallback(() => {
-    if (data?.hasNextPage && !isLoading) {
-      setPage((prev) => prev + 1);
+    if (hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage();
     }
-  }, [data?.hasNextPage, isLoading]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const renderItem = useCallback(
     ({ item }: { item: AdminUser }) => (
@@ -256,8 +261,8 @@ export default function AdminUsersPage() {
     );
   }
 
-  const users = data?.users ?? [];
-  const total = data?.total ?? 0;
+  const users = data?.pages.flatMap((p) => p.users) ?? [];
+  const total = data?.pages[0]?.total ?? 0;
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
@@ -313,18 +318,18 @@ export default function AdminUsersPage() {
           <EmptyState title="검색 결과 없음" description="검색 조건에 맞는 사용자가 없습니다." />
         }
         ListFooterComponent={
-          users.length > 0 && data ? (
+          users.length > 0 ? (
             <View className="py-4 items-center">
-              <Text className="text-sm text-content-placeholder font-sans">
-                {data.page} / {data.totalPages} 페이지
-              </Text>
-              {data.hasNextPage && (
-                <Pressable
-                  onPress={handleLoadMore}
-                  className="mt-2 px-4 py-2 bg-primary-600 rounded-lg"
-                >
+              {isFetchingNextPage ? (
+                <ActivityIndicator color={getLoadingColor(isDarkMode)} />
+              ) : hasNextPage ? (
+                <Pressable onPress={handleLoadMore} className="px-4 py-2 bg-primary-600 rounded-lg">
                   <Text className="text-surface-dark font-sans-medium">더 보기</Text>
                 </Pressable>
+              ) : (
+                <Text className="text-sm text-content-placeholder font-sans">
+                  모든 사용자를 불러왔어요
+                </Text>
               )}
             </View>
           ) : null

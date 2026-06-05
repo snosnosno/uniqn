@@ -26,7 +26,11 @@ export function PaywallModal({
   onCharge,
 }: PaywallModalProps) {
   const symbol = currencyHint === 'heart_first' ? '💖' : '💎';
-  const owned = currencyHint === 'heart_first' ? heartBalance + diamondBalance : diamondBalance;
+  // 실제 차감 RPC(consume_diamonds_atomically)는 currency_hint 와 무관하게 하트 FIFO
+  // 우선 → 부족분 다이아로 차감하고, 잔액 가드도 (heart + diamond) 합산이다. 따라서
+  // 결제력 표시도 항상 합산이어야 한다 — diamond 힌트 공고에서 하트를 제외하면 잔액이
+  // 충분해도 '부족'으로 오표시된다 (EF-wallet-1).
+  const owned = heartBalance + diamondBalance;
   const short = Math.max(0, cost - owned);
 
   return (

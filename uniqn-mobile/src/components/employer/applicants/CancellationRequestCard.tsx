@@ -115,13 +115,14 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
     setRejectionReason('');
   }, []);
 
-  // 거절 제출
+  // 거절 제출 — 처리 중이면 중복 제출 차단(EF-CAN-2)
   const handleSubmitReject = useCallback(() => {
+    if (isProcessing) return;
     if (rejectionReason.trim().length >= 3) {
       onReject(application.id, rejectionReason.trim());
       handleCloseRejectModal();
     }
-  }, [application.id, rejectionReason, onReject, handleCloseRejectModal]);
+  }, [isProcessing, application.id, rejectionReason, onReject, handleCloseRejectModal]);
 
   // 취소 요청이 없으면 렌더링하지 않음
   if (!cancellationRequest) {
@@ -293,7 +294,8 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
             onCancel={handleCloseRejectModal}
             onSubmit={handleSubmitReject}
             submitText="거절하기"
-            submitDisabled={rejectionReason.trim().length < 3}
+            isLoading={isProcessing}
+            submitDisabled={rejectionReason.trim().length < 3 || isProcessing}
           />
         </View>
       </Modal>

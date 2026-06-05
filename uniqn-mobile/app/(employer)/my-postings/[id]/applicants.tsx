@@ -16,6 +16,7 @@ import {
 import { Loading, ErrorState } from '@/components';
 import { StackHeader } from '@/components/headers';
 import { useApplicantManagement } from '@/hooks/applicant';
+import { confirmAction } from '@/utils/confirmAction';
 import type { ApplicantWithDetails } from '@/services';
 import type { Assignment } from '@/types';
 import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
@@ -39,6 +40,7 @@ export default function ApplicantsScreen() {
     refresh,
     confirmWithHistory,
     rejectApplication,
+    cancelConfirmationAsync,
     isConfirmingWithHistory,
     isRejecting,
     markAsRead,
@@ -92,6 +94,22 @@ export default function ApplicantsScreen() {
     setModalAction('reject');
     setIsModalVisible(true);
   }, []);
+
+  // 확정 취소 (확정된 스태프 un-confirm) — 점유 자리 반납. 파괴적 액션이라 확인 다이얼로그.
+  const handleCancelConfirmation = useCallback(
+    (applicant: ApplicantWithDetails) => {
+      confirmAction({
+        title: '확정 취소',
+        message: '이 지원자의 확정을 취소할까요?\n점유된 자리가 다시 비워집니다.',
+        confirmText: '확정 취소',
+        destructive: true,
+        onConfirm: async () => {
+          await cancelConfirmationAsync({ applicationId: applicant.id });
+        },
+      });
+    },
+    [cancelConfirmationAsync]
+  );
 
   // 모달에서 확정 처리
   const handleModalConfirm = useCallback(
@@ -190,6 +208,7 @@ export default function ApplicantsScreen() {
         isRefreshing={isRefreshing}
         onConfirm={handleConfirm}
         onReject={handleReject}
+        onCancelConfirmation={handleCancelConfirmation}
         onViewProfile={handleViewProfile}
       />
 

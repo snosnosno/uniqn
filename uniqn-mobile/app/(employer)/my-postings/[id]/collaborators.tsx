@@ -8,8 +8,9 @@
 
 import React from 'react';
 import { View, Text, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StackHeader } from '@/components/headers';
 import { useAuthStore } from '@/stores/authStore';
 import { useJobDetail } from '@/hooks/useJobDetail';
 import { useJobPostingCollaborators } from '@/hooks/job-posting/useJobPostingCollaborators';
@@ -35,13 +36,8 @@ export default function CollaboratorsRoute() {
   const total = collaborators.length;
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
-      <Stack.Screen
-        options={{
-          title: '공유 관리',
-          presentation: 'modal',
-        }}
-      />
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
+      <StackHeader title="공유 관리" fallbackHref={`/(employer)/my-postings/${jobPostingId}`} />
 
       <View className="px-4 py-3 border-b border-divider">
         <Text className="text-base font-medium text-content-primary" numberOfLines={1}>

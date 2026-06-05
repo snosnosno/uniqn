@@ -235,22 +235,29 @@ export default function SettingsScreen() {
     if (!user?.uid || !profile) return;
 
     void triggerHaptic('light');
+
+    // 낙관적 반영 — Switch가 서버 왕복 동안 옛 위치에 멈추지 않도록 즉시 이동
+    const previousMarketing = profile.marketingAgreed ?? false;
+    setProfile({
+      ...profile,
+      marketingAgreed: value,
+      updatedAt: new Date(),
+    });
     setIsMarketingUpdating(true);
     try {
       await updateMarketingConsent(user.uid, value);
-
-      // 로컬 상태 업데이트
-      setProfile({
-        ...profile,
-        marketingAgreed: value,
-        updatedAt: new Date(),
-      });
 
       addToast({
         type: 'success',
         message: value ? '마케팅 수신에 동의했습니다.' : '마케팅 수신 동의를 철회했습니다.',
       });
     } catch (error) {
+      // 롤백 — 실패 시 이전 동의 상태로 복원
+      setProfile({
+        ...profile,
+        marketingAgreed: previousMarketing,
+        updatedAt: new Date(),
+      });
       logger.error('마케팅 동의 업데이트 실패', error as Error);
       addToast({
         type: 'error',

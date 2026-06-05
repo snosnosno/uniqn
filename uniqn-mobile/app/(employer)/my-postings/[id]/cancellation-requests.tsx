@@ -17,9 +17,10 @@ import { StackHeader } from '@/components/headers';
 import { InboxIcon } from '@/components/icons';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { ScreenSkeleton } from '@/components/ui';
+import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import { useApplicantManagement } from '@/hooks/applicant';
 import { useJobDetail } from '@/hooks/useJobDetail';
-import { useThemeStore } from '@/stores';
 import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import type { Application } from '@/types';
 import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
@@ -45,7 +46,6 @@ function StatsHeader({ pendingCount }: StatsHeaderProps) {
 
 export default function CancellationRequestsScreen() {
   const { id: jobPostingId } = useLocalSearchParams<{ id: string }>();
-  const { isDarkMode } = useThemeStore();
   const { job: posting, isLoading: isLoadingPosting } = useJobDetail(jobPostingId || '');
   const { job: contextJob, isFixed, handleShowQR } = useJobDetailContext();
   const headerBackHref = `/(employer)/my-postings/${jobPostingId ?? ''}`;
@@ -169,12 +169,7 @@ export default function CancellationRequestsScreen() {
           fallbackHref={headerBackHref}
           rightAction={headerRightAction}
         />
-        <View className="flex-1 items-center justify-center">
-          <Loading size="large" />
-          <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
-            취소 요청을 불러오는 중...
-          </Text>
-        </View>
+        <ScreenSkeleton type="applicantList" />
       </SafeAreaView>
     );
   }
@@ -225,7 +220,7 @@ export default function CancellationRequestsScreen() {
             <RefreshControl
               refreshing={isRefetchingCancellationRequests}
               onRefresh={handleRefresh}
-              tintColor={isDarkMode ? SECONDARY_PALETTE[400] : SECONDARY_PALETTE[500]}
+              {...PTR_REFRESH_PROPS}
             />
           }
           ListEmptyComponent={

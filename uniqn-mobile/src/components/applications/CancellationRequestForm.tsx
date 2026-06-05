@@ -11,6 +11,7 @@ import { View, Text, TextInput, Pressable } from 'react-native';
 import { SheetModal } from '@/components/ui/SheetModal';
 import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/ui/FormField';
+import { CheckIcon } from '@/components/icons';
 import { cancellationRequestSchema } from '@/schemas/application.schema';
 import { getRoleDisplayName } from '@/types/unified';
 import { triggerHaptic } from '@/utils/haptics';
@@ -212,7 +213,7 @@ export function CancellationRequestForm({
                 wantsSubstitutePost ? 'bg-primary-500 border-primary-500' : 'border-divider'
               }`}
             >
-              {wantsSubstitutePost && <Text className="text-white text-xs font-sans-bold">✓</Text>}
+              {wantsSubstitutePost && <CheckIcon size={14} color="#FFFFFF" />}
             </View>
             <View className="flex-1">
               <Text className="text-sm font-sans-semibold text-content-primary dark:text-off-white">

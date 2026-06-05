@@ -80,6 +80,40 @@ async function fetchTokensByUsers(
   return map;
 }
 
+interface PushSettingsRow {
+  user_id: string;
+  enabled: boolean | null;
+  push_enabled: boolean | null;
+}
+
+// 수신자별 알림 설정 조회. push_enabled(설정 화면 '푸시 알림' 토글) 또는 enabled(전체
+// 알림)가 false 면 푸시 발송에서 제외한다. 설정 행이 없으면 기본 허용.
+// (카테고리별/방해금지 시간대 세분화 게이트는 후속 PR — 우선 마스터 토글을 실효화.)
+async function fetchPushSettingsByUsers(
+  client: SupabaseClient,
+  userIds: string[]
+): Promise<Map<string, PushSettingsRow>> {
+  if (userIds.length === 0) return new Map();
+
+  const { data, error } = await client
+    .from('notification_settings')
+    .select('user_id, enabled, push_enabled')
+    .in('user_id', userIds);
+
+  if (error) throw new Error(`notification_settings fetch failed: ${error.message}`);
+
+  const map = new Map<string, PushSettingsRow>();
+  for (const row of (data ?? []) as PushSettingsRow[]) {
+    map.set(row.user_id, row);
+  }
+  return map;
+}
+
+function isPushDisabledByPreference(settings: PushSettingsRow | undefined): boolean {
+  if (!settings) return false; // 설정 없음 = 기본 허용
+  return settings.enabled === false || settings.push_enabled === false;
+}
+
 async function removeInvalidToken(client: SupabaseClient, token: string): Promise<void> {
   const { error } = await client.from('fcm_tokens').delete().eq('token', token);
   if (error) {
@@ -210,9 +244,16 @@ Deno.serve(async (req: Request) => {
 
     const recipientIds = [...new Set(notifications.map((n) => n.recipient_id))];
     const tokensByUser = await fetchTokensByUsers(client, recipientIds);
+    const pushSettingsByUser = await fetchPushSettingsByUsers(client, recipientIds);
 
     const messages: ExpoPushMessage[] = [];
+    let skippedByPreference = 0;
     for (const notification of notifications) {
+      // 사용자가 푸시 알림을 끈 경우 발송 제외 (설정 토글 실효화)
+      if (isPushDisabledByPreference(pushSettingsByUser.get(notification.recipient_id))) {
+        skippedByPreference++;
+        continue;
+      }
       const tokens = tokensByUser.get(notification.recipient_id) ?? [];
       for (const tokenRow of tokens) {
         const msg = buildMessage(notification, tokenRow);
@@ -227,6 +268,7 @@ Deno.serve(async (req: Request) => {
           reason: 'no valid tokens',
           notifications: notifications.length,
           recipients: recipientIds.length,
+          skippedByPreference,
         }),
         { status: 200, headers: responseHeaders }
       );
@@ -245,6 +287,7 @@ Deno.serve(async (req: Request) => {
         errors: errorCount,
         notifications: notifications.length,
         recipients: recipientIds.length,
+        skippedByPreference,
       }),
       { status: 200, headers: responseHeaders }
     );

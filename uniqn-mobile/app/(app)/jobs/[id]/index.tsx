@@ -242,6 +242,17 @@ export default function JobDetailScreen() {
                 ? '정원이 마감되었어요'
                 : '마감된 공고입니다'}
             </Button>
+          ) : isFixed ? (
+            // 고정 공고는 앱 지원 플로우(AssignmentSelector)가 비활성 상태 — 빈 지원폼으로
+            // 진입하는 dead-end를 막기 위해 CTA 단계에서 차단한다.
+            <View className="items-center">
+              <Button disabled fullWidth>
+                고정 공고는 앱에서 지원할 수 없어요
+              </Button>
+              <Text className="mt-2 text-center text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+                날짜 기반 모집 공고만 앱에서 지원할 수 있어요
+              </Text>
+            </View>
           ) : (
             <View>
               {!sessionUserId ? (

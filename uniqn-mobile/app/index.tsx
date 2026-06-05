@@ -3,7 +3,7 @@
  * Root entry splash that forwards to the authenticated or login flow.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
@@ -23,6 +23,8 @@ const LOGO_SOURCE = require('../assets/1024.png');
 const LOGO_SIZE = 160;
 const SPLASH_REDIRECT_DELAY_MS = 500;
 const PROFILE_RETRY_DELAY_MS = 500;
+// 프로필 조회가 지속 실패(orphan/RLS/네트워크)할 때 무한 재시도+배터리 소모를 막는 상한.
+const MAX_PROFILE_RETRIES = 5;
 
 const SPINNER_COLOR = {
   light: PRIMARY_COLORS[300],
@@ -36,6 +38,7 @@ export default function SplashScreen() {
   const isAuthLoading = useAuthStore(selectIsLoading);
   const checkAuthState = useAuthStore((state) => state.checkAuthState);
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
+  const profileRetryCountRef = useRef(0);
 
   const authenticatedEntryRoute = getAuthenticatedEntryRoute({
     socialProvider: profile?.socialProvider ?? null,
@@ -59,15 +62,22 @@ export default function SplashScreen() {
         return () => clearTimeout(timer);
       }
 
-      if (!isAuthLoading) {
+      if (isAuthLoading) {
+        return; // 로딩 중 — 다음 상태 변화 대기
+      }
+
+      // 프로필 조회 재시도. setUser가 매 호출 새 user 객체를 만들어 effect가 재실행되므로
+      // 상한이 없으면 500ms마다 무한 재시도된다. MAX 회 초과 시 재시도를 멈추고 아래
+      // 리다이렉트로 이탈해 무한 splash + 배터리 소모를 차단한다.
+      if (profileRetryCountRef.current < MAX_PROFILE_RETRIES) {
+        profileRetryCountRef.current += 1;
         const retryTimer = setTimeout(() => {
           void checkAuthState();
         }, PROFILE_RETRY_DELAY_MS);
 
         return () => clearTimeout(retryTimer);
       }
-
-      return;
+      // 재시도 소진 → 아래 인증 진입 라우트로 이탈(프로필 미완성 시 setup/login으로 안내)
     }
 
     const timer = setTimeout(() => {

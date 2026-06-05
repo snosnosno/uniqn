@@ -12,6 +12,7 @@ import { projectPostingSurface } from '@/domains/job-posting/projections';
 import {
   buildPostingCompensationModel,
   buildPostingScheduleModel,
+  type PostingCompensationModel,
   type PostingRoleDisplayModel,
 } from '@/components/jobs/shared/postingSurfaceModel';
 import type { JobPosting, PostingDetailViewModel } from '@/types';
@@ -19,10 +20,6 @@ import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 
 type ScheduleModel = ReturnType<typeof buildPostingScheduleModel>;
-
-function roleText(role: Pick<PostingRoleDisplayModel, 'label' | 'count'>): string {
-  return `${role.label} ${role.count}명`;
-}
 
 /**
  * 날짜+시간 라인들 (variant 별). 빈 문자열만 제거하고 '미정'(시간 미정) 등
@@ -58,7 +55,10 @@ export function buildDateLines(schedule: ScheduleModel): string[] {
   return line ? [line] : [];
 }
 
-/** 역할+인원 집계 라인 (중복 라벨/카운트는 1회). */
+/**
+ * 역할별 확정/총원 집계 라인. 실시간 현황 공유를 위해 "라벨 확정/총원명" 형식으로 표시한다.
+ * 같은 역할이 여러 날짜/슬롯에 걸쳐 있으면 확정·총원을 각각 합산한다.
+ */
 export function buildRoleLine(schedule: ScheduleModel): { header: string; line: string } {
   const roles: PostingRoleDisplayModel[] = [];
 
@@ -70,30 +70,33 @@ export function buildRoleLine(schedule: ScheduleModel): { header: string; line: 
     );
   }
 
-  // 동일 "라벨 N명" 은 한 번만 (다중 날짜 동일 역할 중복 제거)
-  const seen = new Set<string>();
-  const uniqueRoleTexts: string[] = [];
-  const uniqueLabels: string[] = [];
+  // 라벨 등장 순서를 유지하면서 확정·총원을 라벨별로 누적
+  const order: string[] = [];
+  const totals = new Map<string, { filled: number; count: number }>();
   for (const role of roles) {
-    const text = roleText(role);
-    if (!seen.has(text)) {
-      seen.add(text);
-      uniqueRoleTexts.push(text);
-    }
-    if (!uniqueLabels.includes(role.label)) {
-      uniqueLabels.push(role.label);
+    const acc = totals.get(role.label);
+    if (acc) {
+      acc.filled += role.filled;
+      acc.count += role.count;
+    } else {
+      totals.set(role.label, { filled: role.filled, count: role.count });
+      order.push(role.label);
     }
   }
 
   return {
-    header: uniqueLabels.join(' '),
-    line: uniqueRoleTexts.join(', '),
+    header: order.join(' '),
+    line: order
+      .map((label) => {
+        const { filled, count } = totals.get(label)!;
+        return `${label} ${filled}/${count}명`;
+      })
+      .join(', '),
   };
 }
 
 /** 급여 라인 (역할별 급여면 행 나열, 단일이면 대표 금액). */
-function buildSalaryLine(detail: PostingDetailViewModel): string {
-  const comp = buildPostingCompensationModel(detail, { display: 'detail' });
+function buildSalaryLine(comp: PostingCompensationModel): string {
   if (!comp.useSameSalary && comp.rows.length > 0) {
     return comp.rows.map((row) => `${row.roleLabel} ${row.text}`).join(', ');
   }
@@ -107,6 +110,10 @@ export interface JobShareParts {
   roleHeader: string;
   roleLine: string;
   salary: string;
+  /** 복리후생 라벨 (예: ['보장 8시간', '식사제공', '교통비 10,000원']). 비면 라인 생략. */
+  allowanceLabels?: string[];
+  /** 세금 라벨 (예: '세금 3.3%'). 비면 라인 생략. */
+  taxLabel?: string;
   url: string;
 }
 
@@ -128,10 +135,19 @@ export function composeJobShareText(parts: JobShareParts): string {
   }
   parts.dateLines.filter(Boolean).forEach((d) => body.push(`📅 ${d}`));
   if (parts.roleLine) {
-    body.push(`🙋 ${parts.roleLine} 모집`);
+    // 실시간 현황(확정/총원)을 그대로 노출 — '모집' 표기는 헤더에만 둔다.
+    body.push(`🙋 ${parts.roleLine}`);
   }
   if (parts.salary) {
     body.push(`💰 ${parts.salary}`);
+  }
+  const allowances = (parts.allowanceLabels ?? []).filter(Boolean);
+  if (allowances.length > 0) {
+    body.push(`🎁 ${allowances.join(' · ')}`);
+  }
+  const taxLabel = parts.taxLabel?.trim();
+  if (taxLabel) {
+    body.push(`🧾 ${taxLabel}`);
   }
 
   const bodyBlock = body.length > 0 ? `\n\n${body.join('\n')}` : '';
@@ -140,8 +156,15 @@ export function composeJobShareText(parts: JobShareParts): string {
 
 /**
  * 공고 공유 본문 생성 (이모지형). 공고 상세 화면과 동일 파생 모델 재사용.
+ *
+ * @param filledCounts (선택) `date__slot__role` 키의 실시간 확정 인원 맵.
+ *   주입 시 🙋 라인이 "확정/총원" 으로 표시된다. 미주입 시 0/N 으로 fallback.
  */
-export function buildJobShareText(job: JobPosting, url: string): string {
+export function buildJobShareText(
+  job: JobPosting,
+  url: string,
+  filledCounts?: Map<string, number>
+): string {
   try {
     const facts = buildPostingFacts(job);
     const detail = projectPostingSurface(facts, {
@@ -149,8 +172,9 @@ export function buildJobShareText(job: JobPosting, url: string): string {
       surface: 'detail',
     }) as PostingDetailViewModel;
 
-    const schedule = buildPostingScheduleModel(detail);
+    const schedule = buildPostingScheduleModel(detail, filledCounts);
     const { header, line: roleLine } = buildRoleLine(schedule);
+    const comp = buildPostingCompensationModel(detail, { display: 'detail' });
 
     return composeJobShareText({
       title: detail.title?.trim() || '공고',
@@ -158,7 +182,9 @@ export function buildJobShareText(job: JobPosting, url: string): string {
       dateLines: buildDateLines(schedule),
       roleHeader: header,
       roleLine,
-      salary: buildSalaryLine(detail),
+      salary: buildSalaryLine(comp),
+      allowanceLabels: comp.allowanceLabels,
+      taxLabel: comp.taxLabel,
       url,
     });
   } catch (error) {

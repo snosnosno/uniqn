@@ -1,5 +1,5 @@
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { render, fireEvent } from '@testing-library/react-native';
 import { CancellationRequestCard } from '../CancellationRequestCard';
 import { STATUS } from '@/constants';
 import type { Application } from '@/types';
@@ -100,5 +100,41 @@ describe('CancellationRequestCard', () => {
     );
     expect(getByText('김소호(스노)')).toBeTruthy();
     expect(getByText('avatar:김소호(스노):https://example.com/profile.jpg')).toBeTruthy();
+  });
+
+  it('유효한 사유로 거절을 제출하면 onReject 가 1회 호출된다', () => {
+    const onReject = jest.fn();
+    const { getByPlaceholderText, getByLabelText } = render(
+      <CancellationRequestCard
+        application={createApplication()}
+        onApprove={jest.fn()}
+        onReject={onReject}
+        isProcessing={false}
+      />
+    );
+
+    fireEvent.changeText(getByPlaceholderText('최소 3자 이상 입력해주세요'), '개인 사정으로 취소');
+    fireEvent.press(getByLabelText('거절하기'));
+
+    expect(onReject).toHaveBeenCalledTimes(1);
+    expect(onReject).toHaveBeenCalledWith('application-1', '개인 사정으로 취소');
+  });
+
+  it('처리 중(isProcessing)에는 거절 제출이 중복 호출되지 않는다 (EF-CAN-2 회귀)', () => {
+    const onReject = jest.fn();
+    const { getByPlaceholderText, getByLabelText } = render(
+      <CancellationRequestCard
+        application={createApplication()}
+        onApprove={jest.fn()}
+        onReject={onReject}
+        isProcessing
+      />
+    );
+
+    // 유효한 사유가 입력돼 있어도, 처리 중이면 제출 버튼이 비활성이라 호출되지 않아야 한다.
+    fireEvent.changeText(getByPlaceholderText('최소 3자 이상 입력해주세요'), '개인 사정으로 취소');
+    fireEvent.press(getByLabelText('거절하기'));
+
+    expect(onReject).not.toHaveBeenCalled();
   });
 });

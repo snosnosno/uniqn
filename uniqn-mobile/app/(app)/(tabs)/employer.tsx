@@ -337,7 +337,7 @@ function EmployerView() {
                   className="text-sm font-sans-semibold text-content-primary dark:text-off-white"
                   numberOfLines={1}
                 >
-                  🔗 {shared.jobPostingTitle}
+                  {shared.jobPostingTitle}
                 </Text>
                 <Text className="mt-0.5 text-xs text-content-secondary" numberOfLines={1}>
                   {shared.workspaceName} 워크스페이스

@@ -14,6 +14,8 @@ import { trackEvent, createJobDeepLink } from '@/services/observability';
 import { useToast } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { getJobDetailQueryOptions } from '@/hooks/useJobDetail';
+import { extractPostingFilledSubmap } from '@/hooks/usePostingFilledCounts';
+import { jobPostingRepository } from '@/repositories';
 import { buildJobShareText } from '@/utils/jobShareMessage';
 import type { JobPosting } from '@/types';
 
@@ -160,8 +162,21 @@ export function useShare(): UseShareReturn {
         // 웹 URL 생성 (외부 공유용)
         const url = createJobDeepLink(job.id, true);
 
-        // 공유 메시지 구성 (일정·역할·인원·급여 포함, url 은 본문 마지막 1회)
-        const message = buildJobShareText(job, url);
+        // 실시간 확정 인원 조회 (best-effort) — 🙋 라인을 "확정/총원" 으로 표시.
+        // 실패해도 공유는 진행되어야 하므로 빈 맵(0/N) 으로 degrade.
+        let filledCounts: Map<string, number> | undefined;
+        try {
+          const all = await jobPostingRepository.getPostingFilledCounts([job.id]);
+          filledCounts = extractPostingFilledSubmap(all, job.id);
+        } catch (countError) {
+          logger.warn('공유 확정 인원 조회 실패 — 0/N fallback', {
+            jobId: job.id,
+            error: toError(countError),
+          });
+        }
+
+        // 공유 메시지 구성 (일정·역할·인원·급여·복리후생·세금 포함, url 은 본문 마지막 1회)
+        const message = buildJobShareText(job, url, filledCounts);
 
         let action: 'shared' | 'dismissed';
 

@@ -19,7 +19,7 @@ import {
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui';
-import { XMarkIcon, RefreshIcon, ScanIcon } from '@/components/icons';
+import { XMarkIcon, RefreshIcon, ScanIcon, FlashlightIcon } from '@/components/icons';
 import { logger } from '@/utils/logger';
 import { isWeb } from '@/utils/platform';
 import { WebPortal } from '@/components/ui/WebPortal';
@@ -221,11 +221,11 @@ export function QRCodeScanner({
           <Pressable
             onPress={handleToggleFlash}
             className="w-10 h-10 items-center justify-center rounded-sm"
+            accessibilityRole="button"
             accessibilityLabel={flashEnabled ? '플래시 끄기' : '플래시 켜기'}
+            accessibilityState={{ selected: flashEnabled }}
           >
-            <Text className={flashEnabled ? 'text-warning-400 font-sans' : 'text-white font-sans'}>
-              {flashEnabled ? '' : ''}
-            </Text>
+            <FlashlightIcon size={24} color={flashEnabled ? '#D4AF37' : '#FFFFFF'} />
           </Pressable>
         </View>
 

@@ -94,38 +94,44 @@ export function WorkTimeEditor({
         timeSlot?: string;
       };
 
-      // 출근 시간 초기화
+      // 기준 날짜 (workLog.date) — 익일 퇴근 표시(24+) 및 예정시간 파싱에 사용
+      const base = workLog.date ? parseTimestamp(workLog.date) : new Date();
+
+      // 예정시간(timeSlot) 파싱 — 실제 출퇴근 기록이 없을 때 폴백으로 표시
+      // (카드/스케줄/프로필 화면과 동일하게 예정시간을 보여줘 "미정" 불일치 방지)
+      const scheduled =
+        workLogWithCheck.timeSlot && workLog.date
+          ? parseTimeSlotToDate(workLogWithCheck.timeSlot, workLog.date)
+          : { startTime: null, endTime: null };
+
+      // 출근 시간 초기화: 실제 기록 > 예정시간 > 미정
       const checkInSource = workLogWithCheck.checkInTime;
-      if (checkInSource === null || checkInSource === undefined) {
-        // checkInTime이 없으면 미정 상태
-        // timeSlot에서 기본값을 프리필 (미정 해제 시 편의용)
-        if (workLogWithCheck.timeSlot && workLog.date) {
-          const { startTime: parsedStart } = parseTimeSlotToDate(
-            workLogWithCheck.timeSlot,
-            workLog.date
-          );
-          setStartTimeStr(parsedStart ? formatTimeForInput(parsedStart) : '');
-        } else {
-          setStartTimeStr('');
-        }
-        setIsStartTimeUndefined(true);
-      } else {
+      if (checkInSource !== null && checkInSource !== undefined) {
         const start = parseTimestamp(checkInSource);
         setStartTimeStr(formatTimeForInput(start));
         setIsStartTimeUndefined(false);
+      } else if (scheduled.startTime) {
+        // 예정시간이 있으면 채워서 보여줌(미정 아님). 저장 시 실제 출근으로 기록됨.
+        setStartTimeStr(formatTimeForInput(scheduled.startTime));
+        setIsStartTimeUndefined(false);
+      } else {
+        setStartTimeStr('');
+        setIsStartTimeUndefined(true);
       }
 
-      // 퇴근 시간 초기화
+      // 퇴근 시간 초기화: 실제 기록 > 예정시간 > 미정
       const checkOutSource = workLogWithCheck.checkOutTime;
-      if (checkOutSource === null || checkOutSource === undefined) {
-        setEndTimeStr('');
-        setIsEndTimeUndefined(true);
-      } else {
+      if (checkOutSource !== null && checkOutSource !== undefined) {
         const end = parseTimestamp(checkOutSource);
-        // 기준 날짜 (workLog.date)와 비교하여 다음날이면 24+ 형식으로 표시
-        const base = workLog.date ? parseTimestamp(workLog.date) : new Date();
+        // 기준 날짜와 비교하여 다음날이면 24+ 형식으로 표시
         setEndTimeStr(formatEndTimeForInput(end, base));
         setIsEndTimeUndefined(false);
+      } else if (scheduled.endTime) {
+        setEndTimeStr(formatEndTimeForInput(scheduled.endTime, base));
+        setIsEndTimeUndefined(false);
+      } else {
+        setEndTimeStr('');
+        setIsEndTimeUndefined(true);
       }
 
       setReason('');

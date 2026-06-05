@@ -53,6 +53,24 @@ describe('PaywallModal', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it('하트로 결제 가능하면 diamond 힌트여도 부족분이 0이다 (EF-wallet-1 회귀)', () => {
+    // 실제 차감 RPC는 currency_hint 무관하게 하트 우선 + 다이아 합산(8+5=13 ≥ 10).
+    // 따라서 결제력 표시도 합산이어야 하고 부족분은 0 이어야 한다.
+    const { getByText, queryByText } = render(
+      <PaywallModal
+        visible
+        cost={10}
+        currencyHint="diamond"
+        heartBalance={8}
+        diamondBalance={5}
+        onClose={jest.fn()}
+        onCharge={jest.fn()}
+      />
+    );
+    expect(getByText('0💎')).toBeTruthy();
+    expect(queryByText('5💎')).toBeNull();
+  });
+
   it('visible=false면 내용 미렌더', () => {
     const { queryByText } = render(
       <PaywallModal

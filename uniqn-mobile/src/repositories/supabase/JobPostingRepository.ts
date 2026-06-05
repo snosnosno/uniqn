@@ -206,11 +206,17 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
   async getTypeCounts(filters?: Pick<JobPostingFilters, 'status'>): Promise<PostingTypeCounts> {
     try {
       logger.info('공고 타입별 개수 조회', { filters });
-      const status = filters?.status ?? STATUS.JOB_POSTING.ACTIVE;
-      const { data, error } = await supabase
-        .from(TABLE)
-        .select('posting_type, tournament_config')
-        .eq('status', status);
+      let query = supabase.from(TABLE).select('posting_type, tournament_config');
+      // 브라우즈(getList) 기본값과 정합: 명시 status 가 없으면 active + capacity_full 을
+      // 집계한다. active 만 세면 정원이 찬(capacity_full) 공고가 칩 카운트에서 누락되어
+      // 실제로는 브라우즈 가능한 타입이 0건으로 표시된다
+      // (EF-jobsearch-11, pitfall_enum_divergence_read_disappearance — getList 동일 클래스).
+      if (filters?.status) {
+        query = query.eq('status', filters.status);
+      } else {
+        query = query.in('status', [STATUS.JOB_POSTING.ACTIVE, STATUS.JOB_POSTING.CAPACITY_FULL]);
+      }
+      const { data, error } = await query;
       if (error) handleSupabaseError(error, { operation: '공고 타입별 개수 조회', table: TABLE });
 
       const counts: PostingTypeCounts = {

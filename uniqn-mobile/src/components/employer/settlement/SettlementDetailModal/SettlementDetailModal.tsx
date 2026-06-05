@@ -13,6 +13,7 @@ import { SheetModal } from '@/components/ui/SheetModal';
 import { useThemeStore } from '@/stores/themeStore';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { parseTimestamp, calculateSettlementFromWorkLog } from '@/utils/settlement';
+import { parseTimeSlotToDate } from '@/utils/date';
 import { getAllowanceItems } from '@/utils/allowanceUtils';
 
 // Sub-components
@@ -91,6 +92,13 @@ export function SettlementDetailModal({
   const endTime = useMemo(() => (workLog ? parseTimestamp(workLog.checkOutTime) : null), [workLog]);
   const workDate = useMemo(() => (workLog ? parseTimestamp(workLog.date) : null), [workLog]);
 
+  // 예정시간(timeSlot) — 실제 출퇴근 기록이 없을 때 표시용 폴백.
+  // 정산 금액/정산 버튼은 실제시간(hasValidTimes)에만 의존하므로 정산 정확성에는 영향 없음.
+  const scheduledTimes = useMemo(
+    () => parseTimeSlotToDate(workLog?.timeSlot ?? null, workLog?.date ?? ''),
+    [workLog?.timeSlot, workLog?.date]
+  );
+
   const settlement = useMemo(
     () =>
       workLog ? calculateSettlementFromWorkLog(workLog, salaryInfo, allowances, taxSettings) : null,
@@ -155,6 +163,8 @@ export function SettlementDetailModal({
         <WorkTimeSection
           startTime={startTime}
           endTime={endTime}
+          scheduledStartTime={scheduledTimes.startTime}
+          scheduledEndTime={scheduledTimes.endTime}
           hoursWorked={settlement?.hoursWorked}
         />
 

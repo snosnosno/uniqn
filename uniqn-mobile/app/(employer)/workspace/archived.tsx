@@ -77,7 +77,7 @@ export default function ArchivedWorkspacesScreen() {
                 variant="secondary"
                 size="sm"
                 onPress={() => handleRestore(ws.id)}
-                loading={restoreMutation.isPending}
+                loading={restoreMutation.isPending && restoreMutation.variables === ws.id}
               >
                 복원
               </Button>
