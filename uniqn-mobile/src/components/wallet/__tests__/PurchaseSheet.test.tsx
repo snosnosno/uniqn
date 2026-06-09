@@ -15,8 +15,9 @@ jest.mock('@/hooks/usePurchaseDiamonds', () => ({
 }));
 
 const mockRestoreFn = jest.fn();
+let mockRestoring = false;
 jest.mock('@/hooks/useRestorePurchases', () => ({
-  useRestorePurchases: () => ({ restoring: false, restore: mockRestoreFn }),
+  useRestorePurchases: () => ({ restoring: mockRestoring, restore: mockRestoreFn }),
 }));
 jest.mock('@/services/purchases', () => ({
   purchasesService: {
@@ -57,6 +58,7 @@ describe('IAP 심사 footer', () => {
   beforeEach(() => {
     mockRouterPush.mockClear();
     mockRestoreFn.mockClear();
+    mockRestoring = false;
     usePurchaseSheetStore.setState({ isOpen: true });
   });
 
@@ -85,5 +87,13 @@ describe('IAP 심사 footer', () => {
     const { getByText } = render(<PurchaseSheet />);
     fireEvent.press(getByText('구매 복원'));
     expect(mockRestoreFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('복원 진행 중에는 약관 이동·시트 닫기 차단(가드 대칭)', () => {
+    mockRestoring = true;
+    const { getByText } = render(<PurchaseSheet />);
+    fireEvent.press(getByText('이용약관'));
+    expect(mockRouterPush).not.toHaveBeenCalled();
+    expect(usePurchaseSheetStore.getState().isOpen).toBe(true);
   });
 });

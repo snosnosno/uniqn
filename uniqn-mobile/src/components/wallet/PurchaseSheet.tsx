@@ -54,6 +54,8 @@ export function PurchaseSheet() {
   }, [isOpen, available]);
 
   const busy = status === 'purchasing' || status === 'processing';
+  // 결제·복원 어느 쪽이든 진행 중이면 상호 배타 — 동시 빌링 트랜잭션·폴링 baseline 오염 차단
+  const blocked = busy || restoring;
 
   // 결제 완료 시 성공 haptic (impeccable rule 17 — 결정적 순간)
   useEffect(() => {
@@ -79,14 +81,14 @@ export function PurchaseSheet() {
   }, [productsQuery.data]);
 
   const handleClose = () => {
-    if (busy) return; // 폴링 중 닫기 차단(이중결제 방지)
+    if (blocked) return; // 결제 폴링·복원 중 닫기 차단(이중결제·무관 화면 토스트 방지)
     reset();
     close();
   };
 
-  // 약관/개인정보 — 시트를 닫고 해당 화면으로 이동(결제 진행 중엔 차단)
+  // 약관/개인정보 — 시트를 닫고 해당 화면으로 이동(결제·복원 진행 중엔 차단)
   const openLegal = (href: '/(app)/settings/terms' | '/(app)/settings/privacy') => {
-    if (busy) return;
+    if (blocked) return;
     reset();
     close();
     router.push(href);
@@ -166,7 +168,7 @@ export function PurchaseSheet() {
               <Pressable
                 key={product.product_id}
                 testID={`purchase-${product.product_id}`}
-                disabled={busy || !pkg}
+                disabled={blocked || !pkg}
                 onPress={() => pkg && purchase(pkg)}
                 accessibilityRole="button"
                 accessibilityLabel={`다이아 ${total}개${bonus > 0 ? ` (보너스 ${bonus} 포함)` : ''}, ${priceLabel}`}
@@ -223,12 +225,12 @@ export function PurchaseSheet() {
       )}
 
       {/* IAP 심사 footer — 약관·개인정보 링크 + 구매 복원 (App Store 3.1.1) */}
-      <View className="mt-4 flex-row items-center justify-center border-t border-secondary-200 pt-1 dark:border-surface-overlay">
+      <View className="mt-4 flex-row flex-wrap items-center justify-center border-t border-divider pt-1">
         <Pressable
           onPress={() => openLegal('/(app)/settings/terms')}
-          disabled={busy}
-          hitSlop={8}
-          className="min-h-[40px] justify-center px-2"
+          disabled={blocked}
+          hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }}
+          className={`min-h-[40px] justify-center px-2 ${blocked ? 'opacity-40' : 'active:opacity-70'}`}
           accessibilityRole="link"
           accessibilityLabel="이용약관 보기"
         >
@@ -236,12 +238,19 @@ export function PurchaseSheet() {
             이용약관
           </Text>
         </Pressable>
-        <Text className="font-sans text-xs text-secondary-300 dark:text-secondary-600">·</Text>
+        <Text
+          accessible={false}
+          importantForAccessibility="no"
+          accessibilityElementsHidden
+          className="font-sans text-xs text-secondary-300 dark:text-secondary-600"
+        >
+          ·
+        </Text>
         <Pressable
           onPress={() => openLegal('/(app)/settings/privacy')}
-          disabled={busy}
-          hitSlop={8}
-          className="min-h-[40px] justify-center px-2"
+          disabled={blocked}
+          hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }}
+          className={`min-h-[40px] justify-center px-2 ${blocked ? 'opacity-40' : 'active:opacity-70'}`}
           accessibilityRole="link"
           accessibilityLabel="개인정보처리방침 보기"
         >
@@ -251,19 +260,30 @@ export function PurchaseSheet() {
         </Pressable>
         {available ? (
           <>
-            <Text className="font-sans text-xs text-secondary-300 dark:text-secondary-600">·</Text>
+            <Text
+              accessible={false}
+              importantForAccessibility="no"
+              accessibilityElementsHidden
+              className="font-sans text-xs text-secondary-300 dark:text-secondary-600"
+            >
+              ·
+            </Text>
             <Pressable
               onPress={() => void restore()}
-              disabled={busy || restoring}
-              hitSlop={8}
-              className="min-h-[40px] flex-row items-center justify-center gap-1 px-2"
+              disabled={blocked}
+              hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }}
+              className={`min-h-[40px] min-w-[68px] items-center justify-center px-2 ${busy ? 'opacity-40' : 'active:opacity-70'}`}
               accessibilityRole="button"
               accessibilityLabel="구매 복원"
+              accessibilityState={{ disabled: blocked, busy: restoring }}
             >
-              {restoring ? <ActivityIndicator size="small" /> : null}
-              <Text className="font-sans text-xs text-primary-600 dark:text-primary-400">
-                {restoring ? '복원 중…' : '구매 복원'}
-              </Text>
+              {restoring ? (
+                <ActivityIndicator size="small" />
+              ) : (
+                <Text className="font-sans-medium text-xs text-secondary-600 dark:text-secondary-300">
+                  구매 복원
+                </Text>
+              )}
             </Pressable>
           </>
         ) : null}

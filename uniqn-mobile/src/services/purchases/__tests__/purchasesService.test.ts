@@ -35,6 +35,7 @@ beforeEach(() => {
   mockConfigure.mockClear();
   mockLogIn.mockClear();
   mockLogOut.mockClear();
+  mockRestorePurchases.mockClear();
   purchasesService.__resetForTest?.();
 });
 
@@ -90,5 +91,28 @@ describe('purchasesService (native)', () => {
   it('restorePurchases 실패는 그대로 throw(호출부가 토스트 처리)', async () => {
     mockRestorePurchases.mockRejectedValue(new Error('network'));
     await expect(purchasesService.restorePurchases()).rejects.toThrow('network');
+  });
+
+  it('미configure 상태에서 restorePurchases(uid)는 configure 후 restore', async () => {
+    mockRestorePurchases.mockResolvedValue({});
+    await purchasesService.restorePurchases(UID);
+    expect(mockConfigure).toHaveBeenCalledWith(expect.objectContaining({ appUserID: UID }));
+    expect(mockRestorePurchases).toHaveBeenCalledTimes(1);
+  });
+
+  it('다른 uid로 configure된 상태에서 restorePurchases(uid)는 logIn으로 정합 후 restore', async () => {
+    await purchasesService.configure('22222222-2222-4222-8222-222222222222');
+    mockRestorePurchases.mockResolvedValue({});
+    await purchasesService.restorePurchases(UID);
+    expect(mockLogIn).toHaveBeenCalledWith(UID);
+    expect(mockRestorePurchases).toHaveBeenCalledTimes(1);
+  });
+
+  it('configure 실패로 uid 정합 미충족이면 restore 호출 없이 PURCHASES_UNAVAILABLE throw', async () => {
+    mockConfigure.mockImplementationOnce(() => {
+      throw new Error('rc down');
+    });
+    await expect(purchasesService.restorePurchases(UID)).rejects.toThrow('PURCHASES_UNAVAILABLE');
+    expect(mockRestorePurchases).not.toHaveBeenCalled();
   });
 });

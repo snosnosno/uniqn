@@ -45,6 +45,8 @@ describe('useRestorePurchases', () => {
       await result.current.restore();
     });
     expect(mockRestore).toHaveBeenCalledTimes(1);
+    // RC 사용자 정합 보장을 위해 현재 auth uid를 전달해야 함
+    expect(mockRestore).toHaveBeenCalledWith('11111111-1111-4111-8111-111111111111');
     expect(mockInvalidate).toHaveBeenCalled();
     expect(mockToastSuccess).toHaveBeenCalled();
     expect(mockToastError).not.toHaveBeenCalled();

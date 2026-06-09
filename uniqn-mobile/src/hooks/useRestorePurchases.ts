@@ -23,7 +23,8 @@ export function useRestorePurchases() {
     inFlight.current = true;
     setRestoring(true);
     try {
-      await purchasesService.restorePurchases();
+      // uid 전달 — RC 사용자 정합 보장(stale/anonymous 영수증 동기화 차단)
+      await purchasesService.restorePurchases(uid);
       // 미반영 영수증이 웹훅으로 적립될 수 있어 잔액·내역 캐시 무효화
       queryClient.invalidateQueries({ queryKey: queryKeys.wallet.summary(uid) });
       queryClient.invalidateQueries({ queryKey: queryKeys.wallet.ledger(uid) });

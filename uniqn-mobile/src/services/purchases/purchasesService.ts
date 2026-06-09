@@ -92,10 +92,20 @@ export const purchasesService = {
     }
   },
 
-  /** 스토어 영수증 복원(재동기화) — App Store 심사 필수 동선. 실패는 throw(호출부 토스트). */
-  async restorePurchases(): Promise<void> {
+  /** 스토어 영수증 복원(재동기화) — App Store 심사 필수 동선. 실패는 throw(호출부 토스트).
+   *  expectedUid 전달 시 RC 사용자 정합 보장(미정합이면 configure 재시도, 그래도 불가면 throw)
+   *  — stale/anonymous app_user_id로 영수증이 동기화되는 것을 차단. */
+  async restorePurchases(expectedUid?: string): Promise<void> {
     if (!this.isAvailable()) {
       throw new Error('PURCHASES_UNAVAILABLE');
+    }
+    if (expectedUid !== undefined) {
+      if (!configured || currentUid !== expectedUid) {
+        await this.configure(expectedUid);
+      }
+      if (!configured || currentUid !== expectedUid) {
+        throw new Error('PURCHASES_UNAVAILABLE');
+      }
     }
     await Purchases.restorePurchases();
   },
