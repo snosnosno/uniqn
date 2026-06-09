@@ -47,6 +47,7 @@ export function usePurchaseDiamonds() {
           fetchBalance: async () => (await getWalletSummary()).diamond_balance,
         });
         queryClient.invalidateQueries({ queryKey: queryKeys.wallet.summary(uid) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.wallet.ledger(uid) });
         setStatus(poll.credited ? 'done' : 'timeout');
       } catch (error) {
         logger.error('purchaseDiamonds.failed', error as Error);

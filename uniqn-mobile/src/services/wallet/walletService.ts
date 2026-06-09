@@ -8,7 +8,7 @@
 
 import { WalletRepository } from '@/repositories/supabase/WalletRepository';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
-import type { WalletSummary, PostingCost } from '@/types/wallet';
+import type { WalletSummary, PostingCost, GetWalletLedgerResponse } from '@/types/wallet';
 
 export type ClaimAttendanceResult =
   | { status: 'claimed'; amount: number; expiresAt: string }
@@ -55,6 +55,23 @@ export async function getPostingCost(postingType: string, ownerId: string): Prom
   } catch (error) {
     throw handleServiceError(error, {
       operation: '공고 비용 조회',
+      component: 'walletService',
+    });
+  }
+}
+
+/**
+ * 본인 지갑 거래내역 페이지 조회 — 최신순.
+ */
+export async function getWalletLedger(
+  offset?: number,
+  limit?: number
+): Promise<GetWalletLedgerResponse> {
+  try {
+    return await WalletRepository.getWalletLedger(offset, limit);
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '거래내역 조회',
       component: 'walletService',
     });
   }

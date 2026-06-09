@@ -117,6 +117,7 @@ const RefundSuccessSchema = z.object({
   success: z.literal(true),
   idempotent: z.boolean().optional(),
   refunded_diamonds: z.number().int().nonnegative().optional(),
+  refunded_hearts: z.number().int().nonnegative().optional(),
   refund_rate: z.number().optional(),
   hours_elapsed: z.number().optional(),
   original_diamond: z.number().int().optional(),
@@ -133,3 +134,50 @@ export const RefundResultSchema = z.discriminatedUnion('success', [
   RefundFailureSchema,
 ]);
 export type RefundResult = z.infer<typeof RefundResultSchema>;
+
+// ============================================================================
+// cancel_job_posting_with_refund_atomically RPC 응답 (M3 — 취소+환불 원자)
+// ============================================================================
+
+const CancelSuccessSchema = z.object({
+  success: z.literal(true),
+  idempotent: z.boolean().optional(),
+  // 내부 환불 결과(success/failure 양 형태). 클라는 상세를 강결합하지 않음 → unknown.
+  refund: z.unknown().optional(),
+});
+
+const CancelFailureSchema = z.object({
+  success: z.literal(false),
+  error: z.string(),
+});
+
+export const CancelPostingResultSchema = z.discriminatedUnion('success', [
+  CancelSuccessSchema,
+  CancelFailureSchema,
+]);
+export type CancelPostingResult = z.infer<typeof CancelPostingResultSchema>;
+
+// ============================================================================
+// wallet_ledger row (거래내역 화면용 — 본인 행만 RLS로 노출)
+//   read-증발 방어: 표시 필드에 .catch() 적용 — RPC/스키마 drift 시 한 행 fallback,
+//   잔액 전체 throw 회피([[pitfall_enum_divergence_read_disappearance]] 클래스).
+// ============================================================================
+
+export const WalletLedgerRowSchema = z.object({
+  id: z.string(),
+  currency_type: z.enum(['heart', 'diamond']).catch('diamond'),
+  delta: z.number().catch(0),
+  // 비문자열 drift 시 빈 문자열 → walletReasonLabel이 '기타'로 강등(오라벨 방지)
+  reason: z.string().catch(''),
+  ref_type: z.string().nullable().catch(null),
+  balance_after_heart: z.number().catch(0),
+  balance_after_diamond: z.number().catch(0),
+  created_at: z.string(),
+});
+export type WalletLedgerRow = z.infer<typeof WalletLedgerRowSchema>;
+
+/** Repository가 구성하는 페이지 응답(클라 camelCase). */
+export type GetWalletLedgerResponse = {
+  items: WalletLedgerRow[];
+  hasMore: boolean;
+};
