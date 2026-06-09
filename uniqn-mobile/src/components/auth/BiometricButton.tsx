@@ -6,10 +6,11 @@
  */
 
 import React, { memo } from 'react';
-import { View, Text, Pressable, ActivityIndicator, Platform } from 'react-native';
+import { Text, Pressable, ActivityIndicator, Platform } from 'react-native';
 import { useBiometricAuth } from '@/hooks';
 import { useThemeStore } from '@/stores/themeStore';
 import { PRIMARY_COLORS } from '@/constants/colors';
+import { FingerprintIcon, ScanFaceIcon } from '@/components/icons';
 
 // ============================================================================
 // Types
@@ -29,46 +30,6 @@ interface BiometricButtonProps {
   /** 추가 클래스 */
   className?: string;
 }
-
-// ============================================================================
-// Icons
-// ============================================================================
-
-/**
- * Face ID 아이콘
- */
-const FaceIdIcon = ({ size = 24, color = '#000' }: { size?: number; color?: string }) => (
-  <View
-    style={{
-      width: size,
-      height: size,
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}
-  >
-    <Text className="font-sans" style={{ fontSize: size * 0.8, color }}>
-      {''}
-    </Text>
-  </View>
-);
-
-/**
- * 지문 아이콘
- */
-const FingerprintIcon = ({ size = 24, color = '#000' }: { size?: number; color?: string }) => (
-  <View
-    style={{
-      width: size,
-      height: size,
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}
-  >
-    <Text className="font-sans" style={{ fontSize: size * 0.8, color }}>
-      {''}
-    </Text>
-  </View>
-);
 
 // ============================================================================
 // Component
@@ -101,7 +62,7 @@ export const BiometricButton = memo(function BiometricButton({
 
   // 생체 인증 타입에 따른 아이콘 선택
   const isFaceId = status?.biometricTypes.includes('facial');
-  const iconSize = size === 'sm' ? 18 : size === 'lg' ? 28 : 22;
+  const iconSize = size === 'sm' ? 18 : size === 'lg' ? 28 : 20;
 
   // 버튼 크기 스타일
   const sizeStyles = {
@@ -112,7 +73,7 @@ export const BiometricButton = memo(function BiometricButton({
 
   // 버튼 변형 스타일
   const variantStyles = {
-    default: 'bg-primary-600 dark:bg-primary-700',
+    default: 'bg-primary-600 active:bg-primary-700 dark:bg-primary-500 dark:active:bg-primary-600',
     outline: 'bg-transparent border border-secondary-300 dark:border-surface-overlay',
     ghost: 'bg-transparent',
   };
@@ -144,7 +105,7 @@ export const BiometricButton = memo(function BiometricButton({
         flex-row items-center justify-center rounded-lg
         ${sizeStyles[size]}
         ${variantStyles[variant]}
-        ${disabled || isLoading ? 'opacity-50' : 'active:opacity-80'}
+        ${disabled || isLoading ? 'opacity-50' : variant === 'default' ? '' : 'active:opacity-80'}
         ${className}
       `}
     >
@@ -153,7 +114,10 @@ export const BiometricButton = memo(function BiometricButton({
       ) : (
         <>
           {isFaceId ? (
-            <FaceIdIcon size={iconSize} color={variant === 'default' ? '#09090B' : primaryColor} />
+            <ScanFaceIcon
+              size={iconSize}
+              color={variant === 'default' ? '#09090B' : primaryColor}
+            />
           ) : (
             <FingerprintIcon
               size={iconSize}

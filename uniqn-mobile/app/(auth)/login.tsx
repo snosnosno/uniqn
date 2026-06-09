@@ -226,7 +226,7 @@ export default function LoginScreen() {
       : undefined;
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-surface-dark">
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
@@ -241,9 +241,7 @@ export default function LoginScreen() {
             <Text className="text-4xl font-sans-bold text-primary-600 dark:text-primary-400">
               UNIQN
             </Text>
-            <Text className="mt-2 text-secondary-500 dark:text-secondary-400 font-sans">
-              안전한 스태프 채용 플랫폼
-            </Text>
+            <Text className="mt-2 text-content-secondary font-sans">안전한 스태프 채용 플랫폼</Text>
           </View>
 
           {shouldShowBiometric ? (
@@ -252,11 +250,11 @@ export default function LoginScreen() {
                 onPress={handleBiometricLogin}
                 isLoading={isBiometricAuthenticating}
                 disabled={isLoading || isSocialLoading || authActionDisabled}
-                variant="default"
+                variant="outline"
                 size="lg"
                 className="w-full"
               />
-              <Text className="mt-2 text-center text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+              <Text className="mt-2 text-center text-sm text-content-secondary font-sans">
                 {biometricTypeName}으로 빠르게 로그인하세요
               </Text>
               <Divider label="또는 이메일로" spacing="md" />

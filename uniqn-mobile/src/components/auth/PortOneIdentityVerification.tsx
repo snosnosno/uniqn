@@ -242,16 +242,16 @@ export function PortOneIdentityVerification({
   return (
     <View className="w-full">
       {verifiedIdentity ? (
-        <View className="rounded-md border border-success-200 bg-success-50 p-4 dark:border-success-900/40 dark:bg-success-900/10">
+        <View className="rounded-md border border-success-600/20 bg-success-50 p-4 dark:border-success-500/20 dark:bg-success-100">
           <View className="mb-3 flex-row items-center">
             <CheckCircleIcon size={20} color={STATUS_COLORS.success} />
-            <Text className="ml-2 font-sans-semibold text-success-700 dark:text-success-400">
+            <Text className="ml-2 font-sans-semibold text-success-700 dark:text-success-500">
               이니시스 본인인증 완료
             </Text>
           </View>
 
           {/* B10: Truncation 정책 — 이름은 numberOfLines=1 tail, 생년월일/성별/번호는 안전망 (overflow 방지) */}
-          <View className="gap-2 rounded-lg bg-white p-3 dark:bg-surface">
+          <View className="gap-2">
             <View className="flex-row justify-between gap-3">
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 이름
@@ -264,6 +264,7 @@ export function PortOneIdentityVerification({
                 {verifiedIdentity.name}
               </Text>
             </View>
+            <View className="h-px bg-divider" />
             <View className="flex-row justify-between gap-3">
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 생년월일
@@ -279,18 +280,22 @@ export function PortOneIdentityVerification({
                 "확인 필요" 표시로 사용자 혼란을 주지 않도록 응답에 있을 때만 렌더한다.
                 가입 후 마이페이지/프로필 화면에서 사용자가 직접 선택. */}
             {verifiedIdentity.gender && (
-              <View className="flex-row justify-between gap-3">
-                <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-                  성별
-                </Text>
-                <Text
-                  className="font-sans-medium text-content-primary dark:text-off-white"
-                  numberOfLines={1}
-                >
-                  {formatGenderLabel(verifiedIdentity.gender)}
-                </Text>
-              </View>
+              <>
+                <View className="h-px bg-divider" />
+                <View className="flex-row justify-between gap-3">
+                  <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                    성별
+                  </Text>
+                  <Text
+                    className="font-sans-medium text-content-primary dark:text-off-white"
+                    numberOfLines={1}
+                  >
+                    {formatGenderLabel(verifiedIdentity.gender)}
+                  </Text>
+                </View>
+              </>
             )}
+            <View className="h-px bg-divider" />
             <View className="flex-row justify-between gap-3">
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 휴대폰 번호
@@ -316,7 +321,7 @@ export function PortOneIdentityVerification({
         </View>
       ) : (
         // B9: 빈 상태 = 온보딩 — (1) 인지(헤더) (2) 가치(소요시간·인증수단·프라이버시) (3) 행동(CTA)
-        <View className="rounded-md border border-secondary-200 bg-surface-page dark:bg-surface p-5 dark:border-surface-overlay dark:bg-surface-elevated gap-4">
+        <View className="rounded-md border border-secondary-200 bg-surface-page p-5 dark:border-surface-overlay dark:bg-surface-elevated gap-4">
           <View className="flex-row items-center gap-2">
             <ShieldCheckIcon size={20} color="#2563EB" />
             <Text className="font-sans-semibold text-content-primary dark:text-off-white">
@@ -325,7 +330,7 @@ export function PortOneIdentityVerification({
           </View>
 
           <View className="flex-row items-center gap-2">
-            <ClockIcon size={16} color="#6B7280" />
+            <ClockIcon size={16} />
             <Text className="text-sm text-content-muted dark:text-secondary-300 font-sans">
               약 30초~1분이면 끝나요
             </Text>
@@ -339,7 +344,7 @@ export function PortOneIdentityVerification({
               {['PASS', '토스', '카카오', '네이버', '신한', 'KB'].map((label) => (
                 <View
                   key={label}
-                  className="px-3 py-1 rounded-full bg-secondary-100 dark:bg-surface"
+                  className="px-3 py-1 rounded-md bg-secondary-100 dark:bg-surface-overlay"
                 >
                   <Text className="text-xs text-content-secondary dark:text-secondary-300 font-sans-medium">
                     {label}
@@ -350,7 +355,7 @@ export function PortOneIdentityVerification({
           </View>
 
           <View className="flex-row items-start gap-2 rounded-lg bg-secondary-50 dark:bg-surface p-3">
-            <LockIcon size={14} color="#6B7280" />
+            <LockIcon size={14} />
             <Text className="flex-1 text-xs leading-4 text-content-muted dark:text-secondary-400 font-sans">
               인증 정보(이름, 생년월일, 성별, 휴대폰)는 본인 확인 목적으로만 사용되며 암호화되어
               안전하게 처리됩니다.

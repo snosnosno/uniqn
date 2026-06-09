@@ -47,10 +47,15 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-surface-dark">
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface">
       {/* 헤더 */}
       <View className="flex-row items-center justify-between px-4 py-2 border-b border-divider">
-        <Pressable onPress={handleBack} className="p-2 -ml-2" accessibilityLabel="뒤로가기">
+        <Pressable
+          onPress={handleBack}
+          hitSlop={10}
+          className="p-2 -ml-2"
+          accessibilityLabel="뒤로가기"
+        >
           <ChevronLeftIcon size={24} />
         </Pressable>
         <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white">

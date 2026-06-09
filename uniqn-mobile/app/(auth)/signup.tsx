@@ -302,12 +302,13 @@ export default function SignUpScreen() {
       : handleSignUp;
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-surface-dark">
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface">
       {/* 헤더 */}
       <View className="flex-row items-center justify-between px-4 py-2 border-b border-divider">
         <Pressable
           onPress={handleBack}
           disabled={isLoading}
+          hitSlop={10}
           className={`p-2 -ml-2 ${isLoading ? 'opacity-40' : ''}`}
           accessibilityLabel="뒤로가기"
           accessibilityState={{ disabled: isLoading }}

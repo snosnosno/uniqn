@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { View, Text } from 'react-native';
+import { CheckIcon } from '@/components/icons';
 
 // ============================================================================
 // Types
@@ -59,11 +60,11 @@ export function StepIndicator({ currentStep, steps, showLabels = true }: StepInd
                     w-8 h-8 rounded-sm items-center justify-center
                     ${isCompleted ? 'bg-success-500 dark:bg-success-600' : ''}
                     ${isActive ? 'bg-primary-600 dark:bg-primary-500' : ''}
-                    ${isUpcoming ? 'bg-secondary-200 dark:bg-surface' : ''}
+                    ${isUpcoming ? 'bg-secondary-200 dark:bg-surface-elevated' : ''}
                   `}
                 >
                   {isCompleted ? (
-                    <Text className="text-white text-sm font-sans-bold">{''}</Text>
+                    <CheckIcon size={14} color="#FFFFFF" />
                   ) : (
                     <Text
                       className={`text-sm font-sans-bold ${
@@ -101,7 +102,7 @@ export function StepIndicator({ currentStep, steps, showLabels = true }: StepInd
                     ${
                       stepNumber < currentStep
                         ? 'bg-success-500 dark:bg-success-600'
-                        : 'bg-secondary-200 dark:bg-surface'
+                        : 'bg-secondary-200 dark:bg-surface-elevated'
                     }
                   `}
                 />

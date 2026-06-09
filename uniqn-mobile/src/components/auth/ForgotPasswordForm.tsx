@@ -5,12 +5,13 @@
  */
 
 import React, { useState } from 'react';
-import { View, Text, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'expo-router';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { MailIcon } from '@/components/icons';
 import { resetPasswordSchema, type ResetPasswordFormData } from '@/schemas';
 
 // ============================================================================
@@ -55,7 +56,7 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
     return (
       <View className="w-full items-center">
         <View className="w-16 h-16 rounded-sm bg-success-100 dark:bg-success-900 items-center justify-center mb-4">
-          <Text className="text-3xl font-sans">{''}</Text>
+          <MailIcon size={32} color="#16A34A" />
         </View>
 
         <Text className="text-lg font-display text-content-primary dark:text-off-white text-center mb-2">
@@ -73,7 +74,7 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
           </Button>
 
           <Link href="/login" asChild>
-            <Pressable className="py-3">
+            <Pressable className="py-3 min-h-[44px] justify-center rounded-md active:opacity-80">
               <Text className="text-center text-primary-600 dark:text-primary-400 font-sans-medium">
                 로그인으로 돌아가기
               </Text>
@@ -119,25 +120,21 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
 
       {/* 제출 버튼 */}
       <View className="mt-6">
-        <Button onPress={handleSubmit(handleFormSubmit)} disabled={loading} fullWidth>
-          {loading ? (
-            <View className="flex-row items-center justify-center">
-              <ActivityIndicator color="white" size="small" />
-              <Text className="ml-2 text-surface-dark font-sans-medium">발송 중...</Text>
-            </View>
-          ) : (
-            <Text className="text-surface-dark font-sans-medium">재설정 링크 발송</Text>
-          )}
+        <Button onPress={handleSubmit(handleFormSubmit)} loading={loading} fullWidth>
+          재설정 링크 발송
         </Button>
       </View>
 
       {/* 로그인 링크 */}
-      <View className="mt-4 flex-row justify-center">
+      <View className="mt-4 flex-row items-center justify-center">
         <Text className="text-content-muted dark:text-secondary-400 font-sans">
           비밀번호가 기억나셨나요?{' '}
         </Text>
         <Link href="/login" asChild>
-          <Pressable>
+          <Pressable
+            hitSlop={8}
+            className="min-h-[44px] justify-center px-2 -mx-2 active:opacity-80"
+          >
             <Text className="font-sans-medium text-primary-600 dark:text-primary-400">로그인</Text>
           </Pressable>
         </Link>

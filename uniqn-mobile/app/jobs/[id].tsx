@@ -57,7 +57,7 @@ export default function PublicJobDetailAliasRoute() {
       accessibilityLabel="공고 공유하기"
       accessibilityRole="button"
     >
-      <ShareIcon size={22} color={secondaryTextColor} />
+      <ShareIcon size={24} color={secondaryTextColor} />
     </Pressable>
   ) : null;
 
@@ -118,10 +118,16 @@ export default function PublicJobDetailAliasRoute() {
           rightAction={shareAction}
         />
         <PostingSurfaceState
-          mode="error"
+          mode="empty"
           scope="detail"
-          message="고정 공고는 공개 상세 화면에서 아직 지원할 수 없습니다."
-          onRetry={refresh}
+          title="앱에서 볼 수 있는 공고예요"
+          message="이 공고는 UNIQN 앱에서만 자세히 보고 지원할 수 있어요."
+          actionLabel="앱에서 공고 보기"
+          onAction={() =>
+            openInstallPrompt('job-detail-cta', {
+              loginRedirect: `/(app)/jobs/${resolvedId}`,
+            })
+          }
         />
       </SafeAreaView>
     );
@@ -166,7 +172,7 @@ export default function PublicJobDetailAliasRoute() {
           {job.status !== STATUS.JOB_POSTING.ACTIVE ? (
             <Button disabled fullWidth>
               {job.status === STATUS.JOB_POSTING.CAPACITY_FULL
-                ? '정원이 마감되었어요'
+                ? '정원이 마감되었습니다'
                 : '마감된 공고입니다'}
             </Button>
           ) : (

@@ -4,6 +4,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SheetModal } from '@/components/ui/SheetModal';
 import { Button } from '@/components/ui/Button';
+import { CheckIcon } from '@/components/icons';
 import { signUpTermsSchema, type SignUpTermsData } from '@/schemas';
 import { logger } from '@/utils/logger';
 
@@ -92,7 +93,7 @@ function Checkbox({
       <Pressable
         onPress={() => !disabled && onChange(!checked)}
         disabled={disabled}
-        className="flex-row flex-1 items-center"
+        className="flex-row flex-1 items-center rounded-md active:bg-secondary-100 dark:active:bg-surface-hover"
         accessibilityRole="checkbox"
         accessibilityState={{ checked, disabled: !!disabled }}
         accessibilityLabel={`${required ? '필수' : '선택'} ${label}`}
@@ -108,7 +109,7 @@ function Checkbox({
             ${disabled ? 'opacity-50' : ''}
           `}
         >
-          {checked && <Text className="text-sm font-sans-bold text-surface-dark">{''}</Text>}
+          {checked && <CheckIcon size={16} color="#07070A" />}
         </View>
         <View className="flex-row items-center">
           {required ? (
@@ -121,7 +122,14 @@ function Checkbox({
       </Pressable>
 
       {onViewContent ? (
-        <Pressable onPress={onViewContent} className="px-2" testID={viewContentTestID}>
+        <Pressable
+          onPress={onViewContent}
+          className="rounded-sm px-2 py-3 -my-3 min-h-[44px] justify-center active:bg-secondary-100 dark:active:bg-surface-hover"
+          hitSlop={{ left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel={`${label} 내용 보기`}
+          testID={viewContentTestID}
+        >
           <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">보기</Text>
         </Pressable>
       ) : null}
@@ -203,7 +211,8 @@ export function SignupStepTerms({ onNext, initialData, isLoading = false }: Sign
         accessibilityState={{ checked: allChecked, disabled: isLoading }}
         accessibilityLabel="전체 동의하기"
         className={`
-          flex-row items-center rounded-lg bg-surface-page dark:bg-surface p-4 dark:bg-surface
+          flex-row items-center rounded-lg bg-surface-page dark:bg-surface-elevated p-4
+          active:bg-secondary-100 dark:active:bg-surface-hover
           ${isLoading ? 'opacity-50' : ''}
         `}
       >
@@ -217,14 +226,14 @@ export function SignupStepTerms({ onNext, initialData, isLoading = false }: Sign
             }
           `}
         >
-          {allChecked && <Text className="text-sm font-sans-bold text-surface-dark">{''}</Text>}
+          {allChecked && <CheckIcon size={16} color="#07070A" />}
         </View>
         <Text className="font-sans-semibold text-content-primary dark:text-off-white">
           전체 동의하기
         </Text>
       </Pressable>
 
-      <View className="h-px bg-secondary-200 dark:bg-surface" />
+      <View className="h-px bg-divider" />
 
       <View className="px-2">
         {TERMS.map((term) => (

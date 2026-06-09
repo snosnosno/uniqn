@@ -36,11 +36,11 @@ export function StackHeader({
             className="mr-1"
           />
         ) : null}
-        <View className="flex-row items-center">
+        <View className="min-w-0 flex-shrink flex-row items-center">
           <Text className="text-lg font-display-semibold" style={{ color: headerTintColor }}>
             {title}
           </Text>
-          {titleSuffix ? <View className="ml-1">{titleSuffix}</View> : null}
+          {titleSuffix ? <View className="ml-1 min-w-0 flex-shrink">{titleSuffix}</View> : null}
         </View>
       </View>
 

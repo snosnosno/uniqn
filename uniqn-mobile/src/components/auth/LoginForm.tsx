@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { View, Text, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'expo-router';
@@ -117,8 +117,11 @@ export function LoginForm({
       {/* 비밀번호 찾기 링크 */}
       <View className="items-end">
         <Link href="/forgot-password" asChild>
-          <Pressable>
-            <Text className="text-sm text-primary-600 dark:text-primary-400 font-sans">
+          <Pressable
+            hitSlop={8}
+            className="min-h-[44px] justify-center px-2 -mr-2 active:opacity-70"
+          >
+            <Text className="text-sm text-secondary-700 dark:text-secondary-300 underline font-sans">
               비밀번호를 잊으셨나요?
             </Text>
           </Pressable>
@@ -127,26 +130,24 @@ export function LoginForm({
 
       {/* 로그인 버튼 */}
       <View className="mt-6">
-        <Button onPress={handleSubmit(onSubmit)} disabled={isDisabled} className="w-full">
-          {loading ? (
-            <View className="flex-row items-center justify-center">
-              <ActivityIndicator color="white" size="small" />
-              <Text className="ml-2 text-surface-dark font-sans-medium">로그인 중...</Text>
-            </View>
-          ) : (
-            <Text className="text-surface-dark font-sans-medium">로그인</Text>
-          )}
+        <Button
+          onPress={handleSubmit(onSubmit)}
+          loading={loading}
+          disabled={isDisabled}
+          className="w-full"
+        >
+          로그인
         </Button>
       </View>
 
       {/* 회원가입 링크 */}
-      <View className="mt-4 flex-row justify-center">
+      <View className="mt-4 flex-row items-center justify-center">
         <Text className="text-content-muted dark:text-secondary-400 font-sans">
           계정이 없으신가요?{' '}
         </Text>
         <Link href="/signup" asChild>
-          <Pressable>
-            <Text className="font-sans-medium text-primary-600 dark:text-primary-400">
+          <Pressable hitSlop={8} className="min-h-[44px] justify-center px-2 active:opacity-70">
+            <Text className="font-sans-medium text-secondary-700 dark:text-secondary-300 underline">
               회원가입
             </Text>
           </Pressable>

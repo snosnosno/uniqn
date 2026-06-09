@@ -124,20 +124,21 @@ describe('LoginForm', () => {
   });
 
   it('should show loading state when isLoading is true', () => {
-    const { getByText } = render(
+    const { queryByText, getByLabelText } = render(
       <LoginForm {...createDefaultProps(mockOnSubmit)} isLoading={true} />
     );
 
-    expect(getByText('로그인 중...')).toBeTruthy();
+    // Button loading prop: 라벨 텍스트 대신 스피너 렌더 + busy 상태 노출
+    expect(queryByText('로그인')).toBeNull();
+    expect(getByLabelText('로그인').props.accessibilityState.busy).toBe(true);
   });
 
   it('should disable button when loading', () => {
-    const { getByText } = render(
+    const { getByLabelText } = render(
       <LoginForm {...createDefaultProps(mockOnSubmit)} isLoading={true} />
     );
 
-    // Button should show loading text
-    expect(getByText('로그인 중...')).toBeTruthy();
+    expect(getByLabelText('로그인').props.accessibilityState.disabled).toBe(true);
   });
 
   it('should call onAutoLoginChange when checkbox is pressed', () => {

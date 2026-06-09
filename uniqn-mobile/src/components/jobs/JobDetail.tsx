@@ -9,7 +9,7 @@ import {
   MapPinIcon,
   PhoneIcon,
 } from '@/components/icons';
-import { SECONDARY_PALETTE } from '@/constants/colors';
+import { SECONDARY_PALETTE, TEXT_CLASSES } from '@/constants/colors';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { extractPostingFilledSubmap, usePostingFilledCounts } from '@/hooks/usePostingFilledCounts';
 import { buildPostingFacts, projectPostingSurface } from '@/domains/job-posting';
@@ -99,12 +99,12 @@ export function JobDetail({ job }: JobDetailProps) {
   return (
     <View className="bg-white dark:bg-surface">
       {/* Hero */}
-      <View className="bg-surface-elevated dark:bg-surface-elevated px-4 py-4 border-b border-divider">
+      <View className="bg-surface-page dark:bg-surface-elevated px-4 py-4 border-b border-divider">
         <View className="flex-row flex-wrap items-center gap-1 mb-2">
           {showPostingTypeChip && postingTypeLabel ? (
-            <Badge variant="chip">{postingTypeLabel}</Badge>
+            <Badge variant="secondary">{postingTypeLabel}</Badge>
           ) : null}
-          {showUrgentChip ? <Badge variant="chip">긴급</Badge> : null}
+          {showUrgentChip ? <Badge preset="urgent" /> : null}
           <PostingStatusBadge status={detail.status} size="sm" />
         </View>
 
@@ -116,7 +116,7 @@ export function JobDetail({ job }: JobDetailProps) {
         </Text>
 
         {detail.locationLabel ? (
-          <Text className="text-primary-500 text-xs mt-1 font-sans-semibold">
+          <Text className="text-content-secondary text-xs mt-1 font-sans-semibold">
             ◦ {detail.locationLabel}
           </Text>
         ) : null}
@@ -181,11 +181,20 @@ export function JobDetail({ job }: JobDetailProps) {
         </View>
 
         {detail.contactPhone ? (
-          <Pressable onPress={handleCall}>
+          <Pressable
+            onPress={handleCall}
+            accessibilityRole="button"
+            accessibilityLabel={`${detail.contactPhone}로 전화 걸기`}
+            className="active:bg-secondary-50 dark:active:bg-secondary-800"
+          >
             <InfoRow
               icon={<PhoneIcon size={18} color={SECONDARY_PALETTE[400]} />}
               label="연락처"
-              value={detail.contactPhone}
+              value={
+                <Text className={`text-sm font-sans ${TEXT_CLASSES.link}`}>
+                  {detail.contactPhone}
+                </Text>
+              }
             />
           </Pressable>
         ) : null}
