@@ -118,8 +118,9 @@ export function useCreateJobPosting() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobPostings.all,
       });
-      // 6A: 차감 반영 — 지갑 요약 동기 갱신(단일 queryKey)
+      // 6A: 차감 반영 — 지갑 요약 + 거래내역 동기 갱신
       queryClient.invalidateQueries({ queryKey: queryKeys.wallet.summary(user?.uid) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.wallet.ledger(user?.uid) });
     },
     onError: (error, variables, ctx) => {
       // 잔액부족은 화면(create.tsx)의 PaywallModal이 처리 → 토스트 억제
@@ -199,8 +200,9 @@ export function useDeleteJobPosting() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobPostings.all,
       });
-      // M4: 취소 환불 반영 — 지갑 요약 동기 갱신(생성 경로와 대칭, 환불 후 잔액 stale 방지)
+      // M4: 취소 환불 반영 — 지갑 요약 + 거래내역 동기 갱신(생성 경로와 대칭, 환불 후 stale 방지)
       queryClient.invalidateQueries({ queryKey: queryKeys.wallet.summary(user?.uid) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.wallet.ledger(user?.uid) });
     },
     onError: createMutationErrorHandler('공고 삭제', addToast, {
       onRollback: (ctx) => {

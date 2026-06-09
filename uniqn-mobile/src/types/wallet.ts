@@ -167,7 +167,8 @@ export const WalletLedgerRowSchema = z.object({
   id: z.string(),
   currency_type: z.enum(['heart', 'diamond']).catch('diamond'),
   delta: z.number().catch(0),
-  reason: z.string().catch('grant_admin'),
+  // 비문자열 drift 시 빈 문자열 → walletReasonLabel이 '기타'로 강등(오라벨 방지)
+  reason: z.string().catch(''),
   ref_type: z.string().nullable().catch(null),
   balance_after_heart: z.number().catch(0),
   balance_after_diamond: z.number().catch(0),

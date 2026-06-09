@@ -71,7 +71,7 @@ function WalletHeader() {
 
           {expiring ? (
             <View className="flex-row items-center justify-center gap-1">
-              <HeartFilledIcon size={13} />
+              <HeartFilledIcon size={14} />
               <Text className="text-xs font-sans text-warning-600 dark:text-warning-400">
                 {expiring.totalAmount}개 D-{expiring.daysUntilExpiry} 만료 예정
               </Text>
@@ -115,9 +115,9 @@ function LedgerRow({ item }: { item: WalletLedgerRow }) {
       </View>
       <View className="flex-row items-center gap-1">
         {isHeart ? (
-          <HeartFilledIcon size={15} />
+          <HeartFilledIcon size={16} />
         ) : (
-          <GemIcon size={15} color={PRIMARY_COLORS[500]} />
+          <GemIcon size={16} color={PRIMARY_COLORS[500]} />
         )}
         <Text
           className={`text-sm font-sans-semibold ${

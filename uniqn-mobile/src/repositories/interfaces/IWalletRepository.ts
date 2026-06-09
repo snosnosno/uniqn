@@ -21,7 +21,6 @@ import type {
   ClaimAttendanceResponse,
   PostingCost,
   CreatePostingPaymentResult,
-  RefundResult,
   CancelPostingResult,
   GetWalletLedgerResponse,
   WalletReason,
@@ -82,15 +81,6 @@ export interface IWalletRepository {
     payload: Record<string, unknown>,
     reason?: WalletReason
   ): Promise<CreatePostingPaymentResult>;
-
-  /**
-   * 공고 취소 환불 (24h 100% / 이후 50%). 환불은 항상 owner 지갑에 적립.
-   *
-   * @param postingId 취소된 공고 id
-   * @param ownerId 비용 주체(owner) user_id — caller가 owner 또는 협업자여야 통과.
-   * @throws Supabase transport 에러만 throw.
-   */
-  refundJobCancellation(postingId: string, ownerId: string): Promise<RefundResult>;
 
   /**
    * 공고 취소(status=cancelled) + 환불을 단일 트랜잭션 원자화 (M3).

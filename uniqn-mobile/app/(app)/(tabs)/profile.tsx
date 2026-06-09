@@ -187,7 +187,7 @@ export default function ProfileScreen() {
               onPress={() => router.push('/(app)/wallet')}
               accessibilityRole="button"
               accessibilityLabel="내 지갑 열기"
-              className="flex-row items-center justify-between py-1 active:opacity-80"
+              className="min-h-[44px] flex-row items-center justify-between py-1 active:opacity-80"
             >
               <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
                 내 지갑

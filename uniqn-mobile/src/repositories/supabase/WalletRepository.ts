@@ -16,15 +16,14 @@ import {
   ClaimAttendanceResponseSchema,
   PostingCostSchema,
   CreatePostingPaymentResultSchema,
-  RefundResultSchema,
   CancelPostingResultSchema,
   WalletLedgerRowSchema,
+  type WalletLedgerRow,
   type DiamondProduct,
   type WalletSummary,
   type ClaimAttendanceResponse,
   type PostingCost,
   type CreatePostingPaymentResult,
-  type RefundResult,
   type CancelPostingResult,
   type GetWalletLedgerResponse,
   type WalletReason,
@@ -141,26 +140,6 @@ export const WalletRepository: IWalletRepository = {
   },
 
   /**
-   * 공고 취소 환불 (24h 100% / 이후 50%). 환불은 항상 owner 지갑에 적립.
-   *
-   * @param postingId 취소된 공고 id
-   * @param ownerId 비용 주체(owner) user_id — caller가 owner 또는 협업자여야 통과.
-   * @returns success + 환불량. 무차감/권한밖이면 success:false (throw 아님).
-   * @throws Supabase transport 에러만 throw.
-   */
-  async refundJobCancellation(postingId: string, ownerId: string): Promise<RefundResult> {
-    const { data, error } = await supabase.rpc('refund_job_cancellation_atomically', {
-      p_posting_id: postingId,
-      p_owner_id: ownerId,
-    });
-    if (error) {
-      logger.error('wallet.refundJobCancellation.failed', error, { postingId });
-      throw error;
-    }
-    return RefundResultSchema.parse(data);
-  },
-
-  /**
    * 공고 취소 + 환불 단일 원자 RPC (M3). 환불 실패는 서버에서 RAISE → 취소까지 롤백.
    *
    * @param postingId 취소할 공고 id
@@ -199,8 +178,15 @@ export const WalletRepository: IWalletRepository = {
       logger.error('wallet.getWalletLedger.failed', error, { offset, limit });
       throw error;
     }
-    const rows = (data ?? []).map((row) => WalletLedgerRowSchema.parse(row));
-    const hasMore = rows.length > limit;
-    return { items: hasMore ? rows.slice(0, limit) : rows, hasMore };
+    // hasMore는 raw prefetch 수로 판정(필터 전), 표시 행만 safeParse로 한 행 실패 격리.
+    const raw = data ?? [];
+    const hasMore = raw.length > limit;
+    const page = hasMore ? raw.slice(0, limit) : raw;
+    const items: WalletLedgerRow[] = [];
+    for (const row of page) {
+      const parsed = WalletLedgerRowSchema.safeParse(row);
+      if (parsed.success) items.push(parsed.data);
+    }
+    return { items, hasMore };
   },
 };
