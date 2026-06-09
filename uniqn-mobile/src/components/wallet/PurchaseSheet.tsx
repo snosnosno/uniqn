@@ -6,12 +6,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import type { PurchasesPackage } from 'react-native-purchases';
 import { Modal } from '@/components/ui';
 import { SkeletonListItem } from '@/components/ui/Skeleton';
 import { purchasesService } from '@/services/purchases';
 import { WalletRepository } from '@/repositories/supabase/WalletRepository';
 import { usePurchaseDiamonds } from '@/hooks/usePurchaseDiamonds';
+import { useRestorePurchases } from '@/hooks/useRestorePurchases';
 import { usePurchaseSheetStore } from '@/stores/purchaseSheetStore';
 import { queryKeys } from '@/lib/queryClient';
 import { logger } from '@/utils/logger';
@@ -23,6 +25,7 @@ export function PurchaseSheet() {
   const close = usePurchaseSheetStore((s) => s.close);
   const available = purchasesService.isAvailable();
   const { status, purchase, reset } = usePurchaseDiamonds();
+  const { restoring, restore } = useRestorePurchases();
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
 
   const productsQuery = useQuery({
@@ -79,6 +82,14 @@ export function PurchaseSheet() {
     if (busy) return; // 폴링 중 닫기 차단(이중결제 방지)
     reset();
     close();
+  };
+
+  // 약관/개인정보 — 시트를 닫고 해당 화면으로 이동(결제 진행 중엔 차단)
+  const openLegal = (href: '/(app)/settings/terms' | '/(app)/settings/privacy') => {
+    if (busy) return;
+    reset();
+    close();
+    router.push(href);
   };
 
   // product_id → 다이아량 매핑(표시는 DB 신뢰, 가격은 RC priceString)
@@ -210,6 +221,53 @@ export function PurchaseSheet() {
           ) : null}
         </View>
       )}
+
+      {/* IAP 심사 footer — 약관·개인정보 링크 + 구매 복원 (App Store 3.1.1) */}
+      <View className="mt-4 flex-row items-center justify-center border-t border-secondary-200 pt-1 dark:border-surface-overlay">
+        <Pressable
+          onPress={() => openLegal('/(app)/settings/terms')}
+          disabled={busy}
+          hitSlop={8}
+          className="min-h-[40px] justify-center px-2"
+          accessibilityRole="link"
+          accessibilityLabel="이용약관 보기"
+        >
+          <Text className="font-sans text-xs text-secondary-500 dark:text-secondary-400">
+            이용약관
+          </Text>
+        </Pressable>
+        <Text className="font-sans text-xs text-secondary-300 dark:text-secondary-600">·</Text>
+        <Pressable
+          onPress={() => openLegal('/(app)/settings/privacy')}
+          disabled={busy}
+          hitSlop={8}
+          className="min-h-[40px] justify-center px-2"
+          accessibilityRole="link"
+          accessibilityLabel="개인정보처리방침 보기"
+        >
+          <Text className="font-sans text-xs text-secondary-500 dark:text-secondary-400">
+            개인정보처리방침
+          </Text>
+        </Pressable>
+        {available ? (
+          <>
+            <Text className="font-sans text-xs text-secondary-300 dark:text-secondary-600">·</Text>
+            <Pressable
+              onPress={() => void restore()}
+              disabled={busy || restoring}
+              hitSlop={8}
+              className="min-h-[40px] flex-row items-center justify-center gap-1 px-2"
+              accessibilityRole="button"
+              accessibilityLabel="구매 복원"
+            >
+              {restoring ? <ActivityIndicator size="small" /> : null}
+              <Text className="font-sans text-xs text-primary-600 dark:text-primary-400">
+                {restoring ? '복원 중…' : '구매 복원'}
+              </Text>
+            </Pressable>
+          </>
+        ) : null}
+      </View>
     </Modal>
   );
 }

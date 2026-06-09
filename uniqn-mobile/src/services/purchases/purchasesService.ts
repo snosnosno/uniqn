@@ -92,6 +92,14 @@ export const purchasesService = {
     }
   },
 
+  /** 스토어 영수증 복원(재동기화) — App Store 심사 필수 동선. 실패는 throw(호출부 토스트). */
+  async restorePurchases(): Promise<void> {
+    if (!this.isAvailable()) {
+      throw new Error('PURCHASES_UNAVAILABLE');
+    }
+    await Purchases.restorePurchases();
+  },
+
   /** 테스트 전용 상태 리셋. */
   __resetForTest(): void {
     configured = false;

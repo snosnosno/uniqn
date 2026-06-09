@@ -5,6 +5,7 @@ const mockLogIn = jest.fn((..._a: unknown[]) => Promise.resolve({ customerInfo: 
 const mockLogOut = jest.fn((..._a: unknown[]) => Promise.resolve({}));
 const mockGetOfferings = jest.fn();
 const mockPurchasePackage = jest.fn();
+const mockRestorePurchases = jest.fn();
 
 jest.mock('react-native-purchases', () => ({
   __esModule: true,
@@ -14,6 +15,7 @@ jest.mock('react-native-purchases', () => ({
     logOut: (...a: unknown[]) => mockLogOut(...a),
     getOfferings: (...a: unknown[]) => mockGetOfferings(...a),
     purchasePackage: (...a: unknown[]) => mockPurchasePackage(...a),
+    restorePurchases: (...a: unknown[]) => mockRestorePurchases(...a),
   },
   PURCHASES_ERROR_CODE: { PURCHASE_CANCELLED_ERROR: 'PURCHASE_CANCELLED' },
 }));
@@ -77,5 +79,16 @@ describe('purchasesService (native)', () => {
     });
     const result = await purchasesService.purchasePackage({ identifier: 'p1' } as never);
     expect(result).toEqual({ cancelled: false, productId: 'uniqn_diamonds_3000' });
+  });
+
+  it('restorePurchases는 Purchases.restorePurchases 호출', async () => {
+    mockRestorePurchases.mockResolvedValue({});
+    await purchasesService.restorePurchases();
+    expect(mockRestorePurchases).toHaveBeenCalledTimes(1);
+  });
+
+  it('restorePurchases 실패는 그대로 throw(호출부가 토스트 처리)', async () => {
+    mockRestorePurchases.mockRejectedValue(new Error('network'));
+    await expect(purchasesService.restorePurchases()).rejects.toThrow('network');
   });
 });
