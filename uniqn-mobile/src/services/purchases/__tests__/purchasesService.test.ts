@@ -44,6 +44,16 @@ describe('purchasesService (native)', () => {
     expect(purchasesService.isAvailable()).toBe(true);
   });
 
+  it('env 키 부재 시 publishable fallback 키로 isAvailable=true (OTA 빈값 방어)', () => {
+    const saved = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY;
+    delete process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY;
+    try {
+      expect(purchasesService.isAvailable()).toBe(true);
+    } finally {
+      process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY = saved;
+    }
+  });
+
   it('최초 configure는 Purchases.configure(appUserID) 호출', async () => {
     await purchasesService.configure(UID);
     expect(mockConfigure).toHaveBeenCalledWith(expect.objectContaining({ appUserID: UID }));

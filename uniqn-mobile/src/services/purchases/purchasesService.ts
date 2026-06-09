@@ -13,11 +13,18 @@ export interface PurchaseResult {
   productId?: string;
 }
 
+// RevenueCat 공개(publishable) SDK 키 — eas.json base.env와 동일 값, secret 아님(클라 임베드 전제).
+// EXPO_PUBLIC_* 인라인이 누락되는 OTA 업데이트 경로에서 충전이 무성 불능(빈 키)이 되는 것을 방지.
+const FALLBACK_API_KEYS = {
+  ios: 'appl_XiQzYCeHsEBFgRhRPiUQlbzJVcg',
+  android: 'goog_AGqIYvWCfjHvDAHOOHPLZZnHZZF',
+} as const;
+
 function getApiKey(): string {
   return (
     Platform.select({
-      ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY,
-      android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY,
+      ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY ?? FALLBACK_API_KEYS.ios,
+      android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY ?? FALLBACK_API_KEYS.android,
       default: undefined,
     }) ?? ''
   );
