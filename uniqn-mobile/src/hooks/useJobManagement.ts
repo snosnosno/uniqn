@@ -199,6 +199,8 @@ export function useDeleteJobPosting() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobPostings.all,
       });
+      // M4: 취소 환불 반영 — 지갑 요약 동기 갱신(생성 경로와 대칭, 환불 후 잔액 stale 방지)
+      queryClient.invalidateQueries({ queryKey: queryKeys.wallet.summary(user?.uid) });
     },
     onError: createMutationErrorHandler('공고 삭제', addToast, {
       onRollback: (ctx) => {

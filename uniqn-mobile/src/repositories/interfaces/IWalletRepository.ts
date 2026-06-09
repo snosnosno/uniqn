@@ -22,6 +22,8 @@ import type {
   PostingCost,
   CreatePostingPaymentResult,
   RefundResult,
+  CancelPostingResult,
+  GetWalletLedgerResponse,
   WalletReason,
 } from '@/types/wallet';
 
@@ -89,4 +91,23 @@ export interface IWalletRepository {
    * @throws Supabase transport 에러만 throw.
    */
   refundJobCancellation(postingId: string, ownerId: string): Promise<RefundResult>;
+
+  /**
+   * 공고 취소(status=cancelled) + 환불을 단일 트랜잭션 원자화 (M3).
+   * 환불 실패 시 서버에서 RAISE → 취소까지 롤백(부분실패 swallow 제거).
+   *
+   * @param postingId 취소할 공고 id
+   * @param ownerId 비용 주체(owner) user_id — caller가 owner 또는 협업자여야 통과.
+   * @returns success(+optional refund) 또는 success:false+error. transport 에러만 throw.
+   */
+  cancelJobPostingWithRefund(postingId: string, ownerId: string): Promise<CancelPostingResult>;
+
+  /**
+   * 본인 지갑 거래내역(wallet_ledger) 페이지 조회 — 최신순. RLS가 본인 행만 노출.
+   *
+   * @param offset 시작 인덱스(기본 0)
+   * @param limit 페이지 크기(기본 20)
+   * @returns items + hasMore(다음 페이지 존재 여부, limit+1 prefetch 방식).
+   */
+  getWalletLedger(offset?: number, limit?: number): Promise<GetWalletLedgerResponse>;
 }

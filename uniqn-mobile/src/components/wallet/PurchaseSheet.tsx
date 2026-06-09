@@ -15,6 +15,8 @@ import { usePurchaseDiamonds } from '@/hooks/usePurchaseDiamonds';
 import { usePurchaseSheetStore } from '@/stores/purchaseSheetStore';
 import { queryKeys } from '@/lib/queryClient';
 import { logger } from '@/utils/logger';
+import { formatCurrency } from '@/utils/formatters/currency';
+import { triggerHaptic } from '@/utils/haptics';
 
 export function PurchaseSheet() {
   const isOpen = usePurchaseSheetStore((s) => s.isOpen);
@@ -49,6 +51,29 @@ export function PurchaseSheet() {
   }, [isOpen, available]);
 
   const busy = status === 'purchasing' || status === 'processing';
+
+  // 결제 완료 시 성공 haptic (impeccable rule 17 — 결정적 순간)
+  useEffect(() => {
+    if (status === 'done') {
+      void triggerHaptic('success');
+    }
+  }, [status]);
+
+  // 원당 단가 최저(가장 이득) 상품 — 보너스 포함 총량 기준
+  const bestValueId = useMemo(() => {
+    let best: string | null = null;
+    let bestRatio = Infinity;
+    for (const p of productsQuery.data ?? []) {
+      const total = p.diamonds + p.bonus_diamonds;
+      if (total <= 0) continue;
+      const ratio = p.price_krw / total;
+      if (ratio < bestRatio) {
+        bestRatio = ratio;
+        best = p.product_id;
+      }
+    }
+    return best;
+  }, [productsQuery.data]);
 
   const handleClose = () => {
     if (busy) return; // 폴링 중 닫기 차단(이중결제 방지)
@@ -120,20 +145,41 @@ export function PurchaseSheet() {
           {(productsQuery.data ?? []).map((product) => {
             const meta = productMap.get(product.product_id);
             const pkg = packages.find((p) => p.product?.identifier === product.product_id);
-            const total = (meta?.diamonds ?? 0) + (meta?.bonus ?? 0);
+            const diamonds = meta?.diamonds ?? 0;
+            const bonus = meta?.bonus ?? 0;
+            const total = diamonds + bonus;
+            // 가격: RC priceString 우선, 폴백은 DB price_krw를 통화 포맷(미포맷 "1100원" 교정)
+            const priceLabel = pkg?.product?.priceString ?? formatCurrency(meta?.priceKrw);
+            const isBest = product.product_id === bestValueId;
             return (
               <Pressable
                 key={product.product_id}
                 testID={`purchase-${product.product_id}`}
                 disabled={busy || !pkg}
                 onPress={() => pkg && purchase(pkg)}
-                className="flex-row items-center justify-between rounded-md bg-surface-card px-4 py-3 dark:bg-secondary-800"
+                accessibilityRole="button"
+                accessibilityLabel={`다이아 ${total}개${bonus > 0 ? ` (보너스 ${bonus} 포함)` : ''}, ${priceLabel}`}
+                className="min-h-[44px] flex-row items-center justify-between rounded-md bg-surface-card px-4 py-3 dark:bg-secondary-800"
               >
-                <Text className="font-sans-semibold text-content-primary dark:text-secondary-100">
-                  💎 {total}
-                </Text>
+                <View className="flex-row items-center gap-2">
+                  <Text className="font-sans-semibold text-content-primary dark:text-secondary-100">
+                    💎 {diamonds}
+                  </Text>
+                  {bonus > 0 ? (
+                    <View className="rounded bg-primary-100 px-1.5 py-0.5 dark:bg-primary-900/30">
+                      <Text className="text-xs font-sans-semibold text-primary-700 dark:text-primary-300">
+                        +{bonus} 보너스
+                      </Text>
+                    </View>
+                  ) : null}
+                  {isBest ? (
+                    <View className="rounded bg-primary-500 px-1.5 py-0.5">
+                      <Text className="text-xs font-sans-semibold text-white">가장 이득</Text>
+                    </View>
+                  ) : null}
+                </View>
                 <Text className="font-sans text-secondary-500 dark:text-secondary-400">
-                  {pkg?.product?.priceString ?? `${meta?.priceKrw ?? 0}원`}
+                  {priceLabel}
                 </Text>
               </Pressable>
             );
