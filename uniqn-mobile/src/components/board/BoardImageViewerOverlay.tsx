@@ -80,7 +80,7 @@ export function BoardImageViewerOverlay({
                   accessibilityRole="button"
                   accessibilityLabel="이전 이미지"
                 >
-                  <ChevronLeftIcon size={22} color="#FFFFFF" />
+                  <ChevronLeftIcon size={24} color="#FFFFFF" />
                 </Pressable>
               ) : (
                 <View className="h-12 w-12" style={{ pointerEvents: 'none' }} />
@@ -109,7 +109,7 @@ export function BoardImageViewerOverlay({
                   accessibilityRole="button"
                   accessibilityLabel="다음 이미지"
                 >
-                  <ChevronRightIcon size={22} color="#FFFFFF" />
+                  <ChevronRightIcon size={24} color="#FFFFFF" />
                 </Pressable>
               ) : (
                 <View className="h-12 w-12" style={{ pointerEvents: 'none' }} />

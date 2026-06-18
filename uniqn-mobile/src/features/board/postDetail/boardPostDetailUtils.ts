@@ -37,7 +37,7 @@ export function getAuthorBadgeVariant(authorRole: string) {
   }
 
   if (authorRole === 'employer') {
-    return 'primary';
+    return 'info';
   }
 
   return 'secondary';

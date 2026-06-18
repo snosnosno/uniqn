@@ -55,21 +55,21 @@ export function BoardPostCard({ post, onPress }: BoardPostCardProps) {
             </Text>
           </View>
           <View className="flex-row flex-wrap items-center gap-x-2.5 gap-y-1">
-            <Text className="text-xs font-sans text-secondary-500 dark:text-secondary-400">
+            <Text className="text-xs font-sans text-secondary-600 dark:text-secondary-400">
               {post.authorName}
             </Text>
-            <NumericText className="text-xs font-sans text-secondary-500 dark:text-secondary-400">
+            <NumericText className="text-xs font-sans text-secondary-600 dark:text-secondary-400">
               {formatMetaDate(post)}
             </NumericText>
             <View className="flex-row items-center">
-              <ChatbubbleEllipsesOutlineIcon size={12} color="#D4AF37" />
-              <NumericText className="ml-1 text-xs font-sans-semibold text-primary-700 dark:text-primary-300">
+              <ChatbubbleEllipsesOutlineIcon size={12} color={SECONDARY_PALETTE[500]} />
+              <NumericText className="ml-1 text-xs font-sans text-secondary-600 dark:text-secondary-400">
                 {formatCompactCount(post.commentCount)}
               </NumericText>
             </View>
             <View className="flex-row items-center">
               <EyeIcon size={12} color={SECONDARY_PALETTE[500]} />
-              <NumericText className="ml-1 text-xs font-sans text-secondary-500 dark:text-secondary-400">
+              <NumericText className="ml-1 text-xs font-sans text-secondary-600 dark:text-secondary-400">
                 {formatCompactCount(post.viewCount)}
               </NumericText>
             </View>

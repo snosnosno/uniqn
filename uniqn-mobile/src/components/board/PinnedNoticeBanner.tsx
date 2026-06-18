@@ -13,12 +13,10 @@ export function PinnedNoticeBanner({ notices, onPress }: PinnedNoticeBannerProps
   if (visible.length === 0) return null;
 
   return (
-    <View className="mb-4 rounded-md border-l-2 border-primary-500 bg-primary-50 px-3 py-2 dark:border-primary-400 dark:bg-surface-elevated">
+    <View className="mb-4 rounded-md bg-primary-50 px-3 py-2 dark:bg-surface-elevated">
       <View className="mb-1 flex-row items-center gap-1">
         <PinIcon size={12} color="#D4AF37" />
-        <Text className="text-xs font-sans-semibold text-primary-700 dark:text-primary-300">
-          고정 공지
-        </Text>
+        <Text className="text-xs font-sans-semibold text-content-secondary">고정 공지</Text>
       </View>
       {visible.map((notice) => (
         <Pressable

@@ -38,7 +38,7 @@ function getRoleBadgeVariant(role: BoardCommentNode['authorRole']) {
   }
 
   if (role === 'employer') {
-    return 'primary';
+    return 'info';
   }
 
   return 'secondary';
@@ -204,6 +204,8 @@ export const BoardCommentItem = memo(function BoardCommentItem({
                           key={type}
                           onPress={() => onToggleReaction(comment, type)}
                           disabled={!canInteract}
+                          hitSlop={8}
+                          accessibilityRole="button"
                           className={`rounded-sm px-2.5 py-1 ${
                             isActive
                               ? 'bg-primary-100 dark:bg-primary-900/30'
@@ -242,6 +244,7 @@ export const BoardCommentItem = memo(function BoardCommentItem({
                 {canInteract && !contentDisabled ? (
                   <Pressable
                     onPress={() => onReply(comment)}
+                    hitSlop={10}
                     className="rounded-sm bg-primary-50 px-3 py-1 dark:bg-primary-900/20 active:opacity-70"
                   >
                     <Text className="text-xs font-sans-semibold text-primary-700 dark:text-primary-300">

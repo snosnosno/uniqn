@@ -30,6 +30,7 @@ function BoardSection({ title, emptyTitle, posts, moreBoardType }: BoardSectionP
             onPress={() => router.replace(`/(app)/(tabs)/board/${moreBoardType}`)}
             accessibilityRole="button"
             accessibilityLabel={`${title} 더보기`}
+            hitSlop={{ top: 14, bottom: 14, left: 8, right: 8 }}
             className="active:opacity-70"
           >
             <Text className="text-xs font-sans text-primary-700 dark:text-primary-300">
@@ -96,7 +97,7 @@ export default function BoardHomeScreen() {
           />
 
           <BoardSection
-            title="🔥 인기글"
+            title="인기글"
             emptyTitle="아직 인기글이 없어요"
             posts={data?.popularCommunityPosts ?? []}
             moreBoardType="free"
@@ -104,10 +105,10 @@ export default function BoardHomeScreen() {
           <BoardSection
             title={
               isAdmin
-                ? '🕒 최근 일정 활동'
+                ? '최근 일정 활동'
                 : role === 'employer'
-                  ? '🕒 내 공고 최근 활동'
-                  : '🕒 내 일정 최근 활동'
+                  ? '내 공고 최근 활동'
+                  : '내 일정 최근 활동'
             }
             emptyTitle="표시할 일정 활동이 없어요"
             posts={data?.recentSchedulePosts ?? []}

@@ -1,7 +1,6 @@
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AddCircleOutlineIcon } from '@/components/icons';
-import { useThemeStore } from '@/stores/themeStore';
 
 interface BoardWriteFabProps {
   onPress: () => void;
@@ -9,7 +8,6 @@ interface BoardWriteFabProps {
 
 /** 게시판 글쓰기 플로팅 액션 버튼 */
 export function BoardWriteFab({ onPress }: BoardWriteFabProps) {
-  const isDark = useThemeStore((s) => s.isDarkMode);
   const insets = useSafeAreaInsets();
 
   return (
@@ -27,7 +25,7 @@ export function BoardWriteFab({ onPress }: BoardWriteFabProps) {
         accessibilityLabel="글쓰기"
         className="h-12 w-12 items-center justify-center rounded-2xl bg-primary-500 shadow-lg active:opacity-70 dark:bg-primary-400"
       >
-        <AddCircleOutlineIcon size={24} color={isDark ? '#000000' : '#FFFFFF'} />
+        <AddCircleOutlineIcon size={24} color="#09090B" />
       </Pressable>
     </View>
   );

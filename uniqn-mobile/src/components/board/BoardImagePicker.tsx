@@ -69,7 +69,7 @@ export function BoardImagePicker({
   return (
     <View className="w-full">
       <View className="mb-3 px-1">
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+        <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
           {images.length}/{MAX_BOARD_POST_IMAGES}장
         </Text>
         <Text className="mt-0.5 text-xs text-content-placeholder font-sans">
@@ -91,7 +91,7 @@ export function BoardImagePicker({
             <Pressable
               onPress={() => onRemoveImage(image.id)}
               className="absolute right-1 top-1 rounded-sm bg-black/70 p-1.5 active:bg-black/85"
-              hitSlop={6}
+              hitSlop={10}
               accessibilityRole="button"
               accessibilityLabel={`첨부 이미지 ${index + 1} 삭제`}
             >
@@ -119,7 +119,7 @@ export function BoardImagePicker({
             {isUploading ? (
               <View className="items-center px-2">
                 <ActivityIndicator size="small" color="#D4AF37" />
-                <Text className="mt-2 text-center text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+                <Text className="mt-2 text-center text-xs text-secondary-600 dark:text-secondary-400 font-sans">
                   업로드 중
                 </Text>
                 <Text className="mt-0.5 text-center text-xs font-sans-medium text-primary-600 dark:text-primary-400">
@@ -132,7 +132,7 @@ export function BoardImagePicker({
                   <ImagesOutlineIcon size={20} color={SECONDARY_PALETTE[400]} />
                 </View>
                 <AddIcon size={18} color={SECONDARY_PALETTE[500]} />
-                <Text className="mt-1 text-center text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+                <Text className="mt-1 text-center text-xs text-secondary-600 dark:text-secondary-400 font-sans">
                   추가
                 </Text>
               </View>

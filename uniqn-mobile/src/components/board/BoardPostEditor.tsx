@@ -86,7 +86,7 @@ export function BoardPostEditor({
             <Badge variant={boardType === 'tda' ? 'warning' : 'primary'} size="sm">
               {BOARD_TYPE_LABELS[boardType]}
             </Badge>
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+            <Text className="text-sm text-content-secondary font-sans">
               {mode === 'create' ? '새 글 작성' : '글 수정'}
             </Text>
           </View>
@@ -184,9 +184,7 @@ export function BoardPostEditorLoading({
             <Skeleton width="100%" height={180} borderRadius={16} />
           </View>
 
-          <Text className="mt-4 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-            {title}
-          </Text>
+          <Text className="mt-4 text-sm text-content-secondary font-sans">{title}</Text>
         </Card>
 
         <Card className="mb-4">
