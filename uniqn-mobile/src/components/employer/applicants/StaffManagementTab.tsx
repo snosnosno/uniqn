@@ -360,7 +360,7 @@ export function StaffManagementTab({
         title="상태 변경"
         description={
           statusSheetTarget
-            ? `${statusSheetTarget.staffName ?? '스태프'}님의 근무 상태를 선택하세요.`
+            ? `${statusSheetTarget.staffName ?? '스태프'}님의 근무 상태를 선택하세요.\n출근/퇴근/완료 처리 시 현재 시각이 근무시간으로 기록됩니다.`
             : undefined
         }
         options={getStatusOptions()}

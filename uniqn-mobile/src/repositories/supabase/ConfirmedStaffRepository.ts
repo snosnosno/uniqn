@@ -64,6 +64,34 @@ function toWorkLog(row: Record<string, unknown>): WorkLog | null {
   return parseWorkLogDocument({ ...applyTsPreference(camel), id: row.id });
 }
 
+/**
+ * 수동 상태 변경 시 종결 status 와 타임스탬프(check_in_ts/check_out_ts) 정합을 위한
+ * 패치 계산(순수 함수). 정산 게이트가 status 가 아닌 타임스탬프로 판정하므로,
+ * 수동 출근/퇴근/완료 처리 시에도 타임스탬프를 함께 기록/정리해야 정산이 풀린다.
+ *
+ * - scheduled        → 근무 전: 타임스탬프 정리(null)
+ * - checked_in       → 출근: check_in 기록(기존 우선), check_out 비움
+ * - checked_out/완료 → 퇴근/완료: check_in·check_out 모두 기록(기존 우선)
+ */
+export function buildStatusTimestampPatch(
+  status: string,
+  existingCheckIn: string | null,
+  existingCheckOut: string | null,
+  now: string
+): { check_in_ts?: string | null; check_out_ts?: string | null } {
+  switch (status) {
+    case STATUS.WORK_LOG.SCHEDULED:
+      return { check_in_ts: null, check_out_ts: null };
+    case STATUS.WORK_LOG.CHECKED_IN:
+      return { check_in_ts: existingCheckIn ?? now, check_out_ts: null };
+    case STATUS.WORK_LOG.CHECKED_OUT:
+    case STATUS.WORK_LOG.COMPLETED:
+      return { check_in_ts: existingCheckIn ?? now, check_out_ts: existingCheckOut ?? now };
+    default:
+      return {};
+  }
+}
+
 /** 공통 catch 핸들러 */
 function rethrowOrHandle(
   error: unknown,
@@ -334,14 +362,25 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
       await verifyJobPostingOwnership(jobPostingId, context.ownerId, '스태프 상태 변경');
 
-      // 3. 상태 업데이트
-      const { error } = await supabase
-        .from(TABLE)
-        .update({
-          status: context.status,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', context.workLogId);
+      // 3. 상태 업데이트 — 종결 status 와 타임스탬프 정합 유지.
+      //    정산 게이트가 status 가 아닌 check_in_ts/check_out_ts 로 판정하므로(SSOT),
+      //    수동으로 출근/퇴근/완료 처리 시 타임스탬프를 함께 기록해야 정산이 풀린다.
+      //    (미기록 시 스태프관리=완료/정산=출퇴근 미완료 모순 발생)
+      const now = new Date().toISOString();
+      const existingCheckIn = workLog.checkInTime
+        ? new Date(workLog.checkInTime).toISOString()
+        : null;
+      const existingCheckOut = workLog.checkOutTime
+        ? new Date(workLog.checkOutTime).toISOString()
+        : null;
+
+      const updateData: Record<string, unknown> = {
+        status: context.status,
+        updated_at: now,
+        ...buildStatusTimestampPatch(context.status, existingCheckIn, existingCheckOut, now),
+      };
+
+      const { error } = await supabase.from(TABLE).update(updateData).eq('id', context.workLogId);
 
       if (error) handleSupabaseError(error, { operation: '스태프 상태 변경', table: TABLE });
 
