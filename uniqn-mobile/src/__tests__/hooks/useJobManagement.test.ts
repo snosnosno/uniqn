@@ -67,6 +67,7 @@ jest.mock('@/lib/queryClient', () => ({
     },
     wallet: {
       summary: (uid?: string) => ['wallet', 'summary', uid ?? 'me'],
+      ledger: (uid?: string) => ['wallet', 'ledger', uid ?? 'me'],
     },
   },
   cachingPolicies: {

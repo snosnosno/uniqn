@@ -18,6 +18,9 @@
 
 예외: `functions/**/*.ts` Cloudflare Pages Functions는 `console.log()` 허용
 
+## 지식 위키
+프로젝트 지식 합성 레이어는 `wiki/`. 위키 작업(ingest/query/lint) 시 `wiki/AGENTS.md` 규약 준수. 운영: `/ingest` `/query` `/lint`.
+
 ## 아키텍처
 ```
 Presentation → Hooks → Service → Repository → Supabase

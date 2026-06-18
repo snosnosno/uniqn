@@ -182,12 +182,21 @@ export default function ProfileScreen() {
 
         <Card className="mb-4">
           <View className="flex-col">
-            <View className="flex-row items-center justify-between py-1">
+            <Pressable
+              testID="profile-wallet-card"
+              onPress={() => router.push('/(app)/wallet')}
+              accessibilityRole="button"
+              accessibilityLabel="내 지갑 열기"
+              className="min-h-[44px] flex-row items-center justify-between py-1 active:opacity-80"
+            >
               <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
                 내 지갑
               </Text>
-              <WalletBalanceBadge testID="profile-wallet-badge" />
-            </View>
+              <View className="flex-row items-center gap-1">
+                <WalletBalanceBadge testID="profile-wallet-badge" />
+                <ChevronRightIcon size={18} color={SECONDARY_PALETTE[400]} />
+              </View>
+            </Pressable>
             <Pressable
               testID="profile-attendance-button"
               onPress={() => claimAttendance.mutate()}

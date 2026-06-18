@@ -29,6 +29,26 @@
 -- ============================================================================
 
 -- ============================================================================
+-- 테이블 GRANT 정합 (Supabase CLI 버전 드리프트 방어) — 2026-06-19
+-- ============================================================================
+-- 배경: 이 RLS 테스트들은 jpc_test_set_user() 로 role=authenticated/anon 전환 후
+--       public 테이블에 직접 접근한다. prod 는 Supabase 기본 default-privilege 로
+--       anon/authenticated/service_role 에 ALL 테이블 GRANT 를 보유하지만(실측 확인),
+--       `supabase/setup-cli@v1 version: latest` 가 받는 최신 로컬 이미지는
+--       마이그레이션 생성 테이블에 implicit GRANT 를 더 이상 자동부여하지 않는다.
+--       그 결과 RLS 평가 전에 "permission denied for table" (42501) 로 die →
+--       db-tests 전면 red (job_postings_anon_public_select + jpc_*_rls 6 +
+--       workspace_archive). master #175(2026-06-18) 에서 16/16 subtest fail.
+-- 해결: 테스트 스택 grant 를 prod 와 동일하게 맞춰 CLI 버전과 무관하게 결정적으로.
+--       RLS 가 실제 행 접근의 보안 경계이므로 테이블 GRANT 확대는 prod 동치이며 안전.
+-- ⚠️ 함수는 GRANT 금지: 결제 RPC 하드닝(#172, wallet_grants_hardening.test.sql)이
+--    anon/authenticated 에서 REVOKE 한 EXECUTE 를 되살리면 회귀. 테이블/시퀀스만.
+-- ⚠️ 이 파일은 fixtures 전용(prod 등록 금지) — 로컬/CI 테스트 DB 에만 적용된다.
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+
+-- ============================================================================
 -- 4 페르소나 + 리소스 셋업 (트랜잭션 안에서만 호출, ROLLBACK 로 정리)
 -- ============================================================================
 

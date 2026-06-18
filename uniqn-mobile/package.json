@@ -132,7 +132,6 @@
     "jest-watch-typeahead": "^2.2.2",
     "lint-staged": "^15.5.0",
     "prettier": "^3.5.0",
-    "react-refresh": "^0.18.0",
     "react-test-renderer": "19.2.0",
     "source-map-explorer": "^2.5.3",
     "ts-node": "^10.9.2",

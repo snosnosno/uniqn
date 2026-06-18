@@ -464,54 +464,24 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
           userMessage: 'Cannot delete a posting with confirmed applicants. Close it instead.',
         });
       }
-      const { error } = await supabase
-        .from(TABLE)
-        .update({ status: STATUS.JOB_POSTING.CANCELLED, updated_at: new Date().toISOString() })
-        .eq('id', jobPostingId);
-      if (error) handleSupabaseError(error, { operation: '공고 삭제', table: TABLE });
-
-      // 취소 성립 후 환불(best-effort) — 비용 주체=posting owner(cur.ownerId).
-      // RPC가 caller(owner|협업자) 권한 검증 + owner 지갑 적립. 멱등.
-      // 무차감(no_consumption_found, flag off 등)은 success:false로 정상 no-op.
-      // RPC 실패가 취소를 되돌리지 않도록 swallow + 경고 로깅(멱등이라 후속 재시도 가능).
-      try {
-        const refund = await WalletRepository.refundJobCancellation(jobPostingId, cur.ownerId);
-        if (refund.success) {
-          if (!('idempotent' in refund && refund.idempotent)) {
-            logger.info('공고 취소 환불 완료', {
-              jobPostingId,
-              refunded: refund.refunded_diamonds,
-            });
-          }
-        } else if (refund.error === 'no_consumption_found') {
-          // 정상 no-op: 무과금(flag off)·미차감 공고는 환불 대상 없음 — 경보 아님.
-          logger.debug('공고 취소 — 환불 대상 차감 없음(no-op)', { jobPostingId });
-        } else {
-          // 예상치 못한 실패(unauthorized/invalid_args 등): 취소는 성립했으나 환불 미수행 → 관측 필요.
-          logger.warn('공고 취소 환불 미수행 — 취소 성립, 환불 후속 필요', {
-            jobPostingId,
-            error: refund.error,
-          });
-          Sentry.addBreadcrumb({
-            category: 'wallet.refund',
-            level: 'error',
-            message: 'refund_returned_failure_after_cancel',
-            data: { jobPostingId, error: refund.error },
-          });
-        }
-      } catch (refundError) {
-        // RPC transport/예외: 취소는 성립. 멱등이라 후속 재시도 안전하나 신호가 필요.
-        logger.warn('공고 취소 환불 실패 — 취소는 성립, 환불 후속 필요', {
+      // M3: 취소(status=cancelled) + 환불을 단일 트랜잭션 원자 RPC로.
+      // 환불 실패 시 서버가 RAISE → 취소까지 롤백되므로 "취소됐는데 환불 미적립" 부분실패가 없다.
+      // 비용 주체=posting owner(cur.ownerId). RPC가 caller(owner|협업자|service_role) 권한 검증.
+      // 무차감(no_consumption_found, flag off 등)은 서버에서 정상 취소로 처리(success:true).
+      const result = await WalletRepository.cancelJobPostingWithRefund(jobPostingId, cur.ownerId);
+      if (!result.success) {
+        // RPC 레벨 실패(unauthorized/not_found/invalid_args 등): 취소가 적용되지 않음 — swallow 금지.
+        logger.error('공고 취소 실패', new Error(result.error), {
           jobPostingId,
-          error: refundError instanceof Error ? refundError.message : String(refundError),
+          error: result.error,
         });
-        Sentry.captureException(refundError, {
-          tags: { domain: 'wallet', op: 'refund_after_cancel' },
-          extra: { jobPostingId, ownerId: cur.ownerId },
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '공고 취소에 실패했어요. 잠시 후 다시 시도해주세요.',
+          metadata: { jobPostingId, error: result.error },
         });
       }
 
-      logger.info('공고 삭제 완료', { jobPostingId });
+      logger.info('공고 삭제 완료', { jobPostingId, idempotent: result.idempotent ?? false });
     } catch (error) {
       rethrowOrHandle(error, '공고 삭제', { jobPostingId });
     }

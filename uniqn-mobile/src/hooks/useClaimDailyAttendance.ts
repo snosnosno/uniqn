@@ -23,6 +23,7 @@ export function useClaimDailyAttendance() {
     onSuccess: (result) => {
       if (result.status === 'claimed') {
         queryClient.invalidateQueries({ queryKey: queryKeys.wallet.summary(uid) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.wallet.ledger(uid) });
         addToast({ type: 'success', message: `출석 완료! 하트 ${result.amount}개를 받았어요.` });
       } else {
         addToast({ type: 'info', message: '오늘은 이미 출석했어요.' });

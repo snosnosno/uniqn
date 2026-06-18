@@ -16,23 +16,30 @@ import {
   ClaimAttendanceResponseSchema,
   PostingCostSchema,
   CreatePostingPaymentResultSchema,
-  RefundResultSchema,
+  CancelPostingResultSchema,
+  WalletLedgerRowSchema,
+  type WalletLedgerRow,
   type DiamondProduct,
   type WalletSummary,
   type ClaimAttendanceResponse,
   type PostingCost,
   type CreatePostingPaymentResult,
-  type RefundResult,
+  type CancelPostingResult,
+  type GetWalletLedgerResponse,
   type WalletReason,
 } from '@/types/wallet';
 import type { IWalletRepository } from '../interfaces';
 
 const TABLES = {
   DIAMOND_PRODUCTS: 'diamond_products',
+  WALLET_LEDGER: 'wallet_ledger',
 } as const;
 
 const DIAMOND_PRODUCT_COLUMNS =
   'product_id, diamonds, bonus_diamonds, price_krw, display_order, active' as const;
+
+const WALLET_LEDGER_COLUMNS =
+  'id, currency_type, delta, reason, ref_type, balance_after_heart, balance_after_diamond, created_at' as const;
 
 export const WalletRepository: IWalletRepository = {
   /**
@@ -133,22 +140,53 @@ export const WalletRepository: IWalletRepository = {
   },
 
   /**
-   * 공고 취소 환불 (24h 100% / 이후 50%). 환불은 항상 owner 지갑에 적립.
+   * 공고 취소 + 환불 단일 원자 RPC (M3). 환불 실패는 서버에서 RAISE → 취소까지 롤백.
    *
-   * @param postingId 취소된 공고 id
-   * @param ownerId 비용 주체(owner) user_id — caller가 owner 또는 협업자여야 통과.
-   * @returns success + 환불량. 무차감/권한밖이면 success:false (throw 아님).
-   * @throws Supabase transport 에러만 throw.
+   * @param postingId 취소할 공고 id
+   * @param ownerId 비용 주체(owner) user_id
+   * @returns success(+refund) 또는 success:false+error. transport 에러만 throw.
    */
-  async refundJobCancellation(postingId: string, ownerId: string): Promise<RefundResult> {
-    const { data, error } = await supabase.rpc('refund_job_cancellation_atomically', {
+  async cancelJobPostingWithRefund(
+    postingId: string,
+    ownerId: string
+  ): Promise<CancelPostingResult> {
+    const { data, error } = await supabase.rpc('cancel_job_posting_with_refund_atomically', {
       p_posting_id: postingId,
       p_owner_id: ownerId,
     });
     if (error) {
-      logger.error('wallet.refundJobCancellation.failed', error, { postingId });
+      logger.error('wallet.cancelJobPostingWithRefund.failed', error, { postingId });
       throw error;
     }
-    return RefundResultSchema.parse(data);
+    return CancelPostingResultSchema.parse(data);
+  },
+
+  /**
+   * 본인 지갑 거래내역 페이지 조회 — 최신순. RLS(ledger_self_select)가 본인 행만 노출.
+   * hasMore는 limit+1 prefetch로 판정(별도 count 쿼리 회피).
+   *
+   * @param offset 시작 인덱스(기본 0)
+   * @param limit 페이지 크기(기본 20)
+   */
+  async getWalletLedger(offset = 0, limit = 20): Promise<GetWalletLedgerResponse> {
+    const { data, error } = await supabase
+      .from(TABLES.WALLET_LEDGER)
+      .select(WALLET_LEDGER_COLUMNS)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit); // limit+1 prefetch
+    if (error) {
+      logger.error('wallet.getWalletLedger.failed', error, { offset, limit });
+      throw error;
+    }
+    // hasMore는 raw prefetch 수로 판정(필터 전), 표시 행만 safeParse로 한 행 실패 격리.
+    const raw = data ?? [];
+    const hasMore = raw.length > limit;
+    const page = hasMore ? raw.slice(0, limit) : raw;
+    const items: WalletLedgerRow[] = [];
+    for (const row of page) {
+      const parsed = WalletLedgerRowSchema.safeParse(row);
+      if (parsed.success) items.push(parsed.data);
+    }
+    return { items, hasMore };
   },
 };
