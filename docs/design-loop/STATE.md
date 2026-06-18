@@ -11,7 +11,7 @@
 | C | 게시판 | `(app)/(tabs)/board/index` `[boardType]` `write` `edit/[postId]` `post/[postId]` `_layout` | **done**(Skeleton잔여✅·error.message→Z) | `3765e405a` `3d3bc97eb`(Skeleton) |
 | D | 공고·지원 플로우 | `(app)/jobs/[id]/index` `(app)/jobs/[id]/apply` `applications/[id]/cancel` | **done** | `aea7a0e73` |
 | E | 리뷰·공지 | `reviews/write` `reviews/[workLogId]` `reviews/pending` `reviews/history` `notices/index` `notices/[id]`(notices는 redirect) | **done** | `f0dce5ec5` |
-| F | 지원센터·알림 | `support/faq` `support/create-inquiry` `support/my-inquiries` `support/inquiry/[id]` `notifications` | pending | |
+| F | 지원센터·알림 | `support/faq` `support/create-inquiry` `support/my-inquiries` `support/inquiry/[id]` `notifications` | **done**(error.message→Z·미정의팔레트→M) | `dfd14081f` |
 | G | 설정·프로필 | `settings/profile` `settings/change-password` `settings/my-data` `settings/business-info` `profile-setup` (약관 4종은 레이아웃만 — 본문 금지) | pending | |
 | H | 구인자 등록 | `employer-register` `employer-application-status` | pending | |
 | I | 구인자 공고관리 | `(employer)/my-postings/create` `[id]/edit` `[id]/applicants` `[id]/settlements` `[id]/collaborators` `[id]/cancellation-requests` | pending | |
@@ -63,6 +63,13 @@
 - [E] P2 기타 | ReviewForm 제출 스피너 `color="white"`(제출중 버튼=회색 비활성 bg-secondary-300, 라이트 1.3:1 거의안보임)→`isDarkMode?'#FFFFFF':'#09090B'`(라이트 어두운 스피너·다크 흰) / [workLogId]:152 "리뷰 작성하기" 골드텍스트 primary-500(흰 2:1)→primary-600(pending:83 형제 정합) / write 잘못된접근 에러 ErrorState retry(→history)와 중복된 "히스토리로 이동" Button 제거(룰11, Button import도 제거)
 - [E] P2 데드마크업 | ReviewBlindMessage 2·ReviewPromptBanner 1 빈 글리프 `<Text text-2xl>{''}</Text>` 제거(이모지 자리 잔재→팬텀 세로여백). 배치A `{''}` 패턴이나 여기선 버튼 아닌 빈상태 장식슬롯이라 리뷰어도 P3(데드)로 평가. **아이콘 추가(EyeSlash/Clock/Star)는 P3 enhancement로 분리**(빈상태 룰9)
 - [E] 검증 | quality exit0(tsc0·lint0·format clean — history/[workLogId]/ReviewTagSelector prettier 재배치, write Button import 제거) / jest 9스위트 31 pass(ReviewForm·ReviewDetailScreen·ReviewWriteScreen·useReviews 등). SentimentSelector/ReviewCard/ReviewTagSelector/ReviewBlindMessage/ReviewPromptBanner 단독 테스트 없음
+- [F] **인라인 정독 리뷰**(워크플로 미사용 — D·E 선례대로 5화면+8컴포넌트 직독 + tailwind.config 토큰값/룰 대조). 확정 P2 9건 수정(`dfd14081f`). 배치B~E 반복패턴(라이트AA·골드위onGold·충돌이중darkbg·빈글리프)이 지원센터/알림에 동일 재현. create-inquiry/faq/my-inquiries 화면 본체는 위반 경미(폼/리스트는 공용 FormField·EmptyState·AppFlashList 경유라 정합)
+- [F] P2 라이트 AA 4 | inquiry/[id]:50 에러설명·NotificationList:150 헤더·:230 SimpleList 빈상태·NotificationGroupItem:136 그룹본문 | `text-secondary-500 dark:text-secondary-400`(흰 2.86:1)→`text-content-secondary`(라이트 #606068 ~6.5:1, CSS var 다크 #C0C0C8 자동). 배치C~E 동일
+- [F] P2 골드 위 전경 SSOT 4 | FAQCategoryTabs:59·NotificationCategoryTabs:102 선택탭 라벨·:115 선택 카운트배지·NotificationList:131 '다시 시도' 버튼 | `text-surface-dark`(#07070A) → `text-content-onGold`(#09090B). 둘 다 거의-검정이나 surface-dark는 "어두운 *배경*" 시맨틱이라 골드 위 전경엔 오용 — content.onGold가 SSOT(배치E ReviewForm:204 선례, support/index:55 이미 정답). **전역 text-surface-dark 73곳 중 골드-전경 오용분만 Z 패스 grep 권장**
+- [F] P2 충돌 이중 dark bg 1 | inquiry/[id]:97 내용박스 `bg-surface-page dark:bg-surface p-4 dark:bg-surface/50`(dark:bg-surface 2회 선언, NativeWind 결과 불확정)→`dark:bg-surface` 1개. 배치E history/ReviewBlindMessage 선례 동일
+- [F] P2 빈 글리프 데드마크업 1 | inquiry/[id]:135 '답변 대기 중' 카드 `<Text text-2xl>{''}</Text>`(현재 프로덕션도 빈 원 렌더)→`<ClockIcon size={24} color={STATUS_COLORS.warning}>`. 배치A/E는 장식슬롯이라 제거만 했으나 여기선 48px 프로미넌트 원이라 룰9(빈상태=인지) 위해 의미있는 아이콘 추가가 정답(이미 빈 원이므로 행동 보존). 원 dark bg `dark:bg-warning-900/30`(미정의)는 M 이관
+- [F] P2 raw bg-white→토큰 1 | NotificationCategoryTabs:72 컨테이너 `bg-white`→`bg-surface-card`(자매 컴포넌트 FAQCategoryTabs 정합, nativewind 룰4 시맨틱토큰)
+- [F] 검증 | quality exit0(tsc0·lint0·format clean — NotificationList/GroupItem prettier 재배치) / jest NotificationList 1 pass(refresh-error 경로 보존 확인). 지원센터 화면·FAQ·Category탭은 단독 테스트 없음(프레젠테이션)
 
 ## P3 백로그 (기록만, 구현 안 함)
 
@@ -125,12 +132,20 @@
 - [E→M] active:opacity Pressed(룰21) + 터치타깃(룰5) | pending:42 카드·ReviewPromptBanner:24·SentimentSelector:49·ReviewTagSelector:104 칩(py-1.5 ~28px, hitSlop 없음, active: 부재) | 토글은 선택상태가 피드백이라 경미하나 룰21 일괄(M). 배치 전반 active:opacity → 배경톤 토글 일괄과 함께
 - [E→M] 로딩 스피너 vs Skeleton 형제 불일치(룰16) | history:76 전체화면 ActivityIndicator / [workLogId]:104 Loading variant=layout / pending은 Skeleton 사용 | 3 형제 화면 로딩 통일(Skeleton) | M
 - [E→M] ReviewForm dark: override 중복(108/123/151 content-primary+dark:text-secondary-100, 166 dark:bg-secondary-800) + :117/144 error-500 dark variant 부재 + :204 골드버튼 텍스트 `text-surface-dark` vs `content-onGold` SSOT / ReviewPromptBanner:40 chevron `{'>'}` 텍스트→ChevronRightIcon(룰27) | 토큰/아이콘 정합 M
+- [F→M] **미정의 팔레트 티어 (배치F 추가, 다크 깨짐)** | inquiry/[id]:125 답변박스 `dark:bg-success-900/20`(success는 50/100/300/400/500/600/700만 → 900 미정의=다크 무배경)·:134 대기카드 원 `dark:bg-warning-900/30`(warning 900 미정의) / `INQUIRY_STATUS_CONFIG`(src/types/inquiry.ts:242-248) `dark:bg-warning-900/30`·`dark:text-warning-300`(warning 300/900 미정의)·`dark:bg-success-900/30`(success 900 미정의) — InquiryStatusBadge는 배치L 관리자도 공유 / NotificationList:164-165 인라인에러 박스 raw `border-amber-200 dark:border-amber-700`(amber raw Tailwind 금지) + `text-warning-800 dark:text-warning-200`(warning 800/200 미정의) — **배치D AssignmentSelector 동일 클래스** | M에서 팔레트 티어 추가 or 클래스 교체 일괄(다크 시각 영향 ↑)
+- [F→M] NotificationIcon categoryColors `dark:bg-{primary,success,warning,info}-50`(라이트-50 배경을 다크에서도 그대로 사용 → 다크 surface 위 밝은 연색 칩) | 의도된 컬러 아이콘 칩일 수 있으나 다크 일관성 점검 — `dark:bg-{color}-900/30` 등 다크 전용 톤으로 교체 검토 | M(공용 컴포넌트)
+- [F→M/Z] my-inquiries 로딩 = 전체화면 `ActivityIndicator color=PRIMARY_COLORS[300]`(룰16 Skeleton 미사용 + 골드 라이트 스피너 ~2.1:1) — 자매 화면 notifications는 ScreenSkeleton 사용. SkeletonInquiryCard composer 신규작성(배치C SkeletonBoardPostItem 선례) + getLoadingColor 스피너 단일소스(배치B Loading.tsx) | M/로딩
+- [F→M] faq.tsx:40 로딩 = `<Text>로딩 중...</Text>`(스피너/Skeleton 없음, 룰16) — FAQ 아코디언 Skeleton composer 검토 | M/로딩
+- [F→M] NotificationItem:68·NotificationGroupItem:77 읽음 행 `bg-white dark:bg-surface-dark`(raw bg-white, 룰4 시맨틱토큰) + 읽음 제목 dark: override 중복(:90 content-secondary+dark:text-secondary-300, :103 dark:text-secondary-400) | 전역 bg-white→surface-card 스윕과 함께 M/Z
+- [F→M/Z] 시맨틱 토큰 위 dark: 중복(배치F) | inquiry/[id]:47 에러타이틀 `text-content-primary dark:text-secondary-100`·NotificationGroupItem:103 미읽음 제목·:127 컨텍스트 `text-content-muted dark:text-secondary-400` — content-* CSS var가 이미 다크 처리하는데 dark: 덧댐 | 배치D/E `dark:text-off-white`·`dark:text-secondary-300` 일괄과 동일 M/Z 정책 결정
+- [F] create-inquiry InquiryForm:147,176 `placeholderTextColor={isDark ? SECONDARY_PALETTE[500] : SECONDARY_PALETTE[400]}`(라이트 #A8A8B0 ~2.1:1) — 배치D 확정 "placeholder 전역 일괄"(getPlaceholderColor 미사용·SECONDARY_PALETTE[400] 지배관행)과 동일. 단독수정 금지 | M/Z 전역 placeholder 결정
 
 ## 회차 메모
 
 > 다음 회차에 넘길 주의사항·미완 항목
 
-- 다음 배치: **F (지원센터·알림)** — `support/faq` `support/create-inquiry` `support/my-inquiries` `support/inquiry/[id]` `notifications`. 5화면. 잔여 error.message는 여전히 Z 횡단패스
+- 다음 배치: **G (설정·프로필)** — `settings/profile` `settings/change-password` `settings/my-data` `settings/business-info` `profile-setup` (약관 4종은 레이아웃만, 본문 금지). 잔여 error.message·미정의 팔레트 티어는 여전히 Z/M
+- 배치 F 교훈: 워크플로 없이 **인라인 정독만으로 완결**(5화면+8컴포넌트). 지원센터/알림은 공용 프리미티브(FormField·EmptyState·AppFlashList·Card·ScreenSkeleton) 경유 비율이 높아 화면 본체 위반이 적고, 위반은 ①라이트AA ②골드위onGold ③충돌 이중darkbg ④빈글리프 ⑤미정의 팔레트 5클래스에 집중 — 모두 배치C~E 기확립 패턴이라 적대검증 불필요. **`text-surface-dark`가 골드 전경에 73곳 중 일부 오용**(content.onGold가 SSOT)이 신규 발견 — Z 패스 grep 후보. **미정의 팔레트 티어가 또 다수**(success-900·warning-200/300/800/900·info-*) → M 우선순위 재확인(다크 깨짐 실재). raw `bg-white`·raw `border-amber-*`도 알림 컴포넌트에 잔존 → M 전역 스윕
 - 배치 E 교훈: **워크플로가 자정 직후에도 느릴 수 있음(~13분)** → journal에서 review findings는 실시간 추출 가능하니, 느리면 정지하고 인라인 reconcile이 빠름. 사용자 대기 길어지면 인라인 우선. **blanket replace_all 주의**: secondary-500이 비활성 버튼/조건부 분기에 있으면 제외(ReviewForm:204 disabled) — 파일 내 같은 클래스라도 맥락 확인 후 타깃 편집. **충돌 이중 dark bg**(`dark:bg-surface dark:bg-secondary-X`)는 배치 E에서 2건(history 화면·ReviewBlindMessage 카드) — Z 패스 grep `dark:bg-\S+ \S*dark:bg-` 권장
 - 배치 E 미정의 팔레트 티어 재확인: warning 팔레트=50/100/400/500/600/700만(200/300/800/900 없음). `dark:bg-warning-900`·`text-warning-300` 등은 무스타일 → 다크 시각 깨짐. 배치D AssignmentSelector·배치E pending/review.ts 모두 동일 → **M에서 팔레트 티어 추가 or 클래스 교체 일괄**(다크 영향 커서 우선순위 ↑)
 - ⚠️ **세션한도 재발(배치 D)**: 워크플로 verify 11건+apply 리뷰 1건이 12am Asia/Seoul 리셋에 또 전멸(배치B qr와 동일 클래스). **대응 성공 패턴**=리뷰 findings + verify 라벨이 "무엇을 찾았는지"는 보존되므로, 세션 리셋 후 **인라인 재검증**(코드 직독 + tailwind.config 토큰값 + 룰 대조 = 검증 동치)으로 확정. 확정 반복패턴(골드위흰색·라이트AA·size22)은 grep 매핑→직독으로 충분. **다음 회차는 세션 리셋(자정 KST) 시각 피해서 워크플로 실행 권장** or 그룹 더 축소
