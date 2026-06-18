@@ -186,6 +186,8 @@ app2/ios/App/App/capacitor.config.json
 !uniqn-mobile/assets/**
 !uniqn-mobile/src/**
 !app2/src/**
+# QA 스크린샷 임시 폴더
+qa-screenshots/
 
 # ========================================
 # PROJECT SPECIFIC

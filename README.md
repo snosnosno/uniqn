@@ -1,6 +1,6 @@
 # UNIQN Project
 
-최종 업데이트: 2026-04-18  
+최종 업데이트: 2026-06-19  
 현재 기준 코드: `uniqn-mobile/`
 
 이 저장소의 현재 source of truth는 모바일 앱 `uniqn-mobile/`입니다. 백엔드는 Supabase(Auth + PostgreSQL + Realtime)로 이전 완료(2026-04-11). `functions/`(Firebase Functions)는 레거시 참고용으로만 보존하며 현재 배포 기준으로 사용하지 않습니다. 과거 웹 실험물과 이관 참고 자료는 저장소 밖 백업 또는 아카이브 문서로만 관리합니다.
@@ -10,6 +10,7 @@
 - `uniqn-mobile/`: Expo + React Native 앱 (Supabase 백엔드)
 - `uniqn-mobile/supabase/`: Supabase Edge Functions, 마이그레이션, 설정
 - `docs/`: 현재 운영/개발 문서 허브
+- `wiki/`: LLM 지식 합성 레이어 (architecture/decisions/domain/sources). 규약 `wiki/AGENTS.md`, 운영 `/ingest`·`/query`·`/lint`
 - `specs/`: 설계 기록 및 이행 아카이브
 - `functions/`: Firebase Functions (레거시, 참고용만)
 
