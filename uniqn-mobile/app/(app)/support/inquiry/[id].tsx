@@ -4,10 +4,11 @@
  */
 
 import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
-import { PRIMARY_COLORS } from '@/constants/colors';
+import { PRIMARY_COLORS, STATUS_COLORS } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Card, NumericText, Button } from '@/components/ui';
+import { ClockIcon } from '@/components/icons';
 import { InquiryStatusBadge, InquiryAttachmentGallery } from '@/components/support';
 import { StackHeader } from '@/components/headers';
 import { useInquiryDetail } from '@/hooks/useInquiry';
@@ -47,7 +48,7 @@ export default function InquiryDetailScreen() {
           <Text className="mb-2 text-center text-lg font-display-semibold text-content-primary dark:text-secondary-100">
             문의를 불러오지 못했어요
           </Text>
-          <Text className="mb-6 text-center text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+          <Text className="mb-6 text-center text-sm text-content-secondary font-sans">
             일시적인 네트워크 문제일 수 있어요. 잠시 후 다시 시도해주세요.
           </Text>
           <View className="flex-row gap-3">
@@ -94,7 +95,7 @@ export default function InquiryDetailScreen() {
           </NumericText>
 
           {/* 내용 */}
-          <View className="rounded-lg bg-surface-page dark:bg-surface p-4 dark:bg-surface/50">
+          <View className="rounded-lg bg-surface-page dark:bg-surface p-4">
             <Text className="leading-6 text-content-secondary font-sans">{inquiry.message}</Text>
           </View>
 
@@ -132,7 +133,7 @@ export default function InquiryDetailScreen() {
         {!inquiry.response && (
           <Card className="items-center">
             <View className="mb-2 h-12 w-12 items-center justify-center rounded-sm bg-warning-100 dark:bg-warning-900/30">
-              <Text className="text-2xl font-sans">{''}</Text>
+              <ClockIcon size={24} color={STATUS_COLORS.warning} />
             </View>
             <Text
               className="mb-1 font-sans-medium text-content-primary"

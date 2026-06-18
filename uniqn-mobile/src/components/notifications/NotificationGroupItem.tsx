@@ -132,10 +132,7 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
             )}
 
             {/* 본문 (요약) */}
-            <Text
-              className="text-sm text-secondary-500 dark:text-secondary-400 mt-1 font-sans"
-              numberOfLines={1}
-            >
+            <Text className="text-sm text-content-secondary mt-1 font-sans" numberOfLines={1}>
               {group.groupBody}
             </Text>
           </View>
