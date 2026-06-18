@@ -19,7 +19,7 @@
 | K | 관리자 1 | `(admin)/index` `announcements/*`(4) `stats` `tournaments` | **done**(다색카테고리·bg-white·Button라벨→M·P3) | `ac8d1565e` |
 | L | 관리자 2 (목록) | `(admin)/reports/index` `board-reports/index` `inquiries/index` `users/index` `employer-applications/index` | **done**(bg-white/팔레트→M) | `e40c8f13a` |
 | L2 | 관리자 2 (상세) | `(admin)/reports/[id]` `board-reports/[id]` `inquiries/[id]` `users/[id]` `employer-applications/[id]` | **done**(bg-white·미정의팔레트·text-[10px]→M) | `(미커밋)` |
-| M | 공용 컴포넌트 | `src/components/` 버튼·카드·모달·EmptyState·Skeleton·배지·토스트 + 토큰 정합 | pending | |
+| M | 공용 컴포넌트 | `src/components/` 버튼·카드·모달·EmptyState·Skeleton·배지·토스트 + 토큰 정합 | **in-progress**(✅M1 팔레트 / M2 bg-white·M3 Button·M4 잔여) | M1:`(미커밋)` |
 | W | 지갑 | `(app)/wallet/*` — master에 없음 (`fix/wallet-p1-money-and-ui` 머지 후) | **deferred** | |
 | Z | 최종 횡단 패스 | 화면 간 통일 검증 + 전체 jest + quality | pending | |
 
@@ -104,6 +104,12 @@
 - [L2] P2 라이트 AA 35 | `text-secondary-500 dark:text-secondary-400`(흰 2.86:1)→`text-content-secondary`(라이트 #606068 ~6.5:1, CSS var 다크 자동) | reports 8(신고자유형·관련공고/근무날짜/첨부 라벨·처리이력 3·처리폼 옵션설명)·board-reports 5(신고자/대상작성자/접수시각·댓글작성자·처리시각)·inquiries 4(에러문구·이메일·카테고리·답변자)·users 5(InfoRow라벨·로딩·역할관리 안내/설명·계정관리 안내)·employer-applications 13(신청/처리/거부 시각·본인인증/프로필 라벨·약관스냅샷 4·하단 처리시각). 각 파일 replace_all(전부 정적 라벨, 비활성/조건부 분기 없음). reports:131은 `text-content-muted dark:text-secondary-400`로 다른 fragment라 미접촉(M/Z dark중복)
 - [L2] P2 충돌 이중 dark bg 1 | inquiries:111 문의내용 박스 `rounded-lg bg-surface-page dark:bg-surface p-4 dark:bg-surface/50`(dark:bg-surface 2회 선언, NativeWind 결과 불확정)→`dark:bg-surface` 1개. 배치E/F/K 선례 동일
 - [L2] 검증 | quality exit0(tsc0·lint0·format0 — 4파일 prettier 재배치, board-reports는 무변동) / 단독 jest 없음(프레젠테이션). **배치 L 완전 종료(목록 L + 상세 L2)**
+- [M1] **미정의 팔레트 티어 추가**(배치 A~L2 누적 #1순위, 다크 깨짐 근본해결). `tailwind.config.js`에 누락 티어 추가(`(미커밋)`). **방법=클래스 교체 대신 티어 추가**(핸드오프 1순위). 색값은 각 hue의 Tailwind 표준 스케일 + 기존 프로젝트 시프트 규칙으로 도출(임의 아님), error 팔레트(완비 50~900)의 명도 패턴과 정합. grep으로 **실제 사용 클래스만** 추가(YAGNI). 라이트모드 영향 작고(대부분 `dark:` prefix) 무스타일→정상화라 결정적 개선
+- [M1] success +200/800/900 | 200=#BBF7D0(green-200, border-success-200·dark:text-success-200)·800=#166534(green-800, text-success-800 라이트)·900=#14532D(green-900, dark:bg-success-900/20~40 46건). 기존 300/400/500이 green-300/400/500 정합이라 스케일 연장
+- [M1] warning +200/300/800/900 | warning-N=yellow-(N+100) 시프트(기존 400=yellow-500·700=yellow-800). 200=#FDE047(yellow-300)·300=#FACC15(yellow-400, dark:text-warning-300 38건 최다)·800=#713F12(yellow-900, text-warning-800 라이트)·900=#422006(yellow-950, dark:bg-warning-900/20~30 55건 최다). 명도 단조 검증 통과
+- [M1] info +300/400/900 | info-N=blue-(N+100) 시프트(기존 500=blue-600·700=blue-800). 300=#60A5FA(blue-400, dark:text-info-300)·400=#3B82F6(blue-500, dark:text-info-400)·900=#172554(blue-950, dark:bg-info-900/20~30 8건). 200/800 미사용이라 미추가
+- [M1] danger 미추가 | grep 0건(배치J invite `text-danger-500`→error-500 이미 수정, 잔존 사용처 없음). 클래스명 자체가 미정의 팔레트라 추가 대신 사용처 제거가 정답(완료)
+- [M1] 검증 | quality exit0(tsc0·lint0·format0). hex 토큰이라 CSS var 웹 주입(nativewind-patterns §2) 불필요 — `_layout.tsx` 미변경. NativeWind 빌드 타임 토큰이라 jest 무관(className 문자열만). **시각 QA(웹 라이트/다크 스크린샷)는 Z 또는 사용자 요청 시** — 색값이 표준스케일+시프트규칙 도출이라 방어 가능([[project_rev2_quality_deadcode_perf_review]] M티어 시각QA 통과 선례)
 
 ## P3 백로그 (기록만, 구현 안 함)
 
