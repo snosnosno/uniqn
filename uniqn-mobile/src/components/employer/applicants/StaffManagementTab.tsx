@@ -326,11 +326,11 @@ export function StaffManagementTab({
         visible={Boolean(deleteTarget)}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDeleteConfirm}
-        title="확정 스태프 제거"
+        title="확정 해제"
         message={`${
           deleteTarget?.staffName ?? '선택한 스태프'
-        }를 확정 목록에서 제거할까요? 이 작업은 확정을 취소하고 점유된 자리를 다시 비웁니다.`}
-        confirmText="제거"
+        }님의 확정을 해제할까요? 점유된 자리가 다시 비워집니다.`}
+        confirmText="확정 해제"
         cancelText="유지"
         isDestructive
       />
