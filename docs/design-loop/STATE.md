@@ -10,7 +10,7 @@
 | B | 탭 코어 | `(app)/(tabs)/home-jobs` `schedule` `qr` `employer` `profile`(고아라 편입) `_layout` `(app)/home` + TabHeader | **done** | `81dae65cb` `5f6a376c5`(qr) |
 | C | 게시판 | `(app)/(tabs)/board/index` `[boardType]` `write` `edit/[postId]` `post/[postId]` `_layout` | **done**(Skeleton잔여✅·error.message→Z) | `3765e405a` `3d3bc97eb`(Skeleton) |
 | D | 공고·지원 플로우 | `(app)/jobs/[id]/index` `(app)/jobs/[id]/apply` `applications/[id]/cancel` | **done** | `aea7a0e73` |
-| E | 리뷰·공지 | `reviews/write` `reviews/[workLogId]` `reviews/pending` `reviews/history` `notices/index` `notices/[id]` | pending | |
+| E | 리뷰·공지 | `reviews/write` `reviews/[workLogId]` `reviews/pending` `reviews/history` `notices/index` `notices/[id]`(notices는 redirect) | **done** | `f0dce5ec5` |
 | F | 지원센터·알림 | `support/faq` `support/create-inquiry` `support/my-inquiries` `support/inquiry/[id]` `notifications` | pending | |
 | G | 설정·프로필 | `settings/profile` `settings/change-password` `settings/my-data` `settings/business-info` `profile-setup` (약관 4종은 레이아웃만 — 본문 금지) | pending | |
 | H | 구인자 등록 | `employer-register` `employer-application-status` | pending | |
@@ -57,6 +57,12 @@
 - [D] P2 라이트 AA 17 | index 4·apply 4·JobDetail:250·ApplicationForm 4·PreQuestionForm 2·AssignmentSelector:188·DateGroupSelection:80 | `text-secondary-500 dark:text-secondary-400`(흰 2.86:1)→`text-content-secondary`(라이트 #606068 ~6.5:1, CSS var가 다크 #C0C0C8 자동). 다크는 secondary-400(#A8A8B0)→#C0C0C8 미세 밝아짐(배치C와 동일·가독성↑). JobDetail:250은 같은 박스 형제(line 243)가 이미 content-secondary라 불일치도 동시 해소
 - [D] P2 룰27 아이콘 1 | JobDetail 헤더 ShareIcon size 22(중간값 금지)→24(헤더 아이콘 표준, 배치B HomeTabBar 정합)
 - [D] 검증 | quality exit0(tsc0·lint0·format clean — apply/ApplicationForm prettier 재배치) / jest 7스위트 27 pass(JobDetailScreen·JobDetail·ApplicationForm·AssignmentSelector+utils·Skeleton·BoardPostDetailScreen). PreQuestionForm/RoleCheckbox/CancellationRequestForm은 테스트 파일 없음(프레젠테이션)
+- [E] 워크플로 14에이전트(3그룹 리뷰+단일투표) — **자정 직후라 verify는 fresh 한도지만 ~13분 느려 사용자 대기** → journal에서 전 review findings 추출 후 **인라인 정독 reconcile**(6컴포넌트+4화면 전부 직독, 워크플로 정지). notices/index·[id]는 board redirect(리뷰대상 0). 워크플로 findings는 내 인라인과 대부분 일치
+- [E] P2 라이트 AA 13 | history 3(ScoreSummary 2·비활성탭 라벨)·pending 2·[workLogId] 2(섹션라벨)·ReviewForm:182·ReviewTagSelector 2·ReviewCard:64·ReviewBlindMessage 2 | `text-secondary-500 dark:text-secondary-400`→`text-content-secondary`. **ReviewForm:204는 비활성 제출버튼 라벨(회색 bg, WCAG disabled 예외)→blanket replace 금지, 타깃 편집으로 제외**
+- [E] P2 충돌 이중 dark bg | history:54 화면컨테이너 `dark:bg-surface dark:bg-secondary-900`(뒤가 이김→#18181E, 표준#0B0B0E 이탈)→`dark:bg-surface` / ReviewBlindMessage:18,31 카드 dead `dark:bg-surface` 제거(secondary-800 로컬 카드 컨벤션 유지). NativeWind 동일속성 2회 선언은 결과 불확정→1개만 남김
+- [E] P2 기타 | ReviewForm 제출 스피너 `color="white"`(제출중 버튼=회색 비활성 bg-secondary-300, 라이트 1.3:1 거의안보임)→`isDarkMode?'#FFFFFF':'#09090B'`(라이트 어두운 스피너·다크 흰) / [workLogId]:152 "리뷰 작성하기" 골드텍스트 primary-500(흰 2:1)→primary-600(pending:83 형제 정합) / write 잘못된접근 에러 ErrorState retry(→history)와 중복된 "히스토리로 이동" Button 제거(룰11, Button import도 제거)
+- [E] P2 데드마크업 | ReviewBlindMessage 2·ReviewPromptBanner 1 빈 글리프 `<Text text-2xl>{''}</Text>` 제거(이모지 자리 잔재→팬텀 세로여백). 배치A `{''}` 패턴이나 여기선 버튼 아닌 빈상태 장식슬롯이라 리뷰어도 P3(데드)로 평가. **아이콘 추가(EyeSlash/Clock/Star)는 P3 enhancement로 분리**(빈상태 룰9)
+- [E] 검증 | quality exit0(tsc0·lint0·format clean — history/[workLogId]/ReviewTagSelector prettier 재배치, write Button import 제거) / jest 9스위트 31 pass(ReviewForm·ReviewDetailScreen·ReviewWriteScreen·useReviews 등). SentimentSelector/ReviewCard/ReviewTagSelector/ReviewBlindMessage/ReviewPromptBanner 단독 테스트 없음
 
 ## P3 백로그 (기록만, 구현 안 함)
 
@@ -111,12 +117,22 @@
 - [D→M/룰] apply.tsx 히어로 아이콘 size 40/56 (AlertTriangle:34·InformationCircle:53·CheckCircle:270) | §27 화이트리스트(14~32) 외이나 80/96px 원형 일러스트 — 배치B BriefcaseIcon size48 선례와 동일 히어로 예외 | 룰27 히어로 예외 명문화 M/룰문서
 - [D→M] apply.tsx:27 LoadingState `Loading variant='layout'`(전체화면 스피너) → 룰16 Skeleton 검토(공고 상세 로드, 배치B home.tsx 선례와 동일) | M/홈·로딩
 - [D→M] JobDetail.tsx:141 상세설명 본문이 `text-content-muted`(최저강조 토큰)라 squint test(룰13)서 가장 읽혀야 할 본문이 가장 흐림 + dark leading(룰1) 미적용 → content-secondary 상향 + dark:leading-body-dark | M(개선 아이디어)
+- [E→M] **공용 BubbleScoreBadge/SENTIMENT 토큰 미정의 다크티어** | `src/types/review.ts` SENTIMENT_COLORS positive.darkBg `dark:bg-success-900/30`·negative.darkBg `dark:bg-error-900/30`(success-900/error-900 미정의 가능) + BUBBLE_SCORE_COLORS `text-white` on `bg-warning-500`(#D4A017 골드, 흰 ~2:1 대비미달, L406)·on bg-success/error-500 | BubbleScoreBadge는 JobDetail 등 **배치 외 공용**이라 M(공용 컴포넌트+토큰)에서 팔레트 티어 검증 후 일괄. [[배치D AssignmentSelector 미정의 warning 티어]]와 동일 클래스
+- [E→M] 미정의 팔레트 티어 (배치E 추가) | pending.tsx:70 D-day 배지 `dark:bg-warning-900/30`·`dark:text-warning-300`(warning은 50/100/400/500/600/700만 존재 → 다크모드 배지 bg/text 미적용) + :61 info-100/700/300/900 확인 필요 | 핸드오프 "미정의 팔레트 40+파일"과 동일 → M 일괄(다크 시각 영향 있어 우선순위 ↑)
+- [E→M] 리뷰 카드 dark bg 컨벤션 통일 | ScoreSummary(history:119)·ReviewCard(51,52)·ReviewBlindMessage·SentimentSelector(54)·ReviewTagSelector(107) 등 `dark:bg-secondary-800`(#2A2A30) vs 앱 표준 `dark:bg-surface`(230파일). secondary-800은 10파일 유효 컨벤션이나 비표준 → 전역 카드 dark bg 토큰 결정(secondary-800 vs surface-card) | M
+- [E→M] sentiment 이모지(룰14) | SentimentSelector:60 선택버튼(text-2xl 😊😐😞)·ReviewCard:60 배지 | **워크플로 2리뷰어 독립 P2 평가**(라벨+컬러 이미 병행이라 제거 저위험·Black&Gold 톤 이질). 단 SentimentSelector 버튼은 이모지가 주 시각이라 제거=상당한 비주얼 변경(입력 어포던스 vs 상태표시 경계) → **디자인 결정 P3**(사용자 승인 시 제거: SENTIMENT_EMOJI 상수 deprecate + 라벨/컬러만)
+- [E→M] 빈상태 아이콘 enhancement | ReviewBlindMessage(EyeSlash 블라인드·Clock 대기)·ReviewPromptBanner(Star) 빈 글리프 제거만 했으니 룰9(빈상태=온보딩) 위해 의미있는 Lucide 아이콘 추가 검토 | M(아이콘 import+색 결정)
+- [E→M] active:opacity Pressed(룰21) + 터치타깃(룰5) | pending:42 카드·ReviewPromptBanner:24·SentimentSelector:49·ReviewTagSelector:104 칩(py-1.5 ~28px, hitSlop 없음, active: 부재) | 토글은 선택상태가 피드백이라 경미하나 룰21 일괄(M). 배치 전반 active:opacity → 배경톤 토글 일괄과 함께
+- [E→M] 로딩 스피너 vs Skeleton 형제 불일치(룰16) | history:76 전체화면 ActivityIndicator / [workLogId]:104 Loading variant=layout / pending은 Skeleton 사용 | 3 형제 화면 로딩 통일(Skeleton) | M
+- [E→M] ReviewForm dark: override 중복(108/123/151 content-primary+dark:text-secondary-100, 166 dark:bg-secondary-800) + :117/144 error-500 dark variant 부재 + :204 골드버튼 텍스트 `text-surface-dark` vs `content-onGold` SSOT / ReviewPromptBanner:40 chevron `{'>'}` 텍스트→ChevronRightIcon(룰27) | 토큰/아이콘 정합 M
 
 ## 회차 메모
 
 > 다음 회차에 넘길 주의사항·미완 항목
 
-- 다음 배치: **E (리뷰·공지)** — `reviews/write` `reviews/[workLogId]` `reviews/pending` `reviews/history` `notices/index` `notices/[id]`. 6화면이라 배치 C 규모(리뷰 그룹 5+verify)로. ⚠️ **배치 C 잔여 ✅완료**(Skeleton), 잔여 error.message는 여전히 Z 횡단패스
+- 다음 배치: **F (지원센터·알림)** — `support/faq` `support/create-inquiry` `support/my-inquiries` `support/inquiry/[id]` `notifications`. 5화면. 잔여 error.message는 여전히 Z 횡단패스
+- 배치 E 교훈: **워크플로가 자정 직후에도 느릴 수 있음(~13분)** → journal에서 review findings는 실시간 추출 가능하니, 느리면 정지하고 인라인 reconcile이 빠름. 사용자 대기 길어지면 인라인 우선. **blanket replace_all 주의**: secondary-500이 비활성 버튼/조건부 분기에 있으면 제외(ReviewForm:204 disabled) — 파일 내 같은 클래스라도 맥락 확인 후 타깃 편집. **충돌 이중 dark bg**(`dark:bg-surface dark:bg-secondary-X`)는 배치 E에서 2건(history 화면·ReviewBlindMessage 카드) — Z 패스 grep `dark:bg-\S+ \S*dark:bg-` 권장
+- 배치 E 미정의 팔레트 티어 재확인: warning 팔레트=50/100/400/500/600/700만(200/300/800/900 없음). `dark:bg-warning-900`·`text-warning-300` 등은 무스타일 → 다크 시각 깨짐. 배치D AssignmentSelector·배치E pending/review.ts 모두 동일 → **M에서 팔레트 티어 추가 or 클래스 교체 일괄**(다크 영향 커서 우선순위 ↑)
 - ⚠️ **세션한도 재발(배치 D)**: 워크플로 verify 11건+apply 리뷰 1건이 12am Asia/Seoul 리셋에 또 전멸(배치B qr와 동일 클래스). **대응 성공 패턴**=리뷰 findings + verify 라벨이 "무엇을 찾았는지"는 보존되므로, 세션 리셋 후 **인라인 재검증**(코드 직독 + tailwind.config 토큰값 + 룰 대조 = 검증 동치)으로 확정. 확정 반복패턴(골드위흰색·라이트AA·size22)은 grep 매핑→직독으로 충분. **다음 회차는 세션 리셋(자정 KST) 시각 피해서 워크플로 실행 권장** or 그룹 더 축소
 - 인라인 검증이 리뷰어 P3 1건 **반증**: placeholder SECONDARY_PALETTE[400]가 "표준 우회"라는 리뷰어 주장 → 실제 getPlaceholderColor 사용처 0건·SECONDARY_PALETTE[400]가 10+파일 지배 관행 → 단독수정이 오히려 불일치. 적대검증 없이도 grep으로 반증 가능(전역 관행 확인 필수)
 - 배치 D 패턴 학습: 같은 체크마크가 **한 파일은 onGold(#09090B)·다른 파일은 #FFFFFF** 불일치(ApplicationForm 정답 vs Cancellation/RoleCheckbox 오답) — 골드 위 전경은 컴포넌트 간 SSOT 부재로 산발. Z 패스 grep `color="#FFFFFF"`/`bg-white` + 골드 부모 전수 필요. content-onGold는 텍스트(text-)뿐 아니라 **배경(bg-content-onGold)·아이콘 color**에도 적용 가능(#09090B literal이라 native 안전)
