@@ -7,7 +7,7 @@
 | 배치 | 영역 | 화면 (uniqn-mobile/app/ 기준) | 상태 | 커밋 |
 |---|---|---|---|---|
 | A | 인증·공개·루트 | `(auth)/login` `(auth)/signup` `(auth)/forgot-password` `(public)/jobs/index` `jobs/index` `jobs/[id]`(공개 alias) `index`(splash) `+not-found` | **done** | `a586e28e9` |
-| B | 탭 코어 | `(app)/(tabs)/home-jobs` `schedule` `qr` `employer` `profile`(고아라 편입) `_layout` `(app)/home` + TabHeader | **done**(⚠️qr 재검증 대기) | `81dae65cb` |
+| B | 탭 코어 | `(app)/(tabs)/home-jobs` `schedule` `qr` `employer` `profile`(고아라 편입) `_layout` `(app)/home` + TabHeader | **done** | `81dae65cb` `5f6a376c5`(qr) |
 | C | 게시판 | `(tabs)/board/index` `[boardType]` `write` `edit/[postId]` `post/[postId]` | pending | |
 | D | 공고·지원 플로우 | `(app)/jobs/[id]/index` `(app)/jobs/[id]/apply` `applications/[id]/cancel` | pending | |
 | E | 리뷰·공지 | `reviews/write` `reviews/[workLogId]` `reviews/pending` `reviews/history` `notices/index` `notices/[id]` | pending | |
@@ -42,6 +42,7 @@
 - [B] P2 빈상태·어포던스 | schedule 캘린더뷰 온보딩 EmptyState 추가(월 0건 게이트) / employer 선택 필 라이트 트랙 분리(bg-secondary-100) / PostingTypeChips min-h-[40px]+hitSlop
 - [B] P2 접근성·안티패턴 | profile 평점배지 hitSlop12+role/label / BalanceBadge 💖→'하트' 텍스트(룰14) / PostingTypeChips 죽은 빈 아이콘 Text 제거(팬텀 마진)
 - [B] 검증 | quality exit0(tsc0·lint0·format0) / jest 21 pass(BalanceBadge·PostingTypeChips·DashboardViewToggle·TabHeader·JobsScreen). BalanceBadge.test 💖→'하트' 정규식(/3/·/D-2/·/만료/) 무영향 확인
+- [B-qr] P2 4 | 유실됐던 qr verify를 인라인 재검증(배치B 동일 패턴 확정): 헤더 부제·'현재 상태' 라벨·스캔 안내문 secondary-500→600(라이트 AA) + 스캔 Button ScanIcon #FFFFFF→onGold (`5f6a376c5`). quality exit0. **배치B 완전 종료**
 
 ## P3 백로그 (기록만, 구현 안 함)
 
@@ -63,7 +64,7 @@
 - [A] +not-found | 워터마크 text-6xl 스케일 이탈(장식 예외 주석으로 유지 중) / 타이틀 dark:text-secondary-100 혼용 → content-primary 단일화
 - [A] index.tsx(스플래시) | 버전 텍스트 테마 가변 토큰을 고정 다크 배경 위에 사용 → text-secondary-500 고정 / PublicBottomTabBar:69 size=22→20|24
 - [A] (auth) 헤더 3종 | 수기 헤더 → StackHeader 공용화 검토 (M 배치)
-- [B→재검증] qr.tsx | 세션한도로 verify 유실된 P1/P2 5건(라이트 AA 대비·nativewind 토큰·룰27 아이콘색 일관성+대비·탭헤더 일관성·룰3 골드 절제) | qr 단일 화면 재리뷰(인라인 가능, 203줄) 필요 — 다음 회차 또는 Z 패스에서
+- [B-qr] ✅재검증 완료(`5f6a376c5`): P2 4건(라이트 AA·아이콘 onGold) 수정. 잔여 P3: qr.tsx:78 커스텀 bg-white 헤더(TabHeader 미사용·flat 다크 경계) / qr.tsx:122 '출근 필요' 골드 배지(룰3 경계, CTA-인접이라 방어가능) / qr.tsx:91 Card a11y forwarding / qr.tsx:144 히어로 ScanIcon size 80
 - [B] src/components/ui/Loading.tsx:18 | 라이트 스피너 PRIMARY[300]=#D4AF37 흰배경 2.1:1 거의 안보임 → getLoadingColor(라이트 #8A7228) 재사용 단일소스. home.tsx 로딩이 사용 | M 배치
 - [B] src/components/headers/TabHeader.tsx:48 | 헤더 borderBottom 부재 — 다크 헤더bg=콘텐츠bg=#0B0B0E 동색이라 스크롤 시 경계 소실. LAYOUT_COLORS.headerBorder 토큰 미사용(의도된 flat이면 무시) | M 배치
 - [B] app/(app)/home.tsx:41 | 대시보드 로딩 Loading variant='layout'(전체화면 스피너) → 위젯 카드 Skeleton 컴포저(룰16, layout shift 감소) | M/홈 배치
@@ -86,7 +87,7 @@
 
 > 다음 회차에 넘길 주의사항·미완 항목
 
-- 다음 배치: **C (게시판)** — `(app)/(tabs)/board/index` `[boardType]` `write` `edit/[postId]` `post/[postId]`. ⚠️ **그 전에/병행: qr.tsx 재검증**(배치B에서 세션한도로 verify 유실, 203줄 인라인 리뷰면 충분 — 워크플로 불필요). 실제 탭 경로는 `app/(app)/(tabs)/` (STATE 표의 `(tabs)/`는 약식)
+- 다음 배치: **C (게시판)** — `app/(app)/(tabs)/board/index` `[boardType]` `write` `edit/[postId]` `post/[postId]`. (✅ qr 재검증은 `5f6a376c5`로 완료, 배치B 종료). 실제 탭 경로는 `app/(app)/(tabs)/` (STATE 표의 `(tabs)/`는 약식)
 - 워크플로 세션한도 교훈: 38에이전트 중 11 verify가 7pm 리셋 한도로 실패 → 그룹 단위로 findings 유실(qr 전멸). 큰 배치는 ①그룹 수 축소 or ②verify를 단일투표로 or ③세션 리셋 시각 피해 실행. 배치 C는 5화면이라 리뷰 5+verify로 규모 적정
 - 배치B 패턴 학습: 라이트모드 골드/회색-온-화이트 대비(2.1~2.9:1)가 반복 P1 클래스 — `getLayoutColor`/`secondary-600`/`content-onGold` 토큰이 이미 존재하나 하드코딩으로 우회됨(HomeTabBar는 토큰 사용=정답 레퍼런스) / 룰27 size 22는 코드베이스 만연(탭바·헤더·메뉴) → Z 패스에서 전역 grep `size={22}` 일괄 점검 권장 / 골드 위 텍스트·아이콘은 `content-onGold`(#09090B)가 SSOT
 - 작업 위치: 워크트리 `C:\Users\user\Desktop\T-HOLDEM-design-loop` 브랜치 `design/ui-ux-consistency-loop` (node_modules 정션 연결됨). 메인 체크아웃의 `docs/design-loop/`는 untracked 사본 — 회차 종료 시 양쪽 동기화할 것
