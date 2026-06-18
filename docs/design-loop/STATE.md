@@ -8,8 +8,8 @@
 |---|---|---|---|---|
 | A | 인증·공개·루트 | `(auth)/login` `(auth)/signup` `(auth)/forgot-password` `(public)/jobs/index` `jobs/index` `jobs/[id]`(공개 alias) `index`(splash) `+not-found` | **done** | `a586e28e9` |
 | B | 탭 코어 | `(app)/(tabs)/home-jobs` `schedule` `qr` `employer` `profile`(고아라 편입) `_layout` `(app)/home` + TabHeader | **done** | `81dae65cb` `5f6a376c5`(qr) |
-| C | 게시판 | `(app)/(tabs)/board/index` `[boardType]` `write` `edit/[postId]` `post/[postId]` `_layout` | **done**(Skeleton 2·error.message→Z 잔여) | `3765e405a` |
-| D | 공고·지원 플로우 | `(app)/jobs/[id]/index` `(app)/jobs/[id]/apply` `applications/[id]/cancel` | pending | |
+| C | 게시판 | `(app)/(tabs)/board/index` `[boardType]` `write` `edit/[postId]` `post/[postId]` `_layout` | **done**(Skeleton잔여✅·error.message→Z) | `3765e405a` `3d3bc97eb`(Skeleton) |
+| D | 공고·지원 플로우 | `(app)/jobs/[id]/index` `(app)/jobs/[id]/apply` `applications/[id]/cancel` | **done** | `aea7a0e73` |
 | E | 리뷰·공지 | `reviews/write` `reviews/[workLogId]` `reviews/pending` `reviews/history` `notices/index` `notices/[id]` | pending | |
 | F | 지원센터·알림 | `support/faq` `support/create-inquiry` `support/my-inquiries` `support/inquiry/[id]` `notifications` | pending | |
 | G | 설정·프로필 | `settings/profile` `settings/change-password` `settings/my-data` `settings/business-info` `profile-setup` (약관 4종은 레이아웃만 — 본문 금지) | pending | |
@@ -51,6 +51,12 @@
 - [C] P2 이모지(룰14) | board 홈 섹션 헤더 🔥인기글·🕒활동 → 이모지 제거(e2e 셀렉터 의존 grep 0건 확인)
 - [C] 검증 | quality exit0(tsc0·lint0·format0) / jest 89 pass(board 21 suites + EmptyState·BoardPostCard·BoardImagePicker·PinnedNotice)
 - [C 잔여] **미수행 P2 3건**: ①error.message 원시노출(board index:81·[boardType]:59) — 앱 전역 11곳 동일관행이라 board 단독변경시 불일치 → **Z 횡단패스로 일괄**(ErrorState 중앙 sanitize or 11곳 통일) ②③Skeleton 구조정합(board/index:71·[boardType]:82) — SkeletonListItem(원형 아바타) → BoardPostCard형 composer 신규작성 규모라 **batch C 잔여**로 분리(차기 회차)
+- [C 잔여 ✅완료] (`3d3bc97eb`) Skeleton 구조정합 2건 + 동반 P3 1건 해소: **SkeletonBoardPostItem** composer 신규작성(BoardPostCard 정합 — 배지+제목 행 + 메타 행, 원형 아바타 제거). 내부 Skeleton `accessible=false`(호출부 progressbar 컨테이너가 announce). board/index·[boardType] 5+5 교체 + board 홈 로딩에 progressbar 래퍼 추가([boardType]은 기존 래퍼 존재). BoardPostDetailSkeleton:12 로딩문구 secondary-500→content-secondary. **기존 SkeletonListItem 불변**(아바타 적절한 profile/collaborator/wallet용). 잔여 error.message는 여전히 **Z 횡단패스**
+- [D] 워크플로 14에이전트(3그룹 리뷰+단일투표 verify) — **세션한도(12am Asia/Seoul 리셋)로 verify 11건+apply 리뷰 1건 유실**(배치B qr 선례 반복). `confirmed:[]`는 반박 아닌 verify 전멸 결과. detail/cancel 리뷰 findings + verify 라벨이 무엇을 찾았는지 보존 → **인라인 재검증**(qr 선례: 코드 직독+토큰값+룰 대조가 곧 검증)으로 확정 P2 21건 수정(`aea7a0e73`). cancel.tsx는 단순 Redirect(리뷰대상 0)
+- [D] P2 골드 위 onGold(#09090B) 3 | CancellationRequestForm:216 대타 체크박스·RoleCheckbox:35 역할 체크 CheckIcon `#FFFFFF`→`#09090B` / PreQuestionForm:79 select 라디오 점 `bg-white`→`bg-content-onGold` | 전부 `bg-primary-500`(골드) 위 흰 전경 2.1:1. **레퍼런스=ApplicationForm:362 이미 #09090B**(동일 체크마크 패턴이 한 파일은 onGold·다른 곳은 흰색 불일치였음)
+- [D] P2 라이트 AA 17 | index 4·apply 4·JobDetail:250·ApplicationForm 4·PreQuestionForm 2·AssignmentSelector:188·DateGroupSelection:80 | `text-secondary-500 dark:text-secondary-400`(흰 2.86:1)→`text-content-secondary`(라이트 #606068 ~6.5:1, CSS var가 다크 #C0C0C8 자동). 다크는 secondary-400(#A8A8B0)→#C0C0C8 미세 밝아짐(배치C와 동일·가독성↑). JobDetail:250은 같은 박스 형제(line 243)가 이미 content-secondary라 불일치도 동시 해소
+- [D] P2 룰27 아이콘 1 | JobDetail 헤더 ShareIcon size 22(중간값 금지)→24(헤더 아이콘 표준, 배치B HomeTabBar 정합)
+- [D] 검증 | quality exit0(tsc0·lint0·format clean — apply/ApplicationForm prettier 재배치) / jest 7스위트 27 pass(JobDetailScreen·JobDetail·ApplicationForm·AssignmentSelector+utils·Skeleton·BoardPostDetailScreen). PreQuestionForm/RoleCheckbox/CancellationRequestForm은 테스트 파일 없음(프레젠테이션)
 
 ## P3 백로그 (기록만, 구현 안 함)
 
@@ -98,13 +104,22 @@
 - [B] profile.tsx:198 | 로딩 ellipsis 혼용('처리 중…' vs '로그아웃 중...') → 유니코드 … 통일. e2e grep |
 - [B] profile.tsx:184/206 | 지갑 잔액배지 비인터랙티브 dead-end(IA: MenuItem화 검토) / 메뉴 아이콘 색 테마 비반응(getIconColor 통일) |
 - [B→M] 골드 위 흰 아이콘 반복편차 | QRPanel.tsx:352·QRCodeDisplay.tsx:148 RefreshIcon #FFFFFF→onGold (employer PlusIcon과 동일) / 💖 이모지 PaywallModal:28,48·PurchaseSheet:133 (BalanceBadge와 동일, 룰14) | M/지갑 배치
+- [D→M] AssignmentSelector.tsx:168-176 고정공고 비활성 warning 박스 | **미정의 warning 티어** `text-warning-800`·`dark:text-warning-200`·`bg-warning-900/30`·`dark:text-warning-300`(warning 팔레트는 50/100/400/500/600/700만 존재 → 미정의 클래스는 무스타일·색 미적용) + raw `border-amber-200 dark:border-amber-800`(amber raw Tailwind 금지) | 박스 전체를 일관 토큰으로 재구성 — 핸드오프 "미정의 팔레트 티어 40+파일" 동일 클래스라 **M 일괄**(amber만 단독수정 시 미정의 티어 잔존)
+- [D→Z/M] placeholder 색 전역 결정 | `placeholderTextColor={SECONDARY_PALETTE[400]}`(#A8A8B0, 라이트 ~2.1:1) — ApplicationForm:330·CancellationRequestForm:181·PreQuestionForm:143,155 등 **10+파일 지배적 관행**. 반면 `getPlaceholderColor(isDarkMode)`(라이트 #707078 반환)는 **사용처 0건**. 단독 교체 시 오히려 전역 불일치 → 라이트 placeholder 대비 개선하려면 **전역 일괄**(헬퍼 채택 or 토큰화) | 리뷰어가 batch D P3로 제기했으나 인라인 검증서 단독수정 반증
+- [D→M] 시맨틱 토큰 위 dark: 중복 (광범위) | `text-content-primary dark:text-off-white`(JobDetail 55/112/216/263·CancellationRequestForm 135/148/219·ApplicationForm 49/258/316/365·FixedRoleSelector) + `text-content-muted dark:text-secondary-300`(JobDetail:141·CancellationRequestForm 140/151/154/222/232) — content-* CSS var가 이미 다크 처리하는데 dark: override 덧댐 | NativeWind 플랫폼 미flip 방어 의도면 정책화, 아니면 dark: 제거 일괄 — **M/Z**
+- [D→M] ApplicationForm/JobDetail `dark:bg-surface` 이중중복 | `bg-surface-page dark:bg-surface p-4 dark:bg-surface`(ApplicationForm 251/337/345/376·JobDetail:240) 한 className에 dark:bg-surface 2회 — 무해하나 정리 | M
+- [D→M/룰] apply.tsx 히어로 아이콘 size 40/56 (AlertTriangle:34·InformationCircle:53·CheckCircle:270) | §27 화이트리스트(14~32) 외이나 80/96px 원형 일러스트 — 배치B BriefcaseIcon size48 선례와 동일 히어로 예외 | 룰27 히어로 예외 명문화 M/룰문서
+- [D→M] apply.tsx:27 LoadingState `Loading variant='layout'`(전체화면 스피너) → 룰16 Skeleton 검토(공고 상세 로드, 배치B home.tsx 선례와 동일) | M/홈·로딩
+- [D→M] JobDetail.tsx:141 상세설명 본문이 `text-content-muted`(최저강조 토큰)라 squint test(룰13)서 가장 읽혀야 할 본문이 가장 흐림 + dark leading(룰1) 미적용 → content-secondary 상향 + dark:leading-body-dark | M(개선 아이디어)
 
 ## 회차 메모
 
 > 다음 회차에 넘길 주의사항·미완 항목
 
-- 다음 배치: **D (공고·지원 플로우)** — `(app)/jobs/[id]/index` `(app)/jobs/[id]/apply` `applications/[id]/cancel`. ⚠️ **batch C 잔여 2건**(board Skeleton 구조정합: index.tsx:71 + [boardType].tsx:82 — SkeletonListItem 원형아바타→BoardPostCard형 composer 신규작성)도 D 전/병행 처리 권장(소규모). 골드 CTA 多화면이라 onGold 패턴 또 나올 것
-- 소규모 워크플로(3그룹+단일투표) 효과 확인: 28에이전트·0 유실로 세션한도 회피. 배치 D도 3화면이라 동일 규모로
+- 다음 배치: **E (리뷰·공지)** — `reviews/write` `reviews/[workLogId]` `reviews/pending` `reviews/history` `notices/index` `notices/[id]`. 6화면이라 배치 C 규모(리뷰 그룹 5+verify)로. ⚠️ **배치 C 잔여 ✅완료**(Skeleton), 잔여 error.message는 여전히 Z 횡단패스
+- ⚠️ **세션한도 재발(배치 D)**: 워크플로 verify 11건+apply 리뷰 1건이 12am Asia/Seoul 리셋에 또 전멸(배치B qr와 동일 클래스). **대응 성공 패턴**=리뷰 findings + verify 라벨이 "무엇을 찾았는지"는 보존되므로, 세션 리셋 후 **인라인 재검증**(코드 직독 + tailwind.config 토큰값 + 룰 대조 = 검증 동치)으로 확정. 확정 반복패턴(골드위흰색·라이트AA·size22)은 grep 매핑→직독으로 충분. **다음 회차는 세션 리셋(자정 KST) 시각 피해서 워크플로 실행 권장** or 그룹 더 축소
+- 인라인 검증이 리뷰어 P3 1건 **반증**: placeholder SECONDARY_PALETTE[400]가 "표준 우회"라는 리뷰어 주장 → 실제 getPlaceholderColor 사용처 0건·SECONDARY_PALETTE[400]가 10+파일 지배 관행 → 단독수정이 오히려 불일치. 적대검증 없이도 grep으로 반증 가능(전역 관행 확인 필수)
+- 배치 D 패턴 학습: 같은 체크마크가 **한 파일은 onGold(#09090B)·다른 파일은 #FFFFFF** 불일치(ApplicationForm 정답 vs Cancellation/RoleCheckbox 오답) — 골드 위 전경은 컴포넌트 간 SSOT 부재로 산발. Z 패스 grep `color="#FFFFFF"`/`bg-white` + 골드 부모 전수 필요. content-onGold는 텍스트(text-)뿐 아니라 **배경(bg-content-onGold)·아이콘 color**에도 적용 가능(#09090B literal이라 native 안전)
 - 배치C 패턴 학습: 골드 위 흰 전경(white/#FFFFFF on 골드 버튼/배경)이 **앱 전역 반복 클래스** — Button variant=primary에 아이콘 흰색 넘기는 패턴이 board 5곳+QRPanel/QRCodeDisplay+employer/profile/qr에 산재. Z 패스에서 `color="#FFFFFF"`/`'#fff'` + 골드배경 전수 grep 권장. 정답=`#09090B`(content.onGold) / EmptyState·Card 등 공용 컴포넌트 수정은 1건으로 전 화면 개선(고ROI)이나 영향범위 grep 필수
 - 워크플로 세션한도 교훈: 38에이전트 중 11 verify가 7pm 리셋 한도로 실패 → 그룹 단위로 findings 유실(qr 전멸). 큰 배치는 ①그룹 수 축소 or ②verify를 단일투표로 or ③세션 리셋 시각 피해 실행. 배치 C는 5화면이라 리뷰 5+verify로 규모 적정
 - 배치B 패턴 학습: 라이트모드 골드/회색-온-화이트 대비(2.1~2.9:1)가 반복 P1 클래스 — `getLayoutColor`/`secondary-600`/`content-onGold` 토큰이 이미 존재하나 하드코딩으로 우회됨(HomeTabBar는 토큰 사용=정답 레퍼런스) / 룰27 size 22는 코드베이스 만연(탭바·헤더·메뉴) → Z 패스에서 전역 grep `size={22}` 일괄 점검 권장 / 골드 위 텍스트·아이콘은 `content-onGold`(#09090B)가 SSOT
