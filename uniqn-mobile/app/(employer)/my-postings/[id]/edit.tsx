@@ -208,9 +208,7 @@ export default function EditJobPostingScreen() {
         />
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
-          <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
-            공고 정보를 불러오는 중...
-          </Text>
+          <Text className="mt-4 text-content-secondary font-sans">공고 정보를 불러오는 중...</Text>
         </View>
       </SafeAreaView>
     );
@@ -229,7 +227,7 @@ export default function EditJobPostingScreen() {
           <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
             공고를 불러올 수 없습니다
           </Text>
-          <Text className="mb-4 text-center text-secondary-500 dark:text-secondary-400 font-sans">
+          <Text className="mb-4 text-center text-content-secondary font-sans">
             {jobError?.message || '공고 정보를 찾을 수 없습니다.'}
           </Text>
           <Button variant="primary" onPress={() => router.back()}>
@@ -292,7 +290,7 @@ export default function EditJobPostingScreen() {
             >
               {hasConfirmedApplicants ? (
                 <View className="rounded-lg bg-surface-card p-4 dark:bg-surface">
-                  <Text className="text-center text-secondary-500 dark:text-secondary-400 font-sans">
+                  <Text className="text-center text-content-secondary font-sans">
                     확정된 지원자가 있어 일정은 수정할 수 없습니다.
                   </Text>
                 </View>
@@ -322,7 +320,7 @@ export default function EditJobPostingScreen() {
               >
                 {hasConfirmedApplicants ? (
                   <View className="rounded-lg bg-surface-card p-4 dark:bg-surface">
-                    <Text className="text-center text-secondary-500 dark:text-secondary-400 font-sans">
+                    <Text className="text-center text-content-secondary font-sans">
                       확정된 지원자가 있어 역할 정보는 수정할 수 없습니다.
                     </Text>
                   </View>

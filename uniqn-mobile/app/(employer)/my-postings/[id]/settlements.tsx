@@ -142,9 +142,7 @@ export default function StaffSettlementsScreen() {
         {stackHeader}
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
-          <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
-            데이터를 불러오는 중...
-          </Text>
+          <Text className="mt-4 text-content-secondary font-sans">데이터를 불러오는 중...</Text>
         </View>
       </SafeAreaView>
     );
