@@ -1,6 +1,6 @@
 ---
 area: architecture
-updated: 2026-06-18
+updated: 2026-06-19
 status: current
 sources:
   - uniqn-mobile/supabase/migrations/20260525153952_fix_job_postings_anon_public_select.sql
@@ -10,7 +10,8 @@ sources:
   - memory/pitfall_rls_with_check_self_select_recursion.md
   - PR#91
   - PR#92
-tags: [rls, postgres, security, supabase, recursion, secdef]
+  - PR#179
+tags: [rls, postgres, security, supabase, recursion, secdef, grants]
 ---
 
 # RLS 모델
@@ -30,6 +31,7 @@ tags: [rls, postgres, security, supabase, recursion, secdef]
 1. **permissive 정책은 OR 합산** — 하나라도 USING 절에서 함수 권한 실패 시 쿼리 전체 abort.
 2. **RLS 안에서 같은 테이블 inline SELECT → cycle 감지(42P17)** — SECURITY DEFINER plpgsql 함수로 wrap 필수.
 3. **SECDEF 함수는 절대 anon에 노출 금지** — 멤버십 논리는 `authenticated`에만 부여.
+4. **테이블 GRANT 는 RLS와 별개의 coarse 레이어** — RLS 평가 이전에 테이블 권한이 없으면 `permission denied for table`(42501)로 abort(RLS는 0행이 아니라 권한 거부). prod 는 Supabase 기본 default-privilege 로 GRANT 보유하지만 테스트/신환경은 implicit 부여에 의존하면 깨진다 → 명시 GRANT([[test-db-grants]]).
 
 ## 함정 1: anon + SECDEF 헬퍼 → 42501 (검증됨)
 
@@ -65,3 +67,4 @@ WITH CHECK 안 `SELECT count(*) FROM workspaces WHERE owner_id = auth.uid()` →
 - [[layers]] — Service/Repository에서 Supabase 호출 방식
 - [[roles]] — UserRole과 RLS authenticated 계층 매핑
 - [[enum-divergence]] — RLS와 함께 발생한 읽기 증발 패턴
+- [[test-db-grants]] — 테이블 GRANT 레이어를 테스트에서 명시화한 결정
