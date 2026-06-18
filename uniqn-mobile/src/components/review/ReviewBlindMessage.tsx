@@ -15,12 +15,11 @@ export default React.memo(function ReviewBlindMessage({ hasMyReview }: ReviewBli
   if (hasMyReview) {
     // 내 리뷰는 작성했지만 상대방이 아직 미작성
     return (
-      <View className="items-center rounded-md border border-secondary-200 bg-surface-page dark:bg-surface px-4 py-6 dark:border-secondary-700 dark:bg-secondary-800">
-        <Text className="mb-2 text-2xl font-sans">{''}</Text>
+      <View className="items-center rounded-md border border-secondary-200 bg-surface-page px-4 py-6 dark:border-secondary-700 dark:bg-secondary-800">
         <Text className="text-center text-sm font-sans-medium text-content-secondary">
           상대방이 아직 평가를 작성하지 않았습니다
         </Text>
-        <Text className="mt-1 text-center text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+        <Text className="mt-1 text-center text-xs text-content-secondary font-sans">
           상대방이 평가를 완료하면 확인할 수 있습니다
         </Text>
       </View>
@@ -28,12 +27,11 @@ export default React.memo(function ReviewBlindMessage({ hasMyReview }: ReviewBli
   }
 
   return (
-    <View className="items-center rounded-md border border-secondary-200 bg-surface-page dark:bg-surface px-4 py-6 dark:border-secondary-700 dark:bg-secondary-800">
-      <Text className="mb-2 text-2xl font-sans">{''}</Text>
+    <View className="items-center rounded-md border border-secondary-200 bg-surface-page px-4 py-6 dark:border-secondary-700 dark:bg-secondary-800">
       <Text className="text-center text-sm font-sans-medium text-content-secondary">
         상대방의 평가는 블라인드 상태입니다
       </Text>
-      <Text className="mt-1 text-center text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+      <Text className="mt-1 text-center text-xs text-content-secondary font-sans">
         평가를 작성하면 상대방의 평가를 확인할 수 있습니다
       </Text>
     </View>

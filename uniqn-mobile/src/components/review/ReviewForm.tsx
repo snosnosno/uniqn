@@ -179,7 +179,7 @@ export default function ReviewForm({
       ) : null}
 
       {sentiment ? (
-        <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+        <Text className="text-xs text-content-secondary font-sans">
           리뷰는 제출 후 수정할 수 없어요. 상대방도 리뷰를 완료하면 서로의 리뷰를 확인할 수 있어요.
         </Text>
       ) : null}
@@ -197,7 +197,7 @@ export default function ReviewForm({
         accessibilityState={{ disabled: !isFormReady || isSubmitting }}
       >
         {isSubmitting ? (
-          <ActivityIndicator color="white" size="small" />
+          <ActivityIndicator color={isDarkMode ? '#FFFFFF' : '#09090B'} size="small" />
         ) : (
           <Text
             className={`text-base font-sans-semibold ${

@@ -50,10 +50,7 @@ export default function ReviewHistoryScreen() {
   const keyExtractor = useCallback((item: Review) => `${item.workLogId}_${item.reviewerType}`, []);
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-surface-page dark:bg-surface dark:bg-secondary-900"
-      edges={['top', 'bottom']}
-    >
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="평가 히스토리" fallbackHref="/(app)/(tabs)/profile" />
       {/* 버블 점수 요약 카드 */}
       {bubbleScore && <ScoreSummary bubbleScore={bubbleScore} />}
@@ -130,7 +127,7 @@ function ScoreSummary({ bubbleScore }: { bubbleScore: ScoreSummaryData }) {
           </NumericText>
           <BubbleScoreBadge score={bubbleScore.score} size="md" />
         </View>
-        <NumericText className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+        <NumericText className="text-xs text-content-secondary font-sans">
           총 {bubbleScore.totalReviewCount}건
         </NumericText>
       </View>
@@ -152,7 +149,7 @@ function StatItem({ dotColor, count, label }: { dotColor: string; count: number;
     <View className="flex-row items-center gap-1.5">
       <View className={`h-2 w-2 rounded-full ${dotColor}`} />
       <NumericText className="text-sm font-sans-bold text-content-secondary">{count}</NumericText>
-      <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">{label}</Text>
+      <Text className="text-xs text-content-secondary font-sans">{label}</Text>
     </View>
   );
 }
@@ -175,9 +172,7 @@ function TabButton({
     >
       <Text
         className={`text-sm font-sans-medium ${
-          isActive
-            ? 'text-primary-600 dark:text-primary-400'
-            : 'text-secondary-500 dark:text-secondary-400'
+          isActive ? 'text-primary-600 dark:text-primary-400' : 'text-content-secondary'
         }`}
       >
         {label}

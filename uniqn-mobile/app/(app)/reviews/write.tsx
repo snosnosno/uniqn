@@ -4,7 +4,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StackHeader } from '@/components/headers';
 import { ErrorState } from '@/components/ui';
-import { Button } from '@/components/ui/Button';
 import ReviewForm from '@/components/review/ReviewForm';
 import { isReviewerType } from '@/domains/review';
 import { useCreateReview } from '@/hooks/useReviews';
@@ -82,11 +81,6 @@ export default function ReviewWriteScreen() {
             onRetry={goToHistory}
             retryText="히스토리로 이동"
           />
-          <View className="px-8 pb-8">
-            <Button variant="outline" onPress={goToHistory} fullWidth>
-              히스토리로 이동
-            </Button>
-          </View>
         </View>
       </SafeAreaView>
     );

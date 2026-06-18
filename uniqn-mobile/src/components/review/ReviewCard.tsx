@@ -61,7 +61,7 @@ export default React.memo(function ReviewCard({
             </Text>
           </View>
           {showReviewer && (
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+            <Text className="text-xs text-content-secondary font-sans">
               {review.reviewerType === 'employer' ? '구인자' : '스태프'}
             </Text>
           )}
