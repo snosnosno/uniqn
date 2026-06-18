@@ -13,7 +13,7 @@
 | E | 리뷰·공지 | `reviews/write` `reviews/[workLogId]` `reviews/pending` `reviews/history` `notices/index` `notices/[id]`(notices는 redirect) | **done** | `f0dce5ec5` |
 | F | 지원센터·알림 | `support/faq` `support/create-inquiry` `support/my-inquiries` `support/inquiry/[id]` `notifications` | **done**(error.message→Z·미정의팔레트→M) | `dfd14081f` |
 | G | 설정·프로필 | `settings/profile` `settings/change-password` `settings/my-data` `settings/business-info` `profile-setup` (약관 4종은 레이아웃만 — 본문 금지) | **done**(hand-rolled 버튼→Button M·error.message→Z) | `86d676398` |
-| H | 구인자 등록 | `employer-register` `employer-application-status` | pending | |
+| H | 구인자 등록 | `employer-register` `employer-application-status` | **done**(Button라벨 surface-dark·미정의팔레트→M) | `2d899af83` |
 | I | 구인자 공고관리 | `(employer)/my-postings/create` `[id]/edit` `[id]/applicants` `[id]/settlements` `[id]/collaborators` `[id]/cancellation-requests` | pending | |
 | J | 워크스페이스 | `(employer)/workspace/index` `invite` `invitations` `archived` | pending | |
 | K | 관리자 1 | `(admin)/index` `announcements/*`(4) `stats` `tournaments` | pending | |
@@ -76,6 +76,11 @@
 - [G] P2 빈 글리프 데드마크업 1 | my-data:203 개인정보 처리방침 카드 `<Text text-2xl mr-3>{''}`(현 프로덕션 빈 텍스트+팬텀 mr-3 12px 갭, flex-row 아이콘 컬럼 의도) → `<ShieldCheckIcon size={24} color={PRIMARY_COLORS[700]}>`(룰9/13 의미있는 아이콘, 배치F ClockIcon 선례 — 프로미넌트 의도된 아이콘 슬롯엔 추가가 정답)
 - [G] P2 라이트 AA 1 | profile-setup:106 부제 `text-secondary-500 dark:text-secondary-400`(흰 2.86:1)→`text-content-secondary`
 - [G] 검증 | quality exit0(tsc0·lint0·format clean). 5화면 모두 단독 jest 없음(프레젠테이션). 로직 미변경(스피너 색 조건·아이콘 size·색 토큰만)이라 tsc0이 useThemeStore훅·ShieldCheckIcon import 정합 보증
+- [H] **인라인 정독 리뷰**(워크플로 미사용). 2화면(employer-register·employer-application-status) 직독. 확정 P2 6건 수정(`2d899af83`). application-status는 5상태(loading/none/pending/approved/rejected) 화면이나 위반은 StatusBadge rounded-full·미정의 팔레트뿐
+- [H] P2 라이트 AA 4 | employer-register InfoRow:42 라벨·AgreementCheckbox:96 설명·:237 본인인증 안내·:263 구인소개 설명 | `text-secondary-500 dark:text-secondary-400`(흰 2.86:1)→`text-content-secondary`. replace_all(4곳 동일 fragment, 비활성/조건부 분기 없음 확인)
+- [H] P2 골드 위 흰 전경 1 | employer-register AgreementCheckbox:80 동의 체크박스 `<CheckCircleIcon color="#fff">`(checked 시 bg-primary-600 골드 위)→`#09090B`. 배치D RoleCheckbox/CancellationForm 체크마크 onGold 정합
+- [H] P2 룰14 rounded-full 1 | employer-application-status StatusBadge:67 `rounded-full`→`rounded-sm`(DESIGN.md rounded 스케일·InquiryStatusBadge/NotificationCategoryTabs 배지 정합). pending/approved/rejected 3상태 배지 공통
+- [H] 검증 | quality exit0(tsc0·lint0·format clean — employer-register prettier 재배치) / 2화면 단독 jest 없음(프레젠테이션)
 
 ## P3 백로그 (기록만, 구현 안 함)
 
@@ -152,12 +157,18 @@
 - [G→M/Z] 시맨틱 토큰 위 dark: 중복(배치G) | profile-setup:103 헤더 `text-content-primary dark:text-off-white` | 배치D/E/F 동일 일괄 정책 결정 M/Z
 - [G→M] business-info InfoRow:47 `active:opacity-70`(룰21: 다크 대비 깨짐) | 룰21 active:opacity→배경톤 토글 전역 일괄 M
 - [G] profile.tsx placeholder 5곳 `placeholderTextColor={SECONDARY_PALETTE[400]}`(라이트 ~2.1:1) — [[배치F create-inquiry]]·배치D와 동일 전역 placeholder 관행 | M/Z 전역 결정
+- [H→M] employer Button-child 라벨 `text-surface-dark` 4 | employer-register:319·employer-application-status:91/172/231 `<Button variant="primary"><Text text-surface-dark>` — Button 컴포넌트 자식으로 라벨색 수기지정(content-onGold SSOT 이탈). 배치E/G와 동일 deferred — Button이 라벨색 소유하도록(string 자식) M에서 일괄. employer-register:317 제출 `<Loading color="#fff">`도 Button loading prop으로 이관
+- [H→M] **미정의 팔레트 티어(배치H)** | employer-application-status StatusBadge pending `dark:bg-warning-900/30`·`dark:text-warning-300`(warning 900/300 미정의)·approved `dark:bg-success-900/30`(success 900 미정의) + PendingScreen:134 `dark:bg-warning-900/20` | 배치D/E/F와 동일 → M 팔레트 티어 추가 or 교체 일괄(다크 깨짐)
+- [H→M] employer-register raw bg-white 2 | AgreementCheckbox:77 미체크 박스 `bg-white`·:276 TextInput `bg-white` + :271 placeholder raw `#9CA3AF`(SECONDARY_PALETTE도 아닌 raw Tailwind gray) | bg-white→surface-card + placeholder 전역결정과 함께 M
+- [H→M/Z] 시맨틱 토큰 위 dark: 중복(배치H 광범위) | employer 두 화면 전반 `text-content-primary dark:text-off-white`·`text-content-muted dark:text-secondary-400` 다수 | 배치D~G 동일 M/Z 일괄 정책
+- [H→M] employer-register AgreementCheckbox `[보기]`:88 Pressable ml-2 무 hitSlop/패딩(룰5 터치 44px 미달) | hitSlop 추가 M
 
 ## 회차 메모
 
 > 다음 회차에 넘길 주의사항·미완 항목
 
-- 다음 배치: **H (구인자 등록)** — `employer-register` `employer-application-status` (2화면). 잔여 error.message·미정의 팔레트 티어·hand-rolled Button·placeholder는 여전히 Z/M
+- 다음 배치: **I (구인자 공고관리)** — `(employer)/my-postings/create` `[id]/edit` `[id]/applicants` `[id]/settlements` `[id]/collaborators` `[id]/cancellation-requests` (6화면, 대형 배치 — 공용 컴포넌트 다수 경유 예상). 잔여 error.message·미정의 팔레트·Button라벨·placeholder는 Z/M
+- 배치 H 교훈: employer 두 화면도 동일 5패턴(라이트AA·골드위onGold·미정의팔레트·Button라벨 surface-dark·dark중복) 재현. **Button-child에 `<Text text-surface-dark>` 라벨 수기지정**이 employer 화면에 4곳 — F에서 standalone 탭은 fix했으나 Button 자식은 G/H 일관되게 M deferred(Button이 색 소유하는 게 근본해결). 배치 I는 6화면 대형이라 컨텍스트 관리 주의 — 공용 컴포넌트(JobForm·ApplicantList·SettlementList 등) 다수 경유분은 이미 배치C/D/E에서 일부 리뷰됨, 화면 본체 위반 위주로
 - 배치 G 교훈: 설정 화면들은 content 토큰 정합도가 높아 위반이 적음(business-info는 거의 0). 위반은 ①제출 스피너 라이트 대비(배치E와 동일, useThemeStore로 isDarkMode split) ②size22 아이콘 ③빈 글리프 ④라이트AA에 집중. **hand-rolled 제출 버튼(Pressable+bg-primary-600 수기)이 profile·change-password에 반복** — 라벨 text-surface-dark·비활성+다크 불가시·상태처리중복 3종을 Button 컴포넌트 교체로 M에서 동시 해소(시각 QA 필요). **profile/change-password에 useThemeStore 신규 도입**(스피너 색 분기용) — 동일 패턴 다른 hand-rolled 버튼에도 적용 가능
 - 배치 F 교훈: 워크플로 없이 **인라인 정독만으로 완결**(5화면+8컴포넌트). 지원센터/알림은 공용 프리미티브(FormField·EmptyState·AppFlashList·Card·ScreenSkeleton) 경유 비율이 높아 화면 본체 위반이 적고, 위반은 ①라이트AA ②골드위onGold ③충돌 이중darkbg ④빈글리프 ⑤미정의 팔레트 5클래스에 집중 — 모두 배치C~E 기확립 패턴이라 적대검증 불필요. **`text-surface-dark`가 골드 전경에 73곳 중 일부 오용**(content.onGold가 SSOT)이 신규 발견 — Z 패스 grep 후보. **미정의 팔레트 티어가 또 다수**(success-900·warning-200/300/800/900·info-*) → M 우선순위 재확인(다크 깨짐 실재). raw `bg-white`·raw `border-amber-*`도 알림 컴포넌트에 잔존 → M 전역 스윕
 - 배치 E 교훈: **워크플로가 자정 직후에도 느릴 수 있음(~13분)** → journal에서 review findings는 실시간 추출 가능하니, 느리면 정지하고 인라인 reconcile이 빠름. 사용자 대기 길어지면 인라인 우선. **blanket replace_all 주의**: secondary-500이 비활성 버튼/조건부 분기에 있으면 제외(ReviewForm:204 disabled) — 파일 내 같은 클래스라도 맥락 확인 후 타깃 편집. **충돌 이중 dark bg**(`dark:bg-surface dark:bg-secondary-X`)는 배치 E에서 2건(history 화면·ReviewBlindMessage 카드) — Z 패스 grep `dark:bg-\S+ \S*dark:bg-` 권장
