@@ -44,6 +44,12 @@ export default function CreateJobPostingScreen() {
   const templateManager = useTemplateManager();
   const postingCost = usePostingCost(formData.postingType ?? 'regular', user?.uid);
 
+  // 잔액 부족 사전 경고: 제출 전에 미리 알려 막다른 단계(제출→실패→충전→재제출)를 줄인다.
+  // 결제력 = 하트+다이아 합산(PaywallModal 과 동일 기준).
+  const totalBalance = (wallet.data?.heart_balance ?? 0) + (wallet.data?.diamond_balance ?? 0);
+  const requiredCost = postingCost.data?.cost ?? 0;
+  const isBalanceInsufficient = requiredCost > 0 && totalBalance < requiredCost;
+
   const updateFormData = useCallback((data: Partial<JobPostingFormData>) => {
     setIsDirty(true);
     setDraft((prev) => patchJobPostingDraft(prev, data));
@@ -114,6 +120,13 @@ export default function CreateJobPostingScreen() {
               : `${postingCost.data.cost}${postingCost.data.currency_hint === 'heart_first' ? '💖' : '💎'}`}
         </Text>
       </View>
+      {isBalanceInsufficient ? (
+        <View className="px-4 pb-2">
+          <Text className="text-xs font-sans text-error-500">
+            보유 잔액이 부족해요. 충전 후 등록할 수 있어요.
+          </Text>
+        </View>
+      ) : null}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"

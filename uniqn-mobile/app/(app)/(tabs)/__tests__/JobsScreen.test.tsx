@@ -146,6 +146,8 @@ describe('JobsScreen search filters', () => {
           title: 'urgent job',
           postingType: 'urgent',
           workDate: '2026-04-01',
+          // 실제 projectPostingCard 는 dateRequirements 를 항상 배열로 채운다.
+          dateRequirements: [],
         },
         {
           id: 'grouped-regular-job',
@@ -228,7 +230,7 @@ describe('JobsScreen search filters', () => {
     jest.useRealTimers();
   });
 
-  it('applies type and focused-date filters to grouped search results without reordering', async () => {
+  it('검색은 type 칩과 무관하게 전체 대상이며, 날짜 선택 시 해당 날짜로 포커싱한다', async () => {
     const { getByTestId, getByText, queryByText } = render(<JobsScreen />);
 
     fireEvent.changeText(getByTestId('search-input'), 'job');
@@ -237,12 +239,15 @@ describe('JobsScreen search filters', () => {
       jest.advanceTimersByTime(300);
     });
 
+    // 검색은 자동선택된 칩(urgent)과 무관하게 모든 타입을 노출한다.
     await waitFor(() => {
       expect(getByText('urgent job')).toBeTruthy();
     });
-    expect(queryByText('grouped regular job')).toBeNull();
-    expect(queryByText('direct regular job')).toBeNull();
+    expect(getByText('grouped regular job')).toBeTruthy();
+    expect(getByText('direct regular job')).toBeTruthy();
+    expect(getByText('off-date regular job')).toBeTruthy();
 
+    // regular 칩을 눌러도 검색 결과는 여전히 전체(타입 필터 미적용 — urgent 도 그대로).
     fireEvent.press(getByText('regular'));
 
     await waitFor(() => {
@@ -250,7 +255,7 @@ describe('JobsScreen search filters', () => {
     });
     expect(getByText('direct regular job')).toBeTruthy();
     expect(getByText('off-date regular job')).toBeTruthy();
-    expect(queryByText('urgent job')).toBeNull();
+    expect(getByText('urgent job')).toBeTruthy();
 
     fireEvent.press(getByTestId('date-select'));
 
@@ -258,7 +263,9 @@ describe('JobsScreen search filters', () => {
       expect(getByText('grouped regular job')).toBeTruthy();
     });
     expect(getByText('direct regular job')).toBeTruthy();
+    // 04-02 선택 → 04-01 공고는 날짜 불일치로 제외(타입이 아닌 날짜 기준).
     expect(queryByText('off-date regular job')).toBeNull();
+    expect(queryByText('urgent job')).toBeNull();
 
     const latestJobs = (mockJobList.mock.calls.at(-1)?.[0]?.jobs ?? []) as {
       title: string;

@@ -141,8 +141,9 @@ BEGIN
     now(), now()
   );
   -- 별도 date('2026-06-01') 사용 — H1/HELPER 의 2026-05-23 dealer 정원 집계와 격리(checked_in 도 집계 대상이므로).
-  INSERT INTO public.work_logs (id, application_id, staff_id, job_posting_id, date, time_slot, status, role, created_at, updated_at)
-  VALUES (gen_random_uuid(), v_appH5, v_s5, v_job, '2026-06-01', '미정', 'checked_in', 'dealer', now(), now());
+  -- checked_in 은 check_in_ts 동반 필수(work_logs_status_timestamp_consistency 제약)
+  INSERT INTO public.work_logs (id, application_id, staff_id, job_posting_id, date, time_slot, status, role, check_in_ts, created_at, updated_at)
+  VALUES (gen_random_uuid(), v_appH5, v_s5, v_job, '2026-06-01', '미정', 'checked_in', 'dealer', now(), now(), now());
 
   -- ---- seed: job2 (명시 시각 18:00 슬롯, dealer 1 / other:딜러보조 1) ----
   INSERT INTO public.job_postings (

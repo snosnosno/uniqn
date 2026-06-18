@@ -28,13 +28,13 @@ export const ConfirmedActions = React.memo(function ConfirmedActions({
       <Pressable
         onPress={handleCancelConfirmation}
         accessibilityRole="button"
-        accessibilityLabel="확정 취소"
-        accessibilityHint="지원자 확정을 취소합니다"
+        accessibilityLabel="확정 해제"
+        accessibilityHint="확정을 해제하고 점유된 자리를 다시 비웁니다"
         className="flex-1 flex-row items-center justify-center rounded-lg bg-surface-card py-2 active:opacity-70 dark:bg-surface"
       >
         <XMarkIcon size={16} color={STATUS_COLORS.error} />
         <Text className="ml-1 text-sm font-sans-medium text-error-600 dark:text-error-400">
-          확정 취소
+          확정 해제
         </Text>
       </Pressable>
     </View>
