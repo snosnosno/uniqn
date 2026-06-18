@@ -12,7 +12,7 @@
 | D | 공고·지원 플로우 | `(app)/jobs/[id]/index` `(app)/jobs/[id]/apply` `applications/[id]/cancel` | **done** | `aea7a0e73` |
 | E | 리뷰·공지 | `reviews/write` `reviews/[workLogId]` `reviews/pending` `reviews/history` `notices/index` `notices/[id]`(notices는 redirect) | **done** | `f0dce5ec5` |
 | F | 지원센터·알림 | `support/faq` `support/create-inquiry` `support/my-inquiries` `support/inquiry/[id]` `notifications` | **done**(error.message→Z·미정의팔레트→M) | `dfd14081f` |
-| G | 설정·프로필 | `settings/profile` `settings/change-password` `settings/my-data` `settings/business-info` `profile-setup` (약관 4종은 레이아웃만 — 본문 금지) | pending | |
+| G | 설정·프로필 | `settings/profile` `settings/change-password` `settings/my-data` `settings/business-info` `profile-setup` (약관 4종은 레이아웃만 — 본문 금지) | **done**(hand-rolled 버튼→Button M·error.message→Z) | `86d676398` |
 | H | 구인자 등록 | `employer-register` `employer-application-status` | pending | |
 | I | 구인자 공고관리 | `(employer)/my-postings/create` `[id]/edit` `[id]/applicants` `[id]/settlements` `[id]/collaborators` `[id]/cancellation-requests` | pending | |
 | J | 워크스페이스 | `(employer)/workspace/index` `invite` `invitations` `archived` | pending | |
@@ -70,6 +70,12 @@
 - [F] P2 빈 글리프 데드마크업 1 | inquiry/[id]:135 '답변 대기 중' 카드 `<Text text-2xl>{''}</Text>`(현재 프로덕션도 빈 원 렌더)→`<ClockIcon size={24} color={STATUS_COLORS.warning}>`. 배치A/E는 장식슬롯이라 제거만 했으나 여기선 48px 프로미넌트 원이라 룰9(빈상태=인지) 위해 의미있는 아이콘 추가가 정답(이미 빈 원이므로 행동 보존). 원 dark bg `dark:bg-warning-900/30`(미정의)는 M 이관
 - [F] P2 raw bg-white→토큰 1 | NotificationCategoryTabs:72 컨테이너 `bg-white`→`bg-surface-card`(자매 컴포넌트 FAQCategoryTabs 정합, nativewind 룰4 시맨틱토큰)
 - [F] 검증 | quality exit0(tsc0·lint0·format clean — NotificationList/GroupItem prettier 재배치) / jest NotificationList 1 pass(refresh-error 경로 보존 확인). 지원센터 화면·FAQ·Category탭은 단독 테스트 없음(프레젠테이션)
+- [G] **인라인 정독 리뷰**(워크플로 미사용). 5화면(profile·change-password·my-data·business-info·profile-setup) 직독. 확정 P2 4종 수정(`86d676398`). business-info는 위반 거의 없음(content 토큰 정합, active:opacity-70만 P3). 약관 4종(terms/privacy/employer-terms/liability-waiver)은 본문 금지라 미접촉
+- [G] P2 제출 스피너 라이트 대비 2 | profile:527·change-password:266 저장중 버튼 `<ActivityIndicator color="#FFFFFF">` — 제출중 버튼 bg=`bg-secondary-300 dark:bg-surface`(라이트 회색), 흰 스피너 ~1.3:1 거의 안보임 → `isDarkMode ? '#FFFFFF' : '#09090B'`(useThemeStore 추가). **배치E ReviewForm:182 동일 패턴·동일 해법**
+- [G] P2 룰27 아이콘 size 22 금지 6 | change-password 비밀번호 표시/숨기기 Eye/EyeSlash 6곳 `size={22}`→`20`(입력필드 py-3 인접, 배치B profile 메뉴아이콘 22→20 정합). 화이트리스트 14/16/18/20/24
+- [G] P2 빈 글리프 데드마크업 1 | my-data:203 개인정보 처리방침 카드 `<Text text-2xl mr-3>{''}`(현 프로덕션 빈 텍스트+팬텀 mr-3 12px 갭, flex-row 아이콘 컬럼 의도) → `<ShieldCheckIcon size={24} color={PRIMARY_COLORS[700]}>`(룰9/13 의미있는 아이콘, 배치F ClockIcon 선례 — 프로미넌트 의도된 아이콘 슬롯엔 추가가 정답)
+- [G] P2 라이트 AA 1 | profile-setup:106 부제 `text-secondary-500 dark:text-secondary-400`(흰 2.86:1)→`text-content-secondary`
+- [G] 검증 | quality exit0(tsc0·lint0·format clean). 5화면 모두 단독 jest 없음(프레젠테이션). 로직 미변경(스피너 색 조건·아이콘 size·색 토큰만)이라 tsc0이 useThemeStore훅·ShieldCheckIcon import 정합 보증
 
 ## P3 백로그 (기록만, 구현 안 함)
 
@@ -139,12 +145,20 @@
 - [F→M] NotificationItem:68·NotificationGroupItem:77 읽음 행 `bg-white dark:bg-surface-dark`(raw bg-white, 룰4 시맨틱토큰) + 읽음 제목 dark: override 중복(:90 content-secondary+dark:text-secondary-300, :103 dark:text-secondary-400) | 전역 bg-white→surface-card 스윕과 함께 M/Z
 - [F→M/Z] 시맨틱 토큰 위 dark: 중복(배치F) | inquiry/[id]:47 에러타이틀 `text-content-primary dark:text-secondary-100`·NotificationGroupItem:103 미읽음 제목·:127 컨텍스트 `text-content-muted dark:text-secondary-400` — content-* CSS var가 이미 다크 처리하는데 dark: 덧댐 | 배치D/E `dark:text-off-white`·`dark:text-secondary-300` 일괄과 동일 M/Z 정책 결정
 - [F] create-inquiry InquiryForm:147,176 `placeholderTextColor={isDark ? SECONDARY_PALETTE[500] : SECONDARY_PALETTE[400]}`(라이트 #A8A8B0 ~2.1:1) — 배치D 확정 "placeholder 전역 일괄"(getPlaceholderColor 미사용·SECONDARY_PALETTE[400] 지배관행)과 동일. 단독수정 금지 | M/Z 전역 placeholder 결정
+- [G→M] **hand-rolled 제출 버튼 → 공용 Button 교체** | profile:517·change-password:260 저장/변경 버튼이 Pressable+bg-primary-600 수기조립(Button 컴포넌트 미사용) → ①라벨 `text-surface-dark`(content-onGold SSOT 이탈, 배치E ReviewForm:204 동일 deferred) ②**비활성+다크 라벨 불가시**(disabled bg `dark:bg-surface` #0B0B0E 위 text-surface-dark #07070A 거의 동색) ③loading/disabled 상태처리 중복 | Button 컴포넌트로 교체 시 3건 동시 해소(시각 QA 필요라 M)
+- [G→M] my-data Modal Input:315 `autoFocus`(룰20 위반, 스크린리더 혼선) — 배치C InlineComposerRow와 동일, AccessibilityInfo.isScreenReaderEnabled() 가드 | M 일괄
+- [G→M] my-data:331 Modal 저장 Button 자식 `<ActivityIndicator color="#FFFFFF">`(Button 기본 골드 bg면 흰 스피너 대비 부족) — Button loading prop 활용 권장 | M(Button 컴포넌트)
+- [G→M/Z] profile-setup:89 컨테이너 raw `bg-white dark:bg-surface`(다른 G화면은 bg-surface-page) — 단 signup 플로우(SignupStepProfile 재사용) 연속성 의도 가능성 → 전역 bg-white→surface-page 스윕 시 함께 판단 | M/Z
+- [G→M/Z] 시맨틱 토큰 위 dark: 중복(배치G) | profile-setup:103 헤더 `text-content-primary dark:text-off-white` | 배치D/E/F 동일 일괄 정책 결정 M/Z
+- [G→M] business-info InfoRow:47 `active:opacity-70`(룰21: 다크 대비 깨짐) | 룰21 active:opacity→배경톤 토글 전역 일괄 M
+- [G] profile.tsx placeholder 5곳 `placeholderTextColor={SECONDARY_PALETTE[400]}`(라이트 ~2.1:1) — [[배치F create-inquiry]]·배치D와 동일 전역 placeholder 관행 | M/Z 전역 결정
 
 ## 회차 메모
 
 > 다음 회차에 넘길 주의사항·미완 항목
 
-- 다음 배치: **G (설정·프로필)** — `settings/profile` `settings/change-password` `settings/my-data` `settings/business-info` `profile-setup` (약관 4종은 레이아웃만, 본문 금지). 잔여 error.message·미정의 팔레트 티어는 여전히 Z/M
+- 다음 배치: **H (구인자 등록)** — `employer-register` `employer-application-status` (2화면). 잔여 error.message·미정의 팔레트 티어·hand-rolled Button·placeholder는 여전히 Z/M
+- 배치 G 교훈: 설정 화면들은 content 토큰 정합도가 높아 위반이 적음(business-info는 거의 0). 위반은 ①제출 스피너 라이트 대비(배치E와 동일, useThemeStore로 isDarkMode split) ②size22 아이콘 ③빈 글리프 ④라이트AA에 집중. **hand-rolled 제출 버튼(Pressable+bg-primary-600 수기)이 profile·change-password에 반복** — 라벨 text-surface-dark·비활성+다크 불가시·상태처리중복 3종을 Button 컴포넌트 교체로 M에서 동시 해소(시각 QA 필요). **profile/change-password에 useThemeStore 신규 도입**(스피너 색 분기용) — 동일 패턴 다른 hand-rolled 버튼에도 적용 가능
 - 배치 F 교훈: 워크플로 없이 **인라인 정독만으로 완결**(5화면+8컴포넌트). 지원센터/알림은 공용 프리미티브(FormField·EmptyState·AppFlashList·Card·ScreenSkeleton) 경유 비율이 높아 화면 본체 위반이 적고, 위반은 ①라이트AA ②골드위onGold ③충돌 이중darkbg ④빈글리프 ⑤미정의 팔레트 5클래스에 집중 — 모두 배치C~E 기확립 패턴이라 적대검증 불필요. **`text-surface-dark`가 골드 전경에 73곳 중 일부 오용**(content.onGold가 SSOT)이 신규 발견 — Z 패스 grep 후보. **미정의 팔레트 티어가 또 다수**(success-900·warning-200/300/800/900·info-*) → M 우선순위 재확인(다크 깨짐 실재). raw `bg-white`·raw `border-amber-*`도 알림 컴포넌트에 잔존 → M 전역 스윕
 - 배치 E 교훈: **워크플로가 자정 직후에도 느릴 수 있음(~13분)** → journal에서 review findings는 실시간 추출 가능하니, 느리면 정지하고 인라인 reconcile이 빠름. 사용자 대기 길어지면 인라인 우선. **blanket replace_all 주의**: secondary-500이 비활성 버튼/조건부 분기에 있으면 제외(ReviewForm:204 disabled) — 파일 내 같은 클래스라도 맥락 확인 후 타깃 편집. **충돌 이중 dark bg**(`dark:bg-surface dark:bg-secondary-X`)는 배치 E에서 2건(history 화면·ReviewBlindMessage 카드) — Z 패스 grep `dark:bg-\S+ \S*dark:bg-` 권장
 - 배치 E 미정의 팔레트 티어 재확인: warning 팔레트=50/100/400/500/600/700만(200/300/800/900 없음). `dark:bg-warning-900`·`text-warning-300` 등은 무스타일 → 다크 시각 깨짐. 배치D AssignmentSelector·배치E pending/review.ts 모두 동일 → **M에서 팔레트 티어 추가 or 클래스 교체 일괄**(다크 영향 커서 우선순위 ↑)
