@@ -8,7 +8,7 @@
 |---|---|---|---|---|
 | A | 인증·공개·루트 | `(auth)/login` `(auth)/signup` `(auth)/forgot-password` `(public)/jobs/index` `jobs/index` `jobs/[id]`(공개 alias) `index`(splash) `+not-found` | **done** | `a586e28e9` |
 | B | 탭 코어 | `(app)/(tabs)/home-jobs` `schedule` `qr` `employer` `profile`(고아라 편입) `_layout` `(app)/home` + TabHeader | **done** | `81dae65cb` `5f6a376c5`(qr) |
-| C | 게시판 | `(tabs)/board/index` `[boardType]` `write` `edit/[postId]` `post/[postId]` | pending | |
+| C | 게시판 | `(app)/(tabs)/board/index` `[boardType]` `write` `edit/[postId]` `post/[postId]` `_layout` | **done**(Skeleton 2·error.message→Z 잔여) | `3765e405a` |
 | D | 공고·지원 플로우 | `(app)/jobs/[id]/index` `(app)/jobs/[id]/apply` `applications/[id]/cancel` | pending | |
 | E | 리뷰·공지 | `reviews/write` `reviews/[workLogId]` `reviews/pending` `reviews/history` `notices/index` `notices/[id]` | pending | |
 | F | 지원센터·알림 | `support/faq` `support/create-inquiry` `support/my-inquiries` `support/inquiry/[id]` `notifications` | pending | |
@@ -43,6 +43,14 @@
 - [B] P2 접근성·안티패턴 | profile 평점배지 hitSlop12+role/label / BalanceBadge 💖→'하트' 텍스트(룰14) / PostingTypeChips 죽은 빈 아이콘 Text 제거(팬텀 마진)
 - [B] 검증 | quality exit0(tsc0·lint0·format0) / jest 21 pass(BalanceBadge·PostingTypeChips·DashboardViewToggle·TabHeader·JobsScreen). BalanceBadge.test 💖→'하트' 정규식(/3/·/D-2/·/만료/) 무영향 확인
 - [B-qr] P2 4 | 유실됐던 qr verify를 인라인 재검증(배치B 동일 패턴 확정): 헤더 부제·'현재 상태' 라벨·스캔 안내문 secondary-500→600(라이트 AA) + 스캔 Button ScanIcon #FFFFFF→onGold (`5f6a376c5`). quality exit0. **배치B 완전 종료**
+- [C] 워크플로 28에이전트(3그룹 리뷰+단일투표 검증, 0 반박·0 유실 — 소규모가 세션한도 회피): 확정 25(검증 후 2건 P3 강등)+P3 8. 22건 수정(`3765e405a`). 배치B 반복패턴이 게시판 전반 재현
+- [C] P2 골드 위 onGold(#09090B) | BoardTabBar 활성라벨(white→onGold)·BoardWriteFab +아이콘·PostHeader 추천하트·post[id] 신고Flag·BoardCommentComposer 등록PaperPlane | 골드 위 흰 전경 라이트 2.1:1→9.5:1. BoardWriteFab는 isDark 전경분기 자체 제거(배경 골드 양모드 동일)→unused 변수/import 정리
+- [C] P2 라이트 AA 대비 | BoardPostCard 메타3·PostHeader 메타4·EmptyState(공용)·BoardPostEditor 2·BoardImagePicker 3 | secondary-500(흰 2.86:1)→secondary-600/content-secondary(4.9~6.2:1). **EmptyState는 공용→전 화면 빈상태 개선(다크 secondary-400 유지)**
+- [C] P2 골드 절제(룰3) | BoardPostCard 댓글 골드→중립·PinnedNoticeBanner border-l-2 골드제거+제목 중립(§14 안티패턴)·작성자/역할 배지 employer primary→info·boardType 배지 작성자role 디커플→secondary | 정보성 배지 골드 제거, getAuthorBadgeVariant/getRoleBadgeVariant 2함수 수정(Badge info/secondary 지원 확인)
+- [C] P2 터치·피드백 | BoardTabBar pressed 배경톤+py-2.5(40px)+hitSlop·댓글 반응칩/답글 hitSlop·더보기 hitSlop·이미지삭제 hitSlop6→10·이미지뷰어 chevron 22→24 | 룰5/21/27
+- [C] P2 이모지(룰14) | board 홈 섹션 헤더 🔥인기글·🕒활동 → 이모지 제거(e2e 셀렉터 의존 grep 0건 확인)
+- [C] 검증 | quality exit0(tsc0·lint0·format0) / jest 89 pass(board 21 suites + EmptyState·BoardPostCard·BoardImagePicker·PinnedNotice)
+- [C 잔여] **미수행 P2 3건**: ①error.message 원시노출(board index:81·[boardType]:59) — 앱 전역 11곳 동일관행이라 board 단독변경시 불일치 → **Z 횡단패스로 일괄**(ErrorState 중앙 sanitize or 11곳 통일) ②③Skeleton 구조정합(board/index:71·[boardType]:82) — SkeletonListItem(원형 아바타) → BoardPostCard형 composer 신규작성 규모라 **batch C 잔여**로 분리(차기 회차)
 
 ## P3 백로그 (기록만, 구현 안 함)
 
@@ -65,6 +73,14 @@
 - [A] index.tsx(스플래시) | 버전 텍스트 테마 가변 토큰을 고정 다크 배경 위에 사용 → text-secondary-500 고정 / PublicBottomTabBar:69 size=22→20|24
 - [A] (auth) 헤더 3종 | 수기 헤더 → StackHeader 공용화 검토 (M 배치)
 - [B-qr] ✅재검증 완료(`5f6a376c5`): P2 4건(라이트 AA·아이콘 onGold) 수정. 잔여 P3: qr.tsx:78 커스텀 bg-white 헤더(TabHeader 미사용·flat 다크 경계) / qr.tsx:122 '출근 필요' 골드 배지(룰3 경계, CTA-인접이라 방어가능) / qr.tsx:91 Card a11y forwarding / qr.tsx:144 히어로 ScanIcon size 80
+- [C] 메타 아이콘 size={12} 화이트리스트 외 | BoardPostCard:65·PinnedNoticeBanner:18·BoardCommentItem:235(PlusIcon) | 14px text 인접이라 의도 합리적이나 룰27 위반. size 14로 통일 | M/Z
+- [C] BoardPostDetailSkeleton.tsx:12 | 로딩 안내 text-secondary-500 라이트 AA 미달(일시 텍스트라 낮음) → content-secondary | batch C 잔여와 함께
+- [C] BoardImageGrid.tsx:77 | 이미지 카운터 text-[10px] 임의값 → text-micro 토큰(검정 위 흰 텍스트라 대비는 OK) | M
+- [C] BoardCommentItem:207 | 반응칩/답글/메뉴 Pressed가 active:opacity-70만(룰21: 다크 대비 깨짐) → 배경 톤 토글 | 룰21 일괄(M)
+- [C] InlineComposerRow.tsx:33 | reply/edit autoFocus(룰20 위반, 스크린리더 혼선) — 사용자 명시 탭 흐름이라 UX 정당성은 있음 → AccessibilityInfo.isScreenReaderEnabled() 시 스킵 | M
+- [C] Card.tsx:27 | 기본 variant 'elevated' shadow-md 항상(룰14 그림자 남발) — 게시판 상세 카드+댓글마다 중첩 → 리스트형 반복카드는 outlined or 배경 elevation | M(공용, 영향 큼)
+- [C] BoardPostEditor.tsx:131 | '취소'가 입력중에도 확인없이 초안 폐기(v1 룰12 Undo>Confirm) → title/body 있으면 Alert 1차확인 | D/작성플로우
+- [C→Z] error.message 원시노출 11곳(board 2·employer 1·my-postings 3·ApplicantList·ConfirmedStaffList·StaffManagementTab·SettlementList·JobList) | ErrorState 중앙 sanitize or 전수 친화문구 통일 | **Z 횡단패스**
 - [B] src/components/ui/Loading.tsx:18 | 라이트 스피너 PRIMARY[300]=#D4AF37 흰배경 2.1:1 거의 안보임 → getLoadingColor(라이트 #8A7228) 재사용 단일소스. home.tsx 로딩이 사용 | M 배치
 - [B] src/components/headers/TabHeader.tsx:48 | 헤더 borderBottom 부재 — 다크 헤더bg=콘텐츠bg=#0B0B0E 동색이라 스크롤 시 경계 소실. LAYOUT_COLORS.headerBorder 토큰 미사용(의도된 flat이면 무시) | M 배치
 - [B] app/(app)/home.tsx:41 | 대시보드 로딩 Loading variant='layout'(전체화면 스피너) → 위젯 카드 Skeleton 컴포저(룰16, layout shift 감소) | M/홈 배치
@@ -87,7 +103,9 @@
 
 > 다음 회차에 넘길 주의사항·미완 항목
 
-- 다음 배치: **C (게시판)** — `app/(app)/(tabs)/board/index` `[boardType]` `write` `edit/[postId]` `post/[postId]`. (✅ qr 재검증은 `5f6a376c5`로 완료, 배치B 종료). 실제 탭 경로는 `app/(app)/(tabs)/` (STATE 표의 `(tabs)/`는 약식)
+- 다음 배치: **D (공고·지원 플로우)** — `(app)/jobs/[id]/index` `(app)/jobs/[id]/apply` `applications/[id]/cancel`. ⚠️ **batch C 잔여 2건**(board Skeleton 구조정합: index.tsx:71 + [boardType].tsx:82 — SkeletonListItem 원형아바타→BoardPostCard형 composer 신규작성)도 D 전/병행 처리 권장(소규모). 골드 CTA 多화면이라 onGold 패턴 또 나올 것
+- 소규모 워크플로(3그룹+단일투표) 효과 확인: 28에이전트·0 유실로 세션한도 회피. 배치 D도 3화면이라 동일 규모로
+- 배치C 패턴 학습: 골드 위 흰 전경(white/#FFFFFF on 골드 버튼/배경)이 **앱 전역 반복 클래스** — Button variant=primary에 아이콘 흰색 넘기는 패턴이 board 5곳+QRPanel/QRCodeDisplay+employer/profile/qr에 산재. Z 패스에서 `color="#FFFFFF"`/`'#fff'` + 골드배경 전수 grep 권장. 정답=`#09090B`(content.onGold) / EmptyState·Card 등 공용 컴포넌트 수정은 1건으로 전 화면 개선(고ROI)이나 영향범위 grep 필수
 - 워크플로 세션한도 교훈: 38에이전트 중 11 verify가 7pm 리셋 한도로 실패 → 그룹 단위로 findings 유실(qr 전멸). 큰 배치는 ①그룹 수 축소 or ②verify를 단일투표로 or ③세션 리셋 시각 피해 실행. 배치 C는 5화면이라 리뷰 5+verify로 규모 적정
 - 배치B 패턴 학습: 라이트모드 골드/회색-온-화이트 대비(2.1~2.9:1)가 반복 P1 클래스 — `getLayoutColor`/`secondary-600`/`content-onGold` 토큰이 이미 존재하나 하드코딩으로 우회됨(HomeTabBar는 토큰 사용=정답 레퍼런스) / 룰27 size 22는 코드베이스 만연(탭바·헤더·메뉴) → Z 패스에서 전역 grep `size={22}` 일괄 점검 권장 / 골드 위 텍스트·아이콘은 `content-onGold`(#09090B)가 SSOT
 - 작업 위치: 워크트리 `C:\Users\user\Desktop\T-HOLDEM-design-loop` 브랜치 `design/ui-ux-consistency-loop` (node_modules 정션 연결됨). 메인 체크아웃의 `docs/design-loop/`는 untracked 사본 — 회차 종료 시 양쪽 동기화할 것
