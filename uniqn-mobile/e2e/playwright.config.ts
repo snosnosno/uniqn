@@ -27,7 +27,8 @@ export default defineConfig({
   testIgnore: /.*-debug\.spec\.ts/,
   fullyParallel: true,
   forbidOnly: isCI,
-  retries: isCI ? 2 : 0,
+  // retries 2→1: 실패/flaky 테스트 재실행을 3배→2배로 줄여 전체 wall-clock 단축 (45분 cap 초과 cancelled 방어, 단일 flake는 1회 재시도로 흡수)
+  retries: isCI ? 1 : 0,
   // ubuntu-latest 는 2 vCPU. workers:4 + 로컬 Supabase + 웹서버가 CPU 초과구독되면
   // 인증후 페이지 로드가 expect timeout 을 넘겨 광범위 실패 → retries 3배 증폭 →
   // 45분 job cap 초과 cancelled. 2 로 낮춰 경합 완화 (8.5→~15분이나 안정적).
