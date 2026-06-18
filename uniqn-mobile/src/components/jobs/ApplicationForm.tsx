@@ -73,7 +73,7 @@ function FixedRoleSelector({
                 >
                   {option.roleLabel}
                 </Text>
-                <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                <Text className="mt-1 text-sm text-content-secondary font-sans">
                   모집 {option.count}명 · 남은 자리 {option.remaining}명
                 </Text>
               </View>
@@ -258,9 +258,7 @@ export function ApplicationForm({
           <Text className="mb-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
             {job.title}
           </Text>
-          <Text className="mb-3 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-            위치 {locationName}
-          </Text>
+          <Text className="mb-3 text-sm text-content-secondary font-sans">위치 {locationName}</Text>
 
           <View className="mb-2">
             <RoleSalaryDisplay
@@ -366,7 +364,7 @@ export function ApplicationForm({
                 <Text className="text-error-500 font-sans">[필수]</Text> 이 공고 구인자에게 내
                 이름·연락처가 전달되는 것에 동의합니다.
               </Text>
-              <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+              <Text className="mt-1 text-xs text-content-secondary font-sans">
                 보유 기간: 채용 종료 후 3개월
               </Text>
             </View>
@@ -374,7 +372,7 @@ export function ApplicationForm({
         </View>
 
         <View className="mb-6 rounded-lg bg-surface-page dark:bg-surface p-4 dark:bg-surface">
-          <Text className="text-xs leading-5 text-secondary-500 dark:text-secondary-400 font-sans">
+          <Text className="text-xs leading-5 text-content-secondary font-sans">
             지원 후에는 구인자가 지원서를 확인합니다.
             {'\n'}
             채용 결과는 알림으로 안내됩니다.

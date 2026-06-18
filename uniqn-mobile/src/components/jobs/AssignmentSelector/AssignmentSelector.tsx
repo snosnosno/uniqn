@@ -185,7 +185,7 @@ export const AssignmentSelector = memo(function AssignmentSelector({
         <Text className="mb-1 text-base font-sans-semibold text-content-primary dark:text-off-white">
           날짜 및 역할 선택 <Text className="text-error-500 font-sans">*</Text>
         </Text>
-        <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+        <Text className="text-xs text-content-secondary font-sans">
           원하는 시간과 역할을 선택해 주세요
           {maxSelections ? ` (최대 ${maxSelections}개)` : ''}
         </Text>

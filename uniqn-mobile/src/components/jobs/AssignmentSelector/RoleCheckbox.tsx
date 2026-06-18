@@ -32,7 +32,7 @@ export const RoleCheckbox = memo(function RoleCheckbox({
               : 'border-secondary-300 dark:border-surface-overlay'
         }`}
       >
-        {isSelected && <CheckIcon size={12} color="#FFFFFF" />}
+        {isSelected && <CheckIcon size={12} color="#09090B" />}
       </View>
 
       <Text

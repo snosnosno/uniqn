@@ -247,7 +247,7 @@ export function JobDetail({ job }: JobDetailProps) {
               </View>
             ))}
             {detail.questions.length > 3 ? (
-              <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+              <Text className="text-xs text-content-secondary font-sans">
                 외 {detail.questions.length - 3}개 질문
               </Text>
             ) : null}

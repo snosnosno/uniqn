@@ -213,7 +213,7 @@ export function CancellationRequestForm({
                 wantsSubstitutePost ? 'bg-primary-500 border-primary-500' : 'border-divider'
               }`}
             >
-              {wantsSubstitutePost && <CheckIcon size={14} color="#FFFFFF" />}
+              {wantsSubstitutePost && <CheckIcon size={14} color="#09090B" />}
             </View>
             <View className="flex-1">
               <Text className="text-sm font-sans-semibold text-content-primary dark:text-off-white">
