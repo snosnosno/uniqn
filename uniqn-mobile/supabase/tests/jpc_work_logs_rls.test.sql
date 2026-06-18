@@ -133,7 +133,7 @@ SELECT throws_ok(
 
 SELECT jpc_test_set_user((current_setting('jpc.owner_id'))::uuid);
 WITH u AS (
-  UPDATE public.work_logs SET status = 'checked_in'
+  UPDATE public.work_logs SET status = 'checked_in', check_in_ts = now()
    WHERE id = (current_setting('jpc.wl_id'))::uuid
   RETURNING 1
 )
@@ -141,7 +141,7 @@ SELECT is((SELECT count(*)::int FROM u), 1, 'work_logs UPDATE: owner');
 
 SELECT jpc_test_set_user((current_setting('jpc.editor_id'))::uuid);
 WITH u AS (
-  UPDATE public.work_logs SET status = 'checked_in'
+  UPDATE public.work_logs SET status = 'checked_in', check_in_ts = now()
    WHERE id = (current_setting('jpc.wl_id'))::uuid
   RETURNING 1
 )
@@ -149,7 +149,7 @@ SELECT is((SELECT count(*)::int FROM u), 1, 'work_logs UPDATE: ws_editor');
 
 SELECT jpc_test_set_user((current_setting('jpc.collab_id'))::uuid);
 WITH u AS (
-  UPDATE public.work_logs SET status = 'checked_in'
+  UPDATE public.work_logs SET status = 'checked_in', check_in_ts = now()
    WHERE id = (current_setting('jpc.wl_id'))::uuid
   RETURNING 1
 )
@@ -157,7 +157,7 @@ SELECT is((SELECT count(*)::int FROM u), 1, 'work_logs UPDATE: collaborator');
 
 SELECT jpc_test_set_user((current_setting('jpc.outsider_id'))::uuid);
 WITH u AS (
-  UPDATE public.work_logs SET status = 'checked_in'
+  UPDATE public.work_logs SET status = 'checked_in', check_in_ts = now()
    WHERE id = (current_setting('jpc.wl_id'))::uuid
   RETURNING 1
 )
