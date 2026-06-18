@@ -8,6 +8,7 @@
 import React, { memo, useCallback } from 'react';
 import { Platform, Pressable, View, Text } from 'react-native';
 import { CheckmarkIcon } from '@/components/icons';
+import { TEXT_COLORS } from '@/constants/colors';
 
 // ============================================================================
 // Types
@@ -108,6 +109,15 @@ export const Checkbox = memo(function Checkbox({
       : 'bg-transparent border-secondary-300 dark:border-surface-overlay';
   };
 
+  // 체크마크 색상: 박스 배경과 짝 맞춤 (WCAG 1.4.11)
+  const getCheckColor = () => {
+    // error: bg-error-500(#DC2626) 위 white 4.8:1 통과
+    // disabled: WCAG 1.4.11 예외 + 다크 disabled(bg-surface-elevated) 위 #09090B 비가시 회귀 방지
+    if (error || disabled) return 'white';
+    // content.onGold — 골드 위 라이트(#B8962E) 7.0:1 / 다크(#D4AF37) 9.5:1
+    return TEXT_COLORS.onGold;
+  };
+
   return (
     <Pressable
       onPress={handlePress}
@@ -130,7 +140,7 @@ export const Checkbox = memo(function Checkbox({
           ${getBoxStyle()}
         `}
       >
-        {checked && <CheckmarkIcon size={config.icon} color="white" />}
+        {checked && <CheckmarkIcon size={config.icon} color={getCheckColor()} />}
       </View>
 
       {/* Label & Description */}

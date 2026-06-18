@@ -39,6 +39,7 @@ import {
   EyeOff,
   File,
   FileText,
+  FingerprintPattern,
   Flag,
   Flashlight,
   Gem,
@@ -73,6 +74,7 @@ import {
   Plus,
   QrCode,
   RotateCw,
+  ScanFace,
   ScanLine,
   Search,
   Send,
@@ -229,6 +231,8 @@ export const LockIcon = createIcon(Lock);
 export const UnlockIcon = createIcon(LockOpen);
 export const ShieldIcon = createIcon(Shield);
 export const ShieldCheckIcon = createIcon(ShieldCheck);
+export const FingerprintIcon = createIcon(FingerprintPattern);
+export const ScanFaceIcon = createIcon(ScanFace);
 
 // ─── Communication ─────────────────────────────────────────────────────────
 export const MessageIcon = createIcon(MessageSquare);

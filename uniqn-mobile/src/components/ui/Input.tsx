@@ -105,7 +105,13 @@ export const Input = React.forwardRef<TextInput, InputProps>(function Input(
           />
 
           {isPassword && (
-            <Pressable onPress={() => setShowPassword(!showPassword)} className="p-1" hitSlop={8}>
+            <Pressable
+              onPress={() => setShowPassword(!showPassword)}
+              className="p-1"
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={showPassword ? '비밀번호 숨기기' : '비밀번호 표시'}
+            >
               {showPassword ? (
                 <EyeSlashIcon size={20} color={placeholderColor} />
               ) : (

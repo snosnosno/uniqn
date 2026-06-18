@@ -64,7 +64,7 @@ export default function PublicJobDetailAliasRoute() {
       accessibilityLabel="공고 공유하기"
       accessibilityRole="button"
     >
-      <ShareIcon size={22} color={secondaryTextColor} />
+      <ShareIcon size={24} color={secondaryTextColor} />
     </Pressable>
   ) : null;
 
@@ -173,7 +173,7 @@ export default function PublicJobDetailAliasRoute() {
           ) : job.status !== STATUS.JOB_POSTING.ACTIVE ? (
             <Button disabled fullWidth>
               {job.status === STATUS.JOB_POSTING.CAPACITY_FULL
-                ? '정원이 마감되었어요'
+                ? '정원이 마감되었습니다'
                 : '마감된 공고입니다'}
             </Button>
           ) : (

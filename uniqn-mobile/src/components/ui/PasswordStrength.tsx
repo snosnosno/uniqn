@@ -149,7 +149,7 @@ export const PasswordStrength = React.memo(function PasswordStrength({
           </Text>
           <Text className={`text-xs font-sans-medium ${config.color}`}>{config.label}</Text>
         </View>
-        <View className="h-2 bg-secondary-200 dark:bg-surface rounded-sm overflow-hidden">
+        <View className="h-2 bg-secondary-200 dark:bg-secondary-800 rounded-sm overflow-hidden">
           <View className={`h-full rounded-sm ${config.barColor}`} style={{ width: `${score}%` }} />
         </View>
       </View>

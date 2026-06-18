@@ -18,7 +18,7 @@ export default function AuthLayout() {
         statusBarStyle: 'auto',
         statusBarBackgroundColor: 'transparent',
         contentStyle: {
-          backgroundColor: getLayoutColor(isDark, 'header'),
+          backgroundColor: getLayoutColor(isDark, 'content'),
         },
       }}
     >

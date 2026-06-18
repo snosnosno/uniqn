@@ -170,14 +170,14 @@ function RoleBadge({
       className={`mr-2 mb-1 rounded-md px-2 py-1 ${
         role.isFilled
           ? 'bg-secondary-200 dark:bg-surface-overlay'
-          : 'bg-primary-100 dark:bg-primary-900/30'
+          : 'bg-secondary-100 dark:bg-surface-elevated'
       }`}
     >
       <Text
         className={`text-xs font-sans ${
           role.isFilled
             ? 'text-secondary-500 line-through dark:text-secondary-400'
-            : 'text-primary-700 dark:text-primary-300'
+            : 'text-secondary-700 dark:text-secondary-200'
         } font-sans`}
       >
         {formatRoleLine(role, showFilledCount)}

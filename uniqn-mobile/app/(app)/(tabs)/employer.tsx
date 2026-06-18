@@ -252,7 +252,7 @@ function EmployerView() {
             </Pressable>
           }
         />
-        <PostingSurfaceState mode="loading" scope="detail" message="공고 목록을 불러오는 중..." />
+        <PostingSurfaceState mode="loading" scope="list" message="공고 목록을 불러오는 중..." />
       </SafeAreaView>
     );
   }

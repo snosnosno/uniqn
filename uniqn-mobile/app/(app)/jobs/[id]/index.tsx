@@ -235,7 +235,7 @@ export default function JobDetailScreen() {
           ) : job.status !== STATUS.JOB_POSTING.ACTIVE ? (
             <Button disabled fullWidth>
               {job.status === STATUS.JOB_POSTING.CAPACITY_FULL
-                ? '정원이 마감되었어요'
+                ? '정원이 마감되었습니다'
                 : '마감된 공고입니다'}
             </Button>
           ) : isFixed ? (
