@@ -232,7 +232,9 @@ export default function WorkspaceSettingsScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="워크스페이스 이름 변경"
                 >
-                  <Text className="text-sm font-sans-medium text-primary-500">이름 변경</Text>
+                  <Text className="text-sm font-sans-medium text-primary-600 dark:text-primary-400">
+                    이름 변경
+                  </Text>
                 </Pressable>
               )}
             </View>

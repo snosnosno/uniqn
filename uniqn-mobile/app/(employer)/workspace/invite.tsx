@@ -132,7 +132,7 @@ export default function WorkspaceInviteScreen() {
             </Button>
           </View>
 
-          {searchError && <Text className="mt-2 text-xs text-danger-500">{searchError}</Text>}
+          {searchError && <Text className="mt-2 text-xs text-error-500">{searchError}</Text>}
         </View>
 
         {/* 결과 영역 */}
