@@ -48,7 +48,10 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # 버전 pin + github-token: version:latest 의 익명 GitHub API rate-limit(#172) +
+          # 이미지 드리프트(PR #179) 예방. 갱신 시 supabase/cli 릴리스 참고.
+          version: 2.107.0
+          github-token: ${{ github.token }}
 
       - name: Determine functions to deploy
         id: targets
