@@ -133,7 +133,7 @@ function ApplicationCard({ app }: { app: EmployerApplication }) {
               {showOverdue ? (
                 <View className="rounded-sm bg-error-50 px-2.5 py-1 dark:bg-error-900/30">
                   <Text className="text-xs font-sans-medium text-error-700 dark:text-error-300">
-                    ⏰ 24h 경과
+                    24h 경과
                   </Text>
                 </View>
               ) : null}
@@ -242,7 +242,9 @@ export default function AdminEmployerApplicationsPage() {
               >
                 <Text
                   className={`text-sm font-sans-medium ${
-                    isSelected ? 'text-surface-dark' : 'text-secondary-700 dark:text-secondary-300'
+                    isSelected
+                      ? 'text-content-onGold'
+                      : 'text-secondary-700 dark:text-secondary-300'
                   }`}
                 >
                   {option.label}
@@ -258,7 +260,7 @@ export default function AdminEmployerApplicationsPage() {
         contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} />}
       >
-        <Text className="mb-3 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+        <Text className="mb-3 text-sm text-content-secondary font-sans">
           총 {applications.length}건
         </Text>
 
