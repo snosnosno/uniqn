@@ -86,7 +86,7 @@ const StatusTab = memo(function StatusTab({
         className="text-sm font-sans-medium"
         style={{
           color: isSelected
-            ? '#FFFFFF'
+            ? '#09090B'
             : isDarkMode
               ? SECONDARY_PALETTE[200]
               : SECONDARY_PALETTE[700],
@@ -193,21 +193,19 @@ const TournamentCard = memo(function TournamentCard({
 
           <View className="flex-row items-center mb-1">
             <LocationOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
+            <Text className="text-sm text-content-secondary ml-1 font-sans">
               {posting.location.name}
             </Text>
           </View>
 
           <View className="flex-row items-center mb-1">
             <CalendarOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
-              {dateRange}
-            </Text>
+            <Text className="text-sm text-content-secondary ml-1 font-sans">{dateRange}</Text>
           </View>
 
           <View className="flex-row items-center">
             <PersonOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
+            <Text className="text-sm text-content-secondary ml-1 font-sans">
               {posting.ownerName ?? '구인자'}
             </Text>
           </View>
@@ -342,7 +340,7 @@ export default function AdminTournamentsPage() {
         <StackHeader title="대회공고 검토" fallbackHref="/(admin)" />
         <View className="flex-1 bg-surface-page dark:bg-surface items-center justify-center">
           <ActivityIndicator size="large" color={getLoadingColor(isDarkMode)} />
-          <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
+          <Text className="mt-4 text-content-secondary font-sans">
             대회공고 목록을 불러오는 중...
           </Text>
         </View>
@@ -377,7 +375,7 @@ export default function AdminTournamentsPage() {
         <Text className="text-xl font-display text-content-primary dark:text-off-white mb-1">
           대회공고 승인 관리
         </Text>
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+        <Text className="text-sm text-content-secondary font-sans">
           대회공고 승인 요청을 검토하고 처리합니다
         </Text>
       </View>
@@ -401,7 +399,7 @@ export default function AdminTournamentsPage() {
 
       {/* 결과 개수 */}
       <View className="px-4 py-2">
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+        <Text className="text-sm text-content-secondary font-sans">
           {displayPostings.length}개의 대회공고
         </Text>
       </View>

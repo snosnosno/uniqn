@@ -205,13 +205,13 @@ export default function AnnouncementDetailPage() {
           <View className="flex-row flex-wrap gap-4 mt-2">
             <View className="flex-row items-center">
               <PersonOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
+              <Text className="text-sm text-content-secondary ml-1 font-sans">
                 {announcement.authorName}
               </Text>
             </View>
             <View className="flex-row items-center">
               <EyeOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
-              <NumericText className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
+              <NumericText className="text-sm text-content-secondary ml-1 font-sans">
                 {announcement.viewCount.toLocaleString()}
               </NumericText>
             </View>
@@ -292,9 +292,7 @@ export default function AnnouncementDetailPage() {
 
           {/* Target Audience */}
           <View className="flex-row justify-between py-2 border-b border-divider">
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-              대상
-            </Text>
+            <Text className="text-sm text-content-secondary font-sans">대상</Text>
             <Text className="text-sm text-content-primary dark:text-off-white font-sans">
               {announcement.targetAudience.type === 'all'
                 ? '전체'
@@ -317,9 +315,7 @@ export default function AnnouncementDetailPage() {
 
           {/* Created At */}
           <View className="flex-row justify-between py-2 border-b border-divider">
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-              작성일
-            </Text>
+            <Text className="text-sm text-content-secondary font-sans">작성일</Text>
             <NumericText className="text-sm text-content-primary dark:text-off-white font-sans">
               {formatDate(announcement.createdAt)}
             </NumericText>
@@ -328,9 +324,7 @@ export default function AnnouncementDetailPage() {
           {/* Published At */}
           {announcement.publishedAt && (
             <View className="flex-row justify-between py-2 border-b border-divider">
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-                발행일
-              </Text>
+              <Text className="text-sm text-content-secondary font-sans">발행일</Text>
               <NumericText className="text-sm text-content-primary dark:text-off-white font-sans">
                 {formatDate(announcement.publishedAt)}
               </NumericText>
@@ -339,9 +333,7 @@ export default function AnnouncementDetailPage() {
 
           {/* Updated At */}
           <View className="flex-row justify-between py-2">
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-              수정일
-            </Text>
+            <Text className="text-sm text-content-secondary font-sans">수정일</Text>
             <NumericText className="text-sm text-content-primary dark:text-off-white font-sans">
               {formatDate(announcement.updatedAt)}
             </NumericText>
@@ -392,7 +384,7 @@ export default function AnnouncementDetailPage() {
             disabled={!!actionLoading}
             className="bg-primary-600 rounded-lg py-3 items-center flex-row justify-center"
           >
-            <CreateOutlineIcon size={18} color="#fff" />
+            <CreateOutlineIcon size={18} color="#09090B" />
             <Text className="text-surface-dark font-sans-medium ml-2">수정하기</Text>
           </Pressable>
 
