@@ -48,7 +48,9 @@ normalizeLegacyInput(raw)   ← safeParse 이전에 흡수
 
 ## 영향 범위
 
-주장 (memory 기반): `payroll_status`(앱 'processing' ↔ DB 'failed'), `posting_status`(2중 하드코딩 `jobPosting.schema.ts:107`, `:474`). 현재 dead writer 0건이나 값 쓰면 즉시 발동.
+주장 (memory 기반): `payroll_status`(앱 'processing' ↔ DB 'failed'). 현재 dead writer 0건이나 값 쓰면 즉시 발동.
+
+검증됨 (`uniqn-mobile/src/schemas/jobPosting.schema.ts:24, 114, 469`): `posting_status`는 현재 SSOT 패턴 적용됨 — `Constants.public.Enums.posting_status` 파생(`POSTING_STATUS_VALUES`, :24), `z.enum(POSTING_STATUS_VALUES)` 사용(jobFilterSchema :114, jobPostingDocumentSchema :469). 과거 인라인 하드코딩은 해소된 상태.
 
 ## 관련
 

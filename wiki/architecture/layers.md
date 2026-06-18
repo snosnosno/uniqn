@@ -44,7 +44,7 @@ Repository 직접 Supabase 호출은 `uniqn-mobile/src/repositories/supabase/Job
 
 ## 에러 처리 패턴
 
-검증됨 (`uniqn-mobile/src/services/wallet/walletService.ts:24-28`):
+검증됨 (`uniqn-mobile/src/services/wallet/walletService.ts:23-28`):
 ```typescript
 } catch (error) {
   throw handleServiceError(error, { operation: '지갑 요약 조회', component: 'walletService' });

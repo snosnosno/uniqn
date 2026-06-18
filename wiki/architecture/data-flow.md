@@ -6,32 +6,37 @@ sources:
   - CLAUDE.md
   - uniqn-mobile/src/services/wallet/walletService.ts
   - uniqn-mobile/src/services/jobs/jobService.ts
+  - uniqn-mobile/src/services/jobs/jobManagementService.ts
+  - uniqn-mobile/src/hooks/useJobPostings.ts
   - uniqn-mobile/src/repositories/supabase/JobPostingRepository.ts
   - uniqn-mobile/src/repositories/supabase/WalletRepository.ts
+  - uniqn-mobile/supabase/migrations/20260421040000_add_job_posting_stats_trigger.sql
+  - uniqn-mobile/supabase/migrations/20260529100100_M2_trigger_capacity_full_transition.sql
 tags: [architecture, data-flow, tanstack-query, repository]
 ---
 
 # 데이터 흐름
 
-**한 줄:** UI 조회는 TanStack Query + Repository 직접, 쓰기는 Service → Repository → Supabase RPC 경유.
+**한 줄:** UI 조회는 TanStack Query + Service → Repository 경유, 쓰기는 Service → Repository → Supabase RPC 경유.
 
-## 흐름 1 — 공고 목록 조회 (읽기, TanStack Query 예외)
+## 흐름 1 — 공고 목록 조회 (읽기, Service 경유)
 
-검증됨 (`uniqn-mobile/src/services/jobs/jobService.ts:20-50`):
+검증됨 (`uniqn-mobile/src/hooks/useJobPostings.ts:39`, `uniqn-mobile/src/services/jobs/jobService.ts:47-59`):
 ```
 useJobPostings (Hook)
-  → jobPostingRepository.getList()          ← Repository 직접 (TanStack Query 예외)
-    → supabase.from('job_postings')
-        .select(...).in('status', [...])
-          → RLS 평가 → rows 반환
+  → getJobPostings() [jobService]        ← Service 경유
+    → jobPostingRepository.getList()
+      → supabase.from('job_postings')
+          .select(...).in('status', [...])
+            → RLS 평가 → rows 반환
   ← 캐시 → Presentation 렌더
 ```
 
-CLAUDE.md: "TanStack Query 읽기 전용 조회: Repository 직접 호출 허용" (검증됨).
+CLAUDE.md: "TanStack Query 읽기 전용 조회: Repository 직접 호출 허용" — 이 규칙은 직접 호출을 허용하나, 실제 `useJobPostings`는 Service(`getJobPostings`)를 경유함 (검증됨).
 
-## 흐름 2 — 지갑 조회 (쓰기/서비스 경유)
+## 흐름 2 — 지갑 요약 조회 (읽기, Service 경유)
 
-검증됨 (`uniqn-mobile/src/services/wallet/walletService.ts:20-47`):
+검증됨 (`uniqn-mobile/src/services/wallet/walletService.ts:20-28`, `uniqn-mobile/src/repositories/supabase/WalletRepository.ts:52-61`):
 ```
 ProfileCard (Presentation)
   → useWallet (Hook)
@@ -40,19 +45,21 @@ ProfileCard (Presentation)
         → supabase.rpc('get_wallet_summary')
 ```
 
-Service 계층이 비즈니스 검증 + `handleServiceError`(AppError 변환) 담당.
+읽기임에도 Service 경유인 이유: `handleServiceError`가 Supabase 에러를 AppError(E1~E7)로 변환하는 역할을 Service가 담당함(TanStack Query 직접 예외와 무관).
 
 ## 흐름 3 — 공고 게시 (쓰기, Service 필수)
 
-검증됨 (`uniqn-mobile/src/repositories/supabase/JobPostingRepository.ts:1-40`):
+검증됨 (`uniqn-mobile/src/services/jobs/jobManagementService.ts:63`, `uniqn-mobile/src/repositories/supabase/JobPostingRepository.ts:347-402`, `uniqn-mobile/src/repositories/supabase/WalletRepository.ts:130`):
 ```
 PostingForm (Presentation)
-  → jobManagementService.createPosting()   ← Service
-    → JobPostingRepository.create()
-      → supabase.from('job_postings').insert(...)
-        → RLS(WITH CHECK) → INSERT
-        → fn_update_job_posting_stats 트리거
+  → jobManagementService.createSinglePosting()   ← Service
+    → jobPostingRepository.createWithTransaction()
+      → WalletRepository.createJobPostingWithPayment()
+        → supabase.rpc('create_job_posting_with_payment_atomically')
+          → DB: job_postings INSERT (RPC 내부) + fn_update_job_posting_stats 트리거
 ```
+
+트리거 출처 (주장, 마이그레이션): `uniqn-mobile/supabase/migrations/20260421040000_add_job_posting_stats_trigger.sql`, `20260529100100_M2_trigger_capacity_full_transition.sql`.
 
 ## TanStack Query 읽기 예외 범위
 
