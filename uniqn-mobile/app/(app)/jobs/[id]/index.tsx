@@ -250,7 +250,7 @@ export default function JobDetailScreen() {
                 고정 공고는 앱에서 지원할 수 없어요
               </Button>
               <Text className="mt-2 text-center text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-                날짜 기반 모집 공고만 앱에서 지원할 수 있어요
+                상시 모집 공고예요. 위 연락처로 직접 문의해 주세요.
               </Text>
             </View>
           ) : (
