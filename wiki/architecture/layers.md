@@ -26,7 +26,7 @@ tags: [architecture, layers, dependency]
 
 ### Service → Repository 예시
 
-검증됨 (`uniqn-mobile/src/services/wallet/walletService.ts:24`):
+검증됨 (`uniqn-mobile/src/services/wallet/walletService.ts:22`):
 ```
 walletService.getWalletSummary()
   → WalletRepository.getSummary()

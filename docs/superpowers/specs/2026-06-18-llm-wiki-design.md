@@ -195,7 +195,8 @@ LLM을 규율 있는 위키 관리자로 만드는 핵심 설정. 다음을 정�
 - **소스 = 파일 경로** (예: `uniqn-mobile/src/services/walletService.ts`):
   `git log -1 --format=%cs -- <path>`의 마지막 커밋일 > 페이지 `updated` → **stale**.
 - **소스 = PR/커밋 SHA**: 불변 → stale 아님.
-- **소스 = `memory/` 파일**: 파일 mtime > `updated` → stale 후보.
+- **소스 = `memory/` 파일 / 디렉토리 경로**: `memory/`는 repo 밖(`~/.claude/...`)이라 `git log`로 날짜 산정 불가, 디렉토리는 단일 파일이 아님 → **staleness 자동추적 비대상**. file 소스가 하나도 없는 페이지(예: memory/PR#만 인용하는 도메인 페이지)는 `check-staleness.sh`가 **UNVERIFIABLE**로 보고해 수동 검토 대상임을 surfacing한다.
+  - **구현 결정 (2026-06-18)**: 당초 §12-1 초안의 "memory mtime 추적"안은 memory가 repo 밖이고 클론 간 mtime이 불안정하여 폐기. 대신 file 소스 부재를 UNVERIFIABLE로 명시 노출하는 방식으로 대체.
 
 결정적 비교라 LLM 호출 0, 비용 0.
 

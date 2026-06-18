@@ -31,6 +31,7 @@
   ```
 - `[[위키링크]]` 적극. 페이지당 cross-link ≥3개(그중 타 영역 ≥1개). dangling 링크는 "쓸 거리" TODO로 허용.
 - 본문 한글, 코드 참조 `파일:줄`.
+- `sources`는 가능한 한 **repo 파일 경로**로(staleness 자동추적 대상). `memory/`·`PR#NNN`·디렉토리 경로는 정보성(비추적) → file 소스가 하나도 없는 페이지는 `/lint`가 **UNVERIFIABLE**로 표기한다.
 
 ## 4. 증거 규칙
 - 모든 주장은 인용: `파일:줄` · `PR#NNN` · 커밋 SHA · `[[sources/...]]`.
@@ -56,6 +57,7 @@
 ## 7. Lint 워크플로우 (`/lint`)
 점검(자동 수정 X, 진단만):
 - **stale 페이지**: `bash wiki/scripts/check-staleness.sh` (소스가 `updated` 이후 변경).
+- **UNVERIFIABLE 페이지**: file 소스가 없어 staleness 자동추적 불가(memory/PR#/디렉토리만) → 수동 검토 대상 (`check-staleness.sh` 동일 출력).
 - **미흡수 docs**: `bash wiki/scripts/check-unprocessed-docs.sh`.
 - **모순**: 페이지 간 충돌 주장.
 - **고아**: 백링크 ≤2개.
