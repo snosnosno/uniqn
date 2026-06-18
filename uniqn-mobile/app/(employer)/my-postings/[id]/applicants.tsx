@@ -41,8 +41,10 @@ export default function ApplicantsScreen() {
     confirmWithHistory,
     rejectApplication,
     cancelConfirmationAsync,
+    bulkConfirm,
     isConfirmingWithHistory,
     isRejecting,
+    isBulkConfirming,
     markAsRead,
   } = useApplicantManagement(jobPostingId || '', { realtime: true });
 
@@ -210,6 +212,8 @@ export default function ApplicantsScreen() {
         onReject={handleReject}
         onCancelConfirmation={handleCancelConfirmation}
         onViewProfile={handleViewProfile}
+        onBulkConfirm={bulkConfirm}
+        isBulkConfirming={isBulkConfirming}
       />
 
       {/* 확정/거절 모달 */}
