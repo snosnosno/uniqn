@@ -4,13 +4,19 @@
 > 규약: [[AGENTS]] · 시작점: [[overview]]
 
 ## architecture
-_(Task 5에서 채움)_
+- [[layers]] — Presentation→Hooks→Service→Repository→Supabase 단방향 5레이어
+- [[data-flow]] — 대표 데이터 흐름(읽기 TanStack Query 예외 + 쓰기 Service 경유)
+- [[rls-model]] — RLS 정책 3계층 + 재귀/SECDEF 함정 3건
 
 ## decisions
-_(Task 7에서 채움)_
+- [[enum-divergence]] — enum 발산 → 읽기 레코드 증발 방지 규칙 (3회 재발 클래스)
+- [[worktime-ssot]] — 근무시간 표시 SSOT(WorkTimeDisplay) 우회 금지
+- [[capacity-full]] — 공고 자동마감 capacity_full + dead counter 제거
 
 ## domain
-_(Task 6에서 채움)_
+- [[roles]] — UserRole(앱권한: admin/employer/staff) vs StaffRole(직무: dealer/floor/serving)
+- [[target-market]] — 홀덤펍 + 대회사 (포커룸 비타깃)
+- [[revenue-model]] — 이중통화(하트·다이아)·IAP·RevenueCat (게이트 OFF 휴면)
 
 ## sources
 _(ingest로 점진 추가)_
