@@ -156,7 +156,7 @@ const TournamentCard = memo(function TournamentCard({
   }, [posting]);
 
   return (
-    <View className="bg-white dark:bg-surface rounded-md mb-3 overflow-hidden border border-divider">
+    <View className="bg-surface-card rounded-md mb-3 overflow-hidden border border-divider">
       <CardStripe tone={stripeTone}>
         {/* 헤더 */}
         <Pressable
@@ -371,7 +371,7 @@ export default function AdminTournamentsPage() {
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="대회공고 검토" fallbackHref="/(admin)" />
       {/* 헤더 */}
-      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-divider">
+      <View className="px-4 py-3 bg-surface-card border-b border-divider">
         <Text className="text-xl font-display text-content-primary dark:text-off-white mb-1">
           대회공고 승인 관리
         </Text>
@@ -381,7 +381,7 @@ export default function AdminTournamentsPage() {
       </View>
 
       {/* 상태 탭 */}
-      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-divider">
+      <View className="px-4 py-3 bg-surface-card border-b border-divider">
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {STATUS_TABS.map((tab) => (
             <StatusTab

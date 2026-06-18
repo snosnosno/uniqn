@@ -101,7 +101,7 @@ function UserCard({ user, onPress }: UserCardProps) {
   return (
     <Pressable
       onPress={onPress}
-      className="bg-white dark:bg-surface rounded-md mb-3 border border-divider active:opacity-80"
+      className="bg-surface-card rounded-md mb-3 border border-divider active:opacity-80"
       style={{
         boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)',
         elevation: 2,
@@ -267,7 +267,7 @@ export default function AdminUsersPage() {
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="사용자 관리" fallbackHref="/(admin)" />
-      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-divider">
+      <View className="px-4 py-3 bg-surface-card border-b border-divider">
         <View className="flex-row items-center bg-surface-card dark:bg-surface rounded-lg px-3 py-2">
           <MagnifyingGlassIcon size={20} color={SECONDARY_PALETTE[400]} />
           <TextInput
@@ -282,7 +282,7 @@ export default function AdminUsersPage() {
         </View>
       </View>
 
-      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-divider">
+      <View className="px-4 py-3 bg-surface-card border-b border-divider">
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {ROLE_OPTIONS.map((option) => (
             <RoleChip

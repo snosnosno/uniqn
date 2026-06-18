@@ -97,7 +97,7 @@ export function JobDetail({ job }: JobDetailProps) {
   const postingTypeLabel = detail.postingType ? POSTING_TYPE_LABELS[detail.postingType] : null;
 
   return (
-    <View className="bg-white dark:bg-surface">
+    <View className="bg-surface-card">
       {/* Hero */}
       <View className="bg-surface-page dark:bg-surface-elevated px-4 py-4 border-b border-divider">
         <View className="flex-row flex-wrap items-center gap-1 mb-2">

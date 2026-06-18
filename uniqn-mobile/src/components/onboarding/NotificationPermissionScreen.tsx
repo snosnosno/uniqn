@@ -115,7 +115,7 @@ export function NotificationPermissionScreen({
   const BadgeIcon = content.badgeIcon;
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-white dark:bg-surface-dark">
+    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-surface-card">
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ flexGrow: 1 }}

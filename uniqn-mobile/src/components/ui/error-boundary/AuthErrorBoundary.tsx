@@ -37,7 +37,7 @@ function AuthErrorFallback({
   const isSessionExpired = error?.message.includes('expired') || error?.message.includes('만료');
 
   return (
-    <View className="flex-1 items-center justify-center p-6 bg-white dark:bg-surface-dark">
+    <View className="flex-1 items-center justify-center p-6 bg-surface-card">
       <View className="w-20 h-20 rounded-sm bg-warning-100 dark:bg-warning-900/30 items-center justify-center mb-6">
         <LockIcon size={40} color="#B8962E" />
       </View>

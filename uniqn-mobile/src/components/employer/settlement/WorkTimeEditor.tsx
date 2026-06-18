@@ -427,7 +427,7 @@ export function WorkTimeEditor({
               multiline
               numberOfLines={2}
               textAlignVertical="top"
-              className="p-3 border border-divider rounded-lg bg-white dark:bg-surface text-content-primary dark:text-off-white min-h-[60px]"
+              className="p-3 border border-divider rounded-lg bg-surface-card text-content-primary dark:text-off-white min-h-[60px]"
             />
             <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
               예: QR 인식 오류로 실제 출근 시간과 다름

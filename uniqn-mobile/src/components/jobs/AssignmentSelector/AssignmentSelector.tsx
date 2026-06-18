@@ -165,7 +165,7 @@ export const AssignmentSelector = memo(function AssignmentSelector({
 
   if (isFixed) {
     return (
-      <View className="rounded-md border border-amber-200 bg-warning-50 p-4 dark:border-amber-800 dark:bg-warning-900/30">
+      <View className="rounded-md border border-warning-200 bg-warning-50 p-4 dark:border-warning-800 dark:bg-warning-900/30">
         <Text className="text-sm font-sans-medium text-warning-800 dark:text-warning-200">
           고정 공고 지원은 현재 비활성화되어 있습니다.
         </Text>

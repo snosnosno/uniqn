@@ -258,7 +258,7 @@ export default function EditJobPostingScreen() {
           showsVerticalScrollIndicator={false}
         >
           {hasConfirmedApplicants && (
-            <View className="mb-4 rounded-lg border border-amber-200 bg-warning-50 p-3 dark:border-amber-800 dark:bg-warning-900/20">
+            <View className="mb-4 rounded-lg border border-warning-200 bg-warning-50 p-3 dark:border-warning-800 dark:bg-warning-900/20">
               <Text className="text-sm text-warning-700 dark:text-warning-300 font-sans">
                 확정된 지원자가 있어 일정과 역할 정보는 수정할 수 없습니다.
               </Text>

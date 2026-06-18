@@ -133,7 +133,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       return fallback;
     }
 
-    const containerClass = fullScreen ? 'flex-1 bg-white dark:bg-surface-dark' : 'p-4';
+    const containerClass = fullScreen ? 'flex-1 bg-surface-card' : 'p-4';
 
     return (
       <View className={containerClass}>

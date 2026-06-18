@@ -160,7 +160,7 @@ function WebSheetModal({
                 pointerEvents: 'auto' as const,
               },
             ]}
-            className={`bg-white dark:bg-surface-dark w-full ${fullHeight ? 'h-full' : 'rounded-t-3xl'}`}
+            className={`bg-surface-card w-full ${fullHeight ? 'h-full' : 'rounded-t-3xl'}`}
           >
             {/* Header */}
             <View className="flex-row items-center justify-between px-4 py-4 border-b border-divider">
@@ -319,7 +319,7 @@ function NativeSheetModal({
             <SafeAreaView
               edges={fullHeight ? ['top', 'bottom'] : ['bottom']}
               style={{ flex: 1 }}
-              className={`bg-white dark:bg-surface-dark ${fullHeight ? '' : 'rounded-t-3xl'}`}
+              className={`bg-surface-card ${fullHeight ? '' : 'rounded-t-3xl'}`}
             >
               {/* Header */}
               <View className="flex-row items-center justify-between px-4 py-4 border-b border-divider">

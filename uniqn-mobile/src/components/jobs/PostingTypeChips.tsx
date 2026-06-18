@@ -88,7 +88,7 @@ export const PostingTypeChips = memo(function PostingTypeChips({
   );
 
   return (
-    <View className={`bg-white dark:bg-surface ${className}`}>
+    <View className={`bg-surface-card ${className}`}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}

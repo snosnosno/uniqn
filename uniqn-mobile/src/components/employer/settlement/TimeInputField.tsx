@@ -74,7 +74,7 @@ export function TimeInputField({
                 ${
                   isUndefined
                     ? 'bg-primary-600 border-primary-600'
-                    : 'bg-white dark:bg-surface border-secondary-300 dark:border-surface-overlay'
+                    : 'bg-surface-card border-secondary-300 dark:border-surface-overlay'
                 }`}
             >
               {isUndefined && <CheckIcon size={14} color="#FFFFFF" />}
@@ -94,7 +94,7 @@ export function TimeInputField({
           ${
             isUndefined
               ? 'bg-secondary-100 dark:bg-surface-dark border-secondary-200 dark:border-surface-overlay'
-              : 'bg-white dark:bg-surface border-divider active:bg-secondary-50 dark:active:bg-secondary-700'
+              : 'bg-surface-card border-divider active:bg-secondary-50 dark:active:bg-secondary-700'
           }`}
       >
         <View className="flex-row items-center flex-1">

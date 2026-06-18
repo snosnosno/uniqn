@@ -207,7 +207,7 @@ export function TutorialOverlay({ config, onComplete, timeoutMs }: TutorialOverl
   const showCountdown = remainingSec !== null && remainingSec <= COUNTDOWN_THRESHOLD_SEC;
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-surface-dark">
+    <SafeAreaView className="flex-1 bg-surface-card">
       {/* 헤더: 카운트다운 + 건너뛰기 */}
       <View className="flex-row justify-between items-center px-6 pt-2">
         {/* H4: 카운트다운 경고 */}

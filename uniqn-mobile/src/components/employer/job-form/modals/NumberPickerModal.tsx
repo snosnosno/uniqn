@@ -102,10 +102,7 @@ export function NumberPickerModal({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable className="flex-1 bg-black/50 justify-end" onPress={onClose}>
-        <Pressable
-          className="bg-white dark:bg-surface rounded-t-2xl"
-          onPress={(e) => e.stopPropagation()}
-        >
+        <Pressable className="bg-surface-card rounded-t-2xl" onPress={(e) => e.stopPropagation()}>
           {/* 헤더 */}
           <View className="flex-row items-center justify-between px-4 py-3 border-b border-divider">
             <Pressable onPress={onClose} className="py-2 px-3">

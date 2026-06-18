@@ -104,7 +104,7 @@ export default function AdminAnnouncementsPage() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          className="border-b border-divider bg-white dark:bg-surface"
+          className="border-b border-divider bg-surface-card"
           style={{ flexGrow: 0 }}
           contentContainerStyle={{ paddingHorizontal: 16 }}
         >

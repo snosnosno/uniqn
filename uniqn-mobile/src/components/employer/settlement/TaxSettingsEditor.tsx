@@ -211,7 +211,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
                 ${
                   isSelected
                     ? 'bg-primary-500 border-primary-500'
-                    : 'bg-white dark:bg-surface border-secondary-300 dark:border-surface-overlay'
+                    : 'bg-surface-card border-secondary-300 dark:border-surface-overlay'
                 }
                 ${disabled ? 'opacity-50' : 'active:opacity-80'}
               `}
@@ -235,7 +235,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
           <View
             className={`
               flex-row items-center rounded-lg border px-3 h-12
-              bg-white dark:bg-surface
+              bg-surface-card
               border-secondary-300 dark:border-surface-overlay
               ${disabled ? 'opacity-50' : ''}
             `}
@@ -307,7 +307,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
           <View
             className={`
               flex-row items-center rounded-lg border px-3 h-12
-              bg-white dark:bg-surface
+              bg-surface-card
               border-secondary-300 dark:border-surface-overlay
               ${disabled ? 'opacity-50' : ''}
             `}
@@ -349,7 +349,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
                     ${
                       isChecked
                         ? 'bg-primary-50 dark:bg-primary-900/30 border-primary-300 dark:border-primary-700'
-                        : 'bg-white dark:bg-surface border-secondary-300 dark:border-surface-overlay'
+                        : 'bg-surface-card border-secondary-300 dark:border-surface-overlay'
                     }
                     ${disabled ? 'opacity-50' : 'active:opacity-70'}
                   `}

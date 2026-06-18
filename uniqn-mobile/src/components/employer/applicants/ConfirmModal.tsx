@@ -276,7 +276,7 @@ export function ApplicantConfirmModal({
               multiline
               numberOfLines={2}
               textAlignVertical="top"
-              className="p-2.5 border border-divider rounded-lg bg-white dark:bg-surface text-content-primary dark:text-off-white min-h-[60px]"
+              className="p-2.5 border border-divider rounded-lg bg-surface-card text-content-primary dark:text-off-white min-h-[60px]"
             />
           </View>
         )}

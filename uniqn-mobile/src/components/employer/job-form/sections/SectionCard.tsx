@@ -102,7 +102,7 @@ export const SectionCard = memo(function SectionCard({
   return (
     <View
       className={`
-        bg-white dark:bg-surface
+        bg-surface-card
         rounded-md border ${borderColor}
         mb-3 overflow-hidden
         ${className}

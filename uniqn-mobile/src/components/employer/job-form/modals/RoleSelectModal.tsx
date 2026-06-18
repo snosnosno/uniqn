@@ -122,7 +122,7 @@ export const RoleSelectModal = memo(function RoleSelectModal({
               placeholder="예: 플로어 매니저"
               placeholderTextColor={SECONDARY_PALETTE[400]}
               autoFocus
-              className="border-2 border-secondary-300 dark:border-surface-overlay rounded-lg px-4 py-3 text-base font-sans text-content-primary dark:text-off-white bg-white dark:bg-surface"
+              className="border-2 border-secondary-300 dark:border-surface-overlay rounded-lg px-4 py-3 text-base font-sans text-content-primary dark:text-off-white bg-surface-card"
             />
             <View className="flex-row gap-3 mt-4">
               <Pressable

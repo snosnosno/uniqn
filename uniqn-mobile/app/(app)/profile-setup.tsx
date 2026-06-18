@@ -86,7 +86,7 @@ export default function ProfileSetupScreen() {
   }, [toast]);
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-surface">
+    <SafeAreaView className="flex-1 bg-surface-card">
       <KeyboardAwareScrollView
         className="flex-1"
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}

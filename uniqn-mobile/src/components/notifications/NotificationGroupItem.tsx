@@ -74,7 +74,7 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
       layout={Layout.duration(200)}
       className={`
         border-b border-divider dark:border-surface-overlay
-        ${hasUnread ? 'bg-primary-50 dark:bg-primary-900/20' : 'bg-white dark:bg-surface-dark'}
+        ${hasUnread ? 'bg-primary-50 dark:bg-primary-900/20' : 'bg-surface-card'}
       `}
     >
       {/* 그룹 헤더 (항상 표시) */}

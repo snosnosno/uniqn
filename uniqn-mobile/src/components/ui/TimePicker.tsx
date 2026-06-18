@@ -183,9 +183,9 @@ export const TimePicker = memo(function TimePicker({
       return `${base} bg-surface-card dark:bg-surface border-secondary-200 dark:border-surface-overlay`;
     }
     if (error) {
-      return `${base} bg-white dark:bg-surface border-error-500`;
+      return `${base} bg-surface-card border-error-500`;
     }
-    return `${base} bg-white dark:bg-surface border-secondary-300 dark:border-surface-overlay`;
+    return `${base} bg-surface-card border-secondary-300 dark:border-surface-overlay`;
   };
 
   // FlatList renderItem
@@ -270,7 +270,7 @@ export const TimePicker = memo(function TimePicker({
           />
 
           {/* 모달 컨텐츠 - 백드롭과 형제 관계 */}
-          <View className="bg-white dark:bg-surface rounded-t-2xl max-h-[70%]">
+          <View className="bg-surface-card rounded-t-2xl max-h-[70%]">
             {/* 헤더 */}
             <View className="flex-row items-center justify-between px-4 py-4 border-b border-divider">
               <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white">

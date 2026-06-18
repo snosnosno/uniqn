@@ -203,7 +203,7 @@ export default function AdminUserDetailPage() {
         }
       >
         {/* Profile Header */}
-        <View className="bg-white dark:bg-surface px-4 py-6 items-center border-b border-divider">
+        <View className="bg-surface-card px-4 py-6 items-center border-b border-divider">
           {user.photoURL ? (
             <Avatar
               source={user.photoURL}
@@ -240,7 +240,7 @@ export default function AdminUserDetailPage() {
         </View>
 
         {/* Basic Info */}
-        <View className="bg-white dark:bg-surface mt-3 px-4 pt-4 pb-2">
+        <View className="bg-surface-card mt-3 px-4 pt-4 pb-2">
           <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             기본 정보
           </Text>
@@ -275,7 +275,7 @@ export default function AdminUserDetailPage() {
         </View>
 
         {/* Role Management */}
-        <View className="bg-white dark:bg-surface mt-3 px-4 pt-4 pb-4">
+        <View className="bg-surface-card mt-3 px-4 pt-4 pb-4">
           <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             역할 관리
           </Text>
@@ -327,7 +327,7 @@ export default function AdminUserDetailPage() {
         </View>
 
         {/* Account Actions */}
-        <View className="bg-white dark:bg-surface mt-3 px-4 pt-4 pb-4 mb-8">
+        <View className="bg-surface-card mt-3 px-4 pt-4 pb-4 mb-8">
           <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             계정 관리
           </Text>

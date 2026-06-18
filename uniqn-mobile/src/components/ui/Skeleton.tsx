@@ -184,7 +184,7 @@ export function SkeletonText({
 
 export function SkeletonCard({ className }: SkeletonCardProps) {
   return (
-    <View className={`bg-white dark:bg-surface rounded-md p-4 ${className || ''}`}>
+    <View className={`bg-surface-card rounded-md p-4 ${className || ''}`}>
       {/* Image placeholder */}
       <Skeleton width="100%" height={160} borderRadius={8} className="mb-4" />
 
@@ -315,7 +315,7 @@ export function SkeletonButton({ width = 120 }: SkeletonButtonProps) {
 
 export function SkeletonJobCard() {
   return (
-    <View className="bg-white dark:bg-surface rounded-md p-4 mb-3">
+    <View className="bg-surface-card rounded-md p-4 mb-3">
       {/* Header */}
       <View className="flex-row items-center mb-3">
         <Skeleton width={40} height={40} borderRadius={8} />
@@ -349,7 +349,7 @@ export function SkeletonJobCard() {
 
 export function SkeletonScheduleCard() {
   return (
-    <View className="bg-white dark:bg-surface rounded-md p-4 mb-3">
+    <View className="bg-surface-card rounded-md p-4 mb-3">
       {/* Date */}
       <View className="flex-row items-center mb-3">
         <Skeleton width={36} height={36} borderRadius={18} />
@@ -372,7 +372,7 @@ export function SkeletonScheduleCard() {
 
 export function SkeletonNotificationItem() {
   return (
-    <View className="flex-row items-start py-4 px-4 bg-white dark:bg-surface border-b border-secondary-100 dark:border-surface-overlay">
+    <View className="flex-row items-start py-4 px-4 bg-surface-card border-b border-secondary-100 dark:border-surface-overlay">
       {/* Icon */}
       <Skeleton width={40} height={40} borderRadius={20} style={{ marginRight: 12 }} />
 
@@ -395,7 +395,7 @@ export function SkeletonNotificationItem() {
 
 export function SkeletonApplicantCard() {
   return (
-    <View className="bg-white dark:bg-surface rounded-md p-4 mb-3">
+    <View className="bg-surface-card rounded-md p-4 mb-3">
       {/* Header */}
       <View className="flex-row items-center mb-4">
         <Skeleton width={56} height={56} borderRadius={28} />
@@ -453,7 +453,7 @@ export function SkeletonProfileHeader() {
 
 export function SkeletonStatsCard() {
   return (
-    <View className="bg-white dark:bg-surface rounded-md p-4">
+    <View className="bg-surface-card rounded-md p-4">
       {/* Title */}
       <Skeleton width="40%" height={16} className="mb-4" />
 
@@ -476,7 +476,7 @@ export function SkeletonStatsCard() {
 
 export function SkeletonSettlementRow() {
   return (
-    <View className="flex-row items-center py-3 px-4 bg-white dark:bg-surface border-b border-secondary-100 dark:border-surface-overlay">
+    <View className="flex-row items-center py-3 px-4 bg-surface-card border-b border-secondary-100 dark:border-surface-overlay">
       {/* Date */}
       <View className="w-20">
         <Skeleton width={60} height={14} className="mb-1" />

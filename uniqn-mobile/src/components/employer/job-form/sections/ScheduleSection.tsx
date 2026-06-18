@@ -196,7 +196,7 @@ const FixedSchedule = memo(function FixedSchedule({
                 ${
                   isNegotiable
                     ? 'bg-primary-600 border-primary-600'
-                    : 'bg-white dark:bg-surface border-secondary-300 dark:border-surface-overlay'
+                    : 'bg-surface-card border-secondary-300 dark:border-surface-overlay'
                 }`}
             >
               {isNegotiable && <CheckIcon size={14} color="#FFFFFF" />}

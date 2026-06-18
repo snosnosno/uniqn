@@ -103,9 +103,9 @@ export const DatePicker = memo(function DatePicker({
       return `${base} bg-surface-card dark:bg-surface border-secondary-200 dark:border-surface-overlay`;
     }
     if (error) {
-      return `${base} bg-white dark:bg-surface border-error-500`;
+      return `${base} bg-surface-card border-error-500`;
     }
-    return `${base} bg-white dark:bg-surface border-secondary-300 dark:border-surface-overlay`;
+    return `${base} bg-surface-card border-secondary-300 dark:border-surface-overlay`;
   };
 
   // time 모드는 TimePicker 사용 권장 (여기서는 기본 동작만)
@@ -185,7 +185,7 @@ export const DatePicker = memo(function DatePicker({
         onRequestClose={handleCloseModal}
       >
         <View className="flex-1 justify-end bg-black/50">
-          <View className="bg-white dark:bg-surface rounded-t-2xl">
+          <View className="bg-surface-card rounded-t-2xl">
             {/* 헤더 */}
             <View className="flex-row items-center justify-between px-4 py-4 border-b border-divider">
               <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white">

@@ -89,7 +89,7 @@ export const NumericInput = memo(function NumericInput({
     <View
       className={`
         flex-row items-center rounded-lg border px-3 h-10
-        bg-white dark:bg-surface
+        bg-surface-card
         ${error ? 'border-error-500' : 'border-secondary-300 dark:border-surface-overlay'}
         ${disabled ? 'opacity-50' : ''}
         ${className}

@@ -134,7 +134,7 @@ export const SalaryTypeSelector = memo(function SalaryTypeSelector({
                 ${
                   isSelected
                     ? 'bg-primary-500 border-primary-500'
-                    : 'bg-white dark:bg-surface border-secondary-300 dark:border-surface-overlay'
+                    : 'bg-surface-card border-secondary-300 dark:border-surface-overlay'
                 }
                 ${disabled ? 'opacity-50' : 'active:opacity-80'}
                 ${error && !isSelected ? 'border-error-500' : ''}
@@ -159,7 +159,7 @@ export const SalaryTypeSelector = memo(function SalaryTypeSelector({
         <View
           className={`
             flex-row items-center rounded-lg border px-3 h-12
-            bg-white dark:bg-surface
+            bg-surface-card
             ${error ? 'border-error-500' : 'border-secondary-300 dark:border-surface-overlay'}
             ${disabled ? 'opacity-50' : ''}
           `}

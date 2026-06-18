@@ -130,7 +130,7 @@ const RoleCard = React.memo(function RoleCard({
         {/* 숫자 탭 → 휠 피커 */}
         <Pressable
           onPress={() => setShowNumberPicker(true)}
-          className="w-12 h-7 items-center justify-center bg-white dark:bg-surface border-y border-divider"
+          className="w-12 h-7 items-center justify-center bg-surface-card border-y border-divider"
           accessibilityRole="button"
           accessibilityLabel="인원 선택"
         >
@@ -378,7 +378,7 @@ export function TimeSlotCard({
                 value={timeSlot.tentativeDescription || ''}
                 onChangeText={handleTentativeDescriptionChange}
                 placeholder="예: 토너먼트 진행 상황에 따라 결정"
-                className="px-3 py-2 bg-white dark:bg-surface border border-secondary-300 dark:border-surface-overlay rounded-lg text-content-primary dark:text-off-white text-sm font-sans"
+                className="px-3 py-2 bg-surface-card border border-secondary-300 dark:border-surface-overlay rounded-lg text-content-primary dark:text-off-white text-sm font-sans"
                 placeholderTextColor={SECONDARY_PALETTE[400]}
                 multiline
                 maxLength={200}
@@ -417,7 +417,7 @@ export function TimeSlotCard({
             </View>
 
             {/* 역할 카드 목록 */}
-            <View className="bg-white dark:bg-surface rounded-lg border border-divider px-3">
+            <View className="bg-surface-card rounded-lg border border-divider px-3">
               {timeSlot.roles.map((role, roleIndex) => (
                 <RoleCard
                   key={role.id || roleIndex}

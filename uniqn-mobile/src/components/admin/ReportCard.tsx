@@ -92,7 +92,7 @@ export const ReportCard = React.memo(function ReportCard({ report, onPress }: Re
   return (
     <Pressable
       onPress={onPress}
-      className="bg-white dark:bg-surface rounded-md mb-3 border border-divider active:opacity-80"
+      className="bg-surface-card rounded-md mb-3 border border-divider active:opacity-80"
       accessibilityRole="button"
       accessibilityLabel={`${typeLabel} 신고, ${SEVERITY_LABELS[report.severity]} 심각도, ${REPORT_STATUS_LABELS[report.status]} 상태`}
     >

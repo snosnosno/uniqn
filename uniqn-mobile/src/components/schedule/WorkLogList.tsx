@@ -80,7 +80,7 @@ function formatDate(dateString: string): string {
 
 function WorkLogSkeleton() {
   return (
-    <View className="bg-white dark:bg-surface rounded-md p-4 mb-3 border border-secondary-100 dark:border-surface-overlay">
+    <View className="bg-surface-card rounded-md p-4 mb-3 border border-secondary-100 dark:border-surface-overlay">
       <View className="flex-row items-center justify-between mb-3">
         <Skeleton className="h-5 w-24" />
         <Skeleton className="h-5 w-16 rounded-sm" />
@@ -122,7 +122,7 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
   return (
     <Pressable
       onPress={onPress}
-      className="bg-white dark:bg-surface rounded-md p-4 mb-3 border border-secondary-100 dark:border-surface-overlay active:opacity-80"
+      className="bg-surface-card rounded-md p-4 mb-3 border border-secondary-100 dark:border-surface-overlay active:opacity-80"
       accessibilityRole="button"
       accessibilityLabel={`${formatDate(workLog.date)} ${roleLabel} 근무 기록`}
     >

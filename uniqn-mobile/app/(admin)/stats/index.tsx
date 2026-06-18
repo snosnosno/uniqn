@@ -102,7 +102,7 @@ export default function AdminStatsScreen() {
         </View>
 
         {error ? (
-          <View className="mb-4 rounded-md border border-amber-200 bg-warning-50 px-4 py-3 dark:border-amber-800 dark:bg-warning-900/20">
+          <View className="mb-4 rounded-md border border-warning-200 bg-warning-50 px-4 py-3 dark:border-warning-800 dark:bg-warning-900/20">
             <Text className="text-sm font-sans-medium text-warning-800 dark:text-warning-300">
               일부 통계만 표시 중입니다
             </Text>

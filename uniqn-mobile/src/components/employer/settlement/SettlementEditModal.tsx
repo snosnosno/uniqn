@@ -285,7 +285,7 @@ export function SettlementEditModal({
               정산 금액 요약
             </Text>
 
-            <View className="bg-white dark:bg-surface-dark rounded-lg p-4 flex-col gap-2">
+            <View className="bg-surface-card rounded-lg p-4 flex-col gap-2">
               {/* 기본 급여 */}
               <View className="flex-row items-center justify-between">
                 <Text className="text-sm text-content-muted dark:text-secondary-400 font-sans">
@@ -357,7 +357,7 @@ export function SettlementEditModal({
             placeholderTextColor={SECONDARY_PALETTE[400]}
             multiline
             numberOfLines={2}
-            className="bg-white dark:bg-surface border border-secondary-300 dark:border-surface-overlay rounded-lg px-4 py-3 text-base font-sans text-content-primary dark:text-off-white"
+            className="bg-surface-card border border-secondary-300 dark:border-surface-overlay rounded-lg px-4 py-3 text-base font-sans text-content-primary dark:text-off-white"
             accessibilityLabel="수정 사유"
           />
         </View>

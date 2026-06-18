@@ -105,7 +105,7 @@ function ReportInfoSection({ report }: { report: Report }) {
   const typeLabel = getReportTypeLabel(report);
 
   return (
-    <View className="bg-white dark:bg-surface rounded-md p-4 mx-4 mb-4">
+    <View className="bg-surface-card rounded-md p-4 mx-4 mb-4">
       {/* 상태 및 심각도 배지 */}
       <View className="flex-row items-center gap-2 mb-4">
         <View className={`px-3 py-1 rounded-sm ${severityColor.bg}`}>
@@ -160,7 +160,7 @@ function ReportInfoSection({ report }: { report: Report }) {
  */
 function ReportContentSection({ report }: { report: Report }) {
   return (
-    <View className="bg-white dark:bg-surface rounded-md p-4 mx-4 mb-4">
+    <View className="bg-surface-card rounded-md p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-3">
         <DocumentIcon size={18} color={PRIMARY_COLORS[500]} />
         <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold ml-2">
@@ -220,7 +220,7 @@ function ReviewHistorySection({ report }: { report: Report }) {
   if (report.status === STATUS.REPORT.PENDING) return null;
 
   return (
-    <View className="bg-white dark:bg-surface rounded-md p-4 mx-4 mb-4">
+    <View className="bg-surface-card rounded-md p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-3">
         <CheckCircleIcon size={18} color={STATUS_COLORS.success} />
         <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold ml-2">
@@ -285,7 +285,7 @@ function ReviewFormSection({
   };
 
   return (
-    <View className="bg-white dark:bg-surface rounded-md p-4 mx-4 mb-4">
+    <View className="bg-surface-card rounded-md p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-4">
         <AlertTriangleIcon size={18} color={STATUS_COLORS.warning} />
         <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold ml-2">

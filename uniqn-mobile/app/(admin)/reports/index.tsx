@@ -145,7 +145,7 @@ export default function AdminReportsPage() {
     <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-surface-page dark:bg-surface">
       <StackHeader title="신고 관리" fallbackHref="/(admin)" />
       {/* 검색바 */}
-      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-divider">
+      <View className="px-4 py-3 bg-surface-card border-b border-divider">
         <View className="flex-row items-center bg-surface-card dark:bg-surface rounded-lg px-3 py-2">
           <SearchIcon size={20} color={SECONDARY_PALETTE[400]} />
           <TextInput
@@ -169,7 +169,7 @@ export default function AdminReportsPage() {
       </View>
 
       {/* 상태 필터 */}
-      <View className="bg-white dark:bg-surface border-b border-divider">
+      <View className="bg-surface-card border-b border-divider">
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}

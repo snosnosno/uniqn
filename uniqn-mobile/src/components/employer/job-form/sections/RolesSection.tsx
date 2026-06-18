@@ -52,7 +52,7 @@ const RoleCard = memo(function RoleCard({
   const isCustom = role.isCustom;
 
   return (
-    <View className="p-3 bg-white dark:bg-surface rounded-md border border-divider mb-3">
+    <View className="p-3 bg-surface-card rounded-md border border-divider mb-3">
       <View className="flex-row items-center">
         {/* 역할 아이콘 */}
         <View className="w-10 h-10 rounded-sm bg-primary-100 dark:bg-primary-900/30 items-center justify-center">
@@ -90,7 +90,7 @@ const RoleCard = memo(function RoleCard({
             <MinusIcon size={18} color={SECONDARY_PALETTE[500]} />
           </Pressable>
 
-          <View className="w-10 h-9 items-center justify-center bg-white dark:bg-surface border-y border-divider">
+          <View className="w-10 h-9 items-center justify-center bg-surface-card border-y border-divider">
             <Text className="font-sans-bold text-content-primary dark:text-off-white">
               {role.count}
             </Text>

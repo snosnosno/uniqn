@@ -60,7 +60,7 @@ export const Input = React.forwardRef<TextInput, InputProps>(function Input(
       return 'border-error-500 bg-error-50 dark:bg-error-900/20';
     }
     if (isFocused) {
-      return 'border-primary-500 bg-white dark:bg-surface';
+      return 'border-primary-500 bg-surface-card';
     }
     return 'border-secondary-300 bg-white dark:border-surface-overlay dark:bg-surface';
   };

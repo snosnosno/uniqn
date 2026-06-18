@@ -42,7 +42,7 @@ export function StatsSummaryCard({
 
   return (
     <CardStripe tone="gold" thickness={2}>
-      <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
+      <View className="bg-surface-card rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
         <View className="flex-row items-start justify-between">
           <View className="flex-1">
             <Text className="text-[9px] uppercase tracking-wider text-content-muted mb-1 font-sans">
@@ -116,7 +116,7 @@ export function SystemStatusCard({ status, isLoading }: SystemStatusCardProps) {
         : XCircleIcon;
 
   return (
-    <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
+    <View className="bg-surface-card rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
       <View className="flex-row items-center justify-between">
         <View>
           <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-1 font-sans">

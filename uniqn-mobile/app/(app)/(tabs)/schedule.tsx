@@ -83,7 +83,7 @@ function MonthNavigator({
   onToggleView,
 }: MonthNavigatorProps) {
   return (
-    <View className="flex-row items-center justify-between bg-white dark:bg-surface px-4 py-3 border-b border-divider">
+    <View className="flex-row items-center justify-between bg-surface-card px-4 py-3 border-b border-divider">
       <FocusablePressable
         onPress={onPrev}
         hitSlop={10}
@@ -163,10 +163,10 @@ interface StatsCardProps {
 }
 
 // StatsCard — full-bleed 밴드로 전환 (옵션 A). MonthNavigator와 동일한 시각 언어
-// (bg-white dark:bg-surface + px-4 py-3 + border-b border-divider)를 사용해
+// (bg-surface-card + px-4 py-3 + border-b border-divider)를 사용해
 // TabHeader 아래 정보 패널이 하나의 띠 구조로 연결되도록 함.
 function StatsCard({ stats, isLoading }: StatsCardProps) {
-  const BAND_CLASS = 'bg-white dark:bg-surface px-4 py-3 border-b border-divider';
+  const BAND_CLASS = 'bg-surface-card px-4 py-3 border-b border-divider';
 
   if (isLoading) {
     return (

@@ -63,9 +63,7 @@ export const NotificationItem = memo(function NotificationItem({
   const content = (
     <View
       className={`relative border-b border-divider dark:border-surface-overlay ${
-        notification.isRead
-          ? 'bg-white dark:bg-surface-dark'
-          : 'bg-primary-50 dark:bg-primary-900/20'
+        notification.isRead ? 'bg-surface-card' : 'bg-primary-50 dark:bg-primary-900/20'
       }`}
     >
       <Pressable

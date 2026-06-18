@@ -97,7 +97,7 @@ export function TrendChart({
   // 데이터가 없는 경우
   if (!data || data.length === 0) {
     return (
-      <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
+      <View className="bg-surface-card rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
         <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white mb-4">
           {title}
         </Text>
@@ -111,7 +111,7 @@ export function TrendChart({
   }
 
   return (
-    <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
+    <View className="bg-surface-card rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
       {/* 헤더 */}
       <View className="flex-row justify-between items-center mb-4">
         <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">

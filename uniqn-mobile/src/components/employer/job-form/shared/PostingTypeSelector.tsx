@@ -103,7 +103,7 @@ export const PostingTypeSelector = memo(function PostingTypeSelector({
       </View>
 
       {value === 'tournament' && (
-        <View className="mt-3 rounded-lg border border-amber-200 bg-warning-50 p-2.5 dark:border-amber-800 dark:bg-warning-900/20">
+        <View className="mt-3 rounded-lg border border-warning-200 bg-warning-50 p-2.5 dark:border-warning-800 dark:bg-warning-900/20">
           <Text className="text-sm text-warning-700 dark:text-warning-300 font-sans">
             대회공고는 관리자 승인 후 게시됩니다.
           </Text>
