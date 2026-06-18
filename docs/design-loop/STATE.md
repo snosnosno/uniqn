@@ -16,7 +16,7 @@
 | H | 구인자 등록 | `employer-register` `employer-application-status` | **done**(Button라벨 surface-dark·미정의팔레트→M) | `2d899af83` |
 | I | 구인자 공고관리 | `(employer)/my-postings/create` `[id]/edit` `[id]/applicants` `[id]/settlements` `[id]/collaborators` `[id]/cancellation-requests` | **done**(bg-white·amber·Button라벨→M·error.message→Z) | `48fb5b44c` |
 | J | 워크스페이스 | `(employer)/workspace/index` `invite` `invitations` `archived` | **done**(bg-white·autoFocus·PTR→M) | `b6674ce58` |
-| K | 관리자 1 | `(admin)/index` `announcements/*`(4) `stats` `tournaments` | pending | |
+| K | 관리자 1 | `(admin)/index` `announcements/*`(4) `stats` `tournaments` | **done**(다색카테고리·bg-white·Button라벨→M·P3) | `ac8d1565e` |
 | L | 관리자 2 | `(admin)/reports/*` `board-reports/*` `inquiries/*` `users/*` `employer-applications/*` | pending | |
 | M | 공용 컴포넌트 | `src/components/` 버튼·카드·모달·EmptyState·Skeleton·배지·토스트 + 토큰 정합 | pending | |
 | W | 지갑 | `(app)/wallet/*` — master에 없음 (`fix/wallet-p1-money-and-ui` 머지 후) | **deferred** | |
@@ -88,6 +88,12 @@
 - [J] P2 미정의 색 클래스 1 | invite:135 검색 에러문구 `text-danger-500` — **danger 팔레트 자체가 tailwind.config 미정의**(error만 존재) → 클래스 무효=에러문구 무스타일(빨강 안 뜸). app 전역 유일 사용(grep 1건) → `text-error-500`(폼 에러 컨벤션 정합). 실질 P1급 결함(검증 에러 가시성)이나 경미 빈도라 P2
 - [J] P2 골드 위 흰 대비 1 | index:235 '이름 변경' 액션 라벨 `text-primary-500`(골드 #D4AF37 흰 ~1.9:1)→`text-primary-600 dark:text-primary-400`(같은 화면 '제거' error-600/400·알림 '모두 읽음' primary-600/400 컨벤션 정합). 배치E [workLogId]:152 primary-500→600 선례
 - [J] 검증 | quality exit0(tsc0·lint0·format clean) / 4화면 단독 jest 없음(프레젠테이션). danger 미정의 node 확인 + grep 1건으로 안전성 검증
+- [K] **인라인 정독 리뷰**(워크플로 미사용). 7화면(index·announcements 4·stats·tournaments, ~1616줄) 직독. 확정 P2 27건 수정(`ac8d1565e`). 관리자 영역은 구버전 화면 많아 위반 다수(예측대로) — 라이트AA가 지배적
+- [K] P2 라이트 AA 24 | `text-secondary-500 dark:text-secondary-400`→`text-content-secondary` | index 2(카드설명·부제)·announcements/index 4(비활성탭/카운트·로딩·빈상태)·announcements/[id] 6(메타·정보행)·stats 6(부제·메타·최근가입자)·tournaments 6(카드 위치/날짜/구인자·로딩·헤더·개수). 각 파일 replace_all
+- [K] P2 골드 위 흰 아이콘 1 | announcements/[id]:395 '수정하기' 버튼 `CreateOutlineIcon color="#fff"`(bg-primary-600 골드 위) — 같은 버튼 라벨은 이미 text-surface-dark(dark)인데 아이콘만 흰색 불일치 → `#09090B`. 발행/보관/삭제 버튼은 success/warning/error bg+흰색(정상 유지)
+- [K] P2 충돌 이중 dark bg 1 | stats:209 최근가입자 행 `bg-surface-page dark:bg-surface px-3 py-3 dark:bg-surface-elevated`(dark:bg 2회)→`dark:bg-surface-elevated` 1개(카드 위 행은 elevated). 배치E/F 선례
+- [K] P2 선택 탭 라벨 AA 1 | tournaments StatusTab:89 선택시 `color:'#FFFFFF'` on `#B8962E`(다크골드, 흰 ~2.84:1 AA미달)→`#09090B`(onGold 컨벤션 정합·6.6:1). inline style
+- [K] 검증 | quality exit0(tsc0·lint0·format clean — index/announcements/[id]/tournaments prettier 재배치) / 7화면 단독 jest 없음(프레젠테이션)
 
 ## P3 백로그 (기록만, 구현 안 함)
 
@@ -178,12 +184,18 @@
 - [J→M] workspace raw bg-white 다수 | index:184 헤더·283/303 멤버행·354 보관함 / archived:66 행 / invite:145 결과카드 / invitations:75 초대카드 — 전부 `bg-white dark:bg-surface-elevated(또는 surface)` | bg-white→surface-card 전역 스윕 M (employer 영역 누적과 합산)
 - [J→M] index:191 이름 변경 Input `autoFocus`(룰20) | 배치C/G autoFocus와 동일 AccessibilityInfo 가드 M
 - [J→M] invitations:162 RefreshControl `refreshing={false}` 하드코딩 + PTR_REFRESH_PROPS(골드 tint) 미적용(룰24) | 다른 리스트(cancellation-requests 등)는 PTR_REFRESH_PROPS 사용 — tint 정합 + refreshing 바인딩 M(refreshing=false는 시각외 동작이라 경미)
+- [K→P3] **admin 대시보드/통계 카테고리 다색 코딩** | index.tsx 8카드 raw Tailwind `bg-{rose,cyan,emerald,orange}-100 dark:bg-*-900/30` + iconColor raw hex(#0891b2 cyan·#10B981 emerald·#EA580C orange·#16a34a 등) / stats StatsSummaryCard iconBgColor `bg-cyan-100` 등 | 룰5(pink/pastel 금지)·룰4(raw 색) 위반이나 **관리자 내부 기능성 색 코딩**(8개 카테고리 시각 구분) — Black&Gold 단색화는 디자인 결정·승인 필요 → P3(사용자 결정). 비-유저페이싱이라 우선순위 낮음
+- [K→M] admin raw bg-white 다수 | index 카드:39·announcements/index 탭:107·announcements/[id] 없음·stats 최근가입자카드:194·tournaments 카드:159/헤더:376/탭:386 `bg-white dark:bg-surface(-elevated)` | bg-white→surface-card 전역 스윕 M
+- [K→M] admin Button-style 라벨 `text-surface-dark` on 골드(standalone Pressable) | announcements/index:174·announcements/[id]:134/396·edit:65 `<Pressable bg-primary-600><Text text-surface-dark>` | content-onGold SSOT — 배치G/H/I와 동일 deferred(stateful이 아니므로 onGold 안전하나 일관성 위해 M 일괄)
+- [K→M] stats:105 통계 부분에러 배너 raw `border-amber-200 dark:border-amber-800` + `text-warning-800`(warning-800 미정의)·`dark:bg-warning-900/20`(warning-900 미정의) | 배치D/F/I 동일 amber+미정의 warning → M 일괄
+- [K→M] announcements/[id] ANNOUNCEMENT_STATUS/PRIORITY_CONFIG(src/types/announcement) bgColor/color 팔레트 티어 검증 | InquiryStatusBadge config와 동일 — M 팔레트 일괄
 
 ## 회차 메모
 
 > 다음 회차에 넘길 주의사항·미완 항목
 
-- 다음 배치: **K (관리자 1)** — `(admin)/index` `announcements/*`(4) `stats` `tournaments`. 잔여 error.message·미정의 팔레트·Button라벨·bg-white·placeholder는 Z/M
+- 다음 배치: **L (관리자 2)** — `(admin)/reports/*` `board-reports/*` `inquiries/*` `users/*` `employer-applications/*`. 잔여 error.message·미정의 팔레트·Button라벨·bg-white·다색카테고리는 Z/M/P3
+- 배치 K 교훈: 관리자 화면은 구버전이라 라이트AA 위반 대량(24) — text-secondary-500 지배. **신규 발견**: ①admin 대시보드/통계가 raw Tailwind 다색(rose/cyan/emerald/orange) 카테고리 코딩(룰5 위반이나 기능성, P3 디자인결정) ②골드 버튼에 흰 아이콘+dark 라벨 혼재(아이콘만 #fff 누락) ③#B8962E 다크골드+흰글자 선택탭 AA미달. raw bg-white admin 전반 → M employer+admin 통합 스윕 가치 큼. 배치 L도 유사 구버전 admin 예상(reports/users/inquiries 등 ~1350줄)
 - 배치 J 교훈: 워크스페이스는 PR #3로 비교적 최근 작성된 고품질 화면군 — content-secondary·EmptyState/ErrorState·hitSlop·min-h-44 정합으로 라이트AA 위반이 처음으로 0. 발견 핵심 = **미정의 색 클래스 `text-danger-500`**(danger 팔레트 아예 없음 → 무스타일). Z 패스 grep 후보 추가: 미정의 *색* 클래스(`text-danger-*` 외 오타성). raw bg-white는 employer 전 영역(I·J) 누적 → M employer 일괄 스윕 가치 큼. **관리자 영역(K·L)은 구버전 화면 많아 위반 더 많을 것으로 예상**
 - 배치 I 교훈: 6화면 대형이나 전부 공용 컴포넌트 경유 thin wrapper라 위반은 인라인 텍스트(라이트AA 11)에 집중 — 적대검증 불필요, replace_all 효율적. **employer 영역 누적 패턴**: raw bg-white(모달/헤더/하단바)·raw amber·미정의 warning 티어·Button-child surface-dark 라벨이 employer 화면 전반 반복 → M 배치에서 employer 일괄 스윕 가치 큼. error.message 누적 Z 대상 4→총 15곳. 배치 J도 유사 thin-wrapper 예상
 - 배치 H 교훈: employer 두 화면도 동일 5패턴(라이트AA·골드위onGold·미정의팔레트·Button라벨 surface-dark·dark중복) 재현. **Button-child에 `<Text text-surface-dark>` 라벨 수기지정**이 employer 화면에 4곳 — F에서 standalone 탭은 fix했으나 Button 자식은 G/H 일관되게 M deferred(Button이 색 소유하는 게 근본해결). 배치 I는 6화면 대형이라 컨텍스트 관리 주의 — 공용 컴포넌트(JobForm·ApplicantList·SettlementList 등) 다수 경유분은 이미 배치C/D/E에서 일부 리뷰됨, 화면 본체 위반 위주로
