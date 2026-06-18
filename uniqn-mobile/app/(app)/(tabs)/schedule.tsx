@@ -202,7 +202,7 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
           accessible
           accessibilityLabel={`${SCHEDULE_STATS_LABELS.upcoming} 통계`}
         >
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+          <Text className="text-xs text-secondary-600 dark:text-secondary-400 font-sans">
             {SCHEDULE_STATS_LABELS.upcoming}
           </Text>
           <Text className="text-lg font-display text-warning-600 dark:text-warning-400">
@@ -215,7 +215,7 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
           accessible
           accessibilityLabel={`${SCHEDULE_STATS_LABELS.confirmed} 통계`}
         >
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+          <Text className="text-xs text-secondary-600 dark:text-secondary-400 font-sans">
             {SCHEDULE_STATS_LABELS.confirmed}
           </Text>
           <Text className="text-lg font-display text-success-600 dark:text-success-400">
@@ -228,7 +228,7 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
           accessible
           accessibilityLabel={`${SCHEDULE_STATS_LABELS.completed} 통계`}
         >
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+          <Text className="text-xs text-secondary-600 dark:text-secondary-400 font-sans">
             {SCHEDULE_STATS_LABELS.completed}
           </Text>
           <Text className="text-lg font-display text-content-primary dark:text-secondary-100">
@@ -244,7 +244,7 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
         accessible
         accessibilityLabel="수익 통계"
       >
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">수익</Text>
+        <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">수익</Text>
         <Text className="text-xl font-display text-primary-600 dark:text-primary-400">
           {formatCurrency(stats.thisMonthEarnings)}
         </Text>
@@ -645,7 +645,7 @@ export default function ScheduleScreen() {
             </Suspense>
           </View>
 
-          {selectedDateSchedules.length > 0 && (
+          {selectedDateSchedules.length > 0 ? (
             <>
               {/* 1: sticky 헤더 — 배경 solid로 아래 콘텐츠 가림 */}
               <View className="bg-surface-page dark:bg-surface px-4 pt-3 pb-2 border-b border-divider">
@@ -676,7 +676,18 @@ export default function ScheduleScreen() {
                 })}
               </View>
             </>
-          )}
+          ) : !isLoading && groupedByApplication.length === 0 ? (
+            // 캘린더 뷰 빈 상태 — 리스트 뷰와 동일한 온보딩 EmptyState (월 전체 0건일 때만)
+            <View className="p-4">
+              <EmptyState
+                title="아직 예정된 스케줄이 없어요"
+                description={`${currentMonth.year}년 ${currentMonth.month}월 일정이 비어있어요.\n공고에 지원하면 여기에 바로 표시돼요.`}
+                actionLabel="공고 둘러보기"
+                onAction={() => router.push('/(app)/(tabs)/home-jobs')}
+                variant="content"
+              />
+            </View>
+          ) : null}
         </ScrollView>
       )}
 
@@ -709,7 +720,7 @@ export default function ScheduleScreen() {
             <>
               {/* 0: sticky 헤더 — MonthNavigator 아래 바로 붙음 (pt-3로 최소 호흡) */}
               <View className="bg-surface-page dark:bg-surface px-4 pt-3 pb-2 border-b border-divider">
-                <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                <Text className="text-sm font-sans-medium text-content-secondary">
                   {currentMonth.month}월 스케줄 ({groupedByApplication.length}건, {totalDays}일)
                 </Text>
               </View>

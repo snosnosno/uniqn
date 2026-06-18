@@ -11,7 +11,7 @@ export function DashboardViewToggle({ value, onChange }: DashboardViewToggleProp
     <View className="flex-row bg-secondary-100 dark:bg-surface rounded-md mx-4 mb-3 p-1">
       <Pressable
         className={`flex-1 py-2 items-center rounded-sm ${
-          value === 'employer' ? 'bg-[#D4AF37]' : 'bg-secondary-100 dark:bg-surface'
+          value === 'employer' ? 'bg-primary-500' : 'bg-secondary-100 dark:bg-surface'
         }`}
         onPress={() => onChange('employer')}
         accessibilityRole="tab"
@@ -20,7 +20,9 @@ export function DashboardViewToggle({ value, onChange }: DashboardViewToggleProp
       >
         <Text
           className={`text-sm font-medium ${
-            value === 'employer' ? 'text-black' : 'text-secondary-600 dark:text-secondary-300'
+            value === 'employer'
+              ? 'text-content-onGold'
+              : 'text-secondary-600 dark:text-secondary-300'
           }`}
         >
           내 업무
@@ -29,7 +31,7 @@ export function DashboardViewToggle({ value, onChange }: DashboardViewToggleProp
 
       <Pressable
         className={`flex-1 py-2 items-center rounded-sm ${
-          value === 'staff' ? 'bg-[#D4AF37]' : 'bg-secondary-100 dark:bg-surface'
+          value === 'staff' ? 'bg-primary-500' : 'bg-secondary-100 dark:bg-surface'
         }`}
         onPress={() => onChange('staff')}
         accessibilityRole="tab"
@@ -38,7 +40,7 @@ export function DashboardViewToggle({ value, onChange }: DashboardViewToggleProp
       >
         <Text
           className={`text-sm font-medium ${
-            value === 'staff' ? 'text-black' : 'text-secondary-600 dark:text-secondary-300'
+            value === 'staff' ? 'text-content-onGold' : 'text-secondary-600 dark:text-secondary-300'
           }`}
         >
           스태프로

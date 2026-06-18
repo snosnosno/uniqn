@@ -164,13 +164,18 @@ export default function ProfileScreen() {
                 {profile?.email ?? user?.email ?? '이메일 없음'}
               </Text>
               <View className="mt-1 flex-row items-center gap-2">
-                <View className="rounded-sm bg-primary-100 px-2 py-0.5 dark:bg-primary-900/30">
-                  <Text className="text-xs font-sans-medium text-primary-700 dark:text-primary-300">
+                <View className="rounded-sm bg-secondary-100 px-2 py-0.5 dark:bg-surface-overlay">
+                  <Text className="text-xs font-sans-medium text-secondary-700 dark:text-secondary-300">
                     {profile?.role ? getRoleDisplayName(profile.role) : '미설정'}
                   </Text>
                 </View>
                 {bubbleScore && (
-                  <Pressable onPress={() => router.push('/(app)/reviews/history')}>
+                  <Pressable
+                    onPress={() => router.push('/(app)/reviews/history')}
+                    hitSlop={12}
+                    accessibilityRole="button"
+                    accessibilityLabel="내 평점 보기, 리뷰 이력으로 이동"
+                  >
                     <BubbleScoreBadge score={bubbleScore.score} />
                   </Pressable>
                 )}
@@ -194,7 +199,7 @@ export default function ProfileScreen() {
               disabled={claimAttendance.isPending}
               className="mt-3 flex-row items-center justify-center rounded-xl bg-primary-500 py-2.5 active:opacity-80 disabled:opacity-50 dark:bg-primary-600"
             >
-              <Text className="text-sm font-sans-semibold text-white">
+              <Text className="text-sm font-sans-semibold text-content-onGold">
                 {claimAttendance.isPending ? '처리 중…' : '출석 체크 (하트 +1)'}
               </Text>
             </Pressable>
@@ -203,25 +208,25 @@ export default function ProfileScreen() {
 
         <Card className="mb-4">
           <MenuItem
-            icon={<HomeIcon size={22} color={SECONDARY_PALETTE[500]} />}
+            icon={<HomeIcon size={20} color={SECONDARY_PALETTE[500]} />}
             label="대시보드"
             onPress={() => router.push('/(app)/home')}
           />
           <Divider spacing="sm" />
           <MenuItem
-            icon={<UsersIcon size={22} color={SECONDARY_PALETTE[500]} />}
+            icon={<UsersIcon size={20} color={SECONDARY_PALETTE[500]} />}
             label="커뮤니티"
             onPress={() => router.push('/(app)/(tabs)/board')}
           />
           <Divider spacing="sm" />
           <MenuItem
-            icon={<SettingsIcon size={22} color={SECONDARY_PALETTE[500]} />}
+            icon={<SettingsIcon size={20} color={SECONDARY_PALETTE[500]} />}
             label="설정센터"
             onPress={() => router.push('/(app)/settings')}
           />
           <Divider spacing="sm" />
           <MenuItem
-            icon={<MessageIcon size={22} color={SECONDARY_PALETTE[500]} />}
+            icon={<MessageIcon size={20} color={SECONDARY_PALETTE[500]} />}
             label="고객센터"
             onPress={() => router.push('/(app)/support')}
           />
@@ -229,7 +234,7 @@ export default function ProfileScreen() {
             <>
               <Divider spacing="sm" />
               <MenuItem
-                icon={<ShieldIcon size={22} color={STATUS_COLORS.error} />}
+                icon={<ShieldIcon size={20} color={STATUS_COLORS.error} />}
                 label="관리자 대시보드"
                 onPress={() => router.push('/(admin)')}
               />
@@ -241,9 +246,9 @@ export default function ProfileScreen() {
           <MenuItem
             icon={
               isLoggingOut ? (
-                <ActivityIndicator size={22} color={STATUS_COLORS.error} />
+                <ActivityIndicator size={20} color={STATUS_COLORS.error} />
               ) : (
-                <LogOutIcon size={22} color={STATUS_COLORS.error} />
+                <LogOutIcon size={20} color={STATUS_COLORS.error} />
               )
             }
             label={isLoggingOut ? '로그아웃 중...' : '로그아웃'}

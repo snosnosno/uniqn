@@ -1,4 +1,4 @@
-import { SECONDARY_PALETTE, SURFACE_COLORS } from '@/constants/colors';
+import { SECONDARY_PALETTE, SURFACE_COLORS, TEXT_COLORS } from '@/constants/colors';
 import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, Text, View } from 'react-native';
@@ -48,7 +48,7 @@ function FilterTabs({ selected, onChange, counts }: FilterTabsProps) {
   const { isDarkMode } = useThemeStore();
 
   return (
-    <View className="mx-4 mb-4 flex-row rounded-lg bg-surface-card p-1 dark:bg-surface">
+    <View className="mx-4 mb-4 flex-row rounded-lg bg-secondary-100 p-1 dark:bg-surface">
       {FILTER_OPTIONS.map((option) => {
         const isSelected = selected === option.value;
         const count = counts[option.value] || 0;
@@ -78,7 +78,7 @@ function FilterTabs({ selected, onChange, counts }: FilterTabsProps) {
                     : '#8A7228'
                   : isDarkMode
                     ? SECONDARY_PALETTE[400]
-                    : SECONDARY_PALETTE[500],
+                    : SECONDARY_PALETTE[600],
               }}
             >
               {option.label} ({count})
@@ -248,7 +248,7 @@ function EmployerView() {
               accessibilityRole="button"
               accessibilityLabel="워크스페이스"
             >
-              <UsersIcon size={22} color={getIconColor(isDarkMode, 'primary')} />
+              <UsersIcon size={24} color={getIconColor(isDarkMode, 'primary')} />
             </Pressable>
           }
         />
@@ -270,7 +270,7 @@ function EmployerView() {
               accessibilityRole="button"
               accessibilityLabel="워크스페이스"
             >
-              <UsersIcon size={22} color={getIconColor(isDarkMode, 'primary')} />
+              <UsersIcon size={24} color={getIconColor(isDarkMode, 'primary')} />
             </Pressable>
           }
         />
@@ -298,7 +298,7 @@ function EmployerView() {
             accessibilityRole="button"
             accessibilityLabel="워크스페이스"
           >
-            <UsersIcon size={22} color={getIconColor(isDarkMode, 'primary')} />
+            <UsersIcon size={24} color={getIconColor(isDarkMode, 'primary')} />
           </Pressable>
         }
       />
@@ -308,7 +308,7 @@ function EmployerView() {
         <Button
           variant="primary"
           onPress={handleCreatePosting}
-          icon={<PlusIcon size={20} color="#fff" />}
+          icon={<PlusIcon size={20} color={TEXT_COLORS.onGold} />}
         >
           <Text className="ml-2 font-sans-semibold text-surface-dark">새 공고 작성</Text>
         </Button>
@@ -319,7 +319,7 @@ function EmployerView() {
       {sharedPostings.length > 0 ? (
         <View className="mx-4 mb-3">
           <View className="mb-2 flex-row items-center">
-            <UserPlusIcon size={16} color="#3B82F6" />
+            <UserPlusIcon size={16} color="#2563EB" />
             <Text className="ml-1.5 text-xs font-sans-semibold uppercase text-content-secondary">
               공유받은 공고 ({sharedPostings.length})
             </Text>
@@ -328,7 +328,7 @@ function EmployerView() {
             <Pressable
               key={shared.jobPostingId}
               onPress={() => handleSharedPostingPress(shared)}
-              className="mb-2 flex-row items-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 active:opacity-70 dark:border-blue-800/50 dark:bg-blue-900/20"
+              className="mb-2 flex-row items-center rounded-lg border border-info-100 bg-info-50 px-3 py-2 active:opacity-70 dark:border-info-500/30 dark:bg-info-50"
               accessibilityRole="button"
               accessibilityLabel={`공유받은 공고 ${shared.jobPostingTitle}`}
             >
