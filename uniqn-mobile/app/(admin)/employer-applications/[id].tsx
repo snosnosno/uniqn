@@ -212,25 +212,25 @@ export default function AdminEmployerApplicationDetailPage() {
           </View>
 
           <View className="mt-3 border-t border-divider pt-3">
-            <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+            <Text className="mb-1 text-sm text-content-secondary font-sans">
               신청 시각: {formatTimestamp(app.submittedAt)}
             </Text>
 
             {app.reviewedAt ? (
-              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+              <Text className="mb-1 text-sm text-content-secondary font-sans">
                 처리 시각: {formatTimestamp(app.reviewedAt)}
                 {reviewerName ? ` (처리자: ${reviewerName})` : ''}
               </Text>
             ) : null}
 
             {app.rejectionReason ? (
-              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+              <Text className="mb-1 text-sm text-content-secondary font-sans">
                 거부 사유: {app.rejectionReason}
               </Text>
             ) : null}
 
             {app.rejectionCategory ? (
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+              <Text className="text-sm text-content-secondary font-sans">
                 거부 분류: {app.rejectionCategory}
               </Text>
             ) : null}
@@ -252,18 +252,14 @@ export default function AdminEmployerApplicationDetailPage() {
             </View>
 
             <View className="flex-row justify-between py-2">
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-                이름
-              </Text>
+              <Text className="text-sm text-content-secondary font-sans">이름</Text>
               <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
                 {applicant.name || '-'}
               </Text>
             </View>
 
             <View className="flex-row items-center justify-between py-2">
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-                연락처
-              </Text>
+              <Text className="text-sm text-content-secondary font-sans">연락처</Text>
               {applicant.phone ? (
                 <Pressable
                   onPress={handleCallPhone}
@@ -312,18 +308,14 @@ export default function AdminEmployerApplicationDetailPage() {
             </Text>
 
             <View className="flex-row justify-between py-2">
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-                닉네임
-              </Text>
+              <Text className="text-sm text-content-secondary font-sans">닉네임</Text>
               <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
                 {applicant.nickname || '-'}
               </Text>
             </View>
 
             <View className="flex-row items-center justify-between py-2">
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-                이메일
-              </Text>
+              <Text className="text-sm text-content-secondary font-sans">이메일</Text>
               {applicant.email ? (
                 <Pressable
                   onPress={handleSendEmail}
@@ -372,25 +364,25 @@ export default function AdminEmployerApplicationDetailPage() {
           ) : null}
 
           {'termsVersion' in snapshot && snapshot.termsVersion ? (
-            <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+            <Text className="mb-1 text-sm text-content-secondary font-sans">
               이용약관 버전: {String(snapshot.termsVersion)}
             </Text>
           ) : null}
 
           {'termsAcceptedAt' in snapshot && snapshot.termsAcceptedAt ? (
-            <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+            <Text className="mb-1 text-sm text-content-secondary font-sans">
               이용약관 동의 시각: {formatTimestamp(String(snapshot.termsAcceptedAt))}
             </Text>
           ) : null}
 
           {'liabilityWaiverVersion' in snapshot && snapshot.liabilityWaiverVersion ? (
-            <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+            <Text className="mb-1 text-sm text-content-secondary font-sans">
               면책 동의 버전: {String(snapshot.liabilityWaiverVersion)}
             </Text>
           ) : null}
 
           {'liabilityWaiverAcceptedAt' in snapshot && snapshot.liabilityWaiverAcceptedAt ? (
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+            <Text className="text-sm text-content-secondary font-sans">
               면책 동의 시각: {formatTimestamp(String(snapshot.liabilityWaiverAcceptedAt))}
             </Text>
           ) : null}
@@ -430,7 +422,7 @@ export default function AdminEmployerApplicationDetailPage() {
               처리 상태: {getStatusLabel(app.status)}
             </Text>
             {app.reviewedAt ? (
-              <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+              <Text className="mt-1 text-sm text-content-secondary font-sans">
                 처리 시각: {formatTimestamp(app.reviewedAt)}
               </Text>
             ) : null}

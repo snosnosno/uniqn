@@ -52,9 +52,7 @@ function InfoRow({ icon, label, value }: InfoRowProps) {
     <View className="flex-row items-center py-3 border-b border-secondary-100 dark:border-surface-overlay">
       <View className="w-10">{icon}</View>
       <View className="flex-1">
-        <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
-          {label}
-        </Text>
+        <Text className="text-xs text-content-secondary mb-1 font-sans">{label}</Text>
         {typeof value === 'string' ? (
           <Text className="text-base text-content-primary dark:text-off-white font-sans">
             {value}
@@ -167,7 +165,7 @@ export default function AdminUserDetailPage() {
         <StackHeader title="사용자 상세" fallbackHref="/(admin)/users" />
         <View className="flex-1 bg-surface-page dark:bg-surface items-center justify-center">
           <ActivityIndicator size="large" color={getLoadingColor(isDarkMode)} />
-          <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
+          <Text className="mt-4 text-content-secondary font-sans">
             사용자 정보를 불러오는 중...
           </Text>
         </View>
@@ -281,7 +279,7 @@ export default function AdminUserDetailPage() {
           <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             역할 관리
           </Text>
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-3 font-sans">
+          <Text className="text-sm text-content-secondary mb-3 font-sans">
             사용자의 역할을 변경합니다. 역할에 따라 접근 가능한 기능이 달라집니다.
           </Text>
           {ROLE_OPTIONS.map((option) => (
@@ -311,7 +309,7 @@ export default function AdminUserDetailPage() {
                 <Text className="text-base font-sans-medium text-content-primary dark:text-off-white">
                   {option.label}
                 </Text>
-                <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                <Text className="text-sm text-content-secondary font-sans">
                   {option.description}
                 </Text>
               </View>
@@ -358,7 +356,7 @@ export default function AdminUserDetailPage() {
                 </Text>
               )}
             </Pressable>
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-2 text-center font-sans">
+            <Text className="text-xs text-content-secondary mt-2 text-center font-sans">
               {user.isActive
                 ? '비활성화하면 사용자가 로그인할 수 없습니다.'
                 : '활성화하면 사용자가 다시 로그인할 수 있습니다.'}

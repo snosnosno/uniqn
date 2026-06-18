@@ -112,13 +112,13 @@ export default function AdminBoardReportDetailPage() {
           <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
             {data.post?.title ?? '원본 게시글이 삭제되었거나 접근할 수 없습니다.'}
           </Text>
-          <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+          <Text className="mb-1 text-sm text-content-secondary font-sans">
             신고자: {data.reporterName}
           </Text>
-          <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+          <Text className="mb-1 text-sm text-content-secondary font-sans">
             대상 작성자: {data.targetAuthorName ?? '확인 필요'}
           </Text>
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+          <Text className="text-sm text-content-secondary font-sans">
             접수 시각: {formatTimestamp(data.report.createdAt)}
           </Text>
         </Card>
@@ -159,7 +159,7 @@ export default function AdminBoardReportDetailPage() {
             <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
               신고 대상 댓글
             </Text>
-            <Text className="mb-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+            <Text className="mb-2 text-sm text-content-secondary font-sans">
               작성자: {data.targetComment.authorName}
             </Text>
             <Text className="text-sm leading-6 text-content-secondary font-sans">
@@ -191,7 +191,7 @@ export default function AdminBoardReportDetailPage() {
             <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
               처리 상태: {getStatusLabel(data.report.status)}
             </Text>
-            <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+            <Text className="mt-1 text-sm text-content-secondary font-sans">
               처리 시각: {formatTimestamp(data.report.resolvedAt)}
             </Text>
           </Card>

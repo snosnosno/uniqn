@@ -140,7 +140,7 @@ function ReportInfoSection({ report }: { report: Report }) {
       </View>
 
       {/* 신고자 유형 */}
-      <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-3 font-sans">
+      <Text className="text-xs text-content-secondary mb-3 font-sans">
         {report.reporterType === 'employer' ? '구인자가 스태프를 신고' : '구직자가 구인자를 신고'}
       </Text>
 
@@ -175,9 +175,7 @@ function ReportContentSection({ report }: { report: Report }) {
       {/* 관련 공고 */}
       {report.jobPostingTitle && (
         <View className="mt-4 pt-4 border-t border-secondary-100 dark:border-surface-overlay">
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
-            관련 공고
-          </Text>
+          <Text className="text-xs text-content-secondary mb-1 font-sans">관련 공고</Text>
           <Text className="text-sm text-content-primary dark:text-off-white font-sans">
             {report.jobPostingTitle}
           </Text>
@@ -187,9 +185,7 @@ function ReportContentSection({ report }: { report: Report }) {
       {/* 근무 날짜 (구인자→스태프 신고만) */}
       {report.workDate && (
         <View className="mt-3">
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
-            근무 날짜
-          </Text>
+          <Text className="text-xs text-content-secondary mb-1 font-sans">근무 날짜</Text>
           <Text className="text-sm text-content-primary dark:text-off-white font-sans">
             {report.workDate}
           </Text>
@@ -199,7 +195,7 @@ function ReportContentSection({ report }: { report: Report }) {
       {/* 증거 자료 */}
       {report.evidenceUrls && report.evidenceUrls.length > 0 && (
         <View className="mt-4 pt-4 border-t border-secondary-100 dark:border-surface-overlay">
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-2 font-sans">
+          <Text className="text-xs text-content-secondary mb-2 font-sans">
             첨부 자료 ({report.evidenceUrls.length}개)
           </Text>
           {report.evidenceUrls.map((url, index) => (
@@ -234,9 +230,7 @@ function ReviewHistorySection({ report }: { report: Report }) {
 
       <View className="space-y-3">
         <View>
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
-            처리 상태
-          </Text>
+          <Text className="text-xs text-content-secondary mb-1 font-sans">처리 상태</Text>
           <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
             {REPORT_STATUS_LABELS[report.status]}
           </Text>
@@ -244,9 +238,7 @@ function ReviewHistorySection({ report }: { report: Report }) {
 
         {report.reviewedAt && (
           <View className="mt-3">
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
-              처리 일시
-            </Text>
+            <Text className="text-xs text-content-secondary mb-1 font-sans">처리 일시</Text>
             <Text className="text-sm text-content-primary dark:text-off-white font-sans">
               {formatTimestamp(report.reviewedAt)}
             </Text>
@@ -255,9 +247,7 @@ function ReviewHistorySection({ report }: { report: Report }) {
 
         {report.reviewerNotes && (
           <View className="mt-3">
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
-              처리 메모
-            </Text>
+            <Text className="text-xs text-content-secondary mb-1 font-sans">처리 메모</Text>
             <Text className="text-sm text-content-secondary font-sans">{report.reviewerNotes}</Text>
           </View>
         )}
@@ -325,7 +315,7 @@ function ReviewFormSection({
             >
               {option.label}
             </Text>
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5 font-sans">
+            <Text className="text-xs text-content-secondary mt-0.5 font-sans">
               {option.description}
             </Text>
           </Pressable>
