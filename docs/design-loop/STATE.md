@@ -15,7 +15,7 @@
 | G | 설정·프로필 | `settings/profile` `settings/change-password` `settings/my-data` `settings/business-info` `profile-setup` (약관 4종은 레이아웃만 — 본문 금지) | **done**(hand-rolled 버튼→Button M·error.message→Z) | `86d676398` |
 | H | 구인자 등록 | `employer-register` `employer-application-status` | **done**(Button라벨 surface-dark·미정의팔레트→M) | `2d899af83` |
 | I | 구인자 공고관리 | `(employer)/my-postings/create` `[id]/edit` `[id]/applicants` `[id]/settlements` `[id]/collaborators` `[id]/cancellation-requests` | **done**(bg-white·amber·Button라벨→M·error.message→Z) | `48fb5b44c` |
-| J | 워크스페이스 | `(employer)/workspace/index` `invite` `invitations` `archived` | pending | |
+| J | 워크스페이스 | `(employer)/workspace/index` `invite` `invitations` `archived` | **done**(bg-white·autoFocus·PTR→M) | `b6674ce58` |
 | K | 관리자 1 | `(admin)/index` `announcements/*`(4) `stats` `tournaments` | pending | |
 | L | 관리자 2 | `(admin)/reports/*` `board-reports/*` `inquiries/*` `users/*` `employer-applications/*` | pending | |
 | M | 공용 컴포넌트 | `src/components/` 버튼·카드·모달·EmptyState·Skeleton·배지·토스트 + 토큰 정합 | pending | |
@@ -84,6 +84,10 @@
 - [I] **인라인 정독 리뷰**(워크플로 미사용). 6화면(create·edit·applicants·settlements·collaborators·cancellation-requests, 총 ~1439줄) 직독. 확정 P2 11건 수정(`48fb5b44c`). 6화면 모두 화면 본체가 공용 컴포넌트(JobPostingScrollForm·ApplicantList·SettlementList·CollaboratorList·CancellationRequestCard) 경유라 **위반은 인라인 로딩/에러/라벨 텍스트에 집중** — 예측대로 thin wrapper. collaborators는 content 토큰 정합으로 위반 0
 - [I] P2 라이트 AA 11 | `text-secondary-500 dark:text-secondary-400`(흰 2.86:1)→`text-content-secondary` | create 2(잔액/비용 라벨)·cancellation-requests 3(StatsHeader 안내·로딩·승인모달 설명)·settlements 1(로딩)·applicants 1(로딩)·edit 4(로딩·에러설명·일정제한 안내·역할제한 안내). 각 파일 replace_all(동일 fragment, 비활성/조건부 분기 없음 — edit 295/325는 disabled-section 정보문구지 버튼라벨 아님)
 - [I] 검증 | quality exit0(tsc0·lint0·format clean — create/cancellation/settlements/edit prettier 재배치) / 6화면 단독 jest 없음(전부 프레젠테이션 wrapper, 로직 미변경)
+- [J] **인라인 정독 리뷰**(워크플로 미사용). 4화면(index·invite·invitations·archived) 직독. 확정 P2 2건 수정(`b6674ce58`). **워크스페이스는 최신/고품질 화면군** — content-secondary 토큰 정합·EmptyState/ErrorState 적용·hitSlop·min-h-44 다수라 라이트AA 위반 0(배치 중 처음). 위반은 미정의색 1·골드AA 1뿐
+- [J] P2 미정의 색 클래스 1 | invite:135 검색 에러문구 `text-danger-500` — **danger 팔레트 자체가 tailwind.config 미정의**(error만 존재) → 클래스 무효=에러문구 무스타일(빨강 안 뜸). app 전역 유일 사용(grep 1건) → `text-error-500`(폼 에러 컨벤션 정합). 실질 P1급 결함(검증 에러 가시성)이나 경미 빈도라 P2
+- [J] P2 골드 위 흰 대비 1 | index:235 '이름 변경' 액션 라벨 `text-primary-500`(골드 #D4AF37 흰 ~1.9:1)→`text-primary-600 dark:text-primary-400`(같은 화면 '제거' error-600/400·알림 '모두 읽음' primary-600/400 컨벤션 정합). 배치E [workLogId]:152 primary-500→600 선례
+- [J] 검증 | quality exit0(tsc0·lint0·format clean) / 4화면 단독 jest 없음(프레젠테이션). danger 미정의 node 확인 + grep 1건으로 안전성 검증
 
 ## P3 백로그 (기록만, 구현 안 함)
 
@@ -171,12 +175,16 @@
 - [I→M] create.tsx 통화 이모지 💖/💎 (게시비용 표시:114) | 룰14 이모지 상태표시 — 메모리 `project_existing_feature_review_20260605` "통화이모지 crud-3/wallet-2 미착수"·배치B PaywallModal/PurchaseSheet 💖 deferred와 동일 | M/지갑 currency 아이콘 결정(💎는 텍스트 대체 어려움)
 - [I→Z] error.message 원시노출(배치I 추가 4) | cancellation-requests:188·settlements:160·applicants:186·edit:233 ErrorState message={error.message} | [[배치C→Z error.message 11곳]]에 합산 → Z 횡단 ErrorState 중앙 sanitize
 - [I→M] collaborators.tsx `font-medium`(4곳: 43/64/77 등 `font-sans` 없이 weight만) — 커스텀 sans 폰트 미적용 가능성(시스템폰트 폴백) | font-sans-medium 정합 M(시각 QA 권장)
+- [J→M] workspace raw bg-white 다수 | index:184 헤더·283/303 멤버행·354 보관함 / archived:66 행 / invite:145 결과카드 / invitations:75 초대카드 — 전부 `bg-white dark:bg-surface-elevated(또는 surface)` | bg-white→surface-card 전역 스윕 M (employer 영역 누적과 합산)
+- [J→M] index:191 이름 변경 Input `autoFocus`(룰20) | 배치C/G autoFocus와 동일 AccessibilityInfo 가드 M
+- [J→M] invitations:162 RefreshControl `refreshing={false}` 하드코딩 + PTR_REFRESH_PROPS(골드 tint) 미적용(룰24) | 다른 리스트(cancellation-requests 등)는 PTR_REFRESH_PROPS 사용 — tint 정합 + refreshing 바인딩 M(refreshing=false는 시각외 동작이라 경미)
 
 ## 회차 메모
 
 > 다음 회차에 넘길 주의사항·미완 항목
 
-- 다음 배치: **J (워크스페이스)** — `(employer)/workspace/index` `invite` `invitations` `archived` (4화면). 잔여 error.message·미정의 팔레트·Button라벨·bg-white·placeholder는 Z/M
+- 다음 배치: **K (관리자 1)** — `(admin)/index` `announcements/*`(4) `stats` `tournaments`. 잔여 error.message·미정의 팔레트·Button라벨·bg-white·placeholder는 Z/M
+- 배치 J 교훈: 워크스페이스는 PR #3로 비교적 최근 작성된 고품질 화면군 — content-secondary·EmptyState/ErrorState·hitSlop·min-h-44 정합으로 라이트AA 위반이 처음으로 0. 발견 핵심 = **미정의 색 클래스 `text-danger-500`**(danger 팔레트 아예 없음 → 무스타일). Z 패스 grep 후보 추가: 미정의 *색* 클래스(`text-danger-*` 외 오타성). raw bg-white는 employer 전 영역(I·J) 누적 → M employer 일괄 스윕 가치 큼. **관리자 영역(K·L)은 구버전 화면 많아 위반 더 많을 것으로 예상**
 - 배치 I 교훈: 6화면 대형이나 전부 공용 컴포넌트 경유 thin wrapper라 위반은 인라인 텍스트(라이트AA 11)에 집중 — 적대검증 불필요, replace_all 효율적. **employer 영역 누적 패턴**: raw bg-white(모달/헤더/하단바)·raw amber·미정의 warning 티어·Button-child surface-dark 라벨이 employer 화면 전반 반복 → M 배치에서 employer 일괄 스윕 가치 큼. error.message 누적 Z 대상 4→총 15곳. 배치 J도 유사 thin-wrapper 예상
 - 배치 H 교훈: employer 두 화면도 동일 5패턴(라이트AA·골드위onGold·미정의팔레트·Button라벨 surface-dark·dark중복) 재현. **Button-child에 `<Text text-surface-dark>` 라벨 수기지정**이 employer 화면에 4곳 — F에서 standalone 탭은 fix했으나 Button 자식은 G/H 일관되게 M deferred(Button이 색 소유하는 게 근본해결). 배치 I는 6화면 대형이라 컨텍스트 관리 주의 — 공용 컴포넌트(JobForm·ApplicantList·SettlementList 등) 다수 경유분은 이미 배치C/D/E에서 일부 리뷰됨, 화면 본체 위반 위주로
 - 배치 G 교훈: 설정 화면들은 content 토큰 정합도가 높아 위반이 적음(business-info는 거의 0). 위반은 ①제출 스피너 라이트 대비(배치E와 동일, useThemeStore로 isDarkMode split) ②size22 아이콘 ③빈 글리프 ④라이트AA에 집중. **hand-rolled 제출 버튼(Pressable+bg-primary-600 수기)이 profile·change-password에 반복** — 라벨 text-surface-dark·비활성+다크 불가시·상태처리중복 3종을 Button 컴포넌트 교체로 M에서 동시 해소(시각 QA 필요). **profile/change-password에 useThemeStore 신규 도입**(스피너 색 분기용) — 동일 패턴 다른 hand-rolled 버튼에도 적용 가능
