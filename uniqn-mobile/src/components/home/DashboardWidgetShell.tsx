@@ -92,7 +92,7 @@ export function DashboardWidgetShell({
   if (variant === 'hero') {
     return (
       <View className="px-4 py-4 border-b border-divider dark:border-divider">
-        <Text className="text-[10px] uppercase tracking-wider text-primary-500 font-sans-bold mb-2">
+        <Text className="text-micro uppercase tracking-wider text-primary-500 font-sans-bold mb-2">
           {title}
         </Text>
         {emptyOrChildren}
@@ -104,7 +104,7 @@ export function DashboardWidgetShell({
     return (
       <View className="px-4 py-3">
         <View className="flex-row items-center justify-between pb-2 border-b border-divider dark:border-divider mb-2">
-          <Text className="text-[10px] uppercase tracking-wider text-content-secondary font-sans-bold">
+          <Text className="text-micro uppercase tracking-wider text-content-secondary font-sans-bold">
             {title}
           </Text>
           {action}

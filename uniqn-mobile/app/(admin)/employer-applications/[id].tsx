@@ -351,7 +351,7 @@ export default function AdminEmployerApplicationDetailPage() {
 
         {/* Card 2 — 약관 동의 스냅샷 */}
         <Card className="mb-4">
-          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-3">
+          <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-3">
             약관 동의 스냅샷
           </Text>
 

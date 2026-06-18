@@ -75,7 +75,7 @@ export default function AdminInquiryDetailScreen() {
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {/* 문의자 정보 */}
         <Card className="mb-4">
-          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+          <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             문의자 정보
           </Text>
           <View className="flex-row items-center justify-between">

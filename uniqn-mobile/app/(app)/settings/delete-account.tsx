@@ -42,7 +42,7 @@ interface ReasonSelectProps {
 function ReasonSelect({ selectedReason, onSelect }: ReasonSelectProps) {
   return (
     <View className="flex-col gap-2">
-      <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+      <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
         탈퇴 사유를 선택해주세요
       </Text>
       {(Object.entries(DELETION_REASONS) as [DeletionReason, string][]).map(([key, label]) => (

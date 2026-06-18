@@ -112,7 +112,7 @@ export default function SupportScreen() {
         </Card>
 
         <View className="mt-6 items-center">
-          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+          <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             고객센터 운영시간
           </Text>
           <Text className="text-sm font-sans-medium text-content-secondary">

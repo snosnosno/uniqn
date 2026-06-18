@@ -246,7 +246,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
 
           {/* 기본 정보 (이름·생년월일·휴대폰은 본인인증 결과로 수정 불가, 성별은 본인인증 누락 시 최초 1회 입력 가능) */}
           <Card className="mb-4">
-            <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-3">
+            <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-3">
               기본 정보
             </Text>
 
@@ -325,7 +325,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
 
           {/* 추가 정보 */}
           <Card className="mb-4">
-            <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-3">
+            <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-3">
               추가 정보
             </Text>
 

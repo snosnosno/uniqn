@@ -217,7 +217,7 @@ export default function MyDataScreen() {
 
         {/* 기본 정보 */}
         <Card className="mb-4">
-          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-4">
+          <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-4">
             기본 정보
           </Text>
 
@@ -240,7 +240,7 @@ export default function MyDataScreen() {
 
         {/* 본인인증 정보 — B12: 기본 정보와 중복되는 이름/연락처 제거. 인증 상태 + 생년월일/성별만 */}
         <Card className="mb-4">
-          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-4">
+          <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-4">
             본인인증 정보
           </Text>
 
@@ -260,7 +260,7 @@ export default function MyDataScreen() {
 
         {/* 동의 정보 */}
         <Card className="mb-4">
-          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-4">
+          <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-4">
             동의 정보
           </Text>
 
@@ -271,7 +271,7 @@ export default function MyDataScreen() {
 
         {/* 데이터 내보내기 */}
         <Card className="mb-4">
-          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+          <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             데이터 내보내기
           </Text>
           <Text className="text-content-muted text-sm mb-4 font-sans">

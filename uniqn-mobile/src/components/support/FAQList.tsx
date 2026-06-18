@@ -74,7 +74,7 @@ export function FAQList({
       <View className={className}>
         {Object.entries(groupedItems).map(([category, categoryItems]) => (
           <View key={category} className="mb-4">
-            <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2 px-4">
+            <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2 px-4">
               {INQUIRY_CATEGORY_LABELS[category as InquiryCategory] || category}
             </Text>
             <View className="rounded-md bg-surface-card dark:bg-surface-elevated">

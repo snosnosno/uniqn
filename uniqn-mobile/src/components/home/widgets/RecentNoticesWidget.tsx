@@ -42,11 +42,11 @@ function NoticeRow({ notice, isLast }: NoticeRowProps) {
           {notice.title}
         </Text>
         {notice.authorName ? (
-          <Text className="text-content-muted text-[10px] mt-0.5">{notice.authorName}</Text>
+          <Text className="text-content-muted text-micro mt-0.5">{notice.authorName}</Text>
         ) : null}
       </View>
       {relativeTime ? (
-        <NumericText className="text-content-muted text-[10px] ml-2">{relativeTime}</NumericText>
+        <NumericText className="text-content-muted text-micro ml-2">{relativeTime}</NumericText>
       ) : null}
     </Pressable>
   );
@@ -73,7 +73,7 @@ export function RecentNoticesWidget() {
           accessibilityLabel="전체 공지 게시판으로 이동"
           hitSlop={8}
         >
-          <Text className="text-primary-500 text-[10px] font-sans-bold">게시판 →</Text>
+          <Text className="text-primary-500 text-micro font-sans-bold">게시판 →</Text>
         </Pressable>
       }
     >

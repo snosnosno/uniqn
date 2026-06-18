@@ -75,7 +75,7 @@ export default function InquiryDetailScreen() {
         <Card className="mb-4">
           {/* 헤더 */}
           <View className="mb-4 flex-row items-center justify-between">
-            <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold">
+            <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold">
               {INQUIRY_CATEGORY_LABELS[inquiry.category]}
             </Text>
             <InquiryStatusBadge status={inquiry.status} />

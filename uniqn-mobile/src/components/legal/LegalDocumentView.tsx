@@ -64,7 +64,7 @@ export function LegalDocumentView({
           {document.epilogue && <ProseBox tone={epilogueTone} text={document.epilogue} />}
 
           <View className="border-t border-divider pt-4">
-            <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+            <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
               부칙
             </Text>
             <Text className="text-xs text-content-muted font-sans">

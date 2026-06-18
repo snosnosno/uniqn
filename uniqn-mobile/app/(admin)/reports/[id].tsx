@@ -163,7 +163,7 @@ function ReportContentSection({ report }: { report: Report }) {
     <View className="bg-surface-card rounded-md p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-3">
         <DocumentIcon size={18} color={PRIMARY_COLORS[500]} />
-        <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold ml-2">
+        <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold ml-2">
           신고 내용
         </Text>
       </View>
@@ -223,7 +223,7 @@ function ReviewHistorySection({ report }: { report: Report }) {
     <View className="bg-surface-card rounded-md p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-3">
         <CheckCircleIcon size={18} color={STATUS_COLORS.success} />
-        <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold ml-2">
+        <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold ml-2">
           처리 이력
         </Text>
       </View>
@@ -288,7 +288,7 @@ function ReviewFormSection({
     <View className="bg-surface-card rounded-md p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-4">
         <AlertTriangleIcon size={18} color={STATUS_COLORS.warning} />
-        <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold ml-2">
+        <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold ml-2">
           신고 처리
         </Text>
       </View>

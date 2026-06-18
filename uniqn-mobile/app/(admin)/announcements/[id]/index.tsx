@@ -220,7 +220,7 @@ export default function AnnouncementDetailPage() {
 
         {/* 내용 */}
         <View className="px-4 py-3 border-b border-divider">
-          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+          <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             내용
           </Text>
           <Text className="text-base text-content-primary dark:text-off-white leading-6 font-sans">
@@ -235,7 +235,7 @@ export default function AnnouncementDetailPage() {
 
           return (
             <View className="px-4 py-3 border-b border-divider">
-              <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+              <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
                 첨부 이미지 ({images.length}장)
               </Text>
               {images.length === 1 ? (
@@ -286,7 +286,7 @@ export default function AnnouncementDetailPage() {
 
         {/* 정보 */}
         <View className="px-4 py-3 border-b border-divider">
-          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+          <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             정보
           </Text>
 

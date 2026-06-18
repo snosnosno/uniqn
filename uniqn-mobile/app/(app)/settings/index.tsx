@@ -274,7 +274,7 @@ export default function SettingsScreen() {
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {/* 알림 설정 */}
         <Card className="mb-4">
-          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+          <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             알림
           </Text>
           {permissionStatus === 'denied' && (
@@ -318,7 +318,7 @@ export default function SettingsScreen() {
         {/* 공고 협업 (워크스페이스) — employer 전용 */}
         {isAuthenticated && isEmployer && (
           <Card className="mb-4">
-            <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+            <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
               공고 협업
             </Text>
             <SettingItem
@@ -338,7 +338,7 @@ export default function SettingsScreen() {
 
         {/* 계정 설정 */}
         <Card className="mb-4">
-          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+          <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             계정
           </Text>
           <SettingItem
@@ -392,7 +392,7 @@ export default function SettingsScreen() {
 
         {/* 앱 설정 */}
         <Card className="mb-4">
-          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+          <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             앱 설정
           </Text>
           <SettingItem
@@ -432,7 +432,7 @@ export default function SettingsScreen() {
 
         {/* 앱 정보 */}
         <Card className="mb-4">
-          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+          <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             정보
           </Text>
           <SettingItem

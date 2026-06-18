@@ -96,10 +96,10 @@ export const SettlementSummaryCard = React.memo(function SettlementSummaryCard({
           <Text className="text-lg font-display text-primary-600 dark:text-primary-400">
             {formatCurrency(totalAmount)}
           </Text>
-          <Text className="text-[10px] text-content-placeholder font-sans">수당 포함</Text>
+          <Text className="text-micro text-content-placeholder font-sans">수당 포함</Text>
         </View>
       </View>
-      <Text className="mt-2 text-[10px] text-content-placeholder font-sans text-center">
+      <Text className="mt-2 text-micro text-content-placeholder font-sans text-center">
         {
           '※ 스태프 화면의 \u201C확정\u201D 금액은 기본급 기준이며, 여기 \u201C총 정산액\u201D은 수당을 포함합니다.'
         }

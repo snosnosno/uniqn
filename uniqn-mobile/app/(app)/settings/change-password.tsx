@@ -238,7 +238,7 @@ export default function ChangePasswordScreen() {
 
           {/* 비밀번호 정책 안내 */}
           <Card className="mb-4">
-            <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+            <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
               비밀번호 정책
             </Text>
             <View className="flex-col gap-1">

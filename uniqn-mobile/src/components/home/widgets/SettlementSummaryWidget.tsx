@@ -49,7 +49,7 @@ export function SettlementSummaryWidget() {
           accessibilityLabel="공고별 정산 보기"
           hitSlop={8}
         >
-          <Text className="text-primary-500 text-[10px] font-sans-bold">상세 →</Text>
+          <Text className="text-primary-500 text-micro font-sans-bold">상세 →</Text>
         </Pressable>
       }
     >
@@ -63,7 +63,7 @@ export function SettlementSummaryWidget() {
               >
                 {formatCurrency(totalPendingAmount)}
               </NumericText>
-              <Text className="text-[10px] uppercase tracking-wider text-content-muted mt-1">
+              <Text className="text-micro uppercase tracking-wider text-content-muted mt-1">
                 미정산 잔액
               </Text>
             </View>

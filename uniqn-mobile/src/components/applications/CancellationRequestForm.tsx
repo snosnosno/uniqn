@@ -23,7 +23,7 @@ import type { Application } from '@/types';
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+    <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
       {children}
     </Text>
   );

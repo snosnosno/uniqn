@@ -123,7 +123,7 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
                 </Text>
                 {isScheduledOnly ? (
                   <View className="rounded bg-info-100 px-1.5 py-0.5 dark:bg-info-900/30">
-                    <Text className="text-[10px] text-info-700 dark:text-info-300 font-sans-semibold">
+                    <Text className="text-micro text-info-700 dark:text-info-300 font-sans-semibold">
                       예정
                     </Text>
                   </View>

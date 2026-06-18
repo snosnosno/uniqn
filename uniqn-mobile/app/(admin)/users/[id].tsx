@@ -241,7 +241,7 @@ export default function AdminUserDetailPage() {
 
         {/* Basic Info */}
         <View className="bg-surface-card mt-3 px-4 pt-4 pb-2">
-          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+          <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             기본 정보
           </Text>
           <InfoRow
@@ -276,7 +276,7 @@ export default function AdminUserDetailPage() {
 
         {/* Role Management */}
         <View className="bg-surface-card mt-3 px-4 pt-4 pb-4">
-          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+          <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             역할 관리
           </Text>
           <Text className="text-sm text-content-secondary mb-3 font-sans">
@@ -328,7 +328,7 @@ export default function AdminUserDetailPage() {
 
         {/* Account Actions */}
         <View className="bg-surface-card mt-3 px-4 pt-4 pb-4 mb-8">
-          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+          <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             계정 관리
           </Text>
           <View className="mt-3">

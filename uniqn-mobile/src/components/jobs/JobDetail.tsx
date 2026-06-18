@@ -29,7 +29,7 @@ interface JobDetailProps {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+    <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
       {children}
     </Text>
   );
@@ -48,7 +48,7 @@ function InfoRow({
     <View className="flex-row items-start border-b border-divider py-3">
       <View className="mr-3 mt-0.5">{icon}</View>
       <View className="flex-1">
-        <Text className="mb-1 text-[10px] uppercase tracking-wider text-content-muted font-sans-bold">
+        <Text className="mb-1 text-micro uppercase tracking-wider text-content-muted font-sans-bold">
           {label}
         </Text>
         {typeof value === 'string' ? (
@@ -160,7 +160,7 @@ export function JobDetail({ job }: JobDetailProps) {
               <CalendarIcon size={18} color={SECONDARY_PALETTE[400]} />
             </View>
             <View className="flex-1">
-              <Text className="mb-2 text-[10px] uppercase tracking-wider text-content-muted font-sans-bold">
+              <Text className="mb-2 text-micro uppercase tracking-wider text-content-muted font-sans-bold">
                 근무 일정
               </Text>
               <PostingScheduleContent
@@ -206,7 +206,7 @@ export function JobDetail({ job }: JobDetailProps) {
                 <BanknotesIcon size={18} color={SECONDARY_PALETTE[400]} />
               </View>
               <View className="flex-1">
-                <Text className="mb-1 text-[10px] uppercase tracking-wider text-content-muted font-sans-bold">
+                <Text className="mb-1 text-micro uppercase tracking-wider text-content-muted font-sans-bold">
                   추가 수당
                 </Text>
                 <View className="flex-row flex-wrap">

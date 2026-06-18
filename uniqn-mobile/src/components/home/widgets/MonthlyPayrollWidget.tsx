@@ -52,7 +52,7 @@ export function MonthlyPayrollWidget() {
           accessibilityLabel="스케줄에서 상세 보기"
           hitSlop={8}
         >
-          <Text className="text-primary-500 text-[10px] font-sans-bold">상세 →</Text>
+          <Text className="text-primary-500 text-micro font-sans-bold">상세 →</Text>
         </Pressable>
       }
     >
@@ -66,7 +66,7 @@ export function MonthlyPayrollWidget() {
               >
                 {formatCurrency(totalAmount)}
               </NumericText>
-              <Text className="text-[10px] uppercase tracking-wider text-content-muted mt-1">
+              <Text className="text-micro uppercase tracking-wider text-content-muted mt-1">
                 {month}월 합계
               </Text>
             </View>
