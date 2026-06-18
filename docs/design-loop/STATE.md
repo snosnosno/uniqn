@@ -17,7 +17,8 @@
 | I | 구인자 공고관리 | `(employer)/my-postings/create` `[id]/edit` `[id]/applicants` `[id]/settlements` `[id]/collaborators` `[id]/cancellation-requests` | **done**(bg-white·amber·Button라벨→M·error.message→Z) | `48fb5b44c` |
 | J | 워크스페이스 | `(employer)/workspace/index` `invite` `invitations` `archived` | **done**(bg-white·autoFocus·PTR→M) | `b6674ce58` |
 | K | 관리자 1 | `(admin)/index` `announcements/*`(4) `stats` `tournaments` | **done**(다색카테고리·bg-white·Button라벨→M·P3) | `ac8d1565e` |
-| L | 관리자 2 | `(admin)/reports/*` `board-reports/*` `inquiries/*` `users/*` `employer-applications/*` | pending | |
+| L | 관리자 2 (목록) | `(admin)/reports/index` `board-reports/index` `inquiries/index` `users/index` `employer-applications/index` | **done**(bg-white/팔레트→M) | `e40c8f13a` |
+| L2 | 관리자 2 (상세) | `(admin)/reports/[id]` `board-reports/[id]` `inquiries/[id]` `users/[id]` `employer-applications/[id]` | pending | |
 | M | 공용 컴포넌트 | `src/components/` 버튼·카드·모달·EmptyState·Skeleton·배지·토스트 + 토큰 정합 | pending | |
 | W | 지갑 | `(app)/wallet/*` — master에 없음 (`fix/wallet-p1-money-and-ui` 머지 후) | **deferred** | |
 | Z | 최종 횡단 패스 | 화면 간 통일 검증 + 전체 jest + quality | pending | |
@@ -94,6 +95,11 @@
 - [K] P2 충돌 이중 dark bg 1 | stats:209 최근가입자 행 `bg-surface-page dark:bg-surface px-3 py-3 dark:bg-surface-elevated`(dark:bg 2회)→`dark:bg-surface-elevated` 1개(카드 위 행은 elevated). 배치E/F 선례
 - [K] P2 선택 탭 라벨 AA 1 | tournaments StatusTab:89 선택시 `color:'#FFFFFF'` on `#B8962E`(다크골드, 흰 ~2.84:1 AA미달)→`#09090B`(onGold 컨벤션 정합·6.6:1). inline style
 - [K] 검증 | quality exit0(tsc0·lint0·format clean — index/announcements/[id]/tournaments prettier 재배치) / 7화면 단독 jest 없음(프레젠테이션)
+- [L] **인라인 정독 리뷰**(워크플로 미사용). 관리자2 목록 5화면(reports·board-reports·inquiries·users·employer-applications index) 직독. 확정 P2 21건 수정(`e40c8f13a`). **L 배치는 목록(index)·상세([id]) 분리** — `/*` 스코프에 [id] 상세 5화면 포함되나 컨텍스트 관리 위해 L2로 분리(다음 회차)
+- [L] P2 라이트 AA 12 | `text-secondary-500 dark:text-secondary-400`→`text-content-secondary` | reports 4·inquiries 1·board-reports 3·employer-applications 1·users 3
+- [L] P2 골드 위 전경 SSOT 8 | `text-surface-dark`→`text-content-onGold` | 선택 필터칩(reports 3·inquiries 1·board-reports 1·employer-applications 1·users RoleChip 1)·users '더 보기' 버튼 1. **배치F FAQ/Notification 탭 정합** — standalone 셀렉티드 칩/항상-골드 버튼은 onGold(stateful submit Button은 M deferred 유지). 5파일 replace_all
+- [L] P2 룰14 이모지 1 | employer-applications:136 '⏰ 24h 경과'→'24h 경과'(bg-error-50+text-error 긴급신호 충분, 배치C 게시판 🔥🕒 제거 정합)
+- [L] 검증 | quality exit0(tsc0·lint0·format clean — 5파일 prettier 재배치) / 단독 jest 없음(프레젠테이션)
 
 ## P3 백로그 (기록만, 구현 안 함)
 
@@ -189,12 +195,18 @@
 - [K→M] admin Button-style 라벨 `text-surface-dark` on 골드(standalone Pressable) | announcements/index:174·announcements/[id]:134/396·edit:65 `<Pressable bg-primary-600><Text text-surface-dark>` | content-onGold SSOT — 배치G/H/I와 동일 deferred(stateful이 아니므로 onGold 안전하나 일관성 위해 M 일괄)
 - [K→M] stats:105 통계 부분에러 배너 raw `border-amber-200 dark:border-amber-800` + `text-warning-800`(warning-800 미정의)·`dark:bg-warning-900/20`(warning-900 미정의) | 배치D/F/I 동일 amber+미정의 warning → M 일괄
 - [K→M] announcements/[id] ANNOUNCEMENT_STATUS/PRIORITY_CONFIG(src/types/announcement) bgColor/color 팔레트 티어 검증 | InquiryStatusBadge config와 동일 — M 팔레트 일괄
+- [L→M] admin2 목록 raw bg-white 다수 | reports 148/172·inquiries 87/99·board-reports 205/220·employer-applications 225·users 102/270/285 `bg-white dark:bg-surface(-elevated)` | bg-white→surface-card employer+admin 통합 스윕 M
+- [L→M] **미정의 warning 티어 (배치L)** | board-reports REPORT_STATUS_CLASSNAMES + employer-applications STATUS_CLASSNAMES `dark:text-warning-300`·`dark:bg-warning-900/30`(warning 300/900 미정의)·`dark:bg-success-900/30`(success 900 미정의) | 배치D~K 동일 → M 팔레트 일괄
+- [L→M] users:135 BubbleScoreBadge 사용처 | [[배치E→M BubbleScoreBadge 미정의 다크티어]] 동일 컴포넌트 — M 공용 검증
+- [L→M] admin2 검색 placeholder SECONDARY_PALETTE[400](reports 155·board-reports 212·users 277) + inquiries ActivityIndicator PRIMARY_COLORS[300] 골드 스피너 | 전역 placeholder·Loading 색 M
+- [L→M] users:104 UserCard 인라인 boxShadow(룰14 그림자) + reports FilterIcon raw `'#D4AF37'`(토큰 아닌 리터럴이나 골드값 정확) | 경미, M
 
 ## 회차 메모
 
 > 다음 회차에 넘길 주의사항·미완 항목
 
-- 다음 배치: **L (관리자 2)** — `(admin)/reports/*` `board-reports/*` `inquiries/*` `users/*` `employer-applications/*`. 잔여 error.message·미정의 팔레트·Button라벨·bg-white·다색카테고리는 Z/M/P3
+- 다음 배치: **L2 (관리자 2 상세)** — `(admin)/reports/[id]` `board-reports/[id]` `inquiries/[id]` `users/[id]` `employer-applications/[id]` (5 상세화면). 이후 M(공용 컴포넌트)→Z(최종 패스). 잔여 error.message·미정의 팔레트·Button라벨·bg-white·다색카테고리는 Z/M/P3
+- 배치 L 교훈: 관리자2 목록 5화면도 동일 3패턴(라이트AA 12·골드칩 onGold 8·이모지 1). **standalone 셀렉티드 필터칩/항상-골드 버튼의 text-surface-dark는 onGold로 FIX**(배치F 탭 정합 — stateful submit Button만 M deferred로 구분). 누적: error.message Z 대상 변동 없음(admin은 EmptyState/ErrorState 사용)·raw bg-white는 employer+admin 광범위→M 통합 스윕 1순위. **L row를 L(목록)+L2(상세)로 분리** — `/*` 스코프에 [id] 상세 포함이라 누락 방지. L2 상세화면들은 액션(승인/거부/답변) 버튼 많아 Button-child 라벨·모달 위반 예상
 - 배치 K 교훈: 관리자 화면은 구버전이라 라이트AA 위반 대량(24) — text-secondary-500 지배. **신규 발견**: ①admin 대시보드/통계가 raw Tailwind 다색(rose/cyan/emerald/orange) 카테고리 코딩(룰5 위반이나 기능성, P3 디자인결정) ②골드 버튼에 흰 아이콘+dark 라벨 혼재(아이콘만 #fff 누락) ③#B8962E 다크골드+흰글자 선택탭 AA미달. raw bg-white admin 전반 → M employer+admin 통합 스윕 가치 큼. 배치 L도 유사 구버전 admin 예상(reports/users/inquiries 등 ~1350줄)
 - 배치 J 교훈: 워크스페이스는 PR #3로 비교적 최근 작성된 고품질 화면군 — content-secondary·EmptyState/ErrorState·hitSlop·min-h-44 정합으로 라이트AA 위반이 처음으로 0. 발견 핵심 = **미정의 색 클래스 `text-danger-500`**(danger 팔레트 아예 없음 → 무스타일). Z 패스 grep 후보 추가: 미정의 *색* 클래스(`text-danger-*` 외 오타성). raw bg-white는 employer 전 영역(I·J) 누적 → M employer 일괄 스윕 가치 큼. **관리자 영역(K·L)은 구버전 화면 많아 위반 더 많을 것으로 예상**
 - 배치 I 교훈: 6화면 대형이나 전부 공용 컴포넌트 경유 thin wrapper라 위반은 인라인 텍스트(라이트AA 11)에 집중 — 적대검증 불필요, replace_all 효율적. **employer 영역 누적 패턴**: raw bg-white(모달/헤더/하단바)·raw amber·미정의 warning 티어·Button-child surface-dark 라벨이 employer 화면 전반 반복 → M 배치에서 employer 일괄 스윕 가치 큼. error.message 누적 Z 대상 4→총 15곳. 배치 J도 유사 thin-wrapper 예상
