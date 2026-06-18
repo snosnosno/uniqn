@@ -24,6 +24,7 @@ import { Card, Loading, GenderSegment, type GenderValue } from '@/components/ui'
 import { ProfileImagePicker } from '@/components/profile';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
+import { useThemeStore } from '@/stores/themeStore';
 import { useToastStore } from '@/stores/toastStore';
 import { updateUserProfile, checkNicknameExists } from '@/services';
 import { updateProfileSchema, type UpdateProfileData } from '@/schemas/user.schema';
@@ -60,6 +61,7 @@ type NicknameStatus = 'idle' | 'checking' | 'available' | 'taken';
 function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUser | null }) {
   const setProfile = useAuthStore((state) => state.setProfile);
   const addToast = useToastStore((state) => state.addToast);
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
   const [isSaving, setIsSaving] = useState(false);
   const [nicknameStatus, setNicknameStatus] = useState<NicknameStatus>('idle');
   const lastCheckedNickname = useRef(profile.nickname ?? '');
@@ -524,7 +526,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
             }`}
           >
             {isSaving ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color={isDarkMode ? '#FFFFFF' : '#09090B'} />
             ) : (
               <Text className="text-center text-base font-sans-semibold text-surface-dark">
                 저장

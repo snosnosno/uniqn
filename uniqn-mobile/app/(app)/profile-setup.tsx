@@ -103,7 +103,7 @@ export default function ProfileSetupScreen() {
             <Text className="text-2xl font-display text-content-primary dark:text-off-white mb-2">
               프로필 설정
             </Text>
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+            <Text className="text-sm text-content-secondary font-sans">
               서비스 이용을 위해 프로필을 완성해주세요.
             </Text>
           </View>

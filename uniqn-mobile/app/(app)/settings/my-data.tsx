@@ -10,6 +10,7 @@ import { PRIMARY_COLORS } from '@/constants/colors';
 import { View, Text, ScrollView, Share, ActivityIndicator, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackHeader } from '@/components/headers';
+import { ShieldCheckIcon } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
@@ -200,7 +201,9 @@ export default function MyDataScreen() {
         {/* 안내 카드 */}
         <Card className="mb-6 bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800">
           <View className="flex-row items-start">
-            <Text className="text-2xl mr-3 font-sans">{''}</Text>
+            <View className="mr-3">
+              <ShieldCheckIcon size={24} color={PRIMARY_COLORS[700]} />
+            </View>
             <View className="flex-1">
               <Text className="text-primary-800 dark:text-primary-200 font-sans-semibold mb-1">
                 개인정보 처리방침
