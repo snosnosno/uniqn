@@ -9,7 +9,7 @@ export function BoardPostDetailSkeleton() {
       contentContainerStyle={{ padding: 16, paddingBottom: LAYOUT.TAB_BAR_HEIGHT + 32 }}
       showsVerticalScrollIndicator={false}
     >
-      <Text className="mb-4 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+      <Text className="mb-4 text-sm text-content-secondary font-sans">
         게시글을 불러오는 중이에요.
       </Text>
 

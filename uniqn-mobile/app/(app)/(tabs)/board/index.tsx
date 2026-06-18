@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import { TabHeader } from '@/components/headers';
-import { EmptyState, ErrorState, SkeletonListItem } from '@/components/ui';
+import { EmptyState, ErrorState, SkeletonBoardPostItem } from '@/components/ui';
 import { BoardPostCard } from '@/components/board/BoardPostCard';
 import { BoardTabBar, type BoardTabKey } from '@/components/board/BoardTabBar';
 import { PinnedNoticeBanner } from '@/components/board/PinnedNoticeBanner';
@@ -70,9 +70,14 @@ export default function BoardHomeScreen() {
       <BoardTabBar activeTab="home" onTabPress={navigateToTab} />
 
       {isLoading ? (
-        <ScrollView className="flex-1" contentContainerClassName="p-4">
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="p-4"
+          accessibilityRole="progressbar"
+          accessibilityLabel="게시판 홈 로딩 중"
+        >
           {[1, 2, 3, 4, 5].map((item) => (
-            <SkeletonListItem key={item} />
+            <SkeletonBoardPostItem key={item} />
           ))}
         </ScrollView>
       ) : error ? (
