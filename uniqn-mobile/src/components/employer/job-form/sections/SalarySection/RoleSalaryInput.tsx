@@ -79,7 +79,7 @@ export const RoleSalaryInput = memo(function RoleSalaryInput({
               <Text
                 className={`text-center text-xs font-sans-medium ${
                   isSelected
-                    ? 'text-surface-dark'
+                    ? 'text-content-onGold'
                     : isReadOnly
                       ? 'text-secondary-400 dark:text-secondary-500'
                       : 'text-secondary-600 dark:text-secondary-300'

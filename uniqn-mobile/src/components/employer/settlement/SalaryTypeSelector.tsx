@@ -143,7 +143,7 @@ export const SalaryTypeSelector = memo(function SalaryTypeSelector({
               <Text
                 className={`
                   text-sm font-sans-medium
-                  ${isSelected ? 'text-surface-dark' : 'text-secondary-700 dark:text-secondary-300'}
+                  ${isSelected ? 'text-content-onGold' : 'text-secondary-700 dark:text-secondary-300'}
                 `}
               >
                 {SALARY_TYPE_LABELS[type]}

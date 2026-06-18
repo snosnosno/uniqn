@@ -491,7 +491,7 @@ export function AlertModal({
         className="bg-primary-600 py-3 rounded-md"
         accessibilityRole="button"
       >
-        <Text className="text-surface-dark text-center font-sans-semibold">{confirmText}</Text>
+        <Text className="text-content-onGold text-center font-sans-semibold">{confirmText}</Text>
       </Pressable>
     </Modal>
   );
@@ -550,7 +550,7 @@ export function ConfirmModal({
           testID={confirmTestID}
         >
           <Text
-            className={`text-center font-sans-semibold ${isDestructive ? 'text-white' : 'text-surface-dark'}`}
+            className={`text-center font-sans-semibold ${isDestructive ? 'text-white' : 'text-content-onGold'}`}
           >
             {confirmText}
           </Text>

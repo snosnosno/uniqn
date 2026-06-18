@@ -152,7 +152,7 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
           {isLoading ? (
             <ActivityIndicator color="white" size="small" />
           ) : (
-            <Text className="text-sm font-sans-medium text-surface-dark">
+            <Text className="text-sm font-sans-medium text-content-onGold">
               {isUnsupported ? '사용 불가' : '불러오기'}
             </Text>
           )}
@@ -177,7 +177,9 @@ function EmptyState({ onClose }: { onClose: () => void }) {
         accessibilityRole="button"
         accessibilityLabel="공고 작성 화면으로 돌아가기"
       >
-        <Text className="text-sm font-sans-semibold text-surface-dark">공고 작성으로 돌아가기</Text>
+        <Text className="text-sm font-sans-semibold text-content-onGold">
+          공고 작성으로 돌아가기
+        </Text>
       </Pressable>
     </View>
   );

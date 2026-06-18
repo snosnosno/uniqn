@@ -528,7 +528,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
             {isSaving ? (
               <ActivityIndicator color={isDarkMode ? '#FFFFFF' : '#09090B'} />
             ) : (
-              <Text className="text-center text-base font-sans-semibold text-surface-dark">
+              <Text className="text-center text-base font-sans-semibold text-content-onGold">
                 저장
               </Text>
             )}

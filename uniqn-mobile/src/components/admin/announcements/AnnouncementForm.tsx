@@ -228,7 +228,7 @@ export function AnnouncementForm({
                 <Text
                   className={`text-sm font-sans ${
                     category === cat.key
-                      ? 'text-surface-dark font-sans-medium'
+                      ? 'text-content-onGold font-sans-medium'
                       : 'text-secondary-700 dark:text-secondary-300'
                   }`}
                 >
@@ -311,7 +311,7 @@ export function AnnouncementForm({
                 <Text
                   className={`text-sm font-sans ${
                     priority === p
-                      ? 'text-surface-dark font-sans-medium'
+                      ? 'text-content-onGold font-sans-medium'
                       : 'text-secondary-700 dark:text-secondary-300'
                   }`}
                 >
@@ -355,7 +355,7 @@ export function AnnouncementForm({
               <Text
                 className={`text-sm font-sans ${
                   targetType === 'all'
-                    ? 'text-surface-dark font-sans-medium'
+                    ? 'text-content-onGold font-sans-medium'
                     : 'text-secondary-700 dark:text-secondary-300'
                 }`}
               >
@@ -373,7 +373,7 @@ export function AnnouncementForm({
               <Text
                 className={`text-sm font-sans ${
                   targetType === 'roles'
-                    ? 'text-surface-dark font-sans-medium'
+                    ? 'text-content-onGold font-sans-medium'
                     : 'text-secondary-700 dark:text-secondary-300'
                 }`}
               >
@@ -398,7 +398,7 @@ export function AnnouncementForm({
                   <Text
                     className={`text-sm font-sans ${
                       targetRoles.includes(role)
-                        ? 'text-surface-dark font-sans-medium'
+                        ? 'text-content-onGold font-sans-medium'
                         : 'text-secondary-700 dark:text-secondary-300'
                     }`}
                   >
@@ -438,7 +438,7 @@ export function AnnouncementForm({
             <Text
               className={`font-sans-medium ${
                 isValid && !isSubmitting
-                  ? 'text-surface-dark'
+                  ? 'text-content-onGold'
                   : 'text-secondary-500 dark:text-secondary-400'
               }`}
             >

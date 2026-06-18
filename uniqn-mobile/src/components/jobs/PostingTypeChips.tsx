@@ -51,7 +51,7 @@ const ChipItem = memo(function ChipItem({ chip, count, isSelected, onPress }: Ch
       }`}
     >
       <Text
-        className={`font-sans-medium ${isSelected ? 'text-surface-dark' : 'text-secondary-700 dark:text-secondary-300'}`}
+        className={`font-sans-medium ${isSelected ? 'text-content-onGold' : 'text-secondary-700 dark:text-secondary-300'}`}
       >
         {chip.label}
       </Text>
@@ -63,7 +63,7 @@ const ChipItem = memo(function ChipItem({ chip, count, isSelected, onPress }: Ch
         >
           <Text
             className={`text-xs font-sans-semibold ${
-              isSelected ? 'text-surface-dark' : 'text-secondary-600 dark:text-secondary-300'
+              isSelected ? 'text-content-onGold' : 'text-secondary-600 dark:text-secondary-300'
             }`}
           >
             {formatCount(count)}

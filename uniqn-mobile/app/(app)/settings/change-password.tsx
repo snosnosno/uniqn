@@ -267,7 +267,7 @@ export default function ChangePasswordScreen() {
             {isSubmitting ? (
               <ActivityIndicator color={isDarkMode ? '#FFFFFF' : '#09090B'} />
             ) : (
-              <Text className="text-center text-base font-sans-semibold text-surface-dark">
+              <Text className="text-center text-base font-sans-semibold text-content-onGold">
                 비밀번호 변경
               </Text>
             )}

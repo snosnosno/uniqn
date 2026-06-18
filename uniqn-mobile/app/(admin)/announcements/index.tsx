@@ -167,7 +167,7 @@ export default function AdminAnnouncementsPage() {
               새 공지사항을 작성해보세요
             </Text>
             <Pressable onPress={handleCreate} className="mt-6 bg-primary-600 px-6 py-3 rounded-lg">
-              <Text className="text-surface-dark font-sans-medium">공지사항 작성</Text>
+              <Text className="text-content-onGold font-sans-medium">공지사항 작성</Text>
             </Pressable>
           </View>
         ) : (

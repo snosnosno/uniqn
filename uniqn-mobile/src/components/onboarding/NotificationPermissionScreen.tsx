@@ -177,7 +177,7 @@ export function NotificationPermissionScreen({
                   : 'bg-primary-600 active:bg-primary-700 dark:bg-primary-700 dark:active:bg-primary-600'
               }`}
             >
-              <Text className="text-base font-sans-semibold text-surface-dark">
+              <Text className="text-base font-sans-semibold text-content-onGold">
                 {loading ? '처리 중...' : content.primaryLabel}
               </Text>
             </Pressable>

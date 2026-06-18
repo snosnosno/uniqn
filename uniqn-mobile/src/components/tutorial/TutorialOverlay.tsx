@@ -279,7 +279,7 @@ export function TutorialOverlay({ config, onComplete, timeoutMs }: TutorialOverl
           <Animated.Text
             key={isLastPage ? 'cta' : 'next'}
             entering={FadeIn.duration(200)}
-            className="text-surface-dark font-sans-semibold text-base"
+            className="text-content-onGold font-sans-semibold text-base"
           >
             {isLastPage ? ctaText : '다음'}
           </Animated.Text>

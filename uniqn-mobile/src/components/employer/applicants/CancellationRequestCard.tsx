@@ -252,7 +252,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
                   `}
                 >
                   <CheckIcon size={16} color="#fff" />
-                  <Text className="ml-1 text-sm font-sans-medium text-surface-dark">승인</Text>
+                  <Text className="ml-1 text-sm font-sans-medium text-content-onGold">승인</Text>
                 </Pressable>
               </View>
             )}

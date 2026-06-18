@@ -146,7 +146,7 @@ export const RoleSelectModal = memo(function RoleSelectModal({
                 <Text
                   className={`text-center font-sans-medium ${
                     customRoleName.trim()
-                      ? 'text-surface-dark'
+                      ? 'text-content-onGold'
                       : 'text-secondary-500 dark:text-secondary-400'
                   }`}
                 >
