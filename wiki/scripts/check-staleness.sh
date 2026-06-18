@@ -7,7 +7,7 @@ cd "$REPO_ROOT"
 stale_count=0
 
 mapfile -t pages < <(find wiki -name '*.md' \
-  ! -name index.md ! -name log.md ! -name overview.md ! -name AGENTS.md)
+  ! -path 'wiki/index.md' ! -path 'wiki/log.md' ! -path 'wiki/overview.md' ! -path 'wiki/AGENTS.md')
 
 for page in "${pages[@]}"; do
   fm="$(awk 'NR==1 && $0=="---"{f=1; next} f && $0=="---"{exit} f{print}' "$page")"
