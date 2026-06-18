@@ -64,7 +64,7 @@ function StatusBadge({ status }: StatusBadgeProps) {
   };
 
   return (
-    <View className={`self-start rounded-full px-3 py-1 ${styleMap[status]}`}>
+    <View className={`self-start rounded-sm px-3 py-1 ${styleMap[status]}`}>
       <Text className={`text-sm font-sans-medium ${textMap[status]}`}>{labelMap[status]}</Text>
     </View>
   );

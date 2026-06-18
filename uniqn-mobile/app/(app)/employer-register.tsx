@@ -39,7 +39,7 @@ interface InfoRowProps {
 function InfoRow({ label, value }: InfoRowProps) {
   return (
     <View className="flex-row justify-between py-2">
-      <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">{label}</Text>
+      <Text className="text-sm text-content-secondary font-sans">{label}</Text>
       <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
         {value || '-'}
       </Text>
@@ -77,7 +77,7 @@ function AgreementCheckbox({
               : 'border-secondary-300 bg-white dark:border-surface-overlay dark:bg-surface'
           }`}
         >
-          {checked && <CheckCircleIcon size={16} color="#fff" />}
+          {checked && <CheckCircleIcon size={16} color="#09090B" />}
         </View>
         <View className="flex-1">
           <View className="flex-row items-center">
@@ -93,9 +93,7 @@ function AgreementCheckbox({
             )}
           </View>
           {description && (
-            <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-              {description}
-            </Text>
+            <Text className="mt-1 text-sm text-content-secondary font-sans">{description}</Text>
           )}
         </View>
       </Pressable>
@@ -234,7 +232,7 @@ export default function EmployerRegisterScreen() {
             </>
           ) : (
             <View>
-              <Text className="mb-3 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+              <Text className="mb-3 text-sm text-content-secondary font-sans">
                 구인자 등록을 위해 본인인증이 필요합니다
               </Text>
               <Button variant="outline" size="sm" onPress={handleGoToVerification}>
@@ -260,7 +258,7 @@ export default function EmployerRegisterScreen() {
           <Text className="mb-1 text-base font-sans-semibold text-content-primary dark:text-off-white">
             구인 소개
           </Text>
-          <Text className="mb-3 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+          <Text className="mb-3 text-sm text-content-secondary font-sans">
             주로 구인하는 지역/매장/대회를 알려주세요. 관리자 심사에 참고됩니다.
           </Text>
 
