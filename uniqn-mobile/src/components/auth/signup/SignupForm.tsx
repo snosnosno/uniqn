@@ -119,7 +119,20 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
     if (!draft) return;
 
     // stepIndex 는 flow 범위 내로 clamp
-    const restoredIndex = Math.min(Math.max(0, draft.stepIndex), flow.length - 1);
+    let restoredIndex = Math.min(Math.max(0, draft.stepIndex), flow.length - 1);
+    // 보안상 password 는 draft 에 저장되지 않는다(아래 account 복원 참고).
+    // 계정 단계를 지나친 위치로 복원되면 비밀번호 없이 본인인증→가입완료로 진행되어
+    // 빈 비밀번호로 signUp 이 호출되고 정체불명 실패가 난다. 비번 재입력을 위해
+    // 계정 단계 이후로의 복원은 계정 단계로 되돌린다(default 모드 한정, social 은 계정 단계 없음).
+    const accountStepIndex = flow.indexOf('account');
+    if (
+      !isSocial &&
+      accountStepIndex !== -1 &&
+      draft.formData.accountEmail &&
+      restoredIndex > accountStepIndex
+    ) {
+      restoredIndex = accountStepIndex;
+    }
     setStepIndex(restoredIndex);
 
     setFormData({
@@ -139,7 +152,7 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
       hasAccountEmail: Boolean(draft.formData.accountEmail),
       hasIdentity: Boolean(draft.formData.identity),
     });
-  }, [flow.length, isReverify, isSocial, mode, socialUserId]);
+  }, [flow, isReverify, isSocial, mode, socialUserId]);
 
   // A2: formData / stepIndex 변경 시 draft 저장. reverify·hydration 이전엔 skip.
   useEffect(() => {
@@ -241,6 +254,15 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
       if (!isSocial && !updatedFormData.account) {
         logger.error('계정 정보 누락', { component: 'SignupForm' });
         toast.error('계정 정보가 누락되었습니다. 다시 입력해주세요.');
+        goToStep('account');
+        return;
+      }
+
+      // 방어 가드: draft 복원 후 password 가 비어 있으면(보안상 미저장) 빈 비밀번호로
+      // signUp 이 호출되어 정체불명 실패가 난다. 계정 단계로 보내 비밀번호 재입력을 유도.
+      if (!isSocial && !updatedFormData.account?.password) {
+        logger.warn('비밀번호 누락 — draft 복원 후 재입력 필요', { component: 'SignupForm' });
+        toast.error('보안을 위해 비밀번호를 다시 입력해주세요.');
         goToStep('account');
         return;
       }
