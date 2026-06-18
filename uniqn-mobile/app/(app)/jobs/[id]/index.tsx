@@ -113,21 +113,13 @@ export default function JobDetailScreen() {
     );
   }
 
-  const shouldBlockForExistingApplicationCheck =
+  // 지원 이력 확인 중 — 본문(JobDetail)은 즉시 렌더하고 CTA 영역만 게이팅한다.
+  // (예전엔 비핵심 체크가 화면 전체를 다시 가려 진입마다 이중 로딩이 발생)
+  const isCheckingApplication =
     !!sessionUserId &&
     !hasApplied(job.id) &&
     !hasAppliedDirect &&
     (isCheckingExistingApplication || isFetchingExistingApplication);
-
-  if (shouldBlockForExistingApplicationCheck) {
-    return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
-        <Stack.Screen options={{ headerShown: false }} />
-        <StackHeader title="공고 상세" fallbackHref="/(app)/(tabs)/home-jobs" />
-        <Loading variant="layout" message="공고 정보를 불러오는 중..." />
-      </SafeAreaView>
-    );
-  }
 
   const titleSuffix = job?.title ? (
     <Text
@@ -205,7 +197,11 @@ export default function JobDetailScreen() {
         }}
       >
         <SafeAreaView edges={['bottom']}>
-          {alreadyApplied ? (
+          {isCheckingApplication ? (
+            <Button disabled fullWidth>
+              지원 여부 확인 중...
+            </Button>
+          ) : alreadyApplied ? (
             <View className="items-center">
               <Text className="mb-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 {getApplicationStatusMessage(applicationStatus?.status)}
