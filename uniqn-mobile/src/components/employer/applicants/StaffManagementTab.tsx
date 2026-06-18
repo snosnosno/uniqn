@@ -12,6 +12,7 @@ import {
   ClockIcon,
   QRCodeIcon,
   RefreshIcon,
+  XCircleIcon,
 } from '@/components/icons';
 import { ActionSheet, type ActionSheetOption } from '@/components/ui/ActionSheet';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -79,6 +80,7 @@ export function StaffManagementTab({
     updateWorkTime,
     removeStaff,
     changeStatus,
+    setNoShow,
     isUpdatingTime,
   } = useConfirmedStaff(jobPostingId);
 
@@ -88,6 +90,7 @@ export function StaffManagementTab({
   const [profileStaff, setProfileStaff] = useState<ConfirmedStaff | null>(null);
   const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
   const [statusSheetTarget, setStatusSheetTarget] = useState<ConfirmedStaff | null>(null);
+  const [noShowTarget, setNoShowTarget] = useState<ConfirmedStaff | null>(null);
 
   const handleStaffPress = useCallback((staff: ConfirmedStaff) => {
     logger.debug('Confirmed staff pressed', { workLogId: staff.id });
@@ -181,10 +184,26 @@ export function StaffManagementTab({
         return;
       }
 
+      // 노쇼는 단순 상태 변경(updateStaffStatus)이 아니라 전용 markAsNoShow 경로를 타며
+      // 정산 0원 처리를 동반하는 파괴적 액션이라 확인 모달을 경유한다(신고와 분리).
+      if (status === STATUS.WORK_LOG.NO_SHOW) {
+        setNoShowTarget(statusSheetTarget);
+        return;
+      }
+
       changeStatus(statusSheetTarget.id, status as WorkLogStatus);
     },
     [changeStatus, statusSheetTarget]
   );
+
+  const handleNoShowConfirm = useCallback(() => {
+    if (!noShowTarget) {
+      return;
+    }
+
+    setNoShow(noShowTarget.id, '확정 스태프 관리에서 노쇼 처리');
+    setNoShowTarget(null);
+  }, [noShowTarget, setNoShow]);
 
   const getStatusOptions = useCallback((): ActionSheetOption[] => {
     if (!statusSheetTarget) {
@@ -223,6 +242,16 @@ export function StaffManagementTab({
         label: '근무 완료 처리',
         value: STATUS.WORK_LOG.COMPLETED,
         icon: <CheckCircleIcon size={20} color="#22C55E" />,
+      });
+    }
+
+    // 노쇼 처리 — 운영 사실 기록(신고와 별개). 정산 0원 동반이라 파괴적 표시.
+    if (currentStatus !== STATUS.WORK_LOG.NO_SHOW) {
+      options.push({
+        label: '노쇼 처리',
+        value: STATUS.WORK_LOG.NO_SHOW,
+        icon: <XCircleIcon size={20} color="#EF4444" />,
+        destructive: true,
       });
     }
 
@@ -303,6 +332,19 @@ export function StaffManagementTab({
         }를 확정 목록에서 제거할까요? 이 작업은 확정을 취소하고 점유된 자리를 다시 비웁니다.`}
         confirmText="제거"
         cancelText="유지"
+        isDestructive
+      />
+
+      <ConfirmModal
+        visible={Boolean(noShowTarget)}
+        onClose={() => setNoShowTarget(null)}
+        onConfirm={handleNoShowConfirm}
+        title="노쇼 처리"
+        message={`${
+          noShowTarget?.staffName ?? '선택한 스태프'
+        }님을 노쇼로 처리할까요? 출근하지 않은 것으로 기록되며 정산 대상에서 제외됩니다.`}
+        confirmText="노쇼 처리"
+        cancelText="취소"
         isDestructive
       />
 
