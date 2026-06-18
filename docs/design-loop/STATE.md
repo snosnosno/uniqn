@@ -18,7 +18,7 @@
 | J | 워크스페이스 | `(employer)/workspace/index` `invite` `invitations` `archived` | **done**(bg-white·autoFocus·PTR→M) | `b6674ce58` |
 | K | 관리자 1 | `(admin)/index` `announcements/*`(4) `stats` `tournaments` | **done**(다색카테고리·bg-white·Button라벨→M·P3) | `ac8d1565e` |
 | L | 관리자 2 (목록) | `(admin)/reports/index` `board-reports/index` `inquiries/index` `users/index` `employer-applications/index` | **done**(bg-white/팔레트→M) | `e40c8f13a` |
-| L2 | 관리자 2 (상세) | `(admin)/reports/[id]` `board-reports/[id]` `inquiries/[id]` `users/[id]` `employer-applications/[id]` | pending | |
+| L2 | 관리자 2 (상세) | `(admin)/reports/[id]` `board-reports/[id]` `inquiries/[id]` `users/[id]` `employer-applications/[id]` | **done**(bg-white·미정의팔레트·text-[10px]→M) | `(미커밋)` |
 | M | 공용 컴포넌트 | `src/components/` 버튼·카드·모달·EmptyState·Skeleton·배지·토스트 + 토큰 정합 | pending | |
 | W | 지갑 | `(app)/wallet/*` — master에 없음 (`fix/wallet-p1-money-and-ui` 머지 후) | **deferred** | |
 | Z | 최종 횡단 패스 | 화면 간 통일 검증 + 전체 jest + quality | pending | |
@@ -100,6 +100,10 @@
 - [L] P2 골드 위 전경 SSOT 8 | `text-surface-dark`→`text-content-onGold` | 선택 필터칩(reports 3·inquiries 1·board-reports 1·employer-applications 1·users RoleChip 1)·users '더 보기' 버튼 1. **배치F FAQ/Notification 탭 정합** — standalone 셀렉티드 칩/항상-골드 버튼은 onGold(stateful submit Button은 M deferred 유지). 5파일 replace_all
 - [L] P2 룰14 이모지 1 | employer-applications:136 '⏰ 24h 경과'→'24h 경과'(bg-error-50+text-error 긴급신호 충분, 배치C 게시판 🔥🕒 제거 정합)
 - [L] 검증 | quality exit0(tsc0·lint0·format clean — 5파일 prettier 재배치) / 단독 jest 없음(프레젠테이션)
+- [L2] **인라인 정독 리뷰**(워크플로 미사용 — D~L 선례). 관리자2 상세 5화면(reports·board-reports·inquiries·users·employer-applications [id], ~1632줄) 직독 + tailwind.config 토큰값/룰 대조. 확정 P2 36건 수정(`(미커밋)`). 5화면 모두 액션(처리/답변/승인·거부/역할변경) 버튼 보유하나 **Button 컴포넌트가 문자열 자식으로 라벨 소유**(reports:'신고 처리하기'·board-reports:'해결/기각'·employer-applications:'승인/거부'·users:'역할 변경')라 surface-dark 라벨 위반 0 — 배치H~K hand-rolled/Pressable 골드버튼과 달리 상세화면은 공용 Button 정합. 위반은 라이트AA에 집중
+- [L2] P2 라이트 AA 35 | `text-secondary-500 dark:text-secondary-400`(흰 2.86:1)→`text-content-secondary`(라이트 #606068 ~6.5:1, CSS var 다크 자동) | reports 8(신고자유형·관련공고/근무날짜/첨부 라벨·처리이력 3·처리폼 옵션설명)·board-reports 5(신고자/대상작성자/접수시각·댓글작성자·처리시각)·inquiries 4(에러문구·이메일·카테고리·답변자)·users 5(InfoRow라벨·로딩·역할관리 안내/설명·계정관리 안내)·employer-applications 13(신청/처리/거부 시각·본인인증/프로필 라벨·약관스냅샷 4·하단 처리시각). 각 파일 replace_all(전부 정적 라벨, 비활성/조건부 분기 없음). reports:131은 `text-content-muted dark:text-secondary-400`로 다른 fragment라 미접촉(M/Z dark중복)
+- [L2] P2 충돌 이중 dark bg 1 | inquiries:111 문의내용 박스 `rounded-lg bg-surface-page dark:bg-surface p-4 dark:bg-surface/50`(dark:bg-surface 2회 선언, NativeWind 결과 불확정)→`dark:bg-surface` 1개. 배치E/F/K 선례 동일
+- [L2] 검증 | quality exit0(tsc0·lint0·format0 — 4파일 prettier 재배치, board-reports는 무변동) / 단독 jest 없음(프레젠테이션). **배치 L 완전 종료(목록 L + 상세 L2)**
 
 ## P3 백로그 (기록만, 구현 안 함)
 
@@ -200,12 +204,19 @@
 - [L→M] users:135 BubbleScoreBadge 사용처 | [[배치E→M BubbleScoreBadge 미정의 다크티어]] 동일 컴포넌트 — M 공용 검증
 - [L→M] admin2 검색 placeholder SECONDARY_PALETTE[400](reports 155·board-reports 212·users 277) + inquiries ActivityIndicator PRIMARY_COLORS[300] 골드 스피너 | 전역 placeholder·Loading 색 M
 - [L→M] users:104 UserCard 인라인 boxShadow(룰14 그림자) + reports FilterIcon raw `'#D4AF37'`(토큰 아닌 리터럴이나 골드값 정확) | 경미, M
+- [L2→M] admin2 상세 raw bg-white | reports/[id] 4섹션(ReportInfo/Content/ReviewHistory/ReviewForm `bg-white dark:bg-surface`)·users/[id] 4(ProfileHeader:206·BasicInfo:245·RoleMgmt:280·AccountActions:332 `bg-white dark:bg-surface`) | bg-white→surface-card employer+admin 통합 스윕 M (board-reports/inquiries/employer-applications는 공용 Card 사용=무위반)
+- [L2→M] **미정의 팔레트 티어(배치L2)** | employer-applications STATUS_CLASSNAMES `dark:text-success-300`·`dark:bg-warning-900/30`·`dark:text-warning-300`·`dark:bg-success-900/30`(success/warning 300/900 미정의) + 본인인증/거부 배지 `dark:bg-error-900/30`·`dark:text-error-300`·`dark:bg-success-900/20`·`dark:bg-error-900/20` / inquiries:136 답변박스 `dark:bg-success-900/20` / users 비활성·인증 배지 `dark:bg-error-900/30`·`dark:bg-success-900/30`·역할옵션 `dark:bg-primary-900/20` | 배치D~L 동일 → M 팔레트 티어 추가 or 클래스 교체 일괄(다크 시각 영향)
+- [L2→M] admin2 상세 text-[10px] 섹션 헤더 raw 임의값 | reports/[id] 3(166/230/301)·board-reports/[id] 4(127/136/148/159)·inquiries/[id] 1(80)·users/[id] 3(246/281/333)·employer-applications/[id] 1(362) `text-[10px] uppercase tracking-wider` | `text-micro` 토큰 교체(배치A jobs/[id]·배치C BoardImageGrid 선례) — admin 전반 관행이라 M/Z 일괄
+- [L2→M] admin2 상세 Loading 스피너 골드/raw | inquiries:52 ActivityIndicator `PRIMARY_COLORS[300]`(골드 라이트 ~2.1:1, 자매 users는 getLoadingColor 사용=정답)·users:348 토글버튼 스피너 raw `'#DC2626'`/`'#22C55E'`(STATUS_COLORS 토큰 미사용, 단 error-50/success-50 연한 bg 위라 대비 OK) | getLoadingColor 단일소스·STATUS_COLORS 정합 M
+- [L2→P3] text-content-placeholder 오용 | reports:150 생성시각·inquiries:102/129 시각·employer-applications:208 ID — 타임스탬프/ID에 placeholder 토큰(최저강조) 사용. 배치A JobDetail 통계 동일 오용 P3 | content-muted 상향 검토(경미)
+- [L2→M/Z] 시맨틱 토큰 위 dark: 중복(배치L2) | reports `text-content-primary dark:text-off-white`·`text-content-muted dark:text-secondary-400`(131) / inquiries `dark:text-secondary-100`(83/103/121) / users·employer-applications `dark:text-off-white` 다수 | 배치D~L 동일 일괄 정책 M/Z
 
 ## 회차 메모
 
 > 다음 회차에 넘길 주의사항·미완 항목
 
-- 다음 배치: **L2 (관리자 2 상세)** — `(admin)/reports/[id]` `board-reports/[id]` `inquiries/[id]` `users/[id]` `employer-applications/[id]` (5 상세화면). 이후 M(공용 컴포넌트)→Z(최종 패스). 잔여 error.message·미정의 팔레트·Button라벨·bg-white·다색카테고리는 Z/M/P3
+- 다음 배치: **M (공용 컴포넌트 + 토큰 정합)** — `src/components/` 버튼·카드·모달·EmptyState·Skeleton·배지·토스트 + 토큰 정합. 이후 Z(최종 패스)로 루프 종료. **M은 배치 A~L2 전반에서 누적된 M-deferred 항목 집결처** — 1순위=미정의 팔레트 티어 추가(warning 200/300/800/900·success 200/800/900·info *·danger 전무 — tailwind.config 티어 추가가 근본, 다크 시각 깨짐 광범위), 2순위=raw bg-white→surface-card 전역 스윕(employer I·J + admin K·L·L2 누적), 3순위=Button-child `text-surface-dark` 라벨→Button 색소유 / hand-rolled 제출버튼(profile·change-password)→Button 교체(시각 QA 필요), 4순위=전역 placeholder(SECONDARY_PALETTE[400] 관행 vs getPlaceholderColor)·Loading 스피너 색·BubbleScoreBadge 미정의 다크티어·Card shadow·active:opacity 룰21·autoFocus 룰20 가드·통화 이모지 💖/💎·text-[10px]→text-micro. M은 공용 컴포넌트 수정이라 **사용처 전수 grep + 시각 QA(웹 dev 라이트/다크 스크린샷)** 권장 — 컨텍스트 크면 하위 배치(M1 팔레트·M2 bg-white·M3 Button·M4 잔여)로 분할
+- 배치 L2 교훈: 관리자2 **상세** 5화면은 목록(L)과 달리 액션 버튼이 **공용 Button(문자열 자식)** 정합이라 골드위onGold/surface-dark 라벨 위반 0 — 위반이 라이트AA(35)에 집중되고 충돌 이중darkbg 1건만 추가. **배치 A~L2 전 배치 공통 결론: 라이트AA `text-secondary-500 dark:text-secondary-400`→`text-content-secondary`가 단일 최다 반복 패턴**(누적 100+ 건). Z 패스에서 잔여 grep 가치. raw bg-white는 reports/[id]·users/[id]에만(공용 Card 미사용 화면) → M 스윕 대상 확정. **배치 L(목록)+L2(상세) 종료 = 관리자 영역 전체(K·L·L2) 완료**. 남은 건 M(공용)·Z(횡단)뿐
 - 배치 L 교훈: 관리자2 목록 5화면도 동일 3패턴(라이트AA 12·골드칩 onGold 8·이모지 1). **standalone 셀렉티드 필터칩/항상-골드 버튼의 text-surface-dark는 onGold로 FIX**(배치F 탭 정합 — stateful submit Button만 M deferred로 구분). 누적: error.message Z 대상 변동 없음(admin은 EmptyState/ErrorState 사용)·raw bg-white는 employer+admin 광범위→M 통합 스윕 1순위. **L row를 L(목록)+L2(상세)로 분리** — `/*` 스코프에 [id] 상세 포함이라 누락 방지. L2 상세화면들은 액션(승인/거부/답변) 버튼 많아 Button-child 라벨·모달 위반 예상
 - 배치 K 교훈: 관리자 화면은 구버전이라 라이트AA 위반 대량(24) — text-secondary-500 지배. **신규 발견**: ①admin 대시보드/통계가 raw Tailwind 다색(rose/cyan/emerald/orange) 카테고리 코딩(룰5 위반이나 기능성, P3 디자인결정) ②골드 버튼에 흰 아이콘+dark 라벨 혼재(아이콘만 #fff 누락) ③#B8962E 다크골드+흰글자 선택탭 AA미달. raw bg-white admin 전반 → M employer+admin 통합 스윕 가치 큼. 배치 L도 유사 구버전 admin 예상(reports/users/inquiries 등 ~1350줄)
 - 배치 J 교훈: 워크스페이스는 PR #3로 비교적 최근 작성된 고품질 화면군 — content-secondary·EmptyState/ErrorState·hitSlop·min-h-44 정합으로 라이트AA 위반이 처음으로 0. 발견 핵심 = **미정의 색 클래스 `text-danger-500`**(danger 팔레트 아예 없음 → 무스타일). Z 패스 grep 후보 추가: 미정의 *색* 클래스(`text-danger-*` 외 오타성). raw bg-white는 employer 전 영역(I·J) 누적 → M employer 일괄 스윕 가치 큼. **관리자 영역(K·L)은 구버전 화면 많아 위반 더 많을 것으로 예상**
