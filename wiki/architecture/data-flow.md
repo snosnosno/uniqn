@@ -1,6 +1,6 @@
 ---
 area: architecture
-updated: 2026-06-18
+updated: 2026-06-19
 status: current
 sources:
   - CLAUDE.md

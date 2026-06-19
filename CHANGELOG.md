@@ -5,15 +5,18 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.0.0/)를 기반으로 하며,
 이 프로젝트는 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 준수합니다.
 
-## [Unreleased] - 2026-05-29
+## [Unreleased] - 2026-06-19
 
 ### Added
+- LLM Wiki 지식 합성 레이어 부트스트랩 (PR #176): `wiki/`(architecture·decisions·domain·sources) + `/ingest`·`/query`·`/lint` 운영 + staleness 자동 감지(memory 전용 인용은 UNVERIFIABLE 표기)
+- 전체 워크플로우 UX 감사 후속 9결함 수정 (PR #175): 가입 빈 비밀번호 가드, 지원자 일괄확정 배선, 수동 출퇴근 타임스탬프→정산 차단 해소, 정산 CSV export 등
 - 공고 자동마감(Approach B): `posting_status` enum에 `capacity_full` 추가 (M1). 정원 도달 시 자동 마감, 빈자리 발생 시 자동 복귀 대기 상태
 - `fn_update_job_posting_stats` 트리거에 인원마감 자동 전이 추가 (M2): `active`↔`capacity_full` (closed/cancelled/draft 불변)
 - 공고 카드/배지에 `capacity_full` "정원 마감" 회색 라벨 + 지원 버튼 비활성 (T7)
 - pgTAP `capacity_full_transition.test.sql` (전이 5시나리오) + e2e `posting-capacity-recovery.spec.ts` (T5/T6)
 
 ### Fixed
+- db-tests pgTAP RLS GRANT 정합 (PR #179): Supabase CLI `version:latest` 드리프트로 소실된 테이블 GRANT를 fixture에 명시(함수 GRANT 제외=wallet 하드닝 회귀 방지) + `supabase/setup-cli` 버전 pin 2.107.0 (PR #180)으로 드리프트 회귀 예방
 - `cancel_application_atomically` reopen 가드 강화 (M3): `closed_reason IN ('expired','expired_by_work_date')` 공고는 취소 후에도 `closed` 유지(cron 만료 의도 보존), `capacity_full`은 `active`로 자동 재노출. manual closed는 기존대로 재오픈(PR #153 정합)
 - `cancel_application_expired_guard` pgTAP 재활성화 (SP3 트리거 정합 위해 fixture `filled_positions` 1→0 보정)
 - (/review P0) `jobPosting.schema.ts` read/filter Zod enum에 `capacity_full` 추가 — 누락 시 M2 전이 공고가 `parseJobPostingDocument` safeParse 실패로 모든 read 경로에서 증발(PR #146 패턴 재발 차단)
