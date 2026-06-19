@@ -212,7 +212,7 @@ const CalendarDayCell = memo(function CalendarDayCell({
       return 'text-secondary-300 dark:text-secondary-600';
     }
     if (day.isSelected) {
-      return 'text-surface-dark font-semibold';
+      return 'text-content-onGold font-semibold';
     }
     if (!day.isCurrentMonth) {
       return 'text-secondary-300 dark:text-secondary-600';

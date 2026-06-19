@@ -24,6 +24,7 @@ import { Card, Loading, GenderSegment, type GenderValue } from '@/components/ui'
 import { ProfileImagePicker } from '@/components/profile';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
+import { useThemeStore } from '@/stores/themeStore';
 import { useToastStore } from '@/stores/toastStore';
 import { updateUserProfile, checkNicknameExists } from '@/services';
 import { updateProfileSchema, type UpdateProfileData } from '@/schemas/user.schema';
@@ -60,6 +61,7 @@ type NicknameStatus = 'idle' | 'checking' | 'available' | 'taken';
 function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUser | null }) {
   const setProfile = useAuthStore((state) => state.setProfile);
   const addToast = useToastStore((state) => state.addToast);
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
   const [isSaving, setIsSaving] = useState(false);
   const [nicknameStatus, setNicknameStatus] = useState<NicknameStatus>('idle');
   const lastCheckedNickname = useRef(profile.nickname ?? '');
@@ -244,7 +246,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
 
           {/* 기본 정보 (이름·생년월일·휴대폰은 본인인증 결과로 수정 불가, 성별은 본인인증 누락 시 최초 1회 입력 가능) */}
           <Card className="mb-4">
-            <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-3">
+            <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-3">
               기본 정보
             </Text>
 
@@ -323,7 +325,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
 
           {/* 추가 정보 */}
           <Card className="mb-4">
-            <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-3">
+            <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-3">
               추가 정보
             </Text>
 
@@ -524,9 +526,9 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
             }`}
           >
             {isSaving ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color={isDarkMode ? '#FFFFFF' : '#09090B'} />
             ) : (
-              <Text className="text-center text-base font-sans-semibold text-surface-dark">
+              <Text className="text-center text-base font-sans-semibold text-content-onGold">
                 저장
               </Text>
             )}

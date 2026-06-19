@@ -124,7 +124,7 @@ export function WeeklyStaffWidget() {
           accessibilityLabel="이번 주 스태프 현황 전체 보기"
           hitSlop={8}
         >
-          <Text className="text-primary-500 text-[10px] font-sans-bold">전체 →</Text>
+          <Text className="text-primary-500 text-micro font-sans-bold">전체 →</Text>
         </Pressable>
       }
     >

@@ -44,7 +44,7 @@ export const RoleSalaryInput = memo(function RoleSalaryInput({
       className={`mb-3 p-3 border rounded-lg ${
         isReadOnly
           ? 'bg-secondary-50 dark:bg-surface/50 border-secondary-100 dark:border-surface-overlay/50'
-          : 'bg-white dark:bg-surface border-secondary-200 dark:border-surface-overlay'
+          : 'bg-surface-card border-secondary-200 dark:border-surface-overlay'
       }`}
     >
       {/* 역할명 + 인원 */}
@@ -79,7 +79,7 @@ export const RoleSalaryInput = memo(function RoleSalaryInput({
               <Text
                 className={`text-center text-xs font-sans-medium ${
                   isSelected
-                    ? 'text-surface-dark'
+                    ? 'text-content-onGold'
                     : isReadOnly
                       ? 'text-secondary-400 dark:text-secondary-500'
                       : 'text-secondary-600 dark:text-secondary-300'

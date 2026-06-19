@@ -179,7 +179,7 @@ export function LoadingOverlay({
         style={[{ backgroundColor: `rgba(0, 0, 0, ${opacity})` }, containerAnimatedStyle]}
       >
         <Animated.View
-          className="bg-white dark:bg-surface rounded-lg px-8 py-6 items-center shadow-xl min-w-[160px]"
+          className="bg-surface-card rounded-lg px-8 py-6 items-center shadow-xl min-w-[160px]"
           style={contentAnimatedStyle}
         >
           {/* 진행률 표시 또는 스피너 */}

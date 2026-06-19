@@ -178,7 +178,7 @@ export const SettlementCard = React.memo(function SettlementCard({
               className="flex-1 flex-row items-center justify-center py-2.5 rounded-lg bg-primary-500 active:opacity-70"
             >
               <BanknotesIcon size={16} color="#fff" />
-              <Text className="ml-1 text-sm font-sans-medium text-surface-dark">정산하기</Text>
+              <Text className="ml-1 text-sm font-sans-medium text-content-onGold">정산하기</Text>
             </Pressable>
           )}
         </View>

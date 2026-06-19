@@ -184,7 +184,7 @@ export function FormSelect<T = string>({
         className={`
           flex-row items-center justify-between
           px-4 py-3 rounded-lg border
-          bg-white dark:bg-surface
+          bg-surface-card
           ${getBorderStyle()}
           ${disabled ? 'opacity-50' : 'active:bg-secondary-50 dark:active:bg-secondary-700'}
         `}

@@ -143,8 +143,8 @@ function WebModal({
 
   const modalClassName =
     position === 'center'
-      ? `bg-white dark:bg-surface rounded-lg overflow-hidden ${MODAL_SIZES[size]}`
-      : 'bg-white dark:bg-surface rounded-t-3xl w-full pb-8';
+      ? `bg-surface-card rounded-lg overflow-hidden ${MODAL_SIZES[size]}`
+      : 'bg-surface-card rounded-t-3xl w-full pb-8';
 
   // 모달 최대 높이 스타일 (숫자값으로 계산)
   const modalMaxHeightStyle = {
@@ -233,9 +233,7 @@ function WebModal({
 
             {/* Footer (sticky) */}
             {footer && (
-              <View className="px-5 py-3 border-t border-divider bg-white dark:bg-surface">
-                {footer}
-              </View>
+              <View className="px-5 py-3 border-t border-divider bg-surface-card">{footer}</View>
             )}
           </View>
         </View>
@@ -360,8 +358,8 @@ function NativeModal({
 
   const modalClassName =
     position === 'center'
-      ? `bg-white dark:bg-surface rounded-lg overflow-hidden ${MODAL_SIZES[size]}`
-      : 'bg-white dark:bg-surface rounded-t-3xl w-full pb-8';
+      ? `bg-surface-card rounded-lg overflow-hidden ${MODAL_SIZES[size]}`
+      : 'bg-surface-card rounded-t-3xl w-full pb-8';
 
   // 모달 최대 높이 스타일 (숫자값으로 계산)
   const modalMaxHeightStyle = {
@@ -440,7 +438,7 @@ function NativeModal({
 
                 {/* Footer (sticky) */}
                 {footer && (
-                  <View className="px-5 py-3 border-t border-divider bg-white dark:bg-surface">
+                  <View className="px-5 py-3 border-t border-divider bg-surface-card">
                     {footer}
                   </View>
                 )}
@@ -493,7 +491,7 @@ export function AlertModal({
         className="bg-primary-600 py-3 rounded-md"
         accessibilityRole="button"
       >
-        <Text className="text-surface-dark text-center font-sans-semibold">{confirmText}</Text>
+        <Text className="text-content-onGold text-center font-sans-semibold">{confirmText}</Text>
       </Pressable>
     </Modal>
   );
@@ -552,7 +550,7 @@ export function ConfirmModal({
           testID={confirmTestID}
         >
           <Text
-            className={`text-center font-sans-semibold ${isDestructive ? 'text-white' : 'text-surface-dark'}`}
+            className={`text-center font-sans-semibold ${isDestructive ? 'text-white' : 'text-content-onGold'}`}
           >
             {confirmText}
           </Text>

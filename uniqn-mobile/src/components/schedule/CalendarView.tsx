@@ -238,7 +238,7 @@ export function CalendarView({
   const currentMonthString = `${currentMonth.year}-${String(currentMonth.month).padStart(2, '0')}-01`;
 
   return (
-    <View className="mx-4 overflow-hidden rounded-md bg-white dark:bg-surface">
+    <View className="mx-4 overflow-hidden rounded-md bg-surface-card">
       <Calendar
         key={`${currentMonthString}-${mode}`}
         current={currentMonthString}

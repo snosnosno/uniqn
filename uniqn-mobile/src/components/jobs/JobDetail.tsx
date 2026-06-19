@@ -29,7 +29,7 @@ interface JobDetailProps {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+    <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
       {children}
     </Text>
   );
@@ -48,7 +48,7 @@ function InfoRow({
     <View className="flex-row items-start border-b border-divider py-3">
       <View className="mr-3 mt-0.5">{icon}</View>
       <View className="flex-1">
-        <Text className="mb-1 text-[10px] uppercase tracking-wider text-content-muted font-sans-bold">
+        <Text className="mb-1 text-micro uppercase tracking-wider text-content-muted font-sans-bold">
           {label}
         </Text>
         {typeof value === 'string' ? (
@@ -97,7 +97,7 @@ export function JobDetail({ job }: JobDetailProps) {
   const postingTypeLabel = detail.postingType ? POSTING_TYPE_LABELS[detail.postingType] : null;
 
   return (
-    <View className="bg-white dark:bg-surface">
+    <View className="bg-surface-card">
       {/* Hero */}
       <View className="bg-surface-page dark:bg-surface-elevated px-4 py-4 border-b border-divider">
         <View className="flex-row flex-wrap items-center gap-1 mb-2">
@@ -160,7 +160,7 @@ export function JobDetail({ job }: JobDetailProps) {
               <CalendarIcon size={18} color={SECONDARY_PALETTE[400]} />
             </View>
             <View className="flex-1">
-              <Text className="mb-2 text-[10px] uppercase tracking-wider text-content-muted font-sans-bold">
+              <Text className="mb-2 text-micro uppercase tracking-wider text-content-muted font-sans-bold">
                 근무 일정
               </Text>
               <PostingScheduleContent
@@ -206,7 +206,7 @@ export function JobDetail({ job }: JobDetailProps) {
                 <BanknotesIcon size={18} color={SECONDARY_PALETTE[400]} />
               </View>
               <View className="flex-1">
-                <Text className="mb-1 text-[10px] uppercase tracking-wider text-content-muted font-sans-bold">
+                <Text className="mb-1 text-micro uppercase tracking-wider text-content-muted font-sans-bold">
                   추가 수당
                 </Text>
                 <View className="flex-row flex-wrap">
@@ -237,7 +237,7 @@ export function JobDetail({ job }: JobDetailProps) {
       {detail.questions.length > 0 ? (
         <View className="px-4 py-3 border-b border-divider">
           <SectionLabel>사전질문 ({detail.questions.length}개)</SectionLabel>
-          <View className="rounded-lg bg-surface-page dark:bg-surface p-3 dark:bg-surface">
+          <View className="rounded-lg bg-surface-page dark:bg-surface p-3">
             {detail.questions.slice(0, 3).map((question, index) => (
               <View key={`${question.id || index}`} className="mb-2">
                 <Text className="text-sm text-content-secondary font-sans">
@@ -247,7 +247,7 @@ export function JobDetail({ job }: JobDetailProps) {
               </View>
             ))}
             {detail.questions.length > 3 ? (
-              <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+              <Text className="text-xs text-content-secondary font-sans">
                 외 {detail.questions.length - 3}개 질문
               </Text>
             ) : null}

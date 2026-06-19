@@ -60,9 +60,7 @@ export default function AdminInquiryDetailScreen() {
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="문의 상세" fallbackHref="/(admin)/inquiries" />
         <View className="flex-1 items-center justify-center">
-          <Text className="text-secondary-500 dark:text-secondary-400 font-sans">
-            문의를 찾을 수 없습니다
-          </Text>
+          <Text className="text-content-secondary font-sans">문의를 찾을 수 없습니다</Text>
         </View>
       </SafeAreaView>
     );
@@ -77,7 +75,7 @@ export default function AdminInquiryDetailScreen() {
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {/* 문의자 정보 */}
         <Card className="mb-4">
-          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+          <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             문의자 정보
           </Text>
           <View className="flex-row items-center justify-between">
@@ -85,9 +83,7 @@ export default function AdminInquiryDetailScreen() {
               <Text className="text-base font-sans-medium text-content-primary dark:text-secondary-100">
                 {inquiry.userName}
               </Text>
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-                {inquiry.userEmail}
-              </Text>
+              <Text className="text-sm text-content-secondary font-sans">{inquiry.userEmail}</Text>
             </View>
             <InquiryStatusBadge status={inquiry.status} />
           </View>
@@ -96,7 +92,7 @@ export default function AdminInquiryDetailScreen() {
         {/* 문의 내용 */}
         <Card className="mb-4">
           <View className="mb-3 flex-row items-center justify-between">
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+            <Text className="text-sm text-content-secondary font-sans">
               {INQUIRY_CATEGORY_LABELS[inquiry.category]}
             </Text>
             <Text className="text-sm text-content-placeholder font-sans">
@@ -108,7 +104,7 @@ export default function AdminInquiryDetailScreen() {
             {inquiry.subject}
           </Text>
 
-          <View className="rounded-lg bg-surface-page dark:bg-surface p-4 dark:bg-surface/50">
+          <View className="rounded-lg bg-surface-page dark:bg-surface p-4">
             <Text className="leading-6 text-content-secondary font-sans">{inquiry.message}</Text>
           </View>
 
@@ -132,7 +128,7 @@ export default function AdminInquiryDetailScreen() {
             </View>
 
             {inquiry.responderName && (
-              <Text className="mb-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+              <Text className="mb-2 text-sm text-content-secondary font-sans">
                 답변자: {inquiry.responderName}
               </Text>
             )}

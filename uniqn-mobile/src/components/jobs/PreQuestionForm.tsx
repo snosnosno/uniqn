@@ -76,7 +76,7 @@ const SelectOption = memo(function SelectOption({
               : 'border-secondary-300 dark:border-surface-overlay'
           }`}
         >
-          {isSelected && <View className="w-2 h-2 rounded-sm bg-white" />}
+          {isSelected && <View className="w-2 h-2 rounded-sm bg-content-onGold" />}
         </View>
         <Text
           className={`text-sm font-sans ${
@@ -142,7 +142,7 @@ const QuestionItem = memo(function QuestionItem({
           placeholder="답변을 입력해주세요"
           placeholderTextColor={SECONDARY_PALETTE[400]}
           accessibilityLabel={`${question.question} 답변 입력`}
-          className={`bg-white dark:bg-surface border ${borderColor} rounded-lg px-4 py-3 text-content-primary`}
+          className={`bg-surface-card border ${borderColor} rounded-lg px-4 py-3 text-content-primary`}
         />
       )}
 
@@ -157,7 +157,7 @@ const QuestionItem = memo(function QuestionItem({
           numberOfLines={4}
           textAlignVertical="top"
           accessibilityLabel={`${question.question} 답변 입력`}
-          className={`bg-white dark:bg-surface border ${borderColor} rounded-lg px-4 py-3 text-content-primary min-h-[100px]`}
+          className={`bg-surface-card border ${borderColor} rounded-lg px-4 py-3 text-content-primary min-h-[100px]`}
         />
       )}
 
@@ -237,21 +237,21 @@ export const PreQuestionForm = memo(function PreQuestionForm({
   ).length;
 
   return (
-    <View className="bg-white dark:bg-surface rounded-md p-4">
+    <View className="bg-surface-card rounded-md p-4">
       {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-4">
         <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white">
           사전질문
         </Text>
         {requiredCount > 0 && (
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+          <Text className="text-sm text-content-secondary font-sans">
             필수 {answeredRequiredCount}/{requiredCount}
           </Text>
         )}
       </View>
 
       {/* 안내 텍스트 */}
-      <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-4 font-sans">
+      <Text className="text-sm text-content-secondary mb-4 font-sans">
         구인자가 지원자에게 미리 물어보는 질문입니다.
         <Text className="text-error-500 font-sans"> *</Text> 표시는 필수 항목입니다.
       </Text>

@@ -135,9 +135,7 @@ export default function ReviewDetailScreen() {
       <StackHeader title="평가 상세" fallbackHref="/(app)/reviews/history" />
       <ScrollView className="flex-1" contentContainerClassName="gap-4 p-4">
         <View>
-          <Text className="mb-2 text-sm font-sans-semibold text-secondary-500 dark:text-secondary-400">
-            내 리뷰
-          </Text>
+          <Text className="mb-2 text-sm font-sans-semibold text-content-secondary">내 리뷰</Text>
           {data?.myReview ? (
             <ReviewCard
               review={data.myReview}
@@ -149,7 +147,7 @@ export default function ReviewDetailScreen() {
               onPress={openWriteScreen}
               className="items-center rounded-md border border-dashed border-secondary-300 bg-white py-8 active:opacity-80 dark:border-secondary-600 dark:bg-secondary-800"
             >
-              <Text className="text-sm text-primary-500 dark:text-primary-400 font-sans">
+              <Text className="text-sm text-primary-600 dark:text-primary-400 font-sans">
                 리뷰 작성하기
               </Text>
             </Pressable>
@@ -168,7 +166,7 @@ export default function ReviewDetailScreen() {
         </View>
 
         <View>
-          <Text className="mb-2 text-sm font-sans-semibold text-secondary-500 dark:text-secondary-400">
+          <Text className="mb-2 text-sm font-sans-semibold text-content-secondary">
             상대방 리뷰
           </Text>
           {data?.canViewOpponent && data?.opponentReview ? (

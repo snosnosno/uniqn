@@ -154,7 +154,7 @@ export function BoardCommentComposer({
         <Button
           className="flex-1"
           loading={isSubmitting}
-          icon={<PaperPlaneOutlineIcon size={18} color="#FFFFFF" />}
+          icon={<PaperPlaneOutlineIcon size={18} color="#09090B" />}
           onPress={onSubmit}
           disabled={isSubmitDisabled}
         >

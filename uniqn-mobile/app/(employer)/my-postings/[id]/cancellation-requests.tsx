@@ -37,9 +37,7 @@ function StatsHeader({ pendingCount }: StatsHeaderProps) {
           대기 {pendingCount}
         </Badge>
       </View>
-      <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-        검토 대기 요청만 표시됩니다
-      </Text>
+      <Text className="text-sm text-content-secondary font-sans">검토 대기 요청만 표시됩니다</Text>
     </View>
   );
 }
@@ -135,9 +133,7 @@ export default function CancellationRequestsScreen() {
         />
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
-          <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
-            공고 정보를 불러오는 중...
-          </Text>
+          <Text className="mt-4 text-content-secondary font-sans">공고 정보를 불러오는 중...</Text>
         </View>
       </SafeAreaView>
     );
@@ -183,11 +179,7 @@ export default function CancellationRequestsScreen() {
           fallbackHref={headerBackHref}
           rightAction={headerRightAction}
         />
-        <ErrorState
-          title="취소 요청을 불러올 수 없습니다"
-          message={error.message}
-          onRetry={handleRefresh}
-        />
+        <ErrorState title="취소 요청을 불러올 수 없습니다" error={error} onRetry={handleRefresh} />
       </SafeAreaView>
     );
   }
@@ -251,7 +243,7 @@ export default function CancellationRequestsScreen() {
             <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
               취소 요청 승인
             </Text>
-            <Text className="mb-6 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+            <Text className="mb-6 text-sm text-content-secondary font-sans">
               이 취소 요청을 승인하시겠습니까?
               {'\n'}
               승인 시 해당 스태프의 확정은 취소됩니다.

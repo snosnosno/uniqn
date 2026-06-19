@@ -122,6 +122,7 @@ export {
   SkeletonText,
   SkeletonCard,
   SkeletonListItem,
+  SkeletonBoardPostItem,
   SkeletonAvatar,
   SkeletonCircle,
   SkeletonButton,

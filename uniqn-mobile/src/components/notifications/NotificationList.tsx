@@ -128,7 +128,7 @@ export const NotificationList = memo(function NotificationList({
         </Text>
         {onRefresh ? (
           <Pressable onPress={onRefresh} className="mt-4 rounded-lg bg-primary-500 px-4 py-2">
-            <Text className="font-sans-medium text-surface-dark">다시 시도</Text>
+            <Text className="font-sans-medium text-content-onGold">다시 시도</Text>
           </Pressable>
         ) : null}
       </View>
@@ -147,7 +147,7 @@ export const NotificationList = memo(function NotificationList({
     <View className={`flex-1 bg-surface-page dark:bg-surface ${className}`}>
       {showHeader && notifications.length > 0 && (
         <View className="flex-row items-center justify-between border-b border-secondary-100 bg-surface-card px-4 py-2 dark:border-surface">
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+          <Text className="text-sm text-content-secondary font-sans">
             {unreadCount > 0 ? `읽지 않음 ${unreadCount}개` : '모든 알림을 확인했습니다'}
           </Text>
           {unreadCount > 0 && onMarkAllAsRead ? (
@@ -161,7 +161,7 @@ export const NotificationList = memo(function NotificationList({
       )}
 
       {showInlineError ? (
-        <View className="mx-4 mb-3 mt-4 rounded-md border border-amber-200 bg-warning-50 px-4 py-3 dark:border-amber-700 dark:bg-warning-900/20">
+        <View className="mx-4 mb-3 mt-4 rounded-md border border-warning-200 bg-warning-50 px-4 py-3 dark:border-warning-700 dark:bg-warning-900/20">
           <Text className="text-sm text-warning-800 dark:text-warning-200 font-sans">
             새 알림을 가져오지 못했어요. 보고 있던 목록은 그대로 유지했습니다.
           </Text>
@@ -227,9 +227,7 @@ export function SimpleNotificationList({
     return (
       <View className="items-center py-8">
         <BellSlashIcon size={32} color={SECONDARY_PALETTE[200]} />
-        <Text className="mt-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-          {emptyMessage}
-        </Text>
+        <Text className="mt-2 text-sm text-content-secondary font-sans">{emptyMessage}</Text>
       </View>
     );
   }

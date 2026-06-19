@@ -27,7 +27,6 @@ export default React.memo(function ReviewPromptBanner({
       accessibilityHint="탭하면 평가 목록으로 이동합니다"
     >
       <View className="flex-1 flex-row items-center gap-2">
-        <Text className="text-lg font-sans">{''}</Text>
         <View>
           <Text className="text-sm font-sans-semibold text-primary-700 dark:text-primary-300">
             작성할 평가가 {pendingCount}건 있어요

@@ -69,7 +69,7 @@ export const NotificationCategoryTabs = memo(function NotificationCategoryTabs({
   );
 
   return (
-    <View className={`bg-white dark:bg-surface ${className}`}>
+    <View className={`bg-surface-card dark:bg-surface ${className}`}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -99,7 +99,7 @@ export const NotificationCategoryTabs = memo(function NotificationCategoryTabs({
             >
               <Text
                 className={`text-sm font-sans-medium ${
-                  isSelected ? 'text-surface-dark' : 'text-secondary-700 dark:text-secondary-300'
+                  isSelected ? 'text-content-onGold' : 'text-secondary-700 dark:text-secondary-300'
                 }`}
               >
                 {option.label}
@@ -112,7 +112,7 @@ export const NotificationCategoryTabs = memo(function NotificationCategoryTabs({
                   }`}
                 >
                   <Text
-                    className={`text-xs font-sans-bold ${isSelected ? 'text-surface-dark' : 'text-white'}`}
+                    className={`text-xs font-sans-bold ${isSelected ? 'text-content-onGold' : 'text-white'}`}
                   >
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </Text>

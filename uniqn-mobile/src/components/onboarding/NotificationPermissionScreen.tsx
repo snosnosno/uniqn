@@ -115,7 +115,7 @@ export function NotificationPermissionScreen({
   const BadgeIcon = content.badgeIcon;
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-white dark:bg-surface-dark">
+    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-surface-card">
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ flexGrow: 1 }}
@@ -146,7 +146,7 @@ export function NotificationPermissionScreen({
                 <Animated.View
                   key={item.title}
                   entering={FadeInUp.delay(200 + index * 100).duration(500)}
-                  className="mb-3 flex-row items-center rounded-md bg-surface-page dark:bg-surface px-4 py-4 dark:bg-surface"
+                  className="mb-3 flex-row items-center rounded-md bg-surface-page dark:bg-surface px-4 py-4"
                 >
                   <View className="mr-4 h-12 w-12 items-center justify-center rounded-sm bg-primary-100 dark:bg-primary-900/30">
                     <ItemIcon size={24} color={PRIMARY_COLORS[500]} />
@@ -177,7 +177,7 @@ export function NotificationPermissionScreen({
                   : 'bg-primary-600 active:bg-primary-700 dark:bg-primary-700 dark:active:bg-primary-600'
               }`}
             >
-              <Text className="text-base font-sans-semibold text-surface-dark">
+              <Text className="text-base font-sans-semibold text-content-onGold">
                 {loading ? '처리 중...' : content.primaryLabel}
               </Text>
             </Pressable>

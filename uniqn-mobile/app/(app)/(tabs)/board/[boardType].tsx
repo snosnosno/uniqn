@@ -4,7 +4,7 @@ import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TabHeader } from '@/components/headers';
 import { EmptyState, ErrorState } from '@/components/ui';
-import { SkeletonListItem } from '@/components/ui/Skeleton';
+import { SkeletonBoardPostItem } from '@/components/ui/Skeleton';
 import { DocumentTextOutlineIcon } from '@/components/icons';
 import { BoardPostCard } from '@/components/board/BoardPostCard';
 import { BoardTabBar, type BoardTabKey } from '@/components/board/BoardTabBar';
@@ -54,11 +54,7 @@ export default function BoardListScreen() {
 
       {error ? (
         <View className="flex-1 items-center justify-center p-4">
-          <ErrorState
-            title="게시글 목록을 불러오지 못했어요"
-            message={error.message}
-            onRetry={refetch}
-          />
+          <ErrorState title="게시글 목록을 불러오지 못했어요" error={error} onRetry={refetch} />
         </View>
       ) : (
         <FlashList
@@ -79,11 +75,11 @@ export default function BoardListScreen() {
           ListEmptyComponent={
             isLoading ? (
               <View accessibilityRole="progressbar" accessibilityLabel="게시글 목록 로딩 중">
-                <SkeletonListItem />
-                <SkeletonListItem />
-                <SkeletonListItem />
-                <SkeletonListItem />
-                <SkeletonListItem />
+                <SkeletonBoardPostItem />
+                <SkeletonBoardPostItem />
+                <SkeletonBoardPostItem />
+                <SkeletonBoardPostItem />
+                <SkeletonBoardPostItem />
               </View>
             ) : (
               <EmptyState

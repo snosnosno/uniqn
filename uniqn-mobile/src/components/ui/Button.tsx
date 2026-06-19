@@ -55,12 +55,12 @@ const variantStyles: Record<ButtonVariant, string> = {
 };
 
 const variantTextStyles: Record<ButtonVariant, string> = {
-  primary: 'text-surface-dark font-bold',
+  primary: 'text-content-onGold font-bold',
   secondary: 'text-secondary-900 dark:text-secondary-100',
   outline: 'text-secondary-900 dark:text-secondary-100',
   ghost: 'text-secondary-900 dark:text-secondary-100',
   danger: 'text-white',
-  accent: 'text-surface-dark font-bold',
+  accent: 'text-content-onGold font-bold',
 };
 
 const sizeStyles: Record<ButtonSize, string> = {

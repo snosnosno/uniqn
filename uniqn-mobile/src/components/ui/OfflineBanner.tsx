@@ -108,7 +108,7 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = React.memo(
           accessibilityRole="alert"
           accessibilityLiveRegion="assertive"
         >
-          <View className="bg-white dark:bg-surface rounded-lg p-8 items-center shadow-2xl max-w-sm w-full">
+          <View className="bg-surface-card rounded-lg p-8 items-center shadow-2xl max-w-sm w-full">
             <View className="w-20 h-20 bg-error-50 dark:bg-error-900/30 rounded-sm items-center justify-center mb-4">
               <WifiOff size={40} color={STATUS_COLORS.error} />
             </View>

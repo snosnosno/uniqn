@@ -44,7 +44,7 @@ export function BalanceBadge({
       </View>
       {expiring && (
         <Text className="text-xs font-sans text-warning-600 dark:text-warning-400">
-          {expiring.totalAmount}💖 D-{expiring.daysUntilExpiry} 만료
+          하트 {expiring.totalAmount} D-{expiring.daysUntilExpiry} 만료
         </Text>
       )}
     </View>

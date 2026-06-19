@@ -77,7 +77,7 @@ export const DateGroupSelection = memo(function DateGroupSelection({
 
       {!isSingleDate && (
         <View className="mt-3 border-t border-secondary-200 pt-2 dark:border-surface-overlay">
-          <Text className="text-center text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+          <Text className="text-center text-xs text-content-secondary font-sans">
             선택하면 {dayCount}일 모두 같은 역할로 함께 지원됩니다.
           </Text>
         </View>

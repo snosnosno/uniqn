@@ -47,7 +47,7 @@ function AttachmentThumbnail({ attachment, index, onPress }: ThumbnailProps) {
       ) : (
         <View className="flex-1 items-center justify-center">
           {isLoading ? null : (
-            <Text className="text-[10px] text-content-placeholder font-sans">불러오기 실패</Text>
+            <Text className="text-micro text-content-placeholder font-sans">불러오기 실패</Text>
           )}
         </View>
       )}
@@ -117,7 +117,7 @@ export function InquiryAttachmentGallery({ attachments }: InquiryAttachmentGalle
 
   return (
     <View className="mt-4">
-      <Text className="mb-2 text-[10px] uppercase tracking-wider text-content-muted font-sans-bold">
+      <Text className="mb-2 text-micro uppercase tracking-wider text-content-muted font-sans-bold">
         첨부파일 ({attachments.length})
       </Text>
       <View className="flex-row flex-wrap gap-2">

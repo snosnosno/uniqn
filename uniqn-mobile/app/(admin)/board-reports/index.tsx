@@ -130,10 +130,10 @@ function BoardReportCard({ record }: { record: BoardAdminReportRecord }) {
           </Text>
 
           <View className="flex-row flex-wrap items-center gap-3">
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+            <Text className="text-xs text-content-secondary font-sans">
               신고자: {record.reporterName}
             </Text>
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+            <Text className="text-xs text-content-secondary font-sans">
               대상 작성자: {record.targetAuthorName ?? '확인 필요'}
             </Text>
           </View>
@@ -237,7 +237,9 @@ export default function AdminBoardReportsPage() {
               >
                 <Text
                   className={`text-sm font-sans-medium ${
-                    isSelected ? 'text-surface-dark' : 'text-secondary-700 dark:text-secondary-300'
+                    isSelected
+                      ? 'text-content-onGold'
+                      : 'text-secondary-700 dark:text-secondary-300'
                   }`}
                 >
                   {option.label}
@@ -253,7 +255,7 @@ export default function AdminBoardReportsPage() {
         contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} />}
       >
-        <Text className="mb-3 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+        <Text className="mb-3 text-sm text-content-secondary font-sans">
           총 {filteredReports.length}건
         </Text>
 

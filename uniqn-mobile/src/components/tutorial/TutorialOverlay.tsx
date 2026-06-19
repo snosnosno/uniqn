@@ -207,7 +207,7 @@ export function TutorialOverlay({ config, onComplete, timeoutMs }: TutorialOverl
   const showCountdown = remainingSec !== null && remainingSec <= COUNTDOWN_THRESHOLD_SEC;
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-surface-dark">
+    <SafeAreaView className="flex-1 bg-surface-card">
       {/* 헤더: 카운트다운 + 건너뛰기 */}
       <View className="flex-row justify-between items-center px-6 pt-2">
         {/* H4: 카운트다운 경고 */}
@@ -279,7 +279,7 @@ export function TutorialOverlay({ config, onComplete, timeoutMs }: TutorialOverl
           <Animated.Text
             key={isLastPage ? 'cta' : 'next'}
             entering={FadeIn.duration(200)}
-            className="text-surface-dark font-sans-semibold text-base"
+            className="text-content-onGold font-sans-semibold text-base"
           >
             {isLastPage ? ctaText : '다음'}
           </Animated.Text>

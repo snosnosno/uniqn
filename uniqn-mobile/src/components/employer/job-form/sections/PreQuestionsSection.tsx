@@ -313,7 +313,7 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
       </View>
 
       {/* 사전질문 사용 토글 */}
-      <View className="flex-row items-center justify-between p-3 bg-white dark:bg-surface rounded-lg border border-divider mb-3">
+      <View className="flex-row items-center justify-between p-3 bg-surface-card rounded-lg border border-divider mb-3">
         <View>
           <Text className="text-content-primary dark:text-off-white font-sans-medium">
             사전질문 사용

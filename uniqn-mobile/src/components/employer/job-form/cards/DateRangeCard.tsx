@@ -119,7 +119,7 @@ export function DateRangeCard({ group, index, canRemove, onUpdate, onRemove }: D
   const canAddTimeSlot = group.timeSlots.length < MAX_TIME_SLOTS_PER_DATE;
 
   return (
-    <View className="mb-4 bg-white dark:bg-surface rounded-md border border-divider overflow-hidden shadow-sm">
+    <View className="mb-4 bg-surface-card rounded-md border border-divider overflow-hidden shadow-sm">
       {/* 헤더 - 날짜 범위 표시 */}
       <View className="px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-b border-divider">
         <View className="flex-row items-center justify-between">

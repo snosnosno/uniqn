@@ -83,7 +83,7 @@ export function CancellationWidget() {
           accessibilityLabel={`취소 요청 ${pendingCount}건 검토하기`}
           hitSlop={8}
         >
-          <Text className="text-primary-500 text-[10px] font-sans-bold">검토 →</Text>
+          <Text className="text-primary-500 text-micro font-sans-bold">검토 →</Text>
         </Pressable>
       }
     >

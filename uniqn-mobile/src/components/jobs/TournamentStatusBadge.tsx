@@ -299,7 +299,7 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
                   ) : (
                     <>
                       <RefreshIcon size={18} color="#FFFFFF" />
-                      <Text className="ml-2 text-base font-sans-medium text-surface-dark">
+                      <Text className="ml-2 text-base font-sans-medium text-content-onGold">
                         재제출
                       </Text>
                     </>

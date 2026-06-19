@@ -12,7 +12,6 @@ interface PostingTypeChipsProps {
 interface ChipConfig {
   id: string;
   label: string;
-  icon: string;
   value: PostingType | null;
 }
 
@@ -24,10 +23,10 @@ interface ChipItemProps {
 }
 
 const CHIPS: ChipConfig[] = [
-  { id: 'urgent', label: '긴급', icon: '', value: 'urgent' },
-  { id: 'tournament', label: '대회', icon: '', value: 'tournament' },
-  { id: 'regular', label: '일반', icon: '', value: 'regular' },
-  { id: 'fixed', label: '고정', icon: '', value: 'fixed' },
+  { id: 'urgent', label: '긴급', value: 'urgent' },
+  { id: 'tournament', label: '대회', value: 'tournament' },
+  { id: 'regular', label: '일반', value: 'regular' },
+  { id: 'fixed', label: '고정', value: 'fixed' },
 ];
 
 function formatCount(count: number): string {
@@ -46,13 +45,13 @@ const ChipItem = memo(function ChipItem({ chip, count, isSelected, onPress }: Ch
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ selected: isSelected }}
-      className={`flex-row items-center rounded-sm px-3 py-2 ${
+      hitSlop={8}
+      className={`min-h-[40px] flex-row items-center rounded-sm px-3 py-2 ${
         isSelected ? 'bg-primary-600 dark:bg-primary-700' : 'bg-secondary-100 dark:bg-surface'
       }`}
     >
-      <Text className="mr-1.5 font-sans">{chip.icon}</Text>
       <Text
-        className={`font-sans-medium ${isSelected ? 'text-surface-dark' : 'text-secondary-700 dark:text-secondary-300'}`}
+        className={`font-sans-medium ${isSelected ? 'text-content-onGold' : 'text-secondary-700 dark:text-secondary-300'}`}
       >
         {chip.label}
       </Text>
@@ -64,7 +63,7 @@ const ChipItem = memo(function ChipItem({ chip, count, isSelected, onPress }: Ch
         >
           <Text
             className={`text-xs font-sans-semibold ${
-              isSelected ? 'text-surface-dark' : 'text-secondary-600 dark:text-secondary-300'
+              isSelected ? 'text-content-onGold' : 'text-secondary-600 dark:text-secondary-300'
             }`}
           >
             {formatCount(count)}
@@ -89,7 +88,7 @@ export const PostingTypeChips = memo(function PostingTypeChips({
   );
 
   return (
-    <View className={`bg-white dark:bg-surface ${className}`}>
+    <View className={`bg-surface-card ${className}`}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}

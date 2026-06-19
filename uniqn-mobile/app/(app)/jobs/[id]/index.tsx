@@ -89,7 +89,7 @@ export default function JobDetailScreen() {
       accessibilityLabel="공고 공유하기"
       accessibilityRole="button"
     >
-      <ShareIcon size={22} color={secondaryTextColor} />
+      <ShareIcon size={24} color={secondaryTextColor} />
     </Pressable>
   ) : null;
 
@@ -203,11 +203,11 @@ export default function JobDetailScreen() {
             </Button>
           ) : alreadyApplied ? (
             <View className="items-center">
-              <Text className="mb-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+              <Text className="mb-2 text-sm text-content-secondary font-sans">
                 {getApplicationStatusMessage(applicationStatus?.status)}
               </Text>
               {cancelUnavailableReason ? (
-                <Text className="mb-2 text-center text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+                <Text className="mb-2 text-center text-xs text-content-secondary font-sans">
                   {cancelUnavailableReason}
                 </Text>
               ) : null}
@@ -245,14 +245,14 @@ export default function JobDetailScreen() {
               <Button disabled fullWidth>
                 고정 공고는 앱에서 지원할 수 없어요
               </Button>
-              <Text className="mt-2 text-center text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+              <Text className="mt-2 text-center text-xs text-content-secondary font-sans">
                 상시 모집 공고예요. 위 연락처로 직접 문의해 주세요.
               </Text>
             </View>
           ) : (
             <View>
               {!sessionUserId ? (
-                <Text className="mb-2 text-center text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                <Text className="mb-2 text-center text-sm text-content-secondary font-sans">
                   로그인 후 지원할 수 있어요
                 </Text>
               ) : null}

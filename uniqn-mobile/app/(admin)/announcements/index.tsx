@@ -104,7 +104,7 @@ export default function AdminAnnouncementsPage() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          className="border-b border-divider bg-white dark:bg-surface"
+          className="border-b border-divider bg-surface-card"
           style={{ flexGrow: 0 }}
           contentContainerStyle={{ paddingHorizontal: 16 }}
         >
@@ -123,7 +123,7 @@ export default function AdminAnnouncementsPage() {
                 <View className="flex-row items-center">
                   <Text
                     className={`text-sm font-sans-medium ${
-                      isActive ? 'text-primary-600' : 'text-secondary-500 dark:text-secondary-400'
+                      isActive ? 'text-primary-600' : 'text-content-secondary'
                     }`}
                   >
                     {tab.label}
@@ -138,9 +138,7 @@ export default function AdminAnnouncementsPage() {
                     >
                       <Text
                         className={`text-xs font-sans ${
-                          isActive
-                            ? 'text-primary-600'
-                            : 'text-secondary-500 dark:text-secondary-400'
+                          isActive ? 'text-primary-600' : 'text-content-secondary'
                         }`}
                       >
                         {count}
@@ -157,9 +155,7 @@ export default function AdminAnnouncementsPage() {
         {isLoading && !data ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator size="large" />
-            <Text className="text-secondary-500 dark:text-secondary-400 mt-4 font-sans">
-              공지사항을 불러오는 중...
-            </Text>
+            <Text className="text-content-secondary mt-4 font-sans">공지사항을 불러오는 중...</Text>
           </View>
         ) : announcements.length === 0 ? (
           <View className="flex-1 items-center justify-center px-8">
@@ -167,11 +163,11 @@ export default function AdminAnnouncementsPage() {
             <Text className="text-lg font-sans-medium text-content-secondary mt-4">
               공지사항이 없습니다
             </Text>
-            <Text className="text-secondary-500 dark:text-secondary-400 text-center mt-2 font-sans">
+            <Text className="text-content-secondary text-center mt-2 font-sans">
               새 공지사항을 작성해보세요
             </Text>
             <Pressable onPress={handleCreate} className="mt-6 bg-primary-600 px-6 py-3 rounded-lg">
-              <Text className="text-surface-dark font-sans-medium">공지사항 작성</Text>
+              <Text className="text-content-onGold font-sans-medium">공지사항 작성</Text>
             </Pressable>
           </View>
         ) : (

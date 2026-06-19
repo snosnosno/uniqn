@@ -70,7 +70,7 @@ export const CalendarCell = memo(function CalendarCell({
       ? 'text-primary-500'
       : 'text-content-primary';
 
-  const badgeBase = 'rounded-sm px-1.5 py-0.5 mt-1 text-[10px] font-sans-medium';
+  const badgeBase = 'rounded-sm px-1.5 py-0.5 mt-1 text-micro font-sans-medium';
   const badgeColor = isSelected
     ? 'bg-[rgba(9,9,11,0.2)] text-content-onGold'
     : 'bg-primary-500/25 text-primary-500';

@@ -145,7 +145,7 @@ export default function AdminReportsPage() {
     <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-surface-page dark:bg-surface">
       <StackHeader title="신고 관리" fallbackHref="/(admin)" />
       {/* 검색바 */}
-      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-divider">
+      <View className="px-4 py-3 bg-surface-card border-b border-divider">
         <View className="flex-row items-center bg-surface-card dark:bg-surface rounded-lg px-3 py-2">
           <SearchIcon size={20} color={SECONDARY_PALETTE[400]} />
           <TextInput
@@ -169,7 +169,7 @@ export default function AdminReportsPage() {
       </View>
 
       {/* 상태 필터 */}
-      <View className="bg-white dark:bg-surface border-b border-divider">
+      <View className="bg-surface-card border-b border-divider">
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -189,7 +189,7 @@ export default function AdminReportsPage() {
               <Text
                 className={`text-sm font-sans-medium ${
                   filters.status === option.value
-                    ? 'text-surface-dark'
+                    ? 'text-content-onGold'
                     : 'text-secondary-700 dark:text-secondary-300'
                 }`}
               >
@@ -204,9 +204,7 @@ export default function AdminReportsPage() {
       {showFilters && (
         <View className="px-4 py-3 bg-surface-page dark:bg-surface border-b border-divider">
           {/* 심각도 필터 */}
-          <Text className="text-sm font-sans-medium text-secondary-500 dark:text-secondary-400 mb-2">
-            심각도
-          </Text>
+          <Text className="text-sm font-sans-medium text-content-secondary mb-2">심각도</Text>
           <View className="flex-row flex-wrap gap-2 mb-3">
             {SEVERITY_OPTIONS.map((option) => (
               <Pressable
@@ -221,7 +219,7 @@ export default function AdminReportsPage() {
                 <Text
                   className={`text-xs font-sans-medium ${
                     filters.severity === option.value
-                      ? 'text-surface-dark'
+                      ? 'text-content-onGold'
                       : 'text-secondary-600 dark:text-secondary-300'
                   }`}
                 >
@@ -232,9 +230,7 @@ export default function AdminReportsPage() {
           </View>
 
           {/* 신고자 유형 필터 */}
-          <Text className="text-sm font-sans-medium text-secondary-500 dark:text-secondary-400 mb-2">
-            신고자 유형
-          </Text>
+          <Text className="text-sm font-sans-medium text-content-secondary mb-2">신고자 유형</Text>
           <View className="flex-row flex-wrap gap-2">
             {[
               { value: 'all' as const, label: '전체' },
@@ -253,7 +249,7 @@ export default function AdminReportsPage() {
                 <Text
                   className={`text-xs font-sans-medium ${
                     filters.reporterType === option.value
-                      ? 'text-surface-dark'
+                      ? 'text-content-onGold'
                       : 'text-secondary-600 dark:text-secondary-300'
                   }`}
                 >
@@ -267,7 +263,7 @@ export default function AdminReportsPage() {
 
       {/* 결과 개수 */}
       <View className="px-4 py-2">
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+        <Text className="text-sm text-content-secondary font-sans">
           총 {filteredReports.length}건의 신고
         </Text>
       </View>
@@ -285,7 +281,7 @@ export default function AdminReportsPage() {
             <Text className="text-lg font-sans-medium text-content-primary dark:text-off-white mt-4">
               신고 없음
             </Text>
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-1 text-center font-sans">
+            <Text className="text-sm text-content-secondary mt-1 text-center font-sans">
               해당 조건의 신고가 없습니다.
             </Text>
           </View>

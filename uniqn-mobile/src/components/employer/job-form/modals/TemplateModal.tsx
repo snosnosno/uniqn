@@ -143,7 +143,7 @@ export function TemplateModal({
           {isSaving ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-surface-dark text-center font-sans-semibold">저장</Text>
+            <Text className="text-content-onGold text-center font-sans-semibold">저장</Text>
           )}
         </Pressable>
       </View>

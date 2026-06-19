@@ -106,7 +106,7 @@ export function DateRequirementCard({
   const canAddTimeSlot = requirement.timeSlots.length < MAX_TIME_SLOTS_PER_DATE;
 
   return (
-    <View className="p-4 bg-white dark:bg-surface rounded-lg border border-divider mb-3">
+    <View className="p-4 bg-surface-card rounded-lg border border-divider mb-3">
       {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-4">
         <Text className="text-base font-sans-semibold text-content-primary dark:text-secondary-100">

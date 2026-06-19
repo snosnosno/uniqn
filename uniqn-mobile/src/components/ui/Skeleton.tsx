@@ -184,7 +184,7 @@ export function SkeletonText({
 
 export function SkeletonCard({ className }: SkeletonCardProps) {
   return (
-    <View className={`bg-white dark:bg-surface rounded-md p-4 ${className || ''}`}>
+    <View className={`bg-surface-card rounded-md p-4 ${className || ''}`}>
       {/* Image placeholder */}
       <Skeleton width="100%" height={160} borderRadius={8} className="mb-4" />
 
@@ -221,6 +221,38 @@ export function SkeletonListItem() {
 
       {/* Action */}
       <Skeleton width={24} height={24} borderRadius={4} />
+    </View>
+  );
+}
+
+// ============================================================================
+// Board Post Item Skeleton (게시판 특화)
+// ============================================================================
+//
+// `BoardPostCard` 구조 정합용 — BoardPostCard는 아바타가 없고 좌측 스트라이프 +
+// (배지 + 제목) 행 + 메타 행으로 구성된다. 원형 아바타가 있는 `SkeletonListItem`
+// 대신 이 composer를 게시판 로딩 placeholder로 사용해 layout shift를 줄인다.
+// 내부 Skeleton은 accessible=false — 호출부의 progressbar 컨테이너가 announce 담당.
+
+export function SkeletonBoardPostItem() {
+  return (
+    <View className="border-b border-divider dark:border-surface-overlay">
+      <View className="pl-3 pr-1 py-2.5">
+        {/* Row 1: 배지 + 제목 */}
+        <View className="flex-row items-center gap-2 mb-2">
+          <Skeleton width={40} height={18} borderRadius={4} accessible={false} />
+          <View className="flex-1">
+            <Skeleton width="72%" height={16} borderRadius={4} accessible={false} />
+          </View>
+        </View>
+        {/* Row 2: 메타 (작성자·날짜·카운트) */}
+        <View className="flex-row items-center gap-x-2.5">
+          <Skeleton width={44} height={12} borderRadius={4} accessible={false} />
+          <Skeleton width={32} height={12} borderRadius={4} accessible={false} />
+          <Skeleton width={28} height={12} borderRadius={4} accessible={false} />
+          <Skeleton width={28} height={12} borderRadius={4} accessible={false} />
+        </View>
+      </View>
     </View>
   );
 }
@@ -283,7 +315,7 @@ export function SkeletonButton({ width = 120 }: SkeletonButtonProps) {
 
 export function SkeletonJobCard() {
   return (
-    <View className="bg-white dark:bg-surface rounded-md p-4 mb-3">
+    <View className="bg-surface-card rounded-md p-4 mb-3">
       {/* Header */}
       <View className="flex-row items-center mb-3">
         <Skeleton width={40} height={40} borderRadius={8} />
@@ -317,7 +349,7 @@ export function SkeletonJobCard() {
 
 export function SkeletonScheduleCard() {
   return (
-    <View className="bg-white dark:bg-surface rounded-md p-4 mb-3">
+    <View className="bg-surface-card rounded-md p-4 mb-3">
       {/* Date */}
       <View className="flex-row items-center mb-3">
         <Skeleton width={36} height={36} borderRadius={18} />
@@ -340,7 +372,7 @@ export function SkeletonScheduleCard() {
 
 export function SkeletonNotificationItem() {
   return (
-    <View className="flex-row items-start py-4 px-4 bg-white dark:bg-surface border-b border-secondary-100 dark:border-surface-overlay">
+    <View className="flex-row items-start py-4 px-4 bg-surface-card border-b border-secondary-100 dark:border-surface-overlay">
       {/* Icon */}
       <Skeleton width={40} height={40} borderRadius={20} style={{ marginRight: 12 }} />
 
@@ -363,7 +395,7 @@ export function SkeletonNotificationItem() {
 
 export function SkeletonApplicantCard() {
   return (
-    <View className="bg-white dark:bg-surface rounded-md p-4 mb-3">
+    <View className="bg-surface-card rounded-md p-4 mb-3">
       {/* Header */}
       <View className="flex-row items-center mb-4">
         <Skeleton width={56} height={56} borderRadius={28} />
@@ -421,7 +453,7 @@ export function SkeletonProfileHeader() {
 
 export function SkeletonStatsCard() {
   return (
-    <View className="bg-white dark:bg-surface rounded-md p-4">
+    <View className="bg-surface-card rounded-md p-4">
       {/* Title */}
       <Skeleton width="40%" height={16} className="mb-4" />
 
@@ -444,7 +476,7 @@ export function SkeletonStatsCard() {
 
 export function SkeletonSettlementRow() {
   return (
-    <View className="flex-row items-center py-3 px-4 bg-white dark:bg-surface border-b border-secondary-100 dark:border-surface-overlay">
+    <View className="flex-row items-center py-3 px-4 bg-surface-card border-b border-secondary-100 dark:border-surface-overlay">
       {/* Date */}
       <View className="w-20">
         <Skeleton width={60} height={14} className="mb-1" />

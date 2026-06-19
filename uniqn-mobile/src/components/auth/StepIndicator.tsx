@@ -69,7 +69,7 @@ export function StepIndicator({ currentStep, steps, showLabels = true }: StepInd
                     <Text
                       className={`text-sm font-sans-bold ${
                         isActive
-                          ? 'text-surface-dark'
+                          ? 'text-content-onGold'
                           : 'text-secondary-500 dark:text-secondary-400'
                       }`}
                     >

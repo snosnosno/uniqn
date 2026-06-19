@@ -222,7 +222,7 @@ export function JobPostingScrollForm({
         </View>
 
         {isTournament && (
-          <View className="mb-4 rounded-md border border-amber-200 bg-warning-50 p-4 dark:border-amber-700 dark:bg-warning-900/20">
+          <View className="mb-4 rounded-md border border-warning-200 bg-warning-50 p-4 dark:border-warning-700 dark:bg-warning-900/20">
             <Text className="mb-1 text-sm font-sans-medium text-warning-800 dark:text-warning-200">
               대회공고 안내
             </Text>
@@ -263,7 +263,7 @@ export function JobPostingScrollForm({
               accessibilityLabel={isTournament ? '승인 요청' : '공고 등록'}
               testID="job-posting-create-submit"
             >
-              <Text className="text-sm font-sans-semibold text-surface-dark">
+              <Text className="text-sm font-sans-semibold text-content-onGold">
                 {isSubmitting ? '등록 중...' : isTournament ? '승인 요청' : '공고 등록'}
               </Text>
             </Button>

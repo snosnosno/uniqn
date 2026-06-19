@@ -36,9 +36,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
       <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
         오류가 발생했습니다
       </Text>
-      <Text className="mb-6 text-center text-secondary-500 dark:text-secondary-400 font-sans">
-        {message}
-      </Text>
+      <Text className="mb-6 text-center text-content-secondary font-sans">{message}</Text>
       <Button onPress={onRetry} variant="outline">
         다시 시도
       </Button>
@@ -55,7 +53,7 @@ function AlreadyAppliedState({ isFixed }: { isFixed: boolean }) {
       <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
         이미 지원한 공고입니다
       </Text>
-      <Text className="mb-6 text-center text-secondary-500 dark:text-secondary-400 font-sans">
+      <Text className="mb-6 text-center text-content-secondary font-sans">
         공고 상세 화면에서 지원 상태를 확인하실 수 있어요.
       </Text>
       <View className="w-full max-w-xs gap-3">
@@ -80,7 +78,7 @@ function UnsupportedPostingState() {
       <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
         현재 지원할 수 없는 공고입니다
       </Text>
-      <Text className="mb-6 text-center text-secondary-500 dark:text-secondary-400 font-sans">
+      <Text className="mb-6 text-center text-content-secondary font-sans">
         이 공고는 현재 앱 내부 지원 범위에 포함되어 있지 않습니다.
       </Text>
       <Button onPress={() => router.back()} variant="outline">
@@ -272,7 +270,7 @@ export default function ApplyScreen() {
           <Text className="mb-2 text-center text-xl font-display text-content-primary dark:text-off-white">
             지원이 완료되었습니다
           </Text>
-          <Text className="mb-8 text-center text-secondary-500 dark:text-secondary-400 font-sans">
+          <Text className="mb-8 text-center text-content-secondary font-sans">
             공고 상세 화면에서 지원 상태를 확인하실 수 있어요.
           </Text>
           <View className="w-full max-w-xs gap-3">

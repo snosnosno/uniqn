@@ -43,7 +43,9 @@ function RoleChip({ label, isSelected, onPress }: RoleChipProps) {
   const selectedClass = isSelected
     ? 'bg-primary-600 dark:bg-primary-500'
     : 'bg-secondary-200 dark:bg-surface';
-  const textClass = isSelected ? 'text-surface-dark' : 'text-secondary-700 dark:text-secondary-300';
+  const textClass = isSelected
+    ? 'text-content-onGold'
+    : 'text-secondary-700 dark:text-secondary-300';
 
   return (
     <Pressable onPress={onPress} className={baseClass + ' ' + selectedClass}>
@@ -99,7 +101,7 @@ function UserCard({ user, onPress }: UserCardProps) {
   return (
     <Pressable
       onPress={onPress}
-      className="bg-white dark:bg-surface rounded-md mb-3 border border-divider active:opacity-80"
+      className="bg-surface-card rounded-md mb-3 border border-divider active:opacity-80"
       style={{
         boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)',
         elevation: 2,
@@ -136,9 +138,7 @@ function UserCard({ user, onPress }: UserCardProps) {
                 </View>
               )}
             </View>
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
-              {user.email}
-            </Text>
+            <Text className="text-sm text-content-secondary mb-1 font-sans">{user.email}</Text>
             <View className="flex-row items-center">
               <NumericText className="text-xs text-content-placeholder font-sans">
                 가입일: {formatDate(user.createdAt)}
@@ -237,7 +237,7 @@ export default function AdminUsersPage() {
         <StackHeader title="사용자 관리" fallbackHref="/(admin)" />
         <View className="flex-1 bg-surface-page dark:bg-surface items-center justify-center">
           <ActivityIndicator size="large" color={getLoadingColor(isDarkMode)} />
-          <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
+          <Text className="mt-4 text-content-secondary font-sans">
             사용자 목록을 불러오는 중...
           </Text>
         </View>
@@ -267,7 +267,7 @@ export default function AdminUsersPage() {
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="사용자 관리" fallbackHref="/(admin)" />
-      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-divider">
+      <View className="px-4 py-3 bg-surface-card border-b border-divider">
         <View className="flex-row items-center bg-surface-card dark:bg-surface rounded-lg px-3 py-2">
           <MagnifyingGlassIcon size={20} color={SECONDARY_PALETTE[400]} />
           <TextInput
@@ -282,7 +282,7 @@ export default function AdminUsersPage() {
         </View>
       </View>
 
-      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-divider">
+      <View className="px-4 py-3 bg-surface-card border-b border-divider">
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {ROLE_OPTIONS.map((option) => (
             <RoleChip
@@ -297,7 +297,7 @@ export default function AdminUsersPage() {
       </View>
 
       <View className="px-4 py-2">
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+        <Text className="text-sm text-content-secondary font-sans">
           총 {total.toLocaleString()}명의 사용자
         </Text>
       </View>
@@ -324,7 +324,7 @@ export default function AdminUsersPage() {
                 <ActivityIndicator color={getLoadingColor(isDarkMode)} />
               ) : hasNextPage ? (
                 <Pressable onPress={handleLoadMore} className="px-4 py-2 bg-primary-600 rounded-lg">
-                  <Text className="text-surface-dark font-sans-medium">더 보기</Text>
+                  <Text className="text-content-onGold font-sans-medium">더 보기</Text>
                 </Pressable>
               ) : (
                 <Text className="text-sm text-content-placeholder font-sans">

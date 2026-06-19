@@ -24,7 +24,7 @@ export interface LoadingProps {
   color?: string;
   message?: string;
   fullScreen?: boolean;
-  /** layout: Layout 파일용 전체화면 중앙 정렬 (bg-white dark:bg-surface-dark) */
+  /** layout: Layout 파일용 전체화면 중앙 정렬 (bg-surface-card) */
   variant?: 'default' | 'layout';
 }
 
@@ -58,11 +58,7 @@ export function Loading({
   }
 
   if (variant === 'layout') {
-    return (
-      <View className="flex-1 items-center justify-center bg-white dark:bg-surface-dark">
-        {content}
-      </View>
-    );
+    return <View className="flex-1 items-center justify-center bg-surface-card">{content}</View>;
   }
 
   return <View className="flex-1 items-center justify-center py-8">{content}</View>;

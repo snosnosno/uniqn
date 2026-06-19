@@ -45,7 +45,7 @@ export function PostHeader({
   return (
     <View className="pb-2">
       <View className="mb-3 flex-row flex-wrap items-center gap-2">
-        <Badge variant={getAuthorBadgeVariant(post.authorRole)} size="sm">
+        <Badge variant="secondary" size="sm">
           {BOARD_TYPE_LABELS[post.boardType]}
         </Badge>
         <Badge variant={getAuthorBadgeVariant(post.authorRole)} size="sm">
@@ -89,9 +89,7 @@ export function PostHeader({
           {postCreatedAtLabel ? (
             <>
               <View className="h-1 w-1 rounded-sm bg-secondary-300 dark:bg-secondary-600" />
-              <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-                {postCreatedAtLabel}
-              </Text>
+              <Text className="text-xs text-content-secondary font-sans">{postCreatedAtLabel}</Text>
             </>
           ) : null}
         </View>
@@ -106,17 +104,13 @@ export function PostHeader({
         />
 
         <View className="mt-5 flex-row flex-wrap items-center gap-x-2 gap-y-1">
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-            댓글 {post.commentCount}
-          </Text>
+          <Text className="text-xs text-content-secondary font-sans">댓글 {post.commentCount}</Text>
           <View className="h-1 w-1 rounded-sm bg-secondary-300 dark:bg-secondary-600" />
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-            조회 {post.viewCount}
-          </Text>
+          <Text className="text-xs text-content-secondary font-sans">조회 {post.viewCount}</Text>
           {postLastActivityLabel ? (
             <>
               <View className="h-1 w-1 rounded-sm bg-secondary-300 dark:bg-secondary-600" />
-              <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+              <Text className="text-xs text-content-secondary font-sans">
                 {postLastActivityLabel} 활동
               </Text>
             </>
@@ -128,7 +122,7 @@ export function PostHeader({
             <Button
               variant={data.myVote === 'like' ? 'primary' : 'outline'}
               size="sm"
-              icon={<HeartIcon size={16} color={data.myVote === 'like' ? '#FFFFFF' : '#16A34A'} />}
+              icon={<HeartIcon size={16} color={data.myVote === 'like' ? '#09090B' : '#16A34A'} />}
               onPress={() => onVote('like')}
               disabled={!canInteract || isVoteSubmitting}
             >

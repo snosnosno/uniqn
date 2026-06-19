@@ -70,7 +70,7 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
   return (
     <SheetModal visible={visible} onClose={onClose} title="스태프 프로필">
       <View>
-        <View className="items-center bg-surface-page dark:bg-surface py-4 dark:bg-surface">
+        <View className="items-center bg-surface-page dark:bg-surface py-4">
           {isProfileLoading ? (
             <View className="mb-2 h-16 w-16 items-center justify-center rounded-sm bg-secondary-200 dark:bg-surface">
               <ActivityIndicator size="small" color={SECONDARY_PALETTE[500]} />
@@ -123,7 +123,7 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
                 </Text>
                 {isScheduledOnly ? (
                   <View className="rounded bg-info-100 px-1.5 py-0.5 dark:bg-info-900/30">
-                    <Text className="text-[10px] text-info-700 dark:text-info-300 font-sans-semibold">
+                    <Text className="text-micro text-info-700 dark:text-info-300 font-sans-semibold">
                       예정
                     </Text>
                   </View>
@@ -157,7 +157,7 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
             <Text className="mb-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
               비고
             </Text>
-            <View className="rounded-lg bg-surface-page dark:bg-surface p-3 dark:bg-surface">
+            <View className="rounded-lg bg-surface-page dark:bg-surface p-3">
               <Text className="text-sm text-content-secondary font-sans">{staff.notes}</Text>
             </View>
           </View>

@@ -8,7 +8,7 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { AlertTriangleIcon } from '@/components/icons';
-import { isAppError, type AppError } from '@/errors';
+import { extractUserMessage, isAppError, type AppError } from '@/errors';
 import { Button } from './Button';
 
 // ============================================================================
@@ -44,8 +44,9 @@ export function ErrorState({
       return error.userMessage;
     }
 
+    // 일반 Error는 개발자 메시지(원시 error.message) 노출 금지 — 중앙 sanitize
     if (error instanceof Error) {
-      return error.message;
+      return extractUserMessage(error);
     }
 
     if (typeof error === 'string') {

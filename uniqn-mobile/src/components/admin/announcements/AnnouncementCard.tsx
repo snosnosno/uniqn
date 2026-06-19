@@ -53,7 +53,7 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${announcement.title} 공지사항 상세 보기`}
-      className="bg-white dark:bg-surface rounded-md border border-secondary-100 dark:border-surface-overlay active:opacity-80"
+      className="bg-surface-card rounded-md border border-secondary-100 dark:border-surface-overlay active:opacity-80"
     >
       <CardStripe tone={stripeTone}>
         <View className="pl-4 pr-4 py-4">

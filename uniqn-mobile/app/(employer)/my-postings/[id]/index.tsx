@@ -428,7 +428,7 @@ export default function JobPostingDetailScreen() {
               </>
             ) : null}
 
-            <View className="rounded-lg bg-surface-page dark:bg-surface px-3 pb-2 pt-3 dark:bg-surface">
+            <View className="rounded-lg bg-surface-page dark:bg-surface px-3 pb-2 pt-3">
               <View className="flex-row justify-around">
                 <View className="flex-1 items-center">
                   <Text className="text-xl font-display text-primary-600 dark:text-primary-400">

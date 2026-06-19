@@ -26,7 +26,7 @@ export function TabHeader({ activeTab, onTabChange, staffCount, settlementCount 
   const inactiveBadgeBg = isDarkMode ? SECONDARY_PALETTE[800] : SECONDARY_PALETTE[100];
 
   return (
-    <View className="flex-row bg-white dark:bg-surface border-b border-divider">
+    <View className="flex-row bg-surface-card border-b border-divider">
       <Pressable
         onPress={() => onTabChange('staff')}
         className="flex-1 flex-row items-center justify-center py-4"

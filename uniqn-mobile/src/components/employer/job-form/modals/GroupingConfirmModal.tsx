@@ -180,7 +180,9 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
             accessibilityRole="button"
             accessibilityLabel="확인"
           >
-            <Text className="text-center text-base font-sans-semibold text-surface-dark">확인</Text>
+            <Text className="text-center text-base font-sans-semibold text-content-onGold">
+              확인
+            </Text>
           </Pressable>
         </View>
       </View>

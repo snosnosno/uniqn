@@ -67,7 +67,7 @@ export default function BusinessInfoScreen() {
       <StackHeader title="사업자정보" fallbackHref="/(app)/settings" />
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         <Card className="mb-4">
-          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-4">
+          <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-4">
             사업자정보
           </Text>
 

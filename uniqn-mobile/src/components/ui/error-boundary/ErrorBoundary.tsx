@@ -133,7 +133,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       return fallback;
     }
 
-    const containerClass = fullScreen ? 'flex-1 bg-white dark:bg-surface-dark' : 'p-4';
+    const containerClass = fullScreen ? 'flex-1 bg-surface-card' : 'p-4';
 
     return (
       <View className={containerClass}>
@@ -181,7 +181,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               accessibilityRole="button"
               accessibilityLabel="다시 시도"
             >
-              <Text className="text-surface-dark font-sans-semibold">다시 시도</Text>
+              <Text className="text-content-onGold font-sans-semibold">다시 시도</Text>
             </Pressable>
 
             {fullScreen && (

@@ -76,7 +76,7 @@ export function WorkTimeSection({
         </Text>
         {isScheduledOnly ? (
           <View className="ml-2 rounded bg-info-100 px-1.5 py-0.5 dark:bg-info-900/30">
-            <Text className="text-[10px] text-info-700 dark:text-info-300 font-sans-semibold">
+            <Text className="text-micro text-info-700 dark:text-info-300 font-sans-semibold">
               예정
             </Text>
           </View>
@@ -108,7 +108,7 @@ export function WorkTimeSection({
                 </Text>
                 {isOvernight ? (
                   <View className="rounded bg-info-100 px-1.5 py-0.5 dark:bg-info-900/30">
-                    <Text className="text-[10px] text-info-700 dark:text-info-300 font-sans-semibold">
+                    <Text className="text-micro text-info-700 dark:text-info-300 font-sans-semibold">
                       익일
                     </Text>
                   </View>

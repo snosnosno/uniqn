@@ -74,7 +74,7 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
       layout={Layout.duration(200)}
       className={`
         border-b border-divider dark:border-surface-overlay
-        ${hasUnread ? 'bg-primary-50 dark:bg-primary-900/20' : 'bg-white dark:bg-surface-dark'}
+        ${hasUnread ? 'bg-primary-50 dark:bg-primary-900/20' : 'bg-surface-card'}
       `}
     >
       {/* 그룹 헤더 (항상 표시) */}
@@ -132,10 +132,7 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
             )}
 
             {/* 본문 (요약) */}
-            <Text
-              className="text-sm text-secondary-500 dark:text-secondary-400 mt-1 font-sans"
-              numberOfLines={1}
-            >
+            <Text className="text-sm text-content-secondary mt-1 font-sans" numberOfLines={1}>
               {group.groupBody}
             </Text>
           </View>

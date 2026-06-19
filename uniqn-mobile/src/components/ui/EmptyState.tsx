@@ -74,7 +74,7 @@ export function EmptyState({
       </Text>
 
       {description && (
-        <Text className="mb-6 text-center text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+        <Text className="mb-6 text-center text-sm text-content-secondary dark:text-secondary-400 font-sans">
           {description}
         </Text>
       )}

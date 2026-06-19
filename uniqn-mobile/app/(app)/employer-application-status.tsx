@@ -64,7 +64,7 @@ function StatusBadge({ status }: StatusBadgeProps) {
   };
 
   return (
-    <View className={`self-start rounded-full px-3 py-1 ${styleMap[status]}`}>
+    <View className={`self-start rounded-sm px-3 py-1 ${styleMap[status]}`}>
       <Text className={`text-sm font-sans-medium ${textMap[status]}`}>{labelMap[status]}</Text>
     </View>
   );
@@ -88,7 +88,7 @@ function NoApplicationScreen() {
             onPress={() => router.replace('/(app)/employer-register')}
             className="w-full"
           >
-            <Text className="font-sans-semibold text-surface-dark">구인자 신청하기</Text>
+            <Text className="font-sans-semibold text-content-onGold">구인자 신청하기</Text>
           </Button>
         </Card>
       </View>
@@ -169,7 +169,7 @@ function ApprovedScreen() {
           onPress={() => router.replace('/(app)/(tabs)/employer')}
           className="w-full"
         >
-          <Text className="font-sans-semibold text-surface-dark">공고 관리</Text>
+          <Text className="font-sans-semibold text-content-onGold">공고 관리</Text>
         </Button>
       </ScrollView>
     </SafeAreaView>
@@ -228,7 +228,7 @@ function RejectedScreen({
           onPress={() => router.replace('/(app)/employer-register')}
           className="mb-3 w-full"
         >
-          <Text className="font-sans-semibold text-surface-dark">재신청하기</Text>
+          <Text className="font-sans-semibold text-content-onGold">재신청하기</Text>
         </Button>
 
         <Text className="text-center text-xs text-content-muted dark:text-secondary-400 font-sans">

@@ -41,17 +41,16 @@ export function BoardTabBar({ activeTab, onTabPress }: BoardTabBarProps) {
             accessibilityRole="tab"
             accessibilityLabel={`${label} 탭`}
             accessibilityState={{ selected: isActive }}
-            className={`self-center rounded-xl px-3 py-1.5 ${
+            hitSlop={{ top: 8, bottom: 8 }}
+            className={`self-center rounded-xl px-3 py-2.5 ${
               isActive
-                ? 'bg-primary-500 dark:bg-primary-400'
-                : 'bg-secondary-100 dark:bg-surface-elevated'
+                ? 'bg-primary-500 active:bg-primary-600 dark:bg-primary-400 dark:active:bg-primary-600'
+                : 'bg-secondary-100 active:bg-secondary-200 dark:bg-surface-elevated dark:active:bg-surface-overlay'
             }`}
           >
             <Text
               className={`text-sm font-sans-semibold ${
-                isActive
-                  ? 'text-white dark:text-black'
-                  : 'text-content-muted dark:text-secondary-300'
+                isActive ? 'text-content-onGold' : 'text-content-secondary dark:text-secondary-300'
               }`}
             >
               {label}

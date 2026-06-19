@@ -23,7 +23,7 @@ import type { Application } from '@/types';
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+    <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
       {children}
     </Text>
   );
@@ -213,7 +213,7 @@ export function CancellationRequestForm({
                 wantsSubstitutePost ? 'bg-primary-500 border-primary-500' : 'border-divider'
               }`}
             >
-              {wantsSubstitutePost && <CheckIcon size={14} color="#FFFFFF" />}
+              {wantsSubstitutePost && <CheckIcon size={14} color="#09090B" />}
             </View>
             <View className="flex-1">
               <Text className="text-sm font-sans-semibold text-content-primary dark:text-off-white">

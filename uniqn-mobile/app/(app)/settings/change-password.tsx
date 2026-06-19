@@ -24,6 +24,7 @@ import { Card } from '@/components/ui';
 import { PasswordStrength } from '@/components/settings';
 import { EyeIcon, EyeSlashIcon } from '@/components/icons';
 import { useToastStore } from '@/stores/toastStore';
+import { useThemeStore } from '@/stores/themeStore';
 import { changePassword } from '@/services';
 import { extractUserMessage } from '@/errors';
 import { passwordChangeSchema, type PasswordChangeData } from '@/schemas/user.schema';
@@ -31,6 +32,7 @@ import { logger } from '@/utils/logger';
 
 export default function ChangePasswordScreen() {
   const addToast = useToastStore((state) => state.addToast);
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -129,9 +131,9 @@ export default function ChangePasswordScreen() {
                   accessibilityLabel={showCurrentPassword ? '비밀번호 숨기기' : '비밀번호 표시'}
                 >
                   {showCurrentPassword ? (
-                    <EyeSlashIcon size={22} color={SECONDARY_PALETTE[400]} />
+                    <EyeSlashIcon size={20} color={SECONDARY_PALETTE[400]} />
                   ) : (
-                    <EyeIcon size={22} color={SECONDARY_PALETTE[400]} />
+                    <EyeIcon size={20} color={SECONDARY_PALETTE[400]} />
                   )}
                 </Pressable>
               </View>
@@ -171,9 +173,9 @@ export default function ChangePasswordScreen() {
                   accessibilityLabel={showNewPassword ? '비밀번호 숨기기' : '비밀번호 표시'}
                 >
                   {showNewPassword ? (
-                    <EyeSlashIcon size={22} color={SECONDARY_PALETTE[400]} />
+                    <EyeSlashIcon size={20} color={SECONDARY_PALETTE[400]} />
                   ) : (
-                    <EyeIcon size={22} color={SECONDARY_PALETTE[400]} />
+                    <EyeIcon size={20} color={SECONDARY_PALETTE[400]} />
                   )}
                 </Pressable>
               </View>
@@ -220,9 +222,9 @@ export default function ChangePasswordScreen() {
                   accessibilityLabel={showConfirmPassword ? '비밀번호 숨기기' : '비밀번호 표시'}
                 >
                   {showConfirmPassword ? (
-                    <EyeSlashIcon size={22} color={SECONDARY_PALETTE[400]} />
+                    <EyeSlashIcon size={20} color={SECONDARY_PALETTE[400]} />
                   ) : (
-                    <EyeIcon size={22} color={SECONDARY_PALETTE[400]} />
+                    <EyeIcon size={20} color={SECONDARY_PALETTE[400]} />
                   )}
                 </Pressable>
               </View>
@@ -236,7 +238,7 @@ export default function ChangePasswordScreen() {
 
           {/* 비밀번호 정책 안내 */}
           <Card className="mb-4">
-            <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+            <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
               비밀번호 정책
             </Text>
             <View className="flex-col gap-1">
@@ -263,9 +265,9 @@ export default function ChangePasswordScreen() {
             className={`rounded-lg py-4 ${isSubmitting ? 'bg-secondary-300 dark:bg-surface' : 'bg-primary-600 active:bg-primary-700'}`}
           >
             {isSubmitting ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color={isDarkMode ? '#FFFFFF' : '#09090B'} />
             ) : (
-              <Text className="text-center text-base font-sans-semibold text-surface-dark">
+              <Text className="text-center text-base font-sans-semibold text-content-onGold">
                 비밀번호 변경
               </Text>
             )}

@@ -242,7 +242,7 @@ export default function BoardPostDetailScreen() {
           <Button
             className="flex-1"
             loading={isReportSubmitting}
-            icon={<FlagOutlineIcon size={16} color="#FFFFFF" />}
+            icon={<FlagOutlineIcon size={16} color="#09090B" />}
             onPress={() => void handleReportSubmit()}
             disabled={isReportSubmitDisabled}
           >

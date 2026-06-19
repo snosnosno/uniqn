@@ -45,7 +45,7 @@ function QuickActions({ onShowQR, onRefresh, isRefreshing }: QuickActionsProps) 
           className="flex-1 flex-row items-center justify-center rounded-md bg-primary-600 p-4 active:opacity-80 dark:bg-primary-700"
         >
           <QRCodeIcon size={24} color="#FFFFFF" />
-          <Text className="ml-2 text-base font-sans-semibold text-surface-dark">
+          <Text className="ml-2 text-base font-sans-semibold text-content-onGold">
             이벤트 QR 열기
           </Text>
         </Pressable>
@@ -281,11 +281,7 @@ export function StaffManagementTab({
 
   if (error) {
     return (
-      <ErrorState
-        title="확정된 스태프를 불러오지 못했습니다"
-        message={error.message}
-        onRetry={refresh}
-      />
+      <ErrorState title="확정된 스태프를 불러오지 못했습니다" error={error} onRetry={refresh} />
     );
   }
 

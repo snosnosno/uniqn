@@ -222,13 +222,13 @@ export function AnnouncementForm({
                 className={`px-4 py-2 rounded-lg border ${
                   category === cat.key
                     ? 'bg-primary-600 border-primary-600'
-                    : 'bg-white dark:bg-surface border-secondary-300 dark:border-surface-overlay'
+                    : 'bg-surface-card border-secondary-300 dark:border-surface-overlay'
                 }`}
               >
                 <Text
                   className={`text-sm font-sans ${
                     category === cat.key
-                      ? 'text-surface-dark font-sans-medium'
+                      ? 'text-content-onGold font-sans-medium'
                       : 'text-secondary-700 dark:text-secondary-300'
                   }`}
                 >
@@ -305,13 +305,13 @@ export function AnnouncementForm({
                       : p === 1
                         ? 'bg-primary-600 border-primary-600'
                         : 'bg-secondary-600 border-secondary-600'
-                    : 'bg-white dark:bg-surface border-secondary-300 dark:border-surface-overlay'
+                    : 'bg-surface-card border-secondary-300 dark:border-surface-overlay'
                 }`}
               >
                 <Text
                   className={`text-sm font-sans ${
                     priority === p
-                      ? 'text-surface-dark font-sans-medium'
+                      ? 'text-content-onGold font-sans-medium'
                       : 'text-secondary-700 dark:text-secondary-300'
                   }`}
                 >
@@ -323,7 +323,7 @@ export function AnnouncementForm({
         </View>
 
         {/* Pinned */}
-        <View className="mb-4 flex-row items-center justify-between bg-white dark:bg-surface rounded-lg border border-secondary-300 dark:border-surface-overlay px-4 py-3">
+        <View className="mb-4 flex-row items-center justify-between bg-surface-card rounded-lg border border-secondary-300 dark:border-surface-overlay px-4 py-3">
           <View>
             <Text className="text-sm font-sans-medium text-content-secondary">상단 고정</Text>
             <Text className="text-xs text-content-placeholder font-sans">
@@ -349,13 +349,13 @@ export function AnnouncementForm({
               className={`flex-1 px-4 py-2 rounded-lg border items-center ${
                 targetType === 'all'
                   ? 'bg-primary-600 border-primary-600'
-                  : 'bg-white dark:bg-surface border-secondary-300 dark:border-surface-overlay'
+                  : 'bg-surface-card border-secondary-300 dark:border-surface-overlay'
               }`}
             >
               <Text
                 className={`text-sm font-sans ${
                   targetType === 'all'
-                    ? 'text-surface-dark font-sans-medium'
+                    ? 'text-content-onGold font-sans-medium'
                     : 'text-secondary-700 dark:text-secondary-300'
                 }`}
               >
@@ -367,13 +367,13 @@ export function AnnouncementForm({
               className={`flex-1 px-4 py-2 rounded-lg border items-center ${
                 targetType === 'roles'
                   ? 'bg-primary-600 border-primary-600'
-                  : 'bg-white dark:bg-surface border-secondary-300 dark:border-surface-overlay'
+                  : 'bg-surface-card border-secondary-300 dark:border-surface-overlay'
               }`}
             >
               <Text
                 className={`text-sm font-sans ${
                   targetType === 'roles'
-                    ? 'text-surface-dark font-sans-medium'
+                    ? 'text-content-onGold font-sans-medium'
                     : 'text-secondary-700 dark:text-secondary-300'
                 }`}
               >
@@ -392,13 +392,13 @@ export function AnnouncementForm({
                   className={`flex-1 px-4 py-2 rounded-lg border items-center ${
                     targetRoles.includes(role)
                       ? 'bg-success-600 border-success-600'
-                      : 'bg-white dark:bg-surface border-secondary-300 dark:border-surface-overlay'
+                      : 'bg-surface-card border-secondary-300 dark:border-surface-overlay'
                   }`}
                 >
                   <Text
                     className={`text-sm font-sans ${
                       targetRoles.includes(role)
-                        ? 'text-surface-dark font-sans-medium'
+                        ? 'text-content-onGold font-sans-medium'
                         : 'text-secondary-700 dark:text-secondary-300'
                     }`}
                   >
@@ -438,7 +438,7 @@ export function AnnouncementForm({
             <Text
               className={`font-sans-medium ${
                 isValid && !isSubmitting
-                  ? 'text-surface-dark'
+                  ? 'text-content-onGold'
                   : 'text-secondary-500 dark:text-secondary-400'
               }`}
             >

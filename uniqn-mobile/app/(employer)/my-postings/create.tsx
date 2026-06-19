@@ -103,15 +103,11 @@ export default function CreateJobPostingScreen() {
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="공고 작성" fallbackHref="/(app)/(tabs)/employer" />
       <View className="flex-row items-center justify-between px-4 py-2">
-        <Text className="text-xs font-sans text-secondary-500 dark:text-secondary-400">
-          보유 잔액
-        </Text>
+        <Text className="text-xs font-sans text-content-secondary">보유 잔액</Text>
         <WalletBalanceBadge testID="create-wallet-badge" />
       </View>
       <View className="flex-row items-center justify-between px-4 pb-2">
-        <Text className="text-xs font-sans text-secondary-500 dark:text-secondary-400">
-          게시 비용
-        </Text>
+        <Text className="text-xs font-sans text-content-secondary">게시 비용</Text>
         <Text className="text-sm font-sans-semibold text-content-primary dark:text-secondary-100">
           {postingCost.data === null || postingCost.data === undefined
             ? '—'

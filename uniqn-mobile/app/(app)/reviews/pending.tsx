@@ -53,7 +53,7 @@ function PendingReviewCard({ item, onPress }: PendingReviewCardProps) {
               {item.jobPostingTitle}
             </Text>
             <View className="mt-1 flex-row items-center gap-2">
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+              <Text className="text-sm text-content-secondary font-sans">
                 {workDateLabel}
                 {item.location ? ` · ${item.location}` : ''}
               </Text>
@@ -129,7 +129,7 @@ export default function PendingReviewsScreen() {
           />
         ) : (
           <View>
-            <NumericText className="mb-3 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+            <NumericText className="mb-3 text-sm text-content-secondary font-sans">
               작성 대기 {pendingCount}건
             </NumericText>
             {pendingReviews.map((item) => (

@@ -18,7 +18,6 @@ export const unstable_settings = { initialRouteName: 'home-jobs' };
 
 // 활성 탭 상단 2px 골드 underbar (디자인 현대화 Task 1.4)
 const TAB_UNDERBAR_COLOR = PRIMARY_COLORS[500];
-const TAB_INACTIVE_COLOR = '#9898A0';
 const TAB_BORDER_TOP_COLOR = SURFACE_COLORS.overlay;
 
 type TabBarIconProps = { color: string; focused: boolean };
@@ -40,7 +39,7 @@ function renderTabBarIcon(Icon: IconComponent) {
             }}
           />
         )}
-        <Icon color={color} size={22} />
+        <Icon color={color} size={24} />
       </View>
     );
   };
@@ -73,8 +72,8 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: TAB_UNDERBAR_COLOR,
-        tabBarInactiveTintColor: TAB_INACTIVE_COLOR,
+        tabBarActiveTintColor: getLayoutColor(isDark, 'tabBarActive'),
+        tabBarInactiveTintColor: getLayoutColor(isDark, 'tabBarInactive'),
         tabBarStyle: {
           backgroundColor: getLayoutColor(isDark, 'tabBarBg'),
           borderTopColor: TAB_BORDER_TOP_COLOR,

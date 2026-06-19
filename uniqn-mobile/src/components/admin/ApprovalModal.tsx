@@ -115,7 +115,7 @@ export const ApprovalModal = memo(function ApprovalModal({
           onPress={handleCancel}
         >
           <Pressable
-            className="bg-white dark:bg-surface rounded-md w-full max-w-md"
+            className="bg-surface-card rounded-md w-full max-w-md"
             onPress={(e) => e.stopPropagation()}
           >
             {/* 헤더 */}
@@ -227,7 +227,7 @@ export const ApprovalModal = memo(function ApprovalModal({
                     <ActivityIndicator size="small" color="white" />
                   ) : (
                     <Text
-                      className={`font-sans-medium ${isApprove ? 'text-surface-dark' : 'text-white'}`}
+                      className={`font-sans-medium ${isApprove ? 'text-content-onGold' : 'text-white'}`}
                     >
                       {isApprove ? '승인' : '거부'}
                     </Text>

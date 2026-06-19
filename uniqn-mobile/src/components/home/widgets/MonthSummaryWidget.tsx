@@ -42,7 +42,7 @@ export function MonthSummaryWidget() {
           accessibilityLabel="이번 달 요약 상세 보기"
           hitSlop={8}
         >
-          <Text className="text-primary-500 text-[10px] font-sans-bold">상세 →</Text>
+          <Text className="text-primary-500 text-micro font-sans-bold">상세 →</Text>
         </Pressable>
       }
     >
@@ -56,7 +56,7 @@ export function MonthSummaryWidget() {
               >
                 {formatCurrency(thisMonthEarnings)}
               </NumericText>
-              <Text className="text-[10px] uppercase tracking-wider text-content-muted mt-1">
+              <Text className="text-micro uppercase tracking-wider text-content-muted mt-1">
                 예상 수령액
               </Text>
             </View>

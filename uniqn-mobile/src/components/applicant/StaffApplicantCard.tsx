@@ -481,7 +481,7 @@ export const StaffApplicantCard = memo(function StaffApplicantCard({
         accessibilityLabel={accessibilityLabel}
         accessibilityHint="탭하면 지원자 상세 정보를 볼 수 있습니다"
         className={`
-          bg-white dark:bg-surface rounded-md
+          bg-surface-card rounded-md
           ${compact ? 'p-3' : 'p-4'}
           border border-secondary-100 dark:border-surface-overlay
           active:opacity-80
@@ -497,7 +497,7 @@ export const StaffApplicantCard = memo(function StaffApplicantCard({
   return (
     <View
       className={`
-        bg-white dark:bg-surface rounded-md
+        bg-surface-card rounded-md
         ${compact ? 'p-3' : 'p-4'}
         border border-secondary-100 dark:border-surface-overlay
         ${className}

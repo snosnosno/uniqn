@@ -7,7 +7,7 @@
  * @note 구인자의 QR 생성은 EventQRModal을 통해 이루어집니다.
  */
 
-import { SECONDARY_PALETTE, STATUS_COLORS } from '@/constants/colors';
+import { SECONDARY_PALETTE, STATUS_COLORS, TEXT_COLORS } from '@/constants/colors';
 import { useState, useCallback, useEffect } from 'react';
 import { View, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -79,7 +79,7 @@ export default function QRScreen() {
         <Text className="text-xl font-display text-content-primary dark:text-secondary-100">
           QR 스캔
         </Text>
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-1 font-sans">
+        <Text className="text-sm text-secondary-600 dark:text-secondary-400 mt-1 font-sans">
           구인자의 QR 코드를 스캔하여 출퇴근하세요
         </Text>
       </View>
@@ -105,7 +105,7 @@ export default function QRScreen() {
               )}
             </View>
             <View className="ml-4 flex-1">
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+              <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
                 현재 상태
               </Text>
               <Text
@@ -148,7 +148,7 @@ export default function QRScreen() {
             QR 코드 스캔
           </Text>
 
-          <Text className="mt-3 text-center text-base text-secondary-500 dark:text-secondary-400 px-4 leading-6 font-sans">
+          <Text className="mt-3 text-center text-base text-secondary-600 dark:text-secondary-400 px-4 leading-6 font-sans">
             구인자가 보여주는 QR 코드를 스캔하여{'\n'}
             {actionLabel}을 완료하세요
           </Text>
@@ -160,7 +160,7 @@ export default function QRScreen() {
               loading={isProcessing}
               fullWidth
               size="lg"
-              icon={<ScanIcon size={24} color="#FFFFFF" />}
+              icon={<ScanIcon size={24} color={TEXT_COLORS.onGold} />}
               accessibilityLabel={`카메라로 ${actionLabel} QR 코드 스캔하기`}
               accessibilityHint="QR 코드 스캐너가 열립니다"
             >

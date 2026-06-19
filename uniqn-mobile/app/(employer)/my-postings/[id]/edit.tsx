@@ -208,9 +208,7 @@ export default function EditJobPostingScreen() {
         />
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
-          <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
-            공고 정보를 불러오는 중...
-          </Text>
+          <Text className="mt-4 text-content-secondary font-sans">공고 정보를 불러오는 중...</Text>
         </View>
       </SafeAreaView>
     );
@@ -229,11 +227,11 @@ export default function EditJobPostingScreen() {
           <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
             공고를 불러올 수 없습니다
           </Text>
-          <Text className="mb-4 text-center text-secondary-500 dark:text-secondary-400 font-sans">
+          <Text className="mb-4 text-center text-content-secondary font-sans">
             {jobError?.message || '공고 정보를 찾을 수 없습니다.'}
           </Text>
           <Button variant="primary" onPress={() => router.back()}>
-            <Text className="font-sans-semibold text-surface-dark">돌아가기</Text>
+            <Text className="font-sans-semibold text-content-onGold">돌아가기</Text>
           </Button>
         </View>
       </SafeAreaView>
@@ -260,7 +258,7 @@ export default function EditJobPostingScreen() {
           showsVerticalScrollIndicator={false}
         >
           {hasConfirmedApplicants && (
-            <View className="mb-4 rounded-lg border border-amber-200 bg-warning-50 p-3 dark:border-amber-800 dark:bg-warning-900/20">
+            <View className="mb-4 rounded-lg border border-warning-200 bg-warning-50 p-3 dark:border-warning-800 dark:bg-warning-900/20">
               <Text className="text-sm text-warning-700 dark:text-warning-300 font-sans">
                 확정된 지원자가 있어 일정과 역할 정보는 수정할 수 없습니다.
               </Text>
@@ -292,7 +290,7 @@ export default function EditJobPostingScreen() {
             >
               {hasConfirmedApplicants ? (
                 <View className="rounded-lg bg-surface-card p-4 dark:bg-surface">
-                  <Text className="text-center text-secondary-500 dark:text-secondary-400 font-sans">
+                  <Text className="text-center text-content-secondary font-sans">
                     확정된 지원자가 있어 일정은 수정할 수 없습니다.
                   </Text>
                 </View>
@@ -322,7 +320,7 @@ export default function EditJobPostingScreen() {
               >
                 {hasConfirmedApplicants ? (
                   <View className="rounded-lg bg-surface-card p-4 dark:bg-surface">
-                    <Text className="text-center text-secondary-500 dark:text-secondary-400 font-sans">
+                    <Text className="text-center text-content-secondary font-sans">
                       확정된 지원자가 있어 역할 정보는 수정할 수 없습니다.
                     </Text>
                   </View>
@@ -389,7 +387,7 @@ export default function EditJobPostingScreen() {
                 accessibilityLabel="공고 수정"
                 testID="job-posting-edit-submit"
               >
-                <Text className="font-sans-semibold text-surface-dark">
+                <Text className="font-sans-semibold text-content-onGold">
                   {updateJobPosting.isPending ? '수정 중...' : '공고 수정'}
                 </Text>
               </Button>
