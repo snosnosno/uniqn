@@ -82,11 +82,7 @@ export default function BoardHomeScreen() {
         </ScrollView>
       ) : error ? (
         <View className="flex-1 items-center justify-center p-4">
-          <ErrorState
-            title="게시판 홈을 불러오지 못했어요"
-            message={error.message}
-            onRetry={refetch}
-          />
+          <ErrorState title="게시판 홈을 불러오지 못했어요" error={error} onRetry={refetch} />
         </View>
       ) : (
         <ScrollView

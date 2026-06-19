@@ -182,7 +182,7 @@ export default function ApplicantsScreen() {
         />
         <ErrorState
           title="지원자 목록을 불러올 수 없습니다"
-          message={error.message}
+          error={error}
           onRetry={() => refresh()}
         />
       </SafeAreaView>

@@ -580,11 +580,7 @@ export default function ScheduleScreen() {
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
         <TabHeader title="내 스케줄" />
         <View className="flex-1 justify-center items-center p-4">
-          <ErrorState
-            title="스케줄을 불러오지 못했어요"
-            message={`${error.message}\n인터넷 연결을 확인하고 다시 시도해주세요.`}
-            onRetry={refresh}
-          />
+          <ErrorState title="스케줄을 불러오지 못했어요" error={error} onRetry={refresh} />
         </View>
       </SafeAreaView>
     );

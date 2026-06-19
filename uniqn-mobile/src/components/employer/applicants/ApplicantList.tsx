@@ -128,11 +128,7 @@ export function ApplicantList({
   // 에러 상태
   if (error) {
     return (
-      <ErrorState
-        title="지원자 목록을 불러올 수 없습니다"
-        message={error.message}
-        onRetry={onRefresh}
-      />
+      <ErrorState title="지원자 목록을 불러올 수 없습니다" error={error} onRetry={onRefresh} />
     );
   }
 

@@ -44,7 +44,7 @@ export const ApplicantProfileHeader = React.memo(function ApplicantProfileHeader
   const metaText = [roleLabel, appliedTimeAgo].filter(Boolean).join(' · ');
 
   return (
-    <View className="items-center bg-surface-page dark:bg-surface py-4 dark:bg-surface">
+    <View className="items-center bg-surface-page dark:bg-surface py-4">
       {isProfileLoading ? (
         <View className="mb-2 h-16 w-16 items-center justify-center rounded-sm bg-secondary-200 dark:bg-surface">
           <ActivityIndicator size="small" color={SECONDARY_PALETTE[500]} />

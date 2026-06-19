@@ -252,11 +252,7 @@ export function StaffManagementTab({
 
   if (error) {
     return (
-      <ErrorState
-        title="확정된 스태프를 불러오지 못했습니다"
-        message={error.message}
-        onRetry={refresh}
-      />
+      <ErrorState title="확정된 스태프를 불러오지 못했습니다" error={error} onRetry={refresh} />
     );
   }
 

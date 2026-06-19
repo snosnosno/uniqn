@@ -179,11 +179,7 @@ export default function CancellationRequestsScreen() {
           fallbackHref={headerBackHref}
           rightAction={headerRightAction}
         />
-        <ErrorState
-          title="취소 요청을 불러올 수 없습니다"
-          message={error.message}
-          onRetry={handleRefresh}
-        />
+        <ErrorState title="취소 요청을 불러올 수 없습니다" error={error} onRetry={handleRefresh} />
       </SafeAreaView>
     );
   }

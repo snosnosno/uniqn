@@ -21,7 +21,7 @@
 | L2 | 관리자 2 (상세) | `(admin)/reports/[id]` `board-reports/[id]` `inquiries/[id]` `users/[id]` `employer-applications/[id]` | **done**(bg-white·미정의팔레트·text-[10px]→M) | `(미커밋)` |
 | M | 공용 컴포넌트 | `src/components/` 버튼·카드·모달·EmptyState·Skeleton·배지·토스트 + 토큰 정합 | **done**(M1팔레트·M2 bg-white·M3 onGold·M4 micro / 잔여=size22·active:opacity·autoFocus·hand-rolled버튼·이모지→Z/P3) | `f4a784b21` `2acae2782` `b9b4dee71` `6f943ef81` |
 | W | 지갑 | `(app)/wallet/*` — master에 없음 (`fix/wallet-p1-money-and-ui` 머지 후) | **deferred** | |
-| Z | 최종 횡단 패스 | 화면 간 통일 검증 + 전체 jest + quality | pending | |
+| Z | 최종 횡단 패스 | 화면 간 통일 검증 + 전체 jest + quality | **in-progress** | |
 
 ## 발견·수정 로그
 

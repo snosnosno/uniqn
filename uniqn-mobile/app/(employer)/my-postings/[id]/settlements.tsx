@@ -153,11 +153,7 @@ export default function StaffSettlementsScreen() {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         {stackHeader}
-        <ErrorState
-          title="데이터를 불러올 수 없습니다"
-          message={error.message}
-          onRetry={() => refresh()}
-        />
+        <ErrorState title="데이터를 불러올 수 없습니다" error={error} onRetry={() => refresh()} />
       </SafeAreaView>
     );
   }

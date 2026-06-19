@@ -70,7 +70,6 @@ export function JobList({
         mode="error"
         scope="list"
         title="공고 목록을 불러올 수 없습니다"
-        message={error.message}
         error={error}
         onRetry={onRefresh}
       />

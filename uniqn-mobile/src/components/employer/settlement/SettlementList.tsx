@@ -274,13 +274,7 @@ export function SettlementList({
 
   // 에러 상태
   if (error) {
-    return (
-      <ErrorState
-        title="정산 목록을 불러올 수 없습니다"
-        message={error.message}
-        onRetry={onRefresh}
-      />
-    );
+    return <ErrorState title="정산 목록을 불러올 수 없습니다" error={error} onRetry={onRefresh} />;
   }
 
   // 빈 상태

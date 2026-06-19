@@ -94,9 +94,7 @@ export function PostingScheduleContent({
           <View
             key={section.key}
             className={
-              display === 'card'
-                ? 'mb-3'
-                : 'mb-3 rounded-lg bg-surface-page dark:bg-surface p-3 dark:bg-surface'
+              display === 'card' ? 'mb-3' : 'mb-3 rounded-lg bg-surface-page dark:bg-surface p-3'
             }
           >
             <Text

@@ -31,7 +31,7 @@ export const ApplicantProfileContent = React.memo(function ApplicantProfileConte
           <Text className="mb-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
             지원 메시지
           </Text>
-          <View className="rounded-lg bg-surface-page dark:bg-surface p-3 dark:bg-surface">
+          <View className="rounded-lg bg-surface-page dark:bg-surface p-3">
             <View className="flex-row items-start">
               <MessageIcon size={16} color={SECONDARY_PALETTE[500]} />
               <Text className="ml-2 flex-1 text-sm text-content-secondary font-sans">
@@ -47,7 +47,7 @@ export const ApplicantProfileContent = React.memo(function ApplicantProfileConte
           <Text className="mb-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
             사전질문 답변
           </Text>
-          <View className="rounded-lg bg-surface-page dark:bg-surface p-3 dark:bg-surface">
+          <View className="rounded-lg bg-surface-page dark:bg-surface p-3">
             {applicant.preQuestionAnswers.map((answer, index) => (
               <View key={index} className="mb-3 last:mb-0">
                 <View className="mb-1 flex-row items-start">
@@ -97,7 +97,7 @@ export const ApplicantProfileContent = React.memo(function ApplicantProfileConte
           <Text className="mb-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
             확정 이력
           </Text>
-          <View className="rounded-lg bg-surface-page dark:bg-surface p-3 dark:bg-surface">
+          <View className="rounded-lg bg-surface-page dark:bg-surface p-3">
             {applicant.confirmationHistory.map((entry, index) => {
               const isCancelled = Boolean(entry.cancelledAt);
               const timestamp = toDateString(isCancelled ? entry.cancelledAt : entry.confirmedAt);

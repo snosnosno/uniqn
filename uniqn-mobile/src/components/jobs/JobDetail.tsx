@@ -237,7 +237,7 @@ export function JobDetail({ job }: JobDetailProps) {
       {detail.questions.length > 0 ? (
         <View className="px-4 py-3 border-b border-divider">
           <SectionLabel>사전질문 ({detail.questions.length}개)</SectionLabel>
-          <View className="rounded-lg bg-surface-page dark:bg-surface p-3 dark:bg-surface">
+          <View className="rounded-lg bg-surface-page dark:bg-surface p-3">
             {detail.questions.slice(0, 3).map((question, index) => (
               <View key={`${question.id || index}`} className="mb-2">
                 <Text className="text-sm text-content-secondary font-sans">
