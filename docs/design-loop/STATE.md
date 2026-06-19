@@ -21,7 +21,7 @@
 | L2 | 관리자 2 (상세) | `(admin)/reports/[id]` `board-reports/[id]` `inquiries/[id]` `users/[id]` `employer-applications/[id]` | **done**(bg-white·미정의팔레트·text-[10px]→M) | `(미커밋)` |
 | M | 공용 컴포넌트 | `src/components/` 버튼·카드·모달·EmptyState·Skeleton·배지·토스트 + 토큰 정합 | **done**(M1팔레트·M2 bg-white·M3 onGold·M4 micro / 잔여=size22·active:opacity·autoFocus·hand-rolled버튼·이모지→Z/P3) | `f4a784b21` `2acae2782` `b9b4dee71` `6f943ef81` |
 | W | 지갑 | `(app)/wallet/*` — master에 없음 (`fix/wallet-p1-money-and-ui` 머지 후) | **deferred** | |
-| Z | 최종 횡단 패스 | 화면 간 통일 검증 + 전체 jest + quality | **in-progress** | |
+| Z | 최종 횡단 패스 | 화면 간 통일 검증 + 전체 jest + quality | **done**(error.message sanitize·충돌darkbg / jest 4468 pass) | `a55e4d70c` |
 
 ## 발견·수정 로그
 
@@ -117,6 +117,8 @@
 - [M3] 검증 | quality exit0(tsc0·lint0·format0 — 3파일 prettier 재배치). **배치F 메모 "text-surface-dark 73곳 골드전경 오용 Z grep" 해소**(61매치 전수 통일)
 - [M4] **text-[10px]→text-micro 토큰 정합**(33파일, `6f943ef81`). 섹션 헤더(`uppercase tracking-wider text-content-muted`)·배지의 raw 임의값을 디자인 토큰 text-micro(10px/14px lineHeight)로. admin/employer/board/home-widget 전반. 배치A jobs/[id]·배치C BoardImageGrid P3 해소
 - [M4] **primary 팔레트 800/900 정의 확인**(미정의 아님 — #6E5A1E/#524318) → `dark:bg-primary-900/20~30` 80+건 골드 선택배경 정상. M1 보완 불필요
+- [Z] **최종 횡단 패스**(`a55e4d70c`). ①error.message 원시노출 12곳 sanitize: ErrorState 호출부 `message={error.message}`→`error={error}`(9곳, ErrorState가 extractUserMessage 중앙 sanitize=AppError→userMessage·일반Error→'알 수 없는 오류가 발생했습니다') + ErrorState 내부 line48 `error.message`→`extractUserMessage(error)` 보강 + PostingSurfaceState 2곳(JobList·employer) 중복 message줄 제거(error prop 기존존재) + schedule 커스텀→error prop. **기존 `extractUserMessage` 헬퍼 재사용**(src/errors/errorUtils.ts, 신규 작성 없음). 동작 개선이라 fix 타입. ②충돌 이중darkbg 동일중복 16파일 정리(`dark:bg-surface` 2회→1개, perl lookahead로 알파변형/다른색 보존). ③횡단 일관성: text-surface-dark grep=0(M3완결)·미정의 success/warning/info/danger=0(M1)·raw bg-white 카드패턴=0(M2)·text-[10px]=0(M4)
+- [Z] 검증 | **quality exit0**(tsc0·lint0·format0) · **전체 jest 4468 pass / 336 suites GREEN**. StaffManagementTab.localization 테스트 Red→Green: raw '네트워크 오류' 단언→sanitize '알 수 없는 오류가 발생했습니다' + `queryByText('네트워크 오류')` null 회귀가드(배치A LoginForm.test 갱신 선례=동작개선 따른 계약 갱신). **🎉 루프 종료 — 전 배치 A~M+Z 완료**
 - [M4] 검증 | quality exit0(tsc0·lint0·format0 — text-micro가 더 짧아 재배치 없음). **M 잔여=Z/P3**: 충돌 이중darkbg 잔여(ApplicantProfile* 등 ~10건, Z grep), size={22} 14건(맥락별 20/24 판단 필요), active:opacity 룰21(맥락별 토글색), autoFocus 룰20 가드(동작로직), hand-rolled 제출버튼→Button 교체(profile/change-password, 구조변경+시각QA), 통화 이모지 💖/💎(wallet=W deferred·master 없음), placeholder 전역·Loading 색·Card shadow. **BubbleScoreBadge 미정의 다크티어는 M1 success/warning 추가로 자동 해소**
 
 ## P3 백로그 (기록만, 구현 안 함)
@@ -224,6 +226,22 @@
 - [L2→M] admin2 상세 Loading 스피너 골드/raw | inquiries:52 ActivityIndicator `PRIMARY_COLORS[300]`(골드 라이트 ~2.1:1, 자매 users는 getLoadingColor 사용=정답)·users:348 토글버튼 스피너 raw `'#DC2626'`/`'#22C55E'`(STATUS_COLORS 토큰 미사용, 단 error-50/success-50 연한 bg 위라 대비 OK) | getLoadingColor 단일소스·STATUS_COLORS 정합 M
 - [L2→P3] text-content-placeholder 오용 | reports:150 생성시각·inquiries:102/129 시각·employer-applications:208 ID — 타임스탬프/ID에 placeholder 토큰(최저강조) 사용. 배치A JobDetail 통계 동일 오용 P3 | content-muted 상향 검토(경미)
 - [L2→M/Z] 시맨틱 토큰 위 dark: 중복(배치L2) | reports `text-content-primary dark:text-off-white`·`text-content-muted dark:text-secondary-400`(131) / inquiries `dark:text-secondary-100`(83/103/121) / users·employer-applications `dark:text-off-white` 다수 | 배치D~L 동일 일괄 정책 M/Z
+
+## 루프 종료 후 잔여 P3 (구현 안 함 — 차기 작업 시 참고)
+
+> 전 배치 A~M+Z 완료. 아래는 "행동 보존+시각 무위험" 경계를 넘어 의도적으로 보류한 항목. 시각 QA/디자인 결정/구조변경/별도 브랜치 필요분.
+
+- [Z잔여] 충돌 darkbg 알파변형/다른색 ~7건 | InfoTab/SettlementTab `dark:bg-surface/30·/50`·BoardImagePicker `/60`·QRPanel `dark:bg-secondary-100`×6 | 반투명/다른색 의도 가능성 → 개별 시각 확인 후 정리
+- [M잔여] size={22} 아이콘 14건 | 룰27 중간값 — 맥락별 20(텍스트인접)/24(헤더·단독) 판단 필요(배치B 선례) | 일괄 부적합
+- [M잔여] active:opacity 룰21 → 배경톤 토글 | 다수 컴포넌트 — 각 요소의 적절한 pressed 배경색 판단 필요(맥락별) | 잘못된 일괄은 시각 깨짐
+- [M잔여] autoFocus 룰20 가드 | InlineComposerRow·my-data Modal·workspace index — `AccessibilityInfo.isScreenReaderEnabled()` 분기(동작 로직) | 테스트 부재
+- [M잔여] **hand-rolled 제출버튼→Button 교체** | profile:517·change-password:260 Pressable+bg-primary-600 수기조립 → 비활성+다크 라벨 불가시 근본해결 | 구조변경+시각 QA 필수
+- [M잔여] 통화 이모지 💖/💎 | wallet(=W deferred, master 없음)·create.tsx 게시비용 | wallet 머지 후 일괄
+- [M잔여] 전역 placeholder | SECONDARY_PALETTE[400] 지배관행 vs getPlaceholderColor 미사용 — 전역 일괄 결정 필요(단독수정=불일치) | 디자인 결정
+- [M잔여] Card.tsx 기본 shadow-md 룰14 | 리스트 반복카드 그림자 남발 | 공용 영향 큼·시각 QA
+- [M잔여] DateRangeCard gradient amber/orange(룰14) | RN 미지원 클래스(무효)라 우선순위 낮음
+- [전역] 시맨틱토큰 위 dark: 중복(`text-content-primary dark:text-off-white` 등 광범위) | content-* CSS var가 이미 다크 처리 — NativeWind 플랫폼 미flip 방어 의도면 정책화, 아니면 일괄 제거 | 정책 결정
+- [W] 지갑 배치 전체 | `(app)/wallet/*` master 없음 — `fix/wallet-p1-money-and-ui` 머지 후 별도 회차
 
 ## 회차 메모
 
