@@ -41,8 +41,10 @@ export default function ApplicantsScreen() {
     confirmWithHistory,
     rejectApplication,
     cancelConfirmationAsync,
+    bulkConfirm,
     isConfirmingWithHistory,
     isRejecting,
+    isBulkConfirming,
     markAsRead,
   } = useApplicantManagement(jobPostingId || '', { realtime: true });
 
@@ -99,9 +101,9 @@ export default function ApplicantsScreen() {
   const handleCancelConfirmation = useCallback(
     (applicant: ApplicantWithDetails) => {
       confirmAction({
-        title: '확정 취소',
-        message: '이 지원자의 확정을 취소할까요?\n점유된 자리가 다시 비워집니다.',
-        confirmText: '확정 취소',
+        title: '확정 해제',
+        message: '이 지원자의 확정을 해제할까요?\n점유된 자리가 다시 비워집니다.',
+        confirmText: '확정 해제',
         destructive: true,
         onConfirm: async () => {
           await cancelConfirmationAsync({ applicationId: applicant.id });
@@ -210,6 +212,8 @@ export default function ApplicantsScreen() {
         onReject={handleReject}
         onCancelConfirmation={handleCancelConfirmation}
         onViewProfile={handleViewProfile}
+        onBulkConfirm={bulkConfirm}
+        isBulkConfirming={isBulkConfirming}
       />
 
       {/* 확정/거절 모달 */}

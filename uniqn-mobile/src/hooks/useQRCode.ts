@@ -9,6 +9,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { processEventQRCheckIn } from '@/services/work/eventQRService';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { queryClient, queryKeys } from '@/lib/queryClient';
@@ -88,6 +89,10 @@ export function useQRCodeScanner(options: UseQRCodeScannerOptions) {
 
       try {
         setIsProcessing(true);
+
+        // 오프라인 가드: 체크인은 쓰기 작업이므로 오프라인이면 명확히 안내한다.
+        // (예전엔 가드 없이 RPC 직행 → 약전파 현장에서 raw 네트워크 에러 산발)
+        requireOnlineForMutation('useQRCodeScanner.checkIn');
 
         // Event QR 처리 (eventQRCodes 검증 + workLogs 업데이트)
         const scanResult = await processEventQRCheckIn(qrString, user.uid);

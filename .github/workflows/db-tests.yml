@@ -29,7 +29,11 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # 버전 pin: version:latest 는 GitHub API 'resolve latest' 호출로 익명 rate-limit(#172
+          # 6초 실패) + 이미지 드리프트(implicit 테이블 GRANT 소실 회귀, PR #179) 유발.
+          # 고정 버전 + github-token 인증으로 둘 다 예방. 갱신 시 supabase/cli 릴리스 참고.
+          version: 2.107.0
+          github-token: ${{ github.token }}
 
       - name: Start local Supabase
         run: supabase start

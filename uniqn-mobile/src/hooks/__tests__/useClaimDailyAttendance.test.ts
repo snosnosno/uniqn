@@ -35,6 +35,7 @@ jest.mock('@/lib/queryClient', () => ({
     wallet: {
       all: ['wallet'],
       summary: (uid?: string) => ['wallet', 'summary', uid ?? 'me'],
+      ledger: (uid?: string) => ['wallet', 'ledger', uid ?? 'me'],
     },
   },
 }));
@@ -57,6 +58,7 @@ describe('useClaimDailyAttendance', () => {
     const opts = mockUseMutation.mock.calls[0][0];
     opts.onSuccess({ status: 'claimed', amount: 1, expiresAt: '2026-08-29T00:00:00Z' });
     expect(mockInvalidate).toHaveBeenCalledWith({ queryKey: queryKeys.wallet.summary('user-1') });
+    expect(mockInvalidate).toHaveBeenCalledWith({ queryKey: queryKeys.wallet.ledger('user-1') });
     expect(mockAddToast).toHaveBeenCalledWith(expect.objectContaining({ type: 'success' }));
   });
 

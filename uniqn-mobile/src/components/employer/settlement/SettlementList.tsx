@@ -23,7 +23,9 @@ import {
   type SalaryInfo,
   type Allowances,
   type TaxSettings,
+  exportSettlementCsv,
 } from '@/utils/settlement';
+import { useToast } from '@/stores/toastStore';
 import {
   groupSettlementsByStaff,
   calculateGroupedSettlementStats,
@@ -112,6 +114,7 @@ export function SettlementList({
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const toast = useToast();
 
   // 그룹핑 컨텍스트
   const groupingContext: SettlementGroupingContext = useMemo(
@@ -186,6 +189,20 @@ export function SettlementList({
       pendingAmount: stats.totalPendingAmount,
     };
   }, [selectedFilter, groupedSettlements, workLogs, groupingContext]);
+
+  // CSV 내보내기 — 전체 정산 내역(필터 무관) 기준. 세무/정산 증빙용.
+  const handleExport = useCallback(async () => {
+    const allGroups = groupSettlementsByStaff(workLogs, groupingContext, {
+      enabled: enableGrouping,
+      minGroupSize: 1,
+    });
+    const result = await exportSettlementCsv(allGroups);
+    if (result.reason === 'empty') {
+      toast.info('내보낼 정산 내역이 없어요.');
+    } else if (!result.success) {
+      toast.error('내보내기에 실패했어요.');
+    }
+  }, [workLogs, groupingContext, enableGrouping, toast]);
 
   // 선택된 항목 금액
   const selectedAmount = useMemo(() => {
@@ -304,6 +321,23 @@ export function SettlementList({
         countDisplay="always"
         labelSize="sm"
       />
+
+      {/* CSV 내보내기 — 세무/정산 증빙용 (전체 내역) */}
+      {workLogs.length > 0 && (
+        <View className="flex-row justify-end px-4 mb-2">
+          <Pressable
+            onPress={handleExport}
+            className="flex-row items-center px-3 py-1.5 rounded-lg bg-surface-card dark:bg-surface active:opacity-70"
+            accessibilityRole="button"
+            accessibilityLabel="정산 내역 CSV 내보내기"
+          >
+            <BanknotesIcon size={14} color={SECONDARY_PALETTE[500]} />
+            <Text className="ml-1 text-xs font-sans-medium text-secondary-600 dark:text-secondary-400">
+              CSV 내보내기
+            </Text>
+          </Pressable>
+        </View>
+      )}
 
       {/* 일괄 선택 버튼 */}
       {showBulkActions && selectableWorkLogs.length > 0 && (

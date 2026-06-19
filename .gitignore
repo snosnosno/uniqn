@@ -129,10 +129,14 @@ __pycache__/
 # ========================================
 # DEVELOPMENT TOOLS
 # ========================================
-.claude/
+.claude/*
+!.claude/commands/
 claude_set/
 .cursor/rules/
 .gstack/
+
+# Obsidian 볼트 로컬 설정 (플러그인/워크스페이스 등 — 버전관리 제외)
+.obsidian/
 
 # ========================================
 # GENERATED/TEMPORARY FILES

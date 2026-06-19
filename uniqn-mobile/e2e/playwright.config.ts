@@ -27,8 +27,12 @@ export default defineConfig({
   testIgnore: /.*-debug\.spec\.ts/,
   fullyParallel: true,
   forbidOnly: isCI,
-  retries: isCI ? 2 : 0,
-  workers: isCI ? 4 : 1,
+  // retries 2→1: 실패/flaky 테스트 재실행을 3배→2배로 줄여 전체 wall-clock 단축 (45분 cap 초과 cancelled 방어, 단일 flake는 1회 재시도로 흡수)
+  retries: isCI ? 1 : 0,
+  // ubuntu-latest 는 2 vCPU. workers:4 + 로컬 Supabase + 웹서버가 CPU 초과구독되면
+  // 인증후 페이지 로드가 expect timeout 을 넘겨 광범위 실패 → retries 3배 증폭 →
+  // 45분 job cap 초과 cancelled. 2 로 낮춰 경합 완화 (8.5→~15분이나 안정적).
+  workers: isCI ? 2 : 1,
   outputDir: testResultsDir,
   reporter: isCI
     ? [['list'], ['html', { open: 'never', outputFolder: htmlReportDir }], ['github']]
@@ -38,7 +42,8 @@ export default defineConfig({
   globalTeardown: require.resolve('./global-teardown'),
 
   timeout: 60_000,
-  expect: { timeout: 10_000 },
+  // CI 러너 부하 시 페이지 로드 여유 확보 (10s → 15s). 근본은 workers 축소.
+  expect: { timeout: 15_000 },
 
   use: {
     baseURL: E2E_CONFIG.runtime.baseUrl,

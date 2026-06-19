@@ -185,9 +185,11 @@ export default function EmployerRegisterScreen() {
     }
   }, [canSubmit, isSubmitting, toast, intro]);
 
-  // 본인인증 진행 — signup?mode=reverify 단일 진입점
+  // 본인인증 진행 — signup?mode=reverify 단일 진입점.
+  // redirect 보존: 인증 완료 후 홈이 아닌 이 등록 화면으로 복귀시킨다.
   const handleGoToVerification = useCallback(() => {
-    router.push('/(auth)/signup?mode=reverify');
+    const redirect = encodeURIComponent('/(app)/employer-register');
+    router.push(`/(auth)/signup?mode=reverify&redirect=${redirect}`);
   }, []);
 
   return (

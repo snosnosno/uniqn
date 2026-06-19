@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Linking, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { HEADER_CLASSES, STATUS } from '@/constants';
@@ -47,6 +47,13 @@ export default function PublicJobDetailAliasRoute() {
 
     void shareJob(job);
   }, [job, shareJob]);
+
+  const handleCallContact = useCallback(() => {
+    const phone = job?.contactPhone?.trim();
+    if (phone) {
+      void Linking.openURL(`tel:${phone}`);
+    }
+  }, [job]);
 
   const shareAction = job ? (
     <Pressable
@@ -107,31 +114,10 @@ export default function PublicJobDetailAliasRoute() {
     );
   }
 
-  if (!isCanonicalDatedPosting(job)) {
-    return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
-        <Stack.Screen options={{ headerShown: false }} />
-        <StackHeader
-          title="공고 상세"
-          titleSuffix={titleSuffix}
-          fallbackHref="/jobs"
-          rightAction={shareAction}
-        />
-        <PostingSurfaceState
-          mode="empty"
-          scope="detail"
-          title="앱에서 볼 수 있는 공고예요"
-          message="이 공고는 UNIQN 앱에서만 자세히 보고 지원할 수 있어요."
-          actionLabel="앱에서 공고 보기"
-          onAction={() =>
-            openInstallPrompt('job-detail-cta', {
-              loginRedirect: `/(app)/jobs/${resolvedId}`,
-            })
-          }
-        />
-      </SafeAreaView>
-    );
-  }
+  // 고정(상시) 공고 등 앱 지원 비대상 — 에러가 아니라 정책 상태이므로
+  // 본문(연락처 포함)을 보여주고 하단에 전화 문의 안내를 제공한다(dead-end 방지).
+  const isAppApplyable = isCanonicalDatedPosting(job);
+  const contactPhone = job.contactPhone?.trim();
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
@@ -169,7 +155,22 @@ export default function PublicJobDetailAliasRoute() {
         }}
       >
         <SafeAreaView edges={['bottom']}>
-          {job.status !== STATUS.JOB_POSTING.ACTIVE ? (
+          {!isAppApplyable ? (
+            <View>
+              <Text className="mb-2 text-center text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                이 공고는 앱에서 지원할 수 없어요.{contactPhone ? ' 전화로 문의해 주세요.' : ''}
+              </Text>
+              {contactPhone ? (
+                <Button onPress={handleCallContact} fullWidth>
+                  전화 문의
+                </Button>
+              ) : (
+                <Button disabled fullWidth>
+                  전화 문의 (연락처 미등록)
+                </Button>
+              )}
+            </View>
+          ) : job.status !== STATUS.JOB_POSTING.ACTIVE ? (
             <Button disabled fullWidth>
               {job.status === STATUS.JOB_POSTING.CAPACITY_FULL
                 ? '정원이 마감되었습니다'

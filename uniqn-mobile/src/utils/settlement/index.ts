@@ -1,6 +1,12 @@
 export { SALARY_TYPE_LABELS } from './constants';
 
 export {
+  buildSettlementCsv,
+  exportSettlementCsv,
+  type ExportSettlementResult,
+} from './settlementExport';
+
+export {
   formatCurrency,
   formatDuration,
   formatTime,

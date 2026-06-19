@@ -26,6 +26,10 @@ export const purchasesService = {
     logger.warn('purchases.web.unsupported');
     throw new Error('PURCHASES_UNAVAILABLE');
   },
+  async restorePurchases(_expectedUid?: string): Promise<void> {
+    logger.warn('purchases.web.unsupported');
+    throw new Error('PURCHASES_UNAVAILABLE');
+  },
   __resetForTest(): void {
     /* no-op */
   },

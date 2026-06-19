@@ -126,11 +126,10 @@ export default function JobsScreen() {
   const filteredSearchJobs = useMemo(() => {
     const searchJobs = searchQuery.data ?? [];
 
+    // 검색은 전체 공고 대상 — 둘러보기용 type 칩 필터는 검색에 적용하지 않는다.
+    // (선택된 칩 때문에 다른 타입 검색 결과가 사라져 '결과 없음' 으로 오인되던 문제)
+    // 단, 일반 탭에서 날짜를 고른 경우의 날짜 포커싱은 유지한다.
     const visibleJobs = searchJobs.filter((job) => {
-      if (selectedType && job.postingType !== selectedType) {
-        return false;
-      }
-
       if (selectedDateString) {
         return matchesPostingDate(job, selectedDateString);
       }
@@ -143,7 +142,7 @@ export default function JobsScreen() {
     }
 
     return visibleJobs.map((job) => focusPostingCardToDate(job, selectedDateString));
-  }, [searchQuery.data, selectedDateString, selectedType]);
+  }, [searchQuery.data, selectedDateString]);
 
   const visibleJobIds = useMemo(
     () => (isSearchMode ? filteredSearchJobs : jobs).map((job) => job.id),
