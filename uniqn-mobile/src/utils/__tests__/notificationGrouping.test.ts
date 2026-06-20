@@ -483,6 +483,74 @@ describe('groupNotifications', () => {
     const grouped = result[0] as GroupedNotificationData;
     expect(grouped.groupBody).toContain('외 1명');
   });
+
+  it('읽지 않은 urgent 알림은 더 최신인 일반 알림보다 상단에 고정된다', () => {
+    const notifications = [
+      createNotificationWithTime(1, {
+        id: 'normal-recent',
+        type: NotificationType.JOB_UPDATED, // 기본 우선순위 low
+        isRead: false,
+        data: { jobPostingId: 'job-1' },
+        body: '공고가 수정되었습니다',
+      }),
+      createNotificationWithTime(120, {
+        id: 'urgent-old',
+        type: NotificationType.CHECKIN_REMINDER, // 기본 우선순위 urgent
+        isRead: false,
+        data: {},
+        body: '출근 시간이 임박했습니다',
+      }),
+    ];
+    const result = groupNotifications(notifications);
+    // urgent-old 가 시간상 더 오래됐지만 읽지 않은 urgent 라 상단 고정
+    expect((result[0] as NotificationData).id).toBe('urgent-old');
+    expect((result[1] as NotificationData).id).toBe('normal-recent');
+  });
+
+  it('이미 읽은 urgent 알림은 상단 고정하지 않고 시간순을 유지한다', () => {
+    const notifications = [
+      createNotificationWithTime(1, {
+        id: 'normal-recent',
+        type: NotificationType.JOB_UPDATED,
+        isRead: false,
+        data: { jobPostingId: 'job-1' },
+        body: '공고가 수정되었습니다',
+      }),
+      createNotificationWithTime(120, {
+        id: 'urgent-old-read',
+        type: NotificationType.CHECKIN_REMINDER,
+        isRead: true, // 이미 읽음 → 고정 안 함
+        data: {},
+        body: '출근 시간이 임박했습니다',
+      }),
+    ];
+    const result = groupNotifications(notifications);
+    // 읽은 urgent 는 고정 제외 → 최신순(normal-recent 먼저)
+    expect((result[0] as NotificationData).id).toBe('normal-recent');
+    expect((result[1] as NotificationData).id).toBe('urgent-old-read');
+  });
+
+  it('명시적 priority 필드가 기본 우선순위보다 우선한다', () => {
+    const notifications = [
+      createNotificationWithTime(1, {
+        id: 'normal-recent',
+        type: NotificationType.NEW_APPLICATION, // 기본 high
+        isRead: false,
+        data: { jobPostingId: 'job-1' },
+        body: '새 지원자',
+      }),
+      createNotificationWithTime(120, {
+        id: 'explicit-urgent',
+        type: NotificationType.JOB_UPDATED, // 기본 low 이지만
+        priority: 'urgent', // 명시적 urgent 로 격상
+        isRead: false,
+        data: { jobPostingId: 'job-2' },
+        body: '긴급 공지',
+      }),
+    ];
+    const result = groupNotifications(notifications);
+    expect((result[0] as NotificationData).id).toBe('explicit-urgent');
+  });
 });
 
 // ============================================================================
