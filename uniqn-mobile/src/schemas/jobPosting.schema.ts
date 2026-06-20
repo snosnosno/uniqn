@@ -16,6 +16,7 @@ import {
 import { JOB_POSTING_SCHEMA_VERSION } from '@/types/jobPosting';
 import { isWithinUrgentDateLimit } from '@/utils/date';
 import { Constants } from '@/types/supabase';
+import { isRegionSlug } from '@/constants/regions';
 
 /**
  * 공고 상태 SSOT — DB enum(posting_status)을 단일출처로 파생.
@@ -114,6 +115,7 @@ export const jobFilterSchema = z.object({
   status: z.enum(POSTING_STATUS_VALUES).optional(),
   roles: z.array(roleSchema).optional(),
   district: z.string().optional(),
+  region: z.string().optional(),
   dateRange: z
     .object({
       start: z.string(),
@@ -150,6 +152,8 @@ const postingLocationSchema = z
   .object({
     name: z.string(),
     district: z.string().optional(),
+    // region 은 읽기에서 enum 제한하지 않는다(미래 신규 slug 도입 시 read 증발 방지).
+    region: z.string().optional(),
     detailedAddress: z.string().optional(),
   })
   .strict();
@@ -165,6 +169,12 @@ const postingLocationInputSchema = z
       .string()
       .trim()
       .refine(xssValidation, { message: 'Unsafe text is not allowed' })
+      .optional(),
+    // 쓰기에서는 알려진 region slug 만 허용(오염 방지). 미선택은 undefined.
+    region: z
+      .string()
+      .trim()
+      .refine((v) => isRegionSlug(v), { message: 'Unknown region' })
       .optional(),
     detailedAddress: z
       .string()

@@ -87,26 +87,30 @@ function normalizeOptionalText(value?: string | null): string | undefined {
 }
 
 function toCanonicalLocation(
-  location: Pick<PostingLocation, 'name' | 'address' | 'district' | 'detailedAddress'>
+  location: Pick<PostingLocation, 'name' | 'address' | 'district' | 'region' | 'detailedAddress'>
 ): JobPostingDocumentV3['location'] {
   const district =
     normalizeOptionalText(location.district) ?? normalizeOptionalText(location.address);
+  const region = normalizeOptionalText(location.region);
   const detailedAddress = normalizeOptionalText(location.detailedAddress);
 
   return {
     name: location.name.trim(),
     ...(district ? { district } : {}),
+    ...(region ? { region } : {}),
     ...(detailedAddress ? { detailedAddress } : {}),
   };
 }
 
 function normalizeRuntimeLocation(location: JobPostingDocumentV3['location']): PostingLocation {
   const district = normalizeOptionalText(location.district);
+  const region = normalizeOptionalText(location.region);
   const detailedAddress = normalizeOptionalText(location.detailedAddress);
 
   return {
     name: location.name.trim(),
     ...(district ? { district, address: district } : {}),
+    ...(region ? { region } : {}),
     ...(detailedAddress ? { detailedAddress } : {}),
   };
 }

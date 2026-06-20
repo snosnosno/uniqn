@@ -247,11 +247,39 @@ describe('jobPosting schemas', () => {
       expect(jobFilterSchema.safeParse({ status: 'active', roles: ['dealer'] }).success).toBe(true);
       expect(jobFilterSchema.safeParse({ roles: ['invalid_role'] }).success).toBe(false);
     });
+
+    it('region 필터를 보존한다(검증 시 누락 방지)', () => {
+      const result = jobFilterSchema.safeParse({ region: '서울 강남구' });
+      expect(result.success).toBe(true);
+      expect(result.success && result.data.region).toBe('서울 강남구');
+    });
   });
 
   describe('jobPostingDocumentSchema', () => {
     it('accepts strict V3 job posting documents', () => {
       expect(jobPostingDocumentSchema.safeParse(createValidDocument()).success).toBe(true);
+    });
+
+    it('location.region 을 읽기 파싱에서 보존한다 (read 증발 방지)', () => {
+      const parsed = parseJobPostingDocument({
+        ...createValidDocument(),
+        location: {
+          name: 'Seoul',
+          district: '서울 강남구 역삼동',
+          region: '서울 강남구',
+          detailedAddress: 'Teheran-ro 123',
+        },
+      });
+      expect(parsed?.location.region).toBe('서울 강남구');
+    });
+
+    it('알 수 없는 region 문자열도 read 를 깨뜨리지 않는다', () => {
+      const parsed = parseJobPostingDocument({
+        ...createValidDocument(),
+        location: { name: 'Seoul', region: '미래신도시' },
+      });
+      expect(parsed).not.toBeNull();
+      expect(parsed?.location.region).toBe('미래신도시');
     });
 
     it('rejects postingType and schedule.kind mismatches or stale derived date fields', () => {

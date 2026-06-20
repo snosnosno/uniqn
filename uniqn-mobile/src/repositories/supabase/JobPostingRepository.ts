@@ -131,6 +131,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
           }
           if (filters?.roles?.length) qr = qr.overlaps('role_keys', filters.roles.slice(0, 10));
           if (filters?.district) qr = qr.eq('location->>district', filters.district);
+          if (filters?.region) qr = qr.eq('location->>region', filters.region);
           if (filters?.ownerId) qr = qr.eq('owner_id', filters.ownerId);
           if (filters?.dateRange) {
             qr = qr

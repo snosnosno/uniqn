@@ -3,12 +3,16 @@
  */
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { View, Keyboard } from 'react-native';
+import { View, Text, Pressable, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { format } from 'date-fns';
 import { JobList, PostingTypeChips, DateCalendar, SearchBar } from '@/components/jobs';
+import { RegionSelectModal } from '@/components/employer/job-form/modals';
+import { getRegionLabel } from '@/constants/regions';
+import { MapPinIcon, ChevronDownIcon } from '@/components/icons';
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import { TabHeader } from '@/components/headers';
 import { useJobPostings } from '@/hooks/useJobPostings';
 import { usePostingTypeCounts } from '@/hooks/usePostingTypeCounts';
@@ -39,6 +43,8 @@ export default function JobsScreen() {
 
   const [selectedType, setSelectedType] = useState<PostingType | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+  const [regionModalVisible, setRegionModalVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const normalizedSearchText = searchText.trim();
@@ -103,8 +109,12 @@ export default function JobsScreen() {
       result.workDate = selectedDateString;
     }
 
+    if (selectedRegion) {
+      result.region = selectedRegion;
+    }
+
     return result;
-  }, [selectedDateString, selectedType]);
+  }, [selectedDateString, selectedType, selectedRegion]);
 
   const { jobs, isLoading, isRefreshing, isFetchingMore, hasMore, error, refresh, loadMore } =
     useJobPostings({
@@ -172,6 +182,10 @@ export default function JobsScreen() {
     router.push(`/(app)/jobs/${jobId}`);
   }, []);
 
+  const handleRegionSelect = useCallback((slug: string | null) => {
+    setSelectedRegion(slug);
+  }, []);
+
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
       <TabHeader title="구인구직" />
@@ -179,6 +193,40 @@ export default function JobsScreen() {
       <SearchBar value={searchText} onChangeText={setSearchText} />
 
       <PostingTypeChips selected={selectedType} onChange={handleTypeChange} counts={chipCounts} />
+
+      {!isSearchMode && (
+        <View className="flex-row px-4 pb-2">
+          <Pressable
+            onPress={() => setRegionModalVisible(true)}
+            className={`min-h-[36px] flex-row items-center gap-1 rounded-full border px-3 py-1.5 active:opacity-70 ${
+              selectedRegion
+                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30'
+                : 'border-secondary-300 dark:border-surface-overlay'
+            }`}
+            accessibilityRole="button"
+            accessibilityLabel="지역 필터 선택"
+            testID="home-region-filter"
+          >
+            <MapPinIcon
+              size={16}
+              color={selectedRegion ? SECONDARY_PALETTE[600] : SECONDARY_PALETTE[400]}
+            />
+            <Text
+              className={`text-sm font-sans-medium ${
+                selectedRegion
+                  ? 'text-primary-700 dark:text-primary-300'
+                  : 'text-content-secondary dark:text-secondary-400'
+              }`}
+            >
+              {getRegionLabel(selectedRegion ?? undefined) ?? '지역 전체'}
+            </Text>
+            <ChevronDownIcon
+              size={16}
+              color={selectedRegion ? SECONDARY_PALETTE[600] : SECONDARY_PALETTE[400]}
+            />
+          </Pressable>
+        </View>
+      )}
 
       {selectedType === 'regular' && (
         <DateCalendar selectedDate={selectedDate} onDateSelect={setSelectedDate} />
@@ -210,6 +258,11 @@ export default function JobsScreen() {
           onLoadMore={loadMore}
           onJobPress={handleJobPress}
           filledCounts={filledCountsQuery.data}
+          emptyMessage={
+            selectedRegion
+              ? `${getRegionLabel(selectedRegion) ?? '선택한 지역'} 공고가 없어요. 위 지역 칩을 눌러 '지역 전체'로 바꿔보세요.`
+              : undefined
+          }
         />
       )}
 
@@ -222,6 +275,14 @@ export default function JobsScreen() {
           />
         </View>
       )}
+
+      <RegionSelectModal
+        visible={regionModalVisible}
+        onClose={() => setRegionModalVisible(false)}
+        onSelect={handleRegionSelect}
+        selectedSlug={selectedRegion ?? undefined}
+        title="지역 필터"
+      />
     </SafeAreaView>
   );
 }
