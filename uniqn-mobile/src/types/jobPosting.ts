@@ -187,6 +187,8 @@ export interface JobPostingFilters {
   status?: JobPostingStatus;
   roles?: StaffRole[];
   district?: string;
+  /** 정규화된 지역 slug (src/constants/regions.ts) — location.region 과 eq 매칭 */
+  region?: string;
   dateRange?: {
     start: string;
     end: string;

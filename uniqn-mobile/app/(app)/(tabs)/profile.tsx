@@ -28,6 +28,7 @@ import {
   HomeIcon,
   UsersIcon,
   StarIcon,
+  BriefcaseIcon,
 } from '@/components/icons';
 import { useAuth } from '@/hooks/useAuth';
 import { useBubbleScore } from '@/hooks/useReviews';
@@ -208,6 +209,16 @@ export default function ProfileScreen() {
         </Card>
 
         <Card className="mb-4">
+          {profile?.role === 'staff' && (
+            <>
+              <MenuItem
+                icon={<BriefcaseIcon size={22} color={SECONDARY_PALETTE[500]} />}
+                label="구인자 신청"
+                onPress={() => router.push('/(app)/employer-application-status')}
+              />
+              <Divider spacing="sm" />
+            </>
+          )}
           <MenuItem
             icon={<StarIcon size={20} color={SECONDARY_PALETTE[500]} />}
             label="내 평점·리뷰 이력"

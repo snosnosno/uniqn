@@ -7,12 +7,14 @@
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback, useEffect, useRef, memo } from 'react';
-import { View, Text, TextInput } from 'react-native';
+import { View, Text, TextInput, Pressable } from 'react-native';
 import { Input, FormField } from '@/components';
-import { MapPinIcon, PhoneIcon } from '@/components/icons';
+import { MapPinIcon, PhoneIcon, ChevronRightIcon } from '@/components/icons';
 import type { JobPostingFormData, Location, PostingType } from '@/types';
 import { PostingTypeSelector } from '../shared';
+import { RegionSelectModal } from '../modals';
 import { formatPhoneNumber } from '@/utils/phone';
+import { findRegionByAddress, getRegionLabel } from '@/constants/regions';
 
 // ============================================================================
 // Types
@@ -46,6 +48,7 @@ export const BasicInfoSection = memo(function BasicInfoSection({
 }: BasicInfoSectionProps) {
   const [locationName, setLocationName] = useState(data.location?.name || '');
   const [locationAddress, setLocationAddress] = useState(getLocationAddressValue(data.location));
+  const [regionModalVisible, setRegionModalVisible] = useState(false);
 
   // 외부에서 data.location이 변경되면 (템플릿 불러오기 등) 로컬 상태 동기화
   // 주의: data.location은 draftToFormData() 호출마다 새 객체를 생성하므로 객체 자체가 아닌
@@ -64,11 +67,13 @@ export const BasicInfoSection = memo(function BasicInfoSection({
   dataRef.current = data;
 
   // 장소 정보 업데이트
+  // region 은 default 를 두지 않는다 — 호출부가 보존/갱신/해제를 명시 전달(default 시 해제 불가).
   const handleUpdateLocation = useCallback(
     (
       name: string,
       address: string,
-      detailedAddress: string = getDetailedAddressValue(dataRef.current)
+      detailedAddress: string = getDetailedAddressValue(dataRef.current),
+      region?: string
     ) => {
       if (name.trim()) {
         const location: Location = {
@@ -76,6 +81,7 @@ export const BasicInfoSection = memo(function BasicInfoSection({
           name,
           address,
           district: address,
+          ...(region ? { region } : {}),
           ...(detailedAddress ? { detailedAddress } : {}),
         };
         onUpdate({ location, detailedAddress });
@@ -86,22 +92,31 @@ export const BasicInfoSection = memo(function BasicInfoSection({
     [onUpdate]
   );
 
-  // 장소명 변경
+  // 장소명 변경 (기존 지역 보존)
   const handleLocationNameChange = useCallback(
     (name: string) => {
       setLocationName(name);
-      handleUpdateLocation(name, locationAddress);
+      handleUpdateLocation(name, locationAddress, undefined, dataRef.current.location?.region);
     },
     [locationAddress, handleUpdateLocation]
   );
 
-  // 장소 주소 변경
+  // 장소 주소 변경 (지역 미설정 시 주소에서 자동 제안)
   const handleLocationAddressChange = useCallback(
     (address: string) => {
       setLocationAddress(address);
-      handleUpdateLocation(locationName, address);
+      const region = dataRef.current.location?.region ?? findRegionByAddress(address)?.slug;
+      handleUpdateLocation(locationName, address, undefined, region);
     },
     [locationName, handleUpdateLocation]
+  );
+
+  // 지역 선택 (null = 해제)
+  const handleRegionSelect = useCallback(
+    (slug: string | null) => {
+      handleUpdateLocation(locationName, locationAddress, undefined, slug ?? undefined);
+    },
+    [locationName, locationAddress, handleUpdateLocation]
   );
 
   // 공고 타입 변경 핸들러
@@ -175,13 +190,43 @@ export const BasicInfoSection = memo(function BasicInfoSection({
         />
       </FormField>
 
+      {/* 지역 선택 (선택) — 지역 필터 노출용. 주소 입력 시 자동 제안 */}
+      <FormField label="지역" error={errors.region}>
+        <Pressable
+          onPress={() => setRegionModalVisible(true)}
+          className="min-h-[44px] flex-row items-center justify-between rounded-lg border-2 border-secondary-300 bg-white px-4 py-3 active:opacity-70 dark:border-surface-overlay dark:bg-surface"
+          accessibilityRole="button"
+          accessibilityLabel="지역 선택"
+          testID="job-posting-region-selector"
+        >
+          <View className="flex-row items-center">
+            <MapPinIcon size={20} color={SECONDARY_PALETTE[500]} />
+            <Text
+              className={`ml-2 text-base font-sans ${
+                data.location?.region
+                  ? 'text-content-primary'
+                  : 'text-secondary-400 dark:text-secondary-500'
+              }`}
+            >
+              {getRegionLabel(data.location?.region) ?? '지역 선택 (선택 사항)'}
+            </Text>
+          </View>
+          <ChevronRightIcon size={18} color={SECONDARY_PALETTE[400]} />
+        </Pressable>
+      </FormField>
+
       {/* 상세 주소 */}
       <FormField label="상세 주소" error={errors.detailedAddress}>
         <Input
           placeholder="건물명, 층수 등 (선택)"
           value={getDetailedAddressValue(data)}
           onChangeText={(detailedAddress) =>
-            handleUpdateLocation(locationName, locationAddress, detailedAddress)
+            handleUpdateLocation(
+              locationName,
+              locationAddress,
+              detailedAddress,
+              dataRef.current.location?.region
+            )
           }
           accessibilityLabel="상세 주소"
           testID="job-posting-detailed-address-input"
@@ -222,6 +267,13 @@ export const BasicInfoSection = memo(function BasicInfoSection({
           {data.description.length}/500
         </Text>
       </FormField>
+
+      <RegionSelectModal
+        visible={regionModalVisible}
+        onClose={() => setRegionModalVisible(false)}
+        onSelect={handleRegionSelect}
+        selectedSlug={data.location?.region}
+      />
     </View>
   );
 });

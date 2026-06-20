@@ -9,12 +9,14 @@ import { toDateValue } from '@/utils/date';
 import {
   NotificationData,
   NotificationType,
+  NotificationPriority,
   GroupedNotificationData,
   NotificationListItem,
   NotificationGroupingOptions,
   GROUPABLE_NOTIFICATION_TYPES,
   NOTIFICATION_TYPE_LABELS,
   NOTIFICATION_TYPE_TO_CATEGORY,
+  NOTIFICATION_DEFAULT_PRIORITY,
   isGroupedNotification,
 } from '@/types/notification';
 
@@ -130,6 +132,27 @@ function extractGroupContext(
   };
 }
 
+/**
+ * 알림의 실효 우선순위 (명시적 priority 우선, 없으면 타입별 기본값)
+ */
+function resolvePriority(notification: NotificationData): NotificationPriority {
+  return notification.priority ?? NOTIFICATION_DEFAULT_PRIORITY[notification.type] ?? 'normal';
+}
+
+/**
+ * 리스트 아이템(단건/그룹)이 "읽지 않은 긴급(urgent)" 인지 판정
+ *
+ * @description 출근 임박·노쇼·정산 마이너스 등 urgent 알림은 시간순과 무관하게
+ * 상단에 고정한다. 단, 이미 읽은 알림은 이미 인지한 것이므로 고정 대상에서 제외.
+ */
+function isUnreadUrgent(item: NotificationListItem): boolean {
+  if (isGroupedNotification(item)) {
+    if (item.unreadCount <= 0) return false;
+    return item.notifications.some((n) => !n.isRead && resolvePriority(n) === 'urgent');
+  }
+  return !item.isRead && resolvePriority(item) === 'urgent';
+}
+
 // ============================================================================
 // Main Functions
 // ============================================================================
@@ -218,8 +241,14 @@ export function groupNotifications(
   // 그룹화 불가능한 알림 추가
   result.push(...ungrouped);
 
-  // 최신순 정렬
+  // 정렬: 읽지 않은 urgent 를 최상단에 고정한 뒤, 나머지는 최신순
   result.sort((a, b) => {
+    const urgentA = isUnreadUrgent(a) ? 1 : 0;
+    const urgentB = isUnreadUrgent(b) ? 1 : 0;
+    if (urgentA !== urgentB) {
+      return urgentB - urgentA; // urgent 가 위로
+    }
+
     const timeA = isGroupedNotification(a)
       ? timestampToMs(a.latestCreatedAt)
       : timestampToMs(a.createdAt);

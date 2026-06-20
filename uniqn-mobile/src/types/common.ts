@@ -101,6 +101,8 @@ export interface Location {
   name: string;
   address?: string;
   district?: string;
+  /** 정규화된 지역 slug (src/constants/regions.ts). 지역 필터용. district(자유텍스트)와 별개 */
+  region?: string;
   detailedAddress?: string;
   coordinates?: {
     latitude: number;
