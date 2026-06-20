@@ -104,7 +104,7 @@ export function TemplateModal({
             - 지역, 연락처, 급여·복리후생
           </Text>
           <Text className="text-primary-700 dark:text-primary-300 text-xs font-sans">
-            - 역할/인원, 시간대 설정
+            - 역할/인원 정보
           </Text>
           <Text className="text-primary-700 dark:text-primary-300 text-xs font-sans">
             - 사전질문 설정
@@ -112,7 +112,7 @@ export function TemplateModal({
         </View>
         <View className="mt-2 pt-2 border-t border-primary-200 dark:border-primary-700">
           <Text className="text-primary-600 dark:text-primary-400 text-xs font-sans">
-            * 구체적인 모집 날짜는 저장되지 않아요. 불러온 뒤 다시 선택해 주세요.
+            * 날짜 및 일정은 저장되지 않습니다
           </Text>
         </View>
       </View>
