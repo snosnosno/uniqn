@@ -55,7 +55,7 @@ export default function WorkspaceInviteScreen() {
       const found = await workspaceService.lookupUserByEmail(trimmed);
       setLookupResult(found);
       if (!found) {
-        setSearchError('등록된 사용자를 찾을 수 없어요');
+        setSearchError('구인자로 등록된 사용자를 찾을 수 없어요');
       }
     } catch (err) {
       logger.warn('사용자 검색 실패', { error: String(err) });
@@ -171,7 +171,7 @@ export default function WorkspaceInviteScreen() {
               <View className="items-center py-12">
                 <EmptyState
                   title="이메일을 입력해주세요"
-                  description="등록된 사용자 이메일로 검색하면 초대할 수 있어요."
+                  description="구인자로 등록된 사용자만 멤버로 초대할 수 있어요."
                 />
               </View>
             )

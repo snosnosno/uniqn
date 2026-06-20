@@ -1,6 +1,7 @@
 import { workspaceService } from '@/services/workspace/workspaceService';
 import { BusinessError, ERROR_CODES, ValidationError } from '@/errors';
 import { workspaceRepository } from '@/repositories';
+import { supabase } from '@/lib/supabase';
 import type { Workspace } from '@/types/workspace';
 
 const mockFindAllByMember = jest.fn();
@@ -150,5 +151,55 @@ describe('workspaceService - archive/restore', () => {
     const spy = jest.spyOn(workspaceRepository, 'findArchivedByOwner').mockResolvedValue([]);
     await workspaceService.listArchivedWorkspaces('owner-1');
     expect(spy).toHaveBeenCalledWith('owner-1');
+  });
+});
+
+describe('workspaceService.lookupUserByEmail', () => {
+  function mockUsersQueryOnce(row: Record<string, unknown> | null) {
+    const inSpy = jest.fn().mockReturnThis();
+    const chain = {
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      in: inSpy,
+      maybeSingle: jest.fn().mockResolvedValue({ data: row, error: null }),
+    };
+    (supabase.from as jest.Mock).mockReturnValueOnce(chain);
+    return { inSpy };
+  }
+
+  it('초대 대상 조회를 employer/admin 역할로만 한정한다 (staff 초대 dead-end 차단)', async () => {
+    const { inSpy } = mockUsersQueryOnce(null);
+
+    await workspaceService.lookupUserByEmail('someone@uniqn.app');
+
+    // 회귀 가드: 역할 한정 필터가 빠지면 staff 가 다시 초대돼 수락 화면 없는 dead-end 발생
+    expect(inSpy).toHaveBeenCalledWith('role', ['employer', 'admin']);
+  });
+
+  it('employer 사용자는 정상 매핑되어 반환된다', async () => {
+    mockUsersQueryOnce({
+      id: 'emp-1',
+      name: '사장',
+      email: 'boss@uniqn.app',
+      photo_url: null,
+      is_active: true,
+    });
+
+    const result = await workspaceService.lookupUserByEmail('boss@uniqn.app');
+
+    expect(result).toEqual({
+      id: 'emp-1',
+      name: '사장',
+      email: 'boss@uniqn.app',
+      photoUrl: null,
+    });
+  });
+
+  it('역할 미일치(쿼리 결과 없음)면 null 을 반환한다', async () => {
+    mockUsersQueryOnce(null);
+
+    const result = await workspaceService.lookupUserByEmail('staff@uniqn.app');
+
+    expect(result).toBeNull();
   });
 });
