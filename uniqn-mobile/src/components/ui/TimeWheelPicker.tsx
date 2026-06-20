@@ -16,6 +16,7 @@ import {
   ScrollView,
   FlatList,
   Platform,
+  StyleSheet,
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from 'react-native';
@@ -55,6 +56,12 @@ export interface TimeWheelPickerProps {
   onConfirm: (value: TimeValue) => void;
   /** 닫기 콜백 */
   onClose: () => void;
+  /**
+   * 부모 Modal 내부에서 사용할 때 true.
+   * 네이티브에서 자체 Modal 대신 absoluteFill 오버레이로 렌더하여
+   * 중첩 Modal로 인한 터치 먹통(iOS)을 방지한다. (웹은 항상 Portal 사용)
+   */
+  embedded?: boolean;
 }
 
 // ============================================================================
@@ -596,6 +603,7 @@ export function TimeWheelPicker({
   minuteInterval = 5,
   onConfirm,
   onClose,
+  embedded = false,
 }: TimeWheelPickerProps) {
   // 웹에서는 Portal로 body에 직접 렌더링 (z-index 문제 해결)
   if (isWeb) {
@@ -613,24 +621,34 @@ export function TimeWheelPicker({
     );
   }
 
-  // 네이티브에서는 기존 Modal 사용
-  // Pressable 중첩을 피해 backdrop과 콘텐츠를 분리 (ScrollView 제스처 충돌 방지)
+  // 네이티브 콘텐츠 (backdrop + 휠) — Modal 여부와 무관하게 공유
+  const content = (
+    <View style={StyleSheet.absoluteFill} className="justify-end">
+      {/* Backdrop - 콘텐츠 위의 빈 영역만 터치 가능 */}
+      <Pressable className="flex-1 bg-black/50" onPress={onClose} />
+      {/* 콘텐츠 - Pressable로 감싸지 않아 ScrollView 제스처 정상 동작 */}
+      <NativeWheelPicker
+        value={value}
+        title={title}
+        minHour={minHour}
+        maxHour={maxHour}
+        minuteInterval={minuteInterval}
+        onConfirm={onConfirm}
+        onClose={onClose}
+      />
+    </View>
+  );
+
+  // 부모 Modal 내부(embedded): 중첩 Modal을 피해 absoluteFill 오버레이로 렌더.
+  // iOS에서 Modal-in-Modal은 콘텐츠는 보이나 터치/스크롤이 먹통이 되므로 금지.
+  if (embedded) {
+    return visible ? content : null;
+  }
+
+  // 독립 사용(standalone): 기존 Modal 경로 유지 (하위 호환)
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View className="flex-1 justify-end">
-        {/* Backdrop - 콘텐츠 위의 빈 영역만 터치 가능 */}
-        <Pressable className="flex-1 bg-black/50" onPress={onClose} />
-        {/* 콘텐츠 - Pressable로 감싸지 않아 ScrollView 제스처 정상 동작 */}
-        <NativeWheelPicker
-          value={value}
-          title={title}
-          minHour={minHour}
-          maxHour={maxHour}
-          minuteInterval={minuteInterval}
-          onConfirm={onConfirm}
-          onClose={onClose}
-        />
-      </View>
+      {content}
     </Modal>
   );
 }

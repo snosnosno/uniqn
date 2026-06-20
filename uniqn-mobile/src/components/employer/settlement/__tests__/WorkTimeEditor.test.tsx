@@ -36,15 +36,18 @@ jest.mock('../../../ui/SheetModal', () => ({
     visible,
     children,
     footer,
+    overlay,
   }: {
     visible: boolean;
     children: React.ReactNode;
     footer?: React.ReactNode;
+    overlay?: React.ReactNode;
   }) =>
     visible ? (
       <>
         {children}
         {footer}
+        {overlay}
       </>
     ) : null,
 }));
