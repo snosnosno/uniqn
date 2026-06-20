@@ -27,6 +27,7 @@ import {
   EditIcon,
   HomeIcon,
   UsersIcon,
+  StarIcon,
 } from '@/components/icons';
 import { useAuth } from '@/hooks/useAuth';
 import { useBubbleScore } from '@/hooks/useReviews';
@@ -169,16 +170,7 @@ export default function ProfileScreen() {
                     {profile?.role ? getRoleDisplayName(profile.role) : '미설정'}
                   </Text>
                 </View>
-                {bubbleScore && (
-                  <Pressable
-                    onPress={() => router.push('/(app)/reviews/history')}
-                    hitSlop={12}
-                    accessibilityRole="button"
-                    accessibilityLabel="내 평점 보기, 리뷰 이력으로 이동"
-                  >
-                    <BubbleScoreBadge score={bubbleScore.score} />
-                  </Pressable>
-                )}
+                {bubbleScore && <BubbleScoreBadge score={bubbleScore.score} />}
               </View>
             </View>
             <EditIcon size={20} color={SECONDARY_PALETTE[400]} />
@@ -216,6 +208,12 @@ export default function ProfileScreen() {
         </Card>
 
         <Card className="mb-4">
+          <MenuItem
+            icon={<StarIcon size={20} color={SECONDARY_PALETTE[500]} />}
+            label="내 평점·리뷰 이력"
+            onPress={() => router.push('/(app)/reviews/history')}
+          />
+          <Divider spacing="sm" />
           <MenuItem
             icon={<HomeIcon size={20} color={SECONDARY_PALETTE[500]} />}
             label="대시보드"
