@@ -338,6 +338,17 @@ export function WorkTimeEditor({
         title="근무 시간 수정"
         footer={footerContent}
         isLoading={isLoading}
+        overlay={
+          <TimeWheelPicker
+            visible={activePicker !== null}
+            value={activePickerValue}
+            title={activePickerTitle}
+            minuteInterval={15}
+            onConfirm={handlePickerConfirm}
+            onClose={() => setActivePicker(null)}
+            embedded
+          />
+        }
       >
         <View className="px-4">
           {/* 스태프 정보 */}
@@ -442,15 +453,6 @@ export function WorkTimeEditor({
             </Text>
           </View>
         </View>
-        {/* 휠 피커 모달 (SheetModal 내부에서 렌더링하여 iOS Modal 스태킹 문제 방지) */}
-        <TimeWheelPicker
-          visible={activePicker !== null}
-          value={activePickerValue}
-          title={activePickerTitle}
-          minuteInterval={15}
-          onConfirm={handlePickerConfirm}
-          onClose={() => setActivePicker(null)}
-        />
       </SheetModal>
     </>
   );

@@ -48,6 +48,12 @@ export interface SheetModalProps {
   /** 로딩 중 닫기 방지 */
   isLoading?: boolean;
   fullHeight?: boolean;
+  /**
+   * 모달 최상위에 겹쳐 띄우는 오버레이(시간 피커 등).
+   * children(ScrollView 내부)이 아닌 Modal 루트에 렌더링하므로
+   * 중첩 Modal 없이 전체 화면 오버레이가 터치를 정상 수신한다.
+   */
+  overlay?: React.ReactNode;
 }
 
 // ============================================================================
@@ -64,6 +70,7 @@ function WebSheetModal({
   showCloseButton = true,
   isLoading = false,
   fullHeight = false,
+  overlay,
 }: SheetModalProps) {
   const { isDarkMode } = useThemeStore();
   const { height: windowHeight } = useWindowDimensions();
@@ -195,6 +202,9 @@ function WebSheetModal({
             {footer && <View className="px-4 py-4 border-t border-divider pb-8">{footer}</View>}
           </View>
         </View>
+
+        {/* 오버레이 (웹: TimeWheelPicker가 자체 Portal로 최상위 렌더) */}
+        {overlay}
       </View>
     </WebPortal>
   );
@@ -214,6 +224,7 @@ function NativeSheetModal({
   showCloseButton = true,
   isLoading = false,
   fullHeight = false,
+  overlay,
 }: SheetModalProps) {
   const { isDarkMode } = useThemeStore();
   const { height: windowHeight } = useWindowDimensions();
@@ -355,6 +366,10 @@ function NativeSheetModal({
               {footer && <View className="px-4 py-4 border-t border-divider">{footer}</View>}
             </SafeAreaView>
           </Animated.View>
+
+          {/* 오버레이 (시간 피커 등) — Modal 루트에 직접 렌더하여 중첩 Modal 회피.
+              자식 오버레이가 absoluteFill로 전체 화면을 덮어 터치를 정상 수신한다. */}
+          {overlay}
         </View>
       </KeyboardAvoidingView>
     </RNModal>
