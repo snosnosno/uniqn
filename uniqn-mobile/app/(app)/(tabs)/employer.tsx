@@ -29,8 +29,13 @@ import { useHasRole } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
 import type { JobPosting } from '@/types';
 import type { SharedJobPosting } from '@/types/jobPostingCollaborator';
+import {
+  countPostingsByFilter,
+  postingMatchesFilter,
+  type PostingFilterStatus,
+} from '@/utils/employerPostingFilter';
 
-type FilterStatus = 'all' | 'active' | 'closed';
+type FilterStatus = PostingFilterStatus;
 
 const FILTER_OPTIONS: { value: FilterStatus; label: string }[] = [
   { value: 'all', label: '전체' },
@@ -141,7 +146,9 @@ function EmployerView() {
 
     const today = new Date().toISOString().split('T')[0] ?? '';
     const filtered =
-      filter === 'all' ? postings : postings.filter((posting) => posting.status === filter);
+      filter === 'all'
+        ? postings
+        : postings.filter((posting) => postingMatchesFilter(posting.status, filter));
 
     return [...filtered].sort((left, right) => {
       const leftDateTime = getEarliestDateTime(left, today);
@@ -172,13 +179,7 @@ function EmployerView() {
       return {};
     }
 
-    const counts: Partial<Record<FilterStatus, number>> = { all: postings.length };
-    postings.forEach((posting) => {
-      const status = posting.status as FilterStatus;
-      counts[status] = (counts[status] || 0) + 1;
-    });
-
-    return counts;
+    return countPostingsByFilter(postings);
   }, [postings]);
 
   const handlePostingPress = useCallback((posting: JobPosting) => {
