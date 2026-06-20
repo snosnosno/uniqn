@@ -36,20 +36,19 @@ function formatDate(timestamp: DateInput): string {
   return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
 }
 
+// 불러올 수 없는 템플릿 = 스케줄 정보가 손상/누락된 경우뿐.
+// (고정공고 fixed 는 round-trip 검증 완료 → 정상 지원. jobTemplate.test.ts 참고)
 function isSupportedTemplateData(templateData?: JobPostingTemplate['templateData']): boolean {
-  if (!templateData?.schedule) {
-    return false;
-  }
-
-  return templateData.postingType !== 'fixed' && templateData.schedule.kind !== 'fixed';
+  return !!templateData?.schedule;
 }
 
 function getPostingTypeLabel(template: JobPostingTemplate): string {
   const postingType = template.templateData?.postingType;
   if (postingType === 'tournament') return '대회';
   if (postingType === 'urgent') return '긴급';
+  if (postingType === 'fixed') return '고정';
   if (template.templateData && !isSupportedTemplateData(template.templateData)) {
-    return '지원 중단';
+    return '불러올 수 없음';
   }
   return '일반';
 }
@@ -131,7 +130,7 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
       {isUnsupported ? (
         <View className="mb-3 rounded-lg bg-warning-50 p-3 dark:bg-warning-900/30">
           <Text className="text-xs text-warning-700 dark:text-warning-300 font-sans">
-            fixed 템플릿은 V3 canonical 전환 동안 불러올 수 없습니다.
+            이 템플릿은 저장된 정보가 손상되어 불러올 수 없어요. 삭제 후 새로 저장해 주세요.
           </Text>
         </View>
       ) : null}

@@ -49,6 +49,68 @@ describe('jobTemplate fixed schedule', () => {
     expect(schedule?.kind).toBe('fixed');
     expect(schedule?.requirements[0].timeSlots[0].isTimeToBeAnnounced).toBe(false);
   });
+
+  // P1 라운드트립: 고정공고를 템플릿으로 저장 → 다시 불러오면 동일한 폼으로 복원돼야 한다.
+  // (LoadTemplateModal 의 fixed 차단 가드 해제 안전성 보장 — 깨지면 차단 유지 근거)
+  it('restores a fixed posting template back to a loadable form (save → load round-trip)', () => {
+    const template = createTemplate({
+      ...INITIAL_JOB_POSTING_FORM_DATA,
+      postingType: 'fixed',
+      title: '서울 딜러 고정',
+      daysPerWeek: 5,
+      startTime: '19:00',
+      isStartTimeNegotiable: false,
+      roles: [
+        {
+          name: DEALER_ROLE_NAME,
+          count: 3,
+          salary: { type: 'hourly', amount: 14000 },
+        },
+      ],
+    } as JobPostingFormData);
+
+    expect(template.templateData.schedule?.kind).toBe('fixed');
+
+    const loaded = {
+      ...INITIAL_JOB_POSTING_FORM_DATA,
+      ...templateToFormData(template),
+    } as JobPostingFormData;
+
+    expect(loaded.postingType).toBe('fixed');
+    expect(loaded.daysPerWeek).toBe(5);
+    expect(loaded.startTime).toBe('19:00');
+    expect(loaded.isStartTimeNegotiable).toBe(false);
+    expect(loaded.roles).toMatchObject([
+      {
+        name: DEALER_ROLE_NAME,
+        count: 3,
+        salary: { type: 'hourly', amount: 14000 },
+      },
+    ]);
+  });
+
+  // 협의 출근시간(isStartTimeNegotiable:true, startTime 없음) 고정공고도 round-trip 보존
+  it('restores a negotiable-start fixed template without a startTime', () => {
+    const template = createTemplate({
+      ...INITIAL_JOB_POSTING_FORM_DATA,
+      postingType: 'fixed',
+      title: '협의 고정',
+      daysPerWeek: 3,
+      startTime: '',
+      isStartTimeNegotiable: true,
+      roles: [{ name: DEALER_ROLE_NAME, count: 1 }],
+    } as JobPostingFormData);
+
+    const loaded = {
+      ...INITIAL_JOB_POSTING_FORM_DATA,
+      ...templateToFormData(template),
+    } as JobPostingFormData;
+
+    expect(loaded.postingType).toBe('fixed');
+    expect(loaded.daysPerWeek).toBe(3);
+    expect(loaded.isStartTimeNegotiable).toBe(true);
+    expect(loaded.startTime).toBe('');
+  });
 });
 
 describe('jobTemplate dated template helpers', () => {

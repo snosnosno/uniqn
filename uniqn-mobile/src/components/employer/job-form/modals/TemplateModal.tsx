@@ -98,16 +98,16 @@ export function TemplateModal({
         </Text>
         <View className="flex-col gap-1">
           <Text className="text-primary-700 dark:text-primary-300 text-xs font-sans">
-            - 제목, 공고 타입, 지역 정보
+            - 제목, 공고 설명, 공고 타입
           </Text>
           <Text className="text-primary-700 dark:text-primary-300 text-xs font-sans">
-            - 급여 정보, 복리후생
-          </Text>
-          <Text className="text-primary-700 dark:text-primary-300 text-xs font-sans">
-            - 사전질문 설정
+            - 지역, 연락처, 급여·복리후생
           </Text>
           <Text className="text-primary-700 dark:text-primary-300 text-xs font-sans">
             - 역할/인원 정보
+          </Text>
+          <Text className="text-primary-700 dark:text-primary-300 text-xs font-sans">
+            - 사전질문 설정
           </Text>
         </View>
         <View className="mt-2 pt-2 border-t border-primary-200 dark:border-primary-700">

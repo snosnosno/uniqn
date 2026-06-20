@@ -4,7 +4,7 @@
  * @version 1.1.0
  */
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   deleteTemplate,
@@ -127,8 +127,24 @@ export function useTemplateManager() {
   const saveMutation = useSaveTemplate();
   const loadMutation = useLoadTemplate();
 
-  // 진행 중인 삭제 타이머 (Undo 지원)
-  const pendingDeletesRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  // 진행 중인 삭제 (Undo 지원) — 타이머 + 즉시 커밋 함수를 함께 보관해
+  // 언마운트 시 flush 할 수 있게 한다.
+  const pendingDeletesRef = useRef<
+    Map<string, { timer: ReturnType<typeof setTimeout>; commit: () => void }>
+  >(new Map());
+
+  // 언마운트 시 남아 있는 삭제를 즉시 커밋한다(타이머 누수 방지).
+  // 사용자는 이미 목록에서 사라진 상태로 화면을 떠났으므로 삭제 의도로 간주.
+  useEffect(() => {
+    const pending = pendingDeletesRef.current;
+    return () => {
+      pending.forEach(({ timer, commit }) => {
+        clearTimeout(timer);
+        commit();
+      });
+      pending.clear();
+    };
+  }, []);
 
   const openTemplateModal = useCallback(() => {
     setIsTemplateModalOpen(true);
@@ -204,38 +220,59 @@ export function useTemplateManager() {
       const userId = user.uid;
       const listKey = queryKeys.templates.list(userId);
 
-      const previousList = queryClient.getQueryData<JobPostingTemplate[]>(listKey);
-      const deletedTemplate = previousList?.find((t) => t.id === templateId);
+      const currentList = queryClient.getQueryData<JobPostingTemplate[]>(listKey);
+      const index = currentList?.findIndex((t) => t.id === templateId) ?? -1;
+      const deletedTemplate = index >= 0 && currentList ? currentList[index] : undefined;
 
-      if (!previousList || !deletedTemplate) {
+      if (!currentList || !deletedTemplate) {
         return false;
       }
+
+      // 삭제 항목을 현재 캐시의 원래 위치에 다시 끼워 넣어 복원한다.
+      // (전체 스냅샷 덮어쓰기 금지 — 연속 삭제 시 다른 대기 항목이 되살아나는 경쟁 방지)
+      const restore = () => {
+        const latest = queryClient.getQueryData<JobPostingTemplate[]>(listKey) ?? [];
+        if (latest.some((t) => t.id === templateId)) {
+          return;
+        }
+        const next = [...latest];
+        next.splice(Math.min(index, next.length), 0, deletedTemplate);
+        queryClient.setQueryData<JobPostingTemplate[]>(listKey, next);
+      };
 
       // 1. 캐시에서 즉시 제거 (옵티미스틱)
       queryClient.setQueryData<JobPostingTemplate[]>(
         listKey,
-        previousList.filter((t) => t.id !== templateId)
+        currentList.filter((t) => t.id !== templateId)
       );
 
-      // 2. 실제 DELETE 스케줄
-      const timer = setTimeout(async () => {
-        pendingDeletesRef.current.delete(templateId);
-        try {
-          await deleteTemplate(templateId, userId);
-          logger.info('템플릿 삭제 완료', { templateId });
-          queryClient.invalidateQueries({ queryKey: queryKeys.templates.all });
-        } catch (error) {
-          logger.error('템플릿 삭제 실패', toError(error));
-          // 실패 시 캐시 복원
-          queryClient.setQueryData<JobPostingTemplate[]>(listKey, previousList);
-          addToast({
-            type: 'error',
-            message: extractErrorMessage(error, '템플릿 삭제에 실패했습니다.'),
-          });
+      // 실제 DELETE 커밋 (타이머 만료 또는 언마운트 시 1회만 실행).
+      let committed = false;
+      const commit = () => {
+        if (committed) {
+          return;
         }
-      }, UNDO_DELAY_MS);
+        committed = true;
+        pendingDeletesRef.current.delete(templateId);
+        deleteTemplate(templateId, userId)
+          .then(() => {
+            logger.info('템플릿 삭제 완료', { templateId });
+            queryClient.invalidateQueries({ queryKey: queryKeys.templates.all });
+          })
+          .catch((error) => {
+            logger.error('템플릿 삭제 실패', toError(error));
+            // 실패 시 캐시 복원
+            restore();
+            addToast({
+              type: 'error',
+              message: extractErrorMessage(error, '템플릿 삭제에 실패했습니다.'),
+            });
+          });
+      };
 
-      pendingDeletesRef.current.set(templateId, timer);
+      // 2. 실제 DELETE 스케줄
+      const timer = setTimeout(commit, UNDO_DELAY_MS);
+      pendingDeletesRef.current.set(templateId, { timer, commit });
 
       // 3. Undo 토스트
       addToast({
@@ -247,10 +284,10 @@ export function useTemplateManager() {
           onPress: () => {
             const pending = pendingDeletesRef.current.get(templateId);
             if (pending) {
-              clearTimeout(pending);
+              clearTimeout(pending.timer);
               pendingDeletesRef.current.delete(templateId);
             }
-            queryClient.setQueryData<JobPostingTemplate[]>(listKey, previousList);
+            restore();
             addToast({
               type: 'info',
               message: `'${templateNameToDelete}' 템플릿을 복원했습니다.`,
