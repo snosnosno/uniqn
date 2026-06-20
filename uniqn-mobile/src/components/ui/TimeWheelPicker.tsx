@@ -17,6 +17,8 @@ import {
   FlatList,
   Platform,
   StyleSheet,
+  BackHandler,
+  Keyboard,
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from 'react-native';
@@ -605,6 +607,20 @@ export function TimeWheelPicker({
   onClose,
   embedded = false,
 }: TimeWheelPickerProps) {
+  // embedded(부모 Modal 내부) 경로는 자체 Modal이 없어 Android 하드웨어 백을
+  // 가로채지 못한다 → 백이 부모 SheetModal로 전파돼 편집기 전체가 닫히는 회귀.
+  // 피커가 열려 있는 동안 백을 소비해 피커만 닫는다. (네이티브 전용)
+  // 또한 열릴 때 키보드를 내려 오버레이가 KeyboardAvoidingView로 밀리는 것을 방지.
+  useEffect(() => {
+    if (isWeb || !embedded || !visible) return undefined;
+    Keyboard.dismiss();
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      onClose();
+      return true; // 이벤트 소비 → 부모 SheetModal onRequestClose 미발화
+    });
+    return () => sub.remove();
+  }, [embedded, visible, onClose]);
+
   // 웹에서는 Portal로 body에 직접 렌더링 (z-index 문제 해결)
   if (isWeb) {
     return (
