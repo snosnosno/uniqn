@@ -196,10 +196,14 @@ export const workspaceService = {
     }
 
     try {
+      // 워크스페이스 멤버는 구조적으로 employer/admin 전제(공고 생성 RLS·(employer) 라우트 가드).
+      // staff 를 초대하면 수락 화면이 employer 전용이라 수신자가 도달 불가한 dead-end 가 되므로
+      // 조회 단계에서 employer/admin 으로 한정해 애초에 초대되지 않도록 막는다.
       const { data, error } = await supabase
         .from('users')
         .select('id, name, email, photo_url, is_active')
         .eq('email', trimmed)
+        .in('role', ['employer', 'admin'])
         .maybeSingle();
 
       if (error) {
