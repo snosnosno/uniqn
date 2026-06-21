@@ -5,9 +5,9 @@
 import { WalletRepository } from '../WalletRepository';
 
 const mockMaybeSingle = jest.fn();
-const mockEq = jest.fn(() => ({ maybeSingle: mockMaybeSingle }));
-const mockSelect = jest.fn(() => ({ eq: mockEq }));
-const mockFrom = jest.fn(() => ({ select: mockSelect }));
+const mockEq = jest.fn((..._a: unknown[]) => ({ maybeSingle: mockMaybeSingle }));
+const mockSelect = jest.fn((..._a: unknown[]) => ({ eq: mockEq }));
+const mockFrom = jest.fn((..._a: unknown[]) => ({ select: mockSelect }));
 jest.mock('@/lib/supabase', () => ({ supabase: { from: (...a: unknown[]) => mockFrom(...a) } }));
 
 describe('WalletRepository.getMonetizationConfig', () => {
