@@ -48,11 +48,13 @@ function toCanonicalPostingLocation(
   }
 
   const district = location.district ?? location.address;
+  const region = location.region;
   const detailedAddress = location.detailedAddress;
 
   return {
     name: location.name,
     ...(district !== undefined ? { district } : {}),
+    ...(region !== undefined ? { region } : {}),
     ...(detailedAddress !== undefined ? { detailedAddress } : {}),
   };
 }
@@ -65,11 +67,13 @@ function toCreateInputLocation(
   }
 
   const district = normalizeOptionalText(location.district ?? location.address);
+  const region = normalizeOptionalText(location.region);
   const detailedAddress = normalizeOptionalText(location.detailedAddress);
 
   return {
     name: location.name.trim(),
     ...(district ? { district } : {}),
+    ...(region ? { region } : {}),
     ...(detailedAddress ? { detailedAddress } : {}),
   };
 }
@@ -82,15 +86,18 @@ function toUpdateInputLocation(
   }
 
   const district = normalizeOptionalText(location.district ?? location.address);
+  const region = normalizeOptionalText(location.region);
   const detailedAddress = normalizeOptionalText(location.detailedAddress);
   const hasDistrictField =
     Object.prototype.hasOwnProperty.call(location, 'district') ||
     Object.prototype.hasOwnProperty.call(location, 'address');
+  const hasRegionField = Object.prototype.hasOwnProperty.call(location, 'region');
   const hasDetailedAddressField = Object.prototype.hasOwnProperty.call(location, 'detailedAddress');
 
   return {
     name: location.name.trim(),
     ...(hasDistrictField ? { district } : {}),
+    ...(hasRegionField ? { region } : {}),
     ...(hasDetailedAddressField ? { detailedAddress } : {}),
   };
 }

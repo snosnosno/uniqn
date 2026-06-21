@@ -389,3 +389,29 @@ describe('draftAdapter fixed (통일 구조)', () => {
     expect(form.startTime).toBe('19:00');
   });
 });
+
+describe('draftAdapter location.region 보존', () => {
+  function draftWithRegion(): JobPostingDraft {
+    const base = createDatedDraft();
+    return {
+      ...base,
+      location: { ...base.location!, region: '서울 강남구' },
+    };
+  }
+
+  it('draftToFormData 가 region 을 보존한다 (작성 폼 표시)', () => {
+    const form = draftToFormData(draftWithRegion());
+    expect(form.location?.region).toBe('서울 강남구');
+  });
+
+  it('draftToCreateJobPostingInput 가 region 을 저장 페이로드에 포함한다', () => {
+    const input = draftToCreateJobPostingInput(draftWithRegion());
+    expect((input.location as { region?: string }).region).toBe('서울 강남구');
+  });
+
+  it('formDataToDraft → draftToCreateJobPostingInput 전체 경로에서 region 이 살아남는다', () => {
+    const form = draftToFormData(draftWithRegion());
+    const input = draftToCreateJobPostingInput(formDataToDraft(form));
+    expect((input.location as { region?: string }).region).toBe('서울 강남구');
+  });
+});
