@@ -132,7 +132,12 @@ Deno.serve(async (req: Request) => {
     return badRequest('missing_event_id');
   }
   if (!event.app_user_id || !UUID_REGEX.test(event.app_user_id)) {
-    return badRequest('invalid_app_user_id', { app_user_id: event.app_user_id });
+    // iap-4: RC 익명 id($RCAnonymousID:...) 등 비-UUID 는 특정 사용자에 매핑 불가.
+    //   400 으로 응답하면 RC 가 재시도 후 폐기→결제-미적립 영구 손실. 200(ignored)로 응답해
+    //   재시도 폭주를 막고, 사용자는 useRestorePurchases 로 로그인 uid 재동기화 시 RC 가
+    //   올바른 app_user_id 로 webhook 을 재발행해 복구된다. (관측을 위해 warn 로깅)
+    console.warn(`non_uuid_app_user_id (ignored): ${event.app_user_id} event=${event.id}`);
+    return ok({ ignored: true, reason: 'non_uuid_user', app_user_id: event.app_user_id });
   }
   if (!event.product_id || typeof event.product_id !== 'string') {
     return badRequest('missing_product_id');
@@ -150,6 +155,8 @@ Deno.serve(async (req: Request) => {
   }
   const client = createClient(supabaseUrl, serviceRoleKey);
 
+  const isRefund = decision.action === 'refund';
+
   // 7) product_id → diamonds + bonus_diamonds 조회 (DB 신뢰)
   const { data: product, error: productError } = await client
     .from('diamond_products')
@@ -164,20 +171,40 @@ Deno.serve(async (req: Request) => {
       headers: responseHeaders,
     });
   }
+
+  // iap-1: 환불(REFUND/CANCELLATION)은 product active/존재 게이트를 적용하지 않는다.
+  //   운영자가 구SKU 를 비활성화(active=false)/삭제해도 환불 클로백(차감)이 누락되면
+  //   사용자가 환불금+다이아를 모두 보유하게 되므로, 환불은 게이트보다 우선한다.
+  //   - product 존재(active/inactive 무관): 해당 행의 diamonds 로 차감.
+  //   - product 삭제됨: 차감 금액 산출 불가 → 200(ignored)+로깅(재시도 폭주/오차감 방지).
+  //     ※ iap-3 한계: 환불 차감량을 '현재' diamond_products 설정에서 산출하므로, 구매↔환불
+  //       사이 diamonds/bonus_diamonds 가 변경되면 차감액이 원 적립액과 달라질 수 있다.
+  //       정확한 원거래 역추적은 credit 시 transaction_id 저장(스키마 변경)이 선행돼야 함.
   if (!product) {
+    if (isRefund) {
+      console.warn(`refund_product_not_found (ignored): ${event.product_id} event=${event.id}`);
+      return ok({
+        ignored: true,
+        reason: 'refund_product_not_found',
+        product_id: event.product_id,
+      });
+    }
     console.error(`product_not_found: ${event.product_id}`);
     return badRequest('product_not_found', { product_id: event.product_id });
   }
-  if (product.active === false) {
+  if (!isRefund && product.active === false) {
     return badRequest('product_inactive', { product_id: event.product_id });
   }
 
   const totalDiamonds = (product.diamonds ?? 0) + (product.bonus_diamonds ?? 0);
   if (totalDiamonds <= 0) {
+    if (isRefund) {
+      console.warn(`refund_invalid_amount (ignored): ${event.product_id} event=${event.id}`);
+      return ok({ ignored: true, reason: 'refund_invalid_amount', product_id: event.product_id });
+    }
     return badRequest('invalid_product_amount', { product_id: event.product_id });
   }
 
-  const isRefund = decision.action === 'refund';
   const diamondsToCredit = isRefund ? -totalDiamonds : totalDiamonds;
 
   // 8) credit_diamonds_atomically 호출 (음수=환불, 양수=구매)

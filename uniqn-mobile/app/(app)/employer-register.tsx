@@ -19,6 +19,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useEmployerApplication } from '@/hooks/auth/useEmployerApplication';
 import { registerAsEmployer } from '@/services/auth';
 import { useToast } from '@/stores/toastStore';
+import { extractUserMessage } from '@/errors';
 import { logger } from '@/utils/logger';
 import { formatE164ToDisplay } from '@/utils/phone';
 import {
@@ -179,7 +180,8 @@ export default function EmployerRegisterScreen() {
         '구인자 등록 신청 실패',
         error instanceof Error ? error : new Error(String(error))
       );
-      toast.error(error instanceof Error ? error.message : '구인자 등록 신청에 실패했습니다');
+      // 원본(개발자) 에러 메시지 노출 금지 — AppError userMessage/일반 메시지로 sanitize.
+      toast.error(extractUserMessage(error));
     } finally {
       setIsSubmitting(false);
     }

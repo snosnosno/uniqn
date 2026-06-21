@@ -54,6 +54,14 @@ export interface IWalletRepository {
   listProducts(): Promise<DiamondProduct[]>;
 
   /**
+   * 수익화 원격 설정(app_config key='monetization') 조회.
+   * 충전 UI 노출 원격 킬스위치(show_purchase_ui)를 위한 단일 reader.
+   *
+   * @returns showPurchaseUi: 충전 UI 노출 허용 여부. 읽기 실패/미설정 시 기본 true(fail-open).
+   */
+  getMonetizationConfig(): Promise<{ showPurchaseUi: boolean }>;
+
+  /**
    * 본인 일일 출석 체크 — 하트 1개 적립(90일 만료). KST 기준 일일 1회.
    *
    * @returns 성공 시 lot 정보, 이미 출석 시 success:false. 미인증 등은 throw.

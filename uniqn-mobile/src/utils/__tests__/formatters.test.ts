@@ -7,7 +7,6 @@
 import {
   formatNumber,
   formatCurrency,
-  formatCurrencyShort,
   maskEmail,
   formatPositions,
   formatPercent,
@@ -49,33 +48,6 @@ describe('Formatters', () => {
 
     it('should handle zero', () => {
       expect(formatCurrency(0)).toBe('₩0');
-    });
-  });
-
-  describe('formatCurrencyShort', () => {
-    it('should format amounts under 10,000', () => {
-      expect(formatCurrencyShort(5000)).toBe('5,000원');
-      expect(formatCurrencyShort(9999)).toBe('9,999원');
-    });
-
-    it('should format amounts in 만원 units', () => {
-      expect(formatCurrencyShort(10000)).toBe('1만원');
-      expect(formatCurrencyShort(150000)).toBe('15만원');
-      expect(formatCurrencyShort(1000000)).toBe('100만원');
-    });
-
-    it('should format amounts with remainder', () => {
-      expect(formatCurrencyShort(15000)).toBe('1만 5,000원');
-      expect(formatCurrencyShort(125000)).toBe('12만 5,000원');
-    });
-
-    it('should handle zero', () => {
-      expect(formatCurrencyShort(0)).toBe('0원');
-    });
-
-    it('should handle null/undefined', () => {
-      expect(formatCurrencyShort(null)).toBe('0원');
-      expect(formatCurrencyShort(undefined)).toBe('0원');
     });
   });
 

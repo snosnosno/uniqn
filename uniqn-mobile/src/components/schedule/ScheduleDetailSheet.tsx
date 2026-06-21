@@ -21,7 +21,7 @@ import {
 import { useCurrentWorkStatus } from '@/hooks/useWorkLogs';
 import { formatCurrency } from '@/utils/settlement';
 import { getRoleDisplayName } from '@/types/unified';
-import { TimeNormalizer, type TimeInput } from '@/shared/time';
+import { formatTime } from './helpers/timeHelpers';
 import type { ScheduleEvent } from '@/types';
 import { useThemeStore } from '@/stores/themeStore';
 import { STATUS } from '@/constants';
@@ -53,11 +53,7 @@ interface ScheduleDetailSheetProps {
 // Helper Functions
 // ============================================================================
 
-function formatTime(value: TimeInput): string {
-  const date = TimeNormalizer.parseTime(value);
-  if (!date) return '--:--';
-  return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
-}
+// formatTime: 공용 헬퍼(./helpers/timeHelpers)로 통일 — 중복 구현 제거(impeccable v2 §19).
 
 function formatDate(dateString: string): string {
   return formatDateKoreanWithDay(dateString) || dateString || '-';

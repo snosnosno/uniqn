@@ -295,7 +295,8 @@ export async function incrementBoardPostViewCount(postId: string): Promise<void>
 
     await boardRepository.incrementViewCount(postId);
   } catch (error) {
-    throw handleSilentError(error, {
+    // 조회수 증가 실패는 비핵심 — 조용히 삼킨다(handleSilentError 는 void 반환이라 throw 금지).
+    handleSilentError(error, {
       operation: '게시글 조회수 증가',
       component: COMPONENT,
       context: { postId },
