@@ -386,8 +386,18 @@ test.describe('WF-08-2 Employer 취소 요청 승인 happy path', () => {
       return;
     }
 
+    // PR #195 anon 하드닝: auth.uid() == p_actor_id 검사 추가로 service role(auth.uid()=NULL) 불가.
+    const employerToken = await signInWithSupabase(
+      SUPABASE_QA_ACCOUNTS.employer.email,
+      SUPABASE_QA_ACCOUNTS.employer.password
+    );
+    const employerClient = createClient(E2E_CONFIG.supabase.url, E2E_CONFIG.supabase.anonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: { headers: { Authorization: `Bearer ${employerToken.access_token}` } },
+    });
+
     // employer(구인자)가 취소 요청을 승인 — actor_type: 'staff_approves_cancel_request'
-    const { data, error } = await adminClient.rpc('cancel_application_atomically', {
+    const { data, error } = await employerClient.rpc('cancel_application_atomically', {
       p_application_id: applicationId,
       p_actor_type: 'staff_approves_cancel_request',
       p_actor_id: SUPABASE_QA_ACCOUNTS.employer.id,
