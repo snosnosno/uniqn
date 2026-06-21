@@ -39,6 +39,7 @@ jest.mock('@/repositories/supabase/WalletRepository', () => ({
         },
       ])
     ),
+    getMonetizationConfig: jest.fn(() => Promise.resolve({ showPurchaseUi: true })),
   },
 }));
 

@@ -79,6 +79,28 @@ export const WalletRepository: IWalletRepository = {
   },
 
   /**
+   * 수익화 원격 설정(app_config key='monetization') 조회 — 충전 UI 원격 킬스위치.
+   * show_purchase_ui=false 면 충전 UI 를 숨겨 재배포 없이 결제를 차단할 수 있다.
+   * 읽기 실패/미설정 시 fail-open(true) — 일시적 오류로 정상 결제가 막히지 않도록.
+   */
+  async getMonetizationConfig(): Promise<{ showPurchaseUi: boolean }> {
+    const { data, error } = await supabase
+      .from('app_config')
+      .select('value')
+      .eq('key', 'monetization')
+      .maybeSingle();
+    if (error) {
+      logger.warn('wallet.getMonetizationConfig.failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return { showPurchaseUi: true };
+    }
+    const value = (data?.value ?? {}) as { show_purchase_ui?: boolean };
+    // 명시적 false 만 차단, 그 외(미설정/true)는 노출 허용.
+    return { showPurchaseUi: value.show_purchase_ui !== false };
+  },
+
+  /**
    * 본인 일일 출석 체크 — 하트 1개 적립(90일 만료). KST 기준 일일 1회.
    *
    * @returns 성공 시 lot 정보, 이미 출석 시 success:false. 미인증 등은 throw.

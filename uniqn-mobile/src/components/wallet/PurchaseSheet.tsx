@@ -28,14 +28,24 @@ export function PurchaseSheet() {
   const { restoring, restore } = useRestorePurchases();
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
 
+  // 충전 UI 원격 킬스위치(app_config monetization.show_purchase_ui).
+  // false 면 재배포 없이 충전 노출 차단. 로딩/실패 시 기본 노출(fail-open).
+  const monetizationQuery = useQuery({
+    queryKey: [...queryKeys.wallet.all, 'monetization'] as const,
+    queryFn: () => WalletRepository.getMonetizationConfig(),
+    enabled: isOpen,
+    staleTime: 5 * 60 * 1000,
+  });
+  const showPurchaseUi = monetizationQuery.data?.showPurchaseUi ?? true;
+
   const productsQuery = useQuery({
     queryKey: [...queryKeys.wallet.all, 'products'] as const,
     queryFn: () => WalletRepository.listProducts(),
-    enabled: isOpen,
+    enabled: isOpen && showPurchaseUi,
   });
 
   useEffect(() => {
-    if (!isOpen || !available) return;
+    if (!isOpen || !available || !showPurchaseUi) return;
     let active = true;
     purchasesService
       .getDiamondPackages()
@@ -51,7 +61,7 @@ export function PurchaseSheet() {
     return () => {
       active = false;
     };
-  }, [isOpen, available]);
+  }, [isOpen, available, showPurchaseUi]);
 
   const busy = status === 'purchasing' || status === 'processing';
   // 결제·복원 어느 쪽이든 진행 중이면 상호 배타 — 동시 빌링 트랜잭션·폴링 baseline 오염 차단
@@ -109,7 +119,16 @@ export function PurchaseSheet() {
 
   return (
     <Modal visible={isOpen} onClose={handleClose} title="다이아 충전" position="bottom">
-      {!available ? (
+      {!showPurchaseUi ? (
+        <View className="py-6">
+          <Text className="text-center font-sans text-content-primary dark:text-secondary-100">
+            다이아 충전은 현재 준비 중이에요.
+          </Text>
+          <Text className="mt-1 text-center font-sans text-sm text-secondary-500 dark:text-secondary-400">
+            곧 만나보실 수 있어요.
+          </Text>
+        </View>
+      ) : !available ? (
         <View className="py-6">
           <Text className="text-center font-sans text-content-primary dark:text-secondary-100">
             다이아 충전은 모바일 앱에서 가능해요.
