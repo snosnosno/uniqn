@@ -347,6 +347,8 @@ export interface PostingFacts {
   location: {
     shortLabel: string;
     fullLabel: string;
+    /** 구조화 지역 표시 라벨(예: '강남구'). region slug 미설정 시 undefined. */
+    regionLabel?: string;
   };
   owner: {
     id: string;
@@ -399,6 +401,8 @@ export interface PostingCardViewModel {
   workflow: PostingWorkflow;
   location: string;
   fullLocation: string;
+  /** 구조화 지역 표시 라벨(예: '강남구'). region slug 미설정 시 undefined. */
+  regionLabel?: string;
   workDate: string;
   timeSlot: string;
   roles: string[];
@@ -439,6 +443,8 @@ export interface PostingDetailViewModel {
   postingType?: PostingType;
   isUrgent: boolean;
   locationLabel: string;
+  /** 구조화 지역 표시 라벨(예: '강남구'). region slug 미설정 시 undefined. */
+  regionLabel?: string;
   contactPhone?: string;
   workDate: string;
   timeSlot: string;

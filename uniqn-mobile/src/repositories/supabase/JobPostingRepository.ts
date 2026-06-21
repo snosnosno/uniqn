@@ -204,7 +204,9 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
     }
   }
 
-  async getTypeCounts(filters?: Pick<JobPostingFilters, 'status'>): Promise<PostingTypeCounts> {
+  async getTypeCounts(
+    filters?: Pick<JobPostingFilters, 'status' | 'region'>
+  ): Promise<PostingTypeCounts> {
     try {
       logger.info('공고 타입별 개수 조회', { filters });
       let query = supabase.from(TABLE).select('posting_type, tournament_config');
@@ -216,6 +218,10 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
         query = query.eq('status', filters.status);
       } else {
         query = query.in('status', [STATUS.JOB_POSTING.ACTIVE, STATUS.JOB_POSTING.CAPACITY_FULL]);
+      }
+      // region 지정 시 getList 와 동일하게 location->>region 으로 좁혀 칩 카운트 정합 유지.
+      if (filters?.region) {
+        query = query.eq('location->>region', filters.region);
       }
       const { data, error } = await query;
       if (error) handleSupabaseError(error, { operation: '공고 타입별 개수 조회', table: TABLE });

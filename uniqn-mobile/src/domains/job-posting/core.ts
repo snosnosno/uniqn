@@ -13,6 +13,7 @@ import type {
 import type { DateSpecificRequirement, TimeSlot } from '@/types/jobPosting/dateRequirement';
 import type { RoleWithCount } from '@/types/postingConfig';
 import { FIXED_TIME_MARKER, TBA_TIME_MARKER } from '@/types/assignment';
+import { getRegionLabel } from '@/constants/regions';
 import { getRoleDisplayName } from '@/types/unified';
 import { groupRequirementsToDateRanges } from '@/utils/date';
 import { formatSalary } from '@/utils/formatters';
@@ -28,13 +29,17 @@ export function getPostingRoleKey(role: { role?: string; customRole?: string }):
 export function getPostingLocationLabels(posting: JobPosting): {
   shortLabel: string;
   fullLabel: string;
+  regionLabel?: string;
 } {
   const name = posting.location?.name || '';
   const detailed = posting.location?.detailedAddress || '';
+  // 구조화 지역(region slug) → 표시 라벨(예: '서울 강남구' → '강남구'). 미설정/미지정 slug 는 undefined.
+  const regionLabel = getRegionLabel(posting.location?.region);
 
   return {
     shortLabel: name,
     fullLabel: `${name}${detailed ? ` ${detailed}` : ''}`.trim(),
+    ...(regionLabel ? { regionLabel } : {}),
   };
 }
 
