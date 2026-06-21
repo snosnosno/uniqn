@@ -20,23 +20,7 @@ export { formatCurrency };
 // 기존 호출부 시그니처 완전 보존.
 export { formatNumber };
 
-/**
- * 금액 간략 표시 (만원 단위)
- */
-export const formatCurrencyShort = (value: number | undefined | null): string => {
-  if (value === undefined || value === null) return '0원';
-
-  if (value >= 10000) {
-    const man = Math.floor(value / 10000);
-    const remainder = value % 10000;
-    if (remainder > 0) {
-      return `${man}만 ${formatNumber(remainder)}원`;
-    }
-    return `${man}만원`;
-  }
-
-  return `${formatNumber(value)}원`;
-};
+// formatCurrencyShort: 데드 중복 제거 — formatCurrencyCompact(@/utils/formatters/currency) 사용.
 
 /**
  * 이메일 마스킹 (h***@gmail.com)
