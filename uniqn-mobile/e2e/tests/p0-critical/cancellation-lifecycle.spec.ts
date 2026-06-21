@@ -9,9 +9,15 @@
  * admin client가 있으면 DB 직접 seed + 검증.
  * 없으면 pre-seeded 데이터 or test.skip으로 graceful degradation.
  */
+import { createClient } from '@supabase/supabase-js';
 import { test, expect } from '@playwright/test';
 import path from 'path';
-import { getAdminClient, SUPABASE_QA_ACCOUNTS } from '../../helpers/supabase-admin';
+import { E2E_CONFIG } from '../../config';
+import {
+  getAdminClient,
+  signInWithSupabase,
+  SUPABASE_QA_ACCOUNTS,
+} from '../../helpers/supabase-admin';
 import { waitForAppReady } from '../../helpers/wait-helpers';
 import { ensureE2EWorkspace } from '../../helpers/workspace-seed';
 
@@ -257,8 +263,18 @@ test.describe('WF-08-1 Staff 확정 취소 happy path', () => {
       return;
     }
 
-    // RPC를 admin client로 직접 호출하여 원자적 취소 검증
-    const { data, error } = await adminClient.rpc('cancel_application_atomically', {
+    // PR #195 anon 하드닝: auth.uid() == p_actor_id 검사 추가로 service role(auth.uid()=NULL) 불가.
+    // staff 계정으로 로그인한 JWT 클라이언트로 RPC 호출.
+    const staffToken = await signInWithSupabase(
+      SUPABASE_QA_ACCOUNTS.staff.email,
+      SUPABASE_QA_ACCOUNTS.staff.password
+    );
+    const staffClient = createClient(E2E_CONFIG.supabase.url, E2E_CONFIG.supabase.anonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: { headers: { Authorization: `Bearer ${staffToken.access_token}` } },
+    });
+
+    const { data, error } = await staffClient.rpc('cancel_application_atomically', {
       p_application_id: applicationId,
       p_actor_type: 'staff_initiates',
       p_actor_id: SUPABASE_QA_ACCOUNTS.staff.id,
