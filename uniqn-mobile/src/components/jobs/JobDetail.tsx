@@ -151,7 +151,11 @@ export function JobDetail({ job }: JobDetailProps) {
         <InfoRow
           icon={<MapPinIcon size={18} color={SECONDARY_PALETTE[400]} />}
           label="근무지"
-          value={detail.locationLabel || '위치 정보 없음'}
+          value={
+            detail.regionLabel
+              ? `${detail.locationLabel || '위치 정보 없음'} · ${detail.regionLabel}`
+              : detail.locationLabel || '위치 정보 없음'
+          }
         />
 
         <View className="border-b border-divider py-3">

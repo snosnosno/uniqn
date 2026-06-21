@@ -85,6 +85,14 @@ export function PostingCardSurface({
                 {card.location}
               </Text>
             ) : null}
+            {card.regionLabel ? (
+              <Text
+                numberOfLines={1}
+                className="max-w-[140px] text-[11px] text-secondary-400 dark:text-secondary-500 font-sans"
+              >
+                📍 {card.regionLabel}
+              </Text>
+            ) : null}
             {titleAccessory}
           </View>
         </View>
