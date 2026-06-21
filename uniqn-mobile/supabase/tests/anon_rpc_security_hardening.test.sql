@@ -8,7 +8,7 @@
 -- auth.uid()/role 은 request.jwt.claims 로 시뮬레이션. 안전: BEGIN/ROLLBACK.
 -- ============================================================
 BEGIN;
-SELECT plan(20);
+SELECT plan(19);
 
 -- ─── 1) EXECUTE 권한: anon 회수 / authenticated 유지 ─────────────────────────
 SELECT ok(NOT has_function_privilege('anon', 'public.permanently_delete_user(uuid)', 'EXECUTE'),
