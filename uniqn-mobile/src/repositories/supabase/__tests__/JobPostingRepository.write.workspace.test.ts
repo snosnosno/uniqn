@@ -357,23 +357,20 @@ describe('JobPostingRepository write-side — owner_id 필터 회귀 가드', ()
     expect(eqCalls).not.toContain('owner_id');
   });
 
-  it('deleteWithTransaction 은 클라 UPDATE 대신 단일 취소+환불 RPC를 호출 (M3 — 서버 authz, owner_id 필터 없음)', async () => {
+  it('deleteWithTransaction 은 status=cancelled 직접 UPDATE를 수행 (지갑 제거 후 클라이언트 UPDATE)', async () => {
     const { updateChain } = setupLoadAndUpdate();
-    mockRpc.mockImplementation((fn: string) => {
-      if (fn === 'cancel_job_posting_with_refund_atomically') {
-        return Promise.resolve({ data: { success: true }, error: null });
-      }
-      return Promise.resolve({ data: false, error: null });
+    (updateChain.update as jest.Mock).mockReturnValue({
+      eq: jest.fn().mockResolvedValue({ error: null }),
     });
 
     await repo.deleteWithTransaction(POSTING_ID, OWNER_ID).catch(() => {});
 
-    // 취소(status=cancelled)+환불을 서버 RPC가 단일 트랜잭션·서버 authz로 수행
-    // → 클라이언트 PostgREST UPDATE(owner_id 필터 leak 여지) 자체가 사라짐.
-    expect(mockRpc).toHaveBeenCalledWith('cancel_job_posting_with_refund_atomically', {
-      p_posting_id: POSTING_ID,
-      p_owner_id: OWNER_ID,
-    });
-    expect(updateChain.update as jest.Mock).not.toHaveBeenCalled();
+    expect(updateChain.update as jest.Mock).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'cancelled' })
+    );
+    expect(mockRpc).not.toHaveBeenCalledWith(
+      'cancel_job_posting_with_refund_atomically',
+      expect.anything()
+    );
   });
 });

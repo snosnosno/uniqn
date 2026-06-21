@@ -22,7 +22,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
 import { createMutationErrorHandler } from '@/shared/errors';
 import { buildCurrentUserIdentitySnapshot } from '@/shared/profile/identity';
-import { requireAuth, isAppError, ERROR_CODES } from '@/errors';
+import { requireAuth } from '@/errors';
 import {
   requireOnlineForMutation,
   shouldApplyOptimisticUpdate,
@@ -118,17 +118,8 @@ export function useCreateJobPosting() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobPostings.all,
       });
-      // 6A: 차감 반영 — 지갑 요약 + 거래내역 동기 갱신
-      queryClient.invalidateQueries({ queryKey: queryKeys.wallet.summary(user?.uid) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.wallet.ledger(user?.uid) });
     },
-    onError: (error, variables, ctx) => {
-      // 잔액부족은 화면(create.tsx)의 PaywallModal이 처리 → 토스트 억제
-      if (isAppError(error) && error.code === ERROR_CODES.BUSINESS_INSUFFICIENT_BALANCE) {
-        return;
-      }
-      createMutationErrorHandler('공고 생성', addToast)(error, variables, ctx);
-    },
+    onError: createMutationErrorHandler('공고 생성', addToast),
   });
 }
 
@@ -200,9 +191,6 @@ export function useDeleteJobPosting() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobPostings.all,
       });
-      // M4: 취소 환불 반영 — 지갑 요약 + 거래내역 동기 갱신(생성 경로와 대칭, 환불 후 stale 방지)
-      queryClient.invalidateQueries({ queryKey: queryKeys.wallet.summary(user?.uid) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.wallet.ledger(user?.uid) });
     },
     onError: createMutationErrorHandler('공고 삭제', addToast, {
       onRollback: (ctx) => {

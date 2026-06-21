@@ -3,13 +3,11 @@ import { queryClient } from '@/lib/queryClient';
 import { useDeepLinkSetup } from '@/hooks/useDeepLink';
 import { useNavigationTracking } from '@/hooks/useNavigationTracking';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
-import { useRevenueCatSession } from '@/hooks/useRevenueCatSession';
 import { logger } from '@/utils/logger';
 
 export default function AuthenticatedRuntime() {
   useNavigationTracking();
   useDeepLinkSetup();
-  useRevenueCatSession();
 
   const { isOnline } = useNetworkStatus();
   const prevOnlineRef = useRef<boolean | null>(null);
