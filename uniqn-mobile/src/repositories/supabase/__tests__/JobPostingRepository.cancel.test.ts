@@ -14,7 +14,12 @@ jest.mock('@/lib/supabase', () => ({
       return {
         update: (...a: unknown[]) => {
           mockUpdate(...a);
-          return { eq: (...b: unknown[]) => { mockEq(...b); return Promise.resolve({ error: null }); } };
+          return {
+            eq: (...b: unknown[]) => {
+              mockEq(...b);
+              return Promise.resolve({ error: null });
+            },
+          };
         },
         select: jest.fn().mockReturnThis(),
         insert: jest.fn().mockReturnThis(),
@@ -61,9 +66,7 @@ describe('deleteWithTransaction → 직접 status=cancelled UPDATE', () => {
     await repo.deleteWithTransaction(POSTING, OWNER);
 
     expect(mockFrom).toHaveBeenCalledWith('job_postings');
-    expect(mockUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'cancelled' })
-    );
+    expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ status: 'cancelled' }));
     expect(mockEq).toHaveBeenCalledWith('id', POSTING);
   });
 
