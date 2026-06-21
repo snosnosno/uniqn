@@ -55,7 +55,7 @@ export default function JobsScreen() {
     hasCounts,
     firstAvailableType,
     isLoading: isLoadingTypeCounts,
-  } = usePostingTypeCounts();
+  } = usePostingTypeCounts({ region: selectedRegion });
 
   useEffect(() => {
     if (!hasAutoSelected.current && !isLoadingTypeCounts && firstAvailableType) {

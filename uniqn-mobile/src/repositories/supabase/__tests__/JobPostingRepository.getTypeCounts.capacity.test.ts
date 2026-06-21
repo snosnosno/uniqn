@@ -106,6 +106,27 @@ describe('JobPostingRepository.getTypeCounts — capacity_full 칩 카운트 정
     expect(statusInCalls).toHaveLength(0);
   });
 
+  it('region 필터가 주어지면 location->>region 으로 .eq 한다 (칩 카운트 지역 정합, A1)', async () => {
+    const chain = makeChain({ data: [], error: null });
+    mockFrom.mockReturnValue(chain);
+
+    await repo.getTypeCounts({ region: '서울 강남구' });
+
+    expect(chain.eq).toHaveBeenCalledWith('location->>region', '서울 강남구');
+    // region 미지정 기본 경로는 location->>region 으로 좁히지 않는다
+    expect(chain.in).toHaveBeenCalledWith('status', ['active', 'capacity_full']);
+  });
+
+  it('region 미지정이면 location->>region eq 를 호출하지 않는다', async () => {
+    const chain = makeChain({ data: [], error: null });
+    mockFrom.mockReturnValue(chain);
+
+    await repo.getTypeCounts();
+
+    const regionEqCalls = chain.eq.mock.calls.filter((c) => c[0] === 'location->>region');
+    expect(regionEqCalls).toHaveLength(0);
+  });
+
   it('정원 마감(capacity_full) 공고도 타입별 카운트에 합산된다', async () => {
     const chain = makeChain({
       data: [

@@ -23,23 +23,30 @@ const DEFAULT_COUNTS: PostingTypeCounts = {
 
 export const AUTO_SELECT_PRIORITY: PostingType[] = ['urgent', 'tournament', 'regular', 'fixed'];
 
-async function fetchPostingTypeCounts(): Promise<PostingTypeCounts> {
+async function fetchPostingTypeCounts(region?: string | null): Promise<PostingTypeCounts> {
   try {
     // status 미지정 → 브라우즈 가시성 기본값(active + capacity_full)으로 집계.
     // (EF-jobsearch-11: 정원 마감 공고가 칩 카운트에서 누락되던 회귀)
-    return await jobPostingRepository.getTypeCounts();
+    // region 지정 시 해당 지역으로 좁혀 브라우즈 목록(getList)의 지역 필터와 정합(A1).
+    return await jobPostingRepository.getTypeCounts(region ? { region } : undefined);
   } catch (error) {
     logger.warn('공고 타입 개수 조회 실패', { error });
     throw error;
   }
 }
 
-export function usePostingTypeCounts() {
+export interface UsePostingTypeCountsOptions {
+  /** 선택된 지역 slug. 지정 시 칩 카운트를 해당 지역으로 좁힌다. */
+  region?: string | null;
+}
+
+export function usePostingTypeCounts(options?: UsePostingTypeCountsOptions) {
   const { status } = useAuthStore();
+  const region = options?.region ?? null;
 
   const queryResult = useQuery({
-    queryKey: [...queryKeys.jobPostings.all, 'typeCounts'] as const,
-    queryFn: fetchPostingTypeCounts,
+    queryKey: [...queryKeys.jobPostings.all, 'typeCounts', region] as const,
+    queryFn: () => fetchPostingTypeCounts(region),
     staleTime: cachingPolicies.frequent,
     gcTime: cachingPolicies.standard * 2,
     enabled: status === 'authenticated',

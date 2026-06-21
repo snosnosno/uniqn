@@ -163,10 +163,11 @@ export interface IJobPostingRepository {
 
   /**
    * 공고 타입별 개수 조회
-   * @param filters - 필터 조건 (status 등)
+   * @param filters - 필터 조건 (status, region 등). region 지정 시 해당 지역으로 좁혀
+   *                  집계해 칩 카운트가 브라우즈 목록(getList)의 지역 필터와 정합을 이룬다.
    * @returns 타입별 개수
    */
-  getTypeCounts(filters?: Pick<JobPostingFilters, 'status'>): Promise<PostingTypeCounts>;
+  getTypeCounts(filters?: Pick<JobPostingFilters, 'status' | 'region'>): Promise<PostingTypeCounts>;
 
   /**
    * 일반 공고 타입의 일자별 공고 개수 집계
