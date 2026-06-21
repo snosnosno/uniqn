@@ -295,16 +295,17 @@ export async function getMySettlementSummary(
       await jobPostingRepository.getManagedJobPostings(undefined, workspaceId)
     ).filter(isCanonicalDatedPosting);
 
-    // 2. 각 공고별 정산 요약 조회
-    const summaries: JobPostingSettlementSummary[] = [];
+    // 2. 각 공고별 정산 요약 조회 — 병렬화(perf-query-1).
+    //    기존 직렬 await 루프는 공고 수 N 에 비례해 라운드트립이 선형 누적됐다.
+    //    Promise.all 로 동시 실행(순서 보존). 권한검사/시그니처는 불변.
+    const summaries = await Promise.all(
+      jobPostings.map((jobPosting) => getJobPostingSettlementSummary(jobPosting.id!, ownerId))
+    );
+
     let totalWorkLogs = 0;
     let totalPendingAmount = 0;
     let totalCompletedAmount = 0;
-
-    for (const jobPosting of jobPostings) {
-      const summary = await getJobPostingSettlementSummary(jobPosting.id!, ownerId);
-      summaries.push(summary);
-
+    for (const summary of summaries) {
       totalWorkLogs += summary.totalWorkLogs;
       totalPendingAmount += summary.totalPendingAmount;
       totalCompletedAmount += summary.totalCompletedAmount;
