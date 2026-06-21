@@ -518,7 +518,17 @@ test.describe('WF-08-3 취소 후 capacity 복원 — DB 직접 검증', () => {
       return;
     }
 
-    const { data, error } = await adminClient.rpc('cancel_application_atomically', {
+    // PR #195 anon 하드닝: auth.uid() == p_actor_id 검사 추가로 service role(auth.uid()=NULL) 불가.
+    const staffToken = await signInWithSupabase(
+      SUPABASE_QA_ACCOUNTS.staff.email,
+      SUPABASE_QA_ACCOUNTS.staff.password
+    );
+    const staffClient = createClient(E2E_CONFIG.supabase.url, E2E_CONFIG.supabase.anonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: { headers: { Authorization: `Bearer ${staffToken.access_token}` } },
+    });
+
+    const { data, error } = await staffClient.rpc('cancel_application_atomically', {
       p_application_id: applicationId,
       p_actor_type: 'staff_initiates',
       p_actor_id: SUPABASE_QA_ACCOUNTS.staff.id,
@@ -581,8 +591,18 @@ test.describe('WF-08-3 취소 후 capacity 복원 — DB 직접 검증', () => {
       return;
     }
 
+    // PR #195 anon 하드닝: auth.uid() == p_actor_id 검사 추가로 service role(auth.uid()=NULL) 불가.
+    const staffToken = await signInWithSupabase(
+      SUPABASE_QA_ACCOUNTS.staff.email,
+      SUPABASE_QA_ACCOUNTS.staff.password
+    );
+    const staffClient = createClient(E2E_CONFIG.supabase.url, E2E_CONFIG.supabase.anonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: { headers: { Authorization: `Bearer ${staffToken.access_token}` } },
+    });
+
     // 이미 applied 상태인데 다시 staff_initiates 호출 → idempotent: true
-    const { data, error } = await adminClient.rpc('cancel_application_atomically', {
+    const { data, error } = await staffClient.rpc('cancel_application_atomically', {
       p_application_id: applicationId,
       p_actor_type: 'staff_initiates',
       p_actor_id: SUPABASE_QA_ACCOUNTS.staff.id,
