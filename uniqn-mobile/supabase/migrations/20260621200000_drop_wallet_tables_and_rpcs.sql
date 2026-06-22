@@ -11,6 +11,8 @@
 --   wallet_reason 을 시그니처에 안 쓰는 함수(credit_diamonds_atomically 등)는
 --   `DROP TYPE wallet_reason CASCADE` 로도 제거되지 않아 잔존했음.
 -- [P2-3] handle_new_user 에서 하트 grant 블록 제거 → dangling 참조 해소.
+-- [P3]   누락 orphan 함수 2종(refund_job_cancellation_atomically, fn_wallet_ledger_update_balance)
+--        명시 DROP 추가 + enum 오타 정정(wallet_currency_type → wallet_currency) (2026-06-23).
 
 -- 0. 가입 시 하트 적립 환원 [P2-3]
 --    drop 적용 후 wallet_ledger / grant_heart_atomically / wallet_reason 가
@@ -74,6 +76,9 @@ COMMENT ON FUNCTION public.handle_new_user() IS
 DROP FUNCTION IF EXISTS create_job_posting_with_payment_atomically(uuid, jsonb, wallet_reason) CASCADE;
 DROP FUNCTION IF EXISTS create_job_posting_with_payment_atomically(uuid, jsonb, integer, wallet_reason) CASCADE;
 DROP FUNCTION IF EXISTS cancel_job_posting_with_refund_atomically(uuid, uuid) CASCADE;
+-- 환불 워커 RPC(취소 래퍼 내부에서만 호출) — 래퍼 DROP 만으론 제거 안 됨(plpgsql 본문 참조는 의존성 추적 대상 아님).
+--   본문이 wallets/wallet_ledger/heart_lots 를 참조 → 미존재 테이블 참조 고아 방지 위해 명시 제거.
+DROP FUNCTION IF EXISTS refund_job_cancellation_atomically(uuid, uuid) CASCADE;
 
 -- 2. 다이아 차감/적립 RPC
 --    consume: (uuid, integer, wallet_reason, uuid, text) (20260609000001)
@@ -110,6 +115,11 @@ END;
 $$;
 DROP FUNCTION IF EXISTS fn_expire_heart_lots() CASCADE;
 
+-- 6-1. wallet_ledger 잔액 동기화 트리거 함수 제거
+--    트리거(tr_wallet_ledger_update_balance)는 wallet_ledger DROP CASCADE 로 함께 제거되나,
+--    함수 자체는 독립 객체라 잔존 → 본문이 public.wallets 를 참조하는 고아 방지 위해 명시 제거.
+DROP FUNCTION IF EXISTS fn_wallet_ledger_update_balance() CASCADE;
+
 -- 7. 테이블 제거 (FK 참조 순서: heart_lots → wallet_ledger → wallets → diamond_products)
 DROP TABLE IF EXISTS heart_lots CASCADE;
 DROP TABLE IF EXISTS wallet_ledger CASCADE;
@@ -118,7 +128,7 @@ DROP TABLE IF EXISTS diamond_products CASCADE;
 
 -- 8. Enum 제거 (테이블·함수 DROP 후)
 DROP TYPE IF EXISTS wallet_reason CASCADE;
-DROP TYPE IF EXISTS wallet_currency_type CASCADE;
+DROP TYPE IF EXISTS wallet_currency CASCADE;
 
 -- 9. app_config monetization 키 제거 (선택적 — RC 비활성화 확인 후)
 -- DELETE FROM app_config WHERE key = 'monetization';
