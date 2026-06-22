@@ -81,6 +81,8 @@ BEGIN
   -- ----------------------------------------------------------
   -- R1: 동일 staff 연속 호출
   -- ----------------------------------------------------------
+  -- [#195 가드] 호출자 바인딩: actor(v_staff_id) 로 jwt sub 세팅
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_staff_id, 'role', 'authenticated')::text, true);
   v_first := public.cancel_application_atomically(v_app_id, 'staff_initiates', v_staff_id, 'first call');
   IF NOT ((v_first->>'success')::bool) THEN RAISE EXCEPTION 'R1 first fail: %', v_first; END IF;
   IF v_first->>'new_status' != 'applied' THEN RAISE EXCEPTION 'R1 first status: %', v_first; END IF;
@@ -88,6 +90,7 @@ BEGIN
     RAISE EXCEPTION 'R1 first should NOT be idempotent: %', v_first;
   END IF;
 
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_staff_id, 'role', 'authenticated')::text, true);
   v_second := public.cancel_application_atomically(v_app_id, 'staff_initiates', v_staff_id, 'second call');
   IF NOT ((v_second->>'success')::bool AND (v_second->>'idempotent')::bool) THEN
     RAISE EXCEPTION 'R1 second fail: %', v_second;
@@ -109,7 +112,9 @@ BEGIN
   -- ----------------------------------------------------------
   -- R3: 다른 user의 시도 → unauthorized
   -- ----------------------------------------------------------
+  -- 타인(v_other_user_id)이 본인 명의로 인증 후 취소 시도 → 비-applicant 거부 검증.
   UPDATE public.applications SET status = 'confirmed' WHERE id = v_app_id;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_other_user_id, 'role', 'authenticated')::text, true);
   v_third := public.cancel_application_atomically(v_app_id, 'staff_initiates', v_other_user_id);
   IF (v_third->>'success')::bool OR v_third->>'error' != 'unauthorized' THEN
     RAISE EXCEPTION 'R3 fail: %', v_third;

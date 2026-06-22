@@ -94,6 +94,8 @@ BEGIN
   -- ============================================================
   -- 시나리오 1: staff_initiates happy path
   -- ============================================================
+  -- [#195 가드] 호출자 바인딩: actor(v_staff_id) 로 jwt sub 세팅
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_staff_id, 'role', 'authenticated')::text, true);
   v_result := public.cancel_application_atomically(v_app_id, 'staff_initiates', v_staff_id, '개인 사정');
   IF NOT ((v_result->>'success')::bool) THEN RAISE EXCEPTION 'S1 fail: %', v_result; END IF;
   IF v_result->>'new_status' != 'applied' THEN RAISE EXCEPTION 'S1 status: %', v_result; END IF;
@@ -111,6 +113,7 @@ BEGIN
   -- ============================================================
   -- 시나리오 3: idempotency (시나리오 1 직후 재호출)
   -- ============================================================
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_staff_id, 'role', 'authenticated')::text, true);
   v_result := public.cancel_application_atomically(v_app_id, 'staff_initiates', v_staff_id);
   IF NOT ((v_result->>'success')::bool AND (v_result->>'idempotent')::bool) THEN
     RAISE EXCEPTION 'S3 fail: %', v_result;
@@ -119,7 +122,10 @@ BEGIN
   -- ============================================================
   -- 시나리오 4: unauthorized actor
   -- ============================================================
+  -- 타인(v_other_user_id)이 본인 명의로 인증해 신청 취소 시도 → 비-applicant 거부 검증.
+  -- jwt sub=actor 로 새 가드는 통과시키되, 업무 권한 체크(applicant != actor)가 'unauthorized' 반환.
   UPDATE public.applications SET status = 'confirmed' WHERE id = v_app_id;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_other_user_id, 'role', 'authenticated')::text, true);
   v_result := public.cancel_application_atomically(v_app_id, 'staff_initiates', v_other_user_id);
   IF (v_result->>'success')::bool OR v_result->>'error' != 'unauthorized' THEN
     RAISE EXCEPTION 'S4 fail: %', v_result;
@@ -129,6 +135,7 @@ BEGIN
   -- 시나리오 5: invalid_status_for_cancellation
   -- ============================================================
   UPDATE public.applications SET status = 'cancelled' WHERE id = v_app_id;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_staff_id, 'role', 'authenticated')::text, true);
   v_result := public.cancel_application_atomically(v_app_id, 'staff_initiates', v_staff_id);
   IF (v_result->>'success')::bool OR v_result->>'error' != 'invalid_status_for_cancellation' THEN
     RAISE EXCEPTION 'S5 fail: %', v_result;
@@ -147,6 +154,7 @@ BEGIN
   WHERE id = v_app_id;
   -- filled_positions 수동 세팅 제거: 위 cancelled→cancellation_pending 전이가 트리거로 +1 시킨다.
 
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner_id, 'role', 'authenticated')::text, true);
   v_result := public.cancel_application_atomically(v_app_id, 'staff_approves_cancel_request', v_owner_id);
   IF NOT ((v_result->>'success')::bool) THEN RAISE EXCEPTION 'S2 fail: %', v_result; END IF;
   IF v_result->>'new_status' != 'cancelled' THEN RAISE EXCEPTION 'S2 status: %', v_result; END IF;

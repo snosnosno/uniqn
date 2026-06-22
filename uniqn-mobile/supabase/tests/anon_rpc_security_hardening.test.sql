@@ -8,7 +8,7 @@
 -- auth.uid()/role 은 request.jwt.claims 로 시뮬레이션. 안전: BEGIN/ROLLBACK.
 -- ============================================================
 BEGIN;
-SELECT plan(19);
+SELECT plan(18);
 
 -- ─── 1) EXECUTE 권한: anon 회수 / authenticated 유지 ─────────────────────────
 SELECT ok(NOT has_function_privilege('anon', 'public.permanently_delete_user(uuid)', 'EXECUTE'),
@@ -21,8 +21,9 @@ SELECT ok(NOT has_function_privilege('anon', 'public.cancel_application_atomical
   'anon cannot EXECUTE cancel_application_atomically');
 SELECT ok(NOT has_function_privilege('anon', 'public.process_qr_checkin_atomically(uuid, uuid, uuid, text, timestamptz, text)', 'EXECUTE'),
   'anon cannot EXECUTE process_qr_checkin_atomically');
-SELECT ok(NOT has_function_privilege('anon', 'public.list_all_applications(application_status)', 'EXECUTE'),
-  'anon cannot EXECUTE list_all_applications');
+-- (제거됨) list_all_applications 는 저장소에 실재하지 않는 phantom 함수.
+--   has_function_privilege 가 미존재 함수에 ERROR 를 던져 파일 전체가 실패하므로 단언 삭제.
+--   REVOKE 루프는 미존재 함수를 멱등 skip 하므로 보호 대상 자체가 없음.
 SELECT ok(has_function_privilege('authenticated', 'public.confirm_application(uuid, uuid, jsonb, jsonb, jsonb, text, boolean, jsonb)', 'EXECUTE'),
   'authenticated retains EXECUTE on confirm_application (no regression)');
 -- allowlist 유지 (가입/공개 경로)

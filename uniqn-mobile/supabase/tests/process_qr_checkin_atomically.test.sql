@@ -79,6 +79,8 @@ BEGIN
   -- ----------------------------------------------------------
   -- S1: checkIn happy path
   -- ----------------------------------------------------------
+  -- [#195 가드] 호출자 바인딩: 직원 본인 셀프스캔(p_staff_id=v_staff_id) 로 jwt sub 세팅
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_staff_id, 'role', 'authenticated')::text, true);
   v_result := public.process_qr_checkin_atomically(
     v_work_log_id, v_staff_id, v_job_id, 'checkIn', v_check_in_time, to_char(now(), 'YYYY-MM-DD')
   );
@@ -91,6 +93,7 @@ BEGIN
   -- ----------------------------------------------------------
   -- S5: 이중 checkIn → already_checked_in
   -- ----------------------------------------------------------
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_staff_id, 'role', 'authenticated')::text, true);
   v_result := public.process_qr_checkin_atomically(
     v_work_log_id, v_staff_id, v_job_id, 'checkIn', now(), NULL
   );
@@ -101,6 +104,7 @@ BEGIN
   -- ----------------------------------------------------------
   -- S2: checkOut happy path (S1 직후, 약 2시간 경과)
   -- ----------------------------------------------------------
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_staff_id, 'role', 'authenticated')::text, true);
   v_result := public.process_qr_checkin_atomically(
     v_work_log_id, v_staff_id, v_job_id, 'checkOut', now(), NULL
   );
@@ -120,6 +124,8 @@ BEGIN
     status = 'scheduled', check_in_ts = NULL, check_out_ts = NULL, work_duration = 0
   WHERE id = v_work_log_id;
 
+  -- 호출자(v_other_staff_id)가 본인 명의로 인증(가드 통과) → work_log.staff_id 불일치로 staff_id_mismatch (업무 체크 검증 유지)
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_other_staff_id, 'role', 'authenticated')::text, true);
   v_result := public.process_qr_checkin_atomically(
     v_work_log_id, v_other_staff_id, v_job_id, 'checkIn', now(), NULL
   );
@@ -130,6 +136,7 @@ BEGIN
   -- ----------------------------------------------------------
   -- S6: scheduled에서 checkOut → not_checked_in
   -- ----------------------------------------------------------
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_staff_id, 'role', 'authenticated')::text, true);
   v_result := public.process_qr_checkin_atomically(
     v_work_log_id, v_staff_id, v_job_id, 'checkOut', now(), NULL
   );
@@ -146,6 +153,8 @@ BEGIN
   PERFORM set_config('request.jwt.claim.role', 'service_role', true);
   UPDATE public.work_logs SET payroll_status = 'completed' WHERE id = v_work_log_id;
   PERFORM set_config('request.jwt.claim.role', '', true);
+  -- 호출자 바인딩: 직원 본인(p_staff_id=v_staff_id) 으로 jwt sub 세팅
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_staff_id, 'role', 'authenticated')::text, true);
   v_result := public.process_qr_checkin_atomically(
     v_work_log_id, v_staff_id, v_job_id, 'checkIn', now(), NULL
   );
