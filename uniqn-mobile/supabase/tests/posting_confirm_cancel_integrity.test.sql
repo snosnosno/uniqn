@@ -191,6 +191,8 @@ BEGIN
   -- ============================================================
   -- 1) owner 가 dealer 확정 → 성공
   -- ============================================================
+  -- [#195 가드] confirm_application 의 actor(p_owner_id) 로 jwt sub 세팅
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
   v_res := public.confirm_application(v_appD1, v_owner, v_assign_dealer);
   IF v_res->>'applicationId' IS NULL THEN RAISE EXCEPTION 'SEED D1 confirm 실패: %', v_res; END IF;
 
@@ -204,6 +206,7 @@ BEGIN
   -- H1) dealer 정원(1) 초과 2번째 확정 → MAX_CAPACITY_REACHED
   -- ============================================================
   v_ok := false;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
   BEGIN
     PERFORM public.confirm_application(v_appD2, v_owner, v_assign_dealer);
   EXCEPTION WHEN OTHERS THEN
@@ -214,13 +217,17 @@ BEGIN
   -- ============================================================
   -- H4-a) 협업자(jpc)가 floor 확정 → 성공
   -- ============================================================
+  -- 협업자 본인 명의 인증 → 가드 통과 후 협업자 권한으로 성공
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_collab, 'role', 'authenticated')::text, true);
   v_res := public.confirm_application(v_appF1, v_collab, v_assign_floor);
   IF v_res->>'applicationId' IS NULL THEN RAISE EXCEPTION 'H4-a: 협업자 floor 확정 실패: %', v_res; END IF;
 
   -- ============================================================
   -- H4-b) 비권한자(stranger) 확정 시도 → PERMISSION_DENIED
   -- ============================================================
+  -- stranger 본인 명의 인증(가드 통과) → 공고 관리권한 없음으로 PERMISSION_DENIED (업무 권한 체크 검증 유지)
   v_ok := false;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_stranger, 'role', 'authenticated')::text, true);
   BEGIN
     PERFORM public.confirm_application(v_appF2, v_stranger, v_assign_floor);
   EXCEPTION WHEN OTHERS THEN
@@ -231,6 +238,8 @@ BEGIN
   -- ============================================================
   -- H5) checked_in work_log 있는 취소 승인 → staff_already_checked_in
   -- ============================================================
+  -- cancel actor = v_owner (본인) → jwt sub 세팅
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
   v_res := public.cancel_application_atomically(v_appH5, 'staff_approves_cancel_request', v_owner);
   IF v_res->>'error' IS DISTINCT FROM 'staff_already_checked_in' THEN
     RAISE EXCEPTION 'H5: 체크인 후 취소가 차단되지 않음 (staff_already_checked_in 기대, 실제: %)', v_res;
@@ -239,6 +248,7 @@ BEGIN
   -- ============================================================
   -- T6) range 형태 timeSlot('18:00~02:00') 정규화 — 시작시각 '18:00' 으로 집계/가드
   -- ============================================================
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
   v_res := public.confirm_application(v_appE1, v_owner, v_assign_range);
   IF v_res->>'applicationId' IS NULL THEN RAISE EXCEPTION 'T6: range 슬롯 dealer 확정 실패: %', v_res; END IF;
 
@@ -250,6 +260,7 @@ BEGIN
 
   -- T6b) 동일 슬롯 dealer 정원(1) 초과 → MAX_CAPACITY (raw 비교였다면 미발견되어 통과했을 케이스)
   v_ok := false;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
   BEGIN
     PERFORM public.confirm_application(v_appE2, v_owner, v_assign_range);
   EXCEPTION WHEN OTHERS THEN
@@ -260,6 +271,7 @@ BEGIN
   -- ============================================================
   -- T7) 커스텀 역할 — client 가 role='staff'+customRole='딜러보조' 로 보냄 → 'other:딜러보조' 집계
   -- ============================================================
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
   v_res := public.confirm_application(v_appC1, v_owner, v_assign_custom);
   IF v_res->>'applicationId' IS NULL THEN RAISE EXCEPTION 'T7: 커스텀 역할 확정 실패: %', v_res; END IF;
 
@@ -270,6 +282,7 @@ BEGIN
 
   -- T7b) 동일 커스텀역할 정원(1) 초과 → MAX_CAPACITY
   v_ok := false;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
   BEGIN
     PERFORM public.confirm_application(v_appC2, v_owner, v_assign_custom);
   EXCEPTION WHEN OTHERS THEN
@@ -281,6 +294,7 @@ BEGIN
   -- T8) 단일 payload 내 동일 (date,slot,role) 2행 → overfill 차단 (정원 1)
   -- ============================================================
   v_ok := false;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
   BEGIN
     PERFORM public.confirm_application(v_appDup, v_owner, v_assign_dup);
   EXCEPTION WHEN OTHERS THEN

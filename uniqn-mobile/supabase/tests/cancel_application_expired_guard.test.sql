@@ -152,6 +152,8 @@ BEGIN
   -- ============================================================
   -- 시나리오 1: closed_reason = 'manual' → 취소 승인 후 'active'로 재오픈
   -- ============================================================
+  -- [#195 가드] 호출자 바인딩: actor(v_owner_id) 로 jwt sub 세팅
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner_id, 'role', 'authenticated')::text, true);
   v_result := public.cancel_application_atomically(v_app_manual_id, 'staff_approves_cancel_request', v_owner_id);
   IF NOT ((v_result->>'success')::bool) THEN
     RAISE EXCEPTION 'S1 RPC fail: %', v_result;
@@ -171,6 +173,7 @@ BEGIN
   -- ============================================================
   -- 시나리오 2: closed_reason = 'expired' → 취소 승인 후 'closed' 유지
   -- ============================================================
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner_id, 'role', 'authenticated')::text, true);
   v_result := public.cancel_application_atomically(v_app_expired_id, 'staff_approves_cancel_request', v_owner_id);
   IF NOT ((v_result->>'success')::bool) THEN
     RAISE EXCEPTION 'S2 RPC fail: %', v_result;
@@ -190,6 +193,7 @@ BEGIN
   -- ============================================================
   -- 시나리오 3: closed_reason = 'expired_by_work_date' → 취소 승인 후 'closed' 유지
   -- ============================================================
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner_id, 'role', 'authenticated')::text, true);
   v_result := public.cancel_application_atomically(v_app_expired_wd_id, 'staff_approves_cancel_request', v_owner_id);
   IF NOT ((v_result->>'success')::bool) THEN
     RAISE EXCEPTION 'S3 RPC fail: %', v_result;

@@ -128,6 +128,8 @@ BEGIN
   -- ============================================================
   -- S1: 그룹일정(dates=3) 1명 확정 → filled_positions = 1 (NOT 3)
   -- ============================================================
+  -- [#195 가드] 호출자 바인딩: confirm_application 의 actor(p_owner_id=v_owner_id) 로 jwt sub 세팅
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner_id, 'role', 'authenticated')::text, true);
   v_result := public.confirm_application(
     v_app1_id, v_owner_id, v_flat_group, NULL, v_history_group, NULL, false, v_assignment_v3_group
   );
@@ -160,6 +162,7 @@ BEGIN
   -- ============================================================
   -- S2: 단일일정 1명 추가 확정 → filled_positions = 2
   -- ============================================================
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner_id, 'role', 'authenticated')::text, true);
   v_result := public.confirm_application(
     v_app2_id, v_owner_id, v_flat_single, NULL, v_history_single, NULL, false, v_assignment_v3_single
   );
@@ -173,6 +176,8 @@ BEGIN
   -- S3: 그룹 확정자 취소(staff_initiates) → filled_positions = 1
   --      slot 단위라면 filled_positions = GREATEST(0, 2-3) = 0 이 됐을 것
   -- ============================================================
+  -- cancel actor = v_staff1_id (본인) → jwt sub 세팅
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_staff1_id, 'role', 'authenticated')::text, true);
   v_result := public.cancel_application_atomically(v_app1_id, 'staff_initiates', v_staff1_id, '개인 사정');
 
   IF NOT ((v_result->>'success')::bool) THEN
