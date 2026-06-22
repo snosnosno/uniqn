@@ -4,15 +4,15 @@
 -- 정책 분석 (pg_policies 직접 조회):
 --   SELECT: job_postings_select_all (USING true) → 모든 인증 사용자 ALLOW
 --           추가 jp_select / jp_select_managed 정책도 OR 결합되어 효과 동일
---   INSERT: job_postings_insert_authenticated (WITH CHECK auth.uid() IS NOT NULL)
---           → 모든 인증 사용자 ALLOW. jp_insert (employer/admin) 와 OR 결합.
---           app layer 권한 검사 별도 필요 (현재 정책은 application-side 책임 위임)
+--   INSERT: jp_insert (20260622000000) — get_my_role() IN ('admin','employer')
+--           AND (owner_id = auth.uid() OR is_admin())
+--           → employer 본인 소유 공고 INSERT ALLOW, staff/outsider DENY
 --   UPDATE: owner_or_admin OR ws_member OR is_posting_collaborator → owner/editor/collab ALLOW, outsider DENY
 --   DELETE: owner_or_admin OR ws.owner → seed 의 owner 만 ALLOW (jp.owner=v_owner=ws.owner)
 --
 -- plan 가정 보정 사항 (file 도입부):
 --   · SELECT outsider: plan=DENY(0) → 실제=ALLOW(1)
---   · INSERT 4 모두: plan=일부 DENY → 실제=모두 ALLOW
+--   · INSERT: owner/editor/collab(employer) ALLOW, outsider(staff) DENY (42501)
 --   · UPDATE/DELETE: plan 가정 정확
 
 BEGIN;
@@ -59,8 +59,9 @@ SELECT is(
 );
 
 -- ============================================================================
--- INSERT (4 케이스) — job_postings_insert_authenticated 가 모든 인증 ALLOW.
--- 매트릭스는 정책 동작 검증이며, 비즈니스 권한은 app layer 책임 (RPC 또는 클라이언트).
+-- INSERT (4 케이스) — jp_insert: get_my_role() IN ('admin','employer') AND owner_id=auth.uid()
+-- owner/editor/collab(employer 역할) 은 자신 UUID 로 owner_id 세팅 → ALLOW.
+-- outsider(staff 역할) 은 role 게이트 미통과 → 42501 DENY.
 -- ============================================================================
 SELECT jpc_test_set_user((current_setting('jpc.owner_id'))::uuid);
 SELECT lives_ok(
@@ -93,13 +94,15 @@ SELECT lives_ok(
 );
 
 SELECT jpc_test_set_user((current_setting('jpc.outsider_id'))::uuid);
-SELECT lives_ok(
+SELECT throws_ok(
   $$INSERT INTO public.job_postings (owner_id, owner_name, workspace_id, title, status, posting_type,
                                      work_date, work_dates, total_positions, filled_positions, view_count,
                                      schema_version, contact_phone)
     VALUES ((current_setting('jpc.outsider_id'))::uuid, 'x', (current_setting('jpc.ws_id'))::uuid, 'p4', 'active', 'regular',
             (current_date+1)::text, ARRAY[(current_date+1)::text], 1, 0, 0, 3, '+82101234567')$$,
-  'job_postings INSERT: outsider (정책상 ALLOW — app layer 권한 검사 필수)'
+  '42501',
+  NULL,
+  'job_postings INSERT: outsider(staff) — jp_insert 역할 게이트 DENY'
 );
 
 -- ============================================================================
