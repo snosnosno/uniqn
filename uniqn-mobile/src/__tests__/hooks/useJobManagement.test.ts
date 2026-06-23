@@ -65,10 +65,6 @@ jest.mock('@/lib/queryClient', () => ({
       lists: () => ['jobPostings', 'lists'],
       detail: (id: string) => ['jobPostings', 'detail', id],
     },
-    wallet: {
-      summary: (uid?: string) => ['wallet', 'summary', uid ?? 'me'],
-      ledger: (uid?: string) => ['wallet', 'ledger', uid ?? 'me'],
-    },
   },
   cachingPolicies: {
     frequent: 1000,
@@ -98,9 +94,6 @@ jest.mock('@/errors', () => ({
     }
     return uid;
   },
-  isAppError: (error: unknown): error is { code: string } =>
-    typeof error === 'object' && error !== null && 'code' in error,
-  ERROR_CODES: { BUSINESS_INSUFFICIENT_BALANCE: 'E6080' },
 }));
 
 jest.mock('@/services/offline/remoteMutationGuard', () => ({

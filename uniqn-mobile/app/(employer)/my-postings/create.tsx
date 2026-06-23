@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { KeyboardAvoidingView, Platform, View, Text } from 'react-native';
+import { KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,11 +20,6 @@ import { JobPostingScrollForm } from '@/components/employer/job-form';
 import { TemplateModal } from '@/components/employer/job-form/modals/TemplateModal';
 import { LoadTemplateModal } from '@/components/employer/job-form/modals/LoadTemplateModal';
 import { StackHeader } from '@/components/headers';
-import { PaywallModal, WalletBalanceBadge } from '@/components/wallet';
-import { usePostingCost } from '@/hooks/usePostingCost';
-import { useWalletBalance } from '@/hooks/useWalletBalance';
-import { usePurchaseSheetStore } from '@/stores/purchaseSheetStore';
-import { isAppError, ERROR_CODES } from '@/errors';
 
 export default function CreateJobPostingScreen() {
   const router = useRouter();
@@ -33,22 +28,12 @@ export default function CreateJobPostingScreen() {
 
   const [draft, setDraft] = useState<JobPostingDraft>(INITIAL_JOB_POSTING_DRAFT);
   const [isDirty, setIsDirty] = useState(false);
-  const [showPaywall, setShowPaywall] = useState(false);
-  const openPurchaseSheet = usePurchaseSheetStore((s) => s.open);
-  const wallet = useWalletBalance();
   const formData = useMemo(() => draftToFormData(draft), [draft]);
 
   useUnsavedChangesGuard(isDirty);
 
   const createJobPosting = useCreateJobPosting();
   const templateManager = useTemplateManager();
-  const postingCost = usePostingCost(formData.postingType ?? 'regular', user?.uid);
-
-  // 잔액 부족 사전 경고: 제출 전에 미리 알려 막다른 단계(제출→실패→충전→재제출)를 줄인다.
-  // 결제력 = 하트+다이아 합산(PaywallModal 과 동일 기준).
-  const totalBalance = (wallet.data?.heart_balance ?? 0) + (wallet.data?.diamond_balance ?? 0);
-  const requiredCost = postingCost.data?.cost ?? 0;
-  const isBalanceInsufficient = requiredCost > 0 && totalBalance < requiredCost;
 
   const updateFormData = useCallback((data: Partial<JobPostingFormData>) => {
     setIsDirty(true);
@@ -87,10 +72,6 @@ export default function CreateJobPostingScreen() {
       addToast({ type: 'success', message: successMessage });
       router.replace('/(app)/(tabs)/employer');
     } catch (error) {
-      if (isAppError(error) && error.code === ERROR_CODES.BUSINESS_INSUFFICIENT_BALANCE) {
-        setShowPaywall(true);
-        return;
-      }
       logger.error('공고 등록 실패', error as Error);
       addToast({
         type: 'error',
@@ -102,27 +83,6 @@ export default function CreateJobPostingScreen() {
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="공고 작성" fallbackHref="/(app)/(tabs)/employer" />
-      <View className="flex-row items-center justify-between px-4 py-2">
-        <Text className="text-xs font-sans text-content-secondary">보유 잔액</Text>
-        <WalletBalanceBadge testID="create-wallet-badge" />
-      </View>
-      <View className="flex-row items-center justify-between px-4 pb-2">
-        <Text className="text-xs font-sans text-content-secondary">게시 비용</Text>
-        <Text className="text-sm font-sans-semibold text-content-primary dark:text-secondary-100">
-          {postingCost.data === null || postingCost.data === undefined
-            ? '—'
-            : postingCost.data.cost === 0
-              ? '무료'
-              : `${postingCost.data.cost}${postingCost.data.currency_hint === 'heart_first' ? '💖' : '💎'}`}
-        </Text>
-      </View>
-      {isBalanceInsufficient ? (
-        <View className="px-4 pb-2">
-          <Text className="text-xs font-sans text-error-500">
-            보유 잔액이 부족해요. 충전 후 등록할 수 있어요.
-          </Text>
-        </View>
-      ) : null}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
@@ -163,19 +123,6 @@ export default function CreateJobPostingScreen() {
           isDeletingTemplate={templateManager.isDeletingTemplate}
         />
       ) : null}
-
-      <PaywallModal
-        visible={showPaywall}
-        cost={postingCost.data?.cost ?? 0}
-        currencyHint={postingCost.data?.currency_hint ?? 'diamond'}
-        heartBalance={wallet.data?.heart_balance ?? 0}
-        diamondBalance={wallet.data?.diamond_balance ?? 0}
-        onClose={() => setShowPaywall(false)}
-        onCharge={() => {
-          setShowPaywall(false);
-          openPurchaseSheet();
-        }}
-      />
     </SafeAreaView>
   );
 }

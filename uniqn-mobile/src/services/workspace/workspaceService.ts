@@ -75,7 +75,7 @@ export const workspaceService = {
    * Owner 의 default 워크스페이스 ID (가장 오래된 것).
    *
    * 무료 공고 생성 (`jobManagementService.createJobPosting`) 경로에서
-   * `workspace_id NOT NULL` 제약 (M3) 충족용. M5 wallet RPC 와 동일 정책 (created_at ASC).
+   * `workspace_id NOT NULL` 제약 충족용 — owner 의 가장 오래된 워크스페이스 (created_at ASC).
    *
    * 2026-05-19 hotfix: 신규 employer (backfill 2026-05-07 이후 가입) + staff→employer 역할 변경자는
    * default workspace 부재 가능. 0개 발견 시 자동 생성 + 재조회 (안전망).

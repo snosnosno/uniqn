@@ -55,7 +55,6 @@ import { useJobDetail } from '@/hooks/useJobDetail';
 import { useShare } from '@/hooks/useShare';
 import { useDeleteJobPosting } from '@/hooks/useJobManagement';
 import { extractPostingFilledSubmap, usePostingFilledCounts } from '@/hooks/usePostingFilledCounts';
-import { usePostingCost } from '@/hooks/usePostingCost';
 import { useThemeStore } from '@/stores/themeStore';
 import type { PostingManagementViewModel, PostingType, TournamentApprovalStatus } from '@/types';
 
@@ -154,11 +153,7 @@ export default function JobPostingDetailScreen() {
     [postingFacts]
   );
 
-  const deletePostingCost = usePostingCost(posting?.postingType ?? 'regular', posting?.ownerId);
-  const isPaidPosting = (deletePostingCost.data?.cost ?? 0) > 0;
-  const deleteMessage = isPaidPosting
-    ? '이 공고는 유료로 등록되었습니다. 취소 시 등록 시점 기준 24시간 이내는 100%, 이후는 50%가 환불됩니다. 정말 취소하시겠습니까?'
-    : '정말 이 공고를 삭제하시겠습니까? 삭제된 공고는 복구할 수 없습니다.';
+  const deleteMessage = '정말 이 공고를 삭제하시겠습니까? 삭제된 공고는 복구할 수 없습니다.';
 
   const postingId = id || '';
   const { data: filledAll } = usePostingFilledCounts([postingId]);

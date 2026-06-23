@@ -102,10 +102,6 @@ verify_jwt = false
 [functions.send-push-notification]
 verify_jwt = false
 
-# 결제 webhook — RevenueCat 서명 자체 검증
-[functions.revenuecat-webhook]
-verify_jwt = false
-
 # 사용자 가입 흐름 — 함수 내부에서 service_role 검증
 [functions.verify-and-save-portone-profile]
 verify_jwt = false

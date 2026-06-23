@@ -57,7 +57,7 @@ async function createSinglePosting(
   ownerName: string
 ): Promise<CreateJobPostingResult> {
   // Phase 0 N1 hotfix: workspace_id NOT NULL 제약 충족
-  // M5 wallet RPC 와 동일 정책 (owner 의 가장 오래된 워크스페이스)
+  // owner 의 가장 오래된 워크스페이스 사용 (created_at ASC)
   const workspaceId = await workspaceService.getDefaultWorkspaceIdForOwner(ownerId);
   try {
     return await jobPostingRepository.createWithTransaction(input, {
