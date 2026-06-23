@@ -1,0 +1,12 @@
+-- 지갑/IAP 수익모델 제거 후속: app_config 'monetization' 피처플래그 키 제거.
+--
+-- 배경:
+--   - 20260427000900_seed_app_config_monetization.sql 가 'monetization' 키를 시드함.
+--   - 지갑/IAP 전체 제거(PR #196, 20260621200000_drop_wallet_tables_and_rpcs)로
+--     이 키를 읽던 RPC(_calc_posting_cost, get_posting_cost 등)가 모두 DROP됨 → 키는 dead.
+--   - prod 에서는 이 마이그와 별개로 2026-06-23 단발 DELETE 로 이미 제거됨.
+--   - seed 마이그 파일이 repo 에 남아 있어 fresh 스택(db reset)에서 키가 재생성되므로,
+--     seed 이후 시점의 이 마이그로 정합화한다.
+--
+-- 멱등: DELETE ... WHERE 라 이미 없으면 0행 삭제 no-op. prod 재적용/db push 안전.
+DELETE FROM public.app_config WHERE key = 'monetization';

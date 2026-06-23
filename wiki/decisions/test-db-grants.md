@@ -1,6 +1,6 @@
 ---
 area: decisions
-updated: 2026-06-19
+updated: 2026-06-23
 status: current
 sources:
   - uniqn-mobile/supabase/fixtures/jpc_helpers.sql
@@ -29,7 +29,7 @@ prod 는 Supabase 기본 default-privilege 로 GRANT 를 보유하지만, CI 의
 ## 규칙
 
 1. **테스트 grant 는 명시적으로** — `GRANT ALL ON ALL TABLES/SEQUENCES IN SCHEMA public TO anon, authenticated, service_role`로 prod grant 상태와 동치화 → CLI 버전 무관 결정적. **두는 위치는 무대별로 다름**: pgTAP은 `jpc_helpers.sql`(fixtures 전용, `npm run test:db:helpers`가 로컬 컨테이너에만 등록); e2e는 전체 앱을 로컬 스택에 띄우므로 **마이그레이션**(`20260619133156_..._local_stack_parity.sql`, PR#183)으로 스키마 자체를 정합화(prod 멱등 no-op).
-2. **함수는 grant 확대 금지** — 결제 RPC 하드닝이 anon/authenticated 에서 REVOKE 한 EXECUTE 를 되살리면 회귀(`wallet_grants_hardening.test.sql`). 테이블/시퀀스만. 마이그레이션 경로는 추가로 wallet 4테이블 DML REVOKE 재적용(`20260605000010` 미러)으로 anon/auth 확대 방지.
+2. **함수는 grant 확대 금지** — 결제 RPC 하드닝이 anon/authenticated 에서 REVOKE 한 EXECUTE 를 되살리면 회귀(`wallet_grants_hardening.test.sql`). 테이블/시퀀스만. 마이그레이션 경로는 추가로 wallet 4테이블 DML REVOKE 재적용(`20260605000010` 미러)으로 anon/auth 확대 방지. **예외(모순 아님)**: 가입경로 **allowlist** 함수(`check_email_exists` 등)는 anon EXECUTE가 정당 → PR#198이 명시 `GRANT ... TO anon` 추가([[wallet-pgtap-caller-binding]]). 하드닝 REVOKE 대상(결제·관리 RPC)과 구분.
 3. **setup-cli 버전 pin** — `version: 2.107.0` + `github-token`(PR#180). `latest` 는 (a) 익명 GitHub API rate-limit, (b) 이미지 드리프트 두 사고의 단일 뿌리. 3개 워크플로우 일괄.
 4. **fixtures 는 prod 등록 금지** — SECDEF 헬퍼 포함, prod 적용 시 RLS 우회 가능(catastrophic).
 
@@ -42,3 +42,4 @@ prod 는 Supabase 기본 default-privilege 로 GRANT 를 보유하지만, CI 의
 - [[db-tests-cli-grant-drift]] — db-tests(pgTAP) 쪽 원천 소스(RED→GREEN 증거)
 - [[e2e-cli-grant-drift]] — e2e 쪽 원천 소스(pin≠fix 반증 + 마이그레이션 수정)
 - [[enum-divergence]] — DB 스키마/환경 드리프트가 읽기를 깨는 또 다른 클래스
+- [[wallet-pgtap-caller-binding]] — 같은 계열 테스트-DB 함정(하드닝이 pgTAP 깨뜨림)

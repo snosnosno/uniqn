@@ -1,10 +1,12 @@
 ---
 area: architecture
-updated: 2026-06-19
+updated: 2026-06-23
 status: current
 sources:
   - uniqn-mobile/supabase/migrations/20260525153952_fix_job_postings_anon_public_select.sql
   - uniqn-mobile/supabase/migrations/20260515030000_jpc_extend_existing_rls.sql
+  - uniqn-mobile/supabase/tests/jpc_job_postings_rls.test.sql
+  - memory/pitfall_job_postings_insert_loose_rls_by_design.md
   - memory/pitfall_anon_rls_secdef_function_poison.md
   - memory/pitfall_rls_jpc_recursion_widespread.md
   - memory/pitfall_rls_with_check_self_select_recursion.md
@@ -53,6 +55,12 @@ WITH CHECK 안 `SELECT count(*) FROM workspaces WHERE owner_id = auth.uid()` →
 
 수정 패턴: self-SELECT를 `plpgsql STABLE SECURITY DEFINER` 함수로 분리. SQL 함수는 inline 가능성 있어 SECDEF 무효화 위험.
 
+## 원칙: job_postings INSERT는 의도적으로 느슨 (검증됨)
+
+`job_postings`의 INSERT RLS는 **느슨**하다: `job_postings_insert_authenticated` WITH CHECK `auth.uid() IS NOT NULL`. 실제 권한(owner/workspace 멤버/협업자)은 **앱 레이어**가 검사하는 설계. pgTAP `jpc_job_postings_rls.test.sql`이 계약으로 명시 — owner/editor/collaborator/**outsider 모두 INSERT=ALLOW**("정책상 ALLOW — app layer 권한 검사 필수").
+
+→ "owner_id 위조 가능"으로 보여 `owner_id = auth.uid()`로 순진하게 조이면 워크스페이스 editor/collaborator 정당 INSERT가 막혀 `jpc_job_postings_rls`가 4/16 깨진다(실측). 결제 RPC가 가졌던 `p_owner_id=auth.uid()` 바인딩은 **결제 경로 한정**이었고 일반 INSERT 계약 아님. 조이려면 협업 경로 전수검증 + 테스트 계약 변경이 필요한 별도 작업. ([[wallet-iap-removal]] 중 한 세션이 조였다가 "느슨 유지" 결정으로 철회.)
+
 ## 주요 테이블별 RLS 요약 (주장: memory 기반)
 
 | 테이블 | anon | authenticated |
@@ -68,3 +76,5 @@ WITH CHECK 안 `SELECT count(*) FROM workspaces WHERE owner_id = auth.uid()` →
 - [[roles]] — UserRole과 RLS authenticated 계층 매핑
 - [[enum-divergence]] — RLS와 함께 발생한 읽기 증발 패턴
 - [[test-db-grants]] — 테이블 GRANT 레이어를 테스트에서 명시화한 결정
+- [[wallet-pgtap-caller-binding]] — SECDEF RPC 호출자 바인딩 가드 + pgTAP 회귀
+- [[wallet-iap-removal]] — 느슨 INSERT 설계 확정 맥락(조임 철회)
