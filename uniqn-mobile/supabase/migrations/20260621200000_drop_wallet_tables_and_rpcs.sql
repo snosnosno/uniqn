@@ -4,7 +4,12 @@
 --     2. RevenueCat 대시보드 웹훅 URL 제거 + 구독 비활성화 완료
 --     3. App Store / Google Play IAP 항목 제거 신청 완료
 --     4. staging 환경에서 먼저 적용 후 회귀 확인
--- ⚠️  이 파일은 작성만 된 상태이며 prod/staging에 적용하지 않았음 (2026-06-21)
+-- ✅ prod 적용 완료 (2026-06-23, MCP apply_migration → schema_migrations version 20260623102054).
+--    적용 직후 src/types/supabase.ts 에서 wallet 타입 제거(재생성)로 prod 정합.
+--    ⚠️ version 정합: 이 파일 version(20260621200000)과 prod 기록 version(20260623102054)이 다름.
+--       머지 후 `supabase db push` 시 20260621200000 이 미기록이라 재적용되나, 전 구문이
+--       IF EXISTS / CREATE OR REPLACE 라 멱등 no-op. 깔끔히 하려면 파일명을 20260623102054_* 로
+--       rename 하거나 `supabase migration repair --status applied 20260621200000` 로 정합화.
 --
 -- [P2-2] 명시적 DROP FUNCTION 인자 타입을 실제 시그니처와 정합화 (2026-06-22).
 --   기존 파일의 인자 타입(text/interval 등)이 실제와 달라 no-op 이었고,
