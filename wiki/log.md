@@ -10,3 +10,5 @@
 ## [2026-06-19] ingest | db-tests CLI grant 드리프트 — sources/db-tests-cli-grant-drift + decisions/test-db-grants 생성, rls-model 갱신(테이블 GRANT 레이어 보강). 출처 PR#179/#180
 
 ## [2026-06-19] ingest | e2e CLI grant 드리프트 — sources/e2e-cli-grant-drift 생성(같은 드리프트가 e2e도 타격, pin 2.107.0으론 미해결 반증, 명시 GRANT 마이그레이션이 수정). decisions/test-db-grants 보정(pin≠fix, 무대별 grant 위치). 출처 PR#183(run 27769458739/27787809344/27829125384)
+
+## [2026-06-23] ingest | 지갑/IAP 수익모델 전체 제거 + db-tests 회귀 — sources/wallet-iap-removal + decisions/wallet-pgtap-caller-binding 생성. revenue-model 휴면→폐기 전환(모순 플래그), rls-model 느슨 INSERT 의도 원칙 보강, test-db-grants allowlist 함수 grant 예외 명확화. 출처 memory(project_wallet_iap_removal_20260622·pitfall 2건)·PR#196(제거,✅머지 967e9f5e2+prod마이그+웹배포)·PR#198(db-tests green)
