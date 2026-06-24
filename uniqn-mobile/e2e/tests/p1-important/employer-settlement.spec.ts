@@ -166,11 +166,13 @@ test.describe('구인자 정산 관리', () => {
     await cleanupJobPosting(testJobId);
   });
 
-  test('공고 상세에서 정산 관리 화면으로 이동한다', async ({ page }) => {
+  test('공고 상세에서 스태프 관리/정산 화면으로 이동한다', async ({ page }) => {
     await page.goto(`/my-postings/${testJobId}`, { waitUntil: 'domcontentloaded' });
     await waitForReady(page);
 
-    const settlementAction = page.locator('button:visible', { hasText: /정산 관리/ }).first();
+    const settlementAction = page
+      .locator('button:visible', { hasText: /스태프 관리\/정산/ })
+      .first();
     await expect(settlementAction).toBeVisible();
     await settlementAction.click();
     await page.waitForURL(/settlements/, { timeout: 15_000 });
