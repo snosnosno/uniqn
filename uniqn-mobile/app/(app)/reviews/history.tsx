@@ -1,27 +1,36 @@
 /**
- * UNIQN Mobile - Review History Screen
- * 평가 히스토리 화면 (받은 평가 + 작성한 평가 탭)
+ * UNIQN Mobile - Review Hub Screen
+ * 평점관리 허브 화면 (미작성 + 받은 평가 + 작성한 평가 탭)
  */
 
 import { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { AppFlashList } from '@/components/ui/AppFlashList';
 import { StackHeader } from '@/components/headers';
 import { EmptyState, NumericText } from '@/components/ui';
 import ReviewCard from '@/components/review/ReviewCard';
 import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';
+import PendingReviewCard from '@/components/review/PendingReviewCard';
 import { REVIEW_CONTEXT_STRIPE_TONE } from '@/components/review/helpers/reviewConfig';
-import { useReceivedReviews, useGivenReviews, useBubbleScore } from '@/hooks/useReviews';
+import {
+  useReceivedReviews,
+  useGivenReviews,
+  useBubbleScore,
+  usePendingReviews,
+} from '@/hooks/useReviews';
+import type { PendingReviewItem } from '@/hooks/useReviews';
 import { useAuthStore } from '@/stores/authStore';
 import type { Review } from '@/types/review';
 
-type TabType = 'received' | 'given';
+type TabType = 'pending' | 'received' | 'given';
 
 export default function ReviewHistoryScreen() {
   const profile = useAuthStore((s) => s.profile);
   const bubbleScore = useBubbleScore();
-  const [activeTab, setActiveTab] = useState<TabType>('received');
+  const { pendingReviews, pendingCount, isLoading: isPendingLoading } = usePendingReviews();
+  const [activeTab, setActiveTab] = useState<TabType>(pendingCount > 0 ? 'pending' : 'received');
 
   const received = useReceivedReviews(profile?.uid);
   const given = useGivenReviews(profile?.uid);
@@ -31,6 +40,21 @@ export default function ReviewHistoryScreen() {
     () => activeData.data?.pages.flatMap((p) => p.items) ?? [],
     [activeData.data]
   );
+
+  const goToWrite = useCallback((item: PendingReviewItem) => {
+    router.push({
+      pathname: '/(app)/reviews/write',
+      params: {
+        workLogId: item.workLogId,
+        revieweeId: item.revieweeId,
+        revieweeName: item.revieweeName,
+        reviewerType: item.reviewerType,
+        jobPostingId: item.jobPostingId,
+        jobPostingTitle: item.jobPostingTitle,
+        workDate: item.workDate,
+      },
+    });
+  }, []);
 
   const handleEndReached = useCallback(() => {
     if (activeData.hasNextPage && !activeData.isFetchingNextPage) {
@@ -51,12 +75,17 @@ export default function ReviewHistoryScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
-      <StackHeader title="평가 히스토리" fallbackHref="/(app)/(tabs)/profile" />
+      <StackHeader title="평점관리" fallbackHref="/(app)/(tabs)/profile" />
       {/* 버블 점수 요약 카드 */}
       {bubbleScore && <ScoreSummary bubbleScore={bubbleScore} />}
 
       {/* 탭 바 */}
       <View className="flex-row border-b border-secondary-200 dark:border-secondary-700">
+        <TabButton
+          label={pendingCount > 0 ? `미작성 ${pendingCount}` : '미작성'}
+          isActive={activeTab === 'pending'}
+          onPress={() => setActiveTab('pending')}
+        />
         <TabButton
           label="받은 평가"
           isActive={activeTab === 'received'}
@@ -69,34 +98,66 @@ export default function ReviewHistoryScreen() {
         />
       </View>
 
-      {/* 리뷰 리스트 */}
-      {activeData.isLoading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" />
-        </View>
-      ) : (
-        <AppFlashList
-          data={reviews}
-          renderItem={renderItem}
-          keyExtractor={keyExtractor}
-          onEndReached={handleEndReached}
-          onEndReachedThreshold={0.5}
-          estimatedItemSize={140}
-          contentContainerStyle={{ paddingVertical: 8 }}
-          ListEmptyComponent={
-            <EmptyState
-              title={activeTab === 'received' ? '받은 평가가 없습니다' : '작성한 평가가 없습니다'}
-              description="근무 완료 후 평가가 생성됩니다"
-            />
-          }
-          ListFooterComponent={
-            activeData.isFetchingNextPage ? (
-              <View className="items-center py-4">
-                <ActivityIndicator size="small" />
+      {/* 미작성 탭 */}
+      {activeTab === 'pending' ? (
+        isPendingLoading ? (
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator size="large" />
+          </View>
+        ) : (
+          <AppFlashList
+            data={pendingReviews}
+            renderItem={({ item }: { item: PendingReviewItem }) => (
+              <View className="px-4 py-1.5">
+                <PendingReviewCard item={item} onPress={() => goToWrite(item)} />
               </View>
-            ) : null
-          }
-        />
+            )}
+            keyExtractor={(item: PendingReviewItem) => `${item.workLogId}_${item.reviewerType}`}
+            estimatedItemSize={120}
+            contentContainerStyle={{ paddingVertical: 8 }}
+            ListEmptyComponent={
+              <EmptyState
+                title="미작성 평가 없음"
+                description="모든 평가를 완료했습니다"
+                variant="content"
+              />
+            }
+          />
+        )
+      ) : (
+        /* 받은/작성한 평가 탭 */
+        <>
+          {activeData.isLoading ? (
+            <View className="flex-1 items-center justify-center">
+              <ActivityIndicator size="large" />
+            </View>
+          ) : (
+            <AppFlashList
+              data={reviews}
+              renderItem={renderItem}
+              keyExtractor={keyExtractor}
+              onEndReached={handleEndReached}
+              onEndReachedThreshold={0.5}
+              estimatedItemSize={140}
+              contentContainerStyle={{ paddingVertical: 8 }}
+              ListEmptyComponent={
+                <EmptyState
+                  title={
+                    activeTab === 'received' ? '받은 평가가 없습니다' : '작성한 평가가 없습니다'
+                  }
+                  description="근무 완료 후 평가가 생성됩니다"
+                />
+              }
+              ListFooterComponent={
+                activeData.isFetchingNextPage ? (
+                  <View className="items-center py-4">
+                    <ActivityIndicator size="small" />
+                  </View>
+                ) : null
+              }
+            />
+          )}
+        </>
       )}
     </SafeAreaView>
   );
