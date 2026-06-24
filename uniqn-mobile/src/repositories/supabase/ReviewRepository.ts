@@ -16,7 +16,6 @@ import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import { isAppError } from '@/errors';
 import { handleSupabaseError, toCamelCase, paginatedQuery, runRpc } from '@/utils/supabase';
-import { getSentimentScoreChange } from '@/types/review';
 import type {
   IReviewRepository,
   CreateReviewContext,
@@ -202,11 +201,7 @@ export class SupabaseReviewRepository implements IReviewRepository {
         sentiment: input.sentiment,
       });
 
-      const reviewId = `${input.workLogId}_${input.reviewerType}`;
-      const bubbleScoreChange = getSentimentScoreChange(input.sentiment);
-
-      const result = await runRpc<{ review_id: string }>('create_review', {
-        p_review_id: reviewId,
+      const result = await runRpc<string>('create_review', {
         p_work_log_id: input.workLogId,
         p_job_posting_id: input.jobPostingId,
         p_job_posting_title: input.jobPostingTitle,
@@ -219,11 +214,10 @@ export class SupabaseReviewRepository implements IReviewRepository {
         p_sentiment: input.sentiment,
         p_tags: input.tags,
         p_comment: input.comment ?? null,
-        p_bubble_score_change: bubbleScoreChange,
       });
 
-      logger.info('리뷰 생성 트랜잭션 완료', { reviewId: result.review_id });
-      return result.review_id;
+      logger.info('리뷰 생성 트랜잭션 완료', { reviewId: result });
+      return result;
     } catch (error) {
       if (isAppError(error)) throw error;
       handleSupabaseError(error, {
