@@ -86,10 +86,23 @@
 - `ops_events`는 HISTORY 탭 + 디버깅 + (후속) 되돌리기 + 동기화 트리거를 **한 번에** 해결.
 
 ### 3.3 코드 구조·배포 (v2 유지)
-uniqn-mobile 모노레포 `app/(ops)/`, 웹 우선, 같은 Supabase·Auth(클라이언트 재사용). **배포는 런타임 variant 분기**(빌드 산출물 분리 아님 — Expo Router 단일번들, ops가 메인앱에 실림 수용). `deploy-cloudflare.js`/`wrangler` `uniqn-app` 하드코딩 파라미터화. 진짜 격리(`EXPO_ROUTER_APP_ROOT`×2)는 후속. **모니터는 `app/(ops)/monitor/[id]`**(공개 읽기전용, 토큰 URL).
+uniqn-mobile 모노레포 `app/(ops)/`, 웹 우선, 같은 Supabase·Auth(클라이언트 재사용). **도메인 = `ops.uniqn.app` 서브도메인**(같은 브랜드, uniqn과 계정·디자인 일관). **배포는 런타임 variant 분기**(빌드 산출물 분리 아님 — Expo Router 단일번들, ops가 메인앱에 실림 수용). `deploy-cloudflare.js`/`wrangler` `uniqn-app` 하드코딩 파라미터화 + 2번째 CF Pages 프로젝트(ops). 진짜 격리(`EXPO_ROUTER_APP_ROOT`×2)는 후속. **모니터는 `app/(ops)/monitor/[id]`**(공개 읽기전용, 토큰 URL).
 
 ### 3.4 라우트 게이팅·레이어·네이밍 (v2 유지)
 `(ops)`는 authenticated 진입, 권한은 RLS(owner/workspace). 모니터는 별도 토큰 접근. 레이어 `Presentation→Hooks(src/hooks/ops)→Service→Repository(interface/impl)→Supabase`. 순수 도메인 `src/domains/ops/`. 네임스페이스 **`ops_*`**(기존 tournament=대회공고와 분리).
+
+### 3.5 진입점 (Entry points) — 한 계정, 여러 문
+| 사용자 | 진입 | 로그인 |
+|---|---|---|
+| 운영자(펍사장·대회진행) | `ops.uniqn.app` 웹(북마크) OR uniqn앱 "라이브 운영 →" 딥링크 | uniqn 계정 |
+| 플로어 직원 | `ops.uniqn.app` → 배정 대회 | uniqn 계정 |
+| 딜러 | uniqn 앱(공고·스케줄) — 현장은 운영자가 테이블 배정(딜러뷰 후속) | uniqn 계정 |
+| 참가자(선수) | **QR 슬립** → `ops.uniqn.app/live/[claim_token]`(익명) → 선택적 로그인 클레임 | 없음→선택 |
+| 관전 TV | 운영자 "Show on monitor" → `ops.uniqn.app/monitor/[id]?token` | 없음(공개) |
+| 기존 uniqn(구인·스태프) | `uniqn.app` 그대로 | uniqn 계정 |
+
+- **브릿지**: uniqn 앱에서 대회공고 보유 employer에게 "이 대회 라이브 운영 →" 버튼(ops 딥링크). 참가자는 도메인 인지 불필요(QR만).
+- **라이프사이클**: uniqn 공고+딜러모집 → ops서 대회 생성(공고 연결, 딜러 자동 import) → 현장 등록+QR 슬립 → 참가자 스캔 → TV 송출.
 
 ---
 
