@@ -6752,3 +6752,17 @@ Produces (relied on by nothing later in 1a; bridge is a leaf):
 - **Seed/next_entry_seq invariant:** `ops_test_seed` sets `next_entry_seq=1` to match its one seeded participant (`entry_number=1`). The allocation test deliberately creates a SEPARATE fresh tournament to get a clean `next_entry_seq=0 → 1, 2` sequence — do not register against the seed tournament in that test or you will hit a spurious 23505.
 - **D4 limitation is documented in the test header** (`ops_entry_number_allocation.test.sql`): true concurrent-session serialization (`FOR UPDATE` in `ops_register_participant`) is out of pgTAP scope and is a code-review gate.
 - **Dependency gate:** T10 requires T1 + T2 already applied locally (`npm run db:reset`). If `has_function_privilege` errors with "function … does not exist", T2's RPC migration or `src/types` regeneration step has not run — fix T2 before T10.
+
+---
+
+## Review Addendum (2026-06-25, pre-implementation review)
+
+Critical security core (T1, T2) reviewed line-by-line against the spec + exemplars. **Verdict: T1 solid as-written; T2 RPC bodies correct (actor binding, FOR UPDATE entry# serialization, registration_open guard, P0001 prefixes, anon REVOKE DO-loop, realtime ADD ops_events-excluded).** Two integration defects from parallel authoring — APPLY THESE FIXES during implementation:
+
+1. **Migration timestamp ordering (BLOCKER).** T1 ships `20260625120000` + `20260625120100`. T2 as-authored uses `20260625000300` + `20260625000400`, which sort BEFORE T1 → RPCs would run before their tables exist and `npm run db:reset` fails. **Renumber T2 migrations to `20260625120200_ops_1a_rpcs.sql` and `20260625120300_ops_1a_grants_and_realtime.sql`** (strictly after T1). Update the smoke/commit/verify commands in T2 to the new filenames. (T1's openIssue flagged this; confirmed.)
+
+2. **Local TS type generation (BLOCKER for local-only flow).** T2 Step 8 regenerates `src/types/supabase.ts` via MCP `generate_typescript_types`, but MCP targets the REMOTE (prod) project, which will NOT have `ops_*` until the gated prod-apply. For the autonomous LOCAL implementation flow, generate from the local stack instead: **`npx supabase gen types typescript --local > src/types/supabase.ts`** (the local stack has the migrations after `db:reset`). This makes `Constants.public.Enums.ops_*` resolve so T3/T4/T5+ compile. Re-run MCP regen against prod after the prod-apply approval gate so the committed file matches prod.
+
+3. **Minor — seed user hardcode.** T2's smoke hardcodes `4365e1ad-c9fb-416f-addb-d1b18b2a5ec8` as a seeded user. If that UUID is not in `supabase/seed.sql`, the smoke fails. During implementation, verify with `docker exec supabase_db_uniqn psql -U postgres -d postgres -c "SELECT id FROM public.users LIMIT 1"` and substitute a real id if needed.
+
+Tasks T3–T10 were authored against the same locked contracts; their cross-task type/signature consistency is guaranteed by construction, but each task's own gate (`npm test` / `npm run quality` / `npm run test:db`) remains the verification of record.
