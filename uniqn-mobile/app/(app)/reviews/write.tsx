@@ -61,13 +61,11 @@ export default function ReviewWriteScreen() {
           comment: values.comment,
         },
         {
-          onSuccess: () => {
-            router.back();
-          },
+          onSuccess: goToHistory,
         }
       );
     },
-    [mutate, params, resolvedJobPostingTitle, resolvedRevieweeName, reviewerType]
+    [goToHistory, mutate, params, resolvedJobPostingTitle, resolvedRevieweeName, reviewerType]
   );
 
   if (!params.workLogId || !params.revieweeId || !params.jobPostingId || !reviewerType) {
