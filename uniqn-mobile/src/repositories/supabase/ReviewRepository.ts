@@ -5,11 +5,11 @@
  * @version 1.0.0
  *
  * 책임:
- * 1. 리뷰 CRUD (결정적 문서 ID 활용)
+ * 1. 리뷰 CRUD (work_log_id + reviewer_type 복합 조회)
  * 2. RPC 트랜잭션 캡슐화 (중복 방지 + 버블 점수 원자적 업데이트)
  * 3. 블라인드 조회 로직
  *
- * 문서 ID 설계: `{workLogId}_{reviewerType}`
+ * 조회 설계: `(work_log_id, reviewer_type)` 컬럼 직접 조회 — 합성 id 금지
  */
 
 import { supabase } from '@/lib/supabase';
@@ -58,11 +58,11 @@ export class SupabaseReviewRepository implements IReviewRepository {
     try {
       logger.info('리뷰 조회', { workLogId, reviewerType });
 
-      const reviewId = `${workLogId}_${reviewerType}`;
       const { data, error } = await supabase
         .from(TABLES.REVIEWS)
         .select(TABLE_COLUMNS)
-        .eq('id', reviewId)
+        .eq('work_log_id', workLogId)
+        .eq('reviewer_type', reviewerType)
         .maybeSingle();
 
       if (error) {
@@ -87,16 +87,20 @@ export class SupabaseReviewRepository implements IReviewRepository {
       logger.info('블라인드 리뷰 조회', { workLogId, myReviewerType });
 
       const opponentType: ReviewerType = myReviewerType === 'employer' ? 'staff' : 'employer';
-      const myReviewId = `${workLogId}_${myReviewerType}`;
-      const opponentReviewId = `${workLogId}_${opponentType}`;
 
-      // 내 리뷰 + 상대 리뷰 병렬 조회
+      // 내 리뷰 + 상대 리뷰 병렬 조회 (uuid 컬럼 직접 조회 — 합성 id 금지)
       const [myResult, opponentResult] = await Promise.all([
-        supabase.from(TABLES.REVIEWS).select(TABLE_COLUMNS).eq('id', myReviewId).maybeSingle(),
         supabase
           .from(TABLES.REVIEWS)
           .select(TABLE_COLUMNS)
-          .eq('id', opponentReviewId)
+          .eq('work_log_id', workLogId)
+          .eq('reviewer_type', myReviewerType)
+          .maybeSingle(),
+        supabase
+          .from(TABLES.REVIEWS)
+          .select(TABLE_COLUMNS)
+          .eq('work_log_id', workLogId)
+          .eq('reviewer_type', opponentType)
           .maybeSingle(),
       ]);
 
