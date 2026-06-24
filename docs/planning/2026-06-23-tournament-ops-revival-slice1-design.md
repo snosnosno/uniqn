@@ -1,7 +1,8 @@
-# T-HOLDEM 라이브 대회 운영 엔진 부활 — 설계 v3.1
+# T-HOLDEM 라이브 대회 운영 엔진 부활 — 설계 v3.2
 
-- **작성일**: 2026-06-23 (화) · **개정**: v3.1 (모니터·플레이어뷰 UX + 플레이어 계정 하이브리드)
-- **상태**: DESIGN v3.1 — 사용자 리뷰 대기
+- **작성일**: 2026-06-23 (화) · **개정**: v3.2 (최종 적대 리뷰 3건 반영: 동기화 레이어 수정)
+- **상태**: DESIGN v3.2 — **1a 계획 준비됨**(아키 7.5·DB 7.5·제품 8, 만장일치 1a GO)
+- **v3.2 핵심 수정**: ①`ops_live_stats` VIEW→**트리거 실테이블**(Realtime 구독 가능) ②플레이어뷰 anon→**SECDEF RPC**(PII/토큰 유출 차단) ③`ops_events`=**감사전용**(동기화 백본 아님)·append강제 ④**1c 분할**(1c-1~4) ⑤**1a 군살 제거**(auto-seat동작·QR슬립·풀STATUS 후행) ⑥entry_number 할당·claim_token 1회소비·상태전이 가드.
 - **브랜치**: `feat/tournament-ops-revival` (master 기반, `T-HOLDEM-ops` 워크트리)
 - **선행**: 원본 T-HOLDEM 인벤토리 + 적대 리뷰 3건(8/8.5/8.5) + **K-Holdem 실제 플로어앱·모니터 화면 분석**
 
@@ -71,20 +72,20 @@
 플로어 컨트롤 앱 `app/(ops)/tournaments/[id]/` 하위 6탭: **STATUS·TABLES·PLAYERS·LEVELS·PAYOUTS·HISTORY**. 운영자가 이미 아는 멘탈모델 그대로.
 > 📄 **화면·흐름 상세(6탭 mockup·Redraw·등록/체크인)**: 동반 문서 `2026-06-23-tournament-ops-ux-flows.md`.
 
-### 3.2 단일 라이브 상태 + 이벤트 척추 (동기화 모델)
+### 3.2 단일 라이브 상태 (동기화 모델) — v3.2 정정
+> ⚠️ **v3.2 정정(적대 리뷰 3건 수렴)**: ①`ops_live_stats`는 **VIEW 불가**(Realtime은 VIEW의 WAL 없음 → 구독 불가) → **트리거 갱신 실테이블**. ②`ops_events`는 **동기화 백본 아님**(Realtime이 이미 base 테이블 동기화) → **HISTORY/감사 전용**.
 ```
               ┌──────────── 쓰기(RPC, 원자) ────────────┐
-   조작 ──▶ ops_* 원천테이블 ──(트리거)──▶ ops_events(append-only 로그)
-              │                                  │
-              ├─▶ ops_live_stats (파생 뷰)        │
-              └────────── Supabase Realtime ──────┴────────────┐
+   조작 ──▶ ops_* 원천테이블 ──(같은 RPC 말미, 델타)──▶ ops_live_stats(실테이블 1행)
+              │         └──(append)──▶ ops_events(감사로그, 비-Realtime)
+              └────────── Supabase Realtime(base + live_stats) ──────┐
                     ▼                ▼                 ▼
-            플로어앱 6탭        모니터(읽기전용)     플레이어뷰(후속)
+            플로어앱 6탭        모니터(비-PII anon)   플레이어뷰(SECDEF RPC)
 ```
-- **모든 변이는 RPC**(원자·actor=auth.uid 바인딩). RPC가 원천테이블 갱신 + `ops_events`에 1건 append.
-- **`ops_live_stats`** = 파생 통계(평균/총칩/엔트리/재진입/빈좌석/AVG BB/프라이즈풀). 화면은 계산 안 하고 구독만.
-- **Realtime** 한 소스 → 플로어앱·모니터·(후속)플레이어 자동 일치 = "유기적 동기화".
-- `ops_events`는 HISTORY 탭 + 디버깅 + (후속) 되돌리기 + 동기화 트리거를 **한 번에** 해결.
+- **모든 변이는 RPC**(원자·actor=auth.uid 바인딩). RPC가 원천테이블 갱신 + **`ops_live_stats` 1행 델타 갱신**(전체 재계산 아님) + `ops_events` 1건 append.
+- **`ops_live_stats`** = 대회당 1행 **실테이블**(트리거/RPC 유지), publication 등록 → 화면은 그 1행만 구독(계산X). 핫행 락 경합은 델타·throttle로 완화.
+- **Realtime** = base 테이블 + live_stats 행. 한 소스 → 플로어앱·모니터·플레이어 자동 일치 = "유기적 동기화".
+- **`ops_events`** = HISTORY 탭 + 감사 + (후속) 되돌리기. **동기화 전송로 아님**, **1a Realtime publication 제외**(HISTORY는 페이지네이션 refetch). append-only 강제 = `BEFORE UPDATE/DELETE` raise 트리거 + REVOKE.
 
 ### 3.3 코드 구조·배포 (v2 유지)
 uniqn-mobile 모노레포 `app/(ops)/`, 웹 우선, 같은 Supabase·Auth(클라이언트 재사용). **도메인 = `ops.uniqn.app` 서브도메인**(같은 브랜드, uniqn과 계정·디자인 일관). **배포는 런타임 variant 분기**(빌드 산출물 분리 아님 — Expo Router 단일번들, ops가 메인앱에 실림 수용). `deploy-cloudflare.js`/`wrangler` `uniqn-app` 하드코딩 파라미터화 + 2번째 CF Pages 프로젝트(ops). 진짜 격리(`EXPO_ROUTER_APP_ROOT`×2)는 후속. **모니터는 `app/(ops)/monitor/[id]`**(공개 읽기전용, 토큰 URL).
@@ -108,7 +109,7 @@ uniqn-mobile 모노레포 `app/(ops)/`, 웹 우선, 같은 Supabase·Auth(클라
 ### 3.6 uniqn → ops 브릿지 (MVP — 실코드 기반)
 - **단일 진입점**: 공고 상세 `app/(employer)/my-postings/[id]/index.tsx` "관리" 섹션에 **"라이브 운영" ActionCard 1개**(홈·리스트 미노출 — MVP 최소).
 - **노출 조건(AND 전부)**: `postingType==='tournament'`(`postingConfig.ts`) AND `tournamentConfig.approvalStatus==='approved'`(미승인/거절=숨김) AND `status ∉ {draft,rejected,cancelled,expired}`. **관리권한은 화면 진입이 이미 게이트**(`my-postings/[id]/_layout.tsx`의 `isEmployerManageablePosting`+RLS) → 별도 role 체크 없음(workspace 협업자 자동 포함).
-- **상태인식 라벨**: employer 앱이 `ops_tournaments WHERE job_posting_id={id}` 가볍게 조회 → 없음=**"라이브 운영 시작"**, 있음=**"라이브 운영 열기"** + `진행 중` 배지.
+- **상태인식 라벨**: employer 앱이 `ops_tournaments WHERE job_posting_id={id}` 1회 조회(구독 아님) → 없음=**"라이브 운영 시작"**, 있음=**"라이브 운영 열기"** + `진행 중` 배지. **`OpsTournamentRepository` 경유**(hook이 Supabase 직접호출 금지) + **`ops_*` 미존재 시 null-safe**(1a 미배포 시 employer 앱 에러 방지).
 - **딥링크**: `deepLinkService.openExternalUrl('https://ops.uniqn.app/t/from-posting?postingId={id}')`(미생성) 또는 `…/t/{opsTournamentId}`(생성됨). 웹=새 탭, 모바일=브라우저.
 - **세션(수용한 마찰)**: 다른 origin이라 Supabase localStorage 세션 미공유 → **ops 첫 진입 1회 재로그인 수용**(이후 기억). SSO(단기 토큰 핸드오프 / `.uniqn.app` 쿠키)는 후속.
 - **역방향**: ops 대회 화면 → "공고 보기" 링크백 `uniqn.app/.../my-postings/{id}`.
@@ -118,12 +119,13 @@ uniqn-mobile 모노레포 `app/(ops)/`, 웹 우선, 같은 Supabase·Auth(클라
 
 ## 4. 데이터 모델 (Postgres) — v3
 
-> `owner_id`/`*_staff_id` FK→`public.users(id)`. Realtime publication = 실시간 대상만(participants·tables·seats·clock·live_stats·events). RLS: `owner_id=auth.uid() OR is_workspace_member(job_posting.workspace_id)`. 모든 RPC `REVOKE anon` + SECDEF actor 바인딩.
+> `owner_id`/`*_staff_id` FK→`public.users(id)`. Realtime publication = 실시간 대상만(participants·tables·seats·clock·**live_stats 실테이블**). **`ops_events`는 publication 제외**(HISTORY=refetch). RLS: `owner_id=auth.uid() OR is_workspace_member(job_posting.workspace_id)`. 모든 RPC `REVOKE anon` + SECDEF actor 바인딩. **공개 토큰 읽기(모니터/플레이어뷰)는 anon RLS에 SECDEF 함수 호출 금지**(is_workspace_member 등 → [pitfall_anon_rls_secdef_function_poison] 재발).
 
 ### 4.1 `ops_tournaments`
 `id, owner_id FK, job_posting_id FK?, name(XSS), venue, event_date date, game_type text(NLH/PLO/…), status CHECK(upcoming/active/completed), seats_per_table int DEFAULT 9, starting_chips, color`
 **칩·정산 config**: `buy_in_chips, rebuy_chips, addon_chips, buy_in_cost, fee_cost, rebuy_cost, addon_cost, bounty_cost?(knockout)`
 **등록 config(K-Holdem)**: `registration_open bool DEFAULT true, auto_seat_on_register bool DEFAULT true, reentry_allowed bool DEFAULT true, max_reentries int?`
+**공개 토큰**: `monitor_token text UNIQUE`(난수, 모니터 공개읽기 키 — anon RLS는 이 컬럼 join만, SECDEF 호출X), `next_entry_seq int DEFAULT 0`(entry_number 할당 카운터, `FOR UPDATE`로 경합 차단).
 `created_at/updated_at`.
 
 ### 4.2 `ops_blind_levels`
@@ -132,11 +134,13 @@ uniqn-mobile 모노레포 `app/(ops)/`, 웹 우선, 같은 Supabase·Auth(클라
 ### 4.3 `ops_participants` (재진입·체크인·계정훅 1급)
 `id, tournament_id FK, entry_number int(=K-Holdem #33, 대회내 유니크), name(XSS), nationality text?, phone?, `
 `player_user_id uuid FK→public.users(id)?  ← 계정 클레임 시 링크(walk-in은 NULL, 운영자 마찰 0), `
-`claim_token text?  ← QR 슬립용 1회성 토큰(스캔→익명 라이브뷰, 로그인 시 player_user_id로 클레임), `
+`claim_token text UNIQUE?  ← QR 슬립용 토큰. 클레임 RPC: token 검증→`player_user_id=auth.uid()` 바인딩→`claimed_at` 세팅(1회성 소비)→이미 클레임시 거부, `
 `status text CHECK(registered/checked_in/active/busted/no_show) DEFAULT registered, `
 `chips int DEFAULT 0, buy_in_amount?, rebuys int DEFAULT 0, add_ons int DEFAULT 0, reentries int DEFAULT 0, `
 `finish_position int?, busted_at timestamptz?, prize_amount int?(ITM 확정), note?`
 - **좌석 컬럼 없음**(점유=`ops_seats` 단일원).
+- **entry_number 할당**: 등록 RPC가 `ops_tournaments.next_entry_seq`를 `FOR UPDATE`로 증가시켜 부여(동시 등록 경합→유니크 위반·등록실패 차단).
+- **상태 전이 가드(RPC 강제)**: 합법 전이만 — register→checked_in→active, active→busted, busted→active(재진입), registered/checked_in→no_show. **불법 전이/raw status UPDATE 거부**(seat·finish_position 부패 방지). 좌석 의미는 status와 분리(`ops_seats`).
 - **재진입**: bust 후 `reenter_participant` RPC가 status→active, chips=starting, finish_position=NULL 리셋, reentries++ (대회 reentry_allowed·max 가드). entries(총) vs 유니크 플레이어 구분은 `ops_live_stats`서 집계.
 - 부분 UNIQUE(tournament_id, finish_position) WHERE finish_position IS NOT NULL · UNIQUE(tournament_id, entry_number).
 - 인덱스 (tournament_id, status), (tournament_id, finish_position).
@@ -158,16 +162,19 @@ uniqn-mobile 모노레포 `app/(ops)/`, 웹 우선, 같은 Supabase·Auth(클라
 ### 4.8 `ops_prizes`
 `id, tournament_id FK, rank int, amount int?, pct numeric?, participant_id FK?` · UNIQUE(tournament_id, rank).
 
-### 4.9 `ops_events` (이벤트 척추 = HISTORY + 동기화) — v3 신규
+### 4.9 `ops_events` (HISTORY/감사 전용 — v3.2: 동기화 백본 아님)
 `id, tournament_id FK, type text(level_play/level_pause/level_set/chips_changed/player_registered/player_checked_in/player_busted/player_reentered/player_moved/seat_freed/table_added/table_closed/table_redraw/prize_assigned/registration_toggled), `
 `actor_id FK→public.users?, actor_device text?, payload jsonb(변경 상세, 예: {participant_id, chips_before, chips_after}), created_at timestamptz DEFAULT now()`
-- **append-only**(UPDATE/DELETE 금지). 모든 변이 RPC가 1건 기록 → HISTORY 탭 = `ORDER BY created_at DESC`.
-- 인덱스 (tournament_id, created_at DESC).
+- **append-only 강제**: `BEFORE UPDATE OR DELETE` 트리거 `RAISE EXCEPTION` + 역할에서 `REVOKE UPDATE,DELETE`(SECDEF RPC가 RLS 우회하므로 RLS만으론 부족).
+- **RLS**: owner/workspace **읽기전용, anon 절대 금지**(모니터/플레이어뷰는 events 불필요). **Realtime publication 제외** → HISTORY 탭 = `ORDER BY created_at DESC` 페이지네이션 refetch.
+- 인덱스 (tournament_id, created_at DESC). 보존: 무한 append → 후속 파티션/아카이브(슬라이스1은 무방).
 
-### 4.10 `ops_live_stats` (파생 뷰/머티리얼라이즈) — v3 신규
-`tournament_id` 기준 집계 VIEW (또는 갱신 트리거 테이블):
-`playing(active 수), entries(총=참가+재진입+리바이 정의 명시), unique_players, reentries_total, tables_open, seats_total, seats_free, total_chips, average_stack, avg_stack_bb(=average_stack/현재 bb), prize_pool(=Σ 수익), knockout_pool?`.
-→ 화면·모니터는 이 한 행만 구독. **단일 진실원, 산발 계산 제거.**
+### 4.10 `ops_live_stats` (트리거 갱신 실테이블 — v3.2: VIEW 불가)
+> ⚠️ VIEW/머티리얼라이즈드는 Realtime 구독 불가(WAL 없음/publication 거부) → **반드시 실테이블**.
+`tournament_id PK FK, playing int, entries int, unique_players int, reentries_total int, tables_open int, seats_total int, seats_free int, total_chips bigint, average_stack int, avg_stack_bb numeric, prize_pool int, knockout_pool int?, updated_at`
+- **대회당 1행**, 변이 RPC 말미에 **델타 갱신**(전체 재계산 아님). `avg_stack_bb`는 클럭 레벨 변경 시에도 재계산. publication 등록 → 화면/모니터는 `tournament_id=eq.X` 한 행 구독.
+- **핫행 경합**(모든 칩변경이 1행에 수렴) 완화: 델타 증분 + 고빈도 필드 throttle. `entries` 정의(재진입 카운트 방식)는 K-Holdem과 의식적으로 일치/분기 결정.
+- **부분 산출(1a)**: 좌석/블라인드 없는 1a에선 `playing/entries/total_chips/average_stack/prize_pool`만 산출(avg_stack_bb·seats_free·tables_open은 1b/1c에서 채움).
 
 ---
 
@@ -179,7 +186,7 @@ uniqn-mobile 모노레포 `app/(ops)/`, 웹 우선, 같은 Supabase·Auth(클라
 6탭(STATUS/TABLES/PLAYERS/LEVELS/PAYOUTS/HISTORY), 모든 조작. STATUS 액션 `Show on monitor`로 각 TV가 볼 대회 지정.
 
 ### 5.2 모니터 디스플레이 `app/(ops)/monitor/[id]?token=…`
-읽기전용 대형(16:9), 공개 토큰 URL(로그인 0). `ops_clock`(서버 시각, 클라 카운트다운만)+`ops_live_stats` 구독 → 새로고침·멀티 TV 100% 동일.
+읽기전용 대형(16:9), 공개 토큰 URL(로그인 0). **읽기 = 비-PII만(`ops_clock`+`ops_live_stats`)** → `monitor_token` 매칭 **anon SELECT RLS**(SECDEF 호출 없는 plain 컬럼 join)로 anon Realtime 구독 가능. 참가자 PII 테이블엔 접근 안 함. 클럭=서버 시각·클라 카운트다운. 새로고침·멀티 TV 100% 동일.
 - **레이아웃**: 헤더(매장로고·대회명·게임타입·REG 상태) / 히어로(LEVEL·대형클럭·±1분·현재 BLINDS+ante) / 통계 스트립(PLAYERS 잔여/총·AVG(BB)·TOTAL CHIPS·POOL) / 푸터(다음 블라인드·다음 브레이크 카운트다운·QR=플레이어뷰 링크·powered by uniqn).
 - **상태별**: 시작전(REGISTRATION OPEN+시작 카운트다운) / 진행 / **일시정지**(클럭 빨강·점멸·PAUSED) / **브레이크**(ON BREAK 카운트다운+다음 레벨) / 레벨전환(0.5s 플래시) / 종료(우승자+파이널 순위·상금 스크롤).
 - **멀티 모니터**: 한 대회 다중 TV 동시 송출, TV별 다른 대회 가능.
@@ -188,9 +195,9 @@ uniqn-mobile 모노레포 `app/(ops)/`, 웹 우선, 같은 Supabase·Auth(클라
 참가자 폰. 자리 배정 시 **QR 슬립**(claim_token) 지급 → 스캔 → **로그인 없이 즉시** 본인 라이브뷰.
 - **레이아웃**: 미니 클럭(모니터 동기) / **내 자리(TABLE·SEAT, 가장 크게)+미니 배치도** / 내 스택(칩+BB) / 대회 라이브(블라인드·인상 카운트다운·생존수·평균BB·풀·다음 브레이크) / 알림 안내.
 - **상태/이벤트**: 자리이동(자동 갱신+토스트 "TABLE 4·SEAT 5") / 블라인드 인상 임박(강조) / 브레이크 / **탈락 ITM**("10위 종료·상금 13,000") / 탈락 노미니("11위") / 재진입 가능 배너.
-- **구독**: `ops_clock`+`ops_live_stats`(공개 집계)+본인 `ops_participants` 행+본인 `ops_seats`. 원본 ParticipantLivePage 계승.
-- **계정 하이브리드(§4.3 훅)**: 익명뷰 하단 **"로그인해 내 기록 저장"** → uniqn 계정 로그인 시 claim_token→`player_user_id` 클레임. 운영자는 그대로 walk-in 입력(마찰 0).
-- **후속(플레이어 포털 슬라이스)**: 가입·클레임 UI·내 대회 이력·프로필 → 이후 랭킹/포인트(와홀덤 선수 포털). **1c는 데이터 훅(`player_user_id`/`claim_token`)+로그인 진입점까지만.**
+- **읽기 경로(v3.2 — anon own-row Realtime 불가)**: `ops_participants`엔 PII+claim_token → blanket anon SELECT 금지(전원 PII/토큰 유출=#195 P0 클래스). 대신 **token→스코프 SECDEF RPC**(claim_token 검증 후 본인 안전필드만 반환, anon EXECUTE GRANT, rate-limit). 공개 집계(clock/live_stats)는 §5.2 anon 경로 재사용. **본인 행 갱신은 비-Realtime**(RPC 폴링 또는 Realtime Broadcast 채널) — URL 토큰으론 own-row RLS 구독 불가.
+- **계정 하이브리드(§4.3 훅)**: 익명뷰 하단 **"로그인해 내 기록 저장"** → uniqn 계정 로그인 시 claim RPC가 `player_user_id=auth.uid()` 바인딩(1회 소비). 운영자는 그대로 walk-in 입력(마찰 0).
+- **후속(플레이어 포털 슬라이스)**: 가입·클레임 UI·내 대회 이력·프로필 → 이후 랭킹/포인트. **플레이어뷰는 가장 위험(anon 보안)·운영 필수도 낮음 → 1c-4로 분리**(아래 §10), 포털과 함께 후행 가능.
 
 ---
 
@@ -224,15 +231,17 @@ uniqn-mobile 모노레포 `app/(ops)/`, 웹 우선, 같은 Supabase·Auth(클라
 
 | # | sub-slice | 내용 | 동기화 |
 |---|---|---|---|
-| **1a** | **CRUD 스파인 + 이벤트로그** | `ops_tournaments`(+등록/칩 config)·`ops_participants`(entry#·체크인·재진입·리바이)·**`ops_events`** + PLAYERS/STATUS(목록·등록) | 척추 확립 |
-| 1b | 테이블/좌석 | `ops_tables`(lock/priority)·`ops_seats`·1종 배정·`move_seat`·`free_seat`·redraw | TABLES 탭 |
-| 1c | 블라인드+클럭+**모니터+플레이어뷰** | `ops_blind_levels`·`ops_clock`·서버동기 타이머 + `ops_live_stats` + **모니터 디스플레이** + **플레이어뷰(QR 익명+계정훅 `player_user_id`/`claim_token`)** | LEVELS+모니터+플레이어뷰 |
-| ↳ | **Realtime** | 1c 시점 다서피스 구독 레이어링 | 유기적 동기화 가동 |
+| **1a** | **CRUD 스파인 + 이벤트로그(군살 제거)** | `ops_tournaments`(config 컬럼 inert)·`ops_participants`(entry# 할당·상태가드·리바이)·**`ops_events`** + 대회 목록/picker + PLAYERS 탭 + STATUS **부분통계**(참가자 파생만) + `toggle_registration` + 브릿지 버튼 | 척추 확립 |
+| 1b | 테이블/좌석 | `ops_tables`(lock/priority)·`ops_seats`·대기채움 배정·`move_seat`·`free_seat`·redraw(미리보기, TOCTOU 재검증) + auto-seat **동작** | TABLES 탭 |
+| 1c-1 | 블라인드+클럭 | `ops_blind_levels`·`ops_clock`·서버동기 타이머(LEVELS, authed) | LEVELS |
+| 1c-2 | live_stats+STATUS | `ops_live_stats` **트리거 실테이블** + STATUS 풀 대시보드 구독 + Realtime(base+stats, authed) | STATUS |
+| 1c-3 | 모니터 | 모니터 디스플레이(비-PII anon, `monitor_token`) | 모니터 |
+| 1c-4 | 플레이어뷰+계정 | 플레이어뷰(token→SECDEF RPC·비-Realtime)+`claim_token`/`player_user_id`(가장 위험, 후속 포털과 함께 가능) | 플레이어뷰 |
 | 1d | 배정 2종 + 재진입/bust | 랜덤·칩드래프트·`bust_participant`(ITM)·`reenter_participant` | PLAYERS |
 | 1e | 스태프 연동 | `ops_staff`·수동+스냅샷 import·딜러 배정 | — |
-| 1f | 상금 | `ops_prizes`·풀 산정·PAYOUTS·ITM 확정 | PAYOUTS |
+| 1f | 상금 | `ops_prizes`·풀 산정·PAYOUTS·ITM 확정·**우승자 finalize** | PAYOUTS |
 
-**1a 첫 출시 단위** = 디지털 등록데스크 + 감사로그 척추(이후 모든 탭이 얹힘). `bust`는 1d(상금 ITM은 1f)로 분리 — 1a는 registered/checked_in/active만.
+**1a 첫 출시 단위(가장 마른 범위)** = 디지털 등록데스크 + 감사로그 척추. **1a에서 제외(리뷰 적발 군살)**: auto-seat *동작*(→1b)·QR슬립/플레이어뷰 라우트(→1c-4)·풀 STATUS 대시보드·avg_stack_bb·좌석/테이블 수(→1b/1c). `bust`=1d, 상금=1f. config 컬럼은 1a에 inert로 적재. **1a STATUS 부분통계** = `playing/entries/total_chips/average_stack/prize_pool`만(1c-2의 `ops_live_stats`가 이를 확장, throwaway 아님). **no_show + 사전등록 CSV는 한 묶음**(둘 다 1a 또는 둘 다 후속).
 
 ---
 
@@ -247,17 +256,18 @@ uniqn-mobile 모노레포 `app/(ops)/`, 웹 우선, 같은 Supabase·Auth(클라
 
 ---
 
-## 12. 리스크/오픈
+## 12. 리스크/오픈 (v3.2 — 적대 리뷰 3건 반영)
 1. prod DB 공유 — `ops_*` RLS·anon REVOKE·actor 바인딩·멱등 마이그.
 2. 번들 미분리 수용(§3.3). 진짜 격리 후속.
-3. Realtime 고빈도 — 좌석정규화+live_stats 단일행으로 완화, throttle/REPLICA IDENTITY 1c 결정.
-4. `ops_live_stats` VIEW vs 머티리얼라이즈드 — 고빈도면 트리거 갱신 테이블 검토(1c 벤치).
-5. 모니터 보안 — 공개 토큰 URL(읽기전용, 민감정보 최소).
-6. 스냅샷 import staleness(취소 미반영, 라벨). 동기화 후속.
-7. 후속 보류: **플레이어 포털(가입·클레임 UI·내 이력·프로필)**·전국 포털/예약·랭킹/포인트·티켓/경고·딜러 로테이션·멀티데이/플라이트·바운티 정산. (라이브 플레이어뷰·계정훅은 1c에 포함)
-8. **claim_token 보안** — 1회성·추측불가(난수)·읽기전용 스코프. 전체공개 칩이라 유출 피해 낮으나 토큰=본인 클레임 권한이므로 클레임 시 재검증.
+3. **[해결] `ops_live_stats`=트리거 실테이블**(VIEW 구독 불가 확정). 핫행 경합은 델타+throttle. 부분산출 1a→확장 1c-2.
+4. **[해결] 플레이어뷰 anon 보안** = token→SECDEF RPC(안전필드만)+비-Realtime(§5.3). 모니터는 비-PII anon SELECT. anon RLS에 SECDEF 호출 금지(P0 재발 방지).
+5. **[해결] `ops_events`=감사전용**(동기화 백본 아님), append-only=raise트리거+REVOKE, 1a publication 제외. 무한 append→후속 파티션.
+6. **1c 분할**(1c-1~1c-4). 플레이어뷰(1c-4)는 후속 포털과 함께 가능.
+7. redraw 미리보기 TOCTOU(1b서 confirm 시 좌석버전 재검증). 우승자 finalize 미명세(1f). cross-variant 딥링크 하드닝(저위험, RLS가 데이터 보호).
+8. 스냅샷 import staleness(취소 미반영, 라벨). 동기화 후속.
+9. 후속 보류: 플레이어 포털·전국 포털/예약·랭킹/포인트·티켓/경고·딜러 로테이션·멀티데이/플라이트·바운티 KO-credit·멤버십카드 dedup.
 
 ---
 
 ## 13. 다음 단계
-v3.1 승인 후 **1a(CRUD+이벤트로그)** `writing-plans` 계획화. 1b~1f 각자 plan→구현, Realtime·모니터·플레이어뷰는 1c. 후속 슬라이스(플레이어 포털=가입·클레임·이력·프로필 → 랭킹/포인트 → 전국 포털)는 별도 spec.
+**1a(가장 마른 범위: 등록데스크+이벤트척추)** `writing-plans` 계획화 — 계획에 핀: entry_number 할당전략·events append강제·상태전이 가드·STATUS 부분통계 정의·no_show/CSV 묶음 결정. 1b·1c-1~4·1d~1f 각자 plan→구현. 후속(플레이어 포털→랭킹/포인트→전국 포털) 별도 spec.

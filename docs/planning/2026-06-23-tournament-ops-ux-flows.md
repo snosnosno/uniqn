@@ -140,8 +140,11 @@ STATUS 🟧 Redraw  (또는 TABLES 메뉴)
    [registered] ──check-in──▶ [checked_in] ──seat/active──▶ [active]
         │(walk-in: 한 번에 active)                              │ bust
         └──────────────────────────────────────────────▶ [busted]→finish_position
-   no_show: 등록했으나 미출석
+   no_show: 등록했으나 미출석 (registered→no_show, 지각시 no_show→active)
 ```
+- **전이 가드(RPC 강제, raw status UPDATE 금지)**: 합법 전이만 허용 — 그 외 거부(seat·finish_position 부패 방지). 예: busted에 check-in 불가, non-active에 bust 불가, active 재check-in 무시.
+- **no_show + 사전등록(CSV)은 한 묶음**: 둘 다 1a 또는 둘 다 후속(혼합 금지 — 사전등록 no_show를 1a서 못 찍는 모순 회피).
+- **워크인 중복 등록**: 멤버십카드 dedup 없음(계정X 모델) → 동명이인/중복은 entry# 별개로 수용(명시).
 
 ### C2. 워크인 등록 (현장, 슬라이스1 주력)
 ```
@@ -155,6 +158,7 @@ PLAYERS 🟢 + 등록
   - claim_token 생성 → QR 슬립 출력/표시
   ▼
   QR 슬립: [QR] #33 · TABLE 98 · SEAT 5
+> ⚠️ v3.2: **auto-seat 동작=1b**(좌석), **QR슬립/플레이어뷰 라우트=1c-4**. 1a 등록은 entry#·칩·상태까지만(슬립 좌석·자동배정은 후행 슬라이스에서 활성).
 ```
 
 ### C3. 사전등록 + 체크인 (온라인/명단, 일부)
@@ -182,10 +186,9 @@ PLAYERS/좌석 → Bust out
 
 ---
 
-## D. 슬라이스 매핑
-- **1a**: 등록(워크인)·PLAYERS·STATUS 통계·HISTORY(이벤트척추)·등록 토글.
-- **1b**: TABLES·좌석·Redraw(1종)·move/free·lock/priority.
-- **1c**: LEVELS·클럭·모니터·플레이어뷰·Realtime·live_stats.
+## D. 슬라이스 매핑 (v3.2 — 메인 spec §10과 정합)
+- **1a**: 등록(워크인)·PLAYERS·**STATUS 부분통계**(참가자 파생만: playing/entries/total_chips/average_stack/prize_pool)·HISTORY(이벤트척추)·등록 토글. **제외(후행): auto-seat 동작·QR슬립·클럭·avg_stack_bb·좌석/테이블 수.**
+- **1b**: TABLES·좌석·**auto-seat 동작**·Redraw(대기채움, 미리보기 confirm시 좌석버전 재검증)·move/free·lock/priority.
+- **1c-1**: LEVELS·클럭(서버동기). **1c-2**: `ops_live_stats` 실테이블+STATUS 풀 대시보드+Realtime. **1c-3**: 모니터(비-PII anon). **1c-4**: 플레이어뷰(token→SECDEF RPC·비-Realtime)+QR슬립+계정훅.
 - **1d**: Redraw 2종·bust(ITM)·재진입.
-- **1e**: 스태프/딜러 배정.
-- **1f**: PAYOUTS·상금.
+- **1e**: 스태프/딜러 배정. **1f**: PAYOUTS·상금·우승자 finalize.
