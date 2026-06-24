@@ -69,6 +69,7 @@
 
 ### 3.1 정보구조(IA) = 6탭 + 모니터
 플로어 컨트롤 앱 `app/(ops)/tournaments/[id]/` 하위 6탭: **STATUS·TABLES·PLAYERS·LEVELS·PAYOUTS·HISTORY**. 운영자가 이미 아는 멘탈모델 그대로.
+> 📄 **화면·흐름 상세(6탭 mockup·Redraw·등록/체크인)**: 동반 문서 `2026-06-23-tournament-ops-ux-flows.md`.
 
 ### 3.2 단일 라이브 상태 + 이벤트 척추 (동기화 모델)
 ```
