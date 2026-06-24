@@ -172,6 +172,13 @@ export const ERROR_CODES = {
   BUSINESS_EMPLOYER_APP_SELF_APPROVE: 'E6072', // 본인 신청 직접 처리 시도
   BUSINESS_EMPLOYER_APP_NOT_FOUND: 'E6073', // 신청 내역 없음
 
+  // 라이브 운영(ops) 관련 (E6100~)
+  OPS_REGISTRATION_CLOSED: 'E6101', // 등록 마감 상태에서 등록 시도
+  OPS_INVALID_TOURNAMENT_TRANSITION: 'E6102', // 불법 대회 상태 전이
+  OPS_PARTICIPANT_NOT_ACTIVE: 'E6103', // 비활성 참가자에 리바이/애드온
+  OPS_TOURNAMENT_NOT_FOUND: 'E6104', // 대회/공고 없음
+  OPS_PARTICIPANT_NOT_FOUND: 'E6105', // 참가자 없음
+
   // 알 수 없는 에러 (E7xxx)
   UNKNOWN: 'E7000',
 } as const;
@@ -181,6 +188,13 @@ export const ERROR_CODES = {
 // ============================================================================
 
 export const ERROR_MESSAGES: Record<string, string> = {
+  // 라이브 운영(ops)
+  [ERROR_CODES.OPS_REGISTRATION_CLOSED]: '등록이 마감되었습니다',
+  [ERROR_CODES.OPS_INVALID_TOURNAMENT_TRANSITION]: '현재 대회 상태에서 허용되지 않는 변경입니다',
+  [ERROR_CODES.OPS_PARTICIPANT_NOT_ACTIVE]: '활성 상태의 참가자만 가능합니다',
+  [ERROR_CODES.OPS_TOURNAMENT_NOT_FOUND]: '대회를 찾을 수 없습니다',
+  [ERROR_CODES.OPS_PARTICIPANT_NOT_FOUND]: '참가자를 찾을 수 없습니다',
+
   // 네트워크
   [ERROR_CODES.NETWORK_OFFLINE]: '인터넷 연결을 확인해주세요',
   [ERROR_CODES.NETWORK_TIMEOUT]: '요청 시간이 초과되었습니다. 다시 시도해주세요',
