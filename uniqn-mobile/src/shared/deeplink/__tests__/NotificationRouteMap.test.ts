@@ -161,16 +161,15 @@ describe('NotificationRouteMap', () => {
     });
   });
 
-  it('maps review notifications to review detail or pending', () => {
+  it('routes review notifications to the hub (reviews/pending)', () => {
     expect(NOTIFICATION_ROUTE_MAP[NotificationType.REVIEW_REQUEST]({ workLogId: 'wl-1' })).toEqual({
-      name: 'reviews/detail',
-      params: { workLogId: 'wl-1' },
+      name: 'reviews/pending',
     });
     expect(NOTIFICATION_ROUTE_MAP[NotificationType.REVIEW_REQUEST]()).toEqual({
       name: 'reviews/pending',
     });
     expect(NOTIFICATION_ROUTE_MAP[NotificationType.REVIEW_RECEIVED]()).toEqual({
-      name: 'schedule',
+      name: 'reviews/pending',
     });
   });
 
