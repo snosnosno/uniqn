@@ -474,11 +474,18 @@ export class SupabaseNotificationRepository implements INotificationRepository {
     try {
       const snakeData = toSnakeCase(settings as unknown as Record<string, unknown>);
 
-      const { error } = await supabase.from(TABLES.NOTIFICATION_SETTINGS).upsert({
-        user_id: userId,
-        ...snakeData,
-        updated_at: new Date().toISOString(),
-      });
+      // onConflict 필수: 테이블은 PK(id) + UNIQUE(user_id) 구조다. onConflict 미지정 시
+      // PostgREST 는 PK(id) 기준으로 충돌을 해소하는데, payload 에 id 가 없어 매번 새 id 가
+      // 생성되어 id 충돌이 안 나고 대신 UNIQUE(user_id)를 위반(23505)해 INSERT 가 실패한다.
+      // → 설정 행이 한 번 생긴 뒤 모든 저장 실패 = '푸시 알림' 토글이 되돌아감.
+      const { error } = await supabase.from(TABLES.NOTIFICATION_SETTINGS).upsert(
+        {
+          user_id: userId,
+          ...snakeData,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id' }
+      );
 
       if (error) {
         handleSupabaseError(error, {
