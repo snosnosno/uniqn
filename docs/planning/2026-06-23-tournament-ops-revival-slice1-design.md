@@ -104,6 +104,15 @@ uniqn-mobile 모노레포 `app/(ops)/`, 웹 우선, 같은 Supabase·Auth(클라
 - **브릿지**: uniqn 앱에서 대회공고 보유 employer에게 "이 대회 라이브 운영 →" 버튼(ops 딥링크). 참가자는 도메인 인지 불필요(QR만).
 - **라이프사이클**: uniqn 공고+딜러모집 → ops서 대회 생성(공고 연결, 딜러 자동 import) → 현장 등록+QR 슬립 → 참가자 스캔 → TV 송출.
 
+### 3.6 uniqn → ops 브릿지 (MVP — 실코드 기반)
+- **단일 진입점**: 공고 상세 `app/(employer)/my-postings/[id]/index.tsx` "관리" 섹션에 **"라이브 운영" ActionCard 1개**(홈·리스트 미노출 — MVP 최소).
+- **노출 조건(AND 전부)**: `postingType==='tournament'`(`postingConfig.ts`) AND `tournamentConfig.approvalStatus==='approved'`(미승인/거절=숨김) AND `status ∉ {draft,rejected,cancelled,expired}`. **관리권한은 화면 진입이 이미 게이트**(`my-postings/[id]/_layout.tsx`의 `isEmployerManageablePosting`+RLS) → 별도 role 체크 없음(workspace 협업자 자동 포함).
+- **상태인식 라벨**: employer 앱이 `ops_tournaments WHERE job_posting_id={id}` 가볍게 조회 → 없음=**"라이브 운영 시작"**, 있음=**"라이브 운영 열기"** + `진행 중` 배지.
+- **딥링크**: `deepLinkService.openExternalUrl('https://ops.uniqn.app/t/from-posting?postingId={id}')`(미생성) 또는 `…/t/{opsTournamentId}`(생성됨). 웹=새 탭, 모바일=브라우저.
+- **세션(수용한 마찰)**: 다른 origin이라 Supabase localStorage 세션 미공유 → **ops 첫 진입 1회 재로그인 수용**(이후 기억). SSO(단기 토큰 핸드오프 / `.uniqn.app` 쿠키)는 후속.
+- **역방향**: ops 대회 화면 → "공고 보기" 링크백 `uniqn.app/.../my-postings/{id}`.
+- **슬라이스**: 버튼+딥링크+상태인식 = **1a 동반**(ops_tournaments 생성 시점). "이 공고로 대회 생성 + 확정 딜러 자동 import" = **1e**.
+
 ---
 
 ## 4. 데이터 모델 (Postgres) — v3
