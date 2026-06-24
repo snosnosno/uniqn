@@ -357,7 +357,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
     try {
       logger.info('공고 생성', { ownerId: context.ownerId, title: input.title });
       const now = new Date();
-      // 클라 생성 UUID — 결제 RPC의 멱등키(ON CONFLICT id)로 사용해 재시도 이중과금 방지
+      // 클라 생성 UUID — 직접 INSERT의 멱등키(ON CONFLICT id)로 사용해 재시도 시 중복 생성 방지
       const postingId = generateUUID();
       const current: Partial<JobPosting> = {
         id: postingId,
