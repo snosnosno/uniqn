@@ -1,10 +1,30 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: '14.5';
+  graphql_public: {
+    Tables: {
+      [_ in never]: never;
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json;
+          operationName?: string;
+          query?: string;
+          variables?: Json;
+        };
+        Returns: Json;
+      };
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
   };
   public: {
     Tables: {
@@ -33,7 +53,15 @@ export type Database = {
           metadata?: Json | null;
           user_id?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'action_logs_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       announcements: {
         Row: {
@@ -136,8 +164,6 @@ export type Database = {
           applicant_phone: string | null;
           applicant_photo_url: string | null;
           applicant_photo_url_blurhash: string | null;
-          applicant_provision_consent_at: string | null;
-          applicant_provision_consent_version: string | null;
           applicant_role: Database['public']['Enums']['staff_role'] | null;
           assignments: Json | null;
           cancellation_request: Json | null;
@@ -170,8 +196,6 @@ export type Database = {
           applicant_phone?: string | null;
           applicant_photo_url?: string | null;
           applicant_photo_url_blurhash?: string | null;
-          applicant_provision_consent_at?: string | null;
-          applicant_provision_consent_version?: string | null;
           applicant_role?: Database['public']['Enums']['staff_role'] | null;
           assignments?: Json | null;
           cancellation_request?: Json | null;
@@ -204,8 +228,6 @@ export type Database = {
           applicant_phone?: string | null;
           applicant_photo_url?: string | null;
           applicant_photo_url_blurhash?: string | null;
-          applicant_provision_consent_at?: string | null;
-          applicant_provision_consent_version?: string | null;
           applicant_role?: Database['public']['Enums']['staff_role'] | null;
           assignments?: Json | null;
           cancellation_request?: Json | null;
@@ -428,6 +450,13 @@ export type Database = {
           work_date?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: 'board_memberships_author_id_fkey';
+            columns: ['author_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
           {
             foreignKeyName: 'board_memberships_job_posting_id_fkey';
             columns: ['job_posting_id'];
@@ -865,6 +894,13 @@ export type Database = {
         };
         Relationships: [
           {
+            foreignKeyName: 'inquiries_responder_id_fkey';
+            columns: ['responder_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
             foreignKeyName: 'inquiries_user_id_fkey';
             columns: ['user_id'];
             isOneToOne: false;
@@ -1227,6 +1263,240 @@ export type Database = {
           },
         ];
       };
+      ops_events: {
+        Row: {
+          actor_device: string | null;
+          actor_id: string | null;
+          created_at: string;
+          id: string;
+          payload: Json;
+          tournament_id: string;
+          type: Database['public']['Enums']['ops_event_type'];
+        };
+        Insert: {
+          actor_device?: string | null;
+          actor_id?: string | null;
+          created_at?: string;
+          id?: string;
+          payload?: Json;
+          tournament_id: string;
+          type: Database['public']['Enums']['ops_event_type'];
+        };
+        Update: {
+          actor_device?: string | null;
+          actor_id?: string | null;
+          created_at?: string;
+          id?: string;
+          payload?: Json;
+          tournament_id?: string;
+          type?: Database['public']['Enums']['ops_event_type'];
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ops_events_actor_id_fkey';
+            columns: ['actor_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'ops_events_tournament_id_fkey';
+            columns: ['tournament_id'];
+            isOneToOne: false;
+            referencedRelation: 'ops_tournaments';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      ops_participants: {
+        Row: {
+          add_ons: number;
+          busted_at: string | null;
+          buy_in_amount: number | null;
+          chips: number;
+          claim_token: string | null;
+          created_at: string;
+          entry_number: number;
+          finish_position: number | null;
+          id: string;
+          name: string;
+          nationality: string | null;
+          note: string | null;
+          phone: string | null;
+          player_user_id: string | null;
+          prize_amount: number | null;
+          rebuys: number;
+          reentries: number;
+          status: Database['public']['Enums']['ops_participant_status'];
+          tournament_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          add_ons?: number;
+          busted_at?: string | null;
+          buy_in_amount?: number | null;
+          chips?: number;
+          claim_token?: string | null;
+          created_at?: string;
+          entry_number: number;
+          finish_position?: number | null;
+          id?: string;
+          name: string;
+          nationality?: string | null;
+          note?: string | null;
+          phone?: string | null;
+          player_user_id?: string | null;
+          prize_amount?: number | null;
+          rebuys?: number;
+          reentries?: number;
+          status?: Database['public']['Enums']['ops_participant_status'];
+          tournament_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          add_ons?: number;
+          busted_at?: string | null;
+          buy_in_amount?: number | null;
+          chips?: number;
+          claim_token?: string | null;
+          created_at?: string;
+          entry_number?: number;
+          finish_position?: number | null;
+          id?: string;
+          name?: string;
+          nationality?: string | null;
+          note?: string | null;
+          phone?: string | null;
+          player_user_id?: string | null;
+          prize_amount?: number | null;
+          rebuys?: number;
+          reentries?: number;
+          status?: Database['public']['Enums']['ops_participant_status'];
+          tournament_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ops_participants_player_user_id_fkey';
+            columns: ['player_user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'ops_participants_tournament_id_fkey';
+            columns: ['tournament_id'];
+            isOneToOne: false;
+            referencedRelation: 'ops_tournaments';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      ops_tournaments: {
+        Row: {
+          addon_chips: number;
+          addon_cost: number;
+          auto_seat_on_register: boolean;
+          bounty_cost: number | null;
+          buy_in_chips: number;
+          buy_in_cost: number;
+          color: string | null;
+          created_at: string;
+          event_date: string | null;
+          fee_cost: number;
+          game_type: string;
+          id: string;
+          job_posting_id: string | null;
+          max_reentries: number | null;
+          monitor_token: string | null;
+          name: string;
+          next_entry_seq: number;
+          owner_id: string;
+          rebuy_chips: number;
+          rebuy_cost: number;
+          reentry_allowed: boolean;
+          registration_open: boolean;
+          seats_per_table: number;
+          starting_chips: number;
+          status: Database['public']['Enums']['ops_tournament_status'];
+          updated_at: string;
+          venue: string | null;
+        };
+        Insert: {
+          addon_chips?: number;
+          addon_cost?: number;
+          auto_seat_on_register?: boolean;
+          bounty_cost?: number | null;
+          buy_in_chips?: number;
+          buy_in_cost?: number;
+          color?: string | null;
+          created_at?: string;
+          event_date?: string | null;
+          fee_cost?: number;
+          game_type?: string;
+          id?: string;
+          job_posting_id?: string | null;
+          max_reentries?: number | null;
+          monitor_token?: string | null;
+          name: string;
+          next_entry_seq?: number;
+          owner_id: string;
+          rebuy_chips?: number;
+          rebuy_cost?: number;
+          reentry_allowed?: boolean;
+          registration_open?: boolean;
+          seats_per_table?: number;
+          starting_chips?: number;
+          status?: Database['public']['Enums']['ops_tournament_status'];
+          updated_at?: string;
+          venue?: string | null;
+        };
+        Update: {
+          addon_chips?: number;
+          addon_cost?: number;
+          auto_seat_on_register?: boolean;
+          bounty_cost?: number | null;
+          buy_in_chips?: number;
+          buy_in_cost?: number;
+          color?: string | null;
+          created_at?: string;
+          event_date?: string | null;
+          fee_cost?: number;
+          game_type?: string;
+          id?: string;
+          job_posting_id?: string | null;
+          max_reentries?: number | null;
+          monitor_token?: string | null;
+          name?: string;
+          next_entry_seq?: number;
+          owner_id?: string;
+          rebuy_chips?: number;
+          rebuy_cost?: number;
+          reentry_allowed?: boolean;
+          registration_open?: boolean;
+          seats_per_table?: number;
+          starting_chips?: number;
+          status?: Database['public']['Enums']['ops_tournament_status'];
+          updated_at?: string;
+          venue?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ops_tournaments_job_posting_id_fkey';
+            columns: ['job_posting_id'];
+            isOneToOne: false;
+            referencedRelation: 'job_postings';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'ops_tournaments_owner_id_fkey';
+            columns: ['owner_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       processed_identity_verifications: {
         Row: {
           function_name: string;
@@ -1557,9 +1827,6 @@ export type Database = {
           social_provider: string | null;
           status: string | null;
           terms_agreed: boolean | null;
-          third_party_agreed: boolean | null;
-          third_party_agreed_at: string | null;
-          third_party_agreed_version: string | null;
           updated_at: string | null;
         };
         Insert: {
@@ -1598,9 +1865,6 @@ export type Database = {
           social_provider?: string | null;
           status?: string | null;
           terms_agreed?: boolean | null;
-          third_party_agreed?: boolean | null;
-          third_party_agreed_at?: string | null;
-          third_party_agreed_version?: string | null;
           updated_at?: string | null;
         };
         Update: {
@@ -1639,9 +1903,6 @@ export type Database = {
           social_provider?: string | null;
           status?: string | null;
           terms_agreed?: boolean | null;
-          third_party_agreed?: boolean | null;
-          third_party_agreed_at?: string | null;
-          third_party_agreed_version?: string | null;
           updated_at?: string | null;
         };
         Relationships: [];
@@ -1993,36 +2254,11 @@ export type Database = {
         Returns: Json;
       };
       check_email_exists: { Args: { p_email: string }; Returns: boolean };
-      check_ip_rate_limit: {
-        Args: {
-          p_ip: string;
-          p_max_requests?: number;
-          p_window_seconds?: number;
-        };
-        Returns: Json;
-      };
       check_nickname_exists: {
         Args: { p_exclude_uid?: string; p_nickname: string };
         Returns: boolean;
       };
       check_phone_exists: { Args: { p_phone: string }; Returns: boolean };
-      check_rate_limit: {
-        Args: {
-          p_key: string;
-          p_max_requests?: number;
-          p_window_seconds?: number;
-        };
-        Returns: Json;
-      };
-      check_user_rate_limit: {
-        Args: {
-          p_max_requests?: number;
-          p_operation: string;
-          p_user_id: string;
-          p_window_seconds?: number;
-        };
-        Returns: Json;
-      };
       confirm_application: {
         Args: {
           p_application_id: string;
@@ -2082,9 +2318,11 @@ export type Database = {
           isSetofReturn: false;
         };
       };
-      decrement_unread_counter:
-        | { Args: { p_notification_id: string }; Returns: undefined }
-        | { Args: { p_delta?: number; p_user_id: string }; Returns: undefined };
+      decrement_unread_counter: {
+        Args: { p_delta?: number; p_user_id: string };
+        Returns: undefined;
+      };
+      derive_region_slug: { Args: { addr: string }; Returns: string };
       expire_pending_workspace_invitations: { Args: never; Returns: number };
       fn_cleanup_expired_fcm_tokens: { Args: never; Returns: number };
       fn_cleanup_rate_limits: { Args: never; Returns: number };
@@ -2124,19 +2362,6 @@ export type Database = {
           work_date: string;
         }[];
       };
-      get_unread_notification_count: {
-        Args: { p_user_id: string };
-        Returns: number;
-      };
-      get_workspace_owner_profile: {
-        Args: { _workspace_id: string };
-        Returns: {
-          id: string;
-          name: string;
-          nickname: string;
-          photo_url: string;
-        }[];
-      };
       increment_announcement_view_count: {
         Args: { p_announcement_id: string };
         Returns: undefined;
@@ -2156,6 +2381,10 @@ export type Database = {
       };
       is_admin: { Args: never; Returns: boolean };
       is_employer_or_admin: { Args: never; Returns: boolean };
+      is_ops_member: {
+        Args: { _tournament_id: string; _user_id: string };
+        Returns: boolean;
+      };
       is_posting_collaborator: {
         Args: { p_posting_id: string; p_user_id: string };
         Returns: boolean;
@@ -2168,183 +2397,6 @@ export type Database = {
         Args: { _user_id: string; _workspace_id: string };
         Returns: boolean;
       };
-      list_all_applications: {
-        Args: { p_status?: Database['public']['Enums']['application_status'] };
-        Returns: {
-          applicant_email: string | null;
-          applicant_id: string;
-          applicant_name: string;
-          applicant_nickname: string | null;
-          applicant_phone: string | null;
-          applicant_photo_url: string | null;
-          applicant_photo_url_blurhash: string | null;
-          applicant_provision_consent_at: string | null;
-          applicant_provision_consent_version: string | null;
-          applicant_role: Database['public']['Enums']['staff_role'] | null;
-          assignments: Json | null;
-          cancellation_request: Json | null;
-          cancelled_at: string | null;
-          confirmation_history: Json | null;
-          confirmed_at: string | null;
-          created_at: string | null;
-          custom_role: string | null;
-          id: string;
-          is_read: boolean | null;
-          job_posting_date: string | null;
-          job_posting_id: string;
-          job_posting_title: string | null;
-          message: string | null;
-          notes: string | null;
-          original_application: Json | null;
-          pre_question_answers: Json | null;
-          processed_at: string | null;
-          processed_by: string | null;
-          recruitment_type: string | null;
-          rejection_reason: string | null;
-          status: Database['public']['Enums']['application_status'];
-          updated_at: string | null;
-        }[];
-        SetofOptions: {
-          from: '*';
-          to: 'applications';
-          isOneToOne: false;
-          isSetofReturn: true;
-        };
-      };
-      list_all_event_qr_codes: {
-        Args: { p_active?: boolean };
-        Returns: {
-          assignment_group_id: string | null;
-          code: string;
-          created_at: string | null;
-          expires_at: string | null;
-          id: string;
-          is_active: boolean | null;
-          job_posting_id: string;
-          time_slot: string | null;
-          type: string;
-          user_id: string;
-          work_date: string | null;
-        }[];
-        SetofOptions: {
-          from: '*';
-          to: 'event_qr_codes';
-          isOneToOne: false;
-          isSetofReturn: true;
-        };
-      };
-      list_all_managed_postings: {
-        Args: { p_status?: Database['public']['Enums']['posting_status'] };
-        Returns: {
-          closed_at: string | null;
-          closed_reason: string | null;
-          compensation: Json | null;
-          contact_phone: string | null;
-          created_at: string | null;
-          description: string | null;
-          filled_positions: number | null;
-          fixed_config: Json | null;
-          id: string;
-          is_featured: boolean | null;
-          last_work_date: string | null;
-          location: Json;
-          og_image_url: string | null;
-          og_image_url_blurhash: string | null;
-          owner_id: string | null;
-          owner_name: string | null;
-          posting_type: Database['public']['Enums']['posting_type'] | null;
-          questions: Json | null;
-          rejection_reason: string | null;
-          role_catalog: Json | null;
-          role_keys: string[] | null;
-          schedule: Json;
-          schema_version: number | null;
-          stats: Json | null;
-          status: Database['public']['Enums']['posting_status'];
-          tags: string[] | null;
-          title: string;
-          total_positions: number | null;
-          tournament_config: Json | null;
-          updated_at: string | null;
-          urgent_config: Json | null;
-          view_count: number | null;
-          work_date: string | null;
-          work_dates: string[] | null;
-          workspace_id: string;
-        }[];
-        SetofOptions: {
-          from: '*';
-          to: 'job_postings';
-          isOneToOne: false;
-          isSetofReturn: true;
-        };
-      };
-      list_all_work_logs: {
-        Args: {
-          p_date_from?: string;
-          p_date_to?: string;
-          p_status?: Database['public']['Enums']['work_log_status'];
-        };
-        Returns: {
-          application_id: string | null;
-          assignment_group_id: string | null;
-          check_in_ts: string | null;
-          check_out_ts: string | null;
-          created_at: string | null;
-          custom_allowances: Json | null;
-          custom_role: string | null;
-          custom_salary_info: Json | null;
-          custom_tax_settings: Json | null;
-          date: string;
-          has_time_modification_logs: boolean | null;
-          id: string;
-          is_fixed_posting: boolean | null;
-          job_posting_id: string;
-          modification_history: Json | null;
-          no_show_at: Json | null;
-          no_show_reason: string | null;
-          notes: string | null;
-          owner_id: string | null;
-          payroll_amount: number | null;
-          payroll_date: string | null;
-          payroll_notes: string | null;
-          payroll_status: Database['public']['Enums']['payroll_status'] | null;
-          role: Database['public']['Enums']['staff_role'];
-          role_change_history: Json | null;
-          settlement_modification_history: Json | null;
-          staff_id: string;
-          staff_name: string | null;
-          staff_nickname: string | null;
-          staff_photo_url: string | null;
-          staff_photo_url_blurhash: string | null;
-          status: Database['public']['Enums']['work_log_status'];
-          time_slot: string | null;
-          updated_at: string | null;
-          work_duration: number | null;
-        }[];
-        SetofOptions: {
-          from: '*';
-          to: 'work_logs';
-          isOneToOne: false;
-          isSetofReturn: true;
-        };
-      };
-      list_all_workspace_members: {
-        Args: { p_workspace_id?: string };
-        Returns: {
-          invited_by: string | null;
-          joined_at: string;
-          role: Database['public']['Enums']['workspace_role'];
-          user_id: string;
-          workspace_id: string;
-        }[];
-        SetofOptions: {
-          from: '*';
-          to: 'workspace_members';
-          isOneToOne: false;
-          isSetofReturn: true;
-        };
-      };
       list_my_workspaces: {
         Args: never;
         Returns: {
@@ -2356,6 +2408,55 @@ export type Database = {
           owner_id: string;
           updated_at: string;
         }[];
+      };
+      ops_add_addon: {
+        Args: { p_actor_id: string; p_participant_id: string };
+        Returns: Json;
+      };
+      ops_add_rebuy: {
+        Args: { p_actor_id: string; p_participant_id: string };
+        Returns: Json;
+      };
+      ops_create_tournament: {
+        Args: {
+          p_config: Json;
+          p_event_date: string;
+          p_game_type: string;
+          p_job_posting_id: string;
+          p_name: string;
+          p_owner_id: string;
+          p_seats_per_table: number;
+          p_starting_chips: number;
+          p_venue: string;
+        };
+        Returns: Json;
+      };
+      ops_register_participant: {
+        Args: {
+          p_actor_id: string;
+          p_buy_in_amount: number;
+          p_name: string;
+          p_nationality: string;
+          p_phone: string;
+          p_tournament_id: string;
+        };
+        Returns: Json;
+      };
+      ops_set_tournament_status: {
+        Args: {
+          p_actor_id: string;
+          p_status: Database['public']['Enums']['ops_tournament_status'];
+          p_tournament_id: string;
+        };
+        Returns: Json;
+      };
+      ops_toggle_registration: {
+        Args: { p_actor_id: string; p_open: boolean; p_tournament_id: string };
+        Returns: Json;
+      };
+      ops_update_tournament: {
+        Args: { p_actor_id: string; p_patch: Json; p_tournament_id: string };
+        Returns: Json;
       };
       permanently_delete_user: { Args: { p_user_id: string }; Returns: Json };
       process_qr_checkin_atomically: {
@@ -2385,7 +2486,6 @@ export type Database = {
         Args: { p_user_id: string; p_workspace_id: string };
         Returns: undefined;
       };
-      reset_unread_counter: { Args: { p_user_id: string }; Returns: undefined };
       restore_workspace: {
         Args: { p_workspace_id: string };
         Returns: undefined;
@@ -2414,10 +2514,6 @@ export type Database = {
         }[];
       };
       sync_schedule_board: { Args: { p_job_posting_id: string }; Returns: Json };
-      toggle_board_post_vote: {
-        Args: { p_post_id: string; p_user_id: string; p_vote_type: string };
-        Returns: Json;
-      };
       toggle_comment_reaction: {
         Args: {
           p_comment_id: string;
@@ -2456,6 +2552,27 @@ export type Database = {
         | 'system'
         | 'admin'
         | 'review';
+      ops_event_type:
+        | 'tournament_created'
+        | 'tournament_status_changed'
+        | 'registration_toggled'
+        | 'player_registered'
+        | 'player_checked_in'
+        | 'player_rebuy'
+        | 'player_addon'
+        | 'player_busted'
+        | 'player_reentered'
+        | 'player_moved'
+        | 'seat_freed'
+        | 'table_added'
+        | 'table_closed'
+        | 'table_redraw'
+        | 'prize_assigned'
+        | 'level_play'
+        | 'level_pause'
+        | 'level_set';
+      ops_participant_status: 'registered' | 'checked_in' | 'active' | 'busted' | 'no_show';
+      ops_tournament_status: 'upcoming' | 'active' | 'completed';
       payroll_status: 'pending' | 'completed' | 'failed';
       posting_status:
         | 'draft'
@@ -2480,6 +2597,551 @@ export type Database = {
         | 'cancelled'
         | 'no_show';
       workspace_role: 'editor';
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+  };
+  storage: {
+    Tables: {
+      buckets: {
+        Row: {
+          allowed_mime_types: string[] | null;
+          avif_autodetection: boolean | null;
+          created_at: string | null;
+          file_size_limit: number | null;
+          id: string;
+          name: string;
+          owner: string | null;
+          owner_id: string | null;
+          public: boolean | null;
+          type: Database['storage']['Enums']['buckettype'];
+          updated_at: string | null;
+        };
+        Insert: {
+          allowed_mime_types?: string[] | null;
+          avif_autodetection?: boolean | null;
+          created_at?: string | null;
+          file_size_limit?: number | null;
+          id: string;
+          name: string;
+          owner?: string | null;
+          owner_id?: string | null;
+          public?: boolean | null;
+          type?: Database['storage']['Enums']['buckettype'];
+          updated_at?: string | null;
+        };
+        Update: {
+          allowed_mime_types?: string[] | null;
+          avif_autodetection?: boolean | null;
+          created_at?: string | null;
+          file_size_limit?: number | null;
+          id?: string;
+          name?: string;
+          owner?: string | null;
+          owner_id?: string | null;
+          public?: boolean | null;
+          type?: Database['storage']['Enums']['buckettype'];
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      buckets_analytics: {
+        Row: {
+          created_at: string;
+          deleted_at: string | null;
+          format: string;
+          id: string;
+          name: string;
+          type: Database['storage']['Enums']['buckettype'];
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          deleted_at?: string | null;
+          format?: string;
+          id?: string;
+          name: string;
+          type?: Database['storage']['Enums']['buckettype'];
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          deleted_at?: string | null;
+          format?: string;
+          id?: string;
+          name?: string;
+          type?: Database['storage']['Enums']['buckettype'];
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      buckets_vectors: {
+        Row: {
+          created_at: string;
+          id: string;
+          type: Database['storage']['Enums']['buckettype'];
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          id: string;
+          type?: Database['storage']['Enums']['buckettype'];
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          type?: Database['storage']['Enums']['buckettype'];
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      iceberg_namespaces: {
+        Row: {
+          bucket_name: string;
+          catalog_id: string;
+          created_at: string;
+          id: string;
+          metadata: Json;
+          name: string;
+          updated_at: string;
+        };
+        Insert: {
+          bucket_name: string;
+          catalog_id: string;
+          created_at?: string;
+          id?: string;
+          metadata?: Json;
+          name: string;
+          updated_at?: string;
+        };
+        Update: {
+          bucket_name?: string;
+          catalog_id?: string;
+          created_at?: string;
+          id?: string;
+          metadata?: Json;
+          name?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'iceberg_namespaces_catalog_id_fkey';
+            columns: ['catalog_id'];
+            isOneToOne: false;
+            referencedRelation: 'buckets_analytics';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      iceberg_tables: {
+        Row: {
+          bucket_name: string;
+          catalog_id: string;
+          created_at: string;
+          id: string;
+          location: string;
+          name: string;
+          namespace_id: string;
+          remote_table_id: string | null;
+          shard_id: string | null;
+          shard_key: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          bucket_name: string;
+          catalog_id: string;
+          created_at?: string;
+          id?: string;
+          location: string;
+          name: string;
+          namespace_id: string;
+          remote_table_id?: string | null;
+          shard_id?: string | null;
+          shard_key?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          bucket_name?: string;
+          catalog_id?: string;
+          created_at?: string;
+          id?: string;
+          location?: string;
+          name?: string;
+          namespace_id?: string;
+          remote_table_id?: string | null;
+          shard_id?: string | null;
+          shard_key?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'iceberg_tables_catalog_id_fkey';
+            columns: ['catalog_id'];
+            isOneToOne: false;
+            referencedRelation: 'buckets_analytics';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'iceberg_tables_namespace_id_fkey';
+            columns: ['namespace_id'];
+            isOneToOne: false;
+            referencedRelation: 'iceberg_namespaces';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      migrations: {
+        Row: {
+          executed_at: string | null;
+          hash: string;
+          id: number;
+          name: string;
+        };
+        Insert: {
+          executed_at?: string | null;
+          hash: string;
+          id: number;
+          name: string;
+        };
+        Update: {
+          executed_at?: string | null;
+          hash?: string;
+          id?: number;
+          name?: string;
+        };
+        Relationships: [];
+      };
+      objects: {
+        Row: {
+          bucket_id: string | null;
+          created_at: string | null;
+          id: string;
+          last_accessed_at: string | null;
+          metadata: Json | null;
+          name: string | null;
+          owner: string | null;
+          owner_id: string | null;
+          path_tokens: string[] | null;
+          updated_at: string | null;
+          user_metadata: Json | null;
+          version: string | null;
+        };
+        Insert: {
+          bucket_id?: string | null;
+          created_at?: string | null;
+          id?: string;
+          last_accessed_at?: string | null;
+          metadata?: Json | null;
+          name?: string | null;
+          owner?: string | null;
+          owner_id?: string | null;
+          path_tokens?: string[] | null;
+          updated_at?: string | null;
+          user_metadata?: Json | null;
+          version?: string | null;
+        };
+        Update: {
+          bucket_id?: string | null;
+          created_at?: string | null;
+          id?: string;
+          last_accessed_at?: string | null;
+          metadata?: Json | null;
+          name?: string | null;
+          owner?: string | null;
+          owner_id?: string | null;
+          path_tokens?: string[] | null;
+          updated_at?: string | null;
+          user_metadata?: Json | null;
+          version?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'objects_bucketId_fkey';
+            columns: ['bucket_id'];
+            isOneToOne: false;
+            referencedRelation: 'buckets';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      s3_multipart_uploads: {
+        Row: {
+          bucket_id: string;
+          created_at: string;
+          id: string;
+          in_progress_size: number;
+          key: string;
+          metadata: Json | null;
+          owner_id: string | null;
+          upload_signature: string;
+          user_metadata: Json | null;
+          version: string;
+        };
+        Insert: {
+          bucket_id: string;
+          created_at?: string;
+          id: string;
+          in_progress_size?: number;
+          key: string;
+          metadata?: Json | null;
+          owner_id?: string | null;
+          upload_signature: string;
+          user_metadata?: Json | null;
+          version: string;
+        };
+        Update: {
+          bucket_id?: string;
+          created_at?: string;
+          id?: string;
+          in_progress_size?: number;
+          key?: string;
+          metadata?: Json | null;
+          owner_id?: string | null;
+          upload_signature?: string;
+          user_metadata?: Json | null;
+          version?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 's3_multipart_uploads_bucket_id_fkey';
+            columns: ['bucket_id'];
+            isOneToOne: false;
+            referencedRelation: 'buckets';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      s3_multipart_uploads_parts: {
+        Row: {
+          bucket_id: string;
+          created_at: string;
+          etag: string;
+          id: string;
+          key: string;
+          owner_id: string | null;
+          part_number: number;
+          size: number;
+          upload_id: string;
+          version: string;
+        };
+        Insert: {
+          bucket_id: string;
+          created_at?: string;
+          etag: string;
+          id?: string;
+          key: string;
+          owner_id?: string | null;
+          part_number: number;
+          size?: number;
+          upload_id: string;
+          version: string;
+        };
+        Update: {
+          bucket_id?: string;
+          created_at?: string;
+          etag?: string;
+          id?: string;
+          key?: string;
+          owner_id?: string | null;
+          part_number?: number;
+          size?: number;
+          upload_id?: string;
+          version?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 's3_multipart_uploads_parts_bucket_id_fkey';
+            columns: ['bucket_id'];
+            isOneToOne: false;
+            referencedRelation: 'buckets';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 's3_multipart_uploads_parts_upload_id_fkey';
+            columns: ['upload_id'];
+            isOneToOne: false;
+            referencedRelation: 's3_multipart_uploads';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      vector_indexes: {
+        Row: {
+          bucket_id: string;
+          created_at: string;
+          data_type: string;
+          dimension: number;
+          distance_metric: string;
+          id: string;
+          metadata_configuration: Json | null;
+          name: string;
+          updated_at: string;
+        };
+        Insert: {
+          bucket_id: string;
+          created_at?: string;
+          data_type: string;
+          dimension: number;
+          distance_metric: string;
+          id?: string;
+          metadata_configuration?: Json | null;
+          name: string;
+          updated_at?: string;
+        };
+        Update: {
+          bucket_id?: string;
+          created_at?: string;
+          data_type?: string;
+          dimension?: number;
+          distance_metric?: string;
+          id?: string;
+          metadata_configuration?: Json | null;
+          name?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'vector_indexes_bucket_id_fkey';
+            columns: ['bucket_id'];
+            isOneToOne: false;
+            referencedRelation: 'buckets_vectors';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      allow_any_operation: {
+        Args: { expected_operations: string[] };
+        Returns: boolean;
+      };
+      allow_only_operation: {
+        Args: { expected_operation: string };
+        Returns: boolean;
+      };
+      can_insert_object: {
+        Args: { bucketid: string; metadata: Json; name: string; owner: string };
+        Returns: undefined;
+      };
+      extension: { Args: { name: string }; Returns: string };
+      filename: { Args: { name: string }; Returns: string };
+      foldername: { Args: { name: string }; Returns: string[] };
+      get_common_prefix: {
+        Args: { p_delimiter: string; p_key: string; p_prefix: string };
+        Returns: string;
+      };
+      get_size_by_bucket: {
+        Args: never;
+        Returns: {
+          bucket_id: string;
+          size: number;
+        }[];
+      };
+      list_multipart_uploads_with_delimiter: {
+        Args: {
+          bucket_id: string;
+          delimiter_param: string;
+          max_keys?: number;
+          next_key_token?: string;
+          next_upload_token?: string;
+          prefix_param: string;
+        };
+        Returns: {
+          created_at: string;
+          id: string;
+          key: string;
+        }[];
+      };
+      list_objects_with_delimiter: {
+        Args: {
+          _bucket_id: string;
+          delimiter_param: string;
+          max_keys?: number;
+          next_token?: string;
+          prefix_param: string;
+          sort_order?: string;
+          start_after?: string;
+        };
+        Returns: {
+          created_at: string;
+          id: string;
+          last_accessed_at: string;
+          metadata: Json;
+          name: string;
+          updated_at: string;
+        }[];
+      };
+      operation: { Args: never; Returns: string };
+      search: {
+        Args: {
+          bucketname: string;
+          levels?: number;
+          limits?: number;
+          offsets?: number;
+          prefix: string;
+          search?: string;
+          sortcolumn?: string;
+          sortorder?: string;
+        };
+        Returns: {
+          created_at: string;
+          id: string;
+          last_accessed_at: string;
+          metadata: Json;
+          name: string;
+          updated_at: string;
+        }[];
+      };
+      search_by_timestamp: {
+        Args: {
+          p_bucket_id: string;
+          p_level: number;
+          p_limit: number;
+          p_prefix: string;
+          p_sort_column: string;
+          p_sort_column_after: string;
+          p_sort_order: string;
+          p_start_after: string;
+        };
+        Returns: {
+          created_at: string;
+          id: string;
+          key: string;
+          last_accessed_at: string;
+          metadata: Json;
+          name: string;
+          updated_at: string;
+        }[];
+      };
+      search_v2: {
+        Args: {
+          bucket_name: string;
+          levels?: number;
+          limits?: number;
+          prefix: string;
+          sort_column?: string;
+          sort_column_after?: string;
+          sort_order?: string;
+          start_after?: string;
+        };
+        Returns: {
+          created_at: string;
+          id: string;
+          key: string;
+          last_accessed_at: string;
+          metadata: Json;
+          name: string;
+          updated_at: string;
+        }[];
+      };
+    };
+    Enums: {
+      buckettype: 'STANDARD' | 'ANALYTICS' | 'VECTOR';
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -2603,6 +3265,9 @@ export type CompositeTypes<
     : never;
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       announcement_category: ['notice', 'update', 'event', 'maintenance'],
@@ -2626,6 +3291,28 @@ export const Constants = {
         'admin',
         'review',
       ],
+      ops_event_type: [
+        'tournament_created',
+        'tournament_status_changed',
+        'registration_toggled',
+        'player_registered',
+        'player_checked_in',
+        'player_rebuy',
+        'player_addon',
+        'player_busted',
+        'player_reentered',
+        'player_moved',
+        'seat_freed',
+        'table_added',
+        'table_closed',
+        'table_redraw',
+        'prize_assigned',
+        'level_play',
+        'level_pause',
+        'level_set',
+      ],
+      ops_participant_status: ['registered', 'checked_in', 'active', 'busted', 'no_show'],
+      ops_tournament_status: ['upcoming', 'active', 'completed'],
       payroll_status: ['pending', 'completed', 'failed'],
       posting_status: [
         'draft',
@@ -2652,6 +3339,11 @@ export const Constants = {
         'no_show',
       ],
       workspace_role: ['editor'],
+    },
+  },
+  storage: {
+    Enums: {
+      buckettype: ['STANDARD', 'ANALYTICS', 'VECTOR'],
     },
   },
 } as const;
