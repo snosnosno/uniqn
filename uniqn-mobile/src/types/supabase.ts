@@ -994,7 +994,6 @@ export type Database = {
           filled_positions: number | null;
           fixed_config: Json | null;
           id: string;
-          is_featured: boolean | null;
           last_work_date: string | null;
           location: Json;
           og_image_url: string | null;
@@ -1031,7 +1030,6 @@ export type Database = {
           filled_positions?: number | null;
           fixed_config?: Json | null;
           id?: string;
-          is_featured?: boolean | null;
           last_work_date?: string | null;
           location?: Json;
           og_image_url?: string | null;
@@ -1068,7 +1066,6 @@ export type Database = {
           filled_positions?: number | null;
           fixed_config?: Json | null;
           id?: string;
-          is_featured?: boolean | null;
           last_work_date?: string | null;
           location?: Json;
           og_image_url?: string | null;
@@ -2245,7 +2242,6 @@ export type Database = {
           filled_positions: number | null;
           fixed_config: Json | null;
           id: string;
-          is_featured: boolean | null;
           last_work_date: string | null;
           location: Json;
           og_image_url: string | null;
