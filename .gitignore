@@ -149,6 +149,7 @@ debug-*.html
 docs/archive/*
 !docs/archive/firebase-legacy/
 !docs/archive/planning/
+!docs/archive/wallet-iap-removal/
 
 # ========================================
 # CAPACITOR & MOBILE (모바일 네이티브 파일들)
