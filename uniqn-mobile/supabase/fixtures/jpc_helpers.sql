@@ -41,8 +41,8 @@
 --       workspace_archive). master #175(2026-06-18) 에서 16/16 subtest fail.
 -- 해결: 테스트 스택 grant 를 prod 와 동일하게 맞춰 CLI 버전과 무관하게 결정적으로.
 --       RLS 가 실제 행 접근의 보안 경계이므로 테이블 GRANT 확대는 prod 동치이며 안전.
--- ⚠️ 함수는 GRANT 금지: 결제 RPC 하드닝(#172, wallet_grants_hardening.test.sql)이
---    anon/authenticated 에서 REVOKE 한 EXECUTE 를 되살리면 회귀. 테이블/시퀀스만.
+-- ⚠️ 함수는 GRANT 금지: anon SECDEF RPC 하드닝(#195)이 anon/authenticated 에서
+--    REVOKE 한 EXECUTE 를 되살리면 회귀. 테이블/시퀀스만.
 -- ⚠️ 이 파일은 fixtures 전용(prod 등록 금지) — 로컬/CI 테스트 DB 에만 적용된다.
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
