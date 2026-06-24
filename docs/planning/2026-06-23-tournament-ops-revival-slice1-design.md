@@ -1,10 +1,11 @@
-# T-HOLDEM 라이브 대회 운영 엔진 부활 — 설계 v3
+# T-HOLDEM 라이브 대회 운영 엔진 부활 — 설계 v3.1
 
-- **작성일**: 2026-06-23 (화) · **개정**: v3 (K-Holdem 플로어앱 22화면 분석 반영)
-- **상태**: DESIGN v3 — 사용자 리뷰 대기
+- **작성일**: 2026-06-23 (화) · **개정**: v3.1 (모니터·플레이어뷰 UX + 플레이어 계정 하이브리드)
+- **상태**: DESIGN v3.1 — 사용자 리뷰 대기
 - **브랜치**: `feat/tournament-ops-revival` (master 기반, `T-HOLDEM-ops` 워크트리)
 - **선행**: 원본 T-HOLDEM 인벤토리 + 적대 리뷰 3건(8/8.5/8.5) + **K-Holdem 실제 플로어앱·모니터 화면 분석**
 
+> **v3.1 변경**: 모니터·플레이어뷰 UX 구체화(§5) + **플레이어 계정 하이브리드**(QR 익명 라이브뷰 + uniqn 계정 클레임 훅 `player_user_id`). 칩=전체공개(브로드캐스트). 모니터+플레이어뷰 둘 다 **1c**. 가입·클레임·이력 포털은 **후속 슬라이스**(데이터 훅만 1c).
 > **v3 변경 요약**: K-Holdem 실측 분석으로 "유기적 동기화" 구조 확정. ①**이벤트 로그 척추 `ops_events`**(=HISTORY 탭 + 동기화 백본) ②**파생 라이브 통계 `ops_live_stats`**(단일 소스→플로어앱·모니터·플레이어 동시) ③**6탭 IA**(STATUS/TABLES/PLAYERS/LEVELS/PAYOUTS/HISTORY) ④**모니터 디스플레이**를 1급 동기화 서피스로 ⑤**재진입(re-entry)·등록 설정 1급화** ⑥테이블 lock/priority(redraw 제어) ⑦참가자 entry_number·체크인 상태 ⑧bust→ITM 즉시 표시.
 > (v2 유지: 좌석 정규화·work_logs 스태프연동·상금 순위컬럼·번들 런타임분기·RPC actor바인딩·ops_* 네임·"참조 재구축" 프레이밍)
 
@@ -105,8 +106,10 @@ uniqn-mobile 모노레포 `app/(ops)/`, 웹 우선, 같은 Supabase·Auth(클라
 ### 4.2 `ops_blind_levels`
 `id, tournament_id FK, level int, sb, bb, ante DEFAULT 0, duration_sec, is_break bool DEFAULT false, sort` · UNIQUE(tournament_id, sort).
 
-### 4.3 `ops_participants` (재진입·체크인 1급)
+### 4.3 `ops_participants` (재진입·체크인·계정훅 1급)
 `id, tournament_id FK, entry_number int(=K-Holdem #33, 대회내 유니크), name(XSS), nationality text?, phone?, `
+`player_user_id uuid FK→public.users(id)?  ← 계정 클레임 시 링크(walk-in은 NULL, 운영자 마찰 0), `
+`claim_token text?  ← QR 슬립용 1회성 토큰(스캔→익명 라이브뷰, 로그인 시 player_user_id로 클레임), `
 `status text CHECK(registered/checked_in/active/busted/no_show) DEFAULT registered, `
 `chips int DEFAULT 0, buy_in_amount?, rebuys int DEFAULT 0, add_ons int DEFAULT 0, reentries int DEFAULT 0, `
 `finish_position int?, busted_at timestamptz?, prize_amount int?(ITM 확정), note?`
@@ -146,9 +149,25 @@ uniqn-mobile 모노레포 `app/(ops)/`, 웹 우선, 같은 Supabase·Auth(클라
 ---
 
 ## 5. 멀티 서피스 (동기화 산출물)
-1. **플로어 컨트롤 앱** — 6탭, 모든 조작. STATUS의 `Show on monitor`로 모니터 대상 대회 지정.
-2. **모니터 디스플레이** `(ops)/monitor/[id]` — 읽기전용 대형: 레벨·대형클럭·현재/다음 블라인드·다음 브레이크 카운트다운·prize pool·reg 상태·players 잔여/총·total chips·avg BB·(후속 스폰서/QR). `ops_clock`+`ops_live_stats` 구독.
-3. **(후속) 플레이어뷰** — 좌석·칩·블라인드(계정 불필요 토큰 URL, 원본 ParticipantLivePage 계승).
+
+세 서피스 모두 **같은 `ops_clock`+`ops_live_stats`의 다른 렌더링** — 별도 기능 아님. 칩 정책 = **전체공개(브로드캐스트)**, 프라이버시 게이팅 없음.
+
+### 5.1 플로어 컨트롤 앱
+6탭(STATUS/TABLES/PLAYERS/LEVELS/PAYOUTS/HISTORY), 모든 조작. STATUS 액션 `Show on monitor`로 각 TV가 볼 대회 지정.
+
+### 5.2 모니터 디스플레이 `app/(ops)/monitor/[id]?token=…`
+읽기전용 대형(16:9), 공개 토큰 URL(로그인 0). `ops_clock`(서버 시각, 클라 카운트다운만)+`ops_live_stats` 구독 → 새로고침·멀티 TV 100% 동일.
+- **레이아웃**: 헤더(매장로고·대회명·게임타입·REG 상태) / 히어로(LEVEL·대형클럭·±1분·현재 BLINDS+ante) / 통계 스트립(PLAYERS 잔여/총·AVG(BB)·TOTAL CHIPS·POOL) / 푸터(다음 블라인드·다음 브레이크 카운트다운·QR=플레이어뷰 링크·powered by uniqn).
+- **상태별**: 시작전(REGISTRATION OPEN+시작 카운트다운) / 진행 / **일시정지**(클럭 빨강·점멸·PAUSED) / **브레이크**(ON BREAK 카운트다운+다음 레벨) / 레벨전환(0.5s 플래시) / 종료(우승자+파이널 순위·상금 스크롤).
+- **멀티 모니터**: 한 대회 다중 TV 동시 송출, TV별 다른 대회 가능.
+
+### 5.3 플레이어뷰 `app/(ops)/live/[claim_token]` (1c, 계정 하이브리드)
+참가자 폰. 자리 배정 시 **QR 슬립**(claim_token) 지급 → 스캔 → **로그인 없이 즉시** 본인 라이브뷰.
+- **레이아웃**: 미니 클럭(모니터 동기) / **내 자리(TABLE·SEAT, 가장 크게)+미니 배치도** / 내 스택(칩+BB) / 대회 라이브(블라인드·인상 카운트다운·생존수·평균BB·풀·다음 브레이크) / 알림 안내.
+- **상태/이벤트**: 자리이동(자동 갱신+토스트 "TABLE 4·SEAT 5") / 블라인드 인상 임박(강조) / 브레이크 / **탈락 ITM**("10위 종료·상금 13,000") / 탈락 노미니("11위") / 재진입 가능 배너.
+- **구독**: `ops_clock`+`ops_live_stats`(공개 집계)+본인 `ops_participants` 행+본인 `ops_seats`. 원본 ParticipantLivePage 계승.
+- **계정 하이브리드(§4.3 훅)**: 익명뷰 하단 **"로그인해 내 기록 저장"** → uniqn 계정 로그인 시 claim_token→`player_user_id` 클레임. 운영자는 그대로 walk-in 입력(마찰 0).
+- **후속(플레이어 포털 슬라이스)**: 가입·클레임 UI·내 대회 이력·프로필 → 이후 랭킹/포인트(와홀덤 선수 포털). **1c는 데이터 훅(`player_user_id`/`claim_token`)+로그인 진입점까지만.**
 
 ---
 
@@ -184,7 +203,7 @@ uniqn-mobile 모노레포 `app/(ops)/`, 웹 우선, 같은 Supabase·Auth(클라
 |---|---|---|---|
 | **1a** | **CRUD 스파인 + 이벤트로그** | `ops_tournaments`(+등록/칩 config)·`ops_participants`(entry#·체크인·재진입·리바이)·**`ops_events`** + PLAYERS/STATUS(목록·등록) | 척추 확립 |
 | 1b | 테이블/좌석 | `ops_tables`(lock/priority)·`ops_seats`·1종 배정·`move_seat`·`free_seat`·redraw | TABLES 탭 |
-| 1c | 블라인드+클럭+**모니터** | `ops_blind_levels`·`ops_clock`·서버동기 타이머 + **모니터 디스플레이** + `ops_live_stats` | LEVELS+모니터 |
+| 1c | 블라인드+클럭+**모니터+플레이어뷰** | `ops_blind_levels`·`ops_clock`·서버동기 타이머 + `ops_live_stats` + **모니터 디스플레이** + **플레이어뷰(QR 익명+계정훅 `player_user_id`/`claim_token`)** | LEVELS+모니터+플레이어뷰 |
 | ↳ | **Realtime** | 1c 시점 다서피스 구독 레이어링 | 유기적 동기화 가동 |
 | 1d | 배정 2종 + 재진입/bust | 랜덤·칩드래프트·`bust_participant`(ITM)·`reenter_participant` | PLAYERS |
 | 1e | 스태프 연동 | `ops_staff`·수동+스냅샷 import·딜러 배정 | — |
@@ -212,9 +231,10 @@ uniqn-mobile 모노레포 `app/(ops)/`, 웹 우선, 같은 Supabase·Auth(클라
 4. `ops_live_stats` VIEW vs 머티리얼라이즈드 — 고빈도면 트리거 갱신 테이블 검토(1c 벤치).
 5. 모니터 보안 — 공개 토큰 URL(읽기전용, 민감정보 최소).
 6. 스냅샷 import staleness(취소 미반영, 라벨). 동기화 후속.
-7. 후속 보류: 플레이어뷰·전국 포털/예약·랭킹·티켓/경고·QR멤버십·딜러 로테이션·멀티데이/플라이트·바운티 정산.
+7. 후속 보류: **플레이어 포털(가입·클레임 UI·내 이력·프로필)**·전국 포털/예약·랭킹/포인트·티켓/경고·딜러 로테이션·멀티데이/플라이트·바운티 정산. (라이브 플레이어뷰·계정훅은 1c에 포함)
+8. **claim_token 보안** — 1회성·추측불가(난수)·읽기전용 스코프. 전체공개 칩이라 유출 피해 낮으나 토큰=본인 클레임 권한이므로 클레임 시 재검증.
 
 ---
 
 ## 13. 다음 단계
-v3 승인 후 **1a(CRUD+이벤트로그)** `writing-plans` 계획화. 1b~1f 각자 plan→구현, Realtime은 1c. 후속 슬라이스(모니터 고도화→플레이어뷰→포털→랭킹)는 별도 spec.
+v3.1 승인 후 **1a(CRUD+이벤트로그)** `writing-plans` 계획화. 1b~1f 각자 plan→구현, Realtime·모니터·플레이어뷰는 1c. 후속 슬라이스(플레이어 포털=가입·클레임·이력·프로필 → 랭킹/포인트 → 전국 포털)는 별도 spec.
