@@ -13,6 +13,9 @@ GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role
 -- 페르소나 + 리소스 시드 (트랜잭션 내 호출, ROLLBACK 정리).
 -- owner(employer), member(workspace editor, employer), outsider(staff).
 -- ops_tournament 는 job_posting(workspace) 연결 → is_ops_member 가 owner OR workspace 멤버 허용.
+-- ⚠️ RETURNS TABLE 시그니처 변경은 CREATE OR REPLACE 로 불가("cannot change return type") →
+--    warm-DB 재적재(test:db without reset) 가 깨지지 않도록 CREATE 직전 DROP 필수.
+DROP FUNCTION IF EXISTS public.ops_test_seed();
 CREATE OR REPLACE FUNCTION ops_test_seed()
 RETURNS TABLE (
   owner_id       uuid,
@@ -22,7 +25,10 @@ RETURNS TABLE (
   job_posting_id uuid,
   tournament_id  uuid,
   participant_id uuid,
-  event_id       uuid
+  event_id       uuid,
+  table_id       uuid,
+  seat1_id       uuid,
+  seat2_id       uuid
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -37,6 +43,9 @@ DECLARE
   v_t         uuid := gen_random_uuid();
   v_p         uuid := gen_random_uuid();
   v_e         uuid := gen_random_uuid();
+  v_tbl       uuid := gen_random_uuid();
+  v_s1        uuid := gen_random_uuid();
+  v_s2        uuid := gen_random_uuid();
   v_work_date date := current_date + 14;
 BEGIN
   INSERT INTO auth.users (id, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
@@ -81,7 +90,14 @@ BEGIN
   INSERT INTO public.ops_events (id, tournament_id, type, actor_id, payload)
   VALUES (v_e, v_t, 'tournament_created', v_owner, '{}'::jsonb);
 
-  RETURN QUERY SELECT v_owner, v_member, v_outsider, v_ws, v_jp, v_t, v_p, v_e;
+  -- 좌석층 시드: 테이블 1개(open/none) + 빈좌석 2개. 시드 참가자(v_p)는 UNSEATED 유지.
+  INSERT INTO public.ops_tables (id, tournament_id, table_no, status, lock_type)
+  VALUES (v_tbl, v_t, 1, 'open', 'none');
+  INSERT INTO public.ops_seats (id, tournament_id, table_id, table_no, seat_no, participant_id)
+  VALUES (v_s1, v_t, v_tbl, 1, 1, NULL),
+         (v_s2, v_t, v_tbl, 1, 2, NULL);
+
+  RETURN QUERY SELECT v_owner, v_member, v_outsider, v_ws, v_jp, v_t, v_p, v_e, v_tbl, v_s1, v_s2;
 END;
 $$;
 
