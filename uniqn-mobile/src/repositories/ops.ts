@@ -4,6 +4,8 @@
  */
 import { SupabaseOpsTournamentRepository } from './supabase/OpsTournamentRepository';
 import { SupabaseOpsParticipantRepository } from './supabase/OpsParticipantRepository';
+import { SupabaseOpsTableRepository } from './supabase/OpsTableRepository';
+import { SupabaseOpsSeatRepository } from './supabase/OpsSeatRepository';
 
 export type {
   IOpsTournamentRepository,
@@ -15,10 +17,16 @@ export type {
   IOpsParticipantRepository,
   RegisterParticipantInput,
 } from './interfaces/IOpsParticipantRepository';
+export type { IOpsTableRepository, AddTableInput } from './interfaces/IOpsTableRepository';
+export type { IOpsSeatRepository } from './interfaces/IOpsSeatRepository';
 
 export { SupabaseOpsTournamentRepository } from './supabase/OpsTournamentRepository';
 export { SupabaseOpsParticipantRepository } from './supabase/OpsParticipantRepository';
+export { SupabaseOpsTableRepository } from './supabase/OpsTableRepository';
+export { SupabaseOpsSeatRepository } from './supabase/OpsSeatRepository';
 
 /** 프로덕션 싱글톤. */
 export const opsTournamentRepository = new SupabaseOpsTournamentRepository();
 export const opsParticipantRepository = new SupabaseOpsParticipantRepository();
+export const opsTableRepository = new SupabaseOpsTableRepository();
+export const opsSeatRepository = new SupabaseOpsSeatRepository();
