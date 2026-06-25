@@ -39,6 +39,9 @@ import {
   TournamentStatusBadge,
 } from '@/components/jobs';
 import { STATUS } from '@/constants';
+import { getOpsBaseUrl } from '@/constants/ops';
+import { openExternalUrl } from '@/services/observability';
+import { useOpsTournamentForPosting } from '@/hooks/ops';
 import {
   getLayoutColor,
   PRIMARY_COLORS,
@@ -142,6 +145,8 @@ export default function JobPostingDetailScreen() {
   const [isInfoExpanded, setIsInfoExpanded] = useState(false);
 
   const postingFacts = useMemo(() => (posting ? buildPostingFacts(posting) : null), [posting]);
+  // 브릿지: 이 공고에 연결된 ops 대회(없으면 null). null-safe(ops_* 미배포 시에도 안전).
+  const { opsTournament } = useOpsTournamentForPosting(posting?.id);
   const managementView = useMemo(
     () =>
       postingFacts
@@ -530,6 +535,38 @@ export default function JobPostingDetailScreen() {
                 testID="job-posting-edit-button"
               />
             )}
+
+            {posting.postingType === 'tournament' &&
+              posting.tournamentConfig?.approvalStatus === STATUS.TOURNAMENT.APPROVED &&
+              !(['draft', 'pending', 'rejected', 'cancelled', 'expired'] as string[]).includes(
+                posting.status
+              ) && (
+                <ActionCard
+                  icon={<UsersIcon size={24} color="#8B5CF6" />}
+                  title={opsTournament ? '라이브 운영 열기' : '라이브 운영 시작'}
+                  description={
+                    opsTournament
+                      ? '진행 중인 라이브 운영 화면으로 이동합니다.'
+                      : '이 대회의 라이브 운영을 시작합니다.'
+                  }
+                  badge={
+                    opsTournament
+                      ? {
+                          label: '진행 중',
+                          variant: opsTournament.status === 'active' ? 'success' : 'primary',
+                        }
+                      : undefined
+                  }
+                  onPress={() => {
+                    const base = getOpsBaseUrl();
+                    const url = opsTournament
+                      ? `${base}/t/${opsTournament.id}`
+                      : `${base}/t/from-posting?postingId=${posting.id}`;
+                    void openExternalUrl(url);
+                  }}
+                  testID="job-posting-live-ops"
+                />
+              )}
 
             <ActionCard
               icon={<UserPlusIcon size={24} color="#3B82F6" />}

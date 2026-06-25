@@ -1224,6 +1224,240 @@ export type Database = {
           },
         ];
       };
+      ops_events: {
+        Row: {
+          actor_device: string | null;
+          actor_id: string | null;
+          created_at: string;
+          id: string;
+          payload: Json;
+          tournament_id: string;
+          type: Database['public']['Enums']['ops_event_type'];
+        };
+        Insert: {
+          actor_device?: string | null;
+          actor_id?: string | null;
+          created_at?: string;
+          id?: string;
+          payload?: Json;
+          tournament_id: string;
+          type: Database['public']['Enums']['ops_event_type'];
+        };
+        Update: {
+          actor_device?: string | null;
+          actor_id?: string | null;
+          created_at?: string;
+          id?: string;
+          payload?: Json;
+          tournament_id?: string;
+          type?: Database['public']['Enums']['ops_event_type'];
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ops_events_actor_id_fkey';
+            columns: ['actor_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'ops_events_tournament_id_fkey';
+            columns: ['tournament_id'];
+            isOneToOne: false;
+            referencedRelation: 'ops_tournaments';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      ops_participants: {
+        Row: {
+          add_ons: number;
+          busted_at: string | null;
+          buy_in_amount: number | null;
+          chips: number;
+          claim_token: string | null;
+          created_at: string;
+          entry_number: number;
+          finish_position: number | null;
+          id: string;
+          name: string;
+          nationality: string | null;
+          note: string | null;
+          phone: string | null;
+          player_user_id: string | null;
+          prize_amount: number | null;
+          rebuys: number;
+          reentries: number;
+          status: Database['public']['Enums']['ops_participant_status'];
+          tournament_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          add_ons?: number;
+          busted_at?: string | null;
+          buy_in_amount?: number | null;
+          chips?: number;
+          claim_token?: string | null;
+          created_at?: string;
+          entry_number: number;
+          finish_position?: number | null;
+          id?: string;
+          name: string;
+          nationality?: string | null;
+          note?: string | null;
+          phone?: string | null;
+          player_user_id?: string | null;
+          prize_amount?: number | null;
+          rebuys?: number;
+          reentries?: number;
+          status?: Database['public']['Enums']['ops_participant_status'];
+          tournament_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          add_ons?: number;
+          busted_at?: string | null;
+          buy_in_amount?: number | null;
+          chips?: number;
+          claim_token?: string | null;
+          created_at?: string;
+          entry_number?: number;
+          finish_position?: number | null;
+          id?: string;
+          name?: string;
+          nationality?: string | null;
+          note?: string | null;
+          phone?: string | null;
+          player_user_id?: string | null;
+          prize_amount?: number | null;
+          rebuys?: number;
+          reentries?: number;
+          status?: Database['public']['Enums']['ops_participant_status'];
+          tournament_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ops_participants_player_user_id_fkey';
+            columns: ['player_user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'ops_participants_tournament_id_fkey';
+            columns: ['tournament_id'];
+            isOneToOne: false;
+            referencedRelation: 'ops_tournaments';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      ops_tournaments: {
+        Row: {
+          addon_chips: number;
+          addon_cost: number;
+          auto_seat_on_register: boolean;
+          bounty_cost: number | null;
+          buy_in_chips: number;
+          buy_in_cost: number;
+          color: string | null;
+          created_at: string;
+          event_date: string | null;
+          fee_cost: number;
+          game_type: string;
+          id: string;
+          job_posting_id: string | null;
+          max_reentries: number | null;
+          monitor_token: string | null;
+          name: string;
+          next_entry_seq: number;
+          owner_id: string;
+          rebuy_chips: number;
+          rebuy_cost: number;
+          reentry_allowed: boolean;
+          registration_open: boolean;
+          seats_per_table: number;
+          starting_chips: number;
+          status: Database['public']['Enums']['ops_tournament_status'];
+          updated_at: string;
+          venue: string | null;
+        };
+        Insert: {
+          addon_chips?: number;
+          addon_cost?: number;
+          auto_seat_on_register?: boolean;
+          bounty_cost?: number | null;
+          buy_in_chips?: number;
+          buy_in_cost?: number;
+          color?: string | null;
+          created_at?: string;
+          event_date?: string | null;
+          fee_cost?: number;
+          game_type?: string;
+          id?: string;
+          job_posting_id?: string | null;
+          max_reentries?: number | null;
+          monitor_token?: string | null;
+          name: string;
+          next_entry_seq?: number;
+          owner_id: string;
+          rebuy_chips?: number;
+          rebuy_cost?: number;
+          reentry_allowed?: boolean;
+          registration_open?: boolean;
+          seats_per_table?: number;
+          starting_chips?: number;
+          status?: Database['public']['Enums']['ops_tournament_status'];
+          updated_at?: string;
+          venue?: string | null;
+        };
+        Update: {
+          addon_chips?: number;
+          addon_cost?: number;
+          auto_seat_on_register?: boolean;
+          bounty_cost?: number | null;
+          buy_in_chips?: number;
+          buy_in_cost?: number;
+          color?: string | null;
+          created_at?: string;
+          event_date?: string | null;
+          fee_cost?: number;
+          game_type?: string;
+          id?: string;
+          job_posting_id?: string | null;
+          max_reentries?: number | null;
+          monitor_token?: string | null;
+          name?: string;
+          next_entry_seq?: number;
+          owner_id?: string;
+          rebuy_chips?: number;
+          rebuy_cost?: number;
+          reentry_allowed?: boolean;
+          registration_open?: boolean;
+          seats_per_table?: number;
+          starting_chips?: number;
+          status?: Database['public']['Enums']['ops_tournament_status'];
+          updated_at?: string;
+          venue?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ops_tournaments_job_posting_id_fkey';
+            columns: ['job_posting_id'];
+            isOneToOne: false;
+            referencedRelation: 'job_postings';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'ops_tournaments_owner_id_fkey';
+            columns: ['owner_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       processed_identity_verifications: {
         Row: {
           function_name: string;
@@ -2061,6 +2295,23 @@ export type Database = {
         };
         Returns: Json;
       };
+      create_review: {
+        Args: {
+          p_comment: string;
+          p_job_posting_id: string;
+          p_job_posting_title: string;
+          p_reviewee_id: string;
+          p_reviewee_name: string;
+          p_reviewer_id: string;
+          p_reviewer_name: string;
+          p_reviewer_type: string;
+          p_sentiment: Database['public']['Enums']['review_sentiment'];
+          p_tags: string[];
+          p_work_date: string;
+          p_work_log_id: string;
+        };
+        Returns: string;
+      };
       create_workspace: {
         Args: { p_name: string };
         Returns: {
@@ -2082,6 +2333,7 @@ export type Database = {
       decrement_unread_counter:
         | { Args: { p_notification_id: string }; Returns: undefined }
         | { Args: { p_delta?: number; p_user_id: string }; Returns: undefined };
+      derive_region_slug: { Args: { addr: string }; Returns: string };
       expire_pending_workspace_invitations: { Args: never; Returns: number };
       fn_cleanup_expired_fcm_tokens: { Args: never; Returns: number };
       fn_cleanup_rate_limits: { Args: never; Returns: number };
@@ -2153,6 +2405,10 @@ export type Database = {
       };
       is_admin: { Args: never; Returns: boolean };
       is_employer_or_admin: { Args: never; Returns: boolean };
+      is_ops_member: {
+        Args: { _tournament_id: string; _user_id: string };
+        Returns: boolean;
+      };
       is_posting_collaborator: {
         Args: { p_posting_id: string; p_user_id: string };
         Returns: boolean;
@@ -2353,6 +2609,55 @@ export type Database = {
           updated_at: string;
         }[];
       };
+      ops_add_addon: {
+        Args: { p_actor_id: string; p_participant_id: string };
+        Returns: Json;
+      };
+      ops_add_rebuy: {
+        Args: { p_actor_id: string; p_participant_id: string };
+        Returns: Json;
+      };
+      ops_create_tournament: {
+        Args: {
+          p_config: Json;
+          p_event_date: string;
+          p_game_type: string;
+          p_job_posting_id: string;
+          p_name: string;
+          p_owner_id: string;
+          p_seats_per_table: number;
+          p_starting_chips: number;
+          p_venue: string;
+        };
+        Returns: Json;
+      };
+      ops_register_participant: {
+        Args: {
+          p_actor_id: string;
+          p_buy_in_amount: number;
+          p_name: string;
+          p_nationality: string;
+          p_phone: string;
+          p_tournament_id: string;
+        };
+        Returns: Json;
+      };
+      ops_set_tournament_status: {
+        Args: {
+          p_actor_id: string;
+          p_status: Database['public']['Enums']['ops_tournament_status'];
+          p_tournament_id: string;
+        };
+        Returns: Json;
+      };
+      ops_toggle_registration: {
+        Args: { p_actor_id: string; p_open: boolean; p_tournament_id: string };
+        Returns: Json;
+      };
+      ops_update_tournament: {
+        Args: { p_actor_id: string; p_patch: Json; p_tournament_id: string };
+        Returns: Json;
+      };
       permanently_delete_user: { Args: { p_user_id: string }; Returns: Json };
       process_qr_checkin_atomically: {
         Args: {
@@ -2452,6 +2757,27 @@ export type Database = {
         | 'system'
         | 'admin'
         | 'review';
+      ops_event_type:
+        | 'tournament_created'
+        | 'tournament_status_changed'
+        | 'registration_toggled'
+        | 'player_registered'
+        | 'player_checked_in'
+        | 'player_rebuy'
+        | 'player_addon'
+        | 'player_busted'
+        | 'player_reentered'
+        | 'player_moved'
+        | 'seat_freed'
+        | 'table_added'
+        | 'table_closed'
+        | 'table_redraw'
+        | 'prize_assigned'
+        | 'level_play'
+        | 'level_pause'
+        | 'level_set';
+      ops_participant_status: 'registered' | 'checked_in' | 'active' | 'busted' | 'no_show';
+      ops_tournament_status: 'upcoming' | 'active' | 'completed';
       payroll_status: 'pending' | 'completed' | 'failed';
       posting_status:
         | 'draft'
@@ -2622,6 +2948,28 @@ export const Constants = {
         'admin',
         'review',
       ],
+      ops_event_type: [
+        'tournament_created',
+        'tournament_status_changed',
+        'registration_toggled',
+        'player_registered',
+        'player_checked_in',
+        'player_rebuy',
+        'player_addon',
+        'player_busted',
+        'player_reentered',
+        'player_moved',
+        'seat_freed',
+        'table_added',
+        'table_closed',
+        'table_redraw',
+        'prize_assigned',
+        'level_play',
+        'level_pause',
+        'level_set',
+      ],
+      ops_participant_status: ['registered', 'checked_in', 'active', 'busted', 'no_show'],
+      ops_tournament_status: ['upcoming', 'active', 'completed'],
       payroll_status: ['pending', 'completed', 'failed'],
       posting_status: [
         'draft',

@@ -18,6 +18,9 @@ const envSchema = z.object({
     .enum(['development', 'staging', 'production'])
     .optional()
     .default('development'),
+
+  // 라이브 운영(ops) 웹앱 도메인 (uniqn→ops 브릿지 딥링크). 미설정 시 상수 기본값 사용.
+  EXPO_PUBLIC_OPS_URL: z.string().url().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -48,6 +51,7 @@ export function getEnv(): Env {
     EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
     EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
     EXPO_PUBLIC_RELEASE_CHANNEL: process.env.EXPO_PUBLIC_RELEASE_CHANNEL,
+    EXPO_PUBLIC_OPS_URL: process.env.EXPO_PUBLIC_OPS_URL,
   };
 
   // 스키마 검증

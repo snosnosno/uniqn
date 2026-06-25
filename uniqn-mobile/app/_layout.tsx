@@ -191,6 +191,7 @@ function MainNavigator() {
         <Stack.Screen name="(app)" />
         <Stack.Screen name="(admin)" />
         <Stack.Screen name="(employer)" />
+        <Stack.Screen name="(ops)" />
         <Stack.Screen name="+not-found" />
       </Stack>
       <ToastManager />

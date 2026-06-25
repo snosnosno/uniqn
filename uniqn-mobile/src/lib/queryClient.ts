@@ -558,6 +558,17 @@ export const queryKeys = {
     adminDetail: (id: string) =>
       [...queryKeys.employerApplications.all, 'admin', 'detail', id] as const,
   },
+
+  // 라이브 운영(ops) — 슬라이스 1a
+  ops: {
+    all: ['ops'] as const,
+    tournaments: () => [...queryKeys.ops.all, 'tournaments'] as const,
+    tournamentDetail: (id: string) => [...queryKeys.ops.all, 'tournament', id] as const,
+    participants: (tournamentId: string) =>
+      [...queryKeys.ops.all, 'participants', tournamentId] as const,
+    forPosting: (jobPostingId: string) =>
+      [...queryKeys.ops.all, 'forPosting', jobPostingId] as const,
+  },
 } as const;
 
 // ============================================================================
