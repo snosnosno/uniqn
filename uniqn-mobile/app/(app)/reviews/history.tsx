@@ -56,6 +56,41 @@ export default function ReviewHistoryScreen() {
     });
   }, []);
 
+  const goToDetail = useCallback(
+    (review: Review) => {
+      const baseParams = {
+        workLogId: review.workLogId,
+        jobPostingId: review.jobPostingId,
+        jobPostingTitle: review.jobPostingTitle,
+        workDate: review.workDate,
+      };
+
+      if (activeTab === 'given') {
+        // 내가 작성한 리뷰: revieweeId=내가 평가한 상대방, reviewerType=내 타입(그대로 전달)
+        router.push({
+          pathname: '/(app)/reviews/[workLogId]',
+          params: {
+            ...baseParams,
+            revieweeId: review.revieweeId,
+            revieweeName: review.revieweeName,
+            reviewerType: review.reviewerType,
+          },
+        });
+      } else {
+        // 받은 리뷰: revieweeId=상대방(리뷰 작성자), reviewerType 미전달(상세화면이 profile.role에서 파생)
+        router.push({
+          pathname: '/(app)/reviews/[workLogId]',
+          params: {
+            ...baseParams,
+            revieweeId: review.reviewerId,
+            revieweeName: review.reviewerName,
+          },
+        });
+      }
+    },
+    [activeTab]
+  );
+
   const handleEndReached = useCallback(() => {
     if (activeData.hasNextPage && !activeData.isFetchingNextPage) {
       activeData.fetchNextPage();
@@ -64,11 +99,16 @@ export default function ReviewHistoryScreen() {
 
   const renderItem = useCallback(
     ({ item }: { item: Review }) => (
-      <View className="px-4 py-1.5">
-        <ReviewCard review={item} stripeTone={REVIEW_CONTEXT_STRIPE_TONE.history} />
-      </View>
+      <Pressable
+        onPress={() => goToDetail(item)}
+        testID={`review-item-${item.workLogId}_${item.reviewerType}`}
+      >
+        <View className="px-4 py-1.5">
+          <ReviewCard review={item} stripeTone={REVIEW_CONTEXT_STRIPE_TONE.history} />
+        </View>
+      </Pressable>
     ),
-    []
+    [goToDetail]
   );
 
   const keyExtractor = useCallback((item: Review) => `${item.workLogId}_${item.reviewerType}`, []);
