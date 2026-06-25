@@ -116,7 +116,7 @@ export default function StaffSettlementsScreen() {
 
   const stackHeader = (
     <StackHeader
-      title="정산 관리"
+      title="스태프 관리/정산"
       titleSuffix={headerTitleSuffix}
       fallbackHref={headerBackHref}
       rightAction={headerRightAction}

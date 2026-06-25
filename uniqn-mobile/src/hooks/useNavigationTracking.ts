@@ -80,7 +80,7 @@ const ROUTE_NAMES: Record<string, string> = {
   '/(employer)/my-postings/[id]': '공고 상세',
   '/(employer)/my-postings/[id]/edit': '공고 수정',
   '/(employer)/my-postings/[id]/applicants': '지원자 관리',
-  '/(employer)/my-postings/[id]/settlements': '정산 관리',
+  '/(employer)/my-postings/[id]/settlements': '스태프 관리/정산',
 
   // 404
   '/+not-found': '페이지 없음',
