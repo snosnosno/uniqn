@@ -104,18 +104,9 @@ export const NOTIFICATION_ROUTE_MAP: Record<
       ? { name: 'admin/employer-application', params: { id: data.applicationId } }
       : { name: 'admin/employer-applications' },
 
-  [NotificationType.REVIEW_REQUEST]: (data) =>
-    data?.workLogId
-      ? { name: 'reviews/detail', params: { workLogId: data.workLogId } }
-      : { name: 'reviews/pending' },
-  [NotificationType.REVIEW_RECEIVED]: (data) =>
-    data?.workLogId
-      ? { name: 'reviews/detail', params: { workLogId: data.workLogId } }
-      : { name: 'schedule' },
-  [NotificationType.REVIEW_REMINDER]: (data) =>
-    data?.workLogId
-      ? { name: 'reviews/detail', params: { workLogId: data.workLogId } }
-      : { name: 'reviews/pending' },
+  [NotificationType.REVIEW_REQUEST]: () => ({ name: 'reviews/pending' }),
+  [NotificationType.REVIEW_RECEIVED]: () => ({ name: 'reviews/pending' }),
+  [NotificationType.REVIEW_REMINDER]: () => ({ name: 'reviews/pending' }),
 
   // 워크스페이스 협업 (PR #2)
   [NotificationType.WORKSPACE_INVITATION]: (data): DeepLinkRoute =>

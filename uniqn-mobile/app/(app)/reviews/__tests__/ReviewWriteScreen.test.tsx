@@ -120,4 +120,26 @@ describe('ReviewWriteScreen', () => {
       })
     );
   });
+
+  it('제출 성공 시 평점관리 허브로 replace 한다', () => {
+    useLocalSearchParams.mockReturnValue({
+      workLogId: 'worklog-3',
+      revieweeId: 'user-3',
+      revieweeName: 'Bob',
+      reviewerType: 'employer',
+      jobPostingId: 'job-3',
+      jobPostingTitle: 'Day Shift',
+      workDate: '2025-01-17',
+    });
+
+    const { getByLabelText } = render(<ReviewWriteScreen />);
+
+    fireEvent.press(getByLabelText('mock-review-form-submit'));
+
+    expect(mockMutate).toHaveBeenCalled();
+    const onSuccess = (mockMutate.mock.calls[0][1] as { onSuccess: () => void }).onSuccess;
+    onSuccess();
+
+    expect(mockReplace).toHaveBeenCalledWith('/(app)/reviews/history');
+  });
 });
