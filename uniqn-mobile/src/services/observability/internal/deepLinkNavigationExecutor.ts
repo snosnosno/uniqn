@@ -8,7 +8,7 @@ import {
   type DeepLinkRoute,
   type NavigationContext,
 } from '@/shared/deeplink';
-import type { NotificationType } from '@/types/notification';
+import { NotificationType } from '@/types/notification';
 import {
   COLD_START_MAX_RETRIES,
   COLD_START_RETRY_INTERVAL_MS,
@@ -140,6 +140,16 @@ export function getRouteFromNotification(
   data?: Record<string, string>,
   link?: string
 ): DeepLinkRoute | null {
+  // REQUEST/REMINDER 는 작성 유도 알림이므로 허브 미작성 탭으로 보낸다.
+  // link 는 workLogId 만 담겨 상세 화면이 작성 정보를 해소하지 못함.
+  // RECEIVED 는 받은 평가 확인이므로 link(상세) 유지.
+  if (type === NotificationType.REVIEW_REQUEST || type === NotificationType.REVIEW_REMINDER) {
+    const routeGenerator = NOTIFICATION_ROUTE_MAP[type];
+    if (routeGenerator) {
+      return routeGenerator(data);
+    }
+  }
+
   const validatedLink = validateNotificationLink(link);
   if (validatedLink) {
     const parsed = parseDeepLink(validatedLink);
