@@ -1,13 +1,17 @@
 # CLAUDE.md
 
-> 언어: 한글 | 작업 디렉토리: uniqn-mobile/ | 배포 전: `npm run quality`
+> **⚠️ 언어 규칙 (필수): 모든 응답·설명·커밋 메시지·문서·코드 주석은 반드시 한글로 작성한다.** 영어로 답하지 말 것. 코드 식별자/라이브러리명/명령어 등 고유 기술 용어만 원문 유지.
+>
+> 작업 디렉토리: uniqn-mobile/ | 배포 전: `npm run quality`
 
 ## 프로젝트
-홀덤 스태프 관리앱 — Expo 55 / RN 0.83.4 / React 19.2 / TS strict / NativeWind 4.2 / Supabase
+홀덤펍·대회사 대상 단발 인력 매칭 앱 — Expo 55 / RN 0.83.4 / React 19.2 / TS strict / NativeWind 4.2 / Supabase
+타깃: 홀덤펍 사장(상시 단발 알바) + 대회사 운영팀(대회 D-7~D-day 집중 인력). 포커룸은 비타깃.
 
 ## 핵심 규칙
 | 항목 | 필수 | 금지 |
 |------|------|------|
+| 언어 | 응답·커밋·문서·주석 **한글** | 영어 답변 |
 | 로깅 | `logger.info()` | `console.log()` (앱 런타임) |
 | 다크모드 | `dark:` 항상 적용 | 라이트모드만 |
 | 경로 | `@/` 절대 경로 | 시스템 절대 경로 |
@@ -32,7 +36,7 @@ Presentation → Hooks → Service → Repository → Supabase
 
 ## 역할
 `admin > employer > staff` | (public/auth)→없음 | (app)→staff | (employer)→employer | (admin)→admin
-UserRole(앱권한) ≠ StaffRole(포커룸 직무: dealer/floor/serving)
+UserRole(앱권한) ≠ StaffRole(현장 직무: dealer/floor/serving)
 
 ## 커밋 / 보안 / 트랜잭션 / 에러
 - 커밋: `<type>(<scope>): <한글>` — feat/fix/refactor/style/docs/test/chore/perf
@@ -59,11 +63,9 @@ Skill 요청 시 Skill tool 먼저 호출 (직접 답하지 말 것):
 에러→`/investigate` | 계획→`/autoplan` | 리뷰→`/review` | 커밋→`/commit`
 PR→`/pr` | 배포→`/deploy` | 보안→`/cso` | 품질→`/health` | 회고→`/retro`
 디자인→`/design-review` | 타입에러→`/type-check` | 테스트→`/test`
+리팩토링→`/refactor` | 성능→`/performance` | 국제화→`/i18n` | 접근성→`/a11y` | 마이그레이션→`/migration`
+RLS/권한/위험 변경 전→`/guard` 먼저
 
-*2026-06-19 업데이트 — 공고 `posting_status` enum에 `capacity_full`(정원 자동마감, PR #155) 추가. 신규 status 값 도입 시 read/filter Zod·공개 RLS·통계 reader 전수 갱신 필수(누락 시 read 증발 회귀). LLM Wiki 지식베이스 `wiki/` 운영 중(`/ingest`·`/query`·`/lint`, 규약 `wiki/AGENTS.md`). db-tests pgTAP는 SET ROLE 후 테이블 직접접근하므로 fixture 명시 GRANT 필요 + `supabase/setup-cli` 버전 pin(#179/#180).*
-
-*2026-04-18 업데이트 — `job_posting_templates.description` 컬럼 추가 (migration + types 재생성). `JobPostingTemplate` 인터페이스 리팩토링: userId/updatedAt 추가, createdBy/lastUsedAt 제거, usageCount 필수화. edit.tsx 템플릿 저장 버튼 + TemplateModal 통합.*
-
-*2026-04-17 업데이트 — Firebase 레거시 규칙/스펙 archive 완료 (docs/archive/firebase-legacy/2026-04/), Firebase MCP 제거.*
-
-*2026-04-13 업데이트 — Expo 55/RN 0.83.4 업그레이드, Supabase 이전 완료, Black & Gold 완료*
+## 변경 이력 / 지식 시스템
+- 변경·스택 이력: `wiki/log.md`(최근 5건 `grep "^## \[" wiki/log.md | tail -5`) · `CHANGELOG.md`. CLAUDE.md는 **규칙 전용**(날짜 노트 누적 금지).
+- 지식 4계층 역할분담(CLAUDE.md=규칙 / 메모리=라이브함정·진행작업 / wiki=영속합성 / 옵시디언색인=발견) + 졸업 규칙: `wiki/AGENTS.md §10`.
