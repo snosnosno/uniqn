@@ -42,20 +42,49 @@ const HOMOGLYPH_MAP: Record<string, string> = {
 };
 
 /**
- * HTML 엔티티 디코딩 (보안 검사용)
+ * HTML 엔티티 1회 디코딩 (보안 검사용)
  *
- * `&#60;` → `<`, `&#x3c;` → `<`, `&lt;` → `<`
+ * `&#60;` → `<`, `&#x3c;` → `<`, `&lt;` → `<`, `&colon;` → `:`
  * XSS 검사 경로에서만 사용 (저장 경로에서는 원본 유지)
  */
+function decodeHtmlEntitiesOnce(text: string): string {
+  return (
+    text
+      // 세미콜론 옵셔널: `&#58alert`처럼 종결자 없는 수치 참조도 디코딩(HTML5 파서 동등)
+      .replace(/&#(\d+);?/g, (_, dec: string) => String.fromCharCode(parseInt(dec, 10)))
+      // 16진은 a-f가 후속 글자와 과매칭될 수 있어 세미콜론 유지
+      .replace(/&#x([0-9a-fA-F]+);/gi, (_, hex: string) => String.fromCharCode(parseInt(hex, 16)))
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&amp;/gi, '&')
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'")
+      // 명명 엔티티 난독 우회 방어: `javascript&colon;alert&lpar;1&rpar;`
+      .replace(/&colon;/gi, ':')
+      .replace(/&lpar;/gi, '(')
+      .replace(/&rpar;/gi, ')')
+      .replace(/&sol;/gi, '/')
+      .replace(/&Tab;/gi, '\t')
+      .replace(/&NewLine;/gi, '\n')
+  );
+}
+
+/**
+ * HTML 엔티티를 안정될 때까지 반복 디코딩 (최대 3회)
+ *
+ * URL 디코딩이 2회 반복하는 것과 대칭 — `&#38;#60;`(= `&` + `#60;` → `<`)처럼
+ * 인코딩을 한 단계 덧씌워 `<`를 숨기는 split-entity 우회를 방어. 정상 입력은 1회 만에 안정.
+ */
 function decodeHtmlEntities(text: string): string {
-  return text
-    .replace(/&#(\d+);/g, (_, dec: string) => String.fromCharCode(parseInt(dec, 10)))
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex: string) => String.fromCharCode(parseInt(hex, 16)))
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>')
-    .replace(/&amp;/gi, '&')
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'");
+  let prev = text;
+  let decoded = decodeHtmlEntitiesOnce(prev);
+  let iterations = 1;
+  while (decoded !== prev && iterations < 3) {
+    prev = decoded;
+    decoded = decodeHtmlEntitiesOnce(prev);
+    iterations += 1;
+  }
+  return decoded;
 }
 
 /**
@@ -87,6 +116,10 @@ export function normalizeForSecurity(input: string): string {
   // 2. HTML 엔티티 디코딩
   normalized = decodeHtmlEntities(normalized);
 
+  // 2.5. 고립 '%'(유효한 %XX 아님)를 %25로 escape → decodeURIComponent throw로
+  //      URL 디코딩이 통째로 중단되어 인코딩 페이로드가 살아남는 우회 방지
+  normalized = normalized.replace(/%(?![0-9a-fA-F]{2})/g, '%25');
+
   // 3. URL 디코딩 (최대 2회, double encoding 방어)
   for (let i = 0; i < 2; i++) {
     try {
@@ -109,31 +142,45 @@ export function normalizeForSecurity(input: string): string {
 // ============================================================================
 
 /**
+ * javascript: 프로토콜 — 콜론 뒤(공백 허용) 출력 가능 ASCII 문자([!-~]) 요구.
+ * 'JavaScript: 중급'처럼 콜론 뒤 공백+비-ASCII(한글) 기술스택 라벨은 통과시키되,
+ * `javascript:alert`·`javascript:0||alert`·`javascript:!alert`처럼 콜론 뒤 코드(문자/숫자/연산자)는 차단.
+ */
+const JS_PROTOCOL_PATTERN = /javascript:\s*[!-~]/gi;
+/** vbscript: 프로토콜 — 동일 협소화('VBScript:' 산문은 통과) */
+const VB_PROTOCOL_PATTERN = /vbscript:\s*[!-~]/gi;
+
+/**
  * 위험한 XSS 패턴 목록
  *
  * 다음 패턴을 차단:
- * - <script> 태그
- * - javascript: 프로토콜
- * - on* 이벤트 핸들러 (onclick, onerror 등)
- * - data:text/html URL, data:*;base64 (이미지 제외)
- * - <iframe>, <object>, <embed>, <svg> 태그
- * - vbscript: 프로토콜
- * - expression() CSS
+ * - 여는 태그 단독/절단형: script/iframe/object/embed/svg + style/base/meta/link/form/math/template
+ *   (닫는 </tag>·닫는 '>' 불요 — `<script>alert(1)`·`<iframe src=//evil` 같은 절단형 우회 차단)
+ * - on* 이벤트 핸들러 전체 (일반형 — allowlist 갭으로 통과하던 ontoggle/onpointerover 등 일소)
+ * - javascript:/vbscript: 프로토콜 (콜론 뒤 코드문자 동반 시)
+ * - data: 스크립트 스킴(text/javascript 등) + 비-이미지 base64
+ * - CSS expression() (콜론 컨텍스트 한정)
+ *
+ * @note `<` 직후 태그명, on 직후 이벤트명을 강제 → '<3'·'a < b'·단어 'script'·'JavaScript:'
+ *       같은 정상 입력은 통과(app-wide 오탐 방지). 스킴 내 제어문자/엔티티 분절 우회는
+ *       normalizeForSecurity + hasXSSPattern의 제어문자 제거 사본에서 추가 방어.
  */
 export const XSS_PATTERNS: RegExp[] = [
-  /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
-  /<script[^>]*>.*?<\/script>/gi,
-  /javascript:/gi,
-  /vbscript:/gi,
-  /\bon(click|load|error|mouseover|mouseout|mousedown|mouseup|mousemove|focus|blur|submit|change|input|keydown|keyup|keypress|touchstart|touchend|touchmove|dragstart|drag|drop|scroll|resize|unload|beforeunload|abort|contextmenu)\s*=/gi,
-  /data:text\/html/gi,
+  /<(?:script|iframe|object|embed|svg|style|base|meta|link|form|math|template)\b/gi,
+  /\bon[a-z]+\s*=/gi,
+  JS_PROTOCOL_PATTERN,
+  VB_PROTOCOL_PATTERN,
+  /data:text\/(?:html|javascript|xml)|data:application\/(?:javascript|x?html|xml)/gi,
   /data:(?!image\/)[^;,]*;base64/gi,
-  /<iframe[^>]*>/gi,
-  /<object[^>]*>/gi,
-  /<embed[^>]*>/gi,
-  /<svg[^>]*>/gi,
-  /expression\s*\(/gi,
+  /:\s*expression\s*\(/gi,
 ];
+
+/**
+ * 프로토콜 패턴(javascript:/vbscript:) — 스킴 내 제어문자(java<TAB>script:)로 분절하는
+ * 우회를 잡기 위해 제어문자 제거 사본에도 추가 검사. 전역 제거는 이벤트 패턴의 개행
+ * 속성 구분자를 손상시키므로 프로토콜 패턴에만 한정.
+ */
+const PROTOCOL_PATTERNS: RegExp[] = [JS_PROTOCOL_PATTERN, VB_PROTOCOL_PATTERN];
 
 /**
  * SQL Injection 패턴 목록
@@ -168,9 +215,19 @@ export const SQL_INJECTION_PATTERNS: RegExp[] = [
 export function hasXSSPattern(text: string): boolean {
   if (!text || typeof text !== 'string') return false;
   const normalized = normalizeForSecurity(text);
-  return XSS_PATTERNS.some((pattern) => {
+  const matchesNormalized = XSS_PATTERNS.some((pattern) => {
     pattern.lastIndex = 0; // /g 플래그 regex의 sticky lastIndex 버그 방지
     return pattern.test(normalized);
+  });
+  if (matchesNormalized) return true;
+
+  // 스킴 내부 제어문자(java<TAB>script:)로 패턴을 분절하는 우회 방어:
+  // 제어문자를 제거한 사본에 프로토콜 패턴만 추가 검사
+  const controlStripped = normalized.replace(/[\x00-\x1F]/g, '');
+  if (controlStripped === normalized) return false;
+  return PROTOCOL_PATTERNS.some((pattern) => {
+    pattern.lastIndex = 0;
+    return pattern.test(controlStripped);
   });
 }
 
@@ -219,12 +276,19 @@ export function xssValidation(text: string): boolean {
 export function sanitizeInput(input: string): string {
   if (!input || typeof input !== 'string') return '';
   const normalized = normalizeForSecurity(input);
-  return normalized
-    .replace(/<script[^>]*>.*?<\/script>/gi, '')
-    .replace(/<[^>]+>/g, '')
-    .replace(/javascript:/gi, '')
-    .replace(/on\w+\s*=/gi, '')
-    .trim();
+  return (
+    normalized
+      .replace(/<script[^>]*>.*?<\/script>/gi, '')
+      // 닫는 '>' 없는 절단형 위험 여는태그도 제거 (<[^>]+>는 '>'를 요구해 절단형이 잔존)
+      .replace(
+        /<\/?(?:script|iframe|object|embed|svg|style|base|meta|link|form|math|template)\b[^>]*>?/gi,
+        ''
+      )
+      .replace(/<[^>]+>/g, '')
+      .replace(/javascript:/gi, '')
+      .replace(/on\w+\s*=/gi, '')
+      .trim()
+  );
 }
 
 /**
