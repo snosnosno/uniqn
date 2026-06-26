@@ -1353,6 +1353,118 @@ export type Database = {
           },
         ];
       };
+      ops_seats: {
+        Row: {
+          created_at: string;
+          id: string;
+          participant_id: string | null;
+          seat_no: number;
+          table_id: string;
+          table_no: number;
+          tournament_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          participant_id?: string | null;
+          seat_no: number;
+          table_id: string;
+          table_no: number;
+          tournament_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          participant_id?: string | null;
+          seat_no?: number;
+          table_id?: string;
+          table_no?: number;
+          tournament_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ops_seats_participant_id_fkey';
+            columns: ['participant_id'];
+            isOneToOne: false;
+            referencedRelation: 'ops_participants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'ops_seats_table_id_fkey';
+            columns: ['table_id'];
+            isOneToOne: false;
+            referencedRelation: 'ops_tables';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'ops_seats_tournament_id_fkey';
+            columns: ['tournament_id'];
+            isOneToOne: false;
+            referencedRelation: 'ops_tournaments';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      ops_tables: {
+        Row: {
+          assigned_staff_id: string | null;
+          created_at: string;
+          id: string;
+          lock_type: Database['public']['Enums']['ops_table_lock_type'];
+          name: string | null;
+          position: Json | null;
+          priority: number | null;
+          status: Database['public']['Enums']['ops_table_status'];
+          table_no: number;
+          tournament_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          assigned_staff_id?: string | null;
+          created_at?: string;
+          id?: string;
+          lock_type?: Database['public']['Enums']['ops_table_lock_type'];
+          name?: string | null;
+          position?: Json | null;
+          priority?: number | null;
+          status?: Database['public']['Enums']['ops_table_status'];
+          table_no: number;
+          tournament_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          assigned_staff_id?: string | null;
+          created_at?: string;
+          id?: string;
+          lock_type?: Database['public']['Enums']['ops_table_lock_type'];
+          name?: string | null;
+          position?: Json | null;
+          priority?: number | null;
+          status?: Database['public']['Enums']['ops_table_status'];
+          table_no?: number;
+          tournament_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ops_tables_assigned_staff_id_fkey';
+            columns: ['assigned_staff_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'ops_tables_tournament_id_fkey';
+            columns: ['tournament_id'];
+            isOneToOne: false;
+            referencedRelation: 'ops_tournaments';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       ops_tournaments: {
         Row: {
           addon_chips: number;
@@ -2777,6 +2889,8 @@ export type Database = {
         | 'level_pause'
         | 'level_set';
       ops_participant_status: 'registered' | 'checked_in' | 'active' | 'busted' | 'no_show';
+      ops_table_lock_type: 'none' | 'locked' | 'feature';
+      ops_table_status: 'open' | 'closed' | 'standby';
       ops_tournament_status: 'upcoming' | 'active' | 'completed';
       payroll_status: 'pending' | 'completed' | 'failed';
       posting_status:
@@ -2969,6 +3083,8 @@ export const Constants = {
         'level_set',
       ],
       ops_participant_status: ['registered', 'checked_in', 'active', 'busted', 'no_show'],
+      ops_table_lock_type: ['none', 'locked', 'feature'],
+      ops_table_status: ['open', 'closed', 'standby'],
       ops_tournament_status: ['upcoming', 'active', 'completed'],
       payroll_status: ['pending', 'completed', 'failed'],
       posting_status: [

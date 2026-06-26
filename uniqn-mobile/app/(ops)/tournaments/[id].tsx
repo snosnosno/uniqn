@@ -5,10 +5,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { AppFlashList } from '@/components/ui/AppFlashList';
 import { StackHeader } from '@/components/headers';
+import { TablesTab } from '@/components/ops';
 import {
   useOpsTournament,
   useOpsParticipants,
   useOpsPartialStats,
+  useOpsTables,
   useRegisterParticipant,
   useAddRebuy,
   useAddAddon,
@@ -35,6 +37,7 @@ export default function OpsTournamentDetailScreen() {
   const tournamentId = id ?? '';
   const { tournament, isLoading } = useOpsTournament(tournamentId);
   const { participants } = useOpsParticipants(tournamentId);
+  const { tables } = useOpsTables(tournamentId);
   const stats = useOpsPartialStats(tournament, participants);
 
   const registerMut = useRegisterParticipant(tournamentId);
@@ -43,7 +46,7 @@ export default function OpsTournamentDetailScreen() {
   const toggleMut = useToggleRegistration(tournamentId);
   const statusMut = useSetTournamentStatus(tournamentId);
 
-  const [tab, setTab] = useState<'players' | 'status'>('players');
+  const [tab, setTab] = useState<'players' | 'status' | 'tables'>('players');
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState('');
   const [nationality, setNationality] = useState('');
@@ -105,7 +108,7 @@ export default function OpsTournamentDetailScreen() {
 
       {/* 세그먼트 */}
       <View className="mx-4 mb-2 mt-1 flex-row rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
-        {(['players', 'status'] as const).map((t) => (
+        {(['players', 'status', 'tables'] as const).map((t) => (
           <Pressable
             key={t}
             onPress={() => setTab(t)}
@@ -115,7 +118,11 @@ export default function OpsTournamentDetailScreen() {
             <Text
               className={`text-sm ${tab === t ? 'font-sans-semibold text-content-primary' : 'text-secondary-500 dark:text-secondary-400'}`}
             >
-              {t === 'players' ? `PLAYERS (${participants.length})` : 'STATUS'}
+              {t === 'players'
+                ? `PLAYERS (${participants.length})`
+                : t === 'status'
+                  ? 'STATUS'
+                  : `TABLES (${tables.length})`}
             </Text>
           </Pressable>
         ))}
@@ -243,7 +250,7 @@ export default function OpsTournamentDetailScreen() {
             }
           />
         </View>
-      ) : (
+      ) : tab === 'status' ? (
         <View className="flex-1 px-3">
           <View className="flex-row flex-wrap">
             <StatCard label="PLAYING" value={fmt(stats?.playing ?? 0)} />
@@ -287,6 +294,8 @@ export default function OpsTournamentDetailScreen() {
             </View>
           </View>
         </View>
+      ) : (
+        <TablesTab tournamentId={tournamentId} />
       )}
     </SafeAreaView>
   );

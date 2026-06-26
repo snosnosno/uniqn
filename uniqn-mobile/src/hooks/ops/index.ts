@@ -5,6 +5,8 @@ export {
   useOpsTournamentForPosting,
 } from './useOpsTournaments';
 export { useOpsParticipants, useOpsPartialStats } from './useOpsParticipants';
+export * from './useOpsTables';
+export * from './useOpsSeats';
 export {
   useCreateOpsTournament,
   useSetTournamentStatus,
@@ -12,4 +14,12 @@ export {
   useRegisterParticipant,
   useAddRebuy,
   useAddAddon,
+  useAddTable,
+  useSetTableLock,
+  useSetTablePriority,
+  useCloseTable,
+  useAssignSeat,
+  useMoveSeat,
+  useFreeSeat,
+  useRedrawWaitlistFill,
 } from './useOpsMutations';

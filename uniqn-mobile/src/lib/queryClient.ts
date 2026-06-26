@@ -568,6 +568,8 @@ export const queryKeys = {
       [...queryKeys.ops.all, 'participants', tournamentId] as const,
     forPosting: (jobPostingId: string) =>
       [...queryKeys.ops.all, 'forPosting', jobPostingId] as const,
+    tables: (tournamentId: string) => [...queryKeys.ops.all, 'tables', tournamentId] as const,
+    seats: (tournamentId: string) => [...queryKeys.ops.all, 'seats', tournamentId] as const,
   },
 } as const;
 

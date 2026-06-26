@@ -74,6 +74,36 @@ export interface OpsEvent {
   createdAt: string;
 }
 
+export type OpsTableStatus = (typeof Constants.public.Enums.ops_table_status)[number];
+export type OpsTableLockType = (typeof Constants.public.Enums.ops_table_lock_type)[number];
+
+/** 라이브 운영 테이블 */
+export interface OpsTable {
+  id: string;
+  tournamentId: string;
+  tableNo: number;
+  name?: string | null;
+  status: OpsTableStatus;
+  assignedStaffId?: string | null;
+  lockType: OpsTableLockType;
+  priority?: number | null;
+  position?: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 좌석(단일 점유원) */
+export interface OpsSeat {
+  id: string;
+  tournamentId: string;
+  tableId: string;
+  tableNo: number;
+  seatNo: number;
+  participantId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** STATUS 부분통계 (1a — 참가자 파생만, 클라이언트 계산). 좌석/블라인드 의존 값은 1b/1c. */
 export interface OpsPartialStats {
   playing: number;
