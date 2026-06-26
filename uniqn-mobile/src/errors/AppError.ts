@@ -185,6 +185,9 @@ export const ERROR_CODES = {
   OPS_NO_EMPTY_SEAT: 'E6110', // 빈좌석 없음
   OPS_TABLE_HAS_OCCUPANTS: 'E6111', // 점유 좌석 있는 테이블 close
   OPS_PARTICIPANT_ALREADY_SEATED: 'E6112', // 이미 착석
+  OPS_TABLE_NOT_OPEN: 'E6113', // redraw/assign 대상 테이블이 open·unlocked 아님
+  OPS_INVALID_SEAT_COUNT: 'E6114', // 테이블 좌석수 범위(1~11) 위반
+  OPS_INVALID_ASSIGNMENTS: 'E6115', // redraw 배정 목록이 비어 있음
 
   // 알 수 없는 에러 (E7xxx)
   UNKNOWN: 'E7000',
@@ -208,6 +211,9 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.OPS_NO_EMPTY_SEAT]: '빈 좌석이 없습니다',
   [ERROR_CODES.OPS_TABLE_HAS_OCCUPANTS]: '점유된 좌석이 있어 닫을 수 없습니다',
   [ERROR_CODES.OPS_PARTICIPANT_ALREADY_SEATED]: '이미 좌석이 배정된 참가자입니다',
+  [ERROR_CODES.OPS_TABLE_NOT_OPEN]: '테이블이 열려 있지 않습니다',
+  [ERROR_CODES.OPS_INVALID_SEAT_COUNT]: '좌석 수는 1~11 사이여야 합니다',
+  [ERROR_CODES.OPS_INVALID_ASSIGNMENTS]: '배정할 좌석이 없습니다',
 
   // 네트워크
   [ERROR_CODES.NETWORK_OFFLINE]: '인터넷 연결을 확인해주세요',
