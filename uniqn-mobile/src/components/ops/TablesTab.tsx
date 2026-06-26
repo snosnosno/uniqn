@@ -338,10 +338,17 @@ export function TablesTab({ tournamentId }: TablesTabProps) {
           );
         }}
         ListEmptyComponent={
-          <View className="items-center py-10">
+          <View className="items-center px-6 py-10">
             <Text className="text-secondary-500 dark:text-secondary-400">
               {isLoading ? '불러오는 중…' : '아직 테이블이 없습니다.'}
             </Text>
+            {!isLoading && (
+              <Text className="mt-2 text-center text-xs text-secondary-500 dark:text-secondary-400">
+                {
+                  "참가자 등록 전 테이블을 먼저 추가하세요. 테이블이 없으면 워크인 등록이 '착석 대기'로 적체되고 PLAYING 통계에 잡히지 않습니다."
+                }
+              </Text>
+            )}
           </View>
         }
       />
