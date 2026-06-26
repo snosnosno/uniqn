@@ -342,3 +342,145 @@ describe('security', () => {
     });
   });
 });
+
+// ============================================================================
+// #4 app-wide XSS 하드닝 — 여는태그 단독/이벤트 일반화/data·인코딩 보강 + 오탐 수정
+// 근거: XSS_PATTERNS가 닫는태그/닫는> 강제 → 절단형 통과, on* allowlist 갭,
+//       프로토콜/data 인코딩 구멍. 동시에 expression(/JavaScript: 등 정상입력 오탐.
+// ============================================================================
+describe('security #4 XSS 하드닝', () => {
+  describe('여는태그 단독/절단형 탐지', () => {
+    it('닫는 </script> 없는 절단 script 탐지', () => {
+      expect(hasXSSPattern('<script>alert(1)')).toBe(true);
+      expect(hasXSSPattern('<script>alert(document.cookie)')).toBe(true);
+      expect(hasXSSPattern('<SCRIPT>alert(1)')).toBe(true);
+    });
+
+    it('닫는태그 없는 외부 src script 탐지', () => {
+      expect(hasXSSPattern('<script src=//evil.com/x.js>')).toBe(true);
+      expect(hasXSSPattern('<script src=https://evil.com/x.js>')).toBe(true);
+    });
+
+    it('닫는 > 없는 절단 iframe/object/embed/svg 탐지', () => {
+      expect(hasXSSPattern('<iframe src=//evil.com/clickjack')).toBe(true);
+      expect(hasXSSPattern('<iframe src=//evil.com')).toBe(true);
+      expect(hasXSSPattern('<object data=//evil.com/x')).toBe(true);
+      expect(hasXSSPattern('<embed src=//evil.com/x')).toBe(true);
+      expect(hasXSSPattern('<svg onpointerover=alert(1)')).toBe(true);
+    });
+
+    it('미목록 위험태그(base/meta/style/form/math/link/template) 탐지', () => {
+      expect(hasXSSPattern('<base href=//evil.com>')).toBe(true);
+      expect(hasXSSPattern('<meta http-equiv=refresh content="0;url=//evil.com">')).toBe(true);
+      expect(hasXSSPattern("<style>@import'//evil'</style>")).toBe(true);
+      expect(hasXSSPattern('<form action=//evil><input formaction=javascript:alert(1)>')).toBe(
+        true
+      );
+      expect(hasXSSPattern('<math href=javascript:alert(1)>click')).toBe(true);
+    });
+  });
+
+  describe('이벤트 핸들러 일반화(allowlist 갭)', () => {
+    it('allowlist 미포함 자동발화 이벤트 탐지', () => {
+      expect(hasXSSPattern('<details open ontoggle=alert(1)>')).toBe(true);
+      expect(hasXSSPattern('<details open onbeforetoggle=alert(1)>')).toBe(true);
+      expect(hasXSSPattern('<input autofocus onfocusin=alert(1)>')).toBe(true);
+      expect(hasXSSPattern('<body onpageshow=alert(1)>')).toBe(true);
+    });
+
+    it('allowlist 미포함 상호작용 이벤트 탐지', () => {
+      expect(hasXSSPattern('<img src=x onpointerover=alert(1)>')).toBe(true);
+      expect(hasXSSPattern('<img src=x onmouseenter=alert(1)>')).toBe(true);
+      expect(hasXSSPattern('<input onbeforeinput=alert(1)>')).toBe(true);
+      expect(hasXSSPattern('<div oncopy=alert(1)>copy</div>')).toBe(true);
+      expect(hasXSSPattern('<a onauxclick=alert(1)>x</a>')).toBe(true);
+      expect(hasXSSPattern('<xss onwheel=alert(1)>scroll</xss>')).toBe(true);
+    });
+
+    it('개행 속성구분자 이벤트 탐지', () => {
+      expect(hasXSSPattern('<img src=x\nonpointerdown=alert(1)>')).toBe(true);
+    });
+
+    it('bare on이벤트 핸들러 탐지 유지(기존 동작 보존)', () => {
+      expect(hasXSSPattern('onclick=alert(1)')).toBe(true);
+    });
+  });
+
+  describe('data:/프로토콜/인코딩 보강', () => {
+    it('비-base64 data: 스크립트 스킴 탐지', () => {
+      expect(hasXSSPattern('data:text/javascript,alert(1)')).toBe(true);
+      expect(hasXSSPattern('data:application/xhtml+xml;charset=utf-8;base64,PD94bWw=')).toBe(true);
+    });
+
+    it('프로토콜 내 제어문자 분절 탐지(탭/개행)', () => {
+      expect(hasXSSPattern('java\tscript:alert(1)')).toBe(true);
+      expect(hasXSSPattern('java\nscript:alert(1)')).toBe(true);
+    });
+
+    it('엔티티 난독 프로토콜 탐지(세미콜론없음/명명엔티티)', () => {
+      expect(hasXSSPattern('jav&#9;ascript:alert(1)')).toBe(true);
+      expect(hasXSSPattern('javascript&#58alert(1)')).toBe(true);
+      expect(hasXSSPattern('javascript&colon;alert(1)')).toBe(true);
+      expect(hasXSSPattern('javascript&colon;alert&lpar;1&rpar;')).toBe(true);
+      expect(hasXSSPattern('<a href=&#106;avascript:alert(1)>')).toBe(true);
+    });
+
+    it('고립 % 로 인한 URL디코드 무력화 우회 탐지', () => {
+      expect(hasXSSPattern('%3Cscript%3Ealert(1)%3C/script%3E%')).toBe(true);
+    });
+  });
+
+  describe('프로토콜 협소화 우회 차단(연산자/숫자 시작) + split-entity', () => {
+    it('콜론 뒤 연산자/숫자로 시작하는 javascript: 실행형 탐지', () => {
+      expect(hasXSSPattern('javascript:0||alert(1)')).toBe(true);
+      expect(hasXSSPattern('javascript:!alert(1)')).toBe(true);
+      expect(hasXSSPattern('javascript:+alert(1)')).toBe(true);
+      expect(hasXSSPattern('javascript:1?alert(1):0')).toBe(true);
+      expect(hasXSSPattern('javascript:/**/alert(1)')).toBe(true);
+      expect(hasXSSPattern('vbscript:0+msgbox(1)')).toBe(true);
+    });
+
+    it('이중 인코딩(split-entity) 여는태그 탐지', () => {
+      expect(hasXSSPattern('&#38;#60;script>alert(1)')).toBe(true);
+      expect(hasXSSPattern('&#38;#60;iframe>')).toBe(true);
+    });
+  });
+
+  describe('오탐 수정 — 정상입력 통과(현행 오탐 제거)', () => {
+    it('expression(...) 영단어/수식 산문 통과', () => {
+      expect(hasXSSPattern('그 expression(표현)이 자연스러워요')).toBe(false);
+      expect(hasXSSPattern('정규 expression(regex)을 평가하면')).toBe(false);
+      expect(hasXSSPattern('정규 expression (regex) 패턴')).toBe(false);
+      expect(hasXSSPattern('f(expression(x)) 중첩')).toBe(false);
+    });
+
+    it('콜론 동반 기술스택 라벨 통과(JavaScript:/VBScript:)', () => {
+      expect(hasXSSPattern('JavaScript: 중급 이상 (경력 3년)')).toBe(false);
+      expect(hasXSSPattern('VBScript: 레거시 유지보수')).toBe(false);
+    });
+
+    it('실제 CSS expression XSS는 여전히 차단(콜론 컨텍스트)', () => {
+      expect(hasXSSPattern('<div style="width:expression(alert(1))">')).toBe(true);
+    });
+
+    it('부등호/이모티콘/태그명 단어 통과(bare < 미차단)', () => {
+      expect(hasXSSPattern('조건 a < b, 1<2, x<=y, if(a<b){}')).toBe(false);
+      expect(hasXSSPattern('우리팀 최고 <3 // 헤어짐 </3')).toBe(false);
+      expect(hasXSSPattern('script 작성법을 알려주세요')).toBe(false);
+      expect(hasXSSPattern('iframe 사용법 문의')).toBe(false);
+      expect(hasXSSPattern('공지 <br> 흐름 -> 결과, <- 이전 단계')).toBe(false);
+      expect(hasXSSPattern('<details>요약 토글</details> 사용')).toBe(false);
+    });
+  });
+
+  describe('sanitizeInput — 절단형 위험태그 제거', () => {
+    it('닫는 > 없는 절단 위험태그도 제거', () => {
+      expect(sanitizeInput('hi<script src=//evil.com/x.js')).toBe('hi');
+      expect(sanitizeInput('x<iframe src=//evil')).toBe('x');
+    });
+
+    it('위험태그 아닌 부등호는 보존', () => {
+      expect(sanitizeInput('a<b 비교')).toBe('a<b 비교');
+    });
+  });
+});
