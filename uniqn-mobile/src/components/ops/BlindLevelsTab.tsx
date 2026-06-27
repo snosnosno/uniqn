@@ -124,7 +124,7 @@ export function BlindLevelsTab({ tournamentId }: BlindLevelsTabProps) {
         renderItem={({ item, index }: { item: OpsBlindLevelInput; index: number }) => (
           <Pressable
             onPress={() => setForm({ mode: 'edit', index })}
-            accessibilityRole="button"
+            accessibilityLabel={`${index + 1}번 레벨 편집`}
             className="mb-2 flex-row items-center rounded-lg border border-gray-200 bg-white p-3 active:opacity-70 dark:border-gray-700 dark:bg-gray-900"
           >
             <Text className="w-8 font-sans-semibold text-sm text-secondary-500 dark:text-secondary-400">
