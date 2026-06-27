@@ -82,7 +82,7 @@
 
 ### B7 [HIGH] ±1분 adjust 상태분기 + 부호 규약
 
-- `ops_clock_adjust(p_tournament_id, p_actor_id, p_delta_sec int)`: **부호 규약 `p_delta_sec>0 = 잔여시간 증가`**. `is_running`이면 `level_started_at -= make_interval(secs => p_delta_sec)`(앵커 과거로→잔여 증가), `paused`(is_running=false)면 `paused_remaining_sec := GREATEST(COALESCE(paused_remaining_sec,0) + p_delta_sec, 0)`. event `level_set` payload `{adjust_sec}`.
+- `ops_clock_adjust(p_tournament_id, p_actor_id, p_delta_sec int)`: **부호 규약 `p_delta_sec>0 = 잔여시간 증가`**. `is_running`이면 `level_started_at += make_interval(secs => p_delta_sec)`(앵커 **미래로**→경과 감소→잔여 증가. ⚠️ 초안의 `-=`는 부호 오기, 구현은 `+=`), `paused`(is_running=false)면 `paused_remaining_sec := GREATEST(COALESCE(paused_remaining_sec,0) + p_delta_sec, 0)`. event `level_set` payload `{adjust_sec}`.
 - pgTAP: running+adjust(+60→잔여 +60)·paused+adjust(+60→paused_remaining +60)·부호 단언. computeClockRemaining 단위테스트에도 동일.
 
 ### B8 [MED] 공개 RPC advisor WARN 화이트리스트
