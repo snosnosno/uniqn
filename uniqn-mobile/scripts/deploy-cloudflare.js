@@ -127,9 +127,17 @@ try {
   // git 없으면 기본값 사용
 }
 
+// CF Pages 프로젝트명 — 멀티 프로젝트 지원(메인 앱 / ops 전광판 등). 기본값=uniqn-app.
+// 우선순위: CLI `--project-name=<name>`(크로스플랫폼) > env CF_PROJECT_NAME > 'uniqn-app'.
+// 예: npm run deploy:ops (= node scripts/deploy-cloudflare.js --project-name=ops-uniqn)
+const projectArg = process.argv.find((a) => a.startsWith('--project-name='));
+const projectName = projectArg
+  ? projectArg.slice('--project-name='.length)
+  : process.env.CF_PROJECT_NAME || 'uniqn-app';
+
 try {
   execSync(
-    `npx wrangler pages deploy dist --project-name=uniqn-app${commitDirtyFlag} --commit-message="${commitMessage}"`,
+    `npx wrangler pages deploy dist --project-name=${projectName}${commitDirtyFlag} --commit-message="${commitMessage}"`,
     {
       stdio: 'inherit',
       cwd: ROOT_DIR,
@@ -141,4 +149,4 @@ try {
 }
 
 console.log('\n✨ 배포 완료!');
-console.log('🔗 https://uniqn-app.pages.dev');
+console.log(`🔗 https://${projectName}.pages.dev`);

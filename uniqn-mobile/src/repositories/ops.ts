@@ -10,6 +10,7 @@ import { SupabaseOpsBlindLevelRepository } from './supabase/OpsBlindLevelReposit
 import { SupabaseOpsClockRepository } from './supabase/OpsClockRepository';
 import { SupabaseOpsLiveStatsRepository } from './supabase/OpsLiveStatsRepository';
 import { SupabaseOpsEventRepository } from './supabase/OpsEventRepository';
+import { SupabaseOpsMonitorRepository } from './supabase/OpsMonitorRepository';
 
 export type {
   IOpsTournamentRepository,
@@ -27,6 +28,7 @@ export type { IOpsBlindLevelRepository } from './interfaces/IOpsBlindLevelReposi
 export type { IOpsClockRepository } from './interfaces/IOpsClockRepository';
 export type { IOpsLiveStatsRepository } from './interfaces/IOpsLiveStatsRepository';
 export type { IOpsEventRepository } from './interfaces/IOpsEventRepository';
+export type { IOpsMonitorRepository } from './interfaces/IOpsMonitorRepository';
 
 export { SupabaseOpsTournamentRepository } from './supabase/OpsTournamentRepository';
 export { SupabaseOpsParticipantRepository } from './supabase/OpsParticipantRepository';
@@ -36,6 +38,7 @@ export { SupabaseOpsBlindLevelRepository } from './supabase/OpsBlindLevelReposit
 export { SupabaseOpsClockRepository } from './supabase/OpsClockRepository';
 export { SupabaseOpsLiveStatsRepository } from './supabase/OpsLiveStatsRepository';
 export { SupabaseOpsEventRepository } from './supabase/OpsEventRepository';
+export { SupabaseOpsMonitorRepository } from './supabase/OpsMonitorRepository';
 
 /** 프로덕션 싱글톤. */
 export const opsTournamentRepository = new SupabaseOpsTournamentRepository();
@@ -46,3 +49,4 @@ export const opsBlindLevelRepository = new SupabaseOpsBlindLevelRepository();
 export const opsClockRepository = new SupabaseOpsClockRepository();
 export const opsLiveStatsRepository = new SupabaseOpsLiveStatsRepository();
 export const opsEventRepository = new SupabaseOpsEventRepository();
+export const opsMonitorRepository = new SupabaseOpsMonitorRepository();

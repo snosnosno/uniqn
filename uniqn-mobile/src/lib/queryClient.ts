@@ -576,6 +576,8 @@ export const queryKeys = {
       [...queryKeys.ops.all, 'blindLevels', tournamentId] as const,
     liveStats: (tournamentId: string) => [...queryKeys.ops.all, 'liveStats', tournamentId] as const,
     events: (tournamentId: string) => [...queryKeys.ops.all, 'events', tournamentId] as const,
+    // 1c-3 — 공개 모니터(전광판). 토큰 스코프 스냅샷(anon 폴링).
+    monitor: (token: string) => [...queryKeys.ops.all, 'monitor', token] as const,
   },
 } as const;
 

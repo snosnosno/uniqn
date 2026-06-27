@@ -11,6 +11,7 @@ import {
   LiveStatsPanel,
   BlindLevelsTab,
   HistoryTab,
+  MonitorLinkButton,
 } from '@/components/ops';
 import {
   useOpsTournament,
@@ -261,6 +262,9 @@ export default function OpsTournamentDetailScreen() {
 
           {/* 라이브 통계판(서버 단일소스) */}
           <LiveStatsPanel tournamentId={tournamentId} />
+
+          {/* 공개 모니터(전광판) 링크 */}
+          <MonitorLinkButton tournamentId={tournamentId} monitorToken={tournament.monitorToken} />
 
           <View className="mx-1 mt-3 flex-row items-center justify-between rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
             <Text className="text-content-primary dark:text-off-white">등록(SUBSCRIPTIONS)</Text>

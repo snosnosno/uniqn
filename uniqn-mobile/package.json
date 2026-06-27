@@ -30,6 +30,7 @@
     "audit": "npm audit",
     "audit:fix": "npm audit fix",
     "deploy:cloudflare": "node scripts/deploy-cloudflare.js",
+    "deploy:ops": "node scripts/deploy-cloudflare.js --project-name=ops-uniqn",
     "release:sync": "node scripts/sync-app-version.js",
     "release:sync:dry": "node scripts/sync-app-version.js --dry-run",
     "release:check": "node scripts/check-version-consistency.js",
