@@ -1224,6 +1224,94 @@ export type Database = {
           },
         ];
       };
+      ops_blind_levels: {
+        Row: {
+          ante: number;
+          big_blind: number;
+          created_at: string;
+          duration_sec: number;
+          id: string;
+          is_break: boolean;
+          level: number;
+          small_blind: number;
+          sort: number;
+          tournament_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          ante?: number;
+          big_blind?: number;
+          created_at?: string;
+          duration_sec: number;
+          id?: string;
+          is_break?: boolean;
+          level: number;
+          small_blind?: number;
+          sort: number;
+          tournament_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          ante?: number;
+          big_blind?: number;
+          created_at?: string;
+          duration_sec?: number;
+          id?: string;
+          is_break?: boolean;
+          level?: number;
+          small_blind?: number;
+          sort?: number;
+          tournament_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ops_blind_levels_tournament_id_fkey';
+            columns: ['tournament_id'];
+            isOneToOne: false;
+            referencedRelation: 'ops_tournaments';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      ops_clock: {
+        Row: {
+          created_at: string;
+          current_level_sort: number;
+          is_running: boolean;
+          level_started_at: string | null;
+          paused_remaining_sec: number | null;
+          tournament_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          current_level_sort?: number;
+          is_running?: boolean;
+          level_started_at?: string | null;
+          paused_remaining_sec?: number | null;
+          tournament_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          current_level_sort?: number;
+          is_running?: boolean;
+          level_started_at?: string | null;
+          paused_remaining_sec?: number | null;
+          tournament_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ops_clock_tournament_id_fkey';
+            columns: ['tournament_id'];
+            isOneToOne: true;
+            referencedRelation: 'ops_tournaments';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       ops_events: {
         Row: {
           actor_device: string | null;
@@ -1264,6 +1352,65 @@ export type Database = {
             foreignKeyName: 'ops_events_tournament_id_fkey';
             columns: ['tournament_id'];
             isOneToOne: false;
+            referencedRelation: 'ops_tournaments';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      ops_live_stats: {
+        Row: {
+          average_stack: number;
+          avg_stack_bb: number;
+          entries: number;
+          knockout_pool: number | null;
+          playing: number;
+          prize_pool: number;
+          reentries_total: number;
+          seats_free: number;
+          seats_total: number;
+          tables_open: number;
+          total_chips: number;
+          tournament_id: string;
+          unique_players: number;
+          updated_at: string;
+        };
+        Insert: {
+          average_stack?: number;
+          avg_stack_bb?: number;
+          entries?: number;
+          knockout_pool?: number | null;
+          playing?: number;
+          prize_pool?: number;
+          reentries_total?: number;
+          seats_free?: number;
+          seats_total?: number;
+          tables_open?: number;
+          total_chips?: number;
+          tournament_id: string;
+          unique_players?: number;
+          updated_at?: string;
+        };
+        Update: {
+          average_stack?: number;
+          avg_stack_bb?: number;
+          entries?: number;
+          knockout_pool?: number | null;
+          playing?: number;
+          prize_pool?: number;
+          reentries_total?: number;
+          seats_free?: number;
+          seats_total?: number;
+          tables_open?: number;
+          total_chips?: number;
+          tournament_id?: string;
+          unique_players?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ops_live_stats_tournament_id_fkey';
+            columns: ['tournament_id'];
+            isOneToOne: true;
             referencedRelation: 'ops_tournaments';
             referencedColumns: ['id'];
           },
@@ -2451,6 +2598,10 @@ export type Database = {
       fn_cleanup_rate_limits: { Args: never; Returns: number };
       fn_expire_by_last_work_date: { Args: never; Returns: number };
       fn_expire_fixed_postings_batch: { Args: never; Returns: number };
+      fn_ops_recompute_live_stats: {
+        Args: { p_tournament_id: string };
+        Returns: undefined;
+      };
       fn_send_review_reminders: { Args: never; Returns: number };
       get_job_posting_stats: {
         Args: { p_owner_id: string };
@@ -2729,6 +2880,53 @@ export type Database = {
         Args: { p_actor_id: string; p_participant_id: string };
         Returns: Json;
       };
+      ops_add_table: {
+        Args: {
+          p_actor_id: string;
+          p_lock_type: Database['public']['Enums']['ops_table_lock_type'];
+          p_name: string;
+          p_priority: number;
+          p_seat_count: number;
+          p_tournament_id: string;
+        };
+        Returns: Json;
+      };
+      ops_assign_seat: {
+        Args: {
+          p_actor_id: string;
+          p_participant_id: string;
+          p_seat_id: string;
+        };
+        Returns: Json;
+      };
+      ops_clock_adjust: {
+        Args: {
+          p_actor_id: string;
+          p_delta_sec: number;
+          p_tournament_id: string;
+        };
+        Returns: Json;
+      };
+      ops_clock_pause: {
+        Args: { p_actor_id: string; p_tournament_id: string };
+        Returns: Json;
+      };
+      ops_clock_set_level: {
+        Args: { p_actor_id: string; p_sort: number; p_tournament_id: string };
+        Returns: Json;
+      };
+      ops_clock_start: {
+        Args: { p_actor_id: string; p_tournament_id: string };
+        Returns: Json;
+      };
+      ops_close_table: {
+        Args: {
+          p_actor_id: string;
+          p_status: Database['public']['Enums']['ops_table_status'];
+          p_table_id: string;
+        };
+        Returns: Json;
+      };
       ops_create_tournament: {
         Args: {
           p_config: Json;
@@ -2743,6 +2941,26 @@ export type Database = {
         };
         Returns: Json;
       };
+      ops_free_seat: {
+        Args: { p_actor_id: string; p_seat_id: string };
+        Returns: Json;
+      };
+      ops_move_seat: {
+        Args: {
+          p_actor_id: string;
+          p_from_seat_id: string;
+          p_to_seat_id: string;
+        };
+        Returns: Json;
+      };
+      ops_redraw_waitlist_fill: {
+        Args: {
+          p_actor_id: string;
+          p_assignments: Json;
+          p_tournament_id: string;
+        };
+        Returns: Json;
+      };
       ops_register_participant: {
         Args: {
           p_actor_id: string;
@@ -2752,6 +2970,22 @@ export type Database = {
           p_phone: string;
           p_tournament_id: string;
         };
+        Returns: Json;
+      };
+      ops_set_blind_levels: {
+        Args: { p_actor_id: string; p_levels: Json; p_tournament_id: string };
+        Returns: Json;
+      };
+      ops_set_table_lock: {
+        Args: {
+          p_actor_id: string;
+          p_lock_type: Database['public']['Enums']['ops_table_lock_type'];
+          p_table_id: string;
+        };
+        Returns: Json;
+      };
+      ops_set_table_priority: {
+        Args: { p_actor_id: string; p_priority: number; p_table_id: string };
         Returns: Json;
       };
       ops_set_tournament_status: {
