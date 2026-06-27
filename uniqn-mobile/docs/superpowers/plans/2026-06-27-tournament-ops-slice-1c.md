@@ -44,6 +44,78 @@
 
 ---
 
+## 0.5 적대 리뷰 반영 — 필수 수정 (구현자 우선 적용, 본 절이 이하 본문보다 우선)
+
+> 5렌즈 적대 리뷰(2026-06-27) = GO_WITH_FIXES(NO_GO 0). 아래 수정이 본문 §1~Phase보다 **우선**한다. 충돌 시 본 절을 따른다.
+
+### B1 [CRITICAL] avg_stack_bb NOT NULL + big_blind=0 → 23502 등록 롤백 방지
+
+- 재계산식: `avg_stack_bb = COALESCE(average_stack::numeric / NULLIF(v_big_blind, 0), 0)`. big_blind=0(브레이크·블라인드 미설정)에서 NULL→0 강제. **이게 빠지면 블라인드 설정 전 모든 워크인 등록·리바이가 23502로 롤백(1a 등록데스크 회귀)**.
+- pgTAP RED 선추가: ①블라인드 미설정 대회 워크인 등록 성공 + avg_stack_bb=0, ②브레이크(bb=0) 리바이 성공 + avg_stack_bb=0.
+
+### B2 [CRITICAL] set_blind_levels 전체교체 시 클럭 앵커 보호
+
+- `ops_set_blind_levels`는 `SELECT … FROM ops_tournaments WHERE id=p_tournament_id FOR UPDATE`로 클럭 RPC와 직렬화.
+- 교체 후 `ops_clock.current_level_sort := LEAST(GREATEST(current_level_sort,1), v_new_count)` clamp. clamp로 값이 바뀌면 `level_started_at=now()`, `is_running=false`, `paused_remaining_sec=NULL`(안전 재앵커: 틀린 블라인드/NaN 카운트다운 차단), ops_events payload `{reanchored:true}`.
+- **결정: clamp+재앵커 채택**(running 중 거부보다 유연). UI는 진행 중 편집 시 확인 다이얼로그(impeccable §12).
+- `computeClockRemaining`: 현재 sort의 blind level 행이 없으면 `{remainingSec:0, isExpired:false, levelMissing:true}` 안전폴백(blank/NaN 아님).
+- pgTAP: 스케줄 축소(N<sort) 후 current_level_sort clamp·재앵커 단언.
+
+### B3 [HIGH] live_stats 트리거 래퍼 함수 (인자 전달 불가 해소 + 마이그 순서)
+
+- 본체 `fn_ops_recompute_live_stats(p_tournament_id uuid) RETURNS void` + **별도 트리거 래퍼** `fn_ops_live_stats_recompute_trigger() RETURNS trigger`(SECDEF, `SET search_path=public,pg_temp`): NEW/OLD에서 tournament_id 추출 → 본체 호출 → `RETURN COALESCE(NEW, OLD)`. (트리거는 인자 없는 RETURNS trigger여야 하므로 본체를 직접 부착 불가.)
+- 트리거 부착: `ops_participants`·`ops_seats`·`ops_tables`·`ops_blind_levels`(AFTER INSERT/UPDATE/DELETE FOR EACH ROW) + `ops_clock`(AFTER UPDATE `WHEN (OLD.current_level_sort IS DISTINCT FROM NEW.current_level_sort)`).
+- **마이그 순서**: 이 트리거들은 함수 정의 이후 마이그(Task 3)에 배치. **Task 1 테이블 마이그엔 init 트리거(`fn_ops_init_derived_rows`)만**(재계산 트리거 넣으면 함수 미존재로 CREATE TRIGGER 실패).
+- **이중 재계산 제거**: 클럭/블라인드 RPC는 recompute를 **명시 호출하지 않음**(트리거 담당). 본문 §1.3/Task 3의 "클럭 변이 말미 recompute 호출" 문구 폐기.
+
+### B4 [HIGH] 토큰 생성 = hex (base64url 폐기)
+
+- 모든 토큰: `encode(gen_random_bytes(24), 'hex')`(48자, 192bit, URL-safe). base64url은 Postgres 미지원(`unrecognized encoding`). `gen_random_bytes`=pgcrypto(extensions)→해당 RPC `SET search_path=public,extensions,pg_temp`.
+
+### B5 [HIGH] 생성타입 파일 정정
+
+- 도메인 camelCase 타입은 **`src/types/ops.ts`에만** 추가(실사용처). 생성 DB 타입(`src/types/supabase.ts`)은 **prod 적용 후 MCP generate_typescript_types로 정합**(문서/IDE용; 클라가 `createClient<Database>` 미사용이라 런타임 타입강제 없음). `src/utils/supabase.ts`(헬퍼파일)는 **편집 대상 아님**. 본문 §4/Task 5의 utils/supabase.ts 항목 폐기.
+
+### B6 [HIGH] pgTAP 검증 명령 정정 (전 Task·게이트 공통)
+
+- **`npm run db:reset && npm run test:db:helpers && npx supabase test db`**. db reset이 `ops_helpers.sql`(ops_test_seed/set_user)을 지우므로 **매 reset 후 helpers 재적재 필수**. 신규 ops 헬퍼 추가 시 `test:db:helpers` 스크립트에 등록 확인.
+
+### B7 [HIGH] ±1분 adjust 상태분기 + 부호 규약
+
+- `ops_clock_adjust(p_tournament_id, p_actor_id, p_delta_sec int)`: **부호 규약 `p_delta_sec>0 = 잔여시간 증가`**. `is_running`이면 `level_started_at -= make_interval(secs => p_delta_sec)`(앵커 과거로→잔여 증가), `paused`(is_running=false)면 `paused_remaining_sec := GREATEST(COALESCE(paused_remaining_sec,0) + p_delta_sec, 0)`. event `level_set` payload `{adjust_sec}`.
+- pgTAP: running+adjust(+60→잔여 +60)·paused+adjust(+60→paused_remaining +60)·부호 단언. computeClockRemaining 단위테스트에도 동일.
+
+### B8 [MED] 공개 RPC advisor WARN 화이트리스트
+
+- `ops_get_monitor_snapshot`·`ops_get_player_view`는 SECDEF+anon GRANT라 advisor `anon_security_definer_function_executable` WARN을 **불가피하게** 발생(반환 화이트리스트 투영으로 유출 아님). Phase 2/3 prod 게이트는 "신규 ERROR 0 + SECDEF anon-executable = 이 2함수만(화이트리스트)"로 재정의. 마이그 주석에 수용 근거 명기.
+
+### B9 [MED] 모니터/플레이어뷰 상태범위 = 1c 가용으로 한정
+
+- 1c-3 모니터: 시작전/진행/일시정지/브레이크/레벨전환만. **종료(우승자/상금) 제외**(1f 의존).
+- 1c-4 플레이어뷰: 내 자리·내 스택·라이브 클럭·블라인드 카운트다운만. **탈락 ITM·재진입 배너 제외**(bust=1d, 상금=1f). Self-Review 미해결에 의존성 명기.
+
+### 핵심 비블로킹 반영
+
+- **bigint**: `total_chips`·`prize_pool`·`average_stack` 전부 bigint(오버플로 방지). `avg_stack_bb`만 numeric.
+- **search_path**: 트리거 함수(recompute 본체·래퍼)·init 트리거 모두 `SECURITY DEFINER SET search_path=public,pg_temp`(토큰 생성 RPC만 extensions 포함). Phase 1 게이트에 `function_search_path_mutable 0` 확인.
+- **CASCADE 가드**: `fn_ops_recompute_live_stats` 진입부 `IF NOT EXISTS(SELECT 1 FROM ops_tournaments WHERE id=p_tournament_id) THEN RETURN; END IF`(대회 삭제 중 자식 DELETE 트리거 FK 위반 방지). 대회 삭제 회귀 pgTAP 1건.
+- **backfill 재계산**: 재계산 함수+트리거 생성 직후(Task 3 말미) `SELECT public.fn_ops_recompute_live_stats(id) FROM public.ops_tournaments;`(기존 대회 0표시 방지, 멱등).
+- **REPLICA IDENTITY**: clock·live_stats는 PK=tournament_id라 DEFAULT 충분. `ops_blind_levels`는 Realtime DELETE 비의존(mutation onSuccess invalidate) 또는 `REPLICA IDENTITY FULL`. Task 4에 1줄 기록.
+- **공개 라우트**: `app/(public)/monitor/[token].tsx`·`app/(public)/live/[claim_token].tsx`((public) 그룹=requiredAuth:false). 모니터도 **token path 파라미터**(대회 UUID·?token 쿼리 제거→referrer/로그 유출 축소). anon 렌더 검증(useAuthGuard routeGroup=null 통과) 구현 직전 실측.
+- **HISTORY 탭**: Phase 1에 최소 HISTORY 탭(ops_events `ORDER BY created_at DESC` 페이지네이션, 신규 RPC 불요) → 5탭(PLAYERS/STATUS/TABLES/LEVELS/HISTORY). 클럭 이벤트 가시화(설계 §3.1 IA 1급).
+- **NULL/짧은 토큰 가드**: 공개 RPC 진입부 `IF p_token IS NULL OR char_length(p_token)<32 THEN RAISE 'OPS_*_TOKEN_INVALID' P0001; END IF`. 클라 폴링 하한 ≥3s.
+- **이중 진실원 제거**: STATUS/통계는 서버 live_stats 단일소스. 클라 computeOpsPartialStats는 모니터/플레이어 폴백 격리 또는 제거. average_stack 서버=정수나눗셈(round), 클라 표시 동일.
+- **authed offset 일관**: 운영자 클럭 읽기도 server_now 동봉(`ops_get_clock` RPC 또는 PostgREST Date 헤더)로 offset 적용(모니터와 동일 불변식). 비용 1필드.
+
+### 결정 (사용자 위임 → 기본값 확정)
+
+- **토큰 회전**: 발급=멱등 재반환(인쇄 QR 보존). 유출 대응=별도 `ops_rotate_*_token`(force, 구토큰 즉시 무효). 회전 시 ops_events 감사.
+- **폴링 vs Broadcast**: Phase 1(운영자 STATUS)은 authed postgres_changes=즉시(무관). 모니터/플레이어 4s 폴링의 일시정지/레벨변경 지연(최대 4s 시간역행 점프)은 **Phase 2 웹QA서 재평가** — 허용 불가 판정 시 클럭 상태전이만 anon 토큰 Realtime Broadcast(public topic) 보강.
+- **QR/도메인**: QR 슬립·모니터 링크 = **배포 origin 동적 생성**(`window.location.origin`). B2(ops.uniqn.app) 경성의존 제거.
+- **ENTRIES 라벨**: `entries`=총 엔트리(참가자 행 수=바이인 수). `reentries_total` 별도 표기(K-Holdem 패리티).
+
+---
+
 ## 1. 데이터 모델 (1c 신규)
 
 ### 1.1 `ops_blind_levels` (블라인드 구조)
@@ -126,8 +198,8 @@ updated_at timestamptz NOT NULL DEFAULT now()
 
 - **모니터**(`ops_get_monitor_snapshot(p_monitor_token)`): `monitor_token` 일치 1행 검증 → **비-PII 스냅샷만** 반환(대회명/venue/게임타입/등록상태 + clock 상태 + live_stats 집계 + `server_now`). 참가자 PII·claim_token 절대 미포함. `GRANT EXECUTE TO anon`. `is_ops_member` **호출 안 함**(anon poison 회피).
 - **플레이어뷰**(`ops_get_player_view(p_claim_token)`): `claim_token` 일치 1행 검증 → **본인 안전필드만**(entry_number·name·status·chips·table_no·seat_no·finish_position·prize_amount) + 공개 clock/stats 부분집합 + `server_now`. 타 참가자·claim_token·phone 미포함. `GRANT EXECUTE TO anon`. rate-limit(토큰당 호출, 후속 강화 여지).
-- 두 RPC는 SECDEF지만 **민감 정보를 반환값 단계에서 화이트리스트 투영**하므로 RLS 우회가 유출로 이어지지 않음.
-- 토큰 형식: `encode(gen_random_bytes(24), 'base64url')` 류 고엔트로피(추측 불가). capability-URL 모델(토큰 아는 자만 접근) — 설계 의도와 일치.
+- 두 RPC는 SECDEF지만 **민감 정보를 반환값 단계에서 화이트리스트 투영**하므로 RLS 우회가 유출로 이어지지 않음. 진입부 NULL/짧은 토큰 가드(§0.5).
+- 토큰 형식: `encode(gen_random_bytes(24), 'hex')`(48자 hex, 192bit, URL-safe — **base64url은 Postgres 미지원**, §0.5 B4). capability-URL 모델(토큰 아는 자만 접근). 발급=멱등, 유출대응=별도 force-rotate(§0.5).
 
 ---
 
@@ -146,8 +218,8 @@ updated_at timestamptz NOT NULL DEFAULT now()
 - Create `src/domains/ops/clock/computeClockRemaining.ts` — 순수 카운트다운.
 - Create `src/domains/ops/clock/__tests__/computeClockRemaining.test.ts`.
 - Create `src/domains/ops/opsLiveStats.ts`(또는 opsStats 확장) — 클라 파생 헬퍼(서버값 우선, 표시 포맷).
-- Modify `src/types/ops.ts` — `OpsBlindLevel`·`OpsClock`·`OpsLiveStats` 타입.
-- Modify `src/utils/supabase.ts` 타입(`supabase.ts` 생성타입) — **수술적 additive**(ops_blind_levels/ops_clock/ops_live_stats Row/Insert/Update만. prod 적용 후 MCP gen 정합).
+- Modify `src/types/ops.ts` — `OpsBlindLevel`·`OpsClock`·`OpsLiveStats` 타입(**실사용 도메인 타입은 여기에만**, §0.5 B5).
+- 생성 DB 타입 `src/types/supabase.ts`는 **prod 적용 후 MCP generate_typescript_types로 정합**(문서/IDE용). `src/utils/supabase.ts`(헬퍼파일)는 편집 대상 아님.
 - Create `src/schemas/opsBlindLevel.schema.ts` — Zod(sb/bb/ante/duration·xss).
 - Modify `src/errors/AppError.ts` — E6116~ 신규 코드+한글 메시지.
 - Modify `src/repositories/supabase/opsRpcError.ts` — PREFIX_MAP 신규 접두사.
@@ -165,12 +237,12 @@ updated_at timestamptz NOT NULL DEFAULT now()
 - Create `src/components/ops/BlindLevelsTab.tsx`(TablesTab master/detail 패턴)·`BlindLevelForm.tsx`·`ClockControl.tsx`(STATUS 상단 클럭+제어)·`LiveStatsPanel.tsx`(STATUS 풀대시보드).
 - Modify `app/(ops)/tournaments/[id].tsx` — 세그먼트에 `levels` 추가(4탭) + STATUS를 `ClockControl`+`LiveStatsPanel`로 교체.
 
-**Phase 2/3(요약 — 세부 just-in-time):**
+**Phase 2/3(요약 — 세부 just-in-time, §0.5 B9 상태범위 한정):**
 
-- Create `app/monitor/[id].tsx`(공개)·`app/live/[claim_token].tsx`(공개) — 최상위(=(ops) 인증게이트 우회).
-- Migrations: `…_ops_1c3_monitor_rpcs.sql`·`…_ops_1c4_player_view_rpcs.sql`(+grants, anon GRANT 예외).
-- Modify `scripts/deploy-cloudflare.js`·`wrangler.toml`·`package.json`(deploy:ops).
-- Hooks: `useMonitorSnapshot.ts`·`usePlayerView.ts`(폴링+클럭 틱).
+- Create `app/(public)/monitor/[token].tsx`·`app/(public)/live/[claim_token].tsx`((public) 그룹=requiredAuth:false, 모니터도 token path). anon 렌더 실측.
+- Migrations: `…_ops_1c3_monitor_rpcs.sql`·`…_ops_1c4_player_view_rpcs.sql`(공개 RPC 2종만 anon GRANT, advisor WARN 화이트리스트 §0.5 B8).
+- Modify `scripts/deploy-cloudflare.js`(`--project-name=${process.env.CF_PROJECT_NAME ?? 'uniqn-app'}`)·`wrangler.toml`·`package.json`(deploy:ops). ops.uniqn.app 생성=사용자 게이트(비차단; QR/링크는 배포 origin 동적생성).
+- Hooks: `useMonitorSnapshot.ts`·`usePlayerView.ts`(≥3s 폴링+클럭 틱+offset).
 
 ---
 
