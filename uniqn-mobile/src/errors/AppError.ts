@@ -192,6 +192,7 @@ export const ERROR_CODES = {
   OPS_BLIND_LEVELS_INVALID: 'E6116', // 블라인드 레벨 설정 부정확(빈 배열·duration<=0·음수)
   OPS_NO_BLIND_LEVELS: 'E6117', // 블라인드 레벨 미설정 상태에서 클럭 시작 시도
   OPS_INVALID_LEVEL: 'E6118', // 존재하지 않는 레벨 sort 로 이동
+  OPS_MONITOR_TOKEN_INVALID: 'E6119', // 모니터(전광판) 토큰 무효/만료(NULL·길이<32·미존재)
 
   // 알 수 없는 에러 (E7xxx)
   UNKNOWN: 'E7000',
@@ -221,6 +222,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.OPS_BLIND_LEVELS_INVALID]: '블라인드 레벨 설정이 올바르지 않습니다',
   [ERROR_CODES.OPS_NO_BLIND_LEVELS]: '블라인드 레벨을 먼저 설정해주세요',
   [ERROR_CODES.OPS_INVALID_LEVEL]: '존재하지 않는 레벨입니다',
+  [ERROR_CODES.OPS_MONITOR_TOKEN_INVALID]: '유효하지 않은 모니터 링크입니다',
 
   // 네트워크
   [ERROR_CODES.NETWORK_OFFLINE]: '인터넷 연결을 확인해주세요',

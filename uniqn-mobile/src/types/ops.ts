@@ -161,3 +161,52 @@ export interface OpsLiveStats {
   knockoutPool: number | null;
   updatedAt: string;
 }
+
+/** 모니터 스냅샷 블라인드 레벨(공개 RPC 부분집합 — 비-PII). */
+export interface OpsMonitorLevel {
+  level: number;
+  smallBlind: number;
+  bigBlind: number;
+  ante: number;
+  durationSec: number;
+  isBreak: boolean;
+}
+
+/**
+ * 공개 모니터(전광판) 스냅샷 (1c-3) — `ops_get_monitor_snapshot(p_monitor_token)` anon RPC 반환.
+ * **비-PII 화이트리스트 투영**: 참가자 PII·claim_token·monitor_token·owner 미포함(집계만).
+ * RPC 가 camelCase 키로 직접 반환(toCamelCase shallow 회피) → 그대로 소비.
+ */
+export interface OpsMonitorSnapshot {
+  tournament: {
+    name: string;
+    venue: string | null;
+    eventDate: string | null;
+    gameType: string;
+    status: string;
+    color: string | null;
+    registrationOpen: boolean;
+  };
+  clock: {
+    currentLevelSort: number;
+    levelStartedAt: string | null;
+    isRunning: boolean;
+    pausedRemainingSec: number | null;
+  };
+  currentLevel: OpsMonitorLevel | null;
+  nextLevel: OpsMonitorLevel | null;
+  stats: {
+    playing: number;
+    entries: number;
+    reentriesTotal: number;
+    tablesOpen: number;
+    seatsTotal: number;
+    seatsFree: number;
+    totalChips: number;
+    averageStack: number;
+    avgStackBb: number;
+    prizePool: number;
+  };
+  /** 서버 시각(ISO) — 클라 offset 보정용(기기 시계 오차 보정). */
+  serverNow: string;
+}

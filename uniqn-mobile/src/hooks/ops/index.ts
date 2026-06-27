@@ -11,6 +11,8 @@ export { useOpsBlindLevels } from './useOpsBlindLevels';
 export { useOpsLiveStats } from './useOpsLiveStats';
 export { useOpsClock } from './useOpsClock';
 export { useOpsEvents } from './useOpsEvents';
+export { useMonitorSnapshot } from './useMonitorSnapshot';
+export { useRotateMonitorToken } from './useOpsMonitorToken';
 export {
   useCreateOpsTournament,
   useSetTournamentStatus,
