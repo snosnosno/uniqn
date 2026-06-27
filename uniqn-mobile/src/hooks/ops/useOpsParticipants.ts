@@ -1,13 +1,12 @@
 /**
- * ops 참가자 읽기 훅 + STATUS 부분통계 파생(클라이언트 계산).
+ * ops 참가자 읽기 훅.
+ * STATUS 통계는 1c 부터 서버 단일소스(useOpsLiveStats) — 클라 파생(useOpsPartialStats) 폐기.
  */
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { opsParticipantRepository } from '@/repositories/ops';
 import { createRealtimeSubscription } from '@/utils/supabase';
-import { computeOpsPartialStats } from '@/domains/ops';
-import type { OpsParticipant, OpsTournament, OpsPartialStats } from '@/types/ops';
 
 export function useOpsParticipants(tournamentId: string | undefined) {
   const queryClient = useQueryClient();
@@ -37,15 +36,4 @@ export function useOpsParticipants(tournamentId: string | undefined) {
     error: query.error,
     refetch: query.refetch,
   };
-}
-
-/** STATUS 부분통계 — 참가자 + 대회 비용설정에서 순수 계산. tournament 없으면 null. */
-export function useOpsPartialStats(
-  tournament: OpsTournament | null,
-  participants: readonly OpsParticipant[]
-): OpsPartialStats | null {
-  return useMemo(() => {
-    if (!tournament) return null;
-    return computeOpsPartialStats(participants, tournament);
-  }, [tournament, participants]);
 }

@@ -1,15 +1,20 @@
 /** ops 대회 상세 (1a) — PLAYERS / STATUS 세그먼트. RLS 단일 진실(없으면 빈 화면). */
 import { useState } from 'react';
-import { View, Text, TextInput, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Pressable, ActivityIndicator, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { AppFlashList } from '@/components/ui/AppFlashList';
 import { StackHeader } from '@/components/headers';
-import { TablesTab } from '@/components/ops';
+import {
+  TablesTab,
+  ClockControl,
+  LiveStatsPanel,
+  BlindLevelsTab,
+  HistoryTab,
+} from '@/components/ops';
 import {
   useOpsTournament,
   useOpsParticipants,
-  useOpsPartialStats,
   useOpsTables,
   useRegisterParticipant,
   useAddRebuy,
@@ -21,24 +26,12 @@ import type { OpsParticipant, OpsTournamentStatus } from '@/types/ops';
 
 const fmt = (n: number) => n.toLocaleString('ko-KR');
 
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <View className="m-1 flex-1 rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
-      <Text className="text-xs text-secondary-500 dark:text-secondary-400">{label}</Text>
-      <Text className="mt-1 font-sans-semibold text-lg text-content-primary dark:text-off-white">
-        {value}
-      </Text>
-    </View>
-  );
-}
-
 export default function OpsTournamentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const tournamentId = id ?? '';
   const { tournament, isLoading } = useOpsTournament(tournamentId);
   const { participants } = useOpsParticipants(tournamentId);
   const { tables } = useOpsTables(tournamentId);
-  const stats = useOpsPartialStats(tournament, participants);
 
   const registerMut = useRegisterParticipant(tournamentId);
   const rebuyMut = useAddRebuy(tournamentId);
@@ -46,7 +39,7 @@ export default function OpsTournamentDetailScreen() {
   const toggleMut = useToggleRegistration(tournamentId);
   const statusMut = useSetTournamentStatus(tournamentId);
 
-  const [tab, setTab] = useState<'players' | 'status' | 'tables'>('players');
+  const [tab, setTab] = useState<'players' | 'status' | 'tables' | 'levels' | 'history'>('players');
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState('');
   const [nationality, setNationality] = useState('');
@@ -106,9 +99,9 @@ export default function OpsTournamentDetailScreen() {
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
       <StackHeader title={tournament.name} fallbackHref="/(ops)/tournaments" />
 
-      {/* 세그먼트 */}
+      {/* 세그먼트 (5탭 — 작은 라벨로 가로 폭 절약) */}
       <View className="mx-4 mb-2 mt-1 flex-row rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
-        {(['players', 'status', 'tables'] as const).map((t) => (
+        {(['players', 'status', 'tables', 'levels', 'history'] as const).map((t) => (
           <Pressable
             key={t}
             onPress={() => setTab(t)}
@@ -116,13 +109,18 @@ export default function OpsTournamentDetailScreen() {
             className={`flex-1 items-center rounded-md py-2 ${tab === t ? 'bg-white dark:bg-gray-700' : ''}`}
           >
             <Text
-              className={`text-sm ${tab === t ? 'font-sans-semibold text-content-primary' : 'text-secondary-500 dark:text-secondary-400'}`}
+              numberOfLines={1}
+              className={`text-xs ${tab === t ? 'font-sans-semibold text-content-primary' : 'text-secondary-500 dark:text-secondary-400'}`}
             >
               {t === 'players'
-                ? `PLAYERS (${participants.length})`
+                ? `PLAYERS ${participants.length}`
                 : t === 'status'
                   ? 'STATUS'
-                  : `TABLES (${tables.length})`}
+                  : t === 'tables'
+                    ? `TABLES ${tables.length}`
+                    : t === 'levels'
+                      ? 'LEVELS'
+                      : 'HISTORY'}
             </Text>
           </Pressable>
         ))}
@@ -251,17 +249,18 @@ export default function OpsTournamentDetailScreen() {
           />
         </View>
       ) : tab === 'status' ? (
-        <View className="flex-1 px-3">
-          <View className="flex-row flex-wrap">
-            <StatCard label="PLAYING" value={fmt(stats?.playing ?? 0)} />
-            <StatCard label="ENTRIES" value={fmt(stats?.entries ?? 0)} />
-            <StatCard label="TOTAL CHIPS" value={fmt(stats?.totalChips ?? 0)} />
+        <ScrollView
+          className="flex-1 px-3"
+          contentContainerStyle={{ paddingBottom: 24 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* 서버동기 클럭 제어 */}
+          <View className="mb-2">
+            <ClockControl tournamentId={tournamentId} onNavigateToLevels={() => setTab('levels')} />
           </View>
-          <View className="flex-row flex-wrap">
-            <StatCard label="AVG STACK" value={fmt(stats?.averageStack ?? 0)} />
-            <StatCard label="PRIZE POOL" value={fmt(stats?.prizePool ?? 0)} />
-            <View className="m-1 flex-1" />
-          </View>
+
+          {/* 라이브 통계판(서버 단일소스) */}
+          <LiveStatsPanel tournamentId={tournamentId} />
 
           <View className="mx-1 mt-3 flex-row items-center justify-between rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
             <Text className="text-content-primary dark:text-off-white">등록(SUBSCRIPTIONS)</Text>
@@ -293,9 +292,13 @@ export default function OpsTournamentDetailScreen() {
               ))}
             </View>
           </View>
-        </View>
-      ) : (
+        </ScrollView>
+      ) : tab === 'tables' ? (
         <TablesTab tournamentId={tournamentId} />
+      ) : tab === 'levels' ? (
+        <BlindLevelsTab tournamentId={tournamentId} />
+      ) : (
+        <HistoryTab tournamentId={tournamentId} />
       )}
     </SafeAreaView>
   );

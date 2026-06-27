@@ -575,6 +575,7 @@ export const queryKeys = {
     blindLevels: (tournamentId: string) =>
       [...queryKeys.ops.all, 'blindLevels', tournamentId] as const,
     liveStats: (tournamentId: string) => [...queryKeys.ops.all, 'liveStats', tournamentId] as const,
+    events: (tournamentId: string) => [...queryKeys.ops.all, 'events', tournamentId] as const,
   },
 } as const;
 
