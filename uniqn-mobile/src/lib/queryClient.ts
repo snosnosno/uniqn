@@ -570,6 +570,11 @@ export const queryKeys = {
       [...queryKeys.ops.all, 'forPosting', jobPostingId] as const,
     tables: (tournamentId: string) => [...queryKeys.ops.all, 'tables', tournamentId] as const,
     seats: (tournamentId: string) => [...queryKeys.ops.all, 'seats', tournamentId] as const,
+    // 1c — 클럭/블라인드/라이브 통계
+    clock: (tournamentId: string) => [...queryKeys.ops.all, 'clock', tournamentId] as const,
+    blindLevels: (tournamentId: string) =>
+      [...queryKeys.ops.all, 'blindLevels', tournamentId] as const,
+    liveStats: (tournamentId: string) => [...queryKeys.ops.all, 'liveStats', tournamentId] as const,
   },
 } as const;
 

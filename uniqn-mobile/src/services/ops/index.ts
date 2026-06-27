@@ -3,3 +3,5 @@ export * as opsTournamentService from './opsTournamentService';
 export * as opsParticipantService from './opsParticipantService';
 export * as opsTableService from './opsTableService';
 export * as opsSeatService from './opsSeatService';
+export * as opsClockService from './opsClockService';
+export * as opsBlindLevelService from './opsBlindLevelService';

@@ -6,6 +6,9 @@ import { SupabaseOpsTournamentRepository } from './supabase/OpsTournamentReposit
 import { SupabaseOpsParticipantRepository } from './supabase/OpsParticipantRepository';
 import { SupabaseOpsTableRepository } from './supabase/OpsTableRepository';
 import { SupabaseOpsSeatRepository } from './supabase/OpsSeatRepository';
+import { SupabaseOpsBlindLevelRepository } from './supabase/OpsBlindLevelRepository';
+import { SupabaseOpsClockRepository } from './supabase/OpsClockRepository';
+import { SupabaseOpsLiveStatsRepository } from './supabase/OpsLiveStatsRepository';
 
 export type {
   IOpsTournamentRepository,
@@ -19,14 +22,23 @@ export type {
 } from './interfaces/IOpsParticipantRepository';
 export type { IOpsTableRepository, AddTableInput } from './interfaces/IOpsTableRepository';
 export type { IOpsSeatRepository } from './interfaces/IOpsSeatRepository';
+export type { IOpsBlindLevelRepository } from './interfaces/IOpsBlindLevelRepository';
+export type { IOpsClockRepository } from './interfaces/IOpsClockRepository';
+export type { IOpsLiveStatsRepository } from './interfaces/IOpsLiveStatsRepository';
 
 export { SupabaseOpsTournamentRepository } from './supabase/OpsTournamentRepository';
 export { SupabaseOpsParticipantRepository } from './supabase/OpsParticipantRepository';
 export { SupabaseOpsTableRepository } from './supabase/OpsTableRepository';
 export { SupabaseOpsSeatRepository } from './supabase/OpsSeatRepository';
+export { SupabaseOpsBlindLevelRepository } from './supabase/OpsBlindLevelRepository';
+export { SupabaseOpsClockRepository } from './supabase/OpsClockRepository';
+export { SupabaseOpsLiveStatsRepository } from './supabase/OpsLiveStatsRepository';
 
 /** 프로덕션 싱글톤. */
 export const opsTournamentRepository = new SupabaseOpsTournamentRepository();
 export const opsParticipantRepository = new SupabaseOpsParticipantRepository();
 export const opsTableRepository = new SupabaseOpsTableRepository();
 export const opsSeatRepository = new SupabaseOpsSeatRepository();
+export const opsBlindLevelRepository = new SupabaseOpsBlindLevelRepository();
+export const opsClockRepository = new SupabaseOpsClockRepository();
+export const opsLiveStatsRepository = new SupabaseOpsLiveStatsRepository();

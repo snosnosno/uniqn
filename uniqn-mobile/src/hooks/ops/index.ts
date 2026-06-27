@@ -7,6 +7,9 @@ export {
 export { useOpsParticipants, useOpsPartialStats } from './useOpsParticipants';
 export * from './useOpsTables';
 export * from './useOpsSeats';
+export { useOpsBlindLevels } from './useOpsBlindLevels';
+export { useOpsLiveStats } from './useOpsLiveStats';
+export { useOpsClock } from './useOpsClock';
 export {
   useCreateOpsTournament,
   useSetTournamentStatus,
@@ -23,3 +26,10 @@ export {
   useFreeSeat,
   useRedrawWaitlistFill,
 } from './useOpsMutations';
+export {
+  useSetBlindLevels,
+  useStartClock,
+  usePauseClock,
+  useSetLevel,
+  useAdjustClock,
+} from './useOpsClockMutations';

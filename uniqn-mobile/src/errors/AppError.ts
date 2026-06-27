@@ -188,6 +188,10 @@ export const ERROR_CODES = {
   OPS_TABLE_NOT_OPEN: 'E6113', // redraw/assign 대상 테이블이 open·unlocked 아님
   OPS_INVALID_SEAT_COUNT: 'E6114', // 테이블 좌석수 범위(1~11) 위반
   OPS_INVALID_ASSIGNMENTS: 'E6115', // redraw 배정 목록이 비어 있음
+  // 라이브 운영(ops) 1c — 블라인드/클럭
+  OPS_BLIND_LEVELS_INVALID: 'E6116', // 블라인드 레벨 설정 부정확(빈 배열·duration<=0·음수)
+  OPS_NO_BLIND_LEVELS: 'E6117', // 블라인드 레벨 미설정 상태에서 클럭 시작 시도
+  OPS_INVALID_LEVEL: 'E6118', // 존재하지 않는 레벨 sort 로 이동
 
   // 알 수 없는 에러 (E7xxx)
   UNKNOWN: 'E7000',
@@ -214,6 +218,9 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.OPS_TABLE_NOT_OPEN]: '테이블이 열려 있지 않습니다',
   [ERROR_CODES.OPS_INVALID_SEAT_COUNT]: '좌석 수는 1~11 사이여야 합니다',
   [ERROR_CODES.OPS_INVALID_ASSIGNMENTS]: '배정할 좌석이 없습니다',
+  [ERROR_CODES.OPS_BLIND_LEVELS_INVALID]: '블라인드 레벨 설정이 올바르지 않습니다',
+  [ERROR_CODES.OPS_NO_BLIND_LEVELS]: '블라인드 레벨을 먼저 설정해주세요',
+  [ERROR_CODES.OPS_INVALID_LEVEL]: '존재하지 않는 레벨입니다',
 
   // 네트워크
   [ERROR_CODES.NETWORK_OFFLINE]: '인터넷 연결을 확인해주세요',
