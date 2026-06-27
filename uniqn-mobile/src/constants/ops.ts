@@ -27,3 +27,8 @@ export function getOpsWebOrigin(): string {
 export function getOpsMonitorUrl(token: string): string {
   return `${getOpsWebOrigin()}/monitor/${token}`;
 }
+
+/** 공개 플레이어뷰 URL(QR 슬립). */
+export function getOpsPlayerUrl(token: string): string {
+  return `${getOpsWebOrigin()}/live/${token}`;
+}
