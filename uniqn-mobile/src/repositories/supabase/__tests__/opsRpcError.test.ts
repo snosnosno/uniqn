@@ -73,6 +73,28 @@ describe('mapOpsRpcError (Task S1)', () => {
     expect((err as BusinessError).code).toBe(ERROR_CODES.OPS_SEAT_VERSION_CONFLICT);
   });
 
+  // 1c — 블라인드 레벨 설정 오류 매핑
+  it('OPS_BLIND_LEVELS_INVALID → OPS_BLIND_LEVELS_INVALID', () => {
+    const err = captureThrown({ message: 'OPS_BLIND_LEVELS_INVALID: 블라인드 레벨이 비었습니다' });
+    expect(isBusinessError(err)).toBe(true);
+    expect((err as BusinessError).code).toBe(ERROR_CODES.OPS_BLIND_LEVELS_INVALID);
+  });
+
+  // 1c — 블라인드 미설정 상태 클럭 시작 (BLIND_LEVELS_INVALID 와 상호 부분문자열 아님)
+  it('OPS_NO_BLIND_LEVELS → OPS_NO_BLIND_LEVELS (INVALID 아님)', () => {
+    const err = captureThrown({ message: 'OPS_NO_BLIND_LEVELS: 블라인드 레벨이 없습니다' });
+    expect(isBusinessError(err)).toBe(true);
+    expect((err as BusinessError).code).toBe(ERROR_CODES.OPS_NO_BLIND_LEVELS);
+    expect((err as BusinessError).code).not.toBe(ERROR_CODES.OPS_BLIND_LEVELS_INVALID);
+  });
+
+  // 1c — 존재하지 않는 레벨 (기존 INVALID_* 접두사로 오매핑되지 않음)
+  it('OPS_INVALID_LEVEL → OPS_INVALID_LEVEL', () => {
+    const err = captureThrown({ message: 'OPS_INVALID_LEVEL: 존재하지 않는 레벨 (sort=9)' });
+    expect(isBusinessError(err)).toBe(true);
+    expect((err as BusinessError).code).toBe(ERROR_CODES.OPS_INVALID_LEVEL);
+  });
+
   // 회귀 — PERMISSION_DENIED 는 PREFIX_MAP 밖 별도 분기
   it('PERMISSION_DENIED → BUSINESS_INVALID_STATE + 권한 메시지 (회귀)', () => {
     const err = captureThrown({ message: 'PERMISSION_DENIED' });

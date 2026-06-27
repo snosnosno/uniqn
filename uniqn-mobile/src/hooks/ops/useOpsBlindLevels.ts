@@ -1,20 +1,19 @@
 /**
- * ops 참가자 읽기 훅.
- * STATUS 통계는 1c 부터 서버 단일소스(useOpsLiveStats) — 클라 파생(useOpsPartialStats) 폐기.
+ * ops 블라인드 레벨 읽기 훅 + 리얼타임 구독 (1c).
  */
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
-import { opsParticipantRepository } from '@/repositories/ops';
+import { opsBlindLevelRepository } from '@/repositories/ops';
 import { createRealtimeSubscription } from '@/utils/supabase';
 
-export function useOpsParticipants(tournamentId: string | undefined) {
+export function useOpsBlindLevels(tournamentId: string | undefined) {
   const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: tournamentId
-      ? queryKeys.ops.participants(tournamentId)
-      : [...queryKeys.ops.all, 'participants', 'none'],
-    queryFn: () => opsParticipantRepository.listByTournament(tournamentId as string),
+      ? queryKeys.ops.blindLevels(tournamentId)
+      : [...queryKeys.ops.all, 'blindLevels', 'none'],
+    queryFn: () => opsBlindLevelRepository.listByTournament(tournamentId as string),
     enabled: !!tournamentId,
     staleTime: cachingPolicies.realtime,
   });
@@ -22,16 +21,16 @@ export function useOpsParticipants(tournamentId: string | undefined) {
   useEffect(() => {
     if (!tournamentId) return undefined;
     return createRealtimeSubscription(
-      'ops_participants',
+      'ops_blind_levels',
       `tournament_id=eq.${tournamentId}`,
       () => {
-        queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.ops.blindLevels(tournamentId) });
       }
     );
   }, [tournamentId, queryClient]);
 
   return {
-    participants: query.data ?? [],
+    blindLevels: query.data ?? [],
     isLoading: query.isLoading,
     error: query.error,
     refetch: query.refetch,

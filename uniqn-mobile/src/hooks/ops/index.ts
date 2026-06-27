@@ -4,9 +4,13 @@ export {
   useOpsTournament,
   useOpsTournamentForPosting,
 } from './useOpsTournaments';
-export { useOpsParticipants, useOpsPartialStats } from './useOpsParticipants';
+export { useOpsParticipants } from './useOpsParticipants';
 export * from './useOpsTables';
 export * from './useOpsSeats';
+export { useOpsBlindLevels } from './useOpsBlindLevels';
+export { useOpsLiveStats } from './useOpsLiveStats';
+export { useOpsClock } from './useOpsClock';
+export { useOpsEvents } from './useOpsEvents';
 export {
   useCreateOpsTournament,
   useSetTournamentStatus,
@@ -23,3 +27,10 @@ export {
   useFreeSeat,
   useRedrawWaitlistFill,
 } from './useOpsMutations';
+export {
+  useSetBlindLevels,
+  useStartClock,
+  usePauseClock,
+  useSetLevel,
+  useAdjustClock,
+} from './useOpsClockMutations';

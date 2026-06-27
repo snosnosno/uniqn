@@ -112,3 +112,52 @@ export interface OpsPartialStats {
   averageStack: number;
   prizePool: number;
 }
+
+/** 블라인드 레벨(1c). sort 1..N 연속(ops_set_blind_levels 전체교체가 보장). */
+export interface OpsBlindLevel {
+  id: string;
+  tournamentId: string;
+  level: number;
+  smallBlind: number;
+  bigBlind: number;
+  ante: number;
+  durationSec: number;
+  isBreak: boolean;
+  sort: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 서버 동기 클럭(대회당 1행, 1c). 남은시간은 서버 앵커(levelStartedAt) 파생. */
+export interface OpsClock {
+  tournamentId: string;
+  currentLevelSort: number;
+  /** 현재 레벨 시작 서버 시각(ISO). 일시정지/미시작이면 null */
+  levelStartedAt: string | null;
+  isRunning: boolean;
+  /** 일시정지 시 남은 초 스냅샷 */
+  pausedRemainingSec: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * 파생 라이브 통계(대회당 1행, 1c — 트리거 재계산).
+ * DB 의 bigint 컬럼(totalChips/averageStack/prizePool)·numeric(avgStackBb)은 앱에서 number 취급.
+ */
+export interface OpsLiveStats {
+  tournamentId: string;
+  playing: number;
+  entries: number;
+  uniquePlayers: number;
+  reentriesTotal: number;
+  tablesOpen: number;
+  seatsTotal: number;
+  seatsFree: number;
+  totalChips: number;
+  averageStack: number;
+  avgStackBb: number;
+  prizePool: number;
+  knockoutPool: number | null;
+  updatedAt: string;
+}
