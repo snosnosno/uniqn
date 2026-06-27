@@ -3,13 +3,15 @@
 -- 주의: pgTAP 단일 트랜잭션 내 now()=transaction_timestamp 고정 → 잔여시간 계산 결정적.
 --   잔여 = duration_sec - EXTRACT(EPOCH FROM (now() - level_started_at)).
 BEGIN;
-SELECT plan(10);
+SELECT plan(14);
 
 DO $$
 DECLARE s RECORD;
 BEGIN
   SELECT * INTO s FROM ops_test_seed();
   PERFORM set_config('ops.owner_id',      s.owner_id::text,      true);
+  PERFORM set_config('ops.member_id',     s.member_id::text,     true);
+  PERFORM set_config('ops.outsider_id',   s.outsider_id::text,   true);
   PERFORM set_config('ops.tournament_id', s.tournament_id::text, true);
 END $$;
 SELECT ops_test_set_user((current_setting('ops.owner_id'))::uuid);
@@ -80,6 +82,32 @@ SELECT throws_ok(
   $$ SELECT public.ops_clock_set_level(
        (current_setting('ops.tournament_id'))::uuid, (current_setting('ops.owner_id'))::uuid, 99) $$,
   'P0001', NULL, 'set_level with nonexistent sort rejected (OPS_INVALID_LEVEL)');
+
+-- ─── 7) actor 가드 회귀 (5종 RPC 공통 가드 — 대표로 start·set_blind_levels 2종). §0.5 actor 규약 ───
+-- 가드는 함수 본문 첫 분기(FOR UPDATE/DELETE 이전)라 throws 시 부수효과 없음.
+-- 7a) 위조 actor: 멤버(member)가 owner 명의로 호출 → auth.uid() IS DISTINCT FROM p_actor_id → PERMISSION_DENIED
+SELECT ops_test_set_user((current_setting('ops.member_id'))::uuid);
+SELECT throws_ok(
+  $$ SELECT public.ops_clock_start(
+       (current_setting('ops.tournament_id'))::uuid, (current_setting('ops.owner_id'))::uuid) $$,
+  'P0001', NULL, 'ops_clock_start: 위조 actor(member→owner 명의) 거부');
+SELECT throws_ok(
+  $$ SELECT public.ops_set_blind_levels(
+       (current_setting('ops.tournament_id'))::uuid, (current_setting('ops.owner_id'))::uuid,
+       '[{"level":1,"big_blind":200,"duration_sec":600}]'::jsonb) $$,
+  'P0001', NULL, 'ops_set_blind_levels: 위조 actor(member→owner 명의) 거부');
+
+-- 7b) 비멤버(outsider): 본인 명의라도 is_ops_member=false → PERMISSION_DENIED
+SELECT ops_test_set_user((current_setting('ops.outsider_id'))::uuid);
+SELECT throws_ok(
+  $$ SELECT public.ops_clock_start(
+       (current_setting('ops.tournament_id'))::uuid, (current_setting('ops.outsider_id'))::uuid) $$,
+  'P0001', NULL, 'ops_clock_start: 비멤버(outsider) 거부');
+SELECT throws_ok(
+  $$ SELECT public.ops_set_blind_levels(
+       (current_setting('ops.tournament_id'))::uuid, (current_setting('ops.outsider_id'))::uuid,
+       '[{"level":1,"big_blind":200,"duration_sec":600}]'::jsonb) $$,
+  'P0001', NULL, 'ops_set_blind_levels: 비멤버(outsider) 거부');
 
 SELECT * FROM finish();
 ROLLBACK;

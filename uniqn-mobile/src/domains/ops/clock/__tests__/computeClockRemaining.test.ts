@@ -54,6 +54,11 @@ describe('computeClockRemaining', () => {
     expect(r.levelMissing).toBe(false);
   });
 
+  it('running 인데 앵커 부재(비정상) → 시작 대기로 레벨 전체 길이(§0.5 B2 안전폴백)', () => {
+    const r = computeClockRemaining(base({ isRunning: true, levelStartedAt: null }));
+    expect(r).toEqual({ remainingSec: 600, isExpired: false, levelMissing: false });
+  });
+
   it('레벨 미존재(durationSec null, 스케줄 축소 고아) → 00:00 안전폴백 + levelMissing', () => {
     const r = computeClockRemaining(base({ durationSec: null }));
     expect(r).toEqual({ remainingSec: 0, isExpired: false, levelMissing: true });

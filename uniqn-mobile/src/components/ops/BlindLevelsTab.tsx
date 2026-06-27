@@ -108,7 +108,10 @@ export function BlindLevelsTab({ tournamentId }: BlindLevelsTabProps) {
 
       {form && (
         <View className="mx-4 mb-2">
+          {/* key 로 add/edit·편집대상 변경 시 강제 리마운트 — 폼 내부 useState 가 새 initial 로 재초기화
+              (key 없으면 행 A 편집폼 연 채 행 B 탭 시 A 값이 B 인덱스로 저장되는 stale state 버그) */}
           <BlindLevelForm
+            key={form.mode === 'edit' ? `edit-${form.index}` : 'add'}
             initial={form.mode === 'edit' ? draft[form.index] : undefined}
             onSubmit={onFormSubmit}
             onCancel={() => setForm(null)}

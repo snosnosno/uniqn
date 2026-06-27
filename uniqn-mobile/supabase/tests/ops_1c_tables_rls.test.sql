@@ -2,7 +2,7 @@
 --   신규 대회 INSERT 시 clock+live_stats 자동생성.
 -- 패턴: ops_tables_rls.test.sql(멤버십 RLS) + ops_entry_number_allocation.test.sql(postgres 역할전환).
 BEGIN;
-SELECT plan(17);
+SELECT plan(19);
 
 -- ─── (a) 세 테이블 존재 ───
 SELECT has_table('public', 'ops_blind_levels', 'ops_blind_levels exists');
@@ -67,6 +67,23 @@ SELECT is(
 SELECT is(
   (SELECT playing FROM public.ops_live_stats WHERE tournament_id = (current_setting('ops.tournament_id'))::uuid),
   1, 'authenticated cannot mutate ops_live_stats (value unchanged: playing stays 1 from seed)');
+
+-- DELETE 시도 → RLS(DELETE 정책 없음) 0행. prod 에선 REVOKE 로 42501 — 예외/0행 모두 흡수 후 행 보존 단언.
+-- (per-command 정책이라 FOR DELETE 과허용/GRANT DELETE 회귀는 UPDATE 단언으로 못 잡음 → DELETE 별도 검증.)
+DO $$
+BEGIN
+  DELETE FROM public.ops_blind_levels
+    WHERE tournament_id = (current_setting('ops.tournament_id'))::uuid;
+  DELETE FROM public.ops_clock
+    WHERE tournament_id = (current_setting('ops.tournament_id'))::uuid;
+EXCEPTION WHEN insufficient_privilege THEN NULL;
+END $$;
+SELECT is(
+  (SELECT count(*)::int FROM public.ops_blind_levels WHERE tournament_id = (current_setting('ops.tournament_id'))::uuid),
+  1, 'authenticated cannot DELETE ops_blind_levels (row preserved)');
+SELECT is(
+  (SELECT count(*)::int FROM public.ops_clock WHERE tournament_id = (current_setting('ops.tournament_id'))::uuid),
+  1, 'authenticated cannot DELETE ops_clock (row preserved)');
 
 -- ─── (d) 신규 대회 INSERT → init 트리거가 clock + live_stats 자동 생성 ───
 DO $$
