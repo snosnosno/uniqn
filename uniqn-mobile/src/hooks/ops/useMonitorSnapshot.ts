@@ -22,7 +22,8 @@ export function useMonitorSnapshot(token: string | undefined) {
     queryKey: token ? queryKeys.ops.monitor(token) : [...queryKeys.ops.all, 'monitor', 'none'],
     queryFn: () => opsMonitorRepository.getSnapshot(token as string),
     enabled,
-    refetchInterval: POLL_INTERVAL_MS,
+    // 무효 토큰(error)이면 폴링 중단(자원 낭비 방지). 정상이면 폴링 유지.
+    refetchInterval: (q) => (q.state.status === 'error' ? false : POLL_INTERVAL_MS),
     staleTime: 0,
     retry: false, // 무효 토큰은 재시도 폭주 금지
   });

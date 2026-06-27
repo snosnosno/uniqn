@@ -2899,6 +2899,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      ops_claim_participant: {
+        Args: { p_claim_token: string; p_user_id: string };
+        Returns: Json;
+      };
       ops_clock_adjust: {
         Args: {
           p_actor_id: string;
@@ -2947,6 +2951,11 @@ export type Database = {
       };
       ops_get_monitor_snapshot: {
         Args: { p_monitor_token: string };
+        Returns: Json;
+      };
+      ops_get_player_view: { Args: { p_claim_token: string }; Returns: Json };
+      ops_issue_claim_token: {
+        Args: { p_actor_id: string; p_participant_id: string };
         Returns: Json;
       };
       ops_move_seat: {
@@ -3006,6 +3015,10 @@ export type Database = {
       };
       ops_toggle_registration: {
         Args: { p_actor_id: string; p_open: boolean; p_tournament_id: string };
+        Returns: Json;
+      };
+      ops_unclaim_participant: {
+        Args: { p_actor_id: string; p_participant_id: string };
         Returns: Json;
       };
       ops_update_tournament: {

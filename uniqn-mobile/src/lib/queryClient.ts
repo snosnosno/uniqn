@@ -578,6 +578,8 @@ export const queryKeys = {
     events: (tournamentId: string) => [...queryKeys.ops.all, 'events', tournamentId] as const,
     // 1c-3 — 공개 모니터(전광판). 토큰 스코프 스냅샷(anon 폴링).
     monitor: (token: string) => [...queryKeys.ops.all, 'monitor', token] as const,
+    // 1c-4 — 공개 플레이어뷰. claim_token 스코프(anon 폴링).
+    player: (token: string) => [...queryKeys.ops.all, 'player', token] as const,
   },
 } as const;
 

@@ -13,6 +13,8 @@ export { useOpsClock } from './useOpsClock';
 export { useOpsEvents } from './useOpsEvents';
 export { useMonitorSnapshot } from './useMonitorSnapshot';
 export { useRotateMonitorToken } from './useOpsMonitorToken';
+export { usePlayerView } from './usePlayerView';
+export { useIssueClaimToken, useClaimParticipant } from './useOpsClaimToken';
 export {
   useCreateOpsTournament,
   useSetTournamentStatus,

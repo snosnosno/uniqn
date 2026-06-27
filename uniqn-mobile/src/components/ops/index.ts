@@ -11,3 +11,4 @@ export { BlindLevelsTab } from './BlindLevelsTab';
 export { BlindLevelForm } from './BlindLevelForm';
 export { HistoryTab } from './HistoryTab';
 export { MonitorLinkButton } from './MonitorLinkButton';
+export { PlayerClaimButton } from './PlayerClaimButton';

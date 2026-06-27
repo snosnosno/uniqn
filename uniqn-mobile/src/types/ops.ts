@@ -210,3 +210,45 @@ export interface OpsMonitorSnapshot {
   /** 서버 시각(ISO) — 클라 offset 보정용(기기 시계 오차 보정). */
   serverNow: string;
 }
+
+/**
+ * 공개 플레이어뷰 (1c-4) — `ops_get_player_view(p_claim_token)` anon RPC 반환.
+ * **본인 안전필드만**: 타 참가자·phone·nationality·claim_token·player_user_id 미포함.
+ * RPC 가 camelCase 키로 직접 반환 → 그대로 소비.
+ */
+export interface OpsPlayerView {
+  me: {
+    entryNumber: number;
+    name: string;
+    status: string;
+    chips: number;
+    finishPosition: number | null;
+    prizeAmount: number | null;
+    rebuys: number;
+    addOns: number;
+    reentries: number;
+    /** 본인 좌석(미착석이면 null). */
+    tableNo: number | null;
+    seatNo: number | null;
+  };
+  tournament: {
+    name: string;
+    venue: string | null;
+    gameType: string;
+    status: string;
+  };
+  clock: {
+    currentLevelSort: number;
+    levelStartedAt: string | null;
+    isRunning: boolean;
+    pausedRemainingSec: number | null;
+  };
+  currentLevel: OpsMonitorLevel | null;
+  stats: {
+    playing: number;
+    entries: number;
+    averageStack: number;
+    avgStackBb: number;
+  };
+  serverNow: string;
+}

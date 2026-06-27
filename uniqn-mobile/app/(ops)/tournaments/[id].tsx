@@ -12,6 +12,7 @@ import {
   BlindLevelsTab,
   HistoryTab,
   MonitorLinkButton,
+  PlayerClaimButton,
 } from '@/components/ops';
 import {
   useOpsTournament,
@@ -216,28 +217,32 @@ export default function OpsTournamentDetailScreen() {
                     {item.addOns > 0 ? ` · A${item.addOns}` : ''}
                   </Text>
                 </View>
-                {item.status === 'active' && (
-                  <View className="flex-row gap-1">
-                    <Pressable
-                      onPress={() => rebuyMut.mutate(item.id)}
-                      accessibilityRole="button"
-                      className="rounded-md bg-gray-100 px-2 py-1.5 active:opacity-70 dark:bg-gray-800"
-                    >
-                      <Text className="text-xs text-content-primary dark:text-off-white">
-                        리바이
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => addonMut.mutate(item.id)}
-                      accessibilityRole="button"
-                      className="rounded-md bg-gray-100 px-2 py-1.5 active:opacity-70 dark:bg-gray-800"
-                    >
-                      <Text className="text-xs text-content-primary dark:text-off-white">
-                        애드온
-                      </Text>
-                    </Pressable>
-                  </View>
-                )}
+                <View className="flex-row gap-1">
+                  {item.status === 'active' && (
+                    <>
+                      <Pressable
+                        onPress={() => rebuyMut.mutate(item.id)}
+                        accessibilityRole="button"
+                        className="rounded-md bg-gray-100 px-2 py-1.5 active:opacity-70 dark:bg-gray-800"
+                      >
+                        <Text className="text-xs text-content-primary dark:text-off-white">
+                          리바이
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => addonMut.mutate(item.id)}
+                        accessibilityRole="button"
+                        className="rounded-md bg-gray-100 px-2 py-1.5 active:opacity-70 dark:bg-gray-800"
+                      >
+                        <Text className="text-xs text-content-primary dark:text-off-white">
+                          애드온
+                        </Text>
+                      </Pressable>
+                    </>
+                  )}
+                  {/* 플레이어 링크(QR) — 전 상태 발급 가능 */}
+                  <PlayerClaimButton tournamentId={tournamentId} participantId={item.id} />
+                </View>
               </View>
             )}
             ListEmptyComponent={
