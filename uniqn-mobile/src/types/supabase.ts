@@ -2945,6 +2945,10 @@ export type Database = {
         Args: { p_actor_id: string; p_seat_id: string };
         Returns: Json;
       };
+      ops_get_monitor_snapshot: {
+        Args: { p_monitor_token: string };
+        Returns: Json;
+      };
       ops_move_seat: {
         Args: {
           p_actor_id: string;
@@ -2970,6 +2974,10 @@ export type Database = {
           p_phone: string;
           p_tournament_id: string;
         };
+        Returns: Json;
+      };
+      ops_rotate_monitor_token: {
+        Args: { p_actor_id: string; p_force?: boolean; p_tournament_id: string };
         Returns: Json;
       };
       ops_set_blind_levels: {
