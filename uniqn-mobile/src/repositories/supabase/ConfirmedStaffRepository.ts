@@ -477,8 +477,7 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
       });
       return workLogIds;
     } catch (error) {
-      const mapped = toDirectStaffBusinessError(error);
-      if (mapped) throw mapped;
+      // 매핑된 BusinessError 는 rethrowOrHandle 의 isAppError 분기로 그대로 재전파된다.
       rethrowOrHandle(error, '스태프 직접 추가', { jobPostingId: context.jobPostingId });
     }
   }
@@ -499,8 +498,7 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
       logger.info('직접 추가 스태프 삭제 완료', { workLogId: context.workLogId });
     } catch (error) {
-      const mapped = toDirectStaffBusinessError(error);
-      if (mapped) throw mapped;
+      // 매핑된 BusinessError 는 rethrowOrHandle 의 isAppError 분기로 그대로 재전파된다.
       rethrowOrHandle(error, '직접 추가 스태프 삭제', { workLogId: context.workLogId });
     }
   }

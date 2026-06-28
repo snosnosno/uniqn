@@ -150,13 +150,8 @@ export class SupabaseUserRepository implements IUserRepository {
 
   async searchByPhone(phone: string): Promise<UserPhoneSearchResult[]> {
     try {
-      const digits = phone.replace(/\D/g, '');
-      // 열거 방지: 너무 짧은 입력은 RPC 호출 없이 빈 결과
-      if (digits.length < 9) {
-        return [];
-      }
-
-      logger.info('전화번호 사용자 검색', { phoneDigits: digits.length });
+      // 짧은 입력 차단(열거 방지)은 호출측 서비스(searchStaffByPhone)와 RPC 본문이 담당.
+      logger.info('전화번호 사용자 검색', { phoneDigits: phone.replace(/\D/g, '').length });
 
       const { data, error } = await supabase.rpc('search_users_by_phone', { p_phone: phone });
 

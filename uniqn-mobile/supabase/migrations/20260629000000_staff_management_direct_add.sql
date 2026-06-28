@@ -211,6 +211,17 @@ BEGIN
       ),
       updated_at = v_now
     WHERE id = p_job_posting_id;
+
+    -- M2 정합: 정원 도달 시 active→capacity_full 자동 전이.
+    -- fn_update_job_posting_stats 트리거는 applications 전용이라 직접추가에는 발화하지 않으므로
+    -- 위 filled +1 직후(갱신된 값 기준) 별도 statement 로 동일 전이를 수동 미러링한다.
+    UPDATE job_postings SET
+      status = 'capacity_full'::posting_status,
+      updated_at = v_now
+    WHERE id = p_job_posting_id
+      AND status = 'active'
+      AND total_positions > 0
+      AND filled_positions >= total_positions;
   END IF;
 
   RETURN jsonb_build_object(
@@ -278,7 +289,7 @@ BEGIN
     AND wl.staff_id = v_wl.staff_id
     AND wl.status NOT IN ('cancelled', 'no_show');
 
-  -- person-basis: 더 이상 남은 배정이 없을 때만 -1 + closed→active 재개방
+  -- person-basis: 더 이상 남은 배정이 없을 때만 -1 + 빈자리 재개방
   IF v_remaining = 0 THEN
     UPDATE job_postings SET
       filled_positions = GREATEST(filled_positions - 1, 0),
@@ -287,13 +298,25 @@ BEGIN
         '{filledPositions}',
         to_jsonb(GREATEST(COALESCE((stats->>'filledPositions')::int, 0) - 1, 0))
       ),
-      status = CASE
-        WHEN status = 'closed' AND GREATEST(filled_positions - 1, 0) < total_positions
-          THEN 'active'::posting_status
-        ELSE status
-      END,
       updated_at = v_now
     WHERE id = v_wl.job_posting_id;
+
+    -- M3 정합: 빈자리 발생 시 재개방. 위 filled -1 직후(갱신된 값 기준) 별도 statement.
+    --   capacity_full + filled<total            → active (자동 재노출)
+    --   closed(수동) + filled<total             → active
+    --   closed(expired/expired_by_work_date)    → 유지 (cron 만료 의도 보존)
+    UPDATE job_postings SET
+      status = 'active'::posting_status,
+      updated_at = v_now
+    WHERE id = v_wl.job_posting_id
+      AND filled_positions < total_positions
+      AND (
+        status = 'capacity_full'
+        OR (
+          status = 'closed'
+          AND COALESCE(closed_reason, '') NOT IN ('expired', 'expired_by_work_date')
+        )
+      );
   END IF;
 
   RETURN jsonb_build_object(
@@ -318,6 +341,6 @@ GRANT EXECUTE ON FUNCTION public.remove_direct_staff(uuid) TO authenticated;
 COMMENT ON FUNCTION public.search_users_by_phone(text) IS
   '전화 정확일치 사용자 검색(구인자 전용, 열거 방지). 스태프 직접 추가용.';
 COMMENT ON FUNCTION public.add_direct_staff(uuid, uuid, jsonb) IS
-  '지원서 없이 스태프(work_logs) 직접 추가. confirm_application 정원가드 동치 + person-basis filled +1.';
+  '지원서 없이 스태프(work_logs) 직접 추가. confirm_application 정원가드 동치 + person-basis filled +1 + active→capacity_full 전이(M2 정합).';
 COMMENT ON FUNCTION public.remove_direct_staff(uuid) IS
-  '직접추가 스태프(application_id NULL) 삭제 + person-basis filled -1 + closed→active 재개방.';
+  '직접추가 스태프(application_id NULL) 삭제 + person-basis filled -1 + capacity_full/closed→active 재개방(M3 정합).';

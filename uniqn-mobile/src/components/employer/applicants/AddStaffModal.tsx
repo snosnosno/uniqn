@@ -66,6 +66,8 @@ export function AddStaffModal({
   }, [onClose, resetAll]);
 
   const handleSearch = useCallback(() => {
+    // 재검색 시 이전 선택을 초기화 — 새 결과에 없는 사람이 그대로 제출되는 것을 방지
+    setSelected(null);
     void search(phone);
   }, [phone, search]);
 

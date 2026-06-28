@@ -290,6 +290,9 @@ export function StaffManagementTab({
       }
     : null;
 
+  // 직접추가분(지원서 미연동)은 '확정 해제'가 아니라 '제거' 의미라 문구를 분기한다.
+  const isDeleteTargetDirect = !deleteTarget?.workLog?.applicationId;
+
   if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center">
@@ -349,11 +352,11 @@ export function StaffManagementTab({
         visible={Boolean(deleteTarget)}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDeleteConfirm}
-        title="확정 해제"
-        message={`${
-          deleteTarget?.staffName ?? '선택한 스태프'
-        }님의 확정을 해제할까요? 점유된 자리가 다시 비워집니다.`}
-        confirmText="확정 해제"
+        title={isDeleteTargetDirect ? '스태프 제거' : '확정 해제'}
+        message={`${deleteTarget?.staffName ?? '선택한 스태프'}님을 ${
+          isDeleteTargetDirect ? '명단에서 제거할까요?' : '확정 해제할까요?'
+        } 점유된 자리가 다시 비워집니다.`}
+        confirmText={isDeleteTargetDirect ? '제거' : '확정 해제'}
         cancelText="유지"
         isDestructive
       />
