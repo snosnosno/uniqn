@@ -5,9 +5,16 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.0.0/)를 기반으로 하며,
 이 프로젝트는 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 준수합니다.
 
-## [Unreleased] - 2026-06-19
+## [Unreleased] - 2026-06-28
 
 ### Added
+- **라이브 대회 운영(ops) 도구 1a~1c 출하** (PR #207·#210·#212·#213·#214, prod 적용 완료·advisor 0 ERROR):
+  - 1a 등록데스크 + `ops_events` 감사 척추(#207), 1b 테이블/좌석/Redraw(#210)
+  - 1c-1/1c-2 블라인드 서버동기 클럭(`computeClockRemaining` 서버앵커+offset) + 트리거 기반 `ops_live_stats` 단일행 재계산 + STATUS/LEVELS/HISTORY 탭(#212)
+  - 1c-3 공개 모니터(전광판) — `ops_get_monitor_snapshot(token)` anon SECDEF 비-PII 화이트리스트 투영 + `app/(public)/monitor/[token]` + B2 배포 멀티 프로젝트 파라미터화(`deploy:ops`)(#213)
+  - 1c-4 공개 플레이어뷰 — `ops_get_player_view(claim_token)` anon SECDEF 본인 안전필드 투영 + claim 계정 바인딩/운영자 unclaim 복구 + `app/(public)/live/[claim_token]`(#214)
+  - 보안: anon ops 테이블 직접 SELECT 0 — token→스코프 SECDEF RPC + 화이트리스트 투영만(#195 PII 유출 클래스 차단). 적대리뷰 WF(1c-1 7차원·1c-4 5렌즈 find→verify) 통과
+  - ⚠️ 1d(bust/재진입) 착수 전 claim view/write 토큰 분리 + 신원게이트 재설계 필요(player_user_id 권한키 승급 전제)
 - LLM Wiki 지식 합성 레이어 부트스트랩 (PR #176): `wiki/`(architecture·decisions·domain·sources) + `/ingest`·`/query`·`/lint` 운영 + staleness 자동 감지(memory 전용 인용은 UNVERIFIABLE 표기)
 - 전체 워크플로우 UX 감사 후속 9결함 수정 (PR #175): 가입 빈 비밀번호 가드, 지원자 일괄확정 배선, 수동 출퇴근 타임스탬프→정산 차단 해소, 정산 CSV export 등
 - 공고 자동마감(Approach B): `posting_status` enum에 `capacity_full` 추가 (M1). 정원 도달 시 자동 마감, 빈자리 발생 시 자동 복귀 대기 상태
