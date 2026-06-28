@@ -66,6 +66,28 @@ export interface DeleteConfirmedStaffInput {
   reason?: string;
 }
 
+/**
+ * 스태프 직접 추가 — 단일 배정 입력
+ * @description role 은 staff_role 키('dealer'|'floor'|'serving'|'manager'|'staff'|'other').
+ *   'other' 인 경우 customRole 에 표시명을 담는다(confirm_application 평탄화 규약과 동일).
+ */
+export interface DirectStaffAssignmentInput {
+  date: string;
+  role: string;
+  customRole?: string;
+  timeSlot?: string;
+  notes?: string;
+}
+
+/**
+ * 스태프 직접 추가 입력 (지원서 없이 앱 가입자를 스태프로 추가)
+ */
+export interface AddDirectStaffInput {
+  jobPostingId: string;
+  staffId: string;
+  assignments: DirectStaffAssignmentInput[];
+}
+
 export interface ConfirmedStaffFilters {
   date?: string;
   status?: ConfirmedStaffStatus;

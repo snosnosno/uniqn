@@ -72,6 +72,7 @@ export type {
   DeletionReason,
   DeletionRequest,
   UserDataExport,
+  UserPhoneSearchResult,
   // EventQR
   IEventQRRepository,
   // Notification
@@ -99,6 +100,9 @@ export type {
   MarkNoShowContext,
   UpdateStaffStatusContext,
   ConfirmedStaffSubscriptionCallbacks,
+  AddDirectStaffAssignment,
+  AddDirectStaffContext,
+  RemoveDirectStaffContext,
   // Announcement
   IAnnouncementRepository,
   AnnouncementPaginationCursor,

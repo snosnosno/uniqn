@@ -21,6 +21,7 @@ import type {
   DeletionRequest,
   UserDataExport,
   EmployerRegistrationInput,
+  UserPhoneSearchResult,
 } from '../interfaces';
 import type { FirestoreUserProfile, MyDataEditableFields } from '@/types';
 
@@ -144,6 +145,38 @@ export class SupabaseUserRepository implements IUserRepository {
       if (isAppError(error)) throw error;
       logger.error('사용자 배치 조회 실패', toError(error), { count: userIds.length });
       handleSupabaseError(error, { operation: '사용자 배치 조회', table: TABLES.USERS });
+    }
+  }
+
+  async searchByPhone(phone: string): Promise<UserPhoneSearchResult[]> {
+    try {
+      const digits = phone.replace(/\D/g, '');
+      // 열거 방지: 너무 짧은 입력은 RPC 호출 없이 빈 결과
+      if (digits.length < 9) {
+        return [];
+      }
+
+      logger.info('전화번호 사용자 검색', { phoneDigits: digits.length });
+
+      const { data, error } = await supabase.rpc('search_users_by_phone', { p_phone: phone });
+
+      if (error) {
+        handleSupabaseError(error, { operation: '전화번호 사용자 검색', table: TABLES.USERS });
+      }
+
+      return ((data ?? []) as Record<string, unknown>[]).map((row) => ({
+        uid: row.id as string,
+        name: (row.name as string) ?? '',
+        nickname: (row.nickname as string) ?? undefined,
+        phone: (row.phone as string) ?? undefined,
+        photoURL: (row.photo_url as string) ?? null,
+        photoURLBlurhash: (row.photo_url_blurhash as string) ?? null,
+        region: (row.region as string) ?? undefined,
+      }));
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      logger.error('전화번호 사용자 검색 실패', toError(error));
+      handleSupabaseError(error, { operation: '전화번호 사용자 검색', table: TABLES.USERS });
     }
   }
 
