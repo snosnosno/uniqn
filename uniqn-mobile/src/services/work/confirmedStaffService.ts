@@ -13,7 +13,9 @@ import type {
   UpdateStaffRoleInput,
   UpdateWorkTimeInput,
   DeleteConfirmedStaffInput,
+  AddDirectStaffInput,
 } from '@/types/confirmedStaff';
+import type { UserPhoneSearchResult } from '@/repositories';
 import { STAFF_ROLES, STATUS } from '@/constants';
 import { StatusMapper, type WorkLogStatus } from '@/shared/status';
 import { TimeNormalizer } from '@/shared/time';
@@ -166,6 +168,13 @@ export async function cancelConfirmedStaffConfirmation(
     });
   }
 
+  // 직접추가분(지원서 미연동)은 확정취소 RPC 가 아니라 전용 삭제 경로를 탄다.
+  if (!workLog.applicationId) {
+    await confirmedStaffRepository.removeDirectStaff({ workLogId: input.workLogId });
+    logger.info('직접 추가 스태프 삭제 완료', { workLogId: input.workLogId });
+    return;
+  }
+
   await cancelConfirmation(
     buildApplicationId(workLog.jobPostingId, workLog.staffId),
     currentUser.id,
@@ -220,6 +229,56 @@ export async function updateStaffStatus(workLogId: string, status: WorkLogStatus
   }
 
   logger.info('Updated confirmed staff status', { workLogId, status });
+}
+
+/**
+ * 전화번호 정확 일치로 앱 가입자를 검색합니다(스태프 직접 추가용, 구인자 전용).
+ */
+export async function searchStaffByPhone(phone: string): Promise<UserPhoneSearchResult[]> {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length < 9) {
+    return [];
+  }
+  return userRepository.searchByPhone(phone);
+}
+
+/**
+ * 지원 절차 없이 앱 가입자를 스태프로 직접 추가합니다.
+ * 정원 가드/정원 카운트 정합은 RPC(add_direct_staff)가 보장합니다.
+ */
+export async function addDirectStaff(input: AddDirectStaffInput): Promise<string[]> {
+  await requireCurrentUser();
+  logger.info('스태프 직접 추가 시작', {
+    jobPostingId: input.jobPostingId,
+    staffId: input.staffId,
+    assignments: input.assignments.length,
+  });
+
+  const workLogIds = await confirmedStaffRepository.addDirectStaff({
+    jobPostingId: input.jobPostingId,
+    staffId: input.staffId,
+    assignments: input.assignments,
+  });
+
+  // 스케줄 보드 동기화(enqueue 실패는 비치명적 — confirm 경로와 동일 정책)
+  try {
+    await enqueueScheduleBoardSync(input.jobPostingId, 'update', {
+      jobPostingId: input.jobPostingId,
+      reason: 'direct_staff_add',
+    });
+  } catch (error) {
+    logger.warn('Schedule board enqueue failed after direct staff add', {
+      component: 'confirmedStaffService',
+      jobPostingId: input.jobPostingId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+
+  logger.info('스태프 직접 추가 완료', {
+    jobPostingId: input.jobPostingId,
+    count: workLogIds.length,
+  });
+  return workLogIds;
 }
 
 export function subscribeToConfirmedStaff(

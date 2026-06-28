@@ -12,6 +12,7 @@ import {
   ClockIcon,
   QRCodeIcon,
   RefreshIcon,
+  UserPlusIcon,
   XCircleIcon,
 } from '@/components/icons';
 import { ActionSheet, type ActionSheetOption } from '@/components/ui/ActionSheet';
@@ -20,6 +21,7 @@ import { Loading } from '@/components/ui/Loading';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { ConfirmedStaffList } from './ConfirmedStaffList';
 import { StaffProfileModal } from './StaffProfileModal';
+import { AddStaffModal } from './AddStaffModal';
 import { WorkTimeEditor } from '../settlement/WorkTimeEditor';
 
 export interface StaffManagementTabProps {
@@ -33,19 +35,28 @@ export interface StaffManagementTabProps {
 interface QuickActionsProps {
   onShowQR: () => void;
   onRefresh: () => void;
+  onAddStaff: () => void;
   isRefreshing: boolean;
 }
 
-function QuickActions({ onShowQR, onRefresh, isRefreshing }: QuickActionsProps) {
+function QuickActions({ onShowQR, onRefresh, onAddStaff, isRefreshing }: QuickActionsProps) {
   return (
     <View className="mb-4 px-4 pt-4">
+      <Pressable
+        onPress={onAddStaff}
+        className="mb-3 flex-row items-center justify-center rounded-md bg-primary-600 p-4 active:opacity-80 dark:bg-primary-700"
+      >
+        <UserPlusIcon size={22} color="#FFFFFF" />
+        <Text className="ml-2 text-base font-sans-semibold text-content-onGold">스태프 추가</Text>
+      </Pressable>
+
       <View className="flex-row gap-3">
         <Pressable
           onPress={onShowQR}
-          className="flex-1 flex-row items-center justify-center rounded-md bg-primary-600 p-4 active:opacity-80 dark:bg-primary-700"
+          className="flex-1 flex-row items-center justify-center rounded-md bg-surface-card p-4 active:opacity-80 dark:bg-surface"
         >
-          <QRCodeIcon size={24} color="#FFFFFF" />
-          <Text className="ml-2 text-base font-sans-semibold text-content-onGold">
+          <QRCodeIcon size={24} color={SECONDARY_PALETTE[500]} />
+          <Text className="ml-2 text-base font-sans-semibold text-content-primary">
             이벤트 QR 열기
           </Text>
         </Pressable>
@@ -81,9 +92,12 @@ export function StaffManagementTab({
     removeStaff,
     changeStatus,
     setNoShow,
+    addStaff,
     isUpdatingTime,
+    isAddingStaff,
   } = useConfirmedStaff(jobPostingId);
 
+  const [showAddStaff, setShowAddStaff] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<ConfirmedStaff | null>(null);
   const [showTimeEditor, setShowTimeEditor] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ConfirmedStaff | null>(null);
@@ -173,6 +187,14 @@ export function StaffManagementTab({
   const handleShowQR = useCallback(() => {
     onShowEventQR?.();
   }, [onShowEventQR]);
+
+  const handleOpenAddStaff = useCallback(() => {
+    setShowAddStaff(true);
+  }, []);
+
+  const handleCloseAddStaff = useCallback(() => {
+    setShowAddStaff(false);
+  }, []);
 
   const handleStatusChange = useCallback((staff: ConfirmedStaff) => {
     setStatusSheetTarget(staff);
@@ -268,6 +290,9 @@ export function StaffManagementTab({
       }
     : null;
 
+  // 직접추가분(지원서 미연동)은 '확정 해제'가 아니라 '제거' 의미라 문구를 분기한다.
+  const isDeleteTargetDirect = !deleteTarget?.workLog?.applicationId;
+
   if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center">
@@ -287,7 +312,12 @@ export function StaffManagementTab({
 
   return (
     <View className="flex-1 bg-surface-page dark:bg-surface">
-      <QuickActions onShowQR={handleShowQR} onRefresh={refresh} isRefreshing={isRefreshing} />
+      <QuickActions
+        onShowQR={handleShowQR}
+        onRefresh={refresh}
+        onAddStaff={handleOpenAddStaff}
+        isRefreshing={isRefreshing}
+      />
 
       <View className="flex-1">
         <ConfirmedStaffList
@@ -322,11 +352,11 @@ export function StaffManagementTab({
         visible={Boolean(deleteTarget)}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDeleteConfirm}
-        title="확정 해제"
-        message={`${
-          deleteTarget?.staffName ?? '선택한 스태프'
-        }님의 확정을 해제할까요? 점유된 자리가 다시 비워집니다.`}
-        confirmText="확정 해제"
+        title={isDeleteTargetDirect ? '스태프 제거' : '확정 해제'}
+        message={`${deleteTarget?.staffName ?? '선택한 스태프'}님을 ${
+          isDeleteTargetDirect ? '명단에서 제거할까요?' : '확정 해제할까요?'
+        } 점유된 자리가 다시 비워집니다.`}
+        confirmText={isDeleteTargetDirect ? '제거' : '확정 해제'}
         cancelText="유지"
         isDestructive
       />
@@ -361,6 +391,14 @@ export function StaffManagementTab({
         }
         options={getStatusOptions()}
         onSelect={handleStatusSelect}
+      />
+
+      <AddStaffModal
+        visible={showAddStaff}
+        onClose={handleCloseAddStaff}
+        jobPostingId={jobPostingId}
+        onSubmit={addStaff}
+        isSubmitting={isAddingStaff}
       />
     </View>
   );

@@ -42,6 +42,24 @@ export interface ConfirmedStaffSubscriptionCallbacks {
   onError?: (error: Error) => void;
 }
 
+export interface AddDirectStaffAssignment {
+  date: string;
+  role: string;
+  customRole?: string;
+  timeSlot?: string;
+  notes?: string;
+}
+
+export interface AddDirectStaffContext {
+  jobPostingId: string;
+  staffId: string;
+  assignments: AddDirectStaffAssignment[];
+}
+
+export interface RemoveDirectStaffContext {
+  workLogId: string;
+}
+
 export interface IConfirmedStaffRepository {
   getByJobPostingId(jobPostingId: string): Promise<WorkLog[]>;
   getByJobPostingAndDate(jobPostingId: string, date: string): Promise<WorkLog[]>;
@@ -49,6 +67,8 @@ export interface IConfirmedStaffRepository {
   updateWorkTimeWithTransaction(context: UpdateConfirmedStaffWorkTimeContext): Promise<void>;
   markAsNoShow(context: MarkNoShowContext): Promise<void>;
   updateStatus(context: UpdateStaffStatusContext): Promise<void>;
+  addDirectStaff(context: AddDirectStaffContext): Promise<string[]>;
+  removeDirectStaff(context: RemoveDirectStaffContext): Promise<void>;
   subscribeByJobPostingId(
     jobPostingId: string,
     callbacks: ConfirmedStaffSubscriptionCallbacks

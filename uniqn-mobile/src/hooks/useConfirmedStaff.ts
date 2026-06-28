@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { cachingPolicies, invalidateQueries, queryKeys } from '@/lib/queryClient';
 import {
+  addDirectStaff,
   cancelConfirmedStaffConfirmation,
   getConfirmedStaff,
   getConfirmedStaffByDate,
@@ -17,6 +18,7 @@ import type { ConfirmedStaffStatus, WorkLogStatus } from '@/shared/status';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import type {
+  AddDirectStaffInput,
   ConfirmedStaff,
   ConfirmedStaffGroup,
   ConfirmedStaffStats,
@@ -44,11 +46,13 @@ export interface UseConfirmedStaffReturn {
   removeStaff: (input: DeleteConfirmedStaffInput) => void;
   setNoShow: (workLogId: string, reason?: string) => void;
   changeStatus: (workLogId: string, status: WorkLogStatus) => void;
+  addStaff: (input: AddDirectStaffInput) => Promise<string[]>;
   isChangingRole: boolean;
   isUpdatingTime: boolean;
   isRemoving: boolean;
   isSettingNoShow: boolean;
   isChangingStatus: boolean;
+  isAddingStaff: boolean;
 }
 
 const emptyStats: ConfirmedStaffStats = {
@@ -149,6 +153,8 @@ export function useConfirmedStaff(
     mutationFn: cancelConfirmedStaffConfirmation,
     onSuccess: () => {
       invalidateQueries.staffManagement(jobPostingId);
+      // 정원/자동마감(capacity_full) 상태가 바뀌므로 공고 상세·목록 캐시도 무효화
+      invalidateQueries.jobPostings();
       addToast({ type: 'success', message: '확정 스태프가 해제되었습니다.' });
     },
     onError: (mutationError: Error) => {
@@ -225,6 +231,22 @@ export function useConfirmedStaff(
     },
   });
 
+  const addStaffMutation = useMutation({
+    mutationFn: addDirectStaff,
+    onSuccess: () => {
+      invalidateQueries.staffManagement(jobPostingId);
+      // 정원/자동마감(capacity_full) 상태가 바뀌므로 공고 상세·목록 캐시도 무효화
+      invalidateQueries.jobPostings();
+      addToast({ type: 'success', message: '스태프가 추가되었습니다.' });
+    },
+    onError: (mutationError: Error) => {
+      logger.error('Failed to add direct staff', mutationError, { jobPostingId });
+      const userMessage =
+        (mutationError as { userMessage?: string }).userMessage ?? '스태프 추가에 실패했습니다.';
+      addToast({ type: 'error', message: userMessage });
+    },
+  });
+
   const refresh = useCallback(() => {
     if (!realtime) {
       refetch();
@@ -272,6 +294,11 @@ export function useConfirmedStaff(
     [changeStatusMutation]
   );
 
+  const addStaff = useCallback(
+    (input: AddDirectStaffInput) => addStaffMutation.mutateAsync(input),
+    [addStaffMutation]
+  );
+
   const resultData = realtime ? realtimeData : data;
 
   return {
@@ -287,11 +314,13 @@ export function useConfirmedStaff(
     removeStaff,
     setNoShow,
     changeStatus,
+    addStaff,
     isChangingRole: changeRoleMutation.isPending,
     isUpdatingTime: updateWorkTimeMutation.isPending,
     isRemoving: removeStaffMutation.isPending,
     isSettingNoShow: setNoShowMutation.isPending,
     isChangingStatus: changeStatusMutation.isPending,
+    isAddingStaff: addStaffMutation.isPending,
   };
 }
 

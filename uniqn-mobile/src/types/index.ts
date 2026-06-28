@@ -208,6 +208,8 @@ export type {
   UpdateWorkTimeInput,
   UpdateStaffRoleInput,
   DeleteConfirmedStaffInput,
+  DirectStaffAssignmentInput,
+  AddDirectStaffInput,
   ConfirmedStaffFilters,
   GroupedConfirmedStaff,
   ConfirmedStaffStats,

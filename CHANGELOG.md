@@ -15,6 +15,7 @@
   - 1c-4 공개 플레이어뷰 — `ops_get_player_view(claim_token)` anon SECDEF 본인 안전필드 투영 + claim 계정 바인딩/운영자 unclaim 복구 + `app/(public)/live/[claim_token]`(#214)
   - 보안: anon ops 테이블 직접 SELECT 0 — token→스코프 SECDEF RPC + 화이트리스트 투영만(#195 PII 유출 클래스 차단). 적대리뷰 WF(1c-1 7차원·1c-4 5렌즈 find→verify) 통과
   - ⚠️ 1d(bust/재진입) 착수 전 claim view/write 토큰 분리 + 신원게이트 재설계 필요(player_user_id 권한키 승급 전제)
+- 스태프관리 직접 추가: 지원 절차 없이 앱 가입자를 전화번호 정확일치 검색으로 스태프(work_logs)에 직접 추가. 신규 SECURITY DEFINER RPC `add_direct_staff`/`remove_direct_staff`/`search_users_by_phone` (confirm_application 정원 가드 동치 + person-basis `filled_positions`/`stats.filledPositions` ±1, `application_id` NULL 직접추가분은 전용 삭제 경로). 스태프관리 탭 "스태프 추가" 버튼 + `AddStaffModal`(전화검색→가입자 선택→날짜/역할/시간대). 검색은 구인자 전용·전화 전체 일치로 열거 방지
 - LLM Wiki 지식 합성 레이어 부트스트랩 (PR #176): `wiki/`(architecture·decisions·domain·sources) + `/ingest`·`/query`·`/lint` 운영 + staleness 자동 감지(memory 전용 인용은 UNVERIFIABLE 표기)
 - 전체 워크플로우 UX 감사 후속 9결함 수정 (PR #175): 가입 빈 비밀번호 가드, 지원자 일괄확정 배선, 수동 출퇴근 타임스탬프→정산 차단 해소, 정산 CSV export 등
 - 공고 자동마감(Approach B): `posting_status` enum에 `capacity_full` 추가 (M1). 정원 도달 시 자동 마감, 빈자리 발생 시 자동 복귀 대기 상태

@@ -27,6 +27,8 @@ import type {
   UpdateConfirmedStaffWorkTimeContext,
   MarkNoShowContext,
   UpdateStaffStatusContext,
+  AddDirectStaffContext,
+  RemoveDirectStaffContext,
 } from '../interfaces';
 
 // ============================================================================
@@ -101,6 +103,46 @@ function rethrowOrHandle(
   if (isAppError(error)) throw error;
   logger.error(`${operation} 실패`, toError(error), context);
   handleSupabaseError(error, { operation, table: TABLE });
+}
+
+/**
+ * 직접 추가/삭제 RPC 가 RAISE 한 도메인 에러를 사용자 친화 메시지로 변환.
+ * (매칭되지 않으면 null 반환 → 공통 핸들러로 위임)
+ */
+function toDirectStaffBusinessError(error: unknown): BusinessError | null {
+  const message = error instanceof Error ? error.message : String(error);
+
+  if (message.includes('MAX_CAPACITY_REACHED')) {
+    return new BusinessError(ERROR_CODES.BUSINESS_MAX_CAPACITY_REACHED, {
+      userMessage: '해당 일정의 모집 인원이 가득 찼습니다.',
+    });
+  }
+  if (message.includes('DUPLICATE_ASSIGNMENT')) {
+    return new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+      userMessage: '이미 같은 날짜/역할로 추가된 스태프입니다.',
+    });
+  }
+  if (message.includes('STAFF_NOT_FOUND')) {
+    return new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
+      userMessage: '대상 사용자를 찾을 수 없습니다.',
+    });
+  }
+  if (message.includes('STAFF_ALREADY_CHECKED_IN')) {
+    return new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+      userMessage: '출근 처리된 스태프는 삭제할 수 없습니다.',
+    });
+  }
+  if (message.includes('NOT_DIRECT_STAFF')) {
+    return new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+      userMessage: '지원을 통해 확정된 스태프는 확정 해제로 처리해주세요.',
+    });
+  }
+  if (message.includes('PERMISSION_DENIED')) {
+    return new BusinessError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
+      userMessage: '이 작업을 수행할 권한이 없습니다.',
+    });
+  }
+  return null;
 }
 
 /**
@@ -393,6 +435,71 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
         workLogId: context.workLogId,
         status: context.status,
       });
+    }
+  }
+
+  // ==========================================================================
+  // 직접 추가/삭제 (지원서 없이 스태프 투입)
+  // ==========================================================================
+
+  async addDirectStaff(context: AddDirectStaffContext): Promise<string[]> {
+    try {
+      logger.info('스태프 직접 추가', {
+        jobPostingId: context.jobPostingId,
+        staffId: context.staffId,
+        assignments: context.assignments.length,
+      });
+
+      const { data, error } = await supabase.rpc('add_direct_staff', {
+        p_job_posting_id: context.jobPostingId,
+        p_staff_id: context.staffId,
+        p_assignments: context.assignments.map((a) => ({
+          date: a.date,
+          role: a.role,
+          customRole: a.customRole ?? null,
+          timeSlot: a.timeSlot ?? null,
+          notes: a.notes ?? null,
+        })),
+      });
+
+      if (error) {
+        const mapped = toDirectStaffBusinessError(error);
+        if (mapped) throw mapped;
+        handleSupabaseError(error, { operation: '스태프 직접 추가', table: TABLE });
+      }
+
+      const result = data as { workLogIds?: string[] } | null;
+      const workLogIds = result?.workLogIds ?? [];
+
+      logger.info('스태프 직접 추가 완료', {
+        jobPostingId: context.jobPostingId,
+        count: workLogIds.length,
+      });
+      return workLogIds;
+    } catch (error) {
+      // 매핑된 BusinessError 는 rethrowOrHandle 의 isAppError 분기로 그대로 재전파된다.
+      rethrowOrHandle(error, '스태프 직접 추가', { jobPostingId: context.jobPostingId });
+    }
+  }
+
+  async removeDirectStaff(context: RemoveDirectStaffContext): Promise<void> {
+    try {
+      logger.info('직접 추가 스태프 삭제', { workLogId: context.workLogId });
+
+      const { error } = await supabase.rpc('remove_direct_staff', {
+        p_work_log_id: context.workLogId,
+      });
+
+      if (error) {
+        const mapped = toDirectStaffBusinessError(error);
+        if (mapped) throw mapped;
+        handleSupabaseError(error, { operation: '직접 추가 스태프 삭제', table: TABLE });
+      }
+
+      logger.info('직접 추가 스태프 삭제 완료', { workLogId: context.workLogId });
+    } catch (error) {
+      // 매핑된 BusinessError 는 rethrowOrHandle 의 isAppError 분기로 그대로 재전파된다.
+      rethrowOrHandle(error, '직접 추가 스태프 삭제', { workLogId: context.workLogId });
     }
   }
 
