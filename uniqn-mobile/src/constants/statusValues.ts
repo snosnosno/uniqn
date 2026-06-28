@@ -44,6 +44,8 @@ export const JOB_POSTING_STATUS_VALUES = {
   CANCELLED: 'cancelled',
   EXPIRED: 'expired',
   REJECTED: 'rejected',
+  // 운영처(venue) 컨테이너 — 숨김 공고. fail-closed 중앙 deny 대상(repo 베이스쿼리/통계 reader).
+  CONTAINER: 'container',
 } as const satisfies Record<string, JobPostingStatusType>;
 
 export const INQUIRY_STATUS_VALUES = {

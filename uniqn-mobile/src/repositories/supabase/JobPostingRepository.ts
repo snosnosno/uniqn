@@ -23,6 +23,12 @@ import {
 import { removeUndefined } from '@/utils/removeUndefined';
 import { generateUUID } from '@/utils/generateId';
 import { STATUS } from '@/constants';
+import {
+  parseVenueContainer,
+  parseVenueContainers,
+  VENUE_CONTAINER_COLUMNS,
+  type VenueContainer,
+} from '@/domains/weeklyGrid';
 import type { UnsubscribeFn, PaginationCursor } from '@/types/common';
 import type { TaxSettings } from '@/utils/settlement';
 import type {
@@ -128,6 +134,10 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
           } else {
             qr = qr.in('status', [STATUS.JOB_POSTING.ACTIVE, STATUS.JOB_POSTING.CAPACITY_FULL]);
           }
+          // fail-closed(R2): 운영처 컨테이너(status='container')는 브라우즈/공개/운영자 목록에서
+          // 항상 제외한다(명시 status·기본값 무관). 컨테이너는 JobPosting 으로 표현되지 않으며
+          // 전용 venue read 경로(getVenueContainers/getVenueContainerById)로만 조회한다.
+          qr = qr.neq('status', STATUS.JOB_POSTING.CONTAINER);
           if (filters?.roles?.length) qr = qr.overlaps('role_keys', filters.roles.slice(0, 10));
           if (filters?.district) qr = qr.eq('location->>district', filters.district);
           if (filters?.region) qr = qr.eq('location->>region', filters.region);
@@ -164,6 +174,8 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       logger.info('소유자별 공고 조회', { ownerId, status });
       let query = supabase.from(TABLE).select(TABLE_COLUMNS).eq('owner_id', ownerId);
       if (status) query = query.eq('status', status);
+      // fail-closed(R2): 운영처 컨테이너는 운영자 "내 공고" 목록에 노출하지 않는다.
+      query = query.neq('status', STATUS.JOB_POSTING.CONTAINER);
       query = query.order('created_at', { ascending: false });
       const { data, error } = await query;
       if (error) handleSupabaseError(error, { operation: '소유자별 공고 조회', table: TABLE });
@@ -192,6 +204,8 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       let query = supabase.from(TABLE).select(TABLE_COLUMNS);
       if (status) query = query.eq('status', status);
       if (workspaceId) query = query.eq('workspace_id', workspaceId);
+      // fail-closed(R2): 컨테이너는 관리 가능 공고 목록에서 제외한다.
+      query = query.neq('status', STATUS.JOB_POSTING.CONTAINER);
       query = query.order('created_at', { ascending: false });
       const { data, error } = await query;
       if (error) handleSupabaseError(error, { operation: '관리 가능 공고 조회', table: TABLE });
@@ -218,6 +232,8 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       } else {
         query = query.in('status', [STATUS.JOB_POSTING.ACTIVE, STATUS.JOB_POSTING.CAPACITY_FULL]);
       }
+      // fail-closed(R2): 컨테이너는 타입별 칩 카운트 집계에서 제외한다.
+      query = query.neq('status', STATUS.JOB_POSTING.CONTAINER);
       // region 지정 시 getList 와 동일하게 location->>region 으로 좁혀 칩 카운트 정합 유지.
       if (filters?.region) {
         query = query.eq('location->>region', filters.region);
@@ -251,6 +267,48 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       return counts;
     } catch (error) {
       rethrowOrHandle(error, '공고 타입별 개수 조회');
+    }
+  }
+
+  // ==========================================================================
+  // 운영처(venue) 컨테이너 전용 read 경로 (주간 배치 그리드)
+  // 컨테이너는 rigid JobPosting 으로 표현하지 않는다(strict 스키마 null 증발 회피).
+  // status='container' 로 좁혀 경량 VenueContainer 로 파싱한다. RLS(owner/멤버/admin)가 가시성 제한.
+  // ==========================================================================
+
+  async getVenueContainers(workspaceId: string): Promise<VenueContainer[]> {
+    try {
+      logger.info('운영처 컨테이너 목록 조회', { workspaceId });
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select(VENUE_CONTAINER_COLUMNS)
+        .eq('workspace_id', workspaceId)
+        .eq('status', STATUS.JOB_POSTING.CONTAINER)
+        .order('title', { ascending: true });
+      if (error)
+        handleSupabaseError(error, { operation: '운영처 컨테이너 목록 조회', table: TABLE });
+      const items = parseVenueContainers((data ?? []) as unknown[]);
+      logger.info('운영처 컨테이너 목록 조회 완료', { workspaceId, count: items.length });
+      return items;
+    } catch (error) {
+      rethrowOrHandle(error, '운영처 컨테이너 목록 조회', { workspaceId });
+    }
+  }
+
+  async getVenueContainerById(id: string): Promise<VenueContainer | null> {
+    try {
+      logger.info('운영처 컨테이너 단건 조회', { id });
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select(VENUE_CONTAINER_COLUMNS)
+        .eq('id', id)
+        .eq('status', STATUS.JOB_POSTING.CONTAINER)
+        .maybeSingle();
+      if (error)
+        handleSupabaseError(error, { operation: '운영처 컨테이너 단건 조회', table: TABLE });
+      return data ? parseVenueContainer(data) : null;
+    } catch (error) {
+      rethrowOrHandle(error, '운영처 컨테이너 단건 조회', { id });
     }
   }
 

@@ -35,7 +35,9 @@ export type JobPostingStatus =
   | 'closed'
   | 'cancelled'
   | 'expired'
-  | 'rejected';
+  | 'rejected'
+  // 운영처(venue) 컨테이너 — 숨김 공고. 공개/운영자 조회는 fail-closed 중앙 deny 로 제외.
+  | 'container';
 export type ClosedReason = 'manual' | 'expired' | 'expired_by_work_date' | 'filled';
 export type SalaryType = 'hourly' | 'daily' | 'monthly' | 'other';
 
