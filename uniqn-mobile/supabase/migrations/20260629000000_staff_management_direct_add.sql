@@ -10,6 +10,14 @@
 --      (지원서가 없어 applications.status 트리거가 발화하지 않으므로 수동 갱신 필수.)
 --   3) 직접추가분(application_id IS NULL)은 전용 삭제 RPC로만 제거(확정취소 경로와 분리).
 --   4) 행위자는 auth.uid() 바인딩, 사용자 검색은 전화 정확일치 + 구인자 전용(열거 방지).
+--
+-- 알려진 한계(filled_positions 회계 이원화):
+--   filled_positions 는 fn_update_job_posting_stats 트리거가 'applications 확정 수'로 관리한다.
+--   직접추가는 application 이 없어 RPC 가 person-basis(해당 staff 의 첫 work_log 일 때만 ±1)로
+--   같은 컬럼을 보정한다. 동일인이 '직접추가 후 정식 지원→확정'(또는 그 역순)으로 한 공고에
+--   양 경로로 들어오는 드문 조합에서는 filled_positions 가 ±1 어긋날 수 있다.
+--   단, 슬롯별 정원 가드/표시는 work_logs 직집계(_posting_slot_key 등)로 항상 정확하므로
+--   '정원 초과 배정'은 발생하지 않는다. 어긋남은 카드의 충원수/자동마감 휴리스틱에 한정된다.
 
 -- ───────────────────────────────────────────────────────────────────────────
 -- 1) 전화번호 정확 일치 사용자 검색 (구인자/관리자 전용, 최소 필드만 반환)
@@ -53,6 +61,8 @@ BEGIN
   SELECT u.id, u.name, u.nickname, u.phone, u.photo_url, u.photo_url_blurhash, u.region
   FROM public.users u
   WHERE u.is_active = true
+    -- 탈퇴/탈퇴유예 계정 제외(is_active 와 status 이원화 드리프트 방어 — PII 노출/오배정 차단)
+    AND COALESCE(u.status, 'active') NOT IN ('deleted', 'deactivated')
     AND regexp_replace(COALESCE(u.phone, ''), '\D', '', 'g') = v_norm
   LIMIT 5;
 END;
@@ -96,7 +106,10 @@ BEGIN
   SELECT id, name, nickname, photo_url, photo_url_blurhash
     INTO v_staff
   FROM public.users
-  WHERE id = p_staff_id AND is_active = true;
+  WHERE id = p_staff_id
+    AND is_active = true
+    -- 탈퇴/탈퇴유예 계정에는 근무 배정 금지(검색 필터와 정합)
+    AND COALESCE(status, 'active') NOT IN ('deleted', 'deactivated');
   IF NOT FOUND THEN
     RAISE EXCEPTION 'STAFF_NOT_FOUND: 대상 사용자를 찾을 수 없습니다 (%)', p_staff_id;
   END IF;

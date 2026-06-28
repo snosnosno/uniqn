@@ -5,7 +5,7 @@
  *   수동 트리거(검색 버튼) 방식이라 useQuery 대신 명령형 상태로 관리한다.
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { searchStaffByPhone } from '@/services';
 import type { UserPhoneSearchResult } from '@/repositories';
 import { toError } from '@/errors';
@@ -26,29 +26,39 @@ export function useStaffPhoneSearch(): UseStaffPhoneSearchReturn {
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [searched, setSearched] = useState(false);
+  // 순서 역전 가드: 최신 요청만 상태에 반영(연타 시 늦게 끝난 옛 요청이 덮어쓰는 것 방지)
+  const latestRequestId = useRef(0);
 
   const search = useCallback(async (phone: string) => {
+    const requestId = ++latestRequestId.current;
     setIsSearching(true);
     setError(null);
     try {
       const found = await searchStaffByPhone(phone);
+      if (requestId !== latestRequestId.current) return;
       setResults(found);
       setSearched(true);
     } catch (e) {
+      if (requestId !== latestRequestId.current) return;
       const normalized = toError(e);
       logger.error('스태프 전화번호 검색 실패', normalized);
       setError(normalized);
       setResults([]);
       setSearched(true);
     } finally {
-      setIsSearching(false);
+      if (requestId === latestRequestId.current) {
+        setIsSearching(false);
+      }
     }
   }, []);
 
   const reset = useCallback(() => {
+    // 진행 중 요청 결과가 reset 이후에 반영되지 않도록 요청 토큰 무효화
+    latestRequestId.current += 1;
     setResults([]);
     setError(null);
     setSearched(false);
+    setIsSearching(false);
   }, []);
 
   return { results, isSearching, error, searched, search, reset };

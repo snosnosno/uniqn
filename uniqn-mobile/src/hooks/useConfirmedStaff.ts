@@ -153,6 +153,8 @@ export function useConfirmedStaff(
     mutationFn: cancelConfirmedStaffConfirmation,
     onSuccess: () => {
       invalidateQueries.staffManagement(jobPostingId);
+      // 정원/자동마감(capacity_full) 상태가 바뀌므로 공고 상세·목록 캐시도 무효화
+      invalidateQueries.jobPostings();
       addToast({ type: 'success', message: '확정 스태프가 해제되었습니다.' });
     },
     onError: (mutationError: Error) => {
@@ -233,6 +235,8 @@ export function useConfirmedStaff(
     mutationFn: addDirectStaff,
     onSuccess: () => {
       invalidateQueries.staffManagement(jobPostingId);
+      // 정원/자동마감(capacity_full) 상태가 바뀌므로 공고 상세·목록 캐시도 무효화
+      invalidateQueries.jobPostings();
       addToast({ type: 'success', message: '스태프가 추가되었습니다.' });
     },
     onError: (mutationError: Error) => {

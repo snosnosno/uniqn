@@ -8,7 +8,7 @@
  * 백엔드 정합(정원 가드/정원 카운트)은 add_direct_staff RPC가 보장한다.
  */
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { format } from 'date-fns';
 import { STAFF_ROLES } from '@/constants';
@@ -64,6 +64,14 @@ export function AddStaffModal({
     resetAll();
     onClose();
   }, [onClose, resetAll]);
+
+  // 모달이 숨겨지면(어떤 닫기 경로든) 입력·검색결과·선택을 비운다.
+  // RNModal 은 visible 토글만 되고 언마운트되지 않아, 재오픈 시 이전 PII 잔존을 방지.
+  useEffect(() => {
+    if (!visible) {
+      resetAll();
+    }
+  }, [visible, resetAll]);
 
   const handleSearch = useCallback(() => {
     // 재검색 시 이전 선택을 초기화 — 새 결과에 없는 사람이 그대로 제출되는 것을 방지
