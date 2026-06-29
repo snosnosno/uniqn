@@ -222,7 +222,7 @@ export interface OpsPlayerCredentials {
 
 /**
  * 공개 플레이어뷰 (1c-4) — `ops_get_player_view(p_view_token)` anon RPC 반환.
- * **본인 안전필드만**: 타 참가자·phone·nationality·claim_token·player_user_id 미포함.
+ * **본인 안전필드만**: 타 참가자·phone·nationality·view_token·claim_pin_hash·player_user_id 미포함.
  * RPC 가 camelCase 키로 직접 반환 → 그대로 소비.
  */
 export interface OpsPlayerView {

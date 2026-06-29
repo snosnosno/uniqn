@@ -15,6 +15,7 @@ export class SupabaseOpsPlayerRepository implements IOpsPlayerRepository {
         p_view_token: viewToken,
       });
       if (error) mapOpsRpcError(error, { operation: 'ops 플레이어뷰' });
+      // RPC 가 camelCase jsonb(본인 안전필드)로 직접 반환 → toCamelCase 불요.
       return data as unknown as OpsPlayerView;
     } catch (error) {
       if (isAppError(error)) throw error;
@@ -33,10 +34,13 @@ export class SupabaseOpsPlayerRepository implements IOpsPlayerRepository {
       });
       if (error) mapOpsRpcError(error, { operation: 'ops 플레이어 자격 발급' });
       const r = data as unknown as OpsPlayerCredentials | null;
+      if (!r?.viewToken || !r?.claimPin) {
+        throw new Error('ops_issue_player_credentials: 빈 자격증명을 반환했습니다');
+      }
       return {
-        participantId: r?.participantId ?? participantId,
-        viewToken: r?.viewToken ?? '',
-        claimPin: r?.claimPin ?? '',
+        participantId: r.participantId ?? participantId,
+        viewToken: r.viewToken,
+        claimPin: r.claimPin,
       };
     } catch (error) {
       if (isAppError(error)) throw error;
