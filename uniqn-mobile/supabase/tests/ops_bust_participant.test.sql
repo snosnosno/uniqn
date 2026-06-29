@@ -8,7 +8,7 @@
 --   plan(N) = 실제 SELECT 단언 수와 정확히 일치(불일치 시 pgTAP fail).
 
 BEGIN;
-SELECT plan(17);
+SELECT plan(22);
 
 -- ── 시드 ──────────────────────────────────────────────────────────────────────
 -- ops_test_seed: owner(employer)·member(employer)·outsider(staff)·tournament·participant 1명(active).
@@ -122,8 +122,12 @@ BEGIN
   SELECT public.ops_bust_participant(
     (current_setting('ops.p1'))::uuid,
     (current_setting('ops.owner_id'))::uuid) INTO r;
+  PERFORM set_config('ops.r1_fp',    (r->>'finish_position'),              true);
   PERFORM set_config('ops.r1_prize', COALESCE(r->>'prize_amount', 'null'), true);
 END $$;
+
+SELECT is(current_setting('ops.r1_fp')::int, 4,                            -- [NEW-m1]
+  'bust#2: 4명 active → finish_position=4 (단조 직접 단언)');
 
 SELECT is(current_setting('ops.r1_prize'), '100000',                        -- [9]
   'ITM prize: bust p1 rank4 → prize_amount=100000 (반환값)');
@@ -175,20 +179,22 @@ SELECT ops_test_set_user((current_setting('ops.owner_id'))::uuid);
 
 -- ── I. 재진입후 재탈락 충돌없음 ───────────────────────────────────────────────
 -- p1(busted fp=4) 재진입 → fp 초기화(NULL)·active 복귀 → 총 3명 active(seed·p1·p3).
-SELECT public.ops_reenter_participant(
-  (current_setting('ops.p1'))::uuid,
-  (current_setting('ops.owner_id'))::uuid);
-
--- p1 재bust(3명 active): 사용 fp={3,5}; generate_series(3,5)→ 3(사용)·4(빈)·5(사용) → fp=4.
+-- 재진입+재bust 전체를 lives_ok 로 감싸 pgTAP 리포트에 23505 미발생을 명시.
+-- 사용 fp={3,5}; generate_series(3,5)→ 3(사용)·4(빈)·5(사용) → fp=4.
 -- 부분UNIQUE 인덱스에 fp=4 는 이미 p1 이 소거(NULL)했으므로 충돌 없음.
-DO $$
-DECLARE r jsonb;
-BEGIN
-  SELECT public.ops_bust_participant(
-    (current_setting('ops.p1'))::uuid,
-    (current_setting('ops.owner_id'))::uuid) INTO r;
-  PERFORM set_config('ops.r3_fp', (r->>'finish_position'), true);
-END $$;
+SELECT lives_ok($TEST$                                                       -- [NEW-I2]
+  DO $$
+  DECLARE r jsonb;
+  BEGIN
+    PERFORM public.ops_reenter_participant(
+      (current_setting('ops.p1'))::uuid,
+      (current_setting('ops.owner_id'))::uuid);
+    SELECT public.ops_bust_participant(
+      (current_setting('ops.p1'))::uuid,
+      (current_setting('ops.owner_id'))::uuid) INTO r;
+    PERFORM set_config('ops.r3_fp', (r->>'finish_position'), true);
+  END $$
+$TEST$, '재진입후 재탈락: 부분UNIQUE 23505 미발생');
 
 SELECT is(current_setting('ops.r3_fp')::int, 4,                             -- [14]
   '재진입후 재탈락: finish_position=4 (부분UNIQUE 충돌없음, 이전 fp 소거됨)');
@@ -212,6 +218,28 @@ SELECT is(                                                                   -- 
    WHERE id = (current_setting('ops.t_id'))::uuid),
   'completed',
   'tournament.status=completed: 우승 확정 후 자동 전환');
+
+-- [I1] 우승자 DB 상태 3종 검증: finish_position=1·prize_amount=500000·status=active
+SELECT is(                                                                   -- [NEW-I1-a]
+  (SELECT finish_position FROM public.ops_participants
+   WHERE tournament_id = (current_setting('ops.t_id'))::uuid
+     AND status = 'active'),
+  1,
+  '우승자 finish_position=1: 우승 자동확정 후 DB 반영');
+
+SELECT is(                                                                   -- [NEW-I1-b]
+  (SELECT prize_amount FROM public.ops_participants
+   WHERE tournament_id = (current_setting('ops.t_id'))::uuid
+     AND status = 'active'),
+  500000,
+  '우승자 prize_amount=500000: rank1 상금 DB 반영');
+
+SELECT is(                                                                   -- [NEW-I1-c]
+  (SELECT status::text FROM public.ops_participants
+   WHERE tournament_id = (current_setting('ops.t_id'))::uuid
+     AND finish_position = 1),
+  'active',
+  '우승자 status=active: 우승자는 busted 처리 안됨');
 
 -- ── K. 비-active(completed) 대회 bust 거부 ────────────────────────────────────
 -- tournament completed 상태 → INVALID_STATUS P0001.
