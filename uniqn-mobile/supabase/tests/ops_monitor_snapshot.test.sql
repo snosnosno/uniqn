@@ -85,8 +85,8 @@ SELECT is(
   (public.ops_get_monitor_snapshot(current_setting('ops.tok3')) -> 'tournament' ->> 'name'),
   'ops test cup', 'snapshot: 대회명 반환');
 SELECT ok(
-  public.ops_get_monitor_snapshot(current_setting('ops.tok3'))::text NOT LIKE '%claim_token%',
-  'snapshot: claim_token 미포함');
+  public.ops_get_monitor_snapshot(current_setting('ops.tok3'))::text NOT LIKE '%view_token%',
+  'snapshot: view_token 미포함');
 SELECT ok(
   public.ops_get_monitor_snapshot(current_setting('ops.tok3'))::text NOT LIKE '%phone%',
   'snapshot: phone(PII) 미포함');

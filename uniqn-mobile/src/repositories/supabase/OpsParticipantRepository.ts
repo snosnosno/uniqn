@@ -10,9 +10,9 @@ import type {
 import type { OpsParticipant } from '@/types/ops';
 
 const TABLE = 'ops_participants' as const;
-// claim_token 제외 (D8 — 1a 에서 클라이언트로 읽지 않음).
+// view_token 포함 (D8 — 운영자가 라이브 링크 재공유, PIN 재발급 없이). claim_pin_hash 는 절대 미포함.
 const COLUMNS =
-  'id, tournament_id, entry_number, name, nationality, phone, player_user_id, status, chips, ' +
+  'id, tournament_id, entry_number, name, nationality, phone, player_user_id, view_token, status, chips, ' +
   'buy_in_amount, rebuys, add_ons, reentries, finish_position, busted_at, prize_amount, note, ' +
   'created_at, updated_at';
 

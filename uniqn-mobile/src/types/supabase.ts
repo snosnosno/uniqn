@@ -1422,7 +1422,7 @@ export type Database = {
           busted_at: string | null;
           buy_in_amount: number | null;
           chips: number;
-          claim_token: string | null;
+          claim_pin_hash: string | null;
           created_at: string;
           entry_number: number;
           finish_position: number | null;
@@ -1438,13 +1438,14 @@ export type Database = {
           status: Database['public']['Enums']['ops_participant_status'];
           tournament_id: string;
           updated_at: string;
+          view_token: string | null;
         };
         Insert: {
           add_ons?: number;
           busted_at?: string | null;
           buy_in_amount?: number | null;
           chips?: number;
-          claim_token?: string | null;
+          claim_pin_hash?: string | null;
           created_at?: string;
           entry_number: number;
           finish_position?: number | null;
@@ -1460,13 +1461,14 @@ export type Database = {
           status?: Database['public']['Enums']['ops_participant_status'];
           tournament_id: string;
           updated_at?: string;
+          view_token?: string | null;
         };
         Update: {
           add_ons?: number;
           busted_at?: string | null;
           buy_in_amount?: number | null;
           chips?: number;
-          claim_token?: string | null;
+          claim_pin_hash?: string | null;
           created_at?: string;
           entry_number?: number;
           finish_position?: number | null;
@@ -1482,6 +1484,7 @@ export type Database = {
           status?: Database['public']['Enums']['ops_participant_status'];
           tournament_id?: string;
           updated_at?: string;
+          view_token?: string | null;
         };
         Relationships: [
           {
@@ -2900,7 +2903,7 @@ export type Database = {
         Returns: Json;
       };
       ops_claim_participant: {
-        Args: { p_claim_token: string; p_user_id: string };
+        Args: { p_claim_pin: string; p_user_id: string; p_view_token: string };
         Returns: Json;
       };
       ops_clock_adjust: {
@@ -2953,8 +2956,8 @@ export type Database = {
         Args: { p_monitor_token: string };
         Returns: Json;
       };
-      ops_get_player_view: { Args: { p_claim_token: string }; Returns: Json };
-      ops_issue_claim_token: {
+      ops_get_player_view: { Args: { p_view_token: string }; Returns: Json };
+      ops_issue_player_credentials: {
         Args: { p_actor_id: string; p_participant_id: string };
         Returns: Json;
       };

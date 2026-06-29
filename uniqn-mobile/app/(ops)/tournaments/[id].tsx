@@ -241,7 +241,11 @@ export default function OpsTournamentDetailScreen() {
                     </>
                   )}
                   {/* 플레이어 링크(QR) — 전 상태 발급 가능 */}
-                  <PlayerClaimButton tournamentId={tournamentId} participantId={item.id} />
+                  <PlayerClaimButton
+                    tournamentId={tournamentId}
+                    participantId={item.id}
+                    viewToken={item.viewToken}
+                  />
                 </View>
               </View>
             )}
