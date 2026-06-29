@@ -6,9 +6,11 @@
  */
 
 import * as Sentry from '@sentry/react-native';
+import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
-import { toError, BusinessError, ERROR_CODES } from '@/errors';
+import { toError, BusinessError, ValidationError, ERROR_CODES } from '@/errors';
+import { xssValidation } from '@/utils/security';
 import {
   handleSupabaseError,
   toSnakeCase,
@@ -68,6 +70,14 @@ import {
 } from './JobPostingRepositorySettlement';
 
 export { buildSlotRoleKey } from './JobPostingRepositoryHelpers';
+
+/**
+ * 운영처명(컨테이너 title) XSS 검증 스키마 (S1).
+ * get_or_create_venue_container RPC 로는 이 검증을 통과한 운영처명만 전달한다.
+ */
+const venueContainerNameSchema = z
+  .string()
+  .refine(xssValidation, { message: '운영처명에 허용되지 않는 문자가 포함되어 있습니다' });
 
 // ── Repository ───────────────────────────────────────────────────────────────
 
@@ -309,6 +319,63 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       return data ? parseVenueContainer(data) : null;
     } catch (error) {
       rethrowOrHandle(error, '운영처 컨테이너 단건 조회', { id });
+    }
+  }
+
+  async getOrCreateVenueContainer(
+    workspaceId: string,
+    options: { name: string; kind: string; period?: string }
+  ): Promise<VenueContainer> {
+    const { name, kind, period } = options;
+    // S1: 운영처명 XSS 검증 통과분만 RPC 로 전달(검증 실패 시 ValidationError, RPC 미호출).
+    const parsedName = venueContainerNameSchema.safeParse(name);
+    if (!parsedName.success) {
+      throw new ValidationError(ERROR_CODES.SECURITY_XSS_DETECTED, {
+        category: 'security',
+        severity: 'medium',
+        userMessage: '운영처명에 허용되지 않는 문자가 포함되어 있습니다',
+      });
+    }
+    try {
+      logger.info('운영처 컨테이너 확보(get-or-create)', { workspaceId, kind });
+      // RPC 는 SECDEF + 워크스페이스 게이트 + anon REVOKE 멱등 확보(get_or_create_venue_container).
+      // period 는 RPC 기본 NULL 이므로 제공된 경우에만 전달한다.
+      const params: {
+        p_workspace_id: string;
+        p_name: string;
+        p_kind: string;
+        p_period?: string;
+      } = { p_workspace_id: workspaceId, p_name: parsedName.data, p_kind: kind };
+      if (period !== undefined) params.p_period = period;
+
+      const { data, error } = await supabase.rpc('get_or_create_venue_container', params);
+      if (error) handleSupabaseError(error, { operation: '운영처 컨테이너 확보', table: TABLE });
+
+      // RPC 는 camelCase({containerId,name,...})로 반환 → raw 행 모양으로 정규화 후
+      // 경량 파서(parseVenueContainer)로 매핑한다(VenueContainer 단일 경로 재사용).
+      const r = (data ?? {}) as {
+        containerId?: string;
+        workspaceId?: string;
+        name?: string;
+        kind?: string;
+      };
+      const container = parseVenueContainer({
+        id: r.containerId,
+        title: r.name,
+        workspace_id: r.workspaceId,
+        venue_id: r.containerId,
+        status: STATUS.JOB_POSTING.CONTAINER,
+        schedule: { kind: r.kind ?? kind, softTargets: {} },
+      });
+      if (!container) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '운영처 컨테이너 확보 결과가 올바르지 않습니다',
+        });
+      }
+      logger.info('운영처 컨테이너 확보 완료', { workspaceId, containerId: container.id });
+      return container;
+    } catch (error) {
+      rethrowOrHandle(error, '운영처 컨테이너 확보', { workspaceId });
     }
   }
 

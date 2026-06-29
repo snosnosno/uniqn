@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import { isAppError } from '@/errors';
 import { handleSupabaseError, toCamelCase } from '@/utils/supabase';
+import { toDateString } from '@/utils/date';
 import type { GridSummaryRow } from '@/domains/weeklyGrid';
 import type { IWeeklyGridRepository, VenueDaySlot } from '../interfaces/IWeeklyGridRepository';
 
@@ -60,6 +61,23 @@ export class SupabaseWeeklyGridRepository implements IWeeklyGridRepository {
     } catch (error) {
       if (isAppError(error)) throw error;
       handleSupabaseError(error, { operation: '운영처 하루 슬롯 조회', table: TABLE });
+    }
+  }
+
+  async setVenueSoftTarget(venueId: string, date: string, count: number): Promise<void> {
+    try {
+      // E5: write 경계에서 날짜키를 YYYY-MM-DD 로 정규화(RPC 도 재정규화하나 클라단 일관성 보장).
+      const dateKey = toDateString(date);
+      logger.info('운영처 soft-target 설정', { venueId, date: dateKey, count });
+      const { error } = await supabase.rpc('set_venue_soft_target', {
+        p_venue: venueId,
+        p_date: dateKey,
+        p_count: count,
+      });
+      if (error) handleSupabaseError(error, { operation: '운영처 soft-target 설정', table: TABLE });
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      handleSupabaseError(error, { operation: '운영처 soft-target 설정', table: TABLE });
     }
   }
 }

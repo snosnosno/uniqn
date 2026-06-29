@@ -108,4 +108,37 @@ describe('WeeklyGridRepository', () => {
       await expect(repo.getVenueDaySlots('v1', '2026-07-01')).rejects.toThrow('supabase: denied');
     });
   });
+
+  describe('setVenueSoftTarget', () => {
+    it('날짜를 YYYY-MM-DD 로 정규화(E5)해 RPC 호출(시간성분 제거)', async () => {
+      mockRpc.mockResolvedValueOnce({ data: { count: 3 }, error: null });
+
+      await repo.setVenueSoftTarget('v1', '2026-07-05T23:30:00', 3);
+
+      expect(mockRpc).toHaveBeenCalledWith('set_venue_soft_target', {
+        p_venue: 'v1',
+        p_date: '2026-07-05',
+        p_count: 3,
+      });
+    });
+
+    it('count=0(키 제거 의미)도 그대로 전달', async () => {
+      mockRpc.mockResolvedValueOnce({ data: { count: 0 }, error: null });
+
+      await repo.setVenueSoftTarget('v1', '2026-07-05', 0);
+
+      expect(mockRpc).toHaveBeenCalledWith('set_venue_soft_target', {
+        p_venue: 'v1',
+        p_date: '2026-07-05',
+        p_count: 0,
+      });
+    });
+
+    it('RPC 에러 전파', async () => {
+      mockRpc.mockResolvedValueOnce({ data: null, error: { message: 'PERMISSION_DENIED' } });
+      await expect(repo.setVenueSoftTarget('v1', '2026-07-05', 1)).rejects.toThrow(
+        'supabase: PERMISSION_DENIED'
+      );
+    });
+  });
 });

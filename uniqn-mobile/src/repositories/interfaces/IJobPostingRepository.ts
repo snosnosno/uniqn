@@ -183,6 +183,18 @@ export interface IJobPostingRepository {
   getVenueContainerById(id: string): Promise<VenueContainer | null>;
 
   /**
+   * 운영처(venue) 컨테이너 멱등 확보(get-or-create).
+   *
+   * @description get_or_create_venue_container RPC(SECDEF + 워크스페이스 게이트 + anon REVOKE)를
+   *   호출해 컨테이너 공고를 멱등하게 확보한다. S1: 운영처명(name)은 xssValidation 통과분만
+   *   RPC 로 전달하며, 검증 실패 시 ValidationError 를 던진다(RPC 미호출). period 는 제공 시에만 전달.
+   */
+  getOrCreateVenueContainer(
+    workspaceId: string,
+    options: { name: string; kind: string; period?: string }
+  ): Promise<VenueContainer>;
+
+  /**
    * 일반 공고 타입의 일자별 공고 개수 집계
    *
    * @description DateCalendar UI의 달력 셀 뱃지용.

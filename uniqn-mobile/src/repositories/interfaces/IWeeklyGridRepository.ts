@@ -32,4 +32,11 @@ export interface IWeeklyGridRepository {
 
   /** 하루 슬롯 상세: 그 날 venue 스팬 배치 work_log 목록. */
   getVenueDaySlots(venueId: string, date: string): Promise<VenueDaySlot[]>;
+
+  /**
+   * 운영처 날짜별 목표인원(soft-target) 설정. 컨테이너 schedule.softTargets[date]=count.
+   * date 는 write 경계에서 YYYY-MM-DD 로 정규화(E5)한다. count=0 은 키 제거(부족신호 노이즈 방지).
+   * restrictive 정책 우회 유일 경로인 SECDEF RPC(set_venue_soft_target) 전용.
+   */
+  setVenueSoftTarget(venueId: string, date: string, count: number): Promise<void>;
 }
