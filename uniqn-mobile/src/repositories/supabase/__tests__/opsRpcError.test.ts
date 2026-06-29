@@ -95,6 +95,27 @@ describe('mapOpsRpcError (Task S1)', () => {
     expect((err as BusinessError).code).toBe(ERROR_CODES.OPS_INVALID_LEVEL);
   });
 
+  // 1c-4 — claim 토큰 분리 (E6120→E6121→E6122 세분화)
+  it('OPS_VIEW_TOKEN_INVALID → OPS_VIEW_TOKEN_INVALID', () => {
+    const err = captureThrown({ message: 'OPS_VIEW_TOKEN_INVALID: 유효하지 않은 토큰' });
+    expect(isBusinessError(err)).toBe(true);
+    expect((err as BusinessError).code).toBe(ERROR_CODES.OPS_VIEW_TOKEN_INVALID);
+  });
+
+  // 1c-4 — PIN 검증 실패 (신규 E6122)
+  it('OPS_CLAIM_PIN_INVALID → OPS_CLAIM_PIN_INVALID', () => {
+    const err = captureThrown({ message: 'OPS_CLAIM_PIN_INVALID: 연결 PIN 불일치' });
+    expect(isBusinessError(err)).toBe(true);
+    expect((err as BusinessError).code).toBe(ERROR_CODES.OPS_CLAIM_PIN_INVALID);
+  });
+
+  // 1c-4 — 이미 클레임됨 (기존 E6121 유지)
+  it('OPS_CLAIM_ALREADY_CLAIMED → OPS_CLAIM_ALREADY_CLAIMED', () => {
+    const err = captureThrown({ message: 'OPS_CLAIM_ALREADY_CLAIMED: 이미 다른 계정 연결' });
+    expect(isBusinessError(err)).toBe(true);
+    expect((err as BusinessError).code).toBe(ERROR_CODES.OPS_CLAIM_ALREADY_CLAIMED);
+  });
+
   // 회귀 — PERMISSION_DENIED 는 PREFIX_MAP 밖 별도 분기
   it('PERMISSION_DENIED → BUSINESS_INVALID_STATE + 권한 메시지 (회귀)', () => {
     const err = captureThrown({ message: 'PERMISSION_DENIED' });
