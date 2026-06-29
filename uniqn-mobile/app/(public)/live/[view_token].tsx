@@ -114,10 +114,10 @@ export default function PlayerLiveScreen() {
               {me.reentries > 0 ? `재입장 ${me.reentries}` : ''}
             </Text>
           )}
-          {me.prizeAmount !== null && (
+          {me.status === 'busted' && me.finishPosition !== null && (
             <Text className="text-center text-sm font-sans-semibold text-primary-600 dark:text-primary-400">
-              {me.finishPosition !== null ? `${me.finishPosition}위 · ` : ''}상금{' '}
-              {fmt(me.prizeAmount)}
+              탈락 · {me.finishPosition}위
+              {me.prizeAmount !== null ? ` · 상금 ${fmt(me.prizeAmount)}` : ''}
             </Text>
           )}
         </View>
