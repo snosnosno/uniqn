@@ -581,6 +581,23 @@ export const queryKeys = {
     // 1c-4 — 공개 플레이어뷰. claim_token 스코프(anon 폴링).
     player: (token: string) => [...queryKeys.ops.all, 'player', token] as const,
   },
+
+  // 앱 설정 플래그 (app_config) — 원격 기능 토글
+  appConfig: {
+    all: ['appConfig'] as const,
+    weeklyGridEnabled: () => [...queryKeys.appConfig.all, 'weeklyGridEnabled'] as const,
+  },
+
+  // 주간 배치 그리드(운영처) — 운영처(컨테이너) 목록 + 월 요약 셀맵 + 하루 슬롯
+  weeklyGrid: {
+    all: ['weeklyGrid'] as const,
+    containers: (workspaceId: string) =>
+      [...queryKeys.weeklyGrid.all, 'containers', workspaceId] as const,
+    summary: (venueId: string, from: string, to: string) =>
+      [...queryKeys.weeklyGrid.all, 'summary', venueId, from, to] as const,
+    daySlots: (venueId: string, date: string) =>
+      [...queryKeys.weeklyGrid.all, 'daySlots', venueId, date] as const,
+  },
 } as const;
 
 // ============================================================================

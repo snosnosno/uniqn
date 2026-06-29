@@ -12,6 +12,12 @@
  *   isToday          → border-2 border-primary-500, 뱃지 bg-primary-500/15
  *   과거 + count>0   → opacity-60, 탭 가능, 뱃지 bg-primary-500/15
  *   기본             → 탭 가능, 뱃지 bg-primary-500/15
+ *
+ * 그리드 모드(gridCell prop 제공 시, weekly_grid_enabled 플래그 뒤):
+ *   - U2 우선순위 단일 뱃지(부족>공고>배치)만 렌더(priorityBadge SSOT)
+ *   - U1 a11y: 색상 단독 금지 → 글리프(아이콘)+숫자 병기, a11y 라벨에 "부족/공고/배치 N"
+ *   - U3: status별 셀 배경 틴트는 Midnight Craft 토큰 팔레트 리터럴 클래스만(자유 hex 금지)
+ *   - gridCell 없으면 기존 count 동작 100% 유지(무회귀)
  */
 
 import React, { memo, useCallback } from 'react';
@@ -20,6 +26,38 @@ import { format, isBefore, startOfDay } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
 import { triggerHaptic } from '@/utils/haptics';
 import { Skeleton } from '@/components/ui/Skeleton';
+import type { GridDayCell, GridBadgeKind } from '@/domains/weeklyGrid';
+
+/**
+ * 우선순위 뱃지(U2: 1개) 종류별 표시 메타.
+ * U1 a11y: 색상 단독 금지 → glyph(아이콘 대용 글리프)+count 병기 + a11y 라벨에 종류명+수치.
+ * U3: 토큰 팔레트 리터럴 클래스만(동적 className 조립 금지 → dark: 유실 방지).
+ *     라이트 모드는 text-{token}-500(어두운 텍스트)로 충분하나, 다크 surface 위 같은 hue의
+ *     반투명 틴트 배경에서는 -500 텍스트 대비가 낮아 dark: 변형으로 밝은 -300 텍스트를 병행한다.
+ */
+const GRID_BADGE_META: Record<
+  GridBadgeKind,
+  { glyph: string; label: string; unit: string; tokenClass: string }
+> = {
+  shortage: {
+    glyph: '!',
+    label: '부족',
+    unit: '명',
+    tokenClass: 'bg-warning-500/20 text-warning-500 dark:text-warning-300',
+  },
+  job: {
+    glyph: '+',
+    label: '공고',
+    unit: '건',
+    tokenClass: 'bg-primary-500/25 text-primary-500 dark:text-primary-200',
+  },
+  batch: {
+    glyph: '✓',
+    label: '배치',
+    unit: '명',
+    tokenClass: 'bg-success-500/20 text-success-500 dark:text-success-300',
+  },
+};
 
 interface CalendarCellProps {
   date: Date;
@@ -31,6 +69,11 @@ interface CalendarCellProps {
   testID?: string;
   /** true일 때 뱃지 위치에 Skeleton shimmer 표시 (Rule 16) */
   loading?: boolean;
+  /**
+   * 주간 그리드 셀 데이터(weekly_grid_enabled 플래그 뒤). 제공되면 그리드 모드로 동작:
+   * priorityBadge/status 기반 렌더. 미제공이면 기존 count 동작 100% 유지(무회귀).
+   */
+  gridCell?: GridDayCell;
 }
 
 export const CalendarCell = memo(function CalendarCell({
@@ -42,8 +85,12 @@ export const CalendarCell = memo(function CalendarCell({
   onPress,
   testID,
   loading = false,
+  gridCell,
 }: CalendarCellProps) {
-  const disabled = isOutsideMonth || count === 0;
+  const gridMode = gridCell !== undefined;
+  // 그리드 모드: 운영 도구라 월내 모든 날짜 탭 가능(빈 날=배치 추가 진입).
+  // 비그리드 모드: 기존 규칙 유지(공고 0건이면 disabled) → 무회귀.
+  const disabled = gridMode ? isOutsideMonth : isOutsideMonth || count === 0;
   const isPast = isBefore(startOfDay(date), startOfDay(new Date()));
   const dayNumber = format(date, 'd');
   const fullLabel = format(date, 'M월 d일 EEEE', { locale: ko });
@@ -55,13 +102,22 @@ export const CalendarCell = memo(function CalendarCell({
     onPress(date);
   }, [date, disabled, onPress]);
 
+  // U3: 그리드 status별 셀 배경 틴트(토큰 리터럴 클래스만). isSelected가 우선(기존 골드 하이라이트).
+  const statusBg =
+    gridCell !== undefined && !isSelected
+      ? gridCell.status === 'shortage'
+        ? 'bg-warning-500/10'
+        : gridCell.status === 'staffed'
+          ? 'bg-success-500/10'
+          : ''
+      : '';
+
   const containerBase =
     'min-h-10 items-center justify-center rounded-sm mx-0.5 my-0.5 py-1 active:bg-secondary-100 dark:active:bg-surface-hover';
+  // 비그리드 모드: statusBg='' 라 기존 동작과 동일(isToday border 또는 빈 문자열).
   const containerState = isSelected
     ? 'bg-primary-500'
-    : isToday
-      ? 'border-2 border-primary-500'
-      : '';
+    : `${isToday ? 'border-2 border-primary-500' : ''} ${statusBg}`.trim();
   const opacityClass = isOutsideMonth ? 'opacity-30' : isPast && !isSelected ? 'opacity-60' : '';
 
   const numberColor = isSelected
@@ -70,10 +126,23 @@ export const CalendarCell = memo(function CalendarCell({
       ? 'text-primary-500'
       : 'text-content-primary';
 
+  // U2: 우선순위 압축 단일 뱃지(부족>공고>배치) — priorityBadge SSOT.
+  const gridBadge = gridCell?.priorityBadge ?? null;
+  const gridBadgeMeta = gridBadge ? GRID_BADGE_META[gridBadge.kind] : null;
+
   const badgeBase = 'rounded-sm px-1.5 py-0.5 mt-1 text-micro font-sans-medium';
   const badgeColor = isSelected
     ? 'bg-[rgba(9,9,11,0.2)] text-content-onGold'
-    : 'bg-primary-500/25 text-primary-500';
+    : gridMode && gridBadgeMeta
+      ? gridBadgeMeta.tokenClass
+      : 'bg-primary-500/25 text-primary-500';
+
+  // U1 a11y: 그리드 모드는 "종류명 N단위"(색상 외 종류·수치 명시), 비그리드는 기존 "공고 N건".
+  const a11yDetail = gridMode
+    ? gridBadge && gridBadgeMeta
+      ? `${gridBadgeMeta.label} ${gridBadge.count}${gridBadgeMeta.unit}`
+      : '비어있음'
+    : countLabel;
 
   return (
     <Pressable
@@ -81,7 +150,7 @@ export const CalendarCell = memo(function CalendarCell({
       disabled={disabled}
       onPress={handlePress}
       accessibilityRole="button"
-      accessibilityLabel={`${fullLabel} ${countLabel}`}
+      accessibilityLabel={`${fullLabel} ${a11yDetail}`}
       accessibilityState={{ selected: isSelected, disabled }}
       className={`${containerBase} ${containerState} ${opacityClass}`}
     >
@@ -90,6 +159,15 @@ export const CalendarCell = memo(function CalendarCell({
         <View className="mt-1">
           <Skeleton width={24} height={10} accessible={false} />
         </View>
+      ) : gridMode ? (
+        gridBadge !== null &&
+        gridBadgeMeta !== null &&
+        !isOutsideMonth && (
+          <Text className={`${badgeBase} ${badgeColor}`}>
+            {gridBadgeMeta.glyph}
+            {gridBadge.count}
+          </Text>
+        )
       ) : (
         count > 0 &&
         !isOutsideMonth && <Text className={`${badgeBase} ${badgeColor}`}>{count}건</Text>

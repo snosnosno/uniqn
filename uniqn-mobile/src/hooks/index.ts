@@ -4,6 +4,7 @@
 
 export { useAppInitialize } from './useAppInitialize';
 export { useVersionCheck, type UseVersionCheckReturn } from './useVersionCheck';
+export { useWeeklyGridEnabled, type UseWeeklyGridEnabledReturn } from './useWeeklyGridEnabled';
 
 export { useAuth } from './useAuth';
 export {
