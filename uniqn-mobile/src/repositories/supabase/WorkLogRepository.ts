@@ -16,6 +16,7 @@ import { toError, BusinessError, ERROR_CODES } from '@/errors';
 import { handleSupabaseError, createRealtimeSubscription } from '@/utils/supabase';
 import { getTodayString } from '@/utils/date';
 import { STATUS } from '@/constants';
+import { assertSlotColor, assertSlotMemo, composeTimeSlot } from '@/domains/weeklyGrid';
 import type { UnsubscribeFn } from '@/types/common';
 import type { WorkLog, PayrollStatus, QRCodeAction } from '@/types';
 import type {
@@ -23,6 +24,7 @@ import type {
   WorkLogStats,
   MonthlyPayrollSummary,
   WorkLogFilterOptions,
+  UpdateSlotInput,
 } from '../interfaces';
 import {
   executeUpdateWorkTime,
@@ -725,5 +727,54 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
     workDuration: number;
   }> {
     return executeProcessQRCheckInOut(workLogId, staffId, jobPostingId, action, checkTime, date);
+  }
+
+  /**
+   * 슬롯 편집(주간 배치 그리드 B2) — 시간/역할/색상/메모 부분 수정.
+   *
+   * 검증 경계(Repository): color 는 토큰 화이트리스트(자유 hex 거부), memo 는 XSS 검증
+   * 통과분만 기록(S1/U3). startTime+endTime 둘 다 제공 시에만 time_slot 갱신(읽기-수정-쓰기 회피).
+   */
+  async updateSlot(workLogId: string, input: UpdateSlotInput): Promise<void> {
+    try {
+      logger.info('배치 슬롯 편집', { workLogId, fields: Object.keys(input) });
+
+      const updateData: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      };
+
+      // 시간: 시작/종료 둘 다 제공 시에만 time_slot('HH:MM - HH:MM') 갱신.
+      if (input.startTime && input.endTime) {
+        updateData.time_slot = composeTimeSlot(input.startTime, input.endTime);
+      }
+
+      // 역할(StaffRole)
+      if (input.staffRole !== undefined) {
+        updateData.role = input.staffRole;
+      }
+
+      // 색상: 화이트리스트 검증(자유 hex 거부) — 위반 시 ValidationError 던짐
+      if (input.color !== undefined) {
+        updateData.color = assertSlotColor(input.color);
+      }
+
+      // 메모: XSS/길이 검증 — 위반 시 ValidationError 던짐
+      if (input.memo !== undefined) {
+        updateData.notes = assertSlotMemo(input.memo);
+      }
+
+      // 수정 행위자(운영자)
+      if (input.editedBy !== undefined) {
+        updateData.edited_by = input.editedBy;
+      }
+
+      const { error } = await supabase.from(TABLE).update(updateData).eq('id', workLogId);
+
+      if (error) handleSupabaseError(error, { operation: '배치 슬롯 편집', table: TABLE });
+
+      logger.info('배치 슬롯 편집 완료', { workLogId });
+    } catch (error) {
+      rethrowOrHandle(error, '배치 슬롯 편집', { workLogId });
+    }
   }
 }

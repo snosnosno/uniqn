@@ -5,4 +5,8 @@
  */
 export { VenueSelector, type VenueSelectorProps } from './VenueSelector';
 export { VenueDayDetail, type VenueDayDetailProps } from './VenueDayDetail';
+export { VenueDayPanel, type VenueDayPanelProps } from './VenueDayPanel';
 export { buildVenueDayGroup, mapVenueDaySlotToConfirmedStaff } from './venueDayDetailMapping';
+export { AddSlotSheet, type AddSlotSheetProps } from './AddSlotSheet';
+export { buildAddSlotPayload, type BuildAddSlotPayloadParams } from './addSlotPayload';
+export { EditSlotSheet, type EditSlotSheetProps } from './EditSlotSheet';

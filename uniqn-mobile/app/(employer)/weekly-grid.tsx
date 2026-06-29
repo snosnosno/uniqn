@@ -26,7 +26,7 @@ import { StackHeader } from '@/components/headers';
 import { Loading, EmptyState, ErrorState } from '@/components/ui';
 import { ChevronLeftIcon, ChevronRightIcon, MapPinIcon } from '@/components/icons';
 import { CalendarGrid } from '@/components/jobs/DateCalendar/CalendarGrid';
-import { VenueSelector, VenueDayDetail } from '@/components/weeklyGrid';
+import { VenueSelector, VenueDayPanel } from '@/components/weeklyGrid';
 import { useWeeklyGridEnabled } from '@/hooks';
 import { useActiveWorkspace } from '@/hooks/workspace';
 import { useGridSummary, useVenueContainers } from '@/hooks/weeklyGrid';
@@ -190,16 +190,14 @@ export default function WeeklyGridScreen() {
             </View>
           ) : null}
 
-          {/* 선택 날짜 상세(unit 6) */}
+          {/* 선택 날짜 패널(요약·소프트타깃·추가·편집 통합, unit 6 + B 통합) */}
           <View className="mt-1 flex-1 border-t border-divider">
-            <View className="px-4 py-2">
-              <Text className="text-sm font-sans-semibold text-content-primary">
-                {selectedDateLabel} 배치
-              </Text>
-            </View>
-            <View className="flex-1">
-              <VenueDayDetail venueId={selectedVenueId} date={selectedDateString} />
-            </View>
+            <VenueDayPanel
+              venueId={selectedVenueId}
+              date={selectedDateString}
+              dateLabel={selectedDateLabel}
+              cell={gridCells[selectedDateString]}
+            />
           </View>
         </View>
       )}

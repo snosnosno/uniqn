@@ -91,6 +91,11 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
         .from(TABLE)
         .select(TABLE_COLUMNS)
         .eq('id', jobPostingId)
+        // fail-closed(B4): 운영처 컨테이너(status='container')는 by-id 직접조회로도
+        // 일반 JobPosting 카드로 노출하지 않는다(work_logs.job_posting_id 가 컨테이너인
+        // 경우 포함). 컨테이너는 전용 venue read 경로(getVenueContainerById)로만 해소하며,
+        // JobPosting Zod 증발에 의존하지 않는 명시적 차단으로 스키마 진화에 견고하다.
+        .neq('status', STATUS.JOB_POSTING.CONTAINER)
         .maybeSingle();
       if (error) handleSupabaseError(error, { operation: '공고 상세 조회', table: TABLE });
       if (!data) return null;
@@ -110,7 +115,14 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       if (jobPostingIds.length === 0) return [];
       logger.info('공고 배치 조회', { count: jobPostingIds.length });
       const uniqueIds = [...new Set(jobPostingIds)];
-      const { data, error } = await supabase.from(TABLE).select(TABLE_COLUMNS).in('id', uniqueIds);
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select(TABLE_COLUMNS)
+        .in('id', uniqueIds)
+        // fail-closed(B4): 컨테이너 행은 배치 결과에서 제외한다. work_log 카드 해소 경로
+        // (scheduleService.fetchJobPostingContextBatch 등)가 컨테이너를 일반 카드로
+        // hydrate 하지 않도록 보장. 누락 id 는 호출부에서 graceful(삭제 공고와 동일 처리).
+        .neq('status', STATUS.JOB_POSTING.CONTAINER);
       if (error) handleSupabaseError(error, { operation: '공고 배치 조회', table: TABLE });
       const items = dataToJobPostings(data);
       logger.info('공고 배치 조회 완료', { requested: jobPostingIds.length, found: items.length });

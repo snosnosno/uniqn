@@ -6,7 +6,26 @@
  */
 
 import type { UnsubscribeFn } from '@/types/common';
-import type { WorkLog, PayrollStatus, WorkLogStatus, QRCodeAction } from '@/types';
+import type { WorkLog, PayrollStatus, WorkLogStatus, QRCodeAction, StaffRole } from '@/types';
+
+/**
+ * 슬롯 편집(주간 배치 그리드 B2) 입력. 부분 업데이트 — 제공된 필드만 반영한다.
+ *
+ * @property startTime - 시작시각 'HH:MM' (endTime 과 함께 제공 시 time_slot 갱신)
+ * @property endTime - 종료시각 'HH:MM'
+ * @property staffRole - 직무 역할(StaffRole)
+ * @property color - 셀 색상 토큰(화이트리스트, 자유 hex 금지)
+ * @property memo - 메모(XSS 검증 통과분만 기록)
+ * @property editedBy - 수정 행위자(운영자) user id
+ */
+export interface UpdateSlotInput {
+  startTime?: string;
+  endTime?: string;
+  staffRole?: StaffRole;
+  color?: string;
+  memo?: string;
+  editedBy?: string;
+}
 
 /**
  * 근무 기록 조회 필터 옵션
@@ -363,4 +382,16 @@ export interface IWorkLogRepository {
     hasExistingCheckInTime: boolean;
     workDuration: number;
   }>;
+
+  /**
+   * 슬롯 편집(주간 배치 그리드 B2) — 시간/역할/색상/메모 부분 수정.
+   *
+   * 검증 경계(Repository): color 는 토큰 화이트리스트(자유 hex 거부), memo 는 XSS 검증
+   * 통과분만 기록한다(S1/U3). startTime+endTime 둘 다 제공 시 time_slot('HH:MM - HH:MM')을 갱신.
+   *
+   * @param workLogId - 근무 기록 ID
+   * @param input - 수정할 필드(제공된 것만 반영)
+   * @throws ValidationError - 색상 화이트리스트 위반/메모 XSS·길이 위반 시
+   */
+  updateSlot(workLogId: string, input: UpdateSlotInput): Promise<void>;
 }

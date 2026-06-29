@@ -35,6 +35,7 @@ export type {
   WorkLogStats,
   MonthlyPayrollSummary,
   WorkLogFilterOptions,
+  UpdateSlotInput,
 } from './IWorkLogRepository';
 
 // User Repository

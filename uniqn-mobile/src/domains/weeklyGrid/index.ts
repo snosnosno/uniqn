@@ -30,3 +30,24 @@ export {
 export { parseWeeklyGridFlag } from './weeklyGridFlag';
 
 export { buildGridCells, type GridSummaryRow } from './buildGridCells';
+
+export {
+  SLOT_COLOR_TOKENS,
+  SLOT_COLOR_CHIPS,
+  MAX_SLOT_MEMO_LENGTH,
+  slotMemoSchema,
+  isValidSlotColor,
+  assertSlotColor,
+  isSafeSlotMemo,
+  assertSlotMemo,
+  parseSlotStartMinutes,
+  compareSlotsByStartTime,
+  sortSlotsByStartTime,
+  composeTimeSlot,
+  parseTimeSlotParts,
+  detectSlotConflicts,
+  type SlotColorToken,
+  type SlotColorChip,
+  type SlotConflict,
+  type SlotConflictInput,
+} from './slotEdit';

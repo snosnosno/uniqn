@@ -5,3 +5,4 @@ export { useGridSummary } from './useGridSummary';
 export { useVenueDaySlots } from './useVenueDaySlots';
 export { useVenueContainers } from './useVenueContainers';
 export { useSetVenueSoftTarget, type SetVenueSoftTargetVars } from './useSetVenueSoftTarget';
+export { useUpdateSlot, type UpdateSlotVars } from './useUpdateSlot';

@@ -67,6 +67,7 @@ export type {
   IWorkLogRepository,
   WorkLogStats,
   MonthlyPayrollSummary,
+  UpdateSlotInput,
   // User
   IUserRepository,
   DeletionReason,
