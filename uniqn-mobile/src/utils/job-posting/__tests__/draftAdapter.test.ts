@@ -2,10 +2,13 @@ import {
   applyFormDataPatch,
   draftToCreateJobPostingInput,
   draftToFormData,
+  draftToUpdateJobPostingInput,
   formDataToDraft,
+  jobPostingToDraft,
 } from '../draftAdapter';
 import { INITIAL_JOB_POSTING_DRAFT, type JobPostingDraft } from '@/types/jobPostingDraft';
 import { INITIAL_JOB_POSTING_FORM_DATA, type FormRoleWithCount } from '@/types/jobPostingForm';
+import type { JobPosting } from '@/types';
 
 function createDatedDraft(): JobPostingDraft {
   return {
@@ -413,5 +416,95 @@ describe('draftAdapter location.region 보존', () => {
     const form = draftToFormData(draftWithRegion());
     const input = draftToCreateJobPostingInput(formDataToDraft(form));
     expect((input.location as { region?: string }).region).toBe('서울 강남구');
+  });
+});
+
+// R8(최고 회귀위험): venue_id 를 draft 경로 전수배선. region 유실 함정(#194) 패턴 재현 방지.
+describe('draftAdapter venue_id 전수배선', () => {
+  const VENUE_ID = 'venue-container-1';
+
+  function draftWithVenueId(): JobPostingDraft {
+    return { ...createDatedDraft(), venueId: VENUE_ID };
+  }
+
+  function postingWithVenueId(): JobPosting {
+    return {
+      ...createDatedDraft(),
+      id: 'posting-1',
+      status: 'active',
+      ownerId: 'owner-1',
+      workDate: '2026-04-10',
+      totalPositions: 7,
+      filledPositions: 0,
+      venueId: VENUE_ID,
+    } as unknown as JobPosting;
+  }
+
+  it('draftToFormData 가 venueId 를 보존한다', () => {
+    const form = draftToFormData(draftWithVenueId());
+    expect(form.venueId).toBe(VENUE_ID);
+  });
+
+  it('formDataToDraft 가 폼의 venueId 를 draft 로 보존한다 (form→draft)', () => {
+    const form = { ...INITIAL_JOB_POSTING_FORM_DATA, venueId: VENUE_ID };
+    expect(formDataToDraft(form).venueId).toBe(VENUE_ID);
+  });
+
+  it('draftToCreateJobPostingInput 가 venueId 를 생성 페이로드에 포함한다', () => {
+    const input = draftToCreateJobPostingInput(draftWithVenueId());
+    expect((input as { venueId?: string }).venueId).toBe(VENUE_ID);
+  });
+
+  it('formDataToDraft → draftToFormData 왕복에서 venueId 가 살아남는다', () => {
+    const form = draftToFormData(draftWithVenueId());
+    const roundTripped = draftToFormData(formDataToDraft(form));
+    expect(roundTripped.venueId).toBe(VENUE_ID);
+  });
+
+  it('jobPostingToDraft → draftToUpdateJobPostingInput 왕복에서 venueId 가 보존된다 (clobber 방지)', () => {
+    const draft = jobPostingToDraft(postingWithVenueId());
+    expect(draft.venueId).toBe(VENUE_ID);
+    const update = draftToUpdateJobPostingInput(draft);
+    expect((update as { venueId?: string }).venueId).toBe(VENUE_ID);
+  });
+
+  it('confirmed 분기 update 에서도 venueId 를 보존한다', () => {
+    const update = draftToUpdateJobPostingInput(draftWithVenueId(), {
+      hasConfirmedApplicants: true,
+    });
+    expect((update as { venueId?: string }).venueId).toBe(VENUE_ID);
+  });
+
+  // 무회귀: venue_id 없는 일반 공고는 어떤 경로에서도 venueId 키가 생기지 않아야 한다.
+  it('venueId 없는 일반 공고는 draft/form/create/update 에 venueId 키가 부재한다', () => {
+    const draft = createDatedDraft();
+    expect(Object.prototype.hasOwnProperty.call(draft, 'venueId')).toBe(false);
+
+    const form = draftToFormData(draft);
+    expect(Object.prototype.hasOwnProperty.call(form, 'venueId')).toBe(false);
+
+    const create = draftToCreateJobPostingInput(draft);
+    expect(Object.prototype.hasOwnProperty.call(create, 'venueId')).toBe(false);
+
+    const update = draftToUpdateJobPostingInput(draft);
+    expect(Object.prototype.hasOwnProperty.call(update, 'venueId')).toBe(false);
+  });
+
+  // 무회귀: 고정공고 lifecycle 도 venueId 미설정 시 불변(왕복 동일).
+  it('고정공고 round-trip 은 venueId 미설정 시 무회귀(키 부재)', () => {
+    const fixedForm = {
+      ...INITIAL_JOB_POSTING_FORM_DATA,
+      postingType: 'fixed' as const,
+      title: 'Fixed posting',
+      location: { name: 'Seoul' },
+      daysPerWeek: 5,
+      startTime: '19:00',
+      isStartTimeNegotiable: false,
+      roles: [{ name: '딜러', count: 3, isCustom: false }],
+    };
+    const draft = formDataToDraft(fixedForm);
+    expect(Object.prototype.hasOwnProperty.call(draft, 'venueId')).toBe(false);
+    const create = draftToCreateJobPostingInput(draft);
+    expect(Object.prototype.hasOwnProperty.call(create, 'venueId')).toBe(false);
   });
 });

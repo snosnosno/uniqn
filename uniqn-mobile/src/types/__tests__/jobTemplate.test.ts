@@ -4,7 +4,7 @@ import { buildSeedTimeSlots } from '@/utils/job-posting/draftRoles';
 import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types/jobPostingForm';
 import { INITIAL_JOB_POSTING_DRAFT } from '@/types/jobPostingDraft';
 import type { JobPostingDraft } from '@/types/jobPostingDraft';
-import { extractTemplateData, templateToFormData } from '@/types/jobTemplate';
+import { extractTemplateData, templateToDraft, templateToFormData } from '@/types/jobTemplate';
 
 const DEALER_ROLE_NAME = STAFF_ROLES.find((role) => role.key === 'dealer')?.name ?? 'dealer';
 
@@ -284,5 +284,30 @@ describe('jobTemplate dated template helpers', () => {
         countEditedTemplate.schedule.kind === 'dated' &&
         countEditedTemplate.schedule.templateTimeSlots[0]?.roles
     ).toMatchObject([{ role: 'dealer', count: 3 }]);
+  });
+});
+
+// R8: venue_id 전수배선 — 운영처 "공고 열기" 경로가 templateData.venueId 를 draft 로 전달.
+describe('jobTemplate venue_id 매핑 (templateToDraft)', () => {
+  function makeTemplate(templateData: JobPostingTemplate['templateData']): JobPostingTemplate {
+    return {
+      id: 'template-venue-1',
+      userId: 'user-1',
+      name: 'Venue Template',
+      createdAt: '2026-06-30T00:00:00Z',
+      updatedAt: '2026-06-30T00:00:00Z',
+      usageCount: 0,
+      templateData,
+    };
+  }
+
+  it('templateData.venueId 가 있으면 draft.venueId 로 매핑한다', () => {
+    const draft = templateToDraft(makeTemplate({ title: 'A', venueId: 'venue-container-1' }));
+    expect(draft.venueId).toBe('venue-container-1');
+  });
+
+  it('templateData.venueId 가 없으면 draft 에 venueId 키가 부재한다 (무회귀)', () => {
+    const draft = templateToDraft(makeTemplate({ title: 'A' }));
+    expect(Object.prototype.hasOwnProperty.call(draft, 'venueId')).toBe(false);
   });
 });

@@ -273,6 +273,21 @@ describe('jobPosting schemas', () => {
       expect(parsed?.location.region).toBe('서울 강남구');
     });
 
+    it('venueId(운영처 FK)를 읽기 파싱에서 보존한다 (venue_id read 증발 방지)', () => {
+      const parsed = parseJobPostingDocument({
+        ...createValidDocument(),
+        venueId: '123e4567-e89b-42d3-a456-426614174000',
+      });
+      expect(parsed).not.toBeNull();
+      expect(parsed?.venueId).toBe('123e4567-e89b-42d3-a456-426614174000');
+    });
+
+    it('venueId 미설정 일반 공고는 venueId 키 없이 정상 파싱된다 (무회귀)', () => {
+      const parsed = parseJobPostingDocument(createValidDocument());
+      expect(parsed).not.toBeNull();
+      expect(parsed?.venueId).toBeUndefined();
+    });
+
     it('알 수 없는 region 문자열도 read 를 깨뜨리지 않는다', () => {
       const parsed = parseJobPostingDocument({
         ...createValidDocument(),

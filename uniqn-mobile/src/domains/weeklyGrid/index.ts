@@ -32,6 +32,15 @@ export { parseWeeklyGridFlag } from './weeklyGridFlag';
 export { buildGridCells, type GridSummaryRow } from './buildGridCells';
 
 export {
+  COPY_LAST_WEEK_SHIFT_DAYS,
+  shiftDateByDays,
+  toLastWeekDate,
+  toThisWeekDate,
+  buildCopyLastWeekPayload,
+  type CopyLastWeekGroup,
+} from './copyLastWeek';
+
+export {
   SLOT_COLOR_TOKENS,
   SLOT_COLOR_CHIPS,
   MAX_SLOT_MEMO_LENGTH,
@@ -51,3 +60,11 @@ export {
   type SlotConflict,
   type SlotConflictInput,
 } from './slotEdit';
+
+export {
+  buildWeeklyBatchConfirmNotification,
+  WEEKLY_GRID_NOTIFICATION_LINK,
+  WEEKLY_BATCH_CONFIRM_TYPE,
+  type WeeklyBatchConfirmInput,
+  type WeeklyBatchNotificationPayload,
+} from './weeklyBatchNotification';

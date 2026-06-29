@@ -6,3 +6,8 @@ export { useVenueDaySlots } from './useVenueDaySlots';
 export { useVenueContainers } from './useVenueContainers';
 export { useSetVenueSoftTarget, type SetVenueSoftTargetVars } from './useSetVenueSoftTarget';
 export { useUpdateSlot, type UpdateSlotVars } from './useUpdateSlot';
+export { useCopyLastWeek } from './useCopyLastWeek';
+export {
+  useNotifyWeeklyBatchConfirm,
+  type NotifyWeeklyBatchConfirmVars,
+} from './useNotifyWeeklyBatchConfirm';

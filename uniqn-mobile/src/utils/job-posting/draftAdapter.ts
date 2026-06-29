@@ -40,6 +40,16 @@ function getFormDetailedAddress(formData: JobPostingFormData): string | undefine
   return normalizeOptionalText(formData.location?.detailedAddress ?? formData.detailedAddress);
 }
 
+/**
+ * venue_id 전수배선 가드 — region 유실 함정(#194, `hasRegionField`) 패턴 재사용.
+ * 소스에 `venueId` own-property 가 있을 때만 매핑한다. 없으면 키 자체를 생략해
+ * 일반 공고(운영처 미연결) lifecycle 을 불변으로 유지하고, update 경로에서
+ * 기존 venue_id 를 clobber 하지 않는다.
+ */
+function hasVenueIdField(source: { venueId?: string }): boolean {
+  return Object.prototype.hasOwnProperty.call(source, 'venueId');
+}
+
 function toCanonicalPostingLocation(
   location: JobPostingFormData['location'] | JobPostingDraft['location'] | JobPosting['location']
 ) {
@@ -343,6 +353,7 @@ export function formDataToDraft(formData: JobPostingFormData): JobPostingDraft {
         ...(detailedAddress ? { detailedAddress } : {}),
       };
     })(),
+    ...(hasVenueIdField(formData) ? { venueId: formData.venueId } : {}),
     contactPhone: formData.contactPhone,
     tags: formData.tags,
     schedule:
@@ -476,6 +487,7 @@ export function draftToFormData(draft: JobPostingDraft): JobPostingFormData {
     usesPreQuestions: (draft.questions.items ?? []).length > 0,
     preQuestions: draft.questions.items ?? [],
     tags: draft.tags ?? [],
+    ...(hasVenueIdField(draft) ? { venueId: draft.venueId } : {}),
   };
 }
 
@@ -504,6 +516,7 @@ export function draftToCreateJobPostingInput(draft: JobPostingDraft): CreateJobP
     ...(normalizeOptionalText(draft.contactPhone)
       ? { contactPhone: normalizeOptionalText(draft.contactPhone) }
       : {}),
+    ...(hasVenueIdField(draft) ? { venueId: draft.venueId } : {}),
     tags: draft.tags,
     schedule:
       draft.schedule.kind === 'fixed'
@@ -570,12 +583,16 @@ export function draftToUpdateJobPostingInput(
 ): UpdateJobPostingInput {
   const canonicalInput = draftToCreateJobPostingInput(draft);
   const hasConfirmedApplicants = options?.hasConfirmedApplicants ?? false;
+  // venue_id 는 운영처 연결(구조 메타)이라 confirmed 여부와 무관하게 보존한다.
+  // 가드로 draft 에 venueId 가 없으면 키를 생략해 일반 공고 update payload 를 불변 유지.
+  const venueIdPatch = hasVenueIdField(draft) ? { venueId: draft.venueId } : {};
   const updateInput: UpdateJobPostingInput = {
     postingType: canonicalInput.postingType,
     title: canonicalInput.title,
     description: normalizeOptionalText(draft.description),
     location: toUpdateInputLocation(draft.location),
     contactPhone: normalizeOptionalText(draft.contactPhone),
+    ...venueIdPatch,
     tags: canonicalInput.tags,
     compensation: canonicalInput.compensation,
     questions: canonicalInput.questions,
@@ -590,6 +607,7 @@ export function draftToUpdateJobPostingInput(
       description: updateInput.description,
       location: updateInput.location,
       contactPhone: updateInput.contactPhone,
+      ...venueIdPatch,
       tags: updateInput.tags,
       compensation: updateInput.compensation,
       questions: updateInput.questions,
@@ -690,6 +708,7 @@ export function jobPostingToDraft(posting: JobPosting): JobPostingDraft {
     title: posting.title,
     description: posting.description ?? '',
     location: toCanonicalPostingLocation(posting.location),
+    ...(hasVenueIdField(posting) ? { venueId: posting.venueId } : {}),
     contactPhone: posting.contactPhone ?? '',
     tags: posting.tags ?? [],
     schedule:

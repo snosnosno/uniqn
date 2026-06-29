@@ -289,6 +289,15 @@ export function serializeJobPostingV3(
     ownerId: options.ownerId,
     ownerName: options.ownerName ?? current?.ownerName,
     ...(resolvedWorkspaceId ? { workspaceId: resolvedWorkspaceId } : {}),
+    // 운영처(venue) 컨테이너 FK(주간 배치 그리드). region 유실(#194)과 동일 클래스의
+    // 직렬화 경계 silent drop 을 막는다: 신규("공고 열기")는 input.venueId, 편집/정산
+    // 재직렬화는 current.venueId(읽기 하이드레이션)로 보존. 일반 공고는 양쪽 모두
+    // undefined → 키 자체를 생략해 venue_id 미기록(무회귀).
+    ...(input.venueId !== undefined
+      ? { venueId: input.venueId }
+      : current?.venueId !== undefined
+        ? { venueId: current.venueId }
+        : {}),
     postingType,
     workDate: totals.workDate,
     ...(totals.workDates ? { workDates: totals.workDates } : {}),
@@ -426,6 +435,9 @@ export function deserializeJobPostingDocument(document: JobPostingDocumentV3): J
     ownerId: document.ownerId,
     ...(document.ownerName !== undefined ? { ownerName: document.ownerName } : {}),
     ...(document.workspaceId !== undefined ? { workspaceId: document.workspaceId } : {}),
+    // 읽기 하이드레이션: DB venue_id → 런타임 venueId. 미매핑 시 편집 진입(jobPostingToDraft)
+    // 에서 venue 연결이 왕복 불가(#194 read 증발 동일 클래스).
+    ...(document.venueId !== undefined ? { venueId: document.venueId } : {}),
     postingType,
     workDate: derivedDates.workDate,
     ...(derivedDates.workDates ? { workDates: derivedDates.workDates } : {}),

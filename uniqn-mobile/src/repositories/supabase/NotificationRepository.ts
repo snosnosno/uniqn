@@ -30,6 +30,7 @@ import {
 import type {
   INotificationRepository,
   GetNotificationsOptions,
+  CreateNotificationInput,
 } from '../interfaces/INotificationRepository';
 import type { NotificationData, NotificationSettings } from '@/types/notification';
 import type { PaginatedResult } from '@/types/common';
@@ -87,6 +88,42 @@ function toNotification(row: Record<string, unknown>): NotificationData {
  * Supabase Notification Repository
  */
 export class SupabaseNotificationRepository implements INotificationRepository {
+  // ==========================================================================
+  // 생성 (Create)
+  // ==========================================================================
+
+  /**
+   * 알림 직접 INSERT — AFTER 트리거(notification_push_trigger)가 푸시를 발송한다.
+   * category/priority 는 type 에서 파생(미지정 시)해 일관성을 유지한다.
+   */
+  async createNotification(input: CreateNotificationInput): Promise<void> {
+    try {
+      const { error } = await supabase.from(TABLES.NOTIFICATIONS).insert({
+        recipient_id: input.recipientId,
+        type: input.type,
+        category: getNotificationCategory(input.type),
+        title: input.title,
+        body: input.body,
+        link: input.link ?? null,
+        data: input.data ?? null,
+        priority: input.priority ?? getNotificationPriority(input.type),
+      });
+
+      if (error) {
+        handleSupabaseError(error, { operation: '알림 생성', table: TABLES.NOTIFICATIONS });
+      }
+
+      logger.info('알림 생성', { recipientId: input.recipientId, type: input.type });
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      logger.error('알림 생성 실패', toError(error), {
+        recipientId: input.recipientId,
+        type: input.type,
+      });
+      handleSupabaseError(error, { operation: '알림 생성', table: TABLES.NOTIFICATIONS });
+    }
+  }
+
   // ==========================================================================
   // 조회 (Read)
   // ==========================================================================

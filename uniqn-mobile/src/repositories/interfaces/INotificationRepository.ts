@@ -15,6 +15,8 @@ import type {
   NotificationData,
   NotificationSettings,
   NotificationFilter,
+  NotificationType,
+  NotificationPriority,
 } from '@/types/notification';
 
 // ============================================================================
@@ -25,6 +27,22 @@ export interface GetNotificationsOptions {
   filter?: NotificationFilter;
   pageSize?: number;
   lastDoc?: PaginationCursor;
+}
+
+/**
+ * 알림 생성 입력(직접 INSERT 경로).
+ *
+ * @description notifications 테이블에 직접 INSERT 하면 AFTER 트리거가 푸시를 발송한다.
+ *              RLS notifications_insert_service 는 authenticated 면 임의 recipient 로 INSERT 를 허용한다.
+ */
+export interface CreateNotificationInput {
+  recipientId: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  link?: string;
+  data?: Record<string, string>;
+  priority?: NotificationPriority;
 }
 
 // ============================================================================
@@ -49,6 +67,16 @@ export interface INotificationRepository {
    * @returns 알림 또는 null
    */
   getById(notificationId: string): Promise<NotificationData | null>;
+
+  // ==========================================================================
+  // 생성 (Create)
+  // ==========================================================================
+
+  /**
+   * 알림 생성 (직접 INSERT — AFTER 트리거가 푸시 발송)
+   * @param input - 수신자/타입/제목/본문/링크/데이터/우선순위
+   */
+  createNotification(input: CreateNotificationInput): Promise<void>;
 
   /**
    * 사용자별 알림 목록 조회 (페이지네이션)
