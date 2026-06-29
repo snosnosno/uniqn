@@ -12,3 +12,5 @@ export { BlindLevelForm } from './BlindLevelForm';
 export { HistoryTab } from './HistoryTab';
 export { MonitorLinkButton } from './MonitorLinkButton';
 export { PlayerClaimButton } from './PlayerClaimButton';
+// 1d — PAYOUTS 탭
+export { PayoutsTab } from './PayoutsTab';
