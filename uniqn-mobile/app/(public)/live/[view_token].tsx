@@ -5,7 +5,16 @@
  * 상태범위(§0.5 B9): 내 자리·내 스택·라이브 클럭·블라인드. 탈락 ITM 배너·재진입 제외(1d/1f).
  */
 import { useState } from 'react';
-import { View, Text, Pressable, ScrollView, TextInput } from 'react-native';
+import {
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  useColorScheme,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { NumericText } from '@/components/ui';
@@ -29,6 +38,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default function PlayerLiveScreen() {
+  const scheme = useColorScheme();
   const params = useLocalSearchParams<{ view_token: string }>();
   const token = params.view_token;
   const { view, remainingSec, isLoading, isError } = usePlayerView(token);
@@ -161,60 +171,65 @@ export default function PlayerLiveScreen() {
       {/* PIN 게이트 — 슬립의 8자 연결 PIN 입력(비가역 바인딩). */}
       {claimOpen && (
         <View className="absolute inset-0 items-center justify-center bg-black/50 px-8">
-          <View className="w-full gap-3 rounded-xl bg-white p-5 dark:bg-gray-900">
-            <Text className="text-lg font-sans-bold text-content-primary dark:text-off-white">
-              내 계정에 연결
-            </Text>
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400">
-              슬립에 적힌 8자리 연결 PIN을 입력해주세요. 연결 후에는 직접 해제할 수 없어요(잘못 연결
-              시 운영자에게 문의).
-            </Text>
-            <TextInput
-              value={pin}
-              onChangeText={(t) =>
-                setPin(
-                  t
-                    .toUpperCase()
-                    .replace(/[^0-9A-Z]/g, '')
-                    .slice(0, 8)
-                )
-              }
-              autoCapitalize="characters"
-              autoCorrect={false}
-              placeholder="예: 7F3K9A2C"
-              placeholderTextColor="#9ca3af"
-              maxLength={8}
-              className="min-h-[44px] rounded-lg border border-gray-300 px-3 text-center text-lg tracking-widest text-content-primary dark:border-gray-600 dark:text-off-white"
-            />
-            <View className="flex-row justify-end gap-2 pt-1">
-              <Pressable
-                onPress={() => {
-                  setClaimOpen(false);
-                  setPin('');
-                }}
-                accessibilityRole="button"
-                className="min-h-[44px] items-center justify-center rounded-lg px-4"
-              >
-                <Text className="text-secondary-500 dark:text-secondary-400">취소</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => {
-                  if (pin.length !== 8 || claimMut.isPending) return;
-                  setClaimOpen(false);
-                  claimMut.mutate(pin, { onSettled: () => setPin('') });
-                }}
-                disabled={pin.length !== 8 || claimMut.isPending}
-                accessibilityRole="button"
-                className={`min-h-[44px] items-center justify-center rounded-lg px-4 ${
-                  pin.length === 8 && !claimMut.isPending
-                    ? 'bg-primary-600 active:opacity-70'
-                    : 'bg-primary-600 opacity-40'
-                }`}
-              >
-                <Text className="font-sans-semibold text-white">연결하기</Text>
-              </Pressable>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            className="w-full"
+          >
+            <View className="w-full gap-3 rounded-xl bg-white p-5 dark:bg-gray-900">
+              <Text className="text-lg font-sans-bold text-content-primary dark:text-off-white">
+                내 계정에 연결
+              </Text>
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+                슬립에 적힌 8자리 연결 PIN을 입력해주세요. 연결 후에는 직접 해제할 수 없어요(잘못
+                연결 시 운영자에게 문의).
+              </Text>
+              <TextInput
+                value={pin}
+                onChangeText={(t) =>
+                  setPin(
+                    t
+                      .toUpperCase()
+                      .replace(/[^0-9A-Z]/g, '')
+                      .slice(0, 8)
+                  )
+                }
+                autoCapitalize="characters"
+                autoCorrect={false}
+                placeholder="예: 7F3K9A2C"
+                placeholderTextColor={scheme === 'dark' ? '#6b7280' : '#9ca3af'}
+                maxLength={8}
+                className="min-h-[44px] rounded-lg border border-gray-300 px-3 text-center text-lg tracking-widest text-content-primary dark:border-gray-600 dark:text-off-white"
+              />
+              <View className="flex-row justify-end gap-2 pt-1">
+                <Pressable
+                  onPress={() => {
+                    setClaimOpen(false);
+                    setPin('');
+                  }}
+                  accessibilityRole="button"
+                  className="min-h-[44px] items-center justify-center rounded-lg px-4"
+                >
+                  <Text className="text-secondary-500 dark:text-secondary-400">취소</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    if (pin.length !== 8 || claimMut.isPending) return;
+                    setClaimOpen(false);
+                    claimMut.mutate(pin, { onSettled: () => setPin('') });
+                  }}
+                  disabled={pin.length !== 8 || claimMut.isPending}
+                  accessibilityRole="button"
+                  className={`min-h-[44px] items-center justify-center rounded-lg px-4 ${
+                    pin.length === 8 && !claimMut.isPending
+                      ? 'bg-primary-600 active:opacity-70'
+                      : 'bg-primary-600 opacity-40'
+                  }`}
+                >
+                  <Text className="font-sans-semibold text-white">연결하기</Text>
+                </Pressable>
+              </View>
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </View>
       )}
     </SafeAreaView>
