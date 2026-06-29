@@ -40,7 +40,7 @@ export interface OpsTournament {
   updatedAt: string;
 }
 
-/** 참가자(엔트리). claim_token 은 1a 에서 클라이언트로 읽지 않음(D8) → 타입에 없음. */
+/** 참가자(엔트리). view_token 포함(D8 운영자 읽기). claim_pin_hash 는 절대 미포함. */
 export interface OpsParticipant {
   id: string;
   tournamentId: string;
@@ -49,6 +49,8 @@ export interface OpsParticipant {
   nationality?: string | null;
   phone?: string | null;
   playerUserId?: string | null;
+  /** 읽기 능력 토큰(운영자 read·D8). 미발급 시 null. */
+  viewToken: string | null;
   status: OpsParticipantStatus;
   chips: number;
   buyInAmount?: number | null;
@@ -211,8 +213,15 @@ export interface OpsMonitorSnapshot {
   serverNow: string;
 }
 
+/** 운영자 발급 결과(평문 PIN은 1회만 노출 — 슬립용). */
+export interface OpsPlayerCredentials {
+  participantId: string;
+  viewToken: string;
+  claimPin: string;
+}
+
 /**
- * 공개 플레이어뷰 (1c-4) — `ops_get_player_view(p_claim_token)` anon RPC 반환.
+ * 공개 플레이어뷰 (1c-4) — `ops_get_player_view(p_view_token)` anon RPC 반환.
  * **본인 안전필드만**: 타 참가자·phone·nationality·claim_token·player_user_id 미포함.
  * RPC 가 camelCase 키로 직접 반환 → 그대로 소비.
  */
