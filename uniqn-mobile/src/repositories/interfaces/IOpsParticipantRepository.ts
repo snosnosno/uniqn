@@ -1,4 +1,4 @@
-import type { OpsParticipant } from '@/types/ops';
+import type { OpsParticipant, OpsBustResult, OpsReenterResult } from '@/types/ops';
 
 export interface RegisterParticipantInput {
   tournamentId: string;
@@ -21,4 +21,6 @@ export interface IOpsParticipantRepository {
   ): Promise<{ participantId: string; entryNumber: number }>;
   addRebuy(participantId: string, actorId: string): Promise<void>;
   addAddon(participantId: string, actorId: string): Promise<void>;
+  bustParticipant(participantId: string, actorId: string): Promise<OpsBustResult>;
+  reenterParticipant(participantId: string, actorId: string): Promise<OpsReenterResult>;
 }
