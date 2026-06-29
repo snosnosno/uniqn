@@ -75,6 +75,7 @@ export {
   generateEventQR,
   validateEventQR,
   processEventQRCheckIn,
+  processVenueQRCheckIn,
   getActiveEventQR,
   deactivateEventQR,
   cleanupExpiredQRCodes,

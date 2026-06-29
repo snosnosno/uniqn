@@ -42,6 +42,9 @@ export {
   getMySettlementSummary,
 } from './settlementQuery';
 
+// 운영처(venue) 정산 — 주간 배치 그리드 Phase 4 (venue 스팬 + 날짜범위 SQL 집계)
+export { getVenueSettlementWorkLogs } from './settlementVenueQuery';
+
 // ============================================================================
 // Calculation Functions
 // ============================================================================

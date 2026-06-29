@@ -187,11 +187,13 @@ export type {
   SettlementModification,
   // QR 코드 타입
   QRCodeAction,
+  QRProcessAction,
   QRCodeScanResult,
   QRScanError,
   // Event QR 타입 (eventQRCodes 컬렉션)
   EventQRCode,
   EventQRDisplayData,
+  VenueQRDisplayData,
   GenerateEventQRInput,
   EventQRScanResult,
   EventQRValidationResult,
