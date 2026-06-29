@@ -60,3 +60,31 @@ export async function addAddon(participantId: string, actorId: string): Promise<
     });
   }
 }
+
+export async function bustParticipant(participantId: string, actorId: string) {
+  try {
+    logger.info('ops 탈락 처리', { component: COMPONENT, participantId });
+    return await opsParticipantRepository.bustParticipant(participantId, actorId);
+  } catch (error) {
+    if (isAppError(error)) throw error;
+    throw handleServiceError(error, {
+      operation: '탈락 처리',
+      component: COMPONENT,
+      context: { participantId },
+    });
+  }
+}
+
+export async function reenterParticipant(participantId: string, actorId: string) {
+  try {
+    logger.info('ops 재진입', { component: COMPONENT, participantId });
+    return await opsParticipantRepository.reenterParticipant(participantId, actorId);
+  } catch (error) {
+    if (isAppError(error)) throw error;
+    throw handleServiceError(error, {
+      operation: '재진입',
+      component: COMPONENT,
+      context: { participantId },
+    });
+  }
+}
