@@ -17,7 +17,7 @@
 --   - ⑥ 시나리오: 별도 completed 대회 수동 시드(postgres 역할로 직접 INSERT)
 
 BEGIN;
-SELECT plan(14);
+SELECT plan(15);
 
 -- ── 시드 ──────────────────────────────────────────────────────────────────────
 -- ops_test_seed: owner·member·outsider·tournament(upcoming)·participant 1명(active)·빈좌석 2개.
@@ -76,32 +76,32 @@ SELECT ops_test_set_user((current_setting('ops.owner_id'))::uuid);
 -- ── ⑦ actor 가드 ─────────────────────────────────────────────────────────────
 -- 가드①: 위조 actor — member 가 owner 명의로 호출 → auth.uid() ≠ p_actor_id → PERMISSION_DENIED
 SELECT ops_test_set_user((current_setting('ops.member_id'))::uuid);
-SELECT throws_ok(                                                          -- [1]
+SELECT throws_like(                                                        -- [1]
   $$ SELECT public.ops_reenter_participant(
        (current_setting('ops.p0'))::uuid,
        (current_setting('ops.owner_id'))::uuid) $$,
-  'P0001', NULL,
-  '⑦ actor 가드: member→owner 명의 위조 거부 (PERMISSION_DENIED P0001)');
+  '%PERMISSION_DENIED%',
+  '⑦ actor 가드: member→owner 명의 위조 거부 (PERMISSION_DENIED)');
 
 -- 가드②: 비멤버 outsider — 본인 명의라도 is_ops_member=false → PERMISSION_DENIED
 SELECT ops_test_set_user((current_setting('ops.outsider_id'))::uuid);
-SELECT throws_ok(                                                          -- [2]
+SELECT throws_like(                                                        -- [2]
   $$ SELECT public.ops_reenter_participant(
        (current_setting('ops.p0'))::uuid,
        (current_setting('ops.outsider_id'))::uuid) $$,
-  'P0001', NULL,
-  '⑦ actor 가드: 비멤버 outsider 거부 (PERMISSION_DENIED P0001)');
+  '%PERMISSION_DENIED%',
+  '⑦ actor 가드: 비멤버 outsider 거부 (PERMISSION_DENIED)');
 
 SELECT ops_test_set_user((current_setting('ops.owner_id'))::uuid);
 
 -- ── ⑤ not-busted(active) 참가자 재진입 → PARTICIPANT_NOT_BUSTED ──────────────
 -- p0 는 현재 active → 재진입 불가
-SELECT throws_ok(                                                          -- [3]
+SELECT throws_like(                                                        -- [3]
   $$ SELECT public.ops_reenter_participant(
        (current_setting('ops.p0'))::uuid,
        (current_setting('ops.owner_id'))::uuid) $$,
-  'P0001', NULL,
-  '⑤ active 참가자 재진입 거부: PARTICIPANT_NOT_BUSTED (P0001)');
+  '%PARTICIPANT_NOT_BUSTED%',
+  '⑤ active 참가자 재진입 거부: PARTICIPANT_NOT_BUSTED');
 
 -- ── p0 탈락 처리 (3명 active → 2명 잔존, 우승확정 안됨) ─────────────────────────
 SELECT public.ops_bust_participant(
@@ -148,18 +148,24 @@ SELECT is(                                                                 -- [7
 SELECT is(current_setting('ops.r_status'), 'active',                      -- [8]
   '①: auto-seat 성공 → 반환 status=active (빈좌석 2개 확보됨)');
 
+SELECT is(                                                                 -- [9]
+  (SELECT status FROM public.ops_participants
+   WHERE id = (current_setting('ops.p0'))::uuid),
+  'active',
+  '①: DB status=active 복원');
+
 -- ② reentries 카운터 정확히 +1 (반환값 + DB 2중 확인)
-SELECT is(current_setting('ops.r_reentries')::int, 1,                     -- [9]
+SELECT is(current_setting('ops.r_reentries')::int, 1,                     -- [10]
   '②: 반환값 reentries=1 (최초 재진입)');
 
-SELECT is(                                                                 -- [10]
+SELECT is(                                                                 -- [11]
   (SELECT reentries FROM public.ops_participants
    WHERE id = (current_setting('ops.p0'))::uuid),
   1,
   '②: DB reentries=1 영속화');
 
 -- auto-seat: seated=true (빈좌석 배정 성공)
-SELECT is(current_setting('ops.r_seated'), 'true',                        -- [11]
+SELECT is(current_setting('ops.r_seated'), 'true',                        -- [12]
   'auto-seat: seated=true (테이블 open/none, 빈좌석 확보)');
 
 -- ── ③ reentry_allowed=false → REENTRY_NOT_ALLOWED ─────────────────────────────
@@ -174,12 +180,12 @@ UPDATE public.ops_tournaments SET reentry_allowed = false
   WHERE id = (current_setting('ops.t_id'))::uuid;
 SELECT ops_test_set_user((current_setting('ops.owner_id'))::uuid);
 
-SELECT throws_ok(                                                          -- [12]
+SELECT throws_like(                                                        -- [13]
   $$ SELECT public.ops_reenter_participant(
        (current_setting('ops.p0'))::uuid,
        (current_setting('ops.owner_id'))::uuid) $$,
-  'P0001', NULL,
-  '③ reentry_allowed=false → REENTRY_NOT_ALLOWED (P0001)');
+  '%REENTRY_NOT_ALLOWED%',
+  '③ reentry_allowed=false → REENTRY_NOT_ALLOWED');
 
 -- ── ④ max_reentries=0 → MAX_REENTRIES_EXCEEDED ──────────────────────────────
 -- p0.reentries=1 (① 에서 1회 재진입) , max_reentries=0 → 1 >= 0 → 초과
@@ -189,22 +195,22 @@ UPDATE public.ops_tournaments
   WHERE id = (current_setting('ops.t_id'))::uuid;
 SELECT ops_test_set_user((current_setting('ops.owner_id'))::uuid);
 
-SELECT throws_ok(                                                          -- [13]
+SELECT throws_like(                                                        -- [14]
   $$ SELECT public.ops_reenter_participant(
        (current_setting('ops.p0'))::uuid,
        (current_setting('ops.owner_id'))::uuid) $$,
-  'P0001', NULL,
-  '④ max_reentries=0, reentries=1 → MAX_REENTRIES_EXCEEDED (P0001)');
+  '%MAX_REENTRIES_EXCEEDED%',
+  '④ max_reentries=0, reentries=1 → MAX_REENTRIES_EXCEEDED');
 
 -- ── ⑥ completed 대회 재진입 → INVALID_STATUS ──────────────────────────────────
 -- t2: 수동 시드된 completed 대회, t2_pid: busted 참가자
 -- is_ops_member(t2, owner) = true (t2.owner_id = owner_id) → 멤버십 통과 후 status 검증
-SELECT throws_ok(                                                          -- [14]
+SELECT throws_like(                                                        -- [15]
   $$ SELECT public.ops_reenter_participant(
        (current_setting('ops.t2_pid'))::uuid,
        (current_setting('ops.owner_id'))::uuid) $$,
-  'P0001', NULL,
-  '⑥ completed 대회 재진입 → INVALID_STATUS (P0001)');
+  '%INVALID_STATUS%',
+  '⑥ completed 대회 재진입 → INVALID_STATUS');
 
 SELECT * FROM finish();
 ROLLBACK;
