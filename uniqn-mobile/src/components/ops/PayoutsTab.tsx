@@ -4,7 +4,7 @@
  * useOpsPrizes / useSetPrizeStructure 훅 소비. 클라이언트 파생 없음.
  */
 import { useState, useEffect } from 'react';
-import { View, Text, TextInput, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Pressable, ActivityIndicator, useColorScheme } from 'react-native';
 import { useOpsPrizes, useSetPrizeStructure } from '@/hooks/ops';
 
 const fmt = (n: number) => n.toLocaleString('ko-KR');
@@ -21,27 +21,35 @@ function parseAmount(raw: string): number {
 export function PayoutsTab({ tournamentId }: { tournamentId: string }) {
   const { prizes, isLoading } = useOpsPrizes(tournamentId);
   const setMut = useSetPrizeStructure(tournamentId);
+  const colorScheme = useColorScheme();
   const [rows, setRows] = useState<PrizeRow[]>([]);
+  const [dirty, setDirty] = useState(false);
 
-  // 서버 데이터 도착 시 미편집 상태면 draft 동기화
+  // 서버 데이터 도착/갱신 시 미편집 상태면 draft 동기화(편집 중이면 보존).
   useEffect(() => {
-    if (prizes.length > 0) {
+    if (!dirty && prizes.length > 0) {
       setRows(prizes.map((p) => ({ rank: p.rank, amount: String(p.amount) })));
     }
-  }, [prizes]);
+  }, [prizes, dirty]);
 
   const total = rows.reduce((s, r) => s + parseAmount(r.amount), 0);
 
-  const addRow = () => setRows((rs) => [...rs, { rank: rs.length + 1, amount: '' }]);
+  const addRow = () => {
+    setRows((rs) => [...rs, { rank: rs.length + 1, amount: '' }]);
+    setDirty(true);
+  };
 
-  const updateAmount = (idx: number, v: string) =>
+  const updateAmount = (idx: number, v: string) => {
     setRows((rs) => rs.map((r, i) => (i === idx ? { ...r, amount: v } : r)));
+    setDirty(true);
+  };
 
   const save = () => {
     const payload = rows
       .map((r) => ({ rank: r.rank, amount: parseAmount(r.amount) }))
       .filter((r) => r.amount > 0);
-    setMut.mutate(payload);
+    // 저장 성공 후 dirty 리셋 → 이후 서버 동기화 허용
+    setMut.mutate(payload, { onSuccess: () => setDirty(false) });
   };
 
   // 로딩 상태
@@ -65,7 +73,10 @@ export function PayoutsTab({ tournamentId }: { tournamentId: string }) {
           대회 시작 전에 설정하는 걸 권장해요.
         </Text>
         <Pressable
-          onPress={() => setRows([{ rank: 1, amount: '' }])}
+          onPress={() => {
+            setRows([{ rank: 1, amount: '' }]);
+            setDirty(true);
+          }}
           accessibilityRole="button"
           className="mt-2 min-h-[44px] items-center justify-center rounded-md bg-primary-600 px-6 active:opacity-70"
         >
@@ -119,7 +130,7 @@ export function PayoutsTab({ tournamentId }: { tournamentId: string }) {
         }`}
       >
         {setMut.isPending ? (
-          <ActivityIndicator />
+          <ActivityIndicator color={colorScheme === 'dark' ? '#FFFFFF' : '#374151'} />
         ) : (
           <Text className="font-sans-semibold text-white">상금 구조 저장</Text>
         )}
@@ -127,5 +138,3 @@ export function PayoutsTab({ tournamentId }: { tournamentId: string }) {
     </View>
   );
 }
-
-export default PayoutsTab;

@@ -273,6 +273,7 @@ export default function OpsTournamentDetailScreen() {
                               onPress: () =>
                                 bustMut.mutate(item.id, {
                                   onSuccess: (r) => {
+                                    // RPC 계약: winnerFinalized=true면 v_active2=1 조건 동일로 winner 항상 non-null.
                                     if (r.winnerFinalized && r.winner) {
                                       Alert.alert(
                                         '우승 확정',
