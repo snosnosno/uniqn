@@ -9,6 +9,8 @@
 -- 조치: 블랭킷 SELECT 정책에서 컨테이너만 carve-out 한다. 비컨테이너 공고의 가시성은 종전과
 --   완전히 동일(무회귀). 컨테이너는 owner(jp_select owner 분기) / 워크스페이스 멤버·콜라보레이터
 --   (jp_select_managed) / admin 만 볼 수 있다(fail-closed, R2).
+-- 락 안전(R4): 블랭킷 SELECT 정책 교체 시 ACCESS EXCLUSIVE 락 큐 무한점유 방지.
+SET LOCAL lock_timeout = '3s';
 DROP POLICY IF EXISTS "job_postings_select_all" ON public.job_postings;
 CREATE POLICY "job_postings_select_all" ON public.job_postings
   FOR SELECT USING (status <> 'container');

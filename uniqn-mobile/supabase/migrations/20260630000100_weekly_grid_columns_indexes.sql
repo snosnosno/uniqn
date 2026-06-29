@@ -2,6 +2,9 @@
 --
 -- job_postings.venue_id (nullable): 컨테이너 자기참조 + 그 운영처의 open 공고가 가리키는
 --   그룹핑/집계 축. 접근 진실은 workspace_id RLS 가 담당하고, venue_id 는 그룹핑/집계 전용.
+-- 락 안전(R4): 운영 테이블 DDL 이 ACCESS EXCLUSIVE 락 큐를 무한 점유해 쓰기 정체를 일으키지
+--   않도록 상한. 소형 테이블이라 정상 적용은 sub-second, 경합 시에만 3s 후 안전 중단.
+SET LOCAL lock_timeout = '3s';
 ALTER TABLE job_postings
   ADD COLUMN IF NOT EXISTS venue_id uuid REFERENCES job_postings(id);
 
