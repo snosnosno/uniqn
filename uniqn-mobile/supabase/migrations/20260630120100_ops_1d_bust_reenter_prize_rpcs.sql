@@ -287,7 +287,8 @@ BEGIN
 
   SELECT count(*),
          count(DISTINCT (e->>'rank')::int),
-         count(*) FILTER (WHERE (e->>'rank')::int <= 0 OR (e->>'amount')::int < 1)
+         count(*) FILTER (WHERE (e->>'rank') IS NULL OR (e->>'amount') IS NULL
+                             OR (e->>'rank')::int <= 0 OR (e->>'amount')::int < 1)
     INTO v_count, v_distinct, v_bad
     FROM jsonb_array_elements(p_prizes) e;
   IF v_bad > 0 OR v_count <> v_distinct THEN
