@@ -1,6 +1,6 @@
 -- ops claim 토큰 분리: 하이재킹 차단(view_token 단독 claim 불가) + NULL fail-closed + 오라클 회피 + PII 차단.
 BEGIN;
-SELECT plan(31);
+SELECT plan(36);
 
 -- ── 설정: 참가자 A(PII 부여) + 참가자 B(cross-token) ──
 DO $$
@@ -35,8 +35,10 @@ SELECT ok(has_function_privilege('authenticated','public.ops_claim_participant(t
 -- 구 시그니처 제거 확인(오버로딩 우회 차단)
 SELECT ok(to_regprocedure('public.ops_claim_participant(text,uuid)') IS NULL,
   '구 2-인자 claim 시그니처 제거됨');
+SELECT ok(NOT has_function_privilege('anon','public.ops_unclaim_participant(uuid,uuid)','EXECUTE'),
+  'anon CANNOT unclaim');
 
--- ── (8~10) issue (운영자) — view_token + PIN 발급/로테이트 ──
+-- ── (9~11) issue (운영자) — view_token + PIN 발급/로테이트 ──
 SELECT ops_test_set_user((current_setting('ops.owner_id'))::uuid);
 DO $$
 DECLARE r jsonb;
@@ -143,6 +145,25 @@ SELECT throws_like(
 SELECT is(
   (public.ops_claim_participant(current_setting('ops.viewB'), current_setting('ops.pinB2'), (current_setting('ops.outsider_id'))::uuid) ->> 'claimed'),
   'true', 'rotate: 새 PIN으로 claim 성공');
+
+-- ── (32~35) unclaim 복구 경로 ──
+-- A 는 앞 테스트(26~30)에서 outsider_id 에 바인딩된 상태
+SELECT ops_test_set_user((current_setting('ops.outsider_id'))::uuid);
+SELECT throws_ok(
+  $$ SELECT public.ops_unclaim_participant((current_setting('ops.participant_id'))::uuid, (current_setting('ops.outsider_id'))::uuid) $$,
+  'P0001', NULL, 'unclaim: 비멤버 거부(outsider 는 운영자 아님)');
+SELECT ops_test_set_user((current_setting('ops.owner_id'))::uuid);
+SELECT is(
+  (public.ops_unclaim_participant((current_setting('ops.participant_id'))::uuid, (current_setting('ops.owner_id'))::uuid) ->> 'unclaimed'),
+  'true', 'unclaim: owner 복구 성공');
+SELECT set_config('role','postgres', true);
+SELECT is(
+  (SELECT player_user_id FROM public.ops_participants WHERE id=(current_setting('ops.participant_id'))::uuid),
+  NULL, 'unclaim 후 player_user_id NULL 확인');
+SELECT ops_test_set_user((current_setting('ops.member_id'))::uuid);
+SELECT is(
+  (public.ops_claim_participant(current_setting('ops.viewA'), current_setting('ops.pinA'), (current_setting('ops.member_id'))::uuid) ->> 'claimed'),
+  'true', 'unclaim 후 member 재클레임 성공');
 
 SELECT * FROM finish();
 ROLLBACK;

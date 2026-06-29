@@ -1,7 +1,7 @@
 /**
  * 공개 플레이어뷰 — ops 1c-4.
  * capability-URL: view_token 만으로 접근(anon). usePlayerView 가 4s 폴링 + 서버시각 offset 보정.
- * 본인 안전필드만 표시(타 참가자·phone·claim_token 미노출). 로그인 시 본인 계정 연결(claim).
+ * 본인 안전필드만 표시(타 참가자·phone·view_token 미노출). 로그인 시 본인 계정 연결(claim).
  * 상태범위(§0.5 B9): 내 자리·내 스택·라이브 클럭·블라인드. 탈락 ITM 배너·재진입 제외(1d/1f).
  */
 import { useState } from 'react';

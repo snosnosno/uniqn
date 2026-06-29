@@ -176,7 +176,7 @@ export interface OpsMonitorLevel {
 
 /**
  * 공개 모니터(전광판) 스냅샷 (1c-3) — `ops_get_monitor_snapshot(p_monitor_token)` anon RPC 반환.
- * **비-PII 화이트리스트 투영**: 참가자 PII·claim_token·monitor_token·owner 미포함(집계만).
+ * **비-PII 화이트리스트 투영**: 참가자 PII·view_token·monitor_token·owner 미포함(집계만).
  * RPC 가 camelCase 키로 직접 반환(toCamelCase shallow 회피) → 그대로 소비.
  */
 export interface OpsMonitorSnapshot {
