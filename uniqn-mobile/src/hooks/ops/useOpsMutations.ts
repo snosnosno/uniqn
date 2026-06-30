@@ -317,3 +317,26 @@ export function useRedrawWaitlistFill(tournamentId: string) {
     },
   });
 }
+
+/** 배정 2종(랜덤/칩 드래프트) 전원 재배치 훅. onSuccess: seats/participants/liveStats 무효화 + toast. */
+export function useReseatParticipants(tournamentId: string) {
+  const qc = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (v: {
+      assignments: { participantId: string; seatId: string }[];
+      mode: 'random_draw' | 'chip_draft';
+    }) =>
+      opsSeatService.reseatParticipants(tournamentId, requireActor(actorId), v.assignments, v.mode),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
+      qc.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
+      qc.invalidateQueries({ queryKey: queryKeys.ops.liveStats(tournamentId) });
+      toast.success(`${res.moved}명 재배치 완료`);
+    },
+    onError: (e) => {
+      logger.error('ops 전원 재배치 실패', toError(e));
+      toast.error(extractUserMessage(e) || '재배치에 실패했습니다');
+    },
+  });
+}

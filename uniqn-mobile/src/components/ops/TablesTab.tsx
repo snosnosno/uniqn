@@ -67,6 +67,10 @@ export function TablesTab({ tournamentId }: TablesTabProps) {
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showRedraw, setShowRedraw] = useState(false);
+  const [showRedrawPicker, setShowRedrawPicker] = useState(false);
+  const [redrawMode, setRedrawMode] = useState<'waitlist_fill' | 'random_draw' | 'chip_draft'>(
+    'waitlist_fill'
+  );
   const [seatMenuSeat, setSeatMenuSeat] = useState<OpsSeat | null>(null);
   const [assignTargetSeat, setAssignTargetSeat] = useState<OpsSeat | null>(null);
   const [moveFromSeat, setMoveFromSeat] = useState<OpsSeat | null>(null);
@@ -181,10 +185,27 @@ export function TablesTab({ tournamentId }: TablesTabProps) {
         />
       )}
 
+      {/* 배정 모드 선택 피커(빈자리채움·랜덤·칩드래프트) */}
+      <SelectBottomSheet
+        visible={showRedrawPicker}
+        onClose={() => setShowRedrawPicker(false)}
+        title="배정 방식 선택"
+        options={[
+          { label: '빈자리 채움 (대기 → 빈 좌석)', value: 'waitlist_fill' },
+          { label: '랜덤 전원 재배치', value: 'random_draw' },
+          { label: '칩 드래프트 전원 재배치', value: 'chip_draft' },
+        ]}
+        onSelect={(v) => {
+          setRedrawMode(v as 'waitlist_fill' | 'random_draw' | 'chip_draft');
+          setShowRedraw(true);
+        }}
+      />
+
       <RedrawModal
         tournamentId={tournamentId}
         visible={showRedraw}
         onClose={() => setShowRedraw(false)}
+        mode={redrawMode}
       />
     </>
   );
@@ -295,9 +316,9 @@ export function TablesTab({ tournamentId }: TablesTabProps) {
     <View className="flex-1">
       <View className="flex-row items-center justify-between px-4 py-2">
         <Pressable
-          onPress={() => setShowRedraw(true)}
+          onPress={() => setShowRedrawPicker(true)}
           accessibilityRole="button"
-          className="rounded-md bg-gray-100 px-3 py-1.5 active:opacity-70 dark:bg-gray-800"
+          className="min-h-[44px] items-center justify-center rounded-md bg-gray-100 px-3 active:opacity-70 dark:bg-gray-800"
         >
           <Text className="font-sans-semibold text-sm text-content-primary dark:text-off-white">
             Redraw

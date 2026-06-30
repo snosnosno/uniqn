@@ -149,3 +149,23 @@ describe('mapOpsRpcError (Task S1)', () => {
     });
   });
 });
+
+describe('opsRpcError — 배정 신규 prefix', () => {
+  it('SEAT_ASSIGNMENT_INVALID → E6129 + 한글 userMessage', () => {
+    const e = captureThrown({
+      message: 'SEAT_ASSIGNMENT_INVALID: 좌석 배정 정보가 올바르지 않아요.',
+    }) as BusinessError;
+    expect(e.code).toBe('E6129');
+    expect(e.userMessage).toBe('좌석 배정 정보가 올바르지 않아요.'); // ERROR_MESSAGES 누락 시 UNKNOWN 폴백 → 적발
+  });
+  it('INVALID_REDRAW_MODE → E6131', () => {
+    expect((captureThrown({ message: 'INVALID_REDRAW_MODE: x' }) as BusinessError).code).toBe(
+      'E6131'
+    );
+  });
+  it('SEAT_ASSIGNMENT_INVALID는 SEAT_TAKEN(E6106)으로 오매핑 안 됨(상호 부분문자열 아님)', () => {
+    expect((captureThrown({ message: 'SEAT_ASSIGNMENT_INVALID: x' }) as BusinessError).code).toBe(
+      'E6129'
+    );
+  });
+});

@@ -4,7 +4,7 @@ import { handleSupabaseError, toCamelCase } from '@/utils/supabase';
 import { mapOpsRpcError } from './opsRpcError';
 import type { IOpsSeatRepository } from '../interfaces/IOpsSeatRepository';
 import type { OpsSeat } from '@/types/ops';
-import type { WaitlistAssignment } from '@/domains/ops';
+import type { WaitlistAssignment, SeatAssignment } from '@/domains/ops';
 
 const TABLE = 'ops_seats' as const;
 const COLUMNS =
@@ -88,6 +88,32 @@ export class SupabaseOpsSeatRepository implements IOpsSeatRepository {
     } catch (error) {
       if (isAppError(error)) throw error;
       mapOpsRpcError(error, { operation: 'ops 대기채움 redraw' });
+    }
+  }
+
+  /** 배정 2종(랜덤/칩 드래프트) 전원 재배치. */
+  async reseatParticipants(
+    tournamentId: string,
+    actorId: string,
+    assignments: SeatAssignment[],
+    mode: 'random_draw' | 'chip_draft'
+  ): Promise<{ moved: number; seated: number; mode: string }> {
+    try {
+      const { data, error } = await supabase.rpc('ops_reseat_participants', {
+        p_tournament_id: tournamentId,
+        p_actor_id: actorId,
+        p_assignments: assignments.map((a) => ({
+          participant_id: a.participantId,
+          seat_id: a.seatId,
+        })),
+        p_mode: mode,
+      });
+      if (error) mapOpsRpcError(error, { operation: 'ops 전원 재배치' });
+      const row = data as { moved: number; seated: number; mode: string };
+      return { moved: row.moved, seated: row.seated, mode: row.mode };
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      mapOpsRpcError(error, { operation: 'ops 전원 재배치' });
     }
   }
 }
