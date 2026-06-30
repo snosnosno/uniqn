@@ -22,6 +22,8 @@ export interface VenueSelectorProps {
   selectedVenueId: string | null;
   onSelectVenue: (id: string) => void;
   isLoadingContainers?: boolean;
+  /** 제공 시 운영처 칩 줄에 "+ 운영처 추가" 진입점 노출. */
+  onAddVenue?: () => void;
 }
 
 interface ChipProps {
@@ -64,6 +66,7 @@ export function VenueSelector({
   selectedVenueId,
   onSelectVenue,
   isLoadingContainers = false,
+  onAddVenue,
 }: VenueSelectorProps) {
   const handleSelectWorkspace = useCallback(
     (id: string) => () => onSelectWorkspace(id),
@@ -102,27 +105,39 @@ export function VenueSelector({
           <ActivityIndicator size="small" />
           <Text className="ml-2 text-sm text-content-secondary">운영처 불러오는 중…</Text>
         </View>
-      ) : containers.length === 0 ? (
-        <View className="h-10 justify-center">
-          <Text className="text-sm text-content-secondary">
-            이 워크스페이스에 등록된 운영처가 없어요
-          </Text>
-        </View>
       ) : (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingRight: 8 }}
+          contentContainerStyle={{ paddingRight: 8, alignItems: 'center' }}
         >
-          {containers.map((c) => (
-            <Chip
-              key={c.id}
-              label={c.name}
-              selected={c.id === selectedVenueId}
-              onPress={handleSelectVenue(c.id)}
-              a11yLabel={`운영처 ${c.name}`}
-            />
-          ))}
+          {containers.length === 0 ? (
+            <View className="mr-2 h-10 justify-center">
+              <Text className="text-sm text-content-secondary">
+                이 워크스페이스에 등록된 운영처가 없어요
+              </Text>
+            </View>
+          ) : (
+            containers.map((c) => (
+              <Chip
+                key={c.id}
+                label={c.name}
+                selected={c.id === selectedVenueId}
+                onPress={handleSelectVenue(c.id)}
+                a11yLabel={`운영처 ${c.name}`}
+              />
+            ))
+          )}
+          {onAddVenue ? (
+            <Pressable
+              onPress={onAddVenue}
+              accessibilityRole="button"
+              accessibilityLabel="운영처 추가"
+              className="min-h-[40px] flex-row items-center justify-center rounded-full border border-dashed border-primary-400 px-4 py-2"
+            >
+              <Text className="text-sm font-sans-medium text-primary-500">+ 운영처 추가</Text>
+            </Pressable>
+          ) : null}
         </ScrollView>
       )}
     </View>
