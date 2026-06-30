@@ -12,6 +12,7 @@ import { TabHeader } from '@/components/headers';
 import { WorkspaceContextBar } from '@/components/workspace';
 import {
   BriefcaseIcon,
+  CalendarDaysIcon,
   ChevronRightIcon,
   PlusIcon,
   UserPlusIcon,
@@ -25,6 +26,7 @@ import {
   useReopenJobPosting,
 } from '@/hooks/useJobManagement';
 import { useSharedJobPostings } from '@/hooks/job-posting/useSharedJobPostings';
+import { useWeeklyGridEnabled } from '@/hooks';
 import { useHasRole } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
 import type { JobPosting } from '@/types';
@@ -134,6 +136,8 @@ function EmployerView() {
   const closeMutation = useCloseJobPosting();
   const reopenMutation = useReopenJobPosting();
   const isDarkMode = useThemeStore((s) => s.isDarkMode);
+  // 주간 배치 그리드(holdem 펍 운영 그리드) 진입점 — 플래그 ON 일 때만 노출(무회귀)
+  const { enabled: weeklyGridEnabled } = useWeeklyGridEnabled();
   const [filter, setFilter] = useState<FilterStatus>('all');
   const [closeTargetId, setCloseTargetId] = useState<string | null>(null);
   const [reopenTargetId, setReopenTargetId] = useState<string | null>(null);
@@ -230,6 +234,10 @@ function EmployerView() {
     router.push('/(employer)/my-postings/create');
   }, []);
 
+  const handleWeeklyGrid = useCallback(() => {
+    router.push('/(employer)/weekly-grid');
+  }, []);
+
   // 공유받은 공고 (collaborator 본인 시점)
   const { sharedPostings } = useSharedJobPostings();
   const handleSharedPostingPress = useCallback((shared: SharedJobPosting) => {
@@ -312,6 +320,17 @@ function EmployerView() {
         >
           <Text className="ml-2 font-sans-semibold text-content-onGold">새 공고 작성</Text>
         </Button>
+        {weeklyGridEnabled ? (
+          <Button
+            variant="outline"
+            onPress={handleWeeklyGrid}
+            icon={<CalendarDaysIcon size={20} color={getIconColor(isDarkMode, 'primary')} />}
+            className="mt-2"
+            accessibilityLabel="주간 배치 그리드 열기"
+          >
+            <Text className="ml-2 font-sans-semibold text-content-primary">주간 배치 그리드</Text>
+          </Button>
+        ) : null}
       </View>
 
       <FilterTabs selected={filter} onChange={setFilter} counts={filterCounts} />

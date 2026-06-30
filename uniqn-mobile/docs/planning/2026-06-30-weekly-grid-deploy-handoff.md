@@ -67,7 +67,7 @@
 
 ## 2.5 ⚠️ 출하(플래그 ON) 전 필수 코드 보강 (독립 감사 발견)
 
-- **[HIGH] 그리드 화면 네비 진입점 부재**: `app/(employer)/weekly-grid.tsx` 화면은 완성·플래그게이트됐으나, 앱 어디에도 이 화면으로 가는 메뉴/버튼/Link가 **없음**(grep 0건). 플래그 ON 해도 직접 URL 외 도달 불가. → (employer) 홈/메뉴/탭에 `weekly_grid_enabled` ON일 때만 노출되는 진입 버튼 추가 필요. **플래그 OFF 출하·머지는 차단 아님**(진입점 없어도 무해), **ON 전 필수**.
+- **[HIGH→✅해소] 그리드 화면 네비 진입점**: `app/(app)/(tabs)/employer.tsx`("내 공고" 탭) "새 공고 작성" 아래에 `weekly_grid_enabled` ON일 때만 노출되는 "주간 배치 그리드" 버튼(outline, CalendarDaysIcon, a11y라벨) 추가 → `/(employer)/weekly-grid` 이동. 플래그 OFF 기본값이라 미노출=무회귀. 커밋 `dc...`(아래). tsc 0·eslint 0.
 - **[MED] venue QR vs venue 스팬 비대칭**: `processVenueQRCheckIn`은 컨테이너 직접배치 스태프만 해소(`findByJobPostingStaffDate(containerId)`). "공고 열기"로 만든 open 공고 확정 스태프는 work_log가 open 공고에 매달려 venue QR로 안 잡힘(count/정산은 venue 스팬이라 잡힘=E1 비대칭). → open 공고 스태프는 기존 공고 QR 사용 가정을 문서화/검증, 또는 venue QR도 스팬 조회로 확장.
 
 ## 3. 앱 출하 (OTA)
