@@ -7,6 +7,23 @@
 
 ---
 
+## ⚠️ 환경 드리프트 (착수 전 필독 — 동시 세션 기인)
+
+**증거**(`list_migrations` 2026-06-30): **prod에는 적용됐으나 master/로컬 `supabase/migrations/`에 파일이 없는 마이그 14종**이 존재한다 — 동시 진행 중인 별도 세션들의 작업이다.
+- **스태프 1종**: `20260629000000_staff_management_direct_add`
+- **weekly_grid 13종**: `20260630000000_weekly_grid_container_enum` ~ `20260702000000_weekly_grid_qr_container_auto` + `20260703000000_weekly_grid_read_rpc_workspace_guard`
+- (ops 1a~1d는 master·prod 양쪽 존재 — 버전 타임스탬프만 상이=알려진 무해 패턴.)
+
+**함의(반드시 인지):**
+1. **로컬 `npm run db:reset`은 staff/weekly_grid 객체를 재현하지 못함** → 로컬 DB ≠ prod. 1d까지의 ops 로컬 검증은 무영향이나, 아래 1e가 직접 걸린다.
+2. **1e 스태프 연동 직격**: prod에 이미 `staff_management_direct_add`가 있다. ops_staff/딜러 배정 설계 **전에 prod의 해당 마이그 실체(테이블/RPC/enum)를 read-only로 실측**해 (a)네임스페이스 충돌 (b)기존 스태프 표면과의 중복을 reconcile할 것. 로컬만 보고 설계하면 stale.
+3. **`supabase.ts` canonical(master)도 staff/weekly_grid 타입 미포함** → 1d처럼 **수술적 타입 추가** 유지(전체 MCP 재생성 시 무관 타입 유입). staff/weekly_grid 브랜치가 master에 머지되면 그때 MCP gen으로 정합.
+4. **이 작업들은 병렬 세션 소유**(weekly_grid=워크트리 `feat/weekly-batch-grid`·자체 배포 게이트 / staff=별도 세션). **머지·이동 금지**(병렬세션 격리 규칙) — 인지만 하고 건드리지 말 것.
+
+**착수 시 액션**: 슬라이스 시작 시 `list_migrations`+`get_advisors`로 현재 prod 상태를 재확인(그 사이 staff/weekly_grid가 master에 머지됐을 수 있음).
+
+---
+
 T-HOLDEM ops(홀덤 대회 라이브 운영 엔진) 슬라이스 작업이 **1a~1d까지 prod 출하** 완료됐다. 다음은 **출하된 전 슬라이스를 점검**하고 **남은 슬라이스를 재매핑·설계**한다. 권위 명세는 `docs/planning/2026-06-23-tournament-ops-revival-slice1-design.md`(§10 슬라이스 표). 코딩 금지 — 점검→브레인스토밍→설계까지.
 
 ## 슬라이스 현황 (점검 시 실측 확인)

@@ -92,3 +92,16 @@
 - **Context**: 파일 헤더 주석 (line 1-12): "FCM 토큰 갱신 서비스 (Exponential Backoff 기반)" — 이미 명확하나 파일명이 거짓말. `src/hooks/useFCMTokenManager.ts`가 주 호출자.
 - **Depends on / blocked by**: `2026-04-25-session-keep-alive` PR 머지 후 (충돌 회피).
 - **Status**: 후속 chore PR로 처리 예정.
+
+## T-HOLDEM ops 라이브 운영 — 후속 PR (2026-06-30)
+
+> 권위 추적: 스펙 `uniqn-mobile/docs/superpowers/specs/2026-06-29-ops-1d-bust-reentry-itm-design.md` §14 · 메모리 `project_tholdem_ops_revival_20260623`.
+
+### [MEDIUM] LS-매개 데드락 — `ops_live_stats` 트리거를 DEFERRED CONSTRAINT TRIGGER로 전환
+
+- **What**: 1c `fn_ops_live_stats_recompute` 재계산 트리거를 일반 `AFTER ROW` → `DEFERRED CONSTRAINT TRIGGER`(트랜잭션 커밋 직전 1회)로 전환. LS행을 항상 모든 데이터행 락 **이후**에만 획득하게 만들어 `(전 데이터행) < LS` 전역 락 순서를 복원.
+- **Why**: 1d 출하 적대검증(conc-7)이 적발. AFTER ROW 트리거가 변경 직후 LS행을 잠가, bust는 `UPDATE ops_participants`(→LS 획득) **후** winner/좌석을 잠가 `LS < {S, P_winner}` 역전이 발생. advisory 비보유 변이(`add_rebuy`/`add_addon`/좌석 RPC/`claim`/`redraw` = `(P,S) → LS`)와 bust가 ABBA 순환(40P01) 가능.
+- **심각도/긴급도**: [MEDIUM] 비긴급. **자기치유**(40P01 자동 abort+재시도) + **prod `ops_tournaments` 0행**이라 실피해 미미. **이번(1d) 락순서 수정과 인과 무관·선재** — 1c 트리거 + 1b redraw 양쪽 관여.
+- **Context**: 1c 메커니즘(live_stats 트리거) + 1b redraw에 걸침 → 독립 작업. 신규 마이그(트리거 정의 변경) + pgTAP + 적대검증 재실행 필요. **남은 슬라이스가 live_stats 트리거를 건드리면(특히 1f 풀 산정) 함께 처리 고려**.
+- **Depends on / blocked by**: 없음(독립). 1d(#218) 머지 후 언제든 별도 PR 가능.
+- **Status**: 추적만(미착수). 별도 PR 대기.
