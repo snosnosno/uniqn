@@ -50,8 +50,9 @@ type ReseatResult =
   | { ok: false; reason: 'INSUFFICIENT_SEATS'; available: number; required: number };
 ```
 
-- **적격 좌석** = `tables.status='open' && lockType='none'` 테이블에 속한 좌석 전체(점유/빈 무관 — 전원 재배치라 기존 점유자도 풀에 포함되어 다시 배정됨). 단 **목표로 쓸 수 있는 좌석**은 그 적격 좌석 전부(재배치 후 풀 플레이어가 채움).
-- `players.length > 적격좌석수` → `{ok:false, INSUFFICIENT_SEATS}`(클라 사전 차단; 서버도 재검증).
+- **적격 좌석** = `tables.status='open' && lockType='none'` 테이블에 속한 좌석 전체(점유/빈 무관 — 전원 재배치라 적격 테이블 기존 점유자도 풀에 포함되어 다시 배정됨).
+- **대상 풀 = active+checked_in 중 "보호 테이블(비-open 또는 locked/feature) 점유자"는 제외**(피처/잠금 테이블 점유자 보호 — 적대검증 F2). 클라가 풀에서 선제외 + RPC 소스 가드 백스톱(§4.3-8).
+- `players.length > 적격좌석수` → `{ok:false, INSUFFICIENT_SEATS}`. **클라 순수함수 신호이며 RPC는 raise 안 함**(§4.3-8) — 서버는 구조/적격성/TOCTOU만 재검증, 좌석 부족은 클라 전담.
 
 ### 3.2 `seatWithinTable(buckets, rng)` — 공유 2단계
 
@@ -91,9 +92,9 @@ ops_reseat_participants(
 ) RETURNS jsonb          -- {moved:int, seated:int, mode:text}
 ```
 
-### 4.2 잠금 순서 불변식 (1d와 통일 — 데드락 회피)
+### 4.2 잠금 순서 불변식 (좌석-우선 — 데드락 회피)
 
-`advisory(대회) → 대회 FOR UPDATE → 참가자 FOR UPDATE(id asc) → 좌석 FOR UPDATE(id asc)`. bust/reenter와 **동일 advisory 키** `hashtext('ops_tournament_'||p_tournament_id::text)::bigint`로 reseat·bust·reenter 상호 직렬화 → 동시 재배치/탈락 레이스 제거.
+`advisory(대회) → 대회 FOR UPDATE → **좌석 FOR UPDATE(id asc) → 참가자 FOR UPDATE(id asc)**`. **좌석을 참가자보다 먼저** 잠가 비-advisory 좌석 RPC(`ops_assign_seat`/`ops_move_seat`/`ops_redraw_waitlist_fill` — 전부 좌석-우선)와 순서를 통일 → ABBA 데드락 회피. ⚠️적대검증 적발: 1b redraw/assign은 **좌석-우선**이라, reseat가 참가자-우선이면 advisory 미공유 좌석 RPC와 40P01. bust/reenter는 참가자-우선이나 reseat와 **동일 advisory 키** `hashtext('ops_tournament_'||p_tournament_id::text)::bigint`로 직렬화되어 동시 실행 불가 → 교차 순서 무해.
 
 ### 4.3 절차
 
@@ -101,14 +102,14 @@ ops_reseat_participants(
 2. **mode 검증**: `p_mode NOT IN ('random_draw','chip_draft')` → `INVALID_REDRAW_MODE`.
 3. **assignments 파싱·구조 검증**(`jsonb_array_elements`): 비어있음/참가자 중복/좌석 중복/`participant_id`·`seat_id` NULL·비-uuid → `SEAT_ASSIGNMENT_INVALID`. 참가자 수 == 좌석 수.
 4. **advisory xact 락** → **대회 `SELECT status FROM ops_tournaments WHERE id=p_tournament_id FOR UPDATE`**(NOT FOUND → `TOURNAMENT_NOT_FOUND`). `status='completed'` → `INVALID_STATUS`(종료 대회 재배치 금지). is_ops_member(p_tournament_id, p_actor_id) OR is_admin() → 아니면 `PERMISSION_DENIED`.
-5. **참가자 잠금·가드**(id asc): 배정된 모든 participant를 `SELECT ... FROM ops_participants WHERE tournament_id=p_tournament_id AND id = ANY(v_pids) ORDER BY id FOR UPDATE`. (a)존재·동일대회 수 일치(아니면 `PARTICIPANT_NOT_FOUND`) (b)전원 `status IN ('active','checked_in')`(busted/no_show 섞이면 `PARTICIPANT_NOT_ACTIVE` — TOCTOU: 동시 bust 적발).
-6. **좌석 잠금**(id asc): 관여 좌석 = 목표 좌석 ∪ 풀 플레이어 현재 점유 좌석 = `SELECT id, participant_id FROM ops_seats WHERE tournament_id=p_tournament_id AND (id = ANY(v_seat_ids) OR participant_id = ANY(v_pids)) ORDER BY id FOR UPDATE`.
-7. **좌석 가드**(목표 좌석별): (a)존재·동일대회(아니면 `SEAT_ASSIGNMENT_INVALID`) (b)소속 테이블 `status='open' AND lock_type='none'`(아니면 `TABLE_NOT_OPEN`) (c)**현재 점유자가 NULL이거나 풀 참가자**(외부인이 동시 착석 → `SEAT_VERSION_CONFLICT`. 미리보기 이후 보드 변경 적발).
-8. **좌석 수 일관**: 참가자 수 == 목표 좌석 수는 §4.3-3 구조 검증으로 보장. **`INSUFFICIENT_SEATS`(풀 인원 > 적격 빈좌석)는 클라 순수함수(§3)·미리보기 단계 오류**이며 RPC는 완성된 배정만 받으므로 raise하지 않는다. **부분 배정도 허용**(배정에 없는 참가자는 좌석 유지 — 미래 "특정 테이블" 스코프 토대). RPC는 '주어진 배정의 원자적 적용'에 집중.
+5. **좌석 잠금**(id asc, **참가자보다 먼저**): 관여 좌석 = 목표 좌석 ∪ 풀 플레이어 현재 점유 좌석 = `SELECT id, participant_id FROM ops_seats WHERE tournament_id=p_tournament_id AND (id = ANY(v_seat_ids) OR participant_id = ANY(v_pids)) ORDER BY id FOR UPDATE`.
+6. **참가자 잠금·가드**(id asc, **좌석 이후**): 배정된 모든 participant를 `SELECT ... FROM ops_participants WHERE tournament_id=p_tournament_id AND id = ANY(v_pids) ORDER BY id FOR UPDATE`. (a)존재·동일대회 수 일치(아니면 `PARTICIPANT_NOT_FOUND`) (b)전원 `status IN ('active','checked_in')`(busted/no_show 섞이면 `PARTICIPANT_NOT_ACTIVE` — TOCTOU: 동시 bust 적발).
+7. **목표 좌석 가드**(목표 좌석별): (a)존재·동일대회(아니면 `SEAT_ASSIGNMENT_INVALID`) (b)소속 테이블 `status='open' AND lock_type='none'`(아니면 `TABLE_NOT_OPEN`) (c)**현재 점유자가 NULL이거나 풀 참가자**(외부인이 동시 착석 → `SEAT_VERSION_CONFLICT`. 미리보기 이후 보드 변경 적발).
+8. **소스 보호 가드**: 풀 참가자가 비적격 테이블(마감/대기/잠금/피처)에 앉아 있으면 `SEAT_ASSIGNMENT_INVALID`(피처/잠금 테이블 점유자 보호 — 클라가 풀에서 선제외, 서버 백스톱). **`INSUFFICIENT_SEATS`(풀 인원 > 적격 빈좌석)는 RPC raise 안 함**(클라 순수함수 §3 전담). **부분 배정 허용**(배정에 없는 참가자는 좌석 유지 — 미래 "특정 테이블" 스코프 토대). RPC는 '주어진 배정의 원자적 적용'에 집중.
 9. **전원 비우기**: `UPDATE ops_seats SET participant_id=NULL WHERE tournament_id=p_tournament_id AND participant_id = ANY(v_pids)`. (풀 플레이어 현재 좌석 전부 vacate → partial UNIQUE 충돌 회피.)
 10. **목표 앉히기**: 각 `{seat_id, participant_id}` → `UPDATE ops_seats SET participant_id=v_pid WHERE id=v_seat_id`. (9 이후라 어떤 풀 플레이어도 좌석 미보유 → 단일점유 충돌 불가.)
 11. **승급**: `UPDATE ops_participants SET status='active' WHERE tournament_id=p_tournament_id AND id = ANY(v_pids) AND status='checked_in'`. (active는 불변.)
-12. **이벤트**: `ops_events` 1행 `table_redraw {mode:p_mode, moved, seated}`. moved=좌석 점유 변경 수, seated=checked_in→active 승급 수.
+12. **이벤트**: `INSERT INTO ops_events (tournament_id, type, actor_id, payload)` — ⚠️컬럼명 **`type`**(NOT event_type) — `table_redraw {mode:p_mode, moved, seated}`. moved=배정 수(v_n), seated=checked_in→active 승급 수.
 13. **반환**: `jsonb_build_object('moved', v_moved, 'seated', v_seated, 'mode', p_mode)`.
 14. **live_stats**: 9~11의 `ops_seats`/`ops_participants` 변경 → 기존 AFTER 트리거 `trg_ops_{seats,participants}_recompute_stats` 자동 재계산(playing/total_chips/seats_free 정합). **신규 트리거 0**.
 
@@ -128,7 +129,7 @@ ops_reseat_participants(
 
 - 기존 재사용: `SEAT_VERSION_CONFLICT`(E6109, 동시 변경)·`TABLE_NOT_OPEN`(E6113)·`PARTICIPANT_NOT_ACTIVE`(동시 bust)·`PARTICIPANT_NOT_FOUND`·`TOURNAMENT_NOT_FOUND`·`INVALID_STATUS`·`PERMISSION_DENIED`.
 - ⚠️**`INSUFFICIENT_SEATS`(E6130)는 클라 순수함수(§3) 신호** — UI가 미리보기 단계에서 직접 AppError 생성. **RPC RAISE prefix 아님**(PREFIX_MAP 등록 불요). RPC가 raise하는 신규 prefix는 `SEAT_ASSIGNMENT_INVALID`·`INVALID_REDRAW_MODE` 2개뿐.
-- ⚠️PREFIX*MAP substring 순서: `SEAT_ASSIGNMENT_INVALID`를 `SEAT*\*`(SEAT_TAKEN/SEAT_VERSION_CONFLICT 등)와 무충돌 확인(접두사 includes 매칭). 구체 토큰 우선 배치 규약 준수.
+- ⚠️PREFIX*MAP substring 순서: `SEAT_ASSIGNMENT_INVALID`를 `SEAT*\*`(SEAT_TAKEN/SEAT_VERSION_CONFLICT 등)와 무충돌 확인(접두사 includes 매칭). **상호 부분문자열 아님 → 순서 무관**(적대검증 확인: SEAT_ASSIGNMENT_INVALID ↔ SEAT_TAKEN/SEAT_VERSION_CONFLICT 어느 쪽도 상대의 부분문자열 아님).
 
 ## 6. 데이터레이어·UI (Presentation→Hooks→Service→Repository→Supabase)
 
@@ -163,21 +164,24 @@ ops_reseat_participants(
 
 `ops_reseat_participants.test.sql`:
 
+> ⚠️시드(적대검증 적발 — 무위 회피 필수): active 참가자를 **좌석에 직접 착석**시키고 chips는 **차등** 부여, checked_in 일부 + busted 1명. 풀이 좌석 미보유거나 칩 동일이면 전순열·칩균형 테스트가 vacuous PASS.
+
 1. 랜덤: active+checked_in 전원 1좌석 배정·중복좌석 0·busted/no_show 제외.
-2. 칩 스네이크: 테이블 칩합 균형(최대 편차 ≤ 최대 스택)·전원 배정.
-3. **전 순열 재배치 → 23505 미발생**(전원 비우기→앉히기로 partial UNIQUE 무위반).
+2. 칩 배정 적용: 사전계산 스네이크 배정 전달→테이블 칩합 최대편차 ≤ 최대스택(균형 알고리즘 자체는 §8.2 jest 전담).
+3. **[RED-GREEN] 점유좌석 재사용 derangement 재배치 → 23505 미발생**(전원 비우기→앉히기로 partial UNIQUE 무위반). RED증거: step9 vacate 임시 제거 시 23505 발생.
 4. checked_in→active 승급·active 불변.
 5. TOCTOU: 동시 bust된 풀 참가자 → `PARTICIPANT_NOT_ACTIVE`.
 6. TOCTOU: 외부인 점유 목표좌석 → `SEAT_VERSION_CONFLICT`.
-7. 좌석 부족 → `INSUFFICIENT_SEATS`(직접 INSERT로 인원>좌석 시드).
-8. 적격성: closed/standby/locked 테이블 목표 → `TABLE_NOT_OPEN`.
-9. actor 가드 3종(위조/비멤버) → `PERMISSION_DENIED`.
+7. **소스 보호: 보호 테이블(locked/feature/standby/closed) 점유자를 풀에 포함 → `SEAT_ASSIGNMENT_INVALID`**(피처 보호).
+8. 적격성: closed/standby/locked 테이블 **목표** → `TABLE_NOT_OPEN`.
+9. actor 가드(위조/비멤버) → `PERMISSION_DENIED` x2.
 10. 종료 대회 → `INVALID_STATUS`.
 11. 구조 무효(중복 참가자/좌석·빈 배정) → `SEAT_ASSIGNMENT_INVALID`.
 12. live_stats playing/total_chips 재배치 후 정합(트리거 자동).
 13. 이벤트 `table_redraw {mode}` 1행 append.
 
-- ⚠️다중 시드: 1d에서 추가한 `ops_test_seed_players(t_id, n)` 재사용(없으면 postgres role 직접 INSERT). 단일 txn이라 실동시성 미검증 → 순차 거부·23505만, 동시성은 코드리뷰+적대검증.
+- ⚠️**`INSUFFICIENT_SEATS`는 pgTAP 단언 금지**(RPC가 raise 안 함 — 완성 배정만 수신) → §8.2 jest 전담.
+- ⚠️다중 시드: `ops_test_seed_players(t_id, n)` 재사용 + 착석·차등칩·derangement는 postgres role 직접 INSERT. 단일 txn이라 실동시성 미검증 → 순차 거부·23505만, 동시성은 코드리뷰+적대검증. plan(N)=실제 단언 수.
 
 ### 8.2 jest (순수 알고리즘)
 
@@ -187,20 +191,22 @@ ops_reseat_participants(
 ## 9. 회귀 주의 (적대검증·pgTAP 필수 커버)
 
 1. **partial UNIQUE 단일점유**: 전원 비우기→앉히기 순서 필수(중간상태 충돌 금지). ❌ seat-by-seat set 우선 금지.
-2. **잠금 순서**: `advisory→대회→참가자(id asc)→좌석(id asc)` — 1b move/redraw·1d bust와 동일 → 데드락 회피.
+2. **잠금 순서**: `advisory→대회→좌석(id asc)→참가자(id asc)` — reseat **좌석-우선**이 비-advisory 좌석 RPC(assign/move/redraw)와 동일 순서라 ABBA 회피. ⚠️적대검증: "1b redraw와 동일" 초안 주장은 거짓(1b redraw=좌석-우선). bust/reenter 참가자-우선은 advisory 직렬화로 무해.
 3. **TOCTOU**: 미리보기↔확정 사이 bust(참가자 status)·외부 착석(좌석 점유) 적발(`PARTICIPANT_NOT_ACTIVE`/`SEAT_VERSION_CONFLICT`).
-4. **적격성 서버 강제**: closed/standby/locked 목표 거부(클라 필터 신뢰 금지).
+4. **적격성 서버 강제**: 목표=closed/standby/locked 거부(`TABLE_NOT_OPEN`) + **소스=보호 테이블 점유자 거부(`SEAT_ASSIGNMENT_INVALID`, 피처 보호)**. 클라 필터 신뢰 금지.
 5. **denormalized counter/live_stats**: seats/participants 변경→트리거 자동(소스 추가 불요), playing/total_chips 정합.
 6. **반환 매핑**: snake→camel 수동(toCamelCase 미경유).
 7. **이벤트 append-only**: `table_redraw` payload mode 추가, BEFORE UPD/DEL raise 무위반.
 
 ## 10. 적대검증 차원 (find→3렌즈 verify WF)
 
-전원 비우기→앉히기 원자성(partial UNIQUE) · 잠금순서/데드락(advisory·FOR UPDATE id asc·bust/redraw 교차) · TOCTOU(동시 bust/외부착석/테이블 잠금변경) · 칩 스네이크 정확성(균형·tie-break) · 좌석부족 경계 · 적격성 서버강제 · checked_in 승급 정합(active-without-seat 불변식) · grants(anon 노출) · 에러매핑 substring 충돌 · **LS-매개 데드락 인접**(reseat가 seats 대량 변경→live_stats AFTER 트리거; reseat는 advisory 보유라 bust류와 동일 카테고리 — 후속 DEFERRED CONSTRAINT TRIGGER PR과 함께 고려, TODOS 추적).
+전원 비우기→앉히기 원자성(partial UNIQUE) · 잠금순서/데드락(advisory·FOR UPDATE id asc·bust/redraw 교차) · TOCTOU(동시 bust/외부착석/테이블 잠금변경) · 칩 스네이크 정확성(균형·tie-break) · 좌석부족 경계 · 적격성 서버강제(목표+소스) · checked_in 승급 정합(active-without-seat 불변식) · grants(anon 노출) · 에러매핑.
+
+> ✅ **적대검증 1회 완료(7차원·14에이전트, 2026-06-30)**: 락순서 ABDA→**좌석-우선 통일로 해소**·`event_type`→`type`·`mapOpsRpcError` 2인자/경로·소스 보호 가드·pgTAP 무위 시드·INSUFFICIENT phantom·ERROR_MESSAGES 실엔트리 전부 본 스펙/계획에 반영. 잔존 **LS-매개 데드락**(reseat가 seats 대량 변경→live_stats AFTER 트리거, 1c 기인·자기치유·prod 0행)은 후속 DEFERRED CONSTRAINT TRIGGER PR·TODOS 추적.
 
 ## 11. 검증·게이트
 
-pgTAP 전 시나리오·jest 신규·`tsc --noEmit`·`npm run quality` 전부 GREEN 증거. RED-GREEN(전순열 23505·TOCTOU·좌석부족). 컨트롤러 직접 재검증. **prod 게이트("go") 후에만** MCP apply→`get_advisors`(ERROR 0·anon SECDEF=monitor/player 2개 유지)→`supabase.ts` 수술적 정합→push+PR+CI+머지. OTA 보류(prod ops 0행).
+pgTAP 전 시나리오·jest 신규·`tsc --noEmit`·`npm run quality` 전부 GREEN 증거. RED-GREEN(전순열 23505·TOCTOU). 좌석부족은 jest 순수함수. 컨트롤러 직접 재검증. **prod 게이트("go") 후에만** MCP apply→`get_advisors`(ERROR 0·anon SECDEF=monitor/player 2개 유지)→`supabase.ts` 수술적 정합→push+PR+CI+머지. OTA 보류(prod ops 0행).
 
 ## 12. SDD 가드레일
 

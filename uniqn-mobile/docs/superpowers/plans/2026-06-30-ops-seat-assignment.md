@@ -13,7 +13,7 @@
 - 언어: 모든 주석·커밋·문서 **한글**(기술 식별자 제외). 작업 디렉토리 `uniqn-mobile/`.
 - 아키텍처: Presentation→Hooks→Service→Repository→Supabase. Presentation/Hooks에서 Supabase 직접호출 금지.
 - 쓰기 RPC: `LANGUAGE plpgsql SECURITY DEFINER SET search_path='public','extensions','pg_temp'`. 모든 비즈니스 거부 `RAISE ... USING ERRCODE='P0001'`, 메시지 `PREFIX: 한글`. anon REVOKE(monitor/player 2개만 anon-executable).
-- 불변: 좌석 단일점유 partial UNIQUE `uniq_ops_seats_participant`. 잠금 순서 `advisory→대회→참가자(id asc)→좌석(id asc)`(1d 통일). 적격 테이블 `status='open' AND lock_type='none'`.
+- 불변: 좌석 단일점유 partial UNIQUE `uniq_ops_seats_participant`. **잠금 순서 `advisory→대회→좌석(id asc)→참가자(id asc)`** — reseat는 비-advisory 좌석 RPC(assign/move/redraw)의 **좌석-우선**과 통일해 ABBA 데드락 회피(적대검증 적발). bust/reenter는 참가자-우선이나 reseat와 동일 advisory 공유로 직렬화→무해. 적격 테이블 `status='open' AND lock_type='none'`.
 - 순수함수: 부수효과 0, `Math.random` 직접호출 금지(RNG 주입). `@/` 절대경로. logger.info(`console.log` 금지).
 - 마이그: 신규 파일만(기존 수정 금지). MCP `apply_migration`은 **prod 전용·SDD 서브에이전트 절대 금지**. 로컬 검증=`npm run db:reset && npm run test:db:helpers && npx supabase test db`(reset이 ops_helpers 소거→재적재 필수).
 - 브랜치: implementer는 **브랜치 생성/전환 금지**, `feat/ops-seat-assignment`에만 커밋.
@@ -42,7 +42,7 @@
 
 - `src/domains/ops/seatAssignment/index.ts` — 배럴에 신규 export 추가.
 - `src/errors/AppError.ts` — E6129~E6131 코드+한글 메시지.
-- `src/errors/opsRpcError.ts` — PREFIX_MAP에 `SEAT_ASSIGNMENT_INVALID`·`INVALID_REDRAW_MODE`(구체 토큰 우선).
+- `src/repositories/supabase/opsRpcError.ts` ⚠️**실제 위치(NOT src/errors/)** — PREFIX_MAP에 `SEAT_ASSIGNMENT_INVALID`·`INVALID_REDRAW_MODE`(순서 무관·상호 부분문자열 아님).
 - `src/schemas/opsSeat.schema.ts` — `reseatAssignmentsSchema`·`reseatModeSchema`.
 - `src/repositories/supabase/OpsSeatRepository.ts` — `reseatParticipants`.
 - `src/services/ops/opsSeatService.ts` — `reseatParticipants` 위임.
@@ -541,13 +541,14 @@ git commit -m "feat(ops): chipDraft 칩 스네이크 버킷 + 랜덤 좌석 배�
 **Files:**
 
 - Modify: `src/domains/ops/seatAssignment/index.ts`
-- Modify: `src/errors/AppError.ts`
-- Modify: `src/errors/opsRpcError.ts`
-- Test: `src/errors/__tests__/opsRpcError.reseat.test.ts`(또는 기존 opsRpcError 테스트 파일에 describe 추가)
+- Modify: `src/errors/AppError.ts` (코드 + ERROR_MESSAGES)
+- Modify: `src/repositories/supabase/opsRpcError.ts` ⚠️**실제 위치 — NOT `src/errors/`**(적대검증 적발)
+- Test: 기존 `src/repositories/supabase/__tests__/opsRpcError.test.ts`에 describe 추가(기존 captureThrown 헬퍼 재사용)
 
 **Interfaces:**
 
-- Produces: 배럴에서 `randomDraw`,`chipDraft`,`seatWithinTable`,`eligibleSeats`,타입 re-export. AppError 코드 `OPS_SEAT_ASSIGNMENT_INVALID`/`OPS_INSUFFICIENT_SEATS`/`OPS_INVALID_REDRAW_MODE`. opsRpcError가 `SEAT_ASSIGNMENT_INVALID`·`INVALID_REDRAW_MODE` prefix 매핑.
+- Produces: 배럴에서 `randomDraw`,`chipDraft`,`seatWithinTable`,`eligibleSeats`,타입 re-export. AppError 코드 `OPS_SEAT_ASSIGNMENT_INVALID`/`OPS_INSUFFICIENT_SEATS`/`OPS_INVALID_REDRAW_MODE` + ERROR_MESSAGES 한글. opsRpcError가 `SEAT_ASSIGNMENT_INVALID`·`INVALID_REDRAW_MODE` prefix 매핑.
+- ⚠️**`mapOpsRpcError(error, { operation })` 는 2인자·`never` 반환(항상 throw)** — 반환값 받지 말고 throw 포착. 기존 5개 호출부(OpsSeatRepository.ts:37/51/64/86) 패턴 미러.
 
 - [ ] **Step 1: 배럴 수정** — `index.ts`에 추가(기존 `computeWaitlistFill` export 유지)
 
@@ -558,59 +559,49 @@ export { randomDraw, eligibleSeats } from './randomDraw';
 export { chipDraft } from './chipDraft';
 ```
 
-- [ ] **Step 2: 실패 테스트 작성** — `__tests__/opsRpcError.reseat.test.ts`
+- [ ] **Step 2: 실패 테스트 작성** — 기존 `src/repositories/supabase/__tests__/opsRpcError.test.ts`에 describe 추가(파일 상단 기존 captureThrown 헬퍼·import 재사용 — `mapOpsRpcError(err, {operation})`는 `never`라 **throw**됨, 반환값 받지 말 것)
 
 ```ts
-import { mapOpsRpcError } from '@/errors/opsRpcError';
-
+// ⚠️ 기존 파일의 captureThrown 헬퍼(throw 포착) 시그니처에 맞춰 호출. 없으면:
+// function captureThrown(err: unknown) { try { mapOpsRpcError(err, { operation: 'reseat-test' }); } catch (e) { return e as AppError; } throw new Error('throw 안 됨'); }
 describe('opsRpcError — 배정 신규 prefix', () => {
-  it('SEAT_ASSIGNMENT_INVALID → E6129', () => {
-    const e = mapOpsRpcError({
+  it('SEAT_ASSIGNMENT_INVALID → E6129 + 한글 userMessage', () => {
+    const e = captureThrown({
       message: 'SEAT_ASSIGNMENT_INVALID: 좌석 배정 정보가 올바르지 않아요.',
-    } as any);
+    });
     expect(e.code).toBe('E6129');
+    expect(e.userMessage).toBe('좌석 배정 정보가 올바르지 않아요.'); // ERROR_MESSAGES 누락 시 UNKNOWN 폴백 → 적발
   });
   it('INVALID_REDRAW_MODE → E6131', () => {
-    const e = mapOpsRpcError({
-      message: 'INVALID_REDRAW_MODE: 지원하지 않는 배정 방식이에요.',
-    } as any);
-    expect(e.code).toBe('E6131');
+    expect(captureThrown({ message: 'INVALID_REDRAW_MODE: x' }).code).toBe('E6131');
   });
-  it('SEAT_ASSIGNMENT_INVALID가 SEAT_TAKEN/SEAT_VERSION_CONFLICT보다 우선 매칭', () => {
-    // 부분문자열 충돌 회귀: 'SEAT_ASSIGNMENT_INVALID'는 'SEAT_'로 시작하지만 전용 코드여야 함
-    const e = mapOpsRpcError({ message: 'SEAT_ASSIGNMENT_INVALID: x' } as any);
-    expect(e.code).toBe('E6129');
-    expect(e.code).not.toBe('E6106'); // SEAT_TAKEN 아님
+  it('SEAT_ASSIGNMENT_INVALID는 SEAT_TAKEN(E6106)으로 오매칭 안 됨(상호 부분문자열 아님)', () => {
+    expect(captureThrown({ message: 'SEAT_ASSIGNMENT_INVALID: x' }).code).toBe('E6129');
   });
 });
 ```
 
-- [ ] **Step 3: 테스트 실패 확인** — Run: `npx jest src/errors/__tests__/opsRpcError.reseat.test.ts` · Expected: FAIL(E6129 미정의 → 폴백 코드 반환).
+- [ ] **Step 3: 테스트 실패 확인** — Run: `npx jest src/repositories/supabase/__tests__/opsRpcError.test.ts` · Expected: FAIL(E6129/E6131 prefix 미등록·ERROR_MESSAGES 미정의 → 폴백/UNKNOWN).
 
-- [ ] **Step 4: AppError 코드 추가** — `AppError.ts` ops 범위(E6128 다음)에 추가. 기존 패턴(예: `OPS_PARTICIPANT_LAST_SURVIVOR` 정의 형태)을 grep으로 확인 후 동일 형식:
+- [ ] **Step 4: AppError 코드 + ERROR_MESSAGES 추가** — `src/errors/AppError.ts` ops 범위(E6128=`OPS_PARTICIPANT_LAST_SURVIVOR` 다음). 기존 E6123~E6128 정의·메시지 형식 grep 확인 후 **코드 3개 + ERROR_MESSAGES 실엔트리 3개**(⚠️주석 아님 — 누락 시 userMessage가 UNKNOWN 폴백):
 
 ```ts
-// (ops 에러코드 블록 내, E6128 다음)
+// ERROR_CODES 블록:
 OPS_SEAT_ASSIGNMENT_INVALID: 'E6129',
 OPS_INSUFFICIENT_SEATS: 'E6130',
 OPS_INVALID_REDRAW_MODE: 'E6131',
+// ERROR_MESSAGES 맵(기존 E6123~E6128 엔트리 옆 — 반드시 실제 엔트리):
+[ERROR_CODES.OPS_SEAT_ASSIGNMENT_INVALID]: '좌석 배정 정보가 올바르지 않아요.',
+[ERROR_CODES.OPS_INSUFFICIENT_SEATS]: '빈 좌석이 부족해 전원을 앉힐 수 없어요.',
+[ERROR_CODES.OPS_INVALID_REDRAW_MODE]: '지원하지 않는 배정 방식이에요.',
 ```
 
-그리고 한글 메시지 맵(기존 코드→메시지 구조와 동일 위치):
+- [ ] **Step 5: opsRpcError PREFIX_MAP 추가** — `src/repositories/supabase/opsRpcError.ts` PREFIX_MAP에 2엔트리. **순서 무관**(적대검증 확인: `SEAT_ASSIGNMENT_INVALID`는 `SEAT_TAKEN`/`SEAT_VERSION_CONFLICT`와 상호 부분문자열 아님 → includes 매칭 충돌 0. `INVALID_REDRAW_MODE`도 `INVALID_STATUS` 등과 무충돌. 기존 파일 주석 규약과 동일):
 
 ```ts
-// E6129: '좌석 배정 정보가 올바르지 않아요.'
-// E6130: '빈 좌석이 부족해 전원을 앉힐 수 없어요.'
-// E6131: '지원하지 않는 배정 방식이에요.'
-```
-
-- [ ] **Step 5: opsRpcError PREFIX_MAP 추가** — `opsRpcError.ts` PREFIX_MAP에 추가. **`SEAT_ASSIGNMENT_INVALID`를 `SEAT_TAKEN`/`SEAT_VERSION_CONFLICT`보다 앞**(includes 부분일치라 구체 토큰 우선). `INVALID_REDRAW_MODE`는 충돌 없음.
-
-```ts
-// PREFIX_MAP 배열 상단부(SEAT_ 계열보다 앞)에:
 ['SEAT_ASSIGNMENT_INVALID', 'OPS_SEAT_ASSIGNMENT_INVALID'],
 ['INVALID_REDRAW_MODE', 'OPS_INVALID_REDRAW_MODE'],
-// (INSUFFICIENT_SEATS는 RPC가 raise 안 함 — 클라 순수함수 신호라 PREFIX_MAP 등록 불요)
+// INSUFFICIENT_SEATS는 RPC가 raise 안 함(클라 순수함수 신호) → PREFIX_MAP 등록 불요
 ```
 
 - [ ] **Step 6: 테스트 통과 + 전체 회귀** — Run: `npx jest src/errors src/domains/ops/seatAssignment` · Expected: PASS(신규+기존 opsRpcError 회귀 0).
@@ -618,7 +609,7 @@ OPS_INVALID_REDRAW_MODE: 'E6131',
 - [ ] **Step 7: 커밋**
 
 ```bash
-git add src/domains/ops/seatAssignment/index.ts src/errors/AppError.ts src/errors/opsRpcError.ts src/errors/__tests__/opsRpcError.reseat.test.ts
+git add src/domains/ops/seatAssignment/index.ts src/errors/AppError.ts src/repositories/supabase/opsRpcError.ts src/repositories/supabase/__tests__/opsRpcError.test.ts
 git commit -m "feat(ops): 배정 배럴 export + 에러코드 E6129~E6131(배정무효/좌석부족/모드무효)"
 ```
 
@@ -700,7 +691,12 @@ BEGIN
     RAISE EXCEPTION 'PERMISSION_DENIED: 권한이 없어요.' USING ERRCODE = 'P0001';
   END IF;
 
-  -- 5. 참가자 잠금·가드(id asc)
+  -- 5. 좌석 잠금(id asc) — 좌석을 참가자보다 **먼저** 잠가 비-advisory 좌석 RPC(assign/move/redraw)의 좌석-우선 규약과 통일(ABBA 데드락 회피). 목표 좌석 ∪ 풀 플레이어 현재 좌석.
+  PERFORM 1 FROM public.ops_seats
+    WHERE tournament_id = p_tournament_id AND (id = ANY(v_seat_ids) OR participant_id = ANY(v_pids))
+    ORDER BY id FOR UPDATE;
+
+  -- 6. 참가자 잠금·가드(id asc) — 좌석 잠금 **이후**
   PERFORM 1 FROM public.ops_participants
     WHERE tournament_id = p_tournament_id AND id = ANY(v_pids)
     ORDER BY id FOR UPDATE;
@@ -713,11 +709,6 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'PARTICIPANT_NOT_ACTIVE: 활성/대기 상태 참가자만 배정할 수 있어요.' USING ERRCODE = 'P0001';
   END IF;
-
-  -- 6. 좌석 잠금(id asc): 목표 좌석 ∪ 풀 플레이어 현재 좌석
-  PERFORM 1 FROM public.ops_seats
-    WHERE tournament_id = p_tournament_id AND (id = ANY(v_seat_ids) OR participant_id = ANY(v_pids))
-    ORDER BY id FOR UPDATE;
 
   -- 7. 목표 좌석 가드: 존재·동일대회·적격 테이블·외부인 미점유
   FOR r IN SELECT unnest(v_seat_ids) AS seat_id LOOP
@@ -741,19 +732,25 @@ BEGIN
     END IF;
   END LOOP;
 
-  -- 9. 전원 비우기(풀 플레이어 현재 좌석 vacate) — moved 계산용 현재 점유 집계
-  SELECT count(*) INTO v_moved FROM public.ops_seats
-    WHERE tournament_id = p_tournament_id AND participant_id = ANY(v_pids);
+  -- 8. 소스 보호 가드: 풀 참가자가 비적격 테이블(마감/대기/잠금/피처)에 앉아 있으면 거부 — 피처/잠금 테이블 점유자는 재배치에서 보호(클라가 풀에서 선제외하나 서버 백스톱)
+  IF EXISTS (
+    SELECT 1 FROM public.ops_seats s JOIN public.ops_tables t ON t.id = s.table_id
+    WHERE s.tournament_id = p_tournament_id AND s.participant_id = ANY(v_pids)
+      AND NOT (t.status = 'open' AND t.lock_type = 'none')
+  ) THEN
+    RAISE EXCEPTION 'SEAT_ASSIGNMENT_INVALID: 보호된(마감/대기/잠금/피처) 테이블 참가자는 재배치 대상이 아니에요.' USING ERRCODE = 'P0001';
+  END IF;
+
+  -- 9. 전원 비우기(풀 플레이어 현재 좌석 vacate → partial UNIQUE 충돌 회피)
   UPDATE public.ops_seats SET participant_id = NULL
     WHERE tournament_id = p_tournament_id AND participant_id = ANY(v_pids);
 
-  -- 10. 목표 앉히기
+  -- 10. 목표 앉히기(9 이후라 풀 플레이어 좌석 미보유 → 단일점유 충돌 불가)
   FOR r IN SELECT (e->>'participant_id')::uuid AS pid, (e->>'seat_id')::uuid AS sid
            FROM jsonb_array_elements(p_assignments) e LOOP
     UPDATE public.ops_seats SET participant_id = r.pid WHERE id = r.sid;
   END LOOP;
-  -- moved = 좌석 점유가 실제로 바뀐 수(전부 비우고 다시 앉혔으므로 배정 수 기준)
-  v_moved := v_n;
+  v_moved := v_n; -- 전원 비우고 다시 앉혔으므로 좌석 점유 변경 수 = 배정 수
 
   -- 11. checked_in → active 승급
   WITH upd AS (
@@ -763,9 +760,9 @@ BEGIN
   )
   SELECT count(*) INTO v_seated FROM upd;
 
-  -- 12. 이벤트
-  INSERT INTO public.ops_events (tournament_id, actor_id, event_type, payload)
-  VALUES (p_tournament_id, p_actor_id, 'table_redraw',
+  -- 12. 이벤트 (⚠️컬럼명은 type — ops_events에 event_type 컬럼 없음. 기존 1a~1d 전부 type 사용)
+  INSERT INTO public.ops_events (tournament_id, type, actor_id, payload)
+  VALUES (p_tournament_id, 'table_redraw', p_actor_id,
           jsonb_build_object('mode', p_mode, 'moved', v_moved, 'seated', v_seated));
 
   -- 13. 반환
@@ -774,7 +771,7 @@ END;
 $$;
 ```
 
-> ⚠️ implementer 검증 포인트(코드 대조): ①`ops_events` 컬럼명(actor_id/event_type/payload)·`is_ops_member`/`is_admin` 시그니처를 기존 1b/1d RPC와 grep 대조(불일치 시 기존 본문 따름). ②`ops_tournaments.status` enum 값 확인 — `completed`만 거부, 그 외 허용. 만약 enum에 'completed' 외 종료성 값이 더 있으면 스펙대로 'completed'만 명시 거부(나머지 허용). ③`moved`는 비우기 전 점유 수가 아니라 배정 수(v_n)로 단순화(스펙 §4.3-12 의도=좌석 점유 변경 수, 전원 재배치라 = 배정 수). ④P0001 메시지 PREFIX는 PREFIX_MAP과 정확히 일치해야 함.
+> ⚠️ implementer 검증 포인트(코드 대조): ①`ops_events` 컬럼명은 **`type`**(NOT `event_type` — 기존 1a~1d 전부 `(tournament_id, type, actor_id, payload)`. 적대검증 적발: plpgsql 늦은바인딩이라 CREATE는 통과하나 첫 호출서 42703 런타임 실패)·`is_ops_member`/`is_admin` 시그니처를 기존 1b/1d RPC와 grep 대조. ②`ops_tournaments.status` enum 값 확인 — `completed`만 거부, 그 외(upcoming/active 등) 허용(적대검증 확인: completed 단일 종료값). ③`moved`=배정 수(v_n) — step9 죽은 SELECT 제거 완료. ④P0001 메시지 PREFIX는 PREFIX_MAP과 정확히 일치(40P01 데드락은 좌석-우선 락으로 reseat·assign·move·redraw 전부 동일순서라 비발생; 잔존 LS-데드락은 TODOS 추적).
 
 - [ ] **Step 3: 로컬 적용·스모크** — Run: `npm run db:reset && npm run test:db:helpers` 후 psql로 함수 존재 확인:
 
@@ -847,28 +844,31 @@ git commit -m "feat(ops): ops_reseat_participants grants(anon REVOKE·authentica
 
 ```sql
 BEGIN;
-SELECT plan(13);
--- (시드: 1대회·2테이블(open·none)·각 2좌석·참가자 active/checked_in 다수. 기존 ops pgTAP 시드 관용구 복제)
+SELECT plan(N);  -- ⚠️ N = 실제 단언 수(아래 throws_like/is/lives_ok 합 — #9·#11 복수). 시나리오 수 아님.
+-- 시드(⚠️적대검증 적발 — 무위 회피 필수):
+--   1대회·2테이블(open·none)·각 2~3좌석. active 참가자를 **좌석에 직접 착석**(postgres role `UPDATE ops_seats SET participant_id=...` 또는 ops_assign_seat)시키고 chips는 **차등**(예: 4000/3000/2000/1000) 부여. checked_in(미착석) 일부 + busted 1명.
+--   풀이 좌석 미보유거나 칩이 동일이면 전순열·칩균형 테스트가 무위 PASS가 됨.
 
--- 1. 랜덤: 전원 1좌석 배정(중복 좌석 0)
--- 2. 칩 스네이크: 테이블 칩합 균형
--- 3. 전 순열 재배치 → 23505 미발생(lives_ok)
--- 4. checked_in→active 승급
--- 5. 동시 bust 참가자 섞임 → PARTICIPANT_NOT_ACTIVE (throws_like)
--- 6. 외부인 점유 목표좌석 → SEAT_VERSION_CONFLICT (throws_like)
--- 7. 인원>좌석 배정 직접 호출 시 좌석 부족(클라 차단이나, 잘못된 배정=중복좌석 등은 SEAT_ASSIGNMENT_INVALID)
--- 8. closed/standby/locked 목표 → TABLE_NOT_OPEN (throws_like)
+-- 1. 랜덤: active+checked_in 전원 1좌석 배정·중복좌석 0·busted/no_show 제외 (is)
+-- 2. 칩 균형(사전계산 스네이크 배정 적용): 테이블 칩합 최대편차 ≤ 최대스택 (is). ※균형 알고리즘 자체는 jest(chipDraft) 전담, 여기선 "주어진 배정의 정확 착석"만.
+-- 3. [RED-GREEN] 점유좌석 재사용 derangement(p1@s1→s2, p2@s2→s1) 재배치 → 23505 미발생 (lives_ok). RED증거: step9 vacate 임시 제거 시 23505 발생 확인(헬퍼로 사전, 본 슬라이스 핵심).
+-- 4. checked_in→active 승급·active 불변 (is)
+-- 5. 동시 bust된 풀 참가자 섞임 → PARTICIPANT_NOT_ACTIVE (throws_like)
+-- 6. 외부인(풀 밖) 점유 목표좌석 → SEAT_VERSION_CONFLICT (throws_like)
+-- 7. 보호 테이블(locked/feature/standby/closed) 점유자를 풀에 포함 → SEAT_ASSIGNMENT_INVALID 소스가드 (throws_like)  ← 신규(피처 보호)
+-- 8. closed/standby/locked **목표** 좌석 → TABLE_NOT_OPEN (throws_like)
 -- 9. actor 위조/비멤버 → PERMISSION_DENIED (throws_like) x2
 -- 10. completed 대회 → INVALID_STATUS (throws_like)
--- 11. 중복 참가자/좌석·빈 배정 → SEAT_ASSIGNMENT_INVALID (throws_like)
--- 12. live_stats playing/total_chips 재배치 후 정합
--- 13. 이벤트 table_redraw {mode} 1행 append
+-- 11. 중복 참가자/좌석·빈 배정 → SEAT_ASSIGNMENT_INVALID (throws_like) x2~3
+-- 12. live_stats playing/total_chips 재배치 후 정합 (is)
+-- 13. 이벤트 table_redraw {mode} 1행 append (is)
+-- ※ INSUFFICIENT_SEATS는 RPC가 raise 안 함(완성 배정만 수신) → pgTAP 제외, jest(randomDraw/chipDraft) 전담.
 
 SELECT finish();
 ROLLBACK;
 ```
 
-> implementer: 위 주석을 실제 `is(...)`/`throws_like(...)`/`lives_ok(...)` 단언으로 채운다. 시드/단언 형태는 `ops_redraw_toctou.test.sql`(stale→conflict, locked→TABLE_NOT_OPEN, cross-tenant)·1d `ops_bust_participant.test.sql`(actor 가드·live_stats 정합·이벤트 append) 패턴을 그대로 복제. RPC 호출은 `SELECT public.ops_reseat_participants(...)`. plan(N) 수는 실제 단언 수와 일치.
+> implementer: 위 주석을 실제 `is(...)`/`throws_like(...)`/`lives_ok(...)` 단언으로 채우고 **plan(N)을 실제 단언 수와 일치**시킨다. 시드/단언 형태는 `ops_redraw_toctou.test.sql`(stale→conflict, locked→TABLE_NOT_OPEN, cross-tenant)·1d `ops_bust_participant.test.sql`(actor 가드·live_stats 정합·이벤트 append) 패턴 복제 + **착석·차등칩·derangement 시드는 직접 INSERT**. RPC 호출 `SELECT public.ops_reseat_participants(...)`. ⚠️INSUFFICIENT_SEATS pgTAP 단언 금지(RPC 미raise).
 
 - [ ] **Step 3: RED-GREEN 검증** — Run(전체 DB 테스트 하니스):
 
@@ -882,7 +882,7 @@ Expected: `ops_reseat_participants.test.sql` ok(전 단언 PASS), 기존 ops pgT
 
 ```bash
 git add supabase/tests/ops_reseat_participants.test.sql
-git commit -m "test(ops): ops_reseat_participants pgTAP(전순열·TOCTOU·적격성·승급·이벤트 13단언)"
+git commit -m "test(ops): ops_reseat_participants pgTAP(착석·차등칩 derangement 시드·전순열 RED-GREEN·TOCTOU·소스가드·승급·이벤트)"
 ```
 
 ---
@@ -997,13 +997,13 @@ async reseatParticipants(
     p_assignments: assignments.map((a) => ({ participant_id: a.participantId, seat_id: a.seatId })),
     p_mode: mode,
   });
-  if (error) throw mapOpsRpcError(error);
+  if (error) mapOpsRpcError(error, { operation: 'ops 전원 재배치' }); // ⚠️2인자·never(throw) — 반환값 받지 말 것. 기존 :37/51/64/86 패턴
   const row = data as { moved: number; seated: number; mode: string };
   return { moved: row.moved, seated: row.seated, mode: row.mode };
 }
 ```
 
-> ⚠️ `IOpsSeatRepository` 인터페이스에도 시그니처 추가. `supabase.rpc` 타입이 stale하면 1d처럼 `as never`/`as unknown` 캐스트(주석으로 "supabase.ts 수술적 정합은 prod 게이트 후" 명시).
+> ⚠️ `mapOpsRpcError` import는 실제 경로 `@/repositories/supabase/opsRpcError`(기존 파일에 이미 import됨). `IOpsSeatRepository` 인터페이스에도 시그니처 추가. `supabase.rpc` 타입이 stale하면 1d처럼 `as never`/`as unknown` 캐스트(주석으로 "supabase.ts 수술적 정합은 prod 게이트 후" 명시).
 
 - [ ] **Step 2: Service 위임 추가** — `opsSeatService.ts`(기존 `redrawWaitlistFill` 위임 미러 + `handleServiceError`).
 
@@ -1088,11 +1088,19 @@ git commit -m "feat(ops): useReseatParticipants 훅(seats/participants/liveStats
 
 - [ ] **Step 1: RedrawModal에 모드 prop 추가** — 기존 미리보기(before→after)·"다시 계산"·"확인" 구조 유지. `mode: 'waitlist_fill' | 'random_draw' | 'chip_draft'` prop. mode에 따라 배정 계산 함수 분기:
   - `waitlist_fill` → 기존 `computeWaitlistFill`(빈자리만, `reseatMut` 아님 기존 `redrawMut`).
-  - `random_draw`/`chip_draft` → `randomDraw`/`chipDraft`(active+checked_in 풀, RNG=`Math.random` 주입), 결과 `ok:false`(INSUFFICIENT_SEATS)면 "빈 좌석 부족"(E6130 메시지) 안내+확인 비활성. `ok:true`면 미리보기 후 "확인"=`reseatMut.mutate({tournamentId, actorId, assignments, mode})`.
+  - `random_draw`/`chip_draft` → `randomDraw`/`chipDraft`(풀=active+checked_in 중 **보호 테이블 점유자 제외**, RNG=`Math.random` 주입). `ok:false`(INSUFFICIENT_SEATS)면 "빈 좌석 부족"(E6130) 안내+확인 비활성. **풀 0명이면 모드 진입/확인 차단**(빈 배정은 Zod `.min(1)`·RPC가 거부 → UI 선차단). `ok:true`+풀≥1이면 미리보기 후 "확인"=`reseatMut.mutate({tournamentId, actorId, assignments, mode})`.
 
 ```tsx
-// 풀 구성(active+checked_in), RNG 주입
+// 풀 구성: active+checked_in 중 "보호 테이블(비-open 또는 잠금/피처) 점유자"는 제외(적대검증 F2 — 피처/잠금 테이블 보호)
 const rng = () => Math.random();
+const eligibleTableIds = new Set(
+  tables.filter((t) => t.status === 'open' && t.lockType === 'none').map((t) => t.id)
+);
+const protectedPids = new Set(
+  seats
+    .filter((s) => s.participantId && !eligibleTableIds.has(s.tableId))
+    .map((s) => s.participantId as string)
+);
 const input: ReseatInput = {
   tables: tables.map((t) => ({ id: t.id, status: t.status, lockType: t.lockType })),
   seats: seats.map((s) => ({
@@ -1103,11 +1111,17 @@ const input: ReseatInput = {
     participantId: s.participantId,
   })),
   players: participants
-    .filter((p) => p.status === 'active' || p.status === 'checked_in')
+    .filter((p) => (p.status === 'active' || p.status === 'checked_in') && !protectedPids.has(p.id))
     .map((p) => ({ id: p.id, chips: p.chips })),
   rng,
 };
-const result = mode === 'random_draw' ? randomDraw(input) : chipDraft(input);
+// 풀 0명: 모드 비활성/안내(빈 배정 Zod/RPC 거부 회피)
+const result =
+  input.players.length === 0
+    ? { ok: false as const, reason: 'INSUFFICIENT_SEATS' as const, available: 0, required: 0 }
+    : mode === 'random_draw'
+      ? randomDraw(input)
+      : chipDraft(input);
 ```
 
 - [ ] **Step 2: TablesTab Redraw 버튼 → 모드 선택** — 기존 Redraw 버튼(:298 `setShowRedraw(true)`)을 SelectBottomSheet 또는 3버튼(빈자리 채움/랜덤 배정/칩 드래프트)으로. 선택 시 해당 mode로 RedrawModal 오픈. 파괴적(전원 재배치) 모드는 확인 다이얼로그(impeccable 룰11/12). dark: 토큰·44px 터치 유지.
@@ -1142,10 +1156,11 @@ git commit -m "feat(ops): TABLES 배정 모드 선택(빈자리/랜덤/칩드래
 ## 회귀 주의 (적대검증·pgTAP 필수 커버, 스펙 §9)
 
 1. partial UNIQUE 단일점유: 전원 비우기→앉히기 순서(중간상태 충돌 금지). ❌seat-by-seat set 우선.
-2. 잠금 순서: advisory→대회→참가자(id asc)→좌석(id asc) = 1b/1d 통일.
+2. **잠금 순서: advisory→대회→좌석(id asc)→참가자(id asc)** — reseat 좌석-우선이 비-advisory 좌석 RPC(assign/move/redraw)와 동일 순서라 ABBA 회피(적대검증 적발: "1b redraw와 동일" 초안 주장은 거짓이었음). bust/reenter 참가자-우선은 advisory 직렬화로 무해.
 3. TOCTOU: 동시 bust(PARTICIPANT_NOT_ACTIVE)·외부 착석(SEAT_VERSION_CONFLICT).
-4. 적격성 서버강제: closed/standby/locked 거부.
+4. 적격성 서버강제: 목표=closed/standby/locked 거부(TABLE_NOT_OPEN) + **소스=보호 테이블 점유자 거부(SEAT_ASSIGNMENT_INVALID, 피처/잠금 보호)**.
 5. live_stats: seats/participants 변경→트리거 자동(소스 추가 불요).
-6. 반환 매핑: snake→camel 수동.
-7. 에러매핑 substring: SEAT*ASSIGNMENT_INVALID를 SEAT*\* 앞에.
-8. LS-매개 데드락 인접(reseat가 live_stats 트리거 표면 확대) — TODOS 추적·후속 DEFERRED CONSTRAINT TRIGGER PR과 함께.
+6. 반환 매핑: snake→camel 수동. `mapOpsRpcError(err, {operation})` 2인자·never(throw).
+7. 에러매핑: 신규 prefix는 기존과 상호 부분문자열 아님 → **순서 무관**(초안 "구체 토큰 우선" 표현은 부정확).
+8. 이벤트 컬럼명 **`type`**(NOT event_type). INSUFFICIENT_SEATS는 클라 전담(RPC 미raise).
+9. LS-매개 데드락 인접(reseat가 live_stats 트리거 표면 확대) — TODOS 추적·후속 DEFERRED CONSTRAINT TRIGGER PR과 함께.
