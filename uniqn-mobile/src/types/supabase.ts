@@ -3031,6 +3031,15 @@ export type Database = {
         };
         Returns: Json;
       };
+      ops_reseat_participants: {
+        Args: {
+          p_actor_id: string;
+          p_assignments: Json;
+          p_mode: string;
+          p_tournament_id: string;
+        };
+        Returns: Json;
+      };
       ops_rotate_monitor_token: {
         Args: { p_actor_id: string; p_force?: boolean; p_tournament_id: string };
         Returns: Json;

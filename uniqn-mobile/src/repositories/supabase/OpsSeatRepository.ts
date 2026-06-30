@@ -91,7 +91,7 @@ export class SupabaseOpsSeatRepository implements IOpsSeatRepository {
     }
   }
 
-  /** 배정 2종(랜덤/칩 드래프트) 전원 재배치 — supabase.ts 수술적 정합은 prod 게이트 후. */
+  /** 배정 2종(랜덤/칩 드래프트) 전원 재배치. */
   async reseatParticipants(
     tournamentId: string,
     actorId: string,
@@ -99,8 +99,7 @@ export class SupabaseOpsSeatRepository implements IOpsSeatRepository {
     mode: 'random_draw' | 'chip_draft'
   ): Promise<{ moved: number; seated: number; mode: string }> {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.rpc as any)('ops_reseat_participants', {
+      const { data, error } = await supabase.rpc('ops_reseat_participants', {
         p_tournament_id: tournamentId,
         p_actor_id: actorId,
         p_assignments: assignments.map((a) => ({
