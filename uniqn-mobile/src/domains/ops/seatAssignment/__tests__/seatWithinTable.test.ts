@@ -1,4 +1,4 @@
-import { seatWithinTable, shuffleInPlace } from '../seatWithinTable';
+import { seatWithinTable } from '../seatWithinTable';
 import type { ReseatSeat, ReseatPlayer } from '../reseat.types';
 
 // 결정적 rng: 시드 시퀀스 반환(테스트 재현)
