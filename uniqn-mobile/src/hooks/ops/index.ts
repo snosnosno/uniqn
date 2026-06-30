@@ -22,6 +22,8 @@ export {
   useRegisterParticipant,
   useAddRebuy,
   useAddAddon,
+  useBustParticipant,
+  useReenterParticipant,
   useAddTable,
   useSetTableLock,
   useSetTablePriority,
@@ -31,6 +33,7 @@ export {
   useFreeSeat,
   useRedrawWaitlistFill,
 } from './useOpsMutations';
+export { useOpsPrizes, useSetPrizeStructure } from './useOpsPrizes';
 export {
   useSetBlindLevels,
   useStartClock,

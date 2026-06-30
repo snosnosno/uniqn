@@ -116,6 +116,20 @@ describe('mapOpsRpcError (Task S1)', () => {
     expect((err as BusinessError).code).toBe(ERROR_CODES.OPS_CLAIM_ALREADY_CLAIMED);
   });
 
+  // 1d — bust/reentry/ITM (Task 8)
+  it.each([
+    ['PARTICIPANT_ALREADY_BUSTED: x', ERROR_CODES.OPS_PARTICIPANT_ALREADY_BUSTED],
+    ['PARTICIPANT_NOT_BUSTED: x', ERROR_CODES.OPS_PARTICIPANT_NOT_BUSTED],
+    ['PARTICIPANT_LAST_SURVIVOR: x', ERROR_CODES.OPS_PARTICIPANT_LAST_SURVIVOR],
+    ['REENTRY_NOT_ALLOWED: x', ERROR_CODES.OPS_REENTRY_NOT_ALLOWED],
+    ['MAX_REENTRIES_EXCEEDED: x', ERROR_CODES.OPS_MAX_REENTRIES_EXCEEDED],
+    ['PRIZE_STRUCTURE_INVALID: x', ERROR_CODES.OPS_PRIZE_STRUCTURE_INVALID],
+  ])('maps %s → %s', (msg, code) => {
+    expect(() => mapOpsRpcError({ message: msg }, { operation: 't' })).toThrow(
+      expect.objectContaining({ code })
+    );
+  });
+
   // 회귀 — PERMISSION_DENIED 는 PREFIX_MAP 밖 별도 분기
   it('PERMISSION_DENIED → BUSINESS_INVALID_STATE + 권한 메시지 (회귀)', () => {
     const err = captureThrown({ message: 'PERMISSION_DENIED' });

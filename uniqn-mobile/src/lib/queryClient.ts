@@ -580,6 +580,8 @@ export const queryKeys = {
     monitor: (token: string) => [...queryKeys.ops.all, 'monitor', token] as const,
     // claim 분리 — 공개 플레이어뷰. view_token 스코프(anon 폴링).
     player: (token: string) => [...queryKeys.ops.all, 'player', token] as const,
+    // 1d — 순위별 상금 구조
+    prizes: (tournamentId: string) => [...queryKeys.ops.all, 'prizes', tournamentId] as const,
   },
 } as const;
 

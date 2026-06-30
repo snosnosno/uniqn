@@ -1,6 +1,14 @@
 /** ops 대회 상세 (1a) — PLAYERS / STATUS 세그먼트. RLS 단일 진실(없으면 빈 화면). */
 import { useState } from 'react';
-import { View, Text, TextInput, Pressable, ActivityIndicator, ScrollView } from 'react-native';
+import {
+  Alert,
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  ActivityIndicator,
+  ScrollView,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { AppFlashList } from '@/components/ui/AppFlashList';
@@ -13,16 +21,18 @@ import {
   HistoryTab,
   MonitorLinkButton,
   PlayerClaimButton,
+  PayoutsTab,
 } from '@/components/ops';
 import {
   useOpsTournament,
   useOpsParticipants,
-  useOpsTables,
   useRegisterParticipant,
   useAddRebuy,
   useAddAddon,
   useToggleRegistration,
   useSetTournamentStatus,
+  useBustParticipant,
+  useReenterParticipant,
 } from '@/hooks/ops';
 import type { OpsParticipant, OpsTournamentStatus } from '@/types/ops';
 
@@ -33,15 +43,18 @@ export default function OpsTournamentDetailScreen() {
   const tournamentId = id ?? '';
   const { tournament, isLoading } = useOpsTournament(tournamentId);
   const { participants } = useOpsParticipants(tournamentId);
-  const { tables } = useOpsTables(tournamentId);
 
   const registerMut = useRegisterParticipant(tournamentId);
   const rebuyMut = useAddRebuy(tournamentId);
   const addonMut = useAddAddon(tournamentId);
   const toggleMut = useToggleRegistration(tournamentId);
   const statusMut = useSetTournamentStatus(tournamentId);
+  const bustMut = useBustParticipant(tournamentId);
+  const reenterMut = useReenterParticipant(tournamentId);
 
-  const [tab, setTab] = useState<'players' | 'status' | 'tables' | 'levels' | 'history'>('players');
+  const [tab, setTab] = useState<
+    'players' | 'status' | 'tables' | 'levels' | 'history' | 'payouts'
+  >('players');
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState('');
   const [nationality, setNationality] = useState('');
@@ -101,9 +114,9 @@ export default function OpsTournamentDetailScreen() {
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
       <StackHeader title={tournament.name} fallbackHref="/(ops)/tournaments" />
 
-      {/* 세그먼트 (5탭 — 작은 라벨로 가로 폭 절약) */}
+      {/* 세그먼트 (6탭 — 한글 축약 라벨로 가로 폭 절약) */}
       <View className="mx-4 mb-2 mt-1 flex-row rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
-        {(['players', 'status', 'tables', 'levels', 'history'] as const).map((t) => (
+        {(['players', 'status', 'tables', 'levels', 'history', 'payouts'] as const).map((t) => (
           <Pressable
             key={t}
             onPress={() => setTab(t)}
@@ -115,14 +128,16 @@ export default function OpsTournamentDetailScreen() {
               className={`text-xs ${tab === t ? 'font-sans-semibold text-content-primary' : 'text-secondary-500 dark:text-secondary-400'}`}
             >
               {t === 'players'
-                ? `PLAYERS ${participants.length}`
+                ? `참가 ${participants.length}`
                 : t === 'status'
-                  ? 'STATUS'
+                  ? '현황'
                   : t === 'tables'
-                    ? `TABLES ${tables.length}`
+                    ? '테이블'
                     : t === 'levels'
-                      ? 'LEVELS'
-                      : 'HISTORY'}
+                      ? '블라인드'
+                      : t === 'history'
+                        ? '이력'
+                        : '상금'}
             </Text>
           </Pressable>
         ))}
@@ -216,6 +231,15 @@ export default function OpsTournamentDetailScreen() {
                     {item.rebuys > 0 ? ` · R${item.rebuys}` : ''}
                     {item.addOns > 0 ? ` · A${item.addOns}` : ''}
                   </Text>
+                  {/* 탈락 배지 — busted 시 순위+상금 표시 */}
+                  {item.status === 'busted' && (
+                    <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+                      탈락 · {item.finishPosition ?? '-'}위
+                      {item.prizeAmount !== null && item.prizeAmount !== undefined
+                        ? ` · 상금 ${fmt(item.prizeAmount)}`
+                        : ''}
+                    </Text>
+                  )}
                 </View>
                 <View className="flex-row gap-1">
                   {item.status === 'active' && (
@@ -238,7 +262,58 @@ export default function OpsTournamentDetailScreen() {
                           애드온
                         </Text>
                       </Pressable>
+                      {/* 탈락 처리 — 확인 Alert 후 bust RPC 호출 */}
+                      <Pressable
+                        onPress={() =>
+                          Alert.alert('탈락 처리', `${item.name} 님을 탈락 처리할까요?`, [
+                            { text: '취소', style: 'cancel' },
+                            {
+                              text: '탈락 처리',
+                              style: 'destructive',
+                              onPress: () =>
+                                bustMut.mutate(item.id, {
+                                  onSuccess: (r) => {
+                                    // RPC 계약: winnerFinalized=true면 v_active2=1 조건 동일로 winner 항상 non-null.
+                                    if (r.winnerFinalized && r.winner) {
+                                      Alert.alert(
+                                        '우승 확정',
+                                        `1위 · 상금 ${
+                                          r.winner.prizeAmount !== null
+                                            ? fmt(r.winner.prizeAmount)
+                                            : '미설정'
+                                        }`
+                                      );
+                                    } else {
+                                      Alert.alert(
+                                        r.prizeAmount !== null ? 'ITM 종료' : '탈락 처리 완료',
+                                        `${r.finishPosition}위${
+                                          r.prizeAmount !== null
+                                            ? ` · 상금 ${fmt(r.prizeAmount)}`
+                                            : ''
+                                        }`
+                                      );
+                                    }
+                                  },
+                                }),
+                            },
+                          ])
+                        }
+                        accessibilityRole="button"
+                        className="min-h-[44px] items-center justify-center rounded-md border border-error-500 px-2 active:opacity-70 dark:border-error-400"
+                      >
+                        <Text className="text-xs text-error-600 dark:text-error-400">탈락</Text>
+                      </Pressable>
                     </>
+                  )}
+                  {/* 재진입 — busted 참가자에게만 노출 */}
+                  {item.status === 'busted' && (
+                    <Pressable
+                      onPress={() => reenterMut.mutate(item.id)}
+                      accessibilityRole="button"
+                      className="min-h-[44px] items-center justify-center rounded-md bg-primary-600 px-2 active:opacity-70"
+                    >
+                      <Text className="text-xs text-white">재진입</Text>
+                    </Pressable>
                   )}
                   {/* 플레이어 링크(QR) — 전 상태 발급 가능 */}
                   <PlayerClaimButton
@@ -310,9 +385,13 @@ export default function OpsTournamentDetailScreen() {
         <TablesTab tournamentId={tournamentId} />
       ) : tab === 'levels' ? (
         <BlindLevelsTab tournamentId={tournamentId} />
-      ) : (
+      ) : tab === 'history' ? (
         <HistoryTab tournamentId={tournamentId} />
-      )}
+      ) : tab === 'payouts' ? (
+        <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
+          <PayoutsTab tournamentId={tournamentId} />
+        </ScrollView>
+      ) : null}
     </SafeAreaView>
   );
 }

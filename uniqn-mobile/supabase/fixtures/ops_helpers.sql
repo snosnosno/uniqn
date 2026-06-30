@@ -112,3 +112,33 @@ BEGIN
   PERFORM set_config('role', 'authenticated', true);
 END;
 $$;
+
+-- 다중 active 참가자 시드(bust 순위/우승확정/재진입 테스트). 좌석 미배정 active.
+-- ⚠️ RETURNS 변경 불가 → CREATE 직전 DROP. postgres role(set_user 전)에서 호출.
+DROP FUNCTION IF EXISTS public.ops_test_seed_players(uuid, int);
+CREATE OR REPLACE FUNCTION public.ops_test_seed_players(p_tournament_id uuid, p_count int)
+RETURNS uuid[]
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions, pg_temp
+AS $$
+DECLARE
+  v_ids uuid[] := '{}';
+  v_id uuid;
+  v_entry int;
+  v_chips int;
+  i int;
+BEGIN
+  SELECT starting_chips INTO v_chips FROM public.ops_tournaments WHERE id = p_tournament_id;
+  FOR i IN 1..p_count LOOP
+    SELECT next_entry_seq + 1 INTO v_entry FROM public.ops_tournaments
+      WHERE id = p_tournament_id FOR UPDATE;
+    UPDATE public.ops_tournaments SET next_entry_seq = v_entry WHERE id = p_tournament_id;
+    INSERT INTO public.ops_participants (tournament_id, entry_number, name, status, chips)
+    VALUES (p_tournament_id, v_entry, 'P' || v_entry, 'active', COALESCE(v_chips, 30000))
+    RETURNING id INTO v_id;
+    v_ids := array_append(v_ids, v_id);
+  END LOOP;
+  RETURN v_ids;
+END;
+$$;

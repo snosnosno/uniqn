@@ -65,6 +65,30 @@ export interface OpsParticipant {
   updatedAt: string;
 }
 
+/** 순위별 고정 상금(1d). */
+export interface OpsPrize {
+  id: string;
+  tournamentId: string;
+  rank: number;
+  amount: number;
+}
+
+/** bust RPC 반환(camelCase 매핑됨). */
+export interface OpsBustResult {
+  finishPosition: number;
+  prizeAmount: number | null;
+  winnerFinalized: boolean;
+  winner: { participantId: string; finishPosition: number; prizeAmount: number | null } | null;
+}
+
+/** reenter RPC 반환. */
+export interface OpsReenterResult {
+  participantId: string;
+  reentries: number;
+  status: OpsParticipantStatus;
+  seated: boolean;
+}
+
 /** 감사 이벤트 로그 (append-only) */
 export interface OpsEvent {
   id: string;

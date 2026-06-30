@@ -1503,6 +1503,41 @@ export type Database = {
           },
         ];
       };
+      ops_prizes: {
+        Row: {
+          amount: number;
+          created_at: string;
+          id: string;
+          rank: number;
+          tournament_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          amount: number;
+          created_at?: string;
+          id?: string;
+          rank: number;
+          tournament_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          amount?: number;
+          created_at?: string;
+          id?: string;
+          rank?: number;
+          tournament_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ops_prizes_tournament_id_fkey';
+            columns: ['tournament_id'];
+            isOneToOne: false;
+            referencedRelation: 'ops_tournaments';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       ops_seats: {
         Row: {
           created_at: string;
@@ -2902,6 +2937,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      ops_bust_participant: {
+        Args: { p_actor_id: string; p_participant_id: string };
+        Returns: Json;
+      };
       ops_claim_participant: {
         Args: { p_claim_pin: string; p_user_id: string; p_view_token: string };
         Returns: Json;
@@ -2977,6 +3016,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      ops_reenter_participant: {
+        Args: { p_actor_id: string; p_participant_id: string };
+        Returns: Json;
+      };
       ops_register_participant: {
         Args: {
           p_actor_id: string;
@@ -2994,6 +3037,10 @@ export type Database = {
       };
       ops_set_blind_levels: {
         Args: { p_actor_id: string; p_levels: Json; p_tournament_id: string };
+        Returns: Json;
+      };
+      ops_set_prize_structure: {
+        Args: { p_actor_id: string; p_prizes: Json; p_tournament_id: string };
         Returns: Json;
       };
       ops_set_table_lock: {
@@ -3145,7 +3192,8 @@ export type Database = {
         | 'prize_assigned'
         | 'level_play'
         | 'level_pause'
-        | 'level_set';
+        | 'level_set'
+        | 'prize_structure_set';
       ops_participant_status: 'registered' | 'checked_in' | 'active' | 'busted' | 'no_show';
       ops_table_lock_type: 'none' | 'locked' | 'feature';
       ops_table_status: 'open' | 'closed' | 'standby';
@@ -3339,6 +3387,7 @@ export const Constants = {
         'level_play',
         'level_pause',
         'level_set',
+        'prize_structure_set',
       ],
       ops_participant_status: ['registered', 'checked_in', 'active', 'busted', 'no_show'],
       ops_table_lock_type: ['none', 'locked', 'feature'],
