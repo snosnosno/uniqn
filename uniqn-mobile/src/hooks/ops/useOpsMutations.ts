@@ -134,6 +134,46 @@ export function useAddAddon(tournamentId: string) {
   });
 }
 
+export function useBustParticipant(tournamentId: string) {
+  const queryClient = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (participantId: string) =>
+      opsParticipantService.bustParticipant(participantId, requireActor(actorId)),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.liveStats(tournamentId) });
+      if (result.winnerFinalized) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournamentDetail(tournamentId) });
+      }
+    },
+    onError: (error) => {
+      logger.error('ops 탈락 처리 실패', toError(error));
+      toast.error(extractUserMessage(error) || '탈락 처리에 실패했습니다');
+    },
+  });
+}
+
+export function useReenterParticipant(tournamentId: string) {
+  const queryClient = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (participantId: string) =>
+      opsParticipantService.reenterParticipant(participantId, requireActor(actorId)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.liveStats(tournamentId) });
+      toast.success('재진입 처리됨');
+    },
+    onError: (error) => {
+      logger.error('ops 재진입 실패', toError(error));
+      toast.error(extractUserMessage(error) || '재진입에 실패했습니다');
+    },
+  });
+}
+
 export function useAddTable(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);

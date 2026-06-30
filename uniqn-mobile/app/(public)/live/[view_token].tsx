@@ -1,15 +1,23 @@
 /**
  * 공개 플레이어뷰 — ops 1c-4.
- * capability-URL: claim_token 만으로 접근(anon). usePlayerView 가 4s 폴링 + 서버시각 offset 보정.
- * 본인 안전필드만 표시(타 참가자·phone·claim_token 미노출). 로그인 시 본인 계정 연결(claim).
+ * capability-URL: view_token 만으로 접근(anon). usePlayerView 가 4s 폴링 + 서버시각 offset 보정.
+ * 본인 안전필드만 표시(타 참가자·phone·view_token 미노출). 로그인 시 본인 계정 연결(claim).
  * 상태범위(§0.5 B9): 내 자리·내 스택·라이브 클럭·블라인드. 탈락 ITM 배너·재진입 제외(1d/1f).
  */
 import { useState } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  useColorScheme,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { NumericText } from '@/components/ui';
-import { ConfirmModal } from '@/components/ui/Modal';
 import { usePlayerView } from '@/hooks/ops/usePlayerView';
 import { useClaimParticipant } from '@/hooks/ops/useOpsClaimToken';
 import { useAuthStore } from '@/stores/authStore';
@@ -30,12 +38,14 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default function PlayerLiveScreen() {
-  const params = useLocalSearchParams<{ claim_token: string }>();
-  const token = params.claim_token;
+  const scheme = useColorScheme();
+  const params = useLocalSearchParams<{ view_token: string }>();
+  const token = params.view_token;
   const { view, remainingSec, isLoading, isError } = usePlayerView(token);
   const isAuthed = useAuthStore((s) => !!s.user);
   const claimMut = useClaimParticipant(token ?? '');
-  const [confirmClaim, setConfirmClaim] = useState(false);
+  const [claimOpen, setClaimOpen] = useState(false);
+  const [pin, setPin] = useState('');
 
   if (isError || (!token && !isLoading)) {
     return (
@@ -104,10 +114,10 @@ export default function PlayerLiveScreen() {
               {me.reentries > 0 ? `재입장 ${me.reentries}` : ''}
             </Text>
           )}
-          {me.prizeAmount !== null && (
+          {me.status === 'busted' && me.finishPosition !== null && (
             <Text className="text-center text-sm font-sans-semibold text-primary-600 dark:text-primary-400">
-              {me.finishPosition !== null ? `${me.finishPosition}위 · ` : ''}상금{' '}
-              {fmt(me.prizeAmount)}
+              탈락 · {me.finishPosition}위
+              {me.prizeAmount !== null ? ` · 상금 ${fmt(me.prizeAmount)}` : ''}
             </Text>
           )}
         </View>
@@ -139,7 +149,7 @@ export default function PlayerLiveScreen() {
         {/* 계정 연결(claim) */}
         {isAuthed ? (
           <Pressable
-            onPress={() => !claimMut.isPending && setConfirmClaim(true)}
+            onPress={() => !claimMut.isPending && setClaimOpen(true)}
             disabled={claimMut.isPending}
             accessibilityRole="button"
             className={`min-h-[44px] items-center justify-center rounded-lg ${
@@ -158,19 +168,70 @@ export default function PlayerLiveScreen() {
           </View>
         )}
       </ScrollView>
-      {/* 비가역 바인딩 — 우발적 1탭 방지(impeccable §12). 신원·비가역 경고 명시. */}
-      <ConfirmModal
-        visible={confirmClaim}
-        onClose={() => setConfirmClaim(false)}
-        onConfirm={() => {
-          setConfirmClaim(false);
-          claimMut.mutate();
-        }}
-        title="내 계정에 연결"
-        message={`#${me.entryNumber} ${me.name} 참가자를 내 계정에 연결할까요? 연결 후에는 직접 해제할 수 없어요(잘못 연결 시 운영자에게 문의).`}
-        confirmText="연결하기"
-        cancelText="취소"
-      />
+      {/* PIN 게이트 — 슬립의 8자 연결 PIN 입력(비가역 바인딩). */}
+      {claimOpen && (
+        <View className="absolute inset-0 items-center justify-center bg-black/50 px-8">
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            className="w-full"
+          >
+            <View className="w-full gap-3 rounded-xl bg-white p-5 dark:bg-gray-900">
+              <Text className="text-lg font-sans-bold text-content-primary dark:text-off-white">
+                내 계정에 연결
+              </Text>
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+                슬립에 적힌 8자리 연결 PIN을 입력해주세요. 연결 후에는 직접 해제할 수 없어요(잘못
+                연결 시 운영자에게 문의).
+              </Text>
+              <TextInput
+                value={pin}
+                onChangeText={(t) =>
+                  setPin(
+                    t
+                      .toUpperCase()
+                      .replace(/[^0-9A-Z]/g, '')
+                      .slice(0, 8)
+                  )
+                }
+                autoCapitalize="characters"
+                autoCorrect={false}
+                placeholder="예: 7F3K9A2C"
+                placeholderTextColor={scheme === 'dark' ? '#6b7280' : '#9ca3af'}
+                maxLength={8}
+                className="min-h-[44px] rounded-lg border border-gray-300 px-3 text-center text-lg tracking-widest text-content-primary dark:border-gray-600 dark:text-off-white"
+              />
+              <View className="flex-row justify-end gap-2 pt-1">
+                <Pressable
+                  onPress={() => {
+                    setClaimOpen(false);
+                    setPin('');
+                  }}
+                  accessibilityRole="button"
+                  className="min-h-[44px] items-center justify-center rounded-lg px-4"
+                >
+                  <Text className="text-secondary-500 dark:text-secondary-400">취소</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    if (pin.length !== 8 || claimMut.isPending) return;
+                    setClaimOpen(false);
+                    claimMut.mutate(pin, { onSettled: () => setPin('') });
+                  }}
+                  disabled={pin.length !== 8 || claimMut.isPending}
+                  accessibilityRole="button"
+                  className={`min-h-[44px] items-center justify-center rounded-lg px-4 ${
+                    pin.length === 8 && !claimMut.isPending
+                      ? 'bg-primary-600 active:opacity-70'
+                      : 'bg-primary-600 opacity-40'
+                  }`}
+                >
+                  <Text className="font-sans-semibold text-white">연결하기</Text>
+                </Pressable>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+      )}
     </SafeAreaView>
   );
 }

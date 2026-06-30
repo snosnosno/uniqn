@@ -578,8 +578,10 @@ export const queryKeys = {
     events: (tournamentId: string) => [...queryKeys.ops.all, 'events', tournamentId] as const,
     // 1c-3 — 공개 모니터(전광판). 토큰 스코프 스냅샷(anon 폴링).
     monitor: (token: string) => [...queryKeys.ops.all, 'monitor', token] as const,
-    // 1c-4 — 공개 플레이어뷰. claim_token 스코프(anon 폴링).
+    // claim 분리 — 공개 플레이어뷰. view_token 스코프(anon 폴링).
     player: (token: string) => [...queryKeys.ops.all, 'player', token] as const,
+    // 1d — 순위별 상금 구조
+    prizes: (tournamentId: string) => [...queryKeys.ops.all, 'prizes', tournamentId] as const,
   },
 
   // 앱 설정 플래그 (app_config) — 원격 기능 토글

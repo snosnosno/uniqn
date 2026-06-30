@@ -7,12 +7,12 @@ import type {
   IOpsParticipantRepository,
   RegisterParticipantInput,
 } from '../interfaces/IOpsParticipantRepository';
-import type { OpsParticipant } from '@/types/ops';
+import type { OpsParticipant, OpsBustResult, OpsReenterResult } from '@/types/ops';
 
 const TABLE = 'ops_participants' as const;
-// claim_token 제외 (D8 — 1a 에서 클라이언트로 읽지 않음).
+// view_token 포함 (D8 — 운영자가 라이브 링크 재공유, PIN 재발급 없이). claim_pin_hash 는 절대 미포함.
 const COLUMNS =
-  'id, tournament_id, entry_number, name, nationality, phone, player_user_id, status, chips, ' +
+  'id, tournament_id, entry_number, name, nationality, phone, player_user_id, view_token, status, chips, ' +
   'buy_in_amount, rebuys, add_ons, reentries, finish_position, busted_at, prize_amount, note, ' +
   'created_at, updated_at';
 
@@ -86,6 +86,66 @@ export class SupabaseOpsParticipantRepository implements IOpsParticipantReposito
     } catch (error) {
       if (isAppError(error)) throw error;
       mapOpsRpcError(error, { operation: 'ops 애드온' });
+    }
+  }
+
+  async bustParticipant(participantId: string, actorId: string): Promise<OpsBustResult> {
+    try {
+      const { data, error } = await supabase.rpc('ops_bust_participant', {
+        p_participant_id: participantId,
+        p_actor_id: actorId,
+      });
+      if (error) mapOpsRpcError(error, { operation: 'ops 탈락 처리' });
+      const r = data as {
+        finish_position: number;
+        prize_amount: number | null;
+        winner_finalized: boolean;
+        winner: {
+          participant_id: string;
+          finish_position: number;
+          prize_amount: number | null;
+        } | null;
+      };
+      return {
+        finishPosition: r.finish_position,
+        prizeAmount: r.prize_amount,
+        winnerFinalized: r.winner_finalized,
+        winner: r.winner
+          ? {
+              participantId: r.winner.participant_id,
+              finishPosition: r.winner.finish_position,
+              prizeAmount: r.winner.prize_amount,
+            }
+          : null,
+      };
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      mapOpsRpcError(error, { operation: 'ops 탈락 처리' });
+    }
+  }
+
+  async reenterParticipant(participantId: string, actorId: string): Promise<OpsReenterResult> {
+    try {
+      const { data, error } = await supabase.rpc('ops_reenter_participant', {
+        p_participant_id: participantId,
+        p_actor_id: actorId,
+      });
+      if (error) mapOpsRpcError(error, { operation: 'ops 재진입' });
+      const r = data as {
+        participant_id: string;
+        reentries: number;
+        status: string;
+        seated: boolean;
+      };
+      return {
+        participantId: r.participant_id,
+        reentries: r.reentries,
+        status: r.status as OpsParticipant['status'],
+        seated: r.seated,
+      };
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      mapOpsRpcError(error, { operation: 'ops 재진입' });
     }
   }
 }

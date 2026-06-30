@@ -95,6 +95,41 @@ describe('mapOpsRpcError (Task S1)', () => {
     expect((err as BusinessError).code).toBe(ERROR_CODES.OPS_INVALID_LEVEL);
   });
 
+  // 1c-4 — claim 토큰 분리 (E6120→E6121→E6122 세분화)
+  it('OPS_VIEW_TOKEN_INVALID → OPS_VIEW_TOKEN_INVALID', () => {
+    const err = captureThrown({ message: 'OPS_VIEW_TOKEN_INVALID: 유효하지 않은 토큰' });
+    expect(isBusinessError(err)).toBe(true);
+    expect((err as BusinessError).code).toBe(ERROR_CODES.OPS_VIEW_TOKEN_INVALID);
+  });
+
+  // 1c-4 — PIN 검증 실패 (신규 E6122)
+  it('OPS_CLAIM_PIN_INVALID → OPS_CLAIM_PIN_INVALID', () => {
+    const err = captureThrown({ message: 'OPS_CLAIM_PIN_INVALID: 연결 PIN 불일치' });
+    expect(isBusinessError(err)).toBe(true);
+    expect((err as BusinessError).code).toBe(ERROR_CODES.OPS_CLAIM_PIN_INVALID);
+  });
+
+  // 1c-4 — 이미 클레임됨 (기존 E6121 유지)
+  it('OPS_CLAIM_ALREADY_CLAIMED → OPS_CLAIM_ALREADY_CLAIMED', () => {
+    const err = captureThrown({ message: 'OPS_CLAIM_ALREADY_CLAIMED: 이미 다른 계정 연결' });
+    expect(isBusinessError(err)).toBe(true);
+    expect((err as BusinessError).code).toBe(ERROR_CODES.OPS_CLAIM_ALREADY_CLAIMED);
+  });
+
+  // 1d — bust/reentry/ITM (Task 8)
+  it.each([
+    ['PARTICIPANT_ALREADY_BUSTED: x', ERROR_CODES.OPS_PARTICIPANT_ALREADY_BUSTED],
+    ['PARTICIPANT_NOT_BUSTED: x', ERROR_CODES.OPS_PARTICIPANT_NOT_BUSTED],
+    ['PARTICIPANT_LAST_SURVIVOR: x', ERROR_CODES.OPS_PARTICIPANT_LAST_SURVIVOR],
+    ['REENTRY_NOT_ALLOWED: x', ERROR_CODES.OPS_REENTRY_NOT_ALLOWED],
+    ['MAX_REENTRIES_EXCEEDED: x', ERROR_CODES.OPS_MAX_REENTRIES_EXCEEDED],
+    ['PRIZE_STRUCTURE_INVALID: x', ERROR_CODES.OPS_PRIZE_STRUCTURE_INVALID],
+  ])('maps %s → %s', (msg, code) => {
+    expect(() => mapOpsRpcError({ message: msg }, { operation: 't' })).toThrow(
+      expect.objectContaining({ code })
+    );
+  });
+
   // 회귀 — PERMISSION_DENIED 는 PREFIX_MAP 밖 별도 분기
   it('PERMISSION_DENIED → BUSINESS_INVALID_STATE + 권한 메시지 (회귀)', () => {
     const err = captureThrown({ message: 'PERMISSION_DENIED' });

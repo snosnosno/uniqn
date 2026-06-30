@@ -28,6 +28,7 @@ const EVENT_LABEL: Record<OpsEventType, string> = {
   level_play: '레벨 시작',
   level_pause: '일시정지',
   level_set: '레벨 변경',
+  prize_structure_set: '상금 구조 설정',
 };
 
 /** payload 의 원시값(string/number/boolean) 만 골라 간결 요약. */

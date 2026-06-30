@@ -5,7 +5,7 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.0.0/)를 기반으로 하며,
 이 프로젝트는 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 준수합니다.
 
-## [Unreleased] - 2026-06-28
+## [Unreleased] - 2026-06-29
 
 ### Added
 - **라이브 대회 운영(ops) 도구 1a~1c 출하** (PR #207·#210·#212·#213·#214, prod 적용 완료·advisor 0 ERROR):
@@ -14,8 +14,9 @@
   - 1c-3 공개 모니터(전광판) — `ops_get_monitor_snapshot(token)` anon SECDEF 비-PII 화이트리스트 투영 + `app/(public)/monitor/[token]` + B2 배포 멀티 프로젝트 파라미터화(`deploy:ops`)(#213)
   - 1c-4 공개 플레이어뷰 — `ops_get_player_view(claim_token)` anon SECDEF 본인 안전필드 투영 + claim 계정 바인딩/운영자 unclaim 복구 + `app/(public)/live/[claim_token]`(#214)
   - 보안: anon ops 테이블 직접 SELECT 0 — token→스코프 SECDEF RPC + 화이트리스트 투영만(#195 PII 유출 클래스 차단). 적대리뷰 WF(1c-1 7차원·1c-4 5렌즈 find→verify) 통과
-  - ⚠️ 1d(bust/재진입) 착수 전 claim view/write 토큰 분리 + 신원게이트 재설계 필요(player_user_id 권한키 승급 전제)
+  - ✅ **STEP A claim 토큰 읽기/쓰기 분리** (PR #216, prod 적용·CI 9/9): `claim_token`(읽기+쓰기 겸용)→`view_token`(읽기 anon)+`claim_pin_hash`(쓰기 비밀, 8자 Crockford base32 PIN·bcrypt) 분리로 읽기 URL 유출→계정 하이재킹 차단. RPC 4종 재정의·구 2-인자 claim/issue_claim_token/player_view(text) 명시 DROP. 적대검증 WF 6렌즈가 NULL PIN fail-open·잠금 DoS HIGH 2건 적출→`IS NULL`+`IS DISTINCT FROM` 가드·8자 PIN으로 잠금제거. 1d(bust/재진입) BLOCKING 선결과제 해소
 - 스태프관리 직접 추가: 지원 절차 없이 앱 가입자를 전화번호 정확일치 검색으로 스태프(work_logs)에 직접 추가. 신규 SECURITY DEFINER RPC `add_direct_staff`/`remove_direct_staff`/`search_users_by_phone` (confirm_application 정원 가드 동치 + person-basis `filled_positions`/`stats.filledPositions` ±1, `application_id` NULL 직접추가분은 전용 삭제 경로). 스태프관리 탭 "스태프 추가" 버튼 + `AddStaffModal`(전화검색→가입자 선택→날짜/역할/시간대). 검색은 구인자 전용·전화 전체 일치로 열거 방지
+- **주간 배치 그리드(홀덤펍 운영 그리드)** (PR #219, 플래그 `weekly_grid_enabled` OFF 출하·마이그 13종 prod 적용): 운영처(venue)를 숨김 "컨테이너 공고"(`status='container'` 신규 enum, fail-closed)로 모델링해 단골을 주간 그리드에 직접 배치. venue 스팬 SSOT(`venue_span_posting_ids`=컨테이너+`venue_id` open 공고)로 인원·부족·정산 집계(E1). 읽기 RPC(`get_venue_grid_summary`/`get_venue_day_slots`)·컨테이너 헬퍼·`set_venue_soft_target`·QR 컨테이너/auto 분기 + 직접배치/슬롯편집(시간·역할·색상·메모)/소프트타깃(부족 N명)/지난주복사(멱등)/배치확인 알림. 컨테이너 직접쓰기 RESTRICTIVE 차단·신규 SECDEF anon REVOKE·cross-workspace 유령행 차단(read RPC workspace 재필터). 적대 전체리뷰(8에이전트)로 중첩 RN Modal(SheetModal+overlay)·배치알림 딥링크 5계층·pgTAP 공백 보강. ⚠️ 플래그 ON 전 시간/날짜 피커 iOS 실기기 QA 필요
 - LLM Wiki 지식 합성 레이어 부트스트랩 (PR #176): `wiki/`(architecture·decisions·domain·sources) + `/ingest`·`/query`·`/lint` 운영 + staleness 자동 감지(memory 전용 인용은 UNVERIFIABLE 표기)
 - 전체 워크플로우 UX 감사 후속 9결함 수정 (PR #175): 가입 빈 비밀번호 가드, 지원자 일괄확정 배선, 수동 출퇴근 타임스탬프→정산 차단 해소, 정산 CSV export 등
 - 공고 자동마감(Approach B): `posting_status` enum에 `capacity_full` 추가 (M1). 정원 도달 시 자동 마감, 빈자리 발생 시 자동 복귀 대기 상태

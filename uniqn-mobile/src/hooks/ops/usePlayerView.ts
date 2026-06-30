@@ -2,6 +2,7 @@
  * 공개 플레이어뷰 훅 (1c-4) — anon 폴링 + 서버시각 offset 보정 + 1초 똑딱.
  * useMonitorSnapshot 과 동일 타이머 계약(서버 앵커 + 클라 틱 + offset). 본인 안전필드만 노출.
  * Repository 직접 호출(읽기 전용) — 공개 라우트는 authStore/Service 비의존.
+ * token 파라미터 = view_token capability(읽기 전용). claim_pin 은 useClaimParticipant 참조.
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';

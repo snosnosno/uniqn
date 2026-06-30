@@ -193,8 +193,15 @@ export const ERROR_CODES = {
   OPS_NO_BLIND_LEVELS: 'E6117', // 블라인드 레벨 미설정 상태에서 클럭 시작 시도
   OPS_INVALID_LEVEL: 'E6118', // 존재하지 않는 레벨 sort 로 이동
   OPS_MONITOR_TOKEN_INVALID: 'E6119', // 모니터(전광판) 토큰 무효/만료(NULL·길이<32·미존재)
-  OPS_CLAIM_TOKEN_INVALID: 'E6120', // 플레이어뷰 claim 토큰 무효/만료(NULL·길이<32·미존재)
+  OPS_VIEW_TOKEN_INVALID: 'E6120', // 플레이어뷰 읽기 토큰 무효(구 OPS_CLAIM_TOKEN_INVALID rename)
   OPS_CLAIM_ALREADY_CLAIMED: 'E6121', // 이미 다른 계정에 연결된 참가자 재클레임
+  OPS_CLAIM_PIN_INVALID: 'E6122', // claim PIN 불일치/형식오류/미발급(오라클 회피 통합)
+  OPS_PARTICIPANT_ALREADY_BUSTED: 'E6123', // 이미 탈락 처리된 참가자 재-bust
+  OPS_PARTICIPANT_NOT_BUSTED: 'E6124', // 비-탈락 참가자 재진입 시도
+  OPS_REENTRY_NOT_ALLOWED: 'E6125', // 재진입 비허용 대회
+  OPS_MAX_REENTRIES_EXCEEDED: 'E6126', // 최대 재진입 초과
+  OPS_PRIZE_STRUCTURE_INVALID: 'E6127', // 상금 구조 형식/중복/음수
+  OPS_PARTICIPANT_LAST_SURVIVOR: 'E6128', // 마지막 생존자 bust 시도
 
   // 알 수 없는 에러 (E7xxx)
   UNKNOWN: 'E7000',
@@ -225,8 +232,16 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.OPS_NO_BLIND_LEVELS]: '블라인드 레벨을 먼저 설정해주세요',
   [ERROR_CODES.OPS_INVALID_LEVEL]: '존재하지 않는 레벨입니다',
   [ERROR_CODES.OPS_MONITOR_TOKEN_INVALID]: '유효하지 않은 모니터 링크입니다',
-  [ERROR_CODES.OPS_CLAIM_TOKEN_INVALID]: '유효하지 않은 플레이어 링크입니다',
+  [ERROR_CODES.OPS_VIEW_TOKEN_INVALID]: '유효하지 않은 플레이어 링크입니다',
   [ERROR_CODES.OPS_CLAIM_ALREADY_CLAIMED]: '이미 다른 계정에 연결된 참가자입니다',
+  [ERROR_CODES.OPS_CLAIM_PIN_INVALID]: '연결 PIN이 올바르지 않습니다',
+  [ERROR_CODES.OPS_PARTICIPANT_ALREADY_BUSTED]: '이미 탈락 처리된 참가자예요.',
+  [ERROR_CODES.OPS_PARTICIPANT_NOT_BUSTED]: '탈락 상태가 아니어서 재진입할 수 없어요.',
+  [ERROR_CODES.OPS_REENTRY_NOT_ALLOWED]: '이 대회는 재진입이 허용되지 않아요.',
+  [ERROR_CODES.OPS_MAX_REENTRIES_EXCEEDED]: '최대 재진입 횟수를 초과했어요.',
+  [ERROR_CODES.OPS_PRIZE_STRUCTURE_INVALID]: '상금 구조가 올바르지 않아요(순위·금액 확인).',
+  [ERROR_CODES.OPS_PARTICIPANT_LAST_SURVIVOR]:
+    '마지막 생존자는 탈락 처리할 수 없어요(우승 처리 대상).',
 
   // 네트워크
   [ERROR_CODES.NETWORK_OFFLINE]: '인터넷 연결을 확인해주세요',

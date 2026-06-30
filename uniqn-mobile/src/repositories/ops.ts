@@ -12,6 +12,7 @@ import { SupabaseOpsLiveStatsRepository } from './supabase/OpsLiveStatsRepositor
 import { SupabaseOpsEventRepository } from './supabase/OpsEventRepository';
 import { SupabaseOpsMonitorRepository } from './supabase/OpsMonitorRepository';
 import { SupabaseOpsPlayerRepository } from './supabase/OpsPlayerRepository';
+import { SupabaseOpsPrizeRepository } from './supabase/OpsPrizeRepository';
 
 export type {
   IOpsTournamentRepository,
@@ -31,6 +32,7 @@ export type { IOpsLiveStatsRepository } from './interfaces/IOpsLiveStatsReposito
 export type { IOpsEventRepository } from './interfaces/IOpsEventRepository';
 export type { IOpsMonitorRepository } from './interfaces/IOpsMonitorRepository';
 export type { IOpsPlayerRepository } from './interfaces/IOpsPlayerRepository';
+export type { IOpsPrizeRepository } from './interfaces/IOpsPrizeRepository';
 
 export { SupabaseOpsTournamentRepository } from './supabase/OpsTournamentRepository';
 export { SupabaseOpsParticipantRepository } from './supabase/OpsParticipantRepository';
@@ -42,6 +44,7 @@ export { SupabaseOpsLiveStatsRepository } from './supabase/OpsLiveStatsRepositor
 export { SupabaseOpsEventRepository } from './supabase/OpsEventRepository';
 export { SupabaseOpsMonitorRepository } from './supabase/OpsMonitorRepository';
 export { SupabaseOpsPlayerRepository } from './supabase/OpsPlayerRepository';
+export { SupabaseOpsPrizeRepository } from './supabase/OpsPrizeRepository';
 
 /** 프로덕션 싱글톤. */
 export const opsTournamentRepository = new SupabaseOpsTournamentRepository();
@@ -54,3 +57,4 @@ export const opsLiveStatsRepository = new SupabaseOpsLiveStatsRepository();
 export const opsEventRepository = new SupabaseOpsEventRepository();
 export const opsMonitorRepository = new SupabaseOpsMonitorRepository();
 export const opsPlayerRepository = new SupabaseOpsPlayerRepository();
+export const opsPrizeRepository = new SupabaseOpsPrizeRepository();

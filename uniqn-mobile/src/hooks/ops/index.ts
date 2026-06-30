@@ -14,7 +14,7 @@ export { useOpsEvents } from './useOpsEvents';
 export { useMonitorSnapshot } from './useMonitorSnapshot';
 export { useRotateMonitorToken } from './useOpsMonitorToken';
 export { usePlayerView } from './usePlayerView';
-export { useIssueClaimToken, useClaimParticipant } from './useOpsClaimToken';
+export { useIssuePlayerCredentials, useClaimParticipant } from './useOpsClaimToken';
 export {
   useCreateOpsTournament,
   useSetTournamentStatus,
@@ -22,6 +22,8 @@ export {
   useRegisterParticipant,
   useAddRebuy,
   useAddAddon,
+  useBustParticipant,
+  useReenterParticipant,
   useAddTable,
   useSetTableLock,
   useSetTablePriority,
@@ -31,6 +33,7 @@ export {
   useFreeSeat,
   useRedrawWaitlistFill,
 } from './useOpsMutations';
+export { useOpsPrizes, useSetPrizeStructure } from './useOpsPrizes';
 export {
   useSetBlindLevels,
   useStartClock,
