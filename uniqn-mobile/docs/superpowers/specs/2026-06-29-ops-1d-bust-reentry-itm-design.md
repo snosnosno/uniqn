@@ -53,15 +53,18 @@ INDEX (tournament_id, rank)
 
 ### 3.1 `ops_bust_participant(p_participant_id uuid, p_actor_id uuid) RETURNS jsonb`
 
-**용어**: `v_tournament_id`·`v_status`·`v_seat_ids`(점유 좌석 id 배열)는 step2 참가자 행에서 추출한 **로컬 변수**(함수 파라미터엔 tournament_id 없음 — 직전 스펙의 `p_tournament_id` 참조는 버그였음, 전부 `v_tournament_id`로 교체). "in-play(생존)" = `status='active'` **단일 정의**(checked_in/registered/no_show/busted는 비-인플레이) — bust 적격·순위 카운트·우승 후보가 모두 이 집합으로 일치(적대검증 trans-1 비대칭 제거).
+**용어**: `v_tournament_id`는 step2 참가자 행에서 **비잠금** 추출(불변), `v_status`는 step5 참가자 `FOR UPDATE`에서 재확인, `v_seat_ids`(점유 좌석 id 배열)는 step10에서 잠금(함수 파라미터엔 tournament_id 없음 — 직전 스펙의 `p_tournament_id` 참조는 버그였음, 전부 `v_tournament_id`로 교체). "in-play(생존)" = `status='active'` **단일 정의**(checked_in/registered/no_show/busted는 비-인플레이) — bust 적격·순위 카운트·우승 후보가 모두 이 집합으로 일치(적대검증 trans-1 비대칭 제거).
+
+> ⚠️ **잠금 순서 불변식(데드락 회피 견고화)**: `advisory → 대회 FOR UPDATE → 참가자 FOR UPDATE → 좌석(id 오름차순)`. 참가자 행 `FOR UPDATE`를 advisory 뒤로 두어, 2명 active 동시 bust 시 우승확정 winner `FOR UPDATE`가 상대 트랜잭션이 보유한 참가자 행을 기다리며 발생하던 순환대기(40P01) 협소창을 제거. advisory가 대회별 모든 bust/reenter를 직렬화하므로 게이트 통과 트랜잭션은 항상 1개.
 
 1. actor 가드: `auth.uid() IS NULL OR (auth.uid() IS DISTINCT FROM p_actor_id AND NOT is_admin())` → `PERMISSION_DENIED`.
-2. 참가자 `SELECT id, tournament_id, status INTO v_pid, v_tournament_id, v_status ... FOR UPDATE`. NOT FOUND → `PARTICIPANT_NOT_FOUND`.
-3. `is_ops_member(v_tournament_id, p_actor_id) OR is_admin()` → 아니면 `PERMISSION_DENIED`.
+2. **tournament_id 선취(비잠금)**: `SELECT tournament_id INTO v_tournament_id FROM ops_participants WHERE id=p_participant_id`(FOR UPDATE 없음). NOT FOUND → `PARTICIPANT_NOT_FOUND`. tournament_id는 참가자 행에서 불변이므로 비잠금 읽기로 충분(advisory 락을 행 잠금보다 먼저 취득하기 위함).
+3. `is_ops_member(v_tournament_id, p_actor_id) OR is_admin()` → 아니면 `PERMISSION_DENIED`(v_tournament_id만 필요 — 참가자 행 잠금 불요).
 4. **advisory xact 락 먼저**: `PERFORM pg_advisory_xact_lock(hashtext('ops_tournament_' || v_tournament_id::text)::bigint)`. 그 다음 대회 `SELECT status INTO v_t_status FROM ops_tournaments WHERE id=v_tournament_id FOR UPDATE`. `active` 아니면 거부 — 메시지 `INVALID_STATUS: 진행 중(active) 대회만 탈락 처리 가능`. (락→상태읽기 순서로 우승확정 레이스·TOCTOU 차단. 대회 행 락+advisory 이중 직렬화.)
-5. 참가자 status 가드: `'active'`만 bust 가능. `v_status='busted'`면 `PARTICIPANT_ALREADY_BUSTED`, 그 외(registered/checked_in/no_show)면 `PARTICIPANT_NOT_ACTIVE`.
+5. **참가자 행 잠금(advisory/대회 락 이후) + status 가드**: `SELECT status INTO v_status FROM ops_participants WHERE id=p_participant_id FOR UPDATE`(NOT FOUND → `PARTICIPANT_NOT_FOUND`). `'active'`만 bust 가능 — `v_status='busted'`면 `PARTICIPANT_ALREADY_BUSTED`, 그 외(registered/checked_in/no_show)면 `PARTICIPANT_NOT_ACTIVE`.
 6. **생존수 산정**: `v_active := (SELECT count(*) FROM ops_participants WHERE tournament_id=v_tournament_id AND status='active')` — **이 시점 자기 자신 포함**(아직 active). ⚠️**마지막 생존자 가드**: `IF v_active <= 1 THEN RAISE 'PARTICIPANT_LAST_SURVIVOR: 마지막 생존자는 탈락 처리할 수 없습니다(우승 처리 대상)'`. (혼자 남은 active를 bust하면 우승 미확정·고착 — 적대검증 oboe-4.)
 7. **finish_position 산정**(⚠️재진입 충돌 불가·off-by-one): "**생존수 이상의 가장 작은 미사용 순위**".
+
    ```sql
    SELECT g INTO v_finish FROM generate_series(
      v_active,
@@ -73,6 +76,7 @@ INDEX (tournament_id, rank)
 
    - 무재진입: v_active=N→fp=N(9,8,…,2 단조), 우승=1. **재진입/좌석전이로 생존수가 비단조여도 이미 부여된 순위를 건너뛰어 부분UNIQUE 충돌 구조적 불가**(적대검증 reentry-1 해소). 상한 `v_active+사용된순위수`는 비둘기집으로 빈칸 보장.
    - ❌**금지**: `finish_position=v_active` 직접대입(재진입 시 23505) / finder 제안 `count(assigned)+1`(순위 방향 역전).
+
 8. **prize 매핑**: `SELECT amount INTO v_prize FROM ops_prizes WHERE tournament_id=v_tournament_id AND rank=v_finish` → 행 있으면 `v_prize=amount`(ITM, amount=0도 ITM로 간주하나 Zod가 amount≥1 강제해 0행 미발생), 없으면 `v_prize=NULL`(out of money).
 9. 변이: `UPDATE ops_participants SET status='busted', busted_at=now(), finish_position=v_finish, prize_amount=v_prize, chips=0 WHERE id=p_participant_id`.
 10. **좌석 해제(결정적 락 순서)**: 점유 좌석을 **id 오름차순 FOR UPDATE 후** 비움 — `FOR v_sid IN SELECT id FROM ops_seats WHERE participant_id=p_participant_id ORDER BY id FOR UPDATE LOOP ... END LOOP; UPDATE ops_seats SET participant_id=NULL WHERE participant_id=p_participant_id`. 비워진 좌석마다 `seat_freed` 이벤트. ⚠️1b 좌석 RPC(`ops_redraw_waitlist_fill`/`ops_move_seat`)가 좌석 id 오름차순 락이므로 **동일 순서로 데드락 회피**(적대검증 conc-1).
@@ -90,10 +94,10 @@ INDEX (tournament_id, rank)
 ### 3.2 `ops_reenter_participant(p_participant_id uuid, p_actor_id uuid) RETURNS jsonb`
 
 1. actor 가드(3.1과 동일).
-2. 참가자 `SELECT id, tournament_id, status, reentries INTO v_pid, v_tournament_id, v_status, v_reentries ... FOR UPDATE`. NOT FOUND → `PARTICIPANT_NOT_FOUND`.
+2. **tournament_id 선취(비잠금, 3.1과 동일 잠금 순서 불변식)**: `SELECT tournament_id INTO v_tournament_id FROM ops_participants WHERE id=p_participant_id`(FOR UPDATE 없음). NOT FOUND → `PARTICIPANT_NOT_FOUND`. `v_status`·`v_reentries`는 step5 참가자 `FOR UPDATE`에서 추출.
 3. `is_ops_member(v_tournament_id, p_actor_id) OR is_admin()` → 아니면 `PERMISSION_DENIED`.
 4. **advisory xact 락 먼저**(3.1과 **동일 키** `hashtext('ops_tournament_'||v_tournament_id::text)::bigint`) → 그 다음 대회 `SELECT status, reentry_allowed, max_reentries, starting_chips, auto_seat_on_register INTO ... FROM ops_tournaments WHERE id=v_tournament_id FOR UPDATE`. `status<>'active'`면 거부 `INVALID_STATUS: 진행 중(active) 대회만 재진입 가능`. ⚠️락→대회 FOR UPDATE 순서로 TOCTOU 차단(적대검증 conc-2: completed 대회 부활 방지).
-5. 참가자 status 가드: `v_status='busted'`만 재진입. 아니면 `PARTICIPANT_NOT_BUSTED`.
+5. **참가자 행 잠금(advisory/대회 락 이후) + status 가드**: `SELECT status, reentries INTO v_status, v_reentries FROM ops_participants WHERE id=p_participant_id FOR UPDATE`(NOT FOUND → `PARTICIPANT_NOT_FOUND`). `v_status='busted'`만 재진입. 아니면 `PARTICIPANT_NOT_BUSTED`.
 6. 재진입 정책 가드: `reentry_allowed=false` → `REENTRY_NOT_ALLOWED`. `max_reentries IS NOT NULL AND v_reentries >= max_reentries` → `MAX_REENTRIES_EXCEEDED`. (`max_reentries IS NULL` = 무제한.)
 7. **auto-seat 결정 먼저**: `auto_seat_on_register=true`면 빈좌석 `SELECT id INTO v_seat_id FROM ops_seats WHERE tournament_id=v_tournament_id AND <open·unlocked·participant_id IS NULL> ORDER BY id LIMIT 1 FOR UPDATE SKIP LOCKED`. `v_seat_id` 있으면 `v_seated:=true, v_new_status:='active'`, 없으면(또는 auto_seat=false) `v_seated:=false, v_new_status:='checked_in'`. (register v2 미러 — active-without-seat 불변식 준수: 좌석 확보 후에만 active.)
 8. **동일 행 재활성화**: `UPDATE ops_participants SET chips=v_starting_chips, finish_position=NULL, busted_at=NULL, prize_amount=NULL, reentries=v_reentries+1, status=v_new_status WHERE id=p_participant_id`. 좌석 확보 시 `UPDATE ops_seats SET participant_id=p_participant_id WHERE id=v_seat_id`. ⚠️checked_in은 "in-play(active)" 아님 → 좌석 못 받은 재진입자는 생존수에 미포함(§3.1 단일 정의 정합).
@@ -234,21 +238,24 @@ pgTAP(전 시나리오)·jest 4524+신규·`tsc --noEmit`·`npm run quality` 전
 
 > WF 44 findings 탐지. 세션 한도로 verify 절반 실패(0/0 미검증) → **확정 2건 + 직접 코드대조 판정**으로 종합. 반영분:
 
-| ID                       | 심각도             | 결함                                                                     | 해소(스펙 위치)                                                                       |
-| ------------------------ | ------------------ | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
-| reentry-1/integ-1/oboe-1 | **CRITICAL**       | 카운트 기반 finish_position이 재진입 시 부분UNIQUE 23505로 bust 하드실패 | "생존수 이상 최소 미사용 순위" 알고리즘 §3.1-7 (finder의 count+1은 방향역전이라 폐기) |
-| trans-1/oboe-2/logic-1   | **HIGH**           | 비-active(checked_in) 생존자가 우승 오확정·rank1 상금 오지급             | "in-play=active" 단일화 — bust적격·순위·우승후보 일치 §3.1-6·12                       |
-| conc-3/oboe-5            | **HIGH(스펙버그)** | advisory 락이 함수에 없는 `p_tournament_id` 참조(컴파일깨짐)             | 로컬 `v_tournament_id` 전면 교체 §3.1                                                 |
-| oboe-4                   | MEDIUM             | 마지막 active 1인 bust→우승미확정 고착                                   | `v_active<=1 → PARTICIPANT_LAST_SURVIVOR` §3.1-6                                      |
-| conc-1                   | MEDIUM             | 좌석해제 락순서 역전→1b 좌석RPC와 데드락                                 | 좌석 id 오름차순 FOR UPDATE §3.1-10                                                   |
-| conc-2                   | MEDIUM(HIGH후보)   | reenter 대회 FOR UPDATE 누락→completed 부활 TOCTOU                       | advisory먼저+대회 FOR UPDATE §3.2-4                                                   |
-| conc-5                   | MEDIUM             | winner 행 FOR UPDATE 없이 갱신                                           | winner SELECT FOR UPDATE §3.1-12                                                      |
-| data-1/data-2            | HIGH               | RPC snake_case 반환 vs 데이터레이어 camelCase 가정                       | Repository 명시 매핑+`OpsBustResult` 계약 §6.1                                        |
-| consist-1                | MEDIUM             | set_prize_structure status 가드 부재                                     | completed 차단 §3.3-1                                                                 |
-| prize-2                  | LOW                | amount=0 ITM 오표시                                                      | Zod `positive()`(≥1) §3.3-2·§6.2                                                      |
-| prize-3                  | LOW                | replace-all 소급 미반영 운영자 혼동                                      | PAYOUTS "시작 전 설정" 안내 §3.3·§6.4                                                 |
-| data-3                   | LOW                | "monitor 무효화" 공개뷰엔 no-op                                          | 공개뷰=자체 폴링 명시 §6.1                                                            |
-| data-4                   | LOW                | 6탭 추가=4사이트 동시수정                                                | 구현 노트 §6.4                                                                        |
-| data-5                   | LOW                | 좌석해제로 탈락자 "좌석 미배정" 오표시                                   | 배너=status 기준(좌석무관) §6.5                                                       |
+| ID                       | 심각도             | 결함                                                                                                | 해소(스펙 위치)                                                                                                                  |
+| ------------------------ | ------------------ | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| reentry-1/integ-1/oboe-1 | **CRITICAL**       | 카운트 기반 finish_position이 재진입 시 부분UNIQUE 23505로 bust 하드실패                            | "생존수 이상 최소 미사용 순위" 알고리즘 §3.1-7 (finder의 count+1은 방향역전이라 폐기)                                            |
+| trans-1/oboe-2/logic-1   | **HIGH**           | 비-active(checked_in) 생존자가 우승 오확정·rank1 상금 오지급                                        | "in-play=active" 단일화 — bust적격·순위·우승후보 일치 §3.1-6·12                                                                  |
+| conc-3/oboe-5            | **HIGH(스펙버그)** | advisory 락이 함수에 없는 `p_tournament_id` 참조(컴파일깨짐)                                        | 로컬 `v_tournament_id` 전면 교체 §3.1                                                                                            |
+| oboe-4                   | MEDIUM             | 마지막 active 1인 bust→우승미확정 고착                                                              | `v_active<=1 → PARTICIPANT_LAST_SURVIVOR` §3.1-6                                                                                 |
+| conc-1                   | MEDIUM             | 좌석해제 락순서 역전→1b 좌석RPC와 데드락                                                            | 좌석 id 오름차순 FOR UPDATE §3.1-10                                                                                              |
+| conc-2                   | MEDIUM(HIGH후보)   | reenter 대회 FOR UPDATE 누락→completed 부활 TOCTOU                                                  | advisory먼저+대회 FOR UPDATE §3.2-4                                                                                              |
+| conc-5                   | MEDIUM             | winner 행 FOR UPDATE 없이 갱신                                                                      | winner SELECT FOR UPDATE §3.1-12                                                                                                 |
+| conc-6(최종리뷰 후속)    | MEDIUM(자기치유)   | 참가자 FOR UPDATE가 advisory보다 먼저→2명 active 동시 bust 우승확정 winner 락 순환대기 40P01 협소창 | **잠금 순서 advisory→대회→참가자**로 재배열(비잠금 tournament_id 선취) §3.1-2/4/5·§3.2-2/4/5. 단일 txn 검사순서/pgTAP 368 무회귀 |
+| data-1/data-2            | HIGH               | RPC snake_case 반환 vs 데이터레이어 camelCase 가정                                                  | Repository 명시 매핑+`OpsBustResult` 계약 §6.1                                                                                   |
+| consist-1                | MEDIUM             | set_prize_structure status 가드 부재                                                                | completed 차단 §3.3-1                                                                                                            |
+| prize-2                  | LOW                | amount=0 ITM 오표시                                                                                 | Zod `positive()`(≥1) §3.3-2·§6.2                                                                                                 |
+| prize-3                  | LOW                | replace-all 소급 미반영 운영자 혼동                                                                 | PAYOUTS "시작 전 설정" 안내 §3.3·§6.4                                                                                            |
+| data-3                   | LOW                | "monitor 무효화" 공개뷰엔 no-op                                                                     | 공개뷰=자체 폴링 명시 §6.1                                                                                                       |
+| data-4                   | LOW                | 6탭 추가=4사이트 동시수정                                                                           | 구현 노트 §6.4                                                                                                                   |
+| data-5                   | LOW                | 좌석해제로 탈락자 "좌석 미배정" 오표시                                                              | 배너=status 기준(좌석무관) §6.5                                                                                                  |
 
 **비차단(검증 후 기각/한계 수용)**: livestats-1/reentry-4(재진입 buy-in이 prize*pool 미반영 — 고정금액이라 무영향, 1f서 recompute 가산) · errmap-2(신규 prefix는 NOT*\*와 substring 무관 — 배치순서 무의미하나 순서 유지) · reentry-2(heads-up 중 재진입기간이면 자동완료가 재진입 차단 — 재진입기간은 초기라 비현실, 수용) · oboe-3(no_show 전이 RPC 부재 — no_show 미설정이라 카운트 무영향, 1e/별도) · conc-5 후속(completed 대회 winner rebuy/addon 가능 — 1a RPC에 tournament-active 가드 추가는 별도 PR).
+
+> **🔭 후속 PR 추적 — [MEDIUM] LS-매개 데드락 (1d 출하 후 적대검증 conc-7, 이번 PR 범위 밖)**: 1c `ops_live_stats` 재계산 트리거가 AFTER ROW로 `ops_live_stats` 행(LS)을 변경 직후 잠그는데, bust는 `UPDATE ops_participants`(→LS 획득) **후** winner/좌석을 잠가 `LS < {S, P_winner}` 역전이 생긴다. advisory 비보유 변이(`add_rebuy`/`add_addon`/좌석 RPC/`claim`/`redraw`)가 `(P,S) → LS` 순서라 bust와 ABBA 순환(40P01) 가능. **이번 락순서 수정과 인과 무관·선재**(prod 적용된 1c 트리거 + 1b redraw 양쪽 관여). 자기치유(40P01 자동 abort+재시도)·prod ops 0행이라 실피해 미미. **정공법 = `fn_ops_live_stats_recompute` 트리거를 일반 AFTER ROW → DEFERRED CONSTRAINT TRIGGER(커밋 직전 1회)로 전환** → LS가 항상 모든 데이터행 락 **이후** 획득되어 `(전 데이터행) < LS` 전역 순서 복원·클래스 전체 소거. 신규 마이그(1c 메커니즘 변경)+pgTAP+적대검증 재실행 필요한 독립 작업.

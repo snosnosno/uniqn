@@ -7,6 +7,8 @@
 --   ⑥ anon EXECUTE 거부.
 --   ⑦ actor 가드 2종(위조 member·비멤버 outsider) → PERMISSION_DENIED.
 --   [NEW] NULL rank·NULL amount → PRIZE_STRUCTURE_INVALID (NULL-가드 보완).
+--   [NEW] 비-숫자/소수 rank("abc"/1.5)·SQL NULL p_prizes → PRIZE_STRUCTURE_INVALID
+--         (캐스트 전 정규식 선검증 — raw 22P02 누출·silent clear 차단, golden #6).
 -- 패턴: ops_bust_participant.test.sql·ops_reenter_participant.test.sql
 --   (set_config 보관·throws_like 게이트별 메시지·postgres 역할 전환).
 -- ⚠️ 시드 주의: ops_test_seed 기본 status='upcoming'.
@@ -14,7 +16,7 @@
 --    completed 시나리오(④)는 별도 대회를 postgres 역할로 직접 INSERT.
 
 BEGIN;
-SELECT plan(12);
+SELECT plan(15);
 
 -- ── 시드 ──────────────────────────────────────────────────────────────────────
 -- ops_test_seed: owner·member·outsider·tournament(upcoming)·participant 1명.
@@ -143,8 +145,37 @@ SELECT throws_like(                                                          -- 
   '%PRIZE_STRUCTURE_INVALID%',
   '[NEW] NULL amount → PRIZE_STRUCTURE_INVALID (NULL-가드)');
 
--- ── ④ completed 대회 ─────────────────────────────────────────────────────────
+-- ── [NEW] 신뢰경계: 비-숫자 rank (캐스트 전 정규식 선검증 — raw 22P02 누출 차단) ──
+-- 수정 전: count(DISTINCT (e->>'rank')::int) 가 'abc'::int 강제 → raw 22P02(메시지에 PRIZE_STRUCTURE_INVALID 없음=RED).
+-- 수정 후: 정규식 선검증이 친절 PRIZE_STRUCTURE_INVALID 발화(GREEN).
 SELECT throws_like(                                                          -- [9]
+  $$ SELECT public.ops_set_prize_structure(
+       (current_setting('ops.t_id'))::uuid,
+       (current_setting('ops.owner_id'))::uuid,
+       '[{"rank":"abc","amount":100}]'::jsonb) $$,
+  '%PRIZE_STRUCTURE_INVALID%',
+  '[NEW] 비-숫자 rank "abc" → PRIZE_STRUCTURE_INVALID (22P02 누출 차단)');
+
+-- ── [NEW] 신뢰경계: 소수 rank (1.5::int 도 22P02) ─────────────────────────────
+SELECT throws_like(                                                          -- [10]
+  $$ SELECT public.ops_set_prize_structure(
+       (current_setting('ops.t_id'))::uuid,
+       (current_setting('ops.owner_id'))::uuid,
+       '[{"rank":1.5,"amount":100}]'::jsonb) $$,
+  '%PRIZE_STRUCTURE_INVALID%',
+  '[NEW] 소수 rank 1.5 → PRIZE_STRUCTURE_INVALID (22P02 누출 차단)');
+
+-- ── [NEW] 신뢰경계: SQL NULL p_prizes (array 가드 우회 silent clear 차단) ──────
+SELECT throws_like(                                                          -- [11]
+  $$ SELECT public.ops_set_prize_structure(
+       (current_setting('ops.t_id'))::uuid,
+       (current_setting('ops.owner_id'))::uuid,
+       NULL::jsonb) $$,
+  '%PRIZE_STRUCTURE_INVALID%',
+  '[NEW] NULL p_prizes → PRIZE_STRUCTURE_INVALID (silent clear 차단)');
+
+-- ── ④ completed 대회 ─────────────────────────────────────────────────────────
+SELECT throws_like(                                                          -- [12]
   $$ SELECT public.ops_set_prize_structure(
        (current_setting('ops.t2_id'))::uuid,
        (current_setting('ops.owner_id'))::uuid,
@@ -154,7 +185,7 @@ SELECT throws_like(                                                          -- 
 
 -- ── ⑤ RLS SELECT ─────────────────────────────────────────────────────────────
 -- ②③[NEW] 는 예외→ops_prizes 미변경; 현재 상태: rank 1·2 (replace-all 재설정 후 2개)
-SELECT is(                                                                   -- [10]
+SELECT is(                                                                   -- [13]
   (SELECT count(*)::int FROM public.ops_prizes
    WHERE tournament_id = (current_setting('ops.t_id'))::uuid),
   2,
@@ -162,14 +193,14 @@ SELECT is(                                                                   -- 
 
 -- outsider: is_ops_member=false → 0행
 SELECT ops_test_set_user((current_setting('ops.outsider_id'))::uuid);
-SELECT is(                                                                   -- [11]
+SELECT is(                                                                   -- [14]
   (SELECT count(*)::int FROM public.ops_prizes
    WHERE tournament_id = (current_setting('ops.t_id'))::uuid),
   0,
   '⑤ RLS SELECT: outsider 0행 (is_ops_member=false)');
 
 -- ── ⑥ anon EXECUTE 거부 ──────────────────────────────────────────────────────
-SELECT ok(                                                                   -- [12]
+SELECT ok(                                                                   -- [15]
   NOT has_function_privilege('anon', 'public.ops_set_prize_structure(uuid,uuid,jsonb)', 'EXECUTE'),
   '⑥ anon set_prize_structure EXECUTE 거부');
 

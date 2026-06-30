@@ -34,20 +34,23 @@ BEGIN
     RAISE EXCEPTION 'PERMISSION_DENIED: 호출자 인증 불일치' USING ERRCODE = 'P0001';
   END IF;
 
-  -- 2) 참가자 잠금
-  SELECT tournament_id, status INTO v_tournament_id, v_status
-    FROM public.ops_participants WHERE id = p_participant_id FOR UPDATE;
+  -- 2) tournament_id 선취(비잠금) — 데드락 회피: advisory 락을 참가자/대회 행 잠금보다 먼저 취득.
+  --    tournament_id 는 참가자 행에서 불변이므로 비잠금 읽기로 충분(이후 FOR UPDATE 로 status 재확인).
+  SELECT tournament_id INTO v_tournament_id
+    FROM public.ops_participants WHERE id = p_participant_id;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'PARTICIPANT_NOT_FOUND: 참가자를 찾을 수 없습니다 (%)', p_participant_id
       USING ERRCODE = 'P0001';
   END IF;
 
-  -- 3) 멤버십
+  -- 3) 멤버십(v_tournament_id 만 필요 — 참가자 행 잠금 불요)
   IF NOT (public.is_ops_member(v_tournament_id, p_actor_id) OR public.is_admin()) THEN
     RAISE EXCEPTION 'PERMISSION_DENIED: 대회 관리 권한 없음' USING ERRCODE = 'P0001';
   END IF;
 
-  -- 4) advisory 락 먼저 → 대회 상태 잠금/검증
+  -- 4) advisory 락(전 bust/reenter 동일 키로 직렬화) → 대회 행 잠금/검증.
+  --    잠금 순서 불변식: advisory → 대회 FOR UPDATE → 참가자 FOR UPDATE → 좌석(id 오름차순).
+  --    참가자 락을 advisory 뒤로 이동해 동시 bust(우승확정 winner FOR UPDATE) 데드락(40P01) 제거.
   PERFORM pg_advisory_xact_lock(hashtext('ops_tournament_' || v_tournament_id::text)::bigint);
   SELECT status INTO v_t_status FROM public.ops_tournaments
     WHERE id = v_tournament_id FOR UPDATE;
@@ -56,7 +59,13 @@ BEGIN
       USING ERRCODE = 'P0001';
   END IF;
 
-  -- 5) 참가자 status 가드
+  -- 5) 참가자 행 잠금(advisory/대회 락 이후) + status 가드
+  SELECT status INTO v_status
+    FROM public.ops_participants WHERE id = p_participant_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'PARTICIPANT_NOT_FOUND: 참가자를 찾을 수 없습니다 (%)', p_participant_id
+      USING ERRCODE = 'P0001';
+  END IF;
   IF v_status = 'busted' THEN
     RAISE EXCEPTION 'PARTICIPANT_ALREADY_BUSTED: 이미 탈락 처리된 참가자입니다' USING ERRCODE = 'P0001';
   ELSIF v_status <> 'active' THEN
@@ -177,8 +186,9 @@ BEGIN
     RAISE EXCEPTION 'PERMISSION_DENIED: 호출자 인증 불일치' USING ERRCODE = 'P0001';
   END IF;
 
-  SELECT tournament_id, status, reentries INTO v_tournament_id, v_status, v_reentries
-    FROM public.ops_participants WHERE id = p_participant_id FOR UPDATE;
+  -- tournament_id 선취(비잠금) — 데드락 회피: advisory 락을 참가자/대회 행 잠금보다 먼저 취득.
+  SELECT tournament_id INTO v_tournament_id
+    FROM public.ops_participants WHERE id = p_participant_id;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'PARTICIPANT_NOT_FOUND: 참가자를 찾을 수 없습니다 (%)', p_participant_id
       USING ERRCODE = 'P0001';
@@ -188,13 +198,22 @@ BEGIN
     RAISE EXCEPTION 'PERMISSION_DENIED: 대회 관리 권한 없음' USING ERRCODE = 'P0001';
   END IF;
 
-  -- advisory 락 먼저 → 대회 잠금
+  -- advisory 락(전 bust/reenter 동일 키로 직렬화) → 대회 행 잠금.
+  --    잠금 순서 불변식: advisory → 대회 FOR UPDATE → 참가자 FOR UPDATE.
   PERFORM pg_advisory_xact_lock(hashtext('ops_tournament_' || v_tournament_id::text)::bigint);
   SELECT status, reentry_allowed, max_reentries, starting_chips, auto_seat_on_register
     INTO v_t_status, v_reentry_allowed, v_max_reentries, v_starting_chips, v_auto_seat
     FROM public.ops_tournaments WHERE id = v_tournament_id FOR UPDATE;
   IF v_t_status <> 'active' THEN
     RAISE EXCEPTION 'INVALID_STATUS: 진행 중(active) 대회만 재진입 가능 (status=%)', v_t_status
+      USING ERRCODE = 'P0001';
+  END IF;
+
+  -- 참가자 행 잠금(advisory/대회 락 이후) + status/카운터 확인
+  SELECT status, reentries INTO v_status, v_reentries
+    FROM public.ops_participants WHERE id = p_participant_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'PARTICIPANT_NOT_FOUND: 참가자를 찾을 수 없습니다 (%)', p_participant_id
       USING ERRCODE = 'P0001';
   END IF;
 
@@ -281,14 +300,26 @@ BEGIN
     RAISE EXCEPTION 'INVALID_STATUS: 종료된 대회의 상금 구조는 변경할 수 없습니다' USING ERRCODE = 'P0001';
   END IF;
 
-  IF jsonb_typeof(p_prizes) <> 'array' THEN
+  -- NULL 도 거부(jsonb_typeof(NULL)=NULL → NULL<>'array'=NULL 이라 array 가드만으론 통과해 silent clear).
+  IF p_prizes IS NULL OR jsonb_typeof(p_prizes) <> 'array' THEN
     RAISE EXCEPTION 'PRIZE_STRUCTURE_INVALID: 상금 구조 형식이 올바르지 않습니다' USING ERRCODE = 'P0001';
   END IF;
 
+  -- 신뢰경계 방어(golden #6): 캐스트(::int) 전에 rank·amount 가 양의 정수 텍스트인지 선검증.
+  -- 비-숫자/소수/불리언/객체/누락 키가 아래 count(DISTINCT (e->>'rank')::int) 캐스트에서
+  -- raw 22P02(친절 PRIZE_STRUCTURE_INVALID 경로 우회)로 누출되던 갭 차단.
+  IF EXISTS (
+    SELECT 1 FROM jsonb_array_elements(p_prizes) e
+    WHERE coalesce(e->>'rank', '') !~ '^[0-9]+$'
+       OR coalesce(e->>'amount', '') !~ '^[0-9]+$'
+  ) THEN
+    RAISE EXCEPTION 'PRIZE_STRUCTURE_INVALID: 순위·금액은 양의 정수여야 합니다' USING ERRCODE = 'P0001';
+  END IF;
+
+  -- 위 선검증으로 rank·amount 는 모두 양의 정수 텍스트가 보장됨(::int 캐스트 안전).
   SELECT count(*),
          count(DISTINCT (e->>'rank')::int),
-         count(*) FILTER (WHERE (e->>'rank') IS NULL OR (e->>'amount') IS NULL
-                             OR (e->>'rank')::int <= 0 OR (e->>'amount')::int < 1)
+         count(*) FILTER (WHERE (e->>'rank')::int <= 0 OR (e->>'amount')::int < 1)
     INTO v_count, v_distinct, v_bad
     FROM jsonb_array_elements(p_prizes) e;
   IF v_bad > 0 OR v_count <> v_distinct THEN
