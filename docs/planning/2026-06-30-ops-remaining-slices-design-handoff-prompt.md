@@ -1,11 +1,13 @@
 # T-HOLDEM ops 라이브 운영 — 전체 슬라이스 점검 + 남은 슬라이스 설계 핸드오프
 
 > 아래 블록을 다음 세션 첫 프롬프트로 그대로 사용. **신선 세션 권장.**
-> 작성: 2026-06-30. 목적 = ①지금까지 출하/구현된 모든 슬라이스(1a~1d)를 신선 컨텍스트로 **재점검·정합 확인** → ②**남은 슬라이스(배정 2종·1e·1f 잔여) 재매핑 후 설계**. 코딩 전 브레인스토밍·계획 게이트.
+> 작성: 2026-06-30 · 갱신: 2026-06-30(1d 출하 후). 목적 = ①지금까지 출하/구현된 모든 슬라이스(1a~1d) 신선 컨텍스트 **재점검·정합 확인** → ②**남은 슬라이스(배정 2종·1e·1f 잔여) 재매핑 후 설계**. 코딩 전 브레인스토밍·계획 게이트.
+>
+> ✅ **1d는 출하 완료**(prod 3마이그 적용·advisor ERROR0·PR #218, 락순서 데드락 견고화·적대검증 4종 차단0). 따라서 이 세션은 **출하 여부 결정 불요 — 남은 슬라이스 설계로 바로 진행**한다.
 
 ---
 
-T-HOLDEM ops(홀덤 대회 라이브 운영 엔진) 슬라이스 작업이 1a~1d까지 진행됐다. 다음은 **지금까지의 전 슬라이스를 점검**하고 **남은 슬라이스를 재매핑·설계**한다. 권위 명세는 `docs/planning/2026-06-23-tournament-ops-revival-slice1-design.md`(§10 슬라이스 표). 코딩 금지 — 점검→브레인스토밍→설계까지.
+T-HOLDEM ops(홀덤 대회 라이브 운영 엔진) 슬라이스 작업이 **1a~1d까지 prod 출하** 완료됐다. 다음은 **출하된 전 슬라이스를 점검**하고 **남은 슬라이스를 재매핑·설계**한다. 권위 명세는 `docs/planning/2026-06-23-tournament-ops-revival-slice1-design.md`(§10 슬라이스 표). 코딩 금지 — 점검→브레인스토밍→설계까지.
 
 ## 슬라이스 현황 (점검 시 실측 확인)
 | 슬라이스 | 설계 §10 범위 | 출하 상태 |
@@ -17,7 +19,7 @@ T-HOLDEM ops(홀덤 대회 라이브 운영 엔진) 슬라이스 작업이 1a~1d
 | **1c-3** 모니터 | 전광판(비-PII anon, monitor_token) | ✅ **머지 #213** |
 | **1c-4** 플레이어뷰+계정 | 플레이어뷰(SECDEF RPC)·claim_token·player_user_id | ✅ **머지 #214** |
 | **STEP A** claim 토큰 분리 | view_token(읽기 anon)+8자 PIN(쓰기 bcrypt) 분리 (1d 선결과제) | ✅ **머지 #216** (prod·advisor ERROR0) |
-| **1d** (우리가 한 범위) | **bust + 재진입 + ITM(ops_prizes 고정금액·PAYOUTS·우승 자동확정)** | 🟡 **로컬 브랜치 `feat/ops-1d-bust-reentry-itm` @ 3a857df51, 미push·미머지** (구현·검증·최종리뷰 Ready:Yes) |
+| **1d** (우리가 한 범위) | **bust + 재진입 + ITM(ops_prizes 고정금액·PAYOUTS·우승 자동확정)** | ✅ **출하 #218** (prod 3마이그 적용·advisor ERROR0·anon ops=monitor/player 2개만). 락순서 데드락 견고화·set_prize 경계검증·적대검증 4종 차단0·pgTAP 371/jest 4533/tsc0 |
 
 ## ⚠️ 스코프 드리프트 (다음 세션이 반드시 재정렬할 핵심)
 설계 §10의 **1d 행 = "배정 2종 + 재진입/bust"**(랜덤·칩드래프트·bust·reenter), **1f 행 = "상금"**(ops_prizes·풀 산정·PAYOUTS·ITM 확정·우승자 finalize).
@@ -35,7 +37,7 @@ T-HOLDEM ops(홀덤 대회 라이브 운영 엔진) 슬라이스 작업이 1a~1d
 
 ## 점검 절차 (신선 컨텍스트)
 1. **메모리** `project_tholdem_ops_revival_20260623`(전체, STEP A·1d 섹션) + MEMORY.md ops 항목. 설계 doc §10 + UX flows `docs/planning/2026-06-23-tournament-ops-ux-flows.md`.
-2. **1d 로컬 브랜치 검토**: `git log --oneline de8706d15..feat/ops-1d-bust-reentry-itm` · 스펙 `uniqn-mobile/docs/superpowers/specs/2026-06-29-ops-1d-bust-reentry-itm-design.md` · ledger `.superpowers/sdd/progress.md`. **1d 출하(prod apply+머지)를 먼저 할지, 남은 슬라이스 설계와 함께 묶을지 사용자 확인**(1d 출하 핸드오프=`docs/planning/2026-06-30-ops-1d-review-handoff-prompt.md`).
+2. **출하된 1d 재확인**(출하 완료 — 결정 불요): 스펙 `uniqn-mobile/docs/superpowers/specs/2026-06-29-ops-1d-bust-reentry-itm-design.md`(§14 적대검증 + 후속 LS-데드락 추적) · PR #218 · `git log --oneline de8706d15..master`(머지 후). **⚠️1d 후속 추적 = [MEDIUM] LS-매개 데드락**(1c `ops_live_stats` AFTER ROW 트리거 기인, bust `LS<{좌석,winner}` 역전 → advisory 비보유 변이와 ABBA. 자기치유·prod 0행. 정공법=트리거를 DEFERRED CONSTRAINT TRIGGER로. 별도 PR) — 남은 슬라이스가 live_stats 트리거를 건드리면 함께 처리 고려.
 3. **전 슬라이스 정합 정찰(WF 권장)**: 출하된 1a~1c + 로컬 1d의 RPC/스키마/RLS/탭 서피스를 매핑해 **남은 슬라이스가 얹힐 표면**(redraw 진입점·ops_staff 부재·work_logs 연동점·ops_prizes 확장 여지) 실측. 적대검증이 직전 1d서 세션한도로 verify 절반 실패했던 이력 참고.
 4. **남은 슬라이스 우선순위·번호 재라벨링 결정**(사용자): 배정 2종 / 1e / 1f잔여 중 무엇을 먼저, 슬라이스 경계 어떻게.
 5. **첫 슬라이스 브레인스토밍→스펙→계획**(`superpowers:brainstorming`→`writing-plans`). 운영 가치·위험도로 순서: 배정 2종(운영 필수·1b 위 저위험) vs 1e 스태프(목표 직결·work_logs/권한 복잡) vs 1f잔여(이미 1d로 대부분 충족).
@@ -51,4 +53,4 @@ T-HOLDEM ops(홀덤 대회 라이브 운영 엔진) 슬라이스 작업이 1a~1d
 
 ## 세션 종료: 메모리+ledger 갱신 + `/session-wrap`. 완료 슬라이스 `/ingest`로 wiki 졸업.
 
-핵심 한 줄: 1a~1c+STEP A는 prod 머지 완료, 1d(bust/재진입/ITM)는 로컬 검증·리뷰 완료·미출하 상태이며 설계 1d의 "배정 2종"은 미구현·1f 상금은 대부분 1d로 흡수됐으니, 다음 세션은 전 슬라이스를 재점검해 남은 작업(배정 2종·1e 스태프·1f 잔여)을 재매핑하고 우선순위를 정해 첫 슬라이스를 브레인스토밍→설계한다.
+핵심 한 줄: 1a~1d(+STEP A)는 **전부 prod 출하 완료**(1d=#218, 락순서 데드락 견고화 포함)이며 설계 1d의 "배정 2종"은 미구현·1f 상금은 대부분 1d로 흡수됐으니, 다음 세션은 출하된 전 슬라이스를 재점검해 남은 작업(배정 2종·1e 스태프·1f 잔여)을 재매핑하고 우선순위를 정해 첫 슬라이스를 브레인스토밍→설계한다. (1d 후속 추적 = LS-매개 데드락 별도 PR.)
