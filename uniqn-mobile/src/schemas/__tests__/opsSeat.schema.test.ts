@@ -70,6 +70,35 @@ describe('reseat 스키마', () => {
     expect(reseatModeSchema.safeParse('chip_draft').success).toBe(true);
     expect(reseatModeSchema.safeParse('bogus').success).toBe(false);
   });
+
+  /* §6.2 UUID 형식 검증 — 비-UUID participantId/seatId 거부 */
+  it('비-UUID participantId "hello" 거부', () => {
+    expect(
+      reseatAssignmentsSchema.safeParse([a('hello', '22222222-2222-2222-2222-222222222222')])
+        .success
+    ).toBe(false);
+  });
+
+  it('빈 문자열 participantId "" 거부', () => {
+    expect(
+      reseatAssignmentsSchema.safeParse([a('', '22222222-2222-2222-2222-222222222222')]).success
+    ).toBe(false);
+  });
+
+  it('비-UUID seatId "not-a-uuid" 거부', () => {
+    expect(
+      reseatAssignmentsSchema.safeParse([a('11111111-1111-1111-1111-111111111111', 'not-a-uuid')])
+        .success
+    ).toBe(false);
+  });
+
+  it('대시만 36자 "--...--" seatId 거부', () => {
+    expect(
+      reseatAssignmentsSchema.safeParse([
+        a('11111111-1111-1111-1111-111111111111', '------------------------------------'),
+      ]).success
+    ).toBe(false);
+  });
 });
 
 describe('redrawWaitlistFillSchema', () => {
