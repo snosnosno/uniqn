@@ -9,13 +9,15 @@
 --   5. checkOut 시 end_time_source='qr'
 --   6. 무회귀: clocked_out_raw NULL→checkOut 시 세팅됨(원본보존 분기)
 --   7. 무회귀: 일반 active 공고 checkIn 여전히 허용
+--   8. 음성단언: closed 공고 work_log QR → error='job_posting_inactive'
+--      (컨테이너/active 만 허용; 가드 완화가 닫힌 공고까지 열지 않음 확인)
 --
 -- 안전: BEGIN/ROLLBACK 래핑 + 마커 이메일(__sql_fixture_qrc_*@test.local)
 -- 호출자 바인딩(#195): SECDEF 함수의 auth.uid() = jwt sub 세팅(직원 본인 셀프스캔)
 -- ============================================================
 
 BEGIN;
-SELECT plan(9);
+SELECT plan(10);
 
 CREATE TEMP TABLE _t (k text PRIMARY KEY, v text);
 
@@ -26,6 +28,8 @@ DECLARE
   v_ws    uuid := gen_random_uuid();
   v_container uuid;
   v_normal uuid := gen_random_uuid();
+  v_closed uuid := gen_random_uuid();
+  v_wl_closed uuid := gen_random_uuid();
   v_d text := to_char(now(), 'YYYY-MM-DD');
   v_add jsonb;
   v_wl_container uuid;
@@ -70,6 +74,12 @@ BEGIN
   INSERT INTO public.work_logs (id, application_id, staff_id, job_posting_id, date, status, role, is_fixed_posting, payroll_status, check_in_ts, clocked_out_raw, end_time_source, created_at, updated_at)
   VALUES (v_wl_raw, NULL, v_staff, v_normal, v_d, 'checked_in', 'staff', false, 'pending', v_checkin, v_fixed_raw, 'manual', now(), now());
 
+  -- (8) 음성단언용: closed 공고 + 그 위의 scheduled work_log (가드 완화가 닫힌 공고는 열지 않아야 함)
+  INSERT INTO public.job_postings (id, owner_id, workspace_id, title, status, posting_type, total_positions, filled_positions, created_at, updated_at)
+  VALUES (v_closed, v_owner, v_ws, '__sql_fixture_qrc_closed', 'closed'::posting_status, 'regular'::posting_type, 5, 1, now(), now());
+  INSERT INTO public.work_logs (id, application_id, staff_id, job_posting_id, date, status, role, is_fixed_posting, payroll_status, created_at, updated_at)
+  VALUES (v_wl_closed, NULL, v_staff, v_closed, v_d, 'scheduled', 'staff', false, 'pending', now(), now());
+
   -- staff 컨텍스트(직원 본인 셀프스캔)
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_staff, 'role', 'authenticated')::text, true);
 
@@ -103,6 +113,10 @@ BEGIN
   v_result := public.process_qr_checkin_atomically(v_wl_normal, v_staff, v_normal, 'checkOut', now(), v_d);
   INSERT INTO _t
     SELECT 'null_raw_set', (clocked_out_raw IS NOT NULL)::text FROM public.work_logs WHERE id = v_wl_normal;
+
+  -- (8) 음성단언: closed 공고 QR → job_posting_inactive (컨테이너/active 만 허용)
+  v_result := public.process_qr_checkin_atomically(v_wl_closed, v_staff, v_closed, 'checkIn', now(), v_d);
+  INSERT INTO _t VALUES ('closed_error', (v_result->>'error'));
 END $$;
 
 SELECT is((SELECT v FROM _t WHERE k = 'container_ok'), 'true',
@@ -123,6 +137,8 @@ SELECT is((SELECT v FROM _t WHERE k = 'raw_end_source'), 'qr',
   'checkOut 시 end_time_source=qr');
 SELECT is((SELECT v FROM _t WHERE k = 'null_raw_set'), 'true',
   'clocked_out_raw NULL→checkOut 시 세팅(원본보존 분기 무회귀)');
+SELECT is((SELECT v FROM _t WHERE k = 'closed_error'), 'job_posting_inactive',
+  '음성단언: closed 공고 QR 거부(컨테이너/active 만 허용, 가드 완화 비누수)');
 
 SELECT * FROM finish();
 ROLLBACK;

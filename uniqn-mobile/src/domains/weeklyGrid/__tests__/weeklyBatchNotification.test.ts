@@ -8,8 +8,9 @@
  * 라우트/타입 재사용 한계:
  * - 전용 weekly NotificationType 미추가(6개 Record<NotificationType,X> 전수보강 회피).
  *   의미가 가장 근접한 SCHEDULE_CREATED 재사용. notifications.type 은 free text 라 마이그 불필요.
- * - link 우선순위 함정(executor getRouteFromNotification): link 가 type 라우트맵보다 우선되므로
- *   weekly-grid 딥링크를 link 로 싣는다(Phase 2.7 라우트 등록 시 해소).
+ * - link 우선순위(executor getRouteFromNotification): link 가 type 라우트맵보다 우선되므로
+ *   weekly-grid 딥링크를 link 로 싣는다. 파서/RouteMapper 에 employer/weekly-grid 가 등록되어
+ *   link 가 곧바로 employer/weekly-grid 로 해소된다(SCHEDULE_CREATED 폴백 미발동).
  * - link 정규식(SAFE_LINK_PATTERN)이 쿼리스트링 금지 → venueId/weekLabel 은 data 로 운반.
  */
 

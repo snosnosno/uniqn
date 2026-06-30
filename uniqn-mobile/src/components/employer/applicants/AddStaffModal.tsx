@@ -6,21 +6,27 @@
  *   2단계: 근무 날짜/역할/(선택)시간대 입력 → 추가
  *
  * 백엔드 정합(정원 가드/정원 카운트)은 add_direct_staff RPC가 보장한다.
+ *
+ * @remarks 날짜 선택은 SheetModal 의 `overlay`(Modal 루트 렌더)로 띄운다.
+ *   부모 SheetModal(RN Modal) 안에서 DatePicker 의 자체 RN Modal 을 임베드하면
+ *   iOS 중첩 Modal 터치 먹통이 발생하므로, absoluteFill 오버레이만 사용한다.
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
 import { format } from 'date-fns';
+import { ko } from 'date-fns/locale/ko';
 import { STAFF_ROLES } from '@/constants';
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import { Modal } from '@/components/ui/Modal';
+import { SheetModal } from '@/components/ui/SheetModal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { DatePicker } from '@/components/ui/DatePicker';
+import { CalendarPicker } from '@/components/ui/CalendarPicker';
 import { Avatar } from '@/components/ui/Avatar';
 import { Loading } from '@/components/ui/Loading';
-import { SearchIcon, UserPlusIcon } from '@/components/icons';
+import { ChevronDownIcon, SearchIcon, UserPlusIcon, XMarkIcon } from '@/components/icons';
 import { useStaffPhoneSearch } from '@/hooks/useStaffPhoneSearch';
+import { isWeb } from '@/utils/platform';
 import type { UserPhoneSearchResult } from '@/repositories';
 import type { AddDirectStaffInput } from '@/types';
 
@@ -46,6 +52,7 @@ export function AddStaffModal({
   const [phone, setPhone] = useState('');
   const [selected, setSelected] = useState<UserPhoneSearchResult | null>(null);
   const [date, setDate] = useState<Date | null>(null);
+  const [dateOpen, setDateOpen] = useState(false);
   const [roleKey, setRoleKey] = useState('');
   const [customRole, setCustomRole] = useState('');
   const [timeSlot, setTimeSlot] = useState('');
@@ -55,6 +62,7 @@ export function AddStaffModal({
     setPhone('');
     setSelected(null);
     setDate(null);
+    setDateOpen(false);
     setRoleKey('');
     setCustomRole('');
     setTimeSlot('');
@@ -66,12 +74,24 @@ export function AddStaffModal({
   }, [onClose, resetAll]);
 
   // 모달이 숨겨지면(어떤 닫기 경로든) 입력·검색결과·선택을 비운다.
-  // RNModal 은 visible 토글만 되고 언마운트되지 않아, 재오픈 시 이전 PII 잔존을 방지.
+  // SheetModal(RNModal) 은 visible 토글만 되고 언마운트되지 않아, 재오픈 시 이전 PII 잔존을 방지.
   useEffect(() => {
     if (!visible) {
       resetAll();
     }
   }, [visible, resetAll]);
+
+  // 날짜 오버레이는 자체 Modal이 없어 Android 하드웨어 백을 가로채지 못한다 →
+  // 백이 부모 SheetModal로 전파돼 모달 전체가 닫히는 회귀. 오버레이가 열린 동안
+  // 백을 소비해 오버레이만 닫는다. (네이티브 전용, TimeWheelPicker embedded 패턴 모사)
+  useEffect(() => {
+    if (isWeb || !dateOpen) return undefined;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setDateOpen(false);
+      return true; // 이벤트 소비 → 부모 SheetModal onRequestClose 미발화
+    });
+    return () => sub.remove();
+  }, [dateOpen]);
 
   const handleSearch = useCallback(() => {
     // 재검색 시 이전 선택을 초기화 — 새 결과에 없는 사람이 그대로 제출되는 것을 방지
@@ -123,9 +143,72 @@ export function AddStaffModal({
     handleClose,
   ]);
 
+  // 날짜 선택 오버레이 — SheetModal 루트에 렌더(중첩 Modal 회피).
+  // absoluteFill 로 전체 화면을 덮어 터치를 정상 수신한다.
+  const dateOverlay = dateOpen ? (
+    <View style={StyleSheet.absoluteFill} className="justify-end">
+      {/* 백드롭 - 콘텐츠 위의 빈 영역만 터치 가능 */}
+      <Pressable className="flex-1 bg-black/50" onPress={() => setDateOpen(false)} />
+      {/* 콘텐츠 */}
+      <View className="bg-surface-card rounded-t-2xl">
+        {/* 헤더 */}
+        <View className="flex-row items-center justify-between px-4 py-4 border-b border-divider">
+          <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white">
+            날짜 선택
+          </Text>
+          <Pressable
+            onPress={() => setDateOpen(false)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel="닫기"
+          >
+            <XMarkIcon size={24} color={SECONDARY_PALETTE[500]} />
+          </Pressable>
+        </View>
+
+        {/* 캘린더 */}
+        <View className="px-2 pb-8">
+          <CalendarPicker
+            value={date}
+            onChange={(d) => {
+              setDate(d);
+              setDateOpen(false);
+            }}
+          />
+        </View>
+      </View>
+    </View>
+  ) : null;
+
+  const footer = (
+    <View className="flex-row gap-2">
+      <Button variant="outline" onPress={handleClose} fullWidth className="flex-1">
+        취소
+      </Button>
+      <Button
+        variant="primary"
+        onPress={handleSubmit}
+        disabled={!canSubmit}
+        loading={isSubmitting}
+        icon={<UserPlusIcon size={18} color="#FFFFFF" />}
+        fullWidth
+        className="flex-1"
+      >
+        추가
+      </Button>
+    </View>
+  );
+
   return (
-    <Modal visible={visible} onClose={handleClose} title="스태프 추가" size="lg" position="bottom">
-      <ScrollView className="max-h-[480px]" keyboardShouldPersistTaps="handled">
+    <SheetModal
+      visible={visible}
+      onClose={handleClose}
+      title="스태프 추가"
+      isLoading={isSubmitting}
+      footer={footer}
+      overlay={dateOverlay}
+    >
+      <View className="p-5">
         {/* 1단계: 전화번호 검색 */}
         <View className="flex-row items-end gap-2">
           <View className="flex-1">
@@ -206,7 +289,30 @@ export function AddStaffModal({
         {/* 2단계: 배정 입력 (가입자 선택 후) */}
         {selected ? (
           <View className="mt-4 gap-3 border-t border-secondary-200 pt-4 dark:border-surface-overlay">
-            <DatePicker label="근무 날짜" value={date} onChange={setDate} />
+            {/* 근무 날짜 트리거 — 탭하면 SheetModal overlay로 캘린더를 띄운다 */}
+            <View>
+              <Text className="mb-2 font-sans-medium text-content-primary dark:text-off-white">
+                근무 날짜
+              </Text>
+              <Pressable
+                onPress={() => setDateOpen(true)}
+                accessibilityRole="button"
+                accessibilityLabel="근무 날짜 선택"
+                accessibilityHint="탭하여 날짜를 선택하세요"
+                className="flex-row items-center px-4 py-3 rounded-lg border-2 bg-surface-card border-secondary-300 dark:border-surface-overlay active:opacity-80"
+              >
+                <Text
+                  className={`flex-1 font-sans ${
+                    date
+                      ? 'text-base text-content-primary'
+                      : 'text-sm text-secondary-400 dark:text-secondary-500'
+                  }`}
+                >
+                  {date ? format(date, 'MM월 dd일 (EEE)', { locale: ko }) : '날짜를 선택하세요'}
+                </Text>
+                <ChevronDownIcon size={20} color={SECONDARY_PALETTE[500]} />
+              </Pressable>
+            </View>
 
             <View>
               <Text className="mb-1.5 text-sm font-sans-medium text-content-secondary">역할</Text>
@@ -255,25 +361,8 @@ export function AddStaffModal({
             />
           </View>
         ) : null}
-      </ScrollView>
-
-      <View className="mt-4 flex-row gap-2">
-        <Button variant="outline" onPress={handleClose} fullWidth className="flex-1">
-          취소
-        </Button>
-        <Button
-          variant="primary"
-          onPress={handleSubmit}
-          disabled={!canSubmit}
-          loading={isSubmitting}
-          icon={<UserPlusIcon size={18} color="#FFFFFF" />}
-          fullWidth
-          className="flex-1"
-        >
-          추가
-        </Button>
       </View>
-    </Modal>
+    </SheetModal>
   );
 }
 

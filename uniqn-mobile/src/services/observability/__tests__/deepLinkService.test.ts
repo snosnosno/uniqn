@@ -341,6 +341,14 @@ describe('deepLinkService', () => {
       });
     });
 
+    it('parses the weekly-grid employer link instead of the my-postings catch-all', () => {
+      // 회귀: 배치확인 알림 link('/employer/weekly-grid') 는 종전 case 'employer' catch-all 때문에
+      // employer/my-postings('내 공고')로 오해소됐다. 이제 employer/weekly-grid 로 해소돼야 한다.
+      const route = deepLinkService.parseDeepLink('/employer/weekly-grid').route;
+      expect(route).toEqual({ name: 'employer/weekly-grid' });
+      expect(route).not.toEqual({ name: 'employer/my-postings' });
+    });
+
     it('keeps legacy schedule and query fallbacks working', () => {
       expect(deepLinkService.parseDeepLink('/my-applications').route).toEqual({ name: 'schedule' });
       expect(deepLinkService.parseDeepLink('uniqn://unknown?jobId=789').route).toEqual({
@@ -459,6 +467,19 @@ describe('deepLinkService', () => {
         name: 'board/post',
         params: { postId: 'post-99' },
       });
+    });
+
+    it('resolves the weekly batch confirm link to the weekly-grid route, not my-postings', () => {
+      // 회귀: 배치확인 알림(SCHEDULE_CREATED 재사용)은 weekly-grid 딥링크를 link 로 싣는다.
+      // executor 는 link 를 type 라우트맵보다 우선하므로 employer/weekly-grid 로 해소돼야 한다.
+      const route = deepLinkService.getRouteFromNotification(
+        'schedule_created' as NotificationType,
+        { venueId: 'venue-1', weekLabel: '6월 5주차' },
+        '/employer/weekly-grid'
+      );
+
+      expect(route).toEqual({ name: 'employer/weekly-grid' });
+      expect(route).not.toEqual({ name: 'employer/my-postings' });
     });
 
     it('falls back to notifications for unknown notification types', () => {
