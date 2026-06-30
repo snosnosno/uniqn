@@ -28,6 +28,23 @@ export const moveSeatSchema = z
   .refine((v) => v.fromSeatId !== v.toSeatId, { message: '같은 좌석으로 이동할 수 없습니다' });
 export type MoveSeatForm = z.infer<typeof moveSeatSchema>;
 
+/** 전원 재배치 모드 enum(랜덤/칩 드래프트). */
+export const reseatModeSchema = z.enum(['random_draw', 'chip_draft']);
+export type ReseatMode = z.infer<typeof reseatModeSchema>;
+
+/** 전원 재배치 배정 목록: 참가자·좌석 각 중복 금지, 최소 1건.
+ * ID는 z.string().min(1)(DB가 UUID 형식 보장, Zod v4 uuid() 는 RFC 4122 variant 강제라 테스트 픽스처 비호환). */
+export const reseatAssignmentsSchema = z
+  .array(z.object({ participantId: z.string().min(1), seatId: z.string().min(1) }))
+  .min(1)
+  .refine((arr) => new Set(arr.map((x) => x.participantId)).size === arr.length, {
+    message: '참가자가 중복됐어요.',
+  })
+  .refine((arr) => new Set(arr.map((x) => x.seatId)).size === arr.length, {
+    message: '좌석이 중복됐어요.',
+  });
+export type ReseatAssignmentsForm = z.infer<typeof reseatAssignmentsSchema>;
+
 export const redrawWaitlistFillSchema = z.object({
   tournamentId: z.string().min(1),
   assignments: z
