@@ -21,6 +21,8 @@ jest.mock('@/repositories', () => ({
     updateWorkTimeWithTransaction: jest.fn(),
     markAsNoShow: jest.fn(),
     updateStatus: jest.fn(),
+    addDirectStaff: jest.fn(),
+    removeDirectStaff: jest.fn(),
     subscribeByJobPostingId: jest.fn(),
   },
   userRepository: {
@@ -180,7 +182,7 @@ describe('confirmedStaffService', () => {
 
   it('cancels confirmation using canonical application id', async () => {
     mockWorkLogRepository.getById.mockResolvedValue(
-      createMockWorkLog({ staffId: 'staff-1', jobPostingId: 'job-1' })
+      createMockWorkLog({ staffId: 'staff-1', jobPostingId: 'job-1', applicationId: 'app-1' })
     );
     mockCancelConfirmation.mockResolvedValue(undefined as never);
 
@@ -197,7 +199,7 @@ describe('confirmedStaffService', () => {
 
   it('keeps deleteConfirmedStaff as backward-compatible alias', async () => {
     mockWorkLogRepository.getById.mockResolvedValue(
-      createMockWorkLog({ staffId: 'staff-1', jobPostingId: 'job-1' })
+      createMockWorkLog({ staffId: 'staff-1', jobPostingId: 'job-1', applicationId: 'app-1' })
     );
     mockCancelConfirmation.mockResolvedValue(undefined as never);
 
@@ -209,6 +211,25 @@ describe('confirmedStaffService', () => {
     });
 
     expect(mockCancelConfirmation).toHaveBeenCalledWith('job-1_staff-1', 'owner-1', undefined);
+  });
+
+  it('routes direct-added staff (no applicationId) to removeDirectStaff', async () => {
+    mockWorkLogRepository.getById.mockResolvedValue(
+      createMockWorkLog({ staffId: 'staff-1', jobPostingId: 'job-1', applicationId: undefined })
+    );
+    mockConfirmedStaffRepository.removeDirectStaff.mockResolvedValue(undefined);
+
+    await cancelConfirmedStaffConfirmation({
+      workLogId: 'worklog-1',
+      jobPostingId: 'job-1',
+      staffId: 'staff-1',
+      date: '2025-01-20',
+    });
+
+    expect(mockConfirmedStaffRepository.removeDirectStaff).toHaveBeenCalledWith({
+      workLogId: 'worklog-1',
+    });
+    expect(mockCancelConfirmation).not.toHaveBeenCalled();
   });
 
   it('marks no-show with current owner id', async () => {

@@ -3208,7 +3208,8 @@ export type Database = {
         | 'closed'
         | 'cancelled'
         | 'expired'
-        | 'rejected';
+        | 'rejected'
+        | 'container';
       posting_type: 'regular' | 'fixed' | 'tournament' | 'urgent';
       report_severity: 'low' | 'medium' | 'high' | 'critical';
       review_sentiment: 'positive' | 'neutral' | 'negative';
@@ -3404,6 +3405,7 @@ export const Constants = {
         'cancelled',
         'expired',
         'rejected',
+        'container',
       ],
       posting_type: ['regular', 'fixed', 'tournament', 'urgent'],
       report_severity: ['low', 'medium', 'high', 'critical'],

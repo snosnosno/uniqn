@@ -67,11 +67,13 @@ export type {
   IWorkLogRepository,
   WorkLogStats,
   MonthlyPayrollSummary,
+  UpdateSlotInput,
   // User
   IUserRepository,
   DeletionReason,
   DeletionRequest,
   UserDataExport,
+  UserPhoneSearchResult,
   // EventQR
   IEventQRRepository,
   // Notification
@@ -99,6 +101,9 @@ export type {
   MarkNoShowContext,
   UpdateStaffStatusContext,
   ConfirmedStaffSubscriptionCallbacks,
+  AddDirectStaffAssignment,
+  AddDirectStaffContext,
+  RemoveDirectStaffContext,
   // Announcement
   IAnnouncementRepository,
   AnnouncementPaginationCursor,

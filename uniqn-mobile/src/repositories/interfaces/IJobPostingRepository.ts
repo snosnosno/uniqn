@@ -7,6 +7,7 @@
 
 import type { UnsubscribeFn, PaginationCursor } from '@/types/common';
 import type { TaxSettings } from '@/utils/settlement';
+import type { VenueContainer } from '@/domains/weeklyGrid';
 import type {
   JobPosting,
   JobPostingFilters,
@@ -168,6 +169,30 @@ export interface IJobPostingRepository {
    * @returns 타입별 개수
    */
   getTypeCounts(filters?: Pick<JobPostingFilters, 'status' | 'region'>): Promise<PostingTypeCounts>;
+
+  /**
+   * 운영처(venue) 컨테이너 목록 조회 (주간 배치 그리드 전용 read 경로).
+   *
+   * @description 컨테이너(status='container')는 rigid JobPosting 으로 표현하지 않고 경량
+   *   VenueContainer 로 파싱한다(jobPostingDocumentSchema strict 충돌로 인한 null 증발 회피).
+   *   RLS(owner/워크스페이스 멤버/admin)가 가시성을 제한한다.
+   */
+  getVenueContainers(workspaceId: string): Promise<VenueContainer[]>;
+
+  /** 운영처 컨테이너 단건 조회. status='container' 로 좁힌다. 없으면 null. */
+  getVenueContainerById(id: string): Promise<VenueContainer | null>;
+
+  /**
+   * 운영처(venue) 컨테이너 멱등 확보(get-or-create).
+   *
+   * @description get_or_create_venue_container RPC(SECDEF + 워크스페이스 게이트 + anon REVOKE)를
+   *   호출해 컨테이너 공고를 멱등하게 확보한다. S1: 운영처명(name)은 xssValidation 통과분만
+   *   RPC 로 전달하며, 검증 실패 시 ValidationError 를 던진다(RPC 미호출). period 는 제공 시에만 전달.
+   */
+  getOrCreateVenueContainer(
+    workspaceId: string,
+    options: { name: string; kind: string; period?: string }
+  ): Promise<VenueContainer>;
 
   /**
    * 일반 공고 타입의 일자별 공고 개수 집계

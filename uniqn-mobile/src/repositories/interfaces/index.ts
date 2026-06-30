@@ -35,6 +35,7 @@ export type {
   WorkLogStats,
   MonthlyPayrollSummary,
   WorkLogFilterOptions,
+  UpdateSlotInput,
 } from './IWorkLogRepository';
 
 // User Repository
@@ -44,6 +45,7 @@ export type {
   DeletionRequest,
   UserDataExport,
   EmployerRegistrationInput,
+  UserPhoneSearchResult,
 } from './IUserRepository';
 
 // EventQR Repository
@@ -81,6 +83,9 @@ export type {
   MarkNoShowContext,
   UpdateStaffStatusContext,
   ConfirmedStaffSubscriptionCallbacks,
+  AddDirectStaffAssignment,
+  AddDirectStaffContext,
+  RemoveDirectStaffContext,
 } from './IConfirmedStaffRepository';
 
 // Announcement Repository

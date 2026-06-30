@@ -4,6 +4,7 @@
 
 export { useAppInitialize } from './useAppInitialize';
 export { useVersionCheck, type UseVersionCheckReturn } from './useVersionCheck';
+export { useWeeklyGridEnabled, type UseWeeklyGridEnabledReturn } from './useWeeklyGridEnabled';
 
 export { useAuth } from './useAuth';
 export {
@@ -138,6 +139,7 @@ export {
   type UseConfirmedStaffOptions,
   type UseConfirmedStaffReturn,
 } from './useConfirmedStaff';
+export { useStaffPhoneSearch, type UseStaffPhoneSearchReturn } from './useStaffPhoneSearch';
 export { useEventQR, type UseEventQROptions, type UseEventQRReturn } from './useEventQR';
 
 export {

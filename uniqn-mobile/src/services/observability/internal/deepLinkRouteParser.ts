@@ -178,6 +178,11 @@ function pathToRoute(path: string, params: Record<string, string>): DeepLinkRout
       if (second === 'settlement' && third) {
         return { name: 'employer/settlement', params: { jobId: third } };
       }
+      // 주간 배치 그리드(배치확인 알림 딥링크). catch-all(my-postings)보다 먼저 분기해야
+      // '/employer/weekly-grid' 가 '내 공고'로 오해소되지 않는다.
+      if (second === 'weekly-grid') {
+        return { name: 'employer/weekly-grid' };
+      }
       return { name: 'employer/my-postings' };
 
     case 'users':

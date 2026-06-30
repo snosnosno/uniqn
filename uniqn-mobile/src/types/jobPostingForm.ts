@@ -175,6 +175,12 @@ export interface JobPostingFormData {
 
   /** 태그 */
   tags: string[];
+
+  /**
+   * 운영처(venue) 컨테이너 self-FK (주간 배치 그리드).
+   * 일반 공고 폼은 미설정. 컨테이너 "공고 열기" 경로에서만 주입.
+   */
+  venueId?: string;
 }
 
 /**

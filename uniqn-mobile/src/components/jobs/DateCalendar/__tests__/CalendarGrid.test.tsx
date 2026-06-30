@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import { CalendarGrid } from '../CalendarGrid';
+import { computeDayCell } from '@/domains/weeklyGrid';
 
 jest.mock('@/utils/haptics', () => ({ triggerHaptic: jest.fn() }));
 
@@ -63,5 +64,42 @@ describe('CalendarGrid', () => {
     const calledDate: Date = onSelect.mock.calls[0][0];
     const localDateStr = `${calledDate.getFullYear()}-${String(calledDate.getMonth() + 1).padStart(2, '0')}-${String(calledDate.getDate()).padStart(2, '0')}`;
     expect(localDateStr).toBe('2026-04-18');
+  });
+
+  it('gridCells 제공 시 해당 날짜 셀이 그리드 뱃지(부족 글리프) 렌더', () => {
+    const gridCells = {
+      '2026-04-18': computeDayCell({
+        dateKey: '2026-04-18',
+        headcount: 1,
+        jobCount: 0,
+        softTarget: 4,
+      }),
+    };
+    const { getByText, queryByText } = render(
+      <CalendarGrid
+        visibleMonth={new Date('2026-04-15T00:00:00')}
+        selectedDate={null}
+        counts={{}}
+        onDateSelect={jest.fn()}
+        gridCells={gridCells}
+      />
+    );
+    // shortage=3 → "!3" 그리드 뱃지
+    expect(getByText('!3')).toBeTruthy();
+    // gridCells 없는 날짜엔 그리드 뱃지 미표시
+    expect(queryByText('✓')).toBeNull();
+  });
+
+  it('gridCells 미제공 시 기존 동작 그대로(공개 캘린더 무회귀)', () => {
+    const { getByText, queryByText } = render(
+      <CalendarGrid
+        visibleMonth={new Date('2026-04-15T00:00:00')}
+        selectedDate={null}
+        counts={{ '2026-04-18': 7 }}
+        onDateSelect={jest.fn()}
+      />
+    );
+    expect(getByText('7건')).toBeTruthy();
+    expect(queryByText('!3')).toBeNull();
   });
 });

@@ -33,6 +33,7 @@ export type DeepLinkRoute =
   | { name: 'employer/posting-edit'; params: { id: string } }
   | { name: 'employer/applicants'; params: { jobId: string } }
   | { name: 'employer/settlement'; params: { jobId: string } }
+  | { name: 'employer/weekly-grid' }
   | { name: 'admin/dashboard' }
   | { name: 'admin/users' }
   | { name: 'admin/user'; params: { id: string } }

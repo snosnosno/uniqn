@@ -528,6 +528,15 @@ export const ATTENDANCE_STATUS_COLORS: Record<AttendanceStatus, string> = {
 export type QRCodeAction = 'checkIn' | 'checkOut';
 
 /**
+ * QR 처리(RPC) 액션.
+ *
+ * 'auto'는 서버(process_qr_checkin_atomically)가 현재 work_log status 로 출근/퇴근을
+ * 결정하도록 위임하는 값(고정 운영처 QR 경로). 클라이언트는 출/퇴근을 손수 고르지 않는다.
+ * 결과 action 은 항상 'checkIn' | 'checkOut' 로 해소되어 반환된다.
+ */
+export type QRProcessAction = QRCodeAction | 'auto';
+
+/**
  * QR 肄붾뱶 ?ㅼ틪 寃곌낵 (QRCodeScanner 而댄룷?뚰듃?먯꽌 ?ъ슜)
  */
 export interface QRCodeScanResult {
@@ -593,6 +602,18 @@ export interface EventQRDisplayData {
   createdAt: number;
   /** 留뚮즺 ?쒓컙 (ms) */
   expiresAt: number;
+}
+
+/**
+ * 고정 운영처(컨테이너) QR 표시 데이터 (JSON stringify 하여 QR 로 인코딩)
+ *
+ * 회전/만료/날짜 인코딩이 없는 고정 QR. jobPostingId 는 컨테이너 공고 ID
+ * (work_logs.job_posting_id). 근무 날짜는 항상 스캔 시점의 오늘(getTodayString)로 해소된다.
+ */
+export interface VenueQRDisplayData {
+  type: 'venue';
+  /** 고정 운영처(컨테이너) 공고 ID */
+  jobPostingId: string;
 }
 
 /**

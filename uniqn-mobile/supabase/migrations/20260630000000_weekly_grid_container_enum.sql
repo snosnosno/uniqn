@@ -1,0 +1,11 @@
+-- 주간 배치 그리드 (홀덤펍 운영 그리드) — Phase 1 ① posting_status enum 값 추가 (단독 트랜잭션)
+--
+-- E4: Postgres 는 ALTER TYPE ... ADD VALUE 로 추가한 enum 값을 "같은 트랜잭션 내에서" 사용할 수 없다.
+--     Supabase 마이그레이션은 마이그=트랜잭션이므로, enum 추가(본 파일 ①)와
+--     그 값을 쓰는 제약/생성(다음 파일 ②: 인덱스/함수)을 반드시 분리한다.
+--
+-- 'container' = 운영처(venue)를 대표하는 숨김 공고 상태. base_schema 의 work_logs.job_posting_id
+--   NOT NULL 제약상 모든 근무기록은 공고에 매달려야 하므로, 단골을 표에 직접 꽂으려면 anchor 공고가
+--   필요하다(→ 컨테이너). 공개 경로는 이미 status IN (allow-list) 로 필터하므로, 목록에 없는 새 status
+--   는 자동 탈락(fail-closed) — boolean 플래그(`AND is_container=false` N곳 추가)보다 누수에 강하다.
+ALTER TYPE posting_status ADD VALUE IF NOT EXISTS 'container';

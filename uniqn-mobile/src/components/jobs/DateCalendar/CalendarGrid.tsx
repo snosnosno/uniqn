@@ -13,12 +13,13 @@ import {
   startOfWeek,
   endOfWeek,
   eachDayOfInterval,
-  format,
   isSameDay,
   isSameMonth,
   isToday as dfIsToday,
 } from 'date-fns';
 import { CalendarCell } from './CalendarCell';
+import { toDateString } from '@/utils/date';
+import type { GridDayCell } from '@/domains/weeklyGrid';
 
 interface CalendarGridProps {
   visibleMonth: Date;
@@ -27,6 +28,11 @@ interface CalendarGridProps {
   onDateSelect: (date: Date) => void;
   /** true이면 셀 뱃지 위치에 Skeleton shimmer 표시 (Rule 16) */
   isLoading?: boolean;
+  /**
+   * 주간 그리드 셀 맵(yyyy-MM-dd → GridDayCell). 제공되면 각 셀이 그리드 모드로 렌더.
+   * 미제공이면 기존 캘린더 동작 그대로(공개 캘린더 무회귀).
+   */
+  gridCells?: Record<string, GridDayCell>;
 }
 
 const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'] as const;
@@ -43,6 +49,7 @@ export const CalendarGrid = memo(function CalendarGrid({
   counts,
   onDateSelect,
   isLoading = false,
+  gridCells,
 }: CalendarGridProps) {
   const days = useMemo(() => {
     const start = startOfWeek(startOfMonth(visibleMonth), { weekStartsOn: 0 });
@@ -64,7 +71,8 @@ export const CalendarGrid = memo(function CalendarGrid({
       {/* 날짜 그리드 */}
       <View className="flex-row flex-wrap">
         {days.map((day) => {
-          const key = format(day, 'yyyy-MM-dd');
+          // 날짜키 SSOT: 적재(densify)와 조회(gridCells lookup)가 동일하게 toDateString 경유.
+          const key = toDateString(day);
           const count = counts[key] ?? 0;
           const isOutsideMonth = !isSameMonth(day, visibleMonth);
           const isSelected = selectedDate !== null && isSameDay(day, selectedDate);
@@ -79,6 +87,7 @@ export const CalendarGrid = memo(function CalendarGrid({
                 onPress={onDateSelect}
                 testID={`calendar-cell-${key}`}
                 loading={isLoading}
+                gridCell={gridCells?.[key]}
               />
             </View>
           );

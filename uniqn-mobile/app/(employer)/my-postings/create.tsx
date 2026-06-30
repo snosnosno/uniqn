@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { KeyboardAvoidingView, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
 import { useCreateJobPosting } from '@/hooks/useJobManagement';
@@ -26,7 +26,14 @@ export default function CreateJobPostingScreen() {
   const { user } = useAuth();
   const { addToast } = useToastStore();
 
-  const [draft, setDraft] = useState<JobPostingDraft>(INITIAL_JOB_POSTING_DRAFT);
+  // 주간 배치 그리드 "공고 열기" 진입 — venueId(=운영처 컨테이너 id)를 받아 초기 draft 에 싣는다.
+  // 일반 생성(파라미터 없음)은 venueId 키 자체를 만들지 않아 무회귀(draftAdapter hasVenueIdField 가드).
+  const params = useLocalSearchParams<{ venueId?: string | string[] }>();
+  const venueId = Array.isArray(params.venueId) ? params.venueId[0] : params.venueId;
+
+  const [draft, setDraft] = useState<JobPostingDraft>(() =>
+    venueId ? { ...INITIAL_JOB_POSTING_DRAFT, venueId } : INITIAL_JOB_POSTING_DRAFT
+  );
   const [isDirty, setIsDirty] = useState(false);
   const formData = useMemo(() => draftToFormData(draft), [draft]);
 
@@ -47,10 +54,13 @@ export default function CreateJobPostingScreen() {
   const handleLoadTemplateFromModal = useCallback(
     async (template: Parameters<typeof templateManager.handleLoadTemplate>[0]) => {
       const loadedDraft = await templateManager.handleLoadTemplate(template);
-      setDraft(loadedDraft);
-      return draftToFormData(loadedDraft);
+      // 템플릿은 운영처 FK 를 보유하지 않으므로(footgun 회피, P6-1), 그리드에서 진입한
+      // venueId 바인딩은 템플릿 로드 후에도 유지한다.
+      const mergedDraft = venueId ? { ...loadedDraft, venueId } : loadedDraft;
+      setDraft(mergedDraft);
+      return draftToFormData(mergedDraft);
     },
-    [templateManager]
+    [templateManager, venueId]
   );
 
   const handleSubmit = useCallback(async () => {

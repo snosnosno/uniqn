@@ -65,6 +65,19 @@ export interface EmployerRegistrationInput {
   liabilityWaiverVersion: string;
 }
 
+/**
+ * 전화번호 검색 결과 (최소 공개 필드만)
+ */
+export interface UserPhoneSearchResult {
+  uid: string;
+  name: string;
+  nickname?: string;
+  phone?: string;
+  photoURL?: string | null;
+  photoURLBlurhash?: string | null;
+  region?: string;
+}
+
 // ============================================================================
 // Interface
 // ============================================================================
@@ -100,6 +113,13 @@ export interface IUserRepository {
    * @param userId - 사용자 ID
    */
   exists(userId: string): Promise<boolean>;
+
+  /**
+   * 전화번호 정확 일치 사용자 검색 (구인자 전용, 스태프 직접 추가용)
+   * @param phone - 전화번호(하이픈/공백 무시, 숫자 정규화 후 정확 일치)
+   * @returns 최소 공개 필드 목록 (최대 5건)
+   */
+  searchByPhone(phone: string): Promise<UserPhoneSearchResult[]>;
 
   /**
    * 회원탈퇴 요청 상태 조회

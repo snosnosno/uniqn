@@ -27,6 +27,8 @@ const POSTING_STRIPE_TONE: Record<JobPostingStatus, CardStripeTone> = {
   cancelled: 'muted',
   expired: 'muted',
   rejected: 'error',
+  // 운영처 컨테이너(숨김) — fail-closed 로 카드 목록에 노출되지 않으나 타입 완전성을 위해 정의.
+  container: 'muted',
 };
 
 export interface JobPostingCardProps {

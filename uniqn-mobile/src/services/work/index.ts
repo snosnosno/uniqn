@@ -61,6 +61,8 @@ export {
   updateWorkTime as updateConfirmedStaffWorkTime,
   cancelConfirmedStaffConfirmation,
   markAsNoShow,
+  searchStaffByPhone,
+  addDirectStaff,
   subscribeToConfirmedStaff,
   type GetConfirmedStaffResult,
 } from './confirmedStaffService';
@@ -73,6 +75,7 @@ export {
   generateEventQR,
   validateEventQR,
   processEventQRCheckIn,
+  processVenueQRCheckIn,
   getActiveEventQR,
   deactivateEventQR,
   cleanupExpiredQRCodes,

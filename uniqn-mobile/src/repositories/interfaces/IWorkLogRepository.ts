@@ -6,7 +6,33 @@
  */
 
 import type { UnsubscribeFn } from '@/types/common';
-import type { WorkLog, PayrollStatus, WorkLogStatus, QRCodeAction } from '@/types';
+import type {
+  WorkLog,
+  PayrollStatus,
+  WorkLogStatus,
+  QRCodeAction,
+  QRProcessAction,
+  StaffRole,
+} from '@/types';
+
+/**
+ * 슬롯 편집(주간 배치 그리드 B2) 입력. 부분 업데이트 — 제공된 필드만 반영한다.
+ *
+ * @property startTime - 시작시각 'HH:MM' (endTime 과 함께 제공 시 time_slot 갱신)
+ * @property endTime - 종료시각 'HH:MM'
+ * @property staffRole - 직무 역할(StaffRole)
+ * @property color - 셀 색상 토큰(화이트리스트, 자유 hex 금지)
+ * @property memo - 메모(XSS 검증 통과분만 기록)
+ * @property editedBy - 수정 행위자(운영자) user id
+ */
+export interface UpdateSlotInput {
+  startTime?: string;
+  endTime?: string;
+  staffRole?: StaffRole;
+  color?: string;
+  memo?: string;
+  editedBy?: string;
+}
 
 /**
  * 근무 기록 조회 필터 옵션
@@ -116,6 +142,25 @@ export interface IWorkLogRepository {
    * @returns 근무 기록 목록
    */
   getByJobPostingId(jobPostingId: string): Promise<WorkLog[]>;
+
+  /**
+   * 운영처(venue) 스팬 + 날짜범위 근무 기록 조회 (주간 배치 그리드 Phase 4 정산)
+   *
+   * @description 운영처 컨테이너 V 의 정산 대상 근무 기록을 SQL 레벨에서 좁혀 조회한다.
+   * - E1: venue 스팬은 `venue_span_posting_ids`(SSOT) RPC 경유 — 컨테이너 자기행(id=V)과
+   *   venue_id=V 인 open 공고를 합친 posting id 집합. `venue_id=:V OR id=:V` 를 손수
+   *   재작성하지 않는다(발산 방지).
+   * - R5: 날짜범위(from..to inclusive)는 SQL 경계(.gte/.lte) — 전기간 풀 pull/클라잘림 금지.
+   * - status NOT IN(cancelled,no_show) 도 SQL 레벨 제외(정산 비대상).
+   *
+   * 기존 getByJobPostingId(날짜필터 없음)는 무회귀로 유지하고, venue 정산은 본 메서드를 쓴다.
+   *
+   * @param venueId - 운영처 컨테이너 id
+   * @param fromDate - 시작 날짜(YYYY-MM-DD, inclusive)
+   * @param toDate - 종료 날짜(YYYY-MM-DD, inclusive)
+   * @returns 스팬 내 날짜범위 근무 기록(정산 비대상 상태 제외). 스팬이 비면 빈 배열.
+   */
+  getByVenueSpanInRange(venueId: string, fromDate: string, toDate: string): Promise<WorkLog[]>;
 
   /**
    * 구인자(ownerId)의 완료된 근무 기록 조회
@@ -346,16 +391,16 @@ export interface IWorkLogRepository {
    * @param workLogId - 근무 기록 ID
    * @param staffId - 스태프 ID (방어적 검증용)
    * @param jobPostingId - 공고 ID (방어적 검증용)
-   * @param action - 출근/퇴근
+   * @param action - 출근/퇴근, 또는 'auto'(서버가 status 로 결정 — 고정 운영처 QR)
    * @param checkTime - 체크 시각
    * @param date - 근무 날짜 (YYYY-MM-DD, timeSlot 파싱용)
-   * @returns action 결과 (출근/퇴근, 근무시간)
+   * @returns action 결과 (출근/퇴근으로 해소됨, 근무시간)
    */
   processQRCheckInOutTransaction(
     workLogId: string,
     staffId: string,
     jobPostingId: string,
-    action: QRCodeAction,
+    action: QRProcessAction,
     checkTime: Date,
     date: string
   ): Promise<{
@@ -363,4 +408,16 @@ export interface IWorkLogRepository {
     hasExistingCheckInTime: boolean;
     workDuration: number;
   }>;
+
+  /**
+   * 슬롯 편집(주간 배치 그리드 B2) — 시간/역할/색상/메모 부분 수정.
+   *
+   * 검증 경계(Repository): color 는 토큰 화이트리스트(자유 hex 거부), memo 는 XSS 검증
+   * 통과분만 기록한다(S1/U3). startTime+endTime 둘 다 제공 시 time_slot('HH:MM - HH:MM')을 갱신.
+   *
+   * @param workLogId - 근무 기록 ID
+   * @param input - 수정할 필드(제공된 것만 반영)
+   * @throws ValidationError - 색상 화이트리스트 위반/메모 XSS·길이 위반 시
+   */
+  updateSlot(workLogId: string, input: UpdateSlotInput): Promise<void>;
 }

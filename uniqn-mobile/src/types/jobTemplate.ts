@@ -22,6 +22,8 @@ export interface JobPostingTemplateData {
   description?: string;
   location?: PostingLocation;
   contactPhone?: string;
+  /** 운영처(venue) 컨테이너 self-FK (주간 배치 그리드). 일반 템플릿은 미설정. */
+  venueId?: string;
   tags?: string[];
   roleCatalog?: PostingRoleCatalogEntry[];
   compensation?: PostingCompensation;
@@ -166,6 +168,9 @@ export function templateToDraft(template: JobPostingTemplate): JobPostingDraft {
     title: templateData.title ?? '',
     description: templateData.description ?? '',
     location: templateData.location ?? null,
+    // venue_id 전수배선 — 운영처 "공고 열기" 경로에서 주입된 venueId 만 매핑.
+    // 일반 템플릿은 미설정이라 키 생략(고정공고 lifecycle 불변).
+    ...(templateData.venueId !== undefined ? { venueId: templateData.venueId } : {}),
     contactPhone: templateData.contactPhone ?? '',
     tags: templateData.tags ?? [],
     schedule:

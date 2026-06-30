@@ -82,6 +82,9 @@ describe('RouteMapper', () => {
       expect(
         RouteMapper.toExpoPath({ name: 'employer/settlement', params: { jobId: 'job-1' } })
       ).toBe('/(employer)/my-postings/job-1/settlements');
+      // 배치확인 알림 딥링크(weekly-grid)는 실제 expo-router 경로(app/(employer)/weekly-grid.tsx)로 매핑된다.
+      expect(RouteMapper.toExpoPath({ name: 'employer/weekly-grid' })).toBe(EXPO_ROUTES.weeklyGrid);
+      expect(EXPO_ROUTES.weeklyGrid).toBe('/(employer)/weekly-grid');
     });
 
     it('maps admin routes, including stats and announcements', () => {

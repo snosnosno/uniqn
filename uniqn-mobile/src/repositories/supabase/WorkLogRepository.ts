@@ -17,12 +17,13 @@ import { handleSupabaseError, createRealtimeSubscription } from '@/utils/supabas
 import { getTodayString } from '@/utils/date';
 import { STATUS } from '@/constants';
 import type { UnsubscribeFn } from '@/types/common';
-import type { WorkLog, PayrollStatus, QRCodeAction } from '@/types';
+import type { WorkLog, PayrollStatus, QRCodeAction, QRProcessAction } from '@/types';
 import type {
   IWorkLogRepository,
   WorkLogStats,
   MonthlyPayrollSummary,
   WorkLogFilterOptions,
+  UpdateSlotInput,
 } from '../interfaces';
 import {
   executeUpdateWorkTime,
@@ -38,6 +39,7 @@ import {
   rowsToWorkLogs,
   rethrowOrHandle,
 } from './WorkLogRepositoryHelpers';
+import * as venue from './WorkLogRepositoryVenue';
 
 // ============================================================================
 // Repository Implementation
@@ -201,6 +203,15 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
     } catch (error) {
       rethrowOrHandle(error, '공고별 근무 기록 조회', { jobPostingId });
     }
+  }
+
+  // 운영처 스팬 정산 조회 — 구현은 WorkLogRepositoryVenue 로 분리(800줄 하드캡). 동작 무변경 위임.
+  async getByVenueSpanInRange(
+    venueId: string,
+    fromDate: string,
+    toDate: string
+  ): Promise<WorkLog[]> {
+    return venue.getByVenueSpanInRange(venueId, fromDate, toDate);
   }
 
   async getCompletedByOwnerId(
@@ -716,7 +727,7 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
     workLogId: string,
     staffId: string,
     jobPostingId: string,
-    action: QRCodeAction,
+    action: QRProcessAction,
     checkTime: Date,
     date: string
   ): Promise<{
@@ -725,5 +736,10 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
     workDuration: number;
   }> {
     return executeProcessQRCheckInOut(workLogId, staffId, jobPostingId, action, checkTime, date);
+  }
+
+  // 슬롯 편집(B2) — 구현은 WorkLogRepositoryVenue 로 분리(800줄 하드캡). 검증/동작 무변경 위임.
+  async updateSlot(workLogId: string, input: UpdateSlotInput): Promise<void> {
+    return venue.updateSlot(workLogId, input);
   }
 }

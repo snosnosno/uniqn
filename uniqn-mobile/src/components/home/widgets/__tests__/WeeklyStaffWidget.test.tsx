@@ -94,11 +94,13 @@ const makeStaffReturn = (staff: { date: string }[]) => ({
   removeStaff: jest.fn(),
   setNoShow: jest.fn(),
   changeStatus: jest.fn(),
+  addStaff: jest.fn(),
   isChangingRole: false,
   isUpdatingTime: false,
   isRemoving: false,
   isSettingNoShow: false,
   isChangingStatus: false,
+  isAddingStaff: false,
 });
 
 describe('WeeklyStaffWidget', () => {

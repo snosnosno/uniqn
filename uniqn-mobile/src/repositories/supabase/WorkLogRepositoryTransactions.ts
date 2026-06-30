@@ -15,7 +15,7 @@ import {
 } from '@/errors/BusinessErrors';
 import { handleSupabaseError } from '@/utils/supabase';
 import { STATUS } from '@/constants';
-import type { PayrollStatus, QRCodeAction } from '@/types';
+import type { PayrollStatus, QRCodeAction, QRProcessAction } from '@/types';
 import { TABLE, TABLE_COLUMNS, toWorkLog, rethrowOrHandle } from './WorkLogRepositoryHelpers';
 
 // ============================================================================
@@ -254,7 +254,7 @@ export async function executeProcessQRCheckInOut(
   workLogId: string,
   staffId: string,
   jobPostingId: string,
-  action: QRCodeAction,
+  action: QRProcessAction,
   checkTime: Date,
   date: string
 ): Promise<{
@@ -289,8 +289,12 @@ export async function executeProcessQRCheckInOut(
       mapQRCheckinErrorToException(result.error ?? 'unknown', workLogId);
     }
 
+    // 'auto' 호출이어도 서버는 성공 시 해소된 action('checkIn'|'checkOut')을 반환한다.
+    // 누락 시(이론상 없음) 'auto'면 출근을 기본값으로 안전 폴백.
+    const resolvedAction: QRCodeAction = result.action ?? (action === 'auto' ? 'checkIn' : action);
+
     return {
-      action: result.action ?? action,
+      action: resolvedAction,
       hasExistingCheckInTime: !!result.check_in_time,
       workDuration: result.work_duration ?? 0,
     };
