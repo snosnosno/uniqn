@@ -34,6 +34,17 @@ describe('eligibleSeats', () => {
     };
     expect(eligibleSeats(input).map((s) => s.id)).toEqual(['s1']);
   });
+
+  it('open+feature 테이블 좌석은 제외', () => {
+    // lockType='feature'는 none이 아니므로 eligibleSeats 필터에서 탈락
+    const input: ReseatInput = {
+      tables: [tbl('t1'), tbl('t2', 'open', 'feature')],
+      seats: [seat('s1', 't1', 1, 1), seat('s2', 't2', 2, 1)],
+      players: [],
+      rng: seqRng([0]),
+    };
+    expect(eligibleSeats(input).map((s) => s.id)).toEqual(['s1']);
+  });
 });
 
 describe('randomDraw', () => {

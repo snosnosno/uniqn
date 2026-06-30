@@ -54,15 +54,21 @@ describe('chipDraft', () => {
   });
 
   it('칩 동점은 id 오름차순 tie-break(결정성)', () => {
+    // z(1000)와 a(1000)는 동점: id asc 정렬 시 'a' < 'z' → a가 스네이크 첫 순번(idx=0, t1) 배정
+    // rng는 테이블 내 좌석이 1개라 셔플 루프 미실행 → seqRng([0]) 결정적
     const input: ReseatInput = {
       tables: [tbl('t1'), tbl('t2')],
       seats: [seat('s1', 't1', 1, 1), seat('s2', 't2', 2, 1)],
       players: [player('z', 1000), player('a', 1000)],
-      rng: seqRng([0, 0]),
+      rng: seqRng([0]),
     };
-    const r1 = chipDraft(input);
-    const r2 = chipDraft({ ...input, rng: seqRng([0, 0]) });
-    expect(r1).toEqual(r2);
+    const res = chipDraft(input);
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      // id asc tie-break 결과: 'a'가 첫 테이블(t1)의 s1에 배정돼야 함
+      const aAssignment = res.assignments.find((x) => x.participantId === 'a');
+      expect(aAssignment?.seatId).toBe('s1');
+    }
   });
 
   it('인원>적격좌석이면 INSUFFICIENT_SEATS', () => {

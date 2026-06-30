@@ -48,7 +48,15 @@ export function chipDraft(input: ReseatInput): ReseatResult {
         dir = 1;
         idx = 0;
       }
-      if (++guard > tableOrder.length * 2) break; // 모든 테이블 만석 방어(capacity 사전검증으로 도달 불가)
+      if (++guard > tableOrder.length * 2) {
+        // 이론상 도달 불가(capacity 사전검증 통과)지만 방어적 에러 반환
+        return {
+          ok: false,
+          reason: 'INSUFFICIENT_SEATS',
+          available: seats.length,
+          required: input.players.length,
+        };
+      }
     }
     buckets.get(tableOrder[idx])!.push(p);
     // 다음 플레이어를 위해 한 칸 진행(스네이크)
