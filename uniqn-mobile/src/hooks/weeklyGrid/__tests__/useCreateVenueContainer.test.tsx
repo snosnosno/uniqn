@@ -18,6 +18,8 @@ jest.mock('@tanstack/react-query', () => jest.requireActual('@tanstack/react-que
 
 jest.mock('@/repositories', () => ({
   jobPostingRepository: { getOrCreateVenueContainer: jest.fn() },
+  // gridWriteService 가 같은 배럴에서 import 하는 workLogRepository 스텁(updateSlot 미사용이나 방어).
+  workLogRepository: {},
 }));
 
 // gridWriteService 가 모듈 로드 시 import 하는 sibling 레포 — 실제 supabase 체인 로드 회피용 스텁.

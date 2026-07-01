@@ -10,4 +10,4 @@ export { buildVenueDayGroup, mapVenueDaySlotToConfirmedStaff } from './venueDayD
 export { AddSlotSheet, type AddSlotSheetProps } from './AddSlotSheet';
 export { buildAddSlotPayload, type BuildAddSlotPayloadParams } from './addSlotPayload';
 export { EditSlotSheet, type EditSlotSheetProps } from './EditSlotSheet';
-export { VenueCreateSheet } from './VenueCreateSheet';
+export { VenueCreateSheet, type VenueCreateSheetProps } from './VenueCreateSheet';

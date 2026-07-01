@@ -8,7 +8,7 @@ import { render, fireEvent } from '@testing-library/react-native';
 import React from 'react';
 import { VenueSelector } from '../VenueSelector';
 
-const NOOP = () => {};
+const NOOP = jest.fn();
 
 function renderSelector(overrides: Partial<React.ComponentProps<typeof VenueSelector>> = {}) {
   return render(
@@ -27,6 +27,16 @@ function renderSelector(overrides: Partial<React.ComponentProps<typeof VenueSele
 it('운영처 0개에서도 onAddVenue 제공 시 추가 버튼 노출 + 콜백 호출', () => {
   const onAddVenue = jest.fn();
   const { getByLabelText } = renderSelector({ onAddVenue });
+  fireEvent.press(getByLabelText('운영처 추가'));
+  expect(onAddVenue).toHaveBeenCalledTimes(1);
+});
+
+it('운영처 N개(칩 노출)에서도 onAddVenue 제공 시 추가 버튼 노출 + 콜백 호출', () => {
+  const onAddVenue = jest.fn();
+  const { getByLabelText } = renderSelector({
+    containers: [{ id: 'v1', name: '강남 홀덤펍' } as never],
+    onAddVenue,
+  });
   fireEvent.press(getByLabelText('운영처 추가'));
   expect(onAddVenue).toHaveBeenCalledTimes(1);
 });

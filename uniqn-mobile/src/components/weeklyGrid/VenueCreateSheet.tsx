@@ -3,7 +3,8 @@
  *
  * 빈 상태 버튼 / 선택기 "+ 운영처 추가" 두 진입점이 공유하는 단일 컴포넌트.
  * v1: 이름만 입력(kind='dated' 고정). 제출 → useCreateVenueContainer → get-or-create(멱등).
- * 성공 시 onCreated(c) + 닫기. 토스트는 이 컴포넌트(호출부) 책임. 닫힐 때 입력 초기화.
+ * 성공 시 onCreated(c) 호출(시트 닫기는 호출부 onCreated 책임). 토스트는 이 컴포넌트(호출부) 책임.
+ * 닫힐 때 입력 초기화.
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
@@ -29,7 +30,8 @@ export function VenueCreateSheet({
   onCreated,
 }: VenueCreateSheetProps) {
   const [name, setName] = useState('');
-  const create = useCreateVenueContainer(workspaceId);
+  // mutate 는 안정적 참조, isPending 만 상태 변화 → 콜백/JSX 불필요 재생성 방지 위해 분해.
+  const { mutate, isPending } = useCreateVenueContainer(workspaceId);
   const toastSuccess = useToastStore((s) => s.success);
   const toastError = useToastStore((s) => s.error);
 
@@ -39,12 +41,12 @@ export function VenueCreateSheet({
   }, [visible]);
 
   const trimmed = name.trim();
-  const canSubmit = trimmed.length > 0 && !!workspaceId && !create.isPending;
+  const canSubmit = trimmed.length > 0 && !!workspaceId && !isPending;
 
   const handleSubmit = useCallback(() => {
     const value = name.trim();
-    if (!value || !workspaceId || create.isPending) return;
-    create.mutate(value, {
+    if (!value || !workspaceId || isPending) return;
+    mutate(value, {
       onSuccess: (container) => {
         toastSuccess('운영처를 만들었어요.');
         onCreated(container);
@@ -55,7 +57,7 @@ export function VenueCreateSheet({
         toastError(msg);
       },
     });
-  }, [name, workspaceId, create, toastSuccess, toastError, onCreated]);
+  }, [name, workspaceId, isPending, mutate, toastSuccess, toastError, onCreated]);
 
   const footer = (
     <View className="flex-row gap-2 p-4">
@@ -66,7 +68,7 @@ export function VenueCreateSheet({
         variant="primary"
         onPress={handleSubmit}
         disabled={!canSubmit}
-        loading={create.isPending}
+        loading={isPending}
         className="flex-1"
         accessibilityLabel="운영처 만들기"
       >
@@ -80,7 +82,7 @@ export function VenueCreateSheet({
       visible={visible}
       onClose={onClose}
       title="운영처 만들기"
-      isLoading={create.isPending}
+      isLoading={isPending}
       footer={footer}
     >
       <View className="p-5">
