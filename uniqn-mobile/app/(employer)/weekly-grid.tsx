@@ -34,7 +34,7 @@ import {
   BellIcon,
 } from '@/components/icons';
 import { CalendarGrid } from '@/components/jobs/DateCalendar/CalendarGrid';
-import { VenueSelector, VenueDayPanel } from '@/components/weeklyGrid';
+import { VenueSelector, VenueDayPanel, VenueCreateSheet } from '@/components/weeklyGrid';
 import { useWeeklyGridEnabled } from '@/hooks';
 import { useActiveWorkspace } from '@/hooks/workspace';
 import {
@@ -89,6 +89,7 @@ export default function WeeklyGridScreen() {
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
   const [visibleMonth, setVisibleMonth] = useState<Date>(() => startOfMonth(new Date()));
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
+  const [createSheetVisible, setCreateSheetVisible] = useState(false);
 
   // 컨테이너 로드/변경 시 선택 venue 자기-치유: 없거나 목록에 없으면 첫 번째로.
   useEffect(() => {
@@ -189,6 +190,7 @@ export default function WeeklyGridScreen() {
         selectedVenueId={selectedVenueId}
         onSelectVenue={setSelectedVenueId}
         isLoadingContainers={wsLoading || containersQuery.isLoading}
+        onAddVenue={() => setCreateSheetVisible(true)}
       />
 
       {/* U4: 운영처 0 — 컨테이너 쿼리가 로딩을 마쳤고(not loading) 컨테이너가 0개일 때만 빈상태.
@@ -201,6 +203,8 @@ export default function WeeklyGridScreen() {
               icon={<MapPinIcon size={48} color={SECONDARY_PALETTE[400]} />}
               title="운영처가 없어요"
               description="이 워크스페이스에 운영처(상시 배치 장소)를 먼저 만들어주세요."
+              actionLabel="운영처 만들기"
+              onAction={() => setCreateSheetVisible(true)}
             />
           ) : (
             <Loading />
@@ -294,6 +298,15 @@ export default function WeeklyGridScreen() {
           </View>
         </View>
       )}
+      <VenueCreateSheet
+        visible={createSheetVisible}
+        workspaceId={activeWorkspace?.id}
+        onClose={() => setCreateSheetVisible(false)}
+        onCreated={(container) => {
+          setSelectedVenueId(container.id);
+          setCreateSheetVisible(false);
+        }}
+      />
     </SafeAreaView>
   );
 }
