@@ -5,7 +5,7 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.0.0/)를 기반으로 하며,
 이 프로젝트는 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 준수합니다.
 
-## [Unreleased] - 2026-06-29
+## [Unreleased] - 2026-07-02
 
 ### Added
 - **라이브 대회 운영(ops) 도구 1a~1c 출하** (PR #207·#210·#212·#213·#214, prod 적용 완료·advisor 0 ERROR):
@@ -15,6 +15,8 @@
   - 1c-4 공개 플레이어뷰 — `ops_get_player_view(claim_token)` anon SECDEF 본인 안전필드 투영 + claim 계정 바인딩/운영자 unclaim 복구 + `app/(public)/live/[claim_token]`(#214)
   - 보안: anon ops 테이블 직접 SELECT 0 — token→스코프 SECDEF RPC + 화이트리스트 투영만(#195 PII 유출 클래스 차단). 적대리뷰 WF(1c-1 7차원·1c-4 5렌즈 find→verify) 통과
   - ✅ **STEP A claim 토큰 읽기/쓰기 분리** (PR #216, prod 적용·CI 9/9): `claim_token`(읽기+쓰기 겸용)→`view_token`(읽기 anon)+`claim_pin_hash`(쓰기 비밀, 8자 Crockford base32 PIN·bcrypt) 분리로 읽기 URL 유출→계정 하이재킹 차단. RPC 4종 재정의·구 2-인자 claim/issue_claim_token/player_view(text) 명시 DROP. 적대검증 WF 6렌즈가 NULL PIN fail-open·잠금 DoS HIGH 2건 적출→`IS NULL`+`IS DISTINCT FROM` 가드·8자 PIN으로 잠금제거. 1d(bust/재진입) BLOCKING 선결과제 해소
+  - ✅ **1d bust/재진입/ITM** (PR #218, master `2fa2dea3a`·prod 3마이그·advisor 0 ERROR): 탈락(순위/시각·상금 자동매핑·좌석해제·우승 자동확정)·재진입(카운터/가드/auto-seat)·고정금액 상금(`ops_prizes`·PAYOUTS 탭). 락순서 데드락 견고화(참가자 FOR UPDATE를 advisory 뒤로·비잠금 tournament_id 선취→40P01 협소창 제거)·set_prize 22P02/NULL 경계검증. 타깃 적대검증 4에이전트 차단0
+  - ✅ **배정 2종 — 랜덤·칩드래프트 전원 재배치** (PR #220, master `685e4e1f8`·prod 2마이그·advisor 0 ERROR·CI 9/9): 적격(open·unlocked) 테이블 active+checked_in을 **랜덤**(균일) 또는 **칩 드래프트**(칩 내림차순 스네이크 버킷+테이블내 랜덤 좌석)로 전원 재배치. 확정 RPC `ops_reseat_participants`(잠금 `advisory→대회→좌석(id asc)→참가자(id asc)` **좌석-우선**=1b assign/move/redraw와 통일·ABBA 회피, **전원 비우기→앉히기**로 좌석 단일점유 partial UNIQUE 충돌 회피, 피처/잠금 테이블 소스보호·TOCTOU). 순수 알고리즘 3종(`src/domains/ops/seatAssignment/`)+RPC+Zod/repo/hook/UI(모드 선택·미리보기·파괴적 확인)+에러 E6129~E6131. **적대검증 WF(7차원 14에이전트)가 머지 전 11결함 하드닝**(락순서 역전 ABBA·`event_type`→`type` plpgsql 42703·Zod v4 uuid strict 등). jest 4557·pgTAP 390(전순열 23505 RED-GREEN 실증)·tsc0·quality0. anon-executable ops SECDEF=monitor/player 2개 유지. OTA 보류(prod ops 0행)
 - 스태프관리 직접 추가: 지원 절차 없이 앱 가입자를 전화번호 정확일치 검색으로 스태프(work_logs)에 직접 추가. 신규 SECURITY DEFINER RPC `add_direct_staff`/`remove_direct_staff`/`search_users_by_phone` (confirm_application 정원 가드 동치 + person-basis `filled_positions`/`stats.filledPositions` ±1, `application_id` NULL 직접추가분은 전용 삭제 경로). 스태프관리 탭 "스태프 추가" 버튼 + `AddStaffModal`(전화검색→가입자 선택→날짜/역할/시간대). 검색은 구인자 전용·전화 전체 일치로 열거 방지
 - **주간 배치 그리드(홀덤펍 운영 그리드)** (PR #219, 플래그 `weekly_grid_enabled` OFF 출하·마이그 13종 prod 적용): 운영처(venue)를 숨김 "컨테이너 공고"(`status='container'` 신규 enum, fail-closed)로 모델링해 단골을 주간 그리드에 직접 배치. venue 스팬 SSOT(`venue_span_posting_ids`=컨테이너+`venue_id` open 공고)로 인원·부족·정산 집계(E1). 읽기 RPC(`get_venue_grid_summary`/`get_venue_day_slots`)·컨테이너 헬퍼·`set_venue_soft_target`·QR 컨테이너/auto 분기 + 직접배치/슬롯편집(시간·역할·색상·메모)/소프트타깃(부족 N명)/지난주복사(멱등)/배치확인 알림. 컨테이너 직접쓰기 RESTRICTIVE 차단·신규 SECDEF anon REVOKE·cross-workspace 유령행 차단(read RPC workspace 재필터). 적대 전체리뷰(8에이전트)로 중첩 RN Modal(SheetModal+overlay)·배치알림 딥링크 5계층·pgTAP 공백 보강. ⚠️ 플래그 ON 전 시간/날짜 피커 iOS 실기기 QA 필요
 - LLM Wiki 지식 합성 레이어 부트스트랩 (PR #176): `wiki/`(architecture·decisions·domain·sources) + `/ingest`·`/query`·`/lint` 운영 + staleness 자동 감지(memory 전용 인용은 UNVERIFIABLE 표기)

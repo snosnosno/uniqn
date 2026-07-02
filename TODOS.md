@@ -105,3 +105,10 @@
 - **Context**: 1c 메커니즘(live_stats 트리거) + 1b redraw에 걸침 → 독립 작업. 신규 마이그(트리거 정의 변경) + pgTAP + 적대검증 재실행 필요. **남은 슬라이스가 live_stats 트리거를 건드리면(특히 1f 풀 산정) 함께 처리 고려**.
 - **Depends on / blocked by**: 없음(독립). 1d(#218) 머지 후 언제든 별도 PR 가능.
 - **Status**: 추적만(미착수). 별도 PR 대기.
+
+### [LOW] 배정 2종 fast-follow (PR #220 비차단 잔여, 적대 최종리뷰 triage)
+
+- **reseat Zod 런타임 배선**: `reseatAssignmentsSchema`/`reseatModeSchema`가 정의됐으나 테스트에서만 사용(repo/service/hook/UI 미호출) → 스펙 §6.2 경계 미실행. 단 머신생성 UUID·RPC fail-closed·형제 RPC(moveSeat/redrawWaitlistFill) 동일 선례. → service safeParse 배선 **또는 수용**.
+- **pgTAP 칩균형 주석 정정**: `ops_reseat_participants.test.sql` [13] 칩균형 임계 주석("≤4000")이 실제(seed_pid 30000 포함 max=30000)와 불일치. 균형 실검증은 jest 전담이라 무해. → 주석 정정 또는 seed_pid 제외 서브쿼리.
+- **RPC 비-uuid 선검증**: step3 `(e->>'participant_id')::uuid`가 비-uuid에 22P02 raise(스펙 §4.3-3은 `SEAT_ASSIGNMENT_INVALID` 요구). fail-closed·클라 Zod 방어라 실발생 불가. → RPC에 uuid 정규식 선검증(선택).
+- **Status**: 추적만. LS-데드락 PR과 묶거나 별도 소규모 PR. prod 데이터 안전 무관.
