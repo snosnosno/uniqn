@@ -8,11 +8,12 @@
  */
 import { INITIAL_JOB_POSTING_DRAFT, type JobPostingDraft } from '@/types/jobPostingDraft';
 import type { PostingTimeSlot } from '@/types/jobPosting';
+import { DEFAULT_SLOT_START_TIME } from '@/domains/weeklyGrid';
 import { generateId } from '@/utils/generateId';
 import { parseDateString } from '@/utils/date';
 
-/** 그리드 슬롯 기본 시작시간(EditSlotSheet DEFAULT_START)과 정합 — 사장이 폼에서 조정. */
-const PREFILL_DEFAULT_START = '18:00';
+/** 딥링크 count 남용 방어 상한 — 폼에서 조정 가능하므로 표시 안전치로 캡. */
+const MAX_PREFILL_COUNT = 999;
 
 export interface GridPrefillParams {
   venueId?: string;
@@ -26,7 +27,8 @@ export interface GridPrefillParams {
 function buildPrefillTimeSlot(count: number): PostingTimeSlot {
   return {
     id: generateId(),
-    startTime: PREFILL_DEFAULT_START,
+    // 시작시간은 그리드 슬롯 기본값 SSOT(DEFAULT_SLOT_START_TIME)와 정합 — 사장이 폼에서 조정.
+    startTime: DEFAULT_SLOT_START_TIME,
     isTimeToBeAnnounced: false,
     roles: [{ id: generateId(), role: 'dealer', count }],
   };
@@ -45,7 +47,9 @@ export function buildGridPrefillDraft({
   }
 
   const headcount =
-    typeof count === 'number' && Number.isFinite(count) && count >= 1 ? Math.floor(count) : 1;
+    typeof count === 'number' && Number.isFinite(count) && count >= 1
+      ? Math.min(Math.floor(count), MAX_PREFILL_COUNT)
+      : 1;
 
   return {
     ...base,

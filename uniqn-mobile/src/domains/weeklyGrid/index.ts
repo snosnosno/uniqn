@@ -49,6 +49,7 @@ export {
 export {
   SLOT_COLOR_TOKENS,
   SLOT_COLOR_CHIPS,
+  DEFAULT_SLOT_START_TIME,
   MAX_SLOT_MEMO_LENGTH,
   slotMemoSchema,
   isValidSlotColor,

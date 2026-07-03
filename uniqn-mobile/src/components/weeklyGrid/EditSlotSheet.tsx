@@ -26,6 +26,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { useDeleteSlot, useUpdateSlot } from '@/hooks/weeklyGrid';
 import {
   SLOT_COLOR_CHIPS,
+  DEFAULT_SLOT_START_TIME,
   MAX_SLOT_MEMO_LENGTH,
   composeTimeSlot,
   parseTimeSlotParts,
@@ -50,7 +51,7 @@ export interface EditSlotSheetProps {
   onSaved?: () => void;
 }
 
-const DEFAULT_START = '18:00';
+const DEFAULT_START = DEFAULT_SLOT_START_TIME;
 const DEFAULT_END = '02:00';
 
 const TIME_RE = /^(\d{1,2}):(\d{2})$/;

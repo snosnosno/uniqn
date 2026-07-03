@@ -13,8 +13,10 @@
  * 플래그 OFF면 상위(weekly-grid 화면)에서 미노출.
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text } from 'react-native';
+import { Alert, View, Text } from 'react-native';
 import { useRouter } from 'expo-router';
+import { format } from 'date-fns';
+import { ko } from 'date-fns/locale/ko';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -26,7 +28,7 @@ import {
   MegaphoneIcon,
 } from '@/components/icons';
 import { SECONDARY_PALETTE, STATUS_COLORS } from '@/constants/colors';
-import { toDateString, parseDateString } from '@/utils/date';
+import { toDateString, parseDateString, getTodayString } from '@/utils/date';
 import { useToastStore } from '@/stores/toastStore';
 import { useUser } from '@/stores/authStore';
 import {
@@ -142,19 +144,43 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
       return;
     }
     if (repeatWeekday) {
-      // 요일 반복: 선택일을 Date 로 복원 → 이번 달 같은 요일 날짜 전체에 목표 인원 벌크 저장.
+      // 요일 반복: 선택일을 Date 로 복원 → 이번 달 같은 요일에 목표 인원 벌크 저장.
       const parsed = parseDateString(date);
       if (!parsed) {
         toastError('날짜를 확인할 수 없어요. 잠시 후 다시 시도해주세요.');
         return;
       }
-      const dates = getSameWeekdayDatesInMonth(parsed);
-      setSoftTargetBulk.mutate(
-        { venueId, dates, count: parsedTarget },
-        {
-          onSuccess: () => toastSuccess(`${dates.length}일에 목표 인원을 저장했어요.`),
-          onError: () => toastError('목표 인원 저장에 실패했어요.'),
-        }
+      // 과거 날짜 제외 — 지난날 부족 뱃지 오표시·이미 지난 개별 설정 오염 방지(오늘 포함 이후만).
+      const today = getTodayString();
+      const dates = getSameWeekdayDatesInMonth(parsed).filter((d) => d >= today);
+      if (dates.length === 0) {
+        toastError('이번 달에 적용할 남은 날짜가 없어요.');
+        return;
+      }
+      // 일괄 덮어쓰기 확인(임페커블 룰12) — 개별 설정한 날짜가 조용히 리셋되지 않게 명시 동의.
+      const weekdayLabel = format(parsed, 'EEEE', { locale: ko });
+      Alert.alert(
+        '요일 전체 적용',
+        `이번 달 남은 ${weekdayLabel} ${dates.length}일의 목표 인원을 ${parsedTarget}명으로 덮어써요. 개별로 설정해둔 날짜도 함께 바뀝니다.`,
+        [
+          { text: '취소', style: 'cancel' },
+          {
+            text: `${dates.length}일에 적용`,
+            style: 'destructive',
+            onPress: () =>
+              setSoftTargetBulk.mutate(
+                { venueId, dates, count: parsedTarget },
+                {
+                  onSuccess: () => toastSuccess(`${dates.length}일에 목표 인원을 저장했어요.`),
+                  // 순차 저장이라 중간 실패 시 일부만 반영됐을 수 있음(멱등이라 재시도 안전).
+                  onError: () =>
+                    toastError(
+                      '목표 인원 저장에 실패했어요. 일부만 적용됐을 수 있어요 — 다시 시도해주세요.'
+                    ),
+                }
+              ),
+          },
+        ]
       );
       return;
     }
@@ -163,7 +189,7 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
       { venueId, date: toDateString(date), count: parsedTarget },
       {
         onSuccess: () => toastSuccess('목표 인원을 저장했어요.'),
-        onError: () => toastError('목표 인원 저장에 실패했어요.'),
+        onError: () => toastError('목표 인원 저장에 실패했어요. 잠시 후 다시 시도해주세요.'),
       }
     );
   }, [
@@ -289,7 +315,12 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
 
       {/* 선택 날짜 배치 상세(행 탭 → 편집) — 직접 렌더(가상화 없음), 스크롤은 상위 담당 */}
       <View className="mt-1">
-        <VenueDayDetail venueId={venueId} date={date} onSlotPress={setEditingSlot} />
+        <VenueDayDetail
+          venueId={venueId}
+          date={date}
+          onSlotPress={setEditingSlot}
+          onAddPress={() => setAddVisible(true)}
+        />
       </View>
 
       {/* 인원 추가 시트 — weeklyGrid 무효화는 useConfirmedStaff.addStaff(W-1)가 담당 */}

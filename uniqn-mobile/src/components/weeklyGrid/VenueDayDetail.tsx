@@ -31,9 +31,11 @@ export interface VenueDayDetailProps {
    * staff.id(=workLogId)로 원본 VenueDaySlot 을 역해소해 전달한다.
    */
   onSlotPress?: (slot: VenueDaySlot) => void;
+  /** 빈 상태 "인원 배치하기" CTA(임페커블 룰9 — 행동 단계). 미제공이면 안내문만. */
+  onAddPress?: () => void;
 }
 
-export function VenueDayDetail({ venueId, date, onSlotPress }: VenueDayDetailProps) {
+export function VenueDayDetail({ venueId, date, onSlotPress, onAddPress }: VenueDayDetailProps) {
   const { data, isLoading, error, refetch, isRefetching } = useVenueDaySlots(venueId, date);
 
   const grouped = useMemo(() => {
@@ -79,7 +81,7 @@ export function VenueDayDetail({ venueId, date, onSlotPress }: VenueDayDetailPro
     );
   }
 
-  // U4: 0명일 때는 그리드 맥락 안내.
+  // U4: 0명일 때는 그리드 맥락 안내 + 행동 CTA(룰9 인지·가치·행동 3단).
   if (grouped.length === 0) {
     return (
       <View className="items-center justify-center px-6 py-8">
@@ -88,6 +90,8 @@ export function VenueDayDetail({ venueId, date, onSlotPress }: VenueDayDetailPro
           icon={<UsersIcon size={48} color={SECONDARY_PALETTE[400]} />}
           title="이 날 배치된 인원이 없어요"
           description="그리드에서 다른 날짜를 선택하거나 인원을 배치해보세요."
+          actionLabel={onAddPress ? '인원 배치하기' : undefined}
+          onAction={onAddPress}
         />
       </View>
     );

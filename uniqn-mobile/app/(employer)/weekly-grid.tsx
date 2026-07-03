@@ -10,7 +10,9 @@
  * 월/대형은 CalendarGrid(고정 6주 그리드, 가상화 불필요), 일별 상세는 ConfirmedStaffList(소형).
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, Text, Pressable, RefreshControl, ScrollView } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryClient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Redirect } from 'expo-router';
 import {
@@ -137,6 +139,19 @@ export default function WeeklyGridScreen() {
   // 선택일이 속한 주(월~일) — 복사/알림/화면 표기가 공유하는 SSOT(P0-4).
   const weekRange = useMemo(() => getWeekRange(selectedDate), [selectedDate]);
 
+  // 당겨서 새로고침 — 단일 ScrollView 전환(P1-3)으로 리스트 RefreshControl 이 사라진 것을 화면
+  // 레벨에서 복원. 타 운영자의 배치 변경(비-realtime)을 수동 갱신하는 유일한 경로.
+  const queryClient = useQueryClient();
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+  const handleManualRefresh = useCallback(async () => {
+    setIsManualRefreshing(true);
+    try {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.weeklyGrid.all });
+    } finally {
+      setIsManualRefreshing(false);
+    }
+  }, [queryClient]);
+
   const handleCopyLastWeek = useCallback(() => {
     if (!selectedVenueId) return;
     const targetWeekStart = toDateString(weekRange.start);
@@ -232,6 +247,14 @@ export default function WeeklyGridScreen() {
           contentContainerStyle={{ paddingBottom: 24 }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
+          refreshControl={
+            <RefreshControl
+              refreshing={isManualRefreshing}
+              onRefresh={handleManualRefresh}
+              tintColor="#D4AF37"
+              colors={['#D4AF37']}
+            />
+          }
         >
           {/* 월 네비게이션 */}
           <View className="flex-row items-center justify-between border-b border-divider px-4 py-1">

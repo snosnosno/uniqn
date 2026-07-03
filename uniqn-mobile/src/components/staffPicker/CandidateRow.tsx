@@ -31,10 +31,11 @@ export function CandidateRow({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ selected: picked }}
+      // pressed 는 opacity 대신 배경톤 반전(임페커블 룰21 — 다크모드 opacity 는 텍스트 대비 저하)
       className={
         picked
-          ? 'flex-row items-center rounded-md border p-3 active:opacity-80 border-primary-500 bg-primary-50 dark:border-primary-500 dark:bg-surface-elevated'
-          : 'flex-row items-center rounded-md border p-3 active:opacity-80 border-secondary-200 bg-surface-card dark:border-surface-overlay dark:bg-surface'
+          ? 'flex-row items-center rounded-md border p-3 active:bg-secondary-100 dark:active:bg-surface-hover border-primary-500 bg-primary-50 dark:border-primary-500 dark:bg-surface-elevated'
+          : 'flex-row items-center rounded-md border p-3 active:bg-secondary-100 dark:active:bg-surface-hover border-secondary-200 bg-surface-card dark:border-surface-overlay dark:bg-surface'
       }
     >
       <Avatar source={photoURL} name={name} size="md" />

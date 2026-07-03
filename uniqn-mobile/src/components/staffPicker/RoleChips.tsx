@@ -30,10 +30,11 @@ export function RoleChips({ value, onChange }: RoleChipsProps) {
             onPress={() => onChange(role.key)}
             accessibilityRole="button"
             accessibilityState={{ selected: isActive }}
+            // pressed 는 opacity 대신 배경톤 반전(임페커블 룰21)
             className={
               isActive
-                ? 'flex-row items-center rounded-full border px-3 py-2 active:opacity-80 border-primary-500 bg-primary-50 dark:bg-surface-elevated'
-                : 'flex-row items-center rounded-full border px-3 py-2 active:opacity-80 border-secondary-200 bg-surface-card dark:border-surface-overlay dark:bg-surface'
+                ? 'flex-row items-center rounded-full border px-3 py-2 active:bg-secondary-100 dark:active:bg-surface-hover border-primary-500 bg-primary-50 dark:bg-surface-elevated'
+                : 'flex-row items-center rounded-full border px-3 py-2 active:bg-secondary-100 dark:active:bg-surface-hover border-secondary-200 bg-surface-card dark:border-surface-overlay dark:bg-surface'
             }
           >
             <Text
