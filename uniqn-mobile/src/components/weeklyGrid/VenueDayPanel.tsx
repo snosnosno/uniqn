@@ -221,11 +221,12 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
         date={date}
       />
 
-      {/* 슬롯 편집 시트 — useUpdateSlot 이 weeklyGrid.all 무효화 */}
+      {/* 슬롯 편집 시트 — useUpdateSlot/useDeleteSlot 이 weeklyGrid.all 무효화 */}
       <EditSlotSheet
         visible={editingSlot !== null}
         onClose={() => setEditingSlot(null)}
         slot={editingSlot}
+        date={date}
         siblingSlots={siblingSlots}
         editedBy={editedBy}
       />
