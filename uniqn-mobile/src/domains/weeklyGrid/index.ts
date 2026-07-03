@@ -22,6 +22,8 @@ export {
 
 export { GRID_BADGE_META, GRID_BADGE_ORDER, type GridBadgeMeta } from './gridBadgeMeta';
 
+export { getWeekRange, type WeekRange } from './weekRange';
+
 export {
   parseVenueContainer,
   parseVenueContainers,
