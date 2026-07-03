@@ -26,38 +26,8 @@ import { format, isBefore, startOfDay } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
 import { triggerHaptic } from '@/utils/haptics';
 import { Skeleton } from '@/components/ui/Skeleton';
-import type { GridDayCell, GridBadgeKind } from '@/domains/weeklyGrid';
-
-/**
- * 우선순위 뱃지(U2: 1개) 종류별 표시 메타.
- * U1 a11y: 색상 단독 금지 → glyph(아이콘 대용 글리프)+count 병기 + a11y 라벨에 종류명+수치.
- * U3: 토큰 팔레트 리터럴 클래스만(동적 className 조립 금지 → dark: 유실 방지).
- *     라이트 모드는 text-{token}-500(어두운 텍스트)로 충분하나, 다크 surface 위 같은 hue의
- *     반투명 틴트 배경에서는 -500 텍스트 대비가 낮아 dark: 변형으로 밝은 -300 텍스트를 병행한다.
- */
-const GRID_BADGE_META: Record<
-  GridBadgeKind,
-  { glyph: string; label: string; unit: string; tokenClass: string }
-> = {
-  shortage: {
-    glyph: '!',
-    label: '부족',
-    unit: '명',
-    tokenClass: 'bg-warning-500/20 text-warning-500 dark:text-warning-300',
-  },
-  job: {
-    glyph: '+',
-    label: '공고',
-    unit: '건',
-    tokenClass: 'bg-primary-500/25 text-primary-500 dark:text-primary-200',
-  },
-  batch: {
-    glyph: '✓',
-    label: '배치',
-    unit: '명',
-    tokenClass: 'bg-success-500/20 text-success-500 dark:text-success-300',
-  },
-};
+// 뱃지 표시 메타(글리프/라벨/토큰 클래스)는 도메인 SSOT — 범례(GridBadgeLegend)와 공유(P0-3).
+import { GRID_BADGE_META, type GridDayCell } from '@/domains/weeklyGrid';
 
 interface CalendarCellProps {
   date: Date;

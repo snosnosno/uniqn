@@ -34,7 +34,12 @@ import {
   BellIcon,
 } from '@/components/icons';
 import { CalendarGrid } from '@/components/jobs/DateCalendar/CalendarGrid';
-import { VenueSelector, VenueDayPanel, VenueCreateSheet } from '@/components/weeklyGrid';
+import {
+  VenueSelector,
+  VenueDayPanel,
+  VenueCreateSheet,
+  GridBadgeLegend,
+} from '@/components/weeklyGrid';
 import { useWeeklyGridEnabled } from '@/hooks';
 import { useActiveWorkspace } from '@/hooks/workspace';
 import {
@@ -274,6 +279,9 @@ export default function WeeklyGridScreen() {
               gridCells={gridCells}
             />
           </View>
+
+          {/* P0-3: 셀 뱃지 범례(!부족/+공고/✓배치) — GRID_BADGE_META SSOT 공유 */}
+          <GridBadgeLegend />
 
           {/* U4: 요약 에러 — 그리드 하단 인라인 + 재시도 */}
           {summaryQuery.isError ? (

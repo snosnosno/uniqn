@@ -20,6 +20,8 @@ export {
   type GridDayStatus,
 } from './gridSlotState';
 
+export { GRID_BADGE_META, GRID_BADGE_ORDER, type GridBadgeMeta } from './gridBadgeMeta';
+
 export {
   parseVenueContainer,
   parseVenueContainers,
