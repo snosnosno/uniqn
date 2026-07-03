@@ -96,8 +96,8 @@ prod 0행이라 구 payload 혼재 없음. 로컬은 db:reset으로 정합.
 ### 4.2 `ops_undo_bust(p_participant_id uuid, p_actor_id uuid)` — 신규
 
 - **목적**: 오조작 bust의 원상 복구. 재진입과 구분: reentries 불변·칩은 bust 직전 값 복원·registration_open 무관·KO 롤백
-- **가드 순서**: actor → 비잠금 tournament_id 선취 → advisory → 대회 FOR UPDATE + `status='active'`(아니면 `INVALID_STATUS: 진행 중 대회에서만 탈락 취소가 가능합니다` — D2: 우승확정 후 completed면 여기서 차단) → 멤버십 → 참가자 FOR UPDATE + `status='busted'`(아니면 `UNDO_INVALID_STATE`)
-- **복원 소스**: 해당 참가자의 **최신 `player_busted` 이벤트**(`WHERE tournament_id=.. AND type='player_busted' AND (payload->>'participant_id')::uuid = p_participant_id ORDER BY created_at DESC, id DESC LIMIT 1`). payload에서 `chips_before`(부재 시 0 — 이론상 불가, fail-safe)·`eliminator_id`·`freed_seat_id` 추출
+- **가드 순서**: actor → 비잠금 tournament_id 선취 → advisory → 대회 FOR UPDATE + `status='active'`(아니면 `INVALID_STATUS: 진행 중 대회에서만 탈락 취소가 가능합니다` — D2: 우승확정 후 completed면 여기서 차단) → 멤버십 → **이벤트 조회(무잠금 — 아래)** → 참가자(+eliminator) **id 오름차순 FOR UPDATE** → 대상 `status='busted'` 검사(아니면 `UNDO_INVALID_STATE`)
+- **복원 소스**: 해당 참가자의 **최신 `player_busted` 이벤트**(`WHERE tournament_id=.. AND type='player_busted' AND (payload->>'participant_id')::uuid = p_participant_id ORDER BY created_at DESC LIMIT 1`). payload에서 `chips_before`(부재 시 0 — 이론상 불가, fail-safe)·`eliminator_id`·`freed_seat_id` 추출. **이벤트는 append-only 불변이라 행 잠금 전 조회가 안전** — eliminator id를 먼저 알아야 두 참가자 행을 id 오름차순으로 잠글 수 있음(4.1 규약 유지). bust→reenter→재bust 이력에서도 "현재 busted 상태 = 최신 bust 이벤트" 대응이 성립(reenter 시 undo 대상 아님·busted 검사가 차단)
 - **변이**:
   1. 참가자: `finish_position=NULL, busted_at=NULL, prize_amount=NULL, chips=chips_before`
   2. eliminator_id 존재 시: 해당 행 FOR UPDATE(있으면) 후 `knockouts = GREATEST(knockouts-1, 0)` — CHECK 위반 방어. eliminator가 그 사이 busted여도 카운트만 감소(정합)
@@ -218,7 +218,7 @@ knockout_pool    := CASE WHEN bounty_cost IS NULL THEN NULL
 ### 7.5 데이터 레이어 배선
 
 - Repo: `OpsParticipantRepository.bustParticipant`에 `eliminatorId?` 파라미터 / `undoBust`·`correctPrize` 신규 메서드(+인터페이스) — snake→camel 수동 매핑(1d data-1 관례)
-- Service: `opsParticipantService`에 undo/correct 위임 + correct는 Zod 경계검증(`prizeCorrectionSchema`: amount int ≥0 nullable·reason ≤200·xssValidation)
+- Service: `opsParticipantService`에 undo/correct 위임 + correct는 Zod 경계검증(`prizeCorrectionSchema`: amount int ≥0 nullable·reason ≤200·xssValidation). uuid 파라미터(eliminatorId 등) Zod는 **#220 그룹형 정규식 재사용**(`.uuid()` RFC4122 strict가 픽스처 uuid 거부하는 함정)
 - Hooks: `useUndoBust`(invalidate: participants·seats·liveStats) / `useCorrectPrize`(invalidate: participants) / bust 훅 시그니처 확장. 공개 뷰 2종은 자체 폴링이라 invalidate 무관(1d data-3)
 - supabase.ts **수술적 추가**(전체 재생성 금지): knockouts 컬럼·RPC 3종 시그니처·enum 2값(**Enums 3186대 + Constants 미러 3381대 두 곳**)
 
