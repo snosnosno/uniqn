@@ -327,10 +327,19 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
               </View>
             ) : poolPeople.length === 0 ? (
               <View className="py-4">
+                {/* 콜드스타트(P0-2): 첫 운영자는 풀이 비어 있다 — 죽은 안내문 대신 행동 CTA 2개 */}
                 <EmptyState
                   icon={<UsersIcon size={40} color={SECONDARY_PALETTE[400]} />}
                   title="확정 스태프 풀이 비어 있어요"
-                  description="전화검색으로 가입자를 찾아 추가하거나, 공고를 열어 모집해보세요."
+                  description="공고로 모집하거나, 전화번호로 가입자를 찾아 바로 배치할 수 있어요."
+                  actionLabel="공고로 모집하기"
+                  onAction={handleOpenPosting}
+                  secondaryActionLabel="전화번호로 찾기"
+                  onSecondaryAction={() => {
+                    setMode('phone');
+                    resetSelection();
+                  }}
+                  compact
                 />
               </View>
             ) : (

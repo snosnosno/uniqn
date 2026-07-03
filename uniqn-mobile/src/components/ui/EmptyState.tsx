@@ -28,6 +28,9 @@ export interface EmptyStateProps {
   icon?: React.ReactNode | string;
   actionLabel?: string;
   onAction?: () => void;
+  /** 보조 액션(기본 액션 아래 ghost 버튼) — 빈 상태에서 대안 경로를 제시할 때 사용 */
+  secondaryActionLabel?: string;
+  onSecondaryAction?: () => void;
   variant?: 'search' | 'content' | 'error';
   /** 컴팩트 모드: Card 안에 삽입 시 높이 축소 (flex-1, py-12 → py-6) */
   compact?: boolean;
@@ -39,6 +42,8 @@ export function EmptyState({
   icon,
   actionLabel,
   onAction,
+  secondaryActionLabel,
+  onSecondaryAction,
   variant = 'content',
   compact = false,
 }: EmptyStateProps) {
@@ -83,6 +88,14 @@ export function EmptyState({
         <Button variant="outline" onPress={onAction}>
           {actionLabel}
         </Button>
+      )}
+
+      {secondaryActionLabel && onSecondaryAction && (
+        <View className="mt-2">
+          <Button variant="ghost" onPress={onSecondaryAction}>
+            {secondaryActionLabel}
+          </Button>
+        </View>
       )}
     </View>
   );
