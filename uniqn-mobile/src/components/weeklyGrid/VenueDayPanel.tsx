@@ -14,19 +14,31 @@
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { UsersIcon, FlagOutlineIcon, AlertTriangleIcon, UserPlusIcon } from '@/components/icons';
+import {
+  UsersIcon,
+  FlagOutlineIcon,
+  AlertTriangleIcon,
+  UserPlusIcon,
+  MegaphoneIcon,
+} from '@/components/icons';
 import { SECONDARY_PALETTE, STATUS_COLORS } from '@/constants/colors';
 import { toDateString, parseDateString } from '@/utils/date';
 import { useToastStore } from '@/stores/toastStore';
 import { useUser } from '@/stores/authStore';
-import { useSetVenueSoftTarget, useVenueDaySlots } from '@/hooks/weeklyGrid';
-// 배럴(hooks/weeklyGrid, domains/weeklyGrid)은 메인 세션 소유 → 신규 모듈은 직접 경로로 import.
-import { useSetVenueSoftTargetBulk } from '@/hooks/weeklyGrid/useSetVenueSoftTargetBulk';
-import { getSameWeekdayDatesInMonth } from '@/domains/weeklyGrid/weekdayDates';
-import { computeShortage, type GridDayCell } from '@/domains/weeklyGrid';
+import {
+  useSetVenueSoftTarget,
+  useSetVenueSoftTargetBulk,
+  useVenueDaySlots,
+} from '@/hooks/weeklyGrid';
+import {
+  computeShortage,
+  getSameWeekdayDatesInMonth,
+  type GridDayCell,
+} from '@/domains/weeklyGrid';
 import type { VenueDaySlot } from '@/repositories/weeklyGrid';
 import { VenueDayDetail } from './VenueDayDetail';
 import { AddSlotSheet } from './AddSlotSheet';
@@ -84,6 +96,7 @@ function StatChip({
 }
 
 export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelProps) {
+  const router = useRouter();
   const toastSuccess = useToastStore((s) => s.success);
   const toastError = useToastStore((s) => s.error);
   const user = useUser();
@@ -166,7 +179,8 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
   ]);
 
   return (
-    <View className="flex-1">
+    // P1-3: 상위(weekly-grid)가 단일 ScrollView 스크롤러 — flex-1 대신 자연 높이(Yoga flex-1 붕괴 회피).
+    <View>
       {/* 헤더: 날짜 + 인원 추가 진입 */}
       <View className="flex-row items-center justify-between px-4 pt-2">
         <Text className="text-sm font-sans-semibold text-content-primary">{dateLabel} 배치</Text>
@@ -216,6 +230,26 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
         ) : null}
       </View>
 
+      {/* P2-1: 부족신호 → 프리필 공고 깔때기 — 그리드가 아는 것(운영처·날짜·부족 인원)을 폼에 실어 보낸다 */}
+      {shortage > 0 ? (
+        <View className="px-4 pt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onPress={() =>
+              router.push({
+                pathname: '/(employer)/my-postings/create',
+                params: { venueId, date, count: String(shortage) },
+              })
+            }
+            icon={<MegaphoneIcon size={16} color={SECONDARY_PALETTE[500]} />}
+            accessibilityLabel={`부족 인원 ${shortage}명 공고로 모집`}
+          >
+            부족 {shortage}명 공고로 모집
+          </Button>
+        </View>
+      ) : null}
+
       {/* 소프트타깃 입력(그 날 목표인원) */}
       <View className="flex-row items-end gap-2 px-4 pt-2">
         <View className="w-28">
@@ -253,12 +287,12 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
         />
       </View>
 
-      {/* 선택 날짜 배치 상세(행 탭 → 편집) */}
-      <View className="mt-1 flex-1">
+      {/* 선택 날짜 배치 상세(행 탭 → 편집) — 직접 렌더(가상화 없음), 스크롤은 상위 담당 */}
+      <View className="mt-1">
         <VenueDayDetail venueId={venueId} date={date} onSlotPress={setEditingSlot} />
       </View>
 
-      {/* 인원 추가 시트 — 자체적으로 weeklyGrid.all 무효화 */}
+      {/* 인원 추가 시트 — weeklyGrid 무효화는 useConfirmedStaff.addStaff(W-1)가 담당 */}
       <AddSlotSheet
         visible={addVisible}
         onClose={() => setAddVisible(false)}

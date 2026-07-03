@@ -82,8 +82,11 @@ export const CalendarCell = memo(function CalendarCell({
           : ''
       : '';
 
-  const containerBase =
-    'min-h-10 items-center justify-center rounded-sm mx-0.5 my-0.5 py-1 active:bg-secondary-100 dark:active:bg-surface-hover';
+  // P1-3: 그리드 모드는 셀 세로 압축(min-h-9·마진/패딩 축소) — 비그리드 모드는 기존 그대로(무회귀).
+  // 두 갈래 모두 정적 리터럴(동적 조립 금지 — dark: 유실 방지).
+  const containerBase = gridMode
+    ? 'min-h-9 items-center justify-center rounded-sm mx-0.5 my-px py-0.5 active:bg-secondary-100 dark:active:bg-surface-hover'
+    : 'min-h-10 items-center justify-center rounded-sm mx-0.5 my-0.5 py-1 active:bg-secondary-100 dark:active:bg-surface-hover';
   // 비그리드 모드: statusBg='' 라 기존 동작과 동일(isToday border 또는 빈 문자열).
   const containerState = isSelected
     ? 'bg-primary-500'

@@ -24,6 +24,8 @@ export { GRID_BADGE_META, GRID_BADGE_ORDER, type GridBadgeMeta } from './gridBad
 
 export { getWeekRange, type WeekRange } from './weekRange';
 
+export { getSameWeekdayDatesInMonth } from './weekdayDates';
+
 export {
   parseVenueContainer,
   parseVenueContainers,

@@ -10,7 +10,7 @@
  * 월/대형은 CalendarGrid(고정 6주 그리드, 가상화 불필요), 일별 상세는 ConfirmedStaffList(소형).
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Redirect } from 'expo-router';
 import {
@@ -226,9 +226,15 @@ export default function WeeklyGridScreen() {
           )}
         </View>
       ) : (
-        <View className="flex-1">
+        // P1-3: 단일 세로 스크롤러 — 내부에 가상화 리스트 없음(VenueDayDetail 직접 렌더 전제).
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ paddingBottom: 24 }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
           {/* 월 네비게이션 */}
-          <View className="flex-row items-center justify-between border-b border-divider px-4 py-2">
+          <View className="flex-row items-center justify-between border-b border-divider px-4 py-1">
             <Pressable
               onPress={handlePrevMonth}
               hitSlop={8}
@@ -314,8 +320,8 @@ export default function WeeklyGridScreen() {
             </View>
           ) : null}
 
-          {/* 선택 날짜 패널(요약·소프트타깃·추가·편집 통합, unit 6 + B 통합) */}
-          <View className="mt-1 flex-1 border-t border-divider">
+          {/* 선택 날짜 패널(요약·소프트타깃·추가·편집 통합) — 자연 높이(스크롤은 이 ScrollView 담당) */}
+          <View className="mt-1 border-t border-divider">
             <VenueDayPanel
               venueId={selectedVenueId}
               date={selectedDateString}
@@ -323,7 +329,7 @@ export default function WeeklyGridScreen() {
               cell={gridCells[selectedDateString]}
             />
           </View>
-        </View>
+        </ScrollView>
       )}
       <VenueCreateSheet
         visible={createSheetVisible}

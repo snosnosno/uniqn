@@ -69,14 +69,15 @@ it('빈 풀 빈상태에 CTA 2개(공고로 모집하기/전화번호로 찾기)
   expect(getByText('전화번호로 찾기')).toBeTruthy();
 });
 
-it('"공고로 모집하기" 탭 → 공고 작성 라우트로 venueId 전달 + 시트 닫힘', () => {
+it('"공고로 모집하기" 탭 → 공고 작성 라우트로 venueId+date 전달 + 시트 닫힘', () => {
   const { getByText, onClose } = renderSheet();
 
   fireEvent.press(getByText('공고로 모집하기'));
 
+  // P2-1: 그리드 선택일(date)을 동봉해 create 초기 draft 프리필(buildGridPrefillDraft)로 이어진다.
   expect(mockPush).toHaveBeenCalledWith({
     pathname: '/(employer)/my-postings/create',
-    params: { venueId: 'venue-1' },
+    params: { venueId: 'venue-1', date: '2026-07-05' },
   });
   expect(onClose).toHaveBeenCalled();
 });

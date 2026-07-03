@@ -19,7 +19,7 @@ export function GridBadgeLegend() {
     <View
       accessible
       accessibilityLabel={a11yLabel}
-      className="flex-row items-center justify-end gap-3 px-4 py-1"
+      className="flex-row items-center justify-end gap-3 px-4 py-0.5"
     >
       {GRID_BADGE_ORDER.map((kind) => {
         const meta = GRID_BADGE_META[kind];

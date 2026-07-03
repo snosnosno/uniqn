@@ -217,11 +217,14 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
   ]);
 
   const handleOpenPosting = useCallback(() => {
-    // 기존 공고 작성 라우트로 venueId 전달(템플릿→인원→발행 재사용).
-    // create 라우트가 params.venueId 를 초기 draft 에 싣고(P6-2), draftAdapter 가 venue_id 컬럼으로 영속(P6-1).
-    router.push({ pathname: '/(employer)/my-postings/create', params: { venueId: containerId } });
+    // 기존 공고 작성 라우트로 venueId+date 전달(템플릿→인원→발행 재사용).
+    // create 라우트가 초기 draft 에 프리필(P2-1: buildGridPrefillDraft), draftAdapter 가 venue_id 로 영속(P6-1).
+    router.push({
+      pathname: '/(employer)/my-postings/create',
+      params: { venueId: containerId, date },
+    });
     handleClose();
-  }, [router, containerId, handleClose]);
+  }, [router, containerId, date, handleClose]);
 
   const dateLabel = useMemo(() => {
     const parsed = parseDateString(date);
