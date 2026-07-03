@@ -16,12 +16,16 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text } from 'react-native';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { UsersIcon, FlagOutlineIcon, AlertTriangleIcon, UserPlusIcon } from '@/components/icons';
 import { SECONDARY_PALETTE, STATUS_COLORS } from '@/constants/colors';
-import { toDateString } from '@/utils/date';
+import { toDateString, parseDateString } from '@/utils/date';
 import { useToastStore } from '@/stores/toastStore';
 import { useUser } from '@/stores/authStore';
 import { useSetVenueSoftTarget, useVenueDaySlots } from '@/hooks/weeklyGrid';
+// 배럴(hooks/weeklyGrid, domains/weeklyGrid)은 메인 세션 소유 → 신규 모듈은 직접 경로로 import.
+import { useSetVenueSoftTargetBulk } from '@/hooks/weeklyGrid/useSetVenueSoftTargetBulk';
+import { getSameWeekdayDatesInMonth } from '@/domains/weeklyGrid/weekdayDates';
 import { computeShortage, type GridDayCell } from '@/domains/weeklyGrid';
 import type { VenueDaySlot } from '@/repositories/weeklyGrid';
 import { VenueDayDetail } from './VenueDayDetail';
@@ -103,6 +107,10 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
   }, [softTarget, date]);
 
   const setSoftTarget = useSetVenueSoftTarget();
+  const setSoftTargetBulk = useSetVenueSoftTargetBulk();
+
+  // "이번 달 같은 요일 전체 적용" 토글(기본 off). on 이면 저장이 요일 반복 벌크 경로를 탄다.
+  const [repeatWeekday, setRepeatWeekday] = useState(false);
 
   // 입력 정규화(빈값=0, 음수/NaN=무효). 저장 버튼 활성/검증 공통 사용.
   const parsedTarget = useMemo(() => {
@@ -120,6 +128,23 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
       toastError('목표 인원은 0 이상의 숫자로 입력해주세요.');
       return;
     }
+    if (repeatWeekday) {
+      // 요일 반복: 선택일을 Date 로 복원 → 이번 달 같은 요일 날짜 전체에 목표 인원 벌크 저장.
+      const parsed = parseDateString(date);
+      if (!parsed) {
+        toastError('날짜를 확인할 수 없어요. 잠시 후 다시 시도해주세요.');
+        return;
+      }
+      const dates = getSameWeekdayDatesInMonth(parsed);
+      setSoftTargetBulk.mutate(
+        { venueId, dates, count: parsedTarget },
+        {
+          onSuccess: () => toastSuccess(`${dates.length}일에 목표 인원을 저장했어요.`),
+          onError: () => toastError('목표 인원 저장에 실패했어요.'),
+        }
+      );
+      return;
+    }
     setSoftTarget.mutate(
       // E5: write 경계에서 날짜키 정규화(레포도 재정규화하나 클라단 일관성 보장).
       { venueId, date: toDateString(date), count: parsedTarget },
@@ -128,7 +153,17 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
         onError: () => toastError('목표 인원 저장에 실패했어요.'),
       }
     );
-  }, [targetValid, parsedTarget, setSoftTarget, venueId, date, toastSuccess, toastError]);
+  }, [
+    targetValid,
+    repeatWeekday,
+    parsedTarget,
+    setSoftTarget,
+    setSoftTargetBulk,
+    venueId,
+    date,
+    toastSuccess,
+    toastError,
+  ]);
 
   return (
     <View className="flex-1">
@@ -201,11 +236,21 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
           size="sm"
           onPress={handleSaveTarget}
           disabled={!targetDirty}
-          loading={setSoftTarget.isPending}
+          loading={setSoftTarget.isPending || setSoftTargetBulk.isPending}
           accessibilityLabel="목표 인원 저장"
         >
           저장
         </Button>
+      </View>
+
+      {/* 요일 반복 토글: on 이면 저장이 이번 달 같은 요일 전체에 목표 인원을 적용 */}
+      <View className="px-4 pt-2">
+        <Checkbox
+          checked={repeatWeekday}
+          onChange={setRepeatWeekday}
+          label="이번 달 같은 요일 전체 적용"
+          size="sm"
+        />
       </View>
 
       {/* 선택 날짜 배치 상세(행 탭 → 편집) */}
