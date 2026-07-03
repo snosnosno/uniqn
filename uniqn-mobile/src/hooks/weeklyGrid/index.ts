@@ -13,3 +13,4 @@ export {
   type NotifyWeeklyBatchConfirmVars,
 } from './useNotifyWeeklyBatchConfirm';
 export { useCreateVenueContainer } from './useCreateVenueContainer';
+export { useEnsureDefaultVenue, type EnsureDefaultVenueInput } from './useEnsureDefaultVenue';

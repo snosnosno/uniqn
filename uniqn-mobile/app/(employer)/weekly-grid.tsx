@@ -46,6 +46,7 @@ import {
   useVenueContainers,
   useCopyLastWeek,
   useNotifyWeeklyBatchConfirm,
+  useEnsureDefaultVenue,
 } from '@/hooks/weeklyGrid';
 import { computeDayCell, getWeekRange, type GridDayCell } from '@/domains/weeklyGrid';
 import { toDateString } from '@/utils/date';
@@ -94,6 +95,15 @@ export default function WeeklyGridScreen() {
   const [visibleMonth, setVisibleMonth] = useState<Date>(() => startOfMonth(new Date()));
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const [createSheetVisible, setCreateSheetVisible] = useState(false);
+
+  // P1-1: 운영처 0개면 워크스페이스 이름으로 기본 운영처 자동 생성(체감 2계층).
+  // 실패 시 재발사 없음(훅 내부 가드) → 아래 수동 EmptyState 폴백.
+  const { isCreating: isAutoCreatingVenue } = useEnsureDefaultVenue({
+    workspaceId: activeWorkspace?.id,
+    workspaceName: activeWorkspace?.name,
+    isReady: enabled && !wsLoading && containersQuery.isSuccess,
+    isEmpty: containers.length === 0,
+  });
 
   // 컨테이너 로드/변경 시 선택 venue 자기-치유: 없거나 목록에 없으면 첫 번째로.
   useEffect(() => {
@@ -202,7 +212,8 @@ export default function WeeklyGridScreen() {
           빈상태 오표시를 막기 위해 로딩으로 처리. */}
       {!hasVenue ? (
         <View className="flex-1 items-center justify-center px-6">
-          {!(wsLoading || containersQuery.isLoading) && containers.length === 0 ? (
+          {!(wsLoading || containersQuery.isLoading || isAutoCreatingVenue) &&
+          containers.length === 0 ? (
             <EmptyState
               icon={<MapPinIcon size={48} color={SECONDARY_PALETTE[400]} />}
               title="운영처가 없어요"
