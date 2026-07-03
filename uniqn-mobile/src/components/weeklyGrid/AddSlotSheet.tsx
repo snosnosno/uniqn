@@ -7,8 +7,10 @@
  *   3) 공고 열기 — 기존 공고 작성 라우트로 venueId 를 실어 보냄(템플릿→인원→발행 재사용)
  *
  * 컨테이너에 스태프 추가는 허용(설계 §6). 정원 카운트·컨테이너 filled 미러 skip 은 RPC 가 보장(R1).
- * 추가 성공 시 weeklyGrid 쿼리(summary/daySlots) 무효화 → 부족셀·상세 갱신(useConfirmedStaff 가
- * confirmedStaff/jobPostings 무효화는 이미 담당).
+ * 추가 성공 후 그리드(부족셀·하루 슬롯) 갱신을 위한 weeklyGrid 무효화는 useConfirmedStaff.addStaff
+ * 가 confirmedStaff/jobPostings 와 함께 담당한다(W-1) — 시트는 별도 무효화하지 않는다.
+ *
+ * 후보행·역할칩·전화검색 폼은 AddStaffModal 과 공유하는 프리미티브(@/components/staffPicker)로 통합.
  *
  * 중첩 RN Modal iOS 터치먹통(pitfall_nested_rn_modal_touch_dead) 회피 — 전화검색은 AddStaffModal
  * 모달을 중첩하지 않고 동일 훅(useStaffPhoneSearch)을 단일 시트 내부에 인라인 재사용한다.
@@ -16,19 +18,17 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { Avatar } from '@/components/ui/Avatar';
 import { Loading } from '@/components/ui/Loading';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { SearchIcon, UserPlusIcon, UsersIcon, PhoneIcon, MegaphoneIcon } from '@/components/icons';
+import { UserPlusIcon, UsersIcon, PhoneIcon, MegaphoneIcon } from '@/components/icons';
+import { CandidateRow, RoleChips, PhoneSearchField } from '@/components/staffPicker';
 import { STAFF_ROLES } from '@/constants';
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import { queryKeys } from '@/lib/queryClient';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import { useStaffPhoneSearch } from '@/hooks/useStaffPhoneSearch';
 import { useToastStore } from '@/stores/toastStore';
@@ -95,7 +95,6 @@ function ModeTab({
 
 export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: AddSlotSheetProps) {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const { addToast } = useToastStore();
 
   // 컨테이너 확정 스태프 풀 + 추가 변이(add_direct_staff). jobPostingId=컨테이너 id.
@@ -191,9 +190,8 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
         customRole: isCustomRole ? customRole : undefined,
         timeSlot,
       });
+      // 그리드 읽기(summary/daySlots) 무효화는 useConfirmedStaff.addStaff onSuccess 가 담당(W-1).
       await addStaff(payload);
-      // 그리드 읽기(summary/daySlots)는 weeklyGrid 키 — 별도 무효화 필요.
-      await queryClient.invalidateQueries({ queryKey: queryKeys.weeklyGrid.all });
       onAdded?.();
       handleClose();
     } catch (error) {
@@ -213,7 +211,6 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
     containerId,
     date,
     addStaff,
-    queryClient,
     onAdded,
     handleClose,
     addToast,
@@ -294,29 +291,12 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
         <ScrollView className="max-h-[440px]" keyboardShouldPersistTaps="handled">
           {/* 전화검색 입력(전화 모드만) */}
           {mode === 'phone' ? (
-            <View className="flex-row items-end gap-2">
-              <View className="flex-1">
-                <Input
-                  label="전화번호"
-                  value={phone}
-                  onChangeText={setPhone}
-                  placeholder="등록된 전화번호 전체 입력"
-                  keyboardType="phone-pad"
-                  hint="개인정보 보호를 위해 전화번호 전체가 정확히 일치해야 검색됩니다."
-                  onSubmitEditing={handleSearch}
-                  returnKeyType="search"
-                />
-              </View>
-              <Button
-                variant="secondary"
-                onPress={handleSearch}
-                loading={phoneSearch.isSearching}
-                icon={<SearchIcon size={18} color={SECONDARY_PALETTE[500]} />}
-                accessibilityLabel="전화번호로 검색"
-              >
-                검색
-              </Button>
-            </View>
+            <PhoneSearchField
+              phone={phone}
+              onChangePhone={setPhone}
+              onSearch={handleSearch}
+              isSearching={phoneSearch.isSearching}
+            />
           ) : null}
 
           {/* 후보 리스트(풀 또는 전화 검색 결과) */}
@@ -389,34 +369,7 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
           {picked ? (
             <View className="mt-4 gap-3 border-t border-secondary-200 pt-4 dark:border-surface-overlay">
               <Text className="text-sm font-sans-medium text-content-secondary">역할</Text>
-              <View className="flex-row flex-wrap gap-2">
-                {STAFF_ROLES.map((role) => {
-                  const isActive = roleKey === role.key;
-                  return (
-                    <Pressable
-                      key={role.key}
-                      onPress={() => setRoleKey(role.key)}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: isActive }}
-                      className={`flex-row items-center rounded-full border px-3 py-2 active:opacity-80 ${
-                        isActive
-                          ? 'border-primary-500 bg-primary-50 dark:bg-surface-elevated'
-                          : 'border-secondary-200 bg-surface-card dark:border-surface-overlay dark:bg-surface'
-                      }`}
-                    >
-                      <Text
-                        className={`text-sm font-sans-medium ${
-                          isActive
-                            ? 'text-primary-700 dark:text-primary-300'
-                            : 'text-content-secondary'
-                        }`}
-                      >
-                        {`${role.icon} ${role.name}`}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+              <RoleChips value={roleKey} onChange={setRoleKey} />
 
               {isCustomRole ? (
                 <Input
@@ -457,52 +410,6 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
         </View>
       ) : null}
     </Modal>
-  );
-}
-
-/** 후보(풀/전화) 한 줄 — Avatar + 이름/닉네임/지역 + 선택 표시. AddStaffModal 결과행과 동일 패턴. */
-function CandidateRow({
-  name,
-  nickname,
-  region,
-  photoURL,
-  picked,
-  onPress,
-}: {
-  name: string;
-  nickname?: string;
-  region?: string;
-  photoURL?: string;
-  picked: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected: picked }}
-      className={`flex-row items-center rounded-md border p-3 active:opacity-80 ${
-        picked
-          ? 'border-primary-500 bg-primary-50 dark:border-primary-500 dark:bg-surface-elevated'
-          : 'border-secondary-200 bg-surface-card dark:border-surface-overlay dark:bg-surface'
-      }`}
-    >
-      <Avatar source={photoURL} name={name} size="md" />
-      <View className="ml-3 flex-1">
-        <Text className="text-base font-sans-semibold text-content-primary">
-          {name}
-          {nickname ? (
-            <Text className="text-sm text-content-secondary font-sans">{`  ${nickname}`}</Text>
-          ) : null}
-        </Text>
-        {region ? <Text className="text-xs text-content-secondary font-sans">{region}</Text> : null}
-      </View>
-      {picked ? (
-        <Text className="text-sm font-sans-semibold text-primary-600 dark:text-primary-400">
-          선택됨
-        </Text>
-      ) : null}
-    </Pressable>
   );
 }
 
