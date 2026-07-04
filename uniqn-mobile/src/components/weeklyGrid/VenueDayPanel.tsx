@@ -13,7 +13,7 @@
  * 플래그 OFF면 상위(weekly-grid 화면)에서 미노출.
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, View, Text } from 'react-native';
+import { View, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
@@ -29,6 +29,7 @@ import {
 } from '@/components/icons';
 import { SECONDARY_PALETTE, STATUS_COLORS } from '@/constants/colors';
 import { toDateString, parseDateString, getTodayString } from '@/utils/date';
+import { confirmAction } from '@/utils/confirmAction';
 import { useToastStore } from '@/stores/toastStore';
 import { useUser } from '@/stores/authStore';
 import {
@@ -158,30 +159,26 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
         return;
       }
       // 일괄 덮어쓰기 확인(임페커블 룰12) — 개별 설정한 날짜가 조용히 리셋되지 않게 명시 동의.
+      // raw Alert.alert 금지: RN Web 에서 no-op 이라 웹 벌크 저장이 조용히 죽는다(confirmAction 이 web 분기).
       const weekdayLabel = format(parsed, 'EEEE', { locale: ko });
-      Alert.alert(
-        '요일 전체 적용',
-        `이번 달 남은 ${weekdayLabel} ${dates.length}일의 목표 인원을 ${parsedTarget}명으로 덮어써요. 개별로 설정해둔 날짜도 함께 바뀝니다.`,
-        [
-          { text: '취소', style: 'cancel' },
-          {
-            text: `${dates.length}일에 적용`,
-            style: 'destructive',
-            onPress: () =>
-              setSoftTargetBulk.mutate(
-                { venueId, dates, count: parsedTarget },
-                {
-                  onSuccess: () => toastSuccess(`${dates.length}일에 목표 인원을 저장했어요.`),
-                  // 순차 저장이라 중간 실패 시 일부만 반영됐을 수 있음(멱등이라 재시도 안전).
-                  onError: () =>
-                    toastError(
-                      '목표 인원 저장에 실패했어요. 일부만 적용됐을 수 있어요 — 다시 시도해주세요.'
-                    ),
-                }
-              ),
-          },
-        ]
-      );
+      confirmAction({
+        title: '요일 전체 적용',
+        message: `이번 달 남은 ${weekdayLabel} ${dates.length}일의 목표 인원을 ${parsedTarget}명으로 덮어써요. 개별로 설정해둔 날짜도 함께 바뀝니다.`,
+        confirmText: `${dates.length}일에 적용`,
+        destructive: true,
+        onConfirm: () =>
+          setSoftTargetBulk.mutate(
+            { venueId, dates, count: parsedTarget },
+            {
+              onSuccess: () => toastSuccess(`${dates.length}일에 목표 인원을 저장했어요.`),
+              // 순차 저장이라 중간 실패 시 일부만 반영됐을 수 있음(멱등이라 재시도 안전).
+              onError: () =>
+                toastError(
+                  '목표 인원 저장에 실패했어요. 일부만 적용됐을 수 있어요 — 다시 시도해주세요.'
+                ),
+            }
+          ),
+      });
       return;
     }
     setSoftTarget.mutate(
