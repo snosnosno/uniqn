@@ -32,7 +32,7 @@ strict TypeScript, 명시적 타입, 2칸 들여쓰기, 기존 Prettier 규칙. 
 Supabase 배치:
 - Edge Functions: `uniqn-mobile/supabase/functions/`
 - 마이그레이션: `uniqn-mobile/supabase/migrations/`
-- DB 타입: `uniqn-mobile/src/lib/database.types.ts` (`npx supabase gen types typescript`로 재생성)
+- DB 타입: `uniqn-mobile/src/types/supabase.ts` (`npx supabase gen types typescript`로 재생성)
 
 ## 에이전트 작업 규약 (요약)
 - 구현 전 `git status` — 내가 만들지 않은 미커밋 변경 존재 시 새 워크트리+브랜치 격리

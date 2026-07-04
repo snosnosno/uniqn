@@ -78,7 +78,7 @@
 
 - **Phase 5 qa/offline**: 오프라인 복구 QA — 실기기 + 별도 세션 필요
 - 알림 emitter 통합: notifications 중복 SQL fix 후 code path 레거시 참조 정리
-- **레거시 trigger 함수 본체 정리**: `tr_notify_*` trigger DROP 후 `fn_notify_*` 함수 참조 경로 최종 확인 → DROP FUNCTION (2026-04-20 감사 `.gstack/qa-reports/LEGACY-TRIGGERS-AUDIT.md`)
+- [x] **레거시 trigger 함수 본체 정리**: `tr_notify_*` trigger DROP 후 `fn_notify_*` 함수 참조 경로 최종 확인 → DROP FUNCTION 완료 — `uniqn-mobile/supabase/migrations/20260421030000_drop_unreferenced_legacy_notify_functions.sql` (2026-04-20 감사 `.gstack/qa-reports/LEGACY-TRIGGERS-AUDIT.md`)
 - **tr_notify_tournament_approval 이관**: UPDATE(재제출) 경로를 `notify_on_job_posting_update` 또는 전용 신규 trigger로 이관 후 레거시 DROP — 현재는 INSERT 중복이지만 재제출 알림 유실 방지 위해 보존
 
 ## 옵저버빌리티 (2026-04-25 plan-eng-review)

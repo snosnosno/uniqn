@@ -73,6 +73,8 @@ npm run build:web
 npm run deploy:cloudflare
 ```
 
+> 기준 명령은 `node scripts/deploy-cloudflare.js --force` 입니다. `npm run deploy:cloudflare`는 이를 감싼 래퍼입니다.
+
 ## Supabase 배포
 
 ### 프로젝트 링크 (최초 1회)
@@ -85,13 +87,17 @@ npx supabase link --project-ref <PROJECT_REF>
 
 ### 마이그레이션 (PostgreSQL 스키마 + RLS)
 
+> **❗ prod 적용은 MCP `apply_migration` 전용 — `npx supabase db push` 금지.** 자세한 사유는 `CONTRIBUTING.md` 참조.
+
 ```bash
 cd uniqn-mobile
-npx supabase db push                         # 원격에 미적용 마이그레이션 반영
 npx supabase db diff -f <name>               # 새 마이그레이션 초안 생성 (선택)
 ```
 
-RLS 정책은 각 마이그레이션 SQL 안에 `CREATE POLICY` 형태로 포함되어 있으므로, 별도 명령 없이 `db push` 하나로 반영됩니다.
+- Claude Code의 `mcp__supabase__apply_migration` 호출로 prod에 적용합니다.
+- 또는 Supabase Dashboard SQL Editor에서 수동 실행합니다.
+
+RLS 정책은 각 마이그레이션 SQL 안에 `CREATE POLICY` 형태로 포함되어 있으므로, 별도 명령 없이 MCP `apply_migration` 하나로 반영됩니다.
 
 ### Edge Functions
 
@@ -104,7 +110,7 @@ npx supabase secrets set KEY=VALUE           # 함수 환경 변수 설정
 
 ### Storage
 
-Storage 버킷 및 정책도 마이그레이션 SQL을 통해 관리합니다. 새 버킷/정책을 추가할 때는 마이그레이션 파일에 포함시킨 뒤 `npx supabase db push` 로 반영합니다.
+Storage 버킷 및 정책도 마이그레이션 SQL을 통해 관리합니다. 새 버킷/정책을 추가할 때는 마이그레이션 파일에 포함시킨 뒤 MCP `apply_migration`으로 반영합니다.
 
 ## 로컬 스택 계약
 
@@ -120,7 +126,7 @@ npx supabase start
 - `cd uniqn-mobile && npm run quality`
 - `cd uniqn-mobile && npm test`
 - `cd uniqn-mobile && npm run build:web`
-- `cd uniqn-mobile && npx supabase db push --dry-run` (적용 예정 마이그레이션 확인)
+- 적용 예정 마이그레이션이 MCP `apply_migration`으로 모두 반영됐는지 확인 (`db push` 사용 금지)
 - env 이름이 `lib/env.ts`, `.env.example`, EAS/CI와 일치하는지 확인 (`EXPO_PUBLIC_SUPABASE_*`)
 - 푸시 알림 네이티브 설정 파일(`google-services.json`, `GoogleService-Info.plist`)이 현재 bundle/package와 일치하는지 확인
 - 루트의 로컬 키 파일이 아닌 `uniqn-mobile/` 기준 자산을 사용하고 있는지 확인
