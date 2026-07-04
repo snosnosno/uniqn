@@ -75,7 +75,11 @@ src/
   components/ops/PrizeCorrectSheet.tsx      (신규 — T11)
   components/ops/TournamentResultCard.tsx   (신규 — T12)
   components/ops/LiveStatsPanel.tsx         (수정 — T12: KO POOL 조건부 카드)
-  components/ops/HistoryTab.tsx             (수정 — T8: EVENT_LABEL 2종 — enum exhaustive 컴파일 강제)
+  components/ops/HistoryTab.tsx             (수정 — T6: EVENT_LABEL 2종 — supabase.ts enum 확장과 같은 커밋에서 tsc 게이트 유지. 🔨H21 T8 아님)
+  components/ui/BottomSheet.tsx             (수정 — T10: SelectBottomSheet snapPoints/scrollable prop 관통 🔨H3)
+  repositories/interfaces/IOpsTournamentRepository.ts (수정 — T12: OpsTournamentCostConfig.bountyCost 🔨H6)
+  repositories/supabase/OpsTournamentRepository.ts    (수정 — T12: p_config bounty_cost 매핑 🔨H6)
+  schemas/opsTournament.schema.ts           (수정 — T12: opsCostConfigSchema.bountyCost 🔨H6)
 app/
   (ops)/tournaments/[id].tsx                (수정 — T10/T12: PLAYERS 추출·STATUS completed 분기)
   (ops)/tournaments/new.tsx                 (수정 — T12: 바운티 입력)
@@ -95,7 +99,7 @@ app/
 8. **supabase.ts 수술 지점**: Enums 유니온 `:3186-3205` + Constants 미러 `:3381-3401`(두 곳 모두), `ops_participants` Row/Insert/Update(`:1420대`), Functions(`ops_bust_participant` `:2940대` Args 확장 + 신규 2종 알파벳순).
 9. **types/ops.ts는 수동 camelCase 인터페이스**: `OpsTournament.bountyCost`·`OpsLiveStats.knockoutPool`은 **이미 존재**(1a/1c inert). `OpsParticipant.knockouts`만 신규.
 10. **uuid Zod는 그룹형 정규식**(`opsSeat.schema.ts:41-46` — `.uuid()`는 RFC4122 strict라 테스트 픽스처 거부. `/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i`).
-11. **확인 다이얼로그 관례 = `Alert.alert`**, 텍스트 입력 동반 = `SheetModal`(overlay prop이 중첩 RN Modal 함정 회피 정본). 선택 목록 = `SelectBottomSheet`(`src/components/ui/BottomSheet.tsx:340-405`, options에 destructive 지원).
+11. 🔨H18 **확인 다이얼로그**: 범용 `ConfirmModal`이 `@/components/ui/Modal`(:500-524)에 **실존**하고 LEVELS 진행 중 편집 가드(BlindLevelsTab.tsx:10 import·:176 사용)가 이것을 씀 — PAYOUTS 진행 중 저장 확인은 **ConfirmModal**(스펙 §7.1 "동형" 준수). 단순 destructive 확인(bust·탈락취소)은 `Alert.alert` 관례. 텍스트 입력 동반 = `SheetModal`(overlay prop이 중첩 RN Modal 함정 회피 정본). 선택 목록 = `SelectBottomSheet`(`src/components/ui/BottomSheet.tsx:340-405`) — ⚠️🔨H3 **snapPoints ['40%'] 고정 + plain View 렌더(비스크롤·scrollable 미전달)**: 옵션 ~6개 이상이면 하단·'지정 안 함' 도달 불가 → T10이 snapPoints?/scrollable? prop 관통을 추가하고 eliminator 피커에 적용한다.
 12. **LiveStatsPanel은 3열 그리드 9카드** — KO POOL 추가 시 10번째는 마지막 행에 1개만 남으므로 자리 채움 처리 필요(T12에 명시).
 13. **PayoutsTab 현행 rank 갭 메커니즘**: 저장 시 `.filter(amount>0)`이 중간 행 제거 + 스키마는 중복만 검증(연속성 없음) + rank 편집/행삭제 UI 없음 → T11 재설계가 rank 1..N 연속 재부여로 해소.
 14. **ops_prizes에 DML REVOKE 없음**(1d 누락 실측 확인) → T1 동반 수선.
@@ -126,10 +130,16 @@ app/
 ALTER TYPE public.ops_event_type ADD VALUE IF NOT EXISTS 'player_bust_undone';
 ALTER TYPE public.ops_event_type ADD VALUE IF NOT EXISTS 'prize_corrected';
 
--- 2) flat KO 카운터 — 이번 슬라이스 유일한 신규 컬럼. 적립(원화)은 파생: knockouts × bounty_cost (컬럼 없음, D4).
+-- 2) flat KO 카운터. 적립(원화)은 파생: knockouts × bounty_cost (컬럼 없음, D4).
 --    인덱스 불요(대회 내 소수 행·기존 (tournament_id,status) 인덱스로 충분).
 ALTER TABLE public.ops_participants
   ADD COLUMN IF NOT EXISTS knockouts int NOT NULL DEFAULT 0;
+
+-- 2-b) [🔨H11] ops_events 전순서 키 — created_at 은 DEFAULT now() = 트랜잭션 시작 시각 고정이라
+--     같은 txn 의 이벤트가 전부 동률(id 는 uuid 라 무순서). undo 의 "최신 player_busted" 선별이
+--     ORDER BY created_at 만으로는 비결정 → seq 가 유일한 전순서. append-only·prod 0행이라 additive 무해.
+ALTER TABLE public.ops_events
+  ADD COLUMN IF NOT EXISTS seq bigint GENERATED ALWAYS AS IDENTITY;
 
 -- 3) CHECK 제약 2종 (멱등 — ADD CONSTRAINT 는 IF NOT EXISTS 미지원이라 카탈로그 확인)
 DO $$
@@ -142,11 +152,14 @@ BEGIN
   END IF;
   -- bounty_cost 음수 거부(스펙 §4.4) — RPC P0001 가드 대신 테이블 제약(모든 경로 차단·신규 에러코드 불요).
   -- NULL = 비-바운티 대회(0 과 구분 — 0 은 "바운티 개념은 있으나 단가 0").
+  -- [🔨H15] 상한 1억: 오입력(예 20억)이면 knockout_pool int 곱이 22003 오버플로 — DEFERRED 트리거라
+  --   원인 조작의 커밋 시점에 원인불명 실패로 터지고 이후 전 참가자 변이가 막히므로 입구에서 차단.
   IF NOT EXISTS (SELECT 1 FROM pg_constraint
                  WHERE conname = 'ops_tournaments_bounty_cost_nonneg'
                    AND conrelid = 'public.ops_tournaments'::regclass) THEN
     ALTER TABLE public.ops_tournaments
-      ADD CONSTRAINT ops_tournaments_bounty_cost_nonneg CHECK (bounty_cost IS NULL OR bounty_cost >= 0);
+      ADD CONSTRAINT ops_tournaments_bounty_cost_nonneg
+      CHECK (bounty_cost IS NULL OR (bounty_cost >= 0 AND bounty_cost <= 100000000));
   END IF;
 END $$;
 
@@ -167,10 +180,11 @@ MSYS_NO_PATHCONV=1 docker exec supabase_db_uniqn psql -U postgres -d postgres -c
   "SELECT enumlabel FROM pg_enum WHERE enumtypid = 'public.ops_event_type'::regtype ORDER BY enumsortorder;" -c \
   "SELECT column_name, column_default, is_nullable FROM information_schema.columns WHERE table_name='ops_participants' AND column_name='knockouts';" -c \
   "SELECT conname FROM pg_constraint WHERE conname IN ('ops_participants_knockouts_nonneg','ops_tournaments_bounty_cost_nonneg');" -c \
+  "SELECT column_name FROM information_schema.columns WHERE table_name='ops_events' AND column_name='seq';" -c \
   "SELECT has_table_privilege('authenticated','public.ops_prizes','INSERT') AS auth_insert, has_table_privilege('anon','public.ops_prizes','UPDATE') AS anon_update;"
 ```
 
-Expected: enum 21값(`player_bust_undone`·`prize_corrected` 포함) · knockouts 컬럼(default 0, NO) · CHECK 2건 · auth_insert=f, anon_update=f
+Expected: enum 21값(`player_bust_undone`·`prize_corrected` 포함) · knockouts 컬럼(default 0, NO) · CHECK 2건 · ops_events.seq 존재 · auth_insert=f, anon_update=f
 
 - [ ] **Step 3: 기존 pgTAP 무회귀 확인**
 
@@ -211,10 +225,12 @@ git commit -m "feat(ops): 1f M1 — 이벤트 enum 2값·knockouts 컬럼·ops_p
 -- ops 1f — live_stats DEFERRED 전환 + recompute 신산식(재진입 가산·knockout_pool) 검증.
 -- RED-GREEN: 이 파일은 마이그 20260704100100 적용 전엔 [1](tgdeferrable)·[2](stale) 단언이 FAIL(구 AFTER ROW 는 즉시 반영).
 -- ⚠️ 무위 시드 금지: 참가자 추가가 실제 entries 를 바꾸는 시드로 stale/반영 차이를 실증.
+-- 🔨H9: 시드 active 3명 유지 — bust 후에도 active≥2 라 우승 자동확정(→completed→reenter 폭발) 미발동.
+-- 🔨H13: WHEN절 미발화 단언은 센티널 오염 기법(updated_at 은 now()=txn 상수라 무위).
 BEGIN;
-SELECT plan(12);
+SELECT plan(13);
 
--- ── 시드 (postgres 직접 — 초기 recompute 는 명시 호출로 결정성 확보) ──
+-- ── 시드: active 3명(시드 1 + players 1 + 아래 [2]의 900). 초기 recompute 는 명시 호출(결정성) ──
 DO $$
 DECLARE s RECORD;
 BEGIN
@@ -222,7 +238,8 @@ BEGIN
   PERFORM set_config('ops.owner_id', s.owner_id::text, true);
   PERFORM set_config('ops.t_id',     s.tournament_id::text, true);
   UPDATE public.ops_tournaments SET status = 'active' WHERE id = s.tournament_id;
-  PERFORM public.fn_ops_recompute_live_stats(s.tournament_id);
+  PERFORM public.ops_test_seed_players(s.tournament_id, 1);  -- H9: bust 후에도 active≥2 유지용
+  PERFORM public.fn_ops_recompute_live_stats(s.tournament_id);  -- entries=2 기록
 END $$;
 
 -- ── [1] 트리거 6종 전부 DEFERRABLE INITIALLY DEFERRED (카탈로그 단언) ──
@@ -242,19 +259,20 @@ BEGIN
 END $$;
 SELECT is(
   (SELECT entries FROM public.ops_live_stats WHERE tournament_id = (current_setting('ops.t_id'))::uuid),
-  1, 'DEFERRED: INSERT 직후 같은 txn 에서 live_stats 는 stale(entries=1 유지)');
+  2, 'DEFERRED: INSERT 직후 같은 txn 에서 live_stats 는 stale(entries=2 유지)');
 
 SET CONSTRAINTS ALL IMMEDIATE;  -- pending 트리거 즉시 발화 + 이후 문장부터 즉시 모드
 
 SELECT is(
   (SELECT entries FROM public.ops_live_stats WHERE tournament_id = (current_setting('ops.t_id'))::uuid),
-  2, 'SET CONSTRAINTS ALL IMMEDIATE 후 pending 발화로 entries=2 반영');
+  3, 'SET CONSTRAINTS ALL IMMEDIATE 후 pending 발화로 entries=3 반영');
 
 -- ── [4] knockouts 컬럼 존재(T1 회귀 앵커) ──
 SELECT has_column('public', 'ops_participants', 'knockouts', 'ops_participants.knockouts 존재');
 
 -- ── [5][6] 재진입 가산: reenter 후 prize_pool = (entries + Σreentries) × buy_in ──
--- 시드 buy_in_cost=50000. 참가자 2명 → bust 1명 → reenter → entries=2, reentries=1 → pool=(2+1)*50000=150000.
+-- 시드 buy_in_cost=50000. active 3명 → bust(900) 후 active 2(자동확정 미발동 — H9) → reenter →
+-- entries=3, reentries=1 → pool=(3+1)*50000=200000.
 SELECT ops_test_set_user((current_setting('ops.owner_id'))::uuid);
 DO $$
 DECLARE v_p uuid;
@@ -269,7 +287,7 @@ SELECT is(
   1, '재진입 후 reentries_total=1');
 SELECT is(
   (SELECT prize_pool FROM public.ops_live_stats WHERE tournament_id = (current_setting('ops.t_id'))::uuid),
-  150000::bigint, '재진입 가산: prize_pool=(2 entries + 1 reentry) × 50000 = 150000');
+  200000::bigint, '재진입 가산: prize_pool=(3 entries + 1 reentry) × 50000 = 200000');
 
 -- ── [7][8] knockout_pool: 비-바운티 NULL → bounty_cost 세팅 시 (entries+reentries)×bounty ──
 SELECT is(
@@ -280,38 +298,36 @@ UPDATE public.ops_tournaments SET bounty_cost = 10000
   WHERE id = (current_setting('ops.t_id'))::uuid;
 SELECT is(
   (SELECT knockout_pool FROM public.ops_live_stats WHERE tournament_id = (current_setting('ops.t_id'))::uuid),
-  30000, 'tournaments 트리거 발화: knockout_pool=(2+1)×10000=30000');
+  40000, 'tournaments 트리거 발화: knockout_pool=(3+1)×10000=40000');
 
 -- ── [9] tournaments 비용 변경 트리거: buy_in_cost 변경 → prize_pool 재계산 ──
 UPDATE public.ops_tournaments SET buy_in_cost = 60000
   WHERE id = (current_setting('ops.t_id'))::uuid;
 SELECT is(
   (SELECT prize_pool FROM public.ops_live_stats WHERE tournament_id = (current_setting('ops.t_id'))::uuid),
-  180000::bigint, '비용 변경 트리거: prize_pool=(2+1)×60000=180000');
+  240000::bigint, '비용 변경 트리거: prize_pool=(3+1)×60000=240000');
 
--- ── [10] WHEN 절: 산식 무관 컬럼(name) 변경은 트리거 미발화 — updated_at 불변으로 실증 ──
-DO $$
-DECLARE v_before timestamptz;
-BEGIN
-  SELECT updated_at INTO v_before FROM public.ops_live_stats
-    WHERE tournament_id = (current_setting('ops.t_id'))::uuid;
-  PERFORM set_config('ops.ls_updated_before', v_before::text, true);
-  UPDATE public.ops_tournaments SET name = 'renamed cup'
-    WHERE id = (current_setting('ops.t_id'))::uuid;
-END $$;
+-- ── [10] WHEN 절 미발화 — 센티널 오염 기법(🔨H13: updated_at 은 now()=txn 상수라 판별력 없음).
+--    postgres 로 entries=999 오염 → name 변경(산식 무관 컬럼) → 999 유지 = 트리거 미발화 실증.
+UPDATE public.ops_live_stats SET entries = 999
+  WHERE tournament_id = (current_setting('ops.t_id'))::uuid;
+UPDATE public.ops_tournaments SET name = 'renamed cup'
+  WHERE id = (current_setting('ops.t_id'))::uuid;
 SELECT is(
-  (SELECT updated_at::text FROM public.ops_live_stats WHERE tournament_id = (current_setting('ops.t_id'))::uuid),
-  current_setting('ops.ls_updated_before'),
-  'WHEN 절: 비용 외 컬럼(name) 변경은 recompute 미발화(updated_at 불변)');
+  (SELECT entries FROM public.ops_live_stats WHERE tournament_id = (current_setting('ops.t_id'))::uuid),
+  999, 'WHEN 절: 비용 외 컬럼(name) 변경은 recompute 미발화(센티널 999 유지)');
 
--- ── [11] bounty_cost NULL 복귀 → knockout_pool NULL ──
+-- ── [11][12] bounty_cost NULL 복귀(비용 컬럼 변경 = 발화) → knockout_pool NULL + 센티널 실값 복귀 ──
 UPDATE public.ops_tournaments SET bounty_cost = NULL
   WHERE id = (current_setting('ops.t_id'))::uuid;
 SELECT is(
   (SELECT knockout_pool FROM public.ops_live_stats WHERE tournament_id = (current_setting('ops.t_id'))::uuid),
   NULL, 'bounty_cost NULL 복귀: knockout_pool NULL');
+SELECT is(
+  (SELECT entries FROM public.ops_live_stats WHERE tournament_id = (current_setting('ops.t_id'))::uuid),
+  3, '비용 변경 발화 실증: recompute 가 센티널(999)을 실값(3)으로 복원');
 
--- ── [12] 신규 tournaments 래퍼 함수 EXECUTE 권한 회수(1a 교훈: 트리거 함수도 REVOKE) ──
+-- ── [13] 신규 tournaments 래퍼 함수 EXECUTE 권한 회수(1a 교훈: 트리거 함수도 REVOKE) ──
 SELECT ok(
   NOT has_function_privilege('anon', 'public.fn_ops_live_stats_recompute_trigger_tournaments()', 'EXECUTE')
   AND NOT has_function_privilege('authenticated', 'public.fn_ops_live_stats_recompute_trigger_tournaments()', 'EXECUTE'),
@@ -325,7 +341,7 @@ ROLLBACK;
 
 Run: `npm run db:reset && npm run test:db:helpers && npx supabase test db supabase/tests/ops_live_stats_deferred.test.sql`
 (개별 파일 지정이 하니스에서 안 되면 `npx supabase test db`로 전체 실행 후 해당 파일 결과 확인)
-Expected: **FAIL** — [1] 트리거 6종 카운트 0(아직 AFTER ROW), [2] stale 단언 실패(구 트리거는 즉시 반영이라 entries=2), [12] 함수 미존재 에러. RED 증거를 기록.
+Expected: **FAIL** — [1] 트리거 카운트 0(아직 AFTER ROW), [2] stale 단언 실패(구 트리거는 즉시 반영이라 entries=3), [8][9][11][12] tournaments 트리거 부재로 실패, [13] 함수 미존재 에러. RED 증거를 기록.
 
 - [ ] **Step 3: 마이그 2 작성**
 
@@ -556,11 +572,12 @@ git commit -m "feat(ops): 1f M2 — live_stats DEFERRED 전환·재진입 가산
 `supabase/tests/ops_bust_eliminator.test.sql`:
 
 ```sql
--- ops 1f — bust v2: eliminator 가드 4종·knockouts 적립·payload 3필드·구 2인자 시그니처 소멸(E10)·actor 가드.
+-- ops 1f — bust v2: eliminator 가드 4종·knockouts 적립·payload 3필드·구 2인자 시그니처 소멸(E10)·
+--   actor 가드·자동확정 보류 가드(🔨H12).
 -- 시드: active 3명(seed + 2명) + 좌석 배정 1명(payload freed_seat_id 실증 — 무위 시드 금지).
 BEGIN;
 SET CONSTRAINTS ALL IMMEDIATE;  -- live_stats 단언은 없지만 트리거 발화 시점 고정(결정성)
-SELECT plan(13);
+SELECT plan(15);
 
 DO $$
 DECLARE s RECORD; player_ids uuid[];
@@ -673,12 +690,21 @@ SELECT is(                                                                   -- 
    ORDER BY created_at DESC LIMIT 1),
   current_setting('ops.seat1'), 'payload.freed_seat_id = bust 당시 점유 좌석');
 
--- ── NULL eliminator: KO 없이 진행(무좌석 bust → freed_seat_id null) ──
+-- ── NULL eliminator + 🔨H12 자동확정 보류: bust(p2) 전에 checked_in 생존자를 만들어
+--    "active=1 이어도 checked_in>0 이면 확정 보류" 를 실증(무위 시드 방지 — checked_in 없으면
+--    이 bust 가 자동확정·completed 를 유발해 보류 가드가 검증 불가).
+DO $$ BEGIN
+  PERFORM set_config('role', 'postgres', true);
+  INSERT INTO public.ops_participants (tournament_id, entry_number, name, status, chips)
+  VALUES ((current_setting('ops.t_id'))::uuid, 950, 'CheckedIn P', 'checked_in', 30000);
+END $$;
+SELECT ops_test_set_user((current_setting('ops.owner_id'))::uuid);
 DO $$
 DECLARE r jsonb;
 BEGIN
   SELECT public.ops_bust_participant((current_setting('ops.p2'))::uuid,
     (current_setting('ops.owner_id'))::uuid, NULL) INTO r;
+  PERFORM set_config('ops.r2_winner', (r->>'winner_finalized'), true);
 END $$;
 SELECT is(                                                                   -- [12]
   (SELECT sum(knockouts)::int FROM public.ops_participants
@@ -690,6 +716,11 @@ SELECT is(                                                                   -- 
      AND (payload->>'participant_id')::uuid = (current_setting('ops.p2'))::uuid
    ORDER BY created_at DESC LIMIT 1),
   NULL, '무좌석 bust: payload.freed_seat_id IS NULL');
+SELECT is(current_setting('ops.r2_winner'), 'false',                         -- [14]
+  'H12: active 1 + checked_in 1 → 우승 자동확정 보류(winner_finalized=false)');
+SELECT is(                                                                   -- [15]
+  (SELECT status::text FROM public.ops_tournaments WHERE id = (current_setting('ops.t_id'))::uuid),
+  'active', 'H12: 확정 보류로 대회 status=active 유지(completed 아님)');
 
 SELECT * FROM finish();
 ROLLBACK;
@@ -698,7 +729,7 @@ ROLLBACK;
 - [ ] **Step 2: RED 확인**
 
 Run: `npm run db:reset && npm run test:db:helpers && npx supabase test db`
-Expected: `ops_bust_eliminator` FAIL — [1] 구 시그니처 잔존(count=1), [3]~[6] 3인자 함수 미존재(42883), [8] knockouts 미적립. 기존 파일은 전부 PASS 유지.
+Expected: `ops_bust_eliminator` FAIL — [1] 구 시그니처 잔존(count=1), [3]~[6] 3인자 함수 미존재(42883), [8] knockouts 미적립, [14][15] 보류 가드 부재(구 로직은 checked_in 무시하고 확정). 기존 파일은 전부 PASS 유지.
 
 - [ ] **Step 3: 마이그 3 파일 시작 — bust v2 작성**
 
@@ -875,11 +906,16 @@ BEGIN
             jsonb_build_object('participant_id', p_participant_id, 'rank', v_finish, 'amount', v_prize));
   END IF;
 
-  -- 14) 우승 자동확정 (v1 보존)
+  -- 14) 우승 자동확정 (v1 보존 + [🔨H12] 보류 가드: checked_in 생존자가 있으면 확정 보류.
+  --     undo/register/reenter 의 무좌석 폴백이 만든 checked_in 을 무시하고 completed 확정하면
+  --     그 참가자는 fp NULL 고아(재bust 불가·D2 로 undo 불가·correct 는 fp NULL 거부) — 구제 불가.
+  --     보류 시 운영자는 checked_in 을 착석(active 승급)시킨 뒤 진행하면 다음 bust 에서 재평가.)
   SELECT count(*) INTO v_active2 FROM public.ops_participants
     WHERE tournament_id = v_tournament_id AND status = 'active';
+  SELECT count(*) INTO v_checked_in FROM public.ops_participants
+    WHERE tournament_id = v_tournament_id AND status = 'checked_in';
   v_winner_json := NULL;
-  IF v_active2 = 1 THEN
+  IF v_active2 = 1 AND v_checked_in = 0 THEN
     SELECT id INTO v_winner FROM public.ops_participants
       WHERE tournament_id = v_tournament_id AND status = 'active' FOR UPDATE;
     SELECT amount INTO v_winner_prize FROM public.ops_prizes
@@ -899,21 +935,23 @@ BEGIN
                                         'finish_position', 1, 'prize_amount', v_winner_prize);
   END IF;
 
-  -- 15) 반환 (v1 보존)
+  -- 15) 반환 (v1 보존 — winner_finalized 는 H12 보류 반영)
   RETURN jsonb_build_object(
     'participant_id', p_participant_id,
     'finish_position', v_finish,
     'prize_amount', v_prize,
-    'winner_finalized', (v_active2 = 1),
+    'winner_finalized', (v_active2 = 1 AND v_checked_in = 0),
     'winner', v_winner_json);
 END;
 $function$;
 ```
 
+(implementer: DECLARE 블록에 `v_checked_in int;` 추가를 잊지 마라.)
+
 - [ ] **Step 4: GREEN 확인**
 
 Run: `npm run db:reset && npm run test:db:helpers && npx supabase test db`
-Expected: `ops_bust_eliminator` 13단언 PASS. **주의**: 이 시점에 bust는 DROP→CREATE라 EXECUTE 권한이 회수된 상태(GRANT는 T6 마이그 4) — 기존 `ops_bust_participant.test.sql`·`ops_rpc_security.test.sql`은 postgres/authenticated role 전환 하에 SECDEF 함수를 직접 호출하므로 **fixture가 함수 GRANT를 안 해도 owner(postgres) 권한으로 실행됨**... 아니다: pgTAP는 `set_config('role','authenticated')` 상태에서 RPC를 호출하므로 EXECUTE 권한이 필요하다. **DROP 후 재생성된 함수는 PUBLIC 기본 EXECUTE가 부여**되므로(Postgres 기본), grants 마이그 전에도 호출은 성공한다(회수는 T6에서 명시 REVOKE+GRANT). 기존 테스트 무회귀 확인.
+Expected: `ops_bust_eliminator` 15단언 PASS. **주의**: 이 시점에 bust는 DROP→CREATE라 EXECUTE 권한이 회수된 상태(GRANT는 T6 마이그 4) — 기존 `ops_bust_participant.test.sql`·`ops_rpc_security.test.sql`은 postgres/authenticated role 전환 하에 SECDEF 함수를 직접 호출하므로 **fixture가 함수 GRANT를 안 해도 owner(postgres) 권한으로 실행됨**... 아니다: pgTAP는 `set_config('role','authenticated')` 상태에서 RPC를 호출하므로 EXECUTE 권한이 필요하다. **DROP 후 재생성된 함수는 PUBLIC 기본 EXECUTE가 부여**되므로(Postgres 기본), grants 마이그 전에도 호출은 성공한다(회수는 T6에서 명시 REVOKE+GRANT). 기존 테스트 무회귀 확인.
 
 - [ ] **Step 5: 커밋**
 
@@ -942,11 +980,12 @@ git commit -m "feat(ops): 1f M3-1 — bust v2 (eliminator flat KO·payload 확�
 
 ```sql
 -- ops 1f — ops_undo_bust: 복원 4필드·좌석 3분기·KO 감소·GREATEST 0·completed 거부(D2)·
---   비busted 거부·undo 후 재bust fp 정상·이벤트 append·actor 가드.
+--   비busted 거부·undo 후 재bust fp 값 단언(🔨H10)·최신 이벤트 판별(🔨H11 칩 변동)·이벤트 append·
+--   actor 가드·비멤버 에러 균일(🔨H1).
 -- 시드: active 4명 + 좌석 2개(원좌석/auto 분기 실증). 재진입과의 구분(reentries 불변) 단언 포함.
 BEGIN;
 SET CONSTRAINTS ALL IMMEDIATE;
-SELECT plan(16);
+SELECT plan(19);
 
 DO $$
 DECLARE s RECORD; player_ids uuid[];
@@ -1025,6 +1064,24 @@ SELECT is(                                                                   -- 
      AND payload->>'seat_restored' = 'original'),
   1, 'undo: player_bust_undone 이벤트 append(seat_restored=original)');
 
+-- ── 🔨H11 최신 이벤트 판별: 리바이로 칩 변동(30000→60000) 후 재bust·undo — 복원값이 60000 이면
+--    seq DESC 가 최신 이벤트를 집은 것(과거 이벤트 30000 과 판별. created_at 은 txn 내 동률이라 무력) ──
+DO $$ BEGIN
+  PERFORM public.ops_add_rebuy((current_setting('ops.p1'))::uuid,
+    (current_setting('ops.owner_id'))::uuid);  -- rebuy_chips=30000 → chips 60000
+  PERFORM public.ops_bust_participant((current_setting('ops.p1'))::uuid,
+    (current_setting('ops.owner_id'))::uuid, NULL);
+END $$;
+DO $$
+DECLARE r jsonb;
+BEGIN
+  SELECT public.ops_undo_bust((current_setting('ops.p1'))::uuid,
+    (current_setting('ops.owner_id'))::uuid) INTO r;
+  PERFORM set_config('ops.r_h11_chips', (r->>'restored_chips'), true);
+END $$;
+SELECT is(current_setting('ops.r_h11_chips')::int, 60000,                    -- [11]
+  'H11: 최신 bust 이벤트(chips_before=60000) 복원 — seq 전순서 판별(과거 30000 아님)');
+
 -- ── GREATEST 0 방어: knockouts=0 인 seed 를 eliminator 로 재-undo 시나리오 —
 --    p1 재bust(eliminator=seed) 후 postgres 로 seed.knockouts 를 0 으로 강제 → undo → 0 유지(음수 금지)
 DO $$ BEGIN
@@ -1039,7 +1096,7 @@ DO $$ BEGIN
   PERFORM public.ops_undo_bust((current_setting('ops.p1'))::uuid,
     (current_setting('ops.owner_id'))::uuid);
 END $$;
-SELECT is(                                                                   -- [11]
+SELECT is(                                                                   -- [12]
   (SELECT knockouts FROM public.ops_participants WHERE id = (current_setting('ops.seed_pid'))::uuid),
   0, 'undo: GREATEST(knockouts-1, 0) — 0 미만 방지(CHECK 위반 방어)');
 
@@ -1059,20 +1116,28 @@ BEGIN
     (current_setting('ops.owner_id'))::uuid) INTO r;
   PERFORM set_config('ops.r2_seated', (r->>'seated'), true);
 END $$;
-SELECT is(current_setting('ops.r2_seated'), 'true', 'undo: 원좌석 점유 시 auto-seat 폴백');  -- [12]
-SELECT is(                                                                   -- [13]
+SELECT is(current_setting('ops.r2_seated'), 'true', 'undo: 원좌석 점유 시 auto-seat 폴백');  -- [13]
+SELECT is(                                                                   -- [14]
   (SELECT participant_id FROM public.ops_seats WHERE id = (current_setting('ops.seat2'))::uuid),
   (current_setting('ops.p1'))::uuid, 'undo: auto 분기 — seat2 배정');
 
--- ── 무좌석 분기: p1 재bust 후 남은 좌석 전부 점유 → checked_in ──
-DO $$ BEGIN
-  PERFORM public.ops_bust_participant((current_setting('ops.p1'))::uuid,
-    (current_setting('ops.owner_id'))::uuid, NULL);
+-- ── 🔨H10 재bust fp 값 단언(무좌석 분기 셋업 겸용): p1 은 지금 seat2 에 active ──
+-- active 4명(seed·p1·p2·p3)·사용 fp 없음(전부 undo 로 소거) → fp=4 가 미사용 최소값.
+DO $$
+DECLARE r jsonb;
+BEGIN
+  SELECT public.ops_bust_participant((current_setting('ops.p1'))::uuid,
+    (current_setting('ops.owner_id'))::uuid, NULL) INTO r;
+  PERFORM set_config('ops.r_refp', (r->>'finish_position'), true);
   PERFORM set_config('role', 'postgres', true);
   UPDATE public.ops_seats SET participant_id = (current_setting('ops.p3'))::uuid
     WHERE id = (current_setting('ops.seat2'))::uuid;  -- 좌석 전부 점유(seat1=p2, seat2=p3)
 END $$;
 SELECT ops_test_set_user((current_setting('ops.owner_id'))::uuid);
+SELECT is(current_setting('ops.r_refp')::int, 4,                             -- [15]
+  'H10: undo 후 재bust — fp=4(미사용 최소값 값 단언, 부분 UNIQUE 무충돌)');
+
+-- ── 무좌석 분기: 빈좌석 0 → checked_in ──
 DO $$
 DECLARE r jsonb;
 BEGIN
@@ -1080,29 +1145,37 @@ BEGIN
     (current_setting('ops.owner_id'))::uuid) INTO r;
   PERFORM set_config('ops.r3_status', (r->>'status'), true);
 END $$;
-SELECT is(current_setting('ops.r3_status'), 'checked_in',                    -- [14]
+SELECT is(current_setting('ops.r3_status'), 'checked_in',                    -- [16]
   'undo: 빈좌석 없음 → checked_in(register v2 관례)');
 
--- ── undo 후 재bust fp 정상(미사용 최소값) — 부분 UNIQUE 무충돌 ──
-SELECT lives_ok($TEST$                                                       -- [15]
-  DO $$ BEGIN
-    PERFORM public.ops_bust_participant((current_setting('ops.p1'))::uuid,
-      (current_setting('ops.owner_id'))::uuid, NULL);
-  END $$
-$TEST$, 'undo 후 재bust: 부분 UNIQUE 23505 미발생');
-
--- ── completed 거부(D2): 우승 자동확정까지 진행 후 undo 시도 ──
--- 현재 busted={p1}, active={seed,p2,p3}. p2·p3 bust → 우승 자동확정(completed).
+-- ── completed 거부(D2) — 🔨H12 보류 가드 대응: p1(checked_in) 잔존 시 자동확정이 보류되므로
+--    postgres 로 p1 을 busted(fp 미부여)로 정리한 뒤 p2·p3 bust 로 우승 자동확정 도달 ──
+DO $$ BEGIN
+  PERFORM set_config('role', 'postgres', true);
+  UPDATE public.ops_participants SET status = 'busted'
+    WHERE id = (current_setting('ops.p1'))::uuid;
+END $$;
+SELECT ops_test_set_user((current_setting('ops.owner_id'))::uuid);
 DO $$ BEGIN
   PERFORM public.ops_bust_participant((current_setting('ops.p2'))::uuid,
     (current_setting('ops.owner_id'))::uuid, NULL);
   PERFORM public.ops_bust_participant((current_setting('ops.p3'))::uuid,
     (current_setting('ops.owner_id'))::uuid, NULL);
 END $$;
-SELECT throws_like(                                                          -- [16]
+SELECT is(                                                                   -- [17]
+  (SELECT status::text FROM public.ops_tournaments WHERE id = (current_setting('ops.t_id'))::uuid),
+  'completed', '전제: 우승 자동확정으로 completed(checked_in 0 이라 보류 미발동)');
+SELECT throws_like(                                                          -- [18]
   $$ SELECT public.ops_undo_bust((current_setting('ops.p3'))::uuid,
        (current_setting('ops.owner_id'))::uuid) $$,
   'INVALID_STATUS%', 'D2: completed 대회 undo 거부(우승 자동확정 시나리오 실증)');
+
+-- ── 🔨H1 비멤버 × completed 대회: status 무관하게 PERMISSION_DENIED(에러 차등 오라클 차단) ──
+SELECT ops_test_set_user((current_setting('ops.outsider_id'))::uuid);
+SELECT throws_like(                                                          -- [19]
+  $$ SELECT public.ops_undo_bust((current_setting('ops.p3'))::uuid,
+       (current_setting('ops.outsider_id'))::uuid) $$,
+  'PERMISSION_DENIED%', 'H1: 비멤버는 completed 여도 PERMISSION_DENIED(INVALID_STATUS 아님)');
 
 SELECT * FROM finish();
 ROLLBACK;
@@ -1161,7 +1234,14 @@ BEGIN
       USING ERRCODE = 'P0001';
   END IF;
 
-  -- 3) advisory → 대회 FOR UPDATE + active 한정(D2 — 우승확정 후 completed 면 여기서 차단)
+  -- 3) 멤버십 [🔨H1: status 검사·advisory 보다 먼저 — 1d 3종·bust v2 와 동일 순서.
+  --    비멤버가 INVALID_STATUS/PERMISSION_DENIED 차등으로 대회 status 를 판별하는 오라클 차단 +
+  --    비멤버는 advisory·행 잠금을 점유하지 않음]
+  IF NOT (public.is_ops_member(v_tournament_id, p_actor_id) OR public.is_admin()) THEN
+    RAISE EXCEPTION 'PERMISSION_DENIED: 대회 관리 권한 없음' USING ERRCODE = 'P0001';
+  END IF;
+
+  -- 4) advisory → 대회 FOR UPDATE + active 한정(D2 — 우승확정 후 completed 면 여기서 차단)
   PERFORM pg_advisory_xact_lock(hashtext('ops_tournament_' || v_tournament_id::text)::bigint);
   SELECT status INTO v_t_status FROM public.ops_tournaments
     WHERE id = v_tournament_id FOR UPDATE;
@@ -1170,17 +1250,13 @@ BEGIN
       USING ERRCODE = 'P0001';
   END IF;
 
-  -- 4) 멤버십
-  IF NOT (public.is_ops_member(v_tournament_id, p_actor_id) OR public.is_admin()) THEN
-    RAISE EXCEPTION 'PERMISSION_DENIED: 대회 관리 권한 없음' USING ERRCODE = 'P0001';
-  END IF;
-
   -- 5) 복원 소스 = 최신 player_busted 이벤트(무잠금 조회 — append-only 불변).
   --    bust→reenter→재bust 이력에서도 "현재 busted = 최신 bust 이벤트" 대응 성립.
+  --    [🔨H11] 정렬은 seq(IDENTITY 전순서) — created_at 은 now()=txn 시작 고정이라 동률 비결정.
   SELECT payload INTO v_payload FROM public.ops_events
     WHERE tournament_id = v_tournament_id AND type = 'player_busted'
       AND (payload->>'participant_id')::uuid = p_participant_id
-    ORDER BY created_at DESC LIMIT 1;
+    ORDER BY seq DESC LIMIT 1;
   v_chips_before := COALESCE((v_payload->>'chips_before')::int, 0);  -- E2 fail-safe(구 payload/이론상 부재)
   v_elim_id      := (v_payload->>'eliminator_id')::uuid;
   v_bust_seat_id := (v_payload->>'freed_seat_id')::uuid;
@@ -1272,7 +1348,7 @@ $function$;
 - [ ] **Step 4: GREEN 확인**
 
 Run: `npm run db:reset && npm run test:db:helpers && npx supabase test db`
-Expected: `ops_undo_bust` 16단언 PASS + 전 파일 무회귀
+Expected: `ops_undo_bust` 19단언 PASS + 전 파일 무회귀
 
 - [ ] **Step 5: 커밋**
 
@@ -1302,10 +1378,11 @@ git commit -m "feat(ops): 1f M3-2 — ops_undo_bust (이벤트 복원·좌석 3�
 
 ```sql
 -- ops 1f — ops_correct_participant_prize: active/completed 허용·upcoming 거부·fp NULL 거부·
---   NULL 회수·비ITM 부여·음수 거부·reason 201자 거부·no-op 이벤트·payload·reenter 리셋 계약·actor 가드.
+--   NULL 회수·비ITM 부여·음수 거부·reason 201자 거부·no-op 이벤트·payload(amount_before 포함 🔨H21)·
+--   reenter 리셋 계약·actor 가드·비멤버 에러 균일(🔨H1).
 BEGIN;
 SET CONSTRAINTS ALL IMMEDIATE;
-SELECT plan(15);
+SELECT plan(17);
 
 DO $$
 DECLARE s RECORD; player_ids uuid[];
@@ -1313,6 +1390,7 @@ BEGIN
   SELECT * INTO s FROM ops_test_seed();
   PERFORM set_config('ops.owner_id',    s.owner_id::text, true);
   PERFORM set_config('ops.member_id',   s.member_id::text, true);
+  PERFORM set_config('ops.outsider_id', s.outsider_id::text, true);
   PERFORM set_config('ops.t_id',        s.tournament_id::text, true);
   PERFORM set_config('ops.seed_pid',    s.participant_id::text, true);
   player_ids := public.ops_test_seed_players(s.tournament_id, 2);
@@ -1326,6 +1404,14 @@ SELECT throws_like(                                                          -- 
   $$ SELECT public.ops_correct_participant_prize((current_setting('ops.seed_pid'))::uuid,
        (current_setting('ops.owner_id'))::uuid, 100000, NULL) $$,
   'INVALID_STATUS%', 'upcoming 대회 정정 거부');
+
+-- ── 🔨H1 비멤버 × upcoming 대회: status 무관하게 PERMISSION_DENIED(에러 차등 오라클 차단) ──
+SELECT ops_test_set_user((current_setting('ops.outsider_id'))::uuid);
+SELECT throws_like(                                                          -- [1b]
+  $$ SELECT public.ops_correct_participant_prize((current_setting('ops.seed_pid'))::uuid,
+       (current_setting('ops.outsider_id'))::uuid, 100000, NULL) $$,
+  'PERMISSION_DENIED%', 'H1: 비멤버는 upcoming 이어도 PERMISSION_DENIED(INVALID_STATUS 아님)');
+SELECT ops_test_set_user((current_setting('ops.owner_id'))::uuid);
 
 -- active 전환 + p1 bust(fp=3·상금 없음), 상금 구조 rank1=500000 설정
 DO $$ BEGIN
@@ -1428,6 +1514,13 @@ BEGIN
 END $$;
 SELECT is(current_setting('ops.r2_before')::int, 500000,                     -- [13]
   'D3: completed 후 정정 허용(우승 상금 500000→450000)');
+-- 🔨H21: 이벤트 payload 의 amount_before 가 실제 이전값으로 기록됨(감사 원장 레벨 고정 —
+--   반환값만 검증하면 payload 키 뒤바뀜/누락이 무증상 통과)
+SELECT is(                                                                   -- [13b]
+  (SELECT (payload->>'amount_before')::int FROM public.ops_events
+   WHERE tournament_id = (current_setting('ops.t_id'))::uuid AND type = 'prize_corrected'
+   ORDER BY seq DESC LIMIT 1),
+  500000, 'H21: prize_corrected payload.amount_before=500000(원장 레벨)');
 -- 회수(p_amount NULL): "수상 아님" 복귀
 DO $$ BEGIN
   PERFORM public.ops_correct_participant_prize((current_setting('ops.p2'))::uuid,
@@ -1492,18 +1585,18 @@ BEGIN
       USING ERRCODE = 'P0001';
   END IF;
 
-  -- 3) advisory → 대회 FOR UPDATE + active/completed 허용(upcoming 거부)
+  -- 3) 멤버십 [🔨H1: status 검사·advisory 보다 먼저 — 에러 차등 오라클 차단·1d 일관, §4.2 와 동일 근거]
+  IF NOT (public.is_ops_member(v_tournament_id, p_actor_id) OR public.is_admin()) THEN
+    RAISE EXCEPTION 'PERMISSION_DENIED: 대회 관리 권한 없음' USING ERRCODE = 'P0001';
+  END IF;
+
+  -- 4) advisory → 대회 FOR UPDATE + active/completed 허용(upcoming 거부)
   PERFORM pg_advisory_xact_lock(hashtext('ops_tournament_' || v_tournament_id::text)::bigint);
   SELECT status INTO v_t_status FROM public.ops_tournaments
     WHERE id = v_tournament_id FOR UPDATE;
   IF v_t_status NOT IN ('active', 'completed') THEN
     RAISE EXCEPTION 'INVALID_STATUS: 시작 전 대회에는 정정할 상금이 없습니다 (status=%)', v_t_status
       USING ERRCODE = 'P0001';
-  END IF;
-
-  -- 4) 멤버십
-  IF NOT (public.is_ops_member(v_tournament_id, p_actor_id) OR public.is_admin()) THEN
-    RAISE EXCEPTION 'PERMISSION_DENIED: 대회 관리 권한 없음' USING ERRCODE = 'P0001';
   END IF;
 
   -- 5) 참가자 FOR UPDATE + 정산 대상(fp NOT NULL = busted 또는 확정 우승자)만
@@ -1613,7 +1706,7 @@ SELECT ok((v->'me'->'bountyAccrued') = 'null'::jsonb, '1f: 비-바운티 bountyA
 - [ ] **Step 5: GREEN 확인**
 
 Run: `npm run db:reset && npm run test:db:helpers && npx supabase test db`
-Expected: `ops_prize_correction` 15단언 PASS + 스냅샷 2파일 확장 단언 PASS + 전 파일 무회귀
+Expected: `ops_prize_correction` 17단언 PASS + 스냅샷 2파일 확장 단언 PASS + 전 파일 무회귀
 
 - [ ] **Step 6: 커밋**
 
@@ -2206,9 +2299,17 @@ async correctPrize(
 }
 ```
 
-- [ ] **Step 3: Service** — `opsParticipantService`에 위임 2종 + correct는 Zod 경계(registerParticipant `:12-34` 패턴 복제):
+- [ ] **Step 3: Service** — `opsParticipantService`에 위임 2종 + correct는 Zod 경계(registerParticipant `:12-34` 패턴 복제). 🔨H2 **bustParticipant 확장에는 eliminatorId 그룹형 uuid 가드**(스펙 §7.5 지시 — 무검증 통과 시 비-uuid 가 22P02→INFRA_NOT_FOUND 오도 표면):
 
 ```ts
+// bustParticipant(participantId, actorId, eliminatorId?) — 확장부에 경계 가드 추가:
+if (eliminatorId != null && !UUID_LIKE_RE.test(eliminatorId)) {
+  throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+    userMessage: '넉아웃 상대 식별자가 올바르지 않아요.',
+  });
+}
+// UUID_LIKE_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i (그룹형 — T8 uuidLike 와 동일 소스 재사용 권장)
+
 async undoBust(participantId: string, actorId: string): Promise<OpsUndoBustResult> {
   // participantId 만 받으므로 스키마 없음(bust/reenter 와 동일) — repository 위임 + 에러 래핑
 },
@@ -2260,6 +2361,7 @@ git commit -m "feat(ops): 1f 데이터 레이어 — bust v2 eliminatorId·undoB
 
 - Create: `src/components/ops/PlayersTab.tsx` (`app/(ops)/tournaments/[id].tsx:146-335`의 PLAYERS 인라인 섹션 추출)
 - Modify: `app/(ops)/tournaments/[id].tsx` (PLAYERS 분기를 `<PlayersTab>` 호출로 교체 — 397줄 → 감량)
+- Modify: `src/components/ui/BottomSheet.tsx` (SelectBottomSheet snapPoints/scrollable prop 관통 — 🔨H3. 웹 미러 파일 존재 시 동일)
 
 **Interfaces:**
 
@@ -2272,7 +2374,13 @@ git commit -m "feat(ops): 1f 데이터 레이어 — bust v2 eliminatorId·undoB
 
 Run: `npx tsc --noEmit` → 0 (리팩토링 완료 게이트)
 
-- [ ] **Step 2: bust 다이얼로그 v2**
+- [ ] **Step 2: SelectBottomSheet prop 관통 (🔨H3 — 선행 소규모 수정)**
+
+`src/components/ui/BottomSheet.tsx`의 `SelectBottomSheetProps`에 `snapPoints?: string[]`·`scrollable?: boolean`을 추가하고 내부 `<BottomSheet>`에 전달(기본값은 기존과 동일 `['40%']`/`false` — 기존 호출부 무영향). `BottomSheet.web.tsx`(웹 미러)가 있으면 동일 수정. 현행은 40% 고정 + plain View 렌더라 옵션 ~6개 이상이면 하단·'지정 안 함' 도달 불가 — eliminator 피커는 active 전원이 대상이라 실전(9-max 1테이블)에서 즉시 막힌다.
+
+Run: `npx tsc --noEmit` → 0 (기존 SelectBottomSheet 호출부 무회귀)
+
+- [ ] **Step 3: bust 다이얼로그 v2**
 
 기존 bust `Alert.alert` 확인을 분기:
 
@@ -2294,24 +2402,42 @@ const handleBustPress = (target: OpsParticipant) => {
   visible={eliminatorPickerFor !== null}
   onClose={() => setEliminatorPickerFor(null)}
   title={`${eliminatorPickerFor?.name ?? ''} 님을 누가 눌렀나요?`}
+  snapPoints={['60%', '90%']} // 🔨H3
+  scrollable // 🔨H3
   options={[
+    { label: '지정 안 함', value: '' }, // 🔨H3: 기본 이탈 경로를 최상단(항상 가시)
     ...participants
       .filter((p) => p.status === 'active' && p.id !== eliminatorPickerFor?.id)
       .map((p) => ({ label: `#${p.entryNumber} ${p.name}`, value: p.id })),
-    { label: '지정 안 함', value: '' },
   ]}
   onSelect={(value) => {
-    if (!eliminatorPickerFor) return;
-    bustMut.mutate(
-      { participantId: eliminatorPickerFor.id, eliminatorId: value === '' ? null : value },
-      { onSuccess: /* 기존 우승/ITM Alert 분기 그대로 */ }
-    );
+    const target = eliminatorPickerFor;
+    if (!target) return;
     setEliminatorPickerFor(null);
+    const eliminatorId = value === '' ? null : value;
+    const eliminatorName =
+      eliminatorId === null
+        ? '지정 안 함'
+        : (participants.find((p) => p.id === eliminatorId)?.name ?? '');
+    // 🔨H4: 스펙 §7.2 "선택 → 확인 → bust" 확인 단계 복원 — 즉시 mutate 금지.
+    // 헤즈업 오탭이 즉시 우승 자동확정(completed)으로 이어지면 D2 로 undo 불가(비가역).
+    Alert.alert('탈락 처리', `${target.name} 님 탈락 · KO: ${eliminatorName}`, [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '탈락 처리',
+        style: 'destructive',
+        onPress: () =>
+          bustMut.mutate(
+            { participantId: target.id, eliminatorId },
+            { onSuccess: /* 기존 우승/ITM Alert 분기 그대로 */ }
+          ),
+      },
+    ]);
   }}
 />
 ```
 
-- [ ] **Step 3: 탈락 취소 + KO 배지**
+- [ ] **Step 4: 탈락 취소 + KO 배지**
 
 busted 행 버튼 나열(기존 재진입 옆)에 대회 active일 때만:
 
@@ -2349,13 +2475,13 @@ active 행 이름 옆 KO 배지:
 }
 ```
 
-- [ ] **Step 4: 검증** — `npx tsc --noEmit` 0 · `npx jest src/components/ops --passWithNoTests` · 파일 줄수 확인(PlayersTab ≤ 400 권장)
+- [ ] **Step 5: 검증** — `npx tsc --noEmit` 0 · `npx jest src/components/ops --passWithNoTests` · 파일 줄수 확인(PlayersTab ≤ 400 권장)
 
-- [ ] **Step 5: 커밋**
+- [ ] **Step 6: 커밋**
 
 ```bash
-git add src/components/ops/PlayersTab.tsx app/
-git commit -m "feat(ops): 1f PLAYERS — 탭 추출 + KO bust 다이얼로그·탈락 취소·KO 배지"
+git add src/components/ops/PlayersTab.tsx src/components/ui/BottomSheet.tsx app/
+git commit -m "feat(ops): 1f PLAYERS — 탭 추출 + KO bust 확인 다이얼로그·탈락 취소·KO 배지 + 피커 스크롤"
 ```
 
 ---
@@ -2398,7 +2524,7 @@ export function reindexRows<T>(rows: T[]): (T & { rank: number })[] {
 - **템플릿 추천 버튼** → `SelectBottomSheet` options = ITM 10/15/20% × 현재 entries(`recommendPayoutCurve(stats.entries, ratio)` 즉시 적용 → % 모드 전환 + percents 세팅)
 - **"현재 풀 기준 재계산"** 버튼(% 모드 전용): 현재 percents로 재환산 → 미리보기 갱신(환산은 저장 시에도 재실행)
 - **풀 대비 바**: `합계 {sum} / 현재 풀 {stats.prizePool} / 잔여 {stats.prizePool - sum}` 3값 + 합계>풀이면 경고색(`text-amber-600 dark:text-amber-400`) — **저장은 차단하지 않음**(풀은 참고치, 1d 의도)
-- **저장**: % 모드면 환산 amounts → `{ rank: i+1, amount }`, 금액 모드면 reindex → 기존 `useSetPrizeStructure`. `tournament.status === 'active'`면 저장 전 `Alert.alert('진행 중 저장', '이미 탈락한 참가자에게는 소급되지 않아요. 저장할까요?', [취소, 저장])`
+- **저장**: % 모드면 환산 amounts → `{ rank: i+1, amount }`, 금액 모드면 reindex → 기존 `useSetPrizeStructure`. `tournament.status === 'active'`면 저장 전 확인 — 🔨H18 **`ConfirmModal`(`@/components/ui/Modal` — 범용, 실존)** 사용: LEVELS 진행 중 편집 가드(BlindLevelsTab.tsx:176)와 **동형**(스펙 §7.1 원문). 메시지 "이미 탈락한 참가자에게는 소급되지 않아요. 저장할까요?" (Alert.alert 아님 — 같은 화면의 두 탭이 동일 시맨틱 가드에 다른 다이얼로그를 쓰면 안 됨)
 
 - [ ] **Step 3: PayoutLedger + PrizeCorrectSheet**
 
@@ -2416,12 +2542,23 @@ const ledgerRows = prizes.map((prize) => {
     corrected: winner !== null && winner.prizeAmount !== prize.amount, // 구조≠실지급 하이라이트
   };
 });
-// + 구조 밖 수상자(수동 부여·fp가 구조 rank 밖): participants.filter(p => p.finishPosition !== null && p.prizeAmount !== null && !prizes.some(z => z.rank === p.finishPosition)) 를 별도 행으로 추가
+// 🔨H20: 구조 밖 행은 "fp NOT NULL 전원"(prize NULL 미지급 포함 — 실지급 '—' 표기).
+// prizeAmount !== null 로 좁히면 §4.3 의 "비ITM자 최초 부여(NULL→금액)"가 UI 에서 도달 불가(유령 기능).
+const extraRows = participants
+  .filter((p) => p.finishPosition != null && !prizes.some((z) => z.rank === p.finishPosition))
+  .map((p) => ({
+    rank: p.finishPosition as number,
+    structureAmount: null,
+    winnerName: p.name,
+    participantId: p.id,
+    paidAmount: p.prizeAmount ?? null,
+    corrected: p.prizeAmount !== null, // 구조 없는데 지급 있음 = 수동 부여 하이라이트
+  }));
 ```
 
-- 행 렌더: `{rank}위 · {winnerName ?? '미확정'} · 구조 {structureAmount} · 실지급 {paidAmount ?? '—'}` + corrected면 amber 하이라이트
+- 행 렌더: `{rank}위 · {winnerName ?? '미확정'} · 구조 {structureAmount ?? '—'} · 실지급 {paidAmount ?? '—'}` + corrected면 amber 하이라이트
 - **바운티 섹션**(bountyCost != null인 대회만): `participants.filter(p => p.knockouts > 0)` → `이름 · KO {n} · 적립 {n × bountyCost}` + 합계
-- 행 탭(수상자 있는 행) → `PrizeCorrectSheet` 오픈
+- 행 탭(**participantId 있는 행 전부** — prize NULL 미지급 행 포함 🔨H20) → `PrizeCorrectSheet` 오픈(최초 부여 진입점)
 
 `PrizeCorrectSheet` — `SheetModal` 기반(텍스트 입력 동반 확인은 SheetModal 관례):
 
@@ -2470,6 +2607,9 @@ git commit -m "feat(ops): 1f PAYOUTS 2부 — %·템플릿 구조 편집기 + �
 - Modify: `app/(ops)/tournaments/new.tsx` (바운티 입력)
 - Modify: `app/(public)/monitor/[token].tsx` (KO POOL 스트립 카드)
 - Modify: `app/(public)/live/[view_token].tsx` (내 KO/적립)
+- Modify: `src/repositories/interfaces/IOpsTournamentRepository.ts` (🔨H6 — `OpsTournamentCostConfig`에 `bountyCost: number | null` 추가)
+- Modify: `src/schemas/opsTournament.schema.ts` (🔨H6 — `opsCostConfigSchema`에 `bountyCost: z.number().int().min(0).nullable()` 추가 + jest에 null/음수 케이스 1건)
+- Modify: `src/repositories/supabase/OpsTournamentRepository.ts` (🔨H6 — create `p_config` 수동 7키 매핑(`:90-98`)에 `bounty_cost: input.config.bountyCost` 1줄 추가)
 
 **Interfaces:**
 
@@ -2484,15 +2624,17 @@ export function TournamentResultCard({ tournament }: { tournament: OpsTournament
   const ranked = [...participants]
     .filter((p) => p.finishPosition !== null && p.finishPosition !== undefined)
     .sort((a, b) => (a.finishPosition ?? 0) - (b.finishPosition ?? 0));
-  const winner = ranked[0] ?? null;
+  // 🔨H14: 우승자는 fp===1 만 — ranked[0] 은 수동 active→completed(딜/chop 종료, 합법 전이)에서
+  // fp=1 이 없을 때 최저 fp "탈락자"를 우승자로 오표기한다.
+  const winner = ranked.find((p) => p.finishPosition === 1) ?? null;
   const totalPaid = ranked.reduce((acc, p) => acc + (p.prizeAmount ?? 0), 0);
-  // 렌더: 🏆 우승 카드(winner.name·winner.prizeAmount)
+  // 렌더: 🏆 우승 카드 — winner 있으면 name·prizeAmount, 없으면 "우승자 미확정(수동 종료)" 빈 상태(H14)
   //  + 최종 순위표(fp asc — {fp}위 {name} {prizeAmount ?? '—'})
   //  + 정산 요약(총 풀 stats.prizePool·지급 합계 totalPaid·KO 풀 stats.knockoutPool(!=null 시)·엔트리 stats.entries·재진입 stats.reentriesTotal)
 }
 ```
 
-`[id].tsx` STATUS 분기: `tournament.status === 'completed'`면 클럭 카드(`ClockControl`) 대신 `<TournamentResultCard tournament={tournament} />`(LiveStatsPanel·MonitorLinkButton은 유지 판단 — 스펙은 "클럭 카드 대신"만 명시).
+`[id].tsx` STATUS 분기(🔨H7 — 카드별 처지 명세): `tournament.status === 'completed'`면 ①클럭 카드(`ClockControl`) 대신 `<TournamentResultCard tournament={tournament} />` ②`LiveStatsPanel`·`MonitorLinkButton` **유지** ③등록(SUBSCRIPTIONS) 토글 카드 **숨김**(completed 대회의 등록 재개방 조작은 무의미·혼란 표면) ④상태 카드 **유지**(nextStatusActions가 completed에서 빈 배열 — 표시 전용).
 
 - [ ] **Step 2: LiveStatsPanel KO POOL 조건부 카드**
 
@@ -2519,7 +2661,7 @@ const toIntOrNull = (v: string): number | null => {
 // config: { ...기존, bountyCost: toIntOrNull(bountyCost) }
 ```
 
-(repo/service의 create config 매핑에 `bounty_cost` 키가 이미 통과되는지 확인 — `p_config`가 jsonb 통짜 전달이면 camel→snake 매핑 지점 1곳 수정: 기존 `buyInCost→buy_in_cost` 매핑 위치를 열어 `bountyCost→bounty_cost` 추가.)
+🔨H6 **create 배선 3계층(실측 확정)**: ①`IOpsTournamentRepository.ts`의 `OpsTournamentCostConfig`(:4-12)에 `bountyCost: number | null` ②`opsTournament.schema.ts`의 `opsCostConfigSchema`(:30-38)에 `bountyCost: z.number().int().min(0).nullable()` ③`OpsTournamentRepository.ts` create의 `p_config` **수동 7키 객체**(:90-98 — jsonb 통짜 아님)에 `bounty_cost: input.config.bountyCost` 1줄. 인터페이스 확장은 new.tsx의 config 객체 리터럴에서 tsc가 강제하지만 **스키마는 비-strict z.object라 누락해도 아무 게이트가 안 깨진다** — 반드시 ②를 함께 넣고 jest에 `bountyCost: null 통과·-1 거부` 케이스 1건 추가. (🔨H5: update 경로(UpdateOpsTournamentPatch/updateOpsTournamentSchema/레포 set 목록)는 **건드리지 않는다** — 수정 화면 부재로 죽은 배선이 되므로 서버 RPC 계약만 선행, Self-Review 편차 3 참조.)
 
 - [ ] **Step 4: 공개 표면 2종**
 
@@ -2566,10 +2708,12 @@ git commit -m "feat(ops): 1f 표면 — 종료 결과 뷰·KO POOL 카드·바�
 - [ ] `npm run quality` — EXIT 0
 - [ ] TODOS.md의 [MED] LS-매개 데드락 항목 완료 처리(D6 해소 — T2)
 - [ ] 스펙 §12 E1 재확인: `grep -n "ops_live_stats" supabase/migrations/*.sql`로 ops RPC가 자기 txn에서 live_stats를 읽는 곳 없음 전수 실측(모니터/플레이어 스냅샷 RPC는 읽지만 자기 txn 변이가 없어 무해 — 논증 기록)
+- [ ] 🔨H8 ops_prizes 테이블 권한 실측(로컬 — **db:reset 직후·test:db:helpers 이전**, fixture GRANT ALL이 덮기 전): `MSYS_NO_PATHCONV=1 docker exec supabase_db_uniqn psql -U postgres -d postgres -c "SELECT has_table_privilege('anon','public.ops_prizes','INSERT') OR has_table_privilege('authenticated','public.ops_prizes','UPDATE');"` → **f**. prod 게이트에서도 동일 쿼리(MCP execute_sql) 재실측(스펙 §11-4).
 
-## Self-Review 결과 (계획 작성자 체크)
+## Self-Review 결과 (계획 작성자 체크 + 2026-07-04 적대검증 하드닝 반영)
 
 1. **스펙 커버리지**: §3(T1·T6) §4.1(T3) §4.2(T4) §4.3(T5) §4.4(T5) §5(T2) §6(T7) §7.1(T11) §7.2(T10) §7.3(T12) §7.4(T5·T12) §7.5(T9) §8(T8) §9(T6) §10(T2~T6 pgTAP + T7~T11 jest) — 전 섹션 태스크 대응 확인.
-2. **스펙과 다른 결정 2건(근거 명시)**: ① bounty 음수 거부 = RPC 가드 대신 **DB CHECK**(정찰 확정 사실 5 — 기존 RPC에 비용 음수 검증이 원래 없고 신규 P0001 prefix는 에러코드 추가를 강제) ② update의 bounty_cost는 COALESCE 대신 **key-presence 분기**(NULL 되돌리기 필요 — 정찰 확정 사실 4). 적대검증 WF에서 이 2건을 스펙-계획 diff 차원의 의도된 편차로 취급할 것.
+2. **스펙과 다른 결정 — 의도된 편차 3건(근거 명시)**: ① bounty 음수 거부 = RPC 가드 대신 **DB CHECK**(정찰 확정 사실 5 — 기존 RPC에 비용 음수 검증이 원래 없고 신규 P0001 prefix는 에러코드 추가를 강제. +🔨H15 상한 1억 포함) ② update의 bounty_cost는 COALESCE 대신 **key-presence 분기**(NULL 되돌리기 필요 — 정찰 확정 사실 4) ③ 🔨H5 **§7.4의 "수정 폼"은 이 슬라이스 Out** — (ops) 라우트에 수정 화면 자체가 부재(updateTournament UI 호출부 0건 실측), update RPC의 bounty 패치는 서버 선행 계약으로만 출하하고 클라 update 배선(Patch 타입/스키마/레포 set)은 **넣지 않는다**(죽은 코드 방지). 바운티 중도 변경 UI는 후속 수정 화면 슬라이스.
 3. **타입 일관성**: `OpsUndoBustResult`(T9 정의 = T4 RPC 반환 snake의 camel 미러), `PrizeCorrectionInput`(T8 정의 → T9 service·T11 시트 소비), `ItmRatio`(T7 → T11) 교차 확인 완료.
 4. **플레이스홀더 검사**: UI 태스크(T10~T12)의 "기존 패턴 그대로" 지시는 정확한 파일:줄 참조로 한정(계획 자족성 유지). SQL/도메인/스키마/repo는 전문 인라인.
+5. **적대검증 하드닝(2026-07-04, 스펙 §12.5 이력 참조)**: 발굴 25건(중복 제거 18건) 전건 반영 — 🔨H1(가드 순서·T4/T5) H2(eliminatorId 가드·T9) H3(피커 스크롤·T10) H4(bust 확인 복원·T10) H5(수정 폼 편차 선언) H6(create 배선 3계층·T12) H7(completed 카드 명세·T12) H8(ops_prizes 권한 게이트) H9(T2 시드 보강) H10(T4 fp 값 단언) H11(ops_events.seq·T1/T4) H12(자동확정 보류 가드·T3) H13(T2 센티널) H14(winner fp===1·T12) H15(bounty CHECK 상한·T1) H18(ConfirmModal·T11) H20(대장 fp 전원 행·T11) H21(파일맵 T6 교정·amount_before 단언·T5).

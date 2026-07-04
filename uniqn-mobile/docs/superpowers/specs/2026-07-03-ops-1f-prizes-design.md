@@ -30,7 +30,7 @@
 
 - **스냅샷 모델**: `ops_prizes`는 구조(rank→amount)만. 지급 권위 = bust 시 복사되는 `ops_participants.prize_amount` + `prize_assigned` 이벤트. 구조 재저장은 기부여분에 소급하지 않음 (1d 스펙 §3.3)
 - **우승 자동확정**: 마지막 1인 남으면 bust RPC가 fp=1·rank1 상금·대회 `completed` 자동 전이 (`20260630120100:126-148`)
-- **completed = 종착**: `ops_set_tournament_status` 합법 전이에 completed→* 없음 (`20260625120200:168-175`)
+- **completed = 종착**: `ops_set_tournament_status` 합법 전이에 completed→\* 없음 (`20260625120200:168-175`)
 - **재진입 리셋**: reenter가 fp/busted_at/prize_amount 일괄 NULL (`20260630120100:248-251`) — 정정 이력의 영속 원장은 `ops_events`뿐
 - **prize_pool 현행식**: `entries×buy_in_cost + Σrebuys×rebuy_cost + Σadd_ons×addon_cost` — **재진입 buy-in 미가산**(1d 스펙이 1f로 명시 이관), fee/bounty 미포함 (`20260627100100:90-93`)
 - **inert 기반**: `ops_tournaments.bounty_cost int NULL`(1a — 단 create/update RPC 패치 목록에 없어 **세팅 경로 부재**) · `ops_live_stats.knockout_pool int NULL`(1c — 기록 로직 0)
@@ -44,7 +44,9 @@
 
 ### 3.1 컬럼
 
-- `ops_participants.knockouts int NOT NULL DEFAULT 0 CHECK (knockouts >= 0)` — **이번 슬라이스 유일한 신규 컬럼**. 인덱스 불요(대회 내 소수 행·기존 (tournament_id,status) 인덱스로 충분)
+- `ops_participants.knockouts int NOT NULL DEFAULT 0 CHECK (knockouts >= 0)` — 인덱스 불요(대회 내 소수 행·기존 (tournament_id,status) 인덱스로 충분)
+- `ops_events.seq bigint GENERATED ALWAYS AS IDENTITY` 🔨H11 — undo 복원 소스의 전순서 키. `created_at DEFAULT now()`는 **트랜잭션 시작 시각 고정**이라 같은 txn 내 이벤트가 전부 동률(pgTAP 단일 txn에서 "최신 bust 이벤트" 선별이 비결정·id 는 uuid 라 무순서). prod 0행·append-only 라 additive 무해. undo 조회는 `ORDER BY seq DESC LIMIT 1`
+- `ops_tournaments.bounty_cost` CHECK `(bounty_cost IS NULL OR (bounty_cost >= 0 AND bounty_cost <= 100000000))` 🔨H15 — 음수 거부(§4.4)를 테이블 제약으로 + 상한 1억(오입력 시 knockout_pool int 곱 오버플로 22003 이 DEFERRED 커밋 시점에 원인불명 실패로 표면화되는 것 차단)
 - 신규 테이블 0. `ops_prizes` 무변경(D1)
 
 ### 3.2 이벤트 enum (별도 txn 마이그)
@@ -91,13 +93,14 @@ prod 0행이라 구 payload 혼재 없음. 로컬은 db:reset으로 정합.
   - **참가자 행 잠금 복수 확장**: 대상·eliminator 2행을 **id 오름차순 FOR UPDATE**(락 불변식의 '참가자' 항을 단수→복수 일반화. 대상 status 검사는 잠금 후 기존 순서 유지 — 에러 메시지/순서 무회귀)
   - eliminator `knockouts = knockouts + 1`
   - `player_busted` payload에 `chips_before`(UPDATE 전 chips)·`eliminator_id`·`freed_seat_id`(해제한 좌석 id, 복수면 첫 좌석 — 단일점유 불변식상 실제 최대 1) 기록
+  - **우승 자동확정 보류 가드** 🔨H12: 자동확정 조건을 `active=1` → `active=1 AND checked_in=0`으로 강화. undo(§4.2)/register/reenter 의 무좌석 폴백이 만든 `checked_in` 생존자가 있으면 확정을 보류(그가 착석해 active 가 되거나 정리된 뒤 다음 bust 에서 재평가). 이유: checked_in 생존자를 무시하고 completed 확정하면 그 참가자는 fp NULL 고아가 되고(재bust 불가·D2로 undo 도 불가·correct 는 fp NULL 거부) 구제 경로가 없음. 마지막 생존자 가드(`v_active<=1` 거부)는 기존대로 active 기준 유지 — active 1+checked_in 1 에서 active 를 bust 하려면 checked_in 을 먼저 착석시켜야 함(운영 흐름 성립)
 - 락 순서: `advisory → 대회 → 참가자(id asc, 1~2행) → 좌석(id asc)` — LS 트리거는 §5로 DEFERRED화되어 커밋 시점 발화 → eliminator 행 추가 잠금이 LS-ABBA 표면을 넓히지 않음(설계 시너지)
 
 ### 4.2 `ops_undo_bust(p_participant_id uuid, p_actor_id uuid)` — 신규
 
 - **목적**: 오조작 bust의 원상 복구. 재진입과 구분: reentries 불변·칩은 bust 직전 값 복원·registration_open 무관·KO 롤백
-- **가드 순서**: actor → 비잠금 tournament_id 선취 → advisory → 대회 FOR UPDATE + `status='active'`(아니면 `INVALID_STATUS: 진행 중 대회에서만 탈락 취소가 가능합니다` — D2: 우승확정 후 completed면 여기서 차단) → 멤버십 → **이벤트 조회(무잠금 — 아래)** → 참가자(+eliminator) **id 오름차순 FOR UPDATE** → 대상 `status='busted'` 검사(아니면 `UNDO_INVALID_STATE`)
-- **복원 소스**: 해당 참가자의 **최신 `player_busted` 이벤트**(`WHERE tournament_id=.. AND type='player_busted' AND (payload->>'participant_id')::uuid = p_participant_id ORDER BY created_at DESC LIMIT 1`). payload에서 `chips_before`(부재 시 0 — 이론상 불가, fail-safe)·`eliminator_id`·`freed_seat_id` 추출. **이벤트는 append-only 불변이라 행 잠금 전 조회가 안전** — eliminator id를 먼저 알아야 두 참가자 행을 id 오름차순으로 잠글 수 있음(4.1 규약 유지). bust→reenter→재bust 이력에서도 "현재 busted 상태 = 최신 bust 이벤트" 대응이 성립(reenter 시 undo 대상 아님·busted 검사가 차단)
+- **가드 순서** 🔨H1: actor → 비잠금 tournament_id 선취 → **멤버십** → advisory → 대회 FOR UPDATE + `status='active'`(아니면 `INVALID_STATUS: 진행 중 대회에서만 탈락 취소가 가능합니다` — D2: 우승확정 후 completed면 여기서 차단) → **이벤트 조회(무잠금 — 아래)** → 참가자(+eliminator) **id 오름차순 FOR UPDATE** → 대상 `status='busted'` 검사(아니면 `UNDO_INVALID_STATE`). 멤버십을 status 검사·advisory 앞에 두는 이유: 1d 3종(bust/reenter/set_prize)·bust v2 와 동일 순서 유지 + 인증된 비멤버가 INVALID_STATUS/PERMISSION_DENIED 에러 차등으로 RLS 밖 대회 status 를 판별하는 오라클 차단 + 비멤버가 advisory·행 잠금을 점유하지 않음
+- **복원 소스**: 해당 참가자의 **최신 `player_busted` 이벤트**(`WHERE tournament_id=.. AND type='player_busted' AND (payload->>'participant_id')::uuid = p_participant_id ORDER BY seq DESC LIMIT 1` 🔨H11 — created_at 은 txn 내 동률이라 seq 가 전순서 키). payload에서 `chips_before`(부재 시 0 — 이론상 불가, fail-safe)·`eliminator_id`·`freed_seat_id` 추출. **이벤트는 append-only 불변이라 행 잠금 전 조회가 안전** — eliminator id를 먼저 알아야 두 참가자 행을 id 오름차순으로 잠글 수 있음(4.1 규약 유지). bust→reenter→재bust 이력에서도 "현재 busted 상태 = 최신 bust 이벤트" 대응이 성립(reenter 시 undo 대상 아님·busted 검사가 차단)
 - **변이**:
   1. 참가자: `finish_position=NULL, busted_at=NULL, prize_amount=NULL, chips=chips_before`
   2. eliminator_id 존재 시: 해당 행 FOR UPDATE(있으면) 후 `knockouts = GREATEST(knockouts-1, 0)` — CHECK 위반 방어. eliminator가 그 사이 busted여도 카운트만 감소(정합)
@@ -111,7 +114,7 @@ prod 0행이라 구 payload 혼재 없음. 로컬은 db:reset으로 정합.
 ### 4.3 `ops_correct_participant_prize(p_participant_id uuid, p_actor_id uuid, p_amount int DEFAULT NULL, p_reason text DEFAULT NULL)` — 신규
 
 - **목적**: 개인 지급액 정정(소급)·회수(D3). 순위·상태·구조 불변
-- **가드 순서**: actor → 비잠금 tournament_id 선취 → advisory → 대회 FOR UPDATE + **`status IN ('active','completed')`**(upcoming이면 `INVALID_STATUS: 시작 전 대회에는 정정할 상금이 없습니다`) → 멤버십 → 참가자 FOR UPDATE + **`finish_position IS NOT NULL`**(정산 대상만: busted 또는 확정 우승자. 아니면 `PRIZE_CORRECTION_INVALID`) → 값 검증: `p_amount IS NOT NULL AND p_amount < 0` → `PRIZE_CORRECTION_INVALID` / `p_reason` 길이 >200 → `PRIZE_CORRECTION_INVALID`
+- **가드 순서** 🔨H1: actor → 비잠금 tournament_id 선취 → **멤버십** → advisory → 대회 FOR UPDATE + **`status IN ('active','completed')`**(upcoming이면 `INVALID_STATUS: 시작 전 대회에는 정정할 상금이 없습니다`) → 참가자 FOR UPDATE + **`finish_position IS NOT NULL`**(정산 대상만: busted 또는 확정 우승자. 아니면 `PRIZE_CORRECTION_INVALID`) → 값 검증: `p_amount IS NOT NULL AND p_amount < 0` → `PRIZE_CORRECTION_INVALID` / `p_reason` 길이 >200 → `PRIZE_CORRECTION_INVALID` (멤버십 선행 이유는 §4.2 와 동일 — 에러 차등 오라클 차단·1d 일관)
 - **시맨틱**: `p_amount NULL = 회수`(prize_amount→NULL, "수상 아님"으로 복귀), `0 이상 = 해당 값으로 설정`(기존 NULL이어도 부여 가능 — 비ITM자에게 수동 지급 포함)
 - 변이: `prize_amount = p_amount` (no-op이어도 이벤트는 기록 — 감사 명료성)
 - 이벤트: `prize_corrected` payload `{participant_id, amount_before, amount_after, reason}` (reason NULL 허용)
@@ -193,6 +196,7 @@ knockout_pool    := CASE WHEN bounty_cost IS NULL THEN NULL
   - 저장: 기존 `useSetPrizeStructure` 그대로. 진행 중(active) 저장 시 `ConfirmModal` "이미 탈락한 참가자에게는 소급되지 않아요" 안내(LEVELS의 진행 중 편집 가드와 동형)
 - **(B) 페이아웃 대장** `PayoutLedger.tsx`:
   - 데이터: `useOpsPrizes`(구조) + `useOpsParticipants`(fp·prize_amount·knockouts) 클라 조인 — rank별 `수상자 이름(fp=rank인 참가자)·구조 금액·실지급(prize_amount)·정정 여부(구조≠실지급 하이라이트)`
+  - **행 구성 규칙** 🔨H20: 구조 rank 행 + **fp NOT NULL 인 전 참가자**(구조 밖·미지급 prize NULL 포함 — 실지급 '—' 표기). §4.3 의 "비ITM자 최초 부여"가 UI 에서 도달 가능해야 하므로 fp 확정 참가자 행은 prize NULL 이어도 탭 → 정정 시트 진입 허용
   - **바운티 섹션**(bounty_cost NOT NULL인 대회만): KO 보유자 목록 `이름 · KO n · 적립 n×bounty_cost` + 합계
   - 행 탭 → **정정 시트** `PrizeCorrectSheet`(BottomSheet): 현재 금액 표시·새 금액 입력(number-pad)·[회수](destructive, amount NULL)·사유 입력(선택, 200자·Zod xss) → `ops_correct_participant_prize`. completed 후에도 동작(D3)
 - 빈 상태·다크 토큰·min-h-[44px]·토스트 관례는 기존 준수(정찰 §9 관례 목록)
@@ -213,7 +217,7 @@ knockout_pool    := CASE WHEN bounty_cost IS NULL THEN NULL
 - `LiveStatsPanel`: **KO POOL 카드**(knockoutPool != null일 때만 — 카드 9→조건부 10)
 - **전광판**: `ops_get_monitor_snapshot` 반환 stats에 `knockoutPool` 추가(집계치·비-PII — 화이트리스트 심사: 개인 식별 불가, 승인) → 통계 스트립 조건부 카드
 - **플레이어뷰**: `ops_get_player_view` 반환 `me`에 `knockouts`·`bountyAccrued`(서버 계산 `knockouts × bounty_cost`, 비-바운티면 null) 추가(본인 행 한정 — 화이트리스트 심사: 본인 데이터, 승인) → 내 카드에 "KO n · 바운티 적립 n원"
-- **생성/수정 폼**(`new.tsx` 등): 칩/정산 섹션에 "바운티(선택)" 입력 — 빈 값=NULL(비-바운티)
+- **생성 폼**(`new.tsx`): 칩/정산 섹션에 "바운티(선택)" 입력 — 빈 값=NULL(비-바운티). 🔨H5 **수정 폼은 이 슬라이스 Out**: (ops) 라우트에 대회 수정 화면 자체가 부재(실측 — index/new/[id] 뿐, updateTournament UI 호출부 0건). §4.4 의 update RPC key-presence 패치는 **서버 선행 계약**으로만 출하(바운티 중도 변경·비-바운티 전환 UI 는 후속 수정 화면 슬라이스). §12-E7 의 "중도 변경" 은 당분간 서버 API 직접 경로만 존재함을 수용
 
 ### 7.5 데이터 레이어 배선
 
@@ -267,7 +271,7 @@ knockout_pool    := CASE WHEN bounty_cost IS NULL THEN NULL
 1. 본 스펙 → `superpowers:writing-plans` 계획(태스크 분해)
 2. **적대검증 WF**(7차원 — 락/동시성·보안(anon 표면)·데이터 정합(스냅샷·리셋)·에러 매핑·pgTAP 무위·UI 배선·스펙-계획 diff, verify 신선 세션 완주)
 3. SDD 3배치(implementer + 배치별 리뷰 + 최종 whole-branch opus): **B1** DB 토대(마이그 1·2 + pgTAP 4·5) → **B2** RPC(마이그 3·4 + pgTAP 1~3·6 + supabase.ts 수술) → **B3** 클라(도메인·스키마·repo/service/hook·UI 6종)
-4. 전 검증 GREEN 증거 → **prod 게이트(사용자 "go")**: MCP apply_migration 4종 → get_advisors(ERROR 0·anon SECDEF 2개 유지) → supabase.ts MCP gen 정합 확인(수술본과 diff) → push + PR → CI 9종 → squash
+4. 전 검증 GREEN 증거 → **prod 게이트(사용자 "go")**: MCP apply_migration 4종 → get_advisors(ERROR 0·anon SECDEF 2개 유지) → 🔨H8 **ops_prizes 테이블 권한 실측**(`SELECT has_table_privilege('anon','public.ops_prizes','INSERT') OR has_table_privilege('authenticated','public.ops_prizes','UPDATE')` = false — pgTAP fixture 의 GRANT ALL 이 테스트 환경에서 REVOKE 를 영구 마스킹하므로 prod/로컬(reset 직후·helpers 이전) 직접 실측만이 검증 수단) → supabase.ts MCP gen 정합 확인(수술본과 diff) → push + PR → CI 9종 → squash
 5. SDD 가드: implementer 브랜치 생성/전환 금지 · `mcp__supabase__*` 서브에이전트 금지(로컬 docker/npm만) · 기존 마이그 수정 금지
 
 ## §12 리스크·엣지케이스 (적대검증 우선 타깃)
@@ -282,6 +286,31 @@ knockout_pool    := CASE WHEN bounty_cost IS NULL THEN NULL
 - **E8 enum ADD VALUE**: 별도 txn 마이그 필수(같은 txn 사용 시 55P04) — 마이그 1에서 값만, 마이그 3에서 사용
 - **E9 CONSTRAINT TRIGGER 제약**: plain table·AFTER ROW만 지원 — 대상 5+1 테이블 전부 plain·기존 트리거도 AFTER ROW라 무충돌. `UPDATE OF` 컬럼 목록 대신 WHEN 절 사용(기존 clock 트리거 방식 통일)
 - **E10 bust v2 시그니처 교체**: 구 2인자 DROP 누락 시 오버로딩 모호성(PostgREST 400) — DROP 명시 + pgTAP에서 2인자 호출 실패 단언
+
+## §12.5 적대검증 하드닝 이력 (2026-07-04, 7차원 WF — 발굴 25건 → 중복 제거 18건 전건 반영. 🔨H번호가 본문 반영 지점)
+
+| #   | 심각도   | 하드닝                                                                                                                                       | 반영                                               |
+| --- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| H1  | LOW      | undo/correct 가드 순서를 1d 패턴(멤버십 → advisory → status)으로 교정 — 비멤버 에러 차등의 대회 status 오라클 차단                           | §4.2·§4.3 + 계획 T4/T5 SQL + pgTAP 비멤버 단언 2건 |
+| H2  | LOW      | bust 서비스의 eliminatorId 에 그룹형 uuid Zod 가드(§7.5 지시 복원)                                                                           | 계획 T9                                            |
+| H3  | CRITICAL | SelectBottomSheet 40% 고정·비스크롤 → eliminator 피커가 active 6인 이상에서 도달 불가. snapPoints/scrollable prop 관통 + '지정 안 함' 최상단 | 계획 T10                                           |
+| H4  | HIGH     | 바운티 bust 의 "선택 → 확인 → bust" 확인 단계가 계획에서 소실(§7.2 원문 위반) — 헤즈업 오탭 시 D2 비가역. Alert 확인 복원                    | 계획 T10                                           |
+| H5  | MED      | update bounty_cost 는 클라 도달 경로 0(수정 화면 부재) — 서버 선행 계약으로 명시 선언, UI 후속                                               | §7.4 + 계획 Self-Review 편차 3                     |
+| H6  | MED      | create 배선 3파일(인터페이스 OpsTournamentCostConfig·opsCostConfigSchema·레포 p_config 매핑) 계획 Files 누락                                 | 계획 T12                                           |
+| H7  | LOW      | completed STATUS 뷰에서 등록 토글 카드 숨김·상태 카드 유지 명세                                                                              | 계획 T12                                           |
+| H8  | LOW      | ops_prizes DML REVOKE 가 fixture GRANT ALL 로 테스트에서 영구 마스킹 — prod/로컬 직접 실측을 게이트에 명문화                                 | §11-4 + 계획 최종 게이트                           |
+| H9  | HIGH     | T2 pgTAP 시드 2명 → bust 가 우승 자동확정·completed 유발 → reenter 폭발(GREEN 불가). 시드 +1명·기대값 연쇄 재계산                            | 계획 T2                                            |
+| H10 | HIGH     | T4 pgTAP [15] checked_in 재bust 불가(NOT_ACTIVE) — 시나리오 재배치 + fp 값 단언                                                              | 계획 T4                                            |
+| H11 | HIGH     | ops_events.created_at 은 txn 상수 → "최신 bust 이벤트" 선별 비결정. `seq bigint IDENTITY` 추가·`ORDER BY seq DESC`·pgTAP 칩 변동 판별 단언   | §3.1·§4.2 + 계획 T1/T4                             |
+| H12 | MED      | undo 무좌석 checked_in 생존자가 자동확정 카운트 제외 → 산 참가자 두고 completed(구제 불가). 자동확정 보류 가드(`checked_in=0` 조건)          | §4.1 + 계획 T3/T4                                  |
+| H13 | HIGH     | T2 pgTAP [10] WHEN절 단언 무위(updated_at=now() txn 상수) — 센티널 오염 기법으로 교체                                                        | 계획 T2                                            |
+| H14 | MED      | TournamentResultCard winner=ranked[0] — 수동 active→completed 전이 시 최저 fp 탈락자를 우승자로 오표기. `fp===1` 한정 + 미확정 빈 상태       | 계획 T12                                           |
+| H15 | LOW      | bounty_cost 상한 CHECK(1억) — int 곱 오버플로 22003 이 DEFERRED 커밋 시점 원인불명 실패로 표면화 차단                                        | §3.1 + 계획 T1                                     |
+| H18 | MED      | 범용 ConfirmModal 실존(BlindLevelsTab 사용 중 — 정찰 오탐 교정). PAYOUTS 진행 중 저장 확인은 ConfirmModal(§7.1 원문 준수)                    | 계획 정찰 사실 11·T11                              |
+| H20 | MED      | 페이아웃 대장에 fp NOT NULL 전원 행(prize NULL 포함) — §4.3 비ITM 최초 부여의 UI 진입점 확보                                                 | §7.1(B) + 계획 T11                                 |
+| H21 | LOW      | 계획 내부 모순(HistoryTab 담당 태스크 표기)·T5 pgTAP amount_before payload 단언 누락                                                         | 계획 파일맵·T5                                     |
+
+미검증 잔여 없음 — verify 단계가 세션 한도로 1건만 완주(H1=CONFIRMED LOW)했으나, 나머지 24건은 컨트롤러가 스펙·계획·실코드 실측으로 직접 판정(ConfirmModal·SelectBottomSheet·create/update 배선 3건은 추가 실측 수행). 기각 0건.
 
 ## §13 메모/후속
 
