@@ -66,6 +66,11 @@ PR→`/pr` | 배포→`/deploy` | 보안→`/cso` | 품질→`/health` | 회고�
 리팩토링→`/refactor` | 성능→`/performance` | 국제화→`/i18n` | 접근성→`/a11y` | 마이그레이션→`/migration`
 RLS/권한/위험 변경 전→`/guard` 먼저
 
+## 세션 오케스트레이션 (자동 적용)
+- 에이전트 분담·병렬 디스패치·Workflow 옵트인·훅·지식 4계층: `.claude/rules/orchestration.md` **상시 준수**
+- 프로젝트 rules: `.claude/rules/` — orchestration · skills-guide · supabase-patterns · nativewind-patterns · impeccable-design (paths 조건부 자동 첨부)
+- 신규 기능 3+ 파일=설계 먼저 | 코드 직후=code-reviewer | 완료 주장 전=실행 증거
+
 ## 변경 이력 / 지식 시스템
 - 변경·스택 이력: `wiki/log.md`(최근 5건 `grep "^## \[" wiki/log.md | tail -5`) · `CHANGELOG.md`. CLAUDE.md는 **규칙 전용**(날짜 노트 누적 금지).
 - 지식 4계층 역할분담(CLAUDE.md=규칙 / 메모리=라이브함정·진행작업 / wiki=영속합성 / 옵시디언색인=발견) + 졸업 규칙: `wiki/AGENTS.md §10`.

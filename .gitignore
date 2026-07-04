@@ -131,6 +131,8 @@ __pycache__/
 # ========================================
 .claude/*
 !.claude/commands/
+!.claude/rules/
+!.claude/skills/
 claude_set/
 .cursor/rules/
 .gstack/
