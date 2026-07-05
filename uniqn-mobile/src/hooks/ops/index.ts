@@ -23,6 +23,7 @@ export {
   useAddRebuy,
   useAddAddon,
   useBustParticipant,
+  useUndoBust,
   useReenterParticipant,
   useAddTable,
   useSetTableLock,

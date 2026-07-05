@@ -349,6 +349,10 @@ export interface SelectBottomSheetProps {
     disabled?: boolean;
   }[];
   onSelect: (value: string) => void;
+  /** 스냅 포인트(기본 ['40%'] — 기존 호출부 무영향). 옵션이 많으면 ['60%','90%'] 로 확장. */
+  snapPoints?: string[];
+  /** 목록 스크롤 활성화(기본 false — 기존 호출부 무영향). */
+  scrollable?: boolean;
 }
 
 export function SelectBottomSheet({
@@ -357,6 +361,8 @@ export function SelectBottomSheet({
   title,
   options,
   onSelect,
+  snapPoints = ['40%'],
+  scrollable = false,
 }: SelectBottomSheetProps) {
   const handleSelect = useCallback(
     (value: string) => {
@@ -371,7 +377,8 @@ export function SelectBottomSheet({
       visible={visible}
       onClose={onClose}
       title={title}
-      snapPoints={['40%']}
+      snapPoints={snapPoints}
+      scrollable={scrollable}
       showCloseButton={false}
     >
       <View className="gap-1">

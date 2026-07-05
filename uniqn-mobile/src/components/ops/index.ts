@@ -14,3 +14,5 @@ export { MonitorLinkButton } from './MonitorLinkButton';
 export { PlayerClaimButton } from './PlayerClaimButton';
 // 1d — PAYOUTS 탭
 export { PayoutsTab } from './PayoutsTab';
+// 1f(T10) — PLAYERS 탭 추출
+export { PlayersTab } from './PlayersTab';
