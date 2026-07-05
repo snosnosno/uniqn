@@ -124,6 +124,16 @@ describe('mapOpsRpcError (Task S1)', () => {
     ['REENTRY_NOT_ALLOWED: x', ERROR_CODES.OPS_REENTRY_NOT_ALLOWED],
     ['MAX_REENTRIES_EXCEEDED: x', ERROR_CODES.OPS_MAX_REENTRIES_EXCEEDED],
     ['PRIZE_STRUCTURE_INVALID: x', ERROR_CODES.OPS_PRIZE_STRUCTURE_INVALID],
+    // 1f — 넉아웃/탈락취소/상금정정 (Task 8)
+    ['ELIMINATOR_INVALID: 넉아웃 상대가 올바르지 않습니다', ERROR_CODES.OPS_ELIMINATOR_INVALID],
+    [
+      'UNDO_INVALID_STATE: 탈락 상태의 참가자만 취소할 수 있습니다',
+      ERROR_CODES.OPS_UNDO_INVALID_STATE,
+    ],
+    [
+      'PRIZE_CORRECTION_INVALID: 금액은 0 이상이어야 합니다',
+      ERROR_CODES.OPS_PRIZE_CORRECTION_INVALID,
+    ],
   ])('maps %s → %s', (msg, code) => {
     expect(() => mapOpsRpcError({ message: msg }, { operation: 't' })).toThrow(
       expect.objectContaining({ code })
@@ -167,5 +177,25 @@ describe('opsRpcError — 배정 신규 prefix', () => {
     expect((captureThrown({ message: 'SEAT_ASSIGNMENT_INVALID: x' }) as BusinessError).code).toBe(
       'E6129'
     );
+  });
+});
+
+describe('opsRpcError — 1f 신규 prefix (한글 userMessage 존재)', () => {
+  // ERROR_MESSAGES 누락 시 UNKNOWN 폴백 메시지로 떨어지므로 userMessage 단언으로 적발.
+  it('ELIMINATOR_INVALID → E6132 + 한글 userMessage', () => {
+    const e = captureThrown({ message: 'ELIMINATOR_INVALID: x' }) as BusinessError;
+    expect(e.code).toBe('E6132');
+    expect(e.userMessage).toBe('넉아웃 상대가 올바르지 않아요.');
+  });
+  it('UNDO_INVALID_STATE → E6133 + 한글 userMessage', () => {
+    const e = captureThrown({ message: 'UNDO_INVALID_STATE: x' }) as BusinessError;
+    expect(e.code).toBe('E6133');
+    expect(e.userMessage).toBe('탈락 취소를 할 수 없는 상태예요.');
+  });
+  it('PRIZE_CORRECTION_INVALID → E6134 + 한글 userMessage (PRIZE_STRUCTURE_INVALID 아님)', () => {
+    const e = captureThrown({ message: 'PRIZE_CORRECTION_INVALID: x' }) as BusinessError;
+    expect(e.code).toBe('E6134');
+    expect(e.code).not.toBe(ERROR_CODES.OPS_PRIZE_STRUCTURE_INVALID);
+    expect(e.userMessage).toBe('상금 정정 대상이나 값이 올바르지 않아요.');
   });
 });
