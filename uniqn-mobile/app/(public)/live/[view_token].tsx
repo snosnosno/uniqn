@@ -2,7 +2,7 @@
  * 공개 플레이어뷰 — ops 1c-4.
  * capability-URL: view_token 만으로 접근(anon). usePlayerView 가 4s 폴링 + 서버시각 offset 보정.
  * 본인 안전필드만 표시(타 참가자·phone·view_token 미노출). 로그인 시 본인 계정 연결(claim).
- * 상태범위(§0.5 B9): 내 자리·내 스택·라이브 클럭·블라인드. 탈락 ITM 배너·재진입 제외(1d/1f).
+ * 상태범위(§0.5 B9): 내 자리·내 스택·라이브 클럭·블라인드 + 탈락 순위·상금·KO/바운티 적립(1f, 바운티 대회만).
  */
 import { useState } from 'react';
 import {
@@ -112,6 +112,12 @@ export default function PlayerLiveScreen() {
               {me.rebuys > 0 ? `리바이 ${me.rebuys} ` : ''}
               {me.addOns > 0 ? `애드온 ${me.addOns} ` : ''}
               {me.reentries > 0 ? `재입장 ${me.reentries}` : ''}
+            </Text>
+          )}
+          {/* 1f: 바운티 대회면 내 KO/적립 노출(bountyAccrued null = 비-바운티) */}
+          {me.bountyAccrued !== null && (
+            <Text className="text-center text-xs text-secondary-500 dark:text-secondary-400">
+              KO {me.knockouts} · 바운티 적립 {fmt(me.bountyAccrued)}원
             </Text>
           )}
           {me.status === 'busted' && me.finishPosition !== null && (

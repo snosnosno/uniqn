@@ -3,3 +3,4 @@ export * from './OpsParticipantStatusMachine';
 export * from './opsStats';
 export * from './seatAssignment';
 export * from './clock/computeClockRemaining';
+export * from './prizeCurve';

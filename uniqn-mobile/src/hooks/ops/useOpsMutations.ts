@@ -16,6 +16,7 @@ import { logger } from '@/utils/logger';
 import { extractUserMessage } from '@/errors';
 import type { CreateOpsTournamentInput, RegisterParticipantInput } from '@/repositories/ops';
 import type { OpsTournamentStatus, OpsTableStatus, OpsTableLockType } from '@/types/ops';
+import type { PrizeCorrectionInput } from '@/schemas/opsPrize.schema';
 
 const toast = {
   success: (m: string) => useToastStore.getState().success(m),
@@ -138,8 +139,12 @@ export function useBustParticipant(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (participantId: string) =>
-      opsParticipantService.bustParticipant(participantId, requireActor(actorId)),
+    mutationFn: (vars: { participantId: string; eliminatorId?: string | null }) =>
+      opsParticipantService.bustParticipant(
+        vars.participantId,
+        requireActor(actorId),
+        vars.eliminatorId
+      ),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
@@ -151,6 +156,42 @@ export function useBustParticipant(tournamentId: string) {
     onError: (error) => {
       logger.error('ops 탈락 처리 실패', toError(error));
       toast.error(extractUserMessage(error) || '탈락 처리에 실패했습니다');
+    },
+  });
+}
+
+export function useUndoBust(tournamentId: string) {
+  const queryClient = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (participantId: string) =>
+      opsParticipantService.undoBust(participantId, requireActor(actorId)),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.liveStats(tournamentId) });
+      toast.success(`탈락 취소됨 · 칩 ${result.restoredChips.toLocaleString()} 복원`);
+    },
+    onError: (error) => {
+      logger.error('ops 탈락 취소 실패', toError(error));
+      toast.error(extractUserMessage(error) || '탈락 취소에 실패했습니다');
+    },
+  });
+}
+
+export function useCorrectPrize(tournamentId: string) {
+  const queryClient = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (input: PrizeCorrectionInput) =>
+      opsParticipantService.correctPrize(input, requireActor(actorId)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
+      toast.success('상금 정정됨');
+    },
+    onError: (error) => {
+      logger.error('ops 상금 정정 실패', toError(error));
+      toast.error(extractUserMessage(error) || '상금 정정에 실패했습니다');
     },
   });
 }

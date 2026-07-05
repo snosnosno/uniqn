@@ -95,6 +95,7 @@ export class SupabaseOpsTournamentRepository implements IOpsTournamentRepository
           fee_cost: input.config.feeCost,
           rebuy_cost: input.config.rebuyCost,
           addon_cost: input.config.addonCost,
+          bounty_cost: input.config.bountyCost, // 1f: null = 비-바운티(서버 RPC COALESCE 없음)
         },
       });
       if (error) mapOpsRpcError(error, { operation: 'ops 대회 생성' });

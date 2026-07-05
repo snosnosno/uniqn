@@ -1427,6 +1427,7 @@ export type Database = {
           entry_number: number;
           finish_position: number | null;
           id: string;
+          knockouts: number;
           name: string;
           nationality: string | null;
           note: string | null;
@@ -1450,6 +1451,7 @@ export type Database = {
           entry_number: number;
           finish_position?: number | null;
           id?: string;
+          knockouts?: number;
           name: string;
           nationality?: string | null;
           note?: string | null;
@@ -1473,6 +1475,7 @@ export type Database = {
           entry_number?: number;
           finish_position?: number | null;
           id?: string;
+          knockouts?: number;
           name?: string;
           nationality?: string | null;
           note?: string | null;
@@ -2938,7 +2941,11 @@ export type Database = {
         Returns: Json;
       };
       ops_bust_participant: {
-        Args: { p_actor_id: string; p_participant_id: string };
+        Args: {
+          p_actor_id: string;
+          p_eliminator_id?: string | null;
+          p_participant_id: string;
+        };
         Returns: Json;
       };
       ops_claim_participant: {
@@ -2970,6 +2977,15 @@ export type Database = {
           p_actor_id: string;
           p_status: Database['public']['Enums']['ops_table_status'];
           p_table_id: string;
+        };
+        Returns: Json;
+      };
+      ops_correct_participant_prize: {
+        Args: {
+          p_actor_id: string;
+          p_amount?: number | null;
+          p_participant_id: string;
+          p_reason?: string | null;
         };
         Returns: Json;
       };
@@ -3077,6 +3093,10 @@ export type Database = {
         Returns: Json;
       };
       ops_unclaim_participant: {
+        Args: { p_actor_id: string; p_participant_id: string };
+        Returns: Json;
+      };
+      ops_undo_bust: {
         Args: { p_actor_id: string; p_participant_id: string };
         Returns: Json;
       };
@@ -3202,7 +3222,9 @@ export type Database = {
         | 'level_play'
         | 'level_pause'
         | 'level_set'
-        | 'prize_structure_set';
+        | 'prize_structure_set'
+        | 'player_bust_undone'
+        | 'prize_corrected';
       ops_participant_status: 'registered' | 'checked_in' | 'active' | 'busted' | 'no_show';
       ops_table_lock_type: 'none' | 'locked' | 'feature';
       ops_table_status: 'open' | 'closed' | 'standby';
@@ -3398,6 +3420,8 @@ export const Constants = {
         'level_pause',
         'level_set',
         'prize_structure_set',
+        'player_bust_undone',
+        'prize_corrected',
       ],
       ops_participant_status: ['registered', 'checked_in', 'active', 'busted', 'no_show'],
       ops_table_lock_type: ['none', 'locked', 'feature'],

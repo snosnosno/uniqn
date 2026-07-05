@@ -1,4 +1,10 @@
-import type { OpsParticipant, OpsBustResult, OpsReenterResult } from '@/types/ops';
+import type {
+  OpsParticipant,
+  OpsBustResult,
+  OpsReenterResult,
+  OpsUndoBustResult,
+  OpsPrizeCorrectionResult,
+} from '@/types/ops';
 
 export interface RegisterParticipantInput {
   tournamentId: string;
@@ -21,6 +27,19 @@ export interface IOpsParticipantRepository {
   ): Promise<{ participantId: string; entryNumber: number }>;
   addRebuy(participantId: string, actorId: string): Promise<void>;
   addAddon(participantId: string, actorId: string): Promise<void>;
-  bustParticipant(participantId: string, actorId: string): Promise<OpsBustResult>;
+  bustParticipant(
+    participantId: string,
+    actorId: string,
+    eliminatorId?: string | null
+  ): Promise<OpsBustResult>;
   reenterParticipant(participantId: string, actorId: string): Promise<OpsReenterResult>;
+  /** 1f: 탈락 취소(bust 직전 상태 복원). */
+  undoBust(participantId: string, actorId: string): Promise<OpsUndoBustResult>;
+  /** 1f: 상금 정정/회수(amount=null 회수). */
+  correctPrize(
+    participantId: string,
+    actorId: string,
+    amount: number | null,
+    reason?: string | null
+  ): Promise<OpsPrizeCorrectionResult>;
 }

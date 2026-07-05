@@ -1,6 +1,6 @@
 -- ops claim 토큰 분리: 하이재킹 차단(view_token 단독 claim 불가) + NULL fail-closed + 오라클 회피 + PII 차단.
 BEGIN;
-SELECT plan(36);
+SELECT plan(38);
 
 -- ── 설정: 참가자 A(PII 부여) + 참가자 B(cross-token) ──
 DO $$
@@ -78,6 +78,13 @@ SELECT ok(public.ops_get_player_view(current_setting('ops.viewA'))::text NOT LIK
        AND public.ops_get_player_view(current_setting('ops.viewA'))::text NOT LIKE '%PII_NOTE_SECRET%',
   'PII 차단: player_user_id/note 미반환');
 SELECT throws_ok($$ SELECT public.ops_get_player_view(NULL) $$, 'P0001', NULL, 'player_view: NULL 거부');
+
+-- ── (19b~19c) 1f: me.knockouts 노출(기본 0) + 비-바운티 bountyAccrued null ──
+-- (신필드는 int/null — phone/nationality/note/player_user_id/claim_pin 화이트리스트 부재 단언 무영향)
+SELECT is((public.ops_get_player_view(current_setting('ops.viewA')) -> 'me' ->> 'knockouts')::int, 0,
+  '1f: me.knockouts=0');
+SELECT ok((public.ops_get_player_view(current_setting('ops.viewA')) -> 'me' -> 'bountyAccrued') = 'null'::jsonb,
+  '1f: 비-바운티 bountyAccrued null');
 
 -- ── (20~24) claim 하이재킹 차단 + NULL fail-closed (핵심 회귀) ──
 SELECT ops_test_set_user((current_setting('ops.outsider_id'))::uuid);

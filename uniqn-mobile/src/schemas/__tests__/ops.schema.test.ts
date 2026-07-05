@@ -1,4 +1,4 @@
-import { createOpsTournamentSchema } from '../opsTournament.schema';
+import { createOpsTournamentSchema, opsCostConfigSchema } from '../opsTournament.schema';
 import { registerParticipantSchema, opsParticipantStatusSchema } from '../opsParticipant.schema';
 
 const validConfig = {
@@ -9,6 +9,7 @@ const validConfig = {
   feeCost: 5000,
   rebuyCost: 50000,
   addonCost: 30000,
+  bountyCost: null,
 };
 
 describe('createOpsTournamentSchema', () => {
@@ -43,6 +44,13 @@ describe('createOpsTournamentSchema', () => {
       config: validConfig,
     });
     expect(r.success).toBe(false);
+  });
+});
+
+describe('opsCostConfigSchema — 바운티(H6 값 검증 계층)', () => {
+  it('bountyCost null 통과 · 음수(-1) 거부', () => {
+    expect(opsCostConfigSchema.safeParse({ ...validConfig, bountyCost: null }).success).toBe(true);
+    expect(opsCostConfigSchema.safeParse({ ...validConfig, bountyCost: -1 }).success).toBe(false);
   });
 });
 

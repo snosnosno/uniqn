@@ -2,6 +2,8 @@
 --   트리거함수 3종 anon REVOKE, publication 3테이블 등록.
 -- 패턴: ops_rpc_security.test.sql(EXECUTE 권한) + ops_tables_seats_rls.test.sql.
 BEGIN;
+-- 1f: live_stats 트리거가 DEFERRED 로 전환됨 — 이 파일은 같은 txn 에서 live_stats 를 단언하므로 즉시 발화 강제.
+SET CONSTRAINTS ALL IMMEDIATE;
 SELECT plan(16);
 
 -- ─── 클럭/블라인드 변이 RPC 5종: anon EXECUTE 없음 / authenticated 있음 ───

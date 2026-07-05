@@ -35,6 +35,12 @@ const toInt = (v: string) => {
   return Number.isFinite(n) ? n : 0;
 };
 
+// 바운티 전용: 빈칸 = null(비-바운티). toInt 는 빈칸→0 이라 바운티에 부적합.
+const toIntOrNull = (v: string): number | null => {
+  const digits = v.replace(/[^0-9]/g, '');
+  return digits === '' ? null : parseInt(digits, 10);
+};
+
 export default function OpsTournamentCreateScreen() {
   const createMut = useCreateOpsTournament();
 
@@ -51,6 +57,7 @@ export default function OpsTournamentCreateScreen() {
   const [rebuyCost, setRebuyCost] = useState('50000');
   const [addonChips, setAddonChips] = useState('20000');
   const [addonCost, setAddonCost] = useState('30000');
+  const [bountyCost, setBountyCost] = useState(''); // 빈칸 = 비-바운티(null)
 
   const canSubmit = name.trim().length > 0 && !createMut.isPending;
 
@@ -71,6 +78,7 @@ export default function OpsTournamentCreateScreen() {
           feeCost: toInt(feeCost),
           rebuyCost: toInt(rebuyCost),
           addonCost: toInt(addonCost),
+          bountyCost: toIntOrNull(bountyCost),
         },
       },
       {
@@ -149,7 +157,7 @@ export default function OpsTournamentCreateScreen() {
         </View>
         <View className="flex-row gap-3">
           <NumField label="수수료(fee)" value={feeCost} onChange={setFeeCost} />
-          <View className="flex-1" />
+          <NumField label="바운티 (선택)" value={bountyCost} onChange={setBountyCost} />
         </View>
 
         <Pressable

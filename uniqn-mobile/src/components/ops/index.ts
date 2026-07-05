@@ -12,5 +12,12 @@ export { BlindLevelForm } from './BlindLevelForm';
 export { HistoryTab } from './HistoryTab';
 export { MonitorLinkButton } from './MonitorLinkButton';
 export { PlayerClaimButton } from './PlayerClaimButton';
-// 1d — PAYOUTS 탭
+// 1d — PAYOUTS 탭 / 1f — 2부 재설계(구조 편집기·대장·정정 시트)
 export { PayoutsTab } from './PayoutsTab';
+export { PayoutStructureEditor } from './PayoutStructureEditor';
+export { PayoutLedger } from './PayoutLedger';
+export { PrizeCorrectSheet } from './PrizeCorrectSheet';
+// 1f(T10) — PLAYERS 탭 추출
+export { PlayersTab } from './PlayersTab';
+// 1f(T12) — 종료 결과 뷰(§7.3)
+export { TournamentResultCard } from './TournamentResultCard';

@@ -23,6 +23,7 @@ export {
   useAddRebuy,
   useAddAddon,
   useBustParticipant,
+  useUndoBust,
   useReenterParticipant,
   useAddTable,
   useSetTableLock,
@@ -33,6 +34,7 @@ export {
   useFreeSeat,
   useRedrawWaitlistFill,
   useReseatParticipants,
+  useCorrectPrize,
 } from './useOpsMutations';
 export { useOpsPrizes, useSetPrizeStructure } from './useOpsPrizes';
 export {

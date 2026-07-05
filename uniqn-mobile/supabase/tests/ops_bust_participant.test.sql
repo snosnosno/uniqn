@@ -8,6 +8,8 @@
 --   plan(N) = 실제 SELECT 단언 수와 정확히 일치(불일치 시 pgTAP fail).
 
 BEGIN;
+-- 1f: live_stats 트리거가 DEFERRED 로 전환됨 — 이 파일은 같은 txn 에서 live_stats 를 단언하므로 즉시 발화 강제.
+SET CONSTRAINTS ALL IMMEDIATE;
 SELECT plan(22);
 
 -- ── 시드 ──────────────────────────────────────────────────────────────────────
