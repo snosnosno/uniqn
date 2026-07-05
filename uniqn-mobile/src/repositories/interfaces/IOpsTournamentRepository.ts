@@ -9,6 +9,8 @@ export interface OpsTournamentCostConfig {
   feeCost: number;
   rebuyCost: number;
   addonCost: number;
+  /** 바운티(선택) — null = 비-바운티 대회(0 과 구분). knockoutPool·bountyAccrued 게이트. */
+  bountyCost: number | null;
 }
 
 export interface CreateOpsTournamentInput {

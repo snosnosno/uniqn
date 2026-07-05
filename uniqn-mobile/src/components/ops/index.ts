@@ -19,3 +19,5 @@ export { PayoutLedger } from './PayoutLedger';
 export { PrizeCorrectSheet } from './PrizeCorrectSheet';
 // 1f(T10) — PLAYERS 탭 추출
 export { PlayersTab } from './PlayersTab';
+// 1f(T12) — 종료 결과 뷰(§7.3)
+export { TournamentResultCard } from './TournamentResultCard';

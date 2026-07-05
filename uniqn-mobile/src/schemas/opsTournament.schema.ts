@@ -35,6 +35,8 @@ export const opsCostConfigSchema = z.object({
   feeCost: intMin0,
   rebuyCost: intMin0,
   addonCost: intMin0,
+  // 바운티(선택): null = 비-바운티. 값 검증 계층(비-strict z.object 라 누락해도 게이트는 안 깨짐).
+  bountyCost: z.number().int().min(0).nullable(),
 });
 export type OpsCostConfigData = z.infer<typeof opsCostConfigSchema>;
 

@@ -13,6 +13,7 @@ import {
   HistoryTab,
   MonitorLinkButton,
   PayoutsTab,
+  TournamentResultCard,
 } from '@/components/ops';
 import {
   useOpsTournament,
@@ -63,6 +64,9 @@ export default function OpsTournamentDetailScreen() {
         ? [{ label: '대회 종료', to: 'completed' }]
         : [];
 
+  // 🔨H7: completed = 클럭 대신 결과 뷰, 등록 토글 숨김. LiveStats·Monitor·상태 카드는 유지.
+  const isCompleted = tournament.status === 'completed';
+
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
       <StackHeader title={tournament.name} fallbackHref="/(ops)/tournaments" />
@@ -108,30 +112,41 @@ export default function OpsTournamentDetailScreen() {
           contentContainerStyle={{ paddingBottom: 24 }}
           keyboardShouldPersistTaps="handled"
         >
-          {/* 서버동기 클럭 제어 */}
+          {/* 진행 중: 서버동기 클럭 제어 / 종료: 결과 뷰(🔨H7 ①) */}
           <View className="mb-2">
-            <ClockControl tournamentId={tournamentId} onNavigateToLevels={() => setTab('levels')} />
+            {isCompleted ? (
+              <TournamentResultCard tournament={tournament} />
+            ) : (
+              <ClockControl
+                tournamentId={tournamentId}
+                onNavigateToLevels={() => setTab('levels')}
+              />
+            )}
           </View>
 
-          {/* 라이브 통계판(서버 단일소스) */}
+          {/* 라이브 통계판(서버 단일소스) — 🔨H7 ② 유지 */}
           <LiveStatsPanel tournamentId={tournamentId} />
 
-          {/* 공개 모니터(전광판) 링크 */}
+          {/* 공개 모니터(전광판) 링크 — 🔨H7 ② 유지 */}
           <MonitorLinkButton tournamentId={tournamentId} monitorToken={tournament.monitorToken} />
 
-          <View className="mx-1 mt-3 flex-row items-center justify-between rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
-            <Text className="text-content-primary dark:text-off-white">등록(SUBSCRIPTIONS)</Text>
-            <Pressable
-              onPress={() => toggleMut.mutate(!tournament.registrationOpen)}
-              accessibilityRole="button"
-              className={`rounded-md px-3 py-1.5 active:opacity-70 ${tournament.registrationOpen ? 'bg-green-600' : 'bg-gray-400 dark:bg-gray-600'}`}
-            >
-              <Text className="font-sans-semibold text-sm text-white">
-                {tournament.registrationOpen ? '열림 (마감하기)' : '마감 (열기)'}
-              </Text>
-            </Pressable>
-          </View>
+          {/* 등록 토글 — 🔨H7 ③ completed 에서는 숨김(재개방 조작은 무의미·혼란 표면) */}
+          {!isCompleted && (
+            <View className="mx-1 mt-3 flex-row items-center justify-between rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+              <Text className="text-content-primary dark:text-off-white">등록(SUBSCRIPTIONS)</Text>
+              <Pressable
+                onPress={() => toggleMut.mutate(!tournament.registrationOpen)}
+                accessibilityRole="button"
+                className={`rounded-md px-3 py-1.5 active:opacity-70 ${tournament.registrationOpen ? 'bg-green-600' : 'bg-gray-400 dark:bg-gray-600'}`}
+              >
+                <Text className="font-sans-semibold text-sm text-white">
+                  {tournament.registrationOpen ? '열림 (마감하기)' : '마감 (열기)'}
+                </Text>
+              </Pressable>
+            </View>
+          )}
 
+          {/* 상태 카드 — 🔨H7 ④ 유지(completed 에서 nextStatusActions 빈 배열 → 표시 전용) */}
           <View className="mx-1 mt-2 flex-row items-center justify-between rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
             <Text className="text-content-primary dark:text-off-white">
               상태: {tournament.status}
