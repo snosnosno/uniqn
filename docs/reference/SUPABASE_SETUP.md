@@ -28,8 +28,9 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 uniqn-mobile/
 ├── src/
 │   ├── lib/
-│   │   ├── supabase.ts              # 클라이언트 초기화
-│   │   └── database.types.ts        # 자동 생성된 DB 타입
+│   │   └── supabase.ts              # 클라이언트 초기화
+│   ├── types/
+│   │   └── supabase.ts              # 자동 생성된 DB 타입 (gen types 출력)
 │   ├── repositories/
 │   │   └── supabase/                # Supabase Repository 구현체
 │   ├── schemas/                     # Zod 입력/도메인 스키마
@@ -53,16 +54,18 @@ npx supabase functions serve     # Edge Functions 로컬 실행
 
 ### 마이그레이션
 
+> **❗ prod 적용은 MCP `apply_migration` 전용 — `npx supabase db push` 금지.** 상세 사유는 `CONTRIBUTING.md` 참조. 아래 `db push`는 로컬 개발 스택(`npx supabase start`)에만 해당하는 참고 명령입니다.
+
 ```bash
-npx supabase db push             # 원격 DB에 마이그레이션 적용
-npx supabase db pull             # 원격 DB 스키마 내려받기
+npx supabase db pull             # 원격 DB 스키마 내려받기 (참고용)
 npx supabase migration new <name>  # 새 마이그레이션 파일 생성
+npx supabase db push             # 로컬 개발 스택 반영 (prod 금지)
 ```
 
 ### 타입 재생성
 
 ```bash
-npx supabase gen types typescript --linked > src/lib/database.types.ts
+npx supabase gen types typescript --linked > src/types/supabase.ts
 ```
 
 또는 Supabase MCP: `mcp__supabase__generate_typescript_types`
@@ -138,7 +141,7 @@ npx supabase functions deploy <function-name>
 
 ### 타입 불일치 (`column does not exist`)
 
-`database.types.ts` 재생성 누락. `npx supabase gen types typescript` 실행.
+`src/types/supabase.ts` 재생성 누락. `npx supabase gen types typescript` 실행.
 
 ### RLS 정책 거부 (`new row violates row-level security policy`)
 

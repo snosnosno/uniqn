@@ -44,7 +44,6 @@
 ```text
 Node.js 22
 npm
-Firebase CLI
 Java 17+
 Git
 ```
@@ -59,14 +58,13 @@ npm run quality
 npm start
 ```
 
-### Functions
+### Supabase Edge Functions
+
+위치: `uniqn-mobile/supabase/functions/`
 
 ```powershell
-cd functions
-npm install
-Copy-Item .env.example .env
-npm run build
-npm test
+cd uniqn-mobile
+npx supabase functions serve
 ```
 
 ## 현재 제외 범위

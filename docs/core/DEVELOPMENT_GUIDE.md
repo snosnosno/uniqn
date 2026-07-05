@@ -78,13 +78,13 @@ cd uniqn-mobile
 npx supabase start                          # 로컬 Supabase(DB/Auth/Storage/Edge Functions)
 npx supabase functions serve <name>         # Edge Function 로컬 실행
 npx supabase db reset                       # 마이그레이션 재적용
-npx supabase gen types typescript --local   # database.types.ts 재생성
+npx supabase gen types typescript --local   # src/types/supabase.ts 재생성
 ```
 
 ## 새 작업 시작 순서
 
 1. 동일한 화면/훅/서비스/저장소가 이미 있는지 검색합니다.
-2. 기존 타입과 스키마를 확인합니다 (`database.types.ts` 포함).
+2. 기존 타입과 스키마를 확인합니다 (`src/types/supabase.ts` 포함).
 3. 역할 영향이 있는지 확인합니다.
 4. 앱 라우트와 deep link 영향을 확인합니다.
 5. Edge Function 연계가 있으면 함수 이름과 `supabase/functions/<name>/index.ts` 엔트리를 확인합니다.

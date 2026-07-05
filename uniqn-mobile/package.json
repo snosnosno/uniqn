@@ -130,11 +130,9 @@
     "jest": "~29.7.0",
     "jest-expo": "~55.0.16",
     "jest-watch-typeahead": "^2.2.2",
-    "lint-staged": "^15.5.0",
     "prettier": "^3.5.0",
     "react-test-renderer": "19.2.0",
     "source-map-explorer": "^2.5.3",
-    "ts-node": "^10.9.2",
     "typescript": "~5.9.2"
   },
   "lint-staged": {
@@ -158,10 +156,22 @@
     }
   },
   "knip": {
+    "ignore": [
+      "babel.config.js",
+      "functions/**",
+      "supabase/functions/**",
+      "e2e/playwright.config.ts",
+      "e2e/global-setup.ts",
+      "e2e/global-teardown.ts",
+      "e2e/fixtures/auth.setup.ts"
+    ],
     "ignoreDependencies": [
       "react-native-mmkv",
       "react-native-nitro-modules",
-      "expo-intent-launcher"
+      "expo-intent-launcher",
+      "expo-modules-core",
+      "babel-preset-expo",
+      "@cloudflare/workers-types"
     ]
   },
   "private": true

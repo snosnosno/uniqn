@@ -41,7 +41,7 @@
 
 ## 백엔드 관측성
 
-- Supabase Edge Functions 로그 (`npx supabase functions logs`)
+- Supabase Edge Functions 로그 (Dashboard → Edge Functions → Logs 또는 MCP `get_logs`)
 - Supabase Dashboard — Auth / PostgreSQL / Edge Functions / Storage
 - PostgreSQL 쿼리 메트릭: Supabase Dashboard → Database → Query Performance
 - Edge Functions 내부 Sentry 유틸: `uniqn-mobile/supabase/functions/_shared/sentry.ts`
@@ -49,7 +49,7 @@
 ## 장애 확인 순서
 
 1. Sentry에서 최근 오류 확인
-2. `npx supabase functions logs <function-name>` 확인
+2. Supabase Dashboard → Edge Functions → Logs(또는 MCP `get_logs`) 확인
 3. Supabase Dashboard → Logs (Auth/DB/Storage) 확인
 4. 관리자 통계 화면에서 주요 수치 확인
 5. 최근 배포와 env 변경 여부 확인

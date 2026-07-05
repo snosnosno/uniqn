@@ -35,6 +35,10 @@
 - (/review M5) 만료 cron 2종 + 소유자 만료 알림 + `get_job_posting_stats`에 `capacity_full` 포함 — 정원 마감 공고의 zombie(미만료)·통계 과소집계 방지
 - (/review) 구인자 카드 "마감하기" 버튼 + 홈 위젯(개요/주간스태프/취소요청) 필터에 `capacity_full` 포함
 
+### Removed
+- Firebase/Firestore 백엔드 전면 제거 — Supabase 전환 완료(2026년 초, 이력 소급 기록)
+- 지갑/IAP/다이아 결제 수익모델 전면 제거(2026-06-22, PR #196~#206)
+
 ## [0.0.1.1] - 2026-04-18
 
 ### Fixed
@@ -133,7 +137,7 @@
 
 ---
 
-## [Unreleased]
+## [미출시 이력 아카이브 — 2025-11 (Firebase/app2 시절)]
 
 ### 📌 고정공고 Phase 4: 상세보기 및 Firestore 인덱스 설정 완료 (2025-11-23)
 

@@ -45,23 +45,23 @@ npx supabase functions deploy <FUNCTION_NAME>
 
 RLS 정책과 테이블 스키마는 `uniqn-mobile/supabase/migrations/*.sql` 로 관리됩니다. 되돌릴 때는 역방향 마이그레이션을 새로 추가하는 것이 원칙입니다.
 
+> **❗ prod 적용은 MCP `apply_migration` 전용 — `npx supabase db push` 금지.**
+
 ```bash
 cd uniqn-mobile
 
-# 1) 문제 마이그레이션을 되돌리는 새 마이그레이션 생성
+# 1) 문제 마이그레이션을 되돌리는 새 마이그레이션 파일 생성
 npx supabase migration new revert_<name>
 
-# 2) DROP POLICY / ALTER TABLE 등 역방향 SQL 작성 후 적용
-npx supabase db push
+# 2) DROP POLICY / ALTER TABLE 등 역방향 SQL 작성 후
+#    Claude Code의 mcp__supabase__apply_migration 호출로 prod에 적용
 ```
 
 긴급 시에는 Supabase Dashboard의 "Database > Migrations"에서 이전 상태로 즉시 복원하거나, Point-In-Time Recovery로 특정 시점의 DB 상태로 복구할 수 있습니다.
 
 ## 로그 확인
 
-```bash
-npx supabase functions logs <FUNCTION_NAME>
-```
+Edge Function 로그는 Supabase Dashboard → Edge Functions → Logs 또는 MCP `get_logs`로 확인합니다 (CLI 2.109 기준 `supabase functions logs` 서브커맨드는 존재하지 않음).
 
 Supabase Dashboard의 Logs / Database / Auth 섹션에서도 실시간 로그 확인이 가능합니다. 추가로 Sentry와 앱 관리자 통계를 함께 확인합니다.
 

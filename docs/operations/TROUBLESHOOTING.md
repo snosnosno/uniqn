@@ -61,7 +61,7 @@ npm run quality
 
 - `uniqn-mobile/supabase/functions/<함수명>/index.ts` 존재 여부
 - Supabase Dashboard → Edge Functions 배포 상태
-- 함수 로그: `supabase functions logs <함수명> --project-ref <ref>`
+- 함수 로그: Supabase Dashboard → Logs 탭 또는 MCP `get_logs` (CLI 2.109 기준 `functions logs` 서브커맨드는 존재하지 않음)
 - `verify_jwt` 설정 (`uniqn-mobile/supabase/config.toml`)
 
 ## 8. Sentry 이벤트가 보이지 않음
