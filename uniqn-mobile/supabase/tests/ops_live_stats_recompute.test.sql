@@ -2,6 +2,8 @@
 --   cross-tenant 격리 + CASCADE 가드(대회 삭제 회귀).
 -- 통제된 대회 A/B/C 를 직접 구성(postgres) 후 RPC/직접변이 → live_stats 단언.
 BEGIN;
+-- 1f: live_stats 트리거가 DEFERRED 로 전환됨 — 이 파일은 같은 txn 에서 live_stats 를 단언하므로 즉시 발화 강제.
+SET CONSTRAINTS ALL IMMEDIATE;
 SELECT plan(13);
 
 -- ─── 셋업: 시드(owner 확보) + 통제 대회 A(코스트 고정, 2명 active chips 100/200, bb=400) ───
