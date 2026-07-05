@@ -207,3 +207,156 @@ BEGIN
     'winner', v_winner_json);
 END;
 $function$;
+
+-- ───────────────────────────────────────────────────────────────────────────
+-- 2) ops_undo_bust — 오조작 bust 원상 복구(D2: active 중에만·completed 재개방 없음).
+--    재진입과 구분: reentries 불변·칩=bust 직전 값 복원·registration_open 무관·KO 롤백.
+--    복원 소스 = 최신 player_busted 이벤트(append-only 불변 → 행 잠금 전 조회 안전.
+--    eliminator id 를 먼저 알아야 두 참가자 행을 id 오름차순으로 잠글 수 있음 — 4.1 규약 유지).
+CREATE FUNCTION public.ops_undo_bust(
+  p_participant_id uuid,
+  p_actor_id uuid
+)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path = 'public', 'extensions', 'pg_temp'
+AS $function$
+DECLARE
+  v_tournament_id uuid;
+  v_t_status public.ops_tournament_status;
+  v_status public.ops_participant_status;
+  v_payload jsonb;
+  v_chips_before int;
+  v_elim_id uuid;
+  v_bust_seat_id uuid;
+  v_seat_id uuid;
+  v_seat_restored text;
+  v_new_status public.ops_participant_status;
+  v_seated boolean;
+  v_table_no int;
+  v_seat_no int;
+BEGIN
+  -- 1) actor 가드
+  IF auth.uid() IS NULL
+     OR (auth.uid() IS DISTINCT FROM p_actor_id AND NOT public.is_admin()) THEN
+    RAISE EXCEPTION 'PERMISSION_DENIED: 호출자 인증 불일치' USING ERRCODE = 'P0001';
+  END IF;
+
+  -- 2) tournament_id 선취(비잠금)
+  SELECT tournament_id INTO v_tournament_id
+    FROM public.ops_participants WHERE id = p_participant_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'PARTICIPANT_NOT_FOUND: 참가자를 찾을 수 없습니다 (%)', p_participant_id
+      USING ERRCODE = 'P0001';
+  END IF;
+
+  -- 3) 멤버십 [🔨H1: status 검사·advisory 보다 먼저 — 1d 3종·bust v2 와 동일 순서.
+  --    비멤버가 INVALID_STATUS/PERMISSION_DENIED 차등으로 대회 status 를 판별하는 오라클 차단 +
+  --    비멤버는 advisory·행 잠금을 점유하지 않음]
+  IF NOT (public.is_ops_member(v_tournament_id, p_actor_id) OR public.is_admin()) THEN
+    RAISE EXCEPTION 'PERMISSION_DENIED: 대회 관리 권한 없음' USING ERRCODE = 'P0001';
+  END IF;
+
+  -- 4) advisory → 대회 FOR UPDATE + active 한정(D2 — 우승확정 후 completed 면 여기서 차단)
+  PERFORM pg_advisory_xact_lock(hashtext('ops_tournament_' || v_tournament_id::text)::bigint);
+  SELECT status INTO v_t_status FROM public.ops_tournaments
+    WHERE id = v_tournament_id FOR UPDATE;
+  IF v_t_status <> 'active' THEN
+    RAISE EXCEPTION 'INVALID_STATUS: 진행 중 대회에서만 탈락 취소가 가능합니다 (status=%)', v_t_status
+      USING ERRCODE = 'P0001';
+  END IF;
+
+  -- 5) 복원 소스 = 최신 player_busted 이벤트(무잠금 조회 — append-only 불변).
+  --    bust→reenter→재bust 이력에서도 "현재 busted = 최신 bust 이벤트" 대응 성립.
+  --    [🔨H11] 정렬은 seq(IDENTITY 전순서) — created_at 은 now()=txn 시작 고정이라 동률 비결정.
+  SELECT payload INTO v_payload FROM public.ops_events
+    WHERE tournament_id = v_tournament_id AND type = 'player_busted'
+      AND (payload->>'participant_id')::uuid = p_participant_id
+    ORDER BY seq DESC LIMIT 1;
+  v_chips_before := COALESCE((v_payload->>'chips_before')::int, 0);  -- E2 fail-safe(구 payload/이론상 부재)
+  v_elim_id      := (v_payload->>'eliminator_id')::uuid;
+  v_bust_seat_id := (v_payload->>'freed_seat_id')::uuid;
+
+  -- 6) 참가자(+eliminator) id 오름차순 FOR UPDATE(4.1 규약) → busted 검사
+  IF v_elim_id IS NOT NULL AND v_elim_id <> p_participant_id THEN
+    PERFORM 1 FROM public.ops_participants
+      WHERE id IN (p_participant_id, v_elim_id)
+      ORDER BY id FOR UPDATE;
+  END IF;
+  SELECT status INTO v_status
+    FROM public.ops_participants WHERE id = p_participant_id FOR UPDATE;
+  IF v_status <> 'busted' THEN
+    RAISE EXCEPTION 'UNDO_INVALID_STATE: 탈락 상태의 참가자만 취소할 수 있습니다 (status=%)', v_status
+      USING ERRCODE = 'P0001';
+  END IF;
+
+  -- 7) KO 롤백 — GREATEST 0(CHECK 위반 방어). eliminator 가 그 사이 busted 여도 카운트만 감소(정합).
+  IF v_elim_id IS NOT NULL THEN
+    UPDATE public.ops_participants
+      SET knockouts = GREATEST(knockouts - 1, 0) WHERE id = v_elim_id;
+  END IF;
+
+  -- 8) 좌석 3분기: ①원좌석(존재·비점유·open·unlocked) ②auto-seat(빈좌석 첫 자리 —
+  --    auto_seat_on_register 설정과 무관하게 항상 시도: undo 는 "물리적으로 앉아 있던 사람"의 복구)
+  --    ③빈좌석 없으면 무좌석. SKIP LOCKED = reenter 와 동일 패턴(경합 시 다음 분기 폴백).
+  v_seat_id := NULL;
+  v_seat_restored := 'none';
+  IF v_bust_seat_id IS NOT NULL THEN
+    SELECT s.id INTO v_seat_id
+      FROM public.ops_seats s
+      JOIN public.ops_tables t ON t.id = s.table_id
+      WHERE s.id = v_bust_seat_id AND s.tournament_id = v_tournament_id
+        AND s.participant_id IS NULL
+        AND t.status = 'open' AND t.lock_type = 'none'
+      FOR UPDATE OF s SKIP LOCKED;
+    IF v_seat_id IS NOT NULL THEN
+      v_seat_restored := 'original';
+    END IF;
+  END IF;
+  IF v_seat_id IS NULL THEN
+    SELECT s.id INTO v_seat_id
+      FROM public.ops_seats s
+      JOIN public.ops_tables t ON t.id = s.table_id
+      WHERE s.tournament_id = v_tournament_id
+        AND s.participant_id IS NULL
+        AND t.status = 'open' AND t.lock_type = 'none'
+      ORDER BY s.table_no, s.seat_no
+      LIMIT 1 FOR UPDATE OF s SKIP LOCKED;
+    IF v_seat_id IS NOT NULL THEN
+      v_seat_restored := 'auto';
+    END IF;
+  END IF;
+  v_seated := v_seat_id IS NOT NULL;
+  v_new_status := CASE WHEN v_seated THEN 'active'::public.ops_participant_status
+                       ELSE 'checked_in'::public.ops_participant_status END;
+
+  -- 9) 참가자 복원
+  UPDATE public.ops_participants
+    SET status = v_new_status, chips = v_chips_before,
+        finish_position = NULL, busted_at = NULL, prize_amount = NULL
+    WHERE id = p_participant_id;
+
+  IF v_seated THEN
+    UPDATE public.ops_seats SET participant_id = p_participant_id WHERE id = v_seat_id;
+    SELECT table_no, seat_no INTO v_table_no, v_seat_no
+      FROM public.ops_seats WHERE id = v_seat_id;
+  END IF;
+
+  -- 10) 이벤트 + 반환
+  INSERT INTO public.ops_events (tournament_id, type, actor_id, payload)
+  VALUES (v_tournament_id, 'player_bust_undone', p_actor_id,
+          jsonb_build_object('participant_id', p_participant_id,
+                             'restored_chips', v_chips_before,
+                             'eliminator_id', v_elim_id,
+                             'seat_restored', v_seat_restored));
+
+  RETURN jsonb_build_object(
+    'participant_id', p_participant_id,
+    'restored_chips', v_chips_before,
+    'status', v_new_status,
+    'seated', v_seated,
+    'table_no', v_table_no,
+    'seat_no', v_seat_no);
+END;
+$function$;
