@@ -1,6 +1,6 @@
 -- ops RPC 보안: anon REVOKE / authenticated GRANT / actor 바인딩 / registration_closed.
 BEGIN;
-SELECT plan(5);
+SELECT plan(11);
 
 -- EXECUTE 권한: anon 없음, authenticated 있음 (fixture 가 함수 GRANT 안 하므로 마이그 상태 유지).
 SELECT ok(
@@ -9,6 +9,26 @@ SELECT ok(
 SELECT ok(
   has_function_privilege('authenticated', 'public.ops_register_participant(uuid,uuid,text,text,text,integer)', 'EXECUTE'),
   'authenticated retains EXECUTE on ops_register_participant');
+
+-- 1f M4: 신규/재생성 변이 RPC 3종도 anon 거부 / authenticated 보유 (마이그 20260704100300).
+SELECT ok(
+  NOT has_function_privilege('anon', 'public.ops_bust_participant(uuid,uuid,uuid)', 'EXECUTE'),
+  '1f: anon cannot EXECUTE ops_bust_participant(v2 3인자)');
+SELECT ok(
+  has_function_privilege('authenticated', 'public.ops_bust_participant(uuid,uuid,uuid)', 'EXECUTE'),
+  '1f: authenticated retains EXECUTE on ops_bust_participant');
+SELECT ok(
+  NOT has_function_privilege('anon', 'public.ops_undo_bust(uuid,uuid)', 'EXECUTE'),
+  '1f: anon cannot EXECUTE ops_undo_bust');
+SELECT ok(
+  has_function_privilege('authenticated', 'public.ops_undo_bust(uuid,uuid)', 'EXECUTE'),
+  '1f: authenticated retains EXECUTE on ops_undo_bust');
+SELECT ok(
+  NOT has_function_privilege('anon', 'public.ops_correct_participant_prize(uuid,uuid,integer,text)', 'EXECUTE'),
+  '1f: anon cannot EXECUTE ops_correct_participant_prize');
+SELECT ok(
+  has_function_privilege('authenticated', 'public.ops_correct_participant_prize(uuid,uuid,integer,text)', 'EXECUTE'),
+  '1f: authenticated retains EXECUTE on ops_correct_participant_prize');
 
 DO $$
 DECLARE s RECORD;
