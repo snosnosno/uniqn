@@ -34,6 +34,7 @@ export {
   useFreeSeat,
   useRedrawWaitlistFill,
   useReseatParticipants,
+  useCorrectPrize,
 } from './useOpsMutations';
 export { useOpsPrizes, useSetPrizeStructure } from './useOpsPrizes';
 export {

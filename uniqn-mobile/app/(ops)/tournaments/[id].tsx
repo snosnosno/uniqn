@@ -157,9 +157,7 @@ export default function OpsTournamentDetailScreen() {
       ) : tab === 'history' ? (
         <HistoryTab tournamentId={tournamentId} />
       ) : tab === 'payouts' ? (
-        <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
-          <PayoutsTab tournamentId={tournamentId} />
-        </ScrollView>
+        <PayoutsTab tournament={tournament} />
       ) : null}
     </SafeAreaView>
   );
