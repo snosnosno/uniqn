@@ -360,3 +360,356 @@ BEGIN
     'seat_no', v_seat_no);
 END;
 $function$;
+
+-- ───────────────────────────────────────────────────────────────────────────
+-- 3) ops_correct_participant_prize — 개인 지급액 정정(소급)·회수(D3: completed 후에도 허용).
+--    순위·상태·구조(ops_prizes) 불변. p_amount NULL = 회수("수상 아님" 복귀), 0 이상 = 설정
+--    (기존 NULL 이어도 부여 가능 — 비ITM자 수동 지급 포함). no-op 도 이벤트 기록(감사 명료성).
+--    재진입 상호작용(의도): 정정 후 reenter 하면 prize_amount NULL 리셋(1d 계약 유지) — 이력은 이벤트 원장에만.
+CREATE FUNCTION public.ops_correct_participant_prize(
+  p_participant_id uuid,
+  p_actor_id uuid,
+  p_amount int DEFAULT NULL,
+  p_reason text DEFAULT NULL
+)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path = 'public', 'extensions', 'pg_temp'
+AS $function$
+DECLARE
+  v_tournament_id uuid;
+  v_t_status public.ops_tournament_status;
+  v_fp int;
+  v_before int;
+BEGIN
+  -- 1) actor 가드
+  IF auth.uid() IS NULL
+     OR (auth.uid() IS DISTINCT FROM p_actor_id AND NOT public.is_admin()) THEN
+    RAISE EXCEPTION 'PERMISSION_DENIED: 호출자 인증 불일치' USING ERRCODE = 'P0001';
+  END IF;
+
+  -- 2) tournament_id 선취(비잠금)
+  SELECT tournament_id INTO v_tournament_id
+    FROM public.ops_participants WHERE id = p_participant_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'PARTICIPANT_NOT_FOUND: 참가자를 찾을 수 없습니다 (%)', p_participant_id
+      USING ERRCODE = 'P0001';
+  END IF;
+
+  -- 3) 멤버십 [🔨H1: status 검사·advisory 보다 먼저 — 에러 차등 오라클 차단·1d 일관, §4.2 와 동일 근거]
+  IF NOT (public.is_ops_member(v_tournament_id, p_actor_id) OR public.is_admin()) THEN
+    RAISE EXCEPTION 'PERMISSION_DENIED: 대회 관리 권한 없음' USING ERRCODE = 'P0001';
+  END IF;
+
+  -- 4) advisory → 대회 FOR UPDATE + active/completed 허용(upcoming 거부)
+  PERFORM pg_advisory_xact_lock(hashtext('ops_tournament_' || v_tournament_id::text)::bigint);
+  SELECT status INTO v_t_status FROM public.ops_tournaments
+    WHERE id = v_tournament_id FOR UPDATE;
+  IF v_t_status NOT IN ('active', 'completed') THEN
+    RAISE EXCEPTION 'INVALID_STATUS: 시작 전 대회에는 정정할 상금이 없습니다 (status=%)', v_t_status
+      USING ERRCODE = 'P0001';
+  END IF;
+
+  -- 5) 참가자 FOR UPDATE + 정산 대상(fp NOT NULL = busted 또는 확정 우승자)만
+  SELECT finish_position, prize_amount INTO v_fp, v_before
+    FROM public.ops_participants WHERE id = p_participant_id FOR UPDATE;
+  IF v_fp IS NULL THEN
+    RAISE EXCEPTION 'PRIZE_CORRECTION_INVALID: 순위가 확정된 참가자만 정정할 수 있습니다'
+      USING ERRCODE = 'P0001';
+  END IF;
+
+  -- 6) 값 검증
+  IF p_amount IS NOT NULL AND p_amount < 0 THEN
+    RAISE EXCEPTION 'PRIZE_CORRECTION_INVALID: 금액은 0 이상이어야 합니다' USING ERRCODE = 'P0001';
+  END IF;
+  IF p_reason IS NOT NULL AND char_length(p_reason) > 200 THEN
+    RAISE EXCEPTION 'PRIZE_CORRECTION_INVALID: 사유는 200자 이내여야 합니다' USING ERRCODE = 'P0001';
+  END IF;
+
+  -- 7) 변이(no-op 도 이벤트는 기록)
+  UPDATE public.ops_participants SET prize_amount = p_amount WHERE id = p_participant_id;
+
+  -- 8) 이벤트(p_reason 은 payload 에만 저장 — 공개 표면 미노출)
+  INSERT INTO public.ops_events (tournament_id, type, actor_id, payload)
+  VALUES (v_tournament_id, 'prize_corrected', p_actor_id,
+          jsonb_build_object('participant_id', p_participant_id,
+                             'amount_before', v_before, 'amount_after', p_amount,
+                             'reason', p_reason));
+
+  RETURN jsonb_build_object('participant_id', p_participant_id,
+                            'amount_before', v_before, 'amount_after', p_amount);
+END;
+$function$;
+
+-- ───────────────────────────────────────────────────────────────────────────
+-- 4) ops_create_tournament — bounty_cost 세팅 경로 추가(CREATE OR REPLACE, 시그니처 불변 → GRANT 보존).
+--    [1f 변경 2곳] ① INSERT 컬럼 목록 addon_cost 뒤 bounty_cost ② VALUES 에 (p_config->>'bounty_cost')::int
+--    (⚠️ COALESCE 없음 — NULL = 비-바운티 유지. 음수는 M1 CHECK 가 차단). 나머지 1a 원문 그대로.
+CREATE OR REPLACE FUNCTION public.ops_create_tournament(
+  p_owner_id uuid,
+  p_name text,
+  p_venue text,
+  p_event_date date,
+  p_game_type text,
+  p_job_posting_id uuid,
+  p_starting_chips int,
+  p_seats_per_table int,
+  p_config jsonb
+)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path = 'public', 'extensions', 'pg_temp'
+AS $function$
+DECLARE
+  v_tournament_id uuid;
+  v_jp record;
+BEGIN
+  -- [보안] 호출자 바인딩: p_owner_id 는 호출자 본인(또는 admin).
+  IF auth.uid() IS NULL
+     OR (auth.uid() IS DISTINCT FROM p_owner_id AND NOT public.is_admin()) THEN
+    RAISE EXCEPTION 'PERMISSION_DENIED: 호출자 인증 불일치' USING ERRCODE = 'P0001';
+  END IF;
+
+  -- 공고 연동 시: 호출자가 해당 공고를 관리할 수 있어야 함.
+  IF p_job_posting_id IS NOT NULL THEN
+    SELECT id, owner_id, workspace_id INTO v_jp
+      FROM public.job_postings WHERE id = p_job_posting_id;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'TOURNAMENT_NOT_FOUND: 공고를 찾을 수 없습니다 (%)', p_job_posting_id
+        USING ERRCODE = 'P0001';
+    END IF;
+    IF NOT (
+      v_jp.owner_id = p_owner_id
+      OR public.is_workspace_member(v_jp.workspace_id, p_owner_id)
+      OR public.is_admin()
+    ) THEN
+      RAISE EXCEPTION 'PERMISSION_DENIED: 공고 관리 권한 없음' USING ERRCODE = 'P0001';
+    END IF;
+  END IF;
+
+  INSERT INTO public.ops_tournaments (
+    owner_id, job_posting_id, name, venue, event_date, game_type,
+    status, seats_per_table, starting_chips,
+    buy_in_chips, rebuy_chips, addon_chips,
+    buy_in_cost, fee_cost, rebuy_cost, addon_cost, bounty_cost
+  ) VALUES (
+    p_owner_id, p_job_posting_id, p_name, p_venue, p_event_date,
+    COALESCE(NULLIF(p_game_type, ''), 'NLH'),
+    'upcoming', COALESCE(p_seats_per_table, 9), COALESCE(p_starting_chips, 0),
+    COALESCE((p_config->>'buy_in_chips')::int, 0),
+    COALESCE((p_config->>'rebuy_chips')::int, 0),
+    COALESCE((p_config->>'addon_chips')::int, 0),
+    COALESCE((p_config->>'buy_in_cost')::int, 0),
+    COALESCE((p_config->>'fee_cost')::int, 0),
+    COALESCE((p_config->>'rebuy_cost')::int, 0),
+    COALESCE((p_config->>'addon_cost')::int, 0),
+    (p_config->>'bounty_cost')::int    -- [1f] COALESCE 없음: NULL = 비-바운티(0 과 구분)
+  ) RETURNING id INTO v_tournament_id;
+
+  INSERT INTO public.ops_events (tournament_id, type, actor_id, payload)
+  VALUES (v_tournament_id, 'tournament_created', p_owner_id,
+          jsonb_build_object('name', p_name));
+
+  RETURN jsonb_build_object('tournament_id', v_tournament_id);
+END;
+$function$;
+
+-- ───────────────────────────────────────────────────────────────────────────
+-- 5) ops_update_tournament — bounty_cost 패치 추가(CREATE OR REPLACE, 시그니처 불변 → GRANT 보존).
+--    [1f 변경 1곳] UPDATE SET addon_cost 다음 bounty_cost 만 key-presence 분기(COALESCE 로는 NULL
+--    되돌리기 불가): 키 없음=유지, {"bounty_cost":null}=NULL 설정, {"bounty_cost":5000}=값 설정.
+--    나머지 1a 원문 그대로.
+CREATE OR REPLACE FUNCTION public.ops_update_tournament(
+  p_tournament_id uuid,
+  p_actor_id uuid,
+  p_patch jsonb
+)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path = 'public', 'extensions', 'pg_temp'
+AS $function$
+DECLARE
+  v_id uuid;
+BEGIN
+  IF auth.uid() IS NULL
+     OR (auth.uid() IS DISTINCT FROM p_actor_id AND NOT public.is_admin()) THEN
+    RAISE EXCEPTION 'PERMISSION_DENIED: 호출자 인증 불일치' USING ERRCODE = 'P0001';
+  END IF;
+
+  SELECT id INTO v_id FROM public.ops_tournaments
+    WHERE id = p_tournament_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'TOURNAMENT_NOT_FOUND: 대회를 찾을 수 없습니다 (%)', p_tournament_id
+      USING ERRCODE = 'P0001';
+  END IF;
+
+  IF NOT (public.is_ops_member(p_tournament_id, p_actor_id) OR public.is_admin()) THEN
+    RAISE EXCEPTION 'PERMISSION_DENIED: 대회 관리 권한 없음' USING ERRCODE = 'P0001';
+  END IF;
+
+  UPDATE public.ops_tournaments SET
+    name            = COALESCE(p_patch->>'name', name),
+    venue           = COALESCE(p_patch->>'venue', venue),
+    event_date      = COALESCE((p_patch->>'event_date')::date, event_date),
+    game_type       = COALESCE(p_patch->>'game_type', game_type),
+    starting_chips  = COALESCE((p_patch->>'starting_chips')::int, starting_chips),
+    seats_per_table = COALESCE((p_patch->>'seats_per_table')::int, seats_per_table),
+    buy_in_chips    = COALESCE((p_patch->>'buy_in_chips')::int, buy_in_chips),
+    rebuy_chips     = COALESCE((p_patch->>'rebuy_chips')::int, rebuy_chips),
+    addon_chips     = COALESCE((p_patch->>'addon_chips')::int, addon_chips),
+    buy_in_cost     = COALESCE((p_patch->>'buy_in_cost')::int, buy_in_cost),
+    fee_cost        = COALESCE((p_patch->>'fee_cost')::int, fee_cost),
+    rebuy_cost      = COALESCE((p_patch->>'rebuy_cost')::int, rebuy_cost),
+    addon_cost      = COALESCE((p_patch->>'addon_cost')::int, addon_cost),
+    -- [1f] bounty_cost 만 key-presence 분기: COALESCE 패치로는 NULL 되돌리기(비-바운티 전환) 불가.
+    bounty_cost     = CASE WHEN p_patch ? 'bounty_cost'
+                           THEN (p_patch->>'bounty_cost')::int
+                           ELSE bounty_cost END,
+    color           = COALESCE(p_patch->>'color', color)
+  WHERE id = p_tournament_id;
+
+  RETURN jsonb_build_object('tournament_id', p_tournament_id);
+END;
+$function$;
+
+-- ───────────────────────────────────────────────────────────────────────────
+-- 6) ops_get_monitor_snapshot — stats 에 knockoutPool 추가(비-PII 집계치 — 화이트리스트 심사 승인 D5).
+--    [1f 변경 2곳] ① v_stats SELECT 끝에 knockout_pool ② stats 에 'knockoutPool' (COALESCE 없음 —
+--    NULL = 비-바운티 신호 그대로 전달, 클라 카드 숨김). 나머지 1c3 원문 그대로(CREATE OR REPLACE → anon GRANT 보존).
+CREATE OR REPLACE FUNCTION public.ops_get_monitor_snapshot(p_monitor_token text)
+ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER
+ SET search_path = 'public', 'extensions', 'pg_temp'
+AS $function$
+DECLARE
+  v_t     record;
+  v_clock record;
+  v_stats record;
+  v_cur   record;
+  v_next  record;
+BEGIN
+  IF p_monitor_token IS NULL OR char_length(p_monitor_token) < 32 THEN
+    RAISE EXCEPTION 'OPS_MONITOR_TOKEN_INVALID: 유효하지 않은 모니터 토큰' USING ERRCODE = 'P0001';
+  END IF;
+
+  SELECT id, name, venue, event_date, game_type, status, color, registration_open
+    INTO v_t
+    FROM public.ops_tournaments
+    WHERE monitor_token = p_monitor_token;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'OPS_MONITOR_TOKEN_INVALID: 유효하지 않은 모니터 토큰' USING ERRCODE = 'P0001';
+  END IF;
+
+  SELECT current_level_sort, level_started_at, is_running, paused_remaining_sec
+    INTO v_clock FROM public.ops_clock WHERE tournament_id = v_t.id;
+
+  SELECT playing, entries, reentries_total, tables_open, seats_total, seats_free,
+         total_chips, average_stack, avg_stack_bb, prize_pool, knockout_pool
+    INTO v_stats FROM public.ops_live_stats WHERE tournament_id = v_t.id;
+
+  SELECT level, small_blind, big_blind, ante, duration_sec, is_break
+    INTO v_cur FROM public.ops_blind_levels
+    WHERE tournament_id = v_t.id AND sort = v_clock.current_level_sort;
+
+  SELECT level, small_blind, big_blind, ante, duration_sec, is_break
+    INTO v_next FROM public.ops_blind_levels
+    WHERE tournament_id = v_t.id AND sort = v_clock.current_level_sort + 1;
+
+  RETURN jsonb_build_object(
+    'tournament', jsonb_build_object(
+      'name', v_t.name, 'venue', v_t.venue, 'eventDate', v_t.event_date,
+      'gameType', v_t.game_type, 'status', v_t.status::text, 'color', v_t.color,
+      'registrationOpen', v_t.registration_open),
+    'clock', jsonb_build_object(
+      'currentLevelSort', v_clock.current_level_sort, 'levelStartedAt', v_clock.level_started_at,
+      'isRunning', COALESCE(v_clock.is_running, false), 'pausedRemainingSec', v_clock.paused_remaining_sec),
+    'currentLevel', CASE WHEN v_cur IS NULL THEN NULL ELSE jsonb_build_object(
+      'level', v_cur.level, 'smallBlind', v_cur.small_blind, 'bigBlind', v_cur.big_blind,
+      'ante', v_cur.ante, 'durationSec', v_cur.duration_sec, 'isBreak', v_cur.is_break) END,
+    'nextLevel', CASE WHEN v_next IS NULL THEN NULL ELSE jsonb_build_object(
+      'level', v_next.level, 'smallBlind', v_next.small_blind, 'bigBlind', v_next.big_blind,
+      'ante', v_next.ante, 'durationSec', v_next.duration_sec, 'isBreak', v_next.is_break) END,
+    'stats', jsonb_build_object(
+      'playing', COALESCE(v_stats.playing, 0), 'entries', COALESCE(v_stats.entries, 0),
+      'reentriesTotal', COALESCE(v_stats.reentries_total, 0), 'tablesOpen', COALESCE(v_stats.tables_open, 0),
+      'seatsTotal', COALESCE(v_stats.seats_total, 0), 'seatsFree', COALESCE(v_stats.seats_free, 0),
+      'totalChips', COALESCE(v_stats.total_chips, 0), 'averageStack', COALESCE(v_stats.average_stack, 0),
+      'avgStackBb', COALESCE(v_stats.avg_stack_bb, 0), 'prizePool', COALESCE(v_stats.prize_pool, 0),
+      'knockoutPool', v_stats.knockout_pool),
+    'serverNow', now()
+  );
+END;
+$function$;
+
+-- ───────────────────────────────────────────────────────────────────────────
+-- 7) ops_get_player_view — me 에 knockouts·bountyAccrued 추가(본인 행 한정 — 화이트리스트 심사 승인 D5).
+--    [1f 변경 3곳] ① v_p SELECT 에 knockouts ② v_t SELECT 에 bounty_cost(반환 안 함 — 적립 계산 전용)
+--    ③ me 에 knockouts·bountyAccrued(=knockouts×bounty_cost, 비-바운티면 NULL). 나머지 claim_split 원문 그대로.
+--    ⚠️ 시그니처 불변 → CREATE OR REPLACE(GRANT 보존, 파라미터명 변경 아님).
+CREATE OR REPLACE FUNCTION public.ops_get_player_view(p_view_token text)
+ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER
+ SET search_path = 'public', 'extensions', 'pg_temp'
+AS $function$
+DECLARE
+  v_p record; v_seat record; v_t record; v_clock record; v_cur record; v_stats record;
+BEGIN
+  IF p_view_token IS NULL OR char_length(p_view_token) < 32 THEN
+    RAISE EXCEPTION 'OPS_VIEW_TOKEN_INVALID: 유효하지 않은 플레이어 토큰' USING ERRCODE = 'P0001';
+  END IF;
+
+  -- 본인 1행. 안전필드만 — view_token/claim_pin_hash/phone/nationality/note/player_user_id 미선택.
+  SELECT id, tournament_id, entry_number, name, status, chips,
+         finish_position, prize_amount, rebuys, add_ons, reentries, knockouts
+    INTO v_p
+    FROM public.ops_participants
+    WHERE view_token = p_view_token;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'OPS_VIEW_TOKEN_INVALID: 유효하지 않은 플레이어 토큰' USING ERRCODE = 'P0001';
+  END IF;
+
+  SELECT t.table_no, s.seat_no
+    INTO v_seat
+    FROM public.ops_seats s
+    JOIN public.ops_tables t ON t.id = s.table_id
+    WHERE s.participant_id = v_p.id;
+
+  -- bounty_cost 는 적립 계산에만 사용(자체는 반환 안 함).
+  SELECT name, venue, game_type, status, bounty_cost
+    INTO v_t FROM public.ops_tournaments WHERE id = v_p.tournament_id;
+
+  SELECT current_level_sort, level_started_at, is_running, paused_remaining_sec
+    INTO v_clock FROM public.ops_clock WHERE tournament_id = v_p.tournament_id;
+
+  SELECT level, small_blind, big_blind, ante, duration_sec, is_break
+    INTO v_cur FROM public.ops_blind_levels
+    WHERE tournament_id = v_p.tournament_id AND sort = v_clock.current_level_sort;
+
+  SELECT playing, entries, average_stack, avg_stack_bb
+    INTO v_stats FROM public.ops_live_stats WHERE tournament_id = v_p.tournament_id;
+
+  RETURN jsonb_build_object(
+    'me', jsonb_build_object(
+      'entryNumber', v_p.entry_number, 'name', v_p.name, 'status', v_p.status::text,
+      'chips', v_p.chips, 'finishPosition', v_p.finish_position, 'prizeAmount', v_p.prize_amount,
+      'rebuys', v_p.rebuys, 'addOns', v_p.add_ons, 'reentries', v_p.reentries,
+      'knockouts', v_p.knockouts,
+      'bountyAccrued', CASE WHEN v_t.bounty_cost IS NULL THEN NULL
+                            ELSE v_p.knockouts * v_t.bounty_cost END,
+      'tableNo', v_seat.table_no, 'seatNo', v_seat.seat_no),
+    'tournament', jsonb_build_object(
+      'name', v_t.name, 'venue', v_t.venue, 'gameType', v_t.game_type, 'status', v_t.status::text),
+    'clock', jsonb_build_object(
+      'currentLevelSort', v_clock.current_level_sort, 'levelStartedAt', v_clock.level_started_at,
+      'isRunning', COALESCE(v_clock.is_running, false), 'pausedRemainingSec', v_clock.paused_remaining_sec),
+    'currentLevel', CASE WHEN v_cur IS NULL THEN NULL ELSE jsonb_build_object(
+      'level', v_cur.level, 'smallBlind', v_cur.small_blind, 'bigBlind', v_cur.big_blind,
+      'ante', v_cur.ante, 'durationSec', v_cur.duration_sec, 'isBreak', v_cur.is_break) END,
+    'stats', jsonb_build_object(
+      'playing', COALESCE(v_stats.playing, 0), 'entries', COALESCE(v_stats.entries, 0),
+      'averageStack', COALESCE(v_stats.average_stack, 0), 'avgStackBb', COALESCE(v_stats.avg_stack_bb, 0)),
+    'serverNow', now()
+  );
+END;
+$function$;
