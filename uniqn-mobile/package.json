@@ -158,7 +158,6 @@
   "knip": {
     "ignore": [
       "babel.config.js",
-      "functions/**",
       "supabase/functions/**",
       "e2e/playwright.config.ts",
       "e2e/global-setup.ts",
