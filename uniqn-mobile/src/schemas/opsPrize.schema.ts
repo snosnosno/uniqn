@@ -16,16 +16,13 @@ export const prizeStructureSchema = z
 export type PrizeStructureInput = z.infer<typeof prizeStructureSchema>;
 
 /**
- * UUID 형식 정규식 refine.
- * Zod v4 `.uuid()`는 RFC 4122 variant 강제라 테스트 픽스처(11111111-…) 거부 —
- * 그룹형 정규식으로 형식만 검사(#220 opsSeat.schema 패턴 재사용).
+ * UUID 형식(그룹형) 정규식 — RFC 4122 variant 비강제.
+ * Zod v4 `.uuid()`는 variant 강제라 테스트 픽스처(11111111-…) 거부 → 형식만 검사(#220 opsSeat.schema 패턴 재사용).
+ * 서비스 경계 가드(H2 eliminatorId)와 단일 소스 공유하도록 export.
  */
-const uuidLike = z
-  .string()
-  .refine(
-    (v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v),
-    'UUID 형식이 아니에요.'
-  );
+export const UUID_LIKE_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const uuidLike = z.string().refine((v) => UUID_LIKE_RE.test(v), 'UUID 형식이 아니에요.');
 
 /** 1f 상금 정정 입력. amount null = 회수. reason 은 선택 + xssValidation. */
 export const prizeCorrectionSchema = z.object({

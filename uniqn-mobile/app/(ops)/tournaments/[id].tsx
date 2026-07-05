@@ -271,30 +271,33 @@ export default function OpsTournamentDetailScreen() {
                               text: '탈락 처리',
                               style: 'destructive',
                               onPress: () =>
-                                bustMut.mutate(item.id, {
-                                  onSuccess: (r) => {
-                                    // RPC 계약: winnerFinalized=true면 v_active2=1 조건 동일로 winner 항상 non-null.
-                                    if (r.winnerFinalized && r.winner) {
-                                      Alert.alert(
-                                        '우승 확정',
-                                        `1위 · 상금 ${
-                                          r.winner.prizeAmount !== null
-                                            ? fmt(r.winner.prizeAmount)
-                                            : '미설정'
-                                        }`
-                                      );
-                                    } else {
-                                      Alert.alert(
-                                        r.prizeAmount !== null ? 'ITM 종료' : '탈락 처리 완료',
-                                        `${r.finishPosition}위${
-                                          r.prizeAmount !== null
-                                            ? ` · 상금 ${fmt(r.prizeAmount)}`
-                                            : ''
-                                        }`
-                                      );
-                                    }
-                                  },
-                                }),
+                                bustMut.mutate(
+                                  { participantId: item.id },
+                                  {
+                                    onSuccess: (r) => {
+                                      // RPC 계약: winnerFinalized=true면 v_active2=1 조건 동일로 winner 항상 non-null.
+                                      if (r.winnerFinalized && r.winner) {
+                                        Alert.alert(
+                                          '우승 확정',
+                                          `1위 · 상금 ${
+                                            r.winner.prizeAmount !== null
+                                              ? fmt(r.winner.prizeAmount)
+                                              : '미설정'
+                                          }`
+                                        );
+                                      } else {
+                                        Alert.alert(
+                                          r.prizeAmount !== null ? 'ITM 종료' : '탈락 처리 완료',
+                                          `${r.finishPosition}위${
+                                            r.prizeAmount !== null
+                                              ? ` · 상금 ${fmt(r.prizeAmount)}`
+                                              : ''
+                                          }`
+                                        );
+                                      }
+                                    },
+                                  }
+                                ),
                             },
                           ])
                         }
