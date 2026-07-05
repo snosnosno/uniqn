@@ -159,10 +159,12 @@
     "ignore": [
       "babel.config.js",
       "supabase/functions/**",
-      "e2e/playwright.config.ts",
-      "e2e/global-setup.ts",
-      "e2e/global-teardown.ts",
-      "e2e/fixtures/auth.setup.ts"
+      "e2e/**",
+      "src/__tests__/mocks/**"
+    ],
+    "ignoreBinaries": [
+      "supabase",
+      "eas"
     ],
     "ignoreDependencies": [
       "react-native-mmkv",

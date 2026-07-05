@@ -63,6 +63,45 @@ knip이 보고한 미사용 심볼 ~3,000건 중 **상당수가 오탐(엔트리
 
 ---
 
+### Phase 0 후 baseline (재측정 — 2026-07-05, `chore/knip-config-harden`)
+
+> **드리프트 정정**: 위 §2 표는 이 로드맵 작성 시점의 config를 기록했으나, 실제로는 로드맵 병합(#224) 직전 커밋 `027a5c5a1 (…knip 오탐 봉인)`이 **파일·의존성 봉인을 이미 완료**한 상태였다. 따라서 §2의 "Unused files 26 / (dev)deps 5"는 stale이며 실측 시점 이미 0이었다. 이번 Phase 0(`chore/knip-config-harden`)는 그 위에 남아 있던 **테스트 인프라 오탐(e2e 43 + `src/__tests__/mocks` 5)과 Unlisted binaries 2**만 추가 봉인했다. 게이트 전부 그린: `type-check` EXIT 0 · `jest` 4,748/4,748 통과 · `npx knip` 재측정.
+
+**적용한 config 변경** (`package.json` knip 블록):
+
+- `ignore`: e2e config 4종을 `e2e/**` blanket으로 대체 + `src/__tests__/mocks/**` 추가
+- `ignoreBinaries: ["supabase", "eas"]` 신규 (npm 스크립트 CLI 미선언 오탐 제거)
+- `ignoreDependencies` 6종 불변 — mmkv/nitro/intent-launcher는 knip "remove" 힌트가 뜨나 peer dep 보호(`pitfall_knip_falsepositive_build_config`)로 **의도적 유지**(hint 3건 무해)
+
+| 카테고리              | §2 (stale) | 027a5c5a1 후 | **Phase 0 후 (권위)** | 조치                                             |
+| --------------------- | ---------- | ------------ | --------------------- | ------------------------------------------------ |
+| Unused files          | 26         | 0            | **0**                 | `ignore: supabase/functions/**` 등 (선반영)      |
+| Unused (dev)deps      | 5          | 0            | **0**                 | `ignoreDependencies` 6종 (선반영)                |
+| Unlisted binaries     | —          | 2            | **0**                 | `ignoreBinaries: [supabase, eas]` 추가           |
+| Unused exports        | 1,725      | 1,716        | **1,670**             | `ignore: e2e/**`, `src/__tests__/mocks/**` (−46) |
+| Unused exported types | 977        | 970          | **968**               | 〃 (−2)                                          |
+| Duplicate exports     | 320        | 313          | **313**               | 불변 (전부 `src/**`, Phase 1 대상)               |
+| Configuration hints   | —          | 3            | **3**                 | mmkv/nitro/intent-launcher — 유지                |
+
+**Phase 0 후 구역별 분해** (오탐 제거 후 순수 신호 — 전부 `src/**`):
+
+- **Unused exports 1,670**: components 411 · schemas 243 · services 228 · hooks 194 · utils 126 · constants 87 · types 67 · errors 61 · domains 60 · stores 51 · repositories 47 · shared 44 · lib 43 · config 8
+- **Unused exported types 968**: schemas 220 · components 178 · types 177 · repositories 100 · services 76 · domains 68 · hooks 52 · constants 25 · shared 25 · stores 13 · utils 12 · errors 11 · lib 6 · config 4 · features 1
+- **Duplicate exports 313**: components 238 · hooks 43 · services 15 · stores 6 · constants 4 · utils 3 · lib 2 · errors 1 · config 1
+
+**Phase 3~5 세션 수 재산정**: config 하드닝은 **테스트 인프라만 봉인**했을 뿐 `src/**` 삭제 대상 물량(총 2,951 심볼)은 사실상 그대로다. 따라서 §6의 21~29 세션 추정은 **상한선으로 유효**. 진짜 감축은 각 Phase에서 심볼별 (b)의도적 공개 API·(d)배럴 재수출·(f)Zod 타입-포지션을 grep으로 걸러낼 때 발생하며, Phase 0 config로는 계량 불가.
+
+| Phase | 대상 구역                                                              | Phase 0 후 물량 | 재산정 세션         |
+| ----- | ---------------------------------------------------------------------- | --------------- | ------------------- |
+| 1     | Duplicate (components 238 · hooks 43 · services 15 · 기타 17)          | 313             | 2~3 (불변)          |
+| 3     | 리프 exports(constants·utils·stores·lib·shared = 351) + types 구역 177 | ~530            | 3~4 (불변)          |
+| 4     | components (exports 411 + types 178)                                   | 589             | 4~5 (§2 대비 소폭↑) |
+| 5     | services·repos·hooks·schemas·domains·errors (exports 833 + types 527)  | ~1,360          | 10~15 (불변)        |
+
+> 핵심: Phase 0의 순효과는 "신호 정화 완료 — 파일·deps·테스트 인프라·바이너리 0, 남은 2,951건은 전부 `src/**` 진짜 분석 대상"이지 Phase 3~5 모수 축소가 아니다. 모수 축소는 Phase 3~5의 per-symbol 판별에서 나온다.
+
+---
+
 ## 3. 오탐 분류 체계 (Taxonomy)
 
 knip이 "미사용"으로 보고한 심볼은 아래 6유형 중 하나다. **삭제 전 반드시 유형부터 판별**한다.
