@@ -74,7 +74,7 @@ UPDATE public.ops_tournaments SET bounty_cost = 10000
   WHERE id = (current_setting('ops.t_id'))::uuid;
 SELECT is(
   (SELECT knockout_pool FROM public.ops_live_stats WHERE tournament_id = (current_setting('ops.t_id'))::uuid),
-  40000, 'tournaments 트리거 발화: knockout_pool=(3+1)×10000=40000');
+  40000::bigint, 'tournaments 트리거 발화: knockout_pool=(3+1)×10000=40000');
 
 -- ── [9] tournaments 비용 변경 트리거: buy_in_cost 변경 → prize_pool 재계산 ──
 UPDATE public.ops_tournaments SET buy_in_cost = 60000
