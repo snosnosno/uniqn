@@ -1,4 +1,3 @@
-import { generateId } from '@/utils/generateId';
 import { getTodayString, toDateString } from '@/utils/date';
 import type { SalaryInfo } from '../jobPosting';
 import type { StaffRole } from '../role';
@@ -80,21 +79,4 @@ export function sortDateRequirements(
 
       return dateB.localeCompare(dateA);
     });
-}
-
-export function createDefaultTimeSlot(): TimeSlot {
-  return {
-    id: generateId(),
-    startTime: '09:00',
-    isTimeToBeAnnounced: false,
-    roles: [createDefaultRole()],
-  };
-}
-
-export function createDefaultRole(): RoleRequirement {
-  return {
-    id: generateId(),
-    role: 'dealer',
-    headcount: 1,
-  };
 }

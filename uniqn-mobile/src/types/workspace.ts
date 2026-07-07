@@ -77,9 +77,3 @@ export interface AcceptInvitationResult {
   /** 이미 수락 완료된 초대를 다시 수락한 경우 true */
   idempotent: boolean;
 }
-
-export const WORKSPACE_LIMITS = {
-  MAX_PER_OWNER: 10,
-  MAX_NAME_LENGTH: 50,
-  INVITATION_TTL_DAYS: 7,
-} as const;

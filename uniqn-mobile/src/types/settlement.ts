@@ -134,14 +134,3 @@ export interface GroupSettlementOptions {
   /** 최소 그룹 크기 (이 수 이상일 때만 그룹화, 기본: 1) */
   minGroupSize?: number;
 }
-
-// ============================================================================
-// Type Guards
-// ============================================================================
-
-/**
- * GroupedSettlement인지 확인하는 타입 가드
- */
-export function isGroupedSettlement(item: WorkLog | GroupedSettlement): item is GroupedSettlement {
-  return 'dateRange' in item && 'originalWorkLogs' in item && 'summary' in item;
-}

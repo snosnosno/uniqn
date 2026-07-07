@@ -249,15 +249,6 @@ export const INQUIRY_STATUS_CONFIG: Record<
   },
 };
 
-/**
- * 상태 라벨 맵
- */
-export const INQUIRY_STATUS_LABELS: Record<InquiryStatus, string> = {
-  open: '접수됨',
-  in_progress: '처리중',
-  closed: '답변 완료',
-};
-
 // ============================================================================
 // FAQ 데이터 (하드코딩)
 // ============================================================================

@@ -9,7 +9,6 @@ import { FirebaseDocument } from './common';
 import type { JobRoleStats, PostingCompensation, SalaryInfo, SalaryType } from './jobPosting';
 import type { AttendanceStatus, PayrollStatus, ScheduleType, WorkLogStatus } from '@/shared/status';
 import type { TimeInput } from '@/shared/time/types';
-import { StatusMapper } from '@/shared/status';
 import type { StaffRole } from './role';
 
 // Re-export SalaryType from jobPosting (single source of truth)
@@ -23,19 +22,6 @@ export type { AttendanceStatus, WorkLogStatus, ScheduleType, PayrollStatus };
 /**
  * WorkLog ?곹깭 (?꾩껜 lifecycle)
  */
-
-/**
- * WorkLogStatus ??AttendanceStatus 蹂???좏떥
- *
- * @description StatusMapper濡??꾩엫 (Phase 1 - ?곹깭 留ㅽ븨 ?듯빀)
- * @example
- * toAttendanceStatus('scheduled') // 'not_started'
- * toAttendanceStatus('checked_in') // 'checked_in'
- * toAttendanceStatus('completed') // 'checked_out'
- */
-export function toAttendanceStatus(workLogStatus: WorkLogStatus): AttendanceStatus {
-  return StatusMapper.toAttendance(workLogStatus);
-}
 
 /**
  * ?ㅼ?以???? */
@@ -476,48 +462,6 @@ export interface WorkLog extends FirebaseDocument {
   /** 구인처 ID */
   ownerId?: string;
 }
-
-/**
- * ?ㅼ?以???낅퀎 ?됱긽
- */
-export const SCHEDULE_COLORS: Record<
-  ScheduleType,
-  {
-    bg: string;
-    border: string;
-    text: string;
-  }
-> = {
-  applied: {
-    bg: 'bg-warning-100 dark:bg-warning-900/30',
-    border: 'border-warning-500',
-    text: 'text-warning-800 dark:text-warning-200',
-  },
-  confirmed: {
-    bg: 'bg-success-100 dark:bg-success-900/30',
-    border: 'border-success-500',
-    text: 'text-success-800 dark:text-success-200',
-  },
-  completed: {
-    bg: 'bg-primary-100 dark:bg-primary-900/30',
-    border: 'border-primary-500',
-    text: 'text-primary-800 dark:text-primary-200',
-  },
-  cancelled: {
-    bg: 'bg-error-100 dark:bg-error-900/30',
-    border: 'border-error-500',
-    text: 'text-error-800 dark:text-error-200',
-  },
-};
-
-/**
- * 異쒖꽍 ?곹깭蹂??됱긽
- */
-export const ATTENDANCE_STATUS_COLORS: Record<AttendanceStatus, string> = {
-  not_started: 'bg-secondary-100 dark:bg-surface text-content-muted dark:text-secondary-300',
-  checked_in: 'bg-success-100 dark:bg-success-900/30 text-success-600 dark:text-success-300',
-  checked_out: 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-300',
-};
 
 // ============================================================================
 // QR Code Types
