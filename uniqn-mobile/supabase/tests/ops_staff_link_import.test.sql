@@ -507,7 +507,7 @@ SELECT throws_like(                                                          -- 
 -- 시드 C(리뷰 후속 T2-M1) — [import] 최신-role 채택 회귀가드용. 별도 대회 t4 + jp4 +
 --   동일 스태프(v_multi)의 work_logs 2행(구 날짜 role='floor' / 신 날짜 role='dealer', 둘 다 활성 status).
 -- ⚠️ 기존 [import] 6~8은 스태프별 1행 시드뿐이라 DISTINCT ON(wl.staff_id) ORDER BY wl.staff_id,
---   wl.date DESC, wl.created_at DESC(20260707100100_ops_1e_staff_rpcs.sql:116-123)의 "최신 활동일 채택"
+--   wl.date DESC, wl.created_at DESC(20260708100100_ops_1e_staff_rpcs.sql:116-123)의 "최신 활동일 채택"
 --   로직이 무검증이었다(ASC로 뒤집혀도 imported/skipped 카운트는 그대로라 기존 단언을 통과한다).
 -- ════════════════════════════════════════════════════════════════════════════
 DO $$

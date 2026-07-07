@@ -477,7 +477,7 @@ SELECT throws_ok(                                                            -- 
 -- (T3-M2) 로스터 RPC 3종(add/remove/assign) 공통 에러경로 회귀 안전망:
 --   ① TOURNAMENT_NOT_FOUND(무효 대회 id) ② actor 불일치(p_actor≠auth.uid, 비-admin)
 --   ③ outsider 멤버십 거부('대회 운영 권한이 없습니다').
--- 게이트 순서(마이그 20260707100100): actor → advisory lock → tournament FOR UPDATE → membership.
+-- 게이트 순서(마이그 20260708100100): actor → advisory lock → tournament FOR UPDATE → membership.
 --   ①은 actor 일치(owner=owner)로 tournament 로드까지 도달, ②는 caller≠actor 로 첫 게이트,
 --   ③은 actor 일치하나 비멤버라 membership 게이트. Task2 시나리오가 실질 커버하나 파일 내 완결 명세.
 -- ════════════════════════════════════════════════════════════════════════════
