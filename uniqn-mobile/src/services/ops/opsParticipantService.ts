@@ -6,11 +6,8 @@ import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { isAppError, ValidationError, ERROR_CODES } from '@/errors';
 import { opsParticipantRepository, type RegisterParticipantInput } from '@/repositories/ops';
 import { registerParticipantSchema } from '@/schemas/opsParticipant.schema';
-import {
-  prizeCorrectionSchema,
-  UUID_LIKE_RE,
-  type PrizeCorrectionInput,
-} from '@/schemas/opsPrize.schema';
+import { prizeCorrectionSchema, type PrizeCorrectionInput } from '@/schemas/opsPrize.schema';
+import { UUID_LIKE_RE } from '@/schemas/common';
 
 const COMPONENT = 'opsParticipantService';
 

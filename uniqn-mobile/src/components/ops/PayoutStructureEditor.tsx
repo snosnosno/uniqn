@@ -14,11 +14,9 @@ import { SelectBottomSheet } from '@/components/ui/BottomSheet';
 import type { OpsTournament } from '@/types/ops';
 import type { PrizeStructureInput } from '@/schemas/opsPrize.schema';
 import { fmtKrw, parseAmount, reindexRows } from './payoutRows';
+import { EMPTY_ROW_ERROR, percentErrorMessage } from './payoutMessages';
 
 const ITM_RATIOS: ItmRatio[] = [0.1, 0.15, 0.2];
-const EMPTY_ROW_ERROR = '금액이 비어 있는 행이 있어요';
-const POOL_TOO_SMALL_MSG = '풀이 작아 1,000원/100원 단위 분배가 불가해요';
-const invalidPercentsMsg = (sum: number) => `비율 합계가 100이 되어야 해요(현재 ${sum}%)`;
 
 type Mode = 'amount' | 'percent';
 type PayloadResult = { ok: true; payload: PrizeStructureInput } | { ok: false; error: string };
@@ -54,6 +52,7 @@ export function PayoutStructureEditor({ tournament }: { tournament: OpsTournamen
   const parsedPercents = percents.map((p) => parseFloat(p) || 0);
   const percentSum = Math.round(parsedPercents.reduce((s, p) => s + p, 0) * 100) / 100;
   const curve = computeAmountsFromPercents(pool, parsedPercents);
+  const percentError = percentErrorMessage(curve, parsedPercents, percentSum);
 
   const displaySum =
     mode === 'amount'
@@ -104,11 +103,7 @@ export function PayoutStructureEditor({ tournament }: { tournament: OpsTournamen
   const buildPayload = (): PayloadResult => {
     if (mode === 'percent') {
       if (!curve.ok) {
-        return {
-          ok: false,
-          error:
-            curve.reason === 'POOL_TOO_SMALL' ? POOL_TOO_SMALL_MSG : invalidPercentsMsg(percentSum),
-        };
+        return { ok: false, error: percentError ?? '' };
       }
       return { ok: true, payload: curve.amounts.map((amount, i) => ({ rank: i + 1, amount })) };
     }
@@ -247,11 +242,7 @@ export function PayoutStructureEditor({ tournament }: { tournament: OpsTournamen
         <>
           {!curve.ok && percents.length > 0 && (
             <View className="rounded-md bg-amber-50 px-3 py-2 dark:bg-amber-900/30">
-              <Text className="text-sm text-amber-600 dark:text-amber-400">
-                {curve.reason === 'POOL_TOO_SMALL'
-                  ? POOL_TOO_SMALL_MSG
-                  : invalidPercentsMsg(percentSum)}
-              </Text>
+              <Text className="text-sm text-amber-600 dark:text-amber-400">{percentError}</Text>
             </View>
           )}
           {percents.map((p, idx) => (

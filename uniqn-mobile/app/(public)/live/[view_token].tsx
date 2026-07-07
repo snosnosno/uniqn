@@ -22,7 +22,7 @@ import { usePlayerView } from '@/hooks/ops/usePlayerView';
 import { useClaimParticipant } from '@/hooks/ops/useOpsClaimToken';
 import { useAuthStore } from '@/stores/authStore';
 
-const fmt = (n: number) => n.toLocaleString('ko-KR');
+import { formatNumber as fmt } from '@/utils/formatters/currency';
 
 function formatMmSs(totalSec: number): string {
   const s = Math.max(0, Math.floor(totalSec));

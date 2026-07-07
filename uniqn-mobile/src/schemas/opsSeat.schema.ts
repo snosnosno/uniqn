@@ -5,6 +5,7 @@
 import { z } from 'zod';
 import { xssValidation } from '@/utils/security';
 import { Constants } from '@/types/supabase';
+import { uuidLikeSchema as uuidLike } from './common';
 
 const safeText = (max: number) =>
   z
@@ -31,19 +32,6 @@ export type MoveSeatForm = z.infer<typeof moveSeatSchema>;
 /** 전원 재배치 모드 enum(랜덤/칩 드래프트). */
 export const reseatModeSchema = z.enum(['random_draw', 'chip_draft']);
 export type ReseatMode = z.infer<typeof reseatModeSchema>;
-
-/**
- * UUID 형식 정규식 refine.
- * Zod v4 `.uuid()`는 RFC 4122 variant 강제라 테스트 픽스처(11111111-…) 거부 —
- * 그룹형 정규식으로 형식만 검사하되 RFC 4122 variant는 강제하지 않는다.
- * ⚠️ `/^[0-9a-f-]{36}$/i` 는 대시만 36개도 통과시키므로 사용 금지.
- */
-const uuidLike = z
-  .string()
-  .refine(
-    (v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v),
-    'UUID 형식이 아니에요.'
-  );
 
 /** 전원 재배치 배정 목록: 참가자·좌석 각 중복 금지, 최소 1건.
  * participantId·seatId 는 UUID 형식 정규식 refine(그룹형, RFC 4122 variant 비강제). */

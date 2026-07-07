@@ -10,7 +10,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { NumericText } from '@/components/ui';
 import { useMonitorSnapshot } from '@/hooks/ops/useMonitorSnapshot';
 
-const fmt = (n: number) => n.toLocaleString('ko-KR');
+import { formatNumber as fmt } from '@/utils/formatters/currency';
 
 function formatMmSs(totalSec: number): string {
   const s = Math.max(0, Math.floor(totalSec));

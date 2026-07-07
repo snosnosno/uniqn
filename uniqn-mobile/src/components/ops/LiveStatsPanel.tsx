@@ -6,7 +6,7 @@
 import { View, Text } from 'react-native';
 import { useOpsLiveStats } from '@/hooks/ops';
 
-const fmt = (n: number) => n.toLocaleString('ko-KR');
+import { formatNumber as fmt } from '@/utils/formatters/currency';
 
 /** avg_stack_bb 는 numeric → 10 이상은 정수, 미만은 소수 1자리. */
 function formatBb(bb: number): string {

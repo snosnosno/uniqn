@@ -14,7 +14,7 @@ import {
 } from '@/hooks/ops';
 import type { OpsBustResult, OpsParticipant, OpsTournament } from '@/types/ops';
 
-const fmt = (n: number) => n.toLocaleString('ko-KR');
+import { formatNumber as fmt } from '@/utils/formatters/currency';
 
 interface PlayersTabProps {
   tournament: OpsTournament;

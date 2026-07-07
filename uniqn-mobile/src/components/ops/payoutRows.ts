@@ -4,9 +4,10 @@
  * buildLedgerRows: 구조(prizes) + 실지급(participants) 클라 조인(🔨H20 유령 방지).
  */
 import type { OpsParticipant, OpsPrize } from '@/types/ops';
+import { formatNumber } from '@/utils/formatters/currency';
 
-/** 원화 표기(ko-KR 천단위). */
-export const fmtKrw = (n: number): string => n.toLocaleString('ko-KR');
+/** 원화 표기(ko-KR 천단위) — canonical formatNumber 위임(중복 제거). */
+export const fmtKrw = (n: number): string => formatNumber(n);
 
 /** raw 입력 문자열 → 정수 원화(숫자 외 제거). 빈/비숫자 → 0. */
 export function parseAmount(raw: string): number {
