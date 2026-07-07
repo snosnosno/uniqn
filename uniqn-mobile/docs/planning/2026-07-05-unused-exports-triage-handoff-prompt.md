@@ -20,7 +20,9 @@
 | E Phase 2    | 죽은 dep `@cloudflare/workers-types` uninstall+unseal(lock diff 분리)                     | `1505440d3`                         |
 | F Phase 3 b1 | colors.ts 자기완결 죽은 export 5개(BORDER_COLORS·CHART_COLORS쌍·PLACEHOLDER_COLORS쌍)     | `af37f2060`                         |
 
-전 배치 게이트 그린: type-check EXIT0 · jest 4748/4748 · (D 배치3) build:web EXIT0(T1) · knip 새 미사용 0.
+전 배치 게이트 그린: type-check EXIT0 · jest 4748/4748 · (D 배치3·웹변형) build:web EXIT0(T1) · knip 새 미사용 0.
+
+**+ 후속(`00b46bfba`)**: code-review(독립 검증)가 batch1~2에서 놓친 **웹 변형 잔존 default 4개**(SheetProvider/PortOneIdentityVerification/QRCodeScanner/BottomSheet `.web.tsx`, 소비자 0)를 적발 → 대칭 제거(knip 미집계라 N 불변). **code-review 최종 = APPROVE, 코드-깨짐 0**(excluded 경로·동적 소비·플랫폼 변형·배럴 전수 점검). 함정 노트 `.claude/agent-memory/code-reviewer/pitfall_knip_platform_variant_default_drift.md`(Phase 4 컴포넌트 구간 재현 주의). → **Phase 4/이후 배치는 base 삭제 시 `.web/.native` 형제 default도 함께 처리**.
 
 **남은 duplicate 36 = 13 needs-review**(테스트 default-import·dynamic import·barrel default 재수출: useAppInitialize/useApplicantManagement/analyticsService/deepLinkService/secureStorage/CalendarView/AssignmentSelector/ApplicantCard/SettlementDetailModal/SalarySection/useNotificationStore/notificationService/sentryService) **+ 23 의도적 별칭**(icons/index.tsx 아이콘 별칭·colors PRIMARY\|ACCENT·statusConfig ATTENDANCE\|attendanceConfig). 버킷 데이터: 세션 스크래치패드 `dup-buckets.json`(재생성: knip --reporter json → `dup-analyze.mjs`).
 
