@@ -39,6 +39,37 @@
 
 ---
 
+## 실행 세션 2 완료 로그 (2026-07-08, Opus 4.8)
+
+> 워크트리 `T-HOLDEM-knip-triage` · 브랜치 `chore/knip-triage-exec` · 세션 1 위에 4커밋 추가 · **미push**.
+
+**총 이슈 2393 → 2313 (−80)** · 래칫 N=**2313**. 세션 1(2951→2393) 이어서 진행.
+
+| 커밋        | 배치                                                                                          | 삭제   | 래칫      |
+| ----------- | --------------------------------------------------------------------------------------------- | ------ | --------- |
+| `d24024d3d` | utils 리프 SELF (platform 반응형 서브셋·상태카운트라벨·시간포맷)                              | 12 net | 2393→2381 |
+| `05be2d002` | platform 죽은 프리미티브 (isIOS·isAndroid·isMobile, code-reviewer 후속)                       | 3      | 2381→2378 |
+| `2e047b080` | types 구역 리프 24종 (5 클러스터)                                                             | 24     | 2378→2354 |
+| `071fe16f6` | constants·lib·shared 배럴 재수출 리프 21종 협응삭제 (+ location.ts·database.ts 죽은파일 삭제) | 41 net | 2354→2313 |
+
+전 배치 게이트 그린: type-check EXIT0 · jest 4748/4748 · knip 재측정(캐스케이드 실측) · 배럴 배치는 미사용파일 0. code-reviewer: batch1 APPROVE(LOW 1=isMobile 트리오 후속지목→05be2d002로 해소), batch2+3 **APPROVE 0 issues**(grep 결정적 + 독립 tsc EXIT0 이중확인, 실수삭제 0·고아참조 0).
+
+**이 세션의 핵심 실측 발견 (P4/P5 판단 근거로 중요):**
+
+- knip "미사용 export"의 **대다수는 삭제 대상이 아니다.** 리프 SELF 후보 109개 중 실제 (a)삭제가능은 ~39개(약 35%). 나머지는 ▲살아있는 형제가 로컬 소비(tsc red로 차단) ▲의도적 공개/미구현 계약 표면 ▲SSOT(statusValues)·보안상수(SQL_INJECTION_PATTERNS).
+- stores/lib/shared/constants/security 구역 SELF는 **삭제가능 0건**이었다(전부 로컬사용/계약).
+- BARREL 버킷도 51개 평가 중 (a)죽음은 21개뿐, 나머지는 계약타입/패밀리훅/local-use-live.
+
+**남은 Phase 3 리프 작업 (다음 세션 착수점, 현 스냅샷 2313 = exports 1320 / types 957 / dup 36):**
+
+- **OTHER 버킷 (69)** — 단순 죽음 아니라 **중복/잉여 재수출 disambiguation**. `utils/job-posting/dateUtils.ts`↔`utils/date/*`, `utils/formatters/phone.ts`↔`utils/phone.ts`, `settlementGrouping`/`settlement/formatters` 중복파일 통합 + `types/supabase.ts` Json/Tables/Enums=**생성타입(불가촉)** + SalaryType/AttendanceStatus/User/Staff=정본 재수출. 이중파일 분석 필요·위험 높음 → 전용 세션 권장.
+- **BARREL 잔여 디퍼(borderline-b)** — `types/index.ts` 47 계약타입(auth DTO·board·jobPosting 엔티티·common: Phase5-adjacent)·domains/application 9·unified 8·version.ts(빌드메타)·authStore 셀렉터/훅(b)·status/deeplink 계약맵(b)·`useRealtimeSubscription` **훅 추상화 전체(100% 死지만 문서화 공개모듈, 사용자 사인오프 권장)**.
+- **LOCAL-USE de-export 후보(다수)** — 과다 export지만 로컬사용. 삭제 불가·데모트만 가능(이 세션은 데모트 미실행 — 규칙 준수).
+
+**STEP G 부분 회부(2026-07-08):** 사용자 = "Phase 3 리프 잔여 완주" 선택 → 배럴 리프유틸(batch 071fe16f6) 완료. OTHER 버킷·barrel 계약타입·P4/P5는 다음 결정.
+
+---
+
 ## 0. 결론 먼저 (현재 상태)
 
 - **Phase 0 완료·커밋됨** — 브랜치 `chore/knip-config-harden`, 로컬 커밋 2개(미push):
