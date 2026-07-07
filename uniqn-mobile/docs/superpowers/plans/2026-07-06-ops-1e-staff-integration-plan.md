@@ -104,7 +104,8 @@ ALTER TABLE public.ops_staff ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ops_staff FORCE ROW LEVEL SECURITY;
 CREATE POLICY ops_staff_select ON public.ops_staff
   FOR SELECT TO authenticated
-  USING (public.is_ops_member(tournament_id, (SELECT auth.uid())) OR public.is_admin());
+  USING (public.is_ops_member(tournament_id, (SELECT auth.uid())) OR (SELECT public.is_admin()));
+  -- is_admin()은 (SELECT ...) initplan 래핑(적대검증 SEC-2 — 기존 ops SELECT 정책 6종 자구 일치)
 GRANT SELECT ON public.ops_staff TO authenticated;
 GRANT ALL ON public.ops_staff TO service_role;
 REVOKE INSERT, UPDATE, DELETE ON public.ops_staff FROM anon, authenticated;
@@ -304,9 +305,11 @@ $$;
 - [ ] **Step 1: pgTAP 테스트 작성 (RED)** — 시나리오(스펙 §5.1 6·7항):
 
 ```text
-[add] 멤버가 활성 사용자 추가 → 행 생성(source='manual', 이름 서버측 스냅샷=users.name) + 'staff_added'
+[add] 멤버(employer 롤)가 활성 사용자 추가 → 행 생성(source='manual', 이름 서버측 스냅샷=users.name) + 'staff_added'
+[add] status=NULL 활성 사용자 추가 → 성공(COALESCE(status,'active') 흡수 — 적대검증 E1/L3-1/F3 회귀)
 [add] 동일인 재추가 → P0001 DUPLICATE_STAFF
 [add] 비활성(is_active=false) 대상 → P0001 STAFF_NOT_FOUND
+[add] actor가 staff 롤(비 employer/admin)인 대회 owner → P0001 PERMISSION_DENIED (적대검증 SEC-1 롤 게이트)
 [remove] 배정 중(T1 assigned) 스태프 제거 → ops_tables.assigned_staff_id NULL 실측 + 'staff_removed' payload cleared_table_ids=[T1]
 [remove] 타 대회 ops_staff_id → P0001 STAFF_NOT_FOUND
 [assign] 로스터 멤버를 T1에 배정 → assigned_staff_id 반영 + 'table_staff_assigned'
@@ -351,9 +354,16 @@ BEGIN
     RAISE EXCEPTION 'PERMISSION_DENIED: 대회 운영 권한이 없습니다' USING ERRCODE = 'P0001';
   END IF;
 
-  -- 대상 검증: add_direct_staff(20260629000000:106-115)와 동일 기준 — 구현 시 현행 본문과 대조
+  -- 롤 게이트(적대검증 SEC-1): 이름 하베스팅 프리미티브 차단 — 전화검색(search_users_by_phone)과 신뢰경계 일치
+  IF NOT (public.is_admin() OR EXISTS (
+    SELECT 1 FROM public.users WHERE id = p_actor_id AND role IN ('employer','admin') AND is_active = true
+  )) THEN
+    RAISE EXCEPTION 'PERMISSION_DENIED: 스태프 추가 권한이 없습니다' USING ERRCODE = 'P0001';
+  END IF;
+
+  -- 대상 검증: add_direct_staff(20260629000000:112)·search_users_by_phone(:65)와 문자 그대로 동일(COALESCE 필수 — status nullable)
   SELECT * INTO v_user FROM public.users
-   WHERE id = p_staff_id AND is_active = true AND status NOT IN ('deleted','deactivated');
+   WHERE id = p_staff_id AND is_active = true AND COALESCE(status, 'active') NOT IN ('deleted','deactivated');
   IF NOT FOUND THEN
     RAISE EXCEPTION 'STAFF_NOT_FOUND: 추가할 수 없는 사용자입니다' USING ERRCODE = 'P0001';
   END IF;
@@ -545,7 +555,10 @@ $$;
 ```text
 [grant] 신규 RPC 5종 has_function_privilege('anon', ..., 'EXECUTE') = false 전건
 [grant] 신규 RPC 5종 has_function_privilege('authenticated', ..., 'EXECUTE') = true 전건
-[불변] anon-executable SECDEF 총량 = 정확히 monitor/player 2개 (기존 ops 보안 테스트의 동일 단언 관례 재사용 — 기존 테스트가 이미 총량 단언이면 그 테스트가 신규 5종 추가 후에도 GREEN인 것으로 갈음)
+[불변] anon-executable SECDEF 총량 = 정확히 2 — **신규 카탈로그 카운트 단언 작성**(적대검증 E2/F4: 기존 pgTAP엔 함수별 단언만 있고 총량 단언은 부재하므로 "기존 테스트로 갈음" 불가). 예:
+  `SELECT is( (SELECT count(*)::int FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+    WHERE n.nspname='public' AND p.prosecdef AND has_function_privilege('anon', p.oid, 'EXECUTE')), 2,
+    'anon-executable SECDEF은 monitor/player 2개뿐');`
 [actor] RPC 5종: p_actor_id ≠ auth.uid() 비-admin 호출 → P0001 PERMISSION_DENIED
 [realtime] pg_publication_tables에 ops_staff 존재
 ```
@@ -571,7 +584,16 @@ BEGIN
   END LOOP;
 END $$;
 
-ALTER PUBLICATION supabase_realtime ADD TABLE public.ops_staff;
+-- Realtime 등록 — 멱등 가드 필수(적대검증 SEC-3: bare ADD는 db:reset 드리프트 시 42710. 1a/1b grants 문형)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'ops_staff'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.ops_staff;
+  END IF;
+END $$;
 ```
 
 - [ ] **Step 4: supabase.ts 수술적 추가** — `ops_staff` Row/Insert/Update 타입 + Functions에 RPC 5종 Args/Returns. 기존 ops_* 항목의 표기 관례(snake_case 키·Json 타입)를 그대로 따름.
@@ -589,7 +611,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.ops_staff;
 - Create: `uniqn-mobile/src/repositories/supabase/OpsStaffRepository.ts`
 - Modify: `uniqn-mobile/src/repositories/supabase/opsRpcError.ts` (신규 에러 코드 매핑)
 - Modify: `uniqn-mobile/src/repositories/ops.ts` (배럴), `uniqn-mobile/src/lib/queryClient.ts` (queryKeys.ops.staff)
-- Modify: `uniqn-mobile/src/repositories/supabase/OpsTableRepository.ts` + `src/types/ops.ts`의 OpsTable — `assigned_staff_id` SELECT 컬럼·`assignedStaffId` 필드 추가(현재 미노출 실측)
+- ~~OpsTable assigned_staff_id 추가~~ **불요(적대검증 C-1/F2)**: `OpsTableRepository.ts:10` COLUMNS에 `assigned_staff_id` 이미 포함 + `toCamelCase`로 `assignedStaffId` 자동 매핑 + `src/types/ops.ts:131`에 `assignedStaffId?: string | null` 이미 선언. Task 7 딜러 배지는 **기존 필드 그대로 소비**(신규 배선 금지 — 재추가 시 TS 중복 식별자).
 - Test: `uniqn-mobile/src/repositories/supabase/__tests__/OpsStaffRepository.test.ts`
 
 **Interfaces:**
@@ -605,7 +627,7 @@ export interface OpsStaff {
   staffName: string; staffNickname: string | null;
   source: OpsStaffSource; sourceWorkLogId: string | null; createdAt: string;
 }
-// OpsTable에 assignedStaffId: string | null 추가
+// OpsTable.assignedStaffId 는 이미 존재(types/ops.ts:131) — 신규 추가 금지(적대검증 C-1/F2)
 
 // OpsStaffRepository (싱글톤 export: opsStaffRepository)
 listByTournament(tournamentId: string): Promise<OpsStaff[]>            // .order('created_at')
@@ -619,9 +641,9 @@ assignTableStaff(p: { tournamentId: string; actorId: string; tableId: string; st
 ```
 
 - [ ] **Step 1: 실측** — `OpsParticipantRepository.ts`(SELECT 컬럼 상수·snake→camel 매핑·`mapOpsRpcError` 사용법)와 `opsRpcError.ts`(코드→AppError 매핑 테이블), `opsTournament.schema.ts`(zod 관례)를 읽고 동일 문형 채택.
-- [ ] **Step 2: jest 작성 (RED)** — supabase 클라이언트 mock으로: listByTournament 매핑(snake→camel), RPC 5종 인자 스네이크 변환, P0001 신규 코드(NO_LINKED_POSTING/DUPLICATE_STAFF/STAFF_NOT_IN_ROSTER) → AppError 매핑 단언. 기존 Ops*Repository 테스트 파일의 mock 관례 복제.
+- [ ] **Step 2: jest 작성 (RED)** — supabase 클라이언트 mock으로: listByTournament 매핑(snake→camel), RPC 5종 인자 스네이크 변환, P0001 **신규 4코드**(NO_LINKED_POSTING/DUPLICATE_STAFF/STAFF_NOT_IN_ROSTER/**POSTING_NOT_FOUND**) → AppError 매핑 단언. 기존 Ops*Repository 테스트 파일의 mock 관례 복제.
 - [ ] **Step 3: RED 확인** — `npx jest src/repositories/supabase/__tests__/OpsStaffRepository.test.ts` FAIL.
-- [ ] **Step 4: 구현** — zod 스키마는 읽기 내성 관례(`role`은 `z.enum(6값).catch('other')` 등 표시용 필드만 .catch — 기존 ops 스키마와 동일 수준, enum 발산 함정 예방). 에러 매핑: `NO_LINKED_POSTING`→BUSINESS_INVALID_STATE류, `DUPLICATE_STAFF`/`STAFF_NOT_IN_ROSTER`→BUSINESS_INVALID_STATE, `STAFF_NOT_FOUND`/`TABLE_NOT_FOUND`→INFRA_NOT_FOUND(기존 매퍼 분류 관례 준수).
+- [ ] **Step 4: 구현** — zod 스키마는 읽기 내성 관례(`role`은 `z.enum(6값).catch('other')` 등 표시용 필드만 .catch — 기존 ops 스키마와 동일 수준, enum 발산 함정 예방). 에러 매핑에 **신규 4코드 추가**(적대검증 C-3/F1): `NO_LINKED_POSTING`→BUSINESS_INVALID_STATE류, `DUPLICATE_STAFF`/`STAFF_NOT_IN_ROSTER`→BUSINESS_INVALID_STATE, `STAFF_NOT_FOUND`→INFRA_NOT_FOUND, **`POSTING_NOT_FOUND`→INFRA_NOT_FOUND**(누락 시 handleSupabaseError 폴백으로 원시 에러 노출 — 보안 게이트 메시지 유실). **`TABLE_NOT_FOUND`는 신규 아님** — `opsRpcError.ts`에 이미 `OPS_TABLE_NOT_FOUND`로 매핑됨, 재추가 금지(기존 매핑 재사용). 구현 전 `opsRpcError.ts` PREFIX_MAP 실측해 신규 4코드만 추가.
 - [ ] **Step 5: GREEN** — 해당 jest PASS + `npx tsc --noEmit` EXIT 0.
 - [ ] **Step 6: Commit** — `feat(ops): 1e 데이터 레이어 — OpsStaff 타입·스키마·레포지토리·에러 매핑`
 
@@ -691,15 +713,16 @@ useAssignTableStaff(); // onSuccess: invalidate ops.tables + ops.staff
 
 - Create: `uniqn-mobile/src/components/ops/StaffTab.tsx` (로스터·연결카드·import CTA)
 - Create: `uniqn-mobile/src/components/ops/StaffAddSheet.tsx` (전화검색 수동 추가)
+- Create: `uniqn-mobile/src/components/ops/PostingPickerSheet.tsx` (내 관리 공고 선택 시트 — Task 9가 재사용, 적대검증 F5로 소유 태스크 고정)
 - Modify: `uniqn-mobile/app/(ops)/tournaments/[id].tsx` (세그먼트 `staff` 추가)
 - Test: `uniqn-mobile/src/components/ops/__tests__/StaffTab.test.tsx`
 
 **Interfaces:**
 
-- Consumes: useOpsStaff·useOpsMutations 5종(Task 6), `DealerPickerSheet` 또는 테이블 선택 시트(Task 7), `useStaffPhoneSearch`(기존, `search_users_by_phone`), `SelectBottomSheet`(`@/components/ui`), `AppFlashList`.
-- Produces: `<StaffTab tournamentId={id} tournament={tournament} />` — [id].tsx가 렌더.
+- Consumes: useOpsStaff·useOpsMutations 5종(Task 6), `DealerPickerSheet` 또는 테이블 선택 시트(Task 7), `useStaffPhoneSearch`(기존, `search_users_by_phone`), `useMyJobPostings`(기존, `src/hooks/useJobManagement.ts:71`), `SelectBottomSheet`(`@/components/ui`), `AppFlashList`.
+- Produces: `<StaffTab tournamentId={id} tournament={tournament} />` — [id].tsx가 렌더. `<PostingPickerSheet visible onSelect(postingId) onClose />` — Task 9 재사용.
 
-- [ ] **Step 1: 실측** — `[id].tsx:55-57,117-144`(세그먼트 배열·탭 렌더 분기), `TablesTab.tsx`(탭 컴포넌트 구조·시트 관례), `AddStaffModal.tsx`+`useStaffPhoneSearch.ts`(전화검색 UX), 공고 picker용 "내 관리 공고 목록" 훅(`app/(employer)/my-postings/index.tsx`가 쓰는 목록 훅을 실측해 재사용 — 신규 쿼리 작성 금지, 기존 훅 재사용이 원칙).
+- [ ] **Step 1: 실측 (적대검증 C-4/C-2 정정 반영)** — `[id].tsx`: 탭 유니언 타입 **35-37행**(`useState<'players'|...>` — `'staff'` 추가), 세그먼트 배열 **76행**(`(['players',...] as const).map` — `'staff'` 추가), 라벨 삼항 **87-97행**(`스태프 ${N}` 추가), 탭 렌더 분기 **103-176행**(staff 케이스 추가). `TablesTab.tsx`(탭 컴포넌트 구조·시트 관례), `AddStaffModal.tsx`+`useStaffPhoneSearch.ts`(전화검색 UX). 공고 picker 원천 = **`useMyJobPostings()`(`src/hooks/useJobManagement.ts:71`, 사용 예 `app/(app)/(tabs)/employer.tsx`)** — `app/(employer)/my-postings/index.tsx`는 **존재하지 않음**(구 계획 오인용). ⚠️`useMyJobPostings`는 `enabled: !!user && !!activeWorkspace?.id`로 **활성 워크스페이스 스코프** — picker는 활성 워크스페이스 공고만 노출되고 활성 워크스페이스 없으면 비활성. 이 제약을 연결 카드 UX에 반영(빈 목록/워크스페이스 없음 안내).
 - [ ] **Step 2: jest 작성 (RED)** — 렌더 분기: 미연결(안내+연결 버튼, owner 아니면 연결 버튼 숨김) / 연결+빈 로스터(import CTA) / 로스터 N행(이름·역할 배지·배정 테이블 배지 T{n}·source 구분) / 행 탭→액션 시트(테이블 지정/삭제) / import 확인 다이얼로그 문구("이미 있는 스태프는 건너뛰고, 삭제했던 스태프는 다시 추가됩니다") / import 성공 toast("N명 추가 · M명 건너뜀") / 로스터 상단 staleness 캡션("가져온 시점 기준 명단입니다") 렌더.
 - [ ] **Step 3: RED 확인** — 해당 jest FAIL.
 - [ ] **Step 4: 구현** — 스펙 §4.2 구성(위→아래: 연결 공고 카드→import CTA→로스터 리스트→수동 추가). 세그먼트 순서 = 참가/현황/테이블/블라인드/**스태프**/이력/상금, 라벨 `스태프 ${N}`. import 기본 date=대회 event_date('YYYY-MM-DD'), "전체 기간" 토글 시 null. 배정 테이블 배지는 `useOpsTables` 데이터에서 `assignedStaffId===row.staffId`인 테이블 번호 매핑. 행 액션 "테이블 지정"은 Task 7 산출물 재사용(스펙 §7 staleness 라벨 포함).
@@ -714,8 +737,10 @@ useAssignTableStaff(); // onSuccess: invalidate ops.tables + ops.staff
 
 - Modify: `uniqn-mobile/app/(ops)/tournaments/new.tsx` ("공고 연결(선택)" 필드 + `?postingId=` 프리셋)
 - Modify: `uniqn-mobile/app/(ops)/tournaments/index.tsx` (`?postingId=` 필터 + 필터 상태 "+ 대회" 프리셋 전달)
-- Modify: `uniqn-mobile/app/(employer)/my-postings/[id]/index.tsx` (ActionCard 인앱 push 전환)
-- Modify: `uniqn-mobile/src/hooks/ops/useOpsTournaments.ts`(또는 해당 훅 파일 실측) — `useOpsTournamentForPosting`(단수)을 `useOpsTournamentsForPosting`(목록)으로 교체 + 레포 `listByPosting` 추가
+- Modify: `uniqn-mobile/app/(employer)/my-postings/[id]/index.tsx` (ActionCard 인앱 push 전환 — 현행 44·149행 `useOpsTournamentForPosting`, 539-569행 ActionCard+`openExternalUrl`)
+- Modify: `uniqn-mobile/src/hooks/ops/useOpsTournaments.ts:51` — `useOpsTournamentForPosting`(단수)을 `useOpsTournamentsForPosting`(목록)으로 교체 + 레포 `listByPosting` 추가
+- Modify: `uniqn-mobile/src/hooks/ops/index.ts:5` (배럴 export 교체 — 적대검증 L3-2, 누락 시 tsc 에러). 사용처는 my-postings/[id]/index.tsx **1곳뿐**(grep 확인됨)
+- Reuse: `PostingPickerSheet`(Task 8 산출) — new.tsx 공고 연결 필드
 - Test: 해당 화면/훅 기존 테스트 확장 + ActionCard 라우팅 회귀 테스트
 
 **Interfaces:**
@@ -726,7 +751,7 @@ useAssignTableStaff(); // onSuccess: invalidate ops.tables + ops.staff
 - [ ] **Step 1: 실측** — new.tsx 폼 상태 구조·`useCreateOpsTournament`→`opsTournamentService.createTournament` 시그니처(jobPostingId 전달 배선 여부 — RPC에는 파라미터 기존재), my-postings/[id]/index.tsx:539-569(ActionCard 현행: `useOpsTournamentForPosting`+`openExternalUrl`), 기존 훅 사용처 전수(grep `useOpsTournamentForPosting`).
 - [ ] **Step 2: jest 작성 (RED)** — ActionCard: 연결 대회 0개→라벨 "라이브 운영 시작"+`router.push('/(ops)/tournaments/new?postingId={id}')` / N개→"라이브 운영 (N)"+`router.push('/(ops)/tournaments?postingId={id}')`, `openExternalUrl` 미호출. index.tsx: postingId 파라미터 시 필터링. new.tsx: postingId 프리셋 시 공고 필드 선반영, 생성 호출에 jobPostingId 포함.
 - [ ] **Step 3: RED 확인** — 해당 jest FAIL.
-- [ ] **Step 4: 구현** — 공고 picker는 Task 8에서 실측한 "내 관리 공고 목록" 훅 재사용(SelectBottomSheet). 외부 URL 경로(`getOpsBaseUrl` 사용부)는 이 화면에서 제거하되 상수/유틸 자체는 보존(모니터 링크 등 타 사용처 실측 후 판단 — 무단 삭제 금지).
+- [ ] **Step 4: 구현** — 공고 picker는 Task 8 산출 `PostingPickerSheet`(내부에서 `useMyJobPostings` — 활성 워크스페이스 스코프) 재사용. `useOpsTournamentForPosting`→`useOpsTournamentsForPosting` 교체 시 배럴(`hooks/ops/index.ts:5`)도 함께 갱신. 외부 URL 경로(`getOpsBaseUrl`/`openExternalUrl` 사용부)는 이 ActionCard에서 제거하되 상수/유틸 자체는 보존(모니터·플레이어뷰 링크 등 타 사용처 실측 후 판단 — 무단 삭제 금지).
 - [ ] **Step 5: GREEN** — 해당 jest PASS + `npx tsc --noEmit`.
 - [ ] **Step 6: Commit** — `feat(ops): 1e 진입점 — 생성 폼 공고연결·목록 필터·공고 상세 인앱 전환(N:1)`
 

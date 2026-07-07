@@ -138,7 +138,8 @@ ORDER BY wl.staff_id, wl.date DESC, wl.created_at DESC  -- staff별 최신 행�
 
 ### 2.3 `ops_add_staff(p_tournament_id uuid, p_actor_id uuid, p_staff_id uuid, p_role public.staff_role DEFAULT 'dealer', p_custom_role text DEFAULT NULL)` → jsonb
 
-- 게이트: is_ops_member. 대상 사용자 검증: 존재 + `is_active` + `status NOT IN ('deleted','deactivated')`(add_direct_staff 20260629000000:106-115와 동일 기준).
+- 게이트: is_ops_member **AND actor가 employer/admin 롤**(아래 SEC 주). 대상 사용자 검증: 존재 + `is_active` + `COALESCE(status,'active') NOT IN ('deleted','deactivated')` — add_direct_staff 20260629000000:112·search_users_by_phone :65와 **문자 그대로 동일**(users.status는 `text DEFAULT 'active'` nullable, base_schema:104 → COALESCE 필수. 누락 시 NULL status 활성 사용자가 `NULL NOT IN(...)`=NULL로 오거부되어, 전화검색엔 뜨는데 추가 시 STAFF_NOT_FOUND 나는 막다른 UX).
+- **SEC 주(적대검증 SEC-1)**: ops_add_staff는 임의 uuid로 타 사용자 실명/닉네임을 ops_staff에 복사하는 프리미티브다. users RLS는 self/admin-only인데 `ops_create_tournament`가 롤 게이트 없이 authenticated 전원에게 열려 있어(일회용 대회 생성→owner→is_ops_member 자명 충족), is_ops_member 게이트만으로는 아무 인증 사용자나 이름 하베스팅이 가능하다. 따라서 대상 사용자 검증 **전에** actor 롤 게이트를 얹어 전화검색(`search_users_by_phone`, employer/admin 게이트)과 신뢰경계를 일치시킨다: `IF NOT (public.is_admin() OR EXISTS(SELECT 1 FROM public.users WHERE id = p_actor_id AND role IN ('employer','admin') AND is_active)) THEN RAISE 'PERMISSION_DENIED'`. import 경로는 work_logs 확정자 한정이라 이 게이트 불요(§7 "대상층=employer" 수용과 정합 — UX 손실 없음).
 - 이름 스냅샷: SECDEF가 `public.users`에서 name/nickname 서버측 복사(클라이언트 전달 금지 — 위조 방지).
 - `source='manual'`, `source_work_log_id=NULL`. UNIQUE 충돌 시 `DUPLICATE_STAFF`(수동 추가는 명시 에러가 UX상 정확).
 - 감사: `staff_added` payload `{staff_id, role}`.
@@ -166,9 +167,10 @@ ORDER BY wl.staff_id, wl.date DESC, wl.created_at DESC  -- staff별 최신 행�
 ## 3. RLS · Realtime · Grants
 
 - `ops_staff`: `ENABLE` + `FORCE` RLS. 정책은 타 ops 테이블과 동형 1종 —
-  `FOR SELECT TO authenticated USING (public.is_ops_member(tournament_id, (SELECT auth.uid())) OR public.is_admin())`.
+  `FOR SELECT TO authenticated USING (public.is_ops_member(tournament_id, (SELECT auth.uid())) OR (SELECT public.is_admin()))`.
+  **`is_admin()`은 `(SELECT ...)`로 initplan 래핑**(적대검증 SEC-2 — 기존 ops SELECT 정책 6종 전부 `OR (SELECT public.is_admin())` 자구, auth_rls_initplan advisor·행별 재평가 회피). `is_ops_member(tournament_id, ...)`는 행별 tournament_id 의존이라 래핑 불가(정상).
   INSERT/UPDATE/DELETE 정책 없음 + `REVOKE INSERT,UPDATE,DELETE ON ops_staff FROM anon, authenticated`(쓰기는 SECDEF RPC 100%).
-- Realtime: `ops_staff`를 publication에 추가(participants/tables와 동형). `ops_tables`는 이미 등록돼 있어 딜러 배지 실시간 반영은 기존 구독으로 커버.
+- Realtime: `ops_staff`를 publication에 추가(participants/tables와 동형) — **멱등 가드 필수**(적대검증 SEC-3): `IF NOT EXISTS(SELECT 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND schemaname='public' AND tablename='ops_staff') THEN ALTER PUBLICATION ... END IF` (1a/1b grants 문형. bare ADD는 db:reset 드리프트 시 42710). `ops_tables`는 이미 등록돼 있어 딜러 배지 실시간 반영은 기존 구독으로 커버.
 - **anon 표면 불변**: anon-executable SECDEF은 `ops_get_monitor_snapshot`/`ops_get_player_view` 2개 유지. 신규 RPC 5종 전부 anon REVOKE.
   모니터/플레이어뷰에 스태프 정보 미노출(후속 논의).
 - prod 게이트 검증 항목: advisor ERROR 0 + anon SECDEF 2개 불변 + 신규 RPC 5종 `has_function_privilege(anon)=false` 실측.
@@ -248,14 +250,16 @@ ORDER BY wl.staff_id, wl.date DESC, wl.created_at DESC  -- staff별 최신 행�
 
 ## 7. 리스크·수용·범위 외
 
-| 항목                                            | 처리                                                                                                                                                            |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| import staleness(공고측 취소 미반영)            | 설계 리스크 8대로 수용. STAFF 탭에 "가져온 시점 기준" 라벨 + 재-import 버튼                                                                                     |
-| 삭제 후 재-import 시 부활                       | add-only 특성. import 확인 다이얼로그에 명시(§2.4)                                                                                                              |
-| `search_users_by_phone`이 employer/admin 게이트 | staff 역할 대회 owner는 전화검색 불가. 대상층=employer라 수용, 문서화만                                                                                         |
-| 공고 연결 변경 시 워크스페이스 멤버 접근권 변동 | 의도된 동작(owner-only 게이트로 통제). posting_linked/unlinked 감사로 추적                                                                                      |
-| 대회 활성 중 연결 변경                          | 제한 없음(로스터는 스냅샷이라 무영향)                                                                                                                           |
-| **범위 외(후속)**                               | 딜러 로테이션·딜러뷰(딜러 본인 화면)·live 동기화·모니터/플레이어뷰 딜러 표시·ops.uniqn.app `/t/*` 브릿지·STATUS 탭 "딜러 페이아웃" 토글(1f/후속 소속 미정 목업) |
+| 항목                                             | 처리                                                                                                                                                                                                                                                                          |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| import staleness(공고측 취소 미반영)             | 설계 리스크 8대로 수용. STAFF 탭에 "가져온 시점 기준" 라벨 + 재-import 버튼                                                                                                                                                                                                   |
+| 삭제 후 재-import 시 부활                        | add-only 특성. import 확인 다이얼로그에 명시(§2.4)                                                                                                                                                                                                                            |
+| 전체기간 import 시 역할 채택(적대검증 L3-3)      | `DISTINCT ON(staff_id) ORDER BY date DESC`는 스태프별 **최신 활동일** 역할을 채택 → 같은 스태프가 대회일 dealer·타일 floor면 전체기간 import 시 floor로 등록. 기본값=event_date 특정일이라 평시 회피. 배정 UI가 전 역할 표시라 실피해 작음. 로스터 행 역할 인라인 편집은 후속 |
+| import 스냅샷 revocation-후 잔존(적대검증 SEC-4) | import는 동기 신규 노출 없음(is_ops_member ⊆ work_logs wl_select). unlink 시 워크스페이스 멤버 가시성은 자동 축소되나 owner 스냅샷은 잔존 — 스냅샷 모델 내재 특성으로 수용                                                                                                    |
+| `search_users_by_phone`이 employer/admin 게이트  | staff 역할 대회 owner는 전화검색 불가. 대상층=employer라 수용, 문서화만                                                                                                                                                                                                       |
+| 공고 연결 변경 시 워크스페이스 멤버 접근권 변동  | 의도된 동작(owner-only 게이트로 통제). posting_linked/unlinked 감사로 추적                                                                                                                                                                                                    |
+| 대회 활성 중 연결 변경                           | 제한 없음(로스터는 스냅샷이라 무영향)                                                                                                                                                                                                                                         |
+| **범위 외(후속)**                                | 딜러 로테이션·딜러뷰(딜러 본인 화면)·live 동기화·모니터/플레이어뷰 딜러 표시·ops.uniqn.app `/t/*` 브릿지·STATUS 탭 "딜러 페이아웃" 토글(1f/후속 소속 미정 목업)                                                                                                               |
 
 ## 8. 출하 게이트 (기존 ops 패턴)
 
