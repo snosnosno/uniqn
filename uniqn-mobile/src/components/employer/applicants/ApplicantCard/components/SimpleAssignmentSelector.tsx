@@ -125,5 +125,3 @@ export const SimpleAssignmentSelector = React.memo(function SimpleAssignmentSele
     </View>
   );
 });
-
-export default SimpleAssignmentSelector;

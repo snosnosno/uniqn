@@ -162,5 +162,3 @@ export const RoleSelectModal = memo(function RoleSelectModal({
     </Modal>
   );
 });
-
-export default RoleSelectModal;

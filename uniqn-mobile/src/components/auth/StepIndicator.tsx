@@ -124,5 +124,3 @@ export function StepIndicator({ currentStep, steps, showLabels = true }: StepInd
     </View>
   );
 }
-
-export default StepIndicator;

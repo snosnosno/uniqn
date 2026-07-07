@@ -427,5 +427,3 @@ export function SignupStepProfile({
     </View>
   );
 }
-
-export default SignupStepProfile;

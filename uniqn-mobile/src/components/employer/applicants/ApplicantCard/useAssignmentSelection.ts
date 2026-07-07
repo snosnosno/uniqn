@@ -311,5 +311,3 @@ export function useAssignmentSelection({
     clearSelection,
   };
 }
-
-export default useAssignmentSelection;

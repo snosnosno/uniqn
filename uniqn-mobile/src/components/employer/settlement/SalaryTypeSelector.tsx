@@ -204,5 +204,3 @@ export const SalaryTypeSelector = memo(function SalaryTypeSelector({
     </View>
   );
 });
-
-export default SalaryTypeSelector;

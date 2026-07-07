@@ -332,5 +332,3 @@ export function ApplicantList({
     </View>
   );
 }
-
-export default ApplicantList;

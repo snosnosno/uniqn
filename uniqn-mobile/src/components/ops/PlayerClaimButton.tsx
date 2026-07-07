@@ -95,5 +95,3 @@ export function PlayerClaimButton({
     </>
   );
 }
-
-export default PlayerClaimButton;

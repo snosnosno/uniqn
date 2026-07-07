@@ -90,5 +90,3 @@ export const RegionSelectModal = memo(function RegionSelectModal({
     </Modal>
   );
 });
-
-export default RegionSelectModal;

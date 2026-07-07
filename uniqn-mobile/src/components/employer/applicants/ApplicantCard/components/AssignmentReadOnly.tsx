@@ -71,5 +71,3 @@ export const AssignmentReadOnly = React.memo(function AssignmentReadOnly({
     </View>
   );
 });
-
-export default AssignmentReadOnly;

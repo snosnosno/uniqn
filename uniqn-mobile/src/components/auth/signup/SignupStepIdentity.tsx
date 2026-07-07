@@ -145,5 +145,3 @@ export function SignupStepIdentity({
     </View>
   );
 }
-
-export default SignupStepIdentity;

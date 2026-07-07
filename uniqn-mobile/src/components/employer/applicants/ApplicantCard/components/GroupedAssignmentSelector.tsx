@@ -336,5 +336,3 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
     </View>
   );
 });
-
-export default GroupedAssignmentSelector;

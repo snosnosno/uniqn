@@ -162,5 +162,3 @@ export function BlindLevelForm({
     </View>
   );
 }
-
-export default BlindLevelForm;

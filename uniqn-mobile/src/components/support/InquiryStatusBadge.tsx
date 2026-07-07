@@ -44,5 +44,3 @@ export function InquiryStatusBadge({
     </View>
   );
 }
-
-export default InquiryStatusBadge;

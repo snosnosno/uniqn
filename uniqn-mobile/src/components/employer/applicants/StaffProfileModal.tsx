@@ -199,5 +199,3 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
     </SheetModal>
   );
 }
-
-export default StaffProfileModal;

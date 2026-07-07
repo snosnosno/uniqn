@@ -258,5 +258,3 @@ export const RolesSection = memo(function RolesSection({
     </View>
   );
 });
-
-export default RolesSection;

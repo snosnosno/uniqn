@@ -160,5 +160,3 @@ export const ReportCard = React.memo(function ReportCard({ report, onPress }: Re
 });
 
 ReportCard.displayName = 'ReportCard';
-
-export default ReportCard;

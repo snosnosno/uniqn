@@ -93,5 +93,3 @@ export const ContactInfo = React.memo(function ContactInfo({
     </>
   );
 });
-
-export default ContactInfo;

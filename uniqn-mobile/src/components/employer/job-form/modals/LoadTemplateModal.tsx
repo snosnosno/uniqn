@@ -258,5 +258,3 @@ export function LoadTemplateModal({
     </Modal>
   );
 }
-
-export default LoadTemplateModal;

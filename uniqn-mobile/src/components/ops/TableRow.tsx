@@ -61,5 +61,3 @@ export function TableRow({ table, seatCount, filled, onPress }: TableRowProps) {
     </Pressable>
   );
 }
-
-export default TableRow;

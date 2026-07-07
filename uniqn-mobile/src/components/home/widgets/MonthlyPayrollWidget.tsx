@@ -84,5 +84,3 @@ export function MonthlyPayrollWidget() {
     </DashboardWidgetShell>
   );
 }
-
-export default MonthlyPayrollWidget;

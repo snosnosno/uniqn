@@ -140,5 +140,3 @@ export function NextWorkWidget() {
     </DashboardWidgetShell>
   );
 }
-
-export default NextWorkWidget;

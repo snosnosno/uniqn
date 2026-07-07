@@ -62,5 +62,3 @@ export function ApplicantProfileModal({ visible, onClose, applicant }: Applicant
     </SheetModal>
   );
 }
-
-export default ApplicantProfileModal;

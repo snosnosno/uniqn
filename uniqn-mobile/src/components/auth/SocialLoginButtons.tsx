@@ -63,8 +63,6 @@ export function SocialLoginButtons({
   );
 }
 
-export default SocialLoginButtons;
-
 const styles = StyleSheet.create({
   button: {
     width: '100%',

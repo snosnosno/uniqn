@@ -102,5 +102,3 @@ export const ApplicantProfileAssignments = React.memo(function ApplicantProfileA
     </View>
   );
 });
-
-export default ApplicantProfileAssignments;

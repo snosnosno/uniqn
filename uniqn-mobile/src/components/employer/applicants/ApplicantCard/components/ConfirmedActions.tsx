@@ -40,5 +40,3 @@ export const ConfirmedActions = React.memo(function ConfirmedActions({
     </View>
   );
 });
-
-export default ConfirmedActions;

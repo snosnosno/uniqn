@@ -211,5 +211,3 @@ export function ClockControl({ tournamentId, onNavigateToLevels }: ClockControlP
     </View>
   );
 }
-
-export default ClockControl;

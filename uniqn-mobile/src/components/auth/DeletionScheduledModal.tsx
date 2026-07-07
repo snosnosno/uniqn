@@ -147,5 +147,3 @@ export function DeletionScheduledModal({
     </Modal>
   );
 }
-
-export default DeletionScheduledModal;

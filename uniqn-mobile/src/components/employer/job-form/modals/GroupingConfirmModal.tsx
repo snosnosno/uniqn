@@ -189,5 +189,3 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
     </Modal>
   );
 });
-
-export default GroupingConfirmModal;

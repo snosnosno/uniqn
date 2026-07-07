@@ -403,5 +403,3 @@ export function StaffManagementTab({
     </View>
   );
 }
-
-export default StaffManagementTab;

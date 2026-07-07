@@ -347,5 +347,3 @@ export function SettlementSettingsModal({
     </SheetModal>
   );
 }
-
-export default SettlementSettingsModal;

@@ -164,5 +164,3 @@ export function RoleDistributionChart({
     </View>
   );
 }
-
-export default RoleDistributionChart;

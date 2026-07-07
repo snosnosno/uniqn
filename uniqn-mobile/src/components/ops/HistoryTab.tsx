@@ -94,5 +94,3 @@ export function HistoryTab({ tournamentId }: HistoryTabProps) {
     />
   );
 }
-
-export default HistoryTab;

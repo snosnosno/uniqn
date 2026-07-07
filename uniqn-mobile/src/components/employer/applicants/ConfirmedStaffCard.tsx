@@ -262,5 +262,3 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
     </Card>
   );
 });
-
-export default ConfirmedStaffCard;

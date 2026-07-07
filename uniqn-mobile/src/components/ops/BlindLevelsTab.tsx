@@ -185,5 +185,3 @@ export function BlindLevelsTab({ tournamentId }: BlindLevelsTabProps) {
     </View>
   );
 }
-
-export default BlindLevelsTab;

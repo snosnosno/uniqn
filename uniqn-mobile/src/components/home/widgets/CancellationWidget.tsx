@@ -102,5 +102,3 @@ export function CancellationWidget() {
     </DashboardWidgetShell>
   );
 }
-
-export default CancellationWidget;

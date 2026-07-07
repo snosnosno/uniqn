@@ -401,5 +401,3 @@ export function PortOneIdentityVerification({
     </View>
   );
 }
-
-export default PortOneIdentityVerification;

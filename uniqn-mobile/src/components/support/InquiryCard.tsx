@@ -100,5 +100,3 @@ export function InquiryCard({
     </Pressable>
   );
 }
-
-export default InquiryCard;

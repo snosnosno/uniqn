@@ -173,5 +173,3 @@ export function WorkspaceSwitcher({ onChange }: WorkspaceSwitcherProps) {
     </>
   );
 }
-
-export default WorkspaceSwitcher;

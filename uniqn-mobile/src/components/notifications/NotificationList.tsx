@@ -256,5 +256,3 @@ export function SimpleNotificationList({
     </View>
   );
 }
-
-export default NotificationList;
