@@ -8,6 +8,7 @@ import {
   opsParticipantService,
   opsTableService,
   opsSeatService,
+  opsStaffService,
 } from '@/services/ops';
 import { computeWaitlistFill } from '@/domains/ops';
 import { useAuthStore } from '@/stores/authStore';
@@ -17,6 +18,7 @@ import { extractUserMessage } from '@/errors';
 import type { CreateOpsTournamentInput, RegisterParticipantInput } from '@/repositories/ops';
 import type { OpsTournamentStatus, OpsTableStatus, OpsTableLockType } from '@/types/ops';
 import type { PrizeCorrectionInput } from '@/schemas/opsPrize.schema';
+import type { StaffRole } from '@/types/role';
 
 const toast = {
   success: (m: string) => useToastStore.getState().success(m),
@@ -378,6 +380,107 @@ export function useReseatParticipants(tournamentId: string) {
     onError: (e) => {
       logger.error('ops 전원 재배치 실패', toError(e));
       toast.error(extractUserMessage(e) || '재배치에 실패했습니다');
+    },
+  });
+}
+
+/** 1e — 대회↔공고 연결 변경 훅. jobPostingId=null 이면 연결 해제. */
+export function useSetTournamentPosting(tournamentId: string) {
+  const qc = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (jobPostingId: string | null) =>
+      opsStaffService.setTournamentPosting(tournamentId, requireActor(actorId), jobPostingId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.ops.staff(tournamentId) });
+      qc.invalidateQueries({ queryKey: queryKeys.ops.tournamentDetail(tournamentId) });
+      qc.invalidateQueries({ queryKey: queryKeys.ops.tournaments() });
+      toast.success('공고 연결을 변경했습니다');
+    },
+    onError: (e) => {
+      logger.error('ops 대회-공고 연결 실패', toError(e));
+      toast.error(extractUserMessage(e) || '공고 연결 변경에 실패했습니다');
+    },
+  });
+}
+
+/** 1e — 연결된 공고의 확정 스태프 스냅샷 import 훅. date=null 이면 전체 날짜. */
+export function useImportOpsStaff(tournamentId: string) {
+  const qc = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (date: string | null) =>
+      opsStaffService.importFromPosting(tournamentId, requireActor(actorId), date),
+    onSuccess: (result) => {
+      qc.invalidateQueries({ queryKey: queryKeys.ops.staff(tournamentId) });
+      const skippedNote = result.skipped > 0 ? ` · ${result.skipped}명 건너뜀` : '';
+      toast.success(`${result.imported}명 임포트됨${skippedNote}`);
+    },
+    onError: (e) => {
+      logger.error('ops 스태프 임포트 실패', toError(e));
+      toast.error(extractUserMessage(e) || '스태프 임포트에 실패했습니다');
+    },
+  });
+}
+
+/** 1e — 가입자 검색 결과 기반 로스터 수동 추가 훅. */
+export function useAddOpsStaff(tournamentId: string) {
+  const qc = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (v: { staffId: string; role: StaffRole; customRole?: string | null }) =>
+      opsStaffService.addStaff(
+        tournamentId,
+        requireActor(actorId),
+        v.staffId,
+        v.role,
+        v.customRole
+      ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.ops.staff(tournamentId) });
+      toast.success('스태프를 추가했습니다');
+    },
+    onError: (e) => {
+      logger.error('ops 스태프 추가 실패', toError(e));
+      toast.error(extractUserMessage(e) || '스태프 추가에 실패했습니다');
+    },
+  });
+}
+
+/** 1e — 로스터 제거 훅. cascade-clear(배정 테이블 선해제)로 ops.tables 도 함께 invalidate. */
+export function useRemoveOpsStaff(tournamentId: string) {
+  const qc = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (opsStaffId: string) =>
+      opsStaffService.removeStaff(tournamentId, requireActor(actorId), opsStaffId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.ops.staff(tournamentId) });
+      qc.invalidateQueries({ queryKey: queryKeys.ops.tables(tournamentId) });
+      toast.success('스태프를 제거했습니다');
+    },
+    onError: (e) => {
+      logger.error('ops 스태프 제거 실패', toError(e));
+      toast.error(extractUserMessage(e) || '스태프 제거에 실패했습니다');
+    },
+  });
+}
+
+/** 1e — 딜러 테이블 배정 훅. staffId=null 이면 해제(멱등), move 시맨틱은 RPC 내부 처리. */
+export function useAssignTableStaff(tournamentId: string) {
+  const qc = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (v: { tableId: string; staffId: string | null }) =>
+      opsStaffService.assignTableStaff(tournamentId, requireActor(actorId), v.tableId, v.staffId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.ops.tables(tournamentId) });
+      qc.invalidateQueries({ queryKey: queryKeys.ops.staff(tournamentId) });
+      toast.success('딜러를 배정했습니다');
+    },
+    onError: (e) => {
+      logger.error('ops 딜러 배정 실패', toError(e));
+      toast.error(extractUserMessage(e) || '딜러 배정에 실패했습니다');
     },
   });
 }
