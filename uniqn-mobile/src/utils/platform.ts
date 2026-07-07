@@ -7,10 +7,5 @@
 
 import { Platform } from 'react-native';
 
-/**
- * 현재 플랫폼 확인
- */
+/** 웹 플랫폼 여부 (네이티브 분기는 각 파일에서 Platform.OS 직접 사용) */
 export const isWeb = Platform.OS === 'web';
-export const isIOS = Platform.OS === 'ios';
-export const isAndroid = Platform.OS === 'android';
-export const isMobile = isIOS || isAndroid;
