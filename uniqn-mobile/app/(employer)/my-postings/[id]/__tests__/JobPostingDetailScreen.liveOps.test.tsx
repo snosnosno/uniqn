@@ -1,6 +1,6 @@
 /**
  * JobPostingDetailScreen — "라이브 운영" ActionCard 라우팅 회귀 테스트 (1e Task 9).
- * 외부 URL(openExternalUrl) 경로 제거 → 인앱 router.push 전환 검증.
+ * 외부 URL 경로 대신 인앱 router.push 로 진입함을 검증(라우트·라벨 회귀 가드).
  * - 연결된 대회 0개: "라이브 운영 시작" → /(ops)/tournaments/new?postingId={id}
  * - 연결된 대회 N개: "라이브 운영 (N)" → /(ops)/tournaments?postingId={id}
  * 화면의 나머지 관심사(지원자/정산/취소요청 등)는 이 파일 범위 밖 — 회귀 위험이 큰
@@ -11,7 +11,6 @@ import { render, fireEvent } from '@testing-library/react-native';
 import JobPostingDetailScreen from '../index';
 
 const mockPush = jest.fn();
-const mockOpenExternalUrl = jest.fn();
 const mockUseOpsTournamentsForPosting = jest.fn();
 
 const mockPosting = {
@@ -73,10 +72,6 @@ jest.mock('@/components/jobs', () => ({
   TournamentStatusBadge: () => null,
 }));
 
-jest.mock('@/services/observability', () => ({
-  openExternalUrl: (...args: unknown[]) => mockOpenExternalUrl(...args),
-}));
-
 jest.mock('@/domains/job-posting', () => ({
   buildPostingFacts: (p: unknown) => p,
   isPostingDeletable: () => true,
@@ -135,7 +130,6 @@ jest.mock('@/hooks/ops', () => ({
 describe('JobPostingDetailScreen — 라이브 운영 ActionCard (1e Task 9)', () => {
   beforeEach(() => {
     mockPush.mockReset();
-    mockOpenExternalUrl.mockReset();
     mockUseOpsTournamentsForPosting.mockReset();
   });
 
@@ -148,7 +142,6 @@ describe('JobPostingDetailScreen — 라이브 운영 ActionCard (1e Task 9)', (
     fireEvent.press(getByTestId('job-posting-live-ops'));
 
     expect(mockPush).toHaveBeenCalledWith('/(ops)/tournaments/new?postingId=posting-1');
-    expect(mockOpenExternalUrl).not.toHaveBeenCalled();
   });
 
   it('연결된 대회가 N개면 "라이브 운영 (N)" 라벨로 목록(postingId 필터)으로 이동한다', () => {
@@ -166,6 +159,5 @@ describe('JobPostingDetailScreen — 라이브 운영 ActionCard (1e Task 9)', (
     fireEvent.press(getByTestId('job-posting-live-ops'));
 
     expect(mockPush).toHaveBeenCalledWith('/(ops)/tournaments?postingId=posting-1');
-    expect(mockOpenExternalUrl).not.toHaveBeenCalled();
   });
 });

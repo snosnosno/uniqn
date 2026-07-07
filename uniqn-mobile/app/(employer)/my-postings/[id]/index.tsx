@@ -185,7 +185,7 @@ export default function JobPostingDetailScreen() {
     router.push(`/(employer)/my-postings/${id}/collaborators`);
   }, [id, router]);
 
-  // 인앱 전환: 외부 URL(openExternalUrl) 대신 (ops) 스택으로 직접 push.
+  // 인앱 전환: 외부 URL 열기 대신 (ops) 스택으로 직접 push.
   // 연결된 대회 0개 → 생성 폼(postingId 프리셋), N개 → 목록(postingId 필터).
   const handleLiveOps = useCallback(() => {
     if (opsTournaments.length > 0) {
