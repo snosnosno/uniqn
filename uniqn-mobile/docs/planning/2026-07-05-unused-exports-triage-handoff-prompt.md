@@ -6,6 +6,37 @@
 
 ---
 
+## 실행 세션 1 완료 로그 (2026-07-08, Opus 4.8)
+
+> 워크트리 `T-HOLDEM-knip-triage` · 브랜치 `chore/knip-triage-exec`(Phase 0 커밋 위에 rebase 없이 이어짐) · **미push**. 이후 세션은 이 브랜치를 이어가거나 push/PR.
+
+**완료(A·B·D·E + Phase 3 batch 1):** 총 이슈 **2951 → 2393 (−558)** · 래칫 N=**2393**.
+
+| STEP         | 결과                                                                                      | 커밋                                |
+| ------------ | ----------------------------------------------------------------------------------------- | ----------------------------------- |
+| A knip 핀    | devDeps `knip@6.25.0` exact, 핀 전후 카운트 동일                                          | `9c41831c5`                         |
+| B 래칫       | `knip:gate = knip --max-issues=<N>`; N은 knip 총계 경험 확정(2951 exit0/2950 exit1)       | `705cd988f`                         |
+| D Phase 1    | 중복 `Component\|default` **277개 제거**(3배치, grep 게이트+tsc 오라클). Duplicate 313→36 | `2b1f2b144`·`c62909c95`·`69b6f3009` |
+| E Phase 2    | 죽은 dep `@cloudflare/workers-types` uninstall+unseal(lock diff 분리)                     | `1505440d3`                         |
+| F Phase 3 b1 | colors.ts 자기완결 죽은 export 5개(BORDER_COLORS·CHART_COLORS쌍·PLACEHOLDER_COLORS쌍)     | `af37f2060`                         |
+
+전 배치 게이트 그린: type-check EXIT0 · jest 4748/4748 · (D 배치3) build:web EXIT0(T1) · knip 새 미사용 0.
+
+**남은 duplicate 36 = 13 needs-review**(테스트 default-import·dynamic import·barrel default 재수출: useAppInitialize/useApplicantManagement/analyticsService/deepLinkService/secureStorage/CalendarView/AssignmentSelector/ApplicantCard/SettlementDetailModal/SalarySection/useNotificationStore/notificationService/sentryService) **+ 23 의도적 별칭**(icons/index.tsx 아이콘 별칭·colors PRIMARY\|ACCENT·statusConfig ATTENDANCE\|attendanceConfig). 버킷 데이터: 세션 스크래치패드 `dup-buckets.json`(재생성: knip --reporter json → `dup-analyze.mjs`).
+
+**결정(STEP G 부분 회부, 2026-07-08):** 사용자 = "Phase 3 리프 이어서". @public(STEP C)·Phase 4/5는 **P4/P5 재결정까지 보류**(@public 가치가 삭제 캠페인 지속에 종속되므로 그 전 투자 = 낭비 위험).
+
+**Phase 3 남은 작업의 실측 난점(다음 세션 필독):** 리프 구역이 "기계적"이 아니라 **심볼별 판단**임이 실측 확인됨 —
+
+- **(d) 배럴 얽힘**: `constants/index.ts`가 50 exports+18 types 재수출(배럴은 131회 소비되나 특정 심볼만). 죽은 재수출 라인 제거는 **라인별로 `from '@/constants'` 배럴 소비 0 확인** 필요. 소스 삭제 시 배럴 재수출이 참조→tsc red.
+- **(f)/(b) SSOT**: `statusValues.ts`의 13 `*_VALUES`는 knip "unused export"지만 **로컬에서 STATUS 구성에 사용**(외부 미import일 뿐)·DB enum 정합 SSOT → (b) 의도적 공개, **보존**. "unused export ≠ 죽음"의 대표 반례.
+- **로컬 사용**: getOpsWebOrigin·CHART_COLORS·parseVersion 등은 정의 파일 내부에서 사용 → 삭제 불가(demote만 가능하나 (b) 판단 선행).
+- **동명 오탐**: PLACEHOLDER_COLORS는 SearchBar/Input의 **동명 로컬 const**가 grep 오탐 유발 → 심볼 grep은 import 경로/스코프까지 확인.
+- **안전 오라클(검증됨)**: 선언 전체 삭제 → tsc red = 실사용(타입포지션 포함) → 즉시 리버트. `--fix`(export 키워드만 제거)는 noUnusedLocals와 충돌하니 리프에선 **수동 전체 삭제** 권장.
+- 남은 리프 물량(현재 실측): constants(exports 80/types 24 — colors 5 제외)·utils(124/12)·stores(46/13)·lib(42/6)·shared(44/25)·types구역(67/177). 다음 배치 후보: 배럴 미얽힌 자기완결 (a)부터, 배럴 라인은 별도 배치.
+
+---
+
 ## 0. 결론 먼저 (현재 상태)
 
 - **Phase 0 완료·커밋됨** — 브랜치 `chore/knip-config-harden`, 로컬 커밋 2개(미push):
