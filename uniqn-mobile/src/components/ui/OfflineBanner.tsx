@@ -185,5 +185,3 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = React.memo(
 );
 
 OfflineBanner.displayName = 'OfflineBanner';
-
-export default OfflineBanner;

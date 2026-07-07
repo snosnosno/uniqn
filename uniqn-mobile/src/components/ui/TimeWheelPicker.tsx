@@ -668,5 +668,3 @@ export function TimeWheelPicker({
     </Modal>
   );
 }
-
-export default TimeWheelPicker;

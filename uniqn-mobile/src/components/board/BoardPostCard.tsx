@@ -91,5 +91,3 @@ export function BoardPostCard({ post, onPress }: BoardPostCardProps) {
     </Pressable>
   );
 }
-
-export default BoardPostCard;

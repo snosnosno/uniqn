@@ -137,5 +137,3 @@ export const Input = React.forwardRef<TextInput, InputProps>(function Input(
     </View>
   );
 });
-
-export default Input;

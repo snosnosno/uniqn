@@ -507,5 +507,3 @@ export const StaffApplicantCard = memo(function StaffApplicantCard({
     </View>
   );
 });
-
-export default StaffApplicantCard;

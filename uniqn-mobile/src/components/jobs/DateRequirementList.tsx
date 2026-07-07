@@ -189,5 +189,3 @@ export const DateRequirementList = memo(function DateRequirementList({
     </View>
   );
 });
-
-export default DateRequirementList;

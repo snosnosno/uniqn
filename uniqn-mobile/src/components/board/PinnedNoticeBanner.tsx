@@ -37,5 +37,3 @@ export function PinnedNoticeBanner({ notices, onPress }: PinnedNoticeBannerProps
     </View>
   );
 }
-
-export default PinnedNoticeBanner;

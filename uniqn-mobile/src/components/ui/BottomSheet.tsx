@@ -403,5 +403,3 @@ export function SelectBottomSheet({
     </BottomSheet>
   );
 }
-
-export default BottomSheet;

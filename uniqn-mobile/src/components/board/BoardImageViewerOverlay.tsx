@@ -121,5 +121,3 @@ export function BoardImageViewerOverlay({
     </RNModal>
   );
 }
-
-export default BoardImageViewerOverlay;

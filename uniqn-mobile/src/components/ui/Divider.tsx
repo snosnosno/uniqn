@@ -32,5 +32,3 @@ export function Divider({ label, spacing = 'md' }: DividerProps) {
 
   return <View className={`h-px bg-divider ${spacingStyles[spacing]}`} />;
 }
-
-export default Divider;

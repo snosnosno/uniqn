@@ -123,5 +123,3 @@ export function Toast({ toast, onDismiss }: ToastProps) {
     </Animated.View>
   );
 }
-
-export default Toast;

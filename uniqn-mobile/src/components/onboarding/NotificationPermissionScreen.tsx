@@ -204,5 +204,3 @@ export function NotificationPermissionScreen({
     </SafeAreaView>
   );
 }
-
-export default NotificationPermissionScreen;

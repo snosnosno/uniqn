@@ -295,5 +295,3 @@ export function JobDetail({ job }: JobDetailProps) {
     </View>
   );
 }
-
-export default JobDetail;

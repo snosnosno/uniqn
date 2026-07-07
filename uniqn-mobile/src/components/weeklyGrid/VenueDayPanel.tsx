@@ -232,5 +232,3 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
     </View>
   );
 }
-
-export default VenueDayPanel;

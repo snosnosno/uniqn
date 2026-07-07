@@ -63,5 +63,3 @@ export function Loading({
 
   return <View className="flex-1 items-center justify-center py-8">{content}</View>;
 }
-
-export default Loading;

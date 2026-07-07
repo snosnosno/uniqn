@@ -160,5 +160,3 @@ export function TabHeader({
     </View>
   );
 }
-
-export default TabHeader;

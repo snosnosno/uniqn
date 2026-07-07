@@ -90,5 +90,3 @@ export function PressableCard({
     </Pressable>
   );
 }
-
-export default PressableCard;

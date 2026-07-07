@@ -107,5 +107,3 @@ export function Card({
 
   return cardContent;
 }
-
-export default Card;

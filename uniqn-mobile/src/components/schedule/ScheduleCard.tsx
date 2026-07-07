@@ -272,5 +272,3 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
     </Pressable>
   );
 });
-
-export default ScheduleCard;

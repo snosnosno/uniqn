@@ -173,5 +173,3 @@ function buildAccessibilityLabel(
 
   return `${card.title}, ${card.location}, ${scheduleLabel}, ${compensationLabel}${focusedGroupHint}`;
 }
-
-export default PostingCardSurface;

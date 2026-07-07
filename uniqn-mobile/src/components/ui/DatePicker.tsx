@@ -331,5 +331,3 @@ export const DateRangePicker = memo(function DateRangePicker({
     </View>
   );
 });
-
-export default DatePicker;

@@ -494,5 +494,3 @@ export function SkeletonSettlementRow() {
     </View>
   );
 }
-
-export default Skeleton;

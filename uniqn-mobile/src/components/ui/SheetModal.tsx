@@ -386,5 +386,3 @@ export function SheetModal(props: SheetModalProps) {
   }
   return <NativeSheetModal {...props} />;
 }
-
-export default SheetModal;

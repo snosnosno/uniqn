@@ -164,5 +164,3 @@ export function BoardCommentComposer({
     </Card>
   );
 }
-
-export default BoardCommentComposer;

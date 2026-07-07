@@ -302,5 +302,3 @@ export const TimePicker = memo(function TimePicker({
     </View>
   );
 });
-
-export default TimePicker;

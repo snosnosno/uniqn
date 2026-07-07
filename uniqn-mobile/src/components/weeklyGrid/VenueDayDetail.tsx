@@ -80,5 +80,3 @@ export function VenueDayDetail({ venueId, date, onSlotPress }: VenueDayDetailPro
     />
   );
 }
-
-export default VenueDayDetail;

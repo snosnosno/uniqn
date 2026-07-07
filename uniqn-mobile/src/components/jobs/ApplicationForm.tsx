@@ -384,5 +384,3 @@ export function ApplicationForm({
     </SheetModal>
   );
 }
-
-export default ApplicationForm;

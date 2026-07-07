@@ -496,5 +496,3 @@ function CandidateRow({
     </Pressable>
   );
 }
-
-export default AddSlotSheet;

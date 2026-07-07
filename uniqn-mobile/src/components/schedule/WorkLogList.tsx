@@ -328,5 +328,3 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
 );
 
 WorkLogList.displayName = 'WorkLogList';
-
-export default WorkLogList;

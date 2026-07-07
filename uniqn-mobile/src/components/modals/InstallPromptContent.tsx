@@ -33,5 +33,3 @@ export function InstallPromptContent({ description, onLogin }: InstallPromptCont
     </View>
   );
 }
-
-export default InstallPromptContent;

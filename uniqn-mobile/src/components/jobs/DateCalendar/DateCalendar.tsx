@@ -214,5 +214,3 @@ export const DateCalendar = memo(function DateCalendar({
     </View>
   );
 });
-
-export default DateCalendar;

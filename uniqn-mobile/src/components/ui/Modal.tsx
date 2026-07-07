@@ -559,5 +559,3 @@ export function ConfirmModal({
     </Modal>
   );
 }
-
-export default Modal;

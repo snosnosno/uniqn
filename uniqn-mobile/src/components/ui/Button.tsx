@@ -189,5 +189,3 @@ export const Button = memo(function Button({
     </View>
   );
 });
-
-export default Button;
