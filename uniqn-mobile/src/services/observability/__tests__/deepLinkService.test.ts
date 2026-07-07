@@ -646,27 +646,4 @@ describe('deepLinkService', () => {
       await expect(deepLinkService.getInitialDeepLink()).resolves.toBeNull();
     });
   });
-
-  describe('openExternalUrl', () => {
-    it('opens a supported URL', async () => {
-      mockCanOpenURL.mockResolvedValue(true);
-      mockOpenURL.mockResolvedValue(undefined);
-
-      const result = await deepLinkService.openExternalUrl('https://example.com');
-
-      expect(result).toBe(true);
-      expect(mockOpenURL).toHaveBeenCalledWith('https://example.com');
-    });
-
-    it('logs a warning when a URL cannot be opened', async () => {
-      mockCanOpenURL.mockResolvedValue(false);
-
-      const result = await deepLinkService.openExternalUrl('unknown-scheme://test');
-
-      expect(result).toBe(false);
-      expect(mockLoggerWarn).toHaveBeenCalledWith('URL을 열 수 없음', {
-        url: 'unknown-scheme://test',
-      });
-    });
-  });
 });

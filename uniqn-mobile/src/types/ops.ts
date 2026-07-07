@@ -4,6 +4,7 @@
  * 앱은 camelCase, DB 는 snake_case (Repository 가 매핑).
  */
 import { Constants } from '@/types/supabase';
+import type { StaffRole } from '@/types/role';
 
 export type OpsTournamentStatus = (typeof Constants.public.Enums.ops_tournament_status)[number];
 export type OpsParticipantStatus = (typeof Constants.public.Enums.ops_participant_status)[number];
@@ -146,6 +147,26 @@ export interface OpsSeat {
   participantId?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/** ops_staff.source — 로스터 편입 경로(1e). */
+export type OpsStaffSource = 'snapshot_import' | 'manual';
+
+/**
+ * 대회 스태프 로스터(1e) — 확정 스태프 스냅샷(import) 또는 수동 추가(manual).
+ * source_work_log_id 는 snapshot_import 출처에서만 채워짐(work_logs 는 SSOT·읽기전용, 여기엔 스냅샷만 보관).
+ */
+export interface OpsStaff {
+  id: string;
+  tournamentId: string;
+  staffId: string;
+  role: StaffRole;
+  customRole: string | null;
+  staffName: string;
+  staffNickname: string | null;
+  source: OpsStaffSource;
+  sourceWorkLogId: string | null;
+  createdAt: string;
 }
 
 /** STATUS 부분통계 (1a — 참가자 파생만, 클라이언트 계산). 좌석/블라인드 의존 값은 1b/1c. */

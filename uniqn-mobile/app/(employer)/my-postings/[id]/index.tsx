@@ -39,9 +39,7 @@ import {
   TournamentStatusBadge,
 } from '@/components/jobs';
 import { STATUS } from '@/constants';
-import { getOpsBaseUrl } from '@/constants/ops';
-import { openExternalUrl } from '@/services/observability';
-import { useOpsTournamentForPosting } from '@/hooks/ops';
+import { useOpsTournamentsForPosting } from '@/hooks/ops';
 import {
   getLayoutColor,
   PRIMARY_COLORS,
@@ -145,8 +143,8 @@ export default function JobPostingDetailScreen() {
   const [isInfoExpanded, setIsInfoExpanded] = useState(false);
 
   const postingFacts = useMemo(() => (posting ? buildPostingFacts(posting) : null), [posting]);
-  // 브릿지: 이 공고에 연결된 ops 대회(없으면 null). null-safe(ops_* 미배포 시에도 안전).
-  const { opsTournament } = useOpsTournamentForPosting(posting?.id);
+  // 브릿지: 이 공고에 연결된 ops 대회 목록(N:1). null-safe(빈 배열, ops_* 미배포 시에도 안전).
+  const { opsTournaments } = useOpsTournamentsForPosting(posting?.id);
   const managementView = useMemo(
     () =>
       postingFacts
@@ -186,6 +184,16 @@ export default function JobPostingDetailScreen() {
   const handleCollaborators = useCallback(() => {
     router.push(`/(employer)/my-postings/${id}/collaborators`);
   }, [id, router]);
+
+  // 인앱 전환: 외부 URL 열기 대신 (ops) 스택으로 직접 push.
+  // 연결된 대회 0개 → 생성 폼(postingId 프리셋), N개 → 목록(postingId 필터).
+  const handleLiveOps = useCallback(() => {
+    if (opsTournaments.length > 0) {
+      router.push(`/(ops)/tournaments?postingId=${id}`);
+    } else {
+      router.push(`/(ops)/tournaments/new?postingId=${id}`);
+    }
+  }, [id, opsTournaments.length, router]);
 
   const handleDeletePress = useCallback(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
@@ -543,27 +551,27 @@ export default function JobPostingDetailScreen() {
               ) && (
                 <ActionCard
                   icon={<UsersIcon size={24} color="#8B5CF6" />}
-                  title={opsTournament ? '라이브 운영 열기' : '라이브 운영 시작'}
+                  title={
+                    opsTournaments.length > 0
+                      ? `라이브 운영 (${opsTournaments.length})`
+                      : '라이브 운영 시작'
+                  }
                   description={
-                    opsTournament
+                    opsTournaments.length > 0
                       ? '진행 중인 라이브 운영 화면으로 이동합니다.'
                       : '이 대회의 라이브 운영을 시작합니다.'
                   }
                   badge={
-                    opsTournament
+                    opsTournaments.length > 0
                       ? {
                           label: '진행 중',
-                          variant: opsTournament.status === 'active' ? 'success' : 'primary',
+                          variant: opsTournaments.some((t) => t.status === 'active')
+                            ? 'success'
+                            : 'primary',
                         }
                       : undefined
                   }
-                  onPress={() => {
-                    const base = getOpsBaseUrl();
-                    const url = opsTournament
-                      ? `${base}/t/${opsTournament.id}`
-                      : `${base}/t/from-posting?postingId=${posting.id}`;
-                    void openExternalUrl(url);
-                  }}
+                  onPress={handleLiveOps}
                   testID="job-posting-live-ops"
                 />
               )}

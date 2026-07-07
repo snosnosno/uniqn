@@ -74,7 +74,6 @@ export {
   createJobDeepLink,
   setupDeepLinkListener,
   getInitialDeepLink,
-  openExternalUrl,
   waitForNavigationReadyAsync,
   APP_SCHEME,
   WEB_DOMAIN,

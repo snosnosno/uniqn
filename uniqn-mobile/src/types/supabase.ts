@@ -1596,6 +1596,67 @@ export type Database = {
           },
         ];
       };
+      ops_staff: {
+        Row: {
+          created_at: string;
+          custom_role: string | null;
+          id: string;
+          role: Database['public']['Enums']['staff_role'];
+          source: string;
+          source_work_log_id: string | null;
+          staff_id: string;
+          staff_name: string;
+          staff_nickname: string | null;
+          tournament_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          custom_role?: string | null;
+          id?: string;
+          role?: Database['public']['Enums']['staff_role'];
+          source: string;
+          source_work_log_id?: string | null;
+          staff_id: string;
+          staff_name: string;
+          staff_nickname?: string | null;
+          tournament_id: string;
+        };
+        Update: {
+          created_at?: string;
+          custom_role?: string | null;
+          id?: string;
+          role?: Database['public']['Enums']['staff_role'];
+          source?: string;
+          source_work_log_id?: string | null;
+          staff_id?: string;
+          staff_name?: string;
+          staff_nickname?: string | null;
+          tournament_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ops_staff_source_work_log_id_fkey';
+            columns: ['source_work_log_id'];
+            isOneToOne: false;
+            referencedRelation: 'work_logs';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'ops_staff_staff_id_fkey';
+            columns: ['staff_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'ops_staff_tournament_id_fkey';
+            columns: ['tournament_id'];
+            isOneToOne: false;
+            referencedRelation: 'ops_tournaments';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       ops_tables: {
         Row: {
           assigned_staff_id: string | null;
@@ -2921,6 +2982,16 @@ export type Database = {
         Args: { p_actor_id: string; p_participant_id: string };
         Returns: Json;
       };
+      ops_add_staff: {
+        Args: {
+          p_actor_id: string;
+          p_custom_role?: string;
+          p_role?: Database['public']['Enums']['staff_role'];
+          p_staff_id: string;
+          p_tournament_id: string;
+        };
+        Returns: Json;
+      };
       ops_add_table: {
         Args: {
           p_actor_id: string;
@@ -2937,6 +3008,15 @@ export type Database = {
           p_actor_id: string;
           p_participant_id: string;
           p_seat_id: string;
+        };
+        Returns: Json;
+      };
+      ops_assign_table_staff: {
+        Args: {
+          p_actor_id: string;
+          p_staff_id?: string;
+          p_table_id: string;
+          p_tournament_id: string;
         };
         Returns: Json;
       };
@@ -3012,6 +3092,10 @@ export type Database = {
         Returns: Json;
       };
       ops_get_player_view: { Args: { p_view_token: string }; Returns: Json };
+      ops_import_staff_from_posting: {
+        Args: { p_actor_id: string; p_date?: string; p_tournament_id: string };
+        Returns: Json;
+      };
       ops_issue_player_credentials: {
         Args: { p_actor_id: string; p_participant_id: string };
         Returns: Json;
@@ -3047,6 +3131,14 @@ export type Database = {
         };
         Returns: Json;
       };
+      ops_remove_staff: {
+        Args: {
+          p_actor_id: string;
+          p_ops_staff_id: string;
+          p_tournament_id: string;
+        };
+        Returns: Json;
+      };
       ops_reseat_participants: {
         Args: {
           p_actor_id: string;
@@ -3078,6 +3170,14 @@ export type Database = {
       };
       ops_set_table_priority: {
         Args: { p_actor_id: string; p_priority: number; p_table_id: string };
+        Returns: Json;
+      };
+      ops_set_tournament_posting: {
+        Args: {
+          p_actor_id: string;
+          p_job_posting_id: string;
+          p_tournament_id: string;
+        };
         Returns: Json;
       };
       ops_set_tournament_status: {
