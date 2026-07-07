@@ -4,6 +4,8 @@ export { RedrawModal } from './RedrawModal';
 export { SeatGrid } from './SeatGrid';
 export { TableRow } from './TableRow';
 export { AddTableForm, type AddTableInput } from './AddTableForm';
+// 1e — 딜러 지정 피커는 TablesTab 이 상대경로로 직접 import(barrel 미등록 — 현재 유일 소비처).
+// Task 8(STAFF 탭)이 재사용을 시작하면 그때 barrel 에 추가(knip 미사용 export 오탐 예방).
 // 1c — 클럭/통계/블라인드/HISTORY
 export { ClockControl } from './ClockControl';
 export { LiveStatsPanel } from './LiveStatsPanel';

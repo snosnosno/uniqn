@@ -13,6 +13,7 @@ import {
   useOpsTables,
   useOpsSeats,
   useOpsParticipants,
+  useOpsStaff,
   useAddTable,
   useSetTableLock,
   useSetTablePriority,
@@ -24,8 +25,9 @@ import {
 import type { OpsTable, OpsSeat, OpsTableLockType, OpsTableStatus } from '@/types/ops';
 import { AddTableForm, type AddTableInput } from './AddTableForm';
 import { SeatGrid } from './SeatGrid';
-import { TableRow } from './TableRow';
+import { TableRow, FALLBACK_DEALER_NAME } from './TableRow';
 import { RedrawModal } from './RedrawModal';
+import { DealerPickerSheet } from './DealerPickerSheet';
 
 const LOCK_LABEL: Record<OpsTableLockType, string> = {
   none: '없음',
@@ -55,6 +57,7 @@ export function TablesTab({ tournamentId }: TablesTabProps) {
   const { tables, isLoading } = useOpsTables(tournamentId);
   const { seats } = useOpsSeats(tournamentId);
   const { participants } = useOpsParticipants(tournamentId);
+  const { data: staff } = useOpsStaff(tournamentId);
 
   const addTableMut = useAddTable(tournamentId);
   const lockMut = useSetTableLock(tournamentId);
@@ -76,10 +79,11 @@ export function TablesTab({ tournamentId }: TablesTabProps) {
   const [moveFromSeat, setMoveFromSeat] = useState<OpsSeat | null>(null);
   const [lockPickerOpen, setLockPickerOpen] = useState(false);
   const [priorityPickerOpen, setPriorityPickerOpen] = useState(false);
+  const [dealerPickerOpen, setDealerPickerOpen] = useState(false);
 
   const selectedTable = tables.find((t) => t.id === selectedTableId) ?? null;
 
-  // 파생: 테이블별 좌석 / 참가자 이름 / 미착석 참가자.
+  // 파생: 테이블별 좌석 / 참가자 이름 / 미착석 참가자 / 로스터 이름(1e).
   const seatsByTable = new Map<string, OpsSeat[]>();
   for (const s of seats) {
     const arr = seatsByTable.get(s.tableId);
@@ -87,6 +91,7 @@ export function TablesTab({ tournamentId }: TablesTabProps) {
     else seatsByTable.set(s.tableId, [s]);
   }
   const participantNameById = new Map(participants.map((p) => [p.id, p.name] as const));
+  const staffNameById = new Map((staff ?? []).map((s) => [s.staffId, s.staffName] as const));
   const seatedIds = new Set(
     seats.filter((s) => s.participantId).map((s) => s.participantId as string)
   );
@@ -185,6 +190,17 @@ export function TablesTab({ tournamentId }: TablesTabProps) {
         />
       )}
 
+      {/* 1e — 딜러 지정 피커(로스터 우선순위 정렬 + 배정 해제) */}
+      {selectedTable && (
+        <DealerPickerSheet
+          visible={dealerPickerOpen}
+          tournamentId={tournamentId}
+          tableId={selectedTable.id}
+          currentStaffId={selectedTable.assignedStaffId}
+          onClose={() => setDealerPickerOpen(false)}
+        />
+      )}
+
       {/* 배정 모드 선택 피커(빈자리채움·랜덤·칩드래프트) */}
       <SelectBottomSheet
         visible={showRedrawPicker}
@@ -248,6 +264,22 @@ export function TablesTab({ tournamentId }: TablesTabProps) {
               <Text className="text-xs text-secondary-500 dark:text-secondary-400">우선순위</Text>
               <Text className="font-sans-semibold text-content-primary dark:text-off-white">
                 {selectedTable.priority ?? '없음'}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setDealerPickerOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel="딜러 지정"
+              className="flex-1 rounded-md bg-gray-100 px-3 py-2 active:opacity-70 dark:bg-gray-800"
+            >
+              <Text className="text-xs text-secondary-500 dark:text-secondary-400">딜러</Text>
+              <Text
+                numberOfLines={1}
+                className="font-sans-semibold text-content-primary dark:text-off-white"
+              >
+                {selectedTable.assignedStaffId
+                  ? (staffNameById.get(selectedTable.assignedStaffId) ?? FALLBACK_DEALER_NAME)
+                  : '미지정'}
               </Text>
             </Pressable>
           </View>
@@ -354,6 +386,7 @@ export function TablesTab({ tournamentId }: TablesTabProps) {
               table={item}
               seatCount={tableSeats.length}
               filled={filled}
+              staffNameById={staffNameById}
               onPress={() => openTable(item.id)}
             />
           );
