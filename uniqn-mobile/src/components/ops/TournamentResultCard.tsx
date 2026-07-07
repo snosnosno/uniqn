@@ -8,7 +8,7 @@ import { View, Text } from 'react-native';
 import { useOpsParticipants, useOpsLiveStats } from '@/hooks/ops';
 import type { OpsTournament } from '@/types/ops';
 
-const fmt = (n: number) => n.toLocaleString('ko-KR');
+import { formatNumber as fmt } from '@/utils/formatters/currency';
 
 /** 상금 표시: 값 있으면 "n원", 없으면 대체 문자열. */
 function prizeText(amount: number | null | undefined, fallback: string): string {

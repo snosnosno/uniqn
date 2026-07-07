@@ -135,6 +135,20 @@ export const dateStringSchema = z
  */
 export const timeStringSchema = z.string().regex(/^\d{1,2}:\d{2}$/, 'HH:MM 형식이어야 합니다');
 
+/**
+ * UUID 형식(그룹형) 정규식 — RFC 4122 variant 비강제.
+ *
+ * @description Zod v4 `.uuid()`는 variant 를 강제해 테스트 픽스처(11111111-…)를 거부하므로,
+ *   형식만 검사하되 variant 는 강제하지 않는다. ⚠️ `/^[0-9a-f-]{36}$/i` 는 대시 36개도
+ *   통과시키므로 사용 금지. ops 좌석/상금 스키마·서비스 경계 가드(eliminatorId)의 단일 소스.
+ */
+export const UUID_LIKE_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** UUID 형식(그룹형) refine zod 스키마 — variant 비강제. */
+export const uuidLikeSchema = z
+  .string()
+  .refine((v) => UUID_LIKE_RE.test(v), 'UUID 형식이 아니에요.');
+
 // ============================================================================
 // Type Exports
 // ============================================================================
