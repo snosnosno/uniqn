@@ -413,8 +413,8 @@ export function useImportOpsStaff(tournamentId: string) {
       opsStaffService.importFromPosting(tournamentId, requireActor(actorId), date),
     onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.staff(tournamentId) });
-      const skippedNote = result.skipped > 0 ? ` · ${result.skipped}명 건너뜀` : '';
-      toast.success(`${result.imported}명 임포트됨${skippedNote}`);
+      // 스펙 §4.2 문구 고정 — StaffTab import CTA 확인 다이얼로그와 짝을 이루는 결과 안내.
+      toast.success(`${result.imported}명 추가 · ${result.skipped}명 건너뜀`);
     },
     onError: (e) => {
       logger.error('ops 스태프 임포트 실패', toError(e));

@@ -164,6 +164,22 @@ describe('useImportOpsStaff', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.ops.staff(TID) });
   });
+
+  // Task 8(STAFF 탭) 스펙 §4.2 고정 문구 — "N명 추가 · M명 건너뜀"(항상 두 항목 모두 표시).
+  it('성공 시 "N명 추가 · M명 건너뜀" 토스트를 표시한다', async () => {
+    mockImportFromPosting.mockResolvedValueOnce({ imported: 3, skipped: 1 });
+    const client = createClient();
+    const { result } = renderHook(() => useImportOpsStaff(TID), {
+      wrapper: createWrapper(client),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync(null);
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockToastSuccess).toHaveBeenCalledWith('3명 추가 · 1명 건너뜀');
+  });
 });
 
 describe('useAddOpsStaff', () => {

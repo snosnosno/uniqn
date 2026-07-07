@@ -14,12 +14,14 @@ import {
   MonitorLinkButton,
   PayoutsTab,
   TournamentResultCard,
+  StaffTab,
 } from '@/components/ops';
 import {
   useOpsTournament,
   useOpsParticipants,
   useToggleRegistration,
   useSetTournamentStatus,
+  useOpsStaff,
 } from '@/hooks/ops';
 import type { OpsTournamentStatus } from '@/types/ops';
 
@@ -28,12 +30,14 @@ export default function OpsTournamentDetailScreen() {
   const tournamentId = id ?? '';
   const { tournament, isLoading } = useOpsTournament(tournamentId);
   const { participants, isLoading: participantsLoading } = useOpsParticipants(tournamentId);
+  // 세그먼트 라벨 "스태프 N" 용 카운트 — StaffTab 도 동일 queryKey 를 구독하므로 캐시 공유(중복 네트워크 없음).
+  const { data: staffRoster } = useOpsStaff(tournamentId);
 
   const toggleMut = useToggleRegistration(tournamentId);
   const statusMut = useSetTournamentStatus(tournamentId);
 
   const [tab, setTab] = useState<
-    'players' | 'status' | 'tables' | 'levels' | 'history' | 'payouts'
+    'players' | 'status' | 'tables' | 'levels' | 'staff' | 'history' | 'payouts'
   >('players');
 
   if (isLoading) {
@@ -71,33 +75,37 @@ export default function OpsTournamentDetailScreen() {
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
       <StackHeader title={tournament.name} fallbackHref="/(ops)/tournaments" />
 
-      {/* 세그먼트 (6탭 — 한글 축약 라벨로 가로 폭 절약) */}
+      {/* 세그먼트 (7탭 — 한글 축약 라벨로 가로 폭 절약) */}
       <View className="mx-4 mb-2 mt-1 flex-row rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
-        {(['players', 'status', 'tables', 'levels', 'history', 'payouts'] as const).map((t) => (
-          <Pressable
-            key={t}
-            onPress={() => setTab(t)}
-            accessibilityRole="button"
-            className={`flex-1 items-center rounded-md py-2 ${tab === t ? 'bg-white dark:bg-gray-700' : ''}`}
-          >
-            <Text
-              numberOfLines={1}
-              className={`text-xs ${tab === t ? 'font-sans-semibold text-content-primary' : 'text-secondary-500 dark:text-secondary-400'}`}
+        {(['players', 'status', 'tables', 'levels', 'staff', 'history', 'payouts'] as const).map(
+          (t) => (
+            <Pressable
+              key={t}
+              onPress={() => setTab(t)}
+              accessibilityRole="button"
+              className={`flex-1 items-center rounded-md py-2 ${tab === t ? 'bg-white dark:bg-gray-700' : ''}`}
             >
-              {t === 'players'
-                ? `참가 ${participants.length}`
-                : t === 'status'
-                  ? '현황'
-                  : t === 'tables'
-                    ? '테이블'
-                    : t === 'levels'
-                      ? '블라인드'
-                      : t === 'history'
-                        ? '이력'
-                        : '상금'}
-            </Text>
-          </Pressable>
-        ))}
+              <Text
+                numberOfLines={1}
+                className={`text-xs ${tab === t ? 'font-sans-semibold text-content-primary' : 'text-secondary-500 dark:text-secondary-400'}`}
+              >
+                {t === 'players'
+                  ? `참가 ${participants.length}`
+                  : t === 'status'
+                    ? '현황'
+                    : t === 'tables'
+                      ? '테이블'
+                      : t === 'levels'
+                        ? '블라인드'
+                        : t === 'staff'
+                          ? `스태프 ${staffRoster?.length ?? 0}`
+                          : t === 'history'
+                            ? '이력'
+                            : '상금'}
+              </Text>
+            </Pressable>
+          )
+        )}
       </View>
 
       {tab === 'players' ? (
@@ -169,6 +177,8 @@ export default function OpsTournamentDetailScreen() {
         <TablesTab tournamentId={tournamentId} />
       ) : tab === 'levels' ? (
         <BlindLevelsTab tournamentId={tournamentId} />
+      ) : tab === 'staff' ? (
+        <StaffTab tournamentId={tournamentId} tournament={tournament} />
       ) : tab === 'history' ? (
         <HistoryTab tournamentId={tournamentId} />
       ) : tab === 'payouts' ? (
