@@ -134,5 +134,3 @@ export const env: EnvironmentConfig = {
 
 // lib/env.ts 유틸리티 re-export (하위 호환성)
 export { libIsDevelopment as isDevelopmentEnv, libIsProduction as isProductionEnv };
-
-export default env;

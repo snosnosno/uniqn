@@ -394,5 +394,3 @@ export function useIsEmployer(): boolean {
 export function useIsStaff(): boolean {
   return useHasPermission('staff');
 }
-
-export default useAuthGuard;

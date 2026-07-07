@@ -152,5 +152,3 @@ export async function checkAutoLoginEnabled(): Promise<boolean> {
     return true; // 기본값: 자동 로그인 활성화
   }
 }
-
-export default useAutoLogin;

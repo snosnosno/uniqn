@@ -280,5 +280,3 @@ export const announcementService = {
   incrementViewCount,
   getAnnouncementCountByStatus,
 };
-
-export default announcementService;

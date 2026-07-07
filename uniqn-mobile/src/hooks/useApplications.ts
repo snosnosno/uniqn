@@ -345,5 +345,3 @@ export function useHasAppliedToJob(jobPostingId?: string) {
     networkMode: 'always',
   });
 }
-
-export default useApplications;

@@ -37,5 +37,3 @@ export function useCreateVenueContainer(workspaceId: string | undefined) {
     },
   });
 }
-
-export default useCreateVenueContainer;

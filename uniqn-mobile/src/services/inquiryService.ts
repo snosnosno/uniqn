@@ -381,5 +381,3 @@ export const inquiryService = {
   deleteMyInquiry,
   getInquiryAttachmentSignedUrl,
 };
-
-export default inquiryService;

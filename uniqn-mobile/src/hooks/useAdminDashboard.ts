@@ -196,5 +196,3 @@ export function useAdminDashboard() {
 // ============================================================================
 
 export type { DashboardStats, PaginatedUsers, AdminUser, SystemMetrics };
-
-export default useAdminDashboard;

@@ -28,5 +28,3 @@ export function useSetVenueSoftTarget() {
     },
   });
 }
-
-export default useSetVenueSoftTarget;

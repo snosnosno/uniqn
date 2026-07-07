@@ -26,5 +26,3 @@ export function useVenueDaySlots(
     staleTime: cachingPolicies.realtime,
   });
 }
-
-export default useVenueDaySlots;

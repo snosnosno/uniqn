@@ -78,5 +78,3 @@ export function useNetworkStatus(
     checkConnection,
   };
 }
-
-export default useNetworkStatus;

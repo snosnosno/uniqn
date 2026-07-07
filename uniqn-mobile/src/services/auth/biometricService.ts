@@ -436,5 +436,3 @@ export const biometricService = {
   setBiometricEnabled,
   isBiometricEnabled,
 };
-
-export default biometricService;

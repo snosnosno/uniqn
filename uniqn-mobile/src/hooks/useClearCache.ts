@@ -108,5 +108,3 @@ export function useClearCache(): UseClearCacheReturn {
     refreshStats,
   };
 }
-
-export default useClearCache;

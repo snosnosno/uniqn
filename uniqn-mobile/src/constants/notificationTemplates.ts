@@ -424,5 +424,3 @@ export const NOTIFICATION_DATA_PATTERNS = {
   workDate: /(\d{4}-\d{2}-\d{2})/,
   amount: /(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/,
 };
-
-export default NotificationTemplates;

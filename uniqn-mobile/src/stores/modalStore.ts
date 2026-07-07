@@ -202,5 +202,3 @@ export const useModal = () => {
     closeAll: closeAllModals,
   };
 };
-
-export default useModalStore;

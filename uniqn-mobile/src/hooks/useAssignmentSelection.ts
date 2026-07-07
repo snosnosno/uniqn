@@ -275,5 +275,3 @@ export function useAssignmentSelection({
     isMaxReached,
   };
 }
-
-export default useAssignmentSelection;

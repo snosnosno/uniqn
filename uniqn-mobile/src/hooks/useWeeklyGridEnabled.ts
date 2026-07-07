@@ -42,5 +42,3 @@ export function useWeeklyGridEnabled(): UseWeeklyGridEnabledReturn {
 
   return { enabled, isLoading: query.isLoading };
 }
-
-export default useWeeklyGridEnabled;

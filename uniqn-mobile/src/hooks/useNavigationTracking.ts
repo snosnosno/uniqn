@@ -275,5 +275,3 @@ export function useNavigationCount(): number {
 
   return countRef.current;
 }
-
-export default useNavigationTracking;

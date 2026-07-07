@@ -382,5 +382,3 @@ export function useMonthlyPayroll(year: number, month: number, enabled = true) {
     refetch: () => (isOnline ? query.refetch() : Promise.resolve()),
   };
 }
-
-export default useWorkLogs;

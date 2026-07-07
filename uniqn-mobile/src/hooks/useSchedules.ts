@@ -720,5 +720,3 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
     refresh,
   };
 }
-
-export default useSchedules;

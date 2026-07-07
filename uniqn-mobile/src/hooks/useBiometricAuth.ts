@@ -402,5 +402,3 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
     refresh,
   };
 }
-
-export default useBiometricAuth;
