@@ -304,6 +304,22 @@ describe('import CTA', () => {
     expect(queryByText('확정 스태프 가져오기')).toBeNull();
   });
 
+  // 리뷰 후속 T8-M2 — eventDate=null 이면 handleImportPress 가 date=null(전체 기간)로 mutate 하므로
+  // 캡션도 "대회일"이 아닌 "전체 기간"으로 표시해야 동작과 일치한다(구 캡션은 실제로 필터되지 않는
+  // 상태를 "대회일 기준"이라 오도했다).
+  it('eventDate 가 null 이면 import CTA 캡션도 "전체 기간"으로 표시한다(동작과 일치)', () => {
+    setupHooks({ postings: [{ id: 'p1', title: '공고' }] });
+    const { getByText, queryByText } = render(
+      <StaffTab
+        tournamentId={TID}
+        tournament={tournament({ jobPostingId: 'p1', eventDate: null })}
+      />
+    );
+
+    expect(getByText('전체 기간 기준')).toBeTruthy();
+    expect(queryByText('대회일 기준')).toBeNull();
+  });
+
   it('누르면 필수 문구가 담긴 확인 다이얼로그를 띄운다', () => {
     setupHooks({ postings: [{ id: 'p1', title: '공고' }] });
     const { getByText } = render(

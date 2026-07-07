@@ -247,7 +247,9 @@ export function StaffTab({ tournamentId, tournament }: StaffTabProps) {
     <View className="mt-3 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
       <View className="flex-row items-center justify-between">
         <Text className="text-xs text-secondary-500 dark:text-secondary-400">
-          {fullPeriod ? '전체 기간' : (tournament.eventDate ?? '대회일')} 기준
+          {/* eventDate 가 없으면 handleImportPress 도 date=null(전체 기간)로 호출한다 — 캡션도 동작과
+              일치시킨다("대회일" 문구는 실제로 필터되지 않는 상태를 오도했다, 리뷰 후속 T8-M2). */}
+          {fullPeriod || !tournament.eventDate ? '전체 기간' : tournament.eventDate} 기준
         </Text>
         <Pressable
           onPress={() => setFullPeriod((v) => !v)}

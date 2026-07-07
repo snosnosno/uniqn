@@ -8,7 +8,7 @@
 -- ⚠️ grants(anon REVOKE)는 Task 4 이후 — 이 파일은 postgres/ops_test_set_user(authenticated) 경유만 검증.
 
 BEGIN;
-SELECT plan(38);
+SELECT plan(39);
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 시드 A: [link] 시나리오용 — ops_test_seed 기본(owner/member/outsider/workspace/jp1/tournament)
@@ -502,6 +502,89 @@ SELECT throws_like(                                                          -- 
        NULL) $$,
   '%PERMISSION_DENIED%',
   '[import] 10) 비멤버 outsider → PERMISSION_DENIED');
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- 시드 C(리뷰 후속 T2-M1) — [import] 최신-role 채택 회귀가드용. 별도 대회 t4 + jp4 +
+--   동일 스태프(v_multi)의 work_logs 2행(구 날짜 role='floor' / 신 날짜 role='dealer', 둘 다 활성 status).
+-- ⚠️ 기존 [import] 6~8은 스태프별 1행 시드뿐이라 DISTINCT ON(wl.staff_id) ORDER BY wl.staff_id,
+--   wl.date DESC, wl.created_at DESC(20260707100100_ops_1e_staff_rpcs.sql:116-123)의 "최신 활동일 채택"
+--   로직이 무검증이었다(ASC로 뒤집혀도 imported/skipped 카운트는 그대로라 기존 단언을 통과한다).
+-- ════════════════════════════════════════════════════════════════════════════
+DO $$
+DECLARE
+  v_t4        uuid := gen_random_uuid();
+  v_jp4       uuid := gen_random_uuid();
+  v_multi     uuid := gen_random_uuid();
+  v_owner     uuid := (current_setting('ops.owner_id'))::uuid;
+  v_ws        uuid := (current_setting('ops.workspace_id'))::uuid;
+  v_old_date  date := current_date + 25;
+  v_new_date  date := current_date + 26;
+BEGIN
+  PERFORM set_config('role', 'postgres', true);
+
+  INSERT INTO public.job_postings (
+    id, owner_id, owner_name, workspace_id, title, status, posting_type,
+    work_date, work_dates, total_positions, filled_positions, view_count,
+    schema_version, contact_phone, created_at, updated_at
+  ) VALUES (
+    v_jp4, v_owner, 'ops owner', v_ws, 'ops import latest-role test posting', 'active', 'regular',
+    v_old_date::text, ARRAY[v_old_date::text, v_new_date::text], 1, 0, 0, 3, '+82101111121', now(), now()
+  );
+
+  INSERT INTO public.ops_tournaments (
+    id, owner_id, job_posting_id, name, game_type, starting_chips,
+    registration_open, next_entry_seq
+  ) VALUES (
+    v_t4, v_owner, v_jp4, 'ops latest-role cup', 'NLH', 30000, true, 0
+  );
+
+  INSERT INTO auth.users (id, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+                          confirmation_token, recovery_token, email_change_token_new, email_change)
+  VALUES (v_multi, 'ops_import_multi_' || v_multi || '@test.local', '{"role":"staff"}'::jsonb, '{}'::jsonb,
+          now(), now(), '', '', '', '');
+
+  INSERT INTO public.users (id, email, name, role, is_active, created_at, updated_at)
+  VALUES (v_multi, (SELECT email FROM auth.users WHERE id = v_multi), '멀티스태프', 'staff'::user_role, true,
+          now(), now());
+
+  -- 구 날짜: role='floor'
+  INSERT INTO public.work_logs (
+    staff_id, job_posting_id, date, staff_name, role, status, owner_id, created_at, updated_at
+  ) VALUES (
+    v_multi, v_jp4, v_old_date::text, '멀티스태프', 'floor', 'scheduled', v_owner,
+    now() - interval '5 hours', now() - interval '5 hours'
+  );
+
+  -- 신 날짜: role='dealer' — 최신 활동일. import 는 이 role 을 채택해야 한다.
+  INSERT INTO public.work_logs (
+    staff_id, job_posting_id, date, staff_name, role, status, owner_id, created_at, updated_at
+  ) VALUES (
+    v_multi, v_jp4, v_new_date::text, '멀티스태프', 'dealer', 'scheduled', v_owner,
+    now() - interval '4 hours', now() - interval '4 hours'
+  );
+
+  PERFORM set_config('ops.t4_id',    v_t4::text,    true);
+  PERFORM set_config('ops.multi_id', v_multi::text, true);
+END $$;
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- [import] 11) 동일 스태프 다중 날짜(구=floor/신=dealer) → 최신 활동일(role=dealer) 채택.
+-- ────────────────────────────────────────────────────────────────────────────
+SELECT ops_test_set_user((current_setting('ops.owner_id'))::uuid);
+
+DO $$
+BEGIN
+  PERFORM public.ops_import_staff_from_posting(
+    (current_setting('ops.t4_id'))::uuid,
+    (current_setting('ops.owner_id'))::uuid,
+    NULL);
+END $$;
+
+SELECT ok(                                                                   -- [39]
+  (SELECT role = 'dealer' FROM public.ops_staff
+    WHERE tournament_id = (current_setting('ops.t4_id'))::uuid
+      AND staff_id = (current_setting('ops.multi_id'))::uuid),
+  '[import] 11) 동일 스태프 다중 날짜 — 최신 활동일(role=dealer) 채택(ORDER BY date DESC 실동작)');
 
 SELECT * FROM finish();
 ROLLBACK;

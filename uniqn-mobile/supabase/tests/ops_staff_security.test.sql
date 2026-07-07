@@ -12,7 +12,7 @@
 --   상속받는다. prod 마이그레이션에는 미등록(로컬 test DB 전용 fixture)이므로 카운트는 'ops\_test\_%'
 --   제외로 실제 운영 RPC만 스코프해야 prod 배포 카탈로그와 동치가 된다.
 BEGIN;
-SELECT plan(17);
+SELECT plan(18);
 
 -- ─── (1~5) anon REVOKE: 신규 RPC 5종 ───
 SELECT ok(
@@ -57,7 +57,17 @@ SELECT is(
       AND p.prosecdef AND has_function_privilege('anon', p.oid, 'EXECUTE')),
   2, 'anon-executable ops SECDEF 총량=2(ops_get_monitor_snapshot/ops_get_player_view만)');
 
--- ─── (12~16) actor 위조: p_actor_id ≠ auth.uid() 비-admin 호출 → P0001 PERMISSION_DENIED ───
+-- ─── (12) 리뷰 후속 — set-equality: 총량 카운트만으로는 "우연히 2개지만 다른 함수로 뒤바뀐" 회귀를
+--   못 잡는다(예: ops_get_monitor_snapshot 이 REVOKE되고 ops_add_staff 가 실수로 anon GRANT되면
+--   카운트는 여전히 2). 정확한 함수명 집합까지 단언해야 완전한 회귀 방지책이 된다.
+SELECT is(
+  ARRAY(SELECT p.proname::text FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+    WHERE n.nspname='public' AND p.proname LIKE 'ops\_%' AND p.proname NOT LIKE 'ops\_test\_%'
+      AND p.prosecdef AND has_function_privilege('anon',p.oid,'EXECUTE') ORDER BY 1),
+  ARRAY['ops_get_monitor_snapshot','ops_get_player_view']::text[],
+  'anon-executable ops SECDEF 집합 = {monitor, player} 정확 일치');
+
+-- ─── (13~17) actor 위조: p_actor_id ≠ auth.uid() 비-admin 호출 → P0001 PERMISSION_DENIED ───
 -- 위조 caller=member, p_actor_id=owner(본인 아님). 5종 함수 모두 actor 가드가 본문 최상단 첫 검사라
 -- 나머지 인자는 존재 여부와 무관하게 가드에서 즉시 차단된다(더미 값 사용 가능).
 DO $$
@@ -98,7 +108,7 @@ SELECT throws_ok(
        (current_setting('ops.table_id'))::uuid, NULL::uuid) $$,
   'P0001', NULL, 'forged actor blocked: ops_assign_table_staff');
 
--- ─── (17) Realtime: ops_staff publication 등록 ───
+-- ─── (18) Realtime: ops_staff publication 등록 ───
 SELECT ok(
   EXISTS (SELECT 1 FROM pg_publication_tables
     WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'ops_staff'),

@@ -16,7 +16,12 @@ import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 import { extractUserMessage } from '@/errors';
 import type { CreateOpsTournamentInput, RegisterParticipantInput } from '@/repositories/ops';
-import type { OpsTournamentStatus, OpsTableStatus, OpsTableLockType } from '@/types/ops';
+import type {
+  OpsTournament,
+  OpsTournamentStatus,
+  OpsTableStatus,
+  OpsTableLockType,
+} from '@/types/ops';
 import type { PrizeCorrectionInput } from '@/schemas/opsPrize.schema';
 import type { StaffRole } from '@/types/role';
 
@@ -40,8 +45,14 @@ export function useCreateOpsTournament() {
   return useMutation({
     mutationFn: (input: CreateOpsTournamentInput) =>
       opsTournamentService.createTournament(input, requireActor(actorId)),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournaments() });
+      // 리뷰 후속 — 공고연결 상태로 생성 시 공고 상세 ActionCard(useOpsTournamentsForPosting)도 즉시 갱신.
+      if (variables.jobPostingId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.ops.forPosting(variables.jobPostingId),
+        });
+      }
       toast.success('대회를 만들었습니다');
     },
     onError: (error) => {
@@ -391,10 +402,21 @@ export function useSetTournamentPosting(tournamentId: string) {
   return useMutation({
     mutationFn: (jobPostingId: string | null) =>
       opsStaffService.setTournamentPosting(tournamentId, requireActor(actorId), jobPostingId),
-    onSuccess: () => {
+    onSuccess: (_data, jobPostingId) => {
+      // 리뷰 후속 — invalidateQueries 전에 캐시에서 old 공고 id 를 확보(무효화 이후엔 갱신되어 못 얻음).
+      // old·new 양쪽 공고 상세 ActionCard(useOpsTournamentsForPosting)를 모두 갱신해 화면 간 staleness 제거.
+      const previous = qc.getQueryData<OpsTournament>(queryKeys.ops.tournamentDetail(tournamentId));
+      const oldJobPostingId = previous?.jobPostingId ?? null;
+
       qc.invalidateQueries({ queryKey: queryKeys.ops.staff(tournamentId) });
       qc.invalidateQueries({ queryKey: queryKeys.ops.tournamentDetail(tournamentId) });
       qc.invalidateQueries({ queryKey: queryKeys.ops.tournaments() });
+      if (oldJobPostingId) {
+        qc.invalidateQueries({ queryKey: queryKeys.ops.forPosting(oldJobPostingId) });
+      }
+      if (jobPostingId) {
+        qc.invalidateQueries({ queryKey: queryKeys.ops.forPosting(jobPostingId) });
+      }
       toast.success('공고 연결을 변경했습니다');
     },
     onError: (e) => {

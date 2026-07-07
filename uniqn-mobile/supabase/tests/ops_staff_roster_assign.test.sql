@@ -12,7 +12,7 @@
 -- ⚠️ grants(anon REVOKE)는 Task 4 이후 — 이 파일은 postgres/ops_test_set_user(authenticated) 경유만 검증.
 
 BEGIN;
-SELECT plan(28);
+SELECT plan(31);
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 시드: ops_test_seed() 기본(owner/member/outsider/tournament/table_id=T1)
@@ -395,7 +395,69 @@ SELECT throws_like(                                                          -- 
   '[assign] 12) 타 대회 컨텍스트의 테이블 조회 실패(TABLE_NOT_FOUND)');
 
 -- ────────────────────────────────────────────────────────────────────────────
--- [백스톱] 13) postgres 롤로 두 테이블(T1, T2)에 동일 staff 직접 UPDATE
+-- [assign] 13) (리뷰 후속 T3-M1) 점유 테이블 축출 — 이미 배정된 테이블(T1=cand2)에 다른 로스터
+--   멤버(cand5)를 배정 → T1.assigned_staff_id=cand5 + 'table_staff_assigned' 이벤트 payload의
+--   replaced_staff_id=cand2(축출된 X). 준비: postgres 직접 INSERT로 cand5를 메인 대회 로스터에 편입
+--   (앞선 [assign]10은 cand5가 로스터 밖일 때의 거부만 검증했으므로 순서상 이후 편입해도 회귀 없음) +
+--   T1에 cand2 배정.
+-- ⚠️ 기존 [assign] 8/9/11 은 전부 빈 테이블 대상이라 v_replaced 가 항상 NULL — replaced_staff_id≠NULL
+--   경로(점유 테이블에 다른 딜러가 있던 경우의 교대)가 무검증이었다. 같은 트랜잭션 내 now() 고정이라
+--   table_staff_assigned 이벤트 3건(8/9차 + 이번)의 created_at 이 동일 — 기존 2건의 id 를 미리 캡처해
+--   배제 필터로 3차 이벤트를 특정한다.
+-- ────────────────────────────────────────────────────────────────────────────
+DO $$
+DECLARE v_known_ids uuid[];
+BEGIN
+  PERFORM set_config('role', 'postgres', true);
+
+  INSERT INTO public.ops_staff (tournament_id, staff_id, role, staff_name, source)
+  VALUES ((current_setting('ops.t_id'))::uuid, (current_setting('ops.cand5_id'))::uuid,
+          'floor', '후보스태프5', 'manual');
+
+  UPDATE public.ops_tables SET assigned_staff_id = (current_setting('ops.cand2_id'))::uuid
+   WHERE id = (current_setting('ops.t1_id'))::uuid;
+
+  SELECT array_agg(id) INTO v_known_ids FROM public.ops_events
+   WHERE tournament_id = (current_setting('ops.t_id'))::uuid AND type = 'table_staff_assigned';
+  PERFORM set_config('ops.tsa_known_ids', v_known_ids::text, true);
+END $$;
+
+SELECT ops_test_set_user((current_setting('ops.owner_id'))::uuid);
+
+DO $$
+DECLARE r jsonb;
+BEGIN
+  SELECT public.ops_assign_table_staff(
+    (current_setting('ops.t_id'))::uuid,
+    (current_setting('ops.owner_id'))::uuid,
+    (current_setting('ops.t1_id'))::uuid,
+    (current_setting('ops.cand5_id'))::uuid
+  ) INTO r;
+  PERFORM set_config('ops.r13_staffId', COALESCE(r->>'staffId', '<NULL>'), true);
+END $$;
+
+SELECT is(                                                                   -- [28]
+  NULLIF(current_setting('ops.r13_staffId'), '<NULL>')::uuid,
+  (current_setting('ops.cand5_id'))::uuid,
+  '[assign] 13) 점유 테이블 축출: 반환값 staffId=cand5');
+
+SELECT is(                                                                   -- [29]
+  (SELECT assigned_staff_id FROM public.ops_tables WHERE id = (current_setting('ops.t1_id'))::uuid),
+  (current_setting('ops.cand5_id'))::uuid,
+  '[assign] 13) T1.assigned_staff_id=cand5 반영(cand2 축출)');
+
+SELECT is(                                                                   -- [30]
+  (SELECT payload FROM public.ops_events
+    WHERE tournament_id = (current_setting('ops.t_id'))::uuid AND type = 'table_staff_assigned'
+      AND id <> ALL((current_setting('ops.tsa_known_ids'))::uuid[])),
+  jsonb_build_object('table_id', (current_setting('ops.t1_id'))::uuid,
+                     'staff_id', (current_setting('ops.cand5_id'))::uuid,
+                     'previous_table_id', NULL::uuid,
+                     'replaced_staff_id', (current_setting('ops.cand2_id'))::uuid),
+  '[assign] 13) table_staff_assigned 이벤트 payload.replaced_staff_id=cand2(축출된 X) 정확');
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- [백스톱] 14) postgres 롤로 두 테이블(T1, T2)에 동일 staff 직접 UPDATE
 --   → uq_ops_tables_assigned_staff 위반(23505). RPC move 시맨틱의 최종 방어선 실동작 확인.
 -- ────────────────────────────────────────────────────────────────────────────
 DO $$
@@ -405,11 +467,11 @@ BEGIN
    WHERE id = (current_setting('ops.t1_id'))::uuid;
 END $$;
 
-SELECT throws_ok(                                                            -- [28]
+SELECT throws_ok(                                                            -- [31]
   $$ UPDATE public.ops_tables SET assigned_staff_id = (current_setting('ops.outsider_id'))::uuid
       WHERE id = (current_setting('ops.t2table_id'))::uuid $$,
   '23505', NULL,
-  '[백스톱] 13) 동일 대회 내 동일 staff 중복 테이블 배정 UPDATE 거부(partial UNIQUE)');
+  '[백스톱] 14) 동일 대회 내 동일 staff 중복 테이블 배정 UPDATE 거부(partial UNIQUE)');
 
 SELECT * FROM finish();
 ROLLBACK;

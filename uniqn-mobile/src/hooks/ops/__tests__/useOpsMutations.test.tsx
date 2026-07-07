@@ -3,6 +3,8 @@
  * (useSetTournamentPosting / useImportOpsStaff / useAddOpsStaff / useRemoveOpsStaff / useAssignTableStaff)
  * 기존 mutation(useSetVenueSoftTarget/useCreateVenueContainer) 문형 복제 — 레포(여기선 Service) 위임 +
  * onSuccess invalidate 키 단언. 그 외 기존 20여종 mutation 은 이 태스크 범위 밖(회귀 없음, 파일 불변 유지).
+ * 리뷰 후속(fix-batch) — useSetTournamentPosting/useCreateOpsTournament 의 ops.forPosting invalidate
+ * 배선(공고 상세 ActionCard 갱신) + skipped=0 토스트 분기를 추가 커버한다.
  */
 import { renderHook, waitFor, act } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -10,6 +12,7 @@ import React from 'react';
 import { queryKeys } from '@/lib/queryClient';
 import { useAuthStore } from '@/stores/authStore';
 import {
+  useCreateOpsTournament,
   useSetTournamentPosting,
   useImportOpsStaff,
   useAddOpsStaff,
@@ -20,6 +23,7 @@ import {
 // jest.setup.js 의 전역 useQuery/useMutation 모킹을 실제 구현으로 복원
 jest.mock('@tanstack/react-query', () => jest.requireActual('@tanstack/react-query'));
 
+const mockCreateTournament = jest.fn();
 const mockSetTournamentPosting = jest.fn();
 const mockImportFromPosting = jest.fn();
 const mockAddStaff = jest.fn();
@@ -27,7 +31,9 @@ const mockRemoveStaff = jest.fn();
 const mockAssignTableStaff = jest.fn();
 
 jest.mock('@/services/ops', () => ({
-  opsTournamentService: {},
+  opsTournamentService: {
+    createTournament: (...args: unknown[]) => mockCreateTournament(...args),
+  },
   opsParticipantService: {},
   opsTableService: {},
   opsSeatService: {},
@@ -70,6 +76,74 @@ function createWrapper(client: QueryClient) {
   };
 }
 
+// 리뷰 후속 — useCreateOpsTournament 의 forPosting invalidate 배선 검증용 최소 유효 입력.
+const baseCreateInput = {
+  name: '테스트 대회',
+  gameType: 'NLH',
+  startingChips: 30000,
+  seatsPerTable: 9,
+  config: {
+    buyInChips: 20000,
+    rebuyChips: 20000,
+    addonChips: 20000,
+    buyInCost: 100000,
+    feeCost: 0,
+    rebuyCost: 100000,
+    addonCost: 100000,
+    bountyCost: null,
+  },
+};
+
+describe('useCreateOpsTournament', () => {
+  beforeEach(() => {
+    mockCreateTournament.mockReset();
+    mockToastSuccess.mockReset();
+    (useAuthStore as unknown as jest.Mock).mockReturnValue('actor-1');
+  });
+
+  // 리뷰 후속 — 공고연결 상태로 생성 시 공고 상세 ActionCard(useOpsTournamentsForPosting)가 즉시
+  // "라이브 운영 (N)" 을 갱신하도록 ops.forPosting(jobPostingId) 도 함께 invalidate 한다.
+  it('jobPostingId 포함 생성 성공 시 ops.tournaments + ops.forPosting(jobPostingId) 를 invalidate', async () => {
+    mockCreateTournament.mockResolvedValueOnce({ tournamentId: 'trn-new' });
+    const client = createClient();
+    const invalidateSpy = jest.spyOn(client, 'invalidateQueries');
+    const { result } = renderHook(() => useCreateOpsTournament(), {
+      wrapper: createWrapper(client),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({ ...baseCreateInput, jobPostingId: 'posting-1' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.ops.tournaments() });
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: queryKeys.ops.forPosting('posting-1'),
+    });
+  });
+
+  it('jobPostingId 없이 생성하면 ops.forPosting 은 invalidate 하지 않는다', async () => {
+    mockCreateTournament.mockResolvedValueOnce({ tournamentId: 'trn-new2' });
+    const client = createClient();
+    const invalidateSpy = jest.spyOn(client, 'invalidateQueries');
+    const { result } = renderHook(() => useCreateOpsTournament(), {
+      wrapper: createWrapper(client),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync(baseCreateInput);
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.ops.tournaments() });
+    const forPostingCalls = invalidateSpy.mock.calls.filter(([arg]) => {
+      const key = (arg as { queryKey?: unknown[] }).queryKey;
+      return Array.isArray(key) && key.includes('forPosting');
+    });
+    expect(forPostingCalls).toHaveLength(0);
+  });
+});
+
 describe('useSetTournamentPosting', () => {
   beforeEach(() => {
     mockSetTournamentPosting.mockReset();
@@ -108,6 +182,59 @@ describe('useSetTournamentPosting', () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.ops.staff(TID) });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.ops.tournamentDetail(TID) });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.ops.tournaments() });
+  });
+
+  // 리뷰 후속 — 연결 변경 시 old·new 양쪽 공고 상세 ActionCard(useOpsTournamentsForPosting)를 갱신해
+  // 화면 간 staleness 를 제거한다. old 는 invalidate 전에 캐시(tournamentDetail)에서 확보.
+  it('연결 변경 성공 시 old·new 양쪽 ops.forPosting 을 invalidate', async () => {
+    mockSetTournamentPosting.mockResolvedValueOnce(undefined);
+    const client = createClient();
+    client.setQueryData(queryKeys.ops.tournamentDetail(TID), {
+      id: TID,
+      jobPostingId: 'old-posting',
+    });
+    const invalidateSpy = jest.spyOn(client, 'invalidateQueries');
+    const { result } = renderHook(() => useSetTournamentPosting(TID), {
+      wrapper: createWrapper(client),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync('posting-1');
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: queryKeys.ops.forPosting('old-posting'),
+    });
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: queryKeys.ops.forPosting('posting-1'),
+    });
+  });
+
+  it('해제(jobPostingId=null) 시 old 공고 ops.forPosting 만 invalidate한다', async () => {
+    mockSetTournamentPosting.mockResolvedValueOnce(undefined);
+    const client = createClient();
+    client.setQueryData(queryKeys.ops.tournamentDetail(TID), {
+      id: TID,
+      jobPostingId: 'old-posting',
+    });
+    const invalidateSpy = jest.spyOn(client, 'invalidateQueries');
+    const { result } = renderHook(() => useSetTournamentPosting(TID), {
+      wrapper: createWrapper(client),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync(null);
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    const forPostingCalls = invalidateSpy.mock.calls
+      .map(([arg]) => arg)
+      .filter((arg) => {
+        const key = (arg as { queryKey?: unknown[] }).queryKey;
+        return Array.isArray(key) && key.includes('forPosting');
+      });
+    expect(forPostingCalls).toEqual([{ queryKey: queryKeys.ops.forPosting('old-posting') }]);
   });
 
   it('로그인 안됨(actorId 없음) → Service 미호출 + 에러', async () => {
@@ -179,6 +306,23 @@ describe('useImportOpsStaff', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockToastSuccess).toHaveBeenCalledWith('3명 추가 · 1명 건너뜀');
+  });
+
+  // 리뷰 후속 T8-M3 — skipped=0 도 "0명 건너뜀"으로 항상 두 항목을 표시(생략하지 않음)해야
+  // 최초 실행(전원 신규 import)처럼 skipped 가 0인 흔한 경로에서 문구가 깨지지 않는다.
+  it('skipped=0 이어도 "N명 추가 · 0명 건너뜀" 토스트를 표시한다', async () => {
+    mockImportFromPosting.mockResolvedValueOnce({ imported: 5, skipped: 0 });
+    const client = createClient();
+    const { result } = renderHook(() => useImportOpsStaff(TID), {
+      wrapper: createWrapper(client),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync(null);
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockToastSuccess).toHaveBeenCalledWith('5명 추가 · 0명 건너뜀');
   });
 });
 
