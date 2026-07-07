@@ -8,7 +8,7 @@
 -- ⚠️ grants(anon REVOKE)는 Task 4 이후 — 이 파일은 postgres/ops_test_set_user(authenticated) 경유만 검증.
 
 BEGIN;
-SELECT plan(39);
+SELECT plan(44);
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 시드 A: [link] 시나리오용 — ops_test_seed 기본(owner/member/outsider/workspace/jp1/tournament)
@@ -585,6 +585,131 @@ SELECT ok(                                                                   -- 
     WHERE tournament_id = (current_setting('ops.t4_id'))::uuid
       AND staff_id = (current_setting('ops.multi_id'))::uuid),
   '[import] 11) 동일 스태프 다중 날짜 — 최신 활동일(role=dealer) 채택(ORDER BY date DESC 실동작)');
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- [link] 12) (T2-M2) 비-NULL 동일값 재설정 → no-op(이벤트 미증가, 반환 동일).
+--   기존 [16][17]은 NULL→NULL no-op 만 검증 — 마이그 60-62행 no-op 단락은 v_old IS NOT DISTINCT FROM
+--   p_job_posting_id 이라 비-NULL 경로도 커버해야 완전. ⚠️ 비-NULL 재설정은 공고 접근 게이트(47-56행
+--   POSTING_NOT_FOUND)가 no-op 단락보다 먼저 실행되므로 owner 가 접근권 유지하는 jp2 로 시나리오 구성.
+--   준비: t_id 는 [10]에서 NULL 로 해제된 상태 → jp2 로 재연결(posting_linked 2번째)한 뒤 동일 jp2 재설정.
+-- ════════════════════════════════════════════════════════════════════════════
+SELECT ops_test_set_user((current_setting('ops.owner_id'))::uuid);
+
+DO $$
+BEGIN
+  -- 재연결(NULL→jp2): posting_linked 2번째 이벤트 발생
+  PERFORM public.ops_set_tournament_posting(
+    (current_setting('ops.t_id'))::uuid, (current_setting('ops.owner_id'))::uuid,
+    (current_setting('ops.jp2_id'))::uuid);
+END $$;
+
+SELECT is(                                                                   -- [40]
+  (SELECT count(*)::int FROM public.ops_events
+    WHERE tournament_id = (current_setting('ops.t_id'))::uuid AND type = 'posting_linked'),
+  2, '[link] 12) 재연결(NULL→jp2) 후 posting_linked 누적 2행(no-op 기준선 확립)');
+
+DO $$
+DECLARE r jsonb;
+BEGIN
+  -- 동일값(jp2→jp2) 재설정: 접근 게이트 통과(owner=jp2 owner) 후 no-op 단락 → 이벤트 미발생
+  SELECT public.ops_set_tournament_posting(
+    (current_setting('ops.t_id'))::uuid, (current_setting('ops.owner_id'))::uuid,
+    (current_setting('ops.jp2_id'))::uuid) INTO r;
+  PERFORM set_config('ops.r8_jobPostingId', COALESCE(r->>'jobPostingId', '<NULL>'), true);
+END $$;
+
+SELECT is(                                                                   -- [41]
+  NULLIF(current_setting('ops.r8_jobPostingId'), '<NULL>')::uuid, (current_setting('ops.jp2_id'))::uuid,
+  '[link] 12) 비-NULL no-op 반환값 jobPostingId=jp2(불변)');
+
+SELECT is(                                                                   -- [42]
+  (SELECT count(*)::int FROM public.ops_events
+    WHERE tournament_id = (current_setting('ops.t_id'))::uuid AND type = 'posting_linked'),
+  2, '[link] 12) 비-NULL 동일값 재설정 no-op: posting_linked 누적 불변(2 유지, 이벤트 미증가)');
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- 시드 D + [import] 13) (T2-M3) date 필터 신규 import 신원 단언.
+--   기존 [33]~[36]은 이미 전량 import 된 뒤라 skipped 카운트 축소로만 필터를 증명 — 실제로 "그 날짜의
+--   스태프만 삽입되는지"의 신원(어느 staff_id 가 들어갔는지)은 무검증이었다. 깨끗한 대회 t5 로 date 필터
+--   최초 import → imported 카운트 + 삽입된 ops_staff.staff_id 집합 = 그 날짜 스태프 집합 실증.
+--   시드: jp5 같은 workspace + 같은 날짜(dateX)에 staffA/staffB 2인 + 다른 날짜(dateY)에 staffC 1인.
+-- ════════════════════════════════════════════════════════════════════════════
+DO $$
+DECLARE
+  v_t5      uuid := gen_random_uuid();
+  v_jp5     uuid := gen_random_uuid();
+  v_sA      uuid := gen_random_uuid();
+  v_sB      uuid := gen_random_uuid();
+  v_sC      uuid := gen_random_uuid();
+  v_owner   uuid := (current_setting('ops.owner_id'))::uuid;
+  v_ws      uuid := (current_setting('ops.workspace_id'))::uuid;
+  v_dateX   date := current_date + 30;
+  v_dateY   date := current_date + 31;
+BEGIN
+  PERFORM set_config('role', 'postgres', true);
+
+  INSERT INTO public.job_postings (
+    id, owner_id, owner_name, workspace_id, title, status, posting_type,
+    work_date, work_dates, total_positions, filled_positions, view_count,
+    schema_version, contact_phone, created_at, updated_at
+  ) VALUES (
+    v_jp5, v_owner, 'ops owner', v_ws, 'ops date-filter identity posting', 'active', 'regular',
+    v_dateX::text, ARRAY[v_dateX::text, v_dateY::text], 3, 0, 0, 3, '+82101111122', now(), now()
+  );
+
+  INSERT INTO public.ops_tournaments (
+    id, owner_id, job_posting_id, name, game_type, starting_chips, registration_open, next_entry_seq
+  ) VALUES (
+    v_t5, v_owner, v_jp5, 'ops date-filter cup', 'NLH', 30000, true, 0
+  );
+
+  INSERT INTO auth.users (id, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+                          confirmation_token, recovery_token, email_change_token_new, email_change)
+  VALUES
+    (v_sA, 'ops_df_a_' || v_sA || '@test.local', '{"role":"staff"}'::jsonb, '{}'::jsonb, now(), now(), '', '', '', ''),
+    (v_sB, 'ops_df_b_' || v_sB || '@test.local', '{"role":"staff"}'::jsonb, '{}'::jsonb, now(), now(), '', '', '', ''),
+    (v_sC, 'ops_df_c_' || v_sC || '@test.local', '{"role":"staff"}'::jsonb, '{}'::jsonb, now(), now(), '', '', '', '');
+
+  INSERT INTO public.users (id, email, name, role, is_active, created_at, updated_at)
+  SELECT id, email, 'ops date-filter staff', 'staff'::user_role, true, now(), now()
+  FROM auth.users WHERE id IN (v_sA, v_sB, v_sC);
+
+  -- dateX: staffA(dealer) + staffB(floor) / dateY: staffC(dealer)
+  INSERT INTO public.work_logs (staff_id, job_posting_id, date, staff_name, role, status, owner_id, created_at, updated_at)
+  VALUES
+    (v_sA, v_jp5, v_dateX::text, '스태프A', 'dealer', 'scheduled', v_owner, now(), now()),
+    (v_sB, v_jp5, v_dateX::text, '스태프B', 'floor',  'scheduled', v_owner, now(), now()),
+    (v_sC, v_jp5, v_dateY::text, '스태프C', 'dealer', 'scheduled', v_owner, now(), now());
+
+  PERFORM set_config('ops.t5_id',    v_t5::text,    true);
+  PERFORM set_config('ops.sA_id',    v_sA::text,    true);
+  PERFORM set_config('ops.sB_id',    v_sB::text,    true);
+  PERFORM set_config('ops.sC_id',    v_sC::text,    true);
+  PERFORM set_config('ops.dateX',    v_dateX::text, true);
+END $$;
+
+SELECT ops_test_set_user((current_setting('ops.owner_id'))::uuid);
+
+DO $$
+DECLARE r jsonb;
+BEGIN
+  SELECT public.ops_import_staff_from_posting(
+    (current_setting('ops.t5_id'))::uuid,
+    (current_setting('ops.owner_id'))::uuid,
+    current_setting('ops.dateX')
+  ) INTO r;
+  PERFORM set_config('ops.r_df_imported', (r->>'imported'), true);
+END $$;
+
+SELECT is(current_setting('ops.r_df_imported')::int, 2,                      -- [43]
+  '[import] 13) date 필터(dateX) 최초 import imported=2(staffA+staffB, dateY의 staffC 제외)');
+
+SELECT is(                                                                   -- [44]
+  ARRAY(SELECT staff_id FROM public.ops_staff
+         WHERE tournament_id = (current_setting('ops.t5_id'))::uuid ORDER BY staff_id),
+  ARRAY(SELECT x FROM unnest(ARRAY[(current_setting('ops.sA_id'))::uuid,
+                                   (current_setting('ops.sB_id'))::uuid]) x ORDER BY x),
+  '[import] 13) 삽입된 ops_staff.staff_id 집합 = {staffA, staffB}(그 날짜 스태프 신원 일치)');
 
 SELECT * FROM finish();
 ROLLBACK;

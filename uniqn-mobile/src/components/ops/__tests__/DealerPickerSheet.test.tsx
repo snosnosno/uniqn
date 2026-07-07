@@ -118,7 +118,7 @@ it('currentStaffId 가 없으면 "배정 해제" 옵션을 노출하지 않는�
   expect(queryByText('배정 해제')).toBeNull();
 });
 
-it('currentStaffId 가 있으면 "배정 해제"(destructive) 옵션을 최상단에 노출한다', () => {
+it('currentStaffId 가 있으면 "배정 해제"(destructive) 옵션을 최상단에 노출하고 현재 배정자에 "(현재)" 라벨을 붙인다', () => {
   mockUseOpsStaff.mockReturnValue({ data: roster });
   mockUseAssignTableStaff.mockReturnValue({ mutate: jest.fn() });
 
@@ -134,6 +134,8 @@ it('currentStaffId 가 있으면 "배정 해제"(destructive) 옵션을 최상�
 
   expect(getByText('배정 해제')).toBeTruthy();
   expect(capturedOptions[0]).toMatchObject({ value: '__unassign', destructive: true });
+  // (T7-M1) 현재 배정자(u-dealer=이딜러) 옵션 라벨에 "(현재)" 접미 렌더 단언.
+  expect(getByText(/이딜러 \(현재\)/)).toBeTruthy();
 });
 
 it('스태프 옵션 선택 시 {tableId, staffId} 로 assign mutation 을 호출한다', () => {

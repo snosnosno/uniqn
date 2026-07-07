@@ -12,7 +12,7 @@
 -- ⚠️ grants(anon REVOKE)는 Task 4 이후 — 이 파일은 postgres/ops_test_set_user(authenticated) 경유만 검증.
 
 BEGIN;
-SELECT plan(31);
+SELECT plan(40);
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 시드: ops_test_seed() 기본(owner/member/outsider/tournament/table_id=T1)
@@ -472,6 +472,66 @@ SELECT throws_ok(                                                            -- 
       WHERE id = (current_setting('ops.t2table_id'))::uuid $$,
   '23505', NULL,
   '[백스톱] 14) 동일 대회 내 동일 staff 중복 테이블 배정 UPDATE 거부(partial UNIQUE)');
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- (T3-M2) 로스터 RPC 3종(add/remove/assign) 공통 에러경로 회귀 안전망:
+--   ① TOURNAMENT_NOT_FOUND(무효 대회 id) ② actor 불일치(p_actor≠auth.uid, 비-admin)
+--   ③ outsider 멤버십 거부('대회 운영 권한이 없습니다').
+-- 게이트 순서(마이그 20260707100100): actor → advisory lock → tournament FOR UPDATE → membership.
+--   ①은 actor 일치(owner=owner)로 tournament 로드까지 도달, ②는 caller≠actor 로 첫 게이트,
+--   ③은 actor 일치하나 비멤버라 membership 게이트. Task2 시나리오가 실질 커버하나 파일 내 완결 명세.
+-- ════════════════════════════════════════════════════════════════════════════
+DO $$
+BEGIN
+  PERFORM set_config('ops.no_t',     gen_random_uuid()::text, true);
+  PERFORM set_config('ops.no_table', gen_random_uuid()::text, true);
+  PERFORM set_config('ops.no_staff', gen_random_uuid()::text, true);
+END $$;
+
+-- ① TOURNAMENT_NOT_FOUND (caller=owner=actor, 무효 대회 id)
+SELECT ops_test_set_user((current_setting('ops.owner_id'))::uuid);
+SELECT throws_like(                                                          -- [32]
+  $$ SELECT public.ops_add_staff((current_setting('ops.no_t'))::uuid,
+       (current_setting('ops.owner_id'))::uuid, (current_setting('ops.no_staff'))::uuid) $$,
+  '%TOURNAMENT_NOT_FOUND%', '[err] add: 무효 대회 → TOURNAMENT_NOT_FOUND');
+SELECT throws_like(                                                          -- [33]
+  $$ SELECT public.ops_remove_staff((current_setting('ops.no_t'))::uuid,
+       (current_setting('ops.owner_id'))::uuid, (current_setting('ops.no_staff'))::uuid) $$,
+  '%TOURNAMENT_NOT_FOUND%', '[err] remove: 무효 대회 → TOURNAMENT_NOT_FOUND');
+SELECT throws_like(                                                          -- [34]
+  $$ SELECT public.ops_assign_table_staff((current_setting('ops.no_t'))::uuid,
+       (current_setting('ops.owner_id'))::uuid, (current_setting('ops.no_table'))::uuid, NULL::uuid) $$,
+  '%TOURNAMENT_NOT_FOUND%', '[err] assign: 무효 대회 → TOURNAMENT_NOT_FOUND');
+
+-- ② actor 불일치 (caller=member, p_actor=owner≠member, 비-admin) → 첫 게이트 차단
+SELECT ops_test_set_user((current_setting('ops.member_id'))::uuid);
+SELECT throws_like(                                                          -- [35]
+  $$ SELECT public.ops_add_staff((current_setting('ops.t_id'))::uuid,
+       (current_setting('ops.owner_id'))::uuid, (current_setting('ops.cand4_id'))::uuid) $$,
+  '%본인 계정으로만%', '[err] add: actor 불일치 → PERMISSION_DENIED(본인 계정)');
+SELECT throws_like(                                                          -- [36]
+  $$ SELECT public.ops_remove_staff((current_setting('ops.t_id'))::uuid,
+       (current_setting('ops.owner_id'))::uuid, (current_setting('ops.no_staff'))::uuid) $$,
+  '%본인 계정으로만%', '[err] remove: actor 불일치 → PERMISSION_DENIED(본인 계정)');
+SELECT throws_like(                                                          -- [37]
+  $$ SELECT public.ops_assign_table_staff((current_setting('ops.t_id'))::uuid,
+       (current_setting('ops.owner_id'))::uuid, (current_setting('ops.t1_id'))::uuid, NULL::uuid) $$,
+  '%본인 계정으로만%', '[err] assign: actor 불일치 → PERMISSION_DENIED(본인 계정)');
+
+-- ③ outsider 멤버십 거부 (caller=outsider=actor, 실 대회 t) → membership 게이트
+SELECT ops_test_set_user((current_setting('ops.outsider_id'))::uuid);
+SELECT throws_like(                                                          -- [38]
+  $$ SELECT public.ops_add_staff((current_setting('ops.t_id'))::uuid,
+       (current_setting('ops.outsider_id'))::uuid, (current_setting('ops.cand4_id'))::uuid) $$,
+  '%대회 운영 권한이 없습니다%', '[err] add: outsider 비멤버 → 멤버십 거부');
+SELECT throws_like(                                                          -- [39]
+  $$ SELECT public.ops_remove_staff((current_setting('ops.t_id'))::uuid,
+       (current_setting('ops.outsider_id'))::uuid, (current_setting('ops.no_staff'))::uuid) $$,
+  '%대회 운영 권한이 없습니다%', '[err] remove: outsider 비멤버 → 멤버십 거부');
+SELECT throws_like(                                                          -- [40]
+  $$ SELECT public.ops_assign_table_staff((current_setting('ops.t_id'))::uuid,
+       (current_setting('ops.outsider_id'))::uuid, (current_setting('ops.t1_id'))::uuid, NULL::uuid) $$,
+  '%대회 운영 권한이 없습니다%', '[err] assign: outsider 비멤버 → 멤버십 거부');
 
 SELECT * FROM finish();
 ROLLBACK;

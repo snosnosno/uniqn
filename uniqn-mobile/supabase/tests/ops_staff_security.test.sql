@@ -70,6 +70,9 @@ SELECT is(
 -- ─── (13~17) actor 위조: p_actor_id ≠ auth.uid() 비-admin 호출 → P0001 PERMISSION_DENIED ───
 -- 위조 caller=member, p_actor_id=owner(본인 아님). 5종 함수 모두 actor 가드가 본문 최상단 첫 검사라
 -- 나머지 인자는 존재 여부와 무관하게 가드에서 즉시 차단된다(더미 값 사용 가능).
+-- ⚠️ (T4-M2) throws_ok 3번째 인자에 정확 메시지 앵커 — SQLSTATE(P0001)만 검사하면 다른 P0001(예:
+--   TOURNAMENT_NOT_FOUND)도 false-green 통과한다. 메시지까지 고정해야 "actor 게이트가 첫 검사로
+--   차단"임을 특정한다(5종 actor 게이트 문구 동일 — 마이그 32/95/168/230/288행).
 DO $$
 DECLARE s RECORD;
 BEGIN
@@ -85,28 +88,28 @@ SELECT ops_test_set_user((current_setting('ops.member_id'))::uuid);
 SELECT throws_ok(
   $$ SELECT public.ops_set_tournament_posting(
        (current_setting('ops.tournament_id'))::uuid, (current_setting('ops.owner_id'))::uuid, NULL::uuid) $$,
-  'P0001', NULL, 'forged actor blocked: ops_set_tournament_posting');
+  'P0001', 'PERMISSION_DENIED: 본인 계정으로만 호출할 수 있습니다', 'forged actor blocked: ops_set_tournament_posting');
 
 SELECT throws_ok(
   $$ SELECT public.ops_import_staff_from_posting(
        (current_setting('ops.tournament_id'))::uuid, (current_setting('ops.owner_id'))::uuid, NULL) $$,
-  'P0001', NULL, 'forged actor blocked: ops_import_staff_from_posting');
+  'P0001', 'PERMISSION_DENIED: 본인 계정으로만 호출할 수 있습니다', 'forged actor blocked: ops_import_staff_from_posting');
 
 SELECT throws_ok(
   $$ SELECT public.ops_add_staff(
        (current_setting('ops.tournament_id'))::uuid, (current_setting('ops.owner_id'))::uuid, gen_random_uuid()) $$,
-  'P0001', NULL, 'forged actor blocked: ops_add_staff');
+  'P0001', 'PERMISSION_DENIED: 본인 계정으로만 호출할 수 있습니다', 'forged actor blocked: ops_add_staff');
 
 SELECT throws_ok(
   $$ SELECT public.ops_remove_staff(
        (current_setting('ops.tournament_id'))::uuid, (current_setting('ops.owner_id'))::uuid, gen_random_uuid()) $$,
-  'P0001', NULL, 'forged actor blocked: ops_remove_staff');
+  'P0001', 'PERMISSION_DENIED: 본인 계정으로만 호출할 수 있습니다', 'forged actor blocked: ops_remove_staff');
 
 SELECT throws_ok(
   $$ SELECT public.ops_assign_table_staff(
        (current_setting('ops.tournament_id'))::uuid, (current_setting('ops.owner_id'))::uuid,
        (current_setting('ops.table_id'))::uuid, NULL::uuid) $$,
-  'P0001', NULL, 'forged actor blocked: ops_assign_table_staff');
+  'P0001', 'PERMISSION_DENIED: 본인 계정으로만 호출할 수 있습니다', 'forged actor blocked: ops_assign_table_staff');
 
 -- ─── (18) Realtime: ops_staff publication 등록 ───
 SELECT ok(
