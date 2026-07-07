@@ -100,13 +100,6 @@ export const SURFACE_COLORS = {
 // 경계선 / 텍스트 토큰 (DESIGN.md 정렬)
 // ============================================================================
 
-export const BORDER_COLORS = {
-  light: SECONDARY_PALETTE[200], // 라이트 모드 기본 보더
-  lightSubtle: SECONDARY_PALETTE[100], // 라이트 모드 subtle
-  dark: '#222228', // 다크 모드 기본 보더 (divider 토큰과 동일)
-  darkSubtle: '#1C1C22', // 다크 모드 subtle — elevated 레벨과 동일
-} as const;
-
 export const TEXT_COLORS = {
   /** Text Primary — 본문 텍스트 */
   primary: {
@@ -215,51 +208,6 @@ export const HEADER_CLASSES = {
   searchField: 'bg-secondary-100 dark:bg-surface-elevated',
   actionPressed: 'active:bg-secondary-100 dark:active:bg-surface-elevated',
 } as const;
-
-// ============================================================================
-// 차트 색상 (v3.0)
-// ============================================================================
-
-export const CHART_COLORS = {
-  background: {
-    light: '#FFFFFF',
-    dark: '#0B0B0E',
-  },
-  text: {
-    light: '#09090B',
-    dark: '#F0F0F2',
-  },
-  grid: {
-    light: SECONDARY_PALETTE[200],
-    dark: '#1C1C22',
-  },
-  series: {
-    light: ['#8A7228', '#16A34A', '#A16207', '#B91C1C', '#1D4ED8'],
-    dark: ['#D4AF37', '#22C55E', '#D4A017', '#DC2626', '#2563EB'],
-  },
-} as const;
-
-export function getChartColors(isDarkMode: boolean) {
-  return {
-    background: isDarkMode ? CHART_COLORS.background.dark : CHART_COLORS.background.light,
-    text: isDarkMode ? CHART_COLORS.text.dark : CHART_COLORS.text.light,
-    grid: isDarkMode ? CHART_COLORS.grid.dark : CHART_COLORS.grid.light,
-    series: isDarkMode ? CHART_COLORS.series.dark : CHART_COLORS.series.light,
-  };
-}
-
-// ============================================================================
-// 플레이스홀더 색상 (v3.0)
-// ============================================================================
-
-export const PLACEHOLDER_COLORS = {
-  light: SECONDARY_PALETTE[600],
-  dark: SECONDARY_PALETTE[400],
-} as const;
-
-export function getPlaceholderColor(isDarkMode: boolean): string {
-  return isDarkMode ? PLACEHOLDER_COLORS.dark : PLACEHOLDER_COLORS.light;
-}
 
 // ============================================================================
 // 로딩 인디케이터 색상 (v3.0)
