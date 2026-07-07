@@ -560,5 +560,3 @@ const styles = StyleSheet.create({
     fontFamily: 'PlusJakartaSans_400Regular',
   },
 });
-
-export default QRCodeScanner;
