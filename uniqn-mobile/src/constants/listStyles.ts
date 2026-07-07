@@ -73,9 +73,3 @@ export const HIT_SLOP = {
   /** 12px 확대 - 중요한 액션 버튼 */
   large: { top: 12, bottom: 12, left: 12, right: 12 },
 } as const;
-
-// ============================================================================
-// Type Exports
-// ============================================================================
-
-export type HitSlopSize = keyof typeof HIT_SLOP;

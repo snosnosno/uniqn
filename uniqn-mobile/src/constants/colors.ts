@@ -133,36 +133,6 @@ export type BadgeVariant =
   | 'error'
   | 'info';
 
-export const BADGE_CLASSES = {
-  container: {
-    default: 'bg-secondary-100 dark:bg-surface-overlay',
-    primary: 'bg-primary-50 dark:bg-primary-50',
-    secondary: 'bg-secondary-200 dark:bg-surface-elevated',
-    success: 'bg-success-50 dark:bg-success-50',
-    warning: 'bg-warning-50 dark:bg-warning-50',
-    error: 'bg-error-50 dark:bg-error-50',
-    info: 'bg-info-50 dark:bg-info-50',
-  },
-  text: {
-    default: 'text-secondary-700 dark:text-secondary-300',
-    primary: 'text-primary-700 dark:text-primary-300',
-    secondary: 'text-secondary-600 dark:text-secondary-200',
-    success: 'text-success-700 dark:text-success-500',
-    warning: 'text-warning-700 dark:text-warning-500',
-    error: 'text-error-700 dark:text-error-500',
-    info: 'text-info-700 dark:text-info-500',
-  },
-  dot: {
-    default: 'bg-secondary-500',
-    primary: 'bg-primary-500',
-    secondary: 'bg-secondary-400',
-    success: 'bg-success-500',
-    warning: 'bg-warning-500',
-    error: 'bg-error-500',
-    info: 'bg-info-500',
-  },
-} as const;
-
 // ============================================================================
 // 텍스트 색상 (v3.0)
 // ============================================================================
@@ -175,30 +145,6 @@ export const TEXT_CLASSES = {
   link: 'text-primary-600 dark:text-primary-300',
   error: 'text-error-600 dark:text-error-500',
   success: 'text-success-600 dark:text-success-500',
-} as const;
-
-// ============================================================================
-// 카드 색상 (v3.0)
-// ============================================================================
-
-export const CARD_CLASSES = {
-  default: 'bg-white dark:bg-surface-elevated',
-  elevated: 'bg-white dark:bg-surface-elevated',
-  highlighted: 'bg-primary-50 dark:bg-primary-50',
-  success: 'bg-success-50 dark:bg-success-50',
-  warning: 'bg-warning-50 dark:bg-warning-50',
-  error: 'bg-error-50 dark:bg-error-50',
-} as const;
-
-// ============================================================================
-// 보더 색상 (v3.0)
-// ============================================================================
-
-export const BORDER_CLASSES = {
-  default: 'border-secondary-200 dark:border-surface-overlay',
-  light: 'border-secondary-100 dark:border-surface-overlay',
-  focus: 'border-primary-500 dark:border-primary-300',
-  error: 'border-error-500 dark:border-error-500',
 } as const;
 
 export const HEADER_CLASSES = {

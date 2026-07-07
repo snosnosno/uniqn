@@ -17,10 +17,6 @@ export {
 // Cache Invalidation Strategy (Phase 2.3)
 export {
   invalidateRelated,
-  invalidateMultiple,
-  invalidateDomain,
-  createInvalidationHandler,
-  createMultiInvalidationHandler,
   invalidationGraph,
   type InvalidationEvent,
   type InvalidationContext,

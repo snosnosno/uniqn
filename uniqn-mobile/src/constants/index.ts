@@ -88,13 +88,6 @@ export const PERFORMANCE = {
 // UI 상수
 // ============================================================================
 
-export const BREAKPOINTS = {
-  SM: 640,
-  MD: 768,
-  LG: 1024,
-  XL: 1280,
-} as const;
-
 export const ANDROID_COMPLIANCE = {
   LARGE_SCREEN_MIN_WIDTH_DP: 600,
 } as const;
@@ -292,21 +285,12 @@ export {
   DATE_CONSTRAINTS,
   MAX_TIME_SLOTS_PER_DATE,
   MAX_ROLES_PER_SLOT,
-  MAX_HEADCOUNT,
-  MIN_HEADCOUNT,
   STAFF_ROLES,
   ROLE_ICONS,
   DEFAULT_ROLE_ICON,
   DEFAULT_START_TIME,
-  DATE_REQUIREMENT_ERRORS,
   type StaffRoleOption,
 } from './jobPosting';
-
-// ============================================================================
-// 지역 상수
-// ============================================================================
-
-export { SEOUL_DISTRICTS, METRO_CITIES, type SeoulDistrict, type MetroCity } from './location';
 
 // ============================================================================
 // 색상 상수
@@ -321,24 +305,13 @@ export {
   PRIMARY_COLORS,
   // Badge colors (v1.1.0)
   type BadgeVariant,
-  BADGE_CLASSES,
   // Text colors (v1.1.0)
   TEXT_CLASSES,
-  // Card colors (v1.1.0)
-  CARD_CLASSES,
-  // Border colors (v1.1.0)
-  BORDER_CLASSES,
   // Header colors/classes
   HEADER_CLASSES,
   // Layout helpers
   getLayoutColor,
 } from './colors';
-
-// ============================================================================
-// 데이터베이스 제한 상수
-// ============================================================================
-
-export { DATABASE_LIMITS, type DatabaseLimits } from './database';
 
 // ============================================================================
 // 상태 설정 통합 (v1.1.0)
@@ -379,4 +352,4 @@ export {
 // 리스트 스타일 상수 (v1.1.0)
 // ============================================================================
 
-export { LIST_CONTAINER_STYLES, HIT_SLOP, type HitSlopSize } from './listStyles';
+export { LIST_CONTAINER_STYLES, HIT_SLOP } from './listStyles';

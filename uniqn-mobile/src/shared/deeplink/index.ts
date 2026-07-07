@@ -16,7 +16,6 @@ export {
   EMPLOYER_REQUIRED_ROUTES,
   ADMIN_REQUIRED_ROUTES,
   type ExpoRouteName,
-  type ExpoRoutePath,
 } from './RouteRegistry';
 
 // Route Mapper

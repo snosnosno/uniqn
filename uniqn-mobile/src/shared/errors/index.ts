@@ -23,10 +23,8 @@ export {
   // Core handlers
   createMutationErrorHandler,
   createQueryErrorHandler,
-  handleHookSilentError,
   // Auth helpers
   requireAuth,
-  getAuthUserId,
   // Error utilities
   extractErrorMessage,
   canRetry,

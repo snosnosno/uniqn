@@ -14,7 +14,7 @@
  * requireAuth(user);
  */
 
-import { normalizeError, AppError, AuthError, ERROR_CODES } from '@/errors';
+import { normalizeError, AuthError, ERROR_CODES } from '@/errors';
 import { logger } from '@/utils/logger';
 /** Auth user type that works with both Supabase User (.id) and AuthUser store (.uid) */
 type AuthUserLike = { uid?: string; id?: string } | null | undefined;
@@ -114,29 +114,6 @@ export function createMutationErrorHandler(
   };
 }
 
-/**
- * 사일런트 에러 핸들러 (토스트 없이 로깅만)
- *
- * @param context - 에러 발생 위치
- * @param extraContext - 추가 컨텍스트
- * @returns AppError
- */
-export function handleHookSilentError(
-  error: unknown,
-  context: string,
-  extraContext?: Record<string, unknown>
-): AppError {
-  const appError = normalizeError(error);
-
-  logger.error(`${context} 실패 (silent)`, appError, {
-    code: appError.code,
-    category: appError.category,
-    ...extraContext,
-  });
-
-  return appError;
-}
-
 // ============================================================================
 // Auth Helpers
 // ============================================================================
@@ -167,17 +144,6 @@ export function requireAuth(user: AuthUserLike): asserts user is NonNullable<Aut
       userMessage: '로그인이 필요합니다.',
     });
   }
-}
-
-/**
- * 인증 상태 체크 (옵셔널)
- *
- * @param user - Auth User 또는 null
- * @returns User ID 또는 null
- */
-export function getAuthUserId(user: AuthUserLike): string | null {
-  if (!user) return null;
-  return user.uid ?? user.id ?? null;
 }
 
 // ============================================================================
