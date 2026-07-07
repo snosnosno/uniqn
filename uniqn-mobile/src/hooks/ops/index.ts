@@ -2,7 +2,7 @@
 export {
   useOpsTournaments,
   useOpsTournament,
-  useOpsTournamentForPosting,
+  useOpsTournamentsForPosting,
 } from './useOpsTournaments';
 export { useOpsParticipants } from './useOpsParticipants';
 export { useOpsStaff } from './useOpsStaff';

@@ -15,11 +15,12 @@ export { BlindLevelForm } from './BlindLevelForm';
 export { HistoryTab } from './HistoryTab';
 export { MonitorLinkButton } from './MonitorLinkButton';
 export { PlayerClaimButton } from './PlayerClaimButton';
-// 1e — STAFF 탭(7번째 세그먼트). StaffAddSheet/PostingPickerSheet 는 현재 StaffTab 이 상대경로로
+// 1e — STAFF 탭(7번째 세그먼트). StaffAddSheet 는 현재 StaffTab 이 상대경로로
 // 직접 import(barrel 미등록 — DealerPickerSheet 와 동일 관례: 현재 유일 소비처가 같은 디렉토리 내부).
-// PostingPickerSheet 는 Task 9(생성 폼 공고 picker)가 재사용을 시작하면 그때 barrel 에 추가
-// (knip 미사용 export 오탐 예방 — 등록만 하고 외부 소비처가 없으면 그 자체가 오탐 소스가 된다).
 export { StaffTab } from './StaffTab';
+// PostingPickerSheet — Task 9(대회 생성 폼 공고 picker)가 재사용을 시작해 barrel 에 등록
+// (StaffTab·new.tsx 두 소비처 — knip 미사용 export 오탐 조건 해소).
+export { PostingPickerSheet } from './PostingPickerSheet';
 // 1d — PAYOUTS 탭 / 1f — 2부 재설계(구조 편집기·대장·정정 시트)
 export { PayoutsTab } from './PayoutsTab';
 export { PayoutStructureEditor } from './PayoutStructureEditor';
