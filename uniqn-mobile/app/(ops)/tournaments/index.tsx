@@ -1,7 +1,8 @@
-/** ops 대회 목록/피커 (1a). */
+/** ops 대회 목록/피커 (1a). 1e — `?postingId=` 필터(해당 공고 연결 대회만). */
+import { useMemo } from 'react';
 import { View, Text, Pressable, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { AppFlashList } from '@/components/ui/AppFlashList';
 import { StackHeader } from '@/components/headers';
 import { useOpsTournaments } from '@/hooks/ops';
@@ -14,7 +15,18 @@ const STATUS_LABEL: Record<OpsTournament['status'], string> = {
 };
 
 export default function OpsTournamentListScreen() {
+  const { postingId: postingIdParam } = useLocalSearchParams<{ postingId?: string }>();
+  const postingId = Array.isArray(postingIdParam) ? postingIdParam[0] : postingIdParam;
   const { tournaments, isLoading, refetch } = useOpsTournaments();
+
+  const filteredTournaments = useMemo(
+    () => (postingId ? tournaments.filter((t) => t.jobPostingId === postingId) : tournaments),
+    [tournaments, postingId]
+  );
+
+  const createHref = postingId
+    ? `/(ops)/tournaments/new?postingId=${postingId}`
+    : '/(ops)/tournaments/new';
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
@@ -23,7 +35,7 @@ export default function OpsTournamentListScreen() {
         fallbackHref="/(app)/(tabs)/home-jobs"
         rightAction={
           <Pressable
-            onPress={() => router.push('/(ops)/tournaments/new')}
+            onPress={() => router.push(createHref)}
             accessibilityRole="button"
             className="rounded-md bg-primary-600 px-3 py-1.5 active:opacity-70"
           >
@@ -36,15 +48,17 @@ export default function OpsTournamentListScreen() {
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator />
         </View>
-      ) : tournaments.length === 0 ? (
+      ) : filteredTournaments.length === 0 ? (
         <View className="flex-1 items-center justify-center px-8">
           <Text className="text-center text-secondary-500 dark:text-secondary-400">
-            등록된 대회가 없습니다.{'\n'}우측 상단 “+ 대회”로 만들어 보세요.
+            {postingId
+              ? '이 공고에 연결된 대회가 없습니다.\n“+ 대회”로 만들어 연결해 보세요.'
+              : '등록된 대회가 없습니다.\n우측 상단 “+ 대회”로 만들어 보세요.'}
           </Text>
         </View>
       ) : (
         <AppFlashList
-          data={tournaments}
+          data={filteredTournaments}
           keyExtractor={(t: OpsTournament) => t.id}
           estimatedItemSize={88}
           contentContainerStyle={{ padding: 16 }}

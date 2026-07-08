@@ -1,6 +1,6 @@
 -- ops claim 토큰 분리: 하이재킹 차단(view_token 단독 claim 불가) + NULL fail-closed + 오라클 회피 + PII 차단.
 BEGIN;
-SELECT plan(36);
+SELECT plan(39);
 
 -- ── 설정: 참가자 A(PII 부여) + 참가자 B(cross-token) ──
 DO $$
@@ -78,6 +78,25 @@ SELECT ok(public.ops_get_player_view(current_setting('ops.viewA'))::text NOT LIK
        AND public.ops_get_player_view(current_setting('ops.viewA'))::text NOT LIKE '%PII_NOTE_SECRET%',
   'PII 차단: player_user_id/note 미반환');
 SELECT throws_ok($$ SELECT public.ops_get_player_view(NULL) $$, 'P0001', NULL, 'player_view: NULL 거부');
+
+-- ── (19b~19c) 1f: me.knockouts 노출(기본 0) + 비-바운티 bountyAccrued null ──
+-- (신필드는 int/null — phone/nationality/note/player_user_id/claim_pin 화이트리스트 부재 단언 무영향)
+SELECT is((public.ops_get_player_view(current_setting('ops.viewA')) -> 'me' ->> 'knockouts')::int, 0,
+  '1f: me.knockouts=0');
+SELECT ok((public.ops_get_player_view(current_setting('ops.viewA')) -> 'me' -> 'bountyAccrued') = 'null'::jsonb,
+  '1f: 비-바운티 bountyAccrued null');
+
+-- (19d) 1f 후속: bounty>0 & KO>0 곱셈분기 커버(기존 null분기만 → 곱셈분기 추가). net-zero(단언 후 원복).
+SELECT set_config('role','postgres', true);
+UPDATE public.ops_tournaments  SET bounty_cost = 10000 WHERE id = (current_setting('ops.tournament_id'))::uuid;
+UPDATE public.ops_participants SET knockouts   = 3     WHERE id = (current_setting('ops.participant_id'))::uuid;
+SELECT set_config('role','anon', true);
+SELECT is((public.ops_get_player_view(current_setting('ops.viewA')) -> 'me' ->> 'bountyAccrued')::bigint, 30000::bigint,
+  '1f 후속: bountyAccrued = knockouts(3) × bounty_cost(10000) = 30000 (곱셈분기 커버)');
+SELECT set_config('role','postgres', true);
+UPDATE public.ops_tournaments  SET bounty_cost = NULL WHERE id = (current_setting('ops.tournament_id'))::uuid;
+UPDATE public.ops_participants SET knockouts   = 0    WHERE id = (current_setting('ops.participant_id'))::uuid;
+SELECT set_config('role','anon', true);
 
 -- ── (20~24) claim 하이재킹 차단 + NULL fail-closed (핵심 회귀) ──
 SELECT ops_test_set_user((current_setting('ops.outsider_id'))::uuid);

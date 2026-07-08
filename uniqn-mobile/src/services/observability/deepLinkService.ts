@@ -90,22 +90,6 @@ export async function getInitialDeepLink(): Promise<string | null> {
   }
 }
 
-export async function openExternalUrl(url: string): Promise<boolean> {
-  try {
-    const canOpen = await Linking.canOpenURL(url);
-    if (canOpen) {
-      await Linking.openURL(url);
-      return true;
-    }
-
-    logger.warn('URL을 열 수 없음', { url });
-    return false;
-  } catch (error) {
-    logger.error('외부 URL 열기 실패', toError(error), { url });
-    return false;
-  }
-}
-
 export const deepLinkService = {
   APP_SCHEME,
   WEB_DOMAIN,
@@ -120,7 +104,6 @@ export const deepLinkService = {
   waitForNavigationReadyAsync,
   setupDeepLinkListener,
   getInitialDeepLink,
-  openExternalUrl,
 };
 
 export default deepLinkService;

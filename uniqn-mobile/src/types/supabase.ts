@@ -1427,6 +1427,7 @@ export type Database = {
           entry_number: number;
           finish_position: number | null;
           id: string;
+          knockouts: number;
           name: string;
           nationality: string | null;
           note: string | null;
@@ -1450,6 +1451,7 @@ export type Database = {
           entry_number: number;
           finish_position?: number | null;
           id?: string;
+          knockouts?: number;
           name: string;
           nationality?: string | null;
           note?: string | null;
@@ -1473,6 +1475,7 @@ export type Database = {
           entry_number?: number;
           finish_position?: number | null;
           id?: string;
+          knockouts?: number;
           name?: string;
           nationality?: string | null;
           note?: string | null;
@@ -1586,6 +1589,67 @@ export type Database = {
           },
           {
             foreignKeyName: 'ops_seats_tournament_id_fkey';
+            columns: ['tournament_id'];
+            isOneToOne: false;
+            referencedRelation: 'ops_tournaments';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      ops_staff: {
+        Row: {
+          created_at: string;
+          custom_role: string | null;
+          id: string;
+          role: Database['public']['Enums']['staff_role'];
+          source: string;
+          source_work_log_id: string | null;
+          staff_id: string;
+          staff_name: string;
+          staff_nickname: string | null;
+          tournament_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          custom_role?: string | null;
+          id?: string;
+          role?: Database['public']['Enums']['staff_role'];
+          source: string;
+          source_work_log_id?: string | null;
+          staff_id: string;
+          staff_name: string;
+          staff_nickname?: string | null;
+          tournament_id: string;
+        };
+        Update: {
+          created_at?: string;
+          custom_role?: string | null;
+          id?: string;
+          role?: Database['public']['Enums']['staff_role'];
+          source?: string;
+          source_work_log_id?: string | null;
+          staff_id?: string;
+          staff_name?: string;
+          staff_nickname?: string | null;
+          tournament_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ops_staff_source_work_log_id_fkey';
+            columns: ['source_work_log_id'];
+            isOneToOne: false;
+            referencedRelation: 'work_logs';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'ops_staff_staff_id_fkey';
+            columns: ['staff_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'ops_staff_tournament_id_fkey';
             columns: ['tournament_id'];
             isOneToOne: false;
             referencedRelation: 'ops_tournaments';
@@ -2918,6 +2982,16 @@ export type Database = {
         Args: { p_actor_id: string; p_participant_id: string };
         Returns: Json;
       };
+      ops_add_staff: {
+        Args: {
+          p_actor_id: string;
+          p_custom_role?: string;
+          p_role?: Database['public']['Enums']['staff_role'];
+          p_staff_id: string;
+          p_tournament_id: string;
+        };
+        Returns: Json;
+      };
       ops_add_table: {
         Args: {
           p_actor_id: string;
@@ -2937,8 +3011,21 @@ export type Database = {
         };
         Returns: Json;
       };
+      ops_assign_table_staff: {
+        Args: {
+          p_actor_id: string;
+          p_staff_id?: string;
+          p_table_id: string;
+          p_tournament_id: string;
+        };
+        Returns: Json;
+      };
       ops_bust_participant: {
-        Args: { p_actor_id: string; p_participant_id: string };
+        Args: {
+          p_actor_id: string;
+          p_eliminator_id?: string | null;
+          p_participant_id: string;
+        };
         Returns: Json;
       };
       ops_claim_participant: {
@@ -2973,6 +3060,15 @@ export type Database = {
         };
         Returns: Json;
       };
+      ops_correct_participant_prize: {
+        Args: {
+          p_actor_id: string;
+          p_amount?: number | null;
+          p_participant_id: string;
+          p_reason?: string | null;
+        };
+        Returns: Json;
+      };
       ops_create_tournament: {
         Args: {
           p_config: Json;
@@ -2996,6 +3092,10 @@ export type Database = {
         Returns: Json;
       };
       ops_get_player_view: { Args: { p_view_token: string }; Returns: Json };
+      ops_import_staff_from_posting: {
+        Args: { p_actor_id: string; p_date?: string; p_tournament_id: string };
+        Returns: Json;
+      };
       ops_issue_player_credentials: {
         Args: { p_actor_id: string; p_participant_id: string };
         Returns: Json;
@@ -3027,6 +3127,14 @@ export type Database = {
           p_name: string;
           p_nationality: string;
           p_phone: string;
+          p_tournament_id: string;
+        };
+        Returns: Json;
+      };
+      ops_remove_staff: {
+        Args: {
+          p_actor_id: string;
+          p_ops_staff_id: string;
           p_tournament_id: string;
         };
         Returns: Json;
@@ -3064,6 +3172,14 @@ export type Database = {
         Args: { p_actor_id: string; p_priority: number; p_table_id: string };
         Returns: Json;
       };
+      ops_set_tournament_posting: {
+        Args: {
+          p_actor_id: string;
+          p_job_posting_id: string;
+          p_tournament_id: string;
+        };
+        Returns: Json;
+      };
       ops_set_tournament_status: {
         Args: {
           p_actor_id: string;
@@ -3077,6 +3193,10 @@ export type Database = {
         Returns: Json;
       };
       ops_unclaim_participant: {
+        Args: { p_actor_id: string; p_participant_id: string };
+        Returns: Json;
+      };
+      ops_undo_bust: {
         Args: { p_actor_id: string; p_participant_id: string };
         Returns: Json;
       };
@@ -3202,7 +3322,9 @@ export type Database = {
         | 'level_play'
         | 'level_pause'
         | 'level_set'
-        | 'prize_structure_set';
+        | 'prize_structure_set'
+        | 'player_bust_undone'
+        | 'prize_corrected';
       ops_participant_status: 'registered' | 'checked_in' | 'active' | 'busted' | 'no_show';
       ops_table_lock_type: 'none' | 'locked' | 'feature';
       ops_table_status: 'open' | 'closed' | 'standby';
@@ -3398,6 +3520,8 @@ export const Constants = {
         'level_pause',
         'level_set',
         'prize_structure_set',
+        'player_bust_undone',
+        'prize_corrected',
       ],
       ops_participant_status: ['registered', 'checked_in', 'active', 'busted', 'no_show'],
       ops_table_lock_type: ['none', 'locked', 'feature'],

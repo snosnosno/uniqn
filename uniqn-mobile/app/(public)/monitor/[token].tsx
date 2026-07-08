@@ -2,14 +2,15 @@
  * 공개 모니터(전광판) — ops 1c-3.
  * capability-URL: monitor_token 만으로 접근(anon). useMonitorSnapshot 이 4s 폴링 + 서버시각 offset 보정.
  * 비-PII 스냅샷만 표시(참가자 PII·토큰 미노출). 항상 다크 보드(TV/대형 디스플레이용).
- * 상태범위(§0.5 B9): 시작전/진행/일시정지/브레이크/레벨전환. 종료·우승자·상금은 1f.
+ * 상태범위(§0.5 B9): 시작전/진행/일시정지/브레이크/레벨전환.
+ * 1f: 바운티 대회면 KO POOL 스트립 카드 조건부 노출(우승자·상금 상세는 운영자 뷰 전용).
  */
 import { View, Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { NumericText } from '@/components/ui';
 import { useMonitorSnapshot } from '@/hooks/ops/useMonitorSnapshot';
 
-const fmt = (n: number) => n.toLocaleString('ko-KR');
+import { formatNumber as fmt } from '@/utils/formatters/currency';
 
 function formatMmSs(totalSec: number): string {
   const s = Math.max(0, Math.floor(totalSec));
@@ -114,13 +115,16 @@ export default function MonitorScreen() {
         </Text>
       </View>
 
-      {/* 통계 스트립 */}
+      {/* 통계 스트립 (바운티 대회면 KO POOL 조건부 추가 — 1f) */}
       <View className="flex-row gap-2">
         <StatCard label="PLAYING" value={fmt(stats.playing)} />
         <StatCard label="ENTRIES" value={fmt(stats.entries)} />
         <StatCard label="AVG (BB)" value={stats.avgStackBb.toFixed(1)} />
         <StatCard label="AVG CHIPS" value={fmt(stats.averageStack)} />
         <StatCard label="PRIZE POOL" value={fmt(stats.prizePool)} />
+        {stats.knockoutPool !== null && (
+          <StatCard label="KO POOL" value={fmt(stats.knockoutPool)} />
+        )}
       </View>
     </View>
   );

@@ -48,27 +48,25 @@ export class SupabaseOpsTournamentRepository implements IOpsTournamentRepository
     }
   }
 
-  async findByJobPostingId(jobPostingId: string): Promise<OpsTournament | null> {
-    // NULL-SAFE: ops_* 미배포/조회 실패 시 null → employer 공고상세 화면 깨짐 방지.
+  async listByPosting(jobPostingId: string): Promise<OpsTournament[]> {
+    // NULL-SAFE: ops_* 미배포/조회 실패 시 빈 배열 → employer 공고상세 화면 깨짐 방지.
     try {
       const { data, error } = await supabase
         .from(TABLE)
         .select(COLUMNS)
         .eq('job_posting_id', jobPostingId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order('created_at', { ascending: false });
       if (error) {
-        logger.warn('ops 대회 by 공고 조회 실패(무시)', {
+        logger.warn('ops 대회 by 공고 목록 조회 실패(무시)', {
           jobPostingId,
           code: (error as { code?: string }).code,
         });
-        return null;
+        return [];
       }
-      return data ? rowToTournament(data as unknown as Record<string, unknown>) : null;
+      return (data ?? []).map((r) => rowToTournament(r as unknown as Record<string, unknown>));
     } catch {
-      logger.warn('ops 대회 by 공고 조회 예외(무시)', { jobPostingId });
-      return null;
+      logger.warn('ops 대회 by 공고 목록 조회 예외(무시)', { jobPostingId });
+      return [];
     }
   }
 
@@ -95,6 +93,7 @@ export class SupabaseOpsTournamentRepository implements IOpsTournamentRepository
           fee_cost: input.config.feeCost,
           rebuy_cost: input.config.rebuyCost,
           addon_cost: input.config.addonCost,
+          bounty_cost: input.config.bountyCost, // 1f: null = 비-바운티(서버 RPC COALESCE 없음)
         },
       });
       if (error) mapOpsRpcError(error, { operation: 'ops 대회 생성' });

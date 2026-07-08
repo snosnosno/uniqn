@@ -9,6 +9,8 @@ export interface OpsTournamentCostConfig {
   feeCost: number;
   rebuyCost: number;
   addonCost: number;
+  /** 바운티(선택) — null = 비-바운티 대회(0 과 구분). knockoutPool·bountyAccrued 게이트. */
+  bountyCost: number | null;
 }
 
 export interface CreateOpsTournamentInput {
@@ -47,8 +49,8 @@ export interface IOpsTournamentRepository {
   /** RLS 가시 대회 목록 (event_date desc nulls last, created_at desc). */
   listForUser(): Promise<OpsTournament[]>;
   getById(id: string): Promise<OpsTournament | null>;
-  /** uniqn→ops 브릿지: 공고에 연결된 대회 1건. ops_* 미존재/실패 시 null (null-safe). */
-  findByJobPostingId(jobPostingId: string): Promise<OpsTournament | null>;
+  /** uniqn→ops 브릿지: 공고에 연결된 대회 목록(N:1, created_at desc). ops_* 미존재/실패 시 빈 배열(null-safe). */
+  listByPosting(jobPostingId: string): Promise<OpsTournament[]>;
   createWithEvent(
     input: CreateOpsTournamentInput,
     actorId: string

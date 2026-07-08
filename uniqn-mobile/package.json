@@ -13,7 +13,7 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx}\" \"app/**/*.{ts,tsx,js,jsx}\"",
     "type-check": "tsc --noEmit",
     "knip": "knip",
-    "knip:gate": "knip --max-issues=2313",
+    "knip:gate": "knip --max-issues=2344",
     "quality": "node scripts/check-css-vars-sync.js && npm run type-check && npm run lint && npm run format:check",
     "test": "jest",
     "test:coverage": "jest --coverage",

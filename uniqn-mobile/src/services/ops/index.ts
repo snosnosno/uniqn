@@ -8,3 +8,4 @@ export * as opsBlindLevelService from './opsBlindLevelService';
 export * as opsMonitorService from './opsMonitorService';
 export * as opsPlayerService from './opsPlayerService';
 export * as opsPrizeService from './opsPrizeService';
+export * as opsStaffService from './opsStaffService';

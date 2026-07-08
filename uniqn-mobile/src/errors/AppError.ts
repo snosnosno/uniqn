@@ -206,6 +206,10 @@ export const ERROR_CODES = {
   OPS_SEAT_ASSIGNMENT_INVALID: 'E6129', // 좌석 배정 정보 무효(중복·누락·비적격 테이블)
   OPS_INSUFFICIENT_SEATS: 'E6130', // 빈 적격 좌석 부족
   OPS_INVALID_REDRAW_MODE: 'E6131', // 지원하지 않는 배정 방식
+  // 1f — 넉아웃/탈락취소/상금정정 (E6132~)
+  OPS_ELIMINATOR_INVALID: 'E6132', // 1f: 넉아웃 상대 무효(자기자신/미존재/타대회/비활성)
+  OPS_UNDO_INVALID_STATE: 'E6133', // 1f: 탈락 취소 불가 상태
+  OPS_PRIZE_CORRECTION_INVALID: 'E6134', // 1f: 상금 정정 대상/값 무효
 
   // 알 수 없는 에러 (E7xxx)
   UNKNOWN: 'E7000',
@@ -249,6 +253,9 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.OPS_SEAT_ASSIGNMENT_INVALID]: '좌석 배정 정보가 올바르지 않아요.',
   [ERROR_CODES.OPS_INSUFFICIENT_SEATS]: '빈 좌석이 부족해 전원을 앉힐 수 없어요.',
   [ERROR_CODES.OPS_INVALID_REDRAW_MODE]: '지원하지 않는 배정 방식이에요.',
+  [ERROR_CODES.OPS_ELIMINATOR_INVALID]: '넉아웃 상대가 올바르지 않아요.',
+  [ERROR_CODES.OPS_UNDO_INVALID_STATE]: '탈락 취소를 할 수 없는 상태예요.',
+  [ERROR_CODES.OPS_PRIZE_CORRECTION_INVALID]: '상금 정정 대상이나 값이 올바르지 않아요.',
 
   // 네트워크
   [ERROR_CODES.NETWORK_OFFLINE]: '인터넷 연결을 확인해주세요',
