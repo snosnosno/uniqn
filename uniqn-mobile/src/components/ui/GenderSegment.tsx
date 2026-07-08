@@ -132,5 +132,3 @@ export function GenderSegment({
     </View>
   );
 }
-
-export default GenderSegment;

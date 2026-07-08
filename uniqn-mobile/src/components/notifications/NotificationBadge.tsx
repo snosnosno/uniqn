@@ -129,5 +129,3 @@ export const NotificationBadgeInline = memo(function NotificationBadgeInline({
     </View>
   );
 });
-
-export default NotificationBadge;

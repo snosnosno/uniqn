@@ -266,5 +266,3 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
     </Pressable>
   );
 });
-
-export default GroupedScheduleCard;

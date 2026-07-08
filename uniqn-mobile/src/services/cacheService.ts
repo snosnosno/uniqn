@@ -234,5 +234,3 @@ export const cacheService = {
   clearJobPostingsCache,
   clearSchedulesCache,
 };
-
-export default cacheService;

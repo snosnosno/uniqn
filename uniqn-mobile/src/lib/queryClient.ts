@@ -795,5 +795,3 @@ export async function invalidateRelated(primaryKey: keyof typeof invalidationGra
     }
   }
 }
-
-export default queryClient;

@@ -66,5 +66,3 @@ export function PostingCompensationContent({
     </View>
   );
 }
-
-export default PostingCompensationContent;

@@ -88,5 +88,3 @@ export const boardService = {
   syncScheduleBoardByApplicationId: boardScheduleService.syncScheduleBoardByApplicationId,
   archiveScheduleBoard: boardScheduleService.archiveScheduleBoard,
 };
-
-export default boardService;

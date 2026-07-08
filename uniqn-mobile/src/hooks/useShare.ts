@@ -275,5 +275,3 @@ export function useShare(): UseShareReturn {
     isSharing,
   };
 }
-
-export default useShare;

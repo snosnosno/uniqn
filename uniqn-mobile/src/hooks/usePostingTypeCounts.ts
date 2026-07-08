@@ -83,5 +83,3 @@ export function usePostingTypeCounts(options?: UsePostingTypeCountsOptions) {
     refetch: queryResult.refetch,
   };
 }
-
-export default usePostingTypeCounts;

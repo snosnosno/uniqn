@@ -583,5 +583,3 @@ export async function waitForHydration(timeout = 5000): Promise<boolean> {
     });
   });
 }
-
-export default useAuthStore;

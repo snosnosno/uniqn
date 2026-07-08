@@ -510,5 +510,3 @@ export function ScheduleDetailModal({
     </Modal>
   );
 }
-
-export default ScheduleDetailModal;

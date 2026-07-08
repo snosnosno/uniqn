@@ -352,5 +352,3 @@ export function LargeHeader({
     </View>
   );
 }
-
-export default MobileHeader;

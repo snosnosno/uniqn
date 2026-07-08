@@ -373,5 +373,3 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
     </View>
   );
 });
-
-export default PreQuestionsSection;

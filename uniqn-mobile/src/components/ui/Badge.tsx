@@ -171,5 +171,3 @@ export const Badge = React.memo(function Badge({
     </View>
   );
 });
-
-export default Badge;

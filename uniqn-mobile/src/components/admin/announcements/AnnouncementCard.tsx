@@ -163,5 +163,3 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
     </Pressable>
   );
 }
-
-export default AnnouncementCard;

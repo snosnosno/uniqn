@@ -239,5 +239,3 @@ export function CancellationRequestForm({
     </SheetModal>
   );
 }
-
-export default CancellationRequestForm;

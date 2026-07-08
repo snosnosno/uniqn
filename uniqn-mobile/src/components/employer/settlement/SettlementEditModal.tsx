@@ -367,5 +367,3 @@ export function SettlementEditModal({
     </SheetModal>
   );
 }
-
-export default SettlementEditModal;

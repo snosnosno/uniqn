@@ -131,5 +131,3 @@ export function ActionSheet({
     </Modal>
   );
 }
-
-export default ActionSheet;

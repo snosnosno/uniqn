@@ -4,7 +4,7 @@
 
 **Goal:** uniqn 공고 확정 스태프를 ops 대회 로스터(`ops_staff`)로 스냅샷 import하고, 딜러를 테이블에 배정한다(공고연결 N:1 + STAFF 탭 + TABLES 딜러 지정).
 
-**Architecture:** 스펙 `uniqn-mobile/docs/superpowers/specs/2026-07-06-ops-1e-staff-integration-design.md`(이하 "스펙")를 그대로 구현. DB = 신규 마이그 3종(M1 테이블/enum/RLS → M2 SECDEF RPC 5종 → M3 grants/realtime) + pgTAP. 클라 = Presentation→Hooks→Service→Repository 계층 신설(OpsStaff*) + STAFF 탭 + TABLES 확장 + 진입점 3곳.
+**Architecture:** 스펙 `uniqn-mobile/docs/superpowers/specs/2026-07-06-ops-1e-staff-integration-design.md`(이하 "스펙")를 그대로 구현. DB = 신규 마이그 3종(M1 테이블/enum/RLS → M2 SECDEF RPC 5종 → M3 grants/realtime) + pgTAP. 클라 = Presentation→Hooks→Service→Repository 계층 신설(OpsStaff\*) + STAFF 탭 + TABLES 확장 + 진입점 3곳.
 
 **Tech Stack:** Supabase(plpgsql SECDEF·RLS·pgTAP), Expo/RN(TS strict, NativeWind, TanStack Query, expo-router), jest.
 
@@ -596,7 +596,7 @@ BEGIN
 END $$;
 ```
 
-- [ ] **Step 4: supabase.ts 수술적 추가** — `ops_staff` Row/Insert/Update 타입 + Functions에 RPC 5종 Args/Returns. 기존 ops_* 항목의 표기 관례(snake_case 키·Json 타입)를 그대로 따름.
+- [ ] **Step 4: supabase.ts 수술적 추가** — `ops_staff` Row/Insert/Update 타입 + Functions에 RPC 5종 Args/Returns. 기존 ops\_\* 항목의 표기 관례(snake_case 키·Json 타입)를 그대로 따름.
 - [ ] **Step 5: GREEN 확인** — DB 3종 전건 PASS + `npx tsc --noEmit` EXIT 0.
 - [ ] **Step 6: Commit** — `feat(ops): 1e M3 — grants·realtime + 보안 pgTAP + supabase 타입`
 
@@ -641,7 +641,7 @@ assignTableStaff(p: { tournamentId: string; actorId: string; tableId: string; st
 ```
 
 - [ ] **Step 1: 실측** — `OpsParticipantRepository.ts`(SELECT 컬럼 상수·snake→camel 매핑·`mapOpsRpcError` 사용법)와 `opsRpcError.ts`(코드→AppError 매핑 테이블), `opsTournament.schema.ts`(zod 관례)를 읽고 동일 문형 채택.
-- [ ] **Step 2: jest 작성 (RED)** — supabase 클라이언트 mock으로: listByTournament 매핑(snake→camel), RPC 5종 인자 스네이크 변환, P0001 **신규 4코드**(NO_LINKED_POSTING/DUPLICATE_STAFF/STAFF_NOT_IN_ROSTER/**POSTING_NOT_FOUND**) → AppError 매핑 단언. 기존 Ops*Repository 테스트 파일의 mock 관례 복제.
+- [ ] **Step 2: jest 작성 (RED)** — supabase 클라이언트 mock으로: listByTournament 매핑(snake→camel), RPC 5종 인자 스네이크 변환, P0001 **신규 4코드**(NO_LINKED_POSTING/DUPLICATE_STAFF/STAFF_NOT_IN_ROSTER/**POSTING_NOT_FOUND**) → AppError 매핑 단언. 기존 Ops\*Repository 테스트 파일의 mock 관례 복제.
 - [ ] **Step 3: RED 확인** — `npx jest src/repositories/supabase/__tests__/OpsStaffRepository.test.ts` FAIL.
 - [ ] **Step 4: 구현** — zod 스키마는 읽기 내성 관례(`role`은 `z.enum(6값).catch('other')` 등 표시용 필드만 .catch — 기존 ops 스키마와 동일 수준, enum 발산 함정 예방). 에러 매핑에 **신규 4코드 추가**(적대검증 C-3/F1): `NO_LINKED_POSTING`→BUSINESS_INVALID_STATE류, `DUPLICATE_STAFF`/`STAFF_NOT_IN_ROSTER`→BUSINESS_INVALID_STATE, `STAFF_NOT_FOUND`→INFRA_NOT_FOUND, **`POSTING_NOT_FOUND`→INFRA_NOT_FOUND**(누락 시 handleSupabaseError 폴백으로 원시 에러 노출 — 보안 게이트 메시지 유실). **`TABLE_NOT_FOUND`는 신규 아님** — `opsRpcError.ts`에 이미 `OPS_TABLE_NOT_FOUND`로 매핑됨, 재추가 금지(기존 매핑 재사용). 구현 전 `opsRpcError.ts` PREFIX_MAP 실측해 신규 4코드만 추가.
 - [ ] **Step 5: GREEN** — 해당 jest PASS + `npx tsc --noEmit` EXIT 0.

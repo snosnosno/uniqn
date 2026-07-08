@@ -131,5 +131,3 @@ export function useJobSchedule(job: JobPosting | null): UseJobScheduleResult {
     };
   }, [job]);
 }
-
-export default useJobSchedule;

@@ -6,6 +6,32 @@
 >
 > **업데이트(2026-07-05)**: 이 로드맵과 별개로 죽은 OG 공유 미리보기 엣지 인프라(`functions/jobs/[id].ts` + wrangler `OG_KV` 바인딩 + `public/og-default.png`)를 `chore/remove-dead-og-infra` 브랜치에서 제거했다. 여파: ① §4.0 Phase 0의 `functions/**` entry 항목은 이제 대상 파일이 없어 불필요(무해). ② 아래 §2·§4.2의 `@cloudflare/workers-types`는 그 함수 전용이었으므로 **더 이상 오탐이 아니라 실제 미사용** — Phase 2에서 `package.json`에서 제거 가능(단 `package-lock.json` 동기화 위해 `npm install` 필요).
 
+> **개정 2 (2026-07-06, `/plan-eng-review` 반영 — 이 블록이 아래 §4·§5·§6·§7의 상충 부분보다 우선):**
+>
+> Phase 0 완료(`chore/knip-config-harden`, `3998a055a`) 후 엔지니어링 리뷰 + 독립 적대검증(Claude 서브에이전트; codex는 계정 gpt-5.4 미지원으로 폴백)을 거쳐 확정.
+>
+> **① 종착점 재정의 (가장 중요):** 원안 "0→5 전 Phase 완주(21~29세션)"를 폐기. §1 최우선 목표(knip 신호 정화 → CI 게이트 신뢰)는 **래칫 게이트 도입 시점에 이미 100% 달성**된다(죽은 export는 런타임 비용 0). 따라서 — **확정 실행**: Phase 0 → knip 핀 → 래칫 → @public 봉인 → Phase 1~3(저위험 기계적 구간). **봉인 후 재결정**: Phase 4(컴포넌트)·Phase 5(공개 API 삭제)는 P1~3 완료 시점의 잔여 리포트를 보고 "대량 삭제 vs 기회주의적 삭제"를 재판단. **지금 17~24세션을 선약속하지 않는다.**
+>
+> **② 선행 필수 — knip 핀 (원안 누락, 래칫 전제):** knip이 devDependencies·lockfile 어디에도 없어 `npx knip`이 매번 최신 버전을 부유(floating)로 받는다. 래칫(`--max-issues`) 도입 **전에** `knip`을 devDependencies 핀 버전으로 고정. 안 그러면 knip 업그레이드가 코드와 무관하게 게이트를 flake시키고 baseline이 무효화됨.
+>
+> **③ 래칫 게이트(A1):** `package.json`에 `"knip:gate": "knip --max-issues=<N>"` 추가. N은 **knip 자체 출력 총계**에서 취한다(손계산 2,951 금지 — hints·member 등이 합계에 섞일 수 있음). 배치마다 N 하향. **Phase 경계(특히 @public 봉인)에서 카운트 급락 시 재baseline 필수.** 캐스케이드 삭제(배럴 제거→원본 고아화, §5 line "새 미사용")로 총계가 비단조로 움직일 수 있으니 게이트 red는 "새 미사용 발생"과 "캐스케이드"를 구분해 판독.
+>
+> **④ @public 봉인(D1·CM1) — 오해 금지:** `@public` 태깅은 삭제/보존 "심볼별 판단"을 **없애지 못한다**(같은 판단을 태그로 옮기는 것). 가치는 (1) 판단이 코드에 자기문서화 → **다음 세션이 재판단 안 함**, (2) knip `--tags`로 영구 제외. "4~7세션"은 보장이 아니라 목표. 현 레포 `@public` 컨벤션 사실상 0건(신규 도입). "배럴 재수출=일괄 @public" 휴리스틱은 "거의 다 봉인+거의 못 지움"이 되니 금지.
+>
+> **⑤ Red-Green ↔ --fix 양립 불가 (원안 §3-f·§5 정정):** tsconfig `noUnusedLocals:true`+`noUnusedParameters:true`(tsconfig.json:7-8). knip `--fix --exports`는 `export` 키워드만 떼고 선언은 남김 → 자동수정 후 전부 "미사용 지역변수" tsc red. 이 red는 실사용 증거가 **아니다**. 따라서 "삭제→tsc red=실사용" 안전 오라클은 **선언 전체 수동 삭제**에만 성립. --fix 사용 시 그 오라클 대신 knip 재측정+전체 jest에 의존. **--fix 파일럿은 Phase 3/4(exports/types)로 이동** — Phase 1은 전량 duplicate이고 duplicate는 knip fixable 타입 아님(dependencies/exports/types/files/catalog만) → Phase 1 --fix는 no-op.
+>
+> **⑥ Phase 1(A2):** duplicate `Component|default` 231건은 소비자 named import 확정 패턴 → grep 게이트된 codemod 1패스 가능(원안 "2~3세션 수동 버킷팅"은 과함). 읽기전용 버킷팅 스크립트로 safe/needs-review 분류는 유지.
+>
+> **⑦ Phase 2(Q1):** `@cloudflare/workers-types` unseal+제거는 **별도 Phase 2 세션**(lock diff를 config 커밋과 분리). ts-node 부재 확인. `lint-staged`는 **config 블록이 package.json:138-146에 잔존**(패키지만 devDeps에 없음, 현재 knip 미flag) → 원안 §4.2의 "ts-node/lint-staged 오탐 가능" 행 폐기.
+>
+> **⑧ 게이트 보강(T1):**
+>
+> - ⓐ 플랫폼 변형 실측 **`.web.tsx` 4개 + `.web.ts` 2개(observability)** (원안 "7 .web.tsx" 오기). 삭제 가드는 `.web.*`·`.native.*` 전부 커버. tsconfig `moduleSuffixes` 미설정이라 web 변형 export 모양 파손을 tsc가 못 잡음 → **`npm run build:web`을 phase당 1회가 아니라 web 변형/observability 건드리는 배치마다** 실행.
+> - ⓑ "관련 스위트"가 아니라 **배치마다 전체 `npm test`**(실측 53초/4,748건이라 절약 무의미).
+> - ⓒ Phase 5 스키마 삭제 점검 = 해당 입력경로 jest 통합 스위트 + **`xssValidation` 참조 grep 0건** 확인(보안 경계 훼손 방지).
+>
+> **⑨ (b) 판별 반례 (원안 §3-b·§8 flagship 정정):** 원안이 "의도적 유예 API"로 든 `getCurrentUser`(authCoreService.ts:486)는 실체가 **무조건 `return null` 죽은 stub**(주석마저 Deprecated). "배럴 재수출+deprecated 주석이면 보존" 규칙은 죽은 코드를 과보존한다 → (b) 판정은 주석이 아니라 **본문이 실제 동작하는지**까지 확인, deprecated stub은 (a) 삭제 대상.
+
 ---
 
 ## 0. 요약 (결론 먼저)
@@ -60,6 +86,45 @@ knip이 보고한 미사용 심볼 ~3,000건 중 **상당수가 오탐(엔트리
 → `entry` 미설정이 엔트리포인트 오탐의 근본 원인. Phase 0에서 여기를 손본다.
 
 **tsconfig exclude** (`tsconfig.json:47-52`): `node_modules`, `functions`, `supabase/functions`, `e2e`. (e2e는 `e2e/tsconfig.json` 별도 보유.)
+
+---
+
+### Phase 0 후 baseline (재측정 — 2026-07-05, `chore/knip-config-harden`)
+
+> **드리프트 정정**: 위 §2 표는 이 로드맵 작성 시점의 config를 기록했으나, 실제로는 로드맵 병합(#224) 직전 커밋 `027a5c5a1 (…knip 오탐 봉인)`이 **파일·의존성 봉인을 이미 완료**한 상태였다. 따라서 §2의 "Unused files 26 / (dev)deps 5"는 stale이며 실측 시점 이미 0이었다. 이번 Phase 0(`chore/knip-config-harden`)는 그 위에 남아 있던 **테스트 인프라 오탐(e2e 43 + `src/__tests__/mocks` 5)과 Unlisted binaries 2**만 추가 봉인했다. 게이트 전부 그린: `type-check` EXIT 0 · `jest` 4,748/4,748 통과 · `npx knip` 재측정.
+
+**적용한 config 변경** (`package.json` knip 블록):
+
+- `ignore`: e2e config 4종을 `e2e/**` blanket으로 대체 + `src/__tests__/mocks/**` 추가
+- `ignoreBinaries: ["supabase", "eas"]` 신규 (npm 스크립트 CLI 미선언 오탐 제거)
+- `ignoreDependencies` 6종 불변 — mmkv/nitro/intent-launcher는 knip "remove" 힌트가 뜨나 peer dep 보호(`pitfall_knip_falsepositive_build_config`)로 **의도적 유지**(hint 3건 무해)
+
+| 카테고리              | §2 (stale) | 027a5c5a1 후 | **Phase 0 후 (권위)** | 조치                                             |
+| --------------------- | ---------- | ------------ | --------------------- | ------------------------------------------------ |
+| Unused files          | 26         | 0            | **0**                 | `ignore: supabase/functions/**` 등 (선반영)      |
+| Unused (dev)deps      | 5          | 0            | **0**                 | `ignoreDependencies` 6종 (선반영)                |
+| Unlisted binaries     | —          | 2            | **0**                 | `ignoreBinaries: [supabase, eas]` 추가           |
+| Unused exports        | 1,725      | 1,716        | **1,670**             | `ignore: e2e/**`, `src/__tests__/mocks/**` (−46) |
+| Unused exported types | 977        | 970          | **968**               | 〃 (−2)                                          |
+| Duplicate exports     | 320        | 313          | **313**               | 불변 (전부 `src/**`, Phase 1 대상)               |
+| Configuration hints   | —          | 3            | **3**                 | mmkv/nitro/intent-launcher — 유지                |
+
+**Phase 0 후 구역별 분해** (오탐 제거 후 순수 신호 — 전부 `src/**`):
+
+- **Unused exports 1,670**: components 411 · schemas 243 · services 228 · hooks 194 · utils 126 · constants 87 · types 67 · errors 61 · domains 60 · stores 51 · repositories 47 · shared 44 · lib 43 · config 8
+- **Unused exported types 968**: schemas 220 · components 178 · types 177 · repositories 100 · services 76 · domains 68 · hooks 52 · constants 25 · shared 25 · stores 13 · utils 12 · errors 11 · lib 6 · config 4 · features 1
+- **Duplicate exports 313**: components 238 · hooks 43 · services 15 · stores 6 · constants 4 · utils 3 · lib 2 · errors 1 · config 1
+
+**Phase 3~5 세션 수 재산정**: config 하드닝은 **테스트 인프라만 봉인**했을 뿐 `src/**` 삭제 대상 물량(총 2,951 심볼)은 사실상 그대로다. 따라서 §6의 21~29 세션 추정은 **상한선으로 유효**. 진짜 감축은 각 Phase에서 심볼별 (b)의도적 공개 API·(d)배럴 재수출·(f)Zod 타입-포지션을 grep으로 걸러낼 때 발생하며, Phase 0 config로는 계량 불가.
+
+| Phase | 대상 구역                                                              | Phase 0 후 물량 | 재산정 세션         |
+| ----- | ---------------------------------------------------------------------- | --------------- | ------------------- |
+| 1     | Duplicate (components 238 · hooks 43 · services 15 · 기타 17)          | 313             | 2~3 (불변)          |
+| 3     | 리프 exports(constants·utils·stores·lib·shared = 351) + types 구역 177 | ~530            | 3~4 (불변)          |
+| 4     | components (exports 411 + types 178)                                   | 589             | 4~5 (§2 대비 소폭↑) |
+| 5     | services·repos·hooks·schemas·domains·errors (exports 833 + types 527)  | ~1,360          | 10~15 (불변)        |
+
+> 핵심: Phase 0의 순효과는 "신호 정화 완료 — 파일·deps·테스트 인프라·바이너리 0, 남은 2,951건은 전부 `src/**` 진짜 분석 대상"이지 Phase 3~5 모수 축소가 아니다. 모수 축소는 Phase 3~5의 per-symbol 판별에서 나온다.
 
 ---
 
@@ -349,3 +414,29 @@ Grep(pattern="export \{ default as Foo \}")
 | deps 5종 대부분 빌드/툴 오탐                        | knip Unused (dev)deps: expo-modules-core·babel-preset-expo·ts-node·lint-staged·@cloudflare/workers-types                                                                                                          |
 
 > 원본 knip 전체 리포트(2742행)는 세션 스크래치패드에 보관. 재측정은 `npx knip`로 갱신하며, Phase 0 후 이 문서 §2에 재측정 스냅샷을 추가 기록할 것.
+
+---
+
+## GSTACK REVIEW REPORT
+
+| Review        | Trigger               | Why                             | Runs | Status       | Findings                                      |
+| ------------- | --------------------- | ------------------------------- | ---- | ------------ | --------------------------------------------- |
+| Eng Review    | `/plan-eng-review`    | Architecture & tests (required) | 1    | issues_open  | 9 issues, 0 critical gaps                     |
+| CEO Review    | `/plan-ceo-review`    | Scope & strategy                | 0    | —            | —                                             |
+| Design Review | `/plan-design-review` | UI/UX gaps                      | 0    | —            | —                                             |
+| Outside Voice | codex/subagent        | Independent 2nd opinion         | 1    | issues_found | 9 findings (codex 미지원→Claude 서브에이전트) |
+
+**핵심 결정 (2026-07-06):**
+
+1. **종착점 재정의(CM1=C)**: 원안 21~29세션 완주 폐기 → Phase 0+핀+래칫+@public 봉인+Phase 1~3만 확정, Phase 4/5(대량 삭제)는 봉인 후 잔여 리포트로 재결정. §1 목표는 래칫 시점에 이미 달성(죽은 export 런타임 비용 0).
+2. **knip 핀 선행 필수**: 래칫 전 `knip`을 devDependencies 핀 고정(현재 floating).
+3. **래칫**: `knip:gate = knip --max-issues=<N>`, N은 knip 출력 총계에서, phase 경계마다 재baseline.
+4. **@public 봉인**: 판단을 없애는 게 아니라 자기문서화+영구제외; "4~7세션"은 목표치.
+5. **Red-Green↔--fix 양립 불가**: noUnusedLocals 때문에 --fix 후 tsc red가 실사용 증거가 아님; --fix 파일럿은 Phase 3/4로(Phase 1 duplicate는 fixable 아님).
+6. **게이트 보강(T1)**: `.web.*`/`.native.*` 삭제 가드+web 배치마다 `build:web`, 배치마다 전체 jest, Phase 5 스키마=jest 통합+xssValidation grep.
+7. **flagship 정정**: `getCurrentUser`는 의도적 API가 아니라 `return null` 죽은 stub → (b) 판정은 본문 동작까지 확인.
+
+**CODEX:** 계정 gpt-5.4 미지원으로 실행 실패 → Claude 서브에이전트로 폴백 실행.
+**CROSS-MODEL:** 외부 목소리가 "캠페인 자체의 위험/보상 역전"(P4/P5 대량 삭제는 런타임 이득 0, prod 회귀 위험 有)을 지적 → CM1=C로 반영(P1~3만 완주, P4/P5 봉인 후 재결정).
+**UNRESOLVED:** 0.
+**VERDICT:** ENG REVIEW 완료 — 9개 발견 전부 로드맵 "개정 2" 블록에 반영. Phase 0는 이미 출하(`3998a055a`). 다음 실행 전 knip 핀+래칫 선행.

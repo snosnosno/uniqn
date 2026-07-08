@@ -148,5 +148,3 @@ export const JobPostingCard = memo(function JobPostingCard({
     </View>
   );
 });
-
-export default JobPostingCard;

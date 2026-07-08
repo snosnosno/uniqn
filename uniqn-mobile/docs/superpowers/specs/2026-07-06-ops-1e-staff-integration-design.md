@@ -36,8 +36,8 @@
 
 work_logs를 ops 로스터 저장소로 직접 재사용하지 않는 실측 근거 4가지:
 
-1. **부작용 오염**: work_logs INSERT는 `notify_on_work_log_insert` 알림 트리거, `filled_positions` 정원 카운터·capacity_full 전이,
-   정산(payroll_*) 표면에 물려 있다(add_direct_staff의 정원 가드·filled 미러 20260629000000:133-238).
+1. **부작용 오염**: work*logs INSERT는 `notify_on_work_log_insert` 알림 트리거, `filled_positions` 정원 카운터·capacity_full 전이,
+   정산(payroll*\*) 표면에 물려 있다(add_direct_staff의 정원 가드·filled 미러 20260629000000:133-238).
    ops 수동 스태프를 work_logs에 심으면 uniqn 공고 정원·알림·정산이 오염된다.
 2. **수명주기·단위 불일치**: work_logs는 (스태프, 날짜, 슬롯) 단위 근태·정산 행이고 `job_posting_id NOT NULL`(base_schema:195).
    ops 로스터는 (대회, 스태프) 단위이며, `job_posting_id NULL`인 수동 대회는 work_logs 행을 아예 가질 수 없다.

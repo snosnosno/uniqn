@@ -381,5 +381,3 @@ export function useEventQR(
     toggleAction,
   };
 }
-
-export default useEventQR;

@@ -156,5 +156,3 @@ export function WeeklyStaffWidget() {
     </DashboardWidgetShell>
   );
 }
-
-export default WeeklyStaffWidget;

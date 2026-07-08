@@ -350,5 +350,3 @@ export const recordNavigationTime =
   performanceService.recordNavigationTime.bind(performanceService);
 export const recordRenderTime = performanceService.recordRenderTime.bind(performanceService);
 export const setPerformanceEnabled = performanceService.setEnabled.bind(performanceService);
-
-export default performanceService;

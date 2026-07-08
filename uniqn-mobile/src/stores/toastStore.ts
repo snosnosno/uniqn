@@ -138,5 +138,3 @@ export const useToast = () => {
   const { success, error, warning, info, addToast } = useToastStore();
   return { success, error, warning, info, show: addToast };
 };
-
-export default useToastStore;

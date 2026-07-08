@@ -63,5 +63,3 @@ export function useStaffPhoneSearch(): UseStaffPhoneSearchReturn {
 
   return { results, isSearching, error, searched, search, reset };
 }
-
-export default useStaffPhoneSearch;

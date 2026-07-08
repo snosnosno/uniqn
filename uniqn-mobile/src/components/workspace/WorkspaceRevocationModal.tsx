@@ -86,5 +86,3 @@ export function WorkspaceRevocationModal({
     </Modal>
   );
 }
-
-export default WorkspaceRevocationModal;

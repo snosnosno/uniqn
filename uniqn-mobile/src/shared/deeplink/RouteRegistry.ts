@@ -78,7 +78,6 @@ export const EXPO_ROUTES = {
 } as const;
 
 export type ExpoRouteName = keyof typeof EXPO_ROUTES;
-export type ExpoRoutePath = (typeof EXPO_ROUTES)[ExpoRouteName];
 
 export const AUTH_REQUIRED_ROUTES: ExpoRouteName[] = [
   'home',

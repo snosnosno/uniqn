@@ -111,5 +111,3 @@ export const CalendarHeader = memo(function CalendarHeader({
     </View>
   );
 });
-
-export default CalendarHeader;

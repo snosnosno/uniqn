@@ -40,5 +40,3 @@ export function EventQRModal({
     </Modal>
   );
 }
-
-export default EventQRModal;

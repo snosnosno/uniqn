@@ -114,5 +114,3 @@ export function useJobPostings(options: UseJobPostingsOptions = {}) {
     },
   };
 }
-
-export default useJobPostings;

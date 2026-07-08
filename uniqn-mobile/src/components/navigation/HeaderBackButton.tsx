@@ -51,5 +51,3 @@ export function HeaderBackButton({
     </Pressable>
   );
 }
-
-export default HeaderBackButton;

@@ -30,5 +30,3 @@ export function BoardWriteFab({ onPress }: BoardWriteFabProps) {
     </View>
   );
 }
-
-export default BoardWriteFab;

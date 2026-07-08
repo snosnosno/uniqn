@@ -117,5 +117,3 @@ export function AddTableForm({ isPending, onSubmit }: AddTableFormProps) {
     </View>
   );
 }
-
-export default AddTableForm;

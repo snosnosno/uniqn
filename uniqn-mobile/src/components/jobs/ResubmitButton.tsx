@@ -125,5 +125,3 @@ export function ResubmitButton({
     </>
   );
 }
-
-export default ResubmitButton;

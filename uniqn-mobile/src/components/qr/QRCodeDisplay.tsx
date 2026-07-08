@@ -195,5 +195,3 @@ export function QRCodeDisplay({
     </Modal>
   );
 }
-
-export default QRCodeDisplay;

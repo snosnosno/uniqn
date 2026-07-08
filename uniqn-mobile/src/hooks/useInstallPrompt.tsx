@@ -146,5 +146,3 @@ export function useInstallPrompt() {
     openInstallPrompt,
   };
 }
-
-export default useInstallPrompt;

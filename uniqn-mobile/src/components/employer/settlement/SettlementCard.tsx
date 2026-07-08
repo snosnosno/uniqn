@@ -186,5 +186,3 @@ export const SettlementCard = React.memo(function SettlementCard({
     </CardStripe>
   );
 });
-
-export default SettlementCard;

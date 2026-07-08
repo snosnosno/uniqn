@@ -411,5 +411,3 @@ export function TablesTab({ tournamentId }: TablesTabProps) {
     </View>
   );
 }
-
-export default TablesTab;

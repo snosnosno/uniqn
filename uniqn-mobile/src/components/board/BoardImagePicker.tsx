@@ -143,5 +143,3 @@ export function BoardImagePicker({
     </View>
   );
 }
-
-export default BoardImagePicker;

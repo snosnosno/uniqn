@@ -299,5 +299,3 @@ export function ApplicantConfirmModal({
     </Modal>
   );
 }
-
-export default ApplicantConfirmModal;

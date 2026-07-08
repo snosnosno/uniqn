@@ -326,5 +326,3 @@ export function useTemplateManager() {
     isDeletingTemplate: false,
   };
 }
-
-export default useTemplateManager;

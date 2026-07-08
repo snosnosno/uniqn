@@ -19,11 +19,3 @@ export function generateMinutes(interval: number): number[] {
 export function normalizeMinute(minute: number, interval: number): number {
   return Math.round(minute / interval) * interval;
 }
-
-/** 시간 표시 포맷 (24시 이상은 다음날 표시) */
-export function formatHourLabel(hour: number): string {
-  if (hour >= 24) {
-    return `다음날 ${(hour - 24).toString().padStart(2, '0')}`;
-  }
-  return hour.toString().padStart(2, '0');
-}

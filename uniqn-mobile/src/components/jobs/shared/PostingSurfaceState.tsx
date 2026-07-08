@@ -97,5 +97,3 @@ export function PostingSurfaceState({
     />
   );
 }
-
-export default PostingSurfaceState;

@@ -513,5 +513,3 @@ export function useSettlementDashboard() {
     summariesByJobPosting: summaryQuery.data?.summariesByJobPosting ?? [],
   };
 }
-
-export default useSettlement;

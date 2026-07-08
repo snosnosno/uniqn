@@ -358,5 +358,3 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
     </View>
   );
 });
-
-export default SettlementTab;

@@ -107,5 +107,3 @@ export const SettlementSummaryCard = React.memo(function SettlementSummaryCard({
     </Card>
   );
 });
-
-export default SettlementSummaryCard;

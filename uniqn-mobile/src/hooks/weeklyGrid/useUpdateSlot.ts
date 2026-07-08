@@ -26,5 +26,3 @@ export function useUpdateSlot() {
     },
   });
 }
-
-export default useUpdateSlot;

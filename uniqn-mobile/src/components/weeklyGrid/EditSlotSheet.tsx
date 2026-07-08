@@ -353,5 +353,3 @@ export function EditSlotSheet({
     </SheetModal>
   );
 }
-
-export default EditSlotSheet;

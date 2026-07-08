@@ -61,5 +61,3 @@ export function BoardTabBar({ activeTab, onTabPress }: BoardTabBarProps) {
     </ScrollView>
   );
 }
-
-export default BoardTabBar;

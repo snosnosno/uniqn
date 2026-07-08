@@ -76,5 +76,3 @@ export const ApplicantProfileHeader = React.memo(function ApplicantProfileHeader
     </View>
   );
 });
-
-export default ApplicantProfileHeader;

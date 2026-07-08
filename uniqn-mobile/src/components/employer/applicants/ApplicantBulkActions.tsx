@@ -90,5 +90,3 @@ export const ApplicantBulkActions = React.memo(function ApplicantBulkActions({
     </View>
   );
 });
-
-export default ApplicantBulkActions;

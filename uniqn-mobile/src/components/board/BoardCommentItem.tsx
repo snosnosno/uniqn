@@ -287,5 +287,3 @@ export const BoardCommentItem = memo(function BoardCommentItem({
     </View>
   );
 });
-
-export default BoardCommentItem;

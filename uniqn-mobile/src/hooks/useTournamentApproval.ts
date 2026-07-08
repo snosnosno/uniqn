@@ -267,5 +267,3 @@ export function useTournamentsByStatus(status: TournamentApprovalStatus, enabled
     enabled,
   });
 }
-
-export default useTournamentApproval;

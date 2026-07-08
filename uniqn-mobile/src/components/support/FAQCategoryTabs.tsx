@@ -68,5 +68,3 @@ export function FAQCategoryTabs({
     </View>
   );
 }
-
-export default FAQCategoryTabs;

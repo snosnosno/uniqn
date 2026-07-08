@@ -150,5 +150,3 @@ export function TemplateModal({
     </Modal>
   );
 }
-
-export default TemplateModal;

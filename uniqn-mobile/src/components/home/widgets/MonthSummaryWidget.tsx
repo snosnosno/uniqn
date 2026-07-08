@@ -74,5 +74,3 @@ export function MonthSummaryWidget() {
     </DashboardWidgetShell>
   );
 }
-
-export default MonthSummaryWidget;

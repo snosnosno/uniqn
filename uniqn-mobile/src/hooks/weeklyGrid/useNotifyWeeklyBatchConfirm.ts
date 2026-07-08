@@ -26,5 +26,3 @@ export function useNotifyWeeklyBatchConfirm() {
       notifyWeeklyBatchConfirm(workspaceId, venueId, weekLabel),
   });
 }
-
-export default useNotifyWeeklyBatchConfirm;

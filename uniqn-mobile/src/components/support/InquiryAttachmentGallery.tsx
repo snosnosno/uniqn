@@ -142,5 +142,3 @@ export function InquiryAttachmentGallery({ attachments }: InquiryAttachmentGalle
     </View>
   );
 }
-
-export default InquiryAttachmentGallery;

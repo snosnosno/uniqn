@@ -198,5 +198,3 @@ export async function waitForThemeHydration(timeout = 3000): Promise<boolean> {
     });
   });
 }
-
-export default useThemeStore;

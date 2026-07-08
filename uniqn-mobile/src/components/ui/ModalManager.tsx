@@ -162,5 +162,3 @@ export function ModalManager() {
     </>
   );
 }
-
-export default ModalManager;

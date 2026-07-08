@@ -125,5 +125,3 @@ export const NotificationCategoryTabs = memo(function NotificationCategoryTabs({
     </View>
   );
 });
-
-export default NotificationCategoryTabs;

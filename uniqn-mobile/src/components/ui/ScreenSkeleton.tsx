@@ -118,5 +118,3 @@ function SkeletonRow({ type }: { type: ScreenSkeletonType }) {
     </View>
   );
 }
-
-export default ScreenSkeleton;

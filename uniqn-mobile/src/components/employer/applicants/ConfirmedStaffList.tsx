@@ -296,5 +296,3 @@ export function ConfirmedStaffList({
     </View>
   );
 }
-
-export default ConfirmedStaffList;

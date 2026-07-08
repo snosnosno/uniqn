@@ -46,5 +46,3 @@ export function BoardTypeBadge({ boardType }: BoardTypeBadgeProps) {
     </View>
   );
 }
-
-export default BoardTypeBadge;

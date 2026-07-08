@@ -100,13 +100,6 @@ export const SURFACE_COLORS = {
 // 경계선 / 텍스트 토큰 (DESIGN.md 정렬)
 // ============================================================================
 
-export const BORDER_COLORS = {
-  light: SECONDARY_PALETTE[200], // 라이트 모드 기본 보더
-  lightSubtle: SECONDARY_PALETTE[100], // 라이트 모드 subtle
-  dark: '#222228', // 다크 모드 기본 보더 (divider 토큰과 동일)
-  darkSubtle: '#1C1C22', // 다크 모드 subtle — elevated 레벨과 동일
-} as const;
-
 export const TEXT_COLORS = {
   /** Text Primary — 본문 텍스트 */
   primary: {
@@ -140,36 +133,6 @@ export type BadgeVariant =
   | 'error'
   | 'info';
 
-export const BADGE_CLASSES = {
-  container: {
-    default: 'bg-secondary-100 dark:bg-surface-overlay',
-    primary: 'bg-primary-50 dark:bg-primary-50',
-    secondary: 'bg-secondary-200 dark:bg-surface-elevated',
-    success: 'bg-success-50 dark:bg-success-50',
-    warning: 'bg-warning-50 dark:bg-warning-50',
-    error: 'bg-error-50 dark:bg-error-50',
-    info: 'bg-info-50 dark:bg-info-50',
-  },
-  text: {
-    default: 'text-secondary-700 dark:text-secondary-300',
-    primary: 'text-primary-700 dark:text-primary-300',
-    secondary: 'text-secondary-600 dark:text-secondary-200',
-    success: 'text-success-700 dark:text-success-500',
-    warning: 'text-warning-700 dark:text-warning-500',
-    error: 'text-error-700 dark:text-error-500',
-    info: 'text-info-700 dark:text-info-500',
-  },
-  dot: {
-    default: 'bg-secondary-500',
-    primary: 'bg-primary-500',
-    secondary: 'bg-secondary-400',
-    success: 'bg-success-500',
-    warning: 'bg-warning-500',
-    error: 'bg-error-500',
-    info: 'bg-info-500',
-  },
-} as const;
-
 // ============================================================================
 // 텍스트 색상 (v3.0)
 // ============================================================================
@@ -184,30 +147,6 @@ export const TEXT_CLASSES = {
   success: 'text-success-600 dark:text-success-500',
 } as const;
 
-// ============================================================================
-// 카드 색상 (v3.0)
-// ============================================================================
-
-export const CARD_CLASSES = {
-  default: 'bg-white dark:bg-surface-elevated',
-  elevated: 'bg-white dark:bg-surface-elevated',
-  highlighted: 'bg-primary-50 dark:bg-primary-50',
-  success: 'bg-success-50 dark:bg-success-50',
-  warning: 'bg-warning-50 dark:bg-warning-50',
-  error: 'bg-error-50 dark:bg-error-50',
-} as const;
-
-// ============================================================================
-// 보더 색상 (v3.0)
-// ============================================================================
-
-export const BORDER_CLASSES = {
-  default: 'border-secondary-200 dark:border-surface-overlay',
-  light: 'border-secondary-100 dark:border-surface-overlay',
-  focus: 'border-primary-500 dark:border-primary-300',
-  error: 'border-error-500 dark:border-error-500',
-} as const;
-
 export const HEADER_CLASSES = {
   title: 'text-secondary-900 dark:text-secondary-50',
   subtitle: 'text-secondary-600 dark:text-secondary-400',
@@ -215,51 +154,6 @@ export const HEADER_CLASSES = {
   searchField: 'bg-secondary-100 dark:bg-surface-elevated',
   actionPressed: 'active:bg-secondary-100 dark:active:bg-surface-elevated',
 } as const;
-
-// ============================================================================
-// 차트 색상 (v3.0)
-// ============================================================================
-
-export const CHART_COLORS = {
-  background: {
-    light: '#FFFFFF',
-    dark: '#0B0B0E',
-  },
-  text: {
-    light: '#09090B',
-    dark: '#F0F0F2',
-  },
-  grid: {
-    light: SECONDARY_PALETTE[200],
-    dark: '#1C1C22',
-  },
-  series: {
-    light: ['#8A7228', '#16A34A', '#A16207', '#B91C1C', '#1D4ED8'],
-    dark: ['#D4AF37', '#22C55E', '#D4A017', '#DC2626', '#2563EB'],
-  },
-} as const;
-
-export function getChartColors(isDarkMode: boolean) {
-  return {
-    background: isDarkMode ? CHART_COLORS.background.dark : CHART_COLORS.background.light,
-    text: isDarkMode ? CHART_COLORS.text.dark : CHART_COLORS.text.light,
-    grid: isDarkMode ? CHART_COLORS.grid.dark : CHART_COLORS.grid.light,
-    series: isDarkMode ? CHART_COLORS.series.dark : CHART_COLORS.series.light,
-  };
-}
-
-// ============================================================================
-// 플레이스홀더 색상 (v3.0)
-// ============================================================================
-
-export const PLACEHOLDER_COLORS = {
-  light: SECONDARY_PALETTE[600],
-  dark: SECONDARY_PALETTE[400],
-} as const;
-
-export function getPlaceholderColor(isDarkMode: boolean): string {
-  return isDarkMode ? PLACEHOLDER_COLORS.dark : PLACEHOLDER_COLORS.light;
-}
 
 // ============================================================================
 // 로딩 인디케이터 색상 (v3.0)

@@ -61,5 +61,3 @@ export const StatusInfo = React.memo(function StatusInfo({
     </>
   );
 });
-
-export default StatusInfo;

@@ -114,5 +114,3 @@ export const NumericInput = memo(function NumericInput({
     </View>
   );
 });
-
-export default NumericInput;

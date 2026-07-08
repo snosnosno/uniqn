@@ -17,10 +17,6 @@ export const APPLICATION_COUNT_LABELS: Record<ApplicationStatus, string> = {
   cancellation_pending: '취소 요청',
 };
 
-export function getApplicationCountLabel(status: ApplicationStatus): string {
-  return APPLICATION_COUNT_LABELS[status];
-}
-
 /**
  * 스케줄 통계(forward-looking, 오늘 포함)용 라벨.
  * 홈 위젯(APPLICATION_COUNT_LABELS)은 전체 시점 집계이므로 cross-screen 숫자가 다를 수 있음.

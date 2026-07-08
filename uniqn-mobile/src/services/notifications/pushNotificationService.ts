@@ -122,5 +122,3 @@ export const pushNotificationService = {
   setNotificationReceivedHandler,
   setNotificationResponseHandler,
 };
-
-export default pushNotificationService;

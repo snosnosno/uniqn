@@ -275,5 +275,3 @@ export const PreQuestionForm = memo(function PreQuestionForm({
     </View>
   );
 });
-
-export default PreQuestionForm;

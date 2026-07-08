@@ -82,5 +82,3 @@ export function ApplicationStatusWidget() {
     </DashboardWidgetShell>
   );
 }
-
-export default ApplicationStatusWidget;

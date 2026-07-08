@@ -263,5 +263,3 @@ export function RedrawModal({
     </BottomSheet>
   );
 }
-
-export default RedrawModal;

@@ -263,5 +263,3 @@ export const CheckboxGroup = memo(function CheckboxGroup({
     </View>
   );
 });
-
-export default Checkbox;

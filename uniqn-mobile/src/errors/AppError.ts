@@ -637,5 +637,3 @@ export const getAppErrorTelemetryPolicy = (error: AppError): AppErrorTelemetryPo
     shouldReport: false,
   };
 };
-
-export default AppError;

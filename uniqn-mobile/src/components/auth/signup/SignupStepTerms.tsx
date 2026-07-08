@@ -318,5 +318,3 @@ export function SignupStepTerms({ onNext, initialData, isLoading = false }: Sign
     </View>
   );
 }
-
-export default SignupStepTerms;

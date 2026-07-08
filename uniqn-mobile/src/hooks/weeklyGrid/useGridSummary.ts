@@ -46,5 +46,3 @@ export function useGridSummary(
     gcTime: cachingPolicies.standard * 2,
   });
 }
-
-export default useGridSummary;

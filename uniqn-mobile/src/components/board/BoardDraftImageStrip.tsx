@@ -56,5 +56,3 @@ export function BoardDraftImageStrip({ images, onRemoveImage }: BoardDraftImageS
     </ScrollView>
   );
 }
-
-export default BoardDraftImageStrip;

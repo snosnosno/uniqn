@@ -8,5 +8,3 @@ interface SheetProviderProps {
 export function SheetProvider({ children }: SheetProviderProps) {
   return <BottomSheetModalProvider>{children}</BottomSheetModalProvider>;
 }
-
-export default SheetProvider;

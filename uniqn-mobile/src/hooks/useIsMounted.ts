@@ -21,5 +21,3 @@ export function useIsMounted(): MutableRefObject<boolean> {
 
   return isMountedRef;
 }
-
-export default useIsMounted;

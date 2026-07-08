@@ -19,5 +19,3 @@ export function initializeRootSentry({ dsn, enabled, environment }: RootSentryOp
     beforeBreadcrumb: applyRedactToBreadcrumb,
   });
 }
-
-export default initializeRootSentry;

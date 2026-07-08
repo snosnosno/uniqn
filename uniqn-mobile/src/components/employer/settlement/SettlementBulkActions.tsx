@@ -98,5 +98,3 @@ export const SettlementBulkActions = React.memo(function SettlementBulkActions({
     </View>
   );
 });
-
-export default SettlementBulkActions;

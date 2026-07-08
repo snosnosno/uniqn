@@ -65,5 +65,3 @@ export function LiveStatsPanel({ tournamentId }: LiveStatsPanelProps) {
     </View>
   );
 }
-
-export default LiveStatsPanel;

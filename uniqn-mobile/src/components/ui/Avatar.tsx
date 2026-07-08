@@ -174,5 +174,3 @@ export const Avatar = memo(function Avatar({
     </View>
   );
 });
-
-export default Avatar;

@@ -75,5 +75,3 @@ export function TableRow({ table, seatCount, filled, staffNameById, onPress }: T
     </Pressable>
   );
 }
-
-export default TableRow;

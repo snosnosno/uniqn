@@ -121,5 +121,3 @@ export const ApplicantProfileContent = React.memo(function ApplicantProfileConte
     </>
   );
 });
-
-export default ApplicantProfileContent;

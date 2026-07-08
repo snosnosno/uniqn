@@ -219,5 +219,3 @@ export function InquiryForm({
     </KeyboardAvoidingView>
   );
 }
-
-export default InquiryForm;

@@ -179,5 +179,3 @@ export function CircularProgress({
     </Animated.View>
   );
 }
-
-export default CircularProgress;

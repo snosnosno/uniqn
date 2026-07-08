@@ -273,5 +273,3 @@ export function JobPostingScrollForm({
     </View>
   );
 }
-
-export default JobPostingScrollForm;
