@@ -186,5 +186,3 @@ export const selectClearAllBookmarks = (state: BookmarkStore) => state.clearAllB
 // ============================================================================
 // Export
 // ============================================================================
-
-export default useBookmarkStore;

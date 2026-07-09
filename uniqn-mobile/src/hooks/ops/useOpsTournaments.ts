@@ -47,15 +47,15 @@ export function useOpsTournament(id: string | undefined) {
   };
 }
 
-/** 브릿지: 공고에 연결된 ops 대회(없으면 null). null-safe. */
-export function useOpsTournamentForPosting(jobPostingId: string | undefined) {
+/** 브릿지: 공고에 연결된 ops 대회 목록(N:1, created_at desc). null-safe(빈 배열). */
+export function useOpsTournamentsForPosting(jobPostingId: string | undefined) {
   const query = useQuery({
     queryKey: jobPostingId
       ? queryKeys.ops.forPosting(jobPostingId)
       : [...queryKeys.ops.all, 'forPosting', 'none'],
-    queryFn: () => opsTournamentRepository.findByJobPostingId(jobPostingId as string),
+    queryFn: () => opsTournamentRepository.listByPosting(jobPostingId as string),
     enabled: !!jobPostingId,
     staleTime: cachingPolicies.frequent,
   });
-  return { opsTournament: query.data ?? null, isLoading: query.isLoading };
+  return { opsTournaments: query.data ?? [], isLoading: query.isLoading };
 }

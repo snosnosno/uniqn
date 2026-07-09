@@ -90,5 +90,3 @@ export const CollapsedHeader = memo(function CollapsedHeader({
     </View>
   );
 });
-
-export default CollapsedHeader;

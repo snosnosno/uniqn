@@ -390,5 +390,3 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
     </View>
   );
 });
-
-export default InfoTab;

@@ -143,5 +143,3 @@ export function VenueSelector({
     </View>
   );
 }
-
-export default VenueSelector;

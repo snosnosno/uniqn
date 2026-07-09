@@ -164,5 +164,3 @@ export function NotificationItemSkeleton() {
     </View>
   );
 }
-
-export default NotificationItem;

@@ -195,5 +195,3 @@ export function buildJobShareText(
     return `[UNIQN] ${title}\n\n👉 지원하기\n${url}`;
   }
 }
-
-export default buildJobShareText;

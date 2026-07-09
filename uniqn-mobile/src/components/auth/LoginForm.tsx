@@ -156,5 +156,3 @@ export function LoginForm({
     </View>
   );
 }
-
-export default LoginForm;

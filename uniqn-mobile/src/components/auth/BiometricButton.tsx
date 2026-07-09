@@ -138,5 +138,3 @@ export const BiometricButton = memo(function BiometricButton({
     </Pressable>
   );
 });
-
-export default BiometricButton;

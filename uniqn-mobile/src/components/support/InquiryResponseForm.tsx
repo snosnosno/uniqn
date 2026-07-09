@@ -131,5 +131,3 @@ export function InquiryResponseForm({
     </View>
   );
 }
-
-export default InquiryResponseForm;

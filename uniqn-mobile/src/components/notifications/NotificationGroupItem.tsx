@@ -170,5 +170,3 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
     </Animated.View>
   );
 });
-
-export default NotificationGroupItem;

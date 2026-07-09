@@ -410,5 +410,3 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
     </View>
   );
 });
-
-export default TaxSettingsEditor;

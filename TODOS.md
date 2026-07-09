@@ -78,7 +78,7 @@
 
 - **Phase 5 qa/offline**: 오프라인 복구 QA — 실기기 + 별도 세션 필요
 - 알림 emitter 통합: notifications 중복 SQL fix 후 code path 레거시 참조 정리
-- **레거시 trigger 함수 본체 정리**: `tr_notify_*` trigger DROP 후 `fn_notify_*` 함수 참조 경로 최종 확인 → DROP FUNCTION (2026-04-20 감사 `.gstack/qa-reports/LEGACY-TRIGGERS-AUDIT.md`)
+- [x] **레거시 trigger 함수 본체 정리**: `tr_notify_*` trigger DROP 후 `fn_notify_*` 함수 참조 경로 최종 확인 → DROP FUNCTION 완료 — `uniqn-mobile/supabase/migrations/20260421030000_drop_unreferenced_legacy_notify_functions.sql` (2026-04-20 감사 `.gstack/qa-reports/LEGACY-TRIGGERS-AUDIT.md`)
 - **tr_notify_tournament_approval 이관**: UPDATE(재제출) 경로를 `notify_on_job_posting_update` 또는 전용 신규 trigger로 이관 후 레거시 DROP — 현재는 INSERT 중복이지만 재제출 알림 유실 방지 위해 보존
 
 ## 옵저버빌리티 (2026-04-25 plan-eng-review)
@@ -104,7 +104,7 @@
 - **심각도/긴급도**: [MEDIUM] 비긴급. **자기치유**(40P01 자동 abort+재시도) + **prod `ops_tournaments` 0행**이라 실피해 미미. **이번(1d) 락순서 수정과 인과 무관·선재** — 1c 트리거 + 1b redraw 양쪽 관여.
 - **Context**: 1c 메커니즘(live_stats 트리거) + 1b redraw에 걸침 → 독립 작업. 신규 마이그(트리거 정의 변경) + pgTAP + 적대검증 재실행 필요. **남은 슬라이스가 live_stats 트리거를 건드리면(특히 1f 풀 산정) 함께 처리 고려**.
 - **Depends on / blocked by**: 없음(독립). 1d(#218) 머지 후 언제든 별도 PR 가능.
-- **Status**: 추적만(미착수). 별도 PR 대기.
+- **Status**: ✅ **해소(1f D6·T2)** — `20260704100100_ops_1f_live_stats_deferred.sql`에서 트리거 6종(participants/seats/tables/blind_levels/clock + 신설 tournaments)을 `AFTER ROW` → `CONSTRAINT TRIGGER DEFERRABLE INITIALLY DEFERRED`로 전환. LS행 락이 항상 커밋 직전 최후라 `{advisory,대회,참가자,좌석} < LS` 전역 순서 복원 → bust의 `LS<{S,P}` 역전 및 `(P,S)→LS` ABBA 순환 근원 제거. pgTAP `ops_live_stats_deferred.test.sql` DEFERRED RED-GREEN 실증. E1(자기 txn live_stats 읽는 RPC 없음) grep 실측 확인. 이 슬라이스에 편입.
 
 ### [LOW] 배정 2종 fast-follow (PR #220 비차단 잔여, 적대 최종리뷰 triage)
 

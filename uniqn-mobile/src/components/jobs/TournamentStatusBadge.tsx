@@ -324,5 +324,3 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
     </>
   );
 });
-
-export default TournamentStatusBadge;

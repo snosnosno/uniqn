@@ -241,5 +241,3 @@ export const ApprovalModal = memo(function ApprovalModal({
     </Modal>
   );
 });
-
-export default ApprovalModal;

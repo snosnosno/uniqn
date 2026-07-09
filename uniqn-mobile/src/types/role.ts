@@ -167,21 +167,6 @@ export function isStaffRole(value: unknown): value is StaffRole {
   return typeof value === 'string' && VALID_STAFF_ROLES.includes(value as StaffRole);
 }
 
-// ============================================================================
-// Utility Functions
-// ============================================================================
-
-/**
- * UserRole 표시명 반환
- *
- * @param role - UserRole 또는 null
- * @returns 한글 표시명 또는 빈 문자열
- */
-export function getUserRoleLabel(role: UserRole | null | undefined): string {
-  if (!role) return '';
-  return USER_ROLE_LABELS[role] ?? '';
-}
-
 /**
  * StaffRole 표시명 반환
  *

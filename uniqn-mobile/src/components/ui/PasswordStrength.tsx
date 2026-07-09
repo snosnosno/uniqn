@@ -183,5 +183,3 @@ export const PasswordStrength = React.memo(function PasswordStrength({
     </View>
   );
 });
-
-export default PasswordStrength;

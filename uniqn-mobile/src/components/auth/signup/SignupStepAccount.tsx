@@ -178,5 +178,3 @@ export function SignupStepAccount({
     </View>
   );
 }
-
-export default SignupStepAccount;

@@ -128,5 +128,3 @@ export const PostingTypeSelector = memo(function PostingTypeSelector({
     </View>
   );
 });
-
-export default PostingTypeSelector;

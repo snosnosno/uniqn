@@ -11,7 +11,7 @@
 
 - 앱 입력/문서 스키마: `uniqn-mobile/src/schemas/`
 - 앱 타입: `uniqn-mobile/src/types/`
-- DB 타입(자동 생성): `uniqn-mobile/src/lib/database.types.ts`
+- DB 타입(자동 생성): `uniqn-mobile/src/types/supabase.ts`
 - PostgreSQL 접근 규칙: `uniqn-mobile/src/repositories/supabase/`
 - 테이블/RLS/RPC/트리거 정의: `uniqn-mobile/supabase/migrations/`
 - 서버 후처리/집계/검증: `uniqn-mobile/supabase/functions/` (Edge Functions) + PostgreSQL 트리거 + RPC
@@ -104,6 +104,7 @@
 - `check_in_time`
 - `check_out_time`
 - `status`
+- `payroll_*` (정산 관련 컬럼 — 정산은 별도 테이블 없이 `work_logs.payroll_*` 컬럼으로 관리)
 
 ### `notifications`
 
@@ -129,7 +130,6 @@ unread 카운터는 별도 `notification_counters` 테이블에서 PostgreSQL �
 - `announcements`
 - `reports`
 - `inquiries`
-- `settlements`
 - `event_qr_codes`
 - `job_posting_templates`
 - `app_config`
@@ -144,7 +144,7 @@ unread 카운터는 별도 `notification_counters` 테이블에서 PostgreSQL �
 
 ## 현재 스키마 해석 원칙
 
-- 문서보다 코드가 우선이며, 스키마 최종 진실은 `uniqn-mobile/supabase/migrations/` 마이그레이션 및 `uniqn-mobile/src/lib/database.types.ts`입니다.
+- 문서보다 코드가 우선이며, 스키마 최종 진실은 `uniqn-mobile/supabase/migrations/` 마이그레이션 및 `uniqn-mobile/src/types/supabase.ts`입니다.
 - `job_postings`는 strict parse 기반 canonical 문서를 우선합니다.
 - 레거시 fallback이 일부 남아 있어도 새 문서는 canonical 필드만 써야 합니다.
 - 결제/포인트 관련 테이블은 현재 운영 스키마가 아닙니다.
@@ -158,5 +158,5 @@ unread 카운터는 별도 `notification_counters` 테이블에서 PostgreSQL �
 - `uniqn-mobile/src/types/notification.ts`
 - `uniqn-mobile/src/repositories/supabase/JobPostingRepository.ts`
 - `uniqn-mobile/src/repositories/supabase/NotificationRepository.ts`
-- `uniqn-mobile/src/lib/database.types.ts`
+- `uniqn-mobile/src/types/supabase.ts`
 - `uniqn-mobile/supabase/migrations/20260409000000_base_schema.sql` (핵심 테이블 정의)

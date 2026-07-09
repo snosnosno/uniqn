@@ -87,5 +87,3 @@ export function RecentNoticesWidget() {
     </DashboardWidgetShell>
   );
 }
-
-export default RecentNoticesWidget;

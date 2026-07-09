@@ -297,5 +297,3 @@ export function AddStaffModal({
     </SheetModal>
   );
 }
-
-export default AddStaffModal;

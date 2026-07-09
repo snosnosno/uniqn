@@ -7,7 +7,7 @@
 
 - 저장소 전체보다 먼저 `README.md`를 읽습니다.
 - 현재 제품 기준은 `uniqn-mobile/`입니다. 백엔드는 Supabase로 이전 완료(2026-04-11).
-- `functions/`(Firebase Functions)와 `app2/`는 레거시 참고용이며 현재 배포 기준으로 사용하지 않습니다.
+- 과거 Firebase Functions(`functions/`)와 레거시 웹앱(`app2/`)은 제거 완료되었으며 저장소에 남아있지 않습니다.
 
 ## 개발 환경
 
@@ -79,14 +79,14 @@ npm run e2e
 cd uniqn-mobile
 supabase start                  # 로컬 부팅 (마이그레이션 자동 적용)
 supabase test db                # pgTAP 테스트 (npm run test:db 도 동일)
-supabase gen types typescript --local > src/lib/database.types.ts
+supabase gen types typescript --local > src/types/supabase.ts
 ```
 
 prod 적용:
 
 - Claude Code 의 `mcp__supabase__apply_migration` 호출
 - 또는 Supabase Dashboard SQL Editor 수동 실행
-- 적용 후 `supabase gen types typescript --linked > src/lib/database.types.ts` 로 타입 재생성
+- 적용 후 `supabase gen types typescript --linked > src/types/supabase.ts` 로 타입 재생성
 
 새 마이그레이션은 가장 최근 timestamp 로 추가하되, 더 이른 timestamp 라도 prod
 영향은 CREATE OR REPLACE / IF NOT EXISTS / IF EXISTS 패턴으로 idempotent 보장 시

@@ -99,5 +99,3 @@ export function VenueCreateSheet({
     </SheetModal>
   );
 }
-
-export default VenueCreateSheet;

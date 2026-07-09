@@ -457,5 +457,3 @@ export function WorkTimeEditor({
     </>
   );
 }
-
-export default WorkTimeEditor;

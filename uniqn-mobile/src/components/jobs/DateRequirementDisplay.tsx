@@ -180,5 +180,3 @@ export const DateRequirementDisplay = memo(function DateRequirementDisplay({
     </View>
   );
 });
-
-export default DateRequirementDisplay;

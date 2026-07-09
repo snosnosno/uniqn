@@ -13,7 +13,7 @@ import type { OpsBlindLevel } from '@/types/ops';
 import type { OpsBlindLevelInput } from '@/schemas/opsBlindLevel.schema';
 import { BlindLevelForm } from './BlindLevelForm';
 
-const fmt = (n: number) => n.toLocaleString('ko-KR');
+import { formatNumber as fmt } from '@/utils/formatters/currency';
 
 const toInput = (l: OpsBlindLevel): OpsBlindLevelInput => ({
   level: l.level,
@@ -185,5 +185,3 @@ export function BlindLevelsTab({ tournamentId }: BlindLevelsTabProps) {
     </View>
   );
 }
-
-export default BlindLevelsTab;

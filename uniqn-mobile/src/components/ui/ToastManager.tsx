@@ -61,5 +61,3 @@ export function ToastManager() {
     </View>
   );
 }
-
-export default ToastManager;

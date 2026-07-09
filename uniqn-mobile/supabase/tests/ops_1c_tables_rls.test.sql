@@ -2,6 +2,8 @@
 --   신규 대회 INSERT 시 clock+live_stats 자동생성.
 -- 패턴: ops_tables_rls.test.sql(멤버십 RLS) + ops_entry_number_allocation.test.sql(postgres 역할전환).
 BEGIN;
+-- 1f: live_stats 트리거가 DEFERRED 로 전환됨 — 이 파일은 같은 txn 에서 live_stats 를 단언하므로 즉시 발화 강제.
+SET CONSTRAINTS ALL IMMEDIATE;
 SELECT plan(19);
 
 -- ─── (a) 세 테이블 존재 ───

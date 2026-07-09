@@ -7,5 +7,3 @@ interface SheetProviderProps {
 export function SheetProvider({ children }: SheetProviderProps) {
   return <>{children}</>;
 }
-
-export default SheetProvider;

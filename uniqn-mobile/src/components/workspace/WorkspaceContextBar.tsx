@@ -31,5 +31,3 @@ export function WorkspaceContextBar({ onChange }: WorkspaceContextBarProps) {
     </View>
   );
 }
-
-export default WorkspaceContextBar;

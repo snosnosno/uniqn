@@ -157,5 +157,3 @@ export function useAndroidOrientationPolicy() {
     void flushOrientationPolicy();
   }, [nextPolicy]);
 }
-
-export default useAndroidOrientationPolicy;

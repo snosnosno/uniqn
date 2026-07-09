@@ -4,6 +4,7 @@
  * 앱은 camelCase, DB 는 snake_case (Repository 가 매핑).
  */
 import { Constants } from '@/types/supabase';
+import type { StaffRole } from '@/types/role';
 
 export type OpsTournamentStatus = (typeof Constants.public.Enums.ops_tournament_status)[number];
 export type OpsParticipantStatus = (typeof Constants.public.Enums.ops_participant_status)[number];
@@ -57,6 +58,7 @@ export interface OpsParticipant {
   rebuys: number;
   addOns: number;
   reentries: number;
+  knockouts: number;
   finishPosition?: number | null;
   bustedAt?: string | null;
   prizeAmount?: number | null;
@@ -79,6 +81,23 @@ export interface OpsBustResult {
   prizeAmount: number | null;
   winnerFinalized: boolean;
   winner: { participantId: string; finishPosition: number; prizeAmount: number | null } | null;
+}
+
+/** 1f: 탈락 취소 결과(bust 직전 상태 복원 — reentries 불변·칩 복원). */
+export interface OpsUndoBustResult {
+  participantId: string;
+  restoredChips: number;
+  status: OpsParticipant['status'];
+  seated: boolean;
+  tableNo: number | null;
+  seatNo: number | null;
+}
+
+/** 1f: 상금 정정/회수 결과. */
+export interface OpsPrizeCorrectionResult {
+  participantId: string;
+  amountBefore: number | null;
+  amountAfter: number | null;
 }
 
 /** reenter RPC 반환. */
@@ -128,6 +147,26 @@ export interface OpsSeat {
   participantId?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/** ops_staff.source — 로스터 편입 경로(1e). */
+export type OpsStaffSource = 'snapshot_import' | 'manual';
+
+/**
+ * 대회 스태프 로스터(1e) — 확정 스태프 스냅샷(import) 또는 수동 추가(manual).
+ * source_work_log_id 는 snapshot_import 출처에서만 채워짐(work_logs 는 SSOT·읽기전용, 여기엔 스냅샷만 보관).
+ */
+export interface OpsStaff {
+  id: string;
+  tournamentId: string;
+  staffId: string;
+  role: StaffRole;
+  customRole: string | null;
+  staffName: string;
+  staffNickname: string | null;
+  source: OpsStaffSource;
+  sourceWorkLogId: string | null;
+  createdAt: string;
 }
 
 /** STATUS 부분통계 (1a — 참가자 파생만, 클라이언트 계산). 좌석/블라인드 의존 값은 1b/1c. */
@@ -232,6 +271,7 @@ export interface OpsMonitorSnapshot {
     averageStack: number;
     avgStackBb: number;
     prizePool: number;
+    knockoutPool: number | null;
   };
   /** 서버 시각(ISO) — 클라 offset 보정용(기기 시계 오차 보정). */
   serverNow: string;
@@ -257,9 +297,11 @@ export interface OpsPlayerView {
     chips: number;
     finishPosition: number | null;
     prizeAmount: number | null;
+    bountyAccrued: number | null;
     rebuys: number;
     addOns: number;
     reentries: number;
+    knockouts: number;
     /** 본인 좌석(미착석이면 null). */
     tableNo: number | null;
     seatNo: number | null;

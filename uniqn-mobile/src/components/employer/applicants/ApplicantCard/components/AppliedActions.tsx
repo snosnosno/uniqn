@@ -100,5 +100,3 @@ export const AppliedActions = React.memo(function AppliedActions({
     </View>
   );
 });
-
-export default AppliedActions;

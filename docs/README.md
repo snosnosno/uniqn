@@ -55,10 +55,10 @@
 - `planning/*`
 - `features/*`
 - 날짜가 들어간 운영 로그/감사 대응 문서
-- `../ROADMAP.md`
-- `../TODO.md`
-- `../mobile-payment-plan.md`
-- `../refactor PLAN.md`
+- `archive/planning/2026-04/ROADMAP.md`
+- `archive/planning/2026-04/TODO.md`
+- `archive/planning/2026-04/mobile-payment-plan.md`
+- `archive/planning/2026-04/refactor-PLAN.md`
 
 아카이브 문서를 읽을 때는 현재 코드와 일치한다고 가정하지 말고, 먼저 활성 문서와 실제 구현을 확인합니다.
 

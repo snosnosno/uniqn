@@ -153,5 +153,3 @@ export const NotificationIcon = memo(function NotificationIcon({
     </View>
   );
 });
-
-export default NotificationIcon;

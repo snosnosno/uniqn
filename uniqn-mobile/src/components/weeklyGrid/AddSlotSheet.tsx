@@ -415,5 +415,3 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
     </Modal>
   );
 }
-
-export default AddSlotSheet;

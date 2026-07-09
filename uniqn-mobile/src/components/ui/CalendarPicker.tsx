@@ -477,5 +477,3 @@ export const CalendarPicker = memo(function CalendarPicker({
     </View>
   );
 });
-
-export default CalendarPicker;

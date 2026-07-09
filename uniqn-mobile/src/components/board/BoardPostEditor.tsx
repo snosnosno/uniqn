@@ -146,8 +146,6 @@ export function BoardPostEditor({
   );
 }
 
-export default BoardPostEditor;
-
 interface BoardPostEditorLoadingProps {
   title?: string;
 }

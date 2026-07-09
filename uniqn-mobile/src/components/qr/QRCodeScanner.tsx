@@ -352,5 +352,3 @@ export function QRCodeScanner({
     </RNModal>
   );
 }
-
-export default QRCodeScanner;

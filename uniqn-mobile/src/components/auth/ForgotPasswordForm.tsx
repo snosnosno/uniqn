@@ -142,5 +142,3 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
     </View>
   );
 }
-
-export default ForgotPasswordForm;

@@ -321,5 +321,3 @@ export const ConfirmationHistoryTimeline = memo(function ConfirmationHistoryTime
     </View>
   );
 });
-
-export default ConfirmationHistoryTimeline;

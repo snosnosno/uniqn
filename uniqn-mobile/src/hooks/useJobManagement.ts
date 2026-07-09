@@ -404,5 +404,3 @@ export function useJobManagement() {
     isBulkUpdating: bulkStatusMutation.isPending,
   };
 }
-
-export default useJobManagement;

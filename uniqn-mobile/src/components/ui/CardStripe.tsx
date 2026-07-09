@@ -54,5 +54,3 @@ export function CardStripe({
     </View>
   );
 }
-
-export default CardStripe;

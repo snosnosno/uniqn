@@ -15,7 +15,7 @@ import {
   useAdjustClock,
 } from '@/hooks/ops';
 
-const fmt = (n: number) => n.toLocaleString('ko-KR');
+import { formatNumber as fmt } from '@/utils/formatters/currency';
 
 /** 남은 초 → mm:ss (음수는 00:00 으로 clamp). */
 function formatMmSs(totalSec: number): string {
@@ -211,5 +211,3 @@ export function ClockControl({ tournamentId, onNavigateToLevels }: ClockControlP
     </View>
   );
 }
-
-export default ClockControl;

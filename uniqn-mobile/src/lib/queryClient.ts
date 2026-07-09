@@ -582,6 +582,8 @@ export const queryKeys = {
     player: (token: string) => [...queryKeys.ops.all, 'player', token] as const,
     // 1d — 순위별 상금 구조
     prizes: (tournamentId: string) => [...queryKeys.ops.all, 'prizes', tournamentId] as const,
+    // 1e — 스태프 로스터(공고연결 스냅샷 import + 수동 추가)
+    staff: (tournamentId: string) => [...queryKeys.ops.all, 'staff', tournamentId] as const,
   },
 
   // 앱 설정 플래그 (app_config) — 원격 기능 토글
@@ -793,5 +795,3 @@ export async function invalidateRelated(primaryKey: keyof typeof invalidationGra
     }
   }
 }
-
-export default queryClient;

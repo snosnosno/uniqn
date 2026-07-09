@@ -49,5 +49,3 @@ export function confirmAction({
     },
   ]);
 }
-
-export default confirmAction;

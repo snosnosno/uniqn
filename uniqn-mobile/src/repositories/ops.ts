@@ -13,6 +13,7 @@ import { SupabaseOpsEventRepository } from './supabase/OpsEventRepository';
 import { SupabaseOpsMonitorRepository } from './supabase/OpsMonitorRepository';
 import { SupabaseOpsPlayerRepository } from './supabase/OpsPlayerRepository';
 import { SupabaseOpsPrizeRepository } from './supabase/OpsPrizeRepository';
+import { SupabaseOpsStaffRepository } from './supabase/OpsStaffRepository';
 
 export type {
   IOpsTournamentRepository,
@@ -33,6 +34,7 @@ export type { IOpsEventRepository } from './interfaces/IOpsEventRepository';
 export type { IOpsMonitorRepository } from './interfaces/IOpsMonitorRepository';
 export type { IOpsPlayerRepository } from './interfaces/IOpsPlayerRepository';
 export type { IOpsPrizeRepository } from './interfaces/IOpsPrizeRepository';
+// OpsStaffRepository(1e)는 interface 없이 클래스 직접 노출(Task 5 브리프 계약 — 재추가 금지).
 
 export { SupabaseOpsTournamentRepository } from './supabase/OpsTournamentRepository';
 export { SupabaseOpsParticipantRepository } from './supabase/OpsParticipantRepository';
@@ -45,6 +47,7 @@ export { SupabaseOpsEventRepository } from './supabase/OpsEventRepository';
 export { SupabaseOpsMonitorRepository } from './supabase/OpsMonitorRepository';
 export { SupabaseOpsPlayerRepository } from './supabase/OpsPlayerRepository';
 export { SupabaseOpsPrizeRepository } from './supabase/OpsPrizeRepository';
+export { SupabaseOpsStaffRepository } from './supabase/OpsStaffRepository';
 
 /** 프로덕션 싱글톤. */
 export const opsTournamentRepository = new SupabaseOpsTournamentRepository();
@@ -58,3 +61,4 @@ export const opsEventRepository = new SupabaseOpsEventRepository();
 export const opsMonitorRepository = new SupabaseOpsMonitorRepository();
 export const opsPlayerRepository = new SupabaseOpsPlayerRepository();
 export const opsPrizeRepository = new SupabaseOpsPrizeRepository();
+export const opsStaffRepository = new SupabaseOpsStaffRepository();

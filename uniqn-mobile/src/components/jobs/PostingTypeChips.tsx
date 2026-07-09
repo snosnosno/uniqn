@@ -107,5 +107,3 @@ export const PostingTypeChips = memo(function PostingTypeChips({
     </View>
   );
 });
-
-export default PostingTypeChips;

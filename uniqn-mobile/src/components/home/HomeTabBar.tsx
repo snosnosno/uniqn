@@ -68,5 +68,3 @@ export function HomeTabBar() {
     </View>
   );
 }
-
-export default HomeTabBar;

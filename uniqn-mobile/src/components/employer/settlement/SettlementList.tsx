@@ -397,5 +397,3 @@ export function SettlementList({
     </View>
   );
 }
-
-export default SettlementList;

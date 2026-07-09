@@ -76,5 +76,3 @@ export function MonitorLinkButton({ tournamentId, monitorToken }: MonitorLinkBut
     </View>
   );
 }
-
-export default MonitorLinkButton;

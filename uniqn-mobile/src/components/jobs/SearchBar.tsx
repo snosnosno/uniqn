@@ -80,5 +80,3 @@ export const SearchBar = memo(function SearchBar({
     </View>
   );
 });
-
-export default SearchBar;

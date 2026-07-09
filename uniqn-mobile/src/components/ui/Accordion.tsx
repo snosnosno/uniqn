@@ -191,5 +191,3 @@ export const Accordion = {
   Item: AccordionItem,
   Group: AccordionGroup,
 };
-
-export default Accordion;

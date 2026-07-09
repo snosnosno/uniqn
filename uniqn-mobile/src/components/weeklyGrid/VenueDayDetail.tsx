@@ -112,5 +112,3 @@ export function VenueDayDetail({ venueId, date, onSlotPress, onAddPress }: Venue
     </View>
   );
 }
-
-export default VenueDayDetail;

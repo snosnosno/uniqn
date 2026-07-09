@@ -18,5 +18,3 @@ export function PostingStatusBadge({ status, size = 'sm', className }: PostingSt
     </Badge>
   );
 }
-
-export default PostingStatusBadge;

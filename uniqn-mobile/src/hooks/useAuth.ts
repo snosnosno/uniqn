@@ -84,5 +84,3 @@ export function useAuth(): UseAuthReturn {
     isStaff: store.isStaff,
   };
 }
-
-export default useAuth;

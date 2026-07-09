@@ -45,5 +45,3 @@ function AppFlashListInner<T>({ ref, estimatedItemSize, ...rest }: AppFlashListP
 export const AppFlashList = AppFlashListInner as <T>(
   props: AppFlashListProps<T>
 ) => React.JSX.Element;
-
-export default AppFlashList;

@@ -72,5 +72,3 @@ export function useNotificationHandler(
     openSettings: setup.openSettings,
   };
 }
-
-export default useNotificationHandler;

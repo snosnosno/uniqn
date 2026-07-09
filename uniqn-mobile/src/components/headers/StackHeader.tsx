@@ -48,5 +48,3 @@ export function StackHeader({
     </View>
   );
 }
-
-export default StackHeader;

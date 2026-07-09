@@ -25,5 +25,3 @@ export function useVenueContainers(
     staleTime: cachingPolicies.frequent,
   });
 }
-
-export default useVenueContainers;

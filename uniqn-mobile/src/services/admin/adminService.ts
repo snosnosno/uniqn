@@ -217,5 +217,3 @@ export const adminService = {
   setUserActive,
   getSystemMetrics,
 };
-
-export default adminService;

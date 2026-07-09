@@ -269,5 +269,3 @@ export const versionInfo = {
     return getStoreUrl();
   },
 } as const;
-
-export default versionInfo;

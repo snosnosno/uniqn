@@ -165,5 +165,3 @@ export const JobCard = memo(function JobCard({
     />
   );
 });
-
-export default JobCard;

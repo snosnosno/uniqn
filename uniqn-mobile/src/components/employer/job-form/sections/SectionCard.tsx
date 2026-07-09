@@ -130,5 +130,3 @@ export const SectionCard = memo(function SectionCard({
     </View>
   );
 });
-
-export default SectionCard;

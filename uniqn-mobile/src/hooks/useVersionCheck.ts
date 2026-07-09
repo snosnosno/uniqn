@@ -281,5 +281,3 @@ export function useVersionCheck(): UseVersionCheckReturn {
     recheckVersion,
   };
 }
-
-export default useVersionCheck;

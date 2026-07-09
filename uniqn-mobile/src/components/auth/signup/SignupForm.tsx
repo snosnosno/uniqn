@@ -380,5 +380,3 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
     </KeyboardAwareScrollView>
   );
 }
-
-export default SignupForm;

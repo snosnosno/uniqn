@@ -442,5 +442,3 @@ export const AllowanceEditor = memo(function AllowanceEditor({
     </View>
   );
 });
-
-export default AllowanceEditor;

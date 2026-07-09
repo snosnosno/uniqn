@@ -121,5 +121,3 @@ export function FAQList({
     </View>
   );
 }
-
-export default FAQList;

@@ -135,5 +135,3 @@ export function SystemStatusCard({ status, isLoading }: SystemStatusCardProps) {
     </View>
   );
 }
-
-export default StatsSummaryCard;

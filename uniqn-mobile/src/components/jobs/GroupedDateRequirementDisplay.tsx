@@ -280,5 +280,3 @@ export const GroupedDateRequirementDisplay = memo(function GroupedDateRequiremen
     </View>
   );
 });
-
-export default GroupedDateRequirementDisplay;

@@ -79,7 +79,7 @@
 - RLS 정책: 모든 테이블에 활성화. 앱 역할은 JWT `app_metadata.role` 기준
 - Scheduled Jobs: `pg_cron` 확장을 통한 PostgreSQL 내장 스케줄링 (계정 정리, 공고 만료, rate limit 정리 등)
 - 설정: `uniqn-mobile/supabase/config.toml`
-- 타입 재생성: `uniqn-mobile/src/lib/database.types.ts` (Supabase CLI 기반 자동 생성)
+- 타입 재생성: `uniqn-mobile/src/types/supabase.ts` (Supabase CLI 기반 자동 생성)
 
 ## 리팩터링 가드레일
 

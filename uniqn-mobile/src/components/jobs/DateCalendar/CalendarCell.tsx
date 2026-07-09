@@ -149,5 +149,3 @@ export const CalendarCell = memo(function CalendarCell({
     </Pressable>
   );
 });
-
-export default CalendarCell;

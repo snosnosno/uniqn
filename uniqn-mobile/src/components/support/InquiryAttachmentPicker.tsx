@@ -222,5 +222,3 @@ export function InquiryAttachmentPicker({
     </View>
   );
 }
-
-export default InquiryAttachmentPicker;

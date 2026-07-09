@@ -239,5 +239,3 @@ DB 컬럼: {users.photo_url_blurhash, job_postings.og_image_url_blurhash,
          work_logs.staff_photo_url_blurhash}
 JSON 배열: announcements.images[i].blurhash, board_posts.image_attachments[i].blurhash
 `;
-
-export default OptimizedImage;

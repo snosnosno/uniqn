@@ -2,7 +2,8 @@
 -- 패턴: ops_clock_state.test.sql(seed·set_user·throws_ok), ops_clock_rpc_security.test.sql(has_function_privilege).
 -- ⚠️ ops_get_monitor_snapshot 만 anon-executable(화이트리스트). rotate 는 authed 전용.
 BEGIN;
-SELECT plan(18);
+SET CONSTRAINTS ALL IMMEDIATE;   -- [1f] DEFERRED live_stats 트리거 즉시 발화(bounty_cost UPDATE → knockout_pool 재계산)
+SELECT plan(20);
 
 DO $$
 DECLARE s RECORD;
@@ -99,6 +100,20 @@ SELECT set_config('role', 'anon', true);
 SELECT is(
   (public.ops_get_monitor_snapshot(current_setting('ops.tok3')) -> 'tournament' ->> 'name'),
   'ops test cup', 'anon 역할로 snapshot 호출 성공(공개 전광판 경로)');
+
+-- ─── (19~20) 1f: stats.knockoutPool ───
+-- 비-바운티 대회(시드 bounty_cost NULL) → knockoutPool = null (COALESCE 없음 = 클라 카드 숨김 신호)
+SELECT ok(
+  (public.ops_get_monitor_snapshot(current_setting('ops.tok3'))->'stats'->'knockoutPool') = 'null'::jsonb,
+  '1f: 비-바운티 knockoutPool null');
+-- bounty_cost 세팅 후 → 집계 반영(entries=1·reentries=0 → total_buyins 1 → 1*10000).
+-- 상단 SET CONSTRAINTS ALL IMMEDIATE 로 DEFERRED 트리거 즉시 발화 → live_stats.knockout_pool 재계산.
+SELECT set_config('role', 'postgres', true);
+UPDATE public.ops_tournaments SET bounty_cost = 10000
+  WHERE id = (current_setting('ops.tournament_id'))::uuid;
+SELECT is(
+  (public.ops_get_monitor_snapshot(current_setting('ops.tok3'))->'stats'->>'knockoutPool')::int, 10000,
+  '1f: bounty_cost=10000·entries=1 → knockoutPool=10000');
 
 SELECT * FROM finish();
 ROLLBACK;

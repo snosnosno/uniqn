@@ -164,5 +164,3 @@ export function useJobDetail(jobId: string, options: UseJobDetailOptions = {}) {
     refresh,
   };
 }
-
-export default useJobDetail;

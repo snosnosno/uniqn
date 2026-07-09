@@ -110,5 +110,3 @@ export function JobList({
     </View>
   );
 }
-
-export default JobList;

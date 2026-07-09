@@ -299,5 +299,3 @@ export function AnnouncementImagePicker({
     </View>
   );
 }
-
-export default AnnouncementImagePicker;

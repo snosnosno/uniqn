@@ -448,5 +448,3 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
     </CardStripe>
   );
 });
-
-export default GroupedSettlementCard;

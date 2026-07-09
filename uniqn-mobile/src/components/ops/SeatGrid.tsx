@@ -71,5 +71,3 @@ export function SeatGrid({
     </View>
   );
 }
-
-export default SeatGrid;

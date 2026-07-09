@@ -7,7 +7,6 @@
 
 import type { FirebaseDocument } from './common';
 import type { UserRole } from './role';
-import { toDate } from '@/utils/date';
 
 // ============================================================================
 // 카테고리 및 상태
@@ -245,15 +244,6 @@ export const ANNOUNCEMENT_STATUS_CONFIG: Record<
 };
 
 /**
- * 상태 라벨 맵
- */
-export const ANNOUNCEMENT_STATUS_LABELS: Record<AnnouncementStatus, string> = {
-  draft: '초안',
-  published: '발행됨',
-  archived: '보관됨',
-};
-
-/**
  * 우선순위 정보
  */
 export const ANNOUNCEMENT_PRIORITY_CONFIG: Record<
@@ -290,14 +280,6 @@ export const ANNOUNCEMENT_PRIORITY_LABELS: Record<AnnouncementPriority, string> 
   2: '긴급',
 };
 
-/**
- * 대상 유형 라벨 맵
- */
-export const TARGET_AUDIENCE_LABELS: Record<'all' | 'roles', string> = {
-  all: '전체',
-  roles: '역할 지정',
-};
-
 // ============================================================================
 // 유틸리티 함수
 // ============================================================================
@@ -309,28 +291,6 @@ export function getCategoryInfo(
   category: AnnouncementCategory
 ): AnnouncementCategoryInfo | undefined {
   return ANNOUNCEMENT_CATEGORIES.find((c) => c.key === category);
-}
-
-/**
- * 사용자 역할에 해당하는 공지사항인지 확인
- */
-export function isAnnouncementForRole(
-  announcement: Announcement,
-  userRole: UserRole | null
-): boolean {
-  const { targetAudience } = announcement;
-
-  // 전체 대상이면 true
-  if (targetAudience.type === 'all') {
-    return true;
-  }
-
-  // 역할 지정이면 해당 역할 확인
-  if (targetAudience.type === 'roles' && targetAudience.roles && userRole) {
-    return targetAudience.roles.includes(userRole);
-  }
-
-  return false;
 }
 
 /**
@@ -357,30 +317,4 @@ export function getAnnouncementImages(announcement: Announcement): AnnouncementI
   }
 
   return [];
-}
-
-/**
- * 공지사항 정렬 (고정 > 우선순위 > 발행일)
- */
-export function sortAnnouncements(announcements: Announcement[]): Announcement[] {
-  return [...announcements].sort((a, b) => {
-    // 1. 고정 공지 우선
-    if (a.isPinned !== b.isPinned) {
-      return a.isPinned ? -1 : 1;
-    }
-
-    // 2. 우선순위 높은 순
-    if (a.priority !== b.priority) {
-      return b.priority - a.priority;
-    }
-
-    // 3. 발행일 최신순
-    const aPublished = a.publishedAt ? toDate(a.publishedAt) : undefined;
-    const bPublished = b.publishedAt ? toDate(b.publishedAt) : undefined;
-    const aCreated = a.createdAt ? toDate(a.createdAt) : undefined;
-    const bCreated = b.createdAt ? toDate(b.createdAt) : undefined;
-    const aTime = (aPublished ?? aCreated ?? new Date(0)).getTime();
-    const bTime = (bPublished ?? bCreated ?? new Date(0)).getTime();
-    return bTime - aTime;
-  });
 }

@@ -3,8 +3,9 @@
  */
 import { logger } from '@/utils/logger';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
-import { isAppError } from '@/errors';
+import { isAppError, ValidationError, ERROR_CODES } from '@/errors';
 import { opsSeatRepository } from '@/repositories/ops';
+import { reseatModeSchema, reseatAssignmentsSchema } from '@/schemas/opsSeat.schema';
 import type { WaitlistAssignment, SeatAssignment } from '@/domains/ops';
 
 const COMPONENT = 'opsSeatService';
@@ -70,6 +71,16 @@ export async function reseatParticipants(
   mode: 'random_draw' | 'chip_draft'
 ): Promise<{ moved: number; seated: number; mode: string }> {
   try {
+    // 서비스 경계 검증(addTable 선례) — 배정 목록(uuid형·참가자/좌석 중복금지·최소1)·모드 enum safeParse.
+    const parsedMode = reseatModeSchema.safeParse(mode);
+    const parsedAssignments = reseatAssignmentsSchema.safeParse(assignments);
+    if (!parsedMode.success || !parsedAssignments.success) {
+      const first =
+        parsedAssignments.error?.issues[0]?.message ?? parsedMode.error?.issues[0]?.message;
+      throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+        userMessage: typeof first === 'string' ? first : '입력값을 확인해 주세요.',
+      });
+    }
     logger.info('ops 전원 재배치', {
       component: COMPONENT,
       tournamentId,

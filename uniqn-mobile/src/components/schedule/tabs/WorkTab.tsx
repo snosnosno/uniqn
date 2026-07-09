@@ -230,5 +230,3 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
     </View>
   );
 });
-
-export default WorkTab;

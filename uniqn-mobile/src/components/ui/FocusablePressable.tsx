@@ -66,5 +66,3 @@ export const FocusablePressable = forwardRef<View, FocusablePressableProps>(
     );
   }
 );
-
-export default FocusablePressable;

@@ -139,5 +139,3 @@ export function DashboardWidgetShell({
     </Card>
   );
 }
-
-export default DashboardWidgetShell;

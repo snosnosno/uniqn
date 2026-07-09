@@ -30,5 +30,3 @@ export function useRegularDateCounts(visibleMonth: Date) {
     gcTime: cachingPolicies.standard * 2,
   });
 }
-
-export default useRegularDateCounts;

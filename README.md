@@ -3,7 +3,7 @@
 최종 업데이트: 2026-06-19  
 현재 기준 코드: `uniqn-mobile/`
 
-이 저장소의 현재 source of truth는 모바일 앱 `uniqn-mobile/`입니다. 백엔드는 Supabase(Auth + PostgreSQL + Realtime)로 이전 완료(2026-04-11). `functions/`(Firebase Functions)는 레거시 참고용으로만 보존하며 현재 배포 기준으로 사용하지 않습니다. 과거 웹 실험물과 이관 참고 자료는 저장소 밖 백업 또는 아카이브 문서로만 관리합니다.
+이 저장소의 현재 source of truth는 모바일 앱 `uniqn-mobile/`입니다. 백엔드는 Supabase(Auth + PostgreSQL + Realtime)로 이전 완료(2026-04-11). 과거 Firebase Functions는 제거 완료되었으며 저장소 루트에 남아있지 않습니다. 과거 웹 실험물과 이관 참고 자료는 저장소 밖 백업 또는 아카이브 문서로만 관리합니다.
 
 ## 현재 워크스페이스
 
@@ -12,7 +12,6 @@
 - `docs/`: 현재 운영/개발 문서 허브
 - `wiki/`: LLM 지식 합성 레이어 (architecture/decisions/domain/sources). 규약 `wiki/AGENTS.md`, 운영 `/ingest`·`/query`·`/lint`
 - `specs/`: 설계 기록 및 이행 아카이브
-- `functions/`: Firebase Functions (레거시, 참고용만)
 
 ## 빠른 시작
 
@@ -49,10 +48,8 @@ npx supabase functions serve  # Edge Functions 로컬 실행
 ### Supabase Edge Functions
 
 - `npx supabase functions serve`: Edge Functions 로컬 실행
-- `npx supabase db push`: 마이그레이션 적용
+- 마이그레이션 적용: MCP `apply_migration` 전용 (`npx supabase db push` 금지 — CONTRIBUTING.md 참조)
 - `npx supabase gen types typescript`: DB 타입 재생성
-
-> `functions/` (Firebase Functions)는 레거시이며 더 이상 배포하지 않습니다.
 
 ## 구조 기준
 
@@ -71,7 +68,7 @@ npx supabase functions serve  # Edge Functions 로컬 실행
 
 - Edge Functions: `uniqn-mobile/supabase/functions/`
 - 마이그레이션: `uniqn-mobile/supabase/migrations/`
-- DB 타입: `uniqn-mobile/src/lib/database.types.ts`
+- DB 타입: `uniqn-mobile/src/types/supabase.ts`
 
 ## 현재 아키텍처 원칙
 
@@ -105,4 +102,4 @@ npx supabase functions serve  # Edge Functions 로컬 실행
 - 문서보다 코드가 우선입니다.
 - 아카이브 문서는 현재 구현을 설명하지 않습니다.
 - 게시판 작업 영역은 별도 진행 중이므로, 구조 정리 시 보호 범위로 취급합니다.
-- 출시 전 검증 기준은 `uniqn-mobile/`의 `npm run quality`와 `functions/`의 `npm run build`, `npm test`입니다.
+- 출시 전 검증 기준은 `uniqn-mobile/`의 `npm run quality` 단독입니다.

@@ -254,5 +254,3 @@ export const ScheduleSection = memo(function ScheduleSection({
       );
   }
 });
-
-export default ScheduleSection;

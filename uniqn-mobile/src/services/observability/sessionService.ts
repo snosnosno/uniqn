@@ -191,5 +191,3 @@ export const sessionService = {
   cleanup,
   getSessionState,
 };
-
-export default sessionService;

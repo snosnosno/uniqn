@@ -113,5 +113,3 @@ export const CardHeader = React.memo(function CardHeader({
     </View>
   );
 });
-
-export default CardHeader;

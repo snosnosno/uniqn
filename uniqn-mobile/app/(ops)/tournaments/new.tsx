@@ -1,10 +1,12 @@
-/** ops 대회 생성 폼 (1a). */
-import { useState } from 'react';
+/** ops 대회 생성 폼 (1a). 1e — "공고 연결(선택)" 필드 + `?postingId=` 프리셋. */
+import { useMemo, useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { StackHeader } from '@/components/headers';
 import { useCreateOpsTournament } from '@/hooks/ops';
+import { PostingPickerSheet } from '@/components/ops';
+import { useMyJobPostings } from '@/hooks/useJobManagement';
 
 function NumField({
   label,
@@ -35,8 +37,17 @@ const toInt = (v: string) => {
   return Number.isFinite(n) ? n : 0;
 };
 
+// 바운티 전용: 빈칸 = null(비-바운티). toInt 는 빈칸→0 이라 바운티에 부적합.
+const toIntOrNull = (v: string): number | null => {
+  const digits = v.replace(/[^0-9]/g, '');
+  return digits === '' ? null : parseInt(digits, 10);
+};
+
 export default function OpsTournamentCreateScreen() {
   const createMut = useCreateOpsTournament();
+  const { postingId: postingIdParam } = useLocalSearchParams<{ postingId?: string }>();
+  const presetPostingId = Array.isArray(postingIdParam) ? postingIdParam[0] : postingIdParam;
+  const { data: myPostings } = useMyJobPostings();
 
   const [name, setName] = useState('');
   const [venue, setVenue] = useState('');
@@ -51,6 +62,14 @@ export default function OpsTournamentCreateScreen() {
   const [rebuyCost, setRebuyCost] = useState('50000');
   const [addonChips, setAddonChips] = useState('20000');
   const [addonCost, setAddonCost] = useState('30000');
+  const [bountyCost, setBountyCost] = useState(''); // 빈칸 = 비-바운티(null)
+  const [jobPostingId, setJobPostingId] = useState<string | undefined>(presetPostingId);
+  const [showPostingPicker, setShowPostingPicker] = useState(false);
+
+  const selectedPosting = useMemo(
+    () => (myPostings ?? []).find((p) => p.id === jobPostingId) ?? null,
+    [myPostings, jobPostingId]
+  );
 
   const canSubmit = name.trim().length > 0 && !createMut.isPending;
 
@@ -61,6 +80,7 @@ export default function OpsTournamentCreateScreen() {
         venue: venue.trim() || undefined,
         eventDate: eventDate.trim() || undefined,
         gameType: gameType.trim() || 'NLH',
+        jobPostingId,
         startingChips: toInt(startingChips),
         seatsPerTable: toInt(seatsPerTable) || 9,
         config: {
@@ -71,6 +91,7 @@ export default function OpsTournamentCreateScreen() {
           feeCost: toInt(feeCost),
           rebuyCost: toInt(rebuyCost),
           addonCost: toInt(addonCost),
+          bountyCost: toIntOrNull(bountyCost),
         },
       },
       {
@@ -103,6 +124,45 @@ export default function OpsTournamentCreateScreen() {
           placeholderTextColor="#9CA3AF"
           className="mb-3 rounded-md border border-gray-300 px-3 py-2 text-content-primary dark:border-gray-700 dark:text-off-white"
         />
+
+        <Text className="mb-1 text-xs text-secondary-500 dark:text-secondary-400">
+          공고 연결(선택)
+        </Text>
+        {jobPostingId ? (
+          <View className="mb-3 flex-row items-center justify-between rounded-md border border-gray-300 px-3 py-2 dark:border-gray-700">
+            <Text
+              numberOfLines={1}
+              className="mr-2 flex-1 text-content-primary dark:text-off-white"
+            >
+              {selectedPosting?.title ?? '연결됨(목록에서 찾을 수 없음)'}
+            </Text>
+            <View className="flex-row gap-3">
+              <Pressable
+                onPress={() => setShowPostingPicker(true)}
+                accessibilityRole="button"
+                testID="ops-create-posting-change"
+              >
+                <Text className="text-sm text-primary-600 dark:text-primary-400">변경</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setJobPostingId(undefined)}
+                accessibilityRole="button"
+                testID="ops-create-posting-clear"
+              >
+                <Text className="text-sm text-error-600 dark:text-error-400">해제</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : (
+          <Pressable
+            onPress={() => setShowPostingPicker(true)}
+            accessibilityRole="button"
+            testID="ops-create-posting-select"
+            className="mb-3 rounded-md border border-gray-300 px-3 py-2 dark:border-gray-700"
+          >
+            <Text className="text-secondary-500 dark:text-secondary-400">공고를 선택하세요</Text>
+          </Pressable>
+        )}
 
         <View className="flex-row gap-3">
           <View className="flex-1">
@@ -149,7 +209,7 @@ export default function OpsTournamentCreateScreen() {
         </View>
         <View className="flex-row gap-3">
           <NumField label="수수료(fee)" value={feeCost} onChange={setFeeCost} />
-          <View className="flex-1" />
+          <NumField label="바운티 (선택)" value={bountyCost} onChange={setBountyCost} />
         </View>
 
         <Pressable
@@ -163,6 +223,12 @@ export default function OpsTournamentCreateScreen() {
           </Text>
         </Pressable>
       </ScrollView>
+
+      <PostingPickerSheet
+        visible={showPostingPicker}
+        onClose={() => setShowPostingPicker(false)}
+        onSelect={(id) => setJobPostingId(id)}
+      />
     </SafeAreaView>
   );
 }

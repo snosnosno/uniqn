@@ -275,5 +275,3 @@ export function RoleChangeModal({
     </Modal>
   );
 }
-
-export default RoleChangeModal;

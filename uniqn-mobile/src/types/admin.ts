@@ -121,16 +121,6 @@ export interface AdminUserFilters {
  */
 export type AdminUserSortField = 'name' | 'email' | 'role' | 'createdAt';
 
-/**
- * 정렬 필드 레이블
- */
-export const ADMIN_USER_SORT_LABELS: Record<AdminUserSortField, string> = {
-  name: '이름',
-  email: '이메일',
-  role: '역할',
-  createdAt: '가입일',
-};
-
 // ============================================================================
 // User Update
 // ============================================================================
@@ -174,45 +164,6 @@ export interface CreatePenaltyInput {
 
 // Phase 8: USER_ROLE_LABELS는 role.ts에서 정의됨 (하위 호환성을 위해 re-export)
 export { USER_ROLE_LABELS } from './role';
-
-/**
- * 역할 배지 색상
- */
-export const USER_ROLE_BADGE_VARIANT: Record<
-  UserRole,
-  'default' | 'primary' | 'success' | 'warning' | 'error'
-> = {
-  admin: 'error',
-  employer: 'primary',
-  staff: 'success',
-};
-
-/**
- * 국가 목록
- */
-export const COUNTRIES = [
-  { code: 'KR', name: '대한민국', flag: '🇰🇷' },
-  { code: 'US', name: '미국', flag: '🇺🇸' },
-  { code: 'JP', name: '일본', flag: '🇯🇵' },
-  { code: 'CN', name: '중국', flag: '🇨🇳' },
-  { code: 'GB', name: '영국', flag: '🇬🇧' },
-  { code: 'DE', name: '독일', flag: '🇩🇪' },
-  { code: 'FR', name: '프랑스', flag: '🇫🇷' },
-  { code: 'CA', name: '캐나다', flag: '🇨🇦' },
-  { code: 'AU', name: '호주', flag: '🇦🇺' },
-  { code: 'TH', name: '태국', flag: '🇹🇭' },
-  { code: 'VN', name: '베트남', flag: '🇻🇳' },
-  { code: 'PH', name: '필리핀', flag: '🇵🇭' },
-  { code: 'MY', name: '말레이시아', flag: '🇲🇾' },
-  { code: 'SG', name: '싱가포르', flag: '🇸🇬' },
-] as const;
-
-/**
- * 국가 코드로 국가 정보 찾기
- */
-export function getCountryByCode(code: string) {
-  return COUNTRIES.find((c) => c.code === code);
-}
 
 // ============================================================================
 // Dashboard Types

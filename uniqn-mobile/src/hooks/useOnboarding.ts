@@ -33,5 +33,3 @@ export function useOnboarding(): UseOnboardingReturn {
     isLoading,
   };
 }
-
-export default useOnboarding;

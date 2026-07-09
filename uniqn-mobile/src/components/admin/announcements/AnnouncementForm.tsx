@@ -450,5 +450,3 @@ export function AnnouncementForm({
     </KeyboardAvoidingView>
   );
 }
-
-export default AnnouncementForm;

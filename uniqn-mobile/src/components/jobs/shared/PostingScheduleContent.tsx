@@ -189,5 +189,3 @@ function formatRoleLine(role: PostingRoleDisplayModel, showFilledCount: boolean)
     ? `${role.label} ${role.count}명 (${role.filled}/${role.count})`
     : `${role.label} ${role.count}명`;
 }
-
-export default PostingScheduleContent;

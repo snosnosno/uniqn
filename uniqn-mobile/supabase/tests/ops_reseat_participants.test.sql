@@ -10,7 +10,9 @@
 -- ⚠️INSUFFICIENT_SEATS pgTAP 단언 금지(RPC가 raise 안 함 — jest 전담)
 -- plan(N) = 실제 SELECT 단언 수와 정확히 일치(불일치 시 pgTAP fail).
 BEGIN;
-SELECT plan(19);
+-- 1f: live_stats 트리거가 DEFERRED 로 전환됨 — 이 파일은 같은 txn 에서 live_stats 를 단언하므로 즉시 발화 강제.
+SET CONSTRAINTS ALL IMMEDIATE;
+SELECT plan(20);
 
 -- ── 시드 ────────────────────────────────────────────────────────────────────
 -- ops_test_seed: owner(employer)·member(employer)·outsider(staff)·tournament(upcoming)·
@@ -319,7 +321,9 @@ BEGIN
 END $$;
 -- 이후 상태: s1→p_a, s2→p_c, s3→p_b, s4→p_d
 
--- [13] 칩 균형: |tbl1합 - tbl2합| ≤ 최대스택(스네이크 분배 결과 적용 검증)
+-- [13] 칩 균형: |tbl1합 - tbl2합| ≤ 착석 최대스택(스네이크 분배 결과 적용 검증)
+-- 임계는 '착석 참가자'만(ops_seats JOIN) — 미착석 30000칩 참가자(다른 시나리오 시드)를
+-- 포함하면 임계가 30000으로 부풀어 무위 통과되므로 제외. → 임계 = max(4000,3000,2000,1000).
 SELECT is(
   abs(
     COALESCE((SELECT sum(p.chips) FROM public.ops_participants p
@@ -331,9 +335,9 @@ SELECT is(
                JOIN public.ops_seats s ON s.participant_id = p.id
               WHERE s.tournament_id = (current_setting('ops.t_id'))::uuid
                 AND s.table_id = (current_setting('ops.tbl2'))::uuid), 0)
-  ) <= COALESCE((SELECT max(chips) FROM public.ops_participants
-                  WHERE tournament_id = (current_setting('ops.t_id'))::uuid
-                    AND status = 'active'), 0),
+  ) <= COALESCE((SELECT max(p.chips) FROM public.ops_participants p
+                  JOIN public.ops_seats s ON s.participant_id = p.id
+                 WHERE s.tournament_id = (current_setting('ops.t_id'))::uuid), 0),
   true,
   '칩 균형: tbl1(p_a+p_c=6000)-tbl2(p_b+p_d=4000) 편차=2000 ≤ max_chip(4000)'); -- [13]
 
@@ -422,6 +426,20 @@ SELECT is(
      AND type = 'table_redraw'),
   4,
   'table_redraw 이벤트 4건 append(랜덤·칩드래프트·derangement·checked_in 승급 각 1건)'); -- [19]
+
+-- ── N. 비-uuid 선검증(신뢰경계 방어, golden #6) ──────────────────────────────
+-- [20] 비-uuid participant_id → ::uuid 캐스트 전 정규식 선검증 → raw 22P02 대신 친절 P0001.
+--      마이그 전(선검증 부재)엔 22P02('invalid input syntax')로 SEAT_ASSIGNMENT_INVALID 미매치=RED.
+SELECT ops_test_set_user((current_setting('ops.owner_id'))::uuid);
+SELECT throws_like(
+  format($$ SELECT public.ops_reseat_participants(
+    %L::uuid, %L::uuid,
+    jsonb_build_array(jsonb_build_object('participant_id','not-a-uuid','seat_id',%L)),
+    'random_draw') $$,
+    current_setting('ops.t_id'), current_setting('ops.owner_id'),
+    current_setting('ops.s3')),
+  '%SEAT_ASSIGNMENT_INVALID%',
+  '비-uuid participant_id: ::uuid 캐스트 전 선검증 → SEAT_ASSIGNMENT_INVALID (raw 22P02 아님)'); -- [20]
 
 SELECT * FROM finish();
 ROLLBACK;

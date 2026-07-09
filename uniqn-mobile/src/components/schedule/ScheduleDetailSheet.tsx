@@ -293,5 +293,3 @@ export function ScheduleDetailSheet({
     </Modal>
   );
 }
-
-export default ScheduleDetailSheet;

@@ -174,5 +174,3 @@ export function useBookmarks(): UseBookmarksReturn {
     clearBookmarks,
   };
 }
-
-export default useBookmarks;

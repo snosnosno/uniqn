@@ -240,5 +240,3 @@ export const Radio = memo(function Radio({
     </View>
   );
 });
-
-export default Radio;

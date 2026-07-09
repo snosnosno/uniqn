@@ -79,5 +79,3 @@ export function PublicBottomTabBar({
 }
 
 export type { ProtectedPublicBottomTabKey, PublicBottomTabKey };
-
-export default PublicBottomTabBar;

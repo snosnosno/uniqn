@@ -409,5 +409,3 @@ export function ReportModal({
     </Modal>
   );
 }
-
-export default ReportModal;

@@ -121,5 +121,3 @@ export const FixedBadge = memo(function FixedBadge({
 }: Omit<PostingTypeBadgeProps, 'type'>) {
   return <PostingTypeBadge type="fixed" size={size} className={className} />;
 });
-
-export default PostingTypeBadge;

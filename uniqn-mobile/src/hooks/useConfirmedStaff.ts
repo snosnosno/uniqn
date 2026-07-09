@@ -326,5 +326,3 @@ export function useConfirmedStaff(
     isAddingStaff: addStaffMutation.isPending,
   };
 }
-
-export default useConfirmedStaff;

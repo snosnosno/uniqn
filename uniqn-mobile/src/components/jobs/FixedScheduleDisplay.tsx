@@ -222,5 +222,3 @@ export const FixedScheduleDisplay = memo(function FixedScheduleDisplay({
     </View>
   );
 });
-
-export default FixedScheduleDisplay;

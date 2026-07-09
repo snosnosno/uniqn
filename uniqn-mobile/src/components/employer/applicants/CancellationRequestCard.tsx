@@ -302,5 +302,3 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
     </>
   );
 });
-
-export default CancellationRequestCard;

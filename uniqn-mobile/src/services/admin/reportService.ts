@@ -204,5 +204,3 @@ export const reportService = {
   getReportCountByStaff,
   getAllReports,
 };
-
-export default reportService;

@@ -71,5 +71,3 @@ export const ModalFooterButtons = memo(function ModalFooterButtons({
     </View>
   );
 });
-
-export default ModalFooterButtons;

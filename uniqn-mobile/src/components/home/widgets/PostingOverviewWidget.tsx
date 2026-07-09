@@ -122,5 +122,3 @@ export function PostingOverviewWidget() {
     </DashboardWidgetShell>
   );
 }
-
-export default PostingOverviewWidget;

@@ -409,71 +409,6 @@ export const AndroidChannelId = {
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- const/type 합성 패턴
 export type AndroidChannelId = (typeof AndroidChannelId)[keyof typeof AndroidChannelId];
 
-/**
- * 알림 타입 → Android 채널 매핑
- */
-export const NOTIFICATION_TYPE_TO_CHANNEL: Record<NotificationType, AndroidChannelId> = {
-  // 지원 관련
-  [NotificationType.NEW_APPLICATION]: AndroidChannelId.APPLICATIONS,
-  [NotificationType.APPLICATION_CANCELLED]: AndroidChannelId.APPLICATIONS,
-  [NotificationType.APPLICATION_CONFIRMED]: AndroidChannelId.APPLICATIONS,
-  [NotificationType.CONFIRMATION_CANCELLED]: AndroidChannelId.APPLICATIONS,
-  [NotificationType.APPLICATION_REJECTED]: AndroidChannelId.APPLICATIONS,
-  [NotificationType.CANCELLATION_APPROVED]: AndroidChannelId.APPLICATIONS,
-  [NotificationType.CANCELLATION_REJECTED]: AndroidChannelId.APPLICATIONS,
-
-  // 출퇴근/스케줄 관련
-  [NotificationType.STAFF_CHECKED_IN]: AndroidChannelId.REMINDERS,
-  [NotificationType.STAFF_CHECKED_OUT]: AndroidChannelId.REMINDERS,
-  [NotificationType.CHECK_IN_CONFIRMED]: AndroidChannelId.DEFAULT,
-  [NotificationType.CHECK_OUT_CONFIRMED]: AndroidChannelId.DEFAULT,
-  [NotificationType.CHECKIN_REMINDER]: AndroidChannelId.REMINDERS,
-  [NotificationType.NO_SHOW_ALERT]: AndroidChannelId.REMINDERS,
-  [NotificationType.SCHEDULE_CHANGE]: AndroidChannelId.REMINDERS,
-  [NotificationType.SCHEDULE_CREATED]: AndroidChannelId.REMINDERS,
-  [NotificationType.SCHEDULE_CANCELLED]: AndroidChannelId.REMINDERS,
-
-  // 정산 관련
-  [NotificationType.SETTLEMENT_COMPLETED]: AndroidChannelId.SETTLEMENT,
-  [NotificationType.SETTLEMENT_REQUESTED]: AndroidChannelId.SETTLEMENT,
-  [NotificationType.NEGATIVE_SETTLEMENT_ALERT]: AndroidChannelId.SETTLEMENT,
-
-  // 공고 관련
-  [NotificationType.JOB_UPDATED]: AndroidChannelId.ANNOUNCEMENTS,
-  [NotificationType.JOB_CANCELLED]: AndroidChannelId.ANNOUNCEMENTS,
-  [NotificationType.JOB_CLOSED]: AndroidChannelId.ANNOUNCEMENTS,
-  [NotificationType.FIXED_POSTING_EXPIRED]: AndroidChannelId.ANNOUNCEMENTS,
-  [NotificationType.WORK_DATE_EXPIRED]: AndroidChannelId.ANNOUNCEMENTS,
-
-  // 시스템
-  [NotificationType.ANNOUNCEMENT]: AndroidChannelId.ANNOUNCEMENTS,
-  [NotificationType.MAINTENANCE]: AndroidChannelId.ANNOUNCEMENTS,
-  [NotificationType.APP_UPDATE]: AndroidChannelId.ANNOUNCEMENTS,
-  [NotificationType.BOARD_COMMENT]: AndroidChannelId.ANNOUNCEMENTS,
-  [NotificationType.BOARD_REPLY]: AndroidChannelId.ANNOUNCEMENTS,
-  [NotificationType.BOARD_MENTION]: AndroidChannelId.ANNOUNCEMENTS,
-  [NotificationType.BOARD_LOCKED]: AndroidChannelId.ANNOUNCEMENTS,
-
-  // 관리자
-  [NotificationType.INQUIRY_ANSWERED]: AndroidChannelId.DEFAULT,
-  [NotificationType.REPORT_RESOLVED]: AndroidChannelId.DEFAULT,
-  [NotificationType.NEW_REPORT]: AndroidChannelId.DEFAULT,
-  [NotificationType.NEW_INQUIRY]: AndroidChannelId.DEFAULT,
-  [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: AndroidChannelId.DEFAULT,
-  [NotificationType.EMPLOYER_APP_SUBMITTED]: AndroidChannelId.DEFAULT,
-  [NotificationType.EMPLOYER_APP_APPROVED]: AndroidChannelId.DEFAULT,
-  [NotificationType.EMPLOYER_APP_REJECTED]: AndroidChannelId.DEFAULT,
-  [NotificationType.NEW_EMPLOYER_APPLICATION]: AndroidChannelId.DEFAULT,
-
-  // 리뷰/평가 관련
-  [NotificationType.REVIEW_REQUEST]: AndroidChannelId.DEFAULT,
-  [NotificationType.REVIEW_RECEIVED]: AndroidChannelId.DEFAULT,
-  [NotificationType.REVIEW_REMINDER]: AndroidChannelId.REMINDERS,
-
-  // 워크스페이스 협업 (PR #2)
-  [NotificationType.WORKSPACE_INVITATION]: AndroidChannelId.DEFAULT,
-};
-
 // ============================================================================
 // Notification Labels
 // ============================================================================
@@ -572,13 +507,6 @@ export function getNotificationCategory(type: NotificationType): NotificationCat
  */
 export function getNotificationPriority(type: NotificationType): NotificationPriority {
   return NOTIFICATION_DEFAULT_PRIORITY[type];
-}
-
-/**
- * Android 채널 ID 가져오기
- */
-export function getAndroidChannelId(type: NotificationType): AndroidChannelId {
-  return NOTIFICATION_TYPE_TO_CHANNEL[type];
 }
 
 /**

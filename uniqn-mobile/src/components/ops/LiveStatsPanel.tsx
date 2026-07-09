@@ -6,7 +6,7 @@
 import { View, Text } from 'react-native';
 import { useOpsLiveStats } from '@/hooks/ops';
 
-const fmt = (n: number) => n.toLocaleString('ko-KR');
+import { formatNumber as fmt } from '@/utils/formatters/currency';
 
 /** avg_stack_bb 는 numeric → 10 이상은 정수, 미만은 소수 1자리. */
 function formatBb(bb: number): string {
@@ -15,7 +15,7 @@ function formatBb(bb: number): string {
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <View className="m-1 flex-1 rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
+    <View className="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
       <Text className="text-xs text-secondary-500 dark:text-secondary-400">{label}</Text>
       <Text className="mt-1 font-sans-semibold text-lg text-content-primary dark:text-off-white">
         {value}
@@ -34,40 +34,34 @@ interface LiveStatsPanelProps {
 export function LiveStatsPanel({ tournamentId }: LiveStatsPanelProps) {
   const { stats } = useOpsLiveStats(tournamentId);
 
-  // 9개 카드 = 3행 × 3열. 서버값 우선, 없으면 0.
-  const rows: { label: string; value: string; sub?: string }[][] = [
-    [
-      { label: 'PLAYING', value: fmt(stats?.playing ?? 0) },
-      { label: 'ENTRIES', value: fmt(stats?.entries ?? 0) },
-      { label: 'RE-ENTRY', value: fmt(stats?.reentriesTotal ?? 0) },
-    ],
-    [
-      { label: 'TABLES', value: fmt(stats?.tablesOpen ?? 0) },
-      { label: 'SEATS', value: fmt(stats?.seatsTotal ?? 0) },
-      { label: 'FREE', value: fmt(stats?.seatsFree ?? 0) },
-    ],
-    [
-      {
-        label: 'AVG',
-        value: fmt(stats?.averageStack ?? 0),
-        sub: `${formatBb(stats?.avgStackBb ?? 0)} BB`,
-      },
-      { label: 'CHIPS', value: fmt(stats?.totalChips ?? 0) },
-      { label: 'POOL', value: fmt(stats?.prizePool ?? 0) },
-    ],
+  // 3열 그리드(flex-wrap + w-1/3). 서버값 우선, 없으면 0.
+  // knockoutPool(바운티 대회) 있으면 10번째 카드 push — 마지막 행 홀로여도 동일 1/3 폭 유지.
+  const cards: { label: string; value: string; sub?: string }[] = [
+    { label: 'PLAYING', value: fmt(stats?.playing ?? 0) },
+    { label: 'ENTRIES', value: fmt(stats?.entries ?? 0) },
+    { label: 'RE-ENTRY', value: fmt(stats?.reentriesTotal ?? 0) },
+    { label: 'TABLES', value: fmt(stats?.tablesOpen ?? 0) },
+    { label: 'SEATS', value: fmt(stats?.seatsTotal ?? 0) },
+    { label: 'FREE', value: fmt(stats?.seatsFree ?? 0) },
+    {
+      label: 'AVG',
+      value: fmt(stats?.averageStack ?? 0),
+      sub: `${formatBb(stats?.avgStackBb ?? 0)} BB`,
+    },
+    { label: 'CHIPS', value: fmt(stats?.totalChips ?? 0) },
+    { label: 'POOL', value: fmt(stats?.prizePool ?? 0) },
+    ...(stats && stats.knockoutPool !== null
+      ? [{ label: 'KO POOL', value: fmt(stats.knockoutPool) }]
+      : []),
   ];
 
   return (
-    <View>
-      {rows.map((row, i) => (
-        <View key={i} className="flex-row">
-          {row.map((card) => (
-            <StatCard key={card.label} label={card.label} value={card.value} sub={card.sub} />
-          ))}
+    <View className="flex-row flex-wrap">
+      {cards.map((card) => (
+        <View key={card.label} className="w-1/3 p-1">
+          <StatCard label={card.label} value={card.value} sub={card.sub} />
         </View>
       ))}
     </View>
   );
 }
-
-export default LiveStatsPanel;

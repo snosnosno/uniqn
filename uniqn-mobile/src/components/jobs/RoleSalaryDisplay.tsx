@@ -268,5 +268,3 @@ export const SalarySummary = memo(function SalarySummary({
     </Text>
   );
 });
-
-export default RoleSalaryDisplay;

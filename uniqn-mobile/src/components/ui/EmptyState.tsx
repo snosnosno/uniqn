@@ -100,5 +100,3 @@ export function EmptyState({
     </View>
   );
 }
-
-export default EmptyState;
