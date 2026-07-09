@@ -5,7 +5,7 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.0.0/)를 기반으로 하며,
 이 프로젝트는 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 준수합니다.
 
-## [Unreleased] - 2026-07-02
+## [Unreleased] - 2026-07-10
 
 ### Added
 - **라이브 대회 운영(ops) 도구 1a~1c 출하** (PR #207·#210·#212·#213·#214, prod 적용 완료·advisor 0 ERROR):
@@ -17,8 +17,11 @@
   - ✅ **STEP A claim 토큰 읽기/쓰기 분리** (PR #216, prod 적용·CI 9/9): `claim_token`(읽기+쓰기 겸용)→`view_token`(읽기 anon)+`claim_pin_hash`(쓰기 비밀, 8자 Crockford base32 PIN·bcrypt) 분리로 읽기 URL 유출→계정 하이재킹 차단. RPC 4종 재정의·구 2-인자 claim/issue_claim_token/player_view(text) 명시 DROP. 적대검증 WF 6렌즈가 NULL PIN fail-open·잠금 DoS HIGH 2건 적출→`IS NULL`+`IS DISTINCT FROM` 가드·8자 PIN으로 잠금제거. 1d(bust/재진입) BLOCKING 선결과제 해소
   - ✅ **1d bust/재진입/ITM** (PR #218, master `2fa2dea3a`·prod 3마이그·advisor 0 ERROR): 탈락(순위/시각·상금 자동매핑·좌석해제·우승 자동확정)·재진입(카운터/가드/auto-seat)·고정금액 상금(`ops_prizes`·PAYOUTS 탭). 락순서 데드락 견고화(참가자 FOR UPDATE를 advisory 뒤로·비잠금 tournament_id 선취→40P01 협소창 제거)·set_prize 22P02/NULL 경계검증. 타깃 적대검증 4에이전트 차단0
   - ✅ **배정 2종 — 랜덤·칩드래프트 전원 재배치** (PR #220, master `685e4e1f8`·prod 2마이그·advisor 0 ERROR·CI 9/9): 적격(open·unlocked) 테이블 active+checked_in을 **랜덤**(균일) 또는 **칩 드래프트**(칩 내림차순 스네이크 버킷+테이블내 랜덤 좌석)로 전원 재배치. 확정 RPC `ops_reseat_participants`(잠금 `advisory→대회→좌석(id asc)→참가자(id asc)` **좌석-우선**=1b assign/move/redraw와 통일·ABBA 회피, **전원 비우기→앉히기**로 좌석 단일점유 partial UNIQUE 충돌 회피, 피처/잠금 테이블 소스보호·TOCTOU). 순수 알고리즘 3종(`src/domains/ops/seatAssignment/`)+RPC+Zod/repo/hook/UI(모드 선택·미리보기·파괴적 확인)+에러 E6129~E6131. **적대검증 WF(7차원 14에이전트)가 머지 전 11결함 하드닝**(락순서 역전 ABBA·`event_type`→`type` plpgsql 42703·Zod v4 uuid strict 등). jest 4557·pgTAP 390(전순열 23505 RED-GREEN 실증)·tsc0·quality0. anon-executable ops SECDEF=monitor/player 2개 유지. OTA 보류(prod ops 0행)
+  - ✅ **1f 잔여 상금** (PR #225, master `f70222b0d`·prod 마이그 4종·advisor 0 ERROR): flat KO 바운티 적립·상금 정정/회수(correct)·탈락 취소(undo bust)·% 상금 금액 환산·`ops_live_stats` 트리거 6종을 DEFERRED CONSTRAINT TRIGGER로 전환(1c 이래 선재하던 LS-매개 데드락 40P01 순환 근원 제거). SDD 12태스크(태스크당 implementer+리뷰어)+최종 whole-branch 리뷰 Critical/Important 0. pgTAP 517·jest 4794·CI 9종 green
+  - ✅ **1e 스태프 연동** (PR #230, master `5018d4bc4`·prod 마이그·CI 9종 green): `ops_staff` 신설(공고 N:1 연결, owner-only)·공고 확정 스태프(work_logs) 스냅샷 import(읽기전용)·딜러 테이블 배정(move)·STAFF 탭. 상세 교훈은 wiki `sources/ops-1e-staff-integration`·`decisions/migration-timestamp-collision`
 - 스태프관리 직접 추가: 지원 절차 없이 앱 가입자를 전화번호 정확일치 검색으로 스태프(work_logs)에 직접 추가. 신규 SECURITY DEFINER RPC `add_direct_staff`/`remove_direct_staff`/`search_users_by_phone` (confirm_application 정원 가드 동치 + person-basis `filled_positions`/`stats.filledPositions` ±1, `application_id` NULL 직접추가분은 전용 삭제 경로). 스태프관리 탭 "스태프 추가" 버튼 + `AddStaffModal`(전화검색→가입자 선택→날짜/역할/시간대). 검색은 구인자 전용·전화 전체 일치로 열거 방지
 - **주간 배치 그리드(홀덤펍 운영 그리드)** (PR #219, 플래그 `weekly_grid_enabled` OFF 출하·마이그 13종 prod 적용): 운영처(venue)를 숨김 "컨테이너 공고"(`status='container'` 신규 enum, fail-closed)로 모델링해 단골을 주간 그리드에 직접 배치. venue 스팬 SSOT(`venue_span_posting_ids`=컨테이너+`venue_id` open 공고)로 인원·부족·정산 집계(E1). 읽기 RPC(`get_venue_grid_summary`/`get_venue_day_slots`)·컨테이너 헬퍼·`set_venue_soft_target`·QR 컨테이너/auto 분기 + 직접배치/슬롯편집(시간·역할·색상·메모)/소프트타깃(부족 N명)/지난주복사(멱등)/배치확인 알림. 컨테이너 직접쓰기 RESTRICTIVE 차단·신규 SECDEF anon REVOKE·cross-workspace 유령행 차단(read RPC workspace 재필터). 적대 전체리뷰(8에이전트)로 중첩 RN Modal(SheetModal+overlay)·배치알림 딥링크 5계층·pgTAP 공백 보강. ⚠️ 플래그 ON 전 시간/날짜 피커 iOS 실기기 QA 필요
+- 주간 그리드 운영처 생성 UI (PR #221): QA가 적발한 출하차단 결함(백엔드 `get_or_create_venue_container` 완성·UI 배선 누락) 해소 — `useCreateVenueContainer` 훅+`VenueCreateSheet`+빈상태/운영처 선택기 "+추가" 두 진입점. 생성 직후 N→N+1 자동선택 바운스는 onSuccess `setQueryData` 캐시 시드로 수정
 - LLM Wiki 지식 합성 레이어 부트스트랩 (PR #176): `wiki/`(architecture·decisions·domain·sources) + `/ingest`·`/query`·`/lint` 운영 + staleness 자동 감지(memory 전용 인용은 UNVERIFIABLE 표기)
 - 전체 워크플로우 UX 감사 후속 9결함 수정 (PR #175): 가입 빈 비밀번호 가드, 지원자 일괄확정 배선, 수동 출퇴근 타임스탬프→정산 차단 해소, 정산 CSV export 등
 - 공고 자동마감(Approach B): `posting_status` enum에 `capacity_full` 추가 (M1). 정원 도달 시 자동 마감, 빈자리 발생 시 자동 복귀 대기 상태
@@ -26,7 +29,12 @@
 - 공고 카드/배지에 `capacity_full` "정원 마감" 회색 라벨 + 지원 버튼 비활성 (T7)
 - pgTAP `capacity_full_transition.test.sql` (전이 5시나리오) + e2e `posting-capacity-recovery.spec.ts` (T5/T6)
 
+### Changed
+- ops 상금 코드 정리 (PR #228, TS-only): `uuidLike`→`schemas/common` 통합·상금 표기 `fmt`→`formatNumber` 통합·PAYOUTS `INVALID_PERCENTS` 에러에 0값 행 안내 문구 추가(`payoutMessages` 순수함수 분리+테스트 5)
+
 ### Fixed
+- ops KO 풀 산술 오버플로 근본 차단 (PR #226·#227, prod 적용): `knockout_pool` 컬럼·재계산 경로 int→bigint 승격(`::int` 다운캐스트 제거) + `ops_get_player_view` bountyAccrued int*int 곱셈 `::bigint` 승격 — 대형 바운티 값에서 22003 오버플로 방지(pgTAP RED 22003→GREEN 실증, anon/authed EXECUTE 보존)
+- reseat 배정 fast-follow (PR #229, prod 마이그): service 경계 Zod safeParse 배선(스펙 §6.2)·RPC 비-uuid 선검증(22P02 → `SEAT_ASSIGNMENT_INVALID` 정규 에러)·pgTAP 칩균형 주석 정정
 - db-tests pgTAP RLS GRANT 정합 (PR #179): Supabase CLI `version:latest` 드리프트로 소실된 테이블 GRANT를 fixture에 명시(함수 GRANT 제외=wallet 하드닝 회귀 방지) + `supabase/setup-cli` 버전 pin 2.107.0 (PR #180)으로 드리프트 회귀 예방
 - `cancel_application_atomically` reopen 가드 강화 (M3): `closed_reason IN ('expired','expired_by_work_date')` 공고는 취소 후에도 `closed` 유지(cron 만료 의도 보존), `capacity_full`은 `active`로 자동 재노출. manual closed는 기존대로 재오픈(PR #153 정합)
 - `cancel_application_expired_guard` pgTAP 재활성화 (SP3 트리거 정합 위해 fixture `filled_positions` 1→0 보정)
@@ -36,6 +44,8 @@
 - (/review) 구인자 카드 "마감하기" 버튼 + 홈 위젯(개요/주간스태프/취소요청) 필터에 `capacity_full` 포함
 
 ### Removed
+- 죽은 OG 공유 미리보기 인프라 제거 (PR #224): KV writer 0건으로 런타임 사문화된 리더 경로(`functions/img`·wrangler KV 바인딩·knip 설정) 삭제 — 링크 공유는 리치 공유텍스트가 실경로. 미사용 export ~3,000건 다세션 triage 로드맵 문서 동반
+- 미사용 export triage 1차 (PR #231): knip 미사용 export 2,951→2,313 감축·저위험 리프 죽은코드 제거·`knip:gate`(기준 2,344) 래칫 게이트 master 배선(이후 PR 증가 금지). 규칙·프로토콜은 wiki 졸업(PR #232, `decisions/knip-signal-hygiene`)
 - Firebase/Firestore 백엔드 전면 제거 — Supabase 전환 완료(2026년 초, 이력 소급 기록)
 - 지갑/IAP/다이아 결제 수익모델 전면 제거(2026-06-22, PR #196~#206)
 
