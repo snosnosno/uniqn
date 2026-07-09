@@ -61,3 +61,5 @@ Expo 55 / RN 0.83.4 / React 19.2 / TypeScript strict / NativeWind 4.2 / Supabase
 - [[data-flow]] — 레이어 간 실제 데이터 흐름
 - [[rls-model]] — Supabase 레이어의 보안 정책
 - [[roles]] — 역할별 앱 권한과 레이어 관계
+- [[worktime-ssot]] — Presentation 근무시간 표시는 WorkTimeDisplay SSOT 경유(직접 계산 우회 금지)
+- [[ops-engine]] — 이 5레이어 위 대회 운영 엔진(쓰기=SECDEF RPC 경계)
