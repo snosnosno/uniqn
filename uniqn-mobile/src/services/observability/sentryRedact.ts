@@ -81,7 +81,9 @@ export const REDACT_KEYS: readonly string[] = [
   'addr',
   'accountNumber',
   'account_number',
-  'name',
+  // 주의: 범용 'name' 키는 의도적으로 제외한다 — Error.name·event.sdk.name·thread/span
+  // name 등 Sentry 구조 필드를 [REDACTED] 로 오염시킨다(원 작성자 문서화 결정 유지).
+  // 실명 PII 는 아래 구체 키(realName/fullName/displayName/userName)로 커버한다.
   'realName',
   'real_name',
 ] as const;
