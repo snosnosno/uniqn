@@ -24,6 +24,12 @@ export interface WorkTimeDisplayResult {
   duration: string;
   isActualTime: boolean;
   rawTimeSlot: string | null;
+  /**
+   * 종료가 시작 다음날인가(심야 운영 "18:00~익일 02:00").
+   * parseTimeSlotToDate 가 end<start 를 +1일로 해석해 duration 은 맞았지만 표시에서
+   * "익일" 정보가 소실되던 갭(P2-3-lite)을 SSOT 결과로 노출한다.
+   */
+  isEndNextDay: boolean;
 }
 
 const DEFAULT_TIME_STR = '미정';
@@ -43,6 +49,14 @@ export class WorkTimeDisplay {
     const effectiveStartDate = actualStart ?? scheduledStart;
     const effectiveEndDate = actualEnd ?? scheduledEnd;
 
+    // 종료가 시작과 다른 달력 날짜면 익일(자정 넘김). 시각 비교가 아니라 날짜 비교(E5 무관).
+    const isEndNextDay =
+      effectiveStartDate !== null &&
+      effectiveEndDate !== null &&
+      (effectiveEndDate.getFullYear() !== effectiveStartDate.getFullYear() ||
+        effectiveEndDate.getMonth() !== effectiveStartDate.getMonth() ||
+        effectiveEndDate.getDate() !== effectiveStartDate.getDate());
+
     return {
       checkIn: this.formatTimeOrDefault(actualStart),
       checkOut: this.formatTimeOrDefault(actualEnd),
@@ -56,6 +70,7 @@ export class WorkTimeDisplay {
       duration: this.calculateDuration(effectiveStartDate, effectiveEndDate),
       isActualTime: hasActualTime,
       rawTimeSlot: timeSlotStr ?? null,
+      isEndNextDay,
     };
   }
 

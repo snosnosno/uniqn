@@ -181,7 +181,8 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
                   {timeInfo.isEffectiveEndActual ? '퇴근' : '종료'}
                 </Text>
                 <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
-                  {timeInfo.effectiveEnd}
+                  {/* P2-3-lite: 심야 운영 자정 넘김은 "익일" 병기(SSOT isEndNextDay) */}
+                  {timeInfo.isEndNextDay ? `익일 ${timeInfo.effectiveEnd}` : timeInfo.effectiveEnd}
                 </Text>
               </View>
 

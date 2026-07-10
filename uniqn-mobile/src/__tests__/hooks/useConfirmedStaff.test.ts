@@ -4,6 +4,7 @@ import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 
 const mockGetConfirmedStaff = jest.fn();
 const mockGetConfirmedStaffByDate = jest.fn();
+const mockAddDirectStaff = jest.fn();
 const mockUpdateStaffRole = jest.fn();
 const mockUpdateConfirmedStaffWorkTime = jest.fn();
 const mockCancelConfirmedStaffConfirmation = jest.fn();
@@ -15,9 +16,11 @@ const mockLoggerInfo = jest.fn();
 const mockLoggerError = jest.fn();
 const mockRefetch = jest.fn();
 const mockInvalidateStaffManagement = jest.fn();
+const mockInvalidateJobPostings = jest.fn();
 const mockCancelQueries = jest.fn();
 const mockGetQueryData = jest.fn();
 const mockSetQueryData = jest.fn();
+const mockInvalidateQueriesClient = jest.fn();
 
 let mockData: unknown;
 let mockError: Error | null;
@@ -28,6 +31,7 @@ let mockPendingStates = [false, false, false, false, false];
 jest.mock('@/services', () => ({
   getConfirmedStaff: (...args: unknown[]) => mockGetConfirmedStaff(...args),
   getConfirmedStaffByDate: (...args: unknown[]) => mockGetConfirmedStaffByDate(...args),
+  addDirectStaff: (...args: unknown[]) => mockAddDirectStaff(...args),
   updateStaffRole: (...args: unknown[]) => mockUpdateStaffRole(...args),
   updateConfirmedStaffWorkTime: (...args: unknown[]) => mockUpdateConfirmedStaffWorkTime(...args),
   cancelConfirmedStaffConfirmation: (...args: unknown[]) =>
@@ -70,12 +74,16 @@ jest.mock('@/lib/queryClient', () => ({
       byJobPosting: (id: string) => ['confirmedStaff', 'byJobPosting', id],
       byDate: (id: string, date: string) => ['confirmedStaff', 'byDate', id, date],
     },
+    weeklyGrid: {
+      all: ['weeklyGrid'],
+    },
   },
   cachingPolicies: {
     frequent: 5 * 60 * 1000,
   },
   invalidateQueries: {
     staffManagement: (...args: unknown[]) => mockInvalidateStaffManagement(...args),
+    jobPostings: (...args: unknown[]) => mockInvalidateJobPostings(...args),
   },
 }));
 
@@ -122,6 +130,16 @@ jest.mock('@tanstack/react-query', () => {
                 options.onError?.(error, variables, undefined);
               });
           },
+          mutateAsync: (variables: unknown) =>
+            Promise.resolve(options.mutationFn(variables))
+              .then((result) => {
+                options.onSuccess?.(result);
+                return result;
+              })
+              .catch((error: Error) => {
+                options.onError?.(error, variables, undefined);
+                throw error;
+              }),
           isPending: mockPendingStates[currentIndex] ?? false,
         };
       }
@@ -130,6 +148,7 @@ jest.mock('@tanstack/react-query', () => {
       cancelQueries: mockCancelQueries,
       getQueryData: mockGetQueryData,
       setQueryData: mockSetQueryData,
+      invalidateQueries: mockInvalidateQueriesClient,
     }),
   };
 });
@@ -362,6 +381,30 @@ describe('useConfirmedStaff', () => {
         type: 'success',
         message: '상태가 변경되었습니다.',
       });
+    });
+  });
+
+  it('adds direct staff and invalidates staff, jobPostings, and weeklyGrid caches (W-1)', async () => {
+    mockAddDirectStaff.mockResolvedValue(['worklog-new']);
+
+    const { result } = renderHook(() => useConfirmedStaff('job-1'));
+
+    await act(async () => {
+      await result.current.addStaff({
+        jobPostingId: 'job-1',
+        staffId: 'staff-1',
+        assignments: [{ date: '2026-07-05', role: 'dealer' }],
+      });
+    });
+
+    expect(mockAddDirectStaff).toHaveBeenCalled();
+    expect(mockInvalidateStaffManagement).toHaveBeenCalledWith('job-1');
+    expect(mockInvalidateJobPostings).toHaveBeenCalled();
+    // W-1: 스태프탭 직접추가가 주간 배치 그리드에 즉시 반영되도록 weeklyGrid 캐시 무효화
+    expect(mockInvalidateQueriesClient).toHaveBeenCalledWith({ queryKey: ['weeklyGrid'] });
+    expect(mockAddToast).toHaveBeenCalledWith({
+      type: 'success',
+      message: '스태프가 추가되었습니다.',
     });
   });
 });
