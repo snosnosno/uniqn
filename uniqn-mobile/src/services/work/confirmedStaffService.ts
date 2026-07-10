@@ -116,12 +116,15 @@ export async function getConfirmedStaffByDate(
 export async function updateStaffRole(input: UpdateStaffRoleInput): Promise<void> {
   logger.info('Updating confirmed staff role', { ...input });
 
+  const actorId = (await requireCurrentUser()).id;
+
   await confirmedStaffRepository.updateRoleWithTransaction({
     workLogId: input.workLogId,
     newRole: input.newRole,
     isStandardRole: STANDARD_ROLE_KEYS.includes(input.newRole),
     reason: input.reason,
     changedBy: input.changedBy ?? 'system',
+    actorId,
   });
 
   logger.info('Updated confirmed staff role', { workLogId: input.workLogId });
@@ -130,7 +133,8 @@ export async function updateStaffRole(input: UpdateStaffRoleInput): Promise<void
 export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> {
   const checkInDate = TimeNormalizer.parseTime(input.checkInTime);
   const checkOutDate = TimeNormalizer.parseTime(input.checkOutTime);
-  const modifiedBy = input.modifiedBy ?? (await requireCurrentUser()).id;
+  const actorId = (await requireCurrentUser()).id;
+  const modifiedBy = input.modifiedBy ?? actorId;
 
   logger.info('Updating confirmed staff work time', {
     workLogId: input.workLogId,
@@ -144,6 +148,7 @@ export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> 
     checkOutTime: checkOutDate,
     reason: input.reason,
     modifiedBy,
+    actorId,
   });
 
   logger.info('Updated confirmed staff work time', { workLogId: input.workLogId });

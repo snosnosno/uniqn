@@ -158,6 +158,7 @@ describe('confirmedStaffService', () => {
       isStandardRole: true,
       reason: 'Role correction',
       changedBy: 'system',
+      actorId: 'owner-1',
     });
   });
 

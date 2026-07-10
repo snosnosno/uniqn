@@ -18,6 +18,7 @@ import { toError, BusinessError, ERROR_CODES, isAppError } from '@/errors';
 import { handleSupabaseError, toCamelCase, createRealtimeSubscription } from '@/utils/supabase';
 import { parseWorkLogDocuments, parseWorkLogDocument } from '@/schemas';
 import { STATUS } from '@/constants';
+import { resolvePostingAuthority, canManagePosting } from './postingAuthority';
 import type { UnsubscribeFn } from '@/types/common';
 import type { RoleChangeHistory, WorkLog } from '@/types';
 import type {
@@ -174,16 +175,17 @@ async function loadWorkLog(workLogId: string, operation: string): Promise<WorkLo
 }
 
 /**
- * 공고 소유권 검증 헬퍼
+ * 공고 권한 검증 헬퍼 — prod RLS wl_update(owner | ws member | posting collaborator)와 일치.
+ * admin 은 통과시키지 않는다: wl_update 에 admin 분기가 없어 UPDATE 가 0행 silent no-op 이 된다.
  */
-async function verifyJobPostingOwnership(
+async function verifyPostingAuthority(
   jobPostingId: string,
-  ownerId: string,
+  actorId: string,
   operation: string
 ): Promise<void> {
   const { data: jobData, error: jobError } = await supabase
     .from('job_postings')
-    .select('id, owner_id')
+    .select('id, owner_id, workspace_id')
     .eq('id', jobPostingId)
     .maybeSingle();
 
@@ -195,9 +197,30 @@ async function verifyJobPostingOwnership(
     });
   }
 
-  if ((jobData as Record<string, unknown>).owner_id !== ownerId) {
+  const row = jobData as Record<string, unknown>;
+  const postingOwnerId = row.owner_id as string;
+
+  // owner 는 workspaceId 유무와 무관하게 통과(레거시 row). 비-owner 만 멤버십·협업자 판정.
+  if (postingOwnerId === actorId) return;
+
+  const workspaceId = row.workspace_id as string | null;
+  if (!workspaceId) {
     throw new BusinessError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
-      userMessage: '공고 소유자만 이 작업을 수행할 수 있습니다.',
+      userMessage: '공고에 워크스페이스가 지정되지 않았습니다.',
+    });
+  }
+
+  const authority = await resolvePostingAuthority({
+    jobPostingId,
+    workspaceId,
+    postingOwnerId,
+    actorId,
+    operation,
+  });
+
+  if (!canManagePosting(authority)) {
+    throw new BusinessError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
+      userMessage: '이 공고에 대한 권한이 없습니다.',
     });
   }
 }
@@ -262,6 +285,10 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
       // 1. 현재 WorkLog 조회
       const workLog = await loadWorkLog(context.workLogId, '스태프 역할 변경');
 
+      // 권한 검증 — workLog 에서 얻은 jobPostingId 로만 판정한다.
+      // 클라이언트가 넘긴 jobPostingId 를 신뢰하면 타 공고 권한으로 우회 가능.
+      await verifyPostingAuthority(workLog.jobPostingId, context.actorId, '스태프 역할 변경');
+
       // 2. 역할 변경 이력 구성
       const previousRole = workLog.role;
       const roleChangeHistory: RoleChangeHistory[] = workLog.roleChangeHistory ?? [];
@@ -308,6 +335,9 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
       // 1. 현재 WorkLog 조회
       const workLog = await loadWorkLog(context.workLogId, '근무 시간 수정');
+
+      // 권한 검증 — workLog 에서 얻은 jobPostingId 로만 판정한다.
+      await verifyPostingAuthority(workLog.jobPostingId, context.actorId, '근무 시간 수정');
 
       // 2. 정산 완료된 경우 수정 불가
       if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
@@ -365,7 +395,7 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
         });
       }
 
-      await verifyJobPostingOwnership(jobPostingId, context.ownerId, '노쇼 처리');
+      await verifyPostingAuthority(jobPostingId, context.ownerId, '노쇼 처리');
 
       // 3. 노쇼 상태 업데이트
       const now = new Date().toISOString();
@@ -402,7 +432,7 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
         });
       }
 
-      await verifyJobPostingOwnership(jobPostingId, context.ownerId, '스태프 상태 변경');
+      await verifyPostingAuthority(jobPostingId, context.ownerId, '스태프 상태 변경');
 
       // 3. 상태 업데이트 — 종결 status 와 타임스탬프 정합 유지.
       //    정산 게이트가 status 가 아닌 check_in_ts/check_out_ts 로 판정하므로(SSOT),
