@@ -330,7 +330,14 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
             .select(JOB_POSTING_COLUMNS)
             .in('id', [...jobPostingIds]);
 
-          if (!jpError && jpRows) {
+          if (jpError) {
+            // 조회 실패를 삼키면 이 청크 전 행이 "권한 없음"으로 오표기된다(fail-closed).
+            // 보안상 안전하나 운영자에게 원인을 남긴다.
+            logger.warn('일괄 정산 - 공고 일괄 조회 실패(해당 청크는 권한 판정 불가로 스킵)', {
+              jobPostingIds: [...jobPostingIds],
+              error: jpError,
+            });
+          } else if (jpRows) {
             for (const row of jpRows as Record<string, unknown>[]) {
               const jp = toJobPosting(row);
               if (jp) {
