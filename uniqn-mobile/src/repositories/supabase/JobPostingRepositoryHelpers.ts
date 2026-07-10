@@ -10,6 +10,7 @@ import { toError, BusinessError, PermissionError, ERROR_CODES, isAppError } from
 import { handleSupabaseError, toCamelCase } from '@/utils/supabase';
 import { parseJobPostingDocument } from '@/schemas';
 import type { JobPosting } from '@/types';
+import { resolvePostingAuthority, canManagePosting } from './postingAuthority';
 
 export const TABLE = 'job_postings';
 export const DEFAULT_PAGE_SIZE = 20;
@@ -108,7 +109,7 @@ export async function loadJobPostingForVerify(
  * exception 미발생) 으로 빠져 caller 가 false success 인식. helper 단계에서 명시적
  * throw 하여 admin write 는 SECURITY DEFINER RPC (spec §2-C) 경유 강제.
  *
- * 호출 비용: owner 본인이면 RPC 0회, 멤버면 1회, admin/외부인이면 2회 (둘 다 throw).
+ * 호출 비용: owner 본인이면 RPC 0회, 멤버면 1회, 협업자면 2회, admin/외부인이면 3회 (둘 다 throw).
  *
  * @see ApplicationRepositoryHelpers.loadAndVerifyJobPostingAccess (read-side 는 admin 통과 유지)
  */
@@ -127,14 +128,14 @@ export async function loadAndVerifyMutateAccess(
     });
   }
 
-  const memberResult = await supabase.rpc('is_workspace_member', {
-    _workspace_id: jobPosting.workspaceId,
-    _user_id: callerId,
+  const authority = await resolvePostingAuthority({
+    jobPostingId,
+    workspaceId: jobPosting.workspaceId,
+    postingOwnerId: jobPosting.ownerId,
+    actorId: callerId,
+    operation,
   });
-  if (memberResult.error) {
-    handleSupabaseError(memberResult.error, { operation, table: TABLE });
-  }
-  if (memberResult.data === true) return jobPosting;
+  if (canManagePosting(authority)) return jobPosting;
 
   // PR3-A.2: admin 분기 silent no-op 차단. 향후 admin write UI 도입 시 SECURITY DEFINER
   // RPC (admin_update_<table>_<column>) 경유하도록 강제.
@@ -149,7 +150,7 @@ export async function loadAndVerifyMutateAccess(
   }
 
   throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-    userMessage: `워크스페이스 멤버만 수행할 수 있습니다: ${operation}`,
+    userMessage: `워크스페이스 멤버 또는 공고 협업자만 수행할 수 있습니다: ${operation}`,
   });
 }
 
