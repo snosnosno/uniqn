@@ -17,6 +17,7 @@
 - [[wallet-pgtap-caller-binding]] — 변이 RPC auth.uid() 바인딩 하드닝이 pgTAP db-tests 깨뜨림 (PR#195→#198, JWT 주입 수정)
 - [[knip-signal-hygiene]] — knip 신호 정화: 래칫 게이트 + 안전 삭제 프로토콜(미사용≠죽음 ~65% 보존, tsc 오라클, 배럴 협응삭제, stale-base 안전망) (PR#231)
 - [[migration-timestamp-collision]] — 병렬 세션이 같은 마이그 타임스탬프 → 병합 후 db reset `schema_migrations_pkey` 23505, 신규분 리네임 해소 (MCP-apply prod는 무관)
+- [[ops-no-money-flow]] — ops 엔진 돈-흐름 비관여 경계: 프라이즈 계산만, 바이인 결제·시드권 발급·상금 정산 금지 (관광진흥법 카지노업 유사행위 리스크)
 
 ## domain
 - [[roles]] — UserRole(앱권한: admin/employer/staff) vs StaffRole(직무: dealer/floor/serving)
