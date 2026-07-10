@@ -1,6 +1,7 @@
 /**
  * ops 1e — STAFF 탭(7번째 세그먼트). 스펙 §4.2 구성(위→아래):
- *   1. 연결 공고 카드(owner 전용 연결/변경/해제, PostingPickerSheet)
+ *   1. 연결 공고 카드(owner 전용 연결/변경/해제, PostingPickerSheet. 미연결 시 "새 공고 만들기"
+ *      역방향 훅 — create 화면에 opsTournamentId 를 넘겨 생성 성공 시 자동 연결)
  *   2. import CTA(확정 스태프 가져오기 — event_date 기본/"전체 기간" 토글, 확인 다이얼로그)
  *   3. 로스터 리스트(AppFlashList, staleness 캡션, 행 탭→액션 시트: 테이블 지정/삭제)
  *   4. 수동 추가(StaffAddSheet)
@@ -17,6 +18,7 @@
  */
 import { useCallback, useMemo, useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { AppFlashList } from '@/components/ui/AppFlashList';
 import { SelectBottomSheet } from '@/components/ui';
 import {
@@ -46,6 +48,7 @@ interface StaffTabProps {
 }
 
 export function StaffTab({ tournamentId, tournament }: StaffTabProps) {
+  const router = useRouter();
   const actorId = useAuthStore((s) => s.user?.uid);
   const { activeWorkspace } = useActiveWorkspace();
   const { data: postings } = useMyJobPostings();
@@ -226,13 +229,29 @@ export function StaffTab({ tournamentId, tournament }: StaffTabProps) {
           </Text>
           {isOwner &&
             (activeWorkspace ? (
-              <Pressable
-                onPress={() => setShowPostingPicker(true)}
-                accessibilityRole="button"
-                className="mt-2 self-start rounded-md bg-primary-600 px-3 py-1.5 active:opacity-70"
-              >
-                <Text className="font-sans-semibold text-sm text-white">연결</Text>
-              </Pressable>
+              <View className="mt-2 flex-row gap-2">
+                <Pressable
+                  onPress={() => setShowPostingPicker(true)}
+                  accessibilityRole="button"
+                  className="rounded-md bg-primary-600 px-3 py-1.5 active:opacity-70"
+                >
+                  <Text className="font-sans-semibold text-sm text-white">연결</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() =>
+                    router.push({
+                      pathname: '/(employer)/my-postings/create',
+                      params: { opsTournamentId: tournamentId },
+                    })
+                  }
+                  accessibilityRole="button"
+                  className="rounded-md bg-gray-100 px-3 py-1.5 active:opacity-70 dark:bg-gray-800"
+                >
+                  <Text className="font-sans-semibold text-sm text-content-primary dark:text-off-white">
+                    새 공고 만들기
+                  </Text>
+                </Pressable>
+              </View>
             ) : (
               <Text className="mt-2 text-xs text-secondary-500 dark:text-secondary-400">
                 워크스페이스가 없어 공고를 연결할 수 없습니다.

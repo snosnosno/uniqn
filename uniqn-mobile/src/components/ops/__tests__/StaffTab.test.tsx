@@ -34,6 +34,13 @@ import type { OpsStaff, OpsTable, OpsTournament } from '@/types/ops';
 
 type CapturedOption = { label: string; value: string; disabled?: boolean; destructive?: boolean };
 
+// jest.setup.js 전역 모킹은 useRouter() 호출마다 새 jest.fn 을 반환해 push 단언이 불가 —
+// 역방향 훅(새 공고 만들기) 검증을 위해 파일 로컬로 안정 스파이를 재모킹한다.
+const mockRouterPush = jest.fn();
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ push: mockRouterPush }),
+}));
+
 // 무거운 의존(SelectBottomSheet=@gorhom/bottom-sheet) 모킹: DealerPickerSheet.test.tsx 와 동일 문형.
 jest.mock('@/components/ui', () => {
   const { View, Text, Pressable } = require('react-native');
@@ -230,13 +237,15 @@ describe('공고 연결 카드 — 미연결', () => {
 
     expect(getByText('공고를 연결하면 확정 스태프를 가져올 수 있어요.')).toBeTruthy();
     expect(getByText('연결')).toBeTruthy();
+    expect(getByText('새 공고 만들기')).toBeTruthy();
   });
 
-  it('non-owner 에게는 연결 버튼을 숨긴다', () => {
+  it('non-owner 에게는 연결/새 공고 만들기 버튼을 숨긴다', () => {
     setupHooks({ actorId: 'staff-999' });
     const { queryByText } = render(<StaffTab tournamentId={TID} tournament={tournament()} />);
 
     expect(queryByText('연결')).toBeNull();
+    expect(queryByText('새 공고 만들기')).toBeNull();
   });
 
   it('워크스페이스가 없으면 owner 라도 연결 버튼 대신 스코프 제약 안내를 노출한다', () => {
@@ -246,7 +255,20 @@ describe('공고 연결 카드 — 미연결', () => {
     );
 
     expect(queryByText('연결')).toBeNull();
+    expect(queryByText('새 공고 만들기')).toBeNull();
     expect(getByText('워크스페이스가 없어 공고를 연결할 수 없습니다.')).toBeTruthy();
+  });
+
+  it('"새 공고 만들기" → create 화면으로 opsTournamentId 와 함께 push 한다(역방향 훅)', () => {
+    setupHooks();
+    const { getByText } = render(<StaffTab tournamentId={TID} tournament={tournament()} />);
+
+    fireEvent.press(getByText('새 공고 만들기'));
+
+    expect(mockRouterPush).toHaveBeenCalledWith({
+      pathname: '/(employer)/my-postings/create',
+      params: { opsTournamentId: TID },
+    });
   });
 
   it('연결 버튼 → PostingPickerSheet 오픈 → 선택 시 공고연결 mutate 를 호출한다', () => {
