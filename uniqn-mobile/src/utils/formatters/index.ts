@@ -28,4 +28,4 @@ export {
   isE164,
   isValidKoreanPhone,
   toE164,
-} from './phone';
+} from '../phone';

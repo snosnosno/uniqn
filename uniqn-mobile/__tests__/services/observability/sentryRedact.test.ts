@@ -29,7 +29,8 @@ describe('redactValue (key-match traversal)', () => {
     const request = out.request as Record<string, Record<string, string>>;
     const body = out.body as Record<string, string>;
     expect(request.headers.Authorization).toBe('[REDACTED]');
-    expect(request.headers.cookie).toBe('c=1');
+    // cookie 는 세션 토큰을 담을 수 있어 마스킹 대상(2026-07-10 하드닝으로 REDACT_KEYS 추가).
+    expect(request.headers.cookie).toBe('[REDACTED]');
     expect(body.id_token).toBe('[REDACTED]');
     expect(body.userId).toBe('u-123');
   });
