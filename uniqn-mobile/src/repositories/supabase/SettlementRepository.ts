@@ -34,6 +34,7 @@ import {
 } from '@/utils/settlement';
 import { IdNormalizer } from '@/shared/id';
 import { STATUS } from '@/constants';
+import { resolvePostingAuthority, canManagePosting } from './postingAuthority';
 import type { TaxSettings } from '@/utils/settlement';
 import type { WorkLog, JobPosting, PayrollStatus } from '@/types';
 import type {
@@ -339,6 +340,30 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
           }
         }
 
+        // 3-1. 공고별 권한 판정 — 같은 공고의 근무기록 N건에 RPC 를 N번 부르지 않도록
+        //      공고당 정확히 1회 판정한다(N+1 방지). admin 은 포함하지 않는다(wl_update RLS 동형).
+        const manageableByJobId = new Map<string, boolean>();
+        for (const jp of jobPostingMap.values()) {
+          // owner 는 workspaceId 유무와 무관하게 자기 공고를 정산할 수 있다(레거시 row 포함).
+          if (jp.ownerId === ownerId) {
+            manageableByJobId.set(jp.id, true);
+            continue;
+          }
+          // 비-owner 는 워크스페이스 멤버십·협업자 판정이 필요하다. workspaceId 없으면 불가.
+          if (!jp.workspaceId) {
+            manageableByJobId.set(jp.id, false);
+            continue;
+          }
+          const authority = await resolvePostingAuthority({
+            jobPostingId: jp.id,
+            workspaceId: jp.workspaceId,
+            postingOwnerId: jp.ownerId,
+            actorId: ownerId,
+            operation: '일괄 정산',
+          });
+          manageableByJobId.set(jp.id, canManagePosting(authority));
+        }
+
         // 4. 각 WorkLog 처리 (청크 내 병렬 — 행 간 의존 없음, 각 UPDATE는 독립 auto-commit이라
         //    부분 실패 의미(이전 성공분 커밋 유지·롤백 없음)가 직렬과 동일하게 보존된다.
         //    순서·집계는 결과 배열에서 결정적으로 후처리해 카운터 경쟁을 제거한다.)
@@ -358,13 +383,13 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
             const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
             const jobPosting = jobPostingMap.get(normalizedJobId);
 
-            // 소유권 확인
-            if (!jobPosting || jobPosting.ownerId !== ownerId) {
+            // 권한 확인 — owner/워크스페이스 멤버/협업자 (공고별로 사전 판정된 결과 조회)
+            if (!jobPosting || !manageableByJobId.get(jobPosting.id)) {
               return {
                 success: false,
                 workLogId: id,
                 amount: 0,
-                message: '본인의 공고가 아닙니다',
+                message: '권한이 없는 공고입니다',
               };
             }
 
@@ -573,7 +598,7 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
    */
   private async validateWorkLogOwnership(
     workLogId: string,
-    ownerId: string,
+    actorId: string,
     operationMessage: string = '처리'
   ): Promise<WorkLogOwnershipResult> {
     // 1. 근무 기록 조회
@@ -629,10 +654,27 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
       });
     }
 
-    if (jobPosting.ownerId !== ownerId) {
-      throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-        userMessage: `본인의 공고에 대한 근무 기록만 ${operationMessage}할 수 있습니다`,
+    // owner 는 workspaceId 유무와 무관하게 통과(레거시 row 포함). 비-owner 만 멤버십·협업자 판정.
+    if (jobPosting.ownerId !== actorId) {
+      if (!jobPosting.workspaceId) {
+        throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
+          userMessage: `공고에 워크스페이스가 지정되지 않았습니다: ${operationMessage}`,
+        });
+      }
+
+      const authority = await resolvePostingAuthority({
+        jobPostingId: jobPosting.id,
+        workspaceId: jobPosting.workspaceId,
+        postingOwnerId: jobPosting.ownerId,
+        actorId,
+        operation: operationMessage,
       });
+
+      if (!canManagePosting(authority)) {
+        throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
+          userMessage: `권한이 있는 공고의 근무 기록만 ${operationMessage}할 수 있습니다`,
+        });
+      }
     }
 
     return { workLog, jobPosting };
