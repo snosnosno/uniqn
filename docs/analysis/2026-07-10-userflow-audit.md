@@ -213,21 +213,77 @@ DB는 `is_workspace_member` / `is_posting_collaborator`로 협업자의 쓰기�
 
 ---
 
-## 5. prod 라이브 실측 대기 (7건)
+## 5. prod 라이브 실측 결과 (2026-07-10 완료)
 
-코드 사실은 확인됐으나 prod 런타임 없이는 확정할 수 없다. **`mcp__supabase__execute_sql` 읽기 쿼리로 30분이면 전부 판정 가능하다.**
+읽기 전용 쿼리로 7건 전부 판정했다. **결과가 백로그를 다시 썼다.** PR #235와 중복 없음(그 PR은 `rate_limit`·`toggle_vote` IDOR·`job_postings_select_all`·`bc_select`를 다뤘고 `notifications` 정책은 손대지 않았다).
 
-| 주장 | 확인할 것 |
-|---|---|
-| `notifications` INSERT RLS가 `recipient_id` 소유권을 검증하지 않음 (**CRITICAL 주장**) | `pg_policies` where tablename='notifications' and cmd='INSERT' |
-| 로그인 실패 잠금이 클라이언트 전용 — 서버 rate-limit 부재 | GoTrue 설정 + 서버측 카운터 테이블 존재 여부 |
-| `users.nickname` UNIQUE 인덱스 부재 | `pg_indexes` where tablename='users' |
-| 확정취소 알림 오발송 (applied→cancelled에도 "확정 취소" 발송) | `notify_on_application_update` 함수 본문 |
-| 알림 삭제 시 unread 카운터 이중차감 | AFTER DELETE 트리거 활성 여부 + Edge Function 병존 |
-| `ConfirmedStaffRepository` 시간수정에 ownerId 검증·row-count 확인 없음 | `wl_update` RLS가 SELECT는 통과·UPDATE만 0건 필터하는지 |
-| weekly-grid 컨테이너가 코어 mutation 게이트를 우회 | 검증관은 `parseJobPostingDocument` strict 실패로 **이미 차단됨**을 확인 — 재확인만 |
+| 주장 | 판정 | 근거 (prod 실측) |
+|---|---|---|
+| `notifications` INSERT RLS 소유권 미검증 (**CRITICAL 주장**) | **기각** | RLS 활성 + INSERT/ALL 정책 **0개** → 위조 INSERT 거부. 알림 생성 트리거 6종은 전부 `SECURITY DEFINER`(owner=postgres)라 정상 경로만 통과 |
+| `users.nickname` UNIQUE 부재 | **기각** | `users_nickname_key UNIQUE (nickname)` 존재 |
+| weekly-grid 컨테이너가 게이트 우회 | **기각** | 검증관 판정 유지 (`parseJobPostingDocument` strict 실패로 선차단) |
+| 확정취소 알림 오발송 | **확정** | `notify_on_application_update`가 `OLD.status='confirmed'`를 검사하지 않음 → `applied→cancelled`(자진 철회)에도 "확정 취소" 알림이 **본인에게** 발송 |
+| 알림 삭제 시 unread 이중차감 | **확정** | `fn_notification_delete_decrement` 트리거 ENABLED(−1) + 클라이언트가 `decrement-unread-counter` Edge Function 추가 호출(−1) = **−2**. `deleteMany`는 **−2N**. `GREATEST(0,…)`은 음수만 막고 언더카운트는 방치 |
+| 로그인 잠금 클라이언트 전용 | **부분 확정** | `rate_limits` 테이블과 `check_rate_limit`/`check_ip_rate_limit`/`check_user_rate_limit` 함수가 **존재하지만 PR #235가 전부 dead code로 판정해 EXECUTE 회수**. 즉 서버측 로그인 카운터는 실제로 미사용. 남은 방어는 GoTrue 플랫폼 레이트리밋 — 대시보드 확인 필요 |
+| 확정스태프 시간수정 ownerId·row-count 미확인 | **강등 (LOW)** | `wl_update`가 owner·staff·workspace member·collaborator를 모두 허용 → 무관한 제3자는 0건 UPDATE(조용한 성공 오보)만 발생하고 **타인 데이터 변조는 불가** |
 
-> ⚠️ 병렬 세션이 2026-07-10 RLS/SECDEF 감사(PR #235)를 진행했다. `notifications` INSERT 정책이 그 범위에 포함됐는지 **먼저 확인**하고 중복 작업을 피할 것.
+### 실측이 새로 확정하거나 뒤집은 것
+
+**① 클러스터 C가 CRITICAL로 승격된다.**
+
+```sql
+-- prod: work_logs RLS
+wl_update USING (staff_id = auth.uid() OR owner_id = auth.uid() OR job_posting_id IN (...))
+
+-- prod: protect_work_log_payroll_columns 는 이 4개만 막는다
+payroll_amount / payroll_status / payroll_date / payroll_notes
+```
+
+`check_in_ts`·`check_out_ts`·`custom_salary_info`·`custom_allowances`·`custom_tax_settings`는 **보호 목록에 없다.** 그리고 `wl_update`는 스태프가 자기 행을 UPDATE하는 것을 허용한다. 따라서 **스태프는 자기 JWT로 Supabase REST에 직접 PATCH를 보내 자신의 근무시각과 급여정보를 조작할 수 있다.**
+
+`payroll_amount` 자체는 트리거가 막지만, 정산 금액은 서버가 *이 입력값으로* 재계산한다. 최종 금액 쓰기를 막아도 **입력을 조작하면 결과가 조작된다.** 인증된 사용자가 자기 이익을 위해 단독 실행 가능하고, 앱 UI를 전혀 거치지 않는다.
+
+**② 클러스터 A가 prod 실측으로 확정된다.** `wl_update` 정책이 `is_workspace_member(...) OR is_posting_collaborator(...)`를 **명시적으로 허용**한다. DB는 협업자의 쓰기를 이미 열어줬고, 앱 레이어만 `owner_id` 완전일치를 요구한다. 추측이 아니라 정책 본문이다.
+
+**③ 확정 결함 하나가 거짓이었다.** `cancellation-request-no-owner-notification`(MEDIUM)은 **틀렸다.** prod에 `tr_notify_cancellation_request` 트리거가 활성이고 `fn_notify_cancellation_request`가 `status → 'cancellation_pending'` 전이 시 owner에게 알림을 INSERT한다. 코드 감사만으로는 알 수 없었다.
+
+다만 **축소된 갭은 남는다**: 이 트리거는 `job_postings.owner_id` **한 명에게만** 보낸다. 워크스페이스 멤버와 공고 협업자는 취소 요청 알림을 받지 못한다.
+
+**④ 새 결함: prod↔레포 파리티 부채 (양방향)**
+
+| 항목 | prod | 레포 |
+|---|---|---|
+| `notifications` INSERT 정책 | 없음 (안전) | `base_schema.sql:654-655`에 `auth.uid() IS NOT NULL OR is_admin()` **느슨한 정책** |
+| `users.nickname` UNIQUE | 있음 | 없음 |
+
+레포가 prod보다 **위험하다.** `supabase db reset`이나 신규 환경 부트스트랩 시 알림 위조 구멍이 열린다. 로컬 dev 스택에서 재현되는 보안 테스트는 prod를 대표하지 못한다.
+
+**⑤ 새 결함: `anon` write grant 잔존.** `notifications`·`applications`·`work_logs` 모두 `anon`에게 INSERT/UPDATE/DELETE **grant**가 남아 있다. 현재는 RLS가 막고 있지만 defense-in-depth가 없다 — PR #235가 함수 EXECUTE에 적용한 것과 같은 계열의 부채다.
+
+### 갱신된 P0
+
+| 순위 | 작업 | 등급 변화 |
+|---|---|---|
+| **1** | `work_logs` 보호 트리거에 `check_in_ts`·`check_out_ts`·`custom_*` 3종 추가 | HIGH → **CRITICAL** (prod 실측) |
+| 2 | 확정 해제 `actor_type` 하드코딩 제거 | HIGH 유지 |
+| 3 | 세 개의 소유권 판정 함수를 단일 함수로 통합 (6건 동시 해소) | HIGH 유지, prod 근거 확보 |
+| 4 | 정산 완료 건은 동결된 `payroll_amount` 표시 | HIGH 유지 |
+| 5 | 대회공고 `approvalStatus` 게이트 추가 | HIGH 유지 |
+| 6 | 레포 `base_schema.sql` 느슨한 notifications INSERT 정책 제거 + nickname UNIQUE 추가 | **신규** (파리티) |
+
+### 백로그에서 삭제
+
+- ~~`notifications` INSERT 위조~~ — prod에서 불가
+- ~~닉네임 중복 생성~~ — prod에 UNIQUE 존재
+- ~~취소 요청 알림 0건~~ — prod에 트리거 존재. **"수신자를 owner+협업자로 확장"으로 재작성**
+- ~~weekly-grid 컨테이너 우회~~ — 선차단 확인
+
+### 백로그에 추가
+
+- 알림 삭제 unread 이중차감 제거 — 트리거와 Edge Function 중 하나를 폐기 (MEDIUM)
+- `notify_on_application_update`에 `OLD.status='confirmed'` 가드 추가 (LOW)
+- `anon` write grant 회수 — `notifications`·`applications`·`work_logs` (MEDIUM, defense-in-depth)
+- GoTrue 로그인 레이트리밋 설정 확인 + dead `rate_limits` 인프라 정리 또는 연결 (MEDIUM)
 
 ---
 
