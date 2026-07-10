@@ -10,7 +10,7 @@
  * 해당 event/breadcrumb을 drop. 우리는 sensitive value만 [REDACTED]로 치환하고
  * event 자체는 그대로 통과시킨다.
  */
-import type { Breadcrumb, ErrorEvent } from '@sentry/react-native';
+import type { Breadcrumb, ErrorEvent, TransactionEvent } from '@sentry/react-native';
 
 export const REDACT_KEYS: readonly string[] = [
   // OAuth / IdP tokens & codes
@@ -169,4 +169,14 @@ export function applyRedactToBreadcrumb(
   _hint?: unknown
 ): Breadcrumb | null {
   return redactValue(breadcrumb) as Breadcrumb;
+}
+
+// tracing transaction 이벤트는 beforeSend 를 우회한다(error 이벤트 전용). tracesSampleRate>0
+// 이면 http.client span 의 data.url(쿼리스트링에 token 등)이 redact 없이 전송된다.
+// beforeSendTransaction 으로 동일 walk 를 적용해 span 문자열 값까지 마스킹한다.
+export function applyRedactToTransaction(
+  event: TransactionEvent,
+  _hint?: unknown
+): TransactionEvent | null {
+  return redactValue(event) as TransactionEvent;
 }

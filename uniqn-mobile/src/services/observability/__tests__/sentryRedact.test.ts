@@ -1,5 +1,10 @@
-import { applyRedactToBreadcrumb, applyRedactToEvent, redactValue } from '../sentryRedact';
-import type { Breadcrumb, ErrorEvent } from '@sentry/react-native';
+import {
+  applyRedactToBreadcrumb,
+  applyRedactToEvent,
+  applyRedactToTransaction,
+  redactValue,
+} from '../sentryRedact';
+import type { Breadcrumb, ErrorEvent, TransactionEvent } from '@sentry/react-native';
 
 describe('sentryRedact', () => {
   describe('키 이름 일치 기반 마스킹 (기존 회귀)', () => {
@@ -70,6 +75,27 @@ describe('sentryRedact', () => {
 
       expect(result.message).toContain('[EMAIL]');
       expect(result.message).not.toContain('user@x.com');
+    });
+
+    it('transaction span data.url 쿼리스트링의 PII를 마스킹한다 (G8 — beforeSendTransaction)', () => {
+      const txn = {
+        type: 'transaction',
+        transaction: 'GET /rest/v1/users',
+        spans: [
+          {
+            op: 'http.client',
+            data: { url: 'https://api/rest/v1/users?email=user@x.com&phone=01012345678' },
+          },
+        ],
+      } as unknown as TransactionEvent;
+      const result = applyRedactToTransaction(txn) as unknown as {
+        spans: { data: { url: string } }[];
+      };
+
+      expect(result.spans[0].data.url).toContain('[EMAIL]');
+      expect(result.spans[0].data.url).toContain('[PHONE]');
+      expect(result.spans[0].data.url).not.toContain('user@x.com');
+      expect(result.spans[0].data.url).not.toContain('01012345678');
     });
 
     it('breadcrumb.data 문자열 값 안의 전화번호를 마스킹한다', () => {
