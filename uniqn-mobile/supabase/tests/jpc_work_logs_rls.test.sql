@@ -8,7 +8,13 @@
 --   INSERT  : work_logs_insert_owner_or_admin WITH CHECK
 --             (owner_id=self OR is_admin)
 --             → owner ALLOW, 나머지 3 DENY (plan 의 "4/4 DENY" 보정 1건)
---   UPDATE  : wl_update USING (SELECT 와 동형) → 4/4 ALLOW
+--   UPDATE  : wl_update USING (owner=self OR jp.id IN
+--             (jp WHERE is_workspace_member OR is_posting_collaborator))
+--             → owner/ws_editor/collaborator ALLOW, staff 본인 DENY
+--             ※ 2026-07-10 유저플로우 감사 P0#1: staff_id 자기행 분기 제거.
+--               스태프가 자기 정산 입력값(check_in_ts/custom_*)을 직접 PATCH 하던
+--               경로였다. QR 출퇴근은 SECURITY DEFINER RPC 라 영향 없음.
+--               상세: supabase/tests/wl_update_staff_self_revoke.test.sql
 --   DELETE  : work_logs_delete_admin USING (is_admin) → 4/4 DENY (admin 아님)
 
 BEGIN;
@@ -155,13 +161,14 @@ WITH u AS (
 )
 SELECT is((SELECT count(*)::int FROM u), 1, 'work_logs UPDATE: collaborator');
 
+-- staff 본인은 DENY — 자기 정산 입력값 직접 조작 차단 (감사 P0#1)
 SELECT jpc_test_set_user((current_setting('jpc.outsider_id'))::uuid);
 WITH u AS (
   UPDATE public.work_logs SET status = 'checked_in', check_in_ts = now()
    WHERE id = (current_setting('jpc.wl_id'))::uuid
   RETURNING 1
 )
-SELECT is((SELECT count(*)::int FROM u), 1, 'work_logs UPDATE: staff 본인');
+SELECT is((SELECT count(*)::int FROM u), 0, 'work_logs UPDATE: staff 본인 DENY');
 
 -- ============================================================================
 -- DELETE (4 케이스) — 모두 DENY (work_logs_delete_admin 만, admin 아님)
