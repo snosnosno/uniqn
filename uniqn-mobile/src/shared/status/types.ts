@@ -69,9 +69,11 @@ export const SCHEDULE_TYPE_LABELS: Record<ScheduleType, string> = {
   cancelled: '취소',
 };
 
+// 스케줄 상세 모달(ScheduleDetailModal)의 헤더가 SCHEDULE_TYPE_LABELS.completed('완료')를 동시에
+// 노출하므로, 정산 배지는 접두어를 붙여 근무 "완료"와 정산 "완료"가 같은 화면에서 겹치지 않게 한다.
 export const PAYROLL_STATUS_LABELS: Record<PayrollStatus, string> = {
-  pending: '대기',
-  processing: '처리 중',
-  completed: '완료',
-  failed: '실패',
+  pending: '정산 대기',
+  processing: '정산 중',
+  completed: '정산 완료',
+  failed: '정산 실패',
 };

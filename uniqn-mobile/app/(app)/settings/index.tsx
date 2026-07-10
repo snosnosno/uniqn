@@ -41,6 +41,7 @@ import {
   useSaveNotificationSettings,
 } from '@/hooks/useNotifications';
 import { useAuth } from '@/hooks/useAuth';
+import { useIsAppleUser } from '@/hooks/auth/useCurrentUser';
 import { useClearCache } from '@/hooks/useClearCache';
 import { useAutoLogin, useBiometricAuth, AUTO_LOGIN_HELPER_TEXT } from '@/hooks';
 import { signOut, updateMarketingConsent } from '@/services/auth';
@@ -105,6 +106,9 @@ function SettingItem({ icon, label, value, onPress, rightElement }: SettingItemP
 
 export default function SettingsScreen() {
   const { isAuthenticated, profile, user } = useAuth();
+
+  // Apple 사용자는 비밀번호가 없어 비밀번호 변경 항목을 숨긴다
+  const isAppleUser = useIsAppleUser();
 
   // 워크스페이스 협업 — employer 만 진입 (라우트 가드와 일치)
   const isEmployer = useHasRole('employer');
@@ -341,14 +345,16 @@ export default function SettingsScreen() {
           <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             계정
           </Text>
-          <SettingItem
-            icon={<LockIcon size={22} color={SECONDARY_PALETTE[500]} />}
-            label="비밀번호 변경"
-            onPress={() => router.push('/(app)/settings/change-password')}
-          />
+          {!isAppleUser && (
+            <SettingItem
+              icon={<LockIcon size={22} color={SECONDARY_PALETTE[500]} />}
+              label="비밀번호 변경"
+              onPress={() => router.push('/(app)/settings/change-password')}
+            />
+          )}
           {isAuthenticated && (
             <>
-              <Divider spacing="sm" />
+              {!isAppleUser && <Divider spacing="sm" />}
               <SettingItem
                 icon={<LockIcon size={22} color={SECONDARY_PALETTE[500]} />}
                 label="자동 로그인"
@@ -460,6 +466,12 @@ export default function SettingsScreen() {
           />
           {isAuthenticated && (
             <>
+              <Divider spacing="sm" />
+              <SettingItem
+                icon={<View className="h-[22px] w-[22px]" />}
+                label="내 정보 보기"
+                onPress={() => router.push('/(app)/settings/my-data')}
+              />
               <Divider spacing="sm" />
               <SettingItem
                 icon={<BellIcon size={22} color={SECONDARY_PALETTE[500]} />}

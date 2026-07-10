@@ -14,6 +14,7 @@ import {
   updateStaffStatus,
 } from '@/services';
 import { toError } from '@/errors';
+import { createMutationErrorHandler } from '@/shared/errors/hookErrorHandler';
 import type { ConfirmedStaffStatus, WorkLogStatus } from '@/shared/status';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
@@ -143,10 +144,11 @@ export function useConfirmedStaff(
       invalidateQueries.staffManagement(jobPostingId);
       addToast({ type: 'success', message: '근무 시간이 수정되었습니다.' });
     },
-    onError: (mutationError: Error) => {
-      logger.error('Failed to update confirmed staff time', mutationError, { jobPostingId });
-      addToast({ type: 'error', message: '근무 시간 수정에 실패했습니다.' });
-    },
+    // 서버 구체 사유(예: '이미 정산이 완료된 근무 기록은 수정할 수 없습니다.')를
+    // 고정 문구로 삼키지 않도록 appError.userMessage를 그대로 노출한다.
+    onError: createMutationErrorHandler('근무 시간 수정', addToast, {
+      context: { jobPostingId },
+    }),
   });
 
   const removeStaffMutation = useMutation({

@@ -72,8 +72,12 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   );
 
   const workDuration = timeInfo.duration !== '-' ? timeInfo.duration : null;
+  // 정산 완료 건은 서버(ConfirmedStaffRepository.updateWorkTimeWithTransaction)가 수정을 거부하므로
+  // 버튼 단계에서 미리 숨긴다 — SettlementDetailModal의 payrollStatus===PENDING 계약과 동일.
   const canEditTime =
-    staff.status !== STATUS.WORK_LOG.CANCELLED && staff.status !== STATUS.CONFIRMED_STAFF.NO_SHOW;
+    staff.status !== STATUS.WORK_LOG.CANCELLED &&
+    staff.status !== STATUS.CONFIRMED_STAFF.NO_SHOW &&
+    staff.payrollStatus !== STATUS.PAYROLL.COMPLETED;
   const canDelete =
     staff.status === STATUS.WORK_LOG.SCHEDULED || staff.status === STATUS.WORK_LOG.CANCELLED;
   const canChangeStatus =

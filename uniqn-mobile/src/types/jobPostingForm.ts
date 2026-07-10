@@ -51,7 +51,7 @@ export const POSTING_TYPE_INFO: Record<
   { label: string; icon: string; description: string }
 > = {
   regular: {
-    label: '지원',
+    label: '일반',
     icon: '📋',
     description: '일반 공고',
   },

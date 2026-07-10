@@ -44,6 +44,8 @@ export interface ApplicantListProps {
   onBulkConfirm?: (applicationIds: string[]) => void;
   /** 일괄 확정 진행 중 여부 */
   isBulkConfirming?: boolean;
+  /** 지원자 0명 상태에서 "공고 공유하기" CTA — 없으면 버튼 미노출 */
+  onSharePosting?: () => void;
 }
 
 type FilterStatus = 'all' | ApplicationStatus;
@@ -75,6 +77,7 @@ export function ApplicantList({
   onViewProfile,
   onBulkConfirm,
   isBulkConfirming,
+  onSharePosting,
 }: ApplicantListProps) {
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
   const [selectionMode, setSelectionMode] = useState(false);
@@ -253,6 +256,8 @@ export function ApplicantList({
         icon={<FilterIcon size={48} color={SECONDARY_PALETTE[400]} />}
         title="지원자가 없습니다"
         description="아직 이 공고에 지원한 사람이 없습니다."
+        actionLabel={onSharePosting ? '공고 공유하기' : undefined}
+        onAction={onSharePosting}
       />
     );
   }

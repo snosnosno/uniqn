@@ -55,7 +55,12 @@ export default function WorkspaceInviteScreen() {
       const found = await workspaceService.lookupUserByEmail(trimmed);
       setLookupResult(found);
       if (!found) {
-        setSearchError('구인자로 등록된 사용자를 찾을 수 없어요');
+        // lookupUserByEmail은 미가입/스태프 계정을 구분하지 않고 동일하게 null을 반환한다
+        // (workspaceService.ts lookupUserByEmail 주석 참조 — role 필터는 의도적 설계).
+        // 서버 조회를 늘리지 않고 문구로 두 가능성을 함께 안내한다.
+        setSearchError(
+          '구인자 계정을 찾을 수 없어요. 이메일을 확인해주세요 — 스태프 계정은 워크스페이스에 초대할 수 없어요.'
+        );
       }
     } catch (err) {
       logger.warn('사용자 검색 실패', { error: String(err) });

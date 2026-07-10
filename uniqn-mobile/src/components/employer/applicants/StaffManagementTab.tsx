@@ -95,7 +95,7 @@ export function StaffManagementTab({
     addStaff,
     isUpdatingTime,
     isAddingStaff,
-  } = useConfirmedStaff(jobPostingId);
+  } = useConfirmedStaff(jobPostingId, { realtime: true });
 
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<ConfirmedStaff | null>(null);
