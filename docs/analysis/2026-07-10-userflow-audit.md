@@ -264,7 +264,7 @@ payroll_amount / payroll_status / payroll_date / payroll_notes
 
 | 순위 | 작업 | 등급 변화 |
 |---|---|---|
-| **1** | `work_logs` 보호 트리거에 `check_in_ts`·`check_out_ts`·`custom_*` 3종 추가 | HIGH → **CRITICAL** (prod 실측) |
+| **1** | ✅ **완료** — 스태프 자기행 `work_logs` UPDATE 회수 (§7) | HIGH → **CRITICAL** (prod 실측) |
 | 2 | 확정 해제 `actor_type` 하드코딩 제거 | HIGH 유지 |
 | 3 | 세 개의 소유권 판정 함수를 단일 함수로 통합 (6건 동시 해소) | HIGH 유지, prod 근거 확보 |
 | 4 | 정산 완료 건은 동결된 `payroll_amount` 표시 | HIGH 유지 |
@@ -287,7 +287,44 @@ payroll_amount / payroll_status / payroll_date / payroll_notes
 
 ---
 
-## 6. 이 감사가 볼 수 없었던 것
+## 6. P0#1 실행 기록 — 스태프 정산 입력값 조작 차단 (완료)
+
+커밋 `729b7d14f` · prod 마이그레이션 `wl_update_revoke_staff_self` 적용 완료.
+
+**선택한 접근**: 컬럼 단위 트리거 확장이 아니라 **RLS 축소**. 이유는 트리거를 손대면 QR 체크인이 깨지기 때문이다 — `protect_work_log_payroll_columns`는 `SECURITY DEFINER`라 내부에서 `current_user`가 항상 `postgres`이고, `auth.jwt()`는 GUC를 읽어 DEFINER RPC 안에서도 여전히 스태프의 JWT를 본다. 즉 `check_in_ts`를 차단 목록에 넣으면 `process_qr_checkin_atomically`를 통한 정상 출퇴근까지 함께 막힌다.
+
+RLS를 축소하면 QR은 무사하다. RPC가 `SECURITY DEFINER`(owner=postgres)라 RLS를 우회하고, 자체적으로 `auth.uid() = p_staff_id`를 검증한다.
+
+**구현 중 발견한 추가 결함**
+
+- **`work_logs_update_involved`** — `base_schema.sql`이 만드는 레포 전용 permissive UPDATE 정책(`staff_id = auth.uid() OR owner_id = auth.uid() OR is_admin()`). prod엔 없다. RLS permissive 정책은 **OR로 합산**되므로, 이게 남아 있으면 `wl_update`만 고쳐도 구멍이 그대로 열려 있다. 같은 마이그레이션에서 제거(prod에선 no-op).
+- **기존 pgTAP가 취약점을 정상으로 고정하고 있었다.** `jpc_work_logs_rls.test.sql`이 `work_logs UPDATE: staff 본인 → ALLOW(1)`을 단언하고 있었다. 회귀 테스트가 구멍을 지키고 있던 셈이다. 단언을 뒤집었다.
+- **[신규 백로그] `work_logs` INSERT/DELETE 정책 파리티** — 레포엔 `work_logs_insert_owner_or_admin`·`work_logs_delete_admin`이 있는데 prod엔 **UPDATE/SELECT 정책 2개뿐**이다. prod에서는 클라이언트 INSERT/DELETE가 전면 거부되고 모든 생성·삭제가 `SECURITY DEFINER` RPC를 지난다. 레포가 더 넓다.
+- **[신규 백로그] `notify_on_job_posting_update` 런타임 실패** — pgTAP 실행 중 `malformed array literal: "status"` WARNING이 반복 발생한다. 트리거가 실패하는데 예외를 삼켜(WARNING) 공고 수정 알림이 조용히 누락될 수 있다. prod 재현 여부 미확인.
+
+**Red-Green 증거**
+
+```
+RED  (수정 전, 로컬):  not ok 1 - wl_update USING 에 staff_id 자기행 분기가 없다
+                       not ok 2 - staff 가 자기 work_log 의 check_in_ts 를 직접 수정할 수 없다
+                       not ok 3 - staff 가 자기 work_log 의 custom_salary_info 를 직접 수정할 수 없다
+                       ok 4~8   - 회귀(조회·owner·collaborator·QR RPC) 통과
+
+GREEN (수정 후, 로컬):  npx supabase test db
+                       Files=55, Tests=652, Result: PASS
+
+prod 실측:              wl_update USING 에 staff_id 없음 / work_logs UPDATE 정책 1개
+                       wl_select 는 staff_id 유지 (조회 정상)
+                       advisor ERROR 0, WARN 178 (work_logs 신규 항목 없음)
+```
+
+**검증하지 않은 것**: prod에서 실제 스태프 JWT로 PATCH를 쏴보는 라이브 재현. prod 실데이터에 쓰기를 시도해야 해서 하지 않았다. 행위 검증은 정책 텍스트가 동일한 로컬에서 수행했다.
+
+**남긴 잔여 벡터 (P1)**: `wl_update`의 `is_posting_collaborator` 분기 때문에, 공고 협업자로 추가된 staff-role 사용자는 여전히 자기 work_log를 PATCH할 수 있다. 협업자 추가는 워크스페이스 owner만 가능하므로(`jpc_insert_ws_owner`) 외부인은 스스로 진입할 수 없다 — 광역 벡터는 닫혔고 내부자 벡터가 남는다. `wl_update_staff_self_revoke.test.sql` 케이스 6이 이 동작을 명시적으로 고정한다. 컬럼 단위 방어(트리거 확장 + 신뢰경로 플래그)는 별도 PR.
+
+---
+
+## 7. 이 감사가 볼 수 없었던 것
 
 정직하게 적는다.
 
