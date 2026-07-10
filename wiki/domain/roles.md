@@ -1,6 +1,6 @@
 ---
 area: domain
-updated: 2026-06-19
+updated: 2026-07-08
 status: current
 sources:
   - CLAUDE.md
@@ -9,7 +9,7 @@ tags: [roles, user-role, staff-role, permissions, rbac]
 
 # 역할 모델
 
-**한 줄:** 앱 접근 권한(UserRole)과 포커룸 직무(StaffRole)는 완전히 다른 두 개념이다. (검증됨: CLAUDE.md)
+**한 줄:** 앱 접근 권한(UserRole)과 현장 직무(StaffRole)는 완전히 다른 두 개념이다. (검증됨: CLAUDE.md)
 
 ## UserRole — 앱 접근 권한
 
@@ -25,7 +25,7 @@ admin > employer > staff
 | `staff` | `(app)/` | 구직자 — 공고 탐색·지원 |
 | (비로그인) | `(public/)`, `(auth/)` | 없음 |
 
-## StaffRole — 포커룸 직무
+## StaffRole — 현장 직무
 
 검증됨 (CLAUDE.md):
 ```
@@ -52,3 +52,4 @@ dealer / floor / serving
 - [[rls-model]] — RLS에서 authenticated role과 UserRole 매핑
 - [[target-market]] — employer/staff 역할이 각각 어떤 타깃 사용자인지
 - [[layers]] — 레이어별 권한 체크 위치
+- [[ops-engine]] — StaffRole(dealer/floor/serving)이 대회 딜러 테이블 배정에 쓰임

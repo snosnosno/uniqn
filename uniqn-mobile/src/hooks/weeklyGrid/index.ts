@@ -5,10 +5,13 @@ export { useGridSummary } from './useGridSummary';
 export { useVenueDaySlots } from './useVenueDaySlots';
 export { useVenueContainers } from './useVenueContainers';
 export { useSetVenueSoftTarget, type SetVenueSoftTargetVars } from './useSetVenueSoftTarget';
+export { useSetVenueSoftTargetBulk } from './useSetVenueSoftTargetBulk';
 export { useUpdateSlot, type UpdateSlotVars } from './useUpdateSlot';
+export { useDeleteSlot } from './useDeleteSlot';
 export { useCopyLastWeek } from './useCopyLastWeek';
 export {
   useNotifyWeeklyBatchConfirm,
   type NotifyWeeklyBatchConfirmVars,
 } from './useNotifyWeeklyBatchConfirm';
 export { useCreateVenueContainer } from './useCreateVenueContainer';
+export { useEnsureDefaultVenue, type EnsureDefaultVenueInput } from './useEnsureDefaultVenue';

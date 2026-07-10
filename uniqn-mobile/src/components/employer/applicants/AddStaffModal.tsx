@@ -16,15 +16,14 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
-import { STAFF_ROLES } from '@/constants';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { SheetModal } from '@/components/ui/SheetModal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { CalendarPicker } from '@/components/ui/CalendarPicker';
-import { Avatar } from '@/components/ui/Avatar';
 import { Loading } from '@/components/ui/Loading';
-import { ChevronDownIcon, SearchIcon, UserPlusIcon, XMarkIcon } from '@/components/icons';
+import { ChevronDownIcon, UserPlusIcon, XMarkIcon } from '@/components/icons';
+import { CandidateRow, RoleChips, PhoneSearchField } from '@/components/staffPicker';
 import { useStaffPhoneSearch } from '@/hooks/useStaffPhoneSearch';
 import { isWeb } from '@/utils/platform';
 import type { UserPhoneSearchResult } from '@/repositories';
@@ -210,29 +209,12 @@ export function AddStaffModal({
     >
       <View className="p-5">
         {/* 1단계: 전화번호 검색 */}
-        <View className="flex-row items-end gap-2">
-          <View className="flex-1">
-            <Input
-              label="전화번호"
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="등록된 전화번호 전체 입력"
-              keyboardType="phone-pad"
-              hint="개인정보 보호를 위해 전화번호 전체가 정확히 일치해야 검색됩니다."
-              onSubmitEditing={handleSearch}
-              returnKeyType="search"
-            />
-          </View>
-          <Button
-            variant="secondary"
-            onPress={handleSearch}
-            loading={isSearching}
-            icon={<SearchIcon size={18} color={SECONDARY_PALETTE[500]} />}
-            accessibilityLabel="전화번호로 검색"
-          >
-            검색
-          </Button>
-        </View>
+        <PhoneSearchField
+          phone={phone}
+          onChangePhone={setPhone}
+          onSearch={handleSearch}
+          isSearching={isSearching}
+        />
 
         {/* 검색 결과 */}
         {isSearching ? (
@@ -246,42 +228,17 @@ export function AddStaffModal({
         ) : (
           results.length > 0 && (
             <View className="mt-3 gap-2">
-              {results.map((user) => {
-                const isPicked = selected?.uid === user.uid;
-                return (
-                  <Pressable
-                    key={user.uid}
-                    onPress={() => setSelected(user)}
-                    className={`flex-row items-center rounded-md border p-3 active:opacity-80 ${
-                      isPicked
-                        ? 'border-primary-500 bg-primary-50 dark:border-primary-500 dark:bg-surface-elevated'
-                        : 'border-secondary-200 bg-surface-card dark:border-surface-overlay dark:bg-surface'
-                    }`}
-                  >
-                    <Avatar source={user.photoURL ?? undefined} name={user.name} size="md" />
-                    <View className="ml-3 flex-1">
-                      <Text className="text-base font-sans-semibold text-content-primary">
-                        {user.name}
-                        {user.nickname ? (
-                          <Text className="text-sm text-content-secondary font-sans">
-                            {`  ${user.nickname}`}
-                          </Text>
-                        ) : null}
-                      </Text>
-                      {user.region ? (
-                        <Text className="text-xs text-content-secondary font-sans">
-                          {user.region}
-                        </Text>
-                      ) : null}
-                    </View>
-                    {isPicked ? (
-                      <Text className="text-sm font-sans-semibold text-primary-600 dark:text-primary-400">
-                        선택됨
-                      </Text>
-                    ) : null}
-                  </Pressable>
-                );
-              })}
+              {results.map((user) => (
+                <CandidateRow
+                  key={user.uid}
+                  name={user.name}
+                  nickname={user.nickname ?? undefined}
+                  region={user.region ?? undefined}
+                  photoURL={user.photoURL ?? undefined}
+                  picked={selected?.uid === user.uid}
+                  onPress={() => setSelected(user)}
+                />
+              ))}
             </View>
           )
         )}
@@ -316,32 +273,7 @@ export function AddStaffModal({
 
             <View>
               <Text className="mb-1.5 text-sm font-sans-medium text-content-secondary">역할</Text>
-              <View className="flex-row flex-wrap gap-2">
-                {STAFF_ROLES.map((role) => {
-                  const isActive = roleKey === role.key;
-                  return (
-                    <Pressable
-                      key={role.key}
-                      onPress={() => setRoleKey(role.key)}
-                      className={`flex-row items-center rounded-full border px-3 py-2 active:opacity-80 ${
-                        isActive
-                          ? 'border-primary-500 bg-primary-50 dark:bg-surface-elevated'
-                          : 'border-secondary-200 bg-surface-card dark:border-surface-overlay dark:bg-surface'
-                      }`}
-                    >
-                      <Text
-                        className={`text-sm font-sans-medium ${
-                          isActive
-                            ? 'text-primary-700 dark:text-primary-300'
-                            : 'text-content-secondary'
-                        }`}
-                      >
-                        {`${role.icon} ${role.name}`}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+              <RoleChips value={roleKey} onChange={setRoleKey} />
             </View>
 
             {isCustomRole ? (

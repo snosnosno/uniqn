@@ -239,6 +239,9 @@ export function useConfirmedStaff(
       invalidateQueries.staffManagement(jobPostingId);
       // 정원/자동마감(capacity_full) 상태가 바뀌므로 공고 상세·목록 캐시도 무효화
       invalidateQueries.jobPostings();
+      // 스태프탭 직접추가가 주간 배치 그리드(부족셀·하루 슬롯)에 즉시 반영되도록 무효화 (W-1).
+      // AddSlotSheet(그리드) 경로도 같은 addStaff 를 쓰므로 단일 지점에서 그리드 캐시를 갱신한다.
+      queryClient.invalidateQueries({ queryKey: queryKeys.weeklyGrid.all });
       addToast({ type: 'success', message: '스태프가 추가되었습니다.' });
     },
     onError: (mutationError: Error) => {

@@ -10,12 +10,12 @@ import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 import type { JobPostingFormData } from '@/types';
 import type { JobPostingDraft } from '@/types/jobPostingDraft';
-import { INITIAL_JOB_POSTING_DRAFT } from '@/types/jobPostingDraft';
 import {
   buildCreateJobPostingInput,
   draftToFormData,
   patchJobPostingDraft,
 } from '@/utils/job-posting/submission';
+import { buildGridPrefillDraft } from '@/utils/job-posting/gridPrefill';
 import { JobPostingScrollForm } from '@/components/employer/job-form';
 import { TemplateModal } from '@/components/employer/job-form/modals/TemplateModal';
 import { LoadTemplateModal } from '@/components/employer/job-form/modals/LoadTemplateModal';
@@ -26,13 +26,21 @@ export default function CreateJobPostingScreen() {
   const { user } = useAuth();
   const { addToast } = useToastStore();
 
-  // 주간 배치 그리드 "공고 열기" 진입 — venueId(=운영처 컨테이너 id)를 받아 초기 draft 에 싣는다.
-  // 일반 생성(파라미터 없음)은 venueId 키 자체를 만들지 않아 무회귀(draftAdapter hasVenueIdField 가드).
-  const params = useLocalSearchParams<{ venueId?: string | string[] }>();
-  const venueId = Array.isArray(params.venueId) ? params.venueId[0] : params.venueId;
+  // 주간 배치 그리드 "공고 열기/부족 모집" 진입 — venueId(운영처)·date(선택일)·count(부족 인원)를
+  // 받아 초기 draft 에 프리필(P2-1). 일반 생성(파라미터 없음)은 완전 무회귀(buildGridPrefillDraft 폴백).
+  const params = useLocalSearchParams<{
+    venueId?: string | string[];
+    date?: string | string[];
+    count?: string | string[];
+  }>();
+  const firstParam = (v?: string | string[]) => (Array.isArray(v) ? v[0] : v);
+  const venueId = firstParam(params.venueId);
+  const prefillDate = firstParam(params.date);
+  const prefillCountRaw = firstParam(params.count);
+  const prefillCount = prefillCountRaw ? Number.parseInt(prefillCountRaw, 10) : undefined;
 
   const [draft, setDraft] = useState<JobPostingDraft>(() =>
-    venueId ? { ...INITIAL_JOB_POSTING_DRAFT, venueId } : INITIAL_JOB_POSTING_DRAFT
+    buildGridPrefillDraft({ venueId, date: prefillDate, count: prefillCount })
   );
   const [isDirty, setIsDirty] = useState(false);
   const formData = useMemo(() => draftToFormData(draft), [draft]);
@@ -80,7 +88,13 @@ export default function CreateJobPostingScreen() {
           ? '공고가 등록되었습니다. 관리자 승인 후 게시됩니다.'
           : '공고가 등록되었습니다.';
       addToast({ type: 'success', message: successMessage });
-      router.replace('/(app)/(tabs)/employer');
+      // P2-2: 그리드 진입(venueId)이면 스택 하부의 그리드로 복귀(선택 운영처·날짜 보존).
+      // 셀 +N 뱃지 갱신은 useCreateJobPosting 의 weeklyGrid 무효화가 담당.
+      if (venueId && router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(app)/(tabs)/employer');
+      }
     } catch (error) {
       logger.error('공고 등록 실패', error as Error);
       addToast({
@@ -88,7 +102,16 @@ export default function CreateJobPostingScreen() {
         message: error instanceof Error ? error.message : '공고 등록에 실패했습니다.',
       });
     }
-  }, [user, formData.location, formData.postingType, draft, createJobPosting, addToast, router]);
+  }, [
+    user,
+    formData.location,
+    formData.postingType,
+    draft,
+    createJobPosting,
+    addToast,
+    router,
+    venueId,
+  ]);
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
