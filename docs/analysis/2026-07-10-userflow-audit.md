@@ -183,9 +183,9 @@ DB는 `is_workspace_member` / `is_posting_collaborator`로 협업자의 쓰기�
 | 2 | C | 정산 완료 건은 `payroll_amount` 동결값 표시. 급여도 수당처럼 스냅샷 | `settlementGrouping.ts:140` |
 | 3 | C | `work_logs` 보호 트리거에 `check_in_ts`/`check_out_ts`/`custom_*` 3종 추가 | `20260415130000_...sql:34` |
 | 4 | D | 공개/인증 상세 + 지원 경로에 `approvalStatus === 'approved'` 게이트 추가 | `JobPostingRepository.ts:416` |
-| 5 | A | `loadAndVerifyMutateAccess` / `validateWorkLogOwnership` / `verifyJobPostingOwnership` **3개 가드를 단일 권한 판정 함수로 통합** | 6건 동시 해소 |
+| 5 | A | ✅ **완료 (§8)** — `postingAuthority` 모듈로 3개 가드 통합 + 무검증 2경로 방어 | 6건 중 5건 해소 |
 
-**#5가 이 감사의 최대 레버리지다.** 세 개의 서로 다른 소유권 판정 함수가 각자 다른 규칙을 갖고 있어 클러스터 A 6건이 발생했다. 하나로 합치면 6건이 한 번에 닫힌다.
+**#5가 이 감사의 최대 레버리지였다.** 세 개의 서로 다른 소유권 판정 함수가 각자 다른 규칙을 갖고 있어 클러스터 A 6건이 발생했다. 하나로 합쳐 5건을 닫았다. 잔여 1건(`staff-role-collaborator-locked-out`, 라우트 role 게이트)은 제품 결정이 필요해 별도 슬라이스로 남았다.
 
 ### P1 — 마찰·정합성
 
@@ -347,3 +347,43 @@ prod 실측:              wl_update USING 에 staff_id 없음 / work_logs UPDATE
 
 - `pitfall_workflow_burst_agent_limit` — 에이전트 17개 동시 디스패치 = 버스트 한도 전원 실패 + 603k 토큰 소각 + 캐시 0건. 5개씩 순차 배치할 것.
 - `pitfall_fable_arithmetic_unreliable` — fable이 `2+3=6`. 판단·검증·종합 자리에 두지 말 것.
+
+---
+
+## 8. P0#3 실행 기록 — 소유권 판정 통합 (클러스터 A, 완료)
+
+브랜치 `analysis/userflow-audit-20260710` 커밋 `2a66d14fc`..`d3f331440` (7커밋). **DB 무변경** — 앱레이어만 prod RLS에 맞췄다.
+
+**핵심 판단**: prod RLS 실측이 방향을 정했다. `work_logs` UPDATE는 `owner OR is_workspace_member OR is_posting_collaborator`(admin 없음), `job_postings` UPDATE는 거기에 `is_admin` 추가. 즉 DB는 협업자에게 이미 쓰기를 열어줬고 앱 레이어만 `owner_id` 완전일치를 요구하고 있었다. 단일 boolean이 아니라 **역량(capability) 판정**으로 통합했다 — admin을 mutate/근무기록 쓰기에서 계속 거부해야 하기 때문이다(PR3-A.2: 후속 RLS에 admin 분기가 없어 UPDATE가 0행 silent no-op이 되고 caller가 false success를 인식한다).
+
+**한 모듈, 4개 가드 통합 + 무검증 2경로 방어**
+
+| 대상 | 변경 |
+|---|---|
+| `postingAuthority.ts` (신규) | `resolvePostingAuthority`(owner short-circuit → 멤버 → 협업자) + `canManagePosting`(admin 미포함) |
+| `loadAndVerifyMutateAccess` | 협업자 인식 → 공고 수정·마감·재오픈·정산설정 4경로 |
+| `validateWorkLogOwnership` + bulk | 정산 쓰기가 멤버·협업자 허용. bulk는 공고당 1회 판정(N+1 방지) |
+| `verifyPostingAuthority` (구 `verifyJobPostingOwnership`) | 노쇼·상태변경 |
+| **`updateRole` / `updateWorkTime`** | **소유권 검증이 아예 없던 2경로에 가드 신설** — `workLog.jobPostingId`로만 판정(클라 주입 불신) |
+
+이로써 "같은 화면 인접 버튼 4개가 서로 다른 권한으로 동작"(클러스터 A의 UX 증상)이 사라졌다.
+
+**적대 리뷰 2종 (code-reviewer + security-reviewer, opus 병렬)** — 둘 다 CRITICAL/HIGH 0건, APPROVE. fail-open 경로 부재 확인(`handleSupabaseError` 반환형 `never`, RPC null → `=== true` 불일치로 fail-closed). `actorId`는 전부 세션(`requireCurrentUser`/`user.uid`)에서 파생돼 클라 스푸핑 불가.
+
+**리뷰가 잡은 것 (두 리뷰 독립 지적)**
+
+- **[수정함, MEDIUM]** bulk 공고조회 실패(`jpError`)를 삼켜 "권한 없는 공고"로 오표기 → `logger.warn` 추가(fail-closed 유지). 커밋 `d3f331440`.
+- **[후속 백로그, 실제 결함]** `useStaffSettlementsHandlers.ts:255,282,348`이 `posting.ownerId`를 actorId로 넘겨 앱레이어 인가가 no-op이 된다(owner short-circuit 항상 참). 정산 커스텀 설정 수정 경로. **이 슬라이스 밖의 선재 패턴**이고 실제 쓰기는 RLS가 막지만, 통합의 신뢰성을 갉으므로 세션 uid로 교체 필요.
+- **[후속 백로그, LOW]** `markAsNoShow`/`updateStatus`/Settlement의 `ownerId` 파라미터명을 `actorId`로 통일(의미와 불일치, 미래 과잉조임 위험).
+
+**검증 증거**
+
+```
+tsc --noEmit           exit 0
+eslint (변경 5파일)     0 errors 0 warnings
+jest 전체              383 스위트 / 4904 테스트 PASS
+pgTAP                  Files=55 Tests=652 PASS (DB 무변경 확인)
+adversarial review     code+security 2종, CRITICAL/HIGH 0
+```
+
+**잔여 (클러스터 A 6건 중 1건)**: `staff-role-collaborator-locked-out` — `app/(employer)/_layout.tsx`의 `useHasRole('employer')` 게이트가 staff-role 협업자를 조용히 튕겨낸다. "staff-role 사용자에게 employer 화면을 보여줄 것인가"라는 제품 결정이 필요해 별도 슬라이스로 남긴다.
