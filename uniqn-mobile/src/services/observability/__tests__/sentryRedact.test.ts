@@ -211,6 +211,116 @@ describe('sentryRedact', () => {
       const result = redactValue({ type: 'TypeError' }) as Record<string, unknown>;
       expect(result.type).toBe('TypeError');
     });
+
+    it('13자리 epoch-ms 타임스탬프를 [RRN]으로 오염시키지 않는다', () => {
+      // RRN 정규식이 "숫자 13자리"만 보면 epoch 밀리초가 전부 [RRN]이 된다.
+      // 실제 RRN은 앞 6자리가 유효한 생년월일이고 7번째 자리가 성별코드(1~8).
+      const result = redactValue({
+        note: 'request took until 1752134400000 ms',
+        ts: '1767225600000',
+      }) as Record<string, unknown>;
+
+      expect(result.note).toBe('request took until 1752134400000 ms');
+      expect(result.ts).toBe('1767225600000');
+    });
+
+    it('긴 숫자열 내부를 [PHONE]으로 부분매치하지 않는다', () => {
+      // PHONE_KR_INTL_REGEX에 선행 경계가 없으면 "1234821012345678" 안의
+      // "821012345678"이 매치되어 주문번호·식별자가 오염된다.
+      const result = redactValue({ orderNo: '1234821012345678' }) as Record<string, unknown>;
+
+      expect(result.orderNo).toBe('1234821012345678');
+    });
+
+    it('레티나 에셋 파일명(@2x/@3x)을 [EMAIL]로 오염시키지 않는다', () => {
+      const result = redactValue({
+        frame: 'assets/img/hero@2x.png',
+        icon: 'splash@3x.webp',
+      }) as Record<string, unknown>;
+
+      expect(result.frame).toBe('assets/img/hero@2x.png');
+      expect(result.icon).toBe('splash@3x.webp');
+    });
+
+    it('오탐 제거 후에도 진짜 PII는 여전히 마스킹한다 (red-green 대조군)', () => {
+      const result = redactValue({
+        rrn: '900101-1234567',
+        rrnNoHyphen: '9012311234567',
+        intlPhone: '문의: +82-10-1234-5678',
+        mail: 'contact user@example.com now',
+      }) as Record<string, unknown>;
+
+      expect(result.rrn).toBe('[REDACTED]'); // 키 매칭 우선
+      expect(result.rrnNoHyphen).toBe('[RRN]');
+      expect(result.intlPhone).toBe('문의: [PHONE]');
+      expect(result.mail).toBe('contact [EMAIL] now');
+    });
+  });
+
+  describe('누락 마스킹 보강 (2026-07-10 리뷰)', () => {
+    it('Sentry Request/Response의 복수형 cookies 키를 마스킹한다', () => {
+      // @sentry/core 의 Request·ResponseContext 인터페이스는 복수형 `cookies`.
+      // 단수 `cookie`만 등록하면 세션 토큰이 담긴 쿠키값이 그대로 전송된다.
+      const event = {
+        request: { cookies: { 'sb-access-token': 'opaque-session-value' } },
+      } as unknown as ErrorEvent;
+      const result = applyRedactToEvent(event) as unknown as { request: { cookies: unknown } };
+
+      expect(result.request.cookies).toBe('[REDACTED]');
+    });
+
+    it('user.ip_address · user.geo를 마스킹한다', () => {
+      const event = {
+        user: { id: 'u-1', ip_address: '203.0.113.42', geo: { city: 'Seoul' } },
+      } as unknown as ErrorEvent;
+      const result = applyRedactToEvent(event) as unknown as {
+        user: { id: string; ip_address: unknown; geo: unknown };
+      };
+
+      expect(result.user.ip_address).toBe('[REDACTED]');
+      expect(result.user.geo).toBe('[REDACTED]');
+      expect(result.user.id).toBe('u-1'); // 식별자는 보존
+    });
+
+    it('contexts.device.name(안드로이드 기기명 = 실명 흔함)을 마스킹한다', () => {
+      const event = {
+        event_id: 'fc6d8c0c43fc4630ad850ee518f1b9d0',
+        contexts: {
+          device: { name: '홍길동의 Galaxy S24', model: 'SM-S921N', family: 'Samsung' },
+        },
+      } as unknown as ErrorEvent;
+      const result = applyRedactToEvent(event) as unknown as {
+        event_id: string;
+        contexts: { device: { name: unknown; model: string; family: string } };
+      };
+
+      expect(result.contexts.device.name).toBe('[REDACTED]');
+      // 진단에 필요한 나머지 device 필드와 event_id는 보존
+      expect(result.contexts.device.model).toBe('SM-S921N');
+      expect(result.contexts.device.family).toBe('Samsung');
+      expect(result.event_id).toBe('fc6d8c0c43fc4630ad850ee518f1b9d0');
+    });
+
+    it('transaction 이벤트의 contexts.device.name도 마스킹한다', () => {
+      const txn = {
+        type: 'transaction',
+        contexts: { device: { name: '홍길동의 Galaxy', model: 'SM-S921N' } },
+      } as unknown as TransactionEvent;
+      const result = applyRedactToTransaction(txn) as unknown as {
+        contexts: { device: { name: unknown; model: string } };
+      };
+
+      expect(result.contexts.device.name).toBe('[REDACTED]');
+      expect(result.contexts.device.model).toBe('SM-S921N');
+    });
+
+    it('device 컨텍스트가 없어도 안전하게 통과한다', () => {
+      const event = { message: 'no contexts here' } as unknown as ErrorEvent;
+      expect(() => applyRedactToEvent(event)).not.toThrow();
+
+      const withEmptyContexts = { contexts: {} } as unknown as ErrorEvent;
+      expect(() => applyRedactToEvent(withEmptyContexts)).not.toThrow();
+    });
   });
 
   describe('depth 초과 처리 (G3)', () => {
