@@ -52,6 +52,18 @@
 6. **원격 repair**: `supabase migration list`로 drift 확인 후 `migration repair --status applied`.
 7. **가드 신설**: CI에 "prod 함수/정책 카운트 == 로컬 카운트" 스모크(주기적 실측)로 재발산 조기경보.
 
+## 3-b. 재빌드 시 보안 퇴행 주의 (레포 전용 gen-1 정책 부활 — prod엔 없음)
+
+`db reset`/신환경 재빌드는 prod가 수동 DROP한 base_schema gen-1 정책을 되살린다. 특히 **위험 2건**:
+
+- **`action_logs.action_logs_insert_any`** — `WITH CHECK (true)` = 누구나 감사로그 INSERT(로그 위조). prod=정책없음(deny).
+- **`notifications.notifications_insert_service`** — `WITH CHECK (auth.uid() IS NOT NULL)`(수신자 바인딩 없음) = 인증된 아무나 타인에게 알림 위조. prod=deny.
+  → baseline squash가 이 gen-1을 제거하므로 근본 해소. 그 전까지 **로컬 db-tests 결과를 prod 보안 근거로 쓰지 말 것**(로컬이 prod보다 느슨한 테이블 13종).
+
+## 3-c. `decrement_unread_counter` 오버로드 모호성 (baseline 재기록 시)
+
+prod에 `(uuid)`와 `(uuid, integer)` 2종 공존, repo엔 `(uuid,int)`만. prod에서 단일인자 `decrement_unread_counter($uuid)` 호출 시 두 후보 매치 → `function is not unique`(42725) 가능(로컬 재현불가·미확인). baseline 재기록 시 잉여 `(uuid)` 제거 또는 호출부 2-인자 고정 검토. (2026-07-10 Tier-3가 두 오버로드 모두 authenticated 회수 = 클라 트리거 표면은 이미 닫힘, service_role 경로만 잔존.)
+
 ## 4. 주의
 
 - 이 계획 실행 전까지 **모든 DB 주장은 prod 라이브 실측**(`mcp__supabase__execute_sql` pg_proc/pg_policies/has_function_privilege). 로컬 GREEN을 prod 증거로 쓰지 말 것.

@@ -18,7 +18,8 @@
 | PG 메이저   | 17.6 | 15.8(dev)  | functiondef 포맷 상이                     |
 
 - `schema_migrations` 버전 대조는 무의미(MCP apply 자체 타임스탬프 → prod 280 vs repo 240 거의 disjoint). 유효 오라클 = 실제 객체 정의 비교.
-- 본문 52 불일치 다수는 주석/포맷(cosmetic)이나 `is_workspace_member`(구조 상이)·`is_admin`(prod=STABLE/repo=VOLATILE, prod 하드닝 앞섬) 등 SEMANTIC 혼재. → **prod에 적용됐으나 repo 미커밋된 hotfix 다수 존재**.
+- **본문 52 불일치는 전건 diff 결과 실질 SEMANTIC 0건**(무공백 정규화 비교 — 주석/공백/대소문자/plpgsql 래퍼/죽은대입만). `is_workspace_member`도 plain SQL↔plpgsql 래퍼 차이일 뿐 반환 동일. 진짜 SEMANTIC은 **본문 밖 메타/grant**: `is_admin` volatility(repo VOLATILE→prod STABLE, RLS 성능 하드닝), `_format_compensation_label` search_path, 6개 함수 grant 핫픽스(check_nickname/phone_exists·increment_view/announcement_view·apply_with_capacity_check·workspace_count_for_owner) — 전부 **D1(prod 앞섬, repo 미커밋)**. 재빌드 시 하드닝 소실.
+- **드리프트 메커니즘(근본)**: repo 마이그가 `EXCEPTION WHEN undefined_function`·동적 pg_proc 루프·`DROP POLICY IF EXISTS`로 **부재 시 조용히 no-op** → `db reset`이 prod와 다른 DB로 **거짓 GREEN**. prod의 수동 DROP/ALTER 핫픽스가 repo에 미커밋되어 로컬 재빌드가 구세대를 되살림.
 - 정책 repo전용 77 = 긴이름 세트(`<table>_<cmd>_<who>`)와 짧은이름(`bp_select`) **공존** → 로컬은 PERMISSIVE 중복 OR로 prod보다 느슨. 로컬 db-tests가 prod와 다르게 동작.
 - **위험**: 신규 마이그가 prod 실상태 미전제 → 깨질 수 있음(`IF EXISTS` 방어 필수). 로컬 GREEN을 prod 증거로 쓰지 말 것.
 - **권장 복구**: prod 스키마 덤프 baseline squash로 repo↔prod 정합(별도 프로젝트, 다운타임 없음: 정의 비교만).
@@ -39,6 +40,17 @@
 
 - `toggle_board_post_vote`·`toggle_comment_reaction`가 `p_user_id`(클라 통제)를 `auth.uid()` 검증 없이 신뢰 → 타인 명의 위조/삭제/카운트 조작. 앱은 자기 uid 전달(정상 무회귀).
 - 수정: 표준 호출자 바인딩 가드(`auth.uid() IS DISTINCT FROM p_user_id AND NOT is_admin()`). **prod 적용·라이브 위조 차단 확인**. prod-only/드리프트였던 두 함수를 현행 prod본문+가드로 재정의(정합화 겸함).
+
+## 2-b. 추가 하드닝 완료 (prod, 2026-07-10 후속)
+
+- **C1 [MED] `job_postings_select_all` whitelist 축소** — `20260710000200`. anon 비whitelist(cancelled 등) 2행→0(prod red-green). base_schema 블랭킷 잔재 제거.
+- **Tier-3 [LOW] `bc_select` visibility 미러 + 미사용 9함수 authenticated 회수** — `20260710000300`. 알림 카운터 3(griefing)·배치 6(스팸/남용)·bc_select 잠복누수. service_role 유지.
+- **[HIGH] `check_user_rate_limit` authenticated 회수** — `20260710000400`. p_user_id 무바인딩 victim-DoS 벡터(lens-authed HIGH#6). dead code.
+
+## 2-c. 후속 추적 (미적용 — 별도 게이트)
+
+- **[MED] `sync_schedule_board(p_job_posting_id)`** — auth.uid() 무검증, 임의 posting 재동기화. 단 **정상 클라 호출 함수**(jobManagementService)+삽입 신원은 실제 work_logs 기반(권한상승·유출 없음, 리소스 넛지). 수정=posting 소유권 가드이나 sync 흐름 회귀 위험 → 소유권 검증 설계 + sync 회귀테스트 후 별도 적용.
+- **[LOW, ~0 exploit] search_path pg_temp 누락 27함수** — `search_path=public`만 있고 pg_temp 미명시(temp-table shadowing 이론). **Supabase PostgREST에서 authenticated 클라 임의SQL(CREATE TEMP) 채널 부재로 실질 악용 ~0**. `cancel_application_atomically`/`confirm_application`이 스키마-미명시 참조 다수라 이론상 최대 노출. 대량 함수 재작성이라 파리티 baseline 정합 시 일괄 `, pg_temp` 추가 권장.
 
 ## 3. Tier-3 — 제품 결정 대기 (미적용)
 
