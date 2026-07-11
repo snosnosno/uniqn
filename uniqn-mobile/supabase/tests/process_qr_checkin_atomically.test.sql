@@ -80,15 +80,21 @@ BEGIN
   -- S1: checkIn happy path
   -- ----------------------------------------------------------
   -- [#195 가드] 호출자 바인딩: 직원 본인 셀프스캔(p_staff_id=v_staff_id) 로 jwt sub 세팅
+  -- [P1#7 클램프] 5분 초과 과거 시각은 서버 now() 로 대체되므로 now() 로 호출하고,
+  -- S2 의 2시간 duration 시나리오는 아래에서 check_in_ts 직접 시드로 구성한다.
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_staff_id, 'role', 'authenticated')::text, true);
   v_result := public.process_qr_checkin_atomically(
-    v_work_log_id, v_staff_id, v_job_id, 'checkIn', v_check_in_time, to_char(now(), 'YYYY-MM-DD')
+    v_work_log_id, v_staff_id, v_job_id, 'checkIn', now(), to_char(now(), 'YYYY-MM-DD')
   );
   IF NOT ((v_result->>'success')::bool) THEN RAISE EXCEPTION 'S1 fail: %', v_result; END IF;
   IF v_result->>'action' != 'checkIn' THEN RAISE EXCEPTION 'S1 action: %', v_result; END IF;
   IF (SELECT status::text FROM public.work_logs WHERE id = v_work_log_id) != 'checked_in' THEN
     RAISE EXCEPTION 'S1 side: status';
   END IF;
+
+  -- S2 준비: 2시간 전 출근 상태를 직접 시드 (클램프 때문에 RPC 로는 과거 시각 기록 불가.
+  -- check_in_ts 는 protect_work_log_payroll_columns 차단목록에 없어 superuser 컨텍스트 UPDATE 가능)
+  UPDATE public.work_logs SET check_in_ts = v_check_in_time WHERE id = v_work_log_id;
 
   -- ----------------------------------------------------------
   -- S5: 이중 checkIn → already_checked_in
