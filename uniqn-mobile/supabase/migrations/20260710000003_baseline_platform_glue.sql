@@ -33,6 +33,24 @@ EXCEPTION
 END $$;
 
 -- -----------------------------------------------------------------------------
+-- 1-b. 이벤트 트리거 ensure_rls — CREATE TABLE 시 RLS 자동 활성화 (prod 실측)
+--    이벤트 트리거는 전역 오브젝트라 스키마 덤프에 담기지 않는다.
+--    함수 rls_auto_enable() 자체는 2) 덤프(public)에 포함.
+-- -----------------------------------------------------------------------------
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_event_trigger WHERE evtname = 'ensure_rls') THEN
+    CREATE EVENT TRIGGER ensure_rls
+      ON ddl_command_end
+      WHEN TAG IN ('CREATE TABLE', 'CREATE TABLE AS', 'SELECT INTO')
+      EXECUTE FUNCTION rls_auto_enable();
+  END IF;
+EXCEPTION
+  WHEN insufficient_privilege THEN
+    RAISE WARNING '[baseline_glue] 이벤트 트리거 생성 권한 없음 — skip';
+END $$;
+
+-- -----------------------------------------------------------------------------
 -- 2. storage 버킷 11종 (prod storage.buckets 실측)
 -- -----------------------------------------------------------------------------
 DO $$

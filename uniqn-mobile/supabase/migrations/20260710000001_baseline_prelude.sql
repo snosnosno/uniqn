@@ -30,17 +30,13 @@ CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 
 -- -----------------------------------------------------------------------------
--- 2. 스키마 레벨 권한 + 기본 권한 (구 20260619133156 상당, prod pg_default_acl 실측 일치)
---    개별 오브젝트 ACL은 2) 덤프가 그대로 담는다. 여기는 스키마/미래 오브젝트 기본값만.
+-- 2. 스키마 레벨 권한 (구 20260619133156 상당)
+--    개별 오브젝트 ACL과 ALTER DEFAULT PRIVILEGES(미래 오브젝트 기본값)는 2) 덤프가
+--    말미에 그대로 담고 있다. ⚠️기본권한을 여기(덤프 전)서 걸면 덤프가 만드는 모든
+--    함수에 anon EXECUTE 가 선부여되고, pg_dump 의 델타 기반 ACL(REVOKE FROM PUBLIC)이
+--    그 오염을 못 지워 prod 하드닝(anon 회수)이 로컬에서 무효화된다 — 실측으로 확인된 함정.
 -- -----------------------------------------------------------------------------
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
-
-ALTER DEFAULT PRIVILEGES IN SCHEMA public
-  GRANT ALL ON TABLES TO anon, authenticated, service_role;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public
-  GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public
-  GRANT EXECUTE ON FUNCTIONS TO anon, authenticated, service_role;
 
 -- -----------------------------------------------------------------------------
 -- 3. vault 로컬 부트스트랩 (구 20260414000000 블록 이관)

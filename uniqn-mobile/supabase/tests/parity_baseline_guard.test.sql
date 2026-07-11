@@ -15,6 +15,11 @@
 --   - 확장 소속 함수(pg_depend deptype='e', 예: supabase test db 의 pgtap)
 --   - 테스트 fixture 헬퍼(jpc_* / ops_test_* — supabase/fixtures/*.sql 이 주입, 스키마 밖 산물)
 -- 안전: BEGIN/ROLLBACK, 읽기 전용.
+--
+-- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
+-- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
+-- PARITY_EXPECT_FUNCS=162
+-- PARITY_EXPECT_POLICIES=103
 -- ============================================================
 BEGIN;
 SELECT plan(7);
