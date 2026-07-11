@@ -130,14 +130,25 @@ function createDateSettlementStatus(
     taxSettings,
   });
 
+  const payrollStatus = workLog.payrollStatus || STATUS.PAYROLL.PENDING;
+
+  // 정산 완료 건은 완료 시점에 동결된 금액(payrollAmount)을 진실원으로 사용한다.
+  // 구인자가 완료 후 공고 급여 설정을 바꿔도 이미 확정·지급된 표시액이 소급 변경되지 않도록 방어.
+  // 동결값이 없는 레거시 완료 행은 재계산으로 안전하게 fallback한다.
+  const isCompleted = payrollStatus === STATUS.PAYROLL.COMPLETED;
+  const amount =
+    isCompleted && Number.isFinite(workLog.payrollAmount)
+      ? (workLog.payrollAmount as number)
+      : settlementResult.afterTaxPay;
+
   // 출퇴근 완료 여부 확인
   const hasValidTimes = !!(workLog.checkInTime && workLog.checkOutTime);
 
   return {
     date: workLog.date,
     formattedDate: formatSingleDate(workLog.date),
-    payrollStatus: workLog.payrollStatus || STATUS.PAYROLL.PENDING,
-    amount: settlementResult.afterTaxPay,
+    payrollStatus,
+    amount,
     workLogId: workLog.id,
     role: workLog.role,
     customRole: workLog.customRole,
