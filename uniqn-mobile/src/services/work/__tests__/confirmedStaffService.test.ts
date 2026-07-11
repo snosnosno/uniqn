@@ -181,7 +181,7 @@ describe('confirmedStaffService', () => {
     );
   });
 
-  it('cancels confirmation using canonical application id', async () => {
+  it('확정 스태프 해제는 실제 applicationId 와 employer_initiates 로 RPC 를 호출한다', async () => {
     mockWorkLogRepository.getById.mockResolvedValue(
       createMockWorkLog({ staffId: 'staff-1', jobPostingId: 'job-1', applicationId: 'app-1' })
     );
@@ -195,7 +195,30 @@ describe('confirmedStaffService', () => {
       reason: 'Release slot',
     });
 
-    expect(mockCancelConfirmation).toHaveBeenCalledWith('job-1_staff-1', 'owner-1', 'Release slot');
+    expect(mockCancelConfirmation).toHaveBeenCalledWith(
+      'app-1',
+      'owner-1',
+      'Release slot',
+      'employer_initiates'
+    );
+  });
+
+  it('합성 키(jobPostingId_staffId)가 아니라 실제 applicationId 를 넘긴다 (22P02 회귀 방지)', async () => {
+    mockWorkLogRepository.getById.mockResolvedValue(
+      createMockWorkLog({ staffId: 'staff-1', jobPostingId: 'job-1', applicationId: 'app-42' })
+    );
+    mockCancelConfirmation.mockResolvedValue(undefined as never);
+
+    await cancelConfirmedStaffConfirmation({
+      workLogId: 'worklog-1',
+      jobPostingId: 'job-1',
+      staffId: 'staff-1',
+      date: '2025-01-20',
+    });
+
+    const [passedApplicationId] = mockCancelConfirmation.mock.calls[0];
+    expect(passedApplicationId).toBe('app-42');
+    expect(passedApplicationId).not.toBe('job-1_staff-1');
   });
 
   it('keeps deleteConfirmedStaff as backward-compatible alias', async () => {
@@ -211,7 +234,12 @@ describe('confirmedStaffService', () => {
       date: '2025-01-20',
     });
 
-    expect(mockCancelConfirmation).toHaveBeenCalledWith('job-1_staff-1', 'owner-1', undefined);
+    expect(mockCancelConfirmation).toHaveBeenCalledWith(
+      'app-1',
+      'owner-1',
+      undefined,
+      'employer_initiates'
+    );
   });
 
   it('routes direct-added staff (no applicationId) to removeDirectStaff', async () => {

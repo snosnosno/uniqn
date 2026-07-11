@@ -82,10 +82,6 @@ async function workLogsToConfirmedStaff(workLogs: WorkLog[]): Promise<ConfirmedS
   });
 }
 
-function buildApplicationId(jobPostingId: string, staffId: string): string {
-  return `${jobPostingId}_${staffId}`;
-}
-
 export async function getConfirmedStaff(jobPostingId: string): Promise<GetConfirmedStaffResult> {
   logger.info('Fetching confirmed staff list', { jobPostingId });
 
@@ -174,21 +170,21 @@ export async function cancelConfirmedStaffConfirmation(
   }
 
   // 직접추가분(지원서 미연동)은 확정취소 RPC 가 아니라 전용 삭제 경로를 탄다.
-  if (!workLog.applicationId) {
+  // applicationId 부재를 여기서 fail-closed 처리하므로, 아래 RPC 경로는 항상 실제 UUID 를 넘긴다
+  // (과거 `${jobPostingId}_${staffId}` 합성키를 uuid 파라미터에 넘겨 22P02 로 즉사하던 결함 제거).
+  const applicationId = workLog.applicationId;
+  if (!applicationId) {
     await confirmedStaffRepository.removeDirectStaff({ workLogId: input.workLogId });
     logger.info('직접 추가 스태프 삭제 완료', { workLogId: input.workLogId });
     return;
   }
 
-  await cancelConfirmation(
-    buildApplicationId(workLog.jobPostingId, workLog.staffId),
-    currentUser.id,
-    input.reason
-  );
+  // 구인자 확정해제: 실제 applicationId + employer_initiates 로 RPC 호출(인가 판정은 RPC 담당).
+  await cancelConfirmation(applicationId, currentUser.id, input.reason, 'employer_initiates');
 
   logger.info('Cancelled confirmed staff confirmation', {
     workLogId: input.workLogId,
-    applicationId: buildApplicationId(workLog.jobPostingId, workLog.staffId),
+    applicationId,
   });
 }
 

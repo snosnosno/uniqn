@@ -47,6 +47,7 @@ import type {
   CancelConfirmationResult,
   SubscribeCallbacks,
 } from '../interfaces';
+import type { CancelActorType } from '../interfaces/IApplicationRepository';
 import {
   TABLES,
   APPLICATION_COLUMNS,
@@ -513,9 +514,10 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
   async cancelConfirmationTransaction(
     applicationId: string,
     ownerId: string,
-    cancelReason?: string
+    cancelReason?: string,
+    actorType?: CancelActorType
   ): Promise<CancelConfirmationResult> {
-    return executeCancelConfirmation(applicationId, ownerId, cancelReason);
+    return executeCancelConfirmation(applicationId, ownerId, cancelReason, actorType);
   }
 
   // ==========================================================================
