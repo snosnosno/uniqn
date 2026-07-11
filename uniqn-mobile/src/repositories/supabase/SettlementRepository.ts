@@ -565,6 +565,12 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
       // 소유권 검증
       const { workLog } = await this.validateWorkLogOwnership(workLogId, ownerId, '정산 설정 수정');
 
+      // 정산 완료된 근무 기록은 급여/수당/세금 설정 수정 불가 (fail-closed).
+      // 완료 시 동결된 payroll_amount 와 표시·이력 정합을 서버측에서 보호한다(UI 방어만으로는 부족).
+      if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
+        throw new AlreadySettledError();
+      }
+
       // 기존 수정 이력에 새 항목 추가 (Supabase에는 arrayUnion이 없으므로 수동 추가)
       const existingHistory =
         (workLog as unknown as Record<string, unknown>).settlementModificationHistory ?? [];
