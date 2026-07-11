@@ -29,7 +29,7 @@ import {
 } from '@/hooks/ops';
 import { useMyJobPostings } from '@/hooks/useJobManagement';
 import { useActiveWorkspace } from '@/hooks/workspace/useActiveWorkspace';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore, useHasRole } from '@/stores/authStore';
 import type { OpsStaff, OpsTable, OpsTournament } from '@/types/ops';
 
 type CapturedOption = { label: string; value: string; disabled?: boolean; destructive?: boolean };
@@ -116,6 +116,7 @@ jest.mock('@/hooks/workspace/useActiveWorkspace', () => ({
 
 jest.mock('@/stores/authStore', () => ({
   useAuthStore: jest.fn(),
+  useHasRole: jest.fn(),
 }));
 
 const mockUseOpsStaff = useOpsStaff as unknown as jest.Mock;
@@ -127,6 +128,7 @@ const mockUseAssignTableStaff = useAssignTableStaff as unknown as jest.Mock;
 const mockUseMyJobPostings = useMyJobPostings as unknown as jest.Mock;
 const mockUseActiveWorkspace = useActiveWorkspace as unknown as jest.Mock;
 const mockUseAuthStore = useAuthStore as unknown as jest.Mock;
+const mockUseHasRole = useHasRole as unknown as jest.Mock;
 
 const TID = 'trn1';
 const OWNER_ID = 'owner-1';
@@ -201,9 +203,11 @@ interface SetupOpts {
   postings?: { id: string; title: string }[];
   activeWorkspace?: { id: string } | undefined;
   actorId?: string | undefined;
+  hasEmployerRole?: boolean;
 }
 
 function setupHooks(opts?: SetupOpts) {
+  mockUseHasRole.mockReturnValue(opts?.hasEmployerRole ?? true);
   mockUseOpsStaff.mockReturnValue({ data: opts?.roster ?? [], isLoading: false });
   mockUseOpsTables.mockReturnValue({ tables: opts?.tables ?? [], isLoading: false });
   mockUseMyJobPostings.mockReturnValue({ data: opts?.postings ?? [] });
@@ -259,7 +263,7 @@ describe('공고 연결 카드 — 미연결', () => {
     expect(getByText('워크스페이스가 없어 공고를 연결할 수 없습니다.')).toBeTruthy();
   });
 
-  it('"새 공고 만들기" → create 화면으로 opsTournamentId 와 함께 push 한다(역방향 훅)', () => {
+  it('"새 공고 만들기" → create 화면으로 opsTournamentId + 대회일(date)과 함께 push 한다(역방향 훅)', () => {
     setupHooks();
     const { getByText } = render(<StaffTab tournamentId={TID} tournament={tournament()} />);
 
@@ -267,8 +271,37 @@ describe('공고 연결 카드 — 미연결', () => {
 
     expect(mockRouterPush).toHaveBeenCalledWith({
       pathname: '/(employer)/my-postings/create',
+      params: { opsTournamentId: TID, date: '2026-07-10' },
+    });
+  });
+
+  // eventDate 프리필 리뷰 후속 — 공고 날짜가 대회일과 다르면 import CTA(기본 event_date 필터)가
+  // 확정 스태프 0명을 가져오는 함정 방지. eventDate 가 없으면 date 키 자체를 생략(프리필 폴백).
+  it('eventDate 가 없으면 date 파라미터 없이 push 한다(프리필 폴백)', () => {
+    setupHooks();
+    const { getByText } = render(
+      <StaffTab tournamentId={TID} tournament={tournament({ eventDate: null })} />
+    );
+
+    fireEvent.press(getByText('새 공고 만들기'));
+
+    expect(mockRouterPush).toHaveBeenCalledWith({
+      pathname: '/(employer)/my-postings/create',
       params: { opsTournamentId: TID },
     });
+  });
+
+  // 리뷰 후속 — employer 역할 없는 ops owner 가 탭하면 (employer) 레이아웃 Redirect 로 안내 없이
+  // 홈으로 이탈(silent redirect)하므로, 버튼 자체를 역할 게이트로 숨긴다. "연결"은 (employer)
+  // 네비게이션 없이 인라인 시트라 게이트 대상이 아니다.
+  it('employer 역할이 없으면 "새 공고 만들기"만 숨기고 "연결"은 유지한다', () => {
+    setupHooks({ hasEmployerRole: false });
+    const { getByText, queryByText } = render(
+      <StaffTab tournamentId={TID} tournament={tournament()} />
+    );
+
+    expect(queryByText('새 공고 만들기')).toBeNull();
+    expect(getByText('연결')).toBeTruthy();
   });
 
   it('연결 버튼 → PostingPickerSheet 오픈 → 선택 시 공고연결 mutate 를 호출한다', () => {
@@ -282,7 +315,7 @@ describe('공고 연결 카드 — 미연결', () => {
     expect(postingPickerProps).toMatchObject({ visible: true });
 
     fireEvent.press(getByText('공고피커열림'));
-    expect(mutate).toHaveBeenCalledWith('posting-new');
+    expect(mutate).toHaveBeenCalledWith({ tournamentId: TID, jobPostingId: 'posting-new' });
   });
 });
 

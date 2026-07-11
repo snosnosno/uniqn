@@ -395,14 +395,16 @@ export function useReseatParticipants(tournamentId: string) {
   });
 }
 
-/** 1e — 대회↔공고 연결 변경 훅. jobPostingId=null 이면 연결 해제. */
-export function useSetTournamentPosting(tournamentId: string) {
+/** 1e — 대회↔공고 연결 변경 훅. jobPostingId=null 이면 연결 해제.
+ * tournamentId 는 훅 인자가 아니라 mutate 변수로 받는다 — 대상이 확정되지 않은 화면(create 의
+ * ops 진입 등)에서 빈 문자열 센티널('') 훅 인자가 강제되던 계약을 제거(리뷰 후속). */
+export function useSetTournamentPosting() {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (jobPostingId: string | null) =>
-      opsStaffService.setTournamentPosting(tournamentId, requireActor(actorId), jobPostingId),
-    onSuccess: (_data, jobPostingId) => {
+    mutationFn: (v: { tournamentId: string; jobPostingId: string | null }) =>
+      opsStaffService.setTournamentPosting(v.tournamentId, requireActor(actorId), v.jobPostingId),
+    onSuccess: (_data, { tournamentId, jobPostingId }) => {
       // 리뷰 후속 — invalidateQueries 전에 캐시에서 old 공고 id 를 확보(무효화 이후엔 갱신되어 못 얻음).
       // old·new 양쪽 공고 상세 ActionCard(useOpsTournamentsForPosting)를 모두 갱신해 화면 간 staleness 제거.
       const previous = qc.getQueryData<OpsTournament>(queryKeys.ops.tournamentDetail(tournamentId));
@@ -417,7 +419,14 @@ export function useSetTournamentPosting(tournamentId: string) {
       if (jobPostingId) {
         qc.invalidateQueries({ queryKey: queryKeys.ops.forPosting(jobPostingId) });
       }
-      toast.success('공고 연결을 변경했습니다');
+      // 해제/신규/변경 문구 분기 — 신규 연결(create 생성 직후 자동 연결 포함)에 "변경했습니다"는 오도(리뷰 후속).
+      toast.success(
+        jobPostingId === null
+          ? '공고 연결을 해제했습니다'
+          : oldJobPostingId
+            ? '공고 연결을 변경했습니다'
+            : '공고를 연결했습니다'
+      );
     },
     onError: (e) => {
       logger.error('ops 대회-공고 연결 실패', toError(e));

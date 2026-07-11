@@ -31,7 +31,7 @@ import {
 } from '@/hooks/ops';
 import { useMyJobPostings } from '@/hooks/useJobManagement';
 import { useActiveWorkspace } from '@/hooks/workspace/useActiveWorkspace';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore, useHasRole } from '@/stores/authStore';
 import { StaffRow } from './StaffRow';
 import { StaffAddSheet } from './StaffAddSheet';
 import { PostingPickerSheet } from './PostingPickerSheet';
@@ -50,12 +50,16 @@ interface StaffTabProps {
 export function StaffTab({ tournamentId, tournament }: StaffTabProps) {
   const router = useRouter();
   const actorId = useAuthStore((s) => s.user?.uid);
+  // "새 공고 만들기"는 (employer) 라우트로 push 하므로 employer 역할 게이트 — 역할 없는 ops owner
+  // (역할 회수 + activeWorkspace 캐시 잔존 조합)가 탭하면 레이아웃 Redirect 로 안내 없이 홈으로
+  // 이탈(silent redirect)한다. "연결"은 인라인 시트라 게이트 대상이 아니다(리뷰 후속).
+  const hasEmployerRole = useHasRole('employer');
   const { activeWorkspace } = useActiveWorkspace();
   const { data: postings } = useMyJobPostings();
   const { data: roster, isLoading: rosterLoading } = useOpsStaff(tournamentId);
   const { tables } = useOpsTables(tournamentId);
 
-  const setPostingMut = useSetTournamentPosting(tournamentId);
+  const setPostingMut = useSetTournamentPosting();
   const importMut = useImportOpsStaff(tournamentId);
   const removeMut = useRemoveOpsStaff(tournamentId);
   const assignMut = useAssignTableStaff(tournamentId);
@@ -108,10 +112,14 @@ export function StaffTab({ tournamentId, tournament }: StaffTabProps) {
       '연결을 해제하면 이 대회에 공고 경유로 접근하던 워크스페이스 멤버의 열람 권한이 축소될 수 있습니다.',
       [
         { text: '취소', style: 'cancel' },
-        { text: '해제', style: 'destructive', onPress: () => setPostingMut.mutate(null) },
+        {
+          text: '해제',
+          style: 'destructive',
+          onPress: () => setPostingMut.mutate({ tournamentId, jobPostingId: null }),
+        },
       ]
     );
-  }, [setPostingMut]);
+  }, [setPostingMut, tournamentId]);
 
   const handleImportPress = useCallback(() => {
     const date = fullPeriod ? null : (tournament.eventDate ?? null);
@@ -144,7 +152,7 @@ export function StaffTab({ tournamentId, tournament }: StaffTabProps) {
       <PostingPickerSheet
         visible={showPostingPicker}
         onClose={() => setShowPostingPicker(false)}
-        onSelect={(postingId) => setPostingMut.mutate(postingId)}
+        onSelect={(postingId) => setPostingMut.mutate({ tournamentId, jobPostingId: postingId })}
       />
 
       <SelectBottomSheet
@@ -237,20 +245,27 @@ export function StaffTab({ tournamentId, tournament }: StaffTabProps) {
                 >
                   <Text className="font-sans-semibold text-sm text-white">연결</Text>
                 </Pressable>
-                <Pressable
-                  onPress={() =>
-                    router.push({
-                      pathname: '/(employer)/my-postings/create',
-                      params: { opsTournamentId: tournamentId },
-                    })
-                  }
-                  accessibilityRole="button"
-                  className="rounded-md bg-gray-100 px-3 py-1.5 active:opacity-70 dark:bg-gray-800"
-                >
-                  <Text className="font-sans-semibold text-sm text-content-primary dark:text-off-white">
-                    새 공고 만들기
-                  </Text>
-                </Pressable>
+                {hasEmployerRole && (
+                  <Pressable
+                    onPress={() =>
+                      router.push({
+                        pathname: '/(employer)/my-postings/create',
+                        params: {
+                          opsTournamentId: tournamentId,
+                          // 대회일을 공고 일정에 프리필 — 공고 날짜가 대회일과 다르면 import CTA
+                          // (기본 event_date 필터)가 0명을 가져오는 함정 방지. 없으면 키 생략(폴백).
+                          ...(tournament.eventDate ? { date: tournament.eventDate } : {}),
+                        },
+                      })
+                    }
+                    accessibilityRole="button"
+                    className="rounded-md bg-gray-100 px-3 py-1.5 active:opacity-70 dark:bg-gray-800"
+                  >
+                    <Text className="font-sans-semibold text-sm text-content-primary dark:text-off-white">
+                      새 공고 만들기
+                    </Text>
+                  </Pressable>
+                )}
               </View>
             ) : (
               <Text className="mt-2 text-xs text-secondary-500 dark:text-secondary-400">

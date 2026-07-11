@@ -30,7 +30,9 @@ export default function CreateJobPostingScreen() {
   // 주간 배치 그리드 "공고 열기/부족 모집" 진입 — venueId(운영처)·date(선택일)·count(부족 인원)를
   // 받아 초기 draft 에 프리필(P2-1). 일반 생성(파라미터 없음)은 완전 무회귀(buildGridPrefillDraft 폴백).
   // opsTournamentId — ops 대회 상세 STAFF 탭 "새 공고 만들기" 역방향 훅. 생성 성공 시
-  // ops_set_tournament_posting 으로 자동 연결(owner 판정은 서버 RPC 가 최종 소스).
+  // ops_set_tournament_posting 으로 자동 연결(owner 판정은 서버 RPC 가 최종 소스). ops 진입은
+  // date=대회일(eventDate)도 실어 보내 같은 프리필 경로로 공고 일정을 대회일에 맞춘다 —
+  // 날짜가 어긋나면 STAFF 탭 import CTA(기본 event_date 필터)가 0명을 가져온다.
   const params = useLocalSearchParams<{
     venueId?: string | string[];
     date?: string | string[];
@@ -53,7 +55,7 @@ export default function CreateJobPostingScreen() {
   useUnsavedChangesGuard(isDirty);
 
   const createJobPosting = useCreateJobPosting();
-  const linkTournamentMut = useSetTournamentPosting(opsTournamentId ?? '');
+  const linkTournamentMut = useSetTournamentPosting();
   const templateManager = useTemplateManager();
 
   const updateFormData = useCallback((data: Partial<JobPostingFormData>) => {
@@ -99,7 +101,7 @@ export default function CreateJobPostingScreen() {
         // await 금지 — 대기 공백 동안 isPending=false 로 제출 버튼이 재활성화(중복 생성)되고,
         // 사용자가 먼저 뒤로가면 재개된 router.back() 이 이중 pop 된다. onSuccess invalidate 는
         // 언마운트 후에도 실행되어 하부 스택의 대회 상세를 알아서 갱신한다.
-        linkTournamentMut.mutate(created.id);
+        linkTournamentMut.mutate({ tournamentId: opsTournamentId, jobPostingId: created.id });
       }
       // P2-2: 그리드 진입(venueId)이면 스택 하부의 그리드로 복귀(선택 운영처·날짜 보존).
       // 셀 +N 뱃지 갱신은 useCreateJobPosting 의 weeklyGrid 무효화가 담당.

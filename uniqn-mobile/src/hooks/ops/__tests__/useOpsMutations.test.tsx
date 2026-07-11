@@ -152,30 +152,33 @@ describe('useSetTournamentPosting', () => {
     (useAuthStore as unknown as jest.Mock).mockReturnValue('actor-1');
   });
 
-  it('jobPostingId 를 Service 로 위임(actor=authStore)', async () => {
+  it('{tournamentId, jobPostingId} 를 Service 로 위임(actor=authStore) + 신규 연결 토스트', async () => {
     mockSetTournamentPosting.mockResolvedValueOnce(undefined);
     const client = createClient();
-    const { result } = renderHook(() => useSetTournamentPosting(TID), {
+    const { result } = renderHook(() => useSetTournamentPosting(), {
       wrapper: createWrapper(client),
     });
 
     await act(async () => {
-      await result.current.mutateAsync('posting-1');
+      await result.current.mutateAsync({ tournamentId: TID, jobPostingId: 'posting-1' });
     });
 
     expect(mockSetTournamentPosting).toHaveBeenCalledWith(TID, 'actor-1', 'posting-1');
+    // 캐시에 old 공고 없음 = 신규 연결 — "변경" 문구는 첫 연결을 오도한다(토스트 문구 분기 리뷰 후속).
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockToastSuccess).toHaveBeenCalledWith('공고를 연결했습니다');
   });
 
   it('성공 시 ops.staff + ops.tournamentDetail/tournaments 를 invalidate', async () => {
     mockSetTournamentPosting.mockResolvedValueOnce(undefined);
     const client = createClient();
     const invalidateSpy = jest.spyOn(client, 'invalidateQueries');
-    const { result } = renderHook(() => useSetTournamentPosting(TID), {
+    const { result } = renderHook(() => useSetTournamentPosting(), {
       wrapper: createWrapper(client),
     });
 
     await act(async () => {
-      await result.current.mutateAsync('posting-1');
+      await result.current.mutateAsync({ tournamentId: TID, jobPostingId: 'posting-1' });
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -194,12 +197,12 @@ describe('useSetTournamentPosting', () => {
       jobPostingId: 'old-posting',
     });
     const invalidateSpy = jest.spyOn(client, 'invalidateQueries');
-    const { result } = renderHook(() => useSetTournamentPosting(TID), {
+    const { result } = renderHook(() => useSetTournamentPosting(), {
       wrapper: createWrapper(client),
     });
 
     await act(async () => {
-      await result.current.mutateAsync('posting-1');
+      await result.current.mutateAsync({ tournamentId: TID, jobPostingId: 'posting-1' });
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -209,6 +212,8 @@ describe('useSetTournamentPosting', () => {
     expect(invalidateSpy).toHaveBeenCalledWith({
       queryKey: queryKeys.ops.forPosting('posting-1'),
     });
+    // old 공고 존재 = 연결 변경 — 이때만 "변경" 문구가 정확하다.
+    expect(mockToastSuccess).toHaveBeenCalledWith('공고 연결을 변경했습니다');
   });
 
   it('해제(jobPostingId=null) 시 old 공고 ops.forPosting 만 invalidate한다', async () => {
@@ -219,12 +224,12 @@ describe('useSetTournamentPosting', () => {
       jobPostingId: 'old-posting',
     });
     const invalidateSpy = jest.spyOn(client, 'invalidateQueries');
-    const { result } = renderHook(() => useSetTournamentPosting(TID), {
+    const { result } = renderHook(() => useSetTournamentPosting(), {
       wrapper: createWrapper(client),
     });
 
     await act(async () => {
-      await result.current.mutateAsync(null);
+      await result.current.mutateAsync({ tournamentId: TID, jobPostingId: null });
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -235,17 +240,20 @@ describe('useSetTournamentPosting', () => {
         return Array.isArray(key) && key.includes('forPosting');
       });
     expect(forPostingCalls).toEqual([{ queryKey: queryKeys.ops.forPosting('old-posting') }]);
+    expect(mockToastSuccess).toHaveBeenCalledWith('공고 연결을 해제했습니다');
   });
 
   it('로그인 안됨(actorId 없음) → Service 미호출 + 에러', async () => {
     (useAuthStore as unknown as jest.Mock).mockReturnValue(undefined);
     const client = createClient();
-    const { result } = renderHook(() => useSetTournamentPosting(TID), {
+    const { result } = renderHook(() => useSetTournamentPosting(), {
       wrapper: createWrapper(client),
     });
 
     await act(async () => {
-      await result.current.mutateAsync('posting-1').catch(() => {});
+      await result.current
+        .mutateAsync({ tournamentId: TID, jobPostingId: 'posting-1' })
+        .catch(() => {});
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
