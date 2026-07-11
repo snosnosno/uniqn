@@ -46,17 +46,24 @@ interface SignupFormProps {
   mode?: 'default' | 'social' | 'reverify';
 }
 
-/** 일반 회원가입 스텝 (3단계: 약관 → 계정 → 본인인증) */
+/**
+ * 일반 회원가입 스텝 표시(4단계: 약관 → 계정 → 본인인증 → 프로필)
+ * B13: 실제 폼 플로우(STEP_FLOW)는 3단계(약관→계정→본인인증)까지만 진행하고
+ * 프로필은 가입 후 별도 화면(profile-setup)에서 입력한다. 여기서는 "다음에
+ * 프로필이 남아있다"는 진행률 정합을 위해 4번째 스텝을 표시만 한다(항상 upcoming).
+ */
 const DEFAULT_SIGNUP_STEPS: StepInfo[] = [
   { label: '약관동의', shortLabel: '약관' },
   { label: '계정정보', shortLabel: '계정' },
   { label: '본인인증', shortLabel: '인증' },
+  { label: '프로필', shortLabel: '프로필' },
 ];
 
-/** 소셜 모드 스텝 (계정정보 생략: 약관 → 본인인증) */
+/** 소셜 모드 스텝 표시(3단계: 약관 → 본인인증 → 프로필, 계정정보 생략) */
 const SOCIAL_SIGNUP_STEPS: StepInfo[] = [
   { label: '약관동의', shortLabel: '약관' },
   { label: '본인인증', shortLabel: '인증' },
+  { label: '프로필', shortLabel: '프로필' },
 ];
 
 /** Reverify 모드 — 본인인증 1단계만 (약관 동의 기존 유지) */

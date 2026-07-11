@@ -18,6 +18,8 @@ import type {
 } from './pushNotificationTypes';
 import { DEFAULT_CHANNELS } from './pushNotificationConstants';
 import { getNotifications, loadNotificationsModule, pushState } from './pushNotificationState';
+import { useNotificationStore } from '@/stores/notificationStore';
+import { resolveForegroundPresentation } from './foregroundPresentationGate';
 
 // ============================================================================
 // Initialization
@@ -128,14 +130,12 @@ function setupNotificationHandlers(): void {
         pushState.receivedHandler(payload);
       }
 
-      // 포그라운드에서 알림 표시 여부
-      return {
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
-        shouldShowBanner: true,
-        shouldShowList: true,
-      };
+      // 포그라운드 표시 여부 — 전체/카테고리 설정 게이트(M3).
+      // 꺼진 카테고리는 배너/사운드만 억제하고 알림센터 목록·뱃지는 유지한다.
+      return resolveForegroundPresentation(
+        payload.data?.type,
+        useNotificationStore.getState().settings
+      );
     },
   });
 

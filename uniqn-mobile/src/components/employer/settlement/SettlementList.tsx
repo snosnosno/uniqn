@@ -34,6 +34,7 @@ import {
 import type { GroupedSettlement } from '@/types/settlement';
 import type { WorkLog, PayrollStatus } from '@/types';
 import { STATUS } from '@/constants';
+import { PAYROLL_STATUS_LABELS } from '@/shared/status';
 
 // Re-export types for backward compatibility
 export type { SalaryType, SalaryInfo };
@@ -85,8 +86,8 @@ type FilterStatus = 'all' | PayrollStatus;
 
 const FILTER_OPTIONS: FilterTabOption<FilterStatus>[] = [
   { value: 'all', label: '전체' },
-  { value: STATUS.PAYROLL.PENDING, label: '미정산' },
-  { value: STATUS.PAYROLL.COMPLETED, label: '완료' },
+  { value: STATUS.PAYROLL.PENDING, label: PAYROLL_STATUS_LABELS.pending },
+  { value: STATUS.PAYROLL.COMPLETED, label: PAYROLL_STATUS_LABELS.completed },
 ];
 
 // ============================================================================

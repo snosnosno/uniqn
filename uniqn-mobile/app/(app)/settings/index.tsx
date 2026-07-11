@@ -41,12 +41,24 @@ import {
   useSaveNotificationSettings,
 } from '@/hooks/useNotifications';
 import { useAuth } from '@/hooks/useAuth';
+import { useIsAppleUser } from '@/hooks/auth/useCurrentUser';
 import { useClearCache } from '@/hooks/useClearCache';
 import { useAutoLogin, useBiometricAuth, AUTO_LOGIN_HELPER_TEXT } from '@/hooks';
 import { signOut, updateMarketingConsent } from '@/services/auth';
 import { versionInfo } from '@/constants/version';
 import { logger } from '@/utils/logger';
 import { triggerHaptic } from '@/utils/haptics';
+import { NotificationCategory, NOTIFICATION_CATEGORY_LABELS } from '@/types/notification';
+
+// 설정 화면에 노출하는 알림 카테고리 (M3) — admin은 일반 사용자 비대상이라 제외
+const NOTIFICATION_SETTING_CATEGORIES: NotificationCategory[] = [
+  NotificationCategory.APPLICATION,
+  NotificationCategory.ATTENDANCE,
+  NotificationCategory.SETTLEMENT,
+  NotificationCategory.JOB,
+  NotificationCategory.REVIEW,
+  NotificationCategory.SYSTEM,
+];
 
 // 태양 아이콘 (다크모드용)
 const SunIcon = ({
@@ -105,6 +117,9 @@ function SettingItem({ icon, label, value, onPress, rightElement }: SettingItemP
 
 export default function SettingsScreen() {
   const { isAuthenticated, profile, user } = useAuth();
+
+  // Apple 사용자는 비밀번호가 없어 비밀번호 변경 항목을 숨긴다
+  const isAppleUser = useIsAppleUser();
 
   // 워크스페이스 협업 — employer 만 진입 (라우트 가드와 일치)
   const isEmployer = useHasRole('employer');
@@ -178,6 +193,23 @@ export default function SettingsScreen() {
       });
     }
   };
+
+  // 카테고리별 알림 토글 (M3) — 토글 1개가 enabled/pushEnabled를 함께 제어.
+  // 발송(Edge Function send-push-notification)과 포그라운드 표시가 이 값을 존중한다.
+  const handleCategoryToggle = (category: NotificationCategory, value: boolean) => {
+    void triggerHaptic('light');
+    if (notificationSettings) {
+      saveSettings({
+        ...notificationSettings,
+        categories: {
+          ...notificationSettings.categories,
+          [category]: { enabled: value, pushEnabled: value },
+        },
+      });
+    }
+  };
+
+  const isPushMasterOff = notificationSettings?.pushEnabled === false;
 
   // 다크모드 토글 (impeccable v2 §17 — 토글은 Light 햅틱)
   const handleDarkModeToggle = (value: boolean) => {
@@ -313,6 +345,38 @@ export default function SettingsScreen() {
               />
             }
           />
+
+          {/* 카테고리별 알림 설정 (M3) — 마스터 토글 OFF 시 비활성 */}
+          {isAuthenticated && (
+            <View className={isPushMasterOff ? 'opacity-40' : ''}>
+              {NOTIFICATION_SETTING_CATEGORIES.map((category) => {
+                const categoryEnabled =
+                  notificationSettings?.categories?.[category]?.enabled ?? true;
+                return (
+                  <View key={category}>
+                    <Divider spacing="sm" />
+                    <SettingItem
+                      // 마스터 행 아이콘(22px)과 정렬을 맞추는 들여쓰기 스페이서
+                      icon={<View style={{ width: 22 }} />}
+                      label={NOTIFICATION_CATEGORY_LABELS[category]}
+                      rightElement={
+                        <Switch
+                          value={categoryEnabled}
+                          onValueChange={(value) => handleCategoryToggle(category, value)}
+                          disabled={isSaving || !isAuthenticated || isPushMasterOff}
+                          trackColor={{ false: SECONDARY_PALETTE[200], true: '#D4AF37' }}
+                          thumbColor={categoryEnabled ? '#FFFFFF' : SECONDARY_PALETTE[50]}
+                        />
+                      }
+                    />
+                  </View>
+                );
+              })}
+              <Text className="mt-1 text-xs text-content-muted dark:text-secondary-400 font-sans">
+                카테고리를 끄면 해당 알림의 푸시 수신과 앱 사용 중 표시가 중단됩니다.
+              </Text>
+            </View>
+          )}
         </Card>
 
         {/* 공고 협업 (워크스페이스) — employer 전용 */}
@@ -341,14 +405,16 @@ export default function SettingsScreen() {
           <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             계정
           </Text>
-          <SettingItem
-            icon={<LockIcon size={22} color={SECONDARY_PALETTE[500]} />}
-            label="비밀번호 변경"
-            onPress={() => router.push('/(app)/settings/change-password')}
-          />
+          {!isAppleUser && (
+            <SettingItem
+              icon={<LockIcon size={22} color={SECONDARY_PALETTE[500]} />}
+              label="비밀번호 변경"
+              onPress={() => router.push('/(app)/settings/change-password')}
+            />
+          )}
           {isAuthenticated && (
             <>
-              <Divider spacing="sm" />
+              {!isAppleUser && <Divider spacing="sm" />}
               <SettingItem
                 icon={<LockIcon size={22} color={SECONDARY_PALETTE[500]} />}
                 label="자동 로그인"
@@ -460,6 +526,12 @@ export default function SettingsScreen() {
           />
           {isAuthenticated && (
             <>
+              <Divider spacing="sm" />
+              <SettingItem
+                icon={<View className="h-[22px] w-[22px]" />}
+                label="내 정보 보기"
+                onPress={() => router.push('/(app)/settings/my-data')}
+              />
               <Divider spacing="sm" />
               <SettingItem
                 icon={<BellIcon size={22} color={SECONDARY_PALETTE[500]} />}

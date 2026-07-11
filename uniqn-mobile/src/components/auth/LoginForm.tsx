@@ -8,7 +8,7 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { Checkbox } from '@/components/ui';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -44,6 +44,7 @@ export function LoginForm({
   const {
     control,
     handleSubmit,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -114,18 +115,22 @@ export function LoginForm({
         />
       </View>
 
-      {/* 비밀번호 찾기 링크 */}
+      {/* 비밀번호 찾기 링크 — 입력된 이메일이 있으면 다음 화면에 prefill */}
       <View className="items-end">
-        <Link href="/forgot-password" asChild>
-          <Pressable
-            hitSlop={8}
-            className="min-h-[44px] justify-center px-2 -mr-2 active:opacity-70"
-          >
-            <Text className="text-sm text-secondary-700 dark:text-secondary-300 underline font-sans">
-              비밀번호를 잊으셨나요?
-            </Text>
-          </Pressable>
-        </Link>
+        <Pressable
+          onPress={() => {
+            const email = getValues?.('email');
+            router.push(
+              email ? { pathname: '/forgot-password', params: { email } } : '/forgot-password'
+            );
+          }}
+          hitSlop={8}
+          className="min-h-[44px] justify-center px-2 -mr-2 active:opacity-70"
+        >
+          <Text className="text-sm text-secondary-700 dark:text-secondary-300 underline font-sans">
+            비밀번호를 잊으셨나요?
+          </Text>
+        </Pressable>
       </View>
 
       {/* 로그인 버튼 */}

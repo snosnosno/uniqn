@@ -28,11 +28,13 @@ import { useThemeStore } from '@/stores/themeStore';
 import { changePassword } from '@/services';
 import { extractUserMessage } from '@/errors';
 import { passwordChangeSchema, type PasswordChangeData } from '@/schemas/user.schema';
+import { useIsAppleUser } from '@/hooks/auth/useCurrentUser';
 import { logger } from '@/utils/logger';
 
 export default function ChangePasswordScreen() {
   const addToast = useToastStore((state) => state.addToast);
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
+  const isAppleUser = useIsAppleUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -79,6 +81,23 @@ export default function ChangePasswordScreen() {
       setIsSubmitting(false);
     }
   };
+
+  // Apple 사용자는 비밀번호가 없어 변경 폼 대신 안내만 노출 (SettingsScreen 항목
+  // 숨김이 뚫려도 이 화면이 최종 방어선)
+  if (isAppleUser) {
+    return (
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
+        <StackHeader title="비밀번호 변경" fallbackHref="/(app)/settings" />
+        <View className="flex-1 items-center justify-center p-4">
+          <Card className="w-full bg-info-50 dark:bg-info-900/20">
+            <Text className="text-sm text-info-700 dark:text-info-300 text-center font-sans">
+              Apple 계정으로 로그인 중이라 비밀번호가 없어요.
+            </Text>
+          </Card>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>

@@ -9,10 +9,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   EmptyState,
   ErrorState,
+  FilterTabs,
   FocusablePressable,
   ScreenSkeleton,
   Skeleton,
 } from '@/components/ui';
+import type { FilterTabOption } from '@/components/ui';
 import { ScheduleCard, ScheduleDetailModal, GroupedScheduleCard } from '@/components/schedule';
 import { CancellationRequestForm } from '@/components/applications';
 import { QRCodeScanner } from '@/components/qr';
@@ -29,9 +31,15 @@ import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import { formatCurrency } from '@/utils/formatters';
 import { SCHEDULE_STATS_LABELS } from '@/utils/applicationStatusLabel';
 import { STATUS } from '@/constants';
+import { SCHEDULE_TYPE_LABELS } from '@/shared/status';
 import { getApplicationById } from '@/services/jobs/applicationService';
 import { logger } from '@/utils/logger';
 import { triggerHaptic } from '@/utils/haptics';
+import {
+  filterSchedulesByStatus,
+  countSchedulesByType,
+  type ScheduleStatusFilter,
+} from '@/utils/scheduleGrouping';
 import type {
   Application,
   ScheduleEvent,
@@ -314,15 +322,38 @@ export default function ScheduleScreen() {
     refresh,
   } = useCalendarView({ enableGrouping: true, realtime: true });
 
-  // 총 일수 계산 (그룹화된 스케줄의 실제 일수 합계)
+  // 상태 필터 (리스트 뷰 전용, M1) — 'all'은 취소 포함 전체 노출
+  const [statusFilter, setStatusFilter] = useState<ScheduleStatusFilter>('all');
+
+  const statusCounts = useMemo(
+    () => countSchedulesByType(groupedByApplication),
+    [groupedByApplication]
+  );
+
+  const filteredSchedules = useMemo(
+    () => filterSchedulesByStatus(groupedByApplication, statusFilter),
+    [groupedByApplication, statusFilter]
+  );
+
+  const statusFilterOptions = useMemo<FilterTabOption<ScheduleStatusFilter>[]>(
+    () => [
+      { value: 'all', label: '전체' },
+      { value: 'applied', label: SCHEDULE_TYPE_LABELS.applied, count: statusCounts.applied },
+      { value: 'confirmed', label: SCHEDULE_TYPE_LABELS.confirmed, count: statusCounts.confirmed },
+      { value: 'completed', label: SCHEDULE_TYPE_LABELS.completed, count: statusCounts.completed },
+    ],
+    [statusCounts]
+  );
+
+  // 총 일수 계산 (그룹화된 스케줄의 실제 일수 합계) — 리스트 헤더용이라 필터 반영
   const totalDays = useMemo(() => {
-    return groupedByApplication.reduce((sum, item) => {
+    return filteredSchedules.reduce((sum, item) => {
       if (isGroupedScheduleEvent(item)) {
         return sum + item.dateRange.totalDays;
       }
       return sum + 1;
     }, 0);
-  }, [groupedByApplication]);
+  }, [filteredSchedules]);
 
   // 뷰 토글 핸들러
   const handleToggleView = useCallback(() => {
@@ -687,13 +718,24 @@ export default function ScheduleScreen() {
         </ScrollView>
       )}
 
+      {/* 상태 필터 (리스트 뷰 전용, M1) — 지원/확정/완료를 탭 전환 없이 구분 */}
+      {viewMode === 'list' && groupedByApplication.length > 0 && (
+        <View className="px-4 pt-3">
+          <FilterTabs
+            options={statusFilterOptions}
+            selectedValue={statusFilter}
+            onSelect={setStatusFilter}
+          />
+        </View>
+      )}
+
       {/* 리스트 뷰 (그룹화 적용) */}
       {viewMode === 'list' && (
         <ScrollView
           className="flex-1"
           contentContainerClassName="pb-20"
           // impeccable §24 — 월 스케줄 요약 헤더를 sticky로: 카드 실제 렌더 시에만 활성.
-          stickyHeaderIndices={!isLoading && groupedByApplication.length > 0 ? [0] : undefined}
+          stickyHeaderIndices={!isLoading && filteredSchedules.length > 0 ? [0] : undefined}
           refreshControl={
             <RefreshControl refreshing={isRefreshing} onRefresh={refresh} {...PTR_REFRESH_PROPS} />
           }
@@ -712,17 +754,26 @@ export default function ScheduleScreen() {
                 variant="content"
               />
             </View>
+          ) : filteredSchedules.length === 0 ? (
+            // 필터 결과 빈 상태 — 월 자체는 일정이 있으므로 온보딩 대신 필터 안내
+            <View className="p-4">
+              <EmptyState
+                title={`${statusFilter === 'all' ? '전체' : SCHEDULE_TYPE_LABELS[statusFilter]} 일정이 없어요`}
+                description="다른 상태를 선택하거나 전체 탭에서 확인해보세요."
+                variant="content"
+              />
+            </View>
           ) : (
             <>
               {/* 0: sticky 헤더 — MonthNavigator 아래 바로 붙음 (pt-3로 최소 호흡) */}
               <View className="bg-surface-page dark:bg-surface px-4 pt-3 pb-2 border-b border-divider">
                 <Text className="text-sm font-sans-medium text-content-secondary">
-                  {currentMonth.month}월 스케줄 ({groupedByApplication.length}건, {totalDays}일)
+                  {currentMonth.month}월 스케줄 ({filteredSchedules.length}건, {totalDays}일)
                 </Text>
               </View>
               {/* 1: 카드 리스트 */}
               <View className="px-4 pt-3">
-                {groupedByApplication.map((item) => {
+                {filteredSchedules.map((item) => {
                   if (isGroupedScheduleEvent(item)) {
                     return (
                       <GroupedScheduleCard

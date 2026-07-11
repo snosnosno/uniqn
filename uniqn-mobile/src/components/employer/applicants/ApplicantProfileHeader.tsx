@@ -7,6 +7,7 @@ import type { ApplicantWithDetails } from '@/services';
 import type { ApplicationStatus } from '@/types';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
+import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';
 
 export interface ApplicantProfileHeaderProps {
   applicant: ApplicantWithDetails;
@@ -15,6 +16,8 @@ export interface ApplicantProfileHeaderProps {
   profilePhotoURLBlurhash?: string | null | undefined;
   isProfileLoading: boolean;
   appliedTimeAgo: string;
+  /** 버블 점수 (없으면 배지 미노출) */
+  bubbleScore?: number;
 }
 
 const STATUS_BADGE_VARIANT: Record<
@@ -36,6 +39,7 @@ export const ApplicantProfileHeader = React.memo(function ApplicantProfileHeader
   profilePhotoURLBlurhash,
   isProfileLoading,
   appliedTimeAgo,
+  bubbleScore,
 }: ApplicantProfileHeaderProps) {
   const roleLabel = getRoleDisplayName(
     applicant.assignments[0]?.roleIds?.[0] ?? 'other',
@@ -66,6 +70,9 @@ export const ApplicantProfileHeader = React.memo(function ApplicantProfileHeader
         <Badge variant={STATUS_BADGE_VARIANT[applicant.status]} size="sm" dot>
           {APPLICATION_STATUS_LABELS[applicant.status]}
         </Badge>
+        {typeof bubbleScore === 'number' ? (
+          <BubbleScoreBadge score={bubbleScore} size="sm" />
+        ) : null}
       </View>
 
       {metaText ? (

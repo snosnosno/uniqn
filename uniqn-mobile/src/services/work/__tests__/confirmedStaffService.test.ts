@@ -1,8 +1,10 @@
 import type { WorkLog } from '@/types';
 import { confirmedStaffRepository, userRepository, workLogRepository } from '@/repositories';
 import { cancelConfirmation } from '@/services/jobs/applicationHistoryService';
+import { enqueueScheduleBoardSync } from '@/services/jobs/jobManagementService';
 import {
   cancelConfirmedStaffConfirmation,
+  cancelNoShow,
   deleteConfirmedStaff,
   getConfirmedStaff,
   getConfirmedStaffByDate,
@@ -20,6 +22,7 @@ jest.mock('@/repositories', () => ({
     updateRoleWithTransaction: jest.fn(),
     updateWorkTimeWithTransaction: jest.fn(),
     markAsNoShow: jest.fn(),
+    cancelNoShow: jest.fn(),
     updateStatus: jest.fn(),
     addDirectStaff: jest.fn(),
     removeDirectStaff: jest.fn(),
@@ -89,6 +92,9 @@ const mockConfirmedStaffRepository = confirmedStaffRepository as jest.Mocked<
 const mockUserRepository = userRepository as jest.Mocked<typeof userRepository>;
 const mockWorkLogRepository = workLogRepository as jest.Mocked<typeof workLogRepository>;
 const mockCancelConfirmation = cancelConfirmation as jest.MockedFunction<typeof cancelConfirmation>;
+const mockEnqueueScheduleBoardSync = enqueueScheduleBoardSync as jest.MockedFunction<
+  typeof enqueueScheduleBoardSync
+>;
 
 function createMockWorkLog(overrides: Partial<WorkLog> = {}): WorkLog {
   return {
@@ -242,6 +248,31 @@ describe('confirmedStaffService', () => {
       ownerId: 'owner-1',
       reason: 'No arrival',
     });
+  });
+
+  it('cancels no-show with current owner id and enqueues schedule board sync', async () => {
+    mockConfirmedStaffRepository.cancelNoShow.mockResolvedValue(undefined);
+    mockWorkLogRepository.getById.mockResolvedValue(createMockWorkLog({ jobPostingId: 'job-1' }));
+
+    await cancelNoShow('worklog-1');
+
+    expect(mockConfirmedStaffRepository.cancelNoShow).toHaveBeenCalledWith({
+      workLogId: 'worklog-1',
+      ownerId: 'owner-1',
+    });
+    expect(mockEnqueueScheduleBoardSync).toHaveBeenCalledWith('job-1', 'update', {
+      jobPostingId: 'job-1',
+      workLogId: 'worklog-1',
+      reason: 'confirmed_staff_no_show_cancel',
+    });
+  });
+
+  it('does not throw when schedule board enqueue fails after no-show cancel', async () => {
+    mockConfirmedStaffRepository.cancelNoShow.mockResolvedValue(undefined);
+    mockWorkLogRepository.getById.mockResolvedValue(createMockWorkLog({ jobPostingId: 'job-1' }));
+    mockEnqueueScheduleBoardSync.mockRejectedValueOnce(new Error('enqueue failed'));
+
+    await expect(cancelNoShow('worklog-1')).resolves.toBeUndefined();
   });
 
   it('updates confirmed staff status with current owner id', async () => {

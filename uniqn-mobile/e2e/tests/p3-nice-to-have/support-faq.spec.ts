@@ -30,7 +30,9 @@ test.describe('지원센터', () => {
 
   test('운영시간 안내가 보인다', async ({ page }) => {
     await expect(page.getByText('고객센터 운영시간')).toBeVisible();
-    await expect(page.getByText(/평일 09:00/)).toBeVisible();
+    // 운영시간 문구는 SSOT(src/constants/support.ts SUPPORT_HOURS_TEXT) 기준 —
+    // QW에서 business-info 값(10:00 ~ 18:00)으로 통일됨. 상수 변경 시 이 기대값도 갱신.
+    await expect(page.getByText(/평일 10:00/)).toBeVisible();
   });
 
   test('FAQ 메뉴는 텍스트 클릭으로도 이동한다', async ({ page }) => {

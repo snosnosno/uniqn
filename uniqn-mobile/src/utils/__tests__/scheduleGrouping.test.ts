@@ -13,6 +13,8 @@ import {
   formatRolesDisplay,
   groupScheduleEvents,
   filterSchedulesByDate,
+  filterSchedulesByStatus,
+  countSchedulesByType,
 } from '../scheduleGrouping';
 
 // ============================================================================
@@ -609,5 +611,48 @@ describe('scheduleGrouping undated handling', () => {
 
   it('formats all-undated arrays as 날짜 미정 with count', () => {
     expect(formatDateDisplay(['', ''])).toBe('날짜 미정 (2일)');
+  });
+});
+
+describe('filterSchedulesByStatus', () => {
+  const mixed = [
+    createScheduleEvent({ id: 'a-1', type: 'applied' }),
+    createScheduleEvent({ id: 'c-1', type: 'confirmed' }),
+    createGroupedScheduleEvent({ id: 'grouped_app-2', type: 'applied' }),
+    createScheduleEvent({ id: 'x-1', type: 'cancelled' }),
+  ];
+
+  it("'all'이면 원본 배열을 그대로 반환한다(취소 포함)", () => {
+    expect(filterSchedulesByStatus(mixed, 'all')).toBe(mixed);
+  });
+
+  it('단일/그룹 이벤트를 가리지 않고 type 일치 항목만 반환한다', () => {
+    const applied = filterSchedulesByStatus(mixed, 'applied');
+    expect(applied.map((s) => s.id)).toEqual(['a-1', 'grouped_app-2']);
+  });
+
+  it('일치 항목이 없으면 빈 배열을 반환한다', () => {
+    expect(filterSchedulesByStatus(mixed, 'completed')).toEqual([]);
+  });
+});
+
+describe('countSchedulesByType', () => {
+  it('그룹 1건을 1건으로 집계한다(그룹 내 날짜 수 아님)', () => {
+    const counts = countSchedulesByType([
+      createScheduleEvent({ id: 'a-1', type: 'applied' }),
+      createGroupedScheduleEvent({ id: 'grouped_app-2', type: 'applied' }),
+      createScheduleEvent({ id: 'c-1', type: 'confirmed' }),
+    ]);
+
+    expect(counts).toEqual({ applied: 2, confirmed: 1, completed: 0, cancelled: 0 });
+  });
+
+  it('빈 배열이면 전 타입 0으로 집계한다', () => {
+    expect(countSchedulesByType([])).toEqual({
+      applied: 0,
+      confirmed: 0,
+      completed: 0,
+      cancelled: 0,
+    });
   });
 });

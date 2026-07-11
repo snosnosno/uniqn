@@ -12,6 +12,7 @@ import {
   MessageIcon,
 } from '@/components/icons';
 import { STATUS } from '@/constants';
+import { SUPPORT_HOURS_TEXT } from '@/constants/support';
 import { useMyInquiries } from '@/hooks/useInquiry';
 
 interface MenuItemProps {
@@ -116,7 +117,7 @@ export default function SupportScreen() {
             고객센터 운영시간
           </Text>
           <Text className="text-sm font-sans-medium text-content-secondary">
-            평일 09:00 - 18:00 (주말/공휴일 휴무)
+            {SUPPORT_HOURS_TEXT}
           </Text>
           <Text className="mt-2 text-xs text-content-placeholder font-sans">
             문의 접수 후 영업일 기준 1-2일 내 답변드려요

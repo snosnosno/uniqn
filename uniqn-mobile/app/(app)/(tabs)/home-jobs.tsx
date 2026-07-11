@@ -192,9 +192,20 @@ export default function JobsScreen() {
 
       <SearchBar value={searchText} onChangeText={setSearchText} />
 
-      <PostingTypeChips selected={selectedType} onChange={handleTypeChange} counts={chipCounts} />
+      <PostingTypeChips
+        selected={selectedType}
+        onChange={handleTypeChange}
+        counts={chipCounts}
+        disabled={isSearchMode}
+      />
 
-      {!isSearchMode && (
+      {isSearchMode ? (
+        <View className="px-4 pb-2">
+          <Text className="text-xs text-content-secondary dark:text-secondary-400 font-sans">
+            검색은 공고 종류·지역 구분 없이 전체를 보여드려요
+          </Text>
+        </View>
+      ) : (
         <View className="flex-row px-4 pb-2">
           <Pressable
             onPress={() => setRegionModalVisible(true)}

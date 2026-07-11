@@ -27,6 +27,7 @@ import {
 } from '@/hooks/useJobManagement';
 import { useSharedJobPostings } from '@/hooks/job-posting/useSharedJobPostings';
 import { useWeeklyGridEnabled } from '@/hooks';
+import { useReceivedWorkspaceInvitations } from '@/hooks/workspace';
 import { useHasRole } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
 import type { JobPosting } from '@/types';
@@ -94,6 +95,32 @@ function FilterTabs({ selected, onChange, counts }: FilterTabsProps) {
         );
       })}
     </View>
+  );
+}
+
+// 워크스페이스 진입 버튼 — 받은 초대가 있으면 빨간 dot 배지로 발견성 확보
+function WorkspaceHeaderAction() {
+  const isDarkMode = useThemeStore((s) => s.isDarkMode);
+  const { invitations: pendingInvitations } = useReceivedWorkspaceInvitations();
+  const hasPendingInvitations = pendingInvitations.length > 0;
+
+  return (
+    <Pressable
+      onPress={() => router.push('/(employer)/workspace')}
+      className="relative rounded-sm p-2"
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={`워크스페이스${hasPendingInvitations ? ', 대기 중인 초대 있음' : ''}`}
+    >
+      <UsersIcon size={24} color={getIconColor(isDarkMode, 'primary')} />
+      {hasPendingInvitations ? (
+        <View
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full border border-white bg-error-500 dark:border-surface"
+        />
+      ) : null}
+    </Pressable>
   );
 }
 
@@ -247,20 +274,7 @@ function EmployerView() {
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
-        <TabHeader
-          title="내 공고"
-          rightAction={
-            <Pressable
-              onPress={() => router.push('/(employer)/workspace')}
-              className="rounded-sm p-2"
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel="워크스페이스"
-            >
-              <UsersIcon size={24} color={getIconColor(isDarkMode, 'primary')} />
-            </Pressable>
-          }
-        />
+        <TabHeader title="내 공고" rightAction={<WorkspaceHeaderAction />} />
         <PostingSurfaceState mode="loading" scope="list" message="공고 목록을 불러오는 중..." />
       </SafeAreaView>
     );
@@ -269,20 +283,7 @@ function EmployerView() {
   if (error) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
-        <TabHeader
-          title="내 공고"
-          rightAction={
-            <Pressable
-              onPress={() => router.push('/(employer)/workspace')}
-              className="rounded-sm p-2"
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel="워크스페이스"
-            >
-              <UsersIcon size={24} color={getIconColor(isDarkMode, 'primary')} />
-            </Pressable>
-          }
-        />
+        <TabHeader title="내 공고" rightAction={<WorkspaceHeaderAction />} />
         <PostingSurfaceState
           mode="error"
           scope="detail"
@@ -296,20 +297,7 @@ function EmployerView() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
-      <TabHeader
-        title="내 공고"
-        rightAction={
-          <Pressable
-            onPress={() => router.push('/(employer)/workspace')}
-            className="rounded-sm p-2"
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="워크스페이스"
-          >
-            <UsersIcon size={24} color={getIconColor(isDarkMode, 'primary')} />
-          </Pressable>
-        }
-      />
+      <TabHeader title="내 공고" rightAction={<WorkspaceHeaderAction />} />
       <WorkspaceContextBar />
 
       <View className="px-4 py-3">

@@ -20,6 +20,7 @@ import {
 import { resolveSessionUserId } from '@/hooks/internal/sessionUserId';
 import { trackJobView } from '@/services/observability';
 import { useThemeStore } from '@/stores';
+import { confirmAction } from '@/utils/confirmAction';
 import {
   getApplicationStatusMessage,
   getCancelUnavailableReason,
@@ -33,7 +34,7 @@ export default function JobDetailScreen() {
   const isDark = useThemeStore((state) => state.isDarkMode);
   const secondaryTextColor = getIconColor(isDark, 'primary');
   const { user, isInitialized } = useAuth();
-  const { hasApplied, getApplicationStatus } = useApplications();
+  const { hasApplied, getApplicationStatus, cancelApplication, isCancelling } = useApplications();
   const { openInstallPrompt } = useInstallPrompt();
   const sessionUserId = resolveSessionUserId(user?.uid, isInitialized);
   const {
@@ -79,6 +80,25 @@ export default function JobDetailScreen() {
 
     router.push(`/(app)/applications/${application.id}/cancel`);
   }, [getApplicationStatus, id]);
+
+  // 대기중(applied) 상태는 구인자 승인 없이 즉시 취소 — schedule 탭
+  // ScheduleDetailModal의 "지원 취소" 버튼과 동일 mutation(cancelApplication) 재사용.
+  const handleCancelApplication = useCallback(() => {
+    const application = getApplicationStatus(id ?? '');
+    if (!application) {
+      return;
+    }
+
+    confirmAction({
+      title: '지원 취소',
+      message: '정말 지원을 취소하시겠습니까?\n취소 후에는 다시 지원해야 합니다.',
+      confirmText: '지원 취소',
+      destructive: true,
+      onConfirm: () => {
+        cancelApplication(application.id);
+      },
+    });
+  }, [cancelApplication, getApplicationStatus, id]);
 
   const shareAction = job ? (
     <Pressable
@@ -156,6 +176,10 @@ export default function JobDetailScreen() {
     !isFixed &&
     applicationStatus?.status === STATUS.APPLICATION.CONFIRMED &&
     !applicationStatus?.cancellationRequest;
+  const canCancelApplied =
+    !isFixed &&
+    applicationStatus?.status === STATUS.APPLICATION.APPLIED &&
+    !applicationStatus?.cancellationRequest;
   const cancelUnavailableReason = getCancelUnavailableReason({
     status: applicationStatus?.status,
     isFixed,
@@ -227,6 +251,19 @@ export default function JobDetailScreen() {
                   <View className="flex-1">
                     <Button onPress={handleCancelRequest} variant="ghost" fullWidth>
                       취소 요청
+                    </Button>
+                  </View>
+                ) : null}
+                {canCancelApplied ? (
+                  <View className="flex-1">
+                    <Button
+                      onPress={handleCancelApplication}
+                      variant="ghost"
+                      fullWidth
+                      loading={isCancelling}
+                      disabled={isCancelling}
+                    >
+                      지원 취소
                     </Button>
                   </View>
                 ) : null}

@@ -32,6 +32,7 @@ export interface NotificationListProps {
   onLoadMore?: () => void;
   onNotificationPress?: (notification: NotificationData) => void;
   onGroupPress?: (group: GroupedNotificationData) => void;
+  onMarkGroupAsRead?: (group: GroupedNotificationData) => void;
   onDeleteNotification?: (notificationId: string) => void;
   onMarkAllAsRead?: () => void;
   showDelete?: boolean;
@@ -51,6 +52,7 @@ export const NotificationList = memo(function NotificationList({
   onLoadMore,
   onNotificationPress,
   onGroupPress,
+  onMarkGroupAsRead,
   onDeleteNotification,
   onMarkAllAsRead,
   showDelete = false,
@@ -66,6 +68,7 @@ export const NotificationList = memo(function NotificationList({
             group={item}
             onGroupPress={onGroupPress}
             onNotificationPress={onNotificationPress}
+            onMarkGroupAsRead={onMarkGroupAsRead}
             onDeleteNotification={onDeleteNotification}
             showDelete={showDelete}
           />
@@ -81,7 +84,7 @@ export const NotificationList = memo(function NotificationList({
         />
       );
     },
-    [onDeleteNotification, onGroupPress, onNotificationPress, showDelete]
+    [onDeleteNotification, onGroupPress, onMarkGroupAsRead, onNotificationPress, showDelete]
   );
 
   const keyExtractor = useCallback(
