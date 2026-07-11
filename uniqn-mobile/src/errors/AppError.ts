@@ -172,6 +172,9 @@ export const ERROR_CODES = {
   BUSINESS_EMPLOYER_APP_SELF_APPROVE: 'E6072', // 본인 신청 직접 처리 시도
   BUSINESS_EMPLOYER_APP_NOT_FOUND: 'E6073', // 신청 내역 없음
 
+  // 대회 공고 승인 게이트 (E6080~)
+  BUSINESS_TOURNAMENT_NOT_APPROVED: 'E6080', // 미승인(pending/rejected/누락) 대회 공고 지원 시도
+
   // 라이브 운영(ops) 관련 (E6100~)
   OPS_REGISTRATION_CLOSED: 'E6101', // 등록 마감 상태에서 등록 시도
   OPS_INVALID_TOURNAMENT_TRANSITION: 'E6102', // 불법 대회 상태 전이
@@ -348,6 +351,9 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.BUSINESS_EMPLOYER_APP_ALREADY_PROCESSED]: '다른 관리자가 먼저 처리한 신청입니다',
   [ERROR_CODES.BUSINESS_EMPLOYER_APP_SELF_APPROVE]: '본인 신청을 직접 처리할 수 없습니다',
   [ERROR_CODES.BUSINESS_EMPLOYER_APP_NOT_FOUND]: '구인자 신청 내역을 찾을 수 없습니다',
+  // 대회 공고 승인 게이트
+  [ERROR_CODES.BUSINESS_TOURNAMENT_NOT_APPROVED]:
+    '승인 대기 중인 대회 공고에는 지원할 수 없습니다.',
   // 알 수 없는 에러
   [ERROR_CODES.UNKNOWN]: '알 수 없는 오류가 발생했습니다',
 };
