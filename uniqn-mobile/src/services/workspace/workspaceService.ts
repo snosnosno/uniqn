@@ -120,6 +120,20 @@ export const workspaceService = {
   },
 
   /**
+   * 사용자가 해당 워크스페이스의 owner 또는 멤버(editor)인지 확인.
+   *
+   * 공고 생성 시 클라이언트(활성 워크스페이스 컨텍스트)가 전달한 workspaceId 의
+   * 신뢰 검증에 사용 — 오전달/조작 시 조용히 다른 워크스페이스로 붙지 않도록
+   * fail-closed 판정을 서비스가 이 결과로 강제한다(P1#8).
+   *
+   * findAllByMember 는 owner + editor 모두 반환하므로 멤버십 판정과 동치.
+   */
+  async isMemberOfWorkspace(workspaceId: string, userId: string): Promise<boolean> {
+    const workspaces = await workspaceRepository.findAllByMember(userId);
+    return workspaces.some((w) => w.id === workspaceId);
+  },
+
+  /**
    * 워크스페이스 멤버 (editor) 목록 + 사용자 정보
    */
   async listMembers(workspaceId: string): Promise<WorkspaceMemberWithUser[]> {

@@ -25,8 +25,10 @@ import {
   useCreateWorkspace,
   useWorkspaces,
   useArchiveWorkspace,
+  useArchivedWorkspaces,
 } from '@/hooks/workspace';
 import { WorkspaceContextBar } from '@/components/workspace';
+import { shouldShowArchivedRestoreEntry } from '@/utils/workspace/archivedEntry';
 import { logger } from '@/utils/logger';
 import { isAppError } from '@/errors';
 import type { WorkspaceMemberWithUser } from '@/types/workspace';
@@ -39,6 +41,10 @@ export default function WorkspaceSettingsScreen() {
   // 중복 조회 dedup. error 만 별도로 노출되지 않으므로 useWorkspaces 한 번 더 호출.
   const { error } = useWorkspaces();
   const { activeWorkspace, isLoading } = useActiveWorkspace();
+  // P1#9: 마지막 워크스페이스를 보관하면 activeWorkspace 가 사라져 EmptyState 로
+  // 떨어지는데, 여기서 복원 경로가 없으면 앱 내에서 되살릴 수 없다. 보관된 워크스페이스가
+  // 있으면 EmptyState 에서도 보관함 진입점을 노출한다.
+  const { archived } = useArchivedWorkspaces();
 
   const isOwner = !!user?.uid && activeWorkspace?.ownerId === user.uid;
 
@@ -161,7 +167,7 @@ export default function WorkspaceSettingsScreen() {
             title="워크스페이스가 없어요"
             description="공고 협업을 위해 워크스페이스를 만들어보세요."
           />
-          <View className="mt-6 w-full max-w-xs">
+          <View className="mt-6 w-full max-w-xs gap-3">
             <Button
               variant="primary"
               onPress={handleCreateFirstWorkspace}
@@ -169,6 +175,17 @@ export default function WorkspaceSettingsScreen() {
             >
               첫 워크스페이스 만들기
             </Button>
+            {shouldShowArchivedRestoreEntry({
+              hasActiveWorkspace: false,
+              archivedCount: archived.length,
+            }) && (
+              <Button
+                variant="secondary"
+                onPress={() => router.push('/(employer)/workspace/archived')}
+              >
+                보관함에서 복원
+              </Button>
+            )}
           </View>
         </View>
       </SafeAreaView>
