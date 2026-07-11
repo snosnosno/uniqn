@@ -24,6 +24,7 @@
 --   E3. 스태프 본인 employer_initiates → unauthorized(공고 권한 없음)
 --   E7. caller binding: auth.uid != p_actor_id(비admin) → unauthorized
 --   E5. staff_initiates 회귀: confirmed → applied 정상(기존 경로 무변경)
+--   E8. 고아 공고(owner_id NULL) + 비인가 액터 → unauthorized (NULL fail-open 방어, 보안리뷰 MEDIUM)
 --
 -- 스키마 의존:
 --   - public.users(id, email, name NOT NULL, role) ← auth.users FK
@@ -192,6 +193,44 @@ BEGIN
   FROM public.notifications
   WHERE recipient_id = v_staff_id AND type = 'confirmation_cancelled';
   IF v_notify_count != 1 THEN RAISE EXCEPTION 'E5 notify: staff_initiates added row, count=%', v_notify_count; END IF;
+
+  -- ============================================================
+  -- E8: 고아 공고(owner_id NULL) — NULL fail-open 방어 (보안리뷰 MEDIUM)
+  -- ============================================================
+  -- owner_id 는 ON DELETE SET NULL 로 nullable. COALESCE 하드닝 전에는
+  -- NULL = actor → NOT(NULL OR false...) = NULL → IF 미발화로 비인가 액터가 통과했다.
+  DECLARE
+    v_job2_id uuid := gen_random_uuid();
+    v_app2_id uuid := gen_random_uuid();
+  BEGIN
+    INSERT INTO public.job_postings (
+      id, owner_id, workspace_id, title, total_positions, filled_positions, status, created_at, updated_at
+    )
+    VALUES (v_job2_id, NULL, v_workspace_id, '__sql_fixture: orphan posting', 5, 0, 'active', now(), now());
+
+    INSERT INTO public.applications (
+      id, job_posting_id, applicant_id, applicant_name, status, confirmation_history, created_at, updated_at
+    )
+    VALUES (
+      v_app2_id, v_job2_id, v_staff_id, 'STAFF', 'confirmed',
+      jsonb_build_array(jsonb_build_object(
+        'assignments', jsonb_build_array(jsonb_build_object('dates', jsonb_build_array('2026-05-02'))),
+        'cancelled_at', NULL,
+        'confirmed_at', now()::text
+      )),
+      now(), now()
+    );
+
+    -- 외부인(비 owner/멤버/협업자/admin)이 본인 명의로 고아 공고 확정해제 시도 → 거부돼야 함
+    PERFORM set_config('request.jwt.claims', json_build_object('sub', v_other_user_id, 'role', 'authenticated')::text, true);
+    v_result := public.cancel_application_atomically(v_app2_id, 'employer_initiates', v_other_user_id);
+    IF (v_result->>'success')::bool OR v_result->>'error' != 'unauthorized' THEN
+      RAISE EXCEPTION 'E8 fail (orphan posting NULL fail-open): %', v_result;
+    END IF;
+
+    DELETE FROM public.applications WHERE id = v_app2_id;
+    DELETE FROM public.job_postings WHERE id = v_job2_id;
+  END;
 
   -- ============================================================
   -- Cleanup (역순)

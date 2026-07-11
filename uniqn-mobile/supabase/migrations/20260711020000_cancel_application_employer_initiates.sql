@@ -17,9 +17,15 @@
 --      삼켜 취소 트랜잭션을 롤백하지 않는다(트리거와 동일 패턴).
 --      senderId 는 실제 행위자(p_actor_id)를 기록한다.
 --
+--   4) [보안 하드닝] 인가 OR-체인의 owner_id 비교를 COALESCE(..., false) 로
+--      fail-closed 고정 — owner_id 는 nullable(ON DELETE SET NULL, prod 실측)이라
+--      고아 공고에서 NULL 전파로 인가가 통과되던 기존(staff_approves) fail-open 도
+--      함께 방어한다. pgTAP E8 케이스가 고정.
+--
 -- 원본: 2026-07-11 prod pg_get_functiondef 실측 본문
 --       (레포 20260621090100_bind_mutation_rpcs_to_auth_uid.sql 과 일치 확인).
---       staff_initiates / staff_approves_cancel_request 경로 동작 무변경.
+--       staff_initiates / staff_approves_cancel_request 경로는 위 4) 하드닝 외
+--       동작 무변경.
 -- =============================================================================
 
 CREATE OR REPLACE FUNCTION public.cancel_application_atomically(
@@ -72,8 +78,11 @@ BEGIN
   IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'error', 'job_posting_not_found'); END IF;
 
   -- 행위자별 인가
+  -- owner_id 는 nullable(계정삭제 시 ON DELETE SET NULL) — NULL = p_actor_id 가 NULL 로 전파되면
+  -- NOT(NULL OR false...) = NULL 이라 IF 미발화 → fail-open. COALESCE 로 fail-closed 고정
+  -- (보안리뷰 MEDIUM, 기존 staff_approves 분기도 동일 하드닝 적용).
   IF p_actor_type IN ('staff_approves_cancel_request', 'employer_initiates') THEN
-    IF NOT (v_job_posting.owner_id = p_actor_id OR public.is_workspace_member(v_job_posting.workspace_id, p_actor_id)
+    IF NOT (COALESCE(v_job_posting.owner_id = p_actor_id, false) OR public.is_workspace_member(v_job_posting.workspace_id, p_actor_id)
       OR public.is_posting_collaborator(v_job_posting.id, p_actor_id) OR public.is_admin()) THEN
       RETURN jsonb_build_object('success', false, 'error', 'unauthorized'); END IF;
   ELSIF p_actor_type = 'staff_initiates' THEN
