@@ -17,6 +17,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient, SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { Expo, ExpoPushMessage, ExpoPushTicket } from 'npm:expo-server-sdk@3.14.0';
+import { TYPE_CATEGORY_MAP } from './typeCategoryMap.ts';
 
 // 이 함수는 trigger / admin 전용 — 브라우저 호출 차단
 const responseHeaders = {
@@ -84,11 +85,12 @@ interface PushSettingsRow {
   user_id: string;
   enabled: boolean | null;
   push_enabled: boolean | null;
+  categories: Record<string, unknown> | null;
 }
 
 // 수신자별 알림 설정 조회. push_enabled(설정 화면 '푸시 알림' 토글) 또는 enabled(전체
 // 알림)가 false 면 푸시 발송에서 제외한다. 설정 행이 없으면 기본 허용.
-// (카테고리별/방해금지 시간대 세분화 게이트는 후속 PR — 우선 마스터 토글을 실효화.)
+// 카테고리 게이트는 isPushDisabledByCategory 참조(방해금지 시간대는 후속 PR).
 async function fetchPushSettingsByUsers(
   client: SupabaseClient,
   userIds: string[]
@@ -97,7 +99,7 @@ async function fetchPushSettingsByUsers(
 
   const { data, error } = await client
     .from('notification_settings')
-    .select('user_id, enabled, push_enabled')
+    .select('user_id, enabled, push_enabled, categories')
     .in('user_id', userIds);
 
   if (error) throw new Error(`notification_settings fetch failed: ${error.message}`);
@@ -112,6 +114,27 @@ async function fetchPushSettingsByUsers(
 function isPushDisabledByPreference(settings: PushSettingsRow | undefined): boolean {
   if (!settings) return false; // 설정 없음 = 기본 허용
   return settings.enabled === false || settings.push_enabled === false;
+}
+
+// 카테고리별 게이트 — fail-open 원칙: 설정/매핑/형태가 불완전하면 발송한다.
+// 이 함수는 전체 푸시의 단일 게이트라 fail-closed 버그는 전 알림 중단 사고가 된다.
+// jsonb 내부 키는 클라 저장 형태인 camelCase(pushEnabled)가 표준이나, 방어적으로
+// snake_case(push_enabled)도 수용한다(prod 실측 2026-07-11: camelCase 확인).
+function isPushDisabledByCategory(
+  settings: PushSettingsRow | undefined,
+  notificationType: string
+): boolean {
+  const categories = settings?.categories;
+  if (!categories || typeof categories !== 'object') return false;
+
+  const category = TYPE_CATEGORY_MAP[notificationType];
+  if (!category) return false; // 미매핑 타입 = 기본 허용
+
+  const categorySetting = (categories as Record<string, unknown>)[category];
+  if (!categorySetting || typeof categorySetting !== 'object') return false;
+
+  const { enabled, pushEnabled, push_enabled } = categorySetting as Record<string, unknown>;
+  return enabled === false || pushEnabled === false || push_enabled === false;
 }
 
 async function removeInvalidToken(client: SupabaseClient, token: string): Promise<void> {
@@ -248,10 +271,17 @@ Deno.serve(async (req: Request) => {
 
     const messages: ExpoPushMessage[] = [];
     let skippedByPreference = 0;
+    let skippedByCategory = 0;
     for (const notification of notifications) {
+      const recipientSettings = pushSettingsByUser.get(notification.recipient_id);
       // 사용자가 푸시 알림을 끈 경우 발송 제외 (설정 토글 실효화)
-      if (isPushDisabledByPreference(pushSettingsByUser.get(notification.recipient_id))) {
+      if (isPushDisabledByPreference(recipientSettings)) {
         skippedByPreference++;
+        continue;
+      }
+      // 카테고리 토글이 꺼진 경우 발송 제외 (설정 화면 카테고리 토글 실효화)
+      if (isPushDisabledByCategory(recipientSettings, notification.type)) {
+        skippedByCategory++;
         continue;
       }
       const tokens = tokensByUser.get(notification.recipient_id) ?? [];
@@ -269,6 +299,7 @@ Deno.serve(async (req: Request) => {
           notifications: notifications.length,
           recipients: recipientIds.length,
           skippedByPreference,
+          skippedByCategory,
         }),
         { status: 200, headers: responseHeaders }
       );
@@ -288,6 +319,7 @@ Deno.serve(async (req: Request) => {
         notifications: notifications.length,
         recipients: recipientIds.length,
         skippedByPreference,
+        skippedByCategory,
       }),
       { status: 200, headers: responseHeaders }
     );
