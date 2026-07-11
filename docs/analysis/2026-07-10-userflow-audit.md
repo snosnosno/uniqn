@@ -179,11 +179,13 @@ DB는 `is_workspace_member` / `is_posting_collaborator`로 협업자의 쓰기�
 
 | # | 클러스터 | 작업 | 근거 |
 |---|---|---|---|
-| 1 | B | `executeCancelConfirmation` actor_type 하드코딩 제거 — 호출자가 owner면 `employer_initiates` | `ApplicationRepositoryTransactions.ts:226` |
-| 2 | C | 정산 완료 건은 `payroll_amount` 동결값 표시. 급여도 수당처럼 스냅샷 | `settlementGrouping.ts:140` |
-| 3 | C | `work_logs` 보호 트리거에 `check_in_ts`/`check_out_ts`/`custom_*` 3종 추가 | `20260415130000_...sql:34` |
-| 4 | D | 공개/인증 상세 + 지원 경로에 `approvalStatus === 'approved'` 게이트 추가 | `JobPostingRepository.ts:416` |
+| 1 | B | ✅ **완료 (§9)** — `employer_initiates` RPC 분기 신설 + 합성 applicationId 제거, prod 적용 | `ApplicationRepositoryTransactions.ts:226` |
+| 2 | C | ✅ **완료 (§9)** — 완료 건 표시액 `payroll_amount` 동결값 사용(레거시 fallback) | `settlementGrouping.ts:140` |
+| 3 | C | ✅ **대체 해소 (§6)** — 트리거 확장은 QR을 깨뜨려(SECDEF+GUC) RLS 축소로 해결 | `20260415130000_...sql:34` |
+| 4 | D | ✅ **완료 (§9)** — `isTournamentApprovalBlocked` SSOT + 상세 2화면·지원 서비스 게이트 | `JobPostingRepository.ts:416` |
 | 5 | A | ✅ **완료 (§8)** — `postingAuthority` 모듈로 3개 가드 통합 + 무검증 2경로 방어 | 6건 중 5건 해소 |
+
+**P0 전항 완료(2026-07-11).** 상세 실행 기록: #5=§8, #1·#2·#4=§9, #3=§6.
 
 **#5가 이 감사의 최대 레버리지였다.** 세 개의 서로 다른 소유권 판정 함수가 각자 다른 규칙을 갖고 있어 클러스터 A 6건이 발생했다. 하나로 합쳐 5건을 닫았다. 잔여 1건(`staff-role-collaborator-locked-out`, 라우트 role 게이트)은 제품 결정이 필요해 별도 슬라이스로 남았다.
 
@@ -387,3 +389,27 @@ adversarial review     code+security 2종, CRITICAL/HIGH 0
 ```
 
 **잔여 (클러스터 A 6건 중 1건)**: `staff-role-collaborator-locked-out` — `app/(employer)/_layout.tsx`의 `useHasRole('employer')` 게이트가 staff-role 협업자를 조용히 튕겨낸다. "staff-role 사용자에게 employer 화면을 보여줄 것인가"라는 제품 결정이 필요해 별도 슬라이스로 남긴다.
+
+---
+
+## 9. P0 B·C(표시)·D + actorId 후속 실행 기록 (2026-07-11, 완료)
+
+브랜치 `analysis/userflow-audit-20260710` 커밋 `79ef444eb`..`4e4418396` (5커밋). 오케스트레이션: 메인 세션(설계·prod 실측·검증·커밋) + opus 구현자 3명 병렬(파일 집합 상호 배타) + 적대 리뷰(code/security).
+
+| 커밋 | 슬라이스 | 내용 |
+|---|---|---|
+| `79ef444eb` | actorId 후속(§8 백로그) | 정산 커스텀설정 2서비스가 `requireCurrentUser()`로 actorId 파생, 훅의 `posting.ownerId` 전달 제거 + `modifiedBy` 서비스 스탬핑 |
+| `d82ecaba0` | P0#2 (C 표시) | 완료 건 표시액 `payrollAmount` 동결값(Number.isFinite), 레거시·미완료는 재계산 fallback. 그룹 summary 자동 반영 |
+| `d0cf940b1` | P0#4 (D) | `isTournamentApprovalBlocked` SSOT(fail-closed) + `applyToJobV2` 게이트(E6080) + 공개/인증 상세 2화면 |
+| `82d0bc92d` | P0#1 (B) | RPC `employer_initiates` 분기 신설 + 클라 4계층 actorType 배관 + **합성 applicationId 제거**(22P02 이중결함) + pgTAP 7케이스 |
+| `4e4418396` | B 보안 하드닝 | 인가 OR-체인 `COALESCE(owner_id = actor, false)` — NULL owner_id fail-open 방어(pgTAP E8) |
+
+**prod 실측이 뒤집은 핸드오프 전제 (B)**: ① RPC에 `employer_initiates` 분기가 아예 없어 클라 수정만으론 `invalid_actor_type` — 마이그레이션 필수. ② `buildApplicationId`가 `${jobPostingId}_${staffId}` 합성 문자열을 uuid 파라미터에 넘겨 unauthorized 이전에 22P02로 즉사(이중 파손). ③ 알림 트리거에 confirmed→applied 분기가 없어 RPC 분기 내 직접 INSERT(예외 삼킴)로 스태프 통지.
+
+**보안 리뷰가 잡은 것 (MEDIUM, 수정함)**: `job_postings.owner_id`는 nullable(ON DELETE SET NULL) — 고아 공고에서 `NULL = actor` 전파로 인가 IF 미발화 → fail-open. **하드닝 전 본문에서 외부인이 고아 공고 확정을 실제 해제함을 pgTAP E8 RED로 라이브 실증** 후 COALESCE로 fail-closed(기존 staff_approves 분기 동시 하드닝). 이 fail-open은 prod에 선재하던 것이다.
+
+**prod 적용·검증**: `apply_migration` 후 prod↔로컬 함수 정의 **md5 완전 일치**(`66af3a45...`) — pgTAP 653건이 통과한 본문 그대로. grants anon=false/authenticated=true, advisor ERROR 0(WARN 175 전역 기지). D는 prod tournament 공고 0건 실측으로 차단 회귀 없음 확인.
+
+**검증 증거 종합**: 전체 jest 386스위트/4935 PASS · 전체 pgTAP 56파일/653 PASS(E8 RED→GREEN 포함) · tsc 0 · 슬라이스별 TDD RED 확인 · 보안 적대리뷰 APPROVE(조건 반영). 코드 리뷰는 슬라이스1만 완료(APPROVE), 나머지 3슬라이스는 리뷰어 세션 한도로 중단 — 마이그레이션 SQL은 기존정의↔적용본 diff 실측(의도 변경 4종 외 무변경)으로 대체, 앱레이어 정식 재리뷰는 후속.
+
+**신규 후속 백로그**: ①applications INSERT RLS에 approvalStatus 방어심화(LOW, 보안리뷰) ②ScheduleCard `payrollAmount > 0` 가드 — 동결값 0 처리 SSOT 통일(LOW) ③`CancelActorType` 인터페이스 배럴 재수출(LOW) ④confirmedStaffService 감사필드 클라값 fallback 제거(LOW, 기존 지적 재확인).
