@@ -29,6 +29,7 @@ import {
 } from '@/features/employer/settlements/settlementCalc';
 import { useStaffSettlementsHandlers } from '@/features/employer/settlements/useStaffSettlementsHandlers';
 import { TabHeader, type TabType } from '@/features/employer/settlements/TabHeader';
+import { TodayOpsStrip } from '@/features/employer/settlements/TodayOpsStrip';
 import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
 
 // ============================================================================
@@ -54,8 +55,16 @@ export default function StaffSettlementsScreen() {
     [posting]
   );
 
-  // 스태프 관리 훅
-  const { stats: staffStats, changeRole } = useConfirmedStaff(jobPostingId || '');
+  // 스태프 관리 훅 — realtime: 스트립·탭 배지가 원격 QR 출근에도 갱신되도록 구독.
+  // 자식 StaffManagementTab의 구독과 같은 채널을 공유(createRealtimeSubscription refCount dedup).
+  const {
+    stats: staffStats,
+    grouped: staffGrouped,
+    changeRole,
+  } = useConfirmedStaff(jobPostingId || '', { realtime: true });
+
+  // 오늘 날짜 그룹 (당일 운영 요약 스트립용)
+  const todayGroup = useMemo(() => staffGrouped.find((group) => group.isToday), [staffGrouped]);
 
   // 정산 관리 훅
   const {
@@ -167,6 +176,10 @@ export default function StaffSettlementsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       {stackHeader}
+
+      {/* 당일 운영 요약 스트립 (M4) — 오늘 근무가 있을 때만 노출 */}
+      <TodayOpsStrip todayGroup={todayGroup} pendingSettlementCount={pendingSettlementCount} />
+
       {/* 탭 헤더 */}
       <TabHeader
         activeTab={activeTab}
