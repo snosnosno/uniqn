@@ -4,6 +4,7 @@
  * @description SettlementDetailModal에서 사용하는 상수 정의
  */
 
+import { PAYROLL_STATUS_LABELS } from '@/shared/status';
 import type { PayrollStatus } from '@/types';
 
 /**
@@ -16,8 +17,8 @@ export const PAYROLL_STATUS_CONFIG: Record<
     variant: 'default' | 'primary' | 'success' | 'warning' | 'error';
   }
 > = {
-  pending: { label: '미정산', variant: 'warning' },
-  processing: { label: '처리중', variant: 'primary' },
-  completed: { label: '정산완료', variant: 'success' },
-  failed: { label: '정산실패', variant: 'error' },
+  pending: { label: PAYROLL_STATUS_LABELS.pending, variant: 'warning' },
+  processing: { label: PAYROLL_STATUS_LABELS.processing, variant: 'primary' },
+  completed: { label: PAYROLL_STATUS_LABELS.completed, variant: 'success' },
+  failed: { label: PAYROLL_STATUS_LABELS.failed, variant: 'error' },
 };
