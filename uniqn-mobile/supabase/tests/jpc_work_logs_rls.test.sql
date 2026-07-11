@@ -1,15 +1,16 @@
 -- uniqn-mobile/supabase/tests/jpc_work_logs_rls.test.sql
 -- JPC 후속 PR — Task 2.4: work_logs RLS 매트릭스 (16 케이스)
 --
--- 정책 (plan 가정 보정):
+-- 정책 (prod 실측 2026-07-12, baseline 파리티):
 --   SELECT  : wl_select USING (staff=self OR owner=self OR jp.id IN
 --             (jp WHERE is_workspace_member OR is_posting_collaborator))
 --             → 4/4 ALLOW
---   INSERT  : work_logs_insert_owner_or_admin WITH CHECK
---             (owner_id=self OR is_admin)
---             → owner ALLOW, 나머지 3 DENY (plan 의 "4/4 DENY" 보정 1건)
---   UPDATE  : wl_update USING (SELECT 와 동형) → 4/4 ALLOW
---   DELETE  : work_logs_delete_admin USING (is_admin) → 4/4 DENY (admin 아님)
+--   INSERT  : 정책 부재 = deny-all → 4/4 DENY(42501). 쓰기는 SECDEF RPC 전용(prod 계약).
+--             (구세대 work_logs_insert_owner_or_admin 은 prod 부재 — 로컬 전용 잔상.)
+--   UPDATE  : wl_update USING (owner=self OR jp workspace_member OR posting_collaborator)
+--             → owner/editor/collaborator ALLOW, staff outsider DENY. SELECT 와 달리
+--             staff 분기 없음(자기행 UPDATE 회수, prod P0#1 2026-07).
+--   DELETE  : 정책 부재 = deny-all → 4/4 DENY (0 rows).
 
 BEGIN;
 SELECT plan(16);
@@ -60,13 +61,13 @@ SELECT is(
 );
 
 -- ============================================================================
--- INSERT (4 케이스) — owner_id=self 만 ALLOW
--- plan 가정 보정: owner ALLOW (work_logs_insert_owner_or_admin WITH CHECK)
+-- INSERT (4 케이스) — prod 실측(2026-07-12, baseline 파리티): INSERT 정책 부재.
+-- work_logs 쓰기는 SECDEF RPC 전용이라 직접 INSERT 는 owner 포함 전 역할 DENY(42501).
 -- ============================================================================
 
--- owner 가 자기 owner_id 로 INSERT → ALLOW
+-- owner 가 자기 owner_id 로 INSERT → DENY (INSERT 정책 부재)
 SELECT jpc_test_set_user((current_setting('jpc.owner_id'))::uuid);
-SELECT lives_ok(
+SELECT throws_ok(
   format(
     $q$INSERT INTO public.work_logs
          (application_id, staff_id, job_posting_id, owner_id, date, status, role)
@@ -76,7 +77,8 @@ SELECT lives_ok(
     current_setting('jpc.jp_id'),
     current_setting('jpc.owner_id')
   ),
-  'work_logs INSERT: owner 본인 명의 (owner_id=self) ALLOW'
+  '42501', NULL,
+  'work_logs INSERT: owner 차단 (INSERT 정책 부재 — RPC 전용)'
 );
 
 -- ws_editor 가 owner_id=owner 로 INSERT → DENY (42501)
@@ -128,7 +130,8 @@ SELECT throws_ok(
 );
 
 -- ============================================================================
--- UPDATE (4 케이스) — 모두 ALLOW (wl_update USING)
+-- UPDATE (4 케이스) — owner/editor/collaborator ALLOW, staff outsider DENY(0 rows).
+-- wl_update USING 에 staff 분기 없음(prod P0#1 자기행 UPDATE 회수, 2026-07).
 -- ============================================================================
 
 SELECT jpc_test_set_user((current_setting('jpc.owner_id'))::uuid);
@@ -155,16 +158,17 @@ WITH u AS (
 )
 SELECT is((SELECT count(*)::int FROM u), 1, 'work_logs UPDATE: collaborator');
 
+-- staff 자기행 UPDATE 는 prod 에서 회수됨(P0#1, 2026-07): wl_update USING 에 staff 분기 없음.
 SELECT jpc_test_set_user((current_setting('jpc.outsider_id'))::uuid);
 WITH u AS (
   UPDATE public.work_logs SET status = 'checked_in', check_in_ts = now()
    WHERE id = (current_setting('jpc.wl_id'))::uuid
   RETURNING 1
 )
-SELECT is((SELECT count(*)::int FROM u), 1, 'work_logs UPDATE: staff 본인');
+SELECT is((SELECT count(*)::int FROM u), 0, 'work_logs UPDATE: staff 본인 차단 (자기행 UPDATE 회수)');
 
 -- ============================================================================
--- DELETE (4 케이스) — 모두 DENY (work_logs_delete_admin 만, admin 아님)
+-- DELETE (4 케이스) — 모두 DENY (prod 실측: DELETE 정책 부재 = deny-all, 0 rows).
 -- ============================================================================
 
 SELECT jpc_test_set_user((current_setting('jpc.owner_id'))::uuid);

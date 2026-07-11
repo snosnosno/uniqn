@@ -90,6 +90,11 @@ BEGIN
     RAISE EXCEPTION 'S1 side: status';
   END IF;
 
+  -- baseline(2026-07-12): prod 함수는 서버앵커(p_check_time 이 now() 기준 ±300초 밖이면 무시하고
+  -- now() 사용) → 위 v_check_in_time(now()-2h) 파라미터가 무시되어 check_in_ts=now() 로 기록됨.
+  -- S2 경과시간(1.5~2.5h) 검증을 위해 픽스처에서 직접 2시간 전으로 되돌린다.
+  UPDATE public.work_logs SET check_in_ts = now() - interval '2 hours' WHERE id = v_work_log_id;
+
   -- ----------------------------------------------------------
   -- S5: 이중 checkIn → already_checked_in
   -- ----------------------------------------------------------
@@ -167,6 +172,8 @@ BEGIN
   DELETE FROM public.applications WHERE id = v_app_id;
   DELETE FROM public.job_postings WHERE id = v_job_id;
   DELETE FROM public.workspaces WHERE id = v_workspace_id;
+  -- baseline(2026-07-12): on_auth_user_created 트리거 공존(선점 행/기본 워크스페이스 정리)
+  DELETE FROM public.workspaces WHERE owner_id IN (v_owner_id, v_staff_id, v_other_staff_id);
   DELETE FROM auth.users WHERE id IN (v_owner_id, v_staff_id, v_other_staff_id);
 END $$;
 

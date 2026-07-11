@@ -87,6 +87,8 @@ BEGIN
 
   DELETE FROM public.job_postings WHERE id IN (v_jp_fill, v_jp_keep);
   DELETE FROM public.workspaces WHERE id = v_ws_id;
+  -- baseline(2026-07-12): on_auth_user_created 트리거 공존(선점 행/기본 워크스페이스 정리)
+  DELETE FROM public.workspaces WHERE owner_id = v_owner_id;
   DELETE FROM public.users WHERE id = v_owner_id;
   DELETE FROM auth.users WHERE id = v_owner_id;
 END $$;
