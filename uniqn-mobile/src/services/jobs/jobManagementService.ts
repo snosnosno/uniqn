@@ -1,6 +1,7 @@
 import { logger } from '@/utils/logger';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { jobPostingRepository } from '@/repositories';
+import { requireCurrentUser } from '@/services/auth/authCoreService';
 import { workspaceService } from '@/services/workspace';
 import { BusinessError, ERROR_CODES } from '@/errors';
 import type { TaxSettings } from '@/utils/settlement';
@@ -236,18 +237,19 @@ export async function updateJobPostingSettlementSettings(
     roles: Record<string, unknown>[];
     allowances: Record<string, unknown>;
     taxSettings: TaxSettings;
-  },
-  ownerId: string
+  }
 ): Promise<void> {
   try {
-    logger.info('공고 정산 설정 저장 시작', { jobPostingId, ownerId });
-    await jobPostingRepository.updateSettlementSettings(jobPostingId, data, ownerId);
+    // 인가 주체는 세션에서 파생한다 — 클라이언트가 넘긴 값은 신뢰하지 않는다
+    const actorId = (await requireCurrentUser()).id;
+    logger.info('공고 정산 설정 저장 시작', { jobPostingId, actorId });
+    await jobPostingRepository.updateSettlementSettings(jobPostingId, data, actorId);
     logger.info('공고 정산 설정 저장 완료', { jobPostingId });
   } catch (error) {
     throw handleServiceError(error, {
       operation: '공고 정산 설정 저장',
       component: 'jobManagementService',
-      context: { jobPostingId, ownerId },
+      context: { jobPostingId },
     });
   }
 }

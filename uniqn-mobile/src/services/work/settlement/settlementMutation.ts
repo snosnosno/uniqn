@@ -12,6 +12,7 @@
 
 import { logger } from '@/utils/logger';
 import { settlementRepository } from '@/repositories';
+import { requireCurrentUser } from '@/services/auth/authCoreService';
 import { TimeNormalizer } from '@/shared/time';
 import type { TaxSettings } from '@/utils/settlement';
 import type { PayrollStatus } from '@/types';
@@ -143,12 +144,21 @@ export async function updateWorkLogCustomSettlement(
     customAllowances?: Record<string, unknown>;
     customTaxSettings: TaxSettings;
     modificationEntry: Record<string, unknown>;
-  },
-  ownerId: string
+  }
 ): Promise<void> {
-  logger.info('개인 정산 설정 저장 시작', { workLogId, ownerId });
+  // 인가 주체·수정 이력 기록자는 세션에서 파생한다 — 클라이언트가 넘긴 값은 신뢰하지 않는다
+  const actorId = (await requireCurrentUser()).id;
 
-  await settlementRepository.updateWorkLogCustomSettlement(workLogId, data, ownerId);
+  logger.info('개인 정산 설정 저장 시작', { workLogId, actorId });
+
+  await settlementRepository.updateWorkLogCustomSettlement(
+    workLogId,
+    {
+      ...data,
+      modificationEntry: { ...data.modificationEntry, modifiedBy: actorId },
+    },
+    actorId
+  );
 
   logger.info('개인 정산 설정 저장 완료', { workLogId });
 }

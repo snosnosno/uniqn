@@ -97,7 +97,6 @@ export default function StaffSettlementsScreen() {
     handleSaveSettings,
   } = useStaffSettlementsHandlers({
     jobPostingId,
-    posting,
     modals,
     salaryConfig,
     rolesForList,
