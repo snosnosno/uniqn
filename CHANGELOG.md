@@ -30,9 +30,11 @@
 - pgTAP `capacity_full_transition.test.sql` (전이 5시나리오) + e2e `posting-capacity-recovery.spec.ts` (T5/T6)
 
 ### Changed
+- **prod↔repo 파리티 baseline squash** (감사 후속 ④, 2026-07-12 완료): 마이그레이션 248개를 `supabase/migrations/archive/`로 이동(재실행 제외·히스토리 보존)하고 prod `pg_dump --schema-only` 스냅샷 + 프렐류드(확장/스키마권한/vault)·플랫폼 glue(auth 트리거·`ensure_rls` 이벤트트리거·storage 버킷11/정책32·realtime 16테이블·cron 11잡)·데이터 시드(review-* e2e 계정·app_config 8행) 4파일로 재기록. 로컬 PG 15→**17.6**(prod 정합). fresh `db reset` 실측 = prod 완전 일치(함수 162·정책 103·pg_temp 누락 0) + gen-1 재빌드 보안퇴행 3정책(`action_logs_insert_any`·`notifications_insert_service`·`board_comments_select_all`) 근본 제거. 파리티 회귀 가드 pgTAP + 주간 CI 스모크(`parity-smoke.yml`, `PROD_DB_URL` 시크릿) 신설. 원격 `migration repair` 5버전 applied. pgTAP 스위트를 prod 진실로 정합(60파일/674 GREEN — jp_insert 역할게이트·qr_insert 본인바인딩·work_logs RPC전용·FK NO ACTION·auth 트리거 공존)
 - ops 상금 코드 정리 (PR #228, TS-only): `uuidLike`→`schemas/common` 통합·상금 표기 `fmt`→`formatNumber` 통합·PAYOUTS `INVALID_PERCENTS` 에러에 0값 행 안내 문구 추가(`payoutMessages` 순수함수 분리+테스트 5)
 
 ### Fixed
+- SECDEF `search_path` pg_temp 누락 62함수 일괄 보정 + `decrement_unread_counter(uuid)` 잉여 오버로드 제거 (감사 ③-B·§3-c, prod 적용·red-green 63→0/2→1, 본문·ACL 무손상 — temp-table shadowing 이론 벡터 봉쇄·42725 모호성 해소)
 - ops KO 풀 산술 오버플로 근본 차단 (PR #226·#227, prod 적용): `knockout_pool` 컬럼·재계산 경로 int→bigint 승격(`::int` 다운캐스트 제거) + `ops_get_player_view` bountyAccrued int*int 곱셈 `::bigint` 승격 — 대형 바운티 값에서 22003 오버플로 방지(pgTAP RED 22003→GREEN 실증, anon/authed EXECUTE 보존)
 - reseat 배정 fast-follow (PR #229, prod 마이그): service 경계 Zod safeParse 배선(스펙 §6.2)·RPC 비-uuid 선검증(22P02 → `SEAT_ASSIGNMENT_INVALID` 정규 에러)·pgTAP 칩균형 주석 정정
 - db-tests pgTAP RLS GRANT 정합 (PR #179): Supabase CLI `version:latest` 드리프트로 소실된 테이블 GRANT를 fixture에 명시(함수 GRANT 제외=wallet 하드닝 회귀 방지) + `supabase/setup-cli` 버전 pin 2.107.0 (PR #180)으로 드리프트 회귀 예방
