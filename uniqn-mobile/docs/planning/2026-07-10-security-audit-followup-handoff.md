@@ -2,6 +2,15 @@
 
 > 2026-07-10 RLS/SECDEF 감사(PR #235) 후속. 감사 보고서 `docs/analysis/2026-07-10-rls-secdef-parity-security-audit.md`, 정합화 계획 `docs/planning/2026-07-10-prod-repo-schema-reconciliation-plan.md`, 메모리 `project_rls_secdef_audit_20260710`·`pitfall_prod_repo_schema_drift_massive`.
 
+## ✅ 진행 상태 (2026-07-11 세션 종료 시점)
+
+- **① PR #235 ✅머지**(squash `63d92dc9d`). `/review` 1회 + prod 라이브 독립검증(하드닝 6종 실측 일치). Sentry redact 신규검토로 **과잉마스킹 3건(RRN=epoch-ms·PHONE 부분매치·EMAIL @2x 에셋) 제거 + 누락 3건(cookies 복수형·ip_address/geo·device.name) 보강** — 46/46 GREEN. 워크트리 `T-HOLDEM-audit` 정리 완료(물리 디렉터리는 busy로 잔존, 재시도 필요).
+- **② Sentry redact OTA ✅배포**(update group `391367bc-aa9c-4115-9851-ac59689f1735`, `Commit=e26553d4d` = master HEAD). ⚠️#222(weekly-grid)가 그새 master 머지돼 함께 배포됨(사용자 승인). tsc0·jest 399스위트/4989 통과. PortOne fallback 정상(빈값 아님)·EAS prod env(supabaseUrl=prod 일치) 실측. **잔여=사용자: Sentry 대시보드에서 실오류 1건 발생시켜 마스킹+event_id/trace_id 원본유지 눈으로 확인.**
+- **③ ✅완료·prod 적용·PR #236 머지**(squash `983d91b9d`). **핸드오프의 ③-A 전제가 틀렸음을 실측으로 반증**: sync_schedule_board는 "정상 클라 호출"이 아니라 **앱 RPC 호출 0건 + Edge Function(service_role) 전용**. 근본원인은 auth.uid() 무검증이 아니라 **20260621090000 일괄 GRANT가 권한 확대**(원래 authenticated 없던 함수에 부여). → 소유권 가드 대신 **authenticated REVOKE로 원계약(service_role only) 복원**(마이그 `20260710020000`). 나머지 31함수 전수검증(오탐 2 기각). +③-B rate_limit 형제 2개 authenticated 회수(`20260710030000`, check_user_rate_limit와 일관화). +board_comments_select_all 블랭킷 DROP(재빌드 누수 차단, prod no-op). prod red-green 전건 + cron 무회귀 실증(적용 35초 뒤 succeeded).
+- **④ 착수 가능(전제 충족)**: 열린 PR **0건** 확인(#222·#233·#235·#236 전부 머지). 사전점검 완료 — 아래 §④ 참조.
+
+---
+
 ## ⚠️ 착수 전 필수 (매 세션)
 
 1. `git status` — 내가 만들지 않은 미커밋 변경 있으면 새 워크트리+브랜치 격리(병렬 세션 활발함: #222·#233 진행 중).
@@ -39,9 +48,19 @@
 - **권장: ④ 파리티 baseline 정합 시 일괄 처리**(27함수 개별 `CREATE OR REPLACE`는 파리티 드리프트를 더 벌림). 단독 진행 시 prod 본문 실측 후 `SET search_path = public, pg_temp`로 재정의.
 - 목록: 감사 보고서 §2-c + lens-authed 결과(cancel_application_atomically·confirm_application이 스키마-미명시 참조 최다 = 이론상 최대 노출).
 
-## ④ 파리티 baseline 정합 (prod 덤프 squash)
+## ④ 파리티 baseline 정합 (prod 덤프 squash) — **착수 가능, 다음 세션 권장**
 
-- **전제(동결)**: 진행 중 PR **#222(weekly grid)·#233(ops wiki)·#235(이 감사)** 전부 머지 완료 = 마이그 히스토리 확정. `gh pr list --state open`으로 0건 확인 후 착수.
+### 사전점검 결과 (2026-07-11)
+
+- **전제 충족**: 열린 PR 0건 확인(#222·#233·#235·#236 전부 머지).
+- **환경 실현 가능**: Docker 29.3.1 가용, 로컬 스택 `supabase_db_uniqn` 실행 중이나 **PG 15.8.1** (config.toml `major_version=15`) → ④는 이걸 **17.6으로 상향** 필요. supabase CLI 2.109.1.
+- **prod 대조군 실측(2026-07-11)**: 함수 **163** · RLS 정책 **103** · PG **17.6**. baseline 재기록 후 로컬이 이 카운트와 일치해야 함(파리티 회귀 가드 단언 값).
+- **pg_temp 누락 SECDEF 함수 = 63개**(감사 시점 "27함수"에서 재측정 상향). baseline 덤프 시 `SET search_path = ..., pg_temp` 일괄 반영 대상. ⚠️LOW·~0 exploit(PostgREST에 authenticated CREATE TEMP 채널 부재).
+- **왜 다음 세션인가**: 정합화 계획 문서가 "별도 세션 실행용"으로 명시. PG17 스택 상향+240마이그 아카이브+baseline 재기록+migration repair는 비가역 재구조화라 신선한 컨텍스트 권장. 이 세션은 ①②③로 이미 진행됨.
+
+### 전제·계획(원본)
+
+- **전제(동결)**: 진행 중 PR **#222(weekly grid)·#233(ops wiki)·#235(이 감사)·#236(③)** 전부 머지 완료 = 마이그 히스토리 확정. ✅2026-07-11 `gh pr list --state open` 0건 확인.
 - 정본 계획: `docs/planning/2026-07-10-prod-repo-schema-reconciliation-plan.md`(Option B, 7단계). 핵심:
   1. PG17 로컬 스택(현 dev 15.8 → prod 17.6 정합).
   2. prod `pg_dump --schema-only --schema=public`(RLS·GRANT·함수 보존) 읽기 덤프.
@@ -55,5 +74,7 @@
 
 ## 순서·범위
 
-- ①②는 즉시(#235 머지 → OTA). ③-A는 독립 가능(소유권 가드). ③-B·④는 함께(baseline 정합 시 pg_temp 일괄).
-- 인접 작업 주의: `project_userflow_audit_20260710`(다른 세션)이 **work_logs 보호트리거 P0 CRITICAL**(payroll 4컬럼만 막아 스태프가 check_in_ts 자기 PATCH 가능)을 별도 적발 — DB 보안 후속과 겹칠 수 있으니 착수 전 그 브랜치(`analysis/userflow-audit-20260710`) 상태 확인. 소유권 판정함수 통합(userflow P0#3)과 ③-A sync 가드가 같은 권한모델을 건드림 → 조율 권장.
+- ✅①②③ 완료. **남은 건 ④ 하나** — 사전점검까지 끝났고 실행만 다음 세션에서.
+- ④ 착수 시 **③-B pg_temp 63함수(재측정)를 baseline 덤프에 일괄 포함**. 개별 CREATE OR REPLACE는 파리티 드리프트를 더 벌리므로 금물.
+- 인접 작업 주의: `project_userflow_audit_20260710`(다른 세션)이 **work_logs 보호트리거 P0 CRITICAL**을 별도 적발 → **P0#1은 이미 prod 적용**(마이그 `20260710010000_wl_update_revoke_staff_self`, 커밋 `729b7d14f`). 워크트리 `T-HOLDEM-authority`(브랜치 `analysis/userflow-audit-20260710`)가 그 세션 소유 — ④ baseline 덤프는 이 세션의 마이그까지 prod에 반영된 뒤 떠야 파리티가 정확. 착수 전 그 브랜치 미머지 마이그 유무 재확인.
+- ③에서 발견해 baseline에 반영할 재빌드 보안퇴행 **3건**(원래 2건 + 신규): `action_logs_insert_any`·`notifications_insert_service`·**`board_comments_select_all`**(USING true 블랭킷, `20260710020000`이 DROP했으나 base_schema에 CREATE 잔존 → baseline 덤프가 근본 해소).
