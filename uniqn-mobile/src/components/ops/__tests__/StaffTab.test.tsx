@@ -34,12 +34,14 @@ import type { OpsStaff, OpsTable, OpsTournament } from '@/types/ops';
 
 type CapturedOption = { label: string; value: string; disabled?: boolean; destructive?: boolean };
 
-// jest.setup.js 전역 모킹은 useRouter() 호출마다 새 jest.fn 을 반환해 push 단언이 불가 —
-// 역방향 훅(새 공고 만들기) 검증을 위해 파일 로컬로 안정 스파이를 재모킹한다.
-const mockRouterPush = jest.fn();
-jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: mockRouterPush }),
-}));
+// jest.setup.js 전역 모킹의 useRouter 는 모듈 레벨 안정 스파이를 반환하므로 컴포넌트와 동일한
+// push 인스턴스를 잡아 역방향 훅(새 공고 만들기) push 를 단언한다(파일 로컬 재모킹 불필요).
+// import 한 useRouter() 직접 호출은 rules-of-hooks 에 걸리므로, 실제 훅이 아닌 모킹 팩토리
+// 반환값임을 명시하는 rename 캡처(jest.requireMock)로 규칙을 우회 없이 피한다.
+const { useRouter: mockedUseRouter } = jest.requireMock('expo-router') as {
+  useRouter: () => { push: jest.Mock };
+};
+const mockRouterPush = mockedUseRouter().push;
 
 // 무거운 의존(SelectBottomSheet=@gorhom/bottom-sheet) 모킹: DealerPickerSheet.test.tsx 와 동일 문형.
 jest.mock('@/components/ui', () => {

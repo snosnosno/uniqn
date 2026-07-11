@@ -82,13 +82,19 @@ jest.mock('expo-splash-screen', () => ({
 }));
 
 // Mock expo-router
+// useRouter 는 모듈 레벨 단일 안정 스파이 객체를 반환한다. 팩토리에서 () => ({ push: jest.fn() })
+// 처럼 호출마다 새 jest.fn 을 만들면 컴포넌트가 잡은 push 와 테스트가 잡은 push 가 달라 호출
+// 단언이 불가능해지고, 그 우회로 테스트 파일마다 부분 재모킹을 복제하게 된다. 안정 스파이를
+// 공유하면 테스트는 beforeEach 의 jest.clearAllMocks() 로 호출 이력만 초기화하면 된다(구현은 유지됨).
+// 변수명은 반드시 mock 접두 — babel-plugin-jest-hoist 의 out-of-scope 참조 허용 규칙.
+const mockExpoRouter = {
+  push: jest.fn(),
+  replace: jest.fn(),
+  back: jest.fn(),
+  canGoBack: jest.fn(() => true),
+};
 jest.mock('expo-router', () => ({
-  useRouter: () => ({
-    push: jest.fn(),
-    replace: jest.fn(),
-    back: jest.fn(),
-    canGoBack: jest.fn(() => true),
-  }),
+  useRouter: () => mockExpoRouter,
   useLocalSearchParams: () => ({}),
   useSegments: () => [],
   usePathname: () => '/',
