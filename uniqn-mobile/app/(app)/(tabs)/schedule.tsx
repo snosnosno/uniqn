@@ -301,6 +301,7 @@ export default function ScheduleScreen() {
     groupedByApplication,
     selectedDateSchedules,
     stats,
+    warning,
     currentMonth,
     selectedDate,
     isLoading,
@@ -605,6 +606,23 @@ export default function ScheduleScreen() {
         onToday={goToToday}
         onToggleView={handleToggleView}
       />
+
+      {/* 부분조회 실패 경고 — 일부 소스(근무/지원) fetch 실패 시 비차단 안내(P1#11).
+          경고를 버리면 근무 일부가 빠진 캘린더를 정상으로 오인하므로 명시 노출한다. */}
+      {warning && (
+        <View
+          className="mx-4 mt-2 rounded-md border border-warning-200 bg-warning-50 px-4 py-3 dark:border-warning-700 dark:bg-warning-900/20"
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+        >
+          <Text className="text-sm font-sans-semibold text-warning-700 dark:text-warning-300">
+            {warning}
+          </Text>
+          <Text className="mt-0.5 text-xs font-sans text-warning-600 dark:text-warning-400">
+            당겨서 새로고침해 주세요.
+          </Text>
+        </View>
+      )}
 
       {/* 미작성 평가 배너 */}
       {pendingCount > 0 && (
