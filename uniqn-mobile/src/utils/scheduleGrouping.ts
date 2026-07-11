@@ -9,7 +9,10 @@
 import { getRoleDisplayName } from '@/types/unified';
 import { STATUS } from '@/constants';
 import { parseDateString } from '@/utils/date';
-import type { ScheduleEvent, GroupedScheduleEvent, DateStatus } from '@/types';
+import type { ScheduleEvent, GroupedScheduleEvent, DateStatus, ScheduleType } from '@/types';
+
+/** 스케줄탭 상태 필터 값 — 'all'은 전체(취소 포함) 노출, 나머지는 type 단일 매칭 */
+export type ScheduleStatusFilter = 'all' | ScheduleType;
 
 // ============================================================================
 // Types
@@ -365,4 +368,45 @@ export function filterSchedulesByDate(
     // ScheduleEvent: 직접 비교
     return schedule.date === date;
   });
+}
+
+/**
+ * 그룹화된 스케줄 목록을 상태(type)로 필터링
+ *
+ * 'all'이면 원본 배열을 그대로 반환(취소 포함). 그 외에는 type이 일치하는
+ * 항목만 반환. ScheduleEvent/GroupedScheduleEvent 둘 다 단일 type 필드를
+ * 가지므로 (같은 지원 내 여러 날짜라도 그룹은 하나의 type) 동일 로직으로 처리 가능.
+ *
+ * @example
+ * filterSchedulesByStatus(schedules, 'confirmed') // 확정 상태만
+ * filterSchedulesByStatus(schedules, 'all') // 전체(원본과 동일)
+ */
+export function filterSchedulesByStatus<T extends ScheduleEvent | GroupedScheduleEvent>(
+  schedules: T[],
+  statusFilter: ScheduleStatusFilter
+): T[] {
+  if (statusFilter === 'all') return schedules;
+  return schedules.filter((schedule) => schedule.type === statusFilter);
+}
+
+/**
+ * 그룹화된 스케줄 목록에서 상태(type)별 건수 집계
+ *
+ * FilterTabs의 count 배지에 사용. 그룹 1건 = 1건으로 집계(그룹 내 날짜 수가 아님).
+ */
+export function countSchedulesByType(
+  schedules: (ScheduleEvent | GroupedScheduleEvent)[]
+): Record<ScheduleType, number> {
+  const counts: Record<ScheduleType, number> = {
+    applied: 0,
+    confirmed: 0,
+    completed: 0,
+    cancelled: 0,
+  };
+
+  for (const schedule of schedules) {
+    counts[schedule.type] += 1;
+  }
+
+  return counts;
 }
