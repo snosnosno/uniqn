@@ -92,6 +92,7 @@ export function StaffManagementTab({
     removeStaff,
     changeStatus,
     setNoShow,
+    cancelNoShow,
     addStaff,
     isUpdatingTime,
     isAddingStaff,
@@ -105,6 +106,7 @@ export function StaffManagementTab({
   const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
   const [statusSheetTarget, setStatusSheetTarget] = useState<ConfirmedStaff | null>(null);
   const [noShowTarget, setNoShowTarget] = useState<ConfirmedStaff | null>(null);
+  const [cancelNoShowTarget, setCancelNoShowTarget] = useState<ConfirmedStaff | null>(null);
 
   const handleStaffPress = useCallback((staff: ConfirmedStaff) => {
     logger.debug('Confirmed staff pressed', { workLogId: staff.id });
@@ -227,6 +229,19 @@ export function StaffManagementTab({
     setNoShowTarget(null);
   }, [noShowTarget, setNoShow]);
 
+  const handleCancelNoShow = useCallback((staff: ConfirmedStaff) => {
+    setCancelNoShowTarget(staff);
+  }, []);
+
+  const handleCancelNoShowConfirm = useCallback(() => {
+    if (!cancelNoShowTarget) {
+      return;
+    }
+
+    cancelNoShow(cancelNoShowTarget.id);
+    setCancelNoShowTarget(null);
+  }, [cancelNoShowTarget, cancelNoShow]);
+
   const getStatusOptions = useCallback((): ActionSheetOption[] => {
     if (!statusSheetTarget) {
       return [];
@@ -333,6 +348,7 @@ export function StaffManagementTab({
           onReport={handleReport}
           onDelete={handleDelete}
           onStatusChange={handleStatusChange}
+          onCancelNoShow={handleCancelNoShow}
           showActions
         />
       </View>
@@ -372,6 +388,16 @@ export function StaffManagementTab({
         confirmText="노쇼 처리"
         cancelText="취소"
         isDestructive
+      />
+
+      <ConfirmModal
+        visible={Boolean(cancelNoShowTarget)}
+        onClose={() => setCancelNoShowTarget(null)}
+        onConfirm={handleCancelNoShowConfirm}
+        title="노쇼 취소"
+        message="노쇼 기록을 취소하고 근무 상태를 복구합니다. 출퇴근 기록이 있으면 해당 상태(출근/퇴근)로, 없으면 출근 예정으로 되돌아갑니다."
+        confirmText="노쇼 취소"
+        cancelText="취소"
       />
 
       <StaffProfileModal

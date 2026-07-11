@@ -5,7 +5,7 @@ import type {
   ConfirmedStaffStats,
 } from '@/types/confirmedStaff';
 import type { PayrollStatus, WorkLog } from '@/types/schedule';
-import type { ConfirmedStaffStatus } from '@/shared/status';
+import type { ConfirmedStaffStatus, WorkLogStatus } from '@/shared/status';
 import type { TimeInput } from '@/shared/time/types';
 import { formatDateWithDay, getTodayString } from '@/utils/date';
 
@@ -129,6 +129,29 @@ export function calculateStaffStats(staffList: ConfirmedStaff[]): ConfirmedStaff
     noShow: staffList.filter((staff) => staff.status === STATUS.WORK_LOG.NO_SHOW).length,
     settled: staffList.filter((staff) => staff.payrollStatus === STATUS.PAYROLL.COMPLETED).length,
   };
+}
+
+/**
+ * 노쇼 취소 시 되돌아갈 근무 상태를 결정한다(순수 함수).
+ *
+ * DB CHECK 제약 `work_logs_status_timestamp_consistency`가 status와 타임스탬프
+ * 정합을 강제한다(checked_in은 check_in_ts 필수, checked_out/completed는 양쪽
+ * 필수). 따라서 노쇼 취소는 고정된 상태(예: scheduled)로 되돌리는 게 아니라,
+ * 남아있는 출퇴근 타임스탬프로부터 상태를 재구성해야 제약을 위반하지 않는다.
+ */
+export function resolveNoShowRevertStatus(
+  checkInTime?: TimeInput | null,
+  checkOutTime?: TimeInput | null
+): WorkLogStatus {
+  if (checkInTime && checkOutTime) {
+    return STATUS.WORK_LOG.CHECKED_OUT;
+  }
+
+  if (checkInTime) {
+    return STATUS.WORK_LOG.CHECKED_IN;
+  }
+
+  return STATUS.WORK_LOG.SCHEDULED;
 }
 
 export function sortStaffByStatus(staffList: ConfirmedStaff[]): ConfirmedStaff[] {

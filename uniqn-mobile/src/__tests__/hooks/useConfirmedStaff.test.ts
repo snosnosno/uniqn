@@ -9,6 +9,7 @@ const mockUpdateStaffRole = jest.fn();
 const mockUpdateConfirmedStaffWorkTime = jest.fn();
 const mockCancelConfirmedStaffConfirmation = jest.fn();
 const mockMarkAsNoShow = jest.fn();
+const mockCancelNoShow = jest.fn();
 const mockUpdateStaffStatus = jest.fn();
 const mockSubscribeToConfirmedStaff = jest.fn();
 const mockAddToast = jest.fn();
@@ -37,8 +38,24 @@ jest.mock('@/services', () => ({
   cancelConfirmedStaffConfirmation: (...args: unknown[]) =>
     mockCancelConfirmedStaffConfirmation(...args),
   markAsNoShow: (...args: unknown[]) => mockMarkAsNoShow(...args),
+  cancelNoShow: (...args: unknown[]) => mockCancelNoShow(...args),
   updateStaffStatus: (...args: unknown[]) => mockUpdateStaffStatus(...args),
   subscribeToConfirmedStaff: (...args: unknown[]) => mockSubscribeToConfirmedStaff(...args),
+}));
+
+jest.mock('@/shared/errors/hookErrorHandler', () => ({
+  createMutationErrorHandler:
+    (
+      _context: string,
+      addToast: (payload: { type: string; message: string }) => void,
+      options?: { onRollback?: (ctx: unknown) => void }
+    ) =>
+    (error: Error, _variables?: unknown, mutationContext?: unknown) => {
+      if (options?.onRollback && mutationContext) {
+        options.onRollback(mutationContext);
+      }
+      addToast({ type: 'error', message: error.message });
+    },
 }));
 
 jest.mock('@/stores/authStore', () => ({
@@ -361,6 +378,44 @@ describe('useConfirmedStaff', () => {
       expect(mockAddToast).toHaveBeenCalledWith({
         type: 'success',
         message: '노쇼 처리되었습니다.',
+      });
+    });
+  });
+
+  it('cancels no-show through canonical mutation and invalidates staff management cache', async () => {
+    mockCancelNoShow.mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useConfirmedStaff('job-1'));
+
+    act(() => {
+      result.current.cancelNoShow('worklog-1');
+    });
+
+    await waitFor(() => {
+      expect(mockCancelNoShow).toHaveBeenCalledWith('worklog-1');
+      expect(mockInvalidateStaffManagement).toHaveBeenCalledWith('job-1');
+      expect(mockAddToast).toHaveBeenCalledWith({
+        type: 'success',
+        message: '노쇼가 취소되었습니다.',
+      });
+    });
+  });
+
+  it('surfaces the server-specific rejection message when no-show cancellation fails', async () => {
+    mockCancelNoShow.mockRejectedValue(
+      new Error('이미 정산이 완료된 근무 기록은 노쇼를 취소할 수 없습니다.')
+    );
+
+    const { result } = renderHook(() => useConfirmedStaff('job-1'));
+
+    act(() => {
+      result.current.cancelNoShow('worklog-1');
+    });
+
+    await waitFor(() => {
+      expect(mockAddToast).toHaveBeenCalledWith({
+        type: 'error',
+        message: '이미 정산이 완료된 근무 기록은 노쇼를 취소할 수 없습니다.',
       });
     });
   });

@@ -31,6 +31,11 @@ export interface MarkNoShowContext {
   reason?: string;
 }
 
+export interface CancelNoShowContext {
+  workLogId: string;
+  ownerId: string;
+}
+
 export interface UpdateStaffStatusContext {
   workLogId: string;
   ownerId: string;
@@ -66,6 +71,7 @@ export interface IConfirmedStaffRepository {
   updateRoleWithTransaction(context: UpdateRoleContext): Promise<void>;
   updateWorkTimeWithTransaction(context: UpdateConfirmedStaffWorkTimeContext): Promise<void>;
   markAsNoShow(context: MarkNoShowContext): Promise<void>;
+  cancelNoShow(context: CancelNoShowContext): Promise<void>;
   updateStatus(context: UpdateStaffStatusContext): Promise<void>;
   addDirectStaff(context: AddDirectStaffContext): Promise<string[]>;
   removeDirectStaff(context: RemoveDirectStaffContext): Promise<void>;

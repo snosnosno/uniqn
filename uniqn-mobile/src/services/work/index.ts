@@ -61,6 +61,7 @@ export {
   updateWorkTime as updateConfirmedStaffWorkTime,
   cancelConfirmedStaffConfirmation,
   markAsNoShow,
+  cancelNoShow,
   searchStaffByPhone,
   addDirectStaff,
   subscribeToConfirmedStaff,

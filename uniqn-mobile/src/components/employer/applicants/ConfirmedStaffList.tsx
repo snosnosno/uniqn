@@ -30,6 +30,7 @@ export interface ConfirmedStaffListProps {
   onReport?: (staff: ConfirmedStaff) => void;
   onDelete?: (staff: ConfirmedStaff) => void;
   onStatusChange?: (staff: ConfirmedStaff) => void;
+  onCancelNoShow?: (staff: ConfirmedStaff) => void;
   showActions?: boolean;
 }
 
@@ -124,6 +125,7 @@ export function ConfirmedStaffList({
   onReport,
   onDelete,
   onStatusChange,
+  onCancelNoShow,
   showActions = true,
 }: ConfirmedStaffListProps) {
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
@@ -203,11 +205,13 @@ export function ConfirmedStaffList({
           onReport={onReport}
           onDelete={onDelete}
           onStatusChange={onStatusChange}
+          onCancelNoShow={onCancelNoShow}
           showActions={showActions}
         />
       </View>
     ),
     [
+      onCancelNoShow,
       onChangeRole,
       onDelete,
       onEditTime,
