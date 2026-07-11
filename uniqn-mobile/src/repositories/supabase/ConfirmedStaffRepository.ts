@@ -395,7 +395,7 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
         });
       }
 
-      await verifyPostingAuthority(jobPostingId, context.ownerId, '노쇼 처리');
+      await verifyPostingAuthority(jobPostingId, context.actorId, '노쇼 처리');
 
       // 3. 노쇼 상태 업데이트
       const now = new Date().toISOString();
@@ -432,7 +432,7 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
         });
       }
 
-      await verifyPostingAuthority(jobPostingId, context.ownerId, '스태프 상태 변경');
+      await verifyPostingAuthority(jobPostingId, context.actorId, '스태프 상태 변경');
 
       // 3. 상태 업데이트 — 종결 status 와 타임스탬프 정합 유지.
       //    정산 게이트가 status 가 아닌 check_in_ts/check_out_ts 로 판정하므로(SSOT),

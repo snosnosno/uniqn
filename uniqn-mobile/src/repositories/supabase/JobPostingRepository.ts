@@ -641,11 +641,11 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       allowances: Record<string, unknown>;
       taxSettings: TaxSettings;
     },
-    ownerId: string
+    actorId: string
   ): Promise<void> {
     try {
-      logger.info('정산 설정 업데이트', { jobPostingId, ownerId });
-      const cur = await loadAndVerifyMutateAccess(jobPostingId, ownerId, '정산 설정 업데이트');
+      logger.info('정산 설정 업데이트', { jobPostingId, actorId });
+      const cur = await loadAndVerifyMutateAccess(jobPostingId, actorId, '정산 설정 업데이트');
 
       const merged: CreateJobPostingInput = mergeJobPostingInput(cur, {
         roleCatalog: mergeSettlementRoles(cur.roleCatalog, data.roles),
@@ -668,7 +668,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       assertCanonical(
         serialized,
         'Settlement settings update produced a non-canonical job posting.',
-        { jobPostingId, ownerId }
+        { jobPostingId, actorId }
       );
 
       const { id: _id, ...rest } = removeUndefined(

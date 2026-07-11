@@ -119,7 +119,8 @@ export async function updateStaffRole(input: UpdateStaffRoleInput): Promise<void
     newRole: input.newRole,
     isStandardRole: STANDARD_ROLE_KEYS.includes(input.newRole),
     reason: input.reason,
-    changedBy: input.changedBy ?? 'system',
+    // 감사 필드는 세션에서 강제 스탬프 — 클라이언트가 넘긴 값은 무시(위조 방지)
+    changedBy: actorId,
     actorId,
   });
 
@@ -130,7 +131,8 @@ export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> 
   const checkInDate = TimeNormalizer.parseTime(input.checkInTime);
   const checkOutDate = TimeNormalizer.parseTime(input.checkOutTime);
   const actorId = (await requireCurrentUser()).id;
-  const modifiedBy = input.modifiedBy ?? actorId;
+  // 감사 필드는 세션에서 강제 스탬프 — 클라이언트가 넘긴 값은 무시(위조 방지)
+  const modifiedBy = actorId;
 
   logger.info('Updating confirmed staff work time', {
     workLogId: input.workLogId,
@@ -197,7 +199,7 @@ export async function markAsNoShow(workLogId: string, reason?: string): Promise<
   const currentUser = await requireCurrentUser();
   logger.info('Marking confirmed staff as no-show', { workLogId, reason });
 
-  await confirmedStaffRepository.markAsNoShow({ workLogId, ownerId: currentUser.id, reason });
+  await confirmedStaffRepository.markAsNoShow({ workLogId, actorId: currentUser.id, reason });
 
   logger.info('Marked confirmed staff as no-show', { workLogId });
 }
@@ -207,7 +209,7 @@ export async function updateStaffStatus(workLogId: string, status: WorkLogStatus
   logger.info('Updating confirmed staff status', { workLogId, status });
 
   const workLog = await workLogRepository.getById(workLogId);
-  await confirmedStaffRepository.updateStatus({ workLogId, ownerId: currentUser.id, status });
+  await confirmedStaffRepository.updateStatus({ workLogId, actorId: currentUser.id, status });
 
   if (workLog?.jobPostingId) {
     try {

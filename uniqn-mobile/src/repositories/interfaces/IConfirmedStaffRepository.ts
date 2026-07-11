@@ -32,13 +32,15 @@ export interface DeleteConfirmedStaffContext {
 
 export interface MarkNoShowContext {
   workLogId: string;
-  ownerId: string;
+  /** 인가 주체(세션에서 파생한 현재 사용자 uid). 공고 소유자 id 를 재주입하지 말 것. */
+  actorId: string;
   reason?: string;
 }
 
 export interface UpdateStaffStatusContext {
   workLogId: string;
-  ownerId: string;
+  /** 인가 주체(세션에서 파생한 현재 사용자 uid). 공고 소유자 id 를 재주입하지 말 것. */
+  actorId: string;
   status: WorkLogStatus;
 }
 

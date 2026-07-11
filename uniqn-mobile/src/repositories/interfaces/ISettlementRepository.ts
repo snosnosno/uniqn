@@ -8,7 +8,10 @@
  * 1. 근무 시간 수정 트랜잭션
  * 2. 개별/일괄 정산 처리 트랜잭션
  * 3. 정산 상태 변경 트랜잭션
- * 4. 소유권 검증 (공고 소유자만 정산 가능)
+ * 4. 인가 검증 (공고 소유자·워크스페이스 멤버·협업자)
+ *
+ * 주의: 모든 메서드의 `actorId`는 인가 주체(세션에서 파생한 현재 사용자 uid)다.
+ * 공고 소유자 id(posting.ownerId)를 재주입하면 안 된다 — 인가는 actorId 기준으로 판정된다.
  */
 
 import type { PayrollStatus } from '@/types';
@@ -104,7 +107,7 @@ export interface ISettlementRepository {
    * @throws PermissionError 소유권이 없는 경우
    * @throws AlreadySettledError 이미 정산 완료된 경우
    */
-  updateWorkTimeWithTransaction(context: UpdateWorkTimeContext, ownerId: string): Promise<void>;
+  updateWorkTimeWithTransaction(context: UpdateWorkTimeContext, actorId: string): Promise<void>;
 
   // ==========================================================================
   // Settlement
@@ -122,7 +125,7 @@ export interface ISettlementRepository {
    */
   settleWorkLogWithTransaction(
     context: SettleWorkLogContext,
-    ownerId: string
+    actorId: string
   ): Promise<SettlementResultDTO>;
 
   /**
@@ -137,7 +140,7 @@ export interface ISettlementRepository {
    */
   bulkSettlementWithTransaction(
     context: BulkSettlementContext,
-    ownerId: string
+    actorId: string
   ): Promise<BulkSettlementResultDTO>;
 
   // ==========================================================================
@@ -157,7 +160,7 @@ export interface ISettlementRepository {
   updatePayrollStatusWithTransaction(
     workLogId: string,
     status: PayrollStatus,
-    ownerId: string
+    actorId: string
   ): Promise<void>;
 
   // ==========================================================================
@@ -182,6 +185,6 @@ export interface ISettlementRepository {
       customTaxSettings: TaxSettings;
       modificationEntry: Record<string, unknown>;
     },
-    ownerId: string
+    actorId: string
   ): Promise<void>;
 }

@@ -100,14 +100,14 @@ describe('markAsNoShow 권한', () => {
     );
 
     await expect(
-      repo.markAsNoShow({ workLogId: WORK_LOG_ID, ownerId: 'collab-1', reason: '무단결근' })
+      repo.markAsNoShow({ workLogId: WORK_LOG_ID, actorId: 'collab-1', reason: '무단결근' })
     ).resolves.not.toThrow();
     expect(capturedUpdate).toMatchObject({ status: 'no_show' });
   });
 
   it('외부인의 노쇼 처리는 SECURITY_UNAUTHORIZED_ACCESS 로 거부된다', async () => {
     await expect(
-      repo.markAsNoShow({ workLogId: WORK_LOG_ID, ownerId: 'outsider-1', reason: 'x' })
+      repo.markAsNoShow({ workLogId: WORK_LOG_ID, actorId: 'outsider-1', reason: 'x' })
     ).rejects.toMatchObject({ code: ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS });
   });
 });

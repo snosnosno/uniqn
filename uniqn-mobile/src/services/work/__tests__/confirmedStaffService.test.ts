@@ -157,7 +157,8 @@ describe('confirmedStaffService', () => {
       newRole: 'dealer',
       isStandardRole: true,
       reason: 'Role correction',
-      changedBy: 'system',
+      // changedBy 미전달 시에도 'system'이 아니라 세션 actorId 로 스탬프된다
+      changedBy: 'owner-1',
       actorId: 'owner-1',
     });
   });
@@ -178,6 +179,37 @@ describe('confirmedStaffService', () => {
         reason: 'Manual correction',
         modifiedBy: 'owner-1',
       })
+    );
+  });
+
+  it('updateStaffRole는 클라이언트가 넘긴 changedBy를 무시하고 세션 actorId로 스탬프한다', async () => {
+    mockConfirmedStaffRepository.updateRoleWithTransaction.mockResolvedValue(undefined);
+
+    await updateStaffRole({
+      workLogId: 'worklog-1',
+      newRole: 'dealer',
+      reason: 'Role correction',
+      changedBy: 'spoofed-attacker',
+    });
+
+    expect(mockConfirmedStaffRepository.updateRoleWithTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ changedBy: 'owner-1', actorId: 'owner-1' })
+    );
+  });
+
+  it('updateWorkTime은 클라이언트가 넘긴 modifiedBy를 무시하고 세션 actorId로 스탬프한다', async () => {
+    mockConfirmedStaffRepository.updateWorkTimeWithTransaction.mockResolvedValue(undefined);
+
+    await updateWorkTime({
+      workLogId: 'worklog-1',
+      checkInTime: '09:00',
+      checkOutTime: '18:00',
+      reason: 'Manual correction',
+      modifiedBy: 'spoofed-attacker',
+    });
+
+    expect(mockConfirmedStaffRepository.updateWorkTimeWithTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ modifiedBy: 'owner-1', actorId: 'owner-1' })
     );
   });
 
@@ -268,7 +300,7 @@ describe('confirmedStaffService', () => {
 
     expect(mockConfirmedStaffRepository.markAsNoShow).toHaveBeenCalledWith({
       workLogId: 'worklog-1',
-      ownerId: 'owner-1',
+      actorId: 'owner-1',
       reason: 'No arrival',
     });
   });
@@ -280,7 +312,7 @@ describe('confirmedStaffService', () => {
 
     expect(mockConfirmedStaffRepository.updateStatus).toHaveBeenCalledWith({
       workLogId: 'worklog-1',
-      ownerId: 'owner-1',
+      actorId: 'owner-1',
       status: 'completed',
     });
   });

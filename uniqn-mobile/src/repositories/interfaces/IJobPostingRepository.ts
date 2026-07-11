@@ -327,7 +327,7 @@ export interface IJobPostingRepository {
       allowances: Record<string, unknown>;
       taxSettings: TaxSettings;
     },
-    ownerId: string
+    actorId: string
   ): Promise<void>;
 
   // ==========================================================================
