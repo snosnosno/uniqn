@@ -189,17 +189,17 @@ DB는 `is_workspace_member` / `is_posting_collaborator`로 협업자의 쓰기�
 
 **#5가 이 감사의 최대 레버리지였다.** 세 개의 서로 다른 소유권 판정 함수가 각자 다른 규칙을 갖고 있어 클러스터 A 6건이 발생했다. 하나로 합쳐 5건을 닫았다. 잔여 1건(`staff-role-collaborator-locked-out`, 라우트 role 게이트)은 제품 결정이 필요해 별도 슬라이스로 남았다.
 
-### P1 — 마찰·정합성
+### P1 — 마찰·정합성 (✅ 전항 완료, 2026-07-11 §10)
 
 | # | 클러스터 | 작업 |
 |---|---|---|
-| 6 | C | 커스텀 급여정보 저장에 서버측 `COMPLETED` 가드 추가 |
-| 7 | C | QR 체크인 시각을 서버 `clock_timestamp()` 기준으로 하거나 편차 임계 검증 |
-| 8 | F | 공고 생성 시 `activeWorkspace.id`를 명시 전달 |
-| 9 | F | 워크스페이스 0개 EmptyState에 '보관함' 진입점 추가 |
-| 10 | E | 취소 요청 제출 시 owner/협업자 알림 트리거 추가 |
-| 11 | E | 스케줄 부분조회 warning을 화면에 노출 |
-| 12 | E | 영문 BusinessError userMessage 5개 한글화 |
+| 6 | C | ✅ 커스텀 급여정보 저장 서버측 `COMPLETED` 가드(AlreadySettledError) `f329a923e` |
+| 7 | C | ✅ QR 시각 서버 클램프(±300초 초과/NULL→now(), 마이그 `20260711030100` prod 적용) `286f1d1e5` |
+| 8 | F | ✅ 공고 생성 activeWorkspace 명시 전달 + 오전달 fail-closed `0a71cbb51` |
+| 9 | F | ✅ 워크스페이스 0개 EmptyState 보관함 진입점 `0a71cbb51` |
+| 10 | E | ✅ 취소요청 알림 수신자 확장(owner∪멤버∪협업자, 마이그 `20260711030000` prod 적용 + 트리거 파리티 고정) `286f1d1e5` |
+| 11 | E | ✅ 부분조회 warning 노출(진짜 결함 지점=useCalendarView 드롭) `afe2af8c1` |
+| 12 | E | ✅ 영문 BusinessError userMessage 5개 한글화 `afe2af8c1` |
 
 ### P2 — 낮음
 
@@ -413,3 +413,30 @@ adversarial review     code+security 2종, CRITICAL/HIGH 0
 **검증 증거 종합**: 전체 jest 386스위트/4935 PASS · 전체 pgTAP 56파일/653 PASS(E8 RED→GREEN 포함) · tsc 0 · 슬라이스별 TDD RED 확인 · 보안 적대리뷰 APPROVE(조건 반영). 코드 리뷰는 슬라이스1만 완료(APPROVE), 나머지 3슬라이스는 리뷰어 세션 한도로 중단 — 마이그레이션 SQL은 기존정의↔적용본 diff 실측(의도 변경 4종 외 무변경)으로 대체, 앱레이어 정식 재리뷰는 후속.
 
 **신규 후속 백로그**: ①applications INSERT RLS에 approvalStatus 방어심화(LOW, 보안리뷰) ②ScheduleCard `payrollAmount > 0` 가드 — 동결값 0 처리 SSOT 통일(LOW) ③`CancelActorType` 인터페이스 배럴 재수출(LOW) ④confirmedStaffService 감사필드 클라값 fallback 제거(LOW, 기존 지적 재확인).
+
+---
+
+## 10. P1 전항 실행 기록 (2026-07-11~12, 완료)
+
+커밋 `286f1d1e5`..`2aa9295f8` (5커밋). P0(§9)과 동일 오케스트레이션 — 마이그레이션·prod 실측은 메인 세션, 앱레이어는 opus 구현자 3명 병렬(파일셋 배타).
+
+| 커밋 | 항목 | 내용 |
+|---|---|---|
+| `286f1d1e5` | P1#7+#10 (마이그 2종) | QR 시각 클램프 + 취소요청 알림 수신자 확장. **prod 적용·md5 파리티 일치** |
+| `f329a923e` | P1#6 | 완료건 커스텀 급여설정 서버 차단(형제 가드 패턴 일치) |
+| `0a71cbb51` | P1#8+#9 | activeWorkspace 명시 전달(fail-closed)·보관함 복원 진입점. workspaceId는 draft 미경유(ambient) — #194류 유실 불가 확인 |
+| `afe2af8c1` | P1#11+#12 | warning 배너(결함 지점=useCalendarView 드롭) + 한글화 5개 |
+| `2aa9295f8` | 후속 LOW | ownerId→actorId 전수 rename + 감사필드(changedBy/modifiedBy) 서버 강제 스탬프 |
+
+**실측이 밝힌 것**:
+- **P1#10은 파리티 구멍 동반**: `tr_notify_cancellation_request` 트리거가 prod엔 있으나 레포/로컬엔 없었다(20260420235202 legacy 드롭 후 prod만 재생성). 마이그가 트리거 보장(멱등 DROP+CREATE)으로 고정. **잔여 파리티 부채**: `applications_updated_at`·`applications_xss_check` 트리거도 동일 패턴으로 레포 누락.
+- **P1#7 클램프는 기존 pgTAP 하네스와 충돌**: 테스트들이 과거 시각을 p_check_time으로 넘겨 2h 근무를 시뮬레이션(P0#1의 "테스트가 취약점을 고정" 재현). check_in_ts 직접 시드로 전환.
+- 클라 QR 호출부는 스캔 즉시 new Date() — 오프라인 재전송 없음 → 정상 클라는 클램프에 안 걸림.
+
+**보안 적대 리뷰(P1 배치)**: CRITICAL/HIGH/MEDIUM 0 — prod 핫픽스 불필요. 핵심 확인: workspace_members에 pending 상태 없음(초대는 별도 테이블)이라 알림 수신자 집합=authz 정의와 정확히 일치 · QR 클램프는 admin 대행 포함 전 분기 적용. LOW 4건(방어심화)은 백로그.
+
+**검증 증거 종합**: 전체 jest **390스위트/4955 PASS** · 전체 pgTAP **58파일/655 PASS**(신규 클램프 4케이스·수신자 4케이스, RED→GREEN) · tsc 0 · prod md5 파리티 2함수 일치.
+
+**⚠️ 공유 로컬 스택 함정(세션 교훈)**: 병렬 세션이 공유 Docker 스택(supabase_db_uniqn)을 prod 스냅샷으로 재구축해 미push 브랜치의 마이그레이션(P0#1 포함)과 픽스처가 로컬에서 증발했다. 워크트리 격리는 git만 지킬 뿐 **로컬 DB는 공유 자원** — pgTAP 전 항상 이 브랜치의 마이그·fixtures/*.sql 재적용 확인 필요.
+
+**잔여**: P2 4건(#13~16) · LOW 방어심화 4건(완료건 custom_* DB 트리거, applications INSERT approvalStatus, ScheduleCard 동결값0 SSOT, applicant_name 연결) · 파리티 부채(트리거 2종) · P0-B~D/P1 앱코드 정식 code-review 재실행(리뷰어 세션 한도) · 범위 밖 제품 결정 2건(§8 잔여, B1/B2).
