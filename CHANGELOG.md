@@ -30,9 +30,11 @@
 - pgTAP `capacity_full_transition.test.sql` (전이 5시나리오) + e2e `posting-capacity-recovery.spec.ts` (T5/T6)
 
 ### Changed
+- 코드 정리(오류·모순·중복 리팩토링, TS-only·기능/UI 무변경): ①모순 유발 죽은 상수 삭제 — `constants/index.ts`의 `STORAGE_KEYS`/`ERROR_MESSAGES`/`VALIDATION`/`PAYROLL`, `securityConfig.ts`의 `PASSWORD_POLICY`(전부 import 0건, 실사용 SSOT와 값 불일치) ②완전 중복 제거 — `isValidDateFormat`/`isValidTimeFormat`을 `date/validation` re-export로 통합, 연속 날짜 판별 3중 구현(`scheduleGrouping`·`ScheduleMerger`)을 `areAllDatesConsecutive` 위임으로 통합 ③`settlementGrouping` 동일 if/else 데드 분기 축약
 - ops 상금 코드 정리 (PR #228, TS-only): `uuidLike`→`schemas/common` 통합·상금 표기 `fmt`→`formatNumber` 통합·PAYOUTS `INVALID_PERCENTS` 에러에 0값 행 안내 문구 추가(`payoutMessages` 순수함수 분리+테스트 5)
 
 ### Fixed
+- "오늘" 날짜 계산 타임존 off-by-one 일괄 수정: UTC 기준 `toISOString().split('T')[0]`이 KST 00~09시에 하루 밀리던 8곳(공고·스케줄 미래/과거 분류 정렬, 캘린더 선택일/오늘 이동, 오늘 스케줄 캐시 키, 관리자 메트릭 차트 라벨, 가입일 analytics 메타)을 로컬 기준 `getTodayString()`/`toDateString()`으로 치환
 - ops KO 풀 산술 오버플로 근본 차단 (PR #226·#227, prod 적용): `knockout_pool` 컬럼·재계산 경로 int→bigint 승격(`::int` 다운캐스트 제거) + `ops_get_player_view` bountyAccrued int*int 곱셈 `::bigint` 승격 — 대형 바운티 값에서 22003 오버플로 방지(pgTAP RED 22003→GREEN 실증, anon/authed EXECUTE 보존)
 - reseat 배정 fast-follow (PR #229, prod 마이그): service 경계 Zod safeParse 배선(스펙 §6.2)·RPC 비-uuid 선검증(22P02 → `SEAT_ASSIGNMENT_INVALID` 정규 에러)·pgTAP 칩균형 주석 정정
 - db-tests pgTAP RLS GRANT 정합 (PR #179): Supabase CLI `version:latest` 드리프트로 소실된 테이블 GRANT를 fixture에 명시(함수 GRANT 제외=wallet 하드닝 회귀 방지) + `supabase/setup-cli` 버전 pin 2.107.0 (PR #180)으로 드리프트 회귀 예방

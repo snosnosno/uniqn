@@ -268,9 +268,9 @@ export function groupSettlementsByStaff(
   context: SettlementGroupingContext,
   options: GroupSettlementOptions = {}
 ): GroupedSettlement[] {
-  const { enabled = true, minGroupSize = 1 } = options;
+  const { enabled = true } = options;
 
-  // 그룹핑 비활성화 시에도 minGroupSize=1이면 단일 WorkLog도 그룹화
+  // 그룹핑 비활성화 시에도 단일 WorkLog를 개별 그룹으로 변환해 반환 형태는 동일
   if (!enabled) {
     // 단순히 각 WorkLog를 개별 GroupedSettlement로 변환
     const staffMap = new Map<string, WorkLog[]>();
@@ -304,14 +304,7 @@ export function groupSettlementsByStaff(
   const result: GroupedSettlement[] = [];
 
   for (const [staffId, logs] of staffMap) {
-    if (logs.length >= minGroupSize) {
-      // 그룹 크기 충족: GroupedSettlement 생성
-      result.push(createGroupedSettlement(staffId, logs, context));
-    } else {
-      // 그룹 크기 미달이어도 minGroupSize=1이면 그룹화
-      // (이 경우 minGroupSize > 1 설정 시에만 이 분기 도달)
-      result.push(createGroupedSettlement(staffId, logs, context));
-    }
+    result.push(createGroupedSettlement(staffId, logs, context));
   }
 
   // 날짜순 정렬 (최신순)

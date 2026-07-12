@@ -30,6 +30,7 @@ import { useWeeklyGridEnabled } from '@/hooks';
 import { useReceivedWorkspaceInvitations } from '@/hooks/workspace';
 import { useHasRole } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
+import { getTodayString } from '@/utils/date';
 import type { JobPosting } from '@/types';
 import type { SharedJobPosting } from '@/types/jobPostingCollaborator';
 import {
@@ -175,7 +176,7 @@ function EmployerView() {
       return [];
     }
 
-    const today = new Date().toISOString().split('T')[0] ?? '';
+    const today = getTodayString();
     const filtered =
       filter === 'all'
         ? postings
