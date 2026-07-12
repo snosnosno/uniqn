@@ -239,7 +239,11 @@ BEGIN
   DELETE FROM public.work_logs WHERE application_id = v_app_id;
   DELETE FROM public.applications WHERE id = v_app_id;
   DELETE FROM public.job_postings WHERE id = v_job_id;
-  DELETE FROM public.workspaces WHERE id = v_workspace_id;
+  -- owner 기준으로 workspace 삭제 — handle_new_user(employer 기본 워크스페이스
+  -- 자동생성, 20260519223300) 트리거가 활성인 스택에서는 test-ws 외에 auto-ws 도
+  -- 생기므로, auth.users 삭제 전 owner 소유 전체를 정리한다(workspaces_owner_id_fkey
+  -- ON DELETE RESTRICT). CI(auth 트리거 미작동)에서는 test-ws 만 대상 = 무해.
+  DELETE FROM public.workspaces WHERE owner_id IN (v_owner_id, v_staff_id, v_other_user_id);
   DELETE FROM auth.users WHERE id IN (v_owner_id, v_staff_id, v_other_user_id);
 END $$;
 
