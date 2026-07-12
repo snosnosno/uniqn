@@ -10,6 +10,7 @@
  */
 
 import type { JobPostingCard } from '@/types';
+import { getTodayString } from '@/utils/date';
 
 // ============================================================================
 // Types
@@ -99,7 +100,7 @@ export function getEarliestFutureDateTime(job: JobPostingCard, today: string): s
 export function sortJobPostings(jobs: JobPostingCard[]): JobPostingCard[] {
   if (jobs.length === 0) return [];
 
-  const today = new Date().toISOString().split('T')[0] ?? '';
+  const today = getTodayString();
 
   // 1. 정렬 키 사전 계산 (O(n))
   const jobsWithKeys: JobWithSortKey[] = jobs.map((job) => {

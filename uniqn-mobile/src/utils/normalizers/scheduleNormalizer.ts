@@ -19,6 +19,7 @@ import {
   normalizeJobRoles,
   normalizeRoleWithCount,
 } from './roleNormalizer';
+import { getTodayString } from '@/utils/date';
 
 function normalizeTimeSlot(slot: PostingTimeSlot, index: number): TimeSlotInfo {
   const roles: RoleInfo[] = slot.roles.map((role) =>
@@ -73,7 +74,7 @@ function normalizeLegacySchedule(job: JobPosting): DatedScheduleInfo {
 }
 
 function sortDatedSchedules(schedules: DatedScheduleInfo[]): DatedScheduleInfo[] {
-  const today = new Date().toISOString().split('T')[0] ?? '';
+  const today = getTodayString();
 
   return [...schedules].sort((a, b) => {
     const aIsFuture = a.date >= today;

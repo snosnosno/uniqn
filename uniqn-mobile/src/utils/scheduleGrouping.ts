@@ -8,7 +8,7 @@
 
 import { getRoleDisplayName } from '@/types/unified';
 import { STATUS } from '@/constants';
-import { parseDateString } from '@/utils/date';
+import { areAllDatesConsecutive, parseDateString } from '@/utils/date';
 import type { ScheduleEvent, GroupedScheduleEvent, DateStatus, ScheduleType } from '@/types';
 
 /** 스케줄탭 상태 필터 값 — 'all'은 전체(취소 포함) 노출, 나머지는 type 단일 매칭 */
@@ -46,27 +46,7 @@ const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
 const UNDATED_LABEL = '날짜 미정';
 
 export function isConsecutiveDates(dates: string[]): boolean {
-  if (dates.length <= 1) return true;
-
-  const sorted = [...dates].sort();
-
-  for (let i = 1; i < sorted.length; i++) {
-    const prev = parseDateString(sorted[i - 1]!);
-    const curr = parseDateString(sorted[i]!);
-
-    if (!prev || !curr) {
-      return false;
-    }
-
-    // 하루 차이인지 확인
-    const diffDays = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
-
-    if (diffDays !== 1) {
-      return false;
-    }
-  }
-
-  return true;
+  return areAllDatesConsecutive(dates);
 }
 
 /**

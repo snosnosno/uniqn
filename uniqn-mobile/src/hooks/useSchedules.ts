@@ -22,6 +22,7 @@ import {
   getCalendarMarkedDates,
 } from '@/services/work/scheduleService';
 import { groupScheduleEvents, filterSchedulesByDate } from '@/utils/scheduleGrouping';
+import { getTodayString } from '@/utils/date';
 import { stableFilters } from '@/utils/queryUtils';
 import { AuthError, ERROR_CODES, isAppError } from '@/errors/AppError';
 import type {
@@ -473,7 +474,7 @@ export function useScheduleDetail(scheduleId: string, enabled = true) {
 export function useTodaySchedules(enabled = true) {
   const user = useAuthStore((state) => state.user);
   const staffId = user?.uid;
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayString();
   const { isOnline } = useNetworkStatus();
   const cacheKey = buildScheduleCacheKey(staffId, 'today', today);
   const todayQueryKey = [...queryKeys.schedules.byDate(today), staffId ?? 'anonymous'] as const;
@@ -626,7 +627,7 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
   const { initialView = 'month', enableGrouping = true, realtime = false } = normalizedOptions;
 
   const [view, setView] = useState<CalendarViewType>(initialView);
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>(getTodayString());
   const [currentMonth, setCurrentMonth] = useState({
     year: new Date().getFullYear(),
     month: new Date().getMonth() + 1,
@@ -660,7 +661,7 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
       year: today.getFullYear(),
       month: today.getMonth() + 1,
     });
-    setSelectedDate(today.toISOString().split('T')[0]);
+    setSelectedDate(getTodayString());
   }, []);
 
   const {

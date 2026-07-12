@@ -140,7 +140,6 @@ export function SettlementList({
   const groupedSettlements = useMemo(() => {
     return groupSettlementsByStaff(filteredWorkLogs, groupingContext, {
       enabled: enableGrouping,
-      minGroupSize: 1, // 항상 그룹 카드 형태로 표시
     });
   }, [filteredWorkLogs, groupingContext, enableGrouping]);
 
@@ -177,7 +176,6 @@ export function SettlementList({
         ? groupedSettlements
         : groupSettlementsByStaff(workLogs, groupingContext, {
             enabled: true,
-            minGroupSize: 1,
           });
 
     const stats = calculateGroupedSettlementStats(targetGrouped);
@@ -195,7 +193,6 @@ export function SettlementList({
   const handleExport = useCallback(async () => {
     const allGroups = groupSettlementsByStaff(workLogs, groupingContext, {
       enabled: enableGrouping,
-      minGroupSize: 1,
     });
     const result = await exportSettlementCsv(allGroups);
     if (result.reason === 'empty') {

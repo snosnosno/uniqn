@@ -100,58 +100,6 @@ export const LAYOUT = {
 } as const;
 
 // ============================================================================
-// 급여 관련
-// ============================================================================
-
-export const PAYROLL = {
-  DEFAULT_HOURLY_RATE: 15000,
-  OVERTIME_MULTIPLIER: 1.5,
-  TAX_RATE: 0.033,
-  MIN_WORK_HOURS: 0.5,
-  MAX_WORK_HOURS: 24,
-} as const;
-
-// ============================================================================
-// 검증 상수
-// ============================================================================
-
-export const VALIDATION = {
-  MIN_PASSWORD_LENGTH: 8,
-  MAX_PASSWORD_LENGTH: 50,
-  MIN_NAME_LENGTH: 2,
-  MAX_NAME_LENGTH: 20,
-  MAX_TITLE_LENGTH: 25,
-  MAX_DESCRIPTION_LENGTH: 500,
-  MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
-  MAX_UPLOAD_FILES: 10,
-} as const;
-
-// ============================================================================
-// 에러 메시지
-// ============================================================================
-
-export const ERROR_MESSAGES = {
-  // 일반
-  NETWORK_ERROR: '네트워크 연결을 확인해주세요',
-  UNKNOWN_ERROR: '알 수 없는 오류가 발생했습니다',
-  PERMISSION_DENIED: '권한이 없습니다',
-  DATA_NOT_FOUND: '데이터를 찾을 수 없습니다',
-
-  // 인증
-  INVALID_EMAIL: '올바른 이메일 형식이 아닙니다',
-  INVALID_PASSWORD: '비밀번호가 올바르지 않습니다',
-  USER_NOT_FOUND: '등록되지 않은 사용자입니다',
-  EMAIL_ALREADY_EXISTS: '이미 사용 중인 이메일입니다',
-  SESSION_EXPIRED: '세션이 만료되었습니다. 다시 로그인해주세요',
-
-  // 폼
-  REQUIRED_FIELD: '필수 입력 항목입니다',
-  INVALID_FORMAT: '올바른 형식이 아닙니다',
-  VALUE_TOO_SHORT: '입력값이 너무 짧습니다',
-  VALUE_TOO_LONG: '입력값이 너무 깁니다',
-} as const;
-
-// ============================================================================
 // 성공 메시지
 // ============================================================================
 
@@ -174,19 +122,6 @@ export const API = {
   TIMEOUT: 10000, // 10초
   RETRY_DELAY: 1000, // 1초
   MAX_CONCURRENT_REQUESTS: 5,
-} as const;
-
-// ============================================================================
-// 스토리지 키
-// ============================================================================
-
-export const STORAGE_KEYS = {
-  AUTH_TOKEN: 'auth_token',
-  USER_ID: 'user_id',
-  THEME: 'theme',
-  FCM_TOKEN: 'fcm_token',
-  ONBOARDING_COMPLETED: 'onboarding_completed',
-  LAST_NOTIFICATION_READ: 'last_notification_read',
 } as const;
 
 // ============================================================================
