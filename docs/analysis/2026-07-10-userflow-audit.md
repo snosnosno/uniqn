@@ -203,10 +203,10 @@ DB는 `is_workspace_member` / `is_posting_collaborator`로 협업자의 쓰기�
 
 ### P2 — 낮음
 
-13. `confirm_application` 동시성 예외를 사용자 문구로 매핑 (LOW)
-14. JPC 초대에 수락/거절 계약 도입 — 프라이버시 (LOW, 설계 필요)
-15. `CollaboratorSearch.tsx:56` `not_registered` 죽은 분기 제거 (LOW, 미검증)
-16. `useWorkspaces.ts:229` 초대 실패 시 캐시 무효화 누락 (LOW, 미검증)
+13. ✅ **완료 (§11)** — `confirm_application` 동시 확정 레이스를 `BUSINESS_INVALID_STATE` + 안내 문구로 매핑 (LOW)
+14. JPC 초대에 수락/거절 계약 도입 — 프라이버시 (LOW, 설계 필요·R2 협업단일화와 같은 슬라이스, 사용자 확인 필요)
+15. ✅ **완료 (§11)** — `CollaboratorSearch` `not_registered` 죽은 분기 제거(세팅 경로 0건 실측) (LOW)
+16. ✅ **완료 (§11)** — 워크스페이스 초대 오탐 근본 수정(`invite` 비원자 2단계, findById 실패 폴백) (LOW)
 
 ### 기존 blocker (이번 감사 범위 밖, 여전히 미해결)
 
@@ -440,3 +440,41 @@ adversarial review     code+security 2종, CRITICAL/HIGH 0
 **⚠️ 공유 로컬 스택 함정(세션 교훈)**: 병렬 세션이 공유 Docker 스택(supabase_db_uniqn)을 prod 스냅샷으로 재구축해 미push 브랜치의 마이그레이션(P0#1 포함)과 픽스처가 로컬에서 증발했다. 워크트리 격리는 git만 지킬 뿐 **로컬 DB는 공유 자원** — pgTAP 전 항상 이 브랜치의 마이그·fixtures/*.sql 재적용 확인 필요.
 
 **잔여**: P2 4건(#13~16) · LOW 방어심화 4건(완료건 custom_* DB 트리거, applications INSERT approvalStatus, ScheduleCard 동결값0 SSOT, applicant_name 연결) · 파리티 부채(트리거 2종) · P0-B~D/P1 앱코드 정식 code-review 재실행(리뷰어 세션 한도) · 범위 밖 제품 결정 2건(§8 잔여, B1/B2).
+
+---
+
+## 11. LOW 방어심화 + P2 + 코드리뷰 재실행 실행 기록 (2026-07-13, 완료)
+
+브랜치 `analysis/userflow-audit-20260710` 커밋 `ae7cc25d8`..`aa2e7ce9a`(5커밋). 오케스트레이션: 코드리뷰 opus 2명 병렬(지원·승인 라인 / 정산·워크스페이스 라인) + P2 실측 Explore(sonnet) + 메인 세션(DB 마이그·prod 실측·앱 반영·검증·커밋).
+
+### 코드리뷰 재실행 (opus 2명, 앱코드 44파일 사후 리뷰)
+직전 세션에 opus 세션 한도로 2회 중단됐던 P0-B~D/P1 앱코드 정식 재리뷰를 완결했다. 리뷰 A(지원·승인·문구 20파일)·리뷰 B(정산·워크스페이스 24파일) 모두 **CRITICAL/HIGH/MEDIUM 0**, APPROVE. LOW 3건(CancelActorType 배럴·인라인 userMessage 중복·감사필드 @deprecated 마커) 도출 → 앱 LOW 슬라이스에 전항 반영.
+
+### DB 방어심화 — 마이그 2종 prod 적용 (`ae7cc25d8`·`b99627a85`·`4c568ed91`)
+- **완료건 custom_* 동결**(`20260712010000`) — `protect_work_log_payroll_columns` 확장: 정산 완료 건의 `custom_salary_info`/`custom_allowances`/`custom_tax_settings` 변경을 역할 무관 차단(P1 보안리뷰 LOW의 DB 계층). **P0#1 교훈 준수** — SECDEF+GUC 트리거지만 QR 출퇴근은 custom_* 미변경이라 무회귀(process_qr/qr_clamp pgTAP GREEN). 2단계 경로(completed→pending 되돌린 뒤 수정)는 의도적 허용.
+- **미승인 대회 지원 게이트**(동 마이그) — applications BEFORE INSERT 트리거로 `approvalStatus!=='approved'`(NULL 포함 fail-closed) 지원 차단(P0-D 보안리뷰 LOW의 DB 계층). 신규 게이트 함수 anon/authenticated EXECUTE 회수.
+- **파리티 고정 + anon write 회수**(`20260712010100`) — `applications_updated_at`·`applications_xss_check` 트리거 레포 고정(prod 본문 md5 실측, §10 잔여 파리티 부채 해소), 레포 전용 느슨 정책 3종 제거(`notifications_insert_service`·`work_logs_insert_owner_or_admin`·`work_logs_delete_admin`), `users.nickname` UNIQUE, `notifications`/`applications`/`work_logs` anon write REVOKE(§5 ④⑤ 해소). `jpc_work_logs_rls` pgTAP를 INSERT/DELETE 4/4 DENY로 갱신, `jpc_helpers.sql` 블랭킷 GRANT에 REVOKE 미러.
+- **픽스처 강건화**(`4c568ed91`) — 공유 Docker 스택이 prod 스냅샷(`handle_new_user` employer auto-워크스페이스 트리거 `20260519223300` 활성)으로 재구축되면 QR/cancel/notify pgTAP cleanup이 auto-ws FK(`workspaces_owner_id_fkey` RESTRICT)에 걸려 die했다. cleanup을 owner-기준 삭제로 강건화(4파일). RPC 로직 assertion(S1~S6/C1~C4) 전부 통과 확인 = 마이그 무관·CI(auth 트리거 미작동) 무해.
+- **prod 검증**: `protect_work_log_payroll_columns` md5 로컬==prod 일치 · 트리거 3종 존재 · 느슨정책 0 · nickname UNIQUE · anon write 3테이블 false · 게이트 함수 EXECUTE 회수 전항 실측 · advisor **ERROR 0**(WARN 175 전역 기지). pgTAP: 신규 settled-lock 6 + tournament-gate 4 + parity-pin 9 + jpc_work_logs_rls 16 + 회귀 r1~r6 GREEN.
+
+### 앱레이어 LOW (`7da3f73ba`, tsc 0·jest 6스위트/86)
+- **동결 판정 SSOT** — `shouldUseFrozenPayrollAmount` 헬퍼 신설. `ScheduleCard`(payrollAmount>0 가드)와 `settlementGrouping`(Number.isFinite)이 어긋나던 동결값 0 처리를 통일(노쇼 등 0원 완료 존중). 헬퍼 단위 테스트 4케이스.
+- **CancelActorType 배럴 재수출** — `interfaces/index.ts`·`repositories/index.ts` 재노출, 딥임포트 3곳 배럴 경유 통일(리뷰A LOW).
+- **applicationService 인라인 userMessage 제거** — E6080 registry 위임(리뷰A LOW, 문구 실측 동일).
+- **confirmedStaff @deprecated JSDoc** — `modifiedBy`/`changedBy` 무시됨 명시(리뷰B LOW).
+
+### P2 (감사 §4 #13·#15·#16, `aa2e7ce9a`, tsc 0·supabase 21/21)
+Explore(sonnet)로 미검증 3건 실측 → **전부 실재 결함 확정**:
+- **#13** `confirm_application` 동시 확정 레이스 — RPC가 `INVALID_STATUS`를 P0001로 던지나 `handleSupabaseError` 매핑이 없어 `UNKNOWN`('알 수 없는 오류')으로 떨어졌다(클라 사전검사는 순차 재시도만 커버). MAX_CAPACITY와 동일 패턴으로 `BUSINESS_INVALID_STATE` + 레이스 안내 문구 분기 추가, 회귀 테스트 1케이스.
+- **#15** `CollaboratorSearch` `not_registered` — status 세팅 경로가 저장소 전체에 **0건**(원천 RPC `search_users_for_collaborator_invite`는 `public.users`만 검색 → 미가입자는 결과에 없음, 빈 상태는 별도 메시지 처리). 죽은 코드 확정 → 타입 유니온 1 + UI 분기 2 + 주석 2 제거.
+- **#16** 워크스페이스 초대 오탐 — `invite()`가 `inviteViaRpc`(초대 커밋+알림 발송) 성공 후 토스트용 `workspaceName` 조회(`findById`)를 별도로 하는데, 이게 실패하면 `invite` 전체가 reject됐다(초대는 발송됐는데 구인자 화면만 "실패"로 오인, `invitationsSent`는 Realtime 없어 자동 정정 안 됨). findById 실패를 빈 이름 폴백으로 격리하는 근본 수정. (다른 5+2 뮤테이션은 onMutate 없어 무해 — 실측 확인.)
+- **#14**만 남김 — JPC 초대 수락/거절 계약(프라이버시)은 R2 협업단일화와 같은 슬라이스라는 사용자 결정이 있어 설계+사용자 확인 필요.
+
+### 검증 증거 종합
+tsc 0 · 관련 jest 전 스위트 GREEN(앱 LOW 6/86 · P2 supabase 21/21) · prod md5 파리티 일치 · advisor ERROR 0 · pgTAP 신규/회귀 전 GREEN(공유 스택 auto-ws 픽스처 강건화 후).
+
+### 잔여
+- **파리티 부채 대규모 재정렬**은 `docs/planning/2026-07-11-parity-baseline-squash-handoff-prompt.md` 트랙 소관(중복 회피) — 이번엔 감사가 실측 확정한 항목만 고정.
+- P2#14(JPC 초대 계약) — R2와 같은 슬라이스, 설계+사용자 확인 필요.
+- 범위 밖 제품 결정 2건(§8 잔여 staff-role 라우트 · B1/B2) 유지.
+- **push/PR 게이트**(사용자 명시 요청 시): 이 브랜치 29커밋 미push. 마이그 3+2종은 이미 prod 적용 — PR은 레포 정합화 목적.
