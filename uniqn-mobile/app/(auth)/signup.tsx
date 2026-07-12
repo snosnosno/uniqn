@@ -88,7 +88,10 @@ export default function SignUpScreen() {
           logger.info('회원가입 성공', { userId: result.user.id });
           // 이전 실패 시도의 stale 에러 토스트 제거 (ISSUE-001 동일 패턴)
           clearAllToasts();
-          addToast({ type: 'success', message: '회원가입이 완료되었습니다!' });
+          addToast({
+            type: 'success',
+            message: '본인인증 완료! 마지막으로 프로필을 완성해주세요.',
+          });
           router.replace(
             getResolvedAuthenticatedRoute({
               socialProvider: result.profile.socialProvider,

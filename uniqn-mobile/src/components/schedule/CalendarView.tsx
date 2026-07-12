@@ -65,7 +65,9 @@ interface DotInfo {
 }
 
 const SCHEDULE_DOT_COLORS: Record<ScheduleType, string> = {
-  applied: STATUS_COLORS.warning,
+  // 지원 중은 반투명(hex8 알파 45%) 점: 확정(불투명)과 색상뿐 아니라 휘도 차이로도
+  // 구분되게 해 색상 단독 의존을 완화한다(색약 대응). 범례도 같은 상수를 참조해 자동 일치.
+  applied: `${STATUS_COLORS.warning}73`,
   confirmed: STATUS_COLORS.success,
   completed: ACCENT_COLORS[500],
   cancelled: STATUS_COLORS.error,

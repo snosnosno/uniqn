@@ -256,7 +256,7 @@ export default function CancellationRequestsScreen() {
               <Button
                 onPress={handleConfirmApprove}
                 variant="primary"
-                className="flex-1 bg-error-500"
+                className="flex-1"
                 disabled={isReviewingCancellation}
               >
                 {isReviewingCancellation ? '처리 중...' : '승인'}

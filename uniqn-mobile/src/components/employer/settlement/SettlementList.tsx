@@ -34,6 +34,7 @@ import {
 import type { GroupedSettlement } from '@/types/settlement';
 import type { WorkLog, PayrollStatus } from '@/types';
 import { STATUS } from '@/constants';
+import { PAYROLL_STATUS_LABELS } from '@/shared/status';
 
 // Re-export types for backward compatibility
 export type { SalaryType, SalaryInfo };
@@ -85,8 +86,8 @@ type FilterStatus = 'all' | PayrollStatus;
 
 const FILTER_OPTIONS: FilterTabOption<FilterStatus>[] = [
   { value: 'all', label: '전체' },
-  { value: STATUS.PAYROLL.PENDING, label: '미정산' },
-  { value: STATUS.PAYROLL.COMPLETED, label: '완료' },
+  { value: STATUS.PAYROLL.PENDING, label: PAYROLL_STATUS_LABELS.pending },
+  { value: STATUS.PAYROLL.COMPLETED, label: PAYROLL_STATUS_LABELS.completed },
 ];
 
 // ============================================================================
@@ -139,7 +140,6 @@ export function SettlementList({
   const groupedSettlements = useMemo(() => {
     return groupSettlementsByStaff(filteredWorkLogs, groupingContext, {
       enabled: enableGrouping,
-      minGroupSize: 1, // 항상 그룹 카드 형태로 표시
     });
   }, [filteredWorkLogs, groupingContext, enableGrouping]);
 
@@ -176,7 +176,6 @@ export function SettlementList({
         ? groupedSettlements
         : groupSettlementsByStaff(workLogs, groupingContext, {
             enabled: true,
-            minGroupSize: 1,
           });
 
     const stats = calculateGroupedSettlementStats(targetGrouped);
@@ -194,7 +193,6 @@ export function SettlementList({
   const handleExport = useCallback(async () => {
     const allGroups = groupSettlementsByStaff(workLogs, groupingContext, {
       enabled: enableGrouping,
-      minGroupSize: 1,
     });
     const result = await exportSettlementCsv(allGroups);
     if (result.reason === 'empty') {

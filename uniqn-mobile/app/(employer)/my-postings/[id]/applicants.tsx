@@ -3,7 +3,7 @@
  * 특정 공고의 지원자 목록 및 관리
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,9 +16,11 @@ import {
 import { Loading, ErrorState } from '@/components';
 import { StackHeader } from '@/components/headers';
 import { useApplicantManagement } from '@/hooks/applicant';
+import { useShare } from '@/hooks/useShare';
 import { confirmAction } from '@/utils/confirmAction';
+import { buildPostingFacts, projectPostingSurface } from '@/domains/job-posting';
 import type { ApplicantWithDetails } from '@/services';
-import type { Assignment } from '@/types';
+import type { Assignment, PostingManagementViewModel } from '@/types';
 import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
 
 // ============================================================================
@@ -31,6 +33,24 @@ export default function ApplicantsScreen() {
   const headerBackHref = `/(employer)/my-postings/${jobPostingId ?? ''}`;
   const headerRightAction = !isFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;
   const headerTitleSuffix = <JobTitleSuffix jobTitle={job?.title ?? null} />;
+
+  // 정원 현황 스트립 — 관리 허브(index.tsx)의 "배정 현황" 계산과 동일 소스(job) 재사용, 추가 fetch 없음
+  const postingFacts = useMemo(() => (job ? buildPostingFacts(job) : null), [job]);
+  const managementView = useMemo(
+    () =>
+      postingFacts
+        ? (projectPostingSurface(postingFacts, {
+            audience: 'employer',
+            surface: 'manage',
+          }) as PostingManagementViewModel)
+        : null,
+    [postingFacts]
+  );
+
+  const { shareJobById } = useShare();
+  const handleSharePosting = useCallback(() => {
+    void shareJobById(jobPostingId || '');
+  }, [jobPostingId, shareJobById]);
 
   const {
     applicants,
@@ -201,6 +221,22 @@ export default function ApplicantsScreen() {
         fallbackHref={headerBackHref}
         rightAction={headerRightAction}
       />
+      {/* 정원 현황 스트립 */}
+      {managementView ? (
+        <View className="flex-row items-center justify-center border-b border-secondary-100 bg-white px-4 py-2 dark:border-surface-overlay dark:bg-surface">
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+            확정{' '}
+            <Text className="font-sans-bold text-content-primary dark:text-off-white">
+              {managementView.filledPositions}
+            </Text>
+            {' / 정원 '}
+            <Text className="font-sans-bold text-content-primary dark:text-off-white">
+              {managementView.totalPositions}
+            </Text>
+            명
+          </Text>
+        </View>
+      ) : null}
       {/* 지원자 목록 */}
       <ApplicantList
         applicants={applicants}
@@ -214,6 +250,7 @@ export default function ApplicantsScreen() {
         onViewProfile={handleViewProfile}
         onBulkConfirm={bulkConfirm}
         isBulkConfirming={isBulkConfirming}
+        onSharePosting={handleSharePosting}
       />
 
       {/* 확정/거절 모달 */}

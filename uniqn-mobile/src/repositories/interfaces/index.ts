@@ -81,6 +81,7 @@ export type {
   UpdateRoleContext,
   UpdateConfirmedStaffWorkTimeContext,
   MarkNoShowContext,
+  CancelNoShowContext,
   UpdateStaffStatusContext,
   ConfirmedStaffSubscriptionCallbacks,
   AddDirectStaffAssignment,

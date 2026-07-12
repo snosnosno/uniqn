@@ -7,6 +7,7 @@
 
 import type { BadgeVariant } from '@/components/ui/Badge';
 import type { CardStripeTone } from '@/components/ui';
+import { PAYROLL_STATUS_LABELS } from '@/shared/status';
 import type { PayrollStatus } from '@/types';
 
 /**
@@ -27,8 +28,8 @@ export const PAYROLL_STATUS_CONFIG: Record<
     stripeTone: CardStripeTone;
   }
 > = {
-  pending: { label: '미정산', variant: 'warning', stripeTone: 'gold' },
-  processing: { label: '처리중', variant: 'primary', stripeTone: 'info' },
-  completed: { label: '정산완료', variant: 'success', stripeTone: 'muted' },
-  failed: { label: '정산실패', variant: 'error', stripeTone: 'error' },
+  pending: { label: PAYROLL_STATUS_LABELS.pending, variant: 'warning', stripeTone: 'gold' },
+  processing: { label: PAYROLL_STATUS_LABELS.processing, variant: 'primary', stripeTone: 'info' },
+  completed: { label: PAYROLL_STATUS_LABELS.completed, variant: 'success', stripeTone: 'muted' },
+  failed: { label: PAYROLL_STATUS_LABELS.failed, variant: 'error', stripeTone: 'error' },
 };

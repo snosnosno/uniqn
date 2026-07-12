@@ -4,6 +4,7 @@ import type { ConfirmedStaff } from '../confirmedStaff';
 import {
   calculateStaffStats,
   groupStaffByDate,
+  resolveNoShowRevertStatus,
   sortStaffByStatus,
   workLogToConfirmedStaff,
 } from '@/domains/staff';
@@ -160,5 +161,25 @@ describe('confirmedStaff', () => {
       'cancelled',
     ]);
     expect(staff).toEqual(original);
+  });
+
+  describe('resolveNoShowRevertStatus', () => {
+    it('returns checked_out when both check-in and check-out timestamps exist', () => {
+      expect(resolveNoShowRevertStatus('2025-03-01T09:00:00Z', '2025-03-01T18:00:00Z')).toBe(
+        'checked_out'
+      );
+    });
+
+    it('returns checked_in when only check-in exists', () => {
+      expect(resolveNoShowRevertStatus('2025-03-01T09:00:00Z', undefined)).toBe('checked_in');
+    });
+
+    it('returns scheduled when neither timestamp exists', () => {
+      expect(resolveNoShowRevertStatus(undefined, undefined)).toBe('scheduled');
+    });
+
+    it('returns scheduled when both timestamps are null', () => {
+      expect(resolveNoShowRevertStatus(null, null)).toBe('scheduled');
+    });
   });
 });

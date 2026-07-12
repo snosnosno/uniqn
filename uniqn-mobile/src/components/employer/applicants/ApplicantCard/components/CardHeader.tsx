@@ -13,6 +13,7 @@ import { ChevronUpIcon, ChevronDownIcon } from '@/components/icons';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 import type { ApplicationStatus } from '@/types';
 import { getIconColor } from '@/constants';
+import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';
 
 // ============================================================================
 // Types
@@ -35,6 +36,8 @@ export interface CardHeaderProps {
   onToggleExpand: () => void;
   /** 프로필 보기 (없으면 비활성화) */
   onViewProfile?: () => void;
+  /** 버블 점수 (없으면 배지 미노출) */
+  bubbleScore?: number;
 }
 
 // ============================================================================
@@ -50,6 +53,7 @@ export const CardHeader = React.memo(function CardHeader({
   isExpanded,
   onToggleExpand,
   onViewProfile,
+  bubbleScore,
 }: CardHeaderProps) {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
@@ -75,16 +79,16 @@ export const CardHeader = React.memo(function CardHeader({
           blurhash={profilePhotoURLBlurhash}
         />
         <View className="flex-1">
-          <View className="flex-row items-center">
+          <View className="flex-row items-center gap-2">
             <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
               {displayName}
             </Text>
             {!isRead && (
-              <View
-                className="ml-2 h-2 w-2 rounded-sm bg-primary-500"
-                accessibilityLabel="새 지원자"
-              />
+              <View className="h-2 w-2 rounded-sm bg-primary-500" accessibilityLabel="새 지원자" />
             )}
+            {typeof bubbleScore === 'number' ? (
+              <BubbleScoreBadge score={bubbleScore} size="sm" />
+            ) : null}
           </View>
         </View>
         <Badge variant="chip" size="sm" dot>

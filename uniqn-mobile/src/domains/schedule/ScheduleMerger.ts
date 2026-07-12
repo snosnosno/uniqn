@@ -7,7 +7,7 @@
 
 import { STATUS } from '@/constants';
 import type { ScheduleEvent } from '@/types';
-import { parseDateString } from '@/utils/date';
+import { areAllDatesConsecutive, parseDateString } from '@/utils/date';
 
 export interface MergeOptions {
   dateRange?: { start: string; end: string };
@@ -180,28 +180,7 @@ export class ScheduleMerger {
   }
 
   static isConsecutiveDates(dates: string[]): boolean {
-    if (dates.length <= 1) {
-      return true;
-    }
-
-    const sorted = [...dates].sort();
-
-    for (let index = 1; index < sorted.length; index += 1) {
-      const previous = parseDateString(sorted[index - 1]!);
-      const current = parseDateString(sorted[index]!);
-
-      if (!previous || !current) {
-        return false;
-      }
-
-      const diffDays = Math.round((current.getTime() - previous.getTime()) / (1000 * 60 * 60 * 24));
-
-      if (diffDays !== 1) {
-        return false;
-      }
-    }
-
-    return true;
+    return areAllDatesConsecutive(dates);
   }
 
   static generateScheduleKey(schedule: ScheduleEvent): string {

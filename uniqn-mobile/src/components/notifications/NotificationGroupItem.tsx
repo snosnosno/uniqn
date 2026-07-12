@@ -19,8 +19,10 @@ import { GroupedNotificationData, NotificationData } from '@/types/notification'
 export interface NotificationGroupItemProps {
   /** 그룹 데이터 */
   group: GroupedNotificationData;
-  /** 그룹 클릭 핸들러 (전체 읽음 처리 등) */
+  /** 그룹 헤더 클릭 핸들러 (펼침/접힘 토글 외 추가 동작 필요 시) */
   onGroupPress?: (group: GroupedNotificationData) => void;
+  /** "이 N건 모두 읽음" 버튼 핸들러 — 펼친 상태에서 명시적으로만 노출 */
+  onMarkGroupAsRead?: (group: GroupedNotificationData) => void;
   /** 개별 알림 클릭 핸들러 */
   onNotificationPress?: (notification: NotificationData) => void;
   /** 개별 알림 삭제 핸들러 */
@@ -34,6 +36,7 @@ export interface NotificationGroupItemProps {
 export const NotificationGroupItem = memo(function NotificationGroupItem({
   group,
   onGroupPress,
+  onMarkGroupAsRead,
   onNotificationPress,
   onDeleteNotification,
   showDelete = false,
@@ -56,13 +59,18 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
     setIsExpanded((prev) => !prev);
   }, []);
 
-  // 그룹 헤더 클릭
+  // 그룹 헤더 클릭 — 펼침/접힘 토글만 수행(읽음 처리는 "모두 읽음" 버튼으로 명시적으로만)
   const handleGroupPress = useCallback(() => {
     if (onGroupPress) {
       onGroupPress(group);
     }
     toggleExpanded();
   }, [group, onGroupPress, toggleExpanded]);
+
+  // 이 그룹의 모든 알림 읽음 처리
+  const handleMarkAllRead = useCallback(() => {
+    onMarkGroupAsRead?.(group);
+  }, [group, onMarkGroupAsRead]);
 
   // 접근성 라벨
   const accessibilityLabel = `${group.groupTitle}, ${contextLabel}, ${timeAgo}${hasUnread ? ', 읽지 않은 알림 있음' : ''}`;
@@ -151,6 +159,19 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
       {/* 펼침 상태: 개별 알림 목록 */}
       {isExpanded && (
         <View className="bg-surface-page dark:bg-surface/50">
+          {hasUnread && onMarkGroupAsRead ? (
+            <Pressable
+              onPress={handleMarkAllRead}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={`이 ${group.unreadCount}건 모두 읽음 처리`}
+              className="flex-row items-center justify-end border-b border-divider px-4 py-2 active:opacity-70 dark:border-surface-overlay/50"
+            >
+              <Text className="text-sm font-sans-medium text-primary-600 dark:text-primary-400">
+                이 {group.unreadCount}건 모두 읽음
+              </Text>
+            </Pressable>
+          ) : null}
           {group.notifications.map((notification, index) => (
             <View
               key={notification.id}

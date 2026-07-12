@@ -21,13 +21,19 @@ import { resetPasswordSchema, type ResetPasswordFormData } from '@/schemas';
 interface ForgotPasswordFormProps {
   onSubmit: (data: ResetPasswordFormData) => Promise<void>;
   isLoading?: boolean;
+  /** 로그인 화면에서 입력해둔 이메일을 넘겨받아 초기값으로 채운다 */
+  initialEmail?: string;
 }
 
 // ============================================================================
 // Component
 // ============================================================================
 
-export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswordFormProps) {
+export function ForgotPasswordForm({
+  onSubmit,
+  isLoading = false,
+  initialEmail = '',
+}: ForgotPasswordFormProps) {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState('');
 
@@ -39,7 +45,7 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
     resolver: zodResolver(resetPasswordSchema),
     mode: 'onBlur',
     defaultValues: {
-      email: '',
+      email: initialEmail,
     },
   });
 

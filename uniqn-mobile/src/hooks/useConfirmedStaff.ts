@@ -4,6 +4,7 @@ import { cachingPolicies, invalidateQueries, queryKeys } from '@/lib/queryClient
 import {
   addDirectStaff,
   cancelConfirmedStaffConfirmation,
+  cancelNoShow,
   getConfirmedStaff,
   getConfirmedStaffByDate,
   markAsNoShow,
@@ -14,6 +15,8 @@ import {
   updateStaffStatus,
 } from '@/services';
 import { toError } from '@/errors';
+import { createMutationErrorHandler } from '@/shared/errors/hookErrorHandler';
+import { resolveNoShowRevertStatus } from '@/domains/staff';
 import type { ConfirmedStaffStatus, WorkLogStatus } from '@/shared/status';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
@@ -45,12 +48,14 @@ export interface UseConfirmedStaffReturn {
   updateWorkTime: (input: UpdateWorkTimeInput) => void;
   removeStaff: (input: DeleteConfirmedStaffInput) => void;
   setNoShow: (workLogId: string, reason?: string) => void;
+  cancelNoShow: (workLogId: string) => void;
   changeStatus: (workLogId: string, status: WorkLogStatus) => void;
   addStaff: (input: AddDirectStaffInput) => Promise<string[]>;
   isChangingRole: boolean;
   isUpdatingTime: boolean;
   isRemoving: boolean;
   isSettingNoShow: boolean;
+  isCancellingNoShow: boolean;
   isChangingStatus: boolean;
   isAddingStaff: boolean;
 }
@@ -143,10 +148,11 @@ export function useConfirmedStaff(
       invalidateQueries.staffManagement(jobPostingId);
       addToast({ type: 'success', message: '근무 시간이 수정되었습니다.' });
     },
-    onError: (mutationError: Error) => {
-      logger.error('Failed to update confirmed staff time', mutationError, { jobPostingId });
-      addToast({ type: 'error', message: '근무 시간 수정에 실패했습니다.' });
-    },
+    // 서버 구체 사유(예: '이미 정산이 완료된 근무 기록은 수정할 수 없습니다.')를
+    // 고정 문구로 삼키지 않도록 appError.userMessage를 그대로 노출한다.
+    onError: createMutationErrorHandler('근무 시간 수정', addToast, {
+      context: { jobPostingId },
+    }),
   });
 
   const removeStaffMutation = useMutation({
@@ -197,6 +203,51 @@ export function useConfirmedStaff(
       logger.error('Failed to mark no-show', mutationError, { jobPostingId });
       addToast({ type: 'error', message: '노쇼 처리에 실패했습니다.' });
     },
+  });
+
+  const cancelNoShowMutation = useMutation({
+    mutationFn: (workLogId: string) => cancelNoShow(workLogId),
+    onMutate: async (workLogId: string) => {
+      await queryClient.cancelQueries({ queryKey: staffQueryKey });
+      const previous = queryClient.getQueryData<GetConfirmedStaffResult>(staffQueryKey);
+
+      if (previous) {
+        queryClient.setQueryData<GetConfirmedStaffResult>(staffQueryKey, {
+          ...previous,
+          staff: previous.staff.map((staff) =>
+            staff.id === workLogId
+              ? {
+                  ...staff,
+                  status: resolveNoShowRevertStatus(
+                    staff.checkInTime,
+                    staff.checkOutTime
+                  ) as ConfirmedStaffStatus,
+                  isNoShow: false,
+                  noShowAt: undefined,
+                  noShowReason: undefined,
+                }
+              : staff
+          ),
+        });
+      }
+
+      return { previous };
+    },
+    onSuccess: () => {
+      invalidateQueries.staffManagement(jobPostingId);
+      addToast({ type: 'success', message: '노쇼가 취소되었습니다.' });
+    },
+    // 서버 구체 사유(예: '이미 정산이 완료된 근무 기록은 노쇼를 취소할 수 없습니다.')를
+    // 고정 문구로 삼키지 않도록 appError.userMessage를 그대로 노출한다.
+    onError: createMutationErrorHandler('노쇼 취소', addToast, {
+      context: { jobPostingId },
+      onRollback: (ctx) => {
+        const { previous } = ctx as { previous?: GetConfirmedStaffResult };
+        if (previous) {
+          queryClient.setQueryData(staffQueryKey, previous);
+        }
+      },
+    }),
   });
 
   const changeStatusMutation = useMutation({
@@ -290,6 +341,13 @@ export function useConfirmedStaff(
     [setNoShowMutation]
   );
 
+  const cancelNoShowStaff = useCallback(
+    (workLogId: string) => {
+      cancelNoShowMutation.mutate(workLogId);
+    },
+    [cancelNoShowMutation]
+  );
+
   const changeStatus = useCallback(
     (workLogId: string, status: WorkLogStatus) => {
       changeStatusMutation.mutate({ workLogId, status });
@@ -316,12 +374,14 @@ export function useConfirmedStaff(
     updateWorkTime,
     removeStaff,
     setNoShow,
+    cancelNoShow: cancelNoShowStaff,
     changeStatus,
     addStaff,
     isChangingRole: changeRoleMutation.isPending,
     isUpdatingTime: updateWorkTimeMutation.isPending,
     isRemoving: removeStaffMutation.isPending,
     isSettingNoShow: setNoShowMutation.isPending,
+    isCancellingNoShow: cancelNoShowMutation.isPending,
     isChangingStatus: changeStatusMutation.isPending,
     isAddingStaff: addStaffMutation.isPending,
   };

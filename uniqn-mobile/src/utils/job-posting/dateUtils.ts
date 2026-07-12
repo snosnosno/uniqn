@@ -22,6 +22,8 @@ export {
   isWithinUrgentDateLimit,
   parseDate,
   getDateAfterDays,
+  isValidTimeFormat,
+  isValidDateFormat,
 } from '../date/validation';
 
 // Re-export range functions
@@ -129,20 +131,6 @@ export function isDuplicateRole(
  */
 export function clampHeadcount(value: number): number {
   return Math.max(1, Math.min(200, Math.floor(value)));
-}
-
-/**
- * HH:mm 형식 검증
- */
-export function isValidTimeFormat(time: string): boolean {
-  return /^([01]\d|2[0-3]):([0-5]\d)$/.test(time);
-}
-
-/**
- * yyyy-MM-dd 형식 검증
- */
-export function isValidDateFormat(date: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}$/.test(date);
 }
 
 // ============================================================================

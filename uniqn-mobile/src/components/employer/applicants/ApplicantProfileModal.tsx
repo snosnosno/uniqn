@@ -49,6 +49,7 @@ export function ApplicantProfileModal({ visible, onClose, applicant }: Applicant
           profilePhotoURLBlurhash={profilePhotoURLBlurhash}
           isProfileLoading={isProfileLoading}
           appliedTimeAgo={appliedTimeAgo}
+          bubbleScore={userProfile?.bubbleScore?.score}
         />
 
         <ApplicantProfileContent applicant={applicant} userProfile={userProfile} />
