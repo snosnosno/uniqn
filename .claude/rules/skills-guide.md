@@ -62,4 +62,9 @@ gstack 기반 커스텀 스킬 + superpowers + 프로젝트 전용 스킬 조합
 | "이거 왜 이렇게 됐지" (과거 결정) | `/query` |
 | "세션 정리해줘" / 작업 마무리 | `/session-wrap` |
 
-에이전트 분담·병렬 디스패치·훅 규칙은 `.claude/rules/orchestration.md` 참조.
+에이전트 분담·병렬 디스패치·모델 3계층 라우팅·훅 규칙은 `.claude/rules/orchestration.md` 참조. 스킬이 서브에이전트를 디스패치할 때도 모델 라우팅(읽기=haiku/sonnet·구현=opus·판정=fable) 준수.
+
+## 스킬/MCP 정리 이력 (2026-07-12)
+- **무관 스킬 8종 아카이브**: ios-clean/ios-design-review/ios-fix/ios-qa/ios-sync(네이티브 Xcode용, 이 프로젝트는 Expo RN)·cache-components(Next.js)·devex-review·frontend-code-review(범용, /review와 중복) → `~/.claude/skills-archive/`. 복원=디렉토리를 `~/.claude/skills/`로 이동.
+- **MCP 제거**: revenuecat(수익모델 설계 P6=RevenueCat 재도입 안함)·tosspayments(PortOne 채택) — `.mcp.json`·전역 `mcp-config.json`. 유지: context7·playwright·supabase·mcp-installer.
+- **중복 7종은 의도적 오버라이드**(autoplan·cso·guard·health·investigate·retro·review) — 프로젝트 버전이 우선(위 우선순위 규칙). 삭제 금지.
