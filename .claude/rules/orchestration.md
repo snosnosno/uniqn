@@ -23,9 +23,20 @@ paths:
 | DB 스키마·쿼리·RLS | database-reviewer | Supabase/PostgreSQL |
 | 다단계 복합 검색 | general-purpose | 첫 시도로 못 찾을 검색 |
 
-- 독립 작업 2개 이상 → **한 메시지에 병렬 디스패치** (순차 금지)
+- 독립 작업 2개 이상 → **한 메시지에 병렬 디스패치** (순차 금지). 대규모 팬아웃은 5개 단위 배치(버스트 한도 이력)
 - 에이전트의 "성공" 보고는 독립 검증(diff 확인·테스트 실행) 후에만 신뢰 — 전역 verification 규칙
 - 에이전트 디스패치 프롬프트에 금지사항 명시: `mcp__supabase__*` 직접 호출 금지·기존 마이그레이션 수정 금지·PROD 우회 금지
+
+## 모델 3계층 라우팅 (전역 agents-v2와 동일 — 2026-07-12 확정)
+| 작업 성격 | 모델 | 디스패치 |
+|---|---|---|
+| 읽기·탐색·수집 | haiku(단순 나열) / sonnet(광역·규약 추론) | Explore·general-purpose에 `model` 명시 |
+| 구현·작성 | opus | tdd-guide·refactor-cleaner·메인 구현 |
+| 설계·계획·검증·판정 | fable | planner·architect·Plan·code/security/database-reviewer·verify-agent |
+
+- **모델 패리티**: 주 세션이 opus/sonnet/haiku여도 설계·계획·검증 판단은 `model: "fable"` 에이전트로 위임 — fable 수준 판정 확보
+- **한도 폴백**: 429/한도/스폰 실패 시 fable→opus→sonnet 한 단계씩 하향 재디스패치, 보고에 다운그레이드 명시
+- **절차 강제(fablize)**: 전역 게이트 훅이 deep 작업의 검증증거 없는 완료를 차단하고 조기중단("하겠다"만 말하고 종료)을 재가동 — 차단 시 우회 금지, 가장 좁은 검증 명령을 실제 실행. 규율 전문: 전역 `fablize-mode` 규칙
 
 ## 대규모 오케스트레이션 (Workflow 도구)
 - 멀티에이전트 파이프라인(Workflow)은 **사용자 옵트인 필수** — "워크플로우/ultracode/팬아웃" 명시 요청 시만 실행
