@@ -45,9 +45,9 @@ import type {
   ApplicantListWithStats,
   ConfirmWithHistoryResult,
   CancelConfirmationResult,
+  CancelActorType,
   SubscribeCallbacks,
 } from '../interfaces';
-import type { CancelActorType } from '../interfaces/IApplicationRepository';
 import {
   TABLES,
   APPLICATION_COLUMNS,

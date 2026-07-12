@@ -54,6 +54,7 @@ export type {
   ApplyContext,
   ConfirmWithHistoryResult,
   CancelConfirmationResult,
+  CancelActorType,
   // JobPosting
   IJobPostingRepository,
   PaginatedJobPostings,

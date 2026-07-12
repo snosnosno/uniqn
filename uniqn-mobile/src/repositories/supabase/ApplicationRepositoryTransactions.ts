@@ -17,8 +17,11 @@ import {
 import { normalizeAssignmentRole } from '@/types/assignment';
 import { STATUS } from '@/constants';
 import type { Application, Assignment, JobPosting, ReviewCancellationInput } from '@/types';
-import type { ConfirmWithHistoryResult, CancelConfirmationResult } from '../interfaces';
-import type { CancelActorType } from '../interfaces/IApplicationRepository';
+import type {
+  ConfirmWithHistoryResult,
+  CancelConfirmationResult,
+  CancelActorType,
+} from '../interfaces';
 import {
   TABLES,
   rethrowOrHandle,

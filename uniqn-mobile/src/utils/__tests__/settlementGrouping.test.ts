@@ -12,6 +12,7 @@ import {
   getSettlableWorkLogIds,
   calculateGroupedSettlementStats,
   formatGroupRolesDisplay,
+  shouldUseFrozenPayrollAmount,
 } from '../settlementGrouping';
 import type { SettlementGroupingContext } from '../settlementGrouping';
 
@@ -482,6 +483,28 @@ describe('formatGroupRolesDisplay', () => {
 // ============================================================================
 // 정산 완료건 금액 동결 (P0#2 — 클러스터 C)
 // ============================================================================
+
+// shouldUseFrozenPayrollAmount: ScheduleCard 와 settlementGrouping 이 공유하는
+// 동결값 판정 SSOT. Number.isFinite 로 판정 → 동결값 0(노쇼 등 정산 0원 완료)도
+// 존중해야 한다. `amount > 0` 가드로 판정하면 두 소비처 표시액이 어긋난다.
+describe('shouldUseFrozenPayrollAmount (동결 판정 SSOT)', () => {
+  it('완료 + 유한 동결값(양수) → true', () => {
+    expect(shouldUseFrozenPayrollAmount(true, 99999)).toBe(true);
+  });
+
+  it('완료 + 동결값 0 → true (0원 완료 존중)', () => {
+    expect(shouldUseFrozenPayrollAmount(true, 0)).toBe(true);
+  });
+
+  it('완료 + 동결값 null/undefined → false (레거시 재계산 fallback)', () => {
+    expect(shouldUseFrozenPayrollAmount(true, null)).toBe(false);
+    expect(shouldUseFrozenPayrollAmount(true, undefined)).toBe(false);
+  });
+
+  it('미완료 → 동결값이 있어도 false', () => {
+    expect(shouldUseFrozenPayrollAmount(false, 99999)).toBe(false);
+  });
+});
 
 describe('정산 완료건 표시 금액 동결', () => {
   // 재계산 mock은 항상 afterTaxPay=125710을 반환한다.

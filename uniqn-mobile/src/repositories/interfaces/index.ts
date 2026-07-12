@@ -14,6 +14,7 @@ export type {
   SubscribeCallbacks,
   ConfirmWithHistoryResult,
   CancelConfirmationResult,
+  CancelActorType,
 } from './IApplicationRepository';
 
 // JobPosting Repository

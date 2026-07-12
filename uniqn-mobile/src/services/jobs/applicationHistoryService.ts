@@ -12,8 +12,11 @@ import type { Application, Assignment } from '@/types';
 import { findActiveConfirmation } from '@/domains/application';
 import { applicationRepository } from '@/repositories';
 import { enqueueScheduleBoardSync } from '@/services/jobs/jobManagementService';
-import type { CancelConfirmationResult, ConfirmWithHistoryResult } from '@/repositories';
-import type { CancelActorType } from '@/repositories/interfaces/IApplicationRepository';
+import type {
+  CancelConfirmationResult,
+  ConfirmWithHistoryResult,
+  CancelActorType,
+} from '@/repositories';
 
 // Re-export types from repository interfaces for backward compatibility.
 export type { CancelConfirmationResult, ConfirmWithHistoryResult } from '@/repositories';

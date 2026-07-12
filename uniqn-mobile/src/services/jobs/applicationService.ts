@@ -161,8 +161,9 @@ export async function applyToJobV2(
     // 공고 미존재는 이 게이트가 아니라 applyWithTransaction 의 not-found 경로로 위임한다.
     const posting = await jobPostingRepository.getById(input.jobPostingId);
     if (posting && isTournamentApprovalBlocked(posting)) {
+      // userMessage 는 ERROR_MESSAGES[BUSINESS_TOURNAMENT_NOT_APPROVED] 가 자동
+      // 채운다(AppError base) — 한쪽만 수정 시 드리프트를 막기 위해 registry에 위임.
       throw new BusinessError(ERROR_CODES.BUSINESS_TOURNAMENT_NOT_APPROVED, {
-        userMessage: '승인 대기 중인 대회 공고에는 지원할 수 없습니다.',
         metadata: { jobPostingId: input.jobPostingId },
       });
     }
