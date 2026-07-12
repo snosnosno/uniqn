@@ -2,7 +2,7 @@
  * UNIQN Mobile - CollaboratorSearch
  *
  * @description 이메일로 협업자 검색 + 추가 UI
- *              상태별 분기: self / workspace_member / already_collaborator / addable / not_registered
+ *              상태별 분기: self / workspace_member / already_collaborator / addable
  * @version 1.0.0
  */
 
@@ -42,8 +42,7 @@ function CandidateRow({
   const disabled =
     candidate.status === 'self' ||
     candidate.status === 'workspace_member' ||
-    candidate.status === 'already_collaborator' ||
-    candidate.status === 'not_registered';
+    candidate.status === 'already_collaborator';
 
   const hint = (() => {
     switch (candidate.status) {
@@ -53,8 +52,6 @@ function CandidateRow({
         return '이미 워크스페이스 멤버 — 모든 공고 접근 가능';
       case 'already_collaborator':
         return '이미 협업자';
-      case 'not_registered':
-        return 'UNIQN 에 가입한 사용자만 추가할 수 있어요';
       default:
         return null;
     }

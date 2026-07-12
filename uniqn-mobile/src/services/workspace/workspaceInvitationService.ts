@@ -53,10 +53,24 @@ export const workspaceInvitationService = {
       data.inviteeUserId
     );
 
-    const workspace = await workspaceRepository.findById(data.workspaceId);
+    // 이 시점에 초대는 이미 커밋됐고 트리거가 invitee에게 알림·푸시를 발송했다.
+    // 아래 findById 는 토스트용 workspaceName 조회일 뿐이므로, 실패해도 초대 성공을
+    // 무효화하면 안 된다(감사 P2#16: 이름 조회 실패 → invite 전체 reject → 초대는
+    // 발송됐는데 구인자 화면만 "실패"로 오인). 조회 실패 시 빈 이름으로 폴백한다.
+    let workspaceName = '';
+    try {
+      const workspace = await workspaceRepository.findById(data.workspaceId);
+      workspaceName = workspace?.name ?? '';
+    } catch (error) {
+      logger.warn('초대 후 워크스페이스명 조회 실패 — 초대는 성공, 이름 없이 반환', {
+        workspaceId: data.workspaceId,
+        error,
+      });
+    }
+
     return {
       invitationId,
-      workspaceName: workspace?.name ?? '',
+      workspaceName,
     };
   },
 
