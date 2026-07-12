@@ -5,9 +5,12 @@
 --   SELECT  : wl_select USING (staff=self OR owner=self OR jp.id IN
 --             (jp WHERE is_workspace_member OR is_posting_collaborator))
 --             → 4/4 ALLOW
---   INSERT  : work_logs_insert_owner_or_admin WITH CHECK
---             (owner_id=self OR is_admin)
---             → owner ALLOW, 나머지 3 DENY (plan 의 "4/4 DENY" 보정 1건)
+--   INSERT  : 정책 부재 = deny-all → 4/4 DENY
+--             ※ 2026-07-12 prod 파리티: work_logs_insert_owner_or_admin 은
+--               레포 전용 잔재였다(prod 실측: work_logs 정책 = wl_select/wl_update
+--               2개뿐, 앱의 클라이언트 직접 INSERT 0건 — 생성은 SECDEF RPC 경유).
+--               마이그 20260712010100 이 드롭. 이전 "owner ALLOW" 단언은 레포
+--               전용 정책을 고정하던 것 — prod 스냅샷 스택에서는 원래 실패했다.
 --   UPDATE  : wl_update USING (owner=self OR jp.id IN
 --             (jp WHERE is_workspace_member OR is_posting_collaborator))
 --             → owner/ws_editor/collaborator ALLOW, staff 본인 DENY
@@ -15,7 +18,8 @@
 --               스태프가 자기 정산 입력값(check_in_ts/custom_*)을 직접 PATCH 하던
 --               경로였다. QR 출퇴근은 SECURITY DEFINER RPC 라 영향 없음.
 --               상세: supabase/tests/wl_update_staff_self_revoke.test.sql
---   DELETE  : work_logs_delete_admin USING (is_admin) → 4/4 DENY (admin 아님)
+--   DELETE  : 정책 부재 = deny-all → 4/4 DENY (work_logs_delete_admin 도
+--             레포 전용 잔재 — 마이그 20260712010100 이 드롭, prod 파리티)
 
 BEGIN;
 SELECT plan(16);
@@ -66,13 +70,13 @@ SELECT is(
 );
 
 -- ============================================================================
--- INSERT (4 케이스) — owner_id=self 만 ALLOW
--- plan 가정 보정: owner ALLOW (work_logs_insert_owner_or_admin WITH CHECK)
+-- INSERT (4 케이스) — 정책 부재 = 4/4 DENY (prod 파리티, 2026-07-12)
+-- 생성 경로는 SECURITY DEFINER RPC 전용 — 클라이언트 직접 INSERT 는 owner 도 차단
 -- ============================================================================
 
--- owner 가 자기 owner_id 로 INSERT → ALLOW
+-- owner 가 자기 owner_id 로 INSERT → DENY (정책 부재)
 SELECT jpc_test_set_user((current_setting('jpc.owner_id'))::uuid);
-SELECT lives_ok(
+SELECT throws_ok(
   format(
     $q$INSERT INTO public.work_logs
          (application_id, staff_id, job_posting_id, owner_id, date, status, role)
@@ -82,7 +86,8 @@ SELECT lives_ok(
     current_setting('jpc.jp_id'),
     current_setting('jpc.owner_id')
   ),
-  'work_logs INSERT: owner 본인 명의 (owner_id=self) ALLOW'
+  '42501', NULL,
+  'work_logs INSERT: owner 도 차단 (정책 부재 deny-all, prod 파리티)'
 );
 
 -- ws_editor 가 owner_id=owner 로 INSERT → DENY (42501)

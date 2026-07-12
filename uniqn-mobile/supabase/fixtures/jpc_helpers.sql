@@ -48,6 +48,14 @@ GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
 
+-- 2026-07-12 파리티: prod 는 notifications/applications/work_logs 의 anon write 를
+-- 회수했다(감사 §5 방어심화, 마이그 20260712010100). 위 블랭킷 GRANT 가 이를
+-- 되살리므로 동일 REVOKE 로 재정합. (SELECT 는 유지 — prod 동일)
+-- 회귀 고정: supabase/tests/parity_pin_write_grants.test.sql
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER
+  ON public.notifications, public.applications, public.work_logs
+  FROM anon;
+
 -- ============================================================================
 -- 4 페르소나 + 리소스 셋업 (트랜잭션 안에서만 호출, ROLLBACK 로 정리)
 -- ============================================================================
