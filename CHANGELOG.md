@@ -5,7 +5,7 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.0.0/)를 기반으로 하며,
 이 프로젝트는 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 준수합니다.
 
-## [Unreleased] - 2026-07-10
+## [Unreleased] - 2026-07-14
 
 ### Added
 - **라이브 대회 운영(ops) 도구 1a~1c 출하** (PR #207·#210·#212·#213·#214, prod 적용 완료·advisor 0 ERROR):
@@ -35,6 +35,9 @@
 - ops 상금 코드 정리 (PR #228, TS-only): `uuidLike`→`schemas/common` 통합·상금 표기 `fmt`→`formatNumber` 통합·PAYOUTS `INVALID_PERCENTS` 에러에 0값 행 안내 문구 추가(`payoutMessages` 순수함수 분리+테스트 5)
 
 ### Fixed
+- **유저플로우 실측 감사 전항 완료** (PR #242, 마이그 5종 prod 적용): P0+P1 결함 수정 + LOW 방어심화(완료건 `custom_*` 동결·미승인 대회 지원 게이트·anon write REVOKE·파리티 고정) + P2 3건(동시확정 레이스 문구·죽은코드·초대 오탐 근본수정) + 코드리뷰 재실행 CRIT~MED 0·advisor ERROR 0
+- **iOS 유저플로우 버그 8종 + 신고모달 승격** (PR #243): 확정 인원 카운터 0/N 드리프트(`extractPostingFilledSubmap` 서브맵 추출 배선), 회원가입 뒤로가기 GO_BACK 폴백, 중첩 Modal 터치 먹통·스태프 추가 footer 화면밖, employer 확정카운트 배선·홈 통계 월스코프, 신고모달 시트 밖 승격(`useOwnerReport`)
+- **시트 지연액션 타이머 정리·재진입 가드** (PR #244): 리뷰 후속 — 타이머 누수 정리 + 더블탭 재진입 가드 + 회귀 테스트 3종
 - SECDEF `search_path` pg_temp 누락 62함수 일괄 보정 + `decrement_unread_counter(uuid)` 잉여 오버로드 제거 (감사 ③-B·§3-c, prod 적용·red-green 63→0/2→1, 본문·ACL 무손상 — temp-table shadowing 이론 벡터 봉쇄·42725 모호성 해소)
 - "오늘" 날짜 계산 타임존 off-by-one 일괄 수정: UTC 기준 `toISOString().split('T')[0]`이 KST 00~09시에 하루 밀리던 8곳(공고·스케줄 미래/과거 분류 정렬, 캘린더 선택일/오늘 이동, 오늘 스케줄 캐시 키, 관리자 메트릭 차트 라벨, 가입일 analytics 메타)을 로컬 기준 `getTodayString()`/`toDateString()`으로 치환
 - ops KO 풀 산술 오버플로 근본 차단 (PR #226·#227, prod 적용): `knockout_pool` 컬럼·재계산 경로 int→bigint 승격(`::int` 다운캐스트 제거) + `ops_get_player_view` bountyAccrued int*int 곱셈 `::bigint` 승격 — 대형 바운티 값에서 22003 오버플로 방지(pgTAP RED 22003→GREEN 실증, anon/authed EXECUTE 보존)
