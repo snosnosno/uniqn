@@ -41,7 +41,10 @@ export function PostingCardSurface({
   stripeTone,
   filledCounts,
 }: PostingCardSurfaceProps) {
-  const schedule = buildPostingScheduleModel(card);
+  // 스케줄 모델은 filledCounts 를 주입해 한 번만 생성하고, a11y label 과 콘텐츠 렌더가
+  // 동일 모델을 공유한다(S2). 이원화 시 label 에 확정 수를 쓰는 순간 0/N 드리프트 재발 소지.
+  // a11y label 은 filled 수치를 읽지 않으므로 filledCounts 주입이 label 텍스트를 바꾸지 않는다.
+  const schedule = buildPostingScheduleModel(card, filledCounts);
   const compensation = buildPostingCompensationModel(card, { display: 'card' });
   const resolvedAccessibilityLabel =
     accessibilityLabel || buildAccessibilityLabel(card, schedule, compensation.primaryText);
@@ -110,6 +113,7 @@ export function PostingCardSurface({
               requiredRolesWithCount={card.requiredRolesWithCount}
               displayContext={card.displayContext}
               filledCounts={filledCounts}
+              schedule={schedule}
             />
           </View>
 

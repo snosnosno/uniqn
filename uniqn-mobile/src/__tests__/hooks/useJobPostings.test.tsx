@@ -257,10 +257,14 @@ describe('useJobPostings', () => {
   });
 
   describe('정렬 로직', () => {
-    const today = new Date().toISOString().split('T')[0];
-    const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-    const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+    // 정렬 유틸(getTodayString)과 동일하게 로컬 타임존 기준으로 날짜 문자열을 만든다.
+    // toISOString()은 UTC 라 KST 00~09시에 어제 날짜가 되어 매일 플레이크가 발생했다.
+    const toLocalDateString = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const today = toLocalDateString(new Date());
+    const tomorrow = toLocalDateString(new Date(Date.now() + 86400000));
+    const yesterday = toLocalDateString(new Date(Date.now() - 86400000));
+    const nextWeek = toLocalDateString(new Date(Date.now() + 7 * 86400000));
 
     it('미래 날짜가 과거 날짜보다 먼저 정렬된다', async () => {
       const mockData = [
