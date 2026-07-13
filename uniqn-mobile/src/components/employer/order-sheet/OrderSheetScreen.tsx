@@ -19,6 +19,8 @@ import {
 import { OrderGroup } from './OrderGroup';
 import { OrderRow } from './OrderRow';
 import { TypeSegment } from './TypeSegment';
+import { TitleSheet } from './sheets/TitleSheet';
+import { PlaceSheet, type OrderSheetLocation } from './sheets/PlaceSheet';
 import type { PostingType } from '@/types/jobPosting';
 
 export interface OrderSheetScreenProps {
@@ -49,8 +51,11 @@ export function OrderSheetScreen({
   });
   const values = form.watch();
   const { errors, isDirty } = form.formState;
-  // activeSheet 값은 Task 6~8에서 시트를 장착할 때 읽는다 — 이번 태스크는 스위치(setter)만 배선
-  const [, setActiveSheet] = useState<OrderRowKey | null>(null);
+  const [activeSheet, setActiveSheet] = useState<OrderRowKey | null>(null);
+
+  // 최근 제목/장소 — Task 9(프리셋 캐러셀)에서 템플릿 title/location 으로 채운다. 그 전까지 빈 배열.
+  const recentTitles: string[] = [];
+  const recentLocations: OrderSheetLocation[] = [];
 
   // dirty 상태 상위 동기화 — useUnsavedChangesGuard(create.tsx)가 주문서 경로에서도 작동하도록
   useEffect(() => {
@@ -134,7 +139,27 @@ export function OrderSheetScreen({
           {submitLabel}
         </Button>
       </View>
-      {/* 시트들: Task 6~8에서 activeSheet 스위치로 장착 */}
+      {/* 기본정보 시트 — 제목·장소(Task 6). 연락처·설명 시트는 후속 태스크에서 장착. */}
+      {activeSheet === 'title' && (
+        <TitleSheet
+          visible
+          value={values.title}
+          recentTitles={recentTitles}
+          onConfirm={(v) => form.setValue('title', v, { shouldDirty: true, shouldValidate: true })}
+          onClose={() => setActiveSheet(null)}
+        />
+      )}
+      {activeSheet === 'place' && (
+        <PlaceSheet
+          visible
+          value={values.location}
+          recentLocations={recentLocations}
+          onConfirm={(v) =>
+            form.setValue('location', v, { shouldDirty: true, shouldValidate: true })
+          }
+          onClose={() => setActiveSheet(null)}
+        />
+      )}
     </View>
   );
 }
