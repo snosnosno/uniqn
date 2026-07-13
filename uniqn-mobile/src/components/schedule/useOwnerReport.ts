@@ -75,8 +75,8 @@ export function useOwnerReport(): OwnerReportState {
       try {
         await createReport(input);
         addToast({ type: 'success', message: '신고가 접수되었습니다.' });
-        setVisible(false);
-        setTarget(null);
+        // 닫힘 상태 리셋은 close() 단일 소스로 — 초기화 필드가 늘 때 한쪽만 갱신되는 것 방지
+        close();
       } catch (error) {
         const err = error as Error & { code?: string; message?: string };
         logger.error('Failed to submit report', err, {
@@ -89,7 +89,7 @@ export function useOwnerReport(): OwnerReportState {
         setIsLoading(false);
       }
     },
-    [addToast]
+    [addToast, close]
   );
 
   return { visible, target, jobPostingId, jobPostingTitle, isLoading, open, close, submit };

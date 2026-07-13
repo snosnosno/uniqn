@@ -16,6 +16,7 @@ import {
   createRealtimeSubscription,
 } from '@/utils/supabase';
 import {
+  BROWSABLE_POSTING_STATUSES,
   createInitialPostingStats,
   mergeJobPostingInput,
   serializeJobPostingV3,
@@ -140,7 +141,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
           if (filters?.status) {
             qr = qr.eq('status', filters.status);
           } else {
-            qr = qr.in('status', [STATUS.JOB_POSTING.ACTIVE, STATUS.JOB_POSTING.CAPACITY_FULL]);
+            qr = qr.in('status', [...BROWSABLE_POSTING_STATUSES]);
           }
           // fail-closed(R2): 운영처 컨테이너(status='container')는 브라우즈/공개/운영자 목록에서
           // 항상 제외한다(명시 status·기본값 무관). 컨테이너는 JobPosting 으로 표현되지 않으며
@@ -238,7 +239,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       if (filters?.status) {
         query = query.eq('status', filters.status);
       } else {
-        query = query.in('status', [STATUS.JOB_POSTING.ACTIVE, STATUS.JOB_POSTING.CAPACITY_FULL]);
+        query = query.in('status', [...BROWSABLE_POSTING_STATUSES]);
       }
       // fail-closed(R2): 컨테이너는 타입별 칩 카운트 집계에서 제외한다.
       query = query.neq('status', STATUS.JOB_POSTING.CONTAINER);

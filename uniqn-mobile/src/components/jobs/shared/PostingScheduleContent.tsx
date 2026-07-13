@@ -1,21 +1,32 @@
 import React from 'react';
 import { Text, View } from 'react-native';
-import type { PostingRoleDisplayModel, PostingScheduleSource } from './postingSurfaceModel';
+import type {
+  PostingRoleDisplayModel,
+  PostingScheduleModel,
+  PostingScheduleSource,
+} from './postingSurfaceModel';
 import { buildPostingScheduleModel, FOCUSED_GROUP_DATE_HINT } from './postingSurfaceModel';
 
 interface PostingScheduleContentProps extends PostingScheduleSource {
   display: 'card' | 'detail';
   showFilledCount?: boolean;
   filledCounts?: Map<string, number>;
+  /**
+   * 상위에서 이미 생성한 스케줄 모델. 주입 시 재생성하지 않고 그대로 렌더에 사용해
+   * a11y label 모델과의 이원화(0/N 드리프트 소지)를 방지한다(S2). 미주입 시
+   * source + filledCounts 로 생성 — 기존 호출부(JobDetail 등) 동작 완전 보존.
+   */
+  schedule?: PostingScheduleModel;
 }
 
 export function PostingScheduleContent({
   display,
   showFilledCount = true,
   filledCounts,
+  schedule: providedSchedule,
   ...source
 }: PostingScheduleContentProps) {
-  const schedule = buildPostingScheduleModel(source, filledCounts);
+  const schedule = providedSchedule ?? buildPostingScheduleModel(source, filledCounts);
   const shouldShowFocusedGroupHint = display === 'card' && source.displayContext?.wasGroupedRange;
 
   if (schedule.variant === 'fixed') {

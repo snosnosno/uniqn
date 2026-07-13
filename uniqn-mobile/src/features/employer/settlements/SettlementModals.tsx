@@ -36,6 +36,8 @@ interface SettlementModalsProps {
   rolesForList: RoleWithSalary[];
   salaryConfig: SalaryConfig;
   availableRoles: string[];
+  /** 역할별 실확정 인원(aggregateRoleFilledFromSubmap 결과) — RoleChangeModal 마감 표시용. */
+  filledByRole?: Record<string, number>;
   isUpdating: boolean;
   onRoleChangeSave: (data: {
     staffId: string;
@@ -59,6 +61,7 @@ export function SettlementModals({
   rolesForList,
   salaryConfig,
   availableRoles,
+  filledByRole,
   isUpdating,
   onRoleChangeSave,
   onReportSubmit,
@@ -85,6 +88,7 @@ export function SettlementModals({
         staff={modals.selectedStaff}
         jobPosting={posting}
         availableRoles={availableRoles}
+        filledByRole={filledByRole}
         onSave={onRoleChangeSave}
       />
 

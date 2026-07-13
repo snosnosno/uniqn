@@ -10,7 +10,8 @@ import React, { useState, useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getPostingSettlementContext } from '@/domains/job-posting';
+import { getPostingSettlementContext, aggregateRoleFilledFromSubmap } from '@/domains/job-posting';
+import { usePostingFilledCounts, extractPostingFilledSubmap } from '@/hooks/usePostingFilledCounts';
 import { SettlementList, StaffManagementTab } from '@/components/employer';
 import { SettlementModals } from '@/features/employer/settlements/SettlementModals';
 import { Loading, ErrorState } from '@/components';
@@ -92,6 +93,17 @@ export default function StaffSettlementsScreen() {
 
   // RoleChangeModal용 역할 키 목록
   const availableRoles = useMemo(() => deriveAvailableRoles(rolesForList), [rolesForList]);
+
+  // 역할별 실확정 인원 (S3) — 역할 변경 모달에서 마감 역할을 정확히 비활성 표기하기 위한 hydrate.
+  // work_logs 기반 배치 조회(H0) → 이 공고 서브맵 추출 → 역할키별 합산.
+  const { data: filledCountsMap } = usePostingFilledCounts(jobPostingId ? [jobPostingId] : []);
+  const filledByRole = useMemo(
+    () =>
+      aggregateRoleFilledFromSubmap(
+        extractPostingFilledSubmap(filledCountsMap, jobPostingId || '')
+      ),
+    [filledCountsMap, jobPostingId]
+  );
 
   // 핸들러 다발 (클로저 의존은 인자로 주입해 deps 보존)
   const {
@@ -225,6 +237,7 @@ export default function StaffSettlementsScreen() {
         rolesForList={rolesForList}
         salaryConfig={salaryConfig}
         availableRoles={availableRoles}
+        filledByRole={filledByRole}
         isUpdating={isUpdating}
         onRoleChangeSave={handleRoleChangeSave}
         onReportSubmit={handleReportSubmit}

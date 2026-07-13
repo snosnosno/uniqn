@@ -65,7 +65,7 @@ const SelectOption = memo(function SelectOption({
       className={`px-4 py-3 rounded-lg border mb-2 ${
         isSelected
           ? 'bg-primary-50 border-primary-500 dark:bg-primary-900/20 dark:border-primary-400'
-          : 'bg-white border-secondary-200 dark:bg-surface dark:border-surface-overlay'
+          : 'bg-white border-secondary-200 dark:bg-surface-card dark:border-surface-overlay'
       } ${disabled ? 'opacity-50' : 'active:opacity-80'}`}
     >
       <View className="flex-row items-center">

@@ -92,6 +92,9 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({}),
   useSegments: () => [],
   usePathname: () => '/',
+  // useFocusEffect: 테스트에서는 항상 포커스 상태로 간주 — 콜백을 즉시 실행하지 않는 no-op
+  // (블러/언마운트 정리는 각 컴포넌트의 useEffect 클린업이 담당)
+  useFocusEffect: jest.fn(),
   Link: 'Link',
   Redirect: 'Redirect',
   Stack: {

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { cachingPolicies, invalidateQueries, queryKeys } from '@/lib/queryClient';
+import { POSTING_FILLED_COUNTS_QUERY_KEY } from '@/hooks/postingFilledCountsKey';
 import {
   addDirectStaff,
   cancelConfirmedStaffConfirmation,
@@ -134,6 +135,8 @@ export function useConfirmedStaff(
     mutationFn: updateStaffRole,
     onSuccess: () => {
       invalidateQueries.staffManagement(jobPostingId);
+      // 역할 분포가 바뀌므로 마감 판정 소스(postingFilledCounts) 캐시도 무효화 — stale 마감 표시 방지
+      queryClient.invalidateQueries({ queryKey: [POSTING_FILLED_COUNTS_QUERY_KEY] });
       addToast({ type: 'success', message: '역할이 변경되었습니다.' });
     },
     onError: (mutationError: Error) => {
@@ -159,8 +162,9 @@ export function useConfirmedStaff(
     mutationFn: cancelConfirmedStaffConfirmation,
     onSuccess: () => {
       invalidateQueries.staffManagement(jobPostingId);
-      // 정원/자동마감(capacity_full) 상태가 바뀌므로 공고 상세·목록 캐시도 무효화
+      // 정원/자동마감(capacity_full) 상태가 바뀌므로 공고 상세·목록·확정분포 캐시도 무효화
       invalidateQueries.jobPostings();
+      queryClient.invalidateQueries({ queryKey: [POSTING_FILLED_COUNTS_QUERY_KEY] });
       addToast({ type: 'success', message: '확정 스태프가 해제되었습니다.' });
     },
     onError: (mutationError: Error) => {
