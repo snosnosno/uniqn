@@ -195,6 +195,7 @@ export default function CreateJobPostingScreen() {
           isSubmitting={createJobPosting.isPending}
           onSwitchToLegacyForm={handleSwitchToLegacyForm}
           onDirtyChange={setIsDirty}
+          myPhone={profile?.phone ?? ''}
         />
       </SafeAreaView>
     );

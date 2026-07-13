@@ -21,6 +21,8 @@ import { OrderRow } from './OrderRow';
 import { TypeSegment } from './TypeSegment';
 import { TitleSheet } from './sheets/TitleSheet';
 import { PlaceSheet, type OrderSheetLocation } from './sheets/PlaceSheet';
+import { ContactSheet } from './sheets/ContactSheet';
+import { DescriptionSheet } from './sheets/DescriptionSheet';
 import type { PostingType } from '@/types/jobPosting';
 
 export interface OrderSheetScreenProps {
@@ -30,6 +32,8 @@ export interface OrderSheetScreenProps {
   onSwitchToLegacyForm: (type: 'fixed' | 'tournament') => void;
   /** RHF dirty 상태를 상위(create.tsx)로 끌어올려 useUnsavedChangesGuard에 연결 */
   onDirtyChange?: (dirty: boolean) => void;
+  /** ContactSheet "내 프로필 번호" 라디오용 — create.tsx가 profile.phone 전달 */
+  myPhone?: string;
   /** Task 9 프리셋 캐러셀 자리 */
   headerSlot?: React.ReactNode;
 }
@@ -40,6 +44,7 @@ export function OrderSheetScreen({
   isSubmitting,
   onSwitchToLegacyForm,
   onDirtyChange,
+  myPhone = '',
   headerSlot,
 }: OrderSheetScreenProps) {
   const { addToast } = useToastStore();
@@ -139,7 +144,7 @@ export function OrderSheetScreen({
           {submitLabel}
         </Button>
       </View>
-      {/* 기본정보 시트 — 제목·장소(Task 6). 연락처·설명 시트는 후속 태스크에서 장착. */}
+      {/* 기본정보 시트 4종 — 제목·장소·연락처·설명(Task 6). activeSheet 스위치로 동시 1개만 마운트. */}
       {activeSheet === 'title' && (
         <TitleSheet
           visible
@@ -156,6 +161,27 @@ export function OrderSheetScreen({
           recentLocations={recentLocations}
           onConfirm={(v) =>
             form.setValue('location', v, { shouldDirty: true, shouldValidate: true })
+          }
+          onClose={() => setActiveSheet(null)}
+        />
+      )}
+      {activeSheet === 'contact' && (
+        <ContactSheet
+          visible
+          value={values.contactPhone}
+          myPhone={myPhone}
+          onConfirm={(v) =>
+            form.setValue('contactPhone', v, { shouldDirty: true, shouldValidate: true })
+          }
+          onClose={() => setActiveSheet(null)}
+        />
+      )}
+      {activeSheet === 'description' && (
+        <DescriptionSheet
+          visible
+          value={values.description ?? ''}
+          onConfirm={(v) =>
+            form.setValue('description', v, { shouldDirty: true, shouldValidate: true })
           }
           onClose={() => setActiveSheet(null)}
         />
