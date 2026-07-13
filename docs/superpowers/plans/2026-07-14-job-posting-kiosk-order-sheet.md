@@ -23,6 +23,7 @@
 - **세금 기본값 = 미설정(세금 없음)**(2026-07-14 사용자 결정 — 레거시 패리티): 신규 공고는 `taxSettings` 없이 발행, TaxSheet를 열면 3.3%를 제안값으로 시드.
 - 복지 시맨틱: 기존 `Allowances` 그대로 — `-1`(=`PROVIDED_FLAG`, `@/utils/settlement`)=제공(체크만), `>0`=금액, `undefined`=없음. **서버 변경 없음**.
 - 중첩 RN Modal 금지: 시트는 `SheetModal`(overlay 슬롯) + `TimeWheelPicker`의 `embedded` 패턴 준수 (`src/components/weeklyGrid/EditSlotSheet.tsx:305` 참고). **RegionSelectModal·ActionSheet·DatePickerModal은 전부 ui/Modal(RN Modal) 기반이므로 SheetModal 내부에서 열기 금지**(리뷰 실측 — Task 6·8에서 인라인 대체 확정).
+- **시트→시트/모달 전환은 직접 스왑 금지(#244 하우스 패턴 — 2026-07-14 의존성 재점검·origin/master 머지 반영)**: 한 시트를 닫으면서 같은 렌더 패스에서 다른 시트·RN Modal을 열면(A unmount+B mount 동시) iOS dismiss-중-present 경합으로 터치먹통·미표시가 재발한다(#186/#243 동형). 전환은 "닫기 → `SHEET_DISMISS_ANIMATION_MS`(`@/constants/animation`, 300ms) 대기 → 다음 열기" + 재진입 가드 + 언마운트 시 타이머 정리로 구현 — 참고 구현 `src/components/schedule/ScheduleDetailModal.tsx:175` `closeSheetThen`. 닫힌 상태에서 행 탭으로 시트 하나를 여는 것은 해당 없음. (대상: Task 7 TimeSlotsSheet↔RolesSheet 전환·DatePickerModal 진입 등 모든 시트 간 전환)
 - **RHF×zod 타입 계약(스파이크 실측 확정)**: `zodResolver`는 `Resolver<z.input, any, z.output>`을 반환하므로 폼은 **3제네릭** `useForm<OrderSheetFormValues, unknown, OrderSheetValues>`로 선언한다. 폼 상태·행 메타·시트는 `OrderSheetFormValues`(=z.input — 장소 null 허용, default 필드 optional), `handleSubmit` 콜백·매퍼 입력은 `OrderSheetValues`(=z.output — 장소 non-null, default 채움). 단일 제네릭 `useForm<z.infer<...>>`는 **컴파일 불가**(zod 4.3.6 × resolvers 5.2.2 × RHF 7.71.2 tsc 실측). `.refine((v) => v !== null)`의 TS 추론 프레디킷이 output에서 null을 제거하는 것은 의도된 동작.
 - **UI 공통 체크리스트(전 시트·행·완료화면 적용, 리뷰 M1~M4·L5)**: ①상태색 텍스트 다크 변형 필수(`text-warning-700 dark:text-warning-300` · `text-error-500 dark:text-error-400` · `text-success-600 dark:text-success-400`) ②선택 컨트롤은 `accessibilityRole="radio"|"checkbox"` + `accessibilityState={{ selected|checked }}` — 하우스 패턴 `TaxSettingsEditor.tsx:206-214` ③터치 타깃 44pt(`min-h-[44px] min-w-[44px]` 또는 hitSlop — 스테퍼·삭제 버튼) ④아이콘은 `@/components/icons` Lucide만(`−`/`＋`/`›`/`✓` 텍스트 글리프 금지 — Plus/Minus/ChevronRight/Check/Trash 아이콘) ⑤`autoFocus` 금지(impeccable rule 20) ⑥하단 고정 바는 `border-t border-secondary-100 dark:border-surface-overlay` 경계 추가.
 - e2e 앵커 `testID="job-posting-create-submit"`은 주문서 등록 버튼이 승계한다.
@@ -240,7 +241,7 @@ Expected: FAIL — `input.conditions` undefined.
 5. `src/types/jobTemplate.ts` — `JobPostingTemplateData`에 `conditions?: PostingConditions;` 추가. `extractTemplateData`(:109)와 `templateToDraft`(:147)에 동일 조건부 스프레드 (템플릿 저장/복원 시 조건 보존).
 6. **[읽기]** `serialization.ts`의 `deserializeJobPostingDocument`(:381) — 반환 조립부(:429-)에 `...(document.conditions !== undefined ? { conditions: document.conditions } : {})` 추가. 엔티티 타입 필드는 Task 1에서 완료. **이게 빠지면 상세·프리셋·edit 전부에서 conditions가 항상 undefined**(쓰기만 되고 아무도 못 읽는 필드).
 7. **[수정 base]** `serialization.ts`의 `toCreateJobPostingInput`(:344-357) — 명시 목록에 동일 조건부 스프레드. 빠지면 `mergeJobPostingInput` 기반 수정·정산설정 변경 1회에 conditions가 조용히 소실.
-8. **[수정 patch]** `draftAdapter.ts`의 `draftToUpdateJobPostingInput`(:589-601) — updateInput 조립부에 동일 조건부 스프레드 (레거시 edit 폼이 키오스크 공고를 수정해도 계약상 보존).
+8. **[수정 patch]** `draftAdapter.ts`의 `draftToUpdateJobPostingInput`(:589-601) — updateInput 조립부에 동일 조건부 스프레드 (레거시 edit 폼이 키오스크 공고를 수정해도 계약상 보존). 주의: 같은 함수의 `hasConfirmedApplicants` 제한 분기(2번째 조립부, :604+)는 건드리지 않는다 — serialize의 current-폴백이 conditions를 보존하므로 1번째 조립부만 추가가 의도(2026-07-14 의존성 재점검 실측).
 9. **[SELECT]** `JobPostingRepositoryHelpers.ts:17` `TABLE_COLUMNS` 문자열에 `conditions` 추가(알파벳 순서 유지 — `compensation` 다음). `ALLOWED_CAMEL_COLUMNS`는 자동 파생이라 별도 수정 불필요.
 
 - [ ] **Step 4: 통과 + 기존 회귀 확인**
@@ -541,9 +542,10 @@ describe('신·구 동등성 (레거시 폼 경로 대비)', () => {
   // 그대로 부르므로 valuesToDraft 결과를 넣어 비교하면 같은 함수를 두 번 부르는 것이다.
   // 반드시 JobPostingFormData(레거시 폼 표현) 픽스처를 경유해 비교한다.
   it('같은 입력 의도의 레거시 formData와 CreateJobPostingInput이 동등하다', () => {
-    // 기존 draftAdapter 테스트의 JobPostingFormData 픽스처를 복사해 baseValues와 같은 의도
+    // 기존 submission 테스트의 JobPostingFormData 픽스처를 복사해 baseValues와 같은 의도
     // (단일 시간대 19:00·딜러2+서빙1·shared 시급 20,000·복지 동일)로 구성한다.
-    const legacyFormData = {/* draftAdapter.test.ts 픽스처 참조 */} as unknown as JobPostingFormData;
+    // (의존성 재점검 교정: draftAdapter.test.ts에는 해당 픽스처 없음 — src/utils/job-posting/__tests__/submission.test.ts:37 createFormData 참조)
+    const legacyFormData = {/* submission.test.ts createFormData 픽스처 참조 */} as unknown as JobPostingFormData;
     const legacy = buildCreateJobPostingInput(legacyFormData);
     const kiosk = valuesToCreateInput(baseValues);
     expect(kiosk.compensation).toEqual(legacy.compensation);
@@ -1280,9 +1282,11 @@ const isLegacyForm = legacyType !== null;
 const initialValues = useMemo(
   () => ({
     ...gridParamsToValues({ venueId, date: prefillDate, count: prefillCount }),
-    contactPhone: user?.phone ?? '',
+    // 의존성 재점검 교정: useAuth().user는 AuthUser 타입이라 phone 필드가 없음(phoneNumber만).
+    // 프로필 프리필은 profile(User 타입, src/types/user.ts:54의 phone) 사용 — create.tsx:26 구조분해를 { user, profile }로 확장.
+    contactPhone: profile?.phone ?? '',
   }),
-  [venueId, prefillDate, prefillCount, user?.phone]
+  [venueId, prefillDate, prefillCount, profile?.phone]
 );
 
 const handleOrderSheetSubmit = useCallback(async (values: OrderSheetValues) => {
@@ -1483,7 +1487,7 @@ export function PlaceSheet({ visible, value, recentLocations, onConfirm, onClose
                       accessibilityRole="radio" accessibilityState={{ selected }}>
                       <View className="flex-row items-center gap-1">
                         {selected ? <CheckIcon size={14} className="text-primary-600 dark:text-primary-400" /> : null}
-                        <Text className={`text-sm font-sans-medium ${selected ? 'text-primary-600 dark:text-primary-400' : 'text-content-secondary'}`}>{r.name}</Text>
+                        <Text className={`text-sm font-sans-medium ${selected ? 'text-primary-600 dark:text-primary-400' : 'text-content-secondary'}`}>{r.label}</Text>{/* 의존성 재점검 교정: RegionOption 필드는 label (name 없음) */}
                       </View>
                     </Pressable>
                   );
@@ -1614,6 +1618,7 @@ export function TimeSlotsSheet({ visible, value, onConfirm, onClose, onEditSlotR
                 </Pressable>
               )}
             </View>
+            {/* ⚠️ onEditSlotRoles는 부모에서 이 시트를 닫고 RolesSheet를 여는 전환 — Global Constraints의 #244 패턴(SHEET_DISMISS_ANIMATION_MS 지연+재진입 가드) 경유 필수, 직접 스왑 금지 */}
             <Pressable onPress={() => { onConfirm(slots); onEditSlotRoles(i); }} className="mt-1 active:opacity-80">
               <Text className="text-xs text-content-secondary font-sans">
                 {slot.roles.length > 0 ? slot.roles.map((r) => `${r.role === 'other' ? r.customRole ?? '기타' : r.role} ${r.count}`).join(' · ') : '이 시간대 역할 설정 ›'}
@@ -1718,7 +1723,7 @@ export function RolesSheet({ visible, value, onConfirm, onClose }: {
 
 (Minus/Plus/Trash 아이콘의 실제 export명은 `@/components/icons`에서 확인 — 없으면 존재하는 동등 아이콘으로 대체. 상단 "추가 전" 스테퍼(`w-9 h-9`)도 UI 공통 체크리스트에 따라 44pt로 키우고 글리프를 아이콘으로 교체한다.)
 
-- [ ] **Step 4: OrderSheetScreen 장착** — `roles` 행은 슬롯 1개면 slot 0 편집, 복수면 TimeSlotsSheet를 연다(슬롯별 역할은 그 안에서 진입). `activeSheet` 상태를 `OrderRowKey | { key: 'slotRoles'; slotIndex: number } | null`로 확장.
+- [ ] **Step 4: OrderSheetScreen 장착** — `roles` 행은 슬롯 1개면 slot 0 편집, 복수면 TimeSlotsSheet를 연다(슬롯별 역할은 그 안에서 진입). `activeSheet` 상태를 `OrderRowKey | { key: 'slotRoles'; slotIndex: number } | null`로 확장. 시트 간 전환(TimeSlotsSheet↔RolesSheet·DatePickerModal 진입)은 Global Constraints의 #244 지연 패턴(`SHEET_DISMISS_ANIMATION_MS` + 재진입 가드 + 타이머 정리) 경유.
 
 - [ ] **Step 5: 검증 + 커밋**
 
@@ -2256,7 +2261,7 @@ Expected: PASS. (로컬 Supabase 스택 필요 — `npm run db:start` 선행. �
 Run: `npm run quality`
 Expected: type-check·lint·format 전부 EXIT 0.
 Run: `npx jest --silent`
-Expected: 전 스위트 PASS (기준: 기존 403 스위트 + 신규 → 실패 0).
+Expected: 전 스위트 PASS (기준: 기존 전체 스위트(2026-07-14 `jest --listTests` 실측 415) + 신규 → 실패 0).
 
 - [ ] **Step 4: 커밋**
 
