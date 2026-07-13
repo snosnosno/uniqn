@@ -8,6 +8,7 @@ import {
   jobPostingDocumentSchema,
   parseJobPostingDocument,
   parseJobPostingDocuments,
+  postingConditionsSchema,
   postingTypeSchema,
   roleRequirementSchema,
   roleSchema,
@@ -665,5 +666,26 @@ describe('jobFilterSchema posting_status SSOT drift guard', () => {
   it('DB enum에 없는 status는 거부한다', () => {
     const result = jobFilterSchema.safeParse({ status: 'weird_status' });
     expect(result.success).toBe(false);
+  });
+});
+
+describe('postingConditionsSchema (조건: 복장·경력)', () => {
+  it('정상 조건을 통과시킨다', () => {
+    const r = postingConditionsSchema.safeParse({
+      dressCode: '검정셔츠/슬랙스',
+      experience: 'TDA 숙지자',
+    });
+    expect(r.success).toBe(true);
+  });
+  it('빈 객체·부분 입력을 허용한다 (선택 필드)', () => {
+    expect(postingConditionsSchema.safeParse({}).success).toBe(true);
+    expect(postingConditionsSchema.safeParse({ dressCode: '흰셔츠/슬랙스' }).success).toBe(true);
+  });
+  it('XSS 패턴을 거부한다', () => {
+    const r = postingConditionsSchema.safeParse({ dressCode: '<script>alert(1)</script>' });
+    expect(r.success).toBe(false);
+  });
+  it('알 수 없는 키를 거부한다 (strict)', () => {
+    expect(postingConditionsSchema.safeParse({ dress: 'x' }).success).toBe(false);
   });
 });
