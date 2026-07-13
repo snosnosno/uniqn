@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { ScheduleDetailModal } from '../ScheduleDetailModal';
 import { createMockScheduleEvent } from '@/__tests__/mocks/factories';
 import type { ScheduleEvent } from '@/types';
@@ -75,8 +75,10 @@ jest.mock('@/stores/toastStore', () => ({
   useToastStore: () => ({ addToast: jest.fn() }),
 }));
 
+const mockShowConfirm = jest.fn();
+
 jest.mock('@/stores/modalStore', () => ({
-  useModal: () => ({ showConfirm: jest.fn() }),
+  useModal: () => ({ showConfirm: mockShowConfirm }),
 }));
 
 jest.mock('@/utils/logger', () => ({
@@ -170,6 +172,112 @@ describe('ScheduleDetailModal', () => {
         jobPostingId: 'jp-1',
         jobPostingTitle: '홀덤펍 딜러',
       });
+    });
+  });
+
+  describe('지원 취소 / 취소 요청 — 시트 닫고 지연 확인 (iOS 중첩 Modal 회피, fake timers)', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('지원 취소: 즉시 시트를 닫고 300ms 후 확인 다이얼로그, 확인 시 캡처된 applicationId 로 콜백한다', () => {
+      const onClose = jest.fn();
+      const onCancelApplication = jest.fn();
+      const schedule = createMockScheduleEvent({
+        type: 'applied',
+        applicationId: 'app-cancel-1',
+      }) as unknown as ScheduleEvent;
+
+      const { getByText } = render(
+        <ScheduleDetailModal
+          schedule={schedule}
+          visible={true}
+          onClose={onClose}
+          onCancelApplication={onCancelApplication}
+        />
+      );
+
+      fireEvent.press(getByText('지원 취소'));
+
+      // 시트는 즉시 닫히고, 확인 다이얼로그는 아직 뜨지 않는다
+      expect(onClose).toHaveBeenCalledTimes(1);
+      expect(mockShowConfirm).not.toHaveBeenCalled();
+
+      act(() => {
+        jest.advanceTimersByTime(300);
+      });
+
+      expect(mockShowConfirm).toHaveBeenCalledTimes(1);
+      // 확인 콜백 실행 시 시트가 닫혔어도 캡처된 applicationId 로 콜백된다
+      const confirmCallback = mockShowConfirm.mock.calls[0][2] as () => void;
+      confirmCallback();
+      expect(onCancelApplication).toHaveBeenCalledWith('app-cancel-1');
+    });
+
+    it('취소 요청: 동일 패턴 — 즉시 닫고 지연 확인 후 캡처된 applicationId 로 콜백한다', () => {
+      const onClose = jest.fn();
+      const onRequestCancellation = jest.fn();
+      const schedule = createMockScheduleEvent({
+        type: 'confirmed',
+        applicationId: 'app-req-1',
+      }) as unknown as ScheduleEvent;
+
+      const { getByText } = render(
+        <ScheduleDetailModal
+          schedule={schedule}
+          visible={true}
+          onClose={onClose}
+          onRequestCancellation={onRequestCancellation}
+        />
+      );
+
+      fireEvent.press(getByText('취소 요청'));
+
+      expect(onClose).toHaveBeenCalledTimes(1);
+      expect(mockShowConfirm).not.toHaveBeenCalled();
+
+      act(() => {
+        jest.advanceTimersByTime(300);
+      });
+
+      expect(mockShowConfirm).toHaveBeenCalledTimes(1);
+      const confirmCallback = mockShowConfirm.mock.calls[0][2] as () => void;
+      confirmCallback();
+      expect(onRequestCancellation).toHaveBeenCalledWith('app-req-1');
+    });
+
+    it('300ms 창 안 더블탭: 확인 다이얼로그는 1회만 예약된다 (전역 ConfirmModal 중첩 방지)', () => {
+      const onClose = jest.fn();
+      const onCancelApplication = jest.fn();
+      const schedule = createMockScheduleEvent({
+        type: 'applied',
+        applicationId: 'app-cancel-2',
+      }) as unknown as ScheduleEvent;
+
+      const { getByText } = render(
+        <ScheduleDetailModal
+          schedule={schedule}
+          visible={true}
+          onClose={onClose}
+          onCancelApplication={onCancelApplication}
+        />
+      );
+
+      const button = getByText('지원 취소');
+      fireEvent.press(button);
+      fireEvent.press(button);
+
+      act(() => {
+        jest.advanceTimersByTime(300);
+      });
+
+      // 재진입 가드: 두 번째 탭은 무시 — 닫기 1회·확인 다이얼로그 1회
+      expect(onClose).toHaveBeenCalledTimes(1);
+      expect(mockShowConfirm).toHaveBeenCalledTimes(1);
     });
   });
 });

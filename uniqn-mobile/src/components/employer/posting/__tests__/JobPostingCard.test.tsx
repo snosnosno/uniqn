@@ -139,4 +139,32 @@ describe('JobPostingCard', () => {
 
     expect(getByText(/3.3%/)).toBeTruthy();
   });
+
+  it('전역 filledCounts 맵에서 이 공고 서브맵을 추출해 확정 인원을 표시한다 (P1 0/N 회귀 가드)', () => {
+    // 전역 키공간은 `${jobPostingId}__${date}__${slot}__${role}` — 카드가 posting.id 접두를
+    // 제거(extractPostingFilledSubmap)하지 않고 전역맵을 그대로 넘기면 모델 조회 키
+    // (`date__slot__role`)와 미스매치해 전건 0/N 으로 렌더된다 (#243 이 고친 P1 회귀).
+    const filledCounts = new Map<string, number>([
+      ['posting-1__2026-03-31__09:00__dealer', 1],
+      ['other-posting__2026-03-31__09:00__dealer', 9],
+    ]);
+
+    const { getByText, queryByText } = render(
+      <JobPostingCard
+        posting={basePosting}
+        onPress={jest.fn()}
+        onClose={jest.fn()}
+        onReopen={jest.fn()}
+        onShowQR={jest.fn()}
+        isClosing={false}
+        isReopening={false}
+        filledCounts={filledCounts}
+      />
+    );
+
+    // 09:00 딜러 1명 슬롯이 (1/1) 로 hydrate — 서브맵 추출이 빠지면 (0/1) 이 되어 실패한다
+    expect(getByText(/\(1\/1\)/)).toBeTruthy();
+    // 다른 공고(other-posting) 카운트는 새지 않는다
+    expect(queryByText(/\(9\//)).toBeNull();
+  });
 });

@@ -3,7 +3,7 @@
  * 내 스케줄 화면
  */
 
-import { useState, useCallback, useEffect, useMemo, Suspense, lazy } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef, Suspense, lazy } from 'react';
 import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -22,7 +22,7 @@ import { ReportModal } from '@/components/employer/ReportModal';
 import { useOwnerReport } from '@/components/schedule/useOwnerReport';
 import { TabHeader } from '@/components/headers';
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, MenuIcon } from '@/components/icons';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCalendarView, useQRCodeScanner, useCurrentWorkStatus, useApplications } from '@/hooks';
 import { useAuthStore } from '@/stores/authStore';
 import { usePendingReviews } from '@/hooks/useReviews';
@@ -33,6 +33,7 @@ import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import { formatCurrency } from '@/utils/formatters';
 import { SCHEDULE_STATS_LABELS } from '@/utils/applicationStatusLabel';
 import { STATUS } from '@/constants';
+import { SHEET_DISMISS_ANIMATION_MS } from '@/constants/animation';
 import { SCHEDULE_TYPE_LABELS } from '@/shared/status';
 import { getApplicationById } from '@/services/jobs/applicationService';
 import { logger } from '@/utils/logger';
@@ -552,7 +553,7 @@ export default function ScheduleScreen() {
     setTimeout(() => {
       setSelectedSchedule(null);
       setSelectedGroupedSchedule(null);
-    }, 300);
+    }, SHEET_DISMISS_ANIMATION_MS);
   }, []);
 
   // 구인자 신고 모달 — 상위 소유. 시트를 닫은 뒤 형제로 열어 iOS 중첩 Modal 터치 먹통을 피한다.
@@ -563,6 +564,9 @@ export default function ScheduleScreen() {
     setSelectedSchedule(schedule);
   }, []);
 
+  // 시트 닫힘 후 QR 스캐너 오픈 예약 타이머
+  const qrOpenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // QR 스캔 핸들러
   const handleQRScan = useCallback(() => {
     // 현재 근무 상태에 따라 액션 결정
@@ -571,8 +575,26 @@ export default function ScheduleScreen() {
     // iOS 중첩 Modal 터치 먹통 방지 — 상세 시트를 먼저 닫고 dismiss 애니메이션 후 QR 스캐너를 연다.
     // (두 네이티브 Modal 이 동시에 present 되면 iOS 에서 터치 라우팅이 깨져 스캐너가 먹통이 된다)
     setIsDetailSheetVisible(false);
-    setTimeout(() => setIsQRScannerVisible(true), 300);
+    if (qrOpenTimerRef.current) clearTimeout(qrOpenTimerRef.current);
+    qrOpenTimerRef.current = setTimeout(() => {
+      qrOpenTimerRef.current = null;
+      setIsQRScannerVisible(true);
+    }, SHEET_DISMISS_ANIMATION_MS);
   }, [isWorking]);
+
+  // 블러(탭 전환) 시 예약된 QR 스캐너 오픈 취소 — 네이티브 Modal 이라 예약이 살아있으면
+  // 다른 탭 위로 스캐너가 떠버린다. 화면이 포커스를 잃으면 예약을 버린다.
+  useFocusEffect(
+    useCallback(
+      () => () => {
+        if (qrOpenTimerRef.current) {
+          clearTimeout(qrOpenTimerRef.current);
+          qrOpenTimerRef.current = null;
+        }
+      },
+      []
+    )
+  );
 
   // QR 스캔 결과 처리 훅
   const { handleScanResult, lastError, clearError } = useQRCodeScanner({
