@@ -3,9 +3,9 @@
 --
 -- 목적: 로컬 재빌드(db reset) 형상이 prod 실측 카운트와 일치하는지 단언해
 --   "레포만 아는 오브젝트"(gen-1 정책 부활 등) 재발산을 조기 검출한다.
---   기준값은 2026-07-11 prod(ygfxukhktpqymahfrvbz) 라이브 실측:
---     public 함수 163 - 1(20260711100000 이 decrement_unread_counter(uuid) 제거) = 162
---     RLS 정책 103 · pg_temp 누락 SECDEF 0(동 마이그가 63개 일괄 보정) · PG 17
+--   기준값은 prod(ygfxukhktpqymahfrvbz) 라이브 실측(2026-07-13 갱신):
+--     public 함수 163 = baseline 163 - 1(20260711100000 오버로드 제거) + 1(#242 userflow-audit)
+--     RLS 정책 103 · pg_temp 누락 SECDEF 0(20260711100000 이 62개 일괄 보정) · PG 17
 --
 -- ⚠️ 유지보수 계약: 이후 마이그레이션이 public 함수/정책을 추가·삭제하면
 --   이 기대값을 같은 PR에서 함께 갱신해야 한다. 갱신을 강제당하는 것 자체가
@@ -18,7 +18,7 @@
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=162
+-- PARITY_EXPECT_FUNCS=163
 -- PARITY_EXPECT_POLICIES=103
 -- ============================================================
 BEGIN;
@@ -38,8 +38,8 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  162,
-  'public function count == prod (162 = 163 measured 2026-07-11 - 1 overload drop)');
+  163,
+  'public function count == prod (163 = baseline 162 + 1 from #242 userflow-audit, 2026-07-13)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(
