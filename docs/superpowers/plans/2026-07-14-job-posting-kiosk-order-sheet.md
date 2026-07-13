@@ -18,9 +18,13 @@
 - 사용자 입력 검증: `z.string().refine(xssValidation)` (`@/utils/security`).
 - 유형 라벨 **지원/급구/고정/대회** · 수당 → **복지** (용어 확정).
 - 급여 기본값: **시급 20,000(±1,000 스테퍼) · 일급 200,000 · 월급 2,500,000** (일급·월급은 기본값+직접입력만).
-- `SalaryType`은 기존 `'hourly'|'daily'|'monthly'|'other'` 사용 — **monthly 기존재, 스키마 변경 불필요**. `'other'`는 신규 작성 UI에서 제외하되 읽기 호환 유지.
+- `SalaryType`은 기존 `'hourly'|'daily'|'monthly'|'other'` 사용 — **monthly 기존재, 스키마 변경 불필요**. **협의(`other`)도 신규 작성에서 선택 가능**(2026-07-14 사용자 결정, 설계 §3 개정) — 금액 없이 `{ type: 'other', amount: 0 }`로 발행. 문서 게이트 `salaryInfoSchema.amount: z.number().min(0)`(jobPosting.schema.ts:51-53)이 허용함을 실측, 레거시도 동일 패턴(SalarySection.tsx:65 `amount: type === 'other' ? 0 : ...`).
+- **"모든 역할 동일 급여" 토글 유지 + OFF 경로 완성**(2026-07-14 사용자 결정): 토글 OFF(by_role) 시 역할별 급여 입력 UI(Task 8)와 `roleCatalog[].salary` 매핑(Task 4)을 구현한다. 리뷰 실측: 초안의 OFF 경로는 역할별 급여를 만들지 않는 no-op이었음.
+- **세금 기본값 = 미설정(세금 없음)**(2026-07-14 사용자 결정 — 레거시 패리티): 신규 공고는 `taxSettings` 없이 발행, TaxSheet를 열면 3.3%를 제안값으로 시드.
 - 복지 시맨틱: 기존 `Allowances` 그대로 — `-1`(=`PROVIDED_FLAG`, `@/utils/settlement`)=제공(체크만), `>0`=금액, `undefined`=없음. **서버 변경 없음**.
-- 중첩 RN Modal 금지: 시트는 `SheetModal`(overlay 슬롯) + `TimeWheelPicker`의 `embedded` 패턴 준수 (`src/components/weeklyGrid/EditSlotSheet.tsx:305` 참고).
+- 중첩 RN Modal 금지: 시트는 `SheetModal`(overlay 슬롯) + `TimeWheelPicker`의 `embedded` 패턴 준수 (`src/components/weeklyGrid/EditSlotSheet.tsx:305` 참고). **RegionSelectModal·ActionSheet·DatePickerModal은 전부 ui/Modal(RN Modal) 기반이므로 SheetModal 내부에서 열기 금지**(리뷰 실측 — Task 6·8에서 인라인 대체 확정).
+- **RHF×zod 타입 계약(스파이크 실측 확정)**: `zodResolver`는 `Resolver<z.input, any, z.output>`을 반환하므로 폼은 **3제네릭** `useForm<OrderSheetFormValues, unknown, OrderSheetValues>`로 선언한다. 폼 상태·행 메타·시트는 `OrderSheetFormValues`(=z.input — 장소 null 허용, default 필드 optional), `handleSubmit` 콜백·매퍼 입력은 `OrderSheetValues`(=z.output — 장소 non-null, default 채움). 단일 제네릭 `useForm<z.infer<...>>`는 **컴파일 불가**(zod 4.3.6 × resolvers 5.2.2 × RHF 7.71.2 tsc 실측). `.refine((v) => v !== null)`의 TS 추론 프레디킷이 output에서 null을 제거하는 것은 의도된 동작.
+- **UI 공통 체크리스트(전 시트·행·완료화면 적용, 리뷰 M1~M4·L5)**: ①상태색 텍스트 다크 변형 필수(`text-warning-700 dark:text-warning-300` · `text-error-500 dark:text-error-400` · `text-success-600 dark:text-success-400`) ②선택 컨트롤은 `accessibilityRole="radio"|"checkbox"` + `accessibilityState={{ selected|checked }}` — 하우스 패턴 `TaxSettingsEditor.tsx:206-214` ③터치 타깃 44pt(`min-h-[44px] min-w-[44px]` 또는 hitSlop — 스테퍼·삭제 버튼) ④아이콘은 `@/components/icons` Lucide만(`−`/`＋`/`›`/`✓` 텍스트 글리프 금지 — Plus/Minus/ChevronRight/Check/Trash 아이콘) ⑤`autoFocus` 금지(impeccable rule 20) ⑥하단 고정 바는 `border-t border-secondary-100 dark:border-surface-overlay` 경계 추가.
 - e2e 앵커 `testID="job-posting-create-submit"`은 주문서 등록 버튼이 승계한다.
 - 파일 800줄 초과 금지 — 시트는 파일당 1개.
 - 각 태스크 종료 시 커밋. 최종 게이트 `npm run quality` + `npx jest` 전체 green.
@@ -35,7 +39,7 @@
 **Files:**
 - Modify: `src/types/jobPosting.ts` (JobPostingInput ~211행, PostingLocation ~69행 부근)
 - Modify: `src/schemas/jobPosting.schema.ts`
-- Create: `supabase/migrations/20260714000000_job_postings_conditions.sql`
+- Create: `uniqn-mobile/supabase/migrations/20260714000000_job_postings_conditions.sql` (⚠️ supabase 디렉토리는 레포 루트가 아니라 `uniqn-mobile/` 하위 — 실측 확정)
 - Test: `src/schemas/__tests__/jobPosting.schema.test.ts` (기존 파일에 추가)
 
 **Interfaces:**
@@ -103,14 +107,16 @@ export const postingConditionsSchema = z
   .strict();
 ```
 
-`jobPostingDocumentSchema`(:473-514)의 필드 목록에 `conditions: postingConditionsSchema.optional(),` 추가 (questions 필드 다음). strict 스키마라 이 한 줄이 없으면 insert가 죽는다.
+`jobPostingDocumentSchema`(:473-514, `.strict()`는 :511 실측)의 필드 목록에 `conditions: postingConditionsSchema.optional(),` 추가 (questions 필드 다음). strict 스키마라 이 한 줄이 없으면 insert가 죽는다(`assertCanonical` → BusinessError).
+
+> ⚠️ 읽기측 엄격성 트레이드오프(보안 리뷰): `parseJobPostingDocument`는 읽기에도 같은 스키마를 쓰므로 conditions는 유일하게 읽기에서도 xss·max50 검증되는 필드가 된다. 신규 필드라 기존 데이터 위험은 없어 수용하되, 향후 다른 표면(admin 툴 등)이 규격 밖 값을 쓰면 공고 전체 read-null(#146 클래스) — read 관용(위반 시 필드 strip) 검토를 후속 백로그로 남긴다.
 
 - [ ] **Step 4: 테스트 통과 확인**
 
 Run: `npx jest src/schemas/__tests__/jobPosting.schema.test.ts --silent`
 Expected: PASS (기존 케이스 포함 전건).
 
-- [ ] **Step 5: 마이그레이션 파일 작성** — `supabase/migrations/20260714000000_job_postings_conditions.sql`:
+- [ ] **Step 5: 마이그레이션 파일 작성** — `uniqn-mobile/supabase/migrations/20260714000000_job_postings_conditions.sql`:
 
 ```sql
 -- 공고 모집 조건(복장·경력) — additive nullable, RLS 무변경
@@ -129,19 +135,22 @@ Expected: reset 성공, `conditions` 컬럼 생성. (Docker 미가동 환경이�
 - [ ] **Step 6: 커밋**
 
 ```bash
-git add uniqn-mobile/src/types/jobPosting.ts uniqn-mobile/src/schemas/jobPosting.schema.ts uniqn-mobile/src/schemas/__tests__/jobPosting.schema.test.ts supabase/migrations/20260714000000_job_postings_conditions.sql
+git add uniqn-mobile/src/types/jobPosting.ts uniqn-mobile/src/schemas/jobPosting.schema.ts uniqn-mobile/src/schemas/__tests__/jobPosting.schema.test.ts uniqn-mobile/supabase/migrations/20260714000000_job_postings_conditions.sql
 git commit -m "feat(job-posting): 모집 조건(복장·경력) 타입·zod 계약·마이그레이션 추가"
 ```
 
 ---
 
-### Task 2: 직렬화·어댑터에 conditions 통과 (own-property 가드)
+### Task 2: 직렬화·어댑터·리포지토리에 conditions 통과 (own-property 가드, 9개 지점)
 
-새 필드가 draft→document→entity→draft 왕복에서 살아남게 한다. **#194(region 유실)의 교훈**: 매퍼는 화이트리스트 방식이라 4개 변환 지점 전부에 명시적으로 넣어야 하고, patch 병합은 own-property 가드(`Object.prototype.hasOwnProperty.call`)를 써야 "필드 없음"과 "undefined로 지우기"가 구분된다.
+새 필드가 draft→document→**DB행→entity**→draft 왕복에서 살아남게 한다. **#194(region 유실)의 교훈**: 매퍼·리포지토리는 전부 화이트리스트 방식이라 **9개 지점(쓰기 4·읽기 3·수정 2)** 전부에 명시적으로 넣어야 하고, patch 병합은 own-property 가드를 써야 "필드 없음"과 "undefined로 지우기"가 구분된다.
+
+> ⚠️ 리뷰 실측(CRITICAL): 초안의 4지점만 반영하면 **쓰기는 성공하지만 모든 읽기(SELECT·Realtime)에서 conditions가 조용히 증발**한다 — `TABLE_COLUMNS` SELECT 화이트리스트(`JobPostingRepositoryHelpers.ts:17`)가 컬럼을 아예 조회하지 않고, `toJobPosting`(:40)이 미등록 키를 버리며, `deserializeJobPostingDocument`(serialization.ts:381) 조립부에도 없기 때문. INSERT만은 동적 조립(`toSnakeCase(removeUndefined(serialized))`, JobPostingRepository.ts:427-433)이라 통과한다.
 
 **Files:**
-- Modify: `src/domains/job-posting/serialization.ts` (`serializeJobPostingV3` ~264행)
-- Modify: `src/utils/job-posting/draftAdapter.ts` (`draftToCreateJobPostingInput` :506, `jobPostingToDraft` :705)
+- Modify: `src/domains/job-posting/serialization.ts` (`serializeJobPostingV3` :264, `toCreateJobPostingInput` :344, `deserializeJobPostingDocument` :381)
+- Modify: `src/repositories/supabase/JobPostingRepositoryHelpers.ts` (`TABLE_COLUMNS` :17 — SELECT 화이트리스트)
+- Modify: `src/utils/job-posting/draftAdapter.ts` (`draftToCreateJobPostingInput` :506, `draftToUpdateJobPostingInput` :589, `jobPostingToDraft` :705)
 - Modify: `src/types/jobPostingDraft.ts` (JobPostingDraft에 필드 추가)
 - Modify: `src/types/jobTemplate.ts` (`JobPostingTemplateData`, `extractTemplateData` :109, `templateToDraft` :147)
 - Test: `src/domains/job-posting/__tests__/serialization.conditions.test.ts` (신규)
@@ -155,8 +164,9 @@ git commit -m "feat(job-posting): 모집 조건(복장·경력) 타입·zod 계�
 기존 `serialization.region.test.ts`의 픽스처 구성 방식을 그대로 따라(동일 헬퍼/최소 input 재사용) 작성:
 
 ```ts
-import { serializeJobPostingV3 } from '../serialization';
+import { serializeJobPostingV3, deserializeJobPostingDocument, toCreateJobPostingInput } from '../serialization';
 import { draftToCreateJobPostingInput, jobPostingToDraft } from '@/utils/job-posting/draftAdapter';
+import { TABLE_COLUMNS } from '@/repositories/supabase/JobPostingRepositoryHelpers';
 import { INITIAL_JOB_POSTING_DRAFT } from '@/types/jobPostingDraft';
 
 describe('conditions 직렬화 왕복', () => {
@@ -178,6 +188,19 @@ describe('conditions 직렬화 왕복', () => {
     const input = draftToCreateJobPostingInput({ ...INITIAL_JOB_POSTING_DRAFT, title: 't', location: { name: 'x' } });
     expect('conditions' in input).toBe(false);
   });
+
+  it('읽기 방향: document→deserialize→entity→수정 base에서 conditions가 보존된다', () => {
+    const input = draftToCreateJobPostingInput(draftWithConditions);
+    const doc = serializeJobPostingV3(input, { ownerId: 'u1', ownerName: 't' });
+    const entity = deserializeJobPostingDocument({ ...doc, id: 'p1' });
+    expect(entity.conditions).toEqual(draftWithConditions.conditions); // ⑥ 읽기 조립부
+    expect(toCreateJobPostingInput(entity).conditions).toEqual(draftWithConditions.conditions); // ⑦ 수정 base
+    expect(jobPostingToDraft(entity).conditions).toEqual(draftWithConditions.conditions); // edit 진입
+  });
+
+  it('TABLE_COLUMNS SELECT 화이트리스트에 conditions가 등록된다 (읽기 증발 가드)', () => {
+    expect(TABLE_COLUMNS.split(',')).toContain('conditions');
+  });
 });
 ```
 
@@ -188,7 +211,7 @@ describe('conditions 직렬화 왕복', () => {
 Run: `npx jest serialization.conditions --silent`
 Expected: FAIL — `input.conditions` undefined.
 
-- [ ] **Step 3: 통과 구현 (4개 지점)**
+- [ ] **Step 3: 통과 구현 (9개 지점 — 쓰기 4·읽기 3·수정 2)**
 
 1. `src/types/jobPostingDraft.ts` — `JobPostingDraft`에 `conditions?: PostingConditions;` 추가 (`questions` 다음), import 추가.
 2. `draftAdapter.ts`의 `draftToCreateJobPostingInput`(:506) — 반환 객체 조립부에 조건부 스프레드 추가:
@@ -203,8 +226,22 @@ Expected: FAIL — `input.conditions` undefined.
 ...(posting.conditions !== undefined ? { conditions: posting.conditions } : {}),
 ```
 
-4. `serialization.ts`의 `serializeJobPostingV3` — document 조립부에 동일 조건부 스프레드. document TS 타입(`JobPostingDocumentV3` — `grep -n "JobPostingDocumentV3" src/domains/job-posting/`로 정의 위치 확인)에 `conditions?: PostingConditions;` 추가.
+4. `serialization.ts`의 `serializeJobPostingV3` — document 조립부에 **venueId와 동일한 current 폴백 패턴**(:296-305 실물 참조 — 편집·정산 재직렬화 경로에서 보존):
+
+```ts
+...(input.conditions !== undefined
+  ? { conditions: input.conditions }
+  : current?.conditions !== undefined
+    ? { conditions: current.conditions }
+    : {}),
+```
+
+`JobPostingDocumentV3` 타입(`src/types/jobPosting.ts:140`)에 `conditions?: PostingConditions;` 추가.
 5. `src/types/jobTemplate.ts` — `JobPostingTemplateData`에 `conditions?: PostingConditions;` 추가. `extractTemplateData`(:109)와 `templateToDraft`(:147)에 동일 조건부 스프레드 (템플릿 저장/복원 시 조건 보존).
+6. **[읽기]** `serialization.ts`의 `deserializeJobPostingDocument`(:381) — 반환 조립부(:429-)에 `...(document.conditions !== undefined ? { conditions: document.conditions } : {})` 추가. 엔티티 타입 필드는 Task 1에서 완료. **이게 빠지면 상세·프리셋·edit 전부에서 conditions가 항상 undefined**(쓰기만 되고 아무도 못 읽는 필드).
+7. **[수정 base]** `serialization.ts`의 `toCreateJobPostingInput`(:344-357) — 명시 목록에 동일 조건부 스프레드. 빠지면 `mergeJobPostingInput` 기반 수정·정산설정 변경 1회에 conditions가 조용히 소실.
+8. **[수정 patch]** `draftAdapter.ts`의 `draftToUpdateJobPostingInput`(:589-601) — updateInput 조립부에 동일 조건부 스프레드 (레거시 edit 폼이 키오스크 공고를 수정해도 계약상 보존).
+9. **[SELECT]** `JobPostingRepositoryHelpers.ts:17` `TABLE_COLUMNS` 문자열에 `conditions` 추가(알파벳 순서 유지 — `compensation` 다음). `ALLOWED_CAMEL_COLUMNS`는 자동 파생이라 별도 수정 불필요.
 
 - [ ] **Step 4: 통과 + 기존 회귀 확인**
 
@@ -241,7 +278,9 @@ Run: `grep -rn "'일반'\|'긴급'\|\"일반\"\|\"긴급\"" src e2e --include="*
 
 - [ ] **Step 3: AllowanceInput 표시 제목 변경**
 
-`AllowanceInput.tsx` 상단 렌더의 섹션 제목 텍스트 "수당" 계열 문자열을 "복지"로 변경 (`grep -n "수당" src/components/employer/job-form/sections/SalarySection/*.tsx`로 표시 문자열만 — 변수·주석의 도메인 용어는 유지 가능).
+`AllowanceInput.tsx` 상단 렌더의 섹션 제목 텍스트 "수당" 계열 문자열(:39 "추가 수당 (선택)")을 "복지"로 변경 (`grep -n "수당" src/components/employer/job-form/sections/SalarySection/*.tsx`로 표시 문자열만 — 변수·주석의 도메인 용어는 유지 가능).
+
+> 스코프 노트(리뷰 LOW): 정산·스태프 표면(AllowanceEditor·SettlementTab·InfoTab 등)의 "수당" 표기는 이번 슬라이스 제외 — 용어 통일은 후속 백로그.
 
 - [ ] **Step 4: 검증**
 
@@ -267,17 +306,19 @@ git commit -m "feat(ux): 공고 타입 라벨 지원·급구 변경 + 수당→�
 - Test: `src/utils/order-sheet/__tests__/mappers.test.ts`
 
 **Interfaces:**
-- Consumes: `JobPostingDraft`(+conditions), `templateToDraft`, `buildGridPrefillDraft`, `draftToCreateJobPostingInput`, `PROVIDED_FLAG`.
+- Consumes: `JobPostingDraft`(+conditions), `templateToDraft`, `draftToCreateJobPostingInput`, `GridPrefillParams`(타입만 — buildGridPrefillDraft는 경유하지 않고 직접 조립), `DEFAULT_SLOT_START_TIME`(`@/domains/weeklyGrid`), `generateId`, `PROVIDED_FLAG`.
 - Produces (이후 UI 태스크 전부가 사용):
 
 ```ts
-export type OrderSheetValues = z.infer<typeof orderSheetValuesSchema>;
+export type OrderSheetFormValues = z.input<typeof orderSheetValuesSchema>;  // 폼 상태 (장소 null 허용, default 필드 optional)
+export type OrderSheetValues = z.output<typeof orderSheetValuesSchema>;    // 제출 결과 (검증 통과 — 장소 non-null, default 채움)
+export function initialOrderSheetValues(): OrderSheetFormValues;            // 초기 주문서 SSOT — INITIAL_JOB_POSTING_DRAFT 경유 금지(by_role·09:00 기본슬롯 유입 차단, 리뷰 실측)
 export function valuesToDraft(values: OrderSheetValues): JobPostingDraft;
-export function draftToValues(draft: JobPostingDraft): OrderSheetValues;      // dated 전용, fixed면 throw
-export function templateToValues(template: JobPostingTemplate): OrderSheetValues; // 날짜 비움
-export function gridParamsToValues(params: GridPrefillParams): OrderSheetValues;
+export function draftToValues(draft: JobPostingDraft): OrderSheetFormValues; // dated 전용 — fixed거나 날짜별 시간대 상이하면 throw(조용한 평탄화 금지, 프리셋이 try/catch 스킵)
+export function templateToValues(template: JobPostingTemplate): OrderSheetFormValues; // 날짜 비움
+export function gridParamsToValues(params: GridPrefillParams): OrderSheetFormValues;  // 정규화(비-UUID venueId drop, count 1..99 클램프) + 직접 조립
 export function valuesToCreateInput(values: OrderSheetValues): CreateJobPostingInput;
-export const DEFAULT_SALARY_BY_TYPE = { hourly: 20000, daily: 200000, monthly: 2500000 } as const;
+export const DEFAULT_SALARY_BY_TYPE = { hourly: 20000, daily: 200000, monthly: 2500000 } as const; // 협의(other)는 기본값 없음(amount 0)
 export const HOURLY_STEP = 1000;
 ```
 
@@ -286,16 +327,38 @@ export const HOURLY_STEP = 1000;
 ```ts
 import { z } from 'zod';
 import { xssValidation } from '@/utils/security';
+import { isRegionSlug } from '@/constants/regions';
+import { PROVIDED_FLAG } from '@/utils/settlement';
+import { preQuestionsArraySchema } from '@/schemas/preQuestion.schema';
 import type { TaxSettings } from '@/types/jobPosting';
-import type { PreQuestion } from '@/types/preQuestion';
 
 const safeText = (max: number) =>
   z.string().max(max).refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' });
+
+// 협의(other) 선택 가능(2026-07-14 결정) — { type: 'other', amount: 0 }로 발행.
+// 문서 게이트 salaryInfoSchema.amount: min(0)이 허용함을 실측(jobPosting.schema.ts:51-53).
+export const orderSheetSalarySchema = z
+  .object({
+    type: z.enum(['hourly', 'daily', 'monthly', 'other']),
+    amount: z.number().int().min(0),
+  })
+  .superRefine((s, ctx) => {
+    if (s.type !== 'other' && s.amount <= 0) {
+      ctx.addIssue({ code: 'custom', path: ['amount'], message: '급여를 입력해주세요' });
+    }
+  });
 
 export const orderSheetRoleSchema = z.object({
   role: z.enum(['dealer', 'floor', 'serving', 'manager', 'staff', 'other']),
   customRole: safeText(20).optional(),
   count: z.number().int().min(1).max(99),
+});
+
+// useSameSalary=false일 때 역할별 급여(2026-07-14 결정) — roleCatalog[].salary의 캐리어
+export const orderSheetRoleSalarySchema = z.object({
+  role: z.enum(['dealer', 'floor', 'serving', 'manager', 'staff', 'other']),
+  customRole: safeText(20).optional(),
+  salary: orderSheetSalarySchema,
 });
 
 export const orderSheetTimeSlotSchema = z.object({
@@ -307,7 +370,7 @@ export const orderSheetLocationSchema = z.object({
   name: safeText(50).min(1, '장소를 선택해주세요'),
   address: safeText(200).optional(),
   district: safeText(50).optional(),
-  region: z.string().optional(),
+  region: z.string().refine((s) => isRegionSlug(s), '지역 값이 올바르지 않습니다').optional(),
   detailedAddress: safeText(200).optional(),
 });
 
@@ -316,35 +379,50 @@ export const orderSheetConditionsSchema = z.object({
   experience: safeText(50).optional(),
 });
 
+// 복지: 기존 Allowances 시맨틱을 타입으로 인코딩(리뷰 CRITICAL 반영) —
+// 보장시간=시간값(0 이상, 문서 게이트 min(0)과 정합·PROVIDED_FLAG 금지), 나머지 3종=-1(제공) 또는 양수 금액
+export const orderSheetAllowancesSchema = z.object({
+  guaranteedHours: z.number().int().min(0).optional(),
+  meal: z.union([z.literal(PROVIDED_FLAG), z.number().int().positive()]).optional(),
+  transportation: z.union([z.literal(PROVIDED_FLAG), z.number().int().positive()]).optional(),
+  accommodation: z.union([z.literal(PROVIDED_FLAG), z.number().int().positive()]).optional(),
+});
+
 export const orderSheetValuesSchema = z.object({
   postingType: z.enum(['regular', 'urgent']),
   title: safeText(25).min(1, '제목을 입력해주세요'),
+  // ⚠️ 아래 refine의 TS 추론 프레디킷이 z.output에서 null을 제거한다(의도된 동작 — 매퍼가 가드 없이 소비)
   location: orderSheetLocationSchema.nullable().refine((v) => v !== null, '장소를 선택해주세요'),
   contactPhone: safeText(20).min(1, '연락처를 입력해주세요'),
   description: safeText(500).default(''),
   dates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).min(1, '날짜를 선택해주세요'),
   timeSlots: z.array(orderSheetTimeSlotSchema).min(1, '시간대를 추가해주세요'),
-  salary: z.object({
-    type: z.enum(['hourly', 'daily', 'monthly']),
-    amount: z.number().int().positive('급여를 입력해주세요'),
-  }),
+  salary: orderSheetSalarySchema,
   useSameSalary: z.boolean().default(true),
-  allowances: z
-    .object({
-      guaranteedHours: z.number().optional(),
-      meal: z.number().optional(),
-      transportation: z.number().optional(),
-      accommodation: z.number().optional(),
-    })
-    .default({}),
+  roleSalaries: z.array(orderSheetRoleSalarySchema).default([]),
+  allowances: orderSheetAllowancesSchema.default({}),
   taxSettings: z.custom<TaxSettings>().optional(),
   conditions: orderSheetConditionsSchema.default({}),
   usesPreQuestions: z.boolean().default(false),
-  preQuestions: z.array(z.custom<PreQuestion>()).default([]),
+  // 기존 preQuestion 스키마 재사용(question xss·max10 확보) + 레거시 라이브 게이트(validation.ts:154-159)의
+  // options xss 검사를 UI측에서 승계(문서 스키마엔 없음 — 회귀 방지, 보안 리뷰 MEDIUM).
+  // ⚠️ 문서 스키마(preQuestion.schema.ts:35)를 조이는 건 금지 — 읽기 공용이라 기존 prod 문서 read-null 위험.
+  preQuestions: preQuestionsArraySchema
+    .superRefine((qs, ctx) => {
+      qs.forEach((q, i) =>
+        q.options?.forEach((opt, j) => {
+          if (opt.trim() && !xssValidation(opt)) {
+            ctx.addIssue({ code: 'custom', path: [i, 'options', j], message: '위험한 문자가 포함되어 있습니다' });
+          }
+        })
+      );
+    })
+    .default([]),
   venueId: z.string().uuid().optional(),
 });
 
-export type OrderSheetValues = z.infer<typeof orderSheetValuesSchema>;
+export type OrderSheetFormValues = z.input<typeof orderSheetValuesSchema>;
+export type OrderSheetValues = z.output<typeof orderSheetValuesSchema>;
 ```
 
 - [ ] **Step 2: 실패하는 매퍼 테스트 작성** — `src/utils/order-sheet/__tests__/mappers.test.ts`:
@@ -352,12 +430,12 @@ export type OrderSheetValues = z.infer<typeof orderSheetValuesSchema>;
 ```ts
 import {
   valuesToDraft, draftToValues, templateToValues, gridParamsToValues,
-  valuesToCreateInput, DEFAULT_SALARY_BY_TYPE,
+  valuesToCreateInput, initialOrderSheetValues, DEFAULT_SALARY_BY_TYPE,
 } from '../mappers';
 import { buildCreateJobPostingInput } from '@/utils/job-posting/submission';
-import { buildGridPrefillDraft } from '@/utils/job-posting/gridPrefill';
 import { INITIAL_JOB_POSTING_DRAFT } from '@/types/jobPostingDraft';
 import type { OrderSheetValues } from '@/schemas/orderSheet.schema';
+import type { JobPostingFormData } from '@/types/jobPostingForm';
 
 const baseValues: OrderSheetValues = {
   postingType: 'regular',
@@ -369,6 +447,7 @@ const baseValues: OrderSheetValues = {
   timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 2 }, { role: 'serving', count: 1 }] }],
   salary: { type: 'hourly', amount: 20000 },
   useSameSalary: true,
+  roleSalaries: [],
   allowances: { meal: -1, transportation: 10000 },
   conditions: { dressCode: '검정셔츠/슬랙스', experience: 'TDA 숙지자' },
   usesPreQuestions: false,
@@ -401,10 +480,34 @@ describe('valuesToDraft', () => {
     expect(draft.conditions).toEqual(baseValues.conditions);
     expect(draft.compensation.allowances).toEqual({ meal: -1, transportation: 10000 });
   });
+  it('useSameSalary=false면 mode=by_role + roleCatalog에 역할별 급여가 실린다 (2026-07-14 결정)', () => {
+    const byRole: OrderSheetValues = {
+      ...baseValues,
+      useSameSalary: false,
+      roleSalaries: [
+        { role: 'dealer', salary: { type: 'hourly', amount: 25000 } },
+        { role: 'serving', salary: { type: 'other', amount: 0 } }, // 역할별 협의도 가능
+      ],
+    };
+    const draft = valuesToDraft(byRole);
+    expect(draft.compensation.mode).toBe('by_role');
+    expect(draft.roleCatalog.find((r) => r.role === 'dealer')?.salary).toEqual({ type: 'hourly', amount: 25000 });
+    expect(draft.roleCatalog.find((r) => r.role === 'serving')?.salary).toEqual({ type: 'other', amount: 0 });
+  });
+  it('협의(other) 급여는 amount 0으로 발행된다', () => {
+    const draft = valuesToDraft({ ...baseValues, salary: { type: 'other', amount: 0 } });
+    expect(draft.compensation.defaultSalary).toEqual({ type: 'other', amount: 0 });
+  });
+  it('날짜별 requirements가 슬롯 배열 참조를 공유하지 않고 slot/role에 id가 부여된다 (gridPrefill 관례)', () => {
+    const draft = valuesToDraft(baseValues);
+    if (draft.schedule.kind !== 'dated') return;
+    expect(draft.schedule.requirements[0]?.timeSlots).not.toBe(draft.schedule.requirements[1]?.timeSlots);
+    expect(draft.schedule.requirements[0]?.timeSlots[0]?.id).toBeTruthy();
+  });
 });
 
 describe('draftToValues ↔ valuesToDraft 왕복', () => {
-  it('values→draft→values가 동치다', () => {
+  it('values→draft→values가 동치다 (values에는 id가 없어 draft에서 생성된 slot/role id는 왕복에 영향 없음)', () => {
     const roundTrip = draftToValues(valuesToDraft(baseValues));
     expect(roundTrip).toEqual(baseValues);
   });
@@ -412,28 +515,57 @@ describe('draftToValues ↔ valuesToDraft 왕복', () => {
     const fixedDraft = { ...INITIAL_JOB_POSTING_DRAFT, schedule: { kind: 'fixed' as const, requirements: [] } };
     expect(() => draftToValues(fixedDraft)).toThrow();
   });
-});
-
-describe('신·구 동등성', () => {
-  it('valuesToCreateInput == buildCreateJobPostingInput(valuesToDraft(v))', () => {
-    expect(valuesToCreateInput(baseValues)).toEqual(buildCreateJobPostingInput(valuesToDraft(baseValues)));
+  it('날짜별 시간대가 상이한 draft는 throw한다 (조용한 평탄화 금지 — 프리셋에서 스킵, 리뷰 M8)', () => {
+    const base = valuesToDraft(baseValues);
+    if (base.schedule.kind !== 'dated') return;
+    const heterogeneous = {
+      ...base,
+      schedule: {
+        ...base.schedule,
+        requirements: [
+          { date: '2026-07-14', timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer' as const, count: 1 }] }] },
+          { date: '2026-07-15', timeSlots: [{ startTime: '21:00', roles: [{ role: 'dealer' as const, count: 1 }] }] },
+        ],
+      },
+    };
+    expect(() => draftToValues(heterogeneous)).toThrow();
+  });
+  it("레거시 협의(other) 공고는 협의로 유지된다 (2026-07-14 결정 — hourly 강제 변환 금지)", () => {
+    const draft = valuesToDraft({ ...baseValues, salary: { type: 'other', amount: 0 } });
+    expect(draftToValues(draft).salary).toEqual({ type: 'other', amount: 0 });
   });
 });
 
-describe('gridParamsToValues', () => {
-  it('그리드 프리필 파라미터가 기존 buildGridPrefillDraft 경유로 흡수된다', () => {
-    const params = { venueId: '00000000-0000-4000-8000-000000000001', date: '2026-07-20', count: 3 };
-    const values = gridParamsToValues(params);
-    expect(values.venueId).toBe(params.venueId);
+describe('신·구 동등성 (레거시 폼 경로 대비)', () => {
+  // ⚠️ 동어반복 금지(리뷰 HIGH): buildCreateJobPostingInput(draft)는 draftToCreateJobPostingInput을
+  // 그대로 부르므로 valuesToDraft 결과를 넣어 비교하면 같은 함수를 두 번 부르는 것이다.
+  // 반드시 JobPostingFormData(레거시 폼 표현) 픽스처를 경유해 비교한다.
+  it('같은 입력 의도의 레거시 formData와 CreateJobPostingInput이 동등하다', () => {
+    // 기존 draftAdapter 테스트의 JobPostingFormData 픽스처를 복사해 baseValues와 같은 의도
+    // (단일 시간대 19:00·딜러2+서빙1·shared 시급 20,000·복지 동일)로 구성한다.
+    const legacyFormData = {/* draftAdapter.test.ts 픽스처 참조 */} as unknown as JobPostingFormData;
+    const legacy = buildCreateJobPostingInput(legacyFormData);
+    const kiosk = valuesToCreateInput(baseValues);
+    expect(kiosk.compensation).toEqual(legacy.compensation);
+    expect(kiosk.schedule.requirements).toEqual(legacy.schedule.requirements); // id 등 생성 필드는 normalize 후 비교
+    expect(kiosk.roleCatalog).toEqual(legacy.roleCatalog);
+  });
+});
+
+describe('gridParamsToValues (정규화 + 직접 조립 — INITIAL 경유 금지)', () => {
+  it('venueId·date·count가 주문서 값으로 흡수된다', () => {
+    const values = gridParamsToValues({ venueId: '00000000-0000-4000-8000-000000000001', date: '2026-07-20', count: 3 });
+    expect(values.venueId).toBe('00000000-0000-4000-8000-000000000001');
     expect(values.dates).toEqual(['2026-07-20']);
-    // 기존 프리필과 동일한 draft가 되는지 (동등성)
-    expect(valuesToDraft(values)).toEqual(
-      expect.objectContaining({ venueId: params.venueId })
-    );
+    expect(values.timeSlots?.[0]?.roles?.[0]).toMatchObject({ role: 'dealer', count: 3 });
+    expect(values.useSameSalary).toBe(true); // INITIAL의 by_role 유입 차단 확인
   });
-  it('파라미터 없으면 venueId 키 자체가 없다 (#gridPrefill 무회귀 계약)', () => {
-    const values = gridParamsToValues({});
-    expect('venueId' in valuesToDraft(values) && valuesToDraft(values).venueId !== undefined).toBe(false);
+  it('비정상 파라미터는 정규화된다 (비-UUID venueId drop, count 1..99 클램프 — 보안 리뷰)', () => {
+    expect('venueId' in gridParamsToValues({ venueId: 'not-a-uuid', date: '2026-07-20' })).toBe(false);
+    expect(gridParamsToValues({ date: '2026-07-20', count: 500 }).timeSlots?.[0]?.roles?.[0]?.count).toBe(99);
+  });
+  it('파라미터 없으면 initialOrderSheetValues와 동일 (venueId 키 부재 무회귀 계약)', () => {
+    expect(gridParamsToValues({})).toEqual(initialOrderSheetValues());
   });
 });
 
@@ -459,22 +591,46 @@ Expected: FAIL — 모듈 없음.
 - [ ] **Step 4: 매퍼 구현** — `src/utils/order-sheet/mappers.ts`:
 
 ```ts
-import type { OrderSheetValues } from '@/schemas/orderSheet.schema';
-import type { CreateJobPostingInput, PostingRoleCatalogEntry, PostingTimeSlot } from '@/types/jobPosting';
+import type { OrderSheetFormValues, OrderSheetValues } from '@/schemas/orderSheet.schema';
+import type { CreateJobPostingInput, PostingRoleCatalogEntry, PostingTimeSlot, SalaryInfo } from '@/types/jobPosting';
 import type { JobPostingDraft } from '@/types/jobPostingDraft';
-import { INITIAL_JOB_POSTING_DRAFT } from '@/types/jobPostingDraft';
 import type { JobPostingTemplate } from '@/types/jobTemplate';
 import { templateToDraft } from '@/types/jobTemplate';
 import { draftToCreateJobPostingInput } from '@/utils/job-posting/draftAdapter';
-import { buildGridPrefillDraft, type GridPrefillParams } from '@/utils/job-posting/gridPrefill';
+import type { GridPrefillParams } from '@/utils/job-posting/gridPrefill';
+import { DEFAULT_SLOT_START_TIME } from '@/domains/weeklyGrid';
+import { generateId } from '@/utils/generateId';
 
 export const DEFAULT_SALARY_BY_TYPE = { hourly: 20000, daily: 200000, monthly: 2500000 } as const;
 export const HOURLY_STEP = 1000;
 
+/** 초기 주문서 SSOT — INITIAL_JOB_POSTING_DRAFT 경유 금지(by_role·09:00 기본슬롯 유입, 리뷰 실측). */
+export function initialOrderSheetValues(): OrderSheetFormValues {
+  return {
+    postingType: 'regular',
+    title: '',
+    location: null,
+    contactPhone: '', // create.tsx가 프로필 phone으로 덮어씀 (Task 5 Step 6)
+    description: '',
+    dates: [],
+    timeSlots: [],
+    salary: { type: 'hourly', amount: DEFAULT_SALARY_BY_TYPE.hourly },
+    useSameSalary: true,
+    roleSalaries: [],
+    allowances: {},
+    conditions: {},
+    usesPreQuestions: false,
+    preQuestions: [],
+  };
+}
+
+/** 날짜별 requirements가 참조를 공유하지 않도록 호출마다 새 슬롯 생성 + id 부여 (gridPrefill.ts 관례). */
 function toPostingTimeSlots(values: OrderSheetValues): PostingTimeSlot[] {
   return values.timeSlots.map((slot) => ({
+    id: generateId(),
     startTime: slot.startTime,
     roles: slot.roles.map((r) => ({
+      id: generateId(),
       role: r.role,
       ...(r.role === 'other' && r.customRole !== undefined ? { customRole: r.customRole } : {}),
       count: r.count,
@@ -482,15 +638,22 @@ function toPostingTimeSlots(values: OrderSheetValues): PostingTimeSlot[] {
   }));
 }
 
+const roleKey = (role: string, customRole?: string) => (role === 'other' ? `other:${customRole ?? ''}` : role);
+
 function toRoleCatalog(values: OrderSheetValues): PostingRoleCatalogEntry[] {
+  const salaryByRole = new Map<string, SalaryInfo>(
+    values.useSameSalary ? [] : values.roleSalaries.map((rs) => [roleKey(rs.role, rs.customRole), rs.salary])
+  );
   const seen = new Map<string, PostingRoleCatalogEntry>();
   for (const slot of values.timeSlots) {
     for (const r of slot.roles) {
-      const key = r.role === 'other' ? `other:${r.customRole ?? ''}` : r.role;
+      const key = roleKey(r.role, r.customRole);
       if (!seen.has(key)) {
+        const salary = salaryByRole.get(key);
         seen.set(key, {
           role: r.role,
           ...(r.role === 'other' && r.customRole !== undefined ? { customRole: r.customRole } : {}),
+          ...(salary !== undefined ? { salary } : {}),
         });
       }
     }
@@ -499,9 +662,8 @@ function toRoleCatalog(values: OrderSheetValues): PostingRoleCatalogEntry[] {
 }
 
 export function valuesToDraft(values: OrderSheetValues): JobPostingDraft {
-  const timeSlots = toPostingTimeSlots(values);
+  // 직접 조립(스프레드 없음) — JobPostingDraft 필수 필드는 TS가 강제, INITIAL 오염 원천 차단
   return {
-    ...INITIAL_JOB_POSTING_DRAFT,
     postingType: values.postingType,
     title: values.title,
     description: values.description,
@@ -513,8 +675,8 @@ export function valuesToDraft(values: OrderSheetValues): JobPostingDraft {
       kind: 'dated',
       primaryDate: values.dates[0] ?? '',
       allDates: [...values.dates],
-      requirements: values.dates.map((date) => ({ date, timeSlots })),
-      templateTimeSlots: timeSlots,
+      requirements: values.dates.map((date) => ({ date, timeSlots: toPostingTimeSlots(values) })),
+      templateTimeSlots: toPostingTimeSlots(values),
     },
     roleCatalog: toRoleCatalog(values),
     compensation: {
@@ -530,12 +692,28 @@ export function valuesToDraft(values: OrderSheetValues): JobPostingDraft {
   };
 }
 
-export function draftToValues(draft: JobPostingDraft): OrderSheetValues {
+/** 왕복 비교용 — draft 슬롯의 생성 id를 벗겨 구조만 비교한다. */
+const stripSlotIds = (slots: PostingTimeSlot[]) =>
+  slots.map((s) => ({
+    startTime: s.startTime,
+    roles: s.roles.map((r) => ({ role: r.role, ...(r.customRole !== undefined ? { customRole: r.customRole } : {}), count: r.count })),
+  }));
+
+export function draftToValues(draft: JobPostingDraft): OrderSheetFormValues {
   if (draft.schedule.kind !== 'dated') {
     throw new Error('주문서는 dated 스케줄(지원·급구)만 지원합니다');
   }
-  const firstSlots = draft.schedule.requirements[0]?.timeSlots ?? draft.schedule.templateTimeSlots ?? [];
-  const salaryType = draft.compensation.defaultSalary?.type;
+  // 날짜별 시간대가 상이하면 조용한 평탄화 대신 throw(리뷰 M8) — 호출부(프리셋)가 try/catch로 스킵
+  const reqs = draft.schedule.requirements;
+  const canonical = JSON.stringify(stripSlotIds(reqs[0]?.timeSlots ?? []));
+  if (reqs.some((r) => JSON.stringify(stripSlotIds(r.timeSlots)) !== canonical)) {
+    throw new Error('날짜별 시간대가 서로 달라 주문서로 표현할 수 없습니다');
+  }
+  const firstSlots = reqs[0]?.timeSlots ?? draft.schedule.templateTimeSlots ?? [];
+  // 역할별 급여(by_role) 복원 — hourly 강제 변환 금지, 협의(other)는 그대로 유지(2026-07-14 결정)
+  const roleSalaries = draft.roleCatalog
+    .filter((r): r is PostingRoleCatalogEntry & { salary: SalaryInfo } => r.salary !== undefined)
+    .map((r) => ({ role: r.role, ...(r.customRole !== undefined ? { customRole: r.customRole } : {}), salary: r.salary }));
   return {
     postingType: draft.postingType === 'urgent' ? 'urgent' : 'regular',
     title: draft.title,
@@ -551,11 +729,11 @@ export function draftToValues(draft: JobPostingDraft): OrderSheetValues {
         count: r.count,
       })),
     })),
-    salary: {
-      type: salaryType === 'daily' || salaryType === 'monthly' ? salaryType : 'hourly',
-      amount: draft.compensation.defaultSalary?.amount ?? DEFAULT_SALARY_BY_TYPE.hourly,
-    },
+    salary: draft.compensation.defaultSalary
+      ?? roleSalaries[0]?.salary
+      ?? { type: 'hourly', amount: DEFAULT_SALARY_BY_TYPE.hourly },
     useSameSalary: draft.compensation.mode === 'shared',
+    roleSalaries,
     allowances: { ...(draft.compensation.allowances ?? {}) },
     ...(draft.compensation.taxSettings !== undefined ? { taxSettings: draft.compensation.taxSettings } : {}),
     conditions: { ...(draft.conditions ?? {}) },
@@ -565,13 +743,31 @@ export function draftToValues(draft: JobPostingDraft): OrderSheetValues {
   };
 }
 
-export function templateToValues(template: JobPostingTemplate): OrderSheetValues {
+export function templateToValues(template: JobPostingTemplate): OrderSheetFormValues {
   const values = draftToValues(templateToDraft(template));
   return { ...values, dates: [] };
 }
 
-export function gridParamsToValues(params: GridPrefillParams): OrderSheetValues {
-  return draftToValues(buildGridPrefillDraft(params));
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** 그리드 프리필 — 파라미터 정규화(보안 리뷰: 비-UUID venueId drop, count 1..99 클램프) 후 직접 조립. */
+export function gridParamsToValues(params: GridPrefillParams): OrderSheetFormValues {
+  const base = initialOrderSheetValues();
+  const venueId = params.venueId && UUID_RE.test(params.venueId) ? params.venueId : undefined;
+  const count = Math.min(99, Math.max(1, Math.trunc(params.count ?? 1)));
+  const hasDate = typeof params.date === 'string' && DATE_RE.test(params.date);
+  if (venueId === undefined && !hasDate) return base; // 일반 생성 — venueId 키 부재 무회귀
+  return {
+    ...base,
+    ...(venueId !== undefined ? { venueId } : {}),
+    ...(hasDate
+      ? {
+          dates: [params.date as string],
+          timeSlots: [{ startTime: DEFAULT_SLOT_START_TIME, roles: [{ role: 'dealer' as const, count }] }],
+        }
+      : {}),
+  };
 }
 
 export function valuesToCreateInput(values: OrderSheetValues): CreateJobPostingInput {
@@ -609,37 +805,40 @@ git commit -m "feat(order-sheet): OrderSheetValues zod 스키마 + canonical 매
 - Produces:
 
 ```ts
-// orderRowMeta.ts
+// orderRowMeta.ts — 폼 상태(OrderSheetFormValues = z.input)를 소비한다
 export type OrderRowKey =
   | 'title' | 'place' | 'contact' | 'description'
   | 'dates' | 'time' | 'roles'
   | 'salary' | 'welfare' | 'tax'
   | 'conditions' | 'preQuestions';
 export interface OrderRowState { label: string; value: string; unset: boolean; optional: boolean; }
-export function getRowState(values: OrderSheetValues, key: OrderRowKey): OrderRowState;
-export function firstUnsetRow(values: OrderSheetValues): OrderRowKey | null;  // 필수 행만, 그룹 순서대로
+export function getRowState(values: OrderSheetFormValues, key: OrderRowKey): OrderRowState;
+export function firstUnsetRow(values: OrderSheetFormValues): OrderRowKey | null;  // 필수 행만, 그룹 순서대로
+export function rowKeyForErrorField(field: string): OrderRowKey | null; // RHF errors 키 → 행 매핑 (에러 배지·시트 유도)
 export const ORDER_GROUPS: ReadonlyArray<{ title: string; rows: OrderRowKey[] }>;
 // OrderSheetScreen.tsx
 export function OrderSheetScreen(props: {
-  initialValues: OrderSheetValues;
-  onSubmit: (values: OrderSheetValues) => Promise<void>;
+  initialValues: OrderSheetFormValues;
+  onSubmit: (values: OrderSheetValues) => Promise<void>; // handleSubmit 콜백 = z.output
   isSubmitting: boolean;
   onSwitchToLegacyForm: (type: 'fixed' | 'tournament') => void;
 }): React.JSX.Element;
 ```
 
+> **행 unset 시맨틱(리뷰 H5 근본 수정)**: `firstUnsetRow`의 판정은 zod 통과 가능성과 정렬돼야 한다 — 어긋나면 "라벨은 '이대로 등록'인데 눌러도 무반응"인 죽은 버튼이 생긴다. 최소 계약: `time`은 **모든** 슬롯의 startTime이 유효해야 set(하나라도 빈 값이면 unset), `roles`는 **모든** 슬롯에 역할이 1개 이상이어야 set, `salary`는 협의(other)면 set·그 외 amount>0, by_role이면 고유 역할 전부에 급여가 있어야 set. 그래도 남는 "값은 있는데 invalid" 케이스(XSS 문자열 등)는 OrderSheetScreen의 onInvalid 폴백이 처리한다.
+
 - [ ] **Step 1: 실패하는 orderRowMeta 테스트 작성** — `__tests__/orderRowMeta.test.ts`:
 
 ```ts
 import { getRowState, firstUnsetRow, ORDER_GROUPS } from '../orderRowMeta';
-import type { OrderSheetValues } from '@/schemas/orderSheet.schema';
+import type { OrderSheetFormValues } from '@/schemas/orderSheet.schema';
 
-const emptyValues: OrderSheetValues = {
+const emptyValues: OrderSheetFormValues = {
   postingType: 'regular', title: '', location: null, contactPhone: '010-1234-5678',
   description: '', dates: [], timeSlots: [], salary: { type: 'hourly', amount: 0 },
-  useSameSalary: true, allowances: {}, conditions: {}, usesPreQuestions: false, preQuestions: [],
+  useSameSalary: true, roleSalaries: [], allowances: {}, conditions: {}, usesPreQuestions: false, preQuestions: [],
 };
-const filled: OrderSheetValues = {
+const filled: OrderSheetFormValues = {
   ...emptyValues, title: '주말 딜러 구합니다',
   location: { name: '라운더스 홀덤펍' }, dates: ['2026-07-14'],
   timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] }],
@@ -672,6 +871,23 @@ describe('getRowState', () => {
   it('연락처는 프로필 프리필이 있으면 unset=false', () => {
     expect(getRowState(emptyValues, 'contact').unset).toBe(false);
   });
+  it('빈 startTime 슬롯이 하나라도 있으면 time 행은 unset (죽은 등록버튼 방지 — H5)', () => {
+    const partial = { ...filled, timeSlots: [...(filled.timeSlots ?? []), { startTime: '', roles: [{ role: 'dealer' as const, count: 1 }] }] };
+    expect(getRowState(partial, 'time').unset).toBe(true);
+  });
+  it('역할 없는 슬롯이 하나라도 있으면 roles 행은 unset', () => {
+    const partial = { ...filled, timeSlots: [...(filled.timeSlots ?? []), { startTime: '21:00', roles: [] }] };
+    expect(getRowState(partial, 'roles').unset).toBe(true);
+  });
+  it("협의(other) 급여는 '협의'로 표기되고 unset=false", () => {
+    const s = getRowState({ ...filled, salary: { type: 'other', amount: 0 } }, 'salary');
+    expect(s.unset).toBe(false);
+    expect(s.value).toBe('협의');
+  });
+  it('by_role인데 급여 없는 역할이 있으면 salary 행은 unset', () => {
+    const byRole = { ...filled, useSameSalary: false, roleSalaries: [] };
+    expect(getRowState(byRole, 'salary').unset).toBe(true);
+  });
 });
 
 describe('firstUnsetRow', () => {
@@ -691,7 +907,7 @@ Run: `npx jest orderRowMeta --silent` → FAIL(모듈 없음).
 - [ ] **Step 3: orderRowMeta 구현**
 
 ```ts
-import type { OrderSheetValues } from '@/schemas/orderSheet.schema';
+import type { OrderSheetFormValues } from '@/schemas/orderSheet.schema';
 import { STAFF_ROLES } from '@/constants/jobPosting';
 import { PROVIDED_FLAG } from '@/utils/settlement';
 
@@ -711,15 +927,30 @@ export const ORDER_GROUPS = [
   { title: '사전질문', rows: ['preQuestions'] },
 ] as const satisfies ReadonlyArray<{ title: string; rows: readonly OrderRowKey[] }>;
 
-const SALARY_TYPE_LABEL = { hourly: '시급', daily: '일급', monthly: '월급' } as const;
+/** RHF errors의 최상위 필드 → 행 매핑 (에러 배지·onInvalid 시트 유도용) */
+const ERROR_FIELD_TO_ROW: Record<string, OrderRowKey> = {
+  title: 'title', location: 'place', contactPhone: 'contact', description: 'description',
+  dates: 'dates', timeSlots: 'time', salary: 'salary', roleSalaries: 'salary',
+  allowances: 'welfare', taxSettings: 'tax', conditions: 'conditions', preQuestions: 'preQuestions',
+};
+export function rowKeyForErrorField(field: string): OrderRowKey | null {
+  return ERROR_FIELD_TO_ROW[field] ?? null;
+}
+
+const SALARY_TYPE_LABEL = { hourly: '시급', daily: '일급', monthly: '월급', other: '협의' } as const;
 const WELFARE_LABEL = { guaranteedHours: '보장시간', meal: '식사', transportation: '교통', accommodation: '숙소' } as const;
+const START_TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 const roleName = (role: string, customRole?: string) =>
   role === 'other' ? (customRole ?? '기타') : (STAFF_ROLES.find((r) => r.key === role)?.name ?? role);
+const roleKey = (role: string, customRole?: string) => (role === 'other' ? `other:${customRole ?? ''}` : role);
 
-function summarizeRoles(values: OrderSheetValues): string {
+const salaryLabel = (s: { type: keyof typeof SALARY_TYPE_LABEL; amount: number }) =>
+  s.type === 'other' ? '협의' : `${SALARY_TYPE_LABEL[s.type]} ${s.amount.toLocaleString()}원`;
+
+function summarizeRoles(values: OrderSheetFormValues): string {
   const totals = new Map<string, number>();
-  for (const slot of values.timeSlots) {
+  for (const slot of values.timeSlots ?? []) {
     for (const r of slot.roles) {
       const name = roleName(r.role, r.customRole);
       totals.set(name, (totals.get(name) ?? 0) + r.count);
@@ -728,43 +959,67 @@ function summarizeRoles(values: OrderSheetValues): string {
   return [...totals.entries()].map(([name, count]) => `${name} ${count}`).join(' · ');
 }
 
-function summarizeWelfare(values: OrderSheetValues): string {
-  const parts = Object.entries(values.allowances)
+function summarizeWelfare(values: OrderSheetFormValues): string {
+  const parts = Object.entries(values.allowances ?? {})
     .filter(([, v]) => v !== undefined)
     .map(([k, v]) => {
       const label = WELFARE_LABEL[k as keyof typeof WELFARE_LABEL] ?? k;
+      if (k === 'guaranteedHours') return `${label} ${Number(v)}시간`;
       return v === PROVIDED_FLAG ? label : `${label} ${Number(v).toLocaleString()}`;
     });
   return parts.length > 0 ? parts.join(' · ') : '없음';
 }
 
-export function getRowState(values: OrderSheetValues, key: OrderRowKey): OrderRowState {
+// FormValues(z.input)는 default 필드가 optional — 전 케이스에서 ?? 폴백으로 소비한다.
+export function getRowState(values: OrderSheetFormValues, key: OrderRowKey): OrderRowState {
   switch (key) {
     case 'title':
       return { label: '제목', value: values.title, unset: values.title.length === 0, optional: false };
     case 'place':
-      return { label: '장소', value: values.location?.name ?? '', unset: values.location === null, optional: false };
+      return { label: '장소', value: values.location?.name ?? '', unset: values.location == null, optional: false };
     case 'contact':
       return { label: '연락처', value: values.contactPhone, unset: values.contactPhone.length === 0, optional: false };
     case 'description':
-      return { label: '설명', value: values.description || '없음', unset: false, optional: true };
+      return { label: '설명', value: (values.description ?? '') || '없음', unset: false, optional: true };
     case 'dates':
       return { label: '날짜', value: values.dates.join(', '), unset: values.dates.length === 0, optional: false };
     case 'time': {
-      const starts = values.timeSlots.map((s) => s.startTime).filter(Boolean);
-      return { label: '시간', value: starts.length > 0 ? `출근 ${starts.join(' · ')}` : '', unset: starts.length === 0, optional: false };
+      // H5 근본 수정: 모든 슬롯의 startTime이 유효해야 set — 하나라도 빈 값이면 unset (zod와 정렬)
+      const slots = values.timeSlots ?? [];
+      const allValid = slots.length > 0 && slots.every((s) => START_TIME_RE.test(s.startTime));
+      const starts = slots.map((s) => s.startTime).filter((t) => START_TIME_RE.test(t));
+      return { label: '시간', value: allValid ? `출근 ${starts.join(' · ')}` : '', unset: !allValid, optional: false };
     }
     case 'roles': {
-      const summary = summarizeRoles(values);
-      return { label: '역할', value: summary, unset: summary.length === 0, optional: false };
+      // 모든 슬롯에 역할 1개 이상이어야 set (zod min(1)과 정렬)
+      const slots = values.timeSlots ?? [];
+      const allHaveRoles = slots.length > 0 && slots.every((s) => s.roles.length > 0);
+      return { label: '역할', value: allHaveRoles ? summarizeRoles(values) : '', unset: !allHaveRoles, optional: false };
     }
     case 'salary': {
+      const useSame = values.useSameSalary ?? true;
+      if (!useSame) {
+        // by_role: 시간대의 고유 역할 전부에 급여가 있어야 set (2026-07-14 결정)
+        const roleSalaries = values.roleSalaries ?? [];
+        const salaryByRole = new Map(roleSalaries.map((rs) => [roleKey(rs.role, rs.customRole), rs.salary]));
+        const uniqueRoles = new Map<string, { role: string; customRole?: string }>();
+        for (const slot of values.timeSlots ?? [])
+          for (const r of slot.roles) uniqueRoles.set(roleKey(r.role, r.customRole), r);
+        const covered = uniqueRoles.size > 0 && [...uniqueRoles.keys()].every((k) => {
+          const s = salaryByRole.get(k);
+          return s !== undefined && (s.type === 'other' || s.amount > 0);
+        });
+        const summary = [...uniqueRoles.values()]
+          .map((r) => {
+            const s = salaryByRole.get(roleKey(r.role, r.customRole));
+            return `${roleName(r.role, r.customRole)} ${s ? (s.type === 'other' ? '협의' : s.amount.toLocaleString()) : '미정'}`;
+          })
+          .join(' · ');
+        return { label: '급여', value: covered ? summary : '', unset: !covered, optional: false };
+      }
       const { type, amount } = values.salary;
-      return {
-        label: '급여',
-        value: amount > 0 ? `${SALARY_TYPE_LABEL[type]} ${amount.toLocaleString()}원` : '',
-        unset: amount <= 0, optional: false,
-      };
+      const set = type === 'other' || amount > 0;
+      return { label: '급여', value: set ? salaryLabel(values.salary) : '', unset: !set, optional: false };
     }
     case 'welfare':
       return { label: '복지', value: summarizeWelfare(values), unset: false, optional: true };
@@ -775,19 +1030,22 @@ export function getRowState(values: OrderSheetValues, key: OrderRowKey): OrderRo
       return { label: '세금', value, unset: false, optional: true };
     }
     case 'conditions': {
-      const parts = [values.conditions.dressCode, values.conditions.experience].filter(Boolean);
+      const c = values.conditions ?? {};
+      const parts = [c.dressCode, c.experience].filter(Boolean);
       return { label: '조건', value: parts.length > 0 ? parts.join(' · ') : '없음', unset: false, optional: true };
     }
-    case 'preQuestions':
+    case 'preQuestions': {
+      const qs = values.preQuestions ?? [];
       return {
         label: '사전질문',
-        value: values.usesPreQuestions && values.preQuestions.length > 0 ? `${values.preQuestions.length}개` : '없음',
+        value: (values.usesPreQuestions ?? false) && qs.length > 0 ? `${qs.length}개` : '없음',
         unset: false, optional: true,
       };
+    }
   }
 }
 
-export function firstUnsetRow(values: OrderSheetValues): OrderRowKey | null {
+export function firstUnsetRow(values: OrderSheetFormValues): OrderRowKey | null {
   for (const group of ORDER_GROUPS) {
     for (const key of group.rows) {
       const state = getRowState(values, key);
@@ -821,8 +1079,10 @@ export function TypeSegment({ value, onChange }: { value: 'regular' | 'urgent'; 
           <Pressable
             key={t}
             onPress={() => onChange(t)}
-            className={`flex-1 items-center py-2 rounded-lg ${selected ? 'bg-primary-100 border border-primary-500' : 'active:opacity-80'}`}
-            accessibilityRole="button"
+            className={`flex-1 items-center justify-center py-2 min-h-[44px] rounded-lg ${selected ? 'bg-primary-100 border border-primary-500' : 'active:opacity-80'}`}
+            accessibilityRole="radio"
+            accessibilityState={{ selected }}
+            accessibilityLabel={`공고 유형 ${POSTING_TYPE_INFO[t].label}`}
             testID={`order-sheet-type-${t}`}
           >
             <Text className={`text-sm font-sans-medium ${selected ? 'text-primary-600 dark:text-primary-400' : 'text-secondary-700 dark:text-secondary-300'}`}>
@@ -841,6 +1101,7 @@ export function TypeSegment({ value, onChange }: { value: 'regular' | 'urgent'; 
 ```tsx
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { ChevronRightIcon } from '@/components/icons';
 import type { OrderRowState } from './orderRowMeta';
 
 export function OrderRow({ state, error, onPress, testID }: {
@@ -849,14 +1110,15 @@ export function OrderRow({ state, error, onPress, testID }: {
   return (
     <Pressable
       onPress={onPress}
-      className="flex-row items-center px-4 py-3 border-b border-secondary-100 dark:border-surface-overlay last:border-b-0 active:opacity-80"
+      className="flex-row items-center px-4 py-3 min-h-[44px] border-b border-secondary-100 dark:border-surface-overlay last:border-b-0 active:opacity-80"
       accessibilityRole="button"
+      accessibilityLabel={`${state.label} ${state.unset ? '미설정' : state.value}${error ? `, 오류: ${error}` : ''}`}
       testID={testID}
     >
       <Text className="w-16 text-xs text-content-secondary font-sans">{state.label}</Text>
       {state.unset ? (
         <View className="px-2 py-0.5 rounded-full bg-warning-100">
-          <Text className="text-[11px] font-sans-medium text-warning-700">미설정</Text>
+          <Text className="text-[11px] font-sans-medium text-warning-700 dark:text-warning-300">미설정</Text>
         </View>
       ) : (
         <Text
@@ -866,14 +1128,14 @@ export function OrderRow({ state, error, onPress, testID }: {
           {state.value}
         </Text>
       )}
-      {error ? <Text className="text-[11px] text-error-500 font-sans mr-1">{error}</Text> : null}
-      <Text className="text-content-muted">›</Text>
+      {error ? <Text className="text-[11px] text-error-500 dark:text-error-400 font-sans mr-1">{error}</Text> : null}
+      <ChevronRightIcon size={16} className="text-content-muted" />
     </Pressable>
   );
 }
 ```
 
-(`error` 표기용 시맨틱 컬러 클래스는 프로젝트 기존 error/warning 토큰 클래스명을 grep으로 확인해 맞춘다: `grep -rn "text-error\|text-warning" src/components/ui | head -5`.)
+(`ChevronRightIcon` 등 아이콘 컴포넌트의 실제 export명·props는 `@/components/icons` index에서 확인해 맞춘다 — RegionSelectModal.tsx:4가 CheckIcon을 쓰는 패턴 참조. 배경 `bg-warning-100`·`bg-primary-100` 계열은 rgba 알파 틴트라 다크에서도 성립(tailwind.config 실측) — 텍스트 색만 다크 변형 필수.)
 
 `OrderGroup.tsx` — 그룹 라벨 + 카드:
 
@@ -901,15 +1163,19 @@ import { ScrollView, View } from 'react-native';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/Button';
-import { orderSheetValuesSchema, type OrderSheetValues } from '@/schemas/orderSheet.schema';
-import { ORDER_GROUPS, firstUnsetRow, getRowState, type OrderRowKey } from './orderRowMeta';
+import {
+  orderSheetValuesSchema,
+  type OrderSheetFormValues,
+  type OrderSheetValues,
+} from '@/schemas/orderSheet.schema';
+import { ORDER_GROUPS, firstUnsetRow, getRowState, rowKeyForErrorField, type OrderRowKey } from './orderRowMeta';
 import { OrderGroup } from './OrderGroup';
 import { OrderRow } from './OrderRow';
 import { TypeSegment } from './TypeSegment';
 import type { PostingType } from '@/types/jobPosting';
 
 export interface OrderSheetScreenProps {
-  initialValues: OrderSheetValues;
+  initialValues: OrderSheetFormValues;
   onSubmit: (values: OrderSheetValues) => Promise<void>;
   isSubmitting: boolean;
   onSwitchToLegacyForm: (type: 'fixed' | 'tournament') => void;
@@ -917,17 +1183,26 @@ export interface OrderSheetScreenProps {
 }
 
 export function OrderSheetScreen({ initialValues, onSubmit, isSubmitting, onSwitchToLegacyForm, headerSlot }: OrderSheetScreenProps) {
-  const form = useForm<OrderSheetValues>({
+  // 3제네릭 필수(Global Constraints·스파이크 실측): 폼 상태=z.input, handleSubmit 콜백=z.output
+  const form = useForm<OrderSheetFormValues, unknown, OrderSheetValues>({
     resolver: zodResolver(orderSheetValuesSchema),
     defaultValues: initialValues,
     mode: 'onChange',
   });
   const values = form.watch();
+  const { errors } = form.formState;
   const [activeSheet, setActiveSheet] = useState<OrderRowKey | null>(null);
+
+  /** 행 키 → RHF 첫 에러 메시지 (행 에러 배지 배선 — 리뷰 H5/설계 스펙 "행 단위 에러 배지") */
+  const rowError = useCallback((key: OrderRowKey): string | undefined => {
+    const entry = Object.entries(errors).find(([field]) => rowKeyForErrorField(field) === key);
+    const err = entry?.[1] as { message?: string } | undefined;
+    return typeof err?.message === 'string' ? err.message : undefined;
+  }, [errors]);
 
   const handleTypeChange = useCallback((t: PostingType) => {
     if (t === 'fixed' || t === 'tournament') {
-      onSwitchToLegacyForm(t);
+      onSwitchToLegacyForm(t); // dirty 확인 다이얼로그는 create.tsx(Step 6)에서 처리
       return;
     }
     form.setValue('postingType', t, { shouldDirty: true });
@@ -935,9 +1210,18 @@ export function OrderSheetScreen({ initialValues, onSubmit, isSubmitting, onSwit
 
   const handleSubmitPress = form.handleSubmit(
     (valid) => onSubmit(valid),
-    () => {
-      const next = firstUnsetRow(values);
-      if (next !== null) setActiveSheet(next); // 미설정 순차 유도
+    (submitErrors) => {
+      // 1순위: 미설정 행 순차 유도. 2순위(값은 있는데 invalid — XSS 문자열·프리필 이상치): 첫 에러 행 시트 열기.
+      // 3순위: 매핑 실패 시 토스트 폴백 — "버튼이 아무 반응 없는" 죽은 상태 금지(리뷰 H5·보안 4).
+      const next = firstUnsetRow(values)
+        ?? Object.keys(submitErrors).map(rowKeyForErrorField).find((k): k is OrderRowKey => k !== null)
+        ?? null;
+      if (next !== null) {
+        setActiveSheet(next);
+        return;
+      }
+      // 기존 토스트 유틸 사용 (create.tsx의 addToast 패턴 grep 후 동일 경로로)
+      // addToast({ type: 'error', message: '입력값을 확인해주세요' });
     }
   );
 
@@ -957,6 +1241,7 @@ export function OrderSheetScreen({ initialValues, onSubmit, isSubmitting, onSwit
               <OrderRow
                 key={key}
                 state={getRowState(values, key)}
+                error={rowError(key)}
                 onPress={() => setActiveSheet(key)}
                 testID={`order-sheet-row-${key}`}
               />
@@ -964,7 +1249,7 @@ export function OrderSheetScreen({ initialValues, onSubmit, isSubmitting, onSwit
           </OrderGroup>
         ))}
       </ScrollView>
-      <View className="absolute bottom-0 left-0 right-0 px-4 pb-6 pt-2 bg-surface-page">
+      <View className="absolute bottom-0 left-0 right-0 px-4 pb-6 pt-2 bg-surface-page border-t border-secondary-100 dark:border-surface-overlay">
         <Button
           onPress={handleSubmitPress}
           disabled={isSubmitting}
@@ -991,20 +1276,41 @@ export function OrderSheetScreen({ initialValues, onSubmit, isSubmitting, onSwit
 const [legacyType, setLegacyType] = useState<'fixed' | 'tournament' | null>(null);
 const isLegacyForm = legacyType !== null;
 
-// 주문서 초기값: 그리드 프리필 흡수 (파라미터 없으면 안전 기본값)
+// 주문서 초기값: 그리드 프리필 흡수(정규화 내장) + 프로필 연락처 프리필(리뷰 H4 — "재공고 타이핑 0")
 const initialValues = useMemo(
-  () => gridParamsToValues({ venueId, date: prefillDate, count: prefillCount }),
-  [venueId, prefillDate, prefillCount]
+  () => ({
+    ...gridParamsToValues({ venueId, date: prefillDate, count: prefillCount }),
+    contactPhone: user?.phone ?? '',
+  }),
+  [venueId, prefillDate, prefillCount, user?.phone]
 );
 
 const handleOrderSheetSubmit = useCallback(async (values: OrderSheetValues) => {
-  const input = valuesToCreateInput(values);
-  const created = await createJobPosting.mutateAsync({ input });
-  setIsDirty(false);
-  // 성공 네비게이션은 Task 10에서 완료 화면으로 교체 — 그 전까지 기존 로직 유지
-  if (venueId && router.canGoBack()) router.back();
-  else router.replace('/(app)/(tabs)/employer');
+  try {
+    const input = valuesToCreateInput(values);
+    const created = await createJobPosting.mutateAsync({ input });
+    setIsDirty(false);
+    // 성공 네비게이션은 Task 10에서 완료 화면으로 교체 — 그 전까지 기존 로직 유지
+    if (venueId && router.canGoBack()) router.back();
+    else router.replace('/(app)/(tabs)/employer');
+  } catch (error) {
+    // 기존 create.tsx handleSubmit(:80-104)과 동일 — unhandled rejection 금지(리뷰 MEDIUM)
+    logger.error('주문서 공고 등록 실패:', toError(error));
+  }
 }, [createJobPosting, venueId, router]);
+
+const handleSwitchToLegacyForm = useCallback((t: 'fixed' | 'tournament') => {
+  // 주문서 입력이 있으면 무경고 소실 금지(리뷰 M7) — 확인 후 전환
+  const doSwitch = () => { setLegacyType(t); updateFormData({ postingType: t }); };
+  if (isDirty) {
+    Alert.alert('작성 중인 내용이 있어요', '고정·대회 공고는 상세 폼에서 작성해요. 지금까지 입력한 내용은 사라져요.', [
+      { text: '취소', style: 'cancel' },
+      { text: '전환', style: 'destructive', onPress: doSwitch },
+    ]);
+  } else {
+    doSwitch();
+  }
+}, [isDirty, updateFormData]);
 
 if (!isLegacyForm) {
   return (
@@ -1012,11 +1318,13 @@ if (!isLegacyForm) {
       initialValues={initialValues}
       onSubmit={handleOrderSheetSubmit}
       isSubmitting={createJobPosting.isPending}
-      onSwitchToLegacyForm={(t) => { setLegacyType(t); updateFormData({ postingType: t }); }}
+      onSwitchToLegacyForm={handleSwitchToLegacyForm}
     />
   );
 }
-// 이하 기존 JobPostingScrollForm 렌더 (고정·대회 전용) — postingType 초기값을 legacyType으로
+// 이하 기존 JobPostingScrollForm 렌더 (고정·대회 전용) — postingType 초기값을 legacyType으로.
+// 복귀 경로(리뷰 M7): 레거시 폼의 타입 선택이 regular/urgent로 바뀌면 setLegacyType(null)로 주문서 복귀
+// (기존 formData.postingType 변경 지점에 연결 — JobPostingScrollForm이 쓰는 updateFormData 경유 확인).
 ```
 
 에러 토스트·`useUnsavedChangesGuard(isDirty)`는 기존 패턴 그대로 재사용(주문서에서는 `form.formState.isDirty`를 상위로 끌어올려 guard에 연결: `onDirtyChange` 콜백 또는 `useEffect`로 `setIsDirty` 동기화).
@@ -1074,7 +1382,7 @@ export function TitleSheet({ visible, value, recentTitles, onConfirm, onClose }:
     <SheetModal visible={visible} onClose={onClose} title="공고 제목"
       footer={<Button onPress={() => { onConfirm(text.trim()); onClose(); }} disabled={text.trim().length === 0}>확인</Button>}>
       <TextInput
-        value={text} onChangeText={setText} maxLength={25} autoFocus
+        value={text} onChangeText={setText} maxLength={25}
         placeholder="예: 주말 딜러 구합니다"
         className="rounded-xl border border-secondary-200 dark:border-surface-overlay bg-surface-card px-4 py-3 text-content-primary"
         testID="order-sheet-title-input"
@@ -1097,67 +1405,100 @@ export function TitleSheet({ visible, value, recentTitles, onConfirm, onClose }:
 
 `recentTitles`는 부모(OrderSheetScreen)가 프리셋(Task 9)의 템플릿 title들에서 전달 — Task 9 전까지는 `[]`.
 
-- [ ] **Step 2: PlaceSheet** — 최근 장소 라디오 리스트 + 새 장소 입력 전환:
+- [ ] **Step 2: PlaceSheet** — 최근 장소 리스트 + 새 장소 입력 + **지역 선택 인라인**(3단 모드):
+
+> ⚠️ **RegionSelectModal 사용 금지(리뷰 CRITICAL C1 — 실측 확정)**: RegionSelectModal은 `@/components/ui/Modal`(RN Modal) 기반이라 SheetModal(RN Modal) 안에서 열면 중첩 Modal iOS 터치먹통(#186/#188)이 정확히 재발한다. embedded 모드도 없어 "문제 시 overlay 이동"이 불가능 — 처음부터 시트 내부 `mode: 'region'`으로 지역 리스트를 **인라인 렌더**한다. 데이터 소스는 RegionSelectModal과 동일한 `REGION_GROUPS`/`REGIONS_BY_GROUP`(`@/constants/regions`) — 렌더 로직은 RegionSelectModal.tsx:77-85를 참조해 복사.
 
 ```tsx
 import React, { useEffect, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { SheetModal } from '@/components/ui/SheetModal';
 import { Button } from '@/components/ui/Button';
-import { RegionSelectModal } from '@/components/employer/job-form/modals/RegionSelectModal';
+import { CheckIcon } from '@/components/icons';
+import { REGION_GROUPS, REGIONS_BY_GROUP } from '@/constants/regions';
 import type { PostingLocation } from '@/types/jobPosting';
 
 export function PlaceSheet({ visible, value, recentLocations, onConfirm, onClose }: {
   visible: boolean; value: PostingLocation | null; recentLocations: PostingLocation[];
   onConfirm: (next: PostingLocation) => void; onClose: () => void;
 }) {
-  const [mode, setMode] = useState<'list' | 'new'>('list');
+  const [mode, setMode] = useState<'list' | 'new' | 'region'>('list');
   const [draft, setDraft] = useState<PostingLocation>({ name: '' });
-  const [showRegion, setShowRegion] = useState(false);
   useEffect(() => { if (visible) { setMode(recentLocations.length > 0 ? 'list' : 'new'); setDraft(value ?? { name: '' }); } }, [visible, value, recentLocations.length]);
 
   return (
-    <SheetModal visible={visible} onClose={onClose} title="어디서 일하나요?"
+    <SheetModal visible={visible} onClose={onClose}
+      title={mode === 'region' ? '지역 선택' : '어디서 일하나요?'}
       footer={mode === 'new'
         ? <Button onPress={() => { onConfirm(draft); onClose(); }} disabled={draft.name.trim().length === 0}>확인</Button>
         : undefined}>
-      {mode === 'list' ? (
+      {mode === 'list' && (
         <View className="gap-2">
           {recentLocations.map((loc) => (
             <Pressable key={`${loc.name}:${loc.address ?? ''}`} onPress={() => { onConfirm(loc); onClose(); }}
-              className="rounded-xl border border-secondary-200 dark:border-surface-overlay bg-surface-card px-4 py-3 active:opacity-80">
+              className="rounded-xl border border-secondary-200 dark:border-surface-overlay bg-surface-card px-4 py-3 min-h-[44px] active:opacity-80">
               <Text className="text-sm font-sans-medium text-content-primary">{loc.name}</Text>
               {loc.address ? <Text className="text-xs text-content-muted font-sans">{loc.address}</Text> : null}
             </Pressable>
           ))}
           <Pressable onPress={() => setMode('new')}
-            className="rounded-xl border border-dashed border-secondary-300 dark:border-surface-overlay px-4 py-3 items-center active:opacity-80">
+            className="rounded-xl border border-dashed border-secondary-300 dark:border-surface-overlay px-4 py-3 min-h-[44px] items-center active:opacity-80">
             <Text className="text-sm text-content-secondary font-sans">＋ 새 장소 입력</Text>
           </Pressable>
         </View>
-      ) : (
+      )}
+      {mode === 'new' && (
         <View className="gap-2">
+          {recentLocations.length > 0 && (
+            <Pressable onPress={() => setMode('list')} className="min-h-[44px] justify-center active:opacity-80"
+              accessibilityRole="button" accessibilityLabel="최근 장소 목록으로 돌아가기">
+              <Text className="text-xs text-content-secondary font-sans">‹ 최근 장소에서 선택</Text>
+            </Pressable>
+          )}
           <TextInput value={draft.name} onChangeText={(name) => setDraft((d) => ({ ...d, name }))} maxLength={50}
             placeholder="장소명 (예: 라운더스 홀덤펍)" testID="order-sheet-place-name"
             className="rounded-xl border border-secondary-200 dark:border-surface-overlay bg-surface-card px-4 py-3 text-content-primary" />
           <TextInput value={draft.address ?? ''} onChangeText={(address) => setDraft((d) => ({ ...d, address }))} maxLength={200}
             placeholder="주소"
             className="rounded-xl border border-secondary-200 dark:border-surface-overlay bg-surface-card px-4 py-3 text-content-primary" />
-          <Pressable onPress={() => setShowRegion(true)}
-            className="rounded-xl border border-secondary-200 dark:border-surface-overlay bg-surface-card px-4 py-3 active:opacity-80">
+          <Pressable onPress={() => setMode('region')}
+            className="rounded-xl border border-secondary-200 dark:border-surface-overlay bg-surface-card px-4 py-3 min-h-[44px] active:opacity-80"
+            accessibilityRole="button">
             <Text className="text-sm text-content-primary font-sans">{draft.region ? `지역: ${draft.region}` : '지역 선택 (선택)'}</Text>
           </Pressable>
         </View>
       )}
-      <RegionSelectModal visible={showRegion} onClose={() => setShowRegion(false)}
-        selectedSlug={draft.region}
-        onSelect={(slug) => { setDraft((d) => ({ ...d, ...(slug !== null ? { region: slug } : {}) })); setShowRegion(false); }} />
+      {mode === 'region' && (
+        <View className="gap-3">
+          {REGION_GROUPS.map((group) => (
+            <View key={group}>
+              <Text className="text-xs font-sans-bold text-content-secondary mb-1.5">{group}</Text>
+              <View className="flex-row flex-wrap gap-2">
+                {REGIONS_BY_GROUP[group].map((r) => {
+                  const selected = draft.region === r.slug;
+                  return (
+                    <Pressable key={r.slug}
+                      onPress={() => { setDraft((d) => ({ ...d, region: r.slug })); setMode('new'); }}
+                      className={`px-3.5 py-2 min-h-[44px] justify-center rounded-full border ${selected ? 'border-primary-500 bg-primary-100' : 'border-secondary-200 dark:border-surface-overlay'} active:opacity-80`}
+                      accessibilityRole="radio" accessibilityState={{ selected }}>
+                      <View className="flex-row items-center gap-1">
+                        {selected ? <CheckIcon size={14} className="text-primary-600 dark:text-primary-400" /> : null}
+                        <Text className={`text-sm font-sans-medium ${selected ? 'text-primary-600 dark:text-primary-400' : 'text-content-secondary'}`}>{r.name}</Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
     </SheetModal>
   );
 }
 ```
 
-`recentLocations`는 부모가 계산: 템플릿들의 `templateData.location` + 현재 값 — 중복 제거(name+address 키). ⚠️ RegionSelectModal이 자체 RN Modal이면 SheetModal 내 중첩 문제 발생 가능 — 실기기/웹에서 겹침 확인 후 문제 시 SheetModal `overlay` 슬롯으로 이동(TimeWheelPicker embedded와 동일 요령).
+`recentLocations`는 부모가 계산: 템플릿들의 `templateData.location` + 현재 값 — 중복 제거(name+address 키). `RegionOption`의 실제 필드명(slug/name)은 `@/constants/regions`에서 확인해 맞춘다. 참고(보안 리뷰 LOW): 제출 시 `toCanonicalLocation`(serialization.ts:89-103)이 `district ?? address` 우선순위로 흡수하므로 PlaceSheet는 district를 수집하지 않는다 — 프리셋 로드로 district가 있는 location이 들어오면 address보다 district가 우선 표시됨을 인지.
 
 - [ ] **Step 3: ContactSheet + DescriptionSheet** — 동일 패턴:
 
@@ -1194,21 +1535,25 @@ git commit -m "feat(order-sheet): 기본정보 시트 4종 (제목·장소·연�
 ### Task 7: 일정·모집 시트 3종 — 날짜·시간(다중 시간대)·역할(다역할+기타 직접입력)
 
 **Files:**
-- Create: `sheets/DateSheet.tsx`, `sheets/TimeSlotsSheet.tsx`, `sheets/RolesSheet.tsx`
+- Create: `sheets/TimeSlotsSheet.tsx`, `sheets/RolesSheet.tsx` (DateSheet는 별도 파일 불필요 — DatePickerModal 직접 렌더)
+- Modify: `src/components/employer/job-form/modals/DatePickerModal.tsx` (additive `initialSelectedDates` prop — 아래 Step 1)
 - Modify: `OrderSheetScreen.tsx` (장착)
 
 **Interfaces:**
 - Consumes: `DatePickerModal`(기존 — visible/onClose/onSelectDates/postingType/existingDates), `TimeWheelPicker`(기존 — embedded), `STAFF_ROLES`.
 - Produces: `OrderSheetValues['timeSlots']` 편집 계약 — RolesSheet는 `slotIndex`를 받아 해당 슬롯의 roles만 편집.
 
-- [ ] **Step 1: DateSheet — 기존 DatePickerModal 직접 재사용 (래퍼 불필요)**
+- [ ] **Step 1: 날짜 — DatePickerModal에 `initialSelectedDates` prop 추가 후 직접 렌더**
 
-DatePickerModal은 이미 독립 모달이므로 시트를 새로 만들지 않고 OrderSheetScreen 스위치에서 직접 렌더:
+> ⚠️ 리뷰 HIGH(H1 — 실측 확정): DatePickerModal은 **추가 전용** 시맨틱이다 — `remainingSlots = maxDates - existingDates.length`(:65), `existingDates`는 `disabledDates`(선택 불가)로 들어가고(:236) `selectedDates`는 빈 배열로 시작, `onSelectDates`는 새로 고른 날짜만 반환한다. 계획 초안처럼 `existingDates={values.dates}`로 열면 ①기존 날짜 재선택 불가 → 확인 시 기존 선택 전부 유실 ②이미 maxDates(지원·급구 7일)를 채웠으면 remainingSlots=0 → **날짜를 바꿀 방법이 없는 데드엔드**.
+
+수정: DatePickerModal에 **additive optional prop** `initialSelectedDates?: string[]`를 추가한다 — 전달되면 `selectedDates` 초기 상태를 이 값으로 시드(재선택·해제 가능)하고 remainingSlots 계산은 `maxDates - (existingDates.length)` 그대로(기존 호출부 무회귀 — prop 미전달 시 동작 동일). 주문서에서는:
 
 ```tsx
 {activeSheet === 'dates' && (
   <DatePickerModal visible onClose={() => setActiveSheet(null)}
-    postingType={values.postingType} existingDates={values.dates}
+    postingType={values.postingType} existingDates={[]}
+    initialSelectedDates={values.dates}
     onSelectDates={(dates) => {
       form.setValue('dates', dates, { shouldDirty: true, shouldValidate: true });
       setActiveSheet(null);
@@ -1216,7 +1561,7 @@ DatePickerModal은 이미 독립 모달이므로 시트를 새로 만들지 않�
 )}
 ```
 
-스펙 확정: **달력만** — 퀵칩·부가 UI 추가하지 않는다. 다중 날짜 그룹화 확인(GroupingConfirmModal)은 DatePickerModal 내부 기존 동작 그대로.
+스펙 확정: **달력만** — 퀵칩·부가 UI 추가하지 않는다. (서술 정정 — 리뷰 M5: GroupingConfirmModal은 DatePickerModal 내부가 아니라 DateRequirementsSection.tsx:304 소관이다. 주문서는 전 날짜 동일 시간대 모델이라 그룹화 확인 플로우는 **이번 슬라이스 의도적 제외** — totalPositions는 역할별 peak 방식(stats.ts)이라 수치 영향 없음, 연속기간 그룹 표시만 다름.)
 
 - [ ] **Step 2: TimeSlotsSheet — 출근시간 휠 + 시간대 목록 + 추가/삭제**
 
@@ -1345,8 +1690,23 @@ export function RolesSheet({ visible, value, onConfirm, onClose }: {
         <View className="gap-1.5">
           {roles.map((r, i) => (
             <View key={i} className="flex-row items-center justify-between rounded-xl bg-surface-card border border-secondary-100 dark:border-surface-overlay px-4 py-2.5">
-              <Text className="text-sm font-sans-medium text-content-primary">{label(r)} {r.count}명</Text>
-              <Pressable onPress={() => setRoles((prev) => prev.filter((_, idx) => idx !== i))}><Text className="text-content-muted">삭제</Text></Pressable>
+              <Text className="flex-1 text-sm font-sans-medium text-content-primary">{label(r)}</Text>
+              {/* 추가된 역할 행에도 ±1 스테퍼 — 스펙 §3 "역할별 인원 스테퍼"(리뷰 M6: 삭제 후 재추가 강요 금지) */}
+              <View className="flex-row items-center gap-1">
+                <Pressable onPress={() => setRoles((prev) => prev.map((x, idx) => (idx === i ? { ...x, count: Math.max(1, x.count - 1) } : x)))}
+                  className="w-11 h-11 items-center justify-center active:opacity-80" accessibilityRole="button" accessibilityLabel={`${label(r)} 인원 줄이기`}>
+                  <MinusIcon size={16} className="text-content-primary" />
+                </Pressable>
+                <Text className="text-sm font-sans-bold text-content-primary w-8 text-center">{r.count}명</Text>
+                <Pressable onPress={() => setRoles((prev) => prev.map((x, idx) => (idx === i ? { ...x, count: Math.min(99, x.count + 1) } : x)))}
+                  className="w-11 h-11 items-center justify-center active:opacity-80" accessibilityRole="button" accessibilityLabel={`${label(r)} 인원 늘리기`}>
+                  <PlusIcon size={16} className="text-content-primary" />
+                </Pressable>
+                <Pressable onPress={() => setRoles((prev) => prev.filter((_, idx) => idx !== i))}
+                  className="w-11 h-11 items-center justify-center active:opacity-80" accessibilityRole="button" accessibilityLabel={`${label(r)} 삭제`}>
+                  <TrashIcon size={16} className="text-content-muted" />
+                </Pressable>
+              </View>
             </View>
           ))}
         </View>
@@ -1355,6 +1715,8 @@ export function RolesSheet({ visible, value, onConfirm, onClose }: {
   );
 }
 ```
+
+(Minus/Plus/Trash 아이콘의 실제 export명은 `@/components/icons`에서 확인 — 없으면 존재하는 동등 아이콘으로 대체. 상단 "추가 전" 스테퍼(`w-9 h-9`)도 UI 공통 체크리스트에 따라 44pt로 키우고 글리프를 아이콘으로 교체한다.)
 
 - [ ] **Step 4: OrderSheetScreen 장착** — `roles` 행은 슬롯 1개면 slot 0 편집, 복수면 TimeSlotsSheet를 연다(슬롯별 역할은 그 안에서 진입). `activeSheet` 상태를 `OrderRowKey | { key: 'slotRoles'; slotIndex: number } | null`로 확장.
 
@@ -1380,7 +1742,7 @@ git commit -m "feat(order-sheet): 일정·모집 시트 (날짜 달력·다중 �
 - Consumes: `DEFAULT_SALARY_BY_TYPE`/`HOURLY_STEP`(Task 4), `PROVIDED_FLAG`(`@/utils/settlement`), `TaxSettingsEditor`(기존), `PreQuestionsSection` 또는 그 내부 패턴, `postingConditionsSchema` 프리셋 문구.
 - Produces: 조건 프리셋 상수 `DRESS_CODE_PRESETS = ['검정셔츠/슬랙스', '흰셔츠/슬랙스']`, `EXPERIENCE_PRESETS = ['TDA 숙지자', '6개월 이상']` (ConditionsSheet에서 export — e2e가 문구 참조 가능).
 
-- [ ] **Step 1: SalarySheet** — 세그먼트(시급/일급/월급) + 시급만 ±1,000 스테퍼, 일급·월급은 기본값+직접입력:
+- [ ] **Step 1: SalarySheet** — 세그먼트(시급/일급/월급/**협의**) + 시급만 ±1,000 스테퍼, 일급·월급은 기본값+직접입력, **동일급여 OFF 시 역할별 급여 입력**(2026-07-14 사용자 결정 2건 반영):
 
 ```tsx
 import React, { useState } from 'react';
@@ -1391,66 +1753,116 @@ import { DEFAULT_SALARY_BY_TYPE, HOURLY_STEP } from '@/utils/order-sheet/mappers
 import type { OrderSheetValues } from '@/schemas/orderSheet.schema';
 
 type Salary = OrderSheetValues['salary'];
+type RoleSalaries = OrderSheetValues['roleSalaries'];
 const TYPE_LABELS = [
-  { type: 'hourly', label: '시급' }, { type: 'daily', label: '일급' }, { type: 'monthly', label: '월급' },
+  { type: 'hourly', label: '시급' }, { type: 'daily', label: '일급' },
+  { type: 'monthly', label: '월급' }, { type: 'other', label: '협의' },
 ] as const;
 
-export function SalarySheet({ visible, value, useSameSalary, onConfirm, onClose }: {
+export function SalarySheet({ visible, value, useSameSalary, roleSalaries, uniqueRoles, onConfirm, onClose }: {
   visible: boolean; value: Salary; useSameSalary: boolean;
-  onConfirm: (next: { salary: Salary; useSameSalary: boolean }) => void; onClose: () => void;
+  roleSalaries: RoleSalaries;
+  uniqueRoles: Array<{ role: RoleSalaries[number]['role']; customRole?: string; label: string }>; // 부모가 timeSlots에서 유도
+  onConfirm: (next: { salary: Salary; useSameSalary: boolean; roleSalaries: RoleSalaries }) => void; onClose: () => void;
 }) {
-  const [salary, setSalary] = useState<Salary>(value.amount > 0 ? value : { type: 'hourly', amount: DEFAULT_SALARY_BY_TYPE.hourly });
+  const [salary, setSalary] = useState<Salary>(value.amount > 0 || value.type === 'other' ? value : { type: 'hourly', amount: DEFAULT_SALARY_BY_TYPE.hourly });
   const [same, setSame] = useState(useSameSalary);
+  const [perRole, setPerRole] = useState<RoleSalaries>(roleSalaries);
   const [directInput, setDirectInput] = useState(false);
 
   const switchType = (type: Salary['type']) => {
-    setSalary({ type, amount: DEFAULT_SALARY_BY_TYPE[type] });
+    // 협의(other)는 금액 없음 — { type: 'other', amount: 0 } (문서 게이트 min(0) 허용 실측)
+    setSalary({ type, amount: type === 'other' ? 0 : DEFAULT_SALARY_BY_TYPE[type] });
     setDirectInput(type !== 'hourly' ? false : directInput);
   };
 
+  const perRoleValid = uniqueRoles.every((u) => {
+    const s = perRole.find((p) => p.role === u.role && p.customRole === u.customRole)?.salary;
+    return s !== undefined && (s.type === 'other' || s.amount > 0);
+  });
+  const confirmDisabled = same ? salary.type !== 'other' && salary.amount <= 0 : !perRoleValid;
+
   return (
     <SheetModal visible={visible} onClose={onClose} title="급여"
-      footer={<Button onPress={() => { onConfirm({ salary, useSameSalary: same }); onClose(); }} disabled={salary.amount <= 0}>확인</Button>}>
+      footer={<Button onPress={() => { onConfirm({ salary, useSameSalary: same, roleSalaries: same ? [] : perRole }); onClose(); }} disabled={confirmDisabled}>확인</Button>}>
       <View className="flex-row gap-1 p-1 rounded-xl bg-surface-card border border-secondary-200 dark:border-surface-overlay mb-3">
         {TYPE_LABELS.map(({ type, label }) => (
           <Pressable key={type} onPress={() => switchType(type)}
-            className={`flex-1 items-center py-2 rounded-lg ${salary.type === type ? 'bg-primary-100 border border-primary-500' : 'active:opacity-80'}`}>
+            className={`flex-1 items-center justify-center py-2 min-h-[44px] rounded-lg ${salary.type === type ? 'bg-primary-100 border border-primary-500' : 'active:opacity-80'}`}
+            accessibilityRole="radio" accessibilityState={{ selected: salary.type === type }}>
             <Text className={`text-sm font-sans-medium ${salary.type === type ? 'text-primary-600 dark:text-primary-400' : 'text-secondary-700 dark:text-secondary-300'}`}>{label}</Text>
           </Pressable>
         ))}
       </View>
-      {salary.type === 'hourly' && !directInput ? (
+      {salary.type === 'other' ? (
+        <View className="rounded-xl border border-secondary-200 dark:border-surface-overlay bg-surface-card px-4 py-3 mb-2">
+          <Text className="text-sm text-content-secondary font-sans">급여는 지원자와 협의로 결정해요 — 금액 없이 등록돼요</Text>
+        </View>
+      ) : salary.type === 'hourly' && !directInput ? (
         <View className="flex-row items-center justify-between rounded-xl border border-secondary-200 dark:border-surface-overlay bg-surface-card px-4 py-2 mb-2">
           <Pressable onPress={() => setSalary((s) => ({ ...s, amount: Math.max(HOURLY_STEP, s.amount - HOURLY_STEP) }))}
-            className="w-10 h-10 items-center justify-center active:opacity-80" testID="order-sheet-salary-minus">
-            <Text className="text-xl text-content-primary">−</Text>
+            className="w-11 h-11 items-center justify-center active:opacity-80" testID="order-sheet-salary-minus"
+            accessibilityRole="button" accessibilityLabel="시급 1,000원 내리기">
+            <MinusIcon size={20} className="text-content-primary" />
           </Pressable>
           <Text className="text-lg font-sans-bold text-content-primary">{salary.amount.toLocaleString()}<Text className="text-xs text-content-muted"> 원</Text></Text>
           <Pressable onPress={() => setSalary((s) => ({ ...s, amount: s.amount + HOURLY_STEP }))}
-            className="w-10 h-10 items-center justify-center active:opacity-80" testID="order-sheet-salary-plus">
-            <Text className="text-xl text-content-primary">＋</Text>
+            className="w-11 h-11 items-center justify-center active:opacity-80" testID="order-sheet-salary-plus"
+            accessibilityRole="button" accessibilityLabel="시급 1,000원 올리기">
+            <PlusIcon size={20} className="text-content-primary" />
           </Pressable>
         </View>
       ) : (
         <TextInput
           value={salary.amount > 0 ? String(salary.amount) : ''} keyboardType="number-pad"
           onChangeText={(t) => setSalary((s) => ({ ...s, amount: Number.parseInt(t.replace(/[^0-9]/g, ''), 10) || 0 }))}
-          placeholder={`기본값 ${DEFAULT_SALARY_BY_TYPE[salary.type].toLocaleString()}원`}
+          placeholder={`기본값 ${DEFAULT_SALARY_BY_TYPE[salary.type as 'hourly' | 'daily' | 'monthly'].toLocaleString()}원`}
           className="rounded-xl border border-secondary-200 dark:border-surface-overlay bg-surface-card px-4 py-3 mb-2 text-content-primary" />
       )}
       {salary.type === 'hourly' && (
-        <Pressable onPress={() => setDirectInput((v) => !v)} className="mb-3 active:opacity-80">
+        <Pressable onPress={() => setDirectInput((v) => !v)} className="mb-3 min-h-[44px] justify-center active:opacity-80" accessibilityRole="button">
           <Text className="text-xs text-content-secondary font-sans">{directInput ? '스테퍼로 조절 (±1,000원)' : '직접 입력'}</Text>
         </Pressable>
       )}
       <Pressable onPress={() => setSame((v) => !v)}
-        className={`flex-row items-center gap-2 rounded-xl border px-4 py-3 ${same ? 'border-primary-500 bg-primary-50' : 'border-secondary-200 dark:border-surface-overlay'} active:opacity-80`}>
+        className={`flex-row items-center gap-2 rounded-xl border px-4 py-3 min-h-[44px] ${same ? 'border-primary-500 bg-primary-50' : 'border-secondary-200 dark:border-surface-overlay'} active:opacity-80`}
+        accessibilityRole="checkbox" accessibilityState={{ checked: same }}>
         <Text className="text-sm font-sans-medium text-content-primary">모든 역할 동일 급여</Text>
       </Pressable>
+      {!same && (
+        <View className="mt-3 gap-2">
+          {/* 역할별 급여(2026-07-14 결정) — 타입은 공통 세그먼트를 따르고 금액만 역할별 입력. */}
+          {uniqueRoles.map((u) => {
+            const entry = perRole.find((p) => p.role === u.role && p.customRole === u.customRole);
+            const setRoleAmount = (t: string) => {
+              const amount = Number.parseInt(t.replace(/[^0-9]/g, ''), 10) || 0;
+              setPerRole((prev) => [
+                ...prev.filter((p) => !(p.role === u.role && p.customRole === u.customRole)),
+                { role: u.role, ...(u.customRole !== undefined ? { customRole: u.customRole } : {}),
+                  salary: { type: salary.type, amount: salary.type === 'other' ? 0 : amount } },
+              ]);
+            };
+            return (
+              <View key={`${u.role}:${u.customRole ?? ''}`} className="flex-row items-center gap-3 rounded-xl border border-secondary-200 dark:border-surface-overlay bg-surface-card px-4 py-2.5">
+                <Text className="flex-1 text-sm font-sans-medium text-content-primary">{u.label}</Text>
+                {salary.type === 'other' ? (
+                  <Text className="text-sm text-content-muted font-sans">협의</Text>
+                ) : (
+                  <TextInput value={entry && entry.salary.amount > 0 ? String(entry.salary.amount) : ''}
+                    onChangeText={setRoleAmount} keyboardType="number-pad" placeholder="금액"
+                    className="w-28 rounded-lg border border-secondary-200 dark:border-surface-overlay px-2 py-1.5 text-right text-sm text-content-primary" />
+                )}
+              </View>
+            );
+          })}
+        </View>
+      )}
     </SheetModal>
   );
 }
 ```
+
+부모(OrderSheetScreen) 배선: `uniqueRoles`는 `values.timeSlots`의 역할을 roleKey 기준 중복 제거해 전달(라벨은 orderRowMeta의 roleName 재사용). 확정 시 `form.setValue('salary', next.salary)` + `form.setValue('useSameSalary', next.useSameSalary)` + `form.setValue('roleSalaries', next.roleSalaries)` (전부 `{ shouldDirty: true, shouldValidate: true }`). 역할이 아직 없는 상태에서 토글 OFF면 "역할을 먼저 추가해주세요" 안내 텍스트를 목록 자리에 표시.
 
 - [ ] **Step 2: WelfareSheet** — 4항목 체크 또는 금액 (기존 `Allowances` 시맨틱: `-1`=제공, `>0`=금액):
 
@@ -1479,8 +1891,22 @@ export function WelfareSheet({ visible, value, onConfirm, onClose }: {
       else next[key] = key === 'guaranteedHours' ? 4 : PROVIDED_FLAG; // 보장시간은 시간값, 그 외 기본=제공 체크
       return next;
     });
+  // ⚠️ 리뷰 CRITICAL: 키별 분기 필수 — guaranteedHours에 PROVIDED_FLAG(-1) 폴백을 쓰면
+  // 문서 게이트 min(0)(jobPosting.schema.ts:58)이 reject해 등록 자체가 죽는다.
+  // 또 '0' 입력이 제공(-1)으로 둔갑하는 시맨틱 플립 금지(보안 리뷰). zod측 가드는 Task 4
+  // orderSheetAllowancesSchema가 담당 — 여기는 UX 시맨틱만.
   const setAmount = (key: keyof Welfare, text: string) =>
-    setWelfare((prev) => ({ ...prev, [key]: Number.parseInt(text.replace(/[^0-9]/g, ''), 10) || PROVIDED_FLAG }));
+    setWelfare((prev) => {
+      const parsed = Number.parseInt(text.replace(/[^0-9]/g, ''), 10);
+      if (key === 'guaranteedHours') {
+        // 시간값: 빈/무효 입력은 기본 4시간, 0 입력은 체크 해제와 동일(키 삭제)
+        if (Number.isNaN(parsed)) return { ...prev, guaranteedHours: 4 };
+        if (parsed <= 0) { const next = { ...prev }; delete next.guaranteedHours; return next; }
+        return { ...prev, guaranteedHours: parsed };
+      }
+      // 금액 3종: 빈/0 입력 = 금액 없는 '제공' 체크(PROVIDED_FLAG)
+      return { ...prev, [key]: Number.isNaN(parsed) || parsed <= 0 ? PROVIDED_FLAG : parsed };
+    });
 
   return (
     <SheetModal visible={visible} onClose={onClose} title="복지 (선택)"
@@ -1491,8 +1917,9 @@ export function WelfareSheet({ visible, value, onConfirm, onClose }: {
           const checked = v !== undefined;
           return (
             <View key={key} className={`flex-row items-center gap-3 rounded-xl border px-4 py-3 ${checked ? 'border-primary-500 bg-primary-50' : 'border-secondary-200 dark:border-surface-overlay bg-surface-card'}`}>
-              <Pressable onPress={() => toggle(key)} className="flex-row items-center gap-3 flex-1 active:opacity-80" testID={`order-sheet-welfare-${key}`}>
-                <View className={`w-5 h-5 rounded-md border ${checked ? 'bg-primary-500 border-primary-500' : 'border-secondary-300'}`} />
+              <Pressable onPress={() => toggle(key)} className="flex-row items-center gap-3 flex-1 min-h-[44px] active:opacity-80"
+                accessibilityRole="checkbox" accessibilityState={{ checked }} testID={`order-sheet-welfare-${key}`}>
+                <View className={`w-5 h-5 rounded-md border ${checked ? 'bg-primary-500 border-primary-500' : 'border-secondary-300 dark:border-surface-overlay'}`} />
                 <Text className="text-sm font-sans-medium text-content-primary">{label}</Text>
               </Pressable>
               {checked && (
@@ -1533,6 +1960,8 @@ export function TaxSheet({ visible, value, onConfirm, onClose }: {
   );
 }
 ```
+
+> 세금 기본값 확정(2026-07-14 사용자 결정): 공고 기본은 **세금 미설정('세금 없음' 표시)** — 레거시 패리티, 실수로 원천징수가 붙는 금전 사고 방지. TaxSheet를 열면 3.3%가 **제안값**으로 시드되고, [확인]을 눌러야만 반영된다(닫기만 하면 미설정 유지). 시트를 열고 바로 확인하면 3.3%가 되는 것은 의도된 제안 동작 — 확인 버튼 위에 현재 선택값이 명확히 보이는 TaxSettingsEditor 인라인 라디오라 오조작 위험 낮음.
 
 - [ ] **Step 4: ConditionsSheet** — 복장·경력 프리셋 칩 + 직접입력:
 
@@ -1592,7 +2021,11 @@ export function ConditionsSheet({ visible, value, onConfirm, onClose }: {
 }
 ```
 
-- [ ] **Step 5: PreQuestionsSheet** — 기존 편집 UI 재사용: `PreQuestionsSection`은 `JobPostingFormData` patch 콜백 형태이므로 얇은 어댑터로 감싼다. `PreQuestionsSection`의 props를 열어 확인(`grep -n "interface PreQuestionsSectionProps" src/components/employer/job-form/sections/PreQuestionsSection.tsx`)하고, `{ usesPreQuestions, preQuestions }`만 주고받는 로컬 상태 어댑터로 SheetModal(fullHeight) 안에 임베드한다. props가 섹션 전용이라 어렵면 PreQuestionsSection 내부의 QuestionCard 패턴을 복사해 `sheets/PreQuestionsSheet.tsx`에 질문 목록+추가+ActionSheet(답변유형)를 동형 구현(최대 10개 제한 유지).
+- [ ] **Step 5: PreQuestionsSheet** — QuestionCard 패턴 동형 구현 (임베드 금지):
+
+> ⚠️ 리뷰 CRITICAL(C2 — 실측 확정): `PreQuestionsSection`은 내부에서 `ActionSheet`(답변유형 선택, :160)를 쓰고 ActionSheet는 ui/Modal(RN Modal) 기반(ActionSheet.tsx:65)이다. SheetModal 안에 임베드하면 중첩 Modal iOS 터치먹통 재발 — **임베드 옵션 폐기**.
+
+`PreQuestionsSection` 내부의 QuestionCard 패턴을 복사해 `sheets/PreQuestionsSheet.tsx`에 질문 목록+추가를 동형 구현하되(최대 10개 제한 유지 — zod `preQuestionsArraySchema.max(10)`이 게이트), **답변유형 선택은 ActionSheet 대신 인라인 라디오 3버튼**(단답/장문/선택형 — `accessibilityRole="radio"`+selected state, TaxSettingsEditor:198-230 세그먼트 패턴)으로 구현한다. SheetModal은 `fullHeight`. select 유형의 options 입력은 Task 4 스키마의 superRefine(options xss)이 검증한다.
 
 - [ ] **Step 6: OrderSheetScreen 장착 + 검증 + 커밋**
 
@@ -1616,22 +2049,13 @@ git commit -m "feat(order-sheet): 급여·복지·세금·조건·사전질문 �
 
 **Interfaces:**
 - Consumes: `useTemplateManager`(`templates`, `handleSaveTemplate`), `templateToValues`(Task 4).
-- Produces: `PresetCarousel({ presets, activeId, onSelect })` — preset = `{ id: string; title: string; subtitle: string; values: OrderSheetValues }`.
+- Produces: `PresetCarousel({ presets, onSelect, onSavePress })` — preset = `{ id: string; title: string; subtitle: string; values: OrderSheetFormValues }`. `onSavePress`는 "+저장" 카드(스펙 §2 캐러셀 3요소 — 리뷰 M5로 누락 복원).
 
-- [ ] **Step 1: "마지막 공고" 데이터 소스 확인**
+- [ ] **Step 1: "마지막 공고" 데이터 소스 — `useMyJobPostings` 훅 사용 (실측 확정)**
 
-Run: `grep -rn "useMyJobPostings\|useEmployerJobPostings\|useMyPostings" src/hooks src/components | head -10`
-내 공고 목록 훅이 있으면 최신 1건을 가져와 `jobPostingToDraft`→`draftToValues`→`{...values, dates: []}`로 "마지막 공고" 프리셋 생성. **없으면** TanStack Query 읽기 전용 Repository 직접 호출(CLAUDE.md 허용 경로)로 `create.tsx`에 국소 쿼리 추가:
+`useMyJobPostings()`가 `src/hooks/useJobManagement.ts:71`에 **이미 존재**한다(리뷰 실측 — 대체 쿼리 코드 불필요). 이 훅으로 내 공고 목록에서 최신 1건을 가져와 `buildJobPostingDraft`(=`jobPostingToDraft` thin wrapper, submission.ts:41)→`draftToValues`→`{...values, dates: []}`로 "마지막 공고" 프리셋을 만든다. 훅의 정렬·최신 1건 파라미터는 훅 시그니처를 열어 맞춘다.
 
-```tsx
-const { data: lastPosting } = useQuery({
-  queryKey: ['orderSheet', 'lastPosting', user?.uid],
-  queryFn: () => jobPostingRepository.findLatestByOwner(user!.uid), // 실제 메서드명은 Repository에서 확인, 없으면 목록 조회 후 첫 건
-  enabled: !!user?.uid,
-});
-```
-
-(Repository에 적합한 단건 조회가 없으면 기존 목록 조회 메서드 + `limit 1` 사용. **fixed/tournament 공고면 프리셋에서 제외** — `draftToValues`가 throw하므로 try/catch로 스킵.)
+(**fixed/tournament 공고와 날짜별 시간대가 상이한 공고는 프리셋에서 제외** — `draftToValues`가 둘 다 throw하므로 try/catch로 스킵. Task 4 계약.)
 
 - [ ] **Step 2: PresetCarousel 구현**
 
@@ -1640,10 +2064,10 @@ import React from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import type { OrderSheetValues } from '@/schemas/orderSheet.schema';
 
-export interface OrderSheetPreset { id: string; title: string; subtitle: string; values: OrderSheetValues; }
+export interface OrderSheetPreset { id: string; title: string; subtitle: string; values: OrderSheetFormValues; }
 
-export function PresetCarousel({ presets, onSelect }: {
-  presets: OrderSheetPreset[]; onSelect: (preset: OrderSheetPreset) => void;
+export function PresetCarousel({ presets, onSelect, onSavePress }: {
+  presets: OrderSheetPreset[]; onSelect: (preset: OrderSheetPreset) => void; onSavePress: () => void;
 }) {
   if (presets.length === 0) {
     return (
@@ -1656,12 +2080,20 @@ export function PresetCarousel({ presets, onSelect }: {
     <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3" contentContainerClassName="gap-2">
       {presets.map((p) => (
         <Pressable key={p.id} onPress={() => onSelect(p)}
-          className="min-w-[130px] rounded-xl border border-secondary-200 dark:border-surface-overlay bg-surface-card px-3 py-2.5 active:opacity-80"
+          className="min-w-[130px] min-h-[44px] rounded-xl border border-secondary-200 dark:border-surface-overlay bg-surface-card px-3 py-2.5 active:opacity-80"
+          accessibilityRole="button" accessibilityLabel={`프리셋 ${p.title} 적용`}
           testID={`order-sheet-preset-${p.id}`}>
           <Text className="text-xs font-sans-bold text-content-primary" numberOfLines={1}>{p.title}</Text>
           <Text className="text-[11px] text-content-muted font-sans" numberOfLines={1}>{p.subtitle}</Text>
         </Pressable>
       ))}
+      {/* "+저장" 카드 — 스펙 §2 캐러셀 3요소(리뷰 M5 복원): 현재 주문서 구성을 템플릿으로 저장 */}
+      <Pressable onPress={onSavePress}
+        className="min-w-[72px] min-h-[44px] rounded-xl border border-dashed border-secondary-300 dark:border-surface-overlay px-3 py-2.5 items-center justify-center active:opacity-80"
+        accessibilityRole="button" accessibilityLabel="현재 구성을 프리셋으로 저장"
+        testID="order-sheet-preset-save">
+        <Text className="text-xs text-content-secondary font-sans">＋ 저장</Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -1688,7 +2120,11 @@ const presets: OrderSheetPreset[] = useMemo(() => {
 
 선택 시 `form.reset(preset.values)` — OrderSheetScreen에 `onApplyPreset` 경유로 전달(RHF `reset`은 컨테이너 내부이므로 headerSlot 대신 `presets` prop으로 넘겨 내부에서 처리해도 됨 — 구현 단순한 쪽 선택). `recentTitles`(Task 6) = `presets.map(p => p.values.title).filter(Boolean)` 중복 제거, `recentLocations` = `presets.map(p => p.values.location).filter(Boolean)` name+address 중복 제거.
 
-- [ ] **Step 4: 첫 등록 프리셋 저장 제안** — 완료 화면(Task 10)에서: `templateManager.templates.length === 0`이면 "이 구성을 프리셋으로 저장하면 다음엔 2탭이면 끝나요" 배너 + 저장 버튼(`templateManager.handleSaveTemplate(valuesToDraft(submittedValues))`). Task 10에서 함께 구현하므로 여기서는 `handleSaveTemplate` 호출 계약만 만들어 둔다(등록 직전 values를 create-success로 전달).
+"+저장" 카드(`onSavePress`)는 `templateManager.openTemplateModal()` + 기존 `TemplateModal` 배선으로 연결 — 현재 폼 values의 `valuesToDraft` 결과를 저장 대상으로 전달(현재 create.tsx가 쓰는 배선 재사용).
+
+> ⚠️ 실측 함정(리뷰): `handleSaveTemplate(draft)`는 내부 `templateName`(별도 state)이 비어 있으면 **조용히 no-op**한다(useTemplateManager.ts:167-172). 직접 호출 금지 — 반드시 이름 입력이 있는 `openTemplateModal`+`TemplateModal` 경유로 저장한다.
+
+- [ ] **Step 4: 첫 등록 프리셋 저장 제안** — 완료 화면(Task 10)에서: `templateManager.templates.length === 0`이면 "이 구성을 프리셋으로 저장하면 다음엔 2탭이면 끝나요" 배너 + 저장 버튼(**openTemplateModal 경유** — 위 함정 참조). Task 10에서 함께 구현하므로 여기서는 호출 계약만 만들어 둔다(등록 직전 values를 create-success로 전달).
 
 - [ ] **Step 5: 검증 + 커밋**
 
@@ -1709,7 +2145,7 @@ git commit -m "feat(order-sheet): 프리셋 캐러셀 (마지막 공고 + 저장
 - Modify: `app/(employer)/my-postings/create.tsx` (성공 분기 교체)
 
 **Interfaces:**
-- Consumes: `useCreateJobPosting` 반환값(생성된 공고 — `CreateJobResult`의 실제 shape을 `src/hooks/useJobManagement.ts:96-136`에서 확인해 id 추출), 공유는 기존 `useShare` 훅(`src/hooks/useShare.ts`) — 공고 상세 화면(`my-postings/[id]/index.tsx`)이 쓰는 공유 호출부를 열어 동일하게 사용.
+- Consumes: `useCreateJobPosting` 반환값 — **실측 확정**: `CreateJobPostingResult { id: string; jobPosting: JobPosting }`(IJobPostingRepository.ts:60-63, repository→service→훅 통과 확인) — `created.id` 바로 사용. 공유는 `useShare().shareJobById(jobId)`(useShare.ts:39) — **id만으로 내부에서 상세 조회 후 공유하는 함수가 이미 있음**(실측) — 별도 상세 훅 로드 불필요.
 - Produces: 라우트 `/(employer)/my-postings/create-success?id=<uuid>`.
 
 - [ ] **Step 1: create-success 화면 구현**
@@ -1719,6 +2155,7 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Button } from '@/components/ui/Button';
+import { CheckIcon } from '@/components/icons';
 
 export default function CreateSuccessScreen() {
   const { id, title, summary, suggestPreset } = useLocalSearchParams<{
@@ -1730,7 +2167,7 @@ export default function CreateSuccessScreen() {
     <View className="flex-1 bg-surface-page px-5 justify-center">
       <View className="items-center mb-6">
         <View className="w-14 h-14 rounded-full bg-success-100 items-center justify-center mb-3">
-          <Text className="text-2xl text-success-600">✓</Text>
+          <CheckIcon size={28} className="text-success-600 dark:text-success-400" />
         </View>
         <Text className="text-lg font-sans-bold text-content-primary">공고가 등록됐어요</Text>
         <Text className="text-sm text-content-secondary font-sans mt-1">지원자가 생기면 바로 알려드릴게요</Text>
@@ -1755,13 +2192,14 @@ export default function CreateSuccessScreen() {
 }
 ```
 
-공유 버튼: 상세 화면의 공유 호출부(`grep -n "useShare\|buildJobShareText" "app/(employer)/my-postings/[id]/index.tsx" src/components -r | head -5`)를 확인해 같은 훅으로 "카카오톡으로 공유" 버튼을 최상단에 추가한다. 공유가 공고 엔티티를 요구하면 상세 데이터 훅(같은 grep으로 확인)을 id로 호출해 로드 후 활성화하고, 로딩 중엔 버튼 disabled. `Button`의 `variant` prop 명칭은 실제 Button 컴포넌트에서 확인해 맞춘다.
+공유 버튼: `useShare().shareJobById(postingId)`를 그대로 호출하는 "카카오톡으로 공유" 버튼을 최상단에 추가한다(실측 — id만으로 내부 조회+공유, `isSharing`으로 로딩 disabled). `Button`의 `variant` prop은 실재 확인됨(Button.tsx:24-44).
 
 프리셋 저장 배너의 [저장] 버튼: `useTemplateManager().openTemplateModal` + `TemplateModal` 재사용 — create.tsx에서 이미 쓰는 배선을 이 화면에도 추가하되, 저장할 draft는 `useLocalSearchParams`로 넘기기엔 크므로 **createJobPosting 성공 시 zustand 없이 모듈 레벨 1회성 캐시**(`src/utils/order-sheet/lastSubmitted.ts` — `export let lastSubmittedDraft: JobPostingDraft | null` + setter)로 전달한다.
 
 - [ ] **Step 2: create.tsx 성공 분기 교체**
 
 ```tsx
+// Task 5의 try/catch + logger 골격 유지 — 성공 분기만 교체
 const created = await createJobPosting.mutateAsync({ input });
 setIsDirty(false);
 if (venueId && router.canGoBack()) {
@@ -1772,7 +2210,7 @@ if (venueId && router.canGoBack()) {
   router.replace({
     pathname: '/(employer)/my-postings/create-success',
     params: {
-      id: created.id, // CreateJobResult에서 실제 필드명 확인
+      id: created.id, // CreateJobPostingResult { id, jobPosting } — 실측 확정
       title: values.title,
       summary: `${values.dates[0] ?? ''} · 출근 ${values.timeSlots[0]?.startTime ?? ''}`,
       suggestPreset: templateManager.templates.length === 0 ? '1' : '0',
@@ -1799,13 +2237,18 @@ git commit -m "feat(order-sheet): 등록 완료 화면 (공유·공고보기·�
 - Modify: `e2e/tests/p1-important/employer-posting-crud.spec.ts` (create 경로를 주문서 플로우로)
 - Test: 전체 스위트
 
-- [ ] **Step 1: e2e create 경로 갱신**
+- [ ] **Step 1: e2e create 경로 갱신 — 대상 3케이스 (리뷰 실측)**
 
-기존 스펙의 공고 생성 구간(폼 섹션 입력)을 주문서 플로우로 교체: `order-sheet-row-title` 탭 → 입력 → 확인 → `order-sheet-row-place` → … → `job-posting-create-submit` 탭 → create-success 확인(`create-success-view` 존재 단언) → 공고 보기. 고정(fixed) 생성 케이스가 스펙에 있으면 `order-sheet-type-fixed` 탭 → 기존 폼 진입 후 기존 시나리오 유지.
+`employer-posting-crud.spec.ts`에서 갱신 대상은 1구간이 아니라 **3케이스**다(리뷰 실측 — 라인은 재확인):
+1. `:122 부근` required controls 케이스 — 주문서 행 testID(`order-sheet-row-*`) 기준으로 교체.
+2. `:133 부근` empty submit 케이스 — 주문서에선 빈 제출 시 **첫 미설정 행 시트가 열리는** 동작으로 단언 변경(제출 차단 텍스트 아님).
+3. `:142 부근` title cap 케이스 — `job-posting-title-input` → `order-sheet-title-input`으로 교체.
+
+생성 해피패스: `order-sheet-row-title` 탭 → 입력 → 확인 → `order-sheet-row-place` → … → `job-posting-create-submit` 탭 → create-success 확인(`create-success-view` 존재 단언) → 공고 보기. 고정(fixed) 생성 케이스가 스펙에 있으면 `order-sheet-type-fixed` 탭 → 기존 폼 진입 후 기존 시나리오 유지. (`ui-components.spec.ts:159`도 create에 진입하지만 방어적 작성(isVisible().catch)이라 무수정 — 실행으로 확인만.)
 
 - [ ] **Step 2: 로컬 e2e 스모크**
 
-Run: `npx playwright test e2e/tests/p1-important/employer-posting-crud.spec.ts --project=chromium` (프로젝트 러너 설정에 맞춰 — `e2e/README` 또는 package.json scripts에서 실행 명령 확인)
+Run: `node scripts/run-e2e.js` (실측 — package.json `e2e` 스크립트가 raw playwright가 아니라 이 러너를 경유. 단일 스펙 필터 인자는 스크립트를 열어 확인)
 Expected: PASS. (로컬 Supabase 스택 필요 — `npm run db:start` 선행. 로컬에서 실행 불가한 환경이면 CI 결과로 대체하고 그 사실을 커밋 메시지에 명기.)
 
 - [ ] **Step 3: 전체 게이트**
@@ -1826,7 +2269,7 @@ git commit -m "test(e2e): 공고 생성 플로우를 주문서 UX로 갱신"
 
 ## 계획 밖 (배포 게이트 — 사용자 확인 후 별도 수행)
 
-1. `20260714000000_job_postings_conditions.sql` prod 적용 — `mcp__supabase__apply_migration` (같은 PR에 파리티 가드 기대값 갱신 필요 여부 확인: 컬럼 추가는 함수/정책 카운트 무변경이라 `parity_baseline_guard` 영향 없음 예상, pgTAP 실행으로 실측).
+1. `20260714000000_job_postings_conditions.sql` prod 적용 — `mcp__supabase__apply_migration`. **파리티 가드 무해 실측 확정**(DB 리뷰): `parity_baseline_guard.test.sql` 7단언은 함수 카운트 163·정책 카운트 104·gen-1 부활·SECDEF pg_temp만 검사하고 **테이블/컬럼은 세지 않음**. CI parity-smoke도 동일(주 1회 schedule 전용, PR 게이트 아님) — 기대값 갱신 불필요, pgTAP 실행으로 재확인만. ⚠️ PR 직전 master 재통합 시 `20260714*` 타임스탬프 중복 여부 확인 — 충돌 시 이쪽(나중 머지)이 늦은 타임스탬프로 `git mv`(내용 무변경, wiki `decisions/migration-timestamp-collision`).
 2. push / PR 생성 (명시 요청 시).
 3. OTA 출하 — JS-only이므로 가능. **직전 origin/master 재fetch+ff 필수**(메모리 `feedback_ota_refetch_local_tree_before_update`).
-4. 실기기 QA: 주문서 시트 중첩(특히 PlaceSheet 안 RegionSelectModal, TimeSlotsSheet 안 TimeWheelPicker embedded) iOS 터치 확인.
+4. 실기기 QA: 주문서 시트 iOS 터치 확인 — PlaceSheet 인라인 지역 모드(RegionSelectModal 미사용으로 설계 변경됨), TimeSlotsSheet 안 TimeWheelPicker embedded(overlay 슬롯), DatePickerModal 단독 오픈.
