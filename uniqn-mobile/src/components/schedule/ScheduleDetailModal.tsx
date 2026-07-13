@@ -10,6 +10,7 @@
 import { getLayoutColor, SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { Modal, Badge, Button } from '@/components/ui';
 import {
   XMarkIcon,
@@ -27,6 +28,7 @@ import { useModal } from '@/stores/modalStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { formatSingleDate } from '@/utils/scheduleGrouping';
 import { STATUS } from '@/constants';
+import { SHEET_DISMISS_ANIMATION_MS } from '@/constants/animation';
 import { SCHEDULE_STATUS } from '@/constants/statusConfig';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 import type { ScheduleEvent, GroupedScheduleEvent } from '@/types';
@@ -156,15 +158,44 @@ export function ScheduleDetailModal({
     [triggerRefresh]
   );
 
-  // 지원 취소 핸들러 (확인 모달)
+  // 시트 닫힘 후 지연 실행이 예약된 액션 (지원취소 확인·취소요청 확인·신고)
+  const pendingActionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearPendingAction = useCallback(() => {
+    if (pendingActionRef.current) {
+      clearTimeout(pendingActionRef.current);
+      pendingActionRef.current = null;
+    }
+  }, []);
+
+  // 시트를 먼저 닫고 dismiss 애니메이션 후 액션 실행 — iOS 중첩 Modal 터치 먹통 회피 공용 경로.
+  // 예약이 살아있는 동안 재호출은 무시(더블탭 시 전역 ConfirmModal 이 append 방식이라 다이얼로그가
+  // 중첩되고 취소가 중복 실행될 수 있다), 화면 포커스를 잃으면(탭 전환) 예약을 취소해
+  // 엉뚱한 화면 위에서 다이얼로그가 뜨지 않게 한다.
+  const closeSheetThen = useCallback(
+    (action: () => void) => {
+      if (pendingActionRef.current) return;
+      onClose();
+      pendingActionRef.current = setTimeout(() => {
+        pendingActionRef.current = null;
+        action();
+      }, SHEET_DISMISS_ANIMATION_MS);
+    },
+    [onClose]
+  );
+
+  // 블러(탭 전환) 시 예약 취소
+  useFocusEffect(useCallback(() => clearPendingAction, [clearPendingAction]));
+
+  // 언마운트 시 예약 취소
+  useEffect(() => clearPendingAction, [clearPendingAction]);
+
+  // 지원 취소 핸들러 (확인 모달) — applicationId 는 클로저로 캡처해 시트가 닫혀도 안전.
   const handleCancelApplication = useCallback(() => {
     if (!schedule?.applicationId || !onCancelApplication) return;
 
     const applicationId = schedule.applicationId;
-    // iOS 중첩 Modal 터치 먹통 방지 — 확인 다이얼로그(전역 ConfirmModal)를 띄우기 전에
-    // 상세 시트를 먼저 닫는다. applicationId 는 클로저로 캡처해 시트가 닫혀도 안전.
-    onClose();
-    setTimeout(() => {
+    closeSheetThen(() => {
       modal.showConfirm(
         '지원 취소',
         '정말 지원을 취소하시겠습니까?\n취소 후에는 다시 지원해야 합니다.',
@@ -172,17 +203,15 @@ export function ScheduleDetailModal({
           onCancelApplication(applicationId);
         }
       );
-    }, 300);
-  }, [schedule?.applicationId, onCancelApplication, onClose, modal]);
+    });
+  }, [schedule?.applicationId, onCancelApplication, closeSheetThen, modal]);
 
   // 취소 요청 핸들러 (확인 모달)
   const handleRequestCancellation = useCallback(() => {
     if (!schedule?.applicationId || !onRequestCancellation) return;
 
     const applicationId = schedule.applicationId;
-    // iOS 중첩 Modal 터치 먹통 방지 — 확인 다이얼로그를 띄우기 전에 상세 시트를 먼저 닫는다.
-    onClose();
-    setTimeout(() => {
+    closeSheetThen(() => {
       modal.showConfirm(
         '취소 요청',
         '확정된 일정의 취소를 요청하시겠습니까?\n구인자가 승인해야 취소가 완료됩니다.',
@@ -190,11 +219,11 @@ export function ScheduleDetailModal({
           onRequestCancellation(applicationId);
         }
       );
-    }, 300);
-  }, [schedule?.applicationId, onRequestCancellation, onClose, modal]);
+    });
+  }, [schedule?.applicationId, onRequestCancellation, closeSheetThen, modal]);
 
   // 신고 버튼 — 시트를 먼저 닫고 상위(schedule.tsx)에서 신고 모달을 연다.
-  // iOS 중첩 Modal 터치 먹통 방지 (QR·취소요청과 동일 패턴). 대상 정보는 클로저로 캡처해 시트가 닫혀도 안전.
+  // 대상 정보는 클로저로 캡처해 시트가 닫혀도 안전.
   const handleReport = useCallback(() => {
     if (!schedule?.ownerId || !onReport) return;
     const request: OwnerReportRequest = {
@@ -203,9 +232,8 @@ export function ScheduleDetailModal({
       jobPostingId: schedule.jobPostingId,
       jobPostingTitle: schedule.jobPostingName,
     };
-    onClose();
-    setTimeout(() => onReport(request), 300);
-  }, [schedule, onReport, onClose]);
+    closeSheetThen(() => onReport(request));
+  }, [schedule, onReport, closeSheetThen]);
 
   // 탭 설정 (상태에 따라 동적으로 구성)
   const tabs: TabConfig[] = [

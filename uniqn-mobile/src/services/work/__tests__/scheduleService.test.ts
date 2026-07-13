@@ -898,6 +898,32 @@ describe('scheduleService - getScheduleStats', () => {
 
     expect(stats.confirmedSchedules).toBe(1);
   });
+
+  it('당월 범위(dateRange)로만 조회한다 — 6개월 창 회귀 가드', async () => {
+    // calculateScheduleStats 가 날짜 필터 없이 조회 범위 전체를 세므로, 조회 창이
+    // 당월이 아니면(과거 6개월 창 회귀) 확정/지원 카운트가 누적으로 부풀려진다.
+    mockWorkLogRepositoryGetByStaffIdWithFilters.mockResolvedValue([]);
+    mockApplicationRepositoryGetByApplicantIdWithStatuses.mockResolvedValue([]);
+    mockJobPostingRepositoryGetByIdBatch.mockResolvedValue([]);
+    mockScheduleMergerMerge.mockReturnValue([]);
+
+    await getScheduleStats('staff-123');
+
+    // 당월 1일~말일 — 날짜는 멘탈 계산 금지, 코드로 산출 (실행 시점 기준)
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const toDateStr = (d: Date) =>
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const monthStart = toDateStr(new Date(now.getFullYear(), now.getMonth(), 1));
+    const monthEnd = toDateStr(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+
+    expect(mockWorkLogRepositoryGetByStaffIdWithFilters).toHaveBeenCalledWith(
+      'staff-123',
+      expect.objectContaining({
+        dateRange: { start: monthStart, end: monthEnd },
+      })
+    );
+  });
 });
 
 describe('scheduleService - groupSchedulesByDate', () => {
