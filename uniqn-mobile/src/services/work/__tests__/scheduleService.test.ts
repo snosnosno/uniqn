@@ -782,7 +782,7 @@ describe('scheduleService - getScheduleStats', () => {
     jest.clearAllMocks();
   });
 
-  it('최근 6개월 통계를 반환해야 함', async () => {
+  it('당월 스코프 통계를 반환해야 함', async () => {
     const mockSchedules = [
       createMockScheduleEvent({ type: STATUS.SCHEDULE.COMPLETED, payrollAmount: 150000 }),
       createMockScheduleEvent({ type: STATUS.SCHEDULE.CONFIRMED }),

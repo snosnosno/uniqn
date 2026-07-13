@@ -129,12 +129,17 @@ describe('ScheduleDetailModal', () => {
     expect(getByText('취소 요청')).toBeTruthy();
   });
 
-  it('opens the report modal immediately with a fallback target name before profile lookup resolves', async () => {
-    mockGetUserProfile.mockImplementation(() => new Promise(() => undefined));
+  it('신고 버튼: 시트를 먼저 닫고 300ms 후 onReport 를 대상 정보와 함께 호출한다', async () => {
+    // ReportModal 은 상위(schedule.tsx)로 승격됐다 — 시트는 닫히고 신고 요청만 위로 전달한다.
+    // (iOS 중첩 Modal 터치 먹통 방지: 시트 children 이면 시트가 닫힐 때 신고 모달도 언마운트된다)
+    const onClose = jest.fn();
+    const onReport = jest.fn();
 
     const schedule = {
       ...createMockScheduleEvent(),
       ownerId: 'owner-1',
+      jobPostingId: 'jp-1',
+      jobPostingName: '홀덤펍 딜러',
       postingProjection: {
         ownerName: '기본 구인자',
         settlement: {
@@ -144,13 +149,27 @@ describe('ScheduleDetailModal', () => {
     } as unknown as ScheduleEvent;
 
     const { getByText } = render(
-      <ScheduleDetailModal schedule={schedule} visible={true} onClose={jest.fn()} />
+      <ScheduleDetailModal
+        schedule={schedule}
+        visible={true}
+        onClose={onClose}
+        onReport={onReport}
+      />
     );
 
     fireEvent.press(getByText('신고'));
 
+    // 시트를 즉시 닫는다
+    expect(onClose).toHaveBeenCalledTimes(1);
+
+    // dismiss 애니메이션(300ms) 후 상위로 신고 요청(대상 스냅샷) 전달
     await waitFor(() => {
-      expect(getByText('기본 구인자')).toBeTruthy();
+      expect(onReport).toHaveBeenCalledWith({
+        ownerId: 'owner-1',
+        ownerName: '기본 구인자',
+        jobPostingId: 'jp-1',
+        jobPostingTitle: '홀덤펍 딜러',
+      });
     });
   });
 });

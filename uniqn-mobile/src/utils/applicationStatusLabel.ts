@@ -18,12 +18,13 @@ export const APPLICATION_COUNT_LABELS: Record<ApplicationStatus, string> = {
 };
 
 /**
- * 스케줄 통계(forward-looking, 오늘 포함)용 라벨.
- * 홈 위젯(APPLICATION_COUNT_LABELS)은 전체 시점 집계이므로 cross-screen 숫자가 다를 수 있음.
+ * 스케줄 통계(스케줄 탭, 월 스코프)용 라벨.
+ * 조회된 월의 type 기준 집계 — 날짜 필터 없이 리스트/캘린더 표시기준과 통일(2026-07 #2 수정).
+ * 홈 위젯(APPLICATION_COUNT_LABELS)은 집계 시점이 달라 cross-screen 숫자가 다를 수 있음.
  * 의미 차이를 라벨로 명시해 인지 혼선 차단.
- * - upcoming = 미래 applied = 지원
- * - confirmed = 미래 confirmed = 확정 완료
- * - completed = 과거 completed = 근무 종료
+ * - upcoming = 월 스코프 applied = 지원
+ * - confirmed = 월 스코프 confirmed = 확정
+ * - completed = completed = 근무 종료
  */
 export const SCHEDULE_STATS_LABELS = {
   upcoming: '지원',

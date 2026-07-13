@@ -18,6 +18,8 @@ import type { FilterTabOption } from '@/components/ui';
 import { ScheduleCard, ScheduleDetailModal, GroupedScheduleCard } from '@/components/schedule';
 import { CancellationRequestForm } from '@/components/applications';
 import { QRCodeScanner } from '@/components/qr';
+import { ReportModal } from '@/components/employer/ReportModal';
+import { useOwnerReport } from '@/components/schedule/useOwnerReport';
 import { TabHeader } from '@/components/headers';
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, MenuIcon } from '@/components/icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -553,6 +555,9 @@ export default function ScheduleScreen() {
     }, 300);
   }, []);
 
+  // 구인자 신고 모달 — 상위 소유. 시트를 닫은 뒤 형제로 열어 iOS 중첩 Modal 터치 먹통을 피한다.
+  const ownerReport = useOwnerReport();
+
   // 그룹 모드에서 날짜 변경 핸들러 (모달 내 이전/다음 버튼)
   const handleModalDateChange = useCallback((_date: string, schedule: ScheduleEvent) => {
     setSelectedSchedule(schedule);
@@ -838,6 +843,7 @@ export default function ScheduleScreen() {
         onQRScan={handleQRScan}
         onCancelApplication={handleCancelApplication}
         onRequestCancellation={handleRequestCancellation}
+        onReport={ownerReport.open}
         groupedSchedule={selectedGroupedSchedule}
         onDateChange={handleModalDateChange}
         onRefreshSchedule={refresh}
@@ -854,6 +860,18 @@ export default function ScheduleScreen() {
         title={`${qrScanAction === 'checkIn' ? '출근' : '퇴근'} QR 스캔`}
         scanError={lastError}
         onClearError={clearError}
+      />
+
+      {/* 구인자 신고 모달 — 시트 밖 형제로 렌더 (시트가 닫힌 뒤 열려 iOS 중첩 Modal 터치 먹통 회피) */}
+      <ReportModal
+        visible={ownerReport.visible}
+        onClose={ownerReport.close}
+        mode="employee"
+        target={ownerReport.target}
+        jobPostingId={ownerReport.jobPostingId}
+        jobPostingTitle={ownerReport.jobPostingTitle}
+        onSubmit={ownerReport.submit}
+        isLoading={ownerReport.isLoading}
       />
     </SafeAreaView>
   );
