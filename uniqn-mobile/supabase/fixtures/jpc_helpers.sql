@@ -47,14 +47,11 @@
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
-
--- 2026-07-12 파리티: prod 는 notifications/applications/work_logs 의 anon write 를
--- 회수했다(감사 §5 방어심화, 마이그 20260712010100). 위 블랭킷 GRANT 가 이를
--- 되살리므로 동일 REVOKE 로 재정합. (SELECT 는 유지 — prod 동일)
--- 회귀 고정: supabase/tests/parity_pin_write_grants.test.sql
-REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER
-  ON public.notifications, public.applications, public.work_logs
-  FROM anon;
+-- ⚠️ anon 의 blanket GRANT 는 의도적이다(RLS 매트릭스 테스트가 anon 컨텍스트로
+--    테이블에 접근해 RLS deny 를 검증하기 위함, wiki decisions/test-db-grants).
+--    prod 의 anon write 회수(마이그 20260712010100)는 defense-in-depth 이며 RLS 가
+--    실제 보안 경계다 — 테스트 스택 grant 를 prod 와 일치시키지 않는다. anon write
+--    회수의 회귀는 prod 실측으로 검증한다(감사 §11, parity_pin 테스트 대상 아님).
 
 -- ============================================================================
 -- 4 페르소나 + 리소스 셋업 (트랜잭션 안에서만 호출, ROLLBACK 로 정리)

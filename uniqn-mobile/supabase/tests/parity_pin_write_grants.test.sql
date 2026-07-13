@@ -6,15 +6,17 @@
 --   [2] 레포 전용 느슨 정책 부재 (notifications_insert_service,
 --       work_logs_insert_owner_or_admin, work_logs_delete_admin,
 --       work_logs_update_involved)
---   [3] anon 은 notifications/applications/work_logs 에 write 권한 없음
---   [4] users.nickname UNIQUE 제약 존재 (prod 파리티)
---   [5] protect_work_log_payroll_columns 에 settled lock 존재 (본문 카나리)
+--   [3] users.nickname UNIQUE 제약 존재 (prod 파리티)
+--   [4] protect_work_log_payroll_columns 에 settled lock 존재 (본문 카나리)
 --
--- ※ 로컬 픽스처(jpc_helpers.sql)의 블랭킷 GRANT 는 동일 REVOKE 를 미러하므로
---   test:db:helpers 재실행 후에도 [3] 이 유지된다.
+-- ※ anon write 회수(마이그 20260712010100)는 여기서 검증하지 않는다 —
+--   테스트 스택(jpc_helpers.sql)은 RLS 매트릭스 검증을 위해 anon 에 blanket GRANT 를
+--   의도적으로 부여하므로(wiki decisions/test-db-grants), grant 부재 단언이 하네스
+--   설계와 충돌한다. anon write 회수는 defense-in-depth 이고 RLS 가 실제 보안
+--   경계다 — prod 실측으로 검증했다(감사 §11).
 
 BEGIN;
-SELECT plan(9);
+SELECT plan(6);
 
 -- [1] 트리거 존재
 SELECT has_trigger('public', 'applications', 'applications_updated_at',
@@ -35,24 +37,7 @@ SELECT is(
   0, '레포 전용 느슨 정책 4종 부재 (prod 파리티)'
 );
 
--- [3] anon write 권한 회수 (INSERT/UPDATE/DELETE 모두 false)
-SELECT is(
-  (SELECT bool_or(has_table_privilege('anon', 'public.notifications', p))
-     FROM unnest(ARRAY['INSERT','UPDATE','DELETE']) AS p),
-  false, 'anon 은 notifications 에 write 권한 없음'
-);
-SELECT is(
-  (SELECT bool_or(has_table_privilege('anon', 'public.applications', p))
-     FROM unnest(ARRAY['INSERT','UPDATE','DELETE']) AS p),
-  false, 'anon 은 applications 에 write 권한 없음'
-);
-SELECT is(
-  (SELECT bool_or(has_table_privilege('anon', 'public.work_logs', p))
-     FROM unnest(ARRAY['INSERT','UPDATE','DELETE']) AS p),
-  false, 'anon 은 work_logs 에 write 권한 없음'
-);
-
--- [4] users.nickname UNIQUE (prod 파리티)
+-- [3] users.nickname UNIQUE (prod 파리티)
 SELECT is(
   (SELECT count(*)::int FROM pg_constraint
     WHERE conname = 'users_nickname_key'
@@ -60,7 +45,7 @@ SELECT is(
   1, 'users_nickname_key UNIQUE 제약 존재 (prod 파리티)'
 );
 
--- [5] settled lock 본문 카나리
+-- [4] settled lock 본문 카나리
 SELECT is(
   (SELECT count(*)::int FROM pg_proc
     WHERE proname = 'protect_work_log_payroll_columns'
