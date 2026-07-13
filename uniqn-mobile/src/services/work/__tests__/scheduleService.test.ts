@@ -782,7 +782,7 @@ describe('scheduleService - getScheduleStats', () => {
     jest.clearAllMocks();
   });
 
-  it('최근 6개월 통계를 반환해야 함', async () => {
+  it('당월 스코프 통계를 반환해야 함', async () => {
     const mockSchedules = [
       createMockScheduleEvent({ type: STATUS.SCHEDULE.COMPLETED, payrollAmount: 150000 }),
       createMockScheduleEvent({ type: STATUS.SCHEDULE.CONFIRMED }),
@@ -875,6 +875,28 @@ describe('scheduleService - getScheduleStats', () => {
     const stats = await getScheduleStats('staff-123');
 
     expect(stats.upcomingSchedules).toBe(1);
+  });
+
+  it('과거 날짜의 확정 스케줄도 확정 카운트에 포함한다 (리스트 표시 기준과 통일)', async () => {
+    // 근무일이 지났지만 아직 완료(WorkLog) 전환 전인 confirmed 지원 — 리스트/캘린더엔 확정으로 뜨는데
+    // 통계에서만 누락되던 회귀(과거 `date >= today` 필터). 이제 날짜 무관 confirmed 전체를 센다.
+    const mockSchedules = [
+      createMockScheduleEvent({
+        id: 'past-confirmed',
+        applicationId: 'app-past',
+        date: '2020-06-06',
+        type: STATUS.SCHEDULE.CONFIRMED,
+      }),
+    ];
+
+    mockWorkLogRepositoryGetByStaffIdWithFilters.mockResolvedValue([]);
+    mockApplicationRepositoryGetByApplicantIdWithStatuses.mockResolvedValue([]);
+    mockJobPostingRepositoryGetByIdBatch.mockResolvedValue([]);
+    mockScheduleMergerMerge.mockReturnValue(mockSchedules);
+
+    const stats = await getScheduleStats('staff-123');
+
+    expect(stats.confirmedSchedules).toBe(1);
   });
 });
 

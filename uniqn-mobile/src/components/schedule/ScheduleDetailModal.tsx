@@ -22,18 +22,14 @@ import {
   CalendarIcon,
 } from '@/components/icons';
 import { InfoTab, WorkTab, SettlementTab } from './tabs';
-import { ReportModal, type ReportTarget } from '@/components/employer/ReportModal';
-import { getUserProfile } from '@/services/auth';
-import { createReport } from '@/services/admin';
-import { useToastStore } from '@/stores/toastStore';
+import type { OwnerReportRequest } from './useOwnerReport';
 import { useModal } from '@/stores/modalStore';
 import { useThemeStore } from '@/stores/themeStore';
-import { logger } from '@/utils/logger';
 import { formatSingleDate } from '@/utils/scheduleGrouping';
 import { STATUS } from '@/constants';
 import { SCHEDULE_STATUS } from '@/constants/statusConfig';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
-import type { ScheduleEvent, GroupedScheduleEvent, CreateReportInput } from '@/types';
+import type { ScheduleEvent, GroupedScheduleEvent } from '@/types';
 
 // ============================================================================
 // Types
@@ -48,6 +44,11 @@ export interface ScheduleDetailModalProps {
   onCancelApplication?: (applicationId: string) => void;
   /** 취소 요청 콜백 (확정 상태에서 사용) */
   onRequestCancellation?: (applicationId: string) => void;
+  /**
+   * 구인자 신고 요청 콜백. 시트를 닫은 뒤 상위(schedule.tsx)에서 ReportModal 을 연다.
+   * ReportModal 이 시트 children 이면 시트가 닫힐 때 언마운트되어 iOS 중첩 Modal 터치 먹통을 못 피한다.
+   */
+  onReport?: (request: OwnerReportRequest) => void;
   /** 그룹화된 스케줄 (다중 날짜 전환 지원) */
   groupedSchedule?: GroupedScheduleEvent | null;
   /** 그룹 내 날짜 변경 콜백 */
@@ -84,6 +85,7 @@ export function ScheduleDetailModal({
   onQRScan,
   onCancelApplication,
   onRequestCancellation,
+  onReport,
   groupedSchedule,
   onDateChange,
   onRefreshSchedule,
@@ -91,12 +93,6 @@ export function ScheduleDetailModal({
   const [activeTab, setActiveTab] = useState<TabId>('info');
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
 
-  // 신고 모달 상태
-  const [isReportModalVisible, setIsReportModalVisible] = useState(false);
-  const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
-  const [isReportLoading, setIsReportLoading] = useState(false);
-
-  const { addToast } = useToastStore();
   const modal = useModal();
 
   // 중복 리페치 방지를 위한 마지막 리페치 시간
@@ -164,96 +160,52 @@ export function ScheduleDetailModal({
   const handleCancelApplication = useCallback(() => {
     if (!schedule?.applicationId || !onCancelApplication) return;
 
-    modal.showConfirm(
-      '지원 취소',
-      '정말 지원을 취소하시겠습니까?\n취소 후에는 다시 지원해야 합니다.',
-      () => {
-        onCancelApplication(schedule.applicationId!);
-        onClose();
-      }
-    );
+    const applicationId = schedule.applicationId;
+    // iOS 중첩 Modal 터치 먹통 방지 — 확인 다이얼로그(전역 ConfirmModal)를 띄우기 전에
+    // 상세 시트를 먼저 닫는다. applicationId 는 클로저로 캡처해 시트가 닫혀도 안전.
+    onClose();
+    setTimeout(() => {
+      modal.showConfirm(
+        '지원 취소',
+        '정말 지원을 취소하시겠습니까?\n취소 후에는 다시 지원해야 합니다.',
+        () => {
+          onCancelApplication(applicationId);
+        }
+      );
+    }, 300);
   }, [schedule?.applicationId, onCancelApplication, onClose, modal]);
 
   // 취소 요청 핸들러 (확인 모달)
   const handleRequestCancellation = useCallback(() => {
     if (!schedule?.applicationId || !onRequestCancellation) return;
 
-    modal.showConfirm(
-      '취소 요청',
-      '확정된 일정의 취소를 요청하시겠습니까?\n구인자가 승인해야 취소가 완료됩니다.',
-      () => {
-        onRequestCancellation(schedule.applicationId!);
-        onClose();
-      }
-    );
+    const applicationId = schedule.applicationId;
+    // iOS 중첩 Modal 터치 먹통 방지 — 확인 다이얼로그를 띄우기 전에 상세 시트를 먼저 닫는다.
+    onClose();
+    setTimeout(() => {
+      modal.showConfirm(
+        '취소 요청',
+        '확정된 일정의 취소를 요청하시겠습니까?\n구인자가 승인해야 취소가 완료됩니다.',
+        () => {
+          onRequestCancellation(applicationId);
+        }
+      );
+    }, 300);
   }, [schedule?.applicationId, onRequestCancellation, onClose, modal]);
 
-  // 신고 모달 열기
-  const handleOpenReportModal = useCallback(async () => {
-    if (!schedule?.ownerId) {
-      addToast({ type: 'error', message: '구인자 정보를 찾을 수 없습니다.' });
-      return;
-    }
-
-    const ownerId = schedule.ownerId;
-    const fallbackName = schedule.postingProjection?.ownerName || '구인자';
-
-    setReportTarget({
-      id: ownerId,
-      name: fallbackName,
-    });
-    setIsReportModalVisible(true);
-
-    try {
-      const profile = await getUserProfile(ownerId);
-      const resolvedName = profile?.name || profile?.nickname;
-
-      if (!resolvedName) {
-        return;
-      }
-
-      setReportTarget((current) =>
-        current?.id === ownerId
-          ? {
-              ...current,
-              name: resolvedName,
-            }
-          : current
-      );
-    } catch (error) {
-      logger.error('Failed to get employer profile', error as Error);
-    }
-  }, [schedule, addToast]);
-
-  // 신고 모달 닫기 (단순 setState이므로 useCallback 불필요)
-  const handleCloseReportModal = () => {
-    setIsReportModalVisible(false);
-    setReportTarget(null);
-  };
-
-  // 신고 제출
-  const handleReportSubmit = useCallback(
-    async (input: CreateReportInput) => {
-      setIsReportLoading(true);
-      try {
-        await createReport(input);
-        addToast({ type: 'success', message: '신고가 접수되었습니다.' });
-        setIsReportModalVisible(false);
-        setReportTarget(null);
-      } catch (error) {
-        const err = error as Error & { code?: string; message?: string };
-        logger.error('Failed to submit report', err, {
-          input,
-          errorCode: err.code,
-          errorMessage: err.message,
-        });
-        addToast({ type: 'error', message: '신고 접수에 실패했습니다. 다시 시도해주세요.' });
-      } finally {
-        setIsReportLoading(false);
-      }
-    },
-    [addToast]
-  );
+  // 신고 버튼 — 시트를 먼저 닫고 상위(schedule.tsx)에서 신고 모달을 연다.
+  // iOS 중첩 Modal 터치 먹통 방지 (QR·취소요청과 동일 패턴). 대상 정보는 클로저로 캡처해 시트가 닫혀도 안전.
+  const handleReport = useCallback(() => {
+    if (!schedule?.ownerId || !onReport) return;
+    const request: OwnerReportRequest = {
+      ownerId: schedule.ownerId,
+      ownerName: schedule.postingProjection?.ownerName || '구인자',
+      jobPostingId: schedule.jobPostingId,
+      jobPostingTitle: schedule.jobPostingName,
+    };
+    onClose();
+    setTimeout(() => onReport(request), 300);
+  }, [schedule, onReport, onClose]);
 
   // 탭 설정 (상태에 따라 동적으로 구성)
   const tabs: TabConfig[] = [
@@ -485,7 +437,7 @@ export function ScheduleDetailModal({
               <Button
                 variant="outline"
                 size="md"
-                onPress={handleOpenReportModal}
+                onPress={handleReport}
                 className="border-secondary-300 dark:border-surface-overlay"
                 icon={<AlertTriangleIcon size={16} color={SECONDARY_PALETTE[500]} />}
               >
@@ -495,18 +447,6 @@ export function ScheduleDetailModal({
           )}
         </View>
       </View>
-
-      {/* 신고 모달 */}
-      <ReportModal
-        visible={isReportModalVisible}
-        onClose={handleCloseReportModal}
-        mode="employee"
-        target={reportTarget}
-        jobPostingId={schedule.jobPostingId}
-        jobPostingTitle={schedule.jobPostingName}
-        onSubmit={handleReportSubmit}
-        isLoading={isReportLoading}
-      />
     </Modal>
   );
 }

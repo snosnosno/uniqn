@@ -237,7 +237,7 @@ export const PreQuestionForm = memo(function PreQuestionForm({
   ).length;
 
   return (
-    <View className="bg-surface-card rounded-md p-4">
+    <View className="bg-surface-page dark:bg-surface rounded-md p-4">
       {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-4">
         <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white">

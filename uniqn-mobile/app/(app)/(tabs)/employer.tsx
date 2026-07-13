@@ -26,6 +26,7 @@ import {
   useReopenJobPosting,
 } from '@/hooks/useJobManagement';
 import { useSharedJobPostings } from '@/hooks/job-posting/useSharedJobPostings';
+import { usePostingFilledCounts } from '@/hooks/usePostingFilledCounts';
 import { useWeeklyGridEnabled } from '@/hooks';
 import { useReceivedWorkspaceInvitations } from '@/hooks/workspace';
 import { useHasRole } from '@/stores/authStore';
@@ -206,6 +207,14 @@ function EmployerView() {
     });
   }, [filter, postings]);
 
+  // 확정 인원(filled/total) hydrate — 내 공고 카드도 구인구직·공고상세와 동일한 실측 카운트를 쓰도록 배선.
+  // (SP3 이후 role.filled 는 소스에서 0 고정 → 표시 시점 hydrate 가 없으면 항상 0/N 으로 나온다)
+  const filledCountIds = useMemo(
+    () => filteredPostings.map((posting) => posting.id),
+    [filteredPostings]
+  );
+  const filledCountsQuery = usePostingFilledCounts(filledCountIds);
+
   const filterCounts = useMemo(() => {
     if (!postings) {
       return {};
@@ -381,6 +390,7 @@ function EmployerView() {
               onShowQR={handleShowQR}
               isClosing={closeMutation.isPending}
               isReopening={reopenMutation.isPending}
+              filledCounts={filledCountsQuery.data}
             />
           )}
           keyExtractor={(item) => item.id}

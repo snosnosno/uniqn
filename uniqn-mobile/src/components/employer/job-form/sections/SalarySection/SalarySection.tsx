@@ -209,7 +209,7 @@ export const SalarySection = memo(function SalarySection({
         onChange={handleTaxSettingsChange}
         totalAmount={previewTotalAmount}
         showLabel={true}
-        showPreview={true}
+        showPreview={false}
         className="mb-3"
       />
 
