@@ -563,7 +563,10 @@ export default function ScheduleScreen() {
     // 현재 근무 상태에 따라 액션 결정
     const action: QRCodeAction = isWorking ? 'checkOut' : 'checkIn';
     setQRScanAction(action);
-    setIsQRScannerVisible(true);
+    // iOS 중첩 Modal 터치 먹통 방지 — 상세 시트를 먼저 닫고 dismiss 애니메이션 후 QR 스캐너를 연다.
+    // (두 네이티브 Modal 이 동시에 present 되면 iOS 에서 터치 라우팅이 깨져 스캐너가 먹통이 된다)
+    setIsDetailSheetVisible(false);
+    setTimeout(() => setIsQRScannerVisible(true), 300);
   }, [isWorking]);
 
   // QR 스캔 결과 처리 훅

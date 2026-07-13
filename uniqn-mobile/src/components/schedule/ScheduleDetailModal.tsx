@@ -164,28 +164,37 @@ export function ScheduleDetailModal({
   const handleCancelApplication = useCallback(() => {
     if (!schedule?.applicationId || !onCancelApplication) return;
 
-    modal.showConfirm(
-      '지원 취소',
-      '정말 지원을 취소하시겠습니까?\n취소 후에는 다시 지원해야 합니다.',
-      () => {
-        onCancelApplication(schedule.applicationId!);
-        onClose();
-      }
-    );
+    const applicationId = schedule.applicationId;
+    // iOS 중첩 Modal 터치 먹통 방지 — 확인 다이얼로그(전역 ConfirmModal)를 띄우기 전에
+    // 상세 시트를 먼저 닫는다. applicationId 는 클로저로 캡처해 시트가 닫혀도 안전.
+    onClose();
+    setTimeout(() => {
+      modal.showConfirm(
+        '지원 취소',
+        '정말 지원을 취소하시겠습니까?\n취소 후에는 다시 지원해야 합니다.',
+        () => {
+          onCancelApplication(applicationId);
+        }
+      );
+    }, 300);
   }, [schedule?.applicationId, onCancelApplication, onClose, modal]);
 
   // 취소 요청 핸들러 (확인 모달)
   const handleRequestCancellation = useCallback(() => {
     if (!schedule?.applicationId || !onRequestCancellation) return;
 
-    modal.showConfirm(
-      '취소 요청',
-      '확정된 일정의 취소를 요청하시겠습니까?\n구인자가 승인해야 취소가 완료됩니다.',
-      () => {
-        onRequestCancellation(schedule.applicationId!);
-        onClose();
-      }
-    );
+    const applicationId = schedule.applicationId;
+    // iOS 중첩 Modal 터치 먹통 방지 — 확인 다이얼로그를 띄우기 전에 상세 시트를 먼저 닫는다.
+    onClose();
+    setTimeout(() => {
+      modal.showConfirm(
+        '취소 요청',
+        '확정된 일정의 취소를 요청하시겠습니까?\n구인자가 승인해야 취소가 완료됩니다.',
+        () => {
+          onRequestCancellation(applicationId);
+        }
+      );
+    }, 300);
   }, [schedule?.applicationId, onRequestCancellation, onClose, modal]);
 
   // 신고 모달 열기
