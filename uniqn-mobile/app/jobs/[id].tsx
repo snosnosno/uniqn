@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { useInstallPrompt, useJobDetail, useShare } from '@/hooks';
 import { trackJobView } from '@/services/observability';
 import { useThemeStore } from '@/stores';
+import { isTournamentApprovalBlocked } from '@/domains/job-posting';
 import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 
 export default function PublicJobDetailAliasRoute() {
@@ -110,6 +111,18 @@ export default function PublicJobDetailAliasRoute() {
           error={error}
           onRetry={refresh}
         />
+      </SafeAreaView>
+    );
+  }
+
+  // 미승인(pending/rejected/누락) 대회 공고는 직링크로 열람할 수 없다(P0#4 승인 게이트).
+  // 소유자는 (employer) 관리 상세로 보므로 예외 없음.
+  if (isTournamentApprovalBlocked(job)) {
+    return (
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <StackHeader title="공고 상세" fallbackHref="/jobs" />
+        <PostingSurfaceState mode="error" scope="detail" message="승인 대기 중인 공고입니다." />
       </SafeAreaView>
     );
   }

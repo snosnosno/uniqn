@@ -48,6 +48,7 @@ export interface UpdateWorkTimeInput {
   checkInTime: TimeInput;
   checkOutTime: TimeInput;
   reason: string;
+  /** @deprecated 무시됨 — confirmedStaffService가 세션 actorId로 강제 스탬프한다(위조 차단). 호출자가 넘겨도 반영되지 않는다. */
   modifiedBy?: string;
 }
 
@@ -55,6 +56,7 @@ export interface UpdateStaffRoleInput {
   workLogId: string;
   newRole: string;
   reason: string;
+  /** @deprecated 무시됨 — confirmedStaffService가 세션 actorId로 강제 스탬프한다(위조 차단). 호출자가 넘겨도 반영되지 않는다. */
   changedBy?: string;
 }
 

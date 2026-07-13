@@ -37,6 +37,28 @@ export {
 } from './scheduleGrouping';
 
 // ============================================================================
+// 정산 완료 동결값 판정 (SSOT)
+// ============================================================================
+
+/**
+ * 정산 완료 건이 동결된 표시액(payrollAmount)을 진실원으로 써야 하는지 판정한다.
+ *
+ * 완료 시점에 확정·지급된 금액은 이후 공고 급여 설정이 바뀌어도 소급 변경되면
+ * 안 되므로 동결값을 우선한다. 동결값이 없는 레거시 완료 행만 재계산으로 fallback.
+ *
+ * ⚠️ `Number.isFinite`로 판정한다 — **동결값 0도 존중**한다(노쇼 등 정산 0원 완료
+ * 건). `amount > 0` 가드로 판정하면 0원 완료 건이 재계산 fallback으로 새어나가
+ * ScheduleCard 표시액과 정산 목록(settlementGrouping)이 어긋난다. 두 소비처가
+ * 반드시 이 헬퍼를 공유해야 계약이 일치한다.
+ */
+export function shouldUseFrozenPayrollAmount(
+  isCompleted: boolean,
+  payrollAmount: number | null | undefined
+): payrollAmount is number {
+  return isCompleted && Number.isFinite(payrollAmount);
+}
+
+// ============================================================================
 // Types
 // ============================================================================
 
@@ -130,14 +152,24 @@ function createDateSettlementStatus(
     taxSettings,
   });
 
+  const payrollStatus = workLog.payrollStatus || STATUS.PAYROLL.PENDING;
+
+  // 정산 완료 건은 완료 시점에 동결된 금액(payrollAmount)을 진실원으로 사용한다.
+  // 구인자가 완료 후 공고 급여 설정을 바꿔도 이미 확정·지급된 표시액이 소급 변경되지 않도록 방어.
+  // 동결값이 없는 레거시 완료 행은 재계산으로 안전하게 fallback한다.
+  const isCompleted = payrollStatus === STATUS.PAYROLL.COMPLETED;
+  const amount = shouldUseFrozenPayrollAmount(isCompleted, workLog.payrollAmount)
+    ? workLog.payrollAmount
+    : settlementResult.afterTaxPay;
+
   // 출퇴근 완료 여부 확인
   const hasValidTimes = !!(workLog.checkInTime && workLog.checkOutTime);
 
   return {
     date: workLog.date,
     formattedDate: formatSingleDate(workLog.date),
-    payrollStatus: workLog.payrollStatus || STATUS.PAYROLL.PENDING,
-    amount: settlementResult.afterTaxPay,
+    payrollStatus,
+    amount,
     workLogId: workLog.id,
     role: workLog.role,
     customRole: workLog.customRole,

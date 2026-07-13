@@ -300,7 +300,13 @@ describe('useJobManagement hooks', () => {
     });
 
     await waitFor(() => {
-      expect(mockCreateJobPosting).toHaveBeenCalledWith(input, 'employer-1', 'Owner Name');
+      // P1#8: 목록 조회와 동일한 활성 워크스페이스(activeWorkspace.id)를 생성 서비스에 전달한다.
+      expect(mockCreateJobPosting).toHaveBeenCalledWith(
+        input,
+        'employer-1',
+        'Owner Name',
+        'ws-default'
+      );
     });
     expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ['jobManagement'] });
     expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ['jobPostings'] });
@@ -310,6 +316,32 @@ describe('useJobManagement hooks', () => {
     expect(mockAddToast).not.toHaveBeenCalledWith({
       type: 'success',
       message: '공고가 등록되었습니다.',
+    });
+  });
+
+  it('P1#8 — 활성 워크스페이스가 없으면 workspaceId 를 undefined 로 넘겨 서비스 fallback 에 맡긴다', async () => {
+    mockUseActiveWorkspace.mockReturnValue({
+      activeWorkspace: undefined,
+      workspaces: [],
+      isLoading: false,
+      setActiveWorkspaceId: jest.fn(),
+    });
+    const input = createInput();
+    mockCreateJobPosting.mockResolvedValue({ id: 'job-1', jobPosting: { title: input.title } });
+
+    const { result } = renderHook(() => useCreateJobPosting());
+
+    await act(async () => {
+      await result.current.mutateAsync({ input });
+    });
+
+    await waitFor(() => {
+      expect(mockCreateJobPosting).toHaveBeenCalledWith(
+        input,
+        'employer-1',
+        'Owner Name',
+        undefined
+      );
     });
   });
 

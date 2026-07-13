@@ -43,6 +43,61 @@ describe('executeCancelConfirmation — H5 staff_already_checked_in 매핑', () 
   });
 });
 
+describe('executeCancelConfirmation — actorType 배관 (P0-B)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('actorType 미지정 시 기본값 staff_initiates 로 RPC를 호출한다', async () => {
+    mockRpc.mockResolvedValue({
+      data: { success: true, deleted_work_log_count: 1, cancelled_at: '2026-07-11T00:00:00.000Z' },
+      error: null,
+    });
+
+    await executeCancelConfirmation('app-1', 'staff-1', '개인 사정');
+
+    expect(mockRpc).toHaveBeenCalledWith(
+      'cancel_application_atomically',
+      expect.objectContaining({
+        p_application_id: 'app-1',
+        p_actor_id: 'staff-1',
+        p_actor_type: 'staff_initiates',
+      })
+    );
+  });
+
+  it('employer_initiates 를 넘기면 p_actor_type 에 그대로 전달한다', async () => {
+    mockRpc.mockResolvedValue({
+      data: { success: true, deleted_work_log_count: 1, cancelled_at: '2026-07-11T00:00:00.000Z' },
+      error: null,
+    });
+
+    await executeCancelConfirmation('app-1', 'owner-1', '구인자 해제', 'employer_initiates');
+
+    expect(mockRpc).toHaveBeenCalledWith(
+      'cancel_application_atomically',
+      expect.objectContaining({
+        p_application_id: 'app-1',
+        p_actor_id: 'owner-1',
+        p_actor_type: 'employer_initiates',
+      })
+    );
+  });
+
+  it('unauthorized 응답은 "권한이 없습니다" BusinessError로 매핑(기존 동작 유지)', async () => {
+    mockRpc.mockResolvedValue({
+      data: { success: false, error: 'unauthorized' },
+      error: null,
+    });
+
+    await expect(
+      executeCancelConfirmation('app-1', 'outsider-1', undefined, 'employer_initiates')
+    ).rejects.toMatchObject({
+      userMessage: expect.stringContaining('권한'),
+    });
+  });
+});
+
 // ─── fixtures ────────────────────────────────────────────────────────────────
 const fakeFixedJobPosting = {
   id: 'jp-fixed-1',

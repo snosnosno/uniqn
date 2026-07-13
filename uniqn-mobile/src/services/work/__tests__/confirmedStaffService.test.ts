@@ -163,7 +163,9 @@ describe('confirmedStaffService', () => {
       newRole: 'dealer',
       isStandardRole: true,
       reason: 'Role correction',
-      changedBy: 'system',
+      // changedBy 미전달 시에도 'system'이 아니라 세션 actorId 로 스탬프된다
+      changedBy: 'owner-1',
+      actorId: 'owner-1',
     });
   });
 
@@ -186,7 +188,38 @@ describe('confirmedStaffService', () => {
     );
   });
 
-  it('cancels confirmation using canonical application id', async () => {
+  it('updateStaffRole는 클라이언트가 넘긴 changedBy를 무시하고 세션 actorId로 스탬프한다', async () => {
+    mockConfirmedStaffRepository.updateRoleWithTransaction.mockResolvedValue(undefined);
+
+    await updateStaffRole({
+      workLogId: 'worklog-1',
+      newRole: 'dealer',
+      reason: 'Role correction',
+      changedBy: 'spoofed-attacker',
+    });
+
+    expect(mockConfirmedStaffRepository.updateRoleWithTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ changedBy: 'owner-1', actorId: 'owner-1' })
+    );
+  });
+
+  it('updateWorkTime은 클라이언트가 넘긴 modifiedBy를 무시하고 세션 actorId로 스탬프한다', async () => {
+    mockConfirmedStaffRepository.updateWorkTimeWithTransaction.mockResolvedValue(undefined);
+
+    await updateWorkTime({
+      workLogId: 'worklog-1',
+      checkInTime: '09:00',
+      checkOutTime: '18:00',
+      reason: 'Manual correction',
+      modifiedBy: 'spoofed-attacker',
+    });
+
+    expect(mockConfirmedStaffRepository.updateWorkTimeWithTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ modifiedBy: 'owner-1', actorId: 'owner-1' })
+    );
+  });
+
+  it('확정 스태프 해제는 실제 applicationId 와 employer_initiates 로 RPC 를 호출한다', async () => {
     mockWorkLogRepository.getById.mockResolvedValue(
       createMockWorkLog({ staffId: 'staff-1', jobPostingId: 'job-1', applicationId: 'app-1' })
     );
@@ -200,7 +233,30 @@ describe('confirmedStaffService', () => {
       reason: 'Release slot',
     });
 
-    expect(mockCancelConfirmation).toHaveBeenCalledWith('job-1_staff-1', 'owner-1', 'Release slot');
+    expect(mockCancelConfirmation).toHaveBeenCalledWith(
+      'app-1',
+      'owner-1',
+      'Release slot',
+      'employer_initiates'
+    );
+  });
+
+  it('합성 키(jobPostingId_staffId)가 아니라 실제 applicationId 를 넘긴다 (22P02 회귀 방지)', async () => {
+    mockWorkLogRepository.getById.mockResolvedValue(
+      createMockWorkLog({ staffId: 'staff-1', jobPostingId: 'job-1', applicationId: 'app-42' })
+    );
+    mockCancelConfirmation.mockResolvedValue(undefined as never);
+
+    await cancelConfirmedStaffConfirmation({
+      workLogId: 'worklog-1',
+      jobPostingId: 'job-1',
+      staffId: 'staff-1',
+      date: '2025-01-20',
+    });
+
+    const [passedApplicationId] = mockCancelConfirmation.mock.calls[0];
+    expect(passedApplicationId).toBe('app-42');
+    expect(passedApplicationId).not.toBe('job-1_staff-1');
   });
 
   it('keeps deleteConfirmedStaff as backward-compatible alias', async () => {
@@ -216,7 +272,12 @@ describe('confirmedStaffService', () => {
       date: '2025-01-20',
     });
 
-    expect(mockCancelConfirmation).toHaveBeenCalledWith('job-1_staff-1', 'owner-1', undefined);
+    expect(mockCancelConfirmation).toHaveBeenCalledWith(
+      'app-1',
+      'owner-1',
+      undefined,
+      'employer_initiates'
+    );
   });
 
   it('routes direct-added staff (no applicationId) to removeDirectStaff', async () => {
@@ -245,7 +306,7 @@ describe('confirmedStaffService', () => {
 
     expect(mockConfirmedStaffRepository.markAsNoShow).toHaveBeenCalledWith({
       workLogId: 'worklog-1',
-      ownerId: 'owner-1',
+      actorId: 'owner-1',
       reason: 'No arrival',
     });
   });
@@ -258,7 +319,7 @@ describe('confirmedStaffService', () => {
 
     expect(mockConfirmedStaffRepository.cancelNoShow).toHaveBeenCalledWith({
       workLogId: 'worklog-1',
-      ownerId: 'owner-1',
+      actorId: 'owner-1',
     });
     expect(mockEnqueueScheduleBoardSync).toHaveBeenCalledWith('job-1', 'update', {
       jobPostingId: 'job-1',
@@ -282,7 +343,7 @@ describe('confirmedStaffService', () => {
 
     expect(mockConfirmedStaffRepository.updateStatus).toHaveBeenCalledWith({
       workLogId: 'worklog-1',
-      ownerId: 'owner-1',
+      actorId: 'owner-1',
       status: 'completed',
     });
   });

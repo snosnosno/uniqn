@@ -45,6 +45,7 @@ import type {
   ApplicantListWithStats,
   ConfirmWithHistoryResult,
   CancelConfirmationResult,
+  CancelActorType,
   SubscribeCallbacks,
 } from '../interfaces';
 import {
@@ -513,9 +514,10 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
   async cancelConfirmationTransaction(
     applicationId: string,
     ownerId: string,
-    cancelReason?: string
+    cancelReason?: string,
+    actorType?: CancelActorType
   ): Promise<CancelConfirmationResult> {
-    return executeCancelConfirmation(applicationId, ownerId, cancelReason);
+    return executeCancelConfirmation(applicationId, ownerId, cancelReason, actorType);
   }
 
   // ==========================================================================

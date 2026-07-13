@@ -157,7 +157,7 @@ describe('applicationHistoryService', () => {
   });
 
   describe('cancelConfirmation', () => {
-    it('delegates cancellation to the repository transaction', async () => {
+    it('delegates cancellation to the repository transaction (기본 staff_initiates)', async () => {
       const repositoryResult = {
         applicationId: 'app-1',
         restoredStatus: 'applied',
@@ -172,9 +172,30 @@ describe('applicationHistoryService', () => {
       expect(mockApplicationRepository.cancelConfirmationTransaction).toHaveBeenCalledWith(
         'app-1',
         'owner-1',
-        'Release slot'
+        'Release slot',
+        'staff_initiates'
       );
       expect(result).toEqual(repositoryResult);
+    });
+
+    it('employer_initiates actorType 을 repository 트랜잭션으로 배관한다', async () => {
+      const repositoryResult = {
+        applicationId: 'app-1',
+        restoredStatus: 'applied',
+        cancelledAt: { seconds: 1700001000, nanoseconds: 0 },
+      };
+      mockApplicationRepository.cancelConfirmationTransaction.mockResolvedValue(
+        repositoryResult as never
+      );
+
+      await cancelConfirmation('app-1', 'owner-1', '구인자 해제', 'employer_initiates');
+
+      expect(mockApplicationRepository.cancelConfirmationTransaction).toHaveBeenCalledWith(
+        'app-1',
+        'owner-1',
+        '구인자 해제',
+        'employer_initiates'
+      );
     });
 
     it('rethrows AppError instances without remapping', async () => {

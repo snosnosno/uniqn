@@ -388,27 +388,29 @@ function createMockWorkLogWithTimes(overrides = {}) {
 // Tests
 // ============================================================================
 
+// shim 이 통과시킬 비-owner caller(워크스페이스 멤버/admin) 집합. 각 테스트에서 채운다.
+const allowedCallers = new Set<string>();
+
 describe('settlementService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     resetCounters();
+    allowedCallers.clear();
 
-    // P0 hotfix (PR #76) shim — loadAndVerifyJobPostingAccess 가
-    // 기존 mockJobPostingGetById 흐름과 동일 시맨틱으로 동작하도록.
-    // 4 시나리오 (owner / member / admin / 외부인) 의 owner-only 경로 만 mirror —
-    // 기존 테스트가 owner 시나리오만 검증하므로 충분.
+    // loadAndVerifyJobPostingAccess 는 실제로 owner|워크스페이스 멤버|admin 을 허용한다.
+    // shim 이 그 계약을 그대로 mirror 한다 — allowedCallers 에 든 caller 는 통과.
+    // (2026-07-10: owner-only 만 mirror 하던 사각지대 제거)
     mockLoadAndVerifyJobPostingAccess.mockImplementation(
       async (jobPostingId: string, callerId: string, _operation: string) => {
         const result = await mockJobPostingGetById(jobPostingId);
         if (!result) {
-          // BusinessError mock 재사용 (jest.mock '@/errors' factory 결과)
-          // userMessage 는 OLD 코드 ('존재하지 않는 공고입니다') 로 통일하여 회귀 테스트 보존
           const { BusinessError, ERROR_CODES } = jest.requireMock('@/errors');
           throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
             userMessage: '존재하지 않는 공고입니다',
           });
         }
-        if (result.ownerId !== callerId) {
+        const allowed = result.ownerId === callerId || allowedCallers.has(callerId);
+        if (!allowed) {
           const { PermissionError, ERROR_CODES } = jest.requireMock('@/errors');
           throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
             userMessage: '본인의 공고만 조회할 수 있습니다',
@@ -458,6 +460,19 @@ describe('settlementService', () => {
       await expect(getWorkLogsByJobPosting('job-1', 'employer-1')).rejects.toThrow(
         '본인의 공고만 조회할 수 있습니다'
       );
+    });
+
+    // 2026-07-10: owner 아닌 워크스페이스 멤버도 조회 가능해야 한다(회귀 사각지대 제거).
+    it('워크스페이스 멤버(비-owner)의 조회는 통과한다', async () => {
+      const jobPosting = createMockJobPostingWithSalary({ id: 'job-1', ownerId: 'other-employer' });
+      const workLog = createMockWorkLogWithTimes({ id: 'worklog-1', jobPostingId: 'job-1' });
+      mockJobPostingGetById.mockResolvedValue(jobPosting);
+      mockWorkLogGetByJobPostingId.mockResolvedValue([workLog]);
+      allowedCallers.add('member-1');
+
+      const result = await getWorkLogsByJobPosting('job-1', 'member-1');
+
+      expect(result).toHaveLength(1);
     });
 
     it('should filter by date range', async () => {

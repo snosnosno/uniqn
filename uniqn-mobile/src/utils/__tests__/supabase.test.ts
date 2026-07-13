@@ -138,7 +138,29 @@ describe('handleSupabaseError — P0001 (plpgsql RAISE EXCEPTION)', () => {
     }
   });
 
-  it('P0001 이지만 MAX_CAPACITY 메시지 아님 → 정원마감 매핑 안 함 (기존 동작 유지)', () => {
+  it('P0001 + INVALID_STATUS → BUSINESS_INVALID_STATE + 레이스 안내 문구 (감사 P2#13)', () => {
+    try {
+      handleSupabaseError(
+        {
+          code: 'P0001',
+          message: 'INVALID_STATUS: 현재 상태 confirmed, applied만 확정 가능',
+          details: '',
+          hint: '',
+        },
+        { operation: 'rpc:confirm_application', table: 'applications' }
+      );
+      throw new Error('should have thrown');
+    } catch (error) {
+      const appError = error as { code: string; userMessage: string };
+      expect(appError.code).toBe(ERROR_CODES.BUSINESS_INVALID_STATE);
+      // UNKNOWN('알 수 없는 오류')이 아니라 레이스임을 알리는 안내 문구여야 한다
+      expect(appError.userMessage).toBe(
+        '다른 사용자가 먼저 처리했어요. 새로고침 후 확인해 주세요.'
+      );
+    }
+  });
+
+  it('P0001 이지만 MAX_CAPACITY / INVALID_STATUS 아님 → 특별 매핑 안 함 (기존 동작 유지)', () => {
     try {
       handleSupabaseError(
         {

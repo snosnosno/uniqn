@@ -26,6 +26,7 @@ import {
   getCancelUnavailableReason,
 } from '@/utils/applicationStatusMessage';
 import { isSupportedReleasePosting } from '@/utils/jobPostingVisibility';
+import { isTournamentApprovalBlocked } from '@/domains/job-posting';
 
 const DEFAULT_BOTTOM_ACTION_HEIGHT = 116;
 
@@ -129,6 +130,18 @@ export default function JobDetailScreen() {
         <Stack.Screen options={{ headerShown: false }} />
         <StackHeader title="공고 상세" fallbackHref="/(app)/(tabs)/home-jobs" />
         <ErrorState message={error?.message ?? '공고를 찾을 수 없습니다'} onRetry={refresh} />
+      </SafeAreaView>
+    );
+  }
+
+  // 미승인(pending/rejected/누락) 대회 공고는 상세 열람·지원 모두 차단(P0#4 승인 게이트).
+  // 소유자는 (employer) 관리 상세로 보므로 예외 없음.
+  if (isTournamentApprovalBlocked(job)) {
+    return (
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <StackHeader title="공고 상세" fallbackHref="/(app)/(tabs)/home-jobs" />
+        <ErrorState message="승인 대기 중인 공고입니다." />
       </SafeAreaView>
     );
   }

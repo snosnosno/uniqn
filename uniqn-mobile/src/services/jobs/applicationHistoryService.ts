@@ -12,7 +12,11 @@ import type { Application, Assignment } from '@/types';
 import { findActiveConfirmation } from '@/domains/application';
 import { applicationRepository } from '@/repositories';
 import { enqueueScheduleBoardSync } from '@/services/jobs/jobManagementService';
-import type { CancelConfirmationResult, ConfirmWithHistoryResult } from '@/repositories';
+import type {
+  CancelConfirmationResult,
+  ConfirmWithHistoryResult,
+  CancelActorType,
+} from '@/repositories';
 
 // Re-export types from repository interfaces for backward compatibility.
 export type { CancelConfirmationResult, ConfirmWithHistoryResult } from '@/repositories';
@@ -95,19 +99,24 @@ export async function confirmApplicationWithHistory(
 
 /**
  * 확정을 취소합니다.
+ *
+ * @param actorType - 취소 주체 유형(기본 staff_initiates). 구인자 해제 경로는 employer_initiates.
+ *                    인가 주체 판정은 RPC가 수행한다.
  */
 export async function cancelConfirmation(
   applicationId: string,
   ownerId: string,
-  cancelReason?: string
+  cancelReason?: string,
+  actorType: CancelActorType = 'staff_initiates'
 ): Promise<CancelConfirmationResult> {
   try {
-    logger.info('확정 취소 시작', { applicationId, ownerId });
+    logger.info('확정 취소 시작', { applicationId, ownerId, actorType });
 
     const result = await applicationRepository.cancelConfirmationTransaction(
       applicationId,
       ownerId,
-      cancelReason
+      cancelReason,
+      actorType
     );
     await syncScheduleBoardSafely(applicationId, 'cancel');
 

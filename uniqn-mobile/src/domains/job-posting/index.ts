@@ -37,3 +37,4 @@ export {
   normalizePostingAggregateStats,
   transitionPostingAggregateStats,
 } from './stats';
+export { isTournamentApprovalBlocked } from './approvalGate';

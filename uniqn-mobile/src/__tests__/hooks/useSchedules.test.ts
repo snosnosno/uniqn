@@ -805,6 +805,36 @@ describe('useSchedules hooks', () => {
       });
     });
 
+    it('exposes the partial-fetch warning produced by the schedule service', async () => {
+      const schedules = [createMockSchedule({ date: '2024-02-15' })];
+
+      mockQueryData = {
+        schedules,
+        stats: createMockStats(),
+        warning: '일부 근무 기록을 불러오지 못했습니다',
+      };
+
+      const { result } = renderHook(() => useCalendarView());
+
+      await waitFor(() => {
+        expect(mockGetSchedulesByMonth).toHaveBeenCalled();
+      });
+
+      expect(result.current.warning).toBe('일부 근무 기록을 불러오지 못했습니다');
+    });
+
+    it('leaves warning undefined when the service reports no partial failure', async () => {
+      mockQueryData = { schedules: [createMockSchedule()], stats: createMockStats() };
+
+      const { result } = renderHook(() => useCalendarView());
+
+      await waitFor(() => {
+        expect(mockGetSchedulesByMonth).toHaveBeenCalled();
+      });
+
+      expect(result.current.warning).toBeUndefined();
+    });
+
     it('uses raw schedules when grouping is disabled', async () => {
       const schedules = [createMockSchedule({ date: '2024-02-15' })];
 

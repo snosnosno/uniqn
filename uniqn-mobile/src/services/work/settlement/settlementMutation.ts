@@ -12,6 +12,7 @@
 
 import { logger } from '@/utils/logger';
 import { settlementRepository } from '@/repositories';
+import { requireCurrentUser } from '@/services/auth/authCoreService';
 import { TimeNormalizer } from '@/shared/time';
 import type { TaxSettings } from '@/utils/settlement';
 import type { PayrollStatus } from '@/types';
@@ -34,9 +35,9 @@ import type {
  */
 export async function updateWorkTimeForSettlement(
   input: UpdateWorkTimeInput,
-  ownerId: string
+  actorId: string
 ): Promise<void> {
-  logger.info('근무 시간 수정 시작', { input, ownerId });
+  logger.info('근무 시간 수정 시작', { input, actorId });
 
   // TimeInput을 Date로 변환
   const checkInDate =
@@ -52,7 +53,7 @@ export async function updateWorkTimeForSettlement(
       notes: input.notes,
       reason: input.reason,
     },
-    ownerId
+    actorId
   );
 
   logger.info('근무 시간 수정 완료', { workLogId: input.workLogId });
@@ -69,9 +70,9 @@ export async function updateWorkTimeForSettlement(
  */
 export async function settleWorkLog(
   input: SettleWorkLogInput,
-  ownerId: string
+  actorId: string
 ): Promise<SettlementResult> {
-  logger.info('개별 정산 처리 시작', { input, ownerId });
+  logger.info('개별 정산 처리 시작', { input, actorId });
 
   const result = await settlementRepository.settleWorkLogWithTransaction(
     {
@@ -79,7 +80,7 @@ export async function settleWorkLog(
       amount: input.amount,
       notes: input.notes,
     },
-    ownerId
+    actorId
   );
 
   return {
@@ -101,16 +102,16 @@ export async function settleWorkLog(
  */
 export async function bulkSettlement(
   input: BulkSettlementInput,
-  ownerId: string
+  actorId: string
 ): Promise<BulkSettlementResult> {
-  logger.info('일괄 정산 처리 시작', { count: input.workLogIds.length, ownerId });
+  logger.info('일괄 정산 처리 시작', { count: input.workLogIds.length, actorId });
 
   const result = await settlementRepository.bulkSettlementWithTransaction(
     {
       workLogIds: input.workLogIds,
       notes: input.notes,
     },
-    ownerId
+    actorId
   );
 
   return {
@@ -143,12 +144,21 @@ export async function updateWorkLogCustomSettlement(
     customAllowances?: Record<string, unknown>;
     customTaxSettings: TaxSettings;
     modificationEntry: Record<string, unknown>;
-  },
-  ownerId: string
+  }
 ): Promise<void> {
-  logger.info('개인 정산 설정 저장 시작', { workLogId, ownerId });
+  // 인가 주체·수정 이력 기록자는 세션에서 파생한다 — 클라이언트가 넘긴 값은 신뢰하지 않는다
+  const actorId = (await requireCurrentUser()).id;
 
-  await settlementRepository.updateWorkLogCustomSettlement(workLogId, data, ownerId);
+  logger.info('개인 정산 설정 저장 시작', { workLogId, actorId });
+
+  await settlementRepository.updateWorkLogCustomSettlement(
+    workLogId,
+    {
+      ...data,
+      modificationEntry: { ...data.modificationEntry, modifiedBy: actorId },
+    },
+    actorId
+  );
 
   logger.info('개인 정산 설정 저장 완료', { workLogId });
 }
@@ -165,11 +175,11 @@ export async function updateWorkLogCustomSettlement(
 export async function updateSettlementStatus(
   workLogId: string,
   status: PayrollStatus,
-  ownerId: string
+  actorId: string
 ): Promise<void> {
-  logger.info('정산 상태 변경', { workLogId, status, ownerId });
+  logger.info('정산 상태 변경', { workLogId, status, actorId });
 
-  await settlementRepository.updatePayrollStatusWithTransaction(workLogId, status, ownerId);
+  await settlementRepository.updatePayrollStatusWithTransaction(workLogId, status, actorId);
 
   logger.info('정산 상태 변경 완료', { workLogId, status });
 }

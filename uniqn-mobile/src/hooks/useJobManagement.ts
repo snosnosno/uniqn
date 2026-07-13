@@ -97,6 +97,9 @@ export function useCreateJobPosting() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user, profile } = useAuthStore();
+  // P1#8: 목록 조회와 동일한 활성 워크스페이스 스코프로 공고를 생성한다.
+  // 미선택(undefined)이면 서비스가 default 워크스페이스로 fallback.
+  const { activeWorkspace } = useActiveWorkspace();
 
   return useMutation({
     mutationFn: (params: CreateJobParams) => {
@@ -108,7 +111,12 @@ export function useCreateJobPosting() {
       });
       const ownerName = profile?.name || profile?.nickname || user.displayName || '익명';
       requireOnlineForMutation('useJobManagement.createJobPosting');
-      return createJobPosting(params.input, user.uid, identity.preferredName || ownerName);
+      return createJobPosting(
+        params.input,
+        user.uid,
+        identity.preferredName || ownerName,
+        activeWorkspace?.id
+      );
     },
     onSuccess: () => {
       // 성공 토스트는 호출부(create 화면, postingType별 문구)가 담당 — 중복 토스트 제거(P2-2).

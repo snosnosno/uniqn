@@ -66,6 +66,7 @@ jest.mock('@/schemas', () => {
 const OWNER_ID = '11111111-1111-4111-8111-111111111111';
 const MEMBER_ID = '22222222-2222-4222-8222-222222222222';
 const ADMIN_ID = '33333333-3333-4333-8333-333333333333';
+const COLLABORATOR_ID = '44444444-4444-4444-8444-444444444444';
 const OUTSIDER_ID = '44444444-4444-4444-8444-444444444444';
 const POSTING_ID = '55555555-5555-4555-8555-555555555555';
 const WORKSPACE_ID = '66666666-6666-4666-8666-666666666666';
@@ -216,6 +217,25 @@ describe('JobPostingRepository write-side — loadAndVerifyMutateAccess (owner|m
 
     // member 통과 → is_admin 미호출
     expect(mockRpc).toHaveBeenCalledWith('is_workspace_member', expect.any(Object));
+    expect(mockRpc).not.toHaveBeenCalledWith('is_admin');
+  });
+
+  // 2026-07-10 P0#3: 공고 협업자(JPC)를 인식. RLS jp_update_workspace_member 와 일치.
+  it('공고 협업자의 close 호출은 통과한다 (member 아님 → collaborator 확인 후 통과)', async () => {
+    setupLoadAndUpdate();
+    mockRpc.mockImplementation((fn: string) => {
+      if (fn === 'is_workspace_member') return Promise.resolve({ data: false, error: null });
+      if (fn === 'is_posting_collaborator') return Promise.resolve({ data: true, error: null });
+      return Promise.resolve({ data: false, error: null });
+    });
+
+    await expect(repo.closeWithTransaction(POSTING_ID, COLLABORATOR_ID)).resolves.not.toThrow();
+
+    expect(mockRpc).toHaveBeenCalledWith('is_posting_collaborator', {
+      p_posting_id: POSTING_ID,
+      p_user_id: COLLABORATOR_ID,
+    });
+    // 협업자 통과 → is_admin 미호출
     expect(mockRpc).not.toHaveBeenCalledWith('is_admin');
   });
 

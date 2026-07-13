@@ -17,7 +17,11 @@ import {
 import { normalizeAssignmentRole } from '@/types/assignment';
 import { STATUS } from '@/constants';
 import type { Application, Assignment, JobPosting, ReviewCancellationInput } from '@/types';
-import type { ConfirmWithHistoryResult, CancelConfirmationResult } from '../interfaces';
+import type {
+  ConfirmWithHistoryResult,
+  CancelConfirmationResult,
+  CancelActorType,
+} from '../interfaces';
 import {
   TABLES,
   rethrowOrHandle,
@@ -203,27 +207,31 @@ export async function executeReviewCancellation(
 // ============================================================================
 
 /**
- * 스태프 자체 확정 취소 (T-B1+B2: cancel_application_atomically RPC 호출)
+ * 확정 취소 (T-B1+B2: cancel_application_atomically RPC 호출)
  *
  * @description 기존 3단계 분리 write(applications/job_postings/work_logs)를
  *              단일 PL/pgSQL RPC로 원자화. SELECT FOR UPDATE + SECURITY DEFINER
  *              + 수동 권한 검사로 race condition 제거.
+ *              인가 주체 판정(소유자/워크스페이스 멤버/협업자/admin, 또는 본인)은 RPC가
+ *              수행하며, 여기서는 어떤 경로에서 호출했는지만 actorType 으로 전달한다.
  * @param applicationId - 취소할 지원서 ID
- * @param actorId - 액션 수행자 (스태프 본인의 user.uid)
+ * @param actorId - 액션 수행자 (호출자 본인의 user.uid)
  * @param cancelReason - 취소 사유 (선택)
+ * @param actorType - 취소 주체 유형(기본 staff_initiates). 구인자 해제는 employer_initiates.
  * @see docs/qa/2026-04-14/team-b-atomicity-spec.md §2
  */
 export async function executeCancelConfirmation(
   applicationId: string,
   actorId: string,
-  cancelReason?: string
+  cancelReason?: string,
+  actorType: CancelActorType = 'staff_initiates'
 ): Promise<CancelConfirmationResult> {
   try {
-    logger.info('확정 취소 시작 (RPC)', { applicationId, actorId });
+    logger.info('확정 취소 시작 (RPC)', { applicationId, actorId, actorType });
 
     const { data, error } = await supabase.rpc('cancel_application_atomically', {
       p_application_id: applicationId,
-      p_actor_type: 'staff_initiates',
+      p_actor_type: actorType,
       p_actor_id: actorId,
       p_cancel_reason: cancelReason ?? null,
       p_rejection_reason: null,

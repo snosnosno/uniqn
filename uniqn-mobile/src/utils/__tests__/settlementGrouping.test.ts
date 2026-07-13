@@ -12,6 +12,7 @@ import {
   getSettlableWorkLogIds,
   calculateGroupedSettlementStats,
   formatGroupRolesDisplay,
+  shouldUseFrozenPayrollAmount,
 } from '../settlementGrouping';
 import type { SettlementGroupingContext } from '../settlementGrouping';
 
@@ -476,5 +477,111 @@ describe('formatGroupRolesDisplay', () => {
     });
     // 딜러가 1번만 나오므로 단일 역할 형태
     expect(formatGroupRolesDisplay(group)).toBe('딜러');
+  });
+});
+
+// ============================================================================
+// 정산 완료건 금액 동결 (P0#2 — 클러스터 C)
+// ============================================================================
+
+// shouldUseFrozenPayrollAmount: ScheduleCard 와 settlementGrouping 이 공유하는
+// 동결값 판정 SSOT. Number.isFinite 로 판정 → 동결값 0(노쇼 등 정산 0원 완료)도
+// 존중해야 한다. `amount > 0` 가드로 판정하면 두 소비처 표시액이 어긋난다.
+describe('shouldUseFrozenPayrollAmount (동결 판정 SSOT)', () => {
+  it('완료 + 유한 동결값(양수) → true', () => {
+    expect(shouldUseFrozenPayrollAmount(true, 99999)).toBe(true);
+  });
+
+  it('완료 + 동결값 0 → true (0원 완료 존중)', () => {
+    expect(shouldUseFrozenPayrollAmount(true, 0)).toBe(true);
+  });
+
+  it('완료 + 동결값 null/undefined → false (레거시 재계산 fallback)', () => {
+    expect(shouldUseFrozenPayrollAmount(true, null)).toBe(false);
+    expect(shouldUseFrozenPayrollAmount(true, undefined)).toBe(false);
+  });
+
+  it('미완료 → 동결값이 있어도 false', () => {
+    expect(shouldUseFrozenPayrollAmount(false, 99999)).toBe(false);
+  });
+});
+
+describe('정산 완료건 표시 금액 동결', () => {
+  // 재계산 mock은 항상 afterTaxPay=125710을 반환한다.
+  // 따라서 동결값이 우선 적용되면 125710이 아닌 동결값이 표시되어야 한다.
+
+  it('완료 상태이고 동결값(payrollAmount)이 있으면 현재 설정으로 재계산하지 않고 동결값을 표시한다', () => {
+    const workLogs = [
+      createWorkLog({
+        id: 'wl-1',
+        date: '2025-01-15',
+        payrollStatus: 'completed',
+        payrollAmount: 99999,
+      }),
+    ];
+    const result = groupSettlementsByStaff(workLogs, defaultContext);
+    // 급여 설정이 바뀌어 재계산이 125710을 내더라도 동결값 99999가 우선한다
+    expect(result[0].dateStatuses[0].amount).toBe(99999);
+  });
+
+  it('완료 상태이지만 동결값이 없는 레거시 행은 재계산 fallback을 사용한다', () => {
+    const workLogs = [
+      createWorkLog({
+        id: 'wl-1',
+        date: '2025-01-15',
+        payrollStatus: 'completed',
+        // payrollAmount 미존재 (동결 도입 이전 레거시 행)
+      }),
+    ];
+    const result = groupSettlementsByStaff(workLogs, defaultContext);
+    expect(result[0].dateStatuses[0].amount).toBe(125710);
+  });
+
+  it('완료 상태이고 동결값이 0이어도(유한 숫자) 동결값을 표시한다', () => {
+    const workLogs = [
+      createWorkLog({
+        id: 'wl-1',
+        date: '2025-01-15',
+        payrollStatus: 'completed',
+        payrollAmount: 0,
+      }),
+    ];
+    const result = groupSettlementsByStaff(workLogs, defaultContext);
+    // 공제 후 0원은 정당한 동결값이므로 재계산(125710)으로 되돌리지 않는다
+    expect(result[0].dateStatuses[0].amount).toBe(0);
+  });
+
+  it('미완료(pending) 상태는 동결값이 있어도 재계산을 사용한다', () => {
+    const workLogs = [
+      createWorkLog({
+        id: 'wl-1',
+        date: '2025-01-15',
+        payrollStatus: 'pending',
+        payrollAmount: 99999, // 미완료면 동결값이 있어도 무시
+      }),
+    ];
+    const result = groupSettlementsByStaff(workLogs, defaultContext);
+    expect(result[0].dateStatuses[0].amount).toBe(125710);
+  });
+
+  it('그룹 summary의 completedAmount/pendingAmount/totalAmount가 동결값 기준으로 합산된다', () => {
+    const workLogs = [
+      createWorkLog({
+        id: 'wl-1',
+        date: '2025-01-15',
+        payrollStatus: 'completed',
+        payrollAmount: 100000,
+      }),
+      createWorkLog({
+        id: 'wl-2',
+        date: '2025-01-16',
+        payrollStatus: 'pending',
+      }),
+    ];
+    const result = groupSettlementsByStaff(workLogs, defaultContext);
+    // 완료건은 동결값 100000, 미완료건은 재계산 125710
+    expect(result[0].summary.completedAmount).toBe(100000);
+    expect(result[0].summary.pendingAmount).toBe(125710);
+    expect(result[0].summary.totalAmount).toBe(225710);
   });
 });

@@ -8,9 +8,15 @@
  */
 
 import { logger } from '@/utils/logger';
-import { ERROR_CODES, ValidationError } from '@/errors';
+import { BusinessError, ERROR_CODES, ValidationError } from '@/errors';
 import { handleErrorWithDefault, handleServiceError } from '@/errors/serviceErrorHandler';
-import { applicationRepository, type ApplicationWithJob, type ApplyContext } from '@/repositories';
+import {
+  applicationRepository,
+  jobPostingRepository,
+  type ApplicationWithJob,
+  type ApplyContext,
+} from '@/repositories';
+import { isTournamentApprovalBlocked } from '@/domains/job-posting';
 import { trackEvent, trackJobApply, startApiTrace } from '@/services/observability';
 import { cancellationRequestSchema, reviewCancellationSchema } from '@/schemas/application.schema';
 import type {
@@ -150,6 +156,17 @@ export async function applyToJobV2(
       applicantId,
       assignmentCount: input.assignments.length,
     });
+
+    // 승인 게이트(핵심 방어선) — 미승인 대회 공고 직링크 지원 차단.
+    // 공고 미존재는 이 게이트가 아니라 applyWithTransaction 의 not-found 경로로 위임한다.
+    const posting = await jobPostingRepository.getById(input.jobPostingId);
+    if (posting && isTournamentApprovalBlocked(posting)) {
+      // userMessage 는 ERROR_MESSAGES[BUSINESS_TOURNAMENT_NOT_APPROVED] 가 자동
+      // 채운다(AppError base) — 한쪽만 수정 시 드리프트를 막기 위해 registry에 위임.
+      throw new BusinessError(ERROR_CODES.BUSINESS_TOURNAMENT_NOT_APPROVED, {
+        metadata: { jobPostingId: input.jobPostingId },
+      });
+    }
 
     const context: ApplyContext = {
       applicantId,

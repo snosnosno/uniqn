@@ -38,6 +38,7 @@ import {
 import { STATUS } from '@/constants';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 import { WorkTimeDisplay } from '@/shared/time';
+import { shouldUseFrozenPayrollAmount } from '@/utils/settlementGrouping';
 import type { ScheduleEvent } from '@/types';
 
 export interface ScheduleCardProps {
@@ -64,9 +65,12 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
   }, [schedule.settlementBreakdown?.salaryInfo, schedule.customSalaryInfo, projectedSalary]);
 
   const completedAmount = useMemo(() => {
-    if (schedule.type !== STATUS.SCHEDULE.COMPLETED) return null;
+    const isCompleted = schedule.type === STATUS.SCHEDULE.COMPLETED;
+    if (!isCompleted) return null;
 
-    if (schedule.payrollAmount && schedule.payrollAmount > 0) {
+    // 동결값 판정은 정산 목록(settlementGrouping)과 동일한 SSOT 헬퍼를 공유한다.
+    // Number.isFinite로 판정 → 노쇼 등 정산 0원 완료 건도 동결값을 존중(0 표시).
+    if (shouldUseFrozenPayrollAmount(isCompleted, schedule.payrollAmount)) {
       return schedule.payrollAmount;
     }
 
