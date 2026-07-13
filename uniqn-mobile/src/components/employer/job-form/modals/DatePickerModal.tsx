@@ -179,7 +179,7 @@ export function DatePickerModal({
         </Text>
         {postingType === 'urgent' && (
           <Text className="text-xs text-primary-600 dark:text-primary-400 mt-0.5 font-sans">
-            긴급 공고는 오늘부터 7일 이내만 선택할 수 있습니다
+            급구 공고는 오늘부터 7일 이내만 선택할 수 있습니다
           </Text>
         )}
       </View>

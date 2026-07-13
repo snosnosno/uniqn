@@ -79,7 +79,7 @@ const SingleDateSchedule = memo(function SingleDateSchedule({
       {isUrgent && (
         <View className="mb-3 p-3 bg-error-50 dark:bg-error-900/20 rounded-lg border border-error-200 dark:border-error-800">
           <Text className="text-sm text-error-700 dark:text-error-300 font-sans">
-            긴급 공고는 오늘부터 7일 이내의 날짜만 선택할 수 있습니다.
+            급구 공고는 오늘부터 7일 이내의 날짜만 선택할 수 있습니다.
           </Text>
         </View>
       )}
