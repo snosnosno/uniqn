@@ -223,7 +223,6 @@ function applyScheduleFilters(
  * - 지원/확정 카운트: 미래 날짜 기준으로 계산
  */
 export function calculateScheduleStats(schedules: ScheduleEvent[]): ScheduleStats {
-  const today = toDateString(new Date());
   const datedSchedules = schedules.filter((schedule) => hasScheduleDate(schedule.date));
   const confirmedScheduleKeys = new Set<string>();
   const upcomingScheduleKeys = new Set<string>();
@@ -269,12 +268,15 @@ export function calculateScheduleStats(schedules: ScheduleEvent[]): ScheduleStat
     // 지원 중인 스케줄 (미래 날짜, applied)
   });
 
+  // 확정/지원 카운트는 조회된 월(schedules는 useSchedulesByMonth로 이미 월별 스코프됨)의
+  // confirmed/applied 전체를 센다 — 리스트·캘린더 표시 기준(type만 판정, 날짜 필터 없음)과 통일.
+  // 과거 date >= today 필터는 과거 월 조회 시 확정건을 전부 누락시켜 리스트와 불일치를 유발했다.
   datedSchedules.forEach((schedule) => {
-    if (schedule.date >= today && schedule.type === STATUS.SCHEDULE.CONFIRMED) {
+    if (schedule.type === STATUS.SCHEDULE.CONFIRMED) {
       confirmedScheduleKeys.add(buildScheduleStatsCountKey(schedule));
     }
 
-    if (schedule.date >= today && schedule.type === STATUS.SCHEDULE.APPLIED) {
+    if (schedule.type === STATUS.SCHEDULE.APPLIED) {
       upcomingScheduleKeys.add(buildScheduleStatsCountKey(schedule));
     }
   });
