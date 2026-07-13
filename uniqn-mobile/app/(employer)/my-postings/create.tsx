@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { KeyboardAvoidingView, Platform } from 'react-native';
+import { KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
@@ -8,6 +8,7 @@ import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { useTemplateManager } from '@/hooks/useTemplateManager';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
+import { toError } from '@/errors';
 import type { JobPostingFormData } from '@/types';
 import type { JobPostingDraft } from '@/types/jobPostingDraft';
 import {
@@ -16,14 +17,17 @@ import {
   patchJobPostingDraft,
 } from '@/utils/job-posting/submission';
 import { buildGridPrefillDraft } from '@/utils/job-posting/gridPrefill';
+import { gridParamsToValues, valuesToCreateInput } from '@/utils/order-sheet/mappers';
 import { JobPostingScrollForm } from '@/components/employer/job-form';
 import { TemplateModal } from '@/components/employer/job-form/modals/TemplateModal';
 import { LoadTemplateModal } from '@/components/employer/job-form/modals/LoadTemplateModal';
 import { StackHeader } from '@/components/headers';
+import { OrderSheetScreen } from '@/components/employer/order-sheet/OrderSheetScreen';
+import type { OrderSheetFormValues, OrderSheetValues } from '@/schemas/orderSheet.schema';
 
 export default function CreateJobPostingScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { addToast } = useToastStore();
 
   // 주간 배치 그리드 "공고 열기/부족 모집" 진입 — venueId(운영처)·date(선택일)·count(부족 인원)를
@@ -37,13 +41,28 @@ export default function CreateJobPostingScreen() {
   const venueId = firstParam(params.venueId);
   const prefillDate = firstParam(params.date);
   const prefillCountRaw = firstParam(params.count);
-  const prefillCount = prefillCountRaw ? Number.parseInt(prefillCountRaw, 10) : undefined;
+  const prefillCountParsed = prefillCountRaw ? Number.parseInt(prefillCountRaw, 10) : undefined;
+  // gridParamsToValues/buildGridPrefillDraft는 NaN을 그대로 투과 → 유한값만 통과(비정상 count → 1 폴백)
+  const prefillCount = Number.isFinite(prefillCountParsed) ? prefillCountParsed : undefined;
 
   const [draft, setDraft] = useState<JobPostingDraft>(() =>
     buildGridPrefillDraft({ venueId, date: prefillDate, count: prefillCount })
   );
   const [isDirty, setIsDirty] = useState(false);
+  // 주문서(기본) vs 레거시 상세폼(고정·대회) 모드 분기 — legacyType!==null이면 상세폼
+  const [legacyType, setLegacyType] = useState<'fixed' | 'tournament' | null>(null);
+  const isLegacyForm = legacyType !== null;
   const formData = useMemo(() => draftToFormData(draft), [draft]);
+
+  // 주문서 초기값: 그리드 프리필 흡수(정규화 내장) + 프로필 연락처 프리필(리뷰 H4 — "재공고 타이핑 0")
+  // useAuth().user는 AuthUser(phone 없음, phoneNumber만) → profile(UserProfile.phone) 사용
+  const initialValues = useMemo<OrderSheetFormValues>(
+    () => ({
+      ...gridParamsToValues({ venueId, date: prefillDate, count: prefillCount }),
+      contactPhone: profile?.phone ?? '',
+    }),
+    [venueId, prefillDate, prefillCount, profile?.phone]
+  );
 
   useUnsavedChangesGuard(isDirty);
 
@@ -51,6 +70,10 @@ export default function CreateJobPostingScreen() {
   const templateManager = useTemplateManager();
 
   const updateFormData = useCallback((data: Partial<JobPostingFormData>) => {
+    // M7 복귀 경로: 레거시 상세폼에서 유형을 지원/급구로 되돌리면 주문서로 복귀
+    if (data.postingType === 'regular' || data.postingType === 'urgent') {
+      setLegacyType(null);
+    }
     setIsDirty(true);
     setDraft((prev) => patchJobPostingDraft(prev, data));
   }, []);
@@ -112,6 +135,70 @@ export default function CreateJobPostingScreen() {
     router,
     venueId,
   ]);
+
+  const handleOrderSheetSubmit = useCallback(
+    async (values: OrderSheetValues) => {
+      try {
+        const input = valuesToCreateInput(values);
+        await createJobPosting.mutateAsync({ input });
+        setIsDirty(false);
+        addToast({ type: 'success', message: '공고가 등록되었습니다.' });
+        // 성공 네비게이션은 Task 10에서 완료 화면으로 교체 — 그 전까지 기존 로직 유지
+        if (venueId && router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace('/(app)/(tabs)/employer');
+        }
+      } catch (error) {
+        // 기존 handleSubmit과 동일 — unhandled rejection 금지(리뷰 MEDIUM)
+        logger.error('주문서 공고 등록 실패', toError(error));
+        addToast({
+          type: 'error',
+          message: error instanceof Error ? error.message : '공고 등록에 실패했습니다.',
+        });
+      }
+    },
+    [createJobPosting, venueId, router, addToast]
+  );
+
+  const handleSwitchToLegacyForm = useCallback(
+    (t: 'fixed' | 'tournament') => {
+      // 주문서 입력이 있으면 무경고 소실 금지(리뷰 M7) — 확인 후 전환
+      const doSwitch = () => {
+        setLegacyType(t);
+        updateFormData({ postingType: t });
+      };
+      if (isDirty) {
+        Alert.alert(
+          '작성 중인 내용이 있어요',
+          '고정·대회 공고는 상세 폼에서 작성해요. 지금까지 입력한 내용은 사라져요.',
+          [
+            { text: '취소', style: 'cancel' },
+            { text: '전환', style: 'destructive', onPress: doSwitch },
+          ]
+        );
+      } else {
+        doSwitch();
+      }
+    },
+    [isDirty, updateFormData]
+  );
+
+  // 기본 진입 = 주문서(지원·급구). 고정·대회 선택 시에만 레거시 상세폼으로 전환.
+  if (!isLegacyForm) {
+    return (
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
+        <StackHeader title="공고 작성" fallbackHref="/(app)/(tabs)/employer" />
+        <OrderSheetScreen
+          initialValues={initialValues}
+          onSubmit={handleOrderSheetSubmit}
+          isSubmitting={createJobPosting.isPending}
+          onSwitchToLegacyForm={handleSwitchToLegacyForm}
+          onDirtyChange={setIsDirty}
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
