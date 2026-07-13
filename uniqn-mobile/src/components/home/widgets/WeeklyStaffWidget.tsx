@@ -1,109 +1,44 @@
 /**
  * WeeklyStaffWidget
  * 이번 주 (월~일) 요일별 확정 스태프 현황 위젯
+ *
+ * 확정 인원 데이터 소스: 활성 공고 전체 id로 usePostingFilledCounts(전역맵) 배치 1회 조회 후
+ * date 세그먼트별 합산 — 공고별 getConfirmedStaff N+1 호출 + top-3 캡(과소집계) 제거.
+ * 집계 순수 함수는 ./weeklyStaffSummary 로 분리(테스트 대상).
  */
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
-import { useQueries } from '@tanstack/react-query';
 import { DashboardWidgetShell } from '@/components/home/DashboardWidgetShell';
 import { NumericText } from '@/components/ui';
 import { useMyJobPostings } from '@/hooks/useJobManagement';
-import { getConfirmedStaff } from '@/services';
-import { cachingPolicies, queryKeys } from '@/lib/queryClient';
-import { toDateString } from '@/utils/date';
-import type { JobPosting } from '@/types/jobPosting';
-import type { ConfirmedStaff } from '@/types/confirmedStaff';
-
-type DayKey = '월' | '화' | '수' | '목' | '금' | '토' | '일';
-
-interface DaySlot {
-  confirmed: number;
-  capacity: number;
-}
-
-type WeeklySummary = Record<DayKey, DaySlot>;
-
-const DAY_KEYS: DayKey[] = ['월', '화', '수', '목', '금', '토', '일'];
-
-const EMPTY_WEEK_SUMMARY: WeeklySummary = DAY_KEYS.reduce(
-  (acc, day) => ({ ...acc, [day]: { confirmed: 0, capacity: 0 } }),
-  {} as WeeklySummary
-);
-
-function getWeekDates(): Record<DayKey, string> {
-  const today = new Date();
-  const dayOfWeek = today.getDay();
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-
-  return DAY_KEYS.reduce(
-    (acc, day, i) => {
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + i);
-      return { ...acc, [day]: toDateString(d) };
-    },
-    {} as Record<DayKey, string>
-  );
-}
-
-function buildWeeklySummary(
-  postings: JobPosting[],
-  staffByPosting: Record<string, ConfirmedStaff[]>
-): WeeklySummary {
-  const weekDates = getWeekDates();
-  const summary: WeeklySummary = { ...EMPTY_WEEK_SUMMARY };
-
-  DAY_KEYS.forEach((day) => {
-    const date = weekDates[day];
-    let totalConfirmed = 0;
-    let totalCapacity = 0;
-
-    postings.forEach((posting) => {
-      const isOnDate = posting.workDate === date || (posting.workDates ?? []).includes(date);
-
-      if (!isOnDate) return;
-
-      totalCapacity += posting.totalPositions ?? 0;
-
-      const staff = staffByPosting[posting.id] ?? [];
-      const confirmedOnDate = staff.filter((s) => s.date === date).length;
-      totalConfirmed += confirmedOnDate;
-    });
-
-    summary[day] = { confirmed: totalConfirmed, capacity: totalCapacity };
-  });
-
-  return summary;
-}
+import { usePostingFilledCounts } from '@/hooks/usePostingFilledCounts';
+import {
+  DAY_KEYS,
+  aggregateConfirmedByDate,
+  buildWeeklySummary,
+  getWeekDates,
+} from './weeklyStaffSummary';
 
 export function WeeklyStaffWidget() {
   const { data, isLoading, error, refetch } = useMyJobPostings();
 
   const activePostings = React.useMemo(
     () =>
-      (data ?? [])
-        .filter(
-          (p) => p.status === 'active' || p.status === 'approved' || p.status === 'capacity_full'
-        )
-        .slice(0, 3),
+      (data ?? []).filter(
+        (p) => p.status === 'active' || p.status === 'approved' || p.status === 'capacity_full'
+      ),
     [data]
   );
 
-  const staffQueries = useQueries({
-    queries: activePostings.map((posting) => ({
-      queryKey: queryKeys.confirmedStaff.byJobPosting(posting.id),
-      queryFn: () => getConfirmedStaff(posting.id),
-      staleTime: cachingPolicies.frequent,
-      enabled: !!posting.id,
-    })),
-  });
+  const activeIds = React.useMemo(() => activePostings.map((p) => p.id), [activePostings]);
+  const { data: filledCounts } = usePostingFilledCounts(activeIds);
 
-  const staffByPosting: Record<string, ConfirmedStaff[]> = {};
-  activePostings.forEach((posting, idx) => {
-    staffByPosting[posting.id] = staffQueries[idx]?.data?.staff ?? [];
-  });
-  const weeklySummary = buildWeeklySummary(activePostings, staffByPosting);
+  const weeklySummary = React.useMemo(() => {
+    const weekDates = getWeekDates();
+    const confirmedByDate = aggregateConfirmedByDate(filledCounts);
+    return buildWeeklySummary(activePostings, weekDates, confirmedByDate);
+  }, [activePostings, filledCounts]);
 
   return (
     <DashboardWidgetShell

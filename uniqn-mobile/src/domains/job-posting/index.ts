@@ -25,6 +25,7 @@ export {
   selectPostingWorkflow,
   isPostingDeletable,
   selectPostingRoleAvailability,
+  aggregateRoleFilledFromSubmap,
   selectPostingSalaryDisplay,
   selectPostingScheduleDisplay,
   selectPostingApplicationEligibility,
@@ -38,3 +39,4 @@ export {
   transitionPostingAggregateStats,
 } from './stats';
 export { isTournamentApprovalBlocked } from './approvalGate';
+export { BROWSABLE_POSTING_STATUSES } from './constants';

@@ -8,7 +8,7 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
-import { buildPostingFacts } from '@/domains/job-posting';
+import { selectPostingRoleAvailability } from '@/domains/job-posting';
 import { Modal } from '@/components/ui/Modal';
 import { ModalFooterButtons } from '@/components/ui/ModalFooterButtons';
 import { Card } from '@/components/ui/Card';
@@ -28,6 +28,11 @@ export interface RoleChangeModalProps {
   staff: ConfirmedStaff | null;
   jobPosting?: JobPosting | null;
   availableRoles?: string[];
+  /**
+   * 역할키(DB `_posting_role_key`)별 실확정 인원 (aggregateRoleFilledFromSubmap 결과).
+   * 주입 시 마감(remaining 0) 역할을 비활성+"(마감)" 표기한다. 미주입 시 기존 동작(전 역할 선택 가능).
+   */
+  filledByRole?: Record<string, number>;
   onSave: (data: { staffId: string; workLogId: string; newRole: string; reason: string }) => void;
   isLoading?: boolean;
 }
@@ -47,30 +52,39 @@ interface RoleOptionProps {
   role: string;
   isSelected: boolean;
   isCurrentRole: boolean;
+  isFull: boolean;
   onSelect: () => void;
 }
 
-function RoleOption({ role, isSelected, isCurrentRole, onSelect }: RoleOptionProps) {
+function RoleOption({ role, isSelected, isCurrentRole, isFull, onSelect }: RoleOptionProps) {
   // 역할 키를 한글로 변환
   const roleDisplayName = getRoleDisplayName(role);
+  // 현재 역할은 항상 선택 가능 — 마감이어도 현재 역할이면 비활성하지 않는다.
+  const disabled = isCurrentRole || isFull;
 
   return (
     <Pressable
       onPress={onSelect}
-      disabled={isCurrentRole}
+      disabled={disabled}
       accessibilityRole="radio"
-      accessibilityLabel={`${roleDisplayName}${isCurrentRole ? ' (현재 역할)' : ''}`}
+      accessibilityLabel={`${roleDisplayName}${
+        isCurrentRole ? ' (현재 역할)' : isFull ? ' (마감)' : ''
+      }`}
       accessibilityHint={
-        isCurrentRole ? '현재 역할이므로 선택할 수 없습니다' : '이 역할로 변경합니다'
+        isCurrentRole
+          ? '현재 역할이므로 선택할 수 없습니다'
+          : isFull
+            ? '모집이 마감된 역할이라 선택할 수 없습니다'
+            : '이 역할로 변경합니다'
       }
       accessibilityState={{
         selected: isSelected,
-        disabled: isCurrentRole,
+        disabled,
       }}
       className={`
         flex-row items-center justify-between p-4 rounded-md mb-2
         ${
-          isCurrentRole
+          disabled
             ? 'bg-secondary-100 dark:bg-surface opacity-50'
             : isSelected
               ? 'bg-primary-100 dark:bg-primary-900/30 border-2 border-primary-500'
@@ -100,6 +114,10 @@ function RoleOption({ role, isSelected, isCurrentRole, onSelect }: RoleOptionPro
             현재 역할
           </Badge>
         )}
+        {/* disabled 행(opacity-50)의 default variant 는 배경과 동화 — warning 으로 시인성 확보 */}
+        {isFull && !isCurrentRole && (
+          <Badge preset="closed" variant="warning" size="sm" className="ml-2" />
+        )}
       </View>
 
       {isSelected && !isCurrentRole && (
@@ -121,11 +139,21 @@ export function RoleChangeModal({
   staff,
   jobPosting,
   availableRoles,
+  filledByRole,
   onSave,
   isLoading = false,
 }: RoleChangeModalProps) {
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [reason, setReason] = useState('');
+
+  // 역할별 실카운트 가용성 — filledByRole 주입 시 마감 역할 판정에 사용(미주입 시 전 역할 여유).
+  const roleAvailability = useMemo(
+    () =>
+      jobPosting
+        ? selectPostingRoleAvailability(jobPosting, filledByRole ? { filledByRole } : undefined)
+        : undefined,
+    [jobPosting, filledByRole]
+  );
 
   // 역할 목록 (공고에서 추출 또는 기본값)
   const roles = useMemo(() => {
@@ -133,15 +161,21 @@ export function RoleChangeModal({
       return availableRoles;
     }
     // v2.0: 공고의 역할 배열에서 추출
-    if (jobPosting) {
-      const postingFacts = buildPostingFacts(jobPosting);
-      if (postingFacts.roleAvailability.items.length > 0) {
-        return postingFacts.roleAvailability.items.map((role) => role.key);
-      }
+    if (roleAvailability && roleAvailability.items.length > 0) {
+      return roleAvailability.items.map((item) => item.key);
     }
     // 기본 역할
     return DEFAULT_ROLES;
-  }, [availableRoles, jobPosting]);
+  }, [availableRoles, roleAvailability]);
+
+  // 마감(remaining 0) 역할키 집합 — 표시 비활성 판정용. 현재 역할 예외는 렌더 시점에 적용.
+  const fullRoleKeys = useMemo(
+    () =>
+      new Set(
+        (roleAvailability?.items ?? []).filter((item) => !item.isAvailable).map((item) => item.key)
+      ),
+    [roleAvailability]
+  );
 
   // staff 변경 시 선택 초기화
   useEffect(() => {
@@ -153,21 +187,25 @@ export function RoleChangeModal({
 
   // 현재 역할
   const currentRole = staff?.role || '';
+  // 역할 목록 키와의 비교용 정규화 키 — custom 스태프는 role='other'+customRole 분리 저장이라
+  // raw role 로 비교하면 본인 역할이 "(마감)" 으로 오표기된다(목록 키는 raw customRole).
+  const currentRoleKey =
+    staff?.role === 'other' && staff.customRole ? staff.customRole : currentRole;
 
   // 역할 선택 핸들러
   const handleSelectRole = useCallback(
     (role: string) => {
-      if (role !== currentRole) {
+      if (role !== currentRoleKey) {
         setSelectedRole(role);
       }
     },
-    [currentRole]
+    [currentRoleKey]
   );
 
   // 저장 유효성
   const isValid = useMemo(() => {
-    return selectedRole.length > 0 && selectedRole !== currentRole && reason.trim().length > 0;
-  }, [selectedRole, currentRole, reason]);
+    return selectedRole.length > 0 && selectedRole !== currentRoleKey && reason.trim().length > 0;
+  }, [selectedRole, currentRoleKey, reason]);
 
   // 저장 핸들러
   const handleSave = useCallback(() => {
@@ -229,7 +267,8 @@ export function RoleChangeModal({
               key={role}
               role={role}
               isSelected={selectedRole === role}
-              isCurrentRole={role === currentRole}
+              isCurrentRole={role === currentRoleKey}
+              isFull={role !== currentRoleKey && fullRoleKeys.has(role)}
               onSelect={() => handleSelectRole(role)}
             />
           ))}

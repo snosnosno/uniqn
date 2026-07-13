@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { jobPostingRepository } from '@/repositories';
+import { POSTING_FILLED_COUNTS_QUERY_KEY } from '@/hooks/postingFilledCountsKey';
 
 /**
  * 가시 공고들의 (date,timeSlot,role)별 활성 확정 수 배치 조회 (H0).
@@ -9,7 +10,7 @@ export function usePostingFilledCounts(jobPostingIds: string[]) {
   const ids = Array.from(new Set(jobPostingIds.filter(Boolean)));
   const key = [...ids].sort().join(',');
   return useQuery({
-    queryKey: ['postingFilledCounts', key],
+    queryKey: [POSTING_FILLED_COUNTS_QUERY_KEY, key],
     queryFn: () => jobPostingRepository.getPostingFilledCounts(ids),
     enabled: ids.length > 0,
     staleTime: 30_000,
