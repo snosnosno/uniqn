@@ -41,7 +41,7 @@ export interface IJobPostingCollaboratorRepository {
 
   /**
    * 이메일로 사용자 검색 (UNIQN 가입자만)
-   * 검색 결과에 status (self/workspace_member/already_collaborator/addable/not_registered) 부여
+   * 검색 결과에 status (self/workspace_member/already_collaborator/addable) 부여
    *
    * @param jobPostingId 협업자 추가 대상 공고
    * @param emailQuery 이메일 prefix (≥3자)

@@ -110,6 +110,18 @@ export function handleSupabaseError(error: unknown, context: SupabaseErrorContex
       });
     }
 
+    // confirm_application RPC 동시성 예외(감사 P2#13). 두 구인자가 같은 지원을
+    // 동시에 확정하면 FOR UPDATE 늦은 쪽이 `INVALID_STATUS: ...`를 P0001로 던진다.
+    // POSTGREST_ERROR_MAP에 없어 UNKNOWN('알 수 없는 오류')으로 떨어지므로 여기서
+    // 레이스임을 알리는 안내 문구로 매핑한다(클라 사전검사는 순차 재시도만 커버).
+    if (error.code === 'P0001' && error.message.includes('INVALID_STATUS')) {
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+        message: error.message,
+        userMessage: '다른 사용자가 먼저 처리했어요. 새로고침 후 확인해 주세요.',
+        metadata,
+      });
+    }
+
     const mapping = POSTGREST_ERROR_MAP[error.code];
 
     if (mapping) {

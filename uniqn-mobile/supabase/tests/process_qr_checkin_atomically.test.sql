@@ -80,9 +80,11 @@ BEGIN
   -- S1: checkIn happy path
   -- ----------------------------------------------------------
   -- [#195 가드] 호출자 바인딩: 직원 본인 셀프스캔(p_staff_id=v_staff_id) 로 jwt sub 세팅
+  -- [P1#7 클램프] 5분 초과 과거 시각은 서버 now() 로 대체되므로 now() 로 호출하고,
+  -- S2 의 2시간 duration 시나리오는 아래에서 check_in_ts 직접 시드로 구성한다.
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_staff_id, 'role', 'authenticated')::text, true);
   v_result := public.process_qr_checkin_atomically(
-    v_work_log_id, v_staff_id, v_job_id, 'checkIn', v_check_in_time, to_char(now(), 'YYYY-MM-DD')
+    v_work_log_id, v_staff_id, v_job_id, 'checkIn', now(), to_char(now(), 'YYYY-MM-DD')
   );
   IF NOT ((v_result->>'success')::bool) THEN RAISE EXCEPTION 'S1 fail: %', v_result; END IF;
   IF v_result->>'action' != 'checkIn' THEN RAISE EXCEPTION 'S1 action: %', v_result; END IF;
@@ -90,10 +92,9 @@ BEGIN
     RAISE EXCEPTION 'S1 side: status';
   END IF;
 
-  -- baseline(2026-07-12): prod 함수는 서버앵커(p_check_time 이 now() 기준 ±300초 밖이면 무시하고
-  -- now() 사용) → 위 v_check_in_time(now()-2h) 파라미터가 무시되어 check_in_ts=now() 로 기록됨.
-  -- S2 경과시간(1.5~2.5h) 검증을 위해 픽스처에서 직접 2시간 전으로 되돌린다.
-  UPDATE public.work_logs SET check_in_ts = now() - interval '2 hours' WHERE id = v_work_log_id;
+  -- S2 준비: 2시간 전 출근 상태를 직접 시드 (클램프 때문에 RPC 로는 과거 시각 기록 불가.
+  -- check_in_ts 는 protect_work_log_payroll_columns 차단목록에 없어 superuser 컨텍스트 UPDATE 가능)
+  UPDATE public.work_logs SET check_in_ts = v_check_in_time WHERE id = v_work_log_id;
 
   -- ----------------------------------------------------------
   -- S5: 이중 checkIn → already_checked_in
@@ -171,9 +172,11 @@ BEGIN
   DELETE FROM public.work_logs WHERE id = v_work_log_id;
   DELETE FROM public.applications WHERE id = v_app_id;
   DELETE FROM public.job_postings WHERE id = v_job_id;
-  DELETE FROM public.workspaces WHERE id = v_workspace_id;
-  -- baseline(2026-07-12): on_auth_user_created 트리거 공존(선점 행/기본 워크스페이스 정리)
-  DELETE FROM public.workspaces WHERE owner_id IN (v_owner_id, v_staff_id, v_other_staff_id);
+  -- owner 기준으로 workspace 삭제 — handle_new_user(employer 기본 워크스페이스
+  -- 자동생성, 20260519223300) 트리거가 활성인 스택에서는 test-ws 외에 auto-ws 도
+  -- 생기므로, auth.users 삭제 전 owner 소유 전체를 정리한다(workspaces_owner_id_fkey
+  -- ON DELETE RESTRICT). CI(auth 트리거 미작동)에서는 test-ws 만 대상 = 무해.
+  DELETE FROM public.workspaces WHERE owner_id = v_owner_id;
   DELETE FROM auth.users WHERE id IN (v_owner_id, v_staff_id, v_other_staff_id);
 END $$;
 

@@ -19,13 +19,7 @@ import { isDuplicateReportError, isCannotReportSelfError } from '@/errors';
 import { logger } from '@/utils/logger';
 import { getEffectiveSalaryInfoFromRoles } from '@/domains/settlement';
 import { serializeTaxSettings, type SalaryInfo } from '@/utils/settlement';
-import type {
-  WorkLog,
-  Allowances,
-  CreateReportInput,
-  JobPosting,
-  UpdateStaffRoleInput,
-} from '@/types';
+import type { WorkLog, Allowances, CreateReportInput, UpdateStaffRoleInput } from '@/types';
 import type { Toast } from '@/stores/toastStore';
 import { calculateWorkLogAmount, type RoleWithSalary, type SalaryConfig } from './settlementCalc';
 
@@ -33,7 +27,6 @@ type SettlementModals = ReturnType<typeof useSettlementModals>;
 
 interface UseStaffSettlementsHandlersParams {
   jobPostingId: string | undefined;
-  posting: JobPosting | null;
   modals: SettlementModals;
   salaryConfig: SalaryConfig;
   rolesForList: RoleWithSalary[];
@@ -53,7 +46,6 @@ interface UseStaffSettlementsHandlersParams {
 
 export function useStaffSettlementsHandlers({
   jobPostingId,
-  posting,
   modals,
   salaryConfig,
   rolesForList,
@@ -236,7 +228,7 @@ export function useStaffSettlementsHandlers({
   const handleSaveAmountEdit = useCallback(
     async (data: SettlementEditData) => {
       const workLogForEdit = modals.selectedWorkLogForEdit;
-      if (!workLogForEdit || !posting?.ownerId) return;
+      if (!workLogForEdit) return;
 
       const { salaryInfo, allowances: customAllowances, taxSettings, reason } = data;
 
@@ -250,9 +242,9 @@ export function useStaffSettlementsHandlers({
           salaryConfig.allowances;
 
         // 수정 이력 생성 (Firebase는 undefined를 허용하지 않으므로 필터링)
+        // modifiedBy는 서비스 계층이 세션 사용자로 기록한다
         const modificationEntry: Record<string, unknown> = {
           modifiedAt: new Date().toISOString(),
-          modifiedBy: posting.ownerId,
           reason: reason || '정산 금액 수정',
           newSalaryInfo: { type: salaryInfo.type, amount: salaryInfo.amount },
           newTaxSettings: { type: taxSettings.type, value: taxSettings.value },
@@ -271,16 +263,12 @@ export function useStaffSettlementsHandlers({
           modificationEntry.newAllowances = customAllowances;
         }
 
-        await updateWorkLogCustomSettlement(
-          workLogForEdit.id,
-          {
-            customSalaryInfo: { type: salaryInfo.type, amount: salaryInfo.amount },
-            customAllowances: customAllowances as Record<string, unknown> | undefined,
-            customTaxSettings: serializeTaxSettings(taxSettings),
-            modificationEntry,
-          },
-          posting.ownerId
-        );
+        await updateWorkLogCustomSettlement(workLogForEdit.id, {
+          customSalaryInfo: { type: salaryInfo.type, amount: salaryInfo.amount },
+          customAllowances: customAllowances as Record<string, unknown> | undefined,
+          customTaxSettings: serializeTaxSettings(taxSettings),
+          modificationEntry,
+        });
 
         addToast({
           type: 'success',
@@ -298,13 +286,13 @@ export function useStaffSettlementsHandlers({
         });
       }
     },
-    [modals, rolesForList, salaryConfig, posting?.ownerId, addToast, refresh]
+    [modals, rolesForList, salaryConfig, addToast, refresh]
   );
 
   // 정산 설정 저장 (v2.0 - roles[] 구조) - jobPosting에 저장
   const handleSaveSettings = useCallback(
     async (data: SettlementSettingsData) => {
-      if (!jobPostingId || !posting?.ownerId) return;
+      if (!jobPostingId) return;
 
       const { roles: updatedRoles, allowances: updatedAllowances, taxSettings } = data;
 
@@ -338,15 +326,11 @@ export function useStaffSettlementsHandlers({
             salary: r.salary,
           }));
 
-        await updateJobPostingSettlementSettings(
-          jobPostingId,
-          {
-            roles: mergedRoles as Record<string, unknown>[],
-            allowances: updatedAllowances as Record<string, unknown>,
-            taxSettings: serializeTaxSettings(taxSettings),
-          },
-          posting.ownerId
-        );
+        await updateJobPostingSettlementSettings(jobPostingId, {
+          roles: mergedRoles as Record<string, unknown>[],
+          allowances: updatedAllowances as Record<string, unknown>,
+          taxSettings: serializeTaxSettings(taxSettings),
+        });
 
         addToast({
           type: 'success',
@@ -363,15 +347,7 @@ export function useStaffSettlementsHandlers({
         });
       }
     },
-    [
-      jobPostingId,
-      salaryConfig.roles,
-      posting?.ownerId,
-      addToast,
-      refresh,
-      refreshJobDetail,
-      modals,
-    ]
+    [jobPostingId, salaryConfig.roles, addToast, refresh, refreshJobDetail, modals]
   );
 
   return {

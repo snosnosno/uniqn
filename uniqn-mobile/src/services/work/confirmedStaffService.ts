@@ -82,10 +82,6 @@ async function workLogsToConfirmedStaff(workLogs: WorkLog[]): Promise<ConfirmedS
   });
 }
 
-function buildApplicationId(jobPostingId: string, staffId: string): string {
-  return `${jobPostingId}_${staffId}`;
-}
-
 export async function getConfirmedStaff(jobPostingId: string): Promise<GetConfirmedStaffResult> {
   logger.info('Fetching confirmed staff list', { jobPostingId });
 
@@ -116,12 +112,16 @@ export async function getConfirmedStaffByDate(
 export async function updateStaffRole(input: UpdateStaffRoleInput): Promise<void> {
   logger.info('Updating confirmed staff role', { ...input });
 
+  const actorId = (await requireCurrentUser()).id;
+
   await confirmedStaffRepository.updateRoleWithTransaction({
     workLogId: input.workLogId,
     newRole: input.newRole,
     isStandardRole: STANDARD_ROLE_KEYS.includes(input.newRole),
     reason: input.reason,
-    changedBy: input.changedBy ?? 'system',
+    // 감사 필드는 세션에서 강제 스탬프 — 클라이언트가 넘긴 값은 무시(위조 방지)
+    changedBy: actorId,
+    actorId,
   });
 
   logger.info('Updated confirmed staff role', { workLogId: input.workLogId });
@@ -130,7 +130,9 @@ export async function updateStaffRole(input: UpdateStaffRoleInput): Promise<void
 export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> {
   const checkInDate = TimeNormalizer.parseTime(input.checkInTime);
   const checkOutDate = TimeNormalizer.parseTime(input.checkOutTime);
-  const modifiedBy = input.modifiedBy ?? (await requireCurrentUser()).id;
+  const actorId = (await requireCurrentUser()).id;
+  // 감사 필드는 세션에서 강제 스탬프 — 클라이언트가 넘긴 값은 무시(위조 방지)
+  const modifiedBy = actorId;
 
   logger.info('Updating confirmed staff work time', {
     workLogId: input.workLogId,
@@ -144,6 +146,7 @@ export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> 
     checkOutTime: checkOutDate,
     reason: input.reason,
     modifiedBy,
+    actorId,
   });
 
   logger.info('Updated confirmed staff work time', { workLogId: input.workLogId });
@@ -169,21 +172,21 @@ export async function cancelConfirmedStaffConfirmation(
   }
 
   // 직접추가분(지원서 미연동)은 확정취소 RPC 가 아니라 전용 삭제 경로를 탄다.
-  if (!workLog.applicationId) {
+  // applicationId 부재를 여기서 fail-closed 처리하므로, 아래 RPC 경로는 항상 실제 UUID 를 넘긴다
+  // (과거 `${jobPostingId}_${staffId}` 합성키를 uuid 파라미터에 넘겨 22P02 로 즉사하던 결함 제거).
+  const applicationId = workLog.applicationId;
+  if (!applicationId) {
     await confirmedStaffRepository.removeDirectStaff({ workLogId: input.workLogId });
     logger.info('직접 추가 스태프 삭제 완료', { workLogId: input.workLogId });
     return;
   }
 
-  await cancelConfirmation(
-    buildApplicationId(workLog.jobPostingId, workLog.staffId),
-    currentUser.id,
-    input.reason
-  );
+  // 구인자 확정해제: 실제 applicationId + employer_initiates 로 RPC 호출(인가 판정은 RPC 담당).
+  await cancelConfirmation(applicationId, currentUser.id, input.reason, 'employer_initiates');
 
   logger.info('Cancelled confirmed staff confirmation', {
     workLogId: input.workLogId,
-    applicationId: buildApplicationId(workLog.jobPostingId, workLog.staffId),
+    applicationId,
   });
 }
 
@@ -196,7 +199,7 @@ export async function markAsNoShow(workLogId: string, reason?: string): Promise<
   const currentUser = await requireCurrentUser();
   logger.info('Marking confirmed staff as no-show', { workLogId, reason });
 
-  await confirmedStaffRepository.markAsNoShow({ workLogId, ownerId: currentUser.id, reason });
+  await confirmedStaffRepository.markAsNoShow({ workLogId, actorId: currentUser.id, reason });
 
   logger.info('Marked confirmed staff as no-show', { workLogId });
 }
@@ -205,7 +208,7 @@ export async function cancelNoShow(workLogId: string): Promise<void> {
   const currentUser = await requireCurrentUser();
   logger.info('Cancelling confirmed staff no-show', { workLogId });
 
-  await confirmedStaffRepository.cancelNoShow({ workLogId, ownerId: currentUser.id });
+  await confirmedStaffRepository.cancelNoShow({ workLogId, actorId: currentUser.id });
 
   const workLog = await workLogRepository.getById(workLogId);
   if (workLog?.jobPostingId) {
@@ -233,7 +236,7 @@ export async function updateStaffStatus(workLogId: string, status: WorkLogStatus
   logger.info('Updating confirmed staff status', { workLogId, status });
 
   const workLog = await workLogRepository.getById(workLogId);
-  await confirmedStaffRepository.updateStatus({ workLogId, ownerId: currentUser.id, status });
+  await confirmedStaffRepository.updateStatus({ workLogId, actorId: currentUser.id, status });
 
   if (workLog?.jobPostingId) {
     try {

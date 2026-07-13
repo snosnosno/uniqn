@@ -20,6 +20,8 @@ jest.mock('@/utils/logger', () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
 }));
 
+const mockRpc = jest.requireMock('@/lib/supabase').supabase.rpc as jest.Mock;
+
 const mockParseWorkLog = jest.fn();
 const mockParseJobPosting = jest.fn();
 jest.mock('@/schemas', () => {
@@ -73,7 +75,7 @@ function makeWorkLog(id: string, overrides: Partial<WorkLog> = {}): WorkLog {
 }
 
 function makeJobPosting(id: string, ownerId: string): JobPosting {
-  return { id, ownerId, compensation: undefined } as unknown as JobPosting;
+  return { id, ownerId, workspaceId: 'ws-1', compensation: undefined } as unknown as JobPosting;
 }
 
 let repo: SupabaseSettlementRepository;
@@ -81,6 +83,9 @@ const AMOUNTS: Record<string, number> = { 'wl-1': 1000, 'wl-2': 2000, 'wl-3': 30
 
 beforeEach(() => {
   mockFrom.mockReset();
+  mockRpc.mockReset();
+  // 기본: 권한 없음(fail-closed). owner 는 short-circuit 이라 RPC 미호출.
+  mockRpc.mockResolvedValue({ data: false, error: null });
   mockParseWorkLog.mockReset();
   mockParseJobPosting.mockReset();
   workLogFixtures.clear();
@@ -174,8 +179,41 @@ describe('bulkSettlementWithTransaction', () => {
     expect(result.totalAmount).toBe(0);
     const byId = Object.fromEntries(result.results.map((r) => [r.workLogId, r]));
     expect(byId['wl-done'].message).toBe('이미 정산 완료되었습니다');
-    expect(byId['wl-foreign'].message).toBe('본인의 공고가 아닙니다');
+    expect(byId['wl-foreign'].message).toBe('권한이 없는 공고입니다');
     // 검증 실패 행은 UPDATE를 발행하지 않는다
     expect(updateCalls).toHaveLength(0);
+  });
+
+  // 2026-07-10 P0#3: owner 뿐 아니라 워크스페이스 멤버·협업자도 정산 가능.
+  it('워크스페이스 멤버의 일괄정산은 스킵되지 않는다 (is_workspace_member=true)', async () => {
+    workLogFixtures.set('wl-1', makeWorkLog('wl-1'));
+    jobPostingFixtures.set('jp-1', makeJobPosting('jp-1', 'someone-else'));
+    workLogSelectResult = { data: [{ id: 'wl-1' }], error: null };
+    jobPostingSelectResult = { data: [{ id: 'jp-1' }], error: null };
+    mockRpc.mockImplementation((fn: string) =>
+      Promise.resolve({ data: fn === 'is_workspace_member', error: null })
+    );
+
+    const result = await repo.bulkSettlementWithTransaction({ workLogIds: ['wl-1'] }, 'member-1');
+
+    expect(result.results[0]).toMatchObject({ success: true });
+    expect(updateCalls).toHaveLength(1);
+  });
+
+  it('같은 공고의 근무기록 N건에 권한 RPC 를 공고당 1회만 호출한다 (N+1 방지)', async () => {
+    workLogFixtures.set('wl-1', makeWorkLog('wl-1'));
+    workLogFixtures.set('wl-2', makeWorkLog('wl-2'));
+    jobPostingFixtures.set('jp-1', makeJobPosting('jp-1', 'someone-else'));
+    workLogSelectResult = { data: [{ id: 'wl-1' }, { id: 'wl-2' }], error: null };
+    jobPostingSelectResult = { data: [{ id: 'jp-1' }], error: null };
+    mockRpc.mockImplementation((fn: string) =>
+      Promise.resolve({ data: fn === 'is_workspace_member', error: null })
+    );
+
+    await repo.bulkSettlementWithTransaction({ workLogIds: ['wl-1', 'wl-2'] }, 'member-1');
+
+    // wl-1, wl-2 가 같은 jp-1 → is_workspace_member 는 정확히 1회
+    const memberCalls = mockRpc.mock.calls.filter((c) => c[0] === 'is_workspace_member');
+    expect(memberCalls).toHaveLength(1);
   });
 });

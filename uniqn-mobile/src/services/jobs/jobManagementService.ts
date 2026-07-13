@@ -1,8 +1,9 @@
 import { logger } from '@/utils/logger';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { jobPostingRepository } from '@/repositories';
+import { requireCurrentUser } from '@/services/auth/authCoreService';
 import { workspaceService } from '@/services/workspace';
-import { BusinessError, ERROR_CODES } from '@/errors';
+import { BusinessError, PermissionError, ERROR_CODES } from '@/errors';
 import type { TaxSettings } from '@/utils/settlement';
 import type {
   CreateJobPostingResult,
@@ -51,14 +52,43 @@ function isWorkspaceFkViolation(error: unknown): boolean {
   return typeof obj.message === 'string' && obj.message.includes('workspace_id');
 }
 
+/**
+ * 공고를 붙일 workspace_id 를 결정한다.
+ *
+ * P1#8: 목록 조회는 활성 워크스페이스(activeWorkspace) 스코프인데 생성은 항상
+ * default(가장 오래된) 워크스페이스로 붙어, 워크스페이스 B 선택 후 만든 공고가
+ * B 목록에서 사라지는 결함이 있었다.
+ *
+ * - requestedWorkspaceId 가 있으면(활성 워크스페이스 컨텍스트) 그 값을 사용하되,
+ *   owner 소유/멤버인지 검증한다. 아니면 조용히 default 로 붙지 않고 명시 에러로
+ *   차단한다(fail-closed) — "조용한 오붙음"이 이 결함의 본질이므로.
+ * - 미전달(레거시/edge) 시 기존 default 조회로 fallback 한다.
+ */
+async function resolveWorkspaceId(ownerId: string, requestedWorkspaceId?: string): Promise<string> {
+  if (!requestedWorkspaceId) {
+    // Phase 0 N1 hotfix: workspace_id NOT NULL 제약 충족
+    // owner 의 가장 오래된 워크스페이스 사용 (created_at ASC)
+    return workspaceService.getDefaultWorkspaceIdForOwner(ownerId);
+  }
+
+  const accessible = await workspaceService.isMemberOfWorkspace(requestedWorkspaceId, ownerId);
+  if (!accessible) {
+    logger.warn('공고 생성 — 전달된 workspaceId 접근 권한 없음', { ownerId, requestedWorkspaceId });
+    throw new PermissionError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
+      userMessage: '선택한 워크스페이스에 공고를 등록할 권한이 없어요.',
+      metadata: { ownerId, requestedWorkspaceId },
+    });
+  }
+  return requestedWorkspaceId;
+}
+
 async function createSinglePosting(
   input: CreateJobPostingInput,
   ownerId: string,
-  ownerName: string
+  ownerName: string,
+  requestedWorkspaceId?: string
 ): Promise<CreateJobPostingResult> {
-  // Phase 0 N1 hotfix: workspace_id NOT NULL 제약 충족
-  // owner 의 가장 오래된 워크스페이스 사용 (created_at ASC)
-  const workspaceId = await workspaceService.getDefaultWorkspaceIdForOwner(ownerId);
+  const workspaceId = await resolveWorkspaceId(ownerId, requestedWorkspaceId);
   try {
     return await jobPostingRepository.createWithTransaction(input, {
       ownerId,
@@ -81,10 +111,11 @@ async function createSinglePosting(
 export async function createJobPosting(
   input: CreateJobPostingInput,
   ownerId: string,
-  ownerName: string
+  ownerName: string,
+  workspaceId?: string
 ): Promise<CreateJobPostingResult> {
   try {
-    const result = await createSinglePosting(input, ownerId, ownerName);
+    const result = await createSinglePosting(input, ownerId, ownerName, workspaceId);
     await enqueueScheduleBoardSync(result.id, 'create', {
       jobPostingId: result.id,
       ownerId,
@@ -236,18 +267,19 @@ export async function updateJobPostingSettlementSettings(
     roles: Record<string, unknown>[];
     allowances: Record<string, unknown>;
     taxSettings: TaxSettings;
-  },
-  ownerId: string
+  }
 ): Promise<void> {
   try {
-    logger.info('공고 정산 설정 저장 시작', { jobPostingId, ownerId });
-    await jobPostingRepository.updateSettlementSettings(jobPostingId, data, ownerId);
+    // 인가 주체는 세션에서 파생한다 — 클라이언트가 넘긴 값은 신뢰하지 않는다
+    const actorId = (await requireCurrentUser()).id;
+    logger.info('공고 정산 설정 저장 시작', { jobPostingId, actorId });
+    await jobPostingRepository.updateSettlementSettings(jobPostingId, data, actorId);
     logger.info('공고 정산 설정 저장 완료', { jobPostingId });
   } catch (error) {
     throw handleServiceError(error, {
       operation: '공고 정산 설정 저장',
       component: 'jobManagementService',
-      context: { jobPostingId, ownerId },
+      context: { jobPostingId },
     });
   }
 }

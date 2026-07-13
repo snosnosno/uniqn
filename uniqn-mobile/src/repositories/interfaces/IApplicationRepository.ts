@@ -77,6 +77,14 @@ export interface CancelConfirmationResult {
 }
 
 /**
+ * 확정 취소 행위 주체 유형 (RPC p_actor_type 클라이언트 배관).
+ * - staff_initiates: 스태프 본인이 자신의 확정을 취소
+ * - employer_initiates: 구인자(공고 권한 보유자)가 확정을 되돌림
+ * 취소요청 승인(staff_approves_cancel_request)은 별도 경로(reviewCancellation)라 여기 포함하지 않는다.
+ */
+export type CancelActorType = 'staff_initiates' | 'employer_initiates';
+
+/**
  * 지원자→스태프 변환 결과
  */
 export interface ConversionResult {
@@ -328,14 +336,17 @@ export interface IApplicationRepository {
    * 5. 상태를 원본(applied)으로 복원
    *
    * @param applicationId - 지원서 ID
-   * @param ownerId - 공고 소유자 ID
+   * @param ownerId - 액션 수행자 ID (호출자 본인의 uid)
    * @param cancelReason - 취소 사유
+   * @param actorType - 취소 주체 유형(기본 staff_initiates). 인가 주체 판정은 RPC가 수행하며,
+   *                    클라이언트는 어떤 경로에서 호출했는지만 전달한다.
    * @returns 취소 결과
    */
   cancelConfirmationTransaction(
     applicationId: string,
     ownerId: string,
-    cancelReason?: string
+    cancelReason?: string,
+    actorType?: CancelActorType
   ): Promise<CancelConfirmationResult>;
 
   // ==========================================================================

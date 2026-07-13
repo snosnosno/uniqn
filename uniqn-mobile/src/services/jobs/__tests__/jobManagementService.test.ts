@@ -8,6 +8,7 @@ import {
   getMyJobPostingStats,
   reopenJobPosting,
   updateJobPosting,
+  updateJobPostingSettlementSettings,
 } from '@/services/jobs/jobManagementService';
 
 const mockCreateWithTransaction = jest.fn();
@@ -21,6 +22,8 @@ const mockGetById = jest.fn();
 const mockUpdateStatus = jest.fn();
 const mockEnqueueScheduleBoardSync = jest.fn();
 const mockGetDefaultWorkspaceIdForOwner = jest.fn();
+const mockUpdateSettlementSettings = jest.fn();
+const mockRequireCurrentUser = jest.fn();
 
 jest.mock('@/repositories', () => ({
   jobPostingRepository: {
@@ -34,7 +37,12 @@ jest.mock('@/repositories', () => ({
     getById: (...args: unknown[]) => mockGetById(...args),
     updateStatus: (...args: unknown[]) => mockUpdateStatus(...args),
     enqueueScheduleBoardSync: (...args: unknown[]) => mockEnqueueScheduleBoardSync(...args),
+    updateSettlementSettings: (...args: unknown[]) => mockUpdateSettlementSettings(...args),
   },
+}));
+
+jest.mock('@/services/auth/authCoreService', () => ({
+  requireCurrentUser: () => mockRequireCurrentUser(),
 }));
 
 jest.mock('@/services/workspace', () => ({
@@ -451,6 +459,35 @@ describe('jobManagementService', () => {
       expect(count).toBe(2);
       expect(mockGetStatsByOwnerId).toHaveBeenCalledWith('employer-1');
       expect(mockBulkUpdateStatus).toHaveBeenCalledWith(['job-1', 'job-2'], 'closed', 'employer-1');
+    });
+  });
+
+  describe('updateJobPostingSettlementSettings', () => {
+    const settlementData = {
+      roles: [{ role: 'dealer', count: 1, filled: 0, salary: { type: 'hourly', amount: 15000 } }],
+      allowances: {},
+      taxSettings: { type: 'none' as const, value: 0 },
+    };
+
+    it('세션 사용자를 actorId로 리포지토리에 전달한다', async () => {
+      mockRequireCurrentUser.mockResolvedValue({ id: 'session-user-1' });
+      mockUpdateSettlementSettings.mockResolvedValue(undefined);
+
+      await updateJobPostingSettlementSettings('job-1', settlementData);
+
+      expect(mockUpdateSettlementSettings).toHaveBeenCalledTimes(1);
+      const [jobPostingId, , actorId] = mockUpdateSettlementSettings.mock.calls[0];
+      expect(jobPostingId).toBe('job-1');
+      expect(actorId).toBe('session-user-1');
+    });
+
+    it('미로그인 시 에러를 던지고 리포지토리를 호출하지 않는다', async () => {
+      mockRequireCurrentUser.mockRejectedValue(new Error('인증이 필요합니다.'));
+
+      await expect(updateJobPostingSettlementSettings('job-1', settlementData)).rejects.toThrow(
+        '인증이 필요합니다.'
+      );
+      expect(mockUpdateSettlementSettings).not.toHaveBeenCalled();
     });
   });
 });

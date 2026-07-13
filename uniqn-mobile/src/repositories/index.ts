@@ -54,6 +54,7 @@ export type {
   ApplyContext,
   ConfirmWithHistoryResult,
   CancelConfirmationResult,
+  CancelActorType,
   // JobPosting
   IJobPostingRepository,
   PaginatedJobPostings,
@@ -310,16 +311,16 @@ export const reportRepository = new SupabaseReportRepository();
  * import { settlementRepository } from '@/repositories';
  *
  * // 근무 시간 수정
- * await settlementRepository.updateWorkTimeWithTransaction(context, ownerId);
+ * await settlementRepository.updateWorkTimeWithTransaction(context, actorId);
  *
  * // 개별 정산
- * const result = await settlementRepository.settleWorkLogWithTransaction(context, ownerId);
+ * const result = await settlementRepository.settleWorkLogWithTransaction(context, actorId);
  *
  * // 일괄 정산
- * const bulkResult = await settlementRepository.bulkSettlementWithTransaction(context, ownerId);
+ * const bulkResult = await settlementRepository.bulkSettlementWithTransaction(context, actorId);
  *
  * // 정산 상태 변경
- * await settlementRepository.updatePayrollStatusWithTransaction(workLogId, status, ownerId);
+ * await settlementRepository.updatePayrollStatusWithTransaction(workLogId, status, actorId);
  * ```
  */
 export const settlementRepository = new SupabaseSettlementRepository();

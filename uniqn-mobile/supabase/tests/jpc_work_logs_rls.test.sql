@@ -1,16 +1,25 @@
 -- uniqn-mobile/supabase/tests/jpc_work_logs_rls.test.sql
 -- JPC 후속 PR — Task 2.4: work_logs RLS 매트릭스 (16 케이스)
 --
--- 정책 (prod 실측 2026-07-12, baseline 파리티):
+-- 정책 (plan 가정 보정):
 --   SELECT  : wl_select USING (staff=self OR owner=self OR jp.id IN
 --             (jp WHERE is_workspace_member OR is_posting_collaborator))
 --             → 4/4 ALLOW
---   INSERT  : 정책 부재 = deny-all → 4/4 DENY(42501). 쓰기는 SECDEF RPC 전용(prod 계약).
---             (구세대 work_logs_insert_owner_or_admin 은 prod 부재 — 로컬 전용 잔상.)
---   UPDATE  : wl_update USING (owner=self OR jp workspace_member OR posting_collaborator)
---             → owner/editor/collaborator ALLOW, staff outsider DENY. SELECT 와 달리
---             staff 분기 없음(자기행 UPDATE 회수, prod P0#1 2026-07).
---   DELETE  : 정책 부재 = deny-all → 4/4 DENY (0 rows).
+--   INSERT  : 정책 부재 = deny-all → 4/4 DENY
+--             ※ 2026-07-12 prod 파리티: work_logs_insert_owner_or_admin 은
+--               레포 전용 잔재였다(prod 실측: work_logs 정책 = wl_select/wl_update
+--               2개뿐, 앱의 클라이언트 직접 INSERT 0건 — 생성은 SECDEF RPC 경유).
+--               마이그 20260712010100 이 드롭. 이전 "owner ALLOW" 단언은 레포
+--               전용 정책을 고정하던 것 — prod 스냅샷 스택에서는 원래 실패했다.
+--   UPDATE  : wl_update USING (owner=self OR jp.id IN
+--             (jp WHERE is_workspace_member OR is_posting_collaborator))
+--             → owner/ws_editor/collaborator ALLOW, staff 본인 DENY
+--             ※ 2026-07-10 유저플로우 감사 P0#1: staff_id 자기행 분기 제거.
+--               스태프가 자기 정산 입력값(check_in_ts/custom_*)을 직접 PATCH 하던
+--               경로였다. QR 출퇴근은 SECURITY DEFINER RPC 라 영향 없음.
+--               상세: supabase/tests/wl_update_staff_self_revoke.test.sql
+--   DELETE  : 정책 부재 = deny-all → 4/4 DENY (work_logs_delete_admin 도
+--             레포 전용 잔재 — 마이그 20260712010100 이 드롭, prod 파리티)
 
 BEGIN;
 SELECT plan(16);
@@ -61,11 +70,11 @@ SELECT is(
 );
 
 -- ============================================================================
--- INSERT (4 케이스) — prod 실측(2026-07-12, baseline 파리티): INSERT 정책 부재.
--- work_logs 쓰기는 SECDEF RPC 전용이라 직접 INSERT 는 owner 포함 전 역할 DENY(42501).
+-- INSERT (4 케이스) — 정책 부재 = 4/4 DENY (prod 파리티, 2026-07-12)
+-- 생성 경로는 SECURITY DEFINER RPC 전용 — 클라이언트 직접 INSERT 는 owner 도 차단
 -- ============================================================================
 
--- owner 가 자기 owner_id 로 INSERT → DENY (INSERT 정책 부재)
+-- owner 가 자기 owner_id 로 INSERT → DENY (정책 부재)
 SELECT jpc_test_set_user((current_setting('jpc.owner_id'))::uuid);
 SELECT throws_ok(
   format(
@@ -78,7 +87,7 @@ SELECT throws_ok(
     current_setting('jpc.owner_id')
   ),
   '42501', NULL,
-  'work_logs INSERT: owner 차단 (INSERT 정책 부재 — RPC 전용)'
+  'work_logs INSERT: owner 도 차단 (정책 부재 deny-all, prod 파리티)'
 );
 
 -- ws_editor 가 owner_id=owner 로 INSERT → DENY (42501)
@@ -130,8 +139,7 @@ SELECT throws_ok(
 );
 
 -- ============================================================================
--- UPDATE (4 케이스) — owner/editor/collaborator ALLOW, staff outsider DENY(0 rows).
--- wl_update USING 에 staff 분기 없음(prod P0#1 자기행 UPDATE 회수, 2026-07).
+-- UPDATE (4 케이스) — 모두 ALLOW (wl_update USING)
 -- ============================================================================
 
 SELECT jpc_test_set_user((current_setting('jpc.owner_id'))::uuid);
@@ -158,17 +166,17 @@ WITH u AS (
 )
 SELECT is((SELECT count(*)::int FROM u), 1, 'work_logs UPDATE: collaborator');
 
--- staff 자기행 UPDATE 는 prod 에서 회수됨(P0#1, 2026-07): wl_update USING 에 staff 분기 없음.
+-- staff 본인은 DENY — 자기 정산 입력값 직접 조작 차단 (감사 P0#1)
 SELECT jpc_test_set_user((current_setting('jpc.outsider_id'))::uuid);
 WITH u AS (
   UPDATE public.work_logs SET status = 'checked_in', check_in_ts = now()
    WHERE id = (current_setting('jpc.wl_id'))::uuid
   RETURNING 1
 )
-SELECT is((SELECT count(*)::int FROM u), 0, 'work_logs UPDATE: staff 본인 차단 (자기행 UPDATE 회수)');
+SELECT is((SELECT count(*)::int FROM u), 0, 'work_logs UPDATE: staff 본인 DENY');
 
 -- ============================================================================
--- DELETE (4 케이스) — 모두 DENY (prod 실측: DELETE 정책 부재 = deny-all, 0 rows).
+-- DELETE (4 케이스) — 모두 DENY (work_logs_delete_admin 만, admin 아님)
 -- ============================================================================
 
 SELECT jpc_test_set_user((current_setting('jpc.owner_id'))::uuid);

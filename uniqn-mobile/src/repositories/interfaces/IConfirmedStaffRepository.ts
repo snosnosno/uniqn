@@ -7,7 +7,10 @@ export interface UpdateRoleContext {
   newRole: string;
   isStandardRole: boolean;
   reason: string;
+  /** 감사 기록용(폴백 'system' 존재). 인가에 사용하지 말 것 */
   changedBy: string;
+  /** 인가 주체. 서비스 레이어가 requireCurrentUser() 로 채운다 */
+  actorId: string;
 }
 
 export interface UpdateConfirmedStaffWorkTimeContext {
@@ -16,6 +19,8 @@ export interface UpdateConfirmedStaffWorkTimeContext {
   checkOutTime: Date | null;
   reason: string;
   modifiedBy: string;
+  /** 인가 주체. 서비스 레이어가 requireCurrentUser() 로 채운다 */
+  actorId: string;
 }
 
 export interface DeleteConfirmedStaffContext {
@@ -27,18 +32,21 @@ export interface DeleteConfirmedStaffContext {
 
 export interface MarkNoShowContext {
   workLogId: string;
-  ownerId: string;
+  /** 인가 주체(세션에서 파생한 현재 사용자 uid). 공고 소유자 id 를 재주입하지 말 것. */
+  actorId: string;
   reason?: string;
 }
 
 export interface CancelNoShowContext {
   workLogId: string;
-  ownerId: string;
+  /** 인가 주체(세션에서 파생한 현재 사용자 uid). 공고 소유자 id 를 재주입하지 말 것. */
+  actorId: string;
 }
 
 export interface UpdateStaffStatusContext {
   workLogId: string;
-  ownerId: string;
+  /** 인가 주체(세션에서 파생한 현재 사용자 uid). 공고 소유자 id 를 재주입하지 말 것. */
+  actorId: string;
   status: WorkLogStatus;
 }
 

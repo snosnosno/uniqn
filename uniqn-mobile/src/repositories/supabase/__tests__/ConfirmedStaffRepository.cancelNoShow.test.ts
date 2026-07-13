@@ -76,7 +76,7 @@ describe('SupabaseConfirmedStaffRepository.cancelNoShow', () => {
       .mockReturnValueOnce(jobPostingChain)
       .mockReturnValueOnce(updateChain);
 
-    await repo.cancelNoShow({ workLogId: 'wl-1', ownerId: 'owner-1' });
+    await repo.cancelNoShow({ workLogId: 'wl-1', actorId: 'owner-1' });
 
     expect(updateChain.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -102,7 +102,7 @@ describe('SupabaseConfirmedStaffRepository.cancelNoShow', () => {
       .mockReturnValueOnce(jobPostingChain)
       .mockReturnValueOnce(updateChain);
 
-    await repo.cancelNoShow({ workLogId: 'wl-1', ownerId: 'owner-1' });
+    await repo.cancelNoShow({ workLogId: 'wl-1', actorId: 'owner-1' });
 
     expect(updateChain.update).toHaveBeenCalledWith(
       expect.objectContaining({ status: STATUS.WORK_LOG.CHECKED_IN })
@@ -126,7 +126,7 @@ describe('SupabaseConfirmedStaffRepository.cancelNoShow', () => {
       .mockReturnValueOnce(jobPostingChain)
       .mockReturnValueOnce(updateChain);
 
-    await repo.cancelNoShow({ workLogId: 'wl-1', ownerId: 'owner-1' });
+    await repo.cancelNoShow({ workLogId: 'wl-1', actorId: 'owner-1' });
 
     expect(updateChain.update).toHaveBeenCalledWith(
       expect.objectContaining({ status: STATUS.WORK_LOG.CHECKED_OUT })
@@ -143,7 +143,7 @@ describe('SupabaseConfirmedStaffRepository.cancelNoShow', () => {
     mockFrom.mockReturnValueOnce(workLogChain).mockReturnValueOnce(jobPostingChain);
 
     await expect(
-      repo.cancelNoShow({ workLogId: 'wl-1', ownerId: 'owner-1' })
+      repo.cancelNoShow({ workLogId: 'wl-1', actorId: 'owner-1' })
     ).rejects.toMatchObject({
       code: ERROR_CODES.BUSINESS_INVALID_STATE,
     });
@@ -159,7 +159,7 @@ describe('SupabaseConfirmedStaffRepository.cancelNoShow', () => {
     mockFrom.mockReturnValueOnce(workLogChain).mockReturnValueOnce(jobPostingChain);
 
     await expect(
-      repo.cancelNoShow({ workLogId: 'wl-1', ownerId: 'owner-1' })
+      repo.cancelNoShow({ workLogId: 'wl-1', actorId: 'owner-1' })
     ).rejects.toMatchObject({
       code: ERROR_CODES.BUSINESS_ALREADY_SETTLED,
     });
@@ -176,7 +176,7 @@ describe('SupabaseConfirmedStaffRepository.cancelNoShow', () => {
     mockFrom.mockReturnValueOnce(workLogChain).mockReturnValueOnce(jobPostingChain);
 
     await expect(
-      repo.cancelNoShow({ workLogId: 'wl-1', ownerId: 'owner-1' })
+      repo.cancelNoShow({ workLogId: 'wl-1', actorId: 'owner-1' })
     ).rejects.toMatchObject({
       code: ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS,
     });

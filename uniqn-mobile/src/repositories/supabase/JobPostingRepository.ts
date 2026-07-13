@@ -457,7 +457,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
           hasRoleCatalogIdentityMutation(cur.roleCatalog, input.roleCatalog))
       ) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: 'Cannot change schedule or roles after applicants are confirmed.',
+          userMessage: '확정된 지원자가 있어 일정이나 역할을 변경할 수 없습니다.',
         });
       }
 
@@ -495,7 +495,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       const cur = await loadAndVerifyDeleteAccess(jobPostingId, ownerId, '공고 삭제');
       if ((cur.filledPositions ?? 0) > 0) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: 'Cannot delete a posting with confirmed applicants. Close it instead.',
+          userMessage: '확정된 지원자가 있는 공고는 삭제할 수 없습니다. 대신 마감해 주세요.',
         });
       }
       const now = new Date().toISOString();
@@ -517,7 +517,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       const cur = await loadAndVerifyMutateAccess(jobPostingId, ownerId, '공고 마감');
       if (cur.status === STATUS.JOB_POSTING.CLOSED) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: 'Job posting is already closed.',
+          userMessage: '이미 마감된 공고입니다.',
         });
       }
       const now = new Date().toISOString();
@@ -544,12 +544,12 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
 
       if (cur.status === STATUS.JOB_POSTING.ACTIVE) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: 'Job posting is already active.',
+          userMessage: '이미 진행 중인 공고입니다.',
         });
       }
       if (cur.status === STATUS.JOB_POSTING.CANCELLED) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: 'Cancelled postings cannot be reopened. Create a new posting instead.',
+          userMessage: '취소된 공고는 재오픈할 수 없습니다. 새 공고를 작성해 주세요.',
         });
       }
       if (
@@ -641,11 +641,11 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       allowances: Record<string, unknown>;
       taxSettings: TaxSettings;
     },
-    ownerId: string
+    actorId: string
   ): Promise<void> {
     try {
-      logger.info('정산 설정 업데이트', { jobPostingId, ownerId });
-      const cur = await loadAndVerifyMutateAccess(jobPostingId, ownerId, '정산 설정 업데이트');
+      logger.info('정산 설정 업데이트', { jobPostingId, actorId });
+      const cur = await loadAndVerifyMutateAccess(jobPostingId, actorId, '정산 설정 업데이트');
 
       const merged: CreateJobPostingInput = mergeJobPostingInput(cur, {
         roleCatalog: mergeSettlementRoles(cur.roleCatalog, data.roles),
@@ -668,7 +668,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       assertCanonical(
         serialized,
         'Settlement settings update produced a non-canonical job posting.',
-        { jobPostingId, ownerId }
+        { jobPostingId, actorId }
       );
 
       const { id: _id, ...rest } = removeUndefined(

@@ -47,7 +47,7 @@ export interface CollaboratorSearchCandidate {
   email: string;
   photoUrl: string | null;
   /** 자기 자신 / workspace 이미 멤버 / 이미 collaborator / 추가 가능 */
-  status: 'self' | 'workspace_member' | 'already_collaborator' | 'addable' | 'not_registered';
+  status: 'self' | 'workspace_member' | 'already_collaborator' | 'addable';
 }
 
 export const COLLABORATOR_LIMITS = {
