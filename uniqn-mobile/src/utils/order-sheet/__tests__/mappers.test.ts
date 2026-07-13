@@ -145,6 +145,26 @@ describe('draftToValues ↔ valuesToDraft 왕복', () => {
     expect(draft.roleCatalog.every((r) => r.salary !== undefined)).toBe(true); // 첫 변경 확인
     expect(draftToValues(draft).roleSalaries).toEqual([]); // 두 번째 변경(게이트) 확인
   });
+  it('by_role 왕복 — roleSalaries(순서 포함)와 useSameSalary=false를 보존한다 (Design B 두 번째 변경 복원 분기 커버)', () => {
+    // 위 shared 가드는 by_role 게이트의 "shared→[]" 쪽만 고정한다. 이 테스트는 반대쪽인
+    // "by_role→roleCatalog salary 복원" 분기(mappers.ts:145-156)를 커버한다. 이 분기가 항상 []로
+    // 회귀하면 by_role 프리셋/공고의 draft→values에서 역할별 급여가 통소실되므로, 순서 포함 보존을 고정한다.
+    const byRoleValues: OrderSheetValues = {
+      ...baseValues,
+      useSameSalary: false,
+      roleSalaries: [
+        { role: 'dealer', salary: { type: 'hourly', amount: 25000 } },
+        { role: 'serving', salary: { type: 'other', amount: 0 } },
+      ],
+    };
+    const roundTrip = draftToValues(valuesToDraft(byRoleValues));
+    expect(roundTrip.useSameSalary).toBe(false);
+    expect(roundTrip.roleSalaries).toEqual([
+      { role: 'dealer', salary: { type: 'hourly', amount: 25000 } },
+      { role: 'serving', salary: { type: 'other', amount: 0 } },
+    ]);
+    expect(roundTrip).toEqual(byRoleValues); // 전체 왕복 동치
+  });
 });
 
 describe('신·구 동등성 (레거시 폼 경로 대비)', () => {
