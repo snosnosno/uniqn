@@ -13,7 +13,7 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
+import { BackHandler, Keyboard, Pressable, StyleSheet, Text, View } from 'react-native';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
 import { SECONDARY_PALETTE } from '@/constants/colors';
@@ -93,6 +93,8 @@ export function AddStaffModal({
   }, [dateOpen]);
 
   const handleSearch = useCallback(() => {
+    // 키보드를 내려 하단 footer(취소/추가 버튼)가 키보드 뒤/화면 밖으로 밀리지 않게 한다 (iOS).
+    Keyboard.dismiss();
     // 재검색 시 이전 선택을 초기화 — 새 결과에 없는 사람이 그대로 제출되는 것을 방지
     setSelected(null);
     void search(phone);

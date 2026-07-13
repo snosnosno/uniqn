@@ -7,6 +7,7 @@ import { Badge, NumericText, type CardStripeTone } from '@/components/ui';
 import { STATUS } from '@/constants';
 import { toJobPostingCard } from '@/domains/job-posting';
 import { useShare } from '@/hooks/useShare';
+import { extractPostingFilledSubmap } from '@/hooks/usePostingFilledCounts';
 import { getPostingStatusMeta } from '@/components/jobs/shared/postingSurfaceModel';
 import type { JobPosting, JobPostingStatus, TournamentApprovalStatus } from '@/types';
 
@@ -39,6 +40,11 @@ export interface JobPostingCardProps {
   onShowQR: (posting: JobPosting) => void;
   isClosing: boolean;
   isReopening: boolean;
+  /**
+   * 전역 확정 인원 맵 (usePostingFilledCounts) — 키 `${jobPostingId}__${date}__${slot}__${role}`.
+   * 카드 내부에서 posting.id 로 서브맵(`date__slot__role`)을 추출해 모델 조회 키와 맞춘다.
+   */
+  filledCounts?: Map<string, number>;
 }
 
 export const JobPostingCard = memo(function JobPostingCard({
@@ -49,8 +55,15 @@ export const JobPostingCard = memo(function JobPostingCard({
   onShowQR,
   isClosing,
   isReopening,
+  filledCounts,
 }: JobPostingCardProps) {
   const card = useMemo(() => toJobPostingCard(posting), [posting]);
+  // 전역맵 → 이 공고의 서브맵(`date__slot__role`) 추출. 이 변환 없이 전역맵을 넘기면
+  // 모델 조회 키(postingId 접두 없음)와 미스매치해 확정 인원이 전건 0/N 으로 표시된다.
+  const cardFilledCounts = useMemo(
+    () => extractPostingFilledSubmap(filledCounts, posting.id),
+    [filledCounts, posting.id]
+  );
   const stripeTone = POSTING_STRIPE_TONE[posting.status];
   const statusLabel = getPostingStatusMeta(posting.status).label;
   const { shareJob, isSharing } = useShare();
@@ -64,6 +77,7 @@ export const JobPostingCard = memo(function JobPostingCard({
         accessibilityLabel={`${posting.title} 공고 상세보기`}
         stripeTone={stripeTone}
         containerClassName="overflow-hidden"
+        filledCounts={cardFilledCounts}
         footer={
           <View className="mt-2 flex-row items-center justify-between border-t border-secondary-100 px-4 pt-2 dark:border-surface-overlay">
             <View className="flex-row items-center">

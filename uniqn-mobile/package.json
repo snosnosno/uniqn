@@ -133,6 +133,7 @@
     "jest-watch-typeahead": "^2.2.2",
     "knip": "6.25.0",
     "prettier": "^3.5.0",
+    "react-refresh": "^0.14.2",
     "react-test-renderer": "19.2.0",
     "source-map-explorer": "^2.5.3",
     "typescript": "~5.9.2"

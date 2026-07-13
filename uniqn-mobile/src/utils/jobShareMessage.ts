@@ -21,56 +21,18 @@ import { toError } from '@/errors';
 
 type ScheduleModel = ReturnType<typeof buildPostingScheduleModel>;
 
-/**
- * 날짜+시간 라인들 (variant 별). 빈 문자열만 제거하고 '미정'(시간 미정) 등
- * 상세 화면이 노출하는 라벨은 그대로 유지 — 공유 텍스트가 화면과 일치하도록.
- */
-export function buildDateLines(schedule: ScheduleModel): string[] {
-  if (schedule.variant === 'fixed') {
-    const time = schedule.fixed.timeLabel?.trim();
-    return [[schedule.fixed.daysLabel, time].filter(Boolean).join(' ').trim()].filter(Boolean);
-  }
-
-  if (schedule.variant === 'dated') {
-    return schedule.sections
-      .map((section) => {
-        const times = Array.from(
-          new Set(
-            section.timeSlots
-              .map((slot) => slot.timeLabel?.trim())
-              .filter((t): t is string => Boolean(t))
-          )
-        );
-        const timePart = times.length > 0 ? ` ${times.join(', ')}` : '';
-        return `${section.label}${timePart}`.trim();
-      })
-      .filter(Boolean);
-  }
-
-  // legacy
-  const line = [schedule.dateLabel, schedule.timeLabel]
-    .filter((v) => Boolean(v?.trim()))
-    .join(' ')
-    .trim();
-  return line ? [line] : [];
+export interface JobShareScheduleBlock {
+  /** 📅 뒤에 올 날짜(+시간) 라벨 */
+  dateLabel: string;
+  /** 🙋 뒤에 올 해당 날짜/시간대의 역할 현황. 비면 라인 생략. */
+  roleLine: string;
 }
 
 /**
- * 역할별 확정/총원 집계 라인. 실시간 현황 공유를 위해 "라벨 확정/총원명" 형식으로 표시한다.
- * 같은 역할이 여러 날짜/슬롯에 걸쳐 있으면 확정·총원을 각각 합산한다.
+ * 역할 배열을 라벨별 확정/총원으로 누적 집계. "라벨 확정/총원명" 형식.
+ * 라벨 등장 순서를 유지한다.
  */
-export function buildRoleLine(schedule: ScheduleModel): { header: string; line: string } {
-  const roles: PostingRoleDisplayModel[] = [];
-
-  if (schedule.variant === 'fixed') {
-    roles.push(...schedule.fixed.roles);
-  } else if (schedule.variant === 'dated') {
-    schedule.sections.forEach((section) =>
-      section.timeSlots.forEach((slot) => roles.push(...slot.roles))
-    );
-  }
-
-  // 라벨 등장 순서를 유지하면서 확정·총원을 라벨별로 누적
+export function aggregateRoles(roles: PostingRoleDisplayModel[]): { header: string; line: string } {
   const order: string[] = [];
   const totals = new Map<string, { filled: number; count: number }>();
   for (const role of roles) {
@@ -95,6 +57,44 @@ export function buildRoleLine(schedule: ScheduleModel): { header: string; line: 
   };
 }
 
+/**
+ * 날짜/시간대별 근무 블록. 각 블록은 "날짜+시간 라벨"과 "그 시간대의 역할 현황"을 짝지어,
+ * 공유 메시지가 공고 상세 카드(PostingScheduleContent)처럼 날짜별로 역할을 분해해 보여주도록 한다.
+ * header 는 전체 역할 종류(헤더 '모집' 표기용) — 모든 블록 역할 라벨의 집합.
+ */
+export function buildScheduleBlocks(schedule: ScheduleModel): {
+  blocks: JobShareScheduleBlock[];
+  header: string;
+} {
+  if (schedule.variant === 'fixed') {
+    const { header, line } = aggregateRoles(schedule.fixed.roles);
+    const time = schedule.fixed.timeLabel?.trim();
+    const dateLabel = [schedule.fixed.daysLabel, time].filter(Boolean).join(' ').trim();
+    return { blocks: [{ dateLabel, roleLine: line }], header };
+  }
+
+  if (schedule.variant === 'dated') {
+    const blocks: JobShareScheduleBlock[] = [];
+    const allRoles: PostingRoleDisplayModel[] = [];
+    schedule.sections.forEach((section) =>
+      section.timeSlots.forEach((slot) => {
+        allRoles.push(...slot.roles);
+        const time = slot.timeLabel?.trim();
+        const dateLabel = [section.label, time].filter(Boolean).join(' ').trim();
+        blocks.push({ dateLabel, roleLine: aggregateRoles(slot.roles).line });
+      })
+    );
+    return { blocks, header: aggregateRoles(allRoles).header };
+  }
+
+  // legacy
+  const dateLabel = [schedule.dateLabel, schedule.timeLabel]
+    .filter((v) => Boolean(v?.trim()))
+    .join(' ')
+    .trim();
+  return { blocks: dateLabel ? [{ dateLabel, roleLine: '' }] : [], header: '' };
+}
+
 /** 급여 라인 (역할별 급여면 행 나열, 단일이면 대표 금액). */
 function buildSalaryLine(comp: PostingCompensationModel): string {
   if (!comp.useSameSalary && comp.rows.length > 0) {
@@ -106,9 +106,10 @@ function buildSalaryLine(comp: PostingCompensationModel): string {
 export interface JobShareParts {
   title: string;
   location: string;
-  dateLines: string[];
+  /** 날짜/시간대별 근무 블록 (날짜 라벨 + 그 시간대 역할). 날짜별로 분해 표시. */
+  scheduleBlocks: JobShareScheduleBlock[];
+  /** 전체 역할 종류 (헤더 '모집' 표기용) */
   roleHeader: string;
-  roleLine: string;
   salary: string;
   /** 복리후생 라벨 (예: ['보장 8시간', '식사제공', '교통비 10,000원']). 비면 라인 생략. */
   allowanceLabels?: string[];
@@ -133,11 +134,18 @@ export function composeJobShareText(parts: JobShareParts): string {
   if (location && location !== title) {
     body.push(`📍 ${location}`);
   }
-  parts.dateLines.filter(Boolean).forEach((d) => body.push(`📅 ${d}`));
-  if (parts.roleLine) {
-    // 실시간 현황(확정/총원)을 그대로 노출 — '모집' 표기는 헤더에만 둔다.
-    body.push(`🙋 ${parts.roleLine}`);
-  }
+  // 날짜/시간대별로 "📅 날짜 → 🙋 그 시간대 역할" 을 짝지어 노출 (공고 상세 카드와 동일한 날짜별 분해).
+  parts.scheduleBlocks.forEach((block) => {
+    const date = block.dateLabel.trim();
+    if (date) {
+      body.push(`📅 ${date}`);
+    }
+    const role = block.roleLine.trim();
+    if (role) {
+      // 실시간 현황(확정/총원)을 그대로 노출 — '모집' 표기는 헤더에만 둔다.
+      body.push(`🙋 ${role}`);
+    }
+  });
   if (parts.salary) {
     body.push(`💰 ${parts.salary}`);
   }
@@ -173,15 +181,14 @@ export function buildJobShareText(
     }) as PostingDetailViewModel;
 
     const schedule = buildPostingScheduleModel(detail, filledCounts);
-    const { header, line: roleLine } = buildRoleLine(schedule);
+    const { blocks, header } = buildScheduleBlocks(schedule);
     const comp = buildPostingCompensationModel(detail, { display: 'detail' });
 
     return composeJobShareText({
       title: detail.title?.trim() || '공고',
       location: detail.locationLabel?.trim() || '',
-      dateLines: buildDateLines(schedule),
+      scheduleBlocks: blocks,
       roleHeader: header,
-      roleLine,
       salary: buildSalaryLine(comp),
       allowanceLabels: comp.allowanceLabels,
       taxLabel: comp.taxLabel,

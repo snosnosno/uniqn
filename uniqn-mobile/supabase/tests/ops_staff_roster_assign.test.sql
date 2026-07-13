@@ -53,7 +53,11 @@ BEGIN
     (v_cand3,       (SELECT email FROM auth.users WHERE id = v_cand3),       '후보스태프3', NULL, 'staff'::user_role, false, 'active', now(), now()),
     (v_cand4,       (SELECT email FROM auth.users WHERE id = v_cand4),       '후보스태프4', NULL, 'staff'::user_role, true,  'active', now(), now()),
     (v_cand5,       (SELECT email FROM auth.users WHERE id = v_cand5),       '후보스태프5', NULL, 'staff'::user_role, true,  'active', now(), now()),
-    (v_staff_owner, (SELECT email FROM auth.users WHERE id = v_staff_owner), '스태프대회장', NULL, 'staff'::user_role, true, 'active', now(), now());
+    (v_staff_owner, (SELECT email FROM auth.users WHERE id = v_staff_owner), '스태프대회장', NULL, 'staff'::user_role, true, 'active', now(), now())
+  -- baseline(2026-07-12): on_auth_user_created 트리거 공존(선점 행/기본 워크스페이스 정리)
+  ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name, nickname = EXCLUDED.nickname, role = EXCLUDED.role,
+    is_active = EXCLUDED.is_active, status = EXCLUDED.status;
 
   -- t3: staff 롤 사용자가 owner인 대회 — is_ops_member=true(owner_id 매칭)이지만 role 게이트는 통과 못함(SEC-1).
   INSERT INTO public.ops_tournaments (

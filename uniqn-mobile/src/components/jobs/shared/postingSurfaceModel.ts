@@ -177,8 +177,10 @@ function buildFixedScheduleModel(
   const daysValue = fixed?.daysPerWeek ?? source.daysPerWeek;
   const timeValue = fixed?.startTime ?? source.startTime;
   const isNegotiable = fixed?.isStartTimeNegotiable ?? source.isStartTimeNegotiable ?? !timeValue;
-  // 고정공고는 work_logs 키가 date='FIXED_SCHEDULE', slotKey=startTime ?? 'NEGOTIABLE'(협의) 로 정규화된다(SP2).
-  const fixedSlotKey = isNegotiable ? FIXED_TIME_MARKER : timeValue || FIXED_TIME_MARKER;
+  // 고정공고 work_logs 키: date='FIXED_SCHEDULE', slotKey=startTime 우선(없을 때만 'NEGOTIABLE').
+  // 확정 경로(facts.ts fixedAssignmentTimeSlot)·DB 정규화(_posting_slot_key)와 동일 규칙으로 통일 —
+  // isNegotiable 플래그가 켜져 있어도 startTime 값이 있으면 그 값으로 hydrate 조회해야 미스매치(0 폴백)가 없다.
+  const fixedSlotKey = timeValue || FIXED_TIME_MARKER;
   const roles = toRoleModels(fixed?.roles ?? source.requiredRolesWithCount ?? [], {
     date: FIXED_DATE_MARKER,
     slotKey: fixedSlotKey,

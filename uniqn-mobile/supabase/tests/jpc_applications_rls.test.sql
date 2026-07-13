@@ -30,6 +30,12 @@ BEGIN
   PERFORM set_config('jpc.app_id',      s.application_id::text,  true);
 END $$;
 
+-- baseline(2026-07-12): on_auth_user_created 트리거 공존(선점 행/기본 워크스페이스 정리)
+-- prod FK(work_logs_application_id_fkey)는 CASCADE 가 아니라 아래 DELETE(라인 216 부근,
+-- outsider 본인 applications DELETE ALLOW 케이스)가 jpc_test_seed() 시드 work_log 참조로
+-- abort 된다. role 전환 전(postgres 컨텍스트)에 미리 정리.
+DELETE FROM public.work_logs WHERE application_id = (current_setting('jpc.app_id'))::uuid;
+
 -- ============================================================================
 -- SELECT (4 케이스) — 모두 ALLOW
 -- ============================================================================

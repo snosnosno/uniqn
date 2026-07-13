@@ -220,10 +220,9 @@ function applyScheduleFilters(
  * 스케줄 통계 계산
  * @description 조회된 스케줄 데이터 기준으로 통계를 계산
  * - thisMonthEarnings: 조회된 데이터(선택된 월)의 completed 수익 합계
- * - 지원/확정 카운트: 미래 날짜 기준으로 계산
+ * - 지원/확정 카운트: 조회 범위(월 스코프) 내 type 기준으로 계산 — 날짜 필터 없음(리스트 표시기준과 통일)
  */
 export function calculateScheduleStats(schedules: ScheduleEvent[]): ScheduleStats {
-  const today = toDateString(new Date());
   const datedSchedules = schedules.filter((schedule) => hasScheduleDate(schedule.date));
   const confirmedScheduleKeys = new Set<string>();
   const upcomingScheduleKeys = new Set<string>();
@@ -269,12 +268,15 @@ export function calculateScheduleStats(schedules: ScheduleEvent[]): ScheduleStat
     // 지원 중인 스케줄 (미래 날짜, applied)
   });
 
+  // 확정/지원 카운트는 조회된 월(schedules는 useSchedulesByMonth로 이미 월별 스코프됨)의
+  // confirmed/applied 전체를 센다 — 리스트·캘린더 표시 기준(type만 판정, 날짜 필터 없음)과 통일.
+  // 과거 date >= today 필터는 과거 월 조회 시 확정건을 전부 누락시켜 리스트와 불일치를 유발했다.
   datedSchedules.forEach((schedule) => {
-    if (schedule.date >= today && schedule.type === STATUS.SCHEDULE.CONFIRMED) {
+    if (schedule.type === STATUS.SCHEDULE.CONFIRMED) {
       confirmedScheduleKeys.add(buildScheduleStatsCountKey(schedule));
     }
 
-    if (schedule.date >= today && schedule.type === STATUS.SCHEDULE.APPLIED) {
+    if (schedule.type === STATUS.SCHEDULE.APPLIED) {
       upcomingScheduleKeys.add(buildScheduleStatsCountKey(schedule));
     }
   });
@@ -745,18 +747,16 @@ export async function getScheduleStats(staffId: string): Promise<ScheduleStats> 
   try {
     logger.info('스케줄 통계 조회', { staffId });
 
-    // 최근 6개월 데이터 조회
+    // "이번 달 요약" 위젯(MonthSummaryWidget) 전용 — 당월 스코프로 조회한다.
+    // calculateScheduleStats 가 date>=today 필터를 제거해 조회 범위 전체의 confirmed/applied 를
+    // 세므로, 6개월 창을 쓰면 확정/지원 카운트와 thisMonthEarnings 가 6개월 누적으로 부풀려진다.
     const now = new Date();
-    const sixMonthsAgo = new Date(now);
-    sixMonthsAgo.setMonth(now.getMonth() - 6);
+    const { start, end } = getMonthRange(now.getFullYear(), now.getMonth() + 1);
 
     const { stats } = await getMySchedules(
       staffId,
       {
-        dateRange: {
-          start: toDateString(sixMonthsAgo),
-          end: toDateString(now),
-        },
+        dateRange: { start, end },
       },
       500
     );

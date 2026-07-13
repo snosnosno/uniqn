@@ -7,7 +7,7 @@
  * (ops_staff 는 (대회, 스태프) 단위 로스터라 work_logs 식 근태 슬롯이 불필요).
  */
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Keyboard, Pressable, Text, View } from 'react-native';
 import { STAFF_ROLES } from '@/constants';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { SheetModal } from '@/components/ui/SheetModal';
@@ -62,6 +62,9 @@ export function StaffAddSheet({ visible, tournamentId, onClose }: StaffAddSheetP
   }, [visible, resetAll]);
 
   const handleSearch = useCallback(() => {
+    // 키보드를 내려 하단 footer(취소/추가 버튼)가 키보드 뒤/화면 밖으로 밀리지 않게 한다 (iOS).
+    // keyboardShouldPersistTaps='handled' 라 검색 버튼 탭만으로는 키보드가 자동으로 내려가지 않는다.
+    Keyboard.dismiss();
     setSelected(null);
     void search(phone);
   }, [phone, search]);
