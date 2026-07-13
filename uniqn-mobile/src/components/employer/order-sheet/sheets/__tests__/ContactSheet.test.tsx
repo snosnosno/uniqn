@@ -70,6 +70,24 @@ describe('ContactSheet', () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
+  it('프로필과 다른 커스텀 번호로 재오픈 시 직접 입력 모드 + 프리필, 확인 시 그 값 유지', () => {
+    const onConfirm = jest.fn();
+    const { getByText, getByDisplayValue } = render(
+      <ContactSheet
+        visible
+        value="010-5555-4444"
+        myPhone="010-1234-5678"
+        onConfirm={onConfirm}
+        onClose={jest.fn()}
+      />
+    );
+
+    // 프로필 번호와 다르므로 직접 입력 모드로 열리고 입력창이 프리필된다
+    expect(getByDisplayValue('010-5555-4444')).toBeTruthy();
+    fireEvent.press(getByText('확인'));
+    expect(onConfirm).toHaveBeenCalledWith('010-5555-4444');
+  });
+
   it('프로필 번호가 없으면 프로필 라디오를 표시하지 않는다', () => {
     const { queryByText, getByTestId } = render(
       <ContactSheet visible value="" myPhone="" onConfirm={jest.fn()} onClose={jest.fn()} />

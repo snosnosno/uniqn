@@ -28,10 +28,14 @@ function RadioDot({ selected }: { selected: boolean }) {
   return (
     <View
       className={`w-5 h-5 rounded-full border items-center justify-center ${
-        selected ? 'border-primary-500' : 'border-secondary-300 dark:border-surface-overlay'
+        selected
+          ? 'border-primary-600 dark:border-primary-500'
+          : 'border-secondary-300 dark:border-surface-overlay'
       }`}
     >
-      {selected ? <View className="w-2.5 h-2.5 rounded-full bg-primary-500" /> : null}
+      {selected ? (
+        <View className="w-2.5 h-2.5 rounded-full bg-primary-600 dark:bg-primary-500" />
+      ) : null}
     </View>
   );
 }
@@ -45,7 +49,7 @@ export function ContactSheet({ visible, value, myPhone, onConfirm, onClose }: Co
   // 재오픈 시 현재 값 기준 동기화: 프로필 번호와 같으면 프로필 라디오, 그 외 값이 있으면 직접 입력
   useEffect(() => {
     if (!visible) return;
-    if (hasProfilePhone && value === myPhone.trim()) {
+    if (hasProfilePhone && value.trim() === myPhone.trim()) {
       setMode('profile');
       setCustomPhone('');
     } else if (value) {
@@ -78,40 +82,42 @@ export function ContactSheet({ visible, value, myPhone, onConfirm, onClose }: Co
     >
       <View className="gap-2">
         {hasProfilePhone && (
-          <Pressable
-            onPress={() => setMode('profile')}
-            className={`flex-row items-center gap-3 rounded-xl border px-4 py-3 min-h-[44px] ${
-              mode === 'profile'
-                ? 'border-primary-500 bg-primary-100 dark:bg-primary-900/30'
-                : 'border-secondary-200 dark:border-surface-overlay'
-            } active:opacity-80`}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: mode === 'profile' }}
-            accessibilityLabel={`내 프로필 번호 ${myPhone.trim()}`}
-          >
-            <RadioDot selected={mode === 'profile'} />
-            <View>
-              <Text className="text-sm font-sans-medium text-content-primary">내 프로필 번호</Text>
-              <Text className="text-xs text-content-muted font-sans">{myPhone.trim()}</Text>
-            </View>
-          </Pressable>
-        )}
+          <View className="gap-2" accessibilityRole="radiogroup">
+            <Pressable
+              onPress={() => setMode('profile')}
+              className={`flex-row items-center gap-3 rounded-xl border px-4 py-3 min-h-[44px] ${
+                mode === 'profile'
+                  ? 'border-primary-500 bg-primary-100 dark:bg-primary-900/30'
+                  : 'border-secondary-200 dark:border-surface-overlay'
+              } active:opacity-80`}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: mode === 'profile' }}
+              accessibilityLabel={`내 프로필 번호 ${myPhone.trim()}`}
+            >
+              <RadioDot selected={mode === 'profile'} />
+              <View>
+                <Text className="text-sm font-sans-medium text-content-primary">
+                  내 프로필 번호
+                </Text>
+                <Text className="text-xs text-content-muted font-sans">{myPhone.trim()}</Text>
+              </View>
+            </Pressable>
 
-        {hasProfilePhone && (
-          <Pressable
-            onPress={() => setMode('custom')}
-            className={`flex-row items-center gap-3 rounded-xl border px-4 py-3 min-h-[44px] ${
-              mode === 'custom'
-                ? 'border-primary-500 bg-primary-100 dark:bg-primary-900/30'
-                : 'border-secondary-200 dark:border-surface-overlay'
-            } active:opacity-80`}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: mode === 'custom' }}
-            accessibilityLabel="직접 입력"
-          >
-            <RadioDot selected={mode === 'custom'} />
-            <Text className="text-sm font-sans-medium text-content-primary">직접 입력</Text>
-          </Pressable>
+            <Pressable
+              onPress={() => setMode('custom')}
+              className={`flex-row items-center gap-3 rounded-xl border px-4 py-3 min-h-[44px] ${
+                mode === 'custom'
+                  ? 'border-primary-500 bg-primary-100 dark:bg-primary-900/30'
+                  : 'border-secondary-200 dark:border-surface-overlay'
+              } active:opacity-80`}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: mode === 'custom' }}
+              accessibilityLabel="직접 입력"
+            >
+              <RadioDot selected={mode === 'custom'} />
+              <Text className="text-sm font-sans-medium text-content-primary">직접 입력</Text>
+            </Pressable>
+          </View>
         )}
 
         {mode === 'custom' && (
