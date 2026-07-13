@@ -9,6 +9,7 @@ import { INITIAL_JOB_POSTING_DRAFT } from './jobPostingDraft';
 import type { JobPostingFormData } from './jobPostingForm';
 import type {
   PostingCompensation,
+  PostingConditions,
   PostingLocation,
   PostingQuestions,
   PostingRoleCatalogEntry,
@@ -28,6 +29,7 @@ export interface JobPostingTemplateData {
   roleCatalog?: PostingRoleCatalogEntry[];
   compensation?: PostingCompensation;
   questions?: PostingQuestions;
+  conditions?: PostingConditions;
   schedule?: JobPostingDraft['schedule'];
 }
 
@@ -123,6 +125,7 @@ export function extractTemplateData(
     roleCatalog: draft.roleCatalog,
     compensation: draft.compensation,
     questions: draft.questions,
+    ...(draft.conditions !== undefined ? { conditions: draft.conditions } : {}),
     schedule:
       draft.schedule.kind === 'fixed'
         ? {
@@ -246,6 +249,7 @@ export function templateToDraft(template: JobPostingTemplate): JobPostingDraft {
     roleCatalog: templateData.roleCatalog ?? base.roleCatalog,
     compensation: templateData.compensation ?? base.compensation,
     questions: templateData.questions ?? base.questions,
+    ...(templateData.conditions !== undefined ? { conditions: templateData.conditions } : {}),
   };
 }
 

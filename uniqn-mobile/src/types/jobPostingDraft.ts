@@ -2,6 +2,7 @@ import { generateId } from '@/utils/generateId';
 import type { PostingType } from './postingConfig';
 import type {
   PostingCompensation,
+  PostingConditions,
   PostingLocation,
   PostingQuestions,
   PostingRoleCatalogEntry,
@@ -31,6 +32,8 @@ export interface JobPostingDraft {
   roleCatalog: PostingRoleCatalogEntry[];
   compensation: PostingCompensation;
   questions: PostingQuestions;
+  /** 모집 조건(복장·경력). 미설정 draft 는 키 자체를 생략(#194 클래스 read 증발 가드). */
+  conditions?: PostingConditions;
 }
 
 function createDefaultSlotRole(

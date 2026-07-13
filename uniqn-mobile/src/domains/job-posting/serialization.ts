@@ -319,6 +319,14 @@ export function serializeJobPostingV3(
     questions: {
       items: input.questions.items ?? [],
     },
+    // 모집 조건(복장·경력) — venueId 와 동일 클래스의 직렬화 경계 silent drop 방지.
+    // 신규("공고 열기")는 input.conditions, 편집/정산 재직렬화는 current.conditions(읽기
+    // 하이드레이션)로 보존. 양쪽 모두 undefined → 키 자체를 생략(무회귀).
+    ...(input.conditions !== undefined
+      ? { conditions: input.conditions }
+      : current?.conditions !== undefined
+        ? { conditions: current.conditions }
+        : {}),
     ...(postingType === 'fixed' && current?.fixedConfig
       ? {
           fixedConfig: {
@@ -353,6 +361,8 @@ export function toCreateJobPostingInput(posting: JobPosting): CreateJobPostingIn
     roleCatalog: posting.roleCatalog,
     compensation: posting.compensation,
     questions: posting.questions,
+    // 수정 base — 빠지면 mergeJobPostingInput 기반 수정·정산설정 변경 1회에 conditions 소실.
+    ...(posting.conditions !== undefined ? { conditions: posting.conditions } : {}),
   };
 }
 
@@ -484,6 +494,9 @@ export function deserializeJobPostingDocument(document: JobPostingDocumentV3): J
         ...(item.options ? { options: [...item.options] } : {}),
       })),
     },
+    // 읽기 하이드레이션 — 빠지면 상세·프리셋·edit 전부에서 conditions 가 항상 undefined
+    // (쓰기만 되고 아무도 못 읽는 필드, #194 클래스 read 증발).
+    ...(document.conditions !== undefined ? { conditions: document.conditions } : {}),
     ...(postingType === 'fixed' && document.fixedConfig
       ? {
           fixedConfig: {
