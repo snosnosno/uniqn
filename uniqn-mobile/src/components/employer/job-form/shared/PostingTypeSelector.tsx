@@ -113,7 +113,7 @@ export const PostingTypeSelector = memo(function PostingTypeSelector({
       {value === 'urgent' && (
         <View className="mt-3 rounded-lg border border-error-200 bg-error-50 p-2.5 dark:border-error-800 dark:bg-error-900/20">
           <Text className="text-sm text-error-700 dark:text-error-300 font-sans">
-            긴급 공고는 오늘 기준 7일 이내 날짜만 선택할 수 있습니다.
+            급구 공고는 오늘 기준 7일 이내 날짜만 선택할 수 있습니다.
           </Text>
         </View>
       )}

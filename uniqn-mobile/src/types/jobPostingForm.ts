@@ -53,7 +53,7 @@ export const POSTING_TYPE_INFO: Record<
   regular: {
     label: '지원',
     icon: '📋',
-    description: '일반 공고',
+    description: '기본 공고',
   },
   fixed: {
     label: '고정',
