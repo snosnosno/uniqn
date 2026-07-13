@@ -172,6 +172,8 @@ BEGIN
   DELETE FROM public.applications WHERE id = v_app_id;
   DELETE FROM public.job_postings WHERE id = v_job_id;
   DELETE FROM public.workspaces WHERE id = v_workspace_id;
+  -- baseline(2026-07-12): on_auth_user_created 트리거 공존(선점 행/기본 워크스페이스 정리)
+  DELETE FROM public.workspaces WHERE owner_id IN (v_owner_id, v_staff_id, v_other_user_id);
   DELETE FROM auth.users WHERE id IN (v_owner_id, v_staff_id, v_other_user_id);
 END $$;
 

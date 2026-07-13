@@ -48,9 +48,11 @@ BEGIN
                           confirmation_token, recovery_token, email_change_token_new, email_change)
   VALUES (v_foreign_owner, 'ops_foreign_owner_' || v_foreign_owner || '@test.local',
           '{"role":"employer"}'::jsonb, '{}'::jsonb, now(), now(), '', '', '', '');
+  -- baseline(2026-07-12): on_auth_user_created 트리거 공존(선점 행/기본 워크스페이스 정리)
   INSERT INTO public.users (id, email, name, role, is_active, created_at, updated_at)
   VALUES (v_foreign_owner, (SELECT email FROM auth.users WHERE id = v_foreign_owner), 'ops foreign owner',
-          'employer'::user_role, true, now(), now());
+          'employer'::user_role, true, now(), now())
+  ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, role = EXCLUDED.role, is_active = EXCLUDED.is_active;
   INSERT INTO public.workspaces (id, name, owner_id, created_at, updated_at)
   VALUES (v_foreign_ws, 'ops foreign ws', v_foreign_owner, now(), now());
   INSERT INTO public.job_postings (
@@ -265,9 +267,11 @@ BEGIN
     (v_cancelled, 'ops_import_cancelled_' || v_cancelled || '@test.local', '{"role":"staff"}'::jsonb, '{}'::jsonb, now(), now(), '', '', '', ''),
     (v_noshow,    'ops_import_noshow_'    || v_noshow    || '@test.local', '{"role":"staff"}'::jsonb, '{}'::jsonb, now(), now(), '', '', '', '');
 
+  -- baseline(2026-07-12): on_auth_user_created 트리거 공존(선점 행/기본 워크스페이스 정리)
   INSERT INTO public.users (id, email, name, role, is_active, created_at, updated_at)
   SELECT id, email, 'ops import test staff', 'staff'::user_role, true, now(), now()
-  FROM auth.users WHERE id IN (v_dealer, v_floor, v_direct, v_cancelled, v_noshow);
+  FROM auth.users WHERE id IN (v_dealer, v_floor, v_direct, v_cancelled, v_noshow)
+  ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, role = EXCLUDED.role, is_active = EXCLUDED.is_active;
 
   -- confirm 경로: 딜러(work_date) + 플로어(work_date2, 날짜 상이)
   INSERT INTO public.work_logs (
@@ -543,9 +547,11 @@ BEGIN
   VALUES (v_multi, 'ops_import_multi_' || v_multi || '@test.local', '{"role":"staff"}'::jsonb, '{}'::jsonb,
           now(), now(), '', '', '', '');
 
+  -- baseline(2026-07-12): on_auth_user_created 트리거 공존(선점 행/기본 워크스페이스 정리)
   INSERT INTO public.users (id, email, name, role, is_active, created_at, updated_at)
   VALUES (v_multi, (SELECT email FROM auth.users WHERE id = v_multi), '멀티스태프', 'staff'::user_role, true,
-          now(), now());
+          now(), now())
+  ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, role = EXCLUDED.role, is_active = EXCLUDED.is_active;
 
   -- 구 날짜: role='floor'
   INSERT INTO public.work_logs (
@@ -670,9 +676,11 @@ BEGIN
     (v_sB, 'ops_df_b_' || v_sB || '@test.local', '{"role":"staff"}'::jsonb, '{}'::jsonb, now(), now(), '', '', '', ''),
     (v_sC, 'ops_df_c_' || v_sC || '@test.local', '{"role":"staff"}'::jsonb, '{}'::jsonb, now(), now(), '', '', '', '');
 
+  -- baseline(2026-07-12): on_auth_user_created 트리거 공존(선점 행/기본 워크스페이스 정리)
   INSERT INTO public.users (id, email, name, role, is_active, created_at, updated_at)
   SELECT id, email, 'ops date-filter staff', 'staff'::user_role, true, now(), now()
-  FROM auth.users WHERE id IN (v_sA, v_sB, v_sC);
+  FROM auth.users WHERE id IN (v_sA, v_sB, v_sC)
+  ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, role = EXCLUDED.role, is_active = EXCLUDED.is_active;
 
   -- dateX: staffA(dealer) + staffB(floor) / dateY: staffC(dealer)
   INSERT INTO public.work_logs (staff_id, job_posting_id, date, staff_name, role, status, owner_id, created_at, updated_at)

@@ -24,14 +24,19 @@ DECLARE
   v_hc1 int; v_jc1 int; v_hc2 int; v_jc2 int; v_slots1 int;
   v_denied boolean := false;
 BEGIN
-  INSERT INTO auth.users (id,email,aud,role,encrypted_password,created_at,updated_at) VALUES
-    (v_owner,'__sql_fixture_wr_owner@test.local','authenticated','authenticated','',now(),now()),
-    (v_staff,'__sql_fixture_wr_staff@test.local','authenticated','authenticated','',now(),now()),
-    (v_stranger,'__sql_fixture_wr_stranger@test.local','authenticated','authenticated','',now(),now());
+  -- baseline(2026-07-12): raw_app_meta_data.role 를 아래 public.users upsert role 과 일치시킴
+  -- (on_auth_user_created 트리거 선점 행의 role 이 다르면 prevent_role_escalation 트리거가
+  -- ON CONFLICT DO UPDATE 의 role 변경을 ROLE_CHANGE_DENIED 로 거부한다).
+  INSERT INTO auth.users (id,email,aud,role,encrypted_password,raw_app_meta_data,created_at,updated_at) VALUES
+    (v_owner,'__sql_fixture_wr_owner@test.local','authenticated','authenticated','','{"role":"employer"}'::jsonb,now(),now()),
+    (v_staff,'__sql_fixture_wr_staff@test.local','authenticated','authenticated','','{"role":"staff"}'::jsonb,now(),now()),
+    (v_stranger,'__sql_fixture_wr_stranger@test.local','authenticated','authenticated','','{"role":"employer"}'::jsonb,now(),now());
+  -- baseline(2026-07-12): on_auth_user_created 트리거 공존(선점 행/기본 워크스페이스 정리)
   INSERT INTO public.users (id,email,name,role,is_active,created_at,updated_at) VALUES
     (v_owner,'__sql_fixture_wr_owner@test.local','WR_OWNER','employer',true,now(),now()),
     (v_staff,'__sql_fixture_wr_staff@test.local','WR_STAFF','staff',true,now(),now()),
-    (v_stranger,'__sql_fixture_wr_stranger@test.local','WR_STRANGER','employer',true,now(),now());
+    (v_stranger,'__sql_fixture_wr_stranger@test.local','WR_STRANGER','employer',true,now(),now())
+  ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, role = EXCLUDED.role, is_active = EXCLUDED.is_active;
   INSERT INTO public.workspaces (id,name,owner_id,created_at,updated_at) VALUES (v_ws,'__sql_fixture_wr_ws',v_owner,now(),now());
 
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role','authenticated')::text, true);

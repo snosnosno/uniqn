@@ -2,33 +2,34 @@
 -- JPC 후속 PR — Task 2.5: event_qr_codes RLS 매트릭스 (16 케이스)
 --
 -- ============================================================================
--- ⚠️ SECURITY GAP INVARIANT — 이 파일은 의도된 정책이 아니라 *현재 갭* 을 잠근다
+-- ⚠️ 부분 SECURITY GAP INVARIANT — 이 파일은 *현재 정책 계약* 을 잠근다
 -- ============================================================================
--- 16/16 ALLOW 는 **정책 갭의 invariant 화** 이며, 향후 tightening 시 일부 케이스가
--- 의도적으로 DENY 로 flip 되어야 한다. 그때까지 본 파일이 변경되면 regression 으로
--- 오인 가능 — 변경 사유를 PR 에 명시 필수.
+-- prod 실측(2026-07-12, baseline 파리티): INSERT 갭은 이미 닫혔고(본인 행만 허용),
+-- UPDATE/DELETE 의 workspace_member 분기 갭은 아직 남아 있다. 매트릭스는
+-- SELECT 4/4 ALLOW · INSERT 3 DENY + 1 ALLOW · UPDATE 4/4 ALLOW · DELETE 4/4 ALLOW.
+-- 향후 UPDATE/DELETE tightening 시 일부 케이스가 DENY 로 flip 되어야 하며, 그때까지
+-- 본 파일 변경은 regression 으로 오인 가능 — 변경 사유를 PR 에 명시 필수.
 --
--- 갭 상세:
---   1. INSERT: `event_qr_codes_insert_authenticated` (WITH CHECK auth.uid() IS NOT NULL)
---      + `qr_insert` (WITH CHECK auth.uid()=user_id) 두 permissive 정책이 OR-union
---      → 느슨한 쪽이 이김. ANY authenticated user 가 ANY user_id / ANY job_posting_id 로
---      QR 삽입 가능. **realistic exploit**: outsider 가 owner 의 jp 에 자기 명의 QR 등록.
+-- 정책 상세:
+--   1. INSERT: `qr_insert` (WITH CHECK auth.uid()=user_id) 단일 정책 — 본인 명의 행만.
+--      구세대 `event_qr_codes_insert_authenticated`(auth.uid() IS NOT NULL) 는 prod 부재
+--      (로컬 전용 잔상). 실제 QR 발급 경로는 SECDEF RPC. ⇒ 타인 명의 INSERT 는 DENY(42501).
 --   2. UPDATE/DELETE: `qr_update/qr_delete` USING (user_id=self OR is_workspace_member
 --      OR is_posting_collaborator) — workspace_member 분기가 너무 넓어 ws_editor 가
---      모든 jp 의 QR 을 변경 가능 (의도 불명).
+--      모든 jp 의 QR 을 변경 가능 (의도 불명, 갭 잔존).
 --
 -- 후속 tightening 후보 (별도 PR):
---   - `event_qr_codes_insert_authenticated` 정책 DROP 또는 WITH CHECK 강화 (user_id 검증)
 --   - `qr_update/qr_delete` 의 workspace_member 분기 좁히기 (owner 만 또는 jp.owner_id=self)
 --
--- 정책 분석 (실제 정책 기준 매트릭스, 갭 invariant):
+-- 정책 분석 (prod 실측 기준 매트릭스):
 --   SELECT  : qr_select USING (user_id=self OR jp.owner=self
 --             OR is_workspace_member OR is_posting_collaborator)
 --             → 4/4 ALLOW
---   INSERT  : OR-union (auth.uid() IS NOT NULL ∪ auth.uid()=user_id) → 4/4 ALLOW
---             ← SECURITY GAP. 후속 tightening 시 outsider 케이스 DENY 로 flip 예상.
---   UPDATE  : qr_update — 4/4 ALLOW ← SECURITY GAP. tightening 시 일부 케이스 flip.
---   DELETE  : qr_delete — 4/4 ALLOW ← SECURITY GAP. tightening 시 일부 케이스 flip.
+--   INSERT  : qr_insert WITH CHECK (auth.uid()=user_id) → 본인 명의만.
+--             owner/editor/collaborator 가 타인(outsider) 명의 삽입 → 3 DENY(42501),
+--             outsider 본인 명의 → 1 ALLOW.
+--   UPDATE  : qr_update — 4/4 ALLOW ← SECURITY GAP(잔존). tightening 시 일부 케이스 flip.
+--   DELETE  : qr_delete — 4/4 ALLOW ← SECURITY GAP(잔존). tightening 시 일부 케이스 flip.
 --
 -- DELETE 4 케이스는 SAVEPOINT 로 격리 (같은 row 1건이므로).
 
@@ -92,13 +93,14 @@ SELECT is(
 );
 
 -- ============================================================================
--- INSERT (4 케이스) — 모두 ALLOW
--- event_qr_codes_insert_authenticated 가 매우 느슨 (auth.uid() IS NOT NULL).
--- UNIQUE 제약 없으므로 4건 INSERT 누적 OK.
+-- INSERT (4 케이스) — prod 실측(2026-07-12, baseline 파리티):
+--   qr_insert WITH CHECK (auth.uid()=user_id) — 본인 명의 행만 허용.
+-- owner/editor/collaborator 는 outsider 명의로 삽입 시도 → DENY(42501),
+-- outsider 는 본인(user_id=self) 명의 → ALLOW. (실제 발급 경로는 SECDEF RPC)
 -- ============================================================================
 
 SELECT jpc_test_set_user((current_setting('jpc.owner_id'))::uuid);
-SELECT lives_ok(
+SELECT throws_ok(
   format(
     $q$INSERT INTO public.event_qr_codes
          (job_posting_id, user_id, type, code, work_date, is_active)
@@ -107,11 +109,12 @@ SELECT lives_ok(
     current_setting('jpc.jp_id'),
     current_setting('jpc.outsider_id')
   ),
-  'event_qr_codes INSERT: owner (auth.uid() IS NOT NULL) ALLOW'
+  '42501', NULL,
+  'event_qr_codes INSERT: owner 타인명의 차단 (user_id!=self, qr_insert)'
 );
 
 SELECT jpc_test_set_user((current_setting('jpc.editor_id'))::uuid);
-SELECT lives_ok(
+SELECT throws_ok(
   format(
     $q$INSERT INTO public.event_qr_codes
          (job_posting_id, user_id, type, code, work_date, is_active)
@@ -120,11 +123,12 @@ SELECT lives_ok(
     current_setting('jpc.jp_id'),
     current_setting('jpc.outsider_id')
   ),
-  'event_qr_codes INSERT: ws_editor ALLOW'
+  '42501', NULL,
+  'event_qr_codes INSERT: ws_editor 타인명의 차단 (user_id!=self)'
 );
 
 SELECT jpc_test_set_user((current_setting('jpc.collab_id'))::uuid);
-SELECT lives_ok(
+SELECT throws_ok(
   format(
     $q$INSERT INTO public.event_qr_codes
          (job_posting_id, user_id, type, code, work_date, is_active)
@@ -133,7 +137,8 @@ SELECT lives_ok(
     current_setting('jpc.jp_id'),
     current_setting('jpc.outsider_id')
   ),
-  'event_qr_codes INSERT: collaborator ALLOW'
+  '42501', NULL,
+  'event_qr_codes INSERT: collaborator 타인명의 차단 (user_id!=self)'
 );
 
 SELECT jpc_test_set_user((current_setting('jpc.outsider_id'))::uuid);
@@ -146,7 +151,7 @@ SELECT lives_ok(
     current_setting('jpc.jp_id'),
     current_setting('jpc.outsider_id')
   ),
-  'event_qr_codes INSERT: outsider 본인 ALLOW'
+  'event_qr_codes INSERT: outsider 본인명의 ALLOW (user_id=self)'
 );
 
 -- ============================================================================
