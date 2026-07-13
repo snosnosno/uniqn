@@ -11,7 +11,7 @@ import { Pressable, Text, TextInput, View } from 'react-native';
 import { SheetModal } from '@/components/ui/SheetModal';
 import { Button } from '@/components/ui/Button';
 import { CheckIcon, ChevronLeftIcon, PlusIcon } from '@/components/icons';
-import { REGION_GROUPS, REGIONS_BY_GROUP } from '@/constants/regions';
+import { REGION_GROUPS, REGIONS_BY_GROUP, getRegionLabel } from '@/constants/regions';
 import { useThemeStore } from '@/stores/themeStore';
 import { PRIMARY_COLORS, SECONDARY_PALETTE } from '@/constants/colors';
 import type { OrderSheetFormValues } from '@/schemas/orderSheet.schema';
@@ -30,6 +30,19 @@ export interface PlaceSheetProps {
 
 type Mode = 'list' | 'new' | 'region';
 
+// 선택 칩 클래스(라이트 700=대비 AA·다크 900/30 = 코드베이스 관례). 아이콘 색도 동일 결정.
+const chipClass = (isSelected: boolean) =>
+  `px-3.5 py-2 min-h-[44px] justify-center rounded-full border ${
+    isSelected
+      ? 'border-primary-500 bg-primary-100 dark:bg-primary-900/30'
+      : 'border-secondary-200 dark:border-surface-overlay'
+  } active:opacity-80`;
+
+const chipTextClass = (isSelected: boolean) =>
+  `text-sm font-sans-medium ${
+    isSelected ? 'text-primary-700 dark:text-primary-400' : 'text-content-secondary'
+  }`;
+
 export function PlaceSheet({
   visible,
   value,
@@ -38,7 +51,8 @@ export function PlaceSheet({
   onClose,
 }: PlaceSheetProps) {
   const isDarkMode = useThemeStore((s) => s.isDarkMode);
-  const [mode, setMode] = useState<Mode>('list');
+  // 최초 오픈 플리커 방지: 최근 장소 유무에 따라 lazy init(effect 는 재오픈 동기화 담당)
+  const [mode, setMode] = useState<Mode>(() => (recentLocations.length > 0 ? 'list' : 'new'));
   const [draft, setDraft] = useState<OrderSheetLocation>({ name: '' });
 
   // 재오픈 시 초기 모드/드래프트 동기화(최근 장소 있으면 리스트, 없으면 바로 새 입력)
@@ -50,6 +64,7 @@ export function PlaceSheet({
   }, [visible, value, recentLocations.length]);
 
   const placeholderColor = isDarkMode ? SECONDARY_PALETTE[500] : SECONDARY_PALETTE[400];
+  const selectedIconColor = isDarkMode ? PRIMARY_COLORS[400] : PRIMARY_COLORS[700];
   const nameTrimmed = draft.name.trim();
 
   return (
@@ -61,7 +76,12 @@ export function PlaceSheet({
         mode === 'new' ? (
           <Button
             onPress={() => {
-              onConfirm({ ...draft, name: nameTrimmed });
+              // name 은 trim, address 는 trim 후 빈 문자열이면 undefined(canonical 왕복 '' / undefined 혼재 방지)
+              onConfirm({
+                ...draft,
+                name: nameTrimmed,
+                address: draft.address?.trim() || undefined,
+              });
               onClose();
             }}
             disabled={nameTrimmed.length === 0}
@@ -139,7 +159,9 @@ export function PlaceSheet({
             accessibilityLabel="지역 선택"
           >
             <Text className="text-sm text-content-primary font-sans">
-              {draft.region ? `지역: ${draft.region}` : '지역 선택 (선택)'}
+              {draft.region
+                ? `지역: ${getRegionLabel(draft.region) ?? draft.region}`
+                : '지역 선택 (선택)'}
             </Text>
           </Pressable>
         </View>
@@ -157,6 +179,24 @@ export function PlaceSheet({
             <ChevronLeftIcon size={16} />
             <Text className="text-xs text-content-secondary font-sans">뒤로</Text>
           </Pressable>
+          {/* 지역은 optional — 해제(선택 안 함) 어포던스 필수(RegionSelectModal 원본과 동형) */}
+          <View className="flex-row flex-wrap gap-2">
+            <Pressable
+              onPress={() => {
+                setDraft((d) => ({ ...d, region: undefined }));
+                setMode('new');
+              }}
+              className={chipClass(!draft.region)}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: !draft.region }}
+              accessibilityLabel="지역 선택 안 함"
+            >
+              <View className="flex-row items-center gap-1">
+                {!draft.region ? <CheckIcon size={14} color={selectedIconColor} /> : null}
+                <Text className={chipTextClass(!draft.region)}>선택 안 함</Text>
+              </View>
+            </Pressable>
+          </View>
           {REGION_GROUPS.map((group) => (
             <View key={group}>
               <Text className="text-xs font-sans-bold text-content-secondary mb-1.5">{group}</Text>
@@ -170,31 +210,14 @@ export function PlaceSheet({
                         setDraft((d) => ({ ...d, region: r.slug }));
                         setMode('new');
                       }}
-                      className={`px-3.5 py-2 min-h-[44px] justify-center rounded-full border ${
-                        selected
-                          ? 'border-primary-500 bg-primary-100'
-                          : 'border-secondary-200 dark:border-surface-overlay'
-                      } active:opacity-80`}
+                      className={chipClass(selected)}
                       accessibilityRole="radio"
                       accessibilityState={{ selected }}
                       accessibilityLabel={`${r.label} 지역`}
                     >
                       <View className="flex-row items-center gap-1">
-                        {selected ? (
-                          <CheckIcon
-                            size={14}
-                            color={isDarkMode ? PRIMARY_COLORS[400] : PRIMARY_COLORS[600]}
-                          />
-                        ) : null}
-                        <Text
-                          className={`text-sm font-sans-medium ${
-                            selected
-                              ? 'text-primary-600 dark:text-primary-400'
-                              : 'text-content-secondary'
-                          }`}
-                        >
-                          {r.label}
-                        </Text>
+                        {selected ? <CheckIcon size={14} color={selectedIconColor} /> : null}
+                        <Text className={chipTextClass(selected)}>{r.label}</Text>
                       </View>
                     </Pressable>
                   );

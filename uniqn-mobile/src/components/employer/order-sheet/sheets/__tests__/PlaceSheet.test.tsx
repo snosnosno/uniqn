@@ -80,8 +80,37 @@ describe('PlaceSheet', () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
-  it('지역 인라인 3단 — 칩은 label(강남구)로 표기하고 slug(서울 강남구)를 저장한다', () => {
-    const { getByText } = render(
+  it('지역 인라인 3단 — 칩·요약은 label(강남구), 확정값은 slug(서울 강남구)', () => {
+    const onConfirm = jest.fn();
+    const { getByTestId, getByText } = render(
+      <PlaceSheet
+        visible
+        value={null}
+        recentLocations={[]}
+        onConfirm={onConfirm}
+        onClose={jest.fn()}
+      />
+    );
+
+    fireEvent.changeText(getByTestId('order-sheet-place-name'), '강남 홀덤펍');
+    // new 모드에서 지역 선택 진입
+    fireEvent.press(getByText('지역 선택 (선택)'));
+    // region 모드: 라벨(강남구) 노출 — slug('서울 강남구')가 아님
+    expect(getByText('강남구')).toBeTruthy();
+
+    fireEvent.press(getByText('강남구'));
+    // new 모드 복귀 + 요약은 label(내부 slug 원문 미노출)
+    expect(getByText('지역: 강남구')).toBeTruthy();
+
+    // 확정값에는 저장용 slug 가 담긴다
+    fireEvent.press(getByText('확인'));
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({ name: '강남 홀덤펍', region: '서울 강남구' })
+    );
+  });
+
+  it('지역은 선택 후 "선택 안 함"으로 해제 가능하다 (optional 계약 — dead-end 방지)', () => {
+    const { getByTestId, getByText } = render(
       <PlaceSheet
         visible
         value={null}
@@ -91,14 +120,15 @@ describe('PlaceSheet', () => {
       />
     );
 
-    // new 모드에서 지역 선택 진입
+    fireEvent.changeText(getByTestId('order-sheet-place-name'), '강남 홀덤펍');
     fireEvent.press(getByText('지역 선택 (선택)'));
-    // region 모드: 라벨(강남구) 노출 — slug('서울 강남구')가 아님
-    expect(getByText('강남구')).toBeTruthy();
-
     fireEvent.press(getByText('강남구'));
-    // new 모드 복귀 + 버튼에 저장된 slug 표기
-    expect(getByText('지역: 서울 강남구')).toBeTruthy();
+    expect(getByText('지역: 강남구')).toBeTruthy();
+
+    // 다시 지역 모드 → 선택 안 함 → 해제되어 플레이스홀더 복귀
+    fireEvent.press(getByText('지역: 강남구'));
+    fireEvent.press(getByText('선택 안 함'));
+    expect(getByText('지역 선택 (선택)')).toBeTruthy();
   });
 
   it('XSS 검증 경로 — 위험 문자열 장소명은 스키마 경계에서 거부된다', () => {
