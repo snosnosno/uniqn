@@ -28,10 +28,10 @@ test.describe('구인구직 홈', () => {
   });
 
   test('공고 타입 칩 필터가 표시된다', async () => {
-    // PostingTypeChips 는 4개 타입 칩(긴급/대회/일반/고정)을 항상 노출한다 — 고정도 의도적 표시.
-    await expect(homePage.getTypeChip('긴급')).toBeVisible({ timeout: 10_000 });
+    // PostingTypeChips 는 4개 타입 칩(급구/대회/지원/고정)을 항상 노출한다 — 고정도 의도적 표시.
+    await expect(homePage.getTypeChip('급구')).toBeVisible({ timeout: 10_000 });
     await expect(homePage.getTypeChip('대회')).toBeVisible();
-    await expect(homePage.getTypeChip('일반')).toBeVisible();
+    await expect(homePage.getTypeChip('지원')).toBeVisible();
     await expect(homePage.getTypeChip('고정')).toBeVisible();
   });
 
@@ -41,7 +41,7 @@ test.describe('구인구직 홈', () => {
 
     // 3개 공개 타입 칩 중 하나가 선택 상태여야 함 (정확한 선택 칩은 데이터에 따라 다름)
     const body = await page.locator('body').textContent();
-    const hasChips = body?.includes('긴급') || body?.includes('대회') || body?.includes('일반');
+    const hasChips = body?.includes('급구') || body?.includes('대회') || body?.includes('지원');
     expect(hasChips).toBeTruthy();
   });
 
@@ -52,8 +52,8 @@ test.describe('구인구직 홈', () => {
   test('타입 칩 클릭 시 필터가 변경된다', async () => {
     await homePage.waitForJobsLoaded();
 
-    // '긴급' 칩 클릭
-    await homePage.selectTypeChip('긴급');
+    // '급구' 칩 클릭
+    await homePage.selectTypeChip('급구');
     await homePage.page.waitForTimeout(500);
 
     // 페이지가 정상 표시되어야 함 (에러 없이)
@@ -63,7 +63,7 @@ test.describe('구인구직 홈', () => {
 
   test('지원 타입 선택 시 날짜 슬라이더가 표시된다', async () => {
     await homePage.waitForJobsLoaded();
-    await homePage.selectTypeChip('일반');
+    await homePage.selectTypeChip('지원');
 
     // 날짜 관련 UI가 표시되어야 함 (DateCalendar 렌더링)
     await homePage.page.waitForTimeout(500);
@@ -71,12 +71,12 @@ test.describe('구인구직 홈', () => {
     expect(body).toBeTruthy();
   });
 
-  test('긴급/대회 타입에서는 날짜 슬라이더가 숨겨진다', async () => {
+  test('급구/대회 타입에서는 날짜 슬라이더가 숨겨진다', async () => {
     await homePage.waitForJobsLoaded();
-    await homePage.selectTypeChip('긴급');
+    await homePage.selectTypeChip('급구');
     await homePage.page.waitForTimeout(500);
 
-    // 날짜 슬라이더가 없어야 함 (긴급 타입에서는 날짜 필터 비활성)
+    // 날짜 슬라이더가 없어야 함 (급구 타입에서는 날짜 필터 비활성)
     // DateCalendar는 regular 타입에서만 표시
     const body = await homePage.page.locator('body').textContent();
     expect(body).toBeTruthy();
@@ -131,7 +131,7 @@ test.describe('구인구직 홈', () => {
     await expect(homePage.searchInput).toHaveValue('');
 
     // 타입 칩이 다시 표시되어야 함
-    await expect(homePage.getTypeChip('긴급')).toBeVisible({ timeout: 5_000 });
+    await expect(homePage.getTypeChip('급구')).toBeVisible({ timeout: 5_000 });
   });
 
   // =====================================================
@@ -181,7 +181,7 @@ test.describe('구인구직 홈', () => {
 
   test('지원 타입에서 DateCalendar가 에러 없이 렌더된다', async () => {
     await homePage.waitForJobsLoaded();
-    await homePage.selectTypeChip('일반');
+    await homePage.selectTypeChip('지원');
     await homePage.page.waitForTimeout(500);
 
     // web E2E 환경에서는 RN 네이티브 컴포넌트 가시성을 직접 검증하기 어려우므로

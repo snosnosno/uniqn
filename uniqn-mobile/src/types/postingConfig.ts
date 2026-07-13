@@ -48,10 +48,10 @@ export type TimeSlot = TimeSlotV2;
 export type DateSpecificRequirement = DateSpecificRequirementV2;
 
 export const POSTING_TYPE_LABELS: Record<PostingType, string> = {
-  regular: '일반',
+  regular: '지원',
   fixed: '고정',
   tournament: '대회',
-  urgent: '긴급',
+  urgent: '급구',
 };
 
 export const POSTING_TYPE_BADGE_STYLES: Record<

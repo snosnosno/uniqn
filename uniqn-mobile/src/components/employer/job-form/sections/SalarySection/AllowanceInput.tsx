@@ -36,7 +36,7 @@ export const AllowanceInput = memo(function AllowanceInput({
       <View className="flex-row items-center mb-3">
         <GiftIcon size={20} color={SECONDARY_PALETTE[500]} />
         <Text className="ml-2 font-sans-semibold text-content-primary dark:text-off-white">
-          추가 수당 (선택)
+          추가 복지 (선택)
         </Text>
       </View>
 

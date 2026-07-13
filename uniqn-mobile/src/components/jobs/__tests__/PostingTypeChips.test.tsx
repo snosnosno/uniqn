@@ -19,9 +19,9 @@ describe('PostingTypeChips', () => {
     expect(getByText('12')).toBeTruthy();
     expect(getByText('0')).toBeTruthy();
     expect(getByText('99+')).toBeTruthy();
-    expect(getByLabelText('긴급 공고 12건')).toBeTruthy();
+    expect(getByLabelText('급구 공고 12건')).toBeTruthy();
     expect(getByLabelText('대회 공고 0건')).toBeTruthy();
-    expect(getByLabelText('일반 공고 120건')).toBeTruthy();
+    expect(getByLabelText('지원 공고 120건')).toBeTruthy();
   });
 
   it('keeps zero-count chips selectable', () => {
@@ -48,8 +48,8 @@ describe('PostingTypeChips', () => {
       <PostingTypeChips selected="urgent" onChange={jest.fn()} />
     );
 
-    expect(getByLabelText('긴급 공고 필터')).toBeTruthy();
-    expect(queryByLabelText('긴급 공고 12건')).toBeNull();
+    expect(getByLabelText('급구 공고 필터')).toBeTruthy();
+    expect(queryByLabelText('급구 공고 12건')).toBeNull();
     expect(queryByText('12')).toBeNull();
 
     rerender(
@@ -64,7 +64,7 @@ describe('PostingTypeChips', () => {
       />
     );
 
-    expect(queryByLabelText('긴급 공고 필터')).toBeNull();
-    expect(getByLabelText('긴급 공고 12건')).toBeTruthy();
+    expect(queryByLabelText('급구 공고 필터')).toBeNull();
+    expect(getByLabelText('급구 공고 12건')).toBeTruthy();
   });
 });

@@ -68,14 +68,14 @@ export class HomePage extends BasePage {
     }
   }
 
-  async selectTypeChip(label: '긴급' | '대회' | '일반' | '고정'): Promise<void> {
+  async selectTypeChip(label: '급구' | '대회' | '지원' | '고정'): Promise<void> {
     await this.getTypeChip(label).click();
   }
 
   /**
    * PostingTypeChips a11y label:
-   *   - count 있음: `긴급 공고 12건`
-   *   - count 없음: `긴급 공고 필터`
+   *   - count 있음: `급구 공고 12건`
+   *   - count 없음: `급구 공고 필터`
    * 둘 다 매칭하려면 regex 에 `(필터|\d+건)` 분기 필요.
    */
   getTypeChip(label: string): Locator {
