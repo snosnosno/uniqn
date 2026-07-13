@@ -280,7 +280,19 @@ export default function SignUpScreen() {
       );
       return;
     }
-    router.back();
+
+    // 직접 진입(웹 URL·딥링크·콜드스타트)으로 signup 이 스택의 첫 화면이면 돌아갈
+    // 화면이 없어 router.back() 의 GO_BACK 이 미처리로 무시된다(버튼이 죽은 것처럼
+    // 보임). 스택이 비면 로그인 화면으로 replace 폴백 — HeaderBackButton 관례와 동일.
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace(
+        postAuthRedirect
+          ? `/(auth)/login?redirect=${encodeURIComponent(postAuthRedirect)}`
+          : '/(auth)/login'
+      );
+    }
   }, [isLoading, isSocialMode, isReverifyMode, postAuthRedirect]);
 
   // 안드로이드 하드웨어 백 버튼은 BackHandler 인터셉트 없으면 곧바로 router.back()
