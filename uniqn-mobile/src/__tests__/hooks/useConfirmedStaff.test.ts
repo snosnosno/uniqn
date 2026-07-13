@@ -4,10 +4,12 @@ import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 
 const mockGetConfirmedStaff = jest.fn();
 const mockGetConfirmedStaffByDate = jest.fn();
+const mockAddDirectStaff = jest.fn();
 const mockUpdateStaffRole = jest.fn();
 const mockUpdateConfirmedStaffWorkTime = jest.fn();
 const mockCancelConfirmedStaffConfirmation = jest.fn();
 const mockMarkAsNoShow = jest.fn();
+const mockCancelNoShow = jest.fn();
 const mockUpdateStaffStatus = jest.fn();
 const mockSubscribeToConfirmedStaff = jest.fn();
 const mockAddToast = jest.fn();
@@ -15,9 +17,11 @@ const mockLoggerInfo = jest.fn();
 const mockLoggerError = jest.fn();
 const mockRefetch = jest.fn();
 const mockInvalidateStaffManagement = jest.fn();
+const mockInvalidateJobPostings = jest.fn();
 const mockCancelQueries = jest.fn();
 const mockGetQueryData = jest.fn();
 const mockSetQueryData = jest.fn();
+const mockInvalidateQueriesClient = jest.fn();
 
 let mockData: unknown;
 let mockError: Error | null;
@@ -28,13 +32,30 @@ let mockPendingStates = [false, false, false, false, false];
 jest.mock('@/services', () => ({
   getConfirmedStaff: (...args: unknown[]) => mockGetConfirmedStaff(...args),
   getConfirmedStaffByDate: (...args: unknown[]) => mockGetConfirmedStaffByDate(...args),
+  addDirectStaff: (...args: unknown[]) => mockAddDirectStaff(...args),
   updateStaffRole: (...args: unknown[]) => mockUpdateStaffRole(...args),
   updateConfirmedStaffWorkTime: (...args: unknown[]) => mockUpdateConfirmedStaffWorkTime(...args),
   cancelConfirmedStaffConfirmation: (...args: unknown[]) =>
     mockCancelConfirmedStaffConfirmation(...args),
   markAsNoShow: (...args: unknown[]) => mockMarkAsNoShow(...args),
+  cancelNoShow: (...args: unknown[]) => mockCancelNoShow(...args),
   updateStaffStatus: (...args: unknown[]) => mockUpdateStaffStatus(...args),
   subscribeToConfirmedStaff: (...args: unknown[]) => mockSubscribeToConfirmedStaff(...args),
+}));
+
+jest.mock('@/shared/errors/hookErrorHandler', () => ({
+  createMutationErrorHandler:
+    (
+      _context: string,
+      addToast: (payload: { type: string; message: string }) => void,
+      options?: { onRollback?: (ctx: unknown) => void }
+    ) =>
+    (error: Error, _variables?: unknown, mutationContext?: unknown) => {
+      if (options?.onRollback && mutationContext) {
+        options.onRollback(mutationContext);
+      }
+      addToast({ type: 'error', message: error.message });
+    },
 }));
 
 jest.mock('@/stores/authStore', () => ({
@@ -70,12 +91,16 @@ jest.mock('@/lib/queryClient', () => ({
       byJobPosting: (id: string) => ['confirmedStaff', 'byJobPosting', id],
       byDate: (id: string, date: string) => ['confirmedStaff', 'byDate', id, date],
     },
+    weeklyGrid: {
+      all: ['weeklyGrid'],
+    },
   },
   cachingPolicies: {
     frequent: 5 * 60 * 1000,
   },
   invalidateQueries: {
     staffManagement: (...args: unknown[]) => mockInvalidateStaffManagement(...args),
+    jobPostings: (...args: unknown[]) => mockInvalidateJobPostings(...args),
   },
 }));
 
@@ -122,6 +147,16 @@ jest.mock('@tanstack/react-query', () => {
                 options.onError?.(error, variables, undefined);
               });
           },
+          mutateAsync: (variables: unknown) =>
+            Promise.resolve(options.mutationFn(variables))
+              .then((result) => {
+                options.onSuccess?.(result);
+                return result;
+              })
+              .catch((error: Error) => {
+                options.onError?.(error, variables, undefined);
+                throw error;
+              }),
           isPending: mockPendingStates[currentIndex] ?? false,
         };
       }
@@ -130,6 +165,7 @@ jest.mock('@tanstack/react-query', () => {
       cancelQueries: mockCancelQueries,
       getQueryData: mockGetQueryData,
       setQueryData: mockSetQueryData,
+      invalidateQueries: mockInvalidateQueriesClient,
     }),
   };
 });
@@ -346,6 +382,44 @@ describe('useConfirmedStaff', () => {
     });
   });
 
+  it('cancels no-show through canonical mutation and invalidates staff management cache', async () => {
+    mockCancelNoShow.mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useConfirmedStaff('job-1'));
+
+    act(() => {
+      result.current.cancelNoShow('worklog-1');
+    });
+
+    await waitFor(() => {
+      expect(mockCancelNoShow).toHaveBeenCalledWith('worklog-1');
+      expect(mockInvalidateStaffManagement).toHaveBeenCalledWith('job-1');
+      expect(mockAddToast).toHaveBeenCalledWith({
+        type: 'success',
+        message: '노쇼가 취소되었습니다.',
+      });
+    });
+  });
+
+  it('surfaces the server-specific rejection message when no-show cancellation fails', async () => {
+    mockCancelNoShow.mockRejectedValue(
+      new Error('이미 정산이 완료된 근무 기록은 노쇼를 취소할 수 없습니다.')
+    );
+
+    const { result } = renderHook(() => useConfirmedStaff('job-1'));
+
+    act(() => {
+      result.current.cancelNoShow('worklog-1');
+    });
+
+    await waitFor(() => {
+      expect(mockAddToast).toHaveBeenCalledWith({
+        type: 'error',
+        message: '이미 정산이 완료된 근무 기록은 노쇼를 취소할 수 없습니다.',
+      });
+    });
+  });
+
   it('changes staff status through manual mutation path', async () => {
     mockUpdateStaffStatus.mockResolvedValue(undefined);
 
@@ -362,6 +436,30 @@ describe('useConfirmedStaff', () => {
         type: 'success',
         message: '상태가 변경되었습니다.',
       });
+    });
+  });
+
+  it('adds direct staff and invalidates staff, jobPostings, and weeklyGrid caches (W-1)', async () => {
+    mockAddDirectStaff.mockResolvedValue(['worklog-new']);
+
+    const { result } = renderHook(() => useConfirmedStaff('job-1'));
+
+    await act(async () => {
+      await result.current.addStaff({
+        jobPostingId: 'job-1',
+        staffId: 'staff-1',
+        assignments: [{ date: '2026-07-05', role: 'dealer' }],
+      });
+    });
+
+    expect(mockAddDirectStaff).toHaveBeenCalled();
+    expect(mockInvalidateStaffManagement).toHaveBeenCalledWith('job-1');
+    expect(mockInvalidateJobPostings).toHaveBeenCalled();
+    // W-1: 스태프탭 직접추가가 주간 배치 그리드에 즉시 반영되도록 weeklyGrid 캐시 무효화
+    expect(mockInvalidateQueriesClient).toHaveBeenCalledWith({ queryKey: ['weeklyGrid'] });
+    expect(mockAddToast).toHaveBeenCalledWith({
+      type: 'success',
+      message: '스태프가 추가되었습니다.',
     });
   });
 });

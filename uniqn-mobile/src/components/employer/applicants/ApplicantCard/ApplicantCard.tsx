@@ -131,6 +131,7 @@ export const ApplicantCard = React.memo(function ApplicantCard({
           isExpanded={isExpanded}
           onToggleExpand={toggleExpand}
           onViewProfile={onViewProfile ? handleViewProfile : undefined}
+          bubbleScore={userProfile?.bubbleScore?.score}
         />
 
         {isExpanded && (

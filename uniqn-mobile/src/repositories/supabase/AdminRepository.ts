@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import { BusinessError, ERROR_CODES, toError, isAppError } from '@/errors';
 import { handleSupabaseError, runRpc } from '@/utils/supabase';
+import { toDateString } from '@/utils/date';
 import type {
   IAdminRepository,
   DashboardCounts,
@@ -361,7 +362,7 @@ export class SupabaseAdminRepository implements IAdminRepository {
         const date = new Date();
         date.setDate(date.getDate() - i);
         date.setHours(0, 0, 0, 0);
-        dates.push(date.toISOString().split('T')[0]);
+        dates.push(toDateString(date));
         const endDate = new Date(date);
         endDate.setHours(23, 59, 59, 999);
         dateRanges.push({ start: date.toISOString(), end: endDate.toISOString() });

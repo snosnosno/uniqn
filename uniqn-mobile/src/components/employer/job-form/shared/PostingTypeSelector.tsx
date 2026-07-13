@@ -118,6 +118,12 @@ export const PostingTypeSelector = memo(function PostingTypeSelector({
         </View>
       )}
 
+      {!disabled && (
+        <Text className="mt-2 text-center text-xs text-content-secondary dark:text-secondary-400 font-sans">
+          공고 등록 후에는 타입을 변경할 수 없어요.
+        </Text>
+      )}
+
       {disabled && (
         <View className="mt-2 rounded bg-surface-card p-2 dark:bg-surface">
           <Text className="text-center text-xs text-secondary-500 dark:text-secondary-400 font-sans">

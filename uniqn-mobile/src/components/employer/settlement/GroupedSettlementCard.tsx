@@ -30,6 +30,7 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import type { GroupedSettlement, DateSettlementStatus } from '@/types/settlement';
 import type { WorkLog, PayrollStatus } from '@/types';
 import { STATUS } from '@/constants';
+import { PAYROLL_STATUS_LABELS } from '@/shared/status';
 
 // ============================================================================
 // Types
@@ -65,22 +66,22 @@ const PAYROLL_STATUS_CONFIG: Record<
   { label: string; bgColor: string; textColor: string }
 > = {
   pending: {
-    label: '미정산',
+    label: PAYROLL_STATUS_LABELS.pending,
     bgColor: 'bg-warning-100 dark:bg-warning-900/30',
     textColor: 'text-warning-700 dark:text-warning-300',
   },
   processing: {
-    label: '처리중',
+    label: PAYROLL_STATUS_LABELS.processing,
     bgColor: 'bg-primary-100 dark:bg-primary-900/30',
     textColor: 'text-primary-700 dark:text-primary-300',
   },
   completed: {
-    label: '정산완료',
+    label: PAYROLL_STATUS_LABELS.completed,
     bgColor: 'bg-success-50 dark:bg-success-900/30',
     textColor: 'text-success-700 dark:text-success-300',
   },
   failed: {
-    label: '정산실패',
+    label: PAYROLL_STATUS_LABELS.failed,
     bgColor: 'bg-error-100 dark:bg-error-900/30',
     textColor: 'text-error-700 dark:text-error-300',
   },

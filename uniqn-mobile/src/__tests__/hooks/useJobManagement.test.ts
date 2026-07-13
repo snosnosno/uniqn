@@ -65,6 +65,9 @@ jest.mock('@/lib/queryClient', () => ({
       lists: () => ['jobPostings', 'lists'],
       detail: (id: string) => ['jobPostings', 'detail', id],
     },
+    weeklyGrid: {
+      all: ['weeklyGrid'],
+    },
   },
   cachingPolicies: {
     frequent: 1000,
@@ -307,7 +310,10 @@ describe('useJobManagement hooks', () => {
     });
     expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ['jobManagement'] });
     expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ['jobPostings'] });
-    expect(mockAddToast).toHaveBeenCalledWith({
+    // 그리드 발행 반영(P2-2): weeklyGrid prefix 무효화
+    expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ['weeklyGrid'] });
+    // 성공 토스트는 호출부(create 화면, postingType별 문구) 담당 — 훅 중복 발송 금지(P2-2 디듑)
+    expect(mockAddToast).not.toHaveBeenCalledWith({
       type: 'success',
       message: '공고가 등록되었습니다.',
     });

@@ -85,6 +85,7 @@ jest.mock('@/utils/date/grouping', () => ({
 }));
 
 jest.mock('@/utils/date/validation', () => ({
+  ...jest.requireActual('@/utils/date/validation'),
   isDuplicateDate: jest.fn((dates: string[], newDate: string) => dates.includes(newDate)),
   validateDateCount: jest.fn(),
   isWithinUrgentDateLimit: jest.fn(),

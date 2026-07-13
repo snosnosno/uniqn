@@ -377,7 +377,7 @@ export function ApplicationForm({
             {'\n'}
             채용 결과는 알림으로 안내됩니다.
             {'\n'}
-            지원 취소는 마이페이지에서 가능합니다.
+            지원 취소는 &apos;내 스케줄&apos; 탭에서 할 수 있어요.
           </Text>
         </View>
       </View>

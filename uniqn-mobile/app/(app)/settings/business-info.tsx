@@ -8,6 +8,7 @@ import { ScrollView, Text, View, Linking, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackHeader } from '@/components/headers';
 import { Card } from '@/components/ui';
+import { SUPPORT_HOURS_TEXT } from '@/constants/support';
 
 const BUSINESS_INFO = {
   companyName: '스노스튜디오',
@@ -18,7 +19,7 @@ const BUSINESS_INFO = {
   address: '인천광역시 부평구 부평대로 141번길 12, 504호',
   email: 'uniqnkorea@gmail.com',
   phone: '010-9800-9039',
-  customerServiceHours: '평일 10:00 ~ 18:00 (점심 12:00 ~ 13:00)',
+  customerServiceHours: SUPPORT_HOURS_TEXT,
 };
 
 interface InfoRowProps {

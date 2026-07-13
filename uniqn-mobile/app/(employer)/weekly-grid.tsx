@@ -10,7 +10,9 @@
  * 월/대형은 CalendarGrid(고정 6주 그리드, 가상화 불필요), 일별 상세는 ConfirmedStaffList(소형).
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, RefreshControl, ScrollView } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryClient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Redirect } from 'expo-router';
 import {
@@ -18,7 +20,6 @@ import {
   subMonths,
   startOfMonth,
   endOfMonth,
-  startOfWeek,
   eachDayOfInterval,
   format,
 } from 'date-fns';
@@ -34,7 +35,12 @@ import {
   BellIcon,
 } from '@/components/icons';
 import { CalendarGrid } from '@/components/jobs/DateCalendar/CalendarGrid';
-import { VenueSelector, VenueDayPanel, VenueCreateSheet } from '@/components/weeklyGrid';
+import {
+  VenueSelector,
+  VenueDayPanel,
+  VenueCreateSheet,
+  GridBadgeLegend,
+} from '@/components/weeklyGrid';
 import { useWeeklyGridEnabled } from '@/hooks';
 import { useActiveWorkspace } from '@/hooks/workspace';
 import {
@@ -42,8 +48,9 @@ import {
   useVenueContainers,
   useCopyLastWeek,
   useNotifyWeeklyBatchConfirm,
+  useEnsureDefaultVenue,
 } from '@/hooks/weeklyGrid';
-import { computeDayCell, type GridDayCell } from '@/domains/weeklyGrid';
+import { computeDayCell, getWeekRange, type GridDayCell } from '@/domains/weeklyGrid';
 import { toDateString } from '@/utils/date';
 import { useToastStore } from '@/stores/toastStore';
 import { SECONDARY_PALETTE } from '@/constants/colors';
@@ -91,6 +98,15 @@ export default function WeeklyGridScreen() {
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const [createSheetVisible, setCreateSheetVisible] = useState(false);
 
+  // P1-1: 운영처 0개면 워크스페이스 이름으로 기본 운영처 자동 생성(체감 2계층).
+  // 실패 시 재발사 없음(훅 내부 가드) → 아래 수동 EmptyState 폴백.
+  const { isCreating: isAutoCreatingVenue } = useEnsureDefaultVenue({
+    workspaceId: activeWorkspace?.id,
+    workspaceName: activeWorkspace?.name,
+    isReady: enabled && !wsLoading && containersQuery.isSuccess,
+    isEmpty: containers.length === 0,
+  });
+
   // 컨테이너 로드/변경 시 선택 venue 자기-치유: 없거나 목록에 없으면 첫 번째로.
   useEffect(() => {
     if (containers.length === 0) {
@@ -120,10 +136,25 @@ export default function WeeklyGridScreen() {
   const copyLastWeek = useCopyLastWeek();
   const notifyConfirm = useNotifyWeeklyBatchConfirm();
 
-  // 선택일이 속한 주의 시작(월요일, 요일정합 월~일). 복사/알림 라벨 공통 기준.
+  // 선택일이 속한 주(월~일) — 복사/알림/화면 표기가 공유하는 SSOT(P0-4).
+  const weekRange = useMemo(() => getWeekRange(selectedDate), [selectedDate]);
+
+  // 당겨서 새로고침 — 단일 ScrollView 전환(P1-3)으로 리스트 RefreshControl 이 사라진 것을 화면
+  // 레벨에서 복원. 타 운영자의 배치 변경(비-realtime)을 수동 갱신하는 유일한 경로.
+  const queryClient = useQueryClient();
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+  const handleManualRefresh = useCallback(async () => {
+    setIsManualRefreshing(true);
+    try {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.weeklyGrid.all });
+    } finally {
+      setIsManualRefreshing(false);
+    }
+  }, [queryClient]);
+
   const handleCopyLastWeek = useCallback(() => {
     if (!selectedVenueId) return;
-    const targetWeekStart = toDateString(startOfWeek(selectedDate, { weekStartsOn: 1 }));
+    const targetWeekStart = toDateString(weekRange.start);
     copyLastWeek.mutate(
       { venueId: selectedVenueId, targetWeekStart },
       {
@@ -136,14 +167,12 @@ export default function WeeklyGridScreen() {
         onError: () => toastError('지난주 배치 복사에 실패했어요.'),
       }
     );
-  }, [selectedVenueId, selectedDate, copyLastWeek, toastSuccess, toastError]);
+  }, [selectedVenueId, weekRange.start, copyLastWeek, toastSuccess, toastError]);
 
   const handleNotifyConfirm = useCallback(() => {
     if (!selectedVenueId || !activeWorkspace?.id) return;
-    const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-    const weekLabel = `${format(weekStart, 'M월 d일', { locale: ko })} 주간`;
     notifyConfirm.mutate(
-      { workspaceId: activeWorkspace.id, venueId: selectedVenueId, weekLabel },
+      { workspaceId: activeWorkspace.id, venueId: selectedVenueId, weekLabel: weekRange.label },
       {
         onSuccess: (result) =>
           result.sent
@@ -155,7 +184,7 @@ export default function WeeklyGridScreen() {
   }, [
     selectedVenueId,
     activeWorkspace?.id,
-    selectedDate,
+    weekRange.label,
     notifyConfirm,
     toastSuccess,
     toastInfo,
@@ -198,7 +227,8 @@ export default function WeeklyGridScreen() {
           빈상태 오표시를 막기 위해 로딩으로 처리. */}
       {!hasVenue ? (
         <View className="flex-1 items-center justify-center px-6">
-          {!(wsLoading || containersQuery.isLoading) && containers.length === 0 ? (
+          {!(wsLoading || containersQuery.isLoading || isAutoCreatingVenue) &&
+          containers.length === 0 ? (
             <EmptyState
               icon={<MapPinIcon size={48} color={SECONDARY_PALETTE[400]} />}
               title="운영처가 없어요"
@@ -211,9 +241,23 @@ export default function WeeklyGridScreen() {
           )}
         </View>
       ) : (
-        <View className="flex-1">
+        // P1-3: 단일 세로 스크롤러 — 내부에 가상화 리스트 없음(VenueDayDetail 직접 렌더 전제).
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ paddingBottom: 24 }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          refreshControl={
+            <RefreshControl
+              refreshing={isManualRefreshing}
+              onRefresh={handleManualRefresh}
+              tintColor="#D4AF37"
+              colors={['#D4AF37']}
+            />
+          }
+        >
           {/* 월 네비게이션 */}
-          <View className="flex-row items-center justify-between border-b border-divider px-4 py-2">
+          <View className="flex-row items-center justify-between border-b border-divider px-4 py-1">
             <Pressable
               onPress={handlePrevMonth}
               hitSlop={8}
@@ -236,31 +280,40 @@ export default function WeeklyGridScreen() {
           </View>
 
           {/* P5: 주간 배치 액션 — 지난주 복사 / 이번 주 배치 확인 알림(플래그 뒤라 OFF면 미노출) */}
-          <View className="flex-row gap-2 border-b border-divider px-4 py-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onPress={handleCopyLastWeek}
-              loading={copyLastWeek.isPending}
-              disabled={copyLastWeek.isPending || notifyConfirm.isPending}
-              icon={<CopyIcon size={16} color={SECONDARY_PALETTE[500]} />}
-              className="flex-1"
-              accessibilityLabel="지난주 배치를 이번 주로 복사"
+          <View className="border-b border-divider px-4 py-2">
+            {/* P0-4: 두 액션이 어느 주를 대상으로 하는지 상시 표기(weekRange SSOT) */}
+            <Text
+              className="mb-1 text-xs text-content-secondary font-sans"
+              accessibilityLabel={`주간 액션 대상 주 ${weekRange.rangeLabel}`}
             >
-              지난주 복사
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onPress={handleNotifyConfirm}
-              loading={notifyConfirm.isPending}
-              disabled={copyLastWeek.isPending || notifyConfirm.isPending}
-              icon={<BellIcon size={16} color={SECONDARY_PALETTE[500]} />}
-              className="flex-1"
-              accessibilityLabel="이번 주 배치 확인 알림 보내기"
-            >
-              배치 확인 알림
-            </Button>
+              대상 주 · {weekRange.rangeLabel}
+            </Text>
+            <View className="flex-row gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onPress={handleCopyLastWeek}
+                loading={copyLastWeek.isPending}
+                disabled={copyLastWeek.isPending || notifyConfirm.isPending}
+                icon={<CopyIcon size={16} color={SECONDARY_PALETTE[500]} />}
+                className="flex-1"
+                accessibilityLabel="지난주 배치를 이번 주로 복사"
+              >
+                지난주 복사
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onPress={handleNotifyConfirm}
+                loading={notifyConfirm.isPending}
+                disabled={copyLastWeek.isPending || notifyConfirm.isPending}
+                icon={<BellIcon size={16} color={SECONDARY_PALETTE[500]} />}
+                className="flex-1"
+                accessibilityLabel="이번 주 배치 확인 알림 보내기"
+              >
+                배치 확인 알림
+              </Button>
+            </View>
           </View>
 
           {/* 월 그리드 — U1/U2/U3 는 CalendarCell 그리드 모드가 처리(gridCells) */}
@@ -275,6 +328,9 @@ export default function WeeklyGridScreen() {
             />
           </View>
 
+          {/* P0-3: 셀 뱃지 범례(!부족/+공고/✓배치) — GRID_BADGE_META SSOT 공유 */}
+          <GridBadgeLegend />
+
           {/* U4: 요약 에러 — 그리드 하단 인라인 + 재시도 */}
           {summaryQuery.isError ? (
             <View className="px-4 py-2">
@@ -287,8 +343,8 @@ export default function WeeklyGridScreen() {
             </View>
           ) : null}
 
-          {/* 선택 날짜 패널(요약·소프트타깃·추가·편집 통합, unit 6 + B 통합) */}
-          <View className="mt-1 flex-1 border-t border-divider">
+          {/* 선택 날짜 패널(요약·소프트타깃·추가·편집 통합) — 자연 높이(스크롤은 이 ScrollView 담당) */}
+          <View className="mt-1 border-t border-divider">
             <VenueDayPanel
               venueId={selectedVenueId}
               date={selectedDateString}
@@ -296,7 +352,7 @@ export default function WeeklyGridScreen() {
               cell={gridCells[selectedDateString]}
             />
           </View>
-        </View>
+        </ScrollView>
       )}
       <VenueCreateSheet
         visible={createSheetVisible}

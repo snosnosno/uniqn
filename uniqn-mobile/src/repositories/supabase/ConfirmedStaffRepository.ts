@@ -19,6 +19,7 @@ import { handleSupabaseError, toCamelCase, createRealtimeSubscription } from '@/
 import { parseWorkLogDocuments, parseWorkLogDocument } from '@/schemas';
 import { STATUS } from '@/constants';
 import { resolvePostingAuthority, canManagePosting } from './postingAuthority';
+import { resolveNoShowRevertStatus } from '@/domains/staff';
 import type { UnsubscribeFn } from '@/types/common';
 import type { RoleChangeHistory, WorkLog } from '@/types';
 import type {
@@ -27,6 +28,7 @@ import type {
   UpdateRoleContext,
   UpdateConfirmedStaffWorkTimeContext,
   MarkNoShowContext,
+  CancelNoShowContext,
   UpdateStaffStatusContext,
   AddDirectStaffContext,
   RemoveDirectStaffContext,
@@ -414,6 +416,60 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
       logger.info('노쇼 처리 완료', { workLogId: context.workLogId });
     } catch (error) {
       rethrowOrHandle(error, '노쇼 처리', { workLogId: context.workLogId });
+    }
+  }
+
+  async cancelNoShow(context: CancelNoShowContext): Promise<void> {
+    try {
+      logger.info('노쇼 취소', { workLogId: context.workLogId });
+
+      // 1. WorkLog 조회
+      const workLog = await loadWorkLog(context.workLogId, '노쇼 취소');
+
+      // 2. 공고 소유권 확인
+      const jobPostingId = workLog.jobPostingId;
+      if (!jobPostingId) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '근무 기록에 공고 정보가 없습니다.',
+        });
+      }
+
+      await verifyPostingAuthority(jobPostingId, context.actorId, '노쇼 취소');
+
+      // 3. 노쇼 상태가 아니면 취소 대상이 아님
+      if (workLog.status !== STATUS.WORK_LOG.NO_SHOW && !workLog.noShowAt) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '노쇼 처리된 근무 기록이 아닙니다.',
+        });
+      }
+
+      // 4. 정산 완료된 경우 취소 불가 (updateWorkTimeWithTransaction과 동일 정책)
+      if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_SETTLED, {
+          userMessage: '이미 정산이 완료된 근무 기록은 노쇼를 취소할 수 없습니다.',
+        });
+      }
+
+      // 5. 남아있는 출퇴근 타임스탬프로부터 상태를 재구성 후 노쇼 필드 제거
+      //    (DB CHECK 제약 work_logs_status_timestamp_consistency 정합 유지)
+      const status = resolveNoShowRevertStatus(workLog.checkInTime, workLog.checkOutTime);
+      const now = new Date().toISOString();
+
+      const { error } = await supabase
+        .from(TABLE)
+        .update({
+          status,
+          no_show_at: null,
+          no_show_reason: null,
+          updated_at: now,
+        })
+        .eq('id', context.workLogId);
+
+      if (error) handleSupabaseError(error, { operation: '노쇼 취소', table: TABLE });
+
+      logger.info('노쇼 취소 완료', { workLogId: context.workLogId, status });
+    } catch (error) {
+      rethrowOrHandle(error, '노쇼 취소', { workLogId: context.workLogId });
     }
   }
 

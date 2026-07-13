@@ -18,6 +18,7 @@ import {
   ClockIcon,
   EditIcon,
   ExclamationTriangleIcon,
+  RefreshIcon,
   TrashIcon,
 } from '@/components/icons';
 
@@ -30,6 +31,7 @@ export interface ConfirmedStaffCardProps {
   onReport?: (staff: ConfirmedStaff) => void;
   onDelete?: (staff: ConfirmedStaff) => void;
   onStatusChange?: (staff: ConfirmedStaff) => void;
+  onCancelNoShow?: (staff: ConfirmedStaff) => void;
   showActions?: boolean;
   compact?: boolean;
 }
@@ -43,6 +45,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   onReport,
   onDelete,
   onStatusChange,
+  onCancelNoShow,
   showActions = true,
   compact = false,
 }: ConfirmedStaffCardProps) {
@@ -72,8 +75,12 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   );
 
   const workDuration = timeInfo.duration !== '-' ? timeInfo.duration : null;
+  // 정산 완료 건은 서버(ConfirmedStaffRepository.updateWorkTimeWithTransaction)가 수정을 거부하므로
+  // 버튼 단계에서 미리 숨긴다 — SettlementDetailModal의 payrollStatus===PENDING 계약과 동일.
   const canEditTime =
-    staff.status !== STATUS.WORK_LOG.CANCELLED && staff.status !== STATUS.CONFIRMED_STAFF.NO_SHOW;
+    staff.status !== STATUS.WORK_LOG.CANCELLED &&
+    staff.status !== STATUS.CONFIRMED_STAFF.NO_SHOW &&
+    staff.payrollStatus !== STATUS.PAYROLL.COMPLETED;
   const canDelete =
     staff.status === STATUS.WORK_LOG.SCHEDULED || staff.status === STATUS.WORK_LOG.CANCELLED;
   const canChangeStatus =
@@ -81,6 +88,9 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
     staff.status === STATUS.WORK_LOG.CHECKED_IN ||
     staff.status === STATUS.WORK_LOG.CHECKED_OUT ||
     staff.status === STATUS.WORK_LOG.COMPLETED;
+  // 정산 완료 건은 서버(ConfirmedStaffRepository.cancelNoShow)가 취소를 거부하므로
+  // 버튼 단계에서 미리 숨긴다.
+  const canCancelNoShow = staff.isNoShow && staff.payrollStatus !== STATUS.PAYROLL.COMPLETED;
 
   const handlePress = useCallback(() => {
     onPress?.(staff);
@@ -109,6 +119,10 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   const handleStatusChange = useCallback(() => {
     onStatusChange?.(staff);
   }, [onStatusChange, staff]);
+
+  const handleCancelNoShow = useCallback(() => {
+    onCancelNoShow?.(staff);
+  }, [onCancelNoShow, staff]);
 
   return (
     <Card variant="elevated" padding={compact ? 'sm' : 'md'}>
@@ -181,7 +195,8 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
                   {timeInfo.isEffectiveEndActual ? '퇴근' : '종료'}
                 </Text>
                 <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
-                  {timeInfo.effectiveEnd}
+                  {/* P2-3-lite: 심야 운영 자정 넘김은 "익일" 병기(SSOT isEndNextDay) */}
+                  {timeInfo.isEndNextDay ? `익일 ${timeInfo.effectiveEnd}` : timeInfo.effectiveEnd}
                 </Text>
               </View>
 
@@ -233,6 +248,18 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
               <BriefcaseIcon size={14} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
               <Text className="ml-1 text-sm font-sans-medium text-primary-600 dark:text-primary-400">
                 역할 변경
+              </Text>
+            </Pressable>
+          ) : null}
+
+          {onCancelNoShow && canCancelNoShow ? (
+            <Pressable
+              onPress={handleCancelNoShow}
+              className="flex-1 flex-row items-center justify-center rounded-lg bg-surface-card py-2 active:opacity-70 dark:bg-surface"
+            >
+              <RefreshIcon size={14} color={SECONDARY_PALETTE[500]} />
+              <Text className="ml-1 text-sm font-sans-medium text-content-primary dark:text-off-white">
+                노쇼 취소
               </Text>
             </Pressable>
           ) : null}

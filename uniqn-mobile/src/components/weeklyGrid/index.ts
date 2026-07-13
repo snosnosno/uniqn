@@ -11,3 +11,4 @@ export { AddSlotSheet, type AddSlotSheetProps } from './AddSlotSheet';
 export { buildAddSlotPayload, type BuildAddSlotPayloadParams } from './addSlotPayload';
 export { EditSlotSheet, type EditSlotSheetProps } from './EditSlotSheet';
 export { VenueCreateSheet, type VenueCreateSheetProps } from './VenueCreateSheet';
+export { GridBadgeLegend } from './GridBadgeLegend';

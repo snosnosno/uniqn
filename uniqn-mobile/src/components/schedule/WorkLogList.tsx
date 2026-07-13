@@ -18,6 +18,7 @@ import { getRoleDisplayName } from '@/types/unified';
 import { formatCurrency } from '@/utils/settlement';
 import { STATUS } from '@/constants';
 import { formatDateShortWithDay } from '@/utils/date';
+import { PAYROLL_STATUS_LABELS } from '@/shared/status';
 
 export interface WorkLogListProps {
   workLogs: WorkLog[];
@@ -49,22 +50,22 @@ const PAYROLL_STATUS_CONFIG: Record<
   { label: string; color: string; bgColor: string }
 > = {
   pending: {
-    label: '정산 대기',
+    label: PAYROLL_STATUS_LABELS.pending,
     color: 'text-warning-700 dark:text-warning-300',
     bgColor: 'bg-warning-100 dark:bg-warning-900/30',
   },
   processing: {
-    label: '정산 중',
+    label: PAYROLL_STATUS_LABELS.processing,
     color: 'text-primary-700 dark:text-primary-300',
     bgColor: 'bg-primary-100 dark:bg-primary-900/30',
   },
   completed: {
-    label: '정산 완료',
+    label: PAYROLL_STATUS_LABELS.completed,
     color: 'text-success-700 dark:text-success-300',
     bgColor: 'bg-success-50 dark:bg-success-900/30',
   },
   failed: {
-    label: '정산 실패',
+    label: PAYROLL_STATUS_LABELS.failed,
     color: 'text-error-700 dark:text-error-300',
     bgColor: 'bg-error-100 dark:bg-error-900/30',
   },

@@ -13,6 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { StackHeader } from '@/components/headers';
 import { Avatar, Badge, Button, EmptyState, ErrorState, Input } from '@/components/ui';
+import { ChevronRightIcon, InboxIcon } from '@/components/icons';
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { useModalStore } from '@/stores/modalStore';
@@ -26,6 +28,7 @@ import {
   useWorkspaces,
   useArchiveWorkspace,
   useArchivedWorkspaces,
+  useReceivedWorkspaceInvitations,
 } from '@/hooks/workspace';
 import { WorkspaceContextBar } from '@/components/workspace';
 import { shouldShowArchivedRestoreEntry } from '@/utils/workspace/archivedEntry';
@@ -45,6 +48,30 @@ export default function WorkspaceSettingsScreen() {
   // 떨어지는데, 여기서 복원 경로가 없으면 앱 내에서 되살릴 수 없다. 보관된 워크스페이스가
   // 있으면 EmptyState 에서도 보관함 진입점을 노출한다.
   const { archived } = useArchivedWorkspaces();
+
+  // 받은 초대 발견성 — 이 화면엔 초대함으로 가는 링크가 없어 배너로 노출
+  const { invitations: pendingInvitations } = useReceivedWorkspaceInvitations();
+  const pendingInvitationsCount = pendingInvitations.length;
+  const pendingInvitationBanner =
+    pendingInvitationsCount > 0 ? (
+      <Pressable
+        onPress={() => router.push('/(employer)/workspace/invitations')}
+        accessibilityRole="button"
+        accessibilityLabel={`받은 초대 ${pendingInvitationsCount}건 확인하기`}
+        className="mx-4 mt-4 flex-row items-center justify-between rounded-md bg-info-50 px-4 py-3 active:opacity-70 dark:bg-info-500/10"
+      >
+        <View className="flex-1 flex-row items-center">
+          <InboxIcon size={20} color="#2563EB" />
+          <Text
+            className="ml-2 flex-1 text-sm font-sans-medium text-content-primary"
+            numberOfLines={1}
+          >
+            받은 초대 {pendingInvitationsCount}건 확인하기
+          </Text>
+        </View>
+        <ChevronRightIcon size={16} color={SECONDARY_PALETTE[400]} />
+      </Pressable>
+    ) : null;
 
   const isOwner = !!user?.uid && activeWorkspace?.ownerId === user.uid;
 
@@ -162,6 +189,7 @@ export default function WorkspaceSettingsScreen() {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="워크스페이스" />
+        {pendingInvitationBanner}
         <View className="flex-1 items-center justify-center px-6">
           <EmptyState
             title="워크스페이스가 없어요"
@@ -196,6 +224,7 @@ export default function WorkspaceSettingsScreen() {
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="워크스페이스" />
       <WorkspaceContextBar />
+      {pendingInvitationBanner}
       <ScrollView contentContainerClassName="pb-8">
         {/* 워크스페이스 헤더 */}
         <View className="border-b border-secondary-200 bg-white px-4 py-5 dark:border-surface-overlay dark:bg-surface">

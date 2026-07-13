@@ -7,7 +7,7 @@
 
 import { useState, useCallback } from 'react';
 import { View, Text, Pressable, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ForgotPasswordForm } from '@/components/auth';
 import { resetPassword } from '@/services';
@@ -18,6 +18,7 @@ import { ChevronLeftIcon } from '@/components/icons';
 import type { ResetPasswordFormData } from '@/schemas';
 
 export default function ForgotPasswordScreen() {
+  const { email: prefillEmail } = useLocalSearchParams<{ email?: string }>();
   const [isLoading, setIsLoading] = useState(false);
   const { addToast } = useToastStore();
 
@@ -74,7 +75,11 @@ export default function ForgotPasswordScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <ForgotPasswordForm onSubmit={handleSubmit} isLoading={isLoading} />
+          <ForgotPasswordForm
+            onSubmit={handleSubmit}
+            isLoading={isLoading}
+            initialEmail={prefillEmail}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

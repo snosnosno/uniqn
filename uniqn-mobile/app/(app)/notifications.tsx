@@ -26,11 +26,7 @@ import {
 } from '@/hooks/useNotifications';
 import { useNotificationNavigation } from '@/hooks/useDeepLink';
 import { useNotificationStore } from '@/stores/notificationStore';
-import type {
-  NotificationData,
-  NotificationCategory,
-  GroupedNotificationData,
-} from '@/types/notification';
+import type { NotificationData, NotificationCategory } from '@/types/notification';
 
 export default function NotificationsScreen() {
   // 카테고리 필터 상태
@@ -82,16 +78,6 @@ export default function NotificationsScreen() {
       void navigateNotification(notification);
     },
     [navigateNotification]
-  );
-
-  // 그룹 클릭 핸들러 (그룹 내 모든 알림 읽음 처리)
-  const handleGroupPress = useCallback(
-    (group: GroupedNotificationData) => {
-      if (group.unreadCount > 0) {
-        markGroupAsRead(group);
-      }
-    },
-    [markGroupAsRead]
   );
 
   // 삭제 핸들러
@@ -162,7 +148,7 @@ export default function NotificationsScreen() {
         onRefresh={handleRefresh}
         onLoadMore={handleLoadMore}
         onNotificationPress={handleNotificationPress}
-        onGroupPress={handleGroupPress}
+        onMarkGroupAsRead={markGroupAsRead}
         onDeleteNotification={handleDelete}
         onMarkAllAsRead={handleMarkAllAsRead}
         showDelete={true}

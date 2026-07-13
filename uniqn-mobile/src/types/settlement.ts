@@ -131,6 +131,4 @@ export interface GroupedSettlement {
 export interface GroupSettlementOptions {
   /** 그룹핑 활성화 여부 (기본: true) */
   enabled?: boolean;
-  /** 최소 그룹 크기 (이 수 이상일 때만 그룹화, 기본: 1) */
-  minGroupSize?: number;
 }

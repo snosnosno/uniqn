@@ -204,6 +204,33 @@ export async function markAsNoShow(workLogId: string, reason?: string): Promise<
   logger.info('Marked confirmed staff as no-show', { workLogId });
 }
 
+export async function cancelNoShow(workLogId: string): Promise<void> {
+  const currentUser = await requireCurrentUser();
+  logger.info('Cancelling confirmed staff no-show', { workLogId });
+
+  await confirmedStaffRepository.cancelNoShow({ workLogId, actorId: currentUser.id });
+
+  const workLog = await workLogRepository.getById(workLogId);
+  if (workLog?.jobPostingId) {
+    try {
+      await enqueueScheduleBoardSync(workLog.jobPostingId, 'update', {
+        jobPostingId: workLog.jobPostingId,
+        workLogId,
+        reason: 'confirmed_staff_no_show_cancel',
+      });
+    } catch (error) {
+      logger.warn('Schedule board enqueue failed after confirmed staff no-show cancel', {
+        component: 'confirmedStaffService',
+        workLogId,
+        jobPostingId: workLog.jobPostingId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  logger.info('Cancelled confirmed staff no-show', { workLogId });
+}
+
 export async function updateStaffStatus(workLogId: string, status: WorkLogStatus): Promise<void> {
   const currentUser = await requireCurrentUser();
   logger.info('Updating confirmed staff status', { workLogId, status });

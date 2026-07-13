@@ -119,12 +119,16 @@ export function useCreateJobPosting() {
       );
     },
     onSuccess: () => {
-      addToast({ type: 'success', message: '공고가 등록되었습니다.' });
+      // 성공 토스트는 호출부(create 화면, postingType별 문구)가 담당 — 중복 토스트 제거(P2-2).
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobManagement.all,
       });
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobPostings.all,
+      });
+      // 그리드 "공고 열기/부족 모집" 발행 시 셀 +N 뱃지·스팬 집계 갱신(venue 무관 무해).
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.weeklyGrid.all,
       });
     },
     onError: createMutationErrorHandler('공고 생성', addToast),

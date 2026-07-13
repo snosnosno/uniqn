@@ -37,6 +37,12 @@ export interface MarkNoShowContext {
   reason?: string;
 }
 
+export interface CancelNoShowContext {
+  workLogId: string;
+  /** 인가 주체(세션에서 파생한 현재 사용자 uid). 공고 소유자 id 를 재주입하지 말 것. */
+  actorId: string;
+}
+
 export interface UpdateStaffStatusContext {
   workLogId: string;
   /** 인가 주체(세션에서 파생한 현재 사용자 uid). 공고 소유자 id 를 재주입하지 말 것. */
@@ -73,6 +79,7 @@ export interface IConfirmedStaffRepository {
   updateRoleWithTransaction(context: UpdateRoleContext): Promise<void>;
   updateWorkTimeWithTransaction(context: UpdateConfirmedStaffWorkTimeContext): Promise<void>;
   markAsNoShow(context: MarkNoShowContext): Promise<void>;
+  cancelNoShow(context: CancelNoShowContext): Promise<void>;
   updateStatus(context: UpdateStaffStatusContext): Promise<void>;
   addDirectStaff(context: AddDirectStaffContext): Promise<string[]>;
   removeDirectStaff(context: RemoveDirectStaffContext): Promise<void>;
