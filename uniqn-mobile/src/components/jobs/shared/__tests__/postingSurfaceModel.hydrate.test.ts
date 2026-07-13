@@ -171,4 +171,32 @@ describe('buildPostingScheduleModel hydrate — fixed/grouped/dated 단일 소�
     expect(role.filled).toBe(2);
     expect(role.isFilled).toBe(true);
   });
+
+  // 협의(negotiable) 플래그가 켜져 있어도 startTime 참고값이 있으면 그 값으로 hydrate 조회해야 한다.
+  // 확정 경로(facts.ts fixedAssignmentTimeSlot)·DB(_posting_slot_key)는 startTime 우선인데
+  // 옛 표시 코드는 negotiable 우선('NEGOTIABLE')으로 조회해 미스매치 → 영원히 0/N 이던 회귀.
+  it('fixed: 협의 플래그가 켜져도 startTime 이 있으면 그 값으로 hydrate 매칭한다 (확정·DB 규칙과 통일, 회귀 가드)', () => {
+    const fixedSource = {
+      workflow: { isFixed: true, usesGroupedDateRanges: false },
+      scheduleDisplay: {
+        variant: 'fixed',
+        fixed: {
+          daysPerWeek: 5,
+          startTime: '19:00',
+          isStartTimeNegotiable: true,
+          roles: [{ role: 'dealer', count: 3, filled: 0 }],
+        },
+        dateGroups: [],
+        dateRequirements: [],
+        workDate: '',
+        timeSlot: '',
+      },
+    } as any;
+
+    const filledCounts = new Map<string, number>([['FIXED_SCHEDULE__19:00__dealer', 1]]);
+    const model = buildPostingScheduleModel(fixedSource, filledCounts);
+
+    const role = (model as any).fixed.roles[0];
+    expect(role.filled).toBe(1);
+  });
 });

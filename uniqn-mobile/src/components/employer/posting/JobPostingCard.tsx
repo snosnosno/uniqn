@@ -39,6 +39,8 @@ export interface JobPostingCardProps {
   onShowQR: (posting: JobPosting) => void;
   isClosing: boolean;
   isReopening: boolean;
+  /** 역할/슬롯별 실시간 확정 인원 맵 (usePostingFilledCounts). 카드의 (확정/총원) 표시에 사용. */
+  filledCounts?: Map<string, number>;
 }
 
 export const JobPostingCard = memo(function JobPostingCard({
@@ -49,6 +51,7 @@ export const JobPostingCard = memo(function JobPostingCard({
   onShowQR,
   isClosing,
   isReopening,
+  filledCounts,
 }: JobPostingCardProps) {
   const card = useMemo(() => toJobPostingCard(posting), [posting]);
   const stripeTone = POSTING_STRIPE_TONE[posting.status];
@@ -64,6 +67,7 @@ export const JobPostingCard = memo(function JobPostingCard({
         accessibilityLabel={`${posting.title} 공고 상세보기`}
         stripeTone={stripeTone}
         containerClassName="overflow-hidden"
+        filledCounts={filledCounts}
         footer={
           <View className="mt-2 flex-row items-center justify-between border-t border-secondary-100 px-4 pt-2 dark:border-surface-overlay">
             <View className="flex-row items-center">
