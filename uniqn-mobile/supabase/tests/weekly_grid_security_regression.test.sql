@@ -88,12 +88,17 @@ DECLARE
   v_super_cnt    int;
   v_stranger_cnt int;
 BEGIN
-  INSERT INTO auth.users (id,email,aud,role,encrypted_password,created_at,updated_at) VALUES
-    (v_owner,   '__sql_fixture_sec_owner@test.local',   'authenticated','authenticated','',now(),now()),
-    (v_stranger,'__sql_fixture_sec_stranger@test.local','authenticated','authenticated','',now(),now());
+  -- baseline(2026-07-12): raw_app_meta_data.role 를 아래 public.users upsert role 과 일치시킴
+  -- (on_auth_user_created 트리거 선점 행의 role 이 다르면 prevent_role_escalation 트리거가
+  -- ON CONFLICT DO UPDATE 의 role 변경을 ROLE_CHANGE_DENIED 로 거부한다).
+  INSERT INTO auth.users (id,email,aud,role,encrypted_password,raw_app_meta_data,created_at,updated_at) VALUES
+    (v_owner,   '__sql_fixture_sec_owner@test.local',   'authenticated','authenticated','','{"role":"employer"}'::jsonb,now(),now()),
+    (v_stranger,'__sql_fixture_sec_stranger@test.local','authenticated','authenticated','','{"role":"employer"}'::jsonb,now(),now());
+  -- baseline(2026-07-12): on_auth_user_created 트리거 공존(선점 행/기본 워크스페이스 정리)
   INSERT INTO public.users (id,email,name,role,is_active,created_at,updated_at) VALUES
     (v_owner,   '__sql_fixture_sec_owner@test.local',   'SEC_OWNER',   'employer',true,now(),now()),
-    (v_stranger,'__sql_fixture_sec_stranger@test.local','SEC_STRANGER','employer',true,now(),now());
+    (v_stranger,'__sql_fixture_sec_stranger@test.local','SEC_STRANGER','employer',true,now(),now())
+  ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, role = EXCLUDED.role, is_active = EXCLUDED.is_active;
   INSERT INTO public.workspaces (id,name,owner_id,created_at,updated_at)
     VALUES (v_ws,'__sql_fixture_sec_ws',v_owner,now(),now());
 
@@ -132,14 +137,19 @@ DECLARE
   v_hc int;
   v_slots int;
 BEGIN
-  INSERT INTO auth.users (id,email,aud,role,encrypted_password,created_at,updated_at) VALUES
-    (v_owner_a,'__sql_fixture_sec_owa@test.local','authenticated','authenticated','',now(),now()),
-    (v_owner_b,'__sql_fixture_sec_owb@test.local','authenticated','authenticated','',now(),now()),
-    (v_staff,  '__sql_fixture_sec_stf@test.local','authenticated','authenticated','',now(),now());
+  -- baseline(2026-07-12): raw_app_meta_data.role 를 아래 public.users upsert role 과 일치시킴
+  -- (on_auth_user_created 트리거 선점 행의 role 이 다르면 prevent_role_escalation 트리거가
+  -- ON CONFLICT DO UPDATE 의 role 변경을 ROLE_CHANGE_DENIED 로 거부한다).
+  INSERT INTO auth.users (id,email,aud,role,encrypted_password,raw_app_meta_data,created_at,updated_at) VALUES
+    (v_owner_a,'__sql_fixture_sec_owa@test.local','authenticated','authenticated','','{"role":"employer"}'::jsonb,now(),now()),
+    (v_owner_b,'__sql_fixture_sec_owb@test.local','authenticated','authenticated','','{"role":"employer"}'::jsonb,now(),now()),
+    (v_staff,  '__sql_fixture_sec_stf@test.local','authenticated','authenticated','','{"role":"staff"}'::jsonb,now(),now());
+  -- baseline(2026-07-12): on_auth_user_created 트리거 공존(선점 행/기본 워크스페이스 정리)
   INSERT INTO public.users (id,email,name,role,is_active,created_at,updated_at) VALUES
     (v_owner_a,'__sql_fixture_sec_owa@test.local','SEC_OWA','employer',true,now(),now()),
     (v_owner_b,'__sql_fixture_sec_owb@test.local','SEC_OWB','employer',true,now(),now()),
-    (v_staff,  '__sql_fixture_sec_stf@test.local','SEC_STF','staff',   true,now(),now());
+    (v_staff,  '__sql_fixture_sec_stf@test.local','SEC_STF','staff',   true,now(),now())
+  ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, role = EXCLUDED.role, is_active = EXCLUDED.is_active;
   INSERT INTO public.workspaces (id,name,owner_id,created_at,updated_at) VALUES
     (v_ws_a,'__sql_fixture_sec_wsa',v_owner_a,now(),now()),
     (v_ws_b,'__sql_fixture_sec_wsb',v_owner_b,now(),now());

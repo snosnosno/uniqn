@@ -1,5 +1,12 @@
 # 핸드오프 프롬프트 — ④ prod↔repo 파리티 baseline squash (다음 세션 메인)
 
+> ✅ **2026-07-12 완료** — 브랜치 `worktree-parity-baseline-20260711` 커밋 5건(로컬). 완료 게이트 증거:
+> prod 무변경(덤프=읽기, pg_temp/오버로드 마이그만 red-green 적용) · fresh db reset == prod
+> (함수162/정책103/pg_temp0/PG17.6) · pgTAP 60파일/674 ALL PASS(파리티 가드 포함) ·
+> migration repair local-only 0 · CI 스모크(`parity-smoke.yml`) 신설. **사용자 후속 2건**:
+> ① GitHub 시크릿 `PROD_DB_URL` 등록(스모크 활성화) ② **DB 비밀번호 로테이션**(세션 채팅에 노출됨).
+> 상세는 정합화 계획 문서 헤더·CHANGELOG [Unreleased] 참조.
+>
 > 2026-07-10 RLS/SECDEF 감사 후속의 **마지막 남은 4번**. ①②③은 완료(PR #235·#236 머지, OTA 배포).
 > 이 프롬프트만으로 새 세션에서 착수 가능. 정본 3종을 먼저 정독하라.
 

@@ -21,6 +21,12 @@ BEGIN
   PERFORM set_config('wsa.outsider_id', s.outsider_id::text, true);
   PERFORM set_config('wsa.ws_id',       s.workspace_id::text, true);
   PERFORM set_config('wsa.jp_id',       s.job_posting_id::text, true);
+
+  -- baseline(2026-07-12): on_auth_user_created 트리거 공존(선점 행/기본 워크스페이스 정리)
+  -- owner(employer)는 트리거가 기본 워크스페이스를 자동 생성 → T3b(workspace_count_for_owner=0
+  -- 기대)가 "owner 당 워크스페이스 1개만" 전제를 깨뜨리지 않도록 트리거 산출물만 사전 제거
+  -- (jpc_test_seed() 의 명시 시드 워크스페이스 s.workspace_id 는 보존).
+  DELETE FROM public.workspaces WHERE owner_id = s.owner_id AND id <> s.workspace_id;
 END $$;
 
 -- ============================================================================

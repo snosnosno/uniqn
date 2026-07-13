@@ -309,6 +309,10 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 BEGIN
+  -- baseline(2026-07-12): on_auth_user_created 트리거 공존(선점 행/기본 워크스페이스 정리)
+  -- employer role 유저는 트리거가 기본 워크스페이스를 자동 생성 → workspaces.owner_id FK 가
+  -- auth.users DELETE(→ public.users CASCADE)를 막지 않도록 사전 정리.
+  DELETE FROM public.workspaces WHERE owner_id = p_user_id;
   DELETE FROM auth.users WHERE id = p_user_id;
 END;
 $$;
@@ -373,6 +377,20 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 BEGIN
+  -- baseline(2026-07-12): prod FK 실측 — job_postings 를 참조하는 NO ACTION('a') FK 전수:
+  -- applications / work_logs(job_posting_id·application_id) / event_qr_codes /
+  -- board_memberships / board_posts(linked) / reports / reviews. CASCADE 는 jpc('c')뿐,
+  -- ops_tournaments 는 SET NULL('n'). job_postings DELETE 전 의존행을 전부 정리
+  -- (C3 의 jpc cascade 단언은 불변 — jpc 는 여기서 지우지 않는다).
+  DELETE FROM public.work_logs
+   WHERE job_posting_id = p_jp_id
+      OR application_id IN (SELECT id FROM public.applications WHERE job_posting_id = p_jp_id);
+  DELETE FROM public.applications WHERE job_posting_id = p_jp_id;
+  DELETE FROM public.event_qr_codes WHERE job_posting_id = p_jp_id;
+  DELETE FROM public.board_memberships WHERE job_posting_id = p_jp_id;
+  UPDATE public.board_posts SET linked_job_posting_id = NULL WHERE linked_job_posting_id = p_jp_id;
+  DELETE FROM public.reports WHERE job_posting_id = p_jp_id;
+  DELETE FROM public.reviews WHERE job_posting_id = p_jp_id;
   DELETE FROM public.job_postings WHERE id = p_jp_id;
 END;
 $$;

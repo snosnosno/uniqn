@@ -4,15 +4,18 @@
 -- 정책 분석 (pg_policies 직접 조회):
 --   SELECT: job_postings_select_all (USING true) → 모든 인증 사용자 ALLOW
 --           추가 jp_select / jp_select_managed 정책도 OR 결합되어 효과 동일
---   INSERT: job_postings_insert_authenticated (WITH CHECK auth.uid() IS NOT NULL)
---           → 모든 인증 사용자 ALLOW. jp_insert (employer/admin) 와 OR 결합.
---           app layer 권한 검사 별도 필요 (현재 정책은 application-side 책임 위임)
+--   INSERT: prod 실측(2026-07-12, baseline 파리티) — 정책 2개 결합:
+--           · jp_insert (PERMISSIVE, WITH CHECK get_my_role() = ANY('{admin,employer}'))
+--             = 앱-역할 게이트. get_my_role() = auth.jwt()->'app_metadata'->>'role'.
+--           · jp_container_no_direct_insert (RESTRICTIVE, status <> 'container')
+--           ⇒ employer/admin + 비컨테이너만 ALLOW. 구세대 '의도적 느슨
+--           (auth.uid() IS NOT NULL)' 정책은 로컬 전용 잔상이며 prod엔 부재.
 --   UPDATE: owner_or_admin OR ws_member OR is_posting_collaborator → owner/editor/collab ALLOW, outsider DENY
 --   DELETE: owner_or_admin OR ws.owner → seed 의 owner 만 ALLOW (jp.owner=v_owner=ws.owner)
 --
 -- plan 가정 보정 사항 (file 도입부):
 --   · SELECT outsider: plan=DENY(0) → 실제=ALLOW(1)
---   · INSERT 4 모두: plan=일부 DENY → 실제=모두 ALLOW
+--   · INSERT: employer 3(owner/editor/collaborator) ALLOW / staff outsider 1 DENY(42501)
 --   · UPDATE/DELETE: plan 가정 정확
 
 BEGIN;
@@ -59,47 +62,80 @@ SELECT is(
 );
 
 -- ============================================================================
--- INSERT (4 케이스) — job_postings_insert_authenticated 가 모든 인증 ALLOW.
--- 매트릭스는 정책 동작 검증이며, 비즈니스 권한은 app layer 책임 (RPC 또는 클라이언트).
+-- INSERT (4 케이스) — prod 실측(2026-07-12, baseline 파리티):
+--   PERMISSIVE jp_insert: get_my_role() = ANY('{admin,employer}')  ← 앱-역할 게이트
+--   RESTRICTIVE jp_container_no_direct_insert: status <> 'container' (active라 항상 통과)
+-- get_my_role() = auth.jwt()->'app_metadata'->>'role'. 하네스 jpc_test_set_user()는
+-- app_metadata 없는 JWT를 만들어 get_my_role()=''(게이트 실패)가 되므로, 여기서는 prod의
+-- 실제 employer/staff JWT가 싣는 app_metadata.role을 인라인 주입한다(픽스처 수정 없이).
+-- 페르소나 앱-역할(픽스처 jpc_test_seed): owner/editor/collaborator=employer, outsider=staff.
+--   ⇒ employer 3 ALLOW / staff outsider 1 DENY(42501).
 -- ============================================================================
-SELECT jpc_test_set_user((current_setting('jpc.owner_id'))::uuid);
+
+-- owner (employer) → ALLOW
+DO $$ BEGIN
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', current_setting('jpc.owner_id'), 'role', 'authenticated',
+                      'app_metadata', json_build_object('role', 'employer'))::text, true);
+  PERFORM set_config('role', 'authenticated', true);
+END $$;
 SELECT lives_ok(
   $$INSERT INTO public.job_postings (owner_id, owner_name, workspace_id, title, status, posting_type,
                                      work_date, work_dates, total_positions, filled_positions, view_count,
                                      schema_version, contact_phone)
     VALUES ((current_setting('jpc.owner_id'))::uuid, 'o', (current_setting('jpc.ws_id'))::uuid, 'p1', 'active', 'regular',
             (current_date+1)::text, ARRAY[(current_date+1)::text], 1, 0, 0, 3, '+82101234567')$$,
-  'job_postings INSERT: owner'
+  'job_postings INSERT: owner (employer 역할 게이트 통과)'
 );
 
-SELECT jpc_test_set_user((current_setting('jpc.editor_id'))::uuid);
+-- ws_editor (employer) → ALLOW
+DO $$ BEGIN
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', current_setting('jpc.editor_id'), 'role', 'authenticated',
+                      'app_metadata', json_build_object('role', 'employer'))::text, true);
+  PERFORM set_config('role', 'authenticated', true);
+END $$;
 SELECT lives_ok(
   $$INSERT INTO public.job_postings (owner_id, owner_name, workspace_id, title, status, posting_type,
                                      work_date, work_dates, total_positions, filled_positions, view_count,
                                      schema_version, contact_phone)
     VALUES ((current_setting('jpc.editor_id'))::uuid, 'e', (current_setting('jpc.ws_id'))::uuid, 'p2', 'active', 'regular',
             (current_date+1)::text, ARRAY[(current_date+1)::text], 1, 0, 0, 3, '+82101234567')$$,
-  'job_postings INSERT: ws_editor'
+  'job_postings INSERT: ws_editor (employer 역할 게이트 통과)'
 );
 
-SELECT jpc_test_set_user((current_setting('jpc.collab_id'))::uuid);
+-- collaborator (employer) → ALLOW. 페르소나명은 공고 관계일 뿐, 앱-역할은 employer라
+-- 순수 역할 게이트를 통과한다(구세대 계약처럼 workspace 관계를 보지 않음).
+DO $$ BEGIN
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', current_setting('jpc.collab_id'), 'role', 'authenticated',
+                      'app_metadata', json_build_object('role', 'employer'))::text, true);
+  PERFORM set_config('role', 'authenticated', true);
+END $$;
 SELECT lives_ok(
   $$INSERT INTO public.job_postings (owner_id, owner_name, workspace_id, title, status, posting_type,
                                      work_date, work_dates, total_positions, filled_positions, view_count,
                                      schema_version, contact_phone)
     VALUES ((current_setting('jpc.collab_id'))::uuid, 'c', (current_setting('jpc.ws_id'))::uuid, 'p3', 'active', 'regular',
             (current_date+1)::text, ARRAY[(current_date+1)::text], 1, 0, 0, 3, '+82101234567')$$,
-  'job_postings INSERT: collaborator (정책상 ALLOW)'
+  'job_postings INSERT: collaborator (employer-tier 역할 게이트 통과)'
 );
 
-SELECT jpc_test_set_user((current_setting('jpc.outsider_id'))::uuid);
-SELECT lives_ok(
+-- outsider (staff) → DENY 42501. get_my_role()=staff 라 jp_insert 역할 게이트 실패.
+DO $$ BEGIN
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', current_setting('jpc.outsider_id'), 'role', 'authenticated',
+                      'app_metadata', json_build_object('role', 'staff'))::text, true);
+  PERFORM set_config('role', 'authenticated', true);
+END $$;
+SELECT throws_ok(
   $$INSERT INTO public.job_postings (owner_id, owner_name, workspace_id, title, status, posting_type,
                                      work_date, work_dates, total_positions, filled_positions, view_count,
                                      schema_version, contact_phone)
     VALUES ((current_setting('jpc.outsider_id'))::uuid, 'x', (current_setting('jpc.ws_id'))::uuid, 'p4', 'active', 'regular',
             (current_date+1)::text, ARRAY[(current_date+1)::text], 1, 0, 0, 3, '+82101234567')$$,
-  'job_postings INSERT: outsider (정책상 ALLOW — app layer 권한 검사 필수)'
+  '42501', NULL,
+  'job_postings INSERT: outsider 차단 (staff 역할, prod 역할 게이트 실패)'
 );
 
 -- ============================================================================

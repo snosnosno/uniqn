@@ -37,10 +37,12 @@ BEGIN
   VALUES
     (v_owner, '__sql_fixture_wg_owner@test.local', 'authenticated', 'authenticated', '', '{"role":"employer"}'::jsonb, '{"name":"WG_OWNER"}'::jsonb, now(), now()),
     (v_staff, '__sql_fixture_wg_staff@test.local', 'authenticated', 'authenticated', '', '{"role":"staff"}'::jsonb,    '{"name":"WG_STAFF"}'::jsonb, now(), now());
+  -- baseline(2026-07-12): on_auth_user_created 트리거 공존(선점 행/기본 워크스페이스 정리)
   INSERT INTO public.users (id, email, name, role, is_active, created_at, updated_at)
   VALUES
     (v_owner, '__sql_fixture_wg_owner@test.local', 'WG_OWNER', 'employer'::user_role, true, now(), now()),
-    (v_staff, '__sql_fixture_wg_staff@test.local', 'WG_STAFF', 'staff'::user_role,    true, now(), now());
+    (v_staff, '__sql_fixture_wg_staff@test.local', 'WG_STAFF', 'staff'::user_role,    true, now(), now())
+  ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, role = EXCLUDED.role, is_active = EXCLUDED.is_active;
   INSERT INTO public.workspaces (id, name, owner_id, created_at, updated_at)
   VALUES (v_ws, '__sql_fixture_wg_ws', v_owner, now(), now());
 

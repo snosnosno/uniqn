@@ -1,5 +1,12 @@
 # prod↔repo 스키마 정합화 계획 (baseline squash)
 
+> ✅ **2026-07-12 실행 완료** (브랜치 `worktree-parity-baseline-20260711`). Option B 7단계 전부 수행:
+> PG17.6 스택 정합 · prod pg_dump baseline(+프렐류드/glue/데이터시드 4파일) · 248마이그 archive/ ·
+> fresh db reset == prod(함수162·정책103·pg_temp0) · pgTAP 60파일/674 GREEN · migration repair 5버전 ·
+> `parity-smoke.yml` CI 가드(요구 시크릿 `PROD_DB_URL`). pg_temp 62함수+오버로드 정리는
+> `20260711100000` 마이그로 prod 적용(red-green). 실행 중 발견 함정·prod 진실 교정(정책 역할게이트,
+> FK NO ACTION, 서버앵커 등)은 메모리 `pitfall_pgdump_baseline_traps` + 커밋 메시지 참조.
+>
 > 2026-07-10 RLS/SECDEF 감사가 적발한 대규모 발산의 근본 복구 계획. 별도 세션 실행용.
 > 감사 보고서: `docs/analysis/2026-07-10-rls-secdef-parity-security-audit.md`
 

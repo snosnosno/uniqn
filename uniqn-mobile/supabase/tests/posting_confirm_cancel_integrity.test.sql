@@ -308,6 +308,9 @@ BEGIN
   DELETE FROM public.job_posting_collaborators WHERE job_posting_id = v_job;
   DELETE FROM public.job_postings WHERE id IN (v_job, v_job2, v_job3);
   DELETE FROM public.workspaces WHERE id = v_ws;
+  -- baseline(2026-07-12): on_auth_user_created 트리거 공존(선점 행/기본 워크스페이스 정리)
+  DELETE FROM public.workspaces
+   WHERE owner_id IN (v_owner, v_collab, v_stranger, v_s1, v_s2, v_s3, v_s4, v_s5, v_s6, v_s7, v_s8, v_s9, v_s10);
   DELETE FROM auth.users WHERE id IN (v_owner, v_collab, v_stranger, v_s1, v_s2, v_s3, v_s4, v_s5, v_s6, v_s7, v_s8, v_s9, v_s10);
 END $$;
 
