@@ -135,17 +135,27 @@ INSERT INTO auth.identities (
   )
 ON CONFLICT ON CONSTRAINT identities_provider_id_provider_unique DO NOTHING;
 
+-- 프로필 완성 게이트 필드(phone_verified/identity_verified/identity_provider/profile_completed)는
+-- 2026-07-13 prod 실측: 3계정 모두 portone_inicis 인증 완료 상태. 이 값이 없으면 앱이 인증 후
+-- 약관/프로필 완성 화면으로 리다이렉트해 홈("내 지원 현황") 진입이 막힌다 → e2e 로그인 후 전 화면 실패.
 INSERT INTO public.users (
-  id, email, name, role, phone, created_at, updated_at
+  id, email, name, role, phone,
+  phone_verified, identity_verified, identity_verified_at, identity_provider, profile_completed,
+  created_at, updated_at
 ) VALUES
-  ('a1111111-1111-4111-a111-111111111111', 'review-staff@uniqn.app',    '심사용 스태프', 'staff',    '+821011110001', NOW(), NOW()),
-  ('b2222222-2222-4222-b222-222222222222', 'review-employer@uniqn.app', '심사용 구인자', 'employer', '+821022220002', NOW(), NOW()),
-  ('c3333333-3333-4333-c333-333333333333', 'review-admin@uniqn.app',    '심사용 관리자', 'admin',    '+821033330003', NOW(), NOW())
+  ('a1111111-1111-4111-a111-111111111111', 'review-staff@uniqn.app',    '심사용 스태프', 'staff',    '+821011110001', true, true, NOW(), 'portone_inicis', true, NOW(), NOW()),
+  ('b2222222-2222-4222-b222-222222222222', 'review-employer@uniqn.app', '심사용 구인자', 'employer', '+821022220002', true, true, NOW(), 'portone_inicis', true, NOW(), NOW()),
+  ('c3333333-3333-4333-c333-333333333333', 'review-admin@uniqn.app',    '심사용 관리자', 'admin',    '+821033330003', true, true, NOW(), 'portone_inicis', true, NOW(), NOW())
 ON CONFLICT (id) DO UPDATE SET
   email = EXCLUDED.email,
   name = EXCLUDED.name,
   role = EXCLUDED.role,
   phone = EXCLUDED.phone,
+  phone_verified = EXCLUDED.phone_verified,
+  identity_verified = EXCLUDED.identity_verified,
+  identity_verified_at = EXCLUDED.identity_verified_at,
+  identity_provider = EXCLUDED.identity_provider,
+  profile_completed = EXCLUDED.profile_completed,
   updated_at = NOW();
 
 -- -----------------------------------------------------------------------------
@@ -213,20 +223,30 @@ INSERT INTO auth.identities (
   NOW(), NOW(), NOW()
 ) ON CONFLICT ON CONSTRAINT identities_provider_id_provider_unique DO NOTHING;
 
+-- "미인증"은 employer 신청이 pending(아래 employer_applications)이라는 뜻 — 개인 프로필
+-- 인증은 완료 상태(2026-07-13 prod 실측: portone_inicis). 미완이면 앱이 프로필 게이트에서 막힘.
 INSERT INTO public.users (
-  id, email, name, role, phone, created_at, updated_at
+  id, email, name, role, phone,
+  phone_verified, identity_verified, identity_verified_at, identity_provider, profile_completed,
+  created_at, updated_at
 ) VALUES (
   'd4444444-4444-4444-d444-444444444444',
   'pending-employer-staff@uniqn.app',
   '심사용 미인증 구인자',
   'staff',
   '+821044440004',
+  true, true, NOW(), 'portone_inicis', true,
   NOW(), NOW()
 ) ON CONFLICT (id) DO UPDATE SET
   email = EXCLUDED.email,
   name = EXCLUDED.name,
   role = EXCLUDED.role,
   phone = EXCLUDED.phone,
+  phone_verified = EXCLUDED.phone_verified,
+  identity_verified = EXCLUDED.identity_verified,
+  identity_verified_at = EXCLUDED.identity_verified_at,
+  identity_provider = EXCLUDED.identity_provider,
+  profile_completed = EXCLUDED.profile_completed,
   updated_at = NOW();
 
 INSERT INTO public.employer_applications (
