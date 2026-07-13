@@ -20,6 +20,7 @@ import {
 } from './portOneIdentityService';
 import { AuthError, ERROR_CODES, isRetryableError } from '@/errors';
 import { createClientRateLimiter } from '@/utils/security';
+import { getTodayString } from '@/utils/date/core';
 import { handleServiceError, maskValue } from '@/errors/serviceErrorHandler';
 import {
   trackLogin,
@@ -55,7 +56,7 @@ function trackSignupAnalytics(uid: string, role: 'staff' | 'employer' | 'admin')
   setUserId(uid);
   setUserProperties({
     user_role: role,
-    account_created_date: new Date().toISOString().split('T')[0],
+    account_created_date: getTodayString(),
     has_verified_phone: true,
   });
 }

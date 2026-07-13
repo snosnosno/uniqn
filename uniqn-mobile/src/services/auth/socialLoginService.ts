@@ -23,6 +23,7 @@ import { AuthError, BusinessError, ERROR_CODES, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { withTimeout } from '@/utils/timeout';
 import { sanitizeInput } from '@/utils/security';
+import { getTodayString } from '@/utils/date/core';
 import { clearProtectedAuthFlow, protectAuthFlow } from '@/shared/auth/protectedAuthFlow';
 import {
   trackLogin,
@@ -644,7 +645,7 @@ export async function completeSocialProfile(
     setUserId(uid);
     setUserProperties({
       user_role: 'staff',
-      account_created_date: new Date().toISOString().split('T')[0],
+      account_created_date: getTodayString(),
       has_verified_phone: true,
     });
 
