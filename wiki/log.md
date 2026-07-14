@@ -58,3 +58,8 @@
 - 신규 sources 1: [[job-posting-kiosk-order-sheet]](PR#246 본·#247 후속 — 무엇/왜·출하 게이트 실측·재발 교훈·폴리시 소건). 신규 decisions 1: [[order-sheet-form-contract]](3제네릭 zodResolver z.input/z.output·canonical 매퍼 등가성·Design B 승인 일탈·#244 지연전환·중첩Modal embedded·guaranteedHours PROVIDED_FLAG 함정).
 - [[whitelist-silent-drop]] 갱신: 규칙 #5 "읽기 배선 ≠ 표시 UI" 추가(conditions 읽기 hydration은 #246 완료였으나 표시 UI JobDetail 섹션은 별개 갭→#247 완결). sources에 PR#247·JobDetail.tsx 추가.
 - index 2항목 추가(decisions·sources 각 1). 원천: PR#246(`beb28d1f0`)·PR#247(`0326682f4`)·마이그 job_postings_conditions·OTA group `4193f9ab`·memory(project_job_posting_kiosk_order_sheet).
+
+## [2026-07-15] note | 구인 필터·주문서 후속 머지 6건 (#249~#254) — 세션랩 이력 기록
+- **필터 3축 완결**: P1 지역(#250)·P2P3 역할/급여(#251, prod 마이그 2건)·**지역 전국 3단계 택소노미(#254**, `bfb83ce28`, 67→277 slug·그룹 접두 like 압축으로 URL 한도 근본수정·DB 변경 0**)**. 잔여=OTA·실기기 QA(사용자 게이트).
+- **주문서 후속 UX 전량 출하**: S3+S2 카드조건·역할별급여(#252)·S1 일정그룹 복원(#253) 머지 + OTA `e01cdfc0`(2026-07-15). #249는 테스트 수정 핸드오프 문서.
+- 택소노미 설계결정(8권역 하이브리드·시 slug="시 전체" 오버로드·구=부모 시 포함)의 wiki 졸업(/ingest)은 미실시 — 후속 후보. 상세=CHANGELOG Unreleased·memory(project_posting_filter_p1_p2_p3·project_region_taxonomy_3level_20260714).
