@@ -32,6 +32,7 @@ import { WelfareSheet } from './sheets/WelfareSheet';
 import { TaxSheet } from './sheets/TaxSheet';
 import { ConditionsSheet } from './sheets/ConditionsSheet';
 import { PreQuestionsSheet } from './sheets/PreQuestionsSheet';
+import { PresetCarousel, type OrderSheetPreset } from './PresetCarousel';
 import { DatePickerModal } from '@/components/employer/job-form/modals/DatePickerModal';
 import type { PostingType } from '@/types/jobPosting';
 
@@ -52,8 +53,10 @@ export interface OrderSheetScreenProps {
   onDirtyChange?: (dirty: boolean) => void;
   /** ContactSheet "내 프로필 번호" 라디오용 — create.tsx가 profile.phone 전달 */
   myPhone?: string;
-  /** Task 9 프리셋 캐러셀 자리 */
-  headerSlot?: React.ReactNode;
+  /** 프리셋 캐러셀(마지막 공고 + 저장 템플릿) — create.tsx가 조립해 전달(Task 9). */
+  presets?: OrderSheetPreset[];
+  /** "＋ 저장" 카드 → 현재 폼 값을 상위(create.tsx)로 넘겨 템플릿 저장 모달을 연다. */
+  onSaveTemplate?: (values: OrderSheetFormValues) => void;
 }
 
 export function OrderSheetScreen({
@@ -63,7 +66,8 @@ export function OrderSheetScreen({
   onSwitchToLegacyForm,
   onDirtyChange,
   myPhone = '',
-  headerSlot,
+  presets,
+  onSaveTemplate,
 }: OrderSheetScreenProps) {
   const { addToast } = useToastStore();
   // 3제네릭 필수(Global Constraints·스파이크 실측): 폼 상태=z.input, handleSubmit 콜백=z.output
@@ -138,9 +142,45 @@ export function OrderSheetScreen({
     [values.timeSlots]
   );
 
-  // 최근 제목/장소 — Task 9(프리셋 캐러셀)에서 템플릿 title/location 으로 채운다. 그 전까지 빈 배열.
-  const recentTitles: string[] = [];
-  const recentLocations: OrderSheetLocation[] = [];
+  // 최근 제목/장소 — 프리셋(마지막 공고 + 템플릿)의 title/location 으로 채운다.
+  // ⚠️ useMemo 참조 안정화 필수: 매 렌더 새 배열이면 시트 effect 의존이 흔들려 편집 상태가 리셋된다(Task 6 리뷰 승계).
+  const recentTitles = useMemo<string[]>(() => {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const p of presets ?? []) {
+      const t = p.values.title?.trim();
+      if (t && !seen.has(t)) {
+        seen.add(t);
+        out.push(t);
+      }
+    }
+    return out;
+  }, [presets]);
+
+  const recentLocations = useMemo<OrderSheetLocation[]>(() => {
+    const seen = new Set<string>();
+    const out: OrderSheetLocation[] = [];
+    for (const p of presets ?? []) {
+      const loc = p.values.location;
+      if (!loc?.name) continue;
+      const key = `${loc.name}:${loc.address ?? ''}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(loc);
+    }
+    return out;
+  }, [presets]);
+
+  // 프리셋 카드 탭 → 주문서 전체를 그 구성으로 교체(RHF reset). 저장 카드 탭 → 현재 값 상위로 전달.
+  const handleApplyPreset = useCallback(
+    (preset: OrderSheetPreset) => {
+      form.reset(preset.values);
+    },
+    [form]
+  );
+  const handleSavePreset = useCallback(() => {
+    onSaveTemplate?.(form.getValues());
+  }, [onSaveTemplate, form]);
 
   // dirty 상태 상위 동기화 — useUnsavedChangesGuard(create.tsx)가 주문서 경로에서도 작동하도록
   useEffect(() => {
@@ -197,7 +237,13 @@ export function OrderSheetScreen({
   return (
     <View className="flex-1 bg-surface-page">
       <ScrollView className="flex-1 px-4 pt-3" contentContainerClassName="pb-28">
-        {headerSlot}
+        {presets !== undefined && (
+          <PresetCarousel
+            presets={presets}
+            onSelect={handleApplyPreset}
+            onSavePress={handleSavePreset}
+          />
+        )}
         <View className="mb-3">
           <TypeSegment value={values.postingType} onChange={handleTypeChange} />
         </View>

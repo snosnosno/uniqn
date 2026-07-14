@@ -2,6 +2,7 @@ import {
   valuesToDraft,
   draftToValues,
   templateToValues,
+  formValuesToDraft,
   gridParamsToValues,
   valuesToCreateInput,
   initialOrderSheetValues,
@@ -9,7 +10,7 @@ import {
 import { buildCreateJobPostingInput } from '@/utils/job-posting/submission';
 import { INITIAL_JOB_POSTING_DRAFT } from '@/types/jobPostingDraft';
 import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types/jobPostingForm';
-import type { OrderSheetValues } from '@/schemas/orderSheet.schema';
+import type { OrderSheetFormValues, OrderSheetValues } from '@/schemas/orderSheet.schema';
 import type { JobPostingFormData } from '@/types/jobPostingForm';
 import type { JobPostingTemplate } from '@/types/jobTemplate';
 import type { CreateJobPostingInput } from '@/types/jobPosting';
@@ -259,6 +260,43 @@ describe('gridParamsToValues (정규화 + 직접 조립 — INITIAL 경유 금�
   });
   it('파라미터 없으면 initialOrderSheetValues와 동일 (venueId 키 부재 무회귀 계약)', () => {
     expect(gridParamsToValues({})).toEqual(initialOrderSheetValues());
+  });
+});
+
+describe('formValuesToDraft (프리셋 저장 — z.input 폼 값 → draft, 검증 우회)', () => {
+  it('optional/default 필드가 비어도 SSOT 기본값으로 채워 draft 를 만든다', () => {
+    // 제목·장소·역할만 채운 미완성(dates 없음) 상태 — 템플릿 저장은 검증 게이트를 거치지 않는다.
+    const partial: OrderSheetFormValues = {
+      postingType: 'regular',
+      title: '주말 딜러',
+      location: { name: '라운더스 홀덤펍' },
+      contactPhone: '010-1234-5678',
+      dates: [],
+      timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] }],
+      salary: { type: 'hourly', amount: 20000 },
+    };
+    const draft = formValuesToDraft(partial);
+    expect(draft.title).toBe('주말 딜러');
+    expect(draft.description).toBe('');
+    // useSameSalary 미지정 → 기본 true → compensation.mode=shared
+    expect(draft.compensation.mode).toBe('shared');
+    expect(draft.questions.items).toEqual([]);
+    expect(draft.location).toEqual({ name: '라운더스 홀덤펍' });
+  });
+
+  it('장소 미선택(null) 상태도 저장 가능 — draft.location=null', () => {
+    const partial: OrderSheetFormValues = {
+      postingType: 'regular',
+      title: '제목만',
+      location: null,
+      contactPhone: '010-0000-0000',
+      dates: [],
+      timeSlots: [],
+      salary: { type: 'hourly', amount: 20000 },
+    };
+    const draft = formValuesToDraft(partial);
+    expect(draft.location).toBeNull();
+    expect(draft.title).toBe('제목만');
   });
 });
 

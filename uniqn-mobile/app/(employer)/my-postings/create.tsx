@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
-import { useCreateJobPosting } from '@/hooks/useJobManagement';
+import { useCreateJobPosting, useMyJobPostings } from '@/hooks/useJobManagement';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { useTemplateManager } from '@/hooks/useTemplateManager';
 import { useToastStore } from '@/stores/toastStore';
@@ -13,16 +13,24 @@ import type { JobPostingFormData } from '@/types';
 import type { JobPostingDraft } from '@/types/jobPostingDraft';
 import {
   buildCreateJobPostingInput,
+  buildJobPostingDraft,
   draftToFormData,
   patchJobPostingDraft,
 } from '@/utils/job-posting/submission';
 import { buildGridPrefillDraft } from '@/utils/job-posting/gridPrefill';
-import { gridParamsToValues, valuesToCreateInput } from '@/utils/order-sheet/mappers';
+import {
+  draftToValues,
+  formValuesToDraft,
+  gridParamsToValues,
+  templateToValues,
+  valuesToCreateInput,
+} from '@/utils/order-sheet/mappers';
 import { JobPostingScrollForm } from '@/components/employer/job-form';
 import { TemplateModal } from '@/components/employer/job-form/modals/TemplateModal';
 import { LoadTemplateModal } from '@/components/employer/job-form/modals/LoadTemplateModal';
 import { StackHeader } from '@/components/headers';
 import { OrderSheetScreen } from '@/components/employer/order-sheet/OrderSheetScreen';
+import type { OrderSheetPreset } from '@/components/employer/order-sheet/PresetCarousel';
 import type { OrderSheetFormValues, OrderSheetValues } from '@/schemas/orderSheet.schema';
 
 export default function CreateJobPostingScreen() {
@@ -68,6 +76,66 @@ export default function CreateJobPostingScreen() {
 
   const createJobPosting = useCreateJobPosting();
   const templateManager = useTemplateManager();
+
+  // 프리셋 캐러셀 데이터 소스 — 내 공고 목록에서 진짜 최신 1건("마지막 공고").
+  // 목록은 status 버킷별 concat(active→capacity_full→closed, 각 created_at desc)이라 [0]이
+  // 전역 최신이 아닐 수 있어 createdAt 최댓값으로 선별한다(jobService.getMyJobPostings 실측).
+  const myPostingsQuery = useMyJobPostings();
+  const lastPosting = useMemo(() => {
+    const list = myPostingsQuery.data ?? [];
+    if (list.length === 0) return undefined;
+    return list.reduce((latest, p) =>
+      (p.createdAt?.getTime() ?? 0) > (latest.createdAt?.getTime() ?? 0) ? p : latest
+    );
+  }, [myPostingsQuery.data]);
+
+  // 프리셋 조립 — 마지막 공고 + 저장된 템플릿. 주문서로 표현 불가한 공고/템플릿(fixed·대회·
+  // 날짜별 시간대 상이)은 draftToValues/templateToValues 가 throw 하므로 try/catch 로 조용히 제외한다.
+  const presets = useMemo<OrderSheetPreset[]>(() => {
+    const out: OrderSheetPreset[] = [];
+    if (lastPosting) {
+      try {
+        const values = draftToValues(buildJobPostingDraft(lastPosting));
+        out.push({
+          id: 'last',
+          title: '⚡ 마지막 공고',
+          subtitle: values.title,
+          values: { ...values, dates: [] },
+        });
+      } catch {
+        // fixed·대회 등 주문서 밖 공고는 프리셋에서 제외
+      }
+    }
+    for (const t of templateManager.templates) {
+      try {
+        out.push({
+          id: t.id,
+          title: t.name,
+          subtitle: t.templateData.title ?? '',
+          values: templateToValues(t),
+        });
+      } catch {
+        // dated 아닌 템플릿은 제외
+      }
+    }
+    return out;
+  }, [lastPosting, templateManager.templates]);
+
+  // 주문서 "＋ 저장" — 현재 폼 값을 draft 로 굳혀 두고(검증 우회) 템플릿 이름 입력 모달을 연다.
+  // ⚠️ handleSaveTemplate 직접 호출 금지: templateName 이 비면 조용한 no-op(useTemplateManager) →
+  //    반드시 openTemplateModal + TemplateModal 경유로 저장한다.
+  const [orderSheetSaveDraft, setOrderSheetSaveDraft] = useState<JobPostingDraft | null>(null);
+  const handleOrderSheetSaveTemplate = useCallback(
+    (values: OrderSheetFormValues) => {
+      setOrderSheetSaveDraft(formValuesToDraft(values));
+      templateManager.openTemplateModal();
+    },
+    [templateManager]
+  );
+  const handleSaveOrderSheetTemplate = useCallback(async () => {
+    if (!orderSheetSaveDraft) return;
+    await templateManager.handleSaveTemplate(orderSheetSaveDraft);
+  }, [templateManager, orderSheetSaveDraft]);
 
   const updateFormData = useCallback((data: Partial<JobPostingFormData>) => {
     // M7 복귀 경로: 레거시 상세폼에서 유형을 지원/급구로 되돌리면 주문서로 복귀
@@ -196,7 +264,23 @@ export default function CreateJobPostingScreen() {
           onSwitchToLegacyForm={handleSwitchToLegacyForm}
           onDirtyChange={setIsDirty}
           myPhone={profile?.phone ?? ''}
+          presets={presets}
+          onSaveTemplate={handleOrderSheetSaveTemplate}
         />
+        {/* 프리셋 "＋ 저장" 이름 입력 모달 — 주문서 시트가 닫힌 상태(캐러셀은 본문 스크롤)에서만 열려
+            중첩 RN Modal(#244) 위험이 없다. onSave 는 굳혀 둔 orderSheetSaveDraft 로 저장. */}
+        {templateManager.isTemplateModalOpen ? (
+          <TemplateModal
+            visible={templateManager.isTemplateModalOpen}
+            onClose={templateManager.closeTemplateModal}
+            templateName={templateManager.templateName}
+            templateDescription={templateManager.templateDescription}
+            onTemplateNameChange={templateManager.setTemplateName}
+            onTemplateDescriptionChange={templateManager.setTemplateDescription}
+            onSave={handleSaveOrderSheetTemplate}
+            isSaving={templateManager.isSavingTemplate}
+          />
+        ) : null}
       </SafeAreaView>
     );
   }

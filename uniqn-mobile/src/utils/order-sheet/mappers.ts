@@ -189,6 +189,29 @@ export function templateToValues(template: JobPostingTemplate): OrderSheetFormVa
   return { ...values, dates: [] };
 }
 
+/**
+ * 프리셋 "저장" 경로 전용 — 검증 전(z.input) 폼 값을 draft 로 변환한다.
+ *
+ * 제출(valuesToCreateInput)과 달리 날짜 미완성·장소 미선택 상태에서도 템플릿으로 저장하므로
+ * z.output 검증 게이트를 거치지 않는다. z.input 의 optional/default 필드를 스키마 기본값과
+ * 동일하게 채운 뒤 valuesToDraft(단일 조립 계층)로 위임한다. 장소 null 은 draft.location(nullable)로
+ * 그대로 흘려보낸다(비어 있으면 extractTemplateData 가 저장에서 드롭).
+ */
+export function formValuesToDraft(values: OrderSheetFormValues): JobPostingDraft {
+  return valuesToDraft({
+    ...values,
+    description: values.description ?? '',
+    useSameSalary: values.useSameSalary ?? true,
+    roleSalaries: values.roleSalaries ?? [],
+    allowances: values.allowances ?? {},
+    conditions: values.conditions ?? {},
+    usesPreQuestions: values.usesPreQuestions ?? false,
+    preQuestions: values.preQuestions ?? [],
+    // z.output 은 refine 으로 location 을 non-null 로 좁히지만, 저장 경로는 미선택(null) 도 허용한다.
+    location: values.location as OrderSheetValues['location'],
+  });
+}
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
