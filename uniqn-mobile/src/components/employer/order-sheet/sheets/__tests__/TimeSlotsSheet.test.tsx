@@ -114,6 +114,20 @@ describe('TimeSlotsSheet', () => {
     expect(onEditSlotRoles).toHaveBeenCalledWith(0);
   });
 
+  it('슬롯 역할 요약은 한글 라벨(딜러 2) — raw key(dealer) 노출 금지', () => {
+    const { getByText, queryByText } = render(
+      <TimeSlotsSheet
+        visible
+        value={[{ startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] }]}
+        onConfirm={jest.fn()}
+        onClose={jest.fn()}
+        onEditSlotRoles={jest.fn()}
+      />
+    );
+    expect(getByText('딜러 2')).toBeTruthy();
+    expect(queryByText('dealer 2')).toBeNull();
+  });
+
   it('확인 → onConfirm(슬롯) + onClose', () => {
     const onConfirm = jest.fn();
     const onClose = jest.fn();

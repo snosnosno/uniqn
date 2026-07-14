@@ -12,6 +12,7 @@ import { SheetModal } from '@/components/ui/SheetModal';
 import { Button } from '@/components/ui/Button';
 import { TimeWheelPicker, type TimeValue } from '@/components/ui/TimeWheelPicker';
 import { PlusIcon, ChevronRightIcon } from '@/components/icons';
+import { roleName } from '../orderRowMeta';
 import type { OrderSheetValues } from '@/schemas/orderSheet.schema';
 
 type Slots = OrderSheetValues['timeSlots'];
@@ -35,9 +36,8 @@ const toStartTime = (t: TimeValue) =>
   `${String(t.hour).padStart(2, '0')}:${String(t.minute).padStart(2, '0')}`;
 
 const rolesSummary = (roles: Slots[number]['roles']) =>
-  roles
-    .map((r) => `${r.role === 'other' ? (r.customRole ?? '기타') : r.role} ${r.count}`)
-    .join(' · ');
+  // rows 요약(orderRowMeta.summarizeRoles)과 동일하게 한글 라벨 사용 — raw key("dealer") 노출 금지.
+  roles.map((r) => `${roleName(r.role, r.customRole)} ${r.count}`).join(' · ');
 
 export function TimeSlotsSheet({
   visible,

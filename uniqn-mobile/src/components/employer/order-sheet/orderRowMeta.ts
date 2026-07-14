@@ -71,7 +71,8 @@ const WELFARE_LABEL = {
 } as const;
 const START_TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-const roleName = (role: string, customRole?: string) =>
+/** 역할 표시명 — 'other'는 customRole(없으면 '기타'), 그 외는 STAFF_ROLES 한글명. raw key 노출 금지(요약 일관성). */
+export const roleName = (role: string, customRole?: string) =>
   role === 'other'
     ? (customRole ?? '기타')
     : (STAFF_ROLES.find((r) => r.key === role)?.name ?? role);

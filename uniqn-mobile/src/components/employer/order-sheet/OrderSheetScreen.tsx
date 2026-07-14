@@ -86,7 +86,9 @@ export function OrderSheetScreen({
     setActiveSheet(null);
     pendingSheetRef.current = setTimeout(() => {
       pendingSheetRef.current = null;
-      setActiveSheet(next);
+      // pending 창(300ms) 동안 사용자가 다른 시트를 열었으면(cur !== null) 그 선택을 존중 —
+      // 예약 타이머가 사용자가 연 시트를 같은 렌더 패스에서 갈아치우는 레이스 차단.
+      setActiveSheet((cur) => (cur === null ? next : cur));
     }, SHEET_DISMISS_ANIMATION_MS);
   }, []);
 
@@ -95,8 +97,10 @@ export function OrderSheetScreen({
     activeSheet !== null && typeof activeSheet === 'object' ? activeSheet : null;
 
   // 행 탭 라우팅 — roles 행은 슬롯 수에 따라 분기(1개=직접 역할 편집, 그 외=TimeSlotsSheet). 나머지는 그대로.
+  // switchSheet 지연 전환 창(300ms) 중에는 무시 — 그 사이 새 시트를 열면 예약 타이머와 충돌(#244 레이스).
   const handleRowPress = useCallback(
     (key: OrderRowKey) => {
+      if (pendingSheetRef.current) return;
       if (key === 'roles') {
         const count = values.timeSlots?.length ?? 0;
         setActiveSheet(
@@ -151,7 +155,8 @@ export function OrderSheetScreen({
           .find((k): k is OrderRowKey => k !== null) ??
         null;
       if (next !== null) {
-        setActiveSheet(next);
+        // 행 탭과 동일 변환 경유 — 'roles'/'time' 등은 setActiveSheet 직접 넣으면 시트 분기에 없어 무반응(H5 죽은 버튼).
+        handleRowPress(next);
         return;
       }
       addToast({ type: 'error', message: '입력값을 확인해주세요.' });
