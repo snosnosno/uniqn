@@ -193,6 +193,24 @@ describe('draftToValues ↔ valuesToDraft 왕복', () => {
     });
   });
 
+  it('고아(timeSlots에서 사라진 역할) 엔트리는 defaultSalary 최저값 산정에서 제외한다 (리뷰 H-1)', () => {
+    // 고아 잔류(금액 보존)는 폼 상태 한정 — 쓰기 시 실 역할이 아닌 금액이 카드 헤드라인·
+    // 정산 폴백에 과소 공시로 흘러가면 안 된다. baseValues의 timeSlots는 dealer+serving.
+    const withOrphan: OrderSheetValues = {
+      ...baseValues,
+      useSameSalary: false,
+      roleSalaries: [
+        { role: 'dealer', salary: { type: 'hourly', amount: 25000 } },
+        { role: 'serving', salary: { type: 'hourly', amount: 26000 } },
+        { role: 'floor', salary: { type: 'hourly', amount: 15000 } }, // 고아 — 슬롯에 없음
+      ],
+    };
+    expect(valuesToDraft(withOrphan).compensation.defaultSalary).toEqual({
+      type: 'hourly',
+      amount: 25000,
+    });
+  });
+
   it('by_role 전원 협의(other)면 defaultSalary도 협의로 기록된다', () => {
     const byRole: OrderSheetValues = {
       ...baseValues,

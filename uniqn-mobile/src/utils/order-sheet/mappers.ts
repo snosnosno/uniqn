@@ -95,10 +95,19 @@ function toRoleCatalog(values: OrderSheetValues): PostingRoleCatalogEntry[] {
  * defaultSalary 소비처 실측 3곳(정산 폴백 SettlementCalculator·카드 a11y 헤드라인
  * postingSurfaceModel·급여 필터 salary_*_max)이 폴백으로 읽어도 "최저가부터" 의미가 되도록 한다.
  * 협의(other) 행은 금액 축이 없어 최저값 산정에서 제외 — 전원 협의면 협의로 기록.
+ * 고아(timeSlots에서 사라진 역할) 엔트리도 제외(리뷰 H-1) — 어떤 실 역할도 지급하지 않는 금액이
+ * 카드 헤드라인·정산 폴백에 기록되는 과소 공시를 막는다. 고아 잔류는 폼 상태 한정 결정이다.
  */
 function resolveDefaultSalary(values: OrderSheetValues): SalaryInfo {
   if (values.useSameSalary || values.roleSalaries.length === 0) return values.salary;
-  const priced = values.roleSalaries.filter((rs) => rs.salary.type !== 'other');
+  const activeKeys = new Set<string>();
+  for (const slot of values.timeSlots)
+    for (const r of slot.roles) activeKeys.add(roleKey(r.role, r.customRole));
+  const active = values.roleSalaries.filter((rs) =>
+    activeKeys.has(roleKey(rs.role, rs.customRole))
+  );
+  if (active.length === 0) return values.salary;
+  const priced = active.filter((rs) => rs.salary.type !== 'other');
   if (priced.length === 0) return { type: 'other', amount: 0 };
   return priced.reduce(
     (min, rs) => (rs.salary.amount < min.amount ? rs.salary : min),
@@ -222,7 +231,6 @@ export function formValuesToDraft(values: OrderSheetFormValues): JobPostingDraft
     ...values,
     description: values.description ?? '',
     useSameSalary: values.useSameSalary ?? false, // 기본 by_role(설계 §S2.1) — 5지점 통일
-
     roleSalaries: values.roleSalaries ?? [],
     allowances: values.allowances ?? {},
     conditions: values.conditions ?? {},

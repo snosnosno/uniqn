@@ -145,7 +145,10 @@ export function OrderSheetScreen({
           type: 'success',
           message: `기본 급여 적용: ${added
             .map(
-              (rs) => `${roleName(rs.role, rs.customRole)} ${rs.salary.amount.toLocaleString()}원`
+              (rs) =>
+                `${roleName(rs.role, rs.customRole)} ${
+                  rs.salary.type === 'other' ? '협의' : `${rs.salary.amount.toLocaleString()}원`
+                }`
             )
             .join(' · ')} · 급여 행에서 수정 가능`,
         });

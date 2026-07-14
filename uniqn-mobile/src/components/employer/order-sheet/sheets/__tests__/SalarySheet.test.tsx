@@ -247,6 +247,35 @@ describe('SalarySheet', () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
+  it('confirm 시 무효 고아(비커버·비협의·0원)는 프루닝하고 유효 고아는 잔류한다 (리뷰 M-1)', () => {
+    const onConfirm = jest.fn();
+    const { getByText } = render(
+      <SalarySheet
+        visible
+        value={HOURLY_VALUE}
+        useSameSalary={false}
+        roleSalaries={[
+          { role: 'dealer', salary: { type: 'hourly', amount: 20000 } },
+          { role: 'floor', salary: { type: 'hourly', amount: 0 } }, // 무효 고아 — 제출 dead-end 원인
+          { role: 'serving', salary: { type: 'hourly', amount: 21000 } }, // 유효 고아 — 금액 보존
+        ]}
+        uniqueRoles={[DEALER]}
+        onConfirm={onConfirm}
+        onClose={jest.fn()}
+      />
+    );
+
+    fireEvent.press(getByText('확인'));
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        roleSalaries: [
+          { role: 'dealer', salary: { type: 'hourly', amount: 20000 } },
+          { role: 'serving', salary: { type: 'hourly', amount: 21000 } },
+        ],
+      })
+    );
+  });
+
   it('직접입력 금액은 1억으로 클램프된다 (Eng-M4)', () => {
     const onConfirm = jest.fn();
     const { getByText, getByTestId } = render(

@@ -170,7 +170,16 @@ export function SalarySheet({
       footer={
         <Button
           onPress={() => {
-            onConfirm({ salary, useSameSalary: same, roleSalaries: same ? [] : perRole });
+            // 무효 고아 프루닝(리뷰 M-1) — 커버 밖(비표시)이면서 검증 불가(비협의·0원)인 엔트리가
+            // 폼 상태에 남으면 zod가 거부하는데 시트에선 보이지도 고칠 수도 없는 dead-end가 된다.
+            // 유효 고아(사용자 금액·협의)는 잔류 유지(재추가 시 금액 복원 — 설계 §S2.3).
+            const pruned = perRole.filter(
+              (p) =>
+                uniqueRoles.some((u) => sameRole(p, u)) ||
+                p.salary.type === 'other' ||
+                p.salary.amount > 0
+            );
+            onConfirm({ salary, useSameSalary: same, roleSalaries: same ? [] : pruned });
             onClose();
           }}
           disabled={confirmDisabled}
