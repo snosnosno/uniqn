@@ -144,7 +144,7 @@ describe('OrderSheetScreen — 일정·모집 라우팅 + #244 전환', () => {
         initialValues={{
           ...initialOrderSheetValues(),
           title: '주말 딜러 구합니다',
-          location: { name: '강남 홀덤펍' },
+          location: { name: '강남 홀덤펍', region: '서울 강남구' },
           contactPhone: '010-1234-5678',
           scheduleGroups: [
             // 역할만 미설정 → firstUnsetRow={roles, 0}
