@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { jobPostingRepository } from '@/repositories';
 import type { PostingTypeCounts } from '@/repositories/interfaces/IJobPostingRepository';
@@ -47,6 +47,11 @@ export interface UsePostingTypeCountsOptions {
   region?: string | null;
   /** 지역 slug 목록(그룹 확장 결과). 비어있지 않으면 region 보다 우선. */
   regions?: string[];
+  /**
+   * 지역 변경으로 캐시 키가 바뀌어도 직전 카운트를 placeholder 로 유지.
+   * 필터 시트의 "공고 N건 보기" 라벨 플리커 방지용 — 목록 화면 칩은 기본값(false) 유지.
+   */
+  keepPreviousCounts?: boolean;
 }
 
 export function usePostingTypeCounts(options?: UsePostingTypeCountsOptions) {
@@ -62,6 +67,7 @@ export function usePostingTypeCounts(options?: UsePostingTypeCountsOptions) {
     staleTime: cachingPolicies.frequent,
     gcTime: cachingPolicies.standard * 2,
     enabled: status === 'authenticated',
+    ...(options?.keepPreviousCounts ? { placeholderData: keepPreviousData } : {}),
   });
 
   const counts = queryResult.isSuccess ? queryResult.data : undefined;

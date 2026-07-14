@@ -56,7 +56,9 @@ export const useJobFilterStore = create<JobFilterState>()(
       }),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
-        // 지역 상수 개편/손상 대비 — 복원 값은 항상 유효 토큰으로 정화
+        // 지역 상수 개편/손상 대비 — 복원 값은 항상 유효 토큰으로 정화.
+        // ⚠️ queueMicrotask 는 필수: MMKV 동기 hydration 은 create() 반환 전에 이 콜백을
+        // 실행하므로, 즉시 useJobFilterStore 를 참조하면 TDZ ReferenceError 로 크래시한다.
         queueMicrotask(() => {
           useJobFilterStore.setState({
             regionTokens: sanitizeRegionTokens(state.regionTokens),

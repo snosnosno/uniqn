@@ -10,7 +10,8 @@ import { memo, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Modal } from '@/components/ui/Modal';
 import { CheckIcon, MapPinIcon, SearchIcon, XMarkIcon } from '@/components/icons';
-import { SECONDARY_PALETTE } from '@/constants/colors';
+import { PRIMARY_COLORS, SECONDARY_PALETTE } from '@/constants/colors';
+import { useThemeStore } from '@/stores/themeStore';
 import {
   REGION_GROUPS,
   REGIONS_BY_GROUP,
@@ -45,6 +46,12 @@ export interface RegionFilterSheetProps {
 
 type SheetBodyProps = Omit<RegionFilterSheetProps, 'visible'>;
 
+/** 선택 체크 골드 — 라이트는 대비 확보용 primary-700 (RegionSelectModal 관례와 동일) */
+function useCheckColor(): string {
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
+  return isDarkMode ? PRIMARY_COLORS[500] : PRIMARY_COLORS[700];
+}
+
 /** 우측 그리드 칩 — 2열(48%) */
 function RegionChip({
   label,
@@ -55,6 +62,7 @@ function RegionChip({
   selected: boolean;
   onPress: () => void;
 }) {
+  const checkColor = useCheckColor();
   return (
     <Pressable
       onPress={onPress}
@@ -75,7 +83,7 @@ function RegionChip({
       >
         {label}
       </Text>
-      {selected ? <CheckIcon size={16} color="#D4AF37" /> : null}
+      {selected ? <CheckIcon size={16} color={checkColor} /> : null}
     </Pressable>
   );
 }
@@ -136,9 +144,14 @@ function SheetBody({
 
   const pendingSlugs = useMemo(() => expandRegionTokens(pending), [pending]);
   const groupCounts = useMemo(() => countRegionTokensByGroup(pending), [pending]);
+  const checkColor = useCheckColor();
 
-  // 적용 전 미리보기 카운트 — 목록/칩과 동일 스코프(getTypeCounts)
-  const { counts, hasCounts } = usePostingTypeCounts({ regions: pendingSlugs });
+  // 적용 전 미리보기 카운트 — 목록/칩과 동일 스코프(getTypeCounts).
+  // keepPreviousCounts: 토글마다 키가 바뀌어도 직전 값을 유지해 버튼 라벨 플리커 방지.
+  const { counts, hasCounts } = usePostingTypeCounts({
+    regions: pendingSlugs,
+    keepPreviousCounts: true,
+  });
 
   const sheetHeight = Math.min(Math.round(windowHeight * 0.72), 640);
 
@@ -207,7 +220,7 @@ function SheetBody({
           {isSearching ? (
             <Pressable
               onPress={() => setSearchText('')}
-              hitSlop={10}
+              hitSlop={14}
               accessibilityRole="button"
               accessibilityLabel="검색어 지우기"
             >
@@ -261,7 +274,7 @@ function SheetBody({
                       {option.group}
                     </Text>
                   </View>
-                  {selected ? <CheckIcon size={20} color="#D4AF37" /> : null}
+                  {selected ? <CheckIcon size={20} color={checkColor} /> : null}
                 </Pressable>
               );
             })
@@ -330,7 +343,7 @@ function SheetBody({
                   {activeGroup} 전체
                 </Text>
                 {pending.includes(groupToken(activeGroup)) ? (
-                  <CheckIcon size={16} color="#D4AF37" />
+                  <CheckIcon size={16} color={checkColor} />
                 ) : null}
               </Pressable>
             ) : null}
@@ -354,7 +367,11 @@ function SheetBody({
       {/* ③ 확인층: 선택 트레이 + 적용 */}
       <View className="gap-2 border-t border-secondary-100 px-4 pb-4 pt-3 dark:border-surface-overlay">
         {showCapNotice ? (
-          <Text className="font-sans text-xs text-error-600 dark:text-error-400">
+          <Text
+            accessibilityRole="alert"
+            accessibilityLiveRegion="polite"
+            className="font-sans text-xs text-error-600 dark:text-error-400"
+          >
             지역은 최대 {MAX_REGION_UNITS}개까지 선택할 수 있어요. 먼저 선택을 해제해주세요.
           </Text>
         ) : null}
@@ -370,9 +387,10 @@ function SheetBody({
                 <Pressable
                   key={`tray-${token}`}
                   onPress={() => handleToggle(token)}
+                  hitSlop={6}
                   accessibilityRole="button"
                   accessibilityLabel={`${regionTokenLabel(token)} 선택 해제`}
-                  className="min-h-[32px] flex-row items-center gap-1 rounded-full bg-primary-50 px-3 py-1 dark:bg-primary-900/30"
+                  className="min-h-[36px] flex-row items-center gap-1 rounded-full bg-primary-50 px-3 py-1 dark:bg-primary-900/30"
                 >
                   <Text className="font-sans-medium text-sm text-primary-700 dark:text-primary-300">
                     {regionTokenLabel(token)}
@@ -383,7 +401,7 @@ function SheetBody({
             </ScrollView>
             <Pressable
               onPress={() => setPending([])}
-              hitSlop={8}
+              hitSlop={12}
               accessibilityRole="button"
               accessibilityLabel="지역 선택 모두 해제"
             >
