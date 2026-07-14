@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/Button';
 import { useToastStore } from '@/stores/toastStore';
+import { SHEET_DISMISS_ANIMATION_MS } from '@/constants/animation';
 import {
   orderSheetValuesSchema,
   type OrderSheetFormValues,
@@ -23,7 +24,18 @@ import { TitleSheet } from './sheets/TitleSheet';
 import { PlaceSheet, type OrderSheetLocation } from './sheets/PlaceSheet';
 import { ContactSheet } from './sheets/ContactSheet';
 import { DescriptionSheet } from './sheets/DescriptionSheet';
+import { TimeSlotsSheet } from './sheets/TimeSlotsSheet';
+import { RolesSheet } from './sheets/RolesSheet';
+import { DatePickerModal } from '@/components/employer/job-form/modals/DatePickerModal';
 import type { PostingType } from '@/types/jobPosting';
+
+/**
+ * 활성 시트 상태 — 행 키 또는 슬롯별 역할 편집 타깃.
+ * slotRoles: 특정 시간대(slotIndex)의 역할만 편집. fromTimeSheet=true 면 확인/닫기 시 TimeSlotsSheet 로 복귀
+ * (복수 슬롯일 때 그 안에서 진입), false 면 rows 로 닫는다(단일 슬롯 직접 진입).
+ */
+type SlotRolesTarget = { key: 'slotRoles'; slotIndex: number; fromTimeSheet: boolean };
+type ActiveSheet = OrderRowKey | SlotRolesTarget | null;
 
 export interface OrderSheetScreenProps {
   initialValues: OrderSheetFormValues;
@@ -56,7 +68,46 @@ export function OrderSheetScreen({
   });
   const values = form.watch();
   const { errors, isDirty } = form.formState;
-  const [activeSheet, setActiveSheet] = useState<OrderRowKey | null>(null);
+  const [activeSheet, setActiveSheet] = useState<ActiveSheet>(null);
+
+  // 시트→시트 직접 스왑은 iOS 중첩 Modal 터치 먹통(#244)을 유발 — 먼저 닫고 dismiss 애니메이션 뒤 다음을 연다.
+  // 재진입 가드(pendingSheetRef)로 더블탭 시 이중 예약을 막고, 언마운트 시 예약을 정리한다(ScheduleDetailModal closeSheetThen 패턴).
+  const pendingSheetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearPendingSheet = useCallback(() => {
+    if (pendingSheetRef.current) {
+      clearTimeout(pendingSheetRef.current);
+      pendingSheetRef.current = null;
+    }
+  }, []);
+  useEffect(() => clearPendingSheet, [clearPendingSheet]);
+
+  const switchSheet = useCallback((next: ActiveSheet) => {
+    if (pendingSheetRef.current) return; // 재진입 가드
+    setActiveSheet(null);
+    pendingSheetRef.current = setTimeout(() => {
+      pendingSheetRef.current = null;
+      setActiveSheet(next);
+    }, SHEET_DISMISS_ANIMATION_MS);
+  }, []);
+
+  // 슬롯별 역할 편집 타깃(객체) 좁히기 — rows/기타 시트 키(문자열)와 구분
+  const slotRolesTarget: SlotRolesTarget | null =
+    activeSheet !== null && typeof activeSheet === 'object' ? activeSheet : null;
+
+  // 행 탭 라우팅 — roles 행은 슬롯 수에 따라 분기(1개=직접 역할 편집, 그 외=TimeSlotsSheet). 나머지는 그대로.
+  const handleRowPress = useCallback(
+    (key: OrderRowKey) => {
+      if (key === 'roles') {
+        const count = values.timeSlots?.length ?? 0;
+        setActiveSheet(
+          count === 1 ? { key: 'slotRoles', slotIndex: 0, fromTimeSheet: false } : 'time'
+        );
+        return;
+      }
+      setActiveSheet(key);
+    },
+    [values.timeSlots]
+  );
 
   // 최근 제목/장소 — Task 9(프리셋 캐러셀)에서 템플릿 title/location 으로 채운다. 그 전까지 빈 배열.
   const recentTitles: string[] = [];
@@ -127,7 +178,7 @@ export function OrderSheetScreen({
                 key={key}
                 state={getRowState(values, key)}
                 error={rowError(key)}
-                onPress={() => setActiveSheet(key)}
+                onPress={() => handleRowPress(key)}
                 testID={`order-sheet-row-${key}`}
               />
             ))}
@@ -184,6 +235,52 @@ export function OrderSheetScreen({
             form.setValue('description', v, { shouldDirty: true, shouldValidate: true })
           }
           onClose={() => setActiveSheet(null)}
+        />
+      )}
+      {/* 일정·모집 시트 3종 — 날짜(달력)·시간(다중 시간대)·역할(슬롯별). rows 진입은 즉시,
+          TimeSlotsSheet↔RolesSheet 스왑만 switchSheet(#244 지연 전환)을 태운다. */}
+      {activeSheet === 'dates' && (
+        <DatePickerModal
+          visible
+          onClose={() => setActiveSheet(null)}
+          postingType={values.postingType}
+          existingDates={[]}
+          initialSelectedDates={values.dates}
+          onSelectDates={(dates) => {
+            form.setValue('dates', dates, { shouldDirty: true, shouldValidate: true });
+            setActiveSheet(null);
+          }}
+        />
+      )}
+      {activeSheet === 'time' && (
+        <TimeSlotsSheet
+          visible
+          value={values.timeSlots}
+          onConfirm={(next) =>
+            form.setValue('timeSlots', next, { shouldDirty: true, shouldValidate: true })
+          }
+          onClose={() => setActiveSheet(null)}
+          onEditSlotRoles={(slotIndex) =>
+            switchSheet({ key: 'slotRoles', slotIndex, fromTimeSheet: true })
+          }
+        />
+      )}
+      {slotRolesTarget && (
+        <RolesSheet
+          visible
+          value={values.timeSlots[slotRolesTarget.slotIndex]?.roles ?? []}
+          onConfirm={(next) =>
+            form.setValue(
+              'timeSlots',
+              (values.timeSlots ?? []).map((s, idx) =>
+                idx === slotRolesTarget.slotIndex ? { ...s, roles: next } : s
+              ),
+              { shouldDirty: true, shouldValidate: true }
+            )
+          }
+          onClose={() =>
+            slotRolesTarget.fromTimeSheet ? switchSheet('time') : setActiveSheet(null)
+          }
         />
       )}
     </View>
