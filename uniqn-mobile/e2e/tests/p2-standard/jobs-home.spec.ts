@@ -35,14 +35,18 @@ test.describe('구인구직 홈', () => {
     await expect(homePage.getTypeChip('고정')).toBeVisible();
   });
 
-  test('초기 로드 시 공고가 있는 탭으로 자동 선택된다', async ({ page }) => {
+  test('초기 로드 시 공고가 있는 탭으로 자동 선택된다', async () => {
     // 자동 선택 대기 (로딩 완료 후)
     await homePage.waitForJobsLoaded();
 
-    // 3개 공개 타입 칩 중 하나가 선택 상태여야 함 (정확한 선택 칩은 데이터에 따라 다름)
-    const body = await page.locator('body').textContent();
-    const hasChips = body?.includes('급구') || body?.includes('대회') || body?.includes('지원');
-    expect(hasChips).toBeTruthy();
+    // 자동 선택이 끝난 뒤에도 3개 공개 타입 칩(급구·대회·지원)이 role=button 접근성 트리에
+    // 노출되어야 한다. 기존 body.includes 스모크는 칩이 항상 렌더되어 늘 참(무의미)이었으므로
+    // 칩 role 기반 단언으로 교체한다.
+    // ⚠️ react-native-web 0.21 은 accessibilityState.selected 를 aria-selected 로 방출하지 않아
+    //    "어느 칩이 선택됐는가"는 접근성 트리로 단언 불가 — 존재·역할 단언이 가능한 상한이다.
+    await expect(homePage.getTypeChip('급구')).toBeVisible({ timeout: 10_000 });
+    await expect(homePage.getTypeChip('대회')).toBeVisible();
+    await expect(homePage.getTypeChip('지원')).toBeVisible();
   });
 
   // =====================================================
