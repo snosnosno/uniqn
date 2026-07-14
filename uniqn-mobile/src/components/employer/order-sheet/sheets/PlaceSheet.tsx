@@ -6,7 +6,7 @@
  * 터치먹통 #186/#243 회피, 브리프 CRITICAL C1). value/onChange 는 OrderSheetFormValues(z.input)
  * 기준 — 장소는 null 허용, 확정값은 non-null.
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { SheetModal } from '@/components/ui/SheetModal';
 import { Button } from '@/components/ui/Button';
@@ -55,9 +55,15 @@ export function PlaceSheet({
   const [mode, setMode] = useState<Mode>(() => (recentLocations.length > 0 ? 'list' : 'new'));
   const [draft, setDraft] = useState<OrderSheetLocation>({ name: '' });
 
-  // 재오픈 시 초기 모드/드래프트 동기화(최근 장소 있으면 리스트, 없으면 바로 새 입력)
+  // 재오픈 시 초기 모드/드래프트 동기화 — visible false→true 상승 에지에서만 수행한다.
+  // ⚠️ recentLocations.length 는 rising-edge 시점에만 읽는다(상승 에지 가드): 시트가 열려 있는 동안
+  // 실데이터 쿼리 해소로 recentLocations 가 0→N 전이해도 편집 중인 draft/mode 를 리셋하지 않는다
+  // (Task 9 실데이터 배선이 처음 도달 가능케 한 편집 텍스트 유실 레이스 — 리뷰 Important).
+  const prevVisibleRef = useRef(false);
   useEffect(() => {
-    if (visible) {
+    const rising = visible && !prevVisibleRef.current;
+    prevVisibleRef.current = visible;
+    if (rising) {
       setMode(recentLocations.length > 0 ? 'list' : 'new');
       setDraft(value ?? { name: '' });
     }

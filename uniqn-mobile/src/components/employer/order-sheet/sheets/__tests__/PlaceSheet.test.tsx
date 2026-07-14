@@ -131,6 +131,38 @@ describe('PlaceSheet', () => {
     expect(getByText('지역 선택 (선택)')).toBeTruthy();
   });
 
+  it('시트 열림 상태에서 recentLocations 가 0→N 늘어도 편집 중 draft·mode 를 리셋하지 않는다 (쿼리 해소 레이스)', () => {
+    // Task 9 실데이터 배선이 처음 도달 가능케 한 편집 텍스트 유실 레이스 방지 —
+    // 동기화는 visible 상승 에지에서만 수행, 시트가 열린 동안 recentLocations 변경은 무시한다.
+    const { getByTestId, rerender } = render(
+      <PlaceSheet
+        visible
+        value={null}
+        recentLocations={[]}
+        onConfirm={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+
+    // 새 입력 모드에서 장소명 타이핑 중
+    fireEvent.changeText(getByTestId('order-sheet-place-name'), '라운더스');
+
+    // 쿼리 해소로 최근 장소 0→N 전이 (시트는 계속 열림)
+    rerender(
+      <PlaceSheet
+        visible
+        value={null}
+        recentLocations={[{ name: '이전 홀덤펍' }]}
+        onConfirm={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+
+    // 입력 필드가 여전히 존재(list 모드로 flip 안 됨) + 텍스트 유지 —
+    // getByTestId 가 던지지 않고 value 가 유지되면 mode·draft 둘 다 보존된 것.
+    expect(getByTestId('order-sheet-place-name').props.value).toBe('라운더스');
+  });
+
   it('XSS 검증 경로 — 위험 문자열 장소명은 스키마 경계에서 거부된다', () => {
     // PlaceSheet 는 onConfirm 으로 값을 흘려보내고, 부모가 setValue(shouldValidate) 로 이 스키마를 태운다.
     const result = orderSheetValuesSchema.safeParse({
