@@ -172,7 +172,7 @@ export interface IJobPostingRepository {
   getTypeCounts(
     filters?: Pick<
       JobPostingFilters,
-      'status' | 'region' | 'regions' | 'roles' | 'salaryType' | 'salaryMin'
+      'status' | 'region' | 'regions' | 'regionPrefixes' | 'roles' | 'salaryType' | 'salaryMin'
     >
   ): Promise<PostingTypeCounts>;
 

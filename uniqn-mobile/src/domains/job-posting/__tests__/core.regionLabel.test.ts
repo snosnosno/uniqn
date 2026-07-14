@@ -56,9 +56,10 @@ describe('region label 표시 흐름 (A2/A3)', () => {
   });
 
   it('카드/상세 view model 에 regionLabel 이 전달된다', () => {
+    // 전국 3단계 택소노미부터 광역시 라벨은 축약("부산광역시"→"부산")
     const facts = buildPostingFacts(createPosting('부산'));
-    expect(projectPostingCard(facts).regionLabel).toBe('부산광역시');
-    expect(projectPostingDetail(facts).regionLabel).toBe('부산광역시');
+    expect(projectPostingCard(facts).regionLabel).toBe('부산');
+    expect(projectPostingDetail(facts).regionLabel).toBe('부산');
   });
 
   it('region 미설정 시 regionLabel 은 undefined(미노출)', () => {

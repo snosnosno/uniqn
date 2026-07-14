@@ -17,7 +17,7 @@ import {
 } from '@/components/jobs/filters';
 import { findRegionByAddress } from '@/constants/regions';
 import {
-  expandRegionTokens,
+  expandRegionTokensToScope,
   formatRegionTokensLabel,
   type RegionToken,
 } from '@/utils/regionSelection';
@@ -70,7 +70,8 @@ export default function JobsScreen() {
   const salaryFilter = useJobFilterStore((state) => state.salaryFilter);
   const applySalaryFilter = useJobFilterStore((state) => state.applySalaryFilter);
   const clearAllFilters = useJobFilterStore((state) => state.clearAllFilters);
-  const expandedRegions = useMemo(() => expandRegionTokens(regionTokens), [regionTokens]);
+  // 서버 쿼리 스코프 — 그룹 토큰은 접두 압축(URL 한도), 시/구 토큰은 slug 확장.
+  const regionScope = useMemo(() => expandRegionTokensToScope(regionTokens), [regionTokens]);
   const regionLabel = useMemo(() => formatRegionTokensLabel(regionTokens), [regionTokens]);
   const roleLabel = useMemo(() => formatRoleFiltersLabel(roleFilters), [roleFilters]);
   const salaryLabel = useMemo(() => formatSalaryFilterLabel(salaryFilter), [salaryFilter]);
@@ -89,7 +90,8 @@ export default function JobsScreen() {
     firstAvailableType,
     isLoading: isLoadingTypeCounts,
   } = usePostingTypeCounts({
-    regions: expandedRegions,
+    regions: regionScope.slugs,
+    regionPrefixes: regionScope.prefixes,
     roles: roleFilters,
     salaryType: salaryFilter?.type ?? null,
     salaryMin: salaryFilter?.min ?? null,
@@ -147,8 +149,12 @@ export default function JobsScreen() {
       result.workDate = selectedDateString;
     }
 
-    if (expandedRegions.length > 0) {
-      result.regions = expandedRegions;
+    if (regionScope.slugs.length > 0) {
+      result.regions = regionScope.slugs;
+    }
+
+    if (regionScope.prefixes.length > 0) {
+      result.regionPrefixes = regionScope.prefixes;
     }
 
     if (roleFilters.length > 0) {
@@ -161,7 +167,7 @@ export default function JobsScreen() {
     }
 
     return result;
-  }, [selectedDateString, selectedType, expandedRegions, roleFilters, salaryFilter]);
+  }, [selectedDateString, selectedType, regionScope, roleFilters, salaryFilter]);
 
   const { jobs, isLoading, isRefreshing, isFetchingMore, hasMore, error, refresh, loadMore } =
     useJobPostings({
@@ -348,7 +354,8 @@ export default function JobsScreen() {
         onClose={() => setRoleModalVisible(false)}
         appliedRoles={roleFilters}
         onApply={handleRoleApply}
-        appliedRegions={expandedRegions}
+        appliedRegions={regionScope.slugs}
+        appliedRegionPrefixes={regionScope.prefixes}
         appliedSalary={salaryFilter}
       />
       <SalaryFilterSheet
@@ -356,7 +363,8 @@ export default function JobsScreen() {
         onClose={() => setSalaryModalVisible(false)}
         appliedSalary={salaryFilter}
         onApply={handleSalaryApply}
-        appliedRegions={expandedRegions}
+        appliedRegions={regionScope.slugs}
+        appliedRegionPrefixes={regionScope.prefixes}
         appliedRoles={roleFilters}
       />
     </SafeAreaView>
