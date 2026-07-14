@@ -72,6 +72,8 @@ WITH CHECK 안 `SELECT count(*) FROM workspaces WHERE owner_id = auth.uid()` →
 
 ## 관련
 
+- [[secdef-hardening]] — SECDEF 함수 하드닝 3규칙(anon EXECUTE REVOKE·search_path extensions·plpgsql NULL fail-open) — 본 페이지 재귀/poison 함정의 자매
+- [[supabase-write-pitfalls]] — 쓰기 경로 함정(카운터 트리거·realtime publication·RPC 예외 매핑·시드 zod·users cross-lookup RPC)
 - [[layers]] — Service/Repository에서 Supabase 호출 방식
 - [[roles]] — UserRole과 RLS authenticated 계층 매핑
 - [[enum-divergence]] — RLS와 함께 발생한 읽기 증발 패턴

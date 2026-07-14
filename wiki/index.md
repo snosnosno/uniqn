@@ -20,6 +20,9 @@
 - [[prod-parity-baseline]] — prod가 진실: baseline squash 채택 이유(함수163vs142·정책103vs173 발산) + 가드 2중 + MCP 핫픽스=같은 PR 가드 갱신 규율 (PR#241)
 - [[whitelist-silent-drop]] — "화이트리스트 조용한 증발" 재발 클래스(3회 실증: #194 region·#243 filled counts·conditions 9지점) — 신규 필드는 지점 전수+읽기 방향 테스트+표시 UI 별도 확인
 - [[order-sheet-form-contract]] — 주문서 폼 계약: 3제네릭 zodResolver(z.input/z.output)·canonical 매퍼 등가성·Design B(단일화면 카드+시트)·#244 지연전환·중첩Modal embedded (PR#246/#247)
+- [[secdef-hardening]] — SECURITY DEFINER 함수 하드닝 3규칙: anon EXECUTE 명시 REVOKE·search_path에 extensions·plpgsql NULL fail-open 차단 (memory 졸업, PR#195)
+- [[supabase-write-pitfalls]] — Supabase 쓰기 경로 함정 종합: 카운터 트리거·realtime publication·RPC 예외 매핑·시드 zod·storage 정책·존재하지 않는 테이블 (memory 졸업)
+- [[nativewind-rn-pitfalls]] — NativeWind/RN UI 함정: 동적 className dark: 유실·flex-1 붕괴·Link asChild 터치 유실·중첩 accessibilityRole hydration (memory 졸업, PR#136)
 
 ## domain
 - [[roles]] — UserRole(앱권한: admin/employer/staff) vs StaffRole(직무: dealer/floor/serving)
