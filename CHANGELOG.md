@@ -36,6 +36,7 @@
 - ops 상금 코드 정리 (PR #228, TS-only): `uuidLike`→`schemas/common` 통합·상금 표기 `fmt`→`formatNumber` 통합·PAYOUTS `INVALID_PERCENTS` 에러에 0값 행 안내 문구 추가(`payoutMessages` 순수함수 분리+테스트 5)
 
 ### Fixed
+- **주문서 모집조건 지원자 표시 + 폴리시 소건** (PR #247, #246 후속): 공고 상세(스태프 탭·공유 링크, 공용 `JobDetail`)에 '모집 조건'(복장·경력) 섹션 렌더 — conditions 읽기 배선 완결(쓰기만 되던 필드 표시 완성). 프리셋 '마지막 공고' ⚡이모지→Lucide `ZapIcon`(이모지 상태표시 안티패턴 해소)·완료화면 `CheckIcon` stroke 2.5→2.0·조건 커스텀 입력 confirm 시 trim·'시간대 추가' roles 깊은복사(참조 변형 차단)·`TemplateModal` onSave try/catch(unhandled rejection 차단, 토스트는 saveMutation.onError 담당). 회귀 테스트 5(ConditionsSheet 2·JobDetail 3)
 - **유저플로우 실측 감사 전항 완료** (PR #242, 마이그 5종 prod 적용): P0+P1 결함 수정 + LOW 방어심화(완료건 `custom_*` 동결·미승인 대회 지원 게이트·anon write REVOKE·파리티 고정) + P2 3건(동시확정 레이스 문구·죽은코드·초대 오탐 근본수정) + 코드리뷰 재실행 CRIT~MED 0·advisor ERROR 0
 - **iOS 유저플로우 버그 8종 + 신고모달 승격** (PR #243): 확정 인원 카운터 0/N 드리프트(`extractPostingFilledSubmap` 서브맵 추출 배선), 회원가입 뒤로가기 GO_BACK 폴백, 중첩 Modal 터치 먹통·스태프 추가 footer 화면밖, employer 확정카운트 배선·홈 통계 월스코프, 신고모달 시트 밖 승격(`useOwnerReport`)
 - **시트 지연액션 타이머 정리·재진입 가드** (PR #244): 리뷰 후속 — 타이머 누수 정리 + 더블탭 재진입 가드 + 회귀 테스트 3종
