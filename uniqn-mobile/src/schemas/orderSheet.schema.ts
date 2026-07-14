@@ -8,6 +8,7 @@
 import { z } from 'zod';
 import { xssValidation } from '@/utils/security';
 import { isRegionSlug } from '@/constants/regions';
+import { MAX_SALARY_AMOUNT } from '@/constants/jobPosting';
 import { PROVIDED_FLAG } from '@/utils/settlement';
 import { preQuestionsArraySchema } from '@/schemas/preQuestion.schema';
 import type { TaxSettings } from '@/types/jobPosting';
@@ -17,10 +18,11 @@ const safeText = (max: number) =>
 
 // 협의(other) 선택 가능(2026-07-14 결정) — { type: 'other', amount: 0 }로 발행.
 // 문서 게이트 salaryInfoSchema.amount: min(0)이 허용함을 실측(jobPosting.schema.ts:51-53).
+// 상한 1억(Eng-M4) — 역할별 입력 지점 확대 시점에 조임(프리셋 경유 이상치 재검증 포함).
 export const orderSheetSalarySchema = z
   .object({
     type: z.enum(['hourly', 'daily', 'monthly', 'other']),
-    amount: z.number().int().min(0),
+    amount: z.number().int().min(0).max(MAX_SALARY_AMOUNT, '금액이 너무 큽니다'),
   })
   .superRefine((s, ctx) => {
     if (s.type !== 'other' && s.amount <= 0) {
@@ -82,7 +84,10 @@ export const orderSheetValuesSchema = z
     dates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).min(1, '날짜를 선택해주세요'),
     timeSlots: z.array(orderSheetTimeSlotSchema).min(1, '시간대를 추가해주세요'),
     salary: orderSheetSalarySchema,
-    useSameSalary: z.boolean().default(true),
+    // 기본 false(by_role) — 설계 §S2.1. 살아있는 기본값 5지점(schema·initialOrderSheetValues·
+    // formValuesToDraft·orderRowMeta·OrderSheetScreen) 전수 통일 — 하나라도 어긋나면 zod 게이트와
+    // UI 판정이 갈라져 "이대로 등록인데 제출 침묵 실패"(H5) 재발.
+    useSameSalary: z.boolean().default(false),
     roleSalaries: z.array(orderSheetRoleSalarySchema).default([]),
     allowances: orderSheetAllowancesSchema.default({}),
     taxSettings: z.custom<TaxSettings>().optional(),
@@ -122,12 +127,13 @@ export const orderSheetValuesSchema = z
     const uniqueKeys = new Set<string>();
     for (const slot of v.timeSlots)
       for (const r of slot.roles) uniqueKeys.add(keyOf(r.role, r.customRole));
-    const allCovered =
-      uniqueKeys.size > 0 &&
-      [...uniqueKeys].every((k) => {
-        const s = salaryByRole.get(k);
-        return s !== undefined && (s.type === 'other' || s.amount > 0);
-      });
+    // 고유 역할 0개면 skip(Eng-M5) — 기본 false 반전 후 신규 폼 첫 onChange부터 급여 에러가
+    // 서는 소음 제거. 제출 차단은 timeSlots/roles min(1)이 담당(게이트 약화 없음).
+    if (uniqueKeys.size === 0) return;
+    const allCovered = [...uniqueKeys].every((k) => {
+      const s = salaryByRole.get(k);
+      return s !== undefined && (s.type === 'other' || s.amount > 0);
+    });
     if (!allCovered) {
       ctx.addIssue({
         code: 'custom',

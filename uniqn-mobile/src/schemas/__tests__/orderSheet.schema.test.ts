@@ -9,7 +9,21 @@ import type { OrderSheetFormValues, OrderSheetValues } from '@/schemas/orderShee
 const orderSheetResolver: Resolver<OrderSheetFormValues, unknown, OrderSheetValues> =
   zodResolver(orderSheetValuesSchema);
 
+// useSameSalary 기본값이 false(by_role)로 반전(설계 §S2.1)돼, 축별 테스트 기준 픽스처는
+// shared를 명시한다. 기본값 자체는 아래 '기본값 false' describe에서 미지정 픽스처로 고정한다.
 const validInput: OrderSheetFormValues = {
+  postingType: 'regular',
+  title: '주말 딜러 구합니다',
+  location: { name: '라운더스 홀덤펍' },
+  contactPhone: '010-1234-5678',
+  dates: ['2026-07-14'],
+  timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 1 }] }],
+  salary: { type: 'hourly', amount: 20000 },
+  useSameSalary: true,
+};
+
+// useSameSalary·roleSalaries 미지정 — 기본값 경로(by_role) 검증용
+const unspecifiedSalaryModeInput: OrderSheetFormValues = {
   postingType: 'regular',
   title: '주말 딜러 구합니다',
   location: { name: '라운더스 홀덤펍' },
@@ -26,10 +40,9 @@ describe('orderSheetValuesSchema — RHF 3제네릭 계약', () => {
 });
 
 describe('orderSheetValuesSchema — z.input/z.output 경계', () => {
-  it('default 필드가 z.output에서 채워진다 (description·useSameSalary·roleSalaries·allowances·conditions·preQuestions)', () => {
+  it('default 필드가 z.output에서 채워진다 (description·roleSalaries·allowances·conditions·preQuestions)', () => {
     const parsed = orderSheetValuesSchema.parse(validInput);
     expect(parsed.description).toBe('');
-    expect(parsed.useSameSalary).toBe(true);
     expect(parsed.roleSalaries).toEqual([]);
     expect(parsed.allowances).toEqual({});
     expect(parsed.conditions).toEqual({});
@@ -146,6 +159,65 @@ describe('orderSheetValuesSchema — 역할별 급여(by_role) 전수 커버 게
       ...validInput,
       useSameSalary: true,
       roleSalaries: [],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('timeSlots 고유 역할이 0개면 커버 게이트를 스킵한다 (Eng-M5 — 신규 폼 첫 onChange 소음 제거)', () => {
+    // timeSlots 자체는 min(1)로 거부되지만, roleSalaries 이슈는 서지 않아야 한다 —
+    // 제출 차단은 timeSlots/roles min(1)이 담당(게이트 약화 없음).
+    const result = orderSheetValuesSchema.safeParse({
+      ...unspecifiedSalaryModeInput,
+      timeSlots: [],
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.some((i) => i.path.includes('roleSalaries'))).toBe(false);
+      expect(result.error.issues.some((i) => i.path.includes('timeSlots'))).toBe(true);
+    }
+  });
+});
+
+describe('orderSheetValuesSchema — useSameSalary 기본값 false (설계 §S2.1)', () => {
+  it('미지정+역할 커버면 by_role(useSameSalary=false)로 통과한다', () => {
+    const parsed = orderSheetValuesSchema.parse({
+      ...unspecifiedSalaryModeInput,
+      roleSalaries: [{ role: 'dealer', salary: { type: 'hourly', amount: 20000 } }],
+    });
+    expect(parsed.useSameSalary).toBe(false);
+  });
+
+  it('미지정+미커버면 커버 게이트가 기본 경로로 작동해 거부된다 (zod·UI 판정 3자 일치)', () => {
+    const result = orderSheetValuesSchema.safeParse(unspecifiedSalaryModeInput);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.some((i) => i.path.includes('roleSalaries'))).toBe(true);
+    }
+  });
+});
+
+describe('orderSheetValuesSchema — 금액 상한 (Eng-M4)', () => {
+  it('1억 초과 금액은 거부된다 (shared)', () => {
+    const result = orderSheetValuesSchema.safeParse({
+      ...validInput,
+      salary: { type: 'hourly', amount: 100_000_001 },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('1억 초과 역할별 금액도 거부된다 (by_role)', () => {
+    const result = orderSheetValuesSchema.safeParse({
+      ...validInput,
+      useSameSalary: false,
+      roleSalaries: [{ role: 'dealer', salary: { type: 'hourly', amount: 100_000_001 } }],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('정확히 1억은 허용된다', () => {
+    const result = orderSheetValuesSchema.safeParse({
+      ...validInput,
+      salary: { type: 'hourly', amount: 100_000_000 },
     });
     expect(result.success).toBe(true);
   });

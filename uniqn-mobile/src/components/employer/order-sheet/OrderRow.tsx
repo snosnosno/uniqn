@@ -6,11 +6,14 @@ import type { OrderRowState } from './orderRowMeta';
 export function OrderRow({
   state,
   error,
+  badge,
   onPress,
   testID,
 }: {
   state: OrderRowState;
   error?: string;
+  /** 파생 상태 배지(예: 급여 행 '기본값' — 프리필 제안 상태 표시, 설계 §S2.3) */
+  badge?: string;
   onPress: () => void;
   testID: string;
 }) {
@@ -20,8 +23,8 @@ export function OrderRow({
       className="flex-row items-center px-4 py-3 min-h-[44px] border-b border-secondary-100 dark:border-surface-overlay last:border-b-0 active:opacity-80"
       accessibilityRole="button"
       accessibilityLabel={`${state.label} ${state.unset ? '미설정' : state.value}${
-        error ? `, 오류: ${error}` : ''
-      }`}
+        !state.unset && badge ? `, ${badge}` : ''
+      }${error ? `, 오류: ${error}` : ''}`}
       testID={testID}
     >
       <Text className="w-16 text-xs text-content-secondary font-sans">{state.label}</Text>
@@ -41,6 +44,14 @@ export function OrderRow({
           {state.value}
         </Text>
       )}
+      {!state.unset && badge ? (
+        <View
+          className="ml-1 mr-1 px-2 py-0.5 rounded-full bg-secondary-100 dark:bg-surface-overlay"
+          testID={`${testID}-badge`}
+        >
+          <Text className="text-[11px] font-sans-medium text-content-secondary">{badge}</Text>
+        </View>
+      ) : null}
       {error ? (
         <Text className="text-[11px] text-error-500 dark:text-error-400 font-sans mr-1">
           {error}

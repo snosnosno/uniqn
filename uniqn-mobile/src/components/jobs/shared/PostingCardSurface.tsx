@@ -138,6 +138,15 @@ export function PostingCardSurface({
           </Text>
         ) : null}
 
+        {(card.conditionLabels?.length ?? 0) > 0 ? (
+          <Text
+            className="mt-0.5 text-sm text-secondary-500 dark:text-secondary-400 font-sans"
+            numberOfLines={1}
+          >
+            {(card.conditionLabels ?? []).join(' · ')}
+          </Text>
+        ) : null}
+
         {bodyFooter}
       </Pressable>
 

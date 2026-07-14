@@ -84,6 +84,54 @@ describe('getRowState', () => {
     const byRole = { ...filled, useSameSalary: false, roleSalaries: [] };
     expect(getRowState(byRole, 'salary').unset).toBe(true);
   });
+  it('useSameSalary 미지정(undefined)은 by_role로 판정한다 — zod 기본값 false와 3자 일치(Eng-H2)', () => {
+    const { useSameSalary: _omit, ...rest } = filled;
+    expect(getRowState(rest, 'salary').unset).toBe(true); // 미커버 → unset (shared 20,000으로 오판 금지)
+  });
+  it('by_role 전수 커버면 역할별 금액 요약을 표기한다', () => {
+    const byRole = {
+      ...filled,
+      useSameSalary: false,
+      timeSlots: [
+        {
+          startTime: '19:00',
+          roles: [
+            { role: 'dealer' as const, count: 2 },
+            { role: 'floor' as const, count: 1 },
+          ],
+        },
+      ],
+      roleSalaries: [
+        { role: 'dealer' as const, salary: { type: 'hourly' as const, amount: 20000 } },
+        { role: 'floor' as const, salary: { type: 'hourly' as const, amount: 30000 } },
+      ],
+    };
+    const s = getRowState(byRole, 'salary');
+    expect(s.unset).toBe(false);
+    expect(s.value).toBe('딜러 20,000 · 플로어 30,000');
+  });
+  it('by_role 역할 3개+면 첫 항목 + 개수 축약 (금액 truncation 금지 — impeccable §26)', () => {
+    const byRole = {
+      ...filled,
+      useSameSalary: false,
+      timeSlots: [
+        {
+          startTime: '19:00',
+          roles: [
+            { role: 'dealer' as const, count: 2 },
+            { role: 'floor' as const, count: 1 },
+            { role: 'serving' as const, count: 1 },
+          ],
+        },
+      ],
+      roleSalaries: [
+        { role: 'dealer' as const, salary: { type: 'hourly' as const, amount: 20000 } },
+        { role: 'floor' as const, salary: { type: 'hourly' as const, amount: 30000 } },
+        { role: 'serving' as const, salary: { type: 'hourly' as const, amount: 20000 } },
+      ],
+    };
+    expect(getRowState(byRole, 'salary').value).toBe('딜러 20,000 외 2개 역할');
+  });
 });
 
 describe('firstUnsetRow', () => {
