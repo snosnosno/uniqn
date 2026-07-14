@@ -16,7 +16,7 @@ import {
 import { JOB_POSTING_SCHEMA_VERSION } from '@/types/jobPosting';
 import { isWithinUrgentDateLimit } from '@/utils/date';
 import { Constants } from '@/types/supabase';
-import { isRegionSlug } from '@/constants/regions';
+import { REGIONS, isRegionSlug } from '@/constants/regions';
 
 /**
  * 공고 상태 SSOT — DB enum(posting_status)을 단일출처로 파생.
@@ -117,8 +117,11 @@ export const jobFilterSchema = z.object({
   district: z.string().optional(),
   region: z.string().optional(),
   // 그룹 확장 slug 목록 (JobPostingFilters.regions) — 스키마 누락 시 strip 모드에서
-  // 침묵 드롭되는 함정(wiki decisions/whitelist-silent-drop 클래스) 방지. 최대 67+여유.
-  regions: z.array(z.string()).max(100).optional(),
+  // 침묵 드롭되는 함정(wiki decisions/whitelist-silent-drop 클래스) 방지.
+  // 상한 = 전체 REGIONS 수 (확장 결과는 항상 REGIONS 의 부분집합 — Set dedupe).
+  regions: z.array(z.string()).max(REGIONS.length).optional(),
+  // 그룹 전체 선택의 접두 압축(REGION_GROUP_QUERY_PREFIXES) — regions 와 동일한 침묵드롭 방지 사유.
+  regionPrefixes: z.array(z.string()).max(32).optional(),
   dateRange: z
     .object({
       start: z.string(),

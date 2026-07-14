@@ -220,6 +220,12 @@ export interface JobPostingFilters {
    * 비어있지 않으면 region(단일)보다 우선한다.
    */
   regions?: string[];
+  /**
+   * 지역 접두 목록 — location.region 과 like '{접두}%' 매칭.
+   * 그룹 전체 선택의 압축 표현(utils/regionSelection 의 expandRegionTokensToScope 결과).
+   * regions 와 함께 하나의 OR 스코프를 이룬다 (repository applyRegionScope).
+   */
+  regionPrefixes?: string[];
   dateRange?: {
     start: string;
     end: string;

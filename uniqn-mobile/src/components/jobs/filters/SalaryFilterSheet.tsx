@@ -25,8 +25,9 @@ export interface SalaryFilterSheetProps {
   /** 현재 적용 중인 급여 필터 — 시트 오픈 시 초기 선택으로 복사 */
   appliedSalary: SalaryFilter | null;
   onApply: (filter: SalaryFilter | null) => void;
-  /** 미리보기 카운트 정합용 — 적용 중인 다른 필터 축 (지역 slug 확장 결과 / 역할) */
+  /** 미리보기 카운트 정합용 — 적용 중인 다른 필터 축 (지역 스코프 slug/접두 / 역할) */
   appliedRegions?: string[];
+  appliedRegionPrefixes?: string[];
   appliedRoles?: StaffRole[];
 }
 
@@ -46,6 +47,7 @@ function SheetBody({
   appliedSalary,
   onApply,
   appliedRegions = [],
+  appliedRegionPrefixes = [],
   appliedRoles = [],
 }: SheetBodyProps) {
   const [pendingType, setPendingType] = useState<FilterableSalaryType>(
@@ -56,6 +58,7 @@ function SheetBody({
   // 적용 전 미리보기 카운트 — 목록/칩과 동일 스코프(getTypeCounts + 적용 중 타 필터 포함).
   const { counts, hasCounts } = usePostingTypeCounts({
     regions: appliedRegions,
+    regionPrefixes: appliedRegionPrefixes,
     roles: appliedRoles,
     salaryType: pendingMin ? pendingType : null,
     salaryMin: pendingMin,
@@ -189,6 +192,7 @@ export const SalaryFilterSheet = memo(function SalaryFilterSheet({
   appliedSalary,
   onApply,
   appliedRegions,
+  appliedRegionPrefixes,
   appliedRoles,
 }: SalaryFilterSheetProps) {
   return (
@@ -200,6 +204,7 @@ export const SalaryFilterSheet = memo(function SalaryFilterSheet({
           appliedSalary={appliedSalary}
           onApply={onApply}
           appliedRegions={appliedRegions}
+          appliedRegionPrefixes={appliedRegionPrefixes}
           appliedRoles={appliedRoles}
         />
       ) : null}

@@ -27,6 +27,7 @@ export const AUTO_SELECT_PRIORITY: PostingType[] = ['urgent', 'tournament', 'reg
 interface PostingTypeCountsScope {
   region: string | null;
   regions: string[];
+  regionPrefixes: string[];
   roles: StaffRole[];
   salaryType: FilterableSalaryType | null;
   salaryMin: number | null;
@@ -37,10 +38,18 @@ async function fetchPostingTypeCounts(scope: PostingTypeCountsScope): Promise<Po
     // status 미지정 → 브라우즈 가시성 기본값(active + capacity_full)으로 집계.
     // (EF-jobsearch-11: 정원 마감 공고가 칩 카운트에서 누락되던 회귀)
     // 지역/역할/급여 지정 시 해당 조건으로 좁혀 브라우즈 목록(getList)과 정합(A1).
-    // regions(멀티/그룹 확장)가 region(단일)보다 우선 — repository applyRegionScope 와 동일 규칙.
-    const { region, regions, roles, salaryType, salaryMin } = scope;
+    // regions/regionPrefixes(멀티·그룹 스코프)가 region(단일)보다 우선 — applyRegionScope 와 동일 규칙.
+    const { region, regions, regionPrefixes, roles, salaryType, salaryMin } = scope;
+    const hasRegionScope = regions.length > 0 || regionPrefixes.length > 0;
     return await jobPostingRepository.getTypeCounts({
-      ...(regions.length > 0 ? { regions } : region ? { region } : {}),
+      ...(hasRegionScope
+        ? {
+            ...(regions.length > 0 ? { regions } : {}),
+            ...(regionPrefixes.length > 0 ? { regionPrefixes } : {}),
+          }
+        : region
+          ? { region }
+          : {}),
       ...(roles.length > 0 ? { roles } : {}),
       ...(salaryType && salaryMin ? { salaryType, salaryMin } : {}),
     });
@@ -53,8 +62,10 @@ async function fetchPostingTypeCounts(scope: PostingTypeCountsScope): Promise<Po
 export interface UsePostingTypeCountsOptions {
   /** 선택된 지역 slug. 지정 시 칩 카운트를 해당 지역으로 좁힌다. */
   region?: string | null;
-  /** 지역 slug 목록(그룹 확장 결과). 비어있지 않으면 region 보다 우선. */
+  /** 지역 slug 목록(시/구 토큰 확장 결과). regionPrefixes 와 함께 region 보다 우선. */
   regions?: string[];
+  /** 지역 접두 목록(그룹 토큰 압축 — expandRegionTokensToScope 결과). */
+  regionPrefixes?: string[];
   /** 역할 필터 (FILTERABLE_STAFF_ROLES). 지정 시 role_keys overlaps 로 좁힌다. */
   roles?: StaffRole[];
   /** 급여 필터 — salaryType 과 salaryMin 이 모두 있어야 적용(repository 와 동일 규칙). */
@@ -71,12 +82,16 @@ export function usePostingTypeCounts(options?: UsePostingTypeCountsOptions) {
   const { status } = useAuthStore();
   const region = options?.region ?? null;
   const regions = options?.regions ?? [];
+  const regionPrefixes = options?.regionPrefixes ?? [];
   const roles = options?.roles ?? [];
   const salaryType = options?.salaryType ?? null;
   const salaryMin = options?.salaryMin ?? null;
   // 배열 identity 무관하게 캐시 키 안정화 (slug/역할 key 에 ',' 미포함 — 상수 계약).
   // 역할은 선택 순서가 결과에 무영향이라 정렬로 캐시 적중률을 올린다(리뷰 L3).
-  const regionScopeKey = regions.length > 0 ? regions.join(',') : region;
+  const regionScopeKey =
+    regions.length > 0 || regionPrefixes.length > 0
+      ? [...regions, ...regionPrefixes.map((p) => `${p}*`)].join(',')
+      : region;
   const roleScopeKey = roles.length > 0 ? [...roles].sort().join(',') : null;
   const salaryScopeKey = salaryType && salaryMin ? `${salaryType}:${salaryMin}` : null;
 
@@ -88,7 +103,8 @@ export function usePostingTypeCounts(options?: UsePostingTypeCountsOptions) {
       roleScopeKey,
       salaryScopeKey,
     ] as const,
-    queryFn: () => fetchPostingTypeCounts({ region, regions, roles, salaryType, salaryMin }),
+    queryFn: () =>
+      fetchPostingTypeCounts({ region, regions, regionPrefixes, roles, salaryType, salaryMin }),
     staleTime: cachingPolicies.frequent,
     gcTime: cachingPolicies.standard * 2,
     enabled: status === 'authenticated',

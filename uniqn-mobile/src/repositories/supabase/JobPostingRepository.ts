@@ -69,13 +69,26 @@ export { buildSlotRoleKey } from './JobPostingRepositoryHelpers';
 /**
  * 지역 조건 공용 적용 — getList 와 getTypeCounts 가 반드시 같은 지역 스코프를 쓰도록
  * 단일 지점으로 묶는다(칩 카운트-목록 불일치 회귀 방지, EF-jobsearch-11 클래스).
- * regions(멀티/그룹 확장)가 있으면 in, 없으면 region(단일) eq.
+ * regionPrefixes(그룹 접두 압축)가 있으면 like 접두 + slug in 을 하나의 or 그룹으로,
+ * 아니면 regions(멀티 확장) in, 없으면 region(단일) eq.
+ * 접두 압축 사유: 그룹 4개+ 선택 시 in() 160+ slug 나열이 게이트웨이 URL 한도 초과(실측).
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function applyRegionScope<T extends { eq: any; in: any }>(
+function applyRegionScope<T extends { eq: any; in: any; or: any }>(
   query: T,
-  filters?: Pick<JobPostingFilters, 'region' | 'regions'>
+  filters?: Pick<JobPostingFilters, 'region' | 'regions' | 'regionPrefixes'>
 ): T {
+  if (filters?.regionPrefixes?.length) {
+    // slug 는 상수 계약상 한글+공백만(따옴표·쉼표·괄호·와일드카드 없음) — 인용만으로 안전.
+    // like 는 '*' 만 와일드카드로 번역되므로 '{접두}*' = startsWith 매칭.
+    const conditions = [
+      ...(filters.regions?.length
+        ? [`location->>region.in.(${filters.regions.map((slug) => `"${slug}"`).join(',')})`]
+        : []),
+      ...filters.regionPrefixes.map((prefix) => `location->>region.like.${prefix}*`),
+    ];
+    return query.or(conditions.join(',')) as T;
+  }
   if (filters?.regions?.length) {
     return query.in('location->>region', filters.regions) as T;
   }
@@ -289,7 +302,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
   async getTypeCounts(
     filters?: Pick<
       JobPostingFilters,
-      'status' | 'region' | 'regions' | 'roles' | 'salaryType' | 'salaryMin'
+      'status' | 'region' | 'regions' | 'regionPrefixes' | 'roles' | 'salaryType' | 'salaryMin'
     >
   ): Promise<PostingTypeCounts> {
     try {
