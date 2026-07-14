@@ -57,12 +57,14 @@ const flushValidation = async () => {
   });
 };
 
-const filledBase = (): OrderSheetFormValues => ({
+const filledBase = (
+  timeSlots: { startTime: string; roles: { role: 'dealer' | 'floor'; count: number }[] }[]
+): OrderSheetFormValues => ({
   ...initialOrderSheetValues(),
   title: '주말 딜러 구합니다',
   location: { name: '강남 홀덤펍' },
   contactPhone: '010-1234-5678',
-  dates: ['2026-07-14'],
+  scheduleGroups: [{ dates: ['2026-07-14'], timeSlots, grouped: false }],
 });
 
 describe('OrderSheetScreen — 역할별 급여 자동 프리필(syncRoleSalaries) 배선', () => {
@@ -75,8 +77,7 @@ describe('OrderSheetScreen — 역할별 급여 자동 프리필(syncRoleSalarie
       <OrderSheetScreen
         {...baseProps}
         initialValues={{
-          ...filledBase(),
-          timeSlots: [{ startTime: '19:00', roles: [] }],
+          ...filledBase([{ startTime: '19:00', roles: [] }]),
         }}
       />
     );
@@ -98,8 +99,7 @@ describe('OrderSheetScreen — 역할별 급여 자동 프리필(syncRoleSalarie
       <OrderSheetScreen
         {...baseProps}
         initialValues={{
-          ...filledBase(),
-          timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 1 }] }],
+          ...filledBase([{ startTime: '19:00', roles: [{ role: 'dealer', count: 1 }] }]),
           roleSalaries: [{ role: 'dealer', salary: { type: 'hourly', amount: 20000 } }],
         }}
       />
@@ -125,8 +125,7 @@ describe('OrderSheetScreen — 역할별 급여 자동 프리필(syncRoleSalarie
       <OrderSheetScreen
         {...baseProps}
         initialValues={{
-          ...filledBase(),
-          timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 1 }] }],
+          ...filledBase([{ startTime: '19:00', roles: [{ role: 'dealer', count: 1 }] }]),
           roleSalaries: [{ role: 'dealer', salary: { type: 'hourly', amount: 20000 } }],
         }}
       />
@@ -147,8 +146,7 @@ describe('OrderSheetScreen — 역할별 급여 자동 프리필(syncRoleSalarie
       title: '⚡ 마지막 공고',
       subtitle: '지난 공고 요약',
       values: {
-        ...filledBase(),
-        timeSlots: [
+        ...filledBase([
           {
             startTime: '19:00',
             roles: [
@@ -156,7 +154,7 @@ describe('OrderSheetScreen — 역할별 급여 자동 프리필(syncRoleSalarie
               { role: 'floor', count: 1 },
             ],
           },
-        ],
+        ]),
         roleSalaries: [{ role: 'dealer', salary: { type: 'hourly', amount: 25000 } }],
       },
     };

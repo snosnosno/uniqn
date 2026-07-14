@@ -16,7 +16,7 @@ import { STAFF_ROLES } from '@/constants/jobPosting';
 import { MinusIcon, PlusIcon, TrashIcon } from '@/components/icons';
 import type { OrderSheetValues } from '@/schemas/orderSheet.schema';
 
-type SlotRoles = OrderSheetValues['timeSlots'][number]['roles'];
+type SlotRoles = OrderSheetValues['scheduleGroups'][number]['timeSlots'][number]['roles'];
 type RoleKey = SlotRoles[number]['role'];
 
 export interface RolesSheetProps {

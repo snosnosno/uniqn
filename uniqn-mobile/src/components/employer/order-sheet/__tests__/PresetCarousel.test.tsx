@@ -15,8 +15,13 @@ const makeValues = (title: string): OrderSheetFormValues => ({
   title,
   location: { name: '라운더스 홀덤펍' },
   contactPhone: '010-1234-5678',
-  dates: [],
-  timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 1 }] }],
+  scheduleGroups: [
+    {
+      dates: [],
+      timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 1 }] }],
+      grouped: false,
+    },
+  ],
   salary: { type: 'hourly', amount: 20000 },
 });
 

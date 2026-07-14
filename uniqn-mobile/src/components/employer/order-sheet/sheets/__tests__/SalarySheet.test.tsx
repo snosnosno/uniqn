@@ -276,6 +276,35 @@ describe('SalarySheet', () => {
     );
   });
 
+  it('그룹 2개+(multiGroup)면 전 그룹 동일 적용 캡션을 노출한다 (S1 — 2차 Design-medium)', () => {
+    const { queryByText, rerender } = render(
+      <SalarySheet
+        visible
+        value={HOURLY_VALUE}
+        useSameSalary={false}
+        roleSalaries={[{ role: 'dealer', salary: { type: 'hourly', amount: 20000 } }]}
+        uniqueRoles={[DEALER]}
+        multiGroup
+        onConfirm={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+    expect(queryByText('역할별 급여는 모든 날짜에 동일하게 적용돼요')).toBeTruthy();
+
+    rerender(
+      <SalarySheet
+        visible
+        value={HOURLY_VALUE}
+        useSameSalary={false}
+        roleSalaries={[{ role: 'dealer', salary: { type: 'hourly', amount: 20000 } }]}
+        uniqueRoles={[DEALER]}
+        onConfirm={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+    expect(queryByText('역할별 급여는 모든 날짜에 동일하게 적용돼요')).toBeNull();
+  });
+
   it('직접입력 금액은 1억으로 클램프된다 (Eng-M4)', () => {
     const onConfirm = jest.fn();
     const { getByText, getByTestId } = render(

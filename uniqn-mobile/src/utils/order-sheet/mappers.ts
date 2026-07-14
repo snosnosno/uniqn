@@ -16,6 +16,7 @@ import type { JobPostingTemplate } from '@/types/jobTemplate';
 import { templateToDraft } from '@/types/jobTemplate';
 import { draftToCreateJobPostingInput } from '@/utils/job-posting/draftAdapter';
 import type { GridPrefillParams } from '@/utils/job-posting/gridPrefill';
+import { toDateString } from '@/utils/date';
 import { DEFAULT_SLOT_START_TIME } from '@/domains/weeklyGrid';
 import { DEFAULT_SALARY_BY_TYPE } from '@/constants/jobPosting';
 import { syncRoleSalaries } from '@/utils/order-sheet/roleSalaries';
@@ -25,6 +26,9 @@ import { generateId } from '@/utils/generateId';
 export { DEFAULT_SALARY_BY_TYPE };
 export const HOURLY_STEP = 1000;
 
+type OrderSheetScheduleGroups = OrderSheetValues['scheduleGroups'];
+type OrderSheetGroupTimeSlots = OrderSheetScheduleGroups[number]['timeSlots'];
+
 /** 초기 주문서 SSOT — INITIAL_JOB_POSTING_DRAFT 경유 금지(by_role·09:00 기본슬롯 유입, 리뷰 실측). */
 export function initialOrderSheetValues(): OrderSheetFormValues {
   return {
@@ -33,8 +37,8 @@ export function initialOrderSheetValues(): OrderSheetFormValues {
     location: null,
     contactPhone: '', // create.tsx가 프로필 phone으로 덮어씀 (Task 5 Step 6)
     description: '',
-    dates: [],
-    timeSlots: [],
+    // 빈 단일 그룹 = 구 평탄(dates:[]·timeSlots:[]) 초기 상태와 동등(S1)
+    scheduleGroups: [{ dates: [], timeSlots: [], grouped: false }],
     salary: { type: 'hourly', amount: DEFAULT_SALARY_BY_TYPE.hourly },
     useSameSalary: false, // 기본 by_role(설계 §S2.1) — 5지점 통일
     roleSalaries: [],
@@ -45,9 +49,9 @@ export function initialOrderSheetValues(): OrderSheetFormValues {
   };
 }
 
-/** 날짜별 requirements가 참조를 공유하지 않도록 호출마다 새 슬롯 생성 + id 부여 (gridPrefill.ts 관례). */
-function toPostingTimeSlots(values: OrderSheetValues): PostingTimeSlot[] {
-  return values.timeSlots.map((slot) => ({
+/** 날짜별 requirements가 참조를 공유하지 않도록 호출마다 새 슬롯 생성 + id 부여 (gridPrefill.ts 관례, F1). */
+function toPostingTimeSlots(slots: OrderSheetGroupTimeSlots): PostingTimeSlot[] {
+  return slots.map((slot) => ({
     id: generateId(),
     startTime: slot.startTime,
     roles: slot.roles.map((r) => ({
@@ -57,6 +61,11 @@ function toPostingTimeSlots(values: OrderSheetValues): PostingTimeSlot[] {
       count: r.count,
     })),
   }));
+}
+
+/** 전 그룹 순회 슬롯 합집합 — 급여 파생(uniqueRoles·커버 게이트·roleCatalog) 공용 소스 */
+function allGroupTimeSlots(values: OrderSheetValues): OrderSheetGroupTimeSlots {
+  return values.scheduleGroups.flatMap((g) => g.timeSlots);
 }
 
 const roleKey = (role: string, customRole?: string) =>
@@ -69,7 +78,7 @@ function toRoleCatalog(values: OrderSheetValues): PostingRoleCatalogEntry[] {
       : values.roleSalaries.map((rs) => [roleKey(rs.role, rs.customRole), rs.salary])
   );
   const seen = new Map<string, PostingRoleCatalogEntry>();
-  for (const slot of values.timeSlots) {
+  for (const slot of allGroupTimeSlots(values)) {
     for (const r of slot.roles) {
       const key = roleKey(r.role, r.customRole);
       if (!seen.has(key)) {
@@ -101,7 +110,7 @@ function toRoleCatalog(values: OrderSheetValues): PostingRoleCatalogEntry[] {
 function resolveDefaultSalary(values: OrderSheetValues): SalaryInfo {
   if (values.useSameSalary || values.roleSalaries.length === 0) return values.salary;
   const activeKeys = new Set<string>();
-  for (const slot of values.timeSlots)
+  for (const slot of allGroupTimeSlots(values))
     for (const r of slot.roles) activeKeys.add(roleKey(r.role, r.customRole));
   const active = values.roleSalaries.filter((rs) =>
     activeKeys.has(roleKey(rs.role, rs.customRole))
@@ -116,6 +125,20 @@ function resolveDefaultSalary(values: OrderSheetValues): SalaryInfo {
 }
 
 export function valuesToDraft(values: OrderSheetValues): JobPostingDraft {
+  // 그룹 flatMap 쓰기(S1) — grouped=true 그룹만 isGrouped 기록(F6: 지원자 묶음지원 축, 미기록=날짜별 지원),
+  // 날짜별 timeSlots는 호출마다 새로 생성(F1 deepClone). requirements·allDates는 날짜 전역 정렬(2차 Eng-H1),
+  // allDates는 dedupe 합집합(F2 — 중복은 스키마 E1이 원천 차단하나 방어 유지).
+  const requirements = values.scheduleGroups
+    .flatMap((g) =>
+      g.dates.map((date) => ({
+        date,
+        timeSlots: toPostingTimeSlots(g.timeSlots),
+        ...(g.grouped ? { isGrouped: true as const } : {}),
+      }))
+    )
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const allDates = [...new Set(values.scheduleGroups.flatMap((g) => g.dates))].sort();
+
   // 직접 조립(스프레드 없음) — JobPostingDraft 필수 필드는 TS가 강제, INITIAL 오염 원천 차단
   return {
     postingType: values.postingType,
@@ -127,10 +150,10 @@ export function valuesToDraft(values: OrderSheetValues): JobPostingDraft {
     ...(values.venueId !== undefined ? { venueId: values.venueId } : {}),
     schedule: {
       kind: 'dated',
-      primaryDate: values.dates[0] ?? '',
-      allDates: [...values.dates],
-      requirements: values.dates.map((date) => ({ date, timeSlots: toPostingTimeSlots(values) })),
-      templateTimeSlots: toPostingTimeSlots(values),
+      primaryDate: allDates[0] ?? '',
+      allDates,
+      requirements,
+      templateTimeSlots: toPostingTimeSlots(values.scheduleGroups[0]?.timeSlots ?? []),
     },
     roleCatalog: toRoleCatalog(values),
     compensation: {
@@ -157,17 +180,85 @@ const stripSlotIds = (slots: PostingTimeSlot[]) =>
     })),
   }));
 
+/** draft 슬롯 → 폼 슬롯(id 제거·구조만) — 그룹 복원 공용 */
+function toFormTimeSlots(slots: PostingTimeSlot[]): OrderSheetGroupTimeSlots {
+  return slots.map((slot) => ({
+    startTime: slot.startTime ?? '',
+    roles: slot.roles.map((r) => ({
+      role: r.role ?? 'other',
+      ...(r.customRole !== undefined ? { customRole: r.customRole } : {}),
+      count: r.count,
+    })),
+  }));
+}
+
+/** 'YYYY-MM-DD' 연속(다음 날) 판정 — 로컬 자정 기준(문자열 산술 금지) */
+function isNextDay(prev: string, next: string): boolean {
+  const [y, m, d] = prev.split('-').map(Number);
+  const date = new Date(y!, (m ?? 1) - 1, d ?? 1);
+  date.setDate(date.getDate() + 1);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` === next;
+}
+
 export function draftToValues(draft: JobPostingDraft): OrderSheetFormValues {
   if (draft.schedule.kind !== 'dated') {
     throw new Error('주문서는 dated 스케줄(지원·급구)만 지원합니다');
   }
-  // 날짜별 시간대가 상이하면 조용한 평탄화 대신 throw(리뷰 M8) — 호출부(프리셋)가 try/catch로 스킵
-  const reqs = draft.schedule.requirements;
-  const canonical = JSON.stringify(stripSlotIds(reqs[0]?.timeSlots ?? []));
-  if (reqs.some((r) => JSON.stringify(stripSlotIds(r.timeSlots)) !== canonical)) {
-    throw new Error('날짜별 시간대가 서로 달라 주문서로 표현할 수 없습니다');
+  // 그룹핑 복원(S1 — 구 M8 throw 제거, 2차 Eng-H1 확정 규칙):
+  // · isGrouped===true: 연속 run + 동일 시그니처(stripSlotIds JSON) 경계 보존 → grouped 그룹
+  //   (groupRequirementsToDateRanges 시맨틱 — 묶음지원 범위를 그대로 살린다)
+  // · falsy: 시그니처 병합 → shared 그룹(동일 조건 개별 날짜들의 병합은 지원자 화면 산출이
+  //   동일해 정규형으로 수용 — 비연속 dates 허용)
+  // 왕복 불변식 = 정규형 동등(draft→values→draft에서 isGrouped·시그니처·날짜 집합 보존).
+  // 레거시 date는 Date/null 가능 — 문자열 정규화 후 무효(date 없음) requirements는 제외.
+  const reqs = draft.schedule.requirements
+    .map((r) => ({ ...r, date: r.date ? toDateString(r.date) : '' }))
+    .filter((r) => r.date !== '')
+    .sort((a, b) => a.date.localeCompare(b.date));
+  type FormGroup = OrderSheetScheduleGroups[number];
+  const groups: FormGroup[] = [];
+  const sharedBySig = new Map<string, FormGroup>();
+  let run: { sig: string; lastDate: string; group: FormGroup } | null = null;
+  for (const r of reqs) {
+    const sig = JSON.stringify(stripSlotIds(r.timeSlots));
+    if (r.isGrouped === true) {
+      if (run !== null && run.sig === sig && isNextDay(run.lastDate, r.date)) {
+        run.group.dates.push(r.date);
+        run.lastDate = r.date;
+      } else {
+        const group: FormGroup = {
+          dates: [r.date],
+          timeSlots: toFormTimeSlots(r.timeSlots),
+          grouped: true,
+        };
+        groups.push(group);
+        run = { sig, lastDate: r.date, group };
+      }
+    } else {
+      run = null; // grouped run은 비-grouped 날짜로 단절(날짜 연속성과 별개의 명시 경계)
+      const existing = sharedBySig.get(sig);
+      if (existing) {
+        existing.dates.push(r.date);
+      } else {
+        const group: FormGroup = {
+          dates: [r.date],
+          timeSlots: toFormTimeSlots(r.timeSlots),
+          grouped: false,
+        };
+        sharedBySig.set(sig, group);
+        groups.push(group);
+      }
+    }
   }
-  const firstSlots = reqs[0]?.timeSlots ?? draft.schedule.templateTimeSlots ?? [];
+  // requirements 없는 draft(빈 템플릿 등) — 구 동작(allDates+templateTimeSlots 단일 그룹) 보존
+  if (groups.length === 0) {
+    groups.push({
+      dates: [...draft.schedule.allDates],
+      timeSlots: toFormTimeSlots(draft.schedule.templateTimeSlots ?? []),
+      grouped: false,
+    });
+  }
   // 역할별 급여(by_role) 복원 — hourly 강제 변환 금지, 협의(other)는 그대로 유지(2026-07-14 결정).
   // shared 는 roleCatalog 에 defaultSalary 를 복사(동등성 계약)하므로, by_role 일 때만 roleSalaries 를
   // 복원해야 왕복이 성립한다(shared 에서 되채우면 baseValues.roleSalaries=[] 와 불일치).
@@ -189,15 +280,7 @@ export function draftToValues(draft: JobPostingDraft): OrderSheetFormValues {
     location: draft.location,
     contactPhone: draft.contactPhone,
     description: draft.description,
-    dates: [...draft.schedule.allDates],
-    timeSlots: firstSlots.map((slot) => ({
-      startTime: slot.startTime ?? '',
-      roles: slot.roles.map((r) => ({
-        role: r.role ?? 'other',
-        ...(r.customRole !== undefined ? { customRole: r.customRole } : {}),
-        count: r.count,
-      })),
-    })),
+    scheduleGroups: groups,
     salary: draft.compensation.defaultSalary ??
       roleSalaries[0]?.salary ?? { type: 'hourly', amount: DEFAULT_SALARY_BY_TYPE.hourly },
     useSameSalary: draft.compensation.mode === 'shared',
@@ -215,7 +298,35 @@ export function draftToValues(draft: JobPostingDraft): OrderSheetFormValues {
 
 export function templateToValues(template: JobPostingTemplate): OrderSheetFormValues {
   const values = draftToValues(templateToDraft(template));
-  return { ...values, dates: [] };
+  // F4: 그룹 구조·timeSlots는 유지하고 각 그룹 dates만 비운다(z.input 단계 허용, 제출 시 검증)
+  return {
+    ...values,
+    scheduleGroups: (values.scheduleGroups ?? []).map((g) => ({ ...g, dates: [] })),
+  };
+}
+
+/**
+ * 완료 화면 요약 소스(리뷰 Eng-M2) — 다중 그룹 규칙: primaryDate(전 그룹 최소 날짜) +
+ * 그 날짜가 속한 그룹의 첫 슬롯 출근시간 + 고유 날짜 수("외 N일" 접미는 호출부 조립).
+ */
+export function primaryScheduleInfo(values: OrderSheetValues): {
+  primaryDate?: string;
+  startTime?: string;
+  totalDates: number;
+} {
+  const uniqueDates = [...new Set(values.scheduleGroups.flatMap((g) => g.dates))].sort();
+  const primaryDate = uniqueDates[0];
+  const primaryGroup =
+    primaryDate === undefined
+      ? undefined
+      : values.scheduleGroups.find((g) => g.dates.includes(primaryDate));
+  return {
+    ...(primaryDate !== undefined ? { primaryDate } : {}),
+    ...(primaryGroup?.timeSlots[0]?.startTime !== undefined
+      ? { startTime: primaryGroup.timeSlots[0].startTime }
+      : {}),
+    totalDates: uniqueDates.length,
+  };
 }
 
 /**
@@ -230,6 +341,12 @@ export function formValuesToDraft(values: OrderSheetFormValues): JobPostingDraft
   return valuesToDraft({
     ...values,
     description: values.description ?? '',
+    // z.input 그룹은 grouped optional — z.output 필수 boolean으로 채움(최종 검증 NIT-2)
+    scheduleGroups: (values.scheduleGroups ?? []).map((g) => ({
+      dates: g.dates,
+      timeSlots: g.timeSlots,
+      grouped: g.grouped ?? false,
+    })),
     useSameSalary: values.useSameSalary ?? false, // 기본 by_role(설계 §S2.1) — 5지점 통일
     roleSalaries: values.roleSalaries ?? [],
     allowances: values.allowances ?? {},
@@ -259,8 +376,8 @@ export function gridParamsToValues(params: GridPrefillParams): OrderSheetFormVal
     ...(venueId !== undefined ? { venueId } : {}),
     ...(hasDate
       ? {
-          dates: [params.date as string],
-          timeSlots,
+          // 단일 그룹 형태로 이행(S1) — 주간그리드 프리필 의미 무변
+          scheduleGroups: [{ dates: [params.date as string], timeSlots, grouped: false as const }],
           // 반환 직전 프리필(Eng-H3) — 미적용 시 그리드 출하 플로우가 "급여 시트 강제 방문"으로 회귀
           roleSalaries: syncRoleSalaries(timeSlots, [], base.salary.type),
         }

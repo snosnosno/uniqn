@@ -8,7 +8,7 @@
 import { z } from 'zod';
 import { xssValidation } from '@/utils/security';
 import { isRegionSlug } from '@/constants/regions';
-import { MAX_SALARY_AMOUNT } from '@/constants/jobPosting';
+import { DATE_CONSTRAINTS, MAX_SALARY_AMOUNT } from '@/constants/jobPosting';
 import { PROVIDED_FLAG } from '@/utils/settlement';
 import { preQuestionsArraySchema } from '@/schemas/preQuestion.schema';
 import type { TaxSettings } from '@/types/jobPosting';
@@ -48,6 +48,19 @@ export const orderSheetTimeSlotSchema = z.object({
   roles: z.array(orderSheetRoleSchema).min(1, '역할을 추가해주세요'),
 });
 
+/**
+ * 일정 그룹(S1) — "같은 시간·역할을 공유하는 날짜 묶음". 개별 설정 = 날짜 1개짜리 그룹.
+ *
+ * grouped = 묶음지원(구형 isGrouped) 축 — 세그먼트 ②("연속 날짜 묶음 지원")에서만 true.
+ * "같은 조건"(시간·역할 공유)과 별개 축이다(2차 Eng-C1 CRITICAL): true면 지원자 화면이
+ * 묶음지원(연속 범위 일괄 지원)으로 분기하므로 그룹 크기>1 자동 설정 절대 금지.
+ */
+export const orderSheetScheduleGroupSchema = z.object({
+  dates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).min(1, '날짜를 선택해주세요'),
+  timeSlots: z.array(orderSheetTimeSlotSchema).min(1, '시간대를 추가해주세요'),
+  grouped: z.boolean().default(false),
+});
+
 export const orderSheetLocationSchema = z.object({
   name: safeText(50).min(1, '장소를 선택해주세요'),
   address: safeText(200).optional(),
@@ -81,8 +94,7 @@ export const orderSheetValuesSchema = z
     location: orderSheetLocationSchema.nullable().refine((v) => v !== null, '장소를 선택해주세요'),
     contactPhone: safeText(20).min(1, '연락처를 입력해주세요'),
     description: safeText(500).default(''),
-    dates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).min(1, '날짜를 선택해주세요'),
-    timeSlots: z.array(orderSheetTimeSlotSchema).min(1, '시간대를 추가해주세요'),
+    scheduleGroups: z.array(orderSheetScheduleGroupSchema).min(1, '날짜를 선택해주세요'),
     salary: orderSheetSalarySchema,
     // 기본 false(by_role) — 설계 §S2.1. 살아있는 기본값 5지점(schema·initialOrderSheetValues·
     // formValuesToDraft·orderRowMeta·OrderSheetScreen) 전수 통일 — 하나라도 어긋나면 zod 게이트와
@@ -114,9 +126,39 @@ export const orderSheetValuesSchema = z
     venueId: z.string().uuid().optional(),
   })
   .superRefine((v, ctx) => {
-    // 역할별 급여(by_role) 전수 커버 게이트 — useSameSalary=false면 timeSlots의 고유 역할
+    // E1: 그룹 간 날짜 중복 금지 — issue path는 뒤에 온 중복 그룹의 dates(해당 그룹 행에 배지).
+    // F2: allDates 중복 → filled counts 키스페이스 충돌의 원천 차단이기도 하다.
+    const seenDates = new Set<string>();
+    v.scheduleGroups.forEach((g, gi) => {
+      let flagged = false;
+      for (const d of g.dates) {
+        if (seenDates.has(d)) {
+          if (!flagged) {
+            ctx.addIssue({
+              code: 'custom',
+              path: ['scheduleGroups', gi, 'dates'],
+              message: '이미 다른 일정에 포함된 날짜예요',
+            });
+            flagged = true;
+          }
+        } else {
+          seenDates.add(d);
+        }
+      }
+    });
+    // 합산 고유 날짜 ≤ 타입별 상한(2차 Eng-M4/CEO-3) — 평탄 dates.max 소실로 그룹×N일 우회 차단
+    const maxDates = DATE_CONSTRAINTS[v.postingType].maxDates;
+    if (seenDates.size > maxDates) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['scheduleGroups'],
+        message: `날짜는 최대 ${maxDates}개까지 선택할 수 있어요`,
+      });
+    }
+
+    // 역할별 급여(by_role) 전수 커버 게이트 — useSameSalary=false면 전 그룹 timeSlots의 고유 역할
     // (기타는 customRole 단위)을 roleSalaries가 전부 커버해야 통과한다. orderRowMeta의 unset
-    // 판정(:171-193)과 대칭 — 스키마는 최후 게이트(급여 미정 제출 차단), UI(급여 시트)는 UX 게이트.
+    // 판정과 대칭 — 스키마는 최후 게이트(급여 미정 제출 차단), UI(급여 시트)는 UX 게이트.
     // 협의(other)는 amount 없이 커버로 인정, 그 외 타입은 amount>0이어야 커버.
     if (v.useSameSalary) return;
     const keyOf = (role: string, customRole?: string) =>
@@ -125,10 +167,11 @@ export const orderSheetValuesSchema = z
       v.roleSalaries.map((rs) => [keyOf(rs.role, rs.customRole), rs.salary] as const)
     );
     const uniqueKeys = new Set<string>();
-    for (const slot of v.timeSlots)
-      for (const r of slot.roles) uniqueKeys.add(keyOf(r.role, r.customRole));
+    for (const g of v.scheduleGroups)
+      for (const slot of g.timeSlots)
+        for (const r of slot.roles) uniqueKeys.add(keyOf(r.role, r.customRole));
     // 고유 역할 0개면 skip(Eng-M5) — 기본 false 반전 후 신규 폼 첫 onChange부터 급여 에러가
-    // 서는 소음 제거. 제출 차단은 timeSlots/roles min(1)이 담당(게이트 약화 없음).
+    // 서는 소음 제거. 제출 차단은 그룹당 timeSlots/roles min(1)이 담당(게이트 약화 없음).
     if (uniqueKeys.size === 0) return;
     const allCovered = [...uniqueKeys].every((k) => {
       const s = salaryByRole.get(k);
