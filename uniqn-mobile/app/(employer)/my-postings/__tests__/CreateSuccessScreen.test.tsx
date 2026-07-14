@@ -8,6 +8,7 @@ const mockShareJobById = jest.fn();
 const mockOpenTemplateModal = jest.fn();
 const mockHandleSaveTemplate = jest.fn();
 const mockGetLastSubmittedDraft = jest.fn<JobPostingDraft | null, []>();
+const mockClearLastSubmittedDraft = jest.fn();
 
 jest.mock('expo-router', () => ({
   router: {
@@ -39,6 +40,7 @@ jest.mock('@/hooks/useTemplateManager', () => ({
 
 jest.mock('@/utils/order-sheet/lastSubmitted', () => ({
   getLastSubmittedDraft: () => mockGetLastSubmittedDraft(),
+  clearLastSubmittedDraft: () => mockClearLastSubmittedDraft(),
 }));
 
 jest.mock('@/components/employer/job-form/modals/TemplateModal', () => ({
@@ -102,6 +104,14 @@ describe('CreateSuccessScreen', () => {
     });
     const { queryByTestId } = render(<CreateSuccessScreen />);
     expect(queryByTestId('create-success-save-preset')).toBeNull();
+  });
+
+  it('마운트 시 캐시를 1회 소비한다 — snapshot 후 clear(1회성 계약, 딥링크 재노출 차단)', () => {
+    const { getByTestId } = render(<CreateSuccessScreen />);
+    // snapshot 이 clear 보다 먼저 실행되므로 draft 로 저장 배너가 렌더된다(순서 보장).
+    expect(getByTestId('create-success-save-preset')).toBeTruthy();
+    // 읽은 직후 모듈 캐시를 비워 앱 수명 잔류·재진입 재노출을 차단한다.
+    expect(mockClearLastSubmittedDraft).toHaveBeenCalled();
   });
 
   it('전달된 draft 가 없으면 저장 제안 배너를 숨긴다(직접 딥링크 진입 방어)', () => {

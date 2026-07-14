@@ -15,7 +15,7 @@ import { BookmarkOutlineIcon, CheckIcon, PlusIcon, ShareIcon } from '@/component
 import { STATUS_COLORS, TEXT_COLORS } from '@/constants/colors';
 import { useShare } from '@/hooks/useShare';
 import { useTemplateManager } from '@/hooks/useTemplateManager';
-import { getLastSubmittedDraft } from '@/utils/order-sheet/lastSubmitted';
+import { clearLastSubmittedDraft, getLastSubmittedDraft } from '@/utils/order-sheet/lastSubmitted';
 
 const first = (v?: string | string[]) => (Array.isArray(v) ? v[0] : v);
 
@@ -35,8 +35,13 @@ export default function CreateSuccessScreen() {
   const { shareJobById, isSharing } = useShare();
   const templateManager = useTemplateManager();
 
-  // 방금 등록한 draft 를 mount 시 1회 snapshot — 이후 모듈 캐시가 갱신돼도 저장 대상은 고정.
-  const [savedDraft] = useState(() => getLastSubmittedDraft());
+  // 방금 등록한 draft 를 mount 시 1회 snapshot 후 즉시 캐시를 비운다(1회성 계약) —
+  // 앱 수명 잔류·조작 딥링크 재진입 시 이전 draft 재노출 경로 차단. snapshot 이라 이후 저장 대상은 고정.
+  const [savedDraft] = useState(() => {
+    const draft = getLastSubmittedDraft();
+    clearLastSubmittedDraft();
+    return draft;
+  });
   const canSavePreset = suggestPreset && savedDraft !== null;
 
   const handleShare = useCallback(() => {
