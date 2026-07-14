@@ -37,7 +37,13 @@ const presetValues: OrderSheetFormValues = {
   title: '프리셋 딜러',
   location: { name: '라운더스 홀덤펍', address: '서울 강남구' },
   contactPhone: '010-1234-5678',
-  timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] }],
+  scheduleGroups: [
+    {
+      dates: [],
+      timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] }],
+      grouped: false,
+    },
+  ],
 };
 
 const lastPreset: OrderSheetPreset = {

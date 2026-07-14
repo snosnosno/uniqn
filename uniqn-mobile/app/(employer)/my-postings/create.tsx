@@ -22,6 +22,7 @@ import {
   draftToValues,
   formValuesToDraft,
   gridParamsToValues,
+  primaryScheduleInfo,
   templateToValues,
   valuesToCreateInput,
   valuesToDraft,
@@ -104,7 +105,10 @@ export default function CreateJobPostingScreen() {
           title: '마지막 공고',
           icon: 'zap',
           subtitle: values.title,
-          values: { ...values, dates: [] },
+          values: {
+            ...values,
+            scheduleGroups: (values.scheduleGroups ?? []).map((g) => ({ ...g, dates: [] })),
+          },
         });
       } catch {
         // fixed·대회 등 주문서 밖 공고는 프리셋에서 제외
@@ -222,9 +226,12 @@ export default function CreateJobPostingScreen() {
         } else {
           // 완료 화면 전달 — draft 는 파라미터로 넘기기엔 커 모듈 캐시로 1회 전달(공유 X, 프리셋 저장용).
           setLastSubmittedDraft(valuesToDraft(values));
-          const startTime = values.timeSlots[0]?.startTime;
+          // 다중 그룹 요약 규칙(리뷰 Eng-M2): 최소 날짜 + 그 그룹 첫 슬롯 + "외 N일" 접미
+          const { primaryDate, startTime, totalDates } = primaryScheduleInfo(values);
           const summary = [
-            values.dates[0] ? formatShortDate(values.dates[0]) : null,
+            primaryDate
+              ? `${formatShortDate(primaryDate)}${totalDates > 1 ? ` 외 ${totalDates - 1}일` : ''}`
+              : null,
             startTime ? `출근 ${startTime}` : null,
           ]
             .filter(Boolean)

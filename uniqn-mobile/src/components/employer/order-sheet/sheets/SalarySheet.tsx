@@ -39,6 +39,8 @@ export interface SalarySheetProps {
   useSameSalary: boolean;
   roleSalaries: RoleSalaries;
   uniqueRoles: UniqueRole[];
+  /** 일정 그룹 2개+(S1) — 역할 행이 전 그룹 합집합임을 안내하는 캡션 노출(2차 Design-medium) */
+  multiGroup?: boolean;
   onConfirm: (next: { salary: Salary; useSameSalary: boolean; roleSalaries: RoleSalaries }) => void;
   onClose: () => void;
 }
@@ -64,6 +66,7 @@ export function SalarySheet({
   useSameSalary,
   roleSalaries,
   uniqueRoles,
+  multiGroup = false,
   onConfirm,
   onClose,
 }: SalarySheetProps) {
@@ -310,6 +313,13 @@ export function SalarySheet({
           />
           <Text className="text-sm font-sans-medium text-content-primary">모든 역할 동일 급여</Text>
         </Pressable>
+
+        {/* 그룹 2개+ 안내(2차 Design-medium) — 역할 행=전 그룹 합집합, 날짜별 단가 차등은 범위 밖 */}
+        {!same && multiGroup && uniqueRoles.length > 0 ? (
+          <Text className="mt-2 text-[11px] text-content-muted font-sans">
+            역할별 급여는 모든 날짜에 동일하게 적용돼요
+          </Text>
+        ) : null}
 
         {/* 역할별 급여(동일급여 OFF) — 타입은 공통 세그먼트, 금액만 역할별.
             시급=스테퍼 [라벨 | − 금액 +], 금액 탭=인라인 직접입력(완료 44px·빈 blur 복원),

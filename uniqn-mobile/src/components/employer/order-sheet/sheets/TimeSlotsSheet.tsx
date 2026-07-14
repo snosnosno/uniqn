@@ -15,7 +15,7 @@ import { PlusIcon, ChevronRightIcon } from '@/components/icons';
 import { roleName } from '../orderRowMeta';
 import type { OrderSheetValues } from '@/schemas/orderSheet.schema';
 
-type Slots = OrderSheetValues['timeSlots'];
+type Slots = OrderSheetValues['scheduleGroups'][number]['timeSlots'];
 
 export interface TimeSlotsSheetProps {
   visible: boolean;
