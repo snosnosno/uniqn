@@ -29,10 +29,14 @@ CREATE INDEX IF NOT EXISTS idx_job_postings_salary_monthly
   WHERE salary_monthly_max IS NOT NULL;
 
 -- 백필: 기존 행의 defaultSalary + role_catalog[].salary 를 타입별 GREATEST 집계.
--- amount 문자열 이력 방어: 빈 문자열 NULLIF + 숫자 형태 정규식 통과분만 캐스팅(비정형 값이
--- 있어도 마이그레이션 전체가 abort 되지 않도록 fail-safe). 0 이하는 무의미 값으로 제외.
+-- amount 문자열 이력 방어: 캐스트는 숫자 형태 정규식 통과분만 CASE 안에서 수행 —
+-- WHERE AND 는 평가 순서를 보장하지 않아(플래너 qual 재정렬) 별도 AND 가드로는
+-- 비정형 값의 캐스트 abort 를 SQL 의미론상 막지 못한다(리뷰 M1). 비정형은 NULL 로
+-- 흘려보내고 집계 FILTER(amount > 0)에서 자연 제외한다. 내림(floor)은 클라이언트
+-- getSalaryBounds(Math.floor)와 동일 의미론(리뷰 L1).
 WITH salary_rows AS (
-  SELECT s.id, s.stype, s.amount::numeric AS amount
+  SELECT s.id, s.stype,
+         CASE WHEN s.amount ~ '^[0-9]+(\.[0-9]+)?$' THEN s.amount::numeric END AS amount
   FROM (
     SELECT id,
            compensation -> 'defaultSalary' ->> 'type' AS stype,
@@ -48,14 +52,12 @@ WITH salary_rows AS (
                 ELSE '[]'::jsonb END) r
   ) s
   WHERE s.stype IN ('hourly', 'daily', 'monthly')
-    AND s.amount ~ '^[0-9]+(\.[0-9]+)?$'
-    AND s.amount::numeric > 0
 ),
 agg AS (
   SELECT id,
-         max(amount) FILTER (WHERE stype = 'hourly')::integer  AS hourly_max,
-         max(amount) FILTER (WHERE stype = 'daily')::integer   AS daily_max,
-         max(amount) FILTER (WHERE stype = 'monthly')::integer AS monthly_max
+         floor(max(amount) FILTER (WHERE stype = 'hourly' AND amount > 0))::integer  AS hourly_max,
+         floor(max(amount) FILTER (WHERE stype = 'daily' AND amount > 0))::integer   AS daily_max,
+         floor(max(amount) FILTER (WHERE stype = 'monthly' AND amount > 0))::integer AS monthly_max
   FROM salary_rows
   GROUP BY id
 )

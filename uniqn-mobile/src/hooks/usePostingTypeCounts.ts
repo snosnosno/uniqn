@@ -74,9 +74,10 @@ export function usePostingTypeCounts(options?: UsePostingTypeCountsOptions) {
   const roles = options?.roles ?? [];
   const salaryType = options?.salaryType ?? null;
   const salaryMin = options?.salaryMin ?? null;
-  // 배열 identity 무관하게 캐시 키 안정화 (slug/역할 key 에 ',' 미포함 — 상수 계약)
+  // 배열 identity 무관하게 캐시 키 안정화 (slug/역할 key 에 ',' 미포함 — 상수 계약).
+  // 역할은 선택 순서가 결과에 무영향이라 정렬로 캐시 적중률을 올린다(리뷰 L3).
   const regionScopeKey = regions.length > 0 ? regions.join(',') : region;
-  const roleScopeKey = roles.length > 0 ? roles.join(',') : null;
+  const roleScopeKey = roles.length > 0 ? [...roles].sort().join(',') : null;
   const salaryScopeKey = salaryType && salaryMin ? `${salaryType}:${salaryMin}` : null;
 
   const queryResult = useQuery({
