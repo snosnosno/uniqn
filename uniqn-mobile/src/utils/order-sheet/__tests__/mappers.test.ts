@@ -164,7 +164,72 @@ describe('draftToValues ↔ valuesToDraft 왕복', () => {
       { role: 'dealer', salary: { type: 'hourly', amount: 25000 } },
       { role: 'serving', salary: { type: 'other', amount: 0 } },
     ]);
-    expect(roundTrip).toEqual(byRoleValues); // 전체 왕복 동치
+    // salary(세그먼트 캐리어)는 defaultSalary=최저값 정규화(CEO-1)로 25,000이 된다 — 정규형 동치.
+    expect(roundTrip).toEqual({ ...byRoleValues, salary: { type: 'hourly', amount: 25000 } });
+    // draft 레벨 멱등 — 정규형에서 재왕복해도 draft가 동일하다.
+    // slot/role id는 호출마다 재생성(타임스탬프 기반)이라 벗겨서 구조만 비교(ms 경계 플레이크 방지).
+    const stripIds = (obj: unknown): unknown =>
+      JSON.parse(JSON.stringify(obj, (key, value) => (key === 'id' ? undefined : value)));
+    expect(
+      stripIds(valuesToDraft(draftToValues(valuesToDraft(byRoleValues)) as OrderSheetValues))
+    ).toEqual(stripIds(valuesToDraft(byRoleValues)));
+  });
+
+  it('by_role의 defaultSalary는 roleSalaries 최저값 — 유령 초기값(세그먼트 캐리어) 아님 (CEO-1)', () => {
+    // 소비처 실측 3곳(정산 폴백·카드 a11y 헤드라인·급여 필터)이 defaultSalary를 읽는다 —
+    // "최저가부터" 의미가 되도록 기록한다. 협의(other) 행은 금액 축이 없어 최저값 산정에서 제외.
+    const byRole: OrderSheetValues = {
+      ...baseValues,
+      salary: { type: 'hourly', amount: 20000 }, // 아무도 안 고른 유령 캐리어
+      useSameSalary: false,
+      roleSalaries: [
+        { role: 'dealer', salary: { type: 'hourly', amount: 25000 } },
+        { role: 'serving', salary: { type: 'hourly', amount: 23000 } },
+      ],
+    };
+    expect(valuesToDraft(byRole).compensation.defaultSalary).toEqual({
+      type: 'hourly',
+      amount: 23000,
+    });
+  });
+
+  it('고아(timeSlots에서 사라진 역할) 엔트리는 defaultSalary 최저값 산정에서 제외한다 (리뷰 H-1)', () => {
+    // 고아 잔류(금액 보존)는 폼 상태 한정 — 쓰기 시 실 역할이 아닌 금액이 카드 헤드라인·
+    // 정산 폴백에 과소 공시로 흘러가면 안 된다. baseValues의 timeSlots는 dealer+serving.
+    const withOrphan: OrderSheetValues = {
+      ...baseValues,
+      useSameSalary: false,
+      roleSalaries: [
+        { role: 'dealer', salary: { type: 'hourly', amount: 25000 } },
+        { role: 'serving', salary: { type: 'hourly', amount: 26000 } },
+        { role: 'floor', salary: { type: 'hourly', amount: 15000 } }, // 고아 — 슬롯에 없음
+      ],
+    };
+    expect(valuesToDraft(withOrphan).compensation.defaultSalary).toEqual({
+      type: 'hourly',
+      amount: 25000,
+    });
+  });
+
+  it('by_role 전원 협의(other)면 defaultSalary도 협의로 기록된다', () => {
+    const byRole: OrderSheetValues = {
+      ...baseValues,
+      useSameSalary: false,
+      roleSalaries: [
+        { role: 'dealer', salary: { type: 'other', amount: 0 } },
+        { role: 'serving', salary: { type: 'other', amount: 0 } },
+      ],
+    };
+    expect(valuesToDraft(byRole).compensation.defaultSalary).toEqual({
+      type: 'other',
+      amount: 0,
+    });
+  });
+
+  it('initialOrderSheetValues는 by_role 기본(useSameSalary=false·roleSalaries=[])', () => {
+    const initial = initialOrderSheetValues();
+    expect(initial.useSameSalary).toBe(false);
+    expect(initial.roleSalaries).toEqual([]);
   });
 });
 
@@ -248,7 +313,12 @@ describe('gridParamsToValues (정규화 + 직접 조립 — INITIAL 경유 금�
     expect(values.venueId).toBe('00000000-0000-4000-8000-000000000001');
     expect(values.dates).toEqual(['2026-07-20']);
     expect(values.timeSlots?.[0]?.roles?.[0]).toMatchObject({ role: 'dealer', count: 3 });
-    expect(values.useSameSalary).toBe(true); // INITIAL의 by_role 유입 차단 확인
+    // 기본 by_role(설계 §S2.1) + 반환 직전 syncRoleSalaries 프리필(Eng-H3) —
+    // 미적용 시 그리드 출하 플로우가 "급여 시트 강제 방문"으로 회귀한다.
+    expect(values.useSameSalary).toBe(false);
+    expect(values.roleSalaries).toEqual([
+      { role: 'dealer', salary: { type: 'hourly', amount: 20000 } },
+    ]);
   });
   it('비정상 파라미터는 정규화된다 (비-UUID venueId drop, count 1..99 클램프 — 보안 리뷰)', () => {
     expect('venueId' in gridParamsToValues({ venueId: 'not-a-uuid', date: '2026-07-20' })).toBe(
@@ -278,8 +348,8 @@ describe('formValuesToDraft (프리셋 저장 — z.input 폼 값 → draft, 검
     const draft = formValuesToDraft(partial);
     expect(draft.title).toBe('주말 딜러');
     expect(draft.description).toBe('');
-    // useSameSalary 미지정 → 기본 true → compensation.mode=shared
-    expect(draft.compensation.mode).toBe('shared');
+    // useSameSalary 미지정 → 기본 false(설계 §S2.1 전수 통일) → compensation.mode=by_role
+    expect(draft.compensation.mode).toBe('by_role');
     expect(draft.questions.items).toEqual([]);
     expect(draft.location).toEqual({ name: '라운더스 홀덤펍' });
   });

@@ -422,6 +422,8 @@ export interface PostingFacts {
     taxLabel?: string;
     display: PostingSalaryDisplay;
   };
+  /** 모집 조건 표시 라벨(예: '복장 검정 셔츠') — 값 없으면 빈 배열 */
+  conditionLabels: string[];
   roleAvailability: PostingRoleAvailability;
   application: PostingApplicationEligibility;
   stats: {
@@ -460,6 +462,8 @@ export interface PostingCardViewModel {
   allowanceLabels: string[];
   taxSettings?: TaxSettings;
   taxLabel?: string;
+  /** 모집 조건 표시 라벨 — 복지 줄 다음 렌더, 빈 배열/미정의면 줄 생략 */
+  conditionLabels?: string[];
   useSameSalary?: boolean;
   status: JobPostingStatus;
   isUrgent?: boolean;

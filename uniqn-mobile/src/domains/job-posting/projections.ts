@@ -29,6 +29,7 @@ function projectCard(facts: PostingFacts): PostingCardViewModel {
     allowanceLabels: facts.compensation.allowanceLabels,
     taxSettings: facts.posting.compensation.taxSettings,
     taxLabel: facts.compensation.taxLabel,
+    conditionLabels: facts.conditionLabels,
     useSameSalary: facts.compensation.display.useSameSalary,
     status: facts.status,
     isUrgent: facts.isUrgent,
