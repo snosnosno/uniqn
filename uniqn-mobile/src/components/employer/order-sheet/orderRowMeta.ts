@@ -153,12 +153,19 @@ export function errorMessageForRow(
       }
       return firstMessage((ts as unknown as Record<string, unknown>)['root']);
     }
-    // roles
+    // roles — 배열 루트(min 1) 메시지 우선, 없으면 아이템(customRole XSS·count) 중첩 메시지 순회(리뷰 L-1)
     if (!Array.isArray(ts)) return undefined;
     for (const slotErr of ts) {
       const roles = (slotErr as Record<string, unknown> | undefined)?.['roles'];
-      const m = firstMessage(roles, roles);
-      if (m) return m;
+      let m = firstMessage(roles);
+      if (m === undefined && Array.isArray(roles)) {
+        for (const roleErr of roles) {
+          const r = roleErr as Record<string, unknown> | undefined;
+          m = firstMessage(r?.['customRole'], r?.['count'], r);
+          if (m !== undefined) break;
+        }
+      }
+      if (m !== undefined) return m;
     }
     return undefined;
   }

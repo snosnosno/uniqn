@@ -59,7 +59,16 @@ export function ScheduleDatesSheet({
       postingType={postingType}
       existingDates={existingDates}
       initialSelectedDates={initialSelectedDates}
-      onSelectDates={(dates) => onConfirm({ dates, segment })}
+      onSelectDates={(dates) => {
+        // 비활성 세그먼트의 raw 상태가 흘러가 의도치 않은 분할이 되지 않게 유효값으로 클램프
+        // (리뷰 M-1 — 예: grouped 재진입 후 비연속으로 변경하면 ②는 disabled인데 state는 잔존).
+        const multi = dates.length >= 2;
+        const effective: ScheduleSplitMode =
+          !showSegment || !multi || (segment === 'grouped' && !hasGroupableDates(dates))
+            ? 'same'
+            : segment;
+        onConfirm({ dates, segment: effective });
+      }}
       renderBottomAccessory={
         showSegment
           ? ({ selectedDates }) => {

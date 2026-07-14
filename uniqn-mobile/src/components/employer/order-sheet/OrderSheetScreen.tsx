@@ -39,7 +39,7 @@ import { PreQuestionsSheet } from './sheets/PreQuestionsSheet';
 import { PresetCarousel, type OrderSheetPreset } from './PresetCarousel';
 import { ScheduleDatesSheet, type ScheduleSplitMode } from './sheets/ScheduleDatesSheet';
 import { XMarkIcon } from '@/components/icons';
-import { groupConsecutiveDates } from '@/utils/date';
+import { groupConsecutiveDates, hasGroupableDates } from '@/utils/date';
 import { defaultAmountForRole, syncRoleSalaries } from '@/utils/order-sheet/roleSalaries';
 import type { PostingType } from '@/types/jobPosting';
 
@@ -242,34 +242,46 @@ export function OrderSheetScreen({
     [form]
   );
 
-  /** 그룹 삭제(즉시) + Undo 토스트 5초(스냅샷 복원 — impeccable §12, 리뷰 Design-M2) */
+  /** 그룹 삭제(즉시) + Undo 토스트 5초 — impeccable §12, 리뷰 Design-M2.
+   *  복원은 삭제 그룹 단건 재삽입(리뷰 L-6) — 5초 내 타 그룹 편집을 함께 되돌리지 않는다. */
   const handleDeleteGroup = useCallback(
     (groupIndex: number) => {
       const current = form.getValues().scheduleGroups ?? [];
       if (current.length <= 1) return; // E4: 마지막 그룹은 버튼 자체 미노출 — 방어
-      const snapshot = current.map((g) => ({
-        ...g,
-        dates: [...g.dates],
-        timeSlots: cloneSlots(g.timeSlots),
-      }));
-      const removed = current[groupIndex];
+      const target = current[groupIndex];
+      if (!target) return;
+      const removed = {
+        ...target,
+        dates: [...target.dates],
+        timeSlots: cloneSlots(target.timeSlots),
+      };
       const next = current.filter((_, i) => i !== groupIndex);
       form.setValue('scheduleGroups', next, { shouldDirty: true, shouldValidate: true });
       addToast({
         type: 'success',
-        message: `${summarizeGroupDates(removed?.dates ?? []) || '일정'} 일정을 삭제했어요`,
+        message: `${summarizeGroupDates(removed.dates) || '일정'} 일정을 삭제했어요`,
         duration: 5000,
         action: {
           label: '되돌리기',
-          onPress: () =>
-            form.setValue('scheduleGroups', snapshot, { shouldDirty: true, shouldValidate: true }),
+          onPress: () => {
+            const now = form.getValues().scheduleGroups ?? [];
+            const insertAt = Math.min(groupIndex, now.length);
+            form.setValue(
+              'scheduleGroups',
+              [...now.slice(0, insertAt), removed, ...now.slice(insertAt)],
+              { shouldDirty: true, shouldValidate: true }
+            );
+          },
         },
       });
     },
     [form, addToast]
   );
 
-  /** "+ 일정 추가" — 새 그룹은 날짜 시트부터, 시간/역할은 직전 그룹 깊은복사 시드(리뷰 Design-L2) */
+  /** "+ 일정 추가" — 새 그룹은 날짜 시트부터, 시간/역할은 직전 그룹 깊은복사 시드(리뷰 Design-L2).
+   *  add 모드는 세그먼트 미노출(v1 확정 — 리뷰 M-2 기록): 다그룹 상태에서 새 묶음지원(②) 구간은
+   *  전체 날짜 whole+② 경로(동일 조건)로 우회 가능하고, 조건이 다른 복수 묶음 구간은 v1 범위 밖.
+   *  confirm-시점-분할 단순성(E6 구조적 회피)을 유지하는 절충이다. */
   const handleAddSchedule = useCallback(() => {
     if (pendingSheetRef.current) return;
     const groups = form.getValues().scheduleGroups ?? [];
@@ -286,7 +298,12 @@ export function OrderSheetScreen({
         const seed = cloneSlots(current[current.length - 1]?.timeSlots);
         next = [...current, { dates: sorted, timeSlots: seed, grouped: false }];
       } else if (target.mode === 'edit') {
-        next = current.map((g, i) => (i === target.groupIndex ? { ...g, dates: sorted } : g));
+        // grouped 그룹의 날짜가 연속쌍을 전부 잃으면 묶음지원 라벨 의미가 사라짐 — 해제(리뷰 L-2)
+        next = current.map((g, i) =>
+          i === target.groupIndex
+            ? { ...g, dates: sorted, grouped: (g.grouped ?? false) && hasGroupableDates(sorted) }
+            : g
+        );
       } else {
         // whole — 단일 그룹 전체 편집(세그먼트). 분할 시 기존 공통 시간/역할을 각 그룹에 깊은복사 승계(E6).
         const base = current[target.groupIndex] ?? { dates: [], timeSlots: [], grouped: false };
@@ -491,7 +508,12 @@ export function OrderSheetScreen({
                             className="flex-1 min-h-[44px] justify-center active:opacity-80"
                             accessibilityRole="button"
                             accessibilityLabel={`일정 날짜 ${
-                              (group.dates ?? []).join(', ') || '미설정'
+                              (group.dates ?? [])
+                                .map((d) => {
+                                  const [, m, day] = d.split('-');
+                                  return `${Number(m)}월 ${Number(day)}일`;
+                                })
+                                .join(', ') || '미설정'
                             }, 탭하여 날짜 편집${datesError ? `, 오류: ${datesError}` : ''}`}
                             testID={`order-sheet-group-dates-${gi}`}
                           >
