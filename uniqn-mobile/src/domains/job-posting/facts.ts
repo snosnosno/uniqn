@@ -86,6 +86,13 @@ export function buildPostingFacts(posting: JobPosting): PostingFacts {
   const defaultSalary = getPostingDefaultSalary(posting);
   const filledPositions = resolveFilledPositions(posting);
   const allowanceLabels = getAllowanceItems(posting.compensation.allowances);
+  // 모집 조건 라벨(S3) — 공백만 있는 값은 미설정으로 취급(쓰기 XSS refine은 zod 완료, 표시는 RN Text)
+  const dressCode = posting.conditions?.dressCode?.trim();
+  const experience = posting.conditions?.experience?.trim();
+  const conditionLabels = [
+    ...(dressCode ? [`복장 ${dressCode}`] : []),
+    ...(experience ? [`경력 ${experience}`] : []),
+  ];
   const dateRequirements = getPostingDateRequirements(posting);
   const requiredRolesWithCount = getPostingRequiredRolesWithCount(posting);
   const scheduleDisplay: PostingScheduleDisplay = {
@@ -193,6 +200,7 @@ export function buildPostingFacts(posting: JobPosting): PostingFacts {
       taxLabel: getPostingTaxLabel(posting),
       display: salaryDisplay,
     },
+    conditionLabels,
     roleAvailability,
     application,
     stats: {
