@@ -16,7 +16,7 @@ const dealerSlot = [{ startTime: '19:00', roles: [{ role: 'dealer' as const, cou
 const validInput: OrderSheetFormValues = {
   postingType: 'regular',
   title: '주말 딜러 구합니다',
-  location: { name: '라운더스 홀덤펍' },
+  location: { name: '라운더스 홀덤펍', region: '서울 강남구' },
   contactPhone: '010-1234-5678',
   scheduleGroups: [{ dates: ['2026-07-14'], timeSlots: dealerSlot }],
   salary: { type: 'hourly', amount: 20000 },
@@ -27,7 +27,7 @@ const validInput: OrderSheetFormValues = {
 const unspecifiedSalaryModeInput: OrderSheetFormValues = {
   postingType: 'regular',
   title: '주말 딜러 구합니다',
-  location: { name: '라운더스 홀덤펍' },
+  location: { name: '라운더스 홀덤펍', region: '서울 강남구' },
   contactPhone: '010-1234-5678',
   scheduleGroups: [{ dates: ['2026-07-14'], timeSlots: dealerSlot }],
   salary: { type: 'hourly', amount: 20000 },
@@ -294,5 +294,39 @@ describe('orderSheetValuesSchema — 금액 상한 (Eng-M4)', () => {
       salary: { type: 'hourly', amount: 100_000_000 },
     });
     expect(result.success).toBe(true);
+  });
+});
+
+describe('orderSheetValuesSchema — location.region 필수 (2026-07-15)', () => {
+  it('region 없는 location은 거부된다 (지역을 선택해주세요, path location.region)', () => {
+    const result = orderSheetValuesSchema.safeParse({
+      ...validInput,
+      location: { name: '라운더스 홀덤펍' },
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const issue = result.error.issues.find((i) => i.path.join('.') === 'location.region');
+      expect(issue?.message).toBe('지역을 선택해주세요');
+    }
+  });
+
+  it('유효 slug(구·시 전체·구없는 시)는 통과한다', () => {
+    for (const region of ['서울 강남구', '부산', '강원 원주시']) {
+      const result = orderSheetValuesSchema.safeParse({
+        ...validInput,
+        location: { name: '라운더스 홀덤펍', region },
+      });
+      expect(result.success).toBe(true);
+    }
+  });
+
+  it('권역 문자열·비정상 값은 거부된다 (지역 값이 올바르지 않습니다)', () => {
+    for (const region of ['서울', '경상', '없는지역']) {
+      const result = orderSheetValuesSchema.safeParse({
+        ...validInput,
+        location: { name: '라운더스 홀덤펍', region },
+      });
+      expect(result.success).toBe(false);
+    }
   });
 });

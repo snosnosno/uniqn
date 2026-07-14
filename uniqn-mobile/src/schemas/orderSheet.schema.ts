@@ -61,16 +61,29 @@ export const orderSheetScheduleGroupSchema = z.object({
   grouped: z.boolean().default(false),
 });
 
-export const orderSheetLocationSchema = z.object({
-  name: safeText(50).min(1, '장소를 선택해주세요'),
-  address: safeText(200).optional(),
-  district: safeText(50).optional(),
-  region: z
-    .string()
-    .refine((s) => isRegionSlug(s), '지역 값이 올바르지 않습니다')
-    .optional(),
-  detailedAddress: safeText(200).optional(),
-});
+export const orderSheetLocationSchema = z
+  .object({
+    name: safeText(50).min(1, '장소를 선택해주세요'),
+    address: safeText(200).optional(),
+    district: safeText(50).optional(),
+    // 지역 필수(2026-07-15) — location nullable 관례와 동형: z.input 은 관용(optional),
+    // 제출(z.output)에서 미선택을 거부한다(타입 파급 0 — z.output region 은 string|undefined 유지).
+    // 레거시 region-less draft 는 로드·편집 관용, 제출 시 아래 게이트가 거부해 지역 추가를 유도.
+    // 슬러그 형식만 필드 refine 으로 검사(값이 있을 때) — '지역 값이 올바르지 않습니다'.
+    region: z
+      .string()
+      .refine((s) => isRegionSlug(s), '지역 값이 올바르지 않습니다')
+      .optional(),
+    detailedAddress: safeText(200).optional(),
+  })
+  // 필수 게이트는 객체 레벨에 둔다 — zod 는 "부재(absent)한 optional 키"의 필드 refine 을
+  // 건너뛰므로(present-undefined 만 잡힘) 필드 레벨 refine 으론 { name } 처럼 region 키가
+  // 아예 없는 제출을 못 막는다. superRefine 은 항상 실행되어 absent·undefined 를 함께 거부한다.
+  .superRefine((loc, ctx) => {
+    if (loc.region === undefined) {
+      ctx.addIssue({ code: 'custom', path: ['region'], message: '지역을 선택해주세요' });
+    }
+  });
 
 export const orderSheetConditionsSchema = z.object({
   dressCode: safeText(50).optional(),
