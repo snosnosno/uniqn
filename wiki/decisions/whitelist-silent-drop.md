@@ -7,8 +7,10 @@ sources:
   - uniqn-mobile/src/domains/job-posting/serialization.ts
   - uniqn-mobile/src/utils/job-posting/draftAdapter.ts
   - docs/superpowers/plans/2026-07-14-job-posting-kiosk-order-sheet.md
+  - uniqn-mobile/src/components/jobs/JobDetail.tsx
   - PR#194
   - PR#243
+  - PR#247
 tags: [serialization, whitelist, regression-class, mapper]
 ---
 
@@ -27,5 +29,6 @@ tags: [serialization, whitelist, regression-class, mapper]
 2. **왕복 테스트는 읽기 방향 포함**: draft→document 쓰기 단언만으로는 이 클래스를 못 잡는다. document→deserialize→entity→(merge base) 방향 단언 + SELECT 목록 등록 가드(`TABLE_COLUMNS.split(',')` contains)까지.
 3. **배선 통합 가드**: 서브맵/추출 함수가 낀 소비자는 "추출 호출을 제거하면 실패하는" Red-Green 테스트로 배선 자체를 고정(단위 테스트는 배선 결함을 못 잡음).
 4. 계획/리뷰 단계에서 이 클래스를 의심하는 질문: "이 필드를 **읽는** 경로는 어디를 지나는가?" — 쓰기 경로만 나열된 계획은 미완성.
+5. **읽기 배선 ≠ 표시 UI**(2026-07-14 실증): conditions는 9지점 왕복(읽기 hydration 포함)이 PR#246에서 완료됐지만, 지원자가 보는 **표시 UI**(`JobDetail.tsx` '모집 조건' 섹션)는 별개 갭으로 남아 PR#247이 완결했다. entity에 필드가 있는 것과 화면에 렌더되는 것은 다른 질문 — 왕복 전수 조사에 "이 필드가 **화면에** 뜨는 경로"를 별도 항목으로 포함하라.
 
-관련: [[ios-userflow-fixes]] · [[enum-divergence]](읽기 레코드 증발의 zod 변형) · [[layers]] · [[parity-baseline-squash]]
+관련: [[ios-userflow-fixes]] · [[enum-divergence]](읽기 레코드 증발의 zod 변형) · [[layers]] · [[parity-baseline-squash]] · [[job-posting-kiosk-order-sheet]]
