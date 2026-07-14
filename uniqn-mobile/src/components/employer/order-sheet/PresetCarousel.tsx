@@ -8,11 +8,14 @@
  */
 import React from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ZapIcon } from '@/components/icons';
 import type { OrderSheetFormValues } from '@/schemas/orderSheet.schema';
 
 export interface OrderSheetPreset {
   id: string;
   title: string;
+  /** 'zap' 이면 title 앞에 번개 아이콘("마지막 공고" 강조). 템플릿 프리셋은 미설정. */
+  icon?: 'zap';
   subtitle: string;
   values: OrderSheetFormValues;
 }
@@ -49,9 +52,12 @@ export function PresetCarousel({ presets, onSelect, onSavePress }: PresetCarouse
           accessibilityLabel={`프리셋 ${p.title} 적용`}
           testID={`order-sheet-preset-${p.id}`}
         >
-          <Text className="text-xs font-sans-bold text-content-primary" numberOfLines={1}>
-            {p.title}
-          </Text>
+          <View className="flex-row items-center gap-1">
+            {p.icon === 'zap' ? <ZapIcon size={14} /> : null}
+            <Text className="flex-1 text-xs font-sans-bold text-content-primary" numberOfLines={1}>
+              {p.title}
+            </Text>
+          </View>
           <Text className="text-[11px] text-content-muted font-sans" numberOfLines={1}>
             {p.subtitle}
           </Text>

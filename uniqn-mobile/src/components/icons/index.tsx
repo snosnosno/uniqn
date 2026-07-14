@@ -82,6 +82,7 @@ import {
   Share2,
   Shield,
   ShieldCheck,
+  Shirt,
   SlidersHorizontal,
   Smartphone,
   Star,
@@ -99,6 +100,7 @@ import {
   WifiOff as LucideWifiOff,
   Wrench,
   X,
+  Zap,
 } from 'lucide-react-native/icons';
 import { useColorScheme } from 'nativewind';
 import React from 'react';
@@ -267,6 +269,8 @@ export const BusOutlineIcon = createIcon(Bus);
 export const BedOutlineIcon = createIcon(Bed);
 export const WrenchScrewdriverIcon = createIcon(Wrench);
 export const StarIcon = createIcon(Star);
+export const ShirtIcon = createIcon(Shirt);
+export const ZapIcon = createIcon(Zap);
 
 // ─── Toggle icons (outline + filled) ───────────────────────────────────────
 export const HeartIcon = createIcon(Heart);

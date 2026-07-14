@@ -45,7 +45,12 @@ export function TemplateModal({
 
   const handleSave = async () => {
     if (!isValid || isSaving) return;
-    await onSave();
+    try {
+      await onSave();
+    } catch {
+      // onSave 실패 시 사용자 피드백(토스트)·로깅은 onSave 제공자(useTemplateManager
+      // saveMutation.onError)가 책임진다. 여기서는 unhandled rejection 만 차단한다.
+    }
   };
 
   return (

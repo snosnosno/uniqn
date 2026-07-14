@@ -101,7 +101,8 @@ export default function CreateJobPostingScreen() {
         const values = draftToValues(buildJobPostingDraft(lastPosting));
         out.push({
           id: 'last',
-          title: '⚡ 마지막 공고',
+          title: '마지막 공고',
+          icon: 'zap',
           subtitle: values.title,
           values: { ...values, dates: [] },
         });

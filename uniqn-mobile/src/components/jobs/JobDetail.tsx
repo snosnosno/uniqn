@@ -4,10 +4,12 @@ import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';
 import { Badge } from '@/components/ui/Badge';
 import {
   BanknotesIcon,
+  BriefcaseIcon,
   CalendarIcon,
   DocumentIcon,
   MapPinIcon,
   PhoneIcon,
+  ShirtIcon,
 } from '@/components/icons';
 import { SECONDARY_PALETTE, TEXT_CLASSES } from '@/constants/colors';
 import { useUserProfile } from '@/hooks/useUserProfile';
@@ -95,6 +97,10 @@ export function JobDetail({ job }: JobDetailProps) {
   const showPostingTypeChip = Boolean(detail.postingType && detail.postingType !== 'regular');
   const showUrgentChip = shouldShowUrgentBadge(detail.postingType, detail.isUrgent);
   const postingTypeLabel = detail.postingType ? POSTING_TYPE_LABELS[detail.postingType] : null;
+
+  // 모집 조건(복장·경력) — 지원자 표면 표시. 원본 엔티티에서 직접 읽고 공백만 값은 렌더 제외.
+  const dressCode = job.conditions?.dressCode?.trim();
+  const experience = job.conditions?.experience?.trim();
 
   return (
     <View className="bg-surface-card">
@@ -236,6 +242,27 @@ export function JobDetail({ job }: JobDetailProps) {
           />
         ) : null}
       </View>
+
+      {/* 모집 조건 (복장·경력) */}
+      {dressCode || experience ? (
+        <View className="px-4 py-3 border-b border-divider">
+          <SectionLabel>모집 조건</SectionLabel>
+          {dressCode ? (
+            <InfoRow
+              icon={<ShirtIcon size={18} color={SECONDARY_PALETTE[400]} />}
+              label="복장"
+              value={dressCode}
+            />
+          ) : null}
+          {experience ? (
+            <InfoRow
+              icon={<BriefcaseIcon size={18} color={SECONDARY_PALETTE[400]} />}
+              label="경력"
+              value={experience}
+            />
+          ) : null}
+        </View>
+      ) : null}
 
       {/* 사전질문 */}
       {detail.questions.length > 0 ? (
