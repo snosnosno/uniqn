@@ -62,6 +62,30 @@ describe('ConditionsSheet', () => {
     expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ experience: 'TDA 3년' }));
   });
 
+  it('커스텀 입력의 앞뒤 공백은 확인 시 trim 되어 반영된다', () => {
+    const onConfirm = jest.fn();
+    const { getByLabelText, getByTestId, getByText } = render(
+      <ConditionsSheet visible value={{}} onConfirm={onConfirm} onClose={jest.fn()} />
+    );
+
+    fireEvent.press(getByLabelText('경력 직접 입력'));
+    fireEvent.changeText(getByTestId('order-sheet-condition-경력-custom'), '  TDA 3년  ');
+    fireEvent.press(getByText('확인'));
+    expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ experience: 'TDA 3년' }));
+  });
+
+  it('공백만 입력한 커스텀 값은 확인 시 undefined 로 떨군다', () => {
+    const onConfirm = jest.fn();
+    const { getByLabelText, getByTestId, getByText } = render(
+      <ConditionsSheet visible value={{}} onConfirm={onConfirm} onClose={jest.fn()} />
+    );
+
+    fireEvent.press(getByLabelText('복장 직접 입력'));
+    fireEvent.changeText(getByTestId('order-sheet-condition-복장-custom'), '   ');
+    fireEvent.press(getByText('확인'));
+    expect(onConfirm.mock.calls[0]?.[0]?.dressCode).toBeUndefined();
+  });
+
   it('프리셋 상수를 export한다 (e2e 문구 참조)', () => {
     expect(DRESS_CODE_PRESETS).toContain('검정셔츠/슬랙스');
     expect(EXPERIENCE_PRESETS).toContain('TDA 숙지자');

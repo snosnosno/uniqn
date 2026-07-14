@@ -120,7 +120,16 @@ export function ConditionsSheet({ visible, value, onConfirm, onClose }: Conditio
       footer={
         <Button
           onPress={() => {
-            onConfirm(conditions);
+            // 커스텀 직접 입력의 앞뒤 공백을 정규화하고 공백만 입력은 미설정으로 떨군다.
+            // (프리셋 값은 trim 무해) — 부모 zod safeText 는 trim 을 하지 않으므로 여기가 권위 지점.
+            const norm = (s: string | undefined) => {
+              const t = s?.trim();
+              return t && t.length > 0 ? t : undefined;
+            };
+            onConfirm({
+              dressCode: norm(conditions.dressCode),
+              experience: norm(conditions.experience),
+            });
             onClose();
           }}
         >

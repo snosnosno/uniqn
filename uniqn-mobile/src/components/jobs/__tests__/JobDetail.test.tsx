@@ -139,6 +139,34 @@ describe('JobDetail', () => {
     });
     expect(getByText('bubble:88')).toBeTruthy();
   });
+  it('job.conditions 가 있으면 모집 조건 섹션에 복장·경력을 렌더한다', () => {
+    const { getByText } = render(
+      <JobDetail
+        job={
+          { conditions: { dressCode: '검정셔츠/슬랙스', experience: 'TDA 숙지자' } } as JobPosting
+        }
+      />
+    );
+
+    expect(getByText('모집 조건')).toBeTruthy();
+    expect(getByText('복장')).toBeTruthy();
+    expect(getByText('검정셔츠/슬랙스')).toBeTruthy();
+    expect(getByText('경력')).toBeTruthy();
+    expect(getByText('TDA 숙지자')).toBeTruthy();
+  });
+
+  it('job.conditions 가 없으면 모집 조건 섹션을 렌더하지 않는다', () => {
+    const { queryByText } = render(<JobDetail job={{} as JobPosting} />);
+    expect(queryByText('모집 조건')).toBeNull();
+  });
+
+  it('공백만 있는 conditions 값은 모집 조건 섹션을 렌더하지 않는다', () => {
+    const { queryByText } = render(
+      <JobDetail job={{ conditions: { dressCode: '   ', experience: '' } } as JobPosting} />
+    );
+    expect(queryByText('모집 조건')).toBeNull();
+  });
+
   it('passes the full grouped schedule to detail content without focused card context', () => {
     const groupedDetail = {
       ...baseDetail,

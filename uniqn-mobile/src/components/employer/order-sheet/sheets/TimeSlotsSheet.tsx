@@ -137,7 +137,12 @@ export function TimeSlotsSheet({
         ))}
         <Pressable
           onPress={() =>
-            setSlots((prev) => [...prev, { startTime: '', roles: prev[0]?.roles ?? [] }])
+            // roles 를 깊은복사(role 객체는 원시값 필드뿐이라 map+spread 로 완전 복사)해
+            // 새 슬롯의 역할 편집이 첫 슬롯 roles 를 참조 변형하는 것을 막는다.
+            setSlots((prev) => [
+              ...prev,
+              { startTime: '', roles: (prev[0]?.roles ?? []).map((r) => ({ ...r })) },
+            ])
           }
           className="min-h-[44px] flex-row items-center justify-center gap-1 rounded-xl border border-dashed border-secondary-300 dark:border-surface-overlay px-4 py-3 active:opacity-80"
           testID="order-time-add-slot"
