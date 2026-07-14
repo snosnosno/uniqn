@@ -28,7 +28,8 @@ const emptyValues: OrderSheetFormValues = {
 const filled: OrderSheetFormValues = {
   ...emptyValues,
   title: '주말 딜러 구합니다',
-  location: { name: '라운더스 홀덤펍' },
+  // 지역 필수(2026-07-15) — 완성 픽스처는 유효 slug 를 포함해야 place 행이 set 된다(H5)
+  location: { name: '라운더스 홀덤펍', region: '서울 강남구' },
   scheduleGroups: [
     {
       dates: ['2026-07-14'],
@@ -296,6 +297,45 @@ describe('errorRowTargets — RHF 에러 경로 워커 (리뷰 Eng-H1)', () => {
     expect(errorMessageForRow(errors as Record<string, unknown>, 'salary', 0)).toBe(
       '금액이 너무 큽니다'
     );
+  });
+});
+
+describe('place 행 — 지역 필수 정렬 (2026-07-15)', () => {
+  const baseValues = {
+    postingType: 'regular',
+    title: '제목',
+    location: { name: '라운더스 홀덤펍' },
+    contactPhone: '010-1234-5678',
+    scheduleGroups: [],
+    salary: { type: 'hourly', amount: 0 },
+  } as unknown as OrderSheetFormValues;
+
+  it('region 없는 location은 unset (zod 통과 가능성과 정렬 — H5)', () => {
+    const state = getRowState(baseValues, 'place');
+    expect(state.unset).toBe(true);
+  });
+
+  it('region 있는 location은 set', () => {
+    const state = getRowState(
+      { ...baseValues, location: { name: '라운더스 홀덤펍', region: '서울 강남구' } },
+      'place'
+    );
+    expect(state.unset).toBe(false);
+    expect(state.value).toBe('라운더스 홀덤펍');
+  });
+
+  it('errors.location.region 중첩 메시지가 place 행 배지로 흐른다', () => {
+    const msg = errorMessageForRow(
+      { location: { region: { message: '지역을 선택해주세요' } } },
+      'place',
+      0
+    );
+    expect(msg).toBe('지역을 선택해주세요');
+  });
+
+  it('errors.location 루트 메시지(장소 null)는 기존대로 흐른다', () => {
+    const msg = errorMessageForRow({ location: { message: '장소를 선택해주세요' } }, 'place', 0);
+    expect(msg).toBe('장소를 선택해주세요');
   });
 });
 
