@@ -77,3 +77,76 @@ describe('orderSheetValuesSchema — z.input/z.output 경계', () => {
     expect(result.success).toBe(false);
   });
 });
+
+describe('orderSheetValuesSchema — 역할별 급여(by_role) 전수 커버 게이트(superRefine)', () => {
+  // 다역할 입력 — dealer/floor + 기타(칩카운터). 커버 판정 키는 role(기타는 customRole 단위).
+  const multiRoleInput: OrderSheetFormValues = {
+    ...validInput,
+    timeSlots: [
+      {
+        startTime: '19:00',
+        roles: [
+          { role: 'dealer', count: 1 },
+          { role: 'floor', count: 1 },
+          { role: 'other', customRole: '칩카운터', count: 1 },
+        ],
+      },
+    ],
+  };
+
+  it('동일급여 OFF인데 roleSalaries가 비어 있으면 거부된다 (급여 미정 제출 차단)', () => {
+    const result = orderSheetValuesSchema.safeParse({
+      ...validInput,
+      useSameSalary: false,
+      roleSalaries: [],
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.some((i) => i.path.includes('roleSalaries'))).toBe(true);
+    }
+  });
+
+  it('동일급여 OFF에서 고유 역할 일부만 커버하면 거부된다', () => {
+    const result = orderSheetValuesSchema.safeParse({
+      ...multiRoleInput,
+      useSameSalary: false,
+      // dealer만 커버, floor·기타(칩카운터) 미커버
+      roleSalaries: [{ role: 'dealer', salary: { type: 'hourly', amount: 25000 } }],
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.some((i) => i.path.includes('roleSalaries'))).toBe(true);
+    }
+  });
+
+  it('동일급여 OFF에서 고유 역할을 전수 커버하면 통과한다 (기타는 customRole 단위·협의 허용)', () => {
+    const result = orderSheetValuesSchema.safeParse({
+      ...multiRoleInput,
+      useSameSalary: false,
+      roleSalaries: [
+        { role: 'dealer', salary: { type: 'hourly', amount: 25000 } },
+        { role: 'floor', salary: { type: 'hourly', amount: 20000 } },
+        { role: 'other', customRole: '칩카운터', salary: { type: 'other', amount: 0 } },
+      ],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('동일급여 OFF에서 커버해도 amount<=0(비협의)이면 거부된다', () => {
+    const result = orderSheetValuesSchema.safeParse({
+      ...validInput,
+      useSameSalary: false,
+      roleSalaries: [{ role: 'dealer', salary: { type: 'hourly', amount: 0 } }],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('동일급여 ON(shared)이면 roleSalaries가 비어도 무영향으로 통과한다', () => {
+    const result = orderSheetValuesSchema.safeParse({
+      ...validInput,
+      useSameSalary: true,
+      roleSalaries: [],
+    });
+    expect(result.success).toBe(true);
+  });
+});

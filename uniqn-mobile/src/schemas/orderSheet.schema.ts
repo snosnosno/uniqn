@@ -71,42 +71,71 @@ export const orderSheetAllowancesSchema = z.object({
   accommodation: z.union([z.literal(PROVIDED_FLAG), z.number().int().positive()]).optional(),
 });
 
-export const orderSheetValuesSchema = z.object({
-  postingType: z.enum(['regular', 'urgent']),
-  title: safeText(25).min(1, '제목을 입력해주세요'),
-  // ⚠️ 아래 refine의 TS 추론 프레디킷이 z.output에서 null을 제거한다(의도된 동작 — 매퍼가 가드 없이 소비)
-  location: orderSheetLocationSchema.nullable().refine((v) => v !== null, '장소를 선택해주세요'),
-  contactPhone: safeText(20).min(1, '연락처를 입력해주세요'),
-  description: safeText(500).default(''),
-  dates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).min(1, '날짜를 선택해주세요'),
-  timeSlots: z.array(orderSheetTimeSlotSchema).min(1, '시간대를 추가해주세요'),
-  salary: orderSheetSalarySchema,
-  useSameSalary: z.boolean().default(true),
-  roleSalaries: z.array(orderSheetRoleSalarySchema).default([]),
-  allowances: orderSheetAllowancesSchema.default({}),
-  taxSettings: z.custom<TaxSettings>().optional(),
-  conditions: orderSheetConditionsSchema.default({}),
-  usesPreQuestions: z.boolean().default(false),
-  // 기존 preQuestion 스키마 재사용(question xss·max10 확보) + 레거시 라이브 게이트(validation.ts:154-159)의
-  // options xss 검사를 UI측에서 승계(문서 스키마엔 없음 — 회귀 방지, 보안 리뷰 MEDIUM).
-  // ⚠️ 문서 스키마(preQuestion.schema.ts:35)를 조이는 건 금지 — 읽기 공용이라 기존 prod 문서 read-null 위험.
-  preQuestions: preQuestionsArraySchema
-    .superRefine((qs, ctx) => {
-      qs.forEach((q, i) =>
-        q.options?.forEach((opt, j) => {
-          if (opt.trim() && !xssValidation(opt)) {
-            ctx.addIssue({
-              code: 'custom',
-              path: [i, 'options', j],
-              message: '위험한 문자가 포함되어 있습니다',
-            });
-          }
-        })
-      );
-    })
-    .default([]),
-  venueId: z.string().uuid().optional(),
-});
+export const orderSheetValuesSchema = z
+  .object({
+    postingType: z.enum(['regular', 'urgent']),
+    title: safeText(25).min(1, '제목을 입력해주세요'),
+    // ⚠️ 아래 refine의 TS 추론 프레디킷이 z.output에서 null을 제거한다(의도된 동작 — 매퍼가 가드 없이 소비)
+    location: orderSheetLocationSchema.nullable().refine((v) => v !== null, '장소를 선택해주세요'),
+    contactPhone: safeText(20).min(1, '연락처를 입력해주세요'),
+    description: safeText(500).default(''),
+    dates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).min(1, '날짜를 선택해주세요'),
+    timeSlots: z.array(orderSheetTimeSlotSchema).min(1, '시간대를 추가해주세요'),
+    salary: orderSheetSalarySchema,
+    useSameSalary: z.boolean().default(true),
+    roleSalaries: z.array(orderSheetRoleSalarySchema).default([]),
+    allowances: orderSheetAllowancesSchema.default({}),
+    taxSettings: z.custom<TaxSettings>().optional(),
+    conditions: orderSheetConditionsSchema.default({}),
+    usesPreQuestions: z.boolean().default(false),
+    // 기존 preQuestion 스키마 재사용(question xss·max10 확보) + 레거시 라이브 게이트(validation.ts:154-159)의
+    // options xss 검사를 UI측에서 승계(문서 스키마엔 없음 — 회귀 방지, 보안 리뷰 MEDIUM).
+    // ⚠️ 문서 스키마(preQuestion.schema.ts:35)를 조이는 건 금지 — 읽기 공용이라 기존 prod 문서 read-null 위험.
+    preQuestions: preQuestionsArraySchema
+      .superRefine((qs, ctx) => {
+        qs.forEach((q, i) =>
+          q.options?.forEach((opt, j) => {
+            if (opt.trim() && !xssValidation(opt)) {
+              ctx.addIssue({
+                code: 'custom',
+                path: [i, 'options', j],
+                message: '위험한 문자가 포함되어 있습니다',
+              });
+            }
+          })
+        );
+      })
+      .default([]),
+    venueId: z.string().uuid().optional(),
+  })
+  .superRefine((v, ctx) => {
+    // 역할별 급여(by_role) 전수 커버 게이트 — useSameSalary=false면 timeSlots의 고유 역할
+    // (기타는 customRole 단위)을 roleSalaries가 전부 커버해야 통과한다. orderRowMeta의 unset
+    // 판정(:171-193)과 대칭 — 스키마는 최후 게이트(급여 미정 제출 차단), UI(급여 시트)는 UX 게이트.
+    // 협의(other)는 amount 없이 커버로 인정, 그 외 타입은 amount>0이어야 커버.
+    if (v.useSameSalary) return;
+    const keyOf = (role: string, customRole?: string) =>
+      role === 'other' ? `other:${customRole ?? ''}` : role;
+    const salaryByRole = new Map(
+      v.roleSalaries.map((rs) => [keyOf(rs.role, rs.customRole), rs.salary] as const)
+    );
+    const uniqueKeys = new Set<string>();
+    for (const slot of v.timeSlots)
+      for (const r of slot.roles) uniqueKeys.add(keyOf(r.role, r.customRole));
+    const allCovered =
+      uniqueKeys.size > 0 &&
+      [...uniqueKeys].every((k) => {
+        const s = salaryByRole.get(k);
+        return s !== undefined && (s.type === 'other' || s.amount > 0);
+      });
+    if (!allCovered) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['roleSalaries'],
+        message: '역할별 급여를 모두 입력해주세요',
+      });
+    }
+  });
 
 export type OrderSheetFormValues = z.input<typeof orderSheetValuesSchema>;
 export type OrderSheetValues = z.output<typeof orderSheetValuesSchema>;

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,6 +14,7 @@ import {
   ORDER_GROUPS,
   firstUnsetRow,
   getRowState,
+  roleName,
   rowKeyForErrorField,
   type OrderRowKey,
 } from './orderRowMeta';
@@ -26,6 +27,11 @@ import { ContactSheet } from './sheets/ContactSheet';
 import { DescriptionSheet } from './sheets/DescriptionSheet';
 import { TimeSlotsSheet } from './sheets/TimeSlotsSheet';
 import { RolesSheet } from './sheets/RolesSheet';
+import { SalarySheet, type UniqueRole } from './sheets/SalarySheet';
+import { WelfareSheet } from './sheets/WelfareSheet';
+import { TaxSheet } from './sheets/TaxSheet';
+import { ConditionsSheet } from './sheets/ConditionsSheet';
+import { PreQuestionsSheet } from './sheets/PreQuestionsSheet';
 import { DatePickerModal } from '@/components/employer/job-form/modals/DatePickerModal';
 import type { PostingType } from '@/types/jobPosting';
 
@@ -95,6 +101,25 @@ export function OrderSheetScreen({
   // 슬롯별 역할 편집 타깃(객체) 좁히기 — rows/기타 시트 키(문자열)와 구분
   const slotRolesTarget: SlotRolesTarget | null =
     activeSheet !== null && typeof activeSheet === 'object' ? activeSheet : null;
+
+  // 급여 시트(동일급여 OFF)용 고유 역할 — timeSlots에서 roleKey(기타는 customRole 단위) 기준 중복 제거,
+  // 라벨은 orderRowMeta.roleName 재사용. by_role 전수 커버 게이트(스키마 superRefine)와 대칭.
+  const uniqueRoles = useMemo<UniqueRole[]>(() => {
+    const seen = new Map<string, UniqueRole>();
+    for (const slot of values.timeSlots ?? []) {
+      for (const r of slot.roles) {
+        const key = r.role === 'other' ? `other:${r.customRole ?? ''}` : r.role;
+        if (!seen.has(key)) {
+          seen.set(key, {
+            role: r.role,
+            ...(r.customRole !== undefined ? { customRole: r.customRole } : {}),
+            label: roleName(r.role, r.customRole),
+          });
+        }
+      }
+    }
+    return [...seen.values()];
+  }, [values.timeSlots]);
 
   // 행 탭 라우팅 — roles 행은 슬롯 수에 따라 분기(1개=직접 역할 편집, 그 외=TimeSlotsSheet). 나머지는 그대로.
   // switchSheet 지연 전환 창(300ms) 중에는 무시 — 그 사이 새 시트를 열면 예약 타이머와 충돌(#244 레이스).
@@ -286,6 +311,77 @@ export function OrderSheetScreen({
           onClose={() =>
             slotRolesTarget.fromTimeSheet ? switchSheet('time') : setActiveSheet(null)
           }
+        />
+      )}
+      {/* 급여 시트 3종 — 급여(타입·역할별)·복지·세금. rows 진입은 즉시(스왑 없음). */}
+      {activeSheet === 'salary' && (
+        <SalarySheet
+          visible
+          value={values.salary}
+          useSameSalary={values.useSameSalary ?? true}
+          roleSalaries={values.roleSalaries ?? []}
+          uniqueRoles={uniqueRoles}
+          onConfirm={(next) => {
+            form.setValue('salary', next.salary, { shouldDirty: true, shouldValidate: true });
+            form.setValue('useSameSalary', next.useSameSalary, {
+              shouldDirty: true,
+              shouldValidate: true,
+            });
+            form.setValue('roleSalaries', next.roleSalaries, {
+              shouldDirty: true,
+              shouldValidate: true,
+            });
+          }}
+          onClose={() => setActiveSheet(null)}
+        />
+      )}
+      {activeSheet === 'welfare' && (
+        <WelfareSheet
+          visible
+          value={values.allowances ?? {}}
+          onConfirm={(next) =>
+            form.setValue('allowances', next, { shouldDirty: true, shouldValidate: true })
+          }
+          onClose={() => setActiveSheet(null)}
+        />
+      )}
+      {activeSheet === 'tax' && (
+        <TaxSheet
+          visible
+          value={values.taxSettings}
+          onConfirm={(next) =>
+            form.setValue('taxSettings', next, { shouldDirty: true, shouldValidate: true })
+          }
+          onClose={() => setActiveSheet(null)}
+        />
+      )}
+      {/* 조건 시트 — 복장·경력 프리셋. */}
+      {activeSheet === 'conditions' && (
+        <ConditionsSheet
+          visible
+          value={values.conditions ?? {}}
+          onConfirm={(next) =>
+            form.setValue('conditions', next, { shouldDirty: true, shouldValidate: true })
+          }
+          onClose={() => setActiveSheet(null)}
+        />
+      )}
+      {/* 사전질문 시트 — QuestionCard 동형(인라인 라디오 유형·중첩 Modal 없음). */}
+      {activeSheet === 'preQuestions' && (
+        <PreQuestionsSheet
+          visible
+          value={values.preQuestions ?? []}
+          onConfirm={(next) => {
+            form.setValue('preQuestions', next.preQuestions, {
+              shouldDirty: true,
+              shouldValidate: true,
+            });
+            form.setValue('usesPreQuestions', next.usesPreQuestions, {
+              shouldDirty: true,
+              shouldValidate: true,
+            });
+          }}
+          onClose={() => setActiveSheet(null)}
         />
       )}
     </View>
