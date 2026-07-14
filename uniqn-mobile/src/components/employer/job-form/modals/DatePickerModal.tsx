@@ -47,6 +47,11 @@ export interface DatePickerModalProps {
    * 미전달 시 빈 배열로 시작(기존 호출부 무회귀). remainingSlots 계산은 existingDates 기준 그대로.
    */
   initialSelectedDates?: string[];
+  /**
+   * 캘린더 아래 액세서리 슬롯(S1 — 주문서 3지 세그먼트). 현재 선택 날짜를 받아 렌더한다.
+   * 미전달 시 렌더 없음(기존 호출부 무회귀).
+   */
+  renderBottomAccessory?: (ctx: { selectedDates: string[] }) => React.ReactNode;
 }
 
 /** 'YYYY-MM-DD' → 로컬 자정 Date. CalendarPicker 의 isSameDay·format(yyyy-MM-dd) 왕복과 정합. */
@@ -67,6 +72,7 @@ export function DatePickerModal({
   postingType,
   existingDates,
   initialSelectedDates,
+  renderBottomAccessory,
 }: DatePickerModalProps) {
   const { addToast } = useToastStore();
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
@@ -255,6 +261,13 @@ export function DatePickerModal({
           maxSelections={remainingSlots}
         />
       </View>
+
+      {/* 하단 액세서리(주문서 3지 세그먼트 등) — 선택 날짜에 반응 */}
+      {renderBottomAccessory
+        ? renderBottomAccessory({
+            selectedDates: sortedSelectedDates.map((d) => format(d, 'yyyy-MM-dd')),
+          })
+        : null}
 
       {/* 이미 추가된 날짜 안내 */}
       {existingDates.length > 0 && (

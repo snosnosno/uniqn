@@ -50,7 +50,7 @@ const baseProps = {
 
 const withSlots = (slots: { startTime: string; roles: any[] }[]) => ({
   ...initialOrderSheetValues(),
-  timeSlots: slots,
+  scheduleGroups: [{ dates: [], timeSlots: slots, grouped: false }],
 });
 
 describe('OrderSheetScreen — 일정·모집 라우팅 + #244 전환', () => {
@@ -146,8 +146,14 @@ describe('OrderSheetScreen — 일정·모집 라우팅 + #244 전환', () => {
           title: '주말 딜러 구합니다',
           location: { name: '강남 홀덤펍' },
           contactPhone: '010-1234-5678',
-          dates: ['2026-07-14'],
-          timeSlots: [{ startTime: '19:00', roles: [] }], // 역할만 미설정 → firstUnsetRow='roles'
+          scheduleGroups: [
+            // 역할만 미설정 → firstUnsetRow={roles, 0}
+            {
+              dates: ['2026-07-14'],
+              timeSlots: [{ startTime: '19:00', roles: [] }],
+              grouped: false,
+            },
+          ],
         }}
       />
     );

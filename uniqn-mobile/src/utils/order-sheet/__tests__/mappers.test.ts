@@ -6,6 +6,7 @@ import {
   gridParamsToValues,
   valuesToCreateInput,
   initialOrderSheetValues,
+  primaryScheduleInfo,
 } from '../mappers';
 import { buildCreateJobPostingInput } from '@/utils/job-posting/submission';
 import { INITIAL_JOB_POSTING_DRAFT } from '@/types/jobPostingDraft';
@@ -14,6 +15,17 @@ import type { OrderSheetFormValues, OrderSheetValues } from '@/schemas/orderShee
 import type { JobPostingFormData } from '@/types/jobPostingForm';
 import type { JobPostingTemplate } from '@/types/jobTemplate';
 import type { CreateJobPostingInput } from '@/types/jobPosting';
+import { singleGroup } from './orderSheetTestHelpers';
+
+const baseSlots: OrderSheetValues['scheduleGroups'][number]['timeSlots'] = [
+  {
+    startTime: '19:00',
+    roles: [
+      { role: 'dealer', count: 2 },
+      { role: 'serving', count: 1 },
+    ],
+  },
+];
 
 const baseValues: OrderSheetValues = {
   postingType: 'regular',
@@ -21,16 +33,7 @@ const baseValues: OrderSheetValues = {
   location: { name: '라운더스 홀덤펍', address: '서울 강남구', region: 'seoul-gangnam' },
   contactPhone: '010-1234-5678',
   description: '',
-  dates: ['2026-07-14', '2026-07-15'],
-  timeSlots: [
-    {
-      startTime: '19:00',
-      roles: [
-        { role: 'dealer', count: 2 },
-        { role: 'serving', count: 1 },
-      ],
-    },
-  ],
+  scheduleGroups: singleGroup(['2026-07-14', '2026-07-15'], baseSlots),
   salary: { type: 'hourly', amount: 20000 },
   useSameSalary: true,
   roleSalaries: [],
@@ -40,7 +43,79 @@ const baseValues: OrderSheetValues = {
   preQuestions: [],
 };
 
-describe('valuesToDraft', () => {
+const slotAt = (
+  startTime: string,
+  roles: { role: 'dealer' | 'floor' | 'serving'; count: number }[]
+) => ({ startTime, roles });
+
+const stripIds = (obj: unknown): unknown =>
+  JSON.parse(JSON.stringify(obj, (key, value) => (key === 'id' ? undefined : value)));
+
+describe('valuesToDraft — 단일 그룹 (신구 등가성)', () => {
+  it('구(dates+timeSlots 평탄) 산출과 동결 스냅샷이 일치한다 (Eng-L2 — S1 전 캡처)', () => {
+    // S1 착수 직전(커밋 039879eab 시점) 구 매퍼의 실제 산출을 id 제거 후 동결한 것.
+    // 단일 그룹은 이 산출과 완전 동일해야 한다(무회귀 계약).
+    const frozen = {
+      postingType: 'regular',
+      title: '주말 딜러 구합니다',
+      description: '',
+      location: { name: '라운더스 홀덤펍', address: '서울 강남구', region: 'seoul-gangnam' },
+      contactPhone: '010-1234-5678',
+      tags: [],
+      schedule: {
+        kind: 'dated',
+        primaryDate: '2026-07-14',
+        allDates: ['2026-07-14', '2026-07-15'],
+        requirements: [
+          {
+            date: '2026-07-14',
+            timeSlots: [
+              {
+                startTime: '19:00',
+                roles: [
+                  { role: 'dealer', count: 2 },
+                  { role: 'serving', count: 1 },
+                ],
+              },
+            ],
+          },
+          {
+            date: '2026-07-15',
+            timeSlots: [
+              {
+                startTime: '19:00',
+                roles: [
+                  { role: 'dealer', count: 2 },
+                  { role: 'serving', count: 1 },
+                ],
+              },
+            ],
+          },
+        ],
+        templateTimeSlots: [
+          {
+            startTime: '19:00',
+            roles: [
+              { role: 'dealer', count: 2 },
+              { role: 'serving', count: 1 },
+            ],
+          },
+        ],
+      },
+      roleCatalog: [
+        { role: 'dealer', salary: { type: 'hourly', amount: 20000 } },
+        { role: 'serving', salary: { type: 'hourly', amount: 20000 } },
+      ],
+      compensation: {
+        mode: 'shared',
+        defaultSalary: { type: 'hourly', amount: 20000 },
+        allowances: { meal: -1, transportation: 10000 },
+      },
+      questions: { items: [] },
+      conditions: { dressCode: '검정셔츠/슬랙스', experience: 'TDA 숙지자' },
+    };
+    expect(stripIds(valuesToDraft(baseValues))).toEqual(frozen);
+  });
   it('dated 스케줄을 canonical하게 만든다 (날짜별 requirements, 시간대·역할 보존)', () => {
     const draft = valuesToDraft(baseValues);
     expect(draft.schedule.kind).toBe('dated');
@@ -52,6 +127,8 @@ describe('valuesToDraft', () => {
       { id: expect.any(String), role: 'dealer', count: 2 },
       { id: expect.any(String), role: 'serving', count: 1 },
     ]);
+    // 단일 grouped=false 그룹은 isGrouped 를 기록하지 않는다(F6 — 지원자 묶음지원 오분기 차단)
+    expect(draft.schedule.requirements.some((r) => 'isGrouped' in r)).toBe(false);
   });
   it('동일급여면 compensation.mode=shared + defaultSalary', () => {
     const draft = valuesToDraft(baseValues);
@@ -101,11 +178,175 @@ describe('valuesToDraft', () => {
   });
 });
 
-describe('draftToValues ↔ valuesToDraft 왕복', () => {
-  it('values→draft→values가 동치다 (values에는 id가 없어 draft에서 생성된 slot/role id는 왕복에 영향 없음)', () => {
-    const roundTrip = draftToValues(valuesToDraft(baseValues));
-    expect(roundTrip).toEqual(baseValues);
+describe('valuesToDraft — 다중 그룹 (S1)', () => {
+  const slotA = [slotAt('19:00', [{ role: 'dealer', count: 2 }])];
+  const slotB = [slotAt('21:00', [{ role: 'floor', count: 1 }])];
+
+  it('그룹 flatMap — grouped=true만 isGrouped 기록, false는 키 자체 미기록 (F6/Eng-C1)', () => {
+    const values: OrderSheetValues = {
+      ...baseValues,
+      scheduleGroups: [
+        { dates: ['2026-07-20', '2026-07-21'], timeSlots: slotA, grouped: true },
+        { dates: ['2026-07-25'], timeSlots: slotB, grouped: false },
+      ],
+    };
+    const draft = valuesToDraft(values);
+    if (draft.schedule.kind !== 'dated') return;
+    const reqs = draft.schedule.requirements;
+    expect(reqs.map((r) => r.date)).toEqual(['2026-07-20', '2026-07-21', '2026-07-25']);
+    expect(reqs[0]?.isGrouped).toBe(true);
+    expect(reqs[1]?.isGrouped).toBe(true);
+    expect(reqs[2] && 'isGrouped' in reqs[2]).toBe(false);
+    expect(reqs[2]?.timeSlots[0]?.startTime).toBe('21:00');
   });
+
+  it('그룹 입력 순서와 무관하게 requirements·allDates는 날짜 전역 정렬, primaryDate는 최소 날짜 (2차 Eng-H1)', () => {
+    const values: OrderSheetValues = {
+      ...baseValues,
+      scheduleGroups: [
+        { dates: ['2026-07-25'], timeSlots: slotB, grouped: false },
+        { dates: ['2026-07-20', '2026-07-21'], timeSlots: slotA, grouped: false },
+      ],
+    };
+    const draft = valuesToDraft(values);
+    if (draft.schedule.kind !== 'dated') return;
+    expect(draft.schedule.requirements.map((r) => r.date)).toEqual([
+      '2026-07-20',
+      '2026-07-21',
+      '2026-07-25',
+    ]);
+    expect(draft.schedule.allDates).toEqual(['2026-07-20', '2026-07-21', '2026-07-25']);
+    expect(draft.schedule.primaryDate).toBe('2026-07-20');
+    // templateTimeSlots는 첫 그룹(입력 순서) 슬롯
+    expect(draft.schedule.templateTimeSlots[0]?.startTime).toBe('21:00');
+  });
+
+  it('같은 그룹의 날짜별 requirements가 timeSlots 참조를 공유하지 않는다 (F1 deepClone)', () => {
+    const values: OrderSheetValues = {
+      ...baseValues,
+      scheduleGroups: [{ dates: ['2026-07-20', '2026-07-21'], timeSlots: slotA, grouped: false }],
+    };
+    const draft = valuesToDraft(values);
+    if (draft.schedule.kind !== 'dated') return;
+    expect(draft.schedule.requirements[0]?.timeSlots).not.toBe(
+      draft.schedule.requirements[1]?.timeSlots
+    );
+    expect(draft.schedule.requirements[0]?.timeSlots[0]?.roles).not.toBe(
+      draft.schedule.requirements[1]?.timeSlots[0]?.roles
+    );
+  });
+
+  it('uniqueRoles 파생(roleCatalog·커버 게이트)은 전 그룹 순회 합집합이다', () => {
+    const values: OrderSheetValues = {
+      ...baseValues,
+      scheduleGroups: [
+        { dates: ['2026-07-20'], timeSlots: slotA, grouped: false }, // dealer
+        { dates: ['2026-07-21'], timeSlots: slotB, grouped: false }, // floor
+      ],
+    };
+    expect(
+      valuesToDraft(values)
+        .roleCatalog.map((r) => r.role)
+        .sort()
+    ).toEqual(['dealer', 'floor']);
+  });
+});
+
+describe('draftToValues — 그룹핑 복원 (S1, M8 throw 제거)', () => {
+  const mk = (
+    date: string,
+    startTime: string,
+    role: 'dealer' | 'floor' = 'dealer',
+    isGrouped?: boolean
+  ) => ({
+    date,
+    timeSlots: [{ id: `s-${date}`, startTime, roles: [{ id: `r-${date}`, role, count: 1 }] }],
+    ...(isGrouped === true ? { isGrouped: true } : {}),
+  });
+
+  const draftWith = (requirements: ReturnType<typeof mk>[]) => {
+    const base = valuesToDraft(baseValues);
+    if (base.schedule.kind !== 'dated') throw new Error('unreachable');
+    return {
+      ...base,
+      schedule: {
+        ...base.schedule,
+        allDates: requirements.map((r) => r.date).sort(),
+        primaryDate: requirements.map((r) => r.date).sort()[0]!,
+        requirements,
+      },
+    };
+  };
+
+  it('구 M8 케이스(날짜별 시간대 상이)가 throw 없이 그룹으로 복원된다', () => {
+    const draft = draftWith([mk('2026-07-14', '19:00'), mk('2026-07-15', '21:00')]);
+    const values = draftToValues(draft);
+    expect(values.scheduleGroups).toEqual([
+      {
+        dates: ['2026-07-14'],
+        timeSlots: [slotAt('19:00', [{ role: 'dealer', count: 1 }])],
+        grouped: false,
+      },
+      {
+        dates: ['2026-07-15'],
+        timeSlots: [slotAt('21:00', [{ role: 'dealer', count: 1 }])],
+        grouped: false,
+      },
+    ]);
+  });
+
+  it('isGrouped 연속 run은 동일 시그니처 경계를 보존하며 grouped 그룹으로 복원된다 (2차 Eng-H1)', () => {
+    const draft = draftWith([
+      mk('2026-07-20', '19:00', 'dealer', true),
+      mk('2026-07-21', '19:00', 'dealer', true),
+      mk('2026-07-22', '21:00', 'dealer', true), // 시그니처 변경 — 경계
+    ]);
+    const values = draftToValues(draft);
+    expect(values.scheduleGroups).toEqual([
+      {
+        dates: ['2026-07-20', '2026-07-21'],
+        timeSlots: [slotAt('19:00', [{ role: 'dealer', count: 1 }])],
+        grouped: true,
+      },
+      {
+        dates: ['2026-07-22'],
+        timeSlots: [slotAt('21:00', [{ role: 'dealer', count: 1 }])],
+        grouped: true,
+      },
+    ]);
+  });
+
+  it('isGrouped run은 비연속 날짜에서 끊긴다', () => {
+    const draft = draftWith([
+      mk('2026-07-20', '19:00', 'dealer', true),
+      mk('2026-07-22', '19:00', 'dealer', true), // 7/21 없음 — run 단절
+    ]);
+    const values = draftToValues(draft);
+    expect(values.scheduleGroups.map((g) => g.dates)).toEqual([['2026-07-20'], ['2026-07-22']]);
+    expect(values.scheduleGroups.every((g) => g.grouped)).toBe(true);
+  });
+
+  it('falsy isGrouped는 시그니처 병합 — 비연속 동일 조건 날짜들이 한 그룹으로 (정규형 수용)', () => {
+    const draft = draftWith([
+      mk('2026-07-20', '19:00'),
+      mk('2026-07-21', '21:00'),
+      mk('2026-07-23', '19:00'), // 7/20과 동일 시그니처 — 병합
+    ]);
+    const values = draftToValues(draft);
+    expect(values.scheduleGroups).toEqual([
+      {
+        dates: ['2026-07-20', '2026-07-23'],
+        timeSlots: [slotAt('19:00', [{ role: 'dealer', count: 1 }])],
+        grouped: false,
+      },
+      {
+        dates: ['2026-07-21'],
+        timeSlots: [slotAt('21:00', [{ role: 'dealer', count: 1 }])],
+        grouped: false,
+      },
+    ]);
+  });
+
   it('fixed 스케줄 draft는 throw한다 (키오스크 범위 밖)', () => {
     const fixedDraft = {
       ...INITIAL_JOB_POSTING_DRAFT,
@@ -113,43 +354,79 @@ describe('draftToValues ↔ valuesToDraft 왕복', () => {
     };
     expect(() => draftToValues(fixedDraft)).toThrow();
   });
-  it('날짜별 시간대가 상이한 draft는 throw한다 (조용한 평탄화 금지 — 프리셋에서 스킵, 리뷰 M8)', () => {
-    const base = valuesToDraft(baseValues);
-    if (base.schedule.kind !== 'dated') return;
-    const heterogeneous = {
-      ...base,
-      schedule: {
-        ...base.schedule,
-        requirements: [
-          {
-            date: '2026-07-14',
-            timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer' as const, count: 1 }] }],
-          },
-          {
-            date: '2026-07-15',
-            timeSlots: [{ startTime: '21:00', roles: [{ role: 'dealer' as const, count: 1 }] }],
-          },
-        ],
-      },
-    };
-    expect(() => draftToValues(heterogeneous)).toThrow();
+});
+
+describe('draftToValues ↔ valuesToDraft 왕복', () => {
+  it('values→draft→values가 동치다 (단일 그룹 — 신구 등가성)', () => {
+    const roundTrip = draftToValues(valuesToDraft(baseValues));
+    expect(roundTrip).toEqual(baseValues);
   });
+
+  it('다중 그룹(grouped 포함) 왕복이 동치다', () => {
+    const values: OrderSheetValues = {
+      ...baseValues,
+      scheduleGroups: [
+        {
+          dates: ['2026-07-20', '2026-07-21'],
+          timeSlots: [slotAt('19:00', [{ role: 'dealer', count: 2 }])],
+          grouped: true,
+        },
+        {
+          dates: ['2026-07-25'],
+          timeSlots: [slotAt('21:00', [{ role: 'dealer', count: 1 }])],
+          grouped: false,
+        },
+      ],
+    };
+    expect(draftToValues(valuesToDraft(values))).toEqual(values);
+  });
+
+  it('"날짜마다 따로"(동일 조건 개별 그룹들)는 정규형(시그니처 병합 단일 그룹)으로 왕복된다', () => {
+    const slots = [slotAt('19:00', [{ role: 'dealer', count: 1 }])];
+    const values: OrderSheetValues = {
+      ...baseValues,
+      scheduleGroups: [
+        { dates: ['2026-07-20'], timeSlots: slots, grouped: false },
+        { dates: ['2026-07-22'], timeSlots: slots, grouped: false },
+      ],
+    };
+    // 지원자 화면 산출이 동일해 정규형으로 수용(설계 §S1 매퍼 읽기) — 개별 그룹 경계는 유지되지 않는다.
+    expect(draftToValues(valuesToDraft(values)).scheduleGroups).toEqual([
+      { dates: ['2026-07-20', '2026-07-22'], timeSlots: slots, grouped: false },
+    ]);
+  });
+
+  it('draft→values→draft 멱등 — isGrouped·개별 선택이 보존된다 (리뷰 Eng-M1)', () => {
+    const values: OrderSheetValues = {
+      ...baseValues,
+      scheduleGroups: [
+        {
+          dates: ['2026-07-20', '2026-07-21'],
+          timeSlots: [slotAt('19:00', [{ role: 'dealer', count: 2 }])],
+          grouped: true,
+        },
+        {
+          dates: ['2026-07-23'],
+          timeSlots: [slotAt('21:00', [{ role: 'floor', count: 1 }])],
+          grouped: false,
+        },
+      ],
+    };
+    const draft1 = valuesToDraft(values);
+    const draft2 = valuesToDraft(draftToValues(draft1) as OrderSheetValues);
+    expect(stripIds(draft2)).toEqual(stripIds(draft1));
+  });
+
   it('레거시 협의(other) 공고는 협의로 유지된다 (2026-07-14 결정 — hourly 강제 변환 금지)', () => {
     const draft = valuesToDraft({ ...baseValues, salary: { type: 'other', amount: 0 } });
     expect(draftToValues(draft).salary).toEqual({ type: 'other', amount: 0 });
   });
   it('shared 모드에서는 roleSalaries가 되채워지지 않는다 (Design B 두 번째 변경 회귀 가드 — draftToValues by_role 게이트)', () => {
-    // Design B 첫 변경으로 shared draft 의 roleCatalog 엔트리는 모두 defaultSalary 를 갖는다.
-    // draftToValues 가 by_role 게이트 없이 roleCatalog salary 를 전수 복원하면 roleSalaries 가 오염돼
-    // 왕복이 깨진다(shared 인데 roleSalaries != []). shared → roleSalaries=[] 를 명시 고정한다.
     const draft = valuesToDraft(baseValues); // useSameSalary: true
-    expect(draft.roleCatalog.every((r) => r.salary !== undefined)).toBe(true); // 첫 변경 확인
-    expect(draftToValues(draft).roleSalaries).toEqual([]); // 두 번째 변경(게이트) 확인
+    expect(draft.roleCatalog.every((r) => r.salary !== undefined)).toBe(true);
+    expect(draftToValues(draft).roleSalaries).toEqual([]);
   });
   it('by_role 왕복 — roleSalaries(순서 포함)와 useSameSalary=false를 보존한다 (Design B 두 번째 변경 복원 분기 커버)', () => {
-    // 위 shared 가드는 by_role 게이트의 "shared→[]" 쪽만 고정한다. 이 테스트는 반대쪽인
-    // "by_role→roleCatalog salary 복원" 분기(mappers.ts:145-156)를 커버한다. 이 분기가 항상 []로
-    // 회귀하면 by_role 프리셋/공고의 draft→values에서 역할별 급여가 통소실되므로, 순서 포함 보존을 고정한다.
     const byRoleValues: OrderSheetValues = {
       ...baseValues,
       useSameSalary: false,
@@ -166,21 +443,15 @@ describe('draftToValues ↔ valuesToDraft 왕복', () => {
     ]);
     // salary(세그먼트 캐리어)는 defaultSalary=최저값 정규화(CEO-1)로 25,000이 된다 — 정규형 동치.
     expect(roundTrip).toEqual({ ...byRoleValues, salary: { type: 'hourly', amount: 25000 } });
-    // draft 레벨 멱등 — 정규형에서 재왕복해도 draft가 동일하다.
-    // slot/role id는 호출마다 재생성(타임스탬프 기반)이라 벗겨서 구조만 비교(ms 경계 플레이크 방지).
-    const stripIds = (obj: unknown): unknown =>
-      JSON.parse(JSON.stringify(obj, (key, value) => (key === 'id' ? undefined : value)));
     expect(
       stripIds(valuesToDraft(draftToValues(valuesToDraft(byRoleValues)) as OrderSheetValues))
     ).toEqual(stripIds(valuesToDraft(byRoleValues)));
   });
 
   it('by_role의 defaultSalary는 roleSalaries 최저값 — 유령 초기값(세그먼트 캐리어) 아님 (CEO-1)', () => {
-    // 소비처 실측 3곳(정산 폴백·카드 a11y 헤드라인·급여 필터)이 defaultSalary를 읽는다 —
-    // "최저가부터" 의미가 되도록 기록한다. 협의(other) 행은 금액 축이 없어 최저값 산정에서 제외.
     const byRole: OrderSheetValues = {
       ...baseValues,
-      salary: { type: 'hourly', amount: 20000 }, // 아무도 안 고른 유령 캐리어
+      salary: { type: 'hourly', amount: 20000 },
       useSameSalary: false,
       roleSalaries: [
         { role: 'dealer', salary: { type: 'hourly', amount: 25000 } },
@@ -193,9 +464,7 @@ describe('draftToValues ↔ valuesToDraft 왕복', () => {
     });
   });
 
-  it('고아(timeSlots에서 사라진 역할) 엔트리는 defaultSalary 최저값 산정에서 제외한다 (리뷰 H-1)', () => {
-    // 고아 잔류(금액 보존)는 폼 상태 한정 — 쓰기 시 실 역할이 아닌 금액이 카드 헤드라인·
-    // 정산 폴백에 과소 공시로 흘러가면 안 된다. baseValues의 timeSlots는 dealer+serving.
+  it('고아(전 그룹 어디에도 없는 역할) 엔트리는 defaultSalary 최저값 산정에서 제외한다 (리뷰 H-1)', () => {
     const withOrphan: OrderSheetValues = {
       ...baseValues,
       useSameSalary: false,
@@ -226,19 +495,15 @@ describe('draftToValues ↔ valuesToDraft 왕복', () => {
     });
   });
 
-  it('initialOrderSheetValues는 by_role 기본(useSameSalary=false·roleSalaries=[])', () => {
+  it('initialOrderSheetValues는 by_role 기본 + 빈 단일 그룹', () => {
     const initial = initialOrderSheetValues();
     expect(initial.useSameSalary).toBe(false);
     expect(initial.roleSalaries).toEqual([]);
+    expect(initial.scheduleGroups).toEqual([{ dates: [], timeSlots: [], grouped: false }]);
   });
 });
 
 describe('신·구 동등성 (레거시 폼 경로 대비)', () => {
-  // ⚠️ 동어반복 금지(리뷰 HIGH): buildCreateJobPostingInput(draft)는 draftToCreateJobPostingInput을
-  // 그대로 부르므로 valuesToDraft 결과를 넣어 비교하면 같은 함수를 두 번 부르는 것이다.
-  // 반드시 JobPostingFormData(레거시 폼 표현) 픽스처를 경유해 비교한다.
-
-  // draft 슬롯/역할의 생성 id 는 비결정적이라 구조 비교 전 벗긴다(브리프 "id 등 생성 필드는 normalize 후 비교").
   const stripReqIds = (reqs: CreateJobPostingInput['schedule']['requirements']) =>
     reqs.map((req) => ({
       ...req,
@@ -249,9 +514,6 @@ describe('신·구 동등성 (레거시 폼 경로 대비)', () => {
     }));
 
   it('같은 입력 의도의 레거시 formData와 CreateJobPostingInput이 동등하다', () => {
-    // baseValues 와 같은 의도(단일 시간대 19:00·딜러2+서빙1·shared 시급 20,000·복지 동일·2일)로
-    // 레거시 폼 표현(JobPostingFormData)을 조립한다. roles=[]로 두어 roleCatalog 는 슬롯에서만 파생.
-    // (submission.test.ts:37 createFormData 픽스처 패턴 참조 — INITIAL 스프레드 + 오버라이드)
     const legacyFormData: JobPostingFormData = {
       ...INITIAL_JOB_POSTING_FORM_DATA,
       postingType: 'regular',
@@ -298,23 +560,24 @@ describe('신·구 동등성 (레거시 폼 경로 대비)', () => {
     expect(kiosk.compensation).toEqual(legacy.compensation);
     expect(stripReqIds(kiosk.schedule.requirements)).toEqual(
       stripReqIds(legacy.schedule.requirements)
-    ); // id 등 생성 필드는 normalize 후 비교
+    );
     expect(kiosk.roleCatalog).toEqual(legacy.roleCatalog);
   });
 });
 
 describe('gridParamsToValues (정규화 + 직접 조립 — INITIAL 경유 금지)', () => {
-  it('venueId·date·count가 주문서 값으로 흡수된다', () => {
+  it('venueId·date·count가 단일 그룹 주문서 값으로 흡수된다', () => {
     const values = gridParamsToValues({
       venueId: '00000000-0000-4000-8000-000000000001',
       date: '2026-07-20',
       count: 3,
     });
     expect(values.venueId).toBe('00000000-0000-4000-8000-000000000001');
-    expect(values.dates).toEqual(['2026-07-20']);
-    expect(values.timeSlots?.[0]?.roles?.[0]).toMatchObject({ role: 'dealer', count: 3 });
-    // 기본 by_role(설계 §S2.1) + 반환 직전 syncRoleSalaries 프리필(Eng-H3) —
-    // 미적용 시 그리드 출하 플로우가 "급여 시트 강제 방문"으로 회귀한다.
+    expect(values.scheduleGroups?.[0]?.dates).toEqual(['2026-07-20']);
+    expect(values.scheduleGroups?.[0]?.timeSlots?.[0]?.roles?.[0]).toMatchObject({
+      role: 'dealer',
+      count: 3,
+    });
     expect(values.useSameSalary).toBe(false);
     expect(values.roleSalaries).toEqual([
       { role: 'dealer', salary: { type: 'hourly', amount: 20000 } },
@@ -325,7 +588,8 @@ describe('gridParamsToValues (정규화 + 직접 조립 — INITIAL 경유 금�
       false
     );
     expect(
-      gridParamsToValues({ date: '2026-07-20', count: 500 }).timeSlots?.[0]?.roles?.[0]?.count
+      gridParamsToValues({ date: '2026-07-20', count: 500 }).scheduleGroups?.[0]?.timeSlots?.[0]
+        ?.roles?.[0]?.count
     ).toBe(99);
   });
   it('파라미터 없으면 initialOrderSheetValues와 동일 (venueId 키 부재 무회귀 계약)', () => {
@@ -334,24 +598,26 @@ describe('gridParamsToValues (정규화 + 직접 조립 — INITIAL 경유 금�
 });
 
 describe('formValuesToDraft (프리셋 저장 — z.input 폼 값 → draft, 검증 우회)', () => {
-  it('optional/default 필드가 비어도 SSOT 기본값으로 채워 draft 를 만든다', () => {
-    // 제목·장소·역할만 채운 미완성(dates 없음) 상태 — 템플릿 저장은 검증 게이트를 거치지 않는다.
+  it('optional/default 필드가 비어도 SSOT 기본값으로 채워 draft 를 만든다 (grouped ?? false 포함)', () => {
     const partial: OrderSheetFormValues = {
       postingType: 'regular',
       title: '주말 딜러',
       location: { name: '라운더스 홀덤펍' },
       contactPhone: '010-1234-5678',
-      dates: [],
-      timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] }],
+      // z.input 경로 — grouped 미지정 그룹도 수용(최종 검증 NIT-2)
+      scheduleGroups: [
+        { dates: [], timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] }] },
+      ],
       salary: { type: 'hourly', amount: 20000 },
     };
     const draft = formValuesToDraft(partial);
     expect(draft.title).toBe('주말 딜러');
     expect(draft.description).toBe('');
-    // useSameSalary 미지정 → 기본 false(설계 §S2.1 전수 통일) → compensation.mode=by_role
     expect(draft.compensation.mode).toBe('by_role');
     expect(draft.questions.items).toEqual([]);
     expect(draft.location).toEqual({ name: '라운더스 홀덤펍' });
+    if (draft.schedule.kind !== 'dated') return;
+    expect(draft.schedule.templateTimeSlots[0]?.startTime).toBe('19:00');
   });
 
   it('장소 미선택(null) 상태도 저장 가능 — draft.location=null', () => {
@@ -360,8 +626,7 @@ describe('formValuesToDraft (프리셋 저장 — z.input 폼 값 → draft, 검
       title: '제목만',
       location: null,
       contactPhone: '010-0000-0000',
-      dates: [],
-      timeSlots: [],
+      scheduleGroups: [],
       salary: { type: 'hourly', amount: 20000 },
     };
     const draft = formValuesToDraft(partial);
@@ -371,7 +636,45 @@ describe('formValuesToDraft (프리셋 저장 — z.input 폼 값 → draft, 검
 });
 
 describe('templateToValues', () => {
-  it('템플릿 로드 시 날짜는 비운다', () => {
+  it('템플릿 로드 시 그룹 구조·timeSlots는 유지하고 각 그룹 dates만 비운다 (F4)', () => {
+    const multiGroupDraft = valuesToDraft({
+      ...baseValues,
+      scheduleGroups: [
+        {
+          dates: ['2026-07-20', '2026-07-21'],
+          timeSlots: [slotAt('19:00', [{ role: 'dealer', count: 2 }])],
+          grouped: true,
+        },
+        {
+          dates: ['2026-07-25'],
+          timeSlots: [slotAt('21:00', [{ role: 'floor', count: 1 }])],
+          grouped: false,
+        },
+      ],
+    });
+    const template: JobPostingTemplate = {
+      id: 't2',
+      userId: 'u1',
+      name: '다중 그룹',
+      description: null,
+      createdAt: null,
+      updatedAt: null,
+      usageCount: 0,
+      templateData: {
+        title: '다중 그룹 공고',
+        schedule: multiGroupDraft.schedule,
+        compensation: { mode: 'shared', defaultSalary: { type: 'hourly', amount: 20000 } },
+      },
+    };
+    const values = templateToValues(template);
+    expect(values.scheduleGroups).toHaveLength(2);
+    expect(values.scheduleGroups?.every((g) => g.dates.length === 0)).toBe(true);
+    expect(values.scheduleGroups?.[0]?.timeSlots?.[0]?.startTime).toBe('19:00');
+    expect(values.scheduleGroups?.[0]?.grouped).toBe(true);
+    expect(values.scheduleGroups?.[1]?.timeSlots?.[0]?.startTime).toBe('21:00');
+  });
+
+  it('schedule 없는 템플릿은 빈 단일 그룹으로 시작한다', () => {
     const template: JobPostingTemplate = {
       id: 't1',
       userId: 'u1',
@@ -386,7 +689,40 @@ describe('templateToValues', () => {
       },
     };
     const values = templateToValues(template);
-    expect(values.dates).toEqual([]);
     expect(values.title).toBe('주말 딜러 구합니다');
+    expect(values.scheduleGroups?.every((g) => g.dates.length === 0)).toBe(true);
+    expect((values.scheduleGroups?.length ?? 0) >= 1).toBe(true);
+  });
+});
+
+describe('primaryScheduleInfo (완료 화면 요약 — 리뷰 Eng-M2)', () => {
+  it('전 그룹 최소 날짜 + 그 그룹 첫 슬롯 출근시간 + 고유 날짜 수를 산출한다', () => {
+    const values: OrderSheetValues = {
+      ...baseValues,
+      scheduleGroups: [
+        {
+          dates: ['2026-07-25'],
+          timeSlots: [slotAt('21:00', [{ role: 'floor', count: 1 }])],
+          grouped: false,
+        },
+        {
+          dates: ['2026-07-20', '2026-07-21'],
+          timeSlots: [slotAt('19:00', [{ role: 'dealer', count: 2 }])],
+          grouped: true,
+        },
+      ],
+    };
+    expect(primaryScheduleInfo(values)).toEqual({
+      primaryDate: '2026-07-20',
+      startTime: '19:00',
+      totalDates: 3,
+    });
+  });
+  it('빈 일정이면 undefined 필드 + 0', () => {
+    expect(primaryScheduleInfo({ ...baseValues, scheduleGroups: [] })).toEqual({
+      primaryDate: undefined,
+      startTime: undefined,
+      totalDates: 0,
+    });
   });
 });

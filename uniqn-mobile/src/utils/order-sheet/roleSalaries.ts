@@ -13,7 +13,7 @@ import {
   DEFAULT_SALARY_BY_TYPE,
 } from '@/constants/jobPosting';
 
-type OrderSheetTimeSlots = OrderSheetValues['timeSlots'];
+type OrderSheetTimeSlots = OrderSheetValues['scheduleGroups'][number]['timeSlots'];
 type OrderSheetRoleSalaries = OrderSheetValues['roleSalaries'];
 type OrderSheetSalaryType = OrderSheetValues['salary']['type'];
 

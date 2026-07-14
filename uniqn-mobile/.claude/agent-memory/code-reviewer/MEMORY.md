@@ -17,3 +17,4 @@
 ## 필드 배선 리뷰 레시피
 
 - [optional 오브젝트 필드 6+3지점 사슬](pattern_optional_field_wiring_six_points.md) — 쓰기6(시트→zod→mapper→직렬화→하이드→UI가드)+카드3(projections 전사·spread 재구성·오프라인캐시 버전)
+- [스토어 계약 필드 렌더러 미배선](pitfall_store_contract_field_without_renderer.md) — toast.action 타입만 있고 Toast.tsx 미소비=Undo 죽은기능. 스토어 mock 테스트는 false-green, 소비처 grep 필수

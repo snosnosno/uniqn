@@ -9,6 +9,8 @@ import type { OrderSheetFormValues, OrderSheetValues } from '@/schemas/orderShee
 const orderSheetResolver: Resolver<OrderSheetFormValues, unknown, OrderSheetValues> =
   zodResolver(orderSheetValuesSchema);
 
+const dealerSlot = [{ startTime: '19:00', roles: [{ role: 'dealer' as const, count: 1 }] }];
+
 // useSameSalary 기본값이 false(by_role)로 반전(설계 §S2.1)돼, 축별 테스트 기준 픽스처는
 // shared를 명시한다. 기본값 자체는 아래 '기본값 false' describe에서 미지정 픽스처로 고정한다.
 const validInput: OrderSheetFormValues = {
@@ -16,8 +18,7 @@ const validInput: OrderSheetFormValues = {
   title: '주말 딜러 구합니다',
   location: { name: '라운더스 홀덤펍' },
   contactPhone: '010-1234-5678',
-  dates: ['2026-07-14'],
-  timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 1 }] }],
+  scheduleGroups: [{ dates: ['2026-07-14'], timeSlots: dealerSlot }],
   salary: { type: 'hourly', amount: 20000 },
   useSameSalary: true,
 };
@@ -28,8 +29,7 @@ const unspecifiedSalaryModeInput: OrderSheetFormValues = {
   title: '주말 딜러 구합니다',
   location: { name: '라운더스 홀덤펍' },
   contactPhone: '010-1234-5678',
-  dates: ['2026-07-14'],
-  timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 1 }] }],
+  scheduleGroups: [{ dates: ['2026-07-14'], timeSlots: dealerSlot }],
   salary: { type: 'hourly', amount: 20000 },
 };
 
@@ -40,7 +40,7 @@ describe('orderSheetValuesSchema — RHF 3제네릭 계약', () => {
 });
 
 describe('orderSheetValuesSchema — z.input/z.output 경계', () => {
-  it('default 필드가 z.output에서 채워진다 (description·roleSalaries·allowances·conditions·preQuestions)', () => {
+  it('default 필드가 z.output에서 채워진다 (description·roleSalaries·allowances·conditions·preQuestions·grouped)', () => {
     const parsed = orderSheetValuesSchema.parse(validInput);
     expect(parsed.description).toBe('');
     expect(parsed.roleSalaries).toEqual([]);
@@ -48,6 +48,8 @@ describe('orderSheetValuesSchema — z.input/z.output 경계', () => {
     expect(parsed.conditions).toEqual({});
     expect(parsed.usesPreQuestions).toBe(false);
     expect(parsed.preQuestions).toEqual([]);
+    // 그룹 grouped 기본 false — 묶음지원(usesGroupedDateRanges) 오분기 차단(F6)
+    expect(parsed.scheduleGroups[0]?.grouped).toBe(false);
   });
 
   it('장소 null은 거부된다 (z.output에서 non-null 계약)', () => {
@@ -91,17 +93,93 @@ describe('orderSheetValuesSchema — z.input/z.output 경계', () => {
   });
 });
 
+describe('orderSheetValuesSchema — scheduleGroups (S1)', () => {
+  it('그룹 0개는 거부된다 (min 1)', () => {
+    const result = orderSheetValuesSchema.safeParse({ ...validInput, scheduleGroups: [] });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.some((i) => i.path.includes('scheduleGroups'))).toBe(true);
+    }
+  });
+
+  it('그룹 내 dates 0개·timeSlots 0개는 거부된다 (그룹당 min 1)', () => {
+    const noDates = orderSheetValuesSchema.safeParse({
+      ...validInput,
+      scheduleGroups: [{ dates: [], timeSlots: dealerSlot }],
+    });
+    expect(noDates.success).toBe(false);
+    const noSlots = orderSheetValuesSchema.safeParse({
+      ...validInput,
+      scheduleGroups: [{ dates: ['2026-07-14'], timeSlots: [] }],
+    });
+    expect(noSlots.success).toBe(false);
+  });
+
+  it('그룹 간 날짜 중복은 거부되고 issue path가 뒤 그룹의 dates를 가리킨다 (E1)', () => {
+    const result = orderSheetValuesSchema.safeParse({
+      ...validInput,
+      scheduleGroups: [
+        { dates: ['2026-07-14', '2026-07-15'], timeSlots: dealerSlot },
+        { dates: ['2026-07-15'], timeSlots: dealerSlot }, // 중복 — 뒤에 온 그룹
+      ],
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(
+        result.error.issues.some(
+          (i) => JSON.stringify(i.path) === JSON.stringify(['scheduleGroups', 1, 'dates'])
+        )
+      ).toBe(true);
+    }
+  });
+
+  it('합산 고유 날짜가 타입 상한(regular=7)을 넘으면 거부된다 (2차 Eng-M4/CEO-3 — 그룹 우회 차단)', () => {
+    const result = orderSheetValuesSchema.safeParse({
+      ...validInput,
+      scheduleGroups: [
+        { dates: ['2026-07-14', '2026-07-15', '2026-07-16', '2026-07-17'], timeSlots: dealerSlot },
+        { dates: ['2026-07-20', '2026-07-21', '2026-07-22', '2026-07-23'], timeSlots: dealerSlot },
+      ],
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.some((i) => i.path.includes('scheduleGroups'))).toBe(true);
+    }
+  });
+
+  it('그룹 2개 합산 7일 이하는 통과한다', () => {
+    const result = orderSheetValuesSchema.safeParse({
+      ...validInput,
+      scheduleGroups: [
+        { dates: ['2026-07-14', '2026-07-15'], timeSlots: dealerSlot, grouped: true },
+        { dates: ['2026-07-20'], timeSlots: dealerSlot },
+      ],
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
 describe('orderSheetValuesSchema — 역할별 급여(by_role) 전수 커버 게이트(superRefine)', () => {
-  // 다역할 입력 — dealer/floor + 기타(칩카운터). 커버 판정 키는 role(기타는 customRole 단위).
+  // 다역할 — 그룹 2개에 분산(dealer/floor + 기타). 커버 판정은 전 그룹 순회 합집합.
   const multiRoleInput: OrderSheetFormValues = {
     ...validInput,
-    timeSlots: [
+    scheduleGroups: [
       {
-        startTime: '19:00',
-        roles: [
-          { role: 'dealer', count: 1 },
-          { role: 'floor', count: 1 },
-          { role: 'other', customRole: '칩카운터', count: 1 },
+        dates: ['2026-07-14'],
+        timeSlots: [
+          {
+            startTime: '19:00',
+            roles: [
+              { role: 'dealer', count: 1 },
+              { role: 'floor', count: 1 },
+            ],
+          },
+        ],
+      },
+      {
+        dates: ['2026-07-16'],
+        timeSlots: [
+          { startTime: '21:00', roles: [{ role: 'other', customRole: '칩카운터', count: 1 }] },
         ],
       },
     ],
@@ -119,30 +197,28 @@ describe('orderSheetValuesSchema — 역할별 급여(by_role) 전수 커버 게
     }
   });
 
-  it('동일급여 OFF에서 고유 역할 일부만 커버하면 거부된다', () => {
-    const result = orderSheetValuesSchema.safeParse({
+  it('동일급여 OFF에서 타 그룹의 역할까지 전수 커버해야 통과한다 (전 그룹 순회)', () => {
+    const partial = orderSheetValuesSchema.safeParse({
       ...multiRoleInput,
       useSameSalary: false,
-      // dealer만 커버, floor·기타(칩카운터) 미커버
-      roleSalaries: [{ role: 'dealer', salary: { type: 'hourly', amount: 25000 } }],
+      // dealer/floor만 커버, 그룹2의 기타(칩카운터) 미커버
+      roleSalaries: [
+        { role: 'dealer', salary: { type: 'hourly', amount: 25000 } },
+        { role: 'floor', salary: { type: 'hourly', amount: 30000 } },
+      ],
     });
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues.some((i) => i.path.includes('roleSalaries'))).toBe(true);
-    }
-  });
+    expect(partial.success).toBe(false);
 
-  it('동일급여 OFF에서 고유 역할을 전수 커버하면 통과한다 (기타는 customRole 단위·협의 허용)', () => {
-    const result = orderSheetValuesSchema.safeParse({
+    const full = orderSheetValuesSchema.safeParse({
       ...multiRoleInput,
       useSameSalary: false,
       roleSalaries: [
         { role: 'dealer', salary: { type: 'hourly', amount: 25000 } },
-        { role: 'floor', salary: { type: 'hourly', amount: 20000 } },
+        { role: 'floor', salary: { type: 'hourly', amount: 30000 } },
         { role: 'other', customRole: '칩카운터', salary: { type: 'other', amount: 0 } },
       ],
     });
-    expect(result.success).toBe(true);
+    expect(full.success).toBe(true);
   });
 
   it('동일급여 OFF에서 커버해도 amount<=0(비협의)이면 거부된다', () => {
@@ -163,12 +239,10 @@ describe('orderSheetValuesSchema — 역할별 급여(by_role) 전수 커버 게
     expect(result.success).toBe(true);
   });
 
-  it('timeSlots 고유 역할이 0개면 커버 게이트를 스킵한다 (Eng-M5 — 신규 폼 첫 onChange 소음 제거)', () => {
-    // timeSlots 자체는 min(1)로 거부되지만, roleSalaries 이슈는 서지 않아야 한다 —
-    // 제출 차단은 timeSlots/roles min(1)이 담당(게이트 약화 없음).
+  it('전 그룹 고유 역할이 0개면 커버 게이트를 스킵한다 (Eng-M5 — 신규 폼 첫 onChange 소음 제거)', () => {
     const result = orderSheetValuesSchema.safeParse({
       ...unspecifiedSalaryModeInput,
-      timeSlots: [],
+      scheduleGroups: [{ dates: ['2026-07-14'], timeSlots: [] }],
     });
     expect(result.success).toBe(false);
     if (!result.success) {

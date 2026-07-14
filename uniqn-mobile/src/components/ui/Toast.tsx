@@ -116,6 +116,23 @@ export function Toast({ toast, onDismiss }: ToastProps) {
           <IconComponent size={20} color="#FFFFFF" />
         </View>
         <Text className="text-white text-sm flex-1 font-sans-medium">{toast.message}</Text>
+        {/* 액션(되돌리기 등) — 스토어 계약 필드의 렌더 배선(S1 리뷰 HIGH-1). 본문 탭(dismiss)과
+            터치 분리를 위해 내부 Pressable(외부는 role=alert라 중첩 button 하이드레이션 무해). */}
+        {toast.action ? (
+          <Pressable
+            onPress={() => {
+              toast.action?.onPress();
+              handleDismiss();
+            }}
+            hitSlop={8}
+            className="ml-2 px-2.5 py-1.5 rounded-sm bg-white/20 active:opacity-80"
+            accessibilityRole="button"
+            accessibilityLabel={toast.action.label}
+            testID="toast-action"
+          >
+            <Text className="text-white text-sm font-sans-bold">{toast.action.label}</Text>
+          </Pressable>
+        ) : null}
         <View className="ml-2 p-1">
           <XMarkIcon size={14} color="rgba(255, 255, 255, 0.8)" />
         </View>

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/Button';
@@ -12,11 +12,15 @@ import {
 } from '@/schemas/orderSheet.schema';
 import {
   ORDER_GROUPS,
+  errorMessageForRow,
+  errorRowTargets,
   firstUnsetRow,
   getRowState,
   roleName,
-  rowKeyForErrorField,
+  summarizeGroupDates,
+  summarizeTotalRoles,
   type OrderRowKey,
+  type OrderRowTarget,
 } from './orderRowMeta';
 import { OrderGroup } from './OrderGroup';
 import { OrderRow } from './OrderRow';
@@ -33,17 +37,40 @@ import { TaxSheet } from './sheets/TaxSheet';
 import { ConditionsSheet } from './sheets/ConditionsSheet';
 import { PreQuestionsSheet } from './sheets/PreQuestionsSheet';
 import { PresetCarousel, type OrderSheetPreset } from './PresetCarousel';
-import { DatePickerModal } from '@/components/employer/job-form/modals/DatePickerModal';
+import { ScheduleDatesSheet, type ScheduleSplitMode } from './sheets/ScheduleDatesSheet';
+import { XMarkIcon } from '@/components/icons';
+import { groupConsecutiveDates, hasGroupableDates } from '@/utils/date';
 import { defaultAmountForRole, syncRoleSalaries } from '@/utils/order-sheet/roleSalaries';
 import type { PostingType } from '@/types/jobPosting';
 
+type ScheduleGroups = NonNullable<OrderSheetFormValues['scheduleGroups']>;
+type GroupTimeSlots = ScheduleGroups[number]['timeSlots'];
+
 /**
- * 활성 시트 상태 — 행 키 또는 슬롯별 역할 편집 타깃.
- * slotRoles: 특정 시간대(slotIndex)의 역할만 편집. fromTimeSheet=true 면 확인/닫기 시 TimeSlotsSheet 로 복귀
- * (복수 슬롯일 때 그 안에서 진입), false 면 rows 로 닫는다(단일 슬롯 직접 진입).
+ * 활성 시트 상태 — 행 키(비일정) 또는 그룹 스코프 일정 타깃(S1).
+ * dates.mode: whole=단일 그룹 전체 편집(3지 세그먼트 노출) · edit=기존 그룹 재편집(세그먼트 숨김 ⓓ)
+ * · add=새 그룹 추가(직전 그룹 시간/역할 깊은복사 시드).
+ * slotRoles: 특정 그룹·시간대(slotIndex)의 역할만 편집. fromTimeSheet=true 면 확인/닫기 시
+ * TimeSlotsSheet 로 복귀(#244 지연 전환), false 면 rows 로 닫는다(단일 슬롯 직접 진입).
  */
-type SlotRolesTarget = { key: 'slotRoles'; slotIndex: number; fromTimeSheet: boolean };
-type ActiveSheet = OrderRowKey | SlotRolesTarget | null;
+type DatesTarget = { key: 'dates'; groupIndex: number; mode: 'whole' | 'edit' | 'add' };
+type TimeTarget = { key: 'time'; groupIndex: number };
+type SlotRolesTarget = {
+  key: 'slotRoles';
+  groupIndex: number;
+  slotIndex: number;
+  fromTimeSheet: boolean;
+};
+type ActiveSheet =
+  | Exclude<OrderRowKey, 'dates' | 'time' | 'roles'>
+  | DatesTarget
+  | TimeTarget
+  | SlotRolesTarget
+  | null;
+
+/** 폼 슬롯 깊은복사(F1/E6) — 분할·시드 시 참조 공유로 타 그룹이 오염되는 것을 차단 */
+const cloneSlots = (slots: GroupTimeSlots | undefined): GroupTimeSlots =>
+  (slots ?? []).map((s) => ({ ...s, roles: s.roles.map((r) => ({ ...r })) }));
 
 export interface OrderSheetScreenProps {
   initialValues: OrderSheetFormValues;
@@ -105,38 +132,50 @@ export function OrderSheetScreen({
     }, SHEET_DISMISS_ANIMATION_MS);
   }, []);
 
-  // 슬롯별 역할 편집 타깃(객체) 좁히기 — rows/기타 시트 키(문자열)와 구분
-  const slotRolesTarget: SlotRolesTarget | null =
+  // 일정 타깃(객체) 좁히기 — rows/기타 시트 키(문자열)와 구분
+  const scheduleTarget =
     activeSheet !== null && typeof activeSheet === 'object' ? activeSheet : null;
+  const datesTarget = scheduleTarget?.key === 'dates' ? scheduleTarget : null;
+  const timeTarget = scheduleTarget?.key === 'time' ? scheduleTarget : null;
+  const slotRolesTarget = scheduleTarget?.key === 'slotRoles' ? scheduleTarget : null;
 
-  // 급여 시트(동일급여 OFF)용 고유 역할 — timeSlots에서 roleKey(기타는 customRole 단위) 기준 중복 제거,
-  // 라벨은 orderRowMeta.roleName 재사용. by_role 전수 커버 게이트(스키마 superRefine)와 대칭.
+  const scheduleGroups: ScheduleGroups = useMemo(
+    () => values.scheduleGroups ?? [],
+    [values.scheduleGroups]
+  );
+  const groupCount = scheduleGroups.length;
+
+  // 급여 시트(동일급여 OFF)용 고유 역할 — 전 그룹 timeSlots에서 roleKey(기타는 customRole 단위) 기준
+  // 중복 제거, 라벨은 orderRowMeta.roleName 재사용. by_role 전수 커버 게이트(스키마 superRefine)와 대칭.
   const uniqueRoles = useMemo<UniqueRole[]>(() => {
     const seen = new Map<string, UniqueRole>();
-    for (const slot of values.timeSlots ?? []) {
-      for (const r of slot.roles) {
-        const key = r.role === 'other' ? `other:${r.customRole ?? ''}` : r.role;
-        if (!seen.has(key)) {
-          seen.set(key, {
-            role: r.role,
-            ...(r.customRole !== undefined ? { customRole: r.customRole } : {}),
-            label: roleName(r.role, r.customRole),
-          });
+    for (const group of scheduleGroups) {
+      for (const slot of group.timeSlots ?? []) {
+        for (const r of slot.roles) {
+          const key = r.role === 'other' ? `other:${r.customRole ?? ''}` : r.role;
+          if (!seen.has(key)) {
+            seen.set(key, {
+              role: r.role,
+              ...(r.customRole !== undefined ? { customRole: r.customRole } : {}),
+              label: roleName(r.role, r.customRole),
+            });
+          }
         }
       }
     }
     return [...seen.values()];
-  }, [values.timeSlots]);
+  }, [scheduleGroups]);
 
   // 역할 확정 시 급여 자동 프리필(설계 §S2.3) — confirm 핸들러(이벤트)에서만 호출, effect 금지(F3).
   // 후속 역할 추가(기존 엔트리가 있던 상태의 신규 주입)만 1회성 토스트로 알린다(2차 CEO-2 —
   // 초기 시드는 '기본값' 배지가 담당). useSameSalary=true(동일급여)면 no-op.
   const applyRoleSalarySync = useCallback(
-    (nextTimeSlots: OrderSheetFormValues['timeSlots']) => {
+    (nextGroups: ScheduleGroups) => {
       const current = form.getValues();
       if (current.useSameSalary ?? false) return;
       const prev = current.roleSalaries ?? [];
-      const synced = syncRoleSalaries(nextTimeSlots ?? [], prev, current.salary.type);
+      const nextSlots = nextGroups.flatMap((g) => g.timeSlots ?? []);
+      const synced = syncRoleSalaries(nextSlots, prev, current.salary.type);
       if (synced === prev) return;
       form.setValue('roleSalaries', synced, { shouldDirty: true, shouldValidate: true });
       const added = synced.slice(prev.length);
@@ -174,21 +213,120 @@ export function OrderSheetScreen({
     });
   }, [salaryConfirmed, values.useSameSalary, values.roleSalaries, uniqueRoles]);
 
-  // 행 탭 라우팅 — roles 행은 슬롯 수에 따라 분기(1개=직접 역할 편집, 그 외=TimeSlotsSheet). 나머지는 그대로.
+  // 행 탭 라우팅(그룹 스코프) — dates는 단일 그룹=whole(세그먼트)·다그룹=edit(헤더 재편집),
+  // roles는 그룹 슬롯 수에 따라 분기(1개=직접 역할 편집, 그 외=TimeSlotsSheet).
   // switchSheet 지연 전환 창(300ms) 중에는 무시 — 그 사이 새 시트를 열면 예약 타이머와 충돌(#244 레이스).
   const handleRowPress = useCallback(
-    (key: OrderRowKey) => {
+    (key: OrderRowKey, groupIndex = 0) => {
       if (pendingSheetRef.current) return;
+      const groups = form.getValues().scheduleGroups ?? [];
+      if (key === 'dates') {
+        setActiveSheet({ key: 'dates', groupIndex, mode: groups.length > 1 ? 'edit' : 'whole' });
+        return;
+      }
+      if (key === 'time') {
+        setActiveSheet({ key: 'time', groupIndex });
+        return;
+      }
       if (key === 'roles') {
-        const count = values.timeSlots?.length ?? 0;
+        const count = groups[groupIndex]?.timeSlots?.length ?? 0;
         setActiveSheet(
-          count === 1 ? { key: 'slotRoles', slotIndex: 0, fromTimeSheet: false } : 'time'
+          count === 1
+            ? { key: 'slotRoles', groupIndex, slotIndex: 0, fromTimeSheet: false }
+            : { key: 'time', groupIndex }
         );
         return;
       }
       setActiveSheet(key);
     },
-    [values.timeSlots]
+    [form]
+  );
+
+  /** 그룹 삭제(즉시) + Undo 토스트 5초 — impeccable §12, 리뷰 Design-M2.
+   *  복원은 삭제 그룹 단건 재삽입(리뷰 L-6) — 5초 내 타 그룹 편집을 함께 되돌리지 않는다. */
+  const handleDeleteGroup = useCallback(
+    (groupIndex: number) => {
+      const current = form.getValues().scheduleGroups ?? [];
+      if (current.length <= 1) return; // E4: 마지막 그룹은 버튼 자체 미노출 — 방어
+      const target = current[groupIndex];
+      if (!target) return;
+      const removed = {
+        ...target,
+        dates: [...target.dates],
+        timeSlots: cloneSlots(target.timeSlots),
+      };
+      const next = current.filter((_, i) => i !== groupIndex);
+      form.setValue('scheduleGroups', next, { shouldDirty: true, shouldValidate: true });
+      addToast({
+        type: 'success',
+        message: `${summarizeGroupDates(removed.dates) || '일정'} 일정을 삭제했어요`,
+        duration: 5000,
+        action: {
+          label: '되돌리기',
+          onPress: () => {
+            const now = form.getValues().scheduleGroups ?? [];
+            const insertAt = Math.min(groupIndex, now.length);
+            form.setValue(
+              'scheduleGroups',
+              [...now.slice(0, insertAt), removed, ...now.slice(insertAt)],
+              { shouldDirty: true, shouldValidate: true }
+            );
+          },
+        },
+      });
+    },
+    [form, addToast]
+  );
+
+  /** "+ 일정 추가" — 새 그룹은 날짜 시트부터, 시간/역할은 직전 그룹 깊은복사 시드(리뷰 Design-L2).
+   *  add 모드는 세그먼트 미노출(v1 확정 — 리뷰 M-2 기록): 다그룹 상태에서 새 묶음지원(②) 구간은
+   *  전체 날짜 whole+② 경로(동일 조건)로 우회 가능하고, 조건이 다른 복수 묶음 구간은 v1 범위 밖.
+   *  confirm-시점-분할 단순성(E6 구조적 회피)을 유지하는 절충이다. */
+  const handleAddSchedule = useCallback(() => {
+    if (pendingSheetRef.current) return;
+    const groups = form.getValues().scheduleGroups ?? [];
+    setActiveSheet({ key: 'dates', groupIndex: groups.length, mode: 'add' });
+  }, [form]);
+
+  /** 날짜 시트 확정 — whole 모드는 세그먼트에 따라 그룹 분할/유지(분할은 confirm 시점에만 실행) */
+  const handleDatesConfirm = useCallback(
+    (target: DatesTarget, dates: string[], segment: ScheduleSplitMode) => {
+      const current = form.getValues().scheduleGroups ?? [];
+      const sorted = [...dates].sort();
+      let next: ScheduleGroups;
+      if (target.mode === 'add') {
+        const seed = cloneSlots(current[current.length - 1]?.timeSlots);
+        next = [...current, { dates: sorted, timeSlots: seed, grouped: false }];
+      } else if (target.mode === 'edit') {
+        // grouped 그룹의 날짜가 연속쌍을 전부 잃으면 묶음지원 라벨 의미가 사라짐 — 해제(리뷰 L-2)
+        next = current.map((g, i) =>
+          i === target.groupIndex
+            ? { ...g, dates: sorted, grouped: (g.grouped ?? false) && hasGroupableDates(sorted) }
+            : g
+        );
+      } else {
+        // whole — 단일 그룹 전체 편집(세그먼트). 분할 시 기존 공통 시간/역할을 각 그룹에 깊은복사 승계(E6).
+        const base = current[target.groupIndex] ?? { dates: [], timeSlots: [], grouped: false };
+        if (segment === 'separate') {
+          next = sorted.map((d) => ({
+            dates: [d],
+            timeSlots: cloneSlots(base.timeSlots),
+            grouped: false,
+          }));
+        } else if (segment === 'grouped') {
+          // 연속 run별 분할 — run 길이 2+만 묶음지원(grouped=true), 단독 날짜는 날짜별 지원 유지(F6)
+          next = groupConsecutiveDates(sorted).map((run) => ({
+            dates: run,
+            timeSlots: cloneSlots(base.timeSlots),
+            grouped: run.length > 1,
+          }));
+        } else {
+          next = [{ ...base, dates: sorted, grouped: false }];
+        }
+      }
+      form.setValue('scheduleGroups', next, { shouldDirty: true, shouldValidate: true });
+    },
+    [form]
   );
 
   // 최근 제목/장소 — 프리셋(마지막 공고 + 템플릿)의 title/location 으로 채운다.
@@ -230,7 +368,11 @@ export function OrderSheetScreen({
       } else {
         form.reset({
           ...v,
-          roleSalaries: syncRoleSalaries(v.timeSlots ?? [], v.roleSalaries ?? [], v.salary.type),
+          roleSalaries: syncRoleSalaries(
+            (v.scheduleGroups ?? []).flatMap((g) => g.timeSlots ?? []),
+            v.roleSalaries ?? [],
+            v.salary.type
+          ),
         });
       }
       setSalaryConfirmed(false);
@@ -246,13 +388,10 @@ export function OrderSheetScreen({
     onDirtyChange?.(isDirty);
   }, [isDirty, onDirtyChange]);
 
-  /** 행 키 → RHF 첫 에러 메시지 (행 에러 배지 배선 — 리뷰 H5/설계 스펙 "행 단위 에러 배지") */
+  /** 행(그룹 스코프) → RHF 에러 메시지 — 경로 워커 경유(중첩 그룹·급여 에러 포함, 리뷰 Eng-H1) */
   const rowError = useCallback(
-    (key: OrderRowKey): string | undefined => {
-      const entry = Object.entries(errors).find(([field]) => rowKeyForErrorField(field) === key);
-      const err = entry?.[1] as { message?: string } | undefined;
-      return typeof err?.message === 'string' ? err.message : undefined;
-    },
+    (key: OrderRowKey, groupIndex = 0): string | undefined =>
+      errorMessageForRow(errors as Record<string, unknown>, key, groupIndex),
     [errors]
   );
 
@@ -271,27 +410,39 @@ export function OrderSheetScreen({
     (valid) => onSubmit(valid),
     (submitErrors) => {
       // 1순위: 미설정 행 순차 유도. 2순위(값은 있는데 invalid — XSS 문자열·프리필 이상치): 첫 에러 행 시트 열기.
-      // 3순위: 매핑 실패 시 토스트 폴백 — "버튼이 아무 반응 없는" 죽은 상태 금지(리뷰 H5·보안 4).
-      const next =
+      // 3순위: 매핑 실패 시 토스트 폴백 — "버튼이 아무 반응 없는" 죽은 상태 금지(리뷰 H5·F5).
+      // 전 단계가 {key, groupIndex}를 흘린다(리뷰 Design-M3).
+      const next: OrderRowTarget | null =
         firstUnsetRow(values) ??
-        Object.keys(submitErrors)
-          .map(rowKeyForErrorField)
-          .find((k): k is OrderRowKey => k !== null) ??
+        errorRowTargets(submitErrors as Record<string, unknown>)[0] ??
         null;
       if (next !== null) {
         // 행 탭과 동일 변환 경유 — 'roles'/'time' 등은 setActiveSheet 직접 넣으면 시트 분기에 없어 무반응(H5 죽은 버튼).
-        handleRowPress(next);
+        handleRowPress(next.key, next.groupIndex);
         return;
       }
       addToast({ type: 'error', message: '입력값을 확인해주세요.' });
     }
   );
 
-  const unsetKey = firstUnsetRow(values);
-  const submitLabel =
-    unsetKey === null
-      ? '이대로 등록'
-      : `${getRowState(values, unsetKey).label}부터 ${unsetKey === 'title' ? '입력' : '선택'}하기`;
+  const unsetTarget = firstUnsetRow(values);
+  const submitLabel = (() => {
+    if (unsetTarget === null) return '이대로 등록';
+    const { key, groupIndex } = unsetTarget;
+    const state = getRowState(values, key, groupIndex);
+    // 그룹 2개+의 일정 행은 날짜 요약 접두로 그룹을 식별시킨다("7/22 일정의 시간부터 선택하기")
+    const isScheduleRow = key === 'dates' || key === 'time' || key === 'roles';
+    const prefix =
+      groupCount > 1 && isScheduleRow
+        ? (() => {
+            const dates = scheduleGroups[groupIndex]?.dates ?? [];
+            return dates.length > 0
+              ? `${summarizeGroupDates(dates)} 일정의 `
+              : `${groupIndex + 1}번째 일정의 `;
+          })()
+        : '';
+    return `${prefix}${state.label}부터 ${key === 'title' ? '입력' : '선택'}하기`;
+  })();
 
   return (
     <View className="flex-1 bg-surface-page">
@@ -306,20 +457,115 @@ export function OrderSheetScreen({
         <View className="mb-3">
           <TypeSegment value={values.postingType} onChange={handleTypeChange} />
         </View>
-        {ORDER_GROUPS.map((group) => (
-          <OrderGroup key={group.title} title={group.title}>
-            {group.rows.map((key) => (
-              <OrderRow
-                key={key}
-                state={getRowState(values, key)}
-                error={rowError(key)}
-                badge={key === 'salary' && showDefaultSalaryBadge ? '기본값' : undefined}
-                onPress={() => handleRowPress(key)}
-                testID={`order-sheet-row-${key}`}
-              />
-            ))}
-          </OrderGroup>
-        ))}
+        {ORDER_GROUPS.map((section) => {
+          if (section.title !== '일정 · 모집') {
+            return (
+              <OrderGroup key={section.title} title={section.title}>
+                {section.rows.map((key) => (
+                  <OrderRow
+                    key={key}
+                    state={getRowState(values, key)}
+                    error={rowError(key)}
+                    badge={key === 'salary' && showDefaultSalaryBadge ? '기본값' : undefined}
+                    onPress={() => handleRowPress(key)}
+                    testID={`order-sheet-row-${key}`}
+                  />
+                ))}
+              </OrderGroup>
+            );
+          }
+          // 일정·모집(S1) — 그룹 1개: 현행 3행 동일 / 2개+: 서브그룹(헤더+시간/역할 2행) 반복 +
+          // h-px 디바이더(중첩 카드 금지 — impeccable §6) + 섹션 캡션 총원 + "+ 일정 추가".
+          return (
+            <OrderGroup
+              key={section.title}
+              title={section.title}
+              caption={groupCount > 1 ? summarizeTotalRoles(values) || undefined : undefined}
+            >
+              {groupCount <= 1 ? (
+                section.rows.map((key) => (
+                  <OrderRow
+                    key={key}
+                    state={getRowState(values, key, 0)}
+                    error={rowError(key, 0)}
+                    onPress={() => handleRowPress(key, 0)}
+                    testID={`order-sheet-row-${key}`}
+                  />
+                ))
+              ) : (
+                <>
+                  {scheduleGroups.map((group, gi) => {
+                    const datesError = rowError('dates', gi);
+                    const datesSummary = summarizeGroupDates(group.dates ?? []);
+                    return (
+                      <View key={`schedule-group-${gi}`}>
+                        {gi > 0 ? (
+                          <View className="h-px bg-secondary-100 dark:bg-surface-overlay" />
+                        ) : null}
+                        <View className="flex-row items-center pl-4 pr-1 pt-1.5">
+                          <Pressable
+                            onPress={() => handleRowPress('dates', gi)}
+                            className="flex-1 min-h-[44px] justify-center active:opacity-80"
+                            accessibilityRole="button"
+                            accessibilityLabel={`일정 날짜 ${
+                              (group.dates ?? [])
+                                .map((d) => {
+                                  const [, m, day] = d.split('-');
+                                  return `${Number(m)}월 ${Number(day)}일`;
+                                })
+                                .join(', ') || '미설정'
+                            }, 탭하여 날짜 편집${datesError ? `, 오류: ${datesError}` : ''}`}
+                            testID={`order-sheet-group-dates-${gi}`}
+                          >
+                            <Text className="text-sm font-sans-bold text-content-primary">
+                              {datesSummary || '날짜 미설정'}
+                            </Text>
+                            {datesError ? (
+                              <Text className="text-[11px] text-error-500 dark:text-error-400 font-sans">
+                                {datesError}
+                              </Text>
+                            ) : null}
+                          </Pressable>
+                          {/* 삭제 — muted 위계 강등 + hitSlop 확장(2차 Design-medium). E4: 그룹 1개면 미노출 */}
+                          <Pressable
+                            onPress={() => handleDeleteGroup(gi)}
+                            hitSlop={14}
+                            className="w-8 h-8 items-center justify-center active:opacity-80"
+                            accessibilityRole="button"
+                            accessibilityLabel={`${datesSummary || '이'} 일정 삭제`}
+                            testID={`order-sheet-group-delete-${gi}`}
+                          >
+                            <XMarkIcon size={16} />
+                          </Pressable>
+                        </View>
+                        {(['time', 'roles'] as const).map((key) => (
+                          <OrderRow
+                            key={key}
+                            state={getRowState(values, key, gi)}
+                            error={rowError(key, gi)}
+                            onPress={() => handleRowPress(key, gi)}
+                            testID={`order-sheet-row-${key}-${gi}`}
+                          />
+                        ))}
+                      </View>
+                    );
+                  })}
+                </>
+              )}
+              <Pressable
+                onPress={handleAddSchedule}
+                className="min-h-[44px] items-center justify-center border-t border-secondary-100 dark:border-surface-overlay active:opacity-80"
+                accessibilityRole="button"
+                accessibilityLabel="일정 추가"
+                testID="order-sheet-add-schedule"
+              >
+                <Text className="text-sm font-sans-medium text-primary-600 dark:text-primary-400">
+                  ＋ 일정 추가
+                </Text>
+              </Pressable>
+            </OrderGroup>
+          );
+        })}
       </ScrollView>
       <View className="absolute bottom-0 left-0 right-0 px-4 pb-6 pt-2 bg-surface-page border-t border-secondary-100 dark:border-surface-overlay">
         <Button
@@ -373,48 +619,80 @@ export function OrderSheetScreen({
           onClose={() => setActiveSheet(null)}
         />
       )}
-      {/* 일정·모집 시트 3종 — 날짜(달력)·시간(다중 시간대)·역할(슬롯별). rows 진입은 즉시,
-          TimeSlotsSheet↔RolesSheet 스왑만 switchSheet(#244 지연 전환)을 태운다. */}
-      {activeSheet === 'dates' && (
-        <DatePickerModal
+      {/* 일정·모집 시트 3종(그룹 스코프) — 날짜(달력+세그먼트)·시간(다중 시간대)·역할(슬롯별).
+          rows 진입은 즉시, TimeSlotsSheet↔RolesSheet 스왑만 switchSheet(#244 지연 전환)을 태운다. */}
+      {datesTarget && (
+        <ScheduleDatesSheet
           visible
-          onClose={() => setActiveSheet(null)}
           postingType={values.postingType}
-          existingDates={[]}
-          initialSelectedDates={values.dates}
-          onSelectDates={(dates) => {
-            form.setValue('dates', dates, { shouldDirty: true, shouldValidate: true });
+          initialSelectedDates={
+            datesTarget.mode === 'add' ? [] : (scheduleGroups[datesTarget.groupIndex]?.dates ?? [])
+          }
+          existingDates={scheduleGroups
+            .filter((_, i) => i !== datesTarget.groupIndex)
+            .flatMap((g) => g.dates ?? [])}
+          showSegment={datesTarget.mode === 'whole'}
+          initialSegment={scheduleGroups[datesTarget.groupIndex]?.grouped ? 'grouped' : 'same'}
+          onConfirm={({ dates, segment }) => {
+            handleDatesConfirm(datesTarget, dates, segment);
             setActiveSheet(null);
           }}
+          onClose={() => setActiveSheet(null)}
         />
       )}
-      {activeSheet === 'time' && (
+      {timeTarget && (
         <TimeSlotsSheet
           visible
-          value={values.timeSlots}
+          value={scheduleGroups[timeTarget.groupIndex]?.timeSlots ?? []}
           onConfirm={(next) => {
-            form.setValue('timeSlots', next, { shouldDirty: true, shouldValidate: true });
-            applyRoleSalarySync(next);
+            const nextGroups = scheduleGroups.map((g, i) =>
+              i === timeTarget.groupIndex ? { ...g, timeSlots: next } : g
+            );
+            form.setValue('scheduleGroups', nextGroups, {
+              shouldDirty: true,
+              shouldValidate: true,
+            });
+            applyRoleSalarySync(nextGroups);
           }}
           onClose={() => setActiveSheet(null)}
           onEditSlotRoles={(slotIndex) =>
-            switchSheet({ key: 'slotRoles', slotIndex, fromTimeSheet: true })
+            switchSheet({
+              key: 'slotRoles',
+              groupIndex: timeTarget.groupIndex,
+              slotIndex,
+              fromTimeSheet: true,
+            })
           }
         />
       )}
       {slotRolesTarget && (
         <RolesSheet
           visible
-          value={values.timeSlots[slotRolesTarget.slotIndex]?.roles ?? []}
+          value={
+            scheduleGroups[slotRolesTarget.groupIndex]?.timeSlots?.[slotRolesTarget.slotIndex]
+              ?.roles ?? []
+          }
           onConfirm={(next) => {
-            const nextSlots = (values.timeSlots ?? []).map((s, idx) =>
-              idx === slotRolesTarget.slotIndex ? { ...s, roles: next } : s
+            const nextGroups = scheduleGroups.map((g, gi) =>
+              gi === slotRolesTarget.groupIndex
+                ? {
+                    ...g,
+                    timeSlots: (g.timeSlots ?? []).map((s, si) =>
+                      si === slotRolesTarget.slotIndex ? { ...s, roles: next } : s
+                    ),
+                  }
+                : g
             );
-            form.setValue('timeSlots', nextSlots, { shouldDirty: true, shouldValidate: true });
-            applyRoleSalarySync(nextSlots);
+            form.setValue('scheduleGroups', nextGroups, {
+              shouldDirty: true,
+              shouldValidate: true,
+            });
+            applyRoleSalarySync(nextGroups);
           }}
           onClose={() =>
-            slotRolesTarget.fromTimeSheet ? switchSheet('time') : setActiveSheet(null)
+            slotRolesTarget.fromTimeSheet
+              ? switchSheet({ key: 'time', groupIndex: slotRolesTarget.groupIndex })
+              : setActiveSheet(null)
           }
         />
       )}
@@ -426,6 +704,7 @@ export function OrderSheetScreen({
           useSameSalary={values.useSameSalary ?? false}
           roleSalaries={values.roleSalaries ?? []}
           uniqueRoles={uniqueRoles}
+          multiGroup={groupCount > 1}
           onConfirm={(next) => {
             form.setValue('salary', next.salary, { shouldDirty: true, shouldValidate: true });
             form.setValue('useSameSalary', next.useSameSalary, {
