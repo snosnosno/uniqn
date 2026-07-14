@@ -203,6 +203,12 @@ export interface JobPostingFilters {
   district?: string;
   /** 정규화된 지역 slug (src/constants/regions.ts) — location.region 과 eq 매칭 */
   region?: string;
+  /**
+   * 정규화된 지역 slug 목록 — location.region 과 in 매칭.
+   * 그룹 전체/멀티 선택(utils/regionSelection 의 expandRegionTokens 결과).
+   * 비어있지 않으면 region(단일)보다 우선한다.
+   */
+  regions?: string[];
   dateRange?: {
     start: string;
     end: string;

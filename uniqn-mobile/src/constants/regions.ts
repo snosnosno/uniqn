@@ -19,6 +19,8 @@ export interface RegionOption {
   group: RegionGroup;
   /** 주소 텍스트 매칭용 키워드 (구/시 이름) */
   keyword: string;
+  /** 그룹 내 소구분 (현재 경기만 남부/북부 — 31개 항목 탐색 보조) */
+  subGroup?: string;
 }
 
 export const REGION_GROUPS: readonly RegionGroup[] = ['서울', '경기', '광역시', '제주', '기타'];
@@ -105,11 +107,26 @@ const SEOUL_REGIONS: RegionOption[] = SEOUL_GU.map((gu) => ({
   keyword: gu,
 }));
 
+// 경기 북부 — 경기도 북부청사 관할 10개 시군 기준. 나머지는 남부로 분류.
+const GYEONGGI_NORTH = new Set([
+  '고양시',
+  '구리시',
+  '남양주시',
+  '동두천시',
+  '양주시',
+  '연천군',
+  '의정부시',
+  '파주시',
+  '포천시',
+  '가평군',
+]);
+
 const GYEONGGI_REGIONS: RegionOption[] = GYEONGGI_SI.map((si) => ({
   slug: `경기 ${si}`,
   label: si,
   group: '경기',
   keyword: si,
+  subGroup: GYEONGGI_NORTH.has(si) ? '북부' : '남부',
 }));
 
 const METRO_REGIONS: RegionOption[] = METRO.map((m) => ({
@@ -167,6 +184,23 @@ export function isRegionSlug(slug: string | null | undefined): boolean {
 export function getRegionLabel(slug: string | null | undefined): string | undefined {
   if (!slug) return undefined;
   return REGION_BY_SLUG.get(slug)?.label;
+}
+
+export function getRegionOption(slug: string | null | undefined): RegionOption | undefined {
+  if (!slug) return undefined;
+  return REGION_BY_SLUG.get(slug);
+}
+
+/**
+ * 지역 검색 — 시트 내 빠른 찾기용. label/keyword/slug 부분 일치, REGIONS 순서 유지.
+ * 빈 질의는 빈 배열(검색 모드 아님).
+ */
+export function searchRegions(query: string): RegionOption[] {
+  const q = query.trim();
+  if (!q) return [];
+  return REGIONS.filter(
+    (r) => r.label.includes(q) || r.slug.includes(q) || (r.keyword !== '' && r.keyword.includes(q))
+  );
 }
 
 /**

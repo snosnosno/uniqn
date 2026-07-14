@@ -116,6 +116,9 @@ export const jobFilterSchema = z.object({
   roles: z.array(roleSchema).optional(),
   district: z.string().optional(),
   region: z.string().optional(),
+  // 그룹 확장 slug 목록 (JobPostingFilters.regions) — 스키마 누락 시 strip 모드에서
+  // 침묵 드롭되는 함정(wiki decisions/whitelist-silent-drop 클래스) 방지. 최대 67+여유.
+  regions: z.array(z.string()).max(100).optional(),
   dateRange: z
     .object({
       start: z.string(),

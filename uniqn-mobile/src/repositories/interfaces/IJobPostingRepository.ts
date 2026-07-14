@@ -164,11 +164,13 @@ export interface IJobPostingRepository {
 
   /**
    * 공고 타입별 개수 조회
-   * @param filters - 필터 조건 (status, region 등). region 지정 시 해당 지역으로 좁혀
+   * @param filters - 필터 조건 (status, region/regions 등). 지역 지정 시 해당 지역으로 좁혀
    *                  집계해 칩 카운트가 브라우즈 목록(getList)의 지역 필터와 정합을 이룬다.
    * @returns 타입별 개수
    */
-  getTypeCounts(filters?: Pick<JobPostingFilters, 'status' | 'region'>): Promise<PostingTypeCounts>;
+  getTypeCounts(
+    filters?: Pick<JobPostingFilters, 'status' | 'region' | 'regions'>
+  ): Promise<PostingTypeCounts>;
 
   /**
    * 운영처(venue) 컨테이너 목록 조회 (주간 배치 그리드 전용 read 경로).
