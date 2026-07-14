@@ -10,6 +10,8 @@ import type {
   PostingRoleCatalogEntry,
   PostingSchedule,
   PostingType,
+  SalaryInfo,
+  SalaryType,
   UpdateJobPostingInput,
 } from '@/types/jobPosting';
 import type { StaffRole } from '@/types/role';
@@ -79,6 +81,40 @@ function getRoleKeysFromCatalog(roleCatalog: PostingRoleCatalogEntry[]): string[
   });
 
   return Array.from(keys);
+}
+
+/**
+ * 급여 필터(P3)용 타입별 최대 급여 비정규화 — role_keys 와 동일 패턴(쓰기 시 단일 지점 계산).
+ * defaultSalary + roleCatalog 전체의 급여 행을 타입별 GREATEST 집계한다(마이그레이션
+ * 20260714100100 백필 SQL 과 동일 의미론 — 0 이하/비유한 값 제외, 'other'(협의)는 무시).
+ * 값이 없는 타입은 null 을 명시 기록 — 편집으로 급여 타입이 사라졌을 때 UPDATE 가
+ * stale 컬럼 값을 지우도록 한다(undefined 는 removeUndefined 로 탈락해 못 지움).
+ */
+export function getSalaryBounds(
+  compensation: PostingCompensation,
+  roleCatalog: PostingRoleCatalogEntry[]
+): Pick<JobPostingDocumentV3, 'salaryHourlyMax' | 'salaryDailyMax' | 'salaryMonthlyMax'> {
+  const maxByType: Partial<Record<SalaryType, number>> = {};
+
+  const consider = (salary?: SalaryInfo) => {
+    if (!salary) return;
+    const amount = Number(salary.amount);
+    if (!Number.isFinite(amount) || amount <= 0) return;
+    const rounded = Math.floor(amount);
+    const current = maxByType[salary.type];
+    if (current === undefined || rounded > current) {
+      maxByType[salary.type] = rounded;
+    }
+  };
+
+  consider(compensation.defaultSalary);
+  roleCatalog.forEach((role) => consider(role.salary));
+
+  return {
+    salaryHourlyMax: maxByType.hourly ?? null,
+    salaryDailyMax: maxByType.daily ?? null,
+    salaryMonthlyMax: maxByType.monthly ?? null,
+  };
 }
 
 function normalizeOptionalText(value?: string | null): string | undefined {
@@ -302,6 +338,7 @@ export function serializeJobPostingV3(
     workDate: totals.workDate,
     ...(totals.workDates ? { workDates: totals.workDates } : {}),
     roleKeys: getRoleKeysFromCatalog(roleCatalog),
+    ...getSalaryBounds(compensation, roleCatalog),
     totalPositions: totals.totalPositions,
     filledPositions: authoritativeFilledPositions,
     viewCount: current?.viewCount ?? 0,

@@ -1005,6 +1005,9 @@ export type Database = {
           rejection_reason: string | null;
           role_catalog: Json | null;
           role_keys: string[] | null;
+          salary_daily_max: number | null;
+          salary_hourly_max: number | null;
+          salary_monthly_max: number | null;
           schedule: Json;
           schema_version: number | null;
           stats: Json | null;
@@ -1041,6 +1044,9 @@ export type Database = {
           rejection_reason?: string | null;
           role_catalog?: Json | null;
           role_keys?: string[] | null;
+          salary_daily_max?: number | null;
+          salary_hourly_max?: number | null;
+          salary_monthly_max?: number | null;
           schedule?: Json;
           schema_version?: number | null;
           stats?: Json | null;
@@ -1077,6 +1083,9 @@ export type Database = {
           rejection_reason?: string | null;
           role_catalog?: Json | null;
           role_keys?: string[] | null;
+          salary_daily_max?: number | null;
+          salary_hourly_max?: number | null;
+          salary_monthly_max?: number | null;
           schedule?: Json;
           schema_version?: number | null;
           stats?: Json | null;
@@ -2874,6 +2883,9 @@ export type Database = {
           rejection_reason: string | null;
           role_catalog: Json | null;
           role_keys: string[] | null;
+          salary_daily_max: number | null;
+          salary_hourly_max: number | null;
+          salary_monthly_max: number | null;
           schedule: Json;
           schema_version: number | null;
           stats: Json | null;

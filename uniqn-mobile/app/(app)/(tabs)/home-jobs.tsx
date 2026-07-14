@@ -9,14 +9,21 @@ import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { format } from 'date-fns';
 import { JobList, PostingTypeChips, DateCalendar, SearchBar } from '@/components/jobs';
-import { FilterBar, RegionFilterSheet } from '@/components/jobs/filters';
+import {
+  FilterBar,
+  RegionFilterSheet,
+  RoleFilterSheet,
+  SalaryFilterSheet,
+} from '@/components/jobs/filters';
 import { findRegionByAddress } from '@/constants/regions';
 import {
   expandRegionTokens,
   formatRegionTokensLabel,
   type RegionToken,
 } from '@/utils/regionSelection';
-import { useJobFilterStore } from '@/stores/jobFilterStore';
+import { formatRoleFiltersLabel, formatSalaryFilterLabel } from '@/utils/jobFilterLabels';
+import { useJobFilterStore, type SalaryFilter } from '@/stores/jobFilterStore';
+import type { StaffRole } from '@/types/role';
 import { TabHeader } from '@/components/headers';
 import { useJobPostings } from '@/hooks/useJobPostings';
 import { usePostingTypeCounts } from '@/hooks/usePostingTypeCounts';
@@ -48,17 +55,27 @@ export default function JobsScreen() {
   const [selectedType, setSelectedType] = useState<PostingType | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [regionModalVisible, setRegionModalVisible] = useState(false);
+  const [roleModalVisible, setRoleModalVisible] = useState(false);
+  const [salaryModalVisible, setSalaryModalVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const normalizedSearchText = searchText.trim();
 
-  // 지역 필터 — 세션 간 영속(MMKV). 토큰(slug | 'group:서울') 모델은 utils/regionSelection.
+  // 지역/역할/급여 필터 — 세션 간 영속(MMKV). 지역 토큰(slug | 'group:서울') 모델은 utils/regionSelection.
   const regionTokens = useJobFilterStore((state) => state.regionTokens);
   const recentRegionTokens = useJobFilterStore((state) => state.recentRegionTokens);
   const applyRegionTokens = useJobFilterStore((state) => state.applyRegionTokens);
-  const clearRegionFilter = useJobFilterStore((state) => state.clearRegionFilter);
+  const roleFilters = useJobFilterStore((state) => state.roleFilters);
+  const applyRoleFilters = useJobFilterStore((state) => state.applyRoleFilters);
+  const salaryFilter = useJobFilterStore((state) => state.salaryFilter);
+  const applySalaryFilter = useJobFilterStore((state) => state.applySalaryFilter);
+  const clearAllFilters = useJobFilterStore((state) => state.clearAllFilters);
   const expandedRegions = useMemo(() => expandRegionTokens(regionTokens), [regionTokens]);
   const regionLabel = useMemo(() => formatRegionTokensLabel(regionTokens), [regionTokens]);
+  const roleLabel = useMemo(() => formatRoleFiltersLabel(roleFilters), [roleFilters]);
+  const salaryLabel = useMemo(() => formatSalaryFilterLabel(salaryFilter), [salaryFilter]);
+  const hasActiveFilter =
+    regionTokens.length > 0 || roleFilters.length > 0 || salaryFilter !== null;
   // 프로필 지역(자유텍스트) → slug 추천 칩. 매핑 실패 시 미노출.
   const suggestedRegionSlug = useMemo(
     () => findRegionByAddress(profile?.region)?.slug,
@@ -71,7 +88,12 @@ export default function JobsScreen() {
     hasCounts,
     firstAvailableType,
     isLoading: isLoadingTypeCounts,
-  } = usePostingTypeCounts({ regions: expandedRegions });
+  } = usePostingTypeCounts({
+    regions: expandedRegions,
+    roles: roleFilters,
+    salaryType: salaryFilter?.type ?? null,
+    salaryMin: salaryFilter?.min ?? null,
+  });
 
   useEffect(() => {
     if (!hasAutoSelected.current && !isLoadingTypeCounts && firstAvailableType) {
@@ -129,8 +151,17 @@ export default function JobsScreen() {
       result.regions = expandedRegions;
     }
 
+    if (roleFilters.length > 0) {
+      result.roles = roleFilters;
+    }
+
+    if (salaryFilter) {
+      result.salaryType = salaryFilter.type;
+      result.salaryMin = salaryFilter.min;
+    }
+
     return result;
-  }, [selectedDateString, selectedType, expandedRegions]);
+  }, [selectedDateString, selectedType, expandedRegions, roleFilters, salaryFilter]);
 
   const { jobs, isLoading, isRefreshing, isFetchingMore, hasMore, error, refresh, loadMore } =
     useJobPostings({
@@ -205,6 +236,20 @@ export default function JobsScreen() {
     [applyRegionTokens]
   );
 
+  const handleRoleApply = useCallback(
+    (roles: StaffRole[]) => {
+      applyRoleFilters(roles);
+    },
+    [applyRoleFilters]
+  );
+
+  const handleSalaryApply = useCallback(
+    (filter: SalaryFilter | null) => {
+      applySalaryFilter(filter);
+    },
+    [applySalaryFilter]
+  );
+
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
       <TabHeader title="구인구직" />
@@ -229,7 +274,13 @@ export default function JobsScreen() {
           regionLabel={regionLabel}
           regionActive={regionTokens.length > 0}
           onPressRegion={() => setRegionModalVisible(true)}
-          onReset={regionTokens.length > 0 ? clearRegionFilter : undefined}
+          roleLabel={roleLabel}
+          roleActive={roleFilters.length > 0}
+          onPressRole={() => setRoleModalVisible(true)}
+          salaryLabel={salaryLabel}
+          salaryActive={salaryFilter !== null}
+          onPressSalary={() => setSalaryModalVisible(true)}
+          onReset={hasActiveFilter ? clearAllFilters : undefined}
         />
       )}
 
@@ -264,8 +315,8 @@ export default function JobsScreen() {
           onJobPress={handleJobPress}
           filledCounts={filledCountsQuery.data}
           emptyMessage={
-            regionTokens.length > 0
-              ? `${regionLabel} 공고가 없어요. 지역을 넓히거나 위 '초기화'로 전체 공고를 볼 수 있어요.`
+            hasActiveFilter
+              ? '조건에 맞는 공고가 없어요. 필터를 넓히거나 위 ‘초기화’로 전체 공고를 볼 수 있어요.'
               : undefined
           }
         />
@@ -281,6 +332,7 @@ export default function JobsScreen() {
         </View>
       )}
 
+      {/* 필터 시트 3종 — 각각 독립 오픈(중첩 Modal 금지). pill 은 한 번에 하나만 열 수 있다. */}
       <RegionFilterSheet
         visible={regionModalVisible}
         onClose={() => setRegionModalVisible(false)}
@@ -288,6 +340,24 @@ export default function JobsScreen() {
         onApply={handleRegionApply}
         recentTokens={recentRegionTokens}
         suggestedSlug={suggestedRegionSlug}
+        appliedRoles={roleFilters}
+        appliedSalary={salaryFilter}
+      />
+      <RoleFilterSheet
+        visible={roleModalVisible}
+        onClose={() => setRoleModalVisible(false)}
+        appliedRoles={roleFilters}
+        onApply={handleRoleApply}
+        appliedRegions={expandedRegions}
+        appliedSalary={salaryFilter}
+      />
+      <SalaryFilterSheet
+        visible={salaryModalVisible}
+        onClose={() => setSalaryModalVisible(false)}
+        appliedSalary={salaryFilter}
+        onApply={handleSalaryApply}
+        appliedRegions={expandedRegions}
+        appliedRoles={roleFilters}
       />
     </SafeAreaView>
   );
