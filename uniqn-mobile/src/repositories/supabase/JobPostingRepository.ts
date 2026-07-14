@@ -66,6 +66,25 @@ import * as venue from './JobPostingRepositoryVenue';
 
 export { buildSlotRoleKey } from './JobPostingRepositoryHelpers';
 
+/**
+ * 지역 조건 공용 적용 — getList 와 getTypeCounts 가 반드시 같은 지역 스코프를 쓰도록
+ * 단일 지점으로 묶는다(칩 카운트-목록 불일치 회귀 방지, EF-jobsearch-11 클래스).
+ * regions(멀티/그룹 확장)가 있으면 in, 없으면 region(단일) eq.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyRegionScope<T extends { eq: any; in: any }>(
+  query: T,
+  filters?: Pick<JobPostingFilters, 'region' | 'regions'>
+): T {
+  if (filters?.regions?.length) {
+    return query.in('location->>region', filters.regions) as T;
+  }
+  if (filters?.region) {
+    return query.eq('location->>region', filters.region) as T;
+  }
+  return query;
+}
+
 // ── Repository ───────────────────────────────────────────────────────────────
 
 export class SupabaseJobPostingRepository implements IJobPostingRepository {
@@ -149,7 +168,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
           qr = qr.neq('status', STATUS.JOB_POSTING.CONTAINER);
           if (filters?.roles?.length) qr = qr.overlaps('role_keys', filters.roles.slice(0, 10));
           if (filters?.district) qr = qr.eq('location->>district', filters.district);
-          if (filters?.region) qr = qr.eq('location->>region', filters.region);
+          qr = applyRegionScope(qr, filters);
           if (filters?.ownerId) qr = qr.eq('owner_id', filters.ownerId);
           if (filters?.dateRange) {
             qr = qr
@@ -227,7 +246,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
   }
 
   async getTypeCounts(
-    filters?: Pick<JobPostingFilters, 'status' | 'region'>
+    filters?: Pick<JobPostingFilters, 'status' | 'region' | 'regions'>
   ): Promise<PostingTypeCounts> {
     try {
       logger.info('공고 타입별 개수 조회', { filters });
@@ -243,10 +262,8 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       }
       // fail-closed(R2): 컨테이너는 타입별 칩 카운트 집계에서 제외한다.
       query = query.neq('status', STATUS.JOB_POSTING.CONTAINER);
-      // region 지정 시 getList 와 동일하게 location->>region 으로 좁혀 칩 카운트 정합 유지.
-      if (filters?.region) {
-        query = query.eq('location->>region', filters.region);
-      }
+      // 지역 지정 시 getList 와 동일 스코프(applyRegionScope)로 좁혀 칩 카운트 정합 유지.
+      query = applyRegionScope(query, filters);
       const { data, error } = await query;
       if (error) handleSupabaseError(error, { operation: '공고 타입별 개수 조회', table: TABLE });
 
