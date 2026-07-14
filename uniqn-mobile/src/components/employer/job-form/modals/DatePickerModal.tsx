@@ -39,8 +39,21 @@ export interface DatePickerModalProps {
   onSelectDates: (dates: string[]) => void;
   /** 공고 타입 */
   postingType: PostingType;
-  /** 이미 선택된 날짜 목록 */
+  /** 이미 선택된 날짜 목록 (선택 불가·취소선 표시) */
   existingDates: string[];
+  /**
+   * 초기 선택 상태 시드 (additive) — 전달되면 이 날짜들이 selectedDates 로 시드되어 재선택·해제 가능.
+   * 주문서(order-sheet)가 기존 날짜 재편집 시 사용한다(existingDates 로 넘기면 재선택 불가·데드엔드).
+   * 미전달 시 빈 배열로 시작(기존 호출부 무회귀). remainingSlots 계산은 existingDates 기준 그대로.
+   */
+  initialSelectedDates?: string[];
+}
+
+/** 'YYYY-MM-DD' → 로컬 자정 Date. CalendarPicker 의 isSameDay·format(yyyy-MM-dd) 왕복과 정합. */
+function parseYmdLocal(ymd: string): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
+  if (!m) return null;
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
 }
 
 // ============================================================================
@@ -53,11 +66,14 @@ export function DatePickerModal({
   onSelectDates,
   postingType,
   existingDates,
+  initialSelectedDates,
 }: DatePickerModalProps) {
   const { addToast } = useToastStore();
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
-  // 다중 선택을 위한 상태 (Date 배열)
-  const [selectedDates, setSelectedDates] = useState<Date[]>([]);
+  // 다중 선택을 위한 상태 (Date 배열) — initialSelectedDates 가 있으면 시드(재선택·해제 가능)
+  const [selectedDates, setSelectedDates] = useState<Date[]>(() =>
+    (initialSelectedDates ?? []).map(parseYmdLocal).filter((d): d is Date => d !== null)
+  );
 
   // 타입별 제약사항
   const constraints = DATE_CONSTRAINTS[postingType];
@@ -179,7 +195,7 @@ export function DatePickerModal({
         </Text>
         {postingType === 'urgent' && (
           <Text className="text-xs text-primary-600 dark:text-primary-400 mt-0.5 font-sans">
-            긴급 공고는 오늘부터 7일 이내만 선택할 수 있습니다
+            급구 공고는 오늘부터 7일 이내만 선택할 수 있습니다
           </Text>
         )}
       </View>

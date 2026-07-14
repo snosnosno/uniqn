@@ -70,6 +70,12 @@ export interface PostingLocation extends Location {
   detailedAddress?: string;
 }
 
+/** 모집 조건 (복장·경력) — 프리셋 문구 또는 직접 입력 */
+export interface PostingConditions {
+  dressCode?: string;
+  experience?: string;
+}
+
 export interface PostingRoleCatalogEntry {
   role: StaffRole | 'other';
   customRole?: string;
@@ -170,6 +176,7 @@ export interface JobPostingDocumentV3 extends FirebaseDocument {
   roleCatalog: PostingRoleCatalogEntry[];
   compensation: PostingCompensation;
   questions: PostingQuestions;
+  conditions?: PostingConditions;
   fixedConfig?: FixedConfig;
   tournamentConfig?: TournamentConfig;
   urgentConfig?: UrgentConfig;
@@ -221,6 +228,7 @@ export interface JobPostingInput {
   roleCatalog: PostingRoleCatalogEntry[];
   compensation: PostingCompensation;
   questions: PostingQuestions;
+  conditions?: PostingConditions;
 }
 
 export type CreateJobPostingInput = JobPostingInput;

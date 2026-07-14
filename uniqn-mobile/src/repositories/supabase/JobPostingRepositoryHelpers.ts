@@ -15,7 +15,7 @@ import { resolvePostingAuthority, canManagePosting } from './postingAuthority';
 export const TABLE = 'job_postings';
 export const DEFAULT_PAGE_SIZE = 20;
 export const TABLE_COLUMNS =
-  'id,closed_at,closed_reason,compensation,contact_phone,created_at,description,filled_positions,fixed_config,location,owner_id,owner_name,posting_type,questions,role_catalog,role_keys,schedule,schema_version,stats,status,tags,title,total_positions,tournament_config,updated_at,urgent_config,venue_id,view_count,work_date,work_dates,workspace_id' as const;
+  'id,closed_at,closed_reason,compensation,conditions,contact_phone,created_at,description,filled_positions,fixed_config,location,owner_id,owner_name,posting_type,questions,role_catalog,role_keys,schedule,schema_version,stats,status,tags,title,total_positions,tournament_config,updated_at,urgent_config,venue_id,view_count,work_date,work_dates,workspace_id' as const;
 
 // TABLE_COLUMNS를 camelCase로 변환한 허용 컬럼 Set (Realtime full-row 필터링용)
 export const ALLOWED_CAMEL_COLUMNS: Set<string> = new Set(

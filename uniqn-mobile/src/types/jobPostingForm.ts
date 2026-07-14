@@ -51,9 +51,9 @@ export const POSTING_TYPE_INFO: Record<
   { label: string; icon: string; description: string }
 > = {
   regular: {
-    label: '일반',
+    label: '지원',
     icon: '📋',
-    description: '일반 공고',
+    description: '기본 공고',
   },
   fixed: {
     label: '고정',
@@ -66,7 +66,7 @@ export const POSTING_TYPE_INFO: Record<
     description: '승인 필요',
   },
   urgent: {
-    label: '긴급',
+    label: '급구',
     icon: '🚨',
     description: '급한 구인',
   },

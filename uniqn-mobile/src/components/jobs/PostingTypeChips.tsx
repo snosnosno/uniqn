@@ -26,9 +26,9 @@ interface ChipItemProps {
 }
 
 const CHIPS: ChipConfig[] = [
-  { id: 'urgent', label: '긴급', value: 'urgent' },
+  { id: 'urgent', label: '급구', value: 'urgent' },
   { id: 'tournament', label: '대회', value: 'tournament' },
-  { id: 'regular', label: '일반', value: 'regular' },
+  { id: 'regular', label: '지원', value: 'regular' },
   { id: 'fixed', label: '고정', value: 'fixed' },
 ];
 

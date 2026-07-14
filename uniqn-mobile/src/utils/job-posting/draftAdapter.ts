@@ -574,6 +574,7 @@ export function draftToCreateJobPostingInput(draft: JobPostingDraft): CreateJobP
     roleCatalog: draft.roleCatalog,
     compensation: draft.compensation,
     questions: draft.questions,
+    ...(draft.conditions !== undefined ? { conditions: draft.conditions } : {}),
   };
 }
 
@@ -598,6 +599,9 @@ export function draftToUpdateJobPostingInput(
     questions: canonicalInput.questions,
     schedule: canonicalInput.schedule,
     roleCatalog: canonicalInput.roleCatalog,
+    // 모집 조건 보존 — hasConfirmedApplicants 제한 분기에는 넣지 않는다. serialize 의
+    // current-폴백이 DB 값에서 conditions 를 보존하므로 1번째 조립부만으로 계약이 성립.
+    ...(draft.conditions !== undefined ? { conditions: draft.conditions } : {}),
   };
 
   if (hasConfirmedApplicants) {
@@ -729,5 +733,6 @@ export function jobPostingToDraft(posting: JobPosting): JobPostingDraft {
     questions: {
       items: posting.questions.items ?? [],
     },
+    ...(posting.conditions !== undefined ? { conditions: posting.conditions } : {}),
   };
 }

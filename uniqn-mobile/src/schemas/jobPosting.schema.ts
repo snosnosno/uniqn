@@ -275,6 +275,21 @@ const postingQuestionsSchema = z
   })
   .strict();
 
+export const postingConditionsSchema = z
+  .object({
+    dressCode: z
+      .string()
+      .max(50)
+      .refine(xssValidation, { message: 'Unsafe text is not allowed' })
+      .optional(),
+    experience: z
+      .string()
+      .max(50)
+      .refine(xssValidation, { message: 'Unsafe text is not allowed' })
+      .optional(),
+  })
+  .strict();
+
 const postingStatsSchema = z
   .object({
     totalApplicants: z.number(),
@@ -504,6 +519,7 @@ export const jobPostingDocumentSchema = z
     roleCatalog: z.array(postingRoleCatalogEntrySchema),
     compensation: postingCompensationSchema,
     questions: postingQuestionsSchema,
+    conditions: postingConditionsSchema.optional(),
     fixedConfig: fixedConfigSchema.optional(),
     tournamentConfig: tournamentConfigSchema.optional(),
     urgentConfig: urgentConfigSchema.optional(),

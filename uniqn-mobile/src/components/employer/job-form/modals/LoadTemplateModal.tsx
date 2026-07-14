@@ -45,12 +45,12 @@ function isSupportedTemplateData(templateData?: JobPostingTemplate['templateData
 function getPostingTypeLabel(template: JobPostingTemplate): string {
   const postingType = template.templateData?.postingType;
   if (postingType === 'tournament') return '대회';
-  if (postingType === 'urgent') return '긴급';
+  if (postingType === 'urgent') return '급구';
   if (postingType === 'fixed') return '고정';
   if (template.templateData && !isSupportedTemplateData(template.templateData)) {
     return '불러올 수 없음';
   }
-  return '일반';
+  return '지원';
 }
 
 function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: TemplateCardProps) {
