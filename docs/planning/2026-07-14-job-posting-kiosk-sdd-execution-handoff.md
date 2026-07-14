@@ -1,6 +1,15 @@
 # 핸드오프 — 키오스크 주문서 SDD 구현 실행 (다음 세션 메인 프롬프트)
 
-> 아래 블록을 다음 세션 첫 메시지로 그대로 사용.
+> ⚠️ **완료됨(2026-07-14) — 이 문서의 실행 지시를 재사용하지 말 것.** 아래 지시(Task 1 리뷰부터 SDD 실행)는 같은 날 세션에서 **전부 완료**됐다: 11태스크 opus 구현→fable 태스크 리뷰 전건 Approved(수정 루프 T3·T4·T7·T10·T9 후속), 최종 브랜치 리뷰(fable) **Ready to merge — 필수 수정 0건**. HEAD `f9cb4c565`(merge-base `a66ddcc2a`, 30커밋/76파일/+8,596), 게이트 실측 quality exit 0·jest 439스위트/5266 PASS·e2e 변경 2스펙 23 pass. 실행 중 결정: origin/master(#244·#245) 머지, 계획 교정 5건(`9f25c6f6e`), **Design B 승인 일탈**(shared에도 roleCatalog salary 전사 + draftToValues는 by_role만 roleSalaries 복원 — 브리프 자기모순·협의+shared "급여 미정" 오표시 해소).
+>
+> **다음 세션이 할 일 = 잔여 게이트만(사용자 보류 중, 순서 엄수)**:
+> ① `20260714000000_job_postings_conditions.sql` prod 적용(**OTA보다 반드시 선행** — TABLE_COLUMNS에 conditions 추가돼 미적용 OTA 시 공고 SELECT 전건 실패. PR 직전 `20260714*` 타임스탬프 충돌 확인)
+> ② push/PR(머지 직전 origin/master 재통합·재검증, squash 저장소라 merge)
+> ③ OTA(직전 재fetch·ff 규율)
+> ④ 실기기 QA(인라인 지역 3단·TimeWheelPicker embedded·#244 지연 전환·홈 인디케이터)
+> + **OTA 전 후속 PR 권고(최종 리뷰)**: conditions 지원자 표시(계획 갭 — 읽기 배선은 완료, UI만) + ⚡→Lucide Zap·strokeWidth 2.0·ConditionsSheet trim·TimeSlotsSheet roles 깊은복사·TemplateModal catch 번들. 상세=SDD 원장(`<워크트리>/.superpowers/sdd/progress.md`, git 미추적)·메모리 `project_job_posting_kiosk_order_sheet.md`.
+>
+> 아래 원문은 이력 보존용. (원지시: 아래 블록을 다음 세션 첫 메시지로 그대로 사용)
 
 ---
 
