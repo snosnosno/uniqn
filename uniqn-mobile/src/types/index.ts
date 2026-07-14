@@ -63,6 +63,7 @@ export type {
   JobPostingEntity,
   JobPostingStatus,
   SalaryType,
+  FilterableSalaryType,
   SalaryInfo,
   Allowances,
   TaxSettings,

@@ -41,6 +41,9 @@ export type JobPostingStatus =
 export type ClosedReason = 'manual' | 'expired' | 'expired_by_work_date' | 'filled';
 export type SalaryType = 'hourly' | 'daily' | 'monthly' | 'other';
 
+/** 급여 필터가 지원하는 타입 — 'other'(협의)는 금액 비교가 불가해 제외 */
+export type FilterableSalaryType = Exclude<SalaryType, 'other'>;
+
 export interface SalaryInfo {
   type: SalaryType;
   amount: number;
@@ -161,6 +164,14 @@ export interface JobPostingDocumentV3 extends FirebaseDocument {
   workDate: string;
   workDates?: string[];
   roleKeys?: string[];
+  /**
+   * 타입별 최대 급여(원) — defaultSalary + roleCatalog 전체의 GREATEST(serialization.getSalaryBounds).
+   * 협의(other)만 있으면 null. 급여 필터(gte) 전용 비정규화 컬럼이라 읽기(select)에는 미포함 —
+   * null 을 명시 기록해 편집으로 급여 타입이 사라졌을 때 stale 값을 UPDATE 가 지우도록 한다.
+   */
+  salaryHourlyMax?: number | null;
+  salaryDailyMax?: number | null;
+  salaryMonthlyMax?: number | null;
   totalPositions: number;
   filledPositions: number;
   viewCount?: number;
@@ -213,6 +224,14 @@ export interface JobPostingFilters {
     start: string;
     end: string;
   };
+  /**
+   * 급여 필터 — salaryType 의 salary_*_max 컬럼과 salaryMin 을 gte 매칭.
+   * 해당 타입 급여 행(default+역할별) "최대값 ≥ 기준" 의미론 — 그 이상 받을 수 있는
+   * 역할이 존재하면 노출. 협의(other) 공고는 컬럼 NULL 이라 자연 제외.
+   * 두 값이 모두 있어야 적용된다(repository applySalaryScope).
+   */
+  salaryType?: FilterableSalaryType;
+  salaryMin?: number;
   searchTerm?: string;
   isUrgent?: boolean;
   ownerId?: string;

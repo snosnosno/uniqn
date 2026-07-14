@@ -31,6 +31,8 @@ import {
   type RegionToken,
 } from '@/utils/regionSelection';
 import { usePostingTypeCounts } from '@/hooks/usePostingTypeCounts';
+import type { StaffRole } from '@/types/role';
+import type { SalaryFilter } from '@/stores/jobFilterStore';
 
 export interface RegionFilterSheetProps {
   visible: boolean;
@@ -42,6 +44,9 @@ export interface RegionFilterSheetProps {
   recentTokens?: RegionToken[];
   /** 프로필 지역에서 유도한 추천 slug */
   suggestedSlug?: string;
+  /** 미리보기 카운트 정합용 — 적용 중인 다른 필터 축 (역할 / 급여) */
+  appliedRoles?: StaffRole[];
+  appliedSalary?: SalaryFilter | null;
 }
 
 type SheetBodyProps = Omit<RegionFilterSheetProps, 'visible'>;
@@ -129,6 +134,8 @@ function SheetBody({
   onApply,
   recentTokens = [],
   suggestedSlug,
+  appliedRoles = [],
+  appliedSalary = null,
 }: SheetBodyProps) {
   const { height: windowHeight } = useWindowDimensions();
   const [pending, setPending] = useState<RegionToken[]>(() => [...appliedTokens]);
@@ -146,10 +153,13 @@ function SheetBody({
   const groupCounts = useMemo(() => countRegionTokensByGroup(pending), [pending]);
   const checkColor = useCheckColor();
 
-  // 적용 전 미리보기 카운트 — 목록/칩과 동일 스코프(getTypeCounts).
+  // 적용 전 미리보기 카운트 — 목록/칩과 동일 스코프(getTypeCounts + 적용 중 타 필터 포함).
   // keepPreviousCounts: 토글마다 키가 바뀌어도 직전 값을 유지해 버튼 라벨 플리커 방지.
   const { counts, hasCounts } = usePostingTypeCounts({
     regions: pendingSlugs,
+    roles: appliedRoles,
+    salaryType: appliedSalary?.type ?? null,
+    salaryMin: appliedSalary?.min ?? null,
     keepPreviousCounts: true,
   });
 
@@ -439,6 +449,8 @@ export const RegionFilterSheet = memo(function RegionFilterSheet({
   onApply,
   recentTokens,
   suggestedSlug,
+  appliedRoles,
+  appliedSalary,
 }: RegionFilterSheetProps) {
   return (
     <Modal visible={visible} onClose={onClose} title="지역 필터" position="bottom" showCloseButton>
@@ -450,6 +462,8 @@ export const RegionFilterSheet = memo(function RegionFilterSheet({
           onApply={onApply}
           recentTokens={recentTokens}
           suggestedSlug={suggestedSlug}
+          appliedRoles={appliedRoles}
+          appliedSalary={appliedSalary}
         />
       ) : null}
     </Modal>

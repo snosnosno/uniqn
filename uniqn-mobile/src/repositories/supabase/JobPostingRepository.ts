@@ -85,6 +85,46 @@ function applyRegionScope<T extends { eq: any; in: any }>(
   return query;
 }
 
+/** 역할 필터 최대 개수 — URL/쿼리 길이 억제(기존 slice(0,10) 캡 유지) */
+const MAX_ROLE_FILTERS = 10;
+
+/**
+ * 역할 조건 공용 적용 — applyRegionScope 와 동일 원칙으로 getList/getTypeCounts 가
+ * 같은 role_keys overlaps 스코프를 쓰도록 단일 지점으로 묶는다(칩 카운트-목록 정합).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyRoleScope<T extends { overlaps: any }>(
+  query: T,
+  filters?: Pick<JobPostingFilters, 'roles'>
+): T {
+  if (filters?.roles?.length) {
+    return query.overlaps('role_keys', filters.roles.slice(0, MAX_ROLE_FILTERS)) as T;
+  }
+  return query;
+}
+
+/** 급여 필터 타입 → 비정규화 컬럼 매핑 (마이그레이션 20260714100100) */
+const SALARY_MAX_COLUMNS = {
+  hourly: 'salary_hourly_max',
+  daily: 'salary_daily_max',
+  monthly: 'salary_monthly_max',
+} as const;
+
+/**
+ * 급여 조건 공용 적용 — 타입별 salary_*_max ≥ salaryMin(gte). 두 값이 모두 있어야
+ * 적용된다. 협의(other) 공고는 컬럼이 NULL 이라 자연 제외(설계 §4).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applySalaryScope<T extends { gte: any }>(
+  query: T,
+  filters?: Pick<JobPostingFilters, 'salaryType' | 'salaryMin'>
+): T {
+  if (filters?.salaryType && typeof filters.salaryMin === 'number' && filters.salaryMin > 0) {
+    return query.gte(SALARY_MAX_COLUMNS[filters.salaryType], filters.salaryMin) as T;
+  }
+  return query;
+}
+
 // ── Repository ───────────────────────────────────────────────────────────────
 
 export class SupabaseJobPostingRepository implements IJobPostingRepository {
@@ -166,9 +206,10 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
           // 항상 제외한다(명시 status·기본값 무관). 컨테이너는 JobPosting 으로 표현되지 않으며
           // 전용 venue read 경로(getVenueContainers/getVenueContainerById)로만 조회한다.
           qr = qr.neq('status', STATUS.JOB_POSTING.CONTAINER);
-          if (filters?.roles?.length) qr = qr.overlaps('role_keys', filters.roles.slice(0, 10));
+          qr = applyRoleScope(qr, filters);
           if (filters?.district) qr = qr.eq('location->>district', filters.district);
           qr = applyRegionScope(qr, filters);
+          qr = applySalaryScope(qr, filters);
           if (filters?.ownerId) qr = qr.eq('owner_id', filters.ownerId);
           if (filters?.dateRange) {
             qr = qr
@@ -246,7 +287,10 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
   }
 
   async getTypeCounts(
-    filters?: Pick<JobPostingFilters, 'status' | 'region' | 'regions'>
+    filters?: Pick<
+      JobPostingFilters,
+      'status' | 'region' | 'regions' | 'roles' | 'salaryType' | 'salaryMin'
+    >
   ): Promise<PostingTypeCounts> {
     try {
       logger.info('공고 타입별 개수 조회', { filters });
@@ -262,8 +306,10 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       }
       // fail-closed(R2): 컨테이너는 타입별 칩 카운트 집계에서 제외한다.
       query = query.neq('status', STATUS.JOB_POSTING.CONTAINER);
-      // 지역 지정 시 getList 와 동일 스코프(applyRegionScope)로 좁혀 칩 카운트 정합 유지.
+      // 지역/역할/급여 지정 시 getList 와 동일 스코프(공용 헬퍼)로 좁혀 칩 카운트 정합 유지.
+      query = applyRoleScope(query, filters);
       query = applyRegionScope(query, filters);
+      query = applySalaryScope(query, filters);
       const { data, error } = await query;
       if (error) handleSupabaseError(error, { operation: '공고 타입별 개수 조회', table: TABLE });
 

@@ -2,11 +2,16 @@
  * 구인구직 필터 스토어 테스트
  */
 
-import { useJobFilterStore } from '../jobFilterStore';
+import { useJobFilterStore, sanitizeRoleFilters, sanitizeSalaryFilter } from '../jobFilterStore';
 
 describe('jobFilterStore', () => {
   beforeEach(() => {
-    useJobFilterStore.setState({ regionTokens: [], recentRegionTokens: [] });
+    useJobFilterStore.setState({
+      regionTokens: [],
+      recentRegionTokens: [],
+      roleFilters: [],
+      salaryFilter: null,
+    });
   });
 
   it('applyRegionTokens: 선택을 교체하고 최근 목록에 쌓는다', () => {
@@ -55,5 +60,75 @@ describe('jobFilterStore', () => {
     const state = useJobFilterStore.getState();
     expect(state.regionTokens).toEqual([]);
     expect(state.recentRegionTokens).toEqual(['group:서울']);
+  });
+
+  it('applyRoleFilters: 유효 역할만 저장하고 other/무효값은 정화한다', () => {
+    useJobFilterStore
+      .getState()
+      .applyRoleFilters(['dealer', 'other', 'dealer', 'invalid'] as never);
+
+    expect(useJobFilterStore.getState().roleFilters).toEqual(['dealer']);
+  });
+
+  it('clearRoleFilter: 역할 선택만 비운다', () => {
+    const { applyRoleFilters, clearRoleFilter } = useJobFilterStore.getState();
+    applyRoleFilters(['dealer', 'floor']);
+    clearRoleFilter();
+
+    expect(useJobFilterStore.getState().roleFilters).toEqual([]);
+  });
+
+  it('applySalaryFilter: 유효 쌍만 저장, 무효 타입/금액은 null 로 정화한다', () => {
+    const { applySalaryFilter } = useJobFilterStore.getState();
+    applySalaryFilter({ type: 'hourly', min: 13000 });
+    expect(useJobFilterStore.getState().salaryFilter).toEqual({ type: 'hourly', min: 13000 });
+
+    applySalaryFilter({ type: 'other', min: 13000 } as never);
+    expect(useJobFilterStore.getState().salaryFilter).toBeNull();
+
+    applySalaryFilter({ type: 'daily', min: 0 });
+    expect(useJobFilterStore.getState().salaryFilter).toBeNull();
+
+    applySalaryFilter(null);
+    expect(useJobFilterStore.getState().salaryFilter).toBeNull();
+  });
+
+  it('clearAllFilters: 지역/역할/급여를 모두 비우되 최근 지역은 유지한다', () => {
+    const state = useJobFilterStore.getState();
+    state.applyRegionTokens(['서울 강남구']);
+    state.applyRoleFilters(['dealer']);
+    state.applySalaryFilter({ type: 'hourly', min: 13000 });
+
+    useJobFilterStore.getState().clearAllFilters();
+
+    const after = useJobFilterStore.getState();
+    expect(after.regionTokens).toEqual([]);
+    expect(after.roleFilters).toEqual([]);
+    expect(after.salaryFilter).toBeNull();
+    expect(after.recentRegionTokens).toEqual(['서울 강남구']);
+  });
+});
+
+describe('sanitizeRoleFilters', () => {
+  it('배열이 아니면 빈 배열, 유효 역할만 중복 없이 통과한다', () => {
+    expect(sanitizeRoleFilters(undefined)).toEqual([]);
+    expect(sanitizeRoleFilters('dealer')).toEqual([]);
+    expect(sanitizeRoleFilters(['dealer', 'floor', 'dealer', 'other', 42])).toEqual([
+      'dealer',
+      'floor',
+    ]);
+  });
+});
+
+describe('sanitizeSalaryFilter', () => {
+  it('타입·금액이 유효한 쌍만 통과하고 금액은 정수로 내림한다', () => {
+    expect(sanitizeSalaryFilter(null)).toBeNull();
+    expect(sanitizeSalaryFilter({ type: 'hourly' })).toBeNull();
+    expect(sanitizeSalaryFilter({ type: 'hourly', min: Number.NaN })).toBeNull();
+    expect(sanitizeSalaryFilter({ type: 'hourly', min: -1 })).toBeNull();
+    expect(sanitizeSalaryFilter({ type: 'monthly', min: 2500000.9 })).toEqual({
+      type: 'monthly',
+      min: 2500000,
+    });
   });
 });

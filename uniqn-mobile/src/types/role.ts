@@ -125,6 +125,19 @@ export const VALID_STAFF_ROLES = [
   'other',
 ] as const;
 
+/**
+ * 역할 필터가 지원하는 표준 역할 목록
+ *
+ * @description 구인구직 브라우즈 역할 필터(role_keys overlaps) 대상.
+ * 'other' 제외 — role_keys 에 `other:자유텍스트` 로 저장돼 overlaps 정확 매칭이 불가하다.
+ */
+export const FILTERABLE_STAFF_ROLES = ['dealer', 'floor', 'serving', 'manager', 'staff'] as const;
+
+/** FILTERABLE_STAFF_ROLES 타입 가드 — persist 복원/외부 입력 방어 */
+export function isFilterableStaffRole(value: unknown): value is StaffRole {
+  return typeof value === 'string' && (FILTERABLE_STAFF_ROLES as readonly string[]).includes(value);
+}
+
 // ============================================================================
 // Role Flags (역할 플래그)
 // ============================================================================

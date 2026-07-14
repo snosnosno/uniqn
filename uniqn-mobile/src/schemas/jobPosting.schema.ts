@@ -125,6 +125,10 @@ export const jobFilterSchema = z.object({
       end: z.string(),
     })
     .optional(),
+  // 급여 필터(P3) — JobPostingFilters.salaryType/salaryMin 과 동기(스키마 누락 시
+  // strip 모드 침묵 드롭 함정 — regions 와 동일 클래스). 'other'(협의)는 필터 불가.
+  salaryType: z.enum(['hourly', 'daily', 'monthly']).optional(),
+  salaryMin: z.number().int().positive().optional(),
   searchTerm: z.string().optional(),
   isUrgent: z.boolean().optional(),
 });
@@ -506,6 +510,11 @@ export const jobPostingDocumentSchema = z
     workDate: z.string().optional(), // fixed 공고는 work_date가 없음
     workDates: z.array(z.string()).optional(),
     roleKeys: z.array(z.string()).optional(),
+    // 타입별 최대 급여(원) — serialization.getSalaryBounds 가 항상 3키를 기록(없으면 null).
+    // `.strict()` 스키마라 미등록 시 직렬화 결과 검증이 throw 한다(venueId 와 동일 클래스).
+    salaryHourlyMax: z.number().int().positive().nullable().optional(),
+    salaryDailyMax: z.number().int().positive().nullable().optional(),
+    salaryMonthlyMax: z.number().int().positive().nullable().optional(),
     totalPositions: z.number(),
     filledPositions: z.number(),
     viewCount: z.number().optional(),

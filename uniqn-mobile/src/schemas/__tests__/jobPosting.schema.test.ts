@@ -254,11 +254,34 @@ describe('jobPosting schemas', () => {
       expect(result.success).toBe(true);
       expect(result.success && result.data.region).toBe('서울 강남구');
     });
+
+    it('급여 필터(salaryType/salaryMin)를 보존한다 — strip 침묵 드롭 방지(P3)', () => {
+      const result = jobFilterSchema.safeParse({ salaryType: 'hourly', salaryMin: 13000 });
+      expect(result.success).toBe(true);
+      expect(result.success && result.data.salaryType).toBe('hourly');
+      expect(result.success && result.data.salaryMin).toBe(13000);
+    });
+
+    it('급여 필터 무효값을 거부한다 — other 타입/0 이하 금액', () => {
+      expect(jobFilterSchema.safeParse({ salaryType: 'other' }).success).toBe(false);
+      expect(jobFilterSchema.safeParse({ salaryType: 'hourly', salaryMin: 0 }).success).toBe(false);
+    });
   });
 
   describe('jobPostingDocumentSchema', () => {
     it('accepts strict V3 job posting documents', () => {
       expect(jobPostingDocumentSchema.safeParse(createValidDocument()).success).toBe(true);
+    });
+
+    it('salary_*_max 3필드를 수용한다 — strict 스키마 미등록 시 직렬화 throw 가드(P3)', () => {
+      expect(
+        jobPostingDocumentSchema.safeParse({
+          ...createValidDocument(),
+          salaryHourlyMax: 15000,
+          salaryDailyMax: null,
+          salaryMonthlyMax: null,
+        }).success
+      ).toBe(true);
     });
 
     it('location.region 을 읽기 파싱에서 보존한다 (read 증발 방지)', () => {
