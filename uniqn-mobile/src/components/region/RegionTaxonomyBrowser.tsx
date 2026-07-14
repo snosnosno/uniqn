@@ -278,6 +278,7 @@ export function RegionTaxonomyBrowser({
         <ScrollView
           className="flex-1 border-t border-secondary-100 dark:border-surface-overlay"
           keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled
         >
           {searchResults.length === 0 ? (
             <Text className="px-4 py-6 text-center font-sans text-sm text-content-secondary dark:text-secondary-400">
@@ -313,8 +314,13 @@ export function RegionTaxonomyBrowser({
         <View className="flex-1 flex-row border-t border-secondary-100 dark:border-surface-overlay">
           {/* 좌: 그룹 탭 — 9그룹 세로 스크롤. grow-0/shrink-0 필수: RN-web ScrollView 는
               기본 flexGrow:1 이라 폭 지정이 flex-basis 로만 작동해 남은 공간을 나눠 갖는다(50/50 버그).
-              76px = 2글자 라벨+선택 배지+웹 스크롤바까지 줄바꿈 없이 수용하는 최소 폭(실측) */}
-          <ScrollView className="w-[76px] grow-0 shrink-0 bg-surface-card dark:bg-surface-elevated">
+              76px = 2글자 라벨+선택 배지+웹 스크롤바까지 줄바꿈 없이 수용하는 최소 폭(실측).
+              nestedScrollEnabled: 외부 세로 ScrollView(SheetModal/Modal) 안에 중첩되므로 Android
+              내부 스크롤 무력화 방지 — 아래 검색결과·우측 칩 그리드 ScrollView 동일 이유(iOS/웹 no-op) */}
+          <ScrollView
+            className="w-[76px] grow-0 shrink-0 bg-surface-card dark:bg-surface-elevated"
+            nestedScrollEnabled
+          >
             {REGION_GROUPS.map((group) => {
               const isActive = group === activeGroup;
               const count = groupBadgeCount?.(group) ?? 0;
@@ -354,7 +360,11 @@ export function RegionTaxonomyBrowser({
           </ScrollView>
 
           {/* 우: 그룹전체 슬롯 + 칩 그리드 (경기: 남부/북부 소섹션) */}
-          <ScrollView className="flex-1 px-3 py-3" keyboardShouldPersistTaps="handled">
+          <ScrollView
+            className="flex-1 px-3 py-3"
+            keyboardShouldPersistTaps="handled"
+            nestedScrollEnabled
+          >
             {renderGroupAllRow?.(activeGroup)}
             {activeSections.map((section) => (
               <View key={section.title ?? 'all'} className="mb-2">

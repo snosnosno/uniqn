@@ -188,6 +188,12 @@ region` 중첩 메시지 워킹). `firstUnsetRow`는 getRowState 파생이라 �
 전 성공 케이스가 이 픽스처를 스프레드하므로 `region: '서울 강남구'` 추가 1곳으로 일괄 해소.
 OrderSheetScreen 계열 테스트 픽스처도 동일 스위프 필요.
 
+> **구현 일탈(2026-07-15 승인)**: zod v4는 부재(absent) optional 키의 필드 refine을 건너뛰므로,
+> 위 필드 레벨 `.optional().refine(...)`으로는 region 없는 제출을 막지 못한다(실측). 실제 구현은
+> 필수 게이트를 **객체 레벨 `.superRefine`**(path `['location','region']`, 동일 메시지)으로 배선했다.
+> 따라서 z.output의 region 타입은 `string | undefined`로 유지되며(런타임 필수는 보장), "z.output만
+> region: string" 서술은 타입 레벨로는 성립하지 않는다.
+
 ## 데이터 흐름
 
 ```
