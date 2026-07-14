@@ -63,3 +63,9 @@
 - **필터 3축 완결**: P1 지역(#250)·P2P3 역할/급여(#251, prod 마이그 2건)·**지역 전국 3단계 택소노미(#254**, `bfb83ce28`, 67→277 slug·그룹 접두 like 압축으로 URL 한도 근본수정·DB 변경 0**)**. 잔여=OTA·실기기 QA(사용자 게이트).
 - **주문서 후속 UX 전량 출하**: S3+S2 카드조건·역할별급여(#252)·S1 일정그룹 복원(#253) 머지 + OTA `e01cdfc0`(2026-07-15). #249는 테스트 수정 핸드오프 문서.
 - 택소노미 설계결정(8권역 하이브리드·시 slug="시 전체" 오버로드·구=부모 시 포함)의 wiki 졸업(/ingest)은 미실시 — 후속 후보. 상세=CHANGELOG Unreleased·memory(project_posting_filter_p1_p2_p3·project_region_taxonomy_3level_20260714).
+
+## [2026-07-15] ingest | MEMORY.md 예산 초과 → 머지완료 함정 wiki 졸업 (3 decisions 신설)
+- MEMORY.md(항상-로딩 인덱스)가 예산 14,000자 초과(~17.6k) → §10 졸업 규칙 적용. 머지·해결된 함정 20여종을 주제별 decisions로 종합 졸업하고 MEMORY 라인을 wiki 포인터로 압축.
+- 신규 decisions 3: [[secdef-hardening]](anon EXECUTE REVOKE·search_path extensions·plpgsql NULL fail-open — memory 3함정+PR#195), [[supabase-write-pitfalls]](카운터 트리거·realtime publication·RPC 예외 매핑·RLS multi-cause·시드 zod/auth.users·storage 정책·존재하지 않는 테이블 — memory 10함정), [[nativewind-rn-pitfalls]](동적 className dark: 유실·flex-1 붕괴·Link asChild 터치·중첩 accessibilityRole hydration — memory 4함정+PR#136).
+- 갱신: [[rls-model]] 관련 섹션에 신규 2페이지 상호링크(재귀/poison 함정은 이미 rls-model에 존재 → MEMORY 라인은 [[rls-model]] 포인터로 압축). index 3항목 추가.
+- 원천: memory/MEMORY.md 인덱스 + 각 pitfall 토픽파일(informational, staleness 비추적 → `/lint` UNVERIFIABLE 예상, 향후 마이그 파일 경로 보강 대상). raw memory/ 무수정. e2e·시드 함정 5종은 별도로 `memory/MEMORY-archive.md`로 냉이관(wiki 미졸업, 니치).
