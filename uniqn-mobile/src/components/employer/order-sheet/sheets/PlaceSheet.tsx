@@ -1,19 +1,21 @@
 /**
  * PlaceSheet — 장소 선택 시트 (주문서 기본정보)
  *
- * @description 인라인 3단 모드(list → new → region). 지역 선택은 SheetModal 내부에 REGION_GROUPS/
- * REGIONS_BY_GROUP 를 인라인 렌더 — RegionSelectModal(RN Modal) 을 열지 않는다(중첩 Modal iOS
- * 터치먹통 #186/#243 회피, 브리프 CRITICAL C1). value/onChange 는 OrderSheetFormValues(z.input)
- * 기준 — 장소는 null 허용, 확정값은 non-null.
+ * @description 인라인 3단 모드(list → new → region). 지역 선택은 SheetModal 내부에 공유 2패널
+ * RegionTaxonomyBrowser(#254 필터와 동일 본문) 를 인라인 렌더 — RN Modal 을 열지 않는다(중첩 Modal
+ * iOS 터치먹통 #186/#243 회피, 브리프 CRITICAL C1). 단일선택: 픽 즉시 확정·복귀. 그룹전체 슬롯
+ * 미지정 = 권역 선택 불가(필수 계약). 지역은 확인 게이트 필수(2026-07-15) — 스키마 제출 게이트가
+ * 최후 방어. value/onChange 는 OrderSheetFormValues(z.input) 기준 — 장소는 null 허용, 확정값은 non-null.
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { SheetModal } from '@/components/ui/SheetModal';
 import { Button } from '@/components/ui/Button';
-import { CheckIcon, ChevronLeftIcon, PlusIcon } from '@/components/icons';
-import { REGION_GROUPS, REGIONS_BY_GROUP, getRegionLabel } from '@/constants/regions';
+import { ChevronLeftIcon, PlusIcon } from '@/components/icons';
+import { getRegionLabel, getRegionOption } from '@/constants/regions';
+import { RegionTaxonomyBrowser } from '@/components/region/RegionTaxonomyBrowser';
 import { useThemeStore } from '@/stores/themeStore';
-import { PRIMARY_COLORS, SECONDARY_PALETTE } from '@/constants/colors';
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import type { OrderSheetFormValues } from '@/schemas/orderSheet.schema';
 
 /** 폼 경계(z.input)의 장소 non-null 형태 — PostingLocation 이 아니라 폼 스키마 기준 */
@@ -30,19 +32,6 @@ export interface PlaceSheetProps {
 
 type Mode = 'list' | 'new' | 'region';
 
-// 선택 칩 클래스(라이트 700=대비 AA·다크 900/30 = 코드베이스 관례). 아이콘 색도 동일 결정.
-const chipClass = (isSelected: boolean) =>
-  `px-3.5 py-2 min-h-[44px] justify-center rounded-full border ${
-    isSelected
-      ? 'border-primary-500 bg-primary-100 dark:bg-primary-900/30'
-      : 'border-secondary-200 dark:border-surface-overlay'
-  } active:opacity-80`;
-
-const chipTextClass = (isSelected: boolean) =>
-  `text-sm font-sans-medium ${
-    isSelected ? 'text-primary-700 dark:text-primary-400' : 'text-content-secondary'
-  }`;
-
 export function PlaceSheet({
   visible,
   value,
@@ -51,6 +40,7 @@ export function PlaceSheet({
   onClose,
 }: PlaceSheetProps) {
   const isDarkMode = useThemeStore((s) => s.isDarkMode);
+  const { height: windowHeight } = useWindowDimensions();
   // 최초 오픈 플리커 방지: 최근 장소 유무에 따라 lazy init(effect 는 재오픈 동기화 담당)
   const [mode, setMode] = useState<Mode>(() => (recentLocations.length > 0 ? 'list' : 'new'));
   const [draft, setDraft] = useState<OrderSheetLocation>({ name: '' });
@@ -70,8 +60,10 @@ export function PlaceSheet({
   }, [visible, value, recentLocations.length]);
 
   const placeholderColor = isDarkMode ? SECONDARY_PALETTE[500] : SECONDARY_PALETTE[400];
-  const selectedIconColor = isDarkMode ? PRIMARY_COLORS[400] : PRIMARY_COLORS[700];
   const nameTrimmed = draft.name.trim();
+  const confirmDisabled = nameTrimmed.length === 0 || !draft.region; // 지역 필수(2026-07-15)
+  // 브라우저는 flex-1 — SheetModal 인라인이라 명시 높이로 bound(실기기 그라운딩 대상)
+  const regionBrowserHeight = Math.min(Math.round(windowHeight * 0.6), 520);
 
   return (
     <SheetModal
@@ -80,20 +72,27 @@ export function PlaceSheet({
       title={mode === 'region' ? '지역 선택' : '어디서 일하나요?'}
       footer={
         mode === 'new' ? (
-          <Button
-            onPress={() => {
-              // name 은 trim, address 는 trim 후 빈 문자열이면 undefined(canonical 왕복 '' / undefined 혼재 방지)
-              onConfirm({
-                ...draft,
-                name: nameTrimmed,
-                address: draft.address?.trim() || undefined,
-              });
-              onClose();
-            }}
-            disabled={nameTrimmed.length === 0}
-          >
-            확인
-          </Button>
+          <View className="gap-2">
+            {confirmDisabled ? (
+              <Text className="text-center text-xs text-content-muted font-sans">
+                장소명과 지역을 입력하면 확인할 수 있어요
+              </Text>
+            ) : null}
+            <Button
+              onPress={() => {
+                // name 은 trim, address 는 trim 후 빈 문자열이면 undefined(canonical 왕복 '' / undefined 혼재 방지)
+                onConfirm({
+                  ...draft,
+                  name: nameTrimmed,
+                  address: draft.address?.trim() || undefined,
+                });
+                onClose();
+              }}
+              disabled={confirmDisabled}
+            >
+              확인
+            </Button>
+          </View>
         ) : undefined
       }
     >
@@ -103,6 +102,12 @@ export function PlaceSheet({
             <Pressable
               key={`${loc.name}:${loc.address ?? ''}`}
               onPress={() => {
+                // 하위호환: region 없는 저장 장소는 조용히 통과시키지 않고 지역 완성 유도
+                if (!loc.region) {
+                  setDraft({ ...loc });
+                  setMode('region');
+                  return;
+                }
                 onConfirm(loc);
                 onClose();
               }}
@@ -113,6 +118,11 @@ export function PlaceSheet({
               <Text className="text-sm font-sans-medium text-content-primary">{loc.name}</Text>
               {loc.address ? (
                 <Text className="text-xs text-content-muted font-sans">{loc.address}</Text>
+              ) : null}
+              {!loc.region ? (
+                <Text className="text-xs text-content-muted font-sans">
+                  지역 미지정 — 탭해서 지역을 골라주세요
+                </Text>
               ) : null}
             </Pressable>
           ))}
@@ -165,16 +175,14 @@ export function PlaceSheet({
             accessibilityLabel="지역 선택"
           >
             <Text className="text-sm text-content-primary font-sans">
-              {draft.region
-                ? `지역: ${getRegionLabel(draft.region) ?? draft.region}`
-                : '지역 선택 (선택)'}
+              {draft.region ? `지역: ${getRegionLabel(draft.region) ?? draft.region}` : '지역 선택'}
             </Text>
           </Pressable>
         </View>
       )}
 
       {mode === 'region' && (
-        <View className="gap-3">
+        <View className="gap-2" style={{ height: regionBrowserHeight }}>
           {/* 지역 모드 dead-end 방지 — 선택 없이 새 입력으로 복귀 */}
           <Pressable
             onPress={() => setMode('new')}
@@ -185,52 +193,18 @@ export function PlaceSheet({
             <ChevronLeftIcon size={16} />
             <Text className="text-xs text-content-secondary font-sans">뒤로</Text>
           </Pressable>
-          {/* 지역은 optional — 해제(선택 안 함) 어포던스 필수(RegionSelectModal 원본과 동형) */}
-          <View className="flex-row flex-wrap gap-2">
-            <Pressable
-              onPress={() => {
-                setDraft((d) => ({ ...d, region: undefined }));
-                setMode('new');
-              }}
-              className={chipClass(!draft.region)}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: !draft.region }}
-              accessibilityLabel="지역 선택 안 함"
-            >
-              <View className="flex-row items-center gap-1">
-                {!draft.region ? <CheckIcon size={14} color={selectedIconColor} /> : null}
-                <Text className={chipTextClass(!draft.region)}>선택 안 함</Text>
-              </View>
-            </Pressable>
-          </View>
-          {REGION_GROUPS.map((group) => (
-            <View key={group}>
-              <Text className="text-xs font-sans-bold text-content-secondary mb-1.5">{group}</Text>
-              <View className="flex-row flex-wrap gap-2">
-                {REGIONS_BY_GROUP[group].map((r) => {
-                  const selected = draft.region === r.slug;
-                  return (
-                    <Pressable
-                      key={r.slug}
-                      onPress={() => {
-                        setDraft((d) => ({ ...d, region: r.slug }));
-                        setMode('new');
-                      }}
-                      className={chipClass(selected)}
-                      accessibilityRole="radio"
-                      accessibilityState={{ selected }}
-                      accessibilityLabel={`${r.label} 지역`}
-                    >
-                      <View className="flex-row items-center gap-1">
-                        {selected ? <CheckIcon size={14} color={selectedIconColor} /> : null}
-                        <Text className={chipTextClass(selected)}>{r.label}</Text>
-                      </View>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-          ))}
+          {/* 필터와 동일 2패널 택소노미(#254) — 단일선택: 픽 즉시 확정·복귀. 그룹전체 슬롯
+              미지정 = 권역 선택 불가(필수 계약). 중첩 Modal 금지 — 인라인 렌더(#186/#243) */}
+          <RegionTaxonomyBrowser
+            selectionMode="single"
+            isSelected={(slug) => draft.region === slug}
+            onPickSlug={(slug) => {
+              setDraft((d) => ({ ...d, region: slug }));
+              setMode('new');
+            }}
+            initialGroup={draft.region ? getRegionOption(draft.region)?.group : undefined}
+            searchInputTestID="order-sheet-region-search"
+          />
         </View>
       )}
     </SheetModal>
