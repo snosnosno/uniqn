@@ -8,6 +8,7 @@
 ## [Unreleased] - 2026-07-14
 
 ### Added
+- **공고작성 키오스크 "주문서" 개편** (PR #246, 마이그 `job_postings.conditions` jsonb nullable prod 적용): 구인자 공고 등록을 카드형 "주문서" 한 화면으로 재설계 — 세그먼트/그룹/행 프레임 + 순차 유도(다음 미작성 항목 자동 안내). 항목별 바텀시트 12종(제목·장소[인라인 지역 3단]·연락처·설명·일정[달력]·모집[다중 시간대·다역할+기타 직접입력]·급여·복지·세금·모집조건[복장·경력]·사전질문) + 역할별 급여 전수커버 게이트. 프리셋 캐러셀(마지막 등록 공고 + 저장 템플릿을 탭 1번으로 전체 교체) + 등록 완료 화면(OS 공유·공고 보기·연속 등록·프리셋 저장 제안, `lastSubmitted` 1회성 소비). 신규 `conditions` jsonb 컬럼(nullable, `{dressCode?, experience?}`) 직렬화·어댑터·템플릿 왕복(own-property 가드). 공고 타입 라벨 구용어 정합(긴급→급구·수당→복지). `OrderSheetValues` zod 스키마 + canonical 매퍼로 기존 create 경로와 동등 산출(신구 등가성 테스트) — Design B(by_role 복원 분기) 승인. SDD 11태스크(태스크당 구현+fable 리뷰)+최종 whole-branch 리뷰 Critical/Important 0. 게이트 실측: quality 0·jest 439스위트/5266 PASS·e2e 변경 2스펙 23 pass
 - **라이브 대회 운영(ops) 도구 1a~1c 출하** (PR #207·#210·#212·#213·#214, prod 적용 완료·advisor 0 ERROR):
   - 1a 등록데스크 + `ops_events` 감사 척추(#207), 1b 테이블/좌석/Redraw(#210)
   - 1c-1/1c-2 블라인드 서버동기 클럭(`computeClockRemaining` 서버앵커+offset) + 트리거 기반 `ops_live_stats` 단일행 재계산 + STATUS/LEVELS/HISTORY 탭(#212)
