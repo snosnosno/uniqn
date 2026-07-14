@@ -24,7 +24,10 @@ import {
   gridParamsToValues,
   templateToValues,
   valuesToCreateInput,
+  valuesToDraft,
 } from '@/utils/order-sheet/mappers';
+import { setLastSubmittedDraft } from '@/utils/order-sheet/lastSubmitted';
+import { formatShortDate } from '@/utils/formatters/date';
 import { JobPostingScrollForm } from '@/components/employer/job-form';
 import { TemplateModal } from '@/components/employer/job-form/modals/TemplateModal';
 import { LoadTemplateModal } from '@/components/employer/job-form/modals/LoadTemplateModal';
@@ -208,14 +211,32 @@ export default function CreateJobPostingScreen() {
     async (values: OrderSheetValues) => {
       try {
         const input = valuesToCreateInput(values);
-        await createJobPosting.mutateAsync({ input });
+        const created = await createJobPosting.mutateAsync({ input });
         setIsDirty(false);
-        addToast({ type: 'success', message: '공고가 등록되었습니다.' });
-        // 성공 네비게이션은 Task 10에서 완료 화면으로 교체 — 그 전까지 기존 로직 유지
+        // 그리드 진입(venueId)이면 스택 하부 그리드로 복귀(선택 운영처·날짜 보존) — 완료 화면 우회.
+        // 셀 +N 뱃지 갱신은 useCreateJobPosting 의 weeklyGrid 무효화가 담당.
         if (venueId && router.canGoBack()) {
+          addToast({ type: 'success', message: '공고가 등록되었습니다.' });
           router.back();
         } else {
-          router.replace('/(app)/(tabs)/employer');
+          // 완료 화면 전달 — draft 는 파라미터로 넘기기엔 커 모듈 캐시로 1회 전달(공유 X, 프리셋 저장용).
+          setLastSubmittedDraft(valuesToDraft(values));
+          const startTime = values.timeSlots[0]?.startTime;
+          const summary = [
+            values.dates[0] ? formatShortDate(values.dates[0]) : null,
+            startTime ? `출근 ${startTime}` : null,
+          ]
+            .filter(Boolean)
+            .join(' · ');
+          router.replace({
+            pathname: '/(employer)/my-postings/create-success',
+            params: {
+              id: created.id, // CreateJobPostingResult { id, jobPosting } — 실측 확정
+              title: values.title,
+              summary,
+              suggestPreset: templateManager.templates.length === 0 ? '1' : '0',
+            },
+          });
         }
       } catch (error) {
         // 기존 handleSubmit과 동일 — unhandled rejection 금지(리뷰 MEDIUM)
@@ -226,7 +247,7 @@ export default function CreateJobPostingScreen() {
         });
       }
     },
-    [createJobPosting, venueId, router, addToast]
+    [createJobPosting, venueId, router, addToast, templateManager.templates.length]
   );
 
   const handleSwitchToLegacyForm = useCallback(
