@@ -53,3 +53,8 @@
 - 신규 sources 3: [[parity-baseline-squash]](PR#241 — pg_dump 함정 5종+E2E 함정 2종+prod 진실 교정) · [[userflow-audit-2026-07]](PR#242 — 감사 방법론+P0~P2+반복 교훈) · [[ios-userflow-fixes]](PR#243·#244 — filled counts 서브맵 함정)
 - 신규 decisions 2: [[prod-parity-baseline]](prod가 진실 — 발산 규모·가드 2중·핫픽스 규율) · [[whitelist-silent-drop]]("화이트리스트 조용한 증발" 재발 클래스 3회 실증 합성 — #194 region·#243 filled counts·키오스크 conditions 9지점)
 - index 5항목 추가. 원천: memory 토픽 4편 + docs/analysis/2026-07-10-userflow-audit.md + 커밋 이력.
+
+## [2026-07-14] ingest | 키오스크 주문서 개편 출하 — sources/job-posting-kiosk-order-sheet + decisions/order-sheet-form-contract 신설
+- 신규 sources 1: [[job-posting-kiosk-order-sheet]](PR#246 본·#247 후속 — 무엇/왜·출하 게이트 실측·재발 교훈·폴리시 소건). 신규 decisions 1: [[order-sheet-form-contract]](3제네릭 zodResolver z.input/z.output·canonical 매퍼 등가성·Design B 승인 일탈·#244 지연전환·중첩Modal embedded·guaranteedHours PROVIDED_FLAG 함정).
+- [[whitelist-silent-drop]] 갱신: 규칙 #5 "읽기 배선 ≠ 표시 UI" 추가(conditions 읽기 hydration은 #246 완료였으나 표시 UI JobDetail 섹션은 별개 갭→#247 완결). sources에 PR#247·JobDetail.tsx 추가.
+- index 2항목 추가(decisions·sources 각 1). 원천: PR#246(`beb28d1f0`)·PR#247(`0326682f4`)·마이그 job_postings_conditions·OTA group `4193f9ab`·memory(project_job_posting_kiosk_order_sheet).
