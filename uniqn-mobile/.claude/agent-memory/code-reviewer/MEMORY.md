@@ -12,4 +12,4 @@
 
 ## 필드 배선 리뷰 레시피
 
-- [optional 오브젝트 필드 6지점 사슬](pattern_optional_field_wiring_six_points.md) — 시트정규화→zod→mapper 게이트→직렬화 폴백→하이드레이션→UI가드 전수 실측. 명시-undefined는 per-field 게이트가 흡수
+- [optional 오브젝트 필드 6+3지점 사슬](pattern_optional_field_wiring_six_points.md) — 쓰기6(시트→zod→mapper→직렬화→하이드→UI가드)+카드3(projections 전사·spread 재구성·오프라인캐시 버전)

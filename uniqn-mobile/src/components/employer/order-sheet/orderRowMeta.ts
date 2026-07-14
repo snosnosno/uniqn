@@ -166,7 +166,7 @@ export function getRowState(values: OrderSheetFormValues, key: OrderRowKey): Ord
       };
     }
     case 'salary': {
-      const useSame = values.useSameSalary ?? true;
+      const useSame = values.useSameSalary ?? false; // 기본 by_role(설계 §S2.1) — 5지점 통일
       if (!useSame) {
         // by_role: 시간대의 고유 역할 전부에 급여가 있어야 set (2026-07-14 결정)
         const roleSalaries = values.roleSalaries ?? [];
@@ -182,14 +182,15 @@ export function getRowState(values: OrderSheetFormValues, key: OrderRowKey): Ord
             const s = salaryByRole.get(k);
             return s !== undefined && (s.type === 'other' || s.amount > 0);
           });
-        const summary = [...uniqueRoles.values()]
-          .map((r) => {
-            const s = salaryByRole.get(roleKey(r.role, r.customRole));
-            return `${roleName(r.role, r.customRole)} ${
-              s ? (s.type === 'other' ? '협의' : s.amount.toLocaleString()) : '미정'
-            }`;
-          })
-          .join(' · ');
+        const parts = [...uniqueRoles.values()].map((r) => {
+          const s = salaryByRole.get(roleKey(r.role, r.customRole));
+          return `${roleName(r.role, r.customRole)} ${
+            s ? (s.type === 'other' ? '협의' : s.amount.toLocaleString()) : '미정'
+          }`;
+        });
+        // 금액 truncation 금지(impeccable §26) — 역할 3개+면 첫 항목 + 개수 축약(2차 Design-medium)
+        const summary =
+          parts.length >= 3 ? `${parts[0]} 외 ${parts.length - 1}개 역할` : parts.join(' · ');
         return { label: '급여', value: covered ? summary : '', unset: !covered, optional: false };
       }
       const { type, amount } = values.salary;

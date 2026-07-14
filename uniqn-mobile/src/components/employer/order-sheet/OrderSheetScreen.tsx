@@ -34,6 +34,7 @@ import { ConditionsSheet } from './sheets/ConditionsSheet';
 import { PreQuestionsSheet } from './sheets/PreQuestionsSheet';
 import { PresetCarousel, type OrderSheetPreset } from './PresetCarousel';
 import { DatePickerModal } from '@/components/employer/job-form/modals/DatePickerModal';
+import { defaultAmountForRole, syncRoleSalaries } from '@/utils/order-sheet/roleSalaries';
 import type { PostingType } from '@/types/jobPosting';
 
 /**
@@ -79,6 +80,8 @@ export function OrderSheetScreen({
   const values = form.watch();
   const { errors, isDirty } = form.formState;
   const [activeSheet, setActiveSheet] = useState<ActiveSheet>(null);
+  // 급여 시트 confirm 이력 — '기본값' 배지(프리필 제안 상태) 해제 판정용 파생 상태(스키마 필드 아님)
+  const [salaryConfirmed, setSalaryConfirmed] = useState(false);
 
   // 시트→시트 직접 스왑은 iOS 중첩 Modal 터치 먹통(#244)을 유발 — 먼저 닫고 dismiss 애니메이션 뒤 다음을 연다.
   // 재진입 가드(pendingSheetRef)로 더블탭 시 이중 예약을 막고, 언마운트 시 예약을 정리한다(ScheduleDetailModal closeSheetThen 패턴).
@@ -124,6 +127,49 @@ export function OrderSheetScreen({
     }
     return [...seen.values()];
   }, [values.timeSlots]);
+
+  // 역할 확정 시 급여 자동 프리필(설계 §S2.3) — confirm 핸들러(이벤트)에서만 호출, effect 금지(F3).
+  // 후속 역할 추가(기존 엔트리가 있던 상태의 신규 주입)만 1회성 토스트로 알린다(2차 CEO-2 —
+  // 초기 시드는 '기본값' 배지가 담당). useSameSalary=true(동일급여)면 no-op.
+  const applyRoleSalarySync = useCallback(
+    (nextTimeSlots: OrderSheetFormValues['timeSlots']) => {
+      const current = form.getValues();
+      if (current.useSameSalary ?? false) return;
+      const prev = current.roleSalaries ?? [];
+      const synced = syncRoleSalaries(nextTimeSlots ?? [], prev, current.salary.type);
+      if (synced === prev) return;
+      form.setValue('roleSalaries', synced, { shouldDirty: true, shouldValidate: true });
+      const added = synced.slice(prev.length);
+      if (prev.length > 0 && added.length > 0) {
+        addToast({
+          type: 'success',
+          message: `기본 급여 적용: ${added
+            .map(
+              (rs) => `${roleName(rs.role, rs.customRole)} ${rs.salary.amount.toLocaleString()}원`
+            )
+            .join(' · ')} · 급여 행에서 수정 가능`,
+        });
+      }
+    },
+    [form, addToast]
+  );
+
+  // '기본값' 배지(CEO-2+Design-H2) — roleSalaries가 전부 역할별 기본값과 일치하고 급여 시트를
+  // confirm한 적 없을 때만. 제출은 배지 상태에서도 허용(R4 존중) — 시각 게이트일 뿐.
+  const showDefaultSalaryBadge = useMemo(() => {
+    if (salaryConfirmed || (values.useSameSalary ?? false) || uniqueRoles.length === 0) {
+      return false;
+    }
+    const roleSalaries = values.roleSalaries ?? [];
+    return uniqueRoles.every((u) => {
+      const entry = roleSalaries.find((rs) => rs.role === u.role && rs.customRole === u.customRole);
+      return (
+        entry !== undefined &&
+        entry.salary.type !== 'other' &&
+        entry.salary.amount === defaultAmountForRole(entry.role, entry.salary.type)
+      );
+    });
+  }, [salaryConfirmed, values.useSameSalary, values.roleSalaries, uniqueRoles]);
 
   // 행 탭 라우팅 — roles 행은 슬롯 수에 따라 분기(1개=직접 역할 편집, 그 외=TimeSlotsSheet). 나머지는 그대로.
   // switchSheet 지연 전환 창(300ms) 중에는 무시 — 그 사이 새 시트를 열면 예약 타이머와 충돌(#244 레이스).
@@ -172,9 +218,19 @@ export function OrderSheetScreen({
   }, [presets]);
 
   // 프리셋 카드 탭 → 주문서 전체를 그 구성으로 교체(RHF reset). 저장 카드 탭 → 현재 값 상위로 전달.
+  // by_role 프리셋은 reset 직전 syncRoleSalaries(Eng-H3) — 부분 커버 템플릿의 미커버 역할을 기본값으로 채운다.
   const handleApplyPreset = useCallback(
     (preset: OrderSheetPreset) => {
-      form.reset(preset.values);
+      const v = preset.values;
+      if (v.useSameSalary ?? false) {
+        form.reset(v);
+      } else {
+        form.reset({
+          ...v,
+          roleSalaries: syncRoleSalaries(v.timeSlots ?? [], v.roleSalaries ?? [], v.salary.type),
+        });
+      }
+      setSalaryConfirmed(false);
     },
     [form]
   );
@@ -254,6 +310,7 @@ export function OrderSheetScreen({
                 key={key}
                 state={getRowState(values, key)}
                 error={rowError(key)}
+                badge={key === 'salary' && showDefaultSalaryBadge ? '기본값' : undefined}
                 onPress={() => handleRowPress(key)}
                 testID={`order-sheet-row-${key}`}
               />
@@ -332,9 +389,10 @@ export function OrderSheetScreen({
         <TimeSlotsSheet
           visible
           value={values.timeSlots}
-          onConfirm={(next) =>
-            form.setValue('timeSlots', next, { shouldDirty: true, shouldValidate: true })
-          }
+          onConfirm={(next) => {
+            form.setValue('timeSlots', next, { shouldDirty: true, shouldValidate: true });
+            applyRoleSalarySync(next);
+          }}
           onClose={() => setActiveSheet(null)}
           onEditSlotRoles={(slotIndex) =>
             switchSheet({ key: 'slotRoles', slotIndex, fromTimeSheet: true })
@@ -345,15 +403,13 @@ export function OrderSheetScreen({
         <RolesSheet
           visible
           value={values.timeSlots[slotRolesTarget.slotIndex]?.roles ?? []}
-          onConfirm={(next) =>
-            form.setValue(
-              'timeSlots',
-              (values.timeSlots ?? []).map((s, idx) =>
-                idx === slotRolesTarget.slotIndex ? { ...s, roles: next } : s
-              ),
-              { shouldDirty: true, shouldValidate: true }
-            )
-          }
+          onConfirm={(next) => {
+            const nextSlots = (values.timeSlots ?? []).map((s, idx) =>
+              idx === slotRolesTarget.slotIndex ? { ...s, roles: next } : s
+            );
+            form.setValue('timeSlots', nextSlots, { shouldDirty: true, shouldValidate: true });
+            applyRoleSalarySync(nextSlots);
+          }}
           onClose={() =>
             slotRolesTarget.fromTimeSheet ? switchSheet('time') : setActiveSheet(null)
           }
@@ -364,7 +420,7 @@ export function OrderSheetScreen({
         <SalarySheet
           visible
           value={values.salary}
-          useSameSalary={values.useSameSalary ?? true}
+          useSameSalary={values.useSameSalary ?? false}
           roleSalaries={values.roleSalaries ?? []}
           uniqueRoles={uniqueRoles}
           onConfirm={(next) => {
@@ -377,6 +433,7 @@ export function OrderSheetScreen({
               shouldDirty: true,
               shouldValidate: true,
             });
+            setSalaryConfirmed(true); // '기본값' 배지 해제 — 사용자가 급여를 직접 확인함
           }}
           onClose={() => setActiveSheet(null)}
         />

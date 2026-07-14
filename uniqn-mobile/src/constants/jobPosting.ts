@@ -88,3 +88,21 @@ export const DEFAULT_ROLE_ICON = '👤';
  * 기본 시작 시간
  */
 export const DEFAULT_START_TIME = '09:00';
+
+/**
+ * 급여 타입별 기본값 (주문서 SSOT — 의존성 0 모듈에 배치, mappers가 재수출)
+ */
+export const DEFAULT_SALARY_BY_TYPE = { hourly: 20000, daily: 200000, monthly: 2500000 } as const;
+
+/**
+ * 역할별 시급 기본단가 (설계 §S2.2 — D2 승인: 딜러 20,000/플로어 30,000/그 외 20,000)
+ *
+ * @description 시급만 역할 차등. 일급/월급은 DEFAULT_SALARY_BY_TYPE 균일(보수적).
+ */
+export const DEFAULT_ROLE_HOURLY: Record<string, number> = { dealer: 20_000, floor: 30_000 };
+export const DEFAULT_ROLE_HOURLY_FALLBACK = 20_000; // serving·manager·staff·other(커스텀 포함)
+
+/**
+ * 급여 금액 상한 (Eng-M4 — 역할별 입력 지점 N개 확대 시점에 조임. 프리셋 경유 이상치도 재검증)
+ */
+export const MAX_SALARY_AMOUNT = 100_000_000;

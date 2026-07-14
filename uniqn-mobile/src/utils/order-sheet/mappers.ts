@@ -17,9 +17,12 @@ import { templateToDraft } from '@/types/jobTemplate';
 import { draftToCreateJobPostingInput } from '@/utils/job-posting/draftAdapter';
 import type { GridPrefillParams } from '@/utils/job-posting/gridPrefill';
 import { DEFAULT_SLOT_START_TIME } from '@/domains/weeklyGrid';
+import { DEFAULT_SALARY_BY_TYPE } from '@/constants/jobPosting';
+import { syncRoleSalaries } from '@/utils/order-sheet/roleSalaries';
 import { generateId } from '@/utils/generateId';
 
-export const DEFAULT_SALARY_BY_TYPE = { hourly: 20000, daily: 200000, monthly: 2500000 } as const;
+// 정의는 의존성 0 모듈(constants/jobPosting)로 이동 — roleSalaries.ts와의 순환 차단. 기존 소비처용 재수출.
+export { DEFAULT_SALARY_BY_TYPE };
 export const HOURLY_STEP = 1000;
 
 /** 초기 주문서 SSOT — INITIAL_JOB_POSTING_DRAFT 경유 금지(by_role·09:00 기본슬롯 유입, 리뷰 실측). */
@@ -33,7 +36,7 @@ export function initialOrderSheetValues(): OrderSheetFormValues {
     dates: [],
     timeSlots: [],
     salary: { type: 'hourly', amount: DEFAULT_SALARY_BY_TYPE.hourly },
-    useSameSalary: true,
+    useSameSalary: false, // 기본 by_role(설계 §S2.1) — 5지점 통일
     roleSalaries: [],
     allowances: {},
     conditions: {},
@@ -86,6 +89,23 @@ function toRoleCatalog(values: OrderSheetValues): PostingRoleCatalogEntry[] {
   return [...seen.values()];
 }
 
+/**
+ * by_role의 defaultSalary = roleSalaries 최저값 (CEO-1 — 유령 세그먼트 캐리어 기록 금지).
+ *
+ * defaultSalary 소비처 실측 3곳(정산 폴백 SettlementCalculator·카드 a11y 헤드라인
+ * postingSurfaceModel·급여 필터 salary_*_max)이 폴백으로 읽어도 "최저가부터" 의미가 되도록 한다.
+ * 협의(other) 행은 금액 축이 없어 최저값 산정에서 제외 — 전원 협의면 협의로 기록.
+ */
+function resolveDefaultSalary(values: OrderSheetValues): SalaryInfo {
+  if (values.useSameSalary || values.roleSalaries.length === 0) return values.salary;
+  const priced = values.roleSalaries.filter((rs) => rs.salary.type !== 'other');
+  if (priced.length === 0) return { type: 'other', amount: 0 };
+  return priced.reduce(
+    (min, rs) => (rs.salary.amount < min.amount ? rs.salary : min),
+    priced[0]!.salary
+  );
+}
+
 export function valuesToDraft(values: OrderSheetValues): JobPostingDraft {
   // 직접 조립(스프레드 없음) — JobPostingDraft 필수 필드는 TS가 강제, INITIAL 오염 원천 차단
   return {
@@ -106,7 +126,7 @@ export function valuesToDraft(values: OrderSheetValues): JobPostingDraft {
     roleCatalog: toRoleCatalog(values),
     compensation: {
       mode: values.useSameSalary ? 'shared' : 'by_role',
-      defaultSalary: values.salary,
+      defaultSalary: resolveDefaultSalary(values),
       ...(Object.keys(values.allowances).length > 0 ? { allowances: values.allowances } : {}),
       ...(values.taxSettings !== undefined ? { taxSettings: values.taxSettings } : {}),
     },
@@ -201,7 +221,8 @@ export function formValuesToDraft(values: OrderSheetFormValues): JobPostingDraft
   return valuesToDraft({
     ...values,
     description: values.description ?? '',
-    useSameSalary: values.useSameSalary ?? true,
+    useSameSalary: values.useSameSalary ?? false, // 기본 by_role(설계 §S2.1) — 5지점 통일
+
     roleSalaries: values.roleSalaries ?? [],
     allowances: values.allowances ?? {},
     conditions: values.conditions ?? {},
@@ -222,15 +243,18 @@ export function gridParamsToValues(params: GridPrefillParams): OrderSheetFormVal
   const count = Math.min(99, Math.max(1, Math.trunc(params.count ?? 1)));
   const hasDate = typeof params.date === 'string' && DATE_RE.test(params.date);
   if (venueId === undefined && !hasDate) return base; // 일반 생성 — venueId 키 부재 무회귀
+  const timeSlots = [
+    { startTime: DEFAULT_SLOT_START_TIME, roles: [{ role: 'dealer' as const, count }] },
+  ];
   return {
     ...base,
     ...(venueId !== undefined ? { venueId } : {}),
     ...(hasDate
       ? {
           dates: [params.date as string],
-          timeSlots: [
-            { startTime: DEFAULT_SLOT_START_TIME, roles: [{ role: 'dealer' as const, count }] },
-          ],
+          timeSlots,
+          // 반환 직전 프리필(Eng-H3) — 미적용 시 그리드 출하 플로우가 "급여 시트 강제 방문"으로 회귀
+          roleSalaries: syncRoleSalaries(timeSlots, [], base.salary.type),
         }
       : {}),
   };
