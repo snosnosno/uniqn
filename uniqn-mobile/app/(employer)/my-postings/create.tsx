@@ -61,7 +61,7 @@ export default function CreateJobPostingScreen() {
     buildGridPrefillDraft({ venueId, date: prefillDate, count: prefillCount })
   );
   const [isDirty, setIsDirty] = useState(false);
-  // 주문서(기본) vs 레거시 상세폼(고정·대회) 모드 분기 — legacyType!==null이면 상세폼
+  // 주문서(기본) vs 레거시 상세폼(고정 전용) 모드 분기 — legacyType!==null이면 상세폼 (대회는 S1에서 주문서로 이관)
   const [legacyType, setLegacyType] = useState<'fixed' | 'tournament' | null>(null);
   const isLegacyForm = legacyType !== null;
   const formData = useMemo(() => draftToFormData(draft), [draft]);
@@ -276,7 +276,7 @@ export default function CreateJobPostingScreen() {
       if (isDirty) {
         Alert.alert(
           '작성 중인 내용이 있어요',
-          '고정·대회 공고는 상세 폼에서 작성해요. 지금까지 입력한 내용은 사라져요.',
+          '고정 공고는 상세 폼에서 작성해요. 지금까지 입력한 내용은 사라져요.',
           [
             { text: '취소', style: 'cancel' },
             { text: '전환', style: 'destructive', onPress: doSwitch },
@@ -289,7 +289,7 @@ export default function CreateJobPostingScreen() {
     [isDirty, updateFormData]
   );
 
-  // 기본 진입 = 주문서(지원·급구). 고정·대회 선택 시에만 레거시 상세폼으로 전환.
+  // 기본 진입 = 주문서(지원·급구·대회). 고정 선택 시에만 레거시 상세폼으로 전환.
   if (!isLegacyForm) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
