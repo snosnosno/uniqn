@@ -323,8 +323,12 @@ describe('draftToValues — 그룹핑 복원 (S1, M8 throw 제거)', () => {
       mk('2026-07-22', '19:00', 'dealer', true), // 7/21 없음 — run 단절
     ]);
     const values = draftToValues(draft);
-    expect(values.scheduleGroups.map((g) => g.dates)).toEqual([['2026-07-20'], ['2026-07-22']]);
-    expect(values.scheduleGroups.every((g) => g.grouped)).toBe(true);
+    // scheduleGroups 는 z.input 에서 optional(.default([])) — 널 가드 후 접근.
+    expect((values.scheduleGroups ?? []).map((g) => g.dates)).toEqual([
+      ['2026-07-20'],
+      ['2026-07-22'],
+    ]);
+    expect((values.scheduleGroups ?? []).every((g) => g.grouped)).toBe(true);
   });
 
   it('falsy isGrouped는 시그니처 병합 — 비연속 동일 조건 날짜들이 한 그룹으로 (정규형 수용)', () => {
@@ -348,12 +352,16 @@ describe('draftToValues — 그룹핑 복원 (S1, M8 throw 제거)', () => {
     ]);
   });
 
-  it('fixed 스케줄 draft는 throw한다 (키오스크 범위 밖)', () => {
+  it('fixed 스케줄 draft는 throw 없이 fixed 폼 값으로 복원된다 (S2 — 키오스크 fixed 지원)', () => {
     const fixedDraft = {
       ...INITIAL_JOB_POSTING_DRAFT,
+      postingType: 'fixed' as const,
       schedule: { kind: 'fixed' as const, requirements: [] },
     };
-    expect(() => draftToValues(fixedDraft)).toThrow();
+    const values = draftToValues(fixedDraft);
+    expect(values.postingType).toBe('fixed');
+    expect(values.scheduleGroups).toEqual([]);
+    expect(values.fixedSchedule?.roles).toEqual([]);
   });
 });
 
@@ -761,5 +769,77 @@ describe('대회(tournament) 왕복 보존 (S1)', () => {
     });
     expect(orderSheetValuesSchema.safeParse(withDates(30)).success).toBe(true);
     expect(orderSheetValuesSchema.safeParse(withDates(31)).success).toBe(false);
+  });
+});
+
+describe('고정(fixed) 매퍼 왕복 (S2)', () => {
+  const fixedValues = orderSheetValuesSchema.parse({
+    postingType: 'fixed',
+    title: '주말 고정 딜러',
+    // region 은 isRegionSlug 등록 슬러그여야 .parse() 통과 — 'seoul-gangnam'(미등록) 대신 유효 슬러그 사용.
+    location: { name: '강남 홀덤펍', address: '서울 강남구', region: '서울 강남구' },
+    contactPhone: '010-1234-5678',
+    description: '',
+    scheduleGroups: [],
+    fixedSchedule: {
+      daysPerWeek: 5,
+      startTime: '19:00',
+      isStartTimeNegotiable: false,
+      roles: [{ role: 'dealer', count: 3 }],
+    },
+    salary: { type: 'daily', amount: 200000 },
+    useSameSalary: true,
+    roleSalaries: [],
+    allowances: {},
+    conditions: {},
+    usesPreQuestions: false,
+    preQuestions: [],
+  });
+
+  it('valuesToDraft가 fixed 스케줄을 조립한다(date:null synthetic)', () => {
+    const draft = valuesToDraft(fixedValues);
+    expect(draft.postingType).toBe('fixed');
+    expect(draft.schedule.kind).toBe('fixed');
+    if (draft.schedule.kind !== 'fixed') throw new Error('kind');
+    expect(draft.schedule.daysPerWeek).toBe(5);
+    expect(draft.schedule.startTime).toBe('19:00');
+    expect(draft.schedule.requirements[0]?.date).toBeNull();
+    expect(draft.schedule.requirements[0]?.timeSlots[0]?.roles).toHaveLength(1);
+  });
+
+  it('draftToValues가 fixed draft를 폼 값으로 복원한다(왕복 own-property)', () => {
+    const draft = valuesToDraft(fixedValues);
+    const back = draftToValues(draft);
+    expect(back.postingType).toBe('fixed');
+    expect(back.scheduleGroups).toEqual([]);
+    expect(back.fixedSchedule?.daysPerWeek).toBe(5);
+    expect(back.fixedSchedule?.startTime).toBe('19:00');
+    expect(back.fixedSchedule?.isStartTimeNegotiable).toBe(false);
+    expect(back.fixedSchedule?.roles).toEqual([{ role: 'dealer', count: 3 }]);
+  });
+
+  it('협의 고정(startTime 없음)도 왕복 보존한다', () => {
+    const negotiable = orderSheetValuesSchema.parse({
+      ...fixedValues,
+      fixedSchedule: {
+        daysPerWeek: 0,
+        isStartTimeNegotiable: true,
+        roles: [{ role: 'dealer', count: 2 }],
+      },
+    });
+    const back = draftToValues(valuesToDraft(negotiable));
+    expect(back.fixedSchedule?.isStartTimeNegotiable).toBe(true);
+    expect(back.fixedSchedule?.startTime).toBeUndefined();
+    expect(back.fixedSchedule?.daysPerWeek).toBe(0);
+  });
+
+  it('valuesToCreateInput(fixed)이 레거시 draftToCreateJobPostingInput과 등가 스케줄을 낸다', () => {
+    const input = valuesToCreateInput(fixedValues);
+    expect(input.postingType).toBe('fixed');
+    expect(input.schedule.kind).toBe('fixed');
+    if (input.schedule.kind !== 'fixed') throw new Error('kind');
+    expect(input.schedule.daysPerWeek).toBe(5);
+    expect(input.schedule.requirements).toHaveLength(1);
+    expect(input.schedule.requirements[0]?.date).toBeNull();
   });
 });

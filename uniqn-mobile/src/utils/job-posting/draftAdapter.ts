@@ -293,7 +293,7 @@ function buildDatedDraft(formData: JobPostingFormData): JobPostingDraftDatedSche
   };
 }
 
-function buildFixedSyntheticRequirement(
+export function buildFixedSyntheticRequirement(
   roles: PostingSlotRoleRequirement[],
   startTime?: string
 ): PostingDateRequirement {
