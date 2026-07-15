@@ -69,3 +69,9 @@
 - 신규 decisions 3: [[secdef-hardening]](anon EXECUTE REVOKE·search_path extensions·plpgsql NULL fail-open — memory 3함정+PR#195), [[supabase-write-pitfalls]](카운터 트리거·realtime publication·RPC 예외 매핑·RLS multi-cause·시드 zod/auth.users·storage 정책·존재하지 않는 테이블 — memory 10함정), [[nativewind-rn-pitfalls]](동적 className dark: 유실·flex-1 붕괴·Link asChild 터치·중첩 accessibilityRole hydration — memory 4함정+PR#136).
 - 갱신: [[rls-model]] 관련 섹션에 신규 2페이지 상호링크(재귀/poison 함정은 이미 rls-model에 존재 → MEMORY 라인은 [[rls-model]] 포인터로 압축). index 3항목 추가.
 - 원천: memory/MEMORY.md 인덱스 + 각 pitfall 토픽파일(informational, staleness 비추적 → `/lint` UNVERIFIABLE 예상, 향후 마이그 파일 경로 보강 대상). raw memory/ 무수정. e2e·시드 함정 5종은 별도로 `memory/MEMORY-archive.md`로 냉이관(wiki 미졸업, 니치).
+
+## [2026-07-15] lint | all
+- 진단만(자동수정 X). stale 21·UNVERIFIABLE 9·미흡수 docs 72·모순 0·데이터갭 0·증거공백 0·dangling 링크 0.
+- **신규 3페이지 후속 확정**(이전 ingest 예상대로): `secdef-hardening`·`supabase-write-pitfalls`·`nativewind-rn-pitfalls` 전부 UNVERIFIABLE(file 소스 0). 고아/저연결: `nativewind-rn-pitfalls` 콘텐츠 백링크 **0**, `supabase-write-pitfalls` **1**(rls-model만) — 인바운드 보강 필요. `secdef-hardening`은 2(rls-model+supabase-write).
+- stale top: `data-flow`(소스 4건 변경)·`order-sheet-form-contract`/`job-posting-kiosk-order-sheet`(orderSheet.schema·mappers 2026-07-15 변경)·`enum-divergence`(jobPosting.schema)·`knip-signal-hygiene`(package.json)·CLAUDE.md 파생(layers·roles·overview·data-flow). 자동수정 X — /ingest 승인 대기.
+- 조치 후보=① 신규 3페이지에 repo 파일경로 sources 보강(UNVERIFIABLE 해소) ② 신규 2페이지 인바운드 백링크 추가 ③ 활성 stale(order-sheet 계열) /ingest 재반영.

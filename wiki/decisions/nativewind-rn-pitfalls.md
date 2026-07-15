@@ -1,8 +1,10 @@
 ---
 area: decisions
-updated: 2026-07-15
+updated: 2026-07-16
 status: current
 sources:
+  - uniqn-mobile/global.css
+  - uniqn-mobile/tailwind.config.js
   - memory/pitfall_nativewind_dynamic_className_dark.md
   - memory/pitfall_rn_flex1_minh_collapse.md
   - memory/pitfall_link_aschild_bare_pressable_native.md
