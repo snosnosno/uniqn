@@ -1,6 +1,6 @@
 ---
 area: decisions
-updated: 2026-07-08
+updated: 2026-07-16
 status: current
 sources:
   - uniqn-mobile/package.json
@@ -38,7 +38,7 @@ tags: [decisions, knip, dead-code, ratchet, tsc-oracle, pitfall]
 
 ## 래칫 게이트 (A1)
 
-`uniqn-mobile/package.json`: `"knip:gate": "knip --max-issues=<N>"`. N은 **knip 자체 출력 총계**(exports+types+duplicates, hints 미포함). 배치마다 실측 총계로 하향하는 **단조감소** 게이트 → 미래의 미사용 증가를 CI가 차단. **phase 경계·병합 시 재baseline**(캐스케이드로 비단조 이동 시 "새 미사용" vs "캐스케이드" 구분 판독).
+`uniqn-mobile/package.json`: `"knip:gate": "knip --max-issues=<N>"`(현재 master **N=2344**, 2026-07-16 확인). N은 **knip 자체 출력 총계**(exports+types+duplicates, hints 미포함). 배치마다 실측 총계로 하향하는 **단조감소** 게이트 → 미래의 미사용 증가를 CI가 차단. **phase 경계·병합 시 재baseline**(캐스케이드로 비단조 이동 시 "새 미사용" vs "캐스케이드" 구분 판독).
 
 ## 🔑 병합 시 stale-base 안전망 (PR#231 실사례)
 
