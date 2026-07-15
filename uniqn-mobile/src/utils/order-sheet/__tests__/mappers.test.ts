@@ -842,4 +842,14 @@ describe('고정(fixed) 매퍼 왕복 (S2)', () => {
     expect(input.schedule.requirements).toHaveLength(1);
     expect(input.schedule.requirements[0]?.date).toBeNull();
   });
+
+  it('primaryScheduleInfo(fixed)는 throw 없이 totalDates 0을 반환한다(완료 요약 fixed-safe, S2 Task7)', () => {
+    // fixed는 scheduleGroups가 항상 빈 배열 — primaryScheduleInfo가 날짜 축 없는 값을 받아도
+    // 크래시 없이 안전 폴백해야 한다(create.tsx 완료 요약이 dated 분기로 잘못 빠지지 않는 근거).
+    expect(() => primaryScheduleInfo(fixedValues)).not.toThrow();
+    const info = primaryScheduleInfo(fixedValues);
+    expect(info).toEqual({ totalDates: 0 });
+    expect(info.primaryDate).toBeUndefined();
+    expect(info.startTime).toBeUndefined();
+  });
 });

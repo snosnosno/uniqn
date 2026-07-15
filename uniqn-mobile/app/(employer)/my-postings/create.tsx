@@ -232,16 +232,33 @@ export default function CreateJobPostingScreen() {
         } else {
           // 완료 화면 전달 — draft 는 파라미터로 넘기기엔 커 모듈 캐시로 1회 전달(공유 X, 프리셋 저장용).
           setLastSubmittedDraft(valuesToDraft(values));
-          // 다중 그룹 요약 규칙(리뷰 Eng-M2): 최소 날짜 + 그 그룹 첫 슬롯 + "외 N일" 접미
-          const { primaryDate, startTime, totalDates } = primaryScheduleInfo(values);
-          const summary = [
-            primaryDate
-              ? `${formatShortDate(primaryDate)}${totalDates > 1 ? ` 외 ${totalDates - 1}일` : ''}`
-              : null,
-            startTime ? `출근 ${startTime}` : null,
-          ]
-            .filter(Boolean)
-            .join(' · ');
+          // 완료 요약 — fixed는 날짜 축이 없어(scheduleGroups:[]) 근무조건(주 N일·출근시간)으로 조립.
+          // dated는 기존 다중 그룹 규칙(리뷰 Eng-M2): 최소 날짜 + 그 그룹 첫 슬롯 + "외 N일" 접미.
+          const summary =
+            values.postingType === 'fixed' && values.fixedSchedule
+              ? [
+                  values.fixedSchedule.daysPerWeek === 0
+                    ? '주 협의'
+                    : `주 ${values.fixedSchedule.daysPerWeek}일`,
+                  values.fixedSchedule.isStartTimeNegotiable
+                    ? '출근 협의'
+                    : values.fixedSchedule.startTime
+                      ? `출근 ${values.fixedSchedule.startTime}`
+                      : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')
+              : (() => {
+                  const { primaryDate, startTime, totalDates } = primaryScheduleInfo(values);
+                  return [
+                    primaryDate
+                      ? `${formatShortDate(primaryDate)}${totalDates > 1 ? ` 외 ${totalDates - 1}일` : ''}`
+                      : null,
+                    startTime ? `출근 ${startTime}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ');
+                })();
           router.replace({
             pathname: '/(employer)/my-postings/create-success',
             params: {
