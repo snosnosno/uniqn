@@ -275,7 +275,9 @@ export function draftToValues(draft: JobPostingDraft): OrderSheetFormValues {
           }))
       : [];
   return {
-    postingType: draft.postingType === 'urgent' ? 'urgent' : 'regular',
+    // fixed는 line 205에서 이미 throw(kind!=='dated') — 여기 도달하는 postingType은 regular|urgent|tournament.
+    // fixed 분기는 도달 불가지만 TS 망라성을 위해 남긴다(S2에서 fixed 지원 시 제거).
+    postingType: draft.postingType === 'fixed' ? 'regular' : draft.postingType,
     title: draft.title,
     location: draft.location,
     contactPhone: draft.contactPhone,

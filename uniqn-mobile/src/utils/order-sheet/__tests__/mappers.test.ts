@@ -12,6 +12,7 @@ import { buildCreateJobPostingInput } from '@/utils/job-posting/submission';
 import { INITIAL_JOB_POSTING_DRAFT } from '@/types/jobPostingDraft';
 import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types/jobPostingForm';
 import type { OrderSheetFormValues, OrderSheetValues } from '@/schemas/orderSheet.schema';
+import { orderSheetValuesSchema } from '@/schemas/orderSheet.schema';
 import type { JobPostingFormData } from '@/types/jobPostingForm';
 import type { JobPostingTemplate } from '@/types/jobTemplate';
 import type { CreateJobPostingInput } from '@/types/jobPosting';
@@ -724,5 +725,41 @@ describe('primaryScheduleInfo (완료 화면 요약 — 리뷰 Eng-M2)', () => {
       startTime: undefined,
       totalDates: 0,
     });
+  });
+});
+
+describe('대회(tournament) 왕복 보존 (S1)', () => {
+  const tournamentValues: OrderSheetValues = {
+    ...baseValues,
+    postingType: 'tournament',
+    title: 'WSOP 서울 딜러 모집',
+  };
+
+  it('valuesToDraft가 tournament를 보존한다', () => {
+    expect(valuesToDraft(tournamentValues).postingType).toBe('tournament');
+  });
+
+  it('draftToValues가 tournament를 regular로 뭉개지 않는다 (silent-coercion 회귀)', () => {
+    const draft = valuesToDraft(tournamentValues);
+    expect(draftToValues(draft).postingType).toBe('tournament');
+  });
+
+  it('valuesToCreateInput이 tournament를 보존한다 (Repository 승인 config 주입 조건)', () => {
+    expect(valuesToCreateInput(tournamentValues).postingType).toBe('tournament');
+  });
+
+  it('스키마가 tournament + 30일을 허용하고 31일을 거부한다', () => {
+    const dates = (n: number) =>
+      Array.from({ length: n }, (_, i) => `2026-08-${String(i + 1).padStart(2, '0')}`);
+    // baseValues.location.region('seoul-gangnam')은 isRegionSlug 미등록 슬러그라 safeParse 지역
+    // 게이트에 걸린다(다른 테스트는 safeParse를 안 타 무영향). 이 테스트는 날짜 상한만 검증하므로
+    // 유효 슬러그로 교체해 지역 게이트를 통과시킨다 — 날짜 개수만 유일 변수로 남긴다.
+    const withDates = (n: number) => ({
+      ...tournamentValues,
+      location: { ...tournamentValues.location, region: '서울 강남구' },
+      scheduleGroups: [{ dates: dates(n), timeSlots: baseSlots, grouped: false }],
+    });
+    expect(orderSheetValuesSchema.safeParse(withDates(30)).success).toBe(true);
+    expect(orderSheetValuesSchema.safeParse(withDates(31)).success).toBe(false);
   });
 });

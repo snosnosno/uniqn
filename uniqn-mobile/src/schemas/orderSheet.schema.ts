@@ -101,7 +101,7 @@ export const orderSheetAllowancesSchema = z.object({
 
 export const orderSheetValuesSchema = z
   .object({
-    postingType: z.enum(['regular', 'urgent']),
+    postingType: z.enum(['regular', 'urgent', 'tournament']),
     title: safeText(25).min(1, '제목을 입력해주세요'),
     // ⚠️ 아래 refine의 TS 추론 프레디킷이 z.output에서 null을 제거한다(의도된 동작 — 매퍼가 가드 없이 소비)
     location: orderSheetLocationSchema.nullable().refine((v) => v !== null, '장소를 선택해주세요'),
