@@ -9,7 +9,7 @@ export function TypeSegment({
   value,
   onChange,
 }: {
-  value: 'regular' | 'urgent';
+  value: 'regular' | 'urgent' | 'tournament';
   onChange: (t: PostingType) => void;
 }) {
   return (

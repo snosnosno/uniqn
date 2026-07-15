@@ -397,10 +397,11 @@ export function OrderSheetScreen({
 
   const handleTypeChange = useCallback(
     (t: PostingType) => {
-      if (t === 'fixed' || t === 'tournament') {
-        onSwitchToLegacyForm(t); // dirty 확인 다이얼로그는 create.tsx(Step 6)에서 처리
+      if (t === 'fixed') {
+        onSwitchToLegacyForm(t); // 고정은 아직 레거시(S2에서 주문서 이관). dirty 확인은 create.tsx.
         return;
       }
+      // 여기서 t는 regular|urgent|tournament (TS 내로잉)
       form.setValue('postingType', t, { shouldDirty: true });
     },
     [form, onSwitchToLegacyForm]
