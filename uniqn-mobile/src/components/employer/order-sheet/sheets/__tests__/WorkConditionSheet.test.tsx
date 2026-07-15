@@ -67,4 +67,17 @@ describe('WorkConditionSheet (S2)', () => {
     fireEvent.press(getByText('확인'));
     expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ daysPerWeek: 3 }));
   });
+
+  it('협의 토글 후 확인 시 startTime을 payload에서 제외한다', () => {
+    const onConfirm = jest.fn();
+    const { getByTestId, getByText } = render(
+      <WorkConditionSheet visible value={base} onConfirm={onConfirm} onClose={jest.fn()} />
+    );
+    fireEvent.press(getByTestId('work-condition-negotiable'));
+    fireEvent.press(getByText('확인'));
+    expect(onConfirm.mock.calls[0][0]).not.toHaveProperty('startTime');
+    expect(onConfirm.mock.calls[0][0]).toEqual(
+      expect.objectContaining({ isStartTimeNegotiable: true, daysPerWeek: 5 })
+    );
+  });
 });
