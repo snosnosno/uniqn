@@ -25,11 +25,14 @@ export default function CreateSuccessScreen() {
     title?: string | string[];
     summary?: string | string[];
     suggestPreset?: string | string[];
+    pending?: string | string[];
   }>();
   const postingId = first(params.id);
   const title = first(params.title);
   const summary = first(params.summary);
   const suggestPreset = first(params.suggestPreset) === '1';
+  // 대회는 관리자 승인 후 게시 — 완료 화면 안내 문구를 승인 대기용으로 분기(서버 상태 아님, 표시 전용).
+  const pending = first(params.pending) === '1';
   const hasPostingId = !!postingId;
 
   const { shareJobById, isSharing } = useShare();
@@ -73,7 +76,7 @@ export default function CreateSuccessScreen() {
           </View>
           <Text className="text-xl font-sans-bold text-content-primary">공고가 등록됐어요</Text>
           <Text className="text-sm text-content-secondary font-sans mt-1.5 text-center">
-            지원자가 생기면 바로 알려드릴게요
+            {pending ? '관리자 승인 후 게시돼요 (1~2 영업일)' : '지원자가 생기면 바로 알려드릴게요'}
           </Text>
         </View>
 

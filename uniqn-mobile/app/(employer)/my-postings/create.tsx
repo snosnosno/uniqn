@@ -221,7 +221,13 @@ export default function CreateJobPostingScreen() {
         // 그리드 진입(venueId)이면 스택 하부 그리드로 복귀(선택 운영처·날짜 보존) — 완료 화면 우회.
         // 셀 +N 뱃지 갱신은 useCreateJobPosting 의 weeklyGrid 무효화가 담당.
         if (venueId && router.canGoBack()) {
-          addToast({ type: 'success', message: '공고가 등록되었습니다.' });
+          addToast({
+            type: 'success',
+            message:
+              values.postingType === 'tournament'
+                ? '공고가 등록됐어요. 관리자 승인 후 게시돼요.'
+                : '공고가 등록되었습니다.',
+          });
           router.back();
         } else {
           // 완료 화면 전달 — draft 는 파라미터로 넘기기엔 커 모듈 캐시로 1회 전달(공유 X, 프리셋 저장용).
@@ -243,6 +249,8 @@ export default function CreateJobPostingScreen() {
               title: values.title,
               summary,
               suggestPreset: templateManager.templates.length === 0 ? '1' : '0',
+              // 대회는 승인 후 게시 — 완료 화면 안내 문구 분기용(표시 전용, 서버 무변경)
+              pending: values.postingType === 'tournament' ? '1' : '0',
             },
           });
         }
