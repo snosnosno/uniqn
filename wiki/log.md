@@ -75,3 +75,9 @@
 - **신규 3페이지 후속 확정**(이전 ingest 예상대로): `secdef-hardening`·`supabase-write-pitfalls`·`nativewind-rn-pitfalls` 전부 UNVERIFIABLE(file 소스 0). 고아/저연결: `nativewind-rn-pitfalls` 콘텐츠 백링크 **0**, `supabase-write-pitfalls` **1**(rls-model만) — 인바운드 보강 필요. `secdef-hardening`은 2(rls-model+supabase-write).
 - stale top: `data-flow`(소스 4건 변경)·`order-sheet-form-contract`/`job-posting-kiosk-order-sheet`(orderSheet.schema·mappers 2026-07-15 변경)·`enum-divergence`(jobPosting.schema)·`knip-signal-hygiene`(package.json)·CLAUDE.md 파생(layers·roles·overview·data-flow). 자동수정 X — /ingest 승인 대기.
 - 조치 후보=① 신규 3페이지에 repo 파일경로 sources 보강(UNVERIFIABLE 해소) ② 신규 2페이지 인바운드 백링크 추가 ③ 활성 stale(order-sheet 계열) /ingest 재반영.
+
+## [2026-07-16] ingest | lint 조치 3 — 활성 stale 재sync (order-sheet 폼 계약 확장 + 3페이지 재확인)
+- **order-sheet-form-contract**: §6 신설(`scheduleGroups` 그룹화 일정·`roleSalaries` 커버리지 refine·by_role `defaultSalary`=활성 최저값 CEO-1). sources+`roleSalaries.ts`·PR#252/#253. #253/#252/#257이 폼 계약을 확장 → 실제 내용 갭 해소.
+- **enum-divergence**: 2026-07 필터 개편(#250/#251/#254=지역 택소노미·salary_*_max·역할필터)이 additive임을 재확인, `POSTING_STATUS_VALUES` SSOT 라인 25/115/504로 갱신(enum 발산 규칙 불변).
+- **knip-signal-hygiene**: `knip:gate --max-issues=2344` 현행 확인. **job-posting-kiosk-order-sheet**(source): 후속 #252/#253/#257 범위 밖 포인터 추가.
+- updated 전부 2026-07-16. 검증: check-staleness → 4페이지 STALE 제거 확인. 미처리=CLAUDE.md 파생 stale(data-flow·layers·roles·overview) 별도 패스.

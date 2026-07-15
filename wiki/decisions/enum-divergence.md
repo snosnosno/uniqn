@@ -1,6 +1,6 @@
 ---
 area: decisions
-updated: 2026-06-18
+updated: 2026-07-16
 status: current
 sources:
   - memory/pitfall_enum_divergence_read_disappearance.md
@@ -50,7 +50,7 @@ normalizeLegacyInput(raw)   ← safeParse 이전에 흡수
 
 주장 (memory 기반): `payroll_status`(앱 'processing' ↔ DB 'failed'). 현재 dead writer 0건이나 값 쓰면 즉시 발동.
 
-검증됨 (`uniqn-mobile/src/schemas/jobPosting.schema.ts:24, 114, 469`): `posting_status`는 현재 SSOT 패턴 적용됨 — `Constants.public.Enums.posting_status` 파생(`POSTING_STATUS_VALUES`, :24), `z.enum(POSTING_STATUS_VALUES)` 사용(jobFilterSchema :114, jobPostingDocumentSchema :469). 과거 인라인 하드코딩은 해소된 상태.
+검증됨 (`uniqn-mobile/src/schemas/jobPosting.schema.ts:25, 115, 504`, 2026-07-16 재확인): `posting_status`는 SSOT 패턴 유지 — `Constants.public.Enums.posting_status` 파생(`POSTING_STATUS_VALUES`, :25), `z.enum(POSTING_STATUS_VALUES)` 사용(jobFilterSchema :115, jobPostingDocumentSchema :504). 2026-07 필터 개편(#250/#251/#254: 지역 택소노미·`salary_*_max`·역할필터)은 **전부 additive** — enum 발산 규칙 불변(라인만 이동).
 
 ## 관련
 

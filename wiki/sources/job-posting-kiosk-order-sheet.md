@@ -1,6 +1,6 @@
 ---
 area: sources
-updated: 2026-07-14
+updated: 2026-07-16
 status: current
 sources:
   - uniqn-mobile/src/schemas/orderSheet.schema.ts
@@ -35,5 +35,8 @@ tags: [job-posting, order-sheet, ux, kiosk, conditions]
 
 ## 폴리시 소건 (PR#247)
 프리셋 ⚡이모지→Lucide `ZapIcon`(이모지 상태표시 안티패턴 해소) · `CheckIcon` stroke 2.0 · ConditionsSheet confirm 시 trim · TimeSlotsSheet roles 깊은복사(참조 변형 차단) · TemplateModal onSave try/catch(이중 토스트 없음 — 피드백은 `useTemplateManager` saveMutation.onError 소유).
+
+## 후속 (이 소스 범위 밖 — 2026-07-16 주석)
+본 소스는 #246/#247(키오스크 개편·conditions)만 문서화. 이후 주문서 폼 계약이 확장됨 — #252(역할별 급여 기본화)·#253(일정 그룹 복원 `scheduleGroups`)·#257(지역 필수화). scheduleGroups·roleSalaries 커버리지 계약은 [[order-sheet-form-contract]] §6.
 
 관련: [[order-sheet-form-contract]] · [[whitelist-silent-drop]] · [[ios-userflow-fixes]] · [[layers]] · [[target-market]]

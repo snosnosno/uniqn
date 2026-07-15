@@ -1,14 +1,17 @@
 ---
 area: decisions
-updated: 2026-07-14
+updated: 2026-07-16
 status: current
 sources:
   - uniqn-mobile/src/schemas/orderSheet.schema.ts
   - uniqn-mobile/src/utils/order-sheet/mappers.ts
+  - uniqn-mobile/src/utils/order-sheet/roleSalaries.ts
   - uniqn-mobile/src/components/employer/order-sheet/sheets/TimeSlotsSheet.tsx
   - uniqn-mobile/src/components/employer/order-sheet/sheets/ConditionsSheet.tsx
   - PR#246
   - PR#247
+  - PR#252
+  - PR#253
 tags: [order-sheet, form, zod, react-hook-form, mapper, modal]
 ---
 
@@ -32,5 +35,10 @@ tags: [order-sheet, form, zod, react-hook-form, mapper, modal]
 - `guaranteedHours`에 `PROVIDED_FLAG`(-1) 넣으면 문서게이트 `min(0)` reject → **등록 전건 실패**. 보장시간은 시간값(0 이상), 나머지 복지 3종만 -1(제공)/양수.
 - `INITIAL_JOB_POSTING_DRAFT.compensation.mode` 초기값 — by_role 팩토리로 우회.
 - 신규 필드(conditions 등)는 **9개 왕복 지점** 전수 — [[whitelist-silent-drop]].
+
+## 6. 일정 그룹 + 역할별 급여 계약 (#253/#252 후속)
+- **일정 = `scheduleGroups`**: 평평한 slot 배열이 아니라 `scheduleGroups: [{ dates: 'YYYY-MM-DD'[]≥1, timeSlots, grouped }]`(≥1). 슬롯은 `scheduleGroups.flatMap(g=>g.timeSlots)`로 파생(3지 세그먼트 UI).
+- **`roleSalaries` 커버리지 refine**: `useSameSalary=false`(기본 by_role, 설계 §S2.1)면 모든 (역할×그룹) 키를 `roleSalaries`가 **전수 커버**해야 통과. 키 = `keyOf(role, customRole)`(other는 `other:${customRole}`로 분리). 미커버 시 zod reject(`path:['roleSalaries']`).
+- **by_role `defaultSalary` = 활성 `roleSalaries` 최저값**(CEO-1): 비활성(고아) roleSalaries 값이 defaultSalary로 새면 안 됨 — 유령 세그먼트 캐리어 기록 금지([[whitelist-silent-drop]] 계열). 매퍼 `roleSalaries.ts`/`syncRoleSalaries`는 **의존성 0 모듈**(mappers와 순환 차단), `draftToValues`는 by_role일 때만 roleSalaries 복원.
 
 관련: [[job-posting-kiosk-order-sheet]] · [[whitelist-silent-drop]] · [[ios-userflow-fixes]] · [[capacity-full]] · [[layers]] · [[nativewind-rn-pitfalls]]
