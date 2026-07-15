@@ -1,5 +1,9 @@
 import { removeUndefined } from '@/utils/removeUndefined';
-import { draftToFormData, formDataToDraft } from '@/utils/job-posting/draftAdapter';
+import {
+  buildFixedSyntheticRequirement,
+  draftToFormData,
+  formDataToDraft,
+} from '@/utils/job-posting/draftAdapter';
 import type {
   JobPostingDraft,
   JobPostingDraftDatedSchedule,
@@ -204,18 +208,11 @@ export function templateToDraft(template: JobPostingTemplate): JobPostingDraft {
               ...(legacyFixed.isStartTimeNegotiable !== undefined
                 ? { isStartTimeNegotiable: legacyFixed.isStartTimeNegotiable }
                 : {}),
-              // TODO(SP1 후속): buildFixedSyntheticRequirement 공유 헬퍼로 통합
               requirements: [
-                {
-                  date: null,
-                  timeSlots: [
-                    {
-                      ...(legacyFixed.startTime ? { startTime: legacyFixed.startTime } : {}),
-                      isTimeToBeAnnounced: false,
-                      roles: sourceRoles.map((role) => ({ ...role })),
-                    },
-                  ],
-                },
+                buildFixedSyntheticRequirement(
+                  sourceRoles.map((role) => ({ ...role })),
+                  legacyFixed.startTime
+                ),
               ],
             };
           })()
