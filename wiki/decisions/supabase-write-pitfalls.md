@@ -1,8 +1,9 @@
 ---
 area: decisions
-updated: 2026-07-15
+updated: 2026-07-16
 status: current
 sources:
+  - uniqn-mobile/src/utils/supabase.ts
   - memory/pitfall_denormalized_counter_drift.md
   - memory/pitfall_realtime_publication_required.md
   - memory/pitfall_rpc_raise_exception_unmapped_unknown.md

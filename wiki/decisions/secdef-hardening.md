@@ -1,8 +1,9 @@
 ---
 area: decisions
-updated: 2026-07-15
+updated: 2026-07-16
 status: current
 sources:
+  - uniqn-mobile/supabase/tests/ops_player_view_security.test.sql
   - memory/pitfall_supabase_new_function_anon_default_grant.md
   - memory/pitfall_secdef_search_path_extensions.md
   - memory/pitfall_plpgsql_null_through_regex_fail_open.md
@@ -39,4 +40,5 @@ plpgsql에서 NULL은 정규식·비교를 **거짓이 아니라 NULL로** 통�
 - [[rls-model]] — SECDEF로 wrap해야 하는 RLS 재귀·anon poison 3함정(본 페이지의 전제)
 - [[test-db-grants]] — 테이블 GRANT 레이어와 pgTAP 명시 GRANT(함수 GRANT와 짝)
 - [[wallet-pgtap-caller-binding]] — 변이 RPC `auth.uid()` 바인딩 하드닝이 pgTAP를 깬 회귀
+- [[supabase-write-pitfalls]] — 쓰기 경로 함정(users cross-lookup SECDEF RPC 등 자매 규칙)
 - [[ops-engine]] — anon-executable SECDEF 2 불변(화이트리스트 예외의 근거)

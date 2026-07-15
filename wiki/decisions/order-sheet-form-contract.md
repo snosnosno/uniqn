@@ -33,4 +33,4 @@ tags: [order-sheet, form, zod, react-hook-form, mapper, modal]
 - `INITIAL_JOB_POSTING_DRAFT.compensation.mode` 초기값 — by_role 팩토리로 우회.
 - 신규 필드(conditions 등)는 **9개 왕복 지점** 전수 — [[whitelist-silent-drop]].
 
-관련: [[job-posting-kiosk-order-sheet]] · [[whitelist-silent-drop]] · [[ios-userflow-fixes]] · [[capacity-full]] · [[layers]]
+관련: [[job-posting-kiosk-order-sheet]] · [[whitelist-silent-drop]] · [[ios-userflow-fixes]] · [[capacity-full]] · [[layers]] · [[nativewind-rn-pitfalls]]
