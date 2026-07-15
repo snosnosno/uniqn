@@ -2,7 +2,7 @@
  * OrderSheetScreen — 대회 유형 전환 배선 테스트 (S1 Task 2)
  *
  * 대회 세그먼트는 레거시로 이탈하지 않고 주문서 안에서 postingType='tournament'로 전환된다.
- * 고정 세그먼트만 아직 레거시 폼으로 위임(S2에서 이관).
+ * S2에서 고정 세그먼트도 내부 처리로 이관됨 — 고정 전환 배선은 OrderSheetScreen.fixed.test.tsx가 커버.
  * SheetModal 은 children+footer 렌더로 모킹(reanimated 배제) — presets 테스트와 동일 스캐폴딩.
  */
 import React from 'react';
@@ -44,14 +44,7 @@ describe('OrderSheetScreen — 대회 유형 전환 (S1)', () => {
     expect(getByTestId('order-sheet-type-tournament').props.accessibilityState.selected).toBe(true);
   });
 
-  it('고정 세그먼트는 아직 레거시로 위임한다', () => {
-    const onSwitchToLegacyForm = jest.fn();
-    const { getByTestId } = render(
-      <OrderSheetScreen {...baseProps} onSwitchToLegacyForm={onSwitchToLegacyForm} />
-    );
-    fireEvent.press(getByTestId('order-sheet-type-fixed'));
-    expect(onSwitchToLegacyForm).toHaveBeenCalledWith('fixed');
-  });
+  // 고정 세그먼트 전환(레거시 미위임·근무조건 행 렌더)은 S2에서 OrderSheetScreen.fixed.test.tsx로 이관됨.
 });
 
 // 전 행이 채워진 완성 대회 폼 — firstUnsetRow가 null을 반환해 submitLabel이 '승인 요청하기'로 해석되도록 구성.

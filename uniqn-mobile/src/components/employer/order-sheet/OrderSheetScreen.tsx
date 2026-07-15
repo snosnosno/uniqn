@@ -11,11 +11,11 @@ import {
   type OrderSheetValues,
 } from '@/schemas/orderSheet.schema';
 import {
-  ORDER_GROUPS,
   errorMessageForRow,
   errorRowTargets,
   firstUnsetRow,
   getRowState,
+  orderGroupsFor,
   roleName,
   summarizeGroupDates,
   summarizeTotalRoles,
@@ -31,6 +31,7 @@ import { ContactSheet } from './sheets/ContactSheet';
 import { DescriptionSheet } from './sheets/DescriptionSheet';
 import { TimeSlotsSheet } from './sheets/TimeSlotsSheet';
 import { RolesSheet } from './sheets/RolesSheet';
+import { WorkConditionSheet } from './sheets/WorkConditionSheet';
 import { SalarySheet, type UniqueRole } from './sheets/SalarySheet';
 import { WelfareSheet } from './sheets/WelfareSheet';
 import { TaxSheet } from './sheets/TaxSheet';
@@ -40,7 +41,11 @@ import { PresetCarousel, type OrderSheetPreset } from './PresetCarousel';
 import { ScheduleDatesSheet, type ScheduleSplitMode } from './sheets/ScheduleDatesSheet';
 import { InformationCircleIcon, XMarkIcon } from '@/components/icons';
 import { groupConsecutiveDates, hasGroupableDates } from '@/utils/date';
-import { defaultAmountForRole, syncRoleSalaries } from '@/utils/order-sheet/roleSalaries';
+import {
+  defaultAmountForRole,
+  syncRoleSalaries,
+  syncRoleSalariesForRoles,
+} from '@/utils/order-sheet/roleSalaries';
 import type { PostingType } from '@/types/jobPosting';
 
 type ScheduleGroups = NonNullable<OrderSheetFormValues['scheduleGroups']>;
@@ -62,7 +67,10 @@ type SlotRolesTarget = {
   fromTimeSheet: boolean;
 };
 type ActiveSheet =
+  // 'workConditions'는 Exclude<OrderRowKey,...>에 이미 포함(고정 근무조건 시트).
+  // 'fixedRoles'는 OrderRowKey가 아닌 고정 전용 시트 키 — 그룹 슬롯 roles와 구분하려 별도 추가(S2).
   | Exclude<OrderRowKey, 'dates' | 'time' | 'roles'>
+  | 'fixedRoles'
   | DatesTarget
   | TimeTarget
   | SlotRolesTarget
@@ -76,6 +84,10 @@ export interface OrderSheetScreenProps {
   initialValues: OrderSheetFormValues;
   onSubmit: (values: OrderSheetValues) => Promise<void>;
   isSubmitting: boolean;
+  /**
+   * 레거시 폼 위임 콜백 — 대회(S1)·고정(S2) 모두 주문서 내부 처리로 이관돼 더 이상 호출되지 않는다.
+   * create.tsx가 계속 전달하므로 계약은 유지하고(미분리 시 호출부 타입 에러), 소비는 하지 않는다. S4에서 제거 예정.
+   */
   onSwitchToLegacyForm: (type: 'fixed' | 'tournament') => void;
   /** RHF dirty 상태를 상위(create.tsx)로 끌어올려 useUnsavedChangesGuard에 연결 */
   onDirtyChange?: (dirty: boolean) => void;
@@ -91,7 +103,7 @@ export function OrderSheetScreen({
   initialValues,
   onSubmit,
   isSubmitting,
-  onSwitchToLegacyForm,
+  // onSwitchToLegacyForm는 의도적으로 구조분해하지 않는다 — S2에서 고정도 내부 처리로 이관돼 미호출(위 계약 주석).
   onDirtyChange,
   myPhone = '',
   presets,
@@ -149,22 +161,23 @@ export function OrderSheetScreen({
   // 중복 제거, 라벨은 orderRowMeta.roleName 재사용. by_role 전수 커버 게이트(스키마 superRefine)와 대칭.
   const uniqueRoles = useMemo<UniqueRole[]>(() => {
     const seen = new Map<string, UniqueRole>();
-    for (const group of scheduleGroups) {
-      for (const slot of group.timeSlots ?? []) {
-        for (const r of slot.roles) {
-          const key = r.role === 'other' ? `other:${r.customRole ?? ''}` : r.role;
-          if (!seen.has(key)) {
-            seen.set(key, {
-              role: r.role,
-              ...(r.customRole !== undefined ? { customRole: r.customRole } : {}),
-              label: roleName(r.role, r.customRole),
-            });
-          }
-        }
+    // 고정(fixed)은 평탄 fixedSchedule.roles, dated는 전 그룹 timeSlots 역할 합집합(S2).
+    const src =
+      values.postingType === 'fixed'
+        ? (values.fixedSchedule?.roles ?? [])
+        : scheduleGroups.flatMap((g) => g.timeSlots ?? []).flatMap((s) => s.roles);
+    for (const r of src) {
+      const key = r.role === 'other' ? `other:${r.customRole ?? ''}` : r.role;
+      if (!seen.has(key)) {
+        seen.set(key, {
+          role: r.role,
+          ...(r.customRole !== undefined ? { customRole: r.customRole } : {}),
+          label: roleName(r.role, r.customRole),
+        });
       }
     }
     return [...seen.values()];
-  }, [scheduleGroups]);
+  }, [values.postingType, values.fixedSchedule, scheduleGroups]);
 
   // 역할 확정 시 급여 자동 프리필(설계 §S2.3) — confirm 핸들러(이벤트)에서만 호출, effect 금지(F3).
   // 후속 역할 추가(기존 엔트리가 있던 상태의 신규 주입)만 1회성 토스트로 알린다(2차 CEO-2 —
@@ -229,6 +242,11 @@ export function OrderSheetScreen({
         return;
       }
       if (key === 'roles') {
+        // 고정(fixed)은 그룹 슬롯이 아니라 단일 fixedSchedule.roles 편집 — 전용 시트로 분기(S2).
+        if (form.getValues().postingType === 'fixed') {
+          setActiveSheet('fixedRoles');
+          return;
+        }
         const count = groups[groupIndex]?.timeSlots?.length ?? 0;
         setActiveSheet(
           count === 1
@@ -237,6 +255,7 @@ export function OrderSheetScreen({
         );
         return;
       }
+      // 나머지(workConditions 포함)는 행 키 그대로 시트 오픈 — 'workConditions'는 ActiveSheet 유니온에 포함.
       setActiveSheet(key);
     },
     [form]
@@ -398,13 +417,32 @@ export function OrderSheetScreen({
   const handleTypeChange = useCallback(
     (t: PostingType) => {
       if (t === 'fixed') {
-        onSwitchToLegacyForm(t); // 고정은 아직 레거시(S2에서 주문서 이관). dirty 확인은 create.tsx.
+        form.setValue('postingType', 'fixed', { shouldDirty: true });
+        // 고정은 scheduleGroups가 반드시 비어야 한다 — 배열 원소 스키마가 잔여 빈 그룹을 검증하지 않도록.
+        form.setValue('scheduleGroups', [], { shouldDirty: true, shouldValidate: true });
+        if (form.getValues().fixedSchedule === undefined) {
+          // 레거시 전환 기본값과 정합(daysPerWeek 5). 역할은 사용자가 근무조건/역할 시트에서 추가.
+          // ⚠️ fixedSchedule을 undefined로 두면 formValuesToDraft(프리셋 저장)가 fixed→dated로 오분기해
+          //    재로드 시 postingType이 fixed→regular로 침묵 전환된다(Task 2 리뷰).
+          form.setValue(
+            'fixedSchedule',
+            { daysPerWeek: 5, isStartTimeNegotiable: false, roles: [] },
+            { shouldDirty: true, shouldValidate: true }
+          );
+        }
         return;
       }
-      // 여기서 t는 regular|urgent|tournament (TS 내로잉)
+      // dated(regular|urgent|tournament) 복귀 — fixedSchedule 정리, 빈 그룹 복원(배열 원소검증 회피)
       form.setValue('postingType', t, { shouldDirty: true });
+      form.setValue('fixedSchedule', undefined, { shouldDirty: true, shouldValidate: true });
+      if ((form.getValues().scheduleGroups ?? []).length === 0) {
+        form.setValue('scheduleGroups', [{ dates: [], timeSlots: [], grouped: false }], {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
+      }
     },
-    [form, onSwitchToLegacyForm]
+    [form]
   );
 
   const handleSubmitPress = form.handleSubmit(
@@ -472,7 +510,8 @@ export function OrderSheetScreen({
             </Text>
           </View>
         ) : null}
-        {ORDER_GROUPS.map((section) => {
+        {/* 고정(fixed)은 orderGroupsFor가 '근무조건'(workConditions·roles) 섹션을 반환 — '일정 · 모집' 특수 분기 미진입(S2). */}
+        {orderGroupsFor(values.postingType).map((section) => {
           if (section.title !== '일정 · 모집') {
             return (
               <OrderGroup key={section.title} title={section.title}>
@@ -631,6 +670,58 @@ export function OrderSheetScreen({
           onConfirm={(v) =>
             form.setValue('description', v, { shouldDirty: true, shouldValidate: true })
           }
+          onClose={() => setActiveSheet(null)}
+        />
+      )}
+      {/* 고정(fixed) 근무조건 시트 — 요일·출근시간(협의). fixedSchedule.roles는 병합으로 보존하고,
+          협의 전환 시 startTime은 승계하지 않고 next 값(부재면 드롭)으로 재구성한다(토글 시맨틱 정합, S2). */}
+      {activeSheet === 'workConditions' && values.fixedSchedule && (
+        <WorkConditionSheet
+          visible
+          value={{
+            daysPerWeek: values.fixedSchedule.daysPerWeek,
+            ...(values.fixedSchedule.startTime
+              ? { startTime: values.fixedSchedule.startTime }
+              : {}),
+            isStartTimeNegotiable: values.fixedSchedule.isStartTimeNegotiable ?? false,
+          }}
+          onConfirm={(next) => {
+            const fs = form.getValues().fixedSchedule!;
+            form.setValue(
+              'fixedSchedule',
+              {
+                daysPerWeek: next.daysPerWeek,
+                isStartTimeNegotiable: next.isStartTimeNegotiable,
+                roles: fs.roles,
+                ...(next.startTime ? { startTime: next.startTime } : {}),
+              },
+              { shouldDirty: true, shouldValidate: true }
+            );
+          }}
+          onClose={() => setActiveSheet(null)}
+        />
+      )}
+      {/* 고정(fixed) 역할 시트 — 평탄 fixedSchedule.roles 편집. 확정 시 by_role 급여 자동 프리필(dated 대칭, S2). */}
+      {activeSheet === 'fixedRoles' && values.fixedSchedule && (
+        <RolesSheet
+          visible
+          value={values.fixedSchedule.roles}
+          onConfirm={(next) => {
+            const fs = form.getValues().fixedSchedule!;
+            form.setValue(
+              'fixedSchedule',
+              { ...fs, roles: next },
+              { shouldDirty: true, shouldValidate: true }
+            );
+            const cur = form.getValues();
+            if (!(cur.useSameSalary ?? false)) {
+              const prev = cur.roleSalaries ?? [];
+              const synced = syncRoleSalariesForRoles(next, prev, cur.salary.type);
+              if (synced !== prev) {
+                form.setValue('roleSalaries', synced, { shouldDirty: true, shouldValidate: true });
+              }
+            }
+          }}
           onClose={() => setActiveSheet(null)}
         />
       )}
