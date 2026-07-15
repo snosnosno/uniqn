@@ -78,7 +78,7 @@ const dealerSlot = [{ startTime: '19:00', roles: [{ role: 'dealer' as const, cou
 const filledSingleGroup = (dates: string[], grouped = false): OrderSheetFormValues => ({
   ...initialOrderSheetValues(),
   title: '주말 딜러 구합니다',
-  location: { name: '강남 홀덤펍' },
+  location: { name: '강남 홀덤펍', region: '서울 강남구' },
   contactPhone: '010-1234-5678',
   scheduleGroups: [{ dates, timeSlots: dealerSlot, grouped }],
   roleSalaries: [{ role: 'dealer', salary: { type: 'hourly', amount: 20000 } }],
@@ -87,7 +87,7 @@ const filledSingleGroup = (dates: string[], grouped = false): OrderSheetFormValu
 const twoGroupValues = (): OrderSheetFormValues => ({
   ...initialOrderSheetValues(),
   title: '주말 딜러 구합니다',
-  location: { name: '강남 홀덤펍' },
+  location: { name: '강남 홀덤펍', region: '서울 강남구' },
   contactPhone: '010-1234-5678',
   scheduleGroups: [
     { dates: ['2026-07-14'], timeSlots: dealerSlot, grouped: false },

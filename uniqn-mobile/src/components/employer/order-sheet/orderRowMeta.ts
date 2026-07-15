@@ -185,6 +185,18 @@ export function errorMessageForRow(
     return firstMessage(salary, salary?.['amount'], rs, ...nested);
   }
 
+  if (key === 'place') {
+    // location 중첩(name XSS·region 필수) 에러도 행 배지로 — 루트(null refine) 우선
+    const loc = errors['location'] as Record<string, unknown> | undefined;
+    return firstMessage(
+      loc,
+      loc?.['region'],
+      loc?.['name'],
+      loc?.['address'],
+      loc?.['detailedAddress']
+    );
+  }
+
   const field = Object.entries(ERROR_FIELD_TO_ROW).find(([, k]) => k === key)?.[0];
   return field ? firstMessage(errors[field]) : undefined;
 }
@@ -289,13 +301,16 @@ export function getRowState(
         unset: values.title.length === 0,
         optional: false,
       };
-    case 'place':
+    case 'place': {
+      const loc = values.location;
       return {
         label: '장소',
-        value: values.location?.name ?? '',
-        unset: values.location === null,
+        value: loc?.name ?? '',
+        // 지역 필수(2026-07-15) — zod 통과 가능성과 정렬(H5): region 없으면 '이대로 등록' 오표기 금지
+        unset: loc === null || !loc.region,
         optional: false,
       };
+    }
     case 'contact':
       return {
         label: '연락처',
