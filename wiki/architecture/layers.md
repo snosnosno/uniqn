@@ -1,10 +1,12 @@
 ---
 area: architecture
-updated: 2026-06-19
+updated: 2026-07-16
 status: current
 sources:
   - CLAUDE.md
-  - uniqn-mobile/src/services/wallet/walletService.ts
+  - uniqn-mobile/src/services/jobs/jobService.ts
+  - uniqn-mobile/src/services/jobs/jobManagementService.ts
+  - uniqn-mobile/src/errors/serviceErrorHandler.ts
   - uniqn-mobile/src/repositories/supabase/JobPostingRepository.ts
   - uniqn-mobile/src/hooks
 tags: [architecture, layers, dependency]
@@ -26,11 +28,11 @@ tags: [architecture, layers, dependency]
 
 ### Service → Repository 예시
 
-검증됨 (`uniqn-mobile/src/services/wallet/walletService.ts:22`):
+검증됨 (`uniqn-mobile/src/services/jobs/jobManagementService.ts:85,93`):
 ```
-walletService.getWalletSummary()
-  → WalletRepository.getSummary()
-    → supabase.rpc('get_wallet_summary')
+jobManagementService.createSinglePosting()
+  → jobPostingRepository.createWithTransaction()   ← runTransaction
+    → supabase.from('job_postings').insert(...)
 ```
 
 Repository 직접 Supabase 호출은 `uniqn-mobile/src/repositories/supabase/JobPostingRepository.ts:9`에서 `import { supabase } from '@/lib/supabase'` 패턴으로 확인됨.
@@ -44,13 +46,15 @@ Repository 직접 Supabase 호출은 `uniqn-mobile/src/repositories/supabase/Job
 
 ## 에러 처리 패턴
 
-검증됨 (`uniqn-mobile/src/services/wallet/walletService.ts:23-28`):
+검증됨 (`uniqn-mobile/src/services/jobs/jobService.ts:18,74` — import `@/errors/serviceErrorHandler`):
 ```typescript
+import { handleServiceError } from '@/errors/serviceErrorHandler';
+// ...
 } catch (error) {
-  throw handleServiceError(error, { operation: '지갑 요약 조회', component: 'walletService' });
+  throw handleServiceError(error, { operation: '...', component: 'jobService' });
 }
 ```
-Service 계층이 `handleServiceError`로 AppError(E1~E7) 변환. Presentation은 AppError만 처리.
+Service 계층이 `handleServiceError`로 Supabase 에러를 AppError(E1~E7)로 변환. Presentation은 AppError만 처리.
 
 ## 기술 스택 (검증됨: CLAUDE.md)
 

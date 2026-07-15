@@ -1,17 +1,14 @@
 ---
 area: architecture
-updated: 2026-06-19
+updated: 2026-07-16
 status: current
 sources:
   - CLAUDE.md
-  - uniqn-mobile/src/services/wallet/walletService.ts
   - uniqn-mobile/src/services/jobs/jobService.ts
   - uniqn-mobile/src/services/jobs/jobManagementService.ts
   - uniqn-mobile/src/hooks/useJobPostings.ts
   - uniqn-mobile/src/repositories/supabase/JobPostingRepository.ts
-  - uniqn-mobile/src/repositories/supabase/WalletRepository.ts
-  - uniqn-mobile/supabase/migrations/20260421040000_add_job_posting_stats_trigger.sql
-  - uniqn-mobile/supabase/migrations/20260529100100_M2_trigger_capacity_full_transition.sql
+  - uniqn-mobile/supabase/migrations/20260710000002_baseline_schema_from_prod.sql
 tags: [architecture, data-flow, tanstack-query, repository]
 ---
 
@@ -34,32 +31,20 @@ useJobPostings (Hook)
 
 CLAUDE.md: "TanStack Query 읽기 전용 조회: Repository 직접 호출 허용" — 이 규칙은 직접 호출을 허용하나, 실제 `useJobPostings`는 Service(`getJobPostings`)를 경유함 (검증됨).
 
-## 흐름 2 — 지갑 요약 조회 (읽기, Service 경유)
+## 흐름 2 — 공고 게시 (쓰기, Service 필수)
 
-검증됨 (`uniqn-mobile/src/services/wallet/walletService.ts:20-28`, `uniqn-mobile/src/repositories/supabase/WalletRepository.ts:52-61`):
-```
-ProfileCard (Presentation)
-  → useWallet (Hook)
-    → walletService.getWalletSummary()      ← Service 경유
-      → WalletRepository.getSummary()
-        → supabase.rpc('get_wallet_summary')
-```
-
-읽기임에도 Service 경유인 이유: `handleServiceError`가 Supabase 에러를 AppError(E1~E7)로 변환하는 역할을 Service가 담당함(TanStack Query 직접 예외와 무관).
-
-## 흐름 3 — 공고 게시 (쓰기, Service 필수)
-
-검증됨 (`uniqn-mobile/src/services/jobs/jobManagementService.ts:63`, `uniqn-mobile/src/repositories/supabase/JobPostingRepository.ts:347-402`, `uniqn-mobile/src/repositories/supabase/WalletRepository.ts:130`):
+검증됨 (`uniqn-mobile/src/services/jobs/jobManagementService.ts:85,93`, `uniqn-mobile/src/repositories/supabase/JobPostingRepository.ts:470,510`):
 ```
 PostingForm (Presentation)
-  → jobManagementService.createSinglePosting()   ← Service
-    → jobPostingRepository.createWithTransaction()
-      → WalletRepository.createJobPostingWithPayment()
-        → supabase.rpc('create_job_posting_with_payment_atomically')
-          → DB: job_postings INSERT (RPC 내부) + fn_update_job_posting_stats 트리거
+  → jobManagementService.createSinglePosting()    ← Service
+    → jobPostingRepository.createWithTransaction() ← runTransaction
+      → supabase.from('job_postings').insert(snakeData)
+        → DB: job_postings INSERT + fn_update_job_posting_stats 트리거
 ```
 
-트리거 출처 (주장, 마이그레이션): `uniqn-mobile/supabase/migrations/20260421040000_add_job_posting_stats_trigger.sql`, `20260529100100_M2_trigger_capacity_full_transition.sql`.
+트리거 `fn_update_job_posting_stats` 정의는 현재 baseline(`uniqn-mobile/supabase/migrations/20260710000002_baseline_schema_from_prod.sql`) — 원 마이그(20260421.../20260529... M2 capacity_full)는 baseline squash로 `migrations/archive/` 이동([[prod-parity-baseline]]).
+
+> ⚠️ **제거된 흐름(2026-07-16 교정)**: 과거 유료 게시(`WalletRepository.createJobPostingWithPayment` → `create_job_posting_with_payment_atomically` RPC)와 지갑 요약 조회(`walletService.getWalletSummary`)는 **지갑/IAP 전체 제거(#196~206)로 삭제**됐다(파일·RPC 부재 실측). 현재 게시는 결제 없는 `createWithTransaction` 단일 경로. [[wallet-iap-removal]].
 
 ## TanStack Query 읽기 예외 범위
 
@@ -75,5 +60,5 @@ Repository가 `supabase.channel().on('postgres_changes')` 래퍼 제공.
 
 - [[layers]] — 레이어별 책임 원칙
 - [[rls-model]] — Supabase 레이어에서 흐름을 차단/허용하는 RLS
-- [[revenue-model]] — 지갑 차감 흐름의 비즈니스 맥락
+- [[wallet-iap-removal]] — 지갑/유료 게시 흐름이 제거된 맥락(구 흐름 2)
 - [[capacity-full]] — 공고 상태 전이가 트리거로 자동화된 흐름 예시
