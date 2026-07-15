@@ -38,7 +38,7 @@ import { ConditionsSheet } from './sheets/ConditionsSheet';
 import { PreQuestionsSheet } from './sheets/PreQuestionsSheet';
 import { PresetCarousel, type OrderSheetPreset } from './PresetCarousel';
 import { ScheduleDatesSheet, type ScheduleSplitMode } from './sheets/ScheduleDatesSheet';
-import { XMarkIcon } from '@/components/icons';
+import { InformationCircleIcon, XMarkIcon } from '@/components/icons';
 import { groupConsecutiveDates, hasGroupableDates } from '@/utils/date';
 import { defaultAmountForRole, syncRoleSalaries } from '@/utils/order-sheet/roleSalaries';
 import type { PostingType } from '@/types/jobPosting';
@@ -428,7 +428,8 @@ export function OrderSheetScreen({
 
   const unsetTarget = firstUnsetRow(values);
   const submitLabel = (() => {
-    if (unsetTarget === null) return '이대로 등록';
+    if (unsetTarget === null)
+      return values.postingType === 'tournament' ? '승인 요청하기' : '이대로 등록';
     const { key, groupIndex } = unsetTarget;
     const state = getRowState(values, key, groupIndex);
     // 그룹 2개+의 일정 행은 날짜 요약 접두로 그룹을 식별시킨다("7/22 일정의 시간부터 선택하기")
@@ -458,6 +459,19 @@ export function OrderSheetScreen({
         <View className="mb-3">
           <TypeSegment value={values.postingType} onChange={handleTypeChange} />
         </View>
+        {/* 대회 승인 안내(S1) — 대회 공고는 관리자 승인 게시. 이모지 대신 Lucide 아이콘(impeccable §14). */}
+        {values.postingType === 'tournament' ? (
+          <View
+            className="flex-row items-start gap-2 mb-3 rounded-xl bg-surface-card border border-secondary-100 dark:border-surface-overlay px-3.5 py-3"
+            accessibilityRole="alert"
+            testID="order-sheet-tournament-notice"
+          >
+            <InformationCircleIcon size={18} />
+            <Text className="flex-1 text-xs font-sans text-content-secondary leading-5 dark:leading-[1.125rem]">
+              대회 공고는 관리자 승인 후 게시돼요. 승인까지 1~2 영업일이 걸릴 수 있어요.
+            </Text>
+          </View>
+        ) : null}
         {ORDER_GROUPS.map((section) => {
           if (section.title !== '일정 · 모집') {
             return (
