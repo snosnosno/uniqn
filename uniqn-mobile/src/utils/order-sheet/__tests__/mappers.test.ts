@@ -853,3 +853,106 @@ describe('고정(fixed) 매퍼 왕복 (S2)', () => {
     expect(info.startTime).toBeUndefined();
   });
 });
+
+// ── 전체리뷰 후속(2026-07-16) — mixed-draft 하드닝 + role fabrication 차단 ──
+
+describe('fixed mixed-draft 하드닝 (전체리뷰 P4·P3)', () => {
+  const fixedInput: OrderSheetFormValues = {
+    postingType: 'fixed',
+    title: '주말 고정 딜러',
+    location: { name: '강남 홀덤펍', address: '서울 강남구', region: '서울 강남구' },
+    contactPhone: '010-1234-5678',
+    description: '',
+    scheduleGroups: [],
+    fixedSchedule: {
+      daysPerWeek: 5,
+      startTime: '19:00',
+      // isStartTimeNegotiable 생략 — z.input optional(.default) 형상. formValuesToDraft가
+      // 정규화 없이 fixed 분기를 못 태우면 dated로 오분기하는 red 조건(#194 클래스, P3-2).
+      roles: [{ role: 'dealer', count: 1 }],
+    },
+    salary: { type: 'daily', amount: 200000 },
+    useSameSalary: true,
+    roleSalaries: [],
+    allowances: {},
+    conditions: {},
+    usesPreQuestions: false,
+    preQuestions: [],
+  };
+
+  it('fixedSchedule 부재여도 postingType=fixed면 kind:fixed로 조립한다(mixed draft 차단)', () => {
+    const parsed = orderSheetValuesSchema.parse({
+      ...fixedInput,
+      fixedSchedule: { ...fixedInput.fixedSchedule, isStartTimeNegotiable: false },
+    });
+    const { fixedSchedule: _fs, ...noFixed } = parsed;
+    const draft = valuesToDraft(noFixed);
+    expect(draft.postingType).toBe('fixed');
+    expect(draft.schedule.kind).toBe('fixed');
+    // 재로드에서도 fixed 유지 — regular 침묵 전환(#194 클래스) 없음
+    expect(draftToValues(draft).postingType).toBe('fixed');
+  });
+
+  it('formValuesToDraft가 z.input fixed를 kind:fixed로 굳힌다(P3-2 red-green)', () => {
+    const draft = formValuesToDraft(fixedInput);
+    expect(draft.postingType).toBe('fixed');
+    expect(draft.schedule.kind).toBe('fixed');
+    expect(draftToValues(draft).postingType).toBe('fixed');
+  });
+});
+
+describe('fixed 역할 복원 — role 부재 fabrication 차단 (전체리뷰 P6)', () => {
+  type LegacyRoles = { role?: 'dealer' | 'floor'; customRole?: string; count: number }[];
+  const legacyFixedDraft = (slots: { startTime?: string; roles: LegacyRoles }[]) => ({
+    ...INITIAL_JOB_POSTING_DRAFT,
+    postingType: 'fixed' as const,
+    schedule: {
+      kind: 'fixed' as const,
+      daysPerWeek: 5,
+      startTime: '19:00',
+      isStartTimeNegotiable: false,
+      requirements: [
+        {
+          date: null,
+          timeSlots: slots.map((s) => ({
+            ...(s.startTime ? { startTime: s.startTime } : {}),
+            isTimeToBeAnnounced: false,
+            roles: s.roles,
+          })),
+        },
+      ],
+    },
+  });
+
+  it('role 부재 + customRole 존재는 other로 승격해 의도를 보존한다', () => {
+    const back = draftToValues(
+      legacyFixedDraft([{ startTime: '19:00', roles: [{ customRole: '홀서빙', count: 2 }] }])
+    );
+    expect(back.fixedSchedule?.roles).toEqual([{ role: 'other', customRole: '홀서빙', count: 2 }]);
+  });
+
+  it('role·customRole 모두 부재 엔트리는 딜러로 조작하지 않고 드랍한다', () => {
+    const back = draftToValues(
+      legacyFixedDraft([
+        {
+          startTime: '19:00',
+          roles: [{ count: 3 }, { role: 'floor', count: 1 }],
+        },
+      ])
+    );
+    expect(back.fixedSchedule?.roles).toEqual([{ role: 'floor', count: 1 }]);
+  });
+
+  it('복수 슬롯 레거시 fixed의 2번째+ 슬롯 역할도 침묵 드랍 없이 흡수한다', () => {
+    const back = draftToValues(
+      legacyFixedDraft([
+        { startTime: '19:00', roles: [{ role: 'dealer', count: 1 }] },
+        { startTime: '21:00', roles: [{ role: 'floor', count: 2 }] },
+      ])
+    );
+    expect(back.fixedSchedule?.roles).toEqual([
+      { role: 'dealer', count: 1 },
+      { role: 'floor', count: 2 },
+    ]);
+  });
+});

@@ -74,10 +74,11 @@ function allGroupTimeSlots(values: OrderSheetValues): OrderSheetGroupTimeSlots {
 type OrderSheetFixedSchedule = NonNullable<OrderSheetValues['fixedSchedule']>;
 type FormRoleRef = OrderSheetFixedSchedule['roles'][number];
 
-/** fixed/dated 공용 역할 목록 — roleCatalog·급여 파생의 단일 소스(S2). */
+/** fixed/dated 공용 역할 목록 — roleCatalog·급여 파생의 단일 소스(S2).
+ *  fixed는 fixedSchedule 부재여도 dated 소스로 새지 않는다(valuesToDraft fixed 분기와 동일 계약). */
 function collectFormRoles(values: OrderSheetValues): FormRoleRef[] {
-  if (values.postingType === 'fixed' && values.fixedSchedule) {
-    return values.fixedSchedule.roles;
+  if (values.postingType === 'fixed') {
+    return values.fixedSchedule?.roles ?? [];
   }
   return allGroupTimeSlots(values).flatMap((slot) => slot.roles);
 }
@@ -162,8 +163,10 @@ export function valuesToDraft(values: OrderSheetValues): JobPostingDraft {
   };
 
   // ── 고정(fixed) 조립 ── 날짜 축 없음. fixedSchedule.roles → date:null synthetic requirement(레거시 등가).
-  if (values.postingType === 'fixed' && values.fixedSchedule) {
-    const fs = values.fixedSchedule;
+  // postingType만으로 분기(#194 방어, 전체리뷰 P4) — fixedSchedule 부재(비정상 잔여 상태)에서 dated로
+  // 오분기하면 {postingType:'fixed', kind:'dated'} mixed draft가 저장돼 재로드 시 regular로 침묵 전환된다.
+  if (values.postingType === 'fixed') {
+    const fs = values.fixedSchedule ?? { daysPerWeek: 0, isStartTimeNegotiable: false, roles: [] };
     const roles = fs.roles.map((r) => ({
       role: r.role,
       ...(r.role === 'other' && r.customRole !== undefined ? { customRole: r.customRole } : {}),
@@ -245,7 +248,11 @@ export function draftToValues(draft: JobPostingDraft): OrderSheetFormValues {
   // 급여 복원(roleSalaries·salary·useSameSalary)은 dated 말미와 동일 계약을 미러링한다.
   if (draft.schedule.kind === 'fixed') {
     const sched = draft.schedule;
-    const slotRoles = sched.requirements[0]?.timeSlots[0]?.roles ?? [];
+    // SP1 정규형은 requirements 1개·timeSlots 1개지만, 정규화 전 레거시 draft(복수 슬롯)도
+    // 침묵 드랍 없이 전 슬롯 역할을 흡수한다(왕복 데이터는 항상 단일 슬롯 — 동작 동일).
+    const slotRoles = sched.requirements
+      .flatMap((req) => req.timeSlots)
+      .flatMap((slot) => slot.roles);
     const roleSalaries =
       draft.compensation.mode === 'by_role'
         ? draft.roleCatalog
@@ -269,11 +276,20 @@ export function draftToValues(draft: JobPostingDraft): OrderSheetFormValues {
         daysPerWeek: sched.daysPerWeek ?? 0,
         ...(sched.startTime ? { startTime: sched.startTime } : {}),
         isStartTimeNegotiable: sched.isStartTimeNegotiable ?? false,
-        roles: slotRoles.map((r) => ({
-          role: r.role ?? 'dealer',
-          ...(r.customRole !== undefined ? { customRole: r.customRole } : {}),
-          count: r.count,
-        })),
+        // role 부재(레거시 관용 필드)를 '딜러'로 조작(fabrication)하지 않는다(전체리뷰 P6) —
+        // customRole이 있으면 'other'로 승격해 의도를 보존하고, 둘 다 없으면 드랍한다
+        // (잘못된 역할로 공개 모집되는 사고 차단 — 드랍분은 역할 행 unset 유도로 사용자가 재입력).
+        roles: slotRoles.flatMap((r) => {
+          const role = r.role ?? (r.customRole !== undefined ? ('other' as const) : undefined);
+          if (role === undefined) return [];
+          return [
+            {
+              role,
+              ...(r.customRole !== undefined ? { customRole: r.customRole } : {}),
+              count: r.count,
+            },
+          ];
+        }),
       },
       salary: draft.compensation.defaultSalary ??
         roleSalaries[0]?.salary ?? { type: 'hourly', amount: DEFAULT_SALARY_BY_TYPE.hourly },
@@ -360,8 +376,9 @@ export function draftToValues(draft: JobPostingDraft): OrderSheetFormValues {
           }))
       : [];
   return {
-    // 이 경로는 dated 전용(fixed는 위 조기 분기에서 반환) — 여기 도달하는 postingType은 regular|urgent|tournament.
-    // 'fixed'→'regular' 폴백은 도달 불가지만 postingType 타입(PostingType)의 TS 망라성을 위해 남긴다.
+    // 이 경로는 dated 스케줄 전용(kind:'fixed'는 위 조기 분기). valuesToDraft가 fixed를 항상 kind:'fixed'로
+    // 조립하므로 신규 draft에선 도달 불가 — 남는 건 레거시/손상 mixed draft({postingType:'fixed', kind:'dated'})
+    // 방어 + TS 망라성으로, 그 경우에만 'regular'로 접는다(스케줄 축이 진실원).
     postingType: draft.postingType === 'fixed' ? 'regular' : draft.postingType,
     title: draft.title,
     location: draft.location,
