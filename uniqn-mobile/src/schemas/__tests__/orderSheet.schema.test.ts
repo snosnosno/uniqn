@@ -362,7 +362,7 @@ describe('주문서 스키마 — fixed union 게이트 (S2)', () => {
   });
 
   it('fixedSchedule 부재면 fixed 제출을 거부한다', () => {
-    const { fixedSchedule, ...noFixed } = baseFixed;
+    const { fixedSchedule: _fixedSchedule, ...noFixed } = baseFixed;
     expect(orderSheetValuesSchema.safeParse(noFixed).success).toBe(false);
   });
 

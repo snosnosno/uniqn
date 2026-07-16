@@ -61,7 +61,8 @@ export default function CreateJobPostingScreen() {
     buildGridPrefillDraft({ venueId, date: prefillDate, count: prefillCount })
   );
   const [isDirty, setIsDirty] = useState(false);
-  // 주문서(기본) vs 레거시 상세폼(고정 전용) 모드 분기 — legacyType!==null이면 상세폼 (대회는 S1에서 주문서로 이관)
+  // 레거시 상세폼 분기 — S1(대회)·S2(고정) 주문서 내부 이관으로 현재 도달 경로 없음(사문).
+  // OrderSheetScreen이 onSwitchToLegacyForm을 더 이상 호출하지 않는다 — S4 레거시 은퇴 때 분기째 제거 예정.
   const [legacyType, setLegacyType] = useState<'fixed' | 'tournament' | null>(null);
   const isLegacyForm = legacyType !== null;
   const formData = useMemo(() => draftToFormData(draft), [draft]);
@@ -93,8 +94,8 @@ export default function CreateJobPostingScreen() {
     );
   }, [myPostingsQuery.data]);
 
-  // 프리셋 조립 — 마지막 공고 + 저장된 템플릿. 주문서로 표현 불가한 공고/템플릿(fixed·대회·
-  // 날짜별 시간대 상이)은 draftToValues/templateToValues 가 throw 하므로 try/catch 로 조용히 제외한다.
+  // 프리셋 조립 — 마지막 공고 + 저장된 템플릿. S1·S2 이후 대회·고정도 draftToValues/templateToValues가
+  // 복원하므로 프리셋에 정상 포함된다. try/catch는 잔여 방어(손상 데이터 등 복원 불가 형상 제외) 전용.
   const presets = useMemo<OrderSheetPreset[]>(() => {
     const out: OrderSheetPreset[] = [];
     if (lastPosting) {
@@ -111,7 +112,7 @@ export default function CreateJobPostingScreen() {
           },
         });
       } catch {
-        // fixed·대회 등 주문서 밖 공고는 프리셋에서 제외
+        // 복원 불가 형상(손상 데이터 등)만 제외 — S2 이후 fixed·대회는 정상 포함
       }
     }
     for (const t of templateManager.templates) {
@@ -123,7 +124,7 @@ export default function CreateJobPostingScreen() {
           values: templateToValues(t),
         });
       } catch {
-        // dated 아닌 템플릿은 제외
+        // 복원 불가 템플릿(손상 데이터 등)만 제외 — fixed 템플릿은 S2 이후 정상 포함
       }
     }
     return out;
@@ -226,7 +227,7 @@ export default function CreateJobPostingScreen() {
             message:
               values.postingType === 'tournament'
                 ? '공고가 등록됐어요. 관리자 승인 후 게시돼요.'
-                : '공고가 등록되었습니다.',
+                : '공고가 등록됐어요.',
           });
           router.back();
         } else {
@@ -283,6 +284,9 @@ export default function CreateJobPostingScreen() {
     [createJobPosting, venueId, router, addToast, templateManager.templates.length]
   );
 
+  // ⚠️ 사문(S2 이후 도달 불가) — OrderSheetScreen이 onSwitchToLegacyForm을 호출하지 않는다.
+  //    prop 계약 유지용으로만 남긴다(S4 레거시 은퇴 때 제거). M7(무경고 소실 금지)은 주문서
+  //    내부 handleTypeChange의 축 데이터 스태시/복원이 승계한다.
   const handleSwitchToLegacyForm = useCallback(
     (t: 'fixed' | 'tournament') => {
       // 주문서 입력이 있으면 무경고 소실 금지(리뷰 M7) — 확인 후 전환
@@ -306,7 +310,7 @@ export default function CreateJobPostingScreen() {
     [isDirty, updateFormData]
   );
 
-  // 기본 진입 = 주문서(지원·급구·대회). 고정 선택 시에만 레거시 상세폼으로 전환.
+  // 기본 진입 = 주문서(전 타입 create). 레거시 상세폼은 S2 이후 도달 경로 없음 — S4에서 분기 제거 예정.
   if (!isLegacyForm) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>

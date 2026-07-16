@@ -100,7 +100,7 @@ export function WorkConditionSheet({
       <View className="px-4 pt-3 pb-2 gap-4">
         {/* 게시기간 안내 — 카드 틴트(impeccable §14 border-l 금지) */}
         <View className="rounded-xl bg-surface-card border border-secondary-100 dark:border-surface-overlay px-3.5 py-3">
-          <Text className="text-xs font-sans text-content-secondary leading-5 dark:leading-[1.125rem]">
+          <Text className="text-xs font-sans text-content-secondary leading-[1.125rem] dark:leading-5">
             고정 공고는 상시 반복 근무예요. 게시 기간은 7일이며, 만료 후 재등록할 수 있어요.
           </Text>
         </View>
@@ -108,7 +108,8 @@ export function WorkConditionSheet({
         {/* 주 출근일수 */}
         <View className="gap-2">
           <Text className="text-sm font-sans-medium text-content-secondary">주 출근일수</Text>
-          {/* 요일 칩 라디오 그룹 — 스크린리더 그룹 맥락(RolesSheet radiogroup 관례 동일) */}
+          {/* 주 출근일수 칩 라디오 그룹(0=협의~7일 개수 선택, 요일 개별선택 아님 — 설계 확정③) —
+              스크린리더 그룹 맥락(RolesSheet radiogroup 관례 동일) */}
           <View className="flex-row flex-wrap gap-2" accessibilityRole="radiogroup">
             {DAYS_OPTIONS.map((o) => {
               const selected = daysPerWeek === o.value;
@@ -144,6 +145,7 @@ export function WorkConditionSheet({
               onPress={toggleNegotiable}
               testID="work-condition-negotiable"
               accessibilityRole="checkbox"
+              accessibilityLabel="출근 시간 협의"
               accessibilityState={{ checked: negotiable }}
               className="flex-row items-center min-h-[44px] active:opacity-80"
               hitSlop={8}

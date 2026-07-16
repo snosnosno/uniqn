@@ -43,8 +43,8 @@ export const orderSheetRoleSalarySchema = z.object({
   salary: orderSheetSalarySchema,
 });
 
-// 출근 시각 형식(HH:MM 24h) — 타임슬롯·고정 근무조건이 공유(중복 정의 제거, 동작 불변).
-const START_TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+// 출근 시각 형식(HH:MM 24h) — 타임슬롯·고정 근무조건·orderRowMeta 요약 판정이 공유(단일 정의).
+export const START_TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export const orderSheetTimeSlotSchema = z.object({
   startTime: z.string().regex(START_TIME_RE, '출근 시간을 선택해주세요'),
@@ -64,6 +64,8 @@ export const orderSheetFixedScheduleSchema = z
     roles: z.array(orderSheetRoleSchema).min(1, '역할을 추가해주세요'),
   })
   .superRefine((fs, ctx) => {
+    // 역방향(협의=true + startTime 잔존)은 의도적 관용 — 레거시 draft 수용. 표시·쓰기 소비측
+    // (WorkConditionSheet confirm·createFixedSchedule)이 협의 우선으로 정규화해 실해 없음.
     if (!fs.isStartTimeNegotiable && !fs.startTime) {
       ctx.addIssue({ code: 'custom', path: ['startTime'], message: '출근 시간을 선택해주세요' });
     }
@@ -129,7 +131,9 @@ export const orderSheetValuesSchema = z
     contactPhone: safeText(20).min(1, '연락처를 입력해주세요'),
     description: safeText(500).default(''),
     scheduleGroups: z.array(orderSheetScheduleGroupSchema).default([]),
-    // 고정(fixed) 근무조건 — dated면 undefined, fixed면 present(superRefine 강제). scheduleGroups와 상호배타.
+    // 고정(fixed) 근무조건 — dated면 undefined, fixed면 present(superRefine 강제). 반대 축 잔여는
+    // 스키마가 아니라 handleTypeChange 불변식 + 매퍼 fixed 분기(잔여 scheduleGroups 무시)가 처리한다
+    // (설계 §3.1 확정⑤ — union은 스케줄 표현만 분기, 잔여 축 검증은 의도적으로 하지 않음).
     fixedSchedule: orderSheetFixedScheduleSchema.optional(),
     salary: orderSheetSalarySchema,
     // 기본 false(by_role) — 설계 §S2.1. 살아있는 기본값 5지점(schema·initialOrderSheetValues·
