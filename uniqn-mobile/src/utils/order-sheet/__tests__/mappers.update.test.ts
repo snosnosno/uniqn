@@ -3,14 +3,12 @@
  * 신·구 등가성 게이트: 레거시 draftToUpdateJobPostingInput 산출과 타입별 동등(위임 계약 고정).
  * 축소 payload: hasConfirmedApplicants=true면 schedule·conditions 제외(레거시 계약 그대로).
  * 승인 무접촉: 어떤 타입에서도 tournamentConfig own-property를 만들지 않는다(설계 확정 ⑥).
+ * 위임 구조(valuesToUpdateInput→draftToUpdateJobPostingInput)에서는 동어반복이며, 위임을 해제(mappers 자체 조립)하는 순간 이 스위트가 실질 등가성 게이트가 된다(S3 최종리뷰 명기).
  */
 import { valuesToDraft, valuesToUpdateInput } from '../mappers';
 import { draftToUpdateJobPostingInput } from '@/utils/job-posting/draftAdapter';
 import type { OrderSheetValues } from '@/schemas/orderSheet.schema';
-import { singleGroup } from './orderSheetTestHelpers';
-
-const stripIds = (obj: unknown): unknown =>
-  JSON.parse(JSON.stringify(obj, (key, value) => (key === 'id' ? undefined : value)));
+import { singleGroup, stripKnownGeneratedIds } from './orderSheetTestHelpers';
 
 const baseSlots: OrderSheetValues['scheduleGroups'][number]['timeSlots'] = [
   {
@@ -65,7 +63,9 @@ describe('valuesToUpdateInput — 신·구 등가성(타입별)', () => {
     ['fixed', fixedValues],
   ])('%s: 레거시 draftToUpdateJobPostingInput 산출과 동등하다', (_label, values) => {
     const legacy = draftToUpdateJobPostingInput(valuesToDraft(values));
-    expect(stripIds(valuesToUpdateInput(values))).toEqual(stripIds(legacy));
+    expect(stripKnownGeneratedIds(valuesToUpdateInput(values))).toEqual(
+      stripKnownGeneratedIds(legacy)
+    );
   });
 
   it('tournament: postingType이 보존된다(silent-coercion 재발 금지)', () => {

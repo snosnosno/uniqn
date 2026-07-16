@@ -16,7 +16,7 @@ import { orderSheetValuesSchema } from '@/schemas/orderSheet.schema';
 import type { JobPostingFormData } from '@/types/jobPostingForm';
 import type { JobPostingTemplate } from '@/types/jobTemplate';
 import type { CreateJobPostingInput } from '@/types/jobPosting';
-import { singleGroup } from './orderSheetTestHelpers';
+import { singleGroup, stripKnownGeneratedIds } from './orderSheetTestHelpers';
 
 const baseSlots: OrderSheetValues['scheduleGroups'][number]['timeSlots'] = [
   {
@@ -48,9 +48,6 @@ const slotAt = (
   startTime: string,
   roles: { role: 'dealer' | 'floor' | 'serving'; count: number }[]
 ) => ({ startTime, roles });
-
-const stripIds = (obj: unknown): unknown =>
-  JSON.parse(JSON.stringify(obj, (key, value) => (key === 'id' ? undefined : value)));
 
 describe('valuesToDraft — 단일 그룹 (신구 등가성)', () => {
   it('구(dates+timeSlots 평탄) 산출과 동결 스냅샷이 일치한다 (Eng-L2 — S1 전 캡처)', () => {
@@ -115,7 +112,7 @@ describe('valuesToDraft — 단일 그룹 (신구 등가성)', () => {
       questions: { items: [] },
       conditions: { dressCode: '검정셔츠/슬랙스', experience: 'TDA 숙지자' },
     };
-    expect(stripIds(valuesToDraft(baseValues))).toEqual(frozen);
+    expect(stripKnownGeneratedIds(valuesToDraft(baseValues))).toEqual(frozen);
   });
   it('dated 스케줄을 canonical하게 만든다 (날짜별 requirements, 시간대·역할 보존)', () => {
     const draft = valuesToDraft(baseValues);
@@ -423,7 +420,7 @@ describe('draftToValues ↔ valuesToDraft 왕복', () => {
     };
     const draft1 = valuesToDraft(values);
     const draft2 = valuesToDraft(draftToValues(draft1) as OrderSheetValues);
-    expect(stripIds(draft2)).toEqual(stripIds(draft1));
+    expect(stripKnownGeneratedIds(draft2)).toEqual(stripKnownGeneratedIds(draft1));
   });
 
   it('레거시 협의(other) 공고는 협의로 유지된다 (2026-07-14 결정 — hourly 강제 변환 금지)', () => {
@@ -453,8 +450,10 @@ describe('draftToValues ↔ valuesToDraft 왕복', () => {
     // salary(세그먼트 캐리어)는 defaultSalary=최저값 정규화(CEO-1)로 25,000이 된다 — 정규형 동치.
     expect(roundTrip).toEqual({ ...byRoleValues, salary: { type: 'hourly', amount: 25000 } });
     expect(
-      stripIds(valuesToDraft(draftToValues(valuesToDraft(byRoleValues)) as OrderSheetValues))
-    ).toEqual(stripIds(valuesToDraft(byRoleValues)));
+      stripKnownGeneratedIds(
+        valuesToDraft(draftToValues(valuesToDraft(byRoleValues)) as OrderSheetValues)
+      )
+    ).toEqual(stripKnownGeneratedIds(valuesToDraft(byRoleValues)));
   });
 
   it('by_role의 defaultSalary는 roleSalaries 최저값 — 유령 초기값(세그먼트 캐리어) 아님 (CEO-1)', () => {
