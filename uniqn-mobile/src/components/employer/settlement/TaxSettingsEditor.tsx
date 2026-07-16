@@ -10,7 +10,6 @@ import React, { memo, useMemo, useCallback } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { CheckmarkIcon } from '@/components/icons';
 import {
-  formatCurrency,
   calculateTaxAmount,
   calculateAfterTaxAmount,
   type TaxType,
@@ -28,13 +27,18 @@ export interface TaxSettingsEditorProps {
   taxSettings: TaxSettings;
   /** 세금 설정 변경 콜백 */
   onChange: (settings: TaxSettings) => void;
-  /** 총 금액 (세후 미리보기용) */
+  /**
+   * @deprecated 세후 미리보기 블록 제거로 더 이상 사용되지 않는다.
+   * 실정산(항목별 제외 반영)과 산식이 달라 트랩이었다 — 사용처 계약 유지를 위해 prop만 남긴다.
+   */
   totalAmount?: number;
   /** 비활성화 여부 */
   disabled?: boolean;
   /** 레이블 표시 여부 */
   showLabel?: boolean;
-  /** 세후 금액 미리보기 표시 여부 */
+  /**
+   * @deprecated 세후 미리보기 블록 제거로 무효. 사용처 계약 유지를 위해 prop만 남긴다.
+   */
   showPreview?: boolean;
   /** 추가 스타일 클래스 */
   className?: string;
@@ -71,10 +75,8 @@ const TAXABLE_ITEM_OPTIONS: { key: keyof TaxableItems; label: string }[] = [
 export const TaxSettingsEditor = memo(function TaxSettingsEditor({
   taxSettings,
   onChange,
-  totalAmount,
   disabled = false,
   showLabel = true,
-  showPreview = true,
   className = '',
 }: TaxSettingsEditorProps) {
   // 현재 taxableItems (기본값 적용)
@@ -175,17 +177,6 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
     if (taxSettings.type !== 'fixed') return '';
     return taxSettings.value > 0 ? taxSettings.value.toLocaleString('ko-KR') : '';
   }, [taxSettings]);
-
-  // 세금 금액 및 세후 금액 계산
-  const taxAmount = useMemo(() => {
-    if (!totalAmount || totalAmount <= 0) return 0;
-    return calculateTaxAmount(taxSettings, totalAmount);
-  }, [taxSettings, totalAmount]);
-
-  const afterTaxAmount = useMemo(() => {
-    if (!totalAmount || totalAmount <= 0) return 0;
-    return calculateAfterTaxAmount(taxSettings, totalAmount);
-  }, [taxSettings, totalAmount]);
 
   return (
     <View className={className}>
@@ -382,29 +373,6 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
           <Text className="text-xs text-content-placeholder mt-2 font-sans">
             체크된 항목에만 세금이 적용됩니다
           </Text>
-        </View>
-      )}
-
-      {/* 세후 금액 미리보기 */}
-      {showPreview && totalAmount && totalAmount > 0 && taxSettings.type !== 'none' && (
-        <View className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3">
-          <View className="flex-row items-center justify-between mb-1">
-            <Text className="text-sm text-content-muted dark:text-secondary-400 font-sans">
-              세금
-              {taxSettings.type === 'rate' && (
-                <Text className="text-xs font-sans"> ({taxSettings.value}%)</Text>
-              )}
-            </Text>
-            <Text className="text-sm text-error-500 dark:text-error-400 font-sans">
-              -{formatCurrency(taxAmount)}
-            </Text>
-          </View>
-          <View className="flex-row items-center justify-between">
-            <Text className="text-sm font-sans-medium text-content-secondary">세후 금액</Text>
-            <Text className="text-base font-sans-bold text-primary-600 dark:text-primary-400">
-              {formatCurrency(afterTaxAmount)}
-            </Text>
-          </View>
         </View>
       )}
     </View>
