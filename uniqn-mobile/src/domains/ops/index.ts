@@ -7,3 +7,4 @@ export * from './prizeCurve';
 export * from './monitor/monitorConfig';
 export * from './monitor/nextBreak';
 export * from './resume/selectResumeTournament';
+export * from './opsHubFlag';
