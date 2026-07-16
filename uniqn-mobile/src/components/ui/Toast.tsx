@@ -5,7 +5,7 @@
  * @version 2.1.0 - 아이콘 컴포넌트 적용 및 의존성 최적화
  */
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -62,6 +62,13 @@ const TOAST_STYLES = {
 
 export function Toast({ toast, onDismiss }: ToastProps) {
   const reduceMotion = useReduceMotion();
+  // reduceMotion 을 이펙트 deps 에 넣으면 비동기 resolve/OS 토글마다 입장 이펙트가
+  // 재실행되어 자동닫기 타이머 재설정·퇴장 중 부활 글리치가 생긴다(2026-07-17 /review).
+  // 마운트 시점 값은 프리페치 캐시(useReduceMotion)로 이미 올바르므로 ref 로만 읽는다.
+  const reduceMotionRef = useRef(reduceMotion);
+  useEffect(() => {
+    reduceMotionRef.current = reduceMotion;
+  }, [reduceMotion]);
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(-20);
 
@@ -88,7 +95,7 @@ export function Toast({ toast, onDismiss }: ToastProps) {
         }
       }
     );
-    if (reduceMotion) {
+    if (reduceMotionRef.current) {
       translateY.value = -20;
     } else {
       translateY.value = withTiming(-20, {
@@ -96,12 +103,12 @@ export function Toast({ toast, onDismiss }: ToastProps) {
         easing: MOTION_EASING.fade,
       });
     }
-  }, [opacity, translateY, reduceMotion, callOnDismiss, toast.id]);
+  }, [opacity, translateY, callOnDismiss, toast.id]);
 
   useEffect(() => {
-    // 입장 애니메이션
+    // 입장 애니메이션 — reduce motion 은 마운트 시점 값(ref)만 읽는다(상단 주석 참조).
     opacity.value = withTiming(1, { duration: MOTION_DURATION.base, easing: MOTION_EASING.enter });
-    if (reduceMotion) {
+    if (reduceMotionRef.current) {
       // reduce motion: translate 는 즉시 목표값, opacity 페이드만 유지
       translateY.value = 0;
     } else {
@@ -118,7 +125,7 @@ export function Toast({ toast, onDismiss }: ToastProps) {
 
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toast.id, toast.duration, reduceMotion]);
+  }, [toast.id, toast.duration]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,

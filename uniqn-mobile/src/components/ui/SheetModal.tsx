@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -32,6 +32,7 @@ import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-g
 import { XMarkIcon } from '@/components/icons';
 import { getIconColor } from '@/constants';
 import { MOTION_EASING, MOTION_DURATION } from '@/constants/animation';
+import { rubberband, shouldDismissSheet } from '@/components/ui/sheetModalGesture';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { useThemeStore } from '@/stores/themeStore';
 import { isWeb } from '@/utils/platform';
@@ -220,15 +221,6 @@ function WebSheetModal({
 // Native SheetModal Component
 // ============================================================================
 
-/**
- * 러버밴드 저항 (Apple 공식): 경계 밖으로 갈수록 이동량이 점점 줄어든다.
- * 위로 끌 때(overshoot < 0) 딱딱한 정지 대신 탄성 저항을 준다.
- */
-function rubberband(overshoot: number, dimension: number, constant = 0.55): number {
-  'worklet';
-  return (overshoot * dimension * constant) / (dimension + constant * Math.abs(overshoot));
-}
-
 function NativeSheetModal({
   visible,
   onClose,
@@ -246,6 +238,8 @@ function NativeSheetModal({
   const reduceMotion = useReduceMotion();
   const fadeOpacity = useSharedValue(0);
   const translateY = useSharedValue(windowHeight);
+  // 드래그 시작 시점의 시트 위치(오프셋) — 애니메이션 진행 중 grab 점프 방지용.
+  const dragStartY = useSharedValue(0);
   const isKeyboardVisible = useRef(false);
 
   const isFirstRender = useRef(true);
@@ -321,38 +315,40 @@ function NativeSheetModal({
 
   // 헤더 한정 Pan 제스처: 끌어내려 닫기.
   // 직접 조작(direct manipulation)이므로 reduce motion 분기 대상이 아니다.
-  const panGesture = Gesture.Pan()
-    .enabled(!isLoading)
-    .onUpdate((e) => {
-      // 아래로는 손가락과 1:1 추적, 위로는 러버밴드 저항.
-      translateY.value =
-        e.translationY > 0 ? e.translationY : rubberband(e.translationY, windowHeight);
-    })
-    .onEnd((e) => {
-      // 25% 초과 드래그여도 위로 플릭(velocityY < 0)이면 명백한 취소 의도 → dismiss 금지.
-      const shouldDismiss =
-        e.velocityY > 400 || (e.translationY > windowHeight * 0.25 && e.velocityY >= 0);
-      if (shouldDismiss) {
-        // 확인형 onRequestClose 계약 때문에 여기서 퇴장 애니메이션을 선행하지 않는다.
-        // 소비처가 닫기를 거부(예: 미저장 변경 시 "계속 편집" Alert)하면 시트가 화면 밖에
-        // 갇히는 유령 모달이 되므로, 닫기 요청은 즉시 보내되 시트는 제자리로 복귀시킨다.
-        // 닫힘이 확정되면 부모 visible=false → 기존 closing useEffect가 현재 위치에서
-        // 이어받아(reanimated 현재값 재타게팅) 점프 없이 퇴장한다.
-        runOnJS(handleRequestClose)();
-        translateY.value = withSpring(0, {
-          dampingRatio: 1,
-          duration: 300,
-          velocity: e.velocityY,
-        });
-      } else {
-        // 복귀: 릴리즈 속도를 스프링에 이양, 오버슈트 0(bounce 금지 규약).
-        translateY.value = withSpring(0, {
-          dampingRatio: 1,
-          duration: 300,
-          velocity: e.velocityY,
-        });
-      }
-    });
+  // useMemo: 매 렌더 재생성 시 드래그 중 리렌더가 진행 중 제스처를 드롭할 수 있다
+  // (gesture-handler 공식 memoize 권고, 2026-07-17 /review).
+  const panGesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .enabled(!isLoading)
+        .onStart(() => {
+          // 입장/복귀 애니메이션 진행 중 grab 시 손가락 위치로 점프하지 않도록
+          // 현재 위치를 기준 오프셋으로 캡처한다.
+          dragStartY.value = translateY.value;
+        })
+        .onUpdate((e) => {
+          // 아래로는 손가락과 1:1 추적, 위로는 러버밴드 저항.
+          const raw = dragStartY.value + e.translationY;
+          translateY.value = raw > 0 ? raw : rubberband(raw, windowHeight);
+        })
+        .onEnd((e) => {
+          if (shouldDismissSheet(e.translationY, e.velocityY, windowHeight)) {
+            // 확인형 onRequestClose 계약 때문에 여기서 퇴장 애니메이션을 선행하지 않는다.
+            // 소비처가 닫기를 거부(예: 미저장 변경 시 "계속 편집" Alert)하면 시트가 화면 밖에
+            // 갇히는 유령 모달이 되므로, 닫기 요청만 즉시 보낸다.
+            runOnJS(handleRequestClose)();
+          }
+          // dismiss 여부와 무관하게 시트는 제자리 복귀(릴리즈 속도 이양, 오버슈트 0).
+          // 닫힘이 확정되면 부모 visible=false → 기존 closing useEffect 가 현재 위치에서
+          // 이어받아(reanimated 현재값 재타게팅) 점프 없이 퇴장한다.
+          translateY.value = withSpring(0, {
+            dampingRatio: 1,
+            duration: 300,
+            velocity: e.velocityY,
+          });
+        }),
+    [isLoading, windowHeight, handleRequestClose, dragStartY, translateY]
+  );
 
   const backdropAnimatedStyle = useAnimatedStyle(() => ({
     // 드래그 진행도(translateY)에 비례해 백드롭이 옅어진다.

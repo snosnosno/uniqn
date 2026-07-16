@@ -5,6 +5,9 @@
 export { useAppInitialize } from './useAppInitialize';
 export { useVersionCheck, type UseVersionCheckReturn } from './useVersionCheck';
 export { useWeeklyGridEnabled, type UseWeeklyGridEnabledReturn } from './useWeeklyGridEnabled';
+// ⚠️ 리프 UI 컴포넌트에서는 이 barrel(@/hooks) 대신 '@/hooks/useReduceMotion' 직접 경로로
+// import할 것 — barrel 첫 export(useAppInitialize)가 도메인 그래프를 끌어와
+// ApplicationStatusMachine의 모듈스코프 STATUS.* 순환-undefined 크래시를 유발한다(2026-07-17 실측).
 export { useReduceMotion } from './useReduceMotion';
 
 export { useAuth } from './useAuth';

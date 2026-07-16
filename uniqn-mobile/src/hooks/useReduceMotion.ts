@@ -15,20 +15,37 @@ import { useEffect, useState } from 'react';
 import { AccessibilityInfo } from 'react-native';
 
 /**
+ * 모듈 스코프 프리페치 캐시: 앱 부팅(모듈 로드) 시 1회 조회해 둔다.
+ * useState(false) 비동기 초기값 때문에 RM 사용자에게도 마운트 첫 1~2프레임 동안
+ * 모션이 재생된 뒤 스냅되는 문제(2026-07-17 /review)를 막고, 훅이 마운트 시점부터
+ * 올바른 값으로 시딩되게 한다. 조회 실패 시 캐시 미시딩 — 훅이 마운트 시 재조회.
+ */
+let cachedReduceMotion: boolean | null = null;
+
+AccessibilityInfo.isReduceMotionEnabled?.()
+  ?.then((value) => {
+    cachedReduceMotion = value;
+  })
+  .catch(() => {});
+
+/**
  * OS의 Reduce Motion 설정 활성 여부를 반환한다.
- * 마운트 시 현재 값을 조회하고, 이후 `reduceMotionChanged` 이벤트로 갱신한다.
+ * 프리페치 캐시로 초기값을 시딩하고, 마운트 시 현재 값을 재조회하며,
+ * 이후 `reduceMotionChanged` 이벤트로 갱신한다.
  */
 export function useReduceMotion(): boolean {
-  const [enabled, setEnabled] = useState(false);
+  const [enabled, setEnabled] = useState(cachedReduceMotion ?? false);
 
   useEffect(() => {
     let mounted = true;
 
     AccessibilityInfo.isReduceMotionEnabled().then((value) => {
+      cachedReduceMotion = value;
       if (mounted) setEnabled(value);
     });
 
     const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', (value: boolean) => {
+      cachedReduceMotion = value;
       if (mounted) setEnabled(value);
     });
 
