@@ -9,7 +9,8 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { Alert, View, Text, Pressable, BackHandler } from 'react-native';
+import { View, Text, Pressable, BackHandler } from 'react-native';
+import { confirmAction } from '@/utils/confirmAction';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SignupForm } from '@/components/auth';
@@ -45,21 +46,16 @@ function isProfileAlreadyCompletedError(error: unknown): boolean {
 }
 
 function showAlreadyRegisteredAlert(redirect?: string) {
-  Alert.alert(
-    '이미 가입된 계정입니다',
-    '이 이메일로 가입이 완료되어 있어요.\n로그인 화면에서 비밀번호로 로그인하거나 비밀번호 찾기를 이용해주세요.',
-    [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '로그인하기',
-        onPress: () =>
-          router.replace(
-            redirect ? `/(auth)/login?redirect=${encodeURIComponent(redirect)}` : '/(auth)/login'
-          ),
-      },
-    ],
-    { cancelable: true }
-  );
+  confirmAction({
+    title: '이미 가입된 계정입니다',
+    message:
+      '이 이메일로 가입이 완료되어 있어요.\n로그인 화면에서 비밀번호로 로그인하거나 비밀번호 찾기를 이용해주세요.',
+    confirmText: '로그인하기',
+    onConfirm: () =>
+      router.replace(
+        redirect ? `/(auth)/login?redirect=${encodeURIComponent(redirect)}` : '/(auth)/login'
+      ),
+  });
 }
 
 type SignupMode = 'social' | 'reverify';
@@ -250,34 +246,29 @@ export default function SignUpScreen() {
     // useAuthGuard 가 미완성 프로필을 감지해 다시 이 화면으로 redirect 한다.
     // 로그인 화면으로 진짜 빠져나가려면 명시적 signOut 필요.
     if (isSocialMode || isReverifyMode) {
-      Alert.alert(
-        '가입을 중단하시겠어요?',
-        '입력한 정보가 사라지고 로그인 화면으로 돌아갑니다.',
-        [
-          { text: '계속 진행', style: 'cancel' },
-          {
-            text: '중단하고 나가기',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                await signOut();
-              } catch (error) {
-                logger.warn('가입 중단 signOut 실패', {
-                  component: 'SignUpScreen',
-                  error: error instanceof Error ? error.message : String(error),
-                });
-              } finally {
-                router.replace(
-                  postAuthRedirect
-                    ? `/(auth)/login?redirect=${encodeURIComponent(postAuthRedirect)}`
-                    : '/(auth)/login'
-                );
-              }
-            },
-          },
-        ],
-        { cancelable: true }
-      );
+      confirmAction({
+        title: '가입을 중단하시겠어요?',
+        message: '입력한 정보가 사라지고 로그인 화면으로 돌아갑니다.',
+        confirmText: '중단하고 나가기',
+        cancelText: '계속 진행',
+        destructive: true,
+        onConfirm: async () => {
+          try {
+            await signOut();
+          } catch (error) {
+            logger.warn('가입 중단 signOut 실패', {
+              component: 'SignUpScreen',
+              error: error instanceof Error ? error.message : String(error),
+            });
+          } finally {
+            router.replace(
+              postAuthRedirect
+                ? `/(auth)/login?redirect=${encodeURIComponent(postAuthRedirect)}`
+                : '/(auth)/login'
+            );
+          }
+        },
+      });
       return;
     }
 
