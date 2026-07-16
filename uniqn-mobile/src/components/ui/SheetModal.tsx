@@ -329,22 +329,21 @@ function NativeSheetModal({
         e.translationY > 0 ? e.translationY : rubberband(e.translationY, windowHeight);
     })
     .onEnd((e) => {
-      const shouldDismiss = e.velocityY > 400 || e.translationY > windowHeight * 0.25;
+      // 25% 초과 드래그여도 위로 플릭(velocityY < 0)이면 명백한 취소 의도 → dismiss 금지.
+      const shouldDismiss =
+        e.velocityY > 400 || (e.translationY > windowHeight * 0.25 && e.velocityY >= 0);
       if (shouldDismiss) {
-        // 현재 위치에서 이어서 퇴장(점프 없음). 완료 시 부모 visible=false 계약에 위임.
-        fadeOpacity.value = withTiming(0, {
-          duration: MOTION_DURATION.base,
-          easing: MOTION_EASING.fade,
+        // 확인형 onRequestClose 계약 때문에 여기서 퇴장 애니메이션을 선행하지 않는다.
+        // 소비처가 닫기를 거부(예: 미저장 변경 시 "계속 편집" Alert)하면 시트가 화면 밖에
+        // 갇히는 유령 모달이 되므로, 닫기 요청은 즉시 보내되 시트는 제자리로 복귀시킨다.
+        // 닫힘이 확정되면 부모 visible=false → 기존 closing useEffect가 현재 위치에서
+        // 이어받아(reanimated 현재값 재타게팅) 점프 없이 퇴장한다.
+        runOnJS(handleRequestClose)();
+        translateY.value = withSpring(0, {
+          dampingRatio: 1,
+          duration: 300,
+          velocity: e.velocityY,
         });
-        translateY.value = withTiming(
-          windowHeight,
-          { duration: MOTION_DURATION.sheetExit, easing: MOTION_EASING.exitTravel },
-          (finished) => {
-            if (finished) {
-              runOnJS(handleRequestClose)();
-            }
-          }
-        );
       } else {
         // 복귀: 릴리즈 속도를 스프링에 이양, 오버슈트 0(bounce 금지 규약).
         translateY.value = withSpring(0, {
