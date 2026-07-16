@@ -1,6 +1,6 @@
 # 004 — 시트류 travel 커브 교체 + 75% 퇴장 규칙 정렬
 
-- **Status**: TODO
+- **Status**: DONE (2026-07-17, quality EXIT 0 · ui jest 16스위트 127통과 · fable 리뷰 APPROVE. LOW 관찰: RNModal visible 직결+animationType="none" 구조라 네이티브 퇴장 애니메이션이 안 보일 수 있음 — 선재 구조, 실기기 QA 시 참고)
 - **Commit**: c0c6113e5
 - **Severity**: HIGH
 - **Category**: 이징·지속시간 (Easing & duration)

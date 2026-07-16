@@ -11,7 +11,7 @@
 | [001](001-motion-tokens.md) | 모션 토큰 신설 (MOTION_EASING·MOTION_DURATION) | HIGH | DONE |
 | [002](002-toast-easing.md) | Toast 입장 이징 강화 (최고빈도 모션) | HIGH | TODO |
 | [003](003-reduce-motion-core-ui.md) | 코어 UI 4종 Reduce Motion + 공유 훅 추출 | HIGH | TODO |
-| [004](004-sheet-travel-curve.md) | 시트류 travel 커브 + 75% 퇴장 규칙 | HIGH | TODO |
+| [004](004-sheet-travel-curve.md) | 시트류 travel 커브 + 75% 퇴장 규칙 | HIGH | DONE |
 | [005](005-sheet-drag-dismiss.md) | SheetModal 드래그 dismiss (제스처) | 기회 | TODO |
 
 ## 권장 실행 순서·의존성

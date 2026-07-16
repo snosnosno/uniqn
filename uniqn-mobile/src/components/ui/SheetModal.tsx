@@ -19,14 +19,10 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { XMarkIcon } from '@/components/icons';
 import { getIconColor } from '@/constants';
+import { MOTION_EASING, MOTION_DURATION } from '@/constants/animation';
 import { useThemeStore } from '@/stores/themeStore';
 import { isWeb } from '@/utils/platform';
 import { WebPortal } from '@/components/ui/WebPortal';
@@ -259,16 +255,22 @@ function NativeSheetModal({
     }
 
     if (visible) {
-      fadeOpacity.value = withTiming(1, { duration: 200, easing: Easing.ease });
+      fadeOpacity.value = withTiming(1, {
+        duration: MOTION_DURATION.base,
+        easing: MOTION_EASING.fade,
+      });
       translateY.value = withTiming(0, {
-        duration: 300,
-        easing: Easing.out(Easing.ease),
+        duration: MOTION_DURATION.sheet,
+        easing: MOTION_EASING.sheet,
       });
     } else {
-      fadeOpacity.value = withTiming(0, { duration: 200, easing: Easing.ease });
+      fadeOpacity.value = withTiming(0, {
+        duration: MOTION_DURATION.base,
+        easing: MOTION_EASING.fade,
+      });
       translateY.value = withTiming(windowHeight, {
-        duration: 250,
-        easing: Easing.in(Easing.ease),
+        duration: MOTION_DURATION.sheetExit,
+        easing: MOTION_EASING.exitTravel,
       });
     }
   }, [visible, fadeOpacity, translateY, windowHeight]);
