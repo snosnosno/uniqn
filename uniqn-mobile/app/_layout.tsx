@@ -20,7 +20,7 @@ import {
   ErrorState,
   Loading,
   ModalManager,
-  OfflineBanner,
+  OfflineStatusBar,
   ScreenErrorBoundary,
   ToastManager,
 } from '@/components/ui';
@@ -175,7 +175,6 @@ function MainNavigator() {
           <AuthenticatedRuntime />
         </Suspense>
       ) : null}
-      <OfflineBanner variant="banner" />
       <Stack
         screenOptions={{
           headerShown: false,
@@ -196,6 +195,7 @@ function MainNavigator() {
       </Stack>
       <ToastManager />
       <ModalManager />
+      <OfflineStatusBar />
     </View>
   );
 }
