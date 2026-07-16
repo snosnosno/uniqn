@@ -7,10 +7,11 @@ import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement
 import { toDateString } from '@/utils/date';
 import { mergeJobPostingInput, serializeJobPostingV3 } from '@/domains/job-posting';
 import {
-  buildCreateJobPostingInput,
-  buildJobPostingFormData,
-  buildUpdateJobPostingInput,
-} from '@/utils/job-posting/submission';
+  draftToCreateJobPostingInput,
+  draftToUpdateJobPostingInput,
+  formDataToDraft,
+  jobPostingToDraft,
+} from '@/utils/job-posting/draftAdapter';
 
 const DEALER_ROLE_NAME = STAFF_ROLES.find((role) => role.key === 'dealer')?.name ?? 'dealer';
 
@@ -124,117 +125,11 @@ function createPosting(): JobPosting {
   };
 }
 
-describe('job posting submission helpers', () => {
-  it('builds canonical create payloads for dated postings', () => {
-    const formData = createFormData({
-      workDate: '2026-03-20',
-      dateSpecificRequirements: [
-        createDateRequirement('2026-03-25'),
-        createDateRequirement('2026-03-26'),
-      ],
-      usesPreQuestions: true,
-      preQuestions: [
-        {
-          id: 'q1',
-          question: 'Do you have live game experience?',
-          type: 'text',
-          required: true,
-        },
-      ],
-      useSameSalary: true,
-    });
-
-    const result = buildCreateJobPostingInput(formData);
-
-    expect(result.schedule.kind).toBe('dated');
-    if (result.schedule.kind === 'dated') {
-      expect(result.schedule.primaryDate).toBe('2026-03-25');
-      expect(result.schedule.allDates).toEqual(['2026-03-25', '2026-03-26']);
-      expect(result.schedule.requirements[0]?.timeSlots[0]?.roles[0]).toMatchObject({
-        role: 'dealer',
-        count: 2,
-      });
-    }
-
-    expect(result.roleCatalog).toEqual([
-      { role: 'dealer', salary: { type: 'hourly', amount: 12000 } },
-    ]);
-    expect(result.location).toEqual({
-      name: 'Seoul Gangnam',
-      district: 'Teheran-ro',
-    });
-    expect(Object.prototype.hasOwnProperty.call(result.location, 'address')).toBe(false);
-    expect(result.compensation).toEqual({
-      mode: 'shared',
-      defaultSalary: { type: 'hourly', amount: 12000 },
-      allowances: {},
-    });
-    expect(result.questions.items).toEqual(formData.preQuestions);
-  });
-
-  it('omits schedule mutations but preserves role salary updates when confirmed applicants exist', () => {
-    const formData = createFormData({
-      workDate: '2026-03-22',
-      dateSpecificRequirements: [createDateRequirement('2026-03-22')],
-      usesPreQuestions: true,
-      preQuestions: [
-        {
-          id: 'q1',
-          question: 'Can you arrive 30 minutes early?',
-          type: 'text',
-          required: false,
-        },
-      ],
-    });
-
-    const result = buildUpdateJobPostingInput(formData, {
-      hasConfirmedApplicants: true,
-    });
-
-    expect(result.schedule).toBeUndefined();
-    expect(result.roleCatalog).toEqual([
-      { role: 'dealer', salary: { type: 'hourly', amount: 12000 } },
-    ]);
-    expect(result.questions).toEqual({
-      items: formData.preQuestions,
-    });
-  });
-
-  it('builds canonical update payloads for fixed postings', () => {
-    const formData = createFormData({
-      postingType: 'fixed',
-      workDate: '',
-      dateSpecificRequirements: [],
-      daysPerWeek: 3,
-      startTime: '18:30',
-      isStartTimeNegotiable: false,
-      roles: [
-        {
-          name: DEALER_ROLE_NAME,
-          count: 3,
-          salary: { type: 'hourly', amount: 14000 },
-        },
-      ],
-    });
-
-    const result = buildUpdateJobPostingInput(formData);
-
-    expect(result.postingType).toBe('fixed');
-    expect(result.schedule?.kind).toBe('fixed');
-    if (result.schedule?.kind === 'fixed') {
-      expect(result.schedule.daysPerWeek).toBe(3);
-      expect(result.schedule.startTime).toBe('18:30');
-      // 통일 구조: requirements[0].timeSlots[0].roles로 역할 배열 확인 (filled는 formData 기반 미설정 시 생략)
-      expect(result.schedule.requirements?.[0]?.timeSlots?.[0]?.roles).toEqual(
-        expect.arrayContaining([expect.objectContaining({ role: 'dealer', count: 3 })])
-      );
-    }
-    expect(result.roleCatalog).toEqual([
-      { role: 'dealer', salary: { type: 'hourly', amount: 14000 } },
-    ]);
-  });
-
-  it('keeps hidden pre-question drafts out of canonical payloads when the toggle is off', () => {
+// submission.ts는 buildJobPostingDraft 단일 존치로 슬림화(S4). 래퍼(buildCreate/Update/FormData)가
+// 은퇴하며, 그 유일 계약을 draftAdapter 직접 경로(draftToCreate/Update·formDataToDraft·jobPostingToDraft)로
+// 이식해 어서션 의미를 보존한다. 파일명은 경로 이력 보존을 위해 유지한다.
+describe('formData 백컴팻(draftAdapter 직접 경로)', () => {
+  it('토글 off면 숨은 pre-question 초안이 canonical payload에서 빠진다', () => {
     const formData = createFormData({
       usesPreQuestions: false,
       preQuestions: [
@@ -247,40 +142,28 @@ describe('job posting submission helpers', () => {
       ],
     });
 
-    const result = buildCreateJobPostingInput(formData);
+    const result = draftToCreateJobPostingInput(formDataToDraft(formData));
 
     expect(result.questions.items).toEqual([]);
     expect(formData.preQuestions).toHaveLength(1);
   });
 
-  it('builds legacy form state from canonical postings', () => {
-    const result = buildJobPostingFormData(createPosting());
-
-    expect(result.workDate).toBe('2026-03-25');
-    expect(result.location?.address).toBe('Teheran-ro');
-    expect(result.location?.district).toBe('Teheran-ro');
-    expect(result.detailedAddress).toBe('Suite 101');
-    expect(result.dateSpecificRequirements).toHaveLength(2);
-    expect(result.roles[0]?.name).toBe(DEALER_ROLE_NAME);
-    expect(result.defaultSalary?.amount).toBe(12000);
-    expect(result.usesPreQuestions).toBe(true);
-    expect(result.preQuestions[0]?.question).toBe('Do you have live game experience?');
-  });
-
-  it('keeps clear intent for optional fields in update payloads and serialization', () => {
+  it('optional 필드 clear-intent가 update payload와 직렬화에 반영된다', () => {
     const currentPosting = createPosting();
-    const formData = buildJobPostingFormData(currentPosting);
+    // S4: 구 draftToFormData(posting→form) 레그 소멸 → clear-intent(빈 문자열) 폼을 직접 픽스처로 구성.
+    // 검사 대상은 formDataToDraft → draftToUpdateJobPostingInput → serialize 의 clear 반영이라 계약 판별력 동일.
     const clearedFormData: JobPostingFormData = {
-      ...formData,
+      ...createFormData(),
       description: '',
       detailedAddress: '',
       location: {
-        ...formData.location!,
+        name: 'Seoul Gangnam',
+        address: 'Teheran-ro',
         detailedAddress: '',
       },
     };
 
-    const updateInput = buildUpdateJobPostingInput(clearedFormData);
+    const updateInput = draftToUpdateJobPostingInput(formDataToDraft(clearedFormData));
 
     expect(Object.prototype.hasOwnProperty.call(updateInput, 'description')).toBe(true);
     expect(updateInput.description).toBeUndefined();
@@ -306,25 +189,27 @@ describe('job posting submission helpers', () => {
     );
   });
 
-  it('prefers canonical nested detailedAddress when facade state is stale', () => {
-    const currentPosting = createPosting();
-    const formData = buildJobPostingFormData(currentPosting);
+  it('facade 상태가 stale일 때 canonical nested detailedAddress를 우선한다', () => {
+    // S4: 구 draftToFormData(posting→form) 레그 소멸 → facade(top-level)/canonical(nested) 상충 폼을 직접 구성.
+    // getFormDetailedAddress = location.detailedAddress ?? detailedAddress — nested(Room 202)가 facade(Suite 101)를 이긴다.
     const nextFormData: JobPostingFormData = {
-      ...formData,
+      ...createFormData(),
       detailedAddress: 'Suite 101',
       location: {
-        ...formData.location!,
+        name: 'Seoul Gangnam',
+        address: 'Teheran-ro',
         detailedAddress: 'Room 202',
       },
     };
 
-    const updateInput = buildUpdateJobPostingInput(nextFormData);
+    const updateInput = draftToUpdateJobPostingInput(formDataToDraft(nextFormData));
 
     expect(updateInput.location?.detailedAddress).toBe('Room 202');
   });
 
-  it('preserves canonical location data through serialize -> parse -> form round-trip', () => {
-    const createInput = buildCreateJobPostingInput(createFormData());
+  it('canonical location이 serialize → parse → draft 왕복에서 보존된다', () => {
+    // 렌즈 교체: form 방향(buildJobPostingFormData) 사멸 → jobPostingToDraft 로 location 보존을 확인.
+    const createInput = draftToCreateJobPostingInput(formDataToDraft(createFormData()));
     const serialized = serializeJobPostingV3(createInput, {
       ownerId: 'employer-1',
       ownerName: 'Owner',
@@ -339,12 +224,12 @@ describe('job posting submission helpers', () => {
 
     expect(parsed).not.toBeNull();
 
-    const formData = buildJobPostingFormData(parsed!);
+    const draft = jobPostingToDraft(parsed!);
 
-    expect(formData.location).toEqual({
+    // toCanonicalPostingLocation: address→district 정규화, address 키는 canonical draft에 남지 않는다.
+    expect(draft.location).toEqual({
       name: 'Seoul Gangnam',
       district: 'Teheran-ro',
-      address: 'Teheran-ro',
     });
   });
 });

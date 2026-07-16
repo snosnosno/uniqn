@@ -133,7 +133,6 @@ export {
   useSettlementDateNavigation,
   type UseSettlementDateNavigationResult,
 } from './useSettlementDateNavigation';
-export { useAllowances, type UseAllowancesResult } from './useAllowances';
 export {
   useConfirmedStaff,
   type UseConfirmedStaffOptions,

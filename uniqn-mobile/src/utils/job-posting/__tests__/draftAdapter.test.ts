@@ -1,13 +1,13 @@
 import {
-  applyFormDataPatch,
   draftToCreateJobPostingInput,
-  draftToFormData,
   draftToUpdateJobPostingInput,
   formDataToDraft,
   jobPostingToDraft,
 } from '../draftAdapter';
+// S4(레거시 은퇴): draftToFormData(폼 읽기 방향) 제거 후, 라이브 읽기 렌즈는 주문서 매퍼 draftToValues 로 단일화.
+import { draftToValues } from '@/utils/order-sheet/mappers';
 import { INITIAL_JOB_POSTING_DRAFT, type JobPostingDraft } from '@/types/jobPostingDraft';
-import { INITIAL_JOB_POSTING_FORM_DATA, type FormRoleWithCount } from '@/types/jobPostingForm';
+import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types/jobPostingForm';
 import type { JobPosting } from '@/types';
 
 function createDatedDraft(): JobPostingDraft {
@@ -89,265 +89,35 @@ function createDatedDraft(): JobPostingDraft {
   };
 }
 
-describe('draftAdapter dated seed handling', () => {
-  it('uses dealer and floor as the default dated roles for a fresh draft', () => {
-    const formData = draftToFormData(INITIAL_JOB_POSTING_DRAFT);
+// S4 이주: 구 draftToFormData(폼 roles) 렌즈 → draftToValues(주문서 라이브 읽기) 렌즈.
+// 역할 surfacing 은 values.scheduleGroups?.[].timeSlots[].roles(canonical role/count)로 어서션.
+describe('draftAdapter dated seed handling (draftToValues 렌즈)', () => {
+  it('빈 요청의 신규 draft 는 기본 dated 역할로 딜러·플로어를 노출한다', () => {
+    const values = draftToValues(INITIAL_JOB_POSTING_DRAFT);
 
-    expect(formData.roles).toMatchObject([
-      {
-        name: '딜러',
-        count: 1,
-      },
-      {
-        name: '플로어',
-        count: 1,
-      },
+    // requirements 없는 draft → templateTimeSlots(기본 딜러/플로어 count 1) 단일 그룹으로 복원.
+    expect(values.scheduleGroups?.[0]?.timeSlots[0]?.roles).toMatchObject([
+      { role: 'dealer', count: 1 },
+      { role: 'floor', count: 1 },
     ]);
   });
 
-  it('keeps form roles aligned with the first populated requirement instead of aggregating all dates', () => {
-    const formData = draftToFormData(createDatedDraft());
+  it('역할을 첫 요청 기준으로 노출하고 날짜 전체를 합산하지 않는다', () => {
+    const values = draftToValues(createDatedDraft());
 
-    expect(formData.location?.address).toBe('Gangnam-daero');
-    expect(formData.roles).toMatchObject([
-      {
-        name: '딜러',
-        count: 2,
-        salary: { type: 'hourly', amount: 13000 },
-      },
+    // draftToValues 는 canonical location 을 그대로 전달 — 폼 레거시 address 가 아니라 district 축.
+    expect(values.location?.district).toBe('Gangnam-daero');
+    // 첫 날짜 그룹은 count 2(합산 7 아님) — 날짜별 requirements 가 개별 그룹으로 분리 보존된다.
+    expect(values.scheduleGroups?.[0]?.timeSlots[0]?.roles).toMatchObject([
+      { role: 'dealer', count: 2 },
     ]);
-  });
-
-  it('surfaces a custom timeSlot role in formData.roles after a patch round-trip', () => {
-    const draft = createDatedDraft();
-    const currentFormData = draftToFormData(draft);
-    const requirement = currentFormData.dateSpecificRequirements?.[0];
-    if (!requirement) {
-      throw new Error('expected a dated requirement');
-    }
-
-    const nextRequirements = [
-      {
-        ...requirement,
-        timeSlots: requirement.timeSlots.map((slot) => ({
-          ...slot,
-          roles: [
-            ...slot.roles,
-            {
-              id: 'custom-manager',
-              role: 'other' as const,
-              customRole: '매니저',
-              headcount: 1,
-              filled: 0,
-            },
-          ],
-        })),
-      },
-      ...(currentFormData.dateSpecificRequirements ?? []).slice(1),
-    ];
-
-    const nextDraft = applyFormDataPatch(draft, { dateSpecificRequirements: nextRequirements });
-    const nextFormData = draftToFormData(nextDraft);
-
-    expect(nextFormData.roles).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ name: '매니저', isCustom: true, count: 1 }),
-      ])
-    );
-  });
-
-  it('is idempotent when the same custom role patch is applied twice', () => {
-    const draft = createDatedDraft();
-    const formData = draftToFormData(draft);
-    const requirement = formData.dateSpecificRequirements?.[0];
-    if (!requirement) {
-      throw new Error('expected a dated requirement');
-    }
-
-    const patched = [
-      {
-        ...requirement,
-        timeSlots: requirement.timeSlots.map((slot) => ({
-          ...slot,
-          roles: [
-            ...slot.roles,
-            {
-              id: 'custom-manager',
-              role: 'other' as const,
-              customRole: '매니저',
-              headcount: 1,
-              filled: 0,
-            },
-          ],
-        })),
-      },
-    ];
-
-    const firstDraft = applyFormDataPatch(draft, { dateSpecificRequirements: patched });
-    const firstFormData = draftToFormData(firstDraft);
-    const secondDraft = applyFormDataPatch(firstDraft, { roles: firstFormData.roles });
-    const secondFormData = draftToFormData(secondDraft);
-
-    expect(secondFormData.roles).toEqual(firstFormData.roles);
-  });
-
-  it('surfaces roles added only to a later dated requirement', () => {
-    const draft = createDatedDraft();
-    const formData = draftToFormData(draft);
-    const requirements = formData.dateSpecificRequirements ?? [];
-    if (requirements.length < 2) {
-      throw new Error('expected at least two dated requirements');
-    }
-
-    const [firstRequirement, secondRequirement, ...rest] = requirements;
-
-    const nextRequirements = [
-      firstRequirement!,
-      {
-        ...secondRequirement!,
-        timeSlots: secondRequirement!.timeSlots.map((slot) => ({
-          ...slot,
-          roles: [
-            ...slot.roles,
-            {
-              id: 'later-serving',
-              role: 'serving' as const,
-              headcount: 3,
-              filled: 0,
-            },
-          ],
-        })),
-      },
-      ...rest,
-    ];
-
-    const nextDraft = applyFormDataPatch(draft, {
-      dateSpecificRequirements: nextRequirements,
-    });
-    const nextFormData = draftToFormData(nextDraft);
-
-    const serving = nextFormData.roles.find((role) => role.name === '서빙');
-    expect(serving).toBeDefined();
-    expect(serving?.count).toBe(3);
-
-    const dealer = nextFormData.roles.find((role) => role.name === '딜러');
-    expect(dealer?.count).toBe(2);
-  });
-
-  it('copies shared salary to a newly added role when useSameSalary is on (fixed)', () => {
-    const draft: JobPostingDraft = {
-      ...INITIAL_JOB_POSTING_DRAFT,
-      postingType: 'fixed',
-      schedule: {
-        kind: 'fixed',
-        daysPerWeek: 5,
-        startTime: '10:00',
-        requirements: [
-          {
-            date: null,
-            timeSlots: [
-              {
-                startTime: '10:00',
-                isTimeToBeAnnounced: false,
-                roles: [
-                  { role: 'dealer', count: 1 },
-                  { role: 'floor', count: 1 },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-      roleCatalog: [
-        { role: 'dealer', salary: { type: 'hourly', amount: 15000 } },
-        { role: 'floor', salary: { type: 'hourly', amount: 15000 } },
-      ],
-      compensation: {
-        mode: 'shared',
-        defaultSalary: { type: 'hourly', amount: 15000 },
-      },
-    };
-
-    const formData = draftToFormData(draft);
-    expect(formData.useSameSalary).toBe(true);
-
-    const nextRoles: FormRoleWithCount[] = [
-      ...formData.roles,
-      { name: '서빙', count: 1, isCustom: false },
-    ];
-
-    const nextDraft = applyFormDataPatch(draft, { roles: nextRoles });
-    const nextFormData = draftToFormData(nextDraft);
-
-    const serving = nextFormData.roles.find((role) => role.name === '서빙');
-    expect(serving).toBeDefined();
-    expect(serving?.salary).toEqual({ type: 'hourly', amount: 15000 });
-  });
-
-  it('copies shared salary to a newly added slot role when useSameSalary is on (dated)', () => {
-    const draft: JobPostingDraft = {
-      ...createDatedDraft(),
-      compensation: {
-        mode: 'shared',
-        defaultSalary: { type: 'hourly', amount: 13000 },
-      },
-    };
-
-    const formData = draftToFormData(draft);
-    expect(formData.useSameSalary).toBe(true);
-
-    const requirement = formData.dateSpecificRequirements?.[0];
-    if (!requirement) {
-      throw new Error('expected a dated requirement');
-    }
-
-    const nextRequirements = [
-      {
-        ...requirement,
-        timeSlots: requirement.timeSlots.map((slot) => ({
-          ...slot,
-          roles: [
-            ...slot.roles,
-            {
-              id: 'slot-serving',
-              role: 'serving' as const,
-              headcount: 1,
-              filled: 0,
-            },
-          ],
-        })),
-      },
-      ...(formData.dateSpecificRequirements ?? []).slice(1),
-    ];
-
-    const nextDraft = applyFormDataPatch(draft, {
-      dateSpecificRequirements: nextRequirements,
-    });
-    const nextFormData = draftToFormData(nextDraft);
-
-    const serving = nextFormData.roles.find((role) => role.name === '서빙');
-    expect(serving).toBeDefined();
-    expect(serving?.salary).toEqual({ type: 'hourly', amount: 13000 });
-  });
-
-  it('falls back to template seed slots when dated requirements are removed', () => {
-    const draft = createDatedDraft();
-    if (draft.schedule.kind !== 'dated') {
-      throw new Error('expected dated draft');
-    }
-
-    draft.schedule = {
-      ...draft.schedule,
-      requirements: [],
-    };
-
-    const formData = draftToFormData(draft);
-
-    expect(formData.roles).toMatchObject([
-      {
-        name: '딜러',
-        count: 2,
-      },
+    // 둘째 날짜 그룹은 count 5 로 독립 유지(합산 발산 회귀 가드).
+    expect(values.scheduleGroups?.[1]?.timeSlots[0]?.roles).toMatchObject([
+      { role: 'dealer', count: 5 },
+    ]);
+    // by_role 급여(13000)는 roleSalaries 로 복원.
+    expect(values.roleSalaries).toMatchObject([
+      { role: 'dealer', salary: { type: 'hourly', amount: 13000 } },
     ]);
   });
 });
@@ -385,12 +155,8 @@ describe('draftAdapter fixed (통일 구조)', () => {
     expect((fixed as { roleRequirements?: unknown }).roleRequirements).toBeUndefined();
   });
 
-  it('round-trips fixed roles back to form (draft -> form)', () => {
-    const form = draftToFormData(formDataToDraft(fixedForm));
-    expect(form.roles.map((r) => r.count).sort()).toEqual([2, 3]);
-    expect(form.daysPerWeek).toBe(5);
-    expect(form.startTime).toBe('19:00');
-  });
+  // fixed draft→form 왕복(구 draftToFormData)은 삭제 — 라이브 동등물이 주문서 매퍼 fixed 왕복
+  // ('draftToValues가 fixed draft를 폼 값으로 복원한다' — mappers.test.ts '고정(fixed) 매퍼 왕복 (S2)')에 존재.
 });
 
 describe('draftAdapter location.region 보존', () => {
@@ -402,9 +168,9 @@ describe('draftAdapter location.region 보존', () => {
     };
   }
 
-  it('draftToFormData 가 region 을 보존한다 (작성 폼 표시)', () => {
-    const form = draftToFormData(draftWithRegion());
-    expect(form.location?.region).toBe('서울 강남구');
+  it('draftToValues 가 region 을 보존한다 (주문서 값 표시)', () => {
+    const values = draftToValues(draftWithRegion());
+    expect(values.location?.region).toBe('서울 강남구');
   });
 
   it('draftToCreateJobPostingInput 가 region 을 저장 페이로드에 포함한다', () => {
@@ -413,7 +179,12 @@ describe('draftAdapter location.region 보존', () => {
   });
 
   it('formDataToDraft → draftToCreateJobPostingInput 전체 경로에서 region 이 살아남는다', () => {
-    const form = draftToFormData(draftWithRegion());
+    // 구 draftToFormData 로 폼을 만들던 레그를 직접 폼 픽스처로 대체(형상 소멸) — 검사 대상은
+    // formDataToDraft(레거시 폼→draft, 존치) 경로의 region 보존이라 계약 판별력 동일.
+    const form = {
+      ...INITIAL_JOB_POSTING_FORM_DATA,
+      location: { name: 'Seoul', address: 'Gangnam-daero', region: '서울 강남구' },
+    };
     const input = draftToCreateJobPostingInput(formDataToDraft(form));
     expect((input.location as { region?: string }).region).toBe('서울 강남구');
   });
@@ -440,9 +211,9 @@ describe('draftAdapter venue_id 전수배선', () => {
     } as unknown as JobPosting;
   }
 
-  it('draftToFormData 가 venueId 를 보존한다', () => {
-    const form = draftToFormData(draftWithVenueId());
-    expect(form.venueId).toBe(VENUE_ID);
+  it('draftToValues 가 venueId 를 보존한다 (주문서 값 표시)', () => {
+    const values = draftToValues(draftWithVenueId());
+    expect(values.venueId).toBe(VENUE_ID);
   });
 
   it('formDataToDraft 가 폼의 venueId 를 draft 로 보존한다 (form→draft)', () => {
@@ -455,11 +226,8 @@ describe('draftAdapter venue_id 전수배선', () => {
     expect((input as { venueId?: string }).venueId).toBe(VENUE_ID);
   });
 
-  it('formDataToDraft → draftToFormData 왕복에서 venueId 가 살아남는다', () => {
-    const form = draftToFormData(draftWithVenueId());
-    const roundTripped = draftToFormData(formDataToDraft(form));
-    expect(roundTripped.venueId).toBe(VENUE_ID);
-  });
+  // form→draft→form 왕복(구 draftToFormData)은 삭제 — venueId 보존은 위 draftToValues 렌즈 +
+  // formDataToDraft(form→draft) 어서션이 커버(형상 소멸분 제거).
 
   it('jobPostingToDraft → draftToUpdateJobPostingInput 왕복에서 venueId 가 보존된다 (clobber 방지)', () => {
     const draft = jobPostingToDraft(postingWithVenueId());
@@ -476,12 +244,10 @@ describe('draftAdapter venue_id 전수배선', () => {
   });
 
   // 무회귀: venue_id 없는 일반 공고는 어떤 경로에서도 venueId 키가 생기지 않아야 한다.
-  it('venueId 없는 일반 공고는 draft/form/create/update 에 venueId 키가 부재한다', () => {
+  // (구 form 레그는 draftToFormData 소멸로 제거 — draft/create/update 레그로 계약 유지.)
+  it('venueId 없는 일반 공고는 draft/create/update 에 venueId 키가 부재한다', () => {
     const draft = createDatedDraft();
     expect(Object.prototype.hasOwnProperty.call(draft, 'venueId')).toBe(false);
-
-    const form = draftToFormData(draft);
-    expect(Object.prototype.hasOwnProperty.call(form, 'venueId')).toBe(false);
 
     const create = draftToCreateJobPostingInput(draft);
     expect(Object.prototype.hasOwnProperty.call(create, 'venueId')).toBe(false);

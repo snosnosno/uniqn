@@ -25,11 +25,14 @@ export default function CreateSuccessScreen() {
     title?: string | string[];
     summary?: string | string[];
     suggestPreset?: string | string[];
+    pending?: string | string[];
   }>();
   const postingId = first(params.id);
   const title = first(params.title);
   const summary = first(params.summary);
   const suggestPreset = first(params.suggestPreset) === '1';
+  // 대회는 관리자 승인 후 게시 — 완료 화면 안내 문구를 승인 대기용으로 분기(서버 상태 아님, 표시 전용).
+  const pending = first(params.pending) === '1';
   const hasPostingId = !!postingId;
 
   const { shareJobById, isSharing } = useShare();
@@ -73,7 +76,7 @@ export default function CreateSuccessScreen() {
           </View>
           <Text className="text-xl font-sans-bold text-content-primary">공고가 등록됐어요</Text>
           <Text className="text-sm text-content-secondary font-sans mt-1.5 text-center">
-            지원자가 생기면 바로 알려드릴게요
+            {pending ? '관리자 승인 후 게시돼요 (1~2 영업일)' : '지원자가 생기면 바로 알려드릴게요'}
           </Text>
         </View>
 
@@ -111,17 +114,30 @@ export default function CreateSuccessScreen() {
           </View>
         ) : null}
 
-        {/* 다음 행동 — 공유(지원자 유입, 유일한 골드 CTA) → 공고 보기 → 하나 더 등록 */}
+        {/* 다음 행동 — 공유(지원자 유입, 유일한 골드 CTA) → 공고 보기 → 하나 더 등록.
+            승인 대기(pending) 대회는 상세가 승인 게이트에 막혀(jobs/[id] P0#4 "승인 대기 중인 공고입니다")
+            공유 링크가 수신자에게 죽은 화면 — 공유 CTA를 숨기고 사유를 안내한다(전체리뷰 P5·P6). */}
         <View className="gap-2.5">
-          <Button
-            onPress={handleShare}
-            disabled={!hasPostingId || isSharing}
-            loading={isSharing}
-            icon={<ShareIcon size={18} color={TEXT_COLORS.onGold} />}
-            testID="create-success-share"
-          >
-            공고 공유하기
-          </Button>
+          {pending ? (
+            <View
+              className="rounded-xl bg-surface-card border border-secondary-100 dark:border-surface-overlay px-4 py-3 min-h-[44px] justify-center"
+              testID="create-success-share-pending"
+            >
+              <Text className="text-center text-sm text-content-secondary font-sans">
+                승인이 완료되면 공유할 수 있어요
+              </Text>
+            </View>
+          ) : (
+            <Button
+              onPress={handleShare}
+              disabled={!hasPostingId || isSharing}
+              loading={isSharing}
+              icon={<ShareIcon size={18} color={TEXT_COLORS.onGold} />}
+              testID="create-success-share"
+            >
+              공고 공유하기
+            </Button>
+          )}
           <Button
             variant="secondary"
             onPress={handleViewPosting}

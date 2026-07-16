@@ -64,7 +64,6 @@ jest.mock('@/components/ui/CalendarPicker', () => {
 const baseProps = {
   onSubmit: jest.fn(),
   isSubmitting: false,
-  onSwitchToLegacyForm: jest.fn(),
 };
 
 const flush = async () => {
