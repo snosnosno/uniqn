@@ -8,14 +8,15 @@ import {
   initialOrderSheetValues,
   primaryScheduleInfo,
 } from '../mappers';
-import { buildCreateJobPostingInput } from '@/utils/job-posting/submission';
+import { draftToCreateJobPostingInput, formDataToDraft } from '@/utils/job-posting/draftAdapter';
 import { INITIAL_JOB_POSTING_DRAFT } from '@/types/jobPostingDraft';
 import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types/jobPostingForm';
 import type { OrderSheetFormValues, OrderSheetValues } from '@/schemas/orderSheet.schema';
+import { orderSheetValuesSchema } from '@/schemas/orderSheet.schema';
 import type { JobPostingFormData } from '@/types/jobPostingForm';
 import type { JobPostingTemplate } from '@/types/jobTemplate';
 import type { CreateJobPostingInput } from '@/types/jobPosting';
-import { singleGroup } from './orderSheetTestHelpers';
+import { singleGroup, stripKnownGeneratedIds } from './orderSheetTestHelpers';
 
 const baseSlots: OrderSheetValues['scheduleGroups'][number]['timeSlots'] = [
   {
@@ -47,9 +48,6 @@ const slotAt = (
   startTime: string,
   roles: { role: 'dealer' | 'floor' | 'serving'; count: number }[]
 ) => ({ startTime, roles });
-
-const stripIds = (obj: unknown): unknown =>
-  JSON.parse(JSON.stringify(obj, (key, value) => (key === 'id' ? undefined : value)));
 
 describe('valuesToDraft — 단일 그룹 (신구 등가성)', () => {
   it('구(dates+timeSlots 평탄) 산출과 동결 스냅샷이 일치한다 (Eng-L2 — S1 전 캡처)', () => {
@@ -114,7 +112,7 @@ describe('valuesToDraft — 단일 그룹 (신구 등가성)', () => {
       questions: { items: [] },
       conditions: { dressCode: '검정셔츠/슬랙스', experience: 'TDA 숙지자' },
     };
-    expect(stripIds(valuesToDraft(baseValues))).toEqual(frozen);
+    expect(stripKnownGeneratedIds(valuesToDraft(baseValues))).toEqual(frozen);
   });
   it('dated 스케줄을 canonical하게 만든다 (날짜별 requirements, 시간대·역할 보존)', () => {
     const draft = valuesToDraft(baseValues);
@@ -322,8 +320,12 @@ describe('draftToValues — 그룹핑 복원 (S1, M8 throw 제거)', () => {
       mk('2026-07-22', '19:00', 'dealer', true), // 7/21 없음 — run 단절
     ]);
     const values = draftToValues(draft);
-    expect(values.scheduleGroups.map((g) => g.dates)).toEqual([['2026-07-20'], ['2026-07-22']]);
-    expect(values.scheduleGroups.every((g) => g.grouped)).toBe(true);
+    // scheduleGroups 는 z.input 에서 optional(.default([])) — 널 가드 후 접근.
+    expect((values.scheduleGroups ?? []).map((g) => g.dates)).toEqual([
+      ['2026-07-20'],
+      ['2026-07-22'],
+    ]);
+    expect((values.scheduleGroups ?? []).every((g) => g.grouped)).toBe(true);
   });
 
   it('falsy isGrouped는 시그니처 병합 — 비연속 동일 조건 날짜들이 한 그룹으로 (정규형 수용)', () => {
@@ -347,12 +349,16 @@ describe('draftToValues — 그룹핑 복원 (S1, M8 throw 제거)', () => {
     ]);
   });
 
-  it('fixed 스케줄 draft는 throw한다 (키오스크 범위 밖)', () => {
+  it('fixed 스케줄 draft는 throw 없이 fixed 폼 값으로 복원된다 (S2 — 키오스크 fixed 지원)', () => {
     const fixedDraft = {
       ...INITIAL_JOB_POSTING_DRAFT,
+      postingType: 'fixed' as const,
       schedule: { kind: 'fixed' as const, requirements: [] },
     };
-    expect(() => draftToValues(fixedDraft)).toThrow();
+    const values = draftToValues(fixedDraft);
+    expect(values.postingType).toBe('fixed');
+    expect(values.scheduleGroups).toEqual([]);
+    expect(values.fixedSchedule?.roles).toEqual([]);
   });
 });
 
@@ -414,7 +420,7 @@ describe('draftToValues ↔ valuesToDraft 왕복', () => {
     };
     const draft1 = valuesToDraft(values);
     const draft2 = valuesToDraft(draftToValues(draft1) as OrderSheetValues);
-    expect(stripIds(draft2)).toEqual(stripIds(draft1));
+    expect(stripKnownGeneratedIds(draft2)).toEqual(stripKnownGeneratedIds(draft1));
   });
 
   it('레거시 협의(other) 공고는 협의로 유지된다 (2026-07-14 결정 — hourly 강제 변환 금지)', () => {
@@ -444,8 +450,10 @@ describe('draftToValues ↔ valuesToDraft 왕복', () => {
     // salary(세그먼트 캐리어)는 defaultSalary=최저값 정규화(CEO-1)로 25,000이 된다 — 정규형 동치.
     expect(roundTrip).toEqual({ ...byRoleValues, salary: { type: 'hourly', amount: 25000 } });
     expect(
-      stripIds(valuesToDraft(draftToValues(valuesToDraft(byRoleValues)) as OrderSheetValues))
-    ).toEqual(stripIds(valuesToDraft(byRoleValues)));
+      stripKnownGeneratedIds(
+        valuesToDraft(draftToValues(valuesToDraft(byRoleValues)) as OrderSheetValues)
+      )
+    ).toEqual(stripKnownGeneratedIds(valuesToDraft(byRoleValues)));
   });
 
   it('by_role의 defaultSalary는 roleSalaries 최저값 — 유령 초기값(세그먼트 캐리어) 아님 (CEO-1)', () => {
@@ -555,7 +563,7 @@ describe('신·구 동등성 (레거시 폼 경로 대비)', () => {
       usesPreQuestions: false,
       preQuestions: [],
     };
-    const legacy = buildCreateJobPostingInput(legacyFormData);
+    const legacy = draftToCreateJobPostingInput(formDataToDraft(legacyFormData));
     const kiosk = valuesToCreateInput(baseValues);
     expect(kiosk.compensation).toEqual(legacy.compensation);
     expect(stripReqIds(kiosk.schedule.requirements)).toEqual(
@@ -591,6 +599,15 @@ describe('gridParamsToValues (정규화 + 직접 조립 — INITIAL 경유 금�
       gridParamsToValues({ date: '2026-07-20', count: 500 }).scheduleGroups?.[0]?.timeSlots?.[0]
         ?.roles?.[0]?.count
     ).toBe(99);
+  });
+  it('count 미지정/0/소수 경계 → 1 이상 정수로 클램프 (구 gridPrefill.test 동형 이식)', () => {
+    // NaN 경계는 제외 — gridParamsToValues는 NaN을 투과(Math.trunc(NaN)=NaN)하고,
+    // create.tsx가 caller 단에서 Number.isFinite 가드로 undefined 폴백한다(계약 위치 상이).
+    const countOf = (date: string, count?: number) =>
+      gridParamsToValues({ date, count }).scheduleGroups?.[0]?.timeSlots?.[0]?.roles?.[0]?.count;
+    expect(countOf('2026-07-20')).toBe(1); // 미지정 → ?? 1
+    expect(countOf('2026-07-20', 0)).toBe(1); // 0 → max(1, 0)
+    expect(countOf('2026-07-20', 2.7)).toBe(2); // 소수 → trunc
   });
   it('파라미터 없으면 initialOrderSheetValues와 동일 (venueId 키 부재 무회귀 계약)', () => {
     expect(gridParamsToValues({})).toEqual(initialOrderSheetValues());
@@ -724,5 +741,226 @@ describe('primaryScheduleInfo (완료 화면 요약 — 리뷰 Eng-M2)', () => {
       startTime: undefined,
       totalDates: 0,
     });
+  });
+});
+
+describe('대회(tournament) 왕복 보존 (S1)', () => {
+  const tournamentValues: OrderSheetValues = {
+    ...baseValues,
+    postingType: 'tournament',
+    title: 'WSOP 서울 딜러 모집',
+  };
+
+  it('valuesToDraft가 tournament를 보존한다', () => {
+    expect(valuesToDraft(tournamentValues).postingType).toBe('tournament');
+  });
+
+  it('draftToValues가 tournament를 regular로 뭉개지 않는다 (silent-coercion 회귀)', () => {
+    const draft = valuesToDraft(tournamentValues);
+    expect(draftToValues(draft).postingType).toBe('tournament');
+  });
+
+  it('valuesToCreateInput이 tournament를 보존한다 (Repository 승인 config 주입 조건)', () => {
+    expect(valuesToCreateInput(tournamentValues).postingType).toBe('tournament');
+  });
+
+  it('스키마가 tournament + 30일을 허용하고 31일을 거부한다', () => {
+    const dates = (n: number) =>
+      Array.from({ length: n }, (_, i) => `2026-08-${String(i + 1).padStart(2, '0')}`);
+    // baseValues.location.region('seoul-gangnam')은 isRegionSlug 미등록 슬러그라 safeParse 지역
+    // 게이트에 걸린다(다른 테스트는 safeParse를 안 타 무영향). 이 테스트는 날짜 상한만 검증하므로
+    // 유효 슬러그로 교체해 지역 게이트를 통과시킨다 — 날짜 개수만 유일 변수로 남긴다.
+    const withDates = (n: number) => ({
+      ...tournamentValues,
+      location: { ...tournamentValues.location, region: '서울 강남구' },
+      scheduleGroups: [{ dates: dates(n), timeSlots: baseSlots, grouped: false }],
+    });
+    expect(orderSheetValuesSchema.safeParse(withDates(30)).success).toBe(true);
+    expect(orderSheetValuesSchema.safeParse(withDates(31)).success).toBe(false);
+  });
+});
+
+describe('고정(fixed) 매퍼 왕복 (S2)', () => {
+  const fixedValues = orderSheetValuesSchema.parse({
+    postingType: 'fixed',
+    title: '주말 고정 딜러',
+    // region 은 isRegionSlug 등록 슬러그여야 .parse() 통과 — 'seoul-gangnam'(미등록) 대신 유효 슬러그 사용.
+    location: { name: '강남 홀덤펍', address: '서울 강남구', region: '서울 강남구' },
+    contactPhone: '010-1234-5678',
+    description: '',
+    scheduleGroups: [],
+    fixedSchedule: {
+      daysPerWeek: 5,
+      startTime: '19:00',
+      isStartTimeNegotiable: false,
+      roles: [{ role: 'dealer', count: 3 }],
+    },
+    salary: { type: 'daily', amount: 200000 },
+    useSameSalary: true,
+    roleSalaries: [],
+    allowances: {},
+    conditions: {},
+    usesPreQuestions: false,
+    preQuestions: [],
+  });
+
+  it('valuesToDraft가 fixed 스케줄을 조립한다(date:null synthetic)', () => {
+    const draft = valuesToDraft(fixedValues);
+    expect(draft.postingType).toBe('fixed');
+    expect(draft.schedule.kind).toBe('fixed');
+    if (draft.schedule.kind !== 'fixed') throw new Error('kind');
+    expect(draft.schedule.daysPerWeek).toBe(5);
+    expect(draft.schedule.startTime).toBe('19:00');
+    expect(draft.schedule.requirements[0]?.date).toBeNull();
+    expect(draft.schedule.requirements[0]?.timeSlots[0]?.roles).toHaveLength(1);
+  });
+
+  it('draftToValues가 fixed draft를 폼 값으로 복원한다(왕복 own-property)', () => {
+    const draft = valuesToDraft(fixedValues);
+    const back = draftToValues(draft);
+    expect(back.postingType).toBe('fixed');
+    expect(back.scheduleGroups).toEqual([]);
+    expect(back.fixedSchedule?.daysPerWeek).toBe(5);
+    expect(back.fixedSchedule?.startTime).toBe('19:00');
+    expect(back.fixedSchedule?.isStartTimeNegotiable).toBe(false);
+    expect(back.fixedSchedule?.roles).toEqual([{ role: 'dealer', count: 3 }]);
+  });
+
+  it('협의 고정(startTime 없음)도 왕복 보존한다', () => {
+    const negotiable = orderSheetValuesSchema.parse({
+      ...fixedValues,
+      fixedSchedule: {
+        daysPerWeek: 0,
+        isStartTimeNegotiable: true,
+        roles: [{ role: 'dealer', count: 2 }],
+      },
+    });
+    const back = draftToValues(valuesToDraft(negotiable));
+    expect(back.fixedSchedule?.isStartTimeNegotiable).toBe(true);
+    expect(back.fixedSchedule?.startTime).toBeUndefined();
+    expect(back.fixedSchedule?.daysPerWeek).toBe(0);
+  });
+
+  it('valuesToCreateInput(fixed)이 레거시 draftToCreateJobPostingInput과 등가 스케줄을 낸다', () => {
+    const input = valuesToCreateInput(fixedValues);
+    expect(input.postingType).toBe('fixed');
+    expect(input.schedule.kind).toBe('fixed');
+    if (input.schedule.kind !== 'fixed') throw new Error('kind');
+    expect(input.schedule.daysPerWeek).toBe(5);
+    expect(input.schedule.requirements).toHaveLength(1);
+    expect(input.schedule.requirements[0]?.date).toBeNull();
+  });
+
+  it('primaryScheduleInfo(fixed)는 throw 없이 totalDates 0을 반환한다(완료 요약 fixed-safe, S2 Task7)', () => {
+    // fixed는 scheduleGroups가 항상 빈 배열 — primaryScheduleInfo가 날짜 축 없는 값을 받아도
+    // 크래시 없이 안전 폴백해야 한다(create.tsx 완료 요약이 dated 분기로 잘못 빠지지 않는 근거).
+    expect(() => primaryScheduleInfo(fixedValues)).not.toThrow();
+    const info = primaryScheduleInfo(fixedValues);
+    expect(info).toEqual({ totalDates: 0 });
+    expect(info.primaryDate).toBeUndefined();
+    expect(info.startTime).toBeUndefined();
+  });
+});
+
+// ── 전체리뷰 후속(2026-07-16) — mixed-draft 하드닝 + role fabrication 차단 ──
+
+describe('fixed mixed-draft 하드닝 (전체리뷰 P4·P3)', () => {
+  const fixedInput: OrderSheetFormValues = {
+    postingType: 'fixed',
+    title: '주말 고정 딜러',
+    location: { name: '강남 홀덤펍', address: '서울 강남구', region: '서울 강남구' },
+    contactPhone: '010-1234-5678',
+    description: '',
+    scheduleGroups: [],
+    fixedSchedule: {
+      daysPerWeek: 5,
+      startTime: '19:00',
+      // isStartTimeNegotiable 생략 — z.input optional(.default) 형상. formValuesToDraft가
+      // 정규화 없이 fixed 분기를 못 태우면 dated로 오분기하는 red 조건(#194 클래스, P3-2).
+      roles: [{ role: 'dealer', count: 1 }],
+    },
+    salary: { type: 'daily', amount: 200000 },
+    useSameSalary: true,
+    roleSalaries: [],
+    allowances: {},
+    conditions: {},
+    usesPreQuestions: false,
+    preQuestions: [],
+  };
+
+  it('fixedSchedule 부재여도 postingType=fixed면 kind:fixed로 조립한다(mixed draft 차단)', () => {
+    const parsed = orderSheetValuesSchema.parse({
+      ...fixedInput,
+      fixedSchedule: { ...fixedInput.fixedSchedule, isStartTimeNegotiable: false },
+    });
+    const { fixedSchedule: _fs, ...noFixed } = parsed;
+    const draft = valuesToDraft(noFixed);
+    expect(draft.postingType).toBe('fixed');
+    expect(draft.schedule.kind).toBe('fixed');
+    // 재로드에서도 fixed 유지 — regular 침묵 전환(#194 클래스) 없음
+    expect(draftToValues(draft).postingType).toBe('fixed');
+  });
+
+  it('formValuesToDraft가 z.input fixed를 kind:fixed로 굳힌다(P3-2 red-green)', () => {
+    const draft = formValuesToDraft(fixedInput);
+    expect(draft.postingType).toBe('fixed');
+    expect(draft.schedule.kind).toBe('fixed');
+    expect(draftToValues(draft).postingType).toBe('fixed');
+  });
+});
+
+describe('fixed 역할 복원 — role 부재 fabrication 차단 (전체리뷰 P6)', () => {
+  type LegacyRoles = { role?: 'dealer' | 'floor'; customRole?: string; count: number }[];
+  const legacyFixedDraft = (slots: { startTime?: string; roles: LegacyRoles }[]) => ({
+    ...INITIAL_JOB_POSTING_DRAFT,
+    postingType: 'fixed' as const,
+    schedule: {
+      kind: 'fixed' as const,
+      daysPerWeek: 5,
+      startTime: '19:00',
+      isStartTimeNegotiable: false,
+      requirements: [
+        {
+          date: null,
+          timeSlots: slots.map((s) => ({
+            ...(s.startTime ? { startTime: s.startTime } : {}),
+            isTimeToBeAnnounced: false,
+            roles: s.roles,
+          })),
+        },
+      ],
+    },
+  });
+
+  it('role 부재 + customRole 존재는 other로 승격해 의도를 보존한다', () => {
+    const back = draftToValues(
+      legacyFixedDraft([{ startTime: '19:00', roles: [{ customRole: '홀서빙', count: 2 }] }])
+    );
+    expect(back.fixedSchedule?.roles).toEqual([{ role: 'other', customRole: '홀서빙', count: 2 }]);
+  });
+
+  it('role·customRole 모두 부재 엔트리는 딜러로 조작하지 않고 드랍한다', () => {
+    const back = draftToValues(
+      legacyFixedDraft([
+        {
+          startTime: '19:00',
+          roles: [{ count: 3 }, { role: 'floor', count: 1 }],
+        },
+      ])
+    );
+    expect(back.fixedSchedule?.roles).toEqual([{ role: 'floor', count: 1 }]);
+  });
+
+  it('복수 슬롯 레거시 fixed의 2번째+ 슬롯 역할도 침묵 드랍 없이 흡수한다', () => {
+    const back = draftToValues(
+      legacyFixedDraft([
+        { startTime: '19:00', roles: [{ role: 'dealer', count: 1 }] },
+        { startTime: '21:00', roles: [{ role: 'floor', count: 2 }] },
+      ])
+    );
+    expect(back.fixedSchedule?.roles).toEqual([
+      { role: 'dealer', count: 1 },
+      { role: 'floor', count: 2 },
+    ]);
   });
 });

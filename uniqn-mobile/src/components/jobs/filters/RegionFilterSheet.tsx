@@ -4,7 +4,7 @@
  * @description 2-패널 본문(검색층 + 좌 그룹 탭 + 우 칩 그리드/구 아코디언)은 공유 컴포넌트
  * RegionTaxonomyBrowser 소비 — 이 시트는 멀티 토큰 선택 상태(pending·cap·미리보기 카운트)와
  * 그룹전체 행·바로가기·확인층 슬롯만 소유한다. 선택 모델은 utils/regionSelection 토큰
- * (slug | 'group:서울') — 상호배타·최대 5단위. 공고작성 폼의 단일선택(RegionSelectModal)과 별개.
+ * (slug | 'group:서울') — 상호배타·최대 5단위. 공고작성 폼의 단일선택(은퇴)과 별개.
  */
 
 import { memo, useMemo, useState } from 'react';
@@ -46,7 +46,7 @@ export interface RegionFilterSheetProps {
 
 type SheetBodyProps = Omit<RegionFilterSheetProps, 'visible'>;
 
-/** 선택 체크 골드 — 라이트는 대비 확보용 primary-700 (RegionSelectModal 관례와 동일) */
+/** 선택 체크 골드 — 라이트는 대비 확보용 primary-700 (구 공고작성 폼 단일선택 모달(은퇴) 관례와 동일) */
 function useCheckColor(): string {
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
   return isDarkMode ? PRIMARY_COLORS[500] : PRIMARY_COLORS[700];

@@ -47,7 +47,7 @@ export interface RegionTaxonomyBrowserProps {
   searchInputTestID?: string;
 }
 
-/** 선택 체크 골드 — 라이트는 대비 확보용 primary-700 (RegionSelectModal 관례와 동일) */
+/** 선택 체크 골드 — 라이트는 대비 확보용 primary-700 (구 공고작성 폼 단일선택 모달(은퇴) 관례와 동일) */
 function useCheckColor(): string {
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
   return isDarkMode ? PRIMARY_COLORS[500] : PRIMARY_COLORS[700];
