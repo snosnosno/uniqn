@@ -142,7 +142,8 @@ export function useStaffSettlementsHandlers({
         workLog,
         rolesForList,
         salaryConfig.defaultSalary,
-        salaryConfig.allowances
+        salaryConfig.allowances,
+        salaryConfig.taxSettings
       ),
     [rolesForList, salaryConfig]
   );
