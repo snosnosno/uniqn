@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { opsPlayerRepository } from '@/repositories/ops';
-import { computeClockRemaining } from '@/domains/ops';
+import { computeClockRemaining, computeNextBreakRemaining } from '@/domains/ops';
 
 const POLL_INTERVAL_MS = 4000; // ≥3s 하한(§0.5)
 
@@ -61,11 +61,37 @@ export function usePlayerView(token: string | undefined) {
     ]
   );
 
+  // S1 C1: 다음 브레이크 카운트다운 — 모니터와 동일 산식(표면별 드리프트 0)
+  const nextBreak = useMemo(
+    () =>
+      computeNextBreakRemaining({
+        nextBreak: view?.nextBreak ?? null,
+        currentLevelIsBreak: view?.currentLevel?.isBreak ?? false,
+        currentLevelDurationSec: view?.currentLevel?.durationSec ?? null,
+        levelStartedAt: view?.clock.levelStartedAt ?? null,
+        isRunning,
+        pausedRemainingSec: view?.clock.pausedRemainingSec ?? null,
+        serverOffsetMs,
+        nowMs,
+      }),
+    [
+      view?.nextBreak,
+      view?.currentLevel?.isBreak,
+      view?.currentLevel?.durationSec,
+      view?.clock.levelStartedAt,
+      view?.clock.pausedRemainingSec,
+      isRunning,
+      serverOffsetMs,
+      nowMs,
+    ]
+  );
+
   return {
     view,
     remainingSec: remaining.remainingSec,
     isExpired: remaining.isExpired,
     levelMissing: remaining.levelMissing,
+    nextBreak,
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,

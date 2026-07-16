@@ -18,6 +18,9 @@ export { usePlayerView } from './usePlayerView';
 export { useIssuePlayerCredentials, useClaimParticipant } from './useOpsClaimToken';
 export {
   useCreateOpsTournament,
+  useDuplicateTournament,
+  useSetMonitorConfig,
+  useSetPrizePaid,
   useSetTournamentStatus,
   useToggleRegistration,
   useRegisterParticipant,

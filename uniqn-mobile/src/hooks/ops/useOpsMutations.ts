@@ -13,6 +13,7 @@ import {
 import { computeWaitlistFill } from '@/domains/ops';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
+import { trackOpsFunnel } from '@/services/observability/analyticsService';
 import { logger } from '@/utils/logger';
 import { extractUserMessage } from '@/errors';
 import type { CreateOpsTournamentInput, RegisterParticipantInput } from '@/repositories/ops';
@@ -53,6 +54,7 @@ export function useCreateOpsTournament() {
           queryKey: queryKeys.ops.forPosting(variables.jobPostingId),
         });
       }
+      trackOpsFunnel('ops_tournament_created', { method: 'create' }); // D1 퍼널
       toast.success('대회를 만들었습니다');
     },
     onError: (error) => {
@@ -92,6 +94,64 @@ export function useToggleRegistration(tournamentId: string) {
     onError: (error) => {
       logger.error('ops 등록 토글 실패', toError(error));
       toast.error(extractUserMessage(error) || '등록 설정 변경에 실패했습니다');
+    },
+  });
+}
+
+/** S1 A4: 대회 복제 — 성공 시 목록 무효화 + 새 대회 id 반환(호출부가 상세로 이동). */
+export function useDuplicateTournament() {
+  const queryClient = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (input: { sourceTournamentId: string; name?: string; eventDate?: string }) =>
+      opsTournamentService.duplicateTournament(input.sourceTournamentId, requireActor(actorId), {
+        name: input.name,
+        eventDate: input.eventDate,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournaments() });
+      trackOpsFunnel('ops_tournament_created', { method: 'duplicate' }); // D1 퍼널
+      toast.success('지난 대회 설정으로 새 대회를 만들었어요');
+    },
+    onError: (error) => {
+      logger.error('ops 대회 복제 실패', toError(error));
+      toast.error(extractUserMessage(error) || '대회 복제에 실패했습니다');
+    },
+  });
+}
+
+/** S1 C6: TV 모니터 구성 저장 — 4s 폴링 내 자동 반영이라 별도 푸시 없음. */
+export function useSetMonitorConfig(tournamentId: string) {
+  const queryClient = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (config: { v: 1; preset: string; slots: (string | null)[] } | null) =>
+      opsTournamentService.setMonitorConfig(tournamentId, requireActor(actorId), config),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournamentDetail(tournamentId) });
+      toast.success('저장했어요. TV에 곧 반영돼요');
+    },
+    onError: (error) => {
+      logger.error('ops TV 모니터 구성 저장 실패', toError(error));
+      toast.error(extractUserMessage(error) || 'TV 모니터 구성 저장에 실패했습니다');
+    },
+  });
+}
+
+/** S1 C4: 상금 지급 마킹(undo-first) — 토글 왕복, 서버 멱등. */
+export function useSetPrizePaid(tournamentId: string) {
+  const queryClient = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (input: { participantId: string; paid: boolean }) =>
+      opsParticipantService.setPrizePaid(input.participantId, requireActor(actorId), input.paid),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
+      toast.success(variables.paid ? '지급 완료로 표시했어요' : '지급 표시를 취소했어요');
+    },
+    onError: (error) => {
+      logger.error('ops 상금 지급 마킹 실패', toError(error));
+      toast.error(extractUserMessage(error) || '지급 표시에 실패했습니다');
     },
   });
 }

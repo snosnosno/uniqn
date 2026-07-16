@@ -11,7 +11,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { opsMonitorRepository } from '@/repositories/ops';
-import { computeClockRemaining } from '@/domains/ops';
+import { computeClockRemaining, computeNextBreakRemaining } from '@/domains/ops';
 
 const POLL_INTERVAL_MS = 4000; // ≥3s 하한(§0.5). 일시정지/레벨변경 최대 4s 지연 허용.
 
@@ -66,11 +66,37 @@ export function useMonitorSnapshot(token: string | undefined) {
     ]
   );
 
+  // S1 C1: 다음 브레이크 카운트다운 — 클럭과 동일 앵커·offset·틱(드리프트 0)
+  const nextBreak = useMemo(
+    () =>
+      computeNextBreakRemaining({
+        nextBreak: snapshot?.nextBreak ?? null,
+        currentLevelIsBreak: snapshot?.currentLevel?.isBreak ?? false,
+        currentLevelDurationSec: snapshot?.currentLevel?.durationSec ?? null,
+        levelStartedAt: snapshot?.clock.levelStartedAt ?? null,
+        isRunning,
+        pausedRemainingSec: snapshot?.clock.pausedRemainingSec ?? null,
+        serverOffsetMs,
+        nowMs,
+      }),
+    [
+      snapshot?.nextBreak,
+      snapshot?.currentLevel?.isBreak,
+      snapshot?.currentLevel?.durationSec,
+      snapshot?.clock.levelStartedAt,
+      snapshot?.clock.pausedRemainingSec,
+      isRunning,
+      serverOffsetMs,
+      nowMs,
+    ]
+  );
+
   return {
     snapshot,
     remainingSec: remaining.remainingSec,
     isExpired: remaining.isExpired,
     levelMissing: remaining.levelMissing,
+    nextBreak,
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,

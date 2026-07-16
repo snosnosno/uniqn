@@ -4,3 +4,6 @@ export * from './opsStats';
 export * from './seatAssignment';
 export * from './clock/computeClockRemaining';
 export * from './prizeCurve';
+export * from './monitor/monitorConfig';
+export * from './monitor/nextBreak';
+export * from './resume/selectResumeTournament';

@@ -213,6 +213,11 @@ export const ERROR_CODES = {
   OPS_ELIMINATOR_INVALID: 'E6132', // 1f: 넉아웃 상대 무효(자기자신/미존재/타대회/비활성)
   OPS_UNDO_INVALID_STATE: 'E6133', // 1f: 탈락 취소 불가 상태
   OPS_PRIZE_CORRECTION_INVALID: 'E6134', // 1f: 상금 정정 대상/값 무효
+  // 전면 개방 S1 (E6135~)
+  OPS_MONITOR_CONFIG_INVALID: 'E6135', // S1 C6: TV 모니터 구성 화이트리스트 위반
+  OPS_PRIZE_NOT_ASSIGNED: 'E6136', // S1 C4: 상금 미배정 참가자 지급 마킹
+  OPS_REPORT_TOKEN_INVALID: 'E6137', // S1 B2: 신고 대상 토큰 무효
+  OPS_REPORT_RATE_LIMITED: 'E6138', // S1 B2: 신고 rate limit
 
   // 알 수 없는 에러 (E7xxx)
   UNKNOWN: 'E7000',
@@ -259,6 +264,11 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.OPS_ELIMINATOR_INVALID]: '넉아웃 상대가 올바르지 않아요.',
   [ERROR_CODES.OPS_UNDO_INVALID_STATE]: '탈락 취소를 할 수 없는 상태예요.',
   [ERROR_CODES.OPS_PRIZE_CORRECTION_INVALID]: '상금 정정 대상이나 값이 올바르지 않아요.',
+  [ERROR_CODES.OPS_MONITOR_CONFIG_INVALID]: 'TV 모니터 구성이 올바르지 않아요.',
+  [ERROR_CODES.OPS_PRIZE_NOT_ASSIGNED]: '상금이 배정되지 않은 참가자예요.',
+  [ERROR_CODES.OPS_REPORT_TOKEN_INVALID]: '신고 대상을 찾을 수 없어요.',
+  [ERROR_CODES.OPS_REPORT_RATE_LIMITED]:
+    '신고가 이미 접수되어 처리 중이에요. 잠시 후 다시 시도해주세요.',
 
   // 네트워크
   [ERROR_CODES.NETWORK_OFFLINE]: '인터넷 연결을 확인해주세요',

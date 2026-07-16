@@ -42,4 +42,10 @@ export interface IOpsParticipantRepository {
     amount: number | null,
     reason?: string | null
   ): Promise<OpsPrizeCorrectionResult>;
+  /** S1 C4: 상금 지급 마킹(paid=true) / 취소(paid=false, undo-first). 멱등. */
+  setPrizePaid(
+    participantId: string,
+    actorId: string,
+    paid: boolean
+  ): Promise<{ participantId: string; prizePaidAt: string | null }>;
 }

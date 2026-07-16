@@ -3336,7 +3336,17 @@ export type Database = {
         | 'level_set'
         | 'prize_structure_set'
         | 'player_bust_undone'
-        | 'prize_corrected';
+        | 'prize_corrected'
+        | 'posting_linked'
+        | 'posting_unlinked'
+        | 'staff_imported'
+        | 'staff_added'
+        | 'staff_removed'
+        | 'table_staff_assigned'
+        | 'table_staff_unassigned'
+        | 'monitor_config_set'
+        | 'prize_paid'
+        | 'prize_paid_undone';
       ops_participant_status: 'registered' | 'checked_in' | 'active' | 'busted' | 'no_show';
       ops_table_lock_type: 'none' | 'locked' | 'feature';
       ops_table_status: 'open' | 'closed' | 'standby';
@@ -3534,6 +3544,16 @@ export const Constants = {
         'prize_structure_set',
         'player_bust_undone',
         'prize_corrected',
+        'posting_linked',
+        'posting_unlinked',
+        'staff_imported',
+        'staff_added',
+        'staff_removed',
+        'table_staff_assigned',
+        'table_staff_unassigned',
+        'monitor_config_set',
+        'prize_paid',
+        'prize_paid_undone',
       ],
       ops_participant_status: ['registered', 'checked_in', 'active', 'busted', 'no_show'],
       ops_table_lock_type: ['none', 'locked', 'feature'],
