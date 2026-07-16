@@ -23,6 +23,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-na
 import { XMarkIcon } from '@/components/icons';
 import { getIconColor } from '@/constants';
 import { MOTION_EASING, MOTION_DURATION } from '@/constants/animation';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { useThemeStore } from '@/stores/themeStore';
 import { isWeb } from '@/utils/platform';
 import { WebPortal } from '@/components/ui/WebPortal';
@@ -256,6 +257,7 @@ function NativeModal({
 }: ModalProps) {
   const { isDarkMode } = useThemeStore();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const reduceMotion = useReduceMotion();
   const fadeOpacity = useSharedValue(0);
   const scale = useSharedValue(0.9);
   const translateY = useSharedValue(100);
@@ -298,7 +300,11 @@ function NativeModal({
         easing: MOTION_EASING.fade,
       });
 
-      if (position === 'center') {
+      if (reduceMotion) {
+        // reduce motion: transform 은 즉시 목표값, opacity 페이드만 유지
+        scale.value = 1;
+        translateY.value = 0;
+      } else if (position === 'center') {
         scale.value = withTiming(1, {
           duration: MOTION_DURATION.emphasized,
           easing: MOTION_EASING.enter,
@@ -316,7 +322,10 @@ function NativeModal({
         easing: MOTION_EASING.fade,
       });
 
-      if (position === 'center') {
+      if (reduceMotion) {
+        scale.value = 0.9;
+        translateY.value = 100;
+      } else if (position === 'center') {
         scale.value = withTiming(0.9, {
           duration: MOTION_DURATION.fast,
           easing: MOTION_EASING.fade,
@@ -328,7 +337,7 @@ function NativeModal({
         });
       }
     }
-  }, [visible, position, fadeOpacity, scale, translateY]);
+  }, [visible, position, reduceMotion, fadeOpacity, scale, translateY]);
 
   const handleBackdropPress = () => {
     Keyboard.dismiss();

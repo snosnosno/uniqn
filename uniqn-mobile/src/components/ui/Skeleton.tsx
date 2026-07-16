@@ -8,8 +8,8 @@
  * 룰 근거: `.claude/rules/impeccable-design.md` §16 Skeleton > Spinner
  */
 
-import React, { useEffect, useState } from 'react';
-import { AccessibilityInfo, View, type ViewStyle, type DimensionValue } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, type ViewStyle, type DimensionValue } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -18,6 +18,7 @@ import Animated, {
   cancelAnimation,
   Easing,
 } from 'react-native-reanimated';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 
 // ============================================================================
 // Types
@@ -49,37 +50,6 @@ interface SkeletonTextProps {
 
 interface SkeletonCardProps {
   className?: string;
-}
-
-// ============================================================================
-// Reduce Motion 감지 훅 (impeccable v2 §16)
-// ============================================================================
-
-/**
- * OS 의 Reduce Motion 설정을 구독한다.
- * 활성 시 shimmer 루프 대신 정적 fade(단일 opacity) 만 표시.
- */
-function useReduceMotion(): boolean {
-  const [enabled, setEnabled] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-
-    AccessibilityInfo.isReduceMotionEnabled().then((value) => {
-      if (mounted) setEnabled(value);
-    });
-
-    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', (value: boolean) => {
-      if (mounted) setEnabled(value);
-    });
-
-    return () => {
-      mounted = false;
-      sub?.remove?.();
-    };
-  }, []);
-
-  return enabled;
 }
 
 // ============================================================================

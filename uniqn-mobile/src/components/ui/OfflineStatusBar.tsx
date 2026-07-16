@@ -20,7 +20,7 @@
 
 import { useColorScheme } from 'nativewind';
 import React, { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Text } from 'react-native';
+import { Text } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -30,6 +30,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { WifiOff } from '@/components/icons';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import {
   getNetworkState,
   subscribeToNetworkState,
@@ -55,29 +56,6 @@ const TOKENS = {
     text: '#09090B', // content-primary light
   },
 } as const;
-
-function useReduceMotion(): boolean {
-  const [enabled, setEnabled] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-
-    AccessibilityInfo.isReduceMotionEnabled().then((v) => {
-      if (mounted) setEnabled(v);
-    });
-
-    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', (v: boolean) => {
-      if (mounted) setEnabled(v);
-    });
-
-    return () => {
-      mounted = false;
-      sub?.remove?.();
-    };
-  }, []);
-
-  return enabled;
-}
 
 export function OfflineStatusBar(): React.ReactElement | null {
   const [, setNetworkState] = useState<NetworkState>(() => getNetworkState());

@@ -11,6 +11,7 @@
 
 import { MOTION_EASING, MOTION_DURATION } from '@/constants/animation';
 import { SECONDARY_PALETTE } from '@/constants/colors';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import React, { useEffect } from 'react';
 import { View, Text, ActivityIndicator, Modal, Pressable } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
@@ -117,6 +118,7 @@ export function LoadingOverlay({
   animationType = 'fade',
 }: LoadingOverlayProps) {
   // Reanimated 애니메이션 값
+  const reduceMotion = useReduceMotion();
   const animatedOpacity = useSharedValue(0);
   const animatedScale = useSharedValue(0.9);
 
@@ -126,21 +128,30 @@ export function LoadingOverlay({
         duration: MOTION_DURATION.base,
         easing: MOTION_EASING.fade,
       });
-      animatedScale.value = withTiming(1, {
-        duration: MOTION_DURATION.emphasized,
-        easing: MOTION_EASING.enter,
-      });
+      if (reduceMotion) {
+        // reduce motion: scale 은 즉시 목표값, opacity 페이드만 유지
+        animatedScale.value = 1;
+      } else {
+        animatedScale.value = withTiming(1, {
+          duration: MOTION_DURATION.emphasized,
+          easing: MOTION_EASING.enter,
+        });
+      }
     } else {
       animatedOpacity.value = withTiming(0, {
         duration: MOTION_DURATION.fast,
         easing: MOTION_EASING.fade,
       });
-      animatedScale.value = withTiming(0.9, {
-        duration: MOTION_DURATION.fast,
-        easing: MOTION_EASING.fade,
-      });
+      if (reduceMotion) {
+        animatedScale.value = 0.9;
+      } else {
+        animatedScale.value = withTiming(0.9, {
+          duration: MOTION_DURATION.fast,
+          easing: MOTION_EASING.fade,
+        });
+      }
     }
-  }, [visible, animatedOpacity, animatedScale]);
+  }, [visible, reduceMotion, animatedOpacity, animatedScale]);
 
   // 애니메이션 스타일
   const containerAnimatedStyle = useAnimatedStyle(() => ({

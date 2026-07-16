@@ -23,6 +23,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-na
 import { XMarkIcon } from '@/components/icons';
 import { getIconColor } from '@/constants';
 import { MOTION_EASING, MOTION_DURATION } from '@/constants/animation';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { useThemeStore } from '@/stores/themeStore';
 import { isWeb } from '@/utils/platform';
 import { WebPortal } from '@/components/ui/WebPortal';
@@ -224,6 +225,7 @@ function NativeSheetModal({
 }: SheetModalProps) {
   const { isDarkMode } = useThemeStore();
   const { height: windowHeight } = useWindowDimensions();
+  const reduceMotion = useReduceMotion();
   const fadeOpacity = useSharedValue(0);
   const translateY = useSharedValue(windowHeight);
   const isKeyboardVisible = useRef(false);
@@ -259,21 +261,30 @@ function NativeSheetModal({
         duration: MOTION_DURATION.base,
         easing: MOTION_EASING.fade,
       });
-      translateY.value = withTiming(0, {
-        duration: MOTION_DURATION.sheet,
-        easing: MOTION_EASING.sheet,
-      });
+      if (reduceMotion) {
+        // reduce motion: translate 는 즉시 목표값, opacity 페이드만 유지
+        translateY.value = 0;
+      } else {
+        translateY.value = withTiming(0, {
+          duration: MOTION_DURATION.sheet,
+          easing: MOTION_EASING.sheet,
+        });
+      }
     } else {
       fadeOpacity.value = withTiming(0, {
         duration: MOTION_DURATION.base,
         easing: MOTION_EASING.fade,
       });
-      translateY.value = withTiming(windowHeight, {
-        duration: MOTION_DURATION.sheetExit,
-        easing: MOTION_EASING.exitTravel,
-      });
+      if (reduceMotion) {
+        translateY.value = windowHeight;
+      } else {
+        translateY.value = withTiming(windowHeight, {
+          duration: MOTION_DURATION.sheetExit,
+          easing: MOTION_EASING.exitTravel,
+        });
+      }
     }
-  }, [visible, fadeOpacity, translateY, windowHeight]);
+  }, [visible, reduceMotion, fadeOpacity, translateY, windowHeight]);
 
   const handleRequestClose = useCallback(() => {
     if (!isLoading) {

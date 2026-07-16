@@ -21,6 +21,7 @@ import {
   XMarkIcon,
 } from '@/components/icons';
 import { MOTION_EASING, MOTION_DURATION } from '@/constants/animation';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import type { Toast as ToastType } from '@/stores/toastStore';
 
 // ============================================================================
@@ -60,6 +61,7 @@ const TOAST_STYLES = {
 // ============================================================================
 
 export function Toast({ toast, onDismiss }: ToastProps) {
+  const reduceMotion = useReduceMotion();
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(-20);
 
@@ -74,10 +76,11 @@ export function Toast({ toast, onDismiss }: ToastProps) {
   );
 
   const handleDismiss = useCallback(() => {
-    // 퇴장 애니메이션
-    opacity.value = withTiming(0, { duration: MOTION_DURATION.fast, easing: MOTION_EASING.fade });
-    translateY.value = withTiming(
-      -20,
+    // 퇴장 애니메이션.
+    // 완료 콜백(onDismiss)은 opacity 페이드에 건다 — opacity 는 양 모드에서 항상
+    // 애니메이트되므로, reduce motion 으로 translateY 를 즉시 세팅해도 콜백이 유실되지 않는다.
+    opacity.value = withTiming(
+      0,
       { duration: MOTION_DURATION.fast, easing: MOTION_EASING.fade },
       (finished) => {
         if (finished) {
@@ -85,15 +88,28 @@ export function Toast({ toast, onDismiss }: ToastProps) {
         }
       }
     );
-  }, [opacity, translateY, callOnDismiss, toast.id]);
+    if (reduceMotion) {
+      translateY.value = -20;
+    } else {
+      translateY.value = withTiming(-20, {
+        duration: MOTION_DURATION.fast,
+        easing: MOTION_EASING.fade,
+      });
+    }
+  }, [opacity, translateY, reduceMotion, callOnDismiss, toast.id]);
 
   useEffect(() => {
     // 입장 애니메이션
     opacity.value = withTiming(1, { duration: MOTION_DURATION.base, easing: MOTION_EASING.enter });
-    translateY.value = withTiming(0, {
-      duration: MOTION_DURATION.base,
-      easing: MOTION_EASING.enter,
-    });
+    if (reduceMotion) {
+      // reduce motion: translate 는 즉시 목표값, opacity 페이드만 유지
+      translateY.value = 0;
+    } else {
+      translateY.value = withTiming(0, {
+        duration: MOTION_DURATION.base,
+        easing: MOTION_EASING.enter,
+      });
+    }
 
     // 자동 닫기
     const timer = setTimeout(() => {
@@ -102,7 +118,7 @@ export function Toast({ toast, onDismiss }: ToastProps) {
 
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toast.id, toast.duration]);
+  }, [toast.id, toast.duration, reduceMotion]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
