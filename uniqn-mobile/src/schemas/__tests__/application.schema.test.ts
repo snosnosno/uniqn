@@ -161,3 +161,63 @@ describe('confirmApplicationSchema', () => {
     expect(result.success).toBe(false);
   });
 });
+
+describe('assignment.duration 재배선 (A2 회귀 — 오배선 시 {}로 증발·재기록되던 결함)', () => {
+  const durationValue = {
+    type: 'consecutive' as const,
+    startDate: '2025-01-09',
+    endDate: '2025-01-11',
+  };
+
+  it('AssignmentDuration 실데이터가 파싱 후 그대로 보존된다 (왕복 무손실)', () => {
+    const result = parseApplicationDocument({
+      ...baseDocument,
+      assignments: [{ ...baseAssignment, duration: durationValue }],
+    });
+
+    expect(result).not.toBeNull();
+    expect(result?.assignments?.[0]?.duration).toEqual(durationValue);
+  });
+
+  it('과거 오배선으로 오염된 {} duration은 흡수하고 지원서 레코드는 증발시키지 않는다', () => {
+    const result = parseApplicationDocument({
+      ...baseDocument,
+      assignments: [{ ...baseAssignment, duration: {} }],
+    });
+
+    expect(result).not.toBeNull();
+    expect(result?.assignments?.[0]?.duration).toBeUndefined();
+  });
+
+  it('duration 부재/null 도 레코드를 증발시키지 않는다', () => {
+    const absent = parseApplicationDocument({
+      ...baseDocument,
+      assignments: [baseAssignment],
+    });
+    const nullish = parseApplicationDocument({
+      ...baseDocument,
+      assignments: [{ ...baseAssignment, duration: null }],
+    });
+
+    expect(absent).not.toBeNull();
+    expect(nullish).not.toBeNull();
+  });
+
+  it('중첩 이력(originalApplication/confirmationHistory)의 duration도 보존된다', () => {
+    const result = parseApplicationDocument({
+      ...baseDocument,
+      originalApplication: {
+        assignments: [{ ...baseAssignment, duration: durationValue }],
+      },
+      confirmationHistory: [
+        {
+          confirmedAt: { seconds: 1735776000, nanoseconds: 0 },
+          assignments: [{ ...baseAssignment, duration: durationValue }],
+        },
+      ],
+    });
+
+    expect(result?.originalApplication?.assignments?.[0]?.duration).toEqual(durationValue);
+    expect(result?.confirmationHistory?.[0]?.assignments?.[0]?.duration).toEqual(durationValue);
+  });
+});
