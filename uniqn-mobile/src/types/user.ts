@@ -120,8 +120,8 @@ export interface UserProfile {
   };
 
   // 프로필 상태
-  /** 사용자 상태 */
-  status?: 'active' | 'inactive' | 'suspended' | 'deleted';
+  /** 사용자 상태 ('deactivated' = 탈퇴 요청 유예 상태, DB users.status에 실기록) */
+  status?: 'active' | 'inactive' | 'suspended' | 'deactivated' | 'deleted';
   /**
    * 닉네임 설정 완료 여부.
    *

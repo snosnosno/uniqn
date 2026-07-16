@@ -19,7 +19,9 @@ import {
  * 워크스페이스 도메인 에러 코드 (E6 비즈니스)
  */
 export const WORKSPACE_ERROR_CODES = {
-  WORKSPACE_NOT_FOUND: 'E6080',
+  // E6080은 대회 공고 승인 게이트(AppError.ts BUSINESS_TOURNAMENT_NOT_APPROVED) 전용이므로
+  // 워크스페이스 블록(E6081~) 다음의 미사용 코드 E6093으로 재할당한다.
+  WORKSPACE_NOT_FOUND: 'E6093',
   WORKSPACE_INVITATION_NOT_FOUND: 'E6081',
   WORKSPACE_ALREADY_MEMBER: 'E6082',
   WORKSPACE_ALREADY_INVITED: 'E6083',

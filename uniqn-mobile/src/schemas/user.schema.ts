@@ -22,8 +22,17 @@ export type UserRoleSchema = z.infer<typeof userRoleSchema>;
 
 /**
  * 사용자 상태 스키마
+ *
+ * @note 'deactivated'는 탈퇴 요청(requestDeletion) 시 DB users.status에 실기록되는
+ *       유예 상태다. 이 값이 enum에 없으면 strict parse가 레코드를 거부해 증발시키므로 포함한다.
  */
-export const userStatusSchema = z.enum(['active', 'inactive', 'suspended', 'deleted']);
+export const userStatusSchema = z.enum([
+  'active',
+  'inactive',
+  'suspended',
+  'deactivated',
+  'deleted',
+]);
 
 export type UserStatusSchema = z.infer<typeof userStatusSchema>;
 
