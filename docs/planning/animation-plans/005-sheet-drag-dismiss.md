@@ -1,6 +1,6 @@
 # 005 — SheetModal 드래그 dismiss (제스처 + 속도 이양)
 
-- **Status**: TODO
+- **Status**: IMPLEMENTED(실기기 QA 대기) (2026-07-17, quality EXIT 0 · ui jest 16스위트 127통과 · SDD 리뷰 Approved(opus 폴백 — fable 529 과부하). Minor 관찰 3: panGesture 미메모화(안전 방향)·withSpring velocity 이양 큰 경우 단일 오버슈트 물리적 가능(스펙 값 준수, 실기기서 튐 관찰 시 튜닝 회부)·입장 백드롭 full 도달이 300ms 슬라이드 추종(스펙 공식의 결과). 임계값 400px/s·25%는 실기기 튜닝 대상)
 - **Commit**: c0c6113e5
 - **Severity**: 기회 (Missed opportunity — 추가적 개선)
 - **Category**: 중단가능성·제스처 (Interruptibility)

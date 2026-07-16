@@ -12,7 +12,7 @@
 | [002](002-toast-easing.md) | Toast 입장 이징 강화 (최고빈도 모션) | HIGH | DONE |
 | [003](003-reduce-motion-core-ui.md) | 코어 UI 4종 Reduce Motion + 공유 훅 추출 | HIGH | DONE |
 | [004](004-sheet-travel-curve.md) | 시트류 travel 커브 + 75% 퇴장 규칙 | HIGH | DONE |
-| [005](005-sheet-drag-dismiss.md) | SheetModal 드래그 dismiss (제스처) | 기회 | TODO |
+| [005](005-sheet-drag-dismiss.md) | SheetModal 드래그 dismiss (제스처) | 기회 | IMPLEMENTED(실기기 QA 대기) |
 
 ## 권장 실행 순서·의존성
 
