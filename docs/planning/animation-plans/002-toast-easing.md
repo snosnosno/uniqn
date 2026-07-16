@@ -1,6 +1,6 @@
 # 002 — Toast 입장 이징 강화 (최고빈도 모션)
 
-- **Status**: TODO
+- **Status**: DONE (2026-07-17, quality EXIT 0 · ui jest 16스위트 127통과 · SDD 리뷰 Approved — 발견사항 0)
 - **Commit**: c0c6113e5
 - **Severity**: HIGH
 - **Category**: 이징·지속시간 (Easing & duration)
