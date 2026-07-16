@@ -35,6 +35,8 @@ import {
 import { IdNormalizer } from '@/shared/id';
 import { STATUS } from '@/constants';
 import { resolvePostingAuthority, canManagePosting } from './postingAuthority';
+// 공고 SELECT 화이트리스트 단일소스 — 정본 TABLE_COLUMNS 를 재사용한다(자체 사본 드리프트 금지).
+import { TABLE_COLUMNS as JOB_POSTING_COLUMNS } from './JobPostingRepositoryHelpers';
 import type { TaxSettings } from '@/utils/settlement';
 import type { WorkLog, JobPosting, PayrollStatus } from '@/types';
 import type {
@@ -57,8 +59,6 @@ const JOB_POSTINGS_TABLE = 'job_postings';
 const BATCH_CHUNK_SIZE = 100;
 const WORK_LOG_COLUMNS =
   'id,application_id,assignment_group_id,check_in_ts,check_out_ts,created_at,custom_allowances,custom_role,custom_salary_info,custom_tax_settings,date,has_time_modification_logs,is_fixed_posting,job_posting_id,modification_history,no_show_at,no_show_reason,notes,owner_id,payroll_amount,payroll_date,payroll_notes,payroll_status,role,role_change_history,settlement_modification_history,staff_id,staff_name,staff_nickname,staff_photo_url,staff_photo_url_blurhash,status,time_slot,updated_at' as const;
-const JOB_POSTING_COLUMNS =
-  'id,closed_at,closed_reason,compensation,contact_phone,created_at,description,filled_positions,fixed_config,last_work_date,location,og_image_url,owner_id,owner_name,posting_type,questions,rejection_reason,role_catalog,role_keys,schedule,schema_version,stats,status,tags,title,total_positions,tournament_config,updated_at,urgent_config,view_count,work_date,work_dates,workspace_id' as const;
 
 // ============================================================================
 // Internal Types
