@@ -20,7 +20,6 @@ import {
   draftToCreateJobPostingInput,
   draftToUpdateJobPostingInput,
 } from '@/utils/job-posting/draftAdapter';
-import type { GridPrefillParams } from '@/utils/job-posting/gridPrefill';
 import { toDateString } from '@/utils/date';
 import { DEFAULT_SLOT_START_TIME } from '@/domains/weeklyGrid';
 import { DEFAULT_SALARY_BY_TYPE } from '@/constants/jobPosting';
@@ -477,6 +476,15 @@ export function formValuesToDraft(values: OrderSheetFormValues): JobPostingDraft
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** 주간 배치 그리드 "부족 N명 → 공고 열기" 프리필 파라미터(구 gridPrefill.ts에서 이주 — 유일 소비자). */
+export interface GridPrefillParams {
+  venueId?: string;
+  /** YYYY-MM-DD (그리드 선택일) */
+  date?: string;
+  /** 모집 인원(부족 인원). 미지정/비정상은 1로 클램프. */
+  count?: number;
+}
 
 /** 그리드 프리필 — 파라미터 정규화(보안 리뷰: 비-UUID venueId drop, count 1..99 클램프) 후 직접 조립. */
 export function gridParamsToValues(params: GridPrefillParams): OrderSheetFormValues {

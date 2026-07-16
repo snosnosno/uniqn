@@ -8,7 +8,7 @@ import {
   initialOrderSheetValues,
   primaryScheduleInfo,
 } from '../mappers';
-import { buildCreateJobPostingInput } from '@/utils/job-posting/submission';
+import { draftToCreateJobPostingInput, formDataToDraft } from '@/utils/job-posting/draftAdapter';
 import { INITIAL_JOB_POSTING_DRAFT } from '@/types/jobPostingDraft';
 import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types/jobPostingForm';
 import type { OrderSheetFormValues, OrderSheetValues } from '@/schemas/orderSheet.schema';
@@ -564,7 +564,7 @@ describe('신·구 동등성 (레거시 폼 경로 대비)', () => {
       usesPreQuestions: false,
       preQuestions: [],
     };
-    const legacy = buildCreateJobPostingInput(legacyFormData);
+    const legacy = draftToCreateJobPostingInput(formDataToDraft(legacyFormData));
     const kiosk = valuesToCreateInput(baseValues);
     expect(kiosk.compensation).toEqual(legacy.compensation);
     expect(stripReqIds(kiosk.schedule.requirements)).toEqual(
@@ -600,6 +600,15 @@ describe('gridParamsToValues (정규화 + 직접 조립 — INITIAL 경유 금�
       gridParamsToValues({ date: '2026-07-20', count: 500 }).scheduleGroups?.[0]?.timeSlots?.[0]
         ?.roles?.[0]?.count
     ).toBe(99);
+  });
+  it('count 미지정/0/소수 경계 → 1 이상 정수로 클램프 (구 gridPrefill.test 동형 이식)', () => {
+    // NaN 경계는 제외 — gridParamsToValues는 NaN을 투과(Math.trunc(NaN)=NaN)하고,
+    // create.tsx가 caller 단에서 Number.isFinite 가드로 undefined 폴백한다(계약 위치 상이).
+    const countOf = (date: string, count?: number) =>
+      gridParamsToValues({ date, count }).scheduleGroups?.[0]?.timeSlots?.[0]?.roles?.[0]?.count;
+    expect(countOf('2026-07-20')).toBe(1); // 미지정 → ?? 1
+    expect(countOf('2026-07-20', 0)).toBe(1); // 0 → max(1, 0)
+    expect(countOf('2026-07-20', 2.7)).toBe(2); // 소수 → trunc
   });
   it('파라미터 없으면 initialOrderSheetValues와 동일 (venueId 키 부재 무회귀 계약)', () => {
     expect(gridParamsToValues({})).toEqual(initialOrderSheetValues());
