@@ -55,4 +55,20 @@ describe('CreateSuccessScreen — 대회 승인 안내 (S1)', () => {
     const { getByText } = render(<CreateSuccessScreen />);
     expect(getByText('지원자가 생기면 바로 알려드릴게요')).toBeTruthy();
   });
+
+  // 전체리뷰 후속(2026-07-16) — 승인 대기 대회는 상세가 승인 게이트에 막혀 공유 링크가 죽은 화면(P5·P6).
+  it('pending=1이면 공유 CTA 대신 승인 후 공유 안내를 보여준다', () => {
+    useLocalSearchParams.mockReturnValue({ id: 'p1', title: '대회 딜러', pending: '1' });
+    const { queryByTestId, getByTestId, getByText } = render(<CreateSuccessScreen />);
+    expect(queryByTestId('create-success-share')).toBeNull();
+    expect(getByTestId('create-success-share-pending')).toBeTruthy();
+    expect(getByText('승인이 완료되면 공유할 수 있어요')).toBeTruthy();
+  });
+
+  it('pending이 없으면 공유 CTA가 노출된다', () => {
+    useLocalSearchParams.mockReturnValue({ id: 'p1', title: '주말 딜러' });
+    const { getByTestId, queryByTestId } = render(<CreateSuccessScreen />);
+    expect(getByTestId('create-success-share')).toBeTruthy();
+    expect(queryByTestId('create-success-share-pending')).toBeNull();
+  });
 });
