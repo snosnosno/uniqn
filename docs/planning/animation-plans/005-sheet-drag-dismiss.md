@@ -1,6 +1,9 @@
 # 005 — SheetModal 드래그 dismiss (제스처 + 속도 이양)
 
 - **Status**: IMPLEMENTED(실기기 QA 대기) (2026-07-17, quality EXIT 0 · ui jest 16스위트 127통과 · SDD 리뷰 Approved(opus 폴백 — fable 529 과부하). Minor 관찰 3: panGesture 미메모화(안전 방향)·withSpring velocity 이양 큰 경우 단일 오버슈트 물리적 가능(스펙 값 준수, 실기기서 튐 관찰 시 튜닝 회부)·입장 백드롭 full 도달이 300ms 슬라이드 추종(스펙 공식의 결과). 임계값 400px/s·25%는 실기기 튜닝 대상)
+- **최종리뷰 fix (2cec50fc7)** — 계획 Target에서 2곳 의도적 이탈(fable 최종 전체리뷰 Critical/Important 판정):
+  1. dismiss 시 퇴장 애니메이션 선행 제거 → 즉시 `handleRequestClose()` + 스프링 복귀. 이유: 유일한 확인형 소비처 ApplicationForm(지원하기)이 Alert "계속 편집"으로 닫기를 거부할 수 있어, 선퇴장하면 시트가 화면 밖에 갇힌 유령 모달이 됨. 닫힘 확정 시 기존 closing useEffect가 현재 위치에서 재타게팅 퇴장(점프 없음).
+  2. 거리 임계에 방향 가드 추가: `translationY > 25% && velocityY >= 0` — 25% 초과 후 위로 플릭(취소 의도) 시 dismiss 대신 복귀.
 - **Commit**: c0c6113e5
 - **Severity**: 기회 (Missed opportunity — 추가적 개선)
 - **Category**: 중단가능성·제스처 (Interruptibility)
