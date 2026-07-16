@@ -144,7 +144,7 @@ export function OfflineStatusBar(): React.ReactElement | null {
 
     if (reduceMotion) {
       translateY.value = 0;
-      opacity.value = show ? 1 : 0;
+      opacity.value = withTiming(show ? 1 : 0, { duration, easing });
     } else {
       translateY.value = withTiming(show ? 0 : -BANNER_HEIGHT, { duration, easing });
       opacity.value = withTiming(show ? 1 : 0, { duration, easing });
