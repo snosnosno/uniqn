@@ -82,10 +82,13 @@ describe('valuesToUpdateInput — 신·구 등가성(타입별)', () => {
 });
 
 describe('valuesToUpdateInput — 확정 지원자 축소 payload(레거시 계약 계승)', () => {
-  it('hasConfirmedApplicants=true면 schedule·conditions 키 자체가 없다', () => {
+  it('hasConfirmedApplicants=true면 schedule만 제외하고 conditions는 유지한다', () => {
     const input = valuesToUpdateInput(datedValues, { hasConfirmedApplicants: true });
+    // 서버 가드(JobPostingRepository:531)는 schedule·roleCatalog identity 변경만 차단한다.
     expect('schedule' in input).toBe(false);
-    expect('conditions' in input).toBe(false);
+    // conditions 변경은 확정 지원자와 무관하게 허용 — 축소 payload가 생략하면 UI가 조건 행을
+    // 잠그지 않아 편집이 조용히 소실된다(S3 리뷰 I-1). 값까지 검증.
+    expect(input.conditions).toEqual({ dressCode: '검정셔츠/슬랙스' });
     // 나머지 편집 가능 필드는 유지(급여·질문·카탈로그 — 서버 identity 가드와 대칭)
     expect(input.compensation).toBeDefined();
     expect(input.roleCatalog).toBeDefined();
@@ -95,6 +98,20 @@ describe('valuesToUpdateInput — 확정 지원자 축소 payload(레거시 계�
   it('기본(false)이면 schedule을 포함한다', () => {
     const input = valuesToUpdateInput(datedValues);
     expect(input.schedule?.kind).toBe('dated');
+  });
+});
+
+describe('valuesToUpdateInput — 조건 전량 해제 명시 전달(S3 리뷰 I-2)', () => {
+  it('conditions:{} values면 input.conditions가 빈 {}로 명시 전달된다(생략=현행유지 침묵부활 차단)', () => {
+    const cleared: OrderSheetValues = { ...datedValues, conditions: {} };
+    // update는 patch 시맨틱(키 생략=현행 유지)이라, 전량 해제가 키 부재로 표현되면 merge base의
+    // 기존 conditions가 살아남아 해제가 조용히 부활한다. update 경로는 빈 {}를 항상 명시 전달해야 한다.
+    expect(valuesToUpdateInput(cleared).conditions).toEqual({});
+  });
+
+  it('확정 지원자 축소 payload에서도 conditions:{} 해제가 명시 전달된다', () => {
+    const cleared: OrderSheetValues = { ...datedValues, conditions: {} };
+    expect(valuesToUpdateInput(cleared, { hasConfirmedApplicants: true }).conditions).toEqual({});
   });
 });
 

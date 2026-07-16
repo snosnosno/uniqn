@@ -587,6 +587,14 @@ export function draftToUpdateJobPostingInput(
   // venue_id 는 운영처 연결(구조 메타)이라 confirmed 여부와 무관하게 보존한다.
   // 가드로 draft 에 venueId 가 없으면 키를 생략해 일반 공고 update payload 를 불변 유지.
   const venueIdPatch = hasVenueIdField(draft) ? { venueId: draft.venueId } : {};
+  // update 는 patch 시맨틱(키 생략=현행 유지)이라, 조건 전량 해제(빈 {})가 키 부재로 표현되면
+  // merge base(toCreateJobPostingInput(current))의 기존 conditions 가 살아남아 해제가 조용히
+  // 부활한다. 그래서 update 경로는 conditions 를 항상 명시 전달한다(draft.conditions ?? {}).
+  // mergeJobPostingInput 이 patch.conditions 를 wholesale 반영하고(serialization.ts:412-425),
+  // serialize 의 `input.conditions !== undefined` 가 빈 {} 를 통과시켜(:362) 문서 conditions={}
+  // 로 해제가 저장된다 — 해제 왕복과 확정 지원자 편집(축소 분기)에서의 조건 보존을 함께 성립시킨다.
+  // create 시맨틱(current 없음, 키 생략)과 달리 update 전용 함수에서만 적용.
+  const conditionsPatch = { conditions: draft.conditions ?? {} };
   const updateInput: UpdateJobPostingInput = {
     postingType: canonicalInput.postingType,
     title: canonicalInput.title,
@@ -599,12 +607,12 @@ export function draftToUpdateJobPostingInput(
     questions: canonicalInput.questions,
     schedule: canonicalInput.schedule,
     roleCatalog: canonicalInput.roleCatalog,
-    // 모집 조건 보존 — hasConfirmedApplicants 제한 분기에는 넣지 않는다. serialize 의
-    // current-폴백이 DB 값에서 conditions 를 보존하므로 1번째 조립부만으로 계약이 성립.
-    ...(draft.conditions !== undefined ? { conditions: draft.conditions } : {}),
+    ...conditionsPatch,
   };
 
   if (hasConfirmedApplicants) {
+    // 축소 payload 는 서버 identity 가드(schedule·roleCatalog)를 건드리지 않도록 schedule 만
+    // 제외한다 — conditions 변경은 확정 지원자와 무관하게 허용되므로 반드시 포함한다(I-1).
     return {
       postingType: updateInput.postingType,
       title: updateInput.title,
@@ -616,6 +624,7 @@ export function draftToUpdateJobPostingInput(
       compensation: updateInput.compensation,
       questions: updateInput.questions,
       roleCatalog: updateInput.roleCatalog,
+      ...conditionsPatch,
     };
   }
 
