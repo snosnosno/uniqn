@@ -12,7 +12,6 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   runOnJS,
-  Easing,
 } from 'react-native-reanimated';
 import {
   CheckCircleIcon,
@@ -21,6 +20,7 @@ import {
   InformationCircleIcon,
   XMarkIcon,
 } from '@/components/icons';
+import { MOTION_EASING, MOTION_DURATION } from '@/constants/animation';
 import type { Toast as ToastType } from '@/stores/toastStore';
 
 // ============================================================================
@@ -75,18 +75,25 @@ export function Toast({ toast, onDismiss }: ToastProps) {
 
   const handleDismiss = useCallback(() => {
     // 퇴장 애니메이션
-    opacity.value = withTiming(0, { duration: 150, easing: Easing.ease });
-    translateY.value = withTiming(-20, { duration: 150, easing: Easing.ease }, (finished) => {
-      if (finished) {
-        runOnJS(callOnDismiss)(toast.id);
+    opacity.value = withTiming(0, { duration: MOTION_DURATION.fast, easing: MOTION_EASING.fade });
+    translateY.value = withTiming(
+      -20,
+      { duration: MOTION_DURATION.fast, easing: MOTION_EASING.fade },
+      (finished) => {
+        if (finished) {
+          runOnJS(callOnDismiss)(toast.id);
+        }
       }
-    });
+    );
   }, [opacity, translateY, callOnDismiss, toast.id]);
 
   useEffect(() => {
     // 입장 애니메이션
-    opacity.value = withTiming(1, { duration: 200, easing: Easing.ease });
-    translateY.value = withTiming(0, { duration: 200, easing: Easing.ease });
+    opacity.value = withTiming(1, { duration: MOTION_DURATION.base, easing: MOTION_EASING.enter });
+    translateY.value = withTiming(0, {
+      duration: MOTION_DURATION.base,
+      easing: MOTION_EASING.enter,
+    });
 
     // 자동 닫기
     const timer = setTimeout(() => {
