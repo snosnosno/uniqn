@@ -112,6 +112,15 @@ describe('AdminRepository.getUsers — 검색 서버측 필터', () => {
     expect(chain.or).toHaveBeenCalledWith('name.ilike.%abcd%,email.ilike.%abcd%');
   });
 
+  it('PostgREST 와일드카드 별칭 *를 제거해 리터럴 부분일치만 남긴다', async () => {
+    const chain = makeChain({ data: [], error: null, count: 0 });
+    mockFrom.mockReturnValue(chain);
+
+    await repo.getUsers({ search: '김*철' }, 1, 20);
+
+    expect(chain.or).toHaveBeenCalledWith('name.ilike.%김철%,email.ilike.%김철%');
+  });
+
   it('검색어가 없으면 or 필터를 걸지 않는다', async () => {
     const chain = makeChain({ data: [], error: null, count: 0 });
     mockFrom.mockReturnValue(chain);
