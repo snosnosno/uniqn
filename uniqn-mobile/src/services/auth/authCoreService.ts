@@ -18,7 +18,7 @@ import {
   clearPortOneIdentityBindingToken,
   callVerifyAndSavePortOneProfile,
 } from './portOneIdentityService';
-import { AuthError, ERROR_CODES, isRetryableError } from '@/errors';
+import { AuthError, ERROR_CODES, isRetryableError, toError } from '@/errors';
 import { createClientRateLimiter } from '@/utils/security';
 import { getTodayString } from '@/utils/date/core';
 import { handleServiceError, maskValue } from '@/errors/serviceErrorHandler';
@@ -34,6 +34,7 @@ import {
   incrementLoginAttempts,
   resetLoginAttempts,
 } from './loginAttemptService';
+import { unregisterPushTokensForSignOut } from '@/services/notifications';
 import type { SignUpFormData, LoginFormData } from '@/schemas';
 import { type UserProfile, type AuthResult } from './authTypes';
 import { getUserProfile as fetchUserProfile } from './userProfileService';
@@ -388,6 +389,18 @@ export async function signOut(): Promise<void> {
     } = await supabase.auth.getUser();
     if (user) {
       clearProtectedAuthFlow(user.id);
+
+      // 공용 기기에서 이전 계정으로 푸시가 잔존하는 것을 막기 위해, 세션이 아직 유효한
+      // 지금(signOut 서두) 서버의 푸시 토큰을 해제한다 — signOut 이후엔 RLS로 삭제 불가.
+      // 해제 실패가 로그아웃을 막지 않도록 fail-safe로 감싼다(기존 "한쪽 실패해도 계속" 정리 패턴과 동일).
+      try {
+        await unregisterPushTokensForSignOut(user.id);
+      } catch (error) {
+        logger.warn('로그아웃 중 푸시 토큰 해제 실패 - 로그아웃은 계속 진행', {
+          component: 'authService',
+          error: toError(error).message,
+        });
+      }
     }
 
     RealtimeManager.unsubscribeAll();

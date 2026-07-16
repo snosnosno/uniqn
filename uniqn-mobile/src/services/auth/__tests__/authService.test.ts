@@ -111,6 +111,14 @@ jest.mock('../userProfileService', () => ({
   getUserProfile: jest.fn(),
 }));
 
+const mockUnregisterPushTokensForSignOut = jest.fn<Promise<void>, [string]>();
+
+jest.mock('@/services/notifications', () => ({
+  __esModule: true,
+  unregisterPushTokensForSignOut: (...args: [string]) =>
+    mockUnregisterPushTokensForSignOut(...args),
+}));
+
 const { getUserProfile: mockFetchUserProfile } = jest.requireMock('../userProfileService') as {
   getUserProfile: jest.Mock;
 };
@@ -123,6 +131,7 @@ describe('authCoreService', () => {
     jest.clearAllMocks();
     mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
     mockSignOut.mockResolvedValue({ error: null });
+    mockUnregisterPushTokensForSignOut.mockResolvedValue(undefined);
   });
 
   it('logs in with Supabase signInWithPassword', async () => {
@@ -370,6 +379,46 @@ describe('authCoreService', () => {
     await expect(signOut()).resolves.toBeUndefined();
     expect(mockSignOut).toHaveBeenCalled();
     expect(mockClearSession).toHaveBeenCalledTimes(1);
+  });
+
+  // A3 — 로그아웃 시 서버 푸시 토큰 해제 (공용 기기 계정 간 알림 노출 방지)
+  it('로그아웃 시 현재 사용자의 서버 푸시 토큰을 해제한다', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+
+    await expect(signOut()).resolves.toBeUndefined();
+    expect(mockUnregisterPushTokensForSignOut).toHaveBeenCalledWith('user-1');
+  });
+
+  it('푸시 토큰 해제는 supabase 세션 종료 이전에 호출된다 (세션 유효 시점)', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+    const callOrder: string[] = [];
+    mockUnregisterPushTokensForSignOut.mockImplementationOnce(async () => {
+      callOrder.push('unregisterPush');
+    });
+    mockSignOut.mockImplementationOnce(async () => {
+      callOrder.push('supabaseSignOut');
+      return { error: null };
+    });
+
+    await signOut();
+
+    expect(callOrder).toEqual(['unregisterPush', 'supabaseSignOut']);
+  });
+
+  it('푸시 토큰 해제가 실패해도 로그아웃은 완료된다 (fail-safe)', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+    mockUnregisterPushTokensForSignOut.mockRejectedValueOnce(new Error('network down'));
+
+    await expect(signOut()).resolves.toBeUndefined();
+    expect(mockSignOut).toHaveBeenCalled();
+    expect(mockSetUserId).toHaveBeenCalledWith(null);
+  });
+
+  it('로그인 사용자가 없으면 푸시 토큰 해제를 시도하지 않는다', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
+
+    await expect(signOut()).resolves.toBeUndefined();
+    expect(mockUnregisterPushTokensForSignOut).not.toHaveBeenCalled();
   });
 
   it('returns user profiles from the repository', async () => {
