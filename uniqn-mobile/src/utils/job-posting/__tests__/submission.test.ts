@@ -8,7 +8,6 @@ import { toDateString } from '@/utils/date';
 import { mergeJobPostingInput, serializeJobPostingV3 } from '@/domains/job-posting';
 import {
   draftToCreateJobPostingInput,
-  draftToFormData,
   draftToUpdateJobPostingInput,
   formDataToDraft,
   jobPostingToDraft,
@@ -151,13 +150,15 @@ describe('formData 백컴팻(draftAdapter 직접 경로)', () => {
 
   it('optional 필드 clear-intent가 update payload와 직렬화에 반영된다', () => {
     const currentPosting = createPosting();
-    const formData = draftToFormData(jobPostingToDraft(currentPosting));
+    // S4: 구 draftToFormData(posting→form) 레그 소멸 → clear-intent(빈 문자열) 폼을 직접 픽스처로 구성.
+    // 검사 대상은 formDataToDraft → draftToUpdateJobPostingInput → serialize 의 clear 반영이라 계약 판별력 동일.
     const clearedFormData: JobPostingFormData = {
-      ...formData,
+      ...createFormData(),
       description: '',
       detailedAddress: '',
       location: {
-        ...formData.location!,
+        name: 'Seoul Gangnam',
+        address: 'Teheran-ro',
         detailedAddress: '',
       },
     };
@@ -189,13 +190,14 @@ describe('formData 백컴팻(draftAdapter 직접 경로)', () => {
   });
 
   it('facade 상태가 stale일 때 canonical nested detailedAddress를 우선한다', () => {
-    const currentPosting = createPosting();
-    const formData = draftToFormData(jobPostingToDraft(currentPosting));
+    // S4: 구 draftToFormData(posting→form) 레그 소멸 → facade(top-level)/canonical(nested) 상충 폼을 직접 구성.
+    // getFormDetailedAddress = location.detailedAddress ?? detailedAddress — nested(Room 202)가 facade(Suite 101)를 이긴다.
     const nextFormData: JobPostingFormData = {
-      ...formData,
+      ...createFormData(),
       detailedAddress: 'Suite 101',
       location: {
-        ...formData.location!,
+        name: 'Seoul Gangnam',
+        address: 'Teheran-ro',
         detailedAddress: 'Room 202',
       },
     };

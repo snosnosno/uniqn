@@ -1,9 +1,5 @@
 import { removeUndefined } from '@/utils/removeUndefined';
-import {
-  buildFixedSyntheticRequirement,
-  draftToFormData,
-  formDataToDraft,
-} from '@/utils/job-posting/draftAdapter';
+import { buildFixedSyntheticRequirement, formDataToDraft } from '@/utils/job-posting/draftAdapter';
 import type {
   JobPostingDraft,
   JobPostingDraftDatedSchedule,
@@ -248,8 +244,4 @@ export function templateToDraft(template: JobPostingTemplate): JobPostingDraft {
     questions: templateData.questions ?? base.questions,
     ...(templateData.conditions !== undefined ? { conditions: templateData.conditions } : {}),
   };
-}
-
-export function templateToFormData(template: JobPostingTemplate): Partial<JobPostingFormData> {
-  return draftToFormData(templateToDraft(template));
 }

@@ -14,7 +14,6 @@ import type {
 } from '@/types/jobPosting';
 import type { JobPostingDraft, JobPostingDraftDatedSchedule } from '@/types/jobPostingDraft';
 import { INITIAL_JOB_POSTING_DRAFT } from '@/types/jobPostingDraft';
-import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types/jobPostingForm';
 import type { DateSpecificRequirement, TimeSlot } from '@/types/jobPosting/dateRequirement';
 import { toDateString } from '@/utils/date';
 import { buildSeedTimeSlots } from './draftRoles';
@@ -112,21 +111,6 @@ function toUpdateInputLocation(
   };
 }
 
-function toFormLocation(
-  location: JobPostingDraft['location'] | JobPosting['location']
-): JobPostingFormData['location'] {
-  if (!location) {
-    return null;
-  }
-
-  return {
-    ...location,
-    ...((location.address ?? location.district)
-      ? { address: location.address ?? location.district }
-      : {}),
-  };
-}
-
 function toCatalogEntry(role: FormRoleWithCount): PostingRoleCatalogEntry {
   const matchedRole = findRoleOptionByName(role.name);
 
@@ -187,33 +171,6 @@ function toCanonicalTimeSlot(slot: TimeSlot): PostingTimeSlot {
       : {}),
     ...(slot.tentativeDescription ? { tentativeDescription: slot.tentativeDescription } : {}),
     roles: (slot.roles ?? []).map(toCanonicalSlotRole),
-  };
-}
-
-function toLegacyTimeSlotRole(
-  role: PostingSlotRoleRequirement,
-  roleCatalog: PostingRoleCatalogEntry[]
-) {
-  return {
-    ...(role.id ? { id: role.id } : {}),
-    role: role.role,
-    ...(role.customRole ? { customRole: role.customRole } : {}),
-    headcount: role.count,
-    salary: roleCatalog.find((entry) => getRoleKey(entry) === getRoleKey(role))?.salary,
-    // dead counter `filled`(SP3 제거) — 레거시 슬롯 타입은 항상 0(미사용 카운터).
-    filled: 0,
-  };
-}
-
-function toLegacyTimeSlot(slot: PostingTimeSlot, roleCatalog: PostingRoleCatalogEntry[]): TimeSlot {
-  return {
-    ...(slot.id ? { id: slot.id } : {}),
-    ...(slot.startTime ? { startTime: slot.startTime } : {}),
-    ...(slot.isTimeToBeAnnounced !== undefined
-      ? { isTimeToBeAnnounced: slot.isTimeToBeAnnounced }
-      : {}),
-    ...(slot.tentativeDescription ? { tentativeDescription: slot.tentativeDescription } : {}),
-    roles: (slot.roles ?? []).map((role) => toLegacyTimeSlotRole(role, roleCatalog)),
   };
 }
 
@@ -364,143 +321,6 @@ export function formDataToDraft(formData: JobPostingFormData): JobPostingDraft {
       items: formData.usesPreQuestions ? formData.preQuestions : [],
     },
   };
-}
-
-function toFormRole(role: PostingRoleCatalogEntry, count: number): FormRoleWithCount {
-  const matchedRole = STAFF_ROLES.find((candidate) => candidate.key === role.role);
-  const isCustom = role.role === 'other';
-
-  return {
-    name: isCustom ? role.customRole || '' : matchedRole?.name || role.role,
-    count,
-    isCustom,
-    ...(role.salary ? { salary: role.salary } : {}),
-  };
-}
-
-function buildFixedFormRoles(draft: JobPostingDraft): FormRoleWithCount[] {
-  if (draft.schedule.kind !== 'fixed') {
-    return [];
-  }
-
-  const roles = draft.schedule.requirements[0]?.timeSlots[0]?.roles ?? [];
-
-  return roles.map((requirement) => {
-    const catalogEntry = draft.roleCatalog.find(
-      (entry) => getRoleKey(entry) === getRoleKey(requirement)
-    ) ?? {
-      role: requirement.role ?? 'dealer',
-      ...(requirement.customRole ? { customRole: requirement.customRole } : {}),
-    };
-
-    return toFormRole(catalogEntry, requirement.count);
-  });
-}
-
-function buildDatedFormRoles(draft: JobPostingDraft): FormRoleWithCount[] {
-  if (draft.schedule.kind !== 'dated') {
-    return [];
-  }
-
-  const seedRequirement = draft.schedule.requirements.find(
-    (requirement) => requirement.timeSlots.length > 0
-  );
-  const sourceSlots = seedRequirement?.timeSlots ?? draft.schedule.templateTimeSlots;
-
-  const totals = new Map<string, { role: PostingRoleCatalogEntry; count: number }>();
-
-  const collectFromSlots = (slots: PostingTimeSlot[], addToExisting: boolean) => {
-    slots.forEach((slot) => {
-      slot.roles.forEach((role) => {
-        const key = getRoleKey(role);
-        const catalogRole = draft.roleCatalog.find((entry) => getRoleKey(entry) === key) ?? {
-          role: role.role ?? 'dealer',
-          ...(role.customRole ? { customRole: role.customRole } : {}),
-        };
-        const existing = totals.get(key);
-
-        if (existing) {
-          if (addToExisting) {
-            existing.count += role.count;
-          }
-          return;
-        }
-
-        totals.set(key, {
-          role: catalogRole,
-          count: role.count,
-        });
-      });
-    });
-  };
-
-  collectFromSlots(sourceSlots, true);
-
-  draft.schedule.requirements.forEach((requirement) => {
-    if (requirement === seedRequirement) {
-      return;
-    }
-    collectFromSlots(requirement.timeSlots, false);
-  });
-
-  return Array.from(totals.values()).map((entry) => toFormRole(entry.role, entry.count));
-}
-
-export function draftToFormData(draft: JobPostingDraft): JobPostingFormData {
-  const roles =
-    draft.schedule.kind === 'fixed' ? buildFixedFormRoles(draft) : buildDatedFormRoles(draft);
-  const firstSalary = draft.roleCatalog.find((role) => role.salary)?.salary;
-
-  return {
-    ...INITIAL_JOB_POSTING_FORM_DATA,
-    postingType: draft.postingType,
-    title: draft.title,
-    location: toFormLocation(draft.location),
-    detailedAddress: draft.location?.detailedAddress ?? '',
-    contactPhone: draft.contactPhone,
-    description: draft.description,
-    workDate: draft.schedule.kind === 'dated' ? draft.schedule.primaryDate : '',
-    startTime: draft.schedule.kind === 'fixed' ? (draft.schedule.startTime ?? '') : '',
-    isStartTimeNegotiable:
-      draft.schedule.kind === 'fixed' ? (draft.schedule.isStartTimeNegotiable ?? false) : false,
-    dateSpecificRequirements:
-      draft.schedule.kind === 'dated'
-        ? draft.schedule.requirements.map((requirement) => ({
-            // kind==='dated' 분기 — dated requirement.date는 항상 string (fixed만 null)
-            date: requirement.date ?? '',
-            isGrouped: requirement.isGrouped,
-            timeSlots: requirement.timeSlots.map((slot) =>
-              toLegacyTimeSlot(slot, draft.roleCatalog)
-            ),
-          }))
-        : [],
-    datedTemplateTimeSlots:
-      draft.schedule.kind === 'dated'
-        ? draft.schedule.templateTimeSlots.map((slot) => toLegacyTimeSlot(slot, draft.roleCatalog))
-        : [],
-    daysPerWeek: draft.schedule.kind === 'fixed' ? (draft.schedule.daysPerWeek ?? 0) : 0,
-    roles: roles.length > 0 ? roles : [...INITIAL_JOB_POSTING_FORM_DATA.roles],
-    defaultSalary: draft.compensation.defaultSalary ?? firstSalary,
-    allowances: draft.compensation.allowances ?? {},
-    useSameSalary: draft.compensation.mode === 'shared',
-    taxSettings: draft.compensation.taxSettings,
-    usesPreQuestions: (draft.questions.items ?? []).length > 0,
-    preQuestions: draft.questions.items ?? [],
-    tags: draft.tags ?? [],
-    ...(hasVenueIdField(draft) ? { venueId: draft.venueId } : {}),
-  };
-}
-
-export function applyFormDataPatch(
-  draft: JobPostingDraft,
-  patch: Partial<JobPostingFormData>
-): JobPostingDraft {
-  const nextFormData = {
-    ...draftToFormData(draft),
-    ...patch,
-  };
-
-  return formDataToDraft(nextFormData);
 }
 
 export function draftToCreateJobPostingInput(draft: JobPostingDraft): CreateJobPostingInput {
