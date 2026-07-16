@@ -12,7 +12,6 @@ import type { TimeSlotInfo, DatedScheduleInfo } from '@/types/unified';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import type { RoleInfo } from '@/types/unified/role';
 import {
-  makeSelectionKey,
   areTimeSlotsStructureEqual,
   createGroupFromSchedules,
   groupDatedSchedules,
@@ -67,28 +66,6 @@ function createTestSchedule(date: string, timeSlots: TimeSlotInfo[]): DatedSched
     timeSlots,
   };
 }
-
-// ============================================================================
-// makeSelectionKey
-// ============================================================================
-
-describe('makeSelectionKey', () => {
-  it('기본 구분자(|)로 키를 생성한다', () => {
-    const key = makeSelectionKey('2024-01-17', '09:00', 'dealer');
-    expect(key).toBe('2024-01-17|09:00|dealer');
-  });
-
-  it('selectionCore의 makeSelectionKey에 위임한다', () => {
-    // selectionUtils의 makeSelectionKey는 항상 | 구분자를 사용
-    const key = makeSelectionKey('2024-01-17', '09:00', 'floor');
-    expect(key).toBe('2024-01-17|09:00|floor');
-  });
-
-  it('빈 문자열 입력도 처리한다', () => {
-    const key = makeSelectionKey('', '', '');
-    expect(key).toBe('||');
-  });
-});
 
 // ============================================================================
 // areTimeSlotsStructureEqual

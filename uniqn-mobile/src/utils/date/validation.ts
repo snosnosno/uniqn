@@ -5,8 +5,7 @@
  * @version 1.0.0
  */
 
-import { isToday, isPast, isFuture, addDays } from 'date-fns';
-import { toDate, toISODateString, type DateInput } from './core';
+import { toDate, toISODateString } from './core';
 
 /**
  * HH:mm 형식 검증
@@ -69,36 +68,6 @@ export function validateDateCount(
 export function isDuplicateDate(existingDates: string[], newDate: string): boolean {
   return existingDates.includes(newDate);
 }
-
-/**
- * 날짜 체크 유틸리티
- */
-export const dateChecks = {
-  isToday: (date: DateInput): boolean => {
-    const d = toDate(date);
-    return d ? isToday(d) : false;
-  },
-
-  isPast: (date: DateInput): boolean => {
-    const d = toDate(date);
-    return d ? isPast(d) : false;
-  },
-
-  isFuture: (date: DateInput): boolean => {
-    const d = toDate(date);
-    return d ? isFuture(d) : false;
-  },
-
-  isWithinDays: (date: DateInput, days: number): boolean => {
-    const d = toDate(date);
-    if (!d) return false;
-
-    const today = new Date();
-    const futureDate = addDays(today, days);
-
-    return d >= today && d <= futureDate;
-  },
-};
 
 /**
  * N일 후 날짜 문자열

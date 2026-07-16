@@ -8,8 +8,6 @@
  * 역할 타입 사용 시 '@/types/role'에서 직접 import할 것.
  */
 
-import type { UserRole, StaffRole } from './role';
-
 /**
  * FCM 토큰 레코드 (Map 구조)
  * DB 필드: users.fcmTokens.{tokenKey}
@@ -33,40 +31,6 @@ export interface BaseDocument {
 
 /** @deprecated Use BaseDocument directly. Firebase 이전 레거시 타입. */
 export type FirebaseDocument = BaseDocument;
-
-/**
- * 사용자 타입
- */
-export interface User extends BaseDocument {
-  email: string;
-  name: string;
-  nickname?: string;
-  role: UserRole;
-  phone?: string;
-  profileImage?: string;
-  isActive: boolean;
-  fcmTokens?: Record<string, FcmTokenRecord>; // 멀티 디바이스 지원 (Map 구조)
-}
-
-/**
- * 스태프 타입
- */
-export interface Staff extends BaseDocument {
-  /** 연결된 사용자 ID */
-  userId?: string;
-  name: string;
-  phone: string;
-  role: StaffRole;
-  status?: 'active' | 'inactive';
-  /** 활성 상태 (v2.0) */
-  isActive?: boolean;
-  email?: string;
-  bankName?: string;
-  accountNumber?: string;
-  notes?: string;
-  /** 총 근무 횟수 */
-  totalWorkCount?: number;
-}
 
 /**
  * API 응답 타입

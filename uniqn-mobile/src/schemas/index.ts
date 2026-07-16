@@ -10,21 +10,17 @@ export {
   timestampSchema,
   optionalTimestampSchema,
   nullableTimestampSchema,
-  // Duration schemas (aliased to avoid conflict with assignment.schema)
-  durationSchema as commonDurationSchema,
-  optionalDurationSchema,
   // Metadata schema
   metadataSchema,
   optionalMetadataSchema,
   // Common field schemas
   documentIdSchema,
   baseEmailSchema as commonEmailSchema,
-  phoneSchema as commonPhoneSchema,
   dateStringSchema,
   timeStringSchema,
 } from './common';
 
-export type { TimestampInput, DurationInput, MetadataInput } from './common';
+export type { TimestampInput, MetadataInput } from './common';
 
 // 인증 스키마
 export {
@@ -66,9 +62,7 @@ export {
   salaryInfoSchema,
   allowancesSchema,
   basicInfoSchema,
-  dateTimeSchema,
   createJobPostingSchema,
-  jobFilterSchema,
   applicationMessageSchema,
   // 문서 파서 (v2.0)
   jobPostingDocumentSchema,
@@ -81,9 +75,7 @@ export type {
   PostingType,
   SalaryTypeSchema,
   BasicInfoData,
-  DateTimeData,
   CreateJobPostingFormData,
-  JobFilterData,
   JobPostingDocumentData,
 } from './jobPosting.schema';
 
@@ -116,28 +108,7 @@ export type {
 } from './application.schema';
 
 // Assignment v3.0 스키마
-export {
-  roleIdsSchema,
-  timeSlotSchema,
-  dateSchema,
-  datesArraySchema,
-  durationTypeSchema,
-  durationSchema,
-  checkMethodSchema,
-  assignmentSchema,
-  assignmentsArraySchema,
-  createApplicationV2Schema,
-  confirmApplicationV2Schema,
-  cancelConfirmationSchema,
-} from './assignment.schema';
-
-export type {
-  AssignmentFormData,
-  AssignmentsArrayData,
-  CreateApplicationV2FormData,
-  ConfirmApplicationV2Data,
-  CancelConfirmationData,
-} from './assignment.schema';
+export { dateSchema, durationTypeSchema, durationSchema } from './assignment.schema';
 
 // 사전질문 스키마
 export {
@@ -206,12 +177,8 @@ export {
   userRoleSchema,
   userStatusSchema,
   updateProfileSchema,
-  staffProfileSchema,
-  employerProfileSchema,
   employerIntroSchema,
-  employerRegisterSchema,
   notificationSettingsSchema,
-  userSettingsSchema,
   searchUsersSchema,
   parseUserDocument,
 } from './user.schema';
@@ -220,12 +187,8 @@ export type {
   UserRoleSchema,
   UserStatusSchema,
   UpdateProfileData,
-  StaffProfileData,
-  EmployerProfileData,
   EmployerIntroData,
-  EmployerRegisterData,
   NotificationSettingsData,
-  UserSettingsData,
   SearchUsersData,
 } from './user.schema';
 

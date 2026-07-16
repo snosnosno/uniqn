@@ -48,7 +48,6 @@ export {
   expandDateRangeToRequirements,
   expandAllDateRangesToRequirements,
   isSingleDate,
-  getDateListFromRange,
 } from './grouping';
 
 // Grouping types
@@ -62,18 +61,14 @@ export {
   isWithinUrgentDateLimit,
   validateDateCount,
   isDuplicateDate,
-  dateChecks,
   getDateAfterDays,
 } from './validation';
 
 // Range utilities
 export {
-  getDateRange,
   generateDateRange,
   getMonthRange,
   sortDates,
   parseTimeSlot,
   parseTimeSlotToDate,
-  calculateWorkDuration,
-  minutesToHoursMinutes,
 } from './ranges';

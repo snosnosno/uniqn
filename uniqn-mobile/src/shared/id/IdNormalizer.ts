@@ -97,26 +97,6 @@ export class IdNormalizer {
     return doc.staffId || doc.applicantId || doc.userId || '';
   }
 
-  /**
-   * applicantId를 staffId로 변환 (WorkLog 생성 시)
-   *
-   * @param applicantId - 지원자 ID
-   * @returns staffId 값 (동일한 값)
-   */
-  static toStaffId(applicantId: string): string {
-    return applicantId;
-  }
-
-  /**
-   * staffId를 applicantId로 변환 (Application 조회 시)
-   *
-   * @param staffId - 스태프 ID
-   * @returns applicantId 값 (동일한 값)
-   */
-  static toApplicantId(staffId: string): string {
-    return staffId;
-  }
-
   // ============================================================================
   // 복합 키 생성/파싱
   // ============================================================================

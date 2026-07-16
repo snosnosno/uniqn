@@ -24,8 +24,6 @@ export type { UserRole, StaffRole, RoleFlags } from './role';
 export type {
   BaseDocument,
   FirebaseDocument,
-  User,
-  Staff,
   ApiResponse,
   PaginationInfo,
   FormErrors,
@@ -45,17 +43,7 @@ export type {
 } from './user';
 
 // 인증 타입
-export type {
-  AuthStatus,
-  AuthUser,
-  LoginRequest,
-  SignUpRequest,
-  ResetPasswordRequest,
-  VerificationStatus,
-  SocialProvider,
-  ConsentItems,
-  SessionInfo,
-} from './auth';
+export type { AuthStatus, AuthUser, SocialProvider } from './auth';
 
 // 구인공고 타입
 export type {

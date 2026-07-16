@@ -7,7 +7,6 @@ import type { PostingType } from '@/types';
 import { type DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import { formatDateDisplay } from '@/types/unified';
 import { areDatesConsecutive, formatDateRangeWithCount, toDateString } from '@/utils/date';
-import { makeSelectionKey as makeSelectionKeyCore } from './selectionCore';
 
 export type SelectionKey = string;
 
@@ -19,10 +18,6 @@ export interface ScheduleGroup {
   dates: DatedScheduleInfo[];
   timeSlots: TimeSlotInfo[];
 }
-
-export const makeSelectionKey = (date: string, slotTime: string, role: string): SelectionKey => {
-  return makeSelectionKeyCore(date, slotTime, role);
-};
 
 function getRoleStructureKey(role: TimeSlotInfo['roles'][number]): string {
   return role.roleId === 'other' && role.customName ? `other:${role.customName}` : role.roleId;

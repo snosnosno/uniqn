@@ -1,24 +1,6 @@
-import type {
-  JobPosting,
-  PostingApplicationEligibility,
-  PostingRoleAvailability,
-  PostingSalaryDisplay,
-  PostingScheduleDisplay,
-  PostingWorkflow,
-} from '@/types';
-import { FIXED_TIME_MARKER } from '@/types/assignment';
+import type { JobPosting, PostingRoleAvailability, PostingWorkflow } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
-import { isSupportedReleasePosting } from '@/utils/jobPostingVisibility';
-import {
-  getPostingDateGroups,
-  getPostingDateRequirements,
-  getPostingDefaultSalary,
-  getPostingLegacyTimeSlot,
-  getPostingRequiredRolesWithCount,
-  getPostingRoleKey,
-  getPostingRoleStats,
-  getPostingSalaryRows,
-} from './core';
+import { getPostingDateGroups, getPostingRoleKey, getPostingRoleStats } from './core';
 
 export type { PostingSettlementContext } from '@/types';
 export {
@@ -142,92 +124,5 @@ export function selectPostingRoleAvailability(
     filledCount: items.reduce((sum, item) => sum + item.filled, 0),
     remainingCount: items.reduce((sum, item) => sum + item.remaining, 0),
     hasAvailableRoles: availableItems.length > 0,
-  };
-}
-
-export function selectPostingSalaryDisplay(posting: JobPosting): PostingSalaryDisplay {
-  const rows = getPostingSalaryRows(posting);
-
-  return {
-    defaultSalary: getPostingDefaultSalary(posting),
-    rows,
-    previewRows: rows.slice(0, 3),
-    overflowCount: Math.max(0, rows.length - 3),
-    useSameSalary: posting.compensation.mode === 'shared',
-    hasRoleSpecificSalary: posting.compensation.mode === 'by_role' && rows.length > 0,
-  };
-}
-
-export function selectPostingScheduleDisplay(posting: JobPosting): PostingScheduleDisplay {
-  const workflow = selectPostingWorkflow(posting);
-  const dateRequirements = getPostingDateRequirements(posting);
-  const dateGroups = workflow.usesGroupedDateRanges ? getPostingDateGroups(posting) : [];
-  const fixed =
-    posting.schedule.kind === 'fixed'
-      ? {
-          daysPerWeek: posting.schedule.daysPerWeek,
-          startTime: posting.schedule.startTime,
-          isStartTimeNegotiable: posting.schedule.isStartTimeNegotiable,
-          roles: getPostingRequiredRolesWithCount(posting),
-        }
-      : undefined;
-
-  return {
-    variant: workflow.isFixed
-      ? 'fixed'
-      : workflow.usesGroupedDateRanges
-        ? 'grouped_dates'
-        : dateRequirements.length > 0
-          ? 'dated_requirements'
-          : 'legacy',
-    dateRequirements,
-    dateGroups,
-    workDate: posting.workDate,
-    timeSlot: getPostingLegacyTimeSlot(posting),
-    fixed,
-  };
-}
-
-export function selectPostingApplicationEligibility(
-  posting: JobPosting
-): PostingApplicationEligibility {
-  const workflow = selectPostingWorkflow(posting);
-  const roleAvailability = selectPostingRoleAvailability(posting);
-  // capacity_full: 트리거 자동 전이로 마감된 정원. 미배포/미전이 active 공고 대비 derived fallback 유지.
-  const postingFull =
-    posting.status === 'capacity_full' ||
-    (posting.status === 'active' &&
-      posting.totalPositions > 0 &&
-      posting.filledPositions >= posting.totalPositions);
-  const unsupportedWorkflow = !isSupportedReleasePosting(posting);
-  const canApply =
-    posting.status === 'active' &&
-    !postingFull &&
-    roleAvailability.hasAvailableRoles &&
-    !unsupportedWorkflow;
-
-  let reason: PostingApplicationEligibility['reason'];
-  if (unsupportedWorkflow) {
-    reason = 'unsupported_workflow';
-  } else if (postingFull) {
-    reason = 'posting_full';
-  } else if (posting.status !== 'active') {
-    reason = 'inactive';
-  } else if (!roleAvailability.hasAvailableRoles) {
-    reason = 'role_full';
-  }
-
-  return {
-    canApply,
-    selectionMode: workflow.isFixed ? 'fixed_role' : 'dated_assignment',
-    requiresRoleSelection: workflow.isFixed,
-    requiresAssignmentSelection: !workflow.isFixed,
-    requiresPreQuestions: (posting.questions.items ?? []).length > 0,
-    fixedAssignmentTimeSlot:
-      posting.schedule.kind === 'fixed'
-        ? posting.schedule.startTime || FIXED_TIME_MARKER
-        : FIXED_TIME_MARKER,
-    availableRoleOptions: roleAvailability.availableItems,
-    reason,
   };
 }

@@ -95,55 +95,6 @@ export const updateProfileSchema = z.object({
 export type UpdateProfileData = z.infer<typeof updateProfileSchema>;
 
 /**
- * 스태프 프로필 스키마
- */
-export const staffProfileSchema = z.object({
-  preferredRoles: z
-    .array(z.string().refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }))
-    .optional(),
-  preferredRegions: z
-    .array(z.string().refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }))
-    .optional(),
-  experience: z
-    .string()
-    .max(500, { message: '경력 설명은 500자를 초과할 수 없습니다' })
-    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
-    .optional(),
-  availableDays: z.array(z.number().min(0).max(6)).optional(), // 0=일요일, 6=토요일
-});
-
-export type StaffProfileData = z.infer<typeof staffProfileSchema>;
-
-/**
- * 구인자 프로필 스키마
- */
-export const employerProfileSchema = z.object({
-  companyName: z
-    .string()
-    .min(1, { message: '업체명은 필수입니다' })
-    .max(50, { message: '업체명은 50자를 초과할 수 없습니다' })
-    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }),
-  businessNumber: z
-    .string()
-    .regex(/^\d{3}-\d{2}-\d{5}$/, {
-      message: '사업자등록번호 형식이 올바르지 않습니다 (예: 123-45-67890)',
-    })
-    .optional(),
-  address: z
-    .string()
-    .max(200, { message: '주소는 200자를 초과할 수 없습니다' })
-    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
-    .optional(),
-  description: z
-    .string()
-    .max(500, { message: '업체 설명은 500자를 초과할 수 없습니다' })
-    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
-    .optional(),
-});
-
-export type EmployerProfileData = z.infer<typeof employerProfileSchema>;
-
-/**
  * 구인자 소개글 스키마 (주로 구인하는 지역/매장/대회)
  * @description 등록 신청 시 필수 입력. trim 후 10~300자, XSS 검증.
  */
@@ -155,22 +106,6 @@ export const employerIntroSchema = z
   .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' });
 
 export type EmployerIntroData = z.infer<typeof employerIntroSchema>;
-
-/**
- * 구인자 등록 스키마 (staff → employer 역할 변경)
- * @description 본인인증 완료 후 동의만으로 구인자 등록
- */
-export const employerRegisterSchema = z.object({
-  intro: employerIntroSchema,
-  agreeToEmployerTerms: z.literal(true, {
-    message: '구인자 이용약관에 동의해주세요',
-  }),
-  agreeToLiabilityWaiver: z.literal(true, {
-    message: '서약서에 동의해주세요',
-  }),
-});
-
-export type EmployerRegisterData = z.infer<typeof employerRegisterSchema>;
 
 // ============================================================================
 // 설정 스키마
@@ -201,17 +136,6 @@ export const notificationSettingsSchema = z.object({
 });
 
 export type NotificationSettingsData = z.infer<typeof notificationSettingsSchema>;
-
-/**
- * 사용자 설정 스키마
- */
-export const userSettingsSchema = z.object({
-  theme: z.enum(['light', 'dark', 'system']).optional(),
-  language: z.enum(['ko', 'en']).optional(),
-  notifications: notificationSettingsSchema.optional(),
-});
-
-export type UserSettingsData = z.infer<typeof userSettingsSchema>;
 
 // ============================================================================
 // 검색/필터 스키마

@@ -309,13 +309,6 @@ export const CurrencyWonIcon: IconComponent = ({
   );
 };
 
-// ─── Deprecated aliases ────────────────────────────────────────────────────
-/**
- * @deprecated 한국 서비스에서 ¥ 심볼은 의미 오류 — `CurrencyWonIcon` 사용.
- *             1 릴리스 후 제거 예정.
- */
-export const CurrencyYenIcon = CurrencyWonIcon;
-
 // ─── Legacy aliases (기존 호출부 호환) ─────────────────────────────────────
 export const HeartOutlineIcon = HeartIcon;
 export const MapIcon = MapPinIcon;

@@ -10,21 +10,6 @@ import { parseTimeValue } from '@/shared/time/parseTimeValue';
 import { toDate, toISODateString } from './core';
 
 /**
- * 날짜 범위 생성 (YYYY-MM-DD 배열)
- */
-export function getDateRange(start: Date, end: Date): string[] {
-  const dates: string[] = [];
-  let current = new Date(start);
-
-  while (current <= end) {
-    dates.push(format(current, 'yyyy-MM-dd'));
-    current = addDays(current, 1);
-  }
-
-  return dates;
-}
-
-/**
  * 시작일부터 종료일까지의 모든 날짜 배열 반환 (문자열 버전)
  */
 export function generateDateRange(startDate: string, endDate: string): string[] {
@@ -160,40 +145,4 @@ export function parseTimeSlotToDate(
   if (isNaN(endTime.getTime())) return { startTime, endTime: null };
 
   return { startTime, endTime };
-}
-
-/**
- * 근무 시간 계산 (분 단위)
- */
-export function calculateWorkDuration(startTime: string, endTime: string): number {
-  const [startHour, startMin] = startTime.split(':').map(Number);
-  const [endHour, endMin] = endTime.split(':').map(Number);
-
-  const startMinutes = startHour * 60 + startMin;
-  let endMinutes = endHour * 60 + endMin;
-
-  // 자정을 넘어가는 경우
-  if (endMinutes < startMinutes) {
-    endMinutes += 24 * 60;
-  }
-
-  return endMinutes - startMinutes;
-}
-
-/**
- * 분을 시간:분 형식으로 변환
- */
-export function minutesToHoursMinutes(minutes: number): {
-  hours: number;
-  minutes: number;
-  display: string;
-} {
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-
-  return {
-    hours,
-    minutes: mins,
-    display: mins > 0 ? `${hours}시간 ${mins}분` : `${hours}시간`,
-  };
 }

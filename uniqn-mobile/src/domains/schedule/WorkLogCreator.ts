@@ -10,17 +10,7 @@
  * 3. 트랜잭션 내 배치 생성 지원
  */
 
-import { STATUS } from '@/constants';
 import { parseTimeSlotToDate } from '@/utils/date';
-
-/**
- * 서버 타임스탬프 센티널 마커
- *
- * @description Firestore serverTimestamp()의 추상화.
- *              Repository 레이어에서 이 마커를 감지하여 실제 serverTimestamp()로 변환.
- */
-const SERVER_TIMESTAMP_SENTINEL = { __type: 'serverTimestamp' } as const;
-export type ServerTimestampSentinel = typeof SERVER_TIMESTAMP_SENTINEL;
 
 // ============================================================================
 // Types
@@ -34,67 +24,6 @@ export interface TimeSlotInfo {
   endTime: string | null;
   /** 원본 timeSlot 문자열 */
   original: string;
-}
-
-/** WorkLog 생성 입력 */
-export interface WorkLogCreateInput {
-  /** 스태프 ID */
-  staffId: string;
-  /** 스태프 이름 */
-  staffName: string;
-  /** 공고 ID (정규화된 필드명) */
-  jobPostingId: string;
-  /** 공고 이름 */
-  jobPostingName: string;
-  /** 역할 ID */
-  roleId: string;
-  /** 날짜 (YYYY-MM-DD) */
-  date: string;
-  /** 시간 슬롯 (예: "09:00~18:00") */
-  timeSlot: string;
-  /** 그룹 ID (Assignment v2.0) */
-  assignmentGroupId?: string | null;
-  /** 출퇴근 체크 방식 */
-  checkMethod?: 'individual' | 'group';
-  /** 시간 미정 여부 */
-  isTimeToBeAnnounced?: boolean;
-  /** 시간 미정 시 설명 */
-  tentativeDescription?: string | null;
-}
-
-/** 생성된 WorkLog 데이터 (Firestore 저장용) */
-export interface WorkLogData {
-  staffId: string;
-  staffName: string;
-  /** 공고 ID */
-  jobPostingId: string;
-  /** 공고 이름 */
-  jobPostingName: string;
-  role: string;
-  date: string;
-  timeSlot: string;
-  isTimeToBeAnnounced: boolean;
-  tentativeDescription: string | null;
-  status: 'scheduled' | 'checked_in' | 'checked_out' | 'completed' | 'cancelled';
-  checkInTime: Date | null;
-  checkOutTime: null;
-  workDuration: null;
-  payrollAmount: null;
-  isSettled: boolean;
-  assignmentGroupId: string | null;
-  checkMethod: 'individual' | 'group';
-  createdAt: ServerTimestampSentinel;
-  updatedAt: ServerTimestampSentinel;
-}
-
-/** 배치 생성 결과 */
-export interface BatchCreateResult {
-  /** 생성된 WorkLog 데이터 배열 */
-  workLogs: WorkLogData[];
-  /** 생성된 날짜 목록 */
-  dates: string[];
-  /** 총 생성 개수 */
-  count: number;
 }
 
 // ============================================================================
@@ -177,98 +106,6 @@ export class WorkLogCreator {
     } catch {
       return null;
     }
-  }
-
-  // ==========================================================================
-  // WorkLog 생성
-  // ==========================================================================
-
-  /**
-   * 단일 WorkLog 데이터 생성
-   *
-   * @param input - 생성 입력
-   * @returns WorkLog 데이터 (Firestore 저장용)
-   */
-  static create(input: WorkLogCreateInput): WorkLogData {
-    return {
-      staffId: input.staffId,
-      staffName: input.staffName,
-      jobPostingId: input.jobPostingId,
-      jobPostingName: input.jobPostingName,
-      role: input.roleId,
-      date: input.date,
-      timeSlot: input.timeSlot,
-      isTimeToBeAnnounced: input.isTimeToBeAnnounced ?? false,
-      tentativeDescription: input.tentativeDescription ?? null,
-      status: STATUS.WORK_LOG.SCHEDULED,
-      checkInTime: null,
-      checkOutTime: null,
-      workDuration: null,
-      payrollAmount: null,
-      isSettled: false,
-      assignmentGroupId: input.assignmentGroupId ?? null,
-      checkMethod: input.checkMethod ?? 'individual',
-      createdAt: SERVER_TIMESTAMP_SENTINEL,
-      updatedAt: SERVER_TIMESTAMP_SENTINEL,
-    };
-  }
-
-  /**
-   * Assignment 배열에서 WorkLog 배치 생성
-   *
-   * @description 각 Assignment의 dates 배열을 펼쳐서 개별 WorkLog 생성
-   *
-   * @param assignments - Assignment 배열
-   * @param staffInfo - 스태프 정보
-   * @param eventInfo - 이벤트 정보
-   * @param defaultRole - 기본 역할 (Assignment에 역할 없을 시)
-   * @returns BatchCreateResult
-   */
-  static createFromAssignments(
-    assignments: {
-      dates: string[];
-      timeSlot: string;
-      roleIds?: string[];
-      groupId?: string | null;
-      checkMethod?: 'individual' | 'group';
-      isTimeToBeAnnounced?: boolean;
-      tentativeDescription?: string | null;
-    }[],
-    staffInfo: { staffId: string; staffName: string },
-    jobPostingInfo: { jobPostingId: string; jobPostingName: string },
-    defaultRole?: string
-  ): BatchCreateResult {
-    const workLogs: WorkLogData[] = [];
-    const allDates: string[] = [];
-
-    for (const assignment of assignments) {
-      const roleId = assignment.roleIds?.[0] ?? defaultRole ?? '';
-
-      for (const date of assignment.dates) {
-        const workLog = this.create({
-          staffId: staffInfo.staffId,
-          staffName: staffInfo.staffName,
-          jobPostingId: jobPostingInfo.jobPostingId,
-          jobPostingName: jobPostingInfo.jobPostingName,
-          roleId,
-          date,
-          timeSlot: assignment.timeSlot,
-          assignmentGroupId: assignment.groupId,
-          checkMethod: assignment.checkMethod,
-          isTimeToBeAnnounced: assignment.isTimeToBeAnnounced,
-          tentativeDescription: assignment.tentativeDescription,
-        });
-
-        workLogs.push(workLog);
-        allDates.push(date);
-      }
-    }
-
-    return {
-      workLogs,
-      dates: [...new Set(allDates)].sort(),
-      count: workLogs.length,
-    };
   }
 
   /**
