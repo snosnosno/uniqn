@@ -19,7 +19,16 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+  runOnJS,
+  interpolate,
+  Extrapolation,
+} from 'react-native-reanimated';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { XMarkIcon } from '@/components/icons';
 import { getIconColor } from '@/constants';
 import { MOTION_EASING, MOTION_DURATION } from '@/constants/animation';
@@ -211,6 +220,15 @@ function WebSheetModal({
 // Native SheetModal Component
 // ============================================================================
 
+/**
+ * 러버밴드 저항 (Apple 공식): 경계 밖으로 갈수록 이동량이 점점 줄어든다.
+ * 위로 끌 때(overshoot < 0) 딱딱한 정지 대신 탄성 저항을 준다.
+ */
+function rubberband(overshoot: number, dimension: number, constant = 0.55): number {
+  'worklet';
+  return (overshoot * dimension * constant) / (dimension + constant * Math.abs(overshoot));
+}
+
 function NativeSheetModal({
   visible,
   onClose,
@@ -301,8 +319,47 @@ function NativeSheetModal({
     handleRequestClose();
   }, [handleRequestClose]);
 
+  // 헤더 한정 Pan 제스처: 끌어내려 닫기.
+  // 직접 조작(direct manipulation)이므로 reduce motion 분기 대상이 아니다.
+  const panGesture = Gesture.Pan()
+    .enabled(!isLoading)
+    .onUpdate((e) => {
+      // 아래로는 손가락과 1:1 추적, 위로는 러버밴드 저항.
+      translateY.value =
+        e.translationY > 0 ? e.translationY : rubberband(e.translationY, windowHeight);
+    })
+    .onEnd((e) => {
+      const shouldDismiss = e.velocityY > 400 || e.translationY > windowHeight * 0.25;
+      if (shouldDismiss) {
+        // 현재 위치에서 이어서 퇴장(점프 없음). 완료 시 부모 visible=false 계약에 위임.
+        fadeOpacity.value = withTiming(0, {
+          duration: MOTION_DURATION.base,
+          easing: MOTION_EASING.fade,
+        });
+        translateY.value = withTiming(
+          windowHeight,
+          { duration: MOTION_DURATION.sheetExit, easing: MOTION_EASING.exitTravel },
+          (finished) => {
+            if (finished) {
+              runOnJS(handleRequestClose)();
+            }
+          }
+        );
+      } else {
+        // 복귀: 릴리즈 속도를 스프링에 이양, 오버슈트 0(bounce 금지 규약).
+        translateY.value = withSpring(0, {
+          dampingRatio: 1,
+          duration: 300,
+          velocity: e.velocityY,
+        });
+      }
+    });
+
   const backdropAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: fadeOpacity.value,
+    // 드래그 진행도(translateY)에 비례해 백드롭이 옅어진다.
+    opacity:
+      fadeOpacity.value *
+      interpolate(translateY.value, [0, windowHeight], [1, 0], Extrapolation.CLAMP),
   }));
 
   const modalAnimatedStyle = useAnimatedStyle(() => ({
@@ -317,74 +374,86 @@ function NativeSheetModal({
       onRequestClose={handleRequestClose}
       statusBarTranslucent
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
-      >
-        <View className="flex-1 justify-end" style={{ pointerEvents: 'box-none' }}>
-          {/* Backdrop */}
-          <Pressable
-            onPress={handleBackdropPress}
-            disabled={isLoading}
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-            accessibilityRole="button"
-            accessibilityLabel="모달 닫기"
-          >
-            <Animated.View style={backdropAnimatedStyle} className="flex-1 bg-black/50" />
-          </Pressable>
-
-          {/* Modal Content */}
-          <Animated.View
-            style={[
-              modalAnimatedStyle,
-              fullHeight ? { flex: 1 } : { maxHeight: windowHeight * 0.95, flex: 1 },
-            ]}
-          >
-            <SafeAreaView
-              edges={fullHeight ? ['top', 'bottom'] : ['bottom']}
-              style={{ flex: 1 }}
-              className={`bg-surface-card ${fullHeight ? '' : 'rounded-t-3xl'}`}
+      {/* Android 함정 회피: RN Modal 내부에서 gesture-handler 가 동작하려면
+          Modal 콘텐츠 최상단을 GestureHandlerRootView 로 감싸야 한다(RNModal 직계 자식). */}
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          className="flex-1"
+        >
+          <View className="flex-1 justify-end" style={{ pointerEvents: 'box-none' }}>
+            {/* Backdrop */}
+            <Pressable
+              onPress={handleBackdropPress}
+              disabled={isLoading}
+              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+              accessibilityRole="button"
+              accessibilityLabel="모달 닫기"
             >
-              {/* Header */}
-              <View className="flex-row items-center justify-between px-4 py-4 border-b border-divider">
-                <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white">
-                  {title}
-                </Text>
-                {showCloseButton && (
-                  <Pressable
-                    onPress={handleRequestClose}
-                    disabled={isLoading}
-                    className="w-10 h-10 items-center justify-center rounded-sm bg-surface-card dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
-                    accessibilityRole="button"
-                    accessibilityLabel="닫기"
-                    hitSlop={8}
-                  >
-                    <XMarkIcon size={18} color={getIconColor(isDarkMode, 'primary')} />
-                  </Pressable>
-                )}
-              </View>
+              <Animated.View style={backdropAnimatedStyle} className="flex-1 bg-black/50" />
+            </Pressable>
 
-              {/* Content */}
-              <ScrollView
+            {/* Modal Content */}
+            <Animated.View
+              style={[
+                modalAnimatedStyle,
+                fullHeight ? { flex: 1 } : { maxHeight: windowHeight * 0.95, flex: 1 },
+              ]}
+            >
+              <SafeAreaView
+                edges={fullHeight ? ['top', 'bottom'] : ['bottom']}
                 style={{ flex: 1 }}
-                contentContainerStyle={{ flexGrow: 1 }}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-                keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+                className={`bg-surface-card ${fullHeight ? '' : 'rounded-t-3xl'}`}
               >
-                {children}
-              </ScrollView>
+                {/* Header — Pan 제스처로 끌어내려 닫기(헤더 한정: 콘텐츠 ScrollView 스크롤 충돌 회피) */}
+                <GestureDetector gesture={panGesture}>
+                  <View className="border-b border-divider">
+                    {/* 드래그 핸들 바 (끌어내려 닫기 어포던스) */}
+                    <View className="items-center pt-2">
+                      <View className="w-9 h-1 rounded-full bg-secondary-300 dark:bg-secondary-600" />
+                    </View>
+                    <View className="flex-row items-center justify-between px-4 pb-4 pt-2">
+                      <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white">
+                        {title}
+                      </Text>
+                      {showCloseButton && (
+                        <Pressable
+                          onPress={handleRequestClose}
+                          disabled={isLoading}
+                          className="w-10 h-10 items-center justify-center rounded-sm bg-surface-card dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
+                          accessibilityRole="button"
+                          accessibilityLabel="닫기"
+                          hitSlop={8}
+                        >
+                          <XMarkIcon size={18} color={getIconColor(isDarkMode, 'primary')} />
+                        </Pressable>
+                      )}
+                    </View>
+                  </View>
+                </GestureDetector>
 
-              {/* Footer */}
-              {footer && <View className="px-4 py-4 border-t border-divider">{footer}</View>}
-            </SafeAreaView>
-          </Animated.View>
+                {/* Content */}
+                <ScrollView
+                  style={{ flex: 1 }}
+                  contentContainerStyle={{ flexGrow: 1 }}
+                  showsVerticalScrollIndicator={false}
+                  keyboardShouldPersistTaps="handled"
+                  keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+                >
+                  {children}
+                </ScrollView>
 
-          {/* 오버레이 (시간 피커 등) — Modal 루트에 직접 렌더하여 중첩 Modal 회피.
+                {/* Footer */}
+                {footer && <View className="px-4 py-4 border-t border-divider">{footer}</View>}
+              </SafeAreaView>
+            </Animated.View>
+
+            {/* 오버레이 (시간 피커 등) — Modal 루트에 직접 렌더하여 중첩 Modal 회피.
               자식 오버레이가 absoluteFill로 전체 화면을 덮어 터치를 정상 수신한다. */}
-          {overlay}
-        </View>
-      </KeyboardAvoidingView>
+            {overlay}
+          </View>
+        </KeyboardAvoidingView>
+      </GestureHandlerRootView>
     </RNModal>
   );
 }
