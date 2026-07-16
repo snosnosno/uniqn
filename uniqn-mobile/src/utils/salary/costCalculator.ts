@@ -15,7 +15,8 @@ import type { FormRoleWithCount } from '@/types';
  * 숫자를 한국 통화 형식으로 포맷 (원화 기호 미포함)
  *
  * @description 공고 작성 UI에서 "원" 레이블과 함께 사용됩니다.
- * 정산 표시용으로는 utils/settlement의 formatNumber를 사용하세요.
+ * 통화 기호(₩) 포함 표기가 필요하면 canonical 포맷터 @/utils/formatters/currency 의
+ * formatCurrency 를 사용하세요.
  *
  * @param value - 포맷할 숫자
  * @returns 포맷된 문자열 (예: "15,000" - 원화 기호 없음)
@@ -23,7 +24,7 @@ import type { FormRoleWithCount } from '@/types';
  * @example
  * formatNumber(15000) // => "15,000"
  *
- * @see {@link @/utils/settlement/formatNumber} 원화 포함 버전 ("15,000원")
+ * @see {@link @/utils/formatters/currency} 통화 기호 포함 표기 formatCurrency (→ "₩15,000")
  */
 export const formatNumber = (value: number): string => {
   return value.toLocaleString('ko-KR');

@@ -5,8 +5,8 @@
  * - 리스트/컬럼(수치 정확성 우선): `formatCurrency(amount)` → "₩1,234,567"
  * - 설명문 축약(읽기 편의): `formatCurrencyCompact(amount)` → "10만원" / "5만 3,000원"
  *
- * 기존 `src/utils/settlement/formatters.formatCurrency`(="1,234,567원")는
- * 하위 호환용으로 유지. 신규 코드는 본 모듈에서 import.
+ * 기존 `src/utils/settlement/formatters.formatCurrency` 는 본 모듈의 formatCurrency 를
+ * 재수출하므로 동일하게 "₩1,234,567" 를 출력한다. 신규 코드는 본 모듈에서 직접 import.
  */
 
 const koKR = new Intl.NumberFormat('ko-KR');

@@ -147,7 +147,12 @@ export interface UserProfile {
 // Type Aliases
 // ============================================================================
 
-/** @deprecated Use UserProfile directly. Firebase 이전 레거시 타입. */
+/**
+ * repository·interface 층(IUserRepository·UserRepository)에서 실사용 중인 프로필 정본 타입.
+ * `UserProfile` 과 상호 별칭(authTypes 에서 `UserProfile = FirestoreUserProfile`)이며,
+ * 이름의 `Firestore` 접두는 Firebase 시대 잔재일 뿐 동작상 의미는 없다.
+ * 이름 일괄 치환(→ UserProfile)은 광역 변경이라 별도 PR로 분리한다.
+ */
 export type FirestoreUserProfile = UserProfile;
 
 /**

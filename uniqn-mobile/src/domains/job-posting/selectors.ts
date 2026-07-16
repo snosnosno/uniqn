@@ -80,7 +80,7 @@ interface PostingRoleAvailabilityOptions {
    * 역할키(DB `_posting_role_key`)별 실확정 인원. 주입 시 SP3 dead counter(filled=0) 대신
    * 이 값으로 remaining/isAvailable 을 계산한다. 미주입 시 기존 동작(모든 역할 여유)을 완전히 보존.
    *
-   * ⚠️ 지원(apply) 게이트(selectPostingApplicationEligibility·ApplicationValidator)는 이 옵션을
+   * ⚠️ 지원(apply) 게이트(ApplicationValidator)는 이 옵션을
    * 주입하지 않는다 — 마감 역할 지원 허용은 의도된 정책(대기 성격, 최종 overfill 차단은 서버
    * confirm_application H1 권위). employer 역할 변경 모달처럼 "지금 남은 자리"를 정확히 보여줘야
    * 하는 표시 경로에서만 주입한다.

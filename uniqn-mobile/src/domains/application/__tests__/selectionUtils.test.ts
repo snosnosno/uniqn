@@ -2,7 +2,7 @@
  * selectionUtils 테스트
  *
  * @description AssignmentSelector 컴포넌트에서 분리된 순수 함수 테스트
- * - makeSelectionKey: 키 생성 (selectionCore 위임)
+ * (makeSelectionKey 자체는 selectionCore.test.ts 에서 검증)
  * - areTimeSlotsStructureEqual: 시간대 구조 비교
  * - createGroupFromSchedules: 스케줄 그룹 생성
  * - groupDatedSchedules: 스케줄 그룹화 로직

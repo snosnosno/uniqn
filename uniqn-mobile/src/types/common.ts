@@ -29,7 +29,12 @@ export interface BaseDocument {
   updatedAt?: Date;
 }
 
-/** @deprecated Use BaseDocument directly. Firebase 이전 레거시 타입. */
+/**
+ * 8개 파일 14개 도메인 인터페이스(Announcement·Application·Board*·Inquiry·
+ * JobPostingDocumentV3·NotificationData·Report·ScheduleEvent·WorkLog 등)가 상속하는
+ * 문서 베이스 — 실질 정본이다. 이름의 `Firebase` 접두는 Firebase 시대 잔재일 뿐
+ * `BaseDocument` 와 동일하며, 이름 일괄 치환은 광역 변경이라 별도 PR로 분리한다.
+ */
 export type FirebaseDocument = BaseDocument;
 
 /**
