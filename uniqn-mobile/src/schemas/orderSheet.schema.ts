@@ -43,12 +43,13 @@ export const orderSheetRoleSalarySchema = z.object({
   salary: orderSheetSalarySchema,
 });
 
+// 출근 시각 형식(HH:MM 24h) — 타임슬롯·고정 근무조건이 공유(중복 정의 제거, 동작 불변).
+const START_TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
 export const orderSheetTimeSlotSchema = z.object({
-  startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, '출근 시간을 선택해주세요'),
+  startTime: z.string().regex(START_TIME_RE, '출근 시간을 선택해주세요'),
   roles: z.array(orderSheetRoleSchema).min(1, '역할을 추가해주세요'),
 });
-
-const START_TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 /**
  * 고정(fixed) 근무조건(S2) — 날짜 축이 없는 상시 반복 근무. 역할은 평탄 배열(레거시 formData.roles 시맨틱).

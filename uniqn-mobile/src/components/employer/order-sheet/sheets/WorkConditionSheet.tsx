@@ -108,7 +108,8 @@ export function WorkConditionSheet({
         {/* 주 출근일수 */}
         <View className="gap-2">
           <Text className="text-sm font-sans-medium text-content-secondary">주 출근일수</Text>
-          <View className="flex-row flex-wrap gap-2">
+          {/* 요일 칩 라디오 그룹 — 스크린리더 그룹 맥락(RolesSheet radiogroup 관례 동일) */}
+          <View className="flex-row flex-wrap gap-2" accessibilityRole="radiogroup">
             {DAYS_OPTIONS.map((o) => {
               const selected = daysPerWeek === o.value;
               return (

@@ -719,6 +719,24 @@ export function OrderSheetScreen({
               const synced = syncRoleSalariesForRoles(next, prev, cur.salary.type);
               if (synced !== prev) {
                 form.setValue('roleSalaries', synced, { shouldDirty: true, shouldValidate: true });
+                // 후속 역할 추가(기존 엔트리가 있던 상태의 신규 주입)만 1회 안내(dated applyRoleSalarySync 대칭) —
+                // 초기 시드(prev 비어있음)는 '기본값' 배지가 담당해 토스트 없음.
+                const added = synced.slice(prev.length);
+                if (prev.length > 0 && added.length > 0) {
+                  addToast({
+                    type: 'success',
+                    message: `기본 급여 적용: ${added
+                      .map(
+                        (rs) =>
+                          `${roleName(rs.role, rs.customRole)} ${
+                            rs.salary.type === 'other'
+                              ? '협의'
+                              : `${rs.salary.amount.toLocaleString()}원`
+                          }`
+                      )
+                      .join(' · ')} · 급여 행에서 수정 가능`,
+                  });
+                }
               }
             }
           }}
