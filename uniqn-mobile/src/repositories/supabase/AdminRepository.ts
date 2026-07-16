@@ -83,6 +83,18 @@ function rowToAdminUser(row: Record<string, unknown>): AdminUser {
   };
 }
 
+/**
+ * PostgREST `.or()` 필터 값에 넣을 사용자 검색어를 안전화한다.
+ *
+ * `,` `(` `)` 는 PostgREST 논리 트리 구분자라 그대로 두면 필터 인젝션·문법오류가 되고,
+ * `%` 는 LIKE 와일드카드라 의도치 않은 광역 매칭을 유발한다(부분일치는 우리가 %..%로 감싼다).
+ * `"` `\` 는 PostgREST 값 인용/이스케이프 문자라 파싱을 깨뜨릴 수 있다.
+ * 위 문자를 모두 제거해 리터럴 부분일치만 남긴다. 남는 문자가 없으면 빈 문자열.
+ */
+function sanitizeOrFilterTerm(raw: string): string {
+  return raw.replace(/[%(),"\\]/g, '').trim();
+}
+
 function getTodayRange(): { start: string; end: string } {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -220,6 +232,16 @@ export class SupabaseAdminRepository implements IAdminRepository {
         query = query.eq('identity_verified', filters.isVerified);
       }
 
+      // 검색: name/email 부분일치를 서버측(count 반영)에서 적용한다.
+      // range(페이지네이션) 이전에 배치해야 전체 페이지에 걸친 매칭이 잡히고
+      // total/totalPages 가 검색 기준 count 를 반영한다.
+      if (filters.search) {
+        const term = sanitizeOrFilterTerm(filters.search);
+        if (term.length > 0) {
+          query = query.or(`name.ilike.%${term}%,email.ilike.%${term}%`);
+        }
+      }
+
       const sortField = filters.sortBy ?? 'created_at';
       const sortOrder = filters.sortOrder ?? 'desc';
       const snakeSortField = sortField.replace(/[A-Z]/g, (ch: string) => `_${ch.toLowerCase()}`);
@@ -236,17 +258,9 @@ export class SupabaseAdminRepository implements IAdminRepository {
         handleSupabaseError(error, { operation: '사용자 목록 조회', table: TABLES.USERS });
       }
 
-      let users = ((data ?? []) as Record<string, unknown>[]).map(rowToAdminUser);
-
-      // 클라이언트 사이드 검색 필터
-      if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
-        users = users.filter(
-          (u) =>
-            u.name.toLowerCase().includes(searchLower) ||
-            u.email.toLowerCase().includes(searchLower)
-        );
-      }
+      // 검색은 서버측 or(ilike) 필터로 처리되므로 클라 사후 필터를 두지 않는다
+      // (사후 필터는 타 페이지 매칭 누락 + total 왜곡의 원인이었다).
+      const users = ((data ?? []) as Record<string, unknown>[]).map(rowToAdminUser);
 
       const total = count ?? 0;
       const totalPages = Math.ceil(total / pageSize);
