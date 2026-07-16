@@ -91,11 +91,6 @@ export interface OrderSheetScreenProps {
   initialValues: OrderSheetFormValues;
   onSubmit: (values: OrderSheetValues) => Promise<void>;
   isSubmitting: boolean;
-  /**
-   * 레거시 폼 위임 콜백 — 대회(S1)·고정(S2) 모두 주문서 내부 처리로 이관돼 더 이상 호출되지 않는다.
-   * create.tsx가 계속 전달하므로 계약은 유지하고(optional — 편집 화면은 미전달), 소비는 하지 않는다. S4에서 제거 예정.
-   */
-  onSwitchToLegacyForm?: (type: 'fixed' | 'tournament') => void;
   /** RHF dirty 상태를 상위(create.tsx)로 끌어올려 useUnsavedChangesGuard에 연결 */
   onDirtyChange?: (dirty: boolean) => void;
   /** ContactSheet "내 프로필 번호" 라디오용 — create.tsx가 profile.phone 전달 */
@@ -114,7 +109,6 @@ export function OrderSheetScreen({
   initialValues,
   onSubmit,
   isSubmitting,
-  // onSwitchToLegacyForm는 의도적으로 구조분해하지 않는다 — S2에서 고정도 내부 처리로 이관돼 미호출(위 계약 주석).
   onDirtyChange,
   myPhone = '',
   presets,

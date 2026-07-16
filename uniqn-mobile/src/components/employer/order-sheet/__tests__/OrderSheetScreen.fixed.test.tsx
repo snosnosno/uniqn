@@ -47,21 +47,8 @@ describe('OrderSheetScreen — 고정 유형(S2)', () => {
     myPhone: '010-0000-0000',
   };
 
-  it('고정 세그먼트 선택 시 레거시로 이탈하지 않는다', async () => {
-    const onSwitchToLegacyForm = jest.fn();
-    const { getByTestId } = render(
-      <OrderSheetScreen {...baseProps} onSwitchToLegacyForm={onSwitchToLegacyForm} />
-    );
-    fireEvent.press(getByTestId('order-sheet-type-fixed'));
-    await flushValidation();
-    expect(onSwitchToLegacyForm).not.toHaveBeenCalled();
-    expect(getByTestId('order-sheet-type-fixed').props.accessibilityState.selected).toBe(true);
-  });
-
   it('고정 선택 시 근무조건 행이 보이고 날짜 행이 없다', async () => {
-    const { getByTestId, queryByTestId } = render(
-      <OrderSheetScreen {...baseProps} onSwitchToLegacyForm={jest.fn()} />
-    );
+    const { getByTestId, queryByTestId } = render(<OrderSheetScreen {...baseProps} />);
     fireEvent.press(getByTestId('order-sheet-type-fixed'));
     await flushValidation();
     expect(getByTestId('order-sheet-row-workConditions')).toBeTruthy();
@@ -92,7 +79,6 @@ describe('OrderSheetScreen — 고정 역할 급여 프리필 안내 토스트(S
     onSubmit: jest.fn(),
     isSubmitting: false,
     myPhone: '010-0000-0000',
-    onSwitchToLegacyForm: jest.fn(),
   };
   beforeEach(() => {
     mockAddToast.mockClear();
@@ -147,7 +133,6 @@ describe('OrderSheetScreen — 타입 전환 축 데이터 보존 (전체리뷰 
     onSubmit: jest.fn(),
     isSubmitting: false,
     myPhone: '010-0000-0000',
-    onSwitchToLegacyForm: jest.fn(),
   };
 
   it('dated 날짜·시간 입력이 고정 전환 후 복귀 시 복원된다', async () => {

@@ -34,17 +34,15 @@ describe('OrderSheetScreen — 대회 유형 전환 (S1)', () => {
     myPhone: '010-0000-0000',
   };
 
-  it('대회 세그먼트 선택 시 레거시로 이탈하지 않는다', () => {
-    const onSwitchToLegacyForm = jest.fn();
-    const { getByTestId } = render(
-      <OrderSheetScreen {...baseProps} onSwitchToLegacyForm={onSwitchToLegacyForm} />
-    );
+  it('대회 세그먼트 선택 시 주문서 안에서 tournament로 전환된다', () => {
+    const { getByTestId } = render(<OrderSheetScreen {...baseProps} />);
     fireEvent.press(getByTestId('order-sheet-type-tournament'));
-    expect(onSwitchToLegacyForm).not.toHaveBeenCalled();
+    // 타입 유지 + 승인 안내 배너 렌더로 내부 전환을 고정(레거시 위임 계약은 prop 소멸로 타입 차원 소거).
     expect(getByTestId('order-sheet-type-tournament').props.accessibilityState.selected).toBe(true);
+    expect(getByTestId('order-sheet-tournament-notice')).toBeTruthy();
   });
 
-  // 고정 세그먼트 전환(레거시 미위임·근무조건 행 렌더)은 S2에서 OrderSheetScreen.fixed.test.tsx로 이관됨.
+  // 고정 세그먼트 전환(근무조건 행 렌더)은 S2에서 OrderSheetScreen.fixed.test.tsx로 이관됨.
 });
 
 // 전 행이 채워진 완성 대회 폼 — firstUnsetRow가 null을 반환해 submitLabel이 '승인 요청하기'로 해석되도록 구성.
@@ -77,7 +75,6 @@ describe('OrderSheetScreen — 대회 안내·제출 라벨 (S1)', () => {
     onSubmit: jest.fn(),
     isSubmitting: false,
     myPhone: '010-0000-0000',
-    onSwitchToLegacyForm: jest.fn(),
   };
 
   it('대회 선택 시 승인 안내 배너를 노출한다', () => {
