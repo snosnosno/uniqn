@@ -3,15 +3,15 @@
  *
  * 목적:
  * - 네트워크 끊김 진입 시 상단에서 슬라이드-인, warning 틴트로 "오프라인 상태입니다"
- * - 복구 순간 "온라인으로 돌아왔어요"(success 톤) 2초 표시 후 자동 dismiss
- * - 사용자 액션 없음(dismiss 버튼·retry 없음). 수동 재시도가 필요한 시나리오는
- *   기존 `<OfflineBanner variant="banner" | "toast" | "fullscreen" />` 를 사용.
+ * - 복구 순간 "온라인으로 돌아왔어요"(success 톤 + Wifi 아이콘) 2초 표시 후 자동 dismiss
+ * - 사용자 액션 없음(dismiss 버튼·retry 없음). 네트워크 복구는 NetInfo 자동 감지 +
+ *   재연결 시 쿼리 자동 refetch(AuthenticatedRuntime)가 담당.
  *
  * 디자인 spec:
  * - height 40px, safe-area-top 아래
- * - 배경 dark `rgba(212,160,23,0.15)` / light `rgba(161,98,7,0.15)`
- * - 좌측 `WifiOff` 16px, 14px/500 텍스트, gap-2
- * - entrance 300ms ease-out / exit 225ms ease-in(75% 규칙)
+ * - offline: warning subtle / reconnected: success subtle (각 0.15 알파)
+ * - 좌측 아이콘 16px(offline=WifiOff / reconnected=Wifi), 14px/500 텍스트, gap-2
+ * - entrance 300ms ease-out / exit 225ms ease-in(75% 규칙) — 언마운트는 exit 완료 후
  * - reduce motion 시 opacity fade 만, translate 생략
  *
  * 접근성: `accessibilityRole="alert"` + `accessibilityLiveRegion="polite"` —
@@ -29,7 +29,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { WifiOff } from '@/components/icons';
+import { WifiIcon, WifiOff } from '@/components/icons';
 import {
   getNetworkState,
   subscribeToNetworkState,
@@ -45,13 +45,13 @@ const EXIT_MS = 225; // 75% of entrance (impeccable v1 §8)
 
 const TOKENS = {
   dark: {
-    bg: 'rgba(212,160,23,0.15)', // warning subtle dark
-    icon: '#D4A017',
+    offline: { bg: 'rgba(212,160,23,0.15)', icon: '#D4A017' }, // warning subtle
+    reconnected: { bg: 'rgba(34,197,94,0.15)', icon: '#22C55E' }, // success subtle
     text: '#F0F0F2', // content-primary dark
   },
   light: {
-    bg: 'rgba(161,98,7,0.15)', // warning subtle light
-    icon: '#A16207',
+    offline: { bg: 'rgba(161,98,7,0.15)', icon: '#A16207' },
+    reconnected: { bg: 'rgba(22,163,74,0.15)', icon: '#16A34A' },
     text: '#09090B', // content-primary light
   },
 } as const;
@@ -84,13 +84,15 @@ export function OfflineStatusBar(): React.ReactElement | null {
   const [phase, setPhase] = useState<BannerPhase>(() =>
     getNetworkState().isOffline ? 'offline' : 'hidden'
   );
+  // exit 애니메이션 동안 렌더를 유지하기 위한 지연 언마운트 플래그
+  const [rendered, setRendered] = useState<boolean>(() => getNetworkState().isOffline);
   const prevOnlineRef = useRef<boolean>(getNetworkState().isOnline);
   const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const reduceMotion = useReduceMotion();
   const insets = useSafeAreaInsets();
   const { colorScheme } = useColorScheme();
-  const tokens = colorScheme === 'dark' ? TOKENS.dark : TOKENS.light;
+  const palette = colorScheme === 'dark' ? TOKENS.dark : TOKENS.light;
 
   // 실제 transform + opacity
   const translateY = useSharedValue(-BANNER_HEIGHT);
@@ -134,7 +136,7 @@ export function OfflineStatusBar(): React.ReactElement | null {
     };
   }, []);
 
-  // 애니메이션
+  // 애니메이션 + 지연 언마운트 (exit 225ms 완료 후 실제 제거)
   useEffect(() => {
     const show = phase !== 'hidden';
     const duration = show ? ENTRANCE_MS : EXIT_MS;
@@ -143,14 +145,17 @@ export function OfflineStatusBar(): React.ReactElement | null {
     if (reduceMotion) {
       translateY.value = 0;
       opacity.value = show ? 1 : 0;
-      return;
+    } else {
+      translateY.value = withTiming(show ? 0 : -BANNER_HEIGHT, { duration, easing });
+      opacity.value = withTiming(show ? 1 : 0, { duration, easing });
     }
 
-    translateY.value = withTiming(show ? 0 : -BANNER_HEIGHT, {
-      duration,
-      easing,
-    });
-    opacity.value = withTiming(show ? 1 : 0, { duration, easing });
+    if (show) {
+      setRendered(true);
+      return;
+    }
+    const unmountTimer = setTimeout(() => setRendered(false), EXIT_MS);
+    return () => clearTimeout(unmountTimer);
   }, [phase, reduceMotion, translateY, opacity]);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -158,9 +163,13 @@ export function OfflineStatusBar(): React.ReactElement | null {
     opacity: opacity.value,
   }));
 
-  if (phase === 'hidden') return null;
+  if (!rendered) return null;
 
-  const label = phase === 'offline' ? '오프라인 상태입니다' : '온라인으로 돌아왔어요';
+  // 'hidden'(exit 구간)은 reconnected 다음에만 오므로 reconnected 표기 유지
+  const isOfflinePhase = phase === 'offline';
+  const phaseTokens = isOfflinePhase ? palette.offline : palette.reconnected;
+  const label = isOfflinePhase ? '오프라인 상태입니다' : '온라인으로 돌아왔어요';
+  const PhaseIcon = isOfflinePhase ? WifiOff : WifiIcon;
 
   return (
     <Animated.View
@@ -177,7 +186,7 @@ export function OfflineStatusBar(): React.ReactElement | null {
           left: 0,
           right: 0,
           height: BANNER_HEIGHT,
-          backgroundColor: tokens.bg,
+          backgroundColor: phaseTokens.bg,
           paddingHorizontal: 16,
           flexDirection: 'row',
           alignItems: 'center',
@@ -187,11 +196,11 @@ export function OfflineStatusBar(): React.ReactElement | null {
         animatedStyle,
       ]}
     >
-      <WifiOff size={16} color={tokens.icon} />
+      <PhaseIcon size={16} color={phaseTokens.icon} />
       <Text
         numberOfLines={1}
         style={{
-          color: tokens.text,
+          color: palette.text,
           fontSize: 14,
           fontWeight: '500',
           flexShrink: 1,

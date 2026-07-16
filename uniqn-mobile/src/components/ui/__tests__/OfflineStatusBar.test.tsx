@@ -5,10 +5,15 @@
  * 오프라인 진입·복구 시퀀스와 2초 auto-dismiss 를 검증한다.
  */
 
-import React from 'react';
 import { act, render } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import { OfflineStatusBar } from '../OfflineStatusBar';
+import { WifiIcon, WifiOff } from '@/components/icons';
+
+jest.mock('nativewind', () => ({
+  useColorScheme: () => ({ colorScheme: 'light' }),
+}));
 
 // ── jest.mock 팩토리는 호이스팅되므로 `mock` 프리픽스 변수만 허용 ──────
 type Listener = () => void;
@@ -108,6 +113,12 @@ describe('OfflineStatusBar', () => {
     act(() => {
       jest.advanceTimersByTime(2000);
     });
+    // exit 애니메이션(225ms) 동안은 아직 렌더 유지
+    expect(queryByTestId('offline-status-bar')).not.toBeNull();
+
+    act(() => {
+      jest.advanceTimersByTime(225);
+    });
     expect(queryByTestId('offline-status-bar')).toBeNull();
     jest.useRealTimers();
   });
@@ -150,6 +161,53 @@ describe('OfflineStatusBar', () => {
       jest.advanceTimersByTime(2000);
     });
     expect(getByTestId('offline-status-bar').props.accessibilityLabel).toBe('오프라인 상태입니다');
+    jest.useRealTimers();
+  });
+
+  it('오프라인 배너는 warning 톤 배경으로 렌더된다', () => {
+    mockIsOnline = false;
+    const { getByTestId, UNSAFE_queryAllByType } = render(<OfflineStatusBar />);
+    const flat = StyleSheet.flatten(getByTestId('offline-status-bar').props.style);
+    expect(flat.backgroundColor).toBe('rgba(161,98,7,0.15)'); // light warning subtle
+    expect(UNSAFE_queryAllByType(WifiOff)).toHaveLength(1);
+    expect(UNSAFE_queryAllByType(WifiIcon)).toHaveLength(0);
+  });
+
+  it('복구 배너는 success 톤 배경 + Wifi 아이콘으로 렌더된다', () => {
+    mockIsOnline = true;
+    const { getByTestId, UNSAFE_queryAllByType } = render(<OfflineStatusBar />);
+
+    act(() => {
+      triggerNetworkChange(false);
+    });
+    act(() => {
+      triggerNetworkChange(true);
+    });
+
+    const flat = StyleSheet.flatten(getByTestId('offline-status-bar').props.style);
+    expect(flat.backgroundColor).toBe('rgba(22,163,74,0.15)'); // light success subtle
+    expect(UNSAFE_queryAllByType(WifiIcon)).toHaveLength(1);
+    expect(UNSAFE_queryAllByType(WifiOff)).toHaveLength(0);
+  });
+
+  it('exit 애니메이션 동안에도 복구 라벨과 success 톤을 유지한다', () => {
+    jest.useFakeTimers();
+    mockIsOnline = true;
+    const { getByTestId } = render(<OfflineStatusBar />);
+
+    act(() => {
+      triggerNetworkChange(false);
+    });
+    act(() => {
+      triggerNetworkChange(true);
+    });
+    act(() => {
+      jest.advanceTimersByTime(2000); // dismiss 발동 → exit 구간 진입
+    });
+
+    const bar = getByTestId('offline-status-bar');
+    expect(bar.props.accessibilityLabel).toBe('온라인으로 돌아왔어요');
+    expect(StyleSheet.flatten(bar.props.style).backgroundColor).toBe('rgba(22,163,74,0.15)');
     jest.useRealTimers();
   });
 });
