@@ -71,7 +71,6 @@ test.describe('오프라인 & 네트워크', () => {
     await expect(page.getByTestId('offline-status-bar')).toBeHidden({ timeout: 6_000 });
   });
 
-  // ⬇ 기존 '느린 네트워크 → 로딩 인디케이터 표시' 테스트는 그대로 유지
   test('느린 네트워크 → 로딩 인디케이터 표시', async ({ page }) => {
     // CDP를 통한 느린 네트워크 시뮬레이션
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

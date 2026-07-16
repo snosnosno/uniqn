@@ -57,6 +57,11 @@ describe('OfflineStatusBar', () => {
     mockSubscribe.mockClear();
   });
 
+  // fake timer가 실패한 테스트에서 다음 테스트로 누수되지 않도록 매번 리셋
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('renders nothing when online on mount', () => {
     const { queryByTestId } = render(<OfflineStatusBar />);
     expect(queryByTestId('offline-status-bar')).toBeNull();

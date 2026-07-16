@@ -30,11 +30,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { WifiIcon, WifiOff } from '@/components/icons';
-import {
-  getNetworkState,
-  subscribeToNetworkState,
-  type NetworkState,
-} from '@/services/offline/networkState';
+import { getNetworkState, subscribeToNetworkState } from '@/services/offline/networkState';
 
 type BannerPhase = 'hidden' | 'offline' | 'reconnected';
 
@@ -80,7 +76,6 @@ function useReduceMotion(): boolean {
 }
 
 export function OfflineStatusBar(): React.ReactElement | null {
-  const [, setNetworkState] = useState<NetworkState>(() => getNetworkState());
   const [phase, setPhase] = useState<BannerPhase>(() =>
     getNetworkState().isOffline ? 'offline' : 'hidden'
   );
@@ -102,7 +97,6 @@ export function OfflineStatusBar(): React.ReactElement | null {
   useEffect(() => {
     const apply = () => {
       const next = getNetworkState();
-      setNetworkState(next);
 
       const wasOnline = prevOnlineRef.current;
       prevOnlineRef.current = next.isOnline;
@@ -177,10 +171,11 @@ export function OfflineStatusBar(): React.ReactElement | null {
       accessibilityRole="alert"
       accessibilityLiveRegion="polite"
       accessibilityLabel={label}
-      pointerEvents="none"
       testID="offline-status-bar"
       style={[
         {
+          // RN 0.83에서 pointerEvents prop은 deprecated — style로 지정
+          pointerEvents: 'none',
           position: 'absolute',
           top: insets.top,
           left: 0,
