@@ -1,6 +1,6 @@
 # 003 — 코어 UI 4종 Reduce Motion 대응 + 공유 훅 추출
 
-- **Status**: TODO
+- **Status**: DONE (2026-07-17, quality EXIT 0 · ui jest 16스위트 127통과 · fable 리뷰 Approved. 편차 1: 소비처는 barrel(@/hooks) 대신 @/hooks/useReduceMotion 직접 import — barrel 경유 시 ApplicationStatusMachine.ts:36 모듈스코프 순환-undefined로 Modal 테스트 크래시 실측, barrel export 자체는 유지. 잔여: 실기기 feel check(사용자 QA))
 - **Commit**: c0c6113e5
 - **Severity**: HIGH
 - **Category**: 접근성 (Accessibility)
