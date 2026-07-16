@@ -80,6 +80,13 @@ type ActiveSheet =
 const cloneSlots = (slots: GroupTimeSlots | undefined): GroupTimeSlots =>
   (slots ?? []).map((s) => ({ ...s, roles: s.roles.map((r) => ({ ...r })) }));
 
+/** 고정 전환/방어 시드 기본값 — 제품 기본 주 5일(레거시 INITIAL은 0=협의, jobPostingForm.ts:202) */
+const defaultFixedSchedule = (): NonNullable<OrderSheetFormValues['fixedSchedule']> => ({
+  daysPerWeek: 5,
+  isStartTimeNegotiable: false,
+  roles: [],
+});
+
 export interface OrderSheetScreenProps {
   initialValues: OrderSheetFormValues;
   onSubmit: (values: OrderSheetValues) => Promise<void>;
@@ -179,16 +186,14 @@ export function OrderSheetScreen({
     return [...seen.values()];
   }, [values.postingType, values.fixedSchedule, scheduleGroups]);
 
-  // 역할 확정 시 급여 자동 프리필(설계 §S2.3) — confirm 핸들러(이벤트)에서만 호출, effect 금지(F3).
-  // 후속 역할 추가(기존 엔트리가 있던 상태의 신규 주입)만 1회성 토스트로 알린다(2차 CEO-2 —
-  // 초기 시드는 '기본값' 배지가 담당). useSameSalary=true(동일급여)면 no-op.
-  const applyRoleSalarySync = useCallback(
-    (nextGroups: ScheduleGroups) => {
-      const current = form.getValues();
-      if (current.useSameSalary ?? false) return;
-      const prev = current.roleSalaries ?? [];
-      const nextSlots = nextGroups.flatMap((g) => g.timeSlots ?? []);
-      const synced = syncRoleSalaries(nextSlots, prev, current.salary.type);
+  // 동기화 결과 반영 + 신규 추가분 1회 안내 — dated(applyRoleSalarySync)·fixed(역할 시트 confirm) 공용
+  // (전체리뷰 P2 — verbatim 중복 통합). 초기 시드(prev 비어있음)는 '기본값' 배지가 담당해 토스트 없음.
+  // syncRoleSalaries* 는 append-only + 변화 없으면 입력 참조 반환 계약(roleSalaries.ts) — slice가 추가분.
+  const applySyncedRoleSalaries = useCallback(
+    (
+      prev: NonNullable<OrderSheetFormValues['roleSalaries']>,
+      synced: NonNullable<OrderSheetFormValues['roleSalaries']>
+    ) => {
       if (synced === prev) return;
       form.setValue('roleSalaries', synced, { shouldDirty: true, shouldValidate: true });
       const added = synced.slice(prev.length);
@@ -209,6 +214,20 @@ export function OrderSheetScreen({
     [form, addToast]
   );
 
+  // 역할 확정 시 급여 자동 프리필(설계 §S2.3) — confirm 핸들러(이벤트)에서만 호출, effect 금지(F3).
+  // 후속 역할 추가(기존 엔트리가 있던 상태의 신규 주입)만 1회성 토스트로 알린다(2차 CEO-2 —
+  // 초기 시드는 '기본값' 배지가 담당). useSameSalary=true(동일급여)면 no-op.
+  const applyRoleSalarySync = useCallback(
+    (nextGroups: ScheduleGroups) => {
+      const current = form.getValues();
+      if (current.useSameSalary ?? false) return;
+      const prev = current.roleSalaries ?? [];
+      const nextSlots = nextGroups.flatMap((g) => g.timeSlots ?? []);
+      applySyncedRoleSalaries(prev, syncRoleSalaries(nextSlots, prev, current.salary.type));
+    },
+    [form, applySyncedRoleSalaries]
+  );
+
   // '기본값' 배지(CEO-2+Design-H2) — roleSalaries가 전부 역할별 기본값과 일치하고 급여 시트를
   // confirm한 적 없을 때만. 제출은 배지 상태에서도 허용(R4 존중) — 시각 게이트일 뿐.
   const showDefaultSalaryBadge = useMemo(() => {
@@ -225,6 +244,16 @@ export function OrderSheetScreen({
       );
     });
   }, [salaryConfirmed, values.useSameSalary, values.roleSalaries, uniqueRoles]);
+
+  /** 방어 시드(H5) — fixed 전용 시트 진입 시 fixedSchedule 부재면 기본값으로 채워 렌더 게이트를 통과시킨다. */
+  const seedFixedScheduleIfMissing = useCallback(() => {
+    if (form.getValues().fixedSchedule === undefined) {
+      form.setValue('fixedSchedule', defaultFixedSchedule(), {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
+  }, [form]);
 
   // 행 탭 라우팅(그룹 스코프) — dates는 단일 그룹=whole(세그먼트)·다그룹=edit(헤더 재편집),
   // roles는 그룹 슬롯 수에 따라 분기(1개=직접 역할 편집, 그 외=TimeSlotsSheet).
@@ -244,6 +273,7 @@ export function OrderSheetScreen({
       if (key === 'roles') {
         // 고정(fixed)은 그룹 슬롯이 아니라 단일 fixedSchedule.roles 편집 — 전용 시트로 분기(S2).
         if (form.getValues().postingType === 'fixed') {
+          seedFixedScheduleIfMissing();
           setActiveSheet('fixedRoles');
           return;
         }
@@ -255,10 +285,17 @@ export function OrderSheetScreen({
         );
         return;
       }
-      // 나머지(workConditions 포함)는 행 키 그대로 시트 오픈 — 'workConditions'는 ActiveSheet 유니온에 포함.
+      if (key === 'workConditions') {
+        // 방어(H5·전체리뷰 P4): fixedSchedule 부재 상태로 진입해도 시트가 열리도록 시드 —
+        // 렌더 게이트(activeSheet==='workConditions' && values.fixedSchedule)와 정합.
+        seedFixedScheduleIfMissing();
+        setActiveSheet('workConditions');
+        return;
+      }
+      // 나머지는 행 키 그대로 시트 오픈.
       setActiveSheet(key);
     },
-    [form]
+    [form, seedFixedScheduleIfMissing]
   );
 
   /** 그룹 삭제(즉시) + Undo 토스트 5초 — impeccable §12, 리뷰 Design-M2.
@@ -378,7 +415,8 @@ export function OrderSheetScreen({
   }, [presets]);
 
   // 프리셋 카드 탭 → 주문서 전체를 그 구성으로 교체(RHF reset). 저장 카드 탭 → 현재 값 상위로 전달.
-  // by_role 프리셋은 reset 직전 syncRoleSalaries(Eng-H3) — 부분 커버 템플릿의 미커버 역할을 기본값으로 채운다.
+  // by_role 프리셋은 reset 직전 sync(Eng-H3) — 부분 커버 템플릿의 미커버 역할을 기본값으로 채운다.
+  // fixed 프리셋은 역할 소스가 fixedSchedule.roles(전체리뷰 P3·P6 — dated 소스만 쓰면 갭필 무동작).
   const handleApplyPreset = useCallback(
     (preset: OrderSheetPreset) => {
       const v = preset.values;
@@ -387,11 +425,18 @@ export function OrderSheetScreen({
       } else {
         form.reset({
           ...v,
-          roleSalaries: syncRoleSalaries(
-            (v.scheduleGroups ?? []).flatMap((g) => g.timeSlots ?? []),
-            v.roleSalaries ?? [],
-            v.salary.type
-          ),
+          roleSalaries:
+            v.postingType === 'fixed'
+              ? syncRoleSalariesForRoles(
+                  v.fixedSchedule?.roles ?? [],
+                  v.roleSalaries ?? [],
+                  v.salary.type
+                )
+              : syncRoleSalaries(
+                  (v.scheduleGroups ?? []).flatMap((g) => g.timeSlots ?? []),
+                  v.roleSalaries ?? [],
+                  v.salary.type
+                ),
         });
       }
       setSalaryConfirmed(false);
@@ -414,32 +459,51 @@ export function OrderSheetScreen({
     [errors]
   );
 
+  // 타입 전환 축 데이터 보존(M7 승계 — 무경고 소실 금지, 전체리뷰 4관점 수렴) — dated↔fixed 전환은
+  // 반대 축 입력을 파기하는 대신 세션 한정 스태시(ref)에 보관하고 복귀 시 복원한다. S1까지 이 보장을
+  // 담당하던 create.tsx 레거시 전환 Alert는 S2 내부화로 사문 — 여기가 승계 지점.
+  const stashedGroupsRef = useRef<ScheduleGroups | null>(null);
+  const stashedFixedRef = useRef<OrderSheetFormValues['fixedSchedule'] | null>(null);
+
   const handleTypeChange = useCallback(
     (t: PostingType) => {
+      const cur = form.getValues();
+      if (cur.postingType === t) return; // 동일 타입 재탭 no-op — 오탭이 dirty만 남기는 것 방지
       if (t === 'fixed') {
         form.setValue('postingType', 'fixed', { shouldDirty: true });
-        // 고정은 scheduleGroups가 반드시 비어야 한다 — 배열 원소 스키마가 잔여 빈 그룹을 검증하지 않도록.
+        // 고정은 scheduleGroups가 반드시 비어야 한다(배열 원소 스키마 회피) — 소거 전 의미 있는
+        // 입력(날짜·시간대)이 있으면 스태시(M7: dated 복귀 시 복원).
+        const groups = cur.scheduleGroups ?? [];
+        if (groups.some((g) => g.dates.length > 0 || (g.timeSlots ?? []).length > 0)) {
+          stashedGroupsRef.current = groups;
+        }
         form.setValue('scheduleGroups', [], { shouldDirty: true, shouldValidate: true });
-        if (form.getValues().fixedSchedule === undefined) {
-          // 레거시 전환 기본값과 정합(daysPerWeek 5). 역할은 사용자가 근무조건/역할 시트에서 추가.
-          // ⚠️ fixedSchedule을 undefined로 두면 formValuesToDraft(프리셋 저장)가 fixed→dated로 오분기해
-          //    재로드 시 postingType이 fixed→regular로 침묵 전환된다(Task 2 리뷰).
-          form.setValue(
-            'fixedSchedule',
-            { daysPerWeek: 5, isStartTimeNegotiable: false, roles: [] },
-            { shouldDirty: true, shouldValidate: true }
-          );
+        if (cur.fixedSchedule === undefined) {
+          // 직전 fixed 입력이 스태시에 있으면 복원, 없으면 제품 기본값 시드(주 5일).
+          // ⚠️ fixedSchedule을 undefined로 두면 근무조건 행·시트가 죽는다 — UI는 항상 시드
+          //    (#194 mixed-draft 방어 자체는 mappers.valuesToDraft fixed 분기가 이중 담당).
+          form.setValue('fixedSchedule', stashedFixedRef.current ?? defaultFixedSchedule(), {
+            shouldDirty: true,
+            shouldValidate: true,
+          });
         }
         return;
       }
-      // dated(regular|urgent|tournament) 복귀 — fixedSchedule 정리, 빈 그룹 복원(배열 원소검증 회피)
+      // dated(regular|urgent|tournament) — fixed에서 오면 근무조건 스태시 후 정리(M7), 그룹 복원/시드
       form.setValue('postingType', t, { shouldDirty: true });
-      form.setValue('fixedSchedule', undefined, { shouldDirty: true, shouldValidate: true });
+      if (cur.fixedSchedule !== undefined) {
+        stashedFixedRef.current = cur.fixedSchedule;
+        form.setValue('fixedSchedule', undefined, { shouldDirty: true, shouldValidate: true });
+      }
       if ((form.getValues().scheduleGroups ?? []).length === 0) {
-        form.setValue('scheduleGroups', [{ dates: [], timeSlots: [], grouped: false }], {
-          shouldDirty: true,
-          shouldValidate: true,
-        });
+        const restored = stashedGroupsRef.current;
+        form.setValue(
+          'scheduleGroups',
+          restored && restored.length > 0
+            ? restored
+            : [{ dates: [], timeSlots: [], grouped: false }],
+          { shouldDirty: true, shouldValidate: true }
+        );
       }
     },
     [form]
@@ -505,7 +569,7 @@ export function OrderSheetScreen({
             testID="order-sheet-tournament-notice"
           >
             <InformationCircleIcon size={18} />
-            <Text className="flex-1 text-xs font-sans text-content-secondary leading-5 dark:leading-[1.125rem]">
+            <Text className="flex-1 text-xs font-sans text-content-secondary leading-[1.125rem] dark:leading-5">
               대회 공고는 관리자 승인 후 게시돼요. 승인까지 1~2 영업일이 걸릴 수 있어요.
             </Text>
           </View>
@@ -673,7 +737,7 @@ export function OrderSheetScreen({
           onClose={() => setActiveSheet(null)}
         />
       )}
-      {/* 고정(fixed) 근무조건 시트 — 요일·출근시간(협의). fixedSchedule.roles는 병합으로 보존하고,
+      {/* 고정(fixed) 근무조건 시트 — 주 출근일수·출근시간(협의). fixedSchedule.roles는 병합으로 보존하고,
           협의 전환 시 startTime은 승계하지 않고 next 값(부재면 드롭)으로 재구성한다(토글 시맨틱 정합, S2). */}
       {activeSheet === 'workConditions' && values.fixedSchedule && (
         <WorkConditionSheet
@@ -686,13 +750,14 @@ export function OrderSheetScreen({
             isStartTimeNegotiable: values.fixedSchedule.isStartTimeNegotiable ?? false,
           }}
           onConfirm={(next) => {
-            const fs = form.getValues().fixedSchedule!;
+            // non-null 단언 대신 옵셔널 — 렌더 게이트가 보장하지만 계약을 코드로 명시(전체리뷰 P4)
+            const fs = form.getValues().fixedSchedule;
             form.setValue(
               'fixedSchedule',
               {
                 daysPerWeek: next.daysPerWeek,
                 isStartTimeNegotiable: next.isStartTimeNegotiable,
-                roles: fs.roles,
+                roles: fs?.roles ?? [],
                 ...(next.startTime ? { startTime: next.startTime } : {}),
               },
               { shouldDirty: true, shouldValidate: true }
@@ -707,37 +772,18 @@ export function OrderSheetScreen({
           visible
           value={values.fixedSchedule.roles}
           onConfirm={(next) => {
-            const fs = form.getValues().fixedSchedule!;
+            // non-null 단언 대신 기본값 폴백 — 렌더 게이트가 보장하지만 계약을 코드로 명시(전체리뷰 P4)
+            const fs = form.getValues().fixedSchedule ?? defaultFixedSchedule();
             form.setValue(
               'fixedSchedule',
               { ...fs, roles: next },
               { shouldDirty: true, shouldValidate: true }
             );
+            // 확정 시 by_role 급여 자동 프리필 + 1회 안내 — dated applyRoleSalarySync와 공용 헬퍼(P2 중복 통합)
             const cur = form.getValues();
             if (!(cur.useSameSalary ?? false)) {
               const prev = cur.roleSalaries ?? [];
-              const synced = syncRoleSalariesForRoles(next, prev, cur.salary.type);
-              if (synced !== prev) {
-                form.setValue('roleSalaries', synced, { shouldDirty: true, shouldValidate: true });
-                // 후속 역할 추가(기존 엔트리가 있던 상태의 신규 주입)만 1회 안내(dated applyRoleSalarySync 대칭) —
-                // 초기 시드(prev 비어있음)는 '기본값' 배지가 담당해 토스트 없음.
-                const added = synced.slice(prev.length);
-                if (prev.length > 0 && added.length > 0) {
-                  addToast({
-                    type: 'success',
-                    message: `기본 급여 적용: ${added
-                      .map(
-                        (rs) =>
-                          `${roleName(rs.role, rs.customRole)} ${
-                            rs.salary.type === 'other'
-                              ? '협의'
-                              : `${rs.salary.amount.toLocaleString()}원`
-                          }`
-                      )
-                      .join(' · ')} · 급여 행에서 수정 가능`,
-                  });
-                }
-              }
+              applySyncedRoleSalaries(prev, syncRoleSalariesForRoles(next, prev, cur.salary.type));
             }
           }}
           onClose={() => setActiveSheet(null)}

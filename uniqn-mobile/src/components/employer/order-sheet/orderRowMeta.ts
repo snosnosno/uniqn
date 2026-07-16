@@ -5,7 +5,7 @@
  * 판정을 계산한다. 행 unset 판정은 zod 통과 가능성과 정렬돼야 한다(리뷰 H5) — 어긋나면
  * "라벨은 '이대로 등록'인데 눌러도 무반응"인 죽은 버튼이 생긴다.
  */
-import type { OrderSheetFormValues } from '@/schemas/orderSheet.schema';
+import { START_TIME_RE, type OrderSheetFormValues } from '@/schemas/orderSheet.schema';
 import { STAFF_ROLES } from '@/constants/jobPosting';
 import { PROVIDED_FLAG } from '@/utils/settlement';
 
@@ -162,6 +162,31 @@ export function errorMessageForRow(
     return undefined;
   };
 
+  // 고정(fixed) 근무조건/역할 — errors.fixedSchedule 경로(전체리뷰 P3·P6: 라우팅(errorRowTargets)만
+  // 되고 메시지 미배선이면 행 배지가 침묵한다 — dated L-1/L-2에서 고친 클래스의 fixed 재발 차단).
+  const fse = errors['fixedSchedule'] as Record<string, unknown> | undefined;
+  if (key === 'workConditions') {
+    return firstMessage(
+      fse?.['startTime'],
+      fse?.['daysPerWeek'],
+      fse?.['isStartTimeNegotiable'],
+      fse
+    );
+  }
+  if (key === 'roles' && fse !== undefined) {
+    const roles = fse['roles'];
+    let m = firstMessage(roles);
+    if (m === undefined && Array.isArray(roles)) {
+      for (const roleErr of roles) {
+        const r = roleErr as Record<string, unknown> | undefined;
+        m = firstMessage(r?.['customRole'], r?.['count'], r);
+        if (m !== undefined) break;
+      }
+    }
+    if (m !== undefined) return m;
+    // roles 관련 에러가 아니면 아래 dated 경로 폴백 — fixed에선 scheduleGroups 에러가 없어 무해
+  }
+
   if (key === 'dates' || key === 'time' || key === 'roles') {
     const sg = errors['scheduleGroups'];
     if (sg === undefined) return undefined;
@@ -267,7 +292,6 @@ const WELFARE_LABEL = {
   transportation: '교통',
   accommodation: '숙소',
 } as const;
-const START_TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 /** 역할 표시명 — 'other'는 customRole(없으면 '기타'), 그 외는 STAFF_ROLES 한글명. raw key 노출 금지(요약 일관성). */
 export const roleName = (role: string, customRole?: string) =>
@@ -289,14 +313,12 @@ function allSlots(values: OrderSheetFormValues): OrderSheetGroupSlots {
   return (values.scheduleGroups ?? []).flatMap((g) => g.timeSlots ?? []);
 }
 
-type FixedRoles = NonNullable<OrderSheetFormValues['fixedSchedule']>['roles'];
-
 /** fixed/dated 공용 고유역할 소스 — 급여 커버·역할 요약(S2). fixed는 평탄 배열, dated는 전 그룹 슬롯 합집합. */
 function formRoleList(
   values: OrderSheetFormValues
 ): { role: string; customRole?: string; count: number }[] {
   if (values.postingType === 'fixed') {
-    return (values.fixedSchedule?.roles ?? []) as FixedRoles;
+    return values.fixedSchedule?.roles ?? [];
   }
   return allSlots(values).flatMap((s) => s.roles);
 }

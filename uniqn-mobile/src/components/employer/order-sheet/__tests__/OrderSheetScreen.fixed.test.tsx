@@ -140,3 +140,51 @@ describe('OrderSheetScreen — 고정 역할 급여 프리필 안내 토스트(S
     expect(mockAddToast).not.toHaveBeenCalled();
   });
 });
+
+// 전체리뷰 후속(2026-07-16) — 타입 전환 축 데이터 보존(M7 승계). 파기 대신 스태시/복원.
+describe('OrderSheetScreen — 타입 전환 축 데이터 보존 (전체리뷰 M7)', () => {
+  const props = {
+    onSubmit: jest.fn(),
+    isSubmitting: false,
+    myPhone: '010-0000-0000',
+    onSwitchToLegacyForm: jest.fn(),
+  };
+
+  it('dated 날짜·시간 입력이 고정 전환 후 복귀 시 복원된다', async () => {
+    const withDates: OrderSheetFormValues = {
+      ...initialOrderSheetValues(),
+      scheduleGroups: [
+        {
+          dates: ['2026-07-20'],
+          timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] }],
+          grouped: false,
+        },
+      ],
+    };
+    const { getByTestId, getByText, queryByText } = render(
+      <OrderSheetScreen {...props} initialValues={withDates} />
+    );
+    // 날짜 행 value = dates.join(', ') (orderRowMeta getRowState 'dates')
+    expect(getByText('2026-07-20')).toBeTruthy();
+    fireEvent.press(getByTestId('order-sheet-type-fixed'));
+    await flushValidation();
+    expect(queryByText('2026-07-20')).toBeNull(); // 고정 레이아웃 — 날짜 행 없음
+    fireEvent.press(getByTestId('order-sheet-type-regular'));
+    await flushValidation();
+    expect(getByText('2026-07-20')).toBeTruthy(); // 복원(M7) — 무경고 소실 금지
+    expect(getByText('출근 19:00')).toBeTruthy(); // 시간대·역할까지 통복원
+  });
+
+  it('fixed 근무조건이 dated 전환 후 복귀 시 복원된다', async () => {
+    const { getByTestId, getByText, queryByText } = render(
+      <OrderSheetScreen {...props} initialValues={fixedBase([{ role: 'dealer', count: 1 }])} />
+    );
+    expect(getByText('주 5일 · 출근 19:00')).toBeTruthy();
+    fireEvent.press(getByTestId('order-sheet-type-tournament'));
+    await flushValidation();
+    expect(queryByText('주 5일 · 출근 19:00')).toBeNull(); // dated 레이아웃 — 근무조건 행 없음
+    fireEvent.press(getByTestId('order-sheet-type-fixed'));
+    await flushValidation();
+    expect(getByText('주 5일 · 출근 19:00')).toBeTruthy(); // 복원(M7)
+  });
+});
