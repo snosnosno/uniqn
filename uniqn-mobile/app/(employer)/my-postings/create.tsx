@@ -59,7 +59,7 @@ export default function CreateJobPostingScreen() {
     [venueId, prefillDate, prefillCount, profile?.phone]
   );
 
-  useUnsavedChangesGuard(isDirty);
+  const { markClean } = useUnsavedChangesGuard(isDirty);
 
   const createJobPosting = useCreateJobPosting();
   const templateManager = useTemplateManager();
@@ -134,6 +134,9 @@ export default function CreateJobPostingScreen() {
         const input = valuesToCreateInput(values);
         const created = await createJobPosting.mutateAsync({ input });
         setIsDirty(false);
+        // 저장 성공 — setIsDirty(false) 리렌더 전 같은 틱의 back()/replace()가 stale 가드에
+        // 걸리지 않게 동기 표식(S3 이월 ④). 그리드 복귀·완료 화면 두 분기 공통 지점.
+        markClean();
         // 그리드 진입(venueId)이면 스택 하부 그리드로 복귀(선택 운영처·날짜 보존) — 완료 화면 우회.
         // 셀 +N 뱃지 갱신은 useCreateJobPosting 의 weeklyGrid 무효화가 담당.
         if (venueId && router.canGoBack()) {
@@ -196,7 +199,7 @@ export default function CreateJobPostingScreen() {
         });
       }
     },
-    [createJobPosting, venueId, router, addToast, templateManager.templates.length]
+    [createJobPosting, venueId, router, addToast, templateManager.templates.length, markClean]
   );
 
   return (

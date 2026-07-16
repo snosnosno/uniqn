@@ -23,7 +23,7 @@ import type { JobPostingDraft } from '@/types/jobPostingDraft';
 
 /**
  * 공고 수정(S3) — 전 타입(지원·급구·대회·고정) 주문서 단일 경로.
- * 레거시 섹션 폼(JobPostingScrollForm 계열)은 S4 은퇴 전까지 코드로만 병존(이 화면은 미사용).
+ * 레거시 섹션 폼(JobPostingScrollForm 계열)은 S4에서 은퇴 완료(주문서 단일 경로).
  * 대회 편집은 approvalStatus 보존(설계 확정 ⑥) — valuesToUpdateInput이 tournamentConfig를
  * 만질 수 없고(타입 계약), update 직렬화가 current에서 보존한다.
  */
@@ -41,7 +41,7 @@ export default function EditJobPostingScreen() {
   const headerRightAction = !contextIsFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;
 
   const [isDirty, setIsDirty] = useState(false);
-  useUnsavedChangesGuard(isDirty);
+  const { markClean } = useUnsavedChangesGuard(isDirty);
 
   const updateJobPosting = useUpdateJobPosting();
   const templateManager = useTemplateManager();
@@ -87,13 +87,16 @@ export default function EditJobPostingScreen() {
         const input = valuesToUpdateInput(values, { hasConfirmedApplicants });
         await updateJobPosting.mutateAsync({ jobPostingId: id, input });
         setIsDirty(false);
+        // 저장 성공 — setIsDirty(false) 리렌더 전 같은 틱의 back()이 stale 가드에 걸리지 않게
+        // 동기 표식(S3 이월 ④). markClean 없이는 저장 후에도 "변경사항 저장 안 됨"이 뜰 수 있다.
+        markClean();
         // 성공·실패 토스트는 useUpdateJobPosting(onSuccess/onError)가 담당 — 화면 중복 발행 제거.
         router.back();
       } catch (error) {
         logger.error('주문서 공고 수정 실패', toError(error), { jobPostingId: id });
       }
     },
-    [id, hasConfirmedApplicants, updateJobPosting, router]
+    [id, hasConfirmedApplicants, updateJobPosting, router, markClean]
   );
 
   // 템플릿 저장 — create.tsx와 동일 굳힘 패턴.
