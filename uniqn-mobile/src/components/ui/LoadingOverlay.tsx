@@ -9,15 +9,11 @@
  * - 진행률 표시 옵션
  */
 
+import { MOTION_EASING, MOTION_DURATION } from '@/constants/animation';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useEffect } from 'react';
 import { View, Text, ActivityIndicator, Modal, Pressable } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 
 // ============================================================================
@@ -127,21 +123,21 @@ export function LoadingOverlay({
   useEffect(() => {
     if (visible) {
       animatedOpacity.value = withTiming(1, {
-        duration: 200,
-        easing: Easing.ease,
+        duration: MOTION_DURATION.base,
+        easing: MOTION_EASING.fade,
       });
       animatedScale.value = withTiming(1, {
-        duration: 250,
-        easing: Easing.out(Easing.cubic),
+        duration: MOTION_DURATION.emphasized,
+        easing: MOTION_EASING.enter,
       });
     } else {
       animatedOpacity.value = withTiming(0, {
-        duration: 150,
-        easing: Easing.ease,
+        duration: MOTION_DURATION.fast,
+        easing: MOTION_EASING.fade,
       });
       animatedScale.value = withTiming(0.9, {
-        duration: 150,
-        easing: Easing.ease,
+        duration: MOTION_DURATION.fast,
+        easing: MOTION_EASING.fade,
       });
     }
   }, [visible, animatedOpacity, animatedScale]);
