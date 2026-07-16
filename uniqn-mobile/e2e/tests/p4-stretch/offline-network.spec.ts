@@ -62,6 +62,10 @@ test.describe('오프라인 & 네트워크', () => {
     await goOffline(page);
     await expect(page.getByTestId('offline-status-bar')).toBeVisible({ timeout: 5_000 });
 
+    // 플랩 가드(MIN_OFFLINE_FOR_RECONNECT_MS=1000): 1초 미만 오프라인은
+    // 복구 배너를 의도적으로 생략하므로, 임계 초과까지 대기 후 복구한다.
+    await page.waitForTimeout(1_200);
+
     await goOnline(page);
 
     // 복구 순간 success 배너로 교체
