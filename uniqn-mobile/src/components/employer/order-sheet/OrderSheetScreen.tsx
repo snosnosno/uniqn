@@ -93,9 +93,9 @@ export interface OrderSheetScreenProps {
   isSubmitting: boolean;
   /**
    * 레거시 폼 위임 콜백 — 대회(S1)·고정(S2) 모두 주문서 내부 처리로 이관돼 더 이상 호출되지 않는다.
-   * create.tsx가 계속 전달하므로 계약은 유지하고(미분리 시 호출부 타입 에러), 소비는 하지 않는다. S4에서 제거 예정.
+   * create.tsx가 계속 전달하므로 계약은 유지하고(optional — 편집 화면은 미전달), 소비는 하지 않는다. S4에서 제거 예정.
    */
-  onSwitchToLegacyForm: (type: 'fixed' | 'tournament') => void;
+  onSwitchToLegacyForm?: (type: 'fixed' | 'tournament') => void;
   /** RHF dirty 상태를 상위(create.tsx)로 끌어올려 useUnsavedChangesGuard에 연결 */
   onDirtyChange?: (dirty: boolean) => void;
   /** ContactSheet "내 프로필 번호" 라디오용 — create.tsx가 profile.phone 전달 */
@@ -104,6 +104,10 @@ export interface OrderSheetScreenProps {
   presets?: OrderSheetPreset[];
   /** "＋ 저장" 카드 → 현재 폼 값을 상위(create.tsx)로 넘겨 템플릿 저장 모달을 연다. */
   onSaveTemplate?: (values: OrderSheetFormValues) => void;
+  /** 편집 모드(S3) — 타입 세그먼트 잠금·'이대로 수정' 라벨·대회 생성 배너 숨김(승인상태 보존 ⑥) */
+  mode?: 'create' | 'edit';
+  /** 확정 지원자 존재(S3) — 일정·역할 행 잠금. 서버 updateWithTransaction 가드와 대칭(급여는 열어둠) */
+  scheduleLocked?: boolean;
 }
 
 export function OrderSheetScreen({
@@ -115,6 +119,8 @@ export function OrderSheetScreen({
   myPhone = '',
   presets,
   onSaveTemplate,
+  mode = 'create',
+  scheduleLocked = false,
 }: OrderSheetScreenProps) {
   const { addToast } = useToastStore();
   // 3제네릭 필수(Global Constraints·스파이크 실측): 폼 상태=z.input, handleSubmit 콜백=z.output
@@ -255,11 +261,31 @@ export function OrderSheetScreen({
     }
   }, [form]);
 
+  // 확정 지원자 일정 잠금(S3) — 서버 BusinessError(일정/역할 변경 불가)를 UI에서 선제 안내.
+  // 급여 행은 잠그지 않는다(identity 비교는 역할 키 집합만 — 금액 수정은 서버 허용 실측).
+  const LOCKED_ROW_KEYS: ReadonlySet<OrderRowKey> = useMemo(
+    () => new Set<OrderRowKey>(['dates', 'time', 'roles', 'workConditions']),
+    []
+  );
+  const guardScheduleLock = useCallback(
+    (key?: OrderRowKey): boolean => {
+      if (!scheduleLocked) return false;
+      if (key !== undefined && !LOCKED_ROW_KEYS.has(key)) return false;
+      addToast({
+        type: 'warning',
+        message: '확정된 지원자가 있어 일정과 역할은 수정할 수 없어요.',
+      });
+      return true;
+    },
+    [scheduleLocked, LOCKED_ROW_KEYS, addToast]
+  );
+
   // 행 탭 라우팅(그룹 스코프) — dates는 단일 그룹=whole(세그먼트)·다그룹=edit(헤더 재편집),
   // roles는 그룹 슬롯 수에 따라 분기(1개=직접 역할 편집, 그 외=TimeSlotsSheet).
   // switchSheet 지연 전환 창(300ms) 중에는 무시 — 그 사이 새 시트를 열면 예약 타이머와 충돌(#244 레이스).
   const handleRowPress = useCallback(
     (key: OrderRowKey, groupIndex = 0) => {
+      if (guardScheduleLock(key)) return;
       if (pendingSheetRef.current) return;
       const groups = form.getValues().scheduleGroups ?? [];
       if (key === 'dates') {
@@ -295,13 +321,14 @@ export function OrderSheetScreen({
       // 나머지는 행 키 그대로 시트 오픈.
       setActiveSheet(key);
     },
-    [form, seedFixedScheduleIfMissing]
+    [form, seedFixedScheduleIfMissing, guardScheduleLock]
   );
 
   /** 그룹 삭제(즉시) + Undo 토스트 5초 — impeccable §12, 리뷰 Design-M2.
    *  복원은 삭제 그룹 단건 재삽입(리뷰 L-6) — 5초 내 타 그룹 편집을 함께 되돌리지 않는다. */
   const handleDeleteGroup = useCallback(
     (groupIndex: number) => {
+      if (guardScheduleLock()) return;
       const current = form.getValues().scheduleGroups ?? [];
       if (current.length <= 1) return; // E4: 마지막 그룹은 버튼 자체 미노출 — 방어
       const target = current[groupIndex];
@@ -331,7 +358,7 @@ export function OrderSheetScreen({
         },
       });
     },
-    [form, addToast]
+    [form, addToast, guardScheduleLock]
   );
 
   /** "+ 일정 추가" — 새 그룹은 날짜 시트부터, 시간/역할은 직전 그룹 깊은복사 시드(리뷰 Design-L2).
@@ -339,10 +366,11 @@ export function OrderSheetScreen({
    *  전체 날짜 whole+② 경로(동일 조건)로 우회 가능하고, 조건이 다른 복수 묶음 구간은 v1 범위 밖.
    *  confirm-시점-분할 단순성(E6 구조적 회피)을 유지하는 절충이다. */
   const handleAddSchedule = useCallback(() => {
+    if (guardScheduleLock()) return;
     if (pendingSheetRef.current) return;
     const groups = form.getValues().scheduleGroups ?? [];
     setActiveSheet({ key: 'dates', groupIndex: groups.length, mode: 'add' });
-  }, [form]);
+  }, [form, guardScheduleLock]);
 
   /** 날짜 시트 확정 — whole 모드는 세그먼트에 따라 그룹 분할/유지(분할은 confirm 시점에만 실행) */
   const handleDatesConfirm = useCallback(
@@ -530,8 +558,10 @@ export function OrderSheetScreen({
 
   const unsetTarget = firstUnsetRow(values);
   const submitLabel = (() => {
-    if (unsetTarget === null)
+    if (unsetTarget === null) {
+      if (mode === 'edit') return '이대로 수정'; // 대회 포함 — 편집은 승인상태 보존(⑥), 재승인 요청 아님
       return values.postingType === 'tournament' ? '승인 요청하기' : '이대로 등록';
+    }
     const { key, groupIndex } = unsetTarget;
     const state = getRowState(values, key, groupIndex);
     // 그룹 2개+의 일정 행은 날짜 요약 접두로 그룹을 식별시킨다("7/22 일정의 시간부터 선택하기")
@@ -559,10 +589,27 @@ export function OrderSheetScreen({
           />
         )}
         <View className="mb-3">
-          <TypeSegment value={values.postingType} onChange={handleTypeChange} />
+          <TypeSegment
+            value={values.postingType}
+            onChange={handleTypeChange}
+            disabled={mode === 'edit'}
+          />
         </View>
-        {/* 대회 승인 안내(S1) — 대회 공고는 관리자 승인 게시. 이모지 대신 Lucide 아이콘(impeccable §14). */}
-        {values.postingType === 'tournament' ? (
+        {/* 확정 지원자 일정 잠금(S3) — 일정·역할 행 편집 차단 안내. 서버 identity 가드와 대칭(급여는 열림). */}
+        {scheduleLocked ? (
+          <View
+            className="flex-row items-start gap-2 mb-3 rounded-xl bg-surface-card border border-warning-200 dark:border-warning-800 px-3.5 py-3"
+            accessibilityRole="alert"
+            testID="order-sheet-schedule-locked-notice"
+          >
+            <InformationCircleIcon size={18} />
+            <Text className="flex-1 text-xs font-sans text-content-secondary leading-[1.125rem] dark:leading-5">
+              확정된 지원자가 있어 일정과 역할 정보는 수정할 수 없어요.
+            </Text>
+          </View>
+        ) : null}
+        {/* 대회 승인 안내(S1) — 대회 공고는 관리자 승인 게시. 편집은 승인상태 보존(⑥)이라 숨김(S3). */}
+        {values.postingType === 'tournament' && mode !== 'edit' ? (
           <View
             className="flex-row items-start gap-2 mb-3 rounded-xl bg-surface-card border border-secondary-100 dark:border-surface-overlay px-3.5 py-3"
             accessibilityRole="alert"
@@ -686,14 +733,30 @@ export function OrderSheetScreen({
         })}
       </ScrollView>
       <View className="absolute bottom-0 left-0 right-0 px-4 pb-6 pt-2 bg-surface-page border-t border-secondary-100 dark:border-surface-overlay">
-        <Button
-          onPress={handleSubmitPress}
-          disabled={isSubmitting}
-          loading={isSubmitting}
-          testID="job-posting-create-submit"
-        >
-          {submitLabel}
-        </Button>
+        {/* 편집 하단 2버튼 패턴 계승(레거시 기능 소실 방지) — 좌 ghost 템플릿 저장 + 우 primary 수정(S3). */}
+        <View className="flex-row items-center gap-2">
+          {mode === 'edit' && onSaveTemplate !== undefined ? (
+            <Button
+              variant="ghost"
+              onPress={handleSavePreset}
+              disabled={isSubmitting}
+              accessibilityLabel="템플릿으로 저장"
+              testID="order-sheet-edit-save-template"
+            >
+              템플릿 저장
+            </Button>
+          ) : null}
+          <View className="flex-1">
+            <Button
+              onPress={handleSubmitPress}
+              disabled={isSubmitting}
+              loading={isSubmitting}
+              testID={mode === 'edit' ? 'job-posting-edit-submit' : 'job-posting-create-submit'}
+            >
+              {submitLabel}
+            </Button>
+          </View>
+        </View>
       </View>
       {/* 기본정보 시트 4종 — 제목·장소·연락처·설명(Task 6). activeSheet 스위치로 동시 1개만 마운트. */}
       {activeSheet === 'title' && (
