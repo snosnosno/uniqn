@@ -1,15 +1,16 @@
 /**
- * P4 오프라인/네트워크 테스트 (4 tests)
+ * P4 오프라인/네트워크 테스트 (3 tests)
  * 프로젝트: chromium (staff storageState)
  *
- * useNetworkStatus 훅은 웹에서 window online/offline 이벤트를 감지.
- * OfflineBanner는 루트 레이아웃(_layout.tsx)에서 렌더링됨.
+ * networkState 싱글톤은 웹에서 window online/offline 이벤트를 감지.
+ * OfflineStatusBar(패시브 오버레이)는 루트 레이아웃(_layout.tsx)에서 렌더링됨.
+ * 재시도 버튼 없음 — NetInfo 자동 감지 + 재연결 자동 refetch가 복구를 담당.
  */
 import { test, expect } from '../../fixtures/base.fixture';
 
 /**
  * 앱이 완전히 초기화될 때까지 대기 (useAppInitialize + 라우트 렌더링)
- * OfflineBanner의 useNetworkStatus 이벤트 리스너가 등록된 상태를 보장
+ * OfflineStatusBar의 networkState 구독이 등록된 상태를 보장
  */
 async function waitForAppReady(page: import('@playwright/test').Page) {
   await page.goto('/', { waitUntil: 'domcontentloaded' });
@@ -18,111 +19,59 @@ async function waitForAppReady(page: import('@playwright/test').Page) {
   await page.waitForTimeout(5_000);
 }
 
+async function goOffline(page: import('@playwright/test').Page) {
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      writable: true,
+      configurable: true,
+    });
+    window.dispatchEvent(new Event('offline'));
+  });
+}
+
+async function goOnline(page: import('@playwright/test').Page) {
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      writable: true,
+      configurable: true,
+    });
+    window.dispatchEvent(new Event('online'));
+  });
+}
+
 test.describe('오프라인 & 네트워크', () => {
-  test('네트워크 차단 → OfflineBanner 표시', async ({ page }) => {
+  test('네트워크 차단 → 오프라인 상태바 표시', async ({ page }) => {
     await waitForAppReady(page);
 
-    // navigator.onLine을 false로 설정 후 offline 이벤트 발생
-    // (브라우저의 synthetic offline 이벤트만으로는 navigator.onLine이 바뀌지 않음)
-    await page.evaluate(() => {
-      Object.defineProperty(navigator, 'onLine', {
-        value: false,
-        writable: true,
-        configurable: true,
-      });
-      window.dispatchEvent(new Event('offline'));
-    });
+    await goOffline(page);
 
-    // useNetworkStatus의 handleOffline → isOffline: true → OfflineBanner 렌더링 대기
-    await page.waitForTimeout(2_000);
+    // networkState → OfflineStatusBar 렌더링 대기
+    const statusBar = page.getByTestId('offline-status-bar');
+    await expect(statusBar).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('오프라인 상태입니다')).toBeVisible();
 
-    // OfflineBanner 확인 — 텍스트 또는 role="alert" 확인
-    const offlineBanner = page.getByText('인터넷 연결이 끊어졌습니다');
-    const hasOfflineBanner = await offlineBanner.isVisible().catch(() => false);
-
-    const alertElement = page.locator('[role="alert"]');
-    const hasAlert = (await alertElement.count()) > 0;
-
-    expect(hasOfflineBanner || hasAlert).toBe(true);
-
-    // 복구
-    await page.evaluate(() => {
-      Object.defineProperty(navigator, 'onLine', {
-        value: true,
-        writable: true,
-        configurable: true,
-      });
-      window.dispatchEvent(new Event('online'));
-    });
+    // 복구 (다음 테스트 오염 방지)
+    await goOnline(page);
   });
 
-  test('네트워크 복구 → OfflineBanner 사라짐', async ({ page }) => {
+  test('네트워크 복구 → 복구 배너 표시 후 자동 dismiss', async ({ page }) => {
     await waitForAppReady(page);
 
-    // 오프라인 상태로 전환
-    await page.evaluate(() => {
-      Object.defineProperty(navigator, 'onLine', {
-        value: false,
-        writable: true,
-        configurable: true,
-      });
-      window.dispatchEvent(new Event('offline'));
-    });
-    await page.waitForTimeout(2_000);
+    await goOffline(page);
+    await expect(page.getByTestId('offline-status-bar')).toBeVisible({ timeout: 5_000 });
 
-    // 온라인 상태로 복구
-    await page.evaluate(() => {
-      Object.defineProperty(navigator, 'onLine', {
-        value: true,
-        writable: true,
-        configurable: true,
-      });
-      window.dispatchEvent(new Event('online'));
-    });
-    await page.waitForTimeout(2_000);
+    await goOnline(page);
 
-    // OfflineBanner가 사라졌는지 확인
-    const offlineBanner = page.getByText('인터넷 연결이 끊어졌습니다');
-    const isStillVisible = await offlineBanner.isVisible().catch(() => false);
+    // 복구 순간 success 배너로 교체
+    await expect(page.getByText('온라인으로 돌아왔어요')).toBeVisible({ timeout: 5_000 });
 
-    // 복구 후에는 배너가 사라져야 함
-    expect(isStillVisible).toBe(false);
+    // 2초 auto-dismiss + 225ms exit 후 완전히 사라짐
+    await expect(page.getByTestId('offline-status-bar')).toBeHidden({ timeout: 6_000 });
   });
 
-  test('오프라인 상태에서 재시도 버튼 표시', async ({ page }) => {
-    await waitForAppReady(page);
-
-    // 오프라인 이벤트 발생
-    await page.evaluate(() => {
-      Object.defineProperty(navigator, 'onLine', {
-        value: false,
-        writable: true,
-        configurable: true,
-      });
-      window.dispatchEvent(new Event('offline'));
-    });
-    await page.waitForTimeout(2_000);
-
-    // 재시도 버튼 확인 (OfflineBanner의 variant="banner"에서는 '재시도' 텍스트)
-    const retryButton = page.getByText(/재시도|다시 연결/);
-    const hasRetry = await retryButton.isVisible().catch(() => false);
-
-    // 재시도 버튼이 있으면 클릭 가능해야 함
-    if (hasRetry) {
-      await expect(retryButton).toBeEnabled();
-    }
-
-    // 복구
-    await page.evaluate(() => {
-      Object.defineProperty(navigator, 'onLine', {
-        value: true,
-        writable: true,
-        configurable: true,
-      });
-      window.dispatchEvent(new Event('online'));
-    });
-  });
-
+  // ⬇ 기존 '느린 네트워크 → 로딩 인디케이터 표시' 테스트는 그대로 유지
   test('느린 네트워크 → 로딩 인디케이터 표시', async ({ page }) => {
     // CDP를 통한 느린 네트워크 시뮬레이션
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
