@@ -143,12 +143,6 @@ export { useStaffPhoneSearch, type UseStaffPhoneSearchReturn } from './useStaffP
 export { useEventQR, type UseEventQROptions, type UseEventQRReturn } from './useEventQR';
 
 export {
-  useAssignmentSelection,
-  type UseAssignmentSelectionOptions,
-  type UseAssignmentSelectionReturn,
-} from './useAssignmentSelection';
-
-export {
   useAdminDashboard,
   useAdminDashboardStats,
   useAdminUsers,

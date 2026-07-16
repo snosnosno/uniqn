@@ -83,8 +83,5 @@ export const boardService = {
   getBoardReportsForAdmin,
   getBoardReportDetailForAdmin,
   reviewBoardReport,
-  syncScheduleBoardForJobPosting: boardScheduleService.syncScheduleBoardForJobPosting,
-  syncScheduleBoardByJobPostingId: boardScheduleService.syncScheduleBoardByJobPostingId,
-  syncScheduleBoardByApplicationId: boardScheduleService.syncScheduleBoardByApplicationId,
   archiveScheduleBoard: boardScheduleService.archiveScheduleBoard,
 };

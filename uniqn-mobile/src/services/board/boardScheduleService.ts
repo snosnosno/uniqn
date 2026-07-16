@@ -1,10 +1,5 @@
 import { ERROR_CODES, handleServiceError, isAppError } from '@/errors';
-import {
-  applicationRepository,
-  boardRepository,
-  jobPostingRepository,
-  workLogRepository,
-} from '@/repositories';
+import { boardRepository } from '@/repositories';
 import { type BoardMembership, type BoardPost } from '@/types/board';
 import { buildScheduleBoardPostId } from '@/shared/board/boardIds';
 import type { JobPosting, WorkLog } from '@/types';
@@ -208,116 +203,6 @@ export async function setScheduleBoardStatusIfExists(
 
   await boardRepository.setPostStatus(postId, status);
   return true;
-}
-
-/**
- * @deprecated T-B12 — 직접 호출 금지. 대신 `enqueueScheduleBoardSync`를
- * 사용하여 outbox 패턴(`schedule_board_sync_outbox` 테이블 + Edge Function)을
- * 거칠 것. 본 함수는 outbox Edge Function 내부 또는 데이터 마이그레이션 스크립트
- * 에서만 사용해야 하며, 다음 마이너 릴리스에서 export 제거 예정.
- *
- * 마이그레이션 가이드:
- * ```typescript
- * // BEFORE
- * await syncScheduleBoardForJobPosting(jobPosting);
- *
- * // AFTER
- * import { enqueueScheduleBoardSync } from '@/services/jobs/jobManagementService';
- * await enqueueScheduleBoardSync(jobPosting.id, 'update', { jobPostingId: jobPosting.id });
- * ```
- */
-export async function syncScheduleBoardForJobPosting(jobPosting: JobPosting): Promise<string> {
-  try {
-    const postId = await boardRepository.upsertSchedulePost({
-      jobPostingId: jobPosting.id,
-      title: jobPosting.title,
-      body: buildScheduleBoardBody(jobPosting),
-      ownerId: jobPosting.ownerId,
-      ownerName: jobPosting.ownerName ?? '구인자',
-      ownerRole: 'employer',
-      workDate: jobPosting.workDate,
-      workDates: jobPosting.workDates ?? [],
-      locationName: jobPosting.location?.name ?? '',
-      totalPositions: jobPosting.totalPositions,
-      filledPositions: jobPosting.filledPositions,
-      compensationLabel: formatCompensationLabel(jobPosting),
-      jobPostingStatus: jobPosting.status,
-    });
-
-    const workLogs = await workLogRepository.getByJobPostingId(jobPosting.id);
-    const memberships = buildScheduleSyncMembers(jobPosting, workLogs);
-    await boardRepository.replaceScheduleMemberships(
-      postId,
-      jobPosting.id,
-      memberships.map((membership) => ({
-        userId: membership.userId,
-        role: membership.role,
-        displayName: membership.displayName,
-        canRead: membership.canRead,
-        canComment: membership.canComment,
-        title: membership.title,
-        workDate: membership.workDate,
-        authorId: membership.authorId,
-        lastActivityAt: membership.lastActivityAt,
-      }))
-    );
-
-    return postId;
-  } catch (error) {
-    throw handleServiceError(error, {
-      operation: '일정게시판 동기화',
-      component: COMPONENT,
-      context: { jobPostingId: jobPosting.id },
-    });
-  }
-}
-
-/**
- * @deprecated T-B12 — 직접 호출 금지. `enqueueScheduleBoardSync(jobPostingId, 'update', ...)`
- * 사용. 본 함수는 outbox Edge Function 내부에서만 호출되어야 함.
- */
-export async function syncScheduleBoardByJobPostingId(
-  jobPostingId: string
-): Promise<string | null> {
-  try {
-    const jobPosting = await jobPostingRepository.getById(jobPostingId);
-    if (!jobPosting) {
-      await setScheduleBoardStatusIfExists(jobPostingId, 'archived');
-      return null;
-    }
-
-    return await syncScheduleBoardForJobPosting(jobPosting);
-  } catch (error) {
-    throw handleServiceError(error, {
-      operation: '일정게시판 공고 동기화',
-      component: COMPONENT,
-      context: { jobPostingId },
-    });
-  }
-}
-
-/**
- * @deprecated T-B12 — 직접 호출 금지. application의 jobPostingId를 조회한 뒤
- * `enqueueScheduleBoardSync(jobPostingId, 'update', ...)`를 사용. 본 함수는
- * outbox Edge Function 내부에서만 호출되어야 함.
- */
-export async function syncScheduleBoardByApplicationId(
-  applicationId: string
-): Promise<string | null> {
-  try {
-    const application = await applicationRepository.getById(applicationId);
-    if (!application?.jobPostingId) {
-      return null;
-    }
-
-    return await syncScheduleBoardByJobPostingId(application.jobPostingId);
-  } catch (error) {
-    throw handleServiceError(error, {
-      operation: '일정게시판 지원자 동기화',
-      component: COMPONENT,
-      context: { applicationId },
-    });
-  }
 }
 
 export async function archiveScheduleBoard(jobPostingId: string): Promise<void> {

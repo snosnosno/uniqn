@@ -492,19 +492,6 @@ export async function reauthenticate(password: string): Promise<void> {
 }
 
 /**
- * 현재 로그인된 사용자 가져오기 (동기 - Zustand store에서 읽기)
- *
- * Supabase의 getUser()는 async이므로, 동기적으로 필요한 경우
- * authStore에서 읽습니다. 신선한 데이터가 필요하면 getCurrentUserAsync()를 사용.
- */
-export function getCurrentUser(): SupabaseUser | null {
-  // 동기적 접근이 필요한 경우를 위해 store에서 읽되,
-  // 호출 시점에 store가 이미 세팅되어 있어야 합니다.
-  // 대부분의 caller는 이미 인증된 상태에서 호출합니다.
-  return null; // Deprecated: use authStore or getCurrentUserAsync()
-}
-
-/**
  * 현재 로그인된 사용자 가져오기 (비동기)
  */
 export async function getCurrentUserAsync(): Promise<SupabaseUser | null> {

@@ -534,20 +534,6 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
   // 실시간 구독 (Realtime)
   // ==========================================================================
 
-  /** @deprecated polling으로 전환됨. getByDate + refetchInterval 사용 */
-  subscribeByDate(
-    staffId: string,
-    date: string,
-    onData: (workLogs: WorkLog[]) => void,
-    onError: (error: Error) => void
-  ): UnsubscribeFn {
-    logger.info('날짜별 근무 기록 초기 조회 (polling 전환)', { staffId, date });
-    void this.getByDate(staffId, date).then(onData).catch(onError);
-    return () => {
-      /* noop */
-    };
-  }
-
   /** @deprecated polling으로 전환됨. getByStaffId + refetchInterval 사용 */
   subscribeByStaffId(
     staffId: string,

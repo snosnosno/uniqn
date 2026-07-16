@@ -20,7 +20,6 @@ import type {
   IUserRepository,
   DeletionRequest,
   UserDataExport,
-  EmployerRegistrationInput,
   UserPhoneSearchResult,
 } from '../interfaces';
 import type { FirestoreUserProfile, MyDataEditableFields } from '@/types';
@@ -410,95 +409,6 @@ export class SupabaseUserRepository implements IUserRepository {
       if (isAppError(error)) throw error;
       logger.error('회원탈퇴 철회 실패', toError(error), { userId });
       handleSupabaseError(error, { operation: '회원탈퇴 철회', table: TABLES.USERS });
-    }
-  }
-
-  // ==========================================================================
-  // 특수 작업 (Transaction)
-  // ==========================================================================
-
-  async registerAsEmployer(
-    userId: string,
-    input: EmployerRegistrationInput
-  ): Promise<FirestoreUserProfile> {
-    try {
-      // 1. 현재 프로필 조회
-      const { data: userData, error: fetchError } = await supabase
-        .from(TABLES.USERS)
-        .select(USER_COLUMNS)
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (fetchError) {
-        handleSupabaseError(fetchError, { operation: '구인자 등록 조회', table: TABLES.USERS });
-      }
-
-      if (!userData) {
-        throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-          userMessage: '사용자 정보를 찾을 수 없습니다',
-        });
-      }
-
-      const row = userData as Record<string, unknown>;
-      const currentRole = row.role as string;
-
-      // 2. 이미 구인자/관리자인 경우
-      if (currentRole === 'employer' || currentRole === 'admin') {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '이미 구인자로 등록되어 있습니다',
-        });
-      }
-
-      // 3. 전화번호 인증 확인
-      if (!row.phone_verified) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '전화번호 인증을 먼저 완료해주세요',
-        });
-      }
-
-      // 4. 서버사이드 RPC로 역할 변경 (역할 상승 공격 방지)
-      const now = new Date().toISOString();
-      const employerAgreements = {
-        termsAgreedAt: now,
-        termsVersion: input.termsVersion,
-        liabilityWaiverAgreedAt: now,
-        liabilityWaiverVersion: input.liabilityWaiverVersion,
-      };
-
-      const { error: rpcError } = await supabase.rpc('register_as_employer', {
-        p_employer_agreements: employerAgreements,
-      });
-
-      if (rpcError) {
-        handleSupabaseError(rpcError, { operation: '구인자 등록 RPC', table: TABLES.USERS });
-      }
-
-      // 5. 동의 기록 저장 (별도 테이블)
-      const { error: consentError } = await supabase.from(TABLES.CONSENTS).upsert({
-        user_id: userId,
-        kind: 'employer_registration',
-        agreed_at: now,
-        terms_agreed: true,
-        terms_version: input.termsVersion,
-        liability_waiver_agreed: true,
-        liability_waiver_version: input.liabilityWaiverVersion,
-      });
-
-      if (consentError) {
-        logger.warn('동의 기록 저장 실패 (비치명적)', { userId, error: consentError.message });
-      }
-
-      // 6. 변경된 프로필 재조회
-      const updatedProfile = await this.getById(userId);
-      if (!updatedProfile) {
-        throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-          userMessage: '프로필 조회 실패',
-        });
-      }
-      return updatedProfile;
-    } catch (error) {
-      if (isAppError(error)) throw error;
-      handleSupabaseError(error, { operation: '구인자 등록', table: TABLES.USERS });
     }
   }
 

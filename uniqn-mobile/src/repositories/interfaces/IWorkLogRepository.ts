@@ -248,21 +248,6 @@ export interface IWorkLogRepository {
   // ==========================================================================
 
   /**
-   * 특정 날짜의 근무 기록 실시간 구독
-   * @param staffId - 스태프 ID
-   * @param date - 날짜 (YYYY-MM-DD)
-   * @param onData - 데이터 콜백
-   * @param onError - 에러 콜백
-   * @returns 구독 해제 함수
-   */
-  subscribeByDate(
-    staffId: string,
-    date: string,
-    onData: (workLogs: WorkLog[]) => void,
-    onError: (error: Error) => void
-  ): UnsubscribeFn;
-
-  /**
    * 스태프의 전체 근무 기록 실시간 구독 (최근 50개)
    *
    * @description scheduleService의 subscribeToSchedules에서 사용
