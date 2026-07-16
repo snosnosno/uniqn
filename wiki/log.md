@@ -81,3 +81,10 @@
 - **enum-divergence**: 2026-07 필터 개편(#250/#251/#254=지역 택소노미·salary_*_max·역할필터)이 additive임을 재확인, `POSTING_STATUS_VALUES` SSOT 라인 25/115/504로 갱신(enum 발산 규칙 불변).
 - **knip-signal-hygiene**: `knip:gate --max-issues=2344` 현행 확인. **job-posting-kiosk-order-sheet**(source): 후속 #252/#253/#257 범위 밖 포인터 추가.
 - updated 전부 2026-07-16. 검증: check-staleness → 4페이지 STALE 제거 확인. 미처리=CLAUDE.md 파생 stale(data-flow·layers·roles·overview) 별도 패스.
+
+## [2026-07-16] ingest | CLAUDE.md 파생 stale 4종 재sync — data-flow/layers 지갑 드리프트 교정
+- **실제 드리프트 적발**: data-flow·layers가 삭제된 `walletService.ts`/`WalletRepository.ts`/`get_wallet_summary`/`create_job_posting_with_payment_atomically`(지갑/IAP 제거 #196~206)를 여전히 인용 중 — `check-staleness`는 **삭제된 소스를 못 잡는 blind spot**(git mtime 기반), grep 실측으로 적발.
+- **data-flow**: 흐름2(지갑 요약)·흐름3(유료 게시) → 현행 무결제 `createSinglePosting`→`createWithTransaction`→`insert` 단일 경로로 재작성 + "제거된 흐름" note. 트리거 SSOT=baseline(`20260710000002`), 원 마이그는 archive/. 관련 revenue-model→[[wallet-iap-removal]].
+- **layers**: Service→Repository 예시·에러패턴을 `jobManagementService`/`jobService`+`serviceErrorHandler.ts`로 교체(sources 정리).
+- **roles·overview**: CLAUDE.md 최근 변경(#240)은 하네스/오케스트레이션 — 역할·아키텍처·스택 불변 확인 → `updated`만 갱신.
+- 검증: check-staleness → 4페이지 STALE 제거. 활성 stale 0.
