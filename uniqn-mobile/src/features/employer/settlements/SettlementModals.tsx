@@ -25,6 +25,7 @@ import {
 import type { PostingSettlementContext } from '@/domains/job-posting';
 import type { WorkLog, CreateReportInput, JobPosting } from '@/types';
 import type { RoleWithSalary, SalaryConfig } from '@/features/employer/settlements/settlementCalc';
+import { formatNumber } from '@/utils/formatters';
 
 type SettlementModalsState = ReturnType<typeof useSettlementModals>;
 
@@ -146,8 +147,8 @@ export function SettlementModals({
         title={modals.settleConfirm.isBulk ? '일괄 정산' : '정산 처리'}
         message={
           modals.settleConfirm.isBulk
-            ? `${modals.settleConfirm.workLogs.length}건의 근무를 정산하시겠습니까?\n예상 금액: ${modals.settleConfirm.amount.toLocaleString()}원`
-            : `이 스태프의 근무를 정산하시겠습니까?\n정산 금액: ${modals.settleConfirm.amount.toLocaleString()}원`
+            ? `${modals.settleConfirm.workLogs.length}건의 근무를 정산하시겠습니까?\n예상 금액: ${formatNumber(modals.settleConfirm.amount)}원`
+            : `이 스태프의 근무를 정산하시겠습니까?\n정산 금액: ${formatNumber(modals.settleConfirm.amount)}원`
         }
         confirmText="정산하기"
         cancelText="취소"
