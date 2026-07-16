@@ -13,6 +13,7 @@
 | [003](003-reduce-motion-core-ui.md) | 코어 UI 4종 Reduce Motion + 공유 훅 추출 | HIGH | DONE |
 | [004](004-sheet-travel-curve.md) | 시트류 travel 커브 + 75% 퇴장 규칙 | HIGH | DONE |
 | [005](005-sheet-drag-dismiss.md) | SheetModal 드래그 dismiss (제스처) | 기회 | IMPLEMENTED(실기기 QA 대기) |
+| [006](006-sheet-exit-render-and-thresholds.md) | 시트 퇴장 렌더 보장 + 임계 시트높이 스케일 (/review Red Team) | 구조 | TODO(실기기 관찰 선행) |
 
 ## 권장 실행 순서·의존성
 
