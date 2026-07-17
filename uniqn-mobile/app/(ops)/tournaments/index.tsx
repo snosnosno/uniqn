@@ -15,15 +15,12 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
 import { StackHeader } from '@/components/headers';
 import { TrophyOutlineIcon, AlertCircleIcon } from '@/components/icons';
-import { SECONDARY_PALETTE } from '@/constants/colors';
+import { SECONDARY_PALETTE, getLayoutColor } from '@/constants/colors';
 import { useThemeStore } from '@/stores/themeStore';
 import { useOpsTournaments } from '@/hooks/ops';
 import { useOpsHubEnteredOnce } from '@/hooks/ops/useOpsHubEnteredOnce';
 import { selectResumeTournament } from '@/domains/ops';
 import type { OpsTournament, OpsTournamentStatus } from '@/types/ops';
-
-/** 골드(pull-to-refresh tint / RefreshControl) — nativewind-patterns 인라인 색상 규칙. */
-const GOLD = '#D4AF37';
 
 // ============================================================================
 // 상태 배지 (디자인 토큰 — raw gray 금지)
@@ -260,6 +257,7 @@ export default function OpsTournamentListScreen() {
   const { postingId: postingIdParam } = useLocalSearchParams<{ postingId?: string }>();
   const postingId = Array.isArray(postingIdParam) ? postingIdParam[0] : postingIdParam;
   const { tournaments, isLoading, error, refetch } = useOpsTournaments();
+  const isDark = useThemeStore((s) => s.isDarkMode);
 
   // ⑤ 진입 계측: 메인 허브 진입만 1회. 피커(postingId)는 퍼널 분모(impression) 밖 진입이라 제외.
   useOpsHubEnteredOnce(!postingId);
@@ -323,8 +321,8 @@ export default function OpsTournamentListScreen() {
             <RefreshControl
               refreshing={false}
               onRefresh={handleRetry}
-              tintColor={GOLD}
-              colors={[GOLD]}
+              tintColor={getLayoutColor(isDark, 'refreshTint')}
+              colors={[getLayoutColor(isDark, 'refreshTint')]}
             />
           }
           ListHeaderComponent={
