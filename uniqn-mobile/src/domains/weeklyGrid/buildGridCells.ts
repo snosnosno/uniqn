@@ -17,6 +17,8 @@ export interface GridSummaryRow {
   headcount: number;
   /** 그 날 venue 의 open 공고 수 */
   jobCount: number;
+  /** 스팬 공고 requirements 날짜별 Σ count(좌석 합, dated only) */
+  requiredCount: number;
 }
 
 export function buildGridCells(

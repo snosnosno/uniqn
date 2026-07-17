@@ -11,7 +11,9 @@ describe('buildGridCells', () => {
   });
 
   it('요약행 + softTarget 미달 → 부족셀(shortage 뱃지 우선)', () => {
-    const rows: GridSummaryRow[] = [{ d: '2026-07-10', headcount: 1, jobCount: 2 }];
+    const rows: GridSummaryRow[] = [
+      { d: '2026-07-10', headcount: 1, jobCount: 2, requiredCount: 0 },
+    ];
     const cells = buildGridCells(rows, { '2026-07-10': 3 });
     expect(cells['2026-07-10']).toMatchObject({
       dateKey: '2026-07-10',
@@ -25,7 +27,9 @@ describe('buildGridCells', () => {
   });
 
   it('softTarget 충족(headcount>=target) → staffed + 공고 뱃지 우선', () => {
-    const rows: GridSummaryRow[] = [{ d: '2026-07-11', headcount: 5, jobCount: 1 }];
+    const rows: GridSummaryRow[] = [
+      { d: '2026-07-11', headcount: 5, jobCount: 1, requiredCount: 0 },
+    ];
     const cells = buildGridCells(rows, { '2026-07-11': 3 });
     expect(cells['2026-07-11']).toMatchObject({
       shortage: 0,
@@ -35,7 +39,9 @@ describe('buildGridCells', () => {
   });
 
   it('softTarget 없는 배치날 → staffed + 배치 뱃지', () => {
-    const rows: GridSummaryRow[] = [{ d: '2026-07-12', headcount: 2, jobCount: 0 }];
+    const rows: GridSummaryRow[] = [
+      { d: '2026-07-12', headcount: 2, jobCount: 0, requiredCount: 0 },
+    ];
     const cells = buildGridCells(rows, {});
     expect(cells['2026-07-12']).toMatchObject({
       softTarget: 0,
@@ -63,7 +69,7 @@ describe('buildGridCells', () => {
   });
 
   it('빈 dateKey 행은 건너뛴다', () => {
-    const rows: GridSummaryRow[] = [{ d: '', headcount: 3, jobCount: 1 }];
+    const rows: GridSummaryRow[] = [{ d: '', headcount: 3, jobCount: 1, requiredCount: 0 }];
     expect(buildGridCells(rows, {})).toEqual({});
   });
 });
