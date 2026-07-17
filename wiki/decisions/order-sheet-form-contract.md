@@ -1,17 +1,21 @@
 ---
 area: decisions
-updated: 2026-07-16
+updated: 2026-07-17
 status: current
 sources:
   - uniqn-mobile/src/schemas/orderSheet.schema.ts
   - uniqn-mobile/src/utils/order-sheet/mappers.ts
   - uniqn-mobile/src/utils/order-sheet/roleSalaries.ts
+  - uniqn-mobile/src/utils/job-posting/draftAdapter.ts
+  - uniqn-mobile/src/domains/job-posting/serialization.ts
+  - uniqn-mobile/src/hooks/useUnsavedChangesGuard.ts
   - uniqn-mobile/src/components/employer/order-sheet/sheets/TimeSlotsSheet.tsx
   - uniqn-mobile/src/components/employer/order-sheet/sheets/ConditionsSheet.tsx
   - PR#246
   - PR#247
   - PR#252
   - PR#253
+  - PR#261
 tags: [order-sheet, form, zod, react-hook-form, mapper, modal]
 ---
 
@@ -41,4 +45,15 @@ tags: [order-sheet, form, zod, react-hook-form, mapper, modal]
 - **`roleSalaries` 커버리지 refine**: `useSameSalary=false`(기본 by_role, 설계 §S2.1)면 모든 (역할×그룹) 키를 `roleSalaries`가 **전수 커버**해야 통과. 키 = `keyOf(role, customRole)`(other는 `other:${customRole}`로 분리). 미커버 시 zod reject(`path:['roleSalaries']`).
 - **by_role `defaultSalary` = 활성 `roleSalaries` 최저값**(CEO-1): 비활성(고아) roleSalaries 값이 defaultSalary로 새면 안 됨 — 유령 세그먼트 캐리어 기록 금지([[whitelist-silent-drop]] 계열). 매퍼 `roleSalaries.ts`/`syncRoleSalaries`는 **의존성 0 모듈**(mappers와 순환 차단), `draftToValues`는 by_role일 때만 roleSalaries 복원.
 
-관련: [[job-posting-kiosk-order-sheet]] · [[whitelist-silent-drop]] · [[ios-userflow-fixes]] · [[capacity-full]] · [[layers]] · [[nativewind-rn-pitfalls]]
+## 7. update = patch 시맨틱 — conditions는 양분기 상시 전달 (#261 S3)
+편집이 create와 결정적으로 다른 지점: **수정 직렬화는 patch(생략=현행 유지)**다. `serialization.ts:360-365`가 `input.conditions`가 undefined면 `current.conditions`로 폴백한다 — create의 "키 생략 관례"를 그대로 update에 승계하면 **conditions 해제 계열이 전부 침묵 무시**된다(축소 payload에서 conditions 제외·전량 해제 키 생략 → serialize current-폴백 부활 → "성공 토스트 + 침묵 소실"). [[whitelist-silent-drop]] 재발 클래스.
+- **확정 계약**: `mappers.ts:303`(draft→update)·`:397`(update input) **양분기 모두 `conditions: { ...(draft.conditions ?? {}) }` 상시 전달**. 빈 `{}`도 wholesale 반영(3계층 실측 선행). 되돌리기 금지.
+- **편집 진입은 위임으로 등가성 보장**: `mappers.ts:525` `valuesToUpdateInput` = `draftToUpdateJobPostingInput(valuesToDraft(values), options)` — `valuesToCreateInput`과 동형 패턴이라 신·구 편집 결과가 구조적으로 일치.
+
+## 8. 전 타입 단일 경로 + 레거시 은퇴 + markClean (#261 S4)
+- **주문서 = 전 타입(지원·급구·대회·고정) create/edit 단일 경로**. `OrderSheetScreen` `mode='edit'`에서 TypeSegment disabled·`scheduleLocked`(확정 지원자 있으면 일정/시간/역할/근무조건 잠금, **급여는 미잠금** — 서버 identity 가드가 역할 키 집합만 비교). 대회 편집은 approvalStatus 보존(재승인 없음).
+- **레거시 폼 30파일 + `draftAdapter` formData 읽기 방향 은퇴**(−4773+180줄). 존치: `TemplateModal`·`DatePickerModal`·`formDataToDraft`(템플릿 백컴팻 라이브) — 오삭제 금지. 왕복/편집 위임(`draftToCreate/UpdateJobPostingInput`)은 §7 conditions 계약 테스트 직결이라 존치(이주 비용>가치).
+- **markClean**(`useUnsavedChangesGuard.ts`): 저장 성공 직후 같은 틱 `back()`이 stale 미저장 상태를 읽어 잘못된 이탈 경고를 띄우던 버그를 제거(TDD). 저장 핸들러가 명시적으로 dirty 플래그를 청소한다.
+- **서버 무변경**(마이그·RLS·EF·직렬화 계약 0) = JSON-only OTA 가능. 소스 요약=[[order-sheet-unification]].
+
+관련: [[job-posting-kiosk-order-sheet]] · [[whitelist-silent-drop]] · [[order-sheet-unification]] · [[ios-userflow-fixes]] · [[capacity-full]] · [[layers]] · [[nativewind-rn-pitfalls]]

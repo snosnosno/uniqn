@@ -1,16 +1,25 @@
 ---
 area: architecture
-updated: 2026-07-08
+updated: 2026-07-17
 status: current
 sources:
   - uniqn-mobile/supabase/migrations/20260625120000_ops_1a_enums_and_tables.sql
   - uniqn-mobile/supabase/migrations/20260625120100_ops_1a_rls_and_membership.sql
   - uniqn-mobile/supabase/migrations/20260628110000_ops_1c4_player_view_rpcs.sql
+  - uniqn-mobile/supabase/migrations/20260717090100_ops_s1_monitor_config_snapshot_break.sql
+  - uniqn-mobile/supabase/migrations/20260717090400_ops_s1_public_reports.sql
+  - uniqn-mobile/supabase/migrations/20260717090500_ops_s1_funnel_events.sql
+  - uniqn-mobile/supabase/migrations/20260717090600_ops_s1_hub_flag.sql
+  - uniqn-mobile/src/domains/ops/opsHubFlag.ts
+  - uniqn-mobile/src/components/ops/OpsHubIntroCard.tsx
+  - uniqn-mobile/src/services/ops/opsReportService.ts
   - uniqn-mobile/src/repositories/supabase/OpsEventRepository.ts
   - uniqn-mobile/src/types/ops.ts
   - memory/project_tholdem_ops_revival_20260623.md
+  - memory/project_ops_open_access_monetization_20260716.md
   - PR#207
   - PR#230
+  - PR#265
 tags: [ops, tournament, architecture, event-sourcing, security]
 ---
 
@@ -59,6 +68,18 @@ D3 원칙: **테이블 DML은 전부 SECDEF RPC 경유**(Presentation/Hooks/Serv
 | 1e | 스태프 연동·딜러 배정 | #230 |
 
 **후속(미착수, 별도 spec)**: 플레이어 포털(가입·클레임 UI·이력)→랭킹/포인트→전국 포털.
+
+## S1 전면 개방(회원 전원) + 대회사 레일 (PR#265, 2026-07-17 머지 — 코드 검증됨)
+ops를 **employer 전용 발견 표면 → 회원 전원 개방**. 서버는 이미 전원 지원(`ops_create_tournament`=caller-binding만·역할 게이트 없음·`job_posting_id` 선택적) — S1은 **발견 표면을 여는 것**이지 권한 확장이 아니다.
+- **진입 허브(진입 표면 조합)**: 프로필 메뉴 + 1회성 신기능 안내(`OpsHubIntroCard`) + 스케줄 빈상태 크로스링크. 게이트 = `app_config` 플래그 `ops_hub_enabled` **기본 OFF**(`weekly_grid_enabled` 패턴, `useOpsHubEnabled`). `(ops)` 라우트 자체는 플래그 무관하게 접근 가능 — 발견 표면만 게이트.
+- **악용 방어**: 공개뷰 익명 신고 — **신규 anon RPC 없이**(=2 계약 보존) 전용 `ops_public_reports` 테이블 + `BEFORE INSERT` 가드 트리거(토큰 해석·8자 절단 저장·대회당 시간당 5건 rate limit). `opsReportService.ts`.
+- **퍼널 계측**: `analytics_events` INSERT 전용(노출→진입→생성→열람→claim 전환, 조회 admin). 훅 `useOpsHubImpressionOnce`·`useOpsHubEnteredOnce`, `analyticsService.ts`. `ops_limit_reached`는 S2 한도 선배선.
+- **TV 모니터 프리셋**: `ops_tournaments.monitor_config` jsonb(NULL=기본 full+5슬롯)·`ops_set_monitor_config`(owner 전용·서버 화이트리스트 재조립 저장→비-PII 보증)·모니터 스냅샷에 payouts 상위5+nextBreak 편승. `MonitorConfigCard`·`monitor/registry.ts`.
+- **지급 마킹/복제**: `ops_participants.prize_paid_at`+`ops_set_prize_paid`(undo-first 왕복)·`ops_duplicate_tournament`(설정+블라인드+monitor_config 복사, 라이브 상태·토큰·상금은 제외).
+
+**마이그 7개(`20260717090000`~`090600`) 전부 additive**(enum ADD VALUE·ADD COLUMN·신규 테이블·`CREATE OR REPLACE`). **배포 순서 BLOCKING**: prod 마이그 → OTA → 플래그 ON. 역순이면 신 클라의 `prize_paid_at`·`monitor_config` 참조가 **42703(undefined_column)으로 기존 ops 화면 즉사**. 진행/게이트 상세 = `memory/project_ops_open_access_monetization_20260716`.
+
+**불변 계약 유지(코드 검증됨)**: anon-executable ops SECDEF **정확히 2개**(monitor/player) — S1 마이그 전부 신규 함수 PUBLIC/anon REVOKE, 공개뷰 스냅샷은 `CREATE OR REPLACE`로 기존 anon ACL 보존, 신고는 anon RPC 대신 테이블+트리거로 우회(위 "anon SECDEF 불변 계약(=2)" 섹션). claim 토큰 읽기(view_token/anon)·쓰기(8자 PIN/bcrypt) 분리도 불변. 하드닝 규율 = [[secdef-hardening]].
 
 ## 연결
 - 5레이어 쓰기 경계: [[layers]]
