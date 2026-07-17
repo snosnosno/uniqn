@@ -3,6 +3,7 @@ import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, Text, View } from 'react-native';
 import { AppFlashList } from '@/components/ui/AppFlashList';
+import { ActionSheet, type ActionSheetOption } from '@/components/ui';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, ConfirmModal, PostingSurfaceState } from '@/components';
@@ -14,9 +15,9 @@ import {
   BriefcaseIcon,
   CalendarDaysIcon,
   ChevronRightIcon,
+  EllipsisHorizontalIcon,
   PlusIcon,
   UserPlusIcon,
-  UsersIcon,
 } from '@/components/icons';
 import { getIconColor } from '@/constants';
 import { buildPostingFacts } from '@/domains/job-posting';
@@ -100,29 +101,60 @@ function FilterTabs({ selected, onChange, counts }: FilterTabsProps) {
   );
 }
 
-// 워크스페이스 진입 버튼 — 받은 초대가 있으면 빨간 dot 배지로 발견성 확보
-function WorkspaceHeaderAction() {
+// 워크스페이스 진입 통일 — ⋯ 더보기 메뉴로 '워크스페이스'·'받은 초대' 진입점을 한곳에 모은다.
+// 받은 초대가 있으면 빨간 dot 배지로 발견성 확보.
+// (테스트 격리를 위해 named export — 파일 내부에서도 함께 사용된다)
+export function WorkspaceHeaderAction() {
   const isDarkMode = useThemeStore((s) => s.isDarkMode);
   const { invitations: pendingInvitations } = useReceivedWorkspaceInvitations();
-  const hasPendingInvitations = pendingInvitations.length > 0;
+  const pendingCount = pendingInvitations.length;
+  const [menuVisible, setMenuVisible] = useState(false);
+
+  const options = useMemo<ActionSheetOption[]>(
+    () => [
+      { label: '워크스페이스', value: 'workspace' },
+      {
+        label: pendingCount > 0 ? `받은 초대 (${pendingCount}건)` : '받은 초대',
+        value: 'invitations',
+      },
+    ],
+    [pendingCount]
+  );
+
+  const handleSelect = useCallback((value: string) => {
+    setMenuVisible(false);
+    if (value === 'workspace') {
+      router.push('/(employer)/workspace');
+    } else if (value === 'invitations') {
+      router.push('/(employer)/workspace/invitations');
+    }
+  }, []);
 
   return (
-    <Pressable
-      onPress={() => router.push('/(employer)/workspace')}
-      className="relative rounded-sm p-2"
-      hitSlop={8}
-      accessibilityRole="button"
-      accessibilityLabel={`워크스페이스${hasPendingInvitations ? ', 대기 중인 초대 있음' : ''}`}
-    >
-      <UsersIcon size={24} color={getIconColor(isDarkMode, 'primary')} />
-      {hasPendingInvitations ? (
-        <View
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-          className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full border border-white bg-error-500 dark:border-surface"
-        />
-      ) : null}
-    </Pressable>
+    <>
+      <Pressable
+        onPress={() => setMenuVisible(true)}
+        className="relative rounded-sm p-2"
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={`더보기${pendingCount > 0 ? ', 대기 중인 초대 있음' : ''}`}
+      >
+        <EllipsisHorizontalIcon size={24} color={getIconColor(isDarkMode, 'primary')} />
+        {pendingCount > 0 ? (
+          <View
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full border border-white bg-error-500 dark:border-surface"
+          />
+        ) : null}
+      </Pressable>
+      <ActionSheet
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+        options={options}
+        onSelect={handleSelect}
+      />
+    </>
   );
 }
 
