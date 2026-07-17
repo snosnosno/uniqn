@@ -50,6 +50,10 @@
 - **퍼널 계측(F8+D5)**: 허브 노출→진입→생성→공개뷰 열람→가입 전환 이벤트. 성공 기준은 **노출 대비 진입율을 분모로** — 배치 실패와 가설 실패를 분리. 가입 전환은 보조 지표(D4).
 - 공개뷰 가입 CTA(D4 — 실존 가치만): claim의 실제 효과("이 대회 참가 기록이 내 계정에 연결돼요")로 한정. 기존 카피(`[view_token].tsx:172`)도 동일 감사. 기록 조회 화면은 TODOS(플레이어 기록 연동)와 배선 — 생기기 전 "모아보기" 류 약속 금지.
 
+- **S1 구현 완료 마킹(2026-07-17)**: 진입 표면 조합(A1) DONE · 재개 카드(A2) DONE · (ops) 목록 개편(A3) DONE · 대회 복제(A4) DONE · 공개뷰 noindex(B1) DONE · 신고 경로(B2) DONE · 약관 사행성 조항(B3) DONE · B4 확인(아래) DONE · 브레이크 카운트다운 3표면(C1) DONE · TV 모니터 보강(C2→C6) DONE · HISTORY 라벨 6종(C3) DONE · 상금 지급 마킹(C4) DONE · 가입 CTA(C5) DONE · TV 모니터 프리셋/5슬롯(C6) DONE · 퍼널 계측(D1) DONE · P1 성공 기준 기록(D2, 아래) DONE. **미완(사용자 게이트, DONE 마킹 제외)**: 실기기 QA · OTA · prod 마이그레이션 적용 · `ops_hub_enabled` 플래그 ON · CI parity 동기.
+- **B4 확인**: 금액 필드 전 티어 동일 노출 — 작업 없음 확인(E11: anon 경로에 entitlement 결합 유발, 별도 게이트).
+- **D2 — P1 성공 기준(2026-07-17)**: "출시 30일 내 비-employer 계정 생성 대회 N건" — 목표치 N = **제안 기본값 10건(사용자 확인 대기)**. 분모 = `ops_hub_impression` 대비 `ops_hub_entered` 진입율(배치 실패와 가설 실패 분리 — F8+D5). 측정 쿼리 소스 = `analytics_events` 테이블.
+
 ### S2 — 무료 한도 + entitlement 스키마 (Phase 3 반영판)
 - **`ops_entitlements` = grant 원장(ledger) 모델(E2)** — owner당 N행: `owner_id`, `plan text + CHECK`(E8 — PG enum 금지: free/pro/event_pass/legacy, 확장=CHECK 교체 1줄), `expires_at`(NULL=무만료, 평가는 `expires_at IS NULL OR expires_at > now()` — NULL fail-open 차단 규약), `source`(webhook/manual), `source_payment_id UNIQUE`(웹훅 멱등의 근간), `granted_by`, `revoked_at`. 행 자체가 감사 기록(E16). event_pass 스태킹·pro 이력 보존·부분 환불(revoked_at) 전부 자연 표현.
 - **resolver `ops_check_entitlement`는 순수 해석 전용(E6)**: 유효 grant 집계 → 최상위 plan/limits 반환. STABLE·락 없음·카운트 없음. 카운트·비교·RAISE는 각 RPC가 자기 락 아래에서. **anon+authenticated 모두 EXECUTE REVOKE** + `has_function_privilege` pgTAP 단언.
