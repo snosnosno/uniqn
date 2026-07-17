@@ -17,6 +17,7 @@ import { getJobDetailQueryOptions } from '@/hooks/useJobDetail';
 import { extractPostingFilledSubmap } from '@/hooks/usePostingFilledCounts';
 import { jobPostingRepository } from '@/repositories';
 import { buildJobShareText } from '@/utils/jobShareMessage';
+import { canShareJob } from '@/domains/job-posting';
 import type { JobPosting } from '@/types';
 
 // ============================================================================
@@ -159,6 +160,14 @@ export function useShare(): UseShareReturn {
   const runJobShare = useCallback(
     async (job: JobPosting): Promise<ShareResult> => {
       try {
+        // 단일 게이트 — 죽은 링크(승인 대기 대회·마감/취소 공고)를 7개 진입점 전체에서 차단.
+        // shareJob / shareJobById 가 공통으로 이 코어를 호출하므로 여기 한 곳이면 충분하다.
+        if (!canShareJob(job)) {
+          logger.info('공유 차단 — 공유 불가 상태', { jobId: job.id, status: job.status });
+          toast.error('지금은 공유할 수 없는 공고예요. (승인 대기 중이거나 마감된 공고)');
+          return { success: false, error: new Error('공유 불가 상태') };
+        }
+
         // 웹 URL 생성 (외부 공유용)
         const url = createJobDeepLink(job.id, true);
 
@@ -213,7 +222,7 @@ export function useShare(): UseShareReturn {
         return { success: false, error: toError(error) };
       }
     },
-    [webShare]
+    [webShare, toast]
   );
 
   /**

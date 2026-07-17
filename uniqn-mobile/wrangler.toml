@@ -10,3 +10,8 @@ pages_build_output_dir = "dist"
 # - www.uniqn.app    → CNAME → uniqn-app.pages.dev (Proxied, SSL)
 # - DNS Setup: Full (Cloudflare 관리)
 
+
+# OG Pages Function(functions/jobs/[id].ts) 환경변수 — anon 공개값(클라 번들에도 포함, 커밋 안전).
+[vars]
+SUPABASE_URL = "https://ygfxukhktpqymahfrvbz.supabase.co"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlnZnh1a2hrdHBxeW1haGZydmJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MDI1MTcsImV4cCI6MjA5MTM3ODUxN30.LYqgEEb_HQPoBdJeYg_fDCO9CNeEaYZbDEFbRqQeJLs"
