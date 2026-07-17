@@ -1,8 +1,11 @@
 -- ============================================================
 -- grid-auto-sync Task 1 — get_venue_grid_summary 에 required_count 파생 추가
 -- ============================================================
--- required_count = venue 스팬 공고(동일 workspace) requirements 의 날짜별 Σ count.
---   · 좌석 규약: 날짜×슬롯×역할 count 총합(SUM), dated only(req.date IS NOT NULL).
+-- required_count = venue 스팬 공고(동일 workspace) requirements 의 날짜별 Σ 좌석수.
+--   · 좌석 read 규약 = _total_positions_from_schedule 와 동일:
+--       SUM(GREATEST(COALESCE(count, headcount, 0), 0)) + 빈 role 스킵.
+--       (count→headcount COALESCE 폴백·음수 clamp·빈 role 제외 — 공고 카운트와 발산 방지)
+--       차이는 날짜별 partition(GROUP BY date) 뿐. dated only(req.date IS NOT NULL).
 --   · 컨테이너 자신(jp.id = p_venue) 제외 → 이중 계상 방지.
 --   · 읽기 시점 파생(수요 테이블/트리거 없음). weekly_grid_enabled OFF 라 호출 0 → 적용 안전.
 -- 반환 타입 변경(3열→4열)이므로 DROP+CREATE. ACL·SECDEF 하드닝 유지.
@@ -51,7 +54,8 @@ BEGIN
   required AS (
     SELECT
       (req->>'date') AS d,
-      SUM((r->>'count')::int)::int AS required_count
+      -- seat-basis SSOT(_total_positions_from_schedule)와 동일한 좌석 합산식
+      SUM(GREATEST(COALESCE((r->>'count')::int, (r->>'headcount')::int, 0), 0))::int AS required_count
     FROM public.job_postings jp
     JOIN span ON span.id = jp.id
     CROSS JOIN LATERAL jsonb_array_elements(COALESCE(jp.schedule->'requirements', '[]'::jsonb)) req
@@ -60,6 +64,8 @@ BEGIN
     WHERE jp.id <> p_venue                       -- 컨테이너 자신 제외(이중 계상 방지)
       AND req->>'date' IS NOT NULL               -- dated only (fixed 제외)
       AND (req->>'date') >= p_from AND (req->>'date') <= p_to
+      -- 빈 role 스킵(SSOT 동일): role/name 둘 다 비면 좌석 아님
+      AND COALESCE(NULLIF(btrim(r->>'role'), ''), NULLIF(btrim(r->>'name'), '')) IS NOT NULL
     GROUP BY (req->>'date')
   )
   SELECT

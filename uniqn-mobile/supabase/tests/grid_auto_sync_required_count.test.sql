@@ -6,15 +6,20 @@
 --   2. dated 스팬 공고 requirements 날짜별 Σ count 파생:
 --        8/10 딜러 2 + 플로어 1 = 3
 --   3. fixed(date=null) 스케줄은 required_count 파생 제외 → 0
--- 좌석 규약: SUM of (roles[].count) across role entries (peak MAX 아님), dated only.
+--   4. both-sides 병합: 같은 날짜에 staffed work_log + dated requirements 동시
+--        → (headcount, required_count) 가 한 행으로 병합(FULL OUTER JOIN)
+--   5. headcount-only 폴백: count 없이 {"role":..,"headcount":N} 역할도
+--        seat-basis SSOT 와 동일하게 required_count 에 반영(count→headcount COALESCE).
+-- 좌석 규약: SUM(GREATEST(COALESCE(count, headcount, 0), 0)) across role entries,
+--   빈 role 스킵 — _total_positions_from_schedule 와 동일. dated only.
 -- 안전: 단일 BEGIN/ROLLBACK + 마커 이메일. 데이터 의존 값은 _g 임시테이블로
 --   캡처(RED 시 미존재 열은 undefined_column 예외로 잡아 트랜잭션 중단 없이
 --   깨끗한 not ok 산출).
 -- ============================================================
 BEGIN;
-SELECT plan(3);
+SELECT plan(5);
 
-CREATE TEMP TABLE _g (k text PRIMARY KEY, v int);
+CREATE TEMP TABLE _g (k text PRIMARY KEY, v text);
 
 DO $$
 DECLARE
@@ -23,10 +28,13 @@ DECLARE
   v_ws    uuid := gen_random_uuid();
   v_cA    uuid;                        -- dated 컨테이너
   v_cB    uuid;                        -- fixed-only 컨테이너
-  v_spanA uuid := gen_random_uuid();   -- dated 스팬 공고
+  v_spanA uuid := gen_random_uuid();   -- dated 스팬 공고(8/10 count, 8/11 headcount-only)
   v_spanB uuid := gen_random_uuid();   -- fixed 스팬 공고
   v_req3     int := -1;
   v_reqfixed int := -1;
+  v_merge_hc int := -1;
+  v_merge_rc int := -1;
+  v_req_hconly int := -1;
 BEGIN
   -- baseline(2026-07-12): raw_app_meta_data.role 를 public.users role 과 일치시켜
   --   prevent_role_escalation 트리거의 ON CONFLICT role 변경 거부를 회피.
@@ -45,11 +53,16 @@ BEGIN
   v_cA := (public.get_or_create_venue_container(v_ws, '운영처GAS_A', 'dated') ->> 'containerId')::uuid;
   v_cB := (public.get_or_create_venue_container(v_ws, '운영처GAS_B', 'fixed') ->> 'containerId')::uuid;
 
-  -- dated 스팬 공고: 8/10 딜러 2 + 플로어 1 (total_positions 는 seat BEFORE 트리거가 재계산)
+  -- dated 스팬 공고:
+  --   8/10 딜러 2 + 플로어 1 (count) → required 3
+  --   8/11 딜러 headcount 2 (count 없음) → seat-basis 폴백으로 required 2 여야 함
   INSERT INTO public.job_postings (id,owner_id,workspace_id,title,status,posting_type,venue_id,schedule,created_at,updated_at)
   VALUES (
     v_spanA, v_owner, v_ws, '__sql_fixture_gas_dated', 'active'::posting_status, 'regular'::posting_type, v_cA,
-    '{"kind":"dated","requirements":[{"date":"2026-08-10","timeSlots":[{"startTime":"18:00","roles":[{"role":"dealer","count":2},{"role":"floor","count":1}]}]}]}'::jsonb,
+    ('{"kind":"dated","requirements":['
+      || '{"date":"2026-08-10","timeSlots":[{"startTime":"18:00","roles":[{"role":"dealer","count":2},{"role":"floor","count":1}]}]},'
+      || '{"date":"2026-08-11","timeSlots":[{"startTime":"18:00","roles":[{"role":"딜러","headcount":2}]}]}'
+      || ']}')::jsonb,
     now(), now()
   );
 
@@ -61,8 +74,10 @@ BEGIN
     now(), now()
   );
 
-  -- fixed 컨테이너에 근무 로그 1건 → staffed 비어있지 않게(FULL OUTER JOIN 실 행에서 required_count=0 확인)
+  -- 8/10 근무 로그 1건(spanA) → 같은 날짜에 staffed+required 동시(both-sides 병합)
+  -- fixed 컨테이너에도 1건 → staffed 비어있지 않게(required_count=0 을 실 행에서 확인)
   INSERT INTO public.work_logs (staff_id,job_posting_id,date,status,role) VALUES
+    (v_staff, v_spanA, '2026-08-10', 'scheduled'::work_log_status, 'dealer'::staff_role),
     (v_staff, v_spanB, '2026-08-15', 'scheduled'::work_log_status, 'dealer'::staff_role);
 
   -- 데이터 의존 값 캡처 (RED: required_count 열 미존재 → undefined_column → sentinel -1)
@@ -74,12 +89,30 @@ BEGIN
   END;
 
   BEGIN
+    SELECT headcount, required_count INTO v_merge_hc, v_merge_rc
+    FROM public.get_venue_grid_summary(v_cA, '2026-08-01', '2026-08-31')
+    WHERE d = '2026-08-10';
+  EXCEPTION WHEN undefined_column THEN v_merge_hc := -1; v_merge_rc := -1;
+  END;
+
+  BEGIN
+    SELECT required_count INTO v_req_hconly
+    FROM public.get_venue_grid_summary(v_cA, '2026-08-01', '2026-08-31')
+    WHERE d = '2026-08-11';
+  EXCEPTION WHEN undefined_column THEN v_req_hconly := -1;
+  END;
+
+  BEGIN
     SELECT COALESCE(SUM(required_count), 0)::int INTO v_reqfixed
     FROM public.get_venue_grid_summary(v_cB, '2026-08-01', '2026-08-31');
   EXCEPTION WHEN undefined_column THEN v_reqfixed := -1;
   END;
 
-  INSERT INTO _g VALUES ('req3', v_req3), ('reqfixed', v_reqfixed);
+  INSERT INTO _g VALUES
+    ('req3',       v_req3::text),
+    ('reqfixed',   v_reqfixed::text),
+    ('merge',      v_merge_hc::text || '/' || v_merge_rc::text),
+    ('req_hconly', v_req_hconly::text);
 END $$;
 
 -- 1) 반환 계약: 시그니처에 required_count 열 포함 (데이터 무관 introspection)
@@ -89,10 +122,16 @@ SELECT ok(
 );
 
 -- 2) dated requirements 날짜별 Σ count 파생
-SELECT is((SELECT v FROM _g WHERE k = 'req3'), 3, 'dated 공고 requirements 날짜별 Σ count 파생 = 3 (딜러2+플로어1)');
+SELECT is((SELECT v FROM _g WHERE k = 'req3'), '3', 'dated 공고 requirements 날짜별 Σ count 파생 = 3 (딜러2+플로어1)');
 
 -- 3) fixed(date=null) 스케줄 제외
-SELECT is((SELECT v FROM _g WHERE k = 'reqfixed'), 0, 'fixed(date=null) 스케줄은 required_count 파생 제외 → 0');
+SELECT is((SELECT v FROM _g WHERE k = 'reqfixed'), '0', 'fixed(date=null) 스케줄은 required_count 파생 제외 → 0');
+
+-- 4) both-sides 병합: 같은 날짜에 staffed(headcount=1) + required(=3) 한 행 병합
+SELECT is((SELECT v FROM _g WHERE k = 'merge'), '1/3', 'both-sides 병합: 같은 날짜 headcount=1 + required_count=3 (FULL OUTER JOIN)');
+
+-- 5) headcount-only 폴백: count→headcount COALESCE (seat-basis SSOT 일치)
+SELECT is((SELECT v FROM _g WHERE k = 'req_hconly'), '2', 'headcount-only 역할도 required_count 반영 = 2 (count→headcount COALESCE)');
 
 SELECT * FROM finish();
 ROLLBACK;
