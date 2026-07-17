@@ -414,6 +414,26 @@ describe('authCoreService', () => {
     expect(mockSetUserId).toHaveBeenCalledWith(null);
   });
 
+  it('푸시 토큰 해제가 4초를 넘겨도 타임아웃 후 로그아웃을 완료한다 (느린 네트워크)', async () => {
+    jest.useFakeTimers();
+    try {
+      mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+      // 해제가 영원히 지연되는 상황(느린/끊긴 네트워크)을 모사 — 4초 타임아웃이 이겨야 한다.
+      mockUnregisterPushTokensForSignOut.mockReturnValueOnce(new Promise<void>(() => {}));
+
+      const signOutPromise = signOut();
+      // 선행 await(getUser 등) 마이크로태스크 소진 → withTimeout 4초 타이머 스케줄
+      await Promise.resolve();
+      await jest.advanceTimersByTimeAsync(4000);
+
+      await expect(signOutPromise).resolves.toBeUndefined();
+      expect(mockSignOut).toHaveBeenCalled();
+      expect(mockSetUserId).toHaveBeenCalledWith(null);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it('로그인 사용자가 없으면 푸시 토큰 해제를 시도하지 않는다', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
 

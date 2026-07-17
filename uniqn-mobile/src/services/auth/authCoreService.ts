@@ -20,6 +20,7 @@ import {
 } from './portOneIdentityService';
 import { AuthError, ERROR_CODES, isRetryableError, toError } from '@/errors';
 import { createClientRateLimiter } from '@/utils/security';
+import { withTimeout } from '@/utils/timeout';
 import { getTodayString } from '@/utils/date/core';
 import { handleServiceError, maskValue } from '@/errors/serviceErrorHandler';
 import {
@@ -393,8 +394,13 @@ export async function signOut(): Promise<void> {
       // 공용 기기에서 이전 계정으로 푸시가 잔존하는 것을 막기 위해, 세션이 아직 유효한
       // 지금(signOut 서두) 서버의 푸시 토큰을 해제한다 — signOut 이후엔 RLS로 삭제 불가.
       // 해제 실패가 로그아웃을 막지 않도록 fail-safe로 감싼다(기존 "한쪽 실패해도 계속" 정리 패턴과 동일).
+      // 느린/끊긴 네트워크에서 해제 왕복이 로그아웃을 지연시키지 않도록 4초 타임아웃을 건다.
+      const unregisterPromise = unregisterPushTokensForSignOut(user.id);
+      // 타임아웃이 이기면 원 promise는 백그라운드에서 계속 완주 — 결과는 이미 흡수됐으므로
+      // 늦은 reject로 인한 unhandled rejection만 방지한다.
+      unregisterPromise.catch(() => {});
       try {
-        await unregisterPushTokensForSignOut(user.id);
+        await withTimeout(unregisterPromise, 4000, '푸시 토큰 해제 시간이 초과되었습니다.');
       } catch (error) {
         logger.warn('로그아웃 중 푸시 토큰 해제 실패 - 로그아웃은 계속 진행', {
           component: 'authService',
