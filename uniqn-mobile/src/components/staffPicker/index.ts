@@ -8,5 +8,5 @@ export { CandidateRow } from './CandidateRow';
 export type { CandidateRowProps } from './CandidateRow';
 export { RoleChips } from './RoleChips';
 export type { RoleChipsProps } from './RoleChips';
-export { PhoneSearchField } from './PhoneSearchField';
-export type { PhoneSearchFieldProps } from './PhoneSearchField';
+export { NicknameSearchField } from './NicknameSearchField';
+export type { NicknameSearchFieldProps } from './NicknameSearchField';

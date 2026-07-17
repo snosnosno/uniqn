@@ -3,21 +3,21 @@
  *
  * 선택한 운영처 컨테이너의 특정 날짜에 인원을 꽂는 3가지 추가 방식:
  *   1) 풀 꽂기   — 이 운영처 확정 스태프 풀(useConfirmedStaff)에서 선택 → add_direct_staff
- *   2) 전화검색  — 전화번호 정확일치(useStaffPhoneSearch)로 가입자 찾아 add_direct_staff
+ *   2) 닉네임검색 — 닉네임 prefix(useStaffNicknameSearch)로 가입자 찾아 add_direct_staff
  *   3) 공고 열기 — 기존 공고 작성 라우트로 venueId 를 실어 보냄(템플릿→인원→발행 재사용)
  *
  * 컨테이너에 스태프 추가는 허용(설계 §6). 정원 카운트·컨테이너 filled 미러 skip 은 RPC 가 보장(R1).
  * 추가 성공 후 그리드(부족셀·하루 슬롯) 갱신을 위한 weeklyGrid 무효화는 useConfirmedStaff.addStaff
  * 가 confirmedStaff/jobPostings 와 함께 담당한다(W-1) — 시트는 별도 무효화하지 않는다.
  *
- * 후보행·역할칩·전화검색 폼은 AddStaffModal 과 공유하는 프리미티브(@/components/staffPicker)로 통합.
+ * 후보행·역할칩·닉네임검색 폼은 AddStaffModal 과 공유하는 프리미티브(@/components/staffPicker)로 통합.
  * 시간대는 형제 화면 AddStaffModal·지원/확정 흐름과 동일하게 **출근시간(start) 하나만** 받는다
  * (StartTimeField: 단일 wheel-picker + '미정' 토글). 종료·익일 개념은 이 화면에 없으므로
  * SlotTimeField/OvernightPreviewBanner 는 쓰지 않는다(그것들은 근무표 슬롯 편집 EditSlotSheet 전용).
  * 저장은 출근시간 있으면 'HH:mm' 단일, 미정이면 timeSlot 미기록(형식 검증은 addSlotPayload).
  *
- * 중첩 RN Modal iOS 터치먹통(pitfall_nested_rn_modal_touch_dead) 회피 — 전화검색은 AddStaffModal
- * 모달을 중첩하지 않고 동일 훅(useStaffPhoneSearch)을 단일 시트 내부에 인라인 재사용하며,
+ * 중첩 RN Modal iOS 터치먹통(pitfall_nested_rn_modal_touch_dead) 회피 — 닉네임검색은 AddStaffModal
+ * 모달을 중첩하지 않고 동일 훅(useStaffNicknameSearch)을 단일 시트 내부에 인라인 재사용하며,
  * 시간 휠 피커는 SheetModal 의 overlay(Modal 루트 렌더)로 띄운다(EditSlotSheet·AddStaffModal 패턴).
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -31,23 +31,23 @@ import { Button } from '@/components/ui/Button';
 import { Loading } from '@/components/ui/Loading';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { TimeWheelPicker, type TimeValue } from '@/components/ui/TimeWheelPicker';
-import { UserPlusIcon, UsersIcon, PhoneIcon, MegaphoneIcon } from '@/components/icons';
-import { CandidateRow, RoleChips, PhoneSearchField } from '@/components/staffPicker';
+import { UserPlusIcon, UsersIcon, SearchIcon, MegaphoneIcon } from '@/components/icons';
+import { CandidateRow, RoleChips, NicknameSearchField } from '@/components/staffPicker';
 import { STAFF_ROLES } from '@/constants';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { DEFAULT_SLOT_START_TIME } from '@/domains/weeklyGrid';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
-import { useStaffPhoneSearch } from '@/hooks/useStaffPhoneSearch';
+import { useStaffNicknameSearch } from '@/hooks/useStaffNicknameSearch';
 import { useToastStore } from '@/stores/toastStore';
 import { toError } from '@/errors';
 import { logger } from '@/utils/logger';
 import { parseDateString } from '@/utils/date';
-import type { UserPhoneSearchResult } from '@/repositories';
+import type { UserNicknameSearchResult } from '@/repositories';
 import { buildAddSlotPayload } from './addSlotPayload';
 import { timeStringToValue, timeValueToString } from './SlotTimeField';
 import { StartTimeField } from './StartTimeField';
 
-type AddMode = 'pool' | 'phone' | 'posting';
+type AddMode = 'pool' | 'nickname' | 'posting';
 
 const OTHER_ROLE_KEY = 'other';
 const KNOWN_ROLE_KEYS = new Set<string>(STAFF_ROLES.map((role) => role.key));
@@ -116,10 +116,10 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
     addStaff,
     isAddingStaff,
   } = useConfirmedStaff(containerId);
-  const phoneSearch = useStaffPhoneSearch();
+  const nicknameSearch = useStaffNicknameSearch();
 
   const [mode, setMode] = useState<AddMode>('pool');
-  const [phone, setPhone] = useState('');
+  const [nickname, setNickname] = useState('');
   const [picked, setPicked] = useState<PickedStaff | null>(null);
   const [roleKey, setRoleKey] = useState('');
   const [customRole, setCustomRole] = useState('');
@@ -139,11 +139,11 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
   }, []);
 
   const resetAll = useCallback(() => {
-    phoneSearch.reset();
+    nicknameSearch.reset();
     setMode('pool');
-    setPhone('');
+    setNickname('');
     resetSelection();
-  }, [phoneSearch, resetSelection]);
+  }, [nicknameSearch, resetSelection]);
 
   // 시트가 숨겨지면(어떤 닫기 경로든) 입력·검색결과·선택을 비운다(PII 잔존 방지).
   useEffect(() => {
@@ -189,8 +189,8 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
 
   const handleSearch = useCallback(() => {
     setPicked(null);
-    void phoneSearch.search(phone);
-  }, [phone, phoneSearch]);
+    void nicknameSearch.search(nickname);
+  }, [nickname, nicknameSearch]);
 
   const isCustomRole = roleKey === OTHER_ROLE_KEY;
   // 출근시간은 단일 시각 또는 미정 — 항상 유효(시작==종료 같은 가드 불필요).
@@ -330,13 +330,16 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
             }}
           />
           <ModeTab
-            active={mode === 'phone'}
-            label="전화검색"
+            active={mode === 'nickname'}
+            label="닉네임검색"
             icon={
-              <PhoneIcon size={16} color={mode === 'phone' ? '#FFFFFF' : SECONDARY_PALETTE[500]} />
+              <SearchIcon
+                size={16}
+                color={mode === 'nickname' ? '#FFFFFF' : SECONDARY_PALETTE[500]}
+              />
             }
             onPress={() => {
-              setMode('phone');
+              setMode('nickname');
               resetSelection();
             }}
           />
@@ -369,17 +372,17 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
           </View>
         ) : (
           <>
-            {/* 전화검색 입력(전화 모드만) */}
-            {mode === 'phone' ? (
-              <PhoneSearchField
-                phone={phone}
-                onChangePhone={setPhone}
+            {/* 닉네임검색 입력(닉네임 모드만) */}
+            {mode === 'nickname' ? (
+              <NicknameSearchField
+                nickname={nickname}
+                onChangeNickname={setNickname}
                 onSearch={handleSearch}
-                isSearching={phoneSearch.isSearching}
+                isSearching={nicknameSearch.isSearching}
               />
             ) : null}
 
-            {/* 후보 리스트(풀 또는 전화 검색 결과) */}
+            {/* 후보 리스트(풀 또는 닉네임 검색 결과) */}
             {mode === 'pool' ? (
               isPoolLoading ? (
                 <View className="items-center py-6">
@@ -391,12 +394,12 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
                   <EmptyState
                     icon={<UsersIcon size={40} color={SECONDARY_PALETTE[400]} />}
                     title="확정 스태프 풀이 비어 있어요"
-                    description="공고로 모집하거나, 전화번호로 가입자를 찾아 바로 배치할 수 있어요."
+                    description="공고로 모집하거나, 닉네임으로 가입자를 찾아 바로 배치할 수 있어요."
                     actionLabel="공고로 모집하기"
                     onAction={handleOpenPosting}
-                    secondaryActionLabel="전화번호로 찾기"
+                    secondaryActionLabel="닉네임으로 찾기"
                     onSecondaryAction={() => {
-                      setMode('phone');
+                      setMode('nickname');
                       resetSelection();
                     }}
                     compact
@@ -415,17 +418,17 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
                   ))}
                 </View>
               )
-            ) : phoneSearch.isSearching ? (
+            ) : nicknameSearch.isSearching ? (
               <View className="items-center py-6">
                 <Loading size="small" />
               </View>
-            ) : phoneSearch.searched && phoneSearch.results.length === 0 ? (
+            ) : nicknameSearch.searched && nicknameSearch.results.length === 0 ? (
               <Text className="py-4 text-center text-sm text-content-secondary font-sans">
                 일치하는 가입자를 찾을 수 없습니다.
               </Text>
-            ) : phoneSearch.results.length > 0 ? (
+            ) : nicknameSearch.results.length > 0 ? (
               <View className="mt-3 gap-2">
-                {phoneSearch.results.map((user: UserPhoneSearchResult) => (
+                {nicknameSearch.results.map((user: UserNicknameSearchResult) => (
                   <CandidateRow
                     key={user.uid}
                     name={user.name}

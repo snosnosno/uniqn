@@ -3,7 +3,7 @@
  *
  * @description 공고별 협업자 (Phase 5)
  *              - 권한 강제는 RLS — Repository 는 단순 조회/쓰기 + snake↔camel 변환
- *              - searchByEmail 은 UNIQN 가입자 이메일 prefix 검색 + 상태 분류
+ *              - searchByNickname 은 UNIQN 가입자 닉네임 prefix 검색 + 상태 분류
  * @version 1.0.0
  */
 
@@ -55,7 +55,7 @@ interface SharedJpRow {
   } | null;
 }
 
-interface UserEmailRow {
+interface UserNicknameRow {
   id: string;
   email: string | null;
   nickname: string | null;
@@ -207,24 +207,24 @@ export class SupabaseJobPostingCollaboratorRepository implements IJobPostingColl
     }
   }
 
-  async searchByEmail(
+  async searchByNickname(
     jobPostingId: string,
-    emailQuery: string
+    nicknameQuery: string
   ): Promise<CollaboratorSearchCandidate[]> {
     try {
-      // 1) RPC 호출 — search_users_for_collaborator_invite 가 SECURITY DEFINER 로
+      // 1) RPC 호출 — search_collaborator_candidates_by_nickname 가 SECURITY DEFINER 로
       //    users RLS 우회 + workspace owner 검증 + 와일드카드 이스케이프 + LIMIT 10
       //    (users_select RLS 가 self/admin 만 허용해 직접 SELECT 는 빈 결과 반환)
       const { data: candidates, error: rpcErr } = await supabase.rpc(
-        'search_users_for_collaborator_invite',
-        { p_job_posting_id: jobPostingId, p_email_query: emailQuery }
+        'search_collaborator_candidates_by_nickname',
+        { p_job_posting_id: jobPostingId, p_nickname_query: nicknameQuery }
       );
 
       if (rpcErr) {
         handleSupabaseError(rpcErr, { operation: '협업자 후보 검색', table: 'users' });
       }
 
-      const candidateRows = (candidates ?? []) as UserEmailRow[];
+      const candidateRows = (candidates ?? []) as UserNicknameRow[];
       if (candidateRows.length === 0) return [];
 
       const candidateIds = candidateRows.map((c) => c.id);

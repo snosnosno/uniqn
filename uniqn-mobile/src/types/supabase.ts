@@ -3262,6 +3262,27 @@ export type Database = {
         Args: { p_invitation_id: string };
         Returns: undefined;
       };
+      search_collaborator_candidates_by_nickname: {
+        Args: { p_job_posting_id: string; p_nickname_query: string };
+        Returns: {
+          email: string;
+          id: string;
+          name: string;
+          nickname: string;
+          photo_url: string;
+        }[];
+      };
+      search_users_by_nickname: {
+        Args: { p_nickname: string };
+        Returns: {
+          id: string;
+          name: string;
+          nickname: string;
+          photo_url: string;
+          photo_url_blurhash: string;
+          region: string;
+        }[];
+      };
       search_users_for_collaborator_invite: {
         Args: { p_email_query: string; p_job_posting_id: string };
         Returns: {

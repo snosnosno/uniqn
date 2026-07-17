@@ -53,8 +53,8 @@ export interface CollaboratorSearchCandidate {
 export const COLLABORATOR_LIMITS = {
   /** MVP cap 없음 — abuse 모니터링 후 결정 */
   MAX_PER_POSTING: null as number | null,
-  /** 이메일 검색 debounce ms */
+  /** 닉네임 검색 debounce ms */
   SEARCH_DEBOUNCE_MS: 300,
-  /** 이메일 검색 최소 길이 */
-  SEARCH_MIN_CHARS: 3,
+  /** 닉네임 검색 최소 길이 */
+  SEARCH_MIN_CHARS: 2,
 } as const;

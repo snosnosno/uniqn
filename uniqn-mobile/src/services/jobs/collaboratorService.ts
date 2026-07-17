@@ -63,15 +63,15 @@ export const collaboratorService = {
   },
 
   /**
-   * 이메일로 사용자 검색 (workspace owner 가 협업자 추가 시)
+   * 닉네임으로 사용자 검색 (workspace owner 가 협업자 추가 시)
    */
   async searchCandidates(input: {
     jobPostingId: string;
-    emailQuery: string;
+    nicknameQuery: string;
   }): Promise<CollaboratorSearchCandidate[]> {
     const parsed = searchCollaboratorCandidateSchema.safeParse(input);
     const data = validateOrThrow(parsed);
-    return jobPostingCollaboratorRepository.searchByEmail(data.jobPostingId, data.emailQuery);
+    return jobPostingCollaboratorRepository.searchByNickname(data.jobPostingId, data.nicknameQuery);
   },
 
   /**

@@ -138,7 +138,10 @@ export {
   type UseConfirmedStaffOptions,
   type UseConfirmedStaffReturn,
 } from './useConfirmedStaff';
-export { useStaffPhoneSearch, type UseStaffPhoneSearchReturn } from './useStaffPhoneSearch';
+export {
+  useStaffNicknameSearch,
+  type UseStaffNicknameSearchReturn,
+} from './useStaffNicknameSearch';
 export { useEventQR, type UseEventQROptions, type UseEventQRReturn } from './useEventQR';
 
 export {

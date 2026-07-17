@@ -18,7 +18,7 @@ jest.mock('@/repositories/supabase/JobPostingCollaboratorRepository', () => ({
     findSharedJobPostingsForUser: jest.fn(),
     add: jest.fn(),
     remove: jest.fn(),
-    searchByEmail: jest.fn(),
+    searchByNickname: jest.fn(),
   },
 }));
 
@@ -144,22 +144,22 @@ describe('collaboratorService', () => {
   });
 
   describe('searchCandidates', () => {
-    it('Zod 검증 실패 (3자 미만) 시 ValidationError', async () => {
+    it('Zod 검증 실패 (2자 미만) 시 ValidationError', async () => {
       await expect(
-        collaboratorService.searchCandidates({ jobPostingId: POSTING_ID, emailQuery: 'ab' })
+        collaboratorService.searchCandidates({ jobPostingId: POSTING_ID, nicknameQuery: 'a' })
       ).rejects.toBeInstanceOf(ValidationError);
-      expect(mockRepo.searchByEmail).not.toHaveBeenCalled();
+      expect(mockRepo.searchByNickname).not.toHaveBeenCalled();
     });
 
-    it('정상 — Repository.searchByEmail 호출', async () => {
-      mockRepo.searchByEmail.mockResolvedValue([]);
+    it('정상 — Repository.searchByNickname 호출', async () => {
+      mockRepo.searchByNickname.mockResolvedValue([]);
 
       await collaboratorService.searchCandidates({
         jobPostingId: POSTING_ID,
-        emailQuery: 'foo@bar.com',
+        nicknameQuery: '홀덤왕',
       });
 
-      expect(mockRepo.searchByEmail).toHaveBeenCalledWith(POSTING_ID, 'foo@bar.com');
+      expect(mockRepo.searchByNickname).toHaveBeenCalledWith(POSTING_ID, '홀덤왕');
     });
   });
 

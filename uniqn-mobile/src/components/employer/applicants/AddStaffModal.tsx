@@ -2,7 +2,7 @@
  * UNIQN Mobile - 스태프 직접 추가 모달
  *
  * @description 지원 절차 없이 앱 가입자를 스태프로 직접 추가한다.
- *   1단계: 전화번호 정확 일치 검색 → 가입자 선택
+ *   1단계: 닉네임 검색 → 가입자 선택
  *   2단계: 근무 날짜/역할/(선택)시간대 입력 → 추가
  *
  * 백엔드 정합(정원 가드/정원 카운트)은 add_direct_staff RPC가 보장한다.
@@ -23,10 +23,10 @@ import { Button } from '@/components/ui/Button';
 import { CalendarPicker } from '@/components/ui/CalendarPicker';
 import { Loading } from '@/components/ui/Loading';
 import { ChevronDownIcon, UserPlusIcon, XMarkIcon } from '@/components/icons';
-import { CandidateRow, RoleChips, PhoneSearchField } from '@/components/staffPicker';
-import { useStaffPhoneSearch } from '@/hooks/useStaffPhoneSearch';
+import { CandidateRow, RoleChips, NicknameSearchField } from '@/components/staffPicker';
+import { useStaffNicknameSearch } from '@/hooks/useStaffNicknameSearch';
 import { isWeb } from '@/utils/platform';
-import type { UserPhoneSearchResult } from '@/repositories';
+import type { UserNicknameSearchResult } from '@/repositories';
 import type { AddDirectStaffInput } from '@/types';
 
 export interface AddStaffModalProps {
@@ -46,10 +46,10 @@ export function AddStaffModal({
   isSubmitting = false,
   onSubmit,
 }: AddStaffModalProps) {
-  const { results, isSearching, searched, search, reset } = useStaffPhoneSearch();
+  const { results, isSearching, searched, search, reset } = useStaffNicknameSearch();
 
-  const [phone, setPhone] = useState('');
-  const [selected, setSelected] = useState<UserPhoneSearchResult | null>(null);
+  const [nickname, setNickname] = useState('');
+  const [selected, setSelected] = useState<UserNicknameSearchResult | null>(null);
   const [date, setDate] = useState<Date | null>(null);
   const [dateOpen, setDateOpen] = useState(false);
   const [roleKey, setRoleKey] = useState('');
@@ -58,7 +58,7 @@ export function AddStaffModal({
 
   const resetAll = useCallback(() => {
     reset();
-    setPhone('');
+    setNickname('');
     setSelected(null);
     setDate(null);
     setDateOpen(false);
@@ -97,8 +97,8 @@ export function AddStaffModal({
     Keyboard.dismiss();
     // 재검색 시 이전 선택을 초기화 — 새 결과에 없는 사람이 그대로 제출되는 것을 방지
     setSelected(null);
-    void search(phone);
-  }, [phone, search]);
+    void search(nickname);
+  }, [nickname, search]);
 
   const isCustomRole = roleKey === OTHER_ROLE_KEY;
   const canSubmit =
@@ -210,10 +210,10 @@ export function AddStaffModal({
       overlay={dateOverlay}
     >
       <View className="p-5">
-        {/* 1단계: 전화번호 검색 */}
-        <PhoneSearchField
-          phone={phone}
-          onChangePhone={setPhone}
+        {/* 1단계: 닉네임 검색 */}
+        <NicknameSearchField
+          nickname={nickname}
+          onChangeNickname={setNickname}
           onSearch={handleSearch}
           isSearching={isSearching}
         />

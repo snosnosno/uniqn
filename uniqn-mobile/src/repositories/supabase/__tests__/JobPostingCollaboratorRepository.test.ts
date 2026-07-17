@@ -1,7 +1,7 @@
 /**
  * JobPostingCollaboratorRepository unit tests
  *
- * Repository 는 RLS 의존 — 여기서는 Supabase 응답 매핑 + 에러 분기 + searchByEmail
+ * Repository 는 RLS 의존 — 여기서는 Supabase 응답 매핑 + 에러 분기 + searchByNickname
  * 상태 분류만 검증한다. 정책 자체의 보안 동작은 pg_prove RLS 매트릭스에서 다룸.
  */
 
@@ -305,10 +305,10 @@ describe('SupabaseJobPostingCollaboratorRepository', () => {
   });
 
   // ==========================================================================
-  // searchByEmail
+  // searchByNickname
   // ==========================================================================
 
-  describe('searchByEmail', () => {
+  describe('searchByNickname', () => {
     function setupSearchMocks(opts: {
       candidates: {
         id: string;
@@ -391,7 +391,7 @@ describe('SupabaseJobPostingCollaboratorRepository', () => {
         ownerId: 'someone-else',
       });
 
-      const result = await repo.searchByEmail('jp-1', 'test');
+      const result = await repo.searchByNickname('jp-1', 'test');
 
       expect(result).toEqual([
         { userId: 'me', displayName: 'me', email: 'me@test.local', photoUrl: null, status: 'self' },
@@ -437,14 +437,14 @@ describe('SupabaseJobPostingCollaboratorRepository', () => {
         ownerId: 'owner-1',
       });
 
-      const result = await repo.searchByEmail('jp-1', 'owner');
+      const result = await repo.searchByNickname('jp-1', 'owner');
       expect(result[0]?.status).toBe('workspace_member');
     });
 
     it('RPC 빈 결과 시 빈 배열을 반환한다 (보조 쿼리 호출 없음)', async () => {
       (mockSupabase.rpc as jest.Mock).mockResolvedValue({ data: [], error: null });
 
-      const result = await repo.searchByEmail('jp-1', 'nomatch');
+      const result = await repo.searchByNickname('jp-1', 'nomatch');
 
       expect(result).toEqual([]);
       expect(mockSupabase.from).not.toHaveBeenCalled();
@@ -469,7 +469,7 @@ describe('SupabaseJobPostingCollaboratorRepository', () => {
         ownerId: null,
       });
 
-      const result = await repo.searchByEmail('jp-1', 'me');
+      const result = await repo.searchByNickname('jp-1', 'me');
       expect(result[0]?.status).toBe('self');
     });
 
@@ -494,7 +494,7 @@ describe('SupabaseJobPostingCollaboratorRepository', () => {
         ownerId: null,
       });
 
-      const result = await repo.searchByEmail('jp-1', 'ec');
+      const result = await repo.searchByNickname('jp-1', 'ec');
       expect(result[0]?.status).toBe('workspace_member');
     });
   });

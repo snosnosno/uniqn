@@ -15,7 +15,7 @@ import type {
   DeleteConfirmedStaffInput,
   AddDirectStaffInput,
 } from '@/types/confirmedStaff';
-import type { UserPhoneSearchResult } from '@/repositories';
+import type { UserNicknameSearchResult } from '@/repositories';
 import { STAFF_ROLES, STATUS } from '@/constants';
 import { StatusMapper, type WorkLogStatus } from '@/shared/status';
 import { TimeNormalizer } from '@/shared/time';
@@ -262,14 +262,15 @@ export async function updateStaffStatus(workLogId: string, status: WorkLogStatus
 }
 
 /**
- * 전화번호 정확 일치로 앱 가입자를 검색합니다(스태프 직접 추가용, 구인자 전용).
+ * 닉네임 prefix 로 앱 가입자를 검색합니다(스태프 직접 추가용, 구인자 전용).
  */
-export async function searchStaffByPhone(phone: string): Promise<UserPhoneSearchResult[]> {
-  const digits = phone.replace(/\D/g, '');
-  if (digits.length < 9) {
+export async function searchStaffByNickname(nickname: string): Promise<UserNicknameSearchResult[]> {
+  const trimmed = nickname.trim();
+  // 최소 2자 미만은 RPC 호출 없이 조기 차단(RPC 본문도 동일 가드)
+  if (trimmed.length < 2) {
     return [];
   }
-  return userRepository.searchByPhone(phone);
+  return userRepository.searchByNickname(trimmed);
 }
 
 /**

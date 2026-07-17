@@ -1,7 +1,7 @@
 /**
  * UNIQN Mobile - CollaboratorSearch
  *
- * @description 이메일로 협업자 검색 + 추가 UI
+ * @description 닉네임으로 협업자 검색 + 추가 UI
  *              상태별 분기: self / workspace_member / already_collaborator / addable
  * @version 1.0.0
  */
@@ -91,8 +91,8 @@ function CandidateRow({
 }
 
 export function CollaboratorSearch({ jobPostingId, onAdd, isAdding }: CollaboratorSearchProps) {
-  const [emailInput, setEmailInput] = useState('');
-  const debounced = useDebouncedValue(emailInput, COLLABORATOR_LIMITS.SEARCH_DEBOUNCE_MS);
+  const [nicknameInput, setNicknameInput] = useState('');
+  const debounced = useDebouncedValue(nicknameInput, COLLABORATOR_LIMITS.SEARCH_DEBOUNCE_MS);
 
   const { candidates, isLoading } = useCollaboratorCandidates(jobPostingId, debounced);
 
@@ -103,13 +103,12 @@ export function CollaboratorSearch({ jobPostingId, onAdd, isAdding }: Collaborat
       <View className="flex-row items-center gap-2 px-4 py-2 bg-surface-page border-b border-divider">
         <SearchIcon size={18} color="#9CA3AF" />
         <TextInput
-          value={emailInput}
-          onChangeText={setEmailInput}
-          placeholder="이메일로 검색 (3자 이상)"
+          value={nicknameInput}
+          onChangeText={setNicknameInput}
+          placeholder="닉네임으로 검색 (2자 이상)"
           placeholderTextColor="#9CA3AF"
           autoCapitalize="none"
           autoCorrect={false}
-          keyboardType="email-address"
           className="flex-1 text-base text-content-primary"
         />
       </View>
@@ -117,7 +116,7 @@ export function CollaboratorSearch({ jobPostingId, onAdd, isAdding }: Collaborat
       {!hasQuery ? (
         <View className="py-6 items-center">
           <Text className="text-sm text-content-secondary">
-            이메일 3자 이상 입력하면 검색됩니다
+            닉네임 2자 이상 입력하면 검색됩니다
           </Text>
         </View>
       ) : isLoading ? (
@@ -138,7 +137,7 @@ export function CollaboratorSearch({ jobPostingId, onAdd, isAdding }: Collaborat
             onAdd={async (uid) => {
               void triggerHaptic('light');
               await onAdd(uid);
-              setEmailInput(''); // 추가 후 입력 초기화
+              setNicknameInput(''); // 추가 후 입력 초기화
             }}
             isAdding={!!isAdding}
           />
