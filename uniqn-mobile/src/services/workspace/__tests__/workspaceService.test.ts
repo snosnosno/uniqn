@@ -44,7 +44,7 @@ jest.mock('@/utils/logger', () => ({
 function workspace(overrides: Partial<Workspace> = {}): Workspace {
   return {
     id: 'ws-1',
-    name: '내 워크스페이스',
+    name: '내 팀',
     ownerId: 'employer-1',
     memberCount: 1,
     createdAt: '2026-05-01T00:00:00.000Z',
@@ -81,7 +81,7 @@ describe('workspaceService.getDefaultWorkspaceIdForOwner', () => {
     const id = await workspaceService.getDefaultWorkspaceIdForOwner('employer-1');
 
     expect(id).toBe('ws-auto');
-    expect(mockCreate).toHaveBeenCalledWith('내 워크스페이스');
+    expect(mockCreate).toHaveBeenCalledWith('내 팀');
     expect(mockFindAllByMember).toHaveBeenCalledTimes(2);
   });
 

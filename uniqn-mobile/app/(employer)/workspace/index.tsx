@@ -122,7 +122,7 @@ export default function WorkspaceSettingsScreen() {
 
   const handleCreateFirstWorkspace = useCallback(async () => {
     try {
-      const created = await createMutation.mutateAsync(`${user?.displayName ?? '내'} 워크스페이스`);
+      const created = await createMutation.mutateAsync(`${user?.displayName ?? '내'} 팀`);
       addToast({ type: 'success', message: '팀이 생성되었어요' });
       logger.info('첫 워크스페이스 생성', { workspaceId: created.id });
     } catch (err) {

@@ -89,7 +89,7 @@ export const workspaceService = {
 
     logger.warn('default workspace not found — auto-creating', { ownerId });
     try {
-      await workspaceRepository.create('내 워크스페이스');
+      await workspaceRepository.create('내 팀');
     } catch (createError) {
       logger.error('default workspace auto-create 실패', {
         ownerId,
