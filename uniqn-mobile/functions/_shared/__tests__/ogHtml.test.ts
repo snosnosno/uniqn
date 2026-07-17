@@ -21,4 +21,15 @@ describe('ogHtml', () => {
     expect(html).toContain('<meta property="og:image" content="https://cdn/x.png"');
     expect(html).toContain('twitter:card');
   });
+  it('buildOgHtml 은 url 의 </script> 브레이크아웃을 차단한다', () => {
+    const html = buildOgHtml({
+      title: '딜러 모집',
+      description: '강남',
+      image: 'https://cdn/x.png',
+      url: 'https://uniqn.app/jobs/x</script><svg onload=alert(1)>',
+    });
+    // 스크립트 본문에 리터럴 </script> 브레이크아웃이 없어야 한다 (정상 닫는 태그 1개만 허용)
+    expect(html).not.toContain('</script><svg');
+    expect(html).toContain('\\u003c/script'); // location.replace 인자 안에서 이스케이프됨
+  });
 });

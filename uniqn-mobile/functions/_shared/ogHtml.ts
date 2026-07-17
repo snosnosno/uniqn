@@ -56,7 +56,7 @@ export function buildOgHtml(meta: OgMeta): string {
 <meta name="twitter:description" content="${description}" />
 <meta name="twitter:image" content="${image}" />
 </head><body>
-<script>location.replace(${JSON.stringify(meta.url)});</script>
+<script>location.replace(${JSON.stringify(meta.url).replace(/</g, '\\u003c')});</script>
 <p>UNIQN 공고로 이동 중…</p>
 </body></html>`;
 }
