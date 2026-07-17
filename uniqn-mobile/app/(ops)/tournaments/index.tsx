@@ -7,7 +7,7 @@
  * 상태 매트릭스(설계 §9.1): LOADING / EMPTY / ERROR / SUCCESS / PARTIAL.
  */
 import { useMemo } from 'react';
-import { View, Text, Pressable, RefreshControl, Alert } from 'react-native';
+import { View, Text, Pressable, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { AppFlashList } from '@/components/ui/AppFlashList';
@@ -15,6 +15,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
 import { StackHeader } from '@/components/headers';
 import { TrophyOutlineIcon, AlertCircleIcon, CopyIcon } from '@/components/icons';
+import { confirmAction } from '@/utils/confirmAction';
 import { SECONDARY_PALETTE, getLayoutColor } from '@/constants/colors';
 import { useThemeStore } from '@/stores/themeStore';
 import { useOpsTournaments, useDuplicateTournament } from '@/hooks/ops';
@@ -333,17 +334,16 @@ export default function OpsTournamentListScreen() {
   // 성공 시 새 대회 상세로 이동. 진행 중이면 재진입 차단(연타 방지).
   const handleDuplicate = (tournament: OpsTournament) => {
     if (duplicate.isPending) return;
-    Alert.alert('대회 복제', `'${tournament.name}' 설정으로 새 대회를 만들까요?`, [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '만들기',
-        onPress: () =>
-          duplicate.mutate(
-            { sourceTournamentId: tournament.id, eventDate: kstDateString(Date.now()) },
-            { onSuccess: (result) => goDetail(result.tournamentId) }
-          ),
-      },
-    ]);
+    confirmAction({
+      title: '대회 복제',
+      message: `'${tournament.name}' 설정으로 새 대회를 만들까요?`,
+      confirmText: '만들기',
+      onConfirm: () =>
+        duplicate.mutate(
+          { sourceTournamentId: tournament.id, eventDate: kstDateString(Date.now()) },
+          { onSuccess: (result) => goDetail(result.tournamentId) }
+        ),
+    });
   };
 
   const hasData = filteredTournaments.length > 0;
