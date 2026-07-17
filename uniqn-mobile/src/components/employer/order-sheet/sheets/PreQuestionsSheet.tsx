@@ -145,6 +145,7 @@ function QuestionCard({
           onValueChange={(required) => onUpdate({ ...question, required })}
           trackColor={{ false: SECONDARY_PALETTE[200], true: '#D4AF37' }}
           thumbColor={question.required ? '#FFFFFF' : SECONDARY_PALETTE[50]}
+          accessibilityLabel="필수 응답"
         />
       </View>
 

@@ -58,6 +58,9 @@ export interface VenueDayPanelProps {
   cell?: GridDayCell;
 }
 
+/** 하루 목표 인원(소프트타깃) 클라 상한(L2) — 서버(set_venue_soft_target)는 음수만 거부(상한 없음)라 클라에서 상한 클램프. 뱃지 "997명" 과장 방지. */
+const MAX_SOFT_TARGET = 99;
+
 type ChipTone = 'neutral' | 'warning' | 'success';
 
 /** 요약 칩 톤별 정적 클래스(NativeWind dark: 유실 방지 — 동적 조립 금지). */
@@ -128,12 +131,14 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
   // "이번 달 같은 요일 전체 적용" 토글(기본 off). on 이면 저장이 요일 반복 벌크 경로를 탄다.
   const [repeatWeekday, setRepeatWeekday] = useState(false);
 
-  // 입력 정규화(빈값=0, 음수/NaN=무효). 저장 버튼 활성/검증 공통 사용.
+  // 입력 정규화(빈값=0, 음수/NaN=무효, 상한 99 클램프). 저장 버튼 활성/검증 공통 사용.
+  // L2: maxLength=3 이 "997" 같은 3자리 입력을 허용하므로 저장/검증 값을 0..99 로 클램프한다
+  // (서버는 음수만 거부·상한 없음). 저장 성공 후 softTarget effect 가 targetInput 을 클램프 값으로 자가치유.
   const parsedTarget = useMemo(() => {
     const trimmed = targetInput.trim();
     if (trimmed === '') return 0;
     const n = Number.parseInt(trimmed, 10);
-    return Number.isFinite(n) ? n : NaN;
+    return Number.isFinite(n) ? Math.min(MAX_SOFT_TARGET, Math.max(0, n)) : NaN;
   }, [targetInput]);
 
   const targetValid = Number.isFinite(parsedTarget) && parsedTarget >= 0;

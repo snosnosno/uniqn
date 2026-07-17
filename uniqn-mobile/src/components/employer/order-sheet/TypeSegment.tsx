@@ -25,7 +25,9 @@ export function TypeSegment({
             disabled={disabled}
             onPress={() => onChange(t)}
             className={`flex-1 items-center justify-center py-2 min-h-[44px] rounded-lg ${
-              selected ? 'bg-primary-100 border border-primary-500' : 'active:opacity-80'
+              selected
+                ? 'bg-primary-100 dark:bg-primary-900/30 border border-primary-500'
+                : 'active:opacity-80'
             } ${disabled && !selected ? 'opacity-40' : ''}`}
             accessibilityRole="radio"
             accessibilityState={{ selected, disabled }}

@@ -108,6 +108,18 @@ jest.mock('expo-router', () => ({
 jest.mock('react-native-worklets', () => require('react-native-worklets/lib/module/mock'));
 require('react-native-reanimated').setUpTests();
 
+// react-native-safe-area-context: useSafeAreaInsets 훅은 SafeAreaProvider 없으면 throw
+// ('No safe area value available'). 컴포넌트(SafeAreaProvider/SafeAreaView/initialWindowMetrics)는
+// 실제 구현을 유지(requireActual)하고 훅만 0 인셋으로 오버라이드 — provider 미래핑 렌더 전역 안전화.
+// 자체 jest.mock 을 둔 파일(HomeTabBar 등)은 그 파일 목이 우선한다.
+jest.mock('react-native-safe-area-context', () => {
+  const actual = jest.requireActual('react-native-safe-area-context');
+  return {
+    ...actual,
+    useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+  };
+});
+
 // Mock NativeWind
 jest.mock('nativewind', () => ({
   colorScheme: {

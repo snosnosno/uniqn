@@ -23,6 +23,7 @@ import { TimeWheelPicker, type TimeValue } from '@/components/ui/TimeWheelPicker
 import { ChevronDownIcon } from '@/components/icons';
 import { STAFF_ROLES } from '@/constants';
 import { useToastStore } from '@/stores/toastStore';
+import { isAppError } from '@/errors';
 import { useDeleteSlot, useUpdateSlot } from '@/hooks/weeklyGrid';
 import {
   SLOT_COLOR_CHIPS,
@@ -218,8 +219,12 @@ export function EditSlotSheet({
           onSaved?.();
           onClose();
         },
-        onError: () => {
-          toastError('수정에 실패했어요. 입력값을 확인해주세요.');
+        onError: (error) => {
+          // 레포 경계(assertSlotMemo·assertSlotColor)가 던진 검증 실패(XSS 메모·비허용 색상)는
+          // 구체 안내(userMessage)를 표면화하고, 그 외(네트워크 등)는 일반 재시도 안내를 유지한다(L3).
+          toastError(
+            isAppError(error) ? error.userMessage : '수정에 실패했어요. 잠시 후 다시 시도해주세요.'
+          );
         },
       }
     );
@@ -391,7 +396,7 @@ export function EditSlotSheet({
                 accessibilityLabel={`역할 ${opt.name}`}
                 className={`flex-row items-center rounded-full px-3 py-2 ${
                   selected
-                    ? 'bg-primary-100 border border-primary-500'
+                    ? 'bg-primary-100 dark:bg-primary-900/30 border border-primary-500'
                     : 'bg-surface-card border border-divider'
                 }`}
               >
