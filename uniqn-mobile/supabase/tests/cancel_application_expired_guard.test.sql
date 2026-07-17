@@ -86,10 +86,16 @@ BEGIN
   -- ============================================================
   -- S1 fixture: closed + closed_reason = 'manual', filled=1, total=3
   -- ============================================================
+  -- 좌석 기준: total 은 서버(BEFORE 트리거)가 schedule 좌석합으로 재계산 → dealer×3 schedule 부여(=total 3)
   INSERT INTO public.job_postings (
-    id, owner_id, workspace_id, title, total_positions, filled_positions, status, closed_reason, created_at, updated_at
+    id, owner_id, workspace_id, title, total_positions, filled_positions, status, closed_reason, schedule, created_at, updated_at
   )
-  VALUES (v_job_manual_id, v_owner_id, v_workspace_id, '__sql_fixture: manual closed', 3, 0, 'closed', 'manual', now(), now());
+  VALUES (v_job_manual_id, v_owner_id, v_workspace_id, '__sql_fixture: manual closed', 3, 0, 'closed', 'manual',
+    jsonb_build_object('kind','dated','requirements', jsonb_build_array(
+      jsonb_build_object('date','2026-05-10','timeSlots', jsonb_build_array(
+        jsonb_build_object('startTime','19:00','roles', jsonb_build_array(
+          jsonb_build_object('role','dealer','count',3))))))),
+    now(), now());
 
   INSERT INTO public.applications (
     id, job_posting_id, applicant_id, applicant_name, status, cancellation_request, confirmation_history, created_at, updated_at
@@ -109,9 +115,14 @@ BEGIN
   -- S2 fixture: closed + closed_reason = 'expired', filled=1, total=3
   -- ============================================================
   INSERT INTO public.job_postings (
-    id, owner_id, workspace_id, title, total_positions, filled_positions, status, closed_reason, created_at, updated_at
+    id, owner_id, workspace_id, title, total_positions, filled_positions, status, closed_reason, schedule, created_at, updated_at
   )
-  VALUES (v_job_expired_id, v_owner_id, v_workspace_id, '__sql_fixture: expired closed', 3, 0, 'closed', 'expired', now(), now());
+  VALUES (v_job_expired_id, v_owner_id, v_workspace_id, '__sql_fixture: expired closed', 3, 0, 'closed', 'expired',
+    jsonb_build_object('kind','dated','requirements', jsonb_build_array(
+      jsonb_build_object('date','2026-05-11','timeSlots', jsonb_build_array(
+        jsonb_build_object('startTime','19:00','roles', jsonb_build_array(
+          jsonb_build_object('role','dealer','count',3))))))),
+    now(), now());
 
   INSERT INTO public.applications (
     id, job_posting_id, applicant_id, applicant_name, status, cancellation_request, confirmation_history, created_at, updated_at
@@ -131,9 +142,14 @@ BEGIN
   -- S3 fixture: closed + closed_reason = 'expired_by_work_date', filled=1, total=3
   -- ============================================================
   INSERT INTO public.job_postings (
-    id, owner_id, workspace_id, title, total_positions, filled_positions, status, closed_reason, created_at, updated_at
+    id, owner_id, workspace_id, title, total_positions, filled_positions, status, closed_reason, schedule, created_at, updated_at
   )
-  VALUES (v_job_expired_wd_id, v_owner_id, v_workspace_id, '__sql_fixture: expired_by_work_date closed', 3, 0, 'closed', 'expired_by_work_date', now(), now());
+  VALUES (v_job_expired_wd_id, v_owner_id, v_workspace_id, '__sql_fixture: expired_by_work_date closed', 3, 0, 'closed', 'expired_by_work_date',
+    jsonb_build_object('kind','dated','requirements', jsonb_build_array(
+      jsonb_build_object('date','2026-05-12','timeSlots', jsonb_build_array(
+        jsonb_build_object('startTime','19:00','roles', jsonb_build_array(
+          jsonb_build_object('role','dealer','count',3))))))),
+    now(), now());
 
   INSERT INTO public.applications (
     id, job_posting_id, applicant_id, applicant_name, status, cancellation_request, confirmation_history, created_at, updated_at

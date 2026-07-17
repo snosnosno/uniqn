@@ -11,7 +11,7 @@ import type {
 import { FIXED_DATE_MARKER, FIXED_TIME_MARKER } from '@/types/assignment';
 import { WorkLogCreator } from '@/domains/schedule';
 import { getRoleDisplayName } from '@/types/unified';
-import { formatDateRangeWithCount, formatDateShortWithDay, getDayCount } from '@/utils/date';
+import { formatDateRangeWithCount, formatDateShortWithDay, generateDateRange } from '@/utils/date';
 import { formatSalary } from '@/utils/formatters';
 
 const UNKNOWN_DATE_LABEL = '날짜 미정';
@@ -78,6 +78,15 @@ export interface PostingTimeSlotDisplayModel {
   roles: PostingRoleDisplayModel[];
 }
 
+export interface PostingDateSectionDayModel {
+  key: string;
+  date: string;
+  label: string;
+  totalCount: number;
+  filledCount: number;
+  timeSlots: PostingTimeSlotDisplayModel[];
+}
+
 export interface PostingDateSectionDisplayModel {
   key: string;
   label: string;
@@ -85,6 +94,8 @@ export interface PostingDateSectionDisplayModel {
   totalCount: number;
   filledCount: number;
   timeSlots: PostingTimeSlotDisplayModel[];
+  /** 그룹 날짜범위 섹션일 때만: 날짜별 전개(좌석 기준 단일 소스). */
+  days?: PostingDateSectionDayModel[];
 }
 
 export interface PostingFixedScheduleModel {
@@ -206,70 +217,18 @@ function buildDatedScheduleModel(
   source: PostingScheduleSource,
   filledCounts?: Map<string, number>
 ): Extract<PostingScheduleModel, { variant: 'dated' }> | null {
-  const sectionSources =
-    source.workflow.usesGroupedDateRanges && source.scheduleDisplay.dateGroups.length > 0
-      ? source.scheduleDisplay.dateGroups.map((group) => ({
-          key: group.id || `${group.startDate}-${group.endDate}`,
-          label:
-            getDayCount(group.startDate, group.endDate) <= 1
-              ? formatDateLabel(group.startDate)
-              : formatDateRangeWithCount(group.startDate, group.endDate),
-          dayCount: getDayCount(group.startDate, group.endDate),
-          timeSlots: group.timeSlots,
-          matchDate: undefined as string | undefined,
-          // grouped 는 단일 날짜가 아니라 범위 — 범위 내 hydrate 엔트리를 slot+role 별로 합산한다.
-          matchRange: { startDate: group.startDate, endDate: group.endDate } as
-            | { startDate: string; endDate: string }
-            | undefined,
-        }))
-      : source.scheduleDisplay.dateRequirements.map((requirement, index) => ({
-          key: `${requirement.date}-${index}`,
-          label: formatDateLabel(requirement.date),
-          dayCount: 1,
-          timeSlots: requirement.timeSlots,
-          matchDate: requirement.date as string | undefined,
-          matchRange: undefined as { startDate: string; endDate: string } | undefined,
-        }));
+  const isGrouped =
+    source.workflow.usesGroupedDateRanges && source.scheduleDisplay.dateGroups.length > 0;
 
-  if (sectionSources.length === 0) {
+  const sections = isGrouped
+    ? source.scheduleDisplay.dateGroups.map((group) => buildGroupedSection(group, filledCounts))
+    : source.scheduleDisplay.dateRequirements.map((requirement, index) =>
+        buildSingleDateSection(requirement, index, filledCounts)
+      );
+
+  if (sections.length === 0) {
     return null;
   }
-
-  const sections = sectionSources.map((section) => {
-    const timeSlots = section.timeSlots.map((slot, slotIndex) => {
-      const timeLabel = formatTimeLabel(slot);
-
-      return {
-        key: `${section.key}-${timeLabel}-${slotIndex}`,
-        timeLabel,
-        roles: toRoleModels(
-          slot.roles,
-          section.matchDate
-            ? { date: section.matchDate, slotKey: slotMatchKey(slot), filledCounts }
-            : section.matchRange
-              ? { range: section.matchRange, slotKey: slotMatchKey(slot), filledCounts }
-              : undefined
-        ),
-      };
-    });
-    const totalCount = timeSlots.reduce(
-      (sum, slot) => sum + slot.roles.reduce((roleSum, role) => roleSum + role.count, 0),
-      0
-    );
-    const filledCount = timeSlots.reduce(
-      (sum, slot) => sum + slot.roles.reduce((roleSum, role) => roleSum + role.filled, 0),
-      0
-    );
-
-    return {
-      key: section.key,
-      label: section.label,
-      dayCount: section.dayCount,
-      totalCount,
-      filledCount,
-      timeSlots,
-    };
-  });
 
   return {
     variant: 'dated',
@@ -279,6 +238,124 @@ function buildDatedScheduleModel(
       section.timeSlots.some((slot) => slot.timeLabel === UNKNOWN_TIME_LABEL)
     ),
   };
+}
+
+/** 비그룹 단일 날짜 섹션 — 기존 동작 보존(단일 날짜 키 hydrate). */
+function buildSingleDateSection(
+  requirement: { date: string; timeSlots: TimeSlotSource[] },
+  index: number,
+  filledCounts?: Map<string, number>
+): PostingDateSectionDisplayModel {
+  const key = `${requirement.date}-${index}`;
+  const timeSlots = requirement.timeSlots.map((slot, slotIndex) => ({
+    key: `${key}-${formatTimeLabel(slot)}-${slotIndex}`,
+    timeLabel: formatTimeLabel(slot),
+    roles: toRoleModels(slot.roles, {
+      date: requirement.date,
+      slotKey: slotMatchKey(slot),
+      filledCounts,
+    }),
+  }));
+
+  return {
+    key,
+    label: formatDateLabel(requirement.date),
+    dayCount: 1,
+    totalCount: sumSlotCounts(timeSlots, 'count'),
+    filledCount: sumSlotCounts(timeSlots, 'filled'),
+    timeSlots,
+  };
+}
+
+/**
+ * 그룹 날짜범위 섹션 — 날짜별 전개(좌석 기준).
+ * 각 날짜를 자기 날짜 키(`date__slot__role`)로 개별 hydrate 하고,
+ * 섹션 요약 timeSlots 는 count=하루치×일수 / filled=일별 합으로 만든다.
+ * (구 sumHydrateForRange 범위합산은 count 가 하루치라 6/3 차원 불일치를 냈음 — 제거)
+ */
+function buildGroupedSection(
+  group: {
+    id?: string;
+    startDate: string;
+    endDate: string;
+    timeSlots: TimeSlotSource[];
+  },
+  filledCounts?: Map<string, number>
+): PostingDateSectionDisplayModel {
+  const sectionKey = group.id || `${group.startDate}-${group.endDate}`;
+  const dates = generateDateRange(group.startDate, group.endDate);
+  const effectiveDates = dates.length > 0 ? dates : [group.startDate];
+
+  const days: PostingDateSectionDayModel[] = effectiveDates.map((date) => {
+    const timeSlots = group.timeSlots.map((slot, slotIndex) => ({
+      key: `${sectionKey}-${date}-${formatTimeLabel(slot)}-${slotIndex}`,
+      timeLabel: formatTimeLabel(slot),
+      // 그룹 날짜는 범위에서 전개된 좌석 인스턴스 — 각 날짜 filled 의 유일 소스는
+      // work_logs hydrate 맵(`date__slot__role`)이다. 소스 role.filled(범위 집계 dead
+      // counter)를 날짜별 폴백으로 흘리면 SP3 이 제거한 과다집계가 되살아나므로,
+      // filled 를 0 으로 눌러 hydrate 미적중 = 0 을 보장한다(구 sumHydrateForRange 의 miss=0 계승).
+      roles: toRoleModels(
+        slot.roles.map((role) => ({ ...role, filled: 0 })),
+        {
+          date,
+          slotKey: slotMatchKey(slot),
+          filledCounts,
+        }
+      ),
+    }));
+
+    return {
+      key: `${sectionKey}-${date}`,
+      date,
+      label: formatDateLabel(date),
+      totalCount: sumSlotCounts(timeSlots, 'count'),
+      filledCount: sumSlotCounts(timeSlots, 'filled'),
+      timeSlots,
+    };
+  });
+
+  const dayCount = effectiveDates.length;
+  // 요약 timeSlots: 슬롯 구조는 하루치와 동일하되 count×일수, filled=일별 합.
+  const summaryTimeSlots: PostingTimeSlotDisplayModel[] = group.timeSlots.map((slot, slotIndex) => {
+    const timeLabel = formatTimeLabel(slot);
+    return {
+      key: `${sectionKey}-${timeLabel}-${slotIndex}`,
+      timeLabel,
+      roles: slot.roles.map((role, roleIndex) => {
+        const perDayCount = role.count ?? role.headcount ?? 0;
+        const count = perDayCount * dayCount;
+        const filled = days.reduce(
+          (sum, day) => sum + (day.timeSlots[slotIndex]?.roles[roleIndex]?.filled ?? 0),
+          0
+        );
+        const base = toRoleModels([role])[0]!;
+        return { ...base, count, filled, isFilled: count > 0 && filled >= count };
+      }),
+    };
+  });
+
+  return {
+    key: sectionKey,
+    label:
+      dayCount <= 1
+        ? formatDateLabel(group.startDate)
+        : formatDateRangeWithCount(group.startDate, group.endDate),
+    dayCount,
+    totalCount: days.reduce((sum, day) => sum + day.totalCount, 0),
+    filledCount: days.reduce((sum, day) => sum + day.filledCount, 0),
+    timeSlots: summaryTimeSlots,
+    days,
+  };
+}
+
+function sumSlotCounts(
+  timeSlots: PostingTimeSlotDisplayModel[],
+  field: 'count' | 'filled'
+): number {
+  return timeSlots.reduce(
+    (sum, slot) => sum + slot.roles.reduce((roleSum, role) => roleSum + role[field], 0),
+    0
+  );
 }
 
 function buildLegacyScheduleModel(
@@ -350,37 +427,7 @@ function roleMatchKey(role: RoleSource): string {
   return role.role || role.name || '';
 }
 
-/**
- * grouped 날짜범위 hydrate 합산: submap 키(`date__slot__role`)를 파싱하여
- * startDate <= date <= endDate(YYYY-MM-DD 문자열 비교) + slot/role 일치 엔트리를 합산한다.
- */
-function sumHydrateForRange(
-  submap: Map<string, number> | undefined,
-  range: { startDate: string; endDate: string },
-  slotKey: string,
-  roleKey: string
-): number {
-  if (!submap) return 0;
-  let total = 0;
-  for (const [key, value] of submap) {
-    const firstSep = key.indexOf('__');
-    if (firstSep < 0) continue;
-    const date = key.slice(0, firstSep);
-    const rest = key.slice(firstSep + 2);
-    if (date < range.startDate || date > range.endDate) continue;
-    if (rest !== `${slotKey}__${roleKey}`) continue;
-    total += value;
-  }
-  return total;
-}
-
-type RoleHydrateCtx =
-  | { date: string; slotKey: string; filledCounts?: Map<string, number> }
-  | {
-      range: { startDate: string; endDate: string };
-      slotKey: string;
-      filledCounts?: Map<string, number>;
-    };
+type RoleHydrateCtx = { date: string; slotKey: string; filledCounts?: Map<string, number> };
 
 function toRoleModels(
   roles: readonly RoleSource[],
@@ -390,9 +437,7 @@ function toRoleModels(
     const label = getRoleDisplayName(role.role || role.name || '', role.customRole);
     const count = role.count ?? role.headcount ?? 0;
     const hydrated = ctx
-      ? 'range' in ctx
-        ? sumHydrateForRange(ctx.filledCounts, ctx.range, ctx.slotKey, roleMatchKey(role))
-        : ctx.filledCounts?.get(`${ctx.date}__${ctx.slotKey}__${roleMatchKey(role)}`)
+      ? ctx.filledCounts?.get(`${ctx.date}__${ctx.slotKey}__${roleMatchKey(role)}`)
       : undefined;
     const filled = hydrated ?? role.filled ?? 0;
     const keySource =

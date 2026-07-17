@@ -1,8 +1,8 @@
 import { calculateTotalPositionsFromSchedule } from '@/domains/job-posting/stats';
 import type { PostingSchedule } from '@/types/jobPosting';
 
-// HANDOFF 알고리즘: 같은 사람이 여러 슬롯·날짜에 돌아가며 근무 가능하다고 가정하여
-// 역할별 peak(여러 슬롯/날짜 중 최대 필요 인원)의 합으로 totalPositions를 산출한다.
+// 좌석 기준(seat basis) 알고리즘: 모든 날짜×슬롯×역할 count의 총합(좌석 기준)으로
+// totalPositions를 산출한다. (날짜마다 다른 사람 투입 가정 — 구 peak 회전 모델 대체)
 
 describe('calculateTotalPositionsFromSchedule', () => {
   describe('fixed schedule', () => {
@@ -81,7 +81,7 @@ describe('calculateTotalPositionsFromSchedule', () => {
       expect(calculateTotalPositionsFromSchedule(schedule)).toBe(0);
     });
 
-    it('grouped 3-day dealer x2 every day -> max 2', () => {
+    it('grouped 3-day dealer x2 every day -> sum 6', () => {
       const schedule: PostingSchedule = {
         kind: 'dated',
         primaryDate: '2025-05-01',
@@ -105,10 +105,10 @@ describe('calculateTotalPositionsFromSchedule', () => {
         ],
       };
 
-      expect(calculateTotalPositionsFromSchedule(schedule)).toBe(2);
+      expect(calculateTotalPositionsFromSchedule(schedule)).toBe(6);
     });
 
-    it('non-grouped 3-day dealer x2 -> max 2', () => {
+    it('non-grouped 3-day dealer x2 -> sum 6', () => {
       const schedule: PostingSchedule = {
         kind: 'dated',
         primaryDate: '2025-05-01',
@@ -129,10 +129,10 @@ describe('calculateTotalPositionsFromSchedule', () => {
         ],
       };
 
-      expect(calculateTotalPositionsFromSchedule(schedule)).toBe(2);
+      expect(calculateTotalPositionsFromSchedule(schedule)).toBe(6);
     });
 
-    it('mixed counts across dates: d1,d2 dealer x2 + d3 dealer x3 -> 3', () => {
+    it('mixed counts: d1,d2 dealer x2 + d3 dealer x3 -> 7', () => {
       const schedule: PostingSchedule = {
         kind: 'dated',
         primaryDate: '2025-05-01',
@@ -153,10 +153,10 @@ describe('calculateTotalPositionsFromSchedule', () => {
         ],
       };
 
-      expect(calculateTotalPositionsFromSchedule(schedule)).toBe(3);
+      expect(calculateTotalPositionsFromSchedule(schedule)).toBe(7);
     });
 
-    it('multi-role peak sum: dealer x2 + floor x1 + serving x1 across 2 days -> 4', () => {
+    it('multi-role seat sum: (dealer2+floor1+serving1) x 2 days -> 8', () => {
       const schedule: PostingSchedule = {
         kind: 'dated',
         primaryDate: '2025-05-01',
@@ -191,7 +191,7 @@ describe('calculateTotalPositionsFromSchedule', () => {
         ],
       };
 
-      expect(calculateTotalPositionsFromSchedule(schedule)).toBe(4);
+      expect(calculateTotalPositionsFromSchedule(schedule)).toBe(8);
     });
 
     it('role=other with customRole "translator" keeps separate key from plain other', () => {
@@ -227,8 +227,8 @@ describe('calculateTotalPositionsFromSchedule', () => {
         ],
       };
 
-      // translator max 3 + security max 1 = 4
-      expect(calculateTotalPositionsFromSchedule(schedule)).toBe(4);
+      // translator 2+3 + security 1+1 = 7
+      expect(calculateTotalPositionsFromSchedule(schedule)).toBe(7);
     });
 
     it('role=other without customRole groups under a single key safely', () => {
@@ -258,11 +258,11 @@ describe('calculateTotalPositionsFromSchedule', () => {
         ],
       };
 
-      // other(무customRole) 하나의 키로 묶여 max=3
-      expect(calculateTotalPositionsFromSchedule(schedule)).toBe(3);
+      // other(무customRole) 2+3 = 5
+      expect(calculateTotalPositionsFromSchedule(schedule)).toBe(5);
     });
 
-    it('same role in two timeSlots within one date (dealer x2 morning + dealer x3 evening) -> 3', () => {
+    it('same role in two timeSlots within one date (dealer x2 morning + dealer x3 evening) -> 5', () => {
       const schedule: PostingSchedule = {
         kind: 'dated',
         primaryDate: '2025-05-01',
@@ -278,7 +278,7 @@ describe('calculateTotalPositionsFromSchedule', () => {
         ],
       };
 
-      expect(calculateTotalPositionsFromSchedule(schedule)).toBe(3);
+      expect(calculateTotalPositionsFromSchedule(schedule)).toBe(5);
     });
 
     it('safely ignores slots with empty roles array', () => {
