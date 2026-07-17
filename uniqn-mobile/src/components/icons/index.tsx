@@ -322,7 +322,6 @@ export const MapIcon = MapPinIcon;
 export const ExclamationCircleIcon = AlertCircleIcon;
 export const CalendarDaysIcon = CalendarIcon;
 export const ArrowPathIcon = RefreshIcon;
-export const RefreshCw = RefreshIcon;
 export const MagnifyingGlassIcon = SearchIcon;
 export const EnvelopeIcon = MailIcon;
 export const QRCodeIcon = QrCodeIcon;

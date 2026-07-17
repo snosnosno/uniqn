@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import NetInfo, { type NetInfoState, NetInfoStateType } from '@react-native-community/netinfo';
 import { onlineManager } from '@tanstack/react-query';
 import { logger } from '@/utils/logger';
@@ -177,10 +177,22 @@ export function initializeNetworkState(): () => void {
     commitState(toNativeState(state));
   });
 
+  // iOS 에서 NetInfo 의 isInternetReachable 이 네트워크 복구 후에도 stale false 로
+  // 남는 경우가 있다. 배너의 재시도 버튼을 제거하면서 수동 재평가 경로가 사라졌으므로,
+  // 앱이 포그라운드로 복귀(active)할 때마다 NetInfo 를 강제 재평가한다.
+  // (웹 분기는 window 'online'/'offline' 이벤트가 복구를 즉시 반영하므로 불필요 →
+  //  네이티브 분기에만 추가한다.)
+  const appStateSubscription = AppState.addEventListener('change', (nextAppState) => {
+    if (nextAppState === 'active') {
+      void checkNetworkConnection();
+    }
+  });
+
   void checkNetworkConnection();
 
   unsubscribeMonitoring = () => {
     unsubscribe();
+    appStateSubscription.remove();
     unsubscribeMonitoring = null;
     initialized = false;
   };
