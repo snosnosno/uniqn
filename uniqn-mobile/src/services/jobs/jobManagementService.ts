@@ -3,6 +3,7 @@ import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { jobPostingRepository } from '@/repositories';
 import { requireCurrentUser } from '@/services/auth/authCoreService';
 import { workspaceService } from '@/services/workspace';
+import { getCanonicalPostingType } from '@/domains/job-posting';
 import { BusinessError, PermissionError, ERROR_CODES } from '@/errors';
 import type { TaxSettings } from '@/utils/settlement';
 import type {
@@ -82,6 +83,47 @@ async function resolveWorkspaceId(ownerId: string, requestedWorkspaceId?: string
   return requestedWorkspaceId;
 }
 
+/** 지점 0개 워크스페이스에 자동 생성할 기본 운영처명(코스메틱 — 그리드 useEnsureDefaultVenue 와 카운트검사로 수렴). */
+const DEFAULT_VENUE_NAME = '기본 지점';
+
+/**
+ * 비-대회 공고 + venueId 미지정 시 그리드 필요인원 자동 파생을 위해 기본 지점(venue 컨테이너)에 연결한다(D1 즉시성).
+ *
+ * - 지점 1개 → 그 지점에 자동 연결(1가게 사장이 "운영처" 개념을 만나지 않도록).
+ * - 지점 0개 → 기본 지점을 멱등 생성(get-or-create)해 연결.
+ * - 지점 2개 이상 → 자동 연결하지 않는다(폼 선택칩=B5 담당). venueId 미지정 유지.
+ * - 대회 공고 / venueId 이미 지정 → 진입하지 않는다(venue_id NULL 또는 지정값 유지).
+ *
+ * NON-BLOCKING: 지점 조회/생성 실패는 공고 생성을 실패시키지 않는다(로그 후 venue_id 없이 진행, 기존 동작 보존).
+ */
+async function resolveDefaultVenueId(
+  input: CreateJobPostingInput,
+  workspaceId: string
+): Promise<string | undefined> {
+  let resolvedVenueId = input.venueId;
+  if (getCanonicalPostingType(input.postingType) !== 'tournament' && !resolvedVenueId) {
+    try {
+      const venues = await jobPostingRepository.getVenueContainers(workspaceId);
+      if (venues.length === 1) {
+        resolvedVenueId = venues[0].id;
+      } else if (venues.length === 0) {
+        const container = await jobPostingRepository.getOrCreateVenueContainer(workspaceId, {
+          name: DEFAULT_VENUE_NAME,
+          kind: 'dated',
+        });
+        resolvedVenueId = container.id;
+      }
+      // 지점 2개 이상 → 자동 연결하지 않는다(폼 선택칩=B5). resolvedVenueId 미지정 유지.
+    } catch (error) {
+      logger.warn('공고 생성 — 기본 지점 자동 연결 실패(무시하고 진행)', {
+        workspaceId,
+        error: String(error),
+      });
+    }
+  }
+  return resolvedVenueId;
+}
+
 async function createSinglePosting(
   input: CreateJobPostingInput,
   ownerId: string,
@@ -89,12 +131,16 @@ async function createSinglePosting(
   requestedWorkspaceId?: string
 ): Promise<CreateJobPostingResult> {
   const workspaceId = await resolveWorkspaceId(ownerId, requestedWorkspaceId);
+  const venueId = await resolveDefaultVenueId(input, workspaceId);
   try {
-    return await jobPostingRepository.createWithTransaction(input, {
-      ownerId,
-      ownerName,
-      workspaceId,
-    });
+    return await jobPostingRepository.createWithTransaction(
+      { ...input, venueId },
+      {
+        ownerId,
+        ownerName,
+        workspaceId,
+      }
+    );
   } catch (error) {
     // Race: lookup ↔ INSERT 사이 워크스페이스 삭제 → FK 23503
     if (isWorkspaceFkViolation(error)) {
