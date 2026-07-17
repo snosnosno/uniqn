@@ -11,8 +11,10 @@
  * 가 confirmedStaff/jobPostings 와 함께 담당한다(W-1) — 시트는 별도 무효화하지 않는다.
  *
  * 후보행·역할칩·전화검색 폼은 AddStaffModal 과 공유하는 프리미티브(@/components/staffPicker)로 통합.
- * 시간대는 자유 텍스트가 아닌 시작/종료 구조화 입력(EditSlotSheet 과 동일한 TimeTriggerField +
- * 익일 프리뷰)으로 받아 정규 'HH:mm - HH:mm' 로만 저장한다(형식 검증은 addSlotPayload).
+ * 시간대는 형제 화면 AddStaffModal·지원/확정 흐름과 동일하게 **출근시간(start) 하나만** 받는다
+ * (StartTimeField: 단일 wheel-picker + '미정' 토글). 종료·익일 개념은 이 화면에 없으므로
+ * SlotTimeField/OvernightPreviewBanner 는 쓰지 않는다(그것들은 근무표 슬롯 편집 EditSlotSheet 전용).
+ * 저장은 출근시간 있으면 'HH:mm' 단일, 미정이면 timeSlot 미기록(형식 검증은 addSlotPayload).
  *
  * 중첩 RN Modal iOS 터치먹통(pitfall_nested_rn_modal_touch_dead) 회피 — 전화검색은 AddStaffModal
  * 모달을 중첩하지 않고 동일 훅(useStaffPhoneSearch)을 단일 시트 내부에 인라인 재사용하며,
@@ -34,7 +36,6 @@ import { CandidateRow, RoleChips, PhoneSearchField } from '@/components/staffPic
 import { STAFF_ROLES } from '@/constants';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { DEFAULT_SLOT_START_TIME } from '@/domains/weeklyGrid';
-import { deriveOvernightPreview } from '@/shared/time';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import { useStaffPhoneSearch } from '@/hooks/useStaffPhoneSearch';
 import { useToastStore } from '@/stores/toastStore';
@@ -43,17 +44,16 @@ import { logger } from '@/utils/logger';
 import { parseDateString } from '@/utils/date';
 import type { UserPhoneSearchResult } from '@/repositories';
 import { buildAddSlotPayload } from './addSlotPayload';
-import { TimeTriggerField, timeStringToValue, timeValueToString } from './SlotTimeField';
-import { OvernightPreviewBanner } from './OvernightPreviewBanner';
+import { timeStringToValue, timeValueToString } from './SlotTimeField';
+import { StartTimeField } from './StartTimeField';
 
 type AddMode = 'pool' | 'phone' | 'posting';
 
 const OTHER_ROLE_KEY = 'other';
 const KNOWN_ROLE_KEYS = new Set<string>(STAFF_ROLES.map((role) => role.key));
 
-// 시간대 기본값 SSOT — 홀덤펍 저녁 운영 기준(EditSlotSheet 과 동일).
+// 출근시간 기본값 SSOT — 홀덤펍 저녁 운영 기준.
 const DEFAULT_START = DEFAULT_SLOT_START_TIME;
-const DEFAULT_END = '02:00';
 
 export interface AddSlotSheetProps {
   visible: boolean;
@@ -124,17 +124,18 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
   const [roleKey, setRoleKey] = useState('');
   const [customRole, setCustomRole] = useState('');
   const [startTime, setStartTime] = useState(DEFAULT_START);
-  const [endTime, setEndTime] = useState(DEFAULT_END);
-  // 휠 피커 상태(시작/종료 구분). 중첩 Modal 없이 SheetModal overlay 로 단일 렌더.
-  const [activePicker, setActivePicker] = useState<'start' | 'end' | null>(null);
+  // 출근시간 미정 — 체크 시 timeSlot 미기록(지원/확정 모델과 동일).
+  const [isTimeUndefined, setIsTimeUndefined] = useState(false);
+  // 출근시간 휠 피커 열림 여부. 중첩 Modal 없이 SheetModal overlay 로 단일 렌더.
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const resetSelection = useCallback(() => {
     setPicked(null);
     setRoleKey('');
     setCustomRole('');
     setStartTime(DEFAULT_START);
-    setEndTime(DEFAULT_END);
-    setActivePicker(null);
+    setIsTimeUndefined(false);
+    setPickerOpen(false);
   }, []);
 
   const resetAll = useCallback(() => {
@@ -182,8 +183,8 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
     );
     setCustomRole('');
     setStartTime(DEFAULT_START);
-    setEndTime(DEFAULT_END);
-    setActivePicker(null);
+    setIsTimeUndefined(false);
+    setPickerOpen(false);
   }, []);
 
   const handleSearch = useCallback(() => {
@@ -191,51 +192,27 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
     void phoneSearch.search(phone);
   }, [phone, phoneSearch]);
 
-  // 입력 중 익일 여부·근무시간 프리뷰(SSOT 파생). end==start 는 추가 차단.
-  const timePreview = useMemo(
-    () => deriveOvernightPreview(startTime, endTime),
-    [startTime, endTime]
-  );
-
   const isCustomRole = roleKey === OTHER_ROLE_KEY;
+  // 출근시간은 단일 시각 또는 미정 — 항상 유효(시작==종료 같은 가드 불필요).
   const canSubmit =
-    !!picked &&
-    !!roleKey &&
-    (!isCustomRole || customRole.trim().length > 0) &&
-    !timePreview.isEqual &&
-    !isAddingStaff;
+    !!picked && !!roleKey && (!isCustomRole || customRole.trim().length > 0) && !isAddingStaff;
 
-  // 현재 활성 피커의 값/제목(시작/종료).
-  const activePickerValue = useMemo<TimeValue>(() => {
-    const source = activePicker === 'end' ? endTime : startTime;
-    return timeStringToValue(source);
-  }, [activePicker, startTime, endTime]);
+  // 출근시간 피커 값('HH:mm' → TimeValue).
+  const pickerValue = useMemo<TimeValue>(() => timeStringToValue(startTime), [startTime]);
 
-  const activePickerTitle = activePicker === 'end' ? '종료 시간' : '시작 시간';
-
-  // 휠 피커 선택 완료 → 'HH:mm' 로 되돌려 반영.
-  const handlePickerConfirm = useCallback(
-    (timeValue: TimeValue) => {
-      const next = timeValueToString(timeValue);
-      if (activePicker === 'start') {
-        setStartTime(next);
-      } else if (activePicker === 'end') {
-        setEndTime(next);
-      }
-      setActivePicker(null);
-    },
-    [activePicker]
-  );
+  // 휠 피커 선택 완료 → 'HH:mm'(0패딩) 로 되돌려 반영.
+  const handlePickerConfirm = useCallback((timeValue: TimeValue) => {
+    setStartTime(timeValueToString(timeValue));
+    setPickerOpen(false);
+  }, []);
 
   const handleSubmit = useCallback(async () => {
     if (!picked || !roleKey) {
       return;
     }
-    if (timePreview.isEqual) {
-      return; // 시작==종료는 익일 오해석 방지 위해 추가 불가
-    }
     try {
       // write 경계: 페이로드 빌더가 날짜 정규화(E5)·시간 형식 검증(TIME_RE)·XSS 검증(S1)을 수행(실패 시 throw).
+      // 출근시간은 미정이면 미기록, 아니면 단일 'HH:mm'(지원/확정 모델과 동일).
       const payload = buildAddSlotPayload({
         containerId,
         staffId: picked.staffId,
@@ -243,7 +220,7 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
         role: roleKey,
         customRole: isCustomRole ? customRole : undefined,
         startTime,
-        endTime,
+        timeUndefined: isTimeUndefined,
       });
       // 그리드 읽기(summary/daySlots) 무효화는 useConfirmedStaff.addStaff onSuccess 가 담당(W-1).
       await addStaff(payload);
@@ -263,8 +240,7 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
     isCustomRole,
     customRole,
     startTime,
-    endTime,
-    timePreview.isEqual,
+    isTimeUndefined,
     containerId,
     date,
     addStaff,
@@ -309,17 +285,17 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
       </View>
     ) : undefined;
 
-  // 시간 휠 피커 — SheetModal 루트에 embedded 오버레이로 렌더(중첩 RN Modal 회피).
+  // 출근시간 휠 피커 — SheetModal 루트에 embedded 오버레이로 렌더(중첩 RN Modal 회피).
   const pickerOverlay = (
     <TimeWheelPicker
-      visible={activePicker !== null}
-      value={activePickerValue}
-      title={activePickerTitle}
+      visible={pickerOpen}
+      value={pickerValue}
+      title="출근 시간"
       minHour={0}
       maxHour={23}
       minuteInterval={30}
       onConfirm={handlePickerConfirm}
-      onClose={() => setActivePicker(null)}
+      onClose={() => setPickerOpen(false)}
       embedded
     />
   );
@@ -484,26 +460,13 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
                   />
                 ) : null}
 
-                {/* 시간대 — 자유 텍스트 대신 시작/종료 구조화 입력 + 익일 프리뷰(EditSlotSheet 동등) */}
-                <View>
-                  <View className="flex-row gap-3">
-                    <View className="flex-1">
-                      <TimeTriggerField
-                        label="시작"
-                        value={startTime}
-                        onPress={() => setActivePicker('start')}
-                      />
-                    </View>
-                    <View className="flex-1">
-                      <TimeTriggerField
-                        label="종료"
-                        value={endTime}
-                        onPress={() => setActivePicker('end')}
-                      />
-                    </View>
-                  </View>
-                  <OvernightPreviewBanner startTime={startTime} endTime={endTime} />
-                </View>
+                {/* 출근시간 — 형제 화면(지원/확정)처럼 단일 시각 + '미정' 토글(종료·익일 없음) */}
+                <StartTimeField
+                  value={startTime}
+                  isUndefined={isTimeUndefined}
+                  onToggleUndefined={setIsTimeUndefined}
+                  onPress={() => setPickerOpen(true)}
+                />
               </View>
             ) : null}
           </>

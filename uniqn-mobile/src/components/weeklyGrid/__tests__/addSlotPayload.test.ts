@@ -3,7 +3,7 @@
  *
  * 검증 포인트: 단일 assignment 구성 · E5 날짜 정규화 · role==='other' 분기 ·
  * customRole S1 XSS 거부 · 필수값/날짜 검증.
- * (시간대 구조화 조합·형식 검증은 addSlotPayload.overnight.test.ts 참조)
+ * (출근시간 단일 입력·미정·형식 검증은 addSlotPayload.startTime.test.ts 참조)
  */
 import { buildAddSlotPayload } from '../addSlotPayload';
 import { ValidationError } from '@/errors';
