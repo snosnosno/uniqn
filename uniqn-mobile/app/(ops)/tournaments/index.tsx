@@ -7,19 +7,19 @@
  * 상태 매트릭스(설계 §9.1): LOADING / EMPTY / ERROR / SUCCESS / PARTIAL.
  */
 import { useMemo } from 'react';
-import { View, Text, Pressable, RefreshControl } from 'react-native';
+import { View, Text, Pressable, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { AppFlashList } from '@/components/ui/AppFlashList';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
 import { StackHeader } from '@/components/headers';
-import { TrophyOutlineIcon, AlertCircleIcon } from '@/components/icons';
+import { TrophyOutlineIcon, AlertCircleIcon, CopyIcon } from '@/components/icons';
 import { SECONDARY_PALETTE, getLayoutColor } from '@/constants/colors';
 import { useThemeStore } from '@/stores/themeStore';
-import { useOpsTournaments } from '@/hooks/ops';
+import { useOpsTournaments, useDuplicateTournament } from '@/hooks/ops';
 import { useOpsHubEnteredOnce } from '@/hooks/ops/useOpsHubEnteredOnce';
-import { selectResumeTournament } from '@/domains/ops';
+import { selectResumeTournament, kstDateString } from '@/domains/ops';
 import type { OpsTournament, OpsTournamentStatus } from '@/types/ops';
 
 // ============================================================================
@@ -69,12 +69,49 @@ function TournamentMeta({ tournament }: { tournament: OpsTournament }) {
 // 카드 (목록 / 재개)
 // ============================================================================
 
+/**
+ * 복제 액션 버튼(A4) — 완료 대회 카드 전용 보조 액션.
+ * - 카드 본체 터치(상세 진입)와 분리된 별도 터치 타깃(44px, 룰: 최소 터치 영역).
+ * - 보조 액션이므로 골드 금지 · muted 아이콘 색(디자인 토큰). 진행 중이면 비활성(연타 방지).
+ */
+function DuplicateButton({
+  testID,
+  onPress,
+  disabled,
+}: {
+  testID: string;
+  onPress: () => void;
+  disabled: boolean;
+}) {
+  const isDark = useThemeStore((s) => s.isDarkMode);
+  return (
+    <Pressable
+      testID={testID}
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel="이 설정으로 새 대회 복제"
+      accessibilityState={{ disabled }}
+      // 44px 터치 타깃(h-11 w-11). 행 높이 증가 최소화를 위해 세로 여백은 음수 마진으로 흡수.
+      className={`-my-1.5 ml-1 h-11 w-11 items-center justify-center rounded-lg active:bg-secondary-100 dark:active:bg-surface-hover ${
+        disabled ? 'opacity-40' : ''
+      }`}
+    >
+      <CopyIcon size={18} color={isDark ? SECONDARY_PALETTE[400] : SECONDARY_PALETTE[500]} />
+    </Pressable>
+  );
+}
+
 function TournamentCard({
   tournament,
   onPress,
+  onDuplicate,
+  isDuplicating = false,
 }: {
   tournament: OpsTournament;
   onPress: () => void;
+  onDuplicate?: () => void;
+  isDuplicating?: boolean;
 }) {
   return (
     <Pressable
@@ -91,6 +128,13 @@ function TournamentCard({
           {tournament.name}
         </Text>
         <StatusBadge status={tournament.status} />
+        {onDuplicate ? (
+          <DuplicateButton
+            testID={`ops-duplicate-${tournament.id}`}
+            onPress={onDuplicate}
+            disabled={isDuplicating}
+          />
+        ) : null}
       </View>
       <TournamentMeta tournament={tournament} />
     </Pressable>
@@ -257,6 +301,7 @@ export default function OpsTournamentListScreen() {
   const { postingId: postingIdParam } = useLocalSearchParams<{ postingId?: string }>();
   const postingId = Array.isArray(postingIdParam) ? postingIdParam[0] : postingIdParam;
   const { tournaments, isLoading, error, refetch } = useOpsTournaments();
+  const duplicate = useDuplicateTournament();
   const isDark = useThemeStore((s) => s.isDarkMode);
 
   // ⑤ 진입 계측: 메인 허브 진입만 1회. 피커(postingId)는 퍼널 분모(impression) 밖 진입이라 제외.
@@ -281,6 +326,24 @@ export default function OpsTournamentListScreen() {
   const goDetail = (id: string) => router.push(`/(ops)/tournaments/${id}`);
   const handleRetry = () => {
     void refetch();
+  };
+
+  // A4 복제: 완료 대회 설정으로 새 대회 생성(펍 사장 데일리 루프 "어제 대회 복제 1탭").
+  // 확인 후 eventDate=오늘 KST(kstDateString 재사용 — toISOString 직접 사용 시 KST 00~09 하루 밀림 방지)로 복제,
+  // 성공 시 새 대회 상세로 이동. 진행 중이면 재진입 차단(연타 방지).
+  const handleDuplicate = (tournament: OpsTournament) => {
+    if (duplicate.isPending) return;
+    Alert.alert('대회 복제', `'${tournament.name}' 설정으로 새 대회를 만들까요?`, [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '만들기',
+        onPress: () =>
+          duplicate.mutate(
+            { sourceTournamentId: tournament.id, eventDate: kstDateString(Date.now()) },
+            { onSuccess: (result) => goDetail(result.tournamentId) }
+          ),
+      },
+    ]);
   };
 
   const hasData = filteredTournaments.length > 0;
@@ -336,7 +399,15 @@ export default function OpsTournamentListScreen() {
             ) : null
           }
           renderItem={({ item }: { item: OpsTournament }) => (
-            <TournamentCard tournament={item} onPress={() => goDetail(item.id)} />
+            <TournamentCard
+              tournament={item}
+              onPress={() => goDetail(item.id)}
+              // 복제는 완료 대회 + 운영 허브(피커 아님)에서만 노출.
+              onDuplicate={
+                !postingId && item.status === 'completed' ? () => handleDuplicate(item) : undefined
+              }
+              isDuplicating={duplicate.isPending}
+            />
           )}
         />
       )}

@@ -10,6 +10,7 @@
  * 그리고 `ops_hub_entered` 마운트 1회 발화(메인 모드 한정) + postingId 필터 회귀.
  */
 import React from 'react';
+import { Alert } from 'react-native';
 import { render, fireEvent, within } from '@testing-library/react-native';
 import OpsTournamentListScreen from '../index';
 
@@ -18,6 +19,11 @@ const mockUseLocalSearchParams = jest.fn(() => ({}) as { postingId?: string });
 const mockRefetch = jest.fn();
 const mockUseOpsTournaments = jest.fn();
 const mockTrackOpsFunnel = jest.fn();
+const mockDuplicateMutate = jest.fn();
+const mockUseDuplicateTournament = jest.fn(() => ({
+  mutate: mockDuplicateMutate,
+  isPending: false,
+}));
 
 jest.mock('expo-router', () => ({
   router: { push: (...args: unknown[]) => mockPush(...args) },
@@ -30,6 +36,7 @@ jest.mock('@/components/headers', () => ({
 
 jest.mock('@/hooks/ops', () => ({
   useOpsTournaments: () => mockUseOpsTournaments(),
+  useDuplicateTournament: () => mockUseDuplicateTournament(),
 }));
 
 jest.mock('@/services/observability/analyticsService', () => ({
@@ -89,10 +96,18 @@ function setState({ tournaments = ROWS, isLoading = false, error = null }: State
   });
 }
 
+let alertSpy: jest.SpyInstance;
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockUseLocalSearchParams.mockReturnValue({});
+  mockUseDuplicateTournament.mockReturnValue({ mutate: mockDuplicateMutate, isPending: false });
+  alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
   setState();
+});
+
+afterEach(() => {
+  alertSpy.mockRestore();
 });
 
 describe('OpsTournamentListScreen — postingId 필터 (1e 회귀)', () => {
@@ -230,5 +245,107 @@ describe('OpsTournamentListScreen — 진입 계측(ops_hub_entered)', () => {
     mockUseLocalSearchParams.mockReturnValue({ postingId: 'posting-1' });
     render(<OpsTournamentListScreen />);
     expect(mockTrackOpsFunnel).not.toHaveBeenCalled();
+  });
+});
+
+describe('OpsTournamentListScreen — 복제 액션(A4)', () => {
+  const COMPLETED = {
+    id: 't-done',
+    name: '어제의 대회',
+    gameType: 'NLH',
+    venue: '강남점',
+    eventDate: '2026-07-16',
+    status: 'completed',
+    jobPostingId: null,
+    createdAt: ISO,
+    updatedAt: ISO,
+  };
+
+  let nowSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    // KST 00~09 함정 구간을 고정: UTC 2026-07-16T23:30Z = KST 2026-07-17T08:30 → 오늘 KST '2026-07-17'
+    // (toISOString 직접 사용 시 '2026-07-16'으로 하루 밀리는 버그를 kstDateString 재사용으로 방지하는지 검증)
+    nowSpy = jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-07-16T23:30:00.000Z'));
+    setState({ tournaments: [COMPLETED] });
+  });
+
+  afterEach(() => {
+    nowSpy.mockRestore();
+  });
+
+  it('완료 카드에서 복제 → Alert 확인 → mutate(오늘 KST eventDate) → 성공 시 새 대회 상세로 push', () => {
+    const { getByTestId } = render(<OpsTournamentListScreen />);
+
+    fireEvent.press(getByTestId('ops-duplicate-t-done'));
+
+    // 계획 고정 문구 — 메시지·버튼 순서
+    const [, message, buttons] = alertSpy.mock.calls[0] as [
+      string,
+      string,
+      { text: string; style?: string; onPress?: () => void }[],
+    ];
+    expect(message).toBe(`'어제의 대회' 설정으로 새 대회를 만들까요?`);
+    expect(buttons.map((b) => b.text)).toEqual(['취소', '만들기']);
+
+    // 확인 → mutate 호출: eventDate = 오늘 KST(함정 구간에서도 하루 안 밀림)
+    buttons.find((b) => b.text === '만들기')?.onPress?.();
+    expect(mockDuplicateMutate).toHaveBeenCalledTimes(1);
+    expect(mockDuplicateMutate.mock.calls[0][0]).toEqual({
+      sourceTournamentId: 't-done',
+      eventDate: '2026-07-17',
+    });
+
+    // 성공 콜백 → 새 대회 상세로 push(기존 카드 탭과 동일 라우트 패턴)
+    const options = mockDuplicateMutate.mock.calls[0][1] as {
+      onSuccess: (r: { tournamentId: string }) => void;
+    };
+    options.onSuccess({ tournamentId: 'new-77' });
+    expect(mockPush).toHaveBeenCalledWith('/(ops)/tournaments/new-77');
+  });
+
+  it('취소를 누르면 복제 mutate 를 호출하지 않는다', () => {
+    const { getByTestId } = render(<OpsTournamentListScreen />);
+
+    fireEvent.press(getByTestId('ops-duplicate-t-done'));
+    const buttons = alertSpy.mock.calls[0]?.[2] as { text: string; onPress?: () => void }[];
+    // 취소 버튼은 단순 닫기(onPress 없음)
+    expect(buttons.find((b) => b.text === '취소')?.onPress).toBeUndefined();
+    expect(mockDuplicateMutate).not.toHaveBeenCalled();
+  });
+
+  it('복제 진행 중(isPending)에는 버튼이 비활성화되어 연타(재요청)를 막는다', () => {
+    mockUseDuplicateTournament.mockReturnValue({ mutate: mockDuplicateMutate, isPending: true });
+
+    const { getByTestId } = render(<OpsTournamentListScreen />);
+    fireEvent.press(getByTestId('ops-duplicate-t-done'));
+
+    // disabled Pressable → onPress 미발화 → Alert 미표시 → mutate 미호출
+    expect(alertSpy).not.toHaveBeenCalled();
+    expect(mockDuplicateMutate).not.toHaveBeenCalled();
+  });
+
+  it('완료가 아닌 카드(upcoming/active)에는 복제 버튼을 노출하지 않는다', () => {
+    setState({
+      tournaments: [
+        { ...COMPLETED, id: 't-up', name: '예정 대회', status: 'upcoming' },
+        { ...COMPLETED, id: 't-act', name: '진행 대회', status: 'active' },
+      ],
+    });
+
+    const { queryByTestId } = render(<OpsTournamentListScreen />);
+    expect(queryByTestId('ops-duplicate-t-up')).toBeNull();
+    expect(queryByTestId('ops-duplicate-t-act')).toBeNull();
+  });
+
+  it('피커(postingId) 모드에서는 완료 카드라도 복제 버튼을 숨긴다(운영 허브 전용 액션)', () => {
+    mockUseLocalSearchParams.mockReturnValue({ postingId: 'posting-1' });
+    setState({ tournaments: [{ ...COMPLETED, jobPostingId: 'posting-1' }] });
+
+    const { getByText, queryByTestId } = render(<OpsTournamentListScreen />);
+    // 카드 자체는 노출되지만
+    expect(getByText('어제의 대회')).toBeTruthy();
+    // 복제 버튼은 미노출
+    expect(queryByTestId('ops-duplicate-t-done')).toBeNull();
   });
 });
