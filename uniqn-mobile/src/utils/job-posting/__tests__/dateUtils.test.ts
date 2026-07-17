@@ -485,9 +485,9 @@ describe('getClosingStatus', () => {
     expect(result.filled).toBe(0);
   });
 
-  // Phase 6 리뷰 C3: schedule 경로는 사람 단위(person basis)로 total 계산.
+  // 좌석 기준(seat basis): schedule 경로는 모든 날짜×슬롯×역할 count의 총합으로 total 계산.
   // filled는 DB 컬럼(filledPositions)만 신뢰.
-  it('schedule.kind=dated인 경우 역할별 peak 합으로 total 계산 (사람 단위)', () => {
+  it('schedule.kind=dated인 경우 좌석 합(모든 날짜×슬롯×역할 count)으로 total 계산', () => {
     const jobData = {
       schedule: {
         kind: 'dated' as const,
@@ -512,8 +512,8 @@ describe('getClosingStatus', () => {
     };
 
     const result = getClosingStatus(jobData);
-    // 슬롯 단위라면 6, 사람 단위(peak) 기준 2
-    expect(result.total).toBe(2);
+    // 좌석 기준: 3일 × dealer 2 = 6
+    expect(result.total).toBe(6);
     expect(result.filled).toBe(1);
     expect(result.isClosed).toBe(false);
   });

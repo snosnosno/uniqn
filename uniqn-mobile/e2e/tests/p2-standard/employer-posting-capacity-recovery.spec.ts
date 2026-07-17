@@ -12,6 +12,17 @@ import { TEST_ACCOUNTS } from '../../fixtures/test-accounts';
 //   2) 1건 취소(confirmed→cancelled) → 트리거가 active 로 자동 복귀
 //      → 목록에서 "모집중" 라벨 노출
 //
+// 좌석 기준 정렬(Task 5 — 메커니즘 이관 반영):
+//   - 좌석 기준 전환(2026-07-17)으로 filled/전이 소유권이 applications 트리거에서
+//     work_logs 좌석 트리거(fn_sync_filled_positions_seat)로 이관됐다. 재작성된
+//     fn_update_job_posting_stats(applications 트리거)는 더 이상 filled 를 쓰지 않는다.
+//     따라서 confirmed 지원서 INSERT 만으로는 filled 가 움직이지 않는다 → 좌석(work_logs)
+//     1건을 함께 시딩해 filled 를 구동한다(pgTAP capacity_full_transition.test.sql 동형).
+//   - 이 픽스처는 단일날짜(workDate)·단일역할(dealer count 1)·total_positions 1 →
+//     좌석 총합 = 사람 총합 = 1. applications INSERT 는 "확정 지원자"를 표현하고,
+//     실제 capacity_full↔active 전이는 좌석 트리거(filled 델타) + BEFORE 트리거
+//     (fn_recalc_total_and_capacity, 전이 단일 지점)가 수행한다.
+//
 // 주의:
 //   - 파일명 employer- 접두사 필수: playwright.config.ts 의 chromium-employer
 //     프로젝트(employer.json storageState, role=employer)로 라우팅되어야 /employer
@@ -42,9 +53,12 @@ test.describe('공고 인원마감 자동 전이/복귀', () => {
   const TITLE = `capacity-recovery-${Date.now()}`;
   let jobId = '';
   let appId = '';
+  let workLogId = '';
 
   test.afterAll(async () => {
     if (!admin) return;
+    // FK 역순: work_logs(좌석) → applications → job_postings
+    if (workLogId) await admin.from('work_logs').delete().eq('id', workLogId);
     if (appId) await admin.from('applications').delete().eq('id', appId);
     if (jobId) await admin.from('job_postings').delete().eq('id', jobId);
   });
@@ -100,7 +114,8 @@ test.describe('공고 인원마감 자동 전이/복귀', () => {
     if (jpErr) throw new Error(`job_postings INSERT 실패: ${jpErr.message}`);
     jobId = (jp as { id: string }).id;
 
-    // confirmed 1건 INSERT → fn_update_job_posting_stats 트리거가 filled +1 → capacity_full 전이
+    // confirmed 지원서 1건 INSERT → 사람 지표(confirmedApplicants)만 갱신.
+    // 좌석 기준 전환 후 applications 트리거는 filled 를 쓰지 않으므로, 아래 work_logs 좌석이 filled 를 구동한다.
     const { data: app, error: appErr } = await admin
       .from('applications')
       .insert({
@@ -122,7 +137,26 @@ test.describe('공고 인원마감 자동 전이/복귀', () => {
     if (appErr) throw new Error(`applications INSERT 실패: ${appErr.message}`);
     appId = (app as { id: string }).id;
 
-    // DB 결정적 검증: 트리거가 capacity_full 로 전이했는지
+    // 좌석(work_logs) 1건 시딩 → seat 트리거(fn_sync_filled_positions_seat)가 filled=1 →
+    // BEFORE 트리거(fn_recalc_total_and_capacity)가 active→capacity_full 자동 전이.
+    // 컬럼/슬롯/역할은 공고 schedule(18:00 · dealer) 및 pgTAP 픽스처와 일치시킨다.
+    const { data: wl, error: wlErr } = await admin
+      .from('work_logs')
+      .insert({
+        staff_id: SUPABASE_QA_ACCOUNTS.staff.id,
+        job_posting_id: jobId,
+        date: workDate,
+        time_slot: '18:00',
+        status: 'scheduled',
+        role: 'dealer',
+      })
+      .select('id')
+      .single();
+    if (wlErr) throw new Error(`work_logs 좌석 INSERT 실패: ${wlErr.message}`);
+    workLogId = (wl as { id: string }).id;
+
+    // DB 결정적 검증: 좌석 트리거 filled=1 + BEFORE 트리거가 capacity_full 로 전이했는지
+    // (좌석 1 = 사람 1 — 단일날짜·단일역할·total 1)
     const { data: row } = await admin
       .from('job_postings')
       .select('status, filled_positions')
@@ -151,7 +185,14 @@ test.describe('공고 인원마감 자동 전이/복귀', () => {
 
   test('빈자리 발생(취소) → active 자동 복귀 (DB 검증)', async () => {
     if (!admin) return;
-    // confirmed → cancelled: 트리거가 filled -1 → capacity_full→active 복귀
+    // 좌석 제거로 filled 를 구동: work_logs DELETE → seat 트리거 filled -1 →
+    // BEFORE 트리거가 capacity_full→active 자동 복귀.
+    const { error: wlDelErr } = await admin.from('work_logs').delete().eq('id', workLogId);
+    if (wlDelErr) throw new Error(`work_logs 좌석 DELETE 실패: ${wlDelErr.message}`);
+    workLogId = '';
+
+    // 사람 지표 정합을 위해 지원서도 실제 취소 상태로 전이(confirmed→cancelled).
+    // filled/전이에는 관여하지 않으며 confirmedApplicants 등 사람 지표만 갱신한다.
     const { error: updErr } = await admin
       .from('applications')
       .update({ status: 'cancelled' })
