@@ -18,8 +18,9 @@ import {
   clearPortOneIdentityBindingToken,
   callVerifyAndSavePortOneProfile,
 } from './portOneIdentityService';
-import { AuthError, ERROR_CODES, isRetryableError } from '@/errors';
+import { AuthError, ERROR_CODES, isRetryableError, toError } from '@/errors';
 import { createClientRateLimiter } from '@/utils/security';
+import { withTimeout } from '@/utils/timeout';
 import { getTodayString } from '@/utils/date/core';
 import { handleServiceError, maskValue } from '@/errors/serviceErrorHandler';
 import {
@@ -34,6 +35,7 @@ import {
   incrementLoginAttempts,
   resetLoginAttempts,
 } from './loginAttemptService';
+import { unregisterPushTokensForSignOut } from '@/services/notifications';
 import type { SignUpFormData, LoginFormData } from '@/schemas';
 import { type UserProfile, type AuthResult } from './authTypes';
 import { getUserProfile as fetchUserProfile } from './userProfileService';
@@ -388,6 +390,23 @@ export async function signOut(): Promise<void> {
     } = await supabase.auth.getUser();
     if (user) {
       clearProtectedAuthFlow(user.id);
+
+      // 공용 기기에서 이전 계정으로 푸시가 잔존하는 것을 막기 위해, 세션이 아직 유효한
+      // 지금(signOut 서두) 서버의 푸시 토큰을 해제한다 — signOut 이후엔 RLS로 삭제 불가.
+      // 해제 실패가 로그아웃을 막지 않도록 fail-safe로 감싼다(기존 "한쪽 실패해도 계속" 정리 패턴과 동일).
+      // 느린/끊긴 네트워크에서 해제 왕복이 로그아웃을 지연시키지 않도록 4초 타임아웃을 건다.
+      const unregisterPromise = unregisterPushTokensForSignOut(user.id);
+      // 타임아웃이 이기면 원 promise는 백그라운드에서 계속 완주 — 결과는 이미 흡수됐으므로
+      // 늦은 reject로 인한 unhandled rejection만 방지한다.
+      unregisterPromise.catch(() => {});
+      try {
+        await withTimeout(unregisterPromise, 4000, '푸시 토큰 해제 시간이 초과되었습니다.');
+      } catch (error) {
+        logger.warn('로그아웃 중 푸시 토큰 해제 실패 - 로그아웃은 계속 진행', {
+          component: 'authService',
+          error: toError(error).message,
+        });
+      }
     }
 
     RealtimeManager.unsubscribeAll();
@@ -476,19 +495,6 @@ export async function reauthenticate(password: string): Promise<void> {
       component: 'authService',
     });
   }
-}
-
-/**
- * 현재 로그인된 사용자 가져오기 (동기 - Zustand store에서 읽기)
- *
- * Supabase의 getUser()는 async이므로, 동기적으로 필요한 경우
- * authStore에서 읽습니다. 신선한 데이터가 필요하면 getCurrentUserAsync()를 사용.
- */
-export function getCurrentUser(): SupabaseUser | null {
-  // 동기적 접근이 필요한 경우를 위해 store에서 읽되,
-  // 호출 시점에 store가 이미 세팅되어 있어야 합니다.
-  // 대부분의 caller는 이미 인증된 상태에서 호출합니다.
-  return null; // Deprecated: use authStore or getCurrentUserAsync()
 }
 
 /**

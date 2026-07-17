@@ -25,6 +25,7 @@ import {
   getTokenWithRecovery,
   registerToken,
   unregisterToken,
+  unregisterTokensForSignOut,
   getCurrentToken,
 } from './internal/pushTokenService';
 import {
@@ -71,6 +72,7 @@ export {
   getToken,
   registerToken,
   unregisterToken,
+  unregisterTokensForSignOut,
   getCurrentToken,
 } from './internal/pushTokenService';
 
@@ -105,6 +107,7 @@ export const pushNotificationService = {
   getToken: getTokenWithRecovery,
   registerToken,
   unregisterToken,
+  unregisterTokensForSignOut,
   getCurrentToken,
 
   // 뱃지

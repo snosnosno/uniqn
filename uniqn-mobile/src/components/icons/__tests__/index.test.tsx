@@ -112,12 +112,6 @@ describe('BookmarkIcon toggle API', () => {
   });
 });
 
-describe('CurrencyYenIcon deprecated alias', () => {
-  it('is exported as an alias of CurrencyWonIcon (한국어 서비스 의미 교정)', () => {
-    expect(Icons.CurrencyYenIcon).toBe(Icons.CurrencyWonIcon);
-  });
-});
-
 describe('still renders without crashing (sanity regression)', () => {
   // Lucide RN(1.8.0)은 내부적으로 testID를 data-testid로 변환하므로 RNTL로는
   // 접근 불가. toJSON 으로 모든 아이콘이 렌더되는지 검증한다.

@@ -1,26 +1,19 @@
 /**
- * UNIQN Mobile - 포맷팅 유틸리티
+ * 표시용 포맷터 — 역할·급여·상태·텍스트 라벨.
  *
- * @description 숫자, 통화, 전화번호 등 포맷팅 함수들
- * @version 1.1.0
+ * 과거 동명 flat 파일(`src/utils/formatters.ts`)에 있던 함수들을 canonical
+ * 배럴(`@/utils/formatters`)로 흡수한 것. flat 파일이 이 디렉토리를 가려
+ * bare `@/utils/formatters` import가 파일 판으로 resolve 되던 그림자를 해소한다.
+ * 출력 문자열은 flat 파일 판과 완전 동일(런타임 검증).
  */
 
 import { SALARY_TYPE_LABELS, JOB_STATUS_LABELS } from '@/constants';
 import { getRoleDisplayName } from '@/types/unified';
 import type { StaffRole, UserRole } from '@/types';
 import type { JobPostingStatus, SalaryType } from '@/types/jobPosting';
-import { formatCurrency } from '@/utils/settlement';
-import { formatNumber } from '@/utils/formatters/currency';
-
-// 정산 유틸리티에서 통화 포맷 함수 re-export
-export { formatCurrency };
-
-// impeccable v2 §19 — `formatNumber` canonical 구현(`@/utils/formatters/currency`)
-// 으로 위임. 출력 동일(ko-KR 구분자), null/undefined/NaN 입력에 "0" 반환.
-// 기존 호출부 시그니처 완전 보존.
-export { formatNumber };
-
-// formatCurrencyShort: 데드 중복 제거 — formatCurrencyCompact(@/utils/formatters/currency) 사용.
+// formatCurrency 는 canonical currency 모듈 판(= flat 파일이 참조하던
+// `@/utils/settlement`.formatCurrency 와 동일 바인딩, "₩1,234,567").
+import { formatCurrency } from './currency';
 
 /**
  * 이메일 마스킹 (h***@gmail.com)
@@ -62,7 +55,7 @@ export const formatSalaryType = (type: SalaryType | string | undefined): string 
 };
 
 /**
- * 급여 정보 포맷 (시급 15,000원)
+ * 급여 정보 포맷 (시급 ₩15,000)
  */
 export const formatSalary = (type: SalaryType, amount: number): string => {
   return `${formatSalaryType(type)} ${formatCurrency(amount)}`;

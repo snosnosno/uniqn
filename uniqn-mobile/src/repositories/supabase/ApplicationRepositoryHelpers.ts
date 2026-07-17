@@ -12,6 +12,7 @@ import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import { STATUS_TO_STATS_KEY } from '@/constants/statusConfig';
 import { STATUS } from '@/constants';
 import { FIXED_DATE_MARKER, FIXED_TIME_MARKER } from '@/types/assignment';
+import { TABLE_COLUMNS } from './JobPostingRepositoryHelpers';
 import type {
   Application,
   ApplicationStatus,
@@ -40,10 +41,9 @@ export const ACTIVE_APPLICATION_STATUSES = new Set<ApplicationStatus>([
 export const EMPLOYER_REALTIME_LIMIT = 300;
 export const APPLICATION_COLUMNS =
   'id,applicant_email,applicant_id,applicant_name,applicant_nickname,applicant_phone,applicant_photo_url,applicant_photo_url_blurhash,applicant_role,assignments,cancellation_request,cancelled_at,confirmation_history,confirmed_at,created_at,custom_role,is_read,job_posting_date,job_posting_id,job_posting_title,message,notes,original_application,pre_question_answers,processed_at,processed_by,recruitment_type,rejection_reason,status,updated_at' as const;
-// JobPostingRepository.ts의 TABLE_COLUMNS와 동기화 유지
-// 제거된 컬럼: is_featured, last_work_date, og_image_url, rejection_reason (ISSUE-003)
-export const JOB_POSTING_COLUMNS =
-  'id,closed_at,closed_reason,compensation,contact_phone,created_at,description,filled_positions,fixed_config,location,owner_id,owner_name,posting_type,questions,role_catalog,role_keys,schedule,schema_version,stats,status,tags,title,total_positions,tournament_config,updated_at,urgent_config,view_count,work_date,work_dates,workspace_id' as const;
+// 공고 SELECT 화이트리스트 단일소스 — 정본 TABLE_COLUMNS(JobPostingRepositoryHelpers)를 그대로 재노출한다.
+// 사본을 두면 conditions·venue_id 누락처럼 드리프트가 생겨 읽기에서 필드가 조용히 증발한다(whitelist-silent-drop).
+export const JOB_POSTING_COLUMNS = TABLE_COLUMNS;
 
 // ============================================================================
 // Mapping Functions

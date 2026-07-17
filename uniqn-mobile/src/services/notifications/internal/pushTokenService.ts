@@ -181,6 +181,33 @@ export async function unregisterToken(userId: string): Promise<boolean> {
   }
 }
 
+/**
+ * 로그아웃 시 서버의 푸시 토큰 해제.
+ *
+ * 인메모리 토큰을 알고 있으면 해당 토큰만, 모르면(앱 재시작 후 signOut 등 인메모리
+ * 부재 시) 현재 사용자의 전체 토큰을 삭제한다. 공용 기기에서 이전 계정으로 푸시가
+ * 잔존하는 것을 막기 위함이다.
+ *
+ * 반드시 세션이 유효한 signOut 서두에 호출해야 한다 — signOut 이후에는 RLS 로
+ * fcm_tokens 삭제가 거부된다.
+ *
+ * `unregisterToken`(인메모리 토큰이 없으면 서버 접근 없이 스킵)과 달리, 여기서는
+ * 인메모리 부재 시에도 전체 삭제로 폴백한다. 실패 시 에러를 전파하며, 호출자(signOut)가
+ * fail-safe 로 감싸 로그아웃 자체는 계속 진행한다.
+ */
+export async function unregisterTokensForSignOut(userId: string): Promise<void> {
+  const token = pushState.currentToken;
+  if (token) {
+    await notificationRepository.unregisterFCMToken(userId, token);
+    pushState.currentToken = null;
+    logger.info('로그아웃 푸시 토큰 해제 완료 (단일 토큰)', { userId });
+    return;
+  }
+
+  await notificationRepository.unregisterAllFCMTokens(userId);
+  logger.info('로그아웃 푸시 토큰 해제 완료 (전체 폴백)', { userId });
+}
+
 /** @alias getTokenWithRecovery — 하위 호환용 */
 export const getToken = getTokenWithRecovery;
 

@@ -552,7 +552,7 @@ export interface PostingRuntimeSnapshot {
 }
 
 /**
- * Legacy compatibility alias. The list surface should migrate to
- * PostingCardViewModel over time.
+ * 리스트 표면 카드 뷰모델의 주력 별칭 — 22개 파일이 이 이름으로 사용 중인 현행 정본.
+ * `PostingCardViewModel` 과 동일 타입이며, 두 이름은 공존한다(단순 alias).
  */
 export type JobPostingCard = PostingCardViewModel;

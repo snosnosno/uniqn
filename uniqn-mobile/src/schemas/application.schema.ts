@@ -8,7 +8,8 @@
 import { z } from 'zod';
 import { xssValidation } from '@/utils/security';
 import { logger } from '@/utils/logger';
-import { timestampSchema, optionalTimestampSchema, optionalDurationSchema } from './common';
+import { timestampSchema, optionalTimestampSchema } from './common';
+import { durationSchema as assignmentDurationSchema } from './assignment.schema';
 import type { Application } from '@/types';
 import { VALID_STAFF_ROLES } from '@/types/role';
 import { Constants } from '@/types/supabase';
@@ -176,7 +177,10 @@ const assignmentInnerSchema = z
     groupId: z.string().optional(),
     checkMethod: z.enum(['group', 'individual']).optional(),
     requirementId: z.string().optional(),
-    duration: optionalDurationSchema,
+    // AssignmentDuration({type,startDate,endDate?}) — 과거 common의 경과시간용 durationSchema
+    // 오배선으로 파싱 시 {}로 증발·재기록되던 결함(A2). 이미 오염된 {} 행은 catch로 흡수해
+    // 지원서 레코드 전체 증발을 방지한다.
+    duration: assignmentDurationSchema.optional().nullable().catch(undefined),
     isTimeToBeAnnounced: z.boolean().optional(),
     // P1 보안: XSS 검증 추가
     tentativeDescription: z

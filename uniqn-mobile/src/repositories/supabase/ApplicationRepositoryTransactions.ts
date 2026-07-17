@@ -317,58 +317,6 @@ function validateConfirmCapacity(
   }
 }
 
-/** @internal 서버 RPC 마이그레이션 완료 시 제거 예정 */
-export async function createWorkLogsForConfirmation(
-  assignmentsToConfirm: Assignment[],
-  applicationData: Application,
-  jobData: JobPosting,
-  now: string
-): Promise<string[]> {
-  const workLogInserts: Record<string, unknown>[] = [];
-
-  for (const assignment of assignmentsToConfirm) {
-    const normalizedRole = normalizeAssignmentRole(assignment.roleIds[0]);
-    for (const date of assignment.dates) {
-      workLogInserts.push({
-        staff_id: applicationData.applicantId,
-        staff_name: applicationData.applicantName,
-        job_posting_id: applicationData.jobPostingId,
-        job_posting_name: jobData.title,
-        owner_id: jobData.ownerId,
-        role: normalizedRole.role,
-        custom_role: normalizedRole.customRole ?? null,
-        date,
-        time_slot: assignment.timeSlot,
-        is_time_to_be_announced: assignment.isTimeToBeAnnounced ?? false,
-        tentative_description: assignment.tentativeDescription ?? null,
-        status: STATUS.WORK_LOG.SCHEDULED,
-        check_in_ts: null,
-        check_out_ts: null,
-        work_duration: null,
-        payroll_amount: null,
-        is_settled: false,
-        assignment_group_id: assignment.groupId ?? null,
-        check_method: assignment.checkMethod ?? 'individual',
-        created_at: now,
-        updated_at: now,
-      });
-    }
-  }
-
-  if (workLogInserts.length === 0) return [];
-
-  const { data: wlData, error: wlError } = await supabase
-    .from(TABLES.WORK_LOGS)
-    .insert(workLogInserts)
-    .select('id');
-
-  if (wlError) {
-    handleSupabaseError(wlError, { operation: 'WorkLog 생성', table: TABLES.WORK_LOGS });
-  }
-
-  return ((wlData ?? []) as Record<string, unknown>[]).map((row) => row.id as string);
-}
-
 /**
  * 구인자 취소요청 승인 (T-B1+B2: cancel_application_atomically RPC 호출)
  *

@@ -9,6 +9,7 @@ import { toError, isAppError } from '@/errors';
 import { handleSupabaseError, toCamelCase } from '@/utils/supabase';
 import { parseWorkLogDocument, parseWorkLogDocuments } from '@/schemas';
 import type { WorkLog } from '@/types';
+import { WORK_LOG_COLUMNS, applyTsPreference } from './workLogColumns';
 
 // ============================================================================
 // Constants
@@ -17,21 +18,12 @@ import type { WorkLog } from '@/types';
 export const TABLE = 'work_logs';
 export const DEFAULT_PAGE_SIZE = 50;
 export const MAX_STATS_PAGE_SIZE = 1000;
-export const TABLE_COLUMNS =
-  'id,application_id,assignment_group_id,check_in_ts,check_out_ts,created_at,custom_allowances,custom_role,custom_salary_info,custom_tax_settings,date,has_time_modification_logs,is_fixed_posting,job_posting_id,modification_history,no_show_at,no_show_reason,notes,owner_id,payroll_amount,payroll_date,payroll_notes,payroll_status,role,role_change_history,settlement_modification_history,staff_id,staff_name,staff_nickname,staff_photo_url,staff_photo_url_blurhash,status,time_slot,updated_at' as const;
+// work_logs SELECT 화이트리스트 정본 재노출(기존 소비처 계약 유지 — 정본은 workLogColumns).
+export const TABLE_COLUMNS = WORK_LOG_COLUMNS;
 
 // ============================================================================
 // Mapping Functions
 // ============================================================================
-
-// Phase D: jsonb 컬럼 제거 후 checkInTs/checkOutTs (timestamptz, PostgREST ISO string) 단일 소스.
-function applyTsPreference(camel: Record<string, unknown>): Record<string, unknown> {
-  return {
-    ...camel,
-    checkInTime: camel.checkInTs ?? null,
-    checkOutTime: camel.checkOutTs ?? null,
-  };
-}
 
 export function toWorkLog(row: Record<string, unknown>): WorkLog | null {
   const camel = toCamelCase<Record<string, unknown>>(row);

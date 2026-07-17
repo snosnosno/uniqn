@@ -1,6 +1,5 @@
 import type {
   BoardComment,
-  BoardCommentReaction,
   BoardMembership,
   BoardPost,
   BoardPostStatus,
@@ -81,11 +80,6 @@ export interface IBoardRepository {
     userId: string,
     type: CommentReactionType
   ): Promise<CommentReactionType | null>;
-  getCommentReaction(
-    postId: string,
-    commentId: string,
-    userId: string
-  ): Promise<BoardCommentReaction | null>;
   getCommentReactionsByUser(
     postId: string,
     userId: string

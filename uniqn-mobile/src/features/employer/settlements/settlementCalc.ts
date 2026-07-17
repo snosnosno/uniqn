@@ -7,7 +7,7 @@
 
 import { getRoleSalaryFromRoles, calculateSettlementFromWorkLog } from '@/domains/settlement';
 import type { PostingSettlementContext } from '@/domains/job-posting';
-import type { SalaryInfo } from '@/utils/settlement';
+import type { SalaryInfo, TaxSettings } from '@/utils/settlement';
 import type { WorkLog, Allowances } from '@/types';
 
 // ============================================================================
@@ -28,6 +28,7 @@ export interface SalaryConfig {
   defaultSalary?: SalaryInfo;
   roles?: RoleWithSalary[];
   allowances?: Allowances;
+  taxSettings?: TaxSettings;
 }
 
 // ============================================================================
@@ -44,16 +45,19 @@ export function calculateWorkLogAmount(
   workLog: WorkLog & { customRole?: string },
   roles: RoleWithSalary[],
   defaultSalary?: SalaryInfo,
-  allowances?: Allowances
+  allowances?: Allowances,
+  taxSettings?: TaxSettings
 ): number {
   // 역할에 따른 급여 정보 결정 (커스텀 역할 지원)
   const salaryInfo = getRoleSalaryFromRoles(roles, workLog.role, workLog.customRole, defaultSalary);
 
   // 통합 유틸리티로 정산 금액 계산 (수당, 세금 포함)
+  // taxSettings 미전달 시 확인 모달이 세전 금액을 표시해 저장값(세후)과 어긋난다
   const { taxAmount, afterTaxPay, totalPay } = calculateSettlementFromWorkLog(
     workLog,
     salaryInfo,
-    allowances
+    allowances,
+    taxSettings
   );
 
   // 세금이 있으면 세후 금액, 없으면 세전 금액 반환
@@ -78,6 +82,7 @@ export function deriveSalaryConfig(
         salary: r.salary,
       })) || [],
     allowances: postingSettlement?.allowances,
+    taxSettings: postingSettlement?.taxSettings,
   };
 }
 

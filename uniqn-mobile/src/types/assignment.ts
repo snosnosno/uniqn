@@ -210,8 +210,8 @@ export function normalizeAssignmentRole(
  *
  * @example
  * if (isValidAssignment(data)) {
- *   // data는 Assignment 타입으로 안전하게 사용 가능
- *   console.log(data.timeSlot);
+ *   // data는 Assignment 타입으로 안전하게 접근 가능
+ *   const timeSlot = data.timeSlot;
  * }
  */
 export function isValidAssignment(obj: unknown): obj is Assignment {

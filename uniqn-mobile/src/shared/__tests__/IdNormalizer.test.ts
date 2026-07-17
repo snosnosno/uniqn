@@ -205,17 +205,4 @@ describe('IdNormalizer', () => {
       expect(ids).toContain('USER2');
     });
   });
-
-  // ============================================================================
-  // 변환 함수 테스트
-  // ============================================================================
-  describe('변환 함수', () => {
-    it('toStaffId는 동일한 값 반환', () => {
-      expect(IdNormalizer.toStaffId('APP123')).toBe('APP123');
-    });
-
-    it('toApplicantId는 동일한 값 반환', () => {
-      expect(IdNormalizer.toApplicantId('STAFF123')).toBe('STAFF123');
-    });
-  });
 });

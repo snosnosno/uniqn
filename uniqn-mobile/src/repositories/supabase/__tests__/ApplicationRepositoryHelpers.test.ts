@@ -5,7 +5,8 @@
  * Supabase는 DB의 빈 optional 필드를 null로 반환하지만 Zod optional은 undefined를 기대함.
  */
 
-import { toApplication, toJobPosting } from '../ApplicationRepositoryHelpers';
+import { toApplication, toJobPosting, JOB_POSTING_COLUMNS } from '../ApplicationRepositoryHelpers';
+import { TABLE_COLUMNS } from '../JobPostingRepositoryHelpers';
 
 jest.mock('@/lib/supabase', () => ({ supabase: {} }));
 
@@ -70,5 +71,24 @@ describe('toJobPosting — null → undefined 변환', () => {
     toJobPosting({ id: 'jp-2', title: '테스트' });
     const arg = mockParseJobPosting.mock.calls[0][0] as Record<string, unknown>;
     expect(arg.id).toBe('jp-2');
+  });
+});
+
+describe('JOB_POSTING_COLUMNS — 정본 TABLE_COLUMNS 동기화 가드 (whitelist-silent-drop 재발 방지)', () => {
+  it('정본 TABLE_COLUMNS 와 동일한 컬럼 화이트리스트를 참조한다 (드리프트 금지)', () => {
+    expect(JOB_POSTING_COLUMNS).toBe(TABLE_COLUMNS);
+  });
+
+  it('conditions·venue_id 를 SELECT 화이트리스트에 포함한다 (읽기 증발 방지)', () => {
+    const cols = JOB_POSTING_COLUMNS.split(',');
+    expect(cols).toContain('conditions');
+    expect(cols).toContain('venue_id');
+  });
+
+  it('정본에서 제거된 컬럼(last_work_date·og_image_url·rejection_reason)을 SELECT 하지 않는다', () => {
+    const cols = JOB_POSTING_COLUMNS.split(',');
+    expect(cols).not.toContain('last_work_date');
+    expect(cols).not.toContain('og_image_url');
+    expect(cols).not.toContain('rejection_reason');
   });
 });

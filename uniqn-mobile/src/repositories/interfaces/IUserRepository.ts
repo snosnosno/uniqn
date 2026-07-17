@@ -171,26 +171,6 @@ export interface IUserRepository {
   cancelDeletion(userId: string): Promise<void>;
 
   // ==========================================================================
-  // 특수 작업 (Transaction)
-  // ==========================================================================
-
-  /**
-   * 구인자 등록 (Transaction으로 원자적 처리)
-   *
-   * @description staff → employer 역할 전환
-   * - 현재 역할 검증 (이미 employer/admin이면 에러)
-   * - 전화번호 인증 확인
-   * - 역할 업데이트 + 동의 기록
-   *
-   * @param userId - 사용자 ID
-   * @returns 업데이트된 프로필
-   */
-  registerAsEmployer(
-    userId: string,
-    input: EmployerRegistrationInput
-  ): Promise<FirestoreUserProfile>;
-
-  // ==========================================================================
   // 데이터 내보내기 / 삭제
   // ==========================================================================
 

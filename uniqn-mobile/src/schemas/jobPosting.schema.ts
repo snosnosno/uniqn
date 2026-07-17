@@ -16,7 +16,7 @@ import {
 import { JOB_POSTING_SCHEMA_VERSION } from '@/types/jobPosting';
 import { isWithinUrgentDateLimit } from '@/utils/date';
 import { Constants } from '@/types/supabase';
-import { REGIONS, isRegionSlug } from '@/constants/regions';
+import { isRegionSlug } from '@/constants/regions';
 
 /**
  * 공고 상태 SSOT — DB enum(posting_status)을 단일출처로 파생.
@@ -100,43 +100,6 @@ export const basicInfoSchema = z.object({
 });
 
 export type BasicInfoData = z.infer<typeof basicInfoSchema>;
-
-export const dateTimeSchema = z.object({
-  workDate: z
-    .string()
-    .min(1, { message: 'Select a work date' })
-    .regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'Use YYYY-MM-DD format' }),
-  timeSlot: z.string().min(1, { message: 'Enter a work time' }),
-});
-
-export type DateTimeData = z.infer<typeof dateTimeSchema>;
-
-export const jobFilterSchema = z.object({
-  status: z.enum(POSTING_STATUS_VALUES).optional(),
-  roles: z.array(roleSchema).optional(),
-  district: z.string().optional(),
-  region: z.string().optional(),
-  // 그룹 확장 slug 목록 (JobPostingFilters.regions) — 스키마 누락 시 strip 모드에서
-  // 침묵 드롭되는 함정(wiki decisions/whitelist-silent-drop 클래스) 방지.
-  // 상한 = 전체 REGIONS 수 (확장 결과는 항상 REGIONS 의 부분집합 — Set dedupe).
-  regions: z.array(z.string()).max(REGIONS.length).optional(),
-  // 그룹 전체 선택의 접두 압축(REGION_GROUP_QUERY_PREFIXES) — regions 와 동일한 침묵드롭 방지 사유.
-  regionPrefixes: z.array(z.string()).max(32).optional(),
-  dateRange: z
-    .object({
-      start: z.string(),
-      end: z.string(),
-    })
-    .optional(),
-  // 급여 필터(P3) — JobPostingFilters.salaryType/salaryMin 과 동기(스키마 누락 시
-  // strip 모드 침묵 드롭 함정 — regions 와 동일 클래스). 'other'(협의)는 필터 불가.
-  salaryType: z.enum(['hourly', 'daily', 'monthly']).optional(),
-  salaryMin: z.number().int().positive().optional(),
-  searchTerm: z.string().optional(),
-  isUrgent: z.boolean().optional(),
-});
-
-export type JobFilterData = z.infer<typeof jobFilterSchema>;
 
 export { applicationMessageSchema } from './application.schema';
 

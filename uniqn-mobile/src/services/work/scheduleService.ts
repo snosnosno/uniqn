@@ -1,7 +1,7 @@
 /**
  * UNIQN Mobile - 스케줄 서비스
  *
- * @description Firebase Firestore 기반 스케줄 서비스
+ * @description Supabase 기반 스케줄 서비스
  * @version 1.0.0
  */
 

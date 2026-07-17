@@ -5,9 +5,8 @@ import { DashboardWidgetShell } from '@/components/home/DashboardWidgetShell';
 import { NumericText } from '@/components/ui';
 import { useScheduleStats } from '@/hooks/useSchedules';
 import { usePendingReviews } from '@/hooks/useReviews';
-// `@/utils/formatters` 는 flat 파일(src/utils/formatters.ts)로 resolve 되어
-// 레거시 settlement 포맷("N원")을 돌려주므로, canonical 배럴의 currency 서브패스를
-// 직접 참조해 "₩N" 포맷(impeccable v2 §19)을 보장한다.
+// canonical currency 판("₩N" 포맷). `@/utils/formatters` 배럴을 통해도 동일하나
+// 통화 함수만 필요하므로 서브패스를 직접 참조한다.
 import { formatCurrency } from '@/utils/formatters/currency';
 
 export function MonthSummaryWidget() {

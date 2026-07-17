@@ -50,6 +50,7 @@ export {
   getTokenWithRecovery as getPushToken,
   registerToken as registerPushToken,
   unregisterToken as unregisterPushToken,
+  unregisterTokensForSignOut as unregisterPushTokensForSignOut,
   getCurrentToken,
   // 뱃지
   setBadge,

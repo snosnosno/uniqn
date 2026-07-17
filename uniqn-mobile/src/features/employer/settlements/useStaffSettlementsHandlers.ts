@@ -142,7 +142,8 @@ export function useStaffSettlementsHandlers({
         workLog,
         rolesForList,
         salaryConfig.defaultSalary,
-        salaryConfig.allowances
+        salaryConfig.allowances,
+        salaryConfig.taxSettings
       ),
     [rolesForList, salaryConfig]
   );
@@ -241,7 +242,7 @@ export function useStaffSettlementsHandlers({
           (workLogForEdit as WorkLog & { customAllowances?: Allowances }).customAllowances ||
           salaryConfig.allowances;
 
-        // 수정 이력 생성 (Firebase는 undefined를 허용하지 않으므로 필터링)
+        // 수정 이력 생성 (Supabase jsonb 저장 시 undefined 필드는 조건부로 제외)
         // modifiedBy는 서비스 계층이 세션 사용자로 기록한다
         const modificationEntry: Record<string, unknown> = {
           modifiedAt: new Date().toISOString(),

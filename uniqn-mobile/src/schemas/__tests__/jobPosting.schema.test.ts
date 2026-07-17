@@ -2,9 +2,7 @@ import {
   allowancesSchema,
   basicInfoSchema,
   createJobPostingSchema,
-  dateTimeSchema,
   isJobPostingDocument,
-  jobFilterSchema,
   jobPostingDocumentSchema,
   parseJobPostingDocument,
   parseJobPostingDocuments,
@@ -17,7 +15,6 @@ import {
 } from '../jobPosting.schema';
 import { serializeJobPostingV3 } from '@/domains/job-posting';
 import { JOB_POSTING_SCHEMA_VERSION } from '@/types/jobPosting';
-import { Constants } from '@/types/supabase';
 
 const createMockTimestamp = (seconds = 1700000000, nanoseconds = 0) => ({
   seconds,
@@ -121,12 +118,6 @@ describe('jobPosting schemas', () => {
           contactPhone: '010-1234-5678',
         }).success
       ).toBe(true);
-      expect(
-        dateTimeSchema.safeParse({
-          workDate: '2026-04-01',
-          timeSlot: '18:00-02:00',
-        }).success
-      ).toBe(true);
     });
 
     it('rejects invalid basic info and date/time helper payloads', () => {
@@ -137,9 +128,6 @@ describe('jobPosting schemas', () => {
           contactPhone: '010-1234-5678',
         }).success
       ).toBe(false);
-      expect(dateTimeSchema.safeParse({ workDate: '04/01/2026', timeSlot: '' }).success).toBe(
-        false
-      );
     });
   });
 
@@ -240,31 +228,6 @@ describe('jobPosting schemas', () => {
       });
 
       expect(result.success).toBe(false);
-    });
-  });
-
-  describe('jobFilterSchema', () => {
-    it('accepts valid filters and rejects invalid role filters', () => {
-      expect(jobFilterSchema.safeParse({ status: 'active', roles: ['dealer'] }).success).toBe(true);
-      expect(jobFilterSchema.safeParse({ roles: ['invalid_role'] }).success).toBe(false);
-    });
-
-    it('region 필터를 보존한다(검증 시 누락 방지)', () => {
-      const result = jobFilterSchema.safeParse({ region: '서울 강남구' });
-      expect(result.success).toBe(true);
-      expect(result.success && result.data.region).toBe('서울 강남구');
-    });
-
-    it('급여 필터(salaryType/salaryMin)를 보존한다 — strip 침묵 드롭 방지(P3)', () => {
-      const result = jobFilterSchema.safeParse({ salaryType: 'hourly', salaryMin: 13000 });
-      expect(result.success).toBe(true);
-      expect(result.success && result.data.salaryType).toBe('hourly');
-      expect(result.success && result.data.salaryMin).toBe(13000);
-    });
-
-    it('급여 필터 무효값을 거부한다 — other 타입/0 이하 금액', () => {
-      expect(jobFilterSchema.safeParse({ salaryType: 'other' }).success).toBe(false);
-      expect(jobFilterSchema.safeParse({ salaryType: 'hourly', salaryMin: 0 }).success).toBe(false);
     });
   });
 
@@ -675,20 +638,6 @@ describe('jobPosting schemas', () => {
         detailedAddress: 'Teheran-ro 123',
       });
     });
-  });
-});
-
-describe('jobFilterSchema posting_status SSOT drift guard', () => {
-  it('jobFilterSchema.status가 DB enum posting_status 전체 집합을 수용한다', () => {
-    for (const status of Constants.public.Enums.posting_status) {
-      const result = jobFilterSchema.safeParse({ status });
-      expect(result.success).toBe(true);
-    }
-  });
-
-  it('DB enum에 없는 status는 거부한다', () => {
-    const result = jobFilterSchema.safeParse({ status: 'weird_status' });
-    expect(result.success).toBe(false);
   });
 });
 

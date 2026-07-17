@@ -46,7 +46,7 @@ export interface SearchProvider<T> {
 /**
  * 클라이언트 사이드 검색 프로바이더
  *
- * @description Firestore 데이터를 메모리에서 필터링
+ * @description Supabase 에서 조회한 데이터를 메모리에서 필터링
  * @limitation 전문 검색 불가, 대용량 데이터에서 성능 저하
  */
 export class ClientSideSearchProvider implements SearchProvider<JobPosting> {

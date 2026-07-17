@@ -18,7 +18,12 @@ import {
 } from '@/components/icons';
 import { NumericInput } from '@/components/ui';
 import { useThemeStore } from '@/stores/themeStore';
-import { type Allowances, PROVIDED_FLAG, formatCurrency } from '@/utils/settlement';
+import {
+  type Allowances,
+  PROVIDED_FLAG,
+  formatCurrency,
+  calculateAllowanceAmount,
+} from '@/utils/settlement';
 
 // ============================================================================
 // Types
@@ -86,37 +91,6 @@ function getAllowanceStatus(value: number | undefined): 'none' | 'provided' | 'a
   if (value === undefined || value === 0) return 'none';
   if (value === PROVIDED_FLAG) return 'provided';
   return 'amount';
-}
-
-/**
- * 총 수당 금액 계산 (금액만, 제공은 제외)
- */
-function calculateTotalAllowance(allowances: Allowances): number {
-  let total = 0;
-
-  if (allowances.meal && allowances.meal !== PROVIDED_FLAG && allowances.meal > 0) {
-    total += allowances.meal;
-  }
-  if (
-    allowances.transportation &&
-    allowances.transportation !== PROVIDED_FLAG &&
-    allowances.transportation > 0
-  ) {
-    total += allowances.transportation;
-  }
-  if (
-    allowances.accommodation &&
-    allowances.accommodation !== PROVIDED_FLAG &&
-    allowances.accommodation > 0
-  ) {
-    total += allowances.accommodation;
-  }
-  // 추가 수당
-  if (allowances.additional && allowances.additional > 0) {
-    total += allowances.additional;
-  }
-
-  return total;
 }
 
 // ============================================================================
@@ -338,8 +312,8 @@ export const AllowanceEditor = memo(function AllowanceEditor({
     [allowances, onChange]
   );
 
-  // 총 수당 계산
-  const totalAllowance = useMemo(() => calculateTotalAllowance(allowances), [allowances]);
+  // 총 수당 계산 (도메인 정본 재사용 — 로컬 재구현 제거)
+  const totalAllowance = useMemo(() => calculateAllowanceAmount(allowances), [allowances]);
 
   // 제공 항목 수
   const providedCount = useMemo(() => {

@@ -5,7 +5,7 @@
  * @version 2.1.0 - getJobPostings Repository 이관
  *
  * 아키텍처:
- * Service Layer → Repository Layer → Firebase
+ * Service Layer → Repository Layer → Supabase
  *
  * 책임 분리:
  * - Service: 비즈니스 로직 조합, 검색, Analytics

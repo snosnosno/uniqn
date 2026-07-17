@@ -7,7 +7,6 @@
 
 import { SettlementCalculator } from '../settlement/SettlementCalculator';
 import { TaxCalculator } from '../settlement/TaxCalculator';
-import { SettlementCache } from '../settlement/SettlementCache';
 import {
   calculateTaxAmountByItems,
   type SalaryInfo,
@@ -545,123 +544,6 @@ describe('SettlementCalculator', () => {
       };
       const salary = SettlementCalculator.getSalaryForRole('dealer', undefined, posting as never);
       expect(salary.amount).toBe(200000);
-    });
-  });
-});
-
-// ============================================================================
-// SettlementCache Tests
-// ============================================================================
-
-describe('SettlementCache', () => {
-  beforeEach(() => {
-    SettlementCache.clear();
-  });
-
-  describe('set / get', () => {
-    it('캐시 저장 및 조회', () => {
-      const breakdown = {
-        hoursWorked: 8,
-        basePay: 120000,
-        allowancePay: 0,
-        totalPay: 120000,
-        taxAmount: 0,
-        afterTaxPay: 120000,
-      };
-
-      SettlementCache.set('workLog1', breakdown, 'hash1');
-      const cached = SettlementCache.get('workLog1');
-
-      expect(cached).not.toBeNull();
-      expect(cached?.basePay).toBe(120000);
-    });
-
-    it('존재하지 않는 키 조회 시 null', () => {
-      const cached = SettlementCache.get('nonexistent');
-      expect(cached).toBeNull();
-    });
-  });
-
-  describe('invalidate', () => {
-    it('단일 키 무효화', () => {
-      const breakdown = {
-        hoursWorked: 8,
-        basePay: 120000,
-        allowancePay: 0,
-        totalPay: 120000,
-        taxAmount: 0,
-        afterTaxPay: 120000,
-      };
-      SettlementCache.set('workLog1', breakdown, 'hash1');
-
-      SettlementCache.invalidate('workLog1');
-
-      expect(SettlementCache.get('workLog1')).toBeNull();
-    });
-
-    it('clear()로 전체 무효화', () => {
-      const breakdown = {
-        hoursWorked: 8,
-        basePay: 120000,
-        allowancePay: 0,
-        totalPay: 120000,
-        taxAmount: 0,
-        afterTaxPay: 120000,
-      };
-      SettlementCache.set('workLog1', breakdown, 'hash1');
-      SettlementCache.set('workLog2', breakdown, 'hash2');
-
-      SettlementCache.clear();
-
-      expect(SettlementCache.get('workLog1')).toBeNull();
-      expect(SettlementCache.get('workLog2')).toBeNull();
-    });
-  });
-
-  describe('isStale', () => {
-    it('inputHash가 다르면 stale', () => {
-      const breakdown = {
-        hoursWorked: 8,
-        basePay: 120000,
-        allowancePay: 0,
-        totalPay: 120000,
-        taxAmount: 0,
-        afterTaxPay: 120000,
-      };
-      SettlementCache.set('workLog1', breakdown, 'hash1');
-
-      expect(SettlementCache.isStale('workLog1', 'hash2')).toBe(true);
-    });
-
-    it('inputHash가 같으면 fresh', () => {
-      const breakdown = {
-        hoursWorked: 8,
-        basePay: 120000,
-        allowancePay: 0,
-        totalPay: 120000,
-        taxAmount: 0,
-        afterTaxPay: 120000,
-      };
-      SettlementCache.set('workLog1', breakdown, 'hash1');
-
-      expect(SettlementCache.isStale('workLog1', 'hash1')).toBe(false);
-    });
-
-    it('캐시에 없으면 stale', () => {
-      expect(SettlementCache.isStale('nonexistent', 'hash1')).toBe(true);
-    });
-  });
-
-  describe('generateKey', () => {
-    it('workLogId로 키 생성', () => {
-      const key = SettlementCache.generateKey('workLog1');
-      expect(key).toBe('workLog1');
-    });
-
-    it('오버라이드 포함 시 해시 추가', () => {
-      const key = SettlementCache.generateKey('workLog1', { customAmount: 10000 });
-      expect(key).toContain('workLog1');
-      expect(key.length).toBeGreaterThan('workLog1'.length);
     });
   });
 });

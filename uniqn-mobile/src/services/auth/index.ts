@@ -33,7 +33,6 @@ export {
   resetPassword,
   getUserProfile,
   reauthenticate,
-  getCurrentUser,
   getCurrentUserAsync,
   requireCurrentUser,
   onAuthStateChanged,

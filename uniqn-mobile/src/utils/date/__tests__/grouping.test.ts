@@ -18,7 +18,6 @@ import {
   expandDateRangeToRequirements,
   expandAllDateRangesToRequirements,
   isSingleDate,
-  getDateListFromRange,
 } from '../grouping';
 import type { DateRangeGroup } from '../grouping';
 
@@ -520,43 +519,5 @@ describe('isSingleDate', () => {
       endDate: '2025-01-17',
     });
     expect(isSingleDate(group)).toBe(false);
-  });
-});
-
-// ============================================================================
-// getDateListFromRange
-// ============================================================================
-
-describe('getDateListFromRange', () => {
-  it('단일 날짜 범위는 1개의 날짜를 반환한다', () => {
-    const group = createDateRangeGroup({
-      startDate: '2025-01-15',
-      endDate: '2025-01-15',
-    });
-    expect(getDateListFromRange(group)).toEqual(['2025-01-15']);
-  });
-
-  it('3일 범위는 3개의 날짜 목록을 반환한다', () => {
-    const group = createDateRangeGroup({
-      startDate: '2025-01-15',
-      endDate: '2025-01-17',
-    });
-    expect(getDateListFromRange(group)).toEqual(['2025-01-15', '2025-01-16', '2025-01-17']);
-  });
-
-  it('유효하지 않은 startDate는 빈 배열을 반환한다', () => {
-    const group = createDateRangeGroup({
-      startDate: '',
-      endDate: '2025-01-17',
-    });
-    expect(getDateListFromRange(group)).toEqual([]);
-  });
-
-  it('월을 넘어가는 범위의 날짜 목록을 올바르게 생성한다', () => {
-    const group = createDateRangeGroup({
-      startDate: '2025-01-30',
-      endDate: '2025-02-01',
-    });
-    expect(getDateListFromRange(group)).toEqual(['2025-01-30', '2025-01-31', '2025-02-01']);
   });
 });
