@@ -127,4 +127,29 @@ describe('buildLedgerRows', () => {
     ];
     expect(buildLedgerRows(prizes, parts).map((r) => r.rank)).toEqual([1, 2, 4]);
   });
+
+  it('C4: participant.prizePaidAt 를 구조·추가 행 모두에 배선', () => {
+    const prizes = [prize(1, 1000000)];
+    const parts = [
+      // 구조 행(1위) — 지급 완료 시각 보유
+      part({
+        id: 'a',
+        name: '앨리스',
+        finishPosition: 1,
+        prizeAmount: 1000000,
+        prizePaidAt: '2026-07-17T00:00:00.000Z',
+      }),
+      // 추가 행(3위, 구조 밖) — 지급 배정됐으나 미지급(null)
+      part({ id: 'c', name: '찰리', finishPosition: 3, prizeAmount: 200000, prizePaidAt: null }),
+    ];
+    const rows = buildLedgerRows(prizes, parts);
+    expect(rows.find((r) => r.rank === 1)?.prizePaidAt).toBe('2026-07-17T00:00:00.000Z');
+    expect(rows.find((r) => r.rank === 3)?.prizePaidAt).toBeNull();
+  });
+
+  it('C4: prizePaidAt 필드 부재 참가자는 null 로 배선(옵셔널 흡수)', () => {
+    const prizes = [prize(1, 1000000)];
+    const parts = [part({ id: 'a', finishPosition: 1, prizeAmount: 1000000 })];
+    expect(buildLedgerRows(prizes, parts)[0].prizePaidAt).toBeNull();
+  });
 });
