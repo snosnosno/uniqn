@@ -22,6 +22,19 @@ describe('deriveOvernightPreview', () => {
     expect(r.isEqual).toBe(true);
   });
 
+  it('시작==종료는 duration을 산정하지 않는다(24시간 누출 회귀 방어)', () => {
+    const r = deriveOvernightPreview('18:00', '18:00');
+    expect(r.durationMinutes).toBe(0);
+    expect(r.durationLabel).toBe('-');
+    expect(r.isNextDay).toBe(false);
+  });
+
+  it('24+ 명시 표기(42:00)는 isEqual이 아니라 익일이다', () => {
+    const r = deriveOvernightPreview('18:00', '42:00');
+    expect(r.isEqual).toBe(false);
+    expect(r.isNextDay).toBe(true);
+  });
+
   it('24+ 표기(25:00)는 이미 익일로 본다', () => {
     const r = deriveOvernightPreview('18:00', '25:00');
     expect(r.isNextDay).toBe(true);

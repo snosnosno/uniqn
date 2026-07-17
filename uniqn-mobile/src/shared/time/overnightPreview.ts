@@ -47,6 +47,16 @@ export function deriveOvernightPreview(startTime: string, endTime: string): Over
   if (start === null || end === null) return INVALID;
 
   const isEqual = end < MINUTES_PER_DAY && end === start;
+  // 시작==종료는 검증 오류 상태 — 24시간으로 해석하지 않고 duration 미산정.
+  if (isEqual) {
+    return {
+      valid: true,
+      isNextDay: false,
+      isEqual: true,
+      durationMinutes: 0,
+      durationLabel: '-',
+    };
+  }
 
   let endEffective = end;
   let isNextDay = false;
