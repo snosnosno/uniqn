@@ -10,9 +10,10 @@
 --     함수 168 = 163 + RPC 3(ops_set_monitor_config/ops_duplicate_tournament/ops_set_prize_paid)
 --       + 가드 트리거 fn 2(fn_ops_public_reports_guard/fn_analytics_events_guard)
 --     정책 110 = 104 + ops_public_reports 3(opr_*) + analytics_events 3(ae_*)
---   2026-07-18 좌석 기준 통일(마이그 20260718000000, prod 미적용 — 머지·prod 적용과 동기):
---     함수 172 = 168 + enforce_tournament_approval_authority 1(20260717093000 grid 하드닝, 168 산정 누락분)
+--   2026-07-18 좌석 기준 통일(마이그 20260718000000·000100·000200, prod 적용 완료):
+--     함수 173 = 168 + enforce_tournament_approval_authority 1(20260717093000 grid 하드닝, 168 산정 누락분)
 --       + 좌석 fn 3(_total_positions_from_schedule/fn_recalc_total_and_capacity/fn_sync_filled_positions_seat)
+--       + 보안 하드닝 fn 1(fn_work_logs_pin_posting_id, 20260718000100 리뷰 P1)
 --     정책 110 불변(좌석 마이그는 RLS 미변경).
 --
 -- ⚠️ 유지보수 계약: 이후 마이그레이션이 public 함수/정책을 추가·삭제하면
@@ -26,7 +27,7 @@
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=172
+-- PARITY_EXPECT_FUNCS=173
 -- PARITY_EXPECT_POLICIES=110
 -- ============================================================
 BEGIN;
@@ -46,8 +47,8 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  172,
-  'public function count == prod (172 = 168 + grid enforce fn 1 + 좌석 fn 3, 2026-07-18)');
+  173,
+  'public function count == prod (173 = 168 + grid enforce fn 1 + 좌석 fn 3 + 보안하드닝 fn 1, 2026-07-18)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(
