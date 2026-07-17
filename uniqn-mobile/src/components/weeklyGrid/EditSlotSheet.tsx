@@ -2,7 +2,7 @@
  * EditSlotSheet — 운영처 배치 슬롯 편집 시트(B2)
  *
  * 한 work_log 슬롯의 시간(시작/종료)·역할(StaffRole)·색상(U3 토큰 칩)·메모(S1 XSS)를 편집한다.
- * - 시간 변경 시 같은 스태프 + 같은 시작시각 중복충돌을 경고(차단 아님).
+ * - 시간 변경 시 같은 스태프의 근무 구간 겹침을 경고(차단 아님).
  * - 쓰기는 useUpdateSlot(→ workLogRepository.updateSlot) 경유. 색상 화이트리스트·메모 XSS 검증은 레포 경계.
  * - 배치 빼기(P0-1): useDeleteSlot 경유(직접추가/지원확정 분기는 서비스 담당), overlay 확인 패널.
  * - 색상 칩 className 은 SLOT_COLOR_CHIPS 의 정적 리터럴만 사용(NativeWind dark: 유실 방지).
@@ -101,7 +101,7 @@ export function EditSlotSheet({
     }
   }, [visible]);
 
-  // 중복충돌 경고(같은 스태프 + 같은 시작시각). 차단이 아닌 경고.
+  // 중복충돌 경고(같은 스태프의 근무 구간 겹침). 차단이 아닌 경고.
   const conflicts = useMemo(() => {
     if (!slot) return [];
     return detectSlotConflicts(
@@ -325,8 +325,7 @@ export function EditSlotSheet({
         {conflicts.length > 0 && (
           <View className="mt-2 rounded-lg bg-warning-50 dark:bg-warning-900/30 px-3 py-2">
             <Text className="text-sm font-sans-medium text-warning-700 dark:text-warning-300">
-              같은 스태프가 같은 시작시각에 {conflicts.length}건 더 배치돼 있어요. 그대로 저장할 수
-              있어요.
+              같은 스태프의 근무 시간이 {conflicts.length}건 겹쳐요. 그대로 저장할 수 있어요.
             </Text>
           </View>
         )}
