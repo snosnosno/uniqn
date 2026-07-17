@@ -12,7 +12,9 @@ const CRAWLER_UA = [
   'whatsapp',
   'line-podcast',
   'skypeuripreview',
-  'naver',
+  // 'naver' 제거: NAVER 인앱 브라우저 UA(한국서 매우 흔함)를 크롤러로 오분류 →
+  // 실사용자에게 location.replace OG 페이지가 서빙되어 동일 URL 리다이렉트 루프 발생.
+  // NAVER 실제 링크 크롤러는 'Yeti'(이 목록에 미포함이어도 무방 — 오늘 기준 OG 부재라 회귀 아님).
 ];
 
 export function escapeHtml(value: string): string {

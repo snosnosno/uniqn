@@ -10,6 +10,13 @@ describe('ogHtml', () => {
     expect(isCrawlerUserAgent('Mozilla/5.0 (iPhone)')).toBe(false);
     expect(isCrawlerUserAgent(null)).toBe(false);
   });
+  it('NAVER 인앱 브라우저는 크롤러로 오분류하지 않는다(리다이렉트 루프 방지)', () => {
+    expect(
+      isCrawlerUserAgent(
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0) AppleWebKit/605.1.15 NAVER(inapp; search; 1234; 12.0.0)'
+      )
+    ).toBe(false);
+  });
   it('OG 태그를 이스케이프해 삽입한다', () => {
     const html = buildOgHtml({
       title: '딜러 <b>모집</b>',
