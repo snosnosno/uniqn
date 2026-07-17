@@ -329,6 +329,9 @@ describe('useSettlement Hooks', () => {
       workspaces: [],
       isLoading: false,
       setActiveWorkspaceId: jest.fn(),
+      isFetching: false,
+      isError: false,
+      refetch: jest.fn(),
     });
   });
 
@@ -832,6 +835,9 @@ describe('useSettlement Hooks', () => {
         workspaces: [],
         isLoading: false,
         setActiveWorkspaceId: jest.fn(),
+        isFetching: false,
+        isError: false,
+        refetch: jest.fn(),
       });
 
       renderHook(() => useMySettlementSummary());
@@ -849,6 +855,9 @@ describe('useSettlement Hooks', () => {
         workspaces: [],
         isLoading: false,
         setActiveWorkspaceId: jest.fn(),
+        isFetching: false,
+        isError: false,
+        refetch: jest.fn(),
       });
 
       renderHook(() => useMySettlementSummary());
@@ -868,6 +877,9 @@ describe('useSettlement Hooks', () => {
         workspaces: [],
         isLoading: false,
         setActiveWorkspaceId: jest.fn(),
+        isFetching: false,
+        isError: false,
+        refetch: jest.fn(),
       });
       mockGetMySettlementSummary.mockResolvedValue({
         totalJobPostings: 0,

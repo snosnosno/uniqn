@@ -21,8 +21,14 @@ export interface UseActiveWorkspaceResult {
   /** 사용자가 속한 모든 워크스페이스 (소유 + 멤버) */
   workspaces: Workspace[];
   isLoading: boolean;
+  /** 최초 로딩 이후 재조회 포함 진행 중 상태 (자동 생성 후 refetch 창 플래시 방지용). */
+  isFetching: boolean;
+  /** 워크스페이스 목록 조회 실패 여부 (성공-빈목록 vs 에러 구분용). */
+  isError: boolean;
   /** 사용자가 활성 워크스페이스 변경 */
   setActiveWorkspaceId: (id: string | null) => void;
+  /** 워크스페이스 목록 재조회 (조회 실패 시 수동 재시도용). */
+  refetch: () => void;
 }
 
 /**
@@ -33,7 +39,7 @@ export interface UseActiveWorkspaceResult {
  * - workspaces.length === 0 인 동안에는 activeWorkspace = undefined.
  */
 export function useActiveWorkspace(): UseActiveWorkspaceResult {
-  const { workspaces, isLoading } = useWorkspaces();
+  const { workspaces, isLoading, isFetching, error, refetch } = useWorkspaces();
   const activeId = useActiveWorkspaceStore(selectActiveWorkspaceId);
   const setActiveWorkspaceId = useActiveWorkspaceStore(selectSetActiveWorkspaceId);
 
@@ -53,6 +59,9 @@ export function useActiveWorkspace(): UseActiveWorkspaceResult {
     activeWorkspace,
     workspaces,
     isLoading,
+    isFetching,
+    isError: !!error,
     setActiveWorkspaceId,
+    refetch,
   };
 }

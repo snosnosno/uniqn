@@ -42,7 +42,7 @@ import {
   GridBadgeLegend,
 } from '@/components/weeklyGrid';
 import { useWeeklyGridEnabled } from '@/hooks';
-import { useActiveWorkspace } from '@/hooks/workspace';
+import { useActiveWorkspace, useEnsureDefaultWorkspace } from '@/hooks/workspace';
 import {
   useGridSummary,
   useVenueContainers,
@@ -86,7 +86,19 @@ export default function WeeklyGridScreen() {
     activeWorkspace,
     setActiveWorkspaceId,
     isLoading: wsLoading,
+    isFetching: wsFetching,
+    isError: wsError,
+    refetch: refetchWorkspaces,
   } = useActiveWorkspace();
+
+  // 신규 employer(워크스페이스 0개) 안전망 — 공고 경로(getDefaultWorkspaceIdForOwner)와 동일.
+  // 조회가 성공적으로 끝났고(로딩/에러 아님) 0개일 때만 기본 워크스페이스 1회 자동 생성.
+  // 이게 없으면 workspaceId undefined → "운영처 만들기" 버튼이 영구 비활성인 데드엔드가 된다.
+  const { isCreating: isCreatingWorkspace, retry: retryCreateWorkspace } =
+    useEnsureDefaultWorkspace({
+      isReady: enabled && !wsLoading && !wsError,
+      isEmpty: workspaces.length === 0,
+    });
 
   // 플래그 OFF면 아래에서 Redirect 하지만 그 전에 훅이 1회 평가되므로,
   // 플래그 값을 enabled 로 넘겨 OFF 시 그리드 RPC 자체를 발사하지 않는다.
@@ -222,13 +234,36 @@ export default function WeeklyGridScreen() {
         onAddVenue={() => setCreateSheetVisible(true)}
       />
 
-      {/* U4: 운영처 0 — 컨테이너 쿼리가 로딩을 마쳤고(not loading) 컨테이너가 0개일 때만 빈상태.
-          컨테이너는 로드됐으나 selectedVenueId 자기-치유 effect 가 아직 실행 전(1프레임)인 상태는
-          빈상태 오표시를 막기 위해 로딩으로 처리. */}
+      {/* U4: 운영처 0 상태 — 워크스페이스/운영처 준비 단계를 명확히 구분한다.
+          운영처(venue)는 워크스페이스에 속하므로 activeWorkspace 부재 시 "운영처 만들기"는 데드엔드
+          (workspaceId undefined → 생성 버튼 영구 비활성)다. 따라서 아래 순서로 분기:
+          로딩(자동 워크스페이스/운영처 생성·재조회 포함) → 워크스페이스 로드실패(재조회) →
+          워크스페이스 준비실패(재생성) → 운영처 없음(생성) → (자기-치유 대기)로딩. */}
       {!hasVenue ? (
         <View className="flex-1 items-center justify-center px-6">
-          {!(wsLoading || containersQuery.isLoading || isAutoCreatingVenue) &&
-          containers.length === 0 ? (
+          {wsLoading ||
+          wsFetching ||
+          containersQuery.isLoading ||
+          isAutoCreatingVenue ||
+          isCreatingWorkspace ? (
+            <Loading />
+          ) : wsError ? (
+            <EmptyState
+              icon={<MapPinIcon size={48} color={SECONDARY_PALETTE[400]} />}
+              title="워크스페이스를 불러오지 못했어요"
+              description="네트워크 상태를 확인하고 다시 시도해주세요."
+              actionLabel="다시 시도"
+              onAction={refetchWorkspaces}
+            />
+          ) : !activeWorkspace ? (
+            <EmptyState
+              icon={<MapPinIcon size={48} color={SECONDARY_PALETTE[400]} />}
+              title="워크스페이스를 준비하지 못했어요"
+              description="잠시 후 다시 시도해주세요."
+              actionLabel="다시 시도"
+              onAction={retryCreateWorkspace}
+            />
+          ) : containers.length === 0 ? (
             <EmptyState
               icon={<MapPinIcon size={48} color={SECONDARY_PALETTE[400]} />}
               title="운영처가 없어요"
