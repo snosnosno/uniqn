@@ -28,6 +28,8 @@ export interface UseWorkspacesResult {
   ownedWorkspaces: Workspace[];
   memberWorkspaces: Workspace[];
   isLoading: boolean;
+  /** 최초 로딩 이후의 재조회(invalidate 후 refetch 등)를 포함한 진행 중 상태. */
+  isFetching: boolean;
   error: unknown;
   refetch: () => void;
 }
@@ -59,6 +61,7 @@ export function useWorkspaces(): UseWorkspacesResult {
     ownedWorkspaces,
     memberWorkspaces,
     isLoading: query.isLoading,
+    isFetching: query.isFetching,
     error: query.error,
     refetch: query.refetch,
   };

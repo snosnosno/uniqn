@@ -31,6 +31,11 @@ export {
 export { useActiveWorkspace, type UseActiveWorkspaceResult } from './useActiveWorkspace';
 
 export {
+  useEnsureDefaultWorkspace,
+  type EnsureDefaultWorkspaceInput,
+} from './useEnsureDefaultWorkspace';
+
+export {
   useWorkspaceRevocationGuard,
   type UseWorkspaceRevocationGuardArgs,
 } from './useWorkspaceRevocationGuard';
