@@ -3283,16 +3283,6 @@ export type Database = {
           region: string;
         }[];
       };
-      search_users_for_collaborator_invite: {
-        Args: { p_email_query: string; p_job_posting_id: string };
-        Returns: {
-          email: string;
-          id: string;
-          name: string;
-          nickname: string;
-          photo_url: string;
-        }[];
-      };
       sync_schedule_board: { Args: { p_job_posting_id: string }; Returns: Json };
       toggle_board_post_vote: {
         Args: { p_post_id: string; p_user_id: string; p_vote_type: string };
