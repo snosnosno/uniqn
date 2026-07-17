@@ -2,7 +2,8 @@
  * addSlotPayload 빌더 테스트 — 추가 시트(B1) write 경계 순수 함수.
  *
  * 검증 포인트: 단일 assignment 구성 · E5 날짜 정규화 · role==='other' 분기 ·
- * timeSlot 트림/생략 · S1 XSS 거부 · 필수값/날짜 검증.
+ * customRole S1 XSS 거부 · 필수값/날짜 검증.
+ * (시간대 구조화 조합·형식 검증은 addSlotPayload.overnight.test.ts 참조)
  */
 import { buildAddSlotPayload } from '../addSlotPayload';
 import { ValidationError } from '@/errors';
@@ -39,21 +40,6 @@ describe('buildAddSlotPayload', () => {
 
     const nonOther = buildAddSlotPayload({ ...base, role: 'dealer', customRole: '무시됨' });
     expect(nonOther.assignments[0]).not.toHaveProperty('customRole');
-  });
-
-  it('timeSlot 을 트림해 동봉하고 공백만 있으면 생략한다', () => {
-    expect(
-      buildAddSlotPayload({ ...base, timeSlot: '  18:00~02:00  ' }).assignments[0]!.timeSlot
-    ).toBe('18:00~02:00');
-    expect(buildAddSlotPayload({ ...base, timeSlot: '   ' }).assignments[0]).not.toHaveProperty(
-      'timeSlot'
-    );
-  });
-
-  it('S1: timeSlot 에 XSS 패턴이 있으면 ValidationError 를 던진다', () => {
-    expect(() => buildAddSlotPayload({ ...base, timeSlot: '<script>alert(1)</script>' })).toThrow(
-      ValidationError
-    );
   });
 
   it('S1: customRole(other) 에 XSS 패턴이 있으면 ValidationError 를 던진다', () => {

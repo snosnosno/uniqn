@@ -15,12 +15,12 @@
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { SECONDARY_PALETTE } from '@/constants/colors';
 import { SheetModal } from '@/components/ui/SheetModal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { TimeWheelPicker, type TimeValue } from '@/components/ui/TimeWheelPicker';
-import { ChevronDownIcon, AlertCircleIcon } from '@/components/icons';
+import { TimeTriggerField, timeStringToValue, timeValueToString } from './SlotTimeField';
+import { OvernightPreviewBanner } from './OvernightPreviewBanner';
 import { STAFF_ROLES } from '@/constants';
 import { useToastStore } from '@/stores/toastStore';
 import { isAppError } from '@/errors';
@@ -55,66 +55,6 @@ export interface EditSlotSheetProps {
 
 const DEFAULT_START = DEFAULT_SLOT_START_TIME;
 const DEFAULT_END = '02:00';
-
-const TIME_RE = /^(\d{1,2}):(\d{2})$/;
-
-/** 'HH:mm' → TimeValue{hour,minute}. 이 화면은 0~23 표기만 사용(다음날 24+ 미사용). */
-function timeStringToValue(time: string): TimeValue {
-  const match = time.match(TIME_RE);
-  if (!match) return { hour: 0, minute: 0 };
-  const hour = Math.min(23, Math.max(0, parseInt(match[1], 10)));
-  const minute = parseInt(match[2], 10);
-  return { hour, minute };
-}
-
-/** TimeValue{hour,minute} → 'HH:mm'(0패딩). */
-function timeValueToString({ hour, minute }: TimeValue): string {
-  const h = hour.toString().padStart(2, '0');
-  const m = minute.toString().padStart(2, '0');
-  return `${h}:${m}`;
-}
-
-/** 'HH:mm' → '오전/오후 H:mm'(TimePicker formatTimeDisplay 동등 포맷). */
-function formatTimeDisplay(time: string): string {
-  const match = time.match(TIME_RE);
-  if (!match) return time || '시간 선택';
-  const hour = parseInt(match[1], 10);
-  const minutes = match[2];
-  const period = hour < 12 ? '오전' : '오후';
-  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-  return `${period} ${displayHour}:${minutes}`;
-}
-
-/** 시간 트리거 필드 — 탭 시 휠 피커를 연다(TimePicker 트리거 스타일 동등). */
-function TimeTriggerField({
-  label,
-  value,
-  onPress,
-}: {
-  label: string;
-  value: string;
-  onPress: () => void;
-}) {
-  return (
-    <View>
-      <Text className="mb-2 font-sans-medium text-content-primary dark:text-off-white">
-        {label}
-      </Text>
-      <Pressable
-        onPress={onPress}
-        accessibilityRole="button"
-        accessibilityLabel={`${label} 시간 선택`}
-        accessibilityHint="탭하여 시간을 선택하세요"
-        className="flex-row items-center px-4 py-3 rounded-lg border-2 bg-surface-card border-secondary-300 dark:border-surface-overlay"
-      >
-        <Text className="flex-1 text-base text-content-primary font-sans">
-          {formatTimeDisplay(value)}
-        </Text>
-        <ChevronDownIcon size={20} color={SECONDARY_PALETTE[500]} />
-      </Pressable>
-    </View>
-  );
-}
 
 export function EditSlotSheet({
   visible,
@@ -378,24 +318,8 @@ export function EditSlotSheet({
           </View>
         </View>
 
-        {/* 익일 프리뷰 / 시작==종료 오류 안내(저장 차단) */}
-        {timePreview.isEqual ? (
-          <View className="mt-2 flex-row items-center rounded-lg bg-error-50 p-3 dark:bg-error-900/20">
-            <AlertCircleIcon size={16} color="#DC2626" />
-            <Text className="ml-2 font-sans text-sm text-error-600 dark:text-error-400">
-              시작과 종료 시간이 같아요. 다시 확인해주세요.
-            </Text>
-          </View>
-        ) : (
-          <View className="mt-2 flex-row items-center justify-between rounded-lg bg-surface-page p-3 dark:bg-surface">
-            <Text className="font-sans text-sm text-content-muted dark:text-secondary-400">
-              {timePreview.isNextDay ? `익일 ${endTime} 종료` : '당일 근무'}
-            </Text>
-            <Text className="font-display text-base text-primary-600 dark:text-primary-400">
-              총 {timePreview.durationLabel}
-            </Text>
-          </View>
-        )}
+        {/* 익일 프리뷰 / 시작==종료 오류 안내(저장 차단은 아래 timePreview.isEqual 가드) */}
+        <OvernightPreviewBanner startTime={startTime} endTime={endTime} />
 
         {/* 중복충돌 경고(차단 아님) */}
         {conflicts.length > 0 && (

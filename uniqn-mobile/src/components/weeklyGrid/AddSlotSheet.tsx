@@ -11,24 +11,30 @@
  * 가 confirmedStaff/jobPostings 와 함께 담당한다(W-1) — 시트는 별도 무효화하지 않는다.
  *
  * 후보행·역할칩·전화검색 폼은 AddStaffModal 과 공유하는 프리미티브(@/components/staffPicker)로 통합.
+ * 시간대는 자유 텍스트가 아닌 시작/종료 구조화 입력(EditSlotSheet 과 동일한 TimeTriggerField +
+ * 익일 프리뷰)으로 받아 정규 'HH:mm - HH:mm' 로만 저장한다(형식 검증은 addSlotPayload).
  *
  * 중첩 RN Modal iOS 터치먹통(pitfall_nested_rn_modal_touch_dead) 회피 — 전화검색은 AddStaffModal
- * 모달을 중첩하지 않고 동일 훅(useStaffPhoneSearch)을 단일 시트 내부에 인라인 재사용한다.
+ * 모달을 중첩하지 않고 동일 훅(useStaffPhoneSearch)을 단일 시트 내부에 인라인 재사용하며,
+ * 시간 휠 피커는 SheetModal 의 overlay(Modal 루트 렌더)로 띄운다(EditSlotSheet·AddStaffModal 패턴).
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
-import { Modal } from '@/components/ui/Modal';
+import { SheetModal } from '@/components/ui/SheetModal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Loading } from '@/components/ui/Loading';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { TimeWheelPicker, type TimeValue } from '@/components/ui/TimeWheelPicker';
 import { UserPlusIcon, UsersIcon, PhoneIcon, MegaphoneIcon } from '@/components/icons';
 import { CandidateRow, RoleChips, PhoneSearchField } from '@/components/staffPicker';
 import { STAFF_ROLES } from '@/constants';
 import { SECONDARY_PALETTE } from '@/constants/colors';
+import { DEFAULT_SLOT_START_TIME } from '@/domains/weeklyGrid';
+import { deriveOvernightPreview } from '@/shared/time';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import { useStaffPhoneSearch } from '@/hooks/useStaffPhoneSearch';
 import { useToastStore } from '@/stores/toastStore';
@@ -37,11 +43,17 @@ import { logger } from '@/utils/logger';
 import { parseDateString } from '@/utils/date';
 import type { UserPhoneSearchResult } from '@/repositories';
 import { buildAddSlotPayload } from './addSlotPayload';
+import { TimeTriggerField, timeStringToValue, timeValueToString } from './SlotTimeField';
+import { OvernightPreviewBanner } from './OvernightPreviewBanner';
 
 type AddMode = 'pool' | 'phone' | 'posting';
 
 const OTHER_ROLE_KEY = 'other';
 const KNOWN_ROLE_KEYS = new Set<string>(STAFF_ROLES.map((role) => role.key));
+
+// 시간대 기본값 SSOT — 홀덤펍 저녁 운영 기준(EditSlotSheet 과 동일).
+const DEFAULT_START = DEFAULT_SLOT_START_TIME;
+const DEFAULT_END = '02:00';
 
 export interface AddSlotSheetProps {
   visible: boolean;
@@ -111,13 +123,18 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
   const [picked, setPicked] = useState<PickedStaff | null>(null);
   const [roleKey, setRoleKey] = useState('');
   const [customRole, setCustomRole] = useState('');
-  const [timeSlot, setTimeSlot] = useState('');
+  const [startTime, setStartTime] = useState(DEFAULT_START);
+  const [endTime, setEndTime] = useState(DEFAULT_END);
+  // 휠 피커 상태(시작/종료 구분). 중첩 Modal 없이 SheetModal overlay 로 단일 렌더.
+  const [activePicker, setActivePicker] = useState<'start' | 'end' | null>(null);
 
   const resetSelection = useCallback(() => {
     setPicked(null);
     setRoleKey('');
     setCustomRole('');
-    setTimeSlot('');
+    setStartTime(DEFAULT_START);
+    setEndTime(DEFAULT_END);
+    setActivePicker(null);
   }, []);
 
   const resetAll = useCallback(() => {
@@ -164,7 +181,9 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
       person.defaultRole && KNOWN_ROLE_KEYS.has(person.defaultRole) ? person.defaultRole : ''
     );
     setCustomRole('');
-    setTimeSlot('');
+    setStartTime(DEFAULT_START);
+    setEndTime(DEFAULT_END);
+    setActivePicker(null);
   }, []);
 
   const handleSearch = useCallback(() => {
@@ -172,23 +191,59 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
     void phoneSearch.search(phone);
   }, [phone, phoneSearch]);
 
+  // 입력 중 익일 여부·근무시간 프리뷰(SSOT 파생). end==start 는 추가 차단.
+  const timePreview = useMemo(
+    () => deriveOvernightPreview(startTime, endTime),
+    [startTime, endTime]
+  );
+
   const isCustomRole = roleKey === OTHER_ROLE_KEY;
   const canSubmit =
-    !!picked && !!roleKey && (!isCustomRole || customRole.trim().length > 0) && !isAddingStaff;
+    !!picked &&
+    !!roleKey &&
+    (!isCustomRole || customRole.trim().length > 0) &&
+    !timePreview.isEqual &&
+    !isAddingStaff;
+
+  // 현재 활성 피커의 값/제목(시작/종료).
+  const activePickerValue = useMemo<TimeValue>(() => {
+    const source = activePicker === 'end' ? endTime : startTime;
+    return timeStringToValue(source);
+  }, [activePicker, startTime, endTime]);
+
+  const activePickerTitle = activePicker === 'end' ? '종료 시간' : '시작 시간';
+
+  // 휠 피커 선택 완료 → 'HH:mm' 로 되돌려 반영.
+  const handlePickerConfirm = useCallback(
+    (timeValue: TimeValue) => {
+      const next = timeValueToString(timeValue);
+      if (activePicker === 'start') {
+        setStartTime(next);
+      } else if (activePicker === 'end') {
+        setEndTime(next);
+      }
+      setActivePicker(null);
+    },
+    [activePicker]
+  );
 
   const handleSubmit = useCallback(async () => {
     if (!picked || !roleKey) {
       return;
     }
+    if (timePreview.isEqual) {
+      return; // 시작==종료는 익일 오해석 방지 위해 추가 불가
+    }
     try {
-      // write 경계: 페이로드 빌더가 날짜 정규화(E5)·XSS 검증(S1)을 수행(실패 시 throw).
+      // write 경계: 페이로드 빌더가 날짜 정규화(E5)·시간 형식 검증(TIME_RE)·XSS 검증(S1)을 수행(실패 시 throw).
       const payload = buildAddSlotPayload({
         containerId,
         staffId: picked.staffId,
         date,
         role: roleKey,
         customRole: isCustomRole ? customRole : undefined,
-        timeSlot,
+        startTime,
+        endTime,
       });
       // 그리드 읽기(summary/daySlots) 무효화는 useConfirmedStaff.addStaff onSuccess 가 담당(W-1).
       await addStaff(payload);
@@ -207,7 +262,9 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
     roleKey,
     isCustomRole,
     customRole,
-    timeSlot,
+    startTime,
+    endTime,
+    timePreview.isEqual,
     containerId,
     date,
     addStaff,
@@ -231,187 +288,227 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
     return parsed ? format(parsed, 'M월 d일 (E)', { locale: ko }) : date;
   }, [date]);
 
+  // 하단 고정 액션(취소/추가) — 공고 열기 모드는 자체 CTA 를 쓰므로 footer 없음.
+  const footer =
+    mode !== 'posting' ? (
+      <View className="flex-row gap-2">
+        <Button variant="outline" onPress={handleClose} fullWidth className="flex-1">
+          취소
+        </Button>
+        <Button
+          variant="primary"
+          onPress={handleSubmit}
+          disabled={!canSubmit}
+          loading={isAddingStaff}
+          icon={<UserPlusIcon size={18} color="#FFFFFF" />}
+          fullWidth
+          className="flex-1"
+        >
+          추가
+        </Button>
+      </View>
+    ) : undefined;
+
+  // 시간 휠 피커 — SheetModal 루트에 embedded 오버레이로 렌더(중첩 RN Modal 회피).
+  const pickerOverlay = (
+    <TimeWheelPicker
+      visible={activePicker !== null}
+      value={activePickerValue}
+      title={activePickerTitle}
+      minHour={0}
+      maxHour={23}
+      minuteInterval={30}
+      onConfirm={handlePickerConfirm}
+      onClose={() => setActivePicker(null)}
+      embedded
+    />
+  );
+
   return (
-    <Modal visible={visible} onClose={handleClose} title="인원 추가" size="lg" position="bottom">
-      {/* 선택일(그리드 맥락에서 고정) */}
-      <View className="mb-3 flex-row items-center gap-2">
-        <Text className="text-sm text-content-secondary font-sans">배치일</Text>
-        <Text className="text-sm font-sans-semibold text-content-primary">{dateLabel}</Text>
-      </View>
-
-      {/* 추가 방식 세그먼트 */}
-      <View className="mb-3 flex-row gap-1 rounded-lg bg-surface-page p-1 dark:bg-surface-elevated">
-        <ModeTab
-          active={mode === 'pool'}
-          label="풀 꽂기"
-          icon={
-            <UsersIcon size={16} color={mode === 'pool' ? '#FFFFFF' : SECONDARY_PALETTE[500]} />
-          }
-          onPress={() => {
-            setMode('pool');
-            resetSelection();
-          }}
-        />
-        <ModeTab
-          active={mode === 'phone'}
-          label="전화검색"
-          icon={
-            <PhoneIcon size={16} color={mode === 'phone' ? '#FFFFFF' : SECONDARY_PALETTE[500]} />
-          }
-          onPress={() => {
-            setMode('phone');
-            resetSelection();
-          }}
-        />
-        <ModeTab
-          active={mode === 'posting'}
-          label="공고 열기"
-          icon={
-            <MegaphoneIcon
-              size={16}
-              color={mode === 'posting' ? '#FFFFFF' : SECONDARY_PALETTE[500]}
-            />
-          }
-          onPress={() => setMode('posting')}
-        />
-      </View>
-
-      {mode === 'posting' ? (
-        <View className="gap-4 py-2">
-          <Text className="text-sm text-content-secondary font-sans">
-            공고를 새로 열어 모집·발행합니다. 이 운영처로 연결됩니다.
-          </Text>
-          <Button
-            variant="primary"
-            onPress={handleOpenPosting}
-            icon={<MegaphoneIcon size={18} color="#FFFFFF" />}
-            fullWidth
-          >
-            공고 작성으로 이동
-          </Button>
+    <SheetModal
+      visible={visible}
+      onClose={handleClose}
+      title="인원 추가"
+      isLoading={isAddingStaff}
+      footer={footer}
+      overlay={pickerOverlay}
+    >
+      <View className="p-5">
+        {/* 선택일(그리드 맥락에서 고정) */}
+        <View className="mb-3 flex-row items-center gap-2">
+          <Text className="text-sm text-content-secondary font-sans">배치일</Text>
+          <Text className="text-sm font-sans-semibold text-content-primary">{dateLabel}</Text>
         </View>
-      ) : (
-        <ScrollView className="max-h-[440px]" keyboardShouldPersistTaps="handled">
-          {/* 전화검색 입력(전화 모드만) */}
-          {mode === 'phone' ? (
-            <PhoneSearchField
-              phone={phone}
-              onChangePhone={setPhone}
-              onSearch={handleSearch}
-              isSearching={phoneSearch.isSearching}
-            />
-          ) : null}
 
-          {/* 후보 리스트(풀 또는 전화 검색 결과) */}
-          {mode === 'pool' ? (
-            isPoolLoading ? (
+        {/* 추가 방식 세그먼트 */}
+        <View className="mb-3 flex-row gap-1 rounded-lg bg-surface-page p-1 dark:bg-surface-elevated">
+          <ModeTab
+            active={mode === 'pool'}
+            label="풀 꽂기"
+            icon={
+              <UsersIcon size={16} color={mode === 'pool' ? '#FFFFFF' : SECONDARY_PALETTE[500]} />
+            }
+            onPress={() => {
+              setMode('pool');
+              resetSelection();
+            }}
+          />
+          <ModeTab
+            active={mode === 'phone'}
+            label="전화검색"
+            icon={
+              <PhoneIcon size={16} color={mode === 'phone' ? '#FFFFFF' : SECONDARY_PALETTE[500]} />
+            }
+            onPress={() => {
+              setMode('phone');
+              resetSelection();
+            }}
+          />
+          <ModeTab
+            active={mode === 'posting'}
+            label="공고 열기"
+            icon={
+              <MegaphoneIcon
+                size={16}
+                color={mode === 'posting' ? '#FFFFFF' : SECONDARY_PALETTE[500]}
+              />
+            }
+            onPress={() => setMode('posting')}
+          />
+        </View>
+
+        {mode === 'posting' ? (
+          <View className="gap-4 py-2">
+            <Text className="text-sm text-content-secondary font-sans">
+              공고를 새로 열어 모집·발행합니다. 이 운영처로 연결됩니다.
+            </Text>
+            <Button
+              variant="primary"
+              onPress={handleOpenPosting}
+              icon={<MegaphoneIcon size={18} color="#FFFFFF" />}
+              fullWidth
+            >
+              공고 작성으로 이동
+            </Button>
+          </View>
+        ) : (
+          <>
+            {/* 전화검색 입력(전화 모드만) */}
+            {mode === 'phone' ? (
+              <PhoneSearchField
+                phone={phone}
+                onChangePhone={setPhone}
+                onSearch={handleSearch}
+                isSearching={phoneSearch.isSearching}
+              />
+            ) : null}
+
+            {/* 후보 리스트(풀 또는 전화 검색 결과) */}
+            {mode === 'pool' ? (
+              isPoolLoading ? (
+                <View className="items-center py-6">
+                  <Loading size="small" />
+                </View>
+              ) : poolPeople.length === 0 ? (
+                <View className="py-4">
+                  {/* 콜드스타트(P0-2): 첫 운영자는 풀이 비어 있다 — 죽은 안내문 대신 행동 CTA 2개 */}
+                  <EmptyState
+                    icon={<UsersIcon size={40} color={SECONDARY_PALETTE[400]} />}
+                    title="확정 스태프 풀이 비어 있어요"
+                    description="공고로 모집하거나, 전화번호로 가입자를 찾아 바로 배치할 수 있어요."
+                    actionLabel="공고로 모집하기"
+                    onAction={handleOpenPosting}
+                    secondaryActionLabel="전화번호로 찾기"
+                    onSecondaryAction={() => {
+                      setMode('phone');
+                      resetSelection();
+                    }}
+                    compact
+                  />
+                </View>
+              ) : (
+                <View className="mt-1 gap-2">
+                  {poolPeople.map((person) => (
+                    <CandidateRow
+                      key={person.staffId}
+                      name={person.name}
+                      photoURL={person.photoURL}
+                      picked={picked?.staffId === person.staffId}
+                      onPress={() => pickStaff(person)}
+                    />
+                  ))}
+                </View>
+              )
+            ) : phoneSearch.isSearching ? (
               <View className="items-center py-6">
                 <Loading size="small" />
               </View>
-            ) : poolPeople.length === 0 ? (
-              <View className="py-4">
-                {/* 콜드스타트(P0-2): 첫 운영자는 풀이 비어 있다 — 죽은 안내문 대신 행동 CTA 2개 */}
-                <EmptyState
-                  icon={<UsersIcon size={40} color={SECONDARY_PALETTE[400]} />}
-                  title="확정 스태프 풀이 비어 있어요"
-                  description="공고로 모집하거나, 전화번호로 가입자를 찾아 바로 배치할 수 있어요."
-                  actionLabel="공고로 모집하기"
-                  onAction={handleOpenPosting}
-                  secondaryActionLabel="전화번호로 찾기"
-                  onSecondaryAction={() => {
-                    setMode('phone');
-                    resetSelection();
-                  }}
-                  compact
-                />
-              </View>
-            ) : (
-              <View className="mt-1 gap-2">
-                {poolPeople.map((person) => (
+            ) : phoneSearch.searched && phoneSearch.results.length === 0 ? (
+              <Text className="py-4 text-center text-sm text-content-secondary font-sans">
+                일치하는 가입자를 찾을 수 없습니다.
+              </Text>
+            ) : phoneSearch.results.length > 0 ? (
+              <View className="mt-3 gap-2">
+                {phoneSearch.results.map((user: UserPhoneSearchResult) => (
                   <CandidateRow
-                    key={person.staffId}
-                    name={person.name}
-                    photoURL={person.photoURL}
-                    picked={picked?.staffId === person.staffId}
-                    onPress={() => pickStaff(person)}
+                    key={user.uid}
+                    name={user.name}
+                    nickname={user.nickname ?? undefined}
+                    region={user.region ?? undefined}
+                    photoURL={user.photoURL ?? undefined}
+                    picked={picked?.staffId === user.uid}
+                    onPress={() =>
+                      pickStaff({
+                        staffId: user.uid,
+                        name: user.name,
+                        photoURL: user.photoURL ?? undefined,
+                      })
+                    }
                   />
                 ))}
               </View>
-            )
-          ) : phoneSearch.isSearching ? (
-            <View className="items-center py-6">
-              <Loading size="small" />
-            </View>
-          ) : phoneSearch.searched && phoneSearch.results.length === 0 ? (
-            <Text className="py-4 text-center text-sm text-content-secondary font-sans">
-              일치하는 가입자를 찾을 수 없습니다.
-            </Text>
-          ) : phoneSearch.results.length > 0 ? (
-            <View className="mt-3 gap-2">
-              {phoneSearch.results.map((user: UserPhoneSearchResult) => (
-                <CandidateRow
-                  key={user.uid}
-                  name={user.name}
-                  nickname={user.nickname ?? undefined}
-                  region={user.region ?? undefined}
-                  photoURL={user.photoURL ?? undefined}
-                  picked={picked?.staffId === user.uid}
-                  onPress={() =>
-                    pickStaff({
-                      staffId: user.uid,
-                      name: user.name,
-                      photoURL: user.photoURL ?? undefined,
-                    })
-                  }
-                />
-              ))}
-            </View>
-          ) : null}
+            ) : null}
 
-          {/* 배정 입력(후보 선택 후) */}
-          {picked ? (
-            <View className="mt-4 gap-3 border-t border-secondary-200 pt-4 dark:border-surface-overlay">
-              <Text className="text-sm font-sans-medium text-content-secondary">역할</Text>
-              <RoleChips value={roleKey} onChange={setRoleKey} />
+            {/* 배정 입력(후보 선택 후) */}
+            {picked ? (
+              <View className="mt-4 gap-3 border-t border-secondary-200 pt-4 dark:border-surface-overlay">
+                <Text className="text-sm font-sans-medium text-content-secondary">역할</Text>
+                <RoleChips value={roleKey} onChange={setRoleKey} />
 
-              {isCustomRole ? (
-                <Input
-                  label="역할명 직접 입력"
-                  value={customRole}
-                  onChangeText={setCustomRole}
-                  placeholder="예: 칩 러너"
-                />
-              ) : null}
+                {isCustomRole ? (
+                  <Input
+                    label="역할명 직접 입력"
+                    value={customRole}
+                    onChangeText={setCustomRole}
+                    placeholder="예: 칩 러너"
+                  />
+                ) : null}
 
-              <Input
-                label="시간대 (선택)"
-                value={timeSlot}
-                onChangeText={setTimeSlot}
-                placeholder="예: 18:00~02:00"
-              />
-            </View>
-          ) : null}
-        </ScrollView>
-      )}
-
-      {mode !== 'posting' ? (
-        <View className="mt-4 flex-row gap-2">
-          <Button variant="outline" onPress={handleClose} fullWidth className="flex-1">
-            취소
-          </Button>
-          <Button
-            variant="primary"
-            onPress={handleSubmit}
-            disabled={!canSubmit}
-            loading={isAddingStaff}
-            icon={<UserPlusIcon size={18} color="#FFFFFF" />}
-            fullWidth
-            className="flex-1"
-          >
-            추가
-          </Button>
-        </View>
-      ) : null}
-    </Modal>
+                {/* 시간대 — 자유 텍스트 대신 시작/종료 구조화 입력 + 익일 프리뷰(EditSlotSheet 동등) */}
+                <View>
+                  <View className="flex-row gap-3">
+                    <View className="flex-1">
+                      <TimeTriggerField
+                        label="시작"
+                        value={startTime}
+                        onPress={() => setActivePicker('start')}
+                      />
+                    </View>
+                    <View className="flex-1">
+                      <TimeTriggerField
+                        label="종료"
+                        value={endTime}
+                        onPress={() => setActivePicker('end')}
+                      />
+                    </View>
+                  </View>
+                  <OvernightPreviewBanner startTime={startTime} endTime={endTime} />
+                </View>
+              </View>
+            ) : null}
+          </>
+        )}
+      </View>
+    </SheetModal>
   );
 }
