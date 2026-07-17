@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import type {
   PostingRoleDisplayModel,
   PostingScheduleModel,
@@ -100,6 +100,8 @@ export function PostingScheduleContent({
       {schedule.sections.map((section) => {
         const dateRangeText = display === 'card' ? section.label.split('\n')[0] : section.label;
         const showCardDayCount = display === 'card' && section.dayCount > 1;
+        // 그룹 섹션: card=요약만, detail=일별 전개(8일↑ 기본 접힘)
+        const renderDays = display === 'detail' && section.days && section.days.length > 0;
 
         return (
           <View
@@ -123,46 +125,124 @@ export function PostingScheduleContent({
               </Text>
             ) : null}
 
-            {section.timeSlots.map((slot) => (
-              <View key={slot.key} className={display === 'card' ? 'mt-1.5 flex-row' : 'ml-2 mt-2'}>
-                {display === 'card' ? (
-                  <>
-                    <Text className="text-sm font-sans-semibold text-content-primary dark:text-off-white">
-                      {slot.timeLabel}{' '}
-                    </Text>
-                    <View className="flex-1 gap-0.5">
-                      {slot.roles.map((role) => (
-                        <Text
-                          key={role.key}
-                          className={`text-sm font-sans ${
-                            role.isFilled
-                              ? 'text-secondary-400 line-through dark:text-secondary-500'
-                              : 'text-content-primary'
-                          }`}
-                        >
-                          {formatRoleLine(role, showFilledCount)}
-                        </Text>
-                      ))}
-                    </View>
-                  </>
-                ) : (
-                  <>
-                    <Text className="mb-1 text-sm font-sans-medium text-content-secondary">
-                      {slot.timeLabel}
-                    </Text>
-                    <View className="ml-4 flex-row flex-wrap">
-                      {slot.roles.map((role) => (
-                        <RoleBadge key={role.key} role={role} showFilledCount={showFilledCount} />
-                      ))}
-                    </View>
-                  </>
-                )}
-              </View>
-            ))}
+            {renderDays ? (
+              <GroupedDaysBlock section={section} showFilledCount={showFilledCount} />
+            ) : (
+              section.timeSlots.map((slot) => (
+                <View
+                  key={slot.key}
+                  className={display === 'card' ? 'mt-1.5 flex-row' : 'ml-2 mt-2'}
+                >
+                  {display === 'card' ? (
+                    <>
+                      <Text className="text-sm font-sans-semibold text-content-primary dark:text-off-white">
+                        {slot.timeLabel}{' '}
+                      </Text>
+                      <View className="flex-1 gap-0.5">
+                        {slot.roles.map((role) => (
+                          <Text
+                            key={role.key}
+                            className={`text-sm font-sans ${
+                              role.isFilled
+                                ? 'text-secondary-400 line-through dark:text-secondary-500'
+                                : 'text-content-primary'
+                            }`}
+                          >
+                            {formatRoleLine(role, showFilledCount)}
+                          </Text>
+                        ))}
+                      </View>
+                    </>
+                  ) : (
+                    <>
+                      <Text className="mb-1 text-sm font-sans-medium text-content-secondary">
+                        {slot.timeLabel}
+                      </Text>
+                      <View className="ml-4 flex-row flex-wrap">
+                        {slot.roles.map((role) => (
+                          <RoleBadge key={role.key} role={role} showFilledCount={showFilledCount} />
+                        ))}
+                      </View>
+                    </>
+                  )}
+                </View>
+              ))
+            )}
           </View>
         );
       })}
     </>
+  );
+}
+
+const COLLAPSE_THRESHOLD_DAYS = 8;
+
+/**
+ * 그룹 날짜범위 섹션의 detail 일별 전개 블록.
+ * 8일 이상이면 기본 접힘(요약 timeSlots만) + '펼치기' 토글로 일별 상세를 연다.
+ */
+function GroupedDaysBlock({
+  section,
+  showFilledCount,
+}: {
+  section: Extract<PostingScheduleModel, { variant: 'dated' }>['sections'][number];
+  showFilledCount: boolean;
+}) {
+  const days = section.days ?? [];
+  const [expanded, setExpanded] = React.useState(days.length < COLLAPSE_THRESHOLD_DAYS);
+
+  if (!expanded) {
+    return (
+      <View className="ml-2 mt-2">
+        {section.timeSlots.map((slot) => (
+          <View key={slot.key} className="mt-1">
+            <Text className="mb-1 text-sm font-sans-medium text-content-secondary">
+              {slot.timeLabel}
+            </Text>
+            <View className="ml-4 flex-row flex-wrap">
+              {slot.roles.map((role) => (
+                <RoleBadge key={role.key} role={role} showFilledCount={showFilledCount} />
+              ))}
+            </View>
+          </View>
+        ))}
+        <Pressable
+          onPress={() => setExpanded(true)}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="일별 인원 펼치기"
+          className="mt-2 min-h-[44px] justify-center"
+        >
+          <Text className="text-sm text-primary-600 dark:text-primary-400 font-sans">
+            일별 인원 보기 ({days.length}일)
+          </Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  return (
+    <View className="ml-2 mt-2 gap-2">
+      {days.map((day) => (
+        <View key={day.key}>
+          <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
+            {day.label}
+          </Text>
+          {day.timeSlots.map((slot) => (
+            <View key={slot.key} className="ml-2 mt-1">
+              <Text className="mb-1 text-sm font-sans-medium text-content-secondary">
+                {slot.timeLabel}
+              </Text>
+              <View className="ml-4 flex-row flex-wrap">
+                {slot.roles.map((role) => (
+                  <RoleBadge key={role.key} role={role} showFilledCount={showFilledCount} />
+                ))}
+              </View>
+            </View>
+          ))}
+        </View>
+      ))}
+    </View>
   );
 }
 
