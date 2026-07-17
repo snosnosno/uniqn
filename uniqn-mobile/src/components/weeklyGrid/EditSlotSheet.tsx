@@ -20,7 +20,7 @@ import { SheetModal } from '@/components/ui/SheetModal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { TimeWheelPicker, type TimeValue } from '@/components/ui/TimeWheelPicker';
-import { ChevronDownIcon } from '@/components/icons';
+import { ChevronDownIcon, AlertCircleIcon } from '@/components/icons';
 import { STAFF_ROLES } from '@/constants';
 import { useToastStore } from '@/stores/toastStore';
 import { isAppError } from '@/errors';
@@ -34,6 +34,7 @@ import {
   detectSlotConflicts,
   type SlotColorToken,
 } from '@/domains/weeklyGrid';
+import { deriveOvernightPreview } from '@/shared/time';
 import type { StaffRole } from '@/types';
 import type { VenueDaySlot } from '@/repositories/weeklyGrid';
 
@@ -177,6 +178,12 @@ export function EditSlotSheet({
     );
   }, [slot, siblingSlots, startTime, endTime]);
 
+  // 입력 중 익일 여부·근무시간 프리뷰(SSOT 파생). end==start 는 저장 차단.
+  const timePreview = useMemo(
+    () => deriveOvernightPreview(startTime, endTime),
+    [startTime, endTime]
+  );
+
   // 현재 활성 피커의 값/제목
   const activePickerValue = useMemo<TimeValue>(() => {
     const source = activePicker === 'end' ? endTime : startTime;
@@ -201,6 +208,7 @@ export function EditSlotSheet({
 
   const handleSave = () => {
     if (!slot) return;
+    if (timePreview.isEqual) return; // 시작==종료는 저장 불가(익일 오해석 방지)
     updateSlot.mutate(
       {
         workLogId: slot.workLogId,
@@ -284,7 +292,7 @@ export function EditSlotSheet({
           onPress={handleSave}
           fullWidth
           loading={updateSlot.isPending}
-          disabled={!slot || isBusy}
+          disabled={!slot || isBusy || timePreview.isEqual}
         >
           저장
         </Button>
@@ -369,6 +377,25 @@ export function EditSlotSheet({
             <TimeTriggerField label="종료" value={endTime} onPress={() => setActivePicker('end')} />
           </View>
         </View>
+
+        {/* 익일 프리뷰 / 시작==종료 오류 안내(저장 차단) */}
+        {timePreview.isEqual ? (
+          <View className="mt-2 flex-row items-center rounded-lg bg-error-50 p-3 dark:bg-error-900/20">
+            <AlertCircleIcon size={16} color="#DC2626" />
+            <Text className="ml-2 font-sans text-sm text-error-600 dark:text-error-400">
+              시작과 종료 시간이 같아요. 다시 확인해주세요.
+            </Text>
+          </View>
+        ) : (
+          <View className="mt-2 flex-row items-center justify-between rounded-lg bg-surface-page p-3 dark:bg-surface">
+            <Text className="font-sans text-sm text-content-muted dark:text-secondary-400">
+              {timePreview.isNextDay ? `익일 ${endTime} 종료` : '당일 근무'}
+            </Text>
+            <Text className="font-display text-base text-primary-600 dark:text-primary-400">
+              총 {timePreview.durationLabel}
+            </Text>
+          </View>
+        )}
 
         {/* 중복충돌 경고(차단 아님) */}
         {conflicts.length > 0 && (
