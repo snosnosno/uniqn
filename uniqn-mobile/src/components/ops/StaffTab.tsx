@@ -16,7 +16,8 @@
  * DealerPickerSheet 를 그대로 감싸면 어색해지고, mutate 계약(useAssignTableStaff)은 동일하게 재사용한다.
  */
 import { useCallback, useMemo, useState } from 'react';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
+import { confirmAction } from '@/utils/confirmAction';
 import { AppFlashList } from '@/components/ui/AppFlashList';
 import { SelectBottomSheet } from '@/components/ui';
 import {
@@ -100,38 +101,35 @@ export function StaffTab({ tournamentId, tournament }: StaffTabProps) {
   }, [tables, tableAssignFor, tableIdByStaffId]);
 
   const confirmUnlink = useCallback(() => {
-    Alert.alert(
-      '공고 연결 해제',
-      '연결을 해제하면 이 대회에 공고 경유로 접근하던 워크스페이스 멤버의 열람 권한이 축소될 수 있습니다.',
-      [
-        { text: '취소', style: 'cancel' },
-        { text: '해제', style: 'destructive', onPress: () => setPostingMut.mutate(null) },
-      ]
-    );
+    confirmAction({
+      title: '공고 연결 해제',
+      message:
+        '연결을 해제하면 이 대회에 공고 경유로 접근하던 워크스페이스 멤버의 열람 권한이 축소될 수 있습니다.',
+      confirmText: '해제',
+      destructive: true,
+      onConfirm: () => setPostingMut.mutate(null),
+    });
   }, [setPostingMut]);
 
   const handleImportPress = useCallback(() => {
     const date = fullPeriod ? null : (tournament.eventDate ?? null);
-    Alert.alert(
-      '확정 스태프 가져오기',
-      '이미 있는 스태프는 건너뛰고, 삭제했던 스태프는 다시 추가됩니다.',
-      [
-        { text: '취소', style: 'cancel' },
-        { text: '가져오기', onPress: () => importMut.mutate(date) },
-      ]
-    );
+    confirmAction({
+      title: '확정 스태프 가져오기',
+      message: '이미 있는 스태프는 건너뛰고, 삭제했던 스태프는 다시 추가됩니다.',
+      confirmText: '가져오기',
+      onConfirm: () => importMut.mutate(date),
+    });
   }, [fullPeriod, tournament.eventDate, importMut]);
 
   const confirmRemove = useCallback(
     (staff: OpsStaff) => {
-      Alert.alert(
-        '로스터에서 삭제',
-        `${staff.staffName} 님을 로스터에서 삭제할까요?\n배정된 테이블이 있으면 함께 해제됩니다.`,
-        [
-          { text: '취소', style: 'cancel' },
-          { text: '삭제', style: 'destructive', onPress: () => removeMut.mutate(staff.id) },
-        ]
-      );
+      confirmAction({
+        title: '로스터에서 삭제',
+        message: `${staff.staffName} 님을 로스터에서 삭제할까요?\n배정된 테이블이 있으면 함께 해제됩니다.`,
+        confirmText: '삭제',
+        destructive: true,
+        onConfirm: () => removeMut.mutate(staff.id),
+      });
     },
     [removeMut]
   );

@@ -16,7 +16,8 @@
  */
 
 import React, { useCallback } from 'react';
-import { View, Text, Pressable, Alert } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
+import { confirmAction } from '@/utils/confirmAction';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { PlusIcon, XIcon } from '@/components/icons';
@@ -155,10 +156,13 @@ export function InquiryAttachmentPicker({
   const handleRemoveWithConfirm = useCallback(
     (index: number) => {
       if (disabled) return;
-      Alert.alert('이미지 삭제', '이 이미지를 첨부에서 제거할까요?', [
-        { text: '취소', style: 'cancel' },
-        { text: '삭제', style: 'destructive', onPress: () => handleRemove(index) },
-      ]);
+      confirmAction({
+        title: '이미지 삭제',
+        message: '이 이미지를 첨부에서 제거할까요?',
+        confirmText: '삭제',
+        destructive: true,
+        onConfirm: () => handleRemove(index),
+      });
     },
     [disabled, handleRemove]
   );

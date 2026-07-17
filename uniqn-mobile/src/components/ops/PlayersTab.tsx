@@ -1,6 +1,8 @@
 /** ops PLAYERS 탭 — 등록 폼·참가자 리스트·리바이/애드온/탈락/재진입·플레이어 링크. [id].tsx 에서 추출(T10). */
 import { useState } from 'react';
-import { Alert, View, Text, TextInput, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Pressable, ActivityIndicator } from 'react-native';
+import { confirmAction } from '@/utils/confirmAction';
+import { showAlert } from '@/utils/showAlert';
 import { AppFlashList } from '@/components/ui/AppFlashList';
 import { SelectBottomSheet } from '@/components/ui';
 import { PlayerClaimButton } from './PlayerClaimButton';
@@ -47,30 +49,29 @@ export function PlayersTab({ tournament, participants, isLoading }: PlayersTabPr
   const handleBustSuccess = (r: OpsBustResult) => {
     // RPC 계약: winnerFinalized=true면 v_active2=1 조건 동일로 winner 항상 non-null.
     if (r.winnerFinalized && r.winner) {
-      Alert.alert(
+      showAlert(
         '우승 확정',
         `1위 · 상금 ${r.winner.prizeAmount !== null ? fmt(r.winner.prizeAmount) : '미설정'}`
       );
     } else {
-      Alert.alert(
+      showAlert(
         r.prizeAmount !== null ? 'ITM 종료' : '탈락 처리 완료',
         `${r.finishPosition}위${r.prizeAmount !== null ? ` · 상금 ${fmt(r.prizeAmount)}` : ''}`
       );
     }
   };
 
-  // 탈락 버튼 — 비-바운티는 기존 확인 Alert, 바운티는 탈락자 지정 피커 진입.
+  // 탈락 버튼 — 비-바운티는 확인 다이얼로그, 바운티는 탈락자 지정 피커 진입.
   const handleBustPress = (target: OpsParticipant) => {
     if (!isBountyTournament) {
-      Alert.alert('탈락 처리', `${target.name} 님을 탈락 처리할까요?`, [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '탈락 처리',
-          style: 'destructive',
-          onPress: () =>
-            bustMut.mutate({ participantId: target.id }, { onSuccess: handleBustSuccess }),
-        },
-      ]);
+      confirmAction({
+        title: '탈락 처리',
+        message: `${target.name} 님을 탈락 처리할까요?`,
+        confirmText: '탈락 처리',
+        destructive: true,
+        onConfirm: () =>
+          bustMut.mutate({ participantId: target.id }, { onSuccess: handleBustSuccess }),
+      });
       return;
     }
     setEliminatorPickerFor(target);
@@ -236,18 +237,13 @@ export function PlayersTab({ tournament, participants, isLoading }: PlayersTabPr
               {tournament.status === 'active' && item.status === 'busted' && (
                 <Pressable
                   onPress={() =>
-                    Alert.alert(
-                      '탈락 취소',
-                      `${item.name} 님의 탈락을 취소할까요?\n칩과 좌석이 복원됩니다.`,
-                      [
-                        { text: '취소', style: 'cancel' },
-                        {
-                          text: '탈락 취소',
-                          style: 'destructive',
-                          onPress: () => undoMut.mutate(item.id),
-                        },
-                      ]
-                    )
+                    confirmAction({
+                      title: '탈락 취소',
+                      message: `${item.name} 님의 탈락을 취소할까요?\n칩과 좌석이 복원됩니다.`,
+                      confirmText: '탈락 취소',
+                      destructive: true,
+                      onConfirm: () => undoMut.mutate(item.id),
+                    })
                   }
                   accessibilityRole="button"
                   className="min-h-[44px] justify-center rounded-md border border-amber-500 px-3 active:opacity-70 dark:border-amber-400"
@@ -313,18 +309,17 @@ export function PlayersTab({ tournament, participants, isLoading }: PlayersTabPr
               ? '지정 안 함'
               : (participants.find((p) => p.id === eliminatorId)?.name ?? '');
           // 🔨H4: 스펙 §7.2 "선택 → 확인 → bust" 확인 단계 — 즉시 mutate 금지(비가역 우승확정 대비).
-          Alert.alert('탈락 처리', `${target.name} 님 탈락 · KO: ${eliminatorName}`, [
-            { text: '취소', style: 'cancel' },
-            {
-              text: '탈락 처리',
-              style: 'destructive',
-              onPress: () =>
-                bustMut.mutate(
-                  { participantId: target.id, eliminatorId },
-                  { onSuccess: handleBustSuccess }
-                ),
-            },
-          ]);
+          confirmAction({
+            title: '탈락 처리',
+            message: `${target.name} 님 탈락 · KO: ${eliminatorName}`,
+            confirmText: '탈락 처리',
+            destructive: true,
+            onConfirm: () =>
+              bustMut.mutate(
+                { participantId: target.id, eliminatorId },
+                { onSuccess: handleBustSuccess }
+              ),
+          });
         }}
       />
     </View>

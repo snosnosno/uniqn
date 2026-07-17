@@ -1,10 +1,11 @@
 /**
  * ops 1f — 상금 정정 시트(SheetModal): 현재 금액 → 새 금액 + 사유(선택).
- * [저장] correctPrize(amount) · [회수] correctPrize(amount=null)(Alert 재확인).
+ * [저장] correctPrize(amount) · [회수] correctPrize(amount=null)(확인 다이얼로그 재확인).
  * completed 이후에도 동작(D3 — 상태 게이트 없음).
  */
 import { useEffect, useState } from 'react';
-import { Alert, View, Text, TextInput, Pressable } from 'react-native';
+import { View, Text, TextInput, Pressable } from 'react-native';
+import { confirmAction } from '@/utils/confirmAction';
 import { SheetModal } from '@/components/ui/SheetModal';
 import { useCorrectPrize } from '@/hooks/ops';
 import { fmtKrw, parseAmount } from './payoutRows';
@@ -41,18 +42,17 @@ export function PrizeCorrectSheet({ visible, onClose, participant, tournamentId 
   };
 
   const onRecall = () => {
-    Alert.alert('상금 회수', `${participant.name} 님의 상금을 회수(0/미지급)할까요?`, [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '회수',
-        style: 'destructive',
-        onPress: () =>
-          correctMut.mutate(
-            { participantId: participant.id, amount: null, reason: trimmedReason() },
-            { onSuccess: onClose }
-          ),
-      },
-    ]);
+    confirmAction({
+      title: '상금 회수',
+      message: `${participant.name} 님의 상금을 회수(0/미지급)할까요?`,
+      confirmText: '회수',
+      destructive: true,
+      onConfirm: () =>
+        correctMut.mutate(
+          { participantId: participant.id, amount: null, reason: trimmedReason() },
+          { onSuccess: onClose }
+        ),
+    });
   };
 
   const footer = (

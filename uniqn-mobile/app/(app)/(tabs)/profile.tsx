@@ -4,15 +4,8 @@
  */
 
 import { SECONDARY_PALETTE, STATUS_COLORS } from '@/constants/colors';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  ActivityIndicator,
-  Alert,
-  Platform,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { confirmAction } from '@/utils/confirmAction';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { type ReactNode, useState } from 'react';
@@ -98,21 +91,13 @@ export default function ProfileScreen() {
       }
     };
 
-    if (Platform.OS === 'web') {
-      if (window.confirm('정말 로그아웃 하시겠습니까?')) {
-        performLogout();
-      }
-      return;
-    }
-
-    Alert.alert('로그아웃', '정말 로그아웃 하시겠습니까?', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '로그아웃',
-        style: 'destructive',
-        onPress: performLogout,
-      },
-    ]);
+    confirmAction({
+      title: '로그아웃',
+      message: '정말 로그아웃 하시겠습니까?',
+      confirmText: '로그아웃',
+      destructive: true,
+      onConfirm: performLogout,
+    });
   };
 
   if (isLoading) {

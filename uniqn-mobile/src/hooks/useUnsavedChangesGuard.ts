@@ -6,7 +6,7 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react';
-import { Alert, Platform } from 'react-native';
+import { confirmAction } from '@/utils/confirmAction';
 import { useNavigation } from 'expo-router';
 
 /**
@@ -43,25 +43,15 @@ export function useUnsavedChangesGuard(hasUnsavedChanges: boolean): { markClean:
       if (cleanRef.current) return; // 저장 완료 — 통과
       e.preventDefault();
 
-      if (Platform.OS === 'web') {
-        if (window.confirm('저장하지 않은 변경사항이 있습니다. 정말 나가시겠습니까?')) {
-          navigation.dispatch(e.data.action);
-        }
-      } else {
-        // Alert.alert 예외: 확인/취소 버튼이 필요한 확인 다이얼로그 (toast는 버튼 미지원)
-        Alert.alert(
-          '변경사항 저장 안 됨',
-          '저장하지 않은 변경사항이 있습니다. 정말 나가시겠습니까?',
-          [
-            { text: '계속 편집', style: 'cancel' },
-            {
-              text: '나가기',
-              style: 'destructive',
-              onPress: () => navigation.dispatch(e.data.action),
-            },
-          ]
-        );
-      }
+      // 확인/취소 버튼이 필요한 확인 다이얼로그 (toast 는 버튼 미지원) — 웹/네이티브 분기는 confirmAction 담당
+      confirmAction({
+        title: '변경사항 저장 안 됨',
+        message: '저장하지 않은 변경사항이 있습니다. 정말 나가시겠습니까?',
+        confirmText: '나가기',
+        cancelText: '계속 편집',
+        destructive: true,
+        onConfirm: () => navigation.dispatch(e.data.action),
+      });
     });
 
     return unsubscribe;

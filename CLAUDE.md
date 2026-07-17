@@ -15,7 +15,7 @@
 | 로깅 | `logger.info()` | `console.log()` (앱 런타임) |
 | 다크모드 | `dark:` 항상 적용 | 라이트모드만 |
 | 경로 | `@/` 절대 경로 | 시스템 절대 경로 |
-| 알림 | `toast.success()` / `Alert.alert()` | 단순 `alert()` |
+| 알림 | `toast.success()` / 확인=`confirmAction()` / 안내=`showAlert()` | `Alert.alert()` 직접 호출(웹 no-op)·단순 `alert()` |
 | 필드명 | camelCase | snake_case |
 | 리스트 | FlashList (대형) / FlatList (소형) | 대형에 FlatList |
 | 이미지 | expo-image | RN `<Image>` |

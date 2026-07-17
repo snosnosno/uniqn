@@ -1,6 +1,7 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
+import { confirmAction } from '@/utils/confirmAction';
 import { buildPostingFacts } from '@/domains/job-posting';
 import { findUnansweredRequired, initializePreQuestionAnswers } from '@/domains/application';
 import { THIRD_PARTY_CONSENT_VERSION_TAG } from '@/constants/legal';
@@ -223,12 +224,16 @@ export function ApplicationForm({
       return;
     }
 
-    // 네이티브 Alert 사용 — modalStore 의 ConfirmModal 은 SheetModal(네이티브 RNModal) 뒤에
-    // 가려 안 보여서 사용자가 닫기 확인을 못 한다(= 화면에서 못 나가는 버그).
-    Alert.alert('작성을 그만할까요?', '입력한 지원 내용은 저장되지 않고 바로 닫힙니다.', [
-      { text: '계속 편집', style: 'cancel' },
-      { text: '닫기', style: 'destructive', onPress: handleClose },
-    ]);
+    // confirmAction 경유 — modalStore 의 ConfirmModal 은 SheetModal(네이티브 RNModal) 뒤에
+    // 가려 안 보이고(화면에서 못 나가는 버그), 웹은 Alert.alert 가 no-op 이라 window.confirm 분기 필수.
+    confirmAction({
+      title: '작성을 그만할까요?',
+      message: '입력한 지원 내용은 저장되지 않고 바로 닫힙니다.',
+      confirmText: '닫기',
+      cancelText: '계속 편집',
+      destructive: true,
+      onConfirm: handleClose,
+    });
   }, [handleClose, hasUnsavedChanges, isSubmitting]);
 
   const footer = (
