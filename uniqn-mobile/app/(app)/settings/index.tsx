@@ -27,14 +27,11 @@ import {
   LogOutIcon,
   ChevronRightIcon,
   TrashIcon,
-  BriefcaseIcon,
-  InboxIcon,
 } from '@/components/icons';
-import { useReceivedWorkspaceInvitations } from '@/hooks/workspace';
 import { pushNotificationService } from '@/services/notifications/pushNotificationService';
 import { useThemeStore } from '@/stores/themeStore';
 import { useModalStore } from '@/stores/modalStore';
-import { useAuthStore, useHasRole } from '@/stores/authStore';
+import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import {
   useNotificationSettingsQuery,
@@ -120,11 +117,6 @@ export default function SettingsScreen() {
 
   // Apple 사용자는 비밀번호가 없어 비밀번호 변경 항목을 숨긴다
   const isAppleUser = useIsAppleUser();
-
-  // 워크스페이스 협업 — employer 만 진입 (라우트 가드와 일치)
-  const isEmployer = useHasRole('employer');
-  const { invitations: pendingInvitations } = useReceivedWorkspaceInvitations();
-  const pendingInvitationsCount = pendingInvitations?.length ?? 0;
 
   // 테마 설정
   const { isDarkMode, setTheme } = useThemeStore();
@@ -378,27 +370,6 @@ export default function SettingsScreen() {
             </View>
           )}
         </Card>
-
-        {/* 공고 협업 (워크스페이스) — employer 전용 */}
-        {isAuthenticated && isEmployer && (
-          <Card className="mb-4">
-            <Text className="text-micro uppercase tracking-wider text-content-muted font-sans-bold mb-2">
-              공고 협업
-            </Text>
-            <SettingItem
-              icon={<BriefcaseIcon size={22} color={SECONDARY_PALETTE[500]} />}
-              label="워크스페이스"
-              onPress={() => router.push('/(employer)/workspace')}
-            />
-            <Divider spacing="sm" />
-            <SettingItem
-              icon={<InboxIcon size={22} color={SECONDARY_PALETTE[500]} />}
-              label="받은 초대"
-              value={pendingInvitationsCount > 0 ? `${pendingInvitationsCount}건` : undefined}
-              onPress={() => router.push('/(employer)/workspace/invitations')}
-            />
-          </Card>
-        )}
 
         {/* 계정 설정 */}
         <Card className="mb-4">
