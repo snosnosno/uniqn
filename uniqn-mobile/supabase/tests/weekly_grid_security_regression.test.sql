@@ -2,12 +2,12 @@
 -- 주간 배치 그리드 — 보안 회귀(M1/M3 전체리뷰 적출 보강)
 -- ============================================================
 -- 검증:
---   A. anon EXECUTE 차단(S2) — 그리드 8 RPC 전부 has_function_privilege('anon',...,'EXECUTE')=false
+--   A. anon EXECUTE 차단(S2) — 그리드 8 RPC + 협업자 검색 RPC 1종 has_function_privilege('anon',...,'EXECUTE')=false
 --      (get_or_create_venue_container / venue_span_posting_ids / get_venue_grid_summary /
---       get_venue_day_slots / set_venue_soft_target / search_users_by_phone /
---       add_direct_staff / remove_direct_staff)
+--       get_venue_day_slots / set_venue_soft_target / search_users_by_nickname /
+--       add_direct_staff / remove_direct_staff / search_collaborator_candidates_by_nickname)
 --   B. SECDEF search_path 하드닝 — pg_temp 사용 7 RPC 의 proconfig 가 'public' 우선 + 'pg_temp' 후행
---      (pg_temp 마스킹 차단; search_users_by_phone 은 설계상 'public' 단독이라 대상 제외)
+--      (pg_temp 마스킹 차단; 닉네임 검색 RPC 2종은 search_path='' 하드닝이라 'public 우선' 패턴 대상 아님)
 --   C. venue_span_posting_ids INVOKER fail-closed —
 --      C1(non-vacuous control): postgres(RLS 우회)는 컨테이너 스팬 >= 1 (데이터 실재)
 --      C2(fail-closed): 외부인(타 워크스페이스 authenticated)은 RLS 로 0행
@@ -21,7 +21,7 @@
 -- ============================================================
 
 BEGIN;
-SELECT plan(19);
+SELECT plan(20);
 
 -- ── A. anon EXECUTE 차단(8) ─────────────────────────────────────────────
 SELECT ok(NOT has_function_privilege('anon',
@@ -40,14 +40,18 @@ SELECT ok(NOT has_function_privilege('anon',
   'public.set_venue_soft_target(uuid, text, integer)'::regprocedure, 'EXECUTE'),
   'anon EXECUTE 차단(S2): set_venue_soft_target');
 SELECT ok(NOT has_function_privilege('anon',
-  'public.search_users_by_phone(text)'::regprocedure, 'EXECUTE'),
-  'anon EXECUTE 차단(S2): search_users_by_phone');
+  'public.search_users_by_nickname(text)'::regprocedure, 'EXECUTE'),
+  'anon EXECUTE 차단(S2): search_users_by_nickname');
 SELECT ok(NOT has_function_privilege('anon',
   'public.add_direct_staff(uuid, uuid, jsonb)'::regprocedure, 'EXECUTE'),
   'anon EXECUTE 차단(S2): add_direct_staff');
 SELECT ok(NOT has_function_privilege('anon',
   'public.remove_direct_staff(uuid)'::regprocedure, 'EXECUTE'),
   'anon EXECUTE 차단(S2): remove_direct_staff');
+-- 신규 협업자 검색 RPC anon 차단 회귀 가드(구 search_users_for_collaborator_invite 대체)
+SELECT ok(NOT has_function_privilege('anon',
+  'public.search_collaborator_candidates_by_nickname(uuid, text)'::regprocedure, 'EXECUTE'),
+  'anon EXECUTE 차단(S2): search_collaborator_candidates_by_nickname');
 
 -- ── B. proconfig: 'public' 우선 + 'pg_temp' 후행(마스킹 차단) (7) ────────
 -- 추출한 search_path 설정이 `search_path=public` 으로 시작(public 우선)하고

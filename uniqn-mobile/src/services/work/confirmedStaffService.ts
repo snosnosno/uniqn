@@ -261,13 +261,18 @@ export async function updateStaffStatus(workLogId: string, status: WorkLogStatus
   logger.info('Updated confirmed staff status', { workLogId, status });
 }
 
+// 닉네임 검색 입력 경계 — 앱 닉네임 규칙(2~15자, updateProfileSchema)과 동일.
+// 하한 미만/상한 초과는 RPC 호출 없이 조기 차단(협업자 검색 zod min2/max15 와 대칭 방어).
+const NICKNAME_SEARCH_MIN = 2;
+const NICKNAME_SEARCH_MAX = 15;
+
 /**
  * 닉네임 prefix 로 앱 가입자를 검색합니다(스태프 직접 추가용, 구인자 전용).
  */
 export async function searchStaffByNickname(nickname: string): Promise<UserNicknameSearchResult[]> {
   const trimmed = nickname.trim();
-  // 최소 2자 미만은 RPC 호출 없이 조기 차단(RPC 본문도 동일 가드)
-  if (trimmed.length < 2) {
+  // 경계 밖(2자 미만/15자 초과)은 RPC 호출 없이 조기 차단(RPC 본문도 최소 2자 가드).
+  if (trimmed.length < NICKNAME_SEARCH_MIN || trimmed.length > NICKNAME_SEARCH_MAX) {
     return [];
   }
   return userRepository.searchByNickname(trimmed);

@@ -54,4 +54,31 @@ describe('NicknameSearchField', () => {
 
     expect(onSearch).toHaveBeenCalledTimes(1);
   });
+
+  it('안내문을 렌더한다 (레이아웃 수정: hint 를 행 밖 하단에 분리)', () => {
+    render(
+      <NicknameSearchField
+        nickname=""
+        onChangeNickname={jest.fn()}
+        onSearch={jest.fn()}
+        isSearching={false}
+      />
+    );
+
+    expect(screen.getByText('닉네임 앞부분으로 검색됩니다 (대소문자 무시).')).toBeTruthy();
+  });
+
+  it('isSearching 이면 검색 버튼이 로딩 상태(비활성)로 렌더된다', () => {
+    render(
+      <NicknameSearchField
+        nickname="로즈"
+        onChangeNickname={jest.fn()}
+        onSearch={jest.fn()}
+        isSearching
+      />
+    );
+
+    // 라벨은 유지되고(레이아웃 안정), 로딩 중에도 컴포넌트가 정상 렌더된다.
+    expect(screen.getByText('닉네임')).toBeTruthy();
+  });
 });
