@@ -22,6 +22,7 @@ import { useCurrentWorkStatus } from '@/hooks/useWorkLogs';
 import { formatCurrency } from '@/utils/settlement';
 import { getRoleDisplayName } from '@/types/unified';
 import { formatTime } from './helpers/timeHelpers';
+import { WorkTimeDisplay } from '@/shared/time';
 import type { ScheduleEvent } from '@/types';
 import { useThemeStore } from '@/stores/themeStore';
 import { STATUS } from '@/constants';
@@ -131,6 +132,17 @@ export function ScheduleDetailSheet({
   const isConfirmed = schedule.type === STATUS.SCHEDULE.CONFIRMED;
   const canCheckInOut = isConfirmed && schedule.workLogId;
 
+  // 시간 표시는 SSOT(WorkTimeDisplay) 경유 — 심야(자정 넘김) 근무는 종료 시각에 "익일"을 병기한다.
+  const scheduledTime = WorkTimeDisplay.getDisplayInfo({
+    startTime: schedule.startTime,
+    endTime: schedule.endTime,
+    timeSlot: schedule.timeSlot,
+    date: schedule.date,
+  });
+  const scheduledTimeLabel = scheduledTime.isEndNextDay
+    ? `${scheduledTime.scheduledStart} – 익일 ${scheduledTime.scheduledEnd}`
+    : `${scheduledTime.scheduledStart} – ${scheduledTime.scheduledEnd}`;
+
   return (
     <Modal visible={visible} onClose={onClose} position="bottom" showCloseButton={false}>
       {/* Handle Bar */}
@@ -176,7 +188,7 @@ export function ScheduleDetailSheet({
         <DetailRow
           icon={<ClockIcon size={18} color={SECONDARY_PALETTE[500]} />}
           label="시간"
-          value={`${formatTime(schedule.startTime)} - ${formatTime(schedule.endTime)}`}
+          value={scheduledTimeLabel}
         />
         {schedule.location && (
           <DetailRow

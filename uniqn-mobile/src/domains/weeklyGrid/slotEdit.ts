@@ -5,13 +5,14 @@
  * - 색상: U3 Midnight Craft 토큰 화이트리스트만 허용(자유 hex 금지, S1/U3).
  * - 메모: z.string().refine(xssValidation) 통과분만 허용(S1 XSS 차단, 기존 workLog notes 패턴).
  * - 시작시간 정렬: timeSlot('HH:MM - HH:MM') 시작시각 기준 비교자(자동정렬).
- * - 중복충돌: 같은 스태프 + 같은 시작시각 슬롯 경고(차단 아님).
+ * - 중복충돌: 같은 스태프의 근무 구간 겹침 경고(자정 포함, 차단 아님).
  *
  * 모두 렌더 없이 결정적으로 단위테스트 가능한 순수함수(불변성: 새 객체만 생성).
  */
 import { z } from 'zod';
 import { ValidationError, ERROR_CODES } from '@/errors';
 import { xssValidation } from '@/utils/security';
+import { deriveOvernightPreview } from '@/shared/time';
 
 // ============================================================================
 // 색상 토큰 팔레트 (U3 화이트리스트 — 자유 hex 금지)
@@ -196,26 +197,44 @@ export interface SlotConflictInput {
 
 export interface SlotConflict {
   workLogId: string;
-  reason: 'sameStaffSameStart';
+  reason: 'overlap';
 }
 
 /**
- * 같은 스태프 + 같은 시작시각 슬롯을 충돌로 표시(자기 자신 제외). 차단이 아닌 경고용.
- * staffId 누락/시작시각 미파싱이면 충돌 없음으로 본다.
+ * timeSlot 을 분(minute) 절대구간 [start, end) 으로 환산.
+ * 자정을 넘는 구간은 end 가 1440 을 초과한다(deriveOvernightPreview.durationMinutes 로 익일 반영).
+ * 시작/종료 미파싱·시작==종료(0분 근무)면 구간을 만들 수 없어 null(충돌 판정 제외).
+ */
+function toSlotInterval(timeSlot: string | null): { start: number; end: number } | null {
+  const { start, end } = parseTimeSlotParts(timeSlot);
+  if (!start || !end) return null;
+  const startMin = toMinutes(start);
+  if (startMin === null) return null;
+  const preview = deriveOvernightPreview(start, end);
+  if (!preview.valid || preview.durationMinutes <= 0) return null;
+  return { start: startMin, end: startMin + preview.durationMinutes };
+}
+
+/**
+ * 같은 스태프의 근무 구간이 실제로 겹치는 슬롯을 충돌로 표시(자기 자신 제외). 차단이 아닌 경고용.
+ * 시작/종료를 분 절대구간으로 환산해 자정을 넘는 구간(예: 18:00-02:00)도 정확히 감지한다.
+ * 표준 반열림 겹침식 `aStart < bEnd && bStart < aEnd` 를 쓰므로 경계가 맞닿기만 하면 겹침 아님.
+ * staffId 누락/시간 미파싱/시작==종료면 충돌 없음으로 본다(기존 가드 유지).
  */
 export function detectSlotConflicts(
   target: SlotConflictInput,
   siblings: readonly SlotConflictInput[]
 ): SlotConflict[] {
   if (!target.staffId) return [];
-  const targetStart = parseSlotStartMinutes(target.timeSlot);
-  if (!Number.isFinite(targetStart)) return [];
+  const targetInterval = toSlotInterval(target.timeSlot);
+  if (!targetInterval) return [];
   return siblings
-    .filter(
-      (s) =>
-        s.workLogId !== target.workLogId &&
-        s.staffId === target.staffId &&
-        parseSlotStartMinutes(s.timeSlot) === targetStart
-    )
-    .map((s) => ({ workLogId: s.workLogId, reason: 'sameStaffSameStart' as const }));
+    .filter((s) => {
+      if (s.workLogId === target.workLogId) return false;
+      if (s.staffId !== target.staffId) return false;
+      const interval = toSlotInterval(s.timeSlot);
+      if (!interval) return false;
+      return targetInterval.start < interval.end && interval.start < targetInterval.end;
+    })
+    .map((s) => ({ workLogId: s.workLogId, reason: 'overlap' as const }));
 }

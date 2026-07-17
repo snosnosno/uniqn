@@ -10,6 +10,7 @@ import { View, Text } from 'react-native';
 import { ClockIcon } from '@/components/icons';
 import { formatTime } from '@/utils/date';
 import { formatDuration } from '@/utils/settlement';
+import { WorkTimeDisplay } from '@/shared/time';
 
 export interface WorkTimeSectionProps {
   /** 실제 출근 시간 */
@@ -56,8 +57,15 @@ export function WorkTimeSection({
   const hasAnyTimes = Boolean(effectiveStart && effectiveEnd);
   // 실제 기록이 전혀 없이 예정시간만으로 표시 중인 경우(확정·출근 전)에만 "예정"으로 안내
   const isScheduledOnly = hasAnyTimes && !startIsActual && !endIsActual;
-  const isOvernight =
-    hasAnyTimes && effectiveEnd!.toDateString() !== effectiveStart!.toDateString();
+  // 익일(자정 넘김) 판정은 SSOT(WorkTimeDisplay)로 단일화 — 독립 재구현 제거.
+  // 실제 출퇴근이 있으면 그 값을, 없으면 예정시간으로 폴백하는 규칙이 getDisplayInfo
+  // 내부(effective = actual ?? scheduled)와 동일하므로 배지 결과는 기존과 완전히 일치한다.
+  const isOvernight = WorkTimeDisplay.getDisplayInfo({
+    checkInTime: startTime,
+    checkOutTime: endTime,
+    startTime: scheduledStartTime,
+    endTime: scheduledEndTime,
+  }).isEndNextDay;
 
   // 표시용 근무 시간: 양쪽 실제는 정산 기준(hoursWorked), 순수 예정은 예정시간 간격(표시 전용),
   // 한쪽만 기록된 중간 상태는 '-'(아직 확정 불가)

@@ -66,7 +66,12 @@ export class TimeNormalizer {
   }
 
   static calculateDurationInHours(start: Date, end: Date): number {
-    const totalMinutes = Math.max(0, (end.getTime() - start.getTime()) / (1000 * 60));
-    return totalMinutes / 60;
+    let diffMs = end.getTime() - start.getTime();
+    // 종료가 시작보다 이르면 자정을 넘긴 것으로 보고 +24h 보정.
+    // (실제 timestamptz 경로는 end>start 라 무영향 — 순수 HH:mm 경로 회귀 방어)
+    if (diffMs < 0) {
+      diffMs += 24 * 60 * 60 * 1000;
+    }
+    return Math.max(0, diffMs) / (1000 * 60 * 60);
   }
 }

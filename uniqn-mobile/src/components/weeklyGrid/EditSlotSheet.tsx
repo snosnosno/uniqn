@@ -2,7 +2,7 @@
  * EditSlotSheet — 운영처 배치 슬롯 편집 시트(B2)
  *
  * 한 work_log 슬롯의 시간(시작/종료)·역할(StaffRole)·색상(U3 토큰 칩)·메모(S1 XSS)를 편집한다.
- * - 시간 변경 시 같은 스태프 + 같은 시작시각 중복충돌을 경고(차단 아님).
+ * - 시간 변경 시 같은 스태프의 근무 구간 겹침을 경고(차단 아님).
  * - 쓰기는 useUpdateSlot(→ workLogRepository.updateSlot) 경유. 색상 화이트리스트·메모 XSS 검증은 레포 경계.
  * - 배치 빼기(P0-1): useDeleteSlot 경유(직접추가/지원확정 분기는 서비스 담당), overlay 확인 패널.
  * - 색상 칩 className 은 SLOT_COLOR_CHIPS 의 정적 리터럴만 사용(NativeWind dark: 유실 방지).
@@ -15,12 +15,12 @@
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { SECONDARY_PALETTE } from '@/constants/colors';
 import { SheetModal } from '@/components/ui/SheetModal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { TimeWheelPicker, type TimeValue } from '@/components/ui/TimeWheelPicker';
-import { ChevronDownIcon } from '@/components/icons';
+import { TimeTriggerField, timeStringToValue, timeValueToString } from './SlotTimeField';
+import { OvernightPreviewBanner } from './OvernightPreviewBanner';
 import { STAFF_ROLES } from '@/constants';
 import { useToastStore } from '@/stores/toastStore';
 import { isAppError } from '@/errors';
@@ -34,6 +34,7 @@ import {
   detectSlotConflicts,
   type SlotColorToken,
 } from '@/domains/weeklyGrid';
+import { deriveOvernightPreview } from '@/shared/time';
 import type { StaffRole } from '@/types';
 import type { VenueDaySlot } from '@/repositories/weeklyGrid';
 
@@ -54,66 +55,6 @@ export interface EditSlotSheetProps {
 
 const DEFAULT_START = DEFAULT_SLOT_START_TIME;
 const DEFAULT_END = '02:00';
-
-const TIME_RE = /^(\d{1,2}):(\d{2})$/;
-
-/** 'HH:mm' → TimeValue{hour,minute}. 이 화면은 0~23 표기만 사용(다음날 24+ 미사용). */
-function timeStringToValue(time: string): TimeValue {
-  const match = time.match(TIME_RE);
-  if (!match) return { hour: 0, minute: 0 };
-  const hour = Math.min(23, Math.max(0, parseInt(match[1], 10)));
-  const minute = parseInt(match[2], 10);
-  return { hour, minute };
-}
-
-/** TimeValue{hour,minute} → 'HH:mm'(0패딩). */
-function timeValueToString({ hour, minute }: TimeValue): string {
-  const h = hour.toString().padStart(2, '0');
-  const m = minute.toString().padStart(2, '0');
-  return `${h}:${m}`;
-}
-
-/** 'HH:mm' → '오전/오후 H:mm'(TimePicker formatTimeDisplay 동등 포맷). */
-function formatTimeDisplay(time: string): string {
-  const match = time.match(TIME_RE);
-  if (!match) return time || '시간 선택';
-  const hour = parseInt(match[1], 10);
-  const minutes = match[2];
-  const period = hour < 12 ? '오전' : '오후';
-  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-  return `${period} ${displayHour}:${minutes}`;
-}
-
-/** 시간 트리거 필드 — 탭 시 휠 피커를 연다(TimePicker 트리거 스타일 동등). */
-function TimeTriggerField({
-  label,
-  value,
-  onPress,
-}: {
-  label: string;
-  value: string;
-  onPress: () => void;
-}) {
-  return (
-    <View>
-      <Text className="mb-2 font-sans-medium text-content-primary dark:text-off-white">
-        {label}
-      </Text>
-      <Pressable
-        onPress={onPress}
-        accessibilityRole="button"
-        accessibilityLabel={`${label} 시간 선택`}
-        accessibilityHint="탭하여 시간을 선택하세요"
-        className="flex-row items-center px-4 py-3 rounded-lg border-2 bg-surface-card border-secondary-300 dark:border-surface-overlay"
-      >
-        <Text className="flex-1 text-base text-content-primary font-sans">
-          {formatTimeDisplay(value)}
-        </Text>
-        <ChevronDownIcon size={20} color={SECONDARY_PALETTE[500]} />
-      </Pressable>
-    </View>
-  );
-}
 
 export function EditSlotSheet({
   visible,
@@ -160,7 +101,7 @@ export function EditSlotSheet({
     }
   }, [visible]);
 
-  // 중복충돌 경고(같은 스태프 + 같은 시작시각). 차단이 아닌 경고.
+  // 중복충돌 경고(같은 스태프의 근무 구간 겹침). 차단이 아닌 경고.
   const conflicts = useMemo(() => {
     if (!slot) return [];
     return detectSlotConflicts(
@@ -176,6 +117,12 @@ export function EditSlotSheet({
       }))
     );
   }, [slot, siblingSlots, startTime, endTime]);
+
+  // 입력 중 익일 여부·근무시간 프리뷰(SSOT 파생). end==start 는 저장 차단.
+  const timePreview = useMemo(
+    () => deriveOvernightPreview(startTime, endTime),
+    [startTime, endTime]
+  );
 
   // 현재 활성 피커의 값/제목
   const activePickerValue = useMemo<TimeValue>(() => {
@@ -201,6 +148,7 @@ export function EditSlotSheet({
 
   const handleSave = () => {
     if (!slot) return;
+    if (timePreview.isEqual) return; // 시작==종료는 저장 불가(익일 오해석 방지)
     updateSlot.mutate(
       {
         workLogId: slot.workLogId,
@@ -284,7 +232,7 @@ export function EditSlotSheet({
           onPress={handleSave}
           fullWidth
           loading={updateSlot.isPending}
-          disabled={!slot || isBusy}
+          disabled={!slot || isBusy || timePreview.isEqual}
         >
           저장
         </Button>
@@ -370,12 +318,14 @@ export function EditSlotSheet({
           </View>
         </View>
 
+        {/* 익일 프리뷰 / 시작==종료 오류 안내(저장 차단은 아래 timePreview.isEqual 가드) */}
+        <OvernightPreviewBanner startTime={startTime} endTime={endTime} />
+
         {/* 중복충돌 경고(차단 아님) */}
         {conflicts.length > 0 && (
           <View className="mt-2 rounded-lg bg-warning-50 dark:bg-warning-900/30 px-3 py-2">
             <Text className="text-sm font-sans-medium text-warning-700 dark:text-warning-300">
-              같은 스태프가 같은 시작시각에 {conflicts.length}건 더 배치돼 있어요. 그대로 저장할 수
-              있어요.
+              같은 스태프의 근무 시간이 {conflicts.length}건 겹쳐요. 그대로 저장할 수 있어요.
             </Text>
           </View>
         )}
