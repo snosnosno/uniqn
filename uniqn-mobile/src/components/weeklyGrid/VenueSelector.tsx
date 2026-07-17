@@ -99,11 +99,11 @@ export function VenueSelector({
       ) : null}
 
       {/* 운영처(컨테이너) 선택 */}
-      <Text className="mb-2 text-xs font-sans-medium text-content-muted">운영처</Text>
+      <Text className="mb-2 text-xs font-sans-medium text-content-muted">지점</Text>
       {isLoadingContainers ? (
         <View className="h-10 flex-row items-center">
           <ActivityIndicator size="small" />
-          <Text className="ml-2 text-sm text-content-secondary">운영처 불러오는 중…</Text>
+          <Text className="ml-2 text-sm text-content-secondary">지점 불러오는 중…</Text>
         </View>
       ) : (
         <ScrollView
@@ -114,7 +114,7 @@ export function VenueSelector({
           {containers.length === 0 ? (
             <View className="mr-2 h-10 justify-center">
               <Text className="text-sm text-content-secondary">
-                이 워크스페이스에 등록된 운영처가 없어요
+                이 워크스페이스에 등록된 지점이 없어요
               </Text>
             </View>
           ) : (
@@ -124,7 +124,7 @@ export function VenueSelector({
                 label={c.name}
                 selected={c.id === selectedVenueId}
                 onPress={handleSelectVenue(c.id)}
-                a11yLabel={`운영처 ${c.name}`}
+                a11yLabel={`지점 ${c.name}`}
               />
             ))
           )}
@@ -132,10 +132,10 @@ export function VenueSelector({
             <Pressable
               onPress={onAddVenue}
               accessibilityRole="button"
-              accessibilityLabel="운영처 추가"
+              accessibilityLabel="지점 추가"
               className="min-h-[40px] flex-row items-center justify-center rounded-full border border-dashed border-primary-400 px-4 py-2"
             >
-              <Text className="text-sm font-sans-medium text-primary-500">+ 운영처 추가</Text>
+              <Text className="text-sm font-sans-medium text-primary-500">+ 지점 추가</Text>
             </Pressable>
           ) : null}
         </ScrollView>

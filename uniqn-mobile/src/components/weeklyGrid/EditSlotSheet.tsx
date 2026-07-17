@@ -215,7 +215,7 @@ export function EditSlotSheet({
       },
       {
         onSuccess: () => {
-          toastSuccess('배치 슬롯을 수정했어요.');
+          toastSuccess('근무 일정을 수정했어요.');
           onSaved?.();
           onClose();
         },
@@ -245,13 +245,13 @@ export function EditSlotSheet({
       },
       {
         onSuccess: () => {
-          toastSuccess('배치에서 뺐어요.');
+          toastSuccess('근무에서 뺐어요.');
           setConfirmingDelete(false);
           onSaved?.();
           onClose();
         },
         onError: () => {
-          toastError('배치 빼기에 실패했어요. 잠시 후 다시 시도해주세요.');
+          toastError('근무 빼기에 실패했어요. 잠시 후 다시 시도해주세요.');
         },
       }
     );
@@ -267,7 +267,7 @@ export function EditSlotSheet({
             onPress={() => setConfirmingDelete(true)}
             fullWidth
             disabled={isBusy}
-            accessibilityLabel="배치 빼기"
+            accessibilityLabel="근무 빼기"
           >
             빼기
           </Button>
@@ -296,7 +296,7 @@ export function EditSlotSheet({
     <SheetModal
       visible={visible}
       onClose={onClose}
-      title="배치 편집"
+      title="근무 수정"
       footer={footerContent}
       isLoading={isBusy}
       overlay={
@@ -320,10 +320,10 @@ export function EditSlotSheet({
             >
               <View className="w-full max-w-sm rounded-xl bg-surface-card p-5 dark:bg-surface-elevated">
                 <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
-                  배치 빼기
+                  근무 빼기
                 </Text>
                 <Text className="mt-2 text-sm leading-5 text-content-secondary font-sans dark:leading-6">
-                  {slot.staffName ?? '이 인원'}님을 이 날 배치에서 뺄까요? 지원으로 확정된 인원은
+                  {slot.staffName ?? '이 인원'}님을 이 날 근무에서 뺄까요? 지원으로 확정된 인원은
                   확정이 해제돼요.
                 </Text>
                 <View className="mt-4 flex-row gap-3">
@@ -343,7 +343,7 @@ export function EditSlotSheet({
                       onPress={handleDeleteConfirm}
                       fullWidth
                       loading={deleteSlot.isPending}
-                      accessibilityLabel="배치 빼기 확정"
+                      accessibilityLabel="근무 빼기 확정"
                     >
                       빼기
                     </Button>

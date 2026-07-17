@@ -108,9 +108,9 @@ export function VenueDayDetail({ venueId, date, onSlotPress, onAddPress }: Venue
         <EmptyState
           compact
           icon={<UsersIcon size={48} color={SECONDARY_PALETTE[400]} />}
-          title="이 날 배치된 인원이 없어요"
+          title="이 날 근무 인원이 없어요"
           description="그리드에서 다른 날짜를 선택하거나 인원을 배치해보세요."
-          actionLabel={onAddPress ? '인원 배치하기' : undefined}
+          actionLabel={onAddPress ? '근무 추가하기' : undefined}
           onAction={onAddPress}
         />
       </View>

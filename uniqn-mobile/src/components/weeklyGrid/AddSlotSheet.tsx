@@ -243,7 +243,7 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
       <View className="mb-3 flex-row gap-1 rounded-lg bg-surface-page p-1 dark:bg-surface-elevated">
         <ModeTab
           active={mode === 'pool'}
-          label="풀 꽂기"
+          label="스태프 추가"
           icon={
             <UsersIcon size={16} color={mode === 'pool' ? '#FFFFFF' : SECONDARY_PALETTE[500]} />
           }
@@ -279,7 +279,7 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
       {mode === 'posting' ? (
         <View className="gap-4 py-2">
           <Text className="text-sm text-content-secondary font-sans">
-            공고를 새로 열어 모집·발행합니다. 이 운영처로 연결됩니다.
+            공고를 새로 열어 모집·발행합니다. 이 지점으로 연결됩니다.
           </Text>
           <Button
             variant="primary"

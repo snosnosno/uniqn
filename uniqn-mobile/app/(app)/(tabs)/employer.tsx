@@ -324,9 +324,9 @@ function EmployerView() {
             onPress={handleWeeklyGrid}
             icon={<CalendarDaysIcon size={20} color={getIconColor(isDarkMode, 'primary')} />}
             className="mt-2"
-            accessibilityLabel="주간 배치 그리드 열기"
+            accessibilityLabel="이번 주 근무표 열기"
           >
-            <Text className="ml-2 font-sans-semibold text-content-primary">주간 배치 그리드</Text>
+            <Text className="ml-2 font-sans-semibold text-content-primary">이번 주 근무표</Text>
           </Button>
         ) : null}
       </View>
