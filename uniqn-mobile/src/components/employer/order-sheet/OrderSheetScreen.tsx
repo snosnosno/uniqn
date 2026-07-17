@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/Button';
@@ -117,6 +118,9 @@ export function OrderSheetScreen({
   scheduleLocked = false,
 }: OrderSheetScreenProps) {
   const { addToast } = useToastStore();
+  // 하단 고정 CTA가 iOS 홈 인디케이터 safe-area를 침범하지 않도록 bottom inset 반영(L7).
+  // 웹은 insets.bottom=0 → 기존 24px 유지(무해). SafeAreaProvider 밖이어도 0 폴백.
+  const insets = useSafeAreaInsets();
   // 3제네릭 필수(Global Constraints·스파이크 실측): 폼 상태=z.input, handleSubmit 콜백=z.output
   const form = useForm<OrderSheetFormValues, unknown, OrderSheetValues>({
     resolver: zodResolver(orderSheetValuesSchema),
@@ -726,7 +730,10 @@ export function OrderSheetScreen({
           );
         })}
       </ScrollView>
-      <View className="absolute bottom-0 left-0 right-0 px-4 pb-6 pt-2 bg-surface-page border-t border-secondary-100 dark:border-surface-overlay">
+      <View
+        className="absolute bottom-0 left-0 right-0 px-4 pt-2 bg-surface-page border-t border-secondary-100 dark:border-surface-overlay"
+        style={{ paddingBottom: Math.max(24, insets.bottom + 8) }}
+      >
         {/* 편집 하단 2버튼 패턴 계승(레거시 기능 소실 방지) — 좌 ghost 템플릿 저장 + 우 primary 수정(S3). */}
         <View className="flex-row items-center gap-2">
           {mode === 'edit' && onSaveTemplate !== undefined ? (

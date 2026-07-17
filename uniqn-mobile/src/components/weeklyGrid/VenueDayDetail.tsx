@@ -9,18 +9,25 @@
  *
  * U4: 그날 0명/로딩/에러 상태를 자체 처리(0명 안내는 그리드 맥락 카피).
  */
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { View } from 'react-native';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Loading } from '@/components/ui/Loading';
 import { UsersIcon } from '@/components/icons';
 import { SECONDARY_PALETTE } from '@/constants/colors';
+import { logger } from '@/utils/logger';
 import { ConfirmedStaffCard } from '@/components/employer/applicants/ConfirmedStaffCard';
 import { useVenueDaySlots } from '@/hooks/weeklyGrid';
 import type { VenueDaySlot } from '@/repositories/weeklyGrid';
 import type { ConfirmedStaff } from '@/types';
 import { buildVenueDayGroup } from './venueDayDetailMapping';
+
+/**
+ * 비가상화 직접 렌더 상한(L4·방어) — P1-3 단일 ScrollView 설계라 FlashList 전환 금지.
+ * 하루 슬롯이 이 임계를 넘으면 성능 저하 신호를 logger.warn 으로만 남긴다(렌더/구조는 불변).
+ */
+const NON_VIRTUALIZED_SLOT_WARN_THRESHOLD = 50;
 
 export interface VenueDayDetailProps {
   venueId: string | null;
@@ -59,6 +66,19 @@ export function VenueDayDetail({ venueId, date, onSlotPress, onAddPress }: Venue
     },
     [slotById, onSlotPress]
   );
+
+  // L4 방어: 비가상화 map 렌더라 슬롯이 과다하면 성능이 저하될 수 있음 — 임계 초과 시 1회 경고만.
+  // 구조는 그대로(가상화 전환 금지). (count, date) 변화 시에만 재평가돼 로그 폭주를 막는다.
+  const slotCount = data?.length ?? 0;
+  useEffect(() => {
+    if (slotCount > NON_VIRTUALIZED_SLOT_WARN_THRESHOLD) {
+      logger.warn('VenueDayDetail 비가상화 렌더 상한 초과', {
+        date,
+        count: slotCount,
+        threshold: NON_VIRTUALIZED_SLOT_WARN_THRESHOLD,
+      });
+    }
+  }, [slotCount, date]);
 
   if (isLoading && !isRefetching) {
     return (
