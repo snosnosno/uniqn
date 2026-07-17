@@ -69,7 +69,7 @@ export interface AppErrorTelemetryPolicy {
  * E1xxx: 네트워크 에러
  * E2xxx: 인증 에러
  * E3xxx: 검증 에러
- * E4xxx: Firebase 에러
+ * E4xxx: 인프라 에러 (DB·권한·가용성 등, INFRA_* 코드)
  * E5xxx: 보안 에러
  * E6xxx: 비즈니스 에러
  * E7xxx: 알 수 없는 에러

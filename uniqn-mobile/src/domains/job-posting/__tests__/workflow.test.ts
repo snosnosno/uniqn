@@ -6,9 +6,7 @@ import {
   projectPostingCard,
   projectPostingDetail,
   projectPostingManagement,
-  selectPostingApplicationEligibility,
   selectPostingRoleAvailability,
-  selectPostingScheduleDisplay,
   selectPostingWorkflow,
 } from '@/domains/job-posting';
 
@@ -95,8 +93,6 @@ describe('job-posting workflow selectors', () => {
 
     const workflow = selectPostingWorkflow(posting);
     const roleAvailability = selectPostingRoleAvailability(posting);
-    const application = selectPostingApplicationEligibility(posting);
-    const scheduleDisplay = selectPostingScheduleDisplay(posting);
 
     expect(workflow).toMatchObject({
       isFixed: true,
@@ -108,23 +104,6 @@ describe('job-posting workflow selectors', () => {
     // SP3: schedule role.filled(dead counter) 제거 — 마감 여부를 schedule 에서 파생하지 않으므로
     // 모든 역할(filled=0)이 available. 실제 마감/충원은 표시 시점 hydrate + 서버측 정원 가드가 결정.
     expect(roleAvailability.availableItems.map((item) => item.role)).toEqual(['dealer', 'floor']);
-    expect(application).toMatchObject({
-      canApply: true,
-      selectionMode: 'fixed_role',
-      requiresRoleSelection: true,
-      requiresAssignmentSelection: false,
-      fixedAssignmentTimeSlot: '19:00',
-    });
-    expect(scheduleDisplay).toMatchObject({
-      variant: 'fixed',
-      fixed: expect.objectContaining({
-        daysPerWeek: 5,
-        startTime: '19:00',
-      }),
-    });
-    // fixed 공고의 역할 목록이 합성 슬롯에서 올바르게 노출되는지 확인
-    expect(scheduleDisplay.fixed?.roles).toHaveLength(2);
-    expect(scheduleDisplay.fixed?.roles?.map((r) => r.role)).toEqual(['dealer', 'floor']);
   });
 
   it('keeps tournament grouping consistent across facts and projections', () => {

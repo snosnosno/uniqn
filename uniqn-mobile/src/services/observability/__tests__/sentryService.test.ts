@@ -1,6 +1,11 @@
 import { AppError, BusinessError, ERROR_CODES, NetworkError } from '@/errors';
-import { crashlyticsService } from '../crashlyticsService';
-import { recordAppError, recordHandledError, sentryService, setEnabled } from '../sentryService';
+import {
+  crashlyticsService,
+  recordAppError,
+  recordHandledError,
+  sentryService,
+  setEnabled,
+} from '../sentryService';
 
 const mockScope = {
   setTag: jest.fn(),

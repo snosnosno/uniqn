@@ -5,61 +5,12 @@
  */
 
 import {
-  getDateRange,
   generateDateRange,
   getMonthRange,
   sortDates,
   parseTimeSlot,
   parseTimeSlotToDate,
-  calculateWorkDuration,
-  minutesToHoursMinutes,
 } from '../ranges';
-
-// ============================================================================
-// getDateRange
-// ============================================================================
-
-describe('getDateRange', () => {
-  it('같은 날짜는 1개의 날짜 배열을 반환한다', () => {
-    const start = new Date(2025, 0, 15);
-    const end = new Date(2025, 0, 15);
-    expect(getDateRange(start, end)).toEqual(['2025-01-15']);
-  });
-
-  it('연속 3일 범위를 반환한다', () => {
-    const start = new Date(2025, 0, 15);
-    const end = new Date(2025, 0, 17);
-    expect(getDateRange(start, end)).toEqual(['2025-01-15', '2025-01-16', '2025-01-17']);
-  });
-
-  it('월을 넘어가는 범위를 올바르게 생성한다', () => {
-    const start = new Date(2025, 0, 30);
-    const end = new Date(2025, 1, 2);
-    expect(getDateRange(start, end)).toEqual([
-      '2025-01-30',
-      '2025-01-31',
-      '2025-02-01',
-      '2025-02-02',
-    ]);
-  });
-
-  it('연도를 넘어가는 범위를 올바르게 생성한다', () => {
-    const start = new Date(2024, 11, 30);
-    const end = new Date(2025, 0, 2);
-    expect(getDateRange(start, end)).toEqual([
-      '2024-12-30',
-      '2024-12-31',
-      '2025-01-01',
-      '2025-01-02',
-    ]);
-  });
-
-  it('start가 end보다 뒤면 빈 배열을 반환한다', () => {
-    const start = new Date(2025, 0, 17);
-    const end = new Date(2025, 0, 15);
-    expect(getDateRange(start, end)).toEqual([]);
-  });
-});
 
 // ============================================================================
 // generateDateRange
@@ -246,90 +197,5 @@ describe('parseTimeSlotToDate', () => {
     const result = parseTimeSlotToDate(undefined, '2025-01-28');
     expect(result.startTime).toBeNull();
     expect(result.endTime).toBeNull();
-  });
-});
-
-// ============================================================================
-// calculateWorkDuration
-// ============================================================================
-
-describe('calculateWorkDuration', () => {
-  it('일반 근무 시간을 계산한다 (09:00~18:00 = 540분)', () => {
-    expect(calculateWorkDuration('09:00', '18:00')).toBe(540);
-  });
-
-  it('짧은 근무 시간을 계산한다 (14:00~16:00 = 120분)', () => {
-    expect(calculateWorkDuration('14:00', '16:00')).toBe(120);
-  });
-
-  it('자정을 넘어가는 근무를 계산한다 (18:00~02:00 = 480분)', () => {
-    expect(calculateWorkDuration('18:00', '02:00')).toBe(480);
-  });
-
-  it('같은 시간이면 0분을 반환한다', () => {
-    expect(calculateWorkDuration('09:00', '09:00')).toBe(0);
-  });
-
-  it('1시간 근무를 계산한다', () => {
-    expect(calculateWorkDuration('09:00', '10:00')).toBe(60);
-  });
-
-  it('30분 단위 시간을 처리한다', () => {
-    expect(calculateWorkDuration('09:30', '12:00')).toBe(150);
-  });
-});
-
-// ============================================================================
-// minutesToHoursMinutes
-// ============================================================================
-
-describe('minutesToHoursMinutes', () => {
-  it('60분을 1시간으로 변환한다', () => {
-    const result = minutesToHoursMinutes(60);
-    expect(result.hours).toBe(1);
-    expect(result.minutes).toBe(0);
-    expect(result.display).toBe('1시간');
-  });
-
-  it('90분을 1시간 30분으로 변환한다', () => {
-    const result = minutesToHoursMinutes(90);
-    expect(result.hours).toBe(1);
-    expect(result.minutes).toBe(30);
-    expect(result.display).toBe('1시간 30분');
-  });
-
-  it('480분을 8시간으로 변환한다', () => {
-    const result = minutesToHoursMinutes(480);
-    expect(result.hours).toBe(8);
-    expect(result.minutes).toBe(0);
-    expect(result.display).toBe('8시간');
-  });
-
-  it('0분을 0시간으로 변환한다', () => {
-    const result = minutesToHoursMinutes(0);
-    expect(result.hours).toBe(0);
-    expect(result.minutes).toBe(0);
-    expect(result.display).toBe('0시간');
-  });
-
-  it('540분을 9시간으로 변환한다', () => {
-    const result = minutesToHoursMinutes(540);
-    expect(result.hours).toBe(9);
-    expect(result.minutes).toBe(0);
-    expect(result.display).toBe('9시간');
-  });
-
-  it('150분을 2시간 30분으로 변환한다', () => {
-    const result = minutesToHoursMinutes(150);
-    expect(result.hours).toBe(2);
-    expect(result.minutes).toBe(30);
-    expect(result.display).toBe('2시간 30분');
-  });
-
-  it('45분을 0시간 45분으로 변환한다', () => {
-    const result = minutesToHoursMinutes(45);
-    expect(result.hours).toBe(0);
-    expect(result.minutes).toBe(45);
-    expect(result.display).toBe('0시간 45분');
   });
 });

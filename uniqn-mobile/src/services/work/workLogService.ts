@@ -5,7 +5,7 @@
  * @version 2.0.0 - Repository 패턴 적용 (Phase 2.1)
  *
  * 아키텍처:
- * Service Layer → Repository Layer → Firebase
+ * Service Layer → Repository Layer → Supabase
  *
  * 책임 분리:
  * - Service: 복잡한 통계 계산, 트랜잭션, 실시간 구독
@@ -266,7 +266,7 @@ export async function updatePayrollStatus(
  * @example
  * const unsubscribe = subscribeToWorkLog(workLogId, {
  *   onUpdate: (workLog) => setWorkLog(workLog),
- *   onError: (error) => console.error(error),
+ *   onError: (error) => logger.error('근무 기록 구독 실패', error),
  * });
  *
  * // 클린업
@@ -317,7 +317,7 @@ export function subscribeToWorkLog(
  * const unsubscribe = subscribeToMyWorkLogs(staffId, {
  *   dateRange: { start: '2025-01-01', end: '2025-01-31' },
  *   onUpdate: (workLogs) => setWorkLogs(workLogs),
- *   onError: (error) => console.error(error),
+ *   onError: (error) => logger.error('근무 기록 목록 구독 실패', error),
  * });
  *
  * // 클린업

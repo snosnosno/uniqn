@@ -5,7 +5,7 @@
  * 판정을 계산한다. 행 unset 판정은 zod 통과 가능성과 정렬돼야 한다(리뷰 H5) — 어긋나면
  * "라벨은 '이대로 등록'인데 눌러도 무반응"인 죽은 버튼이 생긴다.
  */
-import type { OrderSheetFormValues } from '@/schemas/orderSheet.schema';
+import { START_TIME_RE, type OrderSheetFormValues } from '@/schemas/orderSheet.schema';
 import { STAFF_ROLES } from '@/constants/jobPosting';
 import { PROVIDED_FLAG } from '@/utils/settlement';
 
@@ -16,6 +16,7 @@ export type OrderRowKey =
   | 'description'
   | 'dates'
   | 'time'
+  | 'workConditions'
   | 'roles'
   | 'salary'
   | 'welfare'
@@ -43,6 +44,20 @@ export const ORDER_GROUPS = [
   { title: '조건', rows: ['conditions'] },
   { title: '사전질문', rows: ['preQuestions'] },
 ] as const satisfies readonly { title: string; rows: readonly OrderRowKey[] }[];
+
+/** 고정(fixed) 섹션 — 날짜·시간 축이 없고 '근무조건' 행(요일·출근시간) + 역할로 모집을 구성한다(S2). */
+export const FIXED_ORDER_GROUPS = [
+  { title: '기본 정보', rows: ['title', 'place', 'contact', 'description'] },
+  { title: '근무조건', rows: ['workConditions', 'roles'] },
+  { title: '급여', rows: ['salary', 'welfare', 'tax'] },
+  { title: '조건', rows: ['conditions'] },
+  { title: '사전질문', rows: ['preQuestions'] },
+] as const satisfies readonly { title: string; rows: readonly OrderRowKey[] }[];
+
+/** postingType별 섹션 구성 — fixed는 날짜·시간 대신 근무조건 행. */
+export function orderGroupsFor(postingType: OrderSheetFormValues['postingType']) {
+  return postingType === 'fixed' ? FIXED_ORDER_GROUPS : ORDER_GROUPS;
+}
 
 /** RHF errors의 최상위 필드 → 행 매핑 (scheduleGroups는 아래 경로 워커가 처리) */
 const ERROR_FIELD_TO_ROW: Record<string, OrderRowKey> = {
@@ -108,8 +123,24 @@ export function errorRowTargets(errors: Record<string, unknown>): OrderRowTarget
     push('dates', 0);
   }
 
+  // 고정(fixed) 근무조건 에러 — roles 하위(min 1)는 '역할' 행, 그 외(startTime·요일·최상위 부재)는
+  // '근무조건' 행으로. 죽은 제출 버튼(H5) 방지 — 어떤 형상이든 최소 한 행으로 흘러가야 한다.
+  const fs = errors['fixedSchedule'];
+  if (fs !== undefined) {
+    const fsObj =
+      typeof fs === 'object' && fs !== null ? (fs as Record<string, unknown>) : undefined;
+    if (fsObj?.['roles'] !== undefined) push('roles', 0);
+    if (
+      fsObj?.['roles'] === undefined ||
+      fsObj?.['startTime'] !== undefined ||
+      fsObj?.['daysPerWeek'] !== undefined
+    ) {
+      push('workConditions', 0);
+    }
+  }
+
   for (const [field, err] of Object.entries(errors)) {
-    if (field === 'scheduleGroups' || err === undefined) continue;
+    if (field === 'scheduleGroups' || field === 'fixedSchedule' || err === undefined) continue;
     const key = ERROR_FIELD_TO_ROW[field];
     if (key) push(key, 0);
   }
@@ -130,6 +161,31 @@ export function errorMessageForRow(
     }
     return undefined;
   };
+
+  // 고정(fixed) 근무조건/역할 — errors.fixedSchedule 경로(전체리뷰 P3·P6: 라우팅(errorRowTargets)만
+  // 되고 메시지 미배선이면 행 배지가 침묵한다 — dated L-1/L-2에서 고친 클래스의 fixed 재발 차단).
+  const fse = errors['fixedSchedule'] as Record<string, unknown> | undefined;
+  if (key === 'workConditions') {
+    return firstMessage(
+      fse?.['startTime'],
+      fse?.['daysPerWeek'],
+      fse?.['isStartTimeNegotiable'],
+      fse
+    );
+  }
+  if (key === 'roles' && fse !== undefined) {
+    const roles = fse['roles'];
+    let m = firstMessage(roles);
+    if (m === undefined && Array.isArray(roles)) {
+      for (const roleErr of roles) {
+        const r = roleErr as Record<string, unknown> | undefined;
+        m = firstMessage(r?.['customRole'], r?.['count'], r);
+        if (m !== undefined) break;
+      }
+    }
+    if (m !== undefined) return m;
+    // roles 관련 에러가 아니면 아래 dated 경로 폴백 — fixed에선 scheduleGroups 에러가 없어 무해
+  }
 
   if (key === 'dates' || key === 'time' || key === 'roles') {
     const sg = errors['scheduleGroups'];
@@ -236,7 +292,6 @@ const WELFARE_LABEL = {
   transportation: '교통',
   accommodation: '숙소',
 } as const;
-const START_TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 /** 역할 표시명 — 'other'는 customRole(없으면 '기타'), 그 외는 STAFF_ROLES 한글명. raw key 노출 금지(요약 일관성). */
 export const roleName = (role: string, customRole?: string) =>
@@ -256,6 +311,16 @@ type OrderSheetGroupSlots = NonNullable<
 /** 전 그룹 순회 슬롯 합집합 — 급여 커버 판정·총원 요약 공용 소스(S1) */
 function allSlots(values: OrderSheetFormValues): OrderSheetGroupSlots {
   return (values.scheduleGroups ?? []).flatMap((g) => g.timeSlots ?? []);
+}
+
+/** fixed/dated 공용 고유역할 소스 — 급여 커버·역할 요약(S2). fixed는 평탄 배열, dated는 전 그룹 슬롯 합집합. */
+function formRoleList(
+  values: OrderSheetFormValues
+): { role: string; customRole?: string; count: number }[] {
+  if (values.postingType === 'fixed') {
+    return values.fixedSchedule?.roles ?? [];
+  }
+  return allSlots(values).flatMap((s) => s.roles);
 }
 
 function summarizeRoles(slots: OrderSheetGroupSlots): string {
@@ -346,8 +411,32 @@ export function getRowState(
         optional: false,
       };
     }
+    case 'workConditions': {
+      // 고정(fixed) 근무조건 — 요일(0=협의) + 출근시간(협의면 부재 허용). zod superRefine과 정렬(H5).
+      const fs = values.fixedSchedule;
+      const negotiable = fs?.isStartTimeNegotiable ?? false;
+      const timeSet = negotiable || (!!fs?.startTime && START_TIME_RE.test(fs.startTime));
+      const daysLabel =
+        fs === undefined ? '' : fs.daysPerWeek === 0 ? '주 협의' : `주 ${fs.daysPerWeek}일`;
+      const timeLabel = fs === undefined ? '' : negotiable ? '출근 협의' : `출근 ${fs.startTime}`;
+      return {
+        label: '근무조건',
+        value: fs !== undefined && timeSet ? `${daysLabel} · ${timeLabel}` : '',
+        unset: fs === undefined || !timeSet,
+        optional: false,
+      };
+    }
     case 'roles': {
-      // 해당 그룹 모든 슬롯에 역할 1개 이상이어야 set (zod min(1)과 정렬)
+      // fixed는 평탄 역할 배열(min 1), dated는 해당 그룹 모든 슬롯에 역할 1개 이상 (zod min(1)과 정렬)
+      if (values.postingType === 'fixed') {
+        const roles = values.fixedSchedule?.roles ?? [];
+        return {
+          label: '역할',
+          value: roles.length > 0 ? summarizeRoles([{ startTime: '', roles }]) : '',
+          unset: roles.length === 0,
+          optional: false,
+        };
+      }
       const slots = group?.timeSlots ?? [];
       const allHaveRoles = slots.length > 0 && slots.every((s) => s.roles.length > 0);
       return {
@@ -366,8 +455,8 @@ export function getRowState(
           roleSalaries.map((rs) => [roleKey(rs.role, rs.customRole), rs.salary])
         );
         const uniqueRoles = new Map<string, { role: string; customRole?: string }>();
-        for (const slot of allSlots(values))
-          for (const r of slot.roles) uniqueRoles.set(roleKey(r.role, r.customRole), r);
+        // fixed/dated 공용 소스 — 급여 커버 대상 고유 역할(S2)
+        for (const r of formRoleList(values)) uniqueRoles.set(roleKey(r.role, r.customRole), r);
         const covered =
           uniqueRoles.size > 0 &&
           [...uniqueRoles.keys()].every((k) => {
@@ -433,8 +522,10 @@ export function getRowState(
  * 제출 유도(H5)와 에러 배지가 같은 타깃을 흘려받는다(리뷰 Design-M3).
  */
 export function firstUnsetRow(values: OrderSheetFormValues): OrderRowTarget | null {
-  const groupCount = Math.max(1, (values.scheduleGroups ?? []).length);
-  for (const section of ORDER_GROUPS) {
+  const isFixed = values.postingType === 'fixed';
+  // fixed는 날짜 축이 없어 단일 그룹(index 0)만 순회 — dated는 그룹 수만큼 일정·모집 반복(S1)
+  const groupCount = isFixed ? 1 : Math.max(1, (values.scheduleGroups ?? []).length);
+  for (const section of orderGroupsFor(values.postingType)) {
     const isSchedule = section.title === '일정 · 모집';
     const groupIndexes = isSchedule ? [...Array(groupCount).keys()] : [0];
     for (const groupIndex of groupIndexes) {

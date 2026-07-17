@@ -3,7 +3,8 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
-import { Alert, View, Text } from 'react-native';
+import { View, Text } from 'react-native';
+import { showAlert } from '@/utils/showAlert';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
@@ -147,25 +148,25 @@ export default function ApplyScreen() {
           });
 
           if (!latestJob) {
-            Alert.alert('오류', '공고를 찾을 수 없습니다');
+            showAlert('오류', '공고를 찾을 수 없습니다');
             return;
           }
 
           if (latestJob.status !== STATUS.JOB_POSTING.ACTIVE) {
-            Alert.alert('지원 불가', '지원이 마감된 공고입니다');
+            showAlert('지원 불가', '지원이 마감된 공고입니다');
             return;
           }
 
           const { total, filled } = getClosingStatus(latestJob);
           if (total > 0 && filled >= total) {
-            Alert.alert('지원 불가', '모집 인원이 마감되었습니다');
+            showAlert('지원 불가', '모집 인원이 마감되었습니다');
             return;
           }
         } catch (error) {
           logger.warn('지원 전 최신 공고 검증 실패', { error });
         }
 
-        // mutateAsync + try/catch — 에러 메시지를 네이티브 Alert 로 노출한다.
+        // mutateAsync + try/catch — 에러 메시지를 다이얼로그로 노출한다(웹은 window.alert 분기).
         // (전역 onError 토스트는 네이티브 SheetModal 뒤에 가려 안 보이므로)
         try {
           await submitApplicationAsync({
@@ -183,7 +184,7 @@ export default function ApplyScreen() {
             error instanceof Error
               ? error.message
               : '지원 중 오류가 발생했습니다. 다시 시도해 주세요.';
-          Alert.alert('지원 실패', errorMessage);
+          showAlert('지원 실패', errorMessage);
         }
       } finally {
         submitInFlightRef.current = false;

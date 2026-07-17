@@ -29,7 +29,6 @@ jest.mock('@/components/ui/SheetModal', () => {
 const baseProps = {
   onSubmit: jest.fn(),
   isSubmitting: false,
-  onSwitchToLegacyForm: jest.fn(),
 };
 
 const presetValues: OrderSheetFormValues = {

@@ -60,34 +60,6 @@ export const optionalTimestampSchema = timestampSchema.optional().nullable();
 export const nullableTimestampSchema = timestampSchema.nullable();
 
 // ============================================================================
-// Duration Schema
-// ============================================================================
-
-/**
- * 시간 간격(Duration) 스키마
- *
- * @description 시간/분/초 형태의 duration 또는 밀리초 숫자
- *
- * @example
- * { hours: 2, minutes: 30 }
- * 9000000 (밀리초)
- */
-export const durationSchema = z.union([
-  // 객체 형태
-  z.object({
-    hours: z.number().min(0).optional(),
-    minutes: z.number().min(0).max(59).optional(),
-    seconds: z.number().min(0).max(59).optional(),
-  }),
-  // 밀리초 숫자
-  z.number().min(0),
-  // 문자열 형태 (HH:MM:SS 또는 HH:MM)
-  z.string().regex(/^\d{1,2}:\d{2}(:\d{2})?$/),
-]);
-
-export const optionalDurationSchema = durationSchema.optional().nullable();
-
-// ============================================================================
 // Metadata Schema
 // ============================================================================
 
@@ -117,11 +89,6 @@ export const documentIdSchema = z.string().min(1).max(128);
  * @description 상세 검증이 필요한 경우 auth.schema.ts의 emailSchema를 사용하세요.
  */
 export const baseEmailSchema = z.string().email('올바른 이메일 형식이 아닙니다');
-
-/**
- * 한국 전화번호 스키마
- */
-export const phoneSchema = z.string().regex(/^01[0-9]{8,9}$/, '올바른 휴대폰 번호 형식이 아닙니다');
 
 /**
  * 날짜 문자열 스키마 (YYYY-MM-DD)
@@ -154,5 +121,4 @@ export const uuidLikeSchema = z
 // ============================================================================
 
 export type TimestampInput = z.infer<typeof timestampSchema>;
-export type DurationInput = z.infer<typeof durationSchema>;
 export type MetadataInput = z.infer<typeof metadataSchema>;

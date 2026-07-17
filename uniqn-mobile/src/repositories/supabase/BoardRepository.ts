@@ -18,7 +18,6 @@ import { toError } from '@/errors';
 import { handleSupabaseError, runRpc } from '@/utils/supabase';
 import type {
   BoardComment,
-  BoardCommentReaction,
   BoardMembership,
   BoardPost,
   BoardPostStatus,
@@ -455,49 +454,6 @@ export class SupabaseBoardRepository implements IBoardRepository {
     } catch {
       logger.warn('toggle_comment_reaction RPC 실패, 폴백 처리', { postId, commentId, userId });
       return toggleCommentReactionFallback(postId, commentId, userId, type);
-    }
-  }
-
-  async getCommentReaction(
-    postId: string,
-    commentId: string,
-    userId: string
-  ): Promise<BoardCommentReaction | null> {
-    try {
-      const { data, error } = await supabase
-        .from(TABLES.BOARD_COMMENT_REACTIONS)
-        .select(POST_COLUMNS)
-        .eq('post_id', postId)
-        .eq('comment_id', commentId)
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (error) {
-        handleSupabaseError(error, {
-          operation: '댓글 리액션 조회',
-          table: TABLES.BOARD_COMMENT_REACTIONS,
-        });
-      }
-
-      if (!data) return null;
-
-      const row = data as Record<string, unknown>;
-      return {
-        id: row.id as string,
-        commentId,
-        userId,
-        type: row.type as CommentReactionType,
-        createdAt: row.created_at ? new Date(row.created_at as string) : undefined,
-        updatedAt: row.updated_at ? new Date(row.updated_at as string) : undefined,
-      };
-    } catch (error) {
-      rethrowRepositoryError(
-        error,
-        '댓글 리액션 조회 실패',
-        '댓글 리액션 조회',
-        TABLES.BOARD_COMMENT_REACTIONS,
-        { postId, commentId, userId }
-      );
     }
   }
 

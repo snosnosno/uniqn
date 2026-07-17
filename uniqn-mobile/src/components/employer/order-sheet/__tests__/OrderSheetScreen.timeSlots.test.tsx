@@ -45,7 +45,6 @@ jest.mock('@/components/ui/CalendarPicker', () => ({ CalendarPicker: () => null 
 const baseProps = {
   onSubmit: jest.fn(),
   isSubmitting: false,
-  onSwitchToLegacyForm: jest.fn(),
 };
 
 const withSlots = (slots: { startTime: string; roles: any[] }[]) => ({

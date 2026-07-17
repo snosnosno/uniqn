@@ -11,12 +11,7 @@ export type {
   MergerScheduleStats,
 } from './ScheduleMerger';
 
-export type {
-  TimeSlotInfo,
-  WorkLogCreateInput,
-  WorkLogData,
-  BatchCreateResult,
-} from './WorkLogCreator';
+export type { TimeSlotInfo } from './WorkLogCreator';
 
 export { ScheduleMerger } from './ScheduleMerger';
 export { WorkLogCreator } from './WorkLogCreator';

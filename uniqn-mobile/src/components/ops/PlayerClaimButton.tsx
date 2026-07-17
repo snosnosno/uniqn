@@ -3,7 +3,8 @@
  * - viewToken 있으면 "링크 공유"(비파괴, 발급 미호출) + "PIN 재발급"(로테이트, 확인).
  * - viewToken 없으면 "발급"(view_token+PIN 생성). 발급 결과 PIN은 Alert로 1회 표시(슬립용).
  */
-import { Pressable, Text, Platform, Share, Alert } from 'react-native';
+import { Pressable, Text, Platform, Share } from 'react-native';
+import { confirmAction } from '@/utils/confirmAction';
 import { useIssuePlayerCredentials } from '@/hooks/ops';
 import { getOpsPlayerUrl } from '@/constants/ops';
 import { useToastStore } from '@/stores/toastStore';
@@ -46,14 +47,14 @@ export function PlayerClaimButton({
   const onIssued = (cred: OpsPlayerCredentials) => {
     const url = getOpsPlayerUrl(cred.viewToken);
     // 평문 PIN은 1회만 노출 — 슬립에 인쇄/전달.
-    Alert.alert(
-      '연결 PIN 발급됨',
-      `연결 PIN: ${cred.claimPin}\n\n슬립/QR에 PIN을 함께 적어주세요. 재발급하면 이 PIN은 무효가 됩니다.`,
-      [
-        { text: '링크 공유', onPress: () => void shareUrl(url) },
-        { text: '닫기', style: 'cancel' },
-      ]
-    );
+    // 웹은 window.confirm 분기(confirmAction) — rn-web Alert 는 no-op 이라 PIN 을 볼 방법이 없어진다.
+    confirmAction({
+      title: '연결 PIN 발급됨',
+      message: `연결 PIN: ${cred.claimPin}\n\n슬립/QR에 PIN을 함께 적어주세요. 재발급하면 이 PIN은 무효가 됩니다.`,
+      confirmText: '링크 공유',
+      cancelText: '닫기',
+      onConfirm: () => void shareUrl(url),
+    });
   };
 
   const issue = () => {
@@ -63,10 +64,13 @@ export function PlayerClaimButton({
 
   const onPressIssue = () => {
     if (!viewToken) return issue(); // 최초 발급
-    Alert.alert('PIN 재발급', '재발급하면 이전 PIN은 사용할 수 없어요. 진행할까요?', [
-      { text: '취소', style: 'cancel' },
-      { text: '재발급', style: 'destructive', onPress: issue },
-    ]);
+    confirmAction({
+      title: 'PIN 재발급',
+      message: '재발급하면 이전 PIN은 사용할 수 없어요. 진행할까요?',
+      confirmText: '재발급',
+      destructive: true,
+      onConfirm: issue,
+    });
   };
 
   return (

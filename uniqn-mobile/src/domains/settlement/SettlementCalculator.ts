@@ -12,7 +12,6 @@ import { parseTimeSlotToDate } from '@/utils/date/ranges';
 import { DEFAULT_SALARY_INFO, PROVIDED_FLAG } from '@/utils/settlement/constants';
 import { DEFAULT_TAX_SETTINGS } from '@/utils/settlement/tax';
 import { TaxCalculator } from './TaxCalculator';
-import { SettlementCache, type CachedSettlement } from './SettlementCache';
 
 // ============================================================================
 // Types
@@ -226,43 +225,6 @@ export class SettlementCalculator {
       const result = this.calculate(input);
       return total + (returnAfterTax ? result.afterTaxPay : result.totalPay);
     }, 0);
-  }
-
-  /**
-   * 캐시를 활용한 정산 계산
-   *
-   * @param workLogId - WorkLog ID
-   * @param input - 계산 입력
-   * @returns 정산 결과
-   */
-  static calculateWithCache(workLogId: string, input: CalculationInput): SettlementResult {
-    const inputHash = SettlementCache.createInputHash(input);
-
-    // 캐시 확인
-    if (!SettlementCache.isStale(workLogId, inputHash)) {
-      const cached = SettlementCache.get(workLogId);
-      if (cached) return cached;
-    }
-
-    // 계산
-    const result = this.calculate(input);
-
-    // 캐시 저장
-    SettlementCache.set(workLogId, result as CachedSettlement, inputHash);
-
-    return result;
-  }
-
-  /**
-   * 배치 계산
-   *
-   * @param inputs - (workLogId, input) 배열
-   * @returns 정산 결과 배열
-   */
-  static calculateBatch(
-    inputs: { workLogId: string; input: CalculationInput }[]
-  ): SettlementResult[] {
-    return inputs.map(({ workLogId, input }) => this.calculateWithCache(workLogId, input));
   }
 
   // ==========================================================================

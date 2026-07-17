@@ -386,20 +386,3 @@ export function expandAllDateRangesToRequirements(
 export function isSingleDate(group: DateRangeGroup): boolean {
   return group.startDate === group.endDate;
 }
-
-/**
- * 날짜 범위 그룹의 모든 날짜 목록 반환
- */
-export function getDateListFromRange(group: DateRangeGroup): string[] {
-  const dates: string[] = [];
-  const start = parseDateString(group.startDate);
-  const dayCount = getDayCount(group.startDate, group.endDate);
-
-  if (!start) return dates;
-
-  for (let i = 0; i < dayCount; i++) {
-    dates.push(format(addDays(start, i), 'yyyy-MM-dd'));
-  }
-
-  return dates;
-}

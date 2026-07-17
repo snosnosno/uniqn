@@ -9,9 +9,12 @@ import {
   calculatePayByType,
   calculateAllowanceAmount,
   calculateSettlement,
+  calculateSettlementWithTax,
+  getRoleSalaryFromRoles,
 } from '@/domains/settlement/helpers';
 import { SettlementCalculator } from '@/domains/settlement/SettlementCalculator';
-import type { SalaryInfo } from '@/types/jobPosting';
+import type { TaxSettings } from '@/utils/settlement';
+import type { SalaryInfo, JobPostingCard, PostingSalaryRow } from '@/types/jobPosting';
 
 describe('settlement/helpers ↔ SettlementCalculator 정합', () => {
   describe('calculatePayByType: 음수 금액 방어', () => {
@@ -73,6 +76,121 @@ describe('settlement/helpers ↔ SettlementCalculator 정합', () => {
       expect(result.allowancePay).toBe(5000);
       expect(result.totalPay).toBe(result.basePay + result.allowancePay);
       expect(result.totalPay).toBe(25000);
+    });
+  });
+
+  describe('세금 등가성: 두 정산 경로가 동일 taxAmount 를 낸다 (taxCore 단일 경유)', () => {
+    it('calculateSettlementWithTax(helpers) 와 SettlementCalculator.calculate 의 세금·합계가 동치', () => {
+      const salary: SalaryInfo = { type: 'hourly', amount: 10000 };
+      const allowances = { meal: 10000, transportation: 5000, additional: 3000 };
+      const taxSettings: TaxSettings = { type: 'rate', value: 3.3 };
+
+      const helpersResult = calculateSettlementWithTax(
+        '18:00',
+        '22:00',
+        salary,
+        allowances,
+        taxSettings
+      );
+      const calcResult = SettlementCalculator.calculate({
+        startTime: '18:00',
+        endTime: '22:00',
+        salaryInfo: salary,
+        allowances,
+        taxSettings,
+      });
+
+      // 항목별 세율 과세가 taxCore(calculateItemizedRateTax)로 단일 경유 → 세금 동치(비-공허)
+      expect(helpersResult.taxAmount).toBeGreaterThan(0);
+      expect(helpersResult.taxAmount).toBe(calcResult.taxAmount);
+      expect(helpersResult.basePay).toBe(calcResult.basePay);
+      expect(helpersResult.totalPay).toBe(calcResult.totalPay);
+      expect(helpersResult.afterTaxPay).toBe(calcResult.afterTaxPay);
+    });
+
+    it('고정 세금(fixed)도 두 경로가 동일 taxAmount 를 낸다', () => {
+      const salary: SalaryInfo = { type: 'hourly', amount: 10000 };
+      const allowances = { meal: 10000 };
+      const taxSettings: TaxSettings = { type: 'fixed', value: 7000 };
+
+      const helpersResult = calculateSettlementWithTax(
+        '18:00',
+        '22:00',
+        salary,
+        allowances,
+        taxSettings
+      );
+      const calcResult = SettlementCalculator.calculate({
+        startTime: '18:00',
+        endTime: '22:00',
+        salaryInfo: salary,
+        allowances,
+        taxSettings,
+      });
+
+      expect(helpersResult.taxAmount).toBe(7000);
+      expect(helpersResult.taxAmount).toBe(calcResult.taxAmount);
+      expect(helpersResult.afterTaxPay).toBe(calcResult.afterTaxPay);
+    });
+  });
+
+  describe('역할급여 조회: getSalaryForRole vs getRoleSalaryFromRoles 의 useSameSalary 발산 (현행 문서화)', () => {
+    const roleSalary: SalaryInfo = { type: 'hourly', amount: 20000 };
+    const defaultSalary: SalaryInfo = { type: 'hourly', amount: 12000 };
+    const salaryRow: PostingSalaryRow = {
+      key: 'dealer',
+      role: 'dealer',
+      roleLabel: '딜러',
+      salary: roleSalary,
+      text: '',
+    };
+    const buildCard = (useSameSalary: boolean): JobPostingCard =>
+      ({
+        useSameSalary,
+        defaultSalary,
+        salaryRows: [salaryRow],
+        fullSalaryRows: [salaryRow],
+      }) as unknown as JobPostingCard;
+
+    it('useSameSalary=false 면 두 함수가 동일하게 역할별 급여를 반환한다 (동치 축)', () => {
+      expect(SettlementCalculator.getSalaryForRole('dealer', undefined, buildCard(false))).toEqual(
+        roleSalary
+      );
+      expect(
+        getRoleSalaryFromRoles(
+          [{ role: 'dealer', salary: roleSalary }],
+          'dealer',
+          undefined,
+          defaultSalary
+        )
+      ).toEqual(roleSalary);
+    });
+
+    it('useSameSalary=true 면 getSalaryForRole 는 defaultSalary, getRoleSalaryFromRoles 는 역할별 급여로 갈라진다 (발산 축 — 미수렴 현행)', () => {
+      // getSalaryForRole: useSameSalary=true → defaultSalary 로 단락(12000)
+      expect(SettlementCalculator.getSalaryForRole('dealer', undefined, buildCard(true))).toEqual(
+        defaultSalary
+      );
+      // getRoleSalaryFromRoles: useSameSalary 미고려 → 역할별 급여 유지(20000)
+      expect(
+        getRoleSalaryFromRoles(
+          [{ role: 'dealer', salary: roleSalary }],
+          'dealer',
+          undefined,
+          defaultSalary
+        )
+      ).toEqual(roleSalary);
+      // 두 결과가 실제로 다르다(발산)는 것을 명시적으로 잠근다
+      expect(
+        SettlementCalculator.getSalaryForRole('dealer', undefined, buildCard(true))
+      ).not.toEqual(
+        getRoleSalaryFromRoles(
+          [{ role: 'dealer', salary: roleSalary }],
+          'dealer',
+          undefined,
+          defaultSalary
+        )
+      );
     });
   });
 });

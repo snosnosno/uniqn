@@ -133,7 +133,6 @@ export {
   useSettlementDateNavigation,
   type UseSettlementDateNavigationResult,
 } from './useSettlementDateNavigation';
-export { useAllowances, type UseAllowancesResult } from './useAllowances';
 export {
   useConfirmedStaff,
   type UseConfirmedStaffOptions,
@@ -141,12 +140,6 @@ export {
 } from './useConfirmedStaff';
 export { useStaffPhoneSearch, type UseStaffPhoneSearchReturn } from './useStaffPhoneSearch';
 export { useEventQR, type UseEventQROptions, type UseEventQRReturn } from './useEventQR';
-
-export {
-  useAssignmentSelection,
-  type UseAssignmentSelectionOptions,
-  type UseAssignmentSelectionReturn,
-} from './useAssignmentSelection';
 
 export {
   useAdminDashboard,

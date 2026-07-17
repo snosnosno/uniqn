@@ -8,7 +8,10 @@
 import React, { memo, useMemo } from 'react';
 import { View, Text } from 'react-native';
 import type { SalaryInfo } from '@/types';
+import type { SalaryType } from '@/types/jobPosting';
 import { getRoleDisplayName } from '@/types/unified';
+import { formatNumber } from '@/utils/formatters';
+import { SALARY_TYPE_LABELS } from '@/utils/settlement/constants';
 
 // ============================================================================
 // Types
@@ -34,36 +37,25 @@ interface RoleSalaryDisplayProps {
 }
 
 // ============================================================================
-// Constants
-// ============================================================================
-
-const SALARY_TYPE_LABELS: Record<string, string> = {
-  hourly: '시급',
-  daily: '일급',
-  monthly: '월급',
-  other: '협의',
-};
-
-// ============================================================================
 // Helpers
 // ============================================================================
 
 /**
- * 급여 포맷
+ * 급여 포맷 (라벨 금액원 — ₩ 없음, 'other'는 '협의')
  */
-function formatSalary(type: string, amount: number): string {
+function formatSalary(type: SalaryType, amount: number): string {
   if (type === 'other') return '협의';
   const typeLabel = SALARY_TYPE_LABELS[type] || '';
-  const formattedAmount = amount.toLocaleString('ko-KR');
+  const formattedAmount = formatNumber(amount);
   return `${typeLabel} ${formattedAmount}원`;
 }
 
 /**
  * 급여 간단 포맷 (금액만)
  */
-function formatSalaryShort(type: string, amount: number): string {
+function formatSalaryShort(type: SalaryType, amount: number): string {
   if (type === 'other') return '협의';
-  return `${amount.toLocaleString('ko-KR')}원`;
+  return `${formatNumber(amount)}원`;
 }
 
 /**

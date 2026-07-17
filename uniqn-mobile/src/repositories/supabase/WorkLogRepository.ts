@@ -534,21 +534,11 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
   // 실시간 구독 (Realtime)
   // ==========================================================================
 
-  /** @deprecated polling으로 전환됨. getByDate + refetchInterval 사용 */
-  subscribeByDate(
-    staffId: string,
-    date: string,
-    onData: (workLogs: WorkLog[]) => void,
-    onError: (error: Error) => void
-  ): UnsubscribeFn {
-    logger.info('날짜별 근무 기록 초기 조회 (polling 전환)', { staffId, date });
-    void this.getByDate(staffId, date).then(onData).catch(onError);
-    return () => {
-      /* noop */
-    };
-  }
-
-  /** @deprecated polling으로 전환됨. getByStaffId + refetchInterval 사용 */
+  /**
+   * 초기 1회 조회 후 noop 구독을 반환하는 폴링 스타일 shim. 호출부(scheduleService)가
+   * refetchInterval 로 갱신 주기를 관리하며, 현재 실사용 중인 정식 경로다.
+   * 호출부를 getByStaffId + refetchInterval 로 직접 인라인 전환하는 마이그레이션은 미완.
+   */
   subscribeByStaffId(
     staffId: string,
     onData: (workLogs: WorkLog[]) => void,
@@ -595,7 +585,11 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
     });
   }
 
-  /** @deprecated polling으로 전환됨. getByStaffIdWithFilters + refetchInterval 사용 */
+  /**
+   * 초기 1회 조회 후 noop 구독을 반환하는 폴링 스타일 shim. 호출부(workLogService)가
+   * refetchInterval 로 갱신 주기를 관리하며, 현재 실사용 중인 정식 경로다.
+   * 호출부를 getByStaffIdWithFilters + refetchInterval 로 직접 인라인 전환하는 마이그레이션은 미완.
+   */
   subscribeByStaffIdWithFilters(
     staffId: string,
     options: { dateRange?: { start: string; end: string }; pageSize?: number },
@@ -617,7 +611,11 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
     };
   }
 
-  /** @deprecated polling으로 전환됨. 직접 조회 + refetchInterval 사용 */
+  /**
+   * 초기 1회 조회 후 noop 구독을 반환하는 폴링 스타일 shim. 호출부(workLogService)가
+   * refetchInterval 로 갱신 주기를 관리하며, 현재 실사용 중인 정식 경로다.
+   * 호출부를 직접 조회 + refetchInterval 로 인라인 전환하는 마이그레이션은 미완.
+   */
   subscribeTodayActive(
     staffId: string,
     date: string,

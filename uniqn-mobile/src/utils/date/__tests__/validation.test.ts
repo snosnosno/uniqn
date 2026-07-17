@@ -11,7 +11,6 @@ import {
   isWithinUrgentDateLimit,
   validateDateCount,
   isDuplicateDate,
-  dateChecks,
   getDateAfterDays,
 } from '../validation';
 
@@ -191,98 +190,6 @@ describe('isDuplicateDate', () => {
 
   it('빈 배열에서는 false를 반환한다', () => {
     expect(isDuplicateDate([], '2025-01-15')).toBe(false);
-  });
-});
-
-// ============================================================================
-// dateChecks
-// ============================================================================
-
-describe('dateChecks', () => {
-  describe('isToday', () => {
-    it('오늘 날짜는 true를 반환한다', () => {
-      expect(dateChecks.isToday(new Date())).toBe(true);
-    });
-
-    it('어제 날짜는 false를 반환한다', () => {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      expect(dateChecks.isToday(yesterday)).toBe(false);
-    });
-
-    it('null은 false를 반환한다', () => {
-      expect(dateChecks.isToday(null)).toBe(false);
-    });
-
-    it('오늘 ISO 문자열은 true를 반환한다', () => {
-      const now = new Date();
-      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-      expect(dateChecks.isToday(todayStr)).toBe(true);
-    });
-
-    it('유효하지 않은 날짜 문자열은 false를 반환한다', () => {
-      expect(dateChecks.isToday('2025-02-30')).toBe(false);
-    });
-  });
-
-  describe('isPast', () => {
-    it('과거 날짜는 true를 반환한다', () => {
-      const past = new Date(2020, 0, 1);
-      expect(dateChecks.isPast(past)).toBe(true);
-    });
-
-    it('미래 날짜는 false를 반환한다', () => {
-      const future = new Date(2030, 0, 1);
-      expect(dateChecks.isPast(future)).toBe(false);
-    });
-
-    it('null은 false를 반환한다', () => {
-      expect(dateChecks.isPast(null)).toBe(false);
-    });
-  });
-
-  describe('isFuture', () => {
-    it('미래 날짜는 true를 반환한다', () => {
-      const future = new Date(2030, 0, 1);
-      expect(dateChecks.isFuture(future)).toBe(true);
-    });
-
-    it('과거 날짜는 false를 반환한다', () => {
-      const past = new Date(2020, 0, 1);
-      expect(dateChecks.isFuture(past)).toBe(false);
-    });
-
-    it('null은 false를 반환한다', () => {
-      expect(dateChecks.isFuture(null)).toBe(false);
-    });
-
-    it('ISO 문자열도 처리한다', () => {
-      expect(dateChecks.isFuture('2030-01-01')).toBe(true);
-    });
-  });
-
-  describe('isWithinDays', () => {
-    it('오늘로부터 N일 이내 날짜는 true를 반환한다', () => {
-      const inTwoDays = new Date();
-      inTwoDays.setDate(inTwoDays.getDate() + 2);
-      expect(dateChecks.isWithinDays(inTwoDays, 7)).toBe(true);
-    });
-
-    it('N일을 초과한 날짜는 false를 반환한다', () => {
-      const farFuture = new Date();
-      farFuture.setDate(farFuture.getDate() + 10);
-      expect(dateChecks.isWithinDays(farFuture, 7)).toBe(false);
-    });
-
-    it('과거 날짜는 false를 반환한다', () => {
-      const past = new Date();
-      past.setDate(past.getDate() - 1);
-      expect(dateChecks.isWithinDays(past, 7)).toBe(false);
-    });
-
-    it('null은 false를 반환한다', () => {
-      expect(dateChecks.isWithinDays(null, 7)).toBe(false);
-    });
   });
 });
 
