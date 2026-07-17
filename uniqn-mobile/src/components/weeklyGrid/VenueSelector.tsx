@@ -79,7 +79,7 @@ export function VenueSelector({
       {/* 워크스페이스 선택(2개 이상일 때만) */}
       {workspaces.length > 1 ? (
         <View className="mb-3">
-          <Text className="mb-2 text-xs font-sans-medium text-content-muted">워크스페이스</Text>
+          <Text className="mb-2 text-xs font-sans-medium text-content-muted">팀</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -91,7 +91,7 @@ export function VenueSelector({
                 label={ws.name}
                 selected={ws.id === activeWorkspaceId}
                 onPress={handleSelectWorkspace(ws.id)}
-                a11yLabel={`워크스페이스 ${ws.name}`}
+                a11yLabel={`팀 ${ws.name}`}
               />
             ))}
           </ScrollView>
@@ -113,9 +113,7 @@ export function VenueSelector({
         >
           {containers.length === 0 ? (
             <View className="mr-2 h-10 justify-center">
-              <Text className="text-sm text-content-secondary">
-                이 워크스페이스에 등록된 지점이 없어요
-              </Text>
+              <Text className="text-sm text-content-secondary">이 팀에 등록된 지점이 없어요</Text>
             </View>
           ) : (
             containers.map((c) => (

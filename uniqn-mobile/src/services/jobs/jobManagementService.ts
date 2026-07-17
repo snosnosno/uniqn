@@ -75,7 +75,7 @@ async function resolveWorkspaceId(ownerId: string, requestedWorkspaceId?: string
   if (!accessible) {
     logger.warn('공고 생성 — 전달된 workspaceId 접근 권한 없음', { ownerId, requestedWorkspaceId });
     throw new PermissionError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
-      userMessage: '선택한 워크스페이스에 공고를 등록할 권한이 없어요.',
+      userMessage: '선택한 팀에 공고를 등록할 권한이 없어요.',
       metadata: { ownerId, requestedWorkspaceId },
     });
   }
@@ -100,7 +100,7 @@ async function createSinglePosting(
     if (isWorkspaceFkViolation(error)) {
       logger.warn('workspace FK race detected', { ownerId, workspaceId });
       throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: '워크스페이스를 다시 확인해주세요. 잠시 후 다시 시도해주세요.',
+        userMessage: '팀을 다시 확인해주세요. 잠시 후 다시 시도해주세요.',
         metadata: { ownerId, workspaceId },
       });
     }

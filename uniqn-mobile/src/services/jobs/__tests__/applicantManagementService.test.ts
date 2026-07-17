@@ -1139,7 +1139,7 @@ describe('applicantManagementService', () => {
 
     it('외부인 호출 시 PermissionError 를 onError 로 호출하고 빈 unsubscribe 반환', async () => {
       const permissionError = new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-        userMessage: '워크스페이스 멤버만 관리할 수 있습니다: 지원자 구독',
+        userMessage: '팀 멤버만 관리할 수 있습니다: 지원자 구독',
       });
       mockLoadAndVerifyJobPostingAccess.mockRejectedValue(permissionError);
 
@@ -1161,7 +1161,7 @@ describe('applicantManagementService', () => {
 
     it('onError 콜백이 없어도 권한 거절 시 빈 unsubscribe 반환', async () => {
       const permissionError = new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-        userMessage: '워크스페이스 멤버만 관리할 수 있습니다: 지원자 구독',
+        userMessage: '팀 멤버만 관리할 수 있습니다: 지원자 구독',
       });
       mockLoadAndVerifyJobPostingAccess.mockRejectedValue(permissionError);
 

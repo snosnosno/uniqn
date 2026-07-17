@@ -92,24 +92,24 @@ describe('WorkspaceHeaderAction 더보기 메뉴', () => {
     mockUseReceivedWorkspaceInvitations.mockReturnValue({ invitations: [] });
   });
 
-  it('⋯ 트리거를 누르면 워크스페이스·받은 초대 옵션이 노출된다', () => {
+  it('⋯ 트리거를 누르면 팀·받은 초대 옵션이 노출된다', () => {
     const { getByLabelText, queryByText, getByText } = render(<WorkspaceHeaderAction />);
 
     // 열기 전에는 옵션이 없다.
-    expect(queryByText('워크스페이스')).toBeNull();
+    expect(queryByText('팀')).toBeNull();
     expect(queryByText('받은 초대')).toBeNull();
 
     fireEvent.press(getByLabelText(/더보기/));
 
-    expect(getByText('워크스페이스')).toBeTruthy();
+    expect(getByText('팀')).toBeTruthy();
     expect(getByText('받은 초대')).toBeTruthy();
   });
 
-  it("'워크스페이스' 선택 시 워크스페이스 라우트로 push 한다", () => {
+  it("'팀' 선택 시 워크스페이스 라우트로 push 한다", () => {
     const { getByLabelText, getByText } = render(<WorkspaceHeaderAction />);
 
     fireEvent.press(getByLabelText(/더보기/));
-    fireEvent.press(getByText('워크스페이스'));
+    fireEvent.press(getByText('팀'));
 
     expect(router.push).toHaveBeenCalledWith('/(employer)/workspace');
   });
