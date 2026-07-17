@@ -232,7 +232,6 @@ describe('useCollaboratorCandidates', () => {
       {
         userId: 'u1',
         displayName: 'u1',
-        email: 'abc@test.local',
         photoUrl: null,
         status: 'addable',
       },

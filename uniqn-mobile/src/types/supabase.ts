@@ -3265,7 +3265,6 @@ export type Database = {
       search_collaborator_candidates_by_nickname: {
         Args: { p_job_posting_id: string; p_nickname_query: string };
         Returns: {
-          email: string;
           id: string;
           name: string;
           nickname: string;

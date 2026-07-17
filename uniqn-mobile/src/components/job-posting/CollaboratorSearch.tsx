@@ -80,9 +80,6 @@ function CandidateRow({
         <Text className="text-base font-medium text-content-primary" numberOfLines={1}>
           {candidate.displayName ?? '이름 없음'}
         </Text>
-        <Text className="text-xs text-content-secondary" numberOfLines={1}>
-          {candidate.email}
-        </Text>
         {hint ? <Text className="text-xs text-warning-600 mt-0.5">{hint}</Text> : null}
       </View>
       {!disabled ? <Text className="text-sm text-primary-500 font-medium">추가</Text> : null}

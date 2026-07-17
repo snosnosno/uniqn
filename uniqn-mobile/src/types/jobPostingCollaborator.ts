@@ -44,7 +44,6 @@ export interface SharedJobPosting {
 export interface CollaboratorSearchCandidate {
   userId: string;
   displayName: string | null;
-  email: string;
   photoUrl: string | null;
   /** 자기 자신 / workspace 이미 멤버 / 이미 collaborator / 추가 가능 */
   status: 'self' | 'workspace_member' | 'already_collaborator' | 'addable';

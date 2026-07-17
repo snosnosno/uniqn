@@ -57,7 +57,6 @@ interface SharedJpRow {
 
 interface UserNicknameRow {
   id: string;
-  email: string | null;
   nickname: string | null;
   name: string | null;
   photo_url: string | null;
@@ -275,7 +274,6 @@ export class SupabaseJobPostingCollaboratorRepository implements IJobPostingColl
         return {
           userId: row.id,
           displayName: row.nickname ?? row.name ?? null,
-          email: row.email ?? '',
           photoUrl: row.photo_url ?? null,
           status,
         };
