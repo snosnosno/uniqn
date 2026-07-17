@@ -88,3 +88,5 @@
 - **layers**: Service→Repository 예시·에러패턴을 `jobManagementService`/`jobService`+`serviceErrorHandler.ts`로 교체(sources 정리).
 - **roles·overview**: CLAUDE.md 최근 변경(#240)은 하네스/오케스트레이션 — 역할·아키텍처·스택 불변 확인 → `updated`만 갱신.
 - 검증: check-staleness → 4페이지 STALE 제거. 활성 stale 0.
+## [2026-07-17] ingest | 7일 머지(07-10~17, 33건) 졸업 — 주문서 통일·필터 3축·전체 정리·Alert 웹 no-op·ops S1 개방
+sources 4 신설: order-sheet-unification(#261+#252/#253, conditions patch 계약·레거시 30파일 은퇴)·jobs-filter-3axis(#250/#251/#254/#257, 277 slug 택소노미·쿼리압축)·codebase-cleanup-2026-07(#263+#239, 버그8종·−3,464줄·전수 grep 프로토콜)·alert-web-noop(#264, rn-web Alert 완전 no-op+ESLint 강제). decisions 3 갱신: order-sheet-form-contract §7 patch-conditions·§8 단일경로/은퇴, whitelist-silent-drop 실증 3→4회(#261 patch 변형), nativewind-rn-pitfalls 5함정(Alert no-op). architecture/ops-engine S1 전면 개방 섹션(anon SECDEF=2 불변 코드검증·배포순서 BLOCKING). index 갱신(sources 4행+decisions 2행+ops-engine행). 작성=opus 에이전트 4기 병렬, 메인(fable) 검증=인용 경로 실존·mappers.ts:303/:397 conditions ?? {}·eslint.config.js Alert 가드·S1 마이그 7개 실측. 출처 PR#239~#265·memory 토픽 7종.

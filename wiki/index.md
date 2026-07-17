@@ -7,7 +7,7 @@
 - [[layers]] — Presentation→Hooks→Service→Repository→Supabase 단방향 5레이어
 - [[data-flow]] — 대표 데이터 흐름(읽기 TanStack Query 예외 + 쓰기 Service 경유)
 - [[rls-model]] — RLS 정책 3계층 + 재귀/SECDEF 함정 3건
-- [[ops-engine]] — 대회 운영 엔진(ops 1a~1f): 이벤트 스파인·SECDEF 쓰기 경계·anon SECDEF 2 불변·서버앵커 클럭
+- [[ops-engine]] — 대회 운영 엔진(ops 1a~1f + S1 전면 개방·대회사 레일): 이벤트 스파인·SECDEF 쓰기 경계·anon SECDEF 2 불변·서버앵커 클럭·진입 허브/악용 방어/TV 프리셋 (PR#207~#265)
 
 ## decisions
 - [[enum-divergence]] — enum 발산 → 읽기 레코드 증발 방지 규칙 (3회 재발 클래스)
@@ -18,8 +18,8 @@
 - [[knip-signal-hygiene]] — knip 신호 정화: 래칫 게이트 + 안전 삭제 프로토콜(미사용≠죽음 ~65% 보존, tsc 오라클, 배럴 협응삭제, stale-base 안전망) (PR#231)
 - [[migration-timestamp-collision]] — 병렬 세션이 같은 마이그 타임스탬프 → 병합 후 db reset `schema_migrations_pkey` 23505, 신규분 리네임 해소 (MCP-apply prod는 무관)
 - [[prod-parity-baseline]] — prod가 진실: baseline squash 채택 이유(함수163vs142·정책103vs173 발산) + 가드 2중 + MCP 핫픽스=같은 PR 가드 갱신 규율 (PR#241)
-- [[whitelist-silent-drop]] — "화이트리스트 조용한 증발" 재발 클래스(3회 실증: #194 region·#243 filled counts·conditions 9지점) — 신규 필드는 지점 전수+읽기 방향 테스트+표시 UI 별도 확인
-- [[order-sheet-form-contract]] — 주문서 폼 계약: 3제네릭 zodResolver(z.input/z.output)·canonical 매퍼 등가성·Design B(단일화면 카드+시트)·#244 지연전환·중첩Modal embedded (PR#246/#247)
+- [[whitelist-silent-drop]] — "화이트리스트 조용한 증발" 재발 클래스(4회 실증: #194 region·#243 filled counts·conditions 9지점·#261 conditions patch) — 신규 필드는 지점 전수+읽기 방향 테스트+표시 UI 별도 확인
+- [[order-sheet-form-contract]] — 주문서 폼 계약: 3제네릭 zodResolver(z.input/z.output)·canonical 매퍼 등가성·Design B(단일화면 카드+시트)·#244 지연전환·중첩Modal embedded·update=patch conditions 상시 전달·전 타입 단일 경로+레거시 은퇴 (PR#246/#247/#261)
 - [[secdef-hardening]] — SECURITY DEFINER 함수 하드닝 3규칙: anon EXECUTE 명시 REVOKE·search_path에 extensions·plpgsql NULL fail-open 차단 (memory 졸업, PR#195)
 - [[supabase-write-pitfalls]] — Supabase 쓰기 경로 함정 종합: 카운터 트리거·realtime publication·RPC 예외 매핑·시드 zod·storage 정책·존재하지 않는 테이블 (memory 졸업)
 - [[nativewind-rn-pitfalls]] — NativeWind/RN UI 함정: 동적 className dark: 유실·flex-1 붕괴·Link asChild 터치 유실·중첩 accessibilityRole hydration (memory 졸업, PR#136)
@@ -39,3 +39,7 @@
 - [[userflow-audit-2026-07]] — 코어 유저플로우 실측 감사→P0~P2 전항 수정(적대검증 44% 기각·prod 재판정·postingAuthority 신설) — ✅PR#242
 - [[ios-userflow-fixes]] — iOS 유저플로우 버그 8종+신고모달 승격+타이머 후속(filled counts 서브맵 함정 포함) — ✅PR#243·#244
 - [[job-posting-kiosk-order-sheet]] — 공고작성 키오스크 "주문서" 개편(단일화면 카드+프리셋+conditions) — ✅PR#246 본·#247 후속(모집조건 표시+폴리시)·마이그·OTA `4193f9ab`
+- [[order-sheet-unification]] — 공고작성 전 타입 주문서 단일화(S1~S4)+레거시 폼 30파일 은퇴+후속 UX(일정그룹·역할별급여·카드조건) — ✅PR#261·#252·#253 머지·서버무변경
+- [[jobs-filter-3axis]] — 구인구직 필터 3축(지역 P1·역할 P2·급여 P3)+전국 3단계 택소노미(67→277 slug)+공고작성 지역 필수화 — ✅PR#250/#251/#254/#257 머지·P3만 마이그(salary_*_max)
+- [[codebase-cleanup-2026-07]] — 전체 코드 정리: 버그 8종·죽은코드 −3,464줄·중복 수렴·주석 정정·"호출0"=전수 grep 프로토콜 — ✅PR#263(선행 #239 타임존 off-by-one 병기)
+- [[alert-web-noop]] — rn-web Alert.alert 완전 no-op 전수 교정: confirmAction/showAlert 단일화+ESLint 강제 — ✅PR#264

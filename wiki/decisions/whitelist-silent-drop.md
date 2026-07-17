@@ -1,16 +1,18 @@
 ---
 area: decisions
-updated: 2026-07-14
+updated: 2026-07-17
 status: current
 sources:
   - uniqn-mobile/src/repositories/supabase/JobPostingRepositoryHelpers.ts
   - uniqn-mobile/src/domains/job-posting/serialization.ts
   - uniqn-mobile/src/utils/job-posting/draftAdapter.ts
+  - uniqn-mobile/src/utils/order-sheet/mappers.ts
   - docs/superpowers/plans/2026-07-14-job-posting-kiosk-order-sheet.md
   - uniqn-mobile/src/components/jobs/JobDetail.tsx
   - PR#194
   - PR#243
   - PR#247
+  - PR#261
 tags: [serialization, whitelist, regression-class, mapper]
 ---
 
@@ -19,10 +21,11 @@ tags: [serialization, whitelist, regression-class, mapper]
 ## 클래스 정의
 이 코드베이스의 직렬화·매핑 계층은 **명시 화이트리스트** 방식이다(스프레드 통과가 아니라 필드를 하나하나 옮김). 신규 필드/키를 어느 한 지점에서 빠뜨리면 **에러 없이 조용히 증발**한다 — 쓰기는 성공하는데 읽기·수정·표시에서 사라지는, 가장 발견이 늦는 결함 클래스다.
 
-## 실증 3회 (같은 클래스, 다른 지점)
+## 실증 4회 (같은 클래스, 다른 지점)
 1. **#194 region 유실**: 신규 location 필드를 draftAdapter 4매퍼 중 일부만 갱신 → 지역 필터 값이 왕복에서 소실.
 2. **#243 filled counts 0/N**: `usePostingFilledCounts` 전역맵(키 `postingId__...`)을 `extractPostingFilledSubmap` 없이 hydrate(접두 없는 키)로 넘김 — 필드가 아니라 **키스페이스** 불일치 변형([[ios-userflow-fixes]]).
 3. **키오스크 conditions (2026-07-14 계획 리뷰가 사전 적발)**: 신규 컬럼의 왕복 지점이 4개가 아니라 **9개**였다 — 쓰기 4(draft타입·draftToCreateJobPostingInput·jobPostingToDraft·serializeJobPostingV3) + 템플릿 2 + **읽기**(`TABLE_COLUMNS` SELECT 화이트리스트 `JobPostingRepositoryHelpers.ts:17`·`toJobPosting`의 미등록 키 드롭·`deserializeJobPostingDocument` 조립부) + **수정**(`toCreateJobPostingInput` merge base·`draftToUpdateJobPostingInput`). 4지점만 하면 "쓰기만 되고 아무도 못 읽는 필드"가 된다.
+4. **#261 conditions update patch 침묵 소실 2건 (변형 — 필드 누락이 아니라 patch 시맨틱)**: 편집 직렬화는 patch(생략=현행 유지)라 `serialization.ts:360-365`가 conditions undefined면 `current.conditions`로 폴백한다. 주문서가 축소 payload로 conditions를 빼거나 전량 해제 키를 생략하면 "성공 토스트 + 침묵 소실". fix = `mappers.ts:303`·`:397` **양분기 `conditions: { ...(draft.conditions ?? {}) }` 상시 전달**. 🔑create의 키 생략 관례를 update에 승계하면 해제 계열이 전부 무시된다 — 이 클래스가 **update patch로도 발현**함을 실증. 상세=[[order-sheet-form-contract]] §7 · [[order-sheet-unification]].
 
 ## 규칙 (신규 필드/키 추가 시)
 1. **지점 전수 조사**: 타입 → 쓰기 매퍼 → 직렬화 → **SELECT 컬럼 목록** → 역직렬화/hydrate → 수정(merge/patch) → 템플릿. `grep -n "<인접 기존 필드명>"`으로 화이트리스트 지점을 전부 나열한 뒤 하나씩 반영.
