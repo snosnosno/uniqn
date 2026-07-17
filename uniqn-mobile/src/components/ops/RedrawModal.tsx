@@ -3,10 +3,11 @@
  * mode='waitlist_fill': computeWaitlistFill(빈자리채움) → 기존 redrawMut.
  * mode='random_draw'|'chip_draft': randomDraw/chipDraft(전원 재배치) → reseatMut.
  * before→after 미리보기, [다시 계산], [확인] 구조. 풀 0명·좌석 부족 시 확인 비활성.
- * 전원 재배치(파괴적) 모드: 확인 전 Alert 다이얼로그.
+ * 전원 재배치(파괴적) 모드: 확인 전 확인 다이얼로그(confirmAction).
  */
 import { useMemo, useCallback } from 'react';
-import { View, Text, Pressable, Alert } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
+import { confirmAction } from '@/utils/confirmAction';
 import { BottomSheet } from '@/components/ui';
 import {
   useOpsTables,
@@ -173,14 +174,13 @@ export function RedrawModal({
     if (!canConfirm) return;
     // 전원 재배치는 파괴적 → 확인 다이얼로그(impeccable 룰 11/12)
     if (mode === 'random_draw' || mode === 'chip_draft') {
-      Alert.alert(
-        '전원 재배치 확인',
-        `${assignments.length}명을 새 좌석에 전원 재배치합니다. 계속하시겠어요?`,
-        [
-          { text: '취소', style: 'cancel' },
-          { text: '확인', style: 'destructive', onPress: doConfirm },
-        ]
-      );
+      confirmAction({
+        title: '전원 재배치 확인',
+        message: `${assignments.length}명을 새 좌석에 전원 재배치합니다. 계속하시겠어요?`,
+        confirmText: '확인',
+        destructive: true,
+        onConfirm: doConfirm,
+      });
     } else {
       doConfirm();
     }

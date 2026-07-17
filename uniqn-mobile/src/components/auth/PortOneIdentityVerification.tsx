@@ -1,13 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  AccessibilityInfo,
-  Alert,
-  View,
-  Text,
-  useColorScheme,
-  useWindowDimensions,
-} from 'react-native';
+import { AccessibilityInfo, View, Text, useColorScheme, useWindowDimensions } from 'react-native';
 import { setStatusBarStyle } from 'expo-status-bar';
+import { confirmAction } from '@/utils/confirmAction';
 import { STATUS_COLORS } from '@/constants/colors';
 import { IdentityVerification } from '@portone/react-native-sdk';
 import {
@@ -221,14 +215,13 @@ export function PortOneIdentityVerification({
 
   // B3: 완료 상태에서 "다시 인증하기" 실수 클릭 방지 — confirm 후 재진행
   const handleRetryPress = useCallback(() => {
-    Alert.alert(
-      '본인인증을 다시 하시겠어요?',
-      '이미 인증된 정보를 잃고 처음부터 다시 진행합니다.',
-      [
-        { text: '취소', style: 'cancel' },
-        { text: '다시 인증', style: 'destructive', onPress: () => startVerification() },
-      ]
-    );
+    confirmAction({
+      title: '본인인증을 다시 하시겠어요?',
+      message: '이미 인증된 정보를 잃고 처음부터 다시 진행합니다.',
+      confirmText: '다시 인증',
+      destructive: true,
+      onConfirm: () => startVerification(),
+    });
   }, [startVerification]);
 
   // B18: iPhone SE 1세대(568px) 등 작은 기기에서 SafeAreaView 잘림 방지.
