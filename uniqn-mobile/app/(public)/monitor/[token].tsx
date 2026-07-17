@@ -25,7 +25,7 @@ import {
   type ResolvedSlot,
 } from '@/components/ops/monitor/registry';
 import { PublicReportSheet, ReportFooterLink } from '@/components/ops/monitor/PublicReportSheet';
-import type { OpsMonitorSnapshot } from '@/types/ops';
+import type { OpsMonitorSnapshot, OpsPayoutEntry } from '@/types/ops';
 import type { NextBreakDisplay } from '@/domains/ops';
 
 import { formatNumber as fmt } from '@/utils/formatters/currency';
@@ -56,7 +56,7 @@ function SlotCard({ slot, variant }: { slot: ResolvedSlot; variant: 'column' | '
 
 /** 프라이즈 패널(T4) — PRIZE POOL(골드) + 상위 5 payout + KO 풀(조건부). 데이터 없으면 미렌더. */
 function PrizePanel({ snapshot }: { snapshot: OpsMonitorSnapshot }) {
-  const payouts = snapshot.payouts ?? [];
+  const payouts: OpsPayoutEntry[] = snapshot.payouts ?? [];
   const { prizePool, knockoutPool } = snapshot.stats;
   return (
     <View className="gap-3 rounded-xl bg-gray-800 px-5 py-4">

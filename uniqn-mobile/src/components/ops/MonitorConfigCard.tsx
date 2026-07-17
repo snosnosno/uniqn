@@ -10,6 +10,7 @@ import { SelectBottomSheet } from '@/components/ui/BottomSheet';
 import { MONITOR_MODULES } from '@/components/ops/monitor/registry';
 import {
   MONITOR_MODULE_IDS,
+  MONITOR_PRESETS,
   MONITOR_SLOT_COUNT,
   parseMonitorConfig,
   type MonitorModuleId,
@@ -20,11 +21,16 @@ import { useSetMonitorConfig } from '@/hooks/ops';
 
 const EMPTY_VALUE = '__empty__' as const;
 
-const PRESETS: { value: MonitorPreset; label: string; description: string }[] = [
-  { value: 'full', label: '풀', description: '슬롯 좌 · 프라이즈 우' },
-  { value: 'mirror', label: '미러', description: '프라이즈 좌 · 슬롯 우' },
-  { value: 'classic', label: '클래식', description: '중앙 + 하단 스트립' },
-];
+/** 프리셋별 카드 고유 표시 데이터(라벨/설명) — id 목록 자체는 MONITOR_PRESETS 가 소스. */
+const PRESET_META: Record<MonitorPreset, { label: string; description: string }> = {
+  full: { label: '풀', description: '슬롯 좌 · 프라이즈 우' },
+  mirror: { label: '미러', description: '프라이즈 좌 · 슬롯 우' },
+  classic: { label: '클래식', description: '중앙 + 하단 스트립' },
+};
+
+const PRESETS: { value: MonitorPreset; label: string; description: string }[] = MONITOR_PRESETS.map(
+  (value) => ({ value, ...PRESET_META[value] })
+);
 
 interface Props {
   tournamentId: string;

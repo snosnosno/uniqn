@@ -18,7 +18,7 @@ export type OpsFunnelEvent =
  * fire-and-forget: 계측 실패는 앱 동작에 절대 영향 금지(throw 없음, dev 로깅만).
  * user_id 는 서버 가드 트리거가 auth.uid() 로 캐노니컬라이즈(위조 불가), anon 은 props.tk 필수.
  */
-export class SupabaseAnalyticsEventRepository {
+class SupabaseAnalyticsEventRepository {
   async insert(
     event: OpsFunnelEvent,
     props: Record<string, string | number | boolean> = {}

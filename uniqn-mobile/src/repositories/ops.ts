@@ -49,7 +49,6 @@ export { SupabaseOpsMonitorRepository } from './supabase/OpsMonitorRepository';
 export { SupabaseOpsPlayerRepository } from './supabase/OpsPlayerRepository';
 export { SupabaseOpsPrizeRepository } from './supabase/OpsPrizeRepository';
 export { SupabaseOpsStaffRepository } from './supabase/OpsStaffRepository';
-export { SupabaseOpsReportRepository } from './supabase/OpsReportRepository';
 
 /** 프로덕션 싱글톤. */
 export const opsTournamentRepository = new SupabaseOpsTournamentRepository();

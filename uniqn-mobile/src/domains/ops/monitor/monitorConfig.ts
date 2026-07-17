@@ -42,11 +42,6 @@ export const DEFAULT_MONITOR_SLOTS: readonly MonitorModuleId[] = [
   'nextBreak',
 ] as const;
 
-export const DEFAULT_MONITOR_CONFIG: ResolvedMonitorConfig = {
-  preset: 'full',
-  slots: [...DEFAULT_MONITOR_SLOTS],
-};
-
 function isMonitorPreset(value: unknown): value is MonitorPreset {
   return typeof value === 'string' && (MONITOR_PRESETS as readonly string[]).includes(value);
 }
