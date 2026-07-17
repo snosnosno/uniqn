@@ -31,6 +31,18 @@ const EVENT_LABEL: Record<OpsEventType, string> = {
   prize_structure_set: '상금 구조 설정',
   player_bust_undone: '탈락 취소',
   prize_corrected: '상금 정정',
+  // 1e 스태프 연동(S1 C3 보완 — enum 원문 노출 해소)
+  posting_linked: '공고 연결',
+  posting_unlinked: '공고 연결 해제',
+  staff_imported: '스태프 일괄 가져오기',
+  staff_added: '스태프 추가',
+  staff_removed: '스태프 제외',
+  table_staff_assigned: '테이블 딜러 배정',
+  table_staff_unassigned: '테이블 딜러 배정 해제',
+  // S1 신규(C4 지급 마킹 · C6 모니터 구성)
+  monitor_config_set: 'TV 모니터 구성 변경',
+  prize_paid: '상금 지급 완료',
+  prize_paid_undone: '상금 지급 취소',
 };
 
 /** payload 의 원시값(string/number/boolean) 만 골라 간결 요약. */

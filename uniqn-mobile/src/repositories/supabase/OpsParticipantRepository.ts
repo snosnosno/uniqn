@@ -19,8 +19,8 @@ const TABLE = 'ops_participants' as const;
 // view_token 포함 (D8 — 운영자가 라이브 링크 재공유, PIN 재발급 없이). claim_pin_hash 는 절대 미포함.
 const COLUMNS =
   'id, tournament_id, entry_number, name, nationality, phone, player_user_id, view_token, status, chips, ' +
-  'buy_in_amount, rebuys, add_ons, reentries, knockouts, finish_position, busted_at, prize_amount, note, ' +
-  'created_at, updated_at';
+  'buy_in_amount, rebuys, add_ons, reentries, knockouts, finish_position, busted_at, prize_amount, ' +
+  'prize_paid_at, note, created_at, updated_at';
 
 function rowToParticipant(row: Record<string, unknown>): OpsParticipant {
   return toCamelCase<OpsParticipant>(row);
@@ -216,6 +216,26 @@ export class SupabaseOpsParticipantRepository implements IOpsParticipantReposito
     } catch (error) {
       if (isAppError(error)) throw error;
       mapOpsRpcError(error, { operation: 'ops 상금 정정' });
+    }
+  }
+
+  async setPrizePaid(
+    participantId: string,
+    actorId: string,
+    paid: boolean
+  ): Promise<{ participantId: string; prizePaidAt: string | null }> {
+    try {
+      const { data, error } = await supabase.rpc('ops_set_prize_paid', {
+        p_participant_id: participantId,
+        p_actor_id: actorId,
+        p_paid: paid,
+      });
+      if (error) mapOpsRpcError(error, { operation: 'ops 상금 지급 마킹' });
+      const row = data as unknown as { participant_id: string; prize_paid_at: string | null };
+      return { participantId: row.participant_id, prizePaidAt: row.prize_paid_at ?? null };
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      mapOpsRpcError(error, { operation: 'ops 상금 지급 마킹' });
     }
   }
 }

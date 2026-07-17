@@ -14,6 +14,7 @@ import {
   useSetLevel,
   useAdjustClock,
 } from '@/hooks/ops';
+import { findNextBreakFromLevels, formatHms } from '@/domains/ops';
 
 import { formatNumber as fmt } from '@/utils/formatters/currency';
 
@@ -75,6 +76,18 @@ export function ClockControl({ tournamentId, onNavigateToLevels }: ClockControlP
 
   // 다음 레벨 미리보기 (sort asc 정렬은 useOpsBlindLevels 가 보장).
   const nextLevel = blindLevels.find((l) => l.sort === currentSort + 1) ?? null;
+
+  // S1 C1: 다음 브레이크 카운트다운 — 클럭 remainingSec 에서 파생(동일 앵커 → 표면 간 드리프트 0).
+  // countdown = (브레이크까지 누적 초) − (현재 레벨 경과) = 누적 초 − duration + remaining
+  const nextBreakInfo = findNextBreakFromLevels(blindLevels, clock?.currentLevelSort ?? null);
+  const currentLevelForBreak = blindLevels.find((l) => l.sort === currentSort) ?? null;
+  const breakCountdownSec =
+    nextBreakInfo && currentLevelForBreak && !currentLevelForBreak.isBreak
+      ? Math.max(
+          0,
+          nextBreakInfo.secondsFromLevelStart - currentLevelForBreak.durationSec + remainingSec
+        )
+      : null;
 
   const togglePlay = () => {
     if (isPending) return;
@@ -207,6 +220,11 @@ export function ClockControl({ tournamentId, onNavigateToLevels }: ClockControlP
               : `다음 · ${fmt(nextLevel.smallBlind)} / ${fmt(nextLevel.bigBlind)}`
             : '다음 레벨 없음 (마지막)'}
         </Text>
+        {breakCountdownSec !== null ? (
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+            다음 브레이크까지 {formatHms(breakCountdownSec)}
+          </Text>
+        ) : null}
       </View>
     </View>
   );

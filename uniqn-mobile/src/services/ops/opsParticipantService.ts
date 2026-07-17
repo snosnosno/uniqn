@@ -141,3 +141,18 @@ export async function reenterParticipant(participantId: string, actorId: string)
     });
   }
 }
+
+/** S1 C4: 상금 지급 마킹(undo-first — paid=false 로 왕복 취소, 서버 멱등). */
+export async function setPrizePaid(participantId: string, actorId: string, paid: boolean) {
+  try {
+    logger.info('ops 상금 지급 마킹', { component: COMPONENT, participantId, paid });
+    return await opsParticipantRepository.setPrizePaid(participantId, actorId, paid);
+  } catch (error) {
+    if (isAppError(error)) throw error;
+    throw handleServiceError(error, {
+      operation: '상금 지급 마킹',
+      component: COMPONENT,
+      context: { participantId },
+    });
+  }
+}

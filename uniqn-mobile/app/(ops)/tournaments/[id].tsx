@@ -12,6 +12,7 @@ import {
   BlindLevelsTab,
   HistoryTab,
   MonitorLinkButton,
+  MonitorConfigCard,
   PayoutsTab,
   TournamentResultCard,
   StaffTab,
@@ -137,6 +138,9 @@ export default function OpsTournamentDetailScreen() {
 
           {/* 공개 모니터(전광판) 링크 — 🔨H7 ② 유지 */}
           <MonitorLinkButton tournamentId={tournamentId} monitorToken={tournament.monitorToken} />
+
+          {/* S1 C6: TV 모니터 구성(프리셋+5슬롯) — 진행 중에도 변경 가능, 4s 폴링 내 반영 */}
+          <MonitorConfigCard tournamentId={tournamentId} monitorConfig={tournament.monitorConfig} />
 
           {/* 등록 토글 — 🔨H7 ③ completed 에서는 숨김(재개방 조작은 무의미·혼란 표면) */}
           {!isCompleted && (

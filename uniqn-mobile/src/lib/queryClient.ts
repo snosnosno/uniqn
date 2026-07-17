@@ -590,6 +590,7 @@ export const queryKeys = {
   appConfig: {
     all: ['appConfig'] as const,
     weeklyGridEnabled: () => [...queryKeys.appConfig.all, 'weeklyGridEnabled'] as const,
+    opsHubEnabled: () => [...queryKeys.appConfig.all, 'opsHubEnabled'] as const,
   },
 
   // 주간 배치 그리드(운영처) — 운영처(컨테이너) 목록 + 월 요약 셀맵 + 하루 슬롯

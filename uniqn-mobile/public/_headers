@@ -42,3 +42,15 @@
 /.well-known/assetlinks.json
   Content-Type: application/json
   Cache-Control: public, max-age=3600
+
+# ============================================================================
+# 공개 대회 뷰 - 검색엔진 색인 차단 (F2-① 악용 방어, 전면 개방 대비)
+# ============================================================================
+# app/+html.tsx 신설 대신 헤더 방식 채택: Expo Router는 SPA 단일 진입점이라
+# +html.tsx에 noindex를 넣으면 앱 전체 <head>가 오염됨. _headers는 경로별로
+# 격리되어 /monitor·/live 에만 적용되고 빌드 시 dist/ 로 자동 복사됨.
+/monitor/*
+  X-Robots-Tag: noindex
+
+/live/*
+  X-Robots-Tag: noindex

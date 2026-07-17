@@ -22,9 +22,13 @@ import {
   UsersIcon,
   StarIcon,
   BriefcaseIcon,
+  TrophyOutlineIcon,
 } from '@/components/icons';
 import { useAuth } from '@/hooks/useAuth';
 import { useBubbleScore } from '@/hooks/useReviews';
+import { useOpsHubEnabled } from '@/hooks/useOpsHubEnabled';
+import { useOpsHubImpressionOnce } from '@/hooks/ops/useOpsHubImpressionOnce';
+import { OpsHubIntroCard } from '@/components/ops/OpsHubIntroCard';
 import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';
 import { signOut } from '@/services/auth';
 import { buildCurrentUserIdentitySnapshot } from '@/shared/profile/identity';
@@ -71,6 +75,11 @@ export default function ProfileScreen() {
   const addToast = useToastStore((state) => state.addToast);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const bubbleScore = useBubbleScore();
+  // A1 진입 표면: ops 허브 게이트(전 회원). 로딩/OFF 면 enabled=false → 3표면 미노출.
+  const { enabled: opsHubEnabled } = useOpsHubEnabled();
+  // 노출 시 impression 퍼널을 마운트당 1회만 발화(재렌더 반복 발화 가드).
+  // 스켈레톤(auth 로딩) 구간엔 메뉴가 실제로 안 보이므로 !isLoading 까지 만족해야 발화.
+  useOpsHubImpressionOnce(opsHubEnabled && !isLoading);
   const currentUserIdentity = buildCurrentUserIdentitySnapshot({
     profile,
     authUser: user,
@@ -160,6 +169,9 @@ export default function ProfileScreen() {
           </Pressable>
         </Card>
 
+        {/* A1 진입 표면 ②: ops 허브 1회성 신기능 안내 카드(게이트 OFF/dismiss 시 자체 미노출) */}
+        <OpsHubIntroCard />
+
         <Card className="mb-4">
           {profile?.role === 'staff' && (
             <>
@@ -167,6 +179,17 @@ export default function ProfileScreen() {
                 icon={<BriefcaseIcon size={22} color={SECONDARY_PALETTE[500]} />}
                 label="구인자 신청"
                 onPress={() => router.push('/(app)/employer-application-status')}
+              />
+              <Divider spacing="sm" />
+            </>
+          )}
+          {/* A1 진입 표면 ①: 라이브 대회 운영(전 회원 — 역할 조건 없음, ops 허브 게이트) */}
+          {opsHubEnabled && (
+            <>
+              <MenuItem
+                icon={<TrophyOutlineIcon size={20} color={SECONDARY_PALETTE[500]} />}
+                label="라이브 대회 운영"
+                onPress={() => router.push('/(ops)/tournaments')}
               />
               <Divider spacing="sm" />
             </>

@@ -19,6 +19,10 @@
 import { Platform } from 'react-native';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
+import {
+  analyticsEventRepository,
+  type OpsFunnelEvent,
+} from '@/repositories/supabase/AnalyticsEventRepository';
 
 // ============================================================================
 // Types
@@ -402,6 +406,18 @@ export function trackTutorialTimeout(type: string): void {
   trackEvent('tutorial_timeout', { tutorial_type: type });
 }
 
+/**
+ * ops S1 퍼널 이벤트(D1/F8) — 로깅 레일 + Supabase 영속 레일 동시 기록.
+ * 분모 = 노출(ops_hub_impression) 대비 진입율(ops_hub_entered). 실패는 조용히 무시(fire-and-forget).
+ */
+export function trackOpsFunnel(
+  event: OpsFunnelEvent,
+  props?: Record<string, string | number | boolean>
+): void {
+  void trackEvent(event, props as AnalyticsEventParams | undefined);
+  void analyticsEventRepository.insert(event, props ?? {});
+}
+
 // ============================================================================
 // Export
 // ============================================================================
@@ -414,6 +430,7 @@ export const analyticsService = {
   // 핵심 기능
   trackEvent,
   trackScreenView,
+  trackOpsFunnel,
   setUserProperties,
   setUserId,
 

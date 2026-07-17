@@ -14,6 +14,7 @@ export { BlindLevelsTab } from './BlindLevelsTab';
 export { BlindLevelForm } from './BlindLevelForm';
 export { HistoryTab } from './HistoryTab';
 export { MonitorLinkButton } from './MonitorLinkButton';
+export { MonitorConfigCard } from './MonitorConfigCard';
 export { PlayerClaimButton } from './PlayerClaimButton';
 // 1e — STAFF 탭(7번째 세그먼트). StaffAddSheet 는 현재 StaffTab 이 상대경로로
 // 직접 import(barrel 미등록 — DealerPickerSheet 와 동일 관례: 현재 유일 소비처가 같은 디렉토리 내부).

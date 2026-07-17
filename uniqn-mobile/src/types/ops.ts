@@ -36,6 +36,8 @@ export interface OpsTournament {
   reentryAllowed: boolean;
   maxReentries?: number | null;
   monitorToken?: string | null;
+  /** TV 모니터 구성(S1 C6) jsonb. NULL=기본. 소비는 parseMonitorConfig 경유. */
+  monitorConfig?: unknown;
   nextEntrySeq: number;
   createdAt: string;
   updatedAt: string;
@@ -62,6 +64,8 @@ export interface OpsParticipant {
   finishPosition?: number | null;
   bustedAt?: string | null;
   prizeAmount?: number | null;
+  /** 상금 지급 완료 시각(S1 C4). null=미지급. 쓰기는 ops_set_prize_paid 전용. */
+  prizePaidAt?: string | null;
   note?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -227,6 +231,31 @@ export interface OpsLiveStats {
   updatedAt: string;
 }
 
+/** 공개뷰 신고 사유 택소노미(S1 B2/D7) — 서버 CHECK 와 1:1. */
+export type OpsReportReason = 'gambling' | 'illegal_gambling' | 'other';
+
+export const OPS_REPORT_REASON_LABELS: Record<OpsReportReason, string> = {
+  gambling: '사행성 우려',
+  illegal_gambling: '불법 도박',
+  other: '기타',
+};
+
+/**
+ * 다음 브레이크 정보(S1 C1) — 현재 레벨 시작 앵커(levelStartedAt) 기준 브레이크 시작까지 누적 초.
+ * 카운트다운 = secondsFromLevelStart − 현재 레벨 경과(클럭과 동일 앵커·offset — 표면별 드리프트 0).
+ */
+export interface OpsNextBreak {
+  level: number;
+  sort: number;
+  secondsFromLevelStart: number;
+}
+
+/** 프라이즈 패널 payout 행(S1 C6/T4 — 상위 5). */
+export interface OpsPayoutEntry {
+  position: number;
+  amount: number;
+}
+
 /** 모니터 스냅샷 블라인드 레벨(공개 RPC 부분집합 — 비-PII). */
 export interface OpsMonitorLevel {
   level: number;
@@ -273,6 +302,15 @@ export interface OpsMonitorSnapshot {
     prizePool: number;
     knockoutPool: number | null;
   };
+  /** 다음 브레이크(S1 C1). 남은 브레이크 없으면 null. */
+  nextBreak: OpsNextBreak | null;
+  /** 상위 5 payout(S1 C6). 상금 구조 없으면 빈 배열(프라이즈 패널 자동 숨김). */
+  payouts: OpsPayoutEntry[];
+  /**
+   * TV 모니터 구성(S1 C6) — 서버가 화이트리스트로 재조립 저장한 jsonb 원본.
+   * 소비는 반드시 parseMonitorConfig 경유(미지 preset→full 폴백·미지 id 무시·중복 첫 항목만).
+   */
+  monitorConfig: unknown;
   /** 서버 시각(ISO) — 클라 offset 보정용(기기 시계 오차 보정). */
   serverNow: string;
 }
@@ -325,5 +363,7 @@ export interface OpsPlayerView {
     averageStack: number;
     avgStackBb: number;
   };
+  /** 다음 브레이크(S1 C1) — 모니터 스냅샷과 동일 산식(드리프트 0). */
+  nextBreak: OpsNextBreak | null;
   serverNow: string;
 }

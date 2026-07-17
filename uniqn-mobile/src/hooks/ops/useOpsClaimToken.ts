@@ -8,6 +8,7 @@ import { queryKeys } from '@/lib/queryClient';
 import { opsPlayerService } from '@/services/ops';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
+import { trackOpsFunnel } from '@/services/observability/analyticsService';
 import { logger } from '@/utils/logger';
 import { extractUserMessage } from '@/errors';
 import type { OpsPlayerCredentials } from '@/types/ops';
@@ -47,6 +48,7 @@ export function useClaimParticipant(viewToken: string) {
       opsPlayerService.claimParticipant(viewToken, claimPin, requireActor(userId)),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.player(viewToken) });
+      trackOpsFunnel('ops_claim_converted', { tk: viewToken.slice(0, 8) }); // D1 퍼널(가입 전환 보조)
       useToastStore.getState().success('내 계정에 연결했습니다');
     },
     onError: (e) => {

@@ -28,6 +28,8 @@ export interface LedgerRow {
   paidAmount: number | null;
   /** 구조≠실지급(또는 구조 없는 수동 지급) — amber 하이라이트. */
   corrected: boolean;
+  /** 상금 지급 완료 시각(S1 C4). null=미지급. 지급 토글 체크 상태의 단일 소스. */
+  prizePaidAt: string | null;
 }
 
 /**
@@ -46,6 +48,7 @@ export function buildLedgerRows(prizes: OpsPrize[], participants: OpsParticipant
       participantId: winner?.id ?? null,
       paidAmount: paid,
       corrected: winner !== null && paid !== prize.amount,
+      prizePaidAt: winner?.prizePaidAt ?? null,
     };
   });
 
@@ -61,6 +64,7 @@ export function buildLedgerRows(prizes: OpsPrize[], participants: OpsParticipant
       participantId: p.id,
       paidAmount: p.prizeAmount ?? null,
       corrected: (p.prizeAmount ?? null) !== null,
+      prizePaidAt: p.prizePaidAt ?? null,
     }));
 
   return [...structureRows, ...extraRows].sort((a, b) => a.rank - b.rank);

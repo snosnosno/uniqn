@@ -24,6 +24,7 @@ import { TabHeader } from '@/components/headers';
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, MenuIcon } from '@/components/icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCalendarView, useQRCodeScanner, useCurrentWorkStatus, useApplications } from '@/hooks';
+import { useOpsHubEnabled } from '@/hooks/useOpsHubEnabled';
 import { useAuthStore } from '@/stores/authStore';
 import { usePendingReviews } from '@/hooks/useReviews';
 import ReviewPromptBanner from '@/components/review/ReviewPromptBanner';
@@ -305,6 +306,9 @@ export default function ScheduleScreen() {
 
   // 지원 취소 훅
   const { cancelApplication, requestCancellation, isRequestingCancellation } = useApplications();
+
+  // A1 진입 표면 ③: ops 허브 게이트(빈 상태 보조 크로스링크). OFF 면 보조 링크 미노출.
+  const { enabled: opsHubEnabled } = useOpsHubEnabled();
 
   const {
     schedules,
@@ -759,6 +763,11 @@ export default function ScheduleScreen() {
                 description={`${currentMonth.year}년 ${currentMonth.month}월 일정이 비어있어요.\n공고에 지원하면 여기에 바로 표시돼요.`}
                 actionLabel="공고 둘러보기"
                 onAction={() => router.push('/(app)/(tabs)/home-jobs')}
+                // A1 진입 표면 ③: ops 허브 게이트 ON 시에만 보조 크로스링크(기본 액션은 유지).
+                secondaryActionLabel={opsHubEnabled ? '라이브 대회 운영' : undefined}
+                onSecondaryAction={
+                  opsHubEnabled ? () => router.push('/(ops)/tournaments') : undefined
+                }
                 variant="content"
               />
             </View>
@@ -799,6 +808,11 @@ export default function ScheduleScreen() {
                 description={`${currentMonth.year}년 ${currentMonth.month}월 일정이 비어있어요.\n공고에 지원하면 여기에 바로 표시돼요.`}
                 actionLabel="공고 둘러보기"
                 onAction={() => router.push('/(app)/(tabs)/home-jobs')}
+                // A1 진입 표면 ③: ops 허브 게이트 ON 시에만 보조 크로스링크(기본 액션은 유지).
+                secondaryActionLabel={opsHubEnabled ? '라이브 대회 운영' : undefined}
+                onSecondaryAction={
+                  opsHubEnabled ? () => router.push('/(ops)/tournaments') : undefined
+                }
                 variant="content"
               />
             </View>

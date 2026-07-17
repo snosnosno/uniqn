@@ -6,6 +6,10 @@
 --   기준값은 prod(ygfxukhktpqymahfrvbz) 라이브 실측(2026-07-13 갱신):
 --     public 함수 163 = baseline 163 - 1(20260711100000 오버로드 제거) + 1(#242 userflow-audit)
 --     RLS 정책 104 = baseline 103 + 1(20260713010000 brep_update 신설) · pg_temp 누락 0 · PG 17
+--   2026-07-17 ops S1 갱신(마이그 20260717090000~090600, prod 미적용 — 머지·prod 적용과 동기):
+--     함수 168 = 163 + RPC 3(ops_set_monitor_config/ops_duplicate_tournament/ops_set_prize_paid)
+--       + 가드 트리거 fn 2(fn_ops_public_reports_guard/fn_analytics_events_guard)
+--     정책 110 = 104 + ops_public_reports 3(opr_*) + analytics_events 3(ae_*)
 --
 -- ⚠️ 유지보수 계약: 이후 마이그레이션이 public 함수/정책을 추가·삭제하면
 --   이 기대값을 같은 PR에서 함께 갱신해야 한다. 갱신을 강제당하는 것 자체가
@@ -18,8 +22,8 @@
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=163
--- PARITY_EXPECT_POLICIES=104
+-- PARITY_EXPECT_FUNCS=168
+-- PARITY_EXPECT_POLICIES=110
 -- ============================================================
 BEGIN;
 SELECT plan(7);
@@ -38,14 +42,14 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  163,
-  'public function count == prod (163 = baseline 162 + 1 from #242 userflow-audit, 2026-07-13)');
+  168,
+  'public function count == prod (168 = 163 + ops S1 RPC 3 + 가드 트리거 fn 2, 2026-07-17)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(
   (SELECT count(*)::int FROM pg_policies WHERE schemaname = 'public'),
-  104,
-  'public RLS policy count == prod (104 = 103 baseline + brep_update, 2026-07-13)');
+  110,
+  'public RLS policy count == prod (110 = 104 + ops S1 opr_* 3 + ae_* 3, 2026-07-17)');
 
 -- 4~6. gen-1 재빌드 보안퇴행 3종 부재 (prod=deny, 레포 전용 부활 금지)
 SELECT is(

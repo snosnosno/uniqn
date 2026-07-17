@@ -58,4 +58,12 @@ export interface IOpsTournamentRepository {
   updateTournament(id: string, actorId: string, patch: UpdateOpsTournamentPatch): Promise<void>;
   setStatus(id: string, actorId: string, status: OpsTournamentStatus): Promise<void>;
   toggleRegistration(id: string, actorId: string, open: boolean): Promise<void>;
+  /** S1 A4: 지난 대회 설정(칩/비용/블라인드 구조/monitor_config) 복사로 새 대회 생성(owner 전용). */
+  duplicateTournament(
+    sourceTournamentId: string,
+    actorId: string,
+    options?: { name?: string; eventDate?: string }
+  ): Promise<{ tournamentId: string }>;
+  /** S1 C6: TV 모니터 구성 저장(owner 전용). null = 기본값 복귀. 서버 화이트리스트 검증(P0001). */
+  setMonitorConfig(tournamentId: string, actorId: string, config: unknown | null): Promise<void>;
 }

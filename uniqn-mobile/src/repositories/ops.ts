@@ -14,6 +14,7 @@ import { SupabaseOpsMonitorRepository } from './supabase/OpsMonitorRepository';
 import { SupabaseOpsPlayerRepository } from './supabase/OpsPlayerRepository';
 import { SupabaseOpsPrizeRepository } from './supabase/OpsPrizeRepository';
 import { SupabaseOpsStaffRepository } from './supabase/OpsStaffRepository';
+import { SupabaseOpsReportRepository } from './supabase/OpsReportRepository';
 
 export type {
   IOpsTournamentRepository,
@@ -62,3 +63,4 @@ export const opsMonitorRepository = new SupabaseOpsMonitorRepository();
 export const opsPlayerRepository = new SupabaseOpsPlayerRepository();
 export const opsPrizeRepository = new SupabaseOpsPrizeRepository();
 export const opsStaffRepository = new SupabaseOpsStaffRepository();
+export const opsReportRepository = new SupabaseOpsReportRepository();

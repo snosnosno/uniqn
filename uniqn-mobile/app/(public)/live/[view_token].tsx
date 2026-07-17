@@ -4,7 +4,7 @@
  * 본인 안전필드만 표시(타 참가자·phone·view_token 미노출). 로그인 시 본인 계정 연결(claim).
  * 상태범위(§0.5 B9): 내 자리·내 스택·라이브 클럭·블라인드 + 탈락 순위·상금·KO/바운티 적립(1f, 바운티 대회만).
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -16,11 +16,14 @@ import {
   useColorScheme,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { NumericText } from '@/components/ui';
 import { usePlayerView } from '@/hooks/ops/usePlayerView';
 import { useClaimParticipant } from '@/hooks/ops/useOpsClaimToken';
 import { useAuthStore } from '@/stores/authStore';
+import { formatHms } from '@/domains/ops';
+import { PublicReportSheet, ReportFooterLink } from '@/components/ops/monitor/PublicReportSheet';
+import { trackOpsFunnel } from '@/services/observability/analyticsService';
 
 import { formatNumber as fmt } from '@/utils/formatters/currency';
 
@@ -39,13 +42,22 @@ const STATUS_LABEL: Record<string, string> = {
 
 export default function PlayerLiveScreen() {
   const scheme = useColorScheme();
+  const router = useRouter();
   const params = useLocalSearchParams<{ view_token: string }>();
   const token = params.view_token;
-  const { view, remainingSec, isLoading, isError } = usePlayerView(token);
+  const { view, remainingSec, nextBreak, isLoading, isError } = usePlayerView(token);
   const isAuthed = useAuthStore((s) => !!s.user);
   const claimMut = useClaimParticipant(token ?? '');
   const [claimOpen, setClaimOpen] = useState(false);
   const [pin, setPin] = useState('');
+  const [reportOpen, setReportOpen] = useState(false);
+
+  // D1 퍼널: 공개뷰 열람(토큰 8자 prefix 만 — capability 원문 전송 금지)
+  useEffect(() => {
+    if (token && token.length >= 32) {
+      trackOpsFunnel('ops_public_view_opened', { tk: token.slice(0, 8), kind: 'player' });
+    }
+  }, [token]);
 
   if (isError || (!token && !isLoading)) {
     return (
@@ -150,6 +162,12 @@ export default function PlayerLiveScreen() {
             PLAYING {fmt(view.stats.playing)} · ENTRIES {fmt(view.stats.entries)} · AVG{' '}
             {fmt(view.stats.averageStack)}
           </Text>
+          {/* S1 C1: 다음 브레이크 — 클럭과 동일 앵커(드리프트 0). 없으면 미표시 */}
+          {nextBreak.kind === 'until' ? (
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+              다음 브레이크까지 {formatHms(nextBreak.remainingSec)}
+            </Text>
+          ) : null}
         </View>
 
         {/* 계정 연결(claim) */}
@@ -167,13 +185,30 @@ export default function PlayerLiveScreen() {
             </Text>
           </Pressable>
         ) : (
-          <View className="items-center rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
+          /* S1 C5(D4): 가입 CTA — claim 실효과 문구만("기록 모아보기" 류 실체 없는 약속 금지) */
+          <View className="items-center gap-3 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
             <Text className="text-center text-sm text-secondary-500 dark:text-secondary-400">
-              로그인하면 내 기록을 계정에 저장할 수 있어요.
+              로그인하면 이 대회 참가 기록이 내 계정에 연결돼요.
             </Text>
+            <Pressable
+              onPress={() => router.push('/(auth)/login')}
+              accessibilityRole="button"
+              className="min-h-[44px] items-center justify-center self-stretch rounded-lg bg-primary-600 active:opacity-70"
+            >
+              <Text className="font-sans-semibold text-white">로그인하고 연결하기</Text>
+            </Pressable>
           </View>
         )}
+
+        {/* S1 B2: 최하단 캡션급 신고 링크(익명) */}
+        <ReportFooterLink onPress={() => setReportOpen(true)} />
       </ScrollView>
+      <PublicReportSheet
+        visible={reportOpen}
+        onClose={() => setReportOpen(false)}
+        tokenKind="player"
+        token={token ?? ''}
+      />
       {/* PIN 게이트 — 슬립의 8자 연결 PIN 입력(비가역 바인딩). */}
       {claimOpen && (
         <View className="absolute inset-0 items-center justify-center bg-black/50 px-8">

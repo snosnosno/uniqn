@@ -15,7 +15,7 @@ const COLUMNS =
   'id, owner_id, job_posting_id, name, venue, event_date, game_type, status, seats_per_table, ' +
   'starting_chips, color, buy_in_chips, rebuy_chips, addon_chips, buy_in_cost, fee_cost, ' +
   'rebuy_cost, addon_cost, bounty_cost, registration_open, auto_seat_on_register, ' +
-  'reentry_allowed, max_reentries, monitor_token, next_entry_seq, created_at, updated_at';
+  'reentry_allowed, max_reentries, monitor_token, monitor_config, next_entry_seq, created_at, updated_at';
 
 function rowToTournament(row: Record<string, unknown>): OpsTournament {
   return toCamelCase<OpsTournament>(row);
@@ -103,6 +103,48 @@ export class SupabaseOpsTournamentRepository implements IOpsTournamentRepository
     } catch (error) {
       if (isAppError(error)) throw error;
       mapOpsRpcError(error, { operation: 'ops 대회 생성' });
+    }
+  }
+
+  async duplicateTournament(
+    sourceTournamentId: string,
+    actorId: string,
+    options?: { name?: string; eventDate?: string }
+  ): Promise<{ tournamentId: string }> {
+    try {
+      logger.info('ops 대회 복제 시작', { sourceTournamentId, actorId });
+      const { data, error } = await supabase.rpc('ops_duplicate_tournament', {
+        p_source_tournament_id: sourceTournamentId,
+        p_actor_id: actorId,
+        p_name: options?.name ?? null,
+        p_event_date: options?.eventDate ?? null,
+      });
+      if (error) mapOpsRpcError(error, { operation: 'ops 대회 복제' });
+      const result = data as { tournament_id: string };
+      logger.info('ops 대회 복제 완료', { tournamentId: result.tournament_id });
+      return { tournamentId: result.tournament_id };
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      mapOpsRpcError(error, { operation: 'ops 대회 복제' });
+    }
+  }
+
+  async setMonitorConfig(
+    tournamentId: string,
+    actorId: string,
+    config: unknown | null
+  ): Promise<void> {
+    try {
+      logger.info('ops TV 모니터 구성 저장', { tournamentId, actorId });
+      const { error } = await supabase.rpc('ops_set_monitor_config', {
+        p_tournament_id: tournamentId,
+        p_actor_id: actorId,
+        p_config: config,
+      });
+      if (error) mapOpsRpcError(error, { operation: 'ops TV 모니터 구성 저장' });
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      mapOpsRpcError(error, { operation: 'ops TV 모니터 구성 저장' });
     }
   }
 
