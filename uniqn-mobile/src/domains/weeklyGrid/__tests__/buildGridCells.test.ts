@@ -72,4 +72,16 @@ describe('buildGridCells', () => {
     const rows: GridSummaryRow[] = [{ d: '', headcount: 3, jobCount: 1, requiredCount: 0 }];
     expect(buildGridCells(rows, {})).toEqual({});
   });
+
+  it('필요인원 = max(수동 softTarget, requiredCount) 로 병합한다', () => {
+    const rows: GridSummaryRow[] = [
+      { d: '2026-08-10', headcount: 1, jobCount: 1, requiredCount: 3 }, // 파생 우세
+      { d: '2026-08-11', headcount: 0, jobCount: 1, requiredCount: 1 }, // 수동 우세
+    ];
+    const softTargets = { '2026-08-11': 5 };
+    const cells = buildGridCells(rows, softTargets);
+    expect(cells['2026-08-10'].softTarget).toBe(3); // max(0, 3)
+    expect(cells['2026-08-10'].shortage).toBe(2); // 3 - 1
+    expect(cells['2026-08-11'].softTarget).toBe(5); // max(5, 1)
+  });
 });

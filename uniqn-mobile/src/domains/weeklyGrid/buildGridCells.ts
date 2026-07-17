@@ -32,11 +32,14 @@ export function buildGridCells(
     const dateKey = row.d;
     if (!dateKey) continue;
     seen.add(dateKey);
+    // 필요 인원 = max(수동 목표, 파생 좌석합) — 공고 requirements 로 목표를 자동 채운다.
+    const manual = softTargets[dateKey] ?? 0;
+    const effectiveTarget = Math.max(manual, row.requiredCount ?? 0);
     cells[dateKey] = computeDayCell({
       dateKey,
       headcount: row.headcount,
       jobCount: row.jobCount,
-      softTarget: softTargets[dateKey] ?? 0,
+      softTarget: effectiveTarget,
     });
   }
 
