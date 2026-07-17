@@ -12,6 +12,11 @@ import { TEST_ACCOUNTS } from '../../fixtures/test-accounts';
 //   2) 1건 취소(confirmed→cancelled) → 트리거가 active 로 자동 복귀
 //      → 목록에서 "모집중" 라벨 노출
 //
+// 좌석 기준 정렬(Task 5):
+//   - 이 픽스처는 단일날짜(workDate)·단일역할(dealer count 1)·total_positions 1 →
+//     좌석 총합 = 사람 총합 = 1. 따라서 "1건 확정 → capacity_full" 기대는 좌석 기준에서도
+//     동일하다. 시나리오 수정 불요, 기대값 그대로 유지.
+//
 // 주의:
 //   - 파일명 employer- 접두사 필수: playwright.config.ts 의 chromium-employer
 //     프로젝트(employer.json storageState, role=employer)로 라우팅되어야 /employer
@@ -123,6 +128,7 @@ test.describe('공고 인원마감 자동 전이/복귀', () => {
     appId = (app as { id: string }).id;
 
     // DB 결정적 검증: 트리거가 capacity_full 로 전이했는지
+    // (좌석 기준에서도 동일 기대 — 단일날짜·단일역할이라 좌석 1 = 사람 1)
     const { data: row } = await admin
       .from('job_postings')
       .select('status, filled_positions')
