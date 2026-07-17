@@ -330,3 +330,90 @@ describe('orderSheetValuesSchema — location.region 필수 (2026-07-15)', () =>
     }
   });
 });
+
+// S2 — 고정(fixed) 공고 union 게이트. region 은 유효 slug(브리프 fixture 의 'seoul-gangnam' 은
+// isRegionSlug 미등록 → 공유 location 게이트에 걸려 fixed 로직이 아닌 region 에서 거부되므로,
+// 파일 내 기존 fixture 규약과 동일한 '서울 강남구'로 교정).
+const baseFixed = {
+  postingType: 'fixed' as const,
+  title: '주말 고정 딜러',
+  location: { name: '강남 홀덤펍', address: '서울 강남구', region: '서울 강남구' },
+  contactPhone: '010-1234-5678',
+  description: '',
+  scheduleGroups: [],
+  fixedSchedule: {
+    daysPerWeek: 5,
+    startTime: '19:00',
+    isStartTimeNegotiable: false,
+    roles: [{ role: 'dealer' as const, count: 3 }],
+  },
+  salary: { type: 'daily' as const, amount: 200000 },
+  useSameSalary: true,
+  roleSalaries: [],
+  allowances: {},
+  conditions: {},
+  usesPreQuestions: false,
+  preQuestions: [],
+};
+
+describe('주문서 스키마 — fixed union 게이트 (S2)', () => {
+  it('유효한 고정 공고를 통과시킨다', () => {
+    expect(orderSheetValuesSchema.safeParse(baseFixed).success).toBe(true);
+  });
+
+  it('fixedSchedule 부재면 fixed 제출을 거부한다', () => {
+    const { fixedSchedule: _fixedSchedule, ...noFixed } = baseFixed;
+    expect(orderSheetValuesSchema.safeParse(noFixed).success).toBe(false);
+  });
+
+  it('역할이 없으면 거부한다(roles min 1)', () => {
+    const r = orderSheetValuesSchema.safeParse({
+      ...baseFixed,
+      fixedSchedule: { ...baseFixed.fixedSchedule, roles: [] },
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it('협의가 아니면서 출근시간이 없으면 거부한다', () => {
+    const r = orderSheetValuesSchema.safeParse({
+      ...baseFixed,
+      fixedSchedule: {
+        daysPerWeek: 5,
+        isStartTimeNegotiable: false,
+        roles: baseFixed.fixedSchedule.roles,
+      },
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it('협의면 출근시간 없이도 통과한다', () => {
+    const r = orderSheetValuesSchema.safeParse({
+      ...baseFixed,
+      fixedSchedule: {
+        daysPerWeek: 0,
+        isStartTimeNegotiable: true,
+        roles: baseFixed.fixedSchedule.roles,
+      },
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it('by_role일 때 fixedSchedule.roles를 급여 커버 게이트로 검사한다', () => {
+    const r = orderSheetValuesSchema.safeParse({
+      ...baseFixed,
+      useSameSalary: false,
+      roleSalaries: [], // dealer 미커버
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it('dated(지원)는 여전히 scheduleGroups ≥1을 요구한다(무회귀)', () => {
+    const r = orderSheetValuesSchema.safeParse({
+      ...baseFixed,
+      postingType: 'regular',
+      fixedSchedule: undefined,
+      scheduleGroups: [],
+    });
+    expect(r.success).toBe(false);
+  });
+});

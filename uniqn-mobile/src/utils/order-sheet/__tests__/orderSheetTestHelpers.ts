@@ -14,3 +14,35 @@ export const singleGroup = (
   timeSlots: GroupTimeSlots,
   grouped = false
 ): ScheduleGroups => [{ dates, timeSlots, grouped }];
+
+/** draft/values의 하네스 생성 id(scheduleGroups·timeSlots·templateTimeSlots·roles·requirements)만 제거.
+ *  알려지지 않은 깊이의 id는 의미 있는 필드일 수 있어 throw — 침묵 통과 금지(S3 T1 이월).
+ *  templateTimeSlots는 mappers.ts:210이 requirements[].timeSlots와 동일한 toPostingTimeSlots(generateId)로
+ *  slot·role id를 부여하는 생성 경로라 화이트리스트에 포함한다(S4 실측 — 미포함 시 dated draft에서 throw). */
+export function stripKnownGeneratedIds(obj: unknown): unknown {
+  const KNOWN_PARENTS = new Set([
+    'scheduleGroups',
+    'timeSlots',
+    'templateTimeSlots',
+    'roles',
+    'requirements',
+  ]);
+  const walk = (node: unknown, parentArrayKey: string | null): unknown => {
+    if (Array.isArray(node)) return node.map((v) => walk(v, parentArrayKey));
+    if (node && typeof node === 'object') {
+      return Object.fromEntries(
+        Object.entries(node as Record<string, unknown>).flatMap(([k, v]) => {
+          if (k === 'id') {
+            if (parentArrayKey && KNOWN_PARENTS.has(parentArrayKey)) return [];
+            throw new Error(
+              `예상 밖 id 경로: ${parentArrayKey ?? '(root)'} — stripIds 화이트리스트 재검토`
+            );
+          }
+          return [[k, walk(v, Array.isArray(v) ? k : null)]];
+        })
+      );
+    }
+    return node;
+  };
+  return walk(obj, null);
+}

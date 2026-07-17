@@ -1,46 +1,36 @@
-import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { View, Text, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Loading } from '@/components';
 import { StackHeader } from '@/components/headers';
-import {
-  SectionCard,
-  BasicInfoSection,
-  DateRequirementsSection,
-  RolesSection,
-  SalarySection,
-  ScheduleSection,
-  PreQuestionsSection,
-} from '@/components/employer/job-form';
+import { OrderSheetScreen } from '@/components/employer/order-sheet/OrderSheetScreen';
+import { TemplateModal } from '@/components/employer/job-form/modals/TemplateModal';
 import { useAuth } from '@/hooks/useAuth';
-import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { useJobDetail } from '@/hooks/useJobDetail';
 import { useUpdateJobPosting } from '@/hooks/useJobManagement';
 import { useTemplateManager } from '@/hooks/useTemplateManager';
-import { TemplateModal } from '@/components/employer/job-form/modals/TemplateModal';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
-import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
-import {
-  type SectionErrors,
-  validateAllSections,
-  getFirstErrorSection,
-} from '@/utils/job-posting/validation';
-import {
-  buildJobPostingDraft,
-  buildUpdateJobPostingInput,
-  draftToFormData,
-  patchJobPostingDraft,
-} from '@/utils/job-posting/submission';
+import { toError } from '@/errors';
+import { buildJobPostingDraft } from '@/utils/job-posting/submission';
 import { isEmployerManageablePosting } from '@/utils/jobPostingVisibility';
-import type { UpdateJobPostingInput, JobPostingFormData } from '@/types';
+import { draftToValues, formValuesToDraft, valuesToUpdateInput } from '@/utils/order-sheet/mappers';
+import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
+import type { OrderSheetFormValues, OrderSheetValues } from '@/schemas/orderSheet.schema';
 import type { JobPostingDraft } from '@/types/jobPostingDraft';
 
+/**
+ * 공고 수정(S3) — 전 타입(지원·급구·대회·고정) 주문서 단일 경로.
+ * 레거시 섹션 폼(JobPostingScrollForm 계열)은 S4에서 은퇴 완료(주문서 단일 경로).
+ * 대회 편집은 approvalStatus 보존(설계 확정 ⑥) — valuesToUpdateInput이 tournamentConfig를
+ * 만질 수 없고(타입 계약), update 직렬화가 current에서 보존한다.
+ */
 export default function EditJobPostingScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { user } = useAuth();
+  const { profile } = useAuth();
   const { addToast } = useToastStore();
 
   const { job: existingJob, isLoading: isJobLoading, error: jobError } = useJobDetail(id || '');
@@ -50,154 +40,82 @@ export default function EditJobPostingScreen() {
   const headerTitleSuffix = <JobTitleSuffix jobTitle={headerJobTitle} />;
   const headerRightAction = !contextIsFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;
 
-  const scrollViewRef = useRef<ScrollView>(null);
-  const [draft, setDraft] = useState<JobPostingDraft | null>(null);
   const [isDirty, setIsDirty] = useState(false);
-  const [hasConfirmedApplicants, setHasConfirmedApplicants] = useState(false);
-  const [errors, setErrors] = useState<SectionErrors>({
-    basicInfo: {},
-    schedule: {},
-    roles: {},
-    salary: {},
-    preQuestions: {},
-  });
+  const { markClean } = useUnsavedChangesGuard(isDirty);
 
-  useUnsavedChangesGuard(isDirty);
-
-  const sectionPositions = useRef<Record<string, number>>({});
   const updateJobPosting = useUpdateJobPosting();
   const templateManager = useTemplateManager();
-  const formData = useMemo(() => (draft ? draftToFormData(draft) : null), [draft]);
-  const isFixed = formData?.postingType === 'fixed';
-  const allowScheduleFallback = useMemo(() => {
-    if (!formData) {
-      return false;
-    }
 
-    return (formData.dateSpecificRequirements?.length ?? 0) === 0 && !!formData.workDate;
-  }, [formData]);
+  const isManageable = existingJob ? isEmployerManageablePosting(existingJob) : true;
+  const hasConfirmedApplicants = (existingJob?.filledPositions ?? 0) > 0;
 
+  // 진입 안내 — 저장 후 쿼리 무효화로 existingJob이 갱신돼도 재발행 금지(1회 가드)
+  const notifiedRef = useRef(false);
   useEffect(() => {
-    if (existingJob && !draft) {
-      if (!isEmployerManageablePosting(existingJob)) {
-        addToast({
-          type: 'warning',
-          message: '지원하지 않는 공고 형식입니다.',
-        });
-        router.replace('/(app)/(tabs)/employer');
-        return;
-      }
-
-      setDraft(buildJobPostingDraft(existingJob));
-
-      const confirmedCount = existingJob.filledPositions ?? 0;
-      setHasConfirmedApplicants(confirmedCount > 0);
-
-      if (confirmedCount > 0) {
-        addToast({
-          type: 'warning',
-          message: '확정된 지원자가 있어 일정과 역할 정보 수정이 제한됩니다.',
-        });
-      }
-    }
-  }, [existingJob, draft, addToast, router]);
-
-  useEffect(() => {
-    if (!allowScheduleFallback) {
+    if (!existingJob || notifiedRef.current) return;
+    notifiedRef.current = true;
+    if (!isEmployerManageablePosting(existingJob)) {
+      addToast({ type: 'warning', message: '지원하지 않는 공고 형식입니다.' });
+      router.replace('/(app)/(tabs)/employer');
       return;
     }
-
-    addToast({
-      type: 'warning',
-      message: '기존 일정 정보가 비어 있어 날짜 정보를 다시 확인해 주세요.',
-    });
-  }, [allowScheduleFallback, addToast]);
-
-  const updateFormData = useCallback((data: Partial<JobPostingFormData>) => {
-    setIsDirty(true);
-    setDraft((prev) => (prev ? patchJobPostingDraft(prev, data) : null));
-  }, []);
-
-  const validateAll = useCallback((): boolean => {
-    if (!formData) return false;
-
-    const skipSections: (keyof SectionErrors)[] = hasConfirmedApplicants
-      ? ['schedule', 'roles']
-      : [];
-
-    const newErrors = validateAllSections(formData, {
-      allowLegacyFallback: allowScheduleFallback,
-      skipSections,
-    });
-
-    setErrors(newErrors);
-
-    const firstError = getFirstErrorSection(newErrors);
-    if (firstError) {
-      const position = sectionPositions.current[firstError];
-      if (position !== undefined && scrollViewRef.current) {
-        scrollViewRef.current.scrollTo({ y: position - 20, animated: true });
-      }
-      return false;
-    }
-
-    return true;
-  }, [allowScheduleFallback, formData, hasConfirmedApplicants]);
-
-  const handleSubmit = useCallback(async () => {
-    if (!user?.uid || !formData?.location || !draft || !id) {
-      addToast({ type: 'error', message: '필수 정보가 누락되었습니다.' });
-      return;
-    }
-
-    if (!validateAll()) {
-      addToast({ type: 'error', message: '입력 정보를 확인해 주세요.' });
-      return;
-    }
-
-    try {
-      const input: UpdateJobPostingInput = buildUpdateJobPostingInput(draft, {
-        hasConfirmedApplicants,
-      });
-
-      await updateJobPosting.mutateAsync({ jobPostingId: id, input });
-      setIsDirty(false);
-
-      addToast({ type: 'success', message: '공고가 수정되었습니다.' });
-      router.back();
-    } catch (error) {
-      logger.error('공고 수정 실패', error as Error, { jobPostingId: id });
+    if ((existingJob.filledPositions ?? 0) > 0) {
       addToast({
-        type: 'error',
-        message: error instanceof Error ? error.message : '공고 수정에 실패했습니다.',
+        type: 'warning',
+        message: '확정된 지원자가 있어 일정과 역할 정보 수정이 제한됩니다.',
       });
     }
-  }, [
-    user,
-    formData,
-    draft,
-    hasConfirmedApplicants,
-    id,
-    validateAll,
-    updateJobPosting,
-    addToast,
-    router,
-  ]);
+  }, [existingJob, addToast, router]);
 
-  const handleSaveTemplate = useCallback(async () => {
-    if (!draft) return;
-    await templateManager.handleSaveTemplate(draft);
-  }, [draft, templateManager]);
+  // 편집 하이드레이션 — draftToValues는 전 타입 복원(S1 dated 그룹핑·S2 fixed·대회 보존).
+  // RHF defaultValues는 첫 마운트만 소비하므로 existingJob 갱신에 따른 재계산은 무해.
+  const initialValues = useMemo<OrderSheetFormValues | null>(() => {
+    if (!existingJob || !isEmployerManageablePosting(existingJob)) return null;
+    try {
+      return draftToValues(buildJobPostingDraft(existingJob));
+    } catch (error) {
+      // 복원 불가 형상(손상 데이터) — 프리셋 방어(create.tsx)와 동형. 아래 에러 화면으로 유도.
+      logger.error('공고 편집 하이드레이션 실패', toError(error), { jobPostingId: id });
+      return null;
+    }
+  }, [existingJob, id]);
 
-  const handleSectionLayout = useCallback((section: string, y: number) => {
-    sectionPositions.current[section] = y;
-  }, []);
+  const handleSubmit = useCallback(
+    async (values: OrderSheetValues) => {
+      if (!id) return;
+      try {
+        const input = valuesToUpdateInput(values, { hasConfirmedApplicants });
+        await updateJobPosting.mutateAsync({ jobPostingId: id, input });
+        setIsDirty(false);
+        // 저장 성공 — setIsDirty(false) 리렌더 전 같은 틱의 back()이 stale 가드에 걸리지 않게
+        // 동기 표식(S3 이월 ④). markClean 없이는 저장 후에도 "변경사항 저장 안 됨"이 뜰 수 있다.
+        markClean();
+        // 성공·실패 토스트는 useUpdateJobPosting(onSuccess/onError)가 담당 — 화면 중복 발행 제거.
+        router.back();
+      } catch (error) {
+        logger.error('주문서 공고 수정 실패', toError(error), { jobPostingId: id });
+      }
+    },
+    [id, hasConfirmedApplicants, updateJobPosting, router, markClean]
+  );
 
-  const getErrorCount = useCallback((sectionErrors: Record<string, string>): number => {
-    return Object.keys(sectionErrors).length;
-  }, []);
+  // 템플릿 저장 — create.tsx와 동일 굳힘 패턴.
+  // ⚠️ handleSaveTemplate 직접 호출 금지: templateName이 비면 조용한 no-op(useTemplateManager) →
+  //    반드시 openTemplateModal + TemplateModal 경유로 저장한다.
+  const [orderSheetSaveDraft, setOrderSheetSaveDraft] = useState<JobPostingDraft | null>(null);
+  const handleOrderSheetSaveTemplate = useCallback(
+    (values: OrderSheetFormValues) => {
+      setOrderSheetSaveDraft(formValuesToDraft(values));
+      templateManager.openTemplateModal();
+    },
+    [templateManager]
+  );
+  const handleSaveOrderSheetTemplate = useCallback(async () => {
+    if (!orderSheetSaveDraft) return;
+    await templateManager.handleSaveTemplate(orderSheetSaveDraft);
+  }, [templateManager, orderSheetSaveDraft]);
 
-  if (isJobLoading || !formData) {
+  if (isJobLoading || (existingJob && !isManageable)) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader
@@ -214,7 +132,7 @@ export default function EditJobPostingScreen() {
     );
   }
 
-  if (jobError || !existingJob) {
+  if (jobError || !existingJob || initialValues === null) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader
@@ -239,163 +157,24 @@ export default function EditJobPostingScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
       <StackHeader
         title="공고 수정"
         titleSuffix={headerTitleSuffix}
         fallbackHref={headerBackHref}
         rightAction={headerRightAction}
       />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
-      >
-        <ScrollView
-          ref={scrollViewRef}
-          className="flex-1"
-          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {hasConfirmedApplicants && (
-            <View className="mb-4 rounded-lg border border-warning-200 bg-warning-50 p-3 dark:border-warning-800 dark:bg-warning-900/20">
-              <Text className="text-sm text-warning-700 dark:text-warning-300 font-sans">
-                확정된 지원자가 있어 일정과 역할 정보는 수정할 수 없습니다.
-              </Text>
-            </View>
-          )}
-
-          <View onLayout={(e) => handleSectionLayout('basicInfo', e.nativeEvent.layout.y)}>
-            <SectionCard
-              title="기본 정보"
-              required
-              hasError={getErrorCount(errors.basicInfo) > 0}
-              errorCount={getErrorCount(errors.basicInfo)}
-            >
-              <BasicInfoSection
-                data={formData}
-                onUpdate={updateFormData}
-                errors={errors.basicInfo}
-                isEdit
-              />
-            </SectionCard>
-          </View>
-
-          <View onLayout={(e) => handleSectionLayout('schedule', e.nativeEvent.layout.y)}>
-            <SectionCard
-              title="일정"
-              required
-              hasError={getErrorCount(errors.schedule) > 0}
-              errorCount={getErrorCount(errors.schedule)}
-            >
-              {hasConfirmedApplicants ? (
-                <View className="rounded-lg bg-surface-card p-4 dark:bg-surface">
-                  <Text className="text-center text-content-secondary font-sans">
-                    확정된 지원자가 있어 일정은 수정할 수 없습니다.
-                  </Text>
-                </View>
-              ) : isFixed ? (
-                <ScheduleSection
-                  data={formData}
-                  onUpdate={updateFormData}
-                  errors={errors.schedule}
-                />
-              ) : (
-                <DateRequirementsSection
-                  data={formData}
-                  onUpdate={updateFormData}
-                  errors={errors.schedule}
-                />
-              )}
-            </SectionCard>
-          </View>
-
-          {isFixed && (
-            <View onLayout={(e) => handleSectionLayout('roles', e.nativeEvent.layout.y)}>
-              <SectionCard
-                title="모집 역할"
-                required
-                hasError={getErrorCount(errors.roles) > 0}
-                errorCount={getErrorCount(errors.roles)}
-              >
-                {hasConfirmedApplicants ? (
-                  <View className="rounded-lg bg-surface-card p-4 dark:bg-surface">
-                    <Text className="text-center text-content-secondary font-sans">
-                      확정된 지원자가 있어 역할 정보는 수정할 수 없습니다.
-                    </Text>
-                  </View>
-                ) : (
-                  <RolesSection data={formData} onUpdate={updateFormData} errors={errors.roles} />
-                )}
-              </SectionCard>
-            </View>
-          )}
-
-          <View onLayout={(e) => handleSectionLayout('salary', e.nativeEvent.layout.y)}>
-            <SectionCard
-              title="급여"
-              required
-              hasError={getErrorCount(errors.salary) > 0}
-              errorCount={getErrorCount(errors.salary)}
-            >
-              <SalarySection data={formData} onUpdate={updateFormData} errors={errors.salary} />
-            </SectionCard>
-          </View>
-
-          <View onLayout={(e) => handleSectionLayout('preQuestions', e.nativeEvent.layout.y)}>
-            <SectionCard
-              title="사전질문"
-              optional
-              hasError={getErrorCount(errors.preQuestions) > 0}
-              errorCount={getErrorCount(errors.preQuestions)}
-            >
-              <PreQuestionsSection
-                data={formData}
-                onUpdate={updateFormData}
-                errors={errors.preQuestions}
-              />
-            </SectionCard>
-          </View>
-        </ScrollView>
-
-        <View className="absolute bottom-0 left-0 right-0 border-t border-secondary-200 bg-white p-4 dark:border-surface-overlay dark:bg-surface-dark">
-          <View className="flex-row items-center gap-2">
-            <Button
-              variant="ghost"
-              size="lg"
-              onPress={templateManager.openTemplateModal}
-              disabled={templateManager.isSavingTemplate}
-              accessibilityLabel="템플릿으로 저장"
-            >
-              <Text
-                className={`font-sans-medium ${
-                  templateManager.isSavingTemplate
-                    ? 'text-secondary-400'
-                    : 'text-primary-600 dark:text-primary-400'
-                }`}
-              >
-                {templateManager.isSavingTemplate ? '저장 중...' : '템플릿 저장'}
-              </Text>
-            </Button>
-            <View className="flex-1">
-              <Button
-                variant="primary"
-                size="lg"
-                onPress={handleSubmit}
-                disabled={updateJobPosting.isPending}
-                fullWidth
-                accessibilityLabel="공고 수정"
-                testID="job-posting-edit-submit"
-              >
-                <Text className="font-sans-semibold text-content-onGold">
-                  {updateJobPosting.isPending ? '수정 중...' : '공고 수정'}
-                </Text>
-              </Button>
-            </View>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-
+      <OrderSheetScreen
+        mode="edit"
+        initialValues={initialValues}
+        onSubmit={handleSubmit}
+        isSubmitting={updateJobPosting.isPending}
+        onDirtyChange={setIsDirty}
+        myPhone={profile?.phone ?? ''}
+        scheduleLocked={hasConfirmedApplicants}
+        onSaveTemplate={handleOrderSheetSaveTemplate}
+      />
+      {/* 템플릿 이름 입력 모달 — 주문서 시트 닫힘 상태에서만 열려 중첩 RN Modal(#244) 위험 없음 */}
       {templateManager.isTemplateModalOpen ? (
         <TemplateModal
           visible={templateManager.isTemplateModalOpen}
@@ -404,7 +183,7 @@ export default function EditJobPostingScreen() {
           templateDescription={templateManager.templateDescription}
           onTemplateNameChange={templateManager.setTemplateName}
           onTemplateDescriptionChange={templateManager.setTemplateDescription}
-          onSave={handleSaveTemplate}
+          onSave={handleSaveOrderSheetTemplate}
           isSaving={templateManager.isSavingTemplate}
         />
       ) : null}

@@ -10,12 +10,16 @@ import type {
   PostingRoleCatalogEntry,
   PostingTimeSlot,
   SalaryInfo,
+  UpdateJobPostingInput,
 } from '@/types/jobPosting';
 import type { JobPostingDraft } from '@/types/jobPostingDraft';
 import type { JobPostingTemplate } from '@/types/jobTemplate';
 import { templateToDraft } from '@/types/jobTemplate';
-import { draftToCreateJobPostingInput } from '@/utils/job-posting/draftAdapter';
-import type { GridPrefillParams } from '@/utils/job-posting/gridPrefill';
+import {
+  buildFixedSyntheticRequirement,
+  draftToCreateJobPostingInput,
+  draftToUpdateJobPostingInput,
+} from '@/utils/job-posting/draftAdapter';
 import { toDateString } from '@/utils/date';
 import { DEFAULT_SLOT_START_TIME } from '@/domains/weeklyGrid';
 import { DEFAULT_SALARY_BY_TYPE } from '@/constants/jobPosting';
@@ -68,6 +72,18 @@ function allGroupTimeSlots(values: OrderSheetValues): OrderSheetGroupTimeSlots {
   return values.scheduleGroups.flatMap((g) => g.timeSlots);
 }
 
+type OrderSheetFixedSchedule = NonNullable<OrderSheetValues['fixedSchedule']>;
+type FormRoleRef = OrderSheetFixedSchedule['roles'][number];
+
+/** fixed/dated 공용 역할 목록 — roleCatalog·급여 파생의 단일 소스(S2).
+ *  fixed는 fixedSchedule 부재여도 dated 소스로 새지 않는다(valuesToDraft fixed 분기와 동일 계약). */
+function collectFormRoles(values: OrderSheetValues): FormRoleRef[] {
+  if (values.postingType === 'fixed') {
+    return values.fixedSchedule?.roles ?? [];
+  }
+  return allGroupTimeSlots(values).flatMap((slot) => slot.roles);
+}
+
 const roleKey = (role: string, customRole?: string) =>
   role === 'other' ? `other:${customRole ?? ''}` : role;
 
@@ -78,21 +94,20 @@ function toRoleCatalog(values: OrderSheetValues): PostingRoleCatalogEntry[] {
       : values.roleSalaries.map((rs) => [roleKey(rs.role, rs.customRole), rs.salary])
   );
   const seen = new Map<string, PostingRoleCatalogEntry>();
-  for (const slot of allGroupTimeSlots(values)) {
-    for (const r of slot.roles) {
-      const key = roleKey(r.role, r.customRole);
-      if (!seen.has(key)) {
-        // 동등성 계약(레거시 buildRoleCatalogFromFormData 동등): shared(동일급여)이면 defaultSalary(values.salary)를
-        // 각 엔트리에 복사한다. roleCatalog[].salary 를 진실원으로 읽는 소비지점(협의 급여 표시 core.ts:154·
-        // 사업주 수정화면 SalarySection)의 레거시 대비 회귀를 막는다. 왕복은 draftToValues 가 by_role 일 때만
-        // roleSalaries 를 복원해 유지한다.
-        const salary = values.useSameSalary ? values.salary : salaryByRole.get(key);
-        seen.set(key, {
-          role: r.role,
-          ...(r.role === 'other' && r.customRole !== undefined ? { customRole: r.customRole } : {}),
-          ...(salary !== undefined ? { salary } : {}),
-        });
-      }
+  // 역할 소스는 collectFormRoles(fixed=fixedSchedule.roles / dated=전 그룹 슬롯 역할) — dated 결과 불변.
+  for (const r of collectFormRoles(values)) {
+    const key = roleKey(r.role, r.customRole);
+    if (!seen.has(key)) {
+      // 동등성 계약(레거시 buildRoleCatalogFromFormData 동등): shared(동일급여)이면 defaultSalary(values.salary)를
+      // 각 엔트리에 복사한다. roleCatalog[].salary 를 진실원으로 읽는 소비지점(협의 급여 표시 core.ts:154·
+      // 사업주 수정화면 SalarySection)의 레거시 대비 회귀를 막는다. 왕복은 draftToValues 가 by_role 일 때만
+      // roleSalaries 를 복원해 유지한다.
+      const salary = values.useSameSalary ? values.salary : salaryByRole.get(key);
+      seen.set(key, {
+        role: r.role,
+        ...(r.role === 'other' && r.customRole !== undefined ? { customRole: r.customRole } : {}),
+        ...(salary !== undefined ? { salary } : {}),
+      });
     }
   }
   return [...seen.values()];
@@ -110,8 +125,7 @@ function toRoleCatalog(values: OrderSheetValues): PostingRoleCatalogEntry[] {
 function resolveDefaultSalary(values: OrderSheetValues): SalaryInfo {
   if (values.useSameSalary || values.roleSalaries.length === 0) return values.salary;
   const activeKeys = new Set<string>();
-  for (const slot of allGroupTimeSlots(values))
-    for (const r of slot.roles) activeKeys.add(roleKey(r.role, r.customRole));
+  for (const r of collectFormRoles(values)) activeKeys.add(roleKey(r.role, r.customRole));
   const active = values.roleSalaries.filter((rs) =>
     activeKeys.has(roleKey(rs.role, rs.customRole))
   );
@@ -125,6 +139,53 @@ function resolveDefaultSalary(values: OrderSheetValues): SalaryInfo {
 }
 
 export function valuesToDraft(values: OrderSheetValues): JobPostingDraft {
+  // 축 무관 공통 필드(postingType/title/roleCatalog/compensation/questions/conditions) — fixed·dated 공유.
+  // 직접 조립(스프레드 없음) — JobPostingDraft 필수 필드는 TS가 강제, INITIAL 오염 원천 차단.
+  const compensation = {
+    mode: values.useSameSalary ? ('shared' as const) : ('by_role' as const),
+    defaultSalary: resolveDefaultSalary(values),
+    ...(Object.keys(values.allowances).length > 0 ? { allowances: values.allowances } : {}),
+    ...(values.taxSettings !== undefined ? { taxSettings: values.taxSettings } : {}),
+  };
+  const common = {
+    postingType: values.postingType,
+    title: values.title,
+    description: values.description,
+    location: values.location,
+    contactPhone: values.contactPhone,
+    tags: [] as string[],
+    ...(values.venueId !== undefined ? { venueId: values.venueId } : {}),
+    roleCatalog: toRoleCatalog(values),
+    compensation,
+    questions: { items: values.usesPreQuestions ? values.preQuestions : [] },
+    ...(values.conditions.dressCode !== undefined || values.conditions.experience !== undefined
+      ? { conditions: values.conditions }
+      : {}),
+  };
+
+  // ── 고정(fixed) 조립 ── 날짜 축 없음. fixedSchedule.roles → date:null synthetic requirement(레거시 등가).
+  // postingType만으로 분기(#194 방어, 전체리뷰 P4) — fixedSchedule 부재(비정상 잔여 상태)에서 dated로
+  // 오분기하면 {postingType:'fixed', kind:'dated'} mixed draft가 저장돼 재로드 시 regular로 침묵 전환된다.
+  if (values.postingType === 'fixed') {
+    const fs = values.fixedSchedule ?? { daysPerWeek: 0, isStartTimeNegotiable: false, roles: [] };
+    const roles = fs.roles.map((r) => ({
+      role: r.role,
+      ...(r.role === 'other' && r.customRole !== undefined ? { customRole: r.customRole } : {}),
+      count: r.count,
+    }));
+    return {
+      ...common,
+      schedule: {
+        kind: 'fixed',
+        daysPerWeek: fs.daysPerWeek,
+        ...(fs.startTime ? { startTime: fs.startTime } : {}),
+        isStartTimeNegotiable: fs.isStartTimeNegotiable,
+        requirements: [buildFixedSyntheticRequirement(roles, fs.startTime)],
+      },
+    };
+  }
+
+  // ── dated 조립(기존) ──
   // 그룹 flatMap 쓰기(S1) — grouped=true 그룹만 isGrouped 기록(F6: 지원자 묶음지원 축, 미기록=날짜별 지원),
   // 날짜별 timeSlots는 호출마다 새로 생성(F1 deepClone). requirements·allDates는 날짜 전역 정렬(2차 Eng-H1),
   // allDates는 dedupe 합집합(F2 — 중복은 스키마 E1이 원천 차단하나 방어 유지).
@@ -139,15 +200,8 @@ export function valuesToDraft(values: OrderSheetValues): JobPostingDraft {
     .sort((a, b) => a.date.localeCompare(b.date));
   const allDates = [...new Set(values.scheduleGroups.flatMap((g) => g.dates))].sort();
 
-  // 직접 조립(스프레드 없음) — JobPostingDraft 필수 필드는 TS가 강제, INITIAL 오염 원천 차단
   return {
-    postingType: values.postingType,
-    title: values.title,
-    description: values.description,
-    location: values.location,
-    contactPhone: values.contactPhone,
-    tags: [],
-    ...(values.venueId !== undefined ? { venueId: values.venueId } : {}),
+    ...common,
     schedule: {
       kind: 'dated',
       primaryDate: allDates[0] ?? '',
@@ -155,17 +209,6 @@ export function valuesToDraft(values: OrderSheetValues): JobPostingDraft {
       requirements,
       templateTimeSlots: toPostingTimeSlots(values.scheduleGroups[0]?.timeSlots ?? []),
     },
-    roleCatalog: toRoleCatalog(values),
-    compensation: {
-      mode: values.useSameSalary ? 'shared' : 'by_role',
-      defaultSalary: resolveDefaultSalary(values),
-      ...(Object.keys(values.allowances).length > 0 ? { allowances: values.allowances } : {}),
-      ...(values.taxSettings !== undefined ? { taxSettings: values.taxSettings } : {}),
-    },
-    questions: { items: values.usesPreQuestions ? values.preQuestions : [] },
-    ...(values.conditions.dressCode !== undefined || values.conditions.experience !== undefined
-      ? { conditions: values.conditions }
-      : {}),
   };
 }
 
@@ -202,9 +245,68 @@ function isNextDay(prev: string, next: string): boolean {
 }
 
 export function draftToValues(draft: JobPostingDraft): OrderSheetFormValues {
-  if (draft.schedule.kind !== 'dated') {
-    throw new Error('주문서는 dated 스케줄(지원·급구)만 지원합니다');
+  // ── 고정(fixed) 복원(S2 — 구 throw 제거) ── date 축 없는 draft를 fixedSchedule 폼 값으로 되돌린다.
+  // 급여 복원(roleSalaries·salary·useSameSalary)은 dated 말미와 동일 계약을 미러링한다.
+  if (draft.schedule.kind === 'fixed') {
+    const sched = draft.schedule;
+    // SP1 정규형은 requirements 1개·timeSlots 1개지만, 정규화 전 레거시 draft(복수 슬롯)도
+    // 침묵 드랍 없이 전 슬롯 역할을 흡수한다(왕복 데이터는 항상 단일 슬롯 — 동작 동일).
+    const slotRoles = sched.requirements
+      .flatMap((req) => req.timeSlots)
+      .flatMap((slot) => slot.roles);
+    const roleSalaries =
+      draft.compensation.mode === 'by_role'
+        ? draft.roleCatalog
+            .filter(
+              (r): r is PostingRoleCatalogEntry & { salary: SalaryInfo } => r.salary !== undefined
+            )
+            .map((r) => ({
+              role: r.role,
+              ...(r.customRole !== undefined ? { customRole: r.customRole } : {}),
+              salary: r.salary,
+            }))
+        : [];
+    return {
+      postingType: 'fixed',
+      title: draft.title,
+      location: draft.location,
+      contactPhone: draft.contactPhone,
+      description: draft.description,
+      scheduleGroups: [],
+      fixedSchedule: {
+        daysPerWeek: sched.daysPerWeek ?? 0,
+        ...(sched.startTime ? { startTime: sched.startTime } : {}),
+        isStartTimeNegotiable: sched.isStartTimeNegotiable ?? false,
+        // role 부재(레거시 관용 필드)를 '딜러'로 조작(fabrication)하지 않는다(전체리뷰 P6) —
+        // customRole이 있으면 'other'로 승격해 의도를 보존하고, 둘 다 없으면 드랍한다
+        // (잘못된 역할로 공개 모집되는 사고 차단 — 드랍분은 역할 행 unset 유도로 사용자가 재입력).
+        roles: slotRoles.flatMap((r) => {
+          const role = r.role ?? (r.customRole !== undefined ? ('other' as const) : undefined);
+          if (role === undefined) return [];
+          return [
+            {
+              role,
+              ...(r.customRole !== undefined ? { customRole: r.customRole } : {}),
+              count: r.count,
+            },
+          ];
+        }),
+      },
+      salary: draft.compensation.defaultSalary ??
+        roleSalaries[0]?.salary ?? { type: 'hourly', amount: DEFAULT_SALARY_BY_TYPE.hourly },
+      useSameSalary: draft.compensation.mode === 'shared',
+      roleSalaries,
+      allowances: { ...(draft.compensation.allowances ?? {}) },
+      ...(draft.compensation.taxSettings !== undefined
+        ? { taxSettings: draft.compensation.taxSettings }
+        : {}),
+      conditions: { ...(draft.conditions ?? {}) },
+      usesPreQuestions: draft.questions.items.length > 0,
+      preQuestions: [...draft.questions.items],
+      ...(draft.venueId !== undefined ? { venueId: draft.venueId } : {}),
+    };
   }
+  // 여기부터 draft.schedule.kind === 'dated' 로 좁혀진다.
   // 그룹핑 복원(S1 — 구 M8 throw 제거, 2차 Eng-H1 확정 규칙):
   // · isGrouped===true: 연속 run + 동일 시그니처(stripSlotIds JSON) 경계 보존 → grouped 그룹
   //   (groupRequirementsToDateRanges 시맨틱 — 묶음지원 범위를 그대로 살린다)
@@ -275,7 +377,10 @@ export function draftToValues(draft: JobPostingDraft): OrderSheetFormValues {
           }))
       : [];
   return {
-    postingType: draft.postingType === 'urgent' ? 'urgent' : 'regular',
+    // 이 경로는 dated 스케줄 전용(kind:'fixed'는 위 조기 분기). valuesToDraft가 fixed를 항상 kind:'fixed'로
+    // 조립하므로 신규 draft에선 도달 불가 — 남는 건 레거시/손상 mixed draft({postingType:'fixed', kind:'dated'})
+    // 방어 + TS 망라성으로, 그 경우에만 'regular'로 접는다(스케줄 축이 진실원).
+    postingType: draft.postingType === 'fixed' ? 'regular' : draft.postingType,
     title: draft.title,
     location: draft.location,
     contactPhone: draft.contactPhone,
@@ -338,9 +443,20 @@ export function primaryScheduleInfo(values: OrderSheetValues): {
  * 그대로 흘려보낸다(비어 있으면 extractTemplateData 가 저장에서 드롭).
  */
 export function formValuesToDraft(values: OrderSheetFormValues): JobPostingDraft {
+  // fixedSchedule 는 ...values 에서 분리해 z.input(isStartTimeNegotiable optional)→z.output(필수 boolean)로
+  // 정규화한다 — 미정규화면 valuesToDraft 의 fixed 분기가 undefined 를 보고 dated 로 오분기(#194 클래스).
+  const { fixedSchedule, ...rest } = values;
   return valuesToDraft({
-    ...values,
+    ...rest,
     description: values.description ?? '',
+    ...(fixedSchedule
+      ? {
+          fixedSchedule: {
+            ...fixedSchedule,
+            isStartTimeNegotiable: fixedSchedule.isStartTimeNegotiable ?? false,
+          },
+        }
+      : {}),
     // z.input 그룹은 grouped optional — z.output 필수 boolean으로 채움(최종 검증 NIT-2)
     scheduleGroups: (values.scheduleGroups ?? []).map((g) => ({
       dates: g.dates,
@@ -360,6 +476,15 @@ export function formValuesToDraft(values: OrderSheetFormValues): JobPostingDraft
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** 주간 배치 그리드 "부족 N명 → 공고 열기" 프리필 파라미터(구 gridPrefill.ts에서 이주 — 유일 소비자). */
+export interface GridPrefillParams {
+  venueId?: string;
+  /** YYYY-MM-DD (그리드 선택일) */
+  date?: string;
+  /** 모집 인원(부족 인원). 미지정/비정상은 1로 클램프. */
+  count?: number;
+}
 
 /** 그리드 프리필 — 파라미터 정규화(보안 리뷰: 비-UUID venueId drop, count 1..99 클램프) 후 직접 조립. */
 export function gridParamsToValues(params: GridPrefillParams): OrderSheetFormValues {
@@ -387,4 +512,19 @@ export function gridParamsToValues(params: GridPrefillParams): OrderSheetFormVal
 
 export function valuesToCreateInput(values: OrderSheetValues): CreateJobPostingInput {
   return draftToCreateJobPostingInput(valuesToDraft(values));
+}
+
+/**
+ * 주문서 값 → 공고 수정 입력(S3). 레거시 draftToUpdateJobPostingInput에 위임해
+ * 신·구 등가성이 구조적으로 성립한다(valuesToCreateInput과 동형 패턴).
+ * hasConfirmedApplicants=true면 레거시 계약 그대로 schedule·conditions를 제외한 축소
+ * payload(서버 updateWithTransaction의 filledPositions 가드와 대칭)를 만든다.
+ * tournamentConfig는 UpdateJobPostingInput 타입에 없어 이 경로가 승인 상태를 만질 수
+ * 없다(설계 확정 ⑥ — update 직렬화가 current에서 보존, serialization.ts tournament 분기).
+ */
+export function valuesToUpdateInput(
+  values: OrderSheetValues,
+  options?: { hasConfirmedApplicants?: boolean }
+): UpdateJobPostingInput {
+  return draftToUpdateJobPostingInput(valuesToDraft(values), options);
 }

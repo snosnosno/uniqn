@@ -14,7 +14,6 @@ import type {
 } from '@/types/jobPosting';
 import type { JobPostingDraft, JobPostingDraftDatedSchedule } from '@/types/jobPostingDraft';
 import { INITIAL_JOB_POSTING_DRAFT } from '@/types/jobPostingDraft';
-import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types/jobPostingForm';
 import type { DateSpecificRequirement, TimeSlot } from '@/types/jobPosting/dateRequirement';
 import { toDateString } from '@/utils/date';
 import { buildSeedTimeSlots } from './draftRoles';
@@ -112,21 +111,6 @@ function toUpdateInputLocation(
   };
 }
 
-function toFormLocation(
-  location: JobPostingDraft['location'] | JobPosting['location']
-): JobPostingFormData['location'] {
-  if (!location) {
-    return null;
-  }
-
-  return {
-    ...location,
-    ...((location.address ?? location.district)
-      ? { address: location.address ?? location.district }
-      : {}),
-  };
-}
-
 function toCatalogEntry(role: FormRoleWithCount): PostingRoleCatalogEntry {
   const matchedRole = findRoleOptionByName(role.name);
 
@@ -187,33 +171,6 @@ function toCanonicalTimeSlot(slot: TimeSlot): PostingTimeSlot {
       : {}),
     ...(slot.tentativeDescription ? { tentativeDescription: slot.tentativeDescription } : {}),
     roles: (slot.roles ?? []).map(toCanonicalSlotRole),
-  };
-}
-
-function toLegacyTimeSlotRole(
-  role: PostingSlotRoleRequirement,
-  roleCatalog: PostingRoleCatalogEntry[]
-) {
-  return {
-    ...(role.id ? { id: role.id } : {}),
-    role: role.role,
-    ...(role.customRole ? { customRole: role.customRole } : {}),
-    headcount: role.count,
-    salary: roleCatalog.find((entry) => getRoleKey(entry) === getRoleKey(role))?.salary,
-    // dead counter `filled`(SP3 제거) — 레거시 슬롯 타입은 항상 0(미사용 카운터).
-    filled: 0,
-  };
-}
-
-function toLegacyTimeSlot(slot: PostingTimeSlot, roleCatalog: PostingRoleCatalogEntry[]): TimeSlot {
-  return {
-    ...(slot.id ? { id: slot.id } : {}),
-    ...(slot.startTime ? { startTime: slot.startTime } : {}),
-    ...(slot.isTimeToBeAnnounced !== undefined
-      ? { isTimeToBeAnnounced: slot.isTimeToBeAnnounced }
-      : {}),
-    ...(slot.tentativeDescription ? { tentativeDescription: slot.tentativeDescription } : {}),
-    roles: (slot.roles ?? []).map((role) => toLegacyTimeSlotRole(role, roleCatalog)),
   };
 }
 
@@ -293,7 +250,7 @@ function buildDatedDraft(formData: JobPostingFormData): JobPostingDraftDatedSche
   };
 }
 
-function buildFixedSyntheticRequirement(
+export function buildFixedSyntheticRequirement(
   roles: PostingSlotRoleRequirement[],
   startTime?: string
 ): PostingDateRequirement {
@@ -364,143 +321,6 @@ export function formDataToDraft(formData: JobPostingFormData): JobPostingDraft {
       items: formData.usesPreQuestions ? formData.preQuestions : [],
     },
   };
-}
-
-function toFormRole(role: PostingRoleCatalogEntry, count: number): FormRoleWithCount {
-  const matchedRole = STAFF_ROLES.find((candidate) => candidate.key === role.role);
-  const isCustom = role.role === 'other';
-
-  return {
-    name: isCustom ? role.customRole || '' : matchedRole?.name || role.role,
-    count,
-    isCustom,
-    ...(role.salary ? { salary: role.salary } : {}),
-  };
-}
-
-function buildFixedFormRoles(draft: JobPostingDraft): FormRoleWithCount[] {
-  if (draft.schedule.kind !== 'fixed') {
-    return [];
-  }
-
-  const roles = draft.schedule.requirements[0]?.timeSlots[0]?.roles ?? [];
-
-  return roles.map((requirement) => {
-    const catalogEntry = draft.roleCatalog.find(
-      (entry) => getRoleKey(entry) === getRoleKey(requirement)
-    ) ?? {
-      role: requirement.role ?? 'dealer',
-      ...(requirement.customRole ? { customRole: requirement.customRole } : {}),
-    };
-
-    return toFormRole(catalogEntry, requirement.count);
-  });
-}
-
-function buildDatedFormRoles(draft: JobPostingDraft): FormRoleWithCount[] {
-  if (draft.schedule.kind !== 'dated') {
-    return [];
-  }
-
-  const seedRequirement = draft.schedule.requirements.find(
-    (requirement) => requirement.timeSlots.length > 0
-  );
-  const sourceSlots = seedRequirement?.timeSlots ?? draft.schedule.templateTimeSlots;
-
-  const totals = new Map<string, { role: PostingRoleCatalogEntry; count: number }>();
-
-  const collectFromSlots = (slots: PostingTimeSlot[], addToExisting: boolean) => {
-    slots.forEach((slot) => {
-      slot.roles.forEach((role) => {
-        const key = getRoleKey(role);
-        const catalogRole = draft.roleCatalog.find((entry) => getRoleKey(entry) === key) ?? {
-          role: role.role ?? 'dealer',
-          ...(role.customRole ? { customRole: role.customRole } : {}),
-        };
-        const existing = totals.get(key);
-
-        if (existing) {
-          if (addToExisting) {
-            existing.count += role.count;
-          }
-          return;
-        }
-
-        totals.set(key, {
-          role: catalogRole,
-          count: role.count,
-        });
-      });
-    });
-  };
-
-  collectFromSlots(sourceSlots, true);
-
-  draft.schedule.requirements.forEach((requirement) => {
-    if (requirement === seedRequirement) {
-      return;
-    }
-    collectFromSlots(requirement.timeSlots, false);
-  });
-
-  return Array.from(totals.values()).map((entry) => toFormRole(entry.role, entry.count));
-}
-
-export function draftToFormData(draft: JobPostingDraft): JobPostingFormData {
-  const roles =
-    draft.schedule.kind === 'fixed' ? buildFixedFormRoles(draft) : buildDatedFormRoles(draft);
-  const firstSalary = draft.roleCatalog.find((role) => role.salary)?.salary;
-
-  return {
-    ...INITIAL_JOB_POSTING_FORM_DATA,
-    postingType: draft.postingType,
-    title: draft.title,
-    location: toFormLocation(draft.location),
-    detailedAddress: draft.location?.detailedAddress ?? '',
-    contactPhone: draft.contactPhone,
-    description: draft.description,
-    workDate: draft.schedule.kind === 'dated' ? draft.schedule.primaryDate : '',
-    startTime: draft.schedule.kind === 'fixed' ? (draft.schedule.startTime ?? '') : '',
-    isStartTimeNegotiable:
-      draft.schedule.kind === 'fixed' ? (draft.schedule.isStartTimeNegotiable ?? false) : false,
-    dateSpecificRequirements:
-      draft.schedule.kind === 'dated'
-        ? draft.schedule.requirements.map((requirement) => ({
-            // kind==='dated' 분기 — dated requirement.date는 항상 string (fixed만 null)
-            date: requirement.date ?? '',
-            isGrouped: requirement.isGrouped,
-            timeSlots: requirement.timeSlots.map((slot) =>
-              toLegacyTimeSlot(slot, draft.roleCatalog)
-            ),
-          }))
-        : [],
-    datedTemplateTimeSlots:
-      draft.schedule.kind === 'dated'
-        ? draft.schedule.templateTimeSlots.map((slot) => toLegacyTimeSlot(slot, draft.roleCatalog))
-        : [],
-    daysPerWeek: draft.schedule.kind === 'fixed' ? (draft.schedule.daysPerWeek ?? 0) : 0,
-    roles: roles.length > 0 ? roles : [...INITIAL_JOB_POSTING_FORM_DATA.roles],
-    defaultSalary: draft.compensation.defaultSalary ?? firstSalary,
-    allowances: draft.compensation.allowances ?? {},
-    useSameSalary: draft.compensation.mode === 'shared',
-    taxSettings: draft.compensation.taxSettings,
-    usesPreQuestions: (draft.questions.items ?? []).length > 0,
-    preQuestions: draft.questions.items ?? [],
-    tags: draft.tags ?? [],
-    ...(hasVenueIdField(draft) ? { venueId: draft.venueId } : {}),
-  };
-}
-
-export function applyFormDataPatch(
-  draft: JobPostingDraft,
-  patch: Partial<JobPostingFormData>
-): JobPostingDraft {
-  const nextFormData = {
-    ...draftToFormData(draft),
-    ...patch,
-  };
-
-  return formDataToDraft(nextFormData);
 }
 
 export function draftToCreateJobPostingInput(draft: JobPostingDraft): CreateJobPostingInput {
@@ -587,6 +407,14 @@ export function draftToUpdateJobPostingInput(
   // venue_id 는 운영처 연결(구조 메타)이라 confirmed 여부와 무관하게 보존한다.
   // 가드로 draft 에 venueId 가 없으면 키를 생략해 일반 공고 update payload 를 불변 유지.
   const venueIdPatch = hasVenueIdField(draft) ? { venueId: draft.venueId } : {};
+  // update 는 patch 시맨틱(키 생략=현행 유지)이라, 조건 전량 해제(빈 {})가 키 부재로 표현되면
+  // merge base(toCreateJobPostingInput(current))의 기존 conditions 가 살아남아 해제가 조용히
+  // 부활한다. 그래서 update 경로는 conditions 를 항상 명시 전달한다(draft.conditions ?? {}).
+  // mergeJobPostingInput 이 patch.conditions 를 wholesale 반영하고(serialization.ts:412-425),
+  // serialize 의 `input.conditions !== undefined` 가 빈 {} 를 통과시켜(:362) 문서 conditions={}
+  // 로 해제가 저장된다 — 해제 왕복과 확정 지원자 편집(축소 분기)에서의 조건 보존을 함께 성립시킨다.
+  // create 시맨틱(current 없음, 키 생략)과 달리 update 전용 함수에서만 적용.
+  const conditionsPatch = { conditions: draft.conditions ?? {} };
   const updateInput: UpdateJobPostingInput = {
     postingType: canonicalInput.postingType,
     title: canonicalInput.title,
@@ -599,12 +427,12 @@ export function draftToUpdateJobPostingInput(
     questions: canonicalInput.questions,
     schedule: canonicalInput.schedule,
     roleCatalog: canonicalInput.roleCatalog,
-    // 모집 조건 보존 — hasConfirmedApplicants 제한 분기에는 넣지 않는다. serialize 의
-    // current-폴백이 DB 값에서 conditions 를 보존하므로 1번째 조립부만으로 계약이 성립.
-    ...(draft.conditions !== undefined ? { conditions: draft.conditions } : {}),
+    ...conditionsPatch,
   };
 
   if (hasConfirmedApplicants) {
+    // 축소 payload 는 서버 identity 가드(schedule·roleCatalog)를 건드리지 않도록 schedule 만
+    // 제외한다 — conditions 변경은 확정 지원자와 무관하게 허용되므로 반드시 포함한다(I-1).
     return {
       postingType: updateInput.postingType,
       title: updateInput.title,
@@ -616,6 +444,7 @@ export function draftToUpdateJobPostingInput(
       compensation: updateInput.compensation,
       questions: updateInput.questions,
       roleCatalog: updateInput.roleCatalog,
+      ...conditionsPatch,
     };
   }
 

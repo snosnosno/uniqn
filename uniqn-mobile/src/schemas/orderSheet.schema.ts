@@ -43,10 +43,33 @@ export const orderSheetRoleSalarySchema = z.object({
   salary: orderSheetSalarySchema,
 });
 
+// 출근 시각 형식(HH:MM 24h) — 타임슬롯·고정 근무조건·orderRowMeta 요약 판정이 공유(단일 정의).
+export const START_TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
 export const orderSheetTimeSlotSchema = z.object({
-  startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, '출근 시간을 선택해주세요'),
+  startTime: z.string().regex(START_TIME_RE, '출근 시간을 선택해주세요'),
   roles: z.array(orderSheetRoleSchema).min(1, '역할을 추가해주세요'),
 });
+
+/**
+ * 고정(fixed) 근무조건(S2) — 날짜 축이 없는 상시 반복 근무. 역할은 평탄 배열(레거시 formData.roles 시맨틱).
+ * startTime은 협의(isStartTimeNegotiable)면 부재 허용, 아니면 필수(superRefine).
+ * daysPerWeek 0 = 협의(레거시 DAYS_OPTIONS와 동일).
+ */
+export const orderSheetFixedScheduleSchema = z
+  .object({
+    daysPerWeek: z.number().int().min(0).max(7),
+    startTime: z.string().regex(START_TIME_RE, '출근 시간을 선택해주세요').optional(),
+    isStartTimeNegotiable: z.boolean().default(false),
+    roles: z.array(orderSheetRoleSchema).min(1, '역할을 추가해주세요'),
+  })
+  .superRefine((fs, ctx) => {
+    // 역방향(협의=true + startTime 잔존)은 의도적 관용 — 레거시 draft 수용. 표시·쓰기 소비측
+    // (WorkConditionSheet confirm·createFixedSchedule)이 협의 우선으로 정규화해 실해 없음.
+    if (!fs.isStartTimeNegotiable && !fs.startTime) {
+      ctx.addIssue({ code: 'custom', path: ['startTime'], message: '출근 시간을 선택해주세요' });
+    }
+  });
 
 /**
  * 일정 그룹(S1) — "같은 시간·역할을 공유하는 날짜 묶음". 개별 설정 = 날짜 1개짜리 그룹.
@@ -101,13 +124,17 @@ export const orderSheetAllowancesSchema = z.object({
 
 export const orderSheetValuesSchema = z
   .object({
-    postingType: z.enum(['regular', 'urgent']),
+    postingType: z.enum(['regular', 'urgent', 'tournament', 'fixed']),
     title: safeText(25).min(1, '제목을 입력해주세요'),
     // ⚠️ 아래 refine의 TS 추론 프레디킷이 z.output에서 null을 제거한다(의도된 동작 — 매퍼가 가드 없이 소비)
     location: orderSheetLocationSchema.nullable().refine((v) => v !== null, '장소를 선택해주세요'),
     contactPhone: safeText(20).min(1, '연락처를 입력해주세요'),
     description: safeText(500).default(''),
-    scheduleGroups: z.array(orderSheetScheduleGroupSchema).min(1, '날짜를 선택해주세요'),
+    scheduleGroups: z.array(orderSheetScheduleGroupSchema).default([]),
+    // 고정(fixed) 근무조건 — dated면 undefined, fixed면 present(superRefine 강제). 반대 축 잔여는
+    // 스키마가 아니라 handleTypeChange 불변식 + 매퍼 fixed 분기(잔여 scheduleGroups 무시)가 처리한다
+    // (설계 §3.1 확정⑤ — union은 스케줄 표현만 분기, 잔여 축 검증은 의도적으로 하지 않음).
+    fixedSchedule: orderSheetFixedScheduleSchema.optional(),
     salary: orderSheetSalarySchema,
     // 기본 false(by_role) — 설계 §S2.1. 살아있는 기본값 5지점(schema·initialOrderSheetValues·
     // formValuesToDraft·orderRowMeta·OrderSheetScreen) 전수 통일 — 하나라도 어긋나면 zod 게이트와
@@ -139,6 +166,51 @@ export const orderSheetValuesSchema = z
     venueId: z.string().uuid().optional(),
   })
   .superRefine((v, ctx) => {
+    // ── 급여 by_role 커버 게이트(공유) — 소스만 타입별로 다르다 ──
+    // useSameSalary=false면 대상 역할 집합(roleKeys)을 roleSalaries가 전부 커버해야 통과.
+    // 고유 역할 0개면 skip(Eng-M5). 협의(other)는 amount 없이 커버 인정, 그 외는 amount>0 필요.
+    const keyOf = (role: string, customRole?: string) =>
+      role === 'other' ? `other:${customRole ?? ''}` : role;
+    const coverByRole = (roleKeys: Set<string>) => {
+      if (v.useSameSalary || roleKeys.size === 0) return;
+      const salaryByRole = new Map(
+        v.roleSalaries.map((rs) => [keyOf(rs.role, rs.customRole), rs.salary] as const)
+      );
+      const allCovered = [...roleKeys].every((k) => {
+        const s = salaryByRole.get(k);
+        return s !== undefined && (s.type === 'other' || s.amount > 0);
+      });
+      if (!allCovered) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['roleSalaries'],
+          message: '역할별 급여를 모두 입력해주세요',
+        });
+      }
+    };
+
+    // ── 고정(fixed) 분기 ── 날짜 축 없음. fixedSchedule 필수 + 역할 커버만 검사.
+    if (v.postingType === 'fixed') {
+      if (v.fixedSchedule === undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['fixedSchedule'],
+          message: '근무조건을 입력해주세요',
+        });
+        return;
+      }
+      const fixedKeys = new Set<string>();
+      for (const r of v.fixedSchedule.roles) fixedKeys.add(keyOf(r.role, r.customRole));
+      coverByRole(fixedKeys);
+      return;
+    }
+
+    // ── dated(지원·급구·대회) 분기 ── (기존 로직 유지 + scheduleGroups 비어있음 게이트)
+    // 빈 그룹 게이트는 기존 scheduleGroups.min(1) 이관 — 경로·메시지 동일 유지.
+    if (v.scheduleGroups.length === 0) {
+      ctx.addIssue({ code: 'custom', path: ['scheduleGroups'], message: '날짜를 선택해주세요' });
+      return;
+    }
     // E1: 그룹 간 날짜 중복 금지 — issue path는 뒤에 온 중복 그룹의 dates(해당 그룹 행에 배지).
     // F2: allDates 중복 → filled counts 키스페이스 충돌의 원천 차단이기도 하다.
     const seenDates = new Set<string>();
@@ -168,35 +240,13 @@ export const orderSheetValuesSchema = z
         message: `날짜는 최대 ${maxDates}개까지 선택할 수 있어요`,
       });
     }
-
-    // 역할별 급여(by_role) 전수 커버 게이트 — useSameSalary=false면 전 그룹 timeSlots의 고유 역할
-    // (기타는 customRole 단위)을 roleSalaries가 전부 커버해야 통과한다. orderRowMeta의 unset
-    // 판정과 대칭 — 스키마는 최후 게이트(급여 미정 제출 차단), UI(급여 시트)는 UX 게이트.
-    // 협의(other)는 amount 없이 커버로 인정, 그 외 타입은 amount>0이어야 커버.
-    if (v.useSameSalary) return;
-    const keyOf = (role: string, customRole?: string) =>
-      role === 'other' ? `other:${customRole ?? ''}` : role;
-    const salaryByRole = new Map(
-      v.roleSalaries.map((rs) => [keyOf(rs.role, rs.customRole), rs.salary] as const)
-    );
+    // 역할별 급여(by_role) 전수 커버 게이트 — 전 그룹 timeSlots의 고유 역할(기타는 customRole 단위)이
+    // 소스. orderRowMeta의 unset 판정과 대칭 — 스키마는 최후 게이트, UI(급여 시트)는 UX 게이트.
     const uniqueKeys = new Set<string>();
     for (const g of v.scheduleGroups)
       for (const slot of g.timeSlots)
         for (const r of slot.roles) uniqueKeys.add(keyOf(r.role, r.customRole));
-    // 고유 역할 0개면 skip(Eng-M5) — 기본 false 반전 후 신규 폼 첫 onChange부터 급여 에러가
-    // 서는 소음 제거. 제출 차단은 그룹당 timeSlots/roles min(1)이 담당(게이트 약화 없음).
-    if (uniqueKeys.size === 0) return;
-    const allCovered = [...uniqueKeys].every((k) => {
-      const s = salaryByRole.get(k);
-      return s !== undefined && (s.type === 'other' || s.amount > 0);
-    });
-    if (!allCovered) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['roleSalaries'],
-        message: '역할별 급여를 모두 입력해주세요',
-      });
-    }
+    coverByRole(uniqueKeys);
   });
 
 export type OrderSheetFormValues = z.input<typeof orderSheetValuesSchema>;
