@@ -130,8 +130,11 @@ export class ScheduleConverter {
       timeSlot: workLog.timeSlot,
       isFixedPosting: workLog.isFixedPosting,
       settlementBreakdown: settlementBreakdown || undefined,
-      createdAt: workLog.createdAt,
-      updatedAt: workLog.updatedAt,
+      // workLog.createdAt/updatedAt 도 런타임 ISO string(timestampSchema) — ScheduleEvent(Date)
+      // 계약에 맞춰 경계에서 Date 로 변환. application 브랜치와 동일 패턴으로 통일해
+      // ScheduleEvent.createdAt 의 소스별 런타임 타입 분기를 제거한다.
+      createdAt: toDate(workLog.createdAt) ?? undefined,
+      updatedAt: toDate(workLog.updatedAt) ?? undefined,
     };
   }
 
@@ -183,8 +186,10 @@ export class ScheduleConverter {
             isCancellationPending: application.status === STATUS.APPLICATION.CANCELLATION_PENDING,
             postingProjection,
             timeSlot: assignment.timeSlot,
-            createdAt: application.createdAt,
-            updatedAt: application.updatedAt,
+            // application.createdAt 은 ISO string(timestampSchema) — ScheduleEvent 는 Date 계약.
+            // workLog 브랜치와 동일하게 경계에서 Date 로 변환(두 소스 런타임 타입 통일).
+            createdAt: toDate(application.createdAt) ?? undefined,
+            updatedAt: toDate(application.updatedAt) ?? undefined,
           },
         ] satisfies ScheduleEvent[];
       })

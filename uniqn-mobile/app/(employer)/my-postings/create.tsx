@@ -21,6 +21,7 @@ import {
 } from '@/utils/order-sheet/mappers';
 import { setLastSubmittedDraft } from '@/utils/order-sheet/lastSubmitted';
 import { formatShortDate } from '@/utils/formatters/date';
+import { toDate } from '@/utils/date';
 import { TemplateModal } from '@/components/employer/job-form/modals/TemplateModal';
 import { StackHeader } from '@/components/headers';
 import { OrderSheetScreen } from '@/components/employer/order-sheet/OrderSheetScreen';
@@ -67,12 +68,16 @@ export default function CreateJobPostingScreen() {
   // 프리셋 캐러셀 데이터 소스 — 내 공고 목록에서 진짜 최신 1건("마지막 공고").
   // 목록은 status 버킷별 concat(active→capacity_full→closed, 각 created_at desc)이라 [0]이
   // 전역 최신이 아닐 수 있어 createdAt 최댓값으로 선별한다(jobService.getMyJobPostings 실측).
+  // ⚠️ createdAt은 타입상 Date지만 런타임은 timestampSchema가 통일한 ISO string(common.ts) →
+  //    .getTime() 직접 호출 시 "not a function" 크래시. toDate()로 변환 후 비교(스키마 규약).
   const myPostingsQuery = useMyJobPostings();
   const lastPosting = useMemo(() => {
     const list = myPostingsQuery.data ?? [];
     if (list.length === 0) return undefined;
     return list.reduce((latest, p) =>
-      (p.createdAt?.getTime() ?? 0) > (latest.createdAt?.getTime() ?? 0) ? p : latest
+      (toDate(p.createdAt)?.getTime() ?? 0) > (toDate(latest.createdAt)?.getTime() ?? 0)
+        ? p
+        : latest
     );
   }, [myPostingsQuery.data]);
 

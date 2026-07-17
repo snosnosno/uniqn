@@ -23,8 +23,9 @@ interface SerializeJobPostingV3Options {
   ownerName?: string;
   status?: JobPostingStatus;
   current?: Partial<JobPosting>;
-  createdAt?: Date;
-  updatedAt?: Date;
+  // 문서 필드와 동일 계약 — ISO string. 쓰기 경로는 new Date().toISOString() 로 전달.
+  createdAt?: string;
+  updatedAt?: string;
   /**
    * 워크스페이스 ID (M3 NOT NULL 제약). 무료 공고 생성 경로는 Service 가
    * owner 의 default workspace 를 lookup 하여 주입. update 경로는 current.workspaceId 를 보존.
