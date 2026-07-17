@@ -185,7 +185,29 @@ module.exports = [
           message:
             '.toDate() 메서드 호출 금지 (Firebase Timestamp 레거시). schema 출력은 ISO string이므로 @/utils/date의 toDate(str) 함수를 사용.',
         },
+        // Alert 웹 no-op 가드 (2026-07-17)
+        // rn-web 의 Alert.alert 는 완전 no-op(static alert() {}) — 웹 배포(uniqn.app)에서
+        // 확인 다이얼로그가 게이트인 액션이 통째로 죽는 사고 재발 방지(10파일 21건 교정 이력).
+        {
+          selector: 'CallExpression[callee.object.name="Alert"][callee.property.name="alert"]',
+          message:
+            'Alert.alert 직접 호출 금지 — 웹(rn-web)에서 no-op. 확인/취소는 confirmAction, 1버튼 안내는 showAlert (@/utils) 를 사용하세요.',
+        },
+        {
+          selector:
+            'CallExpression[callee.object.name="window"][callee.property.name=/^(confirm|alert)$/]',
+          message:
+            'window.confirm/alert 직접 호출 금지 — confirmAction/showAlert (@/utils) 경유 (네이티브 분기 일관성).',
+        },
       ],
+    },
+  },
+
+  // 4e. Alert 웹 no-op 가드 예외 — 플랫폼 분기 유틸 자신만 원시 API 사용 허용
+  {
+    files: ['src/utils/confirmAction.ts', 'src/utils/showAlert.ts'],
+    rules: {
+      'no-restricted-syntax': 'off',
     },
   },
 
