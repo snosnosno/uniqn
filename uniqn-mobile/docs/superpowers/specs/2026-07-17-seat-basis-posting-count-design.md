@@ -52,7 +52,7 @@
 1. **신규(또는 개편) work_logs 트리거** `AFTER INSERT OR DELETE OR UPDATE OF status ON work_logs`
    - 좌석 델타로 `job_postings.filled_positions` 갱신(`status NOT IN ('cancelled','no_show')` 진입/이탈 기준 ±1). `stats.filledPositions` 미러도 동일 갱신.
    - **컨테이너 SKIP**(`job_postings.status = 'container'`) — 기존 CHECK `chk_container_no_filled` 유지.
-   - 갱신 후 `capacity_full ↔ active` 자동전이(현재 3곳 중복을 이 한 곳으로 통합).
+   - 이 트리거는 **filled 델타만** 담당. `capacity_full ↔ active` 자동전이는 §3.2.6의 job_postings BEFORE 트리거가 단일 지점으로 수행(현재 3곳 중복 통합) — filled 갱신 UPDATE 자체가 BEFORE 트리거를 발화시켜 전이가 자동 적용된다.
 2. **`fn_update_job_posting_stats`(applications 트리거)**: `v_filled_delta`/`filled_positions` UPDATE **제거**. 사람 지표(`totalApplicants/activeApplicants/confirmedApplicants/cancellationPendingApplicants`)만 유지. capacity_full 전이 블록 제거(work_logs 트리거로 이관).
 3. **`add_direct_staff` / `remove_direct_staff`**: 인라인 `filled_positions +1/-1` 및 `v_already`/`v_remaining` 사람단위 게이트 **제거**(work_logs 트리거가 좌석으로 처리). 슬롯 정원가드·중복가드는 유지.
 4. **`confirm_application`**: filled 관련 변경 없음(work_logs INSERT → 트리거가 +N 좌석). 슬롯 정원가드 유지. → 같은 사람 여러 날 확정 = 좌석 전부 카운트 ✅
@@ -60,7 +60,7 @@
 
 > ⚠️ **필수 사전작업**: `filled_positions`를 쓰는 **모든 경로 전수 grep** 후 사람단위 증감을 남김없이 제거(신규 트리거와 이중계상 방지). 최소 4곳: `fn_update_job_posting_stats`, `add_direct_staff`, `remove_direct_staff`, (cancel 경유 트리거).
 
-6. **(채택) 서버측 total 재계산 트리거**: `job_postings` BEFORE INSERT/UPDATE OF schedule 트리거로 `total_positions`를 schedule에서 재계산(좌석합)하고, **total 변경 시 capacity_full ↔ active 재평가까지 수행**한다. 근거 2가지: ① 클라/DB 드리프트 원천 차단(롤아웃 순서 리스크 소멸) ② **공고 수정으로 total이 줄어도 재평가가 안 도는 공백**(work_logs 트리거는 work_logs 변경에만 반응) 해소.
+6. **(채택) 서버측 total 재계산 + capacity 전이 단일 지점 트리거**: `job_postings` BEFORE INSERT OR UPDATE 트리거. ① schedule 변경 시 `total_positions`를 좌석합으로 재계산 ② **모든 job_postings 쓰기에서 `capacity_full ↔ active` 전이를 재평가**(active/capacity_full 외 상태는 불변). 이로써 전이 로직이 이 한 곳으로 수렴 — work_logs 트리거의 filled UPDATE·applications 트리거의 stats UPDATE·공고 수정 모두 이 BEFORE 트리거를 자연 발화시킨다. 근거: 클라/DB total 드리프트 원천 차단 + 공고 수정 시 재평가 공백 해소 + 전이 3곳 중복 제거. (`closed → active` 재개만 closed_reason 분기 때문에 cancel/remove RPC에 잔존.)
 
 ### 3.3 백필 마이그레이션
 
