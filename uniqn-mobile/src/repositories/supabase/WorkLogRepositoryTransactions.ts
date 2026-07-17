@@ -2,7 +2,7 @@
  * UNIQN Mobile - WorkLog Repository Transactions
  *
  * @description WorkLogRepository에서 사용하는 대형 트랜잭션 함수
- * updateWorkTimeTransaction, updatePayrollStatusTransaction, processQRCheckInOutTransaction
+ * updatePayrollStatusTransaction, processQRCheckInOutTransaction
  */
 
 import { supabase } from '@/lib/supabase';
@@ -17,102 +17,6 @@ import { handleSupabaseError } from '@/utils/supabase';
 import { STATUS } from '@/constants';
 import type { PayrollStatus, QRCodeAction, QRProcessAction } from '@/types';
 import { TABLE, TABLE_COLUMNS, toWorkLog, rethrowOrHandle } from './WorkLogRepositoryHelpers';
-
-// ============================================================================
-// updateWorkTimeTransaction
-// ============================================================================
-
-export async function executeUpdateWorkTime(
-  workLogId: string,
-  updates: {
-    checkInTime?: Date;
-    checkOutTime?: Date;
-    notes?: string;
-  }
-): Promise<void> {
-  try {
-    logger.info('근무 시간 수정', { workLogId });
-
-    // 1. 현재 상태 조회
-    const { data: current, error: fetchError } = await supabase
-      .from(TABLE)
-      .select(TABLE_COLUMNS)
-      .eq('id', workLogId)
-      .maybeSingle();
-
-    if (fetchError)
-      handleSupabaseError(fetchError, { operation: '근무 시간 수정 조회', table: TABLE });
-    if (!current) {
-      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
-        userMessage: '근무 기록을 찾을 수 없습니다',
-      });
-    }
-
-    const workLog = toWorkLog(current as Record<string, unknown>);
-    if (!workLog) {
-      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
-        userMessage: '근무 기록 데이터가 올바르지 않습니다',
-      });
-    }
-
-    // 2. 정산 완료된 경우 수정 불가
-    if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
-      throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_SETTLED, {
-        userMessage: '이미 정산 완료된 근무 기록은 수정할 수 없습니다',
-      });
-    }
-
-    // 3. 업데이트 데이터 구성
-    const updateData: Record<string, unknown> = {
-      updated_at: new Date().toISOString(),
-    };
-
-    if (updates.checkInTime) {
-      updateData.check_in_ts = updates.checkInTime.toISOString();
-    }
-
-    if (updates.checkOutTime) {
-      updateData.check_out_ts = updates.checkOutTime.toISOString();
-    }
-
-    if (updates.notes !== undefined) {
-      updateData.notes = updates.notes;
-    }
-
-    // workDuration 재계산 (ISO string → ms). Phase C: workLog.checkInTime 은 ISO string 보장.
-    const finalCheckInMs = updates.checkInTime
-      ? updates.checkInTime.getTime()
-      : workLog.checkInTime
-        ? Date.parse(String(workLog.checkInTime))
-        : NaN;
-    const finalCheckOutMs = updates.checkOutTime
-      ? updates.checkOutTime.getTime()
-      : workLog.checkOutTime
-        ? Date.parse(String(workLog.checkOutTime))
-        : NaN;
-
-    if (Number.isFinite(finalCheckInMs) && Number.isFinite(finalCheckOutMs)) {
-      const durationMinutes = Math.round((finalCheckOutMs - finalCheckInMs) / (1000 * 60));
-      updateData.work_duration = Math.round((durationMinutes / 60) * 100) / 100;
-    }
-
-    // 4. 상태 업데이트 (check_in/out 둘 다 있으면 checked_out)
-    if (updates.checkInTime && updates.checkOutTime) {
-      updateData.status = STATUS.WORK_LOG.CHECKED_OUT;
-    } else if (updates.checkInTime && !workLog.checkOutTime && !updates.checkOutTime) {
-      updateData.status = STATUS.WORK_LOG.CHECKED_IN;
-    }
-
-    const { error } = await supabase.from(TABLE).update(updateData).eq('id', workLogId);
-
-    if (error) handleSupabaseError(error, { operation: '근무 시간 수정', table: TABLE });
-
-    logger.info('근무 시간 수정 완료', { workLogId });
-  } catch (error) {
-    if (isAppError(error)) throw error;
-    rethrowOrHandle(error, '근무 시간 수정 (Transaction)', { workLogId });
-  }
-}
 
 // ============================================================================
 // updatePayrollStatusTransaction

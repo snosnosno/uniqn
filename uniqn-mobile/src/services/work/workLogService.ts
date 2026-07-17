@@ -14,7 +14,7 @@
 
 import type { UnsubscribeFn } from '@/types/common';
 import { logger } from '@/utils/logger';
-import { maskSensitiveId, sanitizeLogData } from '@/utils/security';
+import { maskSensitiveId } from '@/utils/security';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { toDateString } from '@/utils/date';
 import { trackSettlementComplete } from '@/services/observability';
@@ -192,34 +192,6 @@ export async function getMonthlyPayroll(
       operation: '월별 정산 조회',
       component: 'workLogService',
       context: { staffId: maskSensitiveId(staffId), year, month, workspaceId },
-    });
-  }
-}
-
-/**
- * 관리자: 근무 시간 수정 (트랜잭션 사용)
- *
- * @description 이미 정산 완료된 기록은 수정 불가
- */
-export async function updateWorkTime(
-  workLogId: string,
-  updates: {
-    checkInTime?: Date;
-    checkOutTime?: Date;
-    notes?: string;
-  }
-): Promise<void> {
-  try {
-    logger.info('근무 시간 수정', { workLogId, updates: sanitizeLogData(updates) });
-
-    await workLogRepository.updateWorkTimeTransaction(workLogId, updates);
-
-    logger.info('근무 시간 수정 완료', { workLogId });
-  } catch (error) {
-    throw handleServiceError(error, {
-      operation: '근무 시간 수정',
-      component: 'workLogService',
-      context: { workLogId },
     });
   }
 }
