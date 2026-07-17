@@ -56,11 +56,11 @@
 2. **`fn_update_job_posting_stats`(applications 트리거)**: `v_filled_delta`/`filled_positions` UPDATE **제거**. 사람 지표(`totalApplicants/activeApplicants/confirmedApplicants/cancellationPendingApplicants`)만 유지. capacity_full 전이 블록 제거(work_logs 트리거로 이관).
 3. **`add_direct_staff` / `remove_direct_staff`**: 인라인 `filled_positions +1/-1` 및 `v_already`/`v_remaining` 사람단위 게이트 **제거**(work_logs 트리거가 좌석으로 처리). 슬롯 정원가드·중복가드는 유지.
 4. **`confirm_application`**: filled 관련 변경 없음(work_logs INSERT → 트리거가 +N 좌석). 슬롯 정원가드 유지. → 같은 사람 여러 날 확정 = 좌석 전부 카운트 ✅
-5. **`cancel_application_atomically`**: filled 변경은 `DELETE work_logs`(scheduled) → 트리거가 감소. **`closed`(비-expired) → `active` 재개 로직은 이 RPC에 유지**(closed_reason 분기가 트리거 범위 밖). capacity_full 재개는 트리거와 중복되지 않도록 정리.
+5. **`cancel_application_atomically`**: filled 변경은 `DELETE work_logs`(scheduled) → 트리거가 감소. **⚠️ 실행 순서 재배열 필수** — 현재는 ①status 재개 판정 → ②`SELECT filled` → ③`DELETE work_logs` 순서인데, 새 설계에선 filled가 ③에서야 감소하므로 ①·②가 stale 값으로 평가된다(재개 미발동 + 낡은 반환값). **③ DELETE를 먼저 실행하고, 그 후에 재개 판정·filled 읽기**로 재배열한다. **`closed`(비-expired) → `active` 재개 로직은 이 RPC에 유지**(closed_reason 분기가 트리거 범위 밖). capacity_full 재개는 트리거와 중복되지 않도록 정리.
 
 > ⚠️ **필수 사전작업**: `filled_positions`를 쓰는 **모든 경로 전수 grep** 후 사람단위 증감을 남김없이 제거(신규 트리거와 이중계상 방지). 최소 4곳: `fn_update_job_posting_stats`, `add_direct_staff`, `remove_direct_staff`, (cancel 경유 트리거).
 
-**(선택) 하드닝**: `job_postings` BEFORE INSERT/UPDATE OF schedule 트리거로 `total_positions`를 schedule에서 서버 재계산 → 클라/DB 드리프트 원천 차단. 롤아웃 리스크를 크게 낮추므로 채택 권장.
+6. **(채택) 서버측 total 재계산 트리거**: `job_postings` BEFORE INSERT/UPDATE OF schedule 트리거로 `total_positions`를 schedule에서 재계산(좌석합)하고, **total 변경 시 capacity_full ↔ active 재평가까지 수행**한다. 근거 2가지: ① 클라/DB 드리프트 원천 차단(롤아웃 순서 리스크 소멸) ② **공고 수정으로 total이 줄어도 재평가가 안 도는 공백**(work_logs 트리거는 work_logs 변경에만 반응) 해소.
 
 ### 3.3 백필 마이그레이션
 
@@ -68,18 +68,19 @@
 2. `filled_positions` = 공고별 활성 `work_logs` COUNT(컨테이너=0).
 3. `status` 재평가(capacity_full/active).
 4. pgTAP 레드-그린으로 백필 정확성 검증.
+5. **순서**: 트리거 교체(구 사람단위 경로 제거 → 신 트리거 설치)와 백필을 **같은 마이그레이션 트랜잭션**에서 실행 — 사이 틈에 쓰기가 끼면 이중계상/누락.
 
 ## 4. 롤아웃
 
 - **클라(peak→합산)와 DB 마이그를 함께 출하**. 순서: **prod 마이그(백필+신 트리거) → OTA**.
-- 순서 역전 시: 신클라가 편집한 공고 total이 잠시 구식이 될 수 있음 — 3.2의 (선택) 서버 재계산 트리거를 채택하면 이 리스크 소멸.
+- 순서 역전 시 total 드리프트는 §3.2.6 서버 재계산 트리거(채택)가 흡수 — 구클라가 peak를 써 보내도 서버가 좌석합으로 덮어쓴다.
 - ops/grid 미출시 + 라이브 확정 데이터 소량이라 백필 저위험. 마이그는 `mcp__supabase__apply_migration` 전용(`db push` 금지, 프로젝트 규약).
 
 ## 5. 테스트
 
 - **jest**: `stats.ts`(합산), `postingSurfaceModel`(그룹 날짜별 전개 하이드레이트).
 - **pgTAP(레드-그린)**: work_logs 트리거 좌석 델타(insert/직접추가/cancel/delete), capacity_full 좌석 전이, 컨테이너 SKIP, 백필 정확성. `person_basis_filled_positions.test.sql`은 **좌석 기준으로 재작성**(현재 DISABLED, S5 잔여와 통합).
-- **E2E**: 멀티데이 서로 다른 스태프 확정 → 조기마감 미발생, 헤더/섹션/배지 정합.
+- **E2E**: 멀티데이 서로 다른 스태프 확정 → 조기마감 미발생, 헤더/섹션/배지 정합. **`employer-posting-capacity-recovery.spec.ts`는 사람 기준 기대를 좌석 기준으로 재작성.**
 
 ## 6. 범위 밖 (후속)
 
@@ -89,12 +90,13 @@
 
 ## 7. 리스크
 
-| 리스크                                      | 완화                                               |
-| ------------------------------------------- | -------------------------------------------------- |
-| 라이브 백필(두 컬럼 재계산)                 | pgTAP 검증 + 저트래픽 시간대 + 롤백 스냅샷         |
-| filled 이중계상(구 사람단위 잔존)           | 전수 grep 체크리스트 + pgTAP 델타 테스트           |
-| 클라/DB total 드리프트                      | 클라+마이그 동시 출하, (선택) 서버 재계산 트리거   |
-| capacity_full 재개 로직 분산(closed_reason) | cancel RPC에 명시 유지 + 트리거와 책임 경계 문서화 |
+| 리스크                                                                                                                                | 완화                                                                                                                                            |
+| ------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| 라이브 백필(두 컬럼 재계산)                                                                                                           | pgTAP 검증 + 저트래픽 시간대 + 롤백 스냅샷                                                                                                      |
+| filled 이중계상(구 사람단위 잔존)                                                                                                     | 전수 grep 체크리스트 + pgTAP 델타 테스트                                                                                                        |
+| 클라/DB total 드리프트                                                                                                                | 클라+마이그 동시 출하, (선택) 서버 재계산 트리거                                                                                                |
+| capacity_full 재개 로직 분산(closed_reason)                                                                                           | cancel RPC에 명시 유지 + 트리거와 책임 경계 문서화                                                                                              |
+| 슬롯가드 우회 좌석(`v_capacity = 0`이면 가드 스킵 — 키 미스매치/스케줄 밖 assignment)이 total에 없는 filled를 쌓아 조기마감 재발 가능 | 기존 동작 유지(이번 범위서 미변경)하되 리스크로 명시. capacity=0 매치 발생 시 RAISE LOG 관측 추가, 발생 실측 후 fail-closed 전환 여부 후속 판단 |
 
 ## 8. 성공 기준
 
