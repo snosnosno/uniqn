@@ -264,6 +264,9 @@ describe('useWorkLogs Hooks', () => {
       workspaces: [],
       isLoading: false,
       setActiveWorkspaceId: jest.fn(),
+      isFetching: false,
+      isError: false,
+      refetch: jest.fn(),
     });
   });
 
@@ -775,6 +778,9 @@ describe('useWorkLogs Hooks', () => {
         workspaces: [],
         isLoading: false,
         setActiveWorkspaceId: jest.fn(),
+        isFetching: false,
+        isError: false,
+        refetch: jest.fn(),
       });
 
       renderHook(() => useMonthlyPayroll(2025, 1));
@@ -793,6 +799,9 @@ describe('useWorkLogs Hooks', () => {
         workspaces: [],
         isLoading: false,
         setActiveWorkspaceId: jest.fn(),
+        isFetching: false,
+        isError: false,
+        refetch: jest.fn(),
       });
 
       renderHook(() => useMonthlyPayroll(2025, 1));
@@ -818,6 +827,9 @@ describe('useWorkLogs Hooks', () => {
         workspaces: [],
         isLoading: false,
         setActiveWorkspaceId: jest.fn(),
+        isFetching: false,
+        isError: false,
+        refetch: jest.fn(),
       });
       mockGetMonthlyPayroll.mockResolvedValue({
         totalAmount: 0,

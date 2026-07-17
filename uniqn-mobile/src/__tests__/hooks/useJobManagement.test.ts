@@ -210,6 +210,9 @@ describe('useJobManagement hooks', () => {
       workspaces: [],
       isLoading: false,
       setActiveWorkspaceId: jest.fn(),
+      isFetching: false,
+      isError: false,
+      refetch: jest.fn(),
     });
   });
 
@@ -238,6 +241,9 @@ describe('useJobManagement hooks', () => {
       workspaces: [],
       isLoading: false,
       setActiveWorkspaceId: jest.fn(),
+      isFetching: false,
+      isError: false,
+      refetch: jest.fn(),
     });
 
     renderHook(() => useMyJobPostings());
@@ -255,6 +261,9 @@ describe('useJobManagement hooks', () => {
       workspaces: [],
       isLoading: false,
       setActiveWorkspaceId: jest.fn(),
+      isFetching: false,
+      isError: false,
+      refetch: jest.fn(),
     });
 
     renderHook(() => useMyJobPostings());
@@ -274,6 +283,9 @@ describe('useJobManagement hooks', () => {
       workspaces: [],
       isLoading: false,
       setActiveWorkspaceId: jest.fn(),
+      isFetching: false,
+      isError: false,
+      refetch: jest.fn(),
     });
     mockGetMyJobPostings.mockResolvedValue([]);
 
@@ -325,6 +337,9 @@ describe('useJobManagement hooks', () => {
       workspaces: [],
       isLoading: false,
       setActiveWorkspaceId: jest.fn(),
+      isFetching: false,
+      isError: false,
+      refetch: jest.fn(),
     });
     const input = createInput();
     mockCreateJobPosting.mockResolvedValue({ id: 'job-1', jobPosting: { title: input.title } });
@@ -415,6 +430,9 @@ describe('useJobManagement hooks', () => {
         workspaces: [],
         isLoading: false,
         setActiveWorkspaceId: jest.fn(),
+        isFetching: false,
+        isError: false,
+        refetch: jest.fn(),
       });
 
       let capturedOnMutate: ((arg: unknown) => Promise<unknown>) | undefined;
