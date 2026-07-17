@@ -117,16 +117,16 @@ describe('slotEdit — timeSlot 조합/분해 + 중복충돌', () => {
     expect(parseTimeSlotParts(null)).toEqual({ start: '', end: '' });
   });
 
-  it('같은 스태프 + 같은 시작시각만 충돌로 경고하고 자기 자신은 제외한다', () => {
+  it('같은 스태프의 겹치는 구간만 충돌로 경고하고 자기 자신은 제외한다', () => {
     const target = { workLogId: 'w1', staffId: 's1', timeSlot: '18:00 - 02:00' };
     const siblings = [
       { workLogId: 'w1', staffId: 's1', timeSlot: '18:00 - 02:00' }, // 자기 자신
-      { workLogId: 'w2', staffId: 's1', timeSlot: '18:00 - 22:00' }, // 충돌
+      { workLogId: 'w2', staffId: 's1', timeSlot: '18:00 - 22:00' }, // 겹침(충돌)
       { workLogId: 'w3', staffId: 's2', timeSlot: '18:00 - 02:00' }, // 다른 스태프
-      { workLogId: 'w4', staffId: 's1', timeSlot: '12:00 - 15:00' }, // 다른 시작
+      { workLogId: 'w4', staffId: 's1', timeSlot: '12:00 - 15:00' }, // 겹치지 않음
     ];
     const conflicts = detectSlotConflicts(target, siblings);
-    expect(conflicts).toEqual([{ workLogId: 'w2', reason: 'sameStaffSameStart' }]);
+    expect(conflicts).toEqual([{ workLogId: 'w2', reason: 'overlap' }]);
   });
 
   it('staffId 가 없으면 충돌 없음', () => {
