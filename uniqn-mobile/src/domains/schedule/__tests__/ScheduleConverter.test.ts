@@ -53,8 +53,8 @@ function createPosting(): JobPosting {
     questions: {
       items: [],
     },
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
 }
 
@@ -90,8 +90,8 @@ function createApplication(overrides: Partial<Application> = {}): Application {
         groupId: 'slot-1',
       },
     ],
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     ...overrides,
   };
 }

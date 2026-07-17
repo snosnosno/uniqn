@@ -474,6 +474,9 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
     try {
       logger.info('공고 생성', { ownerId: context.ownerId, title: input.title });
       const now = new Date();
+      // createdAt/updatedAt 는 ISO string 계약(timestampSchema). submittedAt(tournamentConfig)
+      // 은 Date 계약이라 now 를 그대로 유지.
+      const nowIso = now.toISOString();
       // 클라 생성 UUID — 직접 INSERT의 멱등키(ON CONFLICT id)로 사용해 재시도 시 중복 생성 방지
       const postingId = generateUUID();
       const current: Partial<JobPosting> = {
@@ -492,8 +495,8 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
         workspaceId: context.workspaceId,
         status: STATUS.JOB_POSTING.ACTIVE,
         current,
-        createdAt: now,
-        updatedAt: now,
+        createdAt: nowIso,
+        updatedAt: nowIso,
       });
       const jobPosting = assertCanonical(
         serialized,
@@ -539,7 +542,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       }
 
       const merged = mergeJobPostingInput(cur, input);
-      const updatedAt = new Date();
+      const updatedAt = new Date().toISOString();
       const serialized = serializeJobPostingV3(merged, {
         ownerId: cur.ownerId,
         ownerName: cur.ownerName,
@@ -733,7 +736,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
         },
       });
 
-      const updatedAt = new Date();
+      const updatedAt = new Date().toISOString();
       const serialized = serializeJobPostingV3(merged, {
         ownerId: cur.ownerId,
         ownerName: cur.ownerName,

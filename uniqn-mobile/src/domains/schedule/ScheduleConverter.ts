@@ -183,8 +183,10 @@ export class ScheduleConverter {
             isCancellationPending: application.status === STATUS.APPLICATION.CANCELLATION_PENDING,
             postingProjection,
             timeSlot: assignment.timeSlot,
-            createdAt: application.createdAt,
-            updatedAt: application.updatedAt,
+            // application.createdAt 은 ISO string(timestampSchema) — ScheduleEvent 는 Date 계약.
+            // workLog 브랜치(위)와 동일하게 Date 로 통일해 경계에서 변환.
+            createdAt: toDate(application.createdAt) ?? undefined,
+            updatedAt: toDate(application.updatedAt) ?? undefined,
           },
         ] satisfies ScheduleEvent[];
       })

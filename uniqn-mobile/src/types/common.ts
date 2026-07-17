@@ -22,11 +22,18 @@ export interface FcmTokenRecord {
 
 /**
  * 문서 기본 타입
+ *
+ * 타임스탬프 표현(`T`)은 도메인마다 런타임 진실이 다르다:
+ *  - 기본값 `Date` — 매퍼가 `new Date(row.created_at)`로 Date를 생산하는 도메인
+ *    (Board·Notification·WorkLog 등). 타입=런타임 정합.
+ *  - `string` — zod `timestampSchema`(normalizeToIsoString)로 ISO string으로
+ *    통일되는 도메인(JobPosting·Application). `FirebaseDocument<string>`로 졸업.
+ * 전 도메인이 string으로 졸업하면 기본값을 string으로 flip 후 파라미터를 제거한다.
  */
-export interface BaseDocument {
+export interface BaseDocument<T = Date> {
   id: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt?: T;
+  updatedAt?: T;
 }
 
 /**
@@ -35,7 +42,7 @@ export interface BaseDocument {
  * 문서 베이스 — 실질 정본이다. 이름의 `Firebase` 접두는 Firebase 시대 잔재일 뿐
  * `BaseDocument` 와 동일하며, 이름 일괄 치환은 광역 변경이라 별도 PR로 분리한다.
  */
-export type FirebaseDocument = BaseDocument;
+export type FirebaseDocument<T = Date> = BaseDocument<T>;
 
 /**
  * API 응답 타입

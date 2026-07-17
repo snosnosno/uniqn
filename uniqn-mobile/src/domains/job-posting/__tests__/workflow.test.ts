@@ -52,8 +52,8 @@ function createBasePosting(overrides: Partial<JobPosting> = {}): JobPosting {
     questions: {
       items: [],
     },
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     ...overrides,
   };
 }
