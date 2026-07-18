@@ -149,8 +149,8 @@ export default function CreateJobPostingScreen() {
     async (values: OrderSheetValues) => {
       try {
         const input = valuesToCreateInput(values);
-        // 선택 지점을 반영(대회는 venue_id NULL 유지 불변식 — 헬퍼가 tournament를 제외).
-        const finalInput = applySelectedVenue(input, selectedVenueId, values.postingType);
+        // 선택 지점을 반영(대회 포함 — 근무표에서 대회 인원/부족을 집계한다).
+        const finalInput = applySelectedVenue(input, selectedVenueId);
         const created = await createJobPosting.mutateAsync({ input: finalInput });
         setIsDirty(false);
         // 저장 성공 — setIsDirty(false) 리렌더 전 같은 틱의 back()/replace()가 stale 가드에
