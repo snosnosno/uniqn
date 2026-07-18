@@ -27,10 +27,19 @@ describe('shouldShowVenueChips', () => {
 
 /**
  * 대회 전용 케이스가 없는 이유: postingType 파라미터를 제거해 헬퍼가 공고 종류를
- * 구분할 수단 자체를 없앴다. "대회도 적용된다"는 이제 런타임 분기가 아니라
- * 타입 수준의 구조적 보장이므로, 같은 인자로 두 번 호출하는 동어반복 테스트를
- * 두지 않는다. 대회 경로의 실질 보장은 B4(jobManagementService.venueAutolink)와
- * 호출부 create.tsx 의 인자 축소가 담당한다.
+ * 구분할 수단 자체를 없앴다. 여기서는 같은 인자로 두 번 호출하는 동어반복 테스트를
+ * 두지 않는다.
+ *
+ * ⚠️ 다만 인자 축소는 인자 **개수**만 고정할 뿐 어떤 **값**이 흐르는지는 고정하지 못한다.
+ * 호출부를 `applySelectedVenue(input, values.postingType === 'tournament' ? undefined :
+ * selectedVenueId)` 로 되돌려도 인자는 2개 그대로라 tsc 도 이 파일도 전부 녹색이다.
+ * B4(jobManagementService.venueAutolink)도 지점 0/1개 자동연결만 덮어 "지점 2개+ · 사용자
+ * 칩 선택" 분기는 커버하지 않는다(같은 파일이 "지점 2개 이상 → 자동 연결하지 않는다"로 못박음).
+ *
+ * 대회 경로의 값 흐름(대회 + 지점 2개+ + 칩 선택 → venue_id)을 실제로 고정하는 것은
+ * `app/(employer)/my-postings/__tests__/CreateJobPostingScreen.test.tsx` 의
+ * "대회 지점칩 선택의 값 흐름(B5)" 스위트다 — 제출 경로에서 createJobPosting 이 받은
+ * input.venueId 를 직접 검증한다.
  */
 describe('applySelectedVenue', () => {
   // 헬퍼는 input을 읽고 스프레드만 하므로 최소 형상으로 캐스팅해도 로직 검증에 충분하다.
