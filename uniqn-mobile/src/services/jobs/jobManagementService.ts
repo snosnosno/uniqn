@@ -3,7 +3,6 @@ import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { jobPostingRepository } from '@/repositories';
 import { requireCurrentUser } from '@/services/auth/authCoreService';
 import { workspaceService } from '@/services/workspace';
-import { getCanonicalPostingType } from '@/domains/job-posting';
 import { BusinessError, PermissionError, ERROR_CODES } from '@/errors';
 import type { TaxSettings } from '@/utils/settlement';
 import type {
@@ -87,12 +86,11 @@ async function resolveWorkspaceId(ownerId: string, requestedWorkspaceId?: string
 const DEFAULT_VENUE_NAME = '기본 지점';
 
 /**
- * 비-대회 공고 + venueId 미지정 시 그리드 필요인원 자동 파생을 위해 기본 지점(venue 컨테이너)에 연결한다(D1 즉시성).
+ * 공고를 담을 기본 지점(venue 컨테이너)을 정한다.
+ * 대회도 포함한다 — 근무표에서 대회 기간 인원/부족을 집계하기 위함(2026-07-19 결정).
+ * 지점 1개면 그 지점, 0개면 기본 지점 생성, 2개 이상이면 미연결(폼 선택칩=B5 담당).
  *
- * - 지점 1개 → 그 지점에 자동 연결(1가게 사장이 "운영처" 개념을 만나지 않도록).
- * - 지점 0개 → 기본 지점을 멱등 생성(get-or-create)해 연결.
- * - 지점 2개 이상 → 자동 연결하지 않는다(폼 선택칩=B5 담당). venueId 미지정 유지.
- * - 대회 공고 / venueId 이미 지정 → 진입하지 않는다(venue_id NULL 또는 지정값 유지).
+ * venueId 가 이미 지정됐으면 진입하지 않는다(지정값 유지).
  *
  * NON-BLOCKING: 지점 조회/생성 실패는 공고 생성을 실패시키지 않는다(로그 후 venue_id 없이 진행, 기존 동작 보존).
  */
@@ -101,7 +99,7 @@ async function resolveDefaultVenueId(
   workspaceId: string
 ): Promise<string | undefined> {
   let resolvedVenueId = input.venueId;
-  if (getCanonicalPostingType(input.postingType) !== 'tournament' && !resolvedVenueId) {
+  if (!resolvedVenueId) {
     try {
       const venues = await jobPostingRepository.getVenueContainers(workspaceId);
       if (venues.length === 1) {

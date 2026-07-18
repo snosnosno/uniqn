@@ -5,7 +5,7 @@
  * - 비-대회 + venueId 미지정 + 지점 1개 → 그 지점 id 로 자동 연결한다.
  * - 지점 0개 → 기본 지점을 생성(get-or-create)해 그 id 로 연결한다.
  * - 지점 2개 이상 → 자동 연결하지 않는다(폼 선택칩=B5 담당). venueId 미지정 유지.
- * - 대회 공고 → 분기 진입하지 않는다(venue_id NULL 유지, 관련 리포 미호출).
+ * - 대회 공고 → 비-대회와 동일하게 자동 연결한다(근무표에 대회 인원 집계 — 2026-07-19 결정 반전).
  * - venueId 가 이미 지정됐으면 자동 연결 로직에 진입하지 않는다(그대로 사용).
  * - 지점 조회/생성 실패는 공고 생성을 실패시키지 않는다(non-blocking, 기존 동작 보존).
  */
@@ -188,7 +188,9 @@ describe('jobManagementService — 비-대회 공고 기본 지점 자동 연결
     expect(passedInput().venueId).toBeUndefined();
   });
 
-  it('대회 공고 → 분기 진입 안 함(venue_id NULL, 관련 리포 미호출)', async () => {
+  it('대회 공고 + 지점 1개 → 비-대회와 동일하게 그 지점 id 로 연결한다', async () => {
+    mockGetVenueContainers.mockResolvedValue([venueContainer('venue-1')]);
+
     await createJobPosting(
       createInput({ postingType: 'tournament' }),
       'employer-1',
@@ -196,9 +198,26 @@ describe('jobManagementService — 비-대회 공고 기본 지점 자동 연결
       'workspace-1'
     );
 
-    expect(mockGetVenueContainers).not.toHaveBeenCalled();
-    expect(mockGetOrCreateVenueContainer).not.toHaveBeenCalled();
-    expect(passedInput().venueId).toBeUndefined();
+    expect(mockGetVenueContainers).toHaveBeenCalledWith('workspace-1');
+    expect(passedInput().venueId).toBe('venue-1');
+  });
+
+  it('대회 공고 + 지점 0개 → 기본 지점을 생성해 연결한다(가게 없는 대회사 경로)', async () => {
+    mockGetVenueContainers.mockResolvedValue([]);
+    mockGetOrCreateVenueContainer.mockResolvedValue(venueContainer('venue-new'));
+
+    await createJobPosting(
+      createInput({ postingType: 'tournament' }),
+      'employer-1',
+      'Owner',
+      'workspace-1'
+    );
+
+    expect(mockGetOrCreateVenueContainer).toHaveBeenCalledWith('workspace-1', {
+      name: '기본 지점',
+      kind: 'dated',
+    });
+    expect(passedInput().venueId).toBe('venue-new');
   });
 
   it('venueId 가 이미 지정됐으면 자동 연결 로직에 진입하지 않는다(그대로 사용)', async () => {
