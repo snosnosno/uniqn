@@ -1,5 +1,5 @@
 /**
- * VenueDayPanel — 목표 인원 저장의 단건/요일반복(벌크) 분기 배선 검증
+ * VenueDayPanel — 필요 인원 저장의 단건/요일반복(벌크) 분기 배선 검증
  *
  * "이번 달 같은 요일 전체 적용" 체크박스가 저장 경로를 가르는지 검증한다:
  *  - off(기본): useSetVenueSoftTarget(단건) 만 호출, 벌크 미호출.
@@ -96,8 +96,8 @@ function renderPanel(date = '2026-07-05') {
 it('요일 반복 off(기본): 저장 시 단건 mutate 만 호출(벌크·확인 미발동)', () => {
   const { getByLabelText } = renderPanel();
 
-  fireEvent.changeText(getByLabelText('이 날 목표 인원'), '5');
-  fireEvent.press(getByLabelText('목표 인원 저장'));
+  fireEvent.changeText(getByLabelText('이 날 필요 인원'), '5');
+  fireEvent.press(getByLabelText('필요 인원 저장'));
 
   expect(singleMutate).toHaveBeenCalledTimes(1);
   // E5: write 경계에서 날짜키 정규화(toDateString) — venueId/date/count 매핑 검증.
@@ -114,8 +114,8 @@ it('요일 반복 on: 저장 시 confirmAction 확인(즉시 벌크 아님) → 
   const { getByLabelText } = renderPanel();
 
   fireEvent.press(getByLabelText('이번 달 같은 요일 전체 적용'));
-  fireEvent.changeText(getByLabelText('이 날 목표 인원'), '5');
-  fireEvent.press(getByLabelText('목표 인원 저장'));
+  fireEvent.changeText(getByLabelText('이 날 필요 인원'), '5');
+  fireEvent.press(getByLabelText('필요 인원 저장'));
 
   // 저장 즉시엔 확인 다이얼로그만 — 벌크는 아직 미호출(룰12: 조용한 덮어쓰기 방지).
   expect(bulkMutate).not.toHaveBeenCalled();
@@ -142,8 +142,8 @@ it('요일 반복 on + 남은 날짜 0(과거만 반환): 확인·두 변이 미
   const { getByLabelText } = renderPanel();
 
   fireEvent.press(getByLabelText('이번 달 같은 요일 전체 적용'));
-  fireEvent.changeText(getByLabelText('이 날 목표 인원'), '5');
-  fireEvent.press(getByLabelText('목표 인원 저장'));
+  fireEvent.changeText(getByLabelText('이 날 필요 인원'), '5');
+  fireEvent.press(getByLabelText('필요 인원 저장'));
 
   expect(mockConfirmAction).not.toHaveBeenCalled();
   expect(bulkMutate).not.toHaveBeenCalled();
@@ -155,8 +155,8 @@ it('요일 반복 on + 비정상 날짜: parseDateString 가드로 확인·두 �
   const { getByLabelText } = renderPanel('invalid');
 
   fireEvent.press(getByLabelText('이번 달 같은 요일 전체 적용'));
-  fireEvent.changeText(getByLabelText('이 날 목표 인원'), '5');
-  fireEvent.press(getByLabelText('목표 인원 저장'));
+  fireEvent.changeText(getByLabelText('이 날 필요 인원'), '5');
+  fireEvent.press(getByLabelText('필요 인원 저장'));
 
   expect(mockConfirmAction).not.toHaveBeenCalled();
   expect(singleMutate).not.toHaveBeenCalled();

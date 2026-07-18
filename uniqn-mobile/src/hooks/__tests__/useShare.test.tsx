@@ -66,7 +66,13 @@ describe('useShare.shareJobById', () => {
   });
 
   it('id 로 전체 공고를 조회한 뒤 실시간 확정수와 함께 공유 본문을 생성해 공유한다', async () => {
-    const job = { id: 'job-1', title: '딜러 모집' } as JobPosting;
+    // 공유 게이트(canShareJob) 통과를 위해 공유 가능한 상태를 명시한다.
+    const job = {
+      id: 'job-1',
+      title: '딜러 모집',
+      status: 'active',
+      postingType: 'regular',
+    } as JobPosting;
     mockGetJob.mockResolvedValue(job);
     // 실시간 확정수 맵(posting-prefixed) — buildJobShareText 에는 prefix 제거 submap 이 전달돼야 함
     jest

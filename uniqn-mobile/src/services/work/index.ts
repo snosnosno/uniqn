@@ -41,7 +41,6 @@ export {
   isCurrentlyWorking,
   getWorkLogStats,
   getMonthlyPayroll,
-  updateWorkTime,
   updatePayrollStatus,
   subscribeToWorkLog,
   subscribeToMyWorkLogs,

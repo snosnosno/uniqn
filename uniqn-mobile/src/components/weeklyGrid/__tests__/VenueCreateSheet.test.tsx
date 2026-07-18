@@ -63,8 +63,8 @@ it('이름 입력 후 제출 시 trim 된 이름으로 mutate 호출', () => {
     <VenueCreateSheet visible workspaceId="ws-1" onClose={jest.fn()} onCreated={jest.fn()} />
   );
 
-  fireEvent.changeText(getByLabelText('운영처 이름'), '  강남 홀덤펍  ');
-  fireEvent.press(getByLabelText('운영처 만들기'));
+  fireEvent.changeText(getByLabelText('지점 이름'), '  강남 홀덤펍  ');
+  fireEvent.press(getByLabelText('지점 만들기'));
 
   expect(mutate).toHaveBeenCalledTimes(1);
   expect(mutate.mock.calls[0][0]).toBe('강남 홀덤펍');
@@ -78,7 +78,7 @@ it('빈 이름이면 제출 버튼 비활성(미호출)', () => {
     <VenueCreateSheet visible workspaceId="ws-1" onClose={jest.fn()} onCreated={jest.fn()} />
   );
 
-  fireEvent.press(getByLabelText('운영처 만들기'));
+  fireEvent.press(getByLabelText('지점 만들기'));
   expect(mutate).not.toHaveBeenCalled();
 });
 
@@ -91,8 +91,8 @@ it('onSuccess 콜백: onCreated 호출 + 성공 토스트', () => {
     <VenueCreateSheet visible workspaceId="ws-1" onClose={jest.fn()} onCreated={onCreated} />
   );
 
-  fireEvent.changeText(getByLabelText('운영처 이름'), '강남 홀덤펍');
-  fireEvent.press(getByLabelText('운영처 만들기'));
+  fireEvent.changeText(getByLabelText('지점 이름'), '강남 홀덤펍');
+  fireEvent.press(getByLabelText('지점 만들기'));
 
   // mutate 의 2번째 인자(콜백 객체)를 직접 호출해 경로 검증
   const opts = mutate.mock.calls[0][1] as {
@@ -113,8 +113,8 @@ it('onError 콜백: 에러 토스트 호출', () => {
     <VenueCreateSheet visible workspaceId="ws-1" onClose={jest.fn()} onCreated={jest.fn()} />
   );
 
-  fireEvent.changeText(getByLabelText('운영처 이름'), '강남 홀덤펍');
-  fireEvent.press(getByLabelText('운영처 만들기'));
+  fireEvent.changeText(getByLabelText('지점 이름'), '강남 홀덤펍');
+  fireEvent.press(getByLabelText('지점 만들기'));
 
   const opts = mutate.mock.calls[0][1] as {
     onSuccess: (c: VenueContainer) => void;

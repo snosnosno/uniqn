@@ -35,5 +35,5 @@ export {
   normalizePostingAggregateStats,
   transitionPostingAggregateStats,
 } from './stats';
-export { isTournamentApprovalBlocked } from './approvalGate';
+export { isTournamentApprovalBlocked, canShareJob } from './approvalGate';
 export { BROWSABLE_POSTING_STATUSES } from './constants';

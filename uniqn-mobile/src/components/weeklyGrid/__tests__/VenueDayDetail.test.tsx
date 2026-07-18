@@ -81,7 +81,7 @@ it('에러: 재시도 노출 + 탭 시 refetch 호출', () => {
   expect(refetch).toHaveBeenCalledTimes(1);
 });
 
-it('빈 배열: 빈 상태 안내 + onAddPress 제공 시 "인원 배치하기" 탭 → 콜백 호출', () => {
+it('빈 배열: 빈 상태 안내 + onAddPress 제공 시 "근무 추가하기" 탭 → 콜백 호출', () => {
   const onAddPress = jest.fn();
   mockUseDaySlots.mockReturnValue({
     data: [],
@@ -95,8 +95,8 @@ it('빈 배열: 빈 상태 안내 + onAddPress 제공 시 "인원 배치하기" 
     <VenueDayDetail venueId="v1" date="2026-07-05" onAddPress={onAddPress} />
   );
 
-  expect(getByText('이 날 배치된 인원이 없어요')).toBeTruthy();
-  fireEvent.press(getByText('인원 배치하기'));
+  expect(getByText('이 날 근무 인원이 없어요')).toBeTruthy();
+  fireEvent.press(getByText('근무 추가하기'));
   expect(onAddPress).toHaveBeenCalledTimes(1);
 });
 

@@ -1,7 +1,7 @@
 /**
- * weeklyBatchNotification — "이번 주 배치 확인" 알림 payload 빌더(순수)
+ * weeklyBatchNotification — "이번 주 출근 확인" 알림 payload 빌더(순수)
  *
- * 운영자에게 이번 주 배치 확인을 요청하는 알림 레코드를 결정적으로 생성한다.
+ * 운영자에게 이번 주 출근 확인을 요청하는 알림 레코드를 결정적으로 생성한다.
  * 기존 푸시 인프라(public.notifications 직접 INSERT + AFTER 트리거 발송) 재사용을 전제로,
  * INSERT 가능한 형태만 빌드한다(서비스 계층이 repository.createNotification 으로 적재).
  *
@@ -30,7 +30,7 @@ import { NotificationType, type NotificationPriority } from '@/types/notificatio
 export const WEEKLY_GRID_NOTIFICATION_LINK = '/employer/weekly-grid';
 
 /**
- * "이번 주 배치 확인" 알림에 재사용하는 기존 NotificationType.
+ * "이번 주 출근 확인" 알림에 재사용하는 기존 NotificationType.
  * @see 파일 상단 "라우트/타입 재사용 한계" 주석
  */
 export const WEEKLY_BATCH_CONFIRM_TYPE: NotificationType = NotificationType.SCHEDULE_CREATED;
@@ -60,13 +60,13 @@ export interface WeeklyBatchNotificationPayload {
 function requireNonEmpty(value: string, field: string): string {
   const trimmed = (value ?? '').trim();
   if (trimmed.length === 0) {
-    throw new Error(`이번 주 배치 확인 알림: 필수값 누락(${field})`);
+    throw new Error(`이번 주 출근 확인 알림: 필수값 누락(${field})`);
   }
   return trimmed;
 }
 
 /**
- * "이번 주 배치 확인" 알림 payload 를 빌드한다(순수·결정적).
+ * "이번 주 출근 확인" 알림 payload 를 빌드한다(순수·결정적).
  *
  * @throws recipientId/workspaceId/venueId/weekLabel 중 비어있으면 Error
  */
@@ -91,8 +91,8 @@ export function buildWeeklyBatchConfirmNotification(
   return {
     recipientId,
     type: WEEKLY_BATCH_CONFIRM_TYPE,
-    title: '이번 주 배치 확인',
-    body: `${venueLabel} ${weekLabel} 배치를 확인해주세요.`,
+    title: '이번 주 출근 확인',
+    body: `${venueLabel} ${weekLabel} 출근을 확인해주세요.`,
     link: WEEKLY_GRID_NOTIFICATION_LINK,
     data,
     priority: 'high',
