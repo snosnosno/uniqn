@@ -160,7 +160,29 @@ describe('handleSupabaseError — P0001 (plpgsql RAISE EXCEPTION)', () => {
     }
   });
 
-  it('P0001 이지만 MAX_CAPACITY / INVALID_STATUS 아님 → 특별 매핑 안 함 (기존 동작 유지)', () => {
+  it('P0001 + RATE_LIMITED → SECURITY_RATE_LIMIT + 재시도 안내 (검색 열거 방어)', () => {
+    try {
+      handleSupabaseError(
+        {
+          code: 'P0001',
+          message: 'RATE_LIMITED: 검색 요청이 너무 잦습니다',
+          details: '',
+          hint: '',
+        },
+        { operation: 'rpc:search_users_by_nickname', table: 'users' }
+      );
+      throw new Error('should have thrown');
+    } catch (error) {
+      const appError = error as { code: string; userMessage: string; isRetryable: boolean };
+      expect(appError.code).toBe(ERROR_CODES.SECURITY_RATE_LIMIT);
+      // 원문 영문/기술 메시지가 아니라 사장님이 읽을 안내 문구여야 한다
+      expect(appError.userMessage).toBe('검색이 너무 잦습니다. 잠시 후 다시 시도해 주세요.');
+      // 시간이 지나면 풀리는 제한이므로 재시도 가능으로 표시한다
+      expect(appError.isRetryable).toBe(true);
+    }
+  });
+
+  it('P0001 이지만 MAX_CAPACITY / INVALID_STATUS / RATE_LIMITED 아님 → 특별 매핑 안 함 (기존 동작 유지)', () => {
     try {
       handleSupabaseError(
         {

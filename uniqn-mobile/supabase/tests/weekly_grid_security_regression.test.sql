@@ -21,7 +21,7 @@
 -- ============================================================
 
 BEGIN;
-SELECT plan(20);
+SELECT plan(22);
 
 -- ── A. anon EXECUTE 차단(8) ─────────────────────────────────────────────
 SELECT ok(NOT has_function_privilege('anon',
@@ -182,6 +182,22 @@ SELECT is((SELECT v FROM _sec WHERE k='m1_headcount'), '1',
   'D1 M1: get_venue_grid_summary 가 타 워크스페이스 유령행 제외(headcount=1)');
 SELECT is((SELECT v FROM _sec WHERE k='m1_slots'), '1',
   'D2 M1: get_venue_day_slots 가 타 워크스페이스 유령행 제외(행수=1)');
+
+-- ── E. 닉네임 검색 rate limit 회귀 가드 (2) ──────────────────────────────
+-- 검색 RPC 는 check_user_rate_limit → check_rate_limit 으로 rate_limits 테이블에
+-- DML 을 수행한다. 함수가 STABLE 로 되돌아가면 PostgreSQL 이 본문 DML 을 거부해
+-- 검색이 런타임에 통째로 터진다(`UPDATE is not allowed in a non-volatile function`).
+-- provolatile = 'v' 를 고정해 그 회귀를 차단한다.
+SELECT is(
+  (SELECT p.provolatile::text FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+   WHERE n.nspname = 'public' AND p.proname = 'search_users_by_nickname'),
+  'v',
+  'E1: search_users_by_nickname 은 VOLATILE (rate limit DML 가능)');
+SELECT is(
+  (SELECT p.provolatile::text FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+   WHERE n.nspname = 'public' AND p.proname = 'search_collaborator_candidates_by_nickname'),
+  'v',
+  'E2: search_collaborator_candidates_by_nickname 은 VOLATILE (rate limit DML 가능)');
 
 SELECT * FROM finish();
 ROLLBACK;
