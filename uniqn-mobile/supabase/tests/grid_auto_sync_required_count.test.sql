@@ -17,7 +17,7 @@
 --   깨끗한 not ok 산출).
 -- ============================================================
 BEGIN;
-SELECT plan(5);
+SELECT plan(8);
 
 CREATE TEMP TABLE _g (k text PRIMARY KEY, v text);
 
@@ -35,15 +35,23 @@ DECLARE
   v_merge_hc int := -1;
   v_merge_rc int := -1;
   v_req_hconly int := -1;
+  v_admin uuid := gen_random_uuid();   -- approved 대회 INSERT 전용(보안 트리거 게이트)
+  v_cT    uuid;                        -- 대회 컨테이너
+  v_tPend uuid := gen_random_uuid();   -- 승인 대기 대회
+  v_tAppr uuid := gen_random_uuid();   -- 승인 완료 대회
+  v_tRej  uuid := gen_random_uuid();   -- 승인 거절 대회
+  v_req_pending int := -1; v_req_approved int := -1; v_req_rejected int := -1;
 BEGIN
   -- baseline(2026-07-12): raw_app_meta_data.role 를 public.users role 과 일치시켜
   --   prevent_role_escalation 트리거의 ON CONFLICT role 변경 거부를 회피.
   INSERT INTO auth.users (id,email,aud,role,encrypted_password,raw_app_meta_data,created_at,updated_at) VALUES
     (v_owner,'__sql_fixture_gas_owner@test.local','authenticated','authenticated','','{"role":"employer"}'::jsonb,now(),now()),
-    (v_staff,'__sql_fixture_gas_staff@test.local','authenticated','authenticated','','{"role":"staff"}'::jsonb,now(),now());
+    (v_staff,'__sql_fixture_gas_staff@test.local','authenticated','authenticated','','{"role":"staff"}'::jsonb,now(),now()),
+    (v_admin,'__sql_fixture_gas_admin@test.local','authenticated','authenticated','','{"role":"admin"}'::jsonb,now(),now());
   INSERT INTO public.users (id,email,name,role,is_active,created_at,updated_at) VALUES
     (v_owner,'__sql_fixture_gas_owner@test.local','GAS_OWNER','employer',true,now(),now()),
-    (v_staff,'__sql_fixture_gas_staff@test.local','GAS_STAFF','staff',true,now(),now())
+    (v_staff,'__sql_fixture_gas_staff@test.local','GAS_STAFF','staff',true,now(),now()),
+    (v_admin,'__sql_fixture_gas_admin@test.local','GAS_ADMIN','admin',true,now(),now())
   ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, role = EXCLUDED.role, is_active = EXCLUDED.is_active;
   INSERT INTO public.workspaces (id,name,owner_id,created_at,updated_at) VALUES (v_ws,'__sql_fixture_gas_ws',v_owner,now(),now());
 
@@ -52,6 +60,7 @@ BEGIN
   -- 두 개의 운영처 컨테이너 (title+kind 조합이 달라 uniq_venue_container 충돌 없음)
   v_cA := (public.get_or_create_venue_container(v_ws, '운영처GAS_A', 'dated') ->> 'containerId')::uuid;
   v_cB := (public.get_or_create_venue_container(v_ws, '운영처GAS_B', 'fixed') ->> 'containerId')::uuid;
+  v_cT := (public.get_or_create_venue_container(v_ws, '운영처GAS_T', 'dated') ->> 'containerId')::uuid;
 
   -- dated 스팬 공고:
   --   8/10 딜러 2 + 플로어 1 (count) → required 3
@@ -73,6 +82,46 @@ BEGIN
     '{"kind":"fixed","requirements":[{"date":null,"timeSlots":[{"startTime":"18:00","roles":[{"role":"dealer","count":5}]}]}]}'::jsonb,
     now(), now()
   );
+
+  -- 대회 3건: 승인 대기 / 승인 완료 / 승인 거절 — 같은 컨테이너, 서로 다른 날짜
+  --   승인 대기 9/01 딜러 8 → required 8 (산입)
+  --   승인 완료 9/02 딜러 5 → required 5 (산입)
+  --   승인 거절 9/03 딜러 9 → required 0 (배제) ← 이 케이스가 RED
+  -- pending·rejected 는 employer 컨텍스트로 통과한다(트리거는 approved 쓰기만 게이트).
+  INSERT INTO public.job_postings (id,owner_id,workspace_id,title,status,posting_type,venue_id,tournament_config,schedule,created_at,updated_at)
+  VALUES
+  (
+    v_tPend, v_owner, v_ws, '__sql_fixture_gas_t_pending', 'active'::posting_status, 'tournament'::posting_type, v_cT,
+    '{"approvalStatus":"pending"}'::jsonb,
+    '{"kind":"dated","requirements":[{"date":"2026-09-01","timeSlots":[{"startTime":"18:00","roles":[{"role":"dealer","count":8}]}]}]}'::jsonb,
+    now(), now()
+  ),
+  (
+    v_tRej, v_owner, v_ws, '__sql_fixture_gas_t_rejected', 'active'::posting_status, 'tournament'::posting_type, v_cT,
+    '{"approvalStatus":"rejected","rejectionReason":"테스트용 거절 사유입니다"}'::jsonb,
+    '{"kind":"dated","requirements":[{"date":"2026-09-03","timeSlots":[{"startTime":"18:00","roles":[{"role":"dealer","count":9}]}]}]}'::jsonb,
+    now(), now()
+  );
+
+  -- 승인 완료 대회는 admin 컨텍스트로만 INSERT 가능하다.
+  -- trg_tournament_approval_authority: approvalStatus='approved' 쓰기는 admin JWT 또는
+  -- auth.uid() IS NULL(service/Edge Function) 만 허용 — 보안 하드닝 HIGH-2 불변식.
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_admin, 'role', 'authenticated',
+                      'app_metadata', json_build_object('role','admin'))::text, true);
+
+  INSERT INTO public.job_postings (id,owner_id,workspace_id,title,status,posting_type,venue_id,tournament_config,schedule,created_at,updated_at)
+  VALUES (
+    v_tAppr, v_owner, v_ws, '__sql_fixture_gas_t_approved', 'active'::posting_status, 'tournament'::posting_type, v_cT,
+    '{"approvalStatus":"approved"}'::jsonb,
+    '{"kind":"dated","requirements":[{"date":"2026-09-02","timeSlots":[{"startTime":"18:00","roles":[{"role":"dealer","count":5}]}]}]}'::jsonb,
+    now(), now()
+  );
+
+  -- 인증 컨텍스트를 owner 로 복원한다. get_venue_grid_summary 가
+  -- is_workspace_member(v_ws, auth.uid()) 게이트를 통과해야 아래 캡처가 동작한다.
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_owner, 'role','authenticated')::text, true);
 
   -- 8/10 근무 로그 1건(spanA) → 같은 날짜에 staffed+required 동시(both-sides 병합)
   -- fixed 컨테이너에도 1건 → staffed 비어있지 않게(required_count=0 을 실 행에서 확인)
@@ -108,11 +157,38 @@ BEGIN
   EXCEPTION WHEN undefined_column THEN v_reqfixed := -1;
   END;
 
+  BEGIN
+    SELECT COALESCE(required_count, 0) INTO v_req_pending
+    FROM public.get_venue_grid_summary(v_cT, '2026-09-01', '2026-09-30')
+    WHERE d = '2026-09-01';
+  EXCEPTION WHEN undefined_column THEN v_req_pending := -1;
+  END;
+
+  BEGIN
+    SELECT COALESCE(required_count, 0) INTO v_req_approved
+    FROM public.get_venue_grid_summary(v_cT, '2026-09-01', '2026-09-30')
+    WHERE d = '2026-09-02';
+  EXCEPTION WHEN undefined_column THEN v_req_approved := -1;
+  END;
+
+  -- 거절 대회 날짜는 배제되어 행 자체가 없어야 한다 → NOT FOUND 시 0 유지
+  v_req_rejected := 0;
+  BEGIN
+    SELECT COALESCE(required_count, 0) INTO v_req_rejected
+    FROM public.get_venue_grid_summary(v_cT, '2026-09-01', '2026-09-30')
+    WHERE d = '2026-09-03';
+    IF NOT FOUND THEN v_req_rejected := 0; END IF;
+  EXCEPTION WHEN undefined_column THEN v_req_rejected := -1;
+  END;
+
   INSERT INTO _g VALUES
     ('req3',       v_req3::text),
     ('reqfixed',   v_reqfixed::text),
     ('merge',      v_merge_hc::text || '/' || v_merge_rc::text),
-    ('req_hconly', v_req_hconly::text);
+    ('req_hconly', v_req_hconly::text),
+    ('req_pending',  v_req_pending::text),
+    ('req_approved', v_req_approved::text),
+    ('req_rejected', v_req_rejected::text);
 END $$;
 
 -- 1) 반환 계약: 시그니처에 required_count 열 포함 (데이터 무관 introspection)
@@ -132,6 +208,15 @@ SELECT is((SELECT v FROM _g WHERE k = 'merge'), '1/3', 'both-sides 병합: 같�
 
 -- 5) headcount-only 폴백: count→headcount COALESCE (seat-basis SSOT 일치)
 SELECT is((SELECT v FROM _g WHERE k = 'req_hconly'), '2', 'headcount-only 역할도 required_count 반영 = 2 (count→headcount COALESCE)');
+
+-- 6) 승인 대기 대회는 필요 인원에 산입 (제품 결정: 승인 병목 가시화)
+SELECT is((SELECT v FROM _g WHERE k = 'req_pending'), '8', '승인 대기(pending) 대회의 좌석은 required_count 에 산입 = 8');
+
+-- 7) 승인 완료 대회는 필요 인원에 산입
+SELECT is((SELECT v FROM _g WHERE k = 'req_approved'), '5', '승인 완료(approved) 대회의 좌석은 required_count 에 산입 = 5');
+
+-- 8) 승인 거절 대회는 배제 — 열리지 않을 대회가 영구 부족분으로 남지 않아야 한다
+SELECT is((SELECT v FROM _g WHERE k = 'req_rejected'), '0', '승인 거절(rejected) 대회의 좌석은 required_count 에서 배제 = 0');
 
 SELECT * FROM finish();
 ROLLBACK;
