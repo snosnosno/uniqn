@@ -50,7 +50,9 @@
 **마이그레이션 불필요** — 트리거 INSERT는 `(recipient_id, type, category, title, body, data, priority)`만 채우고 `link` 컬럼을 쓰지 않으므로(`20260711030000_...sql:37`), 라우팅은 전적으로 `NOTIFICATION_ROUTE_MAP` 소관이다. `data`에 `{applicationId, jobPostingId}`가 이미 실려 있다(`:43`).
 
 **변경 지점**
-- `src/types/notification.ts` — `NotificationType.CANCELLATION_REQUESTED = 'cancellation_requested'`, `NOTIFICATION_CATEGORY_MAP`(application), `NOTIFICATION_PRIORITY_MAP`(high), `NOTIFICATION_TYPE_LABELS`('취소 요청')
+- `src/types/notification.ts` — `NotificationType.CANCELLATION_REQUESTED = 'cancellation_requested'`, `NOTIFICATION_TYPE_TO_CATEGORY`(application), `NOTIFICATION_DEFAULT_PRIORITY`(high), `NOTIFICATION_TYPE_LABELS`('취소 요청')
+- `src/shared/deeplink/types.ts` — `DeepLinkRoute` 유니온에 `{ name: 'employer/cancellation-requests'; params: { jobId: string } }` 추가 (기존 유니온에 취소요청 화면 variant가 **없음**)
+- `src/shared/deeplink/RouteMapper.ts` — `case`로 `EXPO_ROUTES.postingCancellationRequests` 매핑. 해당 EXPO_ROUTES 키와 `EMPLOYER_REQUIRED_ROUTES` 등록은 이미 존재
 - `src/constants/notificationTemplates.ts` — 템플릿 추가
 - `src/components/notifications/NotificationIcon.tsx` — 아이콘 매핑
 - `src/shared/deeplink/NotificationRouteMap.ts` — `data.jobPostingId` → `postingCancellationRequests`(`/(employer)/my-postings/[id]/cancellation-requests`), `jobPostingId` 부재 시 `employer/my-postings` 폴백
@@ -79,7 +81,8 @@
 
 **테스트**
 - 유닛: `app/(app)/__tests__/home.test.tsx` 삭제. `TabHeader.test.tsx`·`authRedirect.test.ts`·`useAuthGuard.test.ts` 홈 기대값 수정
-- e2e: `e2e/pages/app/tabs/home.page.ts` 삭제, `home-logo-no-stack-accumulation.spec.ts` 삭제(로고 탭 동작 자체가 사라짐), p0 스펙 4건(`admin-report-resolution`·`rbac-access`·`e2e-user-journeys`·`auth-login`)의 `page.goto('/home')`를 `page.goto('/home-jobs')`로 치환(스펙 삭제가 아니라 경로 교체 — 각 스펙의 검증 대상은 홈이 아니다)
+- e2e: `home-logo-no-stack-accumulation.spec.ts` 삭제(로고 탭 동작 자체가 사라짐), p0 스펙 4건(`admin-report-resolution`·`rbac-access`·`e2e-user-journeys`·`auth-login`)의 `page.goto('/home')`를 `page.goto('/home-jobs')`로 치환(스펙 삭제가 아니라 경로 교체 — 각 스펙의 검증 대상은 홈이 아니다)
+- ⚠️ **`e2e/pages/app/tabs/home.page.ts`는 삭제 금지** — 이름과 달리 홈 대시보드가 아니라 **구인구직 탭 페이지 오브젝트**이며 `e2e/tests/p2-standard/jobs-home.spec.ts:6`이 사용 중. `goto()` 내부의 `home_dashboard_enabled` 기반 `/home` → 탭 리다이렉트 대기 로직만 제거한다
 - `NotificationRouteMap.test.ts` — 신규 타입 케이스 추가
 
 ## 6. 의도적 손실
