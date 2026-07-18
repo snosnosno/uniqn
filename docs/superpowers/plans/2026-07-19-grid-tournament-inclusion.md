@@ -48,7 +48,11 @@ Task 1(DB)은 클라이언트와 독립이다 — pgTAP이 `job_postings`에 `ve
 - Consumes: 기존 `public.get_venue_grid_summary(uuid, text, text)` — 반환 `TABLE(d text, headcount integer, job_count integer, required_count integer)`
 - Produces: 같은 시그니처·같은 반환 타입. `required` CTE만 거절 대회를 제외한다. 후속 Task는 이 함수를 호출하지 않는다(독립).
 
-> ⚠️ **관찰 포인트**: `job_postings`에 `posting_type='tournament'` + `tournament_config->>'approvalStatus'='pending'`인 행이 INSERT되면 baseline 트리거가 발화한다(알림 생성 계열). pgTAP 트랜잭션에서 이 트리거가 에러를 내면 **우회하지 말고 에러 전문을 보고**하라 — 테스트 설계가 아니라 트리거 쪽 사실 확인이 필요한 신호다.
+> ⚠️ **보안 트리거 (2026-07-19 실측 교정)**: `trg_tournament_approval_authority`가 `job_postings`의 BEFORE INSERT/UPDATE에 걸려 있고, `enforce_tournament_approval_authority()`는 **`approvalStatus='approved'`로 만드는 쓰기만** 차단한다(`20260717093000_grid_order_sheet_security_hardening.sql`). 통과 조건은 admin JWT 또는 `auth.uid() IS NULL`(service/Edge Function/마이그레이션 경로)다.
+>
+> `pending`·`rejected`는 무조건 통과하므로 employer 컨텍스트로 INSERT해도 된다. **`approved` 1건만 admin JWT로 INSERT해야 한다.** 이 게이트는 보안 하드닝 HIGH-2의 어서션된 불변식(`grid_order_sheet_security_hardening.test.sql` 케이스 5·7)이므로 **트리거를 손대거나 우회하지 마라.**
+>
+> 세 건을 한 INSERT 문에 묶으면 approved 1건이 막히면서 트랜잭션 전체가 롤백되어 `plan(8)`이 통째로 `Tests: 0`이 된다 — 아래 Step 1은 그래서 컨텍스트를 나눈다.
 
 - [ ] **Step 1: 실패하는 테스트 작성 — 승인 상태별 3케이스 추가**
 
@@ -63,6 +67,7 @@ SELECT plan(8);
 다음으로 `DO $$` 블록의 `DECLARE` 섹션에서 마지막 변수 선언 `v_req_hconly int := -1;` **바로 아래**에 다음 5줄을 추가한다:
 
 ```sql
+  v_admin uuid := gen_random_uuid();   -- approved 대회 INSERT 전용(보안 트리거 게이트)
   v_cT    uuid;                        -- 대회 컨테이너
   v_tPend uuid := gen_random_uuid();   -- 승인 대기 대회
   v_tAppr uuid := gen_random_uuid();   -- 승인 완료 대회
@@ -70,19 +75,36 @@ SELECT plan(8);
   v_req_pending int := -1; v_req_approved int := -1; v_req_rejected int := -1;
 ```
 
+다음으로 admin 사용자를 추가한다. `auth.users` INSERT의 마지막 행 끝 `...'{"role":"staff"}'::jsonb,now(),now());`을 다음으로 바꾼다(세미콜론이 쉼표로 바뀌고 행이 하나 늘어난다):
+
+```sql
+    (v_staff,'__sql_fixture_gas_staff@test.local','authenticated','authenticated','','{"role":"staff"}'::jsonb,now(),now()),
+    (v_admin,'__sql_fixture_gas_admin@test.local','authenticated','authenticated','','{"role":"admin"}'::jsonb,now(),now());
+```
+
+이어서 `public.users` INSERT의 마지막 값 행 `(v_staff,'__sql_fixture_gas_staff@test.local','GAS_STAFF','staff',true,now(),now())`을 다음으로 바꾼다:
+
+```sql
+    (v_staff,'__sql_fixture_gas_staff@test.local','GAS_STAFF','staff',true,now(),now()),
+    (v_admin,'__sql_fixture_gas_admin@test.local','GAS_ADMIN','admin',true,now(),now())
+```
+
+> `auth.users.raw_app_meta_data.role`과 `public.users.role`을 반드시 일치시켜라(둘 다 `admin`). 불일치하면 `prevent_role_escalation` 트리거가 ON CONFLICT 경로에서 role 변경을 거부한다 — 이 파일 상단 주석에 이미 기록된 함정이다.
+
 다음으로 컨테이너 생성부에서 `v_cB := (public.get_or_create_venue_container(v_ws, '운영처GAS_B', 'fixed') ->> 'containerId')::uuid;` **바로 아래**에 다음을 추가한다:
 
 ```sql
   v_cT := (public.get_or_create_venue_container(v_ws, '운영처GAS_T', 'dated') ->> 'containerId')::uuid;
 ```
 
-다음으로 fixed 스팬 공고 INSERT 블록 **바로 아래**(주석 `-- 8/10 근무 로그 1건(spanA)` 바로 위)에 대회 공고 3건을 추가한다:
+다음으로 fixed 스팬 공고 INSERT 블록 **바로 아래**(주석 `-- 8/10 근무 로그 1건(spanA)` 바로 위)에 대회 공고 3건을 추가한다. **인증 컨텍스트를 나눠야 한다** — `approved`는 employer 컨텍스트에서 보안 트리거에 막힌다:
 
 ```sql
   -- 대회 3건: 승인 대기 / 승인 완료 / 승인 거절 — 같은 컨테이너, 서로 다른 날짜
   --   승인 대기 9/01 딜러 8 → required 8 (산입)
   --   승인 완료 9/02 딜러 5 → required 5 (산입)
   --   승인 거절 9/03 딜러 9 → required 0 (배제) ← 이 케이스가 RED
+  -- pending·rejected 는 employer 컨텍스트로 통과한다(트리거는 approved 쓰기만 게이트).
   INSERT INTO public.job_postings (id,owner_id,workspace_id,title,status,posting_type,venue_id,tournament_config,schedule,created_at,updated_at)
   VALUES
   (
@@ -92,17 +114,31 @@ SELECT plan(8);
     now(), now()
   ),
   (
-    v_tAppr, v_owner, v_ws, '__sql_fixture_gas_t_approved', 'active'::posting_status, 'tournament'::posting_type, v_cT,
-    '{"approvalStatus":"approved"}'::jsonb,
-    '{"kind":"dated","requirements":[{"date":"2026-09-02","timeSlots":[{"startTime":"18:00","roles":[{"role":"dealer","count":5}]}]}]}'::jsonb,
-    now(), now()
-  ),
-  (
     v_tRej, v_owner, v_ws, '__sql_fixture_gas_t_rejected', 'active'::posting_status, 'tournament'::posting_type, v_cT,
     '{"approvalStatus":"rejected","rejectionReason":"테스트용 거절 사유입니다"}'::jsonb,
     '{"kind":"dated","requirements":[{"date":"2026-09-03","timeSlots":[{"startTime":"18:00","roles":[{"role":"dealer","count":9}]}]}]}'::jsonb,
     now(), now()
   );
+
+  -- 승인 완료 대회는 admin 컨텍스트로만 INSERT 가능하다.
+  -- trg_tournament_approval_authority: approvalStatus='approved' 쓰기는 admin JWT 또는
+  -- auth.uid() IS NULL(service/Edge Function) 만 허용 — 보안 하드닝 HIGH-2 불변식.
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_admin, 'role', 'authenticated',
+                      'app_metadata', json_build_object('role','admin'))::text, true);
+
+  INSERT INTO public.job_postings (id,owner_id,workspace_id,title,status,posting_type,venue_id,tournament_config,schedule,created_at,updated_at)
+  VALUES (
+    v_tAppr, v_owner, v_ws, '__sql_fixture_gas_t_approved', 'active'::posting_status, 'tournament'::posting_type, v_cT,
+    '{"approvalStatus":"approved"}'::jsonb,
+    '{"kind":"dated","requirements":[{"date":"2026-09-02","timeSlots":[{"startTime":"18:00","roles":[{"role":"dealer","count":5}]}]}]}'::jsonb,
+    now(), now()
+  );
+
+  -- 인증 컨텍스트를 owner 로 복원한다. get_venue_grid_summary 가
+  -- is_workspace_member(v_ws, auth.uid()) 게이트를 통과해야 아래 캡처가 동작한다.
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_owner, 'role','authenticated')::text, true);
 ```
 
 다음으로 `v_reqfixed` 캡처 블록 **바로 아래**(`INSERT INTO _g VALUES` 바로 위)에 캡처 3건을 추가한다:
