@@ -52,7 +52,7 @@
 **변경 지점**
 - `src/types/notification.ts` — `NotificationType.CANCELLATION_REQUESTED = 'cancellation_requested'`, `NOTIFICATION_CATEGORY_MAP`(application), `NOTIFICATION_PRIORITY_MAP`(high), `NOTIFICATION_TYPE_LABELS`('취소 요청')
 - `src/constants/notificationTemplates.ts` — 템플릿 추가
-- `src/components/.../NotificationIcon.tsx` — 아이콘 매핑
+- `src/components/notifications/NotificationIcon.tsx` — 아이콘 매핑
 - `src/shared/deeplink/NotificationRouteMap.ts` — `data.jobPostingId` → `postingCancellationRequests`(`/(employer)/my-postings/[id]/cancellation-requests`), `jobPostingId` 부재 시 `employer/my-postings` 폴백
 - `isEmployerOnlyNotification`의 employer 타입 목록에 추가
 
@@ -79,7 +79,7 @@
 
 **테스트**
 - 유닛: `app/(app)/__tests__/home.test.tsx` 삭제. `TabHeader.test.tsx`·`authRedirect.test.ts`·`useAuthGuard.test.ts` 홈 기대값 수정
-- e2e: `e2e/pages/app/tabs/home.page.ts` 삭제, `home-logo-no-stack-accumulation.spec.ts` 삭제(로고 탭 동작 자체가 사라짐), p0 스펙 4건(`admin-report-resolution`·`rbac-access`·`e2e-user-journeys`·`auth-login`)의 `page.goto('/home')` 정리
+- e2e: `e2e/pages/app/tabs/home.page.ts` 삭제, `home-logo-no-stack-accumulation.spec.ts` 삭제(로고 탭 동작 자체가 사라짐), p0 스펙 4건(`admin-report-resolution`·`rbac-access`·`e2e-user-journeys`·`auth-login`)의 `page.goto('/home')`를 `page.goto('/home-jobs')`로 치환(스펙 삭제가 아니라 경로 교체 — 각 스펙의 검증 대상은 홈이 아니다)
 - `NotificationRouteMap.test.ts` — 신규 타입 케이스 추가
 
 ## 6. 의도적 손실
