@@ -3,6 +3,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
 import { useCreateJobPosting, useMyJobPostings } from '@/hooks/useJobManagement';
+import { useActiveWorkspace } from '@/hooks/workspace';
+import { useVenueContainers } from '@/hooks/weeklyGrid';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { useTemplateManager } from '@/hooks/useTemplateManager';
 import { useToastStore } from '@/stores/toastStore';
@@ -25,6 +27,8 @@ import { toDate } from '@/utils/date';
 import { TemplateModal } from '@/components/employer/job-form/modals/TemplateModal';
 import { StackHeader } from '@/components/headers';
 import { OrderSheetScreen } from '@/components/employer/order-sheet/OrderSheetScreen';
+import { VenueSelectChips } from '@/components/employer/order-sheet/VenueSelectChips';
+import { shouldShowVenueChips, applySelectedVenue } from '@/utils/order-sheet/venueSelection';
 import type { OrderSheetPreset } from '@/components/employer/order-sheet/PresetCarousel';
 import type { OrderSheetFormValues, OrderSheetValues } from '@/schemas/orderSheet.schema';
 
@@ -49,6 +53,14 @@ export default function CreateJobPostingScreen() {
   const prefillCount = Number.isFinite(prefillCountParsed) ? prefillCountParsed : undefined;
 
   const [isDirty, setIsDirty] = useState(false);
+
+  // 다중 지점 employer — 이 공고를 어느 지점 배치(주간 그리드)에 반영할지 고르는 칩(B5).
+  // 그리드 "공고 열기"(venueId 라우트 파라미터) 진입은 이미 지점이 정해져 미노출.
+  const { activeWorkspace } = useActiveWorkspace();
+  const venuesQuery = useVenueContainers(activeWorkspace?.id);
+  const venues = useMemo(() => venuesQuery.data ?? [], [venuesQuery.data]);
+  const [selectedVenueId, setSelectedVenueId] = useState<string | undefined>(undefined);
+  const showVenueChips = shouldShowVenueChips(venues.length, venueId);
 
   // 주문서 초기값: 그리드 프리필 흡수(정규화 내장) + 프로필 연락처 프리필(리뷰 H4 — "재공고 타이핑 0")
   // useAuth().user는 AuthUser(phone 없음, phoneNumber만) → profile(UserProfile.phone) 사용
@@ -137,7 +149,9 @@ export default function CreateJobPostingScreen() {
     async (values: OrderSheetValues) => {
       try {
         const input = valuesToCreateInput(values);
-        const created = await createJobPosting.mutateAsync({ input });
+        // 선택 지점을 반영(대회는 venue_id NULL 유지 불변식 — 헬퍼가 tournament를 제외).
+        const finalInput = applySelectedVenue(input, selectedVenueId, values.postingType);
+        const created = await createJobPosting.mutateAsync({ input: finalInput });
         setIsDirty(false);
         // 저장 성공 — setIsDirty(false) 리렌더 전 같은 틱의 back()/replace()가 stale 가드에
         // 걸리지 않게 동기 표식(S3 이월 ④). 그리드 복귀·완료 화면 두 분기 공통 지점.
@@ -204,12 +218,27 @@ export default function CreateJobPostingScreen() {
         });
       }
     },
-    [createJobPosting, venueId, router, addToast, templateManager.templates.length, markClean]
+    [
+      createJobPosting,
+      venueId,
+      selectedVenueId,
+      router,
+      addToast,
+      templateManager.templates.length,
+      markClean,
+    ]
   );
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
       <StackHeader title="공고 작성" fallbackHref="/(app)/(tabs)/employer" />
+      {showVenueChips ? (
+        <VenueSelectChips
+          venues={venues}
+          selectedId={selectedVenueId}
+          onSelect={setSelectedVenueId}
+        />
+      ) : null}
       <OrderSheetScreen
         initialValues={initialValues}
         onSubmit={handleOrderSheetSubmit}

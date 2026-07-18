@@ -36,6 +36,16 @@ jest.mock('@/hooks/useUnsavedChangesGuard', () => ({
   useUnsavedChangesGuard: () => ({ markClean: jest.fn() }),
 }));
 
+// B5 지점 선택 칩 — 활성 워크스페이스/지점 목록 훅(TanStack Query·store)은 이 회귀 테스트 범위 밖.
+// 워크스페이스 미보유로 고정해 칩 비노출 경로만 통과시킨다(QueryClient 요구 회피).
+jest.mock('@/hooks/workspace', () => ({
+  useActiveWorkspace: () => ({ activeWorkspace: undefined }),
+}));
+
+jest.mock('@/hooks/weeklyGrid', () => ({
+  useVenueContainers: () => ({ data: [] }),
+}));
+
 jest.mock('@/hooks/useTemplateManager', () => ({
   useTemplateManager: () => ({
     templates: [],
