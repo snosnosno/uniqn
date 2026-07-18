@@ -66,8 +66,10 @@ BEGIN
       AND COALESCE(NULLIF(btrim(r->>'role'), ''), NULLIF(btrim(r->>'name'), '')) IS NOT NULL
       -- 승인 거절 대회 배제: 열리지 않을 대회가 영구 부족분으로 남지 않게 한다.
       -- 대회 status 는 'active' 고정이라 status 필터로는 잡히지 않는다.
+      -- COALESCE 필수: tournament_config 가 NULL 이면 3값 논리로 NOT(true AND NULL)=NULL
+      -- 이 되어 거절되지 않은 대회까지 조용히 배제된다(과소집계).
       AND NOT (jp.posting_type = 'tournament'
-               AND jp.tournament_config->>'approvalStatus' = 'rejected')
+               AND COALESCE(jp.tournament_config->>'approvalStatus', '') = 'rejected')
     GROUP BY (req->>'date')
   )
   SELECT

@@ -17,7 +17,7 @@
 --   깨끗한 not ok 산출).
 -- ============================================================
 BEGIN;
-SELECT plan(8);
+SELECT plan(9);
 
 CREATE TEMP TABLE _g (k text PRIMARY KEY, v text);
 
@@ -40,7 +40,9 @@ DECLARE
   v_tPend uuid := gen_random_uuid();   -- 승인 대기 대회
   v_tAppr uuid := gen_random_uuid();   -- 승인 완료 대회
   v_tRej  uuid := gen_random_uuid();   -- 승인 거절 대회
+  v_tNull uuid := gen_random_uuid();   -- tournament_config 자체가 NULL 인 대회(3값 논리 방어)
   v_req_pending int := -1; v_req_approved int := -1; v_req_rejected int := -1;
+  v_req_nullcfg int := -1;
 BEGIN
   -- baseline(2026-07-12): raw_app_meta_data.role 를 public.users role 과 일치시켜
   --   prevent_role_escalation 트리거의 ON CONFLICT role 변경 거부를 회피.
@@ -87,7 +89,8 @@ BEGIN
   --   승인 대기 9/01 딜러 8 → required 8 (산입)
   --   승인 완료 9/02 딜러 5 → required 5 (산입)
   --   승인 거절 9/03 딜러 9 → required 0 (배제) ← 이 케이스가 RED
-  -- pending·rejected 는 employer 컨텍스트로 통과한다(트리거는 approved 쓰기만 게이트).
+  --   config NULL 9/04 딜러 4 → required 4 (산입) ← 3값 논리 방어 케이스
+  -- pending·rejected·NULL 은 employer 컨텍스트로 통과한다(트리거는 approved 쓰기만 게이트).
   INSERT INTO public.job_postings (id,owner_id,workspace_id,title,status,posting_type,venue_id,tournament_config,schedule,created_at,updated_at)
   VALUES
   (
@@ -100,6 +103,14 @@ BEGIN
     v_tRej, v_owner, v_ws, '__sql_fixture_gas_t_rejected', 'active'::posting_status, 'tournament'::posting_type, v_cT,
     '{"approvalStatus":"rejected","rejectionReason":"테스트용 거절 사유입니다"}'::jsonb,
     '{"kind":"dated","requirements":[{"date":"2026-09-03","timeSlots":[{"startTime":"18:00","roles":[{"role":"dealer","count":9}]}]}]}'::jsonb,
+    now(), now()
+  ),
+  -- tournament_config 컬럼은 nullable + default 없음 + CHECK 없음 → 실제로 NULL 이 존재할 수 있다.
+  -- 거절이 아니므로 산입되어야 한다. COALESCE 없는 NOT(...) 은 3값 논리로 이 행을 조용히 배제한다.
+  (
+    v_tNull, v_owner, v_ws, '__sql_fixture_gas_t_nullcfg', 'active'::posting_status, 'tournament'::posting_type, v_cT,
+    NULL,
+    '{"kind":"dated","requirements":[{"date":"2026-09-04","timeSlots":[{"startTime":"18:00","roles":[{"role":"dealer","count":4}]}]}]}'::jsonb,
     now(), now()
   );
 
@@ -181,6 +192,16 @@ BEGIN
   EXCEPTION WHEN undefined_column THEN v_req_rejected := -1;
   END;
 
+  -- config NULL 대회는 산입되어야 한다. 조용히 배제되면 행이 없어 0 이 되고 9번이 RED.
+  v_req_nullcfg := 0;
+  BEGIN
+    SELECT COALESCE(required_count, 0) INTO v_req_nullcfg
+    FROM public.get_venue_grid_summary(v_cT, '2026-09-01', '2026-09-30')
+    WHERE d = '2026-09-04';
+    IF NOT FOUND THEN v_req_nullcfg := 0; END IF;
+  EXCEPTION WHEN undefined_column THEN v_req_nullcfg := -1;
+  END;
+
   INSERT INTO _g VALUES
     ('req3',       v_req3::text),
     ('reqfixed',   v_reqfixed::text),
@@ -188,7 +209,8 @@ BEGIN
     ('req_hconly', v_req_hconly::text),
     ('req_pending',  v_req_pending::text),
     ('req_approved', v_req_approved::text),
-    ('req_rejected', v_req_rejected::text);
+    ('req_rejected', v_req_rejected::text),
+    ('req_nullcfg',  v_req_nullcfg::text);
 END $$;
 
 -- 1) 반환 계약: 시그니처에 required_count 열 포함 (데이터 무관 introspection)
@@ -217,6 +239,9 @@ SELECT is((SELECT v FROM _g WHERE k = 'req_approved'), '5', '승인 완료(appro
 
 -- 8) 승인 거절 대회는 배제 — 열리지 않을 대회가 영구 부족분으로 남지 않아야 한다
 SELECT is((SELECT v FROM _g WHERE k = 'req_rejected'), '0', '승인 거절(rejected) 대회의 좌석은 required_count 에서 배제 = 0');
+
+-- 9) tournament_config 가 NULL 인 대회는 거절이 아니므로 산입되어야 한다(3값 논리 방어)
+SELECT is((SELECT v FROM _g WHERE k = 'req_nullcfg'), '4', 'tournament_config NULL 대회는 required_count 에 산입 = 4 (COALESCE 없으면 NULL 3값 논리로 조용히 배제)');
 
 SELECT * FROM finish();
 ROLLBACK;
