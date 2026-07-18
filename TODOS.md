@@ -122,11 +122,12 @@
 - **Why 이월**: `closed` 는 만석 마감(capacity_full→closed)일 수 있어 배제하면 required 만 떨어지고 headcount 는 남아 셀이 왜곡된다. 상태별 구분 판단이 선행돼야 한다.
 - **Effort**: S | **Priority**: P2 | 대회 포함과 무관하게 기존 배치에 이미 존재하는 동작.
 
-### 캘린더 셀 "대회 있는 날" 표식
-- **What**: 근무표 셀에서 평소 운영과 대회를 구분하는 표식(예: 골드 점).
-- **Why 이월**: 셀 표식을 그리려면 `get_venue_grid_summary` 가 날짜별 대회 포함 여부를 반환해야 해 "RPC 응답 컬럼 변경 0" 원칙과 충돌한다. 날짜 탭 시 상세 패널에 `대회` 배지가 이미 뜬다.
-- **재검토 조건**: D-7 대회가 몰리는 주에 구분 부재가 실사용 문제로 확인되면 RPC 컬럼 추가와 함께 착수.
-- **Effort**: M | **Priority**: P3.
+### 근무표에서 대회를 구분할 수단이 전무
+- **What**: 근무표 어디에도 "이 수요가 대회에서 왔다"를 알 표식이 없다. 셀 표식도, 상세 패널 배지도 없다.
+- **⚠️ 최초 기록의 완화 근거는 거짓이었다**: "상세 패널에 `대회` 배지가 이미 뜬다"고 적었으나 **존재하지 않는다**. `대회` 문자열이 `src/components/weeklyGrid/`·`src/domains/weeklyGrid/`·`src/hooks/weeklyGrid/` 전체에 0건. 원인=`venueDayDetailMapping.ts:30-44` 의 `mapVenueDaySlotToConfirmedStaff` 가 `job_posting_id`·`is_container` 를 투영에서 떨궈 `ConfirmedStaff` 에 공고 정체성이 없다.
+- **Why 지금 문제인가**: 대회 포함 배치로 대회 좌석이 `required_count` 를 올려 필요/부족 숫자가 커지는데, 운영자는 그 출처를 어느 깊이에서도 확인할 수 없다. D-7 대회가 몰리는 주에 특히 혼란.
+- **해법 2갈래**: (a) 상세 패널 배지 — `get_venue_day_slots` 가 이미 `job_posting_id` 를 반환하므로 매퍼 투영만 살리면 된다. RPC 계약 무변경, 저비용. (b) 캘린더 셀 표식 — `get_venue_grid_summary` 에 날짜별 대회 포함 컬럼 추가 필요, 고비용.
+- **Effort**: (a) S / (b) M | **Priority**: **P2** | 권장=(a) 먼저.
 
 ### 대회사 대상 "지점" 라벨
 - **What**: 대회사에게 "지점"은 장소가 아니라 대회를 담는 서랍이라 어색할 수 있다.
