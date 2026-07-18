@@ -112,3 +112,23 @@
 - **pgTAP 칩균형 주석 정정**: `ops_reseat_participants.test.sql` [13] 칩균형 임계 주석("≤4000")이 실제(seed_pid 30000 포함 max=30000)와 불일치. 균형 실검증은 jest 전담이라 무해. → 주석 정정 또는 seed_pid 제외 서브쿼리.
 - **RPC 비-uuid 선검증**: step3 `(e->>'participant_id')::uuid`가 비-uuid에 22P02 raise(스펙 §4.3-3은 `SEAT_ASSIGNMENT_INVALID` 요구). fail-closed·클라 Zod 방어라 실발생 불가. → RPC에 uuid 정규식 선검증(선택).
 - **Status**: 추적만. LS-데드락 PR과 묶거나 별도 소규모 PR. prod 데이터 안전 무관.
+
+---
+
+## 근무표 대회 포함 — 이월 (2026-07-19)
+
+### required CTE 에 job_postings.status 필터 부재
+- **What**: `get_venue_grid_summary` 의 `required` CTE 가 공고 status 를 전혀 보지 않아 **취소된(`cancelled`) 일반 공고의 requirements 도 필요인원에 산입**된다.
+- **Why 이월**: `closed` 는 만석 마감(capacity_full→closed)일 수 있어 배제하면 required 만 떨어지고 headcount 는 남아 셀이 왜곡된다. 상태별 구분 판단이 선행돼야 한다.
+- **Effort**: S | **Priority**: P2 | 대회 포함과 무관하게 기존 배치에 이미 존재하는 동작.
+
+### 캘린더 셀 "대회 있는 날" 표식
+- **What**: 근무표 셀에서 평소 운영과 대회를 구분하는 표식(예: 골드 점).
+- **Why 이월**: 셀 표식을 그리려면 `get_venue_grid_summary` 가 날짜별 대회 포함 여부를 반환해야 해 "RPC 응답 컬럼 변경 0" 원칙과 충돌한다. 날짜 탭 시 상세 패널에 `대회` 배지가 이미 뜬다.
+- **재검토 조건**: D-7 대회가 몰리는 주에 구분 부재가 실사용 문제로 확인되면 RPC 컬럼 추가와 함께 착수.
+- **Effort**: M | **Priority**: P3.
+
+### 대회사 대상 "지점" 라벨
+- **What**: 대회사에게 "지점"은 장소가 아니라 대회를 담는 서랍이라 어색할 수 있다.
+- **Why 이월**: 구조가 아니라 문구만의 문제. 실사용 피드백 후 라벨만 조정.
+- **Effort**: S | **Priority**: P3.
