@@ -86,8 +86,14 @@
 
 ```sql
 AND NOT (jp.posting_type = 'tournament'
-         AND jp.tournament_config->>'approvalStatus' = 'rejected')
+         AND COALESCE(jp.tournament_config->>'approvalStatus', '') = 'rejected')
 ```
+
+> ⚠️ **`COALESCE` 필수 (2026-07-19 구현 중 실측 교정)**: 이 문서 초안은 `COALESCE` 없이 `jp.tournament_config->>'approvalStatus' = 'rejected'`를 제시했으나 **결함이다**. `tournament_config`는 nullable이고 CHECK 제약도 default도 없어서, NULL이면 `NOT (true AND NULL)` = `NULL`이 되어 WHERE가 false로 취급 → **거절되지 않은 대회가 통째로 집계에서 탈락**한다(과소집계).
+>
+> 라이브 실측으로 확인된 탈락 상태는 4가지다: `tournament_config` IS NULL · `{}`(키 부재) · `{"approvalStatus":null}` · `posting_type` NULL + config NULL. 방향이 "필요 인원이 조용히 줄어드는" 쪽이라 발견이 어렵다.
+>
+> pgTAP 9번이 이 회귀를 잡는다. 이 SQL을 어디선가 재작성하게 되면 `COALESCE`를 반드시 유지하라.
 
 나머지 CTE 본문·시그니처·`search_path`·GRANT는 원본과 바이트 동일하게 유지한다.
 
