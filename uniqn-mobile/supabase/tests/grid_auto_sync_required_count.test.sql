@@ -17,7 +17,7 @@
 --   깨끗한 not ok 산출).
 -- ============================================================
 BEGIN;
-SELECT plan(9);
+SELECT plan(10);
 
 CREATE TEMP TABLE _g (k text PRIMARY KEY, v text);
 
@@ -41,8 +41,10 @@ DECLARE
   v_tAppr uuid := gen_random_uuid();   -- 승인 완료 대회
   v_tRej  uuid := gen_random_uuid();   -- 승인 거절 대회
   v_tNull uuid := gen_random_uuid();   -- tournament_config 자체가 NULL 인 대회(3값 논리 방어)
+  v_tEmpty uuid := gen_random_uuid();  -- tournament_config = {} (approvalStatus 키 부재)
   v_req_pending int := -1; v_req_approved int := -1; v_req_rejected int := -1;
   v_req_nullcfg int := -1;
+  v_req_emptycfg int := -1;
 BEGIN
   -- baseline(2026-07-12): raw_app_meta_data.role 를 public.users role 과 일치시켜
   --   prevent_role_escalation 트리거의 ON CONFLICT role 변경 거부를 회피.
@@ -111,6 +113,15 @@ BEGIN
     v_tNull, v_owner, v_ws, '__sql_fixture_gas_t_nullcfg', 'active'::posting_status, 'tournament'::posting_type, v_cT,
     NULL,
     '{"kind":"dated","requirements":[{"date":"2026-09-04","timeSlots":[{"startTime":"18:00","roles":[{"role":"dealer","count":4}]}]}]}'::jsonb,
+    now(), now()
+  ),
+  -- tournament_config = {} (approvalStatus 키 부재) — NULL 보다 현실적으로 더 흔한 상태다.
+  -- ->>'approvalStatus' 가 NULL 이 되는 경로가 같으므로 COALESCE 가드가 덮는 4상태 중 하나.
+  -- 거절이 아니므로 산입되어야 한다.
+  (
+    v_tEmpty, v_owner, v_ws, '__sql_fixture_gas_t_emptycfg', 'active'::posting_status, 'tournament'::posting_type, v_cT,
+    '{}'::jsonb,
+    '{"kind":"dated","requirements":[{"date":"2026-09-05","timeSlots":[{"startTime":"18:00","roles":[{"role":"dealer","count":6}]}]}]}'::jsonb,
     now(), now()
   );
 
@@ -202,6 +213,16 @@ BEGIN
   EXCEPTION WHEN undefined_column THEN v_req_nullcfg := -1;
   END;
 
+  -- config = {} 대회도 산입되어야 한다. 조용히 배제되면 행이 없어 0 이 되고 10번이 RED.
+  v_req_emptycfg := 0;
+  BEGIN
+    SELECT COALESCE(required_count, 0) INTO v_req_emptycfg
+    FROM public.get_venue_grid_summary(v_cT, '2026-09-01', '2026-09-30')
+    WHERE d = '2026-09-05';
+    IF NOT FOUND THEN v_req_emptycfg := 0; END IF;
+  EXCEPTION WHEN undefined_column THEN v_req_emptycfg := -1;
+  END;
+
   INSERT INTO _g VALUES
     ('req3',       v_req3::text),
     ('reqfixed',   v_reqfixed::text),
@@ -210,7 +231,8 @@ BEGIN
     ('req_pending',  v_req_pending::text),
     ('req_approved', v_req_approved::text),
     ('req_rejected', v_req_rejected::text),
-    ('req_nullcfg',  v_req_nullcfg::text);
+    ('req_nullcfg',  v_req_nullcfg::text),
+    ('req_emptycfg', v_req_emptycfg::text);
 END $$;
 
 -- 1) 반환 계약: 시그니처에 required_count 열 포함 (데이터 무관 introspection)
@@ -242,6 +264,9 @@ SELECT is((SELECT v FROM _g WHERE k = 'req_rejected'), '0', '승인 거절(rejec
 
 -- 9) tournament_config 가 NULL 인 대회는 거절이 아니므로 산입되어야 한다(3값 논리 방어)
 SELECT is((SELECT v FROM _g WHERE k = 'req_nullcfg'), '4', 'tournament_config NULL 대회는 required_count 에 산입 = 4 (COALESCE 없으면 NULL 3값 논리로 조용히 배제)');
+
+-- 10) approvalStatus 키가 없는 대회({})도 거절이 아니므로 산입되어야 한다
+SELECT is((SELECT v FROM _g WHERE k = 'req_emptycfg'), '6', 'tournament_config = {} (approvalStatus 키 부재) 대회는 required_count 에 산입 = 6');
 
 SELECT * FROM finish();
 ROLLBACK;

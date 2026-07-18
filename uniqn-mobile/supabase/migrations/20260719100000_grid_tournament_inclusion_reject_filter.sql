@@ -84,6 +84,8 @@ $$;
 
 -- CREATE OR REPLACE 는 기존 권한을 보존하지만, 드리프트 방어로 재선언한다(멱등).
 ALTER FUNCTION public.get_venue_grid_summary(uuid, text, text) OWNER TO postgres;
+-- Supabase 기본권한(ALTER DEFAULT PRIVILEGES ... GRANT ON FUNCTIONS TO anon)이 신규
+-- public 함수에 anon EXECUTE 를 자동 부여하므로 PUBLIC 만으론 부족 → anon 명시 회수.
 REVOKE ALL ON FUNCTION public.get_venue_grid_summary(uuid, text, text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.get_venue_grid_summary(uuid, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_venue_grid_summary(uuid, text, text) TO service_role;
