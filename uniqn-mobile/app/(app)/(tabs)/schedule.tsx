@@ -207,7 +207,7 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
 
   return (
     <View className={BAND_CLASS}>
-      {/* 1행: 대기중/확정/완료 — 홈 ApplicationStatusWidget과 동일 어휘 사용 */}
+      {/* 1행: 대기중/확정/완료 — 지원 상태 어휘와 통일 */}
       <View className="flex-row justify-around">
         <View
           className="items-center"

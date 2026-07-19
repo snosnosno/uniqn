@@ -18,6 +18,7 @@ import {
   subscribeToSchedules,
   groupSchedulesByDate,
   getCalendarMarkedDates,
+  calculateScheduleStats,
 } from '@/services/work/scheduleService';
 import { STATUS } from '@/constants';
 
@@ -877,5 +878,41 @@ describe('scheduleService - invalid date fallback', () => {
     const groups = groupSchedulesByDate([createMockScheduleEvent({ date: 'invalid-date' })]);
 
     expect(groups[0].formattedDate).toBe('invalid-date');
+  });
+});
+
+describe('scheduleService - calculateScheduleStats', () => {
+  // 홈 대시보드 삭제로 래퍼 getScheduleStats 는 사라졌지만, 실로직인 calculateScheduleStats 는
+  // 스케줄 탭 통계로 그대로 렌더된다. 아래 두 건은 과거 실제 회귀의 가드이므로 순수 함수 직접
+  // 호출로 이식해 유지한다 (리포지토리 mock 불필요).
+
+  it('과거 날짜의 확정 스케줄도 확정 카운트에 포함한다 (리스트 표시 기준과 통일)', () => {
+    // 근무일이 지났지만 아직 완료(WorkLog) 전환 전인 confirmed 지원 — 리스트/캘린더엔 확정으로 뜨는데
+    // 통계에서만 누락되던 회귀(과거 `date >= today` 필터). 이제 날짜 무관 confirmed 전체를 센다.
+    const stats = calculateScheduleStats([
+      createMockScheduleEvent({
+        id: 'past-confirmed',
+        applicationId: 'app-past',
+        date: '2020-06-06',
+        type: STATUS.SCHEDULE.CONFIRMED,
+      }),
+    ]);
+
+    expect(stats.confirmedSchedules).toBe(1);
+  });
+
+  it('하나의 지원이 여러 일정으로 펼쳐져도 지원중은 1건으로 집계한다', () => {
+    const stats = calculateScheduleStats(
+      ['2099-01-15', '2099-01-16', '2099-01-17'].map((date, index) =>
+        createMockScheduleEvent({
+          id: `app-1-${index + 1}`,
+          applicationId: 'app-1',
+          date,
+          type: STATUS.SCHEDULE.APPLIED,
+        })
+      )
+    );
+
+    expect(stats.upcomingSchedules).toBe(1);
   });
 });
