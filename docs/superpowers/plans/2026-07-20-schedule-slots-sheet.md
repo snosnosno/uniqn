@@ -1905,12 +1905,37 @@ Expected: PASS — 4 tests passed
 
 `SHEET_DISMISS_ANIMATION_MS` import가 이 파일에서 사라졌다. `@/constants/animation`의 해당 상수가 다른 곳에서도 안 쓰이면 knip이 Task 9에서 잡아낸다 — 그때 판단한다(다른 시트에서 쓰고 있을 수 있으므로 지금 삭제하지 말 것).
 
-- [ ] **Step 10: 급여 동기화 회귀 확인**
+- [ ] **Step 10: 고정 경로 역할 반영 커버리지 보강 (Task 4 리뷰 이월)**
+
+Task 4 리뷰가 **선재 커버리지 갭**을 찾았다: `OrderSheetScreen.tsx:843`의 `{ ...fs, roles: next }`를 `{ ...fs }`로 바꿔도 `OrderSheetScreen.fixed.test.tsx`가 **전부 통과한다**. 토스트가 `syncRoleSalariesForRoles(next, ...)`로 `next`를 폼 경유 없이 직접 받기 때문에, 이 테스트는 "고정 타입 역할이 실제로 폼에 반영되는가"를 한 번도 검증한 적이 없다. (리뷰어가 base 커밋에 같은 변이를 재생해 **이번 작업이 깎은 게 아님**을 확인했다.)
+
+dated 경로는 같은 변이에서 red가 되므로 비대칭이다. 지금 `OrderSheetScreen`을 손보는 김에 메운다.
+
+`OrderSheetScreen.fixed.test.tsx`에 폼 값 기반 단언을 추가한다 — 역할 확인 후 **주문서 본화면의 역할 행 요약**에 그 역할이 나타나는지 본다(토스트가 아니라 폼을 경유한 경로를 지난다):
+
+```tsx
+  it('고정 타입 역할 확인 → 폼에 반영되어 역할 행 요약에 나타난다', async () => {
+    const { getByTestId, getByText, findByText } = render(
+      <OrderSheetScreen {...baseProps} initialValues={fixedInitialValues()} />
+    );
+    fireEvent.press(getByTestId('order-sheet-row-roles'));
+    fireEvent.press(getByTestId('order-role-chip-floor'));
+    fireEvent.press(getByText('확인'));
+    // 토스트가 아니라 form.setValue 를 경유한 요약이어야 한다 — :843 의 roles: next 를 지운 변이에서 red 가 된다
+    expect(await findByText(/플로어/)).toBeTruthy();
+  });
+```
+
+`fixedInitialValues()`는 그 파일에 이미 있는 고정 타입 시드 헬퍼를 쓴다(이름이 다르면 실측해서 맞출 것).
+
+**이 테스트가 실효한지 반드시 Red-Green 으로 확인하라**: `:843`을 `{ ...fs }`로 임시 변경 → 이 테스트만 red → 복원 → green. red 가 안 되면 여전히 토스트 경로를 타고 있는 것이므로 단언을 폼 경유로 다시 잡아라.
+
+- [ ] **Step 11: 급여 동기화 회귀 확인**
 
 Run: `cd uniqn-mobile && npx jest src/components/employer/order-sheet/__tests__/OrderSheetScreen.salarySync.test.tsx`
 Expected: PASS — `applyRoleSalarySync` 호출이 2회에서 1회로 줄었지만 최종 `roleSalaries` 결과는 같아야 한다. 실패하면 동기화가 실제로 누락된 것이므로 테스트가 아니라 구현을 고친다.
 
-- [ ] **Step 11: 커밋**
+- [ ] **Step 12: 커밋**
 
 ```bash
 git add -A src/components/employer/order-sheet/
