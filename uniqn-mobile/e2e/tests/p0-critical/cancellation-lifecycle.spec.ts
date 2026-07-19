@@ -60,9 +60,11 @@ async function seedConfirmedApplication(
   const workspaceId = await ensureE2EWorkspace(adminClient, SUPABASE_QA_ACCOUNTS.employer.id);
 
   // 1. job_posting 생성 (정원 1).
-  //    SP3: filled_positions/stats 카운터는 fn_update_job_posting_stats 트리거가
-  //    applications status 로 관리한다. 0 으로 시드하면 아래 'confirmed' application INSERT 가
-  //    트리거를 발화시켜 1 이 된다(수동 1 시드 금지 — 트리거가 +1 추가해 이중카운트 2 가 됨).
+  //    좌석 기준 전환(2026-07-17, PR #269): filled_positions 유지 주체가 applications 트리거에서
+  //    work_logs 좌석 트리거(fn_sync_filled_positions_seat)로 이관됐다. 재작성된
+  //    fn_update_job_posting_stats 는 더 이상 filled 를 쓰지 않으므로 confirmed 지원서 INSERT
+  //    만으로는 filled 가 움직이지 않는다 → 아래 3번에서 좌석(work_logs) 1건을 함께 시딩한다.
+  //    filled 는 0 으로 시드(수동 1 금지 — 좌석 트리거가 +1 하므로 이중카운트 2 가 됨).
   const { error: jobError } = await adminClient.from('job_postings').insert({
     id: jobId,
     schema_version: 3,
@@ -168,6 +170,29 @@ async function seedConfirmedApplication(
 
   if (appError) {
     throw new Error(`application seed 실패: ${appError.message}`);
+  }
+
+  // 3. 좌석(work_logs) 1건 시딩 — filled_positions 를 구동하는 유일 경로.
+  //    seat 트리거(fn_sync_filled_positions_seat)가 filled=1 → BEFORE 트리거
+  //    (fn_recalc_total_and_capacity)가 active→capacity_full 자동 전이한다.
+  //    ⚠️ application_id 와 status='scheduled' 는 필수:
+  //       cancel_application_atomically 의 좌석 회수 조건이
+  //       `DELETE FROM work_logs WHERE application_id = p_application_id AND status = 'scheduled'`
+  //       이므로, 둘 중 하나라도 어긋나면 취소해도 좌석이 남아 정원이 복원되지 않는다.
+  //    컬럼/슬롯/역할은 위 schedule(18:00 · dealer) 및 pgTAP 픽스처와 일치시킨다.
+  const { error: workLogError } = await adminClient.from('work_logs').insert({
+    staff_id: SUPABASE_QA_ACCOUNTS.staff.id,
+    job_posting_id: jobId,
+    application_id: applicationId,
+    date: workDate,
+    time_slot: '18:00',
+    role: 'dealer',
+    status: 'scheduled',
+    owner_id: SUPABASE_QA_ACCOUNTS.employer.id,
+  });
+
+  if (workLogError) {
+    throw new Error(`work_logs 좌석 seed 실패: ${workLogError.message}`);
   }
 
   return { jobId, applicationId, initialFilledPositions: 1 };
