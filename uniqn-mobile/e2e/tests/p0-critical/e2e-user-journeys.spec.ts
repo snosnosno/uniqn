@@ -14,16 +14,16 @@ const employerState = path.join(__dirname, '../../fixtures/storage-states/employ
 const adminState = path.join(__dirname, '../../fixtures/storage-states/admin.json');
 
 test.describe('E2E 유저 저니', () => {
-  test('Staff 전체 흐름: 로그인 → 홈 → 공고 검색 → 공고 상세', async ({ browser }) => {
+  test('Staff 전체 흐름: 로그인 → 구인구직 → 공고 검색 → 공고 상세', async ({ browser }) => {
     const context = await browser.newContext({ storageState: staffState });
     const page = await context.newPage();
 
-    // 1. /home으로 직접 이동 (splash 우회)
-    await page.goto('/home', { waitUntil: 'domcontentloaded' });
+    // 1. /home-jobs로 직접 이동 (splash 우회)
+    await page.goto('/home-jobs', { waitUntil: 'domcontentloaded' });
     await waitForAppReady(page);
 
-    // 홈 화면이 로드되어야 함 (내 지원 현황은 StaffDashboard에서 항상 표시)
-    await expect(page.getByText('내 지원 현황').first()).toBeVisible({ timeout: 10_000 });
+    // 구인구직 탭이 로드되어야 함 (검색바는 JobsScreen에서 항상 표시)
+    await expect(page.getByPlaceholder('제목, 장소로 검색')).toBeVisible({ timeout: 10_000 });
 
     // 2. 스케줄 탭 직접 이동 (접근 가능한 URL)
     await page.goto('/schedule', { waitUntil: 'domcontentloaded' });
@@ -39,8 +39,8 @@ test.describe('E2E 유저 저니', () => {
     const context = await browser.newContext({ storageState: employerState });
     const page = await context.newPage();
 
-    // 1. /home으로 직접 이동 (splash 우회)
-    await page.goto('/home', { waitUntil: 'domcontentloaded' });
+    // 1. /home-jobs로 직접 이동 (splash 우회)
+    await page.goto('/home-jobs', { waitUntil: 'domcontentloaded' });
     await waitForAppReady(page);
 
     // 2. '내 공고' 탭 클릭
@@ -62,8 +62,8 @@ test.describe('E2E 유저 저니', () => {
     const context = await browser.newContext({ storageState: adminState });
     const page = await context.newPage();
 
-    // 1. /home으로 직접 이동 (splash 우회)
-    await page.goto('/home', { waitUntil: 'domcontentloaded' });
+    // 1. /home-jobs로 직접 이동 (splash 우회)
+    await page.goto('/home-jobs', { waitUntil: 'domcontentloaded' });
     await waitForAppReady(page);
 
     // 2. 로그인 페이지로 리다이렉트되지 않아야 함
@@ -169,10 +169,10 @@ test.describe('E2E 유저 저니', () => {
           }
         }
       } else {
-        // admin client가 없을 때: 홈 화면 접근으로 대체 검증
-        await page.goto('/home', { waitUntil: 'domcontentloaded' });
+        // admin client가 없을 때: 구인구직 탭 접근으로 대체 검증
+        await page.goto('/home-jobs', { waitUntil: 'domcontentloaded' });
         await waitForAppReady(page);
-        await expect(page.getByText('내 지원 현황').first()).toBeVisible({ timeout: 10_000 });
+        await expect(page.getByPlaceholder('제목, 장소로 검색')).toBeVisible({ timeout: 10_000 });
       }
 
       await context.close();
@@ -183,24 +183,25 @@ test.describe('E2E 유저 저니', () => {
     }
   });
 
-  // PR #119: staff entry 가 (app)/home (standalone) 으로 변경. HomeTabBar 의
-  // "프로필 탭으로 이동" button + 프로필 탭의 "설정센터" menu item 으로 selector 재작성.
+  // 홈 대시보드 삭제(2026-07-19) 후 staff entry = (app)/(tabs)/home-jobs.
+  // 프로필 탭 → "설정센터" menu item 으로 이동한다.
   //
-  // Note: 이전 시도는 `page.goto('/settings')` 사용 시 frame detached + RangeError
-  // (wrapApiCall Invalid string length) 발생 — /home 페이지 trace capture 가 트리거.
-  // UI 네비게이션(설정센터 click)으로 우회.
+  // Note: `page.goto('/settings')` 직접 이동은 frame detached + RangeError
+  // (wrapApiCall Invalid string length) 회귀가 있어 UI 네비게이션으로 우회한다.
   test('계정 생명주기: 로그인 → 프로필 접근 → 설정 접근', async ({ browser }) => {
     const context = await browser.newContext({ storageState: staffState });
     const page = await context.newPage();
 
-    // 1. /home으로 직접 이동 (splash 우회)
-    await page.goto('/home', { waitUntil: 'domcontentloaded' });
+    // 1. /home-jobs로 직접 이동 (splash 우회)
+    await page.goto('/home-jobs', { waitUntil: 'domcontentloaded' });
     await waitForAppReady(page);
 
-    // 2. HomeTabBar 의 프로필 탭 click → (tabs)/profile
+    // 2. 하단 탭바의 프로필 탭 click → (tabs)/profile
+    // (app)/(tabs)/_layout.tsx 의 Tabs.Screen name="profile" title="프로필".
+    // @react-navigation/bottom-tabs 는 web 에서 role="tab" 으로 렌더한다.
     // 탭 버튼 click 은 앱 초기화 race 로 no-op 될 수 있어(클릭 시점에 라우터 미준비),
     // navigation 확정(프로필 수정 버튼 가시)까지 click+assert 를 재시도한다.
-    const profileTabButton = page.getByRole('button', { name: '프로필 탭으로 이동' });
+    const profileTabButton = page.getByRole('tab', { name: '프로필' });
     await expect(profileTabButton).toBeVisible({ timeout: 10_000 });
     await expect(async () => {
       await profileTabButton.click();

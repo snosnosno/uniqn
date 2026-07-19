@@ -319,12 +319,12 @@ test.describe('WF-17: 관리자 신고 처리', () => {
       const context = await browser.newContext({ storageState: staffState });
       const page = await context.newPage();
 
-      // /home으로 직접 이동 (splash 우회)
-      await page.goto('/home', { waitUntil: 'domcontentloaded' });
+      // /home-jobs로 직접 이동 (splash 우회)
+      await page.goto('/home-jobs', { waitUntil: 'domcontentloaded' });
       await waitForAppInit(page);
 
-      // staff 홈 화면이 로드될 때까지 대기 (내 지원 현황은 StaffDashboard에서 항상 표시)
-      await expect(page.getByText('내 지원 현황').first()).toBeVisible({ timeout: 15_000 });
+      // staff 구인구직 탭이 로드될 때까지 대기 (검색바는 JobsScreen에서 항상 표시)
+      await expect(page.getByPlaceholder('제목, 장소로 검색')).toBeVisible({ timeout: 15_000 });
 
       // "신고 관리" 관리자 메뉴가 보이지 않아야 함
       await expect(page.getByText('신고 관리')).not.toBeVisible({ timeout: 3_000 });
