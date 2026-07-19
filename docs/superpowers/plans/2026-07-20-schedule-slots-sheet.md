@@ -1783,7 +1783,56 @@ import에서 `useRef`와 `SHEET_DISMISS_ANIMATION_MS`가 더 이상 쓰이지 �
 import { ScheduleSlotsSheet } from './sheets/ScheduleSlotsSheet';
 ```
 
-- [ ] **Step 7: 구 파일 삭제**
+- [ ] **Step 7: 새 슬롯 시간 피커 기본값 수정 (Task 6 리뷰 이월)**
+
+새 시간대를 추가하면 시간 휠이 **19:00이 아니라 00:00으로 열린다.** `slots[pickerIndex]?.startTime ?? DEFAULT_START`에서 새 슬롯의 `startTime`은 `''`(빈 문자열)이라 `??`를 그냥 통과하기 때문이다. 구 `TimeSlotsSheet.tsx:78`이 같은 결함을 갖고 있던 선재 버그이고, 그 파일을 지우는 김에 신규 쪽을 고친다.
+
+`ScheduleSlotsSheet.tsx`의 해당 줄에서 `??`를 `||`로 바꾼다:
+
+```tsx
+            value={toTimeValue(slots[pickerIndex]?.startTime || DEFAULT_START)}
+```
+
+회귀 가드를 `ScheduleSlotsSheet.test.tsx`에 추가한다 — 목 피커가 받은 `value`를 노출시켜 단언한다:
+
+```tsx
+  it('새 시간대의 피커는 00:00 이 아니라 기본값 19:00 으로 열린다', () => {
+    const { getByTestId } = render(
+      <ScheduleSlotsSheet
+        visible
+        value={[{ startTime: '19:00', roles: [{ role: 'dealer', count: 1 }] }]}
+        onConfirm={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+    fireEvent.press(getByTestId('order-time-add-slot')); // 새 슬롯은 startTime=''
+    fireEvent.press(getByTestId('order-time-start-1'));
+    expect(getByTestId('mock-time-seed').props.children).toBe('19:0');
+  });
+```
+
+이 단언이 통하려면 파일 상단의 `TimeWheelPicker` 목이 받은 `value`를 노출해야 한다. 기존 목을 다음으로 교체한다:
+
+```tsx
+jest.mock('@/components/ui/TimeWheelPicker', () => {
+  const { Pressable, Text } = require('react-native');
+  return {
+    TimeWheelPicker: ({ visible, value, onConfirm }: any) =>
+      visible ? (
+        <>
+          <Text testID="mock-time-seed">{`${value?.hour}:${value?.minute}`}</Text>
+          <Pressable testID="mock-time-confirm" onPress={() => onConfirm({ hour: 20, minute: 30 })}>
+            <Text>MockPicker</Text>
+          </Pressable>
+        </>
+      ) : null,
+  };
+});
+```
+
+**Red-Green 확인**: `||`를 `??`로 되돌리면 이 테스트가 red(`0:0` 수신)가 되어야 한다. 기존 12건은 계속 통과해야 한다.
+
+- [ ] **Step 8: 구 파일 삭제**
 
 ```bash
 cd uniqn-mobile
@@ -1791,12 +1840,12 @@ rm src/components/employer/order-sheet/sheets/TimeSlotsSheet.tsx
 rm src/components/employer/order-sheet/sheets/__tests__/TimeSlotsSheet.test.tsx
 ```
 
-- [ ] **Step 8: 타입체크로 잔여 참조 확인**
+- [ ] **Step 9: 타입체크로 잔여 참조 확인**
 
 Run: `cd uniqn-mobile && npx tsc --noEmit`
 Expected: exit 0. `timeTarget`/`slotRolesTarget`/`TimeSlotsSheet`/`switchSheet`/`pendingSheetRef` 잔여 참조가 있으면 여기서 잡힌다 — 전부 제거한다.
 
-- [ ] **Step 9: 통합 테스트 재작성**
+- [ ] **Step 10: 통합 테스트 재작성**
 
 현행 `OrderSheetScreen.timeSlots.test.tsx`는 **6개 테스트 중 4개가 #244 지연 전환 전용**이다 — 우리가 삭제하는 동작을 지키는 테스트라 그대로 두면 반드시 실패한다. 다음과 같이 재작성한다:
 
@@ -1938,7 +1987,7 @@ Expected: PASS — 4 tests passed
 
 `SHEET_DISMISS_ANIMATION_MS` import가 이 파일에서 사라졌다. `@/constants/animation`의 해당 상수가 다른 곳에서도 안 쓰이면 knip이 Task 9에서 잡아낸다 — 그때 판단한다(다른 시트에서 쓰고 있을 수 있으므로 지금 삭제하지 말 것).
 
-- [ ] **Step 10: 고정 경로 역할 반영 커버리지 보강 (Task 4 리뷰 이월)**
+- [ ] **Step 11: 고정 경로 역할 반영 커버리지 보강 (Task 4 리뷰 이월)**
 
 Task 4 리뷰가 **선재 커버리지 갭**을 찾았다: `OrderSheetScreen.tsx:843`의 `{ ...fs, roles: next }`를 `{ ...fs }`로 바꿔도 `OrderSheetScreen.fixed.test.tsx`가 **전부 통과한다**. 토스트가 `syncRoleSalariesForRoles(next, ...)`로 `next`를 폼 경유 없이 직접 받기 때문에, 이 테스트는 "고정 타입 역할이 실제로 폼에 반영되는가"를 한 번도 검증한 적이 없다. (리뷰어가 base 커밋에 같은 변이를 재생해 **이번 작업이 깎은 게 아님**을 확인했다.)
 
@@ -1963,12 +2012,12 @@ dated 경로는 같은 변이에서 red가 되므로 비대칭이다. 지금 `Or
 
 **이 테스트가 실효한지 반드시 Red-Green 으로 확인하라**: `:843`을 `{ ...fs }`로 임시 변경 → 이 테스트만 red → 복원 → green. red 가 안 되면 여전히 토스트 경로를 타고 있는 것이므로 단언을 폼 경유로 다시 잡아라.
 
-- [ ] **Step 11: 급여 동기화 회귀 확인**
+- [ ] **Step 12: 급여 동기화 회귀 확인**
 
 Run: `cd uniqn-mobile && npx jest src/components/employer/order-sheet/__tests__/OrderSheetScreen.salarySync.test.tsx`
 Expected: PASS — `applyRoleSalarySync` 호출이 2회에서 1회로 줄었지만 최종 `roleSalaries` 결과는 같아야 한다. 실패하면 동기화가 실제로 누락된 것이므로 테스트가 아니라 구현을 고친다.
 
-- [ ] **Step 12: 커밋**
+- [ ] **Step 13: 커밋**
 
 ```bash
 git add -A src/components/employer/order-sheet/
