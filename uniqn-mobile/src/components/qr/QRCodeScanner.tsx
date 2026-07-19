@@ -17,7 +17,7 @@ import {
   Linking,
 } from 'react-native';
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui';
 import { XMarkIcon, RefreshIcon, ScanIcon, FlashlightIcon } from '@/components/icons';
 import { logger } from '@/utils/logger';
@@ -63,6 +63,9 @@ export function QRCodeScanner({
 }: QRCodeScannerProps) {
   const { width: windowWidth } = useWindowDimensions();
   const [permission, requestPermission] = useCameraPermissions();
+  // SafeAreaView 는 RNModal 의 별도 윈도우를 자기 기준으로 측정해 인셋이 0이 된다
+  // (실기기 2026-07-19: 상단 닫기/플래시 버튼이 상태바와 겹쳐 탭 불가).
+  const insets = useSafeAreaInsets();
   const [scanned, setScanned] = useState(false);
   const [flashEnabled, setFlashEnabled] = useState(false);
   const [permissionTimedOut, setPermissionTimedOut] = useState(false);
@@ -151,7 +154,10 @@ export function QRCodeScanner({
     if (!permission) {
       if (permissionTimedOut) {
         return (
-          <SafeAreaView className="flex-1 bg-secondary-900" edges={['top', 'bottom']}>
+          <View
+            className="flex-1 bg-secondary-900"
+            style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
+          >
             {renderCloseHeader()}
             <View className="flex-1 justify-center items-center p-6">
               <ScanIcon size={64} color={SECONDARY_PALETTE[500]} />
@@ -167,23 +173,29 @@ export function QRCodeScanner({
                 <Text className="text-content-placeholder font-sans">닫기</Text>
               </Pressable>
             </View>
-          </SafeAreaView>
+          </View>
         );
       }
 
       return (
-        <SafeAreaView className="flex-1 bg-black" edges={['top', 'bottom']}>
+        <View
+          className="flex-1 bg-black"
+          style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
+        >
           {renderCloseHeader()}
           <View className="flex-1 justify-center items-center">
             <Text className="text-white font-sans">카메라 권한 확인 중...</Text>
           </View>
-        </SafeAreaView>
+        </View>
       );
     }
 
     if (!permission.granted) {
       return (
-        <SafeAreaView className="flex-1 bg-secondary-900" edges={['top', 'bottom']}>
+        <View
+          className="flex-1 bg-secondary-900"
+          style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
+        >
           {renderCloseHeader()}
           <View className="flex-1 justify-center items-center p-6">
             <ScanIcon size={64} color={SECONDARY_PALETTE[500]} />
@@ -202,12 +214,15 @@ export function QRCodeScanner({
               <Text className="text-content-placeholder font-sans">닫기</Text>
             </Pressable>
           </View>
-        </SafeAreaView>
+        </View>
       );
     }
 
     return (
-      <SafeAreaView className="flex-1 bg-black" edges={['top', 'bottom']}>
+      <View
+        className="flex-1 bg-black"
+        style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
+      >
         {/* 헤더 */}
         <View className="flex-row items-center justify-between px-4 py-3 bg-black/50 z-10">
           <Pressable
@@ -318,7 +333,7 @@ export function QRCodeScanner({
             </Button>
           </View>
         )}
-      </SafeAreaView>
+      </View>
     );
   };
 

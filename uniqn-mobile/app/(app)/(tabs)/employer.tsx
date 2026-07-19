@@ -28,6 +28,7 @@ import {
 } from '@/hooks/useJobManagement';
 import { useSharedJobPostings } from '@/hooks/job-posting/useSharedJobPostings';
 import { usePostingFilledCounts } from '@/hooks/usePostingFilledCounts';
+import { useTabBarBottomPadding } from '@/hooks/useTabBarBottomPadding';
 import { useWeeklyGridEnabled } from '@/hooks';
 import { useReceivedWorkspaceInvitations } from '@/hooks/workspace';
 import { useHasRole } from '@/stores/authStore';
@@ -193,6 +194,7 @@ function getEarliestDateTime(posting: JobPosting, today: string): string {
 }
 
 function EmployerView() {
+  const bottomPadding = useTabBarBottomPadding();
   const { data: postings, isLoading, error, refetch, isRefetching } = useMyJobPostings();
   const closeMutation = useCloseJobPosting();
   const reopenMutation = useReopenJobPosting();
@@ -431,7 +433,7 @@ function EmployerView() {
             <RefreshControl refreshing={isRefetching} onRefresh={refetch} {...PTR_REFRESH_PROPS} />
           }
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 20 }}
+          contentContainerStyle={{ paddingBottom: bottomPadding }}
         />
       )}
 

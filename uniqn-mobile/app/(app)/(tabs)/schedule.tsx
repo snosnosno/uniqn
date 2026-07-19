@@ -25,6 +25,7 @@ import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, MenuIcon } from '@/com
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCalendarView, useQRCodeScanner, useCurrentWorkStatus, useApplications } from '@/hooks';
 import { useOpsHubEnabled } from '@/hooks/useOpsHubEnabled';
+import { useTabBarBottomPadding } from '@/hooks/useTabBarBottomPadding';
 import { useAuthStore } from '@/stores/authStore';
 import { usePendingReviews } from '@/hooks/useReviews';
 import ReviewPromptBanner from '@/components/review/ReviewPromptBanner';
@@ -309,6 +310,7 @@ export default function ScheduleScreen() {
 
   // A1 진입 표면 ③: ops 허브 게이트(빈 상태 보조 크로스링크). OFF 면 보조 링크 미노출.
   const { enabled: opsHubEnabled } = useOpsHubEnabled();
+  const bottomPadding = useTabBarBottomPadding();
 
   const {
     schedules,
@@ -703,7 +705,9 @@ export default function ScheduleScreen() {
       {viewMode === 'calendar' && (
         <ScrollView
           className="flex-1"
-          contentContainerClassName="pb-20"
+          // 정적 pb-20(80px)은 탭바 실높이(56 + insets.bottom ≈ 90px)를 못 덮어
+          // 마지막 카드가 가려지고 더 스크롤할 여지도 없었다 (2026-07-19 실기기).
+          contentContainerStyle={{ paddingBottom: bottomPadding }}
           // impeccable §24 — 선택 날짜 헤더를 sticky로: 스크롤해도 현재 컨텍스트 유지.
           // 선택 날짜 스케줄이 있을 때만 sticky 활성 (index 1 = 헤더).
           stickyHeaderIndices={selectedDateSchedules.length > 0 ? [1] : undefined}
@@ -790,7 +794,7 @@ export default function ScheduleScreen() {
       {viewMode === 'list' && (
         <ScrollView
           className="flex-1"
-          contentContainerClassName="pb-20"
+          contentContainerStyle={{ paddingBottom: bottomPadding }}
           // impeccable §24 — 월 스케줄 요약 헤더를 sticky로: 카드 실제 렌더 시에만 활성.
           stickyHeaderIndices={!isLoading && filteredSchedules.length > 0 ? [0] : undefined}
           refreshControl={

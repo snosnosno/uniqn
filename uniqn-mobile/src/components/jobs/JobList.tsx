@@ -20,6 +20,11 @@ interface JobListProps {
   emptyMessage?: string;
   error?: Error | null;
   filledCounts?: Map<string, number>;
+  /**
+   * 리스트 하단 여백. 탭바가 있는 화면은 useTabBarBottomPadding() 값을 넘겨야
+   * 마지막 카드가 탭바에 가려지지 않는다. 미지정 시 기본 16px 패딩만 적용.
+   */
+  contentBottomPadding?: number;
 }
 
 export function JobList({
@@ -34,6 +39,7 @@ export function JobList({
   emptyMessage = '등록된 공고가 없습니다',
   error,
   filledCounts,
+  contentBottomPadding,
 }: JobListProps) {
   const renderItem = useCallback(
     ({ item }: { item: JobPostingCard }) => (
@@ -98,7 +104,11 @@ export function JobList({
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         estimatedItemSize={160}
-        contentContainerStyle={LIST_CONTAINER_STYLES.padding16}
+        contentContainerStyle={
+          contentBottomPadding === undefined
+            ? LIST_CONTAINER_STYLES.padding16
+            : { ...LIST_CONTAINER_STYLES.padding16, paddingBottom: contentBottomPadding }
+        }
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} {...PTR_REFRESH_PROPS} />
