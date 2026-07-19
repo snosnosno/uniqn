@@ -35,15 +35,42 @@
 import fs from 'fs';
 import path from 'path';
 
-/** 2026-07-19 기준 잔량. 줄이는 것만 허용한다. */
-const RATCHET_MAX = 99;
+/**
+ * 2026-07-19 기준 잔량. 줄이는 것만 허용한다.
+ *
+ * 첫 측정은 99 였으나 그건 className 블록 단위 판정(false-green)의 값이었다.
+ * 리터럴 단위로 좁히면서 함수 반환 클래스·삼항 분기까지 잡혀 149 가 실측값이다.
+ */
+const RATCHET_MAX = 149;
+
+/** 실기기에서 실제로 깨진 것이 확인된 컴포넌트군 — 0 을 강제한다. */
+const GUARDED_COMPONENTS = [
+  'src/components/ui/BottomSheet.tsx',
+  'src/components/ui/BottomSheet.web.tsx',
+  'src/components/ui/ActionSheet.tsx',
+  'src/components/ui/FormSelect.tsx',
+  'src/components/ops/MonitorConfigCard.tsx',
+];
 
 const SOURCE_ROOTS = ['src', 'app'];
 const SOURCE_EXT = /\.(tsx|jsx)$/;
 const SKIP_DIR = /node_modules|__tests__|\.expo/;
 
-/** className={...} 또는 className="..." 한 덩어리를 통째로 잡는다 (중괄호 1단 중첩까지) */
-const CLASSNAME_BLOCK = /className=(\{(?:[^{}]|\{[^{}]*\})*\}|"[^"]*")/gs;
+/**
+ * 개별 문자열 리터럴 단위로 검사한다.
+ *
+ * className 블록 전체를 보면 안 된다 — 결함은 삼항의 *한 분기*에 있는데
+ * 다른 분기의 `dark:text-error-400` 이 짝 검사를 만족시켜 버려서, 버그가 있는
+ * 상태에서도 통과하는 false-green 가드가 된다 (2026-07-19 리뷰에서 실증 지적).
+ * 리터럴 단위로 좁히면 각 분기가 독립적으로 판정된다.
+ *
+ * 함수 반환값(`return 'text-content-primary';`)처럼 className 밖에 있는 클래스
+ * 문자열도 이 방식이면 함께 잡힌다.
+ */
+const QUOTED_LITERAL = /'[^'\n]*'|"[^"\n]*"/g;
+const TEMPLATE_LITERAL = /`[^`]*`/gs;
+/** 템플릿 안의 `${...}` 보간부 — 정적 구간만 남기려고 경계로 쓴다 */
+const TEMPLATE_INTERPOLATION = /\$\{[\s\S]*?\}/g;
 
 function collectSourceFiles(dir: string, acc: string[] = []): string[] {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -57,6 +84,30 @@ function collectSourceFiles(dir: string, acc: string[] = []): string[] {
   return acc;
 }
 
+/**
+ * 클래스 문자열 후보를 뽑는다.
+ *
+ * 템플릿 리터럴을 통째로 한 단위로 보면 안 된다 — 안쪽 `${x ? 'a' : 'b'}` 의
+ * 다른 분기가 짝 검사를 만족시켜 false-green 이 된다. 템플릿은 `${...}` 를
+ * 경계로 쪼개 정적 구간만 취하고, 보간부 안의 따옴표 리터럴은 별도로 수집한다.
+ */
+function extractClassStrings(source: string): string[] {
+  const candidates: string[] = [...(source.match(QUOTED_LITERAL) ?? [])];
+
+  for (const template of source.match(TEMPLATE_LITERAL) ?? []) {
+    candidates.push(...template.split(TEMPLATE_INTERPOLATION));
+  }
+
+  return candidates;
+}
+
+/** 한 소스 문자열 안에서 짝 없는 클래스 문자열 수를 센다. */
+function countOffendersIn(source: string): number {
+  return extractClassStrings(source).filter(
+    (candidate) => candidate.includes('text-content-primary') && !candidate.includes('dark:text-')
+  ).length;
+}
+
 function countBareTokens(): { total: number; byFile: Record<string, number> } {
   const repoRoot = path.resolve(__dirname, '../../../..');
   const files = SOURCE_ROOTS.flatMap((root) => collectSourceFiles(path.join(repoRoot, root)));
@@ -65,12 +116,10 @@ function countBareTokens(): { total: number; byFile: Record<string, number> } {
   let total = 0;
 
   for (const file of files) {
-    const source = fs.readFileSync(file, 'utf8');
-    for (const [, block] of source.matchAll(CLASSNAME_BLOCK)) {
-      if (block.includes('text-content-primary') && !block.includes('dark:text-')) {
-        total += 1;
-        byFile[path.relative(repoRoot, file)] = (byFile[path.relative(repoRoot, file)] ?? 0) + 1;
-      }
+    const offenders = countOffendersIn(fs.readFileSync(file, 'utf8'));
+    if (offenders > 0) {
+      total += offenders;
+      byFile[path.relative(repoRoot, file)] = offenders;
     }
   }
 
@@ -101,21 +150,31 @@ describe('다크모드 dark: 짝 래칫', () => {
   it('공용 선택 시트/목록 컴포넌트에는 짝 누락이 없다', () => {
     // 실기기에서 실제로 깨진 것이 확인된 컴포넌트군 — 여기는 0을 유지한다.
     const repoRoot = path.resolve(__dirname, '../../../..');
-    const guarded = [
-      'src/components/ui/BottomSheet.tsx',
-      'src/components/ui/BottomSheet.web.tsx',
-      'src/components/ui/ActionSheet.tsx',
-      'src/components/ui/FormSelect.tsx',
-      'src/components/ops/MonitorConfigCard.tsx',
-    ];
 
-    for (const relative of guarded) {
+    for (const relative of GUARDED_COMPONENTS) {
       const source = fs.readFileSync(path.join(repoRoot, relative), 'utf8');
-      const offenders = [...source.matchAll(CLASSNAME_BLOCK)].filter(
-        ([, block]) => block.includes('text-content-primary') && !block.includes('dark:text-')
-      );
-
-      expect(`${relative}: ${offenders.length}`).toBe(`${relative}: 0`);
+      expect(`${relative}: ${countOffendersIn(source)}`).toBe(`${relative}: 0`);
     }
+  });
+
+  it('수정 전 코드에서는 red 가 된다 (가드가 실제로 작동함을 증명)', () => {
+    // 이 가드의 첫 버전은 className 블록 전체를 봐서, 삼항의 다른 분기에 있는
+    // dark:text-error-400 때문에 결함 코드에서도 green 이었다(false-green).
+    // 실제로 잡히는지 수정 전 형태로 반증한다.
+    const beforeFix = `
+      <Text
+        className={\`
+          text-base font-sans-medium flex-1
+          \${option.destructive ? 'text-error-600 dark:text-error-400' : 'text-content-primary'}
+        \`}
+      >
+    `;
+    const afterFix = beforeFix.replace(
+      "'text-content-primary'",
+      "'text-content-primary dark:text-content-primary'"
+    );
+
+    expect(countOffendersIn(beforeFix)).toBeGreaterThan(0);
+    expect(countOffendersIn(afterFix)).toBe(0);
   });
 });
