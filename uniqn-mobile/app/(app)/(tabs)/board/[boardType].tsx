@@ -10,6 +10,7 @@ import { BoardPostCard } from '@/components/board/BoardPostCard';
 import { BoardTabBar, type BoardTabKey } from '@/components/board/BoardTabBar';
 import { BoardWriteFab } from '@/components/board/BoardWriteFab';
 import { useBoardPosts } from '@/hooks/useBoard';
+import { useTabBarBottomPadding } from '@/hooks/useTabBarBottomPadding';
 import { BOARD_TYPE_LABELS, type BoardType } from '@/types/board';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { PTR_REFRESH_PROPS } from '@/constants/ptr';
@@ -25,6 +26,7 @@ function navigateToTab(tab: BoardTabKey) {
 }
 
 export default function BoardListScreen() {
+  const bottomPadding = useTabBarBottomPadding();
   const { boardType: rawBoardType } = useLocalSearchParams<{ boardType: string }>();
   const boardType = rawBoardType as BoardType;
   const isValidBoardType = SUPPORTED_BOARD_TYPES.includes(boardType);
@@ -68,7 +70,11 @@ export default function BoardListScreen() {
           keyExtractor={(item) => item.id}
           // @ts-expect-error - FlashList 2.x runtime prop is available but project types lag behind
           estimatedItemSize={72}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8, paddingBottom: 80 }}
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            paddingBottom: bottomPadding,
+          }}
           refreshControl={
             <RefreshControl refreshing={isRefetching} onRefresh={refetch} {...PTR_REFRESH_PROPS} />
           }

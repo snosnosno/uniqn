@@ -39,10 +39,12 @@ import { queryKeys } from '@/lib/queryClient';
 import type { PostingType, JobPostingFilters } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { useTutorial } from '@/hooks/useTutorial';
+import { useTabBarBottomPadding } from '@/hooks/useTabBarBottomPadding';
 import { TutorialOverlay } from '@/components/tutorial';
 import { APP_INTRO_STAFF, APP_INTRO_EMPLOYER } from '@/constants/tutorials';
 
 export default function JobsScreen() {
+  const bottomPadding = useTabBarBottomPadding();
   const { isEmployer, profile } = useAuth();
   const tutorialConfig = isEmployer ? APP_INTRO_EMPLOYER : APP_INTRO_STAFF;
   const {
@@ -306,6 +308,7 @@ export default function JobsScreen() {
           onLoadMore={noop}
           onJobPress={handleJobPress}
           filledCounts={filledCountsQuery.data}
+          contentBottomPadding={bottomPadding}
           emptyMessage={`'${debouncedSearch || normalizedSearchText}' 검색 결과가 없습니다`}
         />
       ) : (
@@ -320,6 +323,7 @@ export default function JobsScreen() {
           onLoadMore={loadMore}
           onJobPress={handleJobPress}
           filledCounts={filledCountsQuery.data}
+          contentBottomPadding={bottomPadding}
           emptyMessage={
             hasActiveFilter
               ? '조건에 맞는 공고가 없어요. 필터를 넓히거나 위 ‘초기화’로 전체 공고를 볼 수 있어요.'
