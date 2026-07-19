@@ -1,82 +1,60 @@
 /**
  * UNIQN Mobile - Workspace Invite Screen (S2)
  *
- * @description 공고 워크스페이스 협업 편집 (PR #3)
- *              owner 만 진입 가능 — 이메일 정확 매칭으로 사용자 lookup 후 초대.
- *              Phase 2: 외부 이메일 + 매직 링크 (workspace_invitations.invitee_email 추가).
+ * @description 팀 멤버 초대 — owner 만 진입. 닉네임 prefix 검색으로 후보를 고른다.
+ *
+ * 2026-07-19: 이메일 정확일치 → 닉네임 검색으로 전환.
+ *   나머지 "사람 찾기" 흐름 두 개(스태프 직접추가·공고 협업자)가 이미 닉네임 prefix +
+ *   SECDEF RPC 라 여기만 구식 직접 테이블 쿼리로 남아 있었다. 사장이 상대방 이메일
+ *   주소를 정확히 알아야 하는 UX 부담도 이질적이었다.
+ *
+ *   후보 필터(구인자/관리자 한정, 본인·기존멤버·대기중초대 제외)와 권한·최소 2자·
+ *   rate limit 은 전부 RPC 가 강제한다. 이 화면은 결과를 보여주고 고르게만 한다.
  */
 
 import { useCallback, useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StackHeader } from '@/components/headers';
-import { Avatar, Button, EmptyState, Input } from '@/components/ui';
+import { Avatar, Button, EmptyState } from '@/components/ui';
+import { NicknameSearchField } from '@/components/staffPicker/NicknameSearchField';
 import { useToastStore } from '@/stores/toastStore';
-import { useInviteWorkspaceMember } from '@/hooks/workspace';
-import { workspaceService } from '@/services/workspace';
+import { useInviteWorkspaceMember, useWorkspaceInviteSearch } from '@/hooks/workspace';
+import type { WorkspaceInviteCandidate } from '@/repositories';
 import { logger } from '@/utils/logger';
 import { isAppError } from '@/errors';
-
-interface LookupResult {
-  id: string;
-  name: string | null;
-  email: string;
-  photoUrl: string | null;
-}
 
 export default function WorkspaceInviteScreen() {
   const { workspaceId } = useLocalSearchParams<{ workspaceId: string }>();
   const { addToast } = useToastStore();
-  const [emailDraft, setEmailDraft] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const [lookupResult, setLookupResult] = useState<LookupResult | null>(null);
-  const [searchError, setSearchError] = useState<string | null>(null);
+  const [nickname, setNickname] = useState('');
+  const [selected, setSelected] = useState<WorkspaceInviteCandidate | null>(null);
 
+  const { results, isSearching, errorMessage, searched, search, reset } = useWorkspaceInviteSearch(
+    workspaceId ?? ''
+  );
   const inviteMutation = useInviteWorkspaceMember();
 
-  const handleSearch = useCallback(async () => {
-    const trimmed = emailDraft.trim();
-    if (!trimmed) {
-      setLookupResult(null);
-      setSearchError(null);
-      return;
-    }
+  const handleChangeNickname = useCallback(
+    (value: string) => {
+      setNickname(value);
+      // 입력이 바뀌면 옛 결과·선택을 버린다 — 바뀐 질의와 짝이 안 맞는 카드가 남지 않게.
+      setSelected(null);
+      reset();
+    },
+    [reset]
+  );
 
-    if (!trimmed.includes('@')) {
-      setSearchError('이메일 형식을 확인해주세요');
-      setLookupResult(null);
-      return;
-    }
-
-    setIsSearching(true);
-    setSearchError(null);
-    try {
-      const found = await workspaceService.lookupUserByEmail(trimmed);
-      setLookupResult(found);
-      if (!found) {
-        // lookupUserByEmail은 미가입/스태프 계정을 구분하지 않고 동일하게 null을 반환한다
-        // (workspaceService.ts lookupUserByEmail 주석 참조 — role 필터는 의도적 설계).
-        // 서버 조회를 늘리지 않고 문구로 두 가능성을 함께 안내한다.
-        setSearchError(
-          '구인자 계정을 찾을 수 없어요. 이메일을 확인해주세요 — 스태프 계정은 팀에 초대할 수 없어요.'
-        );
-      }
-    } catch (err) {
-      logger.warn('사용자 검색 실패', { error: String(err) });
-      setSearchError('검색에 실패했어요. 다시 시도해주세요.');
-    } finally {
-      setIsSearching(false);
-    }
-  }, [emailDraft]);
+  const handleSearch = useCallback(() => {
+    setSelected(null);
+    void search(nickname);
+  }, [nickname, search]);
 
   const handleInvite = useCallback(async () => {
-    if (!workspaceId || !lookupResult) return;
+    if (!workspaceId || !selected) return;
     try {
-      await inviteMutation.mutateAsync({
-        workspaceId,
-        inviteeUserId: lookupResult.id,
-      });
+      await inviteMutation.mutateAsync({ workspaceId, inviteeUserId: selected.id });
       addToast({ type: 'success', message: '초대를 보냈어요' });
       router.back();
     } catch (err) {
@@ -85,7 +63,7 @@ export default function WorkspaceInviteScreen() {
         isAppError(err) && err.userMessage ? err.userMessage : '초대 발송에 실패했어요';
       addToast({ type: 'error', message });
     }
-  }, [workspaceId, lookupResult, inviteMutation, addToast]);
+  }, [workspaceId, selected, inviteMutation, addToast]);
 
   if (!workspaceId) {
     return (
@@ -106,81 +84,92 @@ export default function WorkspaceInviteScreen() {
       <StackHeader title="멤버 초대" />
       <ScrollView contentContainerClassName="pb-8" keyboardShouldPersistTaps="handled">
         <View className="px-4 pt-4">
-          <Text className="mb-2 text-sm font-sans-medium text-content-primary">
-            등록된 사용자 이메일
-          </Text>
-          <View className="flex-row items-center gap-2">
-            <View className="flex-1">
-              <Input
-                value={emailDraft}
-                onChangeText={(t) => {
-                  setEmailDraft(t);
-                  setLookupResult(null);
-                  setSearchError(null);
-                }}
-                placeholder="user@example.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                returnKeyType="search"
-                onSubmitEditing={handleSearch}
-              />
-            </View>
-            <Button
-              variant="primary"
-              size="md"
-              onPress={handleSearch}
-              loading={isSearching}
-              disabled={isSearching || !emailDraft.trim()}
-            >
-              검색
-            </Button>
-          </View>
-
-          {searchError && <Text className="mt-2 text-xs text-error-500">{searchError}</Text>}
+          <NicknameSearchField
+            nickname={nickname}
+            onChangeNickname={handleChangeNickname}
+            onSearch={handleSearch}
+            isSearching={isSearching}
+          />
+          {errorMessage ? (
+            <Text className="mt-2 text-sm text-error-600 dark:text-error-400">{errorMessage}</Text>
+          ) : null}
         </View>
 
-        {/* 결과 영역 */}
         <View className="mt-6 px-4">
-          {isSearching ? (
-            <View className="items-center py-8">
-              <ActivityIndicator size="small" />
-            </View>
-          ) : lookupResult ? (
-            <View className="rounded-md bg-white p-4 dark:bg-surface-elevated">
-              <View className="flex-row items-center">
-                <Avatar
-                  source={lookupResult.photoUrl ?? undefined}
-                  name={lookupResult.name ?? lookupResult.email}
-                  size="md"
-                />
-                <View className="ml-3 flex-1">
-                  <Text className="text-base font-sans-medium text-content-primary">
-                    {lookupResult.name ?? '익명'}
-                  </Text>
-                  <Text className="text-sm text-content-secondary">{lookupResult.email}</Text>
-                </View>
-              </View>
-              <Text className="mt-3 text-xs text-content-secondary">
-                초대를 수락하면 이 팀의 모든 공고를 만들고 수정할 수 있어요. 삭제는 소유자만
-                가능해요.
+          {results.length > 0 ? (
+            <>
+              <Text className="mb-2 text-sm font-sans-medium text-content-primary dark:text-content-primary">
+                검색 결과 {results.length}명
               </Text>
-              <View className="mt-4">
-                <Button variant="primary" onPress={handleInvite} loading={inviteMutation.isPending}>
-                  편집자로 초대
-                </Button>
+              <View className="gap-2">
+                {results.map((candidate) => {
+                  const isSelected = selected?.id === candidate.id;
+                  return (
+                    <Pressable
+                      key={candidate.id}
+                      onPress={() => setSelected(candidate)}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: isSelected }}
+                      accessibilityLabel={`${candidate.nickname ?? '익명'} 선택`}
+                      className={`min-h-[56px] flex-row items-center rounded-md border p-3 ${
+                        isSelected
+                          ? 'border-primary-500 bg-primary-50 dark:bg-surface-elevated'
+                          : 'border-divider bg-white dark:bg-surface-elevated'
+                      }`}
+                    >
+                      <Avatar
+                        source={candidate.photoUrl ?? undefined}
+                        name={candidate.nickname ?? candidate.name ?? '익명'}
+                        size="md"
+                      />
+                      <View className="ml-3 flex-1">
+                        <Text className="text-base font-sans-medium text-content-primary dark:text-content-primary">
+                          {candidate.nickname ?? '익명'}
+                        </Text>
+                        {candidate.name ? (
+                          <Text className="text-sm text-content-secondary dark:text-content-secondary">
+                            {candidate.name}
+                          </Text>
+                        ) : null}
+                      </View>
+                    </Pressable>
+                  );
+                })}
               </View>
+
+              {selected ? (
+                <View className="mt-4 rounded-md bg-white p-4 dark:bg-surface-elevated">
+                  <Text className="text-sm text-content-secondary dark:text-content-secondary">
+                    초대를 수락하면 이 팀의 모든 공고를 만들고 수정할 수 있어요. 삭제는 소유자만
+                    가능해요.
+                  </Text>
+                  <View className="mt-4">
+                    <Button
+                      variant="primary"
+                      onPress={handleInvite}
+                      loading={inviteMutation.isPending}
+                    >
+                      {`${selected.nickname ?? '이 사용자'}님을 편집자로 초대`}
+                    </Button>
+                  </View>
+                </View>
+              ) : null}
+            </>
+          ) : searched && !errorMessage ? (
+            <View className="items-center py-12">
+              <EmptyState
+                title="일치하는 구인자가 없어요"
+                description="닉네임 앞부분을 다시 확인해주세요. 구인자로 등록된 사용자만 팀에 초대할 수 있고, 이미 멤버이거나 초대 중인 사람은 나오지 않아요."
+              />
             </View>
-          ) : (
-            !searchError && (
-              <View className="items-center py-12">
-                <EmptyState
-                  title="이메일을 입력해주세요"
-                  description="구인자로 등록된 사용자만 멤버로 초대할 수 있어요."
-                />
-              </View>
-            )
-          )}
+          ) : !searched && !errorMessage ? (
+            <View className="items-center py-12">
+              <EmptyState
+                title="닉네임으로 찾아보세요"
+                description="구인자로 등록된 사용자만 멤버로 초대할 수 있어요."
+              />
+            </View>
+          ) : null}
         </View>
       </ScrollView>
     </SafeAreaView>
