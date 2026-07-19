@@ -1,11 +1,12 @@
 ---
 area: decisions
-updated: 2026-06-18
+updated: 2026-07-19
 status: current
 sources:
   - memory/pitfall_worktime_display_ssot_divergence.md
   - uniqn-mobile/src/shared/time/WorkTimeDisplay.ts
   - PR#170
+  - PR#271
 tags: [decisions, worktime, ssot, display, pitfall, staff-management]
 ---
 
@@ -44,8 +45,13 @@ effective = actual(checkInTime/checkOutTime) ?? scheduled(timeSlot)
 
 `isEffectiveStartActual`/`isEffectiveEndActual` 개별 판단 필요. 단일 `isActualTime` 플래그로 양쪽에 "예정" 오라벨 주의.
 
+## 확장 — 자정을 넘는 근무 (PR#271)
+
+같은 SSOT 원칙을 **계산(duration)** 축으로 확장했다. 자정을 넘는 근무에서 입력 3경로·표시 3우회가 각자 계산하던 것을 단일 지점으로 수렴시키고, 음수 `work_duration` 저장을 차단했다(`endTimeForSave`). 클라이언트 전용 변경이라 **서버측 정산 클램프는 아직 없다** — 잔여 리스크. 상세: [[overnight-worktime-ssot]].
+
 ## 관련
 
+- [[overnight-worktime-ssot]] — 자정 넘는 근무시간 SSOT 확장(PR#271)
 - [[layers]] — Presentation이 Hooks/Service 경유 없이 WorkTimeDisplay 직접 사용하는 예외
 - [[enum-divergence]] — "표시 SSOT 우회" 계열(읽기 경로 단락 클래스 공유)
 - [[capacity-full]] — 공고 상태와 함께 UI 표시 정합성 관리 사례
