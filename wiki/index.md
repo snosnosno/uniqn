@@ -12,7 +12,8 @@
 ## decisions
 - [[enum-divergence]] — enum 발산 → 읽기 레코드 증발 방지 규칙 (3회 재발 클래스)
 - [[worktime-ssot]] — 근무시간 표시 SSOT(WorkTimeDisplay) 우회 금지
-- [[capacity-full]] — 공고 자동마감 capacity_full + dead counter 제거
+- [[capacity-full]] — 공고 자동마감 capacity_full + dead counter 제거 (⚠️PR#269로 담당 주체 이관: filled=work_logs 좌석 트리거·전이=job_postings BEFORE 트리거)
+- [[test-seed-contract-drift]] — DB 계약 소유권 이관 시 테스트 시드 전수 점검: red보다 **vacuous green**이 위험(사후단언만 있으면 시드가 죽어도 조용) + 수정 후 비-공허성 red-green 증명 (PR#269→#275)
 - [[test-db-grants]] — 테스트 DB는 명시 GRANT + setup-cli 버전 pin (기본 default-privilege 의존 금지)
 - [[wallet-pgtap-caller-binding]] — 변이 RPC auth.uid() 바인딩 하드닝이 pgTAP db-tests 깨뜨림 (PR#195→#198, JWT 주입 수정)
 - [[knip-signal-hygiene]] — knip 신호 정화: 래칫 게이트 + 안전 삭제 프로토콜(미사용≠죽음 ~65% 보존, tsc 오라클, 배럴 협응삭제, stale-base 안전망) (PR#231)
@@ -43,3 +44,4 @@
 - [[jobs-filter-3axis]] — 구인구직 필터 3축(지역 P1·역할 P2·급여 P3)+전국 3단계 택소노미(67→277 slug)+공고작성 지역 필수화 — ✅PR#250/#251/#254/#257 머지·P3만 마이그(salary_*_max)
 - [[codebase-cleanup-2026-07]] — 전체 코드 정리: 버그 8종·죽은코드 −3,464줄·중복 수렴·주석 정정·"호출0"=전수 grep 프로토콜 — ✅PR#263(선행 #239 타임존 off-by-one 병기)
 - [[alert-web-noop]] — rn-web Alert.alert 완전 no-op 전수 교정: confirmAction/showAlert 단일화+ESLint 강제 — ✅PR#264
+- [[seat-basis-e2e-seed-drift]] — 좌석 기준 filled_positions 전환(사람→좌석·유지 주체 work_logs 트리거 이관) + E2E 시드 낙오로 P0 취소플로우 이틀간 red+vacuous green — ✅PR#269·#275 머지 `9cfec82db`(라이브 결함 아님, 4갈래 실측)
