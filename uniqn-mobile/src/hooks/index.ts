@@ -45,7 +45,7 @@ export {
   useCurrentWorkStatus,
   useWorkLogStats,
 } from './useWorkLogs';
-export { useQRCodeScanner, useQRScannerModal, useQRDisplayModal } from './useQRCode';
+export { useQRCodeScanner, useQRScannerModal } from './useQRCode';
 
 export {
   useNotificationHandler,
