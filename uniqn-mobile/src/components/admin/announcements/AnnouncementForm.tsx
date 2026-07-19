@@ -35,12 +35,9 @@ import {
   MAX_ANNOUNCEMENT_IMAGES,
 } from '@/types/announcement';
 import type { UserRole } from '@/types/role';
-
-const TARGET_ROLE_LABELS: Record<UserRole, string> = {
-  admin: '관리자',
-  employer: '구인자',
-  staff: '스태프',
-};
+// UserRole 표시명 단일 소스. 과거에는 ROLE_LABELS 의 staff 가 '일반'이라 여기서
+// 로컬 맵을 재정의했으나, 2026-07-19 정리로 그럴 이유가 없어졌다.
+import { USER_ROLE_LABELS as TARGET_ROLE_LABELS } from '@/types/role';
 
 interface AnnouncementFormProps {
   initialData?: Partial<CreateAnnouncementInput> & {

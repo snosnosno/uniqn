@@ -4,7 +4,7 @@
  * 2026-05-14 migration 으로 `job_postings.workspace_id NOT NULL` 전환되어
  * job_postings 시드 전에 workspace 가 사전 보장되어야 한다.
  *
- * 본 헬퍼는 (owner_id, name) 매칭으로 멱등 — 동일 owner 의 'E2E 테스트 워크스페이스'
+ * 본 헬퍼는 (owner_id, name) 매칭으로 멱등 — 동일 owner 의 'E2E 테스트 팀'
  * 가 이미 있으면 재사용. job_postings 시드 시 반환된 workspace_id 를 함께 INSERT.
  *
  * 2026-05-17 race fix: Playwright workers=4 병렬 환경에서 같은 owner 로 다중
@@ -15,7 +15,14 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-export const E2E_TEST_WORKSPACE_NAME = 'E2E 테스트 워크스페이스';
+/**
+ * ⚠️ 이 값은 단순 표시 문자열이 아니라 **멱등 조회키**다.
+ * `(owner_id, name)` 매칭으로 get-or-create 하므로, 바꾸면 기존 행을 못 찾아
+ * 매 실행마다 중복 워크스페이스가 쌓인다. DB 쪽 이름을 바꾸는 마이그레이션과
+ * 반드시 함께 움직여야 한다 (2026-07-19 용어 통일에서 실제로 걸림).
+ * 다른 스펙 파일은 이 상수를 **import** 할 것 — 리터럴 재정의 금지.
+ */
+export const E2E_TEST_WORKSPACE_NAME = 'E2E 테스트 팀';
 
 /**
  * 주어진 owner 의 E2E 워크스페이스를 보장하고 ID 반환 (멱등 + race-safe).
@@ -74,7 +81,7 @@ export async function ensureE2EWorkspace(
  * 앱은 `workspaceService.pickOwnedWorkspaceId` 에서 owned 워크스페이스를
  * `created_at` 오름차순 정렬 후 가장 오래된 것을 현재 워크스페이스로 사용한다.
  * /employer 리스트는 이 현재 워크스페이스로 필터링되므로, 리스트 가시성을
- * 검증하는 테스트는 별도의 'E2E 테스트 워크스페이스' 가 아니라 이 기본
+ * 검증하는 테스트는 별도의 'E2E 테스트 팀' 가 아니라 이 기본
  * 워크스페이스에 공고를 시드해야 한다.
  *
  * owned 워크스페이스가 하나도 없으면 `ensureE2EWorkspace` 로 생성 후 반환(폴백).

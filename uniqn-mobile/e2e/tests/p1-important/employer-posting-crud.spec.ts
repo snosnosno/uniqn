@@ -22,7 +22,7 @@ async function seedJobPosting(
 
   const workDate = new Date(Date.now() + 10 * 86_400_000).toISOString().slice(0, 10);
   // 앱이 현재 워크스페이스로 보여주는 기본(가장 오래된 owned) 워크스페이스에 시드해야
-  // /employer 리스트에 노출된다. 별도 'E2E 테스트 워크스페이스' 에 넣으면 0건으로 보임.
+  // /employer 리스트에 노출된다. 별도 'E2E 테스트 팀' 에 넣으면 0건으로 보임.
   const workspaceId = await getDefaultWorkspaceId(admin, TEST_ACCOUNTS.employer.uid);
 
   const { data, error } = await admin

@@ -10,6 +10,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import path from 'path';
 import { getAdminClient, SUPABASE_QA_ACCOUNTS } from '../../helpers/supabase-admin';
+import { E2E_TEST_WORKSPACE_NAME } from '../../helpers/workspace-seed';
 import { AdminDashboardPage } from '../../pages/admin/dashboard.page';
 import { AdminReportsPage } from '../../pages/admin/reports.page';
 
@@ -55,8 +56,6 @@ interface SeededReport {
   reportId: string;
   jobPostingId: string;
 }
-
-const E2E_TEST_WORKSPACE_NAME = 'E2E 테스트 워크스페이스';
 
 async function seedTestReport(): Promise<SeededReport | null> {
   const adminClient = getAdminClient();

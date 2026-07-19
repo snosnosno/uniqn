@@ -10,7 +10,8 @@
  * 3. 다양한 역할 필드 형식 통합 처리
  */
 
-import { ROLE_LABELS, STAFF_ROLES } from '@/constants';
+import { STAFF_ROLES } from '@/constants';
+import { STAFF_ROLE_LABELS } from '@/types/role';
 import { PermissionError, ERROR_CODES } from '@/errors';
 import type { UserRole } from '@/types';
 import type { ResolvedRole, StaffRoleInput, AssignmentRoleInput } from './types';
@@ -282,7 +283,9 @@ export class RoleResolver {
     if (roleId === 'other' && customRole) {
       return customRole;
     }
-    return ROLE_LABELS[roleId] ?? roleId;
+    // 직무 역할 전용 함수이므로 StaffRole 맵을 직접 읽는다.
+    // ROLE_LABELS 는 UserRole 과 StaffRole 을 합성한 맵이라 staff 키가 오염돼 있었다.
+    return STAFF_ROLE_LABELS[roleId as keyof typeof STAFF_ROLE_LABELS] ?? roleId;
   }
 
   /**

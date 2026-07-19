@@ -311,7 +311,7 @@ export const JOB_POSTING_STATUS: Record<JobPostingStatusType, StatusConfig> = {
   // 운영처(venue) 컨테이너 — 숨김 상태. fail-closed 로 공개/운영자 목록에 노출되지 않으므로
   // 일반 UI 뱃지로는 표시되지 않으나, Record<JobPostingStatusType, …> 타입 완전성을 위해 정의.
   container: {
-    label: '운영처',
+    label: '지점',
     variant: 'secondary',
     textColor: 'text-secondary-600 dark:text-secondary-400',
     bgColor: 'bg-secondary-100 dark:bg-surface',

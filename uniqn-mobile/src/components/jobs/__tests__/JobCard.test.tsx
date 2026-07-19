@@ -422,12 +422,15 @@ describe('JobCard role labels', () => {
     expect(getByText(/서빙/)).toBeTruthy();
   });
 
-  it('renders staff as 일반', () => {
+  // 공고 카드는 직무 문맥이라 '직원'이 맞다. 공고 작성 화면(STAFF_ROLES 칩)이
+  // 이미 '직원'을 쓰고 있어, 과거 '일반' 표시는 같은 역할이 화면마다 갈라져
+  // 보이는 불일치였다 (2026-07-19 정리).
+  it('renders staff as 직원', () => {
     const { getByText } = render(
       <JobCard job={createJobWithRole('staff')} onPress={mockOnPress} />
     );
 
-    expect(getByText(/일반/)).toBeTruthy();
+    expect(getByText(/직원/)).toBeTruthy();
   });
 
   it('renders custom roles as-is', () => {
