@@ -91,12 +91,11 @@ QR 스캔·생성·출석 기능이 "얽혀서 쓰기 어렵다"는 문제 제�
   ┌─────────────────┐
   │   [ QR 코드 ]   │
   └─────────────────┘
-  [ 이미지 저장 ]  [ 공유 ]
 ```
 
-**사라지는 UI**: 출근/퇴근 모드 토글, 날짜 선택, 시간슬롯 선택, 남은시간 카운트다운, 자동 갱신, 수동 새로고침. 사장이 고를 것 **0개**.
+**사라지는 UI**: 출근/퇴근 모드 토글, 날짜 선택, 시간슬롯 선택, 남은시간 카운트다운, 자동 갱신, 수동 새로고침. 사장이 고를 것 **0개**. 안내 문구도 두지 않는다.
 
-안내 문구는 두지 않는다 — 카운트다운이 없고 저장/공유 버튼이 있다는 것 자체가 고정 QR임을 드러낸다.
+**저장/공유 버튼은 두지 않는다.** `expo-media-library`·`react-native-view-shot`·`expo-sharing`·`expo-file-system`이 전부 미설치이고(설치된 QR 관련 패키지는 `react-native-qrcode-svg` 하나뿐), 이들은 네이티브 모듈이라 **OTA로 배포되지 않고 새 EAS 빌드를 요구한다.** 저장은 스크린샷으로 충분하다 — iOS·Android 모두 기본 기능이다. 이 원칙 덕분에 이번 작업 전체가 OTA로 나간다.
 
 **고정(`isFixed`) 공고도 QR 활성화.** 막았던 이유(날짜·슬롯 선택 복잡도)가 사라지므로 막을 근거가 없다. `index.tsx`의 `!(contextIsFixed || isFixed)` 이중 판정도 함께 정리한다.
 
@@ -149,9 +148,13 @@ QR 스캔·생성·출석 기능이 "얽혀서 쓰기 어렵다"는 문제 제�
 
 ### 5. 리스크 (계획 단계에서 해소)
 
-1. **고정(`isFixed`) 공고의 work_log 조회 — 미검증**
-   `findByJobPostingStaffDate`가 날짜로 조회하는데, 고정 스케줄 work_log는 `date`가 `null`일 수 있다(SP1 결정: `kind` 유지 · `date: null`). RPC는 `is_fixed_posting=true`면 날짜 검증을 건너뛰지만(64행) **클라이언트 조회 경로는 확인되지 않았다.** 여기가 안 맞으면 고정 공고 QR이 "배정된 근무가 없습니다"로 튕긴다.
-   → 계획 첫 단계에서 `findByJobPostingStaffDate` 구현과 고정 공고 work_log의 실제 `date` 값을 실측할 것.
+1. **고정(`isFixed`) 공고의 work_log 조회 — ✅ 실측 완료, 해소 방법 확정**
+   고정 공고 work_log의 `date`는 `null`이 아니라 **`'FIXED_SCHEDULE'` 리터럴**이다(`FIXED_DATE_MARKER`, `src/types/assignment.ts:19`). 컬럼 자체가 `NOT NULL` 제약이라 NULL이 들어갈 수 없다(baseline 스키마 3863행). 그런데 `findByJobPostingStaffDate`는 `.eq('date', 오늘)`로 조회하므로 **고정 공고는 현재 코드로 QR 출근이 불가능하다.**
+   → 해소: `.in('date', [오늘, 'FIXED_SCHEDULE'])`로 한 쿼리에서 함께 조회하는 신규 메서드 `findQRCandidates`를 추가한다.
+
+1-b. **하루 다중 배정 — 신규 발견, 자동 선택으로 해소**
+   `(job_posting_id, staff_id, date)`에 UNIQUE 제약이 **없고**(PK는 `id`뿐), `confirm_application`이 `roleIds × dates`를 개별 행으로 flat INSERT하므로 같은 날 다른 시간대/역할로 여러 행이 정상 생성된다. 기존 `findByJobPostingStaffDate`는 2행 이상이면 `BusinessError`("assignment별 QR이 필요합니다")를 던지는데, 이는 회전 QR 전제라 고정 QR과 정면 충돌한다.
+   → 해소: 스태프가 고를 것을 0개로 유지하기 위해 **클라이언트가 자동 선택**한다. ①`checked_in` 후보가 있으면 그것(퇴근) ②없으면 `scheduled` 후보 중 시작시각이 현재와 가장 가까운 것(출근, 자정 넘는 근무를 위해 24시간 순환 거리) ③둘 다 없으면 사유별 문구로 거부.
 
 2. **`event_qr_codes` 테이블 처리**
    앱에서 안 쓰게 되지만 RLS 정책과 pgTAP 테스트 4종이 물려 있다. **이번 PR에서는 테이블을 남기고 앱 코드만 끊는다.** DROP은 별도 PR로 분리 — 컬럼/테이블 DROP 전 `pg_proc.prosrc` 의존성 실측 규율을 따른다.
