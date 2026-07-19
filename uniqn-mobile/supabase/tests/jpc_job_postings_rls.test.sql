@@ -62,23 +62,23 @@ SELECT is(
 );
 
 -- ============================================================================
--- INSERT (4 케이스) — prod 실측(2026-07-12, baseline 파리티):
---   PERMISSIVE jp_insert: get_my_role() = ANY('{admin,employer}')  ← 앱-역할 게이트
+-- INSERT (4 케이스) — prod 실측(2026-07-19, PR#267 하드닝 반영):
+--   PERMISSIVE jp_insert WITH CHECK:
+--     get_my_role() = ANY('{admin,employer}')            ← 앱-역할 게이트
+--     AND (owner_id = auth.uid() OR get_my_role()='admin') ← PR#267 [M-1] owner 바인딩
 --   RESTRICTIVE jp_container_no_direct_insert: status <> 'container' (active라 항상 통과)
--- get_my_role() = auth.jwt()->'app_metadata'->>'role'. 하네스 jpc_test_set_user()는
--- app_metadata 없는 JWT를 만들어 get_my_role()=''(게이트 실패)가 되므로, 여기서는 prod의
--- 실제 employer/staff JWT가 싣는 app_metadata.role을 인라인 주입한다(픽스처 수정 없이).
+-- get_my_role() = auth.jwt()->'app_metadata'->>'role' (plural claims 만 읽음).
+-- auth.uid() 는 singular GUC(request.jwt.claim.sub)를 먼저 읽고 plural 은 fallback.
+--   ⇒ 두 GUC 를 함께 갱신하는 jpc_test_set_user_with_role() 경유 필수.
+--     plural 만 인라인 주입하면 직전 케이스가 남긴 singular 가 살아남아 auth.uid() 가
+--     outsider 를 반환 → 역할 게이트는 통과하는데 owner 바인딩만 깨져 42501.
+--     (실증: 07-17~19 master db-tests red 3건의 원인. prod 결함 아님)
 -- 페르소나 앱-역할(픽스처 jpc_test_seed): owner/editor/collaborator=employer, outsider=staff.
 --   ⇒ employer 3 ALLOW / staff outsider 1 DENY(42501).
 -- ============================================================================
 
 -- owner (employer) → ALLOW
-DO $$ BEGIN
-  PERFORM set_config('request.jwt.claims',
-    json_build_object('sub', current_setting('jpc.owner_id'), 'role', 'authenticated',
-                      'app_metadata', json_build_object('role', 'employer'))::text, true);
-  PERFORM set_config('role', 'authenticated', true);
-END $$;
+SELECT jpc_test_set_user_with_role((current_setting('jpc.owner_id'))::uuid, 'employer');
 SELECT lives_ok(
   $$INSERT INTO public.job_postings (owner_id, owner_name, workspace_id, title, status, posting_type,
                                      work_date, work_dates, total_positions, filled_positions, view_count,
@@ -89,12 +89,7 @@ SELECT lives_ok(
 );
 
 -- ws_editor (employer) → ALLOW
-DO $$ BEGIN
-  PERFORM set_config('request.jwt.claims',
-    json_build_object('sub', current_setting('jpc.editor_id'), 'role', 'authenticated',
-                      'app_metadata', json_build_object('role', 'employer'))::text, true);
-  PERFORM set_config('role', 'authenticated', true);
-END $$;
+SELECT jpc_test_set_user_with_role((current_setting('jpc.editor_id'))::uuid, 'employer');
 SELECT lives_ok(
   $$INSERT INTO public.job_postings (owner_id, owner_name, workspace_id, title, status, posting_type,
                                      work_date, work_dates, total_positions, filled_positions, view_count,
@@ -106,12 +101,7 @@ SELECT lives_ok(
 
 -- collaborator (employer) → ALLOW. 페르소나명은 공고 관계일 뿐, 앱-역할은 employer라
 -- 순수 역할 게이트를 통과한다(구세대 계약처럼 workspace 관계를 보지 않음).
-DO $$ BEGIN
-  PERFORM set_config('request.jwt.claims',
-    json_build_object('sub', current_setting('jpc.collab_id'), 'role', 'authenticated',
-                      'app_metadata', json_build_object('role', 'employer'))::text, true);
-  PERFORM set_config('role', 'authenticated', true);
-END $$;
+SELECT jpc_test_set_user_with_role((current_setting('jpc.collab_id'))::uuid, 'employer');
 SELECT lives_ok(
   $$INSERT INTO public.job_postings (owner_id, owner_name, workspace_id, title, status, posting_type,
                                      work_date, work_dates, total_positions, filled_positions, view_count,
@@ -122,12 +112,7 @@ SELECT lives_ok(
 );
 
 -- outsider (staff) → DENY 42501. get_my_role()=staff 라 jp_insert 역할 게이트 실패.
-DO $$ BEGIN
-  PERFORM set_config('request.jwt.claims',
-    json_build_object('sub', current_setting('jpc.outsider_id'), 'role', 'authenticated',
-                      'app_metadata', json_build_object('role', 'staff'))::text, true);
-  PERFORM set_config('role', 'authenticated', true);
-END $$;
+SELECT jpc_test_set_user_with_role((current_setting('jpc.outsider_id'))::uuid, 'staff');
 SELECT throws_ok(
   $$INSERT INTO public.job_postings (owner_id, owner_name, workspace_id, title, status, posting_type,
                                      work_date, work_dates, total_positions, filled_positions, view_count,
