@@ -2,12 +2,12 @@
 -- 주간 배치 그리드 — 보안 회귀(M1/M3 전체리뷰 적출 보강)
 -- ============================================================
 -- 검증:
---   A. anon EXECUTE 차단(S2) — 그리드 8 RPC 전부 has_function_privilege('anon',...,'EXECUTE')=false
+--   A. anon EXECUTE 차단(S2) — 그리드 8 RPC + 협업자 검색 RPC 1종 has_function_privilege('anon',...,'EXECUTE')=false
 --      (get_or_create_venue_container / venue_span_posting_ids / get_venue_grid_summary /
---       get_venue_day_slots / set_venue_soft_target / search_users_by_phone /
---       add_direct_staff / remove_direct_staff)
+--       get_venue_day_slots / set_venue_soft_target / search_users_by_nickname /
+--       add_direct_staff / remove_direct_staff / search_collaborator_candidates_by_nickname)
 --   B. SECDEF search_path 하드닝 — pg_temp 사용 7 RPC 의 proconfig 가 'public' 우선 + 'pg_temp' 후행
---      (pg_temp 마스킹 차단; search_users_by_phone 은 설계상 'public' 단독이라 대상 제외)
+--      (pg_temp 마스킹 차단; 닉네임 검색 RPC 2종은 search_path='' 하드닝이라 'public 우선' 패턴 대상 아님)
 --   C. venue_span_posting_ids INVOKER fail-closed —
 --      C1(non-vacuous control): postgres(RLS 우회)는 컨테이너 스팬 >= 1 (데이터 실재)
 --      C2(fail-closed): 외부인(타 워크스페이스 authenticated)은 RLS 로 0행
@@ -21,7 +21,7 @@
 -- ============================================================
 
 BEGIN;
-SELECT plan(19);
+SELECT plan(26);
 
 -- ── A. anon EXECUTE 차단(8) ─────────────────────────────────────────────
 SELECT ok(NOT has_function_privilege('anon',
@@ -40,14 +40,18 @@ SELECT ok(NOT has_function_privilege('anon',
   'public.set_venue_soft_target(uuid, text, integer)'::regprocedure, 'EXECUTE'),
   'anon EXECUTE 차단(S2): set_venue_soft_target');
 SELECT ok(NOT has_function_privilege('anon',
-  'public.search_users_by_phone(text)'::regprocedure, 'EXECUTE'),
-  'anon EXECUTE 차단(S2): search_users_by_phone');
+  'public.search_users_by_nickname(text)'::regprocedure, 'EXECUTE'),
+  'anon EXECUTE 차단(S2): search_users_by_nickname');
 SELECT ok(NOT has_function_privilege('anon',
   'public.add_direct_staff(uuid, uuid, jsonb)'::regprocedure, 'EXECUTE'),
   'anon EXECUTE 차단(S2): add_direct_staff');
 SELECT ok(NOT has_function_privilege('anon',
   'public.remove_direct_staff(uuid)'::regprocedure, 'EXECUTE'),
   'anon EXECUTE 차단(S2): remove_direct_staff');
+-- 신규 협업자 검색 RPC anon 차단 회귀 가드(구 search_users_for_collaborator_invite 대체)
+SELECT ok(NOT has_function_privilege('anon',
+  'public.search_collaborator_candidates_by_nickname(uuid, text)'::regprocedure, 'EXECUTE'),
+  'anon EXECUTE 차단(S2): search_collaborator_candidates_by_nickname');
 
 -- ── B. proconfig: 'public' 우선 + 'pg_temp' 후행(마스킹 차단) (7) ────────
 -- 추출한 search_path 설정이 `search_path=public` 으로 시작(public 우선)하고
@@ -178,6 +182,59 @@ SELECT is((SELECT v FROM _sec WHERE k='m1_headcount'), '1',
   'D1 M1: get_venue_grid_summary 가 타 워크스페이스 유령행 제외(headcount=1)');
 SELECT is((SELECT v FROM _sec WHERE k='m1_slots'), '1',
   'D2 M1: get_venue_day_slots 가 타 워크스페이스 유령행 제외(행수=1)');
+
+-- ── E. 닉네임 검색 rate limit 회귀 가드 (6) ──────────────────────────────
+-- 검색 RPC 는 check_user_rate_limit → check_rate_limit 으로 rate_limits 에 토큰을 차감한다.
+--
+-- E1·E2 (provolatile): 함수가 STABLE 로 되돌아가면 플래너가 호출을 접어(fold) 카운트가
+--   누락될 수 있다. ※ STABLE 이라고 중첩 DML 이 거부되지는 않는다 — read-only 강제는
+--   함수 자신의 provolatile 기준이라 전파되지 않는다. 즉 회귀 증상은 요란한 실패가 아니라
+--   **조용한 카운트 누락**이므로 이 가드가 유일한 조기 경보다.
+--   regprocedure 로 고정한다 — proname 스칼라 서브쿼리는 향후 오버로드가 생기면
+--   단언 실패가 아니라 `more than one row returned` 로 스위트 전체를 깨뜨린다.
+-- E3·E4 (호출 존재): provolatile 만으로는 부족하다. rate limit 블록만 삭제하고 VOLATILE 을
+--   남기면 E1·E2 는 계속 GREEN 인데 열거 방어는 사라진다. 본문에 호출이 남아있는지 본다.
+-- E5 (실동작): 한도 인프라가 실제로 트립하는지. 21회차에서 allowed=false 여야 한다.
+SELECT is(
+  (SELECT p.provolatile::text FROM pg_proc p
+   WHERE p.oid = 'public.search_users_by_nickname(text)'::regprocedure),
+  'v',
+  'E1: search_users_by_nickname 은 VOLATILE (플래너 폴딩 방지)');
+SELECT is(
+  (SELECT p.provolatile::text FROM pg_proc p
+   WHERE p.oid = 'public.search_collaborator_candidates_by_nickname(uuid, text)'::regprocedure),
+  'v',
+  'E2: search_collaborator_candidates_by_nickname 은 VOLATILE (플래너 폴딩 방지)');
+SELECT ok(
+  (SELECT p.prosrc LIKE '%check_user_rate_limit%' FROM pg_proc p
+   WHERE p.oid = 'public.search_users_by_nickname(text)'::regprocedure),
+  'E3: search_users_by_nickname 본문에 rate limit 호출이 남아있다');
+SELECT ok(
+  (SELECT p.prosrc LIKE '%check_user_rate_limit%' FROM pg_proc p
+   WHERE p.oid = 'public.search_collaborator_candidates_by_nickname(uuid, text)'::regprocedure),
+  'E4: search_collaborator_candidates_by_nickname 본문에 rate limit 호출이 남아있다');
+
+-- E5: 한도 20 이 실제로 트립하는가. 임의 uuid 로 21회 호출 — 픽스처 불필요하고
+--     테스트 트랜잭션이 ROLLBACK 되므로 rate_limits 오염도 없다.
+DO $$
+DECLARE
+  v_uid  uuid := '00000000-0000-4000-8000-0000000000e5';
+  v_rate jsonb;
+BEGIN
+  FOR i IN 1..20 LOOP
+    v_rate := public.check_user_rate_limit(v_uid, '_pgtap_probe', 20, 60);
+  END LOOP;
+  -- 20회까지는 통과해야 한다
+  INSERT INTO _sec VALUES ('e5_20th_allowed', (v_rate ->> 'allowed'));
+  -- 21회차는 차단되어야 한다
+  v_rate := public.check_user_rate_limit(v_uid, '_pgtap_probe', 20, 60);
+  INSERT INTO _sec VALUES ('e5_21st_allowed', (v_rate ->> 'allowed'));
+END $$;
+
+SELECT is((SELECT v FROM _sec WHERE k='e5_20th_allowed'), 'true',
+  'E5a: 한도 내(20회차) 검색은 허용된다');
+SELECT is((SELECT v FROM _sec WHERE k='e5_21st_allowed'), 'false',
+  'E5b: 21회차는 차단된다 (한도 상수 20 회귀 가드)');
 
 SELECT * FROM finish();
 ROLLBACK;

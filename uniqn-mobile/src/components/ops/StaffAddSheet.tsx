@@ -1,26 +1,26 @@
 /**
  * ops 1e — 로스터 수동 추가 시트.
- * 전화번호 검색(useStaffPhoneSearch, search_users_by_phone RPC 재사용) → 가입자 선택 → 역할 선택
+ * 닉네임 검색(useStaffNicknameSearch, search_users_by_nickname RPC 재사용) → 가입자 선택 → 역할 선택
  * → ops_add_staff(useAddOpsStaff). 제출 직전 addOpsStaffInputSchema 로 재검증
  * (자유 텍스트 customRole XSS 방어 — CLAUDE.md 시스템 경계 검증 규칙, 이전까지 미소비였던 스키마를 여기서 소비).
- * AddStaffModal(직접추가 스태프, 근태 배정)의 전화검색 UX 를 차용하되 날짜/시간대 필드는 뺀다
+ * AddStaffModal(직접추가 스태프, 근태 배정)의 닉네임검색 UX 를 차용하되 날짜/시간대 필드는 뺀다
  * (ops_staff 는 (대회, 스태프) 단위 로스터라 work_logs 식 근태 슬롯이 불필요).
  */
 import { useCallback, useEffect, useState } from 'react';
 import { Keyboard, Pressable, Text, View } from 'react-native';
 import { STAFF_ROLES } from '@/constants';
-import { SECONDARY_PALETTE } from '@/constants/colors';
 import { SheetModal } from '@/components/ui/SheetModal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { Loading } from '@/components/ui/Loading';
-import { SearchIcon, UserPlusIcon } from '@/components/icons';
-import { useStaffPhoneSearch } from '@/hooks/useStaffPhoneSearch';
+import { UserPlusIcon } from '@/components/icons';
+import { NicknameSearchField, SearchErrorNotice } from '@/components/staffPicker';
+import { useStaffNicknameSearch } from '@/hooks/useStaffNicknameSearch';
 import { useAddOpsStaff } from '@/hooks/ops';
 import { addOpsStaffInputSchema } from '@/schemas/opsStaff.schema';
 import { useToastStore } from '@/stores/toastStore';
-import type { UserPhoneSearchResult } from '@/repositories';
+import type { UserNicknameSearchResult } from '@/repositories';
 import type { StaffRole } from '@/types/role';
 
 export interface StaffAddSheetProps {
@@ -32,17 +32,24 @@ export interface StaffAddSheetProps {
 const OTHER_ROLE_KEY: StaffRole = 'other';
 
 export function StaffAddSheet({ visible, tournamentId, onClose }: StaffAddSheetProps) {
-  const { results, isSearching, searched, search, reset } = useStaffPhoneSearch();
+  const {
+    results,
+    isSearching,
+    searched,
+    search,
+    reset,
+    error: searchError,
+  } = useStaffNicknameSearch();
   const addMut = useAddOpsStaff(tournamentId);
 
-  const [phone, setPhone] = useState('');
-  const [selected, setSelected] = useState<UserPhoneSearchResult | null>(null);
+  const [nickname, setNickname] = useState('');
+  const [selected, setSelected] = useState<UserNicknameSearchResult | null>(null);
   const [roleKey, setRoleKey] = useState<StaffRole | ''>('');
   const [customRole, setCustomRole] = useState('');
 
   const resetAll = useCallback(() => {
     reset();
-    setPhone('');
+    setNickname('');
     setSelected(null);
     setRoleKey('');
     setCustomRole('');
@@ -66,8 +73,8 @@ export function StaffAddSheet({ visible, tournamentId, onClose }: StaffAddSheetP
     // keyboardShouldPersistTaps='handled' 라 검색 버튼 탭만으로는 키보드가 자동으로 내려가지 않는다.
     Keyboard.dismiss();
     setSelected(null);
-    void search(phone);
-  }, [phone, search]);
+    void search(nickname);
+  }, [nickname, search]);
 
   const isCustomRole = roleKey === OTHER_ROLE_KEY;
   const canSubmit =
@@ -117,36 +124,21 @@ export function StaffAddSheet({ visible, tournamentId, onClose }: StaffAddSheetP
       footer={footer}
     >
       <View className="p-5">
-        {/* 1단계: 전화번호 검색 */}
-        <View className="flex-row items-end gap-2">
-          <View className="flex-1">
-            <Input
-              label="전화번호"
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="등록된 전화번호 전체 입력"
-              keyboardType="phone-pad"
-              hint="개인정보 보호를 위해 전화번호 전체가 정확히 일치해야 검색됩니다."
-              onSubmitEditing={handleSearch}
-              returnKeyType="search"
-            />
-          </View>
-          <Button
-            variant="secondary"
-            onPress={handleSearch}
-            loading={isSearching}
-            icon={<SearchIcon size={18} color={SECONDARY_PALETTE[500]} />}
-            accessibilityLabel="전화번호로 검색"
-          >
-            검색
-          </Button>
-        </View>
+        {/* 1단계: 닉네임 검색 */}
+        <NicknameSearchField
+          nickname={nickname}
+          onChangeNickname={setNickname}
+          onSearch={handleSearch}
+          isSearching={isSearching}
+        />
 
         {/* 검색 결과 */}
         {isSearching ? (
           <View className="items-center py-6">
             <Loading size="small" />
           </View>
+        ) : searchError ? (
+          <SearchErrorNotice error={searchError} />
         ) : searched && results.length === 0 ? (
           <Text className="py-4 text-center text-sm text-content-secondary font-sans">
             일치하는 가입자를 찾을 수 없습니다.

@@ -20,7 +20,7 @@ import type {
   IUserRepository,
   DeletionRequest,
   UserDataExport,
-  UserPhoneSearchResult,
+  UserNicknameSearchResult,
 } from '../interfaces';
 import type { FirestoreUserProfile, MyDataEditableFields } from '@/types';
 
@@ -147,30 +147,31 @@ export class SupabaseUserRepository implements IUserRepository {
     }
   }
 
-  async searchByPhone(phone: string): Promise<UserPhoneSearchResult[]> {
+  async searchByNickname(nickname: string): Promise<UserNicknameSearchResult[]> {
     try {
-      // 짧은 입력 차단(열거 방지)은 호출측 서비스(searchStaffByPhone)와 RPC 본문이 담당.
-      logger.info('전화번호 사용자 검색', { phoneDigits: phone.replace(/\D/g, '').length });
+      // 짧은 입력 차단(열거 방지)은 호출측 서비스(searchStaffByNickname)와 RPC 본문이 담당.
+      logger.info('닉네임 사용자 검색', { nicknameLength: nickname.trim().length });
 
-      const { data, error } = await supabase.rpc('search_users_by_phone', { p_phone: phone });
+      const { data, error } = await supabase.rpc('search_users_by_nickname', {
+        p_nickname: nickname,
+      });
 
       if (error) {
-        handleSupabaseError(error, { operation: '전화번호 사용자 검색', table: TABLES.USERS });
+        handleSupabaseError(error, { operation: '닉네임 사용자 검색', table: TABLES.USERS });
       }
 
       return ((data ?? []) as Record<string, unknown>[]).map((row) => ({
         uid: row.id as string,
         name: (row.name as string) ?? '',
         nickname: (row.nickname as string) ?? undefined,
-        phone: (row.phone as string) ?? undefined,
         photoURL: (row.photo_url as string) ?? null,
         photoURLBlurhash: (row.photo_url_blurhash as string) ?? null,
         region: (row.region as string) ?? undefined,
       }));
     } catch (error) {
       if (isAppError(error)) throw error;
-      logger.error('전화번호 사용자 검색 실패', toError(error));
-      handleSupabaseError(error, { operation: '전화번호 사용자 검색', table: TABLES.USERS });
+      logger.error('닉네임 사용자 검색 실패', toError(error));
+      handleSupabaseError(error, { operation: '닉네임 사용자 검색', table: TABLES.USERS });
     }
   }
 
