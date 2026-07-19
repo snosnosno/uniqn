@@ -153,7 +153,7 @@ describe('useAuthGuard', () => {
     renderHook(() => useAuthGuard());
 
     await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith('/(app)/home');
+      expect(mockReplace).toHaveBeenCalledWith('/(app)/(tabs)/home-jobs');
     });
   });
 
@@ -171,7 +171,7 @@ describe('useAuthGuard', () => {
     renderHook(() => useAuthGuard());
 
     await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith('/(app)/home');
+      expect(mockReplace).toHaveBeenCalledWith('/(app)/(tabs)/home-jobs');
     });
   });
 
@@ -339,11 +339,12 @@ describe('useAuthGuard', () => {
   });
 
   // PR #120 회귀 가드 (이제 방어용): Jobs 탭을 /home-jobs 로 분리(URL '/' 및 공개 '/jobs'
-  // 충돌 해소)한 뒤로는 HomeTabBar 가 '/(app)/(tabs)/home-jobs' (URL '/home-jobs') 로 push
-  // 하므로 이 시나리오는 자연 발생하지 않는다. 다만 정적 빌드 라우터가 '/'+segments=['(tabs)'] 로 재해석하는
+  // 충돌 해소)한 뒤로는 탭 그룹 진입이 '/(app)/(tabs)/home-jobs' (URL '/home-jobs') 로
+  // 귀결(app/(app)/(tabs)/_layout.tsx 의 initialRouteName)되므로 이 시나리오는 자연
+  // 발생하지 않는다. 다만 정적 빌드 라우터가 '/'+segments=['(tabs)'] 로 재해석하는
   // 잔여 경로를 대비해 가드는 유지. group segment 가 하나라도 있으면 의도된 in-app
   // 네비게이션이므로 redirect 를 건너뛴다.
-  it('does not redirect authenticated users to home when navigating into a tabs group at root URL', async () => {
+  it('does not redirect authenticated users to the jobs tab when navigating into a tabs group at root URL', async () => {
     mockPathname = '/';
     mockSegments = ['(tabs)'];
     mockAuthState.user = { uid: 'staff-1', email: 'staff@example.com', phoneNumber: null };
@@ -362,7 +363,7 @@ describe('useAuthGuard', () => {
     });
   });
 
-  it('still redirects authenticated users to home on a true root entry with empty segments', async () => {
+  it('still redirects authenticated users to the jobs tab on a true root entry with empty segments', async () => {
     mockPathname = '/';
     mockSegments = [];
     mockAuthState.user = { uid: 'staff-1', email: 'staff@example.com', phoneNumber: null };
@@ -376,7 +377,7 @@ describe('useAuthGuard', () => {
     renderHook(() => useAuthGuard());
 
     await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith('/(app)/home');
+      expect(mockReplace).toHaveBeenCalledWith('/(app)/(tabs)/home-jobs');
     });
   });
 

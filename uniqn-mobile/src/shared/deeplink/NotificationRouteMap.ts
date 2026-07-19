@@ -33,6 +33,10 @@ export const NOTIFICATION_ROUTE_MAP: Record<
     data?.applicationId
       ? { name: 'schedule', params: { applicationId: data.applicationId } }
       : { name: 'schedule' },
+  [NotificationType.CANCELLATION_REQUESTED]: (data) =>
+    data?.jobPostingId
+      ? { name: 'employer/cancellation-requests', params: { jobId: data.jobPostingId } }
+      : { name: 'employer/my-postings' },
 
   [NotificationType.STAFF_CHECKED_IN]: (data) =>
     data?.jobPostingId
@@ -141,6 +145,7 @@ export function isEmployerOnlyNotification(type: NotificationType): boolean {
     NotificationType.STAFF_CHECKED_IN,
     NotificationType.STAFF_CHECKED_OUT,
     NotificationType.SETTLEMENT_REQUESTED,
+    NotificationType.CANCELLATION_REQUESTED,
   ];
 
   return employerTypes.includes(type);

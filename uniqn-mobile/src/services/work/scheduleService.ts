@@ -556,40 +556,6 @@ export async function getTodaySchedules(staffId: string): Promise<ScheduleEvent[
 }
 
 /**
- * 다가오는 스케줄 조회 (오늘 포함 7일)
- */
-export async function getUpcomingSchedules(
-  staffId: string,
-  days: number = 7
-): Promise<ScheduleEvent[]> {
-  try {
-    logger.info('다가오는 스케줄 조회', { staffId, days });
-
-    const today = new Date();
-    const endDate = new Date(today);
-    endDate.setDate(today.getDate() + days);
-
-    const { schedules } = await getMySchedules(staffId, {
-      dateRange: {
-        start: toDateString(today),
-        end: toDateString(endDate),
-      },
-    });
-
-    // confirmed 상태만 필터링
-    return schedules.filter(
-      (s) => s.type === STATUS.SCHEDULE.CONFIRMED || s.type === STATUS.SCHEDULE.APPLIED
-    );
-  } catch (error) {
-    throw handleServiceError(error, {
-      operation: '다가오는 스케줄 조회',
-      component: 'scheduleService',
-      context: { staffId },
-    });
-  }
-}
-
-/**
  * 스케줄 실시간 구독
  *
  * @description Phase 12 - RealtimeManager로 중복 구독 방지
@@ -738,35 +704,4 @@ export function getCalendarMarkedDates(
   });
 
   return markedDates;
-}
-
-/**
- * 스케줄 통계 조회
- */
-export async function getScheduleStats(staffId: string): Promise<ScheduleStats> {
-  try {
-    logger.info('스케줄 통계 조회', { staffId });
-
-    // "이번 달 요약" 위젯(MonthSummaryWidget) 전용 — 당월 스코프로 조회한다.
-    // calculateScheduleStats 가 date>=today 필터를 제거해 조회 범위 전체의 confirmed/applied 를
-    // 세므로, 6개월 창을 쓰면 확정/지원 카운트와 thisMonthEarnings 가 6개월 누적으로 부풀려진다.
-    const now = new Date();
-    const { start, end } = getMonthRange(now.getFullYear(), now.getMonth() + 1);
-
-    const { stats } = await getMySchedules(
-      staffId,
-      {
-        dateRange: { start, end },
-      },
-      500
-    );
-
-    return stats;
-  } catch (error) {
-    throw handleServiceError(error, {
-      operation: '스케줄 통계 조회',
-      component: 'scheduleService',
-      context: { staffId },
-    });
-  }
 }

@@ -72,6 +72,8 @@ function toExternalPath(route: DeepLinkRoute): string {
       return `employer/applicants/${route.params.jobId}`;
     case 'employer/settlement':
       return `employer/settlement/${route.params.jobId}`;
+    case 'employer/cancellation-requests':
+      return `employer/cancellation-requests/${route.params.jobId}`;
     case 'employer/weekly-grid':
       return 'employer/weekly-grid';
     case 'admin/dashboard':

@@ -67,7 +67,6 @@ export type {
   // WorkLog
   IWorkLogRepository,
   WorkLogStats,
-  MonthlyPayrollSummary,
   UpdateSlotInput,
   // User
   IUserRepository,

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, PixelRatio } from 'react-native';
-import { router, usePathname } from 'expo-router';
+import { router } from 'expo-router';
 import { BellIcon, MoonIcon, QrCodeIcon, SettingsIcon, SunIcon } from '@/components/icons';
 import { NotificationBadge } from '@/components/notifications';
 import { getIconColor, getLayoutColor, HEADER_CLASSES } from '@/constants';
@@ -30,19 +30,6 @@ export function TabHeader({
   const headerBackgroundColor = getLayoutColor(isDarkMode, 'header');
   const headerTintColor = getLayoutColor(isDarkMode, 'headerTint');
   const actionColor = getIconColor(isDarkMode, 'primary');
-  const pathname = usePathname();
-
-  const handleLogoPress = () => {
-    // pathname은 플랫폼에 따라 '/home' 또는 '/(app)/home'로 반환됨
-    const isOnHome = pathname === '/home' || pathname === '/(app)/home';
-    if (isOnHome) {
-      return;
-    }
-    // push 로 /home 진입(화면 정상 표시). 중복 스택 누적은 isOnHome 가드가 막는다
-    // — /home 도달 후 추가 로고 탭은 no-op 이므로 push 가 반복되지 않는다.
-    // (navigate 는 정적 웹 빌드에서 URL 만 갱신하고 /home 화면을 숨긴 채 두는 회귀가 있었음)
-    router.push('/(app)/home');
-  };
 
   return (
     <View
@@ -123,9 +110,9 @@ export function TabHeader({
         ) : null}
       </View>
 
-      {/* 중앙 로고 (absolute + pointerEvents box-none — 실제 로고만 tap 영역) */}
+      {/* 중앙 로고 (absolute + pointerEvents none — 표시 전용 브랜드 마크) */}
       <View
-        pointerEvents="box-none"
+        pointerEvents="none"
         style={{
           position: 'absolute',
           left: 0,
@@ -136,26 +123,18 @@ export function TabHeader({
           justifyContent: 'center',
         }}
       >
-        <Pressable
-          onPress={handleLogoPress}
-          hitSlop={8}
-          className={`px-3 py-1 ${HEADER_CLASSES.actionPressed}`}
-          accessibilityRole="button"
-          accessibilityLabel="UNIQN 홈으로 이동"
+        <Text
+          className="font-display font-bold px-3 py-1"
+          allowFontScaling={false}
+          style={{
+            color: '#D4AF37',
+            // impeccable §27 — 브랜드 마크는 Dynamic Type 영향을 받되 극단 스케일
+            // (예: 200%)에서 헤더 레이아웃 붕괴 방지. 기본 + 최대 1.5배까지만 확대.
+            fontSize: 18 * Math.min(PixelRatio.getFontScale(), 1.5),
+          }}
         >
-          <Text
-            className="font-display font-bold"
-            allowFontScaling={false}
-            style={{
-              color: '#D4AF37',
-              // impeccable §27 — 브랜드 마크는 Dynamic Type 영향을 받되 극단 스케일
-              // (예: 200%)에서 헤더 레이아웃 붕괴 방지. 기본 + 최대 1.5배까지만 확대.
-              fontSize: 18 * Math.min(PixelRatio.getFontScale(), 1.5),
-            }}
-          >
-            UNIQN
-          </Text>
-        </Pressable>
+          UNIQN
+        </Text>
       </View>
     </View>
   );

@@ -44,11 +44,12 @@ test.describe('로그아웃 & 세션', () => {
 
     // 앱이 로드되어야 함 (리다이렉트 또는 로그인 화면/스플래시 표시)
     // Expo Router SPA에서는 클라이언트 라우팅으로 인해
-    // 비인증 시 로그인 폼이 표시되거나 스플래시/홈이 표시됨
+    // 비인증 시 로그인 폼이 표시되거나 스플래시/앱 탭이 표시됨
+    // (앱 탭 착지 프록시: 하단 탭바의 구인구직 탭 — 홈 대시보드 삭제로 로고 버튼은 소멸)
     const loginOrSplash = page
       .getByPlaceholder('이메일을 입력하세요')
       .or(page.getByText('로그인'))
-      .or(page.getByRole('button', { name: 'UNIQN 홈으로 이동' }));
+      .or(page.getByRole('tab', { name: '구인구직' }));
     await expect(loginOrSplash).toBeVisible({ timeout: 15_000 });
   });
 
@@ -96,7 +97,7 @@ test.describe('로그아웃 & 세션', () => {
     const anyContent = page
       .getByPlaceholder('이메일을 입력하세요')
       .or(page.getByText('로그인'))
-      .or(page.getByRole('button', { name: 'UNIQN 홈으로 이동' }))
+      .or(page.getByRole('tab', { name: '구인구직' }))
       .or(page.getByText('앱 로딩 중...'));
     await expect(anyContent).toBeVisible({ timeout: 10_000 });
 

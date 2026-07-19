@@ -52,6 +52,7 @@ const typeIcons: Partial<Record<NotificationType, IconComponent>> = {
   [NotificationType.APPLICATION_REJECTED]: XCircleIcon,
   [NotificationType.CANCELLATION_APPROVED]: CheckCircleIcon,
   [NotificationType.CANCELLATION_REJECTED]: XCircleIcon,
+  [NotificationType.CANCELLATION_REQUESTED]: UserMinusIcon,
 
   // 출퇴근/스케줄 관련
   [NotificationType.STAFF_CHECKED_IN]: ClockIcon,

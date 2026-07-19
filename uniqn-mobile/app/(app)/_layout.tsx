@@ -36,7 +36,7 @@ export default function AppLayout() {
       phoneVerified: profile.phoneVerified ?? null,
       profileCompleted: profile.profileCompleted ?? null,
       identityVerified: profile.identityVerified ?? null,
-    }) === AUTH_ENTRY_ROUTES.appHome;
+    }) === AUTH_ENTRY_ROUTES.appTabs;
 
   const {
     needsNotificationOnboarding,
@@ -125,12 +125,6 @@ export default function AppLayout() {
             },
           }}
         >
-          <Stack.Screen
-            name="home"
-            options={{
-              presentation: 'card',
-            }}
-          />
           <Stack.Screen
             name="profile-setup"
             options={{

@@ -20,7 +20,6 @@ import {
   getTodayCheckedInWorkLog,
   isCurrentlyWorking,
   getWorkLogStats,
-  getMonthlyPayroll,
   updatePayrollStatus,
   subscribeToWorkLog,
   subscribeToMyWorkLogs,
@@ -37,7 +36,6 @@ jest.mock('@/repositories', () => ({
     getByDate: jest.fn(),
     getById: jest.fn(),
     getStats: jest.fn(),
-    getMonthlyPayroll: jest.fn(),
     subscribeById: jest.fn(),
     subscribeByStaffIdWithFilters: jest.fn(),
     subscribeTodayActive: jest.fn(),
@@ -387,66 +385,6 @@ describe('WorkLogService', () => {
       mockHandleServiceError.mockReturnValue(error);
 
       await expect(getWorkLogStats('staff-1')).rejects.toThrow('Stats failed');
-    });
-  });
-
-  // ==========================================================================
-  // getMonthlyPayroll
-  // ==========================================================================
-  describe('getMonthlyPayroll', () => {
-    it('should return monthly payroll summary from repository', async () => {
-      const mockSummary = {
-        totalAmount: 3000000,
-        pendingAmount: 1000000,
-        completedAmount: 2000000,
-        workLogs: [createMockWorkLogData()],
-      };
-      mockRepo.getMonthlyPayroll.mockResolvedValue(mockSummary as any);
-
-      const result = await getMonthlyPayroll('staff-1', 2025, 1);
-
-      expect(mockRepo.getMonthlyPayroll).toHaveBeenCalledWith('staff-1', 2025, 1, undefined);
-      expect(result.totalAmount).toBe(3000000);
-      expect(result.pendingAmount).toBe(1000000);
-      expect(result.completedAmount).toBe(2000000);
-      expect(result.workLogs).toHaveLength(1);
-    });
-
-    // Phase 2A.후속 (PR3-B, 2026-05-10) — workspaceId pass-through 검증
-    it('should pass workspaceId 4th arg to repository when provided', async () => {
-      const mockSummary = {
-        totalAmount: 1500000,
-        pendingAmount: 0,
-        completedAmount: 1500000,
-        workLogs: [],
-      };
-      mockRepo.getMonthlyPayroll.mockResolvedValue(mockSummary as any);
-
-      await getMonthlyPayroll('staff-1', 2025, 5, 'ws-abc');
-
-      expect(mockRepo.getMonthlyPayroll).toHaveBeenCalledWith('staff-1', 2025, 5, 'ws-abc');
-    });
-
-    it('should return empty workLogs array when summary has no workLogs', async () => {
-      const mockSummary = {
-        totalAmount: 0,
-        pendingAmount: 0,
-        completedAmount: 0,
-        workLogs: undefined,
-      };
-      mockRepo.getMonthlyPayroll.mockResolvedValue(mockSummary as any);
-
-      const result = await getMonthlyPayroll('staff-1', 2025, 2);
-
-      expect(result.workLogs).toEqual([]);
-    });
-
-    it('should propagate repository errors', async () => {
-      const error = new Error('Payroll query failed');
-      mockRepo.getMonthlyPayroll.mockRejectedValue(error);
-      mockHandleServiceError.mockReturnValue(error);
-
-      await expect(getMonthlyPayroll('staff-1', 2025, 1)).rejects.toThrow('Payroll query failed');
     });
   });
 

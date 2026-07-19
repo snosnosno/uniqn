@@ -10,7 +10,6 @@
 
 import { getPostingSettlementContext } from '@/domains/job-posting';
 import { logger } from '@/utils/logger';
-import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { SettlementCalculator } from '@/domains/settlement';
 import {
@@ -18,7 +17,7 @@ import {
   getEffectiveAllowances,
   getEffectiveTaxSettings,
 } from '@/utils/settlement';
-import { jobPostingRepository, workLogRepository } from '@/repositories';
+import { workLogRepository } from '@/repositories';
 import { loadAndVerifyJobPostingAccess } from '@/repositories/supabase/ApplicationRepositoryHelpers';
 import { STATUS } from '@/constants';
 import type { WorkLog } from '@/types';
@@ -259,77 +258,6 @@ export async function getJobPostingSettlementSummary(
       operation: '공고별 정산 요약 조회',
       component: 'settlementService',
       context: { jobPostingId, ownerId },
-    });
-  }
-}
-
-/**
- * 내 전체 정산 요약 조회 (구인자용)
- *
- * @description 구인자의 모든 공고에 대한 정산 현황 요약
- *
- * Phase 2A.후속 PR3-C — multi-workspace employer/admin 이 정산 대시보드를
- * workspace 별로 분리해서 보도록 workspaceId 인자를 받아 repo 에 pass-through.
- * RLS jp_select 첫 분기가 모든 인증 사용자에게 active/closed 공고 SELECT 권한을
- * 주므로, 클라이언트에서 workspace_id 를 명시적으로 좁혀야 cross-workspace
- * aggregation 이 발생하지 않는다.
- */
-export async function getMySettlementSummary(
-  ownerId: string,
-  dateRange?: { start: string; end: string },
-  workspaceId?: string
-): Promise<{
-  totalJobPostings: number;
-  totalWorkLogs: number;
-  totalPendingAmount: number;
-  totalCompletedAmount: number;
-  summariesByJobPosting: JobPostingSettlementSummary[];
-}> {
-  try {
-    logger.info('전체 정산 요약 조회', { ownerId, dateRange, workspaceId });
-
-    // 1. 관리 가능 공고 조회 — owner 본인 + 워크스페이스 멤버 공고 (RLS 통과)
-    // Phase 2A: getByOwnerId → getManagedJobPostings 로 전환
-    // Phase 2A.후속 PR3-C: workspaceId 로 active workspace 범위로 좁힘
-    const jobPostings = (
-      await jobPostingRepository.getManagedJobPostings(undefined, workspaceId)
-    ).filter(isCanonicalDatedPosting);
-
-    // 2. 각 공고별 정산 요약 조회 — 병렬화(perf-query-1).
-    //    기존 직렬 await 루프는 공고 수 N 에 비례해 라운드트립이 선형 누적됐다.
-    //    Promise.all 로 동시 실행(순서 보존). 권한검사/시그니처는 불변.
-    const summaries = await Promise.all(
-      jobPostings.map((jobPosting) => getJobPostingSettlementSummary(jobPosting.id!, ownerId))
-    );
-
-    let totalWorkLogs = 0;
-    let totalPendingAmount = 0;
-    let totalCompletedAmount = 0;
-    for (const summary of summaries) {
-      totalWorkLogs += summary.totalWorkLogs;
-      totalPendingAmount += summary.totalPendingAmount;
-      totalCompletedAmount += summary.totalCompletedAmount;
-    }
-
-    const result = {
-      totalJobPostings: jobPostings.length,
-      totalWorkLogs,
-      totalPendingAmount,
-      totalCompletedAmount,
-      summariesByJobPosting: summaries,
-    };
-
-    logger.info('전체 정산 요약 조회 완료', {
-      totalJobPostings: result.totalJobPostings,
-      totalWorkLogs: result.totalWorkLogs,
-    });
-
-    return result;
-  } catch (error) {
-    throw handleServiceError(error, {
-      operation: '전체 정산 요약 조회',
-      component: 'settlementService',
-      context: { ownerId },
     });
   }
 }

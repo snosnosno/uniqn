@@ -18,7 +18,6 @@ import {
   LogOutIcon,
   ShieldIcon,
   EditIcon,
-  HomeIcon,
   UsersIcon,
   StarIcon,
   BriefcaseIcon,
@@ -198,12 +197,6 @@ export default function ProfileScreen() {
             icon={<StarIcon size={20} color={SECONDARY_PALETTE[500]} />}
             label="내 평점·리뷰 이력"
             onPress={() => router.push('/(app)/reviews/history')}
-          />
-          <Divider spacing="sm" />
-          <MenuItem
-            icon={<HomeIcon size={20} color={SECONDARY_PALETTE[500]} />}
-            label="대시보드"
-            onPress={() => router.push('/(app)/home')}
           />
           <Divider spacing="sm" />
           <MenuItem

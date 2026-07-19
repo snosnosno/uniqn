@@ -28,9 +28,7 @@ import {
   getSchedulesByMonth,
   getScheduleById,
   getTodaySchedules,
-  getUpcomingSchedules,
   subscribeToSchedules,
-  getScheduleStats,
 } from '@/services/work/scheduleService';
 import { logger } from '@/utils/logger';
 import { NetworkError, ERROR_CODES } from '@/errors';
@@ -592,34 +590,6 @@ describe('scheduleService', () => {
     });
   });
 
-  describe('getUpcomingSchedules', () => {
-    it('should query for upcoming 7 days by default', async () => {
-      mockWorkLogRepoGetByStaffIdWithFilters.mockResolvedValue([]);
-      mockAppRepoGetByApplicantIdWithStatuses.mockResolvedValue([]);
-
-      await getUpcomingSchedules('staff-123');
-
-      expect(mockWorkLogRepoGetByStaffIdWithFilters).toHaveBeenCalledWith(
-        'staff-123',
-        expect.objectContaining({
-          dateRange: expect.objectContaining({
-            start: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
-            end: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
-          }),
-        })
-      );
-    });
-
-    it('should allow custom days parameter', async () => {
-      mockWorkLogRepoGetByStaffIdWithFilters.mockResolvedValue([]);
-      mockAppRepoGetByApplicantIdWithStatuses.mockResolvedValue([]);
-
-      await getUpcomingSchedules('staff-123', 14);
-
-      expect(mockWorkLogRepoGetByStaffIdWithFilters).toHaveBeenCalled();
-    });
-  });
-
   describe('subscribeToSchedules', () => {
     it('should set up subscription via repository', () => {
       const onUpdate = jest.fn();
@@ -801,42 +771,6 @@ describe('scheduleService', () => {
 
       // 같은 에러 상태에서 반복 호출되어도 onError는 1회만 발화
       expect(onError).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  describe('getScheduleStats', () => {
-    it('should return stats for last 6 months', async () => {
-      const workLogs = [
-        createMockWorkLog({
-          id: 'wl-1',
-          staffId: 'staff-123',
-          jobPostingId: 'job-1',
-          status: 'checked_out',
-        }),
-        createMockWorkLog({
-          id: 'wl-2',
-          staffId: 'staff-123',
-          jobPostingId: 'job-2',
-          status: 'scheduled',
-        }),
-      ];
-
-      const postings = [
-        createMockJobPosting({ id: 'job-1', title: '이벤트 1', location: '서울' }),
-        createMockJobPosting({ id: 'job-2', title: '이벤트 2', location: '서울' }),
-      ];
-
-      mockWorkLogRepoGetByStaffIdWithFilters.mockResolvedValue(workLogs);
-      mockAppRepoGetByApplicantIdWithStatuses.mockResolvedValue([]);
-      mockJobPostingRepoGetByIdBatch.mockResolvedValue(postings);
-
-      const stats = await getScheduleStats('staff-123');
-
-      expect(stats).toBeDefined();
-      expect(stats.totalSchedules).toBeDefined();
-      expect(stats.completedSchedules).toBeDefined();
-      expect(stats.upcomingSchedules).toBeDefined();
-      expect(stats.totalEarnings).toBeDefined();
     });
   });
 });

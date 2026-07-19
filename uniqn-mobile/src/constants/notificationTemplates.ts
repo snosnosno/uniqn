@@ -87,6 +87,13 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     icon: '❌',
   },
 
+  [NotificationType.CANCELLATION_REQUESTED]: {
+    title: '취소 요청',
+    body: (d) => `"${d.jobTitle}" 취소 요청이 접수되었습니다.`,
+    link: (d) => `/employer/my-postings/${d.jobPostingId}/cancellation-requests`,
+    icon: '⚠️',
+  },
+
   // =========================================================================
   // 출퇴근 관련
   // =========================================================================

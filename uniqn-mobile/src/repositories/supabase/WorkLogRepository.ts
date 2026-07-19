@@ -21,7 +21,6 @@ import type { WorkLog, PayrollStatus, QRCodeAction, QRProcessAction } from '@/ty
 import type {
   IWorkLogRepository,
   WorkLogStats,
-  MonthlyPayrollSummary,
   WorkLogFilterOptions,
   UpdateSlotInput,
 } from '../interfaces';
@@ -356,84 +355,6 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
       return stats;
     } catch (error) {
       rethrowOrHandle(error, '근무 기록 통계 조회', { staffId });
-    }
-  }
-
-  async getMonthlyPayroll(
-    staffId: string,
-    year: number,
-    month: number,
-    workspaceId?: string
-  ): Promise<MonthlyPayrollSummary> {
-    try {
-      const monthStr = `${year}-${String(month).padStart(2, '0')}`;
-      logger.info('월별 정산 요약 조회', { staffId, monthStr, workspaceId });
-
-      const startDate = `${monthStr}-01`;
-      const lastDay = new Date(year, month, 0).getDate();
-      const endDate = `${monthStr}-${String(lastDay).padStart(2, '0')}`;
-
-      // Phase 2A.후속 (PR3-B, 2026-05-10) — workspaceId 제공 시 job_postings.workspace_id
-      // 로 inner-join 필터. work_logs 자체에 workspace_id 컬럼이 없어 PostgREST embed
-      // resource 를 통한 join 필터링이 유일한 방법. parseWorkLogDocument 의
-      // .passthrough() 가 join 결과의 nested job_postings 필드를 무시한다.
-      const selectColumns = workspaceId
-        ? `${TABLE_COLUMNS},job_postings!inner(workspace_id)`
-        : TABLE_COLUMNS;
-
-      let query = supabase
-        .from(TABLE)
-        .select(selectColumns)
-        .eq('staff_id', staffId)
-        .gte('date', startDate)
-        .lte('date', endDate);
-
-      if (workspaceId) {
-        query = query.eq('job_postings.workspace_id', workspaceId);
-      }
-
-      const { data, error } = await query.order('date', { ascending: true });
-
-      if (error) handleSupabaseError(error, { operation: '월별 정산 요약 조회', table: TABLE });
-
-      const summary: MonthlyPayrollSummary = {
-        month: monthStr,
-        totalAmount: 0,
-        pendingAmount: 0,
-        completedAmount: 0,
-        workLogCount: 0,
-        workLogs: [],
-      };
-
-      const workLogs: WorkLog[] = [];
-      // join 결과 타입은 nested 객체를 포함하지만 toWorkLog 의 zod
-      // .passthrough() 가 unknown 필드를 무시. 동적 select 로 union 이 된 만큼
-      // unknown 경유 cast 가 필요.
-      for (const row of (data ?? []) as unknown as Record<string, unknown>[]) {
-        const workLog = toWorkLog(row);
-        if (!workLog) continue;
-
-        workLogs.push(workLog);
-        summary.workLogCount++;
-        const amount = workLog.payrollAmount ?? 0;
-        summary.totalAmount += amount;
-
-        if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
-          summary.completedAmount += amount;
-        } else {
-          summary.pendingAmount += amount;
-        }
-      }
-
-      summary.workLogs = workLogs;
-
-      logger.info('월별 정산 요약 조회 완료', {
-        staffId,
-        summary: { ...summary, workLogs: undefined },
-      });
-      return summary;
-    } catch (error) {
-      rethrowOrHandle(error, '월별 정산 요약 조회', { staffId, year, month, workspaceId });
     }
   }
 

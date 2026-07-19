@@ -8,7 +8,6 @@
 import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
-import { useActiveWorkspace } from '@/hooks/workspace/useActiveWorkspace';
 import {
   getWorkLogsByJobPosting,
   calculateSettlement,
@@ -17,7 +16,6 @@ import {
   bulkSettlement,
   updateSettlementStatus,
   getJobPostingSettlementSummary,
-  getMySettlementSummary,
   type SettlementWorkLog,
   type SettlementFilters,
   type CalculateSettlementInput,
@@ -78,34 +76,6 @@ export function useSettlementSummary(jobPostingId: string) {
     queryKey: summaryQueryKey,
     queryFn: () => getJobPostingSettlementSummary(jobPostingId, user!.uid),
     enabled: !!user && !!jobPostingId,
-    staleTime: queryCachingOptions.settlement.staleTime,
-    gcTime: queryCachingOptions.settlement.gcTime,
-  });
-}
-
-/**
- * 내 전체 정산 요약 조회 훅
- *
- * Phase 2A.후속 PR3-C — useActiveWorkspace 의존. multi-workspace employer/admin 이
- * 정산 대시보드를 workspace 별로 분리해서 보도록 query key + queryFn 모두
- * activeWorkspace.id 를 포함. activeWorkspace 가 미선택이면 enabled=false 로
- * cross-workspace aggregation 회피.
- */
-export function useMySettlementSummary(dateRange?: { start: string; end: string }) {
-  const { user } = useAuthStore();
-  const { activeWorkspace } = useActiveWorkspace();
-  const normalizedDateRange = stableFilters(dateRange);
-  const mySummaryQueryKey = [
-    ...queryKeys.settlement.mySummary(),
-    user?.uid ?? 'anonymous',
-    normalizedDateRange,
-    activeWorkspace?.id ?? 'no-workspace',
-  ] as const;
-
-  return useQuery({
-    queryKey: mySummaryQueryKey,
-    queryFn: () => getMySettlementSummary(user!.uid, dateRange, activeWorkspace?.id),
-    enabled: !!user && !!activeWorkspace?.id,
     staleTime: queryCachingOptions.settlement.staleTime,
     gcTime: queryCachingOptions.settlement.gcTime,
   });
@@ -486,30 +456,5 @@ export function useSettlement(jobPostingId: string) {
     totalCompletedAmount,
     pendingCount: pendingWorkLogs.length,
     completedCount: completedWorkLogs.length,
-  };
-}
-
-/**
- * 전체 정산 현황 훅 (대시보드용)
- *
- * Phase 2A.후속 PR3-C — workspace 별 분리 (useMySettlementSummary 통해).
- * 본 훅은 thin wrapper 라 직접 변경 없음, upstream useMySettlementSummary 가
- * useActiveWorkspace 에 의존하므로 자동으로 active workspace 기준으로 분리됨.
- */
-export function useSettlementDashboard() {
-  const summaryQuery = useMySettlementSummary();
-
-  return {
-    summary: summaryQuery.data,
-    isLoading: summaryQuery.isLoading,
-    error: summaryQuery.error,
-    refresh: summaryQuery.refetch,
-
-    // 계산된 값
-    totalJobPostings: summaryQuery.data?.totalJobPostings ?? 0,
-    totalWorkLogs: summaryQuery.data?.totalWorkLogs ?? 0,
-    totalPendingAmount: summaryQuery.data?.totalPendingAmount ?? 0,
-    totalCompletedAmount: summaryQuery.data?.totalCompletedAmount ?? 0,
-    summariesByJobPosting: summaryQuery.data?.summariesByJobPosting ?? [],
   };
 }

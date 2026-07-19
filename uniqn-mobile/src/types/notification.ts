@@ -32,6 +32,8 @@ export const NotificationType = {
   CANCELLATION_APPROVED: 'cancellation_approved',
   /** 취소 요청 거절됨 (지원자에게) */
   CANCELLATION_REJECTED: 'cancellation_rejected',
+  /** 취소 요청 접수됨 (사장·워크스페이스 멤버·협업자에게) */
+  CANCELLATION_REQUESTED: 'cancellation_requested',
 
   // === 출퇴근/스케줄 관련 ===
   /** 출근 체크인 알림 (구인자에게) */
@@ -169,6 +171,7 @@ export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, Notificatio
   [NotificationType.APPLICATION_REJECTED]: NotificationCategory.APPLICATION,
   [NotificationType.CANCELLATION_APPROVED]: NotificationCategory.APPLICATION,
   [NotificationType.CANCELLATION_REJECTED]: NotificationCategory.APPLICATION,
+  [NotificationType.CANCELLATION_REQUESTED]: NotificationCategory.APPLICATION,
 
   // 출퇴근/스케줄 관련
   [NotificationType.STAFF_CHECKED_IN]: NotificationCategory.ATTENDANCE,
@@ -245,6 +248,7 @@ export const NOTIFICATION_DEFAULT_PRIORITY: Record<NotificationType, Notificatio
   [NotificationType.APPLICATION_REJECTED]: 'normal',
   [NotificationType.CANCELLATION_APPROVED]: 'normal',
   [NotificationType.CANCELLATION_REJECTED]: 'high',
+  [NotificationType.CANCELLATION_REQUESTED]: 'high',
 
   // 출퇴근/스케줄 관련 - 리마인더/노쇼는 urgent
   [NotificationType.STAFF_CHECKED_IN]: 'normal',
@@ -425,6 +429,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   [NotificationType.APPLICATION_REJECTED]: '지원 거절',
   [NotificationType.CANCELLATION_APPROVED]: '취소 승인',
   [NotificationType.CANCELLATION_REJECTED]: '취소 거절',
+  [NotificationType.CANCELLATION_REQUESTED]: '취소 요청',
 
   // 출퇴근/스케줄 관련
   [NotificationType.STAFF_CHECKED_IN]: '출근 알림',

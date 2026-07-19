@@ -6,8 +6,6 @@
  */
 
 import { act, renderHook, waitFor } from '@testing-library/react-native';
-// Phase 2A.후속 (PR3-B, 2026-05-10) — useMonthlyPayroll workspace 의존성 mock
-import { useActiveWorkspace } from '@/hooks/workspace/useActiveWorkspace';
 import { resetCounters, createMockWorkLog } from '../mocks/factories';
 
 // ============================================================================
@@ -20,7 +18,6 @@ import {
   useWorkLogDetail,
   useCurrentWorkStatus,
   useWorkLogStats,
-  useMonthlyPayroll,
 } from '@/hooks/useWorkLogs';
 
 // ============================================================================
@@ -53,7 +50,6 @@ const mockGetWorkLogById = jest.fn();
 const mockGetTodayCheckedInWorkLog = jest.fn();
 const mockIsCurrentlyWorking = jest.fn();
 const mockGetWorkLogStats = jest.fn();
-const mockGetMonthlyPayroll = jest.fn();
 const mockSubscribeToTodayWorkStatus = jest.fn();
 
 jest.mock('@/services/work/workLogService', () => ({
@@ -63,7 +59,6 @@ jest.mock('@/services/work/workLogService', () => ({
   getTodayCheckedInWorkLog: (...args: unknown[]) => mockGetTodayCheckedInWorkLog(...args),
   isCurrentlyWorking: (...args: unknown[]) => mockIsCurrentlyWorking(...args),
   getWorkLogStats: (...args: unknown[]) => mockGetWorkLogStats(...args),
-  getMonthlyPayroll: (...args: unknown[]) => mockGetMonthlyPayroll(...args),
   subscribeToTodayWorkStatus: (...args: unknown[]) => mockSubscribeToTodayWorkStatus(...args),
 }));
 
@@ -73,12 +68,6 @@ jest.mock('@/services/work/workLogService', () => ({
 
 const mockUser = { uid: 'staff-1' };
 const mockAuthState = { user: mockUser };
-
-// Phase 2A.후속 (PR3-B, 2026-05-10) — useMonthlyPayroll workspace 의존성
-jest.mock('@/hooks/workspace/useActiveWorkspace', () => ({
-  useActiveWorkspace: jest.fn(),
-}));
-const mockUseActiveWorkspace = useActiveWorkspace as jest.MockedFunction<typeof useActiveWorkspace>;
 
 jest.mock('@/stores/authStore', () => ({
   useAuthStore: (selector?: (state: typeof mockAuthState) => unknown) =>
@@ -252,22 +241,6 @@ describe('useWorkLogs Hooks', () => {
         return jest.fn();
       }
     );
-
-    // Phase 2A.후속 (PR3-B, 2026-05-10) — useMonthlyPayroll 가 useActiveWorkspace 의존
-    mockUseActiveWorkspace.mockReturnValue({
-      activeWorkspace: {
-        id: 'ws-default',
-        name: 'Default',
-        ownerId: 'staff-1',
-        memberCount: 1,
-      } as any,
-      workspaces: [],
-      isLoading: false,
-      setActiveWorkspaceId: jest.fn(),
-      isFetching: false,
-      isError: false,
-      refetch: jest.fn(),
-    });
   });
 
   // ==========================================================================
@@ -710,142 +683,6 @@ describe('useWorkLogs Hooks', () => {
       expect(mockEnabled).toBe(false);
 
       Object.assign(mockAuthState, originalState);
-    });
-  });
-
-  // ==========================================================================
-  // useMonthlyPayroll
-  // ==========================================================================
-
-  describe('useMonthlyPayroll', () => {
-    it('should return correct structure', () => {
-      const { result } = renderHook(() => useMonthlyPayroll(2025, 1));
-
-      expect(result.current).toHaveProperty('payroll');
-      expect(result.current).toHaveProperty('isLoading');
-      expect(result.current).toHaveProperty('error');
-      expect(result.current).toHaveProperty('refetch');
-    });
-
-    it('should return undefined payroll when no data', () => {
-      mockData = undefined;
-
-      const { result } = renderHook(() => useMonthlyPayroll(2025, 1));
-
-      expect(result.current.payroll).toBeUndefined();
-    });
-
-    it('should return payroll data when available', () => {
-      const mockPayroll = {
-        year: 2025,
-        month: 1,
-        totalAmount: 2400000,
-        workDays: 20,
-        entries: [],
-      };
-      mockData = mockPayroll;
-
-      const { result } = renderHook(() => useMonthlyPayroll(2025, 1));
-
-      expect(result.current.payroll).toEqual(mockPayroll);
-    });
-
-    it('should disable query when enabled is false', () => {
-      renderHook(() => useMonthlyPayroll(2025, 1, false));
-
-      expect(mockEnabled).toBe(false);
-    });
-
-    it('should disable query when user is not authenticated', () => {
-      const originalState = { ...mockAuthState };
-      Object.assign(mockAuthState, { user: null });
-
-      renderHook(() => useMonthlyPayroll(2025, 1));
-
-      expect(mockEnabled).toBe(false);
-
-      Object.assign(mockAuthState, originalState);
-    });
-
-    // ========================================================================
-    // Phase 2A.후속 (PR3-B, 2026-05-10) — workspace 의존성 contract 테스트
-    // PR #71 useJobManagement.test.ts:workspace 패턴 복제
-    // ========================================================================
-
-    it('Phase 2A.후속 — activeWorkspace 가 없으면 enabled 가 false 다', () => {
-      mockUseActiveWorkspace.mockReturnValue({
-        activeWorkspace: undefined,
-        workspaces: [],
-        isLoading: false,
-        setActiveWorkspaceId: jest.fn(),
-        isFetching: false,
-        isError: false,
-        refetch: jest.fn(),
-      });
-
-      renderHook(() => useMonthlyPayroll(2025, 1));
-
-      expect(mockEnabled).toBe(false);
-    });
-
-    it('Phase 2A.후속 — activeWorkspace.id 가 query key 에 포함된다', () => {
-      mockUseActiveWorkspace.mockReturnValue({
-        activeWorkspace: {
-          id: 'ws-1',
-          name: 'Test',
-          ownerId: 'staff-1',
-          memberCount: 1,
-        } as any,
-        workspaces: [],
-        isLoading: false,
-        setActiveWorkspaceId: jest.fn(),
-        isFetching: false,
-        isError: false,
-        refetch: jest.fn(),
-      });
-
-      renderHook(() => useMonthlyPayroll(2025, 1));
-
-      const { useQuery } = jest.requireMock('@tanstack/react-query') as {
-        useQuery: jest.Mock;
-      };
-
-      // 가장 최근 호출의 queryKey 검사
-      const calls = useQuery.mock.calls;
-      const lastCall = calls[calls.length - 1][0] as { queryKey: unknown[] };
-      expect(lastCall.queryKey).toEqual(expect.arrayContaining(['ws-1']));
-    });
-
-    it('Phase 2A.후속 — getMonthlyPayroll 호출 시 workspaceId 가 4번째 인자로 전달된다', async () => {
-      mockUseActiveWorkspace.mockReturnValue({
-        activeWorkspace: {
-          id: 'ws-1',
-          name: 'Test',
-          ownerId: 'staff-1',
-          memberCount: 1,
-        } as any,
-        workspaces: [],
-        isLoading: false,
-        setActiveWorkspaceId: jest.fn(),
-        isFetching: false,
-        isError: false,
-        refetch: jest.fn(),
-      });
-      mockGetMonthlyPayroll.mockResolvedValue({
-        totalAmount: 0,
-        pendingAmount: 0,
-        completedAmount: 0,
-        workLogs: [],
-      });
-
-      renderHook(() => useMonthlyPayroll(2025, 3));
-
-      // queryFn 직접 호출하여 service 인자 검증
-      if (lastQueryFn) {
-        await lastQueryFn();
-      }
-
-      expect(mockGetMonthlyPayroll).toHaveBeenCalledWith('staff-1', 2025, 3, 'ws-1');
     });
   });
 });

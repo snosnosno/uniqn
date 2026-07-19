@@ -74,12 +74,12 @@ test.describe('RBAC access control', () => {
     const context = await browser.newContext({ storageState: staffState });
     const page = await context.newPage();
 
-    // /home으로 직접 이동 (splash 우회)
-    await page.goto('/home', { waitUntil: 'domcontentloaded' });
+    // /home-jobs로 직접 이동 (splash 우회)
+    await page.goto('/home-jobs', { waitUntil: 'domcontentloaded' });
     await waitForAppInit(page);
 
-    // staff 홈 화면이 로드되어야 함 (내 지원 현황은 StaffDashboard에서 항상 표시)
-    await expect(page.getByText('내 지원 현황').first()).toBeVisible({ timeout: 10_000 });
+    // staff 구인구직 탭이 로드되어야 함 (검색바는 JobsScreen에서 항상 표시)
+    await expect(page.getByPlaceholder('제목, 장소로 검색')).toBeVisible({ timeout: 10_000 });
     // 관리자 전용 메뉴(신고 관리 등)가 보이지 않아야 함
     await expect(page.getByText('신고 관리')).not.toBeVisible({ timeout: 3_000 });
 
@@ -90,12 +90,12 @@ test.describe('RBAC access control', () => {
     const context = await browser.newContext({ storageState: employerState });
     const page = await context.newPage();
 
-    // /home으로 직접 이동 (splash 우회)
-    await page.goto('/home', { waitUntil: 'domcontentloaded' });
+    // /home-jobs로 직접 이동 (splash 우회)
+    await page.goto('/home-jobs', { waitUntil: 'domcontentloaded' });
     await waitForAppInit(page);
 
-    // employer 홈 화면이 로드되어야 함 (UNIQN 로고 버튼은 항상 TabHeader에 표시)
-    await expect(page.getByRole('button', { name: 'UNIQN 홈으로 이동' })).toBeVisible({
+    // employer도 구인구직 탭에 접근 가능해야 함 (검색바는 JobsScreen에서 항상 표시)
+    await expect(page.getByPlaceholder('제목, 장소로 검색')).toBeVisible({
       timeout: 10_000,
     });
     // 관리자 전용 페이지 내용이 보이지 않아야 함
@@ -133,12 +133,12 @@ test.describe('RBAC access control', () => {
     const context = await browser.newContext({ storageState: adminState });
     const page = await context.newPage();
 
-    // /home으로 직접 이동
-    await page.goto('/home', { waitUntil: 'domcontentloaded' });
+    // /home-jobs로 직접 이동
+    await page.goto('/home-jobs', { waitUntil: 'domcontentloaded' });
     await waitForAppInit(page);
 
-    // admin도 홈 화면에 접근 가능해야 함 (로고 버튼 항상 존재)
-    await expect(page.getByRole('button', { name: 'UNIQN 홈으로 이동' })).toBeVisible({
+    // admin도 staff 화면(구인구직 탭)에 접근 가능해야 함 (검색바 항상 존재)
+    await expect(page.getByPlaceholder('제목, 장소로 검색')).toBeVisible({
       timeout: 10_000,
     });
 

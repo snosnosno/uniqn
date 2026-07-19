@@ -19,21 +19,13 @@ import { createMockWorkLog, resetCounters } from '../mocks/factories';
 import {
   useWorkLogsByJobPosting,
   useSettlementSummary,
-  useMySettlementSummary,
   useCalculateSettlement,
   useUpdateWorkTime,
   useSettleWorkLog,
   useBulkSettlement,
   useUpdateSettlementStatus,
   useSettlement,
-  useSettlementDashboard,
 } from '@/hooks/useSettlement';
-import { useActiveWorkspace } from '@/hooks/workspace/useActiveWorkspace';
-
-jest.mock('@/hooks/workspace/useActiveWorkspace', () => ({
-  useActiveWorkspace: jest.fn(),
-}));
-const mockUseActiveWorkspace = useActiveWorkspace as jest.MockedFunction<typeof useActiveWorkspace>;
 
 // createMockJobPosting is available for future tests
 // NOTE: Dynamic imports removed due to Jest compatibility issues
@@ -66,7 +58,6 @@ const mockSettleWorkLog = jest.fn();
 const mockBulkSettlement = jest.fn();
 const mockUpdateSettlementStatus = jest.fn();
 const mockGetJobPostingSettlementSummary = jest.fn();
-const mockGetMySettlementSummary = jest.fn();
 
 // Mock the services index (the hook imports from @/services, not @/services/settlementService)
 jest.mock('@/services', () => ({
@@ -78,7 +69,6 @@ jest.mock('@/services', () => ({
   updateSettlementStatus: (...args: unknown[]) => mockUpdateSettlementStatus(...args),
   getJobPostingSettlementSummary: (...args: unknown[]) =>
     mockGetJobPostingSettlementSummary(...args),
-  getMySettlementSummary: (...args: unknown[]) => mockGetMySettlementSummary(...args),
 }));
 
 // ============================================================================
@@ -209,7 +199,6 @@ jest.mock('@/lib', () => ({
       all: ['settlement'],
       byJobPosting: (id: string) => ['settlement', 'byJobPosting', id],
       summary: (id: string) => ['settlement', 'summary', id],
-      mySummary: () => ['settlement', 'mySummary'],
     },
     workLogs: {
       all: ['workLogs'],
@@ -319,20 +308,6 @@ describe('useSettlement Hooks', () => {
     mockIsPending = false;
     mockData = undefined;
     mockError = null;
-    mockUseActiveWorkspace.mockReturnValue({
-      activeWorkspace: {
-        id: 'ws-default',
-        name: 'Default',
-        ownerId: 'employer-1',
-        memberCount: 1,
-      } as any,
-      workspaces: [],
-      isLoading: false,
-      setActiveWorkspaceId: jest.fn(),
-      isFetching: false,
-      isError: false,
-      refetch: jest.fn(),
-    });
   });
 
   // ==========================================================================
@@ -700,208 +675,6 @@ describe('useSettlement Hooks', () => {
       expect(result.current.completedWorkLogs).toHaveLength(1);
       expect(result.current.pendingCount).toBe(1);
       expect(result.current.completedCount).toBe(1);
-    });
-  });
-
-  // ==========================================================================
-  // useSettlementDashboard
-  // ==========================================================================
-
-  describe('useSettlementDashboard', () => {
-    it('should return dashboard summary', () => {
-      const mockSummary = {
-        totalJobPostings: 5,
-        totalWorkLogs: 50,
-        totalPendingAmount: 3000000,
-        totalCompletedAmount: 2000000,
-        summariesByJobPosting: [],
-      };
-      mockData = mockSummary;
-
-      const { result } = renderHook(() => useSettlementDashboard());
-
-      expect(result.current.summary).toEqual(mockSummary);
-      expect(result.current.totalJobPostings).toBe(5);
-      expect(result.current.totalWorkLogs).toBe(50);
-      expect(result.current.totalPendingAmount).toBe(3000000);
-      expect(result.current.totalCompletedAmount).toBe(2000000);
-    });
-
-    it('should return default values when summary is undefined', () => {
-      mockData = undefined;
-
-      const { result } = renderHook(() => useSettlementDashboard());
-
-      expect(result.current.totalJobPostings).toBe(0);
-      expect(result.current.totalWorkLogs).toBe(0);
-      expect(result.current.totalPendingAmount).toBe(0);
-      expect(result.current.totalCompletedAmount).toBe(0);
-      expect(result.current.summariesByJobPosting).toEqual([]);
-    });
-
-    it('should provide refresh function', () => {
-      mockData = {
-        totalJobPostings: 5,
-        totalWorkLogs: 50,
-        totalPendingAmount: 3000000,
-        totalCompletedAmount: 2000000,
-        summariesByJobPosting: [],
-      };
-
-      const { result } = renderHook(() => useSettlementDashboard());
-
-      expect(result.current.refresh).toBeDefined();
-      expect(typeof result.current.refresh).toBe('function');
-    });
-  });
-
-  // ==========================================================================
-  // useMySettlementSummary
-  // ==========================================================================
-
-  describe('useMySettlementSummary', () => {
-    it('should query my settlement summary without date range', () => {
-      const mockSummary = {
-        totalJobPostings: 3,
-        totalWorkLogs: 30,
-        totalPendingAmount: 1500000,
-        totalCompletedAmount: 1000000,
-        summariesByJobPosting: [],
-      };
-      mockData = mockSummary;
-
-      const { result } = renderHook(() => useMySettlementSummary());
-
-      expect(result.current.data).toEqual(mockSummary);
-    });
-
-    it('should query my settlement summary with date range', () => {
-      const dateRange = { start: '2024-01-01', end: '2024-01-31' };
-      const mockSummary = {
-        totalJobPostings: 2,
-        totalWorkLogs: 20,
-        totalPendingAmount: 800000,
-        totalCompletedAmount: 500000,
-        summariesByJobPosting: [],
-      };
-      mockData = mockSummary;
-
-      const { result } = renderHook(() => useMySettlementSummary(dateRange));
-
-      expect(result.current.data).toEqual(mockSummary);
-    });
-
-    it('should scope my settlement summary query by user, date range, and active workspace', () => {
-      const { useQuery } = jest.requireMock('@tanstack/react-query') as { useQuery: jest.Mock };
-
-      renderHook(() =>
-        useMySettlementSummary({
-          start: '2024-01-01',
-          end: '2024-01-31',
-        })
-      );
-
-      const queryKey = useQuery.mock.calls.at(-1)?.[0]?.queryKey;
-
-      expect(queryKey).toEqual([
-        'settlement',
-        'mySummary',
-        'employer-1',
-        {
-          end: '2024-01-31',
-          start: '2024-01-01',
-        },
-        'ws-default',
-      ]);
-    });
-
-    it('should not query when user is not authenticated', () => {
-      mockAuthState.user = null;
-      mockData = undefined;
-
-      const { result } = renderHook(() => useMySettlementSummary());
-
-      expect(result.current.data).toBeUndefined();
-      expect(result.current.isLoading).toBe(false);
-    });
-
-    // ========================================================================
-    // Phase 2A.후속 PR3-C — workspace 별 분리 contract 테스트
-    // ========================================================================
-
-    it('Phase 2A.후속 PR3-C — activeWorkspace 가 없으면 enabled 가 false 다', () => {
-      mockUseActiveWorkspace.mockReturnValue({
-        activeWorkspace: undefined,
-        workspaces: [],
-        isLoading: false,
-        setActiveWorkspaceId: jest.fn(),
-        isFetching: false,
-        isError: false,
-        refetch: jest.fn(),
-      });
-
-      renderHook(() => useMySettlementSummary());
-
-      const { useQuery } = jest.requireMock('@tanstack/react-query') as {
-        useQuery: jest.Mock;
-      };
-
-      expect(useQuery.mock.calls.at(-1)?.[0]?.enabled).toBe(false);
-    });
-
-    it('Phase 2A.후속 PR3-C — activeWorkspace.id 가 query key 에 포함된다', () => {
-      mockUseActiveWorkspace.mockReturnValue({
-        activeWorkspace: { id: 'ws-abc', name: 'Test', ownerId: 'u1', memberCount: 1 } as any,
-        workspaces: [],
-        isLoading: false,
-        setActiveWorkspaceId: jest.fn(),
-        isFetching: false,
-        isError: false,
-        refetch: jest.fn(),
-      });
-
-      renderHook(() => useMySettlementSummary());
-
-      const { useQuery } = jest.requireMock('@tanstack/react-query') as {
-        useQuery: jest.Mock;
-      };
-
-      expect(useQuery.mock.calls.at(-1)?.[0]?.queryKey).toEqual(
-        expect.arrayContaining(['mySummary', 'ws-abc'])
-      );
-    });
-
-    it('Phase 2A.후속 PR3-C — getMySettlementSummary 호출 시 workspaceId 가 3번째 인자로 전달된다', async () => {
-      mockUseActiveWorkspace.mockReturnValue({
-        activeWorkspace: { id: 'ws-abc', name: 'Test', ownerId: 'u1', memberCount: 1 } as any,
-        workspaces: [],
-        isLoading: false,
-        setActiveWorkspaceId: jest.fn(),
-        isFetching: false,
-        isError: false,
-        refetch: jest.fn(),
-      });
-      mockGetMySettlementSummary.mockResolvedValue({
-        totalJobPostings: 0,
-        totalWorkLogs: 0,
-        totalPendingAmount: 0,
-        totalCompletedAmount: 0,
-        summariesByJobPosting: [],
-      });
-
-      renderHook(() => useMySettlementSummary({ start: '2024-01-01', end: '2024-01-31' }));
-
-      const { useQuery } = jest.requireMock('@tanstack/react-query') as {
-        useQuery: jest.Mock;
-      };
-
-      await useQuery.mock.calls.at(-1)?.[0]?.queryFn();
-
-      expect(mockGetMySettlementSummary).toHaveBeenCalledWith(
-        'employer-1',
-        { start: '2024-01-01', end: '2024-01-31' },
-        'ws-abc'
-      );
     });
   });
 
