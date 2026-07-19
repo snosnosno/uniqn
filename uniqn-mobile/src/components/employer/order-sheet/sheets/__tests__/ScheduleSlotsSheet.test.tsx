@@ -23,14 +23,18 @@ jest.mock('@/components/ui/SheetModal', () => {
   };
 });
 
+// 목이 받은 value 를 mock-time-seed 로 노출한다 — 피커가 어떤 시각으로 열리는지 단언하기 위해.
 jest.mock('@/components/ui/TimeWheelPicker', () => {
   const { Pressable, Text } = require('react-native');
   return {
-    TimeWheelPicker: ({ visible, onConfirm }: any) =>
+    TimeWheelPicker: ({ visible, value, onConfirm }: any) =>
       visible ? (
-        <Pressable testID="mock-time-confirm" onPress={() => onConfirm({ hour: 20, minute: 30 })}>
-          <Text>MockPicker</Text>
-        </Pressable>
+        <>
+          <Text testID="mock-time-seed">{`${value?.hour}:${value?.minute}`}</Text>
+          <Pressable testID="mock-time-confirm" onPress={() => onConfirm({ hour: 20, minute: 30 })}>
+            <Text>MockPicker</Text>
+          </Pressable>
+        </>
       ) : null,
   };
 });
@@ -174,6 +178,22 @@ describe('ScheduleSlotsSheet', () => {
       { startTime: '19:00', roles: [{ role: 'dealer', count: 1 }] },
       { startTime: '20:30', roles: [{ role: 'dealer', count: 1 }] },
     ]);
+  });
+
+  // Task 6 리뷰 이월 — `slots[i]?.startTime ?? DEFAULT_START` 로 되돌리면 red('0:0') 가 되어야 한다.
+  // 새 슬롯의 startTime 은 ''(빈 문자열)이라 `??` 를 그냥 통과해 휠이 00:00 으로 열렸다.
+  it('새 시간대의 피커는 00:00 이 아니라 기본값 19:00 으로 열린다', () => {
+    const { getByTestId } = render(
+      <ScheduleSlotsSheet
+        visible
+        value={[{ startTime: '19:00', roles: [{ role: 'dealer', count: 1 }] }]}
+        onConfirm={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+    fireEvent.press(getByTestId('order-time-add-slot')); // 새 슬롯은 startTime=''
+    fireEvent.press(getByTestId('order-time-start-1'));
+    expect(getByTestId('mock-time-seed').props.children).toBe('19:0');
   });
 
   it('슬롯이 1개면 삭제 버튼이 없다', () => {

@@ -6,7 +6,7 @@
  * SheetModal 은 children+footer 렌더로 모킹(reanimated 배제) — tournament 테스트와 동일 스캐폴딩.
  */
 import React from 'react';
-import { act, fireEvent, render } from '@testing-library/react-native';
+import { act, fireEvent, render, within } from '@testing-library/react-native';
 import { OrderSheetScreen } from '../OrderSheetScreen';
 import { initialOrderSheetValues } from '@/utils/order-sheet/mappers';
 import type { OrderSheetFormValues } from '@/schemas/orderSheet.schema';
@@ -109,6 +109,23 @@ describe('OrderSheetScreen — 고정 역할 급여 프리필 안내 토스트(S
     expect(mockAddToast).toHaveBeenCalledWith(
       expect.objectContaining({ message: expect.stringContaining('급여 행에서 수정 가능') })
     );
+  });
+
+  // Task 4 리뷰 이월(선재 커버리지 갭) — 위 두 테스트는 토스트가 `next` 를 폼 경유 없이 직접 받아
+  // OrderSheetScreen 의 `{ ...fs, roles: next }` 를 `{ ...fs }` 로 바꿔도 전부 통과했다.
+  // 즉 "고정 역할이 실제로 폼에 반영되는가"를 한 번도 검증하지 않았다. 폼 경유 경로로 메운다.
+  it('고정 타입 역할 확인 → 폼에 반영되어 역할 행 요약에 나타난다', async () => {
+    const { getByTestId, getByText } = render(
+      <OrderSheetScreen {...fixedProps} initialValues={fixedBase([{ role: 'dealer', count: 1 }])} />
+    );
+    fireEvent.press(getByTestId('order-sheet-row-roles'));
+    fireEvent.press(getByTestId('order-role-chip-floor'));
+    fireEvent.press(getByText('확인'));
+    await flushValidation();
+    // ⚠️ 반드시 **역할 행으로 스코프**를 좁힌다. 급여 행도 자동 프리필로 "플로어 30,000"을 렌더하므로
+    // 전역 매칭은 (1) 중복 매치로 실패하고 (2) roles 반영과 무관한 경로로도 통과해 단언이 무력해진다.
+    // 토스트가 아니라 form.setValue 를 경유한 요약이어야 한다 — `roles: next` 를 지운 변이에서 red 가 된다.
+    expect(within(getByTestId('order-sheet-row-roles')).getByText(/플로어/)).toBeTruthy();
   });
 
   it('초기 시드(기존 역할 없음)에서는 토스트가 뜨지 않는다', async () => {

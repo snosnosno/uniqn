@@ -111,7 +111,9 @@ export function ScheduleSlotsSheet({
             visible
             embedded
             title="출근 시간"
-            value={toTimeValue(slots[pickerIndex]?.startTime ?? DEFAULT_START)}
+            // `??` 가 아니라 `||` — 새 슬롯의 startTime 은 ''(빈 문자열)이라 `??` 를 통과해
+            // 휠이 00:00 으로 열린다(구 TimeSlotsSheet 선재 버그). 빈 값도 기본값으로 떨어뜨린다.
+            value={toTimeValue(slots[pickerIndex]?.startTime || DEFAULT_START)}
             minuteInterval={5}
             onConfirm={(t) => {
               updateStart(pickerIndex, t);
