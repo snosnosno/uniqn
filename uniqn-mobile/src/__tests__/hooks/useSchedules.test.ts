@@ -7,8 +7,6 @@ import {
   useSchedulesByDate,
   useScheduleDetail,
   useTodaySchedules,
-  useUpcomingSchedules,
-  useScheduleStats,
   useCalendarView,
 } from '@/hooks/useSchedules';
 
@@ -17,8 +15,6 @@ const mockGetSchedulesByMonth = jest.fn();
 const mockGetSchedulesByDate = jest.fn();
 const mockGetScheduleById = jest.fn();
 const mockGetTodaySchedules = jest.fn();
-const mockGetUpcomingSchedules = jest.fn();
-const mockGetScheduleStats = jest.fn();
 const mockSubscribeToSchedules = jest.fn();
 const mockCalculateScheduleStats = jest.fn();
 const mockGroupSchedulesByDate = jest.fn();
@@ -30,8 +26,6 @@ jest.mock('@/services/work/scheduleService', () => ({
   getSchedulesByDate: (...args: unknown[]) => mockGetSchedulesByDate(...args),
   getScheduleById: (...args: unknown[]) => mockGetScheduleById(...args),
   getTodaySchedules: (...args: unknown[]) => mockGetTodaySchedules(...args),
-  getUpcomingSchedules: (...args: unknown[]) => mockGetUpcomingSchedules(...args),
-  getScheduleStats: (...args: unknown[]) => mockGetScheduleStats(...args),
   subscribeToSchedules: (...args: unknown[]) => mockSubscribeToSchedules(...args),
   calculateScheduleStats: (...args: unknown[]) => mockCalculateScheduleStats(...args),
   groupSchedulesByDate: (...args: unknown[]) => mockGroupSchedulesByDate(...args),
@@ -689,65 +683,13 @@ describe('useSchedules hooks', () => {
 
       expect(result.current.schedules).toEqual(schedules);
     });
-
-    it('loads upcoming schedules with default and custom ranges', async () => {
-      mockQueryData = [createMockSchedule()];
-
-      renderHook(() => useUpcomingSchedules());
-      renderHook(() => useUpcomingSchedules(14));
-
-      await waitFor(() => {
-        expect(mockGetUpcomingSchedules).toHaveBeenCalledWith('staff-1', 7);
-      });
-
-      expect(mockGetUpcomingSchedules).toHaveBeenCalledWith('staff-1', 14);
-    });
-
-    it('loads schedule stats', async () => {
-      const stats = createMockStats();
-      mockQueryData = stats;
-
-      const { result } = renderHook(() => useScheduleStats());
-
-      await waitFor(() => {
-        expect(mockGetScheduleStats).toHaveBeenCalledWith('staff-1');
-      });
-
-      expect(result.current.stats).toEqual(stats);
-    });
   });
 
   // Phase 2A.후속 PR3-D 검증 (2026-05-10):
-  // useScheduleStats / useSchedulesByMonth 는 staff-only scope.
+  // useSchedulesByMonth 는 staff-only scope.
   // queryKey 가 staffId 만 포함하고 workspace/employer dimension 이 없음을 잠금.
   // service call 도 staffId 단일 인자 (workspace/owner 인자 없음).
   describe('staff-only scope contract (PR3-D)', () => {
-    it('useScheduleStats query key contains staffId and no workspace dimension', () => {
-      mockQueryData = createMockStats();
-
-      renderHook(() => useScheduleStats());
-
-      const queryOptions = mockUseQuery.mock.calls.at(-1)?.[0] as
-        | { queryKey: readonly unknown[] }
-        | undefined;
-      expect(queryOptions?.queryKey).toEqual(['schedules', 'stats', 'staff-1']);
-      // workspace / ownerId / employer 같은 추가 차원이 없어야 함
-      expect(queryOptions?.queryKey).toHaveLength(3);
-    });
-
-    it('useScheduleStats queryFn calls service with staffId only (no workspace/owner)', async () => {
-      mockQueryData = createMockStats();
-
-      renderHook(() => useScheduleStats());
-
-      await waitFor(() => {
-        expect(mockGetScheduleStats).toHaveBeenCalled();
-      });
-      // staffId 단일 인자 — workspaceId / ownerId 추가 인자 없음
-      expect(mockGetScheduleStats).toHaveBeenCalledWith('staff-1');
-      expect(mockGetScheduleStats.mock.calls[0]).toHaveLength(1);
-    });
-
     it('useSchedulesByMonth query key contains staffId and no workspace dimension', () => {
       mockQueryData = { schedules: [], stats: createMockStats() };
 

@@ -126,12 +126,6 @@ export default function AppLayout() {
           }}
         >
           <Stack.Screen
-            name="home"
-            options={{
-              presentation: 'card',
-            }}
-          />
-          <Stack.Screen
             name="profile-setup"
             options={{
               gestureEnabled: false,

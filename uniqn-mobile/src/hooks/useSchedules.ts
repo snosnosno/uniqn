@@ -15,8 +15,6 @@ import {
   getSchedulesByDate,
   getScheduleById,
   getTodaySchedules,
-  getUpcomingSchedules,
-  getScheduleStats,
   subscribeToSchedules,
   groupSchedulesByDate,
   getCalendarMarkedDates,
@@ -514,93 +512,6 @@ export function useTodaySchedules(enabled = true) {
   return {
     schedules,
     isLoading: schedules.length === 0 ? query.isLoading : false,
-    error: isOnline ? query.error : null,
-    refetch: () => (isOnline ? query.refetch() : Promise.resolve()),
-  };
-}
-
-export function useUpcomingSchedules(days = 7, enabled = true) {
-  const user = useAuthStore((state) => state.user);
-  const staffId = user?.uid;
-  const { isOnline } = useNetworkStatus();
-  const cacheKey = buildScheduleCacheKey(staffId, 'upcoming', String(days));
-  const upcomingQueryKey = [
-    ...queryKeys.schedules.all,
-    'upcoming',
-    days,
-    staffId ?? 'anonymous',
-  ] as const;
-  const cachedPayload = useCachedSchedulePayload(
-    cacheKey,
-    queryCachingOptions.schedules.staleTime,
-    staffId
-  );
-
-  const query = useQuery({
-    queryKey: upcomingQueryKey,
-    queryFn: async () => {
-      if (!staffId) throw new AuthError(ERROR_CODES.AUTH_REQUIRED);
-      return getUpcomingSchedules(staffId, days);
-    },
-    enabled: enabled && !!staffId && isOnline,
-    staleTime: queryCachingOptions.schedules.staleTime,
-    gcTime: queryCachingOptions.schedules.gcTime,
-  });
-  const normalizedQueryPayload = useMemo(
-    () =>
-      query.data !== undefined ? normalizeScheduleQueryPayload({ schedules: query.data }) : null,
-    [query.data]
-  );
-
-  useEffect(() => {
-    if (!staffId || !normalizedQueryPayload) {
-      return;
-    }
-
-    setCriticalOfflineCache(cacheKey, normalizedQueryPayload, {
-      userId: staffId,
-      schemaVersion: SCHEDULE_CACHE_SCHEMA_VERSION,
-    });
-  }, [cacheKey, normalizedQueryPayload, staffId]);
-
-  const shouldUseCachedPayload = enabled && !!staffId && !isOnline && query.data === undefined;
-  const schedules =
-    normalizedQueryPayload?.schedules ?? (shouldUseCachedPayload ? cachedPayload.schedules : []);
-
-  return {
-    schedules,
-    isLoading: schedules.length === 0 ? query.isLoading : false,
-    error: isOnline ? query.error : null,
-    refetch: () => (isOnline ? query.refetch() : Promise.resolve()),
-  };
-}
-
-/**
- * 스케줄 통계 조회 hook.
- *
- * Phase 2A.후속 PR3-D 검증 (2026-05-10): staff-only scope. user.uid 기반 본인 work_logs 만 조회.
- * active workspace 필터 불필요 — RLS 가 본인 work_logs 만 노출 + service 가 staff_id 로 query.
- * staff 가 다른 워크스페이스 공고에 지원했어도 본인 work_logs 라면 모두 보임 (의도된 동작).
- */
-export function useScheduleStats(enabled = true) {
-  const user = useAuthStore((state) => state.user);
-  const staffId = user?.uid;
-  const { isOnline } = useNetworkStatus();
-  const statsQueryKey = [...queryKeys.schedules.all, 'stats', staffId ?? 'anonymous'] as const;
-
-  const query = useQuery({
-    queryKey: statsQueryKey,
-    queryFn: async () => {
-      if (!staffId) throw new AuthError(ERROR_CODES.AUTH_REQUIRED);
-      return getScheduleStats(staffId);
-    },
-    enabled: enabled && !!staffId && isOnline,
-    staleTime: cachingPolicies.stable,
-  });
-
-  return {
-    stats: query.data,
-    isLoading: query.isLoading,
     error: isOnline ? query.error : null,
     refetch: () => (isOnline ? query.refetch() : Promise.resolve()),
   };
