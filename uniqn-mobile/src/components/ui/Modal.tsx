@@ -68,6 +68,9 @@ const MODAL_SIZES = {
 
 const MODAL_FULL_MARGIN = 16; // 좌우 가장자리 여백 (px)
 
+/** 하단 시트 카드의 최소 하단 여백 — 비-노치 기기(insets.bottom=0)에서 기존 pb-8 유지용 */
+const BOTTOM_SHEET_MIN_PAD = 16;
+
 // ============================================================================
 // Web Modal Component
 // ============================================================================
@@ -360,7 +363,8 @@ function NativeModal({
   const modalClassName =
     position === 'center'
       ? `bg-surface-card rounded-lg overflow-hidden ${MODAL_SIZES[size]}`
-      : 'bg-surface-card rounded-t-3xl w-full pb-8';
+      : // pb-8 은 style 의 paddingBottom(인셋 반영)으로 대체됐다 — 아래 카드 View 참조.
+        'bg-surface-card rounded-t-3xl w-full';
 
   // 모달 최대 높이 스타일 (숫자값으로 계산)
   const modalMaxHeightStyle = {
@@ -404,13 +408,24 @@ function NativeModal({
             <View
               style={{
                 flexShrink: 1,
-                // SafeAreaView 는 RNModal 의 별도 윈도우를 자기 기준으로 측정해
-                // 인셋이 0으로 떨어진다. 훅 값을 직접 패딩으로 적용한다 (2026-07-19).
+                // center 모달은 화면 중앙에 뜨므로 래퍼 여백으로 가장자리 침범만 막으면 된다.
+                // bottom 시트는 바닥에 붙어야 하므로 여기서 여백을 주면 안 된다 —
+                // 이 래퍼에는 배경이 없어서 카드가 떠오르고 백드롭이 비친다.
                 paddingTop: position === 'center' ? insets.top : 0,
-                paddingBottom: insets.bottom,
+                paddingBottom: position === 'center' ? insets.bottom : 0,
               }}
             >
-              <View className={modalClassName} style={{ flexShrink: 1 }}>
+              <View
+                className={modalClassName}
+                style={{
+                  flexShrink: 1,
+                  // bottom 시트는 인셋을 카드 '안쪽' 패딩으로 흡수한다.
+                  // 비-노치 기기(insets.bottom=0)에서도 기존 pb-8(32px)과 같은 여백을 유지.
+                  ...(position === 'bottom'
+                    ? { paddingBottom: Math.max(insets.bottom, BOTTOM_SHEET_MIN_PAD) + 16 }
+                    : null),
+                }}
+              >
                 {/* Header */}
                 {(title || showCloseButton) && (
                   <View className="flex-row items-center justify-between px-5 py-2.5 border-b border-divider">
