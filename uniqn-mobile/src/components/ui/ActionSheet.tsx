@@ -104,7 +104,9 @@ export function ActionSheet({
               className={`
                 text-base font-sans-medium
                 ${
-                  option.destructive ? 'text-error-600 dark:text-error-400' : 'text-content-primary'
+                  option.destructive
+                    ? 'text-error-600 dark:text-error-400'
+                    : 'text-content-primary dark:text-content-primary'
                 }
                 ${option.disabled ? 'text-secondary-400 dark:text-secondary-600' : ''}
               `}
