@@ -213,15 +213,25 @@ export interface IWorkLogRepository {
   /**
    * QR 스캔용 work_log 후보 조회
    *
-   * @description 고정 공고(date='FIXED_SCHEDULE')와 일반 공고(date=오늘)를 한 쿼리로 조회.
+   * @description 고정 공고(date='FIXED_SCHEDULE')와 일반 공고(date=오늘/어제)를 한 쿼리로 조회.
    *   하루 다중 배정이 정상 케이스이므로 예외를 던지지 않고 배열을 그대로 반환한다.
    *   (job_posting_id, staff_id, date)에 UNIQUE 제약이 없어 2건 이상이 정상 발생한다.
+   *
+   *   어제를 포함하는 이유는 **자정 넘는 근무의 퇴근 스캔**이다 — 18:00~02:00 근무의
+   *   work_logs.date 는 시작일 D 라서, D+1 새벽에 찍는 퇴근 QR 을 오늘 날짜로만 조회하면
+   *   후보가 0건이 되어 근무 중인 스태프가 퇴근을 찍지 못한다.
    * @param jobPostingId - 공고 ID
    * @param staffId - 스태프 ID
    * @param today - 오늘 날짜 (YYYY-MM-DD)
+   * @param yesterday - 어제 날짜 (YYYY-MM-DD) — 자정 넘는 근무의 퇴근 스캔용
    * @returns 후보 근무 기록 목록 (없으면 빈 배열)
    */
-  findQRCandidates(jobPostingId: string, staffId: string, today: string): Promise<WorkLog[]>;
+  findQRCandidates(
+    jobPostingId: string,
+    staffId: string,
+    today: string,
+    yesterday: string
+  ): Promise<WorkLog[]>;
 
   // ==========================================================================
   // 실시간 구독 (Realtime)

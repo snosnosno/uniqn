@@ -42,11 +42,13 @@ jest.mock('@/utils/logger', () => ({
 }));
 
 const FIXED_TODAY = '2026-06-29';
-// getTodayString 만 고정한다. toDate/toISODateString 은 selectWorkLogForQR 이 실제로 쓰므로
-// requireActual 로 진짜 구현을 남긴다(직접 재구현하면 선택 로직이 조용히 어긋난다).
+const FIXED_YESTERDAY = '2026-06-28';
+// getTodayString/getYesterdayString 만 고정한다. toDate/toISODateString 은 selectWorkLogForQR 이
+// 실제로 쓰므로 requireActual 로 진짜 구현을 남긴다(직접 재구현하면 선택 로직이 조용히 어긋난다).
 jest.mock('@/utils/date', () => ({
   ...jest.requireActual('@/utils/date'),
   getTodayString: jest.fn(() => '2026-06-29'),
+  getYesterdayString: jest.fn(() => '2026-06-28'),
 }));
 
 jest.mock('@/services/observability', () => ({
@@ -196,8 +198,13 @@ describe('processQRCheckIn — auto 액션 위임', () => {
 
     const result = await processQRCheckIn(VENUE_QR, 'staff-1');
 
-    // 후보 조회: 공고 + 스태프 + 오늘(getTodayString)
-    expect(mockFindQRCandidates).toHaveBeenCalledWith('container-1', 'staff-1', FIXED_TODAY);
+    // 후보 조회: 공고 + 스태프 + 오늘(getTodayString) + 어제(getYesterdayString)
+    expect(mockFindQRCandidates).toHaveBeenCalledWith(
+      'container-1',
+      'staff-1',
+      FIXED_TODAY,
+      FIXED_YESTERDAY
+    );
 
     // 클라가 출/퇴근을 결정하지 않는다 — 서버가 status 로 해소한다
     expect(mockProcessQRCheckInOutTransaction).toHaveBeenCalledWith(
@@ -270,6 +277,161 @@ describe('processQRCheckIn — auto 액션 위임', () => {
   });
 });
 
+describe('processQRCheckIn — 자정 넘는 근무(어제 자 후보)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockIsAppError.mockReturnValue(true);
+  });
+
+  it('어제 자 출근 중 근무를 D+1 새벽 스캔으로 퇴근 처리한다', async () => {
+    // 18:00~02:00 근무의 work_logs.date 는 시작일(어제). 오늘 날짜로만 조회하면 후보가 0건이 된다.
+    mockFindQRCandidates.mockResolvedValue([
+      createMockWorkLog({
+        id: 'wl-overnight',
+        date: FIXED_YESTERDAY,
+        status: STATUS.WORK_LOG.CHECKED_IN,
+        timeSlot: '18:00~02:00',
+        checkInTime: new Date(2026, 5, 28, 18, 0),
+      }),
+    ]);
+    mockProcessQRCheckInOutTransaction.mockResolvedValue({
+      action: 'checkOut',
+      workDuration: 480,
+      hasExistingCheckInTime: true,
+    });
+
+    const result = await processQRCheckIn(VENUE_QR, 'staff-1');
+
+    expect(result.action).toBe('checkOut');
+    expect(result.workLogId).toBe('wl-overnight');
+
+    // p_expected_date = 선택된 work_log 자신의 date.
+    // 오늘 날짜를 넘기면 RPC 의 date_mismatch 가드가 퇴근을 거부한다.
+    expect(mockProcessQRCheckInOutTransaction).toHaveBeenCalledWith(
+      'wl-overnight',
+      'staff-1',
+      'container-1',
+      'auto',
+      expect.any(Date),
+      FIXED_YESTERDAY
+    );
+  });
+
+  it('어제 자 scheduled(출근한 적 없는 지난 근무)는 후보에서 제외한다', async () => {
+    // 어제를 조회 범위에 넣은 것은 퇴근 스캔용이지, 지난 근무에 새로 출근하기 위한 게 아니다.
+    mockFindQRCandidates.mockResolvedValue([
+      createMockWorkLog({
+        id: 'wl-yesterday-noshow',
+        date: FIXED_YESTERDAY,
+        status: STATUS.WORK_LOG.SCHEDULED,
+        timeSlot: '18:00~02:00',
+      }),
+    ]);
+
+    await expect(processQRCheckIn(VENUE_QR, 'staff-1')).rejects.toMatchObject({
+      userMessage: '오늘 이 공고에 배정된 근무가 없습니다',
+    });
+
+    expect(mockProcessQRCheckInOutTransaction).not.toHaveBeenCalled();
+  });
+
+  it('오늘 자 대기 근무와 어제 자 출근 중 근무가 함께 있으면 어제 자 퇴근을 먼저 처리한다', async () => {
+    // selectWorkLogForQR 규칙 ① checked_in 우선 — 날짜가 아니라 상태가 우선순위를 정한다.
+    mockFindQRCandidates.mockResolvedValue([
+      createMockWorkLog({
+        id: 'wl-today-scheduled',
+        date: FIXED_TODAY,
+        status: STATUS.WORK_LOG.SCHEDULED,
+        timeSlot: '18:00~02:00',
+      }),
+      createMockWorkLog({
+        id: 'wl-yesterday-working',
+        date: FIXED_YESTERDAY,
+        status: STATUS.WORK_LOG.CHECKED_IN,
+        timeSlot: '18:00~02:00',
+        checkInTime: new Date(2026, 5, 28, 18, 0),
+      }),
+    ]);
+    mockProcessQRCheckInOutTransaction.mockResolvedValue({
+      action: 'checkOut',
+      workDuration: 480,
+      hasExistingCheckInTime: true,
+    });
+
+    const result = await processQRCheckIn(VENUE_QR, 'staff-1');
+
+    expect(result.workLogId).toBe('wl-yesterday-working');
+    expect(mockProcessQRCheckInOutTransaction.mock.calls[0][5]).toBe(FIXED_YESTERDAY);
+  });
+
+  it('어제 자 checked_out 만 남으면 이미 퇴근이 아니라 배정 없음으로 안내한다', async () => {
+    // 어제 끝난 근무를 "오늘 근무는 이미 퇴근 처리됐습니다"라고 안내하면 거짓 정보다.
+    mockFindQRCandidates.mockResolvedValue([
+      createMockWorkLog({
+        id: 'wl-yesterday-done',
+        date: FIXED_YESTERDAY,
+        status: STATUS.WORK_LOG.CHECKED_OUT,
+        timeSlot: '18:00~02:00',
+      }),
+    ]);
+
+    await expect(processQRCheckIn(VENUE_QR, 'staff-1')).rejects.toMatchObject({
+      userMessage: '오늘 이 공고에 배정된 근무가 없습니다',
+    });
+
+    expect(mockProcessQRCheckInOutTransaction).not.toHaveBeenCalled();
+  });
+
+  it('어제 자 checked_out 은 제외되고 오늘 자 대기 근무가 선택된다', async () => {
+    mockFindQRCandidates.mockResolvedValue([
+      createMockWorkLog({
+        id: 'wl-yesterday-done',
+        date: FIXED_YESTERDAY,
+        status: STATUS.WORK_LOG.CHECKED_OUT,
+        timeSlot: '18:00~02:00',
+      }),
+      createMockWorkLog({
+        id: 'wl-today-scheduled',
+        date: FIXED_TODAY,
+        status: STATUS.WORK_LOG.SCHEDULED,
+        timeSlot: '18:00~02:00',
+      }),
+    ]);
+    mockProcessQRCheckInOutTransaction.mockResolvedValue({
+      action: 'checkIn',
+      workDuration: 0,
+      hasExistingCheckInTime: false,
+    });
+
+    const result = await processQRCheckIn(VENUE_QR, 'staff-1');
+
+    // 어제 자가 남아 있었다면 all_checked_out 으로 오늘 출근이 막혔을 것이다.
+    expect(result.workLogId).toBe('wl-today-scheduled');
+    expect(mockProcessQRCheckInOutTransaction.mock.calls[0][5]).toBe(FIXED_TODAY);
+  });
+
+  it('고정 공고(FIXED_SCHEDULE) 후보는 날짜 필터와 무관하게 통과한다', async () => {
+    mockFindQRCandidates.mockResolvedValue([
+      createMockWorkLog({
+        id: 'wl-fixed',
+        date: 'FIXED_SCHEDULE',
+        status: STATUS.WORK_LOG.SCHEDULED,
+        timeSlot: '09:00~15:00',
+      }),
+    ]);
+    mockProcessQRCheckInOutTransaction.mockResolvedValue({
+      action: 'checkIn',
+      workDuration: 0,
+      hasExistingCheckInTime: false,
+    });
+
+    const result = await processQRCheckIn(VENUE_QR, 'staff-1');
+
+    expect(result.workLogId).toBe('wl-fixed');
+    expect(mockProcessQRCheckInOutTransaction.mock.calls[0][5]).toBe('FIXED_SCHEDULE');
+  });
+});
+
 describe('buildVenueQRString', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -288,6 +450,11 @@ describe('buildVenueQRString', () => {
     await processQRCheckIn(qr, 'staff-1');
 
     // 왕복 성립: 생성한 QR 이 같은 공고 ID 로 후보 조회를 트리거한다
-    expect(mockFindQRCandidates).toHaveBeenCalledWith('container-1', 'staff-1', FIXED_TODAY);
+    expect(mockFindQRCandidates).toHaveBeenCalledWith(
+      'container-1',
+      'staff-1',
+      FIXED_TODAY,
+      FIXED_YESTERDAY
+    );
   });
 });

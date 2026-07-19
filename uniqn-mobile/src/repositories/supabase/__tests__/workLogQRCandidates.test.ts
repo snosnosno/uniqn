@@ -1,8 +1,10 @@
 /**
  * UNIQN Mobile - QR 후보 work_log 조회 테스트
  *
- * @description 고정 공고(date='FIXED_SCHEDULE')와 일반 공고(date=오늘)를
- *   한 쿼리로 모두 조회하는지 검증. 하루 다중 배정은 예외 없이 배열로 반환한다.
+ * @description 고정 공고(date='FIXED_SCHEDULE')와 일반 공고(date=오늘/어제)를
+ *   한 쿼리로 모두 조회하는지 검증. 어제를 포함하는 이유는 자정 넘는 근무의 퇴근 스캔이다
+ *   (18:00~02:00 근무의 work_logs.date 는 시작일 D — D+1 새벽 스캔은 어제 자를 찾아야 한다).
+ *   하루 다중 배정은 예외 없이 배열로 반환한다.
  *   (job_posting_id, staff_id, date)에 UNIQUE 제약이 없어 2건 이상이 정상 케이스다.
  *
  * 파싱 계약도 함께 고정한다 — work_logs 행은 zod(workLogDocumentSchema)를 통과해야
@@ -44,6 +46,7 @@ function makeChain(returnValue: { data: unknown; error: unknown }) {
 }
 
 const TODAY = '2026-07-20';
+const YESTERDAY = '2026-07-19';
 
 /** 실제 work_logs 행 모양(snake_case) — 필수 필드 누락 시 zod 가 행을 버린다. */
 function makeRow(overrides: Record<string, unknown> = {}) {
@@ -68,16 +71,39 @@ beforeEach(() => {
 describe('SupabaseWorkLogRepository.findQRCandidates', () => {
   const repo = new SupabaseWorkLogRepository();
 
-  it('오늘 날짜와 FIXED_SCHEDULE 을 한 쿼리로 함께 조회한다', async () => {
+  it('오늘·어제·FIXED_SCHEDULE 을 한 쿼리로 함께 조회한다', async () => {
     const chain = makeChain({ data: [], error: null });
     mockFrom.mockReturnValueOnce(chain);
 
-    await repo.findQRCandidates('posting-1', 'staff-1', TODAY);
+    await repo.findQRCandidates('posting-1', 'staff-1', TODAY, YESTERDAY);
 
     expect(mockFrom).toHaveBeenCalledWith('work_logs');
     expect(chain.eq).toHaveBeenCalledWith('job_posting_id', 'posting-1');
     expect(chain.eq).toHaveBeenCalledWith('staff_id', 'staff-1');
-    expect(chain.in).toHaveBeenCalledWith('date', [TODAY, FIXED_DATE_MARKER]);
+    // 어제를 포함하는 이유 = 자정 넘는 근무(18:00~02:00)의 퇴근 스캔.
+    // work_logs.date 는 근무 시작일이라 D+1 새벽 스캔은 어제 자 행을 찾아야 한다.
+    expect(chain.in).toHaveBeenCalledWith('date', [TODAY, YESTERDAY, FIXED_DATE_MARKER]);
+  });
+
+  it('어제 자 행(자정 넘는 근무)도 버려지지 않고 반환된다', async () => {
+    mockFrom.mockReturnValueOnce(
+      makeChain({
+        data: [
+          makeRow({
+            id: 'wl-overnight',
+            date: YESTERDAY,
+            status: 'checked_in',
+            time_slot: '18:00~02:00',
+          }),
+        ],
+        error: null,
+      })
+    );
+
+    const result = await repo.findQRCandidates('posting-1', 'staff-1', TODAY, YESTERDAY);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]?.date).toBe(YESTERDAY);
   });
 
   it('하루에 배정이 2건이면 예외 없이 2건 모두 반환한다', async () => {
@@ -91,7 +117,7 @@ describe('SupabaseWorkLogRepository.findQRCandidates', () => {
       })
     );
 
-    const result = await repo.findQRCandidates('posting-1', 'staff-1', TODAY);
+    const result = await repo.findQRCandidates('posting-1', 'staff-1', TODAY, YESTERDAY);
 
     expect(result).toHaveLength(2);
     expect(result.map((w) => w.id)).toEqual(['wl-1', 'wl-2']);
@@ -105,7 +131,7 @@ describe('SupabaseWorkLogRepository.findQRCandidates', () => {
       })
     );
 
-    const result = await repo.findQRCandidates('posting-1', 'staff-1', TODAY);
+    const result = await repo.findQRCandidates('posting-1', 'staff-1', TODAY, YESTERDAY);
 
     expect(result).toHaveLength(1);
     expect(result[0]?.date).toBe(FIXED_DATE_MARKER);
@@ -114,7 +140,7 @@ describe('SupabaseWorkLogRepository.findQRCandidates', () => {
   it('배정이 없으면 빈 배열을 반환한다', async () => {
     mockFrom.mockReturnValueOnce(makeChain({ data: [], error: null }));
 
-    const result = await repo.findQRCandidates('posting-1', 'staff-1', TODAY);
+    const result = await repo.findQRCandidates('posting-1', 'staff-1', TODAY, YESTERDAY);
 
     expect(result).toEqual([]);
   });

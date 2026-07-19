@@ -20,10 +20,11 @@ import { toError, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { InvalidQRCodeError } from '@/errors/BusinessErrors';
 import { trackCheckIn, trackCheckOut } from '@/services/observability';
-import { toISODateString, getTodayString } from '@/utils/date';
+import { toISODateString, getTodayString, getYesterdayString } from '@/utils/date';
+import { WORK_LOG_STATUS_VALUES } from '@/constants/statusValues';
 import { workLogRepository } from '@/repositories';
 import { selectWorkLogForQR, type QRSelectionFailureReason } from './selectWorkLogForQR';
-import type { VenueQRDisplayData, EventQRScanResult } from '@/types';
+import type { VenueQRDisplayData, EventQRScanResult, WorkLog } from '@/types';
 
 // ============================================================================
 // Helper Functions
@@ -47,6 +48,20 @@ function parseVenueQRData(qrString: string): VenueQRDisplayData | null {
   }
 }
 
+/**
+ * 어제 자 후보를 "아직 출근 중인 것"만 남기고 걸러낸다
+ *
+ * @description 어제 자 배정은 아직 출근 중인 것만 후보로 인정한다 —
+ *   자정 넘는 근무의 퇴근 스캔을 위한 것이지, 지난 근무에 새로 출근하기 위한 것이 아니다.
+ *   오늘 자·FIXED_SCHEDULE 후보는 그대로 통과시킨다.
+ * @remarks 새 배열을 반환한다(입력 불변).
+ */
+function keepOnlyActiveYesterdayCandidates(candidates: WorkLog[], yesterday: string): WorkLog[] {
+  return candidates.filter(
+    (workLog) => workLog.date !== yesterday || workLog.status === WORK_LOG_STATUS_VALUES.CHECKED_IN
+  );
+}
+
 /** 선택 실패 사유별 사용자 문구 */
 const SELECTION_FAILURE_MESSAGES: Record<QRSelectionFailureReason, string> = {
   no_assignment: '오늘 이 공고에 배정된 근무가 없습니다',
@@ -61,9 +76,12 @@ const SELECTION_FAILURE_MESSAGES: Record<QRSelectionFailureReason, string> = {
 /**
  * QR 스캔 출퇴근 처리 (유일한 스캔 진입점)
  *
- * @description 고정 QR 스캔 → 오늘(또는 고정 스케줄) 배정 후보 조회 →
- *   처리 대상 자동 선택 → process_qr_checkin_atomically(p_action='auto').
+ * @description 고정 QR 스캔 → 오늘·어제·고정 스케줄 배정 후보 조회 →
+ *   어제 자 필터 → 처리 대상 자동 선택 → process_qr_checkin_atomically(p_action='auto').
  *   서버가 현재 status 로 출근/퇴근을 결정한다(TOCTOU 방지).
+ *
+ *   어제까지 조회하는 이유는 자정 넘는 근무(18:00~02:00)다 — work_logs.date 가 시작일이라
+ *   D+1 새벽 퇴근 스캔이 오늘 날짜로는 후보를 못 찾는다.
  */
 export async function processQRCheckIn(
   qrString: string,
@@ -83,13 +101,22 @@ export async function processQRCheckIn(
   try {
     logger.info('QR 스캔 출퇴근 처리', { jobPostingId, staffId });
 
-    // 1. 근무 날짜 = 오늘 (QR 에 날짜 미인코딩 — 스캔 시점 기준)
-    const date = getTodayString();
+    // 1. 스캔 시점 기준 날짜 (QR 에 날짜 미인코딩)
+    const today = getTodayString();
+    const yesterday = getYesterdayString();
 
-    // 2. 후보 조회 (고정 공고의 'FIXED_SCHEDULE' 포함)
-    const candidates = await workLogRepository.findQRCandidates(jobPostingId, staffId, date);
+    // 2. 후보 조회 (고정 공고의 'FIXED_SCHEDULE' + 자정 넘는 근무용 어제 포함)
+    const rawCandidates = await workLogRepository.findQRCandidates(
+      jobPostingId,
+      staffId,
+      today,
+      yesterday
+    );
 
-    // 3. 처리 대상 자동 선택 (하루 다중 배정 대응)
+    // 3. 어제 자 후보는 '아직 출근 중'인 것만 인정 (자정 넘는 근무의 퇴근 스캔용)
+    const candidates = keepOnlyActiveYesterdayCandidates(rawCandidates, yesterday);
+
+    // 4. 처리 대상 자동 선택 (하루 다중 배정 대응)
     const checkTime = new Date();
     const selection = selectWorkLogForQR(candidates, checkTime);
 
@@ -103,17 +130,19 @@ export async function processQRCheckIn(
     const workLog = selection.workLog;
     const workLogId = workLog.id;
 
-    // 4. auto 액션으로 원자적 처리 — 서버가 현재 status 로 출/퇴근 결정
+    // 5. auto 액션으로 원자적 처리 — 서버가 현재 status 로 출/퇴근 결정
+    //    p_expected_date 는 **선택된 work_log 자신의 date**. 오늘 날짜를 고정으로 넘기면
+    //    자정 넘는 근무(어제 자 행)를 RPC 의 date_mismatch 가드가 거부한다.
     const result = await workLogRepository.processQRCheckInOutTransaction(
       workLogId,
       staffId,
       jobPostingId,
       'auto',
       checkTime,
-      date
+      workLog.date
     );
 
-    // 5. Analytics (트랜잭션 외부 — 실패해도 출퇴근은 성공)
+    // 6. Analytics (트랜잭션 외부 — 실패해도 출퇴근은 성공)
     if (result.action === 'checkIn') {
       trackCheckIn(toISODateString(checkTime) || '');
       logger.info('QR 출근 처리 완료', { workLogId, staffId });

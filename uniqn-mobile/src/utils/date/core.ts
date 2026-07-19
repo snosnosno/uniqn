@@ -141,6 +141,18 @@ export function getTodayString(): string {
   return format(new Date(), 'yyyy-MM-dd');
 }
 
+/**
+ * 어제 날짜를 YYYY-MM-DD 로 반환 (로컬 시각 기준)
+ *
+ * @description getTodayString 과 같은 기준(로컬 시각)으로 계산한다. UTC 로 계산하면
+ *   KST 00~09시 구간에서 하루가 어긋나 날짜 비교가 조용히 깨진다.
+ */
+export function getYesterdayString(): string {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  return format(yesterday, 'yyyy-MM-dd');
+}
+
 export function toDateString(value: DateInput): string {
   return toISODateString(value) ?? '';
 }
