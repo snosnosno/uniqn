@@ -2,9 +2,10 @@
  * SlotCard — 슬롯 카드 테스트 (아코디언 펼침/접힘)
  *
  * 검증: (1) 접힘=요약만+편집기 미마운트, (2) 접힘 탭=onExpand(무상태), (3) 펼침=시간 트리거+역할 편집기,
- * (4) 삭제 버튼 노출 조건, (5) 요약은 한글 라벨, (6) 역할 변경 배선, (7) 동작 줄이기 분기.
+ * (4) 삭제 버튼 노출 조건, (5) 요약은 한글 라벨, (6) 역할 변경 배선,
+ * (7) 동작 줄이기 조회 배선 + **결과 소비**(entering/exiting 실제 값)와 300/225ms 규격.
  */
-import { render, fireEvent } from '@testing-library/react-native';
+import { render, fireEvent, act } from '@testing-library/react-native';
 import React, { useState } from 'react';
 import { AccessibilityInfo, Pressable, Text } from 'react-native';
 import { SlotCard } from '../SlotCard';
@@ -244,5 +245,62 @@ describe('SlotCard — 동작 줄이기', () => {
     );
     await findByTestId('order-role-chip-dealer');
     expect(spy).toHaveBeenCalled();
+  });
+
+  /**
+   * 펼침 분기의 Animated.View 노드들을 찾는다.
+   *
+   * 앵커는 `accessibilityState={{ expanded: true }}` — 동작 줄이기 값과 **무관하게 항상** 붙어 있으므로
+   * "노드를 못 찾아서 통과"하는 공허 단언이 되지 않는다(그래서 아래 단언들이 length>0 을 먼저 본다).
+   * `entering`/`exiting` 을 앵커로 쓰면 ON 케이스에서 매치 0건이 되어 무엇도 검증하지 못한다.
+   *
+   * reanimated 4.2.1 실측: layout animation prop 은 렌더 트리에 **그대로 노출**되며(prop 소비 후 제거 아님),
+   * 지속시간은 FadeIn/FadeOut 인스턴스의 내부 필드 `durationV` 로 읽힌다. 앵커 1개당 4개 노드가 잡힌다
+   * (NativeWind 래퍼 / AnimatedComponent(View) / host View) — 전부 같은 prop 을 들고 있어 전건 단언한다.
+   */
+  // UNSAFE_root 와 그 자식 노드는 같은 ReactTestInstance 타입 — findAll 이 predicate 인자에
+  // 컨텍스트 타입을 안 주므로(TS7006) 명시 annotate 한다.
+  type TestNode = ReturnType<typeof render>['UNSAFE_root'];
+  const findExpandedAnimatedNodes = (root: TestNode) =>
+    root.findAll((node: TestNode) => node.props?.accessibilityState?.expanded === true);
+
+  it('동작 줄이기 ON 이면 entering/exiting 이 모두 undefined 다 (애니메이션 미부착)', async () => {
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
+    const { UNSAFE_root, findByTestId } = render(
+      <SlotCard {...baseProps} expanded slot={{ startTime: '19:00', roles: [] }} />
+    );
+    await findByTestId('order-role-chip-dealer');
+    // isReduceMotionEnabled() 의 promise 해제 → setReduceMotion 반영까지 대기.
+    // 이 flush 가 없으면 초기값(false) 을 읽어 ON 분기를 검증하지 못한다.
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const nodes = findExpandedAnimatedNodes(UNSAFE_root);
+    expect(nodes.length).toBeGreaterThan(0);
+    for (const node of nodes) {
+      expect(node.props.entering).toBeUndefined();
+      expect(node.props.exiting).toBeUndefined();
+    }
+  });
+
+  it('동작 줄이기 OFF 면 진입 300ms · 종료 225ms 로 부착된다 (종료=시작의 75%)', async () => {
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
+    const { UNSAFE_root, findByTestId } = render(
+      <SlotCard {...baseProps} expanded slot={{ startTime: '19:00', roles: [] }} />
+    );
+    await findByTestId('order-role-chip-dealer');
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const nodes = findExpandedAnimatedNodes(UNSAFE_root);
+    expect(nodes.length).toBeGreaterThan(0);
+    for (const node of nodes) {
+      expect(node.props.entering).toBeDefined();
+      expect(node.props.exiting).toBeDefined();
+      expect(node.props.entering.durationV).toBe(300);
+      expect(node.props.exiting.durationV).toBe(225);
+    }
   });
 });
