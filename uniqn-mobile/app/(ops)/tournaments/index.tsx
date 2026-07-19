@@ -301,7 +301,7 @@ function ErrorBanner({ onRetry }: { onRetry: () => void }) {
 export default function OpsTournamentListScreen() {
   const { postingId: postingIdParam } = useLocalSearchParams<{ postingId?: string }>();
   const postingId = Array.isArray(postingIdParam) ? postingIdParam[0] : postingIdParam;
-  const { tournaments, isLoading, error, refetch } = useOpsTournaments();
+  const { tournaments, isLoading, isRefetching, error, refetch } = useOpsTournaments();
   const duplicate = useDuplicateTournament();
   const isDark = useThemeStore((s) => s.isDarkMode);
 
@@ -382,7 +382,7 @@ export default function OpsTournamentListScreen() {
           contentContainerStyle={{ padding: 16 }}
           refreshControl={
             <RefreshControl
-              refreshing={false}
+              refreshing={isRefetching}
               onRefresh={handleRetry}
               tintColor={getLayoutColor(isDark, 'refreshTint')}
               colors={[getLayoutColor(isDark, 'refreshTint')]}

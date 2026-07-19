@@ -19,6 +19,7 @@ import {
   useAcceptWorkspaceInvitation,
   useRejectWorkspaceInvitation,
 } from '@/hooks/workspace';
+import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import { logger } from '@/utils/logger';
 import { isAppError } from '@/errors';
 import type { ReceivedWorkspaceInvitation } from '@/types/workspace';
@@ -33,7 +34,8 @@ function formatExpiresAt(expiresAtIso: string): string {
 
 export default function WorkspaceInvitationsScreen() {
   const { addToast } = useToastStore();
-  const { invitations, isLoading, error, refetch } = useReceivedWorkspaceInvitations();
+  const { invitations, isLoading, isRefetching, error, refetch } =
+    useReceivedWorkspaceInvitations();
   const acceptMutation = useAcceptWorkspaceInvitation();
   const rejectMutation = useRejectWorkspaceInvitation();
 
@@ -159,7 +161,9 @@ export default function WorkspaceInvitationsScreen() {
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         estimatedItemSize={140}
-        refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
+        refreshControl={
+          <RefreshControl refreshing={isRefetching} onRefresh={refetch} {...PTR_REFRESH_PROPS} />
+        }
         contentContainerClassName="pt-3 pb-8"
         ListEmptyComponent={
           <View className="items-center px-6 py-12">

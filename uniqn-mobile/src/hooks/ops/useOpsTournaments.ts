@@ -16,6 +16,8 @@ export function useOpsTournaments() {
   return {
     tournaments: query.data ?? [],
     isLoading: query.isLoading,
+    // 당겨서 새로고침 스피너용 — 노출하지 않으면 화면이 refreshing={false} 로 땜빵하게 된다
+    isRefetching: query.isRefetching,
     error: query.error,
     refetch: query.refetch,
   };
