@@ -110,6 +110,24 @@ describe('selectWorkLogForQR', () => {
     expect(selectWorkLogForQR([done], now)).toEqual({ workLog: null, reason: 'all_checked_out' });
   });
 
+  // completed 는 WORK_LOG_STATUS_VALUES 의 실재 멤버이자 도달 가능한 프로덕션 상태다.
+  // all_checked_out 판정에서 이 항을 빼면 not_active 로 잘못 떨어진다.
+  it('후보가 전부 completed 여도 all_checked_out 을 반환한다', () => {
+    const done = makeWorkLog({ id: 'wl-completed', status: WORK_LOG_STATUS_VALUES.COMPLETED });
+
+    expect(selectWorkLogForQR([done], now)).toEqual({ workLog: null, reason: 'all_checked_out' });
+  });
+
+  it('checked_out 과 completed 가 섞여 있어도 all_checked_out 을 반환한다', () => {
+    const checkedOut = makeWorkLog({ id: 'wl-o', status: WORK_LOG_STATUS_VALUES.CHECKED_OUT });
+    const completed = makeWorkLog({ id: 'wl-c2', status: WORK_LOG_STATUS_VALUES.COMPLETED });
+
+    expect(selectWorkLogForQR([checkedOut, completed], now)).toEqual({
+      workLog: null,
+      reason: 'all_checked_out',
+    });
+  });
+
   it('후보가 전부 취소/노쇼면 not_active 를 반환한다', () => {
     const cancelled = makeWorkLog({ id: 'wl-c', status: WORK_LOG_STATUS_VALUES.CANCELLED });
     const noShow = makeWorkLog({ id: 'wl-n', status: WORK_LOG_STATUS_VALUES.NO_SHOW });
@@ -137,9 +155,35 @@ describe('selectWorkLogForQR', () => {
 
   // findQRCandidates 는 .order() 를 걸지 않아 배열 순서가 무보장이다.
   // 같은 후보 집합이면 순서와 무관하게 같은 결과가 나와야 한다.
-  it('시작시각이 동률이면 입력 순서와 무관하게 같은 건을 선택한다', () => {
+  //
+  // 동률 규칙: 순환 거리 → 이미 시작한 근무 우선 → id 오름차순.
+  // 아래 두 테스트는 id 사전순이 새 규칙과 **반대 방향**이 되도록 id 를 붙였다.
+  // "이미 시작 우선" 규칙을 제거하면 id 순으로 갈려 red 가 된다.
+  it('거리가 동률이면 이미 시작한 근무를 우선한다 (지각 출근 > 조기 출근)', () => {
+    // 10:00 기준 양쪽 다 순환 거리 60분. id 사전순으로는 'wl-a'(11:00)가 이기므로,
+    // 'wl-b'(09:00)가 선택돼야만 "이미 시작 우선" 규칙이 살아있다는 뜻이다.
+    const notStarted = makeWorkLog({ id: 'wl-a', timeSlot: '11:00~17:00' });
+    const alreadyStarted = makeWorkLog({ id: 'wl-b', timeSlot: '09:00~15:00' });
+
+    expect(selectWorkLogForQR([notStarted, alreadyStarted], now).workLog?.id).toBe('wl-b');
+    expect(selectWorkLogForQR([alreadyStarted, notStarted], now).workLog?.id).toBe('wl-b');
+  });
+
+  it('자정을 넘겨도 "이미 시작" 판정을 순환 기준으로 한다', () => {
+    const lateNight = new Date(2026, 6, 20, 23, 0); // 로컬 23:00
+    // 02:00 은 3시간 "뒤" 시작(아직 미시작), 20:00 은 3시간 "전" 시작(이미 시작). 둘 다 거리 180분.
+    // 선형 비교(start <= now)를 쓰면 02:00(120 <= 1380)을 이미 시작으로 오판해 'wl-a' 가 이긴다.
+    const nextDayEarly = makeWorkLog({ id: 'wl-a', timeSlot: '02:00~08:00' });
+    const alreadyStarted = makeWorkLog({ id: 'wl-b', timeSlot: '20:00~02:00' });
+
+    expect(selectWorkLogForQR([nextDayEarly, alreadyStarted], lateNight).workLog?.id).toBe('wl-b');
+    expect(selectWorkLogForQR([alreadyStarted, nextDayEarly], lateNight).workLog?.id).toBe('wl-b');
+  });
+
+  it('거리도 시작 여부도 같으면 id 오름차순으로 결정한다', () => {
+    // 둘 다 10:00 기준 60분 전 시작 = 이미 시작. 마지막 tiebreak 인 id 만 남는다.
     const a = makeWorkLog({ id: 'wl-a', timeSlot: '09:00~15:00' });
-    const b = makeWorkLog({ id: 'wl-b', timeSlot: '11:00~17:00' }); // 10:00 기준 동률(60분)
+    const b = makeWorkLog({ id: 'wl-b', timeSlot: '09:00~13:00' });
 
     expect(selectWorkLogForQR([a, b], now).workLog?.id).toBe('wl-a');
     expect(selectWorkLogForQR([b, a], now).workLog?.id).toBe('wl-a');
