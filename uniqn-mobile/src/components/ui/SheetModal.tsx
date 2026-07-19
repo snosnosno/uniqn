@@ -18,7 +18,7 @@ import {
   StyleSheet,
   useWindowDimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -30,6 +30,12 @@ import { getIconColor } from '@/constants';
 import { useThemeStore } from '@/stores/themeStore';
 import { isWeb } from '@/utils/platform';
 import { WebPortal } from '@/components/ui/WebPortal';
+
+/**
+ * 시트 상단이 상태바에 닿지 않도록 남기는 최소 간격.
+ * 상한 = windowHeight - insets.top - 이 값.
+ */
+const SHEET_TOP_GAP = 8;
 
 // ============================================================================
 // Types
@@ -228,6 +234,11 @@ function NativeSheetModal({
 }: SheetModalProps) {
   const { isDarkMode } = useThemeStore();
   const { height: windowHeight } = useWindowDimensions();
+  // SafeAreaView(네이티브 뷰)는 RNModal 의 별도 윈도우를 자기 기준으로 측정해
+  // 인셋이 0으로 떨어진다 (실기기 2026-07-19: 하단 버튼이 홈 인디케이터에 잘리고
+  // 키보드 오픈 시 헤더가 상태바를 침범). 훅으로 앱 루트 provider 값을 직접 읽어
+  // 패딩으로 적용하면 중첩 SafeAreaProvider 없이 해소된다.
+  const insets = useSafeAreaInsets();
   const fadeOpacity = useSharedValue(0);
   const translateY = useSharedValue(windowHeight);
   const isKeyboardVisible = useRef(false);
@@ -324,12 +335,24 @@ function NativeSheetModal({
           <Animated.View
             style={[
               modalAnimatedStyle,
-              fullHeight ? { flex: 1 } : { maxHeight: windowHeight * 0.95, flex: 1 },
+              fullHeight
+                ? { flex: 1 }
+                : {
+                    // flex:1 을 주면 내용이 짧아도 시트가 항상 화면을 가득 채워
+                    // 광활한 빈 공간이 생겼다 (실기기 2026-07-19). 높이를 지정하지
+                    // 않아 내용에 맞춰 줄어들게 하고, 상한만 둔다.
+                    // 상한은 상태바 인셋을 뺀 값이라 시트가 헤더까지 밀려 올라가도
+                    // 상태바를 침범하지 않는다.
+                    maxHeight: windowHeight - insets.top - SHEET_TOP_GAP,
+                  },
             ]}
           >
-            <SafeAreaView
-              edges={fullHeight ? ['top', 'bottom'] : ['bottom']}
-              style={{ flex: 1 }}
+            <View
+              style={
+                fullHeight
+                  ? { flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom }
+                  : { flexShrink: 1, paddingBottom: insets.bottom }
+              }
               className={`bg-surface-card ${fullHeight ? '' : 'rounded-t-3xl'}`}
             >
               {/* Header */}
@@ -353,8 +376,11 @@ function NativeSheetModal({
 
               {/* Content */}
               <ScrollView
-                style={{ flex: 1 }}
-                contentContainerStyle={{ flexGrow: 1 }}
+                // 내용 기반 높이 모드에서 flex:1 을 주면 부모 높이가 확정되지 않아
+                // basis 0 으로 붕괴한다. flexShrink 만 두어 내용만큼 차지하되
+                // 상한에 닿으면 줄어들며 스크롤되게 한다.
+                style={fullHeight ? { flex: 1 } : { flexShrink: 1 }}
+                contentContainerStyle={fullHeight ? { flexGrow: 1 } : undefined}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
                 keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
@@ -364,7 +390,7 @@ function NativeSheetModal({
 
               {/* Footer */}
               {footer && <View className="px-4 py-4 border-t border-divider">{footer}</View>}
-            </SafeAreaView>
+            </View>
           </Animated.View>
 
           {/* 오버레이 (시간 피커 등) — Modal 루트에 직접 렌더하여 중첩 Modal 회피.

@@ -18,7 +18,7 @@ import {
   StyleSheet,
   useWindowDimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -260,6 +260,7 @@ function NativeModal({
 }: ModalProps) {
   const { isDarkMode } = useThemeStore();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const fadeOpacity = useSharedValue(0);
   const scale = useSharedValue(0.9);
   const translateY = useSharedValue(100);
@@ -400,9 +401,14 @@ function NativeModal({
               size === 'full' ? { width: windowWidth - MODAL_FULL_MARGIN * 2 } : null,
             ]}
           >
-            <SafeAreaView
-              edges={position === 'center' ? ['top', 'bottom'] : ['bottom']}
-              style={{ flexShrink: 1 }}
+            <View
+              style={{
+                flexShrink: 1,
+                // SafeAreaView 는 RNModal 의 별도 윈도우를 자기 기준으로 측정해
+                // 인셋이 0으로 떨어진다. 훅 값을 직접 패딩으로 적용한다 (2026-07-19).
+                paddingTop: position === 'center' ? insets.top : 0,
+                paddingBottom: insets.bottom,
+              }}
             >
               <View className={modalClassName} style={{ flexShrink: 1 }}>
                 {/* Header */}
@@ -443,7 +449,7 @@ function NativeModal({
                   </View>
                 )}
               </View>
-            </SafeAreaView>
+            </View>
           </Animated.View>
         </View>
       </KeyboardAvoidingView>
