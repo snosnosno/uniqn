@@ -395,6 +395,21 @@ describe('RoleCountEditor — 기타 직접 입력', () => {
     fireEvent.press(getByTestId('order-role-count-plus-0'));
     expect(dump(getByTestId)).toEqual([{ role: 'other', customRole: '칩카운터', count: 2 }]);
   });
+
+  // roleLabel 의 'other' 분기(= roleName 위임의 핵심 갈래) 직접 커버.
+  // Task 1 리뷰 지적: 이 분기가 레포 어디에서도 단언되지 않고 있었다.
+  it("커스텀 역할은 이름이 그대로 표시된다 (roleLabel 'other' 분기)", () => {
+    const { getByText, getByLabelText } = render(
+      <Harness initial={[{ role: 'other', customRole: '칩카운터', count: 1 }]} />
+    );
+    expect(getByText('칩카운터')).toBeTruthy();
+    expect(getByLabelText('칩카운터 인원 늘리기')).toBeTruthy();
+  });
+
+  it("customRole 이 없는 'other' 는 '기타'로 표시된다", () => {
+    const { getByText } = render(<Harness initial={[{ role: 'other', count: 1 }]} />);
+    expect(getByText('기타')).toBeTruthy();
+  });
 });
 ```
 
@@ -563,6 +578,15 @@ describe('RoleCountEditor — 인원 숫자 직접 입력', () => {
     fireEvent(input, 'blur');
     expect(dump(getByTestId)).toEqual([{ role: 'dealer', count: 12 }]);
   });
+
+  // Minor-2 회귀 가드 — 칩 해제로 기억된 인원이 범위 밖이어도 재선택 시 clamp 되어야 한다.
+  // (레거시 draft 의 count=150 같은 값이 하이드레이션으로 흘러들어오는 경로)
+  it('범위 밖 인원을 기억했다가 재선택하면 99로 clamp 된다', () => {
+    const { getByTestId } = render(<Harness initial={[{ role: 'dealer', count: 150 }]} />);
+    fireEvent.press(getByTestId('order-role-chip-dealer')); // 해제 → lastCount=150 기억
+    fireEvent.press(getByTestId('order-role-chip-dealer')); // 재선택 → clamp
+    expect(dump(getByTestId)).toEqual([{ role: 'dealer', count: 99 }]);
+  });
 });
 ```
 
@@ -571,7 +595,27 @@ describe('RoleCountEditor — 인원 숫자 직접 입력', () => {
 Run: `cd uniqn-mobile && npx jest src/components/employer/order-sheet/sheets/__tests__/RoleCountEditor.test.tsx -t "숫자 직접 입력"`
 Expected: FAIL — `Unable to find an element with testID: order-role-count-input-0`
 
-- [ ] **Step 3: 구현 — 편집 상태 추가**
+- [ ] **Step 3: Task 1 리뷰 Minor 2건 동시 처리 (clamp 일관성)**
+
+Task 1 리뷰가 clamp 관련 결함 2건을 지적했다. 숫자 입력을 붙이면 노출 반경이 커지므로 여기서 함께 고친다.
+
+**Minor-1 — clamp 경계에서 no-op `onChange`**: count=1에서 −, count=99에서 + 를 눌러도 매번 새 배열을 emit해 부모의 `form.setValue(..., { shouldValidate: true })`가 폼 전체 zod 재검증을 돌린다. `setCountAt`을 다음으로 교체:
+
+```tsx
+  const setCountAt = (i: number, next: number) => {
+    const clamped = clampCount(next);
+    if (clamped === roles[i]?.count) return; // 경계 탭 no-op — 불필요한 재검증 차단
+    onChange(roles.map((r, idx) => (idx === i ? { ...r, count: clamped } : r)));
+  };
+```
+
+**Minor-2 — 추가·복원 경로가 clamp를 안 탄다**: `lastCount[key] ?? MIN_COUNT`는 `??`라서 0을 통과시키고, 레거시 draft의 범위 밖 값(150 등)도 그대로 흘린다. `toggleRole`의 추가 분기를 다음으로 교체:
+
+```tsx
+    onChange([...roles, { role: key, count: clampCount(lastCount[key] ?? MIN_COUNT) }]);
+```
+
+- [ ] **Step 4: 구현 — 편집 상태 추가**
 
 `const [customName, setCustomName] = useState('');` 아래에 추가:
 
@@ -588,7 +632,7 @@ Expected: FAIL — `Unable to find an element with testID: order-role-count-inpu
   };
 ```
 
-- [ ] **Step 4: 구현 — 인원 Text를 TextInput으로 교체**
+- [ ] **Step 5: 구현 — 인원 Text를 TextInput으로 교체**
 
 역할 행의 다음 블록을
 
@@ -619,12 +663,12 @@ Expected: FAIL — `Unable to find an element with testID: order-role-count-inpu
 
 `autoFocus`는 쓰지 않는다 — 사용자가 숫자를 탭했을 때만 포커스된다.
 
-- [ ] **Step 5: 테스트 통과 확인**
+- [ ] **Step 6: 테스트 통과 확인**
 
 Run: `cd uniqn-mobile && npx jest src/components/employer/order-sheet/sheets/__tests__/RoleCountEditor.test.tsx`
 Expected: PASS — 19 tests passed
 
-- [ ] **Step 6: 커밋**
+- [ ] **Step 7: 커밋**
 
 ```bash
 git add src/components/employer/order-sheet/sheets/RoleCountEditor.tsx src/components/employer/order-sheet/sheets/__tests__/RoleCountEditor.test.tsx
@@ -793,10 +837,25 @@ export function RolesSheet({ visible, value, onConfirm, onClose }: RolesSheetPro
 Run: `cd uniqn-mobile && npx jest src/components/employer/order-sheet/sheets/__tests__/RolesSheet.test.tsx`
 Expected: PASS — 4 tests passed
 
-- [ ] **Step 5: 고정 타입 회귀 확인**
+- [ ] **Step 5: 칩 시맨틱 변경의 하류 테스트 갱신 (2파일)**
 
-Run: `cd uniqn-mobile && npx jest src/components/employer/order-sheet/__tests__/OrderSheetScreen.fixed.test.tsx`
-Expected: PASS. 실패하면 해당 테스트가 옛 3단계 흐름(`order-role-add` 단독 탭으로 딜러 추가)을 쓰고 있는 것이므로, 칩 토글(`order-role-chip-dealer`)로 갱신한다.
+Task 1 리뷰 지적 — `order-role-chip-*`를 **라디오(칩 선택 → "이 역할 추가" 버튼)** 전제로 누르는 기존 테스트가 두 파일에 있다. 칩이 "1탭 = 즉시 추가"로 바뀌므로 **이 태스크에서 깨진다**(Task 8이 아니다).
+
+| 파일 | 알려진 사용처 |
+|---|---|
+| `src/components/employer/order-sheet/__tests__/OrderSheetScreen.fixed.test.tsx` | `:99`, `:121` |
+| `src/components/employer/order-sheet/__tests__/OrderSheetScreen.salarySync.test.tsx` | `:85`, `:108` |
+
+Run: `cd uniqn-mobile && npx jest src/components/employer/order-sheet/__tests__/OrderSheetScreen.fixed.test.tsx src/components/employer/order-sheet/__tests__/OrderSheetScreen.salarySync.test.tsx`
+
+실패하는 곳마다 다음 변환을 적용한다:
+- `order-role-chip-{key}` 탭 **후** `order-role-add` 탭으로 역할을 추가하던 시퀀스 → `order-role-chip-{key}` 탭 **1회**로 축약 (`order-role-add`는 이제 '기타 직접 입력' 전용이다)
+- 상단 사전 스테퍼(`order-role-count-plus` — 인덱스 없음)로 인원을 올리던 것 → 행 스테퍼(`order-role-count-plus-0`)로 교체
+- '기타' 커스텀 역할 추가는 `order-role-custom-open` → `order-sheet-role-custom` 입력 → `order-role-add` 순서로 교체
+
+**단언의 의도는 바꾸지 말 것** — 이 두 테스트는 각각 고정 타입 역할 반영과 역할별 급여 동기화를 지키는 것이지 칩 조작 방식을 지키는 게 아니다. 최종 `onConfirm`/`roleSalaries` 기대값이 달라진다면 그건 회귀이므로 테스트가 아니라 구현을 의심하라.
+
+Expected: 두 파일 모두 PASS
 
 - [ ] **Step 6: 커밋**
 
