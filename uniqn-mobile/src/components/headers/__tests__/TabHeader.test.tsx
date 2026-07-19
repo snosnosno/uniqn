@@ -1,13 +1,11 @@
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
+import { render } from '@testing-library/react-native';
 import { TabHeader } from '../TabHeader';
 
 const mockPush = jest.fn();
-const mockPathname = jest.fn(() => '/(app)/(tabs)/home-jobs');
 
 jest.mock('expo-router', () => ({
   router: { push: (...args: unknown[]) => mockPush(...args) },
-  usePathname: () => mockPathname(),
 }));
 
 jest.mock('@/components/icons', () => ({
@@ -41,7 +39,6 @@ jest.mock('@/constants', () => ({
 describe('TabHeader', () => {
   beforeEach(() => {
     mockPush.mockClear();
-    mockPathname.mockReturnValue('/(app)/(tabs)/home-jobs');
   });
 
   it('renders title text', () => {
@@ -54,23 +51,9 @@ describe('TabHeader', () => {
     expect(getByText('UNIQN')).toBeTruthy();
   });
 
-  it('navigates to home when logo is tapped', () => {
-    const { getByRole } = render(<TabHeader title="구인구직" />);
-    fireEvent.press(getByRole('button', { name: 'UNIQN 홈으로 이동' }));
-    expect(mockPush).toHaveBeenCalledWith('/(app)/home');
-  });
-
-  it('does not navigate when already on home screen (grouped path)', () => {
-    mockPathname.mockReturnValue('/(app)/home');
-    const { getByRole } = render(<TabHeader title="구인구직" />);
-    fireEvent.press(getByRole('button', { name: 'UNIQN 홈으로 이동' }));
-    expect(mockPush).not.toHaveBeenCalled();
-  });
-
-  it('does not navigate when already on home screen (web path)', () => {
-    mockPathname.mockReturnValue('/home');
-    const { getByRole } = render(<TabHeader title="구인구직" />);
-    fireEvent.press(getByRole('button', { name: 'UNIQN 홈으로 이동' }));
-    expect(mockPush).not.toHaveBeenCalled();
+  it('renders the brand mark as non-interactive text', () => {
+    const { getByText, queryByRole } = render(<TabHeader title="구인구직" />);
+    expect(getByText('UNIQN')).toBeTruthy();
+    expect(queryByRole('button', { name: 'UNIQN 홈으로 이동' })).toBeNull();
   });
 });
