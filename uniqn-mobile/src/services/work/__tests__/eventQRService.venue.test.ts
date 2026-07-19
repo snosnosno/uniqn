@@ -1,35 +1,30 @@
 /**
- * UNIQN Mobile - 고정 운영처(컨테이너) QR 출퇴근 처리 테스트
+ * UNIQN Mobile - QR 출퇴근 단일 진입점 테스트
  *
- * @description 주간 배치 그리드 Phase 4 — 고정 운영처 QR 앱측 경로.
- *   (스태프, 컨테이너 공고, 오늘) work_log 해소 + process_qr_checkin_atomically(p_action='auto').
- *   슬롯 해소 + auto 분기 선택 로직을 모킹 기반으로 검증.
+ * @description 고정 QR(type='venue') 스캔 → 후보 조회 → 처리 대상 자동 선택 →
+ *   process_qr_checkin_atomically(p_action='auto') 로 이어지는 서비스 경로를 검증한다.
+ *
+ * @remarks 선택 규칙 자체(순환 거리·동률 처리)는 selectWorkLogForQR.test.ts 가 검증한다.
+ *   여기서는 서비스가 후보 조회·선택·RPC 를 올바르게 배선하는지와 사용자 문구 계약을 본다.
+ *   그래서 시각 의존 케이스를 만들지 않는다 — 후보를 1건만 두거나 checked_in 우선 규칙처럼
+ *   현재 시각과 무관한 조합만 쓴다(실제 `new Date()` 를 쓰는 코드라 시각 의존 시 플레이크).
  */
 import type { WorkLog } from '@/types';
 
 // Import after mocks
-import { processVenueQRCheckIn, processEventQRCheckIn } from '@/services/work/eventQRService';
+import { processQRCheckIn, buildVenueQRString } from '@/services/work/eventQRService';
 import { STATUS } from '@/constants';
 
 // ============================================================================
 // Mock Setup
 // ============================================================================
 
-const mockFindByJobPostingStaffDate = jest.fn();
+const mockFindQRCandidates = jest.fn();
 const mockProcessQRCheckInOutTransaction = jest.fn();
-const mockValidateSecurityCode = jest.fn();
 
 jest.mock('@/repositories', () => ({
-  eventQRRepository: {
-    create: jest.fn(),
-    deactivate: jest.fn(),
-    deactivateByJobAndDate: jest.fn(),
-    getActiveByJobAndDate: jest.fn(),
-    validateSecurityCode: (...args: unknown[]) => mockValidateSecurityCode(...args),
-    deactivateExpired: jest.fn(),
-  },
   workLogRepository: {
-    findByJobPostingStaffDate: (...args: unknown[]) => mockFindByJobPostingStaffDate(...args),
+    findQRCandidates: (...args: unknown[]) => mockFindQRCandidates(...args),
     processQRCheckInOutTransaction: (...args: unknown[]) =>
       mockProcessQRCheckInOutTransaction(...args),
   },
@@ -46,15 +41,12 @@ jest.mock('@/utils/logger', () => ({
   logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
 }));
 
-jest.mock('@/utils/generateId', () => ({
-  generateUUID: jest.fn(() => 'test-uuid'),
-}));
-
 const FIXED_TODAY = '2026-06-29';
+// getTodayString 만 고정한다. toDate/toISODateString 은 selectWorkLogForQR 이 실제로 쓰므로
+// requireActual 로 진짜 구현을 남긴다(직접 재구현하면 선택 로직이 조용히 어긋난다).
 jest.mock('@/utils/date', () => ({
+  ...jest.requireActual('@/utils/date'),
   getTodayString: jest.fn(() => '2026-06-29'),
-  toISODateString: jest.fn((date: Date) => date.toISOString().split('T')[0]),
-  parseTimeSlotToDate: jest.fn(),
 }));
 
 jest.mock('@/services/observability', () => ({
@@ -100,130 +92,202 @@ const VENUE_QR = JSON.stringify({ type: 'venue', jobPostingId: 'container-1' });
 // Tests
 // ============================================================================
 
-describe('eventQRService - processVenueQRCheckIn (고정 운영처 QR)', () => {
+describe('processQRCheckIn — QR 형식 거부', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockIsAppError.mockReturnValue(true); // 던져진 AppError 는 그대로 rethrow
-    mockFindByJobPostingStaffDate.mockReset();
-    mockProcessQRCheckInOutTransaction.mockReset();
+    mockIsAppError.mockReturnValue(true);
   });
 
-  it('(스태프,컨테이너,오늘) work_log 해소 후 auto 로 출근 처리해야 함', async () => {
-    mockFindByJobPostingStaffDate.mockResolvedValue(createMockWorkLog());
-    mockProcessQRCheckInOutTransaction.mockResolvedValue({
-      action: 'checkIn',
-      hasExistingCheckInTime: false,
-      workDuration: 0,
+  it('venue 형식이 아닌 QR 은 UNIQN QR 아님으로 거부한다', async () => {
+    await expect(processQRCheckIn('그냥문자열', 'staff-1')).rejects.toMatchObject({
+      userMessage: 'UNIQN 출근 QR이 아닙니다',
     });
 
-    const result = await processVenueQRCheckIn('container-1', 'staff-1');
+    expect(mockFindQRCandidates).not.toHaveBeenCalled();
+  });
 
-    expect(result.success).toBe(true);
-    expect(result.action).toBe('checkIn');
-    expect(result.workLogId).toBe('wl-container-1');
-    expect(result.message).toContain('출근');
+  it('event 형식(구 회전 QR)도 더 이상 처리하지 않는다', async () => {
+    const legacy = JSON.stringify({
+      type: 'event',
+      jobPostingId: 'posting-1',
+      date: '2026-07-20',
+      action: 'checkIn',
+      securityCode: 'code-1',
+    });
 
-    // 슬롯 해소: 컨테이너 공고 + 오늘(getTodayString)로 조회
-    expect(mockFindByJobPostingStaffDate).toHaveBeenCalledWith(
-      'container-1',
-      'staff-1',
-      FIXED_TODAY
-    );
+    await expect(processQRCheckIn(legacy, 'staff-1')).rejects.toMatchObject({
+      userMessage: 'UNIQN 출근 QR이 아닙니다',
+    });
 
-    // auto 분기: p_action='auto', date=오늘
+    expect(mockFindQRCandidates).not.toHaveBeenCalled();
+  });
+
+  it('jobPostingId 가 없는 venue QR 도 거부한다', async () => {
+    await expect(
+      processQRCheckIn(JSON.stringify({ type: 'venue' }), 'staff-1')
+    ).rejects.toMatchObject({ userMessage: 'UNIQN 출근 QR이 아닙니다' });
+
+    expect(mockFindQRCandidates).not.toHaveBeenCalled();
+  });
+});
+
+describe('processQRCheckIn — 처리 대상 없음', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockIsAppError.mockReturnValue(true);
+  });
+
+  it('배정이 없으면 오늘 배정 없음 문구로 거부하고 RPC 를 호출하지 않는다', async () => {
+    mockFindQRCandidates.mockResolvedValue([]);
+
+    await expect(processQRCheckIn(VENUE_QR, 'staff-1')).rejects.toMatchObject({
+      userMessage: '오늘 이 공고에 배정된 근무가 없습니다',
+    });
+
+    expect(mockProcessQRCheckInOutTransaction).not.toHaveBeenCalled();
+  });
+
+  it('후보가 전부 퇴근 완료면 이미 퇴근 문구로 거부한다', async () => {
+    mockFindQRCandidates.mockResolvedValue([
+      createMockWorkLog({ status: STATUS.WORK_LOG.CHECKED_OUT, timeSlot: '09:00~15:00' }),
+    ]);
+
+    await expect(processQRCheckIn(VENUE_QR, 'staff-1')).rejects.toMatchObject({
+      userMessage: '오늘 근무는 이미 퇴근 처리됐습니다',
+    });
+
+    expect(mockProcessQRCheckInOutTransaction).not.toHaveBeenCalled();
+  });
+
+  it('취소/노쇼만 남았으면 처리 불가 문구로 거부한다', async () => {
+    mockFindQRCandidates.mockResolvedValue([
+      createMockWorkLog({ id: 'wl-cancelled', status: STATUS.WORK_LOG.CANCELLED }),
+      createMockWorkLog({ id: 'wl-no-show', status: STATUS.WORK_LOG.NO_SHOW }),
+    ]);
+
+    await expect(processQRCheckIn(VENUE_QR, 'staff-1')).rejects.toMatchObject({
+      userMessage: '취소되었거나 처리할 수 없는 근무입니다',
+    });
+
+    expect(mockProcessQRCheckInOutTransaction).not.toHaveBeenCalled();
+  });
+});
+
+describe('processQRCheckIn — auto 액션 위임', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockIsAppError.mockReturnValue(true);
+  });
+
+  it('선택된 work_log 로 auto 액션 RPC 를 호출한다', async () => {
+    mockFindQRCandidates.mockResolvedValue([
+      createMockWorkLog({
+        id: 'wl-1',
+        status: STATUS.WORK_LOG.SCHEDULED,
+        timeSlot: '09:00~15:00',
+        assignmentGroupId: 'group-1',
+      }),
+    ]);
+    mockProcessQRCheckInOutTransaction.mockResolvedValue({
+      action: 'checkIn',
+      workDuration: 0,
+      hasExistingCheckInTime: false,
+    });
+
+    const result = await processQRCheckIn(VENUE_QR, 'staff-1');
+
+    // 후보 조회: 공고 + 스태프 + 오늘(getTodayString)
+    expect(mockFindQRCandidates).toHaveBeenCalledWith('container-1', 'staff-1', FIXED_TODAY);
+
+    // 클라가 출/퇴근을 결정하지 않는다 — 서버가 status 로 해소한다
     expect(mockProcessQRCheckInOutTransaction).toHaveBeenCalledWith(
-      'wl-container-1',
+      'wl-1',
       'staff-1',
       'container-1',
       'auto',
       expect.any(Date),
       FIXED_TODAY
     );
+
+    expect(result.success).toBe(true);
+    expect(result.action).toBe('checkIn');
+    expect(result.workLogId).toBe('wl-1');
+    expect(result.assignmentGroupId).toBe('group-1');
+    expect(result.timeSlot).toBe('09:00~15:00');
+    expect(result.message).toContain('출근');
   });
 
-  it('서버가 checkOut 으로 해소하면 퇴근 결과를 반환해야 함', async () => {
-    mockFindByJobPostingStaffDate.mockResolvedValue(
-      createMockWorkLog({ status: STATUS.WORK_LOG.CHECKED_IN })
-    );
+  it('서버가 checkOut 으로 해소하면 퇴근 결과를 반환한다', async () => {
+    mockFindQRCandidates.mockResolvedValue([
+      createMockWorkLog({ status: STATUS.WORK_LOG.CHECKED_IN, checkInTime: new Date() }),
+    ]);
     mockProcessQRCheckInOutTransaction.mockResolvedValue({
       action: 'checkOut',
-      hasExistingCheckInTime: true,
       workDuration: 180,
+      hasExistingCheckInTime: true,
     });
 
-    const result = await processVenueQRCheckIn('container-1', 'staff-1');
+    const result = await processQRCheckIn(VENUE_QR, 'staff-1');
 
     expect(result.action).toBe('checkOut');
     expect(result.message).toContain('퇴근');
-    // auto 로 호출(클라가 출/퇴근을 결정하지 않음)
     expect(mockProcessQRCheckInOutTransaction.mock.calls[0][3]).toBe('auto');
   });
 
-  it('오늘 컨테이너에 배치된 work_log 가 없으면 에러를 throw하고 RPC를 호출하지 않아야 함', async () => {
-    mockFindByJobPostingStaffDate.mockResolvedValue(null);
+  it('출근 중인 근무가 있으면 대기 중인 근무보다 먼저 처리한다', async () => {
+    // 선택 규칙 위임 검증: checked_in 우선(= 퇴근 처리)은 현재 시각과 무관하다.
+    mockFindQRCandidates.mockResolvedValue([
+      createMockWorkLog({ id: 'wl-scheduled', status: STATUS.WORK_LOG.SCHEDULED }),
+      createMockWorkLog({
+        id: 'wl-working',
+        status: STATUS.WORK_LOG.CHECKED_IN,
+        checkInTime: new Date(),
+      }),
+    ]);
+    mockProcessQRCheckInOutTransaction.mockResolvedValue({
+      action: 'checkOut',
+      workDuration: 120,
+      hasExistingCheckInTime: true,
+    });
 
-    await expect(processVenueQRCheckIn('container-1', 'staff-1')).rejects.toThrow();
-    expect(mockProcessQRCheckInOutTransaction).not.toHaveBeenCalled();
+    const result = await processQRCheckIn(VENUE_QR, 'staff-1');
+
+    expect(mockProcessQRCheckInOutTransaction.mock.calls[0][0]).toBe('wl-working');
+    expect(result.workLogId).toBe('wl-working');
+  });
+
+  it('RPC 가 던진 에러는 그대로 전파한다', async () => {
+    mockFindQRCandidates.mockResolvedValue([createMockWorkLog({ id: 'wl-1' })]);
+    mockProcessQRCheckInOutTransaction.mockRejectedValue(
+      Object.assign(new Error('정산 완료'), {
+        userMessage: '정산이 끝난 근무는 변경할 수 없습니다',
+      })
+    );
+
+    await expect(processQRCheckIn(VENUE_QR, 'staff-1')).rejects.toMatchObject({
+      userMessage: '정산이 끝난 근무는 변경할 수 없습니다',
+    });
   });
 });
 
-describe('eventQRService - processEventQRCheckIn 분기 선택(dispatch)', () => {
+describe('buildVenueQRString', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockIsAppError.mockReturnValue(true);
-    mockFindByJobPostingStaffDate.mockReset();
-    mockProcessQRCheckInOutTransaction.mockReset();
-    mockValidateSecurityCode.mockReset();
   });
 
-  it('venue QR 이면 auto 경로로 위임(오늘 날짜 + p_action=auto)해야 함', async () => {
-    mockFindByJobPostingStaffDate.mockResolvedValue(createMockWorkLog());
+  it('생성한 QR 문자열을 스캔 경로가 그대로 받아들인다', async () => {
+    mockFindQRCandidates.mockResolvedValue([createMockWorkLog({ id: 'wl-1' })]);
     mockProcessQRCheckInOutTransaction.mockResolvedValue({
       action: 'checkIn',
-      hasExistingCheckInTime: false,
       workDuration: 0,
-    });
-
-    await processEventQRCheckIn(VENUE_QR, 'staff-1');
-
-    // 고정 운영처 경로: 보안코드 검증 우회
-    expect(mockValidateSecurityCode).not.toHaveBeenCalled();
-    expect(mockFindByJobPostingStaffDate).toHaveBeenCalledWith(
-      'container-1',
-      'staff-1',
-      FIXED_TODAY
-    );
-    expect(mockProcessQRCheckInOutTransaction.mock.calls[0][3]).toBe('auto');
-    expect(mockProcessQRCheckInOutTransaction.mock.calls[0][5]).toBe(FIXED_TODAY);
-  });
-
-  it('event QR 이면 기존 경로(보안코드 검증 + QR 액션, auto 아님)를 유지해야 함', async () => {
-    const now = Date.now();
-    const eventQR = JSON.stringify({
-      type: 'event',
-      jobPostingId: 'job-1',
-      date: '2026-01-15',
-      action: 'checkIn',
-      securityCode: 'sec-1',
-      createdAt: now,
-      expiresAt: now + 3 * 60 * 1000,
-    });
-
-    mockValidateSecurityCode.mockResolvedValue({ id: 'qr-1' });
-    mockFindByJobPostingStaffDate.mockResolvedValue(
-      createMockWorkLog({ jobPostingId: 'job-1', date: '2026-01-15' })
-    );
-    mockProcessQRCheckInOutTransaction.mockResolvedValue({
-      action: 'checkIn',
       hasExistingCheckInTime: false,
-      workDuration: 0,
     });
 
-    await processEventQRCheckIn(eventQR, 'staff-1');
+    const qr = buildVenueQRString('container-1');
+    await processQRCheckIn(qr, 'staff-1');
 
-    expect(mockValidateSecurityCode).toHaveBeenCalled();
-    // event 경로: QR 액션 그대로, auto 아님 + QR 의 날짜 사용
-    expect(mockProcessQRCheckInOutTransaction.mock.calls[0][3]).toBe('checkIn');
-    expect(mockProcessQRCheckInOutTransaction.mock.calls[0][5]).toBe('2026-01-15');
+    // 왕복 성립: 생성한 QR 이 같은 공고 ID 로 후보 조회를 트리거한다
+    expect(mockFindQRCandidates).toHaveBeenCalledWith('container-1', 'staff-1', FIXED_TODAY);
   });
 });
