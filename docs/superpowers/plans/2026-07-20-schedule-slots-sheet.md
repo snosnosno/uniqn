@@ -177,6 +177,7 @@ import React, { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { STAFF_ROLES } from '@/constants/jobPosting';
 import { MinusIcon, PlusIcon, TrashIcon } from '@/components/icons';
+import { roleName } from '../orderRowMeta';
 import type { OrderSheetValues } from '@/schemas/orderSheet.schema';
 
 export type SlotRoles =
@@ -191,10 +192,11 @@ const clampCount = (n: number) => Math.min(MAX_COUNT, Math.max(MIN_COUNT, n));
 /** 토글 대상 = '기타'를 제외한 5종. '기타'는 직접입력 액션으로 분리(§4.1) */
 const TOGGLE_ROLES = STAFF_ROLES.filter((r) => r.key !== 'other');
 
-export const roleLabel = (r: SlotRoles[number]) =>
-  r.role === 'other'
-    ? (r.customRole ?? '기타')
-    : (STAFF_ROLES.find((s) => s.key === r.role)?.name ?? r.role);
+/**
+ * 역할 표시명 — orderRowMeta.roleName(orderRowMeta.ts:297) 재사용.
+ * 구 RolesSheet 는 같은 로직을 로컬로 재정의했는데, 그 중복을 여기서 끝낸다.
+ */
+export const roleLabel = (r: SlotRoles[number]) => roleName(r.role, r.customRole);
 
 export interface RoleCountEditorProps {
   roles: SlotRoles;
