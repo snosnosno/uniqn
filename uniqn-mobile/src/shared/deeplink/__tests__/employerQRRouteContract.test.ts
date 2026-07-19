@@ -53,7 +53,7 @@ describe('사장 QR 진입점 도착지 계약', () => {
   });
 
   it.each(Object.entries(ENTRY_POINTS))(
-    '%s 는 EXPO_ROUTES.postingQR 로 이동한다',
+    '%s 은 EXPO_ROUTES.postingQR 로 이동한다',
     (_label, relativePath) => {
       expect(extractShowQRPushTemplate(relativePath)).toBe(EXPO_ROUTES.postingQR);
     }

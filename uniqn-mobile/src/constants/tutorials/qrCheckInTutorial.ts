@@ -18,10 +18,10 @@ const PAGES: readonly TutorialPage[] = [
     id: 'qr-scan',
     icon: ScanIcon,
     iconColor: PRIMARY_COLORS[700],
-    title: '현장에 비치된 QR을 스캔하세요',
-    subtitle: '근무지에 붙어 있는 코드를 비추면 돼요',
+    title: '출퇴근 QR을 스캔하세요',
+    subtitle: '현장에 비치되거나 구인자가 보여주는 코드예요',
     description:
-      'QR 스캔 화면에 들어가면 카메라가 바로 열립니다.\n근무지에 비치된 출퇴근 QR 코드를\n카메라 프레임 안에 비추세요.',
+      'QR 스캔 화면에 들어가면 카메라가 바로 열립니다.\n현장에 비치된 코드나 구인자가 보여주는 코드를\n카메라 프레임 안에 비추세요.',
   },
   {
     id: 'qr-auto',
