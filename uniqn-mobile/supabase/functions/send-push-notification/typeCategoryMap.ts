@@ -17,6 +17,7 @@ export const TYPE_CATEGORY_MAP: Record<string, string> = {
   application_rejected: 'application',
   cancellation_approved: 'application',
   cancellation_rejected: 'application',
+  cancellation_requested: 'application',
 
   // 출퇴근/스케줄 관련
   staff_checked_in: 'attendance',

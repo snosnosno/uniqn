@@ -12,7 +12,7 @@ describe('NotificationRouteMap', () => {
   it('covers every NotificationType', () => {
     const allNotificationTypes = Object.values(NotificationType) as NotificationType[];
 
-    expect(allNotificationTypes.length).toBe(44);
+    expect(allNotificationTypes.length).toBe(45);
 
     allNotificationTypes.forEach((type) => {
       expect(NOTIFICATION_ROUTE_MAP[type]).toBeDefined();
@@ -224,5 +224,27 @@ describe('NotificationRouteMap', () => {
     expect(isEmployerOnlyNotification(NotificationType.STAFF_CHECKED_OUT)).toBe(true);
     expect(isEmployerOnlyNotification(NotificationType.SETTLEMENT_REQUESTED)).toBe(true);
     expect(isEmployerOnlyNotification(NotificationType.APP_UPDATE)).toBe(false);
+  });
+
+  describe('CANCELLATION_REQUESTED (취소 요청 — 사장 수신)', () => {
+    it('routes to the posting cancellation-requests screen with jobPostingId', () => {
+      const route = NOTIFICATION_ROUTE_MAP[NotificationType.CANCELLATION_REQUESTED]({
+        applicationId: 'app-1',
+        jobPostingId: 'job-123',
+      });
+      expect(route).toEqual({
+        name: 'employer/cancellation-requests',
+        params: { jobId: 'job-123' },
+      });
+    });
+
+    it('falls back to my-postings when jobPostingId is missing', () => {
+      const route = NOTIFICATION_ROUTE_MAP[NotificationType.CANCELLATION_REQUESTED]({});
+      expect(route).toEqual({ name: 'employer/my-postings' });
+    });
+
+    it('is classified as an employer-only notification', () => {
+      expect(isEmployerOnlyNotification(NotificationType.CANCELLATION_REQUESTED)).toBe(true);
+    });
   });
 });
