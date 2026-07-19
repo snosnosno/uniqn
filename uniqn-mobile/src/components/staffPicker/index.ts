@@ -10,3 +10,5 @@ export { RoleChips } from './RoleChips';
 export type { RoleChipsProps } from './RoleChips';
 export { NicknameSearchField } from './NicknameSearchField';
 export type { NicknameSearchFieldProps } from './NicknameSearchField';
+export { SearchErrorNotice, resolveSearchErrorMessage } from './SearchErrorNotice';
+export type { SearchErrorNoticeProps } from './SearchErrorNotice';

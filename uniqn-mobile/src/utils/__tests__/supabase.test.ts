@@ -160,12 +160,12 @@ describe('handleSupabaseError — P0001 (plpgsql RAISE EXCEPTION)', () => {
     }
   });
 
-  it('P0001 + RATE_LIMITED → SECURITY_RATE_LIMIT + 재시도 안내 (검색 열거 방어)', () => {
+  it('P0001 + SEARCH_RATE_LIMITED → SECURITY_RATE_LIMIT + 재시도 안내 (검색 열거 방어)', () => {
     try {
       handleSupabaseError(
         {
           code: 'P0001',
-          message: 'RATE_LIMITED: 검색 요청이 너무 잦습니다',
+          message: 'SEARCH_RATE_LIMITED: 검색 요청이 너무 잦습니다',
           details: '',
           hint: '',
         },
@@ -179,6 +179,25 @@ describe('handleSupabaseError — P0001 (plpgsql RAISE EXCEPTION)', () => {
       expect(appError.userMessage).toBe('검색이 너무 잦습니다. 잠시 후 다시 시도해 주세요.');
       // 시간이 지나면 풀리는 제한이므로 재시도 가능으로 표시한다
       expect(appError.isRetryable).toBe(true);
+    }
+  });
+
+  // 리뷰 지적(과포획): includes('RATE_LIMITED') 였다면 아래 두 토큰을 검색 문구로 삼켰다.
+  // 두 토큰은 현재 별도 매퍼(opsRpcError)를 타지만 그 매퍼에 미등록이면 여기로 폴백한다.
+  it.each([
+    ['ANALYTICS_RATE_LIMITED: 이벤트 기록 한도 초과'],
+    ['OPS_REPORT_RATE_LIMITED: 리포트 요청 한도 초과'],
+  ])('P0001 + %s → 검색 rate limit 으로 오분류하지 않는다', (message) => {
+    try {
+      handleSupabaseError(
+        { code: 'P0001', message, details: '', hint: '' },
+        { operation: 'rpc:other', table: 'other' }
+      );
+      throw new Error('should have thrown');
+    } catch (error) {
+      const appError = error as { code: string; userMessage: string };
+      expect(appError.code).not.toBe(ERROR_CODES.SECURITY_RATE_LIMIT);
+      expect(appError.userMessage).not.toBe('검색이 너무 잦습니다. 잠시 후 다시 시도해 주세요.');
     }
   });
 

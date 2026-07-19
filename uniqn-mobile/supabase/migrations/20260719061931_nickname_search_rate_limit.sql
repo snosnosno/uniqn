@@ -10,14 +10,21 @@
 --   → ② 이전에 두지 않는 이유: 무권한 호출은 이미 예외로 튕기며, 그 경로에서
 --      rate_limits 쓰기를 유발하면 오히려 무인증 쓰기 표면이 된다.
 --
--- 한도: 분당 20회. 두 검색 모두 **수동 버튼 트리거**(타이핑 debounce 아님)라
---   정상 사용자는 도달할 수 없고, 봇은 즉시 차단된다. 검색별로 키를 분리해
---   한쪽이 다른 쪽을 소진시키지 않게 한다.
+-- 한도: 분당 20회. 두 검색 모두 **수동 제출 트리거**(검색 버튼·엔터)라 정상 사용자는
+--   도달할 수 없고, 봇은 즉시 차단된다. 검색별로 키를 분리해 한쪽이 다른 쪽을
+--   소진시키지 않게 한다.
+--   ※ 협업자 검색은 원래 300ms debounce 타이핑 검색이었다 — 그 상태로 20회/분을 걸면
+--     정상 사용자가 초대 도중 잠긴다. 그래서 CollaboratorSearch 를 스태프 검색과 동일한
+--     명시 제출 방식으로 전환했다(같은 PR). 이 한도는 그 전환을 전제로 한다.
 --
--- ⚠️ STABLE → VOLATILE 전환 필수:
---   check_user_rate_limit → check_rate_limit 은 rate_limits 테이블에 INSERT/UPDATE 한다.
---   PostgreSQL 은 STABLE 함수 본문에서의 DML 을 거부하므로(`UPDATE is not allowed in a
---   non-volatile function`), 호출하는 검색 RPC 도 VOLATILE 이어야 한다.
+-- STABLE → VOLATILE 전환:
+--   함수가 부작용(rate_limits 토큰 차감)을 갖게 되었으므로 VOLATILE 이 정확한 선언이다.
+--   STABLE 로 두면 플래너가 호출을 접어(fold) 카운트가 누락될 수 있다.
+--   ※ "STABLE 이면 중첩 DML 이 거부된다"는 것은 사실이 아니다 — PostgreSQL 의 read-only
+--     강제는 함수 자신의 provolatile 기준이며 중첩 호출로 전파되지 않는다(로컬 실측 확인).
+--     DML 은 check_rate_limit(VOLATILE) 안에 있으므로 STABLE 로도 "터지지는" 않는다.
+--     즉 회귀 시 증상은 요란한 실패가 아니라 **조용한 카운트 누락**이다. 그래서 아래
+--     pgTAP provolatile 가드가 더 중요하다.
 --   단발 RPC 호출이라 플래너 최적화 손실은 무시 가능하다.
 --
 -- 권한 참고: check_user_rate_limit 은 authenticated 에 REVOKE 되어 있으나(직접 호출 차단),
@@ -65,7 +72,7 @@ BEGIN
   -- 실제 검색만 토큰을 소모한다(분당 20회)
   v_rate := public.check_user_rate_limit(v_caller_uid, 'search_users_by_nickname', 20, 60);
   IF NOT COALESCE((v_rate ->> 'allowed')::boolean, false) THEN
-    RAISE EXCEPTION 'RATE_LIMITED: 검색 요청이 너무 잦습니다';
+    RAISE EXCEPTION 'SEARCH_RATE_LIMITED: 검색 요청이 너무 잦습니다';
   END IF;
 
   -- ILIKE 와일드카드 이스케이프(prefix 매칭, 대소문자 무시)
@@ -136,7 +143,7 @@ BEGIN
   -- 스태프 검색과 키를 분리한다(한쪽 소진이 다른 쪽을 막지 않도록)
   v_rate := public.check_user_rate_limit(v_caller_uid, 'search_collab_by_nickname', 20, 60);
   IF NOT COALESCE((v_rate ->> 'allowed')::boolean, false) THEN
-    RAISE EXCEPTION 'RATE_LIMITED: 검색 요청이 너무 잦습니다';
+    RAISE EXCEPTION 'SEARCH_RATE_LIMITED: 검색 요청이 너무 잦습니다';
   END IF;
 
   v_escaped := replace(replace(replace(v_query, '\', '\\'), '%', '\%'), '_', '\_');

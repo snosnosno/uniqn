@@ -21,7 +21,7 @@
 -- ============================================================
 
 BEGIN;
-SELECT plan(22);
+SELECT plan(26);
 
 -- ── A. anon EXECUTE 차단(8) ─────────────────────────────────────────────
 SELECT ok(NOT has_function_privilege('anon',
@@ -183,21 +183,58 @@ SELECT is((SELECT v FROM _sec WHERE k='m1_headcount'), '1',
 SELECT is((SELECT v FROM _sec WHERE k='m1_slots'), '1',
   'D2 M1: get_venue_day_slots 가 타 워크스페이스 유령행 제외(행수=1)');
 
--- ── E. 닉네임 검색 rate limit 회귀 가드 (2) ──────────────────────────────
--- 검색 RPC 는 check_user_rate_limit → check_rate_limit 으로 rate_limits 테이블에
--- DML 을 수행한다. 함수가 STABLE 로 되돌아가면 PostgreSQL 이 본문 DML 을 거부해
--- 검색이 런타임에 통째로 터진다(`UPDATE is not allowed in a non-volatile function`).
--- provolatile = 'v' 를 고정해 그 회귀를 차단한다.
+-- ── E. 닉네임 검색 rate limit 회귀 가드 (6) ──────────────────────────────
+-- 검색 RPC 는 check_user_rate_limit → check_rate_limit 으로 rate_limits 에 토큰을 차감한다.
+--
+-- E1·E2 (provolatile): 함수가 STABLE 로 되돌아가면 플래너가 호출을 접어(fold) 카운트가
+--   누락될 수 있다. ※ STABLE 이라고 중첩 DML 이 거부되지는 않는다 — read-only 강제는
+--   함수 자신의 provolatile 기준이라 전파되지 않는다. 즉 회귀 증상은 요란한 실패가 아니라
+--   **조용한 카운트 누락**이므로 이 가드가 유일한 조기 경보다.
+--   regprocedure 로 고정한다 — proname 스칼라 서브쿼리는 향후 오버로드가 생기면
+--   단언 실패가 아니라 `more than one row returned` 로 스위트 전체를 깨뜨린다.
+-- E3·E4 (호출 존재): provolatile 만으로는 부족하다. rate limit 블록만 삭제하고 VOLATILE 을
+--   남기면 E1·E2 는 계속 GREEN 인데 열거 방어는 사라진다. 본문에 호출이 남아있는지 본다.
+-- E5 (실동작): 한도 인프라가 실제로 트립하는지. 21회차에서 allowed=false 여야 한다.
 SELECT is(
-  (SELECT p.provolatile::text FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-   WHERE n.nspname = 'public' AND p.proname = 'search_users_by_nickname'),
+  (SELECT p.provolatile::text FROM pg_proc p
+   WHERE p.oid = 'public.search_users_by_nickname(text)'::regprocedure),
   'v',
-  'E1: search_users_by_nickname 은 VOLATILE (rate limit DML 가능)');
+  'E1: search_users_by_nickname 은 VOLATILE (플래너 폴딩 방지)');
 SELECT is(
-  (SELECT p.provolatile::text FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-   WHERE n.nspname = 'public' AND p.proname = 'search_collaborator_candidates_by_nickname'),
+  (SELECT p.provolatile::text FROM pg_proc p
+   WHERE p.oid = 'public.search_collaborator_candidates_by_nickname(uuid, text)'::regprocedure),
   'v',
-  'E2: search_collaborator_candidates_by_nickname 은 VOLATILE (rate limit DML 가능)');
+  'E2: search_collaborator_candidates_by_nickname 은 VOLATILE (플래너 폴딩 방지)');
+SELECT ok(
+  (SELECT p.prosrc LIKE '%check_user_rate_limit%' FROM pg_proc p
+   WHERE p.oid = 'public.search_users_by_nickname(text)'::regprocedure),
+  'E3: search_users_by_nickname 본문에 rate limit 호출이 남아있다');
+SELECT ok(
+  (SELECT p.prosrc LIKE '%check_user_rate_limit%' FROM pg_proc p
+   WHERE p.oid = 'public.search_collaborator_candidates_by_nickname(uuid, text)'::regprocedure),
+  'E4: search_collaborator_candidates_by_nickname 본문에 rate limit 호출이 남아있다');
+
+-- E5: 한도 20 이 실제로 트립하는가. 임의 uuid 로 21회 호출 — 픽스처 불필요하고
+--     테스트 트랜잭션이 ROLLBACK 되므로 rate_limits 오염도 없다.
+DO $$
+DECLARE
+  v_uid  uuid := '00000000-0000-4000-8000-0000000000e5';
+  v_rate jsonb;
+BEGIN
+  FOR i IN 1..20 LOOP
+    v_rate := public.check_user_rate_limit(v_uid, '_pgtap_probe', 20, 60);
+  END LOOP;
+  -- 20회까지는 통과해야 한다
+  INSERT INTO _sec VALUES ('e5_20th_allowed', (v_rate ->> 'allowed'));
+  -- 21회차는 차단되어야 한다
+  v_rate := public.check_user_rate_limit(v_uid, '_pgtap_probe', 20, 60);
+  INSERT INTO _sec VALUES ('e5_21st_allowed', (v_rate ->> 'allowed'));
+END $$;
+
+SELECT is((SELECT v FROM _sec WHERE k='e5_20th_allowed'), 'true',
+  'E5a: 한도 내(20회차) 검색은 허용된다');
+SELECT is((SELECT v FROM _sec WHERE k='e5_21st_allowed'), 'false',
+  'E5b: 21회차는 차단된다 (한도 상수 20 회귀 가드)');
 
 SELECT * FROM finish();
 ROLLBACK;

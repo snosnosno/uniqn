@@ -32,7 +32,12 @@ import { Loading } from '@/components/ui/Loading';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { TimeWheelPicker, type TimeValue } from '@/components/ui/TimeWheelPicker';
 import { UserPlusIcon, UsersIcon, SearchIcon, MegaphoneIcon } from '@/components/icons';
-import { CandidateRow, RoleChips, NicknameSearchField } from '@/components/staffPicker';
+import {
+  CandidateRow,
+  RoleChips,
+  NicknameSearchField,
+  SearchErrorNotice,
+} from '@/components/staffPicker';
 import { STAFF_ROLES } from '@/constants';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { DEFAULT_SLOT_START_TIME } from '@/domains/weeklyGrid';
@@ -422,6 +427,8 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
               <View className="items-center py-6">
                 <Loading size="small" />
               </View>
+            ) : nicknameSearch.error ? (
+              <SearchErrorNotice error={nicknameSearch.error} />
             ) : nicknameSearch.searched && nicknameSearch.results.length === 0 ? (
               <Text className="py-4 text-center text-sm text-content-secondary font-sans">
                 일치하는 가입자를 찾을 수 없습니다.

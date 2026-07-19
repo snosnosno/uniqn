@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { Loading } from '@/components/ui/Loading';
 import { UserPlusIcon } from '@/components/icons';
-import { NicknameSearchField } from '@/components/staffPicker';
+import { NicknameSearchField, SearchErrorNotice } from '@/components/staffPicker';
 import { useStaffNicknameSearch } from '@/hooks/useStaffNicknameSearch';
 import { useAddOpsStaff } from '@/hooks/ops';
 import { addOpsStaffInputSchema } from '@/schemas/opsStaff.schema';
@@ -32,7 +32,14 @@ export interface StaffAddSheetProps {
 const OTHER_ROLE_KEY: StaffRole = 'other';
 
 export function StaffAddSheet({ visible, tournamentId, onClose }: StaffAddSheetProps) {
-  const { results, isSearching, searched, search, reset } = useStaffNicknameSearch();
+  const {
+    results,
+    isSearching,
+    searched,
+    search,
+    reset,
+    error: searchError,
+  } = useStaffNicknameSearch();
   const addMut = useAddOpsStaff(tournamentId);
 
   const [nickname, setNickname] = useState('');
@@ -130,6 +137,8 @@ export function StaffAddSheet({ visible, tournamentId, onClose }: StaffAddSheetP
           <View className="items-center py-6">
             <Loading size="small" />
           </View>
+        ) : searchError ? (
+          <SearchErrorNotice error={searchError} />
         ) : searched && results.length === 0 ? (
           <Text className="py-4 text-center text-sm text-content-secondary font-sans">
             일치하는 가입자를 찾을 수 없습니다.

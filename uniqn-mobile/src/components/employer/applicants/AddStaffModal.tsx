@@ -23,7 +23,12 @@ import { Button } from '@/components/ui/Button';
 import { CalendarPicker } from '@/components/ui/CalendarPicker';
 import { Loading } from '@/components/ui/Loading';
 import { ChevronDownIcon, UserPlusIcon, XMarkIcon } from '@/components/icons';
-import { CandidateRow, RoleChips, NicknameSearchField } from '@/components/staffPicker';
+import {
+  CandidateRow,
+  RoleChips,
+  NicknameSearchField,
+  SearchErrorNotice,
+} from '@/components/staffPicker';
 import { useStaffNicknameSearch } from '@/hooks/useStaffNicknameSearch';
 import { isWeb } from '@/utils/platform';
 import type { UserNicknameSearchResult } from '@/repositories';
@@ -46,7 +51,14 @@ export function AddStaffModal({
   isSubmitting = false,
   onSubmit,
 }: AddStaffModalProps) {
-  const { results, isSearching, searched, search, reset } = useStaffNicknameSearch();
+  const {
+    results,
+    isSearching,
+    searched,
+    search,
+    reset,
+    error: searchError,
+  } = useStaffNicknameSearch();
 
   const [nickname, setNickname] = useState('');
   const [selected, setSelected] = useState<UserNicknameSearchResult | null>(null);
@@ -223,6 +235,8 @@ export function AddStaffModal({
           <View className="items-center py-6">
             <Loading size="small" />
           </View>
+        ) : searchError ? (
+          <SearchErrorNotice error={searchError} />
         ) : searched && results.length === 0 ? (
           <Text className="py-4 text-center text-sm text-content-secondary font-sans">
             일치하는 가입자를 찾을 수 없습니다.
