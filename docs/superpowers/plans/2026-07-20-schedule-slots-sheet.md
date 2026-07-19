@@ -835,12 +835,24 @@ export function RolesSheet({ visible, value, onConfirm, onClose }: RolesSheetPro
 }
 ```
 
-- [ ] **Step 4: 테스트 통과 확인**
+- [ ] **Step 4: `'명'` 단위 라벨 복원 (Task 3 리뷰 이월)**
+
+Task 3에서 인원 표시를 `<Text>{r.count}명</Text>`에서 `TextInput`으로 교체하면서 **'명' 단위가 사라졌다**. 구 `RolesSheet.tsx:194-196`은 지금도 `{r.count}명`을 렌더하므로, 이 태스크가 그 인라인 블록을 `RoleCountEditor`로 교체하는 순간 **눈에 보이는 UI 회귀**가 된다. 그래서 여기서 복원한다.
+
+`RoleCountEditor.tsx`의 인원 `TextInput` **바로 뒤**에 형제로 추가 (기존 `RolesSheet.tsx:142` 패턴 승계):
+
+```tsx
+                <Text className="text-xs text-content-muted font-sans">명</Text>
+```
+
+`TextInput`의 `w-10 h-11 text-center`는 그대로 두고 옆에 붙이기만 한다 — 폭 제약을 건드리지 말 것.
+
+- [ ] **Step 5: 테스트 통과 확인**
 
 Run: `cd uniqn-mobile && npx jest src/components/employer/order-sheet/sheets/__tests__/RolesSheet.test.tsx`
 Expected: PASS — 4 tests passed
 
-- [ ] **Step 5: 칩 시맨틱 변경의 하류 테스트 갱신 (2파일)**
+- [ ] **Step 6: 칩 시맨틱 변경의 하류 테스트 갱신 (2파일)**
 
 Task 1 리뷰 지적 — `order-role-chip-*`를 **라디오(칩 선택 → "이 역할 추가" 버튼)** 전제로 누르는 기존 테스트가 두 파일에 있다. 칩이 "1탭 = 즉시 추가"로 바뀌므로 **이 태스크에서 깨진다**(Task 8이 아니다).
 
@@ -860,7 +872,7 @@ Run: `cd uniqn-mobile && npx jest src/components/employer/order-sheet/__tests__/
 
 Expected: 두 파일 모두 PASS
 
-- [ ] **Step 6: 커밋**
+- [ ] **Step 7: 커밋**
 
 ```bash
 git add src/components/employer/order-sheet/sheets/RolesSheet.tsx src/components/employer/order-sheet/sheets/__tests__/RolesSheet.test.tsx src/components/employer/order-sheet/__tests__/OrderSheetScreen.fixed.test.tsx
