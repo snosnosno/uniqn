@@ -7,9 +7,9 @@ import { HomePage } from '../../pages/app/tabs/home.page';
 
 // storageState는 chromium 프로젝트에서 staff.json으로 자동 설정됨
 
-// 해소(옵션 B): Jobs 탭을 (tabs)/home-jobs.tsx 로 분리 → URL '/home-jobs'. 로그인 착지가
-// '/(app)/(tabs)/home-jobs' 이므로 더 이상 URL '/' 로 group erase 되지 않고,
-// 공개 '/jobs'(공유 링크 라우트)와도 겹치지 않아 useAuthGuard redirect 가 발동하지 않는다.
+// 해소(옵션 B): Jobs 탭을 (tabs)/home-jobs.tsx 로 분리 → URL '/home-jobs'.
+// HomePage.goto() 가 '/' 를 경유하지 않고 '/home-jobs' 로 직행하므로 useAuthGuard
+// redirect 경로는 이 스펙의 관심사가 아니다(해당 회귀는 root-boot-landing.spec.ts 담당).
 test.describe('구인구직 홈', () => {
   let homePage: HomePage;
 
