@@ -429,8 +429,11 @@ import { STAFF_ROLES } from '@/constants/jobPosting';
 import { MinusIcon, PlusIcon, TrashIcon } from '@/components/icons';
 import { useThemeStore } from '@/stores/themeStore';
 import { SECONDARY_PALETTE } from '@/constants/colors';
+import { roleName } from '../orderRowMeta';
 import type { OrderSheetValues } from '@/schemas/orderSheet.schema';
 ```
+
+⚠️ `roleName` 줄을 빠뜨리지 말 것 — `roleLabel`이 이 함수에 위임한다.
 
 - [ ] **Step 4: 구현 — state와 핸들러 추가**
 
@@ -503,7 +506,7 @@ import type { OrderSheetValues } from '@/schemas/orderSheet.schema';
 - [ ] **Step 6: 테스트 통과 확인**
 
 Run: `cd uniqn-mobile && npx jest src/components/employer/order-sheet/sheets/__tests__/RoleCountEditor.test.tsx`
-Expected: PASS — 14 tests passed
+Expected: PASS — 16 tests passed (기존 9 + 신규 7)
 
 - [ ] **Step 7: 커밋**
 
