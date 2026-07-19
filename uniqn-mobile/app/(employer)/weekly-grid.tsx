@@ -220,7 +220,7 @@ export default function WeeklyGridScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
-      <StackHeader title="이번 주 근무표" fallbackHref="/(employer)/workspace" />
+      <StackHeader title="근무표" fallbackHref="/(employer)/workspace" />
 
       {/* 운영처 선택기(unit 5) */}
       <VenueSelector

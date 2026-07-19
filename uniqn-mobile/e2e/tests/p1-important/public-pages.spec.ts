@@ -5,9 +5,9 @@
 import path from 'path';
 import { test, expect } from '@playwright/test';
 import { getAdminClient, SUPABASE_QA_ACCOUNTS } from '../../helpers/supabase-admin';
+import { E2E_TEST_WORKSPACE_NAME } from '../../helpers/workspace-seed';
 
 const PUBLIC_SEED_JOB_TITLE = `[e2e] 긴급 딜러 모집 ${Date.now()}`;
-const E2E_TEST_WORKSPACE_NAME = 'E2E 테스트 워크스페이스';
 const staffState = path.join(__dirname, '../../fixtures/storage-states/staff.json');
 
 interface SeededPublicJob {
