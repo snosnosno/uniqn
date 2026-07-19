@@ -50,11 +50,10 @@ interface StaffApplicantCardProps {
 // Helpers
 // ============================================================================
 
-const getRoleLabel = (role: string, customRole?: string): string => {
-  // staff 키 충돌: getRoleDisplayName은 '일반'으로 매핑하므로 직무 컨텍스트에서는 '직원' 유지
-  if (role === 'staff') return '직원';
-  return getRoleDisplayName(role, customRole);
-};
+// getRoleDisplayName 이 staff 를 '일반'으로 매핑하던 시절의 로컬 우회(if role === 'staff')는
+// 2026-07-19 에 제거했다 — 이제 맵 자체가 직무 문맥에서 '직원'을 돌려준다.
+const getRoleLabel = (role: string, customRole?: string): string =>
+  getRoleDisplayName(role, customRole);
 
 const getRoleBadgeVariant = (
   role: string

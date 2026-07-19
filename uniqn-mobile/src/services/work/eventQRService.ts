@@ -356,7 +356,7 @@ export async function processVenueQRCheckIn(
     if (!workLog) {
       throw new InvalidQRCodeError({
         message: '해당 근무 기록을 찾을 수 없습니다',
-        userMessage: '오늘 이 운영처에 배치된 스태프가 아닙니다',
+        userMessage: '오늘 이 지점에 배치된 스태프가 아닙니다',
       });
     }
 

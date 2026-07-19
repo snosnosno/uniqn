@@ -79,7 +79,7 @@ export function buildWeeklyBatchConfirmNotification(
   const weekLabel = requireNonEmpty(input.weekLabel, 'weekLabel');
 
   const trimmedVenueName = input.venueName?.trim();
-  const venueLabel = trimmedVenueName && trimmedVenueName.length > 0 ? trimmedVenueName : '운영처';
+  const venueLabel = trimmedVenueName && trimmedVenueName.length > 0 ? trimmedVenueName : '지점';
 
   const data: Record<string, string> = {
     workspaceId,

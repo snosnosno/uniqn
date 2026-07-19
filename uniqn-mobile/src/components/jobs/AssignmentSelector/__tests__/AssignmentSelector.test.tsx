@@ -108,7 +108,8 @@ describe('AssignmentSelector', () => {
     expect(screen.getByText(/날짜 및 역할 선택/)).toBeTruthy();
     expect(screen.getByText('4/1(수)')).toBeTruthy();
     expect(screen.getByText('09:00')).toBeTruthy();
-    expect(screen.getByText('일반(0/1)')).toBeTruthy();
+    // 직무 배정 문맥이라 StaffRole 라벨('직원')이 맞다 (2026-07-19 용어 정리).
+    expect(screen.getByText('직원(0/1)')).toBeTruthy();
   });
 
   it('renders a readable Korean selection summary', () => {
@@ -126,7 +127,7 @@ describe('AssignmentSelector', () => {
       />
     );
 
-    expect(screen.getByText('선택된 일반 1건')).toBeTruthy();
+    expect(screen.getByText('선택된 직원 1건')).toBeTruthy();
   });
 
   it('passes the selected slot id into simple assignments', () => {

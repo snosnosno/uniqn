@@ -42,7 +42,7 @@ describe('buildWeeklyBatchConfirmNotification', () => {
     expect(payload.recipientId).toBe('owner-uuid-1');
   });
 
-  it('제목은 고정, 본문에 운영처명·주차 라벨을 포함한다', () => {
+  it('제목은 고정, 본문에 지점명·주차 라벨을 포함한다', () => {
     const payload = buildWeeklyBatchConfirmNotification(baseInput);
     expect(payload.title).toBe('이번 주 출근 확인');
     expect(payload.body).toContain('강남 홀덤펍');
@@ -67,16 +67,16 @@ describe('buildWeeklyBatchConfirmNotification', () => {
     });
   });
 
-  it('venueName 미제공 시 본문은 기본 라벨(운영처)을 쓰고 data 에 venueName 키가 없다', () => {
+  it('venueName 미제공 시 본문은 기본 라벨(지점)을 쓰고 data 에 venueName 키가 없다', () => {
     const { venueName: _omit, ...withoutName } = baseInput;
     const payload = buildWeeklyBatchConfirmNotification(withoutName);
-    expect(payload.body).toContain('운영처');
+    expect(payload.body).toContain('지점');
     expect(payload.data.venueName).toBeUndefined();
   });
 
   it('venueName 이 공백뿐이면 기본 라벨로 폴백한다', () => {
     const payload = buildWeeklyBatchConfirmNotification({ ...baseInput, venueName: '   ' });
-    expect(payload.body).toContain('운영처');
+    expect(payload.body).toContain('지점');
     expect(payload.data.venueName).toBeUndefined();
   });
 

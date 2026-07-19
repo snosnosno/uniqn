@@ -29,7 +29,7 @@ import { SheetProvider } from '@/components/app/SheetProvider';
 import { useAppInitialize } from '@/hooks/useAppInitialize';
 import { useAndroidOrientationPolicy } from '@/hooks/useAndroidOrientationPolicy';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
-import { queryClient } from '@/lib/queryClient';
+import { queryClient, initializeQueryFocusManager } from '@/lib/queryClient';
 import { initializeRootSentry } from '@/services/observability/rootSentry';
 import { useAuthStore } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
@@ -237,6 +237,14 @@ export default function RootLayout() {
 
   useEffect(() => {
     const unsubscribe = initializeNetworkState();
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  // 포그라운드 복귀를 React Query focus 신호로 연결 (RN 에는 window focus 가 없다)
+  useEffect(() => {
+    const unsubscribe = initializeQueryFocusManager();
     return () => {
       unsubscribe();
     };
