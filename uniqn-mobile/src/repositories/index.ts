@@ -481,6 +481,7 @@ export type {
   IWorkspaceRepository,
   IWorkspaceMemberRepository,
   IWorkspaceInvitationRepository,
+  WorkspaceInviteCandidate,
 } from './interfaces';
 
 export {

@@ -140,6 +140,7 @@ export type {
   IWorkspaceRepository,
   IWorkspaceMemberRepository,
   IWorkspaceInvitationRepository,
+  WorkspaceInviteCandidate,
 } from './IWorkspaceRepository';
 
 // 공고별 협업자 (Phase 5 — feat/job-posting-collaborators)

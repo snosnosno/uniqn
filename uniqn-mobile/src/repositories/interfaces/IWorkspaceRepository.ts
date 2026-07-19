@@ -14,6 +14,21 @@ import type {
   AcceptInvitationResult,
 } from '@/types/workspace';
 
+/**
+ * 멤버 초대 후보 검색 결과 한 건.
+ *
+ * email 이 없는 것은 누락이 아니라 의도다 — 닉네임 prefix 검색은 열거 표면이라
+ * 이메일을 함께 돌려주면 두 글자 조합 열거로 가입자 이메일 명단을 모을 수 있다.
+ * RPC 도 email 을 반환하지 않는다.
+ */
+export interface WorkspaceInviteCandidate {
+  id: string;
+  name: string | null;
+  nickname: string | null;
+  photoUrl: string | null;
+  photoUrlBlurhash: string | null;
+}
+
 export interface IWorkspaceRepository {
   /**
    * 워크스페이스 생성 (RPC create_workspace 경유 — auth.uid() 자동 사용)
@@ -53,6 +68,19 @@ export interface IWorkspaceRepository {
 
   /** 내가 owner 인 아카이브된 워크스페이스 목록 (보관함). 최근 아카이브순. */
   findArchivedByOwner(ownerId: string): Promise<Workspace[]>;
+
+  /**
+   * 멤버 초대 후보 닉네임 prefix 검색 (owner 전용 RPC 경유).
+   *
+   * RPC 가 employer/admin 한정·본인/기존멤버/대기중초대 제외·최소 2자·분당 20회를
+   * 모두 강제한다. 2자 미만은 예외가 아니라 빈 배열이다.
+   *
+   * @throws AppError E5 권한(미인증·비owner) / E6 rate limit
+   */
+  searchInviteCandidatesByNickname(
+    workspaceId: string,
+    nickname: string
+  ): Promise<WorkspaceInviteCandidate[]>;
 }
 
 export interface IWorkspaceMemberRepository {

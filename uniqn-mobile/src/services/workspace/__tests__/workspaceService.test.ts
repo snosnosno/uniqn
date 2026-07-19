@@ -1,11 +1,11 @@
 import { workspaceService } from '@/services/workspace/workspaceService';
 import { BusinessError, ERROR_CODES, ValidationError } from '@/errors';
 import { workspaceRepository } from '@/repositories';
-import { supabase } from '@/lib/supabase';
 import type { Workspace } from '@/types/workspace';
 
 const mockFindAllByMember = jest.fn();
 const mockCreate = jest.fn();
+const mockSearchInviteCandidates = jest.fn();
 
 jest.mock('@/repositories', () => ({
   workspaceRepository: {
@@ -14,6 +14,7 @@ jest.mock('@/repositories', () => ({
     archiveViaRpc: jest.fn(),
     restoreViaRpc: jest.fn(),
     findArchivedByOwner: jest.fn(),
+    searchInviteCandidatesByNickname: (...args: unknown[]) => mockSearchInviteCandidates(...args),
   },
   workspaceMemberRepository: {
     findByWorkspaceWithUser: jest.fn(),
@@ -154,52 +155,54 @@ describe('workspaceService - archive/restore', () => {
   });
 });
 
-describe('workspaceService.lookupUserByEmail', () => {
-  function mockUsersQueryOnce(row: Record<string, unknown> | null) {
-    const inSpy = jest.fn().mockReturnThis();
-    const chain = {
-      select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      in: inSpy,
-      maybeSingle: jest.fn().mockResolvedValue({ data: row, error: null }),
-    };
-    (supabase.from as jest.Mock).mockReturnValueOnce(chain);
-    return { inSpy };
-  }
+/**
+ * lookupUserByEmail(이메일 정확일치) → searchInviteCandidatesByNickname(닉네임 prefix) 전환.
+ *
+ * ⚠️ 이관된 회귀 가드 — 여기서 사라진 게 아니라 SQL 로 내려갔다.
+ *   옛 테스트는 "초대 대상을 employer/admin 으로만 한정"(staff 초대 시 수락 화면이
+ *   employer 전용이라 도달 불가한 dead-end)을 `.in('role', [...])` 호출로 감시했다.
+ *   그 필터는 이제 RPC search_workspace_invite_candidates_by_nickname 본문에 있어
+ *   TS 목으로는 감시할 수 없다. 대신 마이그레이션 적용 시 로컬 DB 에서 4개 게이트를
+ *   실측 검증했다(미인증·비owner 예외 / 2자 미만 0행 / staff·본인·기존멤버·대기중초대 제외).
+ *   RPC 본문을 손댈 때는 그 시나리오를 다시 돌릴 것.
+ */
+describe('workspaceService.searchInviteCandidatesByNickname', () => {
+  const CANDIDATE = {
+    id: 'emp-1',
+    name: '사장',
+    nickname: 'boss',
+    photoUrl: null,
+    photoUrlBlurhash: null,
+  };
 
-  it('초대 대상 조회를 employer/admin 역할로만 한정한다 (staff 초대 dead-end 차단)', async () => {
-    const { inSpy } = mockUsersQueryOnce(null);
-
-    await workspaceService.lookupUserByEmail('someone@uniqn.app');
-
-    // 회귀 가드: 역할 한정 필터가 빠지면 staff 가 다시 초대돼 수락 화면 없는 dead-end 발생
-    expect(inSpy).toHaveBeenCalledWith('role', ['employer', 'admin']);
+  it('workspaceId 가 없으면 ValidationError 를 던진다', async () => {
+    await expect(
+      workspaceService.searchInviteCandidatesByNickname('', 'boss')
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(mockSearchInviteCandidates).not.toHaveBeenCalled();
   });
 
-  it('employer 사용자는 정상 매핑되어 반환된다', async () => {
-    mockUsersQueryOnce({
-      id: 'emp-1',
-      name: '사장',
-      email: 'boss@uniqn.app',
-      photo_url: null,
-      is_active: true,
-    });
+  it('2자 미만이면 서버 왕복 없이 빈 배열을 준다 (rate limit 토큰 보호)', async () => {
+    const result = await workspaceService.searchInviteCandidatesByNickname('ws-1', ' b ');
 
-    const result = await workspaceService.lookupUserByEmail('boss@uniqn.app');
-
-    expect(result).toEqual({
-      id: 'emp-1',
-      name: '사장',
-      email: 'boss@uniqn.app',
-      photoUrl: null,
-    });
+    expect(result).toEqual([]);
+    expect(mockSearchInviteCandidates).not.toHaveBeenCalled();
   });
 
-  it('역할 미일치(쿼리 결과 없음)면 null 을 반환한다', async () => {
-    mockUsersQueryOnce(null);
+  it('2자 이상이면 repository 에 workspaceId 와 원문 닉네임을 그대로 넘긴다', async () => {
+    mockSearchInviteCandidates.mockResolvedValueOnce([CANDIDATE]);
 
-    const result = await workspaceService.lookupUserByEmail('staff@uniqn.app');
+    const result = await workspaceService.searchInviteCandidatesByNickname('ws-1', 'bo');
 
-    expect(result).toBeNull();
+    expect(mockSearchInviteCandidates).toHaveBeenCalledWith('ws-1', 'bo');
+    expect(result).toEqual([CANDIDATE]);
+  });
+
+  it('실패를 삼키지 않고 그대로 던진다 (권한·rate limit 을 화면이 구분해야 함)', async () => {
+    mockSearchInviteCandidates.mockRejectedValueOnce(new Error('SEARCH_RATE_LIMITED'));
+
+    await expect(workspaceService.searchInviteCandidatesByNickname('ws-1', 'bo')).rejects.toThrow(
+      'SEARCH_RATE_LIMITED'
+    );
   });
 });
