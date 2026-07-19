@@ -83,6 +83,10 @@ export function ScheduleSlotsSheet({
     const next = slots.filter((_, idx) => idx !== i);
     setSlots(next);
     setSlotIds((prev) => prev.filter((_, idx) => idx !== i));
+    // `cur > i` 항은 **영구 도달불가**(커버리지 0)라 회귀 테스트가 없다 — SlotCard 가 삭제 버튼을
+    // 펼친 카드에만 렌더하므로 removeSlot(i) 는 항상 i === expanded 다. 방어적으로만 남긴다.
+    // 반면 else 의 클램프(Math.min)는 도달 가능하다 — 마지막(펼친) 슬롯 삭제 시 남은 카드를
+    // 펼치는 경로이고, '마지막(펼친) 슬롯을 삭제하면 남은 슬롯이 펼쳐진다' 테스트가 지킨다.
     setExpanded((cur) => (cur > i ? cur - 1 : Math.min(cur, Math.max(0, next.length - 1))));
   };
 

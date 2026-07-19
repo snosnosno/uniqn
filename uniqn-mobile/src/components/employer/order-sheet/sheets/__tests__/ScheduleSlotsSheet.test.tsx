@@ -207,6 +207,30 @@ describe('ScheduleSlotsSheet', () => {
     expect(queryByTestId('order-sheet-role-custom')).toBeNull();
   });
 
+  // removeSlot 의 인덱스 보정(clamp) 회귀 가드 — `setExpanded` 줄을 지우거나
+  // `Math.min(cur, next.length - 1)` 을 `cur` 로 되돌리면 red 가 되어야 한다.
+  // 기존 삭제 테스트 2건은 전부 "index 0 삭제"라 보정식을 그냥 통과시킨다.
+  // 무가드 증상: 마지막(펼친) 슬롯을 삭제하면 expanded 가 사라진 인덱스를 계속 가리켜
+  // 남은 카드가 접힌 채로 남고 펼친 카드가 0개가 된다(사용자가 한 번 더 탭해야 함).
+  it('마지막(펼친) 슬롯을 삭제하면 남은 슬롯이 펼쳐진다', () => {
+    const { getByText, getByTestId } = render(
+      <ScheduleSlotsSheet
+        visible
+        // 두 슬롯 모두 완성 — firstIncomplete 가 0 을 고르므로
+        // 그 뒤 명시적으로 마지막 카드를 펼치는 시나리오가 성립한다.
+        value={[
+          { startTime: '19:00', roles: [{ role: 'dealer', count: 1 }] },
+          { startTime: '22:00', roles: [{ role: 'dealer', count: 1 }] },
+        ]}
+        onConfirm={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+    fireEvent.press(getByTestId('order-time-roles-1')); // 마지막 카드 펼침
+    fireEvent.press(getByTestId('order-time-remove-1'));
+    expect(getByText('출근 19:00')).toBeTruthy(); // 남은 카드가 펼쳐져야 한다
+  });
+
   it('슬롯 2개에서 펼친 카드를 삭제하면 1개로 줄고 삭제 버튼이 사라진다', () => {
     const { getByTestId, queryByTestId } = render(
       <ScheduleSlotsSheet
