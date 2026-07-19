@@ -88,3 +88,67 @@ describe('RoleCountEditor — 칩 토글', () => {
     expect(dump(getByTestId)).toEqual([{ role: 'floor', count: 1 }]);
   });
 });
+
+describe('RoleCountEditor — 기타 직접 입력', () => {
+  it('＋ 직접 입력 → 이름 입력 → 추가 시 other+customRole 로 담긴다', () => {
+    const { getByTestId } = render(<Harness />);
+    fireEvent.press(getByTestId('order-role-custom-open'));
+    fireEvent.changeText(getByTestId('order-sheet-role-custom'), '  칩카운터  ');
+    fireEvent.press(getByTestId('order-role-add'));
+    expect(dump(getByTestId)).toEqual([{ role: 'other', customRole: '칩카운터', count: 1 }]);
+  });
+
+  it('이름이 다른 커스텀 역할을 여러 개 담을 수 있다 (기능 보존)', () => {
+    const { getByTestId } = render(<Harness />);
+    fireEvent.press(getByTestId('order-role-custom-open'));
+    fireEvent.changeText(getByTestId('order-sheet-role-custom'), '칩카운터');
+    fireEvent.press(getByTestId('order-role-add'));
+    fireEvent.press(getByTestId('order-role-custom-open'));
+    fireEvent.changeText(getByTestId('order-sheet-role-custom'), '안내');
+    fireEvent.press(getByTestId('order-role-add'));
+    expect(dump(getByTestId)).toEqual([
+      { role: 'other', customRole: '칩카운터', count: 1 },
+      { role: 'other', customRole: '안내', count: 1 },
+    ]);
+  });
+
+  it('이름이 비면 추가되지 않는다', () => {
+    const { getByTestId } = render(<Harness />);
+    fireEvent.press(getByTestId('order-role-custom-open'));
+    fireEvent.press(getByTestId('order-role-add'));
+    expect(dump(getByTestId)).toEqual([]);
+  });
+
+  it('같은 이름을 다시 추가하면 중복 행이 생기지 않는다', () => {
+    const { getByTestId } = render(
+      <Harness initial={[{ role: 'other', customRole: '칩카운터', count: 3 }]} />
+    );
+    fireEvent.press(getByTestId('order-role-custom-open'));
+    fireEvent.changeText(getByTestId('order-sheet-role-custom'), '칩카운터');
+    fireEvent.press(getByTestId('order-role-add'));
+    expect(dump(getByTestId)).toEqual([{ role: 'other', customRole: '칩카운터', count: 3 }]);
+  });
+
+  it('커스텀 역할도 스테퍼로 인원 조정된다', () => {
+    const { getByTestId } = render(
+      <Harness initial={[{ role: 'other', customRole: '칩카운터', count: 1 }]} />
+    );
+    fireEvent.press(getByTestId('order-role-count-plus-0'));
+    expect(dump(getByTestId)).toEqual([{ role: 'other', customRole: '칩카운터', count: 2 }]);
+  });
+
+  // roleLabel 의 'other' 분기(= roleName 위임의 핵심 갈래) 직접 커버.
+  // Task 1 리뷰 지적: 이 분기가 레포 어디에서도 단언되지 않고 있었다.
+  it("커스텀 역할은 이름이 그대로 표시된다 (roleLabel 'other' 분기)", () => {
+    const { getByText, getByLabelText } = render(
+      <Harness initial={[{ role: 'other', customRole: '칩카운터', count: 1 }]} />
+    );
+    expect(getByText('칩카운터')).toBeTruthy();
+    expect(getByLabelText('칩카운터 인원 늘리기')).toBeTruthy();
+  });
+
+  it("customRole 이 없는 'other' 는 '기타'로 표시된다", () => {
+    const { getByText } = render(<Harness initial={[{ role: 'other', count: 1 }]} />);
+    expect(getByText('기타')).toBeTruthy();
+  });
+});
