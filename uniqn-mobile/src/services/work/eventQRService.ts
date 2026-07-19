@@ -20,7 +20,7 @@ import { toError, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { InvalidQRCodeError } from '@/errors/BusinessErrors';
 import { trackCheckIn, trackCheckOut } from '@/services/observability';
-import { toISODateString, getTodayString, getYesterdayString } from '@/utils/date';
+import { toDate, toISODateString, getTodayString, getYesterdayString } from '@/utils/date';
 import { WORK_LOG_STATUS_VALUES } from '@/constants/statusValues';
 import { workLogRepository } from '@/repositories';
 import { selectWorkLogForQR, type QRSelectionFailureReason } from './selectWorkLogForQR';
@@ -49,17 +49,46 @@ function parseVenueQRData(qrString: string): VenueQRDisplayData | null {
 }
 
 /**
- * 어제 자 후보를 "아직 출근 중인 것"만 남기고 걸러낸다
+ * 자정 넘는 근무로 인정할 출근 후 최대 경과 시간 (16시간)
  *
- * @description 어제 자 배정은 아직 출근 중인 것만 후보로 인정한다 —
- *   자정 넘는 근무의 퇴근 스캔을 위한 것이지, 지난 근무에 새로 출근하기 위한 것이 아니다.
+ * @description 정상적인 자정 넘김 근무(18:00 출근 → 다음날 02:00 퇴근 = 8시간)는 통과하고,
+ *   퇴근 스캔을 깜빡해 하루가 지난 건(20시간 이상)은 제외되는 경계값이다.
+ *
+ *   상한이 없으면 D일 퇴근을 깜빡한 스태프가 D+1 아침 출근 스캔을 할 때 어제 자
+ *   checked_in 이 선택되어(선택 규칙 ① checked_in 우선) 24시간짜리 허위 work_duration 이
+ *   기록되고, 정작 오늘 출근은 되지 않는다. RPC 의 시각 클램프는 p_check_time 과 서버
+ *   now() 의 편차만 보정하고 work_duration 은 음수만 막을 뿐 상한이 없어, 이 필터가
+ *   정산 오염을 막는 유일한 지점이다.
+ * @remarks 어떤 값을 골라도 휴리스틱이다 — "가장 긴 정상 근무"와 "퇴근을 깜빡한 하루 경과"
+ *   사이 어딘가를 자르는 값이며, 16시간을 넘는 실제 근무는 이 경로로 퇴근할 수 없다.
+ */
+const MAX_OVERNIGHT_SHIFT_MS = 16 * 60 * 60 * 1000;
+
+/**
+ * 어제 자 후보를 "아직 출근 중이고 상한 이내인 것"만 남기고 걸러낸다
+ *
+ * @description 어제 자 배정은 자정 넘는 근무의 퇴근 스캔용이지, 지난 근무에 새로 출근하거나
+ *   하루 지난 근무를 뒤늦게 퇴근시키기 위한 것이 아니다. 그래서 두 조건을 모두 본다 —
+ *   ① 상태가 checked_in ② 출근 후 경과 시간이 MAX_OVERNIGHT_SHIFT_MS 이내.
  *   오늘 자·FIXED_SCHEDULE 후보는 그대로 통과시킨다.
+ * @remarks checkInTime 이 없거나 파싱 불가면 제외한다(fail-closed). 경과 시간을 판정할
+ *   근거가 없는데 통과시키면 근거 없이 24시간짜리 근무를 기록하게 된다 — 스캔 실패가 낫다.
  * @remarks 새 배열을 반환한다(입력 불변).
  */
-function keepOnlyActiveYesterdayCandidates(candidates: WorkLog[], yesterday: string): WorkLog[] {
-  return candidates.filter(
-    (workLog) => workLog.date !== yesterday || workLog.status === WORK_LOG_STATUS_VALUES.CHECKED_IN
-  );
+function keepOnlyActiveYesterdayCandidates(
+  candidates: WorkLog[],
+  yesterday: string,
+  now: Date
+): WorkLog[] {
+  return candidates.filter((workLog) => {
+    if (workLog.date !== yesterday) return true;
+    if (workLog.status !== WORK_LOG_STATUS_VALUES.CHECKED_IN) return false;
+
+    const checkInTime = toDate(workLog.checkInTime);
+    if (!checkInTime) return false;
+
+    return now.getTime() - checkInTime.getTime() <= MAX_OVERNIGHT_SHIFT_MS;
+  });
 }
 
 /** 선택 실패 사유별 사용자 문구 */
@@ -113,11 +142,12 @@ export async function processQRCheckIn(
       yesterday
     );
 
-    // 3. 어제 자 후보는 '아직 출근 중'인 것만 인정 (자정 넘는 근무의 퇴근 스캔용)
-    const candidates = keepOnlyActiveYesterdayCandidates(rawCandidates, yesterday);
+    // 3. 어제 자 후보는 '아직 출근 중 + 상한 이내'인 것만 인정 (자정 넘는 근무의 퇴근 스캔용).
+    //    시계는 여기서 한 번만 읽어 필터와 선택이 같은 기준 시각을 쓰게 한다.
+    const checkTime = new Date();
+    const candidates = keepOnlyActiveYesterdayCandidates(rawCandidates, yesterday, checkTime);
 
     // 4. 처리 대상 자동 선택 (하루 다중 배정 대응)
-    const checkTime = new Date();
     const selection = selectWorkLogForQR(candidates, checkTime);
 
     if (!selection.workLog) {

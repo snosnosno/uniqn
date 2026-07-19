@@ -6,8 +6,10 @@
  *
  * @remarks 선택 규칙 자체(순환 거리·동률 처리)는 selectWorkLogForQR.test.ts 가 검증한다.
  *   여기서는 서비스가 후보 조회·선택·RPC 를 올바르게 배선하는지와 사용자 문구 계약을 본다.
- *   그래서 시각 의존 케이스를 만들지 않는다 — 후보를 1건만 두거나 checked_in 우선 규칙처럼
- *   현재 시각과 무관한 조합만 쓴다(실제 `new Date()` 를 쓰는 코드라 시각 의존 시 플레이크).
+ *   대부분의 케이스는 후보를 1건만 두거나 checked_in 우선 규칙처럼 현재 시각과 무관한 조합만 쓴다.
+ *   단 어제 자 후보 필터는 출근 후 경과 시간의 상한을 보므로, 그 describe 만 가짜 타이머로
+ *   시계를 고정한다 — 실제 `new Date()` 를 쓰는 코드라 고정하지 않으면 플레이크가 된다.
+ *   시각은 CI(UTC)에서도 의미가 유지되도록 로컬 생성자(`new Date(2026, 5, 28, 18, 0)`)로 만든다.
  */
 import type { WorkLog } from '@/types';
 
@@ -278,9 +280,18 @@ describe('processQRCheckIn — auto 액션 위임', () => {
 });
 
 describe('processQRCheckIn — 자정 넘는 근무(어제 자 후보)', () => {
+  // 어제 자 후보 필터가 "출근 후 경과 시간"을 보므로 시계를 고정한다.
+  // 기본 시각 = D+1 02:00 — 18:00~02:00 자정 넘김 근무의 정상 퇴근 스캔 시점.
+  const SCAN_AT_DAWN = new Date(2026, 5, 29, 2, 0);
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockIsAppError.mockReturnValue(true);
+    jest.useFakeTimers({ now: SCAN_AT_DAWN });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it('어제 자 출근 중 근무를 D+1 새벽 스캔으로 퇴근 처리한다', async () => {
@@ -335,8 +346,12 @@ describe('processQRCheckIn — 자정 넘는 근무(어제 자 후보)', () => {
     expect(mockProcessQRCheckInOutTransaction).not.toHaveBeenCalled();
   });
 
-  it('오늘 자 대기 근무와 어제 자 출근 중 근무가 함께 있으면 어제 자 퇴근을 먼저 처리한다', async () => {
-    // selectWorkLogForQR 규칙 ① checked_in 우선 — 날짜가 아니라 상태가 우선순위를 정한다.
+  it('새벽 스캔이면 오늘 자 대기 근무보다 어제 자 출근 중 근무의 퇴근을 먼저 처리한다', async () => {
+    // selectWorkLogForQR 규칙 ① checked_in 우선 — 상태가 날짜보다 우선순위가 높다.
+    // 단 이 우선순위는 **어제 자가 경과 시간 상한 안일 때만** 성립한다. 시각을 고정하지 않으면
+    // "어제 자 우선"이 무조건 참인 것처럼 읽혀, 퇴근을 깜빡한 어제 건이 오늘 출근을
+    // 가로채는 결함(아래 24시간 경과 케이스)을 정답으로 못박게 된다.
+    // 여기서는 D+1 02:00 스캔 + 어제 18:00 출근 = 8시간 경과 → 상한 안.
     mockFindQRCandidates.mockResolvedValue([
       createMockWorkLog({
         id: 'wl-today-scheduled',
@@ -405,7 +420,10 @@ describe('processQRCheckIn — 자정 넘는 근무(어제 자 후보)', () => {
 
     const result = await processQRCheckIn(VENUE_QR, 'staff-1');
 
-    // 어제 자가 남아 있었다면 all_checked_out 으로 오늘 출근이 막혔을 것이다.
+    // 문서용 케이스 — 이 조합은 어제 자 필터의 유무와 무관하게 오늘 자가 선택된다.
+    // selectWorkLogForQR 이 checked_in 없음 → scheduled 분기로 가므로 어제 자 checked_out 은
+    // 애초에 경쟁 후보가 아니다. 필터의 실제 가드는 위의 'checked_out 만 남으면' 케이스와
+    // 아래 '24시간 경과' 케이스가 담당한다.
     expect(result.workLogId).toBe('wl-today-scheduled');
     expect(mockProcessQRCheckInOutTransaction.mock.calls[0][5]).toBe(FIXED_TODAY);
   });
@@ -429,6 +447,134 @@ describe('processQRCheckIn — 자정 넘는 근무(어제 자 후보)', () => {
 
     expect(result.workLogId).toBe('wl-fixed');
     expect(mockProcessQRCheckInOutTransaction.mock.calls[0][5]).toBe('FIXED_SCHEDULE');
+  });
+
+  // ==========================================================================
+  // 경과 시간 상한 (MAX_OVERNIGHT_SHIFT_MS = 16시간)
+  //
+  // 어제 자 checked_in 을 상태만 보고 인정하면, 퇴근 스캔을 깜빡한 어제 건이 다음날
+  // 출근 스캔을 가로채 24시간짜리 허위 work_duration 을 정산에 흘려보낸다.
+  // RPC 의 시각 클램프는 p_check_time 과 서버 now() 의 편차만 보정하고, work_duration 은
+  // 음수만 막을 뿐 상한이 없다 → 클라이언트 필터가 유일한 방어선이다.
+  // ==========================================================================
+
+  it('어제 자 출근 후 8시간 경과(정상 자정 넘김)는 퇴근 처리한다', async () => {
+    // D+1 02:00 스캔 - 어제 18:00 출근 = 8시간 → 상한(16시간) 안.
+    mockFindQRCandidates.mockResolvedValue([
+      createMockWorkLog({
+        id: 'wl-overnight',
+        date: FIXED_YESTERDAY,
+        status: STATUS.WORK_LOG.CHECKED_IN,
+        timeSlot: '18:00~02:00',
+        checkInTime: new Date(2026, 5, 28, 18, 0),
+      }),
+    ]);
+    mockProcessQRCheckInOutTransaction.mockResolvedValue({
+      action: 'checkOut',
+      workDuration: 480,
+      hasExistingCheckInTime: true,
+    });
+
+    const result = await processQRCheckIn(VENUE_QR, 'staff-1');
+
+    expect(result.action).toBe('checkOut');
+    expect(result.workLogId).toBe('wl-overnight');
+  });
+
+  it('어제 자 출근 후 24시간 경과(퇴근 깜빡)는 제외하고 오늘 자에 정상 출근시킨다', async () => {
+    // 결함 재현: D일 09:00 출근 후 퇴근 스캔 누락 → D+1 08:55 오늘 근무 출근 스캔.
+    // 상한이 없으면 어제 자 checked_in 이 선택되어 work_duration ≈ 23.9시간이 기록되고,
+    // 정작 오늘 출근은 되지 않는다.
+    jest.setSystemTime(new Date(2026, 5, 29, 8, 55));
+
+    mockFindQRCandidates.mockResolvedValue([
+      createMockWorkLog({
+        id: 'wl-yesterday-forgot-checkout',
+        date: FIXED_YESTERDAY,
+        status: STATUS.WORK_LOG.CHECKED_IN,
+        timeSlot: '09:00~18:00',
+        checkInTime: new Date(2026, 5, 28, 9, 0),
+      }),
+      createMockWorkLog({
+        id: 'wl-today-scheduled',
+        date: FIXED_TODAY,
+        status: STATUS.WORK_LOG.SCHEDULED,
+        timeSlot: '09:00~18:00',
+      }),
+    ]);
+    mockProcessQRCheckInOutTransaction.mockResolvedValue({
+      action: 'checkIn',
+      workDuration: 0,
+      hasExistingCheckInTime: false,
+    });
+
+    const result = await processQRCheckIn(VENUE_QR, 'staff-1');
+
+    expect(result.action).toBe('checkIn');
+    expect(result.workLogId).toBe('wl-today-scheduled');
+    expect(mockProcessQRCheckInOutTransaction.mock.calls[0][0]).toBe('wl-today-scheduled');
+    expect(mockProcessQRCheckInOutTransaction.mock.calls[0][5]).toBe(FIXED_TODAY);
+  });
+
+  it('어제 자 checked_in 이지만 checkInTime 이 없으면 제외한다(fail-closed)', async () => {
+    // 경과 시간을 판정할 근거가 없다. 근거 없이 24시간 근무를 기록하느니 스캔이 실패하는 게 낫다.
+    mockFindQRCandidates.mockResolvedValue([
+      createMockWorkLog({
+        id: 'wl-yesterday-no-checkin-time',
+        date: FIXED_YESTERDAY,
+        status: STATUS.WORK_LOG.CHECKED_IN,
+        timeSlot: '18:00~02:00',
+        checkInTime: undefined,
+      }),
+    ]);
+
+    await expect(processQRCheckIn(VENUE_QR, 'staff-1')).rejects.toMatchObject({
+      userMessage: '오늘 이 공고에 배정된 근무가 없습니다',
+    });
+
+    expect(mockProcessQRCheckInOutTransaction).not.toHaveBeenCalled();
+  });
+
+  it('상한 경계: 15시간 59분 경과는 통과한다', async () => {
+    // D+1 02:00 스캔 - 어제 10:01 출근 = 15시간 59분.
+    mockFindQRCandidates.mockResolvedValue([
+      createMockWorkLog({
+        id: 'wl-just-inside',
+        date: FIXED_YESTERDAY,
+        status: STATUS.WORK_LOG.CHECKED_IN,
+        timeSlot: '10:00~02:00',
+        checkInTime: new Date(2026, 5, 28, 10, 1),
+      }),
+    ]);
+    mockProcessQRCheckInOutTransaction.mockResolvedValue({
+      action: 'checkOut',
+      workDuration: 959,
+      hasExistingCheckInTime: true,
+    });
+
+    const result = await processQRCheckIn(VENUE_QR, 'staff-1');
+
+    expect(result.action).toBe('checkOut');
+    expect(result.workLogId).toBe('wl-just-inside');
+  });
+
+  it('상한 경계: 16시간 1분 경과는 제외한다', async () => {
+    // D+1 02:00 스캔 - 어제 09:59 출근 = 16시간 1분.
+    mockFindQRCandidates.mockResolvedValue([
+      createMockWorkLog({
+        id: 'wl-just-outside',
+        date: FIXED_YESTERDAY,
+        status: STATUS.WORK_LOG.CHECKED_IN,
+        timeSlot: '10:00~02:00',
+        checkInTime: new Date(2026, 5, 28, 9, 59),
+      }),
+    ]);
+
+    await expect(processQRCheckIn(VENUE_QR, 'staff-1')).rejects.toMatchObject({
+      userMessage: '오늘 이 공고에 배정된 근무가 없습니다',
+    });
+
+    expect(mockProcessQRCheckInOutTransaction).not.toHaveBeenCalled();
   });
 });
 
