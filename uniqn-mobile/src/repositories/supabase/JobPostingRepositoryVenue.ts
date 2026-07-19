@@ -30,7 +30,7 @@ import { TABLE, rethrowOrHandle } from './JobPostingRepositoryHelpers';
  */
 const venueContainerNameSchema = z
   .string()
-  .refine(xssValidation, { message: '운영처명에 허용되지 않는 문자가 포함되어 있습니다' });
+  .refine(xssValidation, { message: '지점명에 허용되지 않는 문자가 포함되어 있습니다' });
 
 export async function getVenueContainers(workspaceId: string): Promise<VenueContainer[]> {
   try {
@@ -77,7 +77,7 @@ export async function getOrCreateVenueContainer(
     throw new ValidationError(ERROR_CODES.SECURITY_XSS_DETECTED, {
       category: 'security',
       severity: 'medium',
-      userMessage: '운영처명에 허용되지 않는 문자가 포함되어 있습니다',
+      userMessage: '지점명에 허용되지 않는 문자가 포함되어 있습니다',
     });
   }
   try {
@@ -113,7 +113,7 @@ export async function getOrCreateVenueContainer(
     });
     if (!container) {
       throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: '운영처 컨테이너 확보 결과가 올바르지 않습니다',
+        userMessage: '지점 정보 확보 결과가 올바르지 않습니다',
       });
     }
     logger.info('운영처 컨테이너 확보 완료', { workspaceId, containerId: container.id });

@@ -83,7 +83,7 @@ function assertSafeText(value: string, field: string): string {
  * @throws ValidationError 필수값 누락·날짜 정규화 실패·XSS 패턴 감지 시.
  */
 export function buildAddSlotPayload(params: BuildAddSlotPayloadParams): AddDirectStaffInput {
-  const containerId = requireValue(params.containerId, '운영처 정보가 필요합니다');
+  const containerId = requireValue(params.containerId, '지점 정보가 필요합니다');
   const staffId = requireValue(params.staffId, '스태프를 선택해주세요');
   const role = requireValue(params.role, '역할을 선택해주세요');
 
