@@ -17,13 +17,12 @@ import {
 import type { FilterTabOption } from '@/components/ui';
 import { ScheduleCard, ScheduleDetailModal, GroupedScheduleCard } from '@/components/schedule';
 import { CancellationRequestForm } from '@/components/applications';
-import { QRCodeScanner } from '@/components/qr';
 import { ReportModal } from '@/components/employer/ReportModal';
 import { useOwnerReport } from '@/components/schedule/useOwnerReport';
 import { TabHeader } from '@/components/headers';
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, MenuIcon } from '@/components/icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCalendarView, useQRCodeScanner, useCurrentWorkStatus, useApplications } from '@/hooks';
+import { useCalendarView, useApplications } from '@/hooks';
 import { useOpsHubEnabled } from '@/hooks/useOpsHubEnabled';
 import { useTabBarBottomPadding } from '@/hooks/useTabBarBottomPadding';
 import { useAuthStore } from '@/stores/authStore';
@@ -45,13 +44,7 @@ import {
   countSchedulesByType,
   type ScheduleStatusFilter,
 } from '@/utils/scheduleGrouping';
-import type {
-  Application,
-  ScheduleEvent,
-  GroupedScheduleEvent,
-  QRCodeScanResult,
-  QRCodeAction,
-} from '@/types';
+import type { Application, ScheduleEvent, GroupedScheduleEvent } from '@/types';
 import type { BoardAuthorRole } from '@/types/board';
 import { isGroupedScheduleEvent } from '@/types/schedule';
 
@@ -294,13 +287,6 @@ export default function ScheduleScreen() {
 
   // 취소 요청 바텀시트 상태 (confirmed 지원 취소)
   const [cancellationApp, setCancellationApp] = useState<Application | null>(null);
-
-  // QR 스캐너 상태
-  const [isQRScannerVisible, setIsQRScannerVisible] = useState(false);
-  const [qrScanAction, setQRScanAction] = useState<QRCodeAction | undefined>();
-
-  // 현재 근무 상태
-  const { isWorking } = useCurrentWorkStatus();
 
   // 미작성 평가 수
   const { pendingCount } = usePendingReviews();
@@ -570,25 +556,23 @@ export default function ScheduleScreen() {
     setSelectedSchedule(schedule);
   }, []);
 
-  // 시트 닫힘 후 QR 스캐너 오픈 예약 타이머
+  // 시트 닫힘 후 스캔 화면 이동 예약 타이머
   const qrOpenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // QR 스캔 핸들러
+  // QR 스캔 핸들러 — 스캐너를 인라인으로 띄우지 않고 /scan 단일 라우트로 넘긴다
+  // (헤더 QR 아이콘과 동일 경로). 출근/퇴근 판정은 서버가 하므로 넘길 파라미터가 없다.
   const handleQRScan = useCallback(() => {
-    // 현재 근무 상태에 따라 액션 결정
-    const action: QRCodeAction = isWorking ? 'checkOut' : 'checkIn';
-    setQRScanAction(action);
-    // iOS 중첩 Modal 터치 먹통 방지 — 상세 시트를 먼저 닫고 dismiss 애니메이션 후 QR 스캐너를 연다.
-    // (두 네이티브 Modal 이 동시에 present 되면 iOS 에서 터치 라우팅이 깨져 스캐너가 먹통이 된다)
-    setIsDetailSheetVisible(false);
+    // iOS 중첩 Modal 터치 먹통 방지 — 상세 시트를 먼저 닫고 dismiss 애니메이션 후 이동한다.
+    // (시트가 present 된 채 스캐너 Modal 이 뜨면 iOS 에서 터치 라우팅이 깨진다)
+    handleCloseDetailSheet();
     if (qrOpenTimerRef.current) clearTimeout(qrOpenTimerRef.current);
     qrOpenTimerRef.current = setTimeout(() => {
       qrOpenTimerRef.current = null;
-      setIsQRScannerVisible(true);
+      router.push('/(app)/scan');
     }, SHEET_DISMISS_ANIMATION_MS);
-  }, [isWorking]);
+  }, [handleCloseDetailSheet]);
 
-  // 블러(탭 전환) 시 예약된 QR 스캐너 오픈 취소 — 네이티브 Modal 이라 예약이 살아있으면
+  // 블러(탭 전환) 시 예약된 스캔 화면 이동 취소 — 예약이 살아있으면
   // 다른 탭 위로 스캐너가 떠버린다. 화면이 포커스를 잃으면 예약을 버린다.
   useFocusEffect(
     useCallback(
@@ -600,30 +584,6 @@ export default function ScheduleScreen() {
       },
       []
     )
-  );
-
-  // QR 스캔 결과 처리 훅
-  const { handleScanResult, lastError, clearError } = useQRCodeScanner({
-    onSuccess: () => {
-      // 출퇴근 체크 완료 — 결정적 순간이므로 Success 햅틱 (impeccable §17).
-      void triggerHaptic('success');
-      setIsQRScannerVisible(false);
-      handleCloseDetailSheet();
-    },
-  });
-
-  // QR 스캐너 닫기
-  const handleCloseQRScanner = useCallback(() => {
-    setIsQRScannerVisible(false);
-    clearError();
-  }, [clearError]);
-
-  // QR 스캔 완료
-  const handleQRScanComplete = useCallback(
-    (result: QRCodeScanResult) => {
-      handleScanResult(result);
-    },
-    [handleScanResult]
   );
 
   // 날짜 선택 핸들러
@@ -890,17 +850,6 @@ export default function ScheduleScreen() {
       />
 
       {/* 스태프 정산 튜토리얼 */}
-
-      {/* QR 스캐너 */}
-      <QRCodeScanner
-        visible={isQRScannerVisible}
-        onClose={handleCloseQRScanner}
-        onScan={handleQRScanComplete}
-        expectedAction={qrScanAction}
-        title={`${qrScanAction === 'checkIn' ? '출근' : '퇴근'} QR 스캔`}
-        scanError={lastError}
-        onClearError={clearError}
-      />
 
       {/* 구인자 신고 모달 — 시트 밖 형제로 렌더 (시트가 닫힌 뒤 열려 iOS 중첩 Modal 터치 먹통 회피) */}
       <ReportModal

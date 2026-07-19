@@ -6,7 +6,7 @@ export const EXPO_ROUTES = {
   board: '/(app)/(tabs)/board',
   profile: '/(app)/(tabs)/profile',
   employerTab: '/(app)/(tabs)/employer',
-  qr: '/(app)/(tabs)/qr',
+  scan: '/(app)/scan',
 
   notifications: '/(app)/notifications',
   jobDetail: '/(app)/jobs/[id]',

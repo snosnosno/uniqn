@@ -57,11 +57,12 @@ export function TabHeader({
 
         {showQR ? (
           <Pressable
-            onPress={() => router.push('/(app)/(tabs)/qr')}
+            onPress={() => router.push('/(app)/scan')}
             className={`rounded-sm p-2 ${HEADER_CLASSES.actionPressed}`}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="QR 코드"
+            accessibilityLabel="출퇴근 QR 스캔"
+            accessibilityHint="카메라가 열립니다"
           >
             <QrCodeIcon size={24} color={actionColor} />
           </Pressable>
