@@ -44,7 +44,6 @@ export interface SharedJobPosting {
 export interface CollaboratorSearchCandidate {
   userId: string;
   displayName: string | null;
-  email: string;
   photoUrl: string | null;
   /** 자기 자신 / workspace 이미 멤버 / 이미 collaborator / 추가 가능 */
   status: 'self' | 'workspace_member' | 'already_collaborator' | 'addable';
@@ -53,8 +52,6 @@ export interface CollaboratorSearchCandidate {
 export const COLLABORATOR_LIMITS = {
   /** MVP cap 없음 — abuse 모니터링 후 결정 */
   MAX_PER_POSTING: null as number | null,
-  /** 이메일 검색 debounce ms */
-  SEARCH_DEBOUNCE_MS: 300,
-  /** 이메일 검색 최소 길이 */
-  SEARCH_MIN_CHARS: 3,
+  /** 닉네임 검색 최소 길이 */
+  SEARCH_MIN_CHARS: 2,
 } as const;

@@ -122,6 +122,20 @@ export function handleSupabaseError(error: unknown, context: SupabaseErrorContex
       });
     }
 
+    // 검색 RPC 열거 방어(rate limit). 서버가 `SEARCH_RATE_LIMITED: ...`를 P0001로 던진다.
+    // 매핑이 없으면 UNKNOWN('알 수 없는 오류')으로 떨어져 사장님이 원인을 알 수 없으므로,
+    // 잠시 후 풀린다는 사실이 드러나는 문구 + isRetryable=true로 매핑한다.
+    // startsWith + 고유 토큰: 기존 ANALYTICS_RATE_LIMITED / OPS_REPORT_RATE_LIMITED 를
+    // 부분문자열로 삼키지 않도록 좁힌다(두 토큰은 현재 별도 매퍼를 타지만 폴백 경로가 있다).
+    if (error.code === 'P0001' && error.message.startsWith('SEARCH_RATE_LIMITED')) {
+      throw new BusinessError(ERROR_CODES.SECURITY_RATE_LIMIT, {
+        message: error.message,
+        userMessage: '검색이 너무 잦습니다. 잠시 후 다시 시도해 주세요.',
+        isRetryable: true,
+        metadata,
+      });
+    }
+
     const mapping = POSTGREST_ERROR_MAP[error.code];
 
     if (mapping) {

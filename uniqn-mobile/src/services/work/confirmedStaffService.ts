@@ -15,7 +15,7 @@ import type {
   DeleteConfirmedStaffInput,
   AddDirectStaffInput,
 } from '@/types/confirmedStaff';
-import type { UserPhoneSearchResult } from '@/repositories';
+import type { UserNicknameSearchResult } from '@/repositories';
 import { STAFF_ROLES, STATUS } from '@/constants';
 import { StatusMapper, type WorkLogStatus } from '@/shared/status';
 import { TimeNormalizer } from '@/shared/time';
@@ -261,15 +261,21 @@ export async function updateStaffStatus(workLogId: string, status: WorkLogStatus
   logger.info('Updated confirmed staff status', { workLogId, status });
 }
 
+// 닉네임 검색 입력 경계 — 앱 닉네임 규칙(2~15자, updateProfileSchema)과 동일.
+// 하한 미만/상한 초과는 RPC 호출 없이 조기 차단(협업자 검색 zod min2/max15 와 대칭 방어).
+const NICKNAME_SEARCH_MIN = 2;
+const NICKNAME_SEARCH_MAX = 15;
+
 /**
- * 전화번호 정확 일치로 앱 가입자를 검색합니다(스태프 직접 추가용, 구인자 전용).
+ * 닉네임 prefix 로 앱 가입자를 검색합니다(스태프 직접 추가용, 구인자 전용).
  */
-export async function searchStaffByPhone(phone: string): Promise<UserPhoneSearchResult[]> {
-  const digits = phone.replace(/\D/g, '');
-  if (digits.length < 9) {
+export async function searchStaffByNickname(nickname: string): Promise<UserNicknameSearchResult[]> {
+  const trimmed = nickname.trim();
+  // 경계 밖(2자 미만/15자 초과)은 RPC 호출 없이 조기 차단(RPC 본문도 최소 2자 가드).
+  if (trimmed.length < NICKNAME_SEARCH_MIN || trimmed.length > NICKNAME_SEARCH_MAX) {
     return [];
   }
-  return userRepository.searchByPhone(phone);
+  return userRepository.searchByNickname(trimmed);
 }
 
 /**

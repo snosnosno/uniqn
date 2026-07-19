@@ -196,9 +196,9 @@ describe('useCollaboratorCandidates', () => {
     mockCreateRealtimeSubscription.mockReturnValue(mockUnsubscribe);
   });
 
-  it('email query 가 3자 미만이면 fetch 하지 않는다', async () => {
+  it('닉네임 query 가 2자 미만이면 fetch 하지 않는다', async () => {
     const { Wrapper } = makeWrapper();
-    const { result } = renderHook(() => useCollaboratorCandidates('jp-1', 'ab'), {
+    const { result } = renderHook(() => useCollaboratorCandidates('jp-1', 'a'), {
       wrapper: Wrapper,
     });
 
@@ -207,9 +207,9 @@ describe('useCollaboratorCandidates', () => {
     expect(result.current.candidates).toEqual([]);
   });
 
-  it('email query 가 trim 후 3자 미만이면 fetch 하지 않는다 (공백 포함)', async () => {
+  it('닉네임 query 가 trim 후 2자 미만이면 fetch 하지 않는다 (공백 포함)', async () => {
     const { Wrapper } = makeWrapper();
-    const { result } = renderHook(() => useCollaboratorCandidates('jp-1', '  ab '), {
+    const { result } = renderHook(() => useCollaboratorCandidates('jp-1', '  a '), {
       wrapper: Wrapper,
     });
 
@@ -219,7 +219,7 @@ describe('useCollaboratorCandidates', () => {
 
   it('jobPostingId 가 undefined 면 fetch 하지 않는다', async () => {
     const { Wrapper } = makeWrapper();
-    const { result } = renderHook(() => useCollaboratorCandidates(undefined, 'abc@test'), {
+    const { result } = renderHook(() => useCollaboratorCandidates(undefined, '홀덤사장'), {
       wrapper: Wrapper,
     });
 
@@ -227,26 +227,25 @@ describe('useCollaboratorCandidates', () => {
     expect(collaboratorService.searchCandidates).not.toHaveBeenCalled();
   });
 
-  it('email query 3자 이상이면 fetch 한다', async () => {
+  it('닉네임 query 2자 이상이면 fetch 한다', async () => {
     (collaboratorService.searchCandidates as jest.Mock).mockResolvedValue([
       {
         userId: 'u1',
         displayName: 'u1',
-        email: 'abc@test.local',
         photoUrl: null,
         status: 'addable',
       },
     ]);
 
     const { Wrapper } = makeWrapper();
-    const { result } = renderHook(() => useCollaboratorCandidates('jp-1', 'abc'), {
+    const { result } = renderHook(() => useCollaboratorCandidates('jp-1', '홀덤'), {
       wrapper: Wrapper,
     });
 
     await waitFor(() => expect(result.current.candidates).toHaveLength(1));
     expect(collaboratorService.searchCandidates).toHaveBeenCalledWith({
       jobPostingId: 'jp-1',
-      emailQuery: 'abc',
+      nicknameQuery: '홀덤',
     });
     expect(result.current.candidates[0]?.status).toBe('addable');
   });

@@ -40,11 +40,14 @@ export interface IJobPostingCollaboratorRepository {
   remove(jobPostingId: string, userId: string): Promise<void>;
 
   /**
-   * 이메일로 사용자 검색 (UNIQN 가입자만)
+   * 닉네임으로 사용자 검색 (UNIQN 가입자만)
    * 검색 결과에 status (self/workspace_member/already_collaborator/addable) 부여
    *
    * @param jobPostingId 협업자 추가 대상 공고
-   * @param emailQuery 이메일 prefix (≥3자)
+   * @param nicknameQuery 닉네임 prefix (≥2자)
    */
-  searchByEmail(jobPostingId: string, emailQuery: string): Promise<CollaboratorSearchCandidate[]>;
+  searchByNickname(
+    jobPostingId: string,
+    nicknameQuery: string
+  ): Promise<CollaboratorSearchCandidate[]>;
 }
