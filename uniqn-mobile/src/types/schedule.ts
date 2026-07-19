@@ -506,7 +506,12 @@ export interface QRScanError {
  * 고정 운영처(컨테이너) QR 표시 데이터 (JSON stringify 하여 QR 로 인코딩)
  *
  * 회전/만료/날짜 인코딩이 없는 고정 QR. jobPostingId 는 컨테이너 공고 ID
- * (work_logs.job_posting_id). 근무 날짜는 항상 스캔 시점의 오늘(getTodayString)로 해소된다.
+ * (work_logs.job_posting_id).
+ *
+ * 근무 날짜는 QR 에 담기지 않고 **스캔 시점에 후보 work_log 를 골라서** 해소된다.
+ * 그 결과 선택되는 `work_logs.date` 는 세 가지다 — 오늘(getTodayString), 어제
+ * (getYesterdayString, 자정 넘는 근무의 퇴근 스캔용), `'FIXED_SCHEDULE'`(고정 스케줄
+ * 공고의 날짜 없는 행). 선택·필터 규칙은 `services/work/eventQRService.ts` 참고.
  */
 export interface VenueQRDisplayData {
   type: 'venue';

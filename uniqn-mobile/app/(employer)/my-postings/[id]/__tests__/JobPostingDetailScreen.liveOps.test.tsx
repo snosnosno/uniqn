@@ -30,7 +30,14 @@ jest.mock('expo-router', () => ({
 }));
 
 jest.mock('../_layout', () => ({
-  useJobDetailContext: () => ({ job: null, handleShowQR: jest.fn() }),
+  // mockPosting 이 고정 스케줄(schedule.kind==='fixed')이므로 컨텍스트도 isFixed=true 를 준다.
+  // 이 파일은 헤더 QR 게이트를 검증하지 않는다 — 그 회귀 가드는 headerQRGate.test.ts.
+  useJobDetailContext: () => ({
+    job: null,
+    isFixed: true,
+    isLoading: false,
+    handleShowQR: jest.fn(),
+  }),
   HeaderQRAction: () => null,
   JobTitleSuffix: () => null,
 }));

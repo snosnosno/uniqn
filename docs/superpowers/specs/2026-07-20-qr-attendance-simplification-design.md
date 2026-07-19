@@ -97,7 +97,38 @@ QR 스캔·생성·출석 기능이 "얽혀서 쓰기 어렵다"는 문제 제�
 
 **저장/공유 버튼은 두지 않는다.** `expo-media-library`·`react-native-view-shot`·`expo-sharing`·`expo-file-system`이 전부 미설치이고(설치된 QR 관련 패키지는 `react-native-qrcode-svg` 하나뿐), 이들은 네이티브 모듈이라 **OTA로 배포되지 않고 새 EAS 빌드를 요구한다.** 저장은 스크린샷으로 충분하다 — iOS·Android 모두 기본 기능이다. 이 원칙 덕분에 이번 작업 전체가 OTA로 나간다.
 
-**고정(`isFixed`) 공고도 QR 활성화.** 막았던 이유(날짜·슬롯 선택 복잡도)가 사라지므로 막을 근거가 없다. `index.tsx`의 `!(contextIsFixed || isFixed)` 이중 판정도 함께 정리한다.
+**고정(`isFixed`) 공고는 QR 진입점을 계속 차단한다.** (2026-07-20 최종 리뷰에서 정정 — 아래 참고)
+
+> ⚠️ **정정 이력.** 이 문서는 원래 "고정 공고도 QR 활성화. 막았던 이유(날짜·슬롯 선택 복잡도)가
+> 사라지므로 막을 근거가 없다"고 적었고, Task 6이 그 전제로 `isFixed` 차단을 제거했다.
+> **그 전제는 거짓이었다.**
+>
+> 막혀 있던 진짜 이유는 선택 복잡도가 아니라 **`work_logs` 행 수명**이다. `confirm_application`
+> 은 고정 공고에 `dates:['FIXED_SCHEDULE']` **한 원소만** flat INSERT 하므로 스태프·공고당
+> 행이 **정확히 1개**이고, 그 행이 모든 근무일에 재사용된다. 그런데 그 행을 `scheduled` 로
+> 되돌리는 크론·트리거·클라 코드가 **어디에도 없다**:
+>
+> ```
+> D일   1차 스캔 → scheduled  → 출근 ✓
+> D일   2차 스캔 → checked_in → 퇴근 ✓  (행이 checked_out 으로 고정)
+> D+1~  모든 스캔 → all_checked_out → "오늘 근무는 이미 퇴근 처리됐습니다" ← 영구 실패
+> ```
+>
+> 고정 QR 전환은 사장의 **선택 복잡도**를 없앴을 뿐 이 행 수명 문제를 건드리지 않는다.
+> 따라서 차단을 복원했다 — 진입점 5곳(`index`·`applicants`·`settlements`·`edit`·
+> `cancellation-requests`) + 공고 리스트 카드 QR 아이콘 + `/qr` 라우트 자체(딥링크 우회 차단).
+> **차단 방식은 토스트가 아니라 버튼 미렌더링**이다. 누를 수 있는데 실패하는 것보다 없는 편이 정직하다.
+>
+> **행 수명 재설계는 별도 PR 로 미룬다.** 후보 방향: ① 일자별 work_log 를 스캔 시점에 lazy 생성
+> ② 날짜 경계에서 `FIXED_SCHEDULE` 행을 `scheduled` 로 리셋하는 서버 잡. 어느 쪽이든 스키마·RPC
+> 변경을 수반하므로 이번 PR(클라 전용, OTA 배포) 범위 밖이다.
+>
+> 회귀 가드: `app/(employer)/my-postings/[id]/__tests__/headerQRGate.test.ts`,
+> `src/components/employer/posting/__tests__/JobPostingCard.test.tsx`.
+
+`index.tsx`의 `!(contextIsFixed || isFixed)` 이중 판정은 **유지한다.** 레이아웃(context)과 화면이
+각자 `useJobDetail` 을 쓰므로 로딩 타이밍이 어긋날 수 있고, 한쪽이라도 고정이면 감추는 쪽이
+fail-closed 다. 노출 실패의 비용(버튼 없음)이 오노출의 비용(영구 실패하는 QR)보다 싸다.
 
 ### 3. 스태프 — 스캔 동선
 
@@ -167,9 +198,18 @@ QR 스캔·생성·출석 기능이 "얽혀서 쓰기 어렵다"는 문제 제�
 - `eventQRService.test.ts`의 event 케이스 제거
 - `eventQRService.venue.test.ts` 확장:
   - 일반 공고 출근 → 재스캔 시 퇴근 자동 판정
-  - 고정(`isFixed`) 공고 출/퇴근 (리스크 #1 회귀 가드)
+  - 고정(`FIXED_SCHEDULE`) 공고 후보의 조회·선택 (리스크 #1 회귀 가드)
+  - 고정 공고 후보에도 경과 시간 상한이 걸리는지 (상한을 날짜 축에만 걸면 `FIXED_SCHEDULE` 이
+    검사를 통째로 우회해 수십 시간짜리 `work_duration` 이 정산으로 샌다)
+  - 상한 경계 3종(15h59m 통과 / 정확히 16h 통과 / 16h1m 제외) + 음수 경과(미래 `checkInTime`) 제외
+  - `checkInTime` 이 PostgREST timestamptz **문자열**인 경로 (전 케이스를 `Date` 로만 두면
+    문자열 파싱이 깨져도 초록으로 남는다)
   - 실패 문구 매핑 5종
   - 배정 없는 스태프 스캔 시 거부
+- 고정 공고 QR 진입점 차단 회귀 가드:
+  - `app/(employer)/my-postings/[id]/__tests__/headerQRGate.test.ts` — 소비처 5곳 전부 게이팅 +
+    새 소비처가 게이트 없이 추가되면 실패
+  - `src/components/employer/posting/__tests__/JobPostingCard.test.tsx` — 리스트 카드 QR 아이콘
 - E2E(`qr-checkin.spec.ts`)는 웹 카메라 제약으로 여전히 UI 표시만 검증 → **실제 스캔 성공 경로는 실기기 QA 항목으로 남는다** (이번 작업으로 해소되지 않는 커버리지 공백)
 
 ## 범위 밖 (후속)

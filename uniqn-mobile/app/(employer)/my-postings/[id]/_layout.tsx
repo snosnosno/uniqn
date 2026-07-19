@@ -18,19 +18,28 @@ import { useThemeStore } from '@/stores/themeStore';
 import { useToastStore } from '@/stores/toastStore';
 import { getLayoutColor, SECONDARY_PALETTE } from '@/constants/colors';
 import { isEmployerManageablePosting } from '@/utils/jobPostingVisibility';
+import { isFixedJobPosting } from '@/utils/normalizers';
 import type { JobPosting } from '@/types';
 
 // ============================================================================
 // JobDetailContext
 // ============================================================================
-// 자식 화면이 StackHeader 렌더링에 필요한 job / handleShowQR 을 공유하기 위한
-// 경량 컨텍스트. 데이터는 레이아웃에서 useJobDetail 로 한 번만 조회.
+// 자식 화면이 StackHeader 렌더링에 필요한 job / isFixed / isLoading / handleShowQR 을
+// 공유하기 위한 경량 컨텍스트. 데이터는 레이아웃에서 useJobDetail 로 한 번만 조회.
 //
-// isFixed 는 QR 차단 용도로만 쓰였으므로 제거했다. 고정 QR 전환으로 사장이 고를 것이
-// 0개가 되어(날짜·시간슬롯·모드·갱신 소멸) 고정공고도 동일한 QR 을 쓴다.
+// isFixed 는 QR 진입점 차단용이다. 고정 QR 전환 때 "사장이 고를 것이 0개가 됐으니 막을
+// 근거가 없다"며 잠시 제거했으나, 막혀 있던 진짜 이유는 선택 복잡도가 아니라 **work_log
+// 행 수명**이었다 — confirm_application 이 고정 공고에 dates:['FIXED_SCHEDULE'] 한 원소만
+// flat INSERT 하므로 스태프·공고당 행이 1개이고, 그 행을 scheduled 로 되돌리는 크론·트리거·
+// 클라 코드가 어디에도 없다. 즉 D일에 출근→퇴근하면 행이 checked_out 으로 고정되어 D+1
+// 부터는 모든 스캔이 "오늘 근무는 이미 퇴근 처리됐습니다"로 영구 실패한다.
+// 행 수명 재설계는 별도 PR 이며, 그때까지 고정 공고에는 QR 진입점을 노출하지 않는다.
 
 interface JobDetailContextValue {
   job: JobPosting | null;
+  /** 고정 스케줄 공고 여부 — true 면 QR 진입점을 렌더링하지 않는다. */
+  isFixed: boolean;
+  isLoading: boolean;
   handleShowQR: () => void;
 }
 
@@ -40,6 +49,8 @@ const NOOP = () => {
 
 const JobDetailContext = createContext<JobDetailContextValue>({
   job: null,
+  isFixed: false,
+  isLoading: false,
   handleShowQR: NOOP,
 });
 
@@ -55,7 +66,11 @@ export function useJobDetailContext(): JobDetailContextValue {
 
 /**
  * StackHeader rightAction 으로 넘기는 헤더 QR 버튼.
- * 모든 공고(고정 포함)에서 동일하게 노출한다.
+ *
+ * @remarks 고정(`isFixed`) 공고에서는 호출부가 이 버튼을 **아예 렌더링하지 않는다**.
+ *   누를 수는 있는데 동작이 실패하는 것보다 버튼이 없는 편이 정직하다.
+ *   소비처는 5곳(index·applicants·settlements·edit·cancellation-requests) — 한 곳이라도
+ *   빠지면 탭을 옮길 때마다 버튼이 나타났다 사라진다.
  */
 export function HeaderQRAction({ onPress }: { onPress: () => void }) {
   const isDark = useThemeStore((s) => s.isDarkMode);
@@ -109,7 +124,9 @@ export default function JobPostingDetailLayout() {
   const router = useRouter();
   const isDark = useThemeStore((s) => s.isDarkMode);
   const { addToast } = useToastStore();
-  const { job } = useJobDetail(id || '', { realtime: true });
+  const { job, isLoading } = useJobDetail(id || '', { realtime: true });
+
+  const isFixed = job ? isFixedJobPosting(job) : false;
 
   const handleShowQR = useCallback(() => {
     router.push(`/(employer)/my-postings/${id ?? ''}/qr`);
@@ -138,9 +155,11 @@ export default function JobPostingDetailLayout() {
   const contextValue = useMemo<JobDetailContextValue>(
     () => ({
       job: job ?? null,
+      isFixed,
+      isLoading,
       handleShowQR,
     }),
-    [job, handleShowQR]
+    [job, isFixed, isLoading, handleShowQR]
   );
 
   if (job && !isEmployerManageablePosting(job)) {

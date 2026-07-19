@@ -45,11 +45,12 @@ function StatsHeader({ pendingCount }: StatsHeaderProps) {
 export default function CancellationRequestsScreen() {
   const { id: jobPostingId } = useLocalSearchParams<{ id: string }>();
   const { job: posting, isLoading: isLoadingPosting } = useJobDetail(jobPostingId || '');
-  const { job: contextJob, handleShowQR } = useJobDetailContext();
+  const { job: contextJob, isFixed, handleShowQR } = useJobDetailContext();
   const headerBackHref = `/(employer)/my-postings/${jobPostingId ?? ''}`;
   const headerJobTitle = posting?.title ?? contextJob?.title ?? null;
   const headerTitleSuffix = <JobTitleSuffix jobTitle={headerJobTitle} />;
-  const headerRightAction = <HeaderQRAction onPress={handleShowQR} />;
+  // 고정 공고는 QR 진입점을 노출하지 않는다 (work_log 행 수명 미해결 — _layout.tsx 주석 참고).
+  const headerRightAction = !isFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;
 
   const [approveModalVisible, setApproveModalVisible] = useState(false);
   const [pendingApproveId, setPendingApproveId] = useState<string | null>(null);

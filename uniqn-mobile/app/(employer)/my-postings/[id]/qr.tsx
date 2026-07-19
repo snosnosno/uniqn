@@ -14,6 +14,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import QRCode from 'react-native-qrcode-svg';
 import { StackHeader } from '@/components/headers';
+import { Loading } from '@/components';
 import { buildVenueQRString } from '@/services/work/eventQRService';
 import { JobTitleSuffix, useJobDetailContext } from './_layout';
 
@@ -22,15 +23,58 @@ const MAX_QR_SIZE = 320;
 /** QR 좌우 여백(화면 폭 대비) — 카드 패딩 + 화면 패딩 합계. */
 const QR_HORIZONTAL_INSET = 96;
 
+/** 공고를 특정할 수 없을 때의 안내 문구 */
+function NotFoundBody({ message }: { message: string }) {
+  return (
+    <View className="flex-1 items-center justify-center px-4">
+      <Text className="text-center text-base text-content-secondary dark:text-secondary-400 font-sans">
+        {message}
+      </Text>
+    </View>
+  );
+}
+
 export default function JobPostingQRScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { job } = useJobDetailContext();
+  const { job, isFixed, isLoading } = useJobDetailContext();
   const { width } = useWindowDimensions();
 
   const qrValue = useMemo(() => (id ? buildVenueQRString(id) : ''), [id]);
   const qrSize = Math.min(MAX_QR_SIZE, Math.max(200, width - QR_HORIZONTAL_INSET));
 
   const headerTitleSuffix = <JobTitleSuffix jobTitle={job?.title ?? null} />;
+
+  // job 이 없는데 QR 을 그리면 제목 없는 QR 이 나온다. 권한 없는(또는 존재하지 않는) 공고 ID 로
+  // 딥링크했을 때가 그렇다 — 실제 권한은 RPC 의 auth.uid() + 배정 존재가 강제하므로 보안 결함은
+  // 아니지만, "출퇴근 QR"이라 적힌 화면에 쓸 수 없는 QR 이 그려지는 건 표시 결함이다.
+  const body = (() => {
+    if (!id) {
+      return <NotFoundBody message="공고를 찾을 수 없어요" />;
+    }
+
+    if (isLoading) {
+      return (
+        <View className="flex-1 items-center justify-center px-4">
+          <Loading size="large" />
+          <Text className="mt-4 text-content-secondary dark:text-secondary-400 font-sans">
+            공고를 불러오는 중...
+          </Text>
+        </View>
+      );
+    }
+
+    if (!job) {
+      return <NotFoundBody message="공고를 찾을 수 없어요" />;
+    }
+
+    // 고정 공고는 QR 진입점이 모두 숨겨져 있지만 이 라우트는 딥링크로 직접 열릴 수 있다.
+    // 진입점만 막고 도착지를 열어두면 우회 경로가 남는다 (사유는 _layout.tsx 주석 참고).
+    if (isFixed) {
+      return <NotFoundBody message="고정 공고는 아직 QR 출퇴근을 지원하지 않아요" />;
+    }
+
+    return null;
+  })();
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['bottom']}>
@@ -40,13 +84,7 @@ export default function JobPostingQRScreen() {
         fallbackHref={`/(employer)/my-postings/${id ?? ''}`}
       />
 
-      {!id ? (
-        <View className="flex-1 items-center justify-center px-4">
-          <Text className="text-base text-content-secondary dark:text-secondary-400 font-sans">
-            공고를 찾을 수 없어요
-          </Text>
-        </View>
-      ) : (
+      {body ?? (
         <View className="flex-1 items-center justify-center px-4">
           {/* QR 배경은 스캔 대비를 위해 다크모드에서도 흰색을 유지한다 (dark:bg-white 의도적) */}
           <View

@@ -57,37 +57,53 @@ function parseVenueQRData(qrString: string): VenueQRDisplayData | null {
  *   상한이 없으면 D일 퇴근을 깜빡한 스태프가 D+1 아침 출근 스캔을 할 때 어제 자
  *   checked_in 이 선택되어(선택 규칙 ① checked_in 우선) 24시간짜리 허위 work_duration 이
  *   기록되고, 정작 오늘 출근은 되지 않는다. RPC 의 시각 클램프는 p_check_time 과 서버
- *   now() 의 편차만 보정하고 work_duration 은 음수만 막을 뿐 상한이 없어, 이 필터가
- *   정산 오염을 막는 유일한 지점이다.
+ *   now() 의 편차만 보정하고 work_duration 은 `GREATEST(0, ...)` 로 음수만 막을 뿐 상한이
+ *   없어, 이 필터가 정산 오염을 막는 유일한 지점이다.
+ *
+ *   상한은 **날짜가 아니라 상태(checked_in)** 를 기준으로 건다. 날짜 기준으로 걸면
+ *   `date === 'FIXED_SCHEDULE'` 인 고정 공고 행이 검사를 통째로 건너뛴다.
  * @remarks 어떤 값을 골라도 휴리스틱이다 — "가장 긴 정상 근무"와 "퇴근을 깜빡한 하루 경과"
  *   사이 어딘가를 자르는 값이며, 16시간을 넘는 실제 근무는 이 경로로 퇴근할 수 없다.
  */
 const MAX_OVERNIGHT_SHIFT_MS = 16 * 60 * 60 * 1000;
 
 /**
- * 어제 자 후보를 "아직 출근 중이고 상한 이내인 것"만 남기고 걸러낸다
+ * 상한을 넘겼거나 되살릴 수 없는 후보를 걸러낸다
  *
- * @description 어제 자 배정은 자정 넘는 근무의 퇴근 스캔용이지, 지난 근무에 새로 출근하거나
- *   하루 지난 근무를 뒤늦게 퇴근시키기 위한 것이 아니다. 그래서 두 조건을 모두 본다 —
- *   ① 상태가 checked_in ② 출근 후 경과 시간이 MAX_OVERNIGHT_SHIFT_MS 이내.
- *   오늘 자·FIXED_SCHEDULE 후보는 그대로 통과시킨다.
+ * @description 두 축을 본다 — **상태 축**과 **날짜 축**.
+ *
+ *   ① 상태 축(모든 날짜에 적용): `checked_in` 후보는 출근 후 경과 시간이 0 이상
+ *      MAX_OVERNIGHT_SHIFT_MS 이내여야 한다. 이 검사를 어제 자에만 걸면 고정 공고
+ *      후보(`date === 'FIXED_SCHEDULE'`)가 상한을 통째로 우회한다 — 고정 공고는
+ *      스태프·공고당 work_log 가 1행뿐이라 퇴근 스캔을 놓치면 `checked_in` 으로
+ *      무기한 남고, 며칠 뒤 스캔이 그 행을 퇴근시켜 수십 시간짜리 work_duration 을
+ *      정산으로 흘려보낸다. 방어는 날짜가 아니라 상태에 걸어야 정직하다.
+ *   ② 날짜 축: 어제 자 배정은 자정 넘는 근무의 **퇴근 스캔용**이지, 지난 근무에 새로
+ *      출근하기 위한 것이 아니다. 그래서 어제 자는 `checked_in` 인 것만 남긴다.
+ *
  * @remarks checkInTime 이 없거나 파싱 불가면 제외한다(fail-closed). 경과 시간을 판정할
  *   근거가 없는데 통과시키면 근거 없이 24시간짜리 근무를 기록하게 된다 — 스캔 실패가 낫다.
+ * @remarks 경과 시간이 음수(미래 checkInTime — 기기 클럭 스큐·오염 데이터)인 것도 제외한다.
+ *   상한만 보면 미래 시각이 검사를 통과해 버린다.
  * @remarks 새 배열을 반환한다(입력 불변).
  */
-function keepOnlyActiveYesterdayCandidates(
-  candidates: WorkLog[],
-  yesterday: string,
-  now: Date
-): WorkLog[] {
+function filterStaleCandidates(candidates: WorkLog[], yesterday: string, now: Date): WorkLog[] {
   return candidates.filter((workLog) => {
-    if (workLog.date !== yesterday) return true;
-    if (workLog.status !== WORK_LOG_STATUS_VALUES.CHECKED_IN) return false;
+    // ① 상태 축 — 날짜와 무관하게 출근 중인 후보의 경과 시간 상한을 강제한다.
+    if (workLog.status === WORK_LOG_STATUS_VALUES.CHECKED_IN) {
+      const checkInTime = toDate(workLog.checkInTime);
+      if (!checkInTime) return false;
 
-    const checkInTime = toDate(workLog.checkInTime);
-    if (!checkInTime) return false;
+      const elapsedMs = now.getTime() - checkInTime.getTime();
+      if (elapsedMs < 0 || elapsedMs > MAX_OVERNIGHT_SHIFT_MS) return false;
+    }
 
-    return now.getTime() - checkInTime.getTime() <= MAX_OVERNIGHT_SHIFT_MS;
+    // ② 날짜 축 — 어제 자는 퇴근 스캔용이므로 출근 중인 것만 남긴다.
+    if (workLog.date === yesterday) {
+      return workLog.status === WORK_LOG_STATUS_VALUES.CHECKED_IN;
+    }
+
+    return true;
   });
 }
 
@@ -142,10 +158,11 @@ export async function processQRCheckIn(
       yesterday
     );
 
-    // 3. 어제 자 후보는 '아직 출근 중 + 상한 이내'인 것만 인정 (자정 넘는 근무의 퇴근 스캔용).
+    // 3. 상한을 넘긴 후보 제거 — 출근 중(checked_in) 후보는 날짜와 무관하게 경과 시간 상한을
+    //    적용하고, 어제 자는 추가로 '출근 중'인 것만 인정한다(자정 넘는 근무의 퇴근 스캔용).
     //    시계는 여기서 한 번만 읽어 필터와 선택이 같은 기준 시각을 쓰게 한다.
     const checkTime = new Date();
-    const candidates = keepOnlyActiveYesterdayCandidates(rawCandidates, yesterday, checkTime);
+    const candidates = filterStaleCandidates(rawCandidates, yesterday, checkTime);
 
     // 4. 처리 대상 자동 선택 (하루 다중 배정 대응)
     const selection = selectWorkLogForQR(candidates, checkTime);

@@ -40,9 +40,10 @@ import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
 export default function StaffSettlementsScreen() {
   const { id: jobPostingId } = useLocalSearchParams<{ id: string }>();
   const { addToast } = useToastStore();
-  const { job: contextJob, handleShowQR } = useJobDetailContext();
+  const { job: contextJob, isFixed, handleShowQR } = useJobDetailContext();
   const headerBackHref = `/(employer)/my-postings/${jobPostingId ?? ''}`;
-  const headerRightAction = <HeaderQRAction onPress={handleShowQR} />;
+  // 고정 공고는 QR 진입점을 노출하지 않는다 (work_log 행 수명 미해결 — _layout.tsx 주석 참고).
+  const headerRightAction = !isFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;
 
   // 탭 상태 (진입 동기 대부분이 "누가 왔나 확인" — 정산은 근무 종료 후 업무)
   const [activeTab, setActiveTab] = useState<TabType>('staff');

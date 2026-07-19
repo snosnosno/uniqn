@@ -428,7 +428,9 @@ describe('processQRCheckIn — 자정 넘는 근무(어제 자 후보)', () => {
     expect(mockProcessQRCheckInOutTransaction.mock.calls[0][5]).toBe(FIXED_TODAY);
   });
 
-  it('고정 공고(FIXED_SCHEDULE) 후보는 날짜 필터와 무관하게 통과한다', async () => {
+  it('고정 공고(FIXED_SCHEDULE) 대기 후보는 날짜 축 필터와 무관하게 통과한다', async () => {
+    // 날짜 축(어제 자 제외)은 FIXED_SCHEDULE 을 건드리지 않는다. 단 상태 축(경과 시간 상한)은
+    // 별개로 적용된다 — 아래 '고정 공고 후보 상한' describe 참고.
     mockFindQRCandidates.mockResolvedValue([
       createMockWorkLog({
         id: 'wl-fixed',
@@ -458,15 +460,24 @@ describe('processQRCheckIn — 자정 넘는 근무(어제 자 후보)', () => {
   // 음수만 막을 뿐 상한이 없다 → 클라이언트 필터가 유일한 방어선이다.
   // ==========================================================================
 
-  it('어제 자 출근 후 8시간 경과(정상 자정 넘김)는 퇴근 처리한다', async () => {
+  it('어제 자 출근 후 8시간 경과(정상 자정 넘김)는 퇴근 처리한다 — checkInTime 이 문자열이어도', async () => {
     // D+1 02:00 스캔 - 어제 18:00 출근 = 8시간 → 상한(16시간) 안.
+    //
+    // checkInTime 을 **문자열**로 주는 유일한 케이스다. 프로덕션의 checkInTime 은 PostgREST
+    // timestamptz 문자열이지 Date 객체가 아니다 — 전 케이스를 Date 로만 두면 toDate() 의
+    // 문자열 경로가 한 번도 실행되지 않아, 파싱이 깨져도 초록으로 남는다.
+    //
+    // 이 케이스만 스캔 시각도 오프셋 문자열로 고정한다. 절대 시각(+09:00)과 로컬 생성자를
+    // 섞으면 경과 시간이 실행 TZ 에 따라 달라져 CI(UTC)에서만 터진다.
+    jest.setSystemTime(new Date('2026-06-29T02:00:00+09:00'));
+
     mockFindQRCandidates.mockResolvedValue([
       createMockWorkLog({
         id: 'wl-overnight',
         date: FIXED_YESTERDAY,
         status: STATUS.WORK_LOG.CHECKED_IN,
         timeSlot: '18:00~02:00',
-        checkInTime: new Date(2026, 5, 28, 18, 0),
+        checkInTime: '2026-06-28T18:00:00+09:00',
       }),
     ]);
     mockProcessQRCheckInOutTransaction.mockResolvedValue({
@@ -558,6 +569,32 @@ describe('processQRCheckIn — 자정 넘는 근무(어제 자 후보)', () => {
     expect(result.workLogId).toBe('wl-just-inside');
   });
 
+  it('상한 경계: 정확히 16시간 경과는 통과한다(경계 포함 계약)', async () => {
+    // D+1 02:00 스캔 - 어제 10:00 출근 = 정확히 16시간.
+    //
+    // 15시간 59분/16시간 1분만으로는 비교 연산자가 고정되지 않는다 — `<=` 를 `<` 로 바꿔도
+    // 두 케이스 모두 초록이다. 경계값 자체를 한 건 두어 "상한은 포함"이라는 계약을 못박는다.
+    mockFindQRCandidates.mockResolvedValue([
+      createMockWorkLog({
+        id: 'wl-exactly-at-limit',
+        date: FIXED_YESTERDAY,
+        status: STATUS.WORK_LOG.CHECKED_IN,
+        timeSlot: '10:00~02:00',
+        checkInTime: new Date(2026, 5, 28, 10, 0),
+      }),
+    ]);
+    mockProcessQRCheckInOutTransaction.mockResolvedValue({
+      action: 'checkOut',
+      workDuration: 960,
+      hasExistingCheckInTime: true,
+    });
+
+    const result = await processQRCheckIn(VENUE_QR, 'staff-1');
+
+    expect(result.action).toBe('checkOut');
+    expect(result.workLogId).toBe('wl-exactly-at-limit');
+  });
+
   it('상한 경계: 16시간 1분 경과는 제외한다', async () => {
     // D+1 02:00 스캔 - 어제 09:59 출근 = 16시간 1분.
     mockFindQRCandidates.mockResolvedValue([
@@ -567,6 +604,113 @@ describe('processQRCheckIn — 자정 넘는 근무(어제 자 후보)', () => {
         status: STATUS.WORK_LOG.CHECKED_IN,
         timeSlot: '10:00~02:00',
         checkInTime: new Date(2026, 5, 28, 9, 59),
+      }),
+    ]);
+
+    await expect(processQRCheckIn(VENUE_QR, 'staff-1')).rejects.toMatchObject({
+      userMessage: '오늘 이 공고에 배정된 근무가 없습니다',
+    });
+
+    expect(mockProcessQRCheckInOutTransaction).not.toHaveBeenCalled();
+  });
+
+  it('checkInTime 이 미래면 제외한다(경과 시간 음수 — 클럭 스큐·오염 데이터)', async () => {
+    // 상한만 보면 미래 시각이 통과한다(음수 <= 16시간). 기기 시계가 앞서 있거나 데이터가
+    // 오염돼 미래 출근 시각이 들어오면, 그 행이 선택돼 서버가 퇴근으로 해소해 버린다.
+    mockFindQRCandidates.mockResolvedValue([
+      createMockWorkLog({
+        id: 'wl-future-checkin',
+        date: FIXED_YESTERDAY,
+        status: STATUS.WORK_LOG.CHECKED_IN,
+        timeSlot: '18:00~02:00',
+        checkInTime: new Date(2026, 5, 29, 3, 0), // 스캔 시각(02:00)보다 1시간 미래
+      }),
+    ]);
+
+    await expect(processQRCheckIn(VENUE_QR, 'staff-1')).rejects.toMatchObject({
+      userMessage: '오늘 이 공고에 배정된 근무가 없습니다',
+    });
+
+    expect(mockProcessQRCheckInOutTransaction).not.toHaveBeenCalled();
+  });
+});
+
+// ============================================================================
+// 고정 공고(FIXED_SCHEDULE) 후보의 경과 시간 상한
+//
+// 고정 공고는 confirm_application 이 dates:['FIXED_SCHEDULE'] 한 원소만 flat INSERT 하므로
+// **스태프·공고당 work_log 가 1행**이고, 그 행을 scheduled 로 되돌리는 코드가 없다.
+// 상한을 날짜 축(date === yesterday)에만 걸면 date === 'FIXED_SCHEDULE' 인 이 행은 검사를
+// 통째로 건너뛴다 → 퇴근 미스캔 시 checked_in 으로 무기한 남고, 며칠 뒤 스캔이 규칙①
+// (checked_in 우선)로 그 행을 골라 수십 시간짜리 work_duration 을 정산에 흘려보낸다.
+// 서버는 GREATEST(0, ...) 로 음수만 막고 상한이 없다 → 이 필터가 유일한 방어선이다.
+// ============================================================================
+
+describe('processQRCheckIn — 고정 공고(FIXED_SCHEDULE) 후보 상한', () => {
+  const SCAN_AT_MORNING = new Date(2026, 5, 29, 8, 55);
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockIsAppError.mockReturnValue(true);
+    jest.useFakeTimers({ now: SCAN_AT_MORNING });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('출근 후 4일 경과한 FIXED_SCHEDULE 행은 제외한다(96시간 work_duration 차단)', async () => {
+    // 결함 재현: 고정 공고에서 퇴근 스캔을 놓친 뒤 4일 후 출근하려고 스캔.
+    // 상한이 날짜 축에만 걸려 있으면 이 행이 선택돼 96시간짜리 퇴근으로 해소된다.
+    mockFindQRCandidates.mockResolvedValue([
+      createMockWorkLog({
+        id: 'wl-fixed-stale',
+        date: 'FIXED_SCHEDULE',
+        status: STATUS.WORK_LOG.CHECKED_IN,
+        timeSlot: '09:00~15:00',
+        checkInTime: new Date(2026, 5, 25, 9, 0), // 4일 전
+      }),
+    ]);
+
+    await expect(processQRCheckIn(VENUE_QR, 'staff-1')).rejects.toMatchObject({
+      userMessage: '오늘 이 공고에 배정된 근무가 없습니다',
+    });
+
+    expect(mockProcessQRCheckInOutTransaction).not.toHaveBeenCalled();
+  });
+
+  it('상한 이내(6시간 경과)인 FIXED_SCHEDULE 행은 정상 퇴근 처리한다', async () => {
+    // 상한이 정상 근무까지 막아버리지 않는지 — 제외 케이스와 짝을 이루는 통과 경로.
+    mockFindQRCandidates.mockResolvedValue([
+      createMockWorkLog({
+        id: 'wl-fixed-active',
+        date: 'FIXED_SCHEDULE',
+        status: STATUS.WORK_LOG.CHECKED_IN,
+        timeSlot: '09:00~15:00',
+        checkInTime: new Date(2026, 5, 29, 2, 55), // 6시간 전
+      }),
+    ]);
+    mockProcessQRCheckInOutTransaction.mockResolvedValue({
+      action: 'checkOut',
+      workDuration: 360,
+      hasExistingCheckInTime: true,
+    });
+
+    const result = await processQRCheckIn(VENUE_QR, 'staff-1');
+
+    expect(result.action).toBe('checkOut');
+    expect(result.workLogId).toBe('wl-fixed-active');
+    expect(mockProcessQRCheckInOutTransaction.mock.calls[0][5]).toBe('FIXED_SCHEDULE');
+  });
+
+  it('checkInTime 이 없는 FIXED_SCHEDULE checked_in 행은 제외한다(fail-closed)', async () => {
+    mockFindQRCandidates.mockResolvedValue([
+      createMockWorkLog({
+        id: 'wl-fixed-no-checkin-time',
+        date: 'FIXED_SCHEDULE',
+        status: STATUS.WORK_LOG.CHECKED_IN,
+        timeSlot: '09:00~15:00',
+        checkInTime: undefined,
       }),
     ]);
 
