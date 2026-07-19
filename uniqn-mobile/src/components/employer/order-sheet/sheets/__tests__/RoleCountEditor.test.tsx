@@ -152,3 +152,97 @@ describe('RoleCountEditor — 기타 직접 입력', () => {
     expect(getByText('기타')).toBeTruthy();
   });
 });
+
+describe('RoleCountEditor — 인원 숫자 직접 입력', () => {
+  it('숫자 입력 후 blur → 값이 반영된다', () => {
+    const { getByTestId } = render(<Harness initial={[{ role: 'dealer', count: 1 }]} />);
+    const input = getByTestId('order-role-count-input-0');
+    fireEvent(input, 'focus');
+    fireEvent.changeText(input, '12');
+    fireEvent(input, 'blur');
+    expect(dump(getByTestId)).toEqual([{ role: 'dealer', count: 12 }]);
+  });
+
+  it('세 자리 입력은 두 자리로 잘려 상한 99를 넘지 않는다', () => {
+    const { getByTestId } = render(<Harness initial={[{ role: 'dealer', count: 1 }]} />);
+    const input = getByTestId('order-role-count-input-0');
+    fireEvent(input, 'focus');
+    fireEvent.changeText(input, '999');
+    fireEvent(input, 'blur');
+    expect(dump(getByTestId)).toEqual([{ role: 'dealer', count: 99 }]);
+  });
+
+  it('빈 문자열로 blur → 직전 값이 복구된다 (0명 저장 방지)', () => {
+    const { getByTestId } = render(<Harness initial={[{ role: 'dealer', count: 5 }]} />);
+    const input = getByTestId('order-role-count-input-0');
+    fireEvent(input, 'focus');
+    fireEvent.changeText(input, '');
+    fireEvent(input, 'blur');
+    expect(dump(getByTestId)).toEqual([{ role: 'dealer', count: 5 }]);
+  });
+
+  it('0 입력 → 직전 값이 복구된다', () => {
+    const { getByTestId } = render(<Harness initial={[{ role: 'dealer', count: 5 }]} />);
+    const input = getByTestId('order-role-count-input-0');
+    fireEvent(input, 'focus');
+    fireEvent.changeText(input, '0');
+    fireEvent(input, 'blur');
+    expect(dump(getByTestId)).toEqual([{ role: 'dealer', count: 5 }]);
+  });
+
+  it('숫자가 아닌 문자는 무시된다', () => {
+    const { getByTestId } = render(<Harness initial={[{ role: 'dealer', count: 1 }]} />);
+    const input = getByTestId('order-role-count-input-0');
+    fireEvent(input, 'focus');
+    fireEvent.changeText(input, '1a2');
+    fireEvent(input, 'blur');
+    expect(dump(getByTestId)).toEqual([{ role: 'dealer', count: 12 }]);
+  });
+
+  // Minor-2 회귀 가드 — 칩 해제로 기억된 인원이 범위 밖이어도 재선택 시 clamp 되어야 한다.
+  // (레거시 draft 의 count=150 같은 값이 하이드레이션으로 흘러들어오는 경로)
+  it('범위 밖 인원을 기억했다가 재선택하면 99로 clamp 된다', () => {
+    const { getByTestId } = render(<Harness initial={[{ role: 'dealer', count: 150 }]} />);
+    fireEvent.press(getByTestId('order-role-chip-dealer')); // 해제 → lastCount=150 기억
+    fireEvent.press(getByTestId('order-role-chip-dealer')); // 재선택 → clamp
+    expect(dump(getByTestId)).toEqual([{ role: 'dealer', count: 99 }]);
+  });
+});
+
+/**
+ * Minor-1 회귀 가드 — 경계에서 값이 그대로면 onChange 를 emit 하지 않아야 한다.
+ * Harness 는 emit 여부를 관측할 수 없어(값이 같으면 dump 도 동일) onChange 를 직접 spy 한다.
+ * 부모가 form.setValue(..., { shouldValidate: true }) 로 받으면 no-op emit 이
+ * 폼 전체 zod 재검증을 유발하므로 값이 아니라 '호출 자체'를 단언한다.
+ */
+describe('RoleCountEditor — 경계 no-op emit 차단', () => {
+  it('인원 1에서 − 를 눌러도 onChange 가 호출되지 않는다', () => {
+    const onChange = jest.fn();
+    const { getByTestId } = render(
+      <RoleCountEditor roles={[{ role: 'dealer', count: 1 }]} onChange={onChange} />
+    );
+    fireEvent.press(getByTestId('order-role-count-minus-0'));
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('인원 99에서 ＋ 를 눌러도 onChange 가 호출되지 않는다', () => {
+    const onChange = jest.fn();
+    const { getByTestId } = render(
+      <RoleCountEditor roles={[{ role: 'dealer', count: 99 }]} onChange={onChange} />
+    );
+    fireEvent.press(getByTestId('order-role-count-plus-0'));
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('같은 숫자를 입력하고 blur 해도 onChange 가 호출되지 않는다', () => {
+    const onChange = jest.fn();
+    const { getByTestId } = render(
+      <RoleCountEditor roles={[{ role: 'dealer', count: 5 }]} onChange={onChange} />
+    );
+    const input = getByTestId('order-role-count-input-0');
+    fireEvent(input, 'focus');
+    fireEvent.changeText(input, '5');
+    fireEvent(input, 'blur');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+});

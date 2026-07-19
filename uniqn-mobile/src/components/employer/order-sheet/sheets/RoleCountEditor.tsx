@@ -46,6 +46,17 @@ export function RoleCountEditor({ roles, onChange }: RoleCountEditorProps) {
   const [customOpen, setCustomOpen] = useState(false);
   const [customName, setCustomName] = useState('');
 
+  // 편집 중 raw 문자열 — 중간 상태("1")를 즉시 clamp 하면 두 자리 입력이 불가능해진다.
+  // 한 번에 한 입력만 포커스되므로 단일 슬롯으로 충분하다.
+  const [editing, setEditing] = useState<{ index: number; text: string } | null>(null);
+
+  const commitEditing = (i: number) => {
+    const parsed = Number.parseInt(editing?.text ?? '', 10);
+    // 빈값·0·NaN 은 직전 값 유지 — 0명 저장 방지(§4.3)
+    if (Number.isFinite(parsed) && parsed >= MIN_COUNT) setCountAt(i, parsed);
+    setEditing(null);
+  };
+
   /** 커스텀 역할 추가 — 같은 이름이 이미 있으면 기존 행을 유지(중복 행 방지, 현행 시맨틱 승계) */
   const addCustom = () => {
     const name = customName.trim();
@@ -65,11 +76,16 @@ export function RoleCountEditor({ roles, onChange }: RoleCountEditorProps) {
       onChange(roles.filter((r) => r.role !== key));
       return;
     }
-    onChange([...roles, { role: key, count: lastCount[key] ?? MIN_COUNT }]);
+    // 기억한 인원도 clamp 를 태운다 — `??` 는 0 을 통과시키고, 레거시 draft 의
+    // 범위 밖 값(150 등)이 zod min(1).max(99) 를 위반한 채 폼으로 흘러든다.
+    onChange([...roles, { role: key, count: clampCount(lastCount[key] ?? MIN_COUNT) }]);
   };
 
-  const setCountAt = (i: number, next: number) =>
-    onChange(roles.map((r, idx) => (idx === i ? { ...r, count: clampCount(next) } : r)));
+  const setCountAt = (i: number, next: number) => {
+    const clamped = clampCount(next);
+    if (clamped === roles[i]?.count) return; // 경계 탭 no-op — 불필요한 재검증 차단
+    onChange(roles.map((r, idx) => (idx === i ? { ...r, count: clamped } : r)));
+  };
 
   const removeAt = (i: number) => {
     const target = roles[i];
@@ -169,9 +185,20 @@ export function RoleCountEditor({ roles, onChange }: RoleCountEditorProps) {
                 >
                   <MinusIcon size={16} />
                 </Pressable>
-                <Text className="text-sm font-sans-bold text-content-primary w-10 text-center">
-                  {r.count}명
-                </Text>
+                <TextInput
+                  value={editing?.index === i ? editing.text : String(r.count)}
+                  onFocus={() => setEditing({ index: i, text: String(r.count) })}
+                  onChangeText={(t) =>
+                    setEditing({ index: i, text: t.replace(/[^0-9]/g, '').slice(0, 2) })
+                  }
+                  onBlur={() => commitEditing(i)}
+                  keyboardType="number-pad"
+                  maxLength={2}
+                  selectTextOnFocus
+                  testID={`order-role-count-input-${i}`}
+                  accessibilityLabel={`${roleLabel(r)} 인원, 숫자 직접 입력`}
+                  className="w-10 h-11 text-center text-sm font-sans-bold text-content-primary"
+                />
                 <Pressable
                   onPress={() => setCountAt(i, r.count + 1)}
                   testID={`order-role-count-plus-${i}`}
