@@ -34,12 +34,14 @@ export class SupabaseWeeklyGridRepository implements IWeeklyGridRepository {
         d: string;
         headcount: number | string;
         job_count: number | string;
+        required_count: number | string;
       }[];
-      // job_count → jobCount camelCase 매핑 + 숫자 정규화(NaN 방어)
+      // snake_case → camelCase 매핑 + 숫자 정규화(NaN 방어)
       return rows.map((r) => ({
         d: r.d,
         headcount: Number(r.headcount) || 0,
         jobCount: Number(r.job_count) || 0,
+        requiredCount: Number(r.required_count) || 0,
       }));
     } catch (error) {
       if (isAppError(error)) throw error;

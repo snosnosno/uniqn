@@ -250,7 +250,7 @@ export default function WeeklyGridScreen() {
           ) : wsError ? (
             <EmptyState
               icon={<MapPinIcon size={48} color={SECONDARY_PALETTE[400]} />}
-              title="워크스페이스를 불러오지 못했어요"
+              title="팀을 불러오지 못했어요"
               description="네트워크 상태를 확인하고 다시 시도해주세요."
               actionLabel="다시 시도"
               onAction={refetchWorkspaces}
@@ -258,7 +258,7 @@ export default function WeeklyGridScreen() {
           ) : !activeWorkspace ? (
             <EmptyState
               icon={<MapPinIcon size={48} color={SECONDARY_PALETTE[400]} />}
-              title="워크스페이스를 준비하지 못했어요"
+              title="팀을 준비하지 못했어요"
               description="잠시 후 다시 시도해주세요."
               actionLabel="다시 시도"
               onAction={retryCreateWorkspace}
@@ -267,7 +267,7 @@ export default function WeeklyGridScreen() {
             <EmptyState
               icon={<MapPinIcon size={48} color={SECONDARY_PALETTE[400]} />}
               title="지점이 없어요"
-              description="이 워크스페이스에 지점(상시 근무 장소)을 먼저 만들어주세요."
+              description="이 팀에 지점(상시 근무 장소)을 먼저 만들어주세요."
               actionLabel="지점 만들기"
               onAction={() => setCreateSheetVisible(true)}
             />

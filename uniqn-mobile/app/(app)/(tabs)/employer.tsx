@@ -112,7 +112,7 @@ export function WorkspaceHeaderAction() {
 
   const options = useMemo<ActionSheetOption[]>(
     () => [
-      { label: '워크스페이스', value: 'workspace' },
+      { label: '팀', value: 'workspace' },
       {
         label: pendingCount > 0 ? `받은 초대 (${pendingCount}건)` : '받은 초대',
         value: 'invitations',
@@ -389,7 +389,7 @@ function EmployerView() {
                   {shared.jobPostingTitle}
                 </Text>
                 <Text className="mt-0.5 text-xs text-content-secondary" numberOfLines={1}>
-                  {shared.workspaceName} 워크스페이스
+                  {shared.workspaceName} 팀
                 </Text>
               </View>
               <ChevronRightIcon size={16} color={SECONDARY_PALETTE[400]} />

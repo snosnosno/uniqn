@@ -33,7 +33,7 @@ it('준비완료 + 워크스페이스 0개 → 기본 이름으로 정확히 1�
   const { rerender } = run({ isReady: true, isEmpty: true });
 
   expect(mutate).toHaveBeenCalledTimes(1);
-  expect(mutate.mock.calls[0][0]).toBe('내 워크스페이스');
+  expect(mutate.mock.calls[0][0]).toBe('내 팀');
 
   // 리렌더(생성 실패 후 재평가 포함)에도 재발사 없음 — 무한루프/중복 생성 가드
   rerender({ isReady: true, isEmpty: true });
@@ -71,5 +71,5 @@ it('retry() 는 자동 발사 없이도 기본 이름으로 재생성을 트리�
 
   result.current.retry();
   expect(mutate).toHaveBeenCalledTimes(1);
-  expect(mutate.mock.calls[0][0]).toBe('내 워크스페이스');
+  expect(mutate.mock.calls[0][0]).toBe('내 팀');
 });
