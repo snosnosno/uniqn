@@ -239,14 +239,14 @@ describe('공고 연결 카드 — 미연결', () => {
     expect(queryByText('연결')).toBeNull();
   });
 
-  it('워크스페이스가 없으면 owner 라도 연결 버튼 대신 스코프 제약 안내를 노출한다', () => {
+  it('팀이 없으면 owner 라도 연결 버튼 대신 스코프 제약 안내를 노출한다', () => {
     setupHooks({ activeWorkspace: undefined });
     const { getByText, queryByText } = render(
       <StaffTab tournamentId={TID} tournament={tournament()} />
     );
 
     expect(queryByText('연결')).toBeNull();
-    expect(getByText('워크스페이스가 없어 공고를 연결할 수 없습니다.')).toBeTruthy();
+    expect(getByText('팀이 없어 공고를 연결할 수 없습니다.')).toBeTruthy();
   });
 
   it('연결 버튼 → PostingPickerSheet 오픈 → 선택 시 공고연결 mutate 를 호출한다', () => {

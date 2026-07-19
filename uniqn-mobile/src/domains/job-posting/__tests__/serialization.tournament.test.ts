@@ -50,7 +50,7 @@ describe('대회 편집 — approvalStatus 보존(merge→serialize 통합)', ()
       status: entity.status,
       current: entity,
       createdAt: entity.createdAt,
-      updatedAt: new Date('2026-07-16T12:00:00+09:00'),
+      updatedAt: new Date('2026-07-16T12:00:00+09:00').toISOString(),
     });
     expect(updated.tournamentConfig?.approvalStatus).toBe('approved');
     expect(updated.tournamentConfig?.submittedAt).toEqual(submittedAt);
@@ -71,7 +71,7 @@ describe('대회 편집 — approvalStatus 보존(merge→serialize 통합)', ()
       status: entity.status,
       current: entity,
       createdAt: entity.createdAt,
-      updatedAt: new Date('2026-07-16T12:00:00+09:00'),
+      updatedAt: new Date('2026-07-16T12:00:00+09:00').toISOString(),
     });
     expect(updated.tournamentConfig?.approvalStatus).toBe('approved');
     expect(updated.title).toBe('주문서에서 수정');
@@ -90,7 +90,7 @@ describe('대회 편집 — approvalStatus 보존(merge→serialize 통합)', ()
       status: pendingEntity.status,
       current: pendingEntity,
       createdAt: pendingEntity.createdAt,
-      updatedAt: new Date('2026-07-16T12:00:00+09:00'),
+      updatedAt: new Date('2026-07-16T12:00:00+09:00').toISOString(),
     });
     expect(updated.tournamentConfig?.approvalStatus).toBe('pending');
     expect(updated.tournamentConfig?.resubmittedAt).toBeUndefined();

@@ -155,8 +155,8 @@ function createPosting(overrides: Partial<JobPosting> = {}): JobPosting {
       cancellationPendingApplicants: 0,
       filledPositions: 0,
     },
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     location: input.location,
     schedule: input.schedule,
     roleCatalog: input.roleCatalog,
@@ -209,7 +209,7 @@ describe('jobManagementService', () => {
     it('Phase 0 N1 hotfix: workspace 가 없으면 lookup 단계에서 BUSINESS_INVALID_STATE', async () => {
       const input = createInput();
       mockGetDefaultWorkspaceIdForOwner.mockRejectedValue(
-        new Error('워크스페이스를 찾을 수 없어요. 잠시 후 다시 시도해주세요.')
+        new Error('팀을 찾을 수 없어요. 잠시 후 다시 시도해주세요.')
       );
 
       await expect(createJobPosting(input, 'employer-1', 'Owner')).rejects.toThrow();

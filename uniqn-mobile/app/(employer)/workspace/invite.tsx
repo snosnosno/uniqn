@@ -59,7 +59,7 @@ export default function WorkspaceInviteScreen() {
         // (workspaceService.ts lookupUserByEmail 주석 참조 — role 필터는 의도적 설계).
         // 서버 조회를 늘리지 않고 문구로 두 가능성을 함께 안내한다.
         setSearchError(
-          '구인자 계정을 찾을 수 없어요. 이메일을 확인해주세요 — 스태프 계정은 워크스페이스에 초대할 수 없어요.'
+          '구인자 계정을 찾을 수 없어요. 이메일을 확인해주세요 — 스태프 계정은 팀에 초대할 수 없어요.'
         );
       }
     } catch (err) {
@@ -93,7 +93,7 @@ export default function WorkspaceInviteScreen() {
         <StackHeader title="멤버 초대" />
         <View className="flex-1 items-center justify-center px-6">
           <EmptyState
-            title="워크스페이스를 선택해주세요"
+            title="팀을 선택해주세요"
             description="이전 화면으로 돌아가 다시 시도해주세요."
           />
         </View>
@@ -162,8 +162,8 @@ export default function WorkspaceInviteScreen() {
                 </View>
               </View>
               <Text className="mt-3 text-xs text-content-secondary">
-                초대를 수락하면 이 워크스페이스의 모든 공고를 만들고 수정할 수 있어요. 삭제는
-                소유자만 가능해요.
+                초대를 수락하면 이 팀의 모든 공고를 만들고 수정할 수 있어요. 삭제는 소유자만
+                가능해요.
               </Text>
               <View className="mt-4">
                 <Button variant="primary" onPress={handleInvite} loading={inviteMutation.isPending}>

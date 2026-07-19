@@ -1,5 +1,5 @@
 /**
- * EditSlotSheet — 배치 빼기(P0-1) 테스트
+ * EditSlotSheet — 근무 빼기(P0-1) 테스트
  *
  * SheetModal 은 children+footer+overlay 렌더로 모킹(확인 패널은 overlay 로 렌더되므로 포함 필수),
  * 변이 훅(useUpdateSlot/useDeleteSlot)을 모킹해 다음을 검증한다:
@@ -83,10 +83,10 @@ it('빼기 버튼 탭 → 확인 overlay 노출(즉시 삭제 아님)', () => {
 
   const { getByLabelText } = renderSheet();
 
-  fireEvent.press(getByLabelText('배치 빼기'));
+  fireEvent.press(getByLabelText('근무 빼기'));
 
   expect(deleteMutate).not.toHaveBeenCalled();
-  expect(getByLabelText('배치 빼기 확정')).toBeTruthy();
+  expect(getByLabelText('근무 빼기 확정')).toBeTruthy();
 });
 
 it('확인 overlay 확정 시 슬롯 식별자 + date 로 mutate 호출', () => {
@@ -95,8 +95,8 @@ it('확인 overlay 확정 시 슬롯 식별자 + date 로 mutate 호출', () => 
 
   const { getByLabelText } = renderSheet();
 
-  fireEvent.press(getByLabelText('배치 빼기'));
-  fireEvent.press(getByLabelText('배치 빼기 확정'));
+  fireEvent.press(getByLabelText('근무 빼기'));
+  fireEvent.press(getByLabelText('근무 빼기 확정'));
 
   expect(deleteMutate).toHaveBeenCalledTimes(1);
   expect(deleteMutate.mock.calls[0][0]).toEqual({
@@ -112,7 +112,7 @@ it('staffId 가 없으면 빼기 버튼 미렌더(가드)', () => {
 
   const { queryByLabelText } = renderSheet({ slot: { ...SLOT, staffId: null } });
 
-  expect(queryByLabelText('배치 빼기')).toBeNull();
+  expect(queryByLabelText('근무 빼기')).toBeNull();
 });
 
 it('onSuccess 콜백: 성공 토스트 + onClose 호출', () => {
@@ -122,8 +122,8 @@ it('onSuccess 콜백: 성공 토스트 + onClose 호출', () => {
 
   const { getByLabelText } = renderSheet({ onClose });
 
-  fireEvent.press(getByLabelText('배치 빼기'));
-  fireEvent.press(getByLabelText('배치 빼기 확정'));
+  fireEvent.press(getByLabelText('근무 빼기'));
+  fireEvent.press(getByLabelText('근무 빼기 확정'));
 
   const opts = deleteMutate.mock.calls[0][1] as { onSuccess: () => void; onError: () => void };
   opts.onSuccess();
@@ -139,8 +139,8 @@ it('onError 콜백: 에러 토스트 호출(시트 유지)', () => {
 
   const { getByLabelText } = renderSheet({ onClose });
 
-  fireEvent.press(getByLabelText('배치 빼기'));
-  fireEvent.press(getByLabelText('배치 빼기 확정'));
+  fireEvent.press(getByLabelText('근무 빼기'));
+  fireEvent.press(getByLabelText('근무 빼기 확정'));
 
   const opts = deleteMutate.mock.calls[0][1] as { onSuccess: () => void; onError: () => void };
   opts.onError();

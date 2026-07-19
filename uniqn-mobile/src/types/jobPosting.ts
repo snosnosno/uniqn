@@ -146,7 +146,7 @@ export interface JobPostingAggregateStats {
  * Canonical V3 Firestore document shape.
  * Query-critical fields stay top-level for Firestore indexes.
  */
-export interface JobPostingDocumentV3 extends FirebaseDocument {
+export interface JobPostingDocumentV3 extends FirebaseDocument<string> {
   schemaVersion: JobPostingSchemaVersion;
   title: string;
   description?: string;
@@ -176,9 +176,12 @@ export interface JobPostingDocumentV3 extends FirebaseDocument {
   filledPositions: number;
   viewCount?: number;
   stats?: JobPostingAggregateStats;
-  createdAt?: Date;
-  updatedAt?: Date;
-  closedAt?: Date;
+  // 런타임 진실 = ISO string (zod timestampSchema→normalizeToIsoString). View 에서 Date 가
+  // 필요하면 utils/date 의 toDate() 로 변환. createdAt/updatedAt 는 FirebaseDocument<string>
+  // 상속으로 이미 string 이나, 명시해 계약을 문서화한다(closedAt 은 JobPosting 고유).
+  createdAt?: string;
+  updatedAt?: string;
+  closedAt?: string;
   closedReason?: ClosedReason;
   tags?: string[];
   contactPhone?: string;

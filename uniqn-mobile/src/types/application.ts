@@ -45,7 +45,11 @@ export type CancellationRequest =
 
 export type RecruitmentType = 'event' | 'fixed';
 
-export interface Application extends FirebaseDocument {
+// createdAt/updatedAt 는 FirebaseDocument<string> 상속 — 런타임 진실 = ISO string
+// (application.schema 의 timestampSchema). View 에서 Date 가 필요하면 toDate() 로 변환.
+// 잔여: processedAt/confirmedAt/cancelledAt 도 런타임 string 이나 applicationHistory
+// (ConfirmationHistoryEntry.confirmedAt = 런타임 Date) 체인과 얽혀 별도 스코프로 분리.
+export interface Application extends FirebaseDocument<string> {
   applicantId: string;
   applicantName: string;
   applicantPhone?: string;

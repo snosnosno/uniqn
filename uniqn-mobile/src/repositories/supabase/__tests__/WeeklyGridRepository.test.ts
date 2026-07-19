@@ -38,7 +38,7 @@ describe('WeeklyGridRepository', () => {
   describe('getVenueGridSummary', () => {
     it('job_count→jobCount 매핑 + 숫자 정규화', async () => {
       mockRpc.mockResolvedValueOnce({
-        data: [{ d: '2026-07-01', headcount: '3', job_count: '2' }],
+        data: [{ d: '2026-07-01', headcount: '3', job_count: '2', required_count: '4' }],
         error: null,
       });
 
@@ -49,7 +49,16 @@ describe('WeeklyGridRepository', () => {
         p_from: '2026-07-01',
         p_to: '2026-07-31',
       });
-      expect(rows).toEqual([{ d: '2026-07-01', headcount: 3, jobCount: 2 }]);
+      expect(rows).toEqual([{ d: '2026-07-01', headcount: 3, jobCount: 2, requiredCount: 4 }]);
+    });
+
+    it('required_count 를 requiredCount 로 매핑한다', async () => {
+      mockRpc.mockResolvedValueOnce({
+        data: [{ d: '2026-08-10', headcount: 1, job_count: 2, required_count: 3 }],
+        error: null,
+      });
+      const rows = await repo.getVenueGridSummary('v1', '2026-08-01', '2026-08-31');
+      expect(rows[0]).toEqual({ d: '2026-08-10', headcount: 1, jobCount: 2, requiredCount: 3 });
     });
 
     it('빈 응답 → 빈 배열', async () => {

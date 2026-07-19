@@ -17,9 +17,11 @@ import {
   ChevronUpIcon,
 } from '@/components/icons';
 import { formatDateDisplay, formatRolesDisplay } from '@/utils/scheduleGrouping';
+import { parseTimeSlot } from '@/utils/date/ranges';
 import { formatSalaryDisplay, SCHEDULE_STATUS_STRIPE_TONE } from './helpers';
 import { STATUS } from '@/constants';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
+import { WorkTimeDisplay } from '@/shared/time';
 import { SCHEDULE_STATUS, ATTENDANCE_STATUS } from '@/constants/statusConfig';
 import type { GroupedScheduleEvent } from '@/types';
 
@@ -54,6 +56,22 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
     [group.postingProjection]
   );
   const ownerName = group.postingProjection?.ownerName;
+
+  // 시간 표시는 SSOT(WorkTimeDisplay) 경유 — 심야(자정 넘김) 근무는 종료 시각에 "익일"을 병기한다.
+  // 시작·종료가 모두 해석되는 "HH:mm - HH:mm" 만 라벨로 변환하고,
+  // 파싱 불가(단일 시각·"협의" 등)면 원문을 그대로 유지한다(빈칸/미정 표시 방지).
+  const timeSlotLabel = useMemo(() => {
+    const parsed = parseTimeSlot(group.timeSlot);
+    if (!parsed || !parsed.end) return group.timeSlot;
+
+    const info = WorkTimeDisplay.getDisplayInfo({
+      timeSlot: group.timeSlot,
+      date: group.dateRange.start,
+    });
+    return info.isEndNextDay
+      ? `${info.scheduledStart} – 익일 ${info.scheduledEnd}`
+      : `${info.scheduledStart} – ${info.scheduledEnd}`;
+  }, [group.timeSlot, group.dateRange.start]);
 
   const attendanceSummary = useMemo(() => {
     if (group.type !== STATUS.SCHEDULE.CONFIRMED) return null;
@@ -168,7 +186,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
             <View className="mb-2 flex-row items-center">
               <ClockIcon size={14} color={SECONDARY_PALETTE[500]} />
               <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
-                {group.timeSlot}
+                {timeSlotLabel}
               </Text>
             </View>
           )}

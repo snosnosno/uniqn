@@ -44,8 +44,8 @@ function createPosting(region?: string): JobPosting {
     roleCatalog: [{ role: 'dealer', salary: { type: 'hourly', amount: 12000 } }],
     compensation: { mode: 'shared', defaultSalary: { type: 'hourly', amount: 12000 } },
     questions: { items: [] },
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
 }
 

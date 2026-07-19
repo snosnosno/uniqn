@@ -38,7 +38,6 @@ export {
   getTodayCheckedInWorkLog,
   isCurrentlyWorking,
   getWorkLogStats,
-  updateWorkTime,
   updatePayrollStatus,
   subscribeToWorkLog,
   subscribeToMyWorkLogs,

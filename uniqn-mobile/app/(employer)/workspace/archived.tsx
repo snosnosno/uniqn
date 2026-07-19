@@ -27,7 +27,7 @@ export default function ArchivedWorkspacesScreen() {
         await restoreMutation.mutateAsync(workspaceId);
         // 복원 성공 시 useRestoreWorkspace onSuccess 가 archivedForUser 쿼리를
         // invalidate → mount 된 이 화면 쿼리가 자동 refetch (수동 refetch 불필요).
-        addToast({ type: 'success', message: '워크스페이스를 복원했어요' });
+        addToast({ type: 'success', message: '팀을 복원했어요' });
       } catch (err) {
         logger.warn('워크스페이스 복원 실패', { error: String(err) });
         const message = isAppError(err) && err.userMessage ? err.userMessage : '복원에 실패했어요';
@@ -54,8 +54,8 @@ export default function ArchivedWorkspacesScreen() {
       ) : archived.length === 0 ? (
         <View className="flex-1 items-center justify-center px-6">
           <EmptyState
-            title="보관한 워크스페이스가 없어요"
-            description="워크스페이스를 보관하면 여기에서 복원할 수 있어요."
+            title="보관한 팀이 없어요"
+            description="팀을 보관하면 여기에서 복원할 수 있어요."
           />
         </View>
       ) : (

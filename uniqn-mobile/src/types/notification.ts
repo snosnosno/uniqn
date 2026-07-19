@@ -480,7 +480,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   [NotificationType.REVIEW_REMINDER]: '평가 마감 임박',
 
   // 워크스페이스 협업 (PR #2)
-  [NotificationType.WORKSPACE_INVITATION]: '워크스페이스 초대',
+  [NotificationType.WORKSPACE_INVITATION]: '팀 초대',
 };
 
 /**

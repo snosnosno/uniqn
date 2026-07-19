@@ -119,8 +119,14 @@ BEGIN
   INSERT INTO _t VALUES ('st_neg_rejected', v_neg_rejected::text);
 
   -- (9/10) capacity_full↔active 전이 무회귀(일반 공고 total=1)
-  INSERT INTO public.job_postings (id, owner_id, workspace_id, title, status, posting_type, total_positions, filled_positions, created_at, updated_at)
-  VALUES (v_cap, v_owner, v_ws, '__sql_fixture_wgst_cap', 'active'::posting_status, 'regular'::posting_type, 1, 0, now(), now());
+  -- 좌석 기준: total 은 서버(BEFORE 트리거)가 schedule 좌석합으로 재계산하므로 dealer×1 schedule 부여(=total 1)
+  INSERT INTO public.job_postings (id, owner_id, workspace_id, title, status, posting_type, total_positions, filled_positions, schedule, created_at, updated_at)
+  VALUES (v_cap, v_owner, v_ws, '__sql_fixture_wgst_cap', 'active'::posting_status, 'regular'::posting_type, 1, 0,
+    jsonb_build_object('kind','dated','requirements', jsonb_build_array(
+      jsonb_build_object('date', v_d, 'timeSlots', jsonb_build_array(
+        jsonb_build_object('startTime','18:00','roles', jsonb_build_array(
+          jsonb_build_object('role','dealer','count',1))))))),
+    now(), now());
   v_add := public.add_direct_staff(
     v_cap, v_staff,
     jsonb_build_array(jsonb_build_object('date', v_d, 'timeSlot', '18:00', 'role', 'dealer'))

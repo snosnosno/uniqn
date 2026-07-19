@@ -124,7 +124,7 @@ export async function loadAndVerifyMutateAccess(
   // workspaceId 없는 레거시 row 방어
   if (!jobPosting.workspaceId) {
     throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-      userMessage: `공고에 워크스페이스가 지정되지 않았습니다: ${operation}`,
+      userMessage: `공고에 팀이 지정되지 않았습니다: ${operation}`,
     });
   }
 
@@ -150,7 +150,7 @@ export async function loadAndVerifyMutateAccess(
   }
 
   throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-    userMessage: `워크스페이스 멤버 또는 공고 협업자만 수행할 수 있습니다: ${operation}`,
+    userMessage: `팀 멤버 또는 공고 협업자만 수행할 수 있습니다: ${operation}`,
   });
 }
 

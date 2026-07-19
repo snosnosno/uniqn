@@ -618,8 +618,8 @@ describe('jobPosting schemas', () => {
           ownerId: 'user-1',
           ownerName: 'Owner',
           workspaceId: '123e4567-e89b-42d3-a456-426614174000',
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         }
       );
 

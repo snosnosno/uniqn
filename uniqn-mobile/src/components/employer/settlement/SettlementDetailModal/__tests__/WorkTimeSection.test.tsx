@@ -5,6 +5,9 @@ import { WorkTimeSection } from '../WorkTimeSection';
 describe('WorkTimeSection', () => {
   const scheduledStart = new Date('2026-03-30T09:00:00');
   const scheduledEnd = new Date('2026-03-30T18:00:00');
+  // 심야 근무: 18:00 출근 / 익일 02:00 퇴근 (자정 넘김)
+  const overnightStart = new Date('2026-03-30T18:00:00');
+  const overnightEnd = new Date('2026-03-31T02:00:00');
 
   it('shows the scheduled time with a 예정 badge when there is no actual record', () => {
     const { getByText } = render(
@@ -60,5 +63,25 @@ describe('WorkTimeSection', () => {
     const { getByText } = render(<WorkTimeSection startTime={null} endTime={null} />);
 
     expect(getByText('근무 시간 정보가 없어요')).toBeTruthy();
+  });
+
+  it('shows the 익일 badge when checkout is on the next calendar day (18:00~익일 02:00)', () => {
+    const { getByText } = render(
+      <WorkTimeSection startTime={overnightStart} endTime={overnightEnd} hoursWorked={8} />
+    );
+
+    // 자정을 넘긴 심야 근무는 종료 라벨 옆에 "익일" 배지가 표시된다
+    expect(getByText('익일')).toBeTruthy();
+  });
+
+  it('does not show the 익일 badge for same-day work (09:00~17:00)', () => {
+    const dayStart = new Date('2026-03-30T09:00:00');
+    const dayEnd = new Date('2026-03-30T17:00:00');
+    const { queryByText } = render(
+      <WorkTimeSection startTime={dayStart} endTime={dayEnd} hoursWorked={8} />
+    );
+
+    // 같은 날 근무는 "익일" 배지가 없어야 한다
+    expect(queryByText('익일')).toBeNull();
   });
 });

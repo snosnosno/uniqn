@@ -48,12 +48,12 @@ export function VenueCreateSheet({
     if (!value || !workspaceId || isPending) return;
     mutate(value, {
       onSuccess: (container) => {
-        toastSuccess('운영처를 만들었어요.');
+        toastSuccess('지점을 만들었어요.');
         onCreated(container);
       },
       onError: (err) => {
         const msg =
-          isAppError(err) && err.userMessage ? err.userMessage : '운영처 생성에 실패했어요.';
+          isAppError(err) && err.userMessage ? err.userMessage : '지점 생성에 실패했어요.';
         toastError(msg);
       },
     });
@@ -70,7 +70,7 @@ export function VenueCreateSheet({
         disabled={!canSubmit}
         loading={isPending}
         className="flex-1"
-        accessibilityLabel="운영처 만들기"
+        accessibilityLabel="지점 만들기"
       >
         만들기
       </Button>
@@ -81,13 +81,13 @@ export function VenueCreateSheet({
     <SheetModal
       visible={visible}
       onClose={onClose}
-      title="운영처 만들기"
+      title="지점 만들기"
       isLoading={isPending}
       footer={footer}
     >
       <View className="p-5">
         <Input
-          label="운영처 이름"
+          label="지점 이름"
           value={name}
           onChangeText={setName}
           placeholder="예: 강남 홀덤펍"

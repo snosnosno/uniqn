@@ -1,7 +1,7 @@
 /**
- * weeklyBatchNotification — "이번 주 배치 확인" 알림 payload 빌더(순수) 테스트
+ * weeklyBatchNotification — "이번 주 출근 확인" 알림 payload 빌더(순수) 테스트
  *
- * 운영자에게 이번 주 배치 확인을 요청하는 알림 레코드를 결정적으로 생성한다.
+ * 운영자에게 이번 주 출근 확인을 요청하는 알림 레코드를 결정적으로 생성한다.
  * 기존 푸시 인프라(notifications INSERT + AFTER 트리거 발송) 재사용을 전제로,
  * INSERT 가능한 형태(recipientId/type/title/body/link/data/priority)만 빌드.
  *
@@ -44,7 +44,7 @@ describe('buildWeeklyBatchConfirmNotification', () => {
 
   it('제목은 고정, 본문에 운영처명·주차 라벨을 포함한다', () => {
     const payload = buildWeeklyBatchConfirmNotification(baseInput);
-    expect(payload.title).toBe('이번 주 배치 확인');
+    expect(payload.title).toBe('이번 주 출근 확인');
     expect(payload.body).toContain('강남 홀덤펍');
     expect(payload.body).toContain('6월 5주차');
   });

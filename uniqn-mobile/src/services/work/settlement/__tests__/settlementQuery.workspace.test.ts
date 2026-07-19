@@ -189,7 +189,7 @@ describe('getWorkLogsByJobPosting — 4 역할 권한 호환', () => {
 
   it('외부인 호출 시 PermissionError propagate', async () => {
     const permissionError = new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-      userMessage: '워크스페이스 멤버만 관리할 수 있습니다: 공고별 근무 기록 조회',
+      userMessage: '팀 멤버만 관리할 수 있습니다: 공고별 근무 기록 조회',
     });
     mockLoadAndVerifyJobPostingAccess.mockRejectedValue(permissionError);
 
@@ -286,7 +286,7 @@ describe('getJobPostingSettlementSummary — 4 역할 권한 호환', () => {
 
   it('외부인 호출 시 PermissionError propagate', async () => {
     const permissionError = new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-      userMessage: '워크스페이스 멤버만 관리할 수 있습니다: 공고별 정산 요약 조회',
+      userMessage: '팀 멤버만 관리할 수 있습니다: 공고별 정산 요약 조회',
     });
     mockLoadAndVerifyJobPostingAccess.mockRejectedValue(permissionError);
 

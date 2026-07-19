@@ -15,6 +15,7 @@ import {
   validateAssignmentSlotCapacity,
 } from '@/domains/application';
 import { normalizeAssignmentRole } from '@/types/assignment';
+import { toDate } from '@/utils/date';
 import { STATUS } from '@/constants';
 import type { Application, Assignment, JobPosting, ReviewCancellationInput } from '@/types';
 import type {
@@ -85,7 +86,9 @@ export async function executeConfirmWithHistory(
     if (!originalApplication && applicationData.assignments) {
       originalApplication = {
         assignments: applicationData.assignments,
-        appliedAt: applicationData.createdAt ?? new Date(),
+        // createdAt 은 ISO string(timestampSchema) — OriginalApplication.appliedAt(Date 계약)
+        // 으로 변환. 부재 시 현재 시각.
+        appliedAt: toDate(applicationData.createdAt) ?? new Date(),
       };
     }
 

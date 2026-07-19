@@ -20,7 +20,6 @@ import {
   getTodayCheckedInWorkLog,
   isCurrentlyWorking,
   getWorkLogStats,
-  updateWorkTime,
   updatePayrollStatus,
   subscribeToWorkLog,
   subscribeToMyWorkLogs,
@@ -40,7 +39,6 @@ jest.mock('@/repositories', () => ({
     subscribeById: jest.fn(),
     subscribeByStaffIdWithFilters: jest.fn(),
     subscribeTodayActive: jest.fn(),
-    updateWorkTimeTransaction: jest.fn(),
     updatePayrollStatusTransaction: jest.fn(),
   },
 }));
@@ -387,76 +385,6 @@ describe('WorkLogService', () => {
       mockHandleServiceError.mockReturnValue(error);
 
       await expect(getWorkLogStats('staff-1')).rejects.toThrow('Stats failed');
-    });
-  });
-
-  // ==========================================================================
-  describe('updateWorkTime', () => {
-    it('should update work time using transaction', async () => {
-      mockRepo.updateWorkTimeTransaction.mockResolvedValue(undefined);
-
-      const updates = {
-        checkInTime: new Date('2025-01-15T09:00:00'),
-        checkOutTime: new Date('2025-01-15T18:00:00'),
-        notes: 'Updated notes',
-      };
-
-      await expect(updateWorkTime('worklog-1', updates)).resolves.toBeUndefined();
-      expect(mockRepo.updateWorkTimeTransaction).toHaveBeenCalledWith('worklog-1', updates);
-    });
-
-    it('should throw when repository rejects (not found)', async () => {
-      mockRepo.updateWorkTimeTransaction.mockRejectedValue(
-        new Error('근무 기록을 찾을 수 없습니다')
-      );
-
-      await expect(updateWorkTime('worklog-1', {})).rejects.toThrow();
-    });
-
-    it('should throw when repository rejects (invalid data)', async () => {
-      mockRepo.updateWorkTimeTransaction.mockRejectedValue(
-        new Error('근무 기록 데이터가 올바르지 않습니다')
-      );
-
-      await expect(updateWorkTime('worklog-1', {})).rejects.toThrow();
-    });
-
-    it('should throw when repository rejects (already settled)', async () => {
-      mockRepo.updateWorkTimeTransaction.mockRejectedValue(
-        new Error('이미 정산이 완료된 기록입니다')
-      );
-
-      await expect(updateWorkTime('worklog-1', { notes: 'test' })).rejects.toThrow();
-    });
-
-    it('should only include provided fields in update', async () => {
-      mockRepo.updateWorkTimeTransaction.mockResolvedValue(undefined);
-
-      await updateWorkTime('worklog-1', { notes: 'Only notes updated' });
-
-      expect(mockRepo.updateWorkTimeTransaction).toHaveBeenCalledWith('worklog-1', {
-        notes: 'Only notes updated',
-      });
-    });
-
-    it('should include checkInTime when provided', async () => {
-      mockRepo.updateWorkTimeTransaction.mockResolvedValue(undefined);
-
-      const checkInTime = new Date('2025-01-15T09:00:00');
-      await updateWorkTime('worklog-1', { checkInTime });
-
-      expect(mockRepo.updateWorkTimeTransaction).toHaveBeenCalledWith('worklog-1', {
-        checkInTime,
-      });
-    });
-
-    it('should propagate errors via handleServiceError', async () => {
-      const error = new Error('Transaction failed');
-      mockRepo.updateWorkTimeTransaction.mockRejectedValue(error);
-      mockHandleServiceError.mockReturnValue(error);
-
-      await expect(updateWorkTime('worklog-1', {})).rejects.toThrow('Transaction failed');
-      expect(mockHandleServiceError).toHaveBeenCalled();
     });
   });
 

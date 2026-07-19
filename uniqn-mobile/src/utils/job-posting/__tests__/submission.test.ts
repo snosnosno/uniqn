@@ -79,8 +79,8 @@ function createPosting(): JobPosting {
       cancellationPendingApplicants: 0,
       filledPositions: 0,
     },
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     location: {
       name: 'Seoul Gangnam',
       district: 'Teheran-ro',
@@ -217,8 +217,8 @@ describe('formData 백컴팻(draftAdapter 직접 경로)', () => {
       // serializeJobPostingV3 는 options.workspaceId 미지정 시 필드 omit → zod 검증 실패.
       // version digit 4, variant digit 8 인 valid uuid v4 사용.
       workspaceId: '11111111-1111-4111-8111-111111111111',
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
     const parsed = parseJobPostingDocument(serialized);
 

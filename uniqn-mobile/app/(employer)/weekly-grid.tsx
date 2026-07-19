@@ -188,9 +188,9 @@ export default function WeeklyGridScreen() {
       {
         onSuccess: (result) =>
           result.sent
-            ? toastSuccess('이번 주 배치 확인 알림을 보냈어요.')
+            ? toastSuccess('이번 주 출근 확인 요청을 보냈어요.')
             : toastInfo('알림 받을 운영자를 찾지 못했어요.'),
-        onError: () => toastError('배치 확인 알림 발송에 실패했어요.'),
+        onError: () => toastError('출근 확인 요청 발송에 실패했어요.'),
       }
     );
   }, [
@@ -220,7 +220,7 @@ export default function WeeklyGridScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
-      <StackHeader title="주간 배치 그리드" fallbackHref="/(employer)/workspace" />
+      <StackHeader title="이번 주 근무표" fallbackHref="/(employer)/workspace" />
 
       {/* 운영처 선택기(unit 5) */}
       <VenueSelector
@@ -250,7 +250,7 @@ export default function WeeklyGridScreen() {
           ) : wsError ? (
             <EmptyState
               icon={<MapPinIcon size={48} color={SECONDARY_PALETTE[400]} />}
-              title="워크스페이스를 불러오지 못했어요"
+              title="팀을 불러오지 못했어요"
               description="네트워크 상태를 확인하고 다시 시도해주세요."
               actionLabel="다시 시도"
               onAction={refetchWorkspaces}
@@ -258,7 +258,7 @@ export default function WeeklyGridScreen() {
           ) : !activeWorkspace ? (
             <EmptyState
               icon={<MapPinIcon size={48} color={SECONDARY_PALETTE[400]} />}
-              title="워크스페이스를 준비하지 못했어요"
+              title="팀을 준비하지 못했어요"
               description="잠시 후 다시 시도해주세요."
               actionLabel="다시 시도"
               onAction={retryCreateWorkspace}
@@ -266,9 +266,9 @@ export default function WeeklyGridScreen() {
           ) : containers.length === 0 ? (
             <EmptyState
               icon={<MapPinIcon size={48} color={SECONDARY_PALETTE[400]} />}
-              title="운영처가 없어요"
-              description="이 워크스페이스에 운영처(상시 배치 장소)를 먼저 만들어주세요."
-              actionLabel="운영처 만들기"
+              title="지점이 없어요"
+              description="이 팀에 지점(상시 근무 장소)을 먼저 만들어주세요."
+              actionLabel="지점 만들기"
               onAction={() => setCreateSheetVisible(true)}
             />
           ) : (
@@ -344,9 +344,9 @@ export default function WeeklyGridScreen() {
                 disabled={copyLastWeek.isPending || notifyConfirm.isPending}
                 icon={<BellIcon size={16} color={SECONDARY_PALETTE[500]} />}
                 className="flex-1"
-                accessibilityLabel="이번 주 배치 확인 알림 보내기"
+                accessibilityLabel="이번 주 출근 확인 요청 보내기"
               >
-                배치 확인 알림
+                출근 확인 요청
               </Button>
             </View>
           </View>

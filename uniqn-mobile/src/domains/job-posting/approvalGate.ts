@@ -1,6 +1,8 @@
 import { STATUS } from '@/constants';
 import type { JobPosting } from '@/types';
 
+import { BROWSABLE_POSTING_STATUSES } from './constants';
+
 /**
  * 대회 공고 승인 게이트 — 상세·지원 경로 판정 헬퍼.
  *
@@ -28,4 +30,18 @@ export function isTournamentApprovalBlocked(
   }
 
   return posting.tournamentConfig?.approvalStatus !== STATUS.TOURNAMENT.APPROVED;
+}
+
+/**
+ * 공유 가능 여부 — 죽은 링크(승인 대기 대회·마감/취소류)를 카톡에 뿌리는 것을 차단.
+ * 공유 가능 상태 = 브라우징 가능(active/capacity_full) AND 승인 게이트 통과.
+ * useShare 진입부 한 곳에서 호출해 7개 진입점을 일괄 방어한다.
+ */
+export function canShareJob(
+  posting: Pick<JobPosting, 'status' | 'postingType' | 'tournamentConfig'>
+): boolean {
+  if (!(BROWSABLE_POSTING_STATUSES as readonly string[]).includes(posting.status)) {
+    return false;
+  }
+  return !isTournamentApprovalBlocked(posting);
 }

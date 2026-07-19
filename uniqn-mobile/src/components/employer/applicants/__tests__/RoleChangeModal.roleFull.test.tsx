@@ -69,8 +69,8 @@ function createDatedPosting(): JobPosting {
       defaultSalary: { type: 'hourly', amount: 12000 },
     },
     questions: { items: [] },
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   } as JobPosting;
 }
 

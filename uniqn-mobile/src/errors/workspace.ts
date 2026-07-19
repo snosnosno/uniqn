@@ -38,23 +38,22 @@ export const WORKSPACE_ERROR_CODES = {
 } as const;
 
 const WORKSPACE_ERROR_USER_MESSAGES: Record<string, string> = {
-  [WORKSPACE_ERROR_CODES.WORKSPACE_NOT_FOUND]: '워크스페이스를 찾을 수 없습니다.',
+  [WORKSPACE_ERROR_CODES.WORKSPACE_NOT_FOUND]: '팀을 찾을 수 없습니다.',
   [WORKSPACE_ERROR_CODES.WORKSPACE_INVITATION_NOT_FOUND]: '초대를 찾을 수 없습니다.',
-  [WORKSPACE_ERROR_CODES.WORKSPACE_ALREADY_MEMBER]: '이미 워크스페이스 멤버입니다.',
+  [WORKSPACE_ERROR_CODES.WORKSPACE_ALREADY_MEMBER]: '이미 팀 멤버입니다.',
   [WORKSPACE_ERROR_CODES.WORKSPACE_ALREADY_INVITED]:
     '이미 초대 보류 중입니다. 상대방의 응답을 기다려주세요.',
   [WORKSPACE_ERROR_CODES.WORKSPACE_INVITATION_EXPIRED]:
-    '만료된 초대예요. 워크스페이스 소유자에게 다시 초대를 요청해주세요.',
+    '만료된 초대예요. 팀 소유자에게 다시 초대를 요청해주세요.',
   [WORKSPACE_ERROR_CODES.WORKSPACE_INVITATION_REJECTED]: '이미 거절한 초대입니다.',
   [WORKSPACE_ERROR_CODES.WORKSPACE_INVITATION_REVOKED]: '회수된 초대입니다.',
   [WORKSPACE_ERROR_CODES.WORKSPACE_INVITATION_ACCEPTED]: '이미 수락된 초대입니다.',
   [WORKSPACE_ERROR_CODES.WORKSPACE_SELF_INVITE]: '본인은 초대할 수 없습니다.',
-  [WORKSPACE_ERROR_CODES.WORKSPACE_CANNOT_REMOVE_OWNER]:
-    '워크스페이스 소유자는 멤버에서 제외할 수 없습니다.',
+  [WORKSPACE_ERROR_CODES.WORKSPACE_CANNOT_REMOVE_OWNER]: '팀 소유자는 멤버에서 제외할 수 없습니다.',
   [WORKSPACE_ERROR_CODES.WORKSPACE_CAP_REACHED]:
-    '워크스페이스는 사용자당 최대 10개까지 만들 수 있어요. 사용하지 않는 워크스페이스를 정리해주세요.',
+    '팀은 사용자당 최대 10개까지 만들 수 있어요. 사용하지 않는 팀을 정리해주세요.',
   [WORKSPACE_ERROR_CODES.WORKSPACE_INSERT_DENIED]:
-    '워크스페이스를 만들 수 없어요. 권한이 부족하거나 최대 개수(10개)에 도달했을 수 있어요. 잠시 후 다시 시도해주세요.',
+    '팀을 만들 수 없어요. 권한이 부족하거나 최대 개수(10개)에 도달했을 수 있어요. 잠시 후 다시 시도해주세요.',
   [WORKSPACE_ERROR_CODES.WORKSPACE_HAS_ACTIVE_POSTINGS]:
     '진행 중인 공고가 있어 보관할 수 없어요. 먼저 공고를 마감해주세요.',
 };
@@ -102,7 +101,7 @@ export function mapWorkspaceRpcError(error: unknown): AppError | null {
 
   if (upper.includes('PERMISSION_DENIED'))
     return new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-      userMessage: '워크스페이스 편집 권한이 회수되었어요. 다시 로그인하면 최신 상태가 적용됩니다.',
+      userMessage: '팀 편집 권한이 회수되었어요. 다시 로그인하면 최신 상태가 적용됩니다.',
     });
 
   if (upper.includes('VALIDATION_REQUIRED'))

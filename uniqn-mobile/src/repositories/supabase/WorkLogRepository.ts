@@ -25,7 +25,6 @@ import type {
   UpdateSlotInput,
 } from '../interfaces';
 import {
-  executeUpdateWorkTime,
   executeUpdatePayrollStatus,
   executeProcessQRCheckInOut,
 } from './WorkLogRepositoryTransactions';
@@ -602,17 +601,6 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
     } catch (error) {
       rethrowOrHandle(error, '정산 상태 변경', { workLogId, status });
     }
-  }
-
-  async updateWorkTimeTransaction(
-    workLogId: string,
-    updates: {
-      checkInTime?: Date;
-      checkOutTime?: Date;
-      notes?: string;
-    }
-  ): Promise<void> {
-    return executeUpdateWorkTime(workLogId, updates);
   }
 
   async updatePayrollStatusTransaction(

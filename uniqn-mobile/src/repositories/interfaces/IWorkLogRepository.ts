@@ -293,23 +293,6 @@ export interface IWorkLogRepository {
   updatePayrollStatus(workLogId: string, status: PayrollStatus): Promise<void>;
 
   /**
-   * 근무 시간 수정 (트랜잭션)
-   *
-   * @description 이미 정산 완료된 기록은 수정 불가
-   * @param workLogId - 근무 기록 ID
-   * @param updates - 수정할 필드
-   * @throws BusinessError - 정산 완료된 기록 수정 시도 시
-   */
-  updateWorkTimeTransaction(
-    workLogId: string,
-    updates: {
-      checkInTime?: Date;
-      checkOutTime?: Date;
-      notes?: string;
-    }
-  ): Promise<void>;
-
-  /**
    * 정산 상태 업데이트 (트랜잭션, 중복 검증 포함)
    *
    * @description 중복 정산 방지 및 금액 지원

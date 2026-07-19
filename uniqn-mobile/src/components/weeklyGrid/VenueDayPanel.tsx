@@ -146,7 +146,7 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
 
   const handleSaveTarget = useCallback(() => {
     if (!targetValid) {
-      toastError('목표 인원은 0 이상의 숫자로 입력해주세요.');
+      toastError('필요 인원은 0 이상의 숫자로 입력해주세요.');
       return;
     }
     if (repeatWeekday) {
@@ -168,18 +168,18 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
       const weekdayLabel = format(parsed, 'EEEE', { locale: ko });
       confirmAction({
         title: '요일 전체 적용',
-        message: `이번 달 남은 ${weekdayLabel} ${dates.length}일의 목표 인원을 ${parsedTarget}명으로 덮어써요. 개별로 설정해둔 날짜도 함께 바뀝니다.`,
+        message: `이번 달 남은 ${weekdayLabel} ${dates.length}일의 필요 인원을 ${parsedTarget}명으로 덮어써요. 개별로 설정해둔 날짜도 함께 바뀝니다.`,
         confirmText: `${dates.length}일에 적용`,
         destructive: true,
         onConfirm: () =>
           setSoftTargetBulk.mutate(
             { venueId, dates, count: parsedTarget },
             {
-              onSuccess: () => toastSuccess(`${dates.length}일에 목표 인원을 저장했어요.`),
+              onSuccess: () => toastSuccess(`${dates.length}일에 필요 인원을 저장했어요.`),
               // 순차 저장이라 중간 실패 시 일부만 반영됐을 수 있음(멱등이라 재시도 안전).
               onError: () =>
                 toastError(
-                  '목표 인원 저장에 실패했어요. 일부만 적용됐을 수 있어요 — 다시 시도해주세요.'
+                  '필요 인원 저장에 실패했어요. 일부만 적용됐을 수 있어요 — 다시 시도해주세요.'
                 ),
             }
           ),
@@ -190,8 +190,8 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
       // E5: write 경계에서 날짜키 정규화(레포도 재정규화하나 클라단 일관성 보장).
       { venueId, date: toDateString(date), count: parsedTarget },
       {
-        onSuccess: () => toastSuccess('목표 인원을 저장했어요.'),
-        onError: () => toastError('목표 인원 저장에 실패했어요. 잠시 후 다시 시도해주세요.'),
+        onSuccess: () => toastSuccess('필요 인원을 저장했어요.'),
+        onError: () => toastError('필요 인원 저장에 실패했어요. 잠시 후 다시 시도해주세요.'),
       }
     );
   }, [
@@ -234,9 +234,9 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
         />
         <StatChip
           icon={<FlagOutlineIcon size={14} color={SECONDARY_PALETTE[500]} />}
-          label="목표"
+          label="필요"
           value={`${softTarget}명`}
-          a11yLabel={`목표 인원 ${softTarget}명`}
+          a11yLabel={`필요 인원 ${softTarget}명`}
           tone="neutral"
         />
         {shortage > 0 ? (
@@ -252,7 +252,7 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
             icon={<UsersIcon size={14} color={STATUS_COLORS.success} />}
             label="충원"
             value="완료"
-            a11yLabel="목표 인원 충원 완료"
+            a11yLabel="필요 인원 충원 완료"
             tone="success"
           />
         ) : null}
@@ -282,13 +282,13 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
       <View className="flex-row items-end gap-2 px-4 pt-2">
         <View className="w-28">
           <Input
-            label="목표 인원"
+            label="필요 인원"
             value={targetInput}
             onChangeText={setTargetInput}
             placeholder="0"
             keyboardType="number-pad"
             maxLength={3}
-            accessibilityLabel="이 날 목표 인원"
+            accessibilityLabel="이 날 필요 인원"
             onSubmitEditing={handleSaveTarget}
             returnKeyType="done"
           />
@@ -299,7 +299,7 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
           onPress={handleSaveTarget}
           disabled={!targetDirty}
           loading={setSoftTarget.isPending || setSoftTargetBulk.isPending}
-          accessibilityLabel="목표 인원 저장"
+          accessibilityLabel="필요 인원 저장"
         >
           저장
         </Button>

@@ -28,40 +28,24 @@ function getRoleKey(role: { role?: string; customRole?: string }): string | null
 }
 
 /**
- * 사람 단위(person basis) 모집 인원 계산.
- * 같은 역할은 여러 슬롯/날짜에서 "같은 사람이 돌아가며 근무 가능"하다고 가정하여
- * 역할별 최대 동시 필요 인원(peak)의 합으로 totalPositions를 구한다.
- * (HANDOFF.md Phase 6 알고리즘 결정)
+ * 좌석 단위(seat basis) 모집 인원 계산.
+ * 모든 날짜 × 타임슬롯 × 역할의 count 총합. 날짜마다 다른 사람을 투입하는
+ * 대회 이벤트를 기본 모델로 하며, DB `_total_positions_from_schedule`(트리거
+ * 재계산)과 동치 규칙 — 빈 role 스킵, 음수 count 0 처리.
+ * (2026-07-17 좌석 기준 통일 설계 — 구 peak(회전 가정) 모델 대체)
  */
 export function calculateTotalPositionsFromSchedule(schedule: PostingSchedule): number {
-  const peakByRole = new Map<string, number>();
+  let total = 0;
 
   schedule.requirements.forEach((requirement) => {
     requirement.timeSlots.forEach((slot) => {
-      // 같은 슬롯 안 동일 역할 엔트리는 동시 필요 인원이므로 합산한다.
-      // (peak 를 바로 비교하면 [dealer:3, dealer:2] 같은 중복 역할이 5 아닌 3으로 과소 집계됨)
-      const slotSumByRole = new Map<string, number>();
       slot.roles.forEach((role) => {
-        const key = getRoleKey(role);
-        if (key === null) {
+        if (getRoleKey(role) === null) {
           return;
         }
-        slotSumByRole.set(key, (slotSumByRole.get(key) ?? 0) + role.count);
-      });
-
-      // 슬롯/날짜 간에는 같은 사람이 돌아가며 근무 가능 → 역할별 최대 동시 필요 인원(peak).
-      slotSumByRole.forEach((slotSum, key) => {
-        const previous = peakByRole.get(key) ?? 0;
-        if (slotSum > previous) {
-          peakByRole.set(key, slotSum);
-        }
+        total += Math.max(0, role.count ?? 0);
       });
     });
-  });
-
-  let total = 0;
-  peakByRole.forEach((count) => {
-    total += count;
   });
 
   return total;

@@ -16,6 +16,7 @@ import { Card } from '@/components/ui/Card';
 import { TimeWheelPicker, type TimeValue } from '@/components/ui/TimeWheelPicker';
 import { AlertCircleIcon } from '@/components/icons';
 import { formatDate, parseTimeSlotToDate } from '@/utils/date';
+import { deriveOvernightPreview } from '@/shared/time';
 import { TimeInputField } from './TimeInputField';
 import {
   parseTimestamp,
@@ -227,12 +228,38 @@ export function WorkTimeEditor({
     return startValid && endValid;
   }, [startTimeStr, endTimeStr, baseDate, isStartTimeUndefined, isEndTimeUndefined]);
 
-  // 시간 순서 유효성 (퇴근 > 출근, 새벽은 25:00 형식으로 입력)
+  // 입력 중 익일 판정 + 근무시간 프리뷰. 종료<시작은 자동 익일(오류 아님), 종료==시작만 차단.
+  const timePreview = useMemo(() => {
+    if (isStartTimeUndefined || isEndTimeUndefined || !startTimeStr || !endTimeStr) {
+      return null;
+    }
+    return deriveOvernightPreview(startTimeStr, endTimeStr);
+  }, [startTimeStr, endTimeStr, isStartTimeUndefined, isEndTimeUndefined]);
+
+  // 시간 순서 유효성: 시작==종료만 차단(기존 endTime>startTime 차단 규칙 폐기 — 종료<시작은 익일).
   const isValidTimeOrder = useMemo(() => {
-    if (isStartTimeUndefined || isEndTimeUndefined) return true;
-    if (!startTime || !endTime) return true;
-    return endTime > startTime;
-  }, [startTime, endTime, isStartTimeUndefined, isEndTimeUndefined]);
+    if (!timePreview) return true;
+    return !timePreview.isEqual;
+  }, [timePreview]);
+
+  // 12시간 초과 여부(비차단 강조 배너).
+  const isLongShift = useMemo(
+    () => !!timePreview && timePreview.valid && timePreview.durationMinutes > 12 * 60,
+    [timePreview]
+  );
+
+  // 저장용 퇴근 시각 보정: 0~23 입력으로 자동 익일 판정된 경우 실제 Date를 익일로 올린다.
+  // parseTimeInput은 24+ 표기(예: 26:00)만 익일 처리하므로, "02:00" 같은 0~23 익일 입력은
+  // 같은 날 Date로 남아 checkOut<checkIn(음수 근무시간)이 저장될 위험이 있다 — 정산 오류 방지.
+  const endTimeForSave = useMemo(() => {
+    if (!endTime || !startTime || isEndTimeUndefined) return endTime;
+    if (timePreview?.isNextDay && endTime.getTime() <= startTime.getTime()) {
+      const bumped = new Date(endTime);
+      bumped.setDate(bumped.getDate() + 1);
+      return bumped;
+    }
+    return endTime;
+  }, [endTime, startTime, isEndTimeUndefined, timePreview]);
 
   // 전체 유효성 검사
   const isValid = useMemo(() => {
@@ -244,10 +271,18 @@ export function WorkTimeEditor({
     if (!isValid) return;
     onSave({
       startTime: isStartTimeUndefined ? null : startTime,
-      endTime: isEndTimeUndefined ? null : endTime,
+      endTime: isEndTimeUndefined ? null : endTimeForSave,
       reason: reason.trim(),
     });
-  }, [isValid, startTime, endTime, reason, onSave, isStartTimeUndefined, isEndTimeUndefined]);
+  }, [
+    isValid,
+    startTime,
+    endTimeForSave,
+    reason,
+    onSave,
+    isStartTimeUndefined,
+    isEndTimeUndefined,
+  ]);
 
   // 닫기
   const handleClose = useCallback(() => {
@@ -402,19 +437,39 @@ export function WorkTimeEditor({
                 <AlertCircleIcon size={16} color={SECONDARY_PALETTE[500]} />
               </View>
               <Text className="ml-2 text-sm text-content-muted dark:text-secondary-400 font-sans">
-                탭하여 시간 선택{'\n'}(24시 이상 = 다음날 새벽)
+                탭하여 시간 선택{'\n'}(퇴근이 이르면 자동으로 익일로 계산돼요)
               </Text>
             </View>
 
-            {/* 시간 순서 경고 */}
-            {isValidTimeFormat && !isValidTimeOrder && (
-              <View className="flex-row items-center p-3 bg-error-50 dark:bg-error-900/20 rounded-lg mb-4">
+            {/* 시작==종료 오류 (유일한 차단 상태) */}
+            {isValidTimeFormat && timePreview?.isEqual ? (
+              <View className="mb-4 flex-row items-center rounded-lg bg-error-50 p-3 dark:bg-error-900/20">
                 <AlertCircleIcon size={16} color="#DC2626" />
-                <Text className="ml-2 text-sm text-error-600 dark:text-error-400 font-sans">
-                  퇴근 시간이 출근보다 빨라요. 새벽은 25:00 형식으로 입력하세요.
+                <Text className="ml-2 font-sans text-sm text-error-600 dark:text-error-400">
+                  출근과 퇴근 시간이 같아요. 다시 확인해주세요.
                 </Text>
               </View>
-            )}
+            ) : null}
+
+            {/* 익일 안내 (비차단) */}
+            {isValidTimeFormat && timePreview && !timePreview.isEqual && timePreview.isNextDay ? (
+              <View className="mb-4 flex-row items-center rounded-lg bg-info-50 p-3 dark:bg-info-900/20">
+                <AlertCircleIcon size={16} color="#2563EB" />
+                <Text className="ml-2 font-sans text-sm text-info-600 dark:text-info-400">
+                  익일 {endTimeStr} 퇴근으로 계산돼요.
+                </Text>
+              </View>
+            ) : null}
+
+            {/* 장시간 근무 강조 (비차단 — 저장은 그대로 가능) */}
+            {isLongShift ? (
+              <View className="mb-4 flex-row items-center rounded-lg bg-warning-50 p-3 dark:bg-warning-900/20">
+                <AlertCircleIcon size={16} color="#A16207" />
+                <Text className="ml-2 font-sans text-sm text-warning-700 dark:text-warning-400">
+                  근무 시간이 {timePreview?.durationLabel}이에요. 맞는지 확인해주세요.
+                </Text>
+              </View>
+            ) : null}
 
             {/* 근무 시간 */}
             <View className="flex-row items-center justify-between p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
@@ -422,7 +477,7 @@ export function WorkTimeEditor({
                 총 근무 시간
               </Text>
               <Text className="text-lg font-display text-primary-600 dark:text-primary-400">
-                {duration}
+                {timePreview && !timePreview.isEqual ? timePreview.durationLabel : duration}
               </Text>
             </View>
           </Card>

@@ -13,8 +13,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { StackHeader } from '@/components/headers';
 import { Avatar, Badge, Button, EmptyState, ErrorState, Input } from '@/components/ui';
-import { ChevronRightIcon, InboxIcon } from '@/components/icons';
-import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { useModalStore } from '@/stores/modalStore';
@@ -28,7 +26,6 @@ import {
   useWorkspaces,
   useArchiveWorkspace,
   useArchivedWorkspaces,
-  useReceivedWorkspaceInvitations,
 } from '@/hooks/workspace';
 import { WorkspaceContextBar } from '@/components/workspace';
 import { shouldShowArchivedRestoreEntry } from '@/utils/workspace/archivedEntry';
@@ -49,30 +46,6 @@ export default function WorkspaceSettingsScreen() {
   // 있으면 EmptyState 에서도 보관함 진입점을 노출한다.
   const { archived } = useArchivedWorkspaces();
 
-  // 받은 초대 발견성 — 이 화면엔 초대함으로 가는 링크가 없어 배너로 노출
-  const { invitations: pendingInvitations } = useReceivedWorkspaceInvitations();
-  const pendingInvitationsCount = pendingInvitations.length;
-  const pendingInvitationBanner =
-    pendingInvitationsCount > 0 ? (
-      <Pressable
-        onPress={() => router.push('/(employer)/workspace/invitations')}
-        accessibilityRole="button"
-        accessibilityLabel={`받은 초대 ${pendingInvitationsCount}건 확인하기`}
-        className="mx-4 mt-4 flex-row items-center justify-between rounded-md bg-info-50 px-4 py-3 active:opacity-70 dark:bg-info-500/10"
-      >
-        <View className="flex-1 flex-row items-center">
-          <InboxIcon size={20} color="#2563EB" />
-          <Text
-            className="ml-2 flex-1 text-sm font-sans-medium text-content-primary"
-            numberOfLines={1}
-          >
-            받은 초대 {pendingInvitationsCount}건 확인하기
-          </Text>
-        </View>
-        <ChevronRightIcon size={16} color={SECONDARY_PALETTE[400]} />
-      </Pressable>
-    ) : null;
-
   const isOwner = !!user?.uid && activeWorkspace?.ownerId === user.uid;
 
   const {
@@ -90,12 +63,12 @@ export default function WorkspaceSettingsScreen() {
   const handleArchive = useCallback(() => {
     if (!activeWorkspace) return;
     showConfirm(
-      '워크스페이스 보관',
-      `'${activeWorkspace.name}' 워크스페이스를 보관할까요?\n공고와 기록은 보존되며 보관함에서 복원할 수 있어요.`,
+      '팀 보관',
+      `'${activeWorkspace.name}' 팀을 보관할까요?\n공고와 기록은 보존되며 보관함에서 복원할 수 있어요.`,
       async () => {
         try {
           await archiveMutation.mutateAsync(activeWorkspace.id);
-          addToast({ type: 'success', message: '워크스페이스를 보관했어요' });
+          addToast({ type: 'success', message: '팀을 보관했어요' });
         } catch (err) {
           logger.warn('워크스페이스 보관 실패', { error: String(err) });
           const message =
@@ -116,7 +89,7 @@ export default function WorkspaceSettingsScreen() {
     }
     try {
       await updateNameMutation.mutateAsync(nameDraft.trim());
-      addToast({ type: 'success', message: '워크스페이스 이름이 변경되었어요' });
+      addToast({ type: 'success', message: '팀 이름이 변경되었어요' });
       setEditingName(false);
     } catch (err) {
       logger.warn('워크스페이스 이름 변경 실패', { error: String(err) });
@@ -131,7 +104,7 @@ export default function WorkspaceSettingsScreen() {
       // showConfirm — native + web 양쪽 호환 (Alert.alert 은 web 에서 무음)
       showConfirm(
         '멤버 제거',
-        `${member.displayName ?? member.email ?? '멤버'}님을 워크스페이스에서 제거할까요?\n권한이 즉시 회수됩니다.`,
+        `${member.displayName ?? member.email ?? '멤버'}님을 팀에서 제거할까요?\n권한이 즉시 회수됩니다.`,
         async () => {
           try {
             await removeMemberMutation.mutateAsync(member.userId);
@@ -149,12 +122,11 @@ export default function WorkspaceSettingsScreen() {
 
   const handleCreateFirstWorkspace = useCallback(async () => {
     try {
-      const created = await createMutation.mutateAsync(`${user?.displayName ?? '내'} 워크스페이스`);
-      addToast({ type: 'success', message: '워크스페이스가 생성되었어요' });
+      const created = await createMutation.mutateAsync(`${user?.displayName ?? '내'} 팀`);
+      addToast({ type: 'success', message: '팀이 생성되었어요' });
       logger.info('첫 워크스페이스 생성', { workspaceId: created.id });
     } catch (err) {
-      const message =
-        isAppError(err) && err.userMessage ? err.userMessage : '워크스페이스 생성에 실패했어요';
+      const message = isAppError(err) && err.userMessage ? err.userMessage : '팀 생성에 실패했어요';
       addToast({ type: 'error', message });
     }
   }, [createMutation, user?.displayName, addToast]);
@@ -165,7 +137,7 @@ export default function WorkspaceSettingsScreen() {
         className="flex-1 items-center justify-center bg-surface-page dark:bg-surface"
         edges={['top', 'bottom']}
       >
-        <StackHeader title="워크스페이스" />
+        <StackHeader title="팀" />
         <ActivityIndicator size="large" />
       </SafeAreaView>
     );
@@ -174,10 +146,10 @@ export default function WorkspaceSettingsScreen() {
   if (error) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
-        <StackHeader title="워크스페이스" />
+        <StackHeader title="팀" />
         <View className="flex-1 items-center justify-center px-6">
           <ErrorState
-            title="워크스페이스를 불러올 수 없어요"
+            title="팀을 불러올 수 없어요"
             message="네트워크 상태를 확인하고 다시 시도해주세요."
           />
         </View>
@@ -188,20 +160,16 @@ export default function WorkspaceSettingsScreen() {
   if (!activeWorkspace) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
-        <StackHeader title="워크스페이스" />
-        {pendingInvitationBanner}
+        <StackHeader title="팀" />
         <View className="flex-1 items-center justify-center px-6">
-          <EmptyState
-            title="워크스페이스가 없어요"
-            description="공고 협업을 위해 워크스페이스를 만들어보세요."
-          />
+          <EmptyState title="팀이 없어요" description="공고 협업을 위해 팀을 만들어보세요." />
           <View className="mt-6 w-full max-w-xs gap-3">
             <Button
               variant="primary"
               onPress={handleCreateFirstWorkspace}
               loading={createMutation.isPending}
             >
-              첫 워크스페이스 만들기
+              첫 팀 만들기
             </Button>
             {shouldShowArchivedRestoreEntry({
               hasActiveWorkspace: false,
@@ -222,9 +190,8 @@ export default function WorkspaceSettingsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
-      <StackHeader title="워크스페이스" />
+      <StackHeader title="팀" />
       <WorkspaceContextBar />
-      {pendingInvitationBanner}
       <ScrollView contentContainerClassName="pb-8">
         {/* 워크스페이스 헤더 */}
         <View className="border-b border-secondary-200 bg-white px-4 py-5 dark:border-surface-overlay dark:bg-surface">
@@ -236,7 +203,7 @@ export default function WorkspaceSettingsScreen() {
                   onChangeText={setNameDraft}
                   autoFocus
                   maxLength={50}
-                  placeholder="워크스페이스 이름"
+                  placeholder="팀 이름"
                 />
               </View>
               <Button
@@ -276,7 +243,7 @@ export default function WorkspaceSettingsScreen() {
                   }}
                   hitSlop={8}
                   accessibilityRole="button"
-                  accessibilityLabel="워크스페이스 이름 변경"
+                  accessibilityLabel="팀 이름 변경"
                 >
                   <Text className="text-sm font-sans-medium text-primary-600 dark:text-primary-400">
                     이름 변경
@@ -402,11 +369,11 @@ export default function WorkspaceSettingsScreen() {
               className="min-h-[44px] flex-row items-center justify-between rounded-md bg-white px-4 py-3 dark:bg-surface-elevated"
             >
               <Text className="text-sm font-sans-medium text-content-primary">보관함</Text>
-              <Text className="text-sm text-content-secondary">보관한 워크스페이스 복원 ›</Text>
+              <Text className="text-sm text-content-secondary">보관한 팀 복원 ›</Text>
             </Pressable>
 
             <Button variant="secondary" onPress={handleArchive} loading={archiveMutation.isPending}>
-              이 워크스페이스 보관
+              이 팀 보관
             </Button>
           </View>
         )}

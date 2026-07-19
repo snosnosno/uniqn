@@ -199,7 +199,7 @@ async function verifyPostingAuthority(
   const workspaceId = row.workspace_id as string | null;
   if (!workspaceId) {
     throw new BusinessError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
-      userMessage: '공고에 워크스페이스가 지정되지 않았습니다.',
+      userMessage: '공고에 팀이 지정되지 않았습니다.',
     });
   }
 
