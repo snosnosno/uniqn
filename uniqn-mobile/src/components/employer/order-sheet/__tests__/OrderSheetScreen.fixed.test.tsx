@@ -122,8 +122,10 @@ describe('OrderSheetScreen — 고정 역할 급여 프리필 안내 토스트(S
     fireEvent.press(getByTestId('order-role-chip-floor'));
     fireEvent.press(getByText('확인'));
     await flushValidation();
-    // ⚠️ 반드시 **역할 행으로 스코프**를 좁힌다. 급여 행도 자동 프리필로 "플로어 30,000"을 렌더하므로
-    // 전역 매칭은 (1) 중복 매치로 실패하고 (2) roles 반영과 무관한 경로로도 통과해 단언이 무력해진다.
+    // ⚠️ 반드시 **역할 행으로 스코프**를 좁힌다 — 급여 행도 자동 프리필로 "플로어 30,000"을 렌더해
+    // 전역 매칭은 중복 매치로 실패한다. (급여 행 요약은 roleSalaries 가 아니라 fixedSchedule.roles
+    // 파생이므로 변이 상태에서는 플로어를 렌더하지 않는다 — 즉 전역 매칭이어도 vacuous 하지는 않다.
+    // 스코핑의 이유는 중복 매치 회피 하나뿐이다. 리뷰 2x2 교차 변이로 실측 확인됨.)
     // 토스트가 아니라 form.setValue 를 경유한 요약이어야 한다 — `roles: next` 를 지운 변이에서 red 가 된다.
     expect(within(getByTestId('order-sheet-row-roles')).getByText(/플로어/)).toBeTruthy();
   });
