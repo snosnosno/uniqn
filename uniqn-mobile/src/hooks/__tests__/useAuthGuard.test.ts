@@ -153,7 +153,7 @@ describe('useAuthGuard', () => {
     renderHook(() => useAuthGuard());
 
     await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith('/(app)/home');
+      expect(mockReplace).toHaveBeenCalledWith('/(app)/(tabs)/home-jobs');
     });
   });
 
@@ -171,7 +171,7 @@ describe('useAuthGuard', () => {
     renderHook(() => useAuthGuard());
 
     await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith('/(app)/home');
+      expect(mockReplace).toHaveBeenCalledWith('/(app)/(tabs)/home-jobs');
     });
   });
 
@@ -376,7 +376,7 @@ describe('useAuthGuard', () => {
     renderHook(() => useAuthGuard());
 
     await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith('/(app)/home');
+      expect(mockReplace).toHaveBeenCalledWith('/(app)/(tabs)/home-jobs');
     });
   });
 

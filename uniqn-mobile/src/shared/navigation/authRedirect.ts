@@ -1,11 +1,7 @@
 import type { UserProfile } from '@/types';
-import { featureFlags } from '@/config/featureFlags';
 
 export const AUTH_ENTRY_ROUTES = {
   appTabs: '/(app)/(tabs)/home-jobs',
-  appHome: (featureFlags.home_dashboard_enabled
-    ? '/(app)/home'
-    : '/(app)/(tabs)/home-jobs') as string,
   signup: '/(auth)/signup',
   socialSignup: '/(auth)/signup?mode=social',
   identityReverify: '/(auth)/signup?mode=reverify',
@@ -80,7 +76,7 @@ export function appendRedirectToRoute(route: string, redirect?: string | null): 
     return route;
   }
 
-  if (route === AUTH_ENTRY_ROUTES.appTabs || route === AUTH_ENTRY_ROUTES.appHome) {
+  if (route === AUTH_ENTRY_ROUTES.appTabs) {
     return normalizedRedirect;
   }
 
@@ -123,7 +119,7 @@ export function getAuthenticatedEntryRoute(params: AuthenticatedEntryRouteParams
     return AUTH_ENTRY_ROUTES.profileSetup;
   }
 
-  return AUTH_ENTRY_ROUTES.appHome as AuthEntryRoute;
+  return AUTH_ENTRY_ROUTES.appTabs;
 }
 
 export function getResolvedAuthenticatedRoute(params: ResolvedAuthenticatedRouteParams): string {
