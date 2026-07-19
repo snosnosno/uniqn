@@ -1,8 +1,8 @@
 /**
  * UNIQN Mobile - QR 코드 훅
  *
- * @description QR 코드 스캔 및 모달 상태 관리 훅
- * @version 3.0.0 - 공고당 고정 QR 전환, 회전 QR 표시 훅 제거
+ * @description QR 코드 스캔 처리 훅
+ * @version 3.1.0 - 공고당 고정 QR 전환, 회전 QR 표시 훅 및 스캐너 모달 훅 제거
  *
  * @note QR 생성은 서버 왕복이 없다 — buildVenueQRString(jobPostingId) 참고.
  */
@@ -14,7 +14,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { queryClient, queryKeys } from '@/lib/queryClient';
 import { logger } from '@/utils/logger';
-import type { QRCodeAction, QRCodeScanResult, QRScanError } from '@/types';
+import type { QRCodeScanResult, QRScanError } from '@/types';
 import { isAppError } from '@/errors/AppError';
 import { toError, normalizeError } from '@/errors';
 
@@ -143,36 +143,10 @@ export function useQRCodeScanner(options: UseQRCodeScannerOptions) {
   };
 }
 
-/**
- * QR 스캔 모달 상태 관리 훅
- */
-export function useQRScannerModal() {
-  const [isVisible, setIsVisible] = useState(false);
-  const [action, setAction] = useState<QRCodeAction | undefined>();
-
-  const openScanner = useCallback((scanAction?: QRCodeAction) => {
-    setAction(scanAction);
-    setIsVisible(true);
-  }, []);
-
-  const closeScanner = useCallback(() => {
-    setIsVisible(false);
-    setAction(undefined);
-  }, []);
-
-  return {
-    isVisible,
-    action,
-    openScanner,
-    closeScanner,
-  };
-}
-
 // ============================================================================
 // Exports
 // ============================================================================
 
 export default {
   useQRCodeScanner,
-  useQRScannerModal,
 };

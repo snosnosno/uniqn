@@ -2,7 +2,7 @@
  * UNIQN Mobile - QRCodeScanner 컴포넌트
  *
  * @description 출퇴근용 QR 코드 스캐너
- * @version 2.1.0 - Event QR 시스템 전용 + 웹 호환성
+ * @version 3.0.0 - 공고당 고정 QR 전용 + 웹 호환성
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
@@ -106,7 +106,7 @@ export function QRCodeScanner({
       try {
         logger.info('QR 코드 스캔됨', { data: result.data });
 
-        // Event QR 시스템: qrString만 전달 (processEventQRCheckIn에서 파싱 및 검증)
+        // 고정 QR: qrString만 전달 (processQRCheckIn에서 파싱 및 검증)
         onScan({
           success: true,
           qrString: result.data,

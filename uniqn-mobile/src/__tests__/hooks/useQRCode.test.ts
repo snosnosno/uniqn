@@ -9,7 +9,7 @@ import { renderHook, act } from '@testing-library/react-native';
 import type { QRCodeScanResult, VenueQRDisplayData, QRCodeAction } from '@/types';
 
 // Import after mocks
-import { useQRCodeScanner, useQRScannerModal } from '@/hooks/useQRCode';
+import { useQRCodeScanner } from '@/hooks/useQRCode';
 
 // Mock eventQRService
 const mockProcessQRCheckIn = jest.fn();
@@ -176,45 +176,6 @@ describe('useQRCode Hooks', () => {
         isRetryable: expect.any(Boolean),
       });
       expect(onError).toHaveBeenCalled();
-    });
-  });
-
-  describe('useQRScannerModal', () => {
-    it('should return initial state correctly', () => {
-      const { result } = renderHook(() => useQRScannerModal());
-
-      expect(result.current.isVisible).toBe(false);
-      expect(result.current.action).toBeUndefined();
-      expect(result.current.openScanner).toBeDefined();
-      expect(result.current.closeScanner).toBeDefined();
-    });
-
-    it('should open scanner with action', () => {
-      const { result } = renderHook(() => useQRScannerModal());
-
-      act(() => {
-        result.current.openScanner('checkIn');
-      });
-
-      expect(result.current.isVisible).toBe(true);
-      expect(result.current.action).toBe('checkIn');
-    });
-
-    it('should close scanner and reset action', () => {
-      const { result } = renderHook(() => useQRScannerModal());
-
-      act(() => {
-        result.current.openScanner('checkOut');
-      });
-
-      expect(result.current.isVisible).toBe(true);
-
-      act(() => {
-        result.current.closeScanner();
-      });
-
-      expect(result.current.isVisible).toBe(false);
-      expect(result.current.action).toBeUndefined();
     });
   });
 });

@@ -467,8 +467,7 @@ export interface WorkLog extends FirebaseDocument {
 // QR Code Types
 // ============================================================================
 
-/**
- * QR 肄붾뱶 ?≪뀡 ??? */
+/** QR 코드 액션 타입 */
 export type QRCodeAction = 'checkIn' | 'checkOut';
 
 /**
@@ -481,17 +480,17 @@ export type QRCodeAction = 'checkIn' | 'checkOut';
 export type QRProcessAction = QRCodeAction | 'auto';
 
 /**
- * QR 肄붾뱶 ?ㅼ틪 寃곌낵 (QRCodeScanner 而댄룷?뚰듃?먯꽌 ?ъ슜)
+ * QR 코드 스캔 결과 (QRCodeScanner 컴포넌트에서 사용)
  */
 export interface QRCodeScanResult {
   success: boolean;
-  /** ?먮낯 QR 臾몄옄??(processEventQRCheckIn??- ?꾩닔) */
+  /** 원본 QR 원문 문자열 (processQRCheckIn 이 파싱 — 필수) */
   qrString?: string;
   error?: string;
 }
 
 /**
- * QR ?ㅼ틪 ?먮윭 ?뺣낫 (useQRCodeScanner ??QRCodeScanner ?꾨떖??
+ * QR 스캔 에러 정보 (useQRCodeScanner → QRCodeScanner 전달용)
  */
 export interface QRScanError {
   code: string;
@@ -500,53 +499,8 @@ export interface QRScanError {
 }
 
 // ============================================================================
-// Event QR Types (eventQRCodes 而щ젆??
+// 고정 QR Types (공고당 1장 — 회전 QR 은 제거됨)
 // ============================================================================
-
-/**
- * ?대깽??QR 肄붾뱶 ?곗씠??(Firestore eventQRCodes 臾몄꽌)
- *
- * 援ъ씤?먭? ?꾩옣?먯꽌 ?앹꽦?섎뒗 異쒗눜洹쇱슜 QR 肄붾뱶
- */
-export interface EventQRCode {
-  id: string;
-  /** 怨듦퀬 ID */
-  jobPostingId: string;
-  /** 洹쇰Т ?좎쭨 (YYYY-MM-DD) */
-  date: string;
-  /** 異쒓렐/?닿렐 */
-  assignmentGroupId?: string | null;
-  timeSlot?: string | null;
-  action: QRCodeAction;
-  /** 蹂댁븞 肄붾뱶 (UUID) */
-  securityCode: string;
-  /** ?앹꽦??ID (援ъ씤?? */
-  createdBy: string;
-  /** ?앹꽦 ?쒓컙 */
-  createdAt: Date;
-  /** 留뚮즺 ?쒓컙 */
-  expiresAt: Date;
-  /** 활성 여부 (만료 시간으로 판단, isUsed 대신 사용) */
-  isActive: boolean;
-}
-
-/**
- * QR 肄붾뱶 ?쒖떆???곗씠??(JSON stringify?섏뿬 QR 肄붾뱶濡??몄퐫??
- */
-export interface EventQRDisplayData {
-  type: 'event';
-  /** 怨듦퀬 ID */
-  jobPostingId: string;
-  date: string;
-  assignmentGroupId?: string | null;
-  timeSlot?: string | null;
-  action: QRCodeAction;
-  securityCode: string;
-  /** ?앹꽦 ?쒓컙 (ms) */
-  createdAt: number;
-  /** 留뚮즺 ?쒓컙 (ms) */
-  expiresAt: number;
-}
 
 /**
  * 고정 운영처(컨테이너) QR 표시 데이터 (JSON stringify 하여 QR 로 인코딩)
@@ -561,20 +515,7 @@ export interface VenueQRDisplayData {
 }
 
 /**
- * QR ?앹꽦 ?낅젰
- */
-export interface GenerateEventQRInput {
-  /** 怨듦퀬 ID (?뺢퇋?붾맂 ?꾨뱶紐? */
-  jobPostingId: string;
-  date: string;
-  assignmentGroupId?: string | null;
-  timeSlot?: string | null;
-  action: QRCodeAction;
-  createdBy: string;
-}
-
-/**
- * QR ?ㅼ틪 寃곌낵 (異쒗눜洹?泥섎━ ??
+ * QR 스캔 결과 (출퇴근 처리 후)
  */
 export interface EventQRScanResult {
   success: boolean;
@@ -584,18 +525,4 @@ export interface EventQRScanResult {
   action: QRCodeAction;
   checkTime: Date;
   message: string;
-}
-
-/**
- * QR 寃利?寃곌낵
- */
-export interface EventQRValidationResult {
-  isValid: boolean;
-  /** 怨듦퀬 ID (?뺢퇋?붾맂 ?꾨뱶紐? */
-  jobPostingId?: string;
-  date?: string;
-  assignmentGroupId?: string | null;
-  timeSlot?: string | null;
-  action?: QRCodeAction;
-  errorMessage?: string;
 }

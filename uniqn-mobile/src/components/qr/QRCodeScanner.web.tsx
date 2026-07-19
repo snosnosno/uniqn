@@ -188,13 +188,13 @@ export function QRCodeScanner({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- handleQRCodeDetected는 안정적 참조, 순서 문제 방지
   }, [scanned]);
 
-  // QR 코드 감지 처리 (Event QR 시스템: qrString만 전달)
+  // QR 코드 감지 처리 (고정 QR: qrString만 전달)
   const handleQRCodeDetected = useCallback(
     (data: string) => {
       try {
         logger.info('QR 코드 스캔됨 (웹)', { data });
 
-        // Event QR 시스템: qrString만 전달 (processEventQRCheckIn에서 파싱 및 검증)
+        // 고정 QR: qrString만 전달 (processQRCheckIn에서 파싱 및 검증)
         onScan({
           success: true,
           qrString: data,

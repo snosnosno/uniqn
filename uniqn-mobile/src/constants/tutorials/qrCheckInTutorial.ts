@@ -1,8 +1,8 @@
 /**
  * UNIQN Mobile - QR 출퇴근 사용법 튜토리얼 콘텐츠
  *
- * @description 스태프가 QR 탭 첫 진입 시 표시
- * @version 1.0.0
+ * @description 스태프가 QR 스캔 화면(/scan) 첫 진입 시 표시
+ * @version 2.0.0 - 공고당 고정 QR 기준으로 문구 갱신 (회전 QR 전제 제거)
  */
 
 import { ScanIcon, CheckCircleIcon, AlertCircleIcon } from '@/components/icons';
@@ -18,10 +18,10 @@ const PAGES: readonly TutorialPage[] = [
     id: 'qr-scan',
     icon: ScanIcon,
     iconColor: PRIMARY_COLORS[700],
-    title: '카메라로 QR 코드를 스캔하세요',
-    subtitle: '구인자가 보여주는 코드를 비추면 돼요',
+    title: '현장에 비치된 QR을 스캔하세요',
+    subtitle: '근무지에 붙어 있는 코드를 비추면 돼요',
     description:
-      '"카메라로 스캔하기" 버튼을 누르면 카메라가 열립니다.\n구인자의 화면에 표시된 QR 코드를\n카메라 프레임 안에 비추세요.',
+      'QR 스캔 화면에 들어가면 카메라가 바로 열립니다.\n근무지에 비치된 출퇴근 QR 코드를\n카메라 프레임 안에 비추세요.',
   },
   {
     id: 'qr-auto',
@@ -30,7 +30,7 @@ const PAGES: readonly TutorialPage[] = [
     title: '출근/퇴근이 자동으로 감지돼요',
     subtitle: '현재 근무 상태에 따라 자동 판별',
     description:
-      '출근 전이면 "출근"으로,\n근무 중이면 "퇴근"으로 자동 처리됩니다.\n화면 상단의 상태 표시를 확인하세요.',
+      '출근 전이면 "출근"으로,\n근무 중이면 "퇴근"으로 자동 처리됩니다.\n같은 QR 하나로 출근과 퇴근을 모두 합니다.',
   },
   {
     id: 'qr-tips',
@@ -39,7 +39,7 @@ const PAGES: readonly TutorialPage[] = [
     title: '이것만 기억하세요',
     subtitle: '원활한 출퇴근을 위한 안내',
     description:
-      '• QR 코드는 구인자가 현장에서 생성합니다\n• 카메라 권한 허용이 필요합니다\n• QR 코드는 일정 시간 후 만료될 수 있어요\n• 스캔이 안 되면 구인자에게 새 코드를 요청하세요',
+      '• QR 코드는 공고마다 1장이며 바뀌지 않아요\n• 카메라 권한 허용이 필요합니다\n• 배정된 근무가 있어야 스캔이 처리됩니다\n• 스캔이 안 되면 구인자에게 문의하세요',
   },
 ] as const;
 
