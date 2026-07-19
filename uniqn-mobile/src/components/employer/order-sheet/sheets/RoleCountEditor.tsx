@@ -57,9 +57,13 @@ export function RoleCountEditor({ roles, onChange }: RoleCountEditorProps) {
 
   // 편집 중 raw 문자열 — 중간 상태("1")를 즉시 clamp 하면 두 자리 입력이 불가능해진다.
   // 한 번에 한 입력만 포커스되므로 단일 슬롯으로 충분하다.
-  // 키는 인덱스가 아니라 행 식별자(rowKeyOf) — 인덱스로 키잉하면 배열 shape 이 바뀔 때
-  // 그 자리를 승계한 다른 역할에 값이 잘못 커밋된다.
-  const [editing, setEditing] = useState<{ key: string; text: string } | null>(null);
+  // 식별자는 key(rowKeyOf)와 index 를 **둘 다** 들고 둘 다 일치할 때만 커밋·표시한다 —
+  // 두 식별자는 서로 다른 오염을 막으며 상호보완한다.
+  //  - key: 배열 shape 이 바뀌어 그 자리를 승계한 *다른 역할*에 값이 커밋되는 것을 막는다.
+  //  - index: rowKeyOf 가 같은 값을 내는 중복 행(예: customRole 없는 'other' 2행)에서
+  //    뒤 행 onFocus 가 앞 행의 편집 텍스트를 덮어써 *값의 출처*가 오염되는 것을 막는다.
+  //    (커밋 대상 행 `i` 는 렌더 클로저라 정확하지만, 값이 다른 행 것이면 결과는 똑같이 오데이터다.)
+  const [editing, setEditing] = useState<{ key: string; index: number; text: string } | null>(null);
 
   /** 커스텀 역할 추가 — 같은 이름이 이미 있으면 기존 행을 유지(중복 행 방지, 현행 시맨틱 승계) */
   const addCustom = () => {
@@ -67,7 +71,8 @@ export function RoleCountEditor({ roles, onChange }: RoleCountEditorProps) {
     if (!name) return;
     const exists = roles.some((r) => r.role === 'other' && r.customRole === name);
     if (!exists) {
-      setEditing(null); // 배열 shape 변경 → 진행 중 편집 무효화
+      // 편집 무효화하지 않는다 — 배열 끝 append 는 기존 행의 인덱스도 식별자도 바꾸지 않는다.
+      // (무효화하면 `keyboardShouldPersistTaps="handled"` 로 blur 없이 추가할 때 입력값이 증발한다)
       onChange([...roles, { role: 'other', customRole: name, count: MIN_COUNT }]);
     }
     setCustomName('');
@@ -75,13 +80,15 @@ export function RoleCountEditor({ roles, onChange }: RoleCountEditorProps) {
   };
 
   const toggleRole = (key: ToggleRoleKey) => {
-    setEditing(null); // 배열 shape 변경 → 진행 중 편집 무효화(삭제된 역할이 부활해 값을 받는 경로 차단)
     const found = roles.find((r) => r.role === key);
     if (found) {
+      // 해제(제거)만 인덱스를 앞당겨 shape 을 바꾼다 → 진행 중 편집 무효화.
+      setEditing(null);
       setLastCount((prev) => ({ ...prev, [key]: found.count }));
       onChange(roles.filter((r) => r.role !== key));
       return;
     }
+    // 추가는 배열 끝 append — 기존 행의 인덱스·식별자가 그대로이므로 편집을 무효화하지 않는다.
     // 기억한 인원도 clamp 를 태운다 — `??` 는 0 을 통과시키고, 레거시 draft 의
     // 범위 밖 값(150 등)이 zod min(1).max(99) 를 위반한 채 폼으로 흘러든다.
     onChange([...roles, { role: key, count: clampCount(lastCount[key] ?? MIN_COUNT) }]);
@@ -94,12 +101,12 @@ export function RoleCountEditor({ roles, onChange }: RoleCountEditorProps) {
   };
 
   /**
-   * blur 커밋 — `rowKey` 는 blur 가 발생한 시점에 그 자리를 차지한 행의 식별자다.
-   * 편집을 시작한 행과 다르면(포커스 이동·행 삭제·행 부활) 커밋하지 않는다.
+   * blur 커밋 — `rowKey`/`i` 는 blur 가 발생한 시점에 그 자리를 차지한 행의 식별자·인덱스다.
+   * 편집을 시작한 행과 **둘 중 하나라도** 다르면(포커스 이동·행 삭제·행 부활·중복 키) 커밋하지 않는다.
    * 이때 `editing` 을 비우지 않는 것이 중요하다 — 지금 포커스된 다른 행의 편집이 살아 있다.
    */
   const commitEditing = (i: number, rowKey: string) => {
-    if (editing?.key !== rowKey) return;
+    if (editing?.key !== rowKey || editing.index !== i) return;
     const parsed = Number.parseInt(editing.text, 10);
     // 빈값·0·NaN 은 직전 값 유지 — 0명 저장 방지(§4.3)
     if (Number.isFinite(parsed) && parsed >= MIN_COUNT) setCountAt(i, parsed);
@@ -208,10 +215,18 @@ export function RoleCountEditor({ roles, onChange }: RoleCountEditorProps) {
                     <MinusIcon size={16} />
                   </Pressable>
                   <TextInput
-                    value={editing?.key === rowKey ? editing.text : String(r.count)}
-                    onFocus={() => setEditing({ key: rowKey, text: String(r.count) })}
+                    value={
+                      editing?.key === rowKey && editing.index === i
+                        ? editing.text
+                        : String(r.count)
+                    }
+                    onFocus={() => setEditing({ key: rowKey, index: i, text: String(r.count) })}
                     onChangeText={(t) =>
-                      setEditing({ key: rowKey, text: t.replace(/[^0-9]/g, '').slice(0, 2) })
+                      setEditing({
+                        key: rowKey,
+                        index: i,
+                        text: t.replace(/[^0-9]/g, '').slice(0, 2),
+                      })
                     }
                     onBlur={() => commitEditing(i, rowKey)}
                     keyboardType="number-pad"

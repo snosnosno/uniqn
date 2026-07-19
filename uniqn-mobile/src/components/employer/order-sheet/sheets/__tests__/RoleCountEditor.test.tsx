@@ -283,6 +283,67 @@ describe('RoleCountEditor — 편집 중 행이 바뀌어도 다른 역할에 �
     expect(dump(getByTestId)).toEqual([{ role: 'floor', count: 5 }]);
   });
 
+  // 회귀 가드 — 무효화가 *추가* 분기까지 걸려 있으면 편집 중 칩 추가에서 입력값이 증발한다.
+  // `keyboardShouldPersistTaps="handled"`(전역 룰 20) 때문에 blur 없는 칩 탭은 정상 경로다.
+  // 배열 끝 append 는 기존 행의 인덱스도 식별자도 바꾸지 않으므로 무효화할 이유가 없다.
+  it('D. 편집 중 칩으로 역할을 추가해도 입력값이 살아남아 정확히 커밋된다', () => {
+    const { getByTestId } = render(<Harness initial={[{ role: 'dealer', count: 1 }]} />);
+    const input = getByTestId('order-role-count-input-0');
+    fireEvent(input, 'focus');
+    fireEvent.changeText(input, '12');
+    fireEvent.press(getByTestId('order-role-chip-floor')); // blur 없이 행 추가(append)
+    // 회귀 시: 표시값이 즉시 '1' 로 되돌아간다.
+    expect(getByTestId('order-role-count-input-0').props.value).toBe('12');
+    fireEvent(getByTestId('order-role-count-input-0'), 'blur');
+    // 회귀 시: dealer 의 12 가 증발해 count:1 로 남는다.
+    expect(dump(getByTestId)).toEqual([
+      { role: 'dealer', count: 12 },
+      { role: 'floor', count: 1 },
+    ]);
+  });
+
+  // 회귀 가드 — 위와 같은 이유로 `addCustom` 의 append 도 편집을 무효화하면 안 된다.
+  it("D-2. 편집 중 '＋ 직접 입력'으로 역할을 추가해도 입력값이 살아남는다", () => {
+    const { getByTestId } = render(<Harness initial={[{ role: 'dealer', count: 1 }]} />);
+    const input = getByTestId('order-role-count-input-0');
+    fireEvent(input, 'focus');
+    fireEvent.changeText(input, '12');
+    fireEvent.press(getByTestId('order-role-custom-open'));
+    fireEvent.changeText(getByTestId('order-sheet-role-custom'), '칩카운터');
+    fireEvent.press(getByTestId('order-role-add')); // blur 없이 행 추가(append)
+    expect(getByTestId('order-role-count-input-0').props.value).toBe('12');
+    fireEvent(getByTestId('order-role-count-input-0'), 'blur');
+    expect(dump(getByTestId)).toEqual([
+      { role: 'dealer', count: 12 },
+      { role: 'other', customRole: '칩카운터', count: 1 },
+    ]);
+  });
+
+  // 회귀 가드 — 중복 식별자(customRole 없는 'other' 2행)에서의 시나리오 A.
+  // key 만으로는 두 행이 같은 슬롯을 공유해 뒤 행 onFocus 가 앞 행의 편집 텍스트를 덮어쓴다.
+  // 커밋 대상 행(`i`)은 맞지만 값의 출처가 뒤 행이라 결과는 그대로 오데이터다 → index 도 함께 본다.
+  it('E. 중복 식별자 행에서도 다른 행의 값이 출처가 되어 커밋되지 않는다', () => {
+    const { getByTestId } = render(
+      <Harness
+        initial={[
+          { role: 'other', count: 3 },
+          { role: 'other', count: 5 },
+        ]}
+      />
+    );
+    fireEvent(getByTestId('order-role-count-input-0'), 'focus');
+    fireEvent.changeText(getByTestId('order-role-count-input-0'), '12');
+    fireEvent(getByTestId('order-role-count-input-1'), 'focus'); // 편집 슬롯이 뒤 행으로 이동
+    // 회귀 시: 앞 행이 뒤 행의 편집 텍스트 '5' 를 공유 표시한다.
+    expect(getByTestId('order-role-count-input-0').props.value).toBe('3');
+    fireEvent(getByTestId('order-role-count-input-0'), 'blur'); // 늦게 도착한 앞 행 blur
+    // 회귀 시: 앞 행의 3 이 뒤 행 값 5 로 덮인다.
+    expect(dump(getByTestId)).toEqual([
+      { role: 'other', count: 3 },
+      { role: 'other', count: 5 },
+    ]);
+  });
+
   it("'기타' 는 customRole 까지 포함해 구분된다 — 다른 커스텀 역할에 커밋되지 않는다", () => {
     const { getByTestId, getByLabelText } = render(
       <Harness
