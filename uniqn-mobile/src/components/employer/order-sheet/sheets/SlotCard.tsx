@@ -3,10 +3,15 @@
  *
  * @description 펼침이면 시간 트리거·삭제·RoleCountEditor 를 렌더하고, 접힘이면 한 줄 요약만 렌더한다.
  * 접힘 시 편집기를 아예 마운트하지 않으므로 여러 카드가 있어도 역할 testID 가 충돌하지 않는다.
- * 활성 인덱스는 부모(ScheduleSlotsSheet)가 소유한다 — 이 컴포넌트는 상태를 갖지 않는다.
+ * 활성 인덱스는 부모(ScheduleSlotsSheet)가 소유한다 — 펼침 여부 상태는 갖지 않는다.
+ *
+ * ⚠️ 펼침/접힘은 반드시 **분리된 두 반환문**으로 유지한다. 애니메이션을 붙인다고 두 분기를
+ * 한 트리로 합치고 본문 display 를 토글하면 접힘 시에도 RoleCountEditor 가 마운트된 채
+ * 남아 (1) testID 다중 매치 (2) 슬롯 간 편집 state 누수가 생긴다(테스트 3건이 이를 잡는다).
  */
-import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { AccessibilityInfo, Pressable, Text, View } from 'react-native';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { ChevronRightIcon } from '@/components/icons';
 import { RoleCountEditor, roleLabel, type SlotRoles } from './RoleCountEditor';
 
@@ -42,6 +47,19 @@ export function SlotCard({
   onChangeRoles,
   onRemove,
 }: SlotCardProps) {
+  // 동작 줄이기 — 프로젝트 기존 패턴(Skeleton.tsx:68, OfflineStatusBar.tsx:69) 승계.
+  // ON 이면 진입/종료 애니메이션 없이 즉시 전환한다.
+  const [reduceMotion, setReduceMotion] = useState(false);
+  useEffect(() => {
+    let mounted = true;
+    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (mounted) setReduceMotion(enabled);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   if (!expanded) {
     return (
       <Pressable
@@ -61,7 +79,9 @@ export function SlotCard({
   }
 
   return (
-    <View
+    <Animated.View
+      entering={reduceMotion ? undefined : FadeIn.duration(300)}
+      exiting={reduceMotion ? undefined : FadeOut.duration(225)}
       accessibilityState={{ expanded: true }}
       className="rounded-xl border border-secondary-200 dark:border-surface-overlay bg-surface-card px-4 py-3"
     >
@@ -91,6 +111,6 @@ export function SlotCard({
         )}
       </View>
       <RoleCountEditor roles={slot.roles} onChange={onChangeRoles} />
-    </View>
+    </Animated.View>
   );
 }

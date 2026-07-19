@@ -2,11 +2,11 @@
  * SlotCard — 슬롯 카드 테스트 (아코디언 펼침/접힘)
  *
  * 검증: (1) 접힘=요약만+편집기 미마운트, (2) 접힘 탭=onExpand(무상태), (3) 펼침=시간 트리거+역할 편집기,
- * (4) 삭제 버튼 노출 조건, (5) 요약은 한글 라벨, (6) 역할 변경 배선.
+ * (4) 삭제 버튼 노출 조건, (5) 요약은 한글 라벨, (6) 역할 변경 배선, (7) 동작 줄이기 분기.
  */
 import { render, fireEvent } from '@testing-library/react-native';
 import React, { useState } from 'react';
-import { Pressable, Text } from 'react-native';
+import { AccessibilityInfo, Pressable, Text } from 'react-native';
 import { SlotCard } from '../SlotCard';
 import type { SlotRoles } from '../RoleCountEditor';
 
@@ -211,5 +211,38 @@ describe('SlotCard', () => {
     expect(getByTestId('order-time-start-2')).toBeTruthy();
     expect(getByTestId('order-time-remove-2')).toBeTruthy();
     expect(queryByTestId('order-time-start-0')).toBeNull();
+  });
+});
+
+describe('SlotCard — 동작 줄이기', () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  it('동작 줄이기 ON 이어도 펼침 내용은 정상 렌더된다', async () => {
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
+    const { getByText, findByTestId } = render(
+      <SlotCard {...baseProps} expanded slot={{ startTime: '19:00', roles: [] }} />
+    );
+    expect(await findByTestId('order-role-chip-dealer')).toBeTruthy();
+    expect(getByText('출근 19:00')).toBeTruthy();
+  });
+
+  it('동작 줄이기 OFF 에서도 펼침 내용은 정상 렌더된다', async () => {
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
+    const { getByText, findByTestId } = render(
+      <SlotCard {...baseProps} expanded slot={{ startTime: '19:00', roles: [] }} />
+    );
+    expect(await findByTestId('order-role-chip-dealer')).toBeTruthy();
+    expect(getByText('출근 19:00')).toBeTruthy();
+  });
+
+  // 위 두 건은 "렌더가 안 깨진다"만 보므로 useEffect 를 통째로 지워도 통과한다(공허 단언).
+  // 실제로 OS 설정을 조회하는 배선이 살아있는지는 호출 자체로 검증한다.
+  it('펼침 시 OS 동작 줄이기 설정을 실제로 조회한다', async () => {
+    const spy = jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
+    const { findByTestId } = render(
+      <SlotCard {...baseProps} expanded slot={{ startTime: '19:00', roles: [] }} />
+    );
+    await findByTestId('order-role-chip-dealer');
+    expect(spy).toHaveBeenCalled();
   });
 });
