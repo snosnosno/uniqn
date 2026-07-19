@@ -96,8 +96,7 @@ describe('OrderSheetScreen — 고정 역할 급여 프리필 안내 토스트(S
     );
 
     fireEvent.press(getByTestId('order-sheet-row-roles')); // 고정 → RolesSheet(fixedRoles) 직접
-    fireEvent.press(getByTestId('order-role-chip-floor'));
-    fireEvent.press(getByTestId('order-role-add'));
+    fireEvent.press(getByTestId('order-role-chip-floor')); // 칩 1탭 = 즉시 추가(RoleCountEditor)
     fireEvent.press(getByText('확인'));
     await flushValidation();
 
@@ -118,8 +117,7 @@ describe('OrderSheetScreen — 고정 역할 급여 프리필 안내 토스트(S
     );
 
     fireEvent.press(getByTestId('order-sheet-row-roles'));
-    fireEvent.press(getByTestId('order-role-chip-dealer'));
-    fireEvent.press(getByTestId('order-role-add'));
+    fireEvent.press(getByTestId('order-role-chip-dealer')); // 칩 1탭 = 즉시 추가(RoleCountEditor)
     fireEvent.press(getByText('확인'));
     await flushValidation();
 

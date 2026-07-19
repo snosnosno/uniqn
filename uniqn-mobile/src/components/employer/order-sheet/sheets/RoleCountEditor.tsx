@@ -236,6 +236,7 @@ export function RoleCountEditor({ roles, onChange }: RoleCountEditorProps) {
                     accessibilityLabel={`${roleLabel(r)} 인원, 숫자 직접 입력`}
                     className="w-10 h-11 text-center text-sm font-sans-bold text-content-primary"
                   />
+                  <Text className="text-xs text-content-muted font-sans">명</Text>
                   <Pressable
                     onPress={() => setCountAt(i, r.count + 1)}
                     testID={`order-role-count-plus-${i}`}
