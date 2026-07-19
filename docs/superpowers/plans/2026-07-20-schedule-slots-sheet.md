@@ -317,7 +317,7 @@ export function RoleCountEditor({ roles, onChange }: RoleCountEditorProps) {
 - [ ] **Step 4: 테스트 통과 확인**
 
 Run: `cd uniqn-mobile && npx jest src/components/employer/order-sheet/sheets/__tests__/RoleCountEditor.test.tsx`
-Expected: PASS — 9 tests passed
+Expected: PASS — 10 tests passed
 
 - [ ] **Step 5: 커밋**
 
@@ -1141,7 +1141,7 @@ export function SlotCard({
 - [ ] **Step 4: 테스트 통과 확인**
 
 Run: `cd uniqn-mobile && npx jest src/components/employer/order-sheet/sheets/__tests__/SlotCard.test.tsx`
-Expected: PASS — 9 tests passed
+Expected: PASS — 10 tests passed
 
 - [ ] **Step 5: 커밋**
 
@@ -1333,6 +1333,30 @@ describe('ScheduleSlotsSheet', () => {
     expect(queryByTestId('order-time-remove-0')).toBeNull();
   });
 
+  // Task 5 리뷰 예고 회귀 가드 — key={i} 로 되돌리면 red 가 되어야 한다.
+  // 펼친 슬롯을 삭제하면 승계 슬롯이 같은 React 인스턴스를 재사용해
+  // RoleCountEditor 의 내부 상태(customOpen/customName)를 물려받는 결함.
+  it('펼친 슬롯을 삭제해도 승계 슬롯이 편집기 상태를 물려받지 않는다', () => {
+    const { getByTestId, queryByTestId } = render(
+      <ScheduleSlotsSheet
+        visible
+        value={[
+          { startTime: '19:00', roles: [] },
+          { startTime: '22:00', roles: [] },
+        ]}
+        onConfirm={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+    // 첫 미완성 = index 0 이 펼쳐진 상태. 기타 직접입력 패널을 열고 이름을 입력해 둔다.
+    fireEvent.press(getByTestId('order-role-custom-open'));
+    fireEvent.changeText(getByTestId('order-sheet-role-custom'), '칩카운터');
+    // 그 펼친 슬롯을 삭제 — index 0 을 22:00 슬롯이 승계한다
+    fireEvent.press(getByTestId('order-time-remove-0'));
+    // 승계 슬롯의 편집기는 깨끗해야 한다(입력 패널이 열려 있으면 안 된다)
+    expect(queryByTestId('order-sheet-role-custom')).toBeNull();
+  });
+
   it('슬롯 2개에서 펼친 카드를 삭제하면 1개로 줄고 삭제 버튼이 사라진다', () => {
     const { getByTestId, queryByTestId } = render(
       <ScheduleSlotsSheet
@@ -1371,7 +1395,7 @@ Expected: FAIL — `Cannot find module '../ScheduleSlotsSheet'`
  * 시간 휠은 여전히 SheetModal 의 overlay 슬롯에 embedded 로 얹는다(중첩 Modal 금지 유효, #186/#243).
  * 슬롯이 2개 이상이면 아코디언 — 활성 카드 하나만 펼친다.
  */
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { SheetModal } from '@/components/ui/SheetModal';
 import { Button } from '@/components/ui/Button';
@@ -1411,13 +1435,20 @@ export function ScheduleSlotsSheet({
   onConfirm,
   onClose,
 }: ScheduleSlotsSheetProps) {
-  const [slots, setSlots] = useState<Slots>(
-    value.length > 0 ? value : [{ startTime: DEFAULT_START, roles: [] }]
-  );
-  const [expanded, setExpanded] = useState<number>(() =>
-    firstIncompleteIndex(value.length > 0 ? value : [{ startTime: DEFAULT_START, roles: [] }])
-  );
+  const seed: Slots = value.length > 0 ? value : [{ startTime: DEFAULT_START, roles: [] }];
+  const [slots, setSlots] = useState<Slots>(seed);
+  const [expanded, setExpanded] = useState<number>(() => firstIncompleteIndex(seed));
   const [pickerIndex, setPickerIndex] = useState<number | null>(null);
+
+  /**
+   * 슬롯별 안정 식별자 — SlotCard 의 key 로 쓴다.
+   * 배열 인덱스를 key 로 쓰면 **펼친 슬롯을 삭제할 때** 승계 슬롯이 같은 React 인스턴스를
+   * 재사용해 RoleCountEditor 의 내부 상태(editing·lastCount·customOpen·customName)를 물려받는다.
+   * Task 5 리뷰가 예고한 위험이자 Task 3 시나리오 C 와 같은 결함 클래스다.
+   * 안정 id 를 쓰면 삭제된 카드가 통째로 언마운트되고 승계 슬롯은 깨끗한 편집기를 새로 마운트한다.
+   */
+  const nextIdRef = useRef(seed.length);
+  const [slotIds, setSlotIds] = useState<string[]>(() => seed.map((_, i) => `slot-${i}`));
 
   const updateStart = (i: number, t: TimeValue) =>
     setSlots((prev) => prev.map((s, idx) => (idx === i ? { ...s, startTime: toStartTime(t) } : s)));
@@ -1432,12 +1463,14 @@ export function ScheduleSlotsSheet({
       { startTime: '', roles: (slots[0]?.roles ?? []).map((r) => ({ ...r })) },
     ];
     setSlots(next);
+    setSlotIds((prev) => [...prev, `slot-${nextIdRef.current++}`]);
     setExpanded(next.length - 1);
   };
 
   const removeSlot = (i: number) => {
     const next = slots.filter((_, idx) => idx !== i);
     setSlots(next);
+    setSlotIds((prev) => prev.filter((_, idx) => idx !== i));
     setExpanded((cur) =>
       cur > i ? cur - 1 : Math.min(cur, Math.max(0, next.length - 1))
     );
@@ -1478,7 +1511,7 @@ export function ScheduleSlotsSheet({
       <View className="gap-2 px-4 pt-3 pb-2">
         {slots.map((slot, i) => (
           <SlotCard
-            key={i}
+            key={slotIds[i]}
             slot={slot}
             index={i}
             expanded={expanded === i}
@@ -1508,7 +1541,7 @@ export function ScheduleSlotsSheet({
 - [ ] **Step 4: 테스트 통과 확인**
 
 Run: `cd uniqn-mobile && npx jest src/components/employer/order-sheet/sheets/__tests__/ScheduleSlotsSheet.test.tsx`
-Expected: PASS — 9 tests passed
+Expected: PASS — 10 tests passed
 
 - [ ] **Step 5: 커밋**
 
