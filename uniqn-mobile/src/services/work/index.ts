@@ -58,7 +58,7 @@ export {
   cancelConfirmedStaffConfirmation,
   markAsNoShow,
   cancelNoShow,
-  searchStaffByPhone,
+  searchStaffByNickname,
   addDirectStaff,
   subscribeToConfirmedStaff,
   type GetConfirmedStaffResult,

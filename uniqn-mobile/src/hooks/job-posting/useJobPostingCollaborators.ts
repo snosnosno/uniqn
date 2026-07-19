@@ -141,7 +141,7 @@ export function useJobPostingCollaborators(
 }
 
 // ============================================================================
-// useCollaboratorCandidates — 이메일 검색 (debounce 는 호출자가 처리)
+// useCollaboratorCandidates — 닉네임 검색 (debounce 는 호출자가 처리)
 // ============================================================================
 
 export interface UseCollaboratorCandidatesResult {
@@ -152,16 +152,16 @@ export interface UseCollaboratorCandidatesResult {
 
 export function useCollaboratorCandidates(
   jobPostingId: string | undefined,
-  emailQuery: string
+  nicknameQuery: string
 ): UseCollaboratorCandidatesResult {
-  const enabled = !!jobPostingId && emailQuery.trim().length >= 3;
+  const enabled = !!jobPostingId && nicknameQuery.trim().length >= 2;
 
   const query = useQuery({
     queryKey: jobPostingId
-      ? queryKeys.jobPostingCollaborators.candidates(jobPostingId, emailQuery)
+      ? queryKeys.jobPostingCollaborators.candidates(jobPostingId, nicknameQuery)
       : [...queryKeys.jobPostingCollaborators.all, 'candidates', 'none'],
     queryFn: () =>
-      collaboratorService.searchCandidates({ jobPostingId: jobPostingId!, emailQuery }),
+      collaboratorService.searchCandidates({ jobPostingId: jobPostingId!, nicknameQuery }),
     enabled,
     staleTime: 30_000,
   });

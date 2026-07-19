@@ -343,8 +343,13 @@ export const queryKeys = {
       [...queryKeys.jobPostingCollaborators.all, 'list', jobPostingId] as const,
     sharedForUser: (userId: string) =>
       [...queryKeys.jobPostingCollaborators.all, 'shared', userId] as const,
-    candidates: (jobPostingId: string, emailQuery: string) =>
-      [...queryKeys.jobPostingCollaborators.all, 'candidates', jobPostingId, emailQuery] as const,
+    candidates: (jobPostingId: string, nicknameQuery: string) =>
+      [
+        ...queryKeys.jobPostingCollaborators.all,
+        'candidates',
+        jobPostingId,
+        nicknameQuery,
+      ] as const,
   },
 
   // 공고 템플릿 (구인자)

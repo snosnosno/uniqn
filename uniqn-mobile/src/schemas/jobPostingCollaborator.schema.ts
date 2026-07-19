@@ -29,7 +29,7 @@ export type JobPostingCollaboratorData = z.infer<typeof jobPostingCollaboratorSc
 
 /**
  * 협업자 추가 (Service 진입점)
- * UI 에서 이메일로 검색 → userId 확정 후 호출
+ * UI 에서 닉네임으로 검색 → userId 확정 후 호출
  */
 export const addCollaboratorSchema = z.object({
   jobPostingId: z.string().uuid({ message: '올바른 공고 ID 가 아닙니다' }),
@@ -39,19 +39,19 @@ export const addCollaboratorSchema = z.object({
 export type AddCollaboratorData = z.infer<typeof addCollaboratorSchema>;
 
 // ============================================================================
-// 이메일 검색
+// 닉네임 검색
 // ============================================================================
 
 /**
- * 협업자 추가용 사용자 검색 (이메일 prefix)
+ * 협업자 추가용 사용자 검색 (닉네임 prefix)
  */
 export const searchCollaboratorCandidateSchema = z.object({
   jobPostingId: z.string().uuid({ message: '올바른 공고 ID 가 아닙니다' }),
-  emailQuery: z
-    .string({ error: '이메일을 입력해주세요' })
+  nicknameQuery: z
+    .string({ error: '닉네임을 입력해주세요' })
     .trim()
-    .min(3, { message: '3자 이상 입력해주세요' })
-    .max(254, { message: '이메일이 너무 깁니다' })
+    .min(2, { message: '2자 이상 입력해주세요' })
+    .max(15, { message: '닉네임이 너무 깁니다' })
     .refine(xssValidation, { message: '특수문자가 포함될 수 없습니다' }),
 });
 

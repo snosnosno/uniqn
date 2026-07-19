@@ -66,13 +66,12 @@ export interface EmployerRegistrationInput {
 }
 
 /**
- * 전화번호 검색 결과 (최소 공개 필드만)
+ * 닉네임 검색 결과 (최소 공개 필드만)
  */
-export interface UserPhoneSearchResult {
+export interface UserNicknameSearchResult {
   uid: string;
   name: string;
   nickname?: string;
-  phone?: string;
   photoURL?: string | null;
   photoURLBlurhash?: string | null;
   region?: string;
@@ -115,11 +114,11 @@ export interface IUserRepository {
   exists(userId: string): Promise<boolean>;
 
   /**
-   * 전화번호 정확 일치 사용자 검색 (구인자 전용, 스태프 직접 추가용)
-   * @param phone - 전화번호(하이픈/공백 무시, 숫자 정규화 후 정확 일치)
-   * @returns 최소 공개 필드 목록 (최대 5건)
+   * 닉네임 prefix 검색 (구인자 전용, 스태프 직접 추가용)
+   * @param nickname - 닉네임(앞부분 일치, 대소문자 무시, 최소 2자)
+   * @returns 최소 공개 필드 목록 (최대 8건)
    */
-  searchByPhone(phone: string): Promise<UserPhoneSearchResult[]>;
+  searchByNickname(nickname: string): Promise<UserNicknameSearchResult[]>;
 
   /**
    * 회원탈퇴 요청 상태 조회

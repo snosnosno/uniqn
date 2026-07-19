@@ -3,7 +3,7 @@
  *
  * (1) 확정 풀이 빈 상태(신규 운영자 첫 상태)에서 빈상태가 죽은 안내문이 아니라 행동 가능한
  *     CTA 2개를 제공하는지: "공고로 모집하기" → 공고 작성 라우트로 venueId 를 실어 이동+시트 닫힘,
- *     "전화번호로 찾기" → 전화검색 모드 전환(검색 입력 노출).
+ *     "닉네임으로 찾기" → 닉네임검색 모드 전환(검색 입력 노출).
  * (2) 풀에서 인원을 고르면 종료 필드·익일 프리뷰가 아니라 **출근시간(start) 단일 필드 + 미정 토글**을
  *     보여주는지(형제 AddStaffModal·지원/확정 모델과 정합). 미정 토글 시 트리거가 '미정'으로 전환되는지.
  */
@@ -11,7 +11,7 @@ import { render, fireEvent } from '@testing-library/react-native';
 import React from 'react';
 import { AddSlotSheet } from '../AddSlotSheet';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
-import { useStaffPhoneSearch } from '@/hooks/useStaffPhoneSearch';
+import { useStaffNicknameSearch } from '@/hooks/useStaffNicknameSearch';
 
 // 무거운 의존(SheetModal=RNModal+reanimated) 모킹: visible 일 때 children+footer+overlay 렌더
 jest.mock('@/components/ui/SheetModal', () => {
@@ -46,10 +46,10 @@ jest.mock('@tanstack/react-query', () => ({
 }));
 
 jest.mock('@/hooks/useConfirmedStaff', () => ({ useConfirmedStaff: jest.fn() }));
-jest.mock('@/hooks/useStaffPhoneSearch', () => ({ useStaffPhoneSearch: jest.fn() }));
+jest.mock('@/hooks/useStaffNicknameSearch', () => ({ useStaffNicknameSearch: jest.fn() }));
 
 const mockUseConfirmedStaff = useConfirmedStaff as unknown as jest.Mock;
-const mockUsePhoneSearch = useStaffPhoneSearch as unknown as jest.Mock;
+const mockUseNicknameSearch = useStaffNicknameSearch as unknown as jest.Mock;
 
 beforeEach(() => {
   mockPush.mockReset();
@@ -60,7 +60,7 @@ beforeEach(() => {
     addStaff: jest.fn(),
     isAddingStaff: false,
   });
-  mockUsePhoneSearch.mockReturnValue({
+  mockUseNicknameSearch.mockReturnValue({
     reset: jest.fn(),
     search: jest.fn(),
     isSearching: false,
@@ -76,11 +76,11 @@ function renderSheet(onClose = jest.fn()) {
   };
 }
 
-it('빈 풀 빈상태에 CTA 2개(공고로 모집하기/전화번호로 찾기) 렌더', () => {
+it('빈 풀 빈상태에 CTA 2개(공고로 모집하기/닉네임으로 찾기) 렌더', () => {
   const { getByText } = renderSheet();
 
   expect(getByText('공고로 모집하기')).toBeTruthy();
-  expect(getByText('전화번호로 찾기')).toBeTruthy();
+  expect(getByText('닉네임으로 찾기')).toBeTruthy();
 });
 
 it('"공고로 모집하기" 탭 → 공고 작성 라우트로 venueId+date 전달 + 시트 닫힘', () => {
@@ -96,12 +96,12 @@ it('"공고로 모집하기" 탭 → 공고 작성 라우트로 venueId+date 전
   expect(onClose).toHaveBeenCalled();
 });
 
-it('"전화번호로 찾기" 탭 → 전화검색 모드 전환(검색 입력 노출)', () => {
+it('"닉네임으로 찾기" 탭 → 닉네임검색 모드 전환(검색 입력 노출)', () => {
   const { getByText, getByPlaceholderText } = renderSheet();
 
-  fireEvent.press(getByText('전화번호로 찾기'));
+  fireEvent.press(getByText('닉네임으로 찾기'));
 
-  expect(getByPlaceholderText('등록된 전화번호 전체 입력')).toBeTruthy();
+  expect(getByPlaceholderText('닉네임 입력 (2자 이상)')).toBeTruthy();
 });
 
 it('풀에서 인원 선택 → 출근시간 단일 필드(기본 오후 6:00) 노출, 종료 필드·익일 프리뷰 없음', () => {

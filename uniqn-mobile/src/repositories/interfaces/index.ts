@@ -45,7 +45,7 @@ export type {
   DeletionRequest,
   UserDataExport,
   EmployerRegistrationInput,
-  UserPhoneSearchResult,
+  UserNicknameSearchResult,
 } from './IUserRepository';
 
 // EventQR Repository

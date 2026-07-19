@@ -9,6 +9,7 @@ import {
   getConfirmedStaff,
   getConfirmedStaffByDate,
   markAsNoShow,
+  searchStaffByNickname,
   subscribeToConfirmedStaff,
   updateStaffRole,
   updateStaffStatus,
@@ -30,6 +31,7 @@ jest.mock('@/repositories', () => ({
   },
   userRepository: {
     getById: jest.fn(),
+    searchByNickname: jest.fn(),
   },
   workLogRepository: {
     getById: jest.fn(),
@@ -370,5 +372,37 @@ describe('confirmedStaffService', () => {
         stats: expect.any(Object),
       })
     );
+  });
+});
+
+describe('searchStaffByNickname', () => {
+  const mockSearchByNickname = userRepository.searchByNickname as jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('2자 미만이면 RPC 호출 없이 빈 배열을 반환한다', async () => {
+    const result = await searchStaffByNickname('로');
+    expect(result).toEqual([]);
+    expect(mockSearchByNickname).not.toHaveBeenCalled();
+  });
+
+  it('공백 제거 후 2자 미만이면 빈 배열을 반환한다', async () => {
+    const result = await searchStaffByNickname('  로  ');
+    expect(result).toEqual([]);
+    expect(mockSearchByNickname).not.toHaveBeenCalled();
+  });
+
+  it('15자 초과면 RPC 호출 없이 빈 배열을 반환한다', async () => {
+    const result = await searchStaffByNickname('가'.repeat(16));
+    expect(result).toEqual([]);
+    expect(mockSearchByNickname).not.toHaveBeenCalled();
+  });
+
+  it('2~15자면 trim 후 Repository.searchByNickname 를 호출한다', async () => {
+    mockSearchByNickname.mockResolvedValue([]);
+    await searchStaffByNickname('  로즈  ');
+    expect(mockSearchByNickname).toHaveBeenCalledWith('로즈');
   });
 });

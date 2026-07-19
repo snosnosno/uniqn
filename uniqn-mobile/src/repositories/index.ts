@@ -73,7 +73,7 @@ export type {
   DeletionReason,
   DeletionRequest,
   UserDataExport,
-  UserPhoneSearchResult,
+  UserNicknameSearchResult,
   // EventQR
   IEventQRRepository,
   // Notification
