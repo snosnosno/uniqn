@@ -15,9 +15,7 @@ import {
   getSchedulesByMonth,
   getScheduleById,
   getTodaySchedules,
-  getUpcomingSchedules,
   subscribeToSchedules,
-  getScheduleStats,
   groupSchedulesByDate,
   getCalendarMarkedDates,
 } from '@/services/work/scheduleService';
@@ -594,51 +592,6 @@ describe('scheduleService - getTodaySchedules', () => {
   });
 });
 
-describe('scheduleService - getUpcomingSchedules', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockWorkLogRepositoryGetByStaffIdWithFilters.mockResolvedValue([]);
-    mockApplicationRepositoryGetByApplicantIdWithStatuses.mockResolvedValue([]);
-    mockJobPostingRepositoryGetByIdBatch.mockResolvedValue([]);
-  });
-
-  it('기본 7일간의 스케줄을 조회해야 함', async () => {
-    mockScheduleMergerMerge.mockReturnValue([]);
-
-    await getUpcomingSchedules('staff-123');
-
-    expect(mockWorkLogRepositoryGetByStaffIdWithFilters).toHaveBeenCalled();
-  });
-
-  it('사용자 지정 일수로 조회 가능해야 함', async () => {
-    mockScheduleMergerMerge.mockReturnValue([]);
-
-    await getUpcomingSchedules('staff-123', 14);
-
-    expect(mockWorkLogRepositoryGetByStaffIdWithFilters).toHaveBeenCalled();
-  });
-
-  it('confirmed와 applied 상태만 필터링해야 함', async () => {
-    const mockSchedules = [
-      createMockScheduleEvent({ type: STATUS.SCHEDULE.CONFIRMED, date: '2025-12-25' }),
-      createMockScheduleEvent({ type: STATUS.SCHEDULE.APPLIED, date: '2025-12-26' }),
-      createMockScheduleEvent({ type: STATUS.SCHEDULE.COMPLETED, date: '2025-12-27' }),
-      createMockScheduleEvent({ type: STATUS.SCHEDULE.CANCELLED, date: '2025-12-28' }),
-    ];
-
-    mockScheduleMergerMerge.mockReturnValue(mockSchedules);
-
-    const result = await getUpcomingSchedules('staff-123');
-
-    expect(result.length).toBe(2);
-    expect(
-      result.every(
-        (s) => s.type === STATUS.SCHEDULE.CONFIRMED || s.type === STATUS.SCHEDULE.APPLIED
-      )
-    ).toBe(true);
-  });
-});
-
 describe('scheduleService - subscribeToSchedules', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -774,155 +727,6 @@ describe('scheduleService - subscribeToSchedules', () => {
         date: '2025-01-15',
       }),
     ]);
-  });
-});
-
-describe('scheduleService - getScheduleStats', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('당월 스코프 통계를 반환해야 함', async () => {
-    const mockSchedules = [
-      createMockScheduleEvent({ type: STATUS.SCHEDULE.COMPLETED, payrollAmount: 150000 }),
-      createMockScheduleEvent({ type: STATUS.SCHEDULE.CONFIRMED }),
-      createMockScheduleEvent({ type: STATUS.SCHEDULE.APPLIED }),
-    ];
-
-    mockWorkLogRepositoryGetByStaffIdWithFilters.mockResolvedValue([]);
-    mockApplicationRepositoryGetByApplicantIdWithStatuses.mockResolvedValue([]);
-    mockJobPostingRepositoryGetByIdBatch.mockResolvedValue([]);
-    mockScheduleMergerMerge.mockReturnValue(mockSchedules);
-
-    const stats = await getScheduleStats('staff-123');
-
-    expect(stats).toHaveProperty('totalSchedules');
-    expect(stats).toHaveProperty('completedSchedules');
-    expect(stats).toHaveProperty('confirmedSchedules');
-    expect(stats).toHaveProperty('upcomingSchedules');
-    expect(stats).toHaveProperty('totalEarnings');
-    expect(stats).toHaveProperty('thisMonthEarnings');
-    expect(stats).toHaveProperty('hoursWorked');
-  });
-
-  it('완료된 스케줄의 수익을 계산해야 함', async () => {
-    const mockSchedules = [
-      createMockScheduleEvent({ type: STATUS.SCHEDULE.COMPLETED, payrollAmount: 100000 }),
-      createMockScheduleEvent({ type: STATUS.SCHEDULE.COMPLETED, payrollAmount: 50000 }),
-    ];
-
-    mockWorkLogRepositoryGetByStaffIdWithFilters.mockResolvedValue([]);
-    mockApplicationRepositoryGetByApplicantIdWithStatuses.mockResolvedValue([]);
-    mockJobPostingRepositoryGetByIdBatch.mockResolvedValue([]);
-    mockScheduleMergerMerge.mockReturnValue(mockSchedules);
-
-    const stats = await getScheduleStats('staff-123');
-
-    expect(stats.completedSchedules).toBe(2);
-    expect(stats.totalEarnings).toBeGreaterThan(0);
-  });
-
-  it('빈 날짜 completed schedule도 통계에는 포함한다', async () => {
-    const mockSchedules = [
-      createMockScheduleEvent({
-        id: 'undated-completed',
-        date: '',
-        type: STATUS.SCHEDULE.COMPLETED,
-        payrollAmount: 90000,
-      }),
-      createMockScheduleEvent({ id: 'dated-confirmed', type: STATUS.SCHEDULE.CONFIRMED }),
-    ];
-
-    mockWorkLogRepositoryGetByStaffIdWithFilters.mockResolvedValue([]);
-    mockApplicationRepositoryGetByApplicantIdWithStatuses.mockResolvedValue([]);
-    mockJobPostingRepositoryGetByIdBatch.mockResolvedValue([]);
-    mockScheduleMergerMerge.mockReturnValue(mockSchedules);
-
-    const stats = await getScheduleStats('staff-123');
-
-    expect(stats.totalSchedules).toBe(2);
-    expect(stats.completedSchedules).toBe(1);
-    expect(stats.totalEarnings).toBe(90000);
-  });
-
-  it('하나의 지원이 여러 일정으로 펼쳐져도 지원중은 1건으로 집계한다', async () => {
-    const mockSchedules = [
-      createMockScheduleEvent({
-        id: 'app-1-1',
-        applicationId: 'app-1',
-        date: '2099-01-15',
-        type: STATUS.SCHEDULE.APPLIED,
-      }),
-      createMockScheduleEvent({
-        id: 'app-1-2',
-        applicationId: 'app-1',
-        date: '2099-01-16',
-        type: STATUS.SCHEDULE.APPLIED,
-      }),
-      createMockScheduleEvent({
-        id: 'app-1-3',
-        applicationId: 'app-1',
-        date: '2099-01-17',
-        type: STATUS.SCHEDULE.APPLIED,
-      }),
-    ];
-
-    mockWorkLogRepositoryGetByStaffIdWithFilters.mockResolvedValue([]);
-    mockApplicationRepositoryGetByApplicantIdWithStatuses.mockResolvedValue([]);
-    mockJobPostingRepositoryGetByIdBatch.mockResolvedValue([]);
-    mockScheduleMergerMerge.mockReturnValue(mockSchedules);
-
-    const stats = await getScheduleStats('staff-123');
-
-    expect(stats.upcomingSchedules).toBe(1);
-  });
-
-  it('과거 날짜의 확정 스케줄도 확정 카운트에 포함한다 (리스트 표시 기준과 통일)', async () => {
-    // 근무일이 지났지만 아직 완료(WorkLog) 전환 전인 confirmed 지원 — 리스트/캘린더엔 확정으로 뜨는데
-    // 통계에서만 누락되던 회귀(과거 `date >= today` 필터). 이제 날짜 무관 confirmed 전체를 센다.
-    const mockSchedules = [
-      createMockScheduleEvent({
-        id: 'past-confirmed',
-        applicationId: 'app-past',
-        date: '2020-06-06',
-        type: STATUS.SCHEDULE.CONFIRMED,
-      }),
-    ];
-
-    mockWorkLogRepositoryGetByStaffIdWithFilters.mockResolvedValue([]);
-    mockApplicationRepositoryGetByApplicantIdWithStatuses.mockResolvedValue([]);
-    mockJobPostingRepositoryGetByIdBatch.mockResolvedValue([]);
-    mockScheduleMergerMerge.mockReturnValue(mockSchedules);
-
-    const stats = await getScheduleStats('staff-123');
-
-    expect(stats.confirmedSchedules).toBe(1);
-  });
-
-  it('당월 범위(dateRange)로만 조회한다 — 6개월 창 회귀 가드', async () => {
-    // calculateScheduleStats 가 날짜 필터 없이 조회 범위 전체를 세므로, 조회 창이
-    // 당월이 아니면(과거 6개월 창 회귀) 확정/지원 카운트가 누적으로 부풀려진다.
-    mockWorkLogRepositoryGetByStaffIdWithFilters.mockResolvedValue([]);
-    mockApplicationRepositoryGetByApplicantIdWithStatuses.mockResolvedValue([]);
-    mockJobPostingRepositoryGetByIdBatch.mockResolvedValue([]);
-    mockScheduleMergerMerge.mockReturnValue([]);
-
-    await getScheduleStats('staff-123');
-
-    // 당월 1일~말일 — 날짜는 멘탈 계산 금지, 코드로 산출 (실행 시점 기준)
-    const now = new Date();
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const toDateStr = (d: Date) =>
-      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-    const monthStart = toDateStr(new Date(now.getFullYear(), now.getMonth(), 1));
-    const monthEnd = toDateStr(new Date(now.getFullYear(), now.getMonth() + 1, 0));
-
-    expect(mockWorkLogRepositoryGetByStaffIdWithFilters).toHaveBeenCalledWith(
-      'staff-123',
-      expect.objectContaining({
-        dateRange: { start: monthStart, end: monthEnd },
-      })
-    );
   });
 });
 

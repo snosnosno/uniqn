@@ -153,50 +153,6 @@ export async function getWorkLogStats(staffId: string): Promise<WorkLogStats> {
 }
 
 /**
- * 월별 정산 정보 조회
- *
- * @description Repository 패턴 적용 - workLogRepository.getMonthlyPayroll 사용
- *
- * Phase 2A.후속 (PR3-B, 2026-05-10) — workspaceId? 추가, repository pass-through.
- * Active workspace 별 정산 분리 지원.
- */
-export async function getMonthlyPayroll(
-  staffId: string,
-  year: number,
-  month: number,
-  workspaceId?: string
-): Promise<{
-  totalAmount: number;
-  pendingAmount: number;
-  completedAmount: number;
-  workLogs: WorkLog[];
-}> {
-  try {
-    logger.info('월별 정산 조회', {
-      staffId: maskSensitiveId(staffId),
-      year,
-      month,
-      workspaceId,
-    });
-
-    const summary = await workLogRepository.getMonthlyPayroll(staffId, year, month, workspaceId);
-
-    return {
-      totalAmount: summary.totalAmount,
-      pendingAmount: summary.pendingAmount,
-      completedAmount: summary.completedAmount,
-      workLogs: summary.workLogs ?? [],
-    };
-  } catch (error) {
-    throw handleServiceError(error, {
-      operation: '월별 정산 조회',
-      component: 'workLogService',
-      context: { staffId: maskSensitiveId(staffId), year, month, workspaceId },
-    });
-  }
-}
-
-/**
  * 관리자: 근무 시간 수정 (트랜잭션 사용)
  *
  * @description 이미 정산 완료된 기록은 수정 불가

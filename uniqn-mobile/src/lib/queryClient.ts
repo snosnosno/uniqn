@@ -393,7 +393,6 @@ export const queryKeys = {
       [...queryKeys.settlement.all, 'byJobPosting', jobPostingId] as const,
     summary: (jobPostingId: string) =>
       [...queryKeys.settlement.all, 'summary', jobPostingId] as const,
-    mySummary: () => [...queryKeys.settlement.all, 'mySummary'] as const,
     calculation: (workLogId: string) =>
       [...queryKeys.settlement.all, 'calculation', workLogId] as const,
   },

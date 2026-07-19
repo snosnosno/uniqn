@@ -199,7 +199,6 @@ jest.mock('@/lib', () => ({
       all: ['settlement'],
       byJobPosting: (id: string) => ['settlement', 'byJobPosting', id],
       summary: (id: string) => ['settlement', 'summary', id],
-      mySummary: () => ['settlement', 'mySummary'],
     },
     workLogs: {
       all: ['workLogs'],

@@ -34,7 +34,6 @@ export type {
 export type {
   IWorkLogRepository,
   WorkLogStats,
-  MonthlyPayrollSummary,
   WorkLogFilterOptions,
   UpdateSlotInput,
 } from './IWorkLogRepository';

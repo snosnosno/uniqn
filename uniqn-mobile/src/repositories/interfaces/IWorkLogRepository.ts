@@ -62,18 +62,6 @@ export interface WorkLogStats {
   completedPayroll: number;
 }
 
-/**
- * 월별 정산 요약
- */
-export interface MonthlyPayrollSummary {
-  month: string; // YYYY-MM
-  totalAmount: number;
-  pendingAmount: number;
-  completedAmount: number;
-  workLogCount: number;
-  workLogs?: WorkLog[]; // 상세 조회 시 포함
-}
-
 // ============================================================================
 // Interface
 // ============================================================================
@@ -197,27 +185,6 @@ export interface IWorkLogRepository {
    * @returns 통계 정보
    */
   getStats(staffId: string): Promise<WorkLogStats>;
-
-  /**
-   * 월별 정산 요약 조회
-   *
-   * Phase 2A.후속 (PR3-B, 2026-05-10) — staff 가 여러 워크스페이스(매장)에서
-   * 근무하는 경우 active workspace 별로 정산을 분리하기 위해 workspaceId? 추가.
-   * work_logs 테이블에 workspace_id 컬럼이 없어 job_postings.workspace_id 를
-   * inner-join 으로 필터링한다.
-   *
-   * @param staffId - 스태프 ID
-   * @param year - 연도
-   * @param month - 월 (1-12)
-   * @param workspaceId - active workspace id (선택). 제공 시 해당 workspace 공고의 work_logs 만 집계.
-   * @returns 월별 정산 요약
-   */
-  getMonthlyPayroll(
-    staffId: string,
-    year: number,
-    month: number,
-    workspaceId?: string
-  ): Promise<MonthlyPayrollSummary>;
 
   /**
    * 날짜 범위로 근무 기록 조회
