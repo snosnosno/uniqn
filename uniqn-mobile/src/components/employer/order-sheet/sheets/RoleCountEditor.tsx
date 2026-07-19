@@ -32,6 +32,15 @@ const TOGGLE_ROLES = STAFF_ROLES.filter((r) => r.key !== 'other');
  */
 export const roleLabel = (r: SlotRoles[number]) => roleName(r.role, r.customRole);
 
+/**
+ * 행 식별자 — 편집 상태(`editing`)의 키.
+ * 인덱스는 불안정 식별자다: 행이 삭제/추가되면 같은 인덱스가 다른 역할을 가리키므로
+ * "딜러에 입력하던 값"이 그 자리를 승계한 플로어에 커밋될 수 있다.
+ * '기타'는 customRole 까지 포함해야 서로 구분된다(orderRowMeta.ts:301 roleKey 와 동일 패턴).
+ */
+const rowKeyOf = (r: SlotRoles[number]) =>
+  r.role === 'other' ? `other:${r.customRole ?? ''}` : r.role;
+
 export interface RoleCountEditorProps {
   roles: SlotRoles;
   onChange: (next: SlotRoles) => void;
@@ -48,14 +57,9 @@ export function RoleCountEditor({ roles, onChange }: RoleCountEditorProps) {
 
   // 편집 중 raw 문자열 — 중간 상태("1")를 즉시 clamp 하면 두 자리 입력이 불가능해진다.
   // 한 번에 한 입력만 포커스되므로 단일 슬롯으로 충분하다.
-  const [editing, setEditing] = useState<{ index: number; text: string } | null>(null);
-
-  const commitEditing = (i: number) => {
-    const parsed = Number.parseInt(editing?.text ?? '', 10);
-    // 빈값·0·NaN 은 직전 값 유지 — 0명 저장 방지(§4.3)
-    if (Number.isFinite(parsed) && parsed >= MIN_COUNT) setCountAt(i, parsed);
-    setEditing(null);
-  };
+  // 키는 인덱스가 아니라 행 식별자(rowKeyOf) — 인덱스로 키잉하면 배열 shape 이 바뀔 때
+  // 그 자리를 승계한 다른 역할에 값이 잘못 커밋된다.
+  const [editing, setEditing] = useState<{ key: string; text: string } | null>(null);
 
   /** 커스텀 역할 추가 — 같은 이름이 이미 있으면 기존 행을 유지(중복 행 방지, 현행 시맨틱 승계) */
   const addCustom = () => {
@@ -63,6 +67,7 @@ export function RoleCountEditor({ roles, onChange }: RoleCountEditorProps) {
     if (!name) return;
     const exists = roles.some((r) => r.role === 'other' && r.customRole === name);
     if (!exists) {
+      setEditing(null); // 배열 shape 변경 → 진행 중 편집 무효화
       onChange([...roles, { role: 'other', customRole: name, count: MIN_COUNT }]);
     }
     setCustomName('');
@@ -70,6 +75,7 @@ export function RoleCountEditor({ roles, onChange }: RoleCountEditorProps) {
   };
 
   const toggleRole = (key: ToggleRoleKey) => {
+    setEditing(null); // 배열 shape 변경 → 진행 중 편집 무효화(삭제된 역할이 부활해 값을 받는 경로 차단)
     const found = roles.find((r) => r.role === key);
     if (found) {
       setLastCount((prev) => ({ ...prev, [key]: found.count }));
@@ -87,7 +93,21 @@ export function RoleCountEditor({ roles, onChange }: RoleCountEditorProps) {
     onChange(roles.map((r, idx) => (idx === i ? { ...r, count: clamped } : r)));
   };
 
+  /**
+   * blur 커밋 — `rowKey` 는 blur 가 발생한 시점에 그 자리를 차지한 행의 식별자다.
+   * 편집을 시작한 행과 다르면(포커스 이동·행 삭제·행 부활) 커밋하지 않는다.
+   * 이때 `editing` 을 비우지 않는 것이 중요하다 — 지금 포커스된 다른 행의 편집이 살아 있다.
+   */
+  const commitEditing = (i: number, rowKey: string) => {
+    if (editing?.key !== rowKey) return;
+    const parsed = Number.parseInt(editing.text, 10);
+    // 빈값·0·NaN 은 직전 값 유지 — 0명 저장 방지(§4.3)
+    if (Number.isFinite(parsed) && parsed >= MIN_COUNT) setCountAt(i, parsed);
+    setEditing(null);
+  };
+
   const removeAt = (i: number) => {
+    setEditing(null); // 배열 shape 변경 → 진행 중 편집 무효화(인덱스 승계 오커밋 차단)
     const target = roles[i];
     if (target && target.role !== 'other') {
       setLastCount((prev) => ({ ...prev, [target.role]: target.count }));
@@ -163,62 +183,65 @@ export function RoleCountEditor({ roles, onChange }: RoleCountEditorProps) {
 
       {roles.length > 0 && (
         <View className="gap-1.5">
-          {roles.map((r, i) => (
-            <View
-              key={`${r.role}-${r.customRole ?? ''}-${i}`}
-              testID={`order-role-item-${i}`}
-              className="flex-row items-center justify-between rounded-xl bg-surface-card border border-secondary-100 dark:border-surface-overlay px-4 py-2.5"
-            >
-              <Text
-                className="flex-1 text-sm font-sans-medium text-content-primary"
-                numberOfLines={1}
+          {roles.map((r, i) => {
+            const rowKey = rowKeyOf(r);
+            return (
+              <View
+                key={`${rowKey}-${i}`}
+                testID={`order-role-item-${i}`}
+                className="flex-row items-center justify-between rounded-xl bg-surface-card border border-secondary-100 dark:border-surface-overlay px-4 py-2.5"
               >
-                {roleLabel(r)}
-              </Text>
-              <View className="flex-row items-center gap-1">
-                <Pressable
-                  onPress={() => setCountAt(i, r.count - 1)}
-                  testID={`order-role-count-minus-${i}`}
-                  className="w-11 h-11 items-center justify-center active:opacity-80"
-                  accessibilityRole="button"
-                  accessibilityLabel={`${roleLabel(r)} 인원 줄이기`}
+                <Text
+                  className="flex-1 text-sm font-sans-medium text-content-primary"
+                  numberOfLines={1}
                 >
-                  <MinusIcon size={16} />
-                </Pressable>
-                <TextInput
-                  value={editing?.index === i ? editing.text : String(r.count)}
-                  onFocus={() => setEditing({ index: i, text: String(r.count) })}
-                  onChangeText={(t) =>
-                    setEditing({ index: i, text: t.replace(/[^0-9]/g, '').slice(0, 2) })
-                  }
-                  onBlur={() => commitEditing(i)}
-                  keyboardType="number-pad"
-                  maxLength={2}
-                  selectTextOnFocus
-                  testID={`order-role-count-input-${i}`}
-                  accessibilityLabel={`${roleLabel(r)} 인원, 숫자 직접 입력`}
-                  className="w-10 h-11 text-center text-sm font-sans-bold text-content-primary"
-                />
-                <Pressable
-                  onPress={() => setCountAt(i, r.count + 1)}
-                  testID={`order-role-count-plus-${i}`}
-                  className="w-11 h-11 items-center justify-center active:opacity-80"
-                  accessibilityRole="button"
-                  accessibilityLabel={`${roleLabel(r)} 인원 늘리기`}
-                >
-                  <PlusIcon size={16} />
-                </Pressable>
-                <Pressable
-                  onPress={() => removeAt(i)}
-                  className="w-11 h-11 items-center justify-center active:opacity-80"
-                  accessibilityRole="button"
-                  accessibilityLabel={`${roleLabel(r)} 삭제`}
-                >
-                  <TrashIcon size={16} />
-                </Pressable>
+                  {roleLabel(r)}
+                </Text>
+                <View className="flex-row items-center gap-1">
+                  <Pressable
+                    onPress={() => setCountAt(i, r.count - 1)}
+                    testID={`order-role-count-minus-${i}`}
+                    className="w-11 h-11 items-center justify-center active:opacity-80"
+                    accessibilityRole="button"
+                    accessibilityLabel={`${roleLabel(r)} 인원 줄이기`}
+                  >
+                    <MinusIcon size={16} />
+                  </Pressable>
+                  <TextInput
+                    value={editing?.key === rowKey ? editing.text : String(r.count)}
+                    onFocus={() => setEditing({ key: rowKey, text: String(r.count) })}
+                    onChangeText={(t) =>
+                      setEditing({ key: rowKey, text: t.replace(/[^0-9]/g, '').slice(0, 2) })
+                    }
+                    onBlur={() => commitEditing(i, rowKey)}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                    selectTextOnFocus
+                    testID={`order-role-count-input-${i}`}
+                    accessibilityLabel={`${roleLabel(r)} 인원, 숫자 직접 입력`}
+                    className="w-10 h-11 text-center text-sm font-sans-bold text-content-primary"
+                  />
+                  <Pressable
+                    onPress={() => setCountAt(i, r.count + 1)}
+                    testID={`order-role-count-plus-${i}`}
+                    className="w-11 h-11 items-center justify-center active:opacity-80"
+                    accessibilityRole="button"
+                    accessibilityLabel={`${roleLabel(r)} 인원 늘리기`}
+                  >
+                    <PlusIcon size={16} />
+                  </Pressable>
+                  <Pressable
+                    onPress={() => removeAt(i)}
+                    className="w-11 h-11 items-center justify-center active:opacity-80"
+                    accessibilityRole="button"
+                    accessibilityLabel={`${roleLabel(r)} 삭제`}
+                  >
+                    <TrashIcon size={16} />
+                  </Pressable>
+                </View>
               </View>
-            </View>
-          ))}
+            );
+          })}
         </View>
       )}
     </View>

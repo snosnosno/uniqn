@@ -154,11 +154,15 @@ describe('RoleCountEditor — 기타 직접 입력', () => {
 });
 
 describe('RoleCountEditor — 인원 숫자 직접 입력', () => {
-  it('숫자 입력 후 blur → 값이 반영된다', () => {
+  it('숫자 입력 후 blur → 값이 반영된다 (blur 전에는 raw 문자열이 그대로 표시된다)', () => {
     const { getByTestId } = render(<Harness initial={[{ role: 'dealer', count: 1 }]} />);
     const input = getByTestId('order-role-count-input-0');
     fireEvent(input, 'focus');
     fireEvent.changeText(input, '12');
+    // Minor-3 — 이 태스크의 헤드라인 계약: 편집 중에는 clamp/포맷하지 않은 raw 문자열을 표시한다.
+    // 이 단언이 없으면 렌더의 `editing?.key === rowKey ? editing.text : String(r.count)`
+    // 분기를 통째로 지워도 테스트가 전부 통과한다(중간 상태 "1" 이 즉시 되돌려져 두 자리 입력 불가).
+    expect(getByTestId('order-role-count-input-0').props.value).toBe('12');
     fireEvent(input, 'blur');
     expect(dump(getByTestId)).toEqual([{ role: 'dealer', count: 12 }]);
   });
@@ -206,6 +210,94 @@ describe('RoleCountEditor — 인원 숫자 직접 입력', () => {
     fireEvent.press(getByTestId('order-role-chip-dealer')); // 해제 → lastCount=150 기억
     fireEvent.press(getByTestId('order-role-chip-dealer')); // 재선택 → clamp
     expect(dump(getByTestId)).toEqual([{ role: 'dealer', count: 99 }]);
+  });
+});
+
+/**
+ * Important 회귀 가드 — 편집 중인 값이 *다른 역할*에 커밋되는 오데이터.
+ *
+ * 뿌리는 blur/focus 순서가 아니라 인덱스가 불안정 식별자라는 점이다. 오염 값이
+ * zod min(1).max(99) 안이라 스키마가 못 잡는 조용한 오데이터라서 회귀 가드가 필수다.
+ * 또 `keyboardShouldPersistTaps="handled"` 때문에 "blur 없이 옆 버튼 탭"은 정상 경로다.
+ */
+describe('RoleCountEditor — 편집 중 행이 바뀌어도 다른 역할에 커밋되지 않는다', () => {
+  it('A. 다른 행으로 포커스를 옮긴 뒤 도착한 blur 는 커밋되지 않는다', () => {
+    const { getByTestId } = render(
+      <Harness
+        initial={[
+          { role: 'dealer', count: 3 },
+          { role: 'floor', count: 7 },
+        ]}
+      />
+    );
+    fireEvent(getByTestId('order-role-count-input-0'), 'focus');
+    fireEvent.changeText(getByTestId('order-role-count-input-0'), '12');
+    fireEvent(getByTestId('order-role-count-input-1'), 'focus'); // 편집 슬롯이 floor 로 이동
+    fireEvent(getByTestId('order-role-count-input-0'), 'blur'); // 늦게 도착한 dealer 의 blur
+    // 수정 전: floor 의 값 7 이 dealer 에 커밋되어 dealer:7 이 된다.
+    expect(dump(getByTestId)).toEqual([
+      { role: 'dealer', count: 3 },
+      { role: 'floor', count: 7 },
+    ]);
+  });
+
+  it('B. 편집 중 다른 행을 삭제했다가 칩으로 되살려도 부활한 행이 값을 받지 않는다', () => {
+    const { getByTestId, getByLabelText } = render(
+      <Harness
+        initial={[
+          { role: 'dealer', count: 2 },
+          { role: 'floor', count: 5 },
+        ]}
+      />
+    );
+    fireEvent(getByTestId('order-role-count-input-1'), 'focus'); // floor 편집 시작
+    fireEvent.changeText(getByTestId('order-role-count-input-1'), '12');
+    fireEvent.press(getByLabelText('딜러 삭제')); // blur 없이 dealer 제거 → floor 가 index 0 으로
+    fireEvent.press(getByTestId('order-role-chip-dealer')); // dealer 부활 → index 1 을 차지
+    // 수정 전: 부활한 dealer 행이 편집 문자열 '12' 를 표시한다.
+    expect(getByTestId('order-role-count-input-1').props.value).toBe('2');
+    fireEvent(getByTestId('order-role-count-input-1'), 'blur');
+    // 수정 전: dealer:12 로 커밋된다.
+    expect(dump(getByTestId)).toEqual([
+      { role: 'floor', count: 5 },
+      { role: 'dealer', count: 2 },
+    ]);
+  });
+
+  it('C. 편집 중인 행을 blur 없이 삭제해도 인덱스를 승계한 행에 커밋되지 않는다', () => {
+    const { getByTestId, getByLabelText } = render(
+      <Harness
+        initial={[
+          { role: 'dealer', count: 3 },
+          { role: 'floor', count: 5 },
+        ]}
+      />
+    );
+    fireEvent(getByTestId('order-role-count-input-0'), 'focus'); // dealer 편집 시작
+    fireEvent.changeText(getByTestId('order-role-count-input-0'), '12');
+    fireEvent.press(getByLabelText('딜러 삭제')); // blur 없이 편집 중인 행 자체를 삭제
+    // 수정 전: index 0 을 승계한 floor 가 dealer 의 편집 문자열 '12' 를 표시한다.
+    expect(getByTestId('order-role-count-input-0').props.value).toBe('5');
+    fireEvent(getByTestId('order-role-count-input-0'), 'blur');
+    // 수정 전: floor:12 로 커밋된다(단순 index 가드는 i=0, editing.index=0 이라 통과해 못 막는다).
+    expect(dump(getByTestId)).toEqual([{ role: 'floor', count: 5 }]);
+  });
+
+  it("'기타' 는 customRole 까지 포함해 구분된다 — 다른 커스텀 역할에 커밋되지 않는다", () => {
+    const { getByTestId, getByLabelText } = render(
+      <Harness
+        initial={[
+          { role: 'other', customRole: '칩카운터', count: 3 },
+          { role: 'other', customRole: '안내', count: 5 },
+        ]}
+      />
+    );
+    fireEvent(getByTestId('order-role-count-input-0'), 'focus');
+    fireEvent.changeText(getByTestId('order-role-count-input-0'), '12');
+    fireEvent.press(getByLabelText('칩카운터 삭제'));
+    expect(getByTestId('order-role-count-input-0').props.value).toBe('5');
+    fireEvent(getByTestId('order-role-count-input-0'), 'blur');
+    expect(dump(getByTestId)).toEqual([{ role: 'other', customRole: '안내', count: 5 }]);
   });
 });
 
