@@ -26,12 +26,6 @@ import {
   useUpdateSettlementStatus,
   useSettlement,
 } from '@/hooks/useSettlement';
-import { useActiveWorkspace } from '@/hooks/workspace/useActiveWorkspace';
-
-jest.mock('@/hooks/workspace/useActiveWorkspace', () => ({
-  useActiveWorkspace: jest.fn(),
-}));
-const mockUseActiveWorkspace = useActiveWorkspace as jest.MockedFunction<typeof useActiveWorkspace>;
 
 // createMockJobPosting is available for future tests
 // NOTE: Dynamic imports removed due to Jest compatibility issues
@@ -315,20 +309,6 @@ describe('useSettlement Hooks', () => {
     mockIsPending = false;
     mockData = undefined;
     mockError = null;
-    mockUseActiveWorkspace.mockReturnValue({
-      activeWorkspace: {
-        id: 'ws-default',
-        name: 'Default',
-        ownerId: 'employer-1',
-        memberCount: 1,
-      } as any,
-      workspaces: [],
-      isLoading: false,
-      setActiveWorkspaceId: jest.fn(),
-      isFetching: false,
-      isError: false,
-      refetch: jest.fn(),
-    });
   });
 
   // ==========================================================================
