@@ -34,11 +34,11 @@ export default function EditJobPostingScreen() {
   const { addToast } = useToastStore();
 
   const { job: existingJob, isLoading: isJobLoading, error: jobError } = useJobDetail(id || '');
-  const { job: contextJob, isFixed: contextIsFixed, handleShowQR } = useJobDetailContext();
+  const { job: contextJob, handleShowQR } = useJobDetailContext();
   const headerBackHref = `/(employer)/my-postings/${id ?? ''}`;
   const headerJobTitle = existingJob?.title ?? contextJob?.title ?? null;
   const headerTitleSuffix = <JobTitleSuffix jobTitle={headerJobTitle} />;
-  const headerRightAction = !contextIsFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;
+  const headerRightAction = <HeaderQRAction onPress={handleShowQR} />;
 
   const [isDirty, setIsDirty] = useState(false);
   const { markClean } = useUnsavedChangesGuard(isDirty);

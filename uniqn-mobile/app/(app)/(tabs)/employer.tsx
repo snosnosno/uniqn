@@ -7,7 +7,6 @@ import { ActionSheet, type ActionSheetOption } from '@/components/ui';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, ConfirmModal, PostingSurfaceState } from '@/components';
-import { EventQRModal } from '@/components/employer/qr/EventQRModal';
 import { JobPostingCard, NonEmployerView } from '@/components/employer';
 import { TabHeader } from '@/components/headers';
 import { WorkspaceContextBar } from '@/components/workspace';
@@ -204,7 +203,6 @@ function EmployerView() {
   const [filter, setFilter] = useState<FilterStatus>('all');
   const [closeTargetId, setCloseTargetId] = useState<string | null>(null);
   const [reopenTargetId, setReopenTargetId] = useState<string | null>(null);
-  const [qrTargetPosting, setQrTargetPosting] = useState<JobPosting | null>(null);
 
   const filteredPostings = useMemo(() => {
     if (!postings) {
@@ -261,8 +259,9 @@ function EmployerView() {
     router.push(`/(employer)/my-postings/${posting.id}`);
   }, []);
 
+  // QR 은 모달이 아니라 공고 상세의 전용 화면으로 간다 — 헤더 QR 버튼과 도착지가 같다.
   const handleShowQR = useCallback((posting: JobPosting) => {
-    setQrTargetPosting(posting);
+    router.push(`/(employer)/my-postings/${posting.id}/qr`);
   }, []);
 
   const handleClosePosting = useCallback((postingId: string) => {
@@ -458,13 +457,6 @@ function EmployerView() {
         message="이 공고를 다시 활성화하시겠습니까? 재오픈한 공고는 다시 구직자에게 노출됩니다."
         confirmText="재오픈"
         cancelText="취소"
-      />
-
-      <EventQRModal
-        visible={Boolean(qrTargetPosting)}
-        onClose={() => setQrTargetPosting(null)}
-        jobPostingId={qrTargetPosting?.id || ''}
-        jobTitle={qrTargetPosting?.title}
       />
     </SafeAreaView>
   );

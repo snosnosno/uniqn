@@ -137,7 +137,6 @@ export {
   useStaffNicknameSearch,
   type UseStaffNicknameSearchReturn,
 } from './useStaffNicknameSearch';
-export { useEventQR, type UseEventQROptions, type UseEventQRReturn } from './useEventQR';
 
 export {
   useAdminDashboard,

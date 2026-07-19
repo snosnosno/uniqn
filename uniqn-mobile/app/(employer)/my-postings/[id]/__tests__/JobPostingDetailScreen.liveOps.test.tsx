@@ -30,7 +30,7 @@ jest.mock('expo-router', () => ({
 }));
 
 jest.mock('../_layout', () => ({
-  useJobDetailContext: () => ({ isFixed: false, handleShowQR: jest.fn() }),
+  useJobDetailContext: () => ({ job: null, handleShowQR: jest.fn() }),
   HeaderQRAction: () => null,
   JobTitleSuffix: () => null,
 }));

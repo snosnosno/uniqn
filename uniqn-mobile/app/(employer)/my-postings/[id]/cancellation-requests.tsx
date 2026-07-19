@@ -45,11 +45,11 @@ function StatsHeader({ pendingCount }: StatsHeaderProps) {
 export default function CancellationRequestsScreen() {
   const { id: jobPostingId } = useLocalSearchParams<{ id: string }>();
   const { job: posting, isLoading: isLoadingPosting } = useJobDetail(jobPostingId || '');
-  const { job: contextJob, isFixed, handleShowQR } = useJobDetailContext();
+  const { job: contextJob, handleShowQR } = useJobDetailContext();
   const headerBackHref = `/(employer)/my-postings/${jobPostingId ?? ''}`;
   const headerJobTitle = posting?.title ?? contextJob?.title ?? null;
   const headerTitleSuffix = <JobTitleSuffix jobTitle={headerJobTitle} />;
-  const headerRightAction = !isFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;
+  const headerRightAction = <HeaderQRAction onPress={handleShowQR} />;
 
   const [approveModalVisible, setApproveModalVisible] = useState(false);
   const [pendingApproveId, setPendingApproveId] = useState<string | null>(null);

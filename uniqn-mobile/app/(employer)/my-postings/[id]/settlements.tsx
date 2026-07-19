@@ -40,9 +40,9 @@ import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
 export default function StaffSettlementsScreen() {
   const { id: jobPostingId } = useLocalSearchParams<{ id: string }>();
   const { addToast } = useToastStore();
-  const { job: contextJob, isFixed, handleShowQR } = useJobDetailContext();
+  const { job: contextJob, handleShowQR } = useJobDetailContext();
   const headerBackHref = `/(employer)/my-postings/${jobPostingId ?? ''}`;
-  const headerRightAction = !isFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;
+  const headerRightAction = <HeaderQRAction onPress={handleShowQR} />;
 
   // 탭 상태 (진입 동기 대부분이 "누가 왔나 확인" — 정산은 근무 종료 후 업무)
   const [activeTab, setActiveTab] = useState<TabType>('staff');
@@ -204,7 +204,6 @@ export default function StaffSettlementsScreen() {
         <StaffManagementTab
           jobPostingId={jobPostingId || ''}
           jobPosting={posting ?? undefined}
-          onShowEventQR={modals.openEventQRModal}
           onShowRoleChange={modals.openRoleChangeModal}
           onShowReport={modals.openReportModal}
         />

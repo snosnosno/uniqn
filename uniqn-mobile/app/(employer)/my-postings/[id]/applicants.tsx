@@ -29,9 +29,9 @@ import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
 
 export default function ApplicantsScreen() {
   const { id: jobPostingId } = useLocalSearchParams<{ id: string }>();
-  const { job, isFixed, handleShowQR } = useJobDetailContext();
+  const { job, handleShowQR } = useJobDetailContext();
   const headerBackHref = `/(employer)/my-postings/${jobPostingId ?? ''}`;
-  const headerRightAction = !isFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;
+  const headerRightAction = <HeaderQRAction onPress={handleShowQR} />;
   const headerTitleSuffix = <JobTitleSuffix jobTitle={job?.title ?? null} />;
 
   // 정원 현황 스트립 — 관리 허브(index.tsx)의 "배정 현황" 계산과 동일 소스(job) 재사용, 추가 fetch 없음

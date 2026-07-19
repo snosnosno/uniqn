@@ -68,7 +68,6 @@ jest.mock('@/components', () => ({
   ConfirmModal: () => null,
   PostingSurfaceState: () => null,
 }));
-jest.mock('@/components/employer/qr/EventQRModal', () => ({ EventQRModal: () => null }));
 jest.mock('@/components/employer', () => ({
   JobPostingCard: () => null,
   NonEmployerView: () => null,

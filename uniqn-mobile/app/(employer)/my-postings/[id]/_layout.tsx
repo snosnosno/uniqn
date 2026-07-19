@@ -2,17 +2,17 @@
  * UNIQN Mobile - Employer Job Posting Detail Layout
  *
  * 하이브리드 레이아웃:
- * - 데이터(useJobDetail), 포스팅 capability 가드, EventQRModal은 레이아웃에서 유지
+ * - 데이터(useJobDetail)와 포스팅 capability 가드는 레이아웃에서 유지
+ * - QR 은 모달이 아니라 전용 화면(`./qr`)이다. 진입점이 여러 개여도 도착지는 하나.
  * - 권한 게이트(owner/workspace/JPC 협업자)는 RLS 가 단일 진실 — client-side
  *   isManageableByUser 가드는 JPC 협업자를 잘못 차단하므로 제거됨 (2026-05-19).
  * - 헤더는 각 자식 화면에서 StackHeader로 렌더링 (JobDetailContext 경유)
  */
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo } from 'react';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import { useJobDetail } from '@/hooks/useJobDetail';
-import { EventQRModal } from '@/components/employer/qr/EventQRModal';
 import { QRCodeIcon } from '@/components/icons';
 import { useThemeStore } from '@/stores/themeStore';
 import { useToastStore } from '@/stores/toastStore';
@@ -23,12 +23,14 @@ import type { JobPosting } from '@/types';
 // ============================================================================
 // JobDetailContext
 // ============================================================================
-// 자식 화면이 StackHeader 렌더링에 필요한 job / isFixed / handleShowQR 을
-// 공유하기 위한 경량 컨텍스트. 데이터는 레이아웃에서 useJobDetail 로 한 번만 조회.
+// 자식 화면이 StackHeader 렌더링에 필요한 job / handleShowQR 을 공유하기 위한
+// 경량 컨텍스트. 데이터는 레이아웃에서 useJobDetail 로 한 번만 조회.
+//
+// isFixed 는 QR 차단 용도로만 쓰였으므로 제거했다. 고정 QR 전환으로 사장이 고를 것이
+// 0개가 되어(날짜·시간슬롯·모드·갱신 소멸) 고정공고도 동일한 QR 을 쓴다.
 
 interface JobDetailContextValue {
   job: JobPosting | null;
-  isFixed: boolean;
   handleShowQR: () => void;
 }
 
@@ -38,7 +40,6 @@ const NOOP = () => {
 
 const JobDetailContext = createContext<JobDetailContextValue>({
   job: null,
-  isFixed: false,
   handleShowQR: NOOP,
 });
 
@@ -54,7 +55,7 @@ export function useJobDetailContext(): JobDetailContextValue {
 
 /**
  * StackHeader rightAction 으로 넘기는 헤더 QR 버튼.
- * isFixed 인 경우 호출부에서 null 을 넘기는 것을 권장.
+ * 모든 공고(고정 포함)에서 동일하게 노출한다.
  */
 export function HeaderQRAction({ onPress }: { onPress: () => void }) {
   const isDark = useThemeStore((s) => s.isDarkMode);
@@ -109,25 +110,10 @@ export default function JobPostingDetailLayout() {
   const isDark = useThemeStore((s) => s.isDarkMode);
   const { addToast } = useToastStore();
   const { job } = useJobDetail(id || '', { realtime: true });
-  const [showQRModal, setShowQRModal] = useState(false);
-
-  const isFixed = job?.schedule.kind === 'fixed';
 
   const handleShowQR = useCallback(() => {
-    if (isFixed) {
-      addToast({
-        type: 'warning',
-        message: '고정공고는 1차 범위에서 QR을 지원하지 않습니다.',
-      });
-      return;
-    }
-
-    setShowQRModal(true);
-  }, [addToast, isFixed]);
-
-  const handleCloseQR = useCallback(() => {
-    setShowQRModal(false);
-  }, []);
+    router.push(`/(employer)/my-postings/${id ?? ''}/qr`);
+  }, [router, id]);
 
   useEffect(() => {
     if (!job) {
@@ -152,10 +138,9 @@ export default function JobPostingDetailLayout() {
   const contextValue = useMemo<JobDetailContextValue>(
     () => ({
       job: job ?? null,
-      isFixed: !!isFixed,
       handleShowQR,
     }),
-    [job, isFixed, handleShowQR]
+    [job, handleShowQR]
   );
 
   if (job && !isEmployerManageablePosting(job)) {
@@ -174,15 +159,6 @@ export default function JobPostingDetailLayout() {
             },
           }}
         />
-
-        {!isFixed && (
-          <EventQRModal
-            visible={showQRModal}
-            onClose={handleCloseQR}
-            jobPostingId={id || ''}
-            jobTitle={job?.title}
-          />
-        )}
       </View>
     </JobDetailContext.Provider>
   );

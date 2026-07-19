@@ -120,7 +120,7 @@ export default function JobPostingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const isDark = useThemeStore((state) => state.isDarkMode);
   const router = useRouter();
-  const { isFixed: contextIsFixed, handleShowQR } = useJobDetailContext();
+  const { handleShowQR } = useJobDetailContext();
   const {
     job: posting,
     isLoading,
@@ -290,7 +290,7 @@ export default function JobPostingDetailScreen() {
             >
               <ShareIcon size={22} color={getLayoutColor(isDark, 'headerTint')} />
             </Pressable>
-            {!(contextIsFixed || isFixed) ? <HeaderQRAction onPress={handleShowQR} /> : null}
+            <HeaderQRAction onPress={handleShowQR} />
           </View>
         }
       />
