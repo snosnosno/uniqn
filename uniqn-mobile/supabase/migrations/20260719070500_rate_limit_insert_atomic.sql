@@ -27,7 +27,11 @@ CREATE OR REPLACE FUNCTION public.check_rate_limit(
 ) RETURNS jsonb
   LANGUAGE plpgsql
   SECURITY DEFINER
-  SET search_path TO 'pg_catalog', 'public'
+  -- ⚠️ pg_temp 필수: 20260711100000_secdef_pg_temp_batch_and_overload_drop.sql 이 SECDEF 함수
+  --   62종에 pg_temp 를 일괄 보정했다. baseline 원본 형태(pg_catalog, public)로 CREATE OR REPLACE
+  --   하면 그 보정이 조용히 유실되고 parity_baseline_guard.test.sql 의
+  --   "SECDEF search_path pg_temp 누락 0" 단언이 깨진다(실제 발생 → 이 주석으로 봉인).
+  SET search_path TO 'pg_catalog', 'public', 'pg_temp'
   AS $$
 DECLARE
   v_record RECORD;
