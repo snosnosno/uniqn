@@ -180,7 +180,7 @@ export async function loadAndVerifyJobPostingAccess(
   // workspaceId 없는 레거시 row 방어 (M3 이후 NOT NULL 이지만 schema migration 보장 안 됨)
   if (!jobData.workspaceId) {
     throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-      userMessage: `공고에 워크스페이스가 지정되지 않았습니다: ${operation}`,
+      userMessage: `공고에 팀이 지정되지 않았습니다: ${operation}`,
     });
   }
 
@@ -202,7 +202,7 @@ export async function loadAndVerifyJobPostingAccess(
   if (adminResult.data === true) return jobData;
 
   throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-    userMessage: `워크스페이스 멤버만 관리할 수 있습니다: ${operation}`,
+    userMessage: `팀 멤버만 관리할 수 있습니다: ${operation}`,
   });
 }
 

@@ -75,11 +75,51 @@ async function resolveWorkspaceId(ownerId: string, requestedWorkspaceId?: string
   if (!accessible) {
     logger.warn('공고 생성 — 전달된 workspaceId 접근 권한 없음', { ownerId, requestedWorkspaceId });
     throw new PermissionError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
-      userMessage: '선택한 워크스페이스에 공고를 등록할 권한이 없어요.',
+      userMessage: '선택한 팀에 공고를 등록할 권한이 없어요.',
       metadata: { ownerId, requestedWorkspaceId },
     });
   }
   return requestedWorkspaceId;
+}
+
+/** 지점 0개 워크스페이스에 자동 생성할 기본 운영처명(코스메틱 — 그리드 useEnsureDefaultVenue 와 카운트검사로 수렴). */
+const DEFAULT_VENUE_NAME = '기본 지점';
+
+/**
+ * 공고를 담을 기본 지점(venue 컨테이너)을 정한다.
+ * 대회도 포함한다 — 근무표에서 대회 기간 인원/부족을 집계하기 위함(2026-07-19 결정).
+ * 지점 1개면 그 지점, 0개면 기본 지점 생성, 2개 이상이면 미연결(폼 선택칩=B5 담당).
+ *
+ * venueId 가 이미 지정됐으면 진입하지 않는다(지정값 유지).
+ *
+ * NON-BLOCKING: 지점 조회/생성 실패는 공고 생성을 실패시키지 않는다(로그 후 venue_id 없이 진행, 기존 동작 보존).
+ */
+async function resolveDefaultVenueId(
+  input: CreateJobPostingInput,
+  workspaceId: string
+): Promise<string | undefined> {
+  let resolvedVenueId = input.venueId;
+  if (!resolvedVenueId) {
+    try {
+      const venues = await jobPostingRepository.getVenueContainers(workspaceId);
+      if (venues.length === 1) {
+        resolvedVenueId = venues[0].id;
+      } else if (venues.length === 0) {
+        const container = await jobPostingRepository.getOrCreateVenueContainer(workspaceId, {
+          name: DEFAULT_VENUE_NAME,
+          kind: 'dated',
+        });
+        resolvedVenueId = container.id;
+      }
+      // 지점 2개 이상 → 자동 연결하지 않는다(폼 선택칩=B5). resolvedVenueId 미지정 유지.
+    } catch (error) {
+      logger.warn('공고 생성 — 기본 지점 자동 연결 실패(무시하고 진행)', {
+        workspaceId,
+        error: String(error),
+      });
+    }
+  }
+  return resolvedVenueId;
 }
 
 async function createSinglePosting(
@@ -89,18 +129,22 @@ async function createSinglePosting(
   requestedWorkspaceId?: string
 ): Promise<CreateJobPostingResult> {
   const workspaceId = await resolveWorkspaceId(ownerId, requestedWorkspaceId);
+  const venueId = await resolveDefaultVenueId(input, workspaceId);
   try {
-    return await jobPostingRepository.createWithTransaction(input, {
-      ownerId,
-      ownerName,
-      workspaceId,
-    });
+    return await jobPostingRepository.createWithTransaction(
+      { ...input, venueId },
+      {
+        ownerId,
+        ownerName,
+        workspaceId,
+      }
+    );
   } catch (error) {
     // Race: lookup ↔ INSERT 사이 워크스페이스 삭제 → FK 23503
     if (isWorkspaceFkViolation(error)) {
       logger.warn('workspace FK race detected', { ownerId, workspaceId });
       throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: '워크스페이스를 다시 확인해주세요. 잠시 후 다시 시도해주세요.',
+        userMessage: '팀을 다시 확인해주세요. 잠시 후 다시 시도해주세요.',
         metadata: { ownerId, workspaceId },
       });
     }

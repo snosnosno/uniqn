@@ -112,3 +112,24 @@
 - **pgTAP 칩균형 주석 정정**: `ops_reseat_participants.test.sql` [13] 칩균형 임계 주석("≤4000")이 실제(seed_pid 30000 포함 max=30000)와 불일치. 균형 실검증은 jest 전담이라 무해. → 주석 정정 또는 seed_pid 제외 서브쿼리.
 - **RPC 비-uuid 선검증**: step3 `(e->>'participant_id')::uuid`가 비-uuid에 22P02 raise(스펙 §4.3-3은 `SEAT_ASSIGNMENT_INVALID` 요구). fail-closed·클라 Zod 방어라 실발생 불가. → RPC에 uuid 정규식 선검증(선택).
 - **Status**: 추적만. LS-데드락 PR과 묶거나 별도 소규모 PR. prod 데이터 안전 무관.
+
+---
+
+## 근무표 대회 포함 — 이월 (2026-07-19)
+
+### required CTE 에 job_postings.status 필터 부재
+- **What**: `get_venue_grid_summary` 의 `required` CTE 가 공고 status 를 전혀 보지 않아 **취소된(`cancelled`) 일반 공고의 requirements 도 필요인원에 산입**된다.
+- **Why 이월**: `closed` 는 만석 마감(capacity_full→closed)일 수 있어 배제하면 required 만 떨어지고 headcount 는 남아 셀이 왜곡된다. 상태별 구분 판단이 선행돼야 한다.
+- **Effort**: S | **Priority**: P2 | 대회 포함과 무관하게 기존 배치에 이미 존재하는 동작.
+
+### 근무표에서 대회를 구분할 수단이 전무
+- **What**: 근무표 어디에도 "이 수요가 대회에서 왔다"를 알 표식이 없다. 셀 표식도, 상세 패널 배지도 없다.
+- **⚠️ 최초 기록의 완화 근거는 거짓이었다**: "상세 패널에 `대회` 배지가 이미 뜬다"고 적었으나 **존재하지 않는다**. `대회` 문자열이 `src/components/weeklyGrid/`·`src/domains/weeklyGrid/`·`src/hooks/weeklyGrid/` 전체에 0건. 원인=`venueDayDetailMapping.ts:30-44` 의 `mapVenueDaySlotToConfirmedStaff` 가 `job_posting_id`·`is_container` 를 투영에서 떨궈 `ConfirmedStaff` 에 공고 정체성이 없다.
+- **Why 지금 문제인가**: 대회 포함 배치로 대회 좌석이 `required_count` 를 올려 필요/부족 숫자가 커지는데, 운영자는 그 출처를 어느 깊이에서도 확인할 수 없다. D-7 대회가 몰리는 주에 특히 혼란.
+- **해법 2갈래**: (a) 상세 패널 배지 — `get_venue_day_slots` 가 이미 `job_posting_id` 를 반환하므로 매퍼 투영만 살리면 된다. RPC 계약 무변경, 저비용. (b) 캘린더 셀 표식 — `get_venue_grid_summary` 에 날짜별 대회 포함 컬럼 추가 필요, 고비용.
+- **Effort**: (a) S / (b) M | **Priority**: **P2** | 권장=(a) 먼저.
+
+### 대회사 대상 "지점" 라벨
+- **What**: 대회사에게 "지점"은 장소가 아니라 대회를 담는 서랍이라 어색할 수 있다.
+- **Why 이월**: 구조가 아니라 문구만의 문제. 실사용 피드백 후 라벨만 조정.
+- **Effort**: S | **Priority**: P3.

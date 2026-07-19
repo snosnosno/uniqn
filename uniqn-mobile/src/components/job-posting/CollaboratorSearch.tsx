@@ -43,7 +43,7 @@ function CandidateRow({
       case 'self':
         return '본인은 추가할 수 없습니다';
       case 'workspace_member':
-        return '이미 워크스페이스 멤버 — 모든 공고 접근 가능';
+        return '이미 팀 멤버 — 모든 공고 접근 가능';
       case 'already_collaborator':
         return '이미 협업자';
       default:

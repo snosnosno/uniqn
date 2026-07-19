@@ -89,14 +89,14 @@ export const workspaceService = {
 
     logger.warn('default workspace not found — auto-creating', { ownerId });
     try {
-      await workspaceRepository.create('내 워크스페이스');
+      await workspaceRepository.create('내 팀');
     } catch (createError) {
       logger.error('default workspace auto-create 실패', {
         ownerId,
         error: String(createError),
       });
       throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: '워크스페이스를 찾을 수 없어요. 잠시 후 다시 시도해주세요.',
+        userMessage: '팀을 찾을 수 없어요. 잠시 후 다시 시도해주세요.',
         metadata: { ownerId, autoCreateFailed: true },
       });
     }
@@ -106,7 +106,7 @@ export const workspaceService = {
 
     logger.error('default workspace not found after auto-create', { ownerId });
     throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-      userMessage: '워크스페이스를 찾을 수 없어요. 잠시 후 다시 시도해주세요.',
+      userMessage: '팀을 찾을 수 없어요. 잠시 후 다시 시도해주세요.',
       metadata: { ownerId, retryAfterCreate: true },
     });
   },

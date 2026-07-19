@@ -73,10 +73,10 @@ export function WorkspaceRevocationModal({
       >
         <View className="w-full max-w-sm rounded-md bg-surface-card p-6 dark:bg-surface-elevated">
           <Text className="mb-3 text-xl font-display text-content-primary">
-            워크스페이스 접근이 회수됐어요
+            팀 접근이 회수됐어요
           </Text>
           <Text className="mb-2 text-base leading-6 text-content-secondary dark:leading-[1.625rem]">
-            {workspaceName ? `‘${workspaceName}’ ` : ''}워크스페이스 소유자가 권한을 회수했습니다.
+            {workspaceName ? `‘${workspaceName}’ ` : ''}팀 소유자가 권한을 회수했습니다.
           </Text>
           <Text className="text-base leading-6 text-content-secondary dark:leading-[1.625rem]">
             보안을 위해 {countdown}초 후 자동으로 로그아웃됩니다.

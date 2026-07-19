@@ -58,7 +58,7 @@ export function WorkspaceSwitcher({ onChange }: WorkspaceSwitcherProps) {
       <View
         className="min-h-[44px] flex-row items-center px-2 py-2"
         accessibilityRole="text"
-        accessibilityLabel={`현재 워크스페이스 ${activeWorkspace?.name ?? ''}`}
+        accessibilityLabel={`현재 팀 ${activeWorkspace?.name ?? ''}`}
       >
         <Text
           className="text-base font-sans-medium text-content-primary"
@@ -81,8 +81,8 @@ export function WorkspaceSwitcher({ onChange }: WorkspaceSwitcherProps) {
         }}
         hitSlop={8}
         accessibilityRole="button"
-        accessibilityLabel={`현재 워크스페이스 ${activeWorkspace?.name ?? ''}, 변경하려면 탭`}
-        accessibilityHint="워크스페이스 선택 시트가 열립니다"
+        accessibilityLabel={`현재 팀 ${activeWorkspace?.name ?? ''}, 변경하려면 탭`}
+        accessibilityHint="팀 선택 시트가 열립니다"
         className="min-h-[44px] flex-row items-center gap-2 px-2 py-2"
       >
         {({ pressed }) => (
@@ -96,7 +96,7 @@ export function WorkspaceSwitcher({ onChange }: WorkspaceSwitcherProps) {
               numberOfLines={1}
               maxFontSizeMultiplier={1.5}
             >
-              {activeWorkspace?.name ?? '워크스페이스 선택'}
+              {activeWorkspace?.name ?? '팀 선택'}
             </Text>
             <ChevronDownIcon size={16} />
           </View>
@@ -116,9 +116,7 @@ export function WorkspaceSwitcher({ onChange }: WorkspaceSwitcherProps) {
             style={{ paddingBottom: insets.bottom + 12 }}
           >
             <View className="flex-row items-center justify-between px-6 pb-2 pt-4">
-              <Text className="text-sm font-sans-medium text-content-secondary">
-                워크스페이스 선택
-              </Text>
+              <Text className="text-sm font-sans-medium text-content-secondary">팀 선택</Text>
               <Pressable
                 onPress={() => setOpen(false)}
                 hitSlop={8}

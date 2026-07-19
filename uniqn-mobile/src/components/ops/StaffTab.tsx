@@ -104,7 +104,7 @@ export function StaffTab({ tournamentId, tournament }: StaffTabProps) {
     confirmAction({
       title: '공고 연결 해제',
       message:
-        '연결을 해제하면 이 대회에 공고 경유로 접근하던 워크스페이스 멤버의 열람 권한이 축소될 수 있습니다.',
+        '연결을 해제하면 이 대회에 공고 경유로 접근하던 팀 멤버의 열람 권한이 축소될 수 있습니다.',
       confirmText: '해제',
       destructive: true,
       onConfirm: () => setPostingMut.mutate(null),
@@ -233,7 +233,7 @@ export function StaffTab({ tournamentId, tournament }: StaffTabProps) {
               </Pressable>
             ) : (
               <Text className="mt-2 text-xs text-secondary-500 dark:text-secondary-400">
-                워크스페이스가 없어 공고를 연결할 수 없습니다.
+                팀이 없어 공고를 연결할 수 없습니다.
               </Text>
             ))}
         </>

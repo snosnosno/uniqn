@@ -79,7 +79,7 @@ describe('WorkspaceSwitcher', () => {
       setActiveWorkspaceId: mockSetActiveWorkspaceId,
     };
     const { getByLabelText } = render(<WorkspaceSwitcher />);
-    expect(getByLabelText(/현재 워크스페이스 내 룸, 변경하려면 탭/)).toBeTruthy();
+    expect(getByLabelText(/현재 팀 내 룸, 변경하려면 탭/)).toBeTruthy();
   });
 
   it('다른 워크스페이스 선택 시 setActiveWorkspaceId + onChange 콜백 호출', () => {
@@ -93,7 +93,7 @@ describe('WorkspaceSwitcher', () => {
     };
     const onChange = jest.fn();
     const { getByLabelText } = render(<WorkspaceSwitcher onChange={onChange} />);
-    fireEvent.press(getByLabelText(/현재 워크스페이스 내 룸, 변경하려면 탭/));
+    fireEvent.press(getByLabelText(/현재 팀 내 룸, 변경하려면 탭/));
     fireEvent.press(getByLabelText(/공동 룸 공동관리/));
 
     expect(mockSetActiveWorkspaceId).toHaveBeenCalledWith('ws-2');

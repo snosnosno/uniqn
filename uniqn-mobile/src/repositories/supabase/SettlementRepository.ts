@@ -662,7 +662,7 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
     if (jobPosting.ownerId !== actorId) {
       if (!jobPosting.workspaceId) {
         throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-          userMessage: `공고에 워크스페이스가 지정되지 않았습니다: ${operationMessage}`,
+          userMessage: `공고에 팀이 지정되지 않았습니다: ${operationMessage}`,
         });
       }
 

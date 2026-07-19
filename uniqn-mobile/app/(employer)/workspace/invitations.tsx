@@ -42,9 +42,9 @@ export default function WorkspaceInvitationsScreen() {
       try {
         const result = await acceptMutation.mutateAsync(invitation.id);
         if (result.idempotent) {
-          addToast({ type: 'info', message: '이미 참여 중인 워크스페이스입니다' });
+          addToast({ type: 'info', message: '이미 참여 중인 팀입니다' });
         } else {
-          addToast({ type: 'success', message: '워크스페이스에 참여했어요' });
+          addToast({ type: 'success', message: '팀에 참여했어요' });
         }
         router.replace('/(employer)/workspace');
       } catch (err) {
@@ -74,10 +74,10 @@ export default function WorkspaceInvitationsScreen() {
     ({ item }: { item: ReceivedWorkspaceInvitation }) => (
       <View className="mx-4 mb-3 rounded-md bg-white p-4 dark:bg-surface-elevated">
         <View className="flex-row items-start">
-          <Avatar name={item.workspaceName || '워크스페이스'} size="md" />
+          <Avatar name={item.workspaceName || '팀'} size="md" />
           <View className="ml-3 flex-1">
             <Text className="text-base font-sans-medium text-content-primary">
-              {item.workspaceName || '워크스페이스'}
+              {item.workspaceName || '팀'}
             </Text>
             <Text className="mt-0.5 text-xs text-content-secondary">
               {item.inviterDisplayName ?? '누군가'}님이 초대 · {formatExpiresAt(item.expiresAt)}
@@ -89,8 +89,8 @@ export default function WorkspaceInvitationsScreen() {
         </View>
 
         <Text className="mt-3 text-xs text-content-secondary">
-          {item.workspaceName} 워크스페이스의 편집자가 되면, 이 워크스페이스의 모든 공고를 만들고
-          수정할 수 있어요. 삭제는 소유자만 가능해요.
+          {item.workspaceName} 팀의 편집자가 되면, 이 팀의 모든 공고를 만들고 수정할 수 있어요.
+          삭제는 소유자만 가능해요.
         </Text>
 
         <View className="mt-4 flex-row gap-2">
@@ -165,7 +165,7 @@ export default function WorkspaceInvitationsScreen() {
           <View className="items-center px-6 py-12">
             <EmptyState
               title="받은 초대가 없어요"
-              description="워크스페이스 소유자가 초대하면 여기에 표시됩니다."
+              description="팀 소유자가 초대하면 여기에 표시됩니다."
             />
           </View>
         }

@@ -107,7 +107,7 @@ jest.mock('@/services/auth', () => ({
 }));
 
 describe('설정 화면 — 공고 협업 섹션 제거(PR-3 진입점 단일화)', () => {
-  it("employer 로 인증돼도 '공고 협업' 섹션과 '워크스페이스' 항목이 렌더되지 않는다", () => {
+  it("employer 로 인증돼도 '공고 협업' 섹션과 '팀' 항목이 렌더되지 않는다", () => {
     const { queryByText } = render(<SettingsScreen />);
 
     // 화면이 실제로 렌더됐는지 확인하는 대조군 — 다른 섹션 헤더는 존재해야 한다.
@@ -115,6 +115,6 @@ describe('설정 화면 — 공고 협업 섹션 제거(PR-3 진입점 단일화
 
     // 핵심 단언: 협업 진입점(섹션 헤더 + 워크스페이스 항목)이 사라져야 한다.
     expect(queryByText('공고 협업')).toBeNull();
-    expect(queryByText('워크스페이스')).toBeNull();
+    expect(queryByText('팀')).toBeNull();
   });
 });
