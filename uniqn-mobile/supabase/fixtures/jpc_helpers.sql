@@ -154,6 +154,15 @@ $$;
 -- JWT 클레임 스위치 — Supabase RLS 의 (SELECT auth.uid()) 가 읽는 컨텍스트
 -- ============================================================================
 
+-- ⚠️ JWT 주입은 반드시 이 헬퍼들을 경유할 것 (테스트 파일에서 set_config 인라인 금지).
+--    auth.uid() 는 singular GUC 를 **먼저** 읽고 plural 은 fallback 이다:
+--      coalesce(current_setting('request.jwt.claim.sub'), claims::jsonb->>'sub')
+--    반면 auth.jwt()/get_my_role() 은 plural 만 읽는다. 따라서 plural 만 인라인 주입하면
+--    직전 호출이 남긴 singular 가 살아남아 auth.uid() 가 **다른 사용자**를 반환한다
+--    (역할 게이트는 통과하는데 owner 바인딩만 깨지는 형태로 발현).
+--    실증: PR#267 이 jp_insert 에 owner_id = auth.uid() 를 추가하자 jpc_job_postings_rls
+--    5/6/7 이 42501 로 red — prod 결함이 아니라 이 주입 불일치가 원인이었다.
+--    동일 클래스 1회차: PR#195→#198 (wallet 변이 RPC caller 바인딩).
 CREATE OR REPLACE FUNCTION jpc_test_set_user(p_user_id uuid)
 RETURNS void
 LANGUAGE plpgsql
@@ -161,6 +170,25 @@ AS $$
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', p_user_id::text, true);
   PERFORM set_config('request.jwt.claims', json_build_object('sub', p_user_id, 'role', 'authenticated')::text, true);
+  PERFORM set_config('role', 'authenticated', true);
+END;
+$$;
+
+-- app_metadata.role 까지 싣는 변형 — prod 의 실제 employer/staff JWT 와 동형.
+-- get_my_role() = auth.jwt()->'app_metadata'->>'role' 을 보는 정책(jp_insert 역할 게이트)
+-- 검증에 사용한다. singular/plural 양쪽을 갱신하므로 stale GUC 오염이 생기지 않는다.
+CREATE OR REPLACE FUNCTION jpc_test_set_user_with_role(p_user_id uuid, p_app_role text)
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', p_user_id::text, true);
+  PERFORM set_config('request.jwt.claims',
+    json_build_object(
+      'sub', p_user_id,
+      'role', 'authenticated',
+      'app_metadata', json_build_object('role', p_app_role)
+    )::text, true);
   PERFORM set_config('role', 'authenticated', true);
 END;
 $$;
