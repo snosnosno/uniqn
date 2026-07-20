@@ -10,7 +10,6 @@ import {
   CalendarIcon,
   CheckCircleIcon,
   ClockIcon,
-  QRCodeIcon,
   RefreshIcon,
   UserPlusIcon,
   XCircleIcon,
@@ -27,19 +26,19 @@ import { WorkTimeEditor } from '../settlement/WorkTimeEditor';
 export interface StaffManagementTabProps {
   jobPostingId: string;
   jobPosting?: JobPosting;
-  onShowEventQR?: () => void;
   onShowRoleChange?: (staff: ConfirmedStaff) => void;
   onShowReport?: (staff: ConfirmedStaff) => void;
 }
 
 interface QuickActionsProps {
-  onShowQR: () => void;
   onRefresh: () => void;
   onAddStaff: () => void;
   isRefreshing: boolean;
 }
 
-function QuickActions({ onShowQR, onRefresh, onAddStaff, isRefreshing }: QuickActionsProps) {
+// QR 진입점은 헤더 QR 버튼 하나로 통일됐다 — 여기 있던 "이벤트 QR 열기" 버튼은
+// 같은 화면을 여는 중복 진입점이라 제거했다 (도착지는 하나).
+function QuickActions({ onRefresh, onAddStaff, isRefreshing }: QuickActionsProps) {
   return (
     <View className="mb-4 px-4 pt-4">
       <Pressable
@@ -52,23 +51,16 @@ function QuickActions({ onShowQR, onRefresh, onAddStaff, isRefreshing }: QuickAc
 
       <View className="flex-row gap-3">
         <Pressable
-          onPress={onShowQR}
-          className="flex-1 flex-row items-center justify-center rounded-md bg-surface-card p-4 active:opacity-80 dark:bg-surface"
-        >
-          <QRCodeIcon size={24} color={SECONDARY_PALETTE[500]} />
-          <Text className="ml-2 text-base font-sans-semibold text-content-primary">
-            이벤트 QR 열기
-          </Text>
-        </Pressable>
-
-        <Pressable
           onPress={onRefresh}
           disabled={isRefreshing}
-          className={`rounded-md bg-surface-card p-4 active:opacity-80 dark:bg-surface ${
+          accessibilityRole="button"
+          accessibilityLabel="스태프 목록 새로고침"
+          className={`flex-1 flex-row items-center justify-center rounded-md bg-surface-card p-4 active:opacity-80 dark:bg-surface ${
             isRefreshing ? 'opacity-50' : ''
           }`}
         >
           <RefreshIcon size={24} color={SECONDARY_PALETTE[500]} />
+          <Text className="ml-2 text-base font-sans-semibold text-content-primary">새로고침</Text>
         </Pressable>
       </View>
     </View>
@@ -78,7 +70,6 @@ function QuickActions({ onShowQR, onRefresh, onAddStaff, isRefreshing }: QuickAc
 export function StaffManagementTab({
   jobPostingId,
   jobPosting: _jobPosting,
-  onShowEventQR,
   onShowRoleChange,
   onShowReport,
 }: StaffManagementTabProps) {
@@ -185,10 +176,6 @@ export function StaffManagementTab({
     executeDelete(deleteTarget);
     setDeleteTarget(null);
   }, [deleteTarget, executeDelete]);
-
-  const handleShowQR = useCallback(() => {
-    onShowEventQR?.();
-  }, [onShowEventQR]);
 
   const handleOpenAddStaff = useCallback(() => {
     setShowAddStaff(true);
@@ -328,7 +315,6 @@ export function StaffManagementTab({
   return (
     <View className="flex-1 bg-surface-page dark:bg-surface">
       <QuickActions
-        onShowQR={handleShowQR}
         onRefresh={refresh}
         onAddStaff={handleOpenAddStaff}
         isRefreshing={isRefreshing}

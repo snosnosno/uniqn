@@ -115,6 +115,21 @@ describe('executeProcessQRCheckInOut — 에러 매핑', () => {
     ).rejects.toBeInstanceOf(BusinessError);
   });
 
+  it('already_settled 의 사용자 문구는 정산 확정 안내여야 함', async () => {
+    mockRpc.mockResolvedValue({ data: { success: false, error: 'already_settled' }, error: null });
+
+    await expect(
+      executeProcessQRCheckInOut(
+        WORK_LOG_ID,
+        STAFF_ID,
+        JOB_POSTING_ID,
+        'auto',
+        CHECK_TIME,
+        EXPECTED_DATE
+      )
+    ).rejects.toMatchObject({ userMessage: '정산이 끝난 근무는 변경할 수 없습니다' });
+  });
+
   it('already_checked_in → AlreadyCheckedInError', async () => {
     mockRpc.mockResolvedValue({
       data: { success: false, error: 'already_checked_in' },
@@ -164,6 +179,24 @@ describe('executeProcessQRCheckInOut — 에러 매핑', () => {
         EXPECTED_DATE
       )
     ).rejects.toBeInstanceOf(InvalidQRCodeError);
+  });
+
+  it('job_posting_inactive 의 사용자 문구는 종료된 공고 안내여야 함', async () => {
+    mockRpc.mockResolvedValue({
+      data: { success: false, error: 'job_posting_inactive' },
+      error: null,
+    });
+
+    await expect(
+      executeProcessQRCheckInOut(
+        WORK_LOG_ID,
+        STAFF_ID,
+        JOB_POSTING_ID,
+        'auto',
+        CHECK_TIME,
+        EXPECTED_DATE
+      )
+    ).rejects.toMatchObject({ userMessage: '종료된 공고입니다' });
   });
 
   it('job_posting_inactive → InvalidQRCodeError', async () => {

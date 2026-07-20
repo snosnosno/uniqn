@@ -108,12 +108,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="qr"
-        options={{
-          href: null, // 탭바에서 숨김 (상단 버튼으로 접근)
-        }}
-      />
-      <Tabs.Screen
         name="employer"
         options={{
           title: '내 공고',

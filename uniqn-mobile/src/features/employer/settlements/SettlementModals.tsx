@@ -6,7 +6,6 @@
 import React from 'react';
 import {
   WorkTimeEditor,
-  EventQRModal,
   RoleChangeModal,
   ReportModal,
   SettlementDetailModal,
@@ -74,14 +73,6 @@ export function SettlementModals({
 }: SettlementModalsProps) {
   return (
     <>
-      {/* 현장 QR 모달 */}
-      <EventQRModal
-        visible={modals.showEventQRModal}
-        onClose={modals.closeEventQRModal}
-        jobPostingId={jobPostingId}
-        jobTitle={posting?.title}
-      />
-
       {/* 역할 변경 모달 */}
       <RoleChangeModal
         visible={modals.showRoleChangeModal}

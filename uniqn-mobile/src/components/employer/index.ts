@@ -71,10 +71,6 @@ export type { ConfirmedStaffListProps } from './applicants/ConfirmedStaffList';
 export { StaffManagementTab } from './applicants/StaffManagementTab';
 export type { StaffManagementTabProps } from './applicants/StaffManagementTab';
 
-// 현장 QR 코드
-export { EventQRModal } from './qr/EventQRModal';
-export type { EventQRModalProps } from './qr/EventQRModal';
-
 // 역할 변경
 export { RoleChangeModal } from './applicants/RoleChangeModal';
 export type { RoleChangeModalProps } from './applicants/RoleChangeModal';

@@ -14,7 +14,6 @@ import { Platform } from 'react-native';
 // 플랫폼별 QRCodeScanner 내보내기
 // Metro bundler/Webpack이 .web.tsx 확장자를 자동으로 선택함
 export { QRCodeScanner } from './QRCodeScanner';
-export { QRCodeDisplay } from './QRCodeDisplay';
 
 // 플랫폼 유틸리티
 export const isWebPlatform = Platform.OS === 'web';

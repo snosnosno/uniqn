@@ -4,7 +4,14 @@
  * @description 날짜 핵심 유틸리티 함수들의 단위 테스트
  */
 
-import { toDate, toISODateString, getTodayString, toDateString, parseDateString } from '../core';
+import {
+  toDate,
+  toISODateString,
+  getTodayString,
+  getYesterdayString,
+  toDateString,
+  parseDateString,
+} from '../core';
 
 // ============================================================================
 // toDate
@@ -92,6 +99,30 @@ describe('getTodayString', () => {
     const today = new Date();
     const expected = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     expect(result).toBe(expected);
+  });
+});
+
+// ============================================================================
+// getYesterdayString
+// ============================================================================
+
+describe('getYesterdayString', () => {
+  it('어제 날짜를 YYYY-MM-DD 형식으로 반환한다', () => {
+    const result = getYesterdayString();
+    expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+
+    // 로컬 시각 기준 — UTC 로 계산하면 KST 00~09시에 하루가 어긋난다.
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const expected = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+    expect(result).toBe(expected);
+  });
+
+  it('오늘보다 정확히 하루 이르다', () => {
+    const today = new Date(`${getTodayString()}T00:00:00`);
+    const yesterday = new Date(`${getYesterdayString()}T00:00:00`);
+
+    expect(today.getTime() - yesterday.getTime()).toBe(24 * 60 * 60 * 1000);
   });
 });
 

@@ -31,6 +31,7 @@ export default function ApplicantsScreen() {
   const { id: jobPostingId } = useLocalSearchParams<{ id: string }>();
   const { job, isFixed, handleShowQR } = useJobDetailContext();
   const headerBackHref = `/(employer)/my-postings/${jobPostingId ?? ''}`;
+  // 고정 공고는 QR 진입점을 노출하지 않는다 (work_log 행 수명 미해결 — _layout.tsx 주석 참고).
   const headerRightAction = !isFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;
   const headerTitleSuffix = <JobTitleSuffix jobTitle={job?.title ?? null} />;
 

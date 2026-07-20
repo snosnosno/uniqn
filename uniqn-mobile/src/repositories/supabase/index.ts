@@ -11,7 +11,6 @@ export { SupabaseReviewRepository } from './ReviewRepository';
 export { SupabaseReportRepository } from './ReportRepository';
 export { SupabaseInquiryRepository } from './InquiryRepository';
 export { SupabaseTemplateRepository } from './TemplateRepository';
-export { SupabaseEventQRRepository } from './EventQRRepository';
 export { SupabaseAdminRepository } from './AdminRepository';
 export { SupabaseWeeklyGridRepository } from './WeeklyGridRepository';
 

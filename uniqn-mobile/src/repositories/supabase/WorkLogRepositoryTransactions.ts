@@ -104,7 +104,7 @@ function mapQRCheckinErrorToException(errorCode: string, workLogId: string): nev
   switch (errorCode) {
     case 'already_settled':
       throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_SETTLED, {
-        userMessage: '이미 정산 완료된 근무는 출퇴근 처리할 수 없습니다',
+        userMessage: '정산이 끝난 근무는 변경할 수 없습니다',
       });
     case 'already_checked_in':
       throw new AlreadyCheckedInError({
@@ -130,7 +130,7 @@ function mapQRCheckinErrorToException(errorCode: string, workLogId: string): nev
     case 'job_posting_inactive':
       throw new InvalidQRCodeError({
         message: '공고 상태가 활성 아닙니다',
-        userMessage: '활성 상태가 아닌 공고입니다',
+        userMessage: '종료된 공고입니다',
       });
     case 'staff_id_mismatch':
       throw new InvalidQRCodeError({
