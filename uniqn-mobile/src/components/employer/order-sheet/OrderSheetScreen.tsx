@@ -5,7 +5,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/Button';
 import { useToastStore } from '@/stores/toastStore';
-import { SHEET_DISMISS_ANIMATION_MS } from '@/constants/animation';
 import {
   orderSheetValuesSchema,
   type OrderSheetFormValues,
@@ -30,7 +29,7 @@ import { TitleSheet } from './sheets/TitleSheet';
 import { PlaceSheet, type OrderSheetLocation } from './sheets/PlaceSheet';
 import { ContactSheet } from './sheets/ContactSheet';
 import { DescriptionSheet } from './sheets/DescriptionSheet';
-import { TimeSlotsSheet } from './sheets/TimeSlotsSheet';
+import { ScheduleSlotsSheet } from './sheets/ScheduleSlotsSheet';
 import { RolesSheet } from './sheets/RolesSheet';
 import { WorkConditionSheet } from './sheets/WorkConditionSheet';
 import { SalarySheet, type UniqueRole } from './sheets/SalarySheet';
@@ -56,25 +55,17 @@ type GroupTimeSlots = ScheduleGroups[number]['timeSlots'];
  * 활성 시트 상태 — 행 키(비일정) 또는 그룹 스코프 일정 타깃(S1).
  * dates.mode: whole=단일 그룹 전체 편집(3지 세그먼트 노출) · edit=기존 그룹 재편집(세그먼트 숨김 ⓓ)
  * · add=새 그룹 추가(직전 그룹 시간/역할 깊은복사 시드).
- * slotRoles: 특정 그룹·시간대(slotIndex)의 역할만 편집. fromTimeSheet=true 면 확인/닫기 시
- * TimeSlotsSheet 로 복귀(#244 지연 전환), false 면 rows 로 닫는다(단일 슬롯 직접 진입).
  */
 type DatesTarget = { key: 'dates'; groupIndex: number; mode: 'whole' | 'edit' | 'add' };
-type TimeTarget = { key: 'time'; groupIndex: number };
-type SlotRolesTarget = {
-  key: 'slotRoles';
-  groupIndex: number;
-  slotIndex: number;
-  fromTimeSheet: boolean;
-};
+/** 시간·역할 통합 시트 타깃 — 구 TimeTarget + SlotRolesTarget 을 대체한다(시트 전환이 사라짐). */
+type SlotsTarget = { key: 'slots'; groupIndex: number };
 type ActiveSheet =
   // 'workConditions'는 Exclude<OrderRowKey,...>에 이미 포함(고정 근무조건 시트).
   // 'fixedRoles'는 OrderRowKey가 아닌 고정 전용 시트 키 — 그룹 슬롯 roles와 구분하려 별도 추가(S2).
   | Exclude<OrderRowKey, 'dates' | 'time' | 'roles'>
   | 'fixedRoles'
   | DatesTarget
-  | TimeTarget
-  | SlotRolesTarget
+  | SlotsTarget
   | null;
 
 /** 폼 슬롯 깊은복사(F1/E6) — 분할·시드 시 참조 공유로 타 그룹이 오염되는 것을 차단 */
@@ -133,34 +124,11 @@ export function OrderSheetScreen({
   // 급여 시트 confirm 이력 — '기본값' 배지(프리필 제안 상태) 해제 판정용 파생 상태(스키마 필드 아님)
   const [salaryConfirmed, setSalaryConfirmed] = useState(false);
 
-  // 시트→시트 직접 스왑은 iOS 중첩 Modal 터치 먹통(#244)을 유발 — 먼저 닫고 dismiss 애니메이션 뒤 다음을 연다.
-  // 재진입 가드(pendingSheetRef)로 더블탭 시 이중 예약을 막고, 언마운트 시 예약을 정리한다(ScheduleDetailModal closeSheetThen 패턴).
-  const pendingSheetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const clearPendingSheet = useCallback(() => {
-    if (pendingSheetRef.current) {
-      clearTimeout(pendingSheetRef.current);
-      pendingSheetRef.current = null;
-    }
-  }, []);
-  useEffect(() => clearPendingSheet, [clearPendingSheet]);
-
-  const switchSheet = useCallback((next: ActiveSheet) => {
-    if (pendingSheetRef.current) return; // 재진입 가드
-    setActiveSheet(null);
-    pendingSheetRef.current = setTimeout(() => {
-      pendingSheetRef.current = null;
-      // pending 창(300ms) 동안 사용자가 다른 시트를 열었으면(cur !== null) 그 선택을 존중 —
-      // 예약 타이머가 사용자가 연 시트를 같은 렌더 패스에서 갈아치우는 레이스 차단.
-      setActiveSheet((cur) => (cur === null ? next : cur));
-    }, SHEET_DISMISS_ANIMATION_MS);
-  }, []);
-
   // 일정 타깃(객체) 좁히기 — rows/기타 시트 키(문자열)와 구분
   const scheduleTarget =
     activeSheet !== null && typeof activeSheet === 'object' ? activeSheet : null;
   const datesTarget = scheduleTarget?.key === 'dates' ? scheduleTarget : null;
-  const timeTarget = scheduleTarget?.key === 'time' ? scheduleTarget : null;
-  const slotRolesTarget = scheduleTarget?.key === 'slotRoles' ? scheduleTarget : null;
+  const slotsTarget = scheduleTarget?.key === 'slots' ? scheduleTarget : null;
 
   const scheduleGroups: ScheduleGroups = useMemo(
     () => values.scheduleGroups ?? [],
@@ -279,34 +247,24 @@ export function OrderSheetScreen({
   );
 
   // 행 탭 라우팅(그룹 스코프) — dates는 단일 그룹=whole(세그먼트)·다그룹=edit(헤더 재편집),
-  // roles는 그룹 슬롯 수에 따라 분기(1개=직접 역할 편집, 그 외=TimeSlotsSheet).
-  // switchSheet 지연 전환 창(300ms) 중에는 무시 — 그 사이 새 시트를 열면 예약 타이머와 충돌(#244 레이스).
+  // 시간·역할은 통합 시트 하나로 진입(설계 §6).
   const handleRowPress = useCallback(
     (key: OrderRowKey, groupIndex = 0) => {
       if (guardScheduleLock(key)) return;
-      if (pendingSheetRef.current) return;
       const groups = form.getValues().scheduleGroups ?? [];
       if (key === 'dates') {
         setActiveSheet({ key: 'dates', groupIndex, mode: groups.length > 1 ? 'edit' : 'whole' });
         return;
       }
-      if (key === 'time') {
-        setActiveSheet({ key: 'time', groupIndex });
-        return;
-      }
-      if (key === 'roles') {
-        // 고정(fixed)은 그룹 슬롯이 아니라 단일 fixedSchedule.roles 편집 — 전용 시트로 분기(S2).
+      // 시간·역할은 통합 시트 하나로 진입한다(설계 §6). 고정(fixed)은 단일 fixedSchedule.roles
+      // 편집이라 전용 시트로 분기하는 기존 동작을 유지한다(S2).
+      if (key === 'time' || key === 'roles') {
         if (form.getValues().postingType === 'fixed') {
           seedFixedScheduleIfMissing();
           setActiveSheet('fixedRoles');
           return;
         }
-        const count = groups[groupIndex]?.timeSlots?.length ?? 0;
-        setActiveSheet(
-          count === 1
-            ? { key: 'slotRoles', groupIndex, slotIndex: 0, fromTimeSheet: false }
-            : { key: 'time', groupIndex }
-        );
+        setActiveSheet({ key: 'slots', groupIndex });
         return;
       }
       if (key === 'workConditions') {
@@ -365,7 +323,6 @@ export function OrderSheetScreen({
    *  confirm-시점-분할 단순성(E6 구조적 회피)을 유지하는 절충이다. */
   const handleAddSchedule = useCallback(() => {
     if (guardScheduleLock()) return;
-    if (pendingSheetRef.current) return;
     const groups = form.getValues().scheduleGroups ?? [];
     setActiveSheet({ key: 'dates', groupIndex: groups.length, mode: 'add' });
   }, [form, guardScheduleLock]);
@@ -853,8 +810,8 @@ export function OrderSheetScreen({
           onClose={() => setActiveSheet(null)}
         />
       )}
-      {/* 일정·모집 시트 3종(그룹 스코프) — 날짜(달력+세그먼트)·시간(다중 시간대)·역할(슬롯별).
-          rows 진입은 즉시, TimeSlotsSheet↔RolesSheet 스왑만 switchSheet(#244 지연 전환)을 태운다. */}
+      {/* 일정·모집 시트 2종(그룹 스코프) — 날짜(달력+세그먼트)·시간역할 통합.
+          시트→시트 스왑이 없으므로 #244 지연 전환 인프라가 필요 없다. */}
       {datesTarget && (
         <ScheduleDatesSheet
           visible
@@ -874,60 +831,23 @@ export function OrderSheetScreen({
           onClose={() => setActiveSheet(null)}
         />
       )}
-      {timeTarget && (
-        <TimeSlotsSheet
+      {slotsTarget && (
+        <ScheduleSlotsSheet
           visible
-          value={scheduleGroups[timeTarget.groupIndex]?.timeSlots ?? []}
+          value={scheduleGroups[slotsTarget.groupIndex]?.timeSlots ?? []}
           onConfirm={(next) => {
             const nextGroups = scheduleGroups.map((g, i) =>
-              i === timeTarget.groupIndex ? { ...g, timeSlots: next } : g
+              i === slotsTarget.groupIndex ? { ...g, timeSlots: next } : g
             );
             form.setValue('scheduleGroups', nextGroups, {
               shouldDirty: true,
               shouldValidate: true,
             });
+            // 시간·역할이 한 번에 확정되므로 역할별 급여 동기화도 여기 1회로 수렴한다
+            // (구 TimeSlotsSheet/RolesSheet 이중 호출 제거).
             applyRoleSalarySync(nextGroups);
           }}
           onClose={() => setActiveSheet(null)}
-          onEditSlotRoles={(slotIndex) =>
-            switchSheet({
-              key: 'slotRoles',
-              groupIndex: timeTarget.groupIndex,
-              slotIndex,
-              fromTimeSheet: true,
-            })
-          }
-        />
-      )}
-      {slotRolesTarget && (
-        <RolesSheet
-          visible
-          value={
-            scheduleGroups[slotRolesTarget.groupIndex]?.timeSlots?.[slotRolesTarget.slotIndex]
-              ?.roles ?? []
-          }
-          onConfirm={(next) => {
-            const nextGroups = scheduleGroups.map((g, gi) =>
-              gi === slotRolesTarget.groupIndex
-                ? {
-                    ...g,
-                    timeSlots: (g.timeSlots ?? []).map((s, si) =>
-                      si === slotRolesTarget.slotIndex ? { ...s, roles: next } : s
-                    ),
-                  }
-                : g
-            );
-            form.setValue('scheduleGroups', nextGroups, {
-              shouldDirty: true,
-              shouldValidate: true,
-            });
-            applyRoleSalarySync(nextGroups);
-          }}
-          onClose={() =>
-            slotRolesTarget.fromTimeSheet
-              ? switchSheet({ key: 'time', groupIndex: slotRolesTarget.groupIndex })
-              : setActiveSheet(null)
-          }
         />
       )}
       {/* 급여 시트 3종 — 급여(타입·역할별)·복지·세금. rows 진입은 즉시(스왑 없음). */}
