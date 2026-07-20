@@ -49,11 +49,10 @@ export function ScheduleSlotsSheet({
 }: ScheduleSlotsSheetProps) {
   const seed: Slots = value.length > 0 ? value : [{ startTime: DEFAULT_START, roles: [] }];
   const [slots, setSlots] = useState<Slots>(seed);
-  const [expanded, setExpanded] = useState<number>(() => firstIncompleteIndex(seed));
   const [pickerIndex, setPickerIndex] = useState<number | null>(null);
 
   /**
-   * 슬롯별 안정 식별자 — SlotCard 의 key 로 쓴다.
+   * 슬롯별 안정 식별자 — SlotCard 의 key 이자 **펼침 대상의 식별자**다.
    * 배열 인덱스를 key 로 쓰면 **펼친 슬롯을 삭제할 때** 승계 슬롯이 같은 React 인스턴스를
    * 재사용해 RoleCountEditor 의 내부 상태(editing·lastCount·customOpen·customName)를 물려받는다.
    * Task 5 리뷰가 예고한 위험이자 Task 3 시나리오 C 와 같은 결함 클래스다.
@@ -61,6 +60,15 @@ export function ScheduleSlotsSheet({
    */
   const nextIdRef = useRef(seed.length);
   const [slotIds, setSlotIds] = useState<string[]>(() => seed.map((_, i) => `slot-${i}`));
+  /**
+   * 펼침 대상을 인덱스가 아니라 **id** 로 들고 있는 이유:
+   * 새 슬롯의 인덱스는 "직전 배열 길이"라서 addSlot 이 클로저의 `slots` 를 읽어야만 알 수 있는데,
+   * 그러면 한 배치에서 두 번 호출될 때 slots 만 갱신을 잃고 slotIds 와 길이가 어긋난다.
+   * id 는 호출 시점에 이미 확정되므로 세 상태(slots·slotIds·expandedId)가 전부 함수형 갱신으로
+   * 같은 배치에서 일관되게 움직인다. 덤으로 삭제 시 인덱스 시프트 보정도 불필요해진다.
+   * 초기값은 slotIds 와 같은 `slot-${i}` 규칙을 공유한다.
+   */
+  const [expandedId, setExpandedId] = useState<string>(() => `slot-${firstIncompleteIndex(seed)}`);
 
   const updateStart = (i: number, t: TimeValue) =>
     setSlots((prev) => prev.map((s, idx) => (idx === i ? { ...s, startTime: toStartTime(t) } : s)));
@@ -69,25 +77,24 @@ export function ScheduleSlotsSheet({
     setSlots((prev) => prev.map((s, idx) => (idx === i ? { ...s, roles } : s)));
 
   const addSlot = () => {
+    const id = `slot-${nextIdRef.current++}`;
     // roles 깊은복사 — 새 슬롯의 역할 편집이 첫 슬롯 roles 를 참조 변형하는 것을 막는다.
-    const next: Slots = [
-      ...slots,
-      { startTime: '', roles: (slots[0]?.roles ?? []).map((r) => ({ ...r })) },
-    ];
-    setSlots(next);
-    setSlotIds((prev) => [...prev, `slot-${nextIdRef.current++}`]);
-    setExpanded(next.length - 1);
+    setSlots((prev) => [
+      ...prev,
+      { startTime: '', roles: (prev[0]?.roles ?? []).map((r) => ({ ...r })) },
+    ]);
+    setSlotIds((prev) => [...prev, id]);
+    setExpandedId(id);
   };
 
   const removeSlot = (i: number) => {
-    const next = slots.filter((_, idx) => idx !== i);
-    setSlots(next);
+    const removedId = slotIds[i];
+    setSlots((prev) => prev.filter((_, idx) => idx !== i));
     setSlotIds((prev) => prev.filter((_, idx) => idx !== i));
-    // `cur > i` 항은 **영구 도달불가**(커버리지 0)라 회귀 테스트가 없다 — SlotCard 가 삭제 버튼을
-    // 펼친 카드에만 렌더하므로 removeSlot(i) 는 항상 i === expanded 다. 방어적으로만 남긴다.
-    // 반면 else 의 클램프(Math.min)는 도달 가능하다 — 마지막(펼친) 슬롯 삭제 시 남은 카드를
-    // 펼치는 경로이고, '마지막(펼친) 슬롯을 삭제하면 남은 슬롯이 펼쳐진다' 테스트가 지킨다.
-    setExpanded((cur) => (cur > i ? cur - 1 : Math.min(cur, Math.max(0, next.length - 1))));
+    // 펼친 카드를 지웠을 때만 이웃으로 승계한다(뒤 → 없으면 앞). 다른 카드가 펼쳐져 있었다면
+    // 배열이 줄어도 그 id 는 그대로 유효하므로 인덱스 시프트 보정 자체가 필요 없다.
+    // '마지막(펼친) 슬롯을 삭제하면 남은 슬롯이 펼쳐진다' 테스트가 이 승계를 지킨다.
+    setExpandedId((cur) => (cur === removedId ? (slotIds[i + 1] ?? slotIds[i - 1] ?? cur) : cur));
   };
 
   return (
@@ -130,9 +137,9 @@ export function ScheduleSlotsSheet({
             key={slotIds[i]}
             slot={slot}
             index={i}
-            expanded={expanded === i}
+            expanded={slotIds[i] === expandedId}
             removable={slots.length > 1}
-            onExpand={() => setExpanded(i)}
+            onExpand={() => setExpandedId(slotIds[i])}
             onPressTime={() => setPickerIndex(i)}
             onChangeRoles={(roles) => updateRoles(i, roles)}
             onRemove={() => removeSlot(i)}

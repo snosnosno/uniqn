@@ -38,7 +38,11 @@ src/components/employer/order-sheet/sheets/
   TimeSlotsSheet.tsx       삭제
 ```
 
-`RoleCountEditor`를 날짜형(dated)과 고정(fixed)이 공유하므로 두 경로의 역할 입력 방식이 자동으로 일치한다. 각 파일은 200줄 이하를 목표로 한다.
+`RoleCountEditor`를 날짜형(dated)과 고정(fixed)이 공유하므로 두 경로의 역할 입력 방식이 자동으로 일치한다.
+
+**파일 크기(구현 실측)**: `ScheduleSlotsSheet` 161줄 / `SlotCard` 116줄 / `RolesSheet` 47줄 / `RoleCountEditor` **265줄**.
+
+`RoleCountEditor`만 애초 목표치 200줄을 넘겼다. **초과를 허용한다** — 프로젝트 상한(800줄)의 3분의 1이고 내부 함수는 전부 20줄 미만이라 가독성 기준은 충족한다. 265줄의 실제 구성은 로직이 아니라 **JSX 마크업 + 함정 주석**이다(칩 그리드·커스텀 입력 패널·역할 행 3블록의 NativeWind className, 그리고 `editing` 이중 가드·`lastCount` clamp 의 근거 주석). 여기서 더 쪼개면 "칩 목록"과 "인원 행"이 별 파일로 갈라져 **한 화면의 상태(`lastCount`·`editing`)를 prop drilling** 으로 넘겨야 하므로 응집도가 떨어진다. 분할은 후속 PR 판단 대상으로 남긴다.
 
 ### 컴포넌트 경계
 
@@ -63,7 +67,11 @@ src/components/employer/order-sheet/sheets/
 1. 탭 → 인라인 `TextInput` 노출 (`maxLength={20}`)
 2. 이름 입력 후 확정 → 목록에 새 행 추가 (인원 1로 시작)
 3. 이름이 비어 있으면 추가 비활성 (현행 `addDisabled`와 동일)
-4. 같은 이름이 이미 있으면 기존 행으로 병합(교체) — 현행 중복 방지 시맨틱 승계
+4. 같은 이름이 이미 있으면 **기존 행을 그대로 두고 아무것도 하지 않는다**(중복 행만 방지). 입력창은 비우고 닫는다.
+
+> 4번은 초안의 "병합(교체)"을 구현에 맞춰 정정한 것이다. **교체하면 안 되는 이유**: 구 `RolesSheet`의 "제거 후 재삽입"은 **사전 스테퍼로 인원을 먼저 정하고 추가**하던 시절의 시맨틱이라 교체해도 사용자가 방금 지정한 인원이 들어갔다. 새 편집기에는 사전 스테퍼가 없어 추가 인원이 항상 1이므로, 같은 이름으로 교체하면 이미 "칩카운터 8명"으로 키워 둔 행이 **1명으로 강등**된다. 무동작이 사용자의 기존 입력을 보존한다.
+>
+> 알려진 UX 갭: 이때 사용자에게 아무 피드백이 없다("왜 안 늘지?"). 중복 이름 피드백은 **후속 PR**로 분리한다 — 이번 범위는 시맨틱 확정까지다.
 
 ### 4.2 해제 시 인원 기억
 
@@ -93,6 +101,23 @@ src/components/employer/order-sheet/sheets/
 - 접힌 카드 라벨: `22:00 · 딜러 1명` (역할 요약은 기존 `roleName` 사용 — raw key 노출 금지)
 - 펼침 300ms / 접힘 225ms(75% 규칙, impeccable §8). `AccessibilityInfo.isReduceMotionEnabled()`면 애니메이션 없이 즉시 전환
 - `accessibilityRole="button"` + `accessibilityState={{ expanded }}`
+
+## 5.1 구현에서 추가된 장치 (설계 초안에 없던 것)
+
+아래 4개는 초안에 없었으나 구현·리뷰 과정에서 정당한 근거로 들어왔다. 되돌릴 때 무엇이 깨지는지까지 남긴다.
+
+| 장치 | 위치 | 막는 것 |
+|---|---|---|
+| `slotIds` 안정 식별자 | `ScheduleSlotsSheet` | 슬롯 카드의 React key 를 배열 인덱스가 아니라 생성 시 확정한 `slot-{n}` 으로 준다. 인덱스 key 면 **펼친 슬롯을 삭제할 때** 승계 슬롯이 같은 컴포넌트 인스턴스를 재사용해 `RoleCountEditor` 의 내부 상태(`editing`·`lastCount`·`customOpen`·`customName`)를 물려받는다. 안정 id 면 삭제 카드가 언마운트되고 승계 슬롯은 깨끗한 편집기를 새로 마운트한다. |
+| 펼침 대상을 **id 로 보관**(`expandedId`) | `ScheduleSlotsSheet` | 펼침 인덱스를 쓰면 "새 슬롯의 인덱스 = 직전 배열 길이"라 `addSlot` 이 클로저의 `slots` 를 읽어야 한다. 그러면 같은 배치에서 두 번 호출될 때 `slots` 만 갱신을 잃고 `slotIds` 와 길이가 어긋난다. id 는 호출 시점에 확정돼 세 상태가 전부 함수형 갱신으로 같은 배치에서 일관되게 움직이고, 삭제 시 인덱스 시프트 보정도 불필요해진다. |
+| `editing` 의 key + index **이중 가드** | `RoleCountEditor` | 인원 직접입력의 커밋 대상 판정. **key**(`rowKeyOf`)는 배열 shape 이 바뀌어 그 자리를 승계한 *다른 역할* 에 값이 커밋되는 것을 막고, **index** 는 `rowKeyOf` 가 같은 값을 내는 중복 행(예: `customRole` 없는 `other` 2행)에서 뒤 행 `onFocus` 가 앞 행의 편집 텍스트를 덮어써 *값의 출처* 가 오염되는 것을 막는다. 두 식별자는 서로 다른 오염을 막으므로 하나만 남기면 안 된다. |
+| 새 슬롯의 `slots[0].roles` **깊은복사 시드** | `ScheduleSlotsSheet.addSlot` | 구 `TimeSlotsSheet` 의 "첫 슬롯 역할을 물려받는다" 동작 승계. 얕은 복사면 새 슬롯의 인원 편집이 첫 슬롯의 역할 객체를 참조 변형한다. |
+
+### 삭제 버튼은 펼친 카드에만 렌더된다 (UX 변화)
+
+구 `TimeSlotsSheet` 는 **모든** 슬롯 행에 삭제 버튼을 달았다. 새 `SlotCard` 는 접힘 분기에 삭제 버튼이 없다 — 접힌 카드는 한 줄 요약 + chevron 뿐이다. 아코디언 설계에 내재된 결과이며(접힘은 요약 전용), 접힌 슬롯을 지우려면 **한 번 펼친 뒤 삭제**해야 한다. 탭 1회가 늘지만 접힌 요약만 보고 잘못 지우는 오조작을 막는다.
+
+부수 효과로 `removeSlot(i)` 는 **항상 펼친 카드**에 대해서만 호출된다 — 삭제 시 펼침 승계 로직이 "지운 카드가 펼친 카드였을 때"만 고려하면 되는 근거다.
 
 ## 6. 진입 경로 (OrderSheetScreen)
 
@@ -149,7 +174,8 @@ if (key === 'time' || key === 'roles') {
 |---|---|---|
 | `order-role-count-minus` / `-plus` | `order-role-count-minus-{i}` / `-plus-{i}` | 행별로 이동 |
 | (신규) | `order-role-count-input-{i}` | 숫자 직접 입력 |
-| `order-role-add` | 유지하되 의미 축소 | '기타 직접 입력' 전용 |
+| (신규) | `order-role-custom-open` | '＋ 직접 입력' 칩 — 커스텀 이름 입력 패널 토글 |
+| `order-role-add` | 유지하되 의미 축소 | '기타 직접 입력' 전용 — 입력 패널 안의 '이 역할 추가' |
 | `order-time-roles-{i}` | 유지하되 의미 변경 | 시트 전환 → 아코디언 펼침 |
 | `order-time-start-{i}` / `-remove-{i}` / `order-time-add-slot` | 유지 | |
 

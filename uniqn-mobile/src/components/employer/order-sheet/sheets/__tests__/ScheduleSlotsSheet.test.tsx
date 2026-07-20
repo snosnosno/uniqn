@@ -5,7 +5,7 @@
  * 검증: (1) 빈 값이면 기본 슬롯 1개 펼침, (2) 시트 안에서 시간·역할을 모두 편집,
  * (3) 아코디언 활성 전환, (4) 첫 미완성 슬롯 자동 펼침, (5) 추가/삭제, (6) 확인 배출.
  */
-import { render, fireEvent } from '@testing-library/react-native';
+import { render, fireEvent, act } from '@testing-library/react-native';
 import React from 'react';
 import { ScheduleSlotsSheet } from '../ScheduleSlotsSheet';
 
@@ -126,6 +126,30 @@ describe('ScheduleSlotsSheet', () => {
     fireEvent.press(getByTestId('order-time-add-slot'));
     expect(getByText('출근 --:--')).toBeTruthy();
     expect(getByText('19:00 · 딜러 2명')).toBeTruthy();
+  });
+
+  // 최종 리뷰 이월 회귀 가드 — addSlot 이 클로저의 `slots` 를 읽어 `setSlots(next)` 하면 red 가 된다.
+  // 같은 배치에서 두 번 호출되면 두 번째 호출이 첫 번째의 갱신을 보지 못해 slots 만 1개만 늘고,
+  // 함수형으로 갱신되던 slotIds 는 2개가 늘어 두 배열의 길이가 어긋난다.
+  it('한 배치에서 시간대 추가를 2회 눌러도 슬롯이 2개 늘어난다', () => {
+    const onConfirm = jest.fn();
+    const { getByTestId, getByText } = render(
+      <ScheduleSlotsSheet
+        visible
+        value={[{ startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] }]}
+        onConfirm={onConfirm}
+        onClose={jest.fn()}
+      />
+    );
+    act(() => {
+      fireEvent.press(getByTestId('order-time-add-slot'));
+      fireEvent.press(getByTestId('order-time-add-slot'));
+    });
+    fireEvent.press(getByText('확인'));
+    expect(onConfirm.mock.calls[0][0]).toHaveLength(3);
+    // 마지막(세 번째) 카드가 펼쳐져 있어야 한다 — 앞의 두 장은 접힘 요약만 렌더한다.
+    expect(getByTestId('order-time-roles-1')).toBeTruthy();
+    expect(getByTestId('order-time-start-2')).toBeTruthy();
   });
 
   it('새 슬롯은 첫 슬롯의 역할을 깊은복사로 시드받는다', () => {
