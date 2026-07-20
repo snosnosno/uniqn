@@ -33,7 +33,7 @@ export type BadgePreset =
   | 'cancelled' // 취소됨 (default)
   | 'closed' // 마감 (default)
   | 'new' // 신규 (primary)
-  | 'tournament'; // 토너먼트 (primary)
+  | 'tournament'; // 대회 (primary) — 키는 DB enum 이라 영문 유지, 표시만 '대회'
 
 /** 프리셋 설정 */
 const BADGE_PRESETS: Record<BadgePreset, { variant: BadgeVariant; label: string }> = {
@@ -46,7 +46,7 @@ const BADGE_PRESETS: Record<BadgePreset, { variant: BadgeVariant; label: string 
   cancelled: { variant: 'default', label: '취소됨' },
   closed: { variant: 'default', label: '마감' },
   new: { variant: 'primary', label: '신규' },
-  tournament: { variant: 'primary', label: '토너먼트' },
+  tournament: { variant: 'primary', label: '대회' },
 };
 
 /**

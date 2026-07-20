@@ -3282,6 +3282,16 @@ export type Database = {
           region: string;
         }[];
       };
+      search_workspace_invite_candidates_by_nickname: {
+        Args: { p_workspace_id: string; p_nickname: string };
+        Returns: {
+          id: string;
+          name: string;
+          nickname: string;
+          photo_url: string;
+          photo_url_blurhash: string;
+        }[];
+      };
       sync_schedule_board: { Args: { p_job_posting_id: string }; Returns: Json };
       toggle_board_post_vote: {
         Args: { p_post_id: string; p_user_id: string; p_vote_type: string };

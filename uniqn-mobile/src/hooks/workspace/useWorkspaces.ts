@@ -158,6 +158,8 @@ export function useWorkspaceOwnerProfile(
 export interface UseReceivedInvitationsResult {
   invitations: ReceivedWorkspaceInvitation[];
   isLoading: boolean;
+  /** 당겨서 새로고침 스피너용 — 노출하지 않으면 화면이 refreshing={false} 로 땜빵하게 된다 */
+  isRefetching: boolean;
   error: unknown;
   refetch: () => void;
 }
@@ -178,6 +180,7 @@ export function useReceivedWorkspaceInvitations(): UseReceivedInvitationsResult 
   return {
     invitations: query.data ?? [],
     isLoading: query.isLoading,
+    isRefetching: query.isRefetching,
     error: query.error,
     refetch: query.refetch,
   };

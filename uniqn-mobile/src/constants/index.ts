@@ -163,9 +163,13 @@ export const ROLE_LABELS: Record<string, string> = {
   // 사용자 역할 + 스태프 역할 (types/role.ts에서 합성)
   ...USER_ROLE_LABELS,
   ...STAFF_ROLE_LABELS,
-  // staff 키 충돌 해결: UserRole.staff('스태프')와 StaffRole.staff('직원')가 겹침
-  // → ROLE_LABELS에서는 UserRole 기준 '일반'을 사용 (기존 동작 유지)
-  staff: '일반',
+  // staff 키 충돌: UserRole.staff('스태프')와 StaffRole.staff('직원')가 같은 키를 쓴다.
+  // 이 맵의 살아있는 소비처는 전부 UserRole 문맥(게시판 작성자/댓글 뱃지)이므로
+  // UserRole 기준 '스태프'가 맞다. 직무 문맥은 STAFF_ROLE_LABELS 를 직접 쓸 것.
+  //
+  // 과거에 '일반'이라는 제3의 값을 넣어 충돌을 회피했으나, 그 값이 맞는 문맥은
+  // 어디에도 없었고 두 화면이 각자 로컬 우회를 만들어 쓰고 있었다 (2026-07-19 정리).
+  staff: '스태프',
   // 추가 매핑 (types/role.ts에 없는 키)
   user: '일반 사용자',
   supervisor: '슈퍼바이저', // 레거시 역호환 (StaffRole에서 제거되었지만 기존 데이터 존재)

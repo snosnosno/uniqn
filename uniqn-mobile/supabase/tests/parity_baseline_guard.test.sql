@@ -15,6 +15,11 @@
 --       + 좌석 fn 3(_total_positions_from_schedule/fn_recalc_total_and_capacity/fn_sync_filled_positions_seat)
 --       + 보안 하드닝 fn 1(fn_work_logs_pin_posting_id, 20260718000100 리뷰 P1)
 --     정책 110 불변(좌석 마이그는 RLS 미변경).
+--   2026-07-19 멤버 초대 닉네임 검색(마이그 20260720002917, prod 적용 완료):
+--     함수 174 = 173 + search_workspace_invite_candidates_by_nickname 1
+--       (팀 멤버 초대 후보 검색 — lookupUserByEmail 이메일 정확일치 대체.
+--        후보가 employer/admin 한정이라 기존 search_users_by_nickname 재사용 불가)
+--     정책 110 불변(RPC 신설만, RLS 미변경).
 --
 -- ⚠️ 유지보수 계약: 이후 마이그레이션이 public 함수/정책을 추가·삭제하면
 --   이 기대값을 같은 PR에서 함께 갱신해야 한다. 갱신을 강제당하는 것 자체가
@@ -27,7 +32,7 @@
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=173
+-- PARITY_EXPECT_FUNCS=174
 -- PARITY_EXPECT_POLICIES=110
 -- ============================================================
 BEGIN;
@@ -47,8 +52,8 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  173,
-  'public function count == prod (173 = 168 + grid enforce fn 1 + 좌석 fn 3 + 보안하드닝 fn 1, 2026-07-18)');
+  174,
+  'public function count == prod (174 = 173 + 멤버초대 닉네임검색 RPC 1, 2026-07-19)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(

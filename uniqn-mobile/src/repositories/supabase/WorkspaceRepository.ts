@@ -9,11 +9,14 @@
 
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
-import { isAppError } from '@/errors';
+import { isAppError, toError } from '@/errors';
 import { handleSupabaseError, toCamelCase } from '@/utils/supabase';
 import { mapWorkspaceRpcError } from '@/errors/workspace';
 import type { Workspace } from '@/types/workspace';
-import type { IWorkspaceRepository } from '../interfaces/IWorkspaceRepository';
+import type {
+  IWorkspaceRepository,
+  WorkspaceInviteCandidate,
+} from '../interfaces/IWorkspaceRepository';
 
 const TABLE = 'workspaces' as const;
 const COLUMNS = 'id, name, owner_id, member_count, created_at, updated_at, archived_at' as const;
@@ -201,6 +204,37 @@ export class SupabaseWorkspaceRepository implements IWorkspaceRepository {
     } catch (error) {
       if (isAppError(error)) throw error;
       handleSupabaseError(error, { operation: '보관함 조회', table: TABLE });
+    }
+  }
+
+  async searchInviteCandidatesByNickname(
+    workspaceId: string,
+    nickname: string
+  ): Promise<WorkspaceInviteCandidate[]> {
+    try {
+      // 최소 2자·권한·rate limit 은 RPC 본문이 강제한다. 여기서는 길이만 로깅.
+      logger.info('멤버 초대 후보 닉네임 검색', { nicknameLength: nickname.trim().length });
+
+      const { data, error } = await supabase.rpc('search_workspace_invite_candidates_by_nickname', {
+        p_workspace_id: workspaceId,
+        p_nickname: nickname,
+      });
+
+      if (error) {
+        handleSupabaseError(error, { operation: '멤버 초대 후보 검색', table: TABLE });
+      }
+
+      return ((data ?? []) as Record<string, unknown>[]).map((row) => ({
+        id: row.id as string,
+        name: (row.name as string) ?? null,
+        nickname: (row.nickname as string) ?? null,
+        photoUrl: (row.photo_url as string) ?? null,
+        photoUrlBlurhash: (row.photo_url_blurhash as string) ?? null,
+      }));
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      logger.error('멤버 초대 후보 검색 실패', toError(error));
+      handleSupabaseError(error, { operation: '멤버 초대 후보 검색', table: TABLE });
     }
   }
 }

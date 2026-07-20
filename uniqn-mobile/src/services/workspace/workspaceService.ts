@@ -9,8 +9,6 @@
  */
 
 import { workspaceRepository, workspaceMemberRepository } from '@/repositories';
-import { supabase } from '@/lib/supabase';
-import { handleSupabaseError } from '@/utils/supabase';
 import {
   createWorkspaceSchema,
   updateWorkspaceNameSchema,
@@ -21,6 +19,7 @@ import {
 import { ValidationError, BusinessError, ERROR_CODES, isAppError } from '@/errors';
 import { logger } from '@/utils/logger';
 import type { Workspace, WorkspaceMemberWithUser } from '@/types/workspace';
+import type { WorkspaceInviteCandidate } from '@/repositories';
 
 function toValidationError(error: unknown): never {
   if (isAppError(error)) throw error;
@@ -198,51 +197,34 @@ export const workspaceService = {
   },
 
   /**
-   * 초대용 사용자 lookup — 이메일 정확 매칭.
-   * (UI 검색 자동완성을 피하기 위해 정확 매칭. 등록된 사용자에게만 초대 발송 가능.)
+   * 멤버 초대 후보 닉네임 prefix 검색.
+   *
+   * 이메일 정확일치(lookupUserByEmail)를 대체한다 — 나머지 두 "사람 찾기" 흐름
+   * (스태프 직접추가·공고 협업자)이 이미 닉네임 prefix + SECDEF RPC 라 여기만
+   * 구식 직접 테이블 쿼리로 남아 있었다.
+   *
+   * 후보 필터(employer/admin 한정, 본인·기존멤버·대기중초대 제외)와 권한·최소 2자·
+   * rate limit 은 전부 RPC 가 강제한다. 클라에서 다시 거르지 않는다 —
+   * 두 곳에 두면 갈라진다.
+   *
+   * 옛 구현은 실패를 삼키고 null 을 돌려줬으나(사용자에게 "못 찾음"과 구분 불가),
+   * 여기서는 그대로 던진다. 권한·rate limit 은 화면이 구분해 안내해야 한다.
    */
-  async lookupUserByEmail(
-    email: string
-  ): Promise<{ id: string; name: string | null; email: string; photoUrl: string | null } | null> {
-    const trimmed = email.trim().toLowerCase();
-    if (!trimmed || trimmed.length < 5 || !trimmed.includes('@')) {
-      return null;
+  async searchInviteCandidatesByNickname(
+    workspaceId: string,
+    nickname: string
+  ): Promise<WorkspaceInviteCandidate[]> {
+    if (!workspaceId) {
+      throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+        userMessage: '팀 정보가 필요합니다',
+      });
     }
 
-    try {
-      // 워크스페이스 멤버는 구조적으로 employer/admin 전제(공고 생성 RLS·(employer) 라우트 가드).
-      // staff 를 초대하면 수락 화면이 employer 전용이라 수신자가 도달 불가한 dead-end 가 되므로
-      // 조회 단계에서 employer/admin 으로 한정해 애초에 초대되지 않도록 막는다.
-      const { data, error } = await supabase
-        .from('users')
-        .select('id, name, email, photo_url, is_active')
-        .eq('email', trimmed)
-        .in('role', ['employer', 'admin'])
-        .maybeSingle();
-
-      if (error) {
-        handleSupabaseError(error, { operation: '사용자 조회', table: 'users' });
-      }
-
-      if (!data || data.is_active === false) {
-        return null;
-      }
-
-      const row = data as {
-        id: string;
-        name: string | null;
-        email: string;
-        photo_url: string | null;
-      };
-      return {
-        id: row.id,
-        name: row.name,
-        email: row.email,
-        photoUrl: row.photo_url ?? null,
-      };
-    } catch (error) {
-      logger.warn('lookupUserByEmail 실패', { email: trimmed, error: String(error) });
-      return null;
+    // 2자 미만은 RPC 도 빈 배열을 주지만, 왕복 자체를 아낀다.
+    if (nickname.trim().length < 2) {
+      return [];
     }
+
+    return workspaceRepository.searchInviteCandidatesByNickname(workspaceId, nickname);
   },
 };
