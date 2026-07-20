@@ -8,5 +8,9 @@
 /privacy.html  /privacy.html  200
 /account-deletion.html  /account-deletion.html  200
 
+# 앱 소개 페이지 (홍보용) — 확장자 없는 /guide 로 접근
+/guide  /guide.html  200
+/guide.html  /guide.html  200
+
 # SPA fallback (모든 경로를 index.html로)
 /*  /index.html  200
