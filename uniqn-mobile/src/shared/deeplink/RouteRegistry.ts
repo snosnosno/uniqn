@@ -6,7 +6,7 @@ export const EXPO_ROUTES = {
   board: '/(app)/(tabs)/board',
   profile: '/(app)/(tabs)/profile',
   employerTab: '/(app)/(tabs)/employer',
-  qr: '/(app)/(tabs)/qr',
+  scan: '/(app)/scan',
 
   notifications: '/(app)/notifications',
   jobDetail: '/(app)/jobs/[id]',
@@ -39,6 +39,7 @@ export const EXPO_ROUTES = {
   postingApplicants: '/(employer)/my-postings/[id]/applicants',
   postingSettlements: '/(employer)/my-postings/[id]/settlements',
   postingCancellationRequests: '/(employer)/my-postings/[id]/cancellation-requests',
+  postingQR: '/(employer)/my-postings/[id]/qr',
   weeklyGrid: '/(employer)/weekly-grid',
 
   adminDashboard: '/(admin)',
@@ -111,6 +112,7 @@ export const AUTH_REQUIRED_ROUTES: ExpoRouteName[] = [
   'postingApplicants',
   'postingSettlements',
   'postingCancellationRequests',
+  'postingQR',
   'weeklyGrid',
   'reviewDetail',
   'reviewsPending',
@@ -128,6 +130,7 @@ export const EMPLOYER_REQUIRED_ROUTES: ExpoRouteName[] = [
   'postingApplicants',
   'postingSettlements',
   'postingCancellationRequests',
+  'postingQR',
   'weeklyGrid',
 ];
 

@@ -64,10 +64,10 @@ const ROUTE_NAMES: Record<string, string> = {
   '/(app)/(tabs)': '홈',
   '/(app)/(tabs)/home-jobs': '홈',
   '/(app)/(tabs)/schedule': '스케줄',
-  '/(app)/(tabs)/qr': 'QR 코드',
   '/(app)/(tabs)/profile': '프로필',
 
   // 메인 앱 - 기능
+  '/(app)/scan': 'QR 스캔',
   '/(app)/jobs/[id]/apply': '지원하기',
   '/(app)/notifications': '알림',
   '/(app)/settings': '설정',
@@ -81,6 +81,7 @@ const ROUTE_NAMES: Record<string, string> = {
   '/(employer)/my-postings/[id]/edit': '공고 수정',
   '/(employer)/my-postings/[id]/applicants': '지원자 관리',
   '/(employer)/my-postings/[id]/settlements': '스태프 관리/정산',
+  '/(employer)/my-postings/[id]/qr': '출퇴근 QR',
 
   // 404
   '/+not-found': '페이지 없음',

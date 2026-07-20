@@ -78,11 +78,18 @@ async function generateStorageStates(): Promise<void> {
     // 튜토리얼 완료 플래그
     // SYNC: src/constants/tutorials/index.ts TUTORIAL_KEY_MAP (키) + TUTORIAL_VERSIONS (버전)
     // 키 또는 버전 변경 시 여기도 반드시 업데이트할 것
-    const tutorialTypes = ['app_intro', 'posting_guide', 'settlement', 'qr_checkin'] as const;
-    // 현재 모든 튜토리얼 버전은 1 — TUTORIAL_VERSIONS 변경 시 동기화 필요
-    const tutorialEntries = tutorialTypes.flatMap((type) => [
+    // 값은 TUTORIAL_VERSIONS의 현재 버전과 일치해야 한다.
+    // 낮으면 앱이 "새 튜토리얼"로 판단해 오버레이를 띄우고 스캔 테스트가 깨진다.
+    // (posting_guide·settlement는 앱에서 제거된 레거시 키 — 잔존 플래그 정리용으로만 유지)
+    const tutorialVersions: Readonly<Record<string, number>> = {
+      app_intro: 1,
+      posting_guide: 1,
+      settlement: 1,
+      qr_checkin: 2,
+    };
+    const tutorialEntries = Object.entries(tutorialVersions).flatMap(([type, version]) => [
       { name: `tutorial:${type}:${userHash}`, value: 'true' },
-      { name: `tutorial:version:${type}:${userHash}`, value: '1' },
+      { name: `tutorial:version:${type}:${userHash}`, value: String(version) },
     ]);
 
     // 3. 자동 로그인 플래그 (secureStorage 형식: uniqn_secure_ + key)

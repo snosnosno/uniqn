@@ -40,5 +40,7 @@ export const TUTORIAL_KEY_MAP: Readonly<Record<TutorialType, string>> = {
  */
 export const TUTORIAL_VERSIONS: Readonly<Record<TutorialType, number>> = {
   appIntro: 1,
-  qrCheckIn: 1,
+  // 2: 공고당 고정 QR 전환으로 문구 전면 교체 (회전 QR 전제 제거)
+  // — 구 문구를 이미 본 사용자에게도 다시 표시해야 하므로 증가
+  qrCheckIn: 2,
 } as const;

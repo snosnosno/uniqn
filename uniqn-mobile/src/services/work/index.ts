@@ -65,21 +65,10 @@ export {
 } from './confirmedStaffService';
 
 // ============================================================================
-// Event QR Service (구인자용)
+// QR 출퇴근 서비스 (고정 QR — 스캔은 스태프, 생성은 구인자)
 // ============================================================================
 
-export {
-  generateEventQR,
-  validateEventQR,
-  processEventQRCheckIn,
-  processVenueQRCheckIn,
-  getActiveEventQR,
-  deactivateEventQR,
-  cleanupExpiredQRCodes,
-  getQRRemainingSeconds,
-  stringifyQRData,
-  QR_REFRESH_INTERVAL_MS,
-} from './eventQRService';
+export { processQRCheckIn, buildVenueQRString } from './eventQRService';
 
 // ============================================================================
 // Settlement Service (구인자용 정산 관리)

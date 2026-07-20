@@ -290,6 +290,9 @@ export default function JobPostingDetailScreen() {
             >
               <ShareIcon size={22} color={getLayoutColor(isDark, 'headerTint')} />
             </Pressable>
+            {/* 고정 공고는 QR 진입점을 노출하지 않는다 (work_log 행 수명 미해결 — _layout.tsx 주석 참고).
+                두 소스를 OR 로 합산하는 이유: 레이아웃(context)과 이 화면이 각자 useJobDetail 을
+                쓰므로 로딩 타이밍이 어긋날 수 있다. 한쪽이라도 고정이면 감추는 fail-closed. */}
             {!(contextIsFixed || isFixed) ? <HeaderQRAction onPress={handleShowQR} /> : null}
           </View>
         }

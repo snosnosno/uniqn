@@ -38,6 +38,7 @@ export default function EditJobPostingScreen() {
   const headerBackHref = `/(employer)/my-postings/${id ?? ''}`;
   const headerJobTitle = existingJob?.title ?? contextJob?.title ?? null;
   const headerTitleSuffix = <JobTitleSuffix jobTitle={headerJobTitle} />;
+  // 고정 공고는 QR 진입점을 노출하지 않는다 (work_log 행 수명 미해결 — _layout.tsx 주석 참고).
   const headerRightAction = !contextIsFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;
 
   const [isDirty, setIsDirty] = useState(false);

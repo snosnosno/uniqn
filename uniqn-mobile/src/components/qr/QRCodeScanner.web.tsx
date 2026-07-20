@@ -14,7 +14,7 @@ import { XMarkIcon, RefreshIcon, ScanIcon } from '@/components/icons';
 import { logger } from '@/utils/logger';
 import { WebPortal } from '@/components/ui/WebPortal';
 import { useThemeStore } from '@/stores/themeStore';
-import type { QRCodeScanResult, QRCodeAction } from '@/types';
+import type { QRCodeScanResult } from '@/types';
 
 // ============================================================================
 // Types
@@ -24,7 +24,6 @@ interface QRCodeScannerProps {
   visible: boolean;
   onClose: () => void;
   onScan: (result: QRCodeScanResult) => void;
-  expectedAction?: QRCodeAction;
   title?: string;
 }
 
@@ -57,7 +56,6 @@ export function QRCodeScanner({
   visible,
   onClose,
   onScan,
-  expectedAction,
   title = 'QR 코드 스캔',
 }: QRCodeScannerProps) {
   const { width: windowWidth } = useWindowDimensions();
@@ -190,13 +188,13 @@ export function QRCodeScanner({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- handleQRCodeDetected는 안정적 참조, 순서 문제 방지
   }, [scanned]);
 
-  // QR 코드 감지 처리 (Event QR 시스템: qrString만 전달)
+  // QR 코드 감지 처리 (고정 QR: qrString만 전달)
   const handleQRCodeDetected = useCallback(
     (data: string) => {
       try {
         logger.info('QR 코드 스캔됨 (웹)', { data });
 
-        // Event QR 시스템: qrString만 전달 (processEventQRCheckIn에서 파싱 및 검증)
+        // 고정 QR: qrString만 전달 (processQRCheckIn에서 파싱 및 검증)
         onScan({
           success: true,
           qrString: data,
@@ -349,15 +347,9 @@ export function QRCodeScanner({
               />
             </View>
 
-            {/* 안내 문구 */}
+            {/* 안내 문구 — 고정 QR 이라 출근/퇴근은 서버가 판정한다 */}
             <Text style={styles.guideText}>
-              {scanned
-                ? '스캔 완료!'
-                : expectedAction === 'checkIn'
-                  ? 'QR 코드를 영역 안에 맞춰주세요\n(출근용)'
-                  : expectedAction === 'checkOut'
-                    ? 'QR 코드를 영역 안에 맞춰주세요\n(퇴근용)'
-                    : 'QR 코드를 영역 안에 맞춰주세요'}
+              {scanned ? '스캔 완료!' : 'QR 코드를 영역 안에 맞춰주세요'}
             </Text>
           </View>
         </View>

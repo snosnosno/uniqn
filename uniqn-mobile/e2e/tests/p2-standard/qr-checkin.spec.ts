@@ -1,73 +1,51 @@
 /**
- * P2 QR 체크인 테스트 (4 tests)
+ * P2 QR 출퇴근 스캔 진입 동선 — 실사용 경로 검증 (2 tests)
  * 인증된 staff 상태에서 실행
  *
- * 웹 환경에서는 카메라 접근이 불가하므로 QR 표시 컴포넌트만 테스트
+ * 이 스펙은 스태프의 **실사용 동선**을 그대로 탄다: 홈에서 헤더 QR 버튼을 탭해
+ * 스캔 화면으로 이동한다. 고정 QR 전환의 핵심 목표가 "헤더 1탭이면 카메라"이므로
+ * 그 동선 자체가 검증 대상이다.
+ *
+ * ⚠️ `page.goto('/scan')` 하드 로드는 쓰지 않는다. 2026-07-20 CI 에서 하드 로드 시
+ * URL 은 /scan 인데 DOM 은 홈(구인구직)이 렌더되는 현상이 관측됐다(run 29710416562).
+ * expo-router 웹의 초기 라우트 하이드레이션 문제로 보이나 원인 미규명 상태이며,
+ * 딥링크·새로고침 경로의 갭으로 남아 있다 → 후속 조사 항목.
+ *
+ * ⚠️ 이 스펙이 검증하지 **못하는** 것 (웹 카메라 제약 — 실기기 QA 항목):
+ * - 실제 QR 스캔 → 출근/퇴근 반영 (getUserMedia 를 헤드리스 브라우저에서 쓸 수 없음)
+ * - 하루 2슬롯 배정 시 처리 대상 자동 선택 (단위 테스트 selectWorkLogForQR 로만 커버)
+ * - 최초 1회 튜토리얼 오버레이 (global-setup 이 완료 플래그를 미리 심어 항상 스킵됨)
+ *
+ * 억지로 통과시키려 카메라 상태를 흉내내지 않는다 — 통과해도 의미 없는 테스트가 되기 때문.
  */
 import { test, expect } from '@playwright/test';
-import { QRPage } from '../../pages/app/tabs/qr.page';
+import { waitForAppReady } from '../../helpers/wait-helpers';
 
 // storageState는 chromium 프로젝트에서 staff.json으로 자동 설정됨
 
-test.describe('QR 체크인', () => {
-  let qrPage: QRPage;
+/** TabHeader.tsx 의 QR 버튼 accessibilityLabel — 웹에서 aria-label 로 노출된다 */
+const QR_BUTTON_LABEL = '출퇴근 QR 스캔';
 
+/** app/(app)/scan.tsx 가 QRCodeScanner 에 넘기는 title — 권한 허용/거부 양쪽에서 렌더된다 */
+const SCANNER_TITLE = '출퇴근 QR 스캔';
+
+test.describe('QR 출퇴근 스캔 진입 동선', () => {
   test.beforeEach(async ({ page }) => {
-    qrPage = new QRPage(page);
-    await qrPage.goto();
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await waitForAppReady(page);
   });
 
-  // =====================================================
-  // UI 렌더링 (2 tests)
-  // =====================================================
-
-  test('QR 스캔 화면이 정상 표시된다', async () => {
-    // 헤더
-    await expect(qrPage.header).toBeVisible();
-    // 서브타이틀
-    await expect(qrPage.subtitle).toBeVisible();
-    // 스캔 타이틀
-    await expect(qrPage.scanTitle).toBeVisible();
-    // 스캔 버튼
-    await expect(qrPage.scanButton).toBeVisible();
+  test('홈 헤더에 QR 스캔 버튼이 있다', async ({ page }) => {
+    await expect(page.getByRole('button', { name: QR_BUTTON_LABEL }).first()).toBeVisible({
+      timeout: 15_000,
+    });
   });
 
-  test('현재 상태 카드에 근무 상태가 표시된다', async () => {
-    // '현재 상태' 라벨
-    await expect(qrPage.statusLabel).toBeVisible();
+  test('헤더 QR 버튼 1탭이면 스캔 화면이 열린다', async ({ page }) => {
+    await page.getByRole('button', { name: QR_BUTTON_LABEL }).first().click();
 
-    // '근무 중' 또는 '출근 전' 중 하나가 표시
-    const statusText = qrPage.getWorkStatus();
-    await expect(statusText).toBeVisible({ timeout: 5_000 });
-  });
-
-  // =====================================================
-  // 상태별 동작 (1 test)
-  // =====================================================
-
-  test('근무 상태에 따라 액션 배지가 다르게 표시된다', async () => {
-    // 액션 배지: '출근 필요' 또는 '퇴근 필요'
-    const badge = qrPage.getActionBadge();
-    await expect(badge).toBeVisible({ timeout: 5_000 });
-
-    const badgeText = await badge.textContent();
-    expect(badgeText).toMatch(/출근 필요|퇴근 필요/);
-
-    // 스캔 설명도 일치해야 함
-    const isCheckIn = badgeText?.includes('출근');
-    if (isCheckIn) {
-      await expect(qrPage.getScanDescription('출근')).toBeVisible();
-    } else {
-      await expect(qrPage.getScanDescription('퇴근')).toBeVisible();
-    }
-  });
-
-  // =====================================================
-  // 안내 문구 (1 test)
-  // =====================================================
-
-  test('QR 코드 안내 문구가 표시된다', async () => {
-    // 하단 안내 문구 확인
-    await expect(qrPage.getGuideText()).toBeVisible();
+    // 카메라 권한이 거부돼도 헤더 타이틀은 렌더된다 (QRCodeScanner.web.tsx 권한 안내 분기).
+    await expect(page.getByText(SCANNER_TITLE).first()).toBeVisible({ timeout: 15_000 });
+    expect(new URL(page.url()).pathname).toContain('scan');
   });
 });

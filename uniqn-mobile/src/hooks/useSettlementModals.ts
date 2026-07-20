@@ -42,7 +42,6 @@ export function useSettlementModals() {
   const [settleConfirm, setSettleConfirm] = useState<SettleConfirmState>(INITIAL_SETTLE_CONFIRM);
 
   // 스태프 관리 모달
-  const [showEventQRModal, setShowEventQRModal] = useState(false);
   const [showRoleChangeModal, setShowRoleChangeModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<ConfirmedStaff | null>(null);
@@ -134,14 +133,6 @@ export function useSettlementModals() {
 
   // --- 스태프 관리 모달 ---
 
-  const openEventQRModal = useCallback(() => {
-    setShowEventQRModal(true);
-  }, []);
-
-  const closeEventQRModal = useCallback(() => {
-    setShowEventQRModal(false);
-  }, []);
-
   const openRoleChangeModal = useCallback((staff: ConfirmedStaff) => {
     setSelectedStaff(staff);
     setShowRoleChangeModal(true);
@@ -196,14 +187,11 @@ export function useSettlementModals() {
     openSettleFromDetail,
     closeSettleConfirm,
     // 스태프 관리
-    showEventQRModal,
-    closeEventQRModal,
     showRoleChangeModal,
     showReportModal,
     selectedStaff,
     isSubmittingReport,
     setIsSubmittingReport,
-    openEventQRModal,
     openRoleChangeModal,
     closeRoleChangeModal,
     openReportModal,

@@ -2,7 +2,7 @@
  * UNIQN Mobile - QRCodeScanner 컴포넌트
  *
  * @description 출퇴근용 QR 코드 스캐너
- * @version 2.1.0 - Event QR 시스템 전용 + 웹 호환성
+ * @version 3.0.0 - 공고당 고정 QR 전용 + 웹 호환성
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
@@ -23,7 +23,7 @@ import { XMarkIcon, RefreshIcon, ScanIcon, FlashlightIcon } from '@/components/i
 import { logger } from '@/utils/logger';
 import { isWeb } from '@/utils/platform';
 import { WebPortal } from '@/components/ui/WebPortal';
-import type { QRCodeScanResult, QRCodeAction, QRScanError } from '@/types';
+import type { QRCodeScanResult, QRScanError } from '@/types';
 
 const PERMISSION_TIMEOUT_MS = 5000;
 
@@ -35,8 +35,6 @@ interface QRCodeScannerProps {
   visible: boolean;
   onClose: () => void;
   onScan: (result: QRCodeScanResult) => void;
-  /** UI 표시용 (실제 검증은 processEventQRCheckIn에서 수행) */
-  expectedAction?: QRCodeAction;
   title?: string;
   /** QR 처리 에러 정보 */
   scanError?: QRScanError | null;
@@ -56,7 +54,6 @@ export function QRCodeScanner({
   visible,
   onClose,
   onScan,
-  expectedAction,
   title = 'QR 코드 스캔',
   scanError,
   onClearError,
@@ -109,7 +106,7 @@ export function QRCodeScanner({
       try {
         logger.info('QR 코드 스캔됨', { data: result.data });
 
-        // Event QR 시스템: qrString만 전달 (processEventQRCheckIn에서 파싱 및 검증)
+        // 고정 QR: qrString만 전달 (processQRCheckIn에서 파싱 및 검증)
         onScan({
           success: true,
           qrString: result.data,
@@ -287,7 +284,7 @@ export function QRCodeScanner({
               />
             </View>
 
-            {/* 안내 문구 / 에러 표시 */}
+            {/* 안내 문구 / 에러 표시 — 고정 QR 이라 출근/퇴근은 서버가 판정하므로 미리 안내하지 않는다 */}
             {scanError ? (
               <View className="mt-6 px-8 items-center">
                 <View className="bg-error-900/80 rounded-md p-4 w-full">
@@ -306,13 +303,7 @@ export function QRCodeScanner({
               </View>
             ) : (
               <Text className="text-white text-center mt-6 px-8 font-sans">
-                {scanned
-                  ? '스캔 완료!'
-                  : expectedAction === 'checkIn'
-                    ? 'QR 코드를 영역 안에 맞춰주세요\n(출근용)'
-                    : expectedAction === 'checkOut'
-                      ? 'QR 코드를 영역 안에 맞춰주세요\n(퇴근용)'
-                      : 'QR 코드를 영역 안에 맞춰주세요'}
+                {scanned ? '스캔 완료!' : 'QR 코드를 영역 안에 맞춰주세요'}
               </Text>
             )}
           </View>
