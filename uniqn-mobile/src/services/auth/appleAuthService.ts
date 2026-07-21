@@ -69,7 +69,8 @@ function isAppleLoginEnabled(): boolean {
     return extra.appleLoginEnabled;
   }
 
-  return process.env.EXPO_PUBLIC_ENABLE_APPLE_LOGIN !== 'false';
+  // app.config.ts 의 appleLoginEnabled 와 동일하게 opt-in 기본 OFF (2026-07-21 소셜 로그인 동결)
+  return process.env.EXPO_PUBLIC_ENABLE_APPLE_LOGIN === 'true';
 }
 
 function createAvailabilityError(
