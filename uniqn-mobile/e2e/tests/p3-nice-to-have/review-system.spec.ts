@@ -96,8 +96,10 @@ test.describe('리뷰 시스템', () => {
     await page.waitForLoadState('domcontentloaded');
 
     // 탭 확인
-    const receivedTab = page.getByText('받은 평가');
-    const givenTab = page.getByText('작성한 평가');
+    // exact 필수 — 빈 상태 문구("받은 평가가 없습니다")가 부분 일치해 strict mode 위반이 난다.
+    // 리뷰 데이터가 없는 러너에서만 재현돼 flaky 로 보였다.
+    const receivedTab = page.getByText('받은 평가', { exact: true });
+    const givenTab = page.getByText('작성한 평가', { exact: true });
 
     await expect(receivedTab).toBeVisible();
     await expect(givenTab).toBeVisible();
