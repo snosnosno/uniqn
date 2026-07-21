@@ -3,9 +3,46 @@ import type { Customer, IdentityVerificationRequest } from '@portone/browser-sdk
 import { invokeEdgeFunction } from '@/lib/supabaseFunctions';
 import { getStorageItem, removeStorageItem, setStorageItem, STORAGE_KEYS } from '@/lib/mmkvStorage';
 import { secureStorage } from '@/lib/secureStorage';
-import { AuthError, ERROR_CODES, ValidationError, isRetryableError } from '@/errors';
+import {
+  AppError,
+  AuthError,
+  ERROR_CODES,
+  ValidationError,
+  isAppError,
+  isRetryableError,
+  toError,
+} from '@/errors';
 import { logger } from '@/utils/logger';
 import { generateUUID } from '@/utils/generateId';
+
+/**
+ * body 에서 code 를 못 뽑은 Edge Function 오류의 마지막 방어선.
+ *
+ * supabase-js 는 non-2xx 를 "Edge Function returned a non-2xx status code" 라는
+ * 영문 generic 메시지로 던진다. body 파싱이 실패하면(비-JSON 5xx·게이트웨이 응답 등)
+ * 그 영문이 그대로 사용자에게 노출된다 — Sentry UNIQN-MOBILE-1G 는 소셜 가입의
+ * 마지막 단계에서 이 문구를 맞은 사례다.
+ */
+function toKoreanEdgeFunctionError(error: unknown, operation: string): unknown {
+  if (isAppError(error)) return error;
+
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes('non-2xx')) return error;
+
+  logger.warn('Edge Function 오류 code 미해석 - 한글 메시지로 대체', {
+    component: 'portOneIdentityService',
+    operation,
+  });
+
+  return new AppError({
+    code: ERROR_CODES.INFRA_UNAVAILABLE,
+    category: 'infrastructure',
+    userMessage: '본인인증 처리 중 문제가 발생했어요. 잠시 후 다시 시도해주세요.',
+    isRetryable: true,
+    originalError: toError(error),
+    metadata: { operation },
+  });
+}
 
 /**
  * A3: Edge Function 에러 응답 body 의 `{ code, error }` 를 파싱한다.
@@ -447,7 +484,7 @@ export async function callVerifyPortOneIdentity(
         });
         throw mapIdpErrorCodeToAppError(parsed.code, parsed.error);
       }
-      throw error;
+      throw toKoreanEdgeFunctionError(error, '본인인증');
     }
     return data!;
   };
@@ -563,7 +600,7 @@ export async function callVerifyAndSavePortOneProfile(
     }
 
     if (!isRetryableError(error)) {
-      throw error;
+      throw toKoreanEdgeFunctionError(error, '소셜 프로필 완성');
     }
 
     logger.warn('verifyAndSavePortOneProfile network error - retrying once', {
