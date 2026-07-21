@@ -287,7 +287,13 @@ Deno.serve(async (req: Request) => {
           };
     if (mode !== 'reverify') {
       if (trimmedNickname) profileData.nickname = trimmedNickname;
+      // users.email 은 NOT NULL(기본값 없음). upsert 는 INSERT ... ON CONFLICT 로 나가고
+      // Postgres 는 충돌 판정 전에 INSERT 튜플의 NOT NULL 을 먼저 검사하므로, 기존 row 에
+      // email 이 이미 있어도 payload 에서 빠지면 23502 로 실패한다.
+      // social 모드(completeSocialProfile)는 email 을 보내지 않아 애플 가입이 100% 차단됐다
+      // (2026-07-20 확인). auth.users.email 을 fallback 으로 채워 결정론적 실패를 끊는다.
       if (email) profileData.email = email;
+      else if (user.email) profileData.email = user.email;
       if (region) profileData.region = region;
       if (experienceYears !== undefined) profileData.experience_years = experienceYears;
       if (career) profileData.career = career;
