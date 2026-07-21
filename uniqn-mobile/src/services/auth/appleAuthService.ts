@@ -69,7 +69,8 @@ function isAppleLoginEnabled(): boolean {
     return extra.appleLoginEnabled;
   }
 
-  return process.env.EXPO_PUBLIC_ENABLE_APPLE_LOGIN !== 'false';
+  // app.config.ts 의 appleLoginEnabled 와 동일하게 opt-in 기본 OFF (2026-07-21 소셜 로그인 동결)
+  return process.env.EXPO_PUBLIC_ENABLE_APPLE_LOGIN === 'true';
 }
 
 function createAvailabilityError(
@@ -101,7 +102,14 @@ function createAvailabilityError(
   });
 }
 
-export async function getAppleLoginAvailability(): Promise<AppleLoginAvailability> {
+/**
+ * @param options.ignoreKillSwitch kill switch(`appleLoginEnabled`)를 무시한다.
+ *   기기 가용성 검사는 그대로 수행한다. 이미 Apple identity 를 가진 사용자의
+ *   재인증·토큰 파기 경로에서만 사용한다 — 아래 requestAppleAuthorization 주석 참고.
+ */
+export async function getAppleLoginAvailability(
+  options: { ignoreKillSwitch?: boolean } = {}
+): Promise<AppleLoginAvailability> {
   leaveAppleAuthBreadcrumb('apple_auth_availability', {
     status: 'start',
     platform: Platform.OS,
@@ -125,7 +133,7 @@ export async function getAppleLoginAvailability(): Promise<AppleLoginAvailabilit
     return result;
   }
 
-  if (!isAppleLoginEnabled()) {
+  if (!options.ignoreKillSwitch && !isAppleLoginEnabled()) {
     const result = { enabled: false, reason: 'disabled_by_flag' } as const;
     leaveAppleAuthBreadcrumb('apple_auth_availability', {
       status: 'success',
@@ -219,7 +227,12 @@ export async function requestAppleAuthorization({
     requestedScopeCount: requestedScopes.length,
   });
 
-  const availability = await getAppleLoginAvailability();
+  // kill switch 는 **신규 진입(login)만** 차단한다. 이미 Apple identity 를 가진 사용자의
+  // 재인증·토큰 파기까지 막으면 회원탈퇴가 불가능해진다(App Store 필수 기능).
+  // 기기 가용성(not_ios·unavailable) 은 정책이 아니라 실제 제약이므로 모든 operation 에서 유지.
+  const availability = await getAppleLoginAvailability({
+    ignoreKillSwitch: operation !== 'login',
+  });
   if (!availability.enabled) {
     leaveAppleAuthBreadcrumb('apple_auth_request', {
       status: 'blocked',
