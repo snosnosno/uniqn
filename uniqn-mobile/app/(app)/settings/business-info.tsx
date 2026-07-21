@@ -4,11 +4,12 @@
  * 전자상거래법 준수를 위한 사업자 정보 표시
  */
 
-import { ScrollView, Text, View, Linking, Pressable } from 'react-native';
+import { ScrollView, Text, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackHeader } from '@/components/headers';
 import { Card } from '@/components/ui';
 import { SUPPORT_HOURS_TEXT } from '@/constants/support';
+import { openExternalUrl } from '@/utils/externalLink';
 
 const BUSINESS_INFO = {
   companyName: '스노스튜디오',
@@ -56,11 +57,21 @@ function InfoRow({ label, value, onPress, isLink }: InfoRowProps) {
 
 export default function BusinessInfoScreen() {
   const handleEmailPress = () => {
-    Linking.openURL(`mailto:${BUSINESS_INFO.email}`);
+    void openExternalUrl(`mailto:${BUSINESS_INFO.email}`, {
+      fallbackTitle: '메일 앱을 열 수 없어요',
+      fallbackHint: '아래 주소로 직접 메일을 보내주세요.',
+      fallbackValue: BUSINESS_INFO.email,
+      component: 'BusinessInfoScreen',
+    });
   };
 
   const handlePhonePress = () => {
-    Linking.openURL(`tel:${BUSINESS_INFO.phone}`);
+    void openExternalUrl(`tel:${BUSINESS_INFO.phone}`, {
+      fallbackTitle: '전화 앱을 열 수 없어요',
+      fallbackHint: '아래 번호로 직접 전화해주세요.',
+      fallbackValue: BUSINESS_INFO.phone,
+      component: 'BusinessInfoScreen',
+    });
   };
 
   return (

@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import { ValidationError, AppError, ERROR_CODES, toError, isAppError } from '@/errors';
 import { computeBlurhash } from '@/utils/blurhash';
+import { retryWithBackoff } from '@/utils/retry';
 import type { AnnouncementImage } from '@/types';
 
 // ============================================================================
@@ -84,8 +85,36 @@ async function prepareImage(uri: string, options: ImageResizeOptions): Promise<B
     format: ImageManipulator.SaveFormat.JPEG,
   });
 
-  const response = await fetch(manipulatedImage.uri);
-  const blob = await response.blob();
+  // 로컬 파일 읽기 — 네트워크 호출이 아니지만 whatwg-fetch 는 실패를
+  // `TypeError: Network request failed` 로 reject 한다 (Sentry UNIQN-MOBILE-1J).
+  // ImagePicker 캐시 파일은 일시적으로 못 읽히는 경우가 있어 1회 재시도로 흡수한다.
+  let blob: Blob;
+  try {
+    const { data } = await retryWithBackoff(
+      async () => {
+        const response = await fetch(manipulatedImage.uri);
+        return response.blob();
+      },
+      {
+        maxRetries: 1,
+        initialDelayMs: 300,
+        component: 'storageService',
+        operationName: '이미지 파일 읽기',
+      }
+    );
+    blob = data;
+  } catch (error) {
+    // 업로드는 시작조차 못 했다 — "업로드 실패" 라고 말하면 사용자가 원인을 오해한다.
+    throw new AppError({
+      code: ERROR_CODES.INFRA_UNAVAILABLE,
+      category: 'infrastructure',
+      userMessage: '이미지를 읽지 못했어요. 사진을 다시 선택해주세요.',
+      // Sentry 태그 is_retryable 이 실제와 맞아야 분류가 오진을 부르지 않는다.
+      isRetryable: true,
+      originalError: toError(error),
+      metadata: { stage: 'prepareImage' },
+    });
+  }
 
   if (blob.size > MAX_IMAGE_SIZE) {
     throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
@@ -249,7 +278,14 @@ export async function uploadProfileImage(userId: string, uri: string): Promise<U
 
     return { ...result, blurhash };
   } catch (error) {
-    logger.error('프로필 이미지 업로드 실패', toError(error), { userId });
+    // warn 레벨 — error 로 올리면 호출부(ProfileImagePicker)의 error 로그와 함께
+    // 같은 실패가 Sentry 이슈 2개로 쪼개진다 (UNIQN-MOBILE-1H + 1J, 동일 trace).
+    // Sentry 리포팅은 사용자 맥락을 쥔 호출부가 담당한다.
+    logger.warn('프로필 이미지 업로드 실패 - 호출부로 전파', {
+      component: 'storageService',
+      userId,
+      error: toError(error).message,
+    });
 
     if (isAppError(error)) {
       throw error;
