@@ -12,12 +12,12 @@ import {
   Pressable,
   Modal as RNModal,
   Keyboard,
-  KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
 } from 'react-native';
+import { ModalKeyboardAvoider } from '@/components/ui/ModalKeyboardAvoider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
@@ -379,10 +379,9 @@ function NativeModal({
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
-      >
+      {/* Android: statusBarTranslucent 다이얼로그에선 KAV(height)가 무력 —
+          ModalKeyboardAvoider가 IME 인셋 기반 paddingBottom으로 직접 보정 */}
+      <ModalKeyboardAvoider>
         <View className={`flex-1 ${containerStyle}`} style={{ pointerEvents: 'box-none' }}>
           {/* 백드롭 - 별도 레이어로 분리 (button 중첩 방지) */}
           <Pressable
@@ -467,7 +466,7 @@ function NativeModal({
             </View>
           </Animated.View>
         </View>
-      </KeyboardAvoidingView>
+      </ModalKeyboardAvoider>
     </RNModal>
   );
 }
