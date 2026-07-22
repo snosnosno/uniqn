@@ -9,6 +9,7 @@ import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { getPasswordResetRedirectUrl } from '@/constants/appUrl';
+import { parseRecoveryUrl } from '@/shared/auth/recoveryEntry';
 import { logger } from '@/utils/logger';
 import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
 import { clearProtectedAuthFlow, protectAuthFlow } from '@/shared/auth/protectedAuthFlow';
@@ -482,6 +483,41 @@ export async function resetPassword(email: string): Promise<void> {
       component: 'authService',
       context: { email: maskEmail(email) },
     });
+  }
+}
+
+/**
+ * 네이티브 딥링크 URL 에서 복구 세션 채택
+ *
+ * Android intentFilter 가 uniqn.app 전 경로를 가로채 복구 링크가 네이티브 앱에서
+ * 열리는데, `detectSessionInUrl` 은 웹 전용이라 프래그먼트 토큰이 무시된다.
+ * URL 에서 직접 토큰을 꺼내 setSession 으로 복구 세션을 만든다.
+ */
+export async function adoptRecoverySessionFromUrl(
+  url: string
+): Promise<'adopted' | 'error' | 'none'> {
+  try {
+    const parsed = parseRecoveryUrl(url);
+
+    if (parsed.kind !== 'tokens') {
+      return parsed.kind;
+    }
+
+    const { error } = await supabase.auth.setSession({
+      access_token: parsed.accessToken,
+      refresh_token: parsed.refreshToken,
+    });
+
+    if (error) {
+      logger.warn('복구 세션 채택 실패', { error: error.message });
+      return 'error';
+    }
+
+    logger.info('딥링크 복구 세션 채택 성공');
+    return 'adopted';
+  } catch (error) {
+    logger.warn('복구 세션 채택 중 예외', { error: toError(error).message });
+    return 'error';
   }
 }
 

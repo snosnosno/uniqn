@@ -6,12 +6,18 @@
  * 접속 불가 주소로 착지했다. 재설정 화면도 없어 복구 경로가 끊겨 있었다.
  */
 
-import { resetPassword, completePasswordReset, hasRecoverySession } from '../authCoreService';
+import {
+  resetPassword,
+  completePasswordReset,
+  hasRecoverySession,
+  adoptRecoverySessionFromUrl,
+} from '../authCoreService';
 import { getPasswordResetRedirectUrl } from '@/constants/appUrl';
 
 const mockResetPasswordForEmail = jest.fn();
 const mockUpdateUser = jest.fn();
 const mockGetSession = jest.fn();
+const mockSetSession = jest.fn();
 
 jest.mock('@/lib/supabase', () => ({
   supabase: {
@@ -19,6 +25,7 @@ jest.mock('@/lib/supabase', () => ({
       resetPasswordForEmail: (...args: unknown[]) => mockResetPasswordForEmail(...args),
       updateUser: (...args: unknown[]) => mockUpdateUser(...args),
       getSession: (...args: unknown[]) => mockGetSession(...args),
+      setSession: (...args: unknown[]) => mockSetSession(...args),
     },
   },
 }));
@@ -114,6 +121,43 @@ describe('비밀번호 재설정', () => {
       mockGetSession.mockRejectedValue(new Error('network down'));
 
       await expect(hasRecoverySession()).resolves.toBe(false);
+    });
+  });
+
+  // Android 는 uniqn.app 전 경로를 앱이 가로채는데 detectSessionInUrl 이 웹 전용이라
+  // 네이티브는 딥링크 URL 의 토큰으로 직접 세션을 채택해야 한다(2026-07-22).
+  describe('adoptRecoverySessionFromUrl', () => {
+    it('토큰이 있으면 setSession 으로 복구 세션을 채택한다', async () => {
+      mockSetSession.mockResolvedValue({ data: { session: { user: { id: 'u1' } } }, error: null });
+
+      await expect(
+        adoptRecoverySessionFromUrl(
+          'https://uniqn.app/reset-password#access_token=at1&refresh_token=rt1&type=recovery'
+        )
+      ).resolves.toBe('adopted');
+      expect(mockSetSession).toHaveBeenCalledWith({ access_token: 'at1', refresh_token: 'rt1' });
+    });
+
+    it('만료 해시는 error — setSession 을 시도하지 않는다', async () => {
+      await expect(
+        adoptRecoverySessionFromUrl('https://uniqn.app/#error_code=otp_expired')
+      ).resolves.toBe('error');
+      expect(mockSetSession).not.toHaveBeenCalled();
+    });
+
+    it('setSession 실패(무효 토큰)는 error 로 수렴한다', async () => {
+      mockSetSession.mockResolvedValue({ data: { session: null }, error: new Error('invalid') });
+
+      await expect(
+        adoptRecoverySessionFromUrl(
+          'https://uniqn.app/#access_token=x&refresh_token=y&type=recovery'
+        )
+      ).resolves.toBe('error');
+    });
+
+    it('복구와 무관한 URL 은 none — 아무것도 하지 않는다', async () => {
+      await expect(adoptRecoverySessionFromUrl('https://uniqn.app/jobs/1')).resolves.toBe('none');
+      expect(mockSetSession).not.toHaveBeenCalled();
     });
   });
 

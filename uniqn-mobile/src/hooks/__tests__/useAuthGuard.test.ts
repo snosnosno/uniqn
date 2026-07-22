@@ -403,6 +403,37 @@ describe('useAuthGuard', () => {
     expect(mockReplace).not.toHaveBeenCalled();
   });
 
+  // Android 는 uniqn.app 전 경로를 앱이 가로채므로 구식 복구 링크(루트 착지)도
+  // 네이티브로 들어온다. app/index 가 재설정 화면으로 넘기기 전에 가드가 앱 홈으로
+  // 튀면 비밀번호를 바꿀 기회가 사라진다(2026-07-22 Android 실기기 재현).
+  it('keeps native recovery deep-link landings unredirected until reset-password takes over', async () => {
+    const ExpoLinking = jest.requireMock('expo-linking');
+    ExpoLinking.useURL.mockReturnValue(
+      'https://uniqn.app/#access_token=guard-at&refresh_token=guard-rt&type=recovery'
+    );
+
+    try {
+      mockPathname = '/';
+      mockSegments = [];
+      mockAuthState.user = { uid: 'staff-1', email: 'staff@example.com', phoneNumber: null };
+      mockAuthState.profile = {
+        role: 'staff',
+        socialProvider: null,
+        phoneVerified: true,
+        profileCompleted: true,
+      };
+
+      renderHook(() => useAuthGuard());
+
+      await waitFor(() => {
+        expect(mockCheckAuthState).not.toHaveBeenCalled();
+      });
+      expect(mockReplace).not.toHaveBeenCalled();
+    } finally {
+      ExpoLinking.useURL.mockReturnValue(null);
+    }
+  });
+
   it('normalizes phone-only sessions off the social signup flow', async () => {
     mockPathname = '/signup';
     mockSegments = ['(auth)', 'signup'];

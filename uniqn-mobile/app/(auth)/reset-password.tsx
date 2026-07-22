@@ -27,8 +27,14 @@ import { PasswordStrength } from '@/components/settings';
 import { EyeIcon, EyeSlashIcon } from '@/components/icons';
 import { useToastStore } from '@/stores/toastStore';
 import { useThemeStore } from '@/stores/themeStore';
-import { completePasswordReset, hasRecoverySession } from '@/services';
-import { clearPasswordRecoveryEntry, isRecoveryLinkErrorEntry } from '@/shared/auth/recoveryEntry';
+import { useURL } from 'expo-linking';
+import { adoptRecoverySessionFromUrl, completePasswordReset, hasRecoverySession } from '@/services';
+import {
+  clearPasswordRecoveryEntry,
+  isRecoveryLinkErrorEntry,
+  markNativeRecoveryUrlHandled,
+  shouldHandleNativeRecoveryUrl,
+} from '@/shared/auth/recoveryEntry';
 import { extractUserMessage } from '@/errors';
 import { passwordResetSchema, type PasswordResetData } from '@/schemas/user.schema';
 import { logger } from '@/utils/logger';
@@ -72,6 +78,8 @@ export default function ResetPasswordScreen() {
 
   const newPassword = watch('newPassword');
 
+  const incomingUrl = useURL();
+
   useEffect(() => {
     let cancelled = false;
     // 루트에서 넘어온 경우 현재 URL 에는 해시가 없다 — 진입 시점 스냅샷으로 판정.
@@ -81,6 +89,18 @@ export default function ResetPasswordScreen() {
     clearPasswordRecoveryEntry();
 
     const detect = async () => {
+      // 네이티브: 딥링크 URL 의 토큰으로 복구 세션을 직접 채택한다.
+      // (Android 는 uniqn.app 전 경로를 앱이 가로채는데 detectSessionInUrl 은 웹 전용)
+      if (shouldHandleNativeRecoveryUrl(incomingUrl)) {
+        markNativeRecoveryUrlHandled(incomingUrl as string);
+        const adoption = await adoptRecoverySessionFromUrl(incomingUrl as string);
+
+        if (!cancelled && adoption !== 'none') {
+          setStatus(adoption === 'adopted' ? 'ready' : 'invalid');
+          return;
+        }
+      }
+
       if (hasLinkErrorInUrl() || wasRecoveryLinkError) {
         logger.warn('비밀번호 재설정 링크 오류 해시로 진입');
         if (!cancelled) {
@@ -101,7 +121,9 @@ export default function ResetPasswordScreen() {
     return () => {
       cancelled = true;
     };
-  }, []);
+    // incomingUrl: cold start 에서 useURL 이 null → URL 도착 후 재평가해야
+    // 네이티브 딥링크 토큰을 놓치지 않는다.
+  }, [incomingUrl]);
 
   const goToForgotPassword = useCallback(() => {
     router.replace('/(auth)/forgot-password');

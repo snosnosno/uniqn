@@ -31,6 +31,64 @@ export function detectRecoveryLinkError(hash: string, search: string): boolean {
   );
 }
 
+export type RecoveryUrlParseResult =
+  | { kind: 'tokens'; accessToken: string; refreshToken: string }
+  | { kind: 'error' }
+  | { kind: 'none' };
+
+/**
+ * 복구 링크 URL 에서 세션 토큰을 추출 (순수 함수 — 테스트 대상).
+ *
+ * Android 는 intentFilter(pathPrefix '/')가 uniqn.app 전 경로를 가로채 링크가
+ * 네이티브 앱에서 열리는데, supabase-js 의 `detectSessionInUrl` 은 웹 전용이라
+ * 네이티브는 URL 프래그먼트에서 직접 토큰을 꺼내 세션을 채택해야 한다.
+ */
+export function parseRecoveryUrl(url: string): RecoveryUrlParseResult {
+  const hashIndex = url.indexOf('#');
+  const hash = hashIndex >= 0 ? url.slice(hashIndex) : '';
+  const beforeHash = hashIndex >= 0 ? url.slice(0, hashIndex) : url;
+  const queryIndex = beforeHash.indexOf('?');
+  const search = queryIndex >= 0 ? beforeHash.slice(queryIndex) : '';
+
+  if (!detectRecoveryEntry(hash, search)) {
+    return { kind: 'none' };
+  }
+
+  if (detectRecoveryLinkError(hash, search)) {
+    return { kind: 'error' };
+  }
+
+  const params = new URLSearchParams(hash.replace(/^#/, ''));
+  const accessToken = params.get('access_token');
+  const refreshToken = params.get('refresh_token');
+
+  if (!accessToken || !refreshToken) {
+    return { kind: 'error' };
+  }
+
+  return { kind: 'tokens', accessToken, refreshToken };
+}
+
+/**
+ * 네이티브 딥링크로 들어온 복구 URL 을 처리해야 하는지.
+ * 한 번 처리한 URL 은 재처리하지 않는다 — useURL 은 세션 내내 마지막 링크를
+ * 유지하므로, 소비 표시가 없으면 로그아웃 후 재마운트 등에서 재설정 화면으로
+ * 잘못 끌려간다.
+ */
+let handledNativeRecoveryUrl: string | null = null;
+
+export function shouldHandleNativeRecoveryUrl(url: string | null | undefined): boolean {
+  if (Platform.OS === 'web' || !url || url === handledNativeRecoveryUrl) {
+    return false;
+  }
+
+  return parseRecoveryUrl(url).kind !== 'none';
+}
+
+export function markNativeRecoveryUrlHandled(url: string): void {
+  handledNativeRecoveryUrl = url;
+}
+
 function readInitialLocation(): { hash: string; search: string } {
   if (Platform.OS !== 'web' || typeof window === 'undefined') {
     return { hash: '', search: '' };

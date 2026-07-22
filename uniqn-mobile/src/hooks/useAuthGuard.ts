@@ -7,8 +7,12 @@
 import { useEffect, useRef } from 'react';
 import { useGlobalSearchParams, usePathname, useRouter, useSegments } from 'expo-router';
 import { useIsMounted } from '@/hooks/useIsMounted';
+import { useURL } from 'expo-linking';
 import { isPhoneOnlySignupAuthUser } from '@/shared/auth/sessionState';
-import { isPasswordRecoveryEntry } from '@/shared/auth/recoveryEntry';
+import {
+  isPasswordRecoveryEntry,
+  shouldHandleNativeRecoveryUrl,
+} from '@/shared/auth/recoveryEntry';
 import {
   AUTH_ENTRY_ROUTES,
   appendRedirectToRoute,
@@ -125,6 +129,10 @@ export function useAuthGuard(): void {
     identityVerified,
   });
 
+  // 네이티브 복구 딥링크(루트 착지 포함) — app/index 가 재설정 화면으로 넘기는
+  // 동안 가드가 앱 홈으로 먼저 튀지 않게 유예 판정에 쓴다.
+  const incomingUrl = useURL();
+
   const routerRef = useRef(router);
   routerRef.current = router;
   const isMountedRef = useIsMounted();
@@ -154,6 +162,7 @@ export function useAuthGuard(): void {
     // 앱 홈으로 튕기면 비밀번호를 바꿀 기회가 사라진다.
     const isOnPasswordReset =
       isPasswordRecoveryEntry() ||
+      shouldHandleNativeRecoveryUrl(incomingUrl) ||
       segments.includes('reset-password' as never) ||
       pathname === '/reset-password' ||
       browserPathname === '/reset-password';
@@ -378,6 +387,7 @@ export function useAuthGuard(): void {
     authenticatedEntryRoute,
     checkAuthState,
     identityVerified,
+    incomingUrl,
     isAuthenticated,
     isLoading,
     isMountedRef,
