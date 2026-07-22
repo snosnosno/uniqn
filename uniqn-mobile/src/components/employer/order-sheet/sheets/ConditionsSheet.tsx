@@ -42,6 +42,19 @@ function joinStored(selected: string[], custom: string): string | undefined {
   return all.length > 0 ? all.join(SEPARATOR) : undefined;
 }
 
+/**
+ * 현재 선택 프리셋을 뺀 커스텀 입력 허용 길이.
+ *
+ * TextInput maxLength 는 **신규 타이핑만** 막고 기존 값은 소급 절단하지 않는다 —
+ * 커스텀을 상한까지 채운 뒤 프리셋을 켜면 조인 결과가 safeText(50)을 넘어 제출이
+ * 거부됐다(리뷰 MEDIUM, 2026-07-22). 그래서 프리셋 토글 시점에도 같은 상한으로 클램프한다.
+ */
+function customLimit(selected: string[]): number {
+  const selectedLength =
+    selected.length > 0 ? selected.join(SEPARATOR).length + SEPARATOR.length : 0;
+  return Math.max(0, MAX_JOINED_LENGTH - selectedLength);
+}
+
 interface PresetPickerProps {
   label: string;
   presets: readonly string[];
@@ -62,9 +75,7 @@ function PresetPicker({
   const isDarkMode = useThemeStore((s) => s.isDarkMode);
   const placeholderColor = isDarkMode ? SECONDARY_PALETTE[500] : SECONDARY_PALETTE[400];
   // 조인 상한 방어 — 이미 선택된 프리셋 길이만큼 커스텀 허용 길이를 줄인다(구분자 포함)
-  const selectedLength =
-    selected.length > 0 ? selected.join(SEPARATOR).length + SEPARATOR.length : 0;
-  const customMaxLength = Math.max(0, MAX_JOINED_LENGTH - selectedLength);
+  const customMaxLength = customLimit(selected);
 
   return (
     <View className="mb-4">
@@ -122,17 +133,21 @@ export function ConditionsSheet({ visible, value, onConfirm, onClose }: Conditio
   const [dress, setDress] = useState(() => splitStored(value.dressCode, DRESS_CODE_PRESETS));
   const [exp, setExp] = useState(() => splitStored(value.experience, EXPERIENCE_PRESETS));
 
-  /** 프리셋 순서를 보존하며 토글 — 표시·저장 순서가 칩 순서와 일치한다 */
+  /**
+   * 프리셋 순서를 보존하며 토글 — 표시·저장 순서가 칩 순서와 일치한다.
+   * 켤 때 줄어든 상한으로 커스텀을 즉시 클램프해 조인 결과가 safeText(50)을 넘지 않게 한다
+   * (해제해도 절단분은 복구하지 않는다 — 사용자가 지운 것과 구분 불가하므로).
+   */
   const toggleIn = (
     presets: readonly string[],
     prev: { selected: string[]; custom: string },
     preset: string
-  ) => ({
-    ...prev,
-    selected: prev.selected.includes(preset)
+  ) => {
+    const selected = prev.selected.includes(preset)
       ? prev.selected.filter((p) => p !== preset)
-      : presets.filter((p) => prev.selected.includes(p) || p === preset),
-  });
+      : presets.filter((p) => prev.selected.includes(p) || p === preset);
+    return { selected, custom: prev.custom.slice(0, customLimit(selected)) };
+  };
 
   return (
     <SheetModal

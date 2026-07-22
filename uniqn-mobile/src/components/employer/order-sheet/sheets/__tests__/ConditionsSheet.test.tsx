@@ -132,4 +132,56 @@ describe('ConditionsSheet', () => {
     expect(DRESS_CODE_PRESETS).toContain('검정셔츠/슬랙스');
     expect(EXPERIENCE_PRESETS).toContain('TDA 숙지자');
   });
+
+  // 리뷰 MEDIUM(2026-07-22): TextInput maxLength는 신규 타이핑만 막고 기존 값은 소급 절단하지
+  // 않는다. 커스텀을 상한까지 채운 뒤 프리셋을 켜면 조인 결과가 zod safeText(50)을 넘어
+  // 제출이 거부됐다 → 프리셋 토글 시점에 커스텀을 새 상한으로 즉시 클램프해야 한다.
+  describe('조인 길이 상한 (safeText 50)', () => {
+    it('커스텀을 꽉 채운 뒤 프리셋을 켜도 조인 결과가 50자를 넘지 않는다', () => {
+      const onConfirm = jest.fn();
+      const { getByTestId, getByText } = render(
+        <ConditionsSheet visible value={{}} onConfirm={onConfirm} onClose={jest.fn()} />
+      );
+
+      fireEvent.changeText(getByTestId('order-sheet-condition-복장-custom'), 'ㄱ'.repeat(50));
+      fireEvent.press(getByText(DRESS_CODE_PRESETS[0])); // 8자 + ', ' → 클램프 없으면 60자
+      fireEvent.press(getByText('확인'));
+
+      const dressCode = onConfirm.mock.calls[0]?.[0]?.dressCode as string;
+      expect(dressCode.startsWith(DRESS_CODE_PRESETS[0])).toBe(true);
+      expect(dressCode.length).toBeLessThanOrEqual(50);
+    });
+
+    it('프리셋을 다시 끄면 남은 커스텀은 그대로 유지된다 (절단분은 복구되지 않음)', () => {
+      const onConfirm = jest.fn();
+      const { getByTestId, getByText } = render(
+        <ConditionsSheet visible value={{}} onConfirm={onConfirm} onClose={jest.fn()} />
+      );
+
+      fireEvent.changeText(getByTestId('order-sheet-condition-복장-custom'), 'ㄱ'.repeat(50));
+      fireEvent.press(getByText(DRESS_CODE_PRESETS[0]));
+      fireEvent.press(getByText(DRESS_CODE_PRESETS[0])); // 해제
+      fireEvent.press(getByText('확인'));
+
+      const dressCode = onConfirm.mock.calls[0]?.[0]?.dressCode as string;
+      expect(dressCode.length).toBeLessThanOrEqual(50);
+      expect(dressCode).toBe('ㄱ'.repeat(40)); // 켤 때 클램프된 길이가 유지
+    });
+
+    it('프리셋 2개를 켜도 조인 결과가 50자를 넘지 않는다', () => {
+      const onConfirm = jest.fn();
+      const { getByTestId, getByText } = render(
+        <ConditionsSheet visible value={{}} onConfirm={onConfirm} onClose={jest.fn()} />
+      );
+
+      fireEvent.changeText(getByTestId('order-sheet-condition-복장-custom'), 'ㄱ'.repeat(50));
+      fireEvent.press(getByText(DRESS_CODE_PRESETS[0]));
+      fireEvent.press(getByText(DRESS_CODE_PRESETS[1]));
+      fireEvent.press(getByText('확인'));
+
+      const dressCode = onConfirm.mock.calls[0]?.[0]?.dressCode as string;
+      expect(dressCode.length).toBeLessThanOrEqual(50);
+      expect(dressCode.startsWith(`${DRESS_CODE_PRESETS[0]}, ${DRESS_CODE_PRESETS[1]}`)).toBe(true);
+    });
+  });
 });
