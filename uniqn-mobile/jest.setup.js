@@ -13,6 +13,7 @@
 // ============================================================================
 jest.mock('expo-linking', () => ({
   createURL: jest.fn((path) => `uniqn://${path || ''}`),
+  useURL: jest.fn(() => null),
   parse: jest.fn((_url) => ({ path: '', queryParams: {} })),
   addEventListener: jest.fn(() => ({ remove: jest.fn() })),
   removeEventListener: jest.fn(),

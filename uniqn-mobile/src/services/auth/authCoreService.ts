@@ -8,6 +8,8 @@
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 import { supabase } from '@/lib/supabase';
+import { getPasswordResetRedirectUrl } from '@/constants/appUrl';
+import { parseRecoveryUrl } from '@/shared/auth/recoveryEntry';
 import { logger } from '@/utils/logger';
 import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
 import { clearProtectedAuthFlow, protectAuthFlow } from '@/shared/auth/protectedAuthFlow';
@@ -436,19 +438,137 @@ export async function signOut(): Promise<void> {
 }
 
 /**
+ * 재설정 메일 발송 오류를 사용자가 행동할 수 있는 메시지로 변환
+ *
+ * GoTrue 는 재요청 쿨다운을 429 + "you can only request this after N seconds" 로
+ * 돌려준다. 이건 서버의 정상 동작인데 generic 에러로 뭉개면 사용자는 무엇을 얼마나
+ * 기다려야 하는지 알 수 없다(2026-07-22 실측: 연속 클릭으로 429 5회).
+ */
+function toResetPasswordError(error: unknown): unknown {
+  const status = (error as { status?: number } | null)?.status;
+
+  if (status !== 429) {
+    return error;
+  }
+
+  const message = error instanceof Error ? error.message : String(error);
+  const seconds = /after (\d+) seconds?/.exec(message)?.[1];
+
+  return new AuthError(ERROR_CODES.AUTH_TOO_MANY_REQUESTS, {
+    userMessage: seconds
+      ? `메일은 이미 보냈어요. ${seconds}초 후에 다시 요청할 수 있어요.`
+      : '요청이 너무 잦아요. 잠시 후 다시 시도해주세요.',
+    originalError: error instanceof Error ? error : new Error(message),
+  });
+}
+
+/**
  * 비밀번호 재설정 이메일 전송
+ *
+ * redirectTo 를 반드시 명시한다. 생략하면 GoTrue 가 프로젝트 Site URL 로
+ * 폴백하는데, 기본값이 `http://localhost:3000` 이라 실제 사용자에게는 접속
+ * 불가 주소로 링크가 착지한다(2026-07-22 실측 장애).
  */
 export async function resetPassword(email: string): Promise<void> {
   try {
     logger.info('비밀번호 재설정 이메일 전송', { email: maskEmail(email) });
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
-    if (error) throw error;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: getPasswordResetRedirectUrl(),
+    });
+    if (error) throw toResetPasswordError(error);
     logger.info('비밀번호 재설정 이메일 전송 성공', { email: maskEmail(email) });
   } catch (error) {
     throw handleServiceError(error, {
       operation: '비밀번호 재설정',
       component: 'authService',
       context: { email: maskEmail(email) },
+    });
+  }
+}
+
+/**
+ * 네이티브 딥링크 URL 에서 복구 세션 채택
+ *
+ * Android intentFilter 가 uniqn.app 전 경로를 가로채 복구 링크가 네이티브 앱에서
+ * 열리는데, `detectSessionInUrl` 은 웹 전용이라 프래그먼트 토큰이 무시된다.
+ * URL 에서 직접 토큰을 꺼내 setSession 으로 복구 세션을 만든다.
+ */
+export async function adoptRecoverySessionFromUrl(
+  url: string
+): Promise<'adopted' | 'error' | 'none'> {
+  try {
+    const parsed = parseRecoveryUrl(url);
+
+    if (parsed.kind !== 'tokens') {
+      return parsed.kind;
+    }
+
+    const { error } = await supabase.auth.setSession({
+      access_token: parsed.accessToken,
+      refresh_token: parsed.refreshToken,
+    });
+
+    if (error) {
+      logger.warn('복구 세션 채택 실패', { error: error.message });
+      return 'error';
+    }
+
+    logger.info('딥링크 복구 세션 채택 성공');
+    return 'adopted';
+  } catch (error) {
+    logger.warn('복구 세션 채택 중 예외', { error: toError(error).message });
+    return 'error';
+  }
+}
+
+/**
+ * 재설정 링크가 만든 복구 세션이 살아있는지 확인
+ *
+ * 웹에서는 supabase-js 가 URL 해시(#access_token=...)를 소비해 세션을 세운 뒤
+ * getSession 이 응답한다. 링크가 이미 사용됐거나 만료됐으면 세션이 없다.
+ */
+export async function hasRecoverySession(): Promise<boolean> {
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    return !!session;
+  } catch (error) {
+    logger.warn('복구 세션 확인 실패', { error: toError(error).message });
+    return false;
+  }
+}
+
+/**
+ * 재설정 링크로 진입한 복구 세션에서 새 비밀번호 저장
+ *
+ * changePassword 와 달리 **현재 비밀번호를 요구하지 않는다** — 비밀번호를 잊은
+ * 사용자가 쓰는 경로이기 때문. 인증은 메일 링크가 만든 복구 세션이 담당한다.
+ */
+export async function completePasswordReset(newPassword: string): Promise<void> {
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
+        userMessage:
+          '재설정 링크가 만료되었거나 이미 사용되었어요. 비밀번호 찾기를 다시 요청해주세요.',
+      });
+    }
+
+    logger.info('비밀번호 재설정 저장 시도');
+
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+
+    logger.info('비밀번호 재설정 저장 성공');
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '비밀번호 재설정 저장',
+      component: 'authService',
     });
   }
 }
