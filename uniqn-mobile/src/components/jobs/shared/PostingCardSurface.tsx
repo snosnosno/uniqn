@@ -48,6 +48,12 @@ export function PostingCardSurface({
   const compensation = buildPostingCompensationModel(card, { display: 'card' });
   const resolvedAccessibilityLabel =
     accessibilityLabel || buildAccessibilityLabel(card, schedule, compensation.primaryText);
+  // 복지 → 세금 → 조건 순 평탄화(기존 렌더 순서 유지) — 급여 컬럼 메타 블록의 단일 소스
+  const metaLabels = [
+    ...(card.allowanceLabels ?? []),
+    ...(card.taxLabel ? [card.taxLabel] : []),
+    ...(card.conditionLabels ?? []),
+  ];
 
   const innerContent = (
     <>
@@ -127,25 +133,28 @@ export function PostingCardSurface({
               allowanceLabels={card.allowanceLabels}
               taxLabel={card.taxLabel}
             />
+
+            {/* 복지·세금·조건 메타 — 급여 아래 오른쪽 정렬, 항목 단위 줄바꿈(라벨 중간 절단 금지).
+                항목별 <Text> + 후행 ' ·' 구분자라 줄이 넘치면 항목째로 다음 줄로 접힌다.
+                구 하단 전체 폭 2줄(numberOfLines=1 말줄임으로 조건이 잘리던 렌더)을 대체. */}
+            {metaLabels.length > 0 ? (
+              <View
+                testID="posting-card-meta"
+                className="mt-1 flex-row flex-wrap justify-end gap-x-1"
+              >
+                {metaLabels.map((label, idx) => (
+                  <Text
+                    key={`${label}-${idx}`}
+                    className="text-xs text-secondary-500 dark:text-secondary-400 font-sans text-right"
+                  >
+                    {label}
+                    {idx < metaLabels.length - 1 ? ' ·' : ''}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
           </View>
         </View>
-
-        {(card.allowanceLabels?.length ?? 0) > 0 || card.taxLabel ? (
-          <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-            {[...(card.allowanceLabels ?? []), ...(card.taxLabel ? [card.taxLabel] : [])].join(
-              ' · '
-            )}
-          </Text>
-        ) : null}
-
-        {(card.conditionLabels?.length ?? 0) > 0 ? (
-          <Text
-            className="mt-0.5 text-sm text-secondary-500 dark:text-secondary-400 font-sans"
-            numberOfLines={1}
-          >
-            {(card.conditionLabels ?? []).join(' · ')}
-          </Text>
-        ) : null}
 
         {bodyFooter}
       </Pressable>
