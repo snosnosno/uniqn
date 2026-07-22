@@ -34,7 +34,7 @@ export default function JobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const isDark = useThemeStore((state) => state.isDarkMode);
   const secondaryTextColor = getIconColor(isDark, 'primary');
-  const { user, isInitialized } = useAuth();
+  const { user, isInitialized, isAdmin } = useAuth();
   const { hasApplied, getApplicationStatus, cancelApplication, isCancelling } = useApplications();
   const { openInstallPrompt } = useInstallPrompt();
   const sessionUserId = resolveSessionUserId(user?.uid, isInitialized);
@@ -136,7 +136,19 @@ export default function JobDetailScreen() {
 
   // 미승인(pending/rejected/누락) 대회 공고는 상세 열람·지원 모두 차단(P0#4 승인 게이트).
   // 소유자는 (employer) 관리 상세로 보므로 예외 없음.
-  if (isTournamentApprovalBlocked(job)) {
+  // 단, 관리자는 승인 심사를 위해 열람 허용(지원 CTA는 아래에서 별도 차단).
+  const isApprovalBlocked = isTournamentApprovalBlocked(job);
+  if (isApprovalBlocked && !isAdmin) {
+    // 인증 초기화 전에는 isAdmin=false로 오판 → 차단 화면 깜빡임 방지
+    if (!isInitialized) {
+      return (
+        <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
+          <Stack.Screen options={{ headerShown: false }} />
+          <StackHeader title="공고 상세" fallbackHref="/(app)/(tabs)/home-jobs" />
+          <Loading variant="layout" message="공고 정보를 불러오는 중..." />
+        </SafeAreaView>
+      );
+    }
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <Stack.Screen options={{ headerShown: false }} />
@@ -234,7 +246,12 @@ export default function JobDetailScreen() {
         }}
       >
         <SafeAreaView edges={['bottom']}>
-          {isCheckingApplication ? (
+          {isApprovalBlocked ? (
+            // 여기 도달하는 것은 관리자 열람뿐 — 지원 서비스단 게이트에 막히므로 CTA 차단
+            <Button disabled fullWidth>
+              미승인 대회공고 — 관리자 열람 전용
+            </Button>
+          ) : isCheckingApplication ? (
             <Button disabled fullWidth>
               지원 여부 확인 중...
             </Button>
