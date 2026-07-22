@@ -437,6 +437,31 @@ export async function signOut(): Promise<void> {
 }
 
 /**
+ * 재설정 메일 발송 오류를 사용자가 행동할 수 있는 메시지로 변환
+ *
+ * GoTrue 는 재요청 쿨다운을 429 + "you can only request this after N seconds" 로
+ * 돌려준다. 이건 서버의 정상 동작인데 generic 에러로 뭉개면 사용자는 무엇을 얼마나
+ * 기다려야 하는지 알 수 없다(2026-07-22 실측: 연속 클릭으로 429 5회).
+ */
+function toResetPasswordError(error: unknown): unknown {
+  const status = (error as { status?: number } | null)?.status;
+
+  if (status !== 429) {
+    return error;
+  }
+
+  const message = error instanceof Error ? error.message : String(error);
+  const seconds = /after (\d+) seconds?/.exec(message)?.[1];
+
+  return new AuthError(ERROR_CODES.AUTH_TOO_MANY_REQUESTS, {
+    userMessage: seconds
+      ? `메일은 이미 보냈어요. ${seconds}초 후에 다시 요청할 수 있어요.`
+      : '요청이 너무 잦아요. 잠시 후 다시 시도해주세요.',
+    originalError: error instanceof Error ? error : new Error(message),
+  });
+}
+
+/**
  * 비밀번호 재설정 이메일 전송
  *
  * redirectTo 를 반드시 명시한다. 생략하면 GoTrue 가 프로젝트 Site URL 로
@@ -449,7 +474,7 @@ export async function resetPassword(email: string): Promise<void> {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: getPasswordResetRedirectUrl(),
     });
-    if (error) throw error;
+    if (error) throw toResetPasswordError(error);
     logger.info('비밀번호 재설정 이메일 전송 성공', { email: maskEmail(email) });
   } catch (error) {
     throw handleServiceError(error, {

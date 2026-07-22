@@ -74,6 +74,29 @@ describe('비밀번호 재설정', () => {
 
       await expect(resetPassword('user@example.com')).rejects.toThrow('smtp down');
     });
+
+    // 429 는 서버의 정상 쿨다운인데 "알 수 없는 오류"로 뭉개지면 사용자는 무엇을
+    // 기다려야 하는지 알 수 없다(2026-07-22 실측: 연속 클릭으로 429 5회).
+    it('429 쿨다운은 남은 초를 담은 안내 메시지로 변환한다', async () => {
+      const rateLimited = Object.assign(
+        new Error('For security purposes, you can only request this after 17 seconds'),
+        { status: 429 }
+      );
+      mockResetPasswordForEmail.mockResolvedValue({ error: rateLimited });
+
+      await expect(resetPassword('user@example.com')).rejects.toMatchObject({
+        userMessage: expect.stringContaining('17초'),
+      });
+    });
+
+    it('429 인데 초를 못 읽으면 일반 안내로 폴백한다', async () => {
+      const rateLimited = Object.assign(new Error('over_email_send_rate_limit'), { status: 429 });
+      mockResetPasswordForEmail.mockResolvedValue({ error: rateLimited });
+
+      await expect(resetPassword('user@example.com')).rejects.toMatchObject({
+        userMessage: expect.stringContaining('잠시 후'),
+      });
+    });
   });
 
   describe('hasRecoverySession', () => {

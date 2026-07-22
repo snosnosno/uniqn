@@ -6,6 +6,7 @@ export const AUTH_ENTRY_ROUTES = {
   socialSignup: '/(auth)/signup?mode=social',
   identityReverify: '/(auth)/signup?mode=reverify',
   profileSetup: '/(app)/profile-setup',
+  resetPassword: '/(auth)/reset-password',
 } as const;
 
 export const AUTH_LOGIN_ROUTE = '/(auth)/login';

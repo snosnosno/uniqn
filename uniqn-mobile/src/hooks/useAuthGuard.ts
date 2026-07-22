@@ -8,6 +8,7 @@ import { useEffect, useRef } from 'react';
 import { useGlobalSearchParams, usePathname, useRouter, useSegments } from 'expo-router';
 import { useIsMounted } from '@/hooks/useIsMounted';
 import { isPhoneOnlySignupAuthUser } from '@/shared/auth/sessionState';
+import { isPasswordRecoveryEntry } from '@/shared/auth/recoveryEntry';
 import {
   AUTH_ENTRY_ROUTES,
   appendRedirectToRoute,
@@ -148,7 +149,11 @@ export function useAuthGuard(): void {
     const postAuthRedirect = routeGroup === '(auth)' ? requestedRedirect : currentProtectedRoute;
     const pendingAuthRedirect = publicAliasRedirect ?? postAuthRedirect;
     const isOnSignup = segments.includes('signup' as never);
+    // 복구 링크 진입은 착지 위치와 무관하게 리다이렉트를 유예한다. 루트로 착지한
+    // 경우(구 번들·Site URL 폴백) app/index 가 재설정 화면으로 넘기기 전에 가드가
+    // 앱 홈으로 튕기면 비밀번호를 바꿀 기회가 사라진다.
     const isOnPasswordReset =
+      isPasswordRecoveryEntry() ||
       segments.includes('reset-password' as never) ||
       pathname === '/reset-password' ||
       browserPathname === '/reset-password';
