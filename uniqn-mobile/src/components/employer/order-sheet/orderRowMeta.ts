@@ -518,22 +518,64 @@ export function getRowState(
 }
 
 /**
- * 첫 미설정 행 타깃 — 일정·모집 섹션은 그룹 순회(그룹0 dates→time→roles → 그룹1 …).
- * 제출 유도(H5)와 에러 배지가 같은 타깃을 흘려받는다(리뷰 Design-M3).
+ * 화면에 보이는 순서대로의 전체 행 타깃 목록 — 일정·모집 섹션은 그룹 수만큼 반복한다.
+ * firstUnsetRow / nextUnsetRowAfter 의 공통 순회 소스(DRY).
  */
-export function firstUnsetRow(values: OrderSheetFormValues): OrderRowTarget | null {
+export function orderedRowTargets(values: OrderSheetFormValues): OrderRowTarget[] {
   const isFixed = values.postingType === 'fixed';
-  // fixed는 날짜 축이 없어 단일 그룹(index 0)만 순회 — dated는 그룹 수만큼 일정·모집 반복(S1)
+  // fixed 는 날짜 축이 없어 단일 그룹(index 0)만 순회 — dated 는 그룹 수만큼 일정·모집 반복(S1)
   const groupCount = isFixed ? 1 : Math.max(1, (values.scheduleGroups ?? []).length);
+  const targets: OrderRowTarget[] = [];
   for (const section of orderGroupsFor(values.postingType)) {
     const isSchedule = section.title === '일정 · 모집';
     const groupIndexes = isSchedule ? [...Array(groupCount).keys()] : [0];
     for (const groupIndex of groupIndexes) {
       for (const key of section.rows) {
-        const state = getRowState(values, key, groupIndex);
-        if (!state.optional && state.unset) return { key, groupIndex };
+        targets.push({ key, groupIndex });
       }
     }
+  }
+  return targets;
+}
+
+/** 해당 타깃이 "채워야 하는데 비어 있는" 상태인지 */
+function isUnsetTarget(values: OrderSheetFormValues, target: OrderRowTarget): boolean {
+  const state = getRowState(values, target.key, target.groupIndex);
+  return !state.optional && state.unset;
+}
+
+/**
+ * 첫 미설정 행 타깃 — 일정·모집 섹션은 그룹 순회(그룹0 dates→time→roles → 그룹1 …).
+ * 제출 유도(H5)와 에러 배지가 같은 타깃을 흘려받는다(리뷰 Design-M3).
+ */
+export function firstUnsetRow(values: OrderSheetFormValues): OrderRowTarget | null {
+  return orderedRowTargets(values).find((t) => isUnsetTarget(values, t)) ?? null;
+}
+
+/**
+ * 연쇄 입력용 — current 다음 위치부터 순환 순회하며 첫 미설정 행을 낸다.
+ *
+ * 전역 첫 미설정(firstUnsetRow)을 쓰면 뒤쪽 행을 확정했을 때 앞쪽 미설정 행으로 되돌아가
+ * 사용자가 끌려가는 느낌을 받는다. 한 바퀴 돌아 current 로 돌아오면 null 을 반환해
+ * 연쇄를 끝낸다 — current 가 확인 후에도 여전히 unset 인 경우(금액 0 확인 등)의
+ * 무한 재오픈을 구조적으로 차단한다.
+ *
+ * current 가 목록에 없으면(타입 전환 등으로 행 구성이 바뀐 경우) 앞에서부터 훑는다.
+ */
+export function nextUnsetRowAfter(
+  values: OrderSheetFormValues,
+  current: OrderRowTarget
+): OrderRowTarget | null {
+  const targets = orderedRowTargets(values);
+  const currentIndex = targets.findIndex(
+    (t) => t.key === current.key && t.groupIndex === current.groupIndex
+  );
+  const start = currentIndex + 1; // 못 찾으면 -1 → 0 부터 = 앞에서부터 훑기
+  for (let offset = 0; offset < targets.length; offset += 1) {
+    const target = targets[(start + offset) % targets.length];
+    if (target === undefined) continue;
+    if (currentIndex >= 0 && (start + offset) % targets.length === currentIndex) break;
+    if (isUnsetTarget(values, target)) return target;
   }
   return null;
 }
