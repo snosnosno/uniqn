@@ -85,8 +85,12 @@ export default function ResetPasswordScreen() {
     // 루트에서 넘어온 경우 현재 URL 에는 해시가 없다 — 진입 시점 스냅샷으로 판정.
     const wasRecoveryLinkError = isRecoveryLinkErrorEntry();
 
-    // 목적지에 도착했으므로 유예를 해제한다 — 이후 일반 라우팅 규칙 복원.
-    clearPasswordRecoveryEntry();
+    // ⚠️ 여기서 clearPasswordRecoveryEntry() 를 호출하면 안 된다(2026-07-22 실측).
+    // auth-js 가 토큰 소비 후 `window.location.hash = ''` 를 실행하면 expo-router 가
+    // 라우트를 '/' 로 리셋하는데, 플래그가 이미 지워져 있으면 index 가 인증된
+    // 사용자를 앱 홈으로 보내 재설정 기회가 사라진다. 플래그는 재설정 완료 또는
+    // 재요청 이탈 시점에만 해제한다 — 그래야 '/' 로 튕겨도 index 가 이 화면으로
+    // 되돌려보낸다.
 
     const detect = async () => {
       // 네이티브: 딥링크 URL 의 토큰으로 복구 세션을 직접 채택한다.
@@ -126,6 +130,7 @@ export default function ResetPasswordScreen() {
   }, [incomingUrl]);
 
   const goToForgotPassword = useCallback(() => {
+    clearPasswordRecoveryEntry(); // 복구 플로우 이탈 — 일반 라우팅 규칙 복원
     router.replace('/(auth)/forgot-password');
   }, []);
 
@@ -133,6 +138,7 @@ export default function ResetPasswordScreen() {
     setIsSubmitting(true);
     try {
       await completePasswordReset(data.newPassword);
+      clearPasswordRecoveryEntry(); // 복구 완료 — 일반 라우팅 규칙 복원
       addToast({ type: 'success', message: '비밀번호가 변경되었어요' });
       router.replace('/');
     } catch (error) {
