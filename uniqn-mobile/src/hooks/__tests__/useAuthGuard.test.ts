@@ -381,6 +381,28 @@ describe('useAuthGuard', () => {
     });
   });
 
+  // 비밀번호 재설정 메일 링크는 복구 세션을 만든 채 (auth) 그룹에 착지한다.
+  // 일반 (auth) 규칙(인증됨 → 앱으로 replace)이 적용되면 사용자는 새 비밀번호를
+  // 입력할 기회 없이 앱 안으로 튕겨 나가 복구 경로가 끊긴다(2026-07-22).
+  it('keeps authenticated recovery sessions on the reset-password screen', async () => {
+    mockPathname = '/reset-password';
+    mockSegments = ['(auth)', 'reset-password'];
+    mockAuthState.user = { uid: 'staff-1', email: 'staff@example.com', phoneNumber: null };
+    mockAuthState.profile = {
+      role: 'staff',
+      socialProvider: null,
+      phoneVerified: true,
+      profileCompleted: true,
+    };
+
+    renderHook(() => useAuthGuard());
+
+    await waitFor(() => {
+      expect(mockCheckAuthState).not.toHaveBeenCalled();
+    });
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
   it('normalizes phone-only sessions off the social signup flow', async () => {
     mockPathname = '/signup';
     mockSegments = ['(auth)', 'signup'];

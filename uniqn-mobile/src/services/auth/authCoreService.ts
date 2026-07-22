@@ -8,6 +8,7 @@
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 import { supabase } from '@/lib/supabase';
+import { getPasswordResetRedirectUrl } from '@/constants/appUrl';
 import { logger } from '@/utils/logger';
 import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
 import { clearProtectedAuthFlow, protectAuthFlow } from '@/shared/auth/protectedAuthFlow';
@@ -437,11 +438,17 @@ export async function signOut(): Promise<void> {
 
 /**
  * 비밀번호 재설정 이메일 전송
+ *
+ * redirectTo 를 반드시 명시한다. 생략하면 GoTrue 가 프로젝트 Site URL 로
+ * 폴백하는데, 기본값이 `http://localhost:3000` 이라 실제 사용자에게는 접속
+ * 불가 주소로 링크가 착지한다(2026-07-22 실측 장애).
  */
 export async function resetPassword(email: string): Promise<void> {
   try {
     logger.info('비밀번호 재설정 이메일 전송', { email: maskEmail(email) });
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: getPasswordResetRedirectUrl(),
+    });
     if (error) throw error;
     logger.info('비밀번호 재설정 이메일 전송 성공', { email: maskEmail(email) });
   } catch (error) {
@@ -449,6 +456,58 @@ export async function resetPassword(email: string): Promise<void> {
       operation: '비밀번호 재설정',
       component: 'authService',
       context: { email: maskEmail(email) },
+    });
+  }
+}
+
+/**
+ * 재설정 링크가 만든 복구 세션이 살아있는지 확인
+ *
+ * 웹에서는 supabase-js 가 URL 해시(#access_token=...)를 소비해 세션을 세운 뒤
+ * getSession 이 응답한다. 링크가 이미 사용됐거나 만료됐으면 세션이 없다.
+ */
+export async function hasRecoverySession(): Promise<boolean> {
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    return !!session;
+  } catch (error) {
+    logger.warn('복구 세션 확인 실패', { error: toError(error).message });
+    return false;
+  }
+}
+
+/**
+ * 재설정 링크로 진입한 복구 세션에서 새 비밀번호 저장
+ *
+ * changePassword 와 달리 **현재 비밀번호를 요구하지 않는다** — 비밀번호를 잊은
+ * 사용자가 쓰는 경로이기 때문. 인증은 메일 링크가 만든 복구 세션이 담당한다.
+ */
+export async function completePasswordReset(newPassword: string): Promise<void> {
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
+        userMessage:
+          '재설정 링크가 만료되었거나 이미 사용되었어요. 비밀번호 찾기를 다시 요청해주세요.',
+      });
+    }
+
+    logger.info('비밀번호 재설정 저장 시도');
+
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+
+    logger.info('비밀번호 재설정 저장 성공');
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '비밀번호 재설정 저장',
+      component: 'authService',
     });
   }
 }
