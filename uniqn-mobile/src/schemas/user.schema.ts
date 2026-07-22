@@ -178,6 +178,24 @@ export const passwordChangeSchema = z
 
 export type PasswordChangeData = z.infer<typeof passwordChangeSchema>;
 
+/**
+ * 비밀번호 재설정 스키마 (메일 링크 복구 경로)
+ *
+ * passwordChangeSchema 와 달리 현재 비밀번호를 받지 않는다 — 비밀번호를 잊은
+ * 사용자가 쓰는 경로이므로 입력 자체가 불가능하다.
+ */
+export const passwordResetSchema = z
+  .object({
+    newPassword: passwordSchema,
+    confirmPassword: passwordConfirmSchema,
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: '비밀번호가 일치하지 않습니다',
+    path: ['confirmPassword'],
+  });
+
+export type PasswordResetData = z.infer<typeof passwordResetSchema>;
+
 // ============================================================================
 // Firestore 문서 파서
 // ============================================================================

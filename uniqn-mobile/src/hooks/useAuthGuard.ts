@@ -148,6 +148,10 @@ export function useAuthGuard(): void {
     const postAuthRedirect = routeGroup === '(auth)' ? requestedRedirect : currentProtectedRoute;
     const pendingAuthRedirect = publicAliasRedirect ?? postAuthRedirect;
     const isOnSignup = segments.includes('signup' as never);
+    const isOnPasswordReset =
+      segments.includes('reset-password' as never) ||
+      pathname === '/reset-password' ||
+      browserPathname === '/reset-password';
     const signupModeParam = Array.isArray(searchParams.mode)
       ? searchParams.mode[0]
       : searchParams.mode;
@@ -165,6 +169,13 @@ export function useAuthGuard(): void {
     );
 
     if (isLoading) {
+      return;
+    }
+
+    // 비밀번호 재설정 화면은 메일 링크가 만든 복구 세션(=인증됨) 상태로 진입한다.
+    // 일반 (auth) 규칙을 적용하면 새 비밀번호를 저장하기도 전에 앱 안으로 튕겨
+    // 나가 복구 경로가 끊긴다. 어떤 리다이렉트도 적용하지 않는다.
+    if (isOnPasswordReset) {
       return;
     }
 

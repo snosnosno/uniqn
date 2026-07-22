@@ -31,6 +31,8 @@ export {
   signUp,
   signOut,
   resetPassword,
+  completePasswordReset,
+  hasRecoverySession,
   getUserProfile,
   reauthenticate,
   getCurrentUserAsync,
