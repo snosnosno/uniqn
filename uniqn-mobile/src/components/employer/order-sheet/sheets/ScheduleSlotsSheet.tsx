@@ -28,9 +28,12 @@ const toTimeValue = (s: string): TimeValue => {
 const toStartTime = (t: TimeValue) =>
   `${String(t.hour).padStart(2, '0')}:${String(t.minute).padStart(2, '0')}`;
 
-/** 진입 시 펼칠 카드 — 첫 미완성 슬롯(시간 미설정 또는 역할 0개), 없으면 첫 카드(§5) */
+/** 진입 시 펼칠 카드 — 첫 미완성 슬롯(시간 미설정 또는 역할 0개), 없으면 첫 카드(§5).
+ *  시간 미정(isTimeToBeAnnounced)은 완성으로 간주한다. */
 const firstIncompleteIndex = (slots: Slots) => {
-  const i = slots.findIndex((s) => !s.startTime || s.roles.length === 0);
+  const i = slots.findIndex(
+    (s) => (!s.startTime && s.isTimeToBeAnnounced !== true) || s.roles.length === 0
+  );
   return i >= 0 ? i : 0;
 };
 
@@ -71,7 +74,22 @@ export function ScheduleSlotsSheet({
   const [expandedId, setExpandedId] = useState<string>(() => `slot-${firstIncompleteIndex(seed)}`);
 
   const updateStart = (i: number, t: TimeValue) =>
-    setSlots((prev) => prev.map((s, idx) => (idx === i ? { ...s, startTime: toStartTime(t) } : s)));
+    setSlots((prev) =>
+      prev.map((s, idx) => {
+        if (idx !== i) return s;
+        // 시각을 고르면 미정 플래그를 **키째로** 제거한다(optional 계약 — undefined 잔존 금지)
+        const { isTimeToBeAnnounced: _tba, ...rest } = s;
+        return { ...rest, startTime: toStartTime(t) };
+      })
+    );
+
+  /** 시간 미정 확정 — startTime 비우고 미정 플래그를 켠다 */
+  const setTimeTBA = (i: number) =>
+    setSlots((prev) =>
+      prev.map((s, idx) =>
+        idx === i ? { ...s, startTime: '', isTimeToBeAnnounced: true as const } : s
+      )
+    );
 
   const updateRoles = (i: number, roles: SlotRoles) =>
     setSlots((prev) => prev.map((s, idx) => (idx === i ? { ...s, roles } : s)));
@@ -121,9 +139,13 @@ export function ScheduleSlotsSheet({
             // `??` 가 아니라 `||` — 새 슬롯의 startTime 은 ''(빈 문자열)이라 `??` 를 통과해
             // 휠이 00:00 으로 열린다(구 TimeSlotsSheet 선재 버그). 빈 값도 기본값으로 떨어뜨린다.
             value={toTimeValue(slots[pickerIndex]?.startTime || DEFAULT_START)}
-            minuteInterval={5}
+            minuteInterval={15}
             onConfirm={(t) => {
               updateStart(pickerIndex, t);
+              setPickerIndex(null);
+            }}
+            onConfirmTBA={() => {
+              setTimeTBA(pickerIndex);
               setPickerIndex(null);
             }}
             onClose={() => setPickerIndex(null)}

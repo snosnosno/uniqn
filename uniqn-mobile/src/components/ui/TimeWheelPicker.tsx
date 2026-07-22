@@ -30,6 +30,7 @@ import {
   generateHours,
   generateMinutes,
   normalizeMinute as normalizeMinuteUtil,
+  resolveSnap,
 } from '@/utils/timePickerUtils';
 
 // ============================================================================
@@ -56,6 +57,11 @@ export interface TimeWheelPickerProps {
   minuteInterval?: number;
   /** 확인 콜백 */
   onConfirm: (value: TimeValue) => void;
+  /**
+   * "시간 미정" 확정 콜백(선택). 전달하면 헤더 아래에 시간 미정 버튼이 렌더된다.
+   * 시각 확정(onConfirm)과 배타 — 호출부가 미정 상태 저장·피커 닫기를 책임진다.
+   */
+  onConfirmTBA?: () => void;
   /** 닫기 콜백 */
   onClose: () => void;
   /**
@@ -75,6 +81,24 @@ const VISIBLE_ITEMS = 5;
 const PICKER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
 
 // ============================================================================
+// 시간 미정 버튼 (웹/네이티브 공용) — onConfirmTBA 전달 시에만 렌더
+// ============================================================================
+
+function TbaButton({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      testID="time-wheel-tba"
+      accessibilityRole="button"
+      accessibilityLabel="시간 미정으로 설정"
+      className="mx-4 mt-3 min-h-[44px] items-center justify-center rounded-xl border border-secondary-200 dark:border-surface-overlay active:opacity-80"
+    >
+      <Text className="text-sm font-sans-medium text-content-secondary">시간 미정 (추후 공지)</Text>
+    </Pressable>
+  );
+}
+
+// ============================================================================
 // Web Fallback Component (시/분 분리 선택)
 // ============================================================================
 
@@ -85,6 +109,7 @@ function WebTimePicker({
   maxHour,
   minuteInterval,
   onConfirm,
+  onConfirmTBA,
   onClose,
 }: Omit<TimeWheelPickerProps, 'visible'>) {
   const [selectedHour, setSelectedHour] = useState(value.hour);
@@ -224,6 +249,8 @@ function WebTimePicker({
         </Pressable>
       </View>
 
+      {onConfirmTBA ? <TbaButton onPress={onConfirmTBA} /> : null}
+
       {/* 라벨 */}
       <View className="flex-row px-4 pt-3">
         <View className="flex-1 items-center">
@@ -301,6 +328,7 @@ function NativeWheelPicker({
   maxHour,
   minuteInterval,
   onConfirm,
+  onConfirmTBA,
   onClose,
 }: Omit<TimeWheelPickerProps, 'visible'>) {
   const hourScrollRef = useRef<ScrollView>(null);
@@ -343,34 +371,32 @@ function NativeWheelPicker({
     return () => clearTimeout(timeoutId);
   }, [value, minHour, minuteInterval, normalizeMinute]);
 
-  // 시간 스크롤 종료 핸들러
+  // 시간 스크롤 종료 핸들러 — 이미 정렬된 오프셋이면 재스크롤 금지(resolveSnap 가드).
+  // Android에서 scrollTo(animated)가 onMomentumScrollEnd를 재발화시켜 같은 위치로
+  // 재-scrollTo하는 무한 재진입(휠 한 번 돌리면 터치 먹통, 2026-07-22 실기기)을 차단한다.
   const handleHourScrollEnd = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const offsetY = event.nativeEvent.contentOffset.y;
-      const index = Math.round(offsetY / ITEM_HEIGHT);
-      const clampedIndex = Math.max(0, Math.min(index, hours.length - 1));
-      const newHour = minHour! + clampedIndex;
-      setSelectedHour(newHour);
-
+      const { index, needsScroll } = resolveSnap(offsetY, hours.length, ITEM_HEIGHT);
+      setSelectedHour(minHour! + index);
+      if (!needsScroll) return;
       hourScrollRef.current?.scrollTo({
-        y: clampedIndex * ITEM_HEIGHT,
+        y: index * ITEM_HEIGHT,
         animated: true,
       });
     },
     [minHour, hours.length]
   );
 
-  // 분 스크롤 종료 핸들러
+  // 분 스크롤 종료 핸들러 — 시간 휠과 동일한 재진입 가드
   const handleMinuteScrollEnd = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const offsetY = event.nativeEvent.contentOffset.y;
-      const index = Math.round(offsetY / ITEM_HEIGHT);
-      const clampedIndex = Math.max(0, Math.min(index, minutes.length - 1));
-      const newMinute = clampedIndex * minuteInterval!;
-      setSelectedMinute(newMinute);
-
+      const { index, needsScroll } = resolveSnap(offsetY, minutes.length, ITEM_HEIGHT);
+      setSelectedMinute(index * minuteInterval!);
+      if (!needsScroll) return;
       minuteScrollRef.current?.scrollTo({
-        y: clampedIndex * ITEM_HEIGHT,
+        y: index * ITEM_HEIGHT,
         animated: true,
       });
     },
@@ -404,6 +430,8 @@ function NativeWheelPicker({
         </Pressable>
       </View>
 
+      {onConfirmTBA ? <TbaButton onPress={onConfirmTBA} /> : null}
+
       {/* 휠 피커 영역 */}
       <View
         style={{ height: PICKER_HEIGHT }}
@@ -423,6 +451,7 @@ function NativeWheelPicker({
         <View className="flex-1" style={{ height: PICKER_HEIGHT }}>
           <ScrollView
             ref={hourScrollRef}
+            testID="time-wheel-hours"
             showsVerticalScrollIndicator={false}
             snapToInterval={ITEM_HEIGHT}
             snapToAlignment="start"
@@ -483,6 +512,7 @@ function NativeWheelPicker({
         <View className="flex-1" style={{ height: PICKER_HEIGHT }}>
           <ScrollView
             ref={minuteScrollRef}
+            testID="time-wheel-minutes"
             showsVerticalScrollIndicator={false}
             snapToInterval={ITEM_HEIGHT}
             snapToAlignment="start"
@@ -559,6 +589,7 @@ function WebOverlay({
   maxHour,
   minuteInterval,
   onConfirm,
+  onConfirmTBA,
   onClose,
 }: TimeWheelPickerProps) {
   if (!visible) return null;
@@ -587,6 +618,7 @@ function WebOverlay({
           maxHour={maxHour}
           minuteInterval={minuteInterval}
           onConfirm={onConfirm}
+          onConfirmTBA={onConfirmTBA}
           onClose={onClose}
         />
       </div>
@@ -604,6 +636,7 @@ export function TimeWheelPicker({
   maxHour = 47,
   minuteInterval = 5,
   onConfirm,
+  onConfirmTBA,
   onClose,
   embedded = false,
 }: TimeWheelPickerProps) {
@@ -632,6 +665,7 @@ export function TimeWheelPicker({
         maxHour={maxHour}
         minuteInterval={minuteInterval}
         onConfirm={onConfirm}
+        onConfirmTBA={onConfirmTBA}
         onClose={onClose}
       />
     );
@@ -650,6 +684,7 @@ export function TimeWheelPicker({
         maxHour={maxHour}
         minuteInterval={minuteInterval}
         onConfirm={onConfirm}
+        onConfirmTBA={onConfirmTBA}
         onClose={onClose}
       />
     </View>

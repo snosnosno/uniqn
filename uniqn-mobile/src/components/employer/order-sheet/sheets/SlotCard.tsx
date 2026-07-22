@@ -16,7 +16,7 @@ import { ChevronRightIcon } from '@/components/icons';
 import { RoleCountEditor, roleLabel, type SlotRoles } from './RoleCountEditor';
 
 export interface SlotCardProps {
-  slot: { startTime: string; roles: SlotRoles };
+  slot: { startTime: string; isTimeToBeAnnounced?: true; roles: SlotRoles };
   index: number;
   expanded: boolean;
   /** 슬롯이 2개 이상일 때만 true — 마지막 슬롯은 삭제 불가 */
@@ -27,9 +27,13 @@ export interface SlotCardProps {
   onRemove: () => void;
 }
 
+/** 시간 표기 — 미정 슬롯은 '미정'(접힘·펼침·a11y 공용) */
+const timeLabel = (slot: SlotCardProps['slot'], fallback: string) =>
+  slot.isTimeToBeAnnounced === true ? '미정' : slot.startTime || fallback;
+
 /** 접힘 요약 — 한글 라벨 사용(raw key "dealer" 노출 금지) */
 const summarize = (slot: SlotCardProps['slot']) => {
-  const time = slot.startTime || '--:--';
+  const time = timeLabel(slot, '--:--');
   const roles =
     slot.roles.length > 0
       ? slot.roles.map((r) => `${roleLabel(r)} ${r.count}명`).join(' · ')
@@ -90,11 +94,11 @@ export function SlotCard({
           onPress={onPressTime}
           testID={`order-time-start-${index}`}
           accessibilityRole="button"
-          accessibilityLabel={`출근 시간 ${slot.startTime || '미설정'} 변경`}
+          accessibilityLabel={`출근 시간 ${timeLabel(slot, '미설정')} 변경`}
           className="min-h-[44px] justify-center active:opacity-80"
         >
           <Text className="text-base font-sans-bold text-content-primary">
-            출근 {slot.startTime || '--:--'}
+            출근 {timeLabel(slot, '--:--')}
           </Text>
         </Pressable>
         {removable && (

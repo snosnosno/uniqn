@@ -2,8 +2,11 @@
  * WelfareSheet — 복지 시트 (주문서 급여·선택)
  *
  * @description 식사·교통·숙소 3종은 기존 Allowances 시맨틱(-1=제공 체크 / 양수=금액), 보장시간은
- * 시간값(0 이상 숫자)으로 분리한다. 확정 값은 부모(OrderSheetScreen)로 흘려보내고 부모가
- * form.setValue(shouldValidate)로 zod orderSheetAllowancesSchema 경계를 태운다. 단일 SheetModal.
+ * 시간값(양수)으로 분리한다. 보장시간은 **기본값이 없다** — 체크 여부(boolean)와 입력 문자열을
+ * 분리 보관하고 확인 시점에만 숫자로 확정한다(구 구현은 빈 입력을 즉시 기본 4로 복원해
+ * 지우고 6·8을 입력하는 것 자체가 불가했다, 2026-07-22). 미입력/0은 미설정으로 확정.
+ * 확정 값은 부모(OrderSheetScreen)로 흘려보내고 부모가 form.setValue(shouldValidate)로
+ * zod orderSheetAllowancesSchema 경계를 태운다. 단일 SheetModal.
  *
  * ⚠️ 리뷰 CRITICAL: guaranteedHours에 PROVIDED_FLAG(-1)를 쓰면 문서 게이트 min(0)이 reject해
  * 등록 자체가 죽는다 → 키별 분기 필수. '0' 입력이 제공(-1)으로 둔갑하는 시맨틱 플립도 금지.
@@ -27,7 +30,8 @@ const ITEMS = [
   { key: 'accommodation', label: '숙소' },
 ] as const;
 
-const DEFAULT_GUARANTEED_HOURS = 4;
+/** 보장시간 축 분리 — welfare 상태는 금액 3종만 들고 간다 */
+const stripGuaranteedHours = ({ guaranteedHours: _gh, ...rest }: Welfare): Welfare => rest;
 
 export interface WelfareSheetProps {
   visible: boolean;
@@ -39,54 +43,66 @@ export interface WelfareSheetProps {
 export function WelfareSheet({ visible, value, onConfirm, onClose }: WelfareSheetProps) {
   const isDarkMode = useThemeStore((s) => s.isDarkMode);
   const placeholderColor = isDarkMode ? SECONDARY_PALETTE[500] : SECONDARY_PALETTE[400];
-  const [welfare, setWelfare] = useState<Welfare>(value);
+  const [welfare, setWelfare] = useState<Welfare>(() => stripGuaranteedHours(value));
+  // 보장시간 — 체크와 입력 문자열을 분리 보관, 확정은 확인 버튼에서만 (기본값 없음)
+  const [ghChecked, setGhChecked] = useState(value.guaranteedHours !== undefined);
+  const [ghText, setGhText] = useState(
+    value.guaranteedHours !== undefined ? String(value.guaranteedHours) : ''
+  );
 
-  const toggle = (key: WelfareKey) =>
+  const toggle = (key: WelfareKey) => {
+    if (key === 'guaranteedHours') {
+      setGhChecked((prev) => !prev);
+      return;
+    }
     setWelfare((prev) => {
       const next = { ...prev };
       if (next[key] !== undefined) delete next[key];
-      // 보장시간은 시간값(기본 4시간), 그 외 3종은 금액 없는 '제공' 체크(PROVIDED_FLAG)
-      else next[key] = key === 'guaranteedHours' ? DEFAULT_GUARANTEED_HOURS : PROVIDED_FLAG;
+      // 금액 3종은 금액 없는 '제공' 체크(PROVIDED_FLAG)
+      else next[key] = PROVIDED_FLAG;
       return next;
     });
+  };
 
-  const setAmount = (key: WelfareKey, text: string) =>
-    setWelfare((prev) => {
-      const parsed = Number.parseInt(text.replace(/[^0-9]/g, ''), 10);
-      if (key === 'guaranteedHours') {
-        // 시간값: 빈/무효 입력은 기본 4시간, 0 입력은 체크 해제와 동일(키 삭제)
-        if (Number.isNaN(parsed)) return { ...prev, guaranteedHours: DEFAULT_GUARANTEED_HOURS };
-        if (parsed <= 0) {
-          const next = { ...prev };
-          delete next.guaranteedHours;
-          return next;
-        }
-        return { ...prev, guaranteedHours: parsed };
-      }
-      // 금액 3종: 빈/0 입력 = 금액 없는 '제공' 체크(PROVIDED_FLAG)
-      return { ...prev, [key]: Number.isNaN(parsed) || parsed <= 0 ? PROVIDED_FLAG : parsed };
-    });
+  const setAmount = (key: WelfareKey, text: string) => {
+    const digits = text.replace(/[^0-9]/g, '');
+    if (key === 'guaranteedHours') {
+      // 입력 중에는 문자열 그대로 유지(빈 값 허용) — 기본값 복원 금지
+      setGhText(digits);
+      return;
+    }
+    const parsed = Number.parseInt(digits, 10);
+    // 금액 3종: 빈/0 입력 = 금액 없는 '제공' 체크(PROVIDED_FLAG)
+    setWelfare((prev) => ({
+      ...prev,
+      [key]: Number.isNaN(parsed) || parsed <= 0 ? PROVIDED_FLAG : parsed,
+    }));
+  };
+
+  const confirm = () => {
+    const parsed = Number.parseInt(ghText, 10);
+    const withHours = ghChecked && Number.isFinite(parsed) && parsed > 0;
+    onConfirm(withHours ? { ...welfare, guaranteedHours: parsed } : welfare);
+    onClose();
+  };
 
   return (
     <SheetModal
       visible={visible}
       onClose={onClose}
       title="복지 (선택)"
-      footer={
-        <Button
-          onPress={() => {
-            onConfirm(welfare);
-            onClose();
-          }}
-        >
-          확인
-        </Button>
-      }
+      footer={<Button onPress={confirm}>확인</Button>}
     >
       <View className="px-4 pt-3 pb-2 gap-2">
         {ITEMS.map(({ key, label }) => {
+          const isHours = key === 'guaranteedHours';
           const v = welfare[key];
-          const checked = v !== undefined;
+          const checked = isHours ? ghChecked : v !== undefined;
+          const inputValue = isHours
+            ? ghText
+            : v !== undefined && v !== PROVIDED_FLAG
+              ? String(v)
+              : '';
           return (
             <View
               key={key}
@@ -115,10 +131,10 @@ export function WelfareSheet({ visible, value, onConfirm, onClose }: WelfareShee
               </Pressable>
               {checked && (
                 <TextInput
-                  value={v !== undefined && v !== PROVIDED_FLAG ? String(v) : ''}
+                  value={inputValue}
                   onChangeText={(t) => setAmount(key, t)}
                   keyboardType="number-pad"
-                  placeholder={key === 'guaranteedHours' ? '시간' : '금액(선택)'}
+                  placeholder={isHours ? '시간' : '금액(선택)'}
                   placeholderTextColor={placeholderColor}
                   testID={`order-sheet-welfare-${key}-input`}
                   className="w-24 rounded-lg border border-secondary-200 dark:border-surface-overlay px-2 py-1.5 text-right text-sm text-content-primary font-sans"

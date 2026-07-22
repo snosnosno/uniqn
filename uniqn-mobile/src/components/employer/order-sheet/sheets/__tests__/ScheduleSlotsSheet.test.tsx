@@ -24,16 +24,22 @@ jest.mock('@/components/ui/SheetModal', () => {
 });
 
 // 목이 받은 value 를 mock-time-seed 로 노출한다 — 피커가 어떤 시각으로 열리는지 단언하기 위해.
+// onConfirmTBA(시간 미정)는 전달됐을 때만 mock-time-tba 로 노출한다(실물 TbaButton 조건부 렌더 미러).
 jest.mock('@/components/ui/TimeWheelPicker', () => {
   const { Pressable, Text } = require('react-native');
   return {
-    TimeWheelPicker: ({ visible, value, onConfirm }: any) =>
+    TimeWheelPicker: ({ visible, value, onConfirm, onConfirmTBA }: any) =>
       visible ? (
         <>
           <Text testID="mock-time-seed">{`${value?.hour}:${value?.minute}`}</Text>
           <Pressable testID="mock-time-confirm" onPress={() => onConfirm({ hour: 20, minute: 30 })}>
             <Text>MockPicker</Text>
           </Pressable>
+          {onConfirmTBA ? (
+            <Pressable testID="mock-time-tba" onPress={onConfirmTBA}>
+              <Text>MockTBA</Text>
+            </Pressable>
+          ) : null}
         </>
       ) : null,
   };
@@ -290,5 +296,59 @@ describe('ScheduleSlotsSheet', () => {
     // 첫 미완성 = index 0 이 펼쳐짐
     fireEvent.press(getByTestId('order-time-remove-0'));
     expect(queryByTestId('order-time-remove-0')).toBeNull();
+  });
+});
+
+describe('시간 미정 (2026-07-22)', () => {
+  it('피커에서 시간 미정 선택 → 슬롯이 "출근 미정"으로 바뀌고 미정 플래그로 확정된다', () => {
+    const onConfirm = jest.fn();
+    const { getByTestId, getByText } = render(
+      <ScheduleSlotsSheet visible value={[]} onConfirm={onConfirm} onClose={jest.fn()} />
+    );
+    fireEvent.press(getByTestId('order-time-start-0'));
+    fireEvent.press(getByTestId('mock-time-tba'));
+    expect(getByText('출근 미정')).toBeTruthy();
+    fireEvent.press(getByTestId('order-role-chip-dealer'));
+    fireEvent.press(getByText('확인'));
+    expect(onConfirm).toHaveBeenCalledWith([
+      { startTime: '', isTimeToBeAnnounced: true, roles: [{ role: 'dealer', count: 1 }] },
+    ]);
+  });
+
+  it('미정 슬롯에서 시각을 다시 고르면 미정이 해제된다', () => {
+    const onConfirm = jest.fn();
+    const { getByTestId, getByText } = render(
+      <ScheduleSlotsSheet
+        visible
+        value={[
+          { startTime: '', isTimeToBeAnnounced: true, roles: [{ role: 'dealer', count: 1 }] },
+        ]}
+        onConfirm={onConfirm}
+        onClose={jest.fn()}
+      />
+    );
+    fireEvent.press(getByTestId('order-time-start-0'));
+    fireEvent.press(getByTestId('mock-time-confirm'));
+    fireEvent.press(getByText('확인'));
+    expect(onConfirm).toHaveBeenCalledWith([
+      { startTime: '20:30', roles: [{ role: 'dealer', count: 1 }] },
+    ]);
+  });
+
+  it('미정 슬롯은 완성으로 간주된다 — 접힘 요약도 "미정 · 딜러 1명"', () => {
+    const { getByText } = render(
+      <ScheduleSlotsSheet
+        visible
+        value={[
+          { startTime: '', isTimeToBeAnnounced: true, roles: [{ role: 'dealer', count: 1 }] },
+          { startTime: '22:00', roles: [] },
+        ]}
+        onConfirm={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+    // 두 번째(역할 0)가 첫 미완성 → 펼침. 미정 슬롯은 접힘 요약으로 표시.
+    expect(getByText('출근 22:00')).toBeTruthy();
+    expect(getByText('미정 · 딜러 1명')).toBeTruthy();
   });
 });

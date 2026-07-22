@@ -46,10 +46,23 @@ export const orderSheetRoleSalarySchema = z.object({
 // 출근 시각 형식(HH:MM 24h) — 타임슬롯·고정 근무조건·orderRowMeta 요약 판정이 공유(단일 정의).
 export const START_TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-export const orderSheetTimeSlotSchema = z.object({
-  startTime: z.string().regex(START_TIME_RE, '출근 시간을 선택해주세요'),
-  roles: z.array(orderSheetRoleSchema).min(1, '역할을 추가해주세요'),
-});
+/**
+ * 타임슬롯 — 시간 미정(isTimeToBeAnnounced) 지원(2026-07-22). 플래그는 **optional**로 유지해
+ * 기존 슬롯(플래그 부재)의 왕복 등가·시그니처 비교(stripSlotIds JSON)를 흔들지 않는다.
+ * 미정이 아니면 startTime HH:MM 필수 — 에러 경로는 기존과 동일한 ['startTime']
+ * (orderRowMeta 행 매핑·RHF 에러 워커 계약 유지).
+ */
+export const orderSheetTimeSlotSchema = z
+  .object({
+    startTime: z.string(),
+    isTimeToBeAnnounced: z.literal(true).optional(),
+    roles: z.array(orderSheetRoleSchema).min(1, '역할을 추가해주세요'),
+  })
+  .superRefine((s, ctx) => {
+    if (s.isTimeToBeAnnounced !== true && !START_TIME_RE.test(s.startTime)) {
+      ctx.addIssue({ code: 'custom', path: ['startTime'], message: '출근 시간을 선택해주세요' });
+    }
+  });
 
 /**
  * 고정(fixed) 근무조건(S2) — 날짜 축이 없는 상시 반복 근무. 역할은 평탄 배열(레거시 formData.roles 시맨틱).
