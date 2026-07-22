@@ -28,6 +28,7 @@ import { EyeIcon, EyeSlashIcon } from '@/components/icons';
 import { useToastStore } from '@/stores/toastStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { completePasswordReset, hasRecoverySession } from '@/services';
+import { clearPasswordRecoveryEntry, isRecoveryLinkErrorEntry } from '@/shared/auth/recoveryEntry';
 import { extractUserMessage } from '@/errors';
 import { passwordResetSchema, type PasswordResetData } from '@/schemas/user.schema';
 import { logger } from '@/utils/logger';
@@ -73,9 +74,14 @@ export default function ResetPasswordScreen() {
 
   useEffect(() => {
     let cancelled = false;
+    // 루트에서 넘어온 경우 현재 URL 에는 해시가 없다 — 진입 시점 스냅샷으로 판정.
+    const wasRecoveryLinkError = isRecoveryLinkErrorEntry();
+
+    // 목적지에 도착했으므로 유예를 해제한다 — 이후 일반 라우팅 규칙 복원.
+    clearPasswordRecoveryEntry();
 
     const detect = async () => {
-      if (hasLinkErrorInUrl()) {
+      if (hasLinkErrorInUrl() || wasRecoveryLinkError) {
         logger.warn('비밀번호 재설정 링크 오류 해시로 진입');
         if (!cancelled) {
           setStatus('invalid');

@@ -10,6 +10,7 @@ import { router } from 'expo-router';
 import { APP_VERSION } from '@/constants/version';
 import { PRIMARY_COLORS } from '@/constants/colors';
 import { isPhoneOnlySignupAuthUser } from '@/shared/auth/sessionState';
+import { isPasswordRecoveryEntry } from '@/shared/auth/recoveryEntry';
 import {
   AUTH_ENTRY_ROUTES,
   AUTH_LOGIN_ROUTE,
@@ -39,6 +40,10 @@ export default function SplashScreen() {
   const checkAuthState = useAuthStore((state) => state.checkAuthState);
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
   const profileRetryCountRef = useRef(0);
+  // 복구 링크가 루트로 착지한 경우(구 번들·Site URL 폴백). 아래 일반 리다이렉트보다
+  // 먼저 재설정 화면으로 보낸다 — 안 그러면 로그인된 사용자는 앱 홈으로 흘러가
+  // 비밀번호를 바꿀 화면을 못 본다.
+  const isRecoveryEntryRef = useRef(isPasswordRecoveryEntry());
 
   const authenticatedEntryRoute = getAuthenticatedEntryRoute({
     socialProvider: profile?.socialProvider ?? null,
@@ -49,6 +54,11 @@ export default function SplashScreen() {
   const isPhoneOnlySignupPending = isPhoneOnlySignupAuthUser(user);
 
   useEffect(() => {
+    if (isRecoveryEntryRef.current) {
+      router.replace(AUTH_ENTRY_ROUTES.resetPassword);
+      return;
+    }
+
     if (startupPhase !== 'resolved') {
       return;
     }
