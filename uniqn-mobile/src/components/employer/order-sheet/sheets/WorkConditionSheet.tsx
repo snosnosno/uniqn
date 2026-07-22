@@ -87,7 +87,7 @@ export function WorkConditionSheet({
             embedded
             title="출근 시간"
             value={toTimeValue(startTime)}
-            minuteInterval={5}
+            minuteInterval={15}
             onConfirm={(t) => {
               setStartTime(toStartTime(t));
               setPickerOpen(false);
