@@ -33,6 +33,7 @@ export {
   resetPassword,
   completePasswordReset,
   hasRecoverySession,
+  adoptRecoverySessionFromUrl,
   getUserProfile,
   reauthenticate,
   getCurrentUserAsync,
