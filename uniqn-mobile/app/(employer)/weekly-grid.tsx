@@ -26,14 +26,7 @@ import {
 import { ko } from 'date-fns/locale/ko';
 import { StackHeader } from '@/components/headers';
 import { Loading, EmptyState, ErrorState } from '@/components/ui';
-import { Button } from '@/components/ui/Button';
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  MapPinIcon,
-  CopyIcon,
-  BellIcon,
-} from '@/components/icons';
+import { ChevronLeftIcon, ChevronRightIcon, MapPinIcon } from '@/components/icons';
 import { CalendarGrid } from '@/components/jobs/DateCalendar/CalendarGrid';
 import {
   VenueSelector,
@@ -43,16 +36,9 @@ import {
 } from '@/components/weeklyGrid';
 import { useWeeklyGridEnabled } from '@/hooks';
 import { useActiveWorkspace, useEnsureDefaultWorkspace } from '@/hooks/workspace';
-import {
-  useGridSummary,
-  useVenueContainers,
-  useCopyLastWeek,
-  useNotifyWeeklyBatchConfirm,
-  useEnsureDefaultVenue,
-} from '@/hooks/weeklyGrid';
-import { computeDayCell, getWeekRange, type GridDayCell } from '@/domains/weeklyGrid';
+import { useGridSummary, useVenueContainers, useEnsureDefaultVenue } from '@/hooks/weeklyGrid';
+import { computeDayCell, type GridDayCell } from '@/domains/weeklyGrid';
 import { toDateString } from '@/utils/date';
-import { useToastStore } from '@/stores/toastStore';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 
 const EMPTY_COUNTS: Record<string, number> = {};
@@ -139,18 +125,6 @@ export default function WeeklyGridScreen() {
   const handleNextMonth = useCallback(() => setVisibleMonth((m) => addMonths(m, 1)), []);
   const handleDateSelect = useCallback((date: Date) => setSelectedDate(date), []);
 
-  // ── P5: 주간 배치 액션(지난주 복사 / 이번 주 배치 확인 알림) ──────────────────
-  // 화면 전체가 weekly_grid_enabled 플래그 뒤(OFF면 Redirect)이므로 버튼도 플래그 OFF 시 미노출.
-  const toastSuccess = useToastStore((s) => s.success);
-  const toastError = useToastStore((s) => s.error);
-  const toastInfo = useToastStore((s) => s.info);
-
-  const copyLastWeek = useCopyLastWeek();
-  const notifyConfirm = useNotifyWeeklyBatchConfirm();
-
-  // 선택일이 속한 주(월~일) — 복사/알림/화면 표기가 공유하는 SSOT(P0-4).
-  const weekRange = useMemo(() => getWeekRange(selectedDate), [selectedDate]);
-
   // 당겨서 새로고침 — 단일 ScrollView 전환(P1-3)으로 리스트 RefreshControl 이 사라진 것을 화면
   // 레벨에서 복원. 타 운영자의 배치 변경(비-realtime)을 수동 갱신하는 유일한 경로.
   const queryClient = useQueryClient();
@@ -163,45 +137,6 @@ export default function WeeklyGridScreen() {
       setIsManualRefreshing(false);
     }
   }, [queryClient]);
-
-  const handleCopyLastWeek = useCallback(() => {
-    if (!selectedVenueId) return;
-    const targetWeekStart = toDateString(weekRange.start);
-    copyLastWeek.mutate(
-      { venueId: selectedVenueId, targetWeekStart },
-      {
-        onSuccess: (result) =>
-          toastSuccess(
-            result.staffGroups > 0
-              ? `지난주 배치 ${result.staffGroups}건을 이번 주로 복사했어요.`
-              : '복사할 지난주 배치가 없어요.'
-          ),
-        onError: () => toastError('지난주 배치 복사에 실패했어요.'),
-      }
-    );
-  }, [selectedVenueId, weekRange.start, copyLastWeek, toastSuccess, toastError]);
-
-  const handleNotifyConfirm = useCallback(() => {
-    if (!selectedVenueId || !activeWorkspace?.id) return;
-    notifyConfirm.mutate(
-      { workspaceId: activeWorkspace.id, venueId: selectedVenueId, weekLabel: weekRange.label },
-      {
-        onSuccess: (result) =>
-          result.sent
-            ? toastSuccess('이번 주 출근 확인 요청을 보냈어요.')
-            : toastInfo('알림 받을 운영자를 찾지 못했어요.'),
-        onError: () => toastError('출근 확인 요청 발송에 실패했어요.'),
-      }
-    );
-  }, [
-    selectedVenueId,
-    activeWorkspace?.id,
-    weekRange.label,
-    notifyConfirm,
-    toastSuccess,
-    toastInfo,
-    toastError,
-  ]);
 
   // 플래그 로딩 중 — 전체 화면 로딩.
   if (flagLoading) {
@@ -312,43 +247,6 @@ export default function WeeklyGridScreen() {
             >
               <ChevronRightIcon size={22} color={SECONDARY_PALETTE[500]} />
             </Pressable>
-          </View>
-
-          {/* P5: 주간 배치 액션 — 지난주 복사 / 이번 주 배치 확인 알림(플래그 뒤라 OFF면 미노출) */}
-          <View className="border-b border-divider px-4 py-2">
-            {/* P0-4: 두 액션이 어느 주를 대상으로 하는지 상시 표기(weekRange SSOT) */}
-            <Text
-              className="mb-1 text-xs text-content-secondary font-sans"
-              accessibilityLabel={`주간 액션 대상 주 ${weekRange.rangeLabel}`}
-            >
-              대상 주 · {weekRange.rangeLabel}
-            </Text>
-            <View className="flex-row gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onPress={handleCopyLastWeek}
-                loading={copyLastWeek.isPending}
-                disabled={copyLastWeek.isPending || notifyConfirm.isPending}
-                icon={<CopyIcon size={16} color={SECONDARY_PALETTE[500]} />}
-                className="flex-1"
-                accessibilityLabel="지난주 배치를 이번 주로 복사"
-              >
-                지난주 복사
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onPress={handleNotifyConfirm}
-                loading={notifyConfirm.isPending}
-                disabled={copyLastWeek.isPending || notifyConfirm.isPending}
-                icon={<BellIcon size={16} color={SECONDARY_PALETTE[500]} />}
-                className="flex-1"
-                accessibilityLabel="이번 주 출근 확인 요청 보내기"
-              >
-                출근 확인 요청
-              </Button>
-            </View>
           </View>
 
           {/* 월 그리드 — U1/U2/U3 는 CalendarCell 그리드 모드가 처리(gridCells) */}

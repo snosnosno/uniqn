@@ -359,7 +359,7 @@ function EmployerView() {
             className="mt-2"
             accessibilityLabel="근무표 열기"
           >
-            <Text className="ml-2 font-sans-semibold text-content-primary">이번 주 근무표</Text>
+            <Text className="ml-2 font-sans-semibold text-content-primary">근무표</Text>
           </Button>
         ) : null}
       </View>
