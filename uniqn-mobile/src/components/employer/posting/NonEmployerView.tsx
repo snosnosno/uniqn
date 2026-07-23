@@ -20,7 +20,7 @@ interface ViewContent {
   title: string;
   message: string;
   ctaLabel: string;
-  ctaRoute: string;
+  ctaRoute: '/(app)/employer-register' | '/(app)/employer-application-status';
 }
 
 const DEFAULT_CONTENT: ViewContent = {
@@ -30,7 +30,7 @@ const DEFAULT_CONTENT: ViewContent = {
   ctaRoute: '/(app)/employer-register',
 };
 
-const CONTENT_BY_STATUS: Record<string, ViewContent> = {
+const CONTENT_BY_STATUS: Partial<Record<'pending' | 'rejected', ViewContent>> = {
   pending: {
     title: '구인자 신청 심사 중입니다',
     message: '관리자 검토 후 알림으로 결과를 알려드려요.\n심사 현황을 확인할 수 있습니다.',
@@ -47,7 +47,12 @@ const CONTENT_BY_STATUS: Record<string, ViewContent> = {
 
 export function NonEmployerView() {
   const { data: application } = useEmployerApplication();
-  const content = (application && CONTENT_BY_STATUS[application.status]) || DEFAULT_CONTENT;
+  const content =
+    (application &&
+      (application.status === 'pending' || application.status === 'rejected'
+        ? CONTENT_BY_STATUS[application.status]
+        : undefined)) ||
+    DEFAULT_CONTENT;
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
@@ -64,7 +69,7 @@ export function NonEmployerView() {
         </Text>
         <Button
           variant="primary"
-          onPress={() => router.push(content.ctaRoute as Parameters<typeof router.push>[0])}
+          onPress={() => router.push(content.ctaRoute)}
           className="min-w-[200px]"
         >
           <Text className="font-sans-semibold text-content-onGold">{content.ctaLabel}</Text>

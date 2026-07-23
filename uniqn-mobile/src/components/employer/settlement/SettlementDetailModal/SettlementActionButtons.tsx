@@ -1,7 +1,7 @@
 /**
  * UNIQN Mobile - 정산 액션 버튼 컴포넌트
  *
- * @description 시간 수정, 금액 수정, 정산하기 버튼
+ * @description 시간 수정, 금액 수정, 지급 완료 표시 버튼
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';

@@ -152,7 +152,7 @@ export const SettlementCard = React.memo(function SettlementCard({
           </View>
         )}
 
-        {/* 하단: 상세보기 + 정산하기 버튼 */}
+        {/* 하단: 상세보기 + 지급 완료 표시 버튼 */}
         <View className="flex-row mt-3 pt-3 border-t border-secondary-100 dark:border-surface-overlay gap-2">
           {/* 상세보기 */}
           <Pressable

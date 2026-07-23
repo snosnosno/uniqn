@@ -38,7 +38,10 @@ export function TodayOpsStrip({
   const a11yParts = [
     `오늘 확정 ${total}명 중 ${attended}명 출근`,
     noShow > 0 ? `노쇼 ${noShow}명` : null,
-    pendingSettlementCount > 0 ? `정산 대기 ${pendingSettlementCount}건` : null,
+    // 배지가 버튼일 땐 버튼 자체 라벨이 낭독하므로 요약에서 제외 (TalkBack 이중 낭독 방지)
+    pendingSettlementCount > 0 && !onPressSettlement
+      ? `정산 대기 ${pendingSettlementCount}건`
+      : null,
   ].filter(Boolean);
 
   return (

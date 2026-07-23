@@ -471,6 +471,8 @@ export default function ScheduleScreen() {
   // - applicationId: 해당 스케줄 상세 모달 자동 오픈
   // - cancelApplicationId: 취소 요청 바텀시트 자동 오픈 (cancel.tsx 호환성)
   const [didHandleSearchParam, setDidHandleSearchParam] = useState(false);
+  // missing 판정 전 refresh 1회 재검증 — stale 부트스트랩 캐시로 인한 오탐 토스트 방지 (QW2 리뷰 반영)
+  const didRetryDeepLinkRef = useRef(false);
   useEffect(() => {
     if (didHandleSearchParam) return;
 
@@ -486,12 +488,23 @@ export default function ScheduleScreen() {
     }
 
     if (targetApplicationId) {
-      const landing = resolveApplicationDeepLink(schedules, targetApplicationId, isLoading, error);
+      const landing = resolveApplicationDeepLink(
+        schedules,
+        targetApplicationId,
+        isLoading || isRefreshing,
+        error
+      );
       if (landing.kind === 'open') {
         setDidHandleSearchParam(true);
         setSelectedSchedule(landing.schedule);
         setIsDetailSheetVisible(true);
       } else if (landing.kind === 'missing') {
+        if (!didRetryDeepLinkRef.current) {
+          // 캐시가 stale일 수 있으니 fresh 데이터로 1회 재판정 (확정 알림 착지 오탐 방지)
+          didRetryDeepLinkRef.current = true;
+          void refresh();
+          return;
+        }
         // 거절/취소된 지원은 스케줄 쿼리에서 제외 → 무반응 착지 대신 안내 (QW2, 근본 해소는 M1)
         setDidHandleSearchParam(true);
         addToast({
@@ -506,8 +519,10 @@ export default function ScheduleScreen() {
     handleRequestCancellation,
     schedules,
     isLoading,
+    isRefreshing,
     error,
     addToast,
+    refresh,
     searchParams.applicationId,
     searchParams.cancelApplicationId,
   ]);
