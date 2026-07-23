@@ -281,6 +281,12 @@ export function OrderSheetScreen({
       chainArmedRef.current = !state.optional && state.unset;
       const groups = current.scheduleGroups ?? [];
       if (key === 'dates') {
+        // 딤 해제: 날짜 시트만 SheetModal 이 아니라 DatePickerModal(ui/Modal) 래핑이라
+        // SheetChainContext 를 소비하지 않는다 → 시트가 떠도 onEntered() 통지가 없어
+        // handleChainEntered 가 영영 안 불린다. 여기서 걷지 않으면 확인이든 취소든
+        // 딤이 화면 전체에 영구 잔존한다(다른 행을 탭해야 우연히 회복).
+        // 설계 스펙의 절충("날짜 시트는 연출 미적용 — 기존 연출 그대로")과 정합.
+        setChainSwapping(false);
         setActiveSheet({ key: 'dates', groupIndex, mode: groups.length > 1 ? 'edit' : 'whole' });
         return;
       }
@@ -357,6 +363,11 @@ export function OrderSheetScreen({
   const closeSheet = useCallback(() => {
     chainArmedRef.current = false;
     setActiveSheet(null);
+    // 딤 안전망 — 예약이 없을 때만 걷는다.
+    // ⚠️ 무조건 걷으면 안 된다: 확인 경로의 호출 순서는 onConfirm(→ confirmRow 가 딤을 켬)
+    //    직후 onClose(=이 함수)라, 무조건 끄면 방금 켠 딤이 즉시 꺼져 전환 번쩍임이 복귀한다.
+    //    예약(pendingSwapRef) 존재 여부가 "연쇄 전환 중"과 "그냥 닫힘"을 가르는 유일한 신호다.
+    if (pendingSwapRef.current === null) setChainSwapping(false);
   }, []);
 
   /** 그룹 삭제(즉시) + Undo 토스트 5초 — impeccable §12, 리뷰 Design-M2.

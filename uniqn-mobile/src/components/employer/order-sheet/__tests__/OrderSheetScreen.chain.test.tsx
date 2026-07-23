@@ -311,4 +311,65 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
 
     expect(queryByTestId('order-sheet-chain-scrim')).toBeNull();
   });
+
+  // 날짜 시트(ScheduleDatesSheet)만 SheetModal 이 아니라 DatePickerModal(ui/Modal) 래핑이라
+  // SheetChainContext.onEntered() 를 부를 주체가 없다 → 딤을 걷는 책임이 openRow 로 넘어온다.
+  it('날짜 시트로 연쇄되면 딤이 걷힌다 (DatePickerModal 은 onEntered 통지가 없다)', async () => {
+    const { getByTestId, getByText, queryByTestId } = render(
+      <OrderSheetScreen {...baseProps} initialValues={secondGroupDatesMissing()} />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
+    fireEvent.press(getByText('확인'));
+
+    // 예약이 실제로 걸렸는지 먼저 고정 — 없으면 아래 "딤 없음" 단언이 공허하게 통과한다
+    expect(getByTestId('order-sheet-chain-scrim')).toBeTruthy();
+
+    await advanceSwap();
+
+    // 연쇄 목적지가 그룹1 날짜 시트(DatePickerModal)임을 고정
+    expect(getByTestId('job-posting-date-confirm-button')).toBeTruthy();
+    expect(queryByTestId('order-sheet-chain-scrim')).toBeNull();
+  });
+
+  it('날짜 시트를 취소로 닫아도 딤이 남지 않는다', async () => {
+    const { getByTestId, getByText, queryByTestId } = render(
+      <OrderSheetScreen {...baseProps} initialValues={secondGroupDatesMissing()} />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
+    fireEvent.press(getByText('확인'));
+
+    await advanceSwap();
+    fireEvent.press(getByTestId('job-posting-date-cancel-button'));
+
+    // 취소로 나가면 시트도 딤도 남지 않는다(딤만 남으면 화면 전체가 어두운 데드엔드)
+    expect(queryByTestId('job-posting-date-confirm-button')).toBeNull();
+    expect(queryByTestId('order-sheet-chain-scrim')).toBeNull();
+  });
+
+  // clearPendingSwap 의 딤 해제 가드.
+  // ⚠️ "다른 행 탭"(예: order-sheet-row-salary)으로는 이 가드를 검증할 수 없다 —
+  //    그 경로는 SheetModal 이 마운트되며 onEntered() 로 딤을 걷어 버려 변이해도 green 이다.
+  //    딤을 걷을 다른 주체가 없는 경로(일정 추가: openRow 를 거치지 않고 setActiveSheet 직행)로 검증한다.
+  it('대기 중 일정 추가로 예약이 취소되면 딤이 걷힌다', async () => {
+    const { getByTestId, getByText, queryByTestId } = render(
+      <OrderSheetScreen {...baseProps} initialValues={titleAndContactMissing()} />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
+    fireEvent.press(getByText('확인'));
+
+    expect(jest.getTimerCount()).toBe(1);
+    expect(getByTestId('order-sheet-chain-scrim')).toBeTruthy();
+
+    // 대기 창 안에서 "+ 일정 추가" — 예약을 취소하고 새 그룹 날짜 시트를 연다
+    fireEvent.press(getByTestId('order-sheet-add-schedule'));
+
+    expect(getByTestId('job-posting-date-confirm-button')).toBeTruthy();
+    expect(queryByTestId('order-sheet-chain-scrim')).toBeNull();
+  });
 });
