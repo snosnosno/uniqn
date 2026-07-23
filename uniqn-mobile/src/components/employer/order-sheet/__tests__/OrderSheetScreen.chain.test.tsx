@@ -713,4 +713,52 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
     expect(queryByTestId('job-posting-date-confirm-button')).toBeNull();
     expect(sheetTitleOf(queryByTestId)).toBeNull();
   });
+
+  // B1 — 딤이 StackHeader(호스트 형제 View)를 못 덮는 문제: onChainSwappingChange 를 받은
+  // 호스트가 SafeAreaView 레벨에서 전체 화면 스크림을 렌더한다. 이때 내부 딤은 렌더하지 않아야
+  // 한다(black/50 이중 적층 = 시트 백드롭보다 어두운 이음매).
+  it('onChainSwappingChange 를 받으면 스크림을 호스트에 위임한다 — 내부 딤 미렌더 + 켜짐/꺼짐 통지', async () => {
+    const onChainSwappingChange = jest.fn();
+    const { getByTestId, getByText, queryByTestId } = render(
+      <OrderSheetScreen
+        {...baseProps}
+        initialValues={titleAndContactMissing()}
+        onChainSwappingChange={onChainSwappingChange}
+      />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
+    fireEvent.press(getByText('확인'));
+
+    // 스왑 대기 중 — 예약이 실제로 걸렸음을 먼저 고정(공허 통과 차단)
+    expect(jest.getTimerCount()).toBe(1);
+    expect(onChainSwappingChange).toHaveBeenLastCalledWith(true);
+    expect(queryByTestId('order-sheet-chain-scrim')).toBeNull();
+
+    await advanceSwap();
+
+    // 다음 시트가 올라오면(onEntered) 꺼짐 통지 — 호스트 딤이 백드롭에 인수인계된다
+    expect(onChainSwappingChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it('스왑 대기 중 언마운트되면 호스트에 꺼짐을 통지한다 — 호스트 딤 고착 방지', async () => {
+    const onChainSwappingChange = jest.fn();
+    const { getByTestId, getByText, unmount } = render(
+      <OrderSheetScreen
+        {...baseProps}
+        initialValues={titleAndContactMissing()}
+        onChainSwappingChange={onChainSwappingChange}
+      />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
+    fireEvent.press(getByText('확인'));
+    expect(onChainSwappingChange).toHaveBeenLastCalledWith(true);
+
+    unmount();
+
+    expect(onChainSwappingChange).toHaveBeenLastCalledWith(false);
+  });
 });
