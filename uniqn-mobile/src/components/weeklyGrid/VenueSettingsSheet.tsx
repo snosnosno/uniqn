@@ -5,7 +5,7 @@
  * 행 편집/역할 추가 폼은 RoleSalaryField 재사용. 저장은 useSetVenueRoleSalary 단일 경로.
  * v1 범위: 단가표만(지점 이름 변경 등 기타 설정 제외 — 설계 §C 범위 컷).
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { SheetModal } from '@/components/ui/SheetModal';
 import { Input } from '@/components/ui/Input';
@@ -16,6 +16,7 @@ import { RoleChips } from '@/components/staffPicker';
 import { getRoleDisplayName } from '@/types/unified';
 import { useSetVenueRoleSalary } from '@/hooks/weeklyGrid';
 import { useToastStore } from '@/stores/toastStore';
+import { confirmAction } from '@/utils/confirmAction';
 import type { VenueContainer } from '@/domains/weeklyGrid';
 import type { PostingRoleCatalogEntry } from '@/types';
 import { RoleSalaryField, defaultVenueSalaryDraft, type VenueSalaryDraft } from './RoleSalaryField';
@@ -49,6 +50,22 @@ export function VenueSettingsSheet({ visible, onClose, container }: VenueSetting
   const [addCustomRole, setAddCustomRole] = useState('');
   const [addDraft, setAddDraft] = useState<VenueSalaryDraft | null>(null);
 
+  const resetAddForm = useCallback(() => {
+    setAdding(false);
+    setAddRole('');
+    setAddCustomRole('');
+    setAddDraft(null);
+  }, []);
+
+  // 시트는 weekly-grid 에서 상시 마운트(visible 토글)이므로, 닫기·지점(container) 변경 시
+  // 폼 상태를 전량 리셋한다. 잔존 editDraft/addDraft 가 다른 지점 재오픈 시 프리필돼
+  // 엉뚱한 지점에 저장되는 stale 오기록을 차단한다.
+  useEffect(() => {
+    setEditingKey(null);
+    setEditDraft(null);
+    resetAddForm();
+  }, [visible, container?.id, resetAddForm]);
+
   const save = useCallback(
     async (role: string, customRole: string | undefined, salary: VenueSalaryDraft | null) => {
       if (!container) return;
@@ -59,15 +76,26 @@ export function VenueSettingsSheet({ visible, onClose, container }: VenueSetting
           message: salary ? '단가를 저장했어요' : '단가를 삭제했어요 — 다음 배치 때 다시 물어봐요',
         });
         setEditingKey(null);
-        setAdding(false);
-        setAddRole('');
-        setAddCustomRole('');
-        setAddDraft(null);
+        resetAddForm();
       } catch {
         addToast({ type: 'error', message: '단가 저장에 실패했어요. 잠시 후 다시 시도해주세요.' });
       }
     },
-    [container, mutation, addToast]
+    [container, mutation, addToast, resetAddForm]
+  );
+
+  // 삭제는 되돌리기 어려운 파괴적 동작 — 확인 후에만 실행(다음 배치 때 JIT 가 다시 물어봄).
+  const confirmDelete = useCallback(
+    (e: PostingRoleCatalogEntry) => {
+      confirmAction({
+        title: '단가 삭제',
+        message: `${entryLabel(e)} 단가를 삭제할까요? 다음 배치 때 다시 물어봐요.`,
+        confirmText: '삭제',
+        destructive: true,
+        onConfirm: () => save(e.role, e.customRole, null),
+      });
+    },
+    [save]
   );
 
   const addRoleReady = !!addRole && (addRole !== 'other' || addCustomRole.trim().length > 0);
@@ -125,11 +153,13 @@ export function VenueSettingsSheet({ visible, onClose, container }: VenueSetting
                       </Text>
                     </Pressable>
                     <Pressable
-                      onPress={() => save(e.role, e.customRole, null)}
+                      onPress={() => confirmDelete(e)}
+                      disabled={mutation.isPending}
                       accessibilityRole="button"
                       accessibilityLabel={`${entryLabel(e)} 단가 삭제`}
+                      accessibilityState={{ disabled: mutation.isPending }}
                       hitSlop={10}
-                      className="h-11 w-11 items-center justify-center"
+                      className="h-11 w-11 items-center justify-center disabled:opacity-40"
                     >
                       <TrashIcon size={18} color={SECONDARY_PALETTE[400]} />
                     </Pressable>
@@ -197,6 +227,14 @@ export function VenueSettingsSheet({ visible, onClose, container }: VenueSetting
               fullWidth
             >
               단가 추가
+            </Button>
+            <Button
+              variant="ghost"
+              onPress={resetAddForm}
+              accessibilityLabel="역할 추가 취소"
+              fullWidth
+            >
+              취소
             </Button>
           </View>
         ) : (
