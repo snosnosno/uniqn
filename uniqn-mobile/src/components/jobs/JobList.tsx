@@ -22,6 +22,9 @@ interface JobListProps {
   filledCounts?: Map<string, number>;
   /** jobPostingId → 내 활성 지원 상태. 카드 "지원완료/확정" 칩 표시용 (O(1) lookup) */
   applicationStatuses?: Map<string, ApplicationStatusType>;
+  /** 빈 상태 액션 버튼 (예: "필터 초기화"). label과 handler 둘 다 있어야 노출 */
+  emptyActionLabel?: string;
+  onEmptyAction?: () => void;
   /**
    * 리스트 하단 여백. 탭바가 있는 화면은 useTabBarBottomPadding() 값을 넘겨야
    * 마지막 카드가 탭바에 가려지지 않는다. 미지정 시 기본 16px 패딩만 적용.
@@ -42,6 +45,8 @@ export function JobList({
   error,
   filledCounts,
   applicationStatuses,
+  emptyActionLabel,
+  onEmptyAction,
   contentBottomPadding,
 }: JobListProps) {
   const renderItem = useCallback(
@@ -92,7 +97,14 @@ export function JobList({
 
   if (!isLoading && jobs.length === 0) {
     return (
-      <PostingSurfaceState mode="empty" scope="list" title="공고 없음" message={emptyMessage} />
+      <PostingSurfaceState
+        mode="empty"
+        scope="list"
+        title="공고 없음"
+        message={emptyMessage}
+        actionLabel={emptyActionLabel}
+        onAction={onEmptyAction}
+      />
     );
   }
 

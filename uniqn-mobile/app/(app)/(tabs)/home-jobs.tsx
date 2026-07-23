@@ -337,9 +337,11 @@ export default function JobsScreen() {
           contentBottomPadding={bottomPadding}
           emptyMessage={
             hasActiveFilter
-              ? '조건에 맞는 공고가 없어요. 필터를 넓히거나 위 ‘초기화’로 전체 공고를 볼 수 있어요.'
+              ? '조건에 맞는 공고가 없어요. 필터를 넓히거나 초기화해서 전체 공고를 볼 수 있어요.'
               : undefined
           }
+          emptyActionLabel={hasActiveFilter ? '필터 초기화' : undefined}
+          onEmptyAction={hasActiveFilter ? clearAllFilters : undefined}
         />
       )}
 
