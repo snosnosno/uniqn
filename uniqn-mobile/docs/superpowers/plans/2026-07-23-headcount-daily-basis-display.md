@@ -423,6 +423,85 @@ git commit -m "feat(jobs): 일수를 날짜와 같은 행에 표기 — 라벨 �
 
 ---
 
+### Task 2c: 상세 일별 전개 행 정렬 — 시간·역할 한 행 (사용자 결정 2026-07-23)
+
+현행 상세는 시간 1행 + 역할 배지 1행 계단식이라 세로로 길다(스크린샷 실측). 시간과 역할 배지를 같은 행에서 시작시키고, 들여쓰기를 두 단(날짜 → 시간·역할)으로 고정한다. 레이아웃 전용 변경(로직·숫자 무변) — RED 유닛 테스트 대신 타입·기존 스위트 + 실기기/웹 시각 확인으로 검증한다.
+
+**Files:**
+
+- Modify: `src/components/jobs/shared/PostingScheduleContent.tsx` — detail 분기 3곳: ①비그룹 detail 슬롯(156-167행) ②`GroupedDaysBlock` 접힘 요약(197-208행) ③`GroupedDaysBlock` 펼침 일별(226-244행)
+
+**Interfaces:**
+
+- Consumes: 기존 `PostingTimeSlotDisplayModel`·`RoleBadge` 그대로. Produces: 렌더 구조만 변경(모델·prop 계약 무변).
+
+- [ ] **Step 1: 구현** — 세 렌더 지점을 동일 패턴으로 교체. 시간 열은 고정 최소폭으로 배지 시작점을 수직 정렬:
+
+①비그룹 detail 슬롯(현행 `<>` fragment의 time Text + `ml-4` 배지 행):
+
+```tsx
+<View className="flex-row items-start">
+  <Text className="min-w-[44px] pr-2 pt-1 text-sm font-sans-medium text-content-secondary">
+    {slot.timeLabel}
+  </Text>
+  <View className="flex-1 flex-row flex-wrap">
+    {slot.roles.map((role) => (
+      <RoleBadge key={role.key} role={role} showFilledCount={showFilledCount} />
+    ))}
+  </View>
+</View>
+```
+
+②`GroupedDaysBlock` 접힘 요약 — 슬롯 매핑 내부를 같은 행 패턴으로:
+
+```tsx
+<View key={slot.key} className="mt-1 flex-row items-start">
+  <Text className="min-w-[44px] pr-2 pt-1 text-sm font-sans-medium text-content-secondary">
+    {slot.timeLabel}
+  </Text>
+  <View className="flex-1 flex-row flex-wrap">
+    {slot.roles.map((role) => (
+      <RoleBadge key={role.key} role={role} showFilledCount={showFilledCount} />
+    ))}
+  </View>
+</View>
+```
+
+③`GroupedDaysBlock` 펼침 일별 — 날짜 라벨은 유지, 슬롯 매핑 내부를 같은 행 패턴으로:
+
+```tsx
+{
+  day.timeSlots.map((slot) => (
+    <View key={slot.key} className="ml-2 mt-1 flex-row items-start">
+      <Text className="min-w-[44px] pr-2 pt-1 text-sm font-sans-medium text-content-secondary">
+        {slot.timeLabel}
+      </Text>
+      <View className="flex-1 flex-row flex-wrap">
+        {slot.roles.map((role) => (
+          <RoleBadge key={role.key} role={role} showFilledCount={showFilledCount} />
+        ))}
+      </View>
+    </View>
+  ));
+}
+```
+
+(TBA 라벨 `미정 (설명)` 처럼 긴 시간 라벨은 `min-w`라 자체 줄바꿈으로 수용 — `w-` 고정폭 금지.)
+
+- [ ] **Step 2: 검증**
+
+Run: `npx tsc --noEmit && npx jest src/components/jobs`
+Expected: 타입 에러 0, 기존 스위트 PASS(렌더 구조 단언 테스트가 있으면 새 구조로 갱신). 시각 확인은 출하 게이트의 실기기/웹 QA 항목에 "상세 일별 전개 행 정렬" 추가.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add src/components/jobs/shared/PostingScheduleContent.tsx
+git commit -m "feat(jobs): 상세 일별 전개를 시간·역할 한 행으로 정렬 — 계단식 제거"
+```
+
+---
+
 ### Task 3: 지원화면 확정 집계 주입 — (0/N) 고정 해소 + 마감·대기 지원
 
 핵심 결함: `AssignmentSelector`는 `useJobSchedule`(dead counter, `filledCount` 항상 0)만 읽어 마감이 절대 표시되지 않는다. 확정 서브맵을 주입하고, 그룹 표시는 날짜별 max로 승격한다. 동시에 `RoleCheckbox`의 "마감=비활성"을 "마감 표시 + 선택 가능(대기 지원)"으로 바꾼다(스펙 §2.4·§5-5).
