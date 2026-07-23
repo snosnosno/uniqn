@@ -401,6 +401,9 @@ export function OrderSheetScreen({
         action: {
           label: '되돌리기',
           onPress: () => {
+            // 복원은 그룹 인덱스를 되밀어 예약된 groupIndex 를 stale 로 만든다 —
+            // 삭제 본체와 같은 가드가 필요하다(대기 창과 토스트 5초가 겹칠 수 있다).
+            clearPendingSwap();
             const now = form.getValues().scheduleGroups ?? [];
             const insertAt = Math.min(groupIndex, now.length);
             form.setValue(
@@ -530,8 +533,11 @@ export function OrderSheetScreen({
     [form, clearPendingSwap]
   );
   const handleSavePreset = useCallback(() => {
+    // 상위(create/edit)가 TemplateModal 을 연다 — 그 모달은 "주문서 시트가 닫힌 상태에서만 열린다"는
+    // 전제(#244 중첩 RN Modal 회피)로 설계됐다. 연쇄 예약이 살아 있으면 그 위로 시트가 겹쳐 뜬다.
+    clearPendingSwap();
     onSaveTemplate?.(form.getValues());
-  }, [onSaveTemplate, form]);
+  }, [onSaveTemplate, form, clearPendingSwap]);
 
   // dirty 상태 상위 동기화 — useUnsavedChangesGuard(create.tsx)가 주문서 경로에서도 작동하도록
   useEffect(() => {

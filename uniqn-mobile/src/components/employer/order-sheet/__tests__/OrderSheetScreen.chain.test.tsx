@@ -106,6 +106,32 @@ const secondGroupDatesMissing = (): OrderSheetFormValues => ({
   ],
 });
 
+/**
+ * 일정 그룹 3개 — 그룹0·1 완성, 그룹2 dates 미설정 + 제목 미설정.
+ * 그룹1을 삭제하면 미설정 그룹이 인덱스 1로 당겨지고, 되돌리기는 인덱스 1에 완성 그룹을 되꽂는다
+ * (예약된 groupIndex 1 이 다른 그룹을 가리키게 되는 stale 시나리오).
+ */
+const middleGroupCompleteLastMissing = (): OrderSheetFormValues => ({
+  ...onlyTitleMissing(),
+  scheduleGroups: [
+    {
+      dates: ['2026-07-24'],
+      timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] }],
+      grouped: false,
+    },
+    {
+      dates: ['2026-07-25'],
+      timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] }],
+      grouped: false,
+    },
+    {
+      dates: [],
+      timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] }],
+      grouped: false,
+    },
+  ],
+});
+
 /** 시간은 채워졌지만 역할·역할별 급여가 빈 폼 — 역할 확정의 급여 프리필 부수효과 검증용 */
 const rolesAndByRoleSalaryMissing = (): OrderSheetFormValues => ({
   ...initialOrderSheetValues(),
@@ -486,5 +512,65 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
 
     // 딤이 남으면 화면 전체가 어두운 데드엔드가 된다(pointerEvents none 이라 영구는 아니지만 오인 유발)
     expect(queryByTestId('order-sheet-chain-scrim')).toBeNull();
+  });
+
+  // 대기 창(180ms) 중 딤은 pointerEvents='none' — 화면 전체가 탭 가능하다.
+  // 아래 두 경로는 폼 구조/상위 모달을 바꾸므로 예약을 반드시 취소해야 한다.
+
+  it('대기 중 프리셋 저장을 누르면 예약이 취소된다 (상위 TemplateModal 과 중첩 RN Modal 충돌 차단)', async () => {
+    const onSaveTemplate = jest.fn();
+    const { getByTestId, getByText, queryByTestId } = render(
+      <OrderSheetScreen
+        {...baseProps}
+        initialValues={titleAndContactMissing()}
+        presets={[completePreset()]}
+        onSaveTemplate={onSaveTemplate}
+      />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
+    fireEvent.press(getByText('확인'));
+
+    // 예약이 실제로 걸렸는지 먼저 고정 — 없으면 아래 "안 열림" 단언이 공허하게 통과한다
+    expect(jest.getTimerCount()).toBe(1);
+
+    // 대기 창 안에서 "＋ 저장" — 부모(create.tsx/edit.tsx)가 TemplateModal 을 연다.
+    // 그 모달은 "주문서 시트가 닫힌 상태에서만 열린다"는 전제(#244 중첩 RN Modal 회피)로 설계돼 있다.
+    fireEvent.press(getByTestId('order-sheet-preset-save'));
+    expect(onSaveTemplate).toHaveBeenCalledTimes(1);
+
+    await advanceSwap();
+
+    // 예약이 살아 있으면 TemplateModal 위로 연쇄 시트가 겹쳐 뜬다
+    expect(sheetTitleOf(queryByTestId)).toBeNull();
+  });
+
+  it('그룹 삭제를 되돌리면 예약이 취소되어 오조준 시트가 열리지 않는다', async () => {
+    const { getByTestId, getByText, queryByTestId } = render(
+      <OrderSheetScreen {...baseProps} initialValues={middleGroupCompleteLastMissing()} />
+    );
+
+    // 1) 가운데 그룹(1) 삭제 — 되돌리기 토스트가 5초간 살아 있다. 미설정 그룹은 인덱스 1로 당겨진다.
+    fireEvent.press(getByTestId('order-sheet-group-delete-1'));
+    const undo = mockAddToast.mock.calls.at(-1)?.[0]?.action;
+    expect(undo?.label).toBe('되돌리기');
+
+    // 2) 삭제 뒤 새 연쇄 예약 — 타깃은 당겨진 그룹(groupIndex 1)의 날짜 행
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
+    fireEvent.press(getByText('확인'));
+    expect(jest.getTimerCount()).toBe(1);
+
+    // 3) 대기 창 안에서 되돌리기 — 그룹이 인덱스 1로 재삽입되어 예약된 groupIndex 가 stale 이 된다
+    act(() => {
+      undo?.onPress?.();
+    });
+
+    await advanceSwap();
+
+    // 예약이 살아 있으면 복원된 완성 그룹(1)의 날짜 시트가 열린다 — 사용자가 지목한 적 없는 그룹이다
+    expect(queryByTestId('job-posting-date-confirm-button')).toBeNull();
+    expect(sheetTitleOf(queryByTestId)).toBeNull();
   });
 });
