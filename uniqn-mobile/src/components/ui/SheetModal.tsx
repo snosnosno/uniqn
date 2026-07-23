@@ -80,13 +80,20 @@ function WebSheetModal({
   overlay,
 }: SheetModalProps) {
   const { isDarkMode } = useThemeStore();
-  // 연쇄 진입 통지 — 웹은 onShow 가 없어 표시 전환(rAF) 시점에 직접 호출한다.
+  // 연쇄 진입 — 네이티브와 같은 계약을 웹에서도 지킨다(마운트 시점 값 고정).
+  // 웹은 onShow 가 없어 표시 전환 시점에 onEntered 를 직접 호출한다.
   const chain = useSheetChain();
+  const isChainEntryRef = useRef(chain?.entering === true);
   const chainOnEnteredRef = useRef(chain?.onEntered);
   chainOnEnteredRef.current = chain?.onEntered;
   const { height: windowHeight } = useWindowDimensions();
   const [shouldRender, setShouldRender] = useState(visible);
-  const [isAnimating, setIsAnimating] = useState(false);
+  // 연쇄 진입은 첫 페인트부터 백드롭이 불투명하고 슬라이드가 없다 — 호출부가 같은 농도의
+  // 딤을 이미 깔아 두었으므로, 여기서 opacity 0 부터 시작하면 그 사이 밝은 화면이 드러난다.
+  // (CSS transition 은 마운트 후 "변화"에만 걸리므로 초기값 true = 전이 없이 즉시 표시)
+  const [isAnimating, setIsAnimating] = useState(visible && isChainEntryRef.current);
+  // 연쇄 진입 전용 콘텐츠 fade — 백드롭은 즉시 불투명하되 내용은 160ms 로 나타난다.
+  const [chainContentIn, setChainContentIn] = useState(false);
   const previouslyFocusedRef = useRef<Element | null>(null);
 
   useEffect(() => {
@@ -98,6 +105,18 @@ function WebSheetModal({
         }
       }
       setShouldRender(true);
+      if (isChainEntryRef.current) {
+        // 딤은 시트가 실제로 그려진 뒤에 걷어야 한다 — rAF 한 번은 "다음 페인트 직전"이라
+        // 아직 화면에 반영되기 전이다. 이중 rAF 로 한 프레임 그려진 것을 보장한다.
+        requestAnimationFrame(() => {
+          setChainContentIn(true);
+          requestAnimationFrame(() => chainOnEnteredRef.current?.());
+        });
+        if (typeof document !== 'undefined') {
+          document.body.style.overflow = 'hidden';
+        }
+        return undefined;
+      }
       requestAnimationFrame(() => {
         setIsAnimating(true);
         chainOnEnteredRef.current?.();
@@ -174,10 +193,15 @@ function WebSheetModal({
               {
                 maxHeight: fullHeight ? windowHeight : windowHeight * 0.95,
                 height: fullHeight ? windowHeight : undefined,
-                opacity: isAnimating ? 1 : 0,
-                transform: [{ translateY: isAnimating ? 0 : windowHeight }],
+                // 연쇄 진입은 제자리에서 내용만 갈린다 — 슬라이드 없이 fade 만(네이티브와 동일).
+                opacity: isChainEntryRef.current ? (chainContentIn ? 1 : 0) : isAnimating ? 1 : 0,
+                transform: [
+                  { translateY: isChainEntryRef.current || isAnimating ? 0 : windowHeight },
+                ],
                 // @ts-expect-error - 웹 전용 스타일
-                transition: 'opacity 200ms ease, transform 300ms ease-out',
+                transition: isChainEntryRef.current
+                  ? 'opacity 160ms ease-out'
+                  : 'opacity 200ms ease, transform 300ms ease-out',
                 pointerEvents: 'auto' as const,
               },
             ]}

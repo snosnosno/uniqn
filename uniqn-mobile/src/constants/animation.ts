@@ -24,3 +24,14 @@ export const SHEET_DISMISS_ANIMATION_MS = 300;
  * ⚠️ iOS 실기기 QA 대상 — 전환 중 터치가 먹지 않으면 300 으로 올릴 것.
  */
 export const SHEET_CHAIN_SWAP_MS = 180;
+
+/**
+ * 연쇄가 날짜 시트로 갈 때 딤을 유지하는 시간 (ms).
+ *
+ * 날짜 시트만 SheetModal 이 아니라 DatePickerModal(ui/Modal) 래핑이라 SheetChainContext 를
+ * 소비하지 않는다 → 백드롭을 즉시 불투명하게 못 박지 못하고 0→1 로 페이드인한다(Modal.tsx).
+ * 그 사이 딤을 걷으면 밝은 주문서 목록이 드러나므로, 백드롭이 다 올라올 때까지 딤을 유지한다.
+ *
+ * 값은 ui/Modal 의 백드롭 fade 길이(withTiming duration 200)와 맞춘 것 — 그쪽이 바뀌면 함께 조정.
+ */
+export const SHEET_CHAIN_DATES_SCRIM_HOLD_MS = 200;

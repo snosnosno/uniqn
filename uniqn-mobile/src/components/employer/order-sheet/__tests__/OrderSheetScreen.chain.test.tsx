@@ -13,7 +13,7 @@ import { render, fireEvent, act } from '@testing-library/react-native';
 import React from 'react';
 import { OrderSheetScreen } from '../OrderSheetScreen';
 import { initialOrderSheetValues } from '@/utils/order-sheet/mappers';
-import { SHEET_CHAIN_SWAP_MS } from '@/constants/animation';
+import { SHEET_CHAIN_DATES_SCRIM_HOLD_MS, SHEET_CHAIN_SWAP_MS } from '@/constants/animation';
 import type { OrderSheetPreset } from '../PresetCarousel';
 import type { OrderSheetFormValues } from '@/schemas/orderSheet.schema';
 
@@ -184,6 +184,13 @@ const lockedWithDatesMissing = (): OrderSheetFormValues => ({
 const advanceSwap = async () => {
   await act(async () => {
     jest.advanceTimersByTime(SHEET_CHAIN_SWAP_MS);
+    await Promise.resolve();
+  });
+};
+
+const advanceDatesScrimHold = async () => {
+  await act(async () => {
+    jest.advanceTimersByTime(SHEET_CHAIN_DATES_SCRIM_HOLD_MS);
     await Promise.resolve();
   });
 };
@@ -393,6 +400,13 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
 
     // 연쇄 목적지가 그룹1 날짜 시트(DatePickerModal)임을 고정
     expect(getByTestId('job-posting-date-confirm-button')).toBeTruthy();
+
+    // ui/Modal 백드롭은 0→1 로 페이드인한다(200ms). 딤을 즉시 걷으면 그 사이 밝은 목록이 보인다 —
+    // 백드롭이 다 올라온 뒤에 걷어야 이음매가 없다.
+    expect(getByTestId('order-sheet-chain-scrim')).toBeTruthy();
+
+    await advanceDatesScrimHold();
+
     expect(queryByTestId('order-sheet-chain-scrim')).toBeNull();
   });
 

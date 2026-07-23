@@ -42,7 +42,7 @@ import { PresetCarousel, type OrderSheetPreset } from './PresetCarousel';
 import { ScheduleDatesSheet, type ScheduleSplitMode } from './sheets/ScheduleDatesSheet';
 import { InformationCircleIcon, XMarkIcon } from '@/components/icons';
 import { SheetChainContext, type SheetChainValue } from '@/components/ui/SheetChainContext';
-import { SHEET_CHAIN_SWAP_MS } from '@/constants/animation';
+import { SHEET_CHAIN_DATES_SCRIM_HOLD_MS, SHEET_CHAIN_SWAP_MS } from '@/constants/animation';
 import { groupConsecutiveDates, hasGroupableDates } from '@/utils/date';
 import {
   defaultAmountForRole,
@@ -132,6 +132,8 @@ export function OrderSheetScreen({
   // pendingSwapRef: 지연 스왑 예약. 두 네이티브 Modal 겹침 회피용 대기(#244 패턴 승계).
   const chainArmedRef = useRef(false);
   const pendingSwapRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // datesScrimHoldRef: 날짜 시트 진입 후 백드롭이 다 올라올 때까지 딤을 잡아 두는 예약.
+  const datesScrimHoldRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // 전환 창 동안 화면을 어둡게 유지 — 시트가 사라진 순간 밝은 목록이 번쩍이는 것을 막는다.
   // 다음 시트의 백드롭과 같은 농도(black/50)라 인수인계에 이음매가 없다.
   const [chainSwapping, setChainSwapping] = useState(false);
@@ -139,6 +141,10 @@ export function OrderSheetScreen({
     if (pendingSwapRef.current !== null) {
       clearTimeout(pendingSwapRef.current);
       pendingSwapRef.current = null;
+    }
+    if (datesScrimHoldRef.current !== null) {
+      clearTimeout(datesScrimHoldRef.current);
+      datesScrimHoldRef.current = null;
     }
     setChainSwapping(false);
   }, []);
@@ -286,12 +292,18 @@ export function OrderSheetScreen({
       chainArmedRef.current = !state.optional && state.unset;
       const groups = current.scheduleGroups ?? [];
       if (key === 'dates') {
-        // 딤 해제: 날짜 시트만 SheetModal 이 아니라 DatePickerModal(ui/Modal) 래핑이라
-        // SheetChainContext 를 소비하지 않는다 → 시트가 떠도 onEntered() 통지가 없어
-        // handleChainEntered 가 영영 안 불린다. 여기서 걷지 않으면 확인이든 취소든
-        // 딤이 화면 전체에 영구 잔존한다(다른 행을 탭해야 우연히 회복).
-        // 설계 스펙의 절충("날짜 시트는 연출 미적용 — 기존 연출 그대로")과 정합.
-        setChainSwapping(false);
+        // 딤 해제 책임이 여기로 넘어온다: 날짜 시트만 SheetModal 이 아니라 DatePickerModal(ui/Modal)
+        // 래핑이라 SheetChainContext 를 소비하지 않는다 → 시트가 떠도 onEntered() 통지가 없어
+        // handleChainEntered 가 영영 안 불린다. 걷지 않으면 딤이 화면 전체에 영구 잔존한다.
+        //
+        // 단 즉시 걷으면 안 된다 — ui/Modal 백드롭은 0→1 페이드인이라(200ms) 그 사이 밝은
+        // 주문서 목록이 드러난다. 백드롭이 다 올라온 뒤에 걷어야 이음매가 없다.
+        // 취소·재탭 등으로 먼저 빠져나가는 경로는 clearPendingSwap 이 이 예약도 함께 정리한다.
+        if (datesScrimHoldRef.current !== null) clearTimeout(datesScrimHoldRef.current);
+        datesScrimHoldRef.current = setTimeout(() => {
+          datesScrimHoldRef.current = null;
+          setChainSwapping(false);
+        }, SHEET_CHAIN_DATES_SCRIM_HOLD_MS);
         setActiveSheet({ key: 'dates', groupIndex, mode: groups.length > 1 ? 'edit' : 'whole' });
         return;
       }
@@ -372,7 +384,14 @@ export function OrderSheetScreen({
     // ⚠️ 무조건 걷으면 안 된다: 확인 경로의 호출 순서는 onConfirm(→ confirmRow 가 딤을 켬)
     //    직후 onClose(=이 함수)라, 무조건 끄면 방금 켠 딤이 즉시 꺼져 전환 번쩍임이 복귀한다.
     //    예약(pendingSwapRef) 존재 여부가 "연쇄 전환 중"과 "그냥 닫힘"을 가르는 유일한 신호다.
-    if (pendingSwapRef.current === null) setChainSwapping(false);
+    if (pendingSwapRef.current === null) {
+      // 날짜 시트를 취소로 닫는 경로 — 백드롭이 사라지므로 딤 유지 예약도 함께 거둔다.
+      if (datesScrimHoldRef.current !== null) {
+        clearTimeout(datesScrimHoldRef.current);
+        datesScrimHoldRef.current = null;
+      }
+      setChainSwapping(false);
+    }
   }, []);
 
   /** 그룹 삭제(즉시) + Undo 토스트 5초 — impeccable §12, 리뷰 Design-M2.
