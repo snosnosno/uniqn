@@ -1,6 +1,7 @@
 /**
  * UNIQN Mobile - 애니메이션/타이밍 상수
  */
+import { Platform, type PlatformOSType } from 'react-native';
 
 /**
  * 네이티브 Modal(시트) dismiss 애니메이션 대기 시간 (ms).
@@ -21,9 +22,13 @@ export const SHEET_DISMISS_ANIMATION_MS = 300;
  * exit 애니메이션을 타지 않고 즉시 언마운트된다(visible 이 false 로 내려가지 않음).
  * 따라서 이 값은 시각 애니메이션 대기가 아니라 네이티브 dismiss 커밋 여유분이다.
  *
- * ⚠️ iOS 실기기 QA 대상 — 전환 중 터치가 먹지 않으면 300 으로 올릴 것.
+ * 플랫폼 분기(연출 B2): 웹은 네이티브 Modal 이 아니라 이 dismiss 커밋 제약이 없으므로 0(즉시).
+ * iOS·Android 는 네이티브 Modal 을 쓰므로 180 유지.
+ * ⚠️ iOS 값(180)은 실기기 QA 대상 — 전환 중 터치가 먹지 않으면 300 으로 올릴 것(이번 범위 아님).
  */
-export const SHEET_CHAIN_SWAP_MS = 180;
+export const sheetChainSwapMs = (os: PlatformOSType): number => (os === 'web' ? 0 : 180);
+
+export const SHEET_CHAIN_SWAP_MS = sheetChainSwapMs(Platform.OS);
 
 /**
  * 연쇄가 날짜 시트로 갈 때 딤을 유지하는 시간 (ms).
