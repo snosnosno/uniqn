@@ -13,7 +13,9 @@ export const RoleCheckbox = memo(function RoleCheckbox({
 }: RoleCheckboxProps) {
   const roleLabel = getRoleDisplayName(role.roleId, role.customName);
   const isFilled = isRoleFilled(role);
-  const isDisabled = disabled || isFilled;
+  // 마감이어도 지원 접수는 허용(대기 성격, 스펙 §2.4) — isFilled 로 비활성화하지 않는다.
+  // 자동 승계 기능은 없으므로 "자동 배정" 류 문구 금지, 마감 배지만 표시.
+  const isDisabled = disabled ?? false;
 
   return (
     <Pressable
@@ -21,6 +23,9 @@ export const RoleCheckbox = memo(function RoleCheckbox({
       disabled={isDisabled}
       accessibilityRole="checkbox"
       accessibilityState={{ checked: isSelected, disabled: isDisabled }}
+      accessibilityLabel={`${roleLabel} ${role.filledCount}/${role.requiredCount}${
+        isFilled ? ', 마감, 대기 지원 가능' : ''
+      }`}
       className={`mb-1 mr-3 flex-row items-center ${isDisabled ? 'opacity-50' : 'active:opacity-80'}`}
     >
       <View
@@ -49,7 +54,7 @@ export const RoleCheckbox = memo(function RoleCheckbox({
 
       {isFilled && (
         <Badge variant="default" size="sm" className="ml-1">
-          마감
+          마감 · 대기 지원 가능
         </Badge>
       )}
     </Pressable>

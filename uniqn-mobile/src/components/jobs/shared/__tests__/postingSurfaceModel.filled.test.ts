@@ -84,13 +84,13 @@ describe('buildPostingScheduleModel 그룹 날짜별 전개 (좌석 기준)', ()
       isFilled: false,
     });
 
-    // 요약(접힘 표시용): count = 하루치3 × 2일 = 6, filled = 3+0
+    // 요약(접힘 표시용·하루 기준 C안): 분모 = 하루치 3(구 곱셈 3×2=6 폐기), 분자 = 일별 max(3,0)=3.
     expect(section.timeSlots[0].roles[0]).toMatchObject({
-      count: 6,
+      count: 3,
       filled: 3,
-      isFilled: false,
+      isFilled: true,
     });
-    expect(section.totalCount).toBe(6);
+    expect(section.totalCount).toBe(6); // 자리 총계(Σ일별 분모)는 불변
     expect(section.filledCount).toBe(3);
   });
 

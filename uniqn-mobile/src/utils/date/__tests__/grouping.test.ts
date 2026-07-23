@@ -273,10 +273,11 @@ describe('formatDateRangeWithCount', () => {
     expect(result).not.toContain('일)');
   });
 
-  it('2일 이상 범위에 일수를 포함한다', () => {
+  it('2일 이상 범위에 일수를 같은 행에 포함한다', () => {
     const result = formatDateRangeWithCount('2025-01-17', '2025-01-19');
-    expect(result).toContain('1/17(금) ~ 1/19(일)');
-    expect(result).toContain('(3일)');
+    // 일수 인라인 표기(사용자 결정 2026-07-23): 구 2행 "(3일)" → 단일 행 "· 3일"
+    expect(result).toBe('1/17(금) ~ 1/19(일) · 3일');
+    expect(result).not.toContain('\n');
   });
 });
 

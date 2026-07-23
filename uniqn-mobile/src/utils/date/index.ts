@@ -73,3 +73,6 @@ export {
   parseTimeSlot,
   parseTimeSlotToDate,
 } from './ranges';
+
+// Time slot display ordering
+export { sortTimeSlotsByStart } from './timeSlotOrder';

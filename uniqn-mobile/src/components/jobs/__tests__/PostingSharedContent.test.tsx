@@ -214,7 +214,7 @@ describe('Posting shared content', () => {
     expect(screen.getByText(/딜러 3명 \(0\/3\)/)).toBeTruthy();
   });
 
-  it('그룹 섹션 card 렌더는 요약 좌석합을 표시한다 (딜러 6명 (3/6))', () => {
+  it('그룹 섹션 card 렌더는 요약을 하루 기준으로 표시한다 (딜러 3명 (3/3))', () => {
     render(
       <PostingScheduleContent
         display="card"
@@ -223,6 +223,7 @@ describe('Posting shared content', () => {
         scheduleDisplay={groupedSeatScheduleDisplay}
       />
     );
-    expect(screen.getByText(/딜러 6명 \(3\/6\)/)).toBeTruthy();
+    // 하루 기준(C안): 요약 분모=하루 요구(3, 곱셈 폐기), 분자=일별 max(14일 3, 15일 0 → 3) — 곱셈·합산 계약 폐기(3cc834383)
+    expect(screen.getByText(/딜러 3명 \(3\/3\)/)).toBeTruthy();
   });
 });

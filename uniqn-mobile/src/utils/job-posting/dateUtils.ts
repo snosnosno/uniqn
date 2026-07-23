@@ -211,9 +211,9 @@ export function getClosingStatus(jobData: {
   totalPositions?: number;
   filledPositions?: number;
 }): { total: number; filled: number; isClosed: boolean } {
-  // schedule이 있으면 사람 단위(person basis)로 total/filled 계산.
-  // total: stats.ts의 calculateTotalPositionsFromSchedule과 의미 동등 (역할별 peak의 합).
-  // filled: RPC가 관리하는 job_postings.filled_positions 컬럼을 단일 진실원으로 사용.
+  // schedule이 있으면 자리(좌석) 기준으로 total/filled 계산.
+  // total: stats.ts의 calculateTotalPositionsFromSchedule과 의미 동등 — 자리 총합(날짜×슬롯×역할 요구의 합).
+  // filled: 트리거가 관리하는 job_postings.filled_positions 컬럼(자리 기준)을 단일 진실원으로 사용.
   if (jobData.schedule?.kind === 'fixed' || jobData.schedule?.kind === 'dated') {
     const total = calculateTotalPositionsFromSchedule(jobData.schedule);
     const filled = jobData.filledPositions ?? 0;

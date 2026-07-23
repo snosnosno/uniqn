@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { confirmAction } from '@/utils/confirmAction';
 import { buildPostingFacts } from '@/domains/job-posting';
+import { usePostingFilledCounts, extractPostingFilledSubmap } from '@/hooks/usePostingFilledCounts';
 import { findUnansweredRequired, initializePreQuestionAnswers } from '@/domains/application';
 import { THIRD_PARTY_CONSENT_VERSION_TAG } from '@/constants/legal';
 import { FIXED_DATE_MARKER, FIXED_TIME_MARKER, type Assignment } from '@/types/assignment';
@@ -103,6 +104,12 @@ export function ApplicationForm({
   onClose,
 }: ApplicationFormProps) {
   const postingFacts = useMemo(() => buildPostingFacts(job), [job]);
+  // 지원화면 확정 집계 주입 — 미배선 시 항상 (0/N)으로 마감이 보이지 않는 핵심 결함 해소
+  const { data: filledAll } = usePostingFilledCounts(job?.id ? [job.id] : []);
+  const applyFilledCounts = useMemo(
+    () => extractPostingFilledSubmap(filledAll, job?.id ?? ''),
+    [filledAll, job?.id]
+  );
   const [message, setMessage] = useState('');
   const [selectedAssignments, setSelectedAssignments] = useState<Assignment[]>([]);
   const [selectedFixedRoleId, setSelectedFixedRoleId] = useState<string | null>(null);
@@ -299,6 +306,7 @@ export function ApplicationForm({
               selectedAssignments={selectedAssignments}
               onSelectionChange={setSelectedAssignments}
               disabled={isSubmitting}
+              filledCounts={applyFilledCounts}
             />
           )}
         </View>

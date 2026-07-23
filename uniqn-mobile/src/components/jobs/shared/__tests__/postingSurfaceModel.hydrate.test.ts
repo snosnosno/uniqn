@@ -99,10 +99,10 @@ describe('buildPostingScheduleModel hydrate — fixed/grouped/dated 단일 소�
     expect(model.variant).toBe('dated');
     expect((model as any).usesGroupedRanges).toBe(true);
     const role = (model as any).sections[0].timeSlots[0].roles[0];
-    // 좌석 기준: 요약 count = 하루치3 × 3일 = 9 (일별 전개 후 범위합산 차원 정합)
-    expect(role.count).toBe(9);
-    expect(role.filled).toBe(2); // 06-01 + 06-02, 06-05 제외
-    expect((model as any).sections[0].filledCount).toBe(2);
+    // 하루 기준(C안): 요약 분모 = 하루치 3 (구 곱셈 3×3=9 폐기), 분자 = 일별 max(1,1,0)=1
+    expect(role.count).toBe(3);
+    expect(role.filled).toBe(1);
+    expect((model as any).sections[0].filledCount).toBe(2); // 자리 총계(Σ일별)는 불변
   });
 
   // --- dated 회귀: 정확한 날짜 키로 hydrate 유지 ---

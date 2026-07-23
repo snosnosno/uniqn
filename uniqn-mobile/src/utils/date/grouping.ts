@@ -164,7 +164,7 @@ export function getDayCount(startDate: string, endDate: string): number {
  *
  * @example
  * formatDateRangeWithCount('2025-01-17', '2025-01-19')
- * // => "1/17(금) ~ 1/19(일)\n    (3일)"
+ * // => "1/17(금) ~ 1/19(일) · 3일"
  */
 export function formatDateRangeWithCount(startDate: string, endDate: string): string {
   const rangeStr = formatDateRange(startDate, endDate);
@@ -174,7 +174,9 @@ export function formatDateRangeWithCount(startDate: string, endDate: string): st
     return rangeStr;
   }
 
-  return `${rangeStr}\n    (${dayCount}일)`;
+  // 일수는 날짜와 같은 행에 표기(사용자 결정 2026-07-23). 구 2행 형식("\n    (N일)")은
+  // 카드가 split('\n') 후 일수를 별도 행에 다시 그리는 이원화를 낳았다 — 단일 행이 단일 소스.
+  return `${rangeStr} · ${dayCount}일`;
 }
 
 // ============================================================================
