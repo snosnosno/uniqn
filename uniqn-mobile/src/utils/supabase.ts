@@ -28,6 +28,7 @@ import {
   AuthError as AppAuthError,
   ERROR_CODES,
   isAppError,
+  isNetworkErrorMessage,
 } from '@/errors';
 import type { ZodType } from 'zod';
 import type { PaginatedResult, UnsubscribeFn } from '@/types/common';
@@ -159,6 +160,16 @@ export function handleSupabaseError(error: unknown, context: SupabaseErrorContex
       throw new AppError({
         code: mapping.code,
         category: mapping.category as AppError['category'],
+        message: error.message,
+        originalError: new Error(error.message),
+        metadata,
+      });
+    }
+
+    // fetch 단절이 PostgrestError 형태(code='')로 전파되는 케이스 — E7000 오분류 방지
+    // (Sentry UNIQN-MOBILE-1M: "TypeError: Network request failed", supabaseCode='')
+    if (isNetworkErrorMessage(error.message)) {
+      throw new NetworkError(ERROR_CODES.NETWORK_REQUEST_FAILED, {
         message: error.message,
         originalError: new Error(error.message),
         metadata,

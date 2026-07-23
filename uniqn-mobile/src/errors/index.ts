@@ -89,6 +89,7 @@ export {
   isRecoverableError,
   requiresReauthentication,
   getErrorAction,
+  isNetworkErrorMessage,
 } from './errorUtils';
 
 // ============================================================================
