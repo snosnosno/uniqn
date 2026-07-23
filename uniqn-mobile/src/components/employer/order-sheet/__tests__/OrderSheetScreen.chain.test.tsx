@@ -1,0 +1,200 @@
+/**
+ * OrderSheetScreen — 미설정 항목 연쇄 입력 테스트
+ *
+ * (1) 미설정 행 확인 → 대기 후 다음 미설정 시트 자동 오픈,
+ * (2) 대조군: 이미 채워진 행 확인 → 연쇄 없음,
+ * (3) 마지막 미설정 항목 확인 → 시트 없음 + CTA '이대로 등록',
+ * (4) X 로 닫으면 연쇄 중단, (5) 대기 중 사용자 행 탭이 예약을 이긴다.
+ *
+ * ⚠️ 시트 식별은 제목 텍스트가 아니라 mock-sheet-title testID 로 한다 —
+ * 본화면 행 라벨('연락처'·'급여')과 시트 제목이 같은 문자열이라 getByText 가 중복 매치된다.
+ */
+import { render, fireEvent, act } from '@testing-library/react-native';
+import React from 'react';
+import { OrderSheetScreen } from '../OrderSheetScreen';
+import { initialOrderSheetValues } from '@/utils/order-sheet/mappers';
+import { SHEET_CHAIN_SWAP_MS } from '@/constants/animation';
+import type { OrderSheetFormValues } from '@/schemas/orderSheet.schema';
+
+const mockAddToast = jest.fn();
+jest.mock('@/stores/toastStore', () => ({
+  useToastStore: () => ({ addToast: mockAddToast }),
+}));
+
+// 실제 SheetModal 의 닫기 버튼은 텍스트가 아니라 아이콘(accessibilityLabel='닫기')이라
+// 모킹 시 사라진다 — 연쇄 중단(X) 경로를 누를 수 있도록 스텁에 닫기 Pressable 을 둔다.
+jest.mock('@/components/ui/SheetModal', () => {
+  const { View, Text, Pressable } = require('react-native');
+  return {
+    SheetModal: ({ visible, title, children, footer, overlay, onClose }: any) =>
+      visible ? (
+        <View testID="mock-sheet">
+          <Text testID="mock-sheet-title">{title}</Text>
+          <Pressable testID="mock-sheet-close" onPress={onClose} accessibilityRole="button" />
+          {children}
+          {footer}
+          {overlay}
+        </View>
+      ) : null,
+  };
+});
+jest.mock('@/components/ui/Modal', () => {
+  const { View } = require('react-native');
+  return {
+    Modal: ({ visible, children, footer }: any) =>
+      visible ? (
+        <View>
+          {children}
+          {footer}
+        </View>
+      ) : null,
+  };
+});
+jest.mock('@/components/ui/CalendarPicker', () => ({ CalendarPicker: () => null }));
+
+const baseProps = { onSubmit: jest.fn(), isSubmitting: false };
+
+/** 제목만 비어 있고 나머지 필수는 전부 채워진 폼 */
+const onlyTitleMissing = (): OrderSheetFormValues => ({
+  ...initialOrderSheetValues(),
+  title: '',
+  location: { name: '강남 홀덤펍', region: '서울' },
+  contactPhone: '010-1234-5678',
+  scheduleGroups: [
+    {
+      dates: ['2026-07-24'],
+      timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] }],
+      grouped: false,
+    },
+  ],
+  useSameSalary: true,
+  salary: { type: 'hourly', amount: 15000 },
+});
+
+/** 제목·연락처가 비어 있는 폼 — 연쇄 2스텝 검증용 */
+const titleAndContactMissing = (): OrderSheetFormValues => ({
+  ...onlyTitleMissing(),
+  contactPhone: '',
+});
+
+const advanceSwap = async () => {
+  await act(async () => {
+    jest.advanceTimersByTime(SHEET_CHAIN_SWAP_MS);
+    await Promise.resolve();
+  });
+};
+
+/** 지금 떠 있는 시트 제목 — 없으면 null */
+const sheetTitleOf = (queryByTestId: (id: string) => { props: { children: unknown } } | null) =>
+  (queryByTestId('mock-sheet-title')?.props.children as string | undefined) ?? null;
+
+describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    mockAddToast.mockClear();
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('미설정 제목을 확인하면 대기 후 다음 미설정 항목(연락처) 시트가 열린다', async () => {
+    const { getByTestId, getByText, queryByTestId } = render(
+      <OrderSheetScreen {...baseProps} initialValues={titleAndContactMissing()} />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
+    fireEvent.press(getByText('확인'));
+
+    // 대기 전에는 다음 시트가 아직 없다
+    expect(sheetTitleOf(queryByTestId)).toBeNull();
+
+    await advanceSwap();
+
+    expect(sheetTitleOf(queryByTestId)).toBe('연락처');
+  });
+
+  it('대조군 — 이미 채워진 행을 확인하면 연쇄가 일어나지 않는다', async () => {
+    const { getByTestId, getByText, queryByTestId } = render(
+      <OrderSheetScreen
+        {...baseProps}
+        initialValues={{ ...titleAndContactMissing(), title: '기존 제목' }}
+      />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title')); // 이미 채워진 행
+    fireEvent.press(getByText('확인'));
+
+    await advanceSwap();
+
+    expect(sheetTitleOf(queryByTestId)).toBeNull();
+  });
+
+  it('마지막 미설정 항목을 확인하면 시트가 닫히고 CTA 가 이대로 등록으로 바뀐다', async () => {
+    const { getByTestId, getByText, queryByTestId } = render(
+      <OrderSheetScreen {...baseProps} initialValues={onlyTitleMissing()} />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
+    fireEvent.press(getByText('확인'));
+
+    await advanceSwap();
+
+    expect(sheetTitleOf(queryByTestId)).toBeNull();
+    expect(getByText('이대로 등록')).toBeTruthy();
+  });
+
+  it('확인 없이 닫기로 나가면 연쇄가 일어나지 않는다', async () => {
+    const { getByTestId, queryByTestId } = render(
+      <OrderSheetScreen {...baseProps} initialValues={titleAndContactMissing()} />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.press(getByTestId('mock-sheet-close'));
+
+    await advanceSwap();
+
+    expect(sheetTitleOf(queryByTestId)).toBeNull();
+  });
+
+  it('대기 중 사용자가 다른 행을 탭하면 예약을 취소하고 그 행이 즉시 열린다', async () => {
+    const { getByTestId, getByText, queryByTestId } = render(
+      <OrderSheetScreen {...baseProps} initialValues={titleAndContactMissing()} />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
+    fireEvent.press(getByText('확인'));
+
+    // 대기 창 안에서 사용자가 급여 행을 직접 탭
+    fireEvent.press(getByTestId('order-sheet-row-salary'));
+    expect(sheetTitleOf(queryByTestId)).toBe('급여');
+
+    await advanceSwap();
+
+    // 예약됐던 연락처 시트가 급여 시트를 갈아치우지 않는다
+    expect(sheetTitleOf(queryByTestId)).toBe('급여');
+  });
+
+  it('대기 중 언마운트되어도 예약 타이머가 정리된다', () => {
+    const { getByTestId, getByText, unmount } = render(
+      <OrderSheetScreen {...baseProps} initialValues={titleAndContactMissing()} />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
+    fireEvent.press(getByText('확인'));
+
+    // ⚠️ 이 단언을 먼저 두는 이유: 예약이 실제로 걸렸음을 확인하지 않으면
+    // 아래 "0" 단언이 공허하게(연쇄 미구현 상태에서도) 통과한다.
+    // 또한 async act() 로 감싸면 RNTL 의 마이크로태스크 플러시가 타이머 1개를 남겨
+    // getTimerCount() 가 절대 0이 되지 않으므로(실측) 동기 경로로만 센다.
+    expect(jest.getTimerCount()).toBe(1);
+
+    unmount();
+
+    // 타이머가 남아 있으면 언마운트된 트리에 setState 하여 경고가 난다
+    expect(jest.getTimerCount()).toBe(0);
+  });
+});

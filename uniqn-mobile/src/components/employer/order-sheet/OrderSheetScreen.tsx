@@ -15,6 +15,7 @@ import {
   errorRowTargets,
   firstUnsetRow,
   getRowState,
+  nextUnsetRowAfter,
   orderGroupsFor,
   roleName,
   summarizeGroupDates,
@@ -40,6 +41,7 @@ import { PreQuestionsSheet } from './sheets/PreQuestionsSheet';
 import { PresetCarousel, type OrderSheetPreset } from './PresetCarousel';
 import { ScheduleDatesSheet, type ScheduleSplitMode } from './sheets/ScheduleDatesSheet';
 import { InformationCircleIcon, XMarkIcon } from '@/components/icons';
+import { SHEET_CHAIN_SWAP_MS } from '@/constants/animation';
 import { groupConsecutiveDates, hasGroupableDates } from '@/utils/date';
 import {
   defaultAmountForRole,
@@ -123,6 +125,19 @@ export function OrderSheetScreen({
   const [activeSheet, setActiveSheet] = useState<ActiveSheet>(null);
   // 급여 시트 confirm 이력 — '기본값' 배지(프리필 제안 상태) 해제 판정용 파생 상태(스키마 필드 아님)
   const [salaryConfirmed, setSalaryConfirmed] = useState(false);
+
+  // 연쇄 입력(미설정 항목 이어가기) 상태.
+  // chainArmedRef: 이 시트를 "미설정 행"으로 열었는가 — 이미 채워진 행 수정은 연쇄하지 않는다.
+  // pendingSwapRef: 지연 스왑 예약. 두 네이티브 Modal 겹침 회피용 대기(#244 패턴 승계).
+  const chainArmedRef = useRef(false);
+  const pendingSwapRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearPendingSwap = useCallback(() => {
+    if (pendingSwapRef.current !== null) {
+      clearTimeout(pendingSwapRef.current);
+      pendingSwapRef.current = null;
+    }
+  }, []);
+  useEffect(() => clearPendingSwap, [clearPendingSwap]);
 
   // 일정 타깃(객체) 좁히기 — rows/기타 시트 키(문자열)와 구분
   const scheduleTarget =
@@ -246,12 +261,20 @@ export function OrderSheetScreen({
     [scheduleLocked, LOCKED_ROW_KEYS, addToast]
   );
 
-  // 행 탭 라우팅(그룹 스코프) — dates는 단일 그룹=whole(세그먼트)·다그룹=edit(헤더 재편집),
-  // 시간·역할은 통합 시트 하나로 진입(설계 §6).
-  const handleRowPress = useCallback(
+  /**
+   * 행 → 시트 라우팅 + 연쇄 무장 판정. 사용자 탭과 연쇄 예약이 공유하는 단일 진입점.
+   * 무장 = 지금 여는 행이 "필수인데 비어 있음" — 이미 채워진 행 수정은 확인 시 목록으로 복귀한다.
+   *
+   * 행 탭 라우팅(그룹 스코프) — dates는 단일 그룹=whole(세그먼트)·다그룹=edit(헤더 재편집),
+   * 시간·역할은 통합 시트 하나로 진입(설계 §6).
+   */
+  const openRow = useCallback(
     (key: OrderRowKey, groupIndex = 0) => {
       if (guardScheduleLock(key)) return;
-      const groups = form.getValues().scheduleGroups ?? [];
+      const current = form.getValues();
+      const state = getRowState(current, key, groupIndex);
+      chainArmedRef.current = !state.optional && state.unset;
+      const groups = current.scheduleGroups ?? [];
       if (key === 'dates') {
         setActiveSheet({ key: 'dates', groupIndex, mode: groups.length > 1 ? 'edit' : 'whole' });
         return;
@@ -259,7 +282,7 @@ export function OrderSheetScreen({
       // 시간·역할은 통합 시트 하나로 진입한다(설계 §6). 고정(fixed)은 단일 fixedSchedule.roles
       // 편집이라 전용 시트로 분기하는 기존 동작을 유지한다(S2).
       if (key === 'time' || key === 'roles') {
-        if (form.getValues().postingType === 'fixed') {
+        if (current.postingType === 'fixed') {
           seedFixedScheduleIfMissing();
           setActiveSheet('fixedRoles');
           return;
@@ -279,6 +302,49 @@ export function OrderSheetScreen({
     },
     [form, seedFixedScheduleIfMissing, guardScheduleLock]
   );
+
+  /**
+   * 사용자가 직접 행을 탭한 경로. 연쇄 예약이 대기 중이면 취소한다 —
+   * 사용자의 명시적 선택이 자동 예약을 이긴다(#244 의 "무시" 가드와 반대 방향:
+   * 그쪽은 시트가 떠 있는 상태의 오탭 방지였고, 여기는 시트가 없는 대기 창이라
+   * 탭을 막으면 사용자가 180ms 동안 아무것도 못 누르는 죽은 구간이 된다).
+   */
+  const handleRowPress = useCallback(
+    (key: OrderRowKey, groupIndex = 0) => {
+      clearPendingSwap();
+      openRow(key, groupIndex);
+    },
+    [clearPendingSwap, openRow]
+  );
+
+  /**
+   * 시트 확인 후 다음 미설정 항목으로 이어간다.
+   * 무장되지 않았으면(이미 채워진 행 수정) 아무것도 하지 않고 목록으로 돌아간다.
+   *
+   * 시트가 onConfirm 직후 onClose 로 activeSheet 를 null 로 내리므로 여기서 닫지 않는다.
+   * ⚠️ 호출 순서: onConfirm(폼 반영 → confirmRow) → onClose(무장 해제). confirmRow 를
+   *    onClose 뒤로 옮기면 무장이 이미 꺼져 연쇄가 침묵으로 죽는다.
+   */
+  const confirmRow = useCallback(
+    (target: OrderRowTarget) => {
+      if (!chainArmedRef.current) return;
+      chainArmedRef.current = false;
+      // setValue 직후라 watch 값은 아직 옛것 — getValues 로 최신 폼을 읽는다
+      const next = nextUnsetRowAfter(form.getValues(), target);
+      if (next === null) return;
+      pendingSwapRef.current = setTimeout(() => {
+        pendingSwapRef.current = null;
+        openRow(next.key, next.groupIndex);
+      }, SHEET_CHAIN_SWAP_MS);
+    },
+    [form, openRow]
+  );
+
+  /** 시트 닫기 — X·백드롭으로 나가면 연쇄를 끊는다(확인 경로는 이미 confirmRow 가 소비 후 해제). */
+  const closeSheet = useCallback(() => {
+    chainArmedRef.current = false;
+    setActiveSheet(null);
+  }, []);
 
   /** 그룹 삭제(즉시) + Undo 토스트 5초 — impeccable §12, 리뷰 Design-M2.
    *  복원은 삭제 그룹 단건 재삽입(리뷰 L-6) — 5초 내 타 그룹 편집을 함께 되돌리지 않는다. */
@@ -323,9 +389,11 @@ export function OrderSheetScreen({
    *  confirm-시점-분할 단순성(E6 구조적 회피)을 유지하는 절충이다. */
   const handleAddSchedule = useCallback(() => {
     if (guardScheduleLock()) return;
+    clearPendingSwap();
     const groups = form.getValues().scheduleGroups ?? [];
+    chainArmedRef.current = true; // 새 그룹은 정의상 미설정 — 날짜 확정 후 시간·역할로 이어간다
     setActiveSheet({ key: 'dates', groupIndex: groups.length, mode: 'add' });
-  }, [form, guardScheduleLock]);
+  }, [form, guardScheduleLock, clearPendingSwap]);
 
   /** 날짜 시트 확정 — whole 모드는 세그먼트에 따라 그룹 분할/유지(분할은 confirm 시점에만 실행) */
   const handleDatesConfirm = useCallback(
@@ -722,8 +790,11 @@ export function OrderSheetScreen({
           visible
           value={values.title}
           recentTitles={recentTitles}
-          onConfirm={(v) => form.setValue('title', v, { shouldDirty: true, shouldValidate: true })}
-          onClose={() => setActiveSheet(null)}
+          onConfirm={(v) => {
+            form.setValue('title', v, { shouldDirty: true, shouldValidate: true });
+            confirmRow({ key: 'title', groupIndex: 0 });
+          }}
+          onClose={closeSheet}
         />
       )}
       {activeSheet === 'place' && (
@@ -731,10 +802,11 @@ export function OrderSheetScreen({
           visible
           value={values.location}
           recentLocations={recentLocations}
-          onConfirm={(v) =>
-            form.setValue('location', v, { shouldDirty: true, shouldValidate: true })
-          }
-          onClose={() => setActiveSheet(null)}
+          onConfirm={(v) => {
+            form.setValue('location', v, { shouldDirty: true, shouldValidate: true });
+            confirmRow({ key: 'place', groupIndex: 0 });
+          }}
+          onClose={closeSheet}
         />
       )}
       {activeSheet === 'contact' && (
@@ -742,20 +814,22 @@ export function OrderSheetScreen({
           visible
           value={values.contactPhone}
           myPhone={myPhone}
-          onConfirm={(v) =>
-            form.setValue('contactPhone', v, { shouldDirty: true, shouldValidate: true })
-          }
-          onClose={() => setActiveSheet(null)}
+          onConfirm={(v) => {
+            form.setValue('contactPhone', v, { shouldDirty: true, shouldValidate: true });
+            confirmRow({ key: 'contact', groupIndex: 0 });
+          }}
+          onClose={closeSheet}
         />
       )}
       {activeSheet === 'description' && (
         <DescriptionSheet
           visible
           value={values.description ?? ''}
-          onConfirm={(v) =>
-            form.setValue('description', v, { shouldDirty: true, shouldValidate: true })
-          }
-          onClose={() => setActiveSheet(null)}
+          onConfirm={(v) => {
+            form.setValue('description', v, { shouldDirty: true, shouldValidate: true });
+            confirmRow({ key: 'description', groupIndex: 0 });
+          }}
+          onClose={closeSheet}
         />
       )}
       {/* 고정(fixed) 근무조건 시트 — 주 출근일수·출근시간(협의). fixedSchedule.roles는 병합으로 보존하고,
@@ -783,8 +857,9 @@ export function OrderSheetScreen({
               },
               { shouldDirty: true, shouldValidate: true }
             );
+            confirmRow({ key: 'workConditions', groupIndex: 0 });
           }}
-          onClose={() => setActiveSheet(null)}
+          onClose={closeSheet}
         />
       )}
       {/* 고정(fixed) 역할 시트 — 평탄 fixedSchedule.roles 편집. 확정 시 by_role 급여 자동 프리필(dated 대칭, S2). */}
@@ -806,12 +881,14 @@ export function OrderSheetScreen({
               const prev = cur.roleSalaries ?? [];
               applySyncedRoleSalaries(prev, syncRoleSalariesForRoles(next, prev, cur.salary.type));
             }
+            confirmRow({ key: 'roles', groupIndex: 0 });
           }}
-          onClose={() => setActiveSheet(null)}
+          onClose={closeSheet}
         />
       )}
       {/* 일정·모집 시트 2종(그룹 스코프) — 날짜(달력+세그먼트)·시간역할 통합.
-          시트→시트 스왑이 없으므로 #244 지연 전환 인프라가 필요 없다. */}
+          행 탭 경로에는 시트→시트 스왑이 없다. 미설정 연쇄(confirmRow)만 SHEET_CHAIN_SWAP_MS
+          지연 후 다음 시트를 마운트한다(#244 겹침 회피 패턴 승계). */}
       {datesTarget && (
         <ScheduleDatesSheet
           visible
@@ -827,8 +904,9 @@ export function OrderSheetScreen({
           onConfirm={({ dates, segment }) => {
             handleDatesConfirm(datesTarget, dates, segment);
             setActiveSheet(null);
+            confirmRow({ key: 'dates', groupIndex: datesTarget.groupIndex });
           }}
-          onClose={() => setActiveSheet(null)}
+          onClose={closeSheet}
         />
       )}
       {slotsTarget && (
@@ -846,8 +924,9 @@ export function OrderSheetScreen({
             // 시간·역할이 한 번에 확정되므로 역할별 급여 동기화도 여기 1회로 수렴한다
             // (구 TimeSlotsSheet/RolesSheet 이중 호출 제거).
             applyRoleSalarySync(nextGroups);
+            confirmRow({ key: 'roles', groupIndex: slotsTarget.groupIndex });
           }}
-          onClose={() => setActiveSheet(null)}
+          onClose={closeSheet}
         />
       )}
       {/* 급여 시트 3종 — 급여(타입·역할별)·복지·세금. rows 진입은 즉시(스왑 없음). */}
@@ -870,28 +949,31 @@ export function OrderSheetScreen({
               shouldValidate: true,
             });
             setSalaryConfirmed(true); // '기본값' 배지 해제 — 사용자가 급여를 직접 확인함
+            confirmRow({ key: 'salary', groupIndex: 0 });
           }}
-          onClose={() => setActiveSheet(null)}
+          onClose={closeSheet}
         />
       )}
       {activeSheet === 'welfare' && (
         <WelfareSheet
           visible
           value={values.allowances ?? {}}
-          onConfirm={(next) =>
-            form.setValue('allowances', next, { shouldDirty: true, shouldValidate: true })
-          }
-          onClose={() => setActiveSheet(null)}
+          onConfirm={(next) => {
+            form.setValue('allowances', next, { shouldDirty: true, shouldValidate: true });
+            confirmRow({ key: 'welfare', groupIndex: 0 });
+          }}
+          onClose={closeSheet}
         />
       )}
       {activeSheet === 'tax' && (
         <TaxSheet
           visible
           value={values.taxSettings}
-          onConfirm={(next) =>
-            form.setValue('taxSettings', next, { shouldDirty: true, shouldValidate: true })
-          }
-          onClose={() => setActiveSheet(null)}
+          onConfirm={(next) => {
+            form.setValue('taxSettings', next, { shouldDirty: true, shouldValidate: true });
+            confirmRow({ key: 'tax', groupIndex: 0 });
+          }}
+          onClose={closeSheet}
         />
       )}
       {/* 조건 시트 — 복장·경력 프리셋. */}
@@ -899,10 +981,11 @@ export function OrderSheetScreen({
         <ConditionsSheet
           visible
           value={values.conditions ?? {}}
-          onConfirm={(next) =>
-            form.setValue('conditions', next, { shouldDirty: true, shouldValidate: true })
-          }
-          onClose={() => setActiveSheet(null)}
+          onConfirm={(next) => {
+            form.setValue('conditions', next, { shouldDirty: true, shouldValidate: true });
+            confirmRow({ key: 'conditions', groupIndex: 0 });
+          }}
+          onClose={closeSheet}
         />
       )}
       {/* 사전질문 시트 — QuestionCard 동형(인라인 라디오 유형·중첩 Modal 없음). */}
@@ -919,8 +1002,9 @@ export function OrderSheetScreen({
               shouldDirty: true,
               shouldValidate: true,
             });
+            confirmRow({ key: 'preQuestions', groupIndex: 0 });
           }}
-          onClose={() => setActiveSheet(null)}
+          onClose={closeSheet}
         />
       )}
     </View>
