@@ -17,6 +17,8 @@ import { SECONDARY_PALETTE } from '@/constants/colors';
 import { getRoleDisplayName } from '@/types/unified';
 import { useVenueSettlement, useSetVenueRoleSalary } from '@/hooks/weeklyGrid';
 import { useToastStore } from '@/stores/toastStore';
+import { logger } from '@/utils/logger';
+import { toError } from '@/errors';
 import {
   RoleSalaryField,
   defaultVenueSalaryDraft,
@@ -88,7 +90,9 @@ export default function VenueSettlementsScreen() {
     // 사용자에게 실패로 알리지 않는다(모순 토스트 방지).
     addToast({ type: 'success', message: '단가를 저장했어요. 정산을 다시 계산합니다.' });
     setFixTarget(null);
-    refetch().catch(() => {});
+    refetch().catch((error) => {
+      logger.warn('지점 정산 재조회 실패 — 단가 저장은 완료됨', { cause: toError(error).message });
+    });
   }, [venueId, fixTarget, fixDraft, mutation, addToast, refetch]);
 
   const renderItem = useCallback(
