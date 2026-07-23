@@ -187,7 +187,7 @@ const completePreset = (): OrderSheetPreset => ({
 
 /**
  * 확정 지원자 잠금(scheduleLocked)인데 그룹 날짜가 비어 있는 이례 상태 —
- * 제목 확인 → 잠긴 '날짜' 행이 연쇄 타깃이 되어 openRow 가 guardScheduleLock 로 차단된다.
+ * 잠긴 '날짜' 행이 미설정이지만 연쇄는 이를 건너뛰어야 한다(skipKeys).
  * (실사용에서도 발생 가능: 확정 후 서버/타 세션에서 날짜가 비워진 공고를 편집 진입)
  */
 const lockedWithDatesMissing = (): OrderSheetFormValues => ({
@@ -371,6 +371,26 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
     expect(sheetTitleOf(queryByTestId)).toBeNull();
   });
 
+  it('역할 0개 확정은 근원 차단 — 확인이 잠긴 급여 시트로 이송되는 데드엔드가 성립하지 않는다', async () => {
+    // 구 증상: 역할 0개로 확정 → roles 는 unset 인데 연쇄가 salary 를 다음 타깃으로 골라
+    // "열자마자 확인이 잠긴" 급여 시트(uniqueRoles 0 → confirmDisabled)에 사용자를 이송했다.
+    const { getByTestId, getByText, queryByTestId } = render(
+      <OrderSheetScreen {...baseProps} initialValues={rolesAndByRoleSalaryMissing()} />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-roles'));
+    expect(sheetTitleOf(queryByTestId)).toBe('시간 · 역할');
+
+    fireEvent.press(getByText('확인')); // 역할 0개 — 확인이 비활성이라 무시된다
+
+    expect(sheetTitleOf(queryByTestId)).toBe('시간 · 역할');
+    expect(jest.getTimerCount()).toBe(0); // 연쇄 예약 자체가 없다
+
+    await advanceSwap();
+    expect(sheetTitleOf(queryByTestId)).not.toBe('급여');
+    expect(sheetTitleOf(queryByTestId)).toBe('시간 · 역할');
+  });
+
   it('전환 대기 동안 딤이 깔리고, 다음 시트가 올라오면 걷힌다', async () => {
     const { getByTestId, getByText, queryByTestId } = render(
       <OrderSheetScreen {...baseProps} initialValues={titleAndContactMissing()} />
@@ -520,7 +540,31 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
     expect(sheetTitleOf(queryByTestId)).toBeNull();
   });
 
-  it('잠긴 행으로 연쇄가 차단되면 딤이 걷힌다', async () => {
+  it('잠긴 행(dates)이 미설정이어도 연쇄가 건너뛰어 수정 가능한 행(급여)으로 간다 — 경고 토스트 없음', async () => {
+    // 구 증상: 연쇄가 잠긴 dates 를 타깃으로 골라 guardScheduleLock 이 누른 적 없는 경고
+    // 토스트를 띄우며 연쇄가 죽었다 — 뒤쪽의 수정 가능한 미설정 행(급여)으로 넘어가야 한다.
+    const { getByTestId, getByText, queryByTestId } = render(
+      <OrderSheetScreen
+        {...baseProps}
+        initialValues={{ ...lockedWithDatesMissing(), salary: { type: 'hourly', amount: 0 } }}
+        scheduleLocked
+      />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
+    fireEvent.press(getByText('확인'));
+
+    await advanceSwap();
+
+    // 잠긴 dates(미설정)를 건너뛰고 급여 시트가 열린다 — 날짜 시트가 아니다
+    expect(queryByTestId('job-posting-date-confirm-button')).toBeNull();
+    expect(sheetTitleOf(queryByTestId)).toBe('급여');
+    // 잠금 경고 토스트는 사용자가 직접 잠긴 행을 탭했을 때만 떠야 한다
+    expect(mockAddToast).not.toHaveBeenCalled();
+  });
+
+  it('잠긴 행이 유일한 미설정이면 연쇄가 조용히 끝난다 — 토스트·딤·시트·예약 없음', async () => {
     const { getByTestId, getByText, queryByTestId } = render(
       <OrderSheetScreen {...baseProps} initialValues={lockedWithDatesMissing()} scheduleLocked />
     );
@@ -529,22 +573,15 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
     fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
     fireEvent.press(getByText('확인'));
 
-    // 예약·딤이 실제로 걸렸는지 먼저 고정
-    expect(getByTestId('order-sheet-chain-scrim')).toBeTruthy();
+    // 잠긴 dates 를 스킵하면 남은 미설정이 없다 — 예약 자체가 걸리지 않는다
+    expect(jest.getTimerCount()).toBe(0);
+    expect(queryByTestId('order-sheet-chain-scrim')).toBeNull();
 
     await advanceSwap();
 
-    // 잠금 분기가 실제로 탔음을 고정(공허 통과 방지) — 토스트만 뜨고 시트는 열리지 않는다
-    expect(mockAddToast).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'warning',
-        message: expect.stringContaining('일정과 역할은 수정할 수 없어요'),
-      })
-    );
+    expect(mockAddToast).not.toHaveBeenCalled();
     expect(sheetTitleOf(queryByTestId)).toBeNull();
     expect(queryByTestId('job-posting-date-confirm-button')).toBeNull();
-
-    // 딤이 남으면 화면 전체가 어두운 데드엔드가 된다(pointerEvents none 이라 영구는 아니지만 오인 유발)
     expect(queryByTestId('order-sheet-chain-scrim')).toBeNull();
   });
 
@@ -580,10 +617,10 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
     expect(sheetTitleOf(queryByTestId)).toBeNull();
   });
 
-  it('시간을 안 고른 슬롯이 남아도 시간·역할 시트가 재오픈되지 않는다 (한 시트=두 행 루프 차단)', async () => {
-    // 시간·역할은 행이 둘이지만 시트는 ScheduleSlotsSheet 하나이고 확인은 roles 로만 보고된다.
-    // 커버 범위를 안 넘기면 time 이 곧바로 다음 타깃이 되어 같은 시트가 무한 재오픈된다
-    // (탈출구가 X 버튼뿐인 소프트락). 확인은 두 행을 함께 확정한 것으로 취급해야 한다.
+  it('시간을 안 고른 슬롯이 있으면 확인이 비활성 — 무효 확정이 근원에서 차단된다', async () => {
+    // 구(#306) 시나리오: 빈 시각 슬롯을 확인으로 확정 → coveredKeys 가드가 재오픈 소프트락을 막았다.
+    // 이제 시트 확인 자체가 게이팅되어 무효 확정이 성립하지 않는다(근원 차단). coveredKeys 가드는
+    // 다른 진입 경로 방어로 유지하며 orderRowMeta.chain.test.ts 단위 테스트가 지킨다.
     const { getByTestId, getByText, queryByTestId } = render(
       <OrderSheetScreen {...baseProps} initialValues={slotMissingStartTime()} />
     );
@@ -592,10 +629,13 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
     expect(sheetTitleOf(queryByTestId)).toBe('시간 · 역할');
 
     fireEvent.press(getByText('확인'));
-    await advanceSwap();
 
-    // 방금 확인한 그 시트가 다시 떠 있으면 사용자는 확인으로 목록에 못 돌아간다
-    expect(sheetTitleOf(queryByTestId)).toBeNull();
+    // 확인이 무시되어 시트가 그대로 남고(내용을 채우거나 X 로만 나간다) 연쇄 예약도 없다
+    expect(sheetTitleOf(queryByTestId)).toBe('시간 · 역할');
+    expect(jest.getTimerCount()).toBe(0);
+
+    await advanceSwap();
+    expect(sheetTitleOf(queryByTestId)).toBe('시간 · 역할');
   });
 
   it('그룹 삭제를 되돌리면 예약이 취소되어 오조준 시트가 열리지 않는다', async () => {

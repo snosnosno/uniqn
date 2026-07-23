@@ -4,7 +4,12 @@
  * 연쇄는 "전역 첫 미설정"이 아니라 "현재 다음부터 순환"이어야 한다 — 아니면 뒤쪽 행을
  * 확정했을 때 앞쪽 미설정 행으로 되돌아가 사용자가 끌려가는 느낌을 받는다.
  */
-import { orderedRowTargets, nextUnsetRowAfter, firstUnsetRow } from '../orderRowMeta';
+import {
+  orderedRowTargets,
+  nextUnsetRowAfter,
+  firstUnsetRow,
+  type OrderRowKey,
+} from '../orderRowMeta';
 import { initialOrderSheetValues } from '@/utils/order-sheet/mappers';
 import type { OrderSheetFormValues } from '@/schemas/orderSheet.schema';
 
@@ -228,5 +233,65 @@ describe('nextUnsetRowAfter — 한 시트가 여러 행을 커버하는 경우'
       key: 'time',
       groupIndex: 0,
     });
+  });
+});
+
+describe('nextUnsetRowAfter — skipKeys(잠긴 행 제외)', () => {
+  /**
+   * scheduleLocked(확정 지원자 편집)에서 연쇄가 잠긴 행을 타깃으로 고르면 openRow 의
+   * guardScheduleLock 이 누른 적 없는 경고 토스트를 띄우며 연쇄가 그 자리에서 죽는다 —
+   * 순회가 잠긴 행을 건너뛰어 뒤쪽의 수정 가능한 미설정 행으로 넘어가야 한다.
+   */
+  const LOCKED = new Set<OrderRowKey>(['dates', 'time', 'roles', 'workConditions']);
+
+  it('skipKeys 에 든 행은 건너뛰고 다음 수정 가능한 미설정 행을 낸다', () => {
+    const base = filled();
+    const values: OrderSheetFormValues = {
+      ...base,
+      scheduleGroups: [{ ...(base.scheduleGroups ?? [])[0]!, dates: [] }],
+      salary: { type: 'hourly', amount: 0 },
+    };
+    // 전제 고정 — skipKeys 없이는 잠긴 dates 가 타깃이 된다(이 테스트가 공허하지 않도록)
+    expect(nextUnsetRowAfter(values, { key: 'contact', groupIndex: 0 })).toEqual({
+      key: 'dates',
+      groupIndex: 0,
+    });
+    expect(nextUnsetRowAfter(values, { key: 'contact', groupIndex: 0 }, undefined, LOCKED)).toEqual(
+      { key: 'salary', groupIndex: 0 }
+    );
+  });
+
+  it('잠긴 행을 건너뛴 결과 남은 미설정이 없으면 null — 연쇄 조용한 종료', () => {
+    const base = filled();
+    const values: OrderSheetFormValues = {
+      ...base,
+      scheduleGroups: [{ ...(base.scheduleGroups ?? [])[0]!, dates: [] }],
+    };
+    expect(
+      nextUnsetRowAfter(values, { key: 'title', groupIndex: 0 }, undefined, LOCKED)
+    ).toBeNull();
+  });
+
+  it('skipKeys 는 coveredKeys 와 달리 그룹 불문 적용된다 — 다른 그룹의 잠긴 행도 건너뛴다', () => {
+    const base = filled();
+    const values: OrderSheetFormValues = {
+      ...base,
+      scheduleGroups: [
+        ...(base.scheduleGroups ?? []),
+        {
+          dates: [],
+          timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] }],
+          grouped: false,
+        },
+      ],
+    };
+    // 전제 고정 — skipKeys 없이는 그룹1 dates 가 타깃이다
+    expect(nextUnsetRowAfter(values, { key: 'roles', groupIndex: 0 }, ['time', 'roles'])).toEqual({
+      key: 'dates',
+      groupIndex: 1,
+    });
+    expect(
+      nextUnsetRowAfter(values, { key: 'roles', groupIndex: 0 }, ['time', 'roles'], LOCKED)
+    ).toBeNull();
   });
 });
