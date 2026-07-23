@@ -12,6 +12,7 @@ import { useOpsBlindLevels, useOpsClock, useSetBlindLevels } from '@/hooks/ops';
 import type { OpsBlindLevel } from '@/types/ops';
 import type { OpsBlindLevelInput } from '@/schemas/opsBlindLevel.schema';
 import { BlindLevelForm } from './BlindLevelForm';
+import { BlindPresetSheet } from './BlindPresetSheet';
 
 import { formatNumber as fmt } from '@/utils/formatters/currency';
 
@@ -40,6 +41,9 @@ export function BlindLevelsTab({ tournamentId }: BlindLevelsTabProps) {
   const [dirty, setDirty] = useState(false);
   const [form, setForm] = useState<FormState>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [presetSheetOpen, setPresetSheetOpen] = useState(false);
+  // 마지막 적용 프리셋명. 수동 편집(추가/편집/삭제) 발생 시 null → "사용자 정의" 표시.
+  const [appliedPresetName, setAppliedPresetName] = useState<string | null>(null);
 
   // 서버 데이터 도착/갱신 시 미편집 상태면 draft 동기화(편집 중이면 보존).
   useEffect(() => {
@@ -54,12 +58,21 @@ export function BlindLevelsTab({ tournamentId }: BlindLevelsTabProps) {
       setDraft((prev) => [...prev, input]);
     }
     setDirty(true);
+    setAppliedPresetName(null);
     setForm(null);
   };
 
   const removeLevel = (index: number) => {
     setDraft((prev) => prev.filter((_, i) => i !== index));
     setDirty(true);
+    setAppliedPresetName(null);
+  };
+
+  // 프리셋 적용 = 전체 교체. draft 교체 + dirty(true) 필수(저장 버튼 활성 조건이 dirty).
+  const applyPreset = (levels: OpsBlindLevelInput[], presetName: string) => {
+    setDraft(levels);
+    setDirty(true);
+    setAppliedPresetName(presetName);
   };
 
   const doSave = () => {
@@ -76,6 +89,19 @@ export function BlindLevelsTab({ tournamentId }: BlindLevelsTabProps) {
 
   return (
     <View className="flex-1">
+      {/* 프리셋 바 — 앱 기본/내 프리셋 시트 열기. 이름은 마지막 적용 프리셋(수동 편집 시 "사용자 정의"). */}
+      <Pressable
+        onPress={() => setPresetSheetOpen(true)}
+        accessibilityRole="button"
+        accessibilityLabel="블라인드 프리셋 열기"
+        className="min-h-[44px] flex-row items-center justify-between border-b border-gray-200 px-4 py-2 active:opacity-70 dark:border-gray-700"
+      >
+        <Text className="text-sm text-content-primary dark:text-off-white">
+          프리셋 · {appliedPresetName ?? '사용자 정의'}
+        </Text>
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400">▾</Text>
+      </Pressable>
+
       <View className="flex-row items-center justify-between px-4 py-2">
         <Pressable
           onPress={onSavePress}
@@ -181,6 +207,13 @@ export function BlindLevelsTab({ tournamentId }: BlindLevelsTabProps) {
         message="진행 중인 타이머가 재계산됩니다. 계속할까요?"
         confirmText="저장하고 재계산"
         cancelText="계속 편집"
+      />
+
+      <BlindPresetSheet
+        visible={presetSheetOpen}
+        onClose={() => setPresetSheetOpen(false)}
+        currentLevels={draft}
+        onApply={applyPreset}
       />
     </View>
   );

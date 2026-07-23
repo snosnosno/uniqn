@@ -12,6 +12,8 @@ export { ClockControl } from './ClockControl';
 export { LiveStatsPanel } from './LiveStatsPanel';
 export { BlindLevelsTab } from './BlindLevelsTab';
 export { BlindLevelForm } from './BlindLevelForm';
+// 계획 B — 블라인드 프리셋 시트(BlindLevelsTab 프리셋 바가 소비).
+export { BlindPresetSheet } from './BlindPresetSheet';
 export { HistoryTab } from './HistoryTab';
 export { MonitorLinkButton } from './MonitorLinkButton';
 export { MonitorConfigCard } from './MonitorConfigCard';
