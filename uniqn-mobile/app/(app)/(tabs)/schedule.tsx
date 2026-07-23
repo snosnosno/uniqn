@@ -668,7 +668,7 @@ export default function ScheduleScreen() {
         <View className="mt-2">
           <ReviewPromptBanner
             pendingCount={pendingCount}
-            onPress={() => router.push('/(app)/reviews/pending')}
+            onPress={() => router.push('/(app)/reviews/history')}
           />
         </View>
       )}
