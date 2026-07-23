@@ -372,9 +372,18 @@ async function executeRejectCancellation(
   now: string,
   input: ReviewCancellationInput
 ): Promise<void> {
+  const cancellationRequest = applicationData.cancellationRequest;
+  if (!cancellationRequest) {
+    throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+      message: 'executeRejectCancellation: cancellationRequest 누락',
+      userMessage: '취소 요청 정보를 찾을 수 없습니다. 새로고침 후 다시 시도해 주세요.',
+      metadata: { applicationId: input.applicationId },
+    });
+  }
+
   const updatedCancellationRequest = {
-    requestedAt: applicationData.cancellationRequest!.requestedAt,
-    reason: applicationData.cancellationRequest!.reason,
+    requestedAt: cancellationRequest.requestedAt,
+    reason: cancellationRequest.reason,
     reviewedAt: now,
     reviewedBy: reviewerId,
     status: STATUS.CANCELLATION_REQUEST.REJECTED,

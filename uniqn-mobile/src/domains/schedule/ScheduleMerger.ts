@@ -6,6 +6,7 @@
  */
 
 import { STATUS } from '@/constants';
+import { WEEKDAYS_KO } from '@/constants/weekdays';
 import type { ScheduleEvent } from '@/types';
 import { areAllDatesConsecutive, parseDateString } from '@/utils/date';
 
@@ -44,7 +45,7 @@ export interface MergerScheduleStats {
   cancelled: number;
 }
 
-const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
+const WEEKDAYS = WEEKDAYS_KO;
 
 function formatDateLabel(dateStr: string): string {
   const date = parseDateString(dateStr);

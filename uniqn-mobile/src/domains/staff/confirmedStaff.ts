@@ -1,4 +1,5 @@
 import { STATUS } from '@/constants';
+import { WEEKDAYS_KO } from '@/constants/weekdays';
 import type {
   ConfirmedStaff,
   ConfirmedStaffGroup,
@@ -46,7 +47,7 @@ function formatDateKorean(date: Date | string): string {
 
   const month = date.getMonth() + 1;
   const day = date.getDate();
-  const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+  const dayNames = WEEKDAYS_KO;
   const dayOfWeek = dayNames[date.getDay()];
 
   return `${month}월 ${day}일(${dayOfWeek})`;

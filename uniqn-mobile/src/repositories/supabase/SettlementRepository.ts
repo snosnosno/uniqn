@@ -13,6 +13,7 @@
  * Note: settlement 데이터는 work_logs 테이블의 payroll 필드에 저장
  */
 
+import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import {
@@ -56,6 +57,13 @@ import type {
 
 const WORK_LOGS_TABLE = 'work_logs';
 const JOB_POSTINGS_TABLE = 'job_postings';
+
+/**
+ * 정산 금액 수정 이력 경계 스키마 — 항목별 객체 배열(얇게).
+ * work_logs jsonb 는 무검증 단언되어 있어, 이력 누적 전 형식만 확인한다.
+ * 실패(비배열·비객체 항목) 시 [] 폴백 + logger.error 관측(throw 금지 — 현 폴백 동작 유지).
+ */
+const settlementModificationHistorySchema = z.array(z.record(z.string(), z.unknown()));
 
 /** Supabase에는 Firestore의 500 배치 제한이 없지만 합리적 청크 크기 유지 */
 const BATCH_CHUNK_SIZE = 100;
@@ -563,11 +571,18 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
       }
 
       // 기존 수정 이력에 새 항목 추가 (Supabase에는 arrayUnion이 없으므로 수동 추가)
-      const existingHistory =
-        (workLog as unknown as Record<string, unknown>).settlementModificationHistory ?? [];
-      const updatedHistory = Array.isArray(existingHistory)
-        ? [...existingHistory, data.modificationEntry]
-        : [data.modificationEntry];
+      // 경계 검증: jsonb 이력이 오염(비배열·비객체)이면 [] 폴백 + 관측(throw 금지).
+      const rawHistory = (workLog as unknown as Record<string, unknown>)
+        .settlementModificationHistory;
+      const historyParsed = settlementModificationHistorySchema.safeParse(rawHistory ?? []);
+      if (!historyParsed.success) {
+        logger.error('정산 수정 이력 형식 오류 — 빈 배열로 폴백', {
+          workLogId,
+          issues: historyParsed.error.issues,
+        });
+      }
+      const existingHistory = historyParsed.success ? historyParsed.data : [];
+      const updatedHistory = [...existingHistory, data.modificationEntry];
 
       const { error } = await supabase
         .from(WORK_LOGS_TABLE)

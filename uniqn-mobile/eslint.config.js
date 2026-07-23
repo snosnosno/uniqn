@@ -107,6 +107,44 @@ module.exports = [
     },
   },
 
+  // 4a. 리프 컴포넌트에서 @/hooks 배럴 import 금지 — 순환 참조 크래시 이력.
+  // hooks 배럴을 리프 UI에서 통째로 import하면 배럴이 끌어오는 무거운 의존성 그래프가
+  // 순환 참조를 만들어 마운트 시 크래시가 났다(hooks barrel↔UI). 개별 훅 직접 경로로 import.
+  // no-restricted-imports 는 flat config에서 배열 옵션이 병합되지 않고 통째로 교체되므로,
+  // 컴포넌트 범위에서도 아이콘 금지(4번 블록)를 유지하기 위해 함께 명시한다.
+  // (app/ 라우트는 대상에서 제외 — 컴포넌트 트리 리프만 규제)
+  {
+    files: ['src/components/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@expo/vector-icons',
+              message: 'Use @/components/icons instead.',
+            },
+            {
+              name: 'lucide-react-native',
+              message: '아이콘은 @/components/icons 에서 import 하세요 (stroke·색 일관성).',
+            },
+            {
+              name: '@/hooks',
+              message:
+                '리프 컴포넌트에서 hooks 배럴 import 금지 — 순환 참조 크래시 이력. 개별 훅 직접 경로로 import',
+            },
+          ],
+          patterns: [
+            {
+              group: ['@expo/vector-icons/*'],
+              message: 'Use @/components/icons instead.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // 4b. T-B12: boardService direct sync 함수 외부 호출 차단
   // 모든 schedule_board sync는 jobManagementService.enqueueScheduleBoardSync 경유 필수.
   // 4d에 통합되어 있어 이 블록은 더 이상 필요하지 않음.

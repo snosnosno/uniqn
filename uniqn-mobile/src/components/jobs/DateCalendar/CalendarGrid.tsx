@@ -18,6 +18,7 @@ import {
   isToday as dfIsToday,
 } from 'date-fns';
 import { CalendarCell } from './CalendarCell';
+import { WEEKDAYS_KO } from '@/constants/weekdays';
 import { toDateString } from '@/utils/date';
 import type { GridDayCell } from '@/domains/weeklyGrid';
 
@@ -35,7 +36,7 @@ interface CalendarGridProps {
   gridCells?: Record<string, GridDayCell>;
 }
 
-const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'] as const;
+const WEEKDAY_LABELS = WEEKDAYS_KO;
 
 function weekdayColor(index: number): string {
   if (index === 0) return 'text-error-500';

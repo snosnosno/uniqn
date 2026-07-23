@@ -8,6 +8,7 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useMemo, useCallback } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
+import { formatNumber } from '@/utils/formatters';
 import {
   type SalaryType,
   type SalaryInfo,
@@ -85,7 +86,7 @@ export const SalaryTypeSelector = memo(function SalaryTypeSelector({
 
   // 포맷된 금액 (천 단위 콤마)
   const formattedAmount = useMemo(() => {
-    return salaryInfo.amount > 0 ? salaryInfo.amount.toLocaleString('ko-KR') : '';
+    return salaryInfo.amount > 0 ? formatNumber(salaryInfo.amount) : '';
   }, [salaryInfo.amount]);
 
   // 예상 급여 계산

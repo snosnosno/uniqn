@@ -5,6 +5,9 @@
  */
 
 import { USER_ROLE_LABELS, STAFF_ROLE_LABELS } from '@/types/role';
+import { WEEKDAYS_KO } from './weekdays';
+
+export { WEEKDAYS_KO } from './weekdays';
 
 // ============================================================================
 // 앱 버전 정보 (version.ts에서 재export)
@@ -51,7 +54,7 @@ export const REGEX = {
 // ============================================================================
 
 export const DATE = {
-  WEEKDAYS_KO: ['일', '월', '화', '수', '목', '금', '토'] as const,
+  WEEKDAYS_KO,
   WEEKDAYS_EN: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const,
   MONTHS_KO: [
     '1월',

@@ -13,6 +13,8 @@
 
 import { differenceInCalendarDays, format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
+import { WEEKDAYS_KO } from '@/constants/weekdays';
+import { toDate as toLenientDate } from '@/utils/date';
 
 const RELATIVE_WINDOW_DAYS = 7;
 const MS_PER_MINUTE = 60 * 1000;
@@ -104,4 +106,25 @@ export function formatDateLong(value: DateLike | null | undefined): string {
   const d = toDate(value);
   if (!d) return '-';
   return format(d, 'yyyy년 M월 d일', { locale: ko });
+}
+
+/**
+ * "YYYY.M.D(요일)" — 프로필·배정 카드용 짧은 날짜(요일 병기, 제로패딩 없음).
+ * 예: "2026.7.5(일)".
+ *
+ * 빈 입력은 ''를, 파싱 실패한 문자열은 원본을 그대로 반환한다(프로필/배정
+ * 컴포넌트의 기존 폴백 관습 보존). 파싱은 통합 대상 컴포넌트와 동일하게 뷰
+ * 레이어 lenient `toDate`(@/utils/date)를 경유해 출력을 완전히 일치시킨다
+ * — 이 파일 상단의 private `toDate`(단순 new Date)와 파싱 규칙이 다르므로
+ * 별칭 import로 구분한다.
+ */
+export function formatDateWithWeekday(dateStr?: string | null): string {
+  if (!dateStr) return '';
+  const date = toLenientDate(dateStr);
+  if (!date) return dateStr;
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const weekday = WEEKDAYS_KO[date.getDay()];
+  return `${year}.${month}.${day}(${weekday})`;
 }

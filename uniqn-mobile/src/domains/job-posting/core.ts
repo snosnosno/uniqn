@@ -16,7 +16,7 @@ import { FIXED_TIME_MARKER, TBA_TIME_MARKER } from '@/types/assignment';
 import { getRegionLabel } from '@/constants/regions';
 import { getRoleDisplayName } from '@/types/unified';
 import { groupRequirementsToDateRanges } from '@/utils/date';
-import { formatSalary } from '@/utils/formatters';
+import { formatNumber, formatSalary } from '@/utils/formatters';
 
 export function getPostingRoleKey(role: { role?: string; customRole?: string }): string {
   if (role.role === 'other' && role.customRole) {
@@ -52,7 +52,7 @@ export function getPostingTaxLabel(posting: JobPosting): string | undefined {
 
   return taxSettings.type === 'rate'
     ? `세금 ${taxSettings.value}%`
-    : `세금 ${taxSettings.value.toLocaleString('ko-KR')}원`;
+    : `세금 ${formatNumber(taxSettings.value)}원`;
 }
 
 function toRoleRequirement(role: {
