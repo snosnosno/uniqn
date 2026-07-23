@@ -82,4 +82,40 @@ describe('그룹 요약 하루 기준 (분자=max)', () => {
     expect(role.count).toBe(5);
     expect(role.filled).toBe(2);
   });
+
+  it('요약·일별 타임슬롯이 시작시간 순으로 정렬된다 (10:00, 11:00, 10:30 입력)', () => {
+    const source = {
+      workflow: { isFixed: false, usesGroupedDateRanges: true },
+      scheduleDisplay: {
+        variant: 'grouped_dates',
+        fixed: undefined,
+        dateGroups: [
+          {
+            id: 'g1',
+            startDate: '2026-09-10',
+            endDate: '2026-09-11',
+            timeSlots: [
+              { id: 'a', startTime: '10:00', roles: [{ role: 'dealer', count: 5, filled: 0 }] },
+              { id: 'b', startTime: '11:00', roles: [{ role: 'dealer', count: 5, filled: 0 }] },
+              { id: 'c', startTime: '10:30', roles: [{ role: 'dealer', count: 1, filled: 0 }] },
+            ],
+          },
+        ],
+        dateRequirements: [],
+        workDate: '',
+        timeSlot: '',
+      },
+    } as any;
+    const model = buildPostingScheduleModel(source, undefined) as any;
+    expect(model.sections[0].timeSlots.map((s: any) => s.timeLabel)).toEqual([
+      '10:00',
+      '10:30',
+      '11:00',
+    ]);
+    expect(model.sections[0].days[0].timeSlots.map((s: any) => s.timeLabel)).toEqual([
+      '10:00',
+      '10:30',
+      '11:00',
+    ]);
+  });
 });

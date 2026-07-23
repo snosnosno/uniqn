@@ -11,7 +11,12 @@ import type {
 import { FIXED_DATE_MARKER, FIXED_TIME_MARKER } from '@/types/assignment';
 import { WorkLogCreator } from '@/domains/schedule';
 import { getRoleDisplayName } from '@/types/unified';
-import { formatDateRangeWithCount, formatDateShortWithDay, generateDateRange } from '@/utils/date';
+import {
+  formatDateRangeWithCount,
+  formatDateShortWithDay,
+  generateDateRange,
+  sortTimeSlotsByStart,
+} from '@/utils/date';
 import { formatSalary } from '@/utils/formatters';
 
 const UNKNOWN_DATE_LABEL = '날짜 미정';
@@ -247,7 +252,9 @@ function buildSingleDateSection(
   filledCounts?: Map<string, number>
 ): PostingDateSectionDisplayModel {
   const key = `${requirement.date}-${index}`;
-  const timeSlots = requirement.timeSlots.map((slot, slotIndex) => ({
+  // 표시 정렬: 등록 순서가 아닌 시작시간 순(스크린샷 실측 10:00→11:00→10:30 버그).
+  const orderedTimeSlots = sortTimeSlotsByStart(requirement.timeSlots);
+  const timeSlots = orderedTimeSlots.map((slot, slotIndex) => ({
     key: `${key}-${formatTimeLabel(slot)}-${slotIndex}`,
     timeLabel: formatTimeLabel(slot),
     roles: toRoleModels(slot.roles, {
@@ -284,11 +291,14 @@ function buildGroupedSection(
   filledCounts?: Map<string, number>
 ): PostingDateSectionDisplayModel {
   const sectionKey = group.id || `${group.startDate}-${group.endDate}`;
+  // 표시 정렬: 등록 순서가 아닌 시작시간 순(스크린샷 실측 10:00→11:00→10:30 버그).
+  // days/summary 가 같은 배열을 공유해야 slotIndex 대응이 유지된다.
+  const orderedTimeSlots = sortTimeSlotsByStart(group.timeSlots);
   const dates = generateDateRange(group.startDate, group.endDate);
   const effectiveDates = dates.length > 0 ? dates : [group.startDate];
 
   const days: PostingDateSectionDayModel[] = effectiveDates.map((date) => {
-    const timeSlots = group.timeSlots.map((slot, slotIndex) => ({
+    const timeSlots = orderedTimeSlots.map((slot, slotIndex) => ({
       key: `${sectionKey}-${date}-${formatTimeLabel(slot)}-${slotIndex}`,
       timeLabel: formatTimeLabel(slot),
       // 그룹 날짜는 범위에서 전개된 좌석 인스턴스 — 각 날짜 filled 의 유일 소스는
@@ -319,27 +329,29 @@ function buildGroupedSection(
   // 요약 timeSlots(하루 기준·C안): 분모=하루 요구(perDayCount, 곱셈 금지), 분자=날짜별 확정의 최대값.
   // 통지원(그룹 일괄 배정) 전제에서 perDayCount − max(filled_d) 가 실제 추가 수용 인원이므로
   // max 가 유일하게 정직한 분자다(합·평균은 이 성질이 없다). 자리 총계는 section.totalCount/filledCount.
-  const summaryTimeSlots: PostingTimeSlotDisplayModel[] = group.timeSlots.map((slot, slotIndex) => {
-    const timeLabel = formatTimeLabel(slot);
-    return {
-      key: `${sectionKey}-${timeLabel}-${slotIndex}`,
-      timeLabel,
-      roles: slot.roles.map((role, roleIndex) => {
-        const perDayCount = role.count ?? role.headcount ?? 0;
-        const filled = days.reduce(
-          (max, day) => Math.max(max, day.timeSlots[slotIndex]?.roles[roleIndex]?.filled ?? 0),
-          0
-        );
-        const base = toRoleModels([role])[0]!;
-        return {
-          ...base,
-          count: perDayCount,
-          filled,
-          isFilled: perDayCount > 0 && filled >= perDayCount,
-        };
-      }),
-    };
-  });
+  const summaryTimeSlots: PostingTimeSlotDisplayModel[] = orderedTimeSlots.map(
+    (slot, slotIndex) => {
+      const timeLabel = formatTimeLabel(slot);
+      return {
+        key: `${sectionKey}-${timeLabel}-${slotIndex}`,
+        timeLabel,
+        roles: slot.roles.map((role, roleIndex) => {
+          const perDayCount = role.count ?? role.headcount ?? 0;
+          const filled = days.reduce(
+            (max, day) => Math.max(max, day.timeSlots[slotIndex]?.roles[roleIndex]?.filled ?? 0),
+            0
+          );
+          const base = toRoleModels([role])[0]!;
+          return {
+            ...base,
+            count: perDayCount,
+            filled,
+            isFilled: perDayCount > 0 && filled >= perDayCount,
+          };
+        }),
+      };
+    }
+  );
 
   return {
     key: sectionKey,
