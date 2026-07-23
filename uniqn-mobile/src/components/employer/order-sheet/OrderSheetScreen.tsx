@@ -275,7 +275,12 @@ export function OrderSheetScreen({
    */
   const openRow = useCallback(
     (key: OrderRowKey, groupIndex = 0) => {
-      if (guardScheduleLock(key)) return;
+      if (guardScheduleLock(key)) {
+        // 잠금 차단 시 딤 해제 — 토스트만 띄우고 나가면 시트가 뜰 주체가 없어
+        // chainSwapping 이 켜진 채 고착된다(화면 전체가 어두운 데드엔드).
+        setChainSwapping(false);
+        return;
+      }
       const current = form.getValues();
       const state = getRowState(current, key, groupIndex);
       chainArmedRef.current = !state.optional && state.unset;
@@ -497,6 +502,9 @@ export function OrderSheetScreen({
   // fixed 프리셋은 역할 소스가 fixedSchedule.roles(전체리뷰 P3·P6 — dated 소스만 쓰면 갭필 무동작).
   const handleApplyPreset = useCallback(
     (preset: OrderSheetPreset) => {
+      // 연쇄 예약 취소 — 대기 창(180ms) 안에서 폼 전체가 교체되면 예약된 타깃이 새 프리셋 값 위에
+      // phantom 시트로 재등장한다(리뷰 실측: 프리셋 적용 직후 '연락처' 시트 팝업).
+      clearPendingSwap();
       const v = preset.values;
       if (v.useSameSalary ?? false) {
         form.reset(v);
@@ -519,7 +527,7 @@ export function OrderSheetScreen({
       }
       setSalaryConfirmed(false);
     },
-    [form]
+    [form, clearPendingSwap]
   );
   const handleSavePreset = useCallback(() => {
     onSaveTemplate?.(form.getValues());
@@ -545,6 +553,9 @@ export function OrderSheetScreen({
 
   const handleTypeChange = useCallback(
     (t: PostingType) => {
+      // 연쇄 예약 취소 — 대기 창(180ms) 안에서 폼 구조(행 구성)가 바뀌면 예약된 타깃이
+      // 새 타입의 폼 위에서 phantom 시트가 된다(fixed→dated 전환 시 '근무조건' 시트 팝업 실측).
+      clearPendingSwap();
       const cur = form.getValues();
       if (cur.postingType === t) return; // 동일 타입 재탭 no-op — 오탭이 dirty만 남기는 것 방지
       if (t === 'fixed') {
@@ -584,7 +595,7 @@ export function OrderSheetScreen({
         );
       }
     },
-    [form]
+    [form, clearPendingSwap]
   );
 
   const handleSubmitPress = form.handleSubmit(

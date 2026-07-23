@@ -14,6 +14,7 @@ import React from 'react';
 import { OrderSheetScreen } from '../OrderSheetScreen';
 import { initialOrderSheetValues } from '@/utils/order-sheet/mappers';
 import { SHEET_CHAIN_SWAP_MS } from '@/constants/animation';
+import type { OrderSheetPreset } from '../PresetCarousel';
 import type { OrderSheetFormValues } from '@/schemas/orderSheet.schema';
 
 const mockAddToast = jest.fn();
@@ -116,6 +117,42 @@ const rolesAndByRoleSalaryMissing = (): OrderSheetFormValues => ({
   ],
   useSameSalary: false,
   roleSalaries: [],
+});
+
+/** 고정(fixed) — 제목·근무조건 미설정. 제목 확인 → fixed 전용 '근무조건' 시트 연쇄 예약용 */
+const fixedTitleAndWorkConditionsMissing = (): OrderSheetFormValues => ({
+  ...initialOrderSheetValues(),
+  postingType: 'fixed',
+  title: '',
+  location: { name: '강남 홀덤펍', region: '서울' },
+  contactPhone: '010-1234-5678',
+  scheduleGroups: [],
+  useSameSalary: true,
+  salary: { type: 'hourly', amount: 15000 },
+});
+
+/** 프리셋 캐러셀용 완성 구성 — 적용 시 form.reset 으로 주문서 전체가 교체된다 */
+const completePreset = (): OrderSheetPreset => ({
+  id: 'last',
+  title: '마지막 공고',
+  subtitle: '강남 홀덤펍 · 딜러 2명',
+  values: { ...onlyTitleMissing(), title: '지난 주말 딜러' },
+});
+
+/**
+ * 확정 지원자 잠금(scheduleLocked)인데 그룹 날짜가 비어 있는 이례 상태 —
+ * 제목 확인 → 잠긴 '날짜' 행이 연쇄 타깃이 되어 openRow 가 guardScheduleLock 로 차단된다.
+ * (실사용에서도 발생 가능: 확정 후 서버/타 세션에서 날짜가 비워진 공고를 편집 진입)
+ */
+const lockedWithDatesMissing = (): OrderSheetFormValues => ({
+  ...onlyTitleMissing(),
+  scheduleGroups: [
+    {
+      dates: [],
+      timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] }],
+      grouped: false,
+    },
+  ],
 });
 
 const advanceSwap = async () => {
@@ -370,6 +407,84 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
     fireEvent.press(getByTestId('order-sheet-add-schedule'));
 
     expect(getByTestId('job-posting-date-confirm-button')).toBeTruthy();
+    expect(queryByTestId('order-sheet-chain-scrim')).toBeNull();
+  });
+
+  // ── 최종리뷰 레이스 3종 회귀 가드 (대기 창 중 폼 구조 변경 / 잠금 차단) ──
+
+  it('대기 중 타입을 전환하면 예약이 취소되어 phantom 시트(근무조건)가 열리지 않는다', async () => {
+    const { getByTestId, getByText, queryByTestId } = render(
+      <OrderSheetScreen {...baseProps} initialValues={fixedTitleAndWorkConditionsMissing()} />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 고정 딜러');
+    fireEvent.press(getByText('확인'));
+
+    // 예약이 실제로 걸렸는지 먼저 고정 — 없으면 아래 "안 열림" 단언이 공허하게 통과한다
+    expect(jest.getTimerCount()).toBe(1);
+
+    // 대기 창 안에서 fixed → dated(regular) 전환 — 행 구성이 통째로 바뀐다
+    fireEvent.press(getByTestId('order-sheet-type-regular'));
+
+    await advanceSwap();
+
+    // 예약됐던 'workConditions' 는 fixed 전용 시트 — getRowState 가 postingType 을 보지 않아
+    // regular 폼 위에서도 unset 재판정되고 seedFixedScheduleIfMissing 이 fixedSchedule 을 되살린다.
+    expect(sheetTitleOf(queryByTestId)).not.toBe('근무조건');
+    expect(sheetTitleOf(queryByTestId)).toBeNull();
+  });
+
+  it('대기 중 프리셋을 적용하면 예약이 취소되어 phantom 시트가 열리지 않는다', async () => {
+    const { getByTestId, getByText, queryByTestId } = render(
+      <OrderSheetScreen
+        {...baseProps}
+        initialValues={titleAndContactMissing()}
+        presets={[completePreset()]}
+      />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
+    fireEvent.press(getByText('확인'));
+
+    // 예약이 실제로 걸렸는지 먼저 고정
+    expect(jest.getTimerCount()).toBe(1);
+
+    // 대기 창 안에서 프리셋 적용 — form.reset 으로 폼 전체가 교체된다
+    fireEvent.press(getByTestId('order-sheet-preset-last'));
+
+    await advanceSwap();
+
+    // 옛 타깃('연락처')이 새 프리셋 값 위에 재등장하면 안 된다
+    expect(sheetTitleOf(queryByTestId)).toBeNull();
+  });
+
+  it('잠긴 행으로 연쇄가 차단되면 딤이 걷힌다', async () => {
+    const { getByTestId, getByText, queryByTestId } = render(
+      <OrderSheetScreen {...baseProps} initialValues={lockedWithDatesMissing()} scheduleLocked />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
+    fireEvent.press(getByText('확인'));
+
+    // 예약·딤이 실제로 걸렸는지 먼저 고정
+    expect(getByTestId('order-sheet-chain-scrim')).toBeTruthy();
+
+    await advanceSwap();
+
+    // 잠금 분기가 실제로 탔음을 고정(공허 통과 방지) — 토스트만 뜨고 시트는 열리지 않는다
+    expect(mockAddToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'warning',
+        message: expect.stringContaining('일정과 역할은 수정할 수 없어요'),
+      })
+    );
+    expect(sheetTitleOf(queryByTestId)).toBeNull();
+    expect(queryByTestId('job-posting-date-confirm-button')).toBeNull();
+
+    // 딤이 남으면 화면 전체가 어두운 데드엔드가 된다(pointerEvents none 이라 영구는 아니지만 오인 유발)
     expect(queryByTestId('order-sheet-chain-scrim')).toBeNull();
   });
 });
