@@ -33,7 +33,8 @@ BEGIN
   IF p_role IS NULL OR length(trim(p_role)) = 0 THEN
     RAISE EXCEPTION 'INVALID_INPUT: 역할이 필요합니다';
   END IF;
-  IF length(trim(p_role)) > 50 THEN
+  -- 원문 길이 기준(trim 아님) — 공백 패딩으로 저장 원문이 상한을 우회하지 못하게 한다.
+  IF length(p_role) > 50 THEN
     RAISE EXCEPTION 'INVALID_INPUT: 역할은 50자 이하여야 합니다';
   END IF;
   IF p_role = 'other' AND (p_custom_role IS NULL OR length(trim(p_custom_role)) = 0) THEN
