@@ -356,3 +356,42 @@ describe('summarizeGroupDates — 그룹 날짜 요약 표기', () => {
     expect(summarizeGroupDates([])).toBe('');
   });
 });
+
+describe('시간 미정 슬롯 (2026-07-22)', () => {
+  it('미정 슬롯은 time 행을 완성으로 보고 "출근 미정"으로 요약한다', () => {
+    const tba: OrderSheetFormValues = {
+      ...filled,
+      scheduleGroups: [
+        {
+          dates: ['2026-07-14'],
+          timeSlots: [
+            { startTime: '', isTimeToBeAnnounced: true, roles: [{ role: 'dealer', count: 2 }] },
+          ],
+          grouped: false,
+        },
+      ],
+    };
+    const s = getRowState(tba, 'time');
+    expect(s.unset).toBe(false);
+    expect(s.value).toBe('출근 미정');
+  });
+
+  it('미정 + 시각 혼합 그룹은 "출근 미정 · 21:00" 순서로 요약한다', () => {
+    const mixed: OrderSheetFormValues = {
+      ...filled,
+      scheduleGroups: [
+        {
+          dates: ['2026-07-14'],
+          timeSlots: [
+            { startTime: '', isTimeToBeAnnounced: true, roles: [{ role: 'dealer', count: 1 }] },
+            { startTime: '21:00', roles: [{ role: 'dealer', count: 1 }] },
+          ],
+          grouped: false,
+        },
+      ],
+    };
+    const s = getRowState(mixed, 'time');
+    expect(s.unset).toBe(false);
+    expect(s.value).toBe('출근 미정 · 21:00');
+  });
+});

@@ -417,3 +417,44 @@ describe('주문서 스키마 — fixed union 게이트 (S2)', () => {
     expect(r.success).toBe(false);
   });
 });
+
+describe('orderSheetTimeSlotSchema — 시간 미정 (2026-07-22)', () => {
+  const { orderSheetTimeSlotSchema } = require('@/schemas/orderSheet.schema');
+  const roles = [{ role: 'dealer' as const, count: 1 }];
+
+  it('isTimeToBeAnnounced=true면 빈 startTime이 허용된다', () => {
+    const r = orderSheetTimeSlotSchema.safeParse({
+      startTime: '',
+      isTimeToBeAnnounced: true,
+      roles,
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it('플래그 없이 빈 startTime은 기존대로 거부하고 에러 경로는 startTime 유지 (행 매핑 계약)', () => {
+    const r = orderSheetTimeSlotSchema.safeParse({ startTime: '', roles });
+    expect(r.success).toBe(false);
+    if (!r.success) {
+      expect(r.error.issues.some((i: { path: unknown[] }) => i.path[0] === 'startTime')).toBe(true);
+    }
+  });
+
+  it('유효 시각은 플래그 없이 통과하고 z.output에 플래그가 주입되지 않는다(optional 유지)', () => {
+    const r = orderSheetTimeSlotSchema.safeParse({ startTime: '19:00', roles });
+    expect(r.success).toBe(true);
+    if (r.success) expect('isTimeToBeAnnounced' in r.data).toBe(false);
+  });
+
+  it('미정 슬롯이 포함된 전체 폼 값도 제출 게이트를 통과한다', () => {
+    const r = orderSheetValuesSchema.safeParse({
+      ...validInput,
+      scheduleGroups: [
+        {
+          dates: ['2026-07-14'],
+          timeSlots: [{ startTime: '', isTimeToBeAnnounced: true, roles }],
+        },
+      ],
+    });
+    expect(r.success).toBe(true);
+  });
+});

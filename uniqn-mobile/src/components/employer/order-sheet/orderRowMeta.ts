@@ -400,10 +400,14 @@ export function getRowState(
       };
     }
     case 'time': {
-      // H5 근본 수정: 해당 그룹 모든 슬롯의 startTime이 유효해야 set — 하나라도 빈 값이면 unset (zod와 정렬)
+      // H5 근본 수정: 해당 그룹 모든 슬롯이 유효(시각 HH:MM 또는 시간 미정)해야 set — zod superRefine과 정렬
       const slots = group?.timeSlots ?? [];
-      const allValid = slots.length > 0 && slots.every((s) => START_TIME_RE.test(s.startTime));
-      const starts = slots.map((s) => s.startTime).filter((t) => START_TIME_RE.test(t));
+      const slotSet = (s: (typeof slots)[number]) =>
+        s.isTimeToBeAnnounced === true || START_TIME_RE.test(s.startTime);
+      const allValid = slots.length > 0 && slots.every(slotSet);
+      const starts = slots
+        .filter(slotSet)
+        .map((s) => (s.isTimeToBeAnnounced === true ? '미정' : s.startTime));
       return {
         label: '시간',
         value: allValid ? `출근 ${starts.join(' · ')}` : '',

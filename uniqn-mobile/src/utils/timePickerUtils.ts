@@ -19,3 +19,18 @@ export function generateMinutes(interval: number): number[] {
 export function normalizeMinute(minute: number, interval: number): number {
   return Math.round(minute / interval) * interval;
 }
+
+/**
+ * 스크롤 종료 오프셋 → 선택 인덱스(범위 클램프).
+ *
+ * ⚠️ 호출부는 이 값으로 **선택 상태만 갱신**하고 `scrollTo`를 호출하면 안 된다.
+ * ScrollView가 `snapToInterval`로 이미 OS 레벨에서 스냅하므로 프로그래매틱 스크롤은 중복이고,
+ * 그 중복이 Android에서 재진입 고리를 만든다: scrollTo(animated) → momentum 으로 간주 →
+ * onMomentumScrollEnd 재발화 → 오프셋이 정확한 정렬값이 아니면 또 scrollTo → 무한 반복.
+ * 루프 도는 동안 ScrollView가 프로그래매틱 스크롤 상태라 사용자 스와이프가 먹통이 된다
+ * (2026-07-22 Android 실기기 — 휠 1회 조작 후 멈춤, 탭·버튼은 정상).
+ * 이전 시도(±0.5dp 정렬이면 재스크롤 생략)는 dp↔px 반올림 오차가 임계를 넘으면 무력화됐다.
+ */
+export function snapIndex(offsetY: number, itemCount: number, itemHeight: number): number {
+  return Math.max(0, Math.min(Math.round(offsetY / itemHeight), itemCount - 1));
+}
