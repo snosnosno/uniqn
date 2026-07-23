@@ -39,4 +39,17 @@ describe('resolveEffectiveSalaryWithSource', () => {
       );
     }
   });
+  it('defaultSalary 파라미터 경로 — 미매칭은 그 값으로 fallback + 기존 헬퍼와 등가(T4)', () => {
+    const defaultSalary = { type: 'hourly' as const, amount: 12000 };
+    // 미매칭 역할: fallback 은 DEFAULT_SALARY_INFO 가 아니라 전달된 defaultSalary 여야 한다.
+    const r = resolveEffectiveSalaryWithSource({ role: 'serving' }, roles, defaultSalary);
+    expect(r).toEqual({ salaryInfo: defaultSalary, source: 'fallback' });
+    // salaryInfo 는 defaultSalary 를 넘긴 기존 헬퍼와 전 케이스 등가.
+    const cases = [{ role: 'serving' }, { role: 'dealer' }, {}];
+    for (const wl of cases) {
+      expect(
+        resolveEffectiveSalaryWithSource(wl as never, roles, defaultSalary).salaryInfo
+      ).toEqual(getEffectiveSalaryInfoFromRoles(wl as never, roles, defaultSalary));
+    }
+  });
 });

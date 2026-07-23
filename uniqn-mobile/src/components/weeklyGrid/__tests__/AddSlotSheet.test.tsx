@@ -88,9 +88,11 @@ beforeEach(() => {
     searched: false,
     results: [],
   });
-  // 기본 단가표: dealer 만 설정됨(serving 등은 미설정 → JIT 대상).
+  // 기본 단가표: dealer 만 설정됨(serving 등은 미설정 → JIT 대상). isFetched=true = 조회 확정 상태
+  // (JIT 노출 판정은 컨테이너 조회 도착 후에만 — needsJitSalary 의 isFetched 게이트).
   mockUseVenueContainer.mockReturnValue({
     data: { roleSalaries: [{ role: 'dealer', salary: { type: 'hourly', amount: 20000 } }] },
+    isFetched: true,
   });
   mockUseSetVenueRoleSalary.mockReturnValue({ mutateAsync: setRoleSalaryMock });
   mockUseToastStore.mockReturnValue({ addToast: addToastMock });
@@ -204,6 +206,19 @@ it('설정된 역할(dealer) 선택 시 JIT 필드가 없다', () => {
   fireEvent.press(getByText('🃏 딜러'));
 
   // 단가표에 dealer 이미 설정됨 → JIT 미노출.
+  expect(queryByText(/단가 미설정/)).toBeNull();
+});
+
+it('컨테이너 조회 도착 전(isFetched=false)에는 JIT 필드가 오노출되지 않는다', () => {
+  // 로딩 창: data 아직 없음(roleSalaries=[] 로 hasRoleSalary=false) → 기존엔 미설정처럼 오노출.
+  // isFetched 게이트로 조회 확정 전에는 JIT 를 띄우지 않는다(MEDIUM 회귀 가드).
+  mockUseVenueContainer.mockReturnValue({ data: undefined, isFetched: false });
+  setPoolWithOneStaff();
+  const { getByText, queryByText } = renderSheet();
+
+  fireEvent.press(getByText('홍길동'));
+  fireEvent.press(getByText('🍸 서빙'));
+
   expect(queryByText(/단가 미설정/)).toBeNull();
 });
 

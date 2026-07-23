@@ -139,7 +139,9 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
 
   // JIT 급여 접점: 컨테이너 단가표(roleSalaries) 읽기 + 단가 저장 변이 + 인라인 드래프트.
   // 시트가 열렸을 때만 조회(닫힌 상태 재조회 방지). 미설정 역할만 그 자리서 묻는다(설계 §B).
-  const { data: container } = useVenueContainer(visible ? containerId : null);
+  const { data: container, isFetched: containerFetched } = useVenueContainer(
+    visible ? containerId : null
+  );
   const setRoleSalary = useSetVenueRoleSalary();
   const [jitDraft, setJitDraft] = useState<VenueSalaryDraft | null>(null);
   const [jitDismissed, setJitDismissed] = useState(false);
@@ -214,7 +216,10 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
 
   // 역할 선택 완료 여부(표준=칩, 커스텀=이름 입력) + JIT 단가 필요 판정.
   const roleReady = !!roleKey && (!isCustomRole || customRole.trim().length > 0);
+  // 컨테이너 조회 도착 전(container undefined)에는 hasRoleSalary([],…)=false 로 이미 설정된 역할까지
+  // JIT 로 오노출→기본 드래프트가 기존 단가를 덮어쓴다. isFetched 게이트로 데이터 확정 후에만 판정한다.
   const needsJitSalary =
+    containerFetched &&
     roleReady &&
     !jitDismissed &&
     !hasRoleSalary(

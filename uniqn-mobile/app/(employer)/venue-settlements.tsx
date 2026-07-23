@@ -53,9 +53,14 @@ export default function VenueSettlementsScreen() {
   const [fixTarget, setFixTarget] = useState<FixTarget | null>(null);
   const [fixDraft, setFixDraft] = useState<VenueSalaryDraft | null>(null);
 
+  // 폴백 배지는 컨테이너 직속 배치(jobPostingId===venueId)에만 뜬다. 공고 스팬 행은 공고 컨텍스트로
+  // 해소되며 그 'fallback'은 공고 defaultSalary 해소라 지점 단가표와 무관 — 배지를 탭해 지점 단가를
+  // 저장해도 그 행은 재계산되지 않으므로(공고 컨텍스트 우선) 거짓 배지가 된다(HIGH-1).
   const fallbackCount = useMemo(
-    () => (workLogs ?? []).filter((wl) => wl.salarySource === 'fallback').length,
-    [workLogs]
+    () =>
+      (workLogs ?? []).filter((wl) => wl.salarySource === 'fallback' && wl.jobPostingId === venueId)
+        .length,
+    [workLogs, venueId]
   );
 
   const openFix = useCallback((wl: SettlementWorkLog) => {
@@ -81,7 +86,8 @@ export default function VenueSettlementsScreen() {
     ({ item }: { item: SettlementWorkLog }) => (
       <View className="mb-2">
         {item.salaryInfo ? <SettlementCard workLog={item} salaryInfo={item.salaryInfo} /> : null}
-        {item.salarySource === 'fallback' ? (
+        {/* 컨테이너 직속 행만 배지 노출 — 공고 스팬 행의 fallback 은 지점 단가표로 못 고친다(HIGH-1). */}
+        {item.salarySource === 'fallback' && item.jobPostingId === venueId ? (
           <Pressable
             onPress={() => openFix(item)}
             accessibilityRole="button"
@@ -97,7 +103,7 @@ export default function VenueSettlementsScreen() {
         ) : null}
       </View>
     ),
-    [openFix]
+    [openFix, venueId]
   );
 
   return (
