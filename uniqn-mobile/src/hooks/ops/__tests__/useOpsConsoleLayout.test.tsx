@@ -1,6 +1,15 @@
-import { act, create } from 'react-test-renderer';
+/* eslint-disable @typescript-eslint/no-require-imports */
+
+import type React from 'react';
 
 import { useOpsConsoleLayout, type OpsConsoleLayout } from '../useOpsConsoleLayout';
+
+// @types/react-test-renderer 미설치라 ES import는 TS7016 —
+// 선례(useAndroidOrientationPolicy.test.ts)와 동일한 typed require 문형 사용.
+const { act, create } = require('react-test-renderer') as {
+  act: (callback: () => void) => void;
+  create: (element: React.ReactElement) => { unmount: () => void };
+};
 
 let mockWidth = 390;
 jest.mock('react-native', () => ({
