@@ -578,6 +578,7 @@ export const queryKeys = {
       [...queryKeys.weeklyGrid.all, 'summary', venueId, from, to] as const,
     daySlots: (venueId: string, date: string) =>
       [...queryKeys.weeklyGrid.all, 'daySlots', venueId, date] as const,
+    container: (venueId: string) => [...queryKeys.weeklyGrid.all, 'container', venueId] as const,
   },
 } as const;
 
