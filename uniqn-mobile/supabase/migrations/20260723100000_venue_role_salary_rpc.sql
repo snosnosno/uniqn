@@ -22,6 +22,7 @@ DECLARE
   v_ws uuid;
   v_owner_id uuid;
   v_schedule jsonb;
+  v_existing jsonb;
   v_entries jsonb;
   v_entry jsonb;
 BEGIN
@@ -31,6 +32,9 @@ BEGIN
 
   IF p_role IS NULL OR length(trim(p_role)) = 0 THEN
     RAISE EXCEPTION 'INVALID_INPUT: 역할이 필요합니다';
+  END IF;
+  IF length(trim(p_role)) > 50 THEN
+    RAISE EXCEPTION 'INVALID_INPUT: 역할은 50자 이하여야 합니다';
   END IF;
   IF p_role = 'other' AND (p_custom_role IS NULL OR length(trim(p_custom_role)) = 0) THEN
     RAISE EXCEPTION 'INVALID_INPUT: 커스텀 역할명이 필요합니다';
@@ -66,9 +70,17 @@ BEGIN
     RAISE EXCEPTION 'PERMISSION_DENIED: 운영처 관리 권한이 없습니다';
   END IF;
 
+  -- 이형 방어: 기존 roleSalaries 가 배열이 아니면(손상/구버전 형태) '[]' 로 취급 —
+  -- jsonb_array_elements raw 에러를 막고 이번 쓰기로 정상 배열로 자가 치유한다.
+  IF jsonb_typeof(v_schedule -> 'roleSalaries') IS DISTINCT FROM 'array' THEN
+    v_existing := '[]'::jsonb;
+  ELSE
+    v_existing := v_schedule -> 'roleSalaries';
+  END IF;
+
   -- 같은 역할(커스텀은 customRole 단위) 기존 엔트리 제거 후, 삭제 요청이 아니면 새 엔트리 추가.
   SELECT COALESCE(jsonb_agg(e), '[]'::jsonb) INTO v_entries
-  FROM jsonb_array_elements(COALESCE(v_schedule -> 'roleSalaries', '[]'::jsonb)) AS e
+  FROM jsonb_array_elements(v_existing) AS e
   WHERE NOT (
     e ->> 'role' = p_role
     AND (p_role <> 'other' OR COALESCE(e ->> 'customRole', '') = COALESCE(p_custom_role, ''))
@@ -83,6 +95,11 @@ BEGIN
       v_entry := v_entry || jsonb_build_object('customRole', p_custom_role);
     END IF;
     v_entries := v_entries || jsonb_build_array(v_entry);
+  END IF;
+
+  -- 재조립 후 엔트리 수 상한(무한 증식·페이로드 팽창 방어). 정상 운영 역할 수를 크게 상회하는 값.
+  IF jsonb_array_length(v_entries) > 50 THEN
+    RAISE EXCEPTION 'INVALID_INPUT: 역할 단가 항목은 50개를 초과할 수 없습니다';
   END IF;
 
   UPDATE public.job_postings
