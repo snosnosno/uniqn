@@ -270,7 +270,8 @@ function buildSingleDateSection(
 /**
  * 그룹 날짜범위 섹션 — 날짜별 전개(좌석 기준).
  * 각 날짜를 자기 날짜 키(`date__slot__role`)로 개별 hydrate 하고,
- * 섹션 요약 timeSlots 는 count=하루치×일수 / filled=일별 합으로 만든다.
+ * 섹션 요약 timeSlots 는 하루 기준(C안)으로 count=하루 요구 / filled=일별 확정 max 로 만든다.
+ * 자리 총계(Σ일별)는 section.totalCount/filledCount 로 별도 보존한다.
  * (구 sumHydrateForRange 범위합산은 count 가 하루치라 6/3 차원 불일치를 냈음 — 제거)
  */
 function buildGroupedSection(
@@ -315,7 +316,9 @@ function buildGroupedSection(
   });
 
   const dayCount = effectiveDates.length;
-  // 요약 timeSlots: 슬롯 구조는 하루치와 동일하되 count×일수, filled=일별 합.
+  // 요약 timeSlots(하루 기준·C안): 분모=하루 요구(perDayCount, 곱셈 금지), 분자=날짜별 확정의 최대값.
+  // 통지원(그룹 일괄 배정) 전제에서 perDayCount − max(filled_d) 가 실제 추가 수용 인원이므로
+  // max 가 유일하게 정직한 분자다(합·평균은 이 성질이 없다). 자리 총계는 section.totalCount/filledCount.
   const summaryTimeSlots: PostingTimeSlotDisplayModel[] = group.timeSlots.map((slot, slotIndex) => {
     const timeLabel = formatTimeLabel(slot);
     return {
@@ -323,13 +326,17 @@ function buildGroupedSection(
       timeLabel,
       roles: slot.roles.map((role, roleIndex) => {
         const perDayCount = role.count ?? role.headcount ?? 0;
-        const count = perDayCount * dayCount;
         const filled = days.reduce(
-          (sum, day) => sum + (day.timeSlots[slotIndex]?.roles[roleIndex]?.filled ?? 0),
+          (max, day) => Math.max(max, day.timeSlots[slotIndex]?.roles[roleIndex]?.filled ?? 0),
           0
         );
         const base = toRoleModels([role])[0]!;
-        return { ...base, count, filled, isFilled: count > 0 && filled >= count };
+        return {
+          ...base,
+          count: perDayCount,
+          filled,
+          isFilled: perDayCount > 0 && filled >= perDayCount,
+        };
       }),
     };
   });
