@@ -38,3 +38,5 @@ export { OpsClockStrip } from './OpsClockStrip';
 export { OpsClockControlSheet } from './OpsClockControlSheet';
 // 2부 리디자인(Task 4) — 현황 탭 콘텐츠(L2, 클럭 제외)
 export { OpsStatusTab } from './OpsStatusTab';
+// 2부 리디자인(Task 5) — 반응형 콘솔 셸(폰 5탭+⋯ / 태블릿 사이드바 7탭)
+export { OpsConsoleShell, type OpsTabKey } from './OpsConsoleShell';
