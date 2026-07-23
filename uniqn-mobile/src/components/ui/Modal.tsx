@@ -179,8 +179,10 @@ function WebModal({
           accessibilityLabel="모달 닫기"
         />
 
-        {/* Modal Container */}
-        <View className={`flex-1 ${containerStyle}`} style={{ pointerEvents: 'box-none' }}>
+        {/* Modal Container — pointerEvents 는 반드시 prop 으로:
+            style 의 'box-none' 은 유효 CSS 값이 아니라 RNW 가 드롭(computed auto)해
+            백드롭(형제 Pressable) 클릭이 이 컨테이너에 전부 삼켜진다(웹 실측). */}
+        <View className={`flex-1 ${containerStyle}`} pointerEvents="box-none">
           <View
             style={[
               modalMaxHeightStyle,

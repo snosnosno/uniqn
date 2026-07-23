@@ -20,7 +20,7 @@ export function OpsSummaryStrip({ tournamentId, onPress }: OpsSummaryStripProps)
       accessibilityLabel={`대회 현황 요약: ${playing}명 플레이 중, ${entries} 엔트리, 평균 ${avgStackBb}BB`}
       className="items-center justify-center border-b border-gray-200 px-3 py-2 active:bg-gray-50 dark:border-gray-700 dark:active:bg-gray-800"
     >
-      <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+      <Text numberOfLines={1} className="text-xs text-secondary-500 dark:text-secondary-400">
         <Text className="font-sans-semibold text-content-primary dark:text-off-white">
           {playing}
         </Text>

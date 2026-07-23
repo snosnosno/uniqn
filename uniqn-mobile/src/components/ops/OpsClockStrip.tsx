@@ -17,16 +17,28 @@ function mmss(totalSec: number): string {
   return `${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
 }
 
+/** 스크린리더용 남은 시간(분·초 낱말) — MM:SS 콜론 표기는 낭독이 부자연스럽다. */
+function remainingWords(totalSec: number): string {
+  const s = Math.max(0, Math.floor(totalSec));
+  return `${Math.floor(s / 60)}분 ${s % 60}초`;
+}
+
 export function OpsClockStrip({ tournamentId, onNavigateToLevels }: OpsClockStripProps) {
   const { currentLevel, remainingSec } = useOpsClock(tournamentId);
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  // 정적 라벨은 화면이 담은 정보(레벨·남은 시간)를 스크린리더에서 숨긴다 —
+  // 현재 상태를 라벨에 실어 시각 정보와 동등하게 전달한다.
+  const controlLabel = currentLevel
+    ? `클럭 제어 열기, 레벨 ${currentLevel.level}, 남은 시간 ${remainingWords(remainingSec ?? 0)}`
+    : '클럭 제어 열기, 블라인드 미설정';
 
   return (
     <>
       <Pressable
         onPress={() => setSheetOpen(true)}
         accessibilityRole="button"
-        accessibilityLabel="클럭 제어 열기"
+        accessibilityLabel={controlLabel}
         className="border-b border-gray-200 px-4 py-3 active:bg-gray-50 dark:border-gray-700 dark:active:bg-gray-800"
       >
         <View className="flex-row items-baseline justify-between">

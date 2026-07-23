@@ -67,6 +67,21 @@ describe('OpsConsoleShell', () => {
     expect(getByText('이력')).toBeTruthy();
   });
 
+  it('폰: 탭은 role=tab + 활성 탭만 selected=true (⋯ 포함 6개)', () => {
+    (useOpsConsoleLayout as jest.Mock).mockReturnValue({ isWide: false, width: 390 });
+    const { getAllByRole } = render(<OpsConsoleShell {...baseProps} activeTab="status" />);
+    const tabs = getAllByRole('tab');
+    expect(tabs).toHaveLength(6); // 5탭 + ⋯
+    const selected = tabs.filter((t) => t.props.accessibilityState?.selected);
+    expect(selected).toHaveLength(1);
+  });
+
+  it('폰: 오버플로 탭 활성 시 ⋯가 selected', () => {
+    (useOpsConsoleLayout as jest.Mock).mockReturnValue({ isWide: false, width: 390 });
+    const { getByLabelText } = render(<OpsConsoleShell {...baseProps} activeTab="payouts" />);
+    expect(getByLabelText('더 보기').props.accessibilityState?.selected).toBe(true);
+  });
+
   it('활성 탭 콘텐츠 렌더', () => {
     (useOpsConsoleLayout as jest.Mock).mockReturnValue({ isWide: false, width: 390 });
     const { getByText } = render(<OpsConsoleShell {...baseProps} activeTab="players" />);

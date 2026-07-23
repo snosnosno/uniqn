@@ -58,6 +58,8 @@ export function BlindPresetSheet({
     saveMut.mutate({ name: trimmedName, levels: currentLevels }, { onSuccess: () => setName('') });
   };
 
+  // 적용 Pressable 안에 삭제 Pressable 을 중첩하면 웹에서 <button> in <button>
+  // 하이드레이션 에러가 난다 — 행을 View 로 두고 [적용] · [삭제] 를 형제로 배치한다.
   const Row = ({
     name: rowName,
     levels,
@@ -67,28 +69,28 @@ export function BlindPresetSheet({
     levels: OpsBlindLevelInput[];
     onDelete?: () => void;
   }) => (
-    <Pressable
-      onPress={() => apply(rowName, levels)}
-      accessibilityRole="button"
-      className="min-h-[44px] flex-row items-center justify-between border-b border-gray-200 px-4 py-3 active:bg-gray-50 dark:border-gray-700 dark:active:bg-gray-800"
-    >
-      <Text className="text-content-primary dark:text-off-white">{rowName}</Text>
-      <View className="flex-row items-center gap-3">
+    <View className="flex-row items-center border-b border-gray-200 dark:border-gray-700">
+      <Pressable
+        onPress={() => apply(rowName, levels)}
+        accessibilityRole="button"
+        className="min-h-[44px] flex-1 flex-row items-center justify-between px-4 py-3 active:bg-gray-50 dark:active:bg-gray-800"
+      >
+        <Text className="text-content-primary dark:text-off-white">{rowName}</Text>
         <Text className="text-xs text-secondary-500 dark:text-secondary-400">
           {levels.length}레벨
         </Text>
-        {onDelete && (
-          <Pressable
-            onPress={onDelete}
-            hitSlop={10}
-            accessibilityRole="button"
-            accessibilityLabel="프리셋 삭제"
-          >
-            <Text className="text-xs text-error-600 dark:text-error-400">삭제</Text>
-          </Pressable>
-        )}
-      </View>
-    </Pressable>
+      </Pressable>
+      {onDelete && (
+        <Pressable
+          onPress={onDelete}
+          accessibilityRole="button"
+          accessibilityLabel="프리셋 삭제"
+          className="min-h-[44px] min-w-[44px] items-center justify-center pr-2 active:bg-gray-50 dark:active:bg-gray-800"
+        >
+          <Text className="text-xs text-error-600 dark:text-error-400">삭제</Text>
+        </Pressable>
+      )}
+    </View>
   );
 
   return (

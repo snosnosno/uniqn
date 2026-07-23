@@ -46,3 +46,30 @@ it('프리셋 적용 → 확인 후 onApply(levels)', () => {
   expect(onApply).toHaveBeenCalled();
   expect(onApply.mock.calls[0][0]).toHaveLength(30); // 기본 30레벨 적용
 });
+
+it('사용자 프리셋: 삭제 버튼이 적용 Pressable과 형제(중첩 금지 — 웹 button-in-button 방지)', () => {
+  (useOpsBlindPresets as jest.Mock).mockReturnValue({
+    presets: [{ id: 'p1', name: '내프리셋', levels: [{ level: 1 }] }],
+    isLoading: false,
+  });
+  const { getByText, getByLabelText } = render(
+    <BlindPresetSheet visible onClose={jest.fn()} currentLevels={[]} onApply={jest.fn()} />
+  );
+  // 삭제 노드의 조상 중 '적용' 버튼(role=button + 이름 텍스트 포함)이 있으면
+  // <button> in <button> 중첩이다 — 형제 구조면 그런 조상이 없어야 한다.
+  const del = getByLabelText('프리셋 삭제');
+  let nestedUnderApply = false;
+  let node: typeof del | null = del.parent;
+  while (node) {
+    const isButton = node.props?.accessibilityRole === 'button';
+    const containsName = isButton && node.findAllByProps({ children: '내프리셋' }).length > 0;
+    if (containsName) {
+      nestedUnderApply = true;
+      break;
+    }
+    node = node.parent;
+  }
+  expect(nestedUnderApply).toBe(false);
+  // 삭제는 별도 형제로 존재해야 한다.
+  expect(getByText('삭제')).toBeTruthy();
+});

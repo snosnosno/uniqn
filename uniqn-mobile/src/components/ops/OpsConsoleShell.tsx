@@ -70,8 +70,9 @@ export function OpsConsoleShell({
   const Tab = ({ t, dim }: { t: OpsTabKey; dim?: boolean }) => (
     <Pressable
       onPress={() => onTabChange(t)}
-      accessibilityRole="button"
-      className={`flex-1 items-center rounded-md py-2 ${activeTab === t ? 'bg-white dark:bg-gray-700' : ''}`}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: activeTab === t }}
+      className={`min-h-[40px] flex-1 items-center justify-center rounded-md py-2 ${activeTab === t ? 'bg-white dark:bg-gray-700' : ''}`}
     >
       <Text
         numberOfLines={1}
@@ -125,9 +126,10 @@ export function OpsConsoleShell({
         ))}
         <Pressable
           onPress={() => setOverflowOpen(true)}
-          accessibilityRole="button"
+          accessibilityRole="tab"
+          accessibilityState={{ selected: isOverflowActive }}
           accessibilityLabel="더 보기"
-          className={`items-center rounded-md px-2 py-2 ${isOverflowActive ? 'bg-white dark:bg-gray-700' : ''}`}
+          className={`min-h-[40px] items-center justify-center rounded-md px-2 py-2 ${isOverflowActive ? 'bg-white dark:bg-gray-700' : ''}`}
         >
           <Text
             className={`text-base ${isOverflowActive ? 'text-gold' : 'text-secondary-500 dark:text-secondary-400'}`}
