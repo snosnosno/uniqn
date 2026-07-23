@@ -10,6 +10,7 @@
  * 본화면 행 라벨('연락처'·'급여')과 시트 제목이 같은 문자열이라 getByText 가 중복 매치된다.
  */
 import { render, fireEvent, act } from '@testing-library/react-native';
+import { AccessibilityInfo } from 'react-native';
 import React from 'react';
 import { OrderSheetScreen } from '../OrderSheetScreen';
 import { initialOrderSheetValues } from '@/utils/order-sheet/mappers';
@@ -21,6 +22,12 @@ const mockAddToast = jest.fn();
 jest.mock('@/stores/toastStore', () => ({
   useToastStore: () => ({ addToast: mockAddToast }),
 }));
+
+jest.mock('@/utils/haptics', () => ({
+  triggerHaptic: jest.fn(),
+}));
+// eslint-disable-next-line import/first
+import { triggerHaptic } from '@/utils/haptics';
 
 // 실제 SheetModal 의 닫기 버튼은 텍스트가 아니라 아이콘(accessibilityLabel='닫기')이라
 // 모킹 시 사라진다 — 연쇄 중단(X) 경로를 누를 수 있도록 스텁에 닫기 Pressable 을 둔다.
@@ -223,6 +230,7 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     mockAddToast.mockClear();
+    (triggerHaptic as jest.Mock).mockClear();
   });
   afterEach(() => {
     jest.useRealTimers();
@@ -243,6 +251,46 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
     await advanceSwap();
 
     expect(sheetTitleOf(queryByTestId)).toBe('연락처');
+  });
+
+  it('연쇄 예약 시 다음 항목을 스크린리더로 안내한다 (C1)', async () => {
+    const announceSpy = jest.spyOn(AccessibilityInfo, 'announceForAccessibility');
+    const { getByTestId, getByText } = render(
+      <OrderSheetScreen {...baseProps} initialValues={titleAndContactMissing()} />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
+    fireEvent.press(getByText('확인'));
+
+    // 스왑 대기(딤 180ms) 전에 안내가 나가야 스크린리더가 침묵하지 않는다 — advanceSwap 이전 단언.
+    expect(announceSpy).toHaveBeenCalledWith('다음 항목: 연락처');
+    announceSpy.mockRestore();
+  });
+
+  it('연쇄 완료(다음 미설정 없음) 시 완료 햅틱을 발화한다 (B3)', async () => {
+    const { getByTestId, getByText } = render(
+      <OrderSheetScreen {...baseProps} initialValues={onlyTitleMissing()} />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
+    fireEvent.press(getByText('확인'));
+
+    expect(triggerHaptic).toHaveBeenCalledWith('success');
+  });
+
+  it('연쇄가 계속되면(다음 미설정 있음) 완료 햅틱을 발화하지 않는다 (B3 대조군)', async () => {
+    const { getByTestId, getByText } = render(
+      <OrderSheetScreen {...baseProps} initialValues={titleAndContactMissing()} />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
+    fireEvent.press(getByText('확인'));
+
+    // 아직 연락처가 남았으므로 완료가 아니다 — 성공 햅틱 금지(중간 단계 오발화 방지).
+    expect(triggerHaptic).not.toHaveBeenCalledWith('success');
   });
 
   it('대조군 — 이미 채워진 행을 확인하면 연쇄가 일어나지 않는다', async () => {
@@ -664,5 +712,53 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
     // 예약이 살아 있으면 복원된 완성 그룹(1)의 날짜 시트가 열린다 — 사용자가 지목한 적 없는 그룹이다
     expect(queryByTestId('job-posting-date-confirm-button')).toBeNull();
     expect(sheetTitleOf(queryByTestId)).toBeNull();
+  });
+
+  // B1 — 딤이 StackHeader(호스트 형제 View)를 못 덮는 문제: onChainSwappingChange 를 받은
+  // 호스트가 SafeAreaView 레벨에서 전체 화면 스크림을 렌더한다. 이때 내부 딤은 렌더하지 않아야
+  // 한다(black/50 이중 적층 = 시트 백드롭보다 어두운 이음매).
+  it('onChainSwappingChange 를 받으면 스크림을 호스트에 위임한다 — 내부 딤 미렌더 + 켜짐/꺼짐 통지', async () => {
+    const onChainSwappingChange = jest.fn();
+    const { getByTestId, getByText, queryByTestId } = render(
+      <OrderSheetScreen
+        {...baseProps}
+        initialValues={titleAndContactMissing()}
+        onChainSwappingChange={onChainSwappingChange}
+      />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
+    fireEvent.press(getByText('확인'));
+
+    // 스왑 대기 중 — 예약이 실제로 걸렸음을 먼저 고정(공허 통과 차단)
+    expect(jest.getTimerCount()).toBe(1);
+    expect(onChainSwappingChange).toHaveBeenLastCalledWith(true);
+    expect(queryByTestId('order-sheet-chain-scrim')).toBeNull();
+
+    await advanceSwap();
+
+    // 다음 시트가 올라오면(onEntered) 꺼짐 통지 — 호스트 딤이 백드롭에 인수인계된다
+    expect(onChainSwappingChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it('스왑 대기 중 언마운트되면 호스트에 꺼짐을 통지한다 — 호스트 딤 고착 방지', async () => {
+    const onChainSwappingChange = jest.fn();
+    const { getByTestId, getByText, unmount } = render(
+      <OrderSheetScreen
+        {...baseProps}
+        initialValues={titleAndContactMissing()}
+        onChainSwappingChange={onChainSwappingChange}
+      />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
+    fireEvent.press(getByText('확인'));
+    expect(onChainSwappingChange).toHaveBeenLastCalledWith(true);
+
+    unmount();
+
+    expect(onChainSwappingChange).toHaveBeenLastCalledWith(false);
   });
 });

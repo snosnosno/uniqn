@@ -27,6 +27,7 @@ import { toDate } from '@/utils/date';
 import { TemplateModal } from '@/components/employer/job-form/modals/TemplateModal';
 import { StackHeader } from '@/components/headers';
 import { OrderSheetScreen } from '@/components/employer/order-sheet/OrderSheetScreen';
+import { OrderSheetChainScrim } from '@/components/employer/order-sheet/OrderSheetChainScrim';
 import { VenueSelectChips } from '@/components/employer/order-sheet/VenueSelectChips';
 import { shouldShowVenueChips, applySelectedVenue } from '@/utils/order-sheet/venueSelection';
 import type { OrderSheetPreset } from '@/components/employer/order-sheet/PresetCarousel';
@@ -53,6 +54,8 @@ export default function CreateJobPostingScreen() {
   const prefillCount = Number.isFinite(prefillCountParsed) ? prefillCountParsed : undefined;
 
   const [isDirty, setIsDirty] = useState(false);
+  // 연쇄 전환 딤 위임(B1) — OrderSheetScreen 내부 딤은 형제인 StackHeader·칩을 못 덮는다.
+  const [chainScrimVisible, setChainScrimVisible] = useState(false);
 
   // 다중 지점 employer — 이 공고를 어느 지점 배치(주간 그리드)에 반영할지 고르는 칩(B5).
   // 그리드 "공고 열기"(venueId 라우트 파라미터) 진입은 이미 지점이 정해져 미노출.
@@ -247,6 +250,7 @@ export default function CreateJobPostingScreen() {
         myPhone={profile?.phone ?? ''}
         presets={presets}
         onSaveTemplate={handleOrderSheetSaveTemplate}
+        onChainSwappingChange={setChainScrimVisible}
       />
       {/* 프리셋 "＋ 저장" 이름 입력 모달 — 주문서 시트가 닫힌 상태(캐러셀은 본문 스크롤)에서만 열려
           중첩 RN Modal(#244) 위험이 없다. onSave 는 굳혀 둔 orderSheetSaveDraft 로 저장. */}
@@ -262,6 +266,8 @@ export default function CreateJobPostingScreen() {
           isSaving={templateManager.isSavingTemplate}
         />
       ) : null}
+      {/* 연쇄 전환 딤(B1) — SafeAreaView 마지막 자식이라 StackHeader·칩까지 한 장으로 덮는다. */}
+      <OrderSheetChainScrim visible={chainScrimVisible} />
     </SafeAreaView>
   );
 }
