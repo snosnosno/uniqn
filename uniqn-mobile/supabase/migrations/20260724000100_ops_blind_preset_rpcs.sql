@@ -23,16 +23,29 @@ BEGIN
   IF p_name IS NULL OR char_length(p_name) = 0 THEN
     RAISE EXCEPTION '이름 필요' USING ERRCODE = 'P0001';
   END IF;
-  -- 입력 형태 검증(기존 ops_set_blind_levels 미러링) — 비배열/결손/음수/0분 차단
+  -- 입력 형태 검증 — 비배열/결손/음수/0분 차단
   IF p_levels IS NULL OR jsonb_typeof(p_levels) <> 'array' THEN
     RAISE EXCEPTION 'levels 배열 필요' USING ERRCODE = 'P0001';
   END IF;
+  -- 신뢰경계 방어(golden #6, sibling ops_set_prize_structure 문형): 캐스트(::int/::bigint/::boolean)
+  -- 전에 숫자 필드(level·smallBlind·bigBlind·ante·durationSec)는 정규식 선검증, isBreak 는 boolean
+  -- 텍스트 선검증. 비-숫자/소수/음수/불리언/누락 키가 아래 캐스트에서 raw 22P02(친절 P0001 경로
+  -- 우회)로 누출되던 갭 차단. coalesce(...,'') 로 누락 키(NULL)도 정규식 불일치로 함께 거부.
+  IF EXISTS (
+    SELECT 1 FROM jsonb_array_elements(p_levels) e
+    WHERE coalesce(e->>'level', '')       !~ '^[0-9]+$'
+       OR coalesce(e->>'smallBlind', '')  !~ '^[0-9]+$'
+       OR coalesce(e->>'bigBlind', '')    !~ '^[0-9]+$'
+       OR coalesce(e->>'ante', '')        !~ '^[0-9]+$'
+       OR coalesce(e->>'durationSec', '') !~ '^[0-9]+$'
+       OR coalesce(e->>'isBreak', '') NOT IN ('true', 'false')
+  ) THEN
+    RAISE EXCEPTION '레벨 값 불량' USING ERRCODE = 'P0001';
+  END IF;
+  -- 선검증으로 숫자 필드는 음이 아닌 정수 텍스트 보장(캐스트 안전). durationSec 는 0 초과여야 함.
   PERFORM 1
   FROM jsonb_array_elements(p_levels) e
-  WHERE (e->>'durationSec') IS NULL OR (e->>'durationSec')::int <= 0
-     OR (e->>'bigBlind') IS NULL OR (e->>'bigBlind')::bigint < 0
-     OR (e->>'smallBlind') IS NULL OR (e->>'smallBlind')::bigint < 0
-     OR (e->>'ante') IS NULL OR (e->>'ante')::bigint < 0;
+  WHERE (e->>'durationSec')::int <= 0;
   IF FOUND THEN
     RAISE EXCEPTION '레벨 값 불량' USING ERRCODE = 'P0001';
   END IF;
