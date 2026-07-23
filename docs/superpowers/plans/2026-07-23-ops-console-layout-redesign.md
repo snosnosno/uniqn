@@ -20,7 +20,7 @@
 - 필드명 camelCase. 리스트 대형=FlashList / 소형=FlatList.
 - 단독 버튼 터치타깃 ≥44px(`min-h-[44px]`), 세그먼트 내부는 40px 허용.
 - 반응형 분기 상수는 **기존** `ANDROID_COMPLIANCE.LARGE_SCREEN_MIN_WIDTH_DP`(=600, `src/constants/index.ts:92`) 재사용 — 신규 상수 금지.
-- 탭 콘텐츠 컴포넌트 내부 로직·props·권한 분기 **변경 금지**.
+- 탭 콘텐츠 컴포넌트 내부 로직·props·권한 분기 **변경 금지**. **명시 예외 = Task 7 한정**: `PlayersTab`/`TablesTab`에 행 액션 이관 배선(옵션 prop `onOpenPayouts?` 추가 포함)만 허용 — 그 외 기존 prop·로직 변경은 여전히 금지.
 - 완료 대회 표시: 착수 전 `git status`로 병렬세션 미커밋 확인, 있으면 워크트리 격리.
 - 완료 주장 전 `npm run quality`(tsc+eslint+prettier) + 관련 Jest 실행 증거.
 
@@ -31,7 +31,7 @@
 **Files:**
 - Create: `src/hooks/ops/useOpsConsoleLayout.ts`
 - Modify: `src/hooks/ops/index.ts` (배럴 export 추가)
-- Test: `src/hooks/ops/__tests__/useOpsConsoleLayout.test.ts`
+- Test: `src/hooks/ops/__tests__/useOpsConsoleLayout.test.tsxx`
 
 **Interfaces:**
 - Consumes: `ANDROID_COMPLIANCE.LARGE_SCREEN_MIN_WIDTH_DP` from `@/constants`, `useWindowDimensions` from `react-native`.
@@ -39,42 +39,54 @@
 
 - [ ] **Step 1: 실패 테스트 작성**
 
-```ts
-// src/hooks/ops/__tests__/useOpsConsoleLayout.test.ts
-import { renderHook } from '@testing-library/react-native';
+⚠️ react-native 전체 모킹 + RNTL `renderHook` 조합은 레포 선례와 충돌(RNTL이 RN 내부 호스트 컴포넌트 감지에 의존) — 선례 `src/hooks/__tests__/useAndroidOrientationPolicy.test.ts:13-36` 문형(react-test-renderer 직접)을 따른다:
+
+```tsx
+// src/hooks/ops/__tests__/useOpsConsoleLayout.test.tsxx
+import { act, create } from 'react-test-renderer';
 
 let mockWidth = 390;
 jest.mock('react-native', () => ({
   useWindowDimensions: () => ({ width: mockWidth, height: 800, scale: 2, fontScale: 1 }),
 }));
 
-import { useOpsConsoleLayout } from '../useOpsConsoleLayout';
+import { useOpsConsoleLayout, type OpsConsoleLayout } from '../useOpsConsoleLayout';
+
+function renderLayout(): OpsConsoleLayout {
+  let captured: OpsConsoleLayout | null = null;
+  function Probe() {
+    captured = useOpsConsoleLayout();
+    return null;
+  }
+  act(() => {
+    create(<Probe />);
+  });
+  return captured!;
+}
 
 describe('useOpsConsoleLayout', () => {
   it('폰 폭(390)에서 isWide=false', () => {
     mockWidth = 390;
-    const { result } = renderHook(() => useOpsConsoleLayout());
-    expect(result.current.isWide).toBe(false);
-    expect(result.current.width).toBe(390);
+    const r = renderLayout();
+    expect(r.isWide).toBe(false);
+    expect(r.width).toBe(390);
   });
 
   it('600dp 경계에서 isWide=true', () => {
     mockWidth = 600;
-    const { result } = renderHook(() => useOpsConsoleLayout());
-    expect(result.current.isWide).toBe(true);
+    expect(renderLayout().isWide).toBe(true);
   });
 
   it('태블릿 폭(834)에서 isWide=true', () => {
     mockWidth = 834;
-    const { result } = renderHook(() => useOpsConsoleLayout());
-    expect(result.current.isWide).toBe(true);
+    expect(renderLayout().isWide).toBe(true);
   });
 });
 ```
 
 - [ ] **Step 2: 실패 확인**
 
-Run: `npx jest src/hooks/ops/__tests__/useOpsConsoleLayout.test.ts`
+Run: `npx jest src/hooks/ops/__tests__/useOpsConsoleLayout.test.tsx`
 Expected: FAIL — "Cannot find module '../useOpsConsoleLayout'"
 
 - [ ] **Step 3: 최소 구현**
@@ -109,13 +121,13 @@ export { useOpsConsoleLayout } from './useOpsConsoleLayout';
 
 - [ ] **Step 5: 통과 확인**
 
-Run: `npx jest src/hooks/ops/__tests__/useOpsConsoleLayout.test.ts`
+Run: `npx jest src/hooks/ops/__tests__/useOpsConsoleLayout.test.tsx`
 Expected: PASS (3 tests)
 
 - [ ] **Step 6: 커밋**
 
 ```bash
-git add src/hooks/ops/useOpsConsoleLayout.ts src/hooks/ops/index.ts src/hooks/ops/__tests__/useOpsConsoleLayout.test.ts
+git add src/hooks/ops/useOpsConsoleLayout.ts src/hooks/ops/index.ts src/hooks/ops/__tests__/useOpsConsoleLayout.test.tsx
 git commit -m "feat(ops): 운영 콘솔 600dp 반응형 분기 훅 추가"
 ```
 
@@ -129,7 +141,7 @@ git commit -m "feat(ops): 운영 콘솔 600dp 반응형 분기 훅 추가"
 - Test: `src/components/ops/__tests__/OpsSummaryStrip.test.tsx`
 
 **Interfaces:**
-- Consumes: `useOpsLiveStats(tournamentId)` from `@/hooks/ops` → `{ stats }` (`stats.playing`, `stats.entries`, `stats.averageStackBb`).
+- Consumes: `useOpsLiveStats(tournamentId)` from `@/hooks/ops` → `{ stats }` (`stats.playing`, `stats.entries`, `stats.avgStackBb` — ⚠️ 필드명 검증됨 `src/types/ops.ts:228`, `averageStackBb` 아님).
 - Produces: `OpsSummaryStrip({ tournamentId: string; onPress?: () => void })`.
 
 - [ ] **Step 1: 실패 테스트 작성**
@@ -145,7 +157,7 @@ jest.mock('@/hooks/ops', () => ({ useOpsLiveStats: jest.fn() }));
 describe('OpsSummaryStrip', () => {
   it('PLAYING·ENTRY·AVG BB 를 한 줄로 표시', () => {
     (useOpsLiveStats as jest.Mock).mockReturnValue({
-      stats: { playing: 9, entries: 57, averageStackBb: 19 },
+      stats: { playing: 9, entries: 57, avgStackBb: 19 },
     });
     const { getByText } = render(<OpsSummaryStrip tournamentId="t1" />);
     expect(getByText(/9/)).toBeTruthy();
@@ -155,7 +167,7 @@ describe('OpsSummaryStrip', () => {
 
   it('탭하면 onPress 호출(현황 점프)', () => {
     (useOpsLiveStats as jest.Mock).mockReturnValue({
-      stats: { playing: 0, entries: 0, averageStackBb: 0 },
+      stats: { playing: 0, entries: 0, avgStackBb: 0 },
     });
     const onPress = jest.fn();
     const { getByRole } = render(<OpsSummaryStrip tournamentId="t1" onPress={onPress} />);
@@ -202,7 +214,7 @@ export function OpsSummaryStrip({ tournamentId, onPress }: OpsSummaryStripProps)
         </Text>{' '}
         ENTRY · AVG{' '}
         <Text className="font-sans-semibold text-content-primary dark:text-off-white">
-          {stats?.averageStackBb ?? 0}
+          {stats?.avgStackBb ?? 0}
         </Text>
         BB
       </Text>
@@ -244,7 +256,7 @@ git commit -m "feat(ops): 상시 요약 스트립(OpsSummaryStrip) 추가"
 **Interfaces:**
 - Consumes: `useOpsClock(tournamentId)` → `{ clock, currentLevel, remainingSec, levelMissing }`; 기존 `ClockControl` 컴포넌트(시트 본문 재사용).
 - Produces:
-  - `OpsClockStrip({ tournamentId: string })` — 축약 표시 + 탭 시 내부 시트 open.
+  - `OpsClockStrip({ tournamentId: string; onNavigateToLevels: () => void })` — 축약 표시 + 탭 시 내부 시트 open. (범위 명기: spec 2.1의 "다음 브레이크" 표시는 `useOpsClock` 반환에 nextBreak가 없어 **v1 제외** — 클라 산출 설계가 필요, spec §6 후속.)
   - `OpsClockControlSheet({ tournamentId: string; visible: boolean; onClose: () => void; onNavigateToLevels: () => void })`.
 
 - [ ] **Step 1: 실패 테스트 작성**
@@ -259,10 +271,13 @@ jest.mock('@/hooks/ops', () => ({
   useOpsClock: jest.fn(),
   useOpsBlindLevels: jest.fn(() => ({ blindLevels: [] })),
 }));
-// 시트 본문은 무거운 의존(ClockControl) → 가벼운 스텁
+// 시트 본문은 무거운 의존(ClockControl) → 가벼운 스텁.
+// 모킹 문형은 레포 관례(factory 안 JSX — TablesTab.test.tsx:55-63): 컴포넌트 직접 함수호출 금지.
 jest.mock('../OpsClockControlSheet', () => ({
-  OpsClockControlSheet: ({ visible }: { visible: boolean }) =>
-    visible ? require('react-native').Text({ children: 'SHEET_OPEN' }) : null,
+  OpsClockControlSheet: ({ visible }: { visible: boolean }) => {
+    const { Text } = require('react-native');
+    return visible ? <Text>SHEET_OPEN</Text> : null;
+  },
 }));
 
 describe('OpsClockStrip', () => {
@@ -273,7 +288,7 @@ describe('OpsClockStrip', () => {
       remainingSec: 493,
       levelMissing: false,
     });
-    const { getByText } = render(<OpsClockStrip tournamentId="t1" />);
+    const { getByText } = render(<OpsClockStrip tournamentId="t1" onNavigateToLevels={jest.fn()} />);
     expect(getByText(/LV 19|LEVEL 19/)).toBeTruthy();
     expect(getByText('08:13')).toBeTruthy();
   });
@@ -285,7 +300,7 @@ describe('OpsClockStrip', () => {
       remainingSec: 60,
       levelMissing: false,
     });
-    const { getByRole, getByText } = render(<OpsClockStrip tournamentId="t1" />);
+    const { getByRole, getByText } = render(<OpsClockStrip tournamentId="t1" onNavigateToLevels={jest.fn()} />);
     fireEvent.press(getByRole('button'));
     expect(getByText('SHEET_OPEN')).toBeTruthy();
   });
@@ -428,6 +443,8 @@ git commit -m "feat(ops): 상시 클럭 스트립 + 제어 시트 추가"
 
 이 태스크는 현재 `[id].tsx:118-179`의 status 탭 JSX를 **클럭(`ClockControl`)만 빼고** 옮긴다(클럭은 이제 상시 스트립).
 
+> 범위 명기(M4): spec 2.1은 완료 대회 결과카드를 "ClockStrip 자리"(모든 탭 상시)로 그렸지만, v1은 **현황 탭 내부에만** 배치한다 — 기본 진입이 현황이라 실용상 동등, 타 탭 상시 노출은 의도적 단순화(spec §6 후속 기록).
+
 - [ ] **Step 1: 실패 테스트 작성**
 
 ```tsx
@@ -443,7 +460,12 @@ jest.mock('@/hooks/ops', () => ({
 jest.mock('../LiveStatsPanel', () => ({ LiveStatsPanel: () => null }));
 jest.mock('../MonitorLinkButton', () => ({ MonitorLinkButton: () => null }));
 jest.mock('../MonitorConfigCard', () => ({ MonitorConfigCard: () => null }));
-jest.mock('../TournamentResultCard', () => ({ TournamentResultCard: () => require('react-native').Text({ children: '결과카드' }) }));
+jest.mock('../TournamentResultCard', () => ({
+  TournamentResultCard: () => {
+    const { Text } = require('react-native');
+    return <Text>결과카드</Text>;
+  },
+}));
 
 const base = { id: 't1', name: 'T', status: 'active', registrationOpen: true, monitorToken: 'm', monitorConfig: null } as any;
 
@@ -617,8 +639,30 @@ import { useOpsConsoleLayout } from '@/hooks/ops';
 import { OpsConsoleShell } from '../OpsConsoleShell';
 
 jest.mock('@/hooks/ops', () => ({ useOpsConsoleLayout: jest.fn() }));
-jest.mock('../OpsClockStrip', () => ({ OpsClockStrip: () => require('react-native').Text({ children: 'CLOCK' }) }));
-jest.mock('../OpsSummaryStrip', () => ({ OpsSummaryStrip: () => require('react-native').Text({ children: 'SUMMARY' }) }));
+// @gorhom/bottom-sheet 실물은 Provider 부재로 jest 렌더 불가(레포 probe 관례: StaffTab.test.tsx:3-5) → ui 배럴 모킹
+jest.mock('@/components/ui', () => ({
+  SelectBottomSheet: ({ visible, options, onSelect }: any) => {
+    const { Text, Pressable } = require('react-native');
+    if (!visible) return null;
+    return options.map((o: any) => (
+      <Pressable key={o.value} onPress={() => onSelect(o.value)}>
+        <Text>{o.label}</Text>
+      </Pressable>
+    ));
+  },
+}));
+jest.mock('../OpsClockStrip', () => ({
+  OpsClockStrip: () => {
+    const { Text } = require('react-native');
+    return <Text>CLOCK</Text>;
+  },
+}));
+jest.mock('../OpsSummaryStrip', () => ({
+  OpsSummaryStrip: () => {
+    const { Text } = require('react-native');
+    return <Text>SUMMARY</Text>;
+  },
+}));
 
 const baseProps = {
   tournamentId: 't1', isCompleted: false, playersCount: 57, staffCount: 4,
@@ -671,8 +715,8 @@ Expected: FAIL — 모듈 없음
 ```tsx
 // src/components/ops/OpsConsoleShell.tsx
 /** ops 운영 콘솔 반응형 셸(L1·L3·L4). 폰=상단 스트립+5탭+⋯, 태블릿=좌측 사이드바+7탭. */
-import { useMemo } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
 import { SelectBottomSheet } from '@/components/ui';
 import { useOpsConsoleLayout } from '@/hooks/ops';
 import { OpsClockStrip } from './OpsClockStrip';
@@ -713,6 +757,7 @@ export function OpsConsoleShell({
   activeTab, onTabChange, renderTab, fab,
 }: OpsConsoleShellProps) {
   const { isWide } = useOpsConsoleLayout();
+  const [overflowOpen, setOverflowOpen] = useState(false); // ⋯ 시트(제어형 — trigger prop 없음)
 
   const overflowOptions = useMemo(
     () => OVERFLOW_TABS.map((t) => ({ label: labelOf(t, playersCount, staffCount), value: t })),
@@ -765,25 +810,30 @@ export function OpsConsoleShell({
         {PHONE_TABS.map((t) => (
           <Tab key={t} t={t} />
         ))}
-        <SelectBottomSheet
-          trigger={
-            <View className={`items-center rounded-md px-2 py-2 ${isOverflowActive ? 'bg-white dark:bg-gray-700' : ''}`}>
-              <Text className={`text-base ${isOverflowActive ? 'text-gold' : 'text-secondary-500 dark:text-secondary-400'}`}>⋯</Text>
-            </View>
-          }
-          title="더 보기"
-          options={overflowOptions}
-          onSelect={(v) => onTabChange(v as OpsTabKey)}
-        />
+        <Pressable
+          onPress={() => setOverflowOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel="더 보기"
+          className={`items-center rounded-md px-2 py-2 ${isOverflowActive ? 'bg-white dark:bg-gray-700' : ''}`}
+        >
+          <Text className={`text-base ${isOverflowActive ? 'text-gold' : 'text-secondary-500 dark:text-secondary-400'}`}>⋯</Text>
+        </Pressable>
       </View>
       <View className="flex-1">{renderTab(activeTab)}</View>
       {fab}
+      <SelectBottomSheet
+        visible={overflowOpen}
+        onClose={() => setOverflowOpen(false)}
+        title="더 보기"
+        options={overflowOptions}
+        onSelect={(v) => onTabChange(v as OpsTabKey)} // onSelect 가 내부에서 onClose 까지 호출(BottomSheet.tsx:367-373)
+      />
     </View>
   );
 }
 ```
 
-> 주의: `SelectBottomSheet`의 실제 API(`trigger`/`options`/`onSelect` vs `value`/`onValueChange`)를 `src/components/ui`에서 확인하고 맞춘다. `trigger` 패턴이 없으면 `⋯` Pressable + 별도 `visible` state로 여는 형태로 조정.
+> 검증됨(리뷰): `SelectBottomSheet`는 **제어형**(`visible/onClose/title/options/onSelect` — `src/components/ui/BottomSheet.tsx:340-356`), `trigger` prop 없음. 위 코드가 그 계약에 맞춘 형태다.
 
 - [ ] **Step 4: 배럴 등록**
 
@@ -823,15 +873,20 @@ import { useOpsTournament, useOpsParticipants, useOpsStaff } from '@/hooks/ops';
 import OpsTournamentDetailScreen from '../[id]';
 
 jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({ id: 't1' }) }));
+// StackHeader→HeaderBackButton 이 useRouter/useNavigation/usePathname 호출 — 미모킹 시 크래시
+// (기존 화면 테스트 관례: OpsTournamentListScreen.test.tsx:33-35)
+jest.mock('@/components/headers', () => ({ StackHeader: () => null }));
 jest.mock('@/hooks/ops', () => ({
   useOpsTournament: jest.fn(),
   useOpsParticipants: jest.fn(() => ({ participants: [], isLoading: false })),
   useOpsStaff: jest.fn(() => ({ data: [] })),
 }));
-// 셸은 렌더 확인만 — 활성 탭 라벨 스텁
+// 셸은 렌더 확인만 — 활성 탭 라벨 스텁(factory 안 JSX 관례)
 jest.mock('@/components/ops', () => ({
-  OpsConsoleShell: ({ activeTab }: { activeTab: string }) =>
-    require('react-native').Text({ children: `SHELL:${activeTab}` }),
+  OpsConsoleShell: ({ activeTab }: { activeTab: string }) => {
+    const { Text } = require('react-native');
+    return <Text>{`SHELL:${activeTab}`}</Text>;
+  },
   OpsStatusTab: () => null, PlayersTab: () => null, TablesTab: () => null,
   BlindLevelsTab: () => null, StaffTab: () => null, HistoryTab: () => null, PayoutsTab: () => null,
 }));
@@ -856,7 +911,7 @@ describe('OpsTournamentDetailScreen', () => {
 - [ ] **Step 2: 실패 확인**
 
 Run: `npx jest "app/(ops)/tournaments/__tests__/OpsTournamentDetailScreen.test.tsx"`
-Expected: FAIL — 기본 탭이 아직 'players'
+Expected: FAIL — 현행 `[id].tsx`는 셸 미채택이라 미모킹 의존(ClockControl 등 컴포넌트 5종·useToggleRegistration 등 훅 2종) undefined 크래시로 실패(기본 탭 단언 이전에 렌더 자체가 깨짐)
 
 - [ ] **Step 3: `[id].tsx` 재작성**
 
@@ -961,26 +1016,39 @@ git commit -m "feat(ops): 대회 상세를 반응형 셸로 전환(기본 현황
 - Test: `src/components/ops/__tests__/OpsParticipantActionSheet.test.tsx`
 
 **Interfaces:**
-- Consumes: `useAddRebuy`, `useAddAddon`, `useBustParticipant`, `useReenterParticipant`, `useUndoBust`, `useMoveSeat`, `useFreeSeat` from `@/hooks/ops`.
+- Consumes: `useAddRebuy`, `useAddAddon`, `useBustParticipant`(⚠️ vars = `{ participantId, eliminatorId? }` — `useOpsMutations.ts:211-220`), `useReenterParticipant`, `useUndoBust`, `useFreeSeat`(⚠️ 인자 = **seatId** — `:401-405`) from `@/hooks/ops`.
 - Produces:
   ```ts
   interface OpsParticipantActionSheetProps {
     tournament: OpsTournament;
-    participant: OpsParticipant | null;   // null = 닫힘
+    participant: OpsParticipant | null;      // null = 닫힘
+    seat?: OpsSeat | null;                    // 좌석 컨텍스트 — TablesTab 진입 시만 전달
     onClose: () => void;
-    onOpenPayouts?: () => void;            // ITM bust 후 상금 화면 링크
+    onRequestMove?: (seat: OpsSeat) => void;  // TablesTab 진입 시: 시트 닫고 기존 moveMode 재사용
+    onOpenPayouts?: () => void;               // ITM bust 후 상금 화면 링크(옵션)
   }
   ```
-  액션시트는 status별 액션 노출(active=리바이/애드온/자리이동/좌석비우기/탈락, busted=재진입/탈락취소). 탈락은 **하단 격리 구역(red)**.
 
-> 이 태스크가 최대 리스크. 기존 PlayersTab의 `handleBustPress`(바운티=탈락자 지정 피커, 비바운티=confirmAction) 로직을 시트로 이관하되 **동작 등가**를 테스트로 고정한다.
+**진입 컨텍스트별 액션 매트릭스** (C1·C2 해소 — `OpsParticipant`에는 좌석 필드가 **없다**, `types/ops.ts:47-72`):
+
+| 액션 | 참가 행 진입(seat 없음) | 좌석 진입(seat 있음) | 게이트 |
+|---|---|---|---|
+| 리바이 / 애드온 | ✓ | ✓ | `p.status==='active'` |
+| 자리 이동 | ✗ 숨김 | ✓ → `onClose()` 후 `onRequestMove(seat)` | seat 필요(C2 — 기존 moveMode 재사용) |
+| 좌석 비우기 | ✗ 숨김 | ✓ → `freeMut.mutate(seat.id)` | seat 필요(C1 — **seatId**, participantId 아님) |
+| 탈락 처리(격리) | ✓ | ✓ | `p.status==='active'` · `{ participantId }` + `handleBustSuccess`(H1) |
+| 재진입 | ✓ | ✓ | `p.status==='busted'` |
+| 탈락 취소 | ✓ | ✓ | `p.status==='busted'` **AND `tournament.status==='active'`**(H8 — 현행 `PlayersTab.tsx:237` 게이트 이관) |
+| QR(PlayerClaimButton) | **행에 잔류**(시트 아님) | 좌석 그리드 무관 | M6 — 전 상태 1탭 노출 유지 |
+
+> 이 태스크가 최대 리스크. bust 성공 안내(`handleBustSuccess` — 우승 확정/ITM/일반 종료 showAlert 분기, `PlayersTab.tsx:49-62`)와 바운티 eliminator picker(`:288-324`)를 시트로 **문구·인자 그대로 이관**(동작 등가를 테스트로 고정). `onOpenPayouts` 스레딩은 Global Constraints의 Task 7 예외로 허용된 옵션 prop — `[id].tsx → PlayersTab/TablesTab → 시트`(H7).
 
 - [ ] **Step 1: 실패 테스트 작성 (액션시트 단독)**
 
 ```tsx
 // src/components/ops/__tests__/OpsParticipantActionSheet.test.tsx
 import { render, fireEvent } from '@testing-library/react-native';
-import { useBustParticipant, useAddRebuy, useReenterParticipant } from '@/hooks/ops';
+import { useBustParticipant, useFreeSeat } from '@/hooks/ops';
 import { OpsParticipantActionSheet } from '../OpsParticipantActionSheet';
 
 jest.mock('@/hooks/ops', () => ({
@@ -989,43 +1057,85 @@ jest.mock('@/hooks/ops', () => ({
   useBustParticipant: jest.fn(() => ({ mutate: jest.fn() })),
   useReenterParticipant: jest.fn(() => ({ mutate: jest.fn() })),
   useUndoBust: jest.fn(() => ({ mutate: jest.fn() })),
-  useMoveSeat: jest.fn(() => ({ mutate: jest.fn() })),
   useFreeSeat: jest.fn(() => ({ mutate: jest.fn() })),
+}));
+// SheetModal 실물 대신 자식 통과 스텁(레포 관례: order-sheet RolesSheet.test.tsx:11-22)
+jest.mock('@/components/ui/SheetModal', () => ({
+  SheetModal: ({ visible, children }: any) => {
+    const { View } = require('react-native');
+    return visible ? <View>{children}</View> : null;
+  },
 }));
 
 const tournament = { id: 't1', status: 'active', bountyCost: null } as any;
-const active = { id: 'p1', name: 'Shimizu', status: 'active', chips: 480000 } as any;
-const busted = { id: 'p2', name: 'Hsieh', status: 'busted', finishPosition: 11 } as any;
+const active = { id: 'p1', name: 'Shimizu', status: 'active', chips: 480000, entryNumber: 8 } as any;
+const busted = { id: 'p2', name: 'Hsieh', status: 'busted', finishPosition: 11, entryNumber: 11 } as any;
+const seat = { id: 's1', participantId: 'p1' } as any;
 
 describe('OpsParticipantActionSheet', () => {
-  it('active: 리바이/애드온/탈락 노출, 탈락은 격리 구역', () => {
-    const { getByText } = render(
+  it('참가 행 진입(seat 없음): 리바이/애드온/탈락 노출, 좌석 액션 숨김', () => {
+    const { getByText, queryByText } = render(
       <OpsParticipantActionSheet tournament={tournament} participant={active} onClose={jest.fn()} />
     );
     expect(getByText('리바이')).toBeTruthy();
     expect(getByText('애드온')).toBeTruthy();
     expect(getByText('탈락 처리')).toBeTruthy();
+    expect(queryByText('좌석 비우기')).toBeNull();
+    expect(queryByText('자리 이동')).toBeNull();
   });
 
-  it('비바운티 탈락 → confirmAction 경유 후 mutate', () => {
+  it('좌석 진입(seat 있음): 좌석 비우기=seat.id · 자리 이동=onRequestMove(seat)', () => {
+    const free = jest.fn();
+    const onRequestMove = jest.fn();
+    (useFreeSeat as jest.Mock).mockReturnValue({ mutate: free });
+    const { getByText } = render(
+      <OpsParticipantActionSheet
+        tournament={tournament}
+        participant={active}
+        seat={seat}
+        onClose={jest.fn()}
+        onRequestMove={onRequestMove}
+      />
+    );
+    fireEvent.press(getByText('좌석 비우기'));
+    expect(free).toHaveBeenCalledWith('s1'); // C1: seatId — participantId 아님
+    fireEvent.press(getByText('자리 이동'));
+    expect(onRequestMove).toHaveBeenCalledWith(seat); // C2: 기존 moveMode 재사용
+  });
+
+  it('비바운티 탈락 → confirmAction 후 {participantId} + onSuccess 콜백(H1)', () => {
     const mutate = jest.fn();
     (useBustParticipant as jest.Mock).mockReturnValue({ mutate });
     // confirmAction 은 즉시 onConfirm 실행하도록 모킹
-    jest.spyOn(require('@/utils/dialog'), 'confirmAction').mockImplementation((o: any) => o.onConfirm());
+    jest.spyOn(require('@/utils/confirmAction'), 'confirmAction').mockImplementation((o: any) => o.onConfirm());
     const { getByText } = render(
       <OpsParticipantActionSheet tournament={tournament} participant={active} onClose={jest.fn()} />
     );
     fireEvent.press(getByText('탈락 처리'));
-    expect(mutate).toHaveBeenCalledWith('p1');
+    expect(mutate).toHaveBeenCalledWith(
+      { participantId: 'p1' },
+      expect.objectContaining({ onSuccess: expect.any(Function) }) // handleBustSuccess 이관
+    );
   });
 
-  it('busted: 재진입/탈락취소 노출(리바이 없음)', () => {
+  it('busted + 대회 active: 재진입/탈락취소 노출(리바이 없음)', () => {
     const { getByText, queryByText } = render(
       <OpsParticipantActionSheet tournament={tournament} participant={busted} onClose={jest.fn()} />
     );
     expect(getByText('재진입')).toBeTruthy();
     expect(getByText('탈락 취소')).toBeTruthy();
     expect(queryByText('리바이')).toBeNull();
+  });
+
+  it('busted + 대회 completed: 탈락취소 숨김(H8 게이트)', () => {
+    const { queryByText } = render(
+      <OpsParticipantActionSheet
+        tournament={{ ...tournament, status: 'completed' }}
+        participant={busted}
+        onClose={jest.fn()}
+      />
+    );
+    expect(queryByText('탈락 취소')).toBeNull();
   });
 
   it('participant=null 이면 아무것도 렌더 안 함', () => {
@@ -1048,25 +1158,29 @@ Expected: FAIL — 모듈 없음
 
 ```tsx
 // src/components/ops/OpsParticipantActionSheet.tsx
-/** 참가자 액션시트(L5·L6). 참가 행·테이블 좌석 공용. 탈락은 하단 격리. */
+/** 참가자 액션시트(L5·L6). 참가 행(seat 없음)·테이블 좌석(seat 있음) 공용. 탈락은 하단 격리. */
 import { Pressable, Text, View } from 'react-native';
 import { SheetModal } from '@/components/ui';
-import { confirmAction } from '@/utils/dialog';
+import { confirmAction } from '@/utils/confirmAction';
+import { showAlert } from '@/utils/alert'; // 정확한 경로는 현행 PlayersTab 상단 import 를 복사
+import { formatNumber as fmt } from '@/utils/formatters/currency';
 import {
   useAddRebuy, useAddAddon, useBustParticipant,
   useReenterParticipant, useUndoBust, useFreeSeat,
 } from '@/hooks/ops';
-import type { OpsParticipant, OpsTournament } from '@/types/ops';
+import type { OpsBustResult, OpsParticipant, OpsSeat, OpsTournament } from '@/types/ops';
 
 interface OpsParticipantActionSheetProps {
   tournament: OpsTournament;
   participant: OpsParticipant | null;
+  seat?: OpsSeat | null;
   onClose: () => void;
+  onRequestMove?: (seat: OpsSeat) => void;
   onOpenPayouts?: () => void;
 }
 
 export function OpsParticipantActionSheet({
-  tournament, participant, onClose, onOpenPayouts,
+  tournament, participant, seat, onClose, onRequestMove, onOpenPayouts,
 }: OpsParticipantActionSheetProps) {
   const tournamentId = tournament.id;
   const rebuyMut = useAddRebuy(tournamentId);
@@ -1079,15 +1193,30 @@ export function OpsParticipantActionSheet({
   if (!participant) return null;
   const p = participant;
 
+  // 우승 확정/ITM/일반 종료 안내 — 현행 PlayersTab.tsx:49-62 문구 그대로 이관(H1 동작 등가)
+  const handleBustSuccess = (r: OpsBustResult) => {
+    if (r.winnerFinalized && r.winner) {
+      showAlert(
+        '우승 확정',
+        `1위 · 상금 ${r.winner.prizeAmount !== null ? fmt(r.winner.prizeAmount) : '미설정'}`
+      );
+    } else {
+      showAlert(
+        r.prizeAmount !== null ? 'ITM 종료' : '탈락 처리 완료',
+        `${r.finishPosition}위${r.prizeAmount !== null ? ` · 상금 ${fmt(r.prizeAmount)}` : ''}`
+      );
+    }
+  };
+
   const handleBust = () => {
-    // 비바운티: 확인 다이얼로그. (바운티: eliminator picker — PlayersTab 기존 로직 이관)
+    // 비바운티: 확인 다이얼로그. 바운티: eliminator picker(PlayersTab.tsx:288-324 그대로 이관 — 생략 금지)
     confirmAction({
       title: '탈락 처리',
       message: `${p.name} 님을 탈락 처리할까요?`,
       confirmText: '탈락 처리',
       destructive: true,
       onConfirm: () => {
-        bustMut.mutate(p.id);
+        bustMut.mutate({ participantId: p.id }, { onSuccess: handleBustSuccess }); // H1: 객체 vars
         onClose();
       },
     });
@@ -1112,9 +1241,16 @@ export function OpsParticipantActionSheet({
               <ActionBtn label="리바이" onPress={() => { rebuyMut.mutate(p.id); onClose(); }} />
               <ActionBtn label="애드온" onPress={() => { addonMut.mutate(p.id); onClose(); }} />
             </View>
-            <View className="flex-row gap-2">
-              <ActionBtn label="좌석 비우기" onPress={() => { freeMut.mutate(p.id); onClose(); }} />
-            </View>
+            {/* 좌석 액션 — 좌석 컨텍스트(seat)가 있을 때만(C1). 참가 행 진입 시 자동 숨김 */}
+            {seat && (
+              <View className="flex-row gap-2">
+                <ActionBtn
+                  label="자리 이동"
+                  onPress={() => { onClose(); onRequestMove?.(seat); }} // C2: 기존 moveMode 재사용
+                />
+                <ActionBtn label="좌석 비우기" onPress={() => { freeMut.mutate(seat.id); onClose(); }} />
+              </View>
+            )}
             {/* 파괴적 액션 격리 구역(L6) */}
             <View className="mt-2 border-t border-gray-200 pt-2 dark:border-gray-700">
               <Pressable
@@ -1130,18 +1266,21 @@ export function OpsParticipantActionSheet({
         {p.status === 'busted' && (
           <View className="flex-row gap-2">
             <ActionBtn label="재진입" onPress={() => { reenterMut.mutate(p.id); onClose(); }} />
-            <ActionBtn
-              label="탈락 취소"
-              onPress={() =>
-                confirmAction({
-                  title: '탈락 취소',
-                  message: `${p.name} 님의 탈락을 취소할까요?\n칩과 좌석이 복원됩니다.`,
-                  confirmText: '탈락 취소',
-                  destructive: true,
-                  onConfirm: () => { undoMut.mutate(p.id); onClose(); },
-                })
-              }
-            />
+            {/* H8: 완료 대회에서는 탈락취소 숨김 — 현행 PlayersTab.tsx:237 게이트 이관 */}
+            {tournament.status === 'active' && (
+              <ActionBtn
+                label="탈락 취소"
+                onPress={() =>
+                  confirmAction({
+                    title: '탈락 취소',
+                    message: `${p.name} 님의 탈락을 취소할까요?\n칩과 좌석이 복원됩니다.`,
+                    confirmText: '탈락 취소',
+                    destructive: true,
+                    onConfirm: () => { undoMut.mutate(p.id); onClose(); },
+                  })
+                }
+              />
+            )}
           </View>
         )}
         {p.status === 'busted' && p.prizeAmount != null && onOpenPayouts && (
@@ -1159,20 +1298,20 @@ export function OpsParticipantActionSheet({
 }
 ```
 
-> 주의: `confirmAction` 경로는 `@/utils/dialog` 여부를 확인(프로젝트에 따라 `@/utils/alert` 등). eliminator picker(바운티)·PlayerClaimButton 재배치는 PlayersTab에서 이관하며 기존 문구/인자 그대로 유지.
+> 검증됨(리뷰): `confirmAction` = `@/utils/confirmAction`(:20). `showAlert`·`OpsBustResult`의 정확한 import는 현행 PlayersTab 상단을 그대로 복사. 바운티 eliminator picker(SelectBottomSheet, `PlayersTab.tsx:288-324`)는 문구·인자 그대로 시트 흐름에 이관. QR(`PlayerClaimButton`)은 **행에 잔류**(M6 — 전 상태 1탭 노출 유지, 시트에 넣으면 탭 수 +1 회귀).
 
 - [ ] **Step 4: 통과 확인 (시트 단독)**
 
 Run: `npx jest src/components/ops/__tests__/OpsParticipantActionSheet.test.tsx`
-Expected: PASS (4 tests)
+Expected: PASS (6 tests)
 
 - [ ] **Step 5: PlayersTab 배선 — 행 탭 → 시트**
 
-`PlayersTab.tsx`에서 행 인라인 버튼(리바이/애드온/탈락/재진입/탈락취소)을 제거하고, 행을 `Pressable`로 감싸 `setSheetParticipant(item)` → `<OpsParticipantActionSheet participant={sheetParticipant} .../>` 렌더. 기존 PlayersTab 테스트(`PlayersTab.test.tsx` 있으면)의 행 액션 단언을 시트 경유로 갱신.
+`PlayersTab.tsx`에서 행 인라인 버튼(리바이/애드온/탈락/재진입/탈락취소)을 제거하고, 행을 `Pressable`로 감싸 `setSheetParticipant(item)` → `<OpsParticipantActionSheet participant={sheetParticipant} onOpenPayouts={onOpenPayouts} .../>` (seat 미전달 — 좌석 액션 자동 숨김). **QR(PlayerClaimButton)은 행 우측에 잔류**(M6). `handleBustSuccess`·바운티 피커는 시트로 이관(문구·인자 그대로). `onOpenPayouts?: () => void` 옵션 prop을 PlayersTab에 추가(Global Constraints의 Task 7 예외)하고 `[id].tsx`에서 `() => setTab('payouts')` 전달(H7). 기존 PlayersTab 테스트의 행 액션 단언을 시트 경유로 갱신.
 
 - [ ] **Step 6: TablesTab 배선 — 좌석 탭 → 시트**
 
-`TablesTab.tsx`의 `onSeatPress(seat)`에서 `seat.participantId`가 있으면 해당 participant를 찾아 `setSheetParticipant`. moveMode 진행 중이면 기존 이동 로직 우선(등가 유지).
+`TablesTab.tsx`의 `onSeatPress(seat)`에서: **moveMode 진행 중이면 기존 이동 로직 우선**(등가 유지). 아니고 `seat.participantId`가 있으면 participant를 찾아 `setSheetParticipant(participant)` + `setSheetSeat(seat)` → 시트에 `seat`·`onRequestMove={(s) => setMoveFromSeat(s)}` 전달 — 기존 seatMenu(SelectBottomSheet)의 '이동' 진입점을 시트가 대체(C2). 빈 좌석 탭은 기존 로직(배정) 유지.
 
 - [ ] **Step 7: 배럴 + 전체 검증**
 
@@ -1197,8 +1336,15 @@ git commit -m "feat(ops): 참가·좌석 공용 액션시트 통합(탈락 격�
 - **Spec 커버리지**: L1(클럭 스트립 T3·요약 T2)·L2(기본 현황 T6)·L3(5탭+⋯ T5)·L4(태블릿 사이드바 T5)·L5(공용 액션시트 T7)·L6(탈락 격리 T7)·L7(FAB 등록 — PlayersTab 기존 FAB 유지, 셸 `fab` 슬롯)·L8(600 분기 T1) 전부 태스크 존재.
 - **미커버 주의**: L7의 FAB '등록'은 기존 PlayersTab 내부 등록 폼/FAB를 그대로 두고 셸 `fab` 슬롯은 옵션으로 남김 — 현행 인라인 등록 흐름을 유지하되, 인라인 폼이 리스트를 밀지 않도록 시트화하는 개선은 **후속**(스펙 L7의 "인라인→시트"는 별도 소규모 태스크로 분리 가능). 실행 시 PlayersTab 등록 UI 확인 후 결정.
 - **타입 일관성**: `OpsTabKey`(T5 정의)를 T6에서 동일 import. `OpsParticipantActionSheetProps`의 `participant: OpsParticipant | null` 일관.
-- **불확실 지점(실행 시 코드 확인 필수)**: `SheetModal`/`SelectBottomSheet` 실제 props, `confirmAction` import 경로, `useOpsClock`의 `currentLevel`/`remainingSec` 필드명, `averageStackBb` 존재 여부. 각 태스크에 주의 노트로 명시.
+- **리뷰 후 확정(2026-07-23)**: SheetModal(`visible/onClose/title` ✓)·SelectBottomSheet(제어형, trigger 없음 ✓)·`confirmAction`=`@/utils/confirmAction` ✓·useOpsClock 반환 필드 ✓·`avgStackBb` ✓ — 전부 코드 라인 근거로 검증됨(아래 리뷰 반영 이력).
 
 ## 실행 순서 의존성
 
 T1 → T2 → T3 → T4 → T5(T1~T3 소비) → T6(T5·T4 소비) → T7(독립성 높음, T6 후 배선). T1~T4는 상호 독립이라 병렬 가능.
+
+## 리뷰 반영 이력 (2026-07-23 fable 검증 리뷰 — 판정 "수정 후 실행, T7 부분 재설계" → 반영 완료)
+
+- **CRITICAL 2**: C1 좌석 컨텍스트(`seat?: OpsSeat` prop — freeSeat는 **seatId**, OpsParticipant에 좌석 필드 없음) · C2 자리 이동 진입점(`onRequestMove` → 기존 moveMode 재사용) — T7을 진입 컨텍스트별 액션 매트릭스로 재설계.
+- **HIGH 8**: H1 bust `{participantId}`+`handleBustSuccess` 이관 · H2 `confirmAction` 경로 · H3 `avgStackBb` · H4 SelectBottomSheet 제어형 승격 · H5 테스트 모킹 3건(ui 배럴·SheetModal·StackHeader) · H6 T1 테스트 react-test-renderer 문형 · H7 `onOpenPayouts` 스레딩(Task 7 예외 명기) · H8 탈락취소 `tournament.status==='active'` 게이트.
+- **MEDIUM**: M1 모킹 factory 안 JSX 문형 · M2 OpsClockStrip `onNavigateToLevels` 시그니처 정합 · M3 "다음 브레이크" v1 제외 명기 · M4 결과카드 현황 탭 한정 명기 · M5 Global Constraints Task 7 예외 · M6 QR 행 잔류 결정.
+- **LOW**: L1 T6 RED 기대 문구 교정. L2(기본 탭 변경 회귀 위험 낮음)·L3(정확성 확인 항목)는 무변경.
