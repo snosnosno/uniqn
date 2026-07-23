@@ -11,27 +11,29 @@
 
 import { logger } from '@/utils/logger';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
-import { SettlementCalculator } from '@/domains/settlement';
+import { SettlementCalculator, resolveEffectiveSalaryWithSource } from '@/domains/settlement';
 import { getPostingSettlementContext } from '@/domains/job-posting';
-import {
-  getEffectiveSalaryInfoFromRoles,
-  getEffectiveAllowances,
-  getEffectiveTaxSettings,
-} from '@/utils/settlement';
+import { getEffectiveAllowances, getEffectiveTaxSettings } from '@/utils/settlement';
 import { DEFAULT_SALARY_INFO } from '@/utils/settlement/constants';
 import { jobPostingRepository, workLogRepository } from '@/repositories';
-import type { WorkLog, PostingSettlementContext } from '@/types';
+import type {
+  WorkLog,
+  PostingSettlementContext,
+  JobRoleStats,
+  PostingRoleCatalogEntry,
+} from '@/types';
 import { type WorkLogWithOverrides, type SettlementWorkLog, type SettlementFilters } from './types';
 
 /**
- * 컨테이너 직속 배치(job_posting_id=venue) 또는 정산 컨텍스트를 찾지 못한 근무 기록의 폴백.
- * 실제 급여는 work_log 슬롯 오버라이드(customSalaryInfo 등)가 우선되고, 없으면 DEFAULT 적용.
+ * toSettlementWorkLog 가 실제로 읽는 정산 컨텍스트 최소 형태. 공고 정산 컨텍스트
+ * (PostingSettlementContext, roles=JobRoleStats[])와 컨테이너 단가표(roles=PostingRoleCatalogEntry[])를
+ * 함께 수용한다 — resolveEffectiveSalaryWithSource 는 role/customRole/salary 만 읽으므로 count/filled 불요.
  */
-const FALLBACK_SETTLEMENT_CONTEXT: PostingSettlementContext = {
-  roles: [],
-  defaultSalary: DEFAULT_SALARY_INFO,
-  allowances: undefined,
-  taxSettings: undefined,
+type SettlementResolutionContext = {
+  roles: JobRoleStats[] | PostingRoleCatalogEntry[];
+  defaultSalary?: PostingSettlementContext['defaultSalary'];
+  allowances?: PostingSettlementContext['allowances'];
+  taxSettings?: PostingSettlementContext['taxSettings'];
 };
 
 /**
@@ -39,11 +41,11 @@ const FALLBACK_SETTLEMENT_CONTEXT: PostingSettlementContext = {
  */
 function toSettlementWorkLog(
   workLog: WorkLog,
-  context: PostingSettlementContext,
+  context: SettlementResolutionContext,
   jobPostingTitle?: string
 ): SettlementWorkLog {
   const wlWithOverrides = workLog as WorkLogWithOverrides;
-  const salaryInfo = getEffectiveSalaryInfoFromRoles(
+  const { salaryInfo, source } = resolveEffectiveSalaryWithSource(
     wlWithOverrides,
     context.roles,
     context.defaultSalary
@@ -64,6 +66,8 @@ function toSettlementWorkLog(
     jobPostingTitle,
     hoursWorked: result.hoursWorked,
     calculatedAmount: result.afterTaxPay,
+    salaryInfo,
+    salarySource: source,
   };
 }
 
@@ -97,7 +101,16 @@ export async function getVenueSettlementWorkLogs(
       dateRange.end
     );
 
-    // 스팬 내 실재 공고(컨테이너 제외=B4)별 정산 컨텍스트 맵. 컨테이너 직속 배치는 폴백 컨텍스트.
+    // 컨테이너 직속 배치(jobPostingId=venueId)의 2순위 해소 — 지점 역할별 단가표(설계 §A).
+    const container = await jobPostingRepository.getVenueContainerById(venueId);
+    const venueContext: SettlementResolutionContext = {
+      roles: container?.roleSalaries ?? [],
+      defaultSalary: DEFAULT_SALARY_INFO,
+      allowances: undefined,
+      taxSettings: undefined,
+    };
+
+    // 스팬 내 실재 공고(컨테이너 제외=B4)별 정산 컨텍스트 맵. 컨테이너 직속 배치는 venue 컨텍스트.
     const postingIds = Array.from(
       new Set(workLogs.map((wl) => wl.jobPostingId).filter((id): id is string => Boolean(id)))
     );
@@ -118,7 +131,11 @@ export async function getVenueSettlementWorkLogs(
 
     let result = workLogs.map((wl) => {
       const found = wl.jobPostingId ? contextByPosting.get(wl.jobPostingId) : undefined;
-      return toSettlementWorkLog(wl, found?.context ?? FALLBACK_SETTLEMENT_CONTEXT, found?.title);
+      return toSettlementWorkLog(
+        wl,
+        found?.context ?? venueContext,
+        found?.title ?? container?.name
+      );
     });
 
     // 날짜 외 부가 필터(역할/정산상태)는 클라단 — 날짜만 SQL 경계로 이전한 설계.
