@@ -15,7 +15,7 @@
 - 모든 주석·커밋·문서·마이그 설명 **한글**. 코드 식별자만 원문.
 - 필드명 camelCase(클라) / snake_case(DB). 경로 `@/` 절대.
 - DB 접근: **Service → Repository → Supabase** 경유 필수. TanStack 읽기전용 조회만 Repository 직접 허용. Presentation/Hooks에서 Supabase 직접 호출 금지.
-- 마이그레이션 = **MCP `apply_migration` 전용**(`db push` 금지). 기존 마이그 수정 금지. PROD 우회 금지.
+- 마이그레이션: 로컬 `supabase/migrations/` 파일 작성 → `npm run db:reset` + `npm run test:db` GREEN → **prod 적용은 MCP `apply_migration` 전용**(`db push` 금지). 기존 마이그 수정 금지. PROD 우회 금지. **순서 역전(선 prod) 금지** — 미검증 DDL prod 선적용 + 로컬 pgTAP 실패 이중 사고.
 - **신규 SECDEF 함수는 PUBLIC/anon EXECUTE REVOKE 필수** — anon-executable ops SECDEF는 정확히 2개(monitor/player) 계약 보존. 회귀 가드 = 카탈로그 카운트 단언(=2).
 - SECDEF 하드닝: `SECURITY DEFINER` + `SET search_path = public, extensions, pg_temp` + actor 바인딩(`auth.uid() IS NULL OR (auth.uid() IS DISTINCT FROM p_actor AND NOT is_admin())`) + 비즈 실패 `ERRCODE 'P0001'` + plpgsql NULL fail-open 차단.
 - RLS: 신규 테이블 `ENABLE + FORCE RLS`. `is_admin()`은 `(SELECT …)` initplan 래핑.
@@ -32,7 +32,7 @@
 - Test: `src/domains/ops/__tests__/defaultBlindStructure.test.ts`
 
 **Interfaces:**
-- Consumes: `OpsBlindLevelInput` from `@/types/ops` (필드: `level`,`smallBlind`,`bigBlind`,`ante`,`durationSec`,`isBreak`).
+- Consumes: `OpsBlindLevelInput` from `@/schemas/opsBlindLevel.schema`(:20, zod infer — 필드 6개 전부 필수: `level`,`smallBlind`,`bigBlind`,`ante`,`durationSec`,`isBreak`). ⚠️ `@/types/ops`에는 이 타입이 **없다** — 중복 타입 신설 금지.
 - Produces: `DEFAULT_BLIND_LEVELS: OpsBlindLevelInput[]` (30개), `DEFAULT_LEVEL_DURATION_SEC = 1200`.
 
 - [ ] **Step 1: 실패 테스트 작성**
@@ -86,7 +86,7 @@ Expected: FAIL — 모듈 없음
 ```ts
 // src/domains/ops/defaultBlindStructure.ts
 /** 기본 블라인드 구조(B1, spec §2 확정). ante=BB, 20분/레벨, 브레이크 없음. 시드·앱 기본 프리셋 단일 소스. */
-import type { OpsBlindLevelInput } from '@/types/ops';
+import type { OpsBlindLevelInput } from '@/schemas/opsBlindLevel.schema';
 
 export const DEFAULT_LEVEL_DURATION_SEC = 1200;
 
@@ -109,7 +109,7 @@ export const DEFAULT_BLIND_LEVELS: OpsBlindLevelInput[] = PAIRS.map(([sb, bb], i
 }));
 ```
 
-> 주의: `OpsBlindLevelInput`의 실제 필드를 `src/types/ops.ts:260` 부근에서 확인(추가 필수 필드 있으면 맞춘다).
+> 검증됨(리뷰): 필드 6개는 `opsBlindLevelSchema`(`src/schemas/opsBlindLevel.schema.ts`)와 정확히 일치, `level` 포함 전부 필수.
 
 - [ ] **Step 4: 통과 확인**
 
@@ -140,21 +140,22 @@ git commit -m "feat(ops): 기본 블라인드 1~30 구조 상수(ante=BB·20분)
 
 ```tsx
 // 기존 OpsTournamentCreateScreen.test.tsx 에 케이스 추가
-import { useSetBlindLevels } from '@/hooks/ops';
+import { opsBlindLevelService } from '@/services/ops';
 import { DEFAULT_BLIND_LEVELS } from '@/domains/ops/defaultBlindStructure';
 
 it('대회 생성 성공 시 기본 30레벨 시드 호출', async () => {
-  const seedMutate = jest.fn();
-  (useSetBlindLevels as jest.Mock).mockReturnValue({ mutate: seedMutate });
+  const seedSpy = jest
+    .spyOn(opsBlindLevelService, 'setLevels')
+    .mockResolvedValue(undefined as never);
   (useCreateOpsTournament as jest.Mock).mockReturnValue({
     mutate: (_input: unknown, opts: { onSuccess: (r: { tournamentId: string }) => void }) =>
       opts.onSuccess({ tournamentId: 't-new' }),
     isPending: false,
   });
   const { getByText, getByPlaceholderText } = render(<OpsTournamentCreateScreen />);
-  fireEvent.changeText(getByPlaceholderText(/대회 이름|이름/), '수요일 딕 야간');
+  fireEvent.changeText(getByPlaceholderText('예: 수요 딥스택'), '수요일 딕 야간');
   fireEvent.press(getByText('대회 만들기'));
-  expect(seedMutate).toHaveBeenCalledWith(DEFAULT_BLIND_LEVELS);
+  expect(seedSpy).toHaveBeenCalledWith('t-new', expect.any(String), DEFAULT_BLIND_LEVELS);
 });
 ```
 
@@ -195,22 +196,20 @@ onSuccess: (r) => {
 ```tsx
 import { opsBlindLevelService } from '@/services/ops';
 import { logger } from '@/utils/logger';
-import { toast } from '@/utils/toast';
-import { useAuth } from '@/hooks/useAuth'; // actorId 소스(프로젝트 인증 훅 확인)
+import { useToastStore } from '@/stores/toastStore'; // 프로젝트 관례(@/utils/toast 없음)
+import { useAuthStore } from '@/stores/authStore'; // ops 관례: actorId = useAuthStore((s) => s.user?.uid)
 
-// onSuccess:
-onSuccess: async (r) => {
-  try {
-    await opsBlindLevelService.setLevels(r.tournamentId, actorId, DEFAULT_BLIND_LEVELS);
-  } catch (e) {
-    logger.info('기본 블라인드 시드 실패(수동 설정 가능)', { error: e });
-    toast.error('기본 블라인드 설정에 실패했어요. 블라인드 탭에서 직접 설정할 수 있어요.');
-  }
+// onSuccess — fire-and-forget: 시드가 내비게이션을 지연시키지 않는다.
+onSuccess: (r) => {
+  opsBlindLevelService.setLevels(r.tournamentId, actorId, DEFAULT_BLIND_LEVELS).catch((e) => {
+    logger.error('기본 블라인드 시드 실패(수동 설정 가능)', { error: e });
+    useToastStore.getState().error('기본 블라인드 설정에 실패했어요. 블라인드 탭에서 직접 설정할 수 있어요.');
+  });
   router.replace(`/(ops)/tournaments/${r.tournamentId}`);
 },
 ```
 
-> 주의: `actorId` 소스(인증 훅), `opsBlindLevelService`/`@/services/ops` export, `useSetBlindLevels`의 내부 인자 형태를 실제 코드에서 확인해 맞춘다. 테스트는 위 (권장) 서비스 직접 호출이면 `opsBlindLevelService.setLevels` spy로 단언하도록 Step 1을 조정.
+> 검증됨(리뷰): `opsBlindLevelService.setLevels(tournamentId, actorId, levels)`(`src/services/ops/opsBlindLevelService.ts:12-16`). 화면에서 서비스 직접 호출은 선례 다수(employer-register.tsx 등) — 아키텍처 위반 아님. 기존 테스트의 `jest.mock('@/hooks/ops')` 노출 목록은 구현안 확정 후 재정렬.
 
 - [ ] **Step 4: 통과 확인**
 
@@ -229,8 +228,8 @@ git commit -m "feat(ops): 대회 생성 시 기본 블라인드 30레벨 자동 
 ### Task 3: `/guard` + `ops_blind_presets` 테이블 + RLS 마이그레이션(B3)
 
 **Files:**
-- Create(마이그, MCP): `ops_blind_presets` 테이블 + RLS + 인덱스
-- Test: `supabase/tests/ops_blind_presets_rls.sql` (pgTAP)
+- Create: `supabase/migrations/<ts>_ops_blind_presets.sql` (로컬 파일 — 로컬 GREEN 후 MCP로 prod 적용)
+- Test: `supabase/tests/ops_blind_presets_rls.test.sql` (pgTAP — 기존 74개 전부 `*.test.sql` 관례)
 
 **선행:** `/guard` 실행(신규 테이블·RLS). database-reviewer로 스키마 리뷰.
 
@@ -241,7 +240,7 @@ Run: `/guard` — 신규 테이블·RLS 위험 체크. anon REVOKE·FORCE RLS·o
 - [ ] **Step 2: pgTAP 회귀 테스트 먼저 작성 (RED)**
 
 ```sql
--- supabase/tests/ops_blind_presets_rls.sql
+-- supabase/tests/ops_blind_presets_rls.test.sql
 BEGIN;
 SELECT plan(4);
 
@@ -261,9 +260,9 @@ ROLLBACK;
 
 (3·4의 구체 시드/JWT 주입은 프로젝트 pgTAP 헬퍼 패턴을 따른다 — `supabase/tests/` 기존 파일 참조.)
 
-- [ ] **Step 3: 마이그레이션 작성 · 적용 (MCP)**
+- [ ] **Step 3: 마이그레이션 파일 작성(로컬)**
 
-`apply_migration` 으로 아래 DDL:
+`supabase/migrations/<ts>_ops_blind_presets.sql`로 아래 DDL 작성. ⚠️ **MCP 선적용 금지** — MCP `apply_migration`은 원격(prod) 적용이며 로컬 마이그 파일을 만들지 않는다. 로컬 GREEN 후 Step 4에서 prod 적용:
 
 ```sql
 -- ops_blind_presets: 내 계정 전용 블라인드 프리셋(B3)
@@ -273,29 +272,34 @@ CREATE TABLE public.ops_blind_presets (
   name text NOT NULL CHECK (char_length(name) BETWEEN 1 AND 60),
   levels jsonb NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT ops_blind_presets_owner_name_key UNIQUE (owner_id, name)  -- 동명 갱신(upsert, spec §3.2) 지지
 );
 CREATE INDEX ops_blind_presets_owner_idx ON public.ops_blind_presets (owner_id, created_at DESC);
 
 ALTER TABLE public.ops_blind_presets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ops_blind_presets FORCE ROW LEVEL SECURITY;
 
--- 소유자 전용(+admin). is_admin() 은 initplan 래핑.
+-- anon 표면 차단(Supabase 기본 privilege가 anon 에 테이블 GRANT — RLS 0행이어도 명시 회수)
+REVOKE ALL ON TABLE public.ops_blind_presets FROM PUBLIC, anon;
+
+-- 소유자 전용(+admin). is_admin() 은 initplan 래핑. 정책은 authenticated 한정.
 CREATE POLICY ops_blind_presets_owner_all ON public.ops_blind_presets
-  FOR ALL
+  FOR ALL TO authenticated
   USING (owner_id = (SELECT auth.uid()) OR (SELECT public.is_admin()))
   WITH CHECK (owner_id = (SELECT auth.uid()) OR (SELECT public.is_admin()));
 ```
 
-- [ ] **Step 4: pgTAP 통과 확인**
+- [ ] **Step 4: 로컬 검증 → prod 적용(MCP)**
 
-Run: 프로젝트 pgTAP 실행 명령(예: `npm run db:test` 또는 supabase test) — `ops_blind_presets_rls.sql`
-Expected: 4/4 PASS. owner B의 A 프리셋 조회 0행.
+Run: `npm run db:reset && npm run test:db` (package.json:21 — 헬퍼 선주입 포함, `db:test` 아님)
+Expected: `ops_blind_presets_rls.test.sql` 4/4 PASS. owner B의 A 프리셋 조회 0행.
+로컬 GREEN + database-reviewer 리뷰 통과 후에만 MCP `apply_migration`으로 prod에 동일 SQL 적용.
 
 - [ ] **Step 5: 커밋**
 
 ```bash
-git add supabase/tests/ops_blind_presets_rls.sql supabase/migrations/<생성된_마이그>.sql
+git add supabase/tests/ops_blind_presets_rls.test.sql supabase/migrations/<생성된_마이그>.sql
 git commit -m "feat(ops): ops_blind_presets 테이블 + owner RLS(FORCE)"
 ```
 
@@ -304,8 +308,8 @@ git commit -m "feat(ops): ops_blind_presets 테이블 + owner RLS(FORCE)"
 ### Task 4: save/delete SECDEF RPC(B6) + anon REVOKE 회귀 가드
 
 **Files:**
-- Create(마이그, MCP): `ops_save_blind_preset`, `ops_delete_blind_preset`
-- Test: `supabase/tests/ops_blind_preset_rpcs.sql` (pgTAP)
+- Create: `supabase/migrations/<ts>_ops_blind_preset_rpcs.sql` (로컬 파일 — 로컬 GREEN 후 MCP로 prod 적용)
+- Test: `supabase/tests/ops_blind_preset_rpcs.test.sql` (pgTAP)
 
 **Interfaces (RPC 시그니처):**
 - `ops_save_blind_preset(p_actor_id uuid, p_name text, p_levels jsonb) RETURNS uuid`
@@ -314,36 +318,44 @@ git commit -m "feat(ops): ops_blind_presets 테이블 + owner RLS(FORCE)"
 - [ ] **Step 1: pgTAP 먼저 작성 (RED) — anon =2 계약 포함**
 
 ```sql
--- supabase/tests/ops_blind_preset_rpcs.sql
+-- supabase/tests/ops_blind_preset_rpcs.test.sql
 BEGIN;
-SELECT plan(5);
+SELECT plan(6);
 
--- 1) save: owner A 저장 → 행 1개, owner_id=A
--- 2) save: p_actor 위조(auth.uid()≠actor, non-admin) → P0001
--- 3) delete: owner B 가 A 프리셋 삭제 시도 → 삭제 0(RLS) 또는 P0001
--- 4) anon-executable ops SECDEF 정확히 2개 유지(monitor/player) — 신규 함수 REVOKE 확인
+-- 1) save: owner A 저장 → 행 1개, owner_id=A (JWT 주입은 헬퍼 ops_test_set_user(uuid) — 인라인 set_config 금지)
+-- 2) save: 동명 재저장 → 행 수 그대로 1, levels 갱신 (upsert 검증)
+-- 3) save: p_actor 위조(auth.uid()≠actor, non-admin) → P0001
+-- 4) delete: owner B 가 A 프리셋 삭제 시도 → 삭제 0(RLS) 또는 P0001
+-- 5) anon-executable ops SECDEF 정확히 2개 유지 — ⚠️ 기존 가드(ops_staff_security.test.sql:54-68)와
+--    동일 쿼리를 복제할 것: prosecdef 필터 + 'ops\_test\_%' 헬퍼 제외 + '\_' 이스케이프.
+--    셋 중 하나라도 빠지면 로컬 픽스처(ops_test_set_user 등, PUBLIC EXECUTE 기본)가 섞여 false-RED.
 SELECT is(
   (SELECT count(*) FROM pg_proc p
      JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname='public' AND p.proname LIKE 'ops_%'
+    WHERE n.nspname = 'public'
+      AND p.prosecdef
+      AND p.proname LIKE 'ops\_%' ESCAPE '\'
+      AND p.proname NOT LIKE 'ops\_test\_%' ESCAPE '\'
       AND has_function_privilege('anon', p.oid, 'EXECUTE')),
   2::bigint,
   'anon-executable ops SECDEF =2 (신규 RPC REVOKE 확인)'
 );
--- 5) search_path 하드닝 확인
+-- 6) search_path 하드닝 확인(proconfig)
 SELECT * FROM finish();
 ROLLBACK;
 ```
 
 - [ ] **Step 2: 실패 확인**
 
-Run: pgTAP `ops_blind_preset_rpcs.sql`
-Expected: FAIL — 함수 없음(또는 anon 카운트 불일치)
+Run: `npm run test:db`
+Expected: `ops_blind_preset_rpcs.test.sql` FAIL — 함수 없음(또는 anon 카운트 불일치)
 
-- [ ] **Step 3: 마이그레이션 작성 · 적용 (MCP)**
+- [ ] **Step 3: 마이그레이션 파일 작성(로컬)**
+
+`supabase/migrations/<ts>_ops_blind_preset_rpcs.sql`:
 
 ```sql
--- 저장(신규 or 동명 갱신). levels 는 화이트리스트 재조립.
+-- 저장(신규 or 동명 갱신 — upsert). levels 는 화이트리스트 재조립.
 CREATE OR REPLACE FUNCTION public.ops_save_blind_preset(
   p_actor_id uuid, p_name text, p_levels jsonb
 ) RETURNS uuid
@@ -360,6 +372,19 @@ BEGIN
   IF p_name IS NULL OR char_length(p_name) = 0 THEN
     RAISE EXCEPTION '이름 필요' USING ERRCODE = 'P0001';
   END IF;
+  -- 입력 형태 검증(기존 ops_set_blind_levels :7637-7649 미러링) — 비배열/결손/음수/0분 차단
+  IF p_levels IS NULL OR jsonb_typeof(p_levels) <> 'array' THEN
+    RAISE EXCEPTION 'levels 배열 필요' USING ERRCODE = 'P0001';
+  END IF;
+  PERFORM 1
+  FROM jsonb_array_elements(p_levels) e
+  WHERE (e->>'durationSec') IS NULL OR (e->>'durationSec')::int <= 0
+     OR (e->>'bigBlind') IS NULL OR (e->>'bigBlind')::bigint < 0
+     OR (e->>'smallBlind') IS NULL OR (e->>'smallBlind')::bigint < 0
+     OR (e->>'ante') IS NULL OR (e->>'ante')::bigint < 0;
+  IF FOUND THEN
+    RAISE EXCEPTION '레벨 값 불량' USING ERRCODE = 'P0001';
+  END IF;
 
   -- 화이트리스트 재조립(임의 필드 유입 차단)
   SELECT jsonb_agg(jsonb_build_object(
@@ -374,6 +399,8 @@ BEGIN
 
   INSERT INTO public.ops_blind_presets (owner_id, name, levels)
   VALUES (p_actor_id, p_name, COALESCE(v_levels, '[]'::jsonb))
+  ON CONFLICT (owner_id, name)                    -- spec §3.2 "동명 갱신"(upsert)
+  DO UPDATE SET levels = EXCLUDED.levels, updated_at = now()
   RETURNING id INTO v_id;
   RETURN v_id;
 END;
@@ -400,16 +427,16 @@ GRANT EXECUTE ON FUNCTION public.ops_save_blind_preset(uuid, text, jsonb) TO aut
 GRANT EXECUTE ON FUNCTION public.ops_delete_blind_preset(uuid, uuid) TO authenticated;
 ```
 
-- [ ] **Step 4: 통과 확인 + security-reviewer**
+- [ ] **Step 4: 로컬 검증 → security-reviewer → prod 적용(MCP)**
 
-Run: pgTAP `ops_blind_preset_rpcs.sql`
-Expected: 5/5 PASS (특히 anon =2 유지).
-그 후 security-reviewer 에이전트로 RPC·RLS 리뷰.
+Run: `npm run db:reset && npm run test:db`
+Expected: `ops_blind_preset_rpcs.test.sql` 6/6 PASS (특히 anon =2 유지·upsert).
+로컬 GREEN + security-reviewer 리뷰 통과 후에만 MCP `apply_migration`으로 prod에 동일 SQL 적용.
 
 - [ ] **Step 5: 커밋**
 
 ```bash
-git add supabase/tests/ops_blind_preset_rpcs.sql supabase/migrations/<생성된_마이그>.sql
+git add supabase/tests/ops_blind_preset_rpcs.test.sql supabase/migrations/<생성된_마이그>.sql
 git commit -m "feat(ops): 블라인드 프리셋 save/delete SECDEF RPC + anon REVOKE 가드"
 ```
 
@@ -419,7 +446,7 @@ git commit -m "feat(ops): 블라인드 프리셋 save/delete SECDEF RPC + anon R
 
 **Files:**
 - Create: `src/repositories/supabase/OpsBlindPresetRepository.ts`
-- Modify: `src/repositories/ops/index.ts` (또는 해당 배럴)
+- Modify: `src/repositories/ops.ts` (싱글톤 배럴 :53-66 — `ops/index.ts` 아님. interface 생략은 OpsStaffRepository 선례 :38 허용)
 - Create: `src/services/ops/opsBlindPresetService.ts` (또는 기존 서비스 확장)
 - Create: `src/hooks/ops/useOpsBlindPresets.ts`
 - Modify: `src/hooks/ops/index.ts`
@@ -516,7 +543,34 @@ export function useOpsBlindPresets() {
 }
 ```
 
-(save/delete 뮤테이션 훅 `useSaveBlindPreset`/`useDeleteBlindPreset`는 `useOpsMutations` 패턴으로 추가 — `onSuccess`에서 `['ops','blindPresets']` invalidate + toast.)
+서비스는 입력 검증 담당(시스템 경계 규칙 — name은 자유 텍스트 사용자 입력):
+
+```ts
+// src/services/ops/opsBlindPresetService.ts
+import { z } from 'zod';
+import { xssValidation } from '@/utils/security';
+import { opsBlindLevelsSchema } from '@/schemas/opsBlindLevel.schema';
+import { opsBlindPresetRepository } from '@/repositories/ops';
+
+const presetNameSchema = z.string().trim().min(1).max(60).refine(xssValidation);
+
+export const opsBlindPresetService = {
+  save(actorId: string, name: string, levels: unknown) {
+    return opsBlindPresetRepository.save(
+      actorId,
+      presetNameSchema.parse(name),
+      opsBlindLevelsSchema.parse(levels)
+    );
+  },
+  remove(actorId: string, presetId: string) {
+    return opsBlindPresetRepository.remove(actorId, presetId);
+  },
+};
+```
+
+> `xssValidation`(`src/utils/security.ts:263`)·levels 스키마의 정확한 export 명은 해당 파일에서 확인해 맞춘다.
+
+(save/delete 뮤테이션 훅 `useSaveBlindPreset`/`useDeleteBlindPreset`는 `useOpsMutations` 패턴으로 추가 — **서비스 경유**, `onSuccess`에서 `['ops','blindPresets']` invalidate + toast.)
 
 - [ ] **Step 5: 배럴 등록 + 통과 확인**
 
@@ -526,7 +580,7 @@ Expected: PASS, quality exit 0
 - [ ] **Step 6: 커밋**
 
 ```bash
-git add src/repositories/supabase/OpsBlindPresetRepository.ts src/repositories/ops/index.ts src/services/ops/ src/hooks/ops/useOpsBlindPresets.ts src/hooks/ops/index.ts src/types/ops.ts src/hooks/ops/__tests__/useOpsBlindPresets.test.tsx
+git add src/repositories/supabase/OpsBlindPresetRepository.ts src/repositories/ops.ts src/services/ops/ src/hooks/ops/useOpsBlindPresets.ts src/hooks/ops/index.ts src/types/ops.ts src/hooks/ops/__tests__/useOpsBlindPresets.test.tsx
 git commit -m "feat(ops): 블라인드 프리셋 레포·서비스·훅"
 ```
 
@@ -567,7 +621,7 @@ it('앱 기본 프리셋(기본 30레벨) 항상 노출', () => {
 
 it('프리셋 적용 → 확인 후 onApply(levels)', () => {
   const onApply = jest.fn();
-  jest.spyOn(require('@/utils/dialog'), 'confirmAction').mockImplementation((o: any) => o.onConfirm());
+  jest.spyOn(require('@/utils/confirmAction'), 'confirmAction').mockImplementation((o: any) => o.onConfirm());
   const { getByText } = render(
     <BlindPresetSheet visible onClose={jest.fn()} currentLevels={[]} onApply={onApply} />
   );
@@ -589,10 +643,10 @@ Expected: FAIL — 모듈 없음
 /** 블라인드 프리셋 시트(B4·B5). 앱 기본 + 내 저장 목록. 적용=전체교체 확인. */
 import { Pressable, Text, View } from 'react-native';
 import { SheetModal } from '@/components/ui';
-import { confirmAction } from '@/utils/dialog';
-import { useOpsBlindPresets } from '@/hooks/ops';
+import { confirmAction } from '@/utils/confirmAction';
+import { useOpsBlindPresets, useDeleteBlindPreset } from '@/hooks/ops';
 import { DEFAULT_BLIND_LEVELS } from '@/domains/ops/defaultBlindStructure';
-import type { OpsBlindLevelInput } from '@/types/ops';
+import type { OpsBlindLevelInput } from '@/schemas/opsBlindLevel.schema';
 
 interface BlindPresetSheetProps {
   visible: boolean;
@@ -607,6 +661,7 @@ const APP_PRESETS: { name: string; levels: OpsBlindLevelInput[] }[] = [
 
 export function BlindPresetSheet({ visible, onClose, currentLevels, onApply }: BlindPresetSheetProps) {
   const { presets } = useOpsBlindPresets();
+  const deleteMut = useDeleteBlindPreset();
 
   const apply = (name: string, levels: OpsBlindLevelInput[]) => {
     confirmAction({
@@ -618,14 +673,21 @@ export function BlindPresetSheet({ visible, onClose, currentLevels, onApply }: B
     });
   };
 
-  const Row = ({ name, levels }: { name: string; levels: OpsBlindLevelInput[] }) => (
+  const Row = ({ name, levels, onDelete }: { name: string; levels: OpsBlindLevelInput[]; onDelete?: () => void }) => (
     <Pressable
       onPress={() => apply(name, levels)}
       accessibilityRole="button"
       className="min-h-[44px] flex-row items-center justify-between border-b border-gray-200 px-4 py-3 active:bg-gray-50 dark:border-gray-700 dark:active:bg-gray-800"
     >
       <Text className="text-content-primary dark:text-off-white">{name}</Text>
-      <Text className="text-xs text-secondary-500 dark:text-secondary-400">{levels.length}레벨</Text>
+      <View className="flex-row items-center gap-3">
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400">{levels.length}레벨</Text>
+        {onDelete && (
+          <Pressable onPress={onDelete} hitSlop={10} accessibilityRole="button" accessibilityLabel="프리셋 삭제">
+            <Text className="text-xs text-error-600 dark:text-error-400">삭제</Text>
+          </Pressable>
+        )}
+      </View>
     </Pressable>
   );
 
@@ -633,14 +695,29 @@ export function BlindPresetSheet({ visible, onClose, currentLevels, onApply }: B
     <SheetModal visible={visible} onClose={onClose} title="블라인드 프리셋">
       <View>
         {APP_PRESETS.map((p) => <Row key={p.name} name={p.name} levels={p.levels} />)}
-        {presets.map((p) => <Row key={p.id} name={p.name} levels={p.levels} />)}
+        {presets.map((p) => (
+          <Row
+            key={p.id}
+            name={p.name}
+            levels={p.levels}
+            onDelete={() =>
+              confirmAction({
+                title: '프리셋 삭제',
+                message: `"${p.name}" 프리셋을 삭제할까요?`,
+                confirmText: '삭제',
+                destructive: true,
+                onConfirm: () => deleteMut.mutate(p.id),
+              })
+            }
+          />
+        ))}
       </View>
     </SheetModal>
   );
 }
 ```
 
-> "현재 구조 저장"(이름 입력 → `useSaveBlindPreset`)은 같은 시트 하단 버튼 + 입력 프롬프트로 추가. 프로젝트 입력 다이얼로그 유틸 확인 후 배선.
+> "현재 구조 저장": 프로젝트에 입력 다이얼로그 유틸이 **없다**(confirmAction/showAlert뿐) — 시트 하단에 `TextInput`(이름) + 저장 버튼을 직접 배치하고 `useSaveBlindPreset`(서비스 경유 zod+XSS 검증) 호출. 프리셋 바의 "프리셋 · <이름>" 표시는 마지막 적용 프리셋명을 로컬 state로 추적하고, 이후 draft 편집(dirty) 발생 시 "사용자 정의"로 표시.
 
 - [ ] **Step 4: 통과 확인**
 
@@ -649,7 +726,7 @@ Expected: PASS (2 tests)
 
 - [ ] **Step 5: `BlindLevelsTab` 배선 — 프리셋 바**
 
-`BlindLevelsTab.tsx` 상단에 프리셋 바(`프리셋 · <이름> ▾` + `구조 저장`) 추가. `▾` → `BlindPresetSheet` open. `onApply(levels)` → 로컬 `draft`를 교체(기존 draft state 재사용) → 사용자가 기존 "블라인드 구조 저장" 버튼으로 `ops_set_blind_levels` 커밋(B5·B6). 저장(save preset)은 현재 draft를 `useSaveBlindPreset`으로.
+`BlindLevelsTab.tsx` 상단에 프리셋 바(`프리셋 · <이름> ▾` + `구조 저장`) 추가. `▾` → `BlindPresetSheet` open. `onApply(levels)` → 로컬 `draft` 교체 + **`setDirty(true)` 필수**(`BlindLevelsTab.tsx:75` 저장 버튼 활성 조건이 dirty — 누락 시 적용해도 저장 버튼 비활성) → 사용자가 기존 "블라인드 구조 저장" 버튼으로 `ops_set_blind_levels` 커밋(B5·B6). 저장(save preset)은 현재 draft를 `useSaveBlindPreset`으로.
 
 - [ ] **Step 6: 배럴 + 전체 검증**
 
@@ -679,3 +756,9 @@ git commit -m "feat(ops): 블라인드 프리셋 바/시트 + 탭 배선(적용=
 ## 실행 순서 의존성
 
 T1 → T2(T1 소비). T3 → T4(T3 테이블 소비) → T5(T4 RPC 소비) → T6(T5 훅·T1 상수 소비). T1·T3는 상호 독립 병렬 가능. **T3·T4는 /guard·DB 리뷰 게이트 통과 후 진행.**
+
+## 리뷰 반영 이력 (2026-07-23 fable 검증 리뷰 — 판정 "수정 후 실행" → 반영 완료)
+
+- **HIGH 5건**: ① `OpsBlindLevelInput` import를 `@/schemas/opsBlindLevel.schema`로 고정(types/ops 중복 신설 차단) ② anon =2 가드 쿼리를 기존 가드(ops_staff_security.test.sql:54-68) 복제로 교체(prosecdef·`ops\_test\_%` 제외·이스케이프 — false-RED 차단) ③ save upsert(`UNIQUE(owner_id,name)` + `ON CONFLICT DO UPDATE`) ④ 마이그 순서를 로컬 파일→`db:reset`+`test:db` GREEN→MCP prod 적용으로 교정(선 prod 금지) ⑤ 프리셋 name zod+xssValidation 서비스 계층 명세.
+- **MEDIUM**: toast→`useToastStore` 관례·`confirmAction`=`@/utils/confirmAction`·actorId=`useAuthStore`·배럴=`src/repositories/ops.ts`·삭제 UI 배선(Row onDelete)·이름 입력=시트 내 TextInput 직접·RPC 입력 검증(비배열/결손/음수/0분 P0001)·T2 테스트 placeholder 실문구화.
+- **LOW**: pgTAP 파일명 `*.test.sql`·실행 `npm run test:db`·시드 fire-and-forget+`logger.error`·테이블 anon REVOKE+`TO authenticated`·onApply 시 `setDirty(true)`.
