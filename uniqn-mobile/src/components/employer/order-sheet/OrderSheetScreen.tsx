@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { AccessibilityInfo, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -375,6 +375,10 @@ export function OrderSheetScreen({
         scheduleLocked ? LOCKED_ROW_KEYS : undefined
       );
       if (next === null) return;
+      // 전환 안내(a11y C1) — 딤 스왑 대기(180ms) 동안 스크린리더가 침묵하지 않도록,
+      // 다음 시트가 실제로 뜨기 전 예약 시점에 다음 항목 라벨을 읽어 준다.
+      const nextLabel = getRowState(form.getValues(), next.key, next.groupIndex).label;
+      AccessibilityInfo.announceForAccessibility(`다음 항목: ${nextLabel}`);
       setChainSwapping(true);
       pendingSwapRef.current = setTimeout(() => {
         pendingSwapRef.current = null;

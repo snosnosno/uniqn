@@ -10,6 +10,7 @@
  * 본화면 행 라벨('연락처'·'급여')과 시트 제목이 같은 문자열이라 getByText 가 중복 매치된다.
  */
 import { render, fireEvent, act } from '@testing-library/react-native';
+import { AccessibilityInfo } from 'react-native';
 import React from 'react';
 import { OrderSheetScreen } from '../OrderSheetScreen';
 import { initialOrderSheetValues } from '@/utils/order-sheet/mappers';
@@ -243,6 +244,21 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
     await advanceSwap();
 
     expect(sheetTitleOf(queryByTestId)).toBe('연락처');
+  });
+
+  it('연쇄 예약 시 다음 항목을 스크린리더로 안내한다 (C1)', async () => {
+    const announceSpy = jest.spyOn(AccessibilityInfo, 'announceForAccessibility');
+    const { getByTestId, getByText } = render(
+      <OrderSheetScreen {...baseProps} initialValues={titleAndContactMissing()} />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
+    fireEvent.press(getByText('확인'));
+
+    // 스왑 대기(딤 180ms) 전에 안내가 나가야 스크린리더가 침묵하지 않는다 — advanceSwap 이전 단언.
+    expect(announceSpy).toHaveBeenCalledWith('다음 항목: 연락처');
+    announceSpy.mockRestore();
   });
 
   it('대조군 — 이미 채워진 행을 확인하면 연쇄가 일어나지 않는다', async () => {
