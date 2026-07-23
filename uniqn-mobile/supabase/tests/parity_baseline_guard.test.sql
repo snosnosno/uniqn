@@ -20,6 +20,9 @@
 --       (팀 멤버 초대 후보 검색 — lookupUserByEmail 이메일 정확일치 대체.
 --        후보가 employer/admin 한정이라 기존 search_users_by_nickname 재사용 불가)
 --     정책 110 불변(RPC 신설만, RLS 미변경).
+--   2026-07-24 ops 블라인드 프리셋(마이그 20260724000000, prod 미적용 — 머지·prod 적용과 동기):
+--     함수 174 불변(ops_blind_presets 는 테이블+RLS 만, 함수 미추가).
+--     정책 111 = 110 + ops_blind_presets_owner_all 1(소유자 전용 FORCE RLS 정책 1종).
 --
 -- ⚠️ 유지보수 계약: 이후 마이그레이션이 public 함수/정책을 추가·삭제하면
 --   이 기대값을 같은 PR에서 함께 갱신해야 한다. 갱신을 강제당하는 것 자체가
@@ -33,7 +36,7 @@
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
 -- PARITY_EXPECT_FUNCS=174
--- PARITY_EXPECT_POLICIES=110
+-- PARITY_EXPECT_POLICIES=111
 -- ============================================================
 BEGIN;
 SELECT plan(7);
@@ -58,8 +61,8 @@ SELECT is(
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(
   (SELECT count(*)::int FROM pg_policies WHERE schemaname = 'public'),
-  110,
-  'public RLS policy count == prod (110 = 104 + ops S1 opr_* 3 + ae_* 3, 2026-07-17)');
+  111,
+  'public RLS policy count == prod (111 = 110 + ops_blind_presets_owner_all 1, 2026-07-24)');
 
 -- 4~6. gen-1 재빌드 보안퇴행 3종 부재 (prod=deny, 레포 전용 부활 금지)
 SELECT is(
