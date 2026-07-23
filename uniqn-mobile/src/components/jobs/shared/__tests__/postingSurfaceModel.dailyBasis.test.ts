@@ -83,6 +83,16 @@ describe('그룹 요약 하루 기준 (분자=max)', () => {
     expect(role.filled).toBe(2);
   });
 
+  it('그룹 라벨은 한 행 — 날짜 범위와 일수가 같은 행에 표기된다', () => {
+    const { source, filledCounts } = makeGroupedSource([
+      { date: '2026-08-22', filled: 0 },
+      { date: '2026-08-23', filled: 0 },
+    ]);
+    const model = buildPostingScheduleModel(source, filledCounts) as any;
+    expect(model.sections[0].label).not.toContain('\n'); // 현행 "\n    (2일)" 이므로 RED
+    expect(model.sections[0].label).toContain('· 2일');
+  });
+
   it('요약·일별 타임슬롯이 시작시간 순으로 정렬된다 (10:00, 11:00, 10:30 입력)', () => {
     const source = {
       workflow: { isFixed: false, usesGroupedDateRanges: true },

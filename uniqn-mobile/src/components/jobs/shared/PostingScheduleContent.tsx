@@ -98,8 +98,7 @@ export function PostingScheduleContent({
       ) : null}
 
       {schedule.sections.map((section) => {
-        const dateRangeText = display === 'card' ? section.label.split('\n')[0] : section.label;
-        const showCardDayCount = display === 'card' && section.dayCount > 1;
+        const dateRangeText = section.label; // 단일 행 라벨 — split 불필요
         // 그룹 섹션: card=요약만, detail=일별 전개(8일↑ 기본 접힘)
         const renderDays = display === 'detail' && section.days && section.days.length > 0;
 
@@ -119,11 +118,6 @@ export function PostingScheduleContent({
             >
               {dateRangeText}
             </Text>
-            {showCardDayCount ? (
-              <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-                {section.dayCount}일
-              </Text>
-            ) : null}
 
             {renderDays ? (
               <GroupedDaysBlock section={section} showFilledCount={showFilledCount} />
