@@ -391,6 +391,28 @@ function buildLegacyScheduleModel(
   };
 }
 
+/**
+ * 자리 총계(구인자 병기용) — 분자 = Σ(일별 확정), 분모 = Σ(일별 요구) = 자리 수.
+ * dated 이고 다일 그룹(dayCount>1)이 있을 때만 의미가 있다(단일 날짜는 요약과 동일해 생략, 스펙 §3).
+ */
+export function computeSeatTotals(
+  schedule: PostingScheduleModel
+): { filled: number; total: number } | null {
+  if (schedule.variant !== 'dated') {
+    return null;
+  }
+  if (!schedule.sections.some((section) => section.dayCount > 1)) {
+    return null;
+  }
+  return schedule.sections.reduce(
+    (acc, section) => ({
+      filled: acc.filled + section.filledCount,
+      total: acc.total + section.totalCount,
+    }),
+    { filled: 0, total: 0 }
+  );
+}
+
 export function buildPostingCompensationModel(
   source: PostingCompensationSource,
   options: { display: 'card' | 'detail' }

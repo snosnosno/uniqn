@@ -1,4 +1,7 @@
-import { buildPostingScheduleModel } from '@/components/jobs/shared/postingSurfaceModel';
+import {
+  buildPostingScheduleModel,
+  computeSeatTotals,
+} from '@/components/jobs/shared/postingSurfaceModel';
 
 /**
  * 하루 기준 표시 통일(C안) — 그룹 요약의 분모=하루 요구, 분자=날짜별 확정 max.
@@ -127,5 +130,31 @@ describe('그룹 요약 하루 기준 (분자=max)', () => {
       '10:30',
       '11:00',
     ]);
+  });
+});
+
+describe('computeSeatTotals — 구인자 자리 총계 병기', () => {
+  it('그룹(2일, 5명/일, 확정 2+1): 자리 3/10', () => {
+    const { source, filledCounts } = makeGroupedSource([
+      { date: '2026-08-22', filled: 2 },
+      { date: '2026-08-23', filled: 1 },
+    ]);
+    const model = buildPostingScheduleModel(source, filledCounts);
+    expect(computeSeatTotals(model)).toEqual({ filled: 3, total: 10 });
+  });
+
+  it('한 날만 만석(5,1): 자리 6/10 — 요약 (5/5) 마감과 함께 8/23 공백이 드러난다', () => {
+    const { source, filledCounts } = makeGroupedSource([
+      { date: '2026-08-22', filled: 5 },
+      { date: '2026-08-23', filled: 1 },
+    ]);
+    const model = buildPostingScheduleModel(source, filledCounts);
+    expect(computeSeatTotals(model)).toEqual({ filled: 6, total: 10 });
+  });
+
+  it('단일 날짜(dayCount==1)뿐이면 null — 요약과 동일해 병기 생략', () => {
+    const { source, filledCounts } = makeGroupedSource([{ date: '2026-08-22', filled: 2 }]);
+    const model = buildPostingScheduleModel(source, filledCounts);
+    expect(computeSeatTotals(model)).toBeNull();
   });
 });

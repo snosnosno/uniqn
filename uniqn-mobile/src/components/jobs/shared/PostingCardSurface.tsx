@@ -8,6 +8,7 @@ import { PostingScheduleContent } from './PostingScheduleContent';
 import {
   buildPostingCompensationModel,
   buildPostingScheduleModel,
+  computeSeatTotals,
   FOCUSED_GROUP_DATE_HINT,
   shouldShowUrgentBadge,
 } from './postingSurfaceModel';
@@ -25,6 +26,7 @@ interface PostingCardSurfaceProps {
   accessibilityHint?: string;
   stripeTone?: CardStripeTone;
   filledCounts?: Map<string, number>;
+  showSeatTotals?: boolean;
 }
 
 export function PostingCardSurface({
@@ -40,6 +42,7 @@ export function PostingCardSurface({
   accessibilityHint,
   stripeTone,
   filledCounts,
+  showSeatTotals,
 }: PostingCardSurfaceProps) {
   // 스케줄 모델은 filledCounts 를 주입해 한 번만 생성하고, a11y label 과 콘텐츠 렌더가
   // 동일 모델을 공유한다(S2). 이원화 시 label 에 확정 수를 쓰는 순간 0/N 드리프트 재발 소지.
@@ -121,6 +124,16 @@ export function PostingCardSurface({
               filledCounts={filledCounts}
               schedule={schedule}
             />
+            {showSeatTotals
+              ? (() => {
+                  const seatTotals = computeSeatTotals(schedule);
+                  return seatTotals && seatTotals.total > 0 ? (
+                    <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+                      자리 {seatTotals.filled}/{seatTotals.total} 채움
+                    </Text>
+                  ) : null;
+                })()
+              : null}
           </View>
 
           <View className="mx-2 w-px self-stretch bg-secondary-100 dark:bg-surface-overlay" />
