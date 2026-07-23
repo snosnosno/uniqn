@@ -39,6 +39,35 @@ describe('resolveEffectiveSalaryWithSource', () => {
       );
     }
   });
+  it('role.name 키 경로 — role.role 부재 시 name 으로 매칭 + 기존 헬퍼와 등가(T4)', () => {
+    // 단가표 항목이 role.role 대신 role.name 키만 가진 경우에도
+    // roleKey = role.role || role.name 이므로 단가표로 해소돼야 한다.
+    const rolesByName = [
+      { name: 'dealer', salary: { type: 'hourly' as const, amount: 22000 } },
+      { name: 'other', customRole: '칩 러너', salary: { type: 'daily' as const, amount: 160000 } },
+    ];
+    expect(resolveEffectiveSalaryWithSource({ role: 'dealer' }, rolesByName)).toEqual({
+      salaryInfo: { type: 'hourly', amount: 22000 },
+      source: 'roleTable',
+    });
+    // other→customRole 커스텀 경로도 name 키로 매칭.
+    expect(
+      resolveEffectiveSalaryWithSource({ role: 'other', customRole: '칩 러너' }, rolesByName)
+    ).toEqual({ salaryInfo: { type: 'daily', amount: 160000 }, source: 'roleTable' });
+    // salaryInfo 는 name 키 단가표를 넘긴 기존 헬퍼와 전 케이스 등가.
+    const cases = [
+      { role: 'dealer' },
+      { role: 'other', customRole: '칩 러너' },
+      { role: 'serving' },
+      {},
+    ];
+    for (const wl of cases) {
+      expect(resolveEffectiveSalaryWithSource(wl as never, rolesByName).salaryInfo).toEqual(
+        getEffectiveSalaryInfoFromRoles(wl as never, rolesByName)
+      );
+    }
+  });
+
   it('defaultSalary 파라미터 경로 — 미매칭은 그 값으로 fallback + 기존 헬퍼와 등가(T4)', () => {
     const defaultSalary = { type: 'hourly' as const, amount: 12000 };
     // 미매칭 역할: fallback 은 DEFAULT_SALARY_INFO 가 아니라 전달된 defaultSalary 여야 한다.

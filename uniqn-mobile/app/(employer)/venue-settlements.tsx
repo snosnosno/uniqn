@@ -37,6 +37,12 @@ function shiftMonth(month: string, delta: number): string {
   return format(d, 'yyyy-MM');
 }
 
+/** 'YYYY-MM' → '2026년 7월' — 월 선행 0 을 제거한 표시 라벨. */
+function formatMonthLabel(month: string): string {
+  const [y, m] = month.split('-').map(Number);
+  return `${y}년 ${m}월`;
+}
+
 export default function VenueSettlementsScreen() {
   const params = useLocalSearchParams<{ venueId?: string; month?: string }>();
   const venueId = typeof params.venueId === 'string' ? params.venueId : null;
@@ -74,12 +80,15 @@ export default function VenueSettlementsScreen() {
     if (!venueId || !fixTarget || !fixDraft) return;
     try {
       await mutation.mutateAsync({ venueId, ...fixTarget, salary: fixDraft });
-      addToast({ type: 'success', message: '단가를 저장했어요. 정산을 다시 계산합니다.' });
-      setFixTarget(null);
-      await refetch();
     } catch {
       addToast({ type: 'error', message: '단가 저장에 실패했어요. 잠시 후 다시 시도해주세요.' });
+      return;
     }
+    // 저장 성공 후에만 성공 토스트. refetch 실패는 저장 자체의 실패가 아니므로
+    // 사용자에게 실패로 알리지 않는다(모순 토스트 방지).
+    addToast({ type: 'success', message: '단가를 저장했어요. 정산을 다시 계산합니다.' });
+    setFixTarget(null);
+    refetch().catch(() => {});
   }, [venueId, fixTarget, fixDraft, mutation, addToast, refetch]);
 
   const renderItem = useCallback(
@@ -122,7 +131,7 @@ export default function VenueSettlementsScreen() {
           <ChevronLeftIcon size={20} color={SECONDARY_PALETTE[500]} />
         </Pressable>
         <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
-          {month.replace('-', '년 ')}월
+          {formatMonthLabel(month)}
         </Text>
         <Pressable
           onPress={() => setMonth((m) => shiftMonth(m, 1))}
