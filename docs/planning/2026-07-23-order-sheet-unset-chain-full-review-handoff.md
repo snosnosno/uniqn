@@ -16,7 +16,7 @@
 - 구현 계획: `docs/superpowers/plans/2026-07-23-order-sheet-unset-chain.md`
 - SDD 진행 원장(리뷰 이력·변이 실측·이월 전부): `.superpowers/sdd/progress.md`
 
-### 브랜치 상태 (base `0b2b7c3cd`, 코드 6커밋 + 문서 2커밋)
+### 브랜치 상태 (base `0b2b7c3cd`, 총 10커밋 = 코드 6 + 문서 4)
 
 ```
 ece8ca9ee fix: 연쇄 대기 창 레이스 3종 — 타입전환·프리셋·잠금차단   ← 최종 리뷰 지적 해소
@@ -28,6 +28,8 @@ e9352547e feat: 연쇄 입력 배선 — 확인 시 다음 미설정 시트로
 453ca0b7a test: nextUnsetRowAfter groupIndex 매칭 회귀 가드
 a6c39c222 feat: 행 순회 함수 — orderedRowTargets · nextUnsetRowAfter
 ```
+
+위 8커밋(코드 6 + 이력 문서 2)이 리뷰 대상 코드 상태. 이후 문서 2커밋(이 핸드오프 + 계획서 `SheetChainContext` 경로 as-built 정합)이 더 얹혀 있다 — 코드 diff 없음.
 
 코드 변경 7파일: `orderRowMeta.ts`(+54) · `OrderSheetScreen.tsx`(실질 +~150, 대부분 리인덴트) · `SheetChainContext.tsx`(신규 22줄, `ui/`) · `SheetModal.tsx`(+30) · `animation.ts`(+14) · 테스트 2신규(chain 16건 + 순회 12건). **시트 12개(`sheets/*.tsx`) 변경 0줄.**
 
@@ -71,7 +73,7 @@ a6c39c222 feat: 행 순회 함수 — orderedRowTargets · nextUnsetRowAfter
 
 ```bash
 cd /c/Users/user/Desktop/T-HOLDEM && git checkout feat/order-sheet-unset-chain
-git log --oneline 0b2b7c3cd..HEAD           # 8커밋 확인
+git log --oneline 0b2b7c3cd..HEAD           # 10커밋 확인 (코드 6 + 문서 4)
 cat .superpowers/sdd/progress.md             # 구현·리뷰 이력 전체
 cd uniqn-mobile && npx jest src/components/employer/order-sheet my-postings   # 265+/265+ 기대
 ```

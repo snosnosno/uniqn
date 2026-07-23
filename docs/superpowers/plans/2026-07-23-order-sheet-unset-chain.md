@@ -38,7 +38,7 @@
 | `src/components/employer/order-sheet/__tests__/orderRowMeta.chain.test.ts` | 위 두 함수 단위 테스트 | 신규 |
 | `src/components/employer/order-sheet/OrderSheetScreen.tsx` | 연쇄 판정·예약·실행, 딤 레이어, Context Provider | 수정 |
 | `src/components/employer/order-sheet/__tests__/OrderSheetScreen.chain.test.tsx` | 연쇄 통합 테스트 | 신규 |
-| `src/components/employer/order-sheet/SheetChainContext.tsx` | 연쇄 전환 상태 Context (~25줄) | 신규 |
+| `src/components/ui/SheetChainContext.tsx` | 연쇄 전환 상태 Context (~25줄) | 신규 |
 | `src/components/ui/SheetModal.tsx` | Context 소비 — 제자리 fade 진입, 백드롭 즉시, `onShow` 통지 | 수정 |
 | `src/constants/animation.ts` | `SHEET_CHAIN_SWAP_MS` 추가 | 수정 |
 
@@ -856,7 +856,7 @@ git commit -m "feat(order-sheet): 미설정 항목 연쇄 입력 — 확인 시 
 연쇄 전환 창(180ms) 동안 어떤 모달도 없어 밝은 주문서 목록이 노출된다. 딤 레이어로 백드롭을 인수인계하고, 다음 시트는 제자리에서 fade-in 시켜 "시트가 자리를 지킨 채 내용만 갈리는" 느낌을 만든다.
 
 **Files:**
-- Create: `src/components/employer/order-sheet/SheetChainContext.tsx`
+- Create: `src/components/ui/SheetChainContext.tsx`
 - Modify: `src/components/ui/SheetModal.tsx`
 - Modify: `src/components/employer/order-sheet/OrderSheetScreen.tsx`
 - Test: `src/components/employer/order-sheet/__tests__/OrderSheetScreen.chain.test.tsx` (Task 2 파일에 추가)
@@ -871,7 +871,7 @@ git commit -m "feat(order-sheet): 미설정 항목 연쇄 입력 — 확인 시 
 
 - [ ] **Step 1: Context 파일 생성**
 
-`src/components/employer/order-sheet/SheetChainContext.tsx`:
+`src/components/ui/SheetChainContext.tsx`:
 
 ```tsx
 /**
@@ -903,7 +903,7 @@ export function useSheetChain(): SheetChainValue | null {
 `src/components/ui/SheetModal.tsx` import에 추가:
 
 ```ts
-import { useSheetChain } from '@/components/employer/order-sheet/SheetChainContext';
+import { useSheetChain } from '@/components/ui/SheetChainContext';
 ```
 
 `NativeSheetModal` 안, `const insets = useSafeAreaInsets();` 아래에 추가:
@@ -1000,7 +1000,7 @@ import { useSheetChain } from '@/components/employer/order-sheet/SheetChainConte
 `OrderSheetScreen.tsx` import에 추가:
 
 ```ts
-import { SheetChainContext, type SheetChainValue } from './SheetChainContext';
+import { SheetChainContext, type SheetChainValue } from '@/components/ui/SheetChainContext';
 ```
 
 Task 2에서 추가한 연쇄 상태 블록에 표시 상태를 추가한다:
@@ -1079,7 +1079,7 @@ Context 값을 만든다 (`confirmRow` 아래):
 jest.mock('@/components/ui/SheetModal', () => {
   const React = require('react');
   const { View, Text } = require('react-native');
-  const { useSheetChain } = require('@/components/employer/order-sheet/SheetChainContext');
+  const { useSheetChain } = require('@/components/ui/SheetChainContext');
   return {
     SheetModal: ({ visible, title, children, footer, overlay }: any) => {
       const chain = useSheetChain();
@@ -1167,7 +1167,7 @@ Expected: 순환 없음. `madge`가 없으면 `SheetChainContext.tsx`가 `react`
 - [ ] **Step 9: 커밋**
 
 ```bash
-git add uniqn-mobile/src/components/employer/order-sheet/SheetChainContext.tsx uniqn-mobile/src/components/ui/SheetModal.tsx uniqn-mobile/src/components/employer/order-sheet/OrderSheetScreen.tsx uniqn-mobile/src/components/employer/order-sheet/__tests__/OrderSheetScreen.chain.test.tsx
+git add uniqn-mobile/src/components/ui/SheetChainContext.tsx uniqn-mobile/src/components/ui/SheetModal.tsx uniqn-mobile/src/components/employer/order-sheet/OrderSheetScreen.tsx uniqn-mobile/src/components/employer/order-sheet/__tests__/OrderSheetScreen.chain.test.tsx
 git commit -m "feat(ui): 주문서 연쇄 전환 연출 — 딤 인수인계 + 제자리 fade 진입
 
 - SheetChainContext: 연쇄 신호를 SheetModal 이 직접 읽어 시트 12개 계약 오염 없음
