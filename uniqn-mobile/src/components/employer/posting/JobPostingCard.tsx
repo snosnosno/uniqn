@@ -80,6 +80,7 @@ export const JobPostingCard = memo(function JobPostingCard({
         stripeTone={stripeTone}
         containerClassName="overflow-hidden"
         filledCounts={cardFilledCounts}
+        showSeatTotals
         footer={
           <View className="mt-2 flex-row items-center justify-between border-t border-secondary-100 px-4 pt-2 dark:border-surface-overlay">
             <View className="flex-row items-center">

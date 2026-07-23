@@ -286,4 +286,93 @@ describe('AssignmentSelector', () => {
       }),
     ]);
   });
+
+  describe('확정 집계 주입 (하루 기준·C안)', () => {
+    const GROUP_ID = '2026-08-22-2026-08-23';
+
+    // grouped 2일(2026-08-22~23), dealer 5명/일 픽스처. dead counter(filledCount=0)로 시작.
+    function createGroupedDealerSchedules() {
+      const makeDay = (date: string) => ({
+        kind: 'dated' as const,
+        date,
+        timeSlots: [
+          {
+            id: `slot-${date}`,
+            startTime: '18:00',
+            isTimeToBeAnnounced: false,
+            roles: [
+              {
+                roleId: 'dealer',
+                displayName: 'Dealer',
+                filledCount: 0,
+                requiredCount: 5,
+              },
+            ],
+          },
+        ],
+      });
+      return [makeDay('2026-08-22'), makeDay('2026-08-23')];
+    }
+
+    // 기존 렌더 헬퍼 패턴을 재사용하되 filledCounts 만 주입. 실제 그룹화 대신
+    // hydrate 결과를 그대로 group.dates/timeSlots 로 통과시켜 전 파이프라인(주입→hydrate→그룹 max)을 검증.
+    function renderSelector({ filledCounts }: { filledCounts?: Map<string, number> }) {
+      buildPostingFacts.mockReturnValue({
+        workflow: { isTournament: true, usesGroupedDateRanges: true },
+        postingType: 'tournament',
+      });
+      useJobSchedule.mockReturnValue(
+        createBaseScheduleResult({ datedSchedules: createGroupedDealerSchedules() })
+      );
+      groupDatedSchedules.mockImplementation(
+        (schedules: ReturnType<typeof createGroupedDealerSchedules>) => [
+          {
+            id: GROUP_ID,
+            startDate: '2026-08-22',
+            endDate: '2026-08-23',
+            label: '8/22 ~ 8/23',
+            dates: schedules,
+            timeSlots: schedules[0]!.timeSlots,
+          },
+        ]
+      );
+
+      return render(
+        <AssignmentSelector
+          jobPosting={{ id: 'job-1' } as JobPosting}
+          selectedAssignments={[]}
+          onSelectionChange={jest.fn()}
+          filledCounts={filledCounts}
+        />
+      );
+    }
+
+    it('그룹 역할이 만석(5/5)이면 마감 배지가 보이고 체크박스는 여전히 선택 가능하다(대기 지원)', () => {
+      const filledCounts = new Map<string, number>([
+        ['2026-08-22__18:00__dealer', 5],
+        ['2026-08-23__18:00__dealer', 1],
+      ]);
+      const { getByText, getByRole } = renderSelector({ filledCounts });
+      expect(getByText(/\(5\/5\)/)).toBeTruthy(); // 분자 = 날짜별 max (합 6 아님)
+      // 마감 뱃지 문구 확장(사용자 결정 2026-07-24): '마감' → '마감 · 대기 지원 가능'
+      expect(getByText('마감 · 대기 지원 가능')).toBeTruthy();
+      const checkbox = getByRole('checkbox');
+      expect(checkbox.props.accessibilityState.disabled).toBe(false); // 대기 지원 허용
+    });
+
+    it('불균등(2,1)은 (2/5)로 표시되고 마감이 아니다', () => {
+      const filledCounts = new Map<string, number>([
+        ['2026-08-22__18:00__dealer', 2],
+        ['2026-08-23__18:00__dealer', 1],
+      ]);
+      const { getByText, queryByText } = renderSelector({ filledCounts });
+      expect(getByText(/\(2\/5\)/)).toBeTruthy();
+      expect(queryByText('마감 · 대기 지원 가능')).toBeNull();
+    });
+
+    it('filledCounts 미주입 시 기존 동작(0/N) 완전 보존', () => {
+      const { getByText } = renderSelector({});
+      expect(getByText(/\(0\/5\)/)).toBeTruthy();
+    });
+  });
 });

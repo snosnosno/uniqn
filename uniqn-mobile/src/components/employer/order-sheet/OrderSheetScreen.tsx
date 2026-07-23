@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { AccessibilityInfo, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/Button';
 import { useToastStore } from '@/stores/toastStore';
+import { triggerHaptic } from '@/utils/haptics';
 import {
   orderSheetValuesSchema,
   type OrderSheetFormValues,
@@ -105,6 +106,13 @@ export interface OrderSheetScreenProps {
   mode?: 'create' | 'edit';
   /** 확정 지원자 존재(S3) — 일정·역할 행 잠금. 서버 updateWithTransaction 가드와 대칭(급여는 열어둠) */
   scheduleLocked?: boolean;
+  /** 연쇄 전환 딤을 호스트로 위임(B1) — 이 화면 밖 형제(StackHeader 등)까지 덮으려면 호스트가
+   *  통지를 받아 OrderSheetChainScrim 을 SafeAreaView 레벨에 렌더한다. 제공 시 내부 딤은
+   *  렌더하지 않는다(black/50 이중 적층 방지).
+   *  ⚠️ 반드시 안정 콜백(useState setter·useCallback)으로 넘길 것 — inline arrow 를 넘기면
+   *  clearPendingSwap 의존 cleanup effect 가 렌더마다 재실행되어 대기 중 스왑 예약(180ms)이
+   *  조기 취소되고 연쇄가 조용히 죽는다. */
+  onChainSwappingChange?: (swapping: boolean) => void;
 }
 
 export function OrderSheetScreen({
@@ -117,6 +125,7 @@ export function OrderSheetScreen({
   onSaveTemplate,
   mode = 'create',
   scheduleLocked = false,
+  onChainSwappingChange,
 }: OrderSheetScreenProps) {
   const { addToast } = useToastStore();
   // 하단 고정 CTA가 iOS 홈 인디케이터 safe-area를 침범하지 않도록 bottom inset 반영(L7).
@@ -144,6 +153,15 @@ export function OrderSheetScreen({
   // 전환 창 동안 화면을 어둡게 유지 — 시트가 사라진 순간 밝은 목록이 번쩍이는 것을 막는다.
   // 다음 시트의 백드롭과 같은 농도(black/50)라 인수인계에 이음매가 없다.
   const [chainSwapping, setChainSwapping] = useState(false);
+  // 딤 토글 단일 경로 — 호스트 위임(B1) 통지를 겸한다. setChainSwapping 직접 호출 금지:
+  // 통지가 빠지면 호스트 딤이 고착되거나(꺼짐 누락) 아예 안 뜬다(켜짐 누락).
+  const updateChainSwapping = useCallback(
+    (swapping: boolean) => {
+      setChainSwapping(swapping);
+      onChainSwappingChange?.(swapping);
+    },
+    [onChainSwappingChange]
+  );
   const clearPendingSwap = useCallback(() => {
     if (pendingSwapRef.current !== null) {
       clearTimeout(pendingSwapRef.current);
@@ -153,8 +171,8 @@ export function OrderSheetScreen({
       clearTimeout(datesScrimHoldRef.current);
       datesScrimHoldRef.current = null;
     }
-    setChainSwapping(false);
-  }, []);
+    updateChainSwapping(false);
+  }, [updateChainSwapping]);
   useEffect(() => clearPendingSwap, [clearPendingSwap]);
 
   // 일정 타깃(객체) 좁히기 — rows/기타 시트 키(문자열)와 구분
@@ -291,7 +309,7 @@ export function OrderSheetScreen({
       if (guardScheduleLock(key)) {
         // 잠금 차단 시 딤 해제 — 토스트만 띄우고 나가면 시트가 뜰 주체가 없어
         // chainSwapping 이 켜진 채 고착된다(화면 전체가 어두운 데드엔드).
-        setChainSwapping(false);
+        updateChainSwapping(false);
         return;
       }
       const current = form.getValues();
@@ -309,7 +327,7 @@ export function OrderSheetScreen({
         if (datesScrimHoldRef.current !== null) clearTimeout(datesScrimHoldRef.current);
         datesScrimHoldRef.current = setTimeout(() => {
           datesScrimHoldRef.current = null;
-          setChainSwapping(false);
+          updateChainSwapping(false);
         }, SHEET_CHAIN_DATES_SCRIM_HOLD_MS);
         setActiveSheet({ key: 'dates', groupIndex, mode: groups.length > 1 ? 'edit' : 'whole' });
         return;
@@ -335,7 +353,7 @@ export function OrderSheetScreen({
       // 나머지는 행 키 그대로 시트 오픈.
       setActiveSheet(key);
     },
-    [form, seedFixedScheduleIfMissing, guardScheduleLock]
+    [form, seedFixedScheduleIfMissing, guardScheduleLock, updateChainSwapping]
   );
 
   /**
@@ -374,18 +392,28 @@ export function OrderSheetScreen({
         coveredKeys,
         scheduleLocked ? LOCKED_ROW_KEYS : undefined
       );
-      if (next === null) return;
-      setChainSwapping(true);
+      if (next === null) {
+        // 연쇄 완료(연출 B3) — 무장된 연쇄에서 마지막 미설정 항목을 채웠다. 결정적 순간이라
+        // 성공 햅틱 1회로 완료를 알린다(룰 17). 웹은 no-op이지만 CTA가 '이대로 등록'으로
+        // 바뀌는 시각 신호가 별도로 있다. 토스트는 절제를 위해 생략(룰 12).
+        void triggerHaptic('success');
+        return;
+      }
+      // 전환 안내(a11y C1) — 딤 스왑 대기(180ms) 동안 스크린리더가 침묵하지 않도록,
+      // 다음 시트가 실제로 뜨기 전 예약 시점에 다음 항목 라벨을 읽어 준다.
+      const nextLabel = getRowState(form.getValues(), next.key, next.groupIndex).label;
+      AccessibilityInfo.announceForAccessibility(`다음 항목: ${nextLabel}`);
+      updateChainSwapping(true);
       pendingSwapRef.current = setTimeout(() => {
         pendingSwapRef.current = null;
         openRow(next.key, next.groupIndex);
       }, SHEET_CHAIN_SWAP_MS);
     },
-    [form, openRow, scheduleLocked, LOCKED_ROW_KEYS]
+    [form, openRow, scheduleLocked, LOCKED_ROW_KEYS, updateChainSwapping]
   );
 
   // 시트가 화면에 올라오면 딤을 걷는다 — 백드롭과 딤이 겹쳐 이중으로 어두워지는 프레임을 최소화.
-  const handleChainEntered = useCallback(() => setChainSwapping(false), []);
+  const handleChainEntered = useCallback(() => updateChainSwapping(false), [updateChainSwapping]);
   const chainValue = useMemo<SheetChainValue>(
     () => ({ entering: chainSwapping, onEntered: handleChainEntered }),
     [chainSwapping, handleChainEntered]
@@ -405,9 +433,9 @@ export function OrderSheetScreen({
         clearTimeout(datesScrimHoldRef.current);
         datesScrimHoldRef.current = null;
       }
-      setChainSwapping(false);
+      updateChainSwapping(false);
     }
-  }, []);
+  }, [updateChainSwapping]);
 
   /** 그룹 삭제(즉시) + Undo 토스트 5초 — impeccable §12, 리뷰 Design-M2.
    *  복원은 삭제 그룹 단건 재삽입(리뷰 L-6) — 5초 내 타 그룹 편집을 함께 되돌리지 않는다. */
@@ -870,8 +898,9 @@ export function OrderSheetScreen({
         </View>
         {/* 연쇄 전환 딤 — 시트가 잠깐 사라지는 구간에서 밝은 목록이 번쩍이는 것을 막는다.
           다음 시트 백드롭과 같은 black/50. pointerEvents none 이라 터치를 막지 않는다.
-          ⚠️ StackHeader 는 이 컴포넌트 밖이라 상단 헤더 띠는 덮이지 않는다(실기기 QA 항목). */}
-        {chainSwapping ? (
+          StackHeader 는 이 컴포넌트 밖이라 여기서는 못 덮는다 — 호스트가 onChainSwappingChange 로
+          위임받으면(B1) 내부 딤은 접고 호스트의 OrderSheetChainScrim 한 장이 헤더까지 덮는다. */}
+        {chainSwapping && onChainSwappingChange === undefined ? (
           <View
             className="absolute top-0 left-0 right-0 bottom-0 bg-black/50 dark:bg-black/50"
             pointerEvents="none"

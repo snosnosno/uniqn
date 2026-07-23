@@ -27,6 +27,12 @@ jest.mock('../AssignmentSelector', () => ({
   },
 }));
 
+// 확정 집계 훅은 QueryClientProvider 를 요구하므로 목 처리(폼 자체 로직만 검증).
+jest.mock('@/hooks/usePostingFilledCounts', () => ({
+  usePostingFilledCounts: () => ({ data: undefined }),
+  extractPostingFilledSubmap: () => undefined,
+}));
+
 jest.mock('../PostingTypeBadge', () => ({
   PostingTypeBadge: () => {
     const ReactNative = jest.requireActual('react-native') as typeof import('react-native');

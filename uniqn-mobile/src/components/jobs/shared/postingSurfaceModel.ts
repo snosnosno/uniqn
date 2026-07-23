@@ -9,9 +9,14 @@ import type {
   PostingSalaryDisplay,
 } from '@/types';
 import { FIXED_DATE_MARKER, FIXED_TIME_MARKER } from '@/types/assignment';
-import { WorkLogCreator } from '@/domains/schedule';
+import { roleHydrateKey, slotHydrateKey } from '@/domains/schedule';
 import { getRoleDisplayName } from '@/types/unified';
-import { formatDateRangeWithCount, formatDateShortWithDay, generateDateRange } from '@/utils/date';
+import {
+  formatDateRangeWithCount,
+  formatDateShortWithDay,
+  generateDateRange,
+  sortTimeSlotsByStart,
+} from '@/utils/date';
 import { formatSalary } from '@/utils/formatters';
 
 const UNKNOWN_DATE_LABEL = '날짜 미정';
@@ -247,12 +252,14 @@ function buildSingleDateSection(
   filledCounts?: Map<string, number>
 ): PostingDateSectionDisplayModel {
   const key = `${requirement.date}-${index}`;
-  const timeSlots = requirement.timeSlots.map((slot, slotIndex) => ({
+  // 표시 정렬: 등록 순서가 아닌 시작시간 순(스크린샷 실측 10:00→11:00→10:30 버그).
+  const orderedTimeSlots = sortTimeSlotsByStart(requirement.timeSlots);
+  const timeSlots = orderedTimeSlots.map((slot, slotIndex) => ({
     key: `${key}-${formatTimeLabel(slot)}-${slotIndex}`,
     timeLabel: formatTimeLabel(slot),
     roles: toRoleModels(slot.roles, {
       date: requirement.date,
-      slotKey: slotMatchKey(slot),
+      slotKey: slotHydrateKey(slot),
       filledCounts,
     }),
   }));
@@ -270,7 +277,8 @@ function buildSingleDateSection(
 /**
  * 그룹 날짜범위 섹션 — 날짜별 전개(좌석 기준).
  * 각 날짜를 자기 날짜 키(`date__slot__role`)로 개별 hydrate 하고,
- * 섹션 요약 timeSlots 는 count=하루치×일수 / filled=일별 합으로 만든다.
+ * 섹션 요약 timeSlots 는 하루 기준(C안)으로 count=하루 요구 / filled=일별 확정 max 로 만든다.
+ * 자리 총계(Σ일별)는 section.totalCount/filledCount 로 별도 보존한다.
  * (구 sumHydrateForRange 범위합산은 count 가 하루치라 6/3 차원 불일치를 냈음 — 제거)
  */
 function buildGroupedSection(
@@ -283,11 +291,14 @@ function buildGroupedSection(
   filledCounts?: Map<string, number>
 ): PostingDateSectionDisplayModel {
   const sectionKey = group.id || `${group.startDate}-${group.endDate}`;
+  // 표시 정렬: 등록 순서가 아닌 시작시간 순(스크린샷 실측 10:00→11:00→10:30 버그).
+  // days/summary 가 같은 배열을 공유해야 slotIndex 대응이 유지된다.
+  const orderedTimeSlots = sortTimeSlotsByStart(group.timeSlots);
   const dates = generateDateRange(group.startDate, group.endDate);
   const effectiveDates = dates.length > 0 ? dates : [group.startDate];
 
   const days: PostingDateSectionDayModel[] = effectiveDates.map((date) => {
-    const timeSlots = group.timeSlots.map((slot, slotIndex) => ({
+    const timeSlots = orderedTimeSlots.map((slot, slotIndex) => ({
       key: `${sectionKey}-${date}-${formatTimeLabel(slot)}-${slotIndex}`,
       timeLabel: formatTimeLabel(slot),
       // 그룹 날짜는 범위에서 전개된 좌석 인스턴스 — 각 날짜 filled 의 유일 소스는
@@ -298,7 +309,7 @@ function buildGroupedSection(
         slot.roles.map((role) => ({ ...role, filled: 0 })),
         {
           date,
-          slotKey: slotMatchKey(slot),
+          slotKey: slotHydrateKey(slot),
           filledCounts,
         }
       ),
@@ -315,24 +326,32 @@ function buildGroupedSection(
   });
 
   const dayCount = effectiveDates.length;
-  // 요약 timeSlots: 슬롯 구조는 하루치와 동일하되 count×일수, filled=일별 합.
-  const summaryTimeSlots: PostingTimeSlotDisplayModel[] = group.timeSlots.map((slot, slotIndex) => {
-    const timeLabel = formatTimeLabel(slot);
-    return {
-      key: `${sectionKey}-${timeLabel}-${slotIndex}`,
-      timeLabel,
-      roles: slot.roles.map((role, roleIndex) => {
-        const perDayCount = role.count ?? role.headcount ?? 0;
-        const count = perDayCount * dayCount;
-        const filled = days.reduce(
-          (sum, day) => sum + (day.timeSlots[slotIndex]?.roles[roleIndex]?.filled ?? 0),
-          0
-        );
-        const base = toRoleModels([role])[0]!;
-        return { ...base, count, filled, isFilled: count > 0 && filled >= count };
-      }),
-    };
-  });
+  // 요약 timeSlots(하루 기준·C안): 분모=하루 요구(perDayCount, 곱셈 금지), 분자=날짜별 확정의 최대값.
+  // 통지원(그룹 일괄 배정) 전제에서 perDayCount − max(filled_d) 가 실제 추가 수용 인원이므로
+  // max 가 유일하게 정직한 분자다(합·평균은 이 성질이 없다). 자리 총계는 section.totalCount/filledCount.
+  const summaryTimeSlots: PostingTimeSlotDisplayModel[] = orderedTimeSlots.map(
+    (slot, slotIndex) => {
+      const timeLabel = formatTimeLabel(slot);
+      return {
+        key: `${sectionKey}-${timeLabel}-${slotIndex}`,
+        timeLabel,
+        roles: slot.roles.map((role, roleIndex) => {
+          const perDayCount = role.count ?? role.headcount ?? 0;
+          const filled = days.reduce(
+            (max, day) => Math.max(max, day.timeSlots[slotIndex]?.roles[roleIndex]?.filled ?? 0),
+            0
+          );
+          const base = toRoleModels([role])[0]!;
+          return {
+            ...base,
+            count: perDayCount,
+            filled,
+            isFilled: perDayCount > 0 && filled >= perDayCount,
+          };
+        }),
+      };
+    }
+  );
 
   return {
     key: sectionKey,
@@ -370,6 +389,28 @@ function buildLegacyScheduleModel(
     timeLabel,
     isPartial: dateLabel === UNKNOWN_DATE_LABEL || timeLabel === UNKNOWN_TIME_LABEL,
   };
+}
+
+/**
+ * 자리 총계(구인자 병기용) — 분자 = Σ(일별 확정), 분모 = Σ(일별 요구) = 자리 수.
+ * dated 이고 다일 그룹(dayCount>1)이 있을 때만 의미가 있다(단일 날짜는 요약과 동일해 생략, 스펙 §3).
+ */
+export function computeSeatTotals(
+  schedule: PostingScheduleModel
+): { filled: number; total: number } | null {
+  if (schedule.variant !== 'dated') {
+    return null;
+  }
+  if (!schedule.sections.some((section) => section.dayCount > 1)) {
+    return null;
+  }
+  return schedule.sections.reduce(
+    (acc, section) => ({
+      filled: acc.filled + section.filledCount,
+      total: acc.total + section.totalCount,
+    }),
+    { filled: 0, total: 0 }
+  );
 }
 
 export function buildPostingCompensationModel(
@@ -412,21 +453,6 @@ function pickMaxSalaryRowText(rows: readonly PostingSalaryRow[]): string | undef
   return best?.text;
 }
 
-function slotMatchKey(slot: TimeSlotSource): string {
-  if (slot.isTimeToBeAnnounced) return UNKNOWN_TIME_LABEL;
-  // 서버 _posting_slot_key / apply 경로(slotCapacity)와 동일하게 range 문자열("14:00~22:00")에서
-  // 시작시간만 추출해 hydrate 키를 맞춘다. discrete HH:MM 값에는 항등(무변경).
-  const normalized = WorkLogCreator.extractStartTime(slot.startTime || slot.time || '');
-  return normalized || UNKNOWN_TIME_LABEL;
-}
-
-function roleMatchKey(role: RoleSource): string {
-  // 서버 _posting_role_key 와 정합: role='other' 면 customRole 유무와 무관하게 'other:' 접두.
-  // (custom 없는 bare 'other' 도 SQL 은 'other:' 를 만들므로 hydrate 키가 일치해야 함)
-  if (role.role === 'other') return `other:${role.customRole ?? ''}`;
-  return role.role || role.name || '';
-}
-
 type RoleHydrateCtx = { date: string; slotKey: string; filledCounts?: Map<string, number> };
 
 function toRoleModels(
@@ -437,7 +463,7 @@ function toRoleModels(
     const label = getRoleDisplayName(role.role || role.name || '', role.customRole);
     const count = role.count ?? role.headcount ?? 0;
     const hydrated = ctx
-      ? ctx.filledCounts?.get(`${ctx.date}__${ctx.slotKey}__${roleMatchKey(role)}`)
+      ? ctx.filledCounts?.get(`${ctx.date}__${ctx.slotKey}__${roleHydrateKey(role)}`)
       : undefined;
     const filled = hydrated ?? role.filled ?? 0;
     const keySource =

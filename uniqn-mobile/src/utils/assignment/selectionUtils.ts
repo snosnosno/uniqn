@@ -20,7 +20,11 @@ export interface ScheduleGroup {
 }
 
 function getRoleStructureKey(role: TimeSlotInfo['roles'][number]): string {
-  return role.roleId === 'other' && role.customName ? `other:${role.customName}` : role.roleId;
+  // 그룹 경계 = 역할 종류 + 하루 요구 인원. 카드 그룹핑(utils/date/grouping.ts areRolesEqual,
+  // headcount 비교)과 단일 기준 — 인원이 다른 날짜를 한 그룹으로 묶으면 하루 기준 분모가 성립하지 않는다.
+  const base =
+    role.roleId === 'other' && role.customName ? `other:${role.customName}` : role.roleId;
+  return `${base}#${role.requiredCount ?? 0}`;
 }
 
 export const areTimeSlotsStructureEqual = (

@@ -30,6 +30,7 @@ import { getIconColor } from '@/constants';
 import { useSheetChain } from '@/components/ui/SheetChainContext';
 import { useThemeStore } from '@/stores/themeStore';
 import { isWeb } from '@/utils/platform';
+import { focusIfPossible } from '@/utils/focusNode';
 import { WebPortal } from '@/components/ui/WebPortal';
 
 /**
@@ -95,6 +96,8 @@ function WebSheetModal({
   // 연쇄 진입 전용 콘텐츠 fade — 백드롭은 즉시 불투명하되 내용은 160ms 로 나타난다.
   const [chainContentIn, setChainContentIn] = useState(false);
   const previouslyFocusedRef = useRef<Element | null>(null);
+  // 연쇄 진입 시 새 시트 제목으로 접근성 포커스를 옮길 타깃(a11y C2) — tabIndex -1 래퍼
+  const titleWrapRef = useRef<View | null>(null);
 
   useEffect(() => {
     if (visible) {
@@ -110,7 +113,13 @@ function WebSheetModal({
         // 아직 화면에 반영되기 전이다. 이중 rAF 로 한 프레임 그려진 것을 보장한다.
         requestAnimationFrame(() => {
           setChainContentIn(true);
-          requestAnimationFrame(() => chainOnEnteredRef.current?.());
+          requestAnimationFrame(() => {
+            chainOnEnteredRef.current?.();
+            // 연쇄 전환 뒤 스크린리더·키보드 사용자가 새 시트에 착지하도록 제목으로
+            // 포커스 이동(a11y C2). 일반 오픈은 사용자가 방금 탭한 맥락이 있어 옮기지
+            // 않는다(절제). DOM 이 아니면(네이티브/테스트) 조용한 no-op.
+            focusIfPossible(titleWrapRef.current);
+          });
         });
         if (typeof document !== 'undefined') {
           document.body.style.overflow = 'hidden';
@@ -209,9 +218,12 @@ function WebSheetModal({
           >
             {/* Header */}
             <View className="flex-row items-center justify-between px-4 py-4 border-b border-divider">
-              <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white">
-                {title}
-              </Text>
+              {/* tabIndex -1: 탭 순서엔 없지만 프로그램 포커스는 받는다(연쇄 진입 착지점, C2) */}
+              <View ref={titleWrapRef} tabIndex={-1}>
+                <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white">
+                  {title}
+                </Text>
+              </View>
               {showCloseButton && (
                 <Pressable
                   onPress={handleRequestClose}
