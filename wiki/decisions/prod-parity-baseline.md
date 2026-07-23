@@ -1,6 +1,6 @@
 ---
 area: decisions
-updated: 2026-07-14
+updated: 2026-07-24
 status: current
 sources:
   - uniqn-mobile/supabase/tests/parity_baseline_guard.test.sql
@@ -22,6 +22,7 @@ prod DB와 레포 마이그레이션이 대규모 발산: 함수 prod 163 vs 레
 1. **DB 보안/스키마 주장의 증거 계층**: prod 라이브 실측 > 로컬 fresh reset(이제 prod 대표) > 문서/기억. baseline 이전 문서·테스트가 말하는 "정책/함수 계약"은 잔상일 수 있다([[parity-baseline-squash]]의 prod 진실 교정 목록).
 2. **prod MCP 핫픽스 = 같은 PR에서 repo 마이그 + 가드 기대값 동시 갱신** (그게 가드의 존재 이유 — 안 하면 가드가 red로 잡는다).
 3. 함수·정책을 만들거나 지우는 마이그는 가드 카운트 갱신 필수. **additive 컬럼은 무영향**(가드는 테이블/컬럼을 세지 않음 — 2026-07-14 conditions 컬럼 실측).
+   - 실패 사례(2026-07-24): PR#311이 `set_venue_role_salary` 추가하며 갱신 누락 → **master DB Tests red + master를 merge한 인접 브랜치 동반 red**. PR#313에서 소급 177 갱신([[ops-console-redesign]]). 누락은 본인 PR이 아니라 머지 후 master와 후속 PR들에서 터진다 — CI green 확인은 머지 **후** master 런까지.
 4. 병렬 세션 마이그 타임스탬프 충돌은 [[migration-timestamp-collision]] 규칙 유지.
 
 ## 판정이 뒤집힌 사례 (재발견 금지)
