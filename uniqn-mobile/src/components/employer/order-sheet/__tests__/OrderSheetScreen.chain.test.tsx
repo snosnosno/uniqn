@@ -77,6 +77,36 @@ const titleAndContactMissing = (): OrderSheetFormValues => ({
   contactPhone: '',
 });
 
+/** 일정 그룹 2개 — 그룹0 완성, 그룹1 dates 미설정. 제목 확인 → 그룹1 날짜 시트 연쇄 예약용 */
+const secondGroupDatesMissing = (): OrderSheetFormValues => ({
+  ...onlyTitleMissing(),
+  scheduleGroups: [
+    {
+      dates: ['2026-07-24'],
+      timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] }],
+      grouped: false,
+    },
+    {
+      dates: [],
+      timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] }],
+      grouped: false,
+    },
+  ],
+});
+
+/** 시간은 채워졌지만 역할·역할별 급여가 빈 폼 — 역할 확정의 급여 프리필 부수효과 검증용 */
+const rolesAndByRoleSalaryMissing = (): OrderSheetFormValues => ({
+  ...initialOrderSheetValues(),
+  title: '주말 딜러 구합니다',
+  location: { name: '강남 홀덤펍', region: '서울' },
+  contactPhone: '010-1234-5678',
+  scheduleGroups: [
+    { dates: ['2026-07-24'], timeSlots: [{ startTime: '19:00', roles: [] }], grouped: false },
+  ],
+  useSameSalary: false,
+  roleSalaries: [],
+});
+
 const advanceSwap = async () => {
   await act(async () => {
     jest.advanceTimersByTime(SHEET_CHAIN_SWAP_MS);
@@ -196,5 +226,47 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
 
     // 타이머가 남아 있으면 언마운트된 트리에 setState 하여 경고가 난다
     expect(jest.getTimerCount()).toBe(0);
+  });
+
+  it('대기 중 그룹을 삭제하면 예약이 취소되어 stale groupIndex phantom 시트가 열리지 않는다', async () => {
+    const { getByTestId, getByText, queryByTestId } = render(
+      <OrderSheetScreen {...baseProps} initialValues={secondGroupDatesMissing()} />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
+    fireEvent.press(getByText('확인'));
+
+    // 예약이 실제로 걸렸는지 먼저 고정 — 없으면 아래 "안 열림" 단언이 공허하게 통과한다(언마운트 테스트 관례)
+    expect(jest.getTimerCount()).toBe(1);
+
+    // 대기 창 안에서 예약된 그룹(1)을 삭제 — 예약된 groupIndex 가 stale 이 된다
+    fireEvent.press(getByTestId('order-sheet-group-delete-1'));
+
+    await advanceSwap();
+
+    // 삭제된 그룹의 날짜 시트(DatePickerModal)가 phantom 으로 열리면 안 된다 —
+    // 거기서 확인한 입력은 groupIndex 매치 실패로 조용히 유실된다(silent data loss).
+    expect(queryByTestId('job-posting-date-confirm-button')).toBeNull();
+    expect(sheetTitleOf(queryByTestId)).toBeNull();
+  });
+
+  it('시간·역할 확인 시 급여 자동 프리필이 반영되어 연쇄가 급여 시트를 건너뛴다 (getValues 계약)', async () => {
+    const { getByTestId, getByText, queryByTestId } = render(
+      <OrderSheetScreen {...baseProps} initialValues={rolesAndByRoleSalaryMissing()} />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-roles')); // roles 미설정 → 연쇄 무장 + 시간·역할 시트
+    expect(sheetTitleOf(queryByTestId)).toBe('시간 · 역할');
+
+    fireEvent.press(getByTestId('order-role-chip-dealer')); // 칩 1탭 = 즉시 추가(RoleCountEditor)
+    fireEvent.press(getByText('확인'));
+
+    await advanceSwap();
+
+    // applyRoleSalarySync 가 확인 대상이 아닌 '급여' 행을 부수효과로 set 으로 바꾼다 —
+    // confirmRow 가 stale watch 값(values)을 읽으면 프리필 전 상태로 보여 '급여' 시트가
+    // 열리므로 이 단언이 깨진다. form.getValues() 계약(최신 폼 읽기)의 회귀 가드.
+    expect(sheetTitleOf(queryByTestId)).toBeNull();
   });
 });

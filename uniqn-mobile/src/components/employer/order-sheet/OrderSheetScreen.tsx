@@ -351,6 +351,9 @@ export function OrderSheetScreen({
   const handleDeleteGroup = useCallback(
     (groupIndex: number) => {
       if (guardScheduleLock()) return;
+      // 연쇄 예약 취소 — 180ms 대기 창 안에서 그룹을 삭제하면 예약된 groupIndex 가 stale 이 되어
+      // phantom 시트가 뜨고, 거기서 확인한 입력은 groupIndex 매치 실패로 조용히 유실된다.
+      clearPendingSwap();
       const current = form.getValues().scheduleGroups ?? [];
       if (current.length <= 1) return; // E4: 마지막 그룹은 버튼 자체 미노출 — 방어
       const target = current[groupIndex];
@@ -380,7 +383,7 @@ export function OrderSheetScreen({
         },
       });
     },
-    [form, addToast, guardScheduleLock]
+    [form, addToast, guardScheduleLock, clearPendingSwap]
   );
 
   /** "+ 일정 추가" — 새 그룹은 날짜 시트부터, 시간/역할은 직전 그룹 깊은복사 시드(리뷰 Design-L2).
