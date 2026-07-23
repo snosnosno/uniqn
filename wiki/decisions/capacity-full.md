@@ -75,3 +75,4 @@ PR#162 (주장): `getList` default `status=active` → capacity_full 구직자 �
 - [[data-flow]] — 자동전이 트리거가 데이터 흐름에 미치는 영향
 - [[seat-basis-e2e-seed-drift]] — 좌석 기준 전환(PR#269) 기록 + E2E 시드 낙오 후속(PR#275)
 - [[test-seed-contract-drift]] — 계약 소유권 이관 시 테스트 시드 전수 점검 규칙
+- [[headcount-daily-basis]] — 역할·하루 단위 **표시** 마감(분자=일별 max, 대기 지원 허용)은 이 페이지의 공고 단위 상태 마감과 층위가 다르다 — 의도된 이원화 (PR#309)
