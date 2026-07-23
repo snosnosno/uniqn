@@ -4,8 +4,8 @@
  * 저장 형식/키 계약은 건드리지 않는 순수 표시 유틸.
  */
 interface SortableTimeSlot {
-  startTime?: string;
-  time?: string;
+  startTime?: string | null;
+  time?: string | null;
   isTimeToBeAnnounced?: boolean;
 }
 

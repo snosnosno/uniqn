@@ -9,7 +9,7 @@ import type {
   PostingSalaryDisplay,
 } from '@/types';
 import { FIXED_DATE_MARKER, FIXED_TIME_MARKER } from '@/types/assignment';
-import { WorkLogCreator } from '@/domains/schedule';
+import { roleHydrateKey, slotHydrateKey } from '@/domains/schedule';
 import { getRoleDisplayName } from '@/types/unified';
 import {
   formatDateRangeWithCount,
@@ -259,7 +259,7 @@ function buildSingleDateSection(
     timeLabel: formatTimeLabel(slot),
     roles: toRoleModels(slot.roles, {
       date: requirement.date,
-      slotKey: slotMatchKey(slot),
+      slotKey: slotHydrateKey(slot),
       filledCounts,
     }),
   }));
@@ -309,7 +309,7 @@ function buildGroupedSection(
         slot.roles.map((role) => ({ ...role, filled: 0 })),
         {
           date,
-          slotKey: slotMatchKey(slot),
+          slotKey: slotHydrateKey(slot),
           filledCounts,
         }
       ),
@@ -453,21 +453,6 @@ function pickMaxSalaryRowText(rows: readonly PostingSalaryRow[]): string | undef
   return best?.text;
 }
 
-function slotMatchKey(slot: TimeSlotSource): string {
-  if (slot.isTimeToBeAnnounced) return UNKNOWN_TIME_LABEL;
-  // 서버 _posting_slot_key / apply 경로(slotCapacity)와 동일하게 range 문자열("14:00~22:00")에서
-  // 시작시간만 추출해 hydrate 키를 맞춘다. discrete HH:MM 값에는 항등(무변경).
-  const normalized = WorkLogCreator.extractStartTime(slot.startTime || slot.time || '');
-  return normalized || UNKNOWN_TIME_LABEL;
-}
-
-function roleMatchKey(role: RoleSource): string {
-  // 서버 _posting_role_key 와 정합: role='other' 면 customRole 유무와 무관하게 'other:' 접두.
-  // (custom 없는 bare 'other' 도 SQL 은 'other:' 를 만들므로 hydrate 키가 일치해야 함)
-  if (role.role === 'other') return `other:${role.customRole ?? ''}`;
-  return role.role || role.name || '';
-}
-
 type RoleHydrateCtx = { date: string; slotKey: string; filledCounts?: Map<string, number> };
 
 function toRoleModels(
@@ -478,7 +463,7 @@ function toRoleModels(
     const label = getRoleDisplayName(role.role || role.name || '', role.customRole);
     const count = role.count ?? role.headcount ?? 0;
     const hydrated = ctx
-      ? ctx.filledCounts?.get(`${ctx.date}__${ctx.slotKey}__${roleMatchKey(role)}`)
+      ? ctx.filledCounts?.get(`${ctx.date}__${ctx.slotKey}__${roleHydrateKey(role)}`)
       : undefined;
     const filled = hydrated ?? role.filled ?? 0;
     const keySource =

@@ -24,6 +24,25 @@ describe('sortTimeSlotsByStart', () => {
     expect(sortTimeSlotsByStart(slots)[0]!.startTime).toBe('09:30');
   });
 
+  it('한 자리 시각(9:30)은 padStart 로 10:00 보다 앞', () => {
+    const slots = [{ startTime: '10:00' }, { startTime: '9:30' }];
+    expect(sortTimeSlotsByStart(slots).map((s) => s.startTime)).toEqual(['9:30', '10:00']);
+  });
+
+  it('형식 불량(abc)은 유효 시각 뒤·LAST 폴백이나 TBA 보다는 앞', () => {
+    // startOf 정규식 미매치 → LAST('99:99') 폴백. 단 TBA 는 isTimeToBeAnnounced 분기로 항상 맨 뒤라
+    // 형식 불량(비-TBA)은 TBA 앞에 온다(실측: 10:00 → abc → TBA).
+    const slots = [
+      { startTime: 'abc' },
+      { startTime: '', isTimeToBeAnnounced: true },
+      { startTime: '10:00' },
+    ];
+    const ordered = sortTimeSlotsByStart(slots).map((s) =>
+      s.isTimeToBeAnnounced ? 'TBA' : s.startTime
+    );
+    expect(ordered).toEqual(['10:00', 'abc', 'TBA']);
+  });
+
   it('원본 배열을 변형하지 않는다', () => {
     const slots = [{ startTime: '11:00' }, { startTime: '10:00' }];
     const copy = [...slots];

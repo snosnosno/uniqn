@@ -49,6 +49,8 @@ export function PostingCardSurface({
   // a11y label 은 filled 수치를 읽지 않으므로 filledCounts 주입이 label 텍스트를 바꾸지 않는다.
   const schedule = buildPostingScheduleModel(card, filledCounts);
   const compensation = buildPostingCompensationModel(card, { display: 'card' });
+  // 자리 총계(구인자 병기): 다일 그룹일 때만 non-null(computeSeatTotals 이 판정). showSeatTotals 꺼짐이면 미계산.
+  const seatTotals = showSeatTotals ? computeSeatTotals(schedule) : null;
   const resolvedAccessibilityLabel =
     accessibilityLabel || buildAccessibilityLabel(card, schedule, compensation.primaryText);
   // 복지 → 세금 → 조건 순 평탄화(기존 렌더 순서 유지) — 급여 컬럼 메타 블록의 단일 소스
@@ -124,16 +126,11 @@ export function PostingCardSurface({
               filledCounts={filledCounts}
               schedule={schedule}
             />
-            {showSeatTotals
-              ? (() => {
-                  const seatTotals = computeSeatTotals(schedule);
-                  return seatTotals && seatTotals.total > 0 ? (
-                    <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-                      자리 {seatTotals.filled}/{seatTotals.total} 채움
-                    </Text>
-                  ) : null;
-                })()
-              : null}
+            {seatTotals && seatTotals.total > 0 ? (
+              <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+                자리 {seatTotals.filled}/{seatTotals.total} 채움
+              </Text>
+            ) : null}
           </View>
 
           <View className="mx-2 w-px self-stretch bg-secondary-100 dark:bg-surface-overlay" />
