@@ -168,9 +168,9 @@ const DateStatusRow = memo(function DateStatusRow({
         <Pressable
           onPress={handleSettle}
           className="px-2.5 py-1 bg-primary-500 rounded-lg active:opacity-70"
-          accessibilityLabel="정산하기"
+          accessibilityLabel="지급 완료로 표시"
         >
-          <Text className="text-xs font-sans-medium text-content-onGold">정산</Text>
+          <Text className="text-xs font-sans-medium text-content-onGold">지급 완료</Text>
         </Pressable>
       ) : (
         <View className={`px-2 py-0.5 rounded-sm ${payrollConfig.bgColor}`}>

@@ -258,7 +258,7 @@ test.describe('구인자 정산 관리', () => {
         [
           page.getByText('정산 상세', { exact: true }),
           page.getByLabel(/정산 금액 수정/),
-          page.getByLabel(/정산하기/),
+          page.getByLabel(/지급 완료로 표시/),
           page.getByText('정산 금액', { exact: true }),
         ],
         10_000
