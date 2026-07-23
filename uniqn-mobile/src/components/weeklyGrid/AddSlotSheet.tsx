@@ -40,15 +40,18 @@ import {
 } from '@/components/staffPicker';
 import { STAFF_ROLES } from '@/constants';
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import { DEFAULT_SLOT_START_TIME } from '@/domains/weeklyGrid';
+import { DEFAULT_SLOT_START_TIME, hasRoleSalary } from '@/domains/weeklyGrid';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import { useStaffNicknameSearch } from '@/hooks/useStaffNicknameSearch';
+import { useVenueContainer, useSetVenueRoleSalary } from '@/hooks/weeklyGrid';
 import { useToastStore } from '@/stores/toastStore';
+import { getRoleDisplayName } from '@/types/unified';
 import { toError } from '@/errors';
 import { logger } from '@/utils/logger';
 import { parseDateString } from '@/utils/date';
 import type { UserNicknameSearchResult } from '@/repositories';
 import { buildAddSlotPayload } from './addSlotPayload';
+import { RoleSalaryField, defaultVenueSalaryDraft, type VenueSalaryDraft } from './RoleSalaryField';
 import { timeStringToValue, timeValueToString } from './SlotTimeField';
 import { StartTimeField } from './StartTimeField';
 
@@ -134,6 +137,13 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
   // 출근시간 휠 피커 열림 여부. 중첩 Modal 없이 SheetModal overlay 로 단일 렌더.
   const [pickerOpen, setPickerOpen] = useState(false);
 
+  // JIT 급여 접점: 컨테이너 단가표(roleSalaries) 읽기 + 단가 저장 변이 + 인라인 드래프트.
+  // 시트가 열렸을 때만 조회(닫힌 상태 재조회 방지). 미설정 역할만 그 자리서 묻는다(설계 §B).
+  const { data: container } = useVenueContainer(visible ? containerId : null);
+  const setRoleSalary = useSetVenueRoleSalary();
+  const [jitDraft, setJitDraft] = useState<VenueSalaryDraft | null>(null);
+  const [jitDismissed, setJitDismissed] = useState(false);
+
   const resetSelection = useCallback(() => {
     setPicked(null);
     setRoleKey('');
@@ -202,6 +212,25 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
   const canSubmit =
     !!picked && !!roleKey && (!isCustomRole || customRole.trim().length > 0) && !isAddingStaff;
 
+  // 역할 선택 완료 여부(표준=칩, 커스텀=이름 입력) + JIT 단가 필요 판정.
+  const roleReady = !!roleKey && (!isCustomRole || customRole.trim().length > 0);
+  const needsJitSalary =
+    roleReady &&
+    !jitDismissed &&
+    !hasRoleSalary(
+      container?.roleSalaries ?? [],
+      roleKey,
+      isCustomRole ? customRole.trim() : undefined
+    );
+
+  // 역할/커스텀명 변경 시 JIT 상태 리셋 + 기본값 시드('나중에 설정' 무효화).
+  useEffect(() => {
+    setJitDismissed(false);
+    setJitDraft(roleReady ? defaultVenueSalaryDraft(roleKey) : null);
+    // roleReady 파생값 자체가 roleKey/customRole 에 의존 — 둘만 의존성으로 둔다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roleKey, customRole]);
+
   // 출근시간 피커 값('HH:mm' → TimeValue).
   const pickerValue = useMemo<TimeValue>(() => timeStringToValue(startTime), [startTime]);
 
@@ -214,6 +243,23 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
   const handleSubmit = useCallback(async () => {
     if (!picked || !roleKey) {
       return;
+    }
+    // JIT: 미설정 역할이면 단가를 **먼저** 저장한다. 실패해도 배치는 계속(설계 §B) — 토스트로 재안내.
+    if (needsJitSalary && jitDraft) {
+      try {
+        await setRoleSalary.mutateAsync({
+          venueId: containerId,
+          role: roleKey,
+          customRole: isCustomRole ? customRole.trim() : undefined,
+          salary: jitDraft,
+        });
+      } catch {
+        logger.warn('지점 단가 JIT 저장 실패 — 배치는 계속', { containerId, roleKey });
+        addToast({
+          type: 'info',
+          message: '단가 저장에 실패했어요. 다음 배치 때 다시 물어볼게요.',
+        });
+      }
     }
     try {
       // write 경계: 페이로드 빌더가 날짜 정규화(E5)·시간 형식 검증(TIME_RE)·XSS 검증(S1)을 수행(실패 시 throw).
@@ -252,6 +298,9 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
     onAdded,
     handleClose,
     addToast,
+    needsJitSalary,
+    jitDraft,
+    setRoleSalary,
   ]);
 
   const handleOpenPosting = useCallback(() => {
@@ -467,6 +516,19 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
                     value={customRole}
                     onChangeText={setCustomRole}
                     placeholder="예: 칩 러너"
+                  />
+                ) : null}
+
+                {/* JIT 단가 — 미설정 역할일 때만 그 자리서 입력(설정돼 있으면 미노출). '나중에 설정' 가능 */}
+                {needsJitSalary && jitDraft ? (
+                  <RoleSalaryField
+                    roleLabel={getRoleDisplayName(
+                      roleKey,
+                      isCustomRole ? customRole.trim() : undefined
+                    )}
+                    value={jitDraft}
+                    onChange={setJitDraft}
+                    onDismiss={() => setJitDismissed(true)}
                   />
                 ) : null}
 
