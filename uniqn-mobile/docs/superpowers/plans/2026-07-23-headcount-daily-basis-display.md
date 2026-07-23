@@ -356,6 +356,73 @@ git commit -m "fix(jobs): 타임 슬롯 표시를 시작시간 순으로 정렬 
 
 ---
 
+### Task 2b: 일수 인라인 표기 — 날짜와 같은 행에 `· N일` (사용자 결정 2026-07-23)
+
+현행: 카드가 라벨을 `\n`으로 쪼개 날짜 아래 별도 행에 "2일"을 그린다(`PostingScheduleContent.tsx:101-102, 122-126`). 라벨 소스 `formatDateRangeWithCount`(`utils/date/grouping.ts:160-178`)가 `"...범위\n    (2일)"` 2행 문자열을 만드는 게 뿌리. 한 행 `"8/22(토) ~ 8/23(일) · 2일"`로 통일한다 — 카드/상세/지원화면(`selectionUtils.ts:60` 그룹 라벨)이 같은 함수를 쓰므로 한 곳만 고치면 전 화면 정합.
+
+**Files:**
+
+- Modify: `src/utils/date/grouping.ts:160-178` (`formatDateRangeWithCount`)
+- Modify: `src/components/jobs/shared/PostingScheduleContent.tsx:100-126` (split·별도 일수 행 제거)
+- Test: `src/components/jobs/shared/__tests__/postingSurfaceModel.dailyBasis.test.ts` (케이스 추가) + `formatDateRangeWithCount` 기존 테스트 갱신(있는 경우)
+
+**Interfaces:**
+
+- Produces: `formatDateRangeWithCount(startDate, endDate)` — dayCount>1이면 `` `${범위} · ${dayCount}일` `` **단일 행**(개행 없음). 소비처(카드 라벨·상세 라벨·지원화면 그룹 라벨) 자동 정합.
+
+- [ ] **Step 1: 실패 테스트 작성** — `postingSurfaceModel.dailyBasis.test.ts`에 추가:
+
+```typescript
+it('그룹 라벨은 한 행 — 날짜 범위와 일수가 같은 행에 표기된다', () => {
+  const { source, filledCounts } = makeGroupedSource([
+    { date: '2026-08-22', filled: 0 },
+    { date: '2026-08-23', filled: 0 },
+  ]);
+  const model = buildPostingScheduleModel(source, filledCounts) as any;
+  expect(model.sections[0].label).not.toContain('\n'); // 현행 "\n    (2일)" 이므로 RED
+  expect(model.sections[0].label).toContain('· 2일');
+});
+```
+
+- [ ] **Step 2: RED 확인**
+
+Run: `npx jest src/components/jobs/shared/__tests__/postingSurfaceModel.dailyBasis.test.ts`
+Expected: FAIL — 라벨에 `\n` 포함, `· 2일` 미포함
+
+- [ ] **Step 3: 구현** — `grouping.ts` `formatDateRangeWithCount` 반환부 교체:
+
+```typescript
+if (dayCount <= 1) {
+  return rangeStr;
+}
+
+// 일수는 날짜와 같은 행에 표기(사용자 결정 2026-07-23). 구 2행 형식("\n    (N일)")은
+// 카드가 split('\n') 후 일수를 별도 행에 다시 그리는 이원화를 낳았다 — 단일 행이 단일 소스.
+return `${rangeStr} · ${dayCount}일`;
+```
+
+`PostingScheduleContent.tsx` 카드 분기 정리 — 101-102행을:
+
+```typescript
+const dateRangeText = section.label; // 단일 행 라벨 — split 불필요
+```
+
+로 바꾸고 `showCardDayCount` 변수(102행)와 122-126행의 별도 일수 `<Text>` 블록을 삭제.
+
+- [ ] **Step 4: GREEN + 라벨 소비처 회귀**
+
+Run: `npx jest src/components/jobs src/utils/date src/utils/assignment`
+Expected: PASS. `"\n    ("` 형식을 단언하던 기존 테스트가 있으면 `· N일` 단일 행으로 갱신(사유 주석). `grep -r "split('\\\\n')" src/` 로 라벨 split 잔존 소비처 0 확인.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/utils/date/grouping.ts src/components/jobs/shared/PostingScheduleContent.tsx src/components/jobs/shared/__tests__/postingSurfaceModel.dailyBasis.test.ts
+git commit -m "feat(jobs): 일수를 날짜와 같은 행에 표기 — 라벨 단일 행화"
+```
+
+---
+
 ### Task 3: 지원화면 확정 집계 주입 — (0/N) 고정 해소 + 마감·대기 지원
 
 핵심 결함: `AssignmentSelector`는 `useJobSchedule`(dead counter, `filledCount` 항상 0)만 읽어 마감이 절대 표시되지 않는다. 확정 서브맵을 주입하고, 그룹 표시는 날짜별 max로 승격한다. 동시에 `RoleCheckbox`의 "마감=비활성"을 "마감 표시 + 선택 가능(대기 지원)"으로 바꾼다(스펙 §2.4·§5-5).
