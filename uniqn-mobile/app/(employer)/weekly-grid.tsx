@@ -32,6 +32,7 @@ import {
   VenueSelector,
   VenueDayPanel,
   VenueCreateSheet,
+  VenueSettingsSheet,
   GridBadgeLegend,
 } from '@/components/weeklyGrid';
 import { useWeeklyGridEnabled } from '@/hooks';
@@ -95,6 +96,11 @@ export default function WeeklyGridScreen() {
   const [visibleMonth, setVisibleMonth] = useState<Date>(() => startOfMonth(new Date()));
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const [createSheetVisible, setCreateSheetVisible] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const selectedContainer = useMemo(
+    () => containers.find((c) => c.id === selectedVenueId) ?? null,
+    [containers, selectedVenueId]
+  );
 
   // P1-1: 운영처 0개면 워크스페이스 이름으로 기본 운영처 자동 생성(체감 2계층).
   // 실패 시 재발사 없음(훅 내부 가드) → 아래 수동 EmptyState 폴백.
@@ -167,6 +173,7 @@ export default function WeeklyGridScreen() {
         onSelectVenue={setSelectedVenueId}
         isLoadingContainers={wsLoading || containersQuery.isLoading}
         onAddVenue={() => setCreateSheetVisible(true)}
+        onOpenSettings={() => setSettingsOpen(true)}
       />
 
       {/* U4: 운영처 0 상태 — 워크스페이스/운영처 준비 단계를 명확히 구분한다.
@@ -295,6 +302,11 @@ export default function WeeklyGridScreen() {
           setSelectedVenueId(container.id);
           setCreateSheetVisible(false);
         }}
+      />
+      <VenueSettingsSheet
+        visible={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        container={selectedContainer}
       />
     </SafeAreaView>
   );
