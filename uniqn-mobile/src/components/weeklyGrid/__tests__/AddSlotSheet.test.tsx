@@ -257,3 +257,24 @@ it('단가 저장 실패해도 슬롯 추가는 진행되고 토스트로 안내
   await waitFor(() => expect(addStaffMock).toHaveBeenCalled());
   expect(addToastMock).toHaveBeenCalledWith(expect.objectContaining({ type: 'info' }));
 });
+
+it("'기타' 역할 커스텀명 키 입력이 수정한 JIT 단가를 되돌리지 않는다", () => {
+  // 회귀: [roleKey, customRole] 의존 effect 가 커스텀명 키 입력마다 jitDraft 를 기본값으로 되돌려
+  // 사용자가 수정한 단가가 조용히 소실됐다. 재시드는 roleKey 변경 시에만 일어나야 한다.
+  setPoolWithOneStaff();
+  const { getByText, getByPlaceholderText, getByLabelText } = renderSheet();
+
+  fireEvent.press(getByText('홍길동'));
+  fireEvent.press(getByText('✏️ 기타'));
+
+  // 커스텀명 입력 → JIT 필드 노출(기타는 단가표 미설정 → needsJitSalary).
+  fireEvent.changeText(getByPlaceholderText('예: 칩 러너'), 'VIP');
+
+  // 기본 시급 20,000 → +1,000 스텝으로 21,000 으로 수정.
+  fireEvent.press(getByLabelText('금액 올리기'));
+  expect(getByText('21,000원')).toBeTruthy();
+
+  // 커스텀명을 이어서 입력(키 입력마다 effect 발화) → 수정한 21,000 이 유지되어야 한다.
+  fireEvent.changeText(getByPlaceholderText('예: 칩 러너'), 'VIP룸');
+  expect(getByText('21,000원')).toBeTruthy();
+});

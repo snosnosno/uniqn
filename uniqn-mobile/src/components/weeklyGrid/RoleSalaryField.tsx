@@ -56,6 +56,9 @@ export function RoleSalaryField({
   const handleType = useCallback(
     (type: VenueSalaryDraft['type']) => () => {
       if (type === value.type) return;
+      // 직접입력이 열린 채 타입을 바꾸면 stale draftText 가 blur 시점에 재시드 금액을 덮어쓴다.
+      // 타입 전환은 편집을 닫아 그 desync 를 끊는다(재개 시 draftText 는 새 금액으로 다시 시드).
+      setEditing(false);
       onChange({ type, amount: DEFAULT_SALARY_BY_TYPE[type] });
     },
     [value.type, onChange]
@@ -79,7 +82,10 @@ export function RoleSalaryField({
       </Text>
 
       {/* 급여 타입 세그먼트 (협의 없음) */}
-      <View className="flex-row gap-1 rounded-lg bg-surface-card p-1 dark:bg-surface">
+      <View
+        accessibilityRole="tablist"
+        className="flex-row gap-1 rounded-lg bg-surface-card p-1 dark:bg-surface"
+      >
         {TYPE_LABELS.map(({ type, label }) => (
           <Pressable
             key={type}
@@ -126,7 +132,7 @@ export function RoleSalaryField({
             keyboardType="number-pad"
             returnKeyType="done"
             accessibilityLabel="금액 직접 입력"
-            className="min-w-[120px] rounded-md border border-primary-400 px-3 py-2 text-center text-base font-sans-semibold text-content-primary dark:text-off-white"
+            className="min-w-[120px] rounded-md border border-primary-400 px-3 py-2 text-center text-base font-sans-semibold text-content-primary dark:border-primary-500 dark:text-off-white"
           />
         ) : (
           <Pressable
