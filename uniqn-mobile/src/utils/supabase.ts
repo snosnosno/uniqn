@@ -7,6 +7,9 @@
  * Firebase의 firestore.ts + queryBuilder.ts를 대체하는 Supabase용 헬퍼.
  * Repository 레이어에서 사용하며, 에러 변환 / RPC / 페이지네이션 / 배치 / Realtime /
  * camelCase↔snake_case 변환을 제공한다.
+ *
+ * 예외: createRealtimeSubscription 은 읽기 전용 realtime 구독(캐시 무효화 목적)에 한해
+ * 훅에서 직접 사용 허용 (CLAUDE.md 아키텍처 예외 참조).
  */
 
 import {
@@ -310,52 +313,6 @@ export async function paginatedQuery<T extends Record<string, unknown>>(
 // ============================================================================
 // 4. Batch Operations
 // ============================================================================
-
-/**
- * 다수 행 일괄 삽입
- *
- * @description PostgREST는 배열 insert를 네이티브로 지원하므로 청킹 불필요.
- *              onConflict 옵션으로 upsert 동작도 가능.
- * @param table - 테이블 이름
- * @param items - 삽입할 행 배열 (snake_case 필드)
- * @param options - onConflict 컬럼 지정 시 upsert
- * @returns 삽입된 행 배열
- *
- * @example
- * ```typescript
- * const inserted = await batchInsert('notifications', [
- *   { user_id: '1', message: '알림1' },
- *   { user_id: '2', message: '알림2' },
- * ]);
- * ```
- */
-export async function batchInsert<T extends Record<string, unknown>>(
-  table: string,
-  items: T[],
-  options?: { onConflict?: string }
-): Promise<T[]> {
-  if (items.length === 0) return [];
-
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const query = options?.onConflict
-    ? supabase
-        .from(table)
-        .upsert(items as any, { onConflict: options.onConflict })
-        .select()
-    : supabase
-        .from(table)
-        .insert(items as any)
-        .select();
-  /* eslint-enable @typescript-eslint/no-explicit-any */
-
-  const { data, error } = await query;
-
-  if (error) {
-    handleSupabaseError(error, { operation: 'batchInsert', table });
-  }
-
-  return (data ?? []) as T[];
-}
 
 /**
  * 다수 행 개별 업데이트

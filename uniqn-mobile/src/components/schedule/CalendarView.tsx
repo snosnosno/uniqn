@@ -13,6 +13,7 @@ import {
   SECONDARY_PALETTE,
   TEXT_COLORS,
 } from '@/constants/colors';
+import { WEEKDAYS_KO } from '@/constants/weekdays';
 import { useThemeStore } from '@/stores/themeStore';
 import type { ScheduleEvent, ScheduleType } from '@/types';
 
@@ -46,7 +47,7 @@ LocaleConfig.locales.ko = {
     '12월',
   ],
   dayNames: ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'],
-  dayNamesShort: ['일', '월', '화', '수', '목', '금', '토'],
+  dayNamesShort: [...WEEKDAYS_KO],
   today: '오늘',
 };
 LocaleConfig.defaultLocale = 'ko';
@@ -73,7 +74,7 @@ const SCHEDULE_DOT_COLORS: Record<ScheduleType, string> = {
   cancelled: STATUS_COLORS.error,
 };
 
-const CALENDAR_WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
+const CALENDAR_WEEKDAYS = WEEKDAYS_KO;
 
 const calendarTheme = {
   backgroundColor: 'transparent',

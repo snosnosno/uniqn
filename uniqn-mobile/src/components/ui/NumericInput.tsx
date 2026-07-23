@@ -8,6 +8,7 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useMemo, useCallback } from 'react';
 import { View, Text, TextInput, type TextInputProps } from 'react-native';
+import { formatNumber } from '@/utils/formatters';
 
 // ============================================================================
 // Types
@@ -65,7 +66,7 @@ export const NumericInput = memo(function NumericInput({
   const formattedValue = useMemo(() => {
     if (value === undefined || value === null) return '';
     if (hideZero && value <= 0) return '';
-    return value.toLocaleString('ko-KR');
+    return formatNumber(value);
   }, [value, hideZero]);
 
   // 숫자만 추출 후 onChange 호출

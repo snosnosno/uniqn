@@ -401,12 +401,25 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
   async getPostingFilledCounts(jobPostingIds: string[]): Promise<Map<string, number>> {
     const map = new Map<string, number>();
     if (jobPostingIds.length === 0) return map;
+    // 폴백(빈 Map 반환) 발생 빈도 관측용 — 반환 동작은 유지하고 Sentry에만 보고한다(현상유지+리포트).
+    const reportFallback = (reason: string, cause: unknown): void => {
+      Sentry.withScope((scope) => {
+        scope.setLevel('warning');
+        scope.setTag('rpc', 'get_posting_filled_counts');
+        scope.setContext('fallback', {
+          reason,
+          jobPostingCount: jobPostingIds.length,
+        });
+        Sentry.captureException(cause instanceof Error ? cause : new Error(String(reason)));
+      });
+    };
     try {
       const { data, error } = await supabase.rpc('get_posting_filled_counts', {
         p_job_posting_ids: jobPostingIds,
       });
       if (error) {
         logger.warn('get_posting_filled_counts 실패 — 역할별 카운트 미표시', { error });
+        reportFallback('rpc_error', new Error(error.message));
         return map;
       }
       const rows = (data ?? []) as {
@@ -422,6 +435,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       }
     } catch (e) {
       logger.warn('get_posting_filled_counts 예외', { error: e });
+      reportFallback('exception', toError(e));
     }
     return map;
   }

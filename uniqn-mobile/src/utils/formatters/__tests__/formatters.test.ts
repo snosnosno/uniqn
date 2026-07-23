@@ -5,6 +5,7 @@
 import {
   formatCurrency,
   formatCurrencyCompact,
+  formatDateWithWeekday,
   formatDuration,
   formatDurationFromMinutes,
   formatISODate,
@@ -212,5 +213,31 @@ describe('phone re-export', () => {
 
   it('toE164 converts local 010 → +8210', () => {
     expect(toE164('010-1234-5678')).toBe('+821012345678');
+  });
+});
+
+// ─── formatDateWithWeekday ────────────────────────────────────────────────
+
+describe('formatDateWithWeekday', () => {
+  it('formats date-only strings as "YYYY.M.D(요일)" without zero padding', () => {
+    // 요일은 date -d 로 사전 검증(date-calculation 규칙)
+    expect(formatDateWithWeekday('2026-07-05')).toBe('2026.7.5(일)');
+    expect(formatDateWithWeekday('2026-07-06')).toBe('2026.7.6(월)');
+    expect(formatDateWithWeekday('2026-01-01')).toBe('2026.1.1(목)');
+    expect(formatDateWithWeekday('2026-12-25')).toBe('2026.12.25(금)');
+  });
+
+  it('handles leap day', () => {
+    expect(formatDateWithWeekday('2024-02-29')).toBe('2024.2.29(목)');
+  });
+
+  it('returns "" for empty/null/undefined input', () => {
+    expect(formatDateWithWeekday('')).toBe('');
+    expect(formatDateWithWeekday(undefined)).toBe('');
+    expect(formatDateWithWeekday(null)).toBe('');
+  });
+
+  it('returns the raw string when parsing fails (기존 폴백 관습 보존)', () => {
+    expect(formatDateWithWeekday('not-a-date')).toBe('not-a-date');
   });
 });

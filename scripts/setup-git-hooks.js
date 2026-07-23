@@ -17,7 +17,22 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const repoRoot = path.join(__dirname, '..');
-const hooksDir = path.join(repoRoot, '.git', 'hooks');
+// 워크트리에서는 .git 이 파일(포인터)이라 .git/hooks 하드코딩이 ENOTDIR로 실패한다.
+// git 이 실제 hooks 경로를 알고 있으므로 rev-parse 로 해석 (실패 시 기존 경로 폴백).
+const hooksDir = resolveHooksDir();
+
+function resolveHooksDir() {
+  try {
+    const resolved = execSync('git rev-parse --git-path hooks', {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    return path.isAbsolute(resolved) ? resolved : path.resolve(repoRoot, resolved);
+  } catch {
+    return path.join(repoRoot, '.git', 'hooks');
+  }
+}
 const marker = 'T-HOLDEM managed hook';
 const nodePath = process.execPath.replace(/\\/g, '/');
 
