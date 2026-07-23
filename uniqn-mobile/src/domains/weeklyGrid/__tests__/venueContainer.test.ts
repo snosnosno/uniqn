@@ -26,6 +26,7 @@ describe('parseVenueContainer', () => {
       venueId: 'c1',
       kind: 'dated',
       softTargets: { '2026-07-01': 3 },
+      roleSalaries: [],
     });
   });
 

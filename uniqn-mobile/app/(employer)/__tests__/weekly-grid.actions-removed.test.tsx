@@ -24,6 +24,7 @@ jest.mock('@/components/weeklyGrid', () => ({
   VenueSelector: () => null,
   VenueDayPanel: () => null,
   VenueCreateSheet: () => null,
+  VenueSettingsSheet: () => null,
   GridBadgeLegend: () => null,
 }));
 jest.mock('@/components/ui', () => ({

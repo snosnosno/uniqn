@@ -12,6 +12,7 @@ import type {
   Allowances as UtilityAllowances,
   TaxSettings as UtilityTaxSettings,
 } from '@/utils/settlement';
+import type { SalaryResolutionSource } from '@/domains/settlement';
 
 // ============================================================================
 // Internal Types
@@ -37,6 +38,9 @@ export interface SettlementWorkLog extends WorkLog {
   jobPostingTitle?: string;
   calculatedAmount?: number;
   hoursWorked?: number;
+  /** 계산에 실제 사용된 급여(카드 재계산용) + 해소 출처(폴백 배지용) — venue 경로가 채운다 */
+  salaryInfo?: UtilitySalaryInfo;
+  salarySource?: SalaryResolutionSource;
 }
 
 /**
