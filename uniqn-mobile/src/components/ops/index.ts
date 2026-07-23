@@ -33,3 +33,6 @@ export { PlayersTab } from './PlayersTab';
 export { TournamentResultCard } from './TournamentResultCard';
 // 2부 리디자인(Task 2) — 상시 한 줄 요약 스트립(L1)
 export { OpsSummaryStrip } from './OpsSummaryStrip';
+// 2부 리디자인(Task 3) — 상시 클럭 스트립 + 제어 시트(L1)
+export { OpsClockStrip } from './OpsClockStrip';
+export { OpsClockControlSheet } from './OpsClockControlSheet';
