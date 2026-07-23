@@ -1,10 +1,9 @@
-/** ops PLAYERS 탭 — 등록 폼·참가자 리스트. 행 탭 → 공용 액션시트(리바이/애드온/탈락/재진입/탈락취소). [id].tsx 에서 추출(T10). */
+/** ops PLAYERS 탭 — 참가자 리스트. 등록은 FAB→시트([id].tsx 소유, L7)로 분리. 행 탭 → 공용 액션시트(리바이/애드온/탈락/재진입/탈락취소). [id].tsx 에서 추출(T10). */
 import { useState } from 'react';
-import { View, Text, TextInput, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { AppFlashList } from '@/components/ui/AppFlashList';
 import { PlayerClaimButton } from './PlayerClaimButton';
 import { OpsParticipantActionSheet } from './OpsParticipantActionSheet';
-import { useRegisterParticipant } from '@/hooks/ops';
 import type { OpsParticipant, OpsTournament } from '@/types/ops';
 
 import { formatNumber as fmt } from '@/utils/formatters/currency';
@@ -28,101 +27,16 @@ export function PlayersTab({
   // 바운티 대회 여부 — bountyCost 설정 시 KO 배지 노출. 탈락자 지정 피커는 액션시트로 이관(T7).
   const isBountyTournament = tournament.bountyCost !== null && tournament.bountyCost !== undefined;
 
-  const registerMut = useRegisterParticipant(tournamentId);
-
-  const [showForm, setShowForm] = useState(false);
-  const [name, setName] = useState('');
-  const [nationality, setNationality] = useState('');
-  const [phone, setPhone] = useState('');
-  const [buyIn, setBuyIn] = useState('');
   // 행 탭 → 액션시트 대상 참가자. null 이면 닫힘.
   const [sheetParticipant, setSheetParticipant] = useState<OpsParticipant | null>(null);
 
-  const submitRegister = () => {
-    if (!name.trim()) return;
-    registerMut.mutate(
-      {
-        name: name.trim(),
-        nationality: nationality.trim() || undefined,
-        phone: phone.trim() || undefined,
-        buyInAmount: buyIn.trim() ? parseInt(buyIn.replace(/[^0-9]/g, ''), 10) : undefined,
-      },
-      {
-        onSuccess: () => {
-          setName('');
-          setNationality('');
-          setPhone('');
-          setBuyIn('');
-          setShowForm(false);
-        },
-      }
-    );
-  };
-
   return (
     <View className="flex-1">
-      <View className="flex-row items-center justify-between px-4 py-2">
+      <View className="flex-row items-center px-4 py-2">
         <Text className="text-sm text-secondary-500 dark:text-secondary-400">
           {tournament.registrationOpen ? '등록 열림' : '등록 마감'}
         </Text>
-        <Pressable
-          onPress={() => setShowForm((s) => !s)}
-          accessibilityRole="button"
-          className="rounded-md bg-primary-600 px-3 py-1.5 active:opacity-70"
-        >
-          <Text className="font-sans-semibold text-sm text-white">
-            {showForm ? '닫기' : '+ 워크인 등록'}
-          </Text>
-        </Pressable>
       </View>
-
-      {showForm && (
-        <View className="mx-4 mb-2 rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
-          <TextInput
-            value={name}
-            onChangeText={setName}
-            placeholder="참가자 이름 *"
-            placeholderTextColor="#9CA3AF"
-            maxLength={50}
-            className="mb-2 rounded-md border border-gray-300 px-3 py-2 text-content-primary dark:border-gray-700 dark:text-off-white"
-          />
-          <View className="flex-row gap-2">
-            <TextInput
-              value={nationality}
-              onChangeText={setNationality}
-              placeholder="국적 (예: KR)"
-              placeholderTextColor="#9CA3AF"
-              className="mb-2 flex-1 rounded-md border border-gray-300 px-3 py-2 text-content-primary dark:border-gray-700 dark:text-off-white"
-            />
-            <TextInput
-              value={buyIn}
-              onChangeText={setBuyIn}
-              placeholder="바이인 금액"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="number-pad"
-              className="mb-2 flex-1 rounded-md border border-gray-300 px-3 py-2 text-content-primary dark:border-gray-700 dark:text-off-white"
-            />
-          </View>
-          <TextInput
-            value={phone}
-            onChangeText={setPhone}
-            placeholder="전화번호 (선택)"
-            placeholderTextColor="#9CA3AF"
-            keyboardType="phone-pad"
-            className="mb-2 rounded-md border border-gray-300 px-3 py-2 text-content-primary dark:border-gray-700 dark:text-off-white"
-          />
-          <Pressable
-            onPress={submitRegister}
-            disabled={!name.trim() || registerMut.isPending}
-            accessibilityRole="button"
-            className={`items-center rounded-md py-2.5 ${name.trim() && !registerMut.isPending ? 'bg-primary-600 active:opacity-70' : 'bg-gray-300 dark:bg-gray-700'}`}
-          >
-            <Text className="font-sans-semibold text-white">
-              {registerMut.isPending ? '등록 중…' : '등록'}
-            </Text>
-          </Pressable>
-        </View>
-      )}
 
       <AppFlashList
         data={participants}

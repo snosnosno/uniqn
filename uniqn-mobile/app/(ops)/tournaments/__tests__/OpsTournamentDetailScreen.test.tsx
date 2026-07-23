@@ -24,6 +24,7 @@ jest.mock('@/components/ops', () => ({
   StaffTab: () => null,
   HistoryTab: () => null,
   PayoutsTab: () => null,
+  OpsRegisterParticipantSheet: () => null,
 }));
 
 describe('OpsTournamentDetailScreen', () => {

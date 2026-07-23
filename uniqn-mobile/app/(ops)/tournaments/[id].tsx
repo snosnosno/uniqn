@@ -1,9 +1,10 @@
 /** ops 대회 상세 — OpsConsoleShell 반응형 셸. 기본 진입 = 현황(L2). RLS 단일 진실. */
 import { useState } from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, Pressable, ActivityIndicator } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { StackHeader } from '@/components/headers';
+import { UserPlusIcon } from '@/components/icons';
 import {
   OpsConsoleShell,
   type OpsTabKey,
@@ -14,8 +15,33 @@ import {
   StaffTab,
   HistoryTab,
   PayoutsTab,
+  OpsRegisterParticipantSheet,
 } from '@/components/ops';
 import { useOpsTournament, useOpsParticipants, useOpsStaff } from '@/hooks/ops';
+
+/**
+ * 참가 등록 확장 FAB(L7) — 참가 탭에서만 셸 fab 슬롯에 주입.
+ * 포지셔닝은 셸이 아닌 FAB 자체(absolute) — BoardWriteFab 선례. 56px(≥44px 터치 타깃).
+ */
+function OpsRegisterFab({ onPress }: { onPress: () => void }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View
+      pointerEvents="box-none"
+      style={{ position: 'absolute', right: 16, bottom: 16 + insets.bottom }}
+    >
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel="참가 등록"
+        className="h-14 flex-row items-center gap-1.5 rounded-2xl bg-primary-600 px-5 shadow-lg active:opacity-70"
+      >
+        <UserPlusIcon size={20} color="#FFFFFF" />
+        <Text className="font-sans-semibold text-white">등록</Text>
+      </Pressable>
+    </View>
+  );
+}
 
 export default function OpsTournamentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -24,6 +50,8 @@ export default function OpsTournamentDetailScreen() {
   const { participants, isLoading: participantsLoading } = useOpsParticipants(tournamentId);
   const { data: staffRoster } = useOpsStaff(tournamentId);
   const [tab, setTab] = useState<OpsTabKey>('status');
+  // 등록 시트 오픈 상태 — FAB(참가 탭) 소유. PlayersTab 인라인 폼 대체(L7).
+  const [registerOpen, setRegisterOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -83,6 +111,14 @@ export default function OpsTournamentDetailScreen() {
         activeTab={tab}
         onTabChange={setTab}
         renderTab={renderTab}
+        fab={
+          tab === 'players' ? <OpsRegisterFab onPress={() => setRegisterOpen(true)} /> : undefined
+        }
+      />
+      <OpsRegisterParticipantSheet
+        tournamentId={tournamentId}
+        visible={registerOpen}
+        onClose={() => setRegisterOpen(false)}
       />
     </SafeAreaView>
   );
