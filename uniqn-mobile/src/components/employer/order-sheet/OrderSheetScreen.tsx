@@ -631,7 +631,12 @@ export function OrderSheetScreen({
   );
 
   const handleSubmitPress = form.handleSubmit(
-    (valid) => onSubmit(valid),
+    (valid) => {
+      // 딤은 pointerEvents='none' 이라 연쇄 대기 창에서도 제출이 눌린다 — 제출로 넘어가면
+      // 예약된 시트는 의미가 없다(실패 경로는 handleRowPress 가 이미 취소한다).
+      clearPendingSwap();
+      return onSubmit(valid);
+    },
     (submitErrors) => {
       // 1순위: 미설정 행 순차 유도. 2순위(값은 있는데 invalid — XSS 문자열·프리필 이상치): 첫 에러 행 시트 열기.
       // 3순위: 매핑 실패 시 토스트 폴백 — "버튼이 아무 반응 없는" 죽은 상태 금지(리뷰 H5·F5).

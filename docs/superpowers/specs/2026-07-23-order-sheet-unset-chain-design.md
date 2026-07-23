@@ -59,7 +59,7 @@ OrderSheetScreen
 
 | 파일 | 역할 |
 |---|---|
-| `src/components/employer/order-sheet/SheetChainContext.tsx` (신규, ~20줄) | 연쇄 단계 상태 컨텍스트 |
+| `src/components/ui/SheetChainContext.tsx` (신규, ~20줄) | 연쇄 단계 상태 컨텍스트 (SheetModal 이 직접 소비하므로 ui/ 에 둔다) |
 | `src/components/employer/order-sheet/OrderSheetScreen.tsx` | 연쇄 판정·실행, 딤 레이어, Provider |
 | `src/components/ui/SheetModal.tsx` | context 소비 — 전환 연출 분기 |
 | `src/constants/animation.ts` | `SHEET_CHAIN_SWAP_MS` 추가 |
