@@ -7,6 +7,11 @@ import { StackHeader } from '@/components/headers';
 import { useCreateOpsTournament } from '@/hooks/ops';
 import { PostingPickerSheet } from '@/components/ops';
 import { useMyJobPostings } from '@/hooks/useJobManagement';
+import { opsBlindLevelService } from '@/services/ops';
+import { DEFAULT_BLIND_LEVELS } from '@/domains/ops/defaultBlindStructure';
+import { useAuthStore } from '@/stores/authStore';
+import { useToastStore } from '@/stores/toastStore';
+import { logger } from '@/utils/logger';
 
 function NumField({
   label,
@@ -48,6 +53,7 @@ export default function OpsTournamentCreateScreen() {
   const { postingId: postingIdParam } = useLocalSearchParams<{ postingId?: string }>();
   const presetPostingId = Array.isArray(postingIdParam) ? postingIdParam[0] : postingIdParam;
   const { data: myPostings } = useMyJobPostings();
+  const actorId = useAuthStore((s) => s.user?.uid);
 
   const [name, setName] = useState('');
   const [venue, setVenue] = useState('');
@@ -96,6 +102,18 @@ export default function OpsTournamentCreateScreen() {
       },
       {
         onSuccess: (r) => {
+          // 기본 블라인드 30레벨 시드(B2). fire-and-forget — 시드가 내비게이션을 지연시키지 않는다.
+          // 대회는 이미 생성됐으므로 시드 실패는 롤백하지 않고 경고만(블라인드 탭에서 수동 재설정 가능).
+          if (actorId) {
+            opsBlindLevelService
+              .setLevels(r.tournamentId, actorId, DEFAULT_BLIND_LEVELS)
+              .catch((e) => {
+                logger.error('기본 블라인드 시드 실패(수동 설정 가능)', { error: e });
+                useToastStore
+                  .getState()
+                  .error('기본 블라인드 설정에 실패했어요. 블라인드 탭에서 직접 설정할 수 있어요.');
+              });
+          }
           router.replace(`/(ops)/tournaments/${r.tournamentId}`);
         },
       }

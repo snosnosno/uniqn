@@ -195,8 +195,10 @@ function WebSheetModal({
           accessibilityLabel="모달 닫기"
         />
 
-        {/* Modal Container */}
-        <View className="flex-1 justify-end" style={{ pointerEvents: 'box-none' }}>
+        {/* Modal Container — pointerEvents 는 반드시 prop 으로:
+            style 의 'box-none' 은 유효 CSS 값이 아니라 RNW 가 드롭(computed auto)해
+            백드롭(형제 Pressable) 클릭이 이 컨테이너에 전부 삼켜진다(웹 실측). */}
+        <View className="flex-1 justify-end" pointerEvents="box-none">
           <View
             style={[
               {
@@ -231,6 +233,7 @@ function WebSheetModal({
                   className="w-10 h-10 items-center justify-center rounded-sm bg-surface-card dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
                   accessibilityRole="button"
                   accessibilityLabel="닫기"
+                  hitSlop={8}
                 >
                   <XMarkIcon size={18} color={getIconColor(isDarkMode, 'primary')} />
                 </Pressable>

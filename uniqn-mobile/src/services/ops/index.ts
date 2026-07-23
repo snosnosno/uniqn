@@ -5,6 +5,7 @@ export * as opsTableService from './opsTableService';
 export * as opsSeatService from './opsSeatService';
 export * as opsClockService from './opsClockService';
 export * as opsBlindLevelService from './opsBlindLevelService';
+export * as opsBlindPresetService from './opsBlindPresetService';
 export * as opsMonitorService from './opsMonitorService';
 export * as opsPlayerService from './opsPlayerService';
 export * as opsPrizeService from './opsPrizeService';
