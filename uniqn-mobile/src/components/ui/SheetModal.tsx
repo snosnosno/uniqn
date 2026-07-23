@@ -27,6 +27,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { XMarkIcon } from '@/components/icons';
 import { getIconColor } from '@/constants';
+import { useSheetChain } from '@/components/ui/SheetChainContext';
 import { useThemeStore } from '@/stores/themeStore';
 import { isWeb } from '@/utils/platform';
 import { WebPortal } from '@/components/ui/WebPortal';
@@ -79,9 +80,20 @@ function WebSheetModal({
   overlay,
 }: SheetModalProps) {
   const { isDarkMode } = useThemeStore();
+  // 연쇄 진입 — 네이티브와 같은 계약을 웹에서도 지킨다(마운트 시점 값 고정).
+  // 웹은 onShow 가 없어 표시 전환 시점에 onEntered 를 직접 호출한다.
+  const chain = useSheetChain();
+  const isChainEntryRef = useRef(chain?.entering === true);
+  const chainOnEnteredRef = useRef(chain?.onEntered);
+  chainOnEnteredRef.current = chain?.onEntered;
   const { height: windowHeight } = useWindowDimensions();
   const [shouldRender, setShouldRender] = useState(visible);
-  const [isAnimating, setIsAnimating] = useState(false);
+  // 연쇄 진입은 첫 페인트부터 백드롭이 불투명하고 슬라이드가 없다 — 호출부가 같은 농도의
+  // 딤을 이미 깔아 두었으므로, 여기서 opacity 0 부터 시작하면 그 사이 밝은 화면이 드러난다.
+  // (CSS transition 은 마운트 후 "변화"에만 걸리므로 초기값 true = 전이 없이 즉시 표시)
+  const [isAnimating, setIsAnimating] = useState(visible && isChainEntryRef.current);
+  // 연쇄 진입 전용 콘텐츠 fade — 백드롭은 즉시 불투명하되 내용은 160ms 로 나타난다.
+  const [chainContentIn, setChainContentIn] = useState(false);
   const previouslyFocusedRef = useRef<Element | null>(null);
 
   useEffect(() => {
@@ -93,7 +105,22 @@ function WebSheetModal({
         }
       }
       setShouldRender(true);
-      requestAnimationFrame(() => setIsAnimating(true));
+      if (isChainEntryRef.current) {
+        // 딤은 시트가 실제로 그려진 뒤에 걷어야 한다 — rAF 한 번은 "다음 페인트 직전"이라
+        // 아직 화면에 반영되기 전이다. 이중 rAF 로 한 프레임 그려진 것을 보장한다.
+        requestAnimationFrame(() => {
+          setChainContentIn(true);
+          requestAnimationFrame(() => chainOnEnteredRef.current?.());
+        });
+        if (typeof document !== 'undefined') {
+          document.body.style.overflow = 'hidden';
+        }
+        return undefined;
+      }
+      requestAnimationFrame(() => {
+        setIsAnimating(true);
+        chainOnEnteredRef.current?.();
+      });
       if (typeof document !== 'undefined') {
         document.body.style.overflow = 'hidden';
       }
@@ -166,10 +193,15 @@ function WebSheetModal({
               {
                 maxHeight: fullHeight ? windowHeight : windowHeight * 0.95,
                 height: fullHeight ? windowHeight : undefined,
-                opacity: isAnimating ? 1 : 0,
-                transform: [{ translateY: isAnimating ? 0 : windowHeight }],
+                // 연쇄 진입은 제자리에서 내용만 갈린다 — 슬라이드 없이 fade 만(네이티브와 동일).
+                opacity: isChainEntryRef.current ? (chainContentIn ? 1 : 0) : isAnimating ? 1 : 0,
+                transform: [
+                  { translateY: isChainEntryRef.current || isAnimating ? 0 : windowHeight },
+                ],
                 // @ts-expect-error - 웹 전용 스타일
-                transition: 'opacity 200ms ease, transform 300ms ease-out',
+                transition: isChainEntryRef.current
+                  ? 'opacity 160ms ease-out'
+                  : 'opacity 200ms ease, transform 300ms ease-out',
                 pointerEvents: 'auto' as const,
               },
             ]}
@@ -239,8 +271,16 @@ function NativeSheetModal({
   // 키보드 오픈 시 헤더가 상태바를 침범). 훅으로 앱 루트 provider 값을 직접 읽어
   // 패딩으로 적용하면 중첩 SafeAreaProvider 없이 해소된다.
   const insets = useSafeAreaInsets();
+  // 연쇄 진입(주문서 미설정 항목 이어가기) — 마운트 시점 값을 고정한다.
+  // 이후 Context 가 바뀌어도 이미 시작한 연출을 갈아치우지 않기 위함.
+  const chain = useSheetChain();
+  const isChainEntryRef = useRef(chain?.entering === true);
+  const chainOnEnteredRef = useRef(chain?.onEntered);
+  chainOnEnteredRef.current = chain?.onEntered;
   const fadeOpacity = useSharedValue(0);
-  const translateY = useSharedValue(windowHeight);
+  // 연쇄 진입은 아래에서 올라오지 않고 제자리에서 나타난다(슬라이드 이동 없음)
+  const translateY = useSharedValue(isChainEntryRef.current ? 0 : windowHeight);
+  const contentOpacity = useSharedValue(isChainEntryRef.current ? 0 : 1);
   const isKeyboardVisible = useRef(false);
 
   const isFirstRender = useRef(true);
@@ -270,6 +310,12 @@ function NativeSheetModal({
     }
 
     if (visible) {
+      if (isChainEntryRef.current) {
+        // 백드롭은 즉시 불투명 — 호출부가 같은 농도의 딤을 이미 깔아 두어 이음매가 없다.
+        fadeOpacity.value = 1;
+        contentOpacity.value = withTiming(1, { duration: 160, easing: Easing.out(Easing.ease) });
+        return;
+      }
       fadeOpacity.value = withTiming(1, { duration: 200, easing: Easing.ease });
       translateY.value = withTiming(0, {
         duration: 300,
@@ -282,7 +328,7 @@ function NativeSheetModal({
         easing: Easing.in(Easing.ease),
       });
     }
-  }, [visible, fadeOpacity, translateY, windowHeight]);
+  }, [visible, fadeOpacity, translateY, contentOpacity, windowHeight]);
 
   const handleRequestClose = useCallback(() => {
     if (!isLoading) {
@@ -305,6 +351,7 @@ function NativeSheetModal({
 
   const modalAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
+    opacity: contentOpacity.value,
   }));
 
   return (
@@ -313,6 +360,7 @@ function NativeSheetModal({
       transparent
       animationType="none"
       onRequestClose={handleRequestClose}
+      onShow={() => chainOnEnteredRef.current?.()}
       statusBarTranslucent
     >
       {/* Android: statusBarTranslucent 다이얼로그에선 KAV(height)가 무력 —

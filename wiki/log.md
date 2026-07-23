@@ -93,3 +93,14 @@ sources 4 신설: order-sheet-unification(#261+#252/#253, conditions patch 계�
 
 ## [2026-07-19] ingest | 좌석 기준 filled_positions 전환 + E2E 시드 낙오 (PR#269→#275)
 sources 1 신설: **seat-basis-e2e-seed-drift** — `filled_positions` 유지 주체가 applications 트리거→work_logs 좌석 트리거(`fn_sync_filled_positions_seat`)로, 전이는 job_postings BEFORE 트리거(`fn_recalc_total_and_capacity`) 단일 지점으로 이관(PR#269). `cancellation-lifecycle.spec.ts` 시드가 구 계약(applications 직접 INSERT, work_logs 0건)에 묶여 낙오 → 07-17~19 전 브랜치 P0 red. 회귀 브래킷=마지막 성공 `07-17T12:29Z`↔#269 머지 `16:15Z`↔첫 실패 `18:08Z`(사이 성공 0건). decisions 1 신설: **test-seed-contract-drift** — 계약 소유권 이관 시 단언 테스트 전수 스캔·시드의 RPC 우회 취약성·**red보다 vacuous green 우선 의심**(`:313`/`:434` 복원 단언 2건이 전제 미성립으로 공허하게 통과 중이었음)·수정 후 비-공허성 red-green 증명 의무·사전조건 단언을 남기는 설계. decisions 1 교정: **capacity-full** M2/M3가 구 주체(applications 트리거·cancel RPC 재개 분기)를 서술하던 **모순 해소** — 담당 주체 이관표 추가, M3 재개 분기 삭제 사실 반영. index 갱신(sources 1행+decisions 1행+capacity-full 경고). 판정 근거=prod 실측 4갈래(prosrc filled 쓰기 0·불변식 mismatch 0·pgTAP 11/11·prod↔로컬 함수 5종 md5 일치) → **테스트 노후화이지 라이브 결함 아님**. 출처 PR#269·PR#275(master `9cfec82db`).
+
+## [2026-07-23] note | 주문서 미설정 항목 연쇄 입력 — 확인 시 다음 미설정 시트로 이어감
+
+공고작성 주문서에서 미설정 항목의 `확인`을 누르면 목록으로 돌아가지 않고 다음 미설정 항목 시트로 이어진다. 순회는 `nextUnsetRowAfter`(current 다음부터 순환, 제자리 복귀 시 null)로 분리해 무한 재오픈을 구조적으로 차단했고, 전환 연출은 `SheetChainContext`(`src/components/ui/`)로 `SheetModal`에만 전달해 시트 컴포넌트 12개를 건드리지 않았다.
+
+핵심 함정 3건:
+- 주문서 시트는 조건부 렌더라 `visible=false` 경로를 타지 않고 즉시 언마운트된다 — exit 애니메이션이 없으므로 전환 대기(`SHEET_CHAIN_SWAP_MS=180`)는 시각 대기가 아니라 iOS 네이티브 모달 겹침 회피용이다.
+- **시트 13종 중 `ScheduleDatesSheet`만 `SheetModal`이 아니라 `DatePickerModal`(`ui/Modal`) 래핑**이라 `onEntered` 통지 주체가 없다. 딤 인수인계를 `SheetModal`에만 걸면 날짜 시트 경로에서 딤이 영구 잔존한다(확인·취소 어느 쪽으로도 안 걷힘). 래퍼가 다른 시트를 Context 계약에서 빠뜨리면 같은 클래스가 재발한다.
+- `closeSheet`의 딤 해제는 **예약 존재로 분기해야 한다** — 모든 시트가 `onConfirm` 직후 `onClose`를 호출하므로, 무조건 해제하면 `confirmRow`가 방금 켠 딤이 꺼져 번쩍임이 복귀한다.
+
+테스트 함정: 예약 취소 시 딤 해제를 검증하려고 `SheetModal` 계열 시트를 탭하면, 그 시트의 `onEntered`가 딤을 대신 걷어 **가드를 제거해도 green**이 된다(프로덕션 `onShow`도 동일 마스킹 — mock 아티팩트 아님). `clearPendingSwap`이 유일한 해제 주체인 경로(그룹 삭제·일정 추가·언마운트)로 검증해야 한다.
