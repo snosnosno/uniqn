@@ -1,6 +1,7 @@
+import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
-import { isAppError } from '@/errors';
+import { isAppError, ValidationError, ERROR_CODES } from '@/errors';
 import { handleSupabaseError, toCamelCase } from '@/utils/supabase';
 import { mapOpsRpcError } from './opsRpcError';
 import type {
@@ -24,6 +25,48 @@ const COLUMNS =
 
 function rowToParticipant(row: Record<string, unknown>): OpsParticipant {
   return toCamelCase<OpsParticipant>(row);
+}
+
+// ── RPC 응답 경계 검증 (금전 경로: 탈락취소 칩복원·상금 정정·지급) ──────────────
+// 생성타입 미반영으로 인라인 익명 타입 직단언하던 자리를 얇은 parse 로 교체.
+// 응답은 snake_case(수동 매핑) → 스키마도 snake_case. passthrough 로 필드 strip 없음.
+// 실패 시 오염값이 흐르지 않도록 ValidationError throw(정상 응답 경로는 불변).
+
+const undoBustResponseSchema = z
+  .object({
+    participant_id: z.string(),
+    restored_chips: z.number(),
+    status: z.string(),
+    seated: z.boolean(),
+    table_no: z.number().nullable(),
+    seat_no: z.number().nullable(),
+  })
+  .passthrough();
+
+const prizeCorrectionResponseSchema = z
+  .object({
+    participant_id: z.string(),
+    amount_before: z.number().nullable(),
+    amount_after: z.number().nullable(),
+  })
+  .passthrough();
+
+const setPrizePaidResponseSchema = z
+  .object({
+    participant_id: z.string(),
+    prize_paid_at: z.string().nullable(),
+  })
+  .passthrough();
+
+/** RPC 응답을 얇은 스키마로 parse. 실패 시 한글 ValidationError. */
+function parseOpsRpcResponse<T>(schema: z.ZodType<T>, data: unknown, operation: string): T {
+  const parsed = schema.safeParse(data);
+  if (!parsed.success) {
+    throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+      userMessage: `${operation} 응답을 확인하지 못했습니다. 잠시 후 다시 시도해주세요`,
+    });
+  }
+  return parsed.data;
 }
 
 export class SupabaseOpsParticipantRepository implements IOpsParticipantRepository {
@@ -167,14 +210,7 @@ export class SupabaseOpsParticipantRepository implements IOpsParticipantReposito
         p_actor_id: actorId,
       });
       if (error) mapOpsRpcError(error, { operation: 'ops 탈락 취소' });
-      const row = data as unknown as {
-        participant_id: string;
-        restored_chips: number;
-        status: string;
-        seated: boolean;
-        table_no: number | null;
-        seat_no: number | null;
-      };
+      const row = parseOpsRpcResponse(undoBustResponseSchema, data, 'ops 탈락 취소');
       return {
         participantId: row.participant_id,
         restoredChips: row.restored_chips,
@@ -203,11 +239,7 @@ export class SupabaseOpsParticipantRepository implements IOpsParticipantReposito
         p_reason: reason ?? null,
       });
       if (error) mapOpsRpcError(error, { operation: 'ops 상금 정정' });
-      const row = data as unknown as {
-        participant_id: string;
-        amount_before: number | null;
-        amount_after: number | null;
-      };
+      const row = parseOpsRpcResponse(prizeCorrectionResponseSchema, data, 'ops 상금 정정');
       return {
         participantId: row.participant_id,
         amountBefore: row.amount_before ?? null,
@@ -231,7 +263,7 @@ export class SupabaseOpsParticipantRepository implements IOpsParticipantReposito
         p_paid: paid,
       });
       if (error) mapOpsRpcError(error, { operation: 'ops 상금 지급 마킹' });
-      const row = data as unknown as { participant_id: string; prize_paid_at: string | null };
+      const row = parseOpsRpcResponse(setPrizePaidResponseSchema, data, 'ops 상금 지급 마킹');
       return { participantId: row.participant_id, prizePaidAt: row.prize_paid_at ?? null };
     } catch (error) {
       if (isAppError(error)) throw error;
