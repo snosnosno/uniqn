@@ -137,6 +137,22 @@ describe('평점관리 허브', () => {
     const { getByText } = render(<ReviewHistoryScreen />);
     expect(getByText(/미작성 2/)).toBeTruthy();
   });
+
+  it('미작성 목록 상단에 작성 기한(7일) 안내를 표시한다 (QW7)', () => {
+    const { getByText } = render(<ReviewHistoryScreen />);
+    expect(getByText(/7일까지만 작성할 수 있어요/)).toBeTruthy();
+  });
+
+  it('미작성 빈 상태에 기간 만료 안내를 표시한다 (QW7)', () => {
+    getHookMocks().usePendingReviews.mockReturnValue({
+      pendingReviews: [],
+      pendingCount: 0,
+      isLoading: false,
+    });
+    const { getByText } = render(<ReviewHistoryScreen />);
+    fireEvent.press(getByText('미작성'));
+    expect(getByText(/작성 기간\(7일\)이 지난 평가는 자동으로 사라져요/)).toBeTruthy();
+  });
 });
 
 // ============================================================================
