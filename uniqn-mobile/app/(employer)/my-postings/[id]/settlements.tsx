@@ -190,7 +190,11 @@ export default function StaffSettlementsScreen() {
       {stackHeader}
 
       {/* 당일 운영 요약 스트립 (M4) — 오늘 근무가 있을 때만 노출 */}
-      <TodayOpsStrip todayGroup={todayGroup} pendingSettlementCount={pendingSettlementCount} />
+      <TodayOpsStrip
+        todayGroup={todayGroup}
+        pendingSettlementCount={pendingSettlementCount}
+        onPressSettlement={() => setActiveTab('settlement')}
+      />
 
       {/* 탭 헤더 */}
       <TabHeader

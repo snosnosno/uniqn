@@ -21,6 +21,7 @@ import {
   usePendingReviews,
 } from '@/hooks/useReviews';
 import type { PendingReviewItem } from '@/hooks/useReviews';
+import { REVIEW_DEADLINE_DAYS } from '@/types/review';
 import { useAuthStore } from '@/stores/authStore';
 import type { Review } from '@/types/review';
 
@@ -155,10 +156,17 @@ export default function ReviewHistoryScreen() {
             keyExtractor={(item: PendingReviewItem) => `${item.workLogId}_${item.reviewerType}`}
             estimatedItemSize={120}
             contentContainerStyle={{ paddingVertical: 8 }}
+            ListHeaderComponent={
+              pendingReviews.length > 0 ? (
+                <Text className="px-4 pb-2 text-xs text-content-secondary dark:text-secondary-400 font-sans">
+                  리뷰는 근무 종료 후 {REVIEW_DEADLINE_DAYS}일까지만 작성할 수 있어요
+                </Text>
+              ) : null
+            }
             ListEmptyComponent={
               <EmptyState
                 title="미작성 평가 없음"
-                description="모든 평가를 완료했습니다"
+                description={`모든 평가를 완료했어요. 작성 기간(${REVIEW_DEADLINE_DAYS}일)이 지난 평가는 자동으로 사라져요`}
                 variant="content"
               />
             }
