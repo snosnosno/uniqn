@@ -59,6 +59,36 @@ export function orderGroupsFor(postingType: OrderSheetFormValues['postingType'])
   return postingType === 'fixed' ? FIXED_ORDER_GROUPS : ORDER_GROUPS;
 }
 
+/**
+ * 슬롯 완성 판정 — getRowState('time'/'roles') 와 ScheduleSlotsSheet 확인 게이팅이 공유하는
+ * 단일 소스. time 행은 시간만, roles 행은 역할만 보므로 반쪽 술어 2개(isSlotTimeSet·slotHasRoles)
+ * + 합성(isSlotComplete)으로 나눈다. 셋을 한 곳에 두어야 zod superRefine 과의 정렬(H5)이
+ * 세 소비처에서 드리프트하지 않는다. 시간 미정(isTimeToBeAnnounced)은 유효한 확정값이다(#303).
+ */
+export interface SlotCompletable {
+  startTime: string;
+  isTimeToBeAnnounced?: boolean;
+  roles: readonly unknown[];
+}
+
+/** 슬롯의 시간이 확정됐는가 — HH:MM 유효값 또는 시간 미정. */
+export const isSlotTimeSet = (s: SlotCompletable): boolean =>
+  s.isTimeToBeAnnounced === true || START_TIME_RE.test(s.startTime);
+
+/** 슬롯에 역할이 1개 이상 있는가. */
+export const slotHasRoles = (s: SlotCompletable): boolean => s.roles.length > 0;
+
+/** 슬롯이 완성됐는가 — 시간 확정 + 역할 있음. 역할 0개 확정은 급여 시트 데드엔드를 만든다. */
+export const isSlotComplete = (s: SlotCompletable): boolean => isSlotTimeSet(s) && slotHasRoles(s);
+
+/**
+ * 슬롯 목록 전체가 완성됐는가 — 확인 버튼 게이팅용.
+ * ⚠️ slots.length > 0 가드 필수: Array.every 는 빈 배열에서 진공적으로 true 라,
+ * 이 가드가 없으면 슬롯 0개일 때 확인이 열려 무효 확정으로 이어진다(리뷰 MEDIUM).
+ */
+export const areSlotsComplete = (slots: readonly SlotCompletable[]): boolean =>
+  slots.length > 0 && slots.every(isSlotComplete);
+
 /** RHF errors의 최상위 필드 → 행 매핑 (scheduleGroups는 아래 경로 워커가 처리) */
 const ERROR_FIELD_TO_ROW: Record<string, OrderRowKey> = {
   title: 'title',
@@ -401,12 +431,11 @@ export function getRowState(
     }
     case 'time': {
       // H5 근본 수정: 해당 그룹 모든 슬롯이 유효(시각 HH:MM 또는 시간 미정)해야 set — zod superRefine과 정렬
+      // 판정은 공유 술어 isSlotTimeSet 경유(3중 구현 통합, 드리프트 차단).
       const slots = group?.timeSlots ?? [];
-      const slotSet = (s: (typeof slots)[number]) =>
-        s.isTimeToBeAnnounced === true || START_TIME_RE.test(s.startTime);
-      const allValid = slots.length > 0 && slots.every(slotSet);
+      const allValid = slots.length > 0 && slots.every(isSlotTimeSet);
       const starts = slots
-        .filter(slotSet)
+        .filter(isSlotTimeSet)
         .map((s) => (s.isTimeToBeAnnounced === true ? '미정' : s.startTime));
       return {
         label: '시간',
@@ -442,7 +471,7 @@ export function getRowState(
         };
       }
       const slots = group?.timeSlots ?? [];
-      const allHaveRoles = slots.length > 0 && slots.every((s) => s.roles.length > 0);
+      const allHaveRoles = slots.length > 0 && slots.every(slotHasRoles);
       return {
         label: '역할',
         value: allHaveRoles ? summarizeRoles(slots) : '',
