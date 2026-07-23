@@ -7,7 +7,7 @@
 - [[layers]] — Presentation→Hooks→Service→Repository→Supabase 단방향 5레이어
 - [[data-flow]] — 대표 데이터 흐름(읽기 TanStack Query 예외 + 쓰기 Service 경유)
 - [[rls-model]] — RLS 정책 3계층 + 재귀/SECDEF 함정 3건
-- [[ops-engine]] — 대회 운영 엔진(ops 1a~1f + S1 전면 개방·대회사 레일): 이벤트 스파인·SECDEF 쓰기 경계·anon SECDEF 2 불변·서버앵커 클럭·진입 허브/악용 방어/TV 프리셋 (PR#207~#265)
+- [[ops-engine]] — 대회 운영 엔진(ops 1a~1f + S1 전면 개방·대회사 레일 + 콘솔 리디자인·블라인드 프리셋): 이벤트 스파인·SECDEF 쓰기 경계·anon SECDEF 2 불변·서버앵커 클럭·진입 허브/악용 방어/TV 프리셋 (PR#207~#265·#313)
 
 ## decisions
 - [[enum-divergence]] — enum 발산 → 읽기 레코드 증발 방지 규칙 (3회 재발 클래스)
@@ -23,7 +23,7 @@
 - [[order-sheet-form-contract]] — 주문서 폼 계약: 3제네릭 zodResolver(z.input/z.output)·canonical 매퍼 등가성·Design B(단일화면 카드+시트)·#244 지연전환·중첩Modal embedded·update=patch conditions 상시 전달·전 타입 단일 경로+레거시 은퇴 (PR#246/#247/#261)
 - [[secdef-hardening]] — SECURITY DEFINER 함수 하드닝 3규칙: anon EXECUTE 명시 REVOKE·search_path에 extensions·plpgsql NULL fail-open 차단 (memory 졸업, PR#195)
 - [[supabase-write-pitfalls]] — Supabase 쓰기 경로 함정 종합: 카운터 트리거·realtime publication·RPC 예외 매핑·시드 zod·storage 정책·존재하지 않는 테이블 (memory 졸업)
-- [[nativewind-rn-pitfalls]] — NativeWind/RN UI 함정: 동적 className dark: 유실·flex-1 붕괴·Link asChild 터치 유실·중첩 accessibilityRole hydration (memory 졸업, PR#136)
+- [[nativewind-rn-pitfalls]] — NativeWind/RN UI 함정: 동적 className dark: 유실·flex-1 붕괴·Link asChild 터치 유실·중첩 Pressable/role hydration·style pointerEvents 드롭(웹 딤)·RNModal+gorhom z-순서 (memory 졸업, PR#136·#313)
 - [[headcount-daily-basis]] — 인원 표시 계약: 하루 기준 분수·분자=일별 max(통지원 전제)·마감=대기 지원 허용·hydrate 키 단일 소스(postingHydrateKeys) — capacity_full(공고 단위)과 의도된 이원화 (PR#309)
 
 ## domain
@@ -47,3 +47,4 @@
 - [[alert-web-noop]] — rn-web Alert.alert 완전 no-op 전수 교정: confirmAction/showAlert 단일화+ESLint 강제 — ✅PR#264
 - [[seat-basis-e2e-seed-drift]] — 좌석 기준 filled_positions 전환(사람→좌석·유지 주체 work_logs 트리거 이관) + E2E 시드 낙오로 P0 취소플로우 이틀간 red+vacuous green — ✅PR#269·#275 머지 `9cfec82db`(라이브 결함 아님, 4갈래 실측)
 - [[headcount-daily-basis-display]] — 인원카운트 하루 기준 표시 통일(요약 곱셈 폐기·지원화면 dead counter 주입 해소·시간 정렬·hydrate 키 공용화) + 교훈 4종(키 중복=조용한 (0/N) 회귀 등) — ✅PR#309 머지 `ceb420ac9`
+- [[ops-console-redesign]] — ops 콘솔 리디자인+블라인드 프리셋(SDD 13태스크+후속 3묶음) + 교훈 5종(RNW pointerEvents 드롭·Pressable 중첩·RNModal z-순서·워크트리 EMFILE·parity 가드 누락 파급) — ✅PR#313 머지 `b76668b5e`
