@@ -367,7 +367,9 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
         {/* 선택일(그리드 맥락에서 고정) */}
         <View className="mb-3 flex-row items-center gap-2">
           <Text className="text-sm text-content-secondary font-sans">배치일</Text>
-          <Text className="text-sm font-sans-semibold text-content-primary">{dateLabel}</Text>
+          <Text className="text-sm font-sans-semibold text-content-primary dark:text-off-white">
+            {dateLabel}
+          </Text>
         </View>
 
         {/* 추가 방식 세그먼트 */}

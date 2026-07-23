@@ -114,7 +114,7 @@ export function VenueSettingsSheet({ visible, onClose, container }: VenueSetting
 
         {entries.length === 0 ? (
           <View className="items-center gap-2 py-8">
-            <Text className="text-base font-sans-semibold text-content-primary">
+            <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
               아직 설정된 단가가 없어요
             </Text>
             <Text className="text-center text-sm text-content-secondary font-sans">
@@ -145,7 +145,7 @@ export function VenueSettingsSheet({ visible, onClose, container }: VenueSetting
                         );
                       }}
                     >
-                      <Text className="text-base text-content-primary font-sans-medium">
+                      <Text className="text-base text-content-primary dark:text-off-white font-sans-medium">
                         {entryLabel(e)}
                       </Text>
                       <Text className="text-base text-content-secondary font-sans">

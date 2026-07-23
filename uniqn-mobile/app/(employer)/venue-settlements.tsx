@@ -115,7 +115,7 @@ export default function VenueSettlementsScreen() {
         >
           <ChevronLeftIcon size={20} color={SECONDARY_PALETTE[500]} />
         </Pressable>
-        <Text className="text-base font-sans-semibold text-content-primary">
+        <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
           {month.replace('-', '년 ')}월
         </Text>
         <Pressable

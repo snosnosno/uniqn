@@ -74,7 +74,7 @@ export function RoleSalaryField({
 
   return (
     <View className="gap-2 rounded-md border border-secondary-200 bg-surface-page p-3 dark:border-surface-overlay dark:bg-surface-elevated">
-      <Text className="text-sm font-sans-medium text-content-primary">
+      <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
         {caption ?? `${roleLabel} 단가 미설정 — 지금 입력하면 이후 자동으로 적용돼요`}
       </Text>
 
@@ -126,7 +126,7 @@ export function RoleSalaryField({
             keyboardType="number-pad"
             returnKeyType="done"
             accessibilityLabel="금액 직접 입력"
-            className="min-w-[120px] rounded-md border border-primary-400 px-3 py-2 text-center text-base font-sans-semibold text-content-primary"
+            className="min-w-[120px] rounded-md border border-primary-400 px-3 py-2 text-center text-base font-sans-semibold text-content-primary dark:text-off-white"
           />
         ) : (
           <Pressable
@@ -138,7 +138,7 @@ export function RoleSalaryField({
             accessibilityLabel="금액 직접 입력 열기"
             className="min-h-[44px] justify-center px-3"
           >
-            <Text className="text-lg font-sans-bold text-content-primary">
+            <Text className="text-lg font-sans-bold text-content-primary dark:text-off-white">
               {value.amount.toLocaleString('ko-KR')}원
             </Text>
           </Pressable>
