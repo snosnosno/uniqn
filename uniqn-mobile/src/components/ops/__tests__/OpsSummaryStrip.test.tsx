@@ -10,9 +10,9 @@ describe('OpsSummaryStrip', () => {
       stats: { playing: 9, entries: 57, avgStackBb: 19 },
     });
     const { getByText } = render(<OpsSummaryStrip tournamentId="t1" />);
-    expect(getByText(/9/)).toBeTruthy();
-    expect(getByText(/57/)).toBeTruthy();
-    expect(getByText(/19/)).toBeTruthy();
+    expect(getByText('9')).toBeTruthy();
+    expect(getByText('57')).toBeTruthy();
+    expect(getByText('19')).toBeTruthy();
   });
 
   it('탭하면 onPress 호출(현황 점프)', () => {
