@@ -23,11 +23,21 @@ jest.mock('@/stores/toastStore', () => ({
 
 // 실제 SheetModal 의 닫기 버튼은 텍스트가 아니라 아이콘(accessibilityLabel='닫기')이라
 // 모킹 시 사라진다 — 연쇄 중단(X) 경로를 누를 수 있도록 스텁에 닫기 Pressable 을 둔다.
+// SheetChainContext 를 소비해 실제 SheetModal 의 onShow(표시 완료 통지) 계약을 재현한다 —
+// 이 통지가 없으면 딤 레이어가 걷히는 경로를 테스트할 수 없다.
 jest.mock('@/components/ui/SheetModal', () => {
+  const React = require('react');
   const { View, Text, Pressable } = require('react-native');
+  const { useSheetChain } = require('@/components/ui/SheetChainContext');
   return {
-    SheetModal: ({ visible, title, children, footer, overlay, onClose }: any) =>
-      visible ? (
+    SheetModal: ({ visible, title, children, footer, overlay, onClose }: any) => {
+      const chain = useSheetChain();
+      // 실제 SheetModal 의 onShow 계약 재현 — 마운트 시 1회 통지
+      React.useEffect(() => {
+        if (visible) chain?.onEntered();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, []);
+      return visible ? (
         <View testID="mock-sheet">
           <Text testID="mock-sheet-title">{title}</Text>
           <Pressable testID="mock-sheet-close" onPress={onClose} accessibilityRole="button" />
@@ -35,7 +45,8 @@ jest.mock('@/components/ui/SheetModal', () => {
           {footer}
           {overlay}
         </View>
-      ) : null,
+      ) : null;
+    },
   };
 });
 jest.mock('@/components/ui/Modal', () => {
@@ -268,5 +279,36 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
     // confirmRow 가 stale watch 값(values)을 읽으면 프리필 전 상태로 보여 '급여' 시트가
     // 열리므로 이 단언이 깨진다. form.getValues() 계약(최신 폼 읽기)의 회귀 가드.
     expect(sheetTitleOf(queryByTestId)).toBeNull();
+  });
+
+  it('전환 대기 동안 딤이 깔리고, 다음 시트가 올라오면 걷힌다', async () => {
+    const { getByTestId, getByText, queryByTestId } = render(
+      <OrderSheetScreen {...baseProps} initialValues={titleAndContactMissing()} />
+    );
+
+    expect(queryByTestId('order-sheet-chain-scrim')).toBeNull();
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
+    fireEvent.press(getByText('확인'));
+
+    // 대기 중에는 딤이 화면을 덮고 있다
+    expect(getByTestId('order-sheet-chain-scrim')).toBeTruthy();
+
+    await advanceSwap();
+
+    expect(queryByTestId('order-sheet-chain-scrim')).toBeNull();
+  });
+
+  it('연쇄가 끝나면(다음 미설정 없음) 딤이 깔리지 않는다', async () => {
+    const { getByTestId, getByText, queryByTestId } = render(
+      <OrderSheetScreen {...baseProps} initialValues={onlyTitleMissing()} />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
+    fireEvent.press(getByText('확인'));
+
+    expect(queryByTestId('order-sheet-chain-scrim')).toBeNull();
   });
 });
