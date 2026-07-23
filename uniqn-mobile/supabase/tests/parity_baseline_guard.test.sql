@@ -27,6 +27,10 @@
 --     함수 176 = 174 + ops_save_blind_preset 1 + ops_delete_blind_preset 1(SECDEF, anon REVOKE).
 --     정책 111 불변(RPC 신설만, RLS 미변경).
 --   ↑ 두 마이그 모두 2026-07-24 prod(ygfxukhktpqymahfrvbz) 실측 확인: 정책 111·함수 176.
+--   2026-07-24 지점 역할별 급여 JIT(마이그 20260723100000, PR#311 머지·prod 적용 완료 — 재적용 금지):
+--     함수 177 = 176 + set_venue_role_salary 1(SECDEF 단가표 upsert RPC).
+--     정책 111 불변(RPC 신설만, RLS 미변경).
+--     (#311이 이 가드 갱신을 누락해 master DB Tests red — 본 PR에서 소급 갱신)
 --
 -- ⚠️ 유지보수 계약: 이후 마이그레이션이 public 함수/정책을 추가·삭제하면
 --   이 기대값을 같은 PR에서 함께 갱신해야 한다. 갱신을 강제당하는 것 자체가
@@ -39,7 +43,7 @@
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=176
+-- PARITY_EXPECT_FUNCS=177
 -- PARITY_EXPECT_POLICIES=111
 -- ============================================================
 BEGIN;
@@ -59,8 +63,8 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  176,
-  'public function count == prod (176 = 174 + ops 블라인드 프리셋 save/delete RPC 2, 2026-07-24)');
+  177,
+  'public function count == prod (177 = 174 + ops 프리셋 RPC 2 + venue 급여 RPC 1, 2026-07-24)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(
