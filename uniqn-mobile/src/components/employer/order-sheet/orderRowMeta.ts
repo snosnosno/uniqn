@@ -565,10 +565,18 @@ export function firstUnsetRow(values: OrderSheetFormValues): OrderRowTarget | nu
  * 무한 재오픈을 구조적으로 차단한다.
  *
  * current 가 목록에 없으면(타입 전환 등으로 행 구성이 바뀐 경우) 앞에서부터 훑는다.
+ *
+ * @param coveredKeys 방금 확인한 시트가 함께 확정한 행들. 기본값은 current 하나.
+ *   ⚠️ 행과 시트는 1:1 이 아니다 — 시간·역할 두 행은 ScheduleSlotsSheet 하나로 열리고
+ *   확인은 roles 로만 보고된다. current 하나만 제외하면 time 이 곧바로 다음 타깃이 되어
+ *   **같은 시트가 무한 재오픈**된다(슬롯 추가 후 시간 미선택 확인으로 재현). 시트가
+ *   커버하는 행 전체를 넘겨야 "확인한 것은 다시 묻지 않는다"는 가드가 성립한다.
+ *   같은 그룹에만 적용되므로 다른 그룹의 동일 행은 정상적으로 다음 타깃이 된다.
  */
 export function nextUnsetRowAfter(
   values: OrderSheetFormValues,
-  current: OrderRowTarget
+  current: OrderRowTarget,
+  coveredKeys: readonly OrderRowKey[] = [current.key]
 ): OrderRowTarget | null {
   const targets = orderedRowTargets(values);
   const currentIndex = targets.findIndex(
@@ -579,6 +587,7 @@ export function nextUnsetRowAfter(
     const target = targets[(start + offset) % targets.length];
     if (target === undefined) continue;
     if (currentIndex >= 0 && (start + offset) % targets.length === currentIndex) break;
+    if (target.groupIndex === current.groupIndex && coveredKeys.includes(target.key)) continue;
     if (isUnsetTarget(values, target)) return target;
   }
   return null;

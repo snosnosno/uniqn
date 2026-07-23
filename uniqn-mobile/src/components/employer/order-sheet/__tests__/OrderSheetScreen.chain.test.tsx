@@ -132,6 +132,26 @@ const middleGroupCompleteLastMissing = (): OrderSheetFormValues => ({
   ],
 });
 
+/**
+ * 슬롯 2개 중 하나에 출근 시각이 없는 폼 — 실사용 재현 경로는 "슬롯 추가(startTime:'') 후
+ * 시간을 안 고르고 확인"이다(추가 버튼이 빈 시각 슬롯을 만들고 확인에 disabled 가 없다).
+ * 이때 time 행은 unset, roles 는 set 이라 확인 보고(roles)만 제외하면 time 이 즉시 재타깃된다.
+ */
+const slotMissingStartTime = (): OrderSheetFormValues => ({
+  ...onlyTitleMissing(),
+  title: '주말 딜러 구합니다',
+  scheduleGroups: [
+    {
+      dates: ['2026-07-24'],
+      timeSlots: [
+        { startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] },
+        { startTime: '', roles: [{ role: 'dealer', count: 1 }] },
+      ],
+      grouped: false,
+    },
+  ],
+});
+
 /** 시간은 채워졌지만 역할·역할별 급여가 빈 폼 — 역할 확정의 급여 프리필 부수효과 검증용 */
 const rolesAndByRoleSalaryMissing = (): OrderSheetFormValues => ({
   ...initialOrderSheetValues(),
@@ -557,6 +577,24 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
     await advanceSwap();
 
     // 예약이 살아 있으면 TemplateModal 위로 연쇄 시트가 겹쳐 뜬다
+    expect(sheetTitleOf(queryByTestId)).toBeNull();
+  });
+
+  it('시간을 안 고른 슬롯이 남아도 시간·역할 시트가 재오픈되지 않는다 (한 시트=두 행 루프 차단)', async () => {
+    // 시간·역할은 행이 둘이지만 시트는 ScheduleSlotsSheet 하나이고 확인은 roles 로만 보고된다.
+    // 커버 범위를 안 넘기면 time 이 곧바로 다음 타깃이 되어 같은 시트가 무한 재오픈된다
+    // (탈출구가 X 버튼뿐인 소프트락). 확인은 두 행을 함께 확정한 것으로 취급해야 한다.
+    const { getByTestId, getByText, queryByTestId } = render(
+      <OrderSheetScreen {...baseProps} initialValues={slotMissingStartTime()} />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-time'));
+    expect(sheetTitleOf(queryByTestId)).toBe('시간 · 역할');
+
+    fireEvent.press(getByText('확인'));
+    await advanceSwap();
+
+    // 방금 확인한 그 시트가 다시 떠 있으면 사용자는 확인으로 목록에 못 돌아간다
     expect(sheetTitleOf(queryByTestId)).toBeNull();
   });
 

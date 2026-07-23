@@ -165,3 +165,68 @@ describe('nextUnsetRowAfter', () => {
     expect(nextUnsetRowAfter(values, { key: 'dates', groupIndex: 1 })).toBeNull();
   });
 });
+
+describe('nextUnsetRowAfter — 한 시트가 여러 행을 커버하는 경우', () => {
+  /**
+   * 시간·역할은 행이 둘이지만 시트는 ScheduleSlotsSheet 하나다. 확인은 항상 roles 로 보고되므로
+   * current 하나만 제외하는 가드로는 time 재오픈을 못 막는다 — 같은 시트가 무한 재오픈된다.
+   * (슬롯 추가 후 시간을 안 고르고 확인하면 재현: addSlot 이 startTime:'' 슬롯을 만들고
+   *  확인 버튼에 disabled 가 없다.)
+   */
+  const slotWithoutTime = (): OrderSheetFormValues => {
+    const base = filled();
+    return {
+      ...base,
+      scheduleGroups: [
+        {
+          dates: ['2026-07-24'],
+          timeSlots: [
+            { startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] },
+            { startTime: '', roles: [{ role: 'dealer', count: 1 }] },
+          ],
+          grouped: false,
+        },
+      ],
+    };
+  };
+
+  it('슬롯 시트가 커버하는 행(time·roles)은 확인 직후 다시 타깃이 되지 않는다', () => {
+    const values = slotWithoutTime();
+    // 전제 고정 — time 이 실제로 unset 이어야 이 테스트가 공허하지 않다
+    expect(nextUnsetRowAfter(values, { key: 'dates', groupIndex: 0 })).toEqual({
+      key: 'time',
+      groupIndex: 0,
+    });
+
+    // 슬롯 시트 확인은 roles 로 보고되지만 time 도 함께 확정한 것이다
+    expect(
+      nextUnsetRowAfter(values, { key: 'roles', groupIndex: 0 }, ['time', 'roles'])
+    ).toBeNull();
+  });
+
+  it('커버 범위는 같은 그룹에만 적용된다 — 다른 그룹의 동일 행은 여전히 타깃이다', () => {
+    const base = slotWithoutTime();
+    const values: OrderSheetFormValues = {
+      ...base,
+      scheduleGroups: [
+        ...(base.scheduleGroups ?? []),
+        {
+          dates: ['2026-07-25'],
+          timeSlots: [{ startTime: '', roles: [{ role: 'dealer', count: 1 }] }],
+          grouped: false,
+        },
+      ],
+    };
+    expect(nextUnsetRowAfter(values, { key: 'roles', groupIndex: 0 }, ['time', 'roles'])).toEqual({
+      key: 'time',
+      groupIndex: 1,
+    });
+  });
+
+  it('coveredKeys 를 안 넘기면 기존 동작(current 만 제외)을 유지한다', () => {
+    expect(nextUnsetRowAfter(slotWithoutTime(), { key: 'roles', groupIndex: 0 })).toEqual({
+      key: 'time',
+      groupIndex: 0,
+    });
+  });
+});

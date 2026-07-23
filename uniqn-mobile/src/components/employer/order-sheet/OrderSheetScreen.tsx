@@ -71,6 +71,13 @@ type ActiveSheet =
   | SlotsTarget
   | null;
 
+/**
+ * ScheduleSlotsSheet 하나가 커버하는 행들 — 시간·역할은 행이 둘이지만 시트는 하나다.
+ * 확인은 roles 로만 보고되므로, 연쇄가 방금 확인한 시트를 곧바로 다시 열지 않으려면
+ * 두 행 모두 "확인됨"으로 넘겨야 한다(넘기지 않으면 time 재오픈 루프).
+ */
+const SLOTS_SHEET_ROWS: readonly OrderRowKey[] = ['time', 'roles'];
+
 /** 폼 슬롯 깊은복사(F1/E6) — 분할·시드 시 참조 공유로 타 그룹이 오염되는 것을 차단 */
 const cloneSlots = (slots: GroupTimeSlots | undefined): GroupTimeSlots =>
   (slots ?? []).map((s) => ({ ...s, roles: s.roles.map((r) => ({ ...r })) }));
@@ -354,11 +361,11 @@ export function OrderSheetScreen({
    *    onClose 뒤로 옮기면 무장이 이미 꺼져 연쇄가 침묵으로 죽는다.
    */
   const confirmRow = useCallback(
-    (target: OrderRowTarget) => {
+    (target: OrderRowTarget, coveredKeys?: readonly OrderRowKey[]) => {
       if (!chainArmedRef.current) return;
       chainArmedRef.current = false;
       // setValue 직후라 watch 값은 아직 옛것 — getValues 로 최신 폼을 읽는다
-      const next = nextUnsetRowAfter(form.getValues(), target);
+      const next = nextUnsetRowAfter(form.getValues(), target, coveredKeys);
       if (next === null) return;
       setChainSwapping(true);
       pendingSwapRef.current = setTimeout(() => {
@@ -958,7 +965,7 @@ export function OrderSheetScreen({
                   syncRoleSalariesForRoles(next, prev, cur.salary.type)
                 );
               }
-              confirmRow({ key: 'roles', groupIndex: 0 });
+              confirmRow({ key: 'roles', groupIndex: 0 }, SLOTS_SHEET_ROWS);
             }}
             onClose={closeSheet}
           />
@@ -1003,7 +1010,7 @@ export function OrderSheetScreen({
               // 시간·역할이 한 번에 확정되므로 역할별 급여 동기화도 여기 1회로 수렴한다
               // (구 TimeSlotsSheet/RolesSheet 이중 호출 제거).
               applyRoleSalarySync(nextGroups);
-              confirmRow({ key: 'roles', groupIndex: slotsTarget.groupIndex });
+              confirmRow({ key: 'roles', groupIndex: slotsTarget.groupIndex }, SLOTS_SHEET_ROWS);
             }}
             onClose={closeSheet}
           />
