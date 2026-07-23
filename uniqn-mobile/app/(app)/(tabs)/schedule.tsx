@@ -38,6 +38,7 @@ import { SHEET_DISMISS_ANIMATION_MS } from '@/constants/animation';
 import { SCHEDULE_TYPE_LABELS } from '@/shared/status';
 import { getApplicationById } from '@/services/jobs/applicationService';
 import { logger } from '@/utils/logger';
+import { resolveApplicationDeepLink } from '@/utils/scheduleDeepLink';
 import { triggerHaptic } from '@/utils/haptics';
 import {
   filterSchedulesByStatus,
@@ -484,18 +485,29 @@ export default function ScheduleScreen() {
       return;
     }
 
-    if (targetApplicationId && schedules.length > 0) {
-      const targetSchedule = schedules.find((s) => s.applicationId === targetApplicationId);
-      if (targetSchedule) {
+    if (targetApplicationId) {
+      const landing = resolveApplicationDeepLink(schedules, targetApplicationId, isLoading, error);
+      if (landing.kind === 'open') {
         setDidHandleSearchParam(true);
-        setSelectedSchedule(targetSchedule);
+        setSelectedSchedule(landing.schedule);
         setIsDetailSheetVisible(true);
+      } else if (landing.kind === 'missing') {
+        // 거절/취소된 지원은 스케줄 쿼리에서 제외 → 무반응 착지 대신 안내 (QW2, 근본 해소는 M1)
+        setDidHandleSearchParam(true);
+        addToast({
+          type: 'info',
+          message:
+            '해당 지원 일정을 찾을 수 없어요. 지원이 거절되었거나 취소되어 목록에 없을 수 있어요.',
+        });
       }
     }
   }, [
     didHandleSearchParam,
     handleRequestCancellation,
     schedules,
+    isLoading,
+    error,
+    addToast,
     searchParams.applicationId,
     searchParams.cancelApplicationId,
   ]);
