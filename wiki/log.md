@@ -104,3 +104,12 @@ sources 1 신설: **seat-basis-e2e-seed-drift** — `filled_positions` 유지 �
 - `closeSheet`의 딤 해제는 **예약 존재로 분기해야 한다** — 모든 시트가 `onConfirm` 직후 `onClose`를 호출하므로, 무조건 해제하면 `confirmRow`가 방금 켠 딤이 꺼져 번쩍임이 복귀한다.
 
 테스트 함정: 예약 취소 시 딤 해제를 검증하려고 `SheetModal` 계열 시트를 탭하면, 그 시트의 `onEntered`가 딤을 대신 걷어 **가드를 제거해도 green**이 된다(프로덕션 `onShow`도 동일 마스킹 — mock 아티팩트 아님). `clearPendingSwap`이 유일한 해제 주체인 경로(그룹 삭제·일정 추가·언마운트)로 검증해야 한다.
+
+후속 함정 2건 (#307·#308):
+- **딤/스크림은 대상 컴포넌트 내부가 아니라 "커버해야 할 형제 트리의 최상위(호스트)"에서 렌더해야 한다** — `OrderSheetScreen` 내부 absolute-fill 딤은 `SafeAreaView`의 형제인 `StackHeader`·`VenueSelectChips`를 못 덮어 스왑 갭 동안 상단 띠가 번쩍였다. 해법은 콜백 위임(`onChainSwappingChange`) + 호스트 렌더(`OrderSheetChainScrim`, 非Modal View라 중첩 RN Modal 무위험). 이때 위임 콜백은 **안정 콜백 필수** — inline arrow면 useCallback deps 체인을 타고 cleanup-only effect가 재실행되어 대기 스왑 예약이 조기 취소된다(연쇄 침묵사).
+- **잠긴/무효 행은 연쇄 순회에서 그룹 불문 `skipKeys`로 제외해야 한다** — 그룹 스코프(`coveredKeys`)만으로 거르면 확정 지원자 잠금 상태에서 연쇄가 잠긴 행을 타깃해 조기 종료·유령 경고가 발생한다(#307).
+
+## [2026-07-24] ingest | 인원카운트 하루 기준 표시 통일 (PR#309)
+- 신규: `sources/headcount-daily-basis-display`(출하 기록+교훈 4종) · `decisions/headcount-daily-basis`(표시 계약: 분자=일별 max·마감=대기 지원·hydrate 키 단일 소스)
+- 갱신: `decisions/capacity-full` 관련 링크(표시 마감 vs 공고 상태 마감 층위 구분 — 모순 아님 명시) · index 2줄
+- memory 졸업: project_headcount_daily_display_20260723 → MEMORY.md 포인터 압축(잔여=실기기 QA·배포)

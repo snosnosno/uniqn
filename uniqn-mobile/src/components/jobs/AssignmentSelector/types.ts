@@ -24,6 +24,11 @@ export interface AssignmentSelectorProps {
   disabled?: boolean;
   /** 에러 메시지 */
   error?: string;
+  /**
+   * 이 공고의 확정 서브맵(키 `date__slot__role`, extractPostingFilledSubmap 결과).
+   * 미주입 시 dead counter(0/N) 기존 동작 보존.
+   */
+  filledCounts?: Map<string, number>;
 }
 
 /**
