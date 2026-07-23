@@ -1,17 +1,32 @@
 # 핸드오프 — 지점 역할별 급여(JIT) 구현 실행 (다음 세션 메인 프롬프트)
 
-> 작성: 2026-07-23. 이전 세션 = 설계 spec + 9태스크 구현 계획 완성·커밋. **이번 세션 = 실행만.**
+> 작성: 2026-07-23. 이전 세션 = 설계 spec + 9태스크 구현 계획 완성·커밋.
+> **이번 세션 = 실행만. 실행 방식 = SDD(`superpowers:subagent-driven-development`) — 사용자 확정.**
 
-## 첫 액션 (순서 고정)
+## 첫 액션 (순서 고정 — 격리 먼저, 그 다음 SDD)
 
-1. `git status` 확인 → **새 워크트리 + 새 브랜치 격리 필수**(메인 체크아웃은 타 세션 점유 중 —
-   브랜치가 `feat/order-sheet-chain-polish`로 바뀌어 있고 타 세션 커밋·미커밋 변경 존재).
-   node_modules 는 `mklink /J` junction(메모리 `feedback_worktree_node_modules_junction`),
-   Expo 실행 시 `EXPO_ROUTER_APP_ROOT` 함정 참고(`pitfall_worktree_junction_expo_router_empty_routes`).
-2. `superpowers:subagent-driven-development` 스킬로 계획 실행(사용자 선택: 서브에이전트 아님 —
-   **"다음 세션 핸드오프"만 선택됨. 실행 방식은 이 세션에서 다시 subagent-driven 권장**).
+1. **워크트리 격리** (메인 체크아웃은 타 세션 점유 중 — `feat/order-sheet-chain-polish` 위에
+   타 세션 커밋·미커밋 변경 존재. 메인 체크아웃에서 브랜치 전환 절대 금지):
+   ```bash
+   cd /c/Users/user/Desktop/T-HOLDEM
+   git fetch origin
+   git worktree add ../T-HOLDEM-salary -b feat/venue-role-salary-jit origin/master
+   # ⚠️ 계획·spec 문서 커밋 3개는 feat/order-sheet-chain-polish 에 있음 → 새 브랜치로 가져온다(docs-only, 충돌 없음)
+   cd ../T-HOLDEM-salary
+   git cherry-pick 5527cb6d7 2550ebf8a 1d1b1c80e
+   # node_modules junction (5분 npm install 절약 — feedback_worktree_node_modules_junction)
+   cmd //c mklink //J "uniqn-mobile\\node_modules" "C:\\Users\\user\\Desktop\\T-HOLDEM\\uniqn-mobile\\node_modules"
+   ```
+   Expo 실행이 필요한 태스크(Task 8 그라운딩)에서는 `EXPO_ROUTER_APP_ROOT=<워크트리>/app` 절대경로
+   + `--clear` 필수(`pitfall_worktree_junction_expo_router_empty_routes`).
+2. **SDD 실행**: `superpowers:subagent-driven-development` 스킬 호출 → 계획의 Task 1~9를
+   태스크당 fresh 서브에이전트로 실행 + 태스크 사이 2단계 리뷰. 모델 라우팅: 구현=opus ·
+   리뷰/판정=fable(orchestration.md). 디스패치 프롬프트에 금지 3종 명시
+   (`mcp__supabase__*` 직접 호출 금지 · 기존 마이그 수정 금지 · PROD 우회 금지).
 3. 계획 문서가 유일한 진실원: `docs/superpowers/plans/2026-07-23-venue-role-salary-jit.md`
    (Task 1~9, TDD 스텝·전체 코드 포함). spec: `docs/superpowers/specs/2026-07-23-venue-role-salary-jit-design.md`.
+   계획 Self-Review에 명시된 "실행 시 확인 필요 4종"(형제 테스트 mock 셋업·아이콘 실명·
+   SettlementCard 배럴 경로·db:test 스크립트)은 각 태스크 실행자가 해당 파일을 열어 실측 후 대입.
 
 ## 상태 스냅샷
 
