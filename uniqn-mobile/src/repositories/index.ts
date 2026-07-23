@@ -478,3 +478,9 @@ export {
   SupabaseJobPostingCollaboratorRepository,
   jobPostingCollaboratorRepository,
 } from './supabase/JobPostingCollaboratorRepository';
+
+// ============================================================================
+// 주간 배치 그리드 (weeklyGrid) — 지점 단가 쓰기 입력 타입 재노출
+// ============================================================================
+
+export type { SetVenueRoleSalaryInput } from './interfaces/IWeeklyGridRepository';

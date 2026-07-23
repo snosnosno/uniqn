@@ -14,7 +14,7 @@ import { View, Text, Pressable, RefreshControl, ScrollView } from 'react-native'
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Redirect } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import {
   addMonths,
   subMonths,
@@ -32,6 +32,7 @@ import {
   VenueSelector,
   VenueDayPanel,
   VenueCreateSheet,
+  VenueSettingsSheet,
   GridBadgeLegend,
 } from '@/components/weeklyGrid';
 import { useWeeklyGridEnabled } from '@/hooks';
@@ -91,10 +92,16 @@ export default function WeeklyGridScreen() {
   const containersQuery = useVenueContainers(activeWorkspace?.id, { enabled });
   const containers = useMemo(() => containersQuery.data ?? [], [containersQuery.data]);
 
+  const router = useRouter();
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
   const [visibleMonth, setVisibleMonth] = useState<Date>(() => startOfMonth(new Date()));
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const [createSheetVisible, setCreateSheetVisible] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const selectedContainer = useMemo(
+    () => containers.find((c) => c.id === selectedVenueId) ?? null,
+    [containers, selectedVenueId]
+  );
 
   // P1-1: 운영처 0개면 워크스페이스 이름으로 기본 운영처 자동 생성(체감 2계층).
   // 실패 시 재발사 없음(훅 내부 가드) → 아래 수동 EmptyState 폴백.
@@ -155,7 +162,31 @@ export default function WeeklyGridScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
-      <StackHeader title="근무표" fallbackHref="/(employer)/workspace" />
+      <StackHeader
+        title="근무표"
+        fallbackHref="/(employer)/workspace"
+        rightAction={
+          hasVenue ? (
+            <Pressable
+              onPress={() =>
+                router.push({
+                  pathname: '/(employer)/venue-settlements',
+                  params: {
+                    venueId: selectedVenueId as string,
+                    month: format(visibleMonth, 'yyyy-MM'),
+                  },
+                })
+              }
+              accessibilityRole="button"
+              accessibilityLabel="지점 정산 보기"
+              hitSlop={10}
+              className="min-h-[44px] justify-center px-2"
+            >
+              <Text className="text-base font-sans-medium text-primary-500">정산</Text>
+            </Pressable>
+          ) : undefined
+        }
+      />
 
       {/* 운영처 선택기(unit 5) */}
       <VenueSelector
@@ -167,6 +198,7 @@ export default function WeeklyGridScreen() {
         onSelectVenue={setSelectedVenueId}
         isLoadingContainers={wsLoading || containersQuery.isLoading}
         onAddVenue={() => setCreateSheetVisible(true)}
+        onOpenSettings={() => setSettingsOpen(true)}
       />
 
       {/* U4: 운영처 0 상태 — 워크스페이스/운영처 준비 단계를 명확히 구분한다.
@@ -295,6 +327,11 @@ export default function WeeklyGridScreen() {
           setSelectedVenueId(container.id);
           setCreateSheetVisible(false);
         }}
+      />
+      <VenueSettingsSheet
+        visible={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        container={selectedContainer}
       />
     </SafeAreaView>
   );

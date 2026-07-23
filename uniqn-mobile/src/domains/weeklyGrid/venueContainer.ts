@@ -7,7 +7,9 @@
  * 이 경량 VenueContainer 로만 컨테이너를 읽는다(전용 read 경로, 증발 회피).
  */
 import { z } from 'zod';
+import type { PostingRoleCatalogEntry } from '@/types';
 import { getSoftTargets } from './softTargets';
+import { getRoleSalaries } from './roleSalaries';
 
 export interface VenueContainer {
   /** 컨테이너 공고 id (= venue 식별자) */
@@ -22,6 +24,8 @@ export interface VenueContainer {
   kind: string;
   /** 날짜별 목표인원 (schedule.softTargets), YYYY-MM-DD 키 */
   softTargets: Record<string, number>;
+  /** 역할별 단가표 (schedule.roleSalaries) — JIT 급여 설계 §A */
+  roleSalaries: PostingRoleCatalogEntry[];
 }
 
 const rawRowSchema = z.object({
@@ -48,6 +52,7 @@ export function parseVenueContainer(row: unknown): VenueContainer | null {
     venueId: r.venue_id ?? null,
     kind: typeof schedule.kind === 'string' ? schedule.kind : 'dated',
     softTargets: getSoftTargets(r.schedule as never),
+    roleSalaries: getRoleSalaries(r.schedule),
   };
 }
 

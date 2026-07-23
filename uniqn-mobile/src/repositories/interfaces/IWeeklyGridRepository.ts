@@ -26,6 +26,13 @@ export interface VenueDaySlot {
   notes: string | null;
 }
 
+/** 지점 역할별 단가 upsert/삭제 입력. salary:null = 해당 역할 단가 삭제. */
+export interface SetVenueRoleSalaryInput {
+  role: string;
+  customRole?: string;
+  salary: { type: 'hourly' | 'daily' | 'monthly'; amount: number } | null;
+}
+
 export interface IWeeklyGridRepository {
   /** 월 그리드 요약: venue 스팬 날짜별 headcount + jobCount. */
   getVenueGridSummary(venueId: string, fromDate: string, toDate: string): Promise<GridSummaryRow[]>;
@@ -39,4 +46,10 @@ export interface IWeeklyGridRepository {
    * restrictive 정책 우회 유일 경로인 SECDEF RPC(set_venue_soft_target) 전용.
    */
   setVenueSoftTarget(venueId: string, date: string, count: number): Promise<void>;
+
+  /**
+   * 지점 역할별 단가 upsert/삭제. 컨테이너 schedule.roleSalaries — RESTRICTIVE 정책 우회
+   * 유일 경로인 SECDEF RPC(set_venue_role_salary) 전용. salary:null = 해당 역할 삭제.
+   */
+  setVenueRoleSalary(venueId: string, input: SetVenueRoleSalaryInput): Promise<void>;
 }

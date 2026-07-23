@@ -53,6 +53,7 @@ const FAKE_CONTAINER: VenueContainer = {
   venueId: 'venue-new',
   kind: 'dated',
   softTargets: {},
+  roleSalaries: [],
 };
 
 it('이름 입력 후 제출 시 trim 된 이름으로 mutate 호출', () => {

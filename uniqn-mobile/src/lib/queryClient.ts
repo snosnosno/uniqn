@@ -372,6 +372,9 @@ export const queryKeys = {
       [...queryKeys.settlement.all, 'summary', jobPostingId] as const,
     calculation: (workLogId: string) =>
       [...queryKeys.settlement.all, 'calculation', workLogId] as const,
+    /** 지점(운영처) 월 단위 정산 — 날짜범위 경계 포함 (JIT 급여 설계 §D) */
+    byVenue: (venueId: string, start: string, end: string) =>
+      [...queryKeys.settlement.all, 'byVenue', venueId, start, end] as const,
   },
 
   // 확정 스태프 관리 (구인자)
@@ -586,6 +589,7 @@ export const queryKeys = {
       [...queryKeys.weeklyGrid.all, 'summary', venueId, from, to] as const,
     daySlots: (venueId: string, date: string) =>
       [...queryKeys.weeklyGrid.all, 'daySlots', venueId, date] as const,
+    container: (venueId: string) => [...queryKeys.weeklyGrid.all, 'container', venueId] as const,
   },
 } as const;
 
