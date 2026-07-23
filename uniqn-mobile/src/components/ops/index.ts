@@ -31,3 +31,5 @@ export { PrizeCorrectSheet } from './PrizeCorrectSheet';
 export { PlayersTab } from './PlayersTab';
 // 1f(T12) — 종료 결과 뷰(§7.3)
 export { TournamentResultCard } from './TournamentResultCard';
+// 2부 리디자인(Task 2) — 상시 한 줄 요약 스트립(L1)
+export { OpsSummaryStrip } from './OpsSummaryStrip';
