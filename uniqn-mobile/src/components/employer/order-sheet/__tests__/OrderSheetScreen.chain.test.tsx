@@ -23,6 +23,12 @@ jest.mock('@/stores/toastStore', () => ({
   useToastStore: () => ({ addToast: mockAddToast }),
 }));
 
+jest.mock('@/utils/haptics', () => ({
+  triggerHaptic: jest.fn(),
+}));
+// eslint-disable-next-line import/first
+import { triggerHaptic } from '@/utils/haptics';
+
 // 실제 SheetModal 의 닫기 버튼은 텍스트가 아니라 아이콘(accessibilityLabel='닫기')이라
 // 모킹 시 사라진다 — 연쇄 중단(X) 경로를 누를 수 있도록 스텁에 닫기 Pressable 을 둔다.
 // SheetChainContext 를 소비해 실제 SheetModal 의 onShow(표시 완료 통지) 계약을 재현한다 —
@@ -224,6 +230,7 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     mockAddToast.mockClear();
+    (triggerHaptic as jest.Mock).mockClear();
   });
   afterEach(() => {
     jest.useRealTimers();
@@ -259,6 +266,31 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
     // 스왑 대기(딤 180ms) 전에 안내가 나가야 스크린리더가 침묵하지 않는다 — advanceSwap 이전 단언.
     expect(announceSpy).toHaveBeenCalledWith('다음 항목: 연락처');
     announceSpy.mockRestore();
+  });
+
+  it('연쇄 완료(다음 미설정 없음) 시 완료 햅틱을 발화한다 (B3)', async () => {
+    const { getByTestId, getByText } = render(
+      <OrderSheetScreen {...baseProps} initialValues={onlyTitleMissing()} />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
+    fireEvent.press(getByText('확인'));
+
+    expect(triggerHaptic).toHaveBeenCalledWith('success');
+  });
+
+  it('연쇄가 계속되면(다음 미설정 있음) 완료 햅틱을 발화하지 않는다 (B3 대조군)', async () => {
+    const { getByTestId, getByText } = render(
+      <OrderSheetScreen {...baseProps} initialValues={titleAndContactMissing()} />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
+    fireEvent.press(getByText('확인'));
+
+    // 아직 연락처가 남았으므로 완료가 아니다 — 성공 햅틱 금지(중간 단계 오발화 방지).
+    expect(triggerHaptic).not.toHaveBeenCalledWith('success');
   });
 
   it('대조군 — 이미 채워진 행을 확인하면 연쇄가 일어나지 않는다', async () => {

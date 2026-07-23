@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/Button';
 import { useToastStore } from '@/stores/toastStore';
+import { triggerHaptic } from '@/utils/haptics';
 import {
   orderSheetValuesSchema,
   type OrderSheetFormValues,
@@ -374,7 +375,13 @@ export function OrderSheetScreen({
         coveredKeys,
         scheduleLocked ? LOCKED_ROW_KEYS : undefined
       );
-      if (next === null) return;
+      if (next === null) {
+        // 연쇄 완료(연출 B3) — 무장된 연쇄에서 마지막 미설정 항목을 채웠다. 결정적 순간이라
+        // 성공 햅틱 1회로 완료를 알린다(룰 17). 웹은 no-op이지만 CTA가 '이대로 등록'으로
+        // 바뀌는 시각 신호가 별도로 있다. 토스트는 절제를 위해 생략(룰 12).
+        void triggerHaptic('success');
+        return;
+      }
       // 전환 안내(a11y C1) — 딤 스왑 대기(180ms) 동안 스크린리더가 침묵하지 않도록,
       // 다음 시트가 실제로 뜨기 전 예약 시점에 다음 항목 라벨을 읽어 준다.
       const nextLabel = getRowState(form.getValues(), next.key, next.groupIndex).label;
