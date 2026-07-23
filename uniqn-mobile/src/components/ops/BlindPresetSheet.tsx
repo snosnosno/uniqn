@@ -126,7 +126,7 @@ export function BlindPresetSheet({
               value={name}
               onChangeText={setName}
               placeholder="프리셋 이름"
-              maxLength={40}
+              maxLength={60}
               accessibilityLabel="프리셋 이름"
               className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-content-primary dark:border-gray-700 dark:text-off-white"
             />

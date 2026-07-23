@@ -47,4 +47,23 @@ describe('OpsStatusTab', () => {
     fireEvent.press(getByText('열림 (마감하기)'));
     expect(mutate).toHaveBeenCalledWith(false);
   });
+
+  it('상태값을 한글로 표시(active=진행 중) — raw enum 미노출', () => {
+    const { getByText, queryByText } = render(<OpsStatusTab tournament={base} />);
+    expect(getByText('상태: 진행 중')).toBeTruthy();
+    expect(queryByText('상태: active')).toBeNull();
+  });
+
+  it('상태값 한글 매핑 — upcoming=시작 전 / completed=종료', () => {
+    const up = render(<OpsStatusTab tournament={{ ...base, status: 'upcoming' }} />);
+    expect(up.getByText('상태: 시작 전')).toBeTruthy();
+    const done = render(<OpsStatusTab tournament={{ ...base, status: 'completed' }} />);
+    expect(done.getByText('상태: 종료')).toBeTruthy();
+  });
+
+  it('등록 라벨 한글화 — 영문 SUBSCRIPTIONS 미노출', () => {
+    const { getByText, queryByText } = render(<OpsStatusTab tournament={base} />);
+    expect(queryByText(/SUBSCRIPTIONS/)).toBeNull();
+    expect(getByText('등록 접수')).toBeTruthy();
+  });
 });

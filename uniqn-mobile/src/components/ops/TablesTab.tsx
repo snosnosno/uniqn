@@ -58,9 +58,11 @@ const PRIORITY_OPTIONS = [
 
 interface TablesTabProps {
   tournamentId: string;
+  /** ITM 탈락 후 상금 화면 링크(PlayersTab 대칭 — [id].tsx 에서 () => setTab('payouts') 주입). */
+  onOpenPayouts?: () => void;
 }
 
-export function TablesTab({ tournamentId }: TablesTabProps) {
+export function TablesTab({ tournamentId, onOpenPayouts }: TablesTabProps) {
   // 좌석 진입 액션시트가 요구하는 대회 객체(status·bountyCost·id). [id].tsx 배선 최소화를 위해 내부 조회.
   const { tournament } = useOpsTournament(tournamentId);
   const { tables, isLoading } = useOpsTables(tournamentId);
@@ -155,6 +157,7 @@ export function TablesTab({ tournamentId }: TablesTabProps) {
             setSheetSeat(null);
           }}
           onRequestMove={(s) => setMoveFromSeat(s)}
+          onOpenPayouts={onOpenPayouts}
         />
       )}
 

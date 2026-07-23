@@ -34,6 +34,13 @@ it('앱 기본 프리셋(기본 30레벨) 항상 노출', () => {
   expect(getByText('기본 30레벨')).toBeTruthy();
 });
 
+it('프리셋 이름 입력 maxLength=60 — zod 스키마(.max(60))와 정합', () => {
+  const { getByLabelText } = render(
+    <BlindPresetSheet visible onClose={jest.fn()} currentLevels={[]} onApply={jest.fn()} />
+  );
+  expect(getByLabelText('프리셋 이름').props.maxLength).toBe(60);
+});
+
 it('프리셋 적용 → 확인 후 onApply(levels)', () => {
   const onApply = jest.fn();
   jest

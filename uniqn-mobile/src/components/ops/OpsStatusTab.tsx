@@ -7,6 +7,13 @@ import { MonitorConfigCard } from './MonitorConfigCard';
 import { TournamentResultCard } from './TournamentResultCard';
 import type { OpsTournament, OpsTournamentStatus } from '@/types/ops';
 
+/** 대회 상태 enum(ops_tournament_status: upcoming·active·completed) → 한글 라벨. */
+const STATUS_LABEL: Record<OpsTournamentStatus, string> = {
+  upcoming: '시작 전',
+  active: '진행 중',
+  completed: '종료',
+};
+
 interface OpsStatusTabProps {
   tournament: OpsTournament;
 }
@@ -42,7 +49,7 @@ export function OpsStatusTab({ tournament }: OpsStatusTabProps) {
 
       {!isCompleted && (
         <View className="mx-1 mt-3 flex-row items-center justify-between rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
-          <Text className="text-content-primary dark:text-off-white">등록(SUBSCRIPTIONS)</Text>
+          <Text className="text-content-primary dark:text-off-white">등록 접수</Text>
           <Pressable
             onPress={() => toggleMut.mutate(!tournament.registrationOpen)}
             accessibilityRole="button"
@@ -56,7 +63,9 @@ export function OpsStatusTab({ tournament }: OpsStatusTabProps) {
       )}
 
       <View className="mx-1 mt-2 flex-row items-center justify-between rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
-        <Text className="text-content-primary dark:text-off-white">상태: {tournament.status}</Text>
+        <Text className="text-content-primary dark:text-off-white">
+          상태: {STATUS_LABEL[tournament.status] ?? tournament.status}
+        </Text>
         <View className="flex-row gap-2">
           {nextStatusActions.map((a) => (
             <Pressable

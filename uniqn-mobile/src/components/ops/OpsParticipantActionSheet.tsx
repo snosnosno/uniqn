@@ -91,13 +91,34 @@ export function OpsParticipantActionSheet({
     setEliminatorPickerFor(p);
   };
 
-  const ActionBtn = ({ label, onPress }: { label: string; onPress: () => void }) => (
+  // destructive=파괴적 액션(좌석 비우기 등) — 탈락 처리와 동일한 error 테두리·텍스트로 구분.
+  const ActionBtn = ({
+    label,
+    onPress,
+    destructive,
+  }: {
+    label: string;
+    onPress: () => void;
+    destructive?: boolean;
+  }) => (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      className="min-h-[44px] flex-1 items-center justify-center rounded-md bg-gray-100 active:opacity-70 dark:bg-gray-800"
+      className={`min-h-[44px] flex-1 items-center justify-center rounded-md active:opacity-70 ${
+        destructive
+          ? 'border border-error-500 dark:border-error-400'
+          : 'bg-gray-100 dark:bg-gray-800'
+      }`}
     >
-      <Text className="text-sm text-content-primary dark:text-off-white">{label}</Text>
+      <Text
+        className={`text-sm ${
+          destructive
+            ? 'font-sans-semibold text-error-600 dark:text-error-400'
+            : 'text-content-primary'
+        }`}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 
@@ -142,6 +163,7 @@ export function OpsParticipantActionSheet({
                   />
                   <ActionBtn
                     label="좌석 비우기"
+                    destructive
                     onPress={() => {
                       freeMut.mutate(seat.id); // C1: seatId — participantId 아님
                       onClose();

@@ -46,7 +46,8 @@ export function useSaveBlindPreset() {
     mutationFn: (input: { name: string; levels: readonly OpsBlindLevelInput[] }) =>
       opsBlindPresetService.save(requireActor(actorId), input.name, input.levels),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.ops.blindPresets(requireActor(actorId)) });
+      // 뮤테이션 비행 중 로그아웃 시 actorId=undefined → requireActor throw 방지(무효화만 조건부 skip).
+      if (actorId) qc.invalidateQueries({ queryKey: queryKeys.ops.blindPresets(actorId) });
       toast.success('프리셋을 저장했습니다');
     },
     onError: (e) => {
@@ -63,7 +64,8 @@ export function useDeleteBlindPreset() {
   return useMutation({
     mutationFn: (presetId: string) => opsBlindPresetService.remove(requireActor(actorId), presetId),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.ops.blindPresets(requireActor(actorId)) });
+      // 뮤테이션 비행 중 로그아웃 시 actorId=undefined → requireActor throw 방지(무효화만 조건부 skip).
+      if (actorId) qc.invalidateQueries({ queryKey: queryKeys.ops.blindPresets(actorId) });
       toast.success('프리셋을 삭제했습니다');
     },
     onError: (e) => {

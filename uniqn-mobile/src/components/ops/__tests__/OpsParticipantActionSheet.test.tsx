@@ -66,6 +66,21 @@ describe('OpsParticipantActionSheet', () => {
     expect(onRequestMove).toHaveBeenCalledWith(seat); // C2: 기존 moveMode 재사용
   });
 
+  it('좌석 비우기는 destructive 스타일(error 색상) — 리디자인 중 소실 복원', () => {
+    const { getByText } = render(
+      <OpsParticipantActionSheet
+        tournament={tournament}
+        participant={active}
+        seat={seat}
+        onClose={jest.fn()}
+        onRequestMove={jest.fn()}
+      />
+    );
+    // 파괴적 액션은 error 색상 텍스트로 구분(자리 이동=중립 gray 와 대비).
+    expect(getByText('좌석 비우기').props.className).toContain('text-error');
+    expect(getByText('자리 이동').props.className).not.toContain('text-error');
+  });
+
   it('비바운티 탈락 → confirmAction 후 {participantId} + onSuccess 콜백(H1)', () => {
     const mutate = jest.fn();
     (useBustParticipant as jest.Mock).mockReturnValue({ mutate });

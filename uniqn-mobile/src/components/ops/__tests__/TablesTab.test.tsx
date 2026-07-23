@@ -65,6 +65,15 @@ jest.mock('../DealerPickerSheet', () => {
   };
 });
 
+// 좌석 진입 액션시트 — 배선(props)만 캡처하는 스텁. 자체 로직은 OpsParticipantActionSheet.test 전담.
+let actionSheetProps: Record<string, unknown> | null = null;
+jest.mock('../OpsParticipantActionSheet', () => ({
+  OpsParticipantActionSheet: (props: Record<string, unknown>) => {
+    actionSheetProps = props;
+    return null;
+  },
+}));
+
 jest.mock('@/hooks/ops', () => ({
   useOpsTournament: jest.fn(),
   useOpsTables: jest.fn(),
@@ -149,7 +158,16 @@ function setupHooks(tableOverrides?: Partial<OpsTable>): OpsTable {
 
 beforeEach(() => {
   dealerPickerProps = null;
+  actionSheetProps = null;
   jest.clearAllMocks();
+});
+
+it('좌석 진입 액션시트에 onOpenPayouts 를 전달(PlayersTab 대칭 — ITM 탈락 후 상금 탭 링크)', () => {
+  setupHooks();
+  const onOpenPayouts = jest.fn();
+  render(<TablesTab tournamentId="trn1" onOpenPayouts={onOpenPayouts} />);
+  expect(actionSheetProps).not.toBeNull();
+  expect(actionSheetProps?.onOpenPayouts).toBe(onOpenPayouts);
 });
 
 it('테이블 상세의 "딜러 지정" 버튼을 누르면 DealerPickerSheet 를 tableId/currentStaffId 와 함께 연다', () => {

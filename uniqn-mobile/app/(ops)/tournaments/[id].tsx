@@ -88,7 +88,7 @@ export default function OpsTournamentDetailScreen() {
           />
         );
       case 'tables':
-        return <TablesTab tournamentId={tournamentId} />;
+        return <TablesTab tournamentId={tournamentId} onOpenPayouts={() => setTab('payouts')} />;
       case 'levels':
         return <BlindLevelsTab tournamentId={tournamentId} />;
       case 'staff':

@@ -9,8 +9,9 @@ import { View, Text, Pressable } from 'react-native';
 import { AppFlashList } from '@/components/ui/AppFlashList';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { useOpsBlindLevels, useOpsClock, useSetBlindLevels } from '@/hooks/ops';
+import { useToastStore } from '@/stores/toastStore';
 import type { OpsBlindLevel } from '@/types/ops';
-import type { OpsBlindLevelInput } from '@/schemas/opsBlindLevel.schema';
+import { OPS_BLIND_LEVELS_MAX, type OpsBlindLevelInput } from '@/schemas/opsBlindLevel.schema';
 import { BlindLevelForm } from './BlindLevelForm';
 import { BlindPresetSheet } from './BlindPresetSheet';
 
@@ -42,8 +43,23 @@ export function BlindLevelsTab({ tournamentId }: BlindLevelsTabProps) {
   const [form, setForm] = useState<FormState>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [presetSheetOpen, setPresetSheetOpen] = useState(false);
-  // 마지막 적용 프리셋명. 수동 편집(추가/편집/삭제) 발생 시 null → "사용자 정의" 표시.
+  // 마지막 적용 프리셋명. 수동 편집(추가/편집/삭제) 발생 시 null → 미적용 중립 라벨 표시.
   const [appliedPresetName, setAppliedPresetName] = useState<string | null>(null);
+
+  // 레벨 추가 시도 — 상한(100) 초과면 토스트 안내 후 폼 미개방(무한 추가 방지).
+  const openAddForm = () => {
+    if (form?.mode === 'add') {
+      setForm(null);
+      return;
+    }
+    if (draft.length >= OPS_BLIND_LEVELS_MAX) {
+      useToastStore
+        .getState()
+        .warning(`블라인드 레벨은 최대 ${OPS_BLIND_LEVELS_MAX}개까지 추가할 수 있습니다`);
+      return;
+    }
+    setForm({ mode: 'add' });
+  };
 
   // 서버 데이터 도착/갱신 시 미편집 상태면 draft 동기화(편집 중이면 보존).
   useEffect(() => {
@@ -97,7 +113,7 @@ export function BlindLevelsTab({ tournamentId }: BlindLevelsTabProps) {
         className="min-h-[44px] flex-row items-center justify-between border-b border-gray-200 px-4 py-2 active:opacity-70 dark:border-gray-700"
       >
         <Text className="text-sm text-content-primary dark:text-off-white">
-          프리셋 · {appliedPresetName ?? '사용자 정의'}
+          {appliedPresetName ? `프리셋 · ${appliedPresetName}` : '프리셋 선택'}
         </Text>
         <Text className="text-sm text-secondary-500 dark:text-secondary-400">▾</Text>
       </Pressable>
@@ -116,7 +132,7 @@ export function BlindLevelsTab({ tournamentId }: BlindLevelsTabProps) {
           </Text>
         </Pressable>
         <Pressable
-          onPress={() => setForm((f) => (f?.mode === 'add' ? null : { mode: 'add' }))}
+          onPress={openAddForm}
           accessibilityRole="button"
           className="min-h-[44px] items-center justify-center rounded-md bg-gray-100 px-4 active:opacity-70 dark:bg-gray-800"
         >
