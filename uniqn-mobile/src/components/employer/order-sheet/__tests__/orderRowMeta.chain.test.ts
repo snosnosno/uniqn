@@ -143,4 +143,25 @@ describe('nextUnsetRowAfter', () => {
     const values: OrderSheetFormValues = { ...filled(), title: '', contactPhone: '' };
     expect(firstUnsetRow(values)).toEqual({ key: 'title', groupIndex: 0 });
   });
+
+  it('그룹1의 dates 만 미설정이면 current 자신을 "다음 미설정 행"으로 되돌리지 않는다 (findIndex groupIndex 매칭 회귀 — 무한 재오픈 차단)', () => {
+    // 그룹0은 전부 채워지고, 그룹1은 dates 만 비우고 timeSlots(시간·역할)는 채운다 —
+    // "그룹1의 dates 만 unset" 상태를 만들어야 groupIndex 조건절의 유무가 결과를 가른다.
+    const base = filled();
+    const values: OrderSheetFormValues = {
+      ...base,
+      scheduleGroups: [
+        ...(base.scheduleGroups ?? []),
+        {
+          dates: [],
+          timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] }],
+          grouped: false,
+        },
+      ],
+    };
+    // current 자신(그룹1 dates)이 유일한 미설정 행 — 한 바퀴 돌아 제자리이므로 null 이어야 한다.
+    // groupIndex 조건절이 없으면 findIndex 가 그룹0의 dates(이미 set)를 currentIndex 로 오인해
+    // 시작점이 어긋나고, 순환 끝에 current 자기 자신을 "다음 미설정 행"으로 잘못 반환한다.
+    expect(nextUnsetRowAfter(values, { key: 'dates', groupIndex: 1 })).toBeNull();
+  });
 });
