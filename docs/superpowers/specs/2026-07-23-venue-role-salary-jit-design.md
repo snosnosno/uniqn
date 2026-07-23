@@ -15,13 +15,21 @@
 ## A. 데이터·해소 (핸드오프 §3 확정 — 변경 없음)
 
 - **저장 위치**: 컨테이너 `schedule.roleSalaries: PostingRoleCatalogEntry[]`
-  (JSONB, softTargets 옆. 마이그레이션 0 · RLS 변경 0 · `/guard` 불요).
+  (JSONB, softTargets 옆. 스키마 컬럼 추가 없음 · RLS **정책** 변경 없음).
+- **⚠️ 쓰기 경로 정정(2026-07-23 실측)**: baseline `jp_container_no_direct_update`
+  (RESTRICTIVE, `status='container'` 직접 UPDATE 차단) 때문에 클라이언트 직접 UPDATE 불가 —
+  softTargets와 동일하게 **신규 SECDEF RPC `set_venue_role_salary` 마이그레이션 1건 필요**
+  (`set_venue_soft_target` 관용구 복제: COALESCE fail-closed 게이트 · search_path
+  `public, extensions, pg_temp` · anon EXECUTE REVOKE — wiki `decisions/secdef-hardening` 3규칙).
+  핸드오프의 "마이그 0"은 읽기 경로에만 유효했다. 적용은 MCP `apply_migration` 전용.
 - **타입**: `PostingRoleCatalogEntry[]`(`types/jobPosting.ts:82` — `{role, customRole?, salary?}`).
   해소기 시그니처(배열)에 어댑터 0으로 직결.
 - **키 규약**: `getPostingRoleKey`(`domains/job-posting/core.ts:21`) 재사용 — `other:<customRole>` 구분.
 - **파싱**: 경량 `VenueContainer` 파서 확장(`domains/weeklyGrid/venueContainer.ts` —
   strict 스키마 null 증발 회피 패턴 유지). `VENUE_CONTAINER_COLUMNS`는 schedule을 이미 로드.
-- **쓰기**: `domains/weeklyGrid/roleSalaries.ts` 신규 — 불변 merge(softTargets 등 schedule 타 필드 보존).
+- **쓰기**: Hook→Service→Repository→RPC 단일 경로(`useSetVenueRoleSalary` →
+  `gridWriteService.setVenueRoleSalary` → `weeklyGridRepository` → `set_venue_role_salary`).
+  RPC가 배열 upsert/삭제 + softTargets 등 schedule 타 필드 보존을 담당.
 - **정산 해소 삽입**(`services/work/settlement/settlementVenueQuery.ts:121` 분기 payload 교체):
   ```ts
   const container = await getVenueContainerById(venueId); // 경량 경로(schedule 포함)
@@ -31,7 +39,7 @@
   ```
   `getEffectiveSalaryInfoFromRoles`·`SettlementCalculator` 무수정 재사용. 쿼리당 read 1회 추가.
 - **출처 헬퍼 신규**: `resolveRoleSalaryWithSource()` — 기존 `getRoleSalaryFromRoles`는 미매칭 시
-  조용히 폴백(helpers.ts:94)이라 배지를 못 만듦. `'override' | 'venueTable' | 'fallback'`을
+  조용히 폴백(helpers.ts:94)이라 배지를 못 만듦. `'override' | 'roleTable' | 'fallback'`을
   반환하는 형제 헬퍼를 별도 작성("조용한 오답 금지" 요건).
 
 ## B. 접점 1 — AddSlotSheet JIT 인라인 필드 (주 진입점)
@@ -84,9 +92,12 @@
 ## F. 테스트·리뷰 게이트
 
 - TDD 대상: ① 파싱/merge 유틸(빈 schedule·null 증발) ② 출처 헬퍼 3서열
-  (override > venueTable > fallback) ③ settlementVenueQuery payload 교체
+  (override > roleTable > fallback) ③ settlementVenueQuery payload 교체
   ④ AddSlotSheet 조건 노출·스킵·2쓰기 순서 ⑤ 배지 렌더·탭 재계산.
-- code-reviewer 필수(배지·재계산 경로). DB 마이그 없음 → `/guard` 불요.
-- 예상 파일: 신규 ~5(RoleSalaryField · VenueSettingsSheet · venue-settlements 라우트 ·
-  roleSalaries 유틸 · 출처 헬퍼) + 수정 ~4(AddSlotSheet · VenueSelector ·
-  settlementVenueQuery · venueContainer 파서).
+- code-reviewer 필수(배지·재계산 경로) + **security-reviewer/database-reviewer 필수**
+  (신규 SECDEF RPC — 인가 게이트·anon REVOKE·search_path). pgTAP 회귀 테스트 동반
+  (JWT 주입은 헬퍼 경유 — wiki `sources/jpc-rls-stale-guc`).
+- 예상 파일: 신규 ~7(RoleSalaryField · VenueSettingsSheet · venue-settlements 라우트 ·
+  roleSalaries 도메인 유틸 · 출처 헬퍼 · **마이그 SQL · pgTAP 테스트**) + 수정 ~6
+  (AddSlotSheet · VenueSelector · settlementVenueQuery · venueContainer 파서 ·
+  WeeklyGridRepository · gridWriteService).
