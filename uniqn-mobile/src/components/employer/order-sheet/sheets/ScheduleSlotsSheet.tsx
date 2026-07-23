@@ -15,7 +15,7 @@ import { TimeWheelPicker, type TimeValue } from '@/components/ui/TimeWheelPicker
 import { PlusIcon } from '@/components/icons';
 import { SlotCard } from './SlotCard';
 import type { SlotRoles } from './RoleCountEditor';
-import type { OrderSheetValues } from '@/schemas/orderSheet.schema';
+import { START_TIME_RE, type OrderSheetValues } from '@/schemas/orderSheet.schema';
 
 type Slots = OrderSheetValues['scheduleGroups'][number]['timeSlots'];
 
@@ -36,6 +36,14 @@ const firstIncompleteIndex = (slots: Slots) => {
   );
   return i >= 0 ? i : 0;
 };
+
+/**
+ * 슬롯 완성 판정 — orderRowMeta.getRowState('time'/'roles')의 unset 판정과 정렬(같은 식).
+ * 역할 0개로 확정되면 연쇄가 급여 시트(역할 0개면 확인 잠김)로 이송되는 데드엔드가 생기므로
+ * 확인 버튼을 근원에서 게이팅한다. 시간 미정(isTimeToBeAnnounced)은 유효한 확정값이다(#303).
+ */
+const slotComplete = (s: Slots[number]) =>
+  (s.isTimeToBeAnnounced === true || START_TIME_RE.test(s.startTime)) && s.roles.length > 0;
 
 export interface ScheduleSlotsSheetProps {
   visible: boolean;
@@ -126,6 +134,7 @@ export function ScheduleSlotsSheet({
             onConfirm(slots);
             onClose();
           }}
+          disabled={!slots.every(slotComplete)}
         >
           확인
         </Button>

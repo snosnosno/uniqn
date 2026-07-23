@@ -151,11 +151,17 @@ describe('ScheduleSlotsSheet', () => {
       fireEvent.press(getByTestId('order-time-add-slot'));
       fireEvent.press(getByTestId('order-time-add-slot'));
     });
-    fireEvent.press(getByText('확인'));
-    expect(onConfirm.mock.calls[0][0]).toHaveLength(3);
     // 마지막(세 번째) 카드가 펼쳐져 있어야 한다 — 앞의 두 장은 접힘 요약만 렌더한다.
     expect(getByTestId('order-time-roles-1')).toBeTruthy();
     expect(getByTestId('order-time-start-2')).toBeTruthy();
+    // 새 슬롯 2개는 시간이 비어 확인이 잠긴다(게이팅) — 미정으로 채워 확정까지 간다.
+    fireEvent.press(getByTestId('order-time-start-2'));
+    fireEvent.press(getByTestId('mock-time-tba'));
+    fireEvent.press(getByTestId('order-time-roles-1')); // 두 번째 카드 펼침
+    fireEvent.press(getByTestId('order-time-start-1'));
+    fireEvent.press(getByTestId('mock-time-tba'));
+    fireEvent.press(getByText('확인'));
+    expect(onConfirm.mock.calls[0][0]).toHaveLength(3);
   });
 
   it('새 슬롯은 첫 슬롯의 역할을 깊은복사로 시드받는다', () => {
@@ -169,8 +175,12 @@ describe('ScheduleSlotsSheet', () => {
       />
     );
     fireEvent.press(getByTestId('order-time-add-slot'));
+    // 새 슬롯은 시간이 비어 확인이 잠긴다(게이팅) — 미정으로 채운다. setTimeTBA 는
+    // roles 참조를 보존하므로({ ...s } 스프레드) 아래 시드 참조 단언은 유효하다.
+    fireEvent.press(getByTestId('order-time-start-1'));
+    fireEvent.press(getByTestId('mock-time-tba'));
 
-    // 참조 비동일성은 **편집 전에** 확인해야 한다 — 편집 후에는 불변 갱신(map+spread)이
+    // 참조 비동일성은 **역할 편집 전에** 확인해야 한다 — 편집 후에는 불변 갱신(map+spread)이
     // 어차피 새 배열·새 객체를 만들어 얕은 시드였어도 참조가 갈라지므로 단언이 무력해진다.
     fireEvent.press(getByText('확인'));
     const seeded = onConfirm.mock.calls[0][0];
@@ -182,7 +192,7 @@ describe('ScheduleSlotsSheet', () => {
     fireEvent.press(getByText('확인'));
     expect(onConfirm).toHaveBeenLastCalledWith([
       { startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] },
-      { startTime: '', roles: [{ role: 'dealer', count: 3 }] },
+      { startTime: '', isTimeToBeAnnounced: true, roles: [{ role: 'dealer', count: 3 }] },
     ]);
   });
 
@@ -296,6 +306,70 @@ describe('ScheduleSlotsSheet', () => {
     // 첫 미완성 = index 0 이 펼쳐짐
     fireEvent.press(getByTestId('order-time-remove-0'));
     expect(queryByTestId('order-time-remove-0')).toBeNull();
+  });
+});
+
+describe('확인 게이팅 (2026-07-23) — 무효 슬롯 확정 차단', () => {
+  // 역할 0개로 확정되면 연쇄가 급여 시트(역할 0개면 확인 잠김)로 이송되는 데드엔드가 생긴다 —
+  // 다른 시트들(TitleSheet·RolesSheet·SalarySheet)과 동일하게 근원(확인 버튼)에서 차단한다.
+  it('역할 0개 슬롯이 있으면 확인이 비활성 — 눌러도 확정되지 않는다', () => {
+    const onConfirm = jest.fn();
+    const onClose = jest.fn();
+    const { getByText } = render(
+      <ScheduleSlotsSheet visible value={[]} onConfirm={onConfirm} onClose={onClose} />
+    );
+    // 기본 시드 슬롯은 시간(19:00)은 있지만 역할이 0개다
+    fireEvent.press(getByText('확인'));
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('시간 미선택(빈 startTime) 슬롯이 있으면 확인이 비활성', () => {
+    const onConfirm = jest.fn();
+    const { getByTestId, getByText } = render(
+      <ScheduleSlotsSheet
+        visible
+        value={[{ startTime: '19:00', roles: [{ role: 'dealer', count: 1 }] }]}
+        onConfirm={onConfirm}
+        onClose={jest.fn()}
+      />
+    );
+    // 새 슬롯은 startTime='' (역할은 첫 슬롯에서 시드되므로 시간만 무효)
+    fireEvent.press(getByTestId('order-time-add-slot'));
+    fireEvent.press(getByText('확인'));
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it('시간 미정(isTimeToBeAnnounced) 슬롯은 유효 — 역할만 있으면 확인이 활성', () => {
+    const onConfirm = jest.fn();
+    const { getByText } = render(
+      <ScheduleSlotsSheet
+        visible
+        value={[
+          { startTime: '', isTimeToBeAnnounced: true, roles: [{ role: 'dealer', count: 1 }] },
+        ]}
+        onConfirm={onConfirm}
+        onClose={jest.fn()}
+      />
+    );
+    fireEvent.press(getByText('확인'));
+    expect(onConfirm).toHaveBeenCalledWith([
+      { startTime: '', isTimeToBeAnnounced: true, roles: [{ role: 'dealer', count: 1 }] },
+    ]);
+  });
+
+  it('무효 슬롯을 채우면 확인이 다시 활성화된다 (복구 경로)', () => {
+    const onConfirm = jest.fn();
+    const { getByTestId, getByText } = render(
+      <ScheduleSlotsSheet visible value={[]} onConfirm={onConfirm} onClose={jest.fn()} />
+    );
+    fireEvent.press(getByText('확인')); // 역할 0개 — 차단
+    expect(onConfirm).not.toHaveBeenCalled();
+    fireEvent.press(getByTestId('order-role-chip-dealer')); // 역할 추가 → 유효
+    fireEvent.press(getByText('확인'));
+    expect(onConfirm).toHaveBeenCalledWith([
+      { startTime: '19:00', roles: [{ role: 'dealer', count: 1 }] },
+    ]);
   });
 });
 

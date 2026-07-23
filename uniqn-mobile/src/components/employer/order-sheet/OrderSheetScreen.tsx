@@ -364,8 +364,16 @@ export function OrderSheetScreen({
     (target: OrderRowTarget, coveredKeys?: readonly OrderRowKey[]) => {
       if (!chainArmedRef.current) return;
       chainArmedRef.current = false;
-      // setValue 직후라 watch 값은 아직 옛것 — getValues 로 최신 폼을 읽는다
-      const next = nextUnsetRowAfter(form.getValues(), target, coveredKeys);
+      // setValue 직후라 watch 값은 아직 옛것 — getValues 로 최신 폼을 읽는다.
+      // 잠금(scheduleLocked) 시 일정·역할 행은 순회에서 제외한다 — 연쇄가 잠긴 행을 타깃으로
+      // 고르면 openRow 의 잠금 가드가 누른 적 없는 경고 토스트를 띄우며 연쇄가 죽는다.
+      // (경고 토스트는 사용자가 직접 잠긴 행을 탭한 handleRowPress 경로에서만 떠야 한다.)
+      const next = nextUnsetRowAfter(
+        form.getValues(),
+        target,
+        coveredKeys,
+        scheduleLocked ? LOCKED_ROW_KEYS : undefined
+      );
       if (next === null) return;
       setChainSwapping(true);
       pendingSwapRef.current = setTimeout(() => {
@@ -373,7 +381,7 @@ export function OrderSheetScreen({
         openRow(next.key, next.groupIndex);
       }, SHEET_CHAIN_SWAP_MS);
     },
-    [form, openRow]
+    [form, openRow, scheduleLocked, LOCKED_ROW_KEYS]
   );
 
   // 시트가 화면에 올라오면 딤을 걷는다 — 백드롭과 딤이 겹쳐 이중으로 어두워지는 프레임을 최소화.

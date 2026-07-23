@@ -572,11 +572,16 @@ export function firstUnsetRow(values: OrderSheetFormValues): OrderRowTarget | nu
  *   **같은 시트가 무한 재오픈**된다(슬롯 추가 후 시간 미선택 확인으로 재현). 시트가
  *   커버하는 행 전체를 넘겨야 "확인한 것은 다시 묻지 않는다"는 가드가 성립한다.
  *   같은 그룹에만 적용되므로 다른 그룹의 동일 행은 정상적으로 다음 타깃이 된다.
+ * @param skipKeys 열어도 편집할 수 없는 행들(scheduleLocked 의 일정·역할 잠금). 연쇄가 이 행을
+ *   타깃으로 고르면 openRow 의 잠금 가드가 누른 적 없는 경고 토스트를 띄우며 연쇄가 그 자리에서
+ *   죽는다 — 순회에서 제외해 뒤쪽의 수정 가능한 미설정 행으로 넘어간다. 잠금은 그룹 무관이므로
+ *   coveredKeys 와 달리 **그룹 불문** 적용. 스킵 결과 남은 미설정이 없으면 조용히 종료(null).
  */
 export function nextUnsetRowAfter(
   values: OrderSheetFormValues,
   current: OrderRowTarget,
-  coveredKeys: readonly OrderRowKey[] = [current.key]
+  coveredKeys: readonly OrderRowKey[] = [current.key],
+  skipKeys?: ReadonlySet<OrderRowKey>
 ): OrderRowTarget | null {
   const targets = orderedRowTargets(values);
   const currentIndex = targets.findIndex(
@@ -587,6 +592,7 @@ export function nextUnsetRowAfter(
     const target = targets[(start + offset) % targets.length];
     if (target === undefined) continue;
     if (currentIndex >= 0 && (start + offset) % targets.length === currentIndex) break;
+    if (skipKeys?.has(target.key)) continue;
     if (target.groupIndex === current.groupIndex && coveredKeys.includes(target.key)) continue;
     if (isUnsetTarget(values, target)) return target;
   }
