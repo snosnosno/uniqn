@@ -96,7 +96,7 @@ export function useUpdateUserRole() {
       logger.info('사용자 역할 변경 성공', { userId: variables.userId });
       // 캐시 무효화 (세분화: 해당 사용자 + 목록 + 대시보드)
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.userDetail(variables.userId) });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.usersLists() });
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.dashboard() });
     },
     onError: (error, variables) => {
@@ -127,7 +127,7 @@ export function useSetUserActive() {
       });
       // 캐시 무효화 (세분화: 해당 사용자 + 목록)
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.userDetail(variables.userId) });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.usersLists() });
     },
     onError: (error, variables) => {
       logger.error('사용자 상태 변경 실패', toError(error), {
