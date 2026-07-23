@@ -42,7 +42,8 @@ export function PlayersTab({
         data={participants}
         keyExtractor={(p: OpsParticipant) => p.id}
         estimatedItemSize={64}
-        contentContainerStyle={{ padding: 16, paddingTop: 4 }}
+        // 하단 96 = 등록 FAB(56 + bottom 16) 풋프린트 — 최하단 행의 QR·체브론 가림 방지
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 96 }}
         renderItem={({ item }: { item: OpsParticipant }) => (
           // 행 전체 탭 → 액션시트. QR(PlayerClaimButton)만 행에 잔류(M6 — 전 상태 1탭 노출).
           <Pressable
