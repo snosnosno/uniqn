@@ -560,6 +560,8 @@ export const queryKeys = {
     prizes: (tournamentId: string) => [...queryKeys.ops.all, 'prizes', tournamentId] as const,
     // 1e — 스태프 로스터(공고연결 스냅샷 import + 수동 추가)
     staff: (tournamentId: string) => [...queryKeys.ops.all, 'staff', tournamentId] as const,
+    // 블라인드 프리셋(계획 B) — per-user 데이터. userId 스코프 필수(기기 계정 전환 시 캐시 격리).
+    blindPresets: (userId: string) => [...queryKeys.ops.all, 'blindPresets', userId] as const,
   },
 
   // 앱 설정 플래그 (app_config) — 원격 기능 토글

@@ -104,7 +104,10 @@ export function OpsParticipantActionSheet({
   return (
     <>
       <SheetModal
-        visible={!!participant}
+        // 네이티브에서 SheetModal=RNModal(OS 별도 윈도우)이라, 피커(=@gorhom BottomSheetModal,
+        // 앱 루트 호스트)가 열린 채로 두면 피커가 이 모달 뒤로 가려져 바운티 탈락이 데드엔드가 된다.
+        // 피커가 열리는 동안 시트를 숨기고(visible=false), 피커 onClose 리셋 시 자연 복귀시킨다.
+        visible={!!participant && eliminatorPickerFor === null}
         onClose={onClose}
         title={`#${p.entryNumber ?? ''} ${p.name}`}
       >

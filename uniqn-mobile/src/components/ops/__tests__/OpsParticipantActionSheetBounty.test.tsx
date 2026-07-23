@@ -92,6 +92,23 @@ describe('OpsParticipantActionSheet — 바운티 eliminator picker', () => {
     );
   });
 
+  it('피커 열림 동안 SheetModal 숨김(visible=false) — 네이티브 모달 뒤 가림 데드엔드 방지', () => {
+    const { getByText, queryByText } = render(
+      <OpsParticipantActionSheet
+        tournament={bounty}
+        participant={target}
+        participants={roster}
+        onClose={jest.fn()}
+      />
+    );
+    // 피커 열기 전: 시트 본문(리바이 액션) 노출
+    expect(getByText('리바이')).toBeTruthy();
+    fireEvent.press(getByText('탈락 처리'));
+    // 피커 열림: 시트 본문 사라지고 피커 타이틀만 남음
+    expect(queryByText('리바이')).toBeNull();
+    expect(getByText('Shimizu 님을 누가 눌렀나요?')).toBeTruthy();
+  });
+
   it('지정 안 함 → eliminatorId=null 로 bust', () => {
     fireConfirmImmediately();
     const mutate = jest.fn();

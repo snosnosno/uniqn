@@ -10,9 +10,8 @@ import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 import { extractUserMessage } from '@/errors';
+import { queryKeys } from '@/lib/queryClient';
 import type { OpsBlindLevelInput } from '@/schemas/opsBlindLevel.schema';
-
-const PRESETS_KEY = ['ops', 'blindPresets'] as const;
 
 const toast = {
   success: (m: string) => useToastStore.getState().success(m),
@@ -28,11 +27,13 @@ function requireActor(actorId: string | undefined | null): string {
   return actorId;
 }
 
-/** 내 블라인드 프리셋 목록. */
+/** 내 블라인드 프리셋 목록. per-user 데이터 → uid 스코프 키(기기 계정 전환 시 캐시 격리). */
 export function useOpsBlindPresets() {
+  const uid = useAuthStore((s) => s.user?.uid);
   const query = useQuery({
-    queryKey: PRESETS_KEY,
+    queryKey: queryKeys.ops.blindPresets(uid ?? ''),
     queryFn: () => opsBlindPresetRepository.listMine(),
+    enabled: !!uid,
   });
   return { presets: query.data ?? [], isLoading: query.isLoading };
 }
@@ -45,7 +46,7 @@ export function useSaveBlindPreset() {
     mutationFn: (input: { name: string; levels: readonly OpsBlindLevelInput[] }) =>
       opsBlindPresetService.save(requireActor(actorId), input.name, input.levels),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: PRESETS_KEY });
+      qc.invalidateQueries({ queryKey: queryKeys.ops.blindPresets(requireActor(actorId)) });
       toast.success('프리셋을 저장했습니다');
     },
     onError: (e) => {
@@ -62,7 +63,7 @@ export function useDeleteBlindPreset() {
   return useMutation({
     mutationFn: (presetId: string) => opsBlindPresetService.remove(requireActor(actorId), presetId),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: PRESETS_KEY });
+      qc.invalidateQueries({ queryKey: queryKeys.ops.blindPresets(requireActor(actorId)) });
       toast.success('프리셋을 삭제했습니다');
     },
     onError: (e) => {
