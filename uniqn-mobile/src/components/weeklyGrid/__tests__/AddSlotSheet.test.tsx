@@ -7,11 +7,14 @@
  * (2) 풀에서 인원을 고르면 종료 필드·익일 프리뷰가 아니라 **출근시간(start) 단일 필드 + 미정 토글**을
  *     보여주는지(형제 AddStaffModal·지원/확정 모델과 정합). 미정 토글 시 트리거가 '미정'으로 전환되는지.
  */
-import { render, fireEvent } from '@testing-library/react-native';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import React from 'react';
 import { AddSlotSheet } from '../AddSlotSheet';
+import { defaultVenueSalaryDraft } from '../RoleSalaryField';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import { useStaffNicknameSearch } from '@/hooks/useStaffNicknameSearch';
+import { useVenueContainer, useSetVenueRoleSalary } from '@/hooks/weeklyGrid';
+import { useToastStore } from '@/stores/toastStore';
 
 // 무거운 의존(SheetModal=RNModal+reanimated) 모킹: visible 일 때 children+footer+overlay 렌더
 jest.mock('@/components/ui/SheetModal', () => {
@@ -47,17 +50,35 @@ jest.mock('@tanstack/react-query', () => ({
 
 jest.mock('@/hooks/useConfirmedStaff', () => ({ useConfirmedStaff: jest.fn() }));
 jest.mock('@/hooks/useStaffNicknameSearch', () => ({ useStaffNicknameSearch: jest.fn() }));
+// JIT 급여 접점: 컨테이너 단가표 읽기 + 단가 저장 변이 + 토스트 안내를 훅/스토어 경계에서 대체
+// (실물 useQuery 는 Provider 를 요구하므로 barrel 훅을 직접 목).
+jest.mock('@/hooks/weeklyGrid', () => ({
+  useVenueContainer: jest.fn(),
+  useSetVenueRoleSalary: jest.fn(),
+}));
+jest.mock('@/stores/toastStore', () => ({ useToastStore: jest.fn() }));
 
 const mockUseConfirmedStaff = useConfirmedStaff as unknown as jest.Mock;
 const mockUseNicknameSearch = useStaffNicknameSearch as unknown as jest.Mock;
+const mockUseVenueContainer = useVenueContainer as unknown as jest.Mock;
+const mockUseSetVenueRoleSalary = useSetVenueRoleSalary as unknown as jest.Mock;
+const mockUseToastStore = useToastStore as unknown as jest.Mock;
+
+// 호출 순서·인자 검증을 위한 모듈 스코프 스파이(매 테스트 리셋).
+const addStaffMock = jest.fn();
+const setRoleSalaryMock = jest.fn();
+const addToastMock = jest.fn();
 
 beforeEach(() => {
   mockPush.mockReset();
+  addStaffMock.mockReset().mockResolvedValue(undefined);
+  setRoleSalaryMock.mockReset().mockResolvedValue(undefined);
+  addToastMock.mockReset();
   // 콜드스타트: 확정 풀 0명
   mockUseConfirmedStaff.mockReturnValue({
     staff: [],
     isLoading: false,
-    addStaff: jest.fn(),
+    addStaff: addStaffMock,
     isAddingStaff: false,
   });
   mockUseNicknameSearch.mockReturnValue({
@@ -67,7 +88,25 @@ beforeEach(() => {
     searched: false,
     results: [],
   });
+  // 기본 단가표: dealer 만 설정됨(serving 등은 미설정 → JIT 대상). isFetched=true = 조회 확정 상태
+  // (JIT 노출 판정은 컨테이너 조회 도착 후에만 — needsJitSalary 의 isFetched 게이트).
+  mockUseVenueContainer.mockReturnValue({
+    data: { roleSalaries: [{ role: 'dealer', salary: { type: 'hourly', amount: 20000 } }] },
+    isFetched: true,
+  });
+  mockUseSetVenueRoleSalary.mockReturnValue({ mutateAsync: setRoleSalaryMock });
+  mockUseToastStore.mockReturnValue({ addToast: addToastMock });
 });
+
+/** 확정 풀에 1명(기본 역할 미지정 — 역할 칩으로 직접 선택) 세팅. */
+function setPoolWithOneStaff() {
+  mockUseConfirmedStaff.mockReturnValue({
+    staff: [{ staffId: 'staff-9', staffName: '홍길동', staffPhotoURL: null, role: undefined }],
+    isLoading: false,
+    addStaff: addStaffMock,
+    isAddingStaff: false,
+  });
+}
 
 function renderSheet(onClose = jest.fn()) {
   return {
@@ -144,4 +183,77 @@ it('출근시간 미정 토글 → 트리거가 "미정"으로 전환(구체 시
   fireEvent.press(getByText('미정'));
   expect(getAllByText('미정')).toHaveLength(2);
   expect(queryByText('오후 6:00')).toBeNull();
+});
+
+// ── JIT 급여 접점(Task 6): 미설정 역할만 그 자리서 묻고, 단가 먼저 저장 후 슬롯 추가 ──
+
+it('미설정 역할(serving) 선택 시 JIT 단가 필드가 나타난다', () => {
+  setPoolWithOneStaff();
+  const { getByText } = renderSheet();
+
+  fireEvent.press(getByText('홍길동'));
+  fireEvent.press(getByText('🍸 서빙'));
+
+  // 단가표에 serving 없음 → RoleSalaryField 캡션('서빙 단가 미설정 …') 노출.
+  expect(getByText(/서빙 단가 미설정/)).toBeTruthy();
+});
+
+it('설정된 역할(dealer) 선택 시 JIT 필드가 없다', () => {
+  setPoolWithOneStaff();
+  const { getByText, queryByText } = renderSheet();
+
+  fireEvent.press(getByText('홍길동'));
+  fireEvent.press(getByText('🃏 딜러'));
+
+  // 단가표에 dealer 이미 설정됨 → JIT 미노출.
+  expect(queryByText(/단가 미설정/)).toBeNull();
+});
+
+it('컨테이너 조회 도착 전(isFetched=false)에는 JIT 필드가 오노출되지 않는다', () => {
+  // 로딩 창: data 아직 없음(roleSalaries=[] 로 hasRoleSalary=false) → 기존엔 미설정처럼 오노출.
+  // isFetched 게이트로 조회 확정 전에는 JIT 를 띄우지 않는다(MEDIUM 회귀 가드).
+  mockUseVenueContainer.mockReturnValue({ data: undefined, isFetched: false });
+  setPoolWithOneStaff();
+  const { getByText, queryByText } = renderSheet();
+
+  fireEvent.press(getByText('홍길동'));
+  fireEvent.press(getByText('🍸 서빙'));
+
+  expect(queryByText(/단가 미설정/)).toBeNull();
+});
+
+it('추가 시 단가 먼저 저장 후 슬롯 추가(호출 순서)', async () => {
+  setPoolWithOneStaff();
+  const { getByText } = renderSheet();
+
+  fireEvent.press(getByText('홍길동'));
+  fireEvent.press(getByText('🍸 서빙'));
+  fireEvent.press(getByText('추가'));
+
+  await waitFor(() => expect(addStaffMock).toHaveBeenCalled());
+
+  // 단가 저장은 기본 드래프트(시급 20,000)로, 슬롯 추가보다 먼저 호출된다.
+  expect(setRoleSalaryMock).toHaveBeenCalledWith({
+    venueId: 'venue-1',
+    role: 'serving',
+    customRole: undefined,
+    salary: defaultVenueSalaryDraft('serving'),
+  });
+  expect(setRoleSalaryMock.mock.invocationCallOrder[0]).toBeLessThan(
+    addStaffMock.mock.invocationCallOrder[0]
+  );
+});
+
+it('단가 저장 실패해도 슬롯 추가는 진행되고 토스트로 안내한다', async () => {
+  setPoolWithOneStaff();
+  setRoleSalaryMock.mockRejectedValueOnce(new Error('fail'));
+  const { getByText } = renderSheet();
+
+  fireEvent.press(getByText('홍길동'));
+  fireEvent.press(getByText('🍸 서빙'));
+  fireEvent.press(getByText('추가'));
+
+  // 단가 저장이 실패해도 배치는 계속 진행되고, info 토스트로 재안내한다(설계 §B).
+  await waitFor(() => expect(addStaffMock).toHaveBeenCalled());
+  expect(addToastMock).toHaveBeenCalledWith(expect.objectContaining({ type: 'info' }));
 });

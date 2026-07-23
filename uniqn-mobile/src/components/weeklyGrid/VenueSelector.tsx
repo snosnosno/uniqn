@@ -11,6 +11,8 @@
  */
 import React, { useCallback } from 'react';
 import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
+import { SettingsIcon } from '@/components/icons';
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import type { Workspace } from '@/types/workspace';
 import type { VenueContainer } from '@/domains/weeklyGrid';
 
@@ -24,6 +26,8 @@ export interface VenueSelectorProps {
   isLoadingContainers?: boolean;
   /** 제공 시 운영처 칩 줄에 "+ 운영처 추가" 진입점 노출. */
   onAddVenue?: () => void;
+  /** 제공 시 선택된 지점 칩 옆에 ⚙(역할별 단가 설정) 진입점 노출. */
+  onOpenSettings?: (venueId: string) => void;
 }
 
 interface ChipProps {
@@ -67,6 +71,7 @@ export function VenueSelector({
   onSelectVenue,
   isLoadingContainers = false,
   onAddVenue,
+  onOpenSettings,
 }: VenueSelectorProps) {
   const handleSelectWorkspace = useCallback(
     (id: string) => () => onSelectWorkspace(id),
@@ -117,13 +122,25 @@ export function VenueSelector({
             </View>
           ) : (
             containers.map((c) => (
-              <Chip
-                key={c.id}
-                label={c.name}
-                selected={c.id === selectedVenueId}
-                onPress={handleSelectVenue(c.id)}
-                a11yLabel={`지점 ${c.name}`}
-              />
+              <View key={c.id} className="flex-row items-center">
+                <Chip
+                  label={c.name}
+                  selected={c.id === selectedVenueId}
+                  onPress={handleSelectVenue(c.id)}
+                  a11yLabel={`지점 ${c.name}`}
+                />
+                {onOpenSettings && c.id === selectedVenueId ? (
+                  <Pressable
+                    onPress={() => onOpenSettings(c.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`지점 ${c.name} 단가 설정`}
+                    hitSlop={10}
+                    className="-ml-1 mr-2 h-10 w-10 items-center justify-center"
+                  >
+                    <SettingsIcon size={18} color={SECONDARY_PALETTE[400]} />
+                  </Pressable>
+                ) : null}
+              </View>
             ))
           )}
           {onAddVenue ? (

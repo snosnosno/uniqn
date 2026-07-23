@@ -10,6 +10,7 @@ export type {
   Allowances,
   ExtendedSettlementResult,
   PostingSettlementSource,
+  SalaryResolutionSource,
 } from './helpers';
 
 export { DEFAULT_SALARY_INFO, PROVIDED_FLAG } from '@/utils/settlement/constants';
@@ -28,6 +29,7 @@ export {
   calculateSettlementFromWorkLog,
   calculateTotalSettlementFromRoles,
   getEffectiveSalaryInfoFromRoles,
+  resolveEffectiveSalaryWithSource,
   getEffectiveAllowances,
   getEffectiveTaxSettings,
   calculateSettlementWithTax,

@@ -12,7 +12,11 @@ import { isAppError } from '@/errors';
 import { handleSupabaseError, toCamelCase } from '@/utils/supabase';
 import { toDateString } from '@/utils/date';
 import type { GridSummaryRow } from '@/domains/weeklyGrid';
-import type { IWeeklyGridRepository, VenueDaySlot } from '../interfaces/IWeeklyGridRepository';
+import type {
+  IWeeklyGridRepository,
+  VenueDaySlot,
+  SetVenueRoleSalaryInput,
+} from '../interfaces/IWeeklyGridRepository';
 
 const TABLE = 'work_logs' as const;
 
@@ -80,6 +84,27 @@ export class SupabaseWeeklyGridRepository implements IWeeklyGridRepository {
     } catch (error) {
       if (isAppError(error)) throw error;
       handleSupabaseError(error, { operation: '운영처 soft-target 설정', table: TABLE });
+    }
+  }
+
+  async setVenueRoleSalary(venueId: string, input: SetVenueRoleSalaryInput): Promise<void> {
+    try {
+      logger.info('지점 역할 단가 설정', {
+        venueId,
+        role: input.role,
+        remove: input.salary === null,
+      });
+      const { error } = await supabase.rpc('set_venue_role_salary', {
+        p_venue: venueId,
+        p_role: input.role,
+        p_custom_role: input.customRole ?? null,
+        p_salary_type: input.salary?.type ?? null,
+        p_amount: input.salary?.amount ?? null,
+      });
+      if (error) handleSupabaseError(error, { operation: '지점 역할 단가 설정', table: TABLE });
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      handleSupabaseError(error, { operation: '지점 역할 단가 설정', table: TABLE });
     }
   }
 }

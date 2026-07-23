@@ -7,7 +7,11 @@
  */
 import { SupabaseWeeklyGridRepository } from './supabase/WeeklyGridRepository';
 
-export type { IWeeklyGridRepository, VenueDaySlot } from './interfaces/IWeeklyGridRepository';
+export type {
+  IWeeklyGridRepository,
+  VenueDaySlot,
+  SetVenueRoleSalaryInput,
+} from './interfaces/IWeeklyGridRepository';
 export { SupabaseWeeklyGridRepository } from './supabase/WeeklyGridRepository';
 
 /** 프로덕션 싱글톤. */
