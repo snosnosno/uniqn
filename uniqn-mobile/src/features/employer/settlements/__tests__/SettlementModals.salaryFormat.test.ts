@@ -12,14 +12,18 @@ describe('정산 확인 모달 금액 문구 (출력 불변)', () => {
   it('일괄 정산 예상 금액 문구', () => {
     const count = 3;
     const amount = 1234567;
-    const message = `${count}건의 근무를 정산하시겠습니까?\n예상 금액: ${formatNumber(amount)}원`;
-    expect(message).toBe('3건의 근무를 정산하시겠습니까?\n예상 금액: 1,234,567원');
+    const message = `${count}건의 근무를 지급 완료로 표시할까요?\n예상 금액: ${formatNumber(amount)}원\n실제 이체는 앱 밖에서 진행해요.`;
+    expect(message).toBe(
+      '3건의 근무를 지급 완료로 표시할까요?\n예상 금액: 1,234,567원\n실제 이체는 앱 밖에서 진행해요.'
+    );
   });
 
   it('단건 정산 금액 문구', () => {
     const amount = 90000;
-    const message = `이 스태프의 근무를 정산하시겠습니까?\n정산 금액: ${formatNumber(amount)}원`;
-    expect(message).toBe('이 스태프의 근무를 정산하시겠습니까?\n정산 금액: 90,000원');
+    const message = `이 스태프의 근무를 지급 완료로 표시할까요?\n정산 금액: ${formatNumber(amount)}원\n실제 이체는 앱 밖에서 진행해요.`;
+    expect(message).toBe(
+      '이 스태프의 근무를 지급 완료로 표시할까요?\n정산 금액: 90,000원\n실제 이체는 앱 밖에서 진행해요.'
+    );
   });
 
   it('교체 전 표기(.toLocaleString())와 교체 후(formatNumber) 원화 정수 도메인 등가', () => {

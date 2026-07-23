@@ -109,6 +109,10 @@ jest.mock('@/utils/logger', () => ({
 
 const mockQueryClient = {
   invalidateQueries: jest.fn(),
+  cancelQueries: jest.fn(),
+  getQueriesData: jest.fn(() => []),
+  setQueriesData: jest.fn(),
+  setQueryData: jest.fn(),
 };
 
 const mockMutate = jest.fn();
@@ -585,6 +589,34 @@ describe('useSettlement Hooks', () => {
       expect(mockAddToast).toHaveBeenCalledWith({
         type: 'warning',
         message: '1건 정산 실패',
+      });
+    });
+
+    it('should list failed staff names from server results (QW3)', async () => {
+      mockQueryClient.getQueriesData.mockReturnValueOnce([
+        [['settlement'], [{ workLogId: 'worklog-2', staffName: '김딜러' }]],
+      ] as never);
+      const mockResult = {
+        totalCount: 2,
+        successCount: 1,
+        failedCount: 1,
+        totalAmount: 120000,
+        results: [
+          { success: true, workLogId: 'worklog-1', amount: 120000, message: 'ok' },
+          { success: false, workLogId: 'worklog-2', amount: 0, message: '이미 정산됨' },
+        ],
+      };
+      mockBulkSettlement.mockResolvedValueOnce(mockResult);
+
+      const { result } = renderHook(() => useBulkSettlement());
+
+      await act(async () => {
+        result.current.mutate({ workLogIds: ['worklog-1', 'worklog-2'] });
+      });
+
+      expect(mockAddToast).toHaveBeenCalledWith({
+        type: 'warning',
+        message: '1건 정산 실패 — 김딜러',
       });
     });
   });

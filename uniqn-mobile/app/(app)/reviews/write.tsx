@@ -71,7 +71,7 @@ export default function ReviewWriteScreen() {
   if (!params.workLogId || !params.revieweeId || !params.jobPostingId || !reviewerType) {
     return (
       <SafeAreaView className="flex-1 bg-surface-card" edges={['top', 'bottom']}>
-        <StackHeader title="평가 작성" fallbackHref="/(app)/reviews/pending" />
+        <StackHeader title="평가 작성" fallbackHref="/(app)/reviews/history" />
         <View className="flex-1">
           <ErrorState
             title="잘못된 접근입니다"
@@ -86,7 +86,7 @@ export default function ReviewWriteScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface-card" edges={['top', 'bottom']}>
-      <StackHeader title="평가 작성" fallbackHref="/(app)/reviews/pending" />
+      <StackHeader title="평가 작성" fallbackHref="/(app)/reviews/history" />
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

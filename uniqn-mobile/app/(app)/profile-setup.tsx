@@ -98,13 +98,16 @@ export default function ProfileSetupScreen() {
         keyboardOpeningTime={0}
       >
         <View className="flex-1 p-4">
-          {/* 헤더 */}
+          {/* 헤더 — 가입 진행률 연속성: 마지막 단계임을 명시 (QW8) */}
           <View className="mb-6">
+            <Text className="mb-1 text-xs font-sans-semibold text-primary-600 dark:text-primary-400">
+              마지막 단계
+            </Text>
             <Text className="text-2xl font-display text-content-primary dark:text-off-white mb-2">
               프로필 설정
             </Text>
             <Text className="text-sm text-content-secondary font-sans">
-              서비스 이용을 위해 프로필을 완성해주세요.
+              프로필을 완성하면 가입이 끝나요.
             </Text>
           </View>
 

@@ -38,6 +38,7 @@ import { SHEET_DISMISS_ANIMATION_MS } from '@/constants/animation';
 import { SCHEDULE_TYPE_LABELS } from '@/shared/status';
 import { getApplicationById } from '@/services/jobs/applicationService';
 import { logger } from '@/utils/logger';
+import { resolveApplicationDeepLink } from '@/utils/scheduleDeepLink';
 import { triggerHaptic } from '@/utils/haptics';
 import {
   filterSchedulesByStatus,
@@ -470,6 +471,8 @@ export default function ScheduleScreen() {
   // - applicationId: 해당 스케줄 상세 모달 자동 오픈
   // - cancelApplicationId: 취소 요청 바텀시트 자동 오픈 (cancel.tsx 호환성)
   const [didHandleSearchParam, setDidHandleSearchParam] = useState(false);
+  // missing 판정 전 refresh 1회 재검증 — stale 부트스트랩 캐시로 인한 오탐 토스트 방지 (QW2 리뷰 반영)
+  const didRetryDeepLinkRef = useRef(false);
   useEffect(() => {
     if (didHandleSearchParam) return;
 
@@ -484,18 +487,42 @@ export default function ScheduleScreen() {
       return;
     }
 
-    if (targetApplicationId && schedules.length > 0) {
-      const targetSchedule = schedules.find((s) => s.applicationId === targetApplicationId);
-      if (targetSchedule) {
+    if (targetApplicationId) {
+      const landing = resolveApplicationDeepLink(
+        schedules,
+        targetApplicationId,
+        isLoading || isRefreshing,
+        error
+      );
+      if (landing.kind === 'open') {
         setDidHandleSearchParam(true);
-        setSelectedSchedule(targetSchedule);
+        setSelectedSchedule(landing.schedule);
         setIsDetailSheetVisible(true);
+      } else if (landing.kind === 'missing') {
+        if (!didRetryDeepLinkRef.current) {
+          // 캐시가 stale일 수 있으니 fresh 데이터로 1회 재판정 (확정 알림 착지 오탐 방지)
+          didRetryDeepLinkRef.current = true;
+          void refresh();
+          return;
+        }
+        // 거절/취소된 지원은 스케줄 쿼리에서 제외 → 무반응 착지 대신 안내 (QW2, 근본 해소는 M1)
+        setDidHandleSearchParam(true);
+        addToast({
+          type: 'info',
+          message:
+            '해당 지원 일정을 찾을 수 없어요. 지원이 거절되었거나 취소되어 목록에 없을 수 있어요.',
+        });
       }
     }
   }, [
     didHandleSearchParam,
     handleRequestCancellation,
     schedules,
+    isLoading,
+    isRefreshing,
+    error,
+    addToast,
+    refresh,
     searchParams.applicationId,
     searchParams.cancelApplicationId,
   ]);
@@ -656,7 +683,7 @@ export default function ScheduleScreen() {
         <View className="mt-2">
           <ReviewPromptBanner
             pendingCount={pendingCount}
-            onPress={() => router.push('/(app)/reviews/pending')}
+            onPress={() => router.push('/(app)/reviews/history')}
           />
         </View>
       )}

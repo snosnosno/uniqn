@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import type { ConfirmedStaffGroup } from '@/types/confirmedStaff';
 
 export interface TodayOpsStripProps {
@@ -15,9 +15,15 @@ export interface TodayOpsStripProps {
   todayGroup?: ConfirmedStaffGroup;
   /** 정산 대기 건수 — 탭 배지와 동일 정의(payrollStatus !== completed)를 그대로 받는다 */
   pendingSettlementCount: number;
+  /** 정산 대기 배지 탭 → 정산 탭 점프 (QW10). 미전달 시 배지는 정적 표시 */
+  onPressSettlement?: () => void;
 }
 
-export function TodayOpsStrip({ todayGroup, pendingSettlementCount }: TodayOpsStripProps) {
+export function TodayOpsStrip({
+  todayGroup,
+  pendingSettlementCount,
+  onPressSettlement,
+}: TodayOpsStripProps) {
   // 오늘 근무가 없으면 스트립 자체를 숨긴다 — 당일 운영 요약이 목적
   if (!todayGroup) {
     return null;
@@ -32,7 +38,10 @@ export function TodayOpsStrip({ todayGroup, pendingSettlementCount }: TodayOpsSt
   const a11yParts = [
     `오늘 확정 ${total}명 중 ${attended}명 출근`,
     noShow > 0 ? `노쇼 ${noShow}명` : null,
-    pendingSettlementCount > 0 ? `정산 대기 ${pendingSettlementCount}건` : null,
+    // 배지가 버튼일 땐 버튼 자체 라벨이 낭독하므로 요약에서 제외 (TalkBack 이중 낭독 방지)
+    pendingSettlementCount > 0 && !onPressSettlement
+      ? `정산 대기 ${pendingSettlementCount}건`
+      : null,
   ].filter(Boolean);
 
   return (
@@ -60,11 +69,25 @@ export function TodayOpsStrip({ todayGroup, pendingSettlementCount }: TodayOpsSt
       ) : null}
 
       {pendingSettlementCount > 0 ? (
-        <View className="rounded-sm bg-warning-100 px-2 py-0.5 dark:bg-warning-900/30">
-          <Text className="text-xs font-sans-medium text-warning-700 dark:text-warning-300">
-            정산 대기 {pendingSettlementCount}건
-          </Text>
-        </View>
+        onPressSettlement ? (
+          <Pressable
+            onPress={onPressSettlement}
+            accessibilityRole="button"
+            accessibilityLabel={`정산 대기 ${pendingSettlementCount}건, 정산 탭으로 이동`}
+            hitSlop={8}
+            className="rounded-sm bg-warning-100 px-2 py-0.5 active:opacity-70 dark:bg-warning-900/30"
+          >
+            <Text className="text-xs font-sans-medium text-warning-700 dark:text-warning-300">
+              정산 대기 {pendingSettlementCount}건
+            </Text>
+          </Pressable>
+        ) : (
+          <View className="rounded-sm bg-warning-100 px-2 py-0.5 dark:bg-warning-900/30">
+            <Text className="text-xs font-sans-medium text-warning-700 dark:text-warning-300">
+              정산 대기 {pendingSettlementCount}건
+            </Text>
+          </View>
+        )
       ) : null}
     </View>
   );
