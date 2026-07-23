@@ -14,7 +14,7 @@ import { View, Text, Pressable, RefreshControl, ScrollView } from 'react-native'
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Redirect } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import {
   addMonths,
   subMonths,
@@ -92,6 +92,7 @@ export default function WeeklyGridScreen() {
   const containersQuery = useVenueContainers(activeWorkspace?.id, { enabled });
   const containers = useMemo(() => containersQuery.data ?? [], [containersQuery.data]);
 
+  const router = useRouter();
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
   const [visibleMonth, setVisibleMonth] = useState<Date>(() => startOfMonth(new Date()));
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
@@ -161,7 +162,31 @@ export default function WeeklyGridScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
-      <StackHeader title="근무표" fallbackHref="/(employer)/workspace" />
+      <StackHeader
+        title="근무표"
+        fallbackHref="/(employer)/workspace"
+        rightAction={
+          hasVenue ? (
+            <Pressable
+              onPress={() =>
+                router.push({
+                  pathname: '/(employer)/venue-settlements',
+                  params: {
+                    venueId: selectedVenueId as string,
+                    month: format(visibleMonth, 'yyyy-MM'),
+                  },
+                })
+              }
+              accessibilityRole="button"
+              accessibilityLabel="지점 정산 보기"
+              hitSlop={10}
+              className="min-h-[44px] justify-center px-2"
+            >
+              <Text className="text-base font-sans-medium text-primary-500">정산</Text>
+            </Pressable>
+          ) : undefined
+        }
+      />
 
       {/* 운영처 선택기(unit 5) */}
       <VenueSelector

@@ -11,3 +11,4 @@ export { useUpdateSlot, type UpdateSlotVars } from './useUpdateSlot';
 export { useDeleteSlot } from './useDeleteSlot';
 export { useCreateVenueContainer } from './useCreateVenueContainer';
 export { useEnsureDefaultVenue, type EnsureDefaultVenueInput } from './useEnsureDefaultVenue';
+export { useVenueSettlement, monthToRange } from './useVenueSettlement';
