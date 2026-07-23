@@ -54,7 +54,7 @@ export const RoleCheckbox = memo(function RoleCheckbox({
 
       {isFilled && (
         <Badge variant="default" size="sm" className="ml-1">
-          마감
+          마감 · 대기 지원 가능
         </Badge>
       )}
     </Pressable>

@@ -354,7 +354,8 @@ describe('AssignmentSelector', () => {
       ]);
       const { getByText, getByRole } = renderSelector({ filledCounts });
       expect(getByText(/\(5\/5\)/)).toBeTruthy(); // 분자 = 날짜별 max (합 6 아님)
-      expect(getByText('마감')).toBeTruthy();
+      // 마감 뱃지 문구 확장(사용자 결정 2026-07-24): '마감' → '마감 · 대기 지원 가능'
+      expect(getByText('마감 · 대기 지원 가능')).toBeTruthy();
       const checkbox = getByRole('checkbox');
       expect(checkbox.props.accessibilityState.disabled).toBe(false); // 대기 지원 허용
     });
@@ -366,7 +367,7 @@ describe('AssignmentSelector', () => {
       ]);
       const { getByText, queryByText } = renderSelector({ filledCounts });
       expect(getByText(/\(2\/5\)/)).toBeTruthy();
-      expect(queryByText('마감')).toBeNull();
+      expect(queryByText('마감 · 대기 지원 가능')).toBeNull();
     });
 
     it('filledCounts 미주입 시 기존 동작(0/N) 완전 보존', () => {
