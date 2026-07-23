@@ -3,33 +3,13 @@ import React, { useMemo } from 'react';
 import { Text, View } from 'react-native';
 import { getAssignmentRoles } from '@/types/assignment';
 import { getRoleDisplayName } from '@/types/unified';
-import { toDate } from '@/utils/date';
+import { formatDateWithWeekday } from '@/utils/formatters';
 import type { Assignment } from '@/types';
 import { BriefcaseIcon, CalendarIcon, ClockIcon } from '@/components/icons';
 
 export interface ApplicantProfileAssignmentsProps {
   assignments: Assignment[];
 }
-
-const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'] as const;
-
-const formatDate = (dateStr?: string): string => {
-  if (!dateStr) {
-    return '';
-  }
-
-  const date = toDate(dateStr);
-  if (!date) {
-    return dateStr;
-  }
-
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const weekday = WEEKDAY_LABELS[date.getDay()];
-
-  return `${year}.${month}.${day}(${weekday})`;
-};
 
 export const ApplicantProfileAssignments = React.memo(function ApplicantProfileAssignments({
   assignments,
@@ -58,7 +38,7 @@ export const ApplicantProfileAssignments = React.memo(function ApplicantProfileA
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([date, slots]) => ({
         date,
-        formattedDate: formatDate(date),
+        formattedDate: formatDateWithWeekday(date),
         slots,
       }));
   }, [assignments]);

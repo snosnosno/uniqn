@@ -4,6 +4,7 @@ import {
 } from '@/types/notification';
 import type { NotificationData, NotificationType } from '@/types/notification';
 import type { NotificationPayload } from '../pushNotificationService';
+import { formatNumber } from '@/utils/formatters';
 
 type LocalizedNotificationMessage = Pick<NotificationData, 'title' | 'body'>;
 
@@ -115,7 +116,7 @@ function getAmountLabel(data: Record<string, string> | undefined): string {
   }
 
   const parsedAmount = Number(rawAmount.replaceAll(',', ''));
-  return Number.isFinite(parsedAmount) ? parsedAmount.toLocaleString('ko-KR') : rawAmount;
+  return Number.isFinite(parsedAmount) ? formatNumber(parsedAmount) : rawAmount;
 }
 
 function getStaffName(data: Record<string, string> | undefined): string {

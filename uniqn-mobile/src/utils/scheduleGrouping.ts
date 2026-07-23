@@ -8,6 +8,7 @@
 
 import { getRoleDisplayName } from '@/types/unified';
 import { STATUS } from '@/constants';
+import { WEEKDAYS_KO } from '@/constants/weekdays';
 import { areAllDatesConsecutive, parseDateString } from '@/utils/date';
 import type { ScheduleEvent, GroupedScheduleEvent, DateStatus, ScheduleType } from '@/types';
 
@@ -34,7 +35,7 @@ export interface GroupScheduleOptions {
  * 날짜 문자열을 Date 객체로 변환
  * iOS 타임존 이슈 방지를 위해 직접 파싱
  */
-const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
+const WEEKDAYS = WEEKDAYS_KO;
 
 /**
  * 날짜 배열이 연속인지 확인

@@ -1,8 +1,7 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React from 'react';
 import { Text, View } from 'react-native';
-import { formatBirthDate } from '@/utils/formatters';
-import { toDate } from '@/utils/date';
+import { formatBirthDate, formatDateWithWeekday } from '@/utils/formatters';
 import { formatE164ToDisplay } from '@/utils/phone';
 import type { UserProfile } from '@/services';
 import {
@@ -22,24 +21,8 @@ const GENDER_LABELS: Record<string, string> = {
   other: '기타',
 };
 
-const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'] as const;
-
 export function formatProfileDate(dateStr?: string): string {
-  if (!dateStr) {
-    return '';
-  }
-
-  const date = toDate(dateStr);
-  if (!date) {
-    return dateStr;
-  }
-
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const weekday = WEEKDAY_LABELS[date.getDay()];
-
-  return `${year}.${month}.${day}(${weekday})`;
+  return formatDateWithWeekday(dateStr);
 }
 
 interface InfoRowProps {
