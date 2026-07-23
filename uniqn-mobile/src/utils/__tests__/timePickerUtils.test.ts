@@ -1,44 +1,34 @@
 /**
- * timePickerUtils — 휠 피커 스냅 판정 테스트
+ * timePickerUtils — 휠 피커 스냅 인덱스 테스트
  *
- * resolveSnap 핵심(2026-07-22 Android 실기기 프리징 수정): 스크롤 종료 오프셋이 이미
- * 스냅 위치면 needsScroll=false — programmatic scrollTo(animated)가 onMomentumScrollEnd를
- * 재발화시켜 핸들러가 스스로를 무한 재호출(휠 터치 먹통)하는 재진입 고리를 끊는다.
+ * snapIndex는 **선택 인덱스만** 계산한다(2026-07-22 Android 프리징 2회차 수정).
+ * 호출부가 이 값으로 scrollTo를 하면 momentum 재발화 → 재-scrollTo 무한 재진입으로
+ * 휠이 먹통이 되므로, 재스크롤 여부라는 개념 자체를 없앴다 — snapToInterval이 OS 레벨에서
+ * 이미 정렬한다. (1회차 ±0.5dp 정렬 가드는 dp↔px 반올림 오차로 무력화돼 실패했다.)
  */
-import { generateHours, generateMinutes, normalizeMinute, resolveSnap } from '../timePickerUtils';
+import { generateHours, generateMinutes, normalizeMinute, snapIndex } from '../timePickerUtils';
 
 const ITEM_HEIGHT = 44;
 
-describe('resolveSnap', () => {
-  it('정렬된 오프셋이면 재스크롤이 필요 없다 (프리징 재진입 고리 차단)', () => {
-    expect(resolveSnap(0, 24, ITEM_HEIGHT)).toEqual({ index: 0, needsScroll: false });
-    expect(resolveSnap(3 * ITEM_HEIGHT, 24, ITEM_HEIGHT)).toEqual({ index: 3, needsScroll: false });
+describe('snapIndex', () => {
+  it('정렬된 오프셋은 그 인덱스를 그대로 준다', () => {
+    expect(snapIndex(0, 24, ITEM_HEIGHT)).toBe(0);
+    expect(snapIndex(3 * ITEM_HEIGHT, 24, ITEM_HEIGHT)).toBe(3);
   });
 
-  it('서브픽셀 오차(±0.5 이내)는 정렬로 간주한다', () => {
-    expect(resolveSnap(3 * ITEM_HEIGHT + 0.3, 24, ITEM_HEIGHT)).toEqual({
-      index: 3,
-      needsScroll: false,
-    });
+  it('서브픽셀 오차가 있어도 같은 인덱스로 떨어진다 (dp↔px 반올림 내성)', () => {
+    expect(snapIndex(3 * ITEM_HEIGHT + 0.3, 24, ITEM_HEIGHT)).toBe(3);
+    expect(snapIndex(3 * ITEM_HEIGHT - 2, 24, ITEM_HEIGHT)).toBe(3);
   });
 
-  it('중간 오프셋은 가장 가까운 인덱스로 스냅하고 재스크롤을 요구한다', () => {
-    expect(resolveSnap(3 * ITEM_HEIGHT + 20, 24, ITEM_HEIGHT)).toEqual({
-      index: 3,
-      needsScroll: true,
-    });
-    expect(resolveSnap(3 * ITEM_HEIGHT + 30, 24, ITEM_HEIGHT)).toEqual({
-      index: 4,
-      needsScroll: true,
-    });
+  it('중간 오프셋은 가장 가까운 인덱스로 반올림한다', () => {
+    expect(snapIndex(3 * ITEM_HEIGHT + 20, 24, ITEM_HEIGHT)).toBe(3);
+    expect(snapIndex(3 * ITEM_HEIGHT + 30, 24, ITEM_HEIGHT)).toBe(4);
   });
 
   it('범위 밖 오프셋(오버스크롤)은 경계 인덱스로 클램프한다', () => {
-    expect(resolveSnap(-30, 24, ITEM_HEIGHT)).toEqual({ index: 0, needsScroll: true });
-    expect(resolveSnap(999 * ITEM_HEIGHT, 24, ITEM_HEIGHT)).toEqual({
-      index: 23,
-      needsScroll: true,
-    });
+    expect(snapIndex(-30, 24, ITEM_HEIGHT)).toBe(0);
+    expect(snapIndex(999 * ITEM_HEIGHT, 24, ITEM_HEIGHT)).toBe(23);
   });
 });
 
