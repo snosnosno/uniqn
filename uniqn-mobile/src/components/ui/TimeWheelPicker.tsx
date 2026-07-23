@@ -30,7 +30,7 @@ import {
   generateHours,
   generateMinutes,
   normalizeMinute as normalizeMinuteUtil,
-  resolveSnap,
+  snapIndex,
 } from '@/utils/timePickerUtils';
 
 // ============================================================================
@@ -117,10 +117,13 @@ function WebTimePicker({
   const hourListRef = useRef<FlatList>(null);
   const minuteListRef = useRef<FlatList>(null);
 
+  // 네이티브 경로와 동일 이유로 원시값 의존 — 호출부의 매 렌더 새 `value` 객체가
+  // 사용자의 선택을 되돌리지 않게 한다.
+  const { hour: valueHour, minute: valueMinute } = value;
   useEffect(() => {
-    setSelectedHour(value.hour);
-    setSelectedMinute(normalizeMinuteUtil(value.minute, minuteInterval!));
-  }, [value, minuteInterval]);
+    setSelectedHour(valueHour);
+    setSelectedMinute(normalizeMinuteUtil(valueMinute, minuteInterval!));
+  }, [valueHour, valueMinute, minuteInterval]);
 
   // 시간/분 배열 (공유 유틸리티 사용)
   const hours = useMemo(() => generateHours(minHour!, maxHour!), [minHour, maxHour]);
@@ -348,13 +351,17 @@ function NativeWheelPicker({
     [minuteInterval]
   );
 
-  // 초기 스크롤 위치 설정
+  // 초기 스크롤 위치 설정.
+  // 의존성은 `value` 객체가 아니라 **원시값(hour/minute)** 이다 — 호출부가 매 렌더
+  // `toTimeValue(...)` 로 새 객체를 만들기 때문에 참조를 의존하면 부모가 리렌더될 때마다
+  // 이 effect 가 재실행돼 사용자가 돌려놓은 휠을 원위치로 되돌린다(같은 "안 움직인다" 증상).
+  const { hour: valueHour, minute: valueMinute } = value;
   useEffect(() => {
-    const hourIndex = value.hour - minHour!;
-    const normalizedMinute = normalizeMinute(value.minute);
+    const hourIndex = valueHour - minHour!;
+    const normalizedMinute = normalizeMinute(valueMinute);
     const minuteIndex = normalizedMinute / minuteInterval!;
 
-    setSelectedHour(value.hour);
+    setSelectedHour(valueHour);
     setSelectedMinute(normalizedMinute);
 
     const timeoutId = setTimeout(() => {
@@ -369,36 +376,24 @@ function NativeWheelPicker({
     }, 50);
 
     return () => clearTimeout(timeoutId);
-  }, [value, minHour, minuteInterval, normalizeMinute]);
+  }, [valueHour, valueMinute, minHour, minuteInterval, normalizeMinute]);
 
-  // 시간 스크롤 종료 핸들러 — 이미 정렬된 오프셋이면 재스크롤 금지(resolveSnap 가드).
-  // Android에서 scrollTo(animated)가 onMomentumScrollEnd를 재발화시켜 같은 위치로
-  // 재-scrollTo하는 무한 재진입(휠 한 번 돌리면 터치 먹통, 2026-07-22 실기기)을 차단한다.
+  // 스크롤 종료 핸들러 — **선택값만 갱신하고 scrollTo 는 하지 않는다.**
+  // snapToInterval 이 이미 OS 레벨에서 정렬하므로 프로그래매틱 스크롤은 중복이고,
+  // 그 중복이 momentum 재발화 → 재-scrollTo 무한 재진입을 만들어 휠을 먹통으로 만든다
+  // (2026-07-22 Android 실기기 — snapIndex docblock의 인과사슬 참조).
   const handleHourScrollEnd = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const offsetY = event.nativeEvent.contentOffset.y;
-      const { index, needsScroll } = resolveSnap(offsetY, hours.length, ITEM_HEIGHT);
+      const index = snapIndex(event.nativeEvent.contentOffset.y, hours.length, ITEM_HEIGHT);
       setSelectedHour(minHour! + index);
-      if (!needsScroll) return;
-      hourScrollRef.current?.scrollTo({
-        y: index * ITEM_HEIGHT,
-        animated: true,
-      });
     },
     [minHour, hours.length]
   );
 
-  // 분 스크롤 종료 핸들러 — 시간 휠과 동일한 재진입 가드
   const handleMinuteScrollEnd = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const offsetY = event.nativeEvent.contentOffset.y;
-      const { index, needsScroll } = resolveSnap(offsetY, minutes.length, ITEM_HEIGHT);
+      const index = snapIndex(event.nativeEvent.contentOffset.y, minutes.length, ITEM_HEIGHT);
       setSelectedMinute(index * minuteInterval!);
-      if (!needsScroll) return;
-      minuteScrollRef.current?.scrollTo({
-        y: index * ITEM_HEIGHT,
-        animated: true,
-      });
     },
     [minutes.length, minuteInterval]
   );
