@@ -36,3 +36,5 @@ export { OpsSummaryStrip } from './OpsSummaryStrip';
 // 2부 리디자인(Task 3) — 상시 클럭 스트립 + 제어 시트(L1)
 export { OpsClockStrip } from './OpsClockStrip';
 export { OpsClockControlSheet } from './OpsClockControlSheet';
+// 2부 리디자인(Task 4) — 현황 탭 콘텐츠(L2, 클럭 제외)
+export { OpsStatusTab } from './OpsStatusTab';
