@@ -29,6 +29,8 @@ export { PayoutLedger } from './PayoutLedger';
 export { PrizeCorrectSheet } from './PrizeCorrectSheet';
 // 1f(T10) — PLAYERS 탭 추출
 export { PlayersTab } from './PlayersTab';
+// 2부 리디자인(Task 7) — 참가·좌석 공용 액션시트(L5·L6)
+export { OpsParticipantActionSheet } from './OpsParticipantActionSheet';
 // 1f(T12) — 종료 결과 뷰(§7.3)
 export { TournamentResultCard } from './TournamentResultCard';
 // 2부 리디자인(Task 2) — 상시 한 줄 요약 스트립(L1)

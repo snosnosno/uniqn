@@ -9,6 +9,7 @@ import { render, fireEvent } from '@testing-library/react-native';
 import React from 'react';
 import { TablesTab } from '../TablesTab';
 import {
+  useOpsTournament,
   useOpsTables,
   useOpsSeats,
   useOpsParticipants,
@@ -26,6 +27,8 @@ import type { OpsTable, OpsStaff } from '@/types/ops';
 jest.mock('@/components/ui', () => {
   const { View, Text, Pressable } = require('react-native');
   return {
+    // OpsParticipantActionSheet 가 소비 — 자식 통과 스텁(좌석 진입 액션시트 배선).
+    SheetModal: ({ visible, children }: any) => (visible ? <View>{children}</View> : null),
     SelectBottomSheet: ({ visible, title, options, onSelect, onClose }: any) =>
       visible ? (
         <View>
@@ -63,6 +66,7 @@ jest.mock('../DealerPickerSheet', () => {
 });
 
 jest.mock('@/hooks/ops', () => ({
+  useOpsTournament: jest.fn(),
   useOpsTables: jest.fn(),
   useOpsSeats: jest.fn(),
   useOpsParticipants: jest.fn(),
@@ -74,8 +78,15 @@ jest.mock('@/hooks/ops', () => ({
   useAssignSeat: jest.fn(),
   useMoveSeat: jest.fn(),
   useFreeSeat: jest.fn(),
+  // 좌석 진입 액션시트(OpsParticipantActionSheet)가 호출하는 mutation 훅 — 렌더 시 undefined 방지.
+  useAddRebuy: jest.fn(() => ({ mutate: jest.fn() })),
+  useAddAddon: jest.fn(() => ({ mutate: jest.fn() })),
+  useBustParticipant: jest.fn(() => ({ mutate: jest.fn() })),
+  useReenterParticipant: jest.fn(() => ({ mutate: jest.fn() })),
+  useUndoBust: jest.fn(() => ({ mutate: jest.fn() })),
 }));
 
+const mockUseOpsTournament = useOpsTournament as unknown as jest.Mock;
 const mockUseOpsTables = useOpsTables as unknown as jest.Mock;
 const mockUseOpsSeats = useOpsSeats as unknown as jest.Mock;
 const mockUseOpsParticipants = useOpsParticipants as unknown as jest.Mock;
@@ -119,6 +130,9 @@ const ROSTER: OpsStaff[] = [
 
 function setupHooks(tableOverrides?: Partial<OpsTable>): OpsTable {
   const table = { ...TABLE, ...tableOverrides };
+  mockUseOpsTournament.mockReturnValue({
+    tournament: { id: 'trn1', status: 'active', bountyCost: null },
+  });
   mockUseOpsTables.mockReturnValue({ tables: [table], isLoading: false });
   mockUseOpsSeats.mockReturnValue({ seats: [] });
   mockUseOpsParticipants.mockReturnValue({ participants: [] });

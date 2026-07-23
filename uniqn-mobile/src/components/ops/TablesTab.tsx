@@ -10,6 +10,7 @@ import { View, Text, Pressable, ScrollView } from 'react-native';
 import { AppFlashList } from '@/components/ui/AppFlashList';
 import { SelectBottomSheet } from '@/components/ui';
 import {
+  useOpsTournament,
   useOpsTables,
   useOpsSeats,
   useOpsParticipants,
@@ -20,14 +21,20 @@ import {
   useCloseTable,
   useAssignSeat,
   useMoveSeat,
-  useFreeSeat,
 } from '@/hooks/ops';
-import type { OpsTable, OpsSeat, OpsTableLockType, OpsTableStatus } from '@/types/ops';
+import type {
+  OpsParticipant,
+  OpsTable,
+  OpsSeat,
+  OpsTableLockType,
+  OpsTableStatus,
+} from '@/types/ops';
 import { AddTableForm, type AddTableInput } from './AddTableForm';
 import { SeatGrid } from './SeatGrid';
 import { TableRow, FALLBACK_DEALER_NAME } from './TableRow';
 import { RedrawModal } from './RedrawModal';
 import { DealerPickerSheet } from './DealerPickerSheet';
+import { OpsParticipantActionSheet } from './OpsParticipantActionSheet';
 
 const LOCK_LABEL: Record<OpsTableLockType, string> = {
   none: '없음',
@@ -54,6 +61,8 @@ interface TablesTabProps {
 }
 
 export function TablesTab({ tournamentId }: TablesTabProps) {
+  // 좌석 진입 액션시트가 요구하는 대회 객체(status·bountyCost·id). [id].tsx 배선 최소화를 위해 내부 조회.
+  const { tournament } = useOpsTournament(tournamentId);
   const { tables, isLoading } = useOpsTables(tournamentId);
   const { seats } = useOpsSeats(tournamentId);
   const { participants } = useOpsParticipants(tournamentId);
@@ -65,7 +74,6 @@ export function TablesTab({ tournamentId }: TablesTabProps) {
   const statusMut = useCloseTable(tournamentId);
   const assignMut = useAssignSeat(tournamentId);
   const moveMut = useMoveSeat(tournamentId);
-  const freeMut = useFreeSeat(tournamentId);
 
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -74,7 +82,9 @@ export function TablesTab({ tournamentId }: TablesTabProps) {
   const [redrawMode, setRedrawMode] = useState<'waitlist_fill' | 'random_draw' | 'chip_draft'>(
     'waitlist_fill'
   );
-  const [seatMenuSeat, setSeatMenuSeat] = useState<OpsSeat | null>(null);
+  // 점유 좌석 탭 → 공용 액션시트(seat 컨텍스트). 좌석 참가자·좌석을 함께 보관.
+  const [sheetParticipant, setSheetParticipant] = useState<OpsParticipant | null>(null);
+  const [sheetSeat, setSheetSeat] = useState<OpsSeat | null>(null);
   const [assignTargetSeat, setAssignTargetSeat] = useState<OpsSeat | null>(null);
   const [moveFromSeat, setMoveFromSeat] = useState<OpsSeat | null>(null);
   const [lockPickerOpen, setLockPickerOpen] = useState(false);
@@ -107,6 +117,7 @@ export function TablesTab({ tournamentId }: TablesTabProps) {
   };
 
   const onSeatPress = (seat: OpsSeat) => {
+    // moveMode 진행 중이면 기존 이동 로직 우선(C2 등가 유지).
     if (moveFromSeat) {
       if (!seat.participantId && seat.id !== moveFromSeat.id) {
         moveMut.mutate({ fromSeatId: moveFromSeat.id, toSeatId: seat.id });
@@ -114,8 +125,15 @@ export function TablesTab({ tournamentId }: TablesTabProps) {
       }
       return;
     }
-    if (seat.participantId) setSeatMenuSeat(seat);
-    else setAssignTargetSeat(seat);
+    // 점유 좌석 → 참가자를 찾아 공용 액션시트(seat 컨텍스트) open. 빈 좌석 → 배정(기존 로직).
+    if (seat.participantId) {
+      const occupant = participants.find((p) => p.id === seat.participantId);
+      if (!occupant) return;
+      setSheetParticipant(occupant);
+      setSheetSeat(seat);
+    } else {
+      setAssignTargetSeat(seat);
+    }
   };
 
   const submitAddTable = (input: AddTableInput) => {
@@ -125,23 +143,20 @@ export function TablesTab({ tournamentId }: TablesTabProps) {
   // 시트(목록/상세 양쪽에서 동일하게 렌더 — 상태가 falsy 면 미표시).
   const sheets = (
     <>
-      <SelectBottomSheet
-        visible={!!seatMenuSeat}
-        onClose={() => setSeatMenuSeat(null)}
-        title={
-          seatMenuSeat?.participantId ? participantNameById.get(seatMenuSeat.participantId) : '좌석'
-        }
-        options={[
-          { label: '이동', value: 'move' },
-          { label: '비우기', value: 'free', destructive: true },
-        ]}
-        onSelect={(v) => {
-          const seat = seatMenuSeat;
-          if (!seat) return;
-          if (v === 'move') setMoveFromSeat(seat);
-          else if (v === 'free') freeMut.mutate(seat.id);
-        }}
-      />
+      {/* 점유 좌석 액션시트(seat 컨텍스트) — 기존 seatMenu(이동/비우기)를 대체. 리바이/애드온/탈락도 좌석에서 직접(C1·C2). */}
+      {tournament && (
+        <OpsParticipantActionSheet
+          tournament={tournament}
+          participant={sheetParticipant}
+          participants={participants}
+          seat={sheetSeat}
+          onClose={() => {
+            setSheetParticipant(null);
+            setSheetSeat(null);
+          }}
+          onRequestMove={(s) => setMoveFromSeat(s)}
+        />
+      )}
 
       <SelectBottomSheet
         visible={!!assignTargetSeat}

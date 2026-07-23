@@ -56,6 +56,7 @@ export default function OpsTournamentDetailScreen() {
             tournament={tournament}
             participants={participants}
             isLoading={participantsLoading}
+            onOpenPayouts={() => setTab('payouts')}
           />
         );
       case 'tables':
