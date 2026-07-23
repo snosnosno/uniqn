@@ -1,6 +1,7 @@
 import React, { memo, useCallback, useMemo } from 'react';
 import { Text, View } from 'react-native';
 import { buildPostingFacts, createPostingLegacyDateRequirements } from '@/domains/job-posting';
+import { WorkLogCreator } from '@/domains/schedule';
 import { useJobSchedule } from '@/hooks';
 import type { Assignment } from '@/types';
 import { TBA_TIME_MARKER, createSimpleAssignment } from '@/types/assignment';
@@ -12,6 +13,7 @@ import {
   type ScheduleGroup,
   type SelectionKey,
 } from '@/utils/assignment';
+import { sortTimeSlotsByStart } from '@/utils/date';
 import { DateGroupSelection } from './DateGroupSelection';
 import { DateSelection } from './DateSelection';
 import type { AssignmentSelectorProps, TimeOptions } from './types';
@@ -46,9 +48,47 @@ export const AssignmentSelector = memo(function AssignmentSelector({
   maxSelections,
   disabled = false,
   error,
+  filledCounts,
 }: AssignmentSelectorProps) {
   const { datedSchedules, isFixed } = useJobSchedule(jobPosting);
   const postingFacts = useMemo(() => buildPostingFacts(jobPosting), [jobPosting]);
+
+  // hydrate 키 규칙(서버 _posting_slot_key/_posting_role_key 정합 — postingSurfaceModel과 동일)
+  const UNKNOWN_TIME_KEY = '미정';
+  const slotHydrateKey = useCallback(
+    (slot: TimeSlotInfo): string =>
+      slot.isTimeToBeAnnounced
+        ? UNKNOWN_TIME_KEY
+        : WorkLogCreator.extractStartTime(slot.startTime ?? '') || UNKNOWN_TIME_KEY,
+    []
+  );
+  const roleHydrateKey = useCallback(
+    (role: TimeSlotInfo['roles'][number]): string =>
+      role.roleId === 'other' ? `other:${role.customName ?? ''}` : role.roleId,
+    []
+  );
+
+  // 확정 서브맵 주입: dead counter(filledCount=0) 대신 실확정으로 교체(불변 생성).
+  // 슬롯은 표시 정렬(시작시간 순) 동시 적용 — 카드/상세와 같은 순서.
+  const hydratedSchedules = useMemo(() => {
+    return datedSchedules.map((schedule) => ({
+      ...schedule,
+      // sortTimeSlotsByStart 의 SortableTimeSlot.startTime 은 `string?` 이나 TimeSlotInfo 는
+      // `string | null` — null/undefined 간극만 좁히는 표시 정렬용 캐스트(런타임 무영향).
+      timeSlots: sortTimeSlotsByStart(
+        schedule.timeSlots as (TimeSlotInfo & { startTime?: string })[]
+      ).map((slot) => ({
+        ...slot,
+        roles: slot.roles.map((role) => ({
+          ...role,
+          filledCount:
+            filledCounts?.get(
+              `${schedule.date}__${slotHydrateKey(slot)}__${roleHydrateKey(role)}`
+            ) ?? 0,
+        })),
+      })),
+    }));
+  }, [datedSchedules, filledCounts, slotHydrateKey, roleHydrateKey]);
 
   const selectedKeys = useMemo(() => {
     const keys = new Set<SelectionKey>();
@@ -160,8 +200,35 @@ export const AssignmentSelector = memo(function AssignmentSelector({
   );
   const usesGroupedDateRanges = postingFacts.workflow.usesGroupedDateRanges;
   const scheduleGroups = useMemo(() => {
-    return groupDatedSchedules(datedSchedules, groupedRequirements, postingFacts.postingType);
-  }, [datedSchedules, groupedRequirements, postingFacts.postingType]);
+    const groups = groupDatedSchedules(
+      hydratedSchedules,
+      groupedRequirements,
+      postingFacts.postingType
+    );
+    return groups.map((group) => ({
+      ...group,
+      timeSlots: group.timeSlots.map((slot) => ({
+        ...slot,
+        roles: slot.roles.map((role) => ({
+          ...role,
+          // 그룹 표시 분자 = 날짜별 확정의 최대값(하루 기준·C안). 합산 금지.
+          filledCount: group.dates.reduce((max, schedule) => {
+            const daySlot = schedule.timeSlots.find(
+              (s) => slotHydrateKey(s) === slotHydrateKey(slot)
+            );
+            const dayRole = daySlot?.roles.find((r) => roleHydrateKey(r) === roleHydrateKey(role));
+            return Math.max(max, dayRole?.filledCount ?? 0);
+          }, 0),
+        })),
+      })),
+    }));
+  }, [
+    hydratedSchedules,
+    groupedRequirements,
+    postingFacts.postingType,
+    slotHydrateKey,
+    roleHydrateKey,
+  ]);
 
   if (isFixed) {
     return (
@@ -202,7 +269,7 @@ export const AssignmentSelector = memo(function AssignmentSelector({
                 disabled={disabled}
               />
             ))
-          : datedSchedules.map((schedule, index) => (
+          : hydratedSchedules.map((schedule, index) => (
               <DateSelection
                 key={schedule.date || index}
                 date={schedule.date}
