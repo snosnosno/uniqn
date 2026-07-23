@@ -108,7 +108,10 @@ export interface OrderSheetScreenProps {
   scheduleLocked?: boolean;
   /** 연쇄 전환 딤을 호스트로 위임(B1) — 이 화면 밖 형제(StackHeader 등)까지 덮으려면 호스트가
    *  통지를 받아 OrderSheetChainScrim 을 SafeAreaView 레벨에 렌더한다. 제공 시 내부 딤은
-   *  렌더하지 않는다(black/50 이중 적층 방지). */
+   *  렌더하지 않는다(black/50 이중 적층 방지).
+   *  ⚠️ 반드시 안정 콜백(useState setter·useCallback)으로 넘길 것 — inline arrow 를 넘기면
+   *  clearPendingSwap 의존 cleanup effect 가 렌더마다 재실행되어 대기 중 스왑 예약(180ms)이
+   *  조기 취소되고 연쇄가 조용히 죽는다. */
   onChainSwappingChange?: (swapping: boolean) => void;
 }
 
