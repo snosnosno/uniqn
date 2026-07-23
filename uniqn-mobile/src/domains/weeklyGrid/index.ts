@@ -29,6 +29,8 @@ export {
   type VenueContainer,
 } from './venueContainer';
 
+export { getRoleSalaries, findRoleSalary, hasRoleSalary } from './roleSalaries';
+
 export { parseWeeklyGridFlag } from './weeklyGridFlag';
 
 export { buildGridCells, type GridSummaryRow } from './buildGridCells';
