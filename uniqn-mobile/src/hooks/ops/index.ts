@@ -53,3 +53,4 @@ export {
   useSetLevel,
   useAdjustClock,
 } from './useOpsClockMutations';
+export { useOpsConsoleLayout } from './useOpsConsoleLayout';
