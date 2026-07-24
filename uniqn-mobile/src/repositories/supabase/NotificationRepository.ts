@@ -466,6 +466,38 @@ export class SupabaseNotificationRepository implements INotificationRepository {
     }
   }
 
+  async deleteAllByRecipient(
+    userId: string
+  ): Promise<{ deletedCount: number; deletedUnreadCount: number }> {
+    try {
+      // RLS notif_delete(recipient_id = auth.uid())가 본인 행만 허용 —
+      // id 선조회 없이 단일 DELETE로 전체 삭제 후 반환 행으로 카운트 산출
+      const { data, error } = await supabase
+        .from(TABLES.NOTIFICATIONS)
+        .delete()
+        .eq('recipient_id', userId)
+        .select('id, is_read');
+
+      if (error) {
+        handleSupabaseError(error, {
+          operation: '모든 알림 삭제',
+          table: TABLES.NOTIFICATIONS,
+        });
+      }
+
+      const rows = (data ?? []) as { id: string; is_read: boolean }[];
+      const deletedCount = rows.length;
+      const deletedUnreadCount = rows.filter((row) => row.is_read === false).length;
+
+      logger.info('모든 알림 삭제', { userId, deletedCount, deletedUnreadCount });
+      return { deletedCount, deletedUnreadCount };
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      logger.error('모든 알림 삭제 실패', toError(error), { userId });
+      handleSupabaseError(error, { operation: '모든 알림 삭제', table: TABLES.NOTIFICATIONS });
+    }
+  }
+
   // ==========================================================================
   // 설정 (Settings)
   // ==========================================================================
