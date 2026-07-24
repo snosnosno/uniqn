@@ -34,6 +34,9 @@
 --   2026-07-24 staff 지점 단가 조회 RPC(마이그 20260724130000, #6 JIT 급여 후속):
 --     함수 178 = 177 + get_my_venue_role_salaries 1(SECDEF 최소노출 조회 — 본인 work_log 컨테이너 한정).
 --     정책 111 불변(RPC 신설만, RLS 미변경).
+--   2026-07-25 지원 본인인증 게이트(마이그 20260725020000, app_insert RLS 강화):
+--     함수 179 = 178 + is_identity_verified 1(SECDEF, users RLS 우회 헬퍼 — with_check 게이트용).
+--     정책 111 불변(app_insert 는 DROP/CREATE 재정의라 개수 불변, apply_with_capacity_check 도 재정의).
 --
 -- ⚠️ 유지보수 계약: 이후 마이그레이션이 public 함수/정책을 추가·삭제하면
 --   이 기대값을 같은 PR에서 함께 갱신해야 한다. 갱신을 강제당하는 것 자체가
@@ -46,7 +49,7 @@
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=178
+-- PARITY_EXPECT_FUNCS=179
 -- PARITY_EXPECT_POLICIES=111
 -- ============================================================
 BEGIN;
@@ -66,8 +69,8 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  178,
-  'public function count == prod (178 = 176 + venue 급여 RPC 1 + staff 지점 단가 조회 RPC 1, 2026-07-24)');
+  179,
+  'public function count == prod (179 = 178 + is_identity_verified 1(지원 본인인증 게이트), 2026-07-25)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(

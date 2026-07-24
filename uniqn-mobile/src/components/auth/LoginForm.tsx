@@ -4,8 +4,8 @@
  * @version 1.0.0
  */
 
-import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import React, { useRef } from 'react';
+import { View, Text, Pressable, type TextInput } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, router } from 'expo-router';
@@ -58,6 +58,16 @@ export function LoginForm({
   const loading = isLoading || isSubmitting;
   const isDisabled = loading || disabled;
 
+  // 웹/외부 키보드: 비밀번호 필드에서 Enter(onSubmitEditing) 시 폼 제출.
+  // 기존에는 로그인 버튼 onPress 만 제출을 트리거해, 데스크톱 웹 사용자가
+  // Enter 를 눌러도 아무 반응이 없었다(2026-07-25 실측 확인).
+  const passwordRef = useRef<TextInput>(null);
+  const submitOnEnter = () => {
+    if (!isDisabled) {
+      void handleSubmit(onSubmit)();
+    }
+  };
+
   return (
     <View className="w-full flex-col gap-4">
       {/* 이메일 입력 */}
@@ -75,6 +85,9 @@ export function LoginForm({
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
+              returnKeyType="next"
+              blurOnSubmit={false}
+              onSubmitEditing={() => passwordRef.current?.focus()}
               error={errors.email?.message}
               editable={!isDisabled}
             />
@@ -90,12 +103,15 @@ export function LoginForm({
           name="password"
           render={({ field: { onChange, onBlur, value } }) => (
             <Input
+              ref={passwordRef}
               placeholder="비밀번호를 입력하세요"
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
               type="password"
               autoComplete="password"
+              returnKeyType="go"
+              onSubmitEditing={submitOnEnter}
               error={errors.password?.message}
               editable={!isDisabled}
             />
