@@ -1,6 +1,6 @@
 ---
 area: decisions
-updated: 2026-07-16
+updated: 2026-07-19
 status: current
 sources:
   - uniqn-mobile/supabase/tests/ops_player_view_security.test.sql
@@ -8,6 +8,8 @@ sources:
   - memory/pitfall_secdef_search_path_extensions.md
   - memory/pitfall_plpgsql_null_through_regex_fail_open.md
   - PR#195
+  - PR#267
+  - PR#273
 tags: [secdef, security, postgres, plpgsql, grants, supabase]
 ---
 
@@ -35,6 +37,10 @@ plpgsql에서 NULL은 정규식·비교를 **거짓이 아니라 NULL로** 통�
 - `crypt(NULL, hash) = NULL → (NULL <> hash) = NULL` → IF-false → **PIN 없이 바인딩**.
 - 규칙: 보안 게이트는 `IS NULL` 명시 선검사 + 비교는 `IS DISTINCT FROM`. pgTAP에 NULL/빈문자열/공백 회귀 필수.
 - 출처: memory `pitfall_plpgsql_null_through_regex_fail_open`([[wallet-pgtap-caller-binding]] 계열의 캘러 바인딩 하드닝과 같은 세션 맥락).
+- **2회차 실증(PR#267, HIGH)**: 그리드/주문서 RPC에서 `owner_id`가 NULL일 때 소유권 비교가 NULL로 통과 → **라이브 노출**. 같은 규칙(`IS NULL` 선검사)이 2개 도메인에서 독립적으로 뚫린 것이므로, 신규 SECDEF 리뷰의 **고정 체크 항목**으로 취급한다. 상세: [[grid-order-sheet-security-hardening]].
+
+## 재정의(REPLACE)는 별개 문제
+위 3규칙은 함수를 **작성할 때**의 규칙이다. 이미 하드닝된 함수를 `CREATE OR REPLACE`로 재정의하면 DDL에 다시 적지 않은 `search_path`·volatility가 **원본형으로 되돌아가** 규칙 2가 조용히 풀린다 — [[secdef-replace-search-path-loss]](PR#273 실증).
 
 ## 관련
 - [[rls-model]] — SECDEF로 wrap해야 하는 RLS 재귀·anon poison 3함정(본 페이지의 전제)
