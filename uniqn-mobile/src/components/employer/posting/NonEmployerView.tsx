@@ -47,15 +47,16 @@ const CONTENT_BY_STATUS: Partial<Record<'pending' | 'rejected', ViewContent>> = 
 };
 
 export function NonEmployerView() {
-  const { data: application } = useEmployerApplication();
+  const { data: application, dataUpdatedAt } = useEmployerApplication();
   const refreshProfile = useAuthStore((state) => state.refreshProfile);
 
-  // 승인됐는데 이 뷰가 보인다 = 로컬 role 캐시가 stale → 서버 프로필 재조회로 자가 회복
+  // 승인됐는데 이 뷰가 보인다 = 로컬 role 캐시가 stale → 세션+프로필 재조회로 자가 회복.
+  // 탭 화면은 언마운트되지 않으므로 dataUpdatedAt(refetch 성공 시각)으로 재시도 기회 확보
   useEffect(() => {
     if (application?.status === 'approved') {
       void refreshProfile();
     }
-  }, [application?.status, refreshProfile]);
+  }, [application?.status, dataUpdatedAt, refreshProfile]);
   const content =
     (application &&
       (application.status === 'pending' || application.status === 'rejected'
