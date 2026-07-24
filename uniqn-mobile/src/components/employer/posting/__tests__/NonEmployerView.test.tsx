@@ -8,6 +8,12 @@ jest.mock('expo-router', () => ({
   router: { push: jest.fn() },
 }));
 
+const mockRefreshProfile = jest.fn();
+jest.mock('@/stores/authStore', () => ({
+  useAuthStore: (selector: (state: { refreshProfile: jest.Mock }) => unknown) =>
+    selector({ refreshProfile: mockRefreshProfile }),
+}));
+
 const mockUseEmployerApplication = useEmployerApplication as jest.Mock;
 
 const setApplication = (application: { status: string } | null) => {
@@ -15,6 +21,24 @@ const setApplication = (application: { status: string } | null) => {
 };
 
 describe('NonEmployerView', () => {
+  beforeEach(() => {
+    mockRefreshProfile.mockClear();
+  });
+
+  it('approved인데 이 뷰가 보이면 stale role 회복을 위해 refreshProfile을 호출한다', () => {
+    setApplication({ status: 'approved' });
+    render(<NonEmployerView />);
+
+    expect(mockRefreshProfile).toHaveBeenCalledTimes(1);
+  });
+
+  it('approved가 아니면 refreshProfile을 호출하지 않는다', () => {
+    setApplication({ status: 'pending' });
+    render(<NonEmployerView />);
+
+    expect(mockRefreshProfile).not.toHaveBeenCalled();
+  });
+
   it('신청 이력이 없으면 등록 유도 CTA를 보여준다', () => {
     setApplication(null);
     const { getByText } = render(<NonEmployerView />);
