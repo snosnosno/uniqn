@@ -148,7 +148,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
               <View className="flex-row items-center">
                 {colorSwatch ? (
                   <View
-                    className={`mr-1.5 h-3 w-3 rounded-sm ${colorSwatch}`}
+                    className={`mr-1.5 h-3 w-3 rounded-sm border border-divider ${colorSwatch}`}
                     accessibilityElementsHidden
                     importantForAccessibility="no"
                   />

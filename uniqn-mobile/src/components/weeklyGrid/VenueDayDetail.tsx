@@ -139,16 +139,22 @@ export function VenueDayDetail({
   // 소형 리스트 직접 렌더(가상화 없음) — 상위 단일 ScrollView 가 스크롤 담당.
   return (
     <View className="pb-4">
-      {grouped[0]!.staff.map((staff) => (
-        <View key={staff.id} className="mb-3 px-4">
-          <ConfirmedStaffCard
-            staff={staff}
-            onPress={onSlotPress ? handleStaffPress : undefined}
-            onEditTime={onEditTime ? handleStaffEditTime : undefined}
-            showActions={!!onEditTime}
-          />
-        </View>
-      ))}
+      {grouped[0]!.staff.map((staff) => {
+        // 출근 수정은 컨테이너 직속 배치(isContainer)만 지원한다. 공고 스팬 슬롯은
+        // useConfirmedStaff(venueId=컨테이너)로 출퇴근 원본을 해소할 수 없어(다른 job_posting_id)
+        // 버튼을 눌러도 실패하므로 아예 노출하지 않는다 — 그 인원은 공고 스태프 관리에서 수정.
+        const canEditAttendance = !!onEditTime && slotById.get(staff.id)?.isContainer === true;
+        return (
+          <View key={staff.id} className="mb-3 px-4">
+            <ConfirmedStaffCard
+              staff={staff}
+              onPress={onSlotPress ? handleStaffPress : undefined}
+              onEditTime={canEditAttendance ? handleStaffEditTime : undefined}
+              showActions={canEditAttendance}
+            />
+          </View>
+        );
+      })}
     </View>
   );
 }

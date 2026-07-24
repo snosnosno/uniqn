@@ -15,6 +15,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text } from 'react-native';
 import { useRouter } from 'expo-router';
+import { STATUS } from '@/constants';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import {
@@ -113,7 +114,12 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
   // 출근(실기록) 수정(#3) — 근무표 카드의 "시간 수정" → WorkTimeEditor.
   // 컨테이너 확정 스태프(useConfirmedStaff)에서 workLog(출퇴근 시각 포함)를 해소해 프리필한다.
   // get_venue_day_slots RPC 는 출퇴근 시각을 반환하지 않아 슬롯만으로는 프리필이 불가하기 때문.
-  const { grouped: confirmedGroups, updateWorkTime, isUpdatingTime } = useConfirmedStaff(venueId);
+  const {
+    grouped: confirmedGroups,
+    updateWorkTime,
+    isUpdatingTime,
+    isLoading: isConfirmedLoading,
+  } = useConfirmedStaff(venueId);
   const confirmedById = useMemo(() => {
     const map = new Map<string, ConfirmedStaff>();
     for (const group of confirmedGroups) {
@@ -127,14 +133,23 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
     (slot: VenueDaySlot) => {
       const full = confirmedById.get(slot.workLogId);
       if (full?.workLog) {
+        // 정산 완료 건은 서버(updateWorkTimeWithTransaction)가 수정을 거부하므로 진입 전 차단한다
+        // (사유까지 입력한 뒤 거부 토스트를 받는 헛수고 방지 — ConfirmedStaffCard 계약과 정렬).
+        if (full.payrollStatus === STATUS.PAYROLL.COMPLETED) {
+          toastError('정산이 완료된 근무는 시간을 수정할 수 없어요.');
+          return;
+        }
         setTimeEditStaff(full);
+      } else if (isConfirmedLoading) {
+        // 확정 스태프 로딩과 슬롯 렌더 시점 차 — 아직 로딩 중이면 일시 안내(구조적 미지원과 구분).
+        toastError('출퇴근 정보를 불러오는 중이에요. 잠시 후 다시 시도해주세요.');
       } else {
-        // 공고 스팬 배치 등 컨테이너 확정분에 없는 슬롯 — 출퇴근 원본을 못 찾으면 빈 값 덮어쓰기를
-        // 막기 위해 편집을 열지 않고 안내한다(해당 인원은 공고 스태프 관리에서 수정).
+        // 여기 도달 = 컨테이너 확정분에 없는 슬롯. VenueDayDetail 이 isContainer 로 버튼을
+        // 미리 걸러 정상 경로에선 오지 않지만, 방어적으로 안내한다.
         toastError('이 인원의 출퇴근 정보를 불러오지 못했어요. 공고 스태프 관리에서 수정해주세요.');
       }
     },
-    [confirmedById, toastError]
+    [confirmedById, isConfirmedLoading, toastError]
   );
 
   const timeEditWorkLog = useMemo<WorkLog | null>(
