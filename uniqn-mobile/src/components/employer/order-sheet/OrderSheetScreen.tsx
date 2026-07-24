@@ -1104,7 +1104,7 @@ export function OrderSheetScreen({
             onClose={closeSheet}
           />
         )}
-        {/* 조건 시트 — 복장·경력 프리셋. */}
+        {/* 조건 시트 — 복장·조건 프리셋. */}
         {activeSheet === 'conditions' && (
           <ConditionsSheet
             visible

@@ -1,7 +1,8 @@
 /**
  * ConditionsSheet — 조건 시트 (주문서 조건·선택)
  *
- * @description 복장·경력을 프리셋 칩(다중 선택, checkbox 시맨틱) + 항상 노출되는 직접 입력으로
+ * @description 복장·조건(구 경력, 2026-07-25 리네임 — 저장 필드는 experience 유지)을
+ * 프리셋 칩(다중 선택, checkbox 시맨틱) + 항상 노출되는 직접 입력으로
  * 구성한다(2026-07-22 — 구 라디오 단일 선택 + 직접입력 배타 모드 폐기). 확정 값은 선택 프리셋과
  * 커스텀 입력을 ', ' 조인한 **단일 문자열**로 기존 필드(dressCode·experience)에 그대로 실어
  * DB/문서 스키마 변경이 없다. 복원은 ', ' 분해 후 프리셋 매칭, 나머지는 커스텀으로 되돌린다.
@@ -19,8 +20,21 @@ import type { OrderSheetValues } from '@/schemas/orderSheet.schema';
 
 type Conditions = OrderSheetValues['conditions'];
 
-export const DRESS_CODE_PRESETS = ['검정셔츠/슬랙스', '흰셔츠/슬랙스'] as const;
-export const EXPERIENCE_PRESETS = ['TDA 숙지자', '6개월 이상'] as const;
+export const DRESS_CODE_PRESETS = [
+  '검정셔츠/슬랙스',
+  '흰셔츠/슬랙스',
+  '깔끔 단정',
+  '슬리퍼x 모자x',
+  '츄리닝x',
+  '반바지x',
+] as const;
+export const EXPERIENCE_PRESETS = [
+  'TDA 숙지자',
+  '6개월 이상',
+  '경력 1년이상',
+  '서빙가능',
+  '연장근무',
+] as const;
 
 /** zod safeText(50) 상한 — 조인 결과가 넘지 않게 커스텀 입력 길이를 동적으로 죈다 */
 const MAX_JOINED_LENGTH = 50;
@@ -178,7 +192,7 @@ export function ConditionsSheet({ visible, value, onConfirm, onClose }: Conditio
           onChangeCustom={(custom) => setDress((prev) => ({ ...prev, custom }))}
         />
         <PresetPicker
-          label="경력"
+          label="조건"
           presets={EXPERIENCE_PRESETS}
           selected={exp.selected}
           custom={exp.custom}
