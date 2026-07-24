@@ -174,6 +174,48 @@ describe('LoginForm', () => {
   });
 });
 
+describe('LoginForm 웹 Enter 제출', () => {
+  const mockOnSubmit = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('비밀번호 필드에서 Enter(onSubmitEditing) 시 onSubmit 을 호출한다', async () => {
+    mockOnSubmit.mockResolvedValue(undefined);
+
+    const { getByPlaceholderText } = render(<LoginForm {...createDefaultProps(mockOnSubmit)} />);
+
+    // 웹/외부 키보드의 Enter = TextInput submitEditing 이벤트
+    fireEvent(getByPlaceholderText('비밀번호를 입력하세요'), 'submitEditing');
+
+    await waitFor(() => {
+      expect(mockOnSubmit).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        password: 'Password123!',
+      });
+    });
+  });
+
+  it('이메일 필드에서 Enter 시에는 제출하지 않는다 (다음 필드로 이동)', () => {
+    const { getByPlaceholderText } = render(<LoginForm {...createDefaultProps(mockOnSubmit)} />);
+
+    fireEvent(getByPlaceholderText('이메일을 입력하세요'), 'submitEditing');
+
+    expect(mockOnSubmit).not.toHaveBeenCalled();
+  });
+
+  it('로딩 중에는 Enter 제출이 막힌다', () => {
+    const { getByPlaceholderText } = render(
+      <LoginForm {...createDefaultProps(mockOnSubmit)} isLoading={true} />
+    );
+
+    fireEvent(getByPlaceholderText('비밀번호를 입력하세요'), 'submitEditing');
+
+    expect(mockOnSubmit).not.toHaveBeenCalled();
+  });
+});
+
 describe('LoginForm validation', () => {
   const mockOnSubmit = jest.fn();
 
