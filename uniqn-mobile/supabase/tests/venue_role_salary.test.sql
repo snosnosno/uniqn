@@ -6,20 +6,26 @@
 --       (7) '협의(other)' 타입 거부 (8) softTargets 보존
 --       (9) 워크스페이스 멤버(비owner) 허용 (10) 비컨테이너 일반 공고 → VENUE_NOT_FOUND
 --       (11) 없는 엔트리 삭제 멱등(에러 없이 count 불변) (12) p_role 51자 거부
+--       (13) 공고 협업자(collaborator) 허용 (14) admin(app_metadata.role=admin) 허용
 -- 안전: BEGIN/ROLLBACK + 마커 이메일(__sql_fixture_vrs_*@test.local)
 
 BEGIN;
-SELECT plan(14);
+SELECT plan(16);
 
 CREATE TEMP TABLE _t (k text PRIMARY KEY, v text);
 
 -- JWT 주입 헬퍼 — singular+plural 동시 설정(wiki jpc-rls-stale-guc: plural 단독 주입 금지)
-CREATE OR REPLACE FUNCTION t_set_user(p_user_id uuid)
+-- p_app_role 지정 시 plural claims 에 app_metadata.role 을 포함(is_admin() 검증용).
+CREATE OR REPLACE FUNCTION t_set_user(p_user_id uuid, p_app_role text DEFAULT NULL)
 RETURNS void LANGUAGE plpgsql AS $$
+DECLARE
+  v_claims jsonb := jsonb_build_object('sub', p_user_id, 'role', 'authenticated');
 BEGIN
+  IF p_app_role IS NOT NULL THEN
+    v_claims := v_claims || jsonb_build_object('app_metadata', jsonb_build_object('role', p_app_role));
+  END IF;
   PERFORM set_config('request.jwt.claim.sub', p_user_id::text, true);
-  PERFORM set_config('request.jwt.claims',
-    json_build_object('sub', p_user_id, 'role', 'authenticated')::text, true);
+  PERFORM set_config('request.jwt.claims', v_claims::text, true);
 END;
 $$;
 
@@ -28,6 +34,8 @@ DECLARE
   v_owner uuid := gen_random_uuid();
   v_outsider uuid := gen_random_uuid();
   v_member uuid := gen_random_uuid();
+  v_collab uuid := gen_random_uuid();  -- 공고 협업자(비owner·비멤버)
+  v_admin uuid := gen_random_uuid();   -- admin(app_metadata.role=admin, 워크스페이스 무관)
   v_ws uuid := gen_random_uuid();
   v_container uuid;
   v_normal uuid := gen_random_uuid();  -- 비컨테이너 일반 공고
@@ -36,6 +44,8 @@ DECLARE
   v_deny_orphan boolean := false;
   v_reject_other boolean := false;
   v_member_ok boolean := false;
+  v_collab_ok boolean := false;
+  v_admin_ok boolean := false;
   v_not_found boolean := false;
   v_reject_longrole boolean := false;
   v_idem_count int;
@@ -44,12 +54,16 @@ BEGIN
   VALUES
     (v_owner,    '__sql_fixture_vrs_owner@test.local',    'authenticated', 'authenticated', '', '{"role":"employer"}'::jsonb, '{"name":"VRS_OWNER"}'::jsonb, now(), now()),
     (v_outsider, '__sql_fixture_vrs_outsider@test.local', 'authenticated', 'authenticated', '', '{"role":"staff"}'::jsonb,    '{"name":"VRS_OUT"}'::jsonb,   now(), now()),
-    (v_member,   '__sql_fixture_vrs_member@test.local',   'authenticated', 'authenticated', '', '{"role":"employer"}'::jsonb, '{"name":"VRS_MEMBER"}'::jsonb, now(), now());
+    (v_member,   '__sql_fixture_vrs_member@test.local',   'authenticated', 'authenticated', '', '{"role":"employer"}'::jsonb, '{"name":"VRS_MEMBER"}'::jsonb, now(), now()),
+    (v_collab,   '__sql_fixture_vrs_collab@test.local',   'authenticated', 'authenticated', '', '{"role":"staff"}'::jsonb,    '{"name":"VRS_COLLAB"}'::jsonb, now(), now()),
+    (v_admin,    '__sql_fixture_vrs_admin@test.local',    'authenticated', 'authenticated', '', '{"role":"admin"}'::jsonb,    '{"name":"VRS_ADMIN"}'::jsonb,  now(), now());
   INSERT INTO public.users (id, email, name, role, is_active, created_at, updated_at)
   VALUES
     (v_owner,    '__sql_fixture_vrs_owner@test.local',    'VRS_OWNER',  'employer'::user_role, true, now(), now()),
     (v_outsider, '__sql_fixture_vrs_outsider@test.local', 'VRS_OUT',    'staff'::user_role,    true, now(), now()),
-    (v_member,   '__sql_fixture_vrs_member@test.local',   'VRS_MEMBER', 'employer'::user_role, true, now(), now())
+    (v_member,   '__sql_fixture_vrs_member@test.local',   'VRS_MEMBER', 'employer'::user_role, true, now(), now()),
+    (v_collab,   '__sql_fixture_vrs_collab@test.local',   'VRS_COLLAB', 'staff'::user_role,    true, now(), now()),
+    (v_admin,    '__sql_fixture_vrs_admin@test.local',    'VRS_ADMIN',  'admin'::user_role,    true, now(), now())
   ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role;
   INSERT INTO public.workspaces (id, name, owner_id, created_at, updated_at)
   VALUES (v_ws, '__sql_fixture_vrs_ws', v_owner, now(), now());
@@ -99,6 +113,31 @@ BEGIN
     v_member_ok := false;
   END;
   INSERT INTO _t VALUES ('t9_member_ok', v_member_ok::text);
+  PERFORM t_set_user(v_owner);
+
+  -- (13) 공고 협업자(collaborator) 허용 — 예외 없이 통과하면 true
+  -- v_collab 은 owner·워크스페이스 멤버가 아니므로 협업자 분기 단독 검증.
+  INSERT INTO public.job_posting_collaborators (job_posting_id, user_id, added_by)
+  VALUES (v_container, v_collab, v_owner);
+  PERFORM t_set_user(v_collab);
+  BEGIN
+    PERFORM public.set_venue_role_salary(v_container, 'floor', NULL, 'hourly', 18000);
+    v_collab_ok := true;
+  EXCEPTION WHEN others THEN
+    v_collab_ok := false;
+  END;
+  INSERT INTO _t VALUES ('t13_collab_ok', v_collab_ok::text);
+  PERFORM t_set_user(v_owner);
+
+  -- (14) admin(app_metadata.role=admin) 허용 — 워크스페이스 무관·비협업자에서 admin 분기 단독 검증
+  PERFORM t_set_user(v_admin, 'admin');
+  BEGIN
+    PERFORM public.set_venue_role_salary(v_container, 'floor', NULL, 'hourly', 18000);
+    v_admin_ok := true;
+  EXCEPTION WHEN others THEN
+    v_admin_ok := false;
+  END;
+  INSERT INTO _t VALUES ('t14_admin_ok', v_admin_ok::text);
   PERFORM t_set_user(v_owner);
 
   -- (10) 비컨테이너 일반 공고 → VENUE_NOT_FOUND
@@ -164,6 +203,8 @@ SELECT is((SELECT v FROM _t WHERE k = 't9_member_ok'), 'true', '워크스페이�
 SELECT is((SELECT v FROM _t WHERE k = 't10_not_found'), 'true', '비컨테이너 일반 공고는 VENUE_NOT_FOUND');
 SELECT is((SELECT v FROM _t WHERE k = 't11_idem_count'), '1', '없는 엔트리 삭제는 멱등(count 불변)');
 SELECT is((SELECT v FROM _t WHERE k = 't12_reject_longrole'), 'true', 'p_role 51자는 거부된다');
+SELECT is((SELECT v FROM _t WHERE k = 't13_collab_ok'), 'true', '공고 협업자(collaborator)는 허용된다');
+SELECT is((SELECT v FROM _t WHERE k = 't14_admin_ok'), 'true', 'admin(app_metadata.role=admin)은 허용된다');
 
 SELECT * FROM finish();
 ROLLBACK;

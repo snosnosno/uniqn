@@ -3,7 +3,7 @@
  * (expo 웹 그라운딩은 메인 세션이 별도 수행. 여기서는 상태별 분기 렌더만 관찰한다.)
  */
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { act, fireEvent, render } from '@testing-library/react-native';
 import VenueSettlementsScreen from '../venue-settlements';
 import type { SettlementWorkLog } from '@/services/work/settlement/types';
 
@@ -16,8 +16,10 @@ jest.mock('@/hooks/weeklyGrid', () => ({
   useSetVenueRoleSalary: jest.fn(),
 }));
 
+// 저장/refetch 흐름의 토스트 호출을 단언하기 위해 모듈 스코프 목으로 캡처한다.
+const mockAddToast = jest.fn();
 jest.mock('@/stores/toastStore', () => ({
-  useToastStore: () => ({ addToast: jest.fn() }),
+  useToastStore: () => ({ addToast: mockAddToast }),
 }));
 
 jest.mock('@/components/headers', () => {
@@ -71,6 +73,7 @@ const FALLBACK_BADGE = /기본 단가\(시급 15,000원\)로 계산됐어요/;
 
 beforeEach(() => {
   const { useVenueSettlement, useSetVenueRoleSalary } = getMocks();
+  mockAddToast.mockClear();
   useSetVenueRoleSalary.mockReturnValue({ mutateAsync: jest.fn(), isPending: false });
   getParams().mockReturnValue({ venueId: 'v1', month: '2026-07' });
   useVenueSettlement.mockReturnValue({ data: [], isLoading: false, refetch: jest.fn() });
@@ -152,5 +155,43 @@ describe('VenueSettlementsScreen 렌더 스모크', () => {
     const { queryByText } = render(<VenueSettlementsScreen />);
     expect(queryByText(FALLBACK_BADGE)).toBeNull();
     expect(queryByText(/배지를 탭해 단가를 설정하세요/)).toBeNull();
+  });
+
+  it('월 라벨은 leading zero 없이 표시한다 ("07" → "7월")', () => {
+    // 'YYYY-MM' 의 월 부분 선행 0 을 제거해 자연스러운 한글 라벨로 보인다.
+    getParams().mockReturnValue({ venueId: 'v1', month: '2026-07' });
+    getMocks().useVenueSettlement.mockReturnValue({
+      data: [],
+      isLoading: false,
+      refetch: jest.fn(),
+    });
+    const { getByText } = render(<VenueSettlementsScreen />);
+    expect(getByText('2026년 7월')).toBeTruthy();
+  });
+
+  it('단가 저장 성공 후 refetch 가 실패해도 실패 토스트를 띄우지 않는다', async () => {
+    // refetch 실패는 저장 자체의 실패가 아니므로 성공 토스트만 떠야 한다(모순 토스트 방지).
+    const mutateAsync = jest.fn().mockResolvedValue(undefined);
+    const refetch = jest.fn().mockRejectedValue(new Error('network'));
+    getMocks().useSetVenueRoleSalary.mockReturnValue({ mutateAsync, isPending: false });
+    getMocks().useVenueSettlement.mockReturnValue({
+      data: [makeWorkLog({ id: 'wl-fb', jobPostingId: 'v1', salarySource: 'fallback' })],
+      isLoading: false,
+      refetch,
+    });
+    const { getByText, getByLabelText } = render(<VenueSettlementsScreen />);
+    // 배지 탭 → 단가 설정 시트 오픈
+    fireEvent.press(getByLabelText(/기본 단가 적용 — 탭해서 단가 설정/));
+    // 저장 버튼 탭 → mutateAsync 성공 → refetch 실패
+    await act(async () => {
+      fireEvent.press(getByText('단가 저장하고 다시 계산'));
+    });
+    expect(mutateAsync).toHaveBeenCalledTimes(1);
+    expect(refetch).toHaveBeenCalledTimes(1);
+    expect(mockAddToast).toHaveBeenCalledWith({
+      type: 'success',
+      message: '단가를 저장했어요. 정산을 다시 계산합니다.',
+    });
+    expect(mockAddToast).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
   });
 });
