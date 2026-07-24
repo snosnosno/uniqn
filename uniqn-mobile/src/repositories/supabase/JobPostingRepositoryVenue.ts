@@ -22,7 +22,18 @@ import {
   VENUE_CONTAINER_COLUMNS,
   type VenueContainer,
 } from '@/domains/weeklyGrid';
+import type { PostingRoleCatalogEntry, SalaryType } from '@/types';
 import { TABLE, rethrowOrHandle } from './JobPostingRepositoryHelpers';
+
+const SALARY_TYPES: readonly SalaryType[] = ['hourly', 'daily', 'monthly', 'other'];
+
+interface MyVenueRoleSalaryRow {
+  job_posting_id: string;
+  role: string;
+  custom_role: string | null;
+  salary_type: string | null;
+  salary_amount: number | string | null;
+}
 
 /**
  * 운영처명(컨테이너 title) XSS 검증 스키마 (S1).
@@ -63,6 +74,45 @@ export async function getVenueContainerById(id: string): Promise<VenueContainer 
     return data ? parseVenueContainer(data) : null;
   } catch (error) {
     rethrowOrHandle(error, '운영처 컨테이너 단건 조회', { id });
+  }
+}
+
+/**
+ * staff 본인이 배치된 지점 컨테이너들의 역할별 단가표를 배치 조회한다(#6).
+ *
+ * 일반 job_postings SELECT RLS 는 status='container' 를 제외하므로, staff 스케줄 경로는
+ * getVenueContainerById 로 컨테이너를 못 읽는다. SECDEF RPC(get_my_venue_role_salaries)가
+ * "본인이 work_log 를 가진 컨테이너"의 role/customRole/salary 만 반환한다.
+ * 반환: containerId → PostingRoleCatalogEntry[]. 조회 실패는 상위(scheduleService)가 폴백 처리.
+ */
+export async function getMyVenueRoleSalaries(
+  ids: string[]
+): Promise<Map<string, PostingRoleCatalogEntry[]>> {
+  const result = new Map<string, PostingRoleCatalogEntry[]>();
+  if (ids.length === 0) return result;
+  try {
+    const { data, error } = await supabase.rpc('get_my_venue_role_salaries', { p_ids: ids });
+    if (error) {
+      handleSupabaseError(error, { operation: '지점 역할 단가 배치 조회', table: TABLE });
+    }
+    for (const row of (data ?? []) as MyVenueRoleSalaryRow[]) {
+      if (!row?.job_posting_id || !row.role) continue;
+      const list = result.get(row.job_posting_id) ?? [];
+      const salaryType = row.salary_type;
+      const salary =
+        salaryType && (SALARY_TYPES as readonly string[]).includes(salaryType)
+          ? { type: salaryType as SalaryType, amount: Number(row.salary_amount ?? 0) }
+          : undefined;
+      list.push({
+        role: row.role,
+        customRole: row.custom_role ?? undefined,
+        salary,
+      } as PostingRoleCatalogEntry);
+      result.set(row.job_posting_id, list);
+    }
+    return result;
+  } catch (error) {
+    rethrowOrHandle(error, '지점 역할 단가 배치 조회', { count: ids.length });
   }
 }
 

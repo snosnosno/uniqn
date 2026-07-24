@@ -34,6 +34,7 @@ import type {
   CreateJobPostingInput,
   UpdateJobPostingInput,
   TournamentApprovalStatus,
+  PostingRoleCatalogEntry,
 } from '@/types';
 import type {
   IJobPostingRepository,
@@ -362,6 +363,10 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
 
   async getVenueContainerById(id: string): Promise<VenueContainer | null> {
     return venue.getVenueContainerById(id);
+  }
+
+  async getMyVenueRoleSalaries(ids: string[]): Promise<Map<string, PostingRoleCatalogEntry[]>> {
+    return venue.getMyVenueRoleSalaries(ids);
   }
 
   async getOrCreateVenueContainer(

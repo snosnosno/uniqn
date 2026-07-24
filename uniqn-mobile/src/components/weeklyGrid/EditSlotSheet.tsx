@@ -255,7 +255,7 @@ export function EditSlotSheet({
             title={activePickerTitle}
             minHour={0}
             maxHour={23}
-            minuteInterval={30}
+            minuteInterval={15}
             onConfirm={handlePickerConfirm}
             onClose={() => setActivePicker(null)}
             embedded

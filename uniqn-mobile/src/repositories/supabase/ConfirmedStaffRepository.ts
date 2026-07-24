@@ -19,7 +19,11 @@ import { handleSupabaseError, toCamelCase, createRealtimeSubscription } from '@/
 import { parseWorkLogDocuments, parseWorkLogDocument } from '@/schemas';
 import { STATUS } from '@/constants';
 import { resolvePostingAuthority, canManagePosting } from './postingAuthority';
-import { resolveNoShowRevertStatus } from '@/domains/staff';
+import {
+  resolveNoShowRevertStatus,
+  assertWorkTimeReason,
+  appendWorkTimeModification,
+} from '@/domains/staff';
 // work_logs SELECT 화이트리스트·ts 매핑 정본(자체 사본 드리프트 금지).
 import { WORK_LOG_COLUMNS as TABLE_COLUMNS, applyTsPreference } from './workLogColumns';
 import type { UnsubscribeFn } from '@/types/common';
@@ -339,9 +343,27 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
         });
       }
 
-      // 3. 업데이트 데이터 구성
+      // 3. 수정 사유 검증 + 이력 append. modification_history 길이 증가가 DB 트리거
+      // (notify_on_work_log_update)를 발화시켜 스태프에게 "근무 시간 변경" 알림을 보내고,
+      // SettlementDetailModal 이력 섹션에 표시된다. role_change_history 와 동일한 클라 append 패턴.
+      const safeReason = assertWorkTimeReason(context.reason);
+      const newModificationHistory = appendWorkTimeModification(workLog.modificationHistory, {
+        previousStartTime: workLog.checkInTime,
+        previousEndTime: workLog.checkOutTime,
+        newStartTime: context.checkInTime === undefined ? undefined : context.checkInTime,
+        newEndTime: context.checkOutTime === undefined ? undefined : context.checkOutTime,
+        reason: safeReason,
+        modifiedBy: context.actorId,
+        modifiedAt: new Date(),
+      });
+
+      // 4. 업데이트 데이터 구성
+      // settlement_breakdown 리셋: 출퇴근 시각이 바뀌면 기존 정산 계산은 무효다. SettlementRepository
+      // .updateWorkTimeWithTransaction 정본과 정렬해 stale 정산 캐시를 남기지 않는다(read-time 재계산).
       const updateData: Record<string, unknown> = {
         has_time_modification_logs: true,
+        modification_history: newModificationHistory,
+        settlement_breakdown: null,
         updated_at: new Date().toISOString(),
       };
 

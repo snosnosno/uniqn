@@ -26,6 +26,18 @@ jest.mock('@/hooks/weeklyGrid', () => ({
 jest.mock('@/stores/toastStore', () => ({ useToastStore: jest.fn() }));
 jest.mock('@/stores/authStore', () => ({ useUser: jest.fn(() => ({ uid: 'u1' })) }));
 
+// 출근 수정(#3) 경로 훅/에디터 목 — 이 테스트 관심 밖(필요 인원 저장 경로만 검증).
+jest.mock('@/hooks/useConfirmedStaff', () => ({
+  useConfirmedStaff: jest.fn(() => ({
+    grouped: [],
+    updateWorkTime: jest.fn(),
+    isUpdatingTime: false,
+  })),
+}));
+jest.mock('@/components/employer/settlement/WorkTimeEditor', () => ({
+  WorkTimeEditor: () => null,
+}));
+
 // 확인 다이얼로그가 다시 배선되면 잡아내기 위한 목(호출 0 을 단언한다).
 jest.mock('@/utils/confirmAction', () => ({ confirmAction: jest.fn() }));
 

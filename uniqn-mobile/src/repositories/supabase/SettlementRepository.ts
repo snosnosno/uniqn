@@ -28,6 +28,7 @@ import { handleSupabaseError, toCamelCase } from '@/utils/supabase';
 import { parseWorkLogDocument, parseJobPostingDocument } from '@/schemas';
 import { getPostingSettlementContext } from '@/domains/job-posting';
 import { SettlementCalculator } from '@/domains/settlement';
+import { assertWorkTimeReason, appendWorkTimeModification } from '@/domains/staff';
 import {
   getEffectiveSalaryInfoFromRoles,
   getEffectiveAllowances,
@@ -133,11 +134,25 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
         throw new AlreadySettledError();
       }
 
-      // 3. 업데이트 데이터 구성
+      // 3. 수정 사유 검증 + 이력 append (ConfirmedStaffRepository 와 동일 규약).
+      // modification_history 길이 증가가 트리거 발화 → 스태프 "근무 시간 변경" 알림 + 이력 표시.
+      const safeReason = assertWorkTimeReason(context.reason);
+      const newModificationHistory = appendWorkTimeModification(workLog.modificationHistory, {
+        previousStartTime: workLog.checkInTime,
+        previousEndTime: workLog.checkOutTime,
+        newStartTime: context.checkInTime,
+        newEndTime: context.checkOutTime,
+        reason: safeReason,
+        modifiedBy: actorId,
+        modifiedAt: new Date(),
+      });
+
+      // 4. 업데이트 데이터 구성
       const updateData: Record<string, unknown> = {
         updated_at: new Date().toISOString(),
         settlement_breakdown: null, // 시간 수정 시 기존 정산 계산 무효화
         has_time_modification_logs: true,
+        modification_history: newModificationHistory,
       };
 
       if (context.checkInTime !== undefined) {

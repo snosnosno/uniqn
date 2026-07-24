@@ -26,7 +26,8 @@ import {
 } from '@/types/assignment';
 import { parseTimeSlotToDate } from '@/utils/date/ranges';
 import { toDate } from '@/utils/date';
-import { calculateSettlementBreakdown } from '@/utils/settlement';
+import { calculateSettlementBreakdown, DEFAULT_SALARY_INFO } from '@/utils/settlement';
+import type { PostingRoleCatalogEntry } from '@/types';
 
 export interface SchedulePostingContext {
   title: string;
@@ -49,6 +50,34 @@ export function createSchedulePostingContext(posting: JobPosting): SchedulePosti
     ownerName: posting.ownerName,
     description: posting.description,
     settlement: getPostingSettlementContext(posting),
+  };
+}
+
+/**
+ * 지점 컨테이너(근무표 직접배치) → 스케줄 정산 컨텍스트.
+ *
+ * 컨테이너 직속 work_log(job_posting_id = venueId, status='container')는 일반 공고 조회에서
+ * 의도적으로 제외(fail-closed)되므로, staff "내 스케줄" 경로가 이 컨텍스트를 못 얻어 급여가
+ * 항상 기본 단가(15,000원)로 폴백되던 버그(#6)를 복구한다. employer settlementVenueQuery 가
+ * 쓰는 "컨테이너 2차 해소(roleSalaries 주입)"와 동일 규약 — role 매칭 시 지점 단가표가 적용된다.
+ */
+export function createScheduleContainerContext(
+  roleSalaries: PostingRoleCatalogEntry[],
+  title?: string
+): SchedulePostingContext {
+  return {
+    title: title || '이벤트',
+    location: '',
+    settlement: {
+      roles: roleSalaries.map((entry) => ({
+        role: entry.role,
+        customRole: entry.customRole,
+        count: 0,
+        filled: 0,
+        salary: entry.salary,
+      })),
+      defaultSalary: DEFAULT_SALARY_INFO,
+    },
   };
 }
 

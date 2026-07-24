@@ -148,6 +148,8 @@ export function useConfirmedStaff(
   const updateWorkTimeMutation = useMutation({
     mutationFn: updateConfirmedStaffWorkTime,
     onSuccess: () => {
+      // invalidateQueries.staffManagement 가 weeklyGrid.all 까지 무효화하므로(근무표 출근 수정 #3
+      // 후 카드 상태/시간 자동 갱신) 별도 호출은 불필요하다.
       invalidateQueries.staffManagement(jobPostingId);
       addToast({ type: 'success', message: '근무 시간이 수정되었습니다.' });
     },

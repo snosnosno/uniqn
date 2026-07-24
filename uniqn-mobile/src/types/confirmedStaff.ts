@@ -20,6 +20,8 @@ export interface ConfirmedStaff {
   noShowReason?: string;
   noShowAt?: TimeInput;
   timeSlot?: string;
+  /** 배치 색상 태그(근무표 슬롯 색상 토큰). 카드에 색 스와치로 표시(#4). */
+  color?: string;
   checkInTime?: TimeInput;
   checkOutTime?: TimeInput;
   payrollStatus?: PayrollStatus;

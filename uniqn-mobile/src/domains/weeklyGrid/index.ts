@@ -43,6 +43,7 @@ export {
   slotMemoSchema,
   isValidSlotColor,
   assertSlotColor,
+  slotColorSwatchClassName,
   isSafeSlotMemo,
   assertSlotMemo,
   parseSlotStartMinutes,

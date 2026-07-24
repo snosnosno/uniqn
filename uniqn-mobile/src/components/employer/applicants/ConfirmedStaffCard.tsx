@@ -7,6 +7,7 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import { WorkTimeDisplay } from '@/shared/time';
 import { useThemeStore } from '@/stores/themeStore';
 import { getRoleDisplayName } from '@/types/unified';
+import { slotColorSwatchClassName } from '@/domains/weeklyGrid';
 import type { ConfirmedStaff } from '@/types/confirmedStaff';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
@@ -57,6 +58,9 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
     fallbackPhotoURL: staff.staffPhotoURL,
     fallbackPhotoURLBlurhash: staff.staffPhotoURLBlurhash,
   });
+
+  // 배치 색상 태그(#4) — 근무표에서 고른 슬롯 색상을 카드 이름 앞 스와치로 표시.
+  const colorSwatch = slotColorSwatchClassName(staff.color);
 
   const isCheckedIn =
     staff.status === STATUS.WORK_LOG.CHECKED_IN ||
@@ -142,6 +146,13 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
             />
             <View className="flex-1">
               <View className="flex-row items-center">
+                {colorSwatch ? (
+                  <View
+                    className={`mr-1.5 h-3 w-3 rounded-sm border border-divider ${colorSwatch}`}
+                    accessibilityElementsHidden
+                    importantForAccessibility="no"
+                  />
+                ) : null}
                 <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
                   {displayName}
                 </Text>

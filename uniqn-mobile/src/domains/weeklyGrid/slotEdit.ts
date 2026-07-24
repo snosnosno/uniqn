@@ -75,6 +75,19 @@ export function isValidSlotColor(value: unknown): value is SlotColorToken {
   return typeof value === 'string' && SLOT_COLOR_SET.has(value);
 }
 
+const SLOT_COLOR_SWATCH_BY_TOKEN: ReadonlyMap<string, string> = new Map(
+  SLOT_COLOR_CHIPS.map((chip) => [chip.token, chip.swatchClassName])
+);
+
+/**
+ * 색상 토큰 → 정적 배경 className(스태프 카드 색상 태그 렌더용, #4).
+ * 미등록/미설정 토큰은 null — 렌더 측이 스와치를 생략한다. 동적 조합 금지(리터럴 맵 조회).
+ */
+export function slotColorSwatchClassName(token: string | null | undefined): string | null {
+  if (!token) return null;
+  return SLOT_COLOR_SWATCH_BY_TOKEN.get(token) ?? null;
+}
+
 /** 색상 토큰 검증(쓰기 경계). 화이트리스트 외(자유 hex 등)면 ValidationError. */
 export function assertSlotColor(value: string): SlotColorToken {
   if (!isValidSlotColor(value)) {
