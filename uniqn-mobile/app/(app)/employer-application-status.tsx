@@ -5,9 +5,11 @@
  * - loading / no-application / pending / approved / rejected 상태 처리
  */
 
+import { useEffect } from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { useAuthStore } from '@/stores/authStore';
 import { StackHeader } from '@/components/headers';
 import { Button, Card, Loading } from '@/components';
 import { useEmployerApplication } from '@/hooks/auth/useEmployerApplication';
@@ -245,6 +247,14 @@ function RejectedScreen({
 
 export default function EmployerApplicationStatusScreen() {
   const { data: application, isLoading } = useEmployerApplication();
+  const refreshProfile = useAuthStore((state) => state.refreshProfile);
+
+  // 승인 확인 시 로컬 role 캐시를 서버와 동기화 — "공고 관리" 진입 전에 employer 플래그 확보
+  useEffect(() => {
+    if (application?.status === 'approved') {
+      void refreshProfile();
+    }
+  }, [application?.status, refreshProfile]);
 
   if (isLoading) {
     return (

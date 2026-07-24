@@ -7,7 +7,7 @@
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/Button';
 import { TabHeader } from '@/components/headers';
 import { BriefcaseIcon } from '@/components/icons';
 import { useEmployerApplication } from '@/hooks/auth/useEmployerApplication';
+import { useAuthStore } from '@/stores/authStore';
 
 interface ViewContent {
   title: string;
@@ -46,7 +47,16 @@ const CONTENT_BY_STATUS: Partial<Record<'pending' | 'rejected', ViewContent>> = 
 };
 
 export function NonEmployerView() {
-  const { data: application } = useEmployerApplication();
+  const { data: application, dataUpdatedAt } = useEmployerApplication();
+  const refreshProfile = useAuthStore((state) => state.refreshProfile);
+
+  // 승인됐는데 이 뷰가 보인다 = 로컬 role 캐시가 stale → 세션+프로필 재조회로 자가 회복.
+  // 탭 화면은 언마운트되지 않으므로 dataUpdatedAt(refetch 성공 시각)으로 재시도 기회 확보
+  useEffect(() => {
+    if (application?.status === 'approved') {
+      void refreshProfile();
+    }
+  }, [application?.status, dataUpdatedAt, refreshProfile]);
   const content =
     (application &&
       (application.status === 'pending' || application.status === 'rejected'

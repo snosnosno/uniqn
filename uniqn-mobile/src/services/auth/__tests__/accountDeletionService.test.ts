@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 import { BusinessError, ERROR_CODES } from '@/errors';
 import { STATUS } from '@/constants';
 import type { UserProfile } from '@/types';
-import type { DeletionRequest, UserDataExport } from '@/repositories';
+import type { DeletionRequest } from '@/repositories';
 
 const mockGetUser = jest.fn();
 const mockSignInWithPassword = jest.fn();
@@ -13,7 +13,6 @@ const mockSignOut = jest.fn();
 const mockRequestDeletion = jest.fn();
 const mockCancelDeletion = jest.fn();
 const mockGetById = jest.fn();
-const mockGetExportData = jest.fn();
 const mockGetDeletionStatus = jest.fn();
 const mockRequestAppleAuthorization = jest.fn();
 const mockFunctionsInvoke = jest.fn();
@@ -47,7 +46,6 @@ jest.mock('@/repositories', () => ({
     requestDeletion: (...args: unknown[]) => mockRequestDeletion(...args),
     cancelDeletion: (...args: unknown[]) => mockCancelDeletion(...args),
     getById: (...args: unknown[]) => mockGetById(...args),
-    getExportData: (...args: unknown[]) => mockGetExportData(...args),
     getDeletionStatus: (...args: unknown[]) => mockGetDeletionStatus(...args),
   },
 }));
@@ -110,13 +108,6 @@ const mockDeletionRequest: DeletionRequest = {
   status: STATUS.DELETION_REQUEST.PENDING,
 };
 
-const mockExportData: UserDataExport = {
-  profile: mockProfile,
-  applications: [],
-  workLogs: [],
-  exportedAt: new Date().toISOString(),
-};
-
 type AccountDeletionServiceModule = typeof import('../accountDeletionService');
 
 function loadModule(): AccountDeletionServiceModule {
@@ -141,7 +132,6 @@ describe('accountDeletionService', () => {
     mockRequestDeletion.mockResolvedValue(undefined);
     mockCancelDeletion.mockResolvedValue(undefined);
     mockGetById.mockResolvedValue(mockProfile);
-    mockGetExportData.mockResolvedValue(mockExportData);
     mockGetDeletionStatus.mockResolvedValue(mockDeletionRequest);
     mockRequestAppleAuthorization.mockResolvedValue({
       rawNonce: 'raw-nonce',
@@ -282,13 +272,6 @@ describe('accountDeletionService', () => {
     const { cancelAccountDeletion } = loadModule();
     await cancelAccountDeletion('user-123');
     expect(mockCancelDeletion).toHaveBeenCalledWith('user-123');
-  });
-
-  it('exports user data', async () => {
-    const { exportMyData } = loadModule();
-    const result = await exportMyData('user-123');
-    expect(result).toEqual(mockExportData);
-    expect(mockGetExportData).toHaveBeenCalledWith('user-123');
   });
 
   it('gets deletion status', async () => {

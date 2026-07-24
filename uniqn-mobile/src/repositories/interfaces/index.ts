@@ -43,7 +43,6 @@ export type {
   IUserRepository,
   DeletionReason,
   DeletionRequest,
-  UserDataExport,
   EmployerRegistrationInput,
   UserNicknameSearchResult,
 } from './IUserRepository';

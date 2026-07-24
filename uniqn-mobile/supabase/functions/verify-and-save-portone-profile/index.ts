@@ -280,6 +280,11 @@ Deno.serve(async (req: Request) => {
             status: 'active',
             profile_completed: Boolean(trimmedNickname),
             is_active: true,
+            // 동의 플래그 — 앱 내정보 화면(users.*_agreed 조회)의 단일 표시 소스.
+            // non-reverify 는 위에서 termsAgreed/privacyAgreed true 검증을 통과한 상태.
+            terms_agreed: true,
+            privacy_agreed: true,
+            marketing_agreed: marketingAgreed ?? false,
             // 개보법 §17 별도 동의 — signup/social 시점에만 기록
             third_party_agreed: true,
             third_party_agreed_at: now,
@@ -331,18 +336,31 @@ Deno.serve(async (req: Request) => {
     }
 
     // reverify: 기존 동의 유지, user_consents 미변경. signup/social 만 동의 기록.
+    // 스키마 = (user_id, consent_type, version, agreed, agreed_at) 행 단위 원장.
+    // 과거엔 존재하지 않는 컬럼(terms_of_service 등)에 upsert 해 조용히 전건 실패했다 — 2026-07-25 수정.
     if (mode !== 'reverify') {
-      await supabase.from('user_consents').upsert(
-        {
-          user_id: user.id,
-          version: TERMS_VERSION,
-          terms_of_service: true,
-          privacy_policy: true,
-          marketing: marketingAgreed ?? false,
-          agreed_at: now,
-        },
-        { onConflict: 'user_id' }
-      );
+      const consentRows = [
+        { consent_type: 'terms_of_service', agreed: true },
+        { consent_type: 'privacy_policy', agreed: true },
+        { consent_type: 'marketing', agreed: marketingAgreed ?? false },
+      ].map((c) => ({
+        user_id: user.id,
+        consent_type: c.consent_type,
+        version: TERMS_VERSION,
+        agreed: c.agreed,
+        agreed_at: c.agreed ? now : null,
+      }));
+      const { error: consentError } = await supabase
+        .from('user_consents')
+        .upsert(consentRows, { onConflict: 'user_id,consent_type' });
+      if (consentError) {
+        // 동의 원장 기록 실패는 가입 자체를 막지 않되 반드시 가시화 (users.*_agreed 는 이미 저장됨)
+        console.error('[CRITICAL] user_consents upsert failed', {
+          uid: user.id,
+          mode,
+          error: consentError.message,
+        });
+      }
     }
 
     // reverify: role/app_metadata 미변경 — phone 만 갱신
