@@ -66,18 +66,24 @@ describe('buildPostingFacts conditionLabels', () => {
     expect(facts.conditionLabels).toEqual(['복장 검정 셔츠']);
   });
 
-  it('dressCode+experience면 복장·조건 순서로 2개', () => {
+  it('dressCode+experience면 복장·경력 순서로 2개', () => {
     const facts = buildPostingFacts(
       buildPosting({ dressCode: '검정 셔츠', experience: '6개월 이상' })
     );
 
-    expect(facts.conditionLabels).toEqual(['복장 검정 셔츠', '조건 6개월 이상']);
+    expect(facts.conditionLabels).toEqual(['복장 검정 셔츠', '경력 6개월 이상']);
+  });
+
+  it("experience가 이미 '경력'으로 시작하면 접두를 중복하지 않는다", () => {
+    const facts = buildPostingFacts(buildPosting({ experience: '경력 1년이상, 서빙가능' }));
+
+    expect(facts.conditionLabels).toEqual(['경력 1년이상, 서빙가능']);
   });
 
   it('공백 문자열 값은 라벨에서 제외', () => {
     const facts = buildPostingFacts(buildPosting({ dressCode: '  ', experience: '무관' }));
 
-    expect(facts.conditionLabels).toEqual(['조건 무관']);
+    expect(facts.conditionLabels).toEqual(['경력 무관']);
   });
 });
 
@@ -87,7 +93,7 @@ describe('projectCard conditionLabels 전사', () => {
       buildPostingFacts(buildPosting({ dressCode: '정장', experience: '1년 이상' }))
     );
 
-    expect(card.conditionLabels).toEqual(['복장 정장', '조건 1년 이상']);
+    expect(card.conditionLabels).toEqual(['복장 정장', '경력 1년 이상']);
   });
 
   it('조건 없으면 카드 뷰모델도 빈 배열', () => {

@@ -91,7 +91,8 @@ export function buildPostingFacts(posting: JobPosting): PostingFacts {
   const experience = posting.conditions?.experience?.trim();
   const conditionLabels = [
     ...(dressCode ? [`복장 ${dressCode}`] : []),
-    ...(experience ? [`조건 ${experience}`] : []),
+    // '경력 1년이상' 같은 칩은 문구가 이미 '경력'으로 시작 — 이중 접두 방지
+    ...(experience ? [experience.startsWith('경력') ? experience : `경력 ${experience}`] : []),
   ];
   const dateRequirements = getPostingDateRequirements(posting);
   const requiredRolesWithCount = getPostingRequiredRolesWithCount(posting);

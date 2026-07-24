@@ -159,7 +159,7 @@ describe('PostingCardSurface', () => {
     it('항목들이 개별 텍스트로 렌더된다 (전체 조인 문자열 아님)', () => {
       const card: PostingCardViewModel = {
         ...buildBaseCard(),
-        conditionLabels: ['복장 검정 셔츠', '조건 6개월 이상'],
+        conditionLabels: ['복장 검정 셔츠', '경력 6개월 이상'],
       };
 
       const { getByText, queryByText } = render(
@@ -167,9 +167,9 @@ describe('PostingCardSurface', () => {
       );
 
       // 구 렌더(한 덩어리 조인)는 사라져야 한다 — 항목 단위 줄바꿈이 불가능했다
-      expect(queryByText('복장 검정 셔츠 · 조건 6개월 이상')).toBeNull();
+      expect(queryByText('복장 검정 셔츠 · 경력 6개월 이상')).toBeNull();
       expect(getByText(/복장 검정 셔츠/)).toBeTruthy();
-      expect(getByText('조건 6개월 이상')).toBeTruthy();
+      expect(getByText('경력 6개월 이상')).toBeTruthy();
     });
 
     it('복지·세금·조건이 한 메타 블록에 순서대로 모인다', () => {
@@ -224,7 +224,7 @@ describe('PostingCardSurface', () => {
 
       const { queryByText } = render(<PostingCardSurface card={card} onPress={jest.fn()} />);
 
-      expect(queryByText(/복장|조건/)).toBeNull();
+      expect(queryByText(/복장|경력/)).toBeNull();
     });
 
     it('조건은 접근성 라벨에 포함하지 않는다', () => {
