@@ -71,7 +71,6 @@ export type {
   IUserRepository,
   DeletionReason,
   DeletionRequest,
-  UserDataExport,
   UserNicknameSearchResult,
   // Notification
   INotificationRepository,

@@ -16,12 +16,7 @@ import { logger } from '@/utils/logger';
 import { toError, BusinessError, ERROR_CODES, isAppError } from '@/errors';
 import { handleSupabaseError, toSnakeCase, toCamelCase } from '@/utils/supabase';
 import { parseUserDocument } from '@/schemas';
-import type {
-  IUserRepository,
-  DeletionRequest,
-  UserDataExport,
-  UserNicknameSearchResult,
-} from '../interfaces';
+import type { IUserRepository, DeletionRequest, UserNicknameSearchResult } from '../interfaces';
 import type { FirestoreUserProfile, MyDataEditableFields } from '@/types';
 
 // ============================================================================
@@ -414,83 +409,8 @@ export class SupabaseUserRepository implements IUserRepository {
   }
 
   // ==========================================================================
-  // 데이터 내보내기 / 삭제
+  // 삭제
   // ==========================================================================
-
-  async getExportData(userId: string): Promise<UserDataExport> {
-    try {
-      logger.info('데이터 내보내기 조회', { userId });
-
-      // 1. 프로필 조회
-      const profile = await this.getById(userId);
-      if (!profile) {
-        throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-          userMessage: '사용자를 찾을 수 없습니다',
-        });
-      }
-
-      // 2. 지원 내역 + 근무 기록 병렬 조회
-      const [applicationsResult, workLogsResult] = await Promise.all([
-        supabase
-          .from(TABLES.APPLICATIONS)
-          .select('id, job_posting_title, status, created_at')
-          .eq('applicant_id', userId),
-        supabase
-          .from(TABLES.WORK_LOGS)
-          .select('id, date, check_in_ts, check_out_ts')
-          .eq('staff_id', userId),
-      ]);
-
-      if (applicationsResult.error) {
-        handleSupabaseError(applicationsResult.error, {
-          operation: '데이터 내보내기 - 지원 내역',
-          table: TABLES.APPLICATIONS,
-        });
-      }
-
-      if (workLogsResult.error) {
-        handleSupabaseError(workLogsResult.error, {
-          operation: '데이터 내보내기 - 근무 기록',
-          table: TABLES.WORK_LOGS,
-        });
-      }
-
-      const applications = ((applicationsResult.data ?? []) as Record<string, unknown>[]).map(
-        (row) => ({
-          id: row.id as string,
-          jobPostingTitle: (row.job_posting_title as string) ?? '',
-          status: row.status as string,
-          createdAt: (row.created_at as string) ?? '',
-        })
-      );
-
-      const workLogs = ((workLogsResult.data ?? []) as Record<string, unknown>[]).map((row) => ({
-        id: row.id as string,
-        date: (row.date as string) ?? '',
-        checkInAt: (row.check_in_ts as string) ?? undefined,
-        checkOutAt: (row.check_out_ts as string) ?? undefined,
-      }));
-
-      const exportData: UserDataExport = {
-        profile,
-        applications,
-        workLogs,
-        exportedAt: new Date().toISOString(),
-      };
-
-      logger.info('데이터 내보내기 조회 완료', {
-        userId,
-        applicationsCount: applications.length,
-        workLogsCount: workLogs.length,
-      });
-
-      return exportData;
-    } catch (error) {
-      if (isAppError(error)) throw error;
-      logger.error('데이터 내보내기 조회 실패', toError(error), { userId });
-      handleSupabaseError(error, { operation: '데이터 내보내기 조회', table: TABLES.USERS });
-    }
-  }
 
   async permanentlyDeleteWithBatch(userId: string): Promise<void> {
     try {

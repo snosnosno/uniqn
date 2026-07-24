@@ -40,26 +40,6 @@ export interface DeletionRequest {
   status: 'pending' | 'cancelled' | 'completed';
 }
 
-/**
- * 사용자 데이터 내보내기 결과
- */
-export interface UserDataExport {
-  profile: FirestoreUserProfile;
-  applications: {
-    id: string;
-    jobPostingTitle: string;
-    status: string;
-    createdAt: string;
-  }[];
-  workLogs: {
-    id: string;
-    date: string;
-    checkInAt?: string;
-    checkOutAt?: string;
-  }[];
-  exportedAt: string;
-}
-
 export interface EmployerRegistrationInput {
   termsVersion: string;
   liabilityWaiverVersion: string;
@@ -170,15 +150,8 @@ export interface IUserRepository {
   cancelDeletion(userId: string): Promise<void>;
 
   // ==========================================================================
-  // 데이터 내보내기 / 삭제
+  // 삭제
   // ==========================================================================
-
-  /**
-   * 사용자 관련 데이터 내보내기 조회
-   * @param userId - 사용자 ID
-   * @returns 지원 내역, 근무 기록 포함
-   */
-  getExportData(userId: string): Promise<UserDataExport>;
 
   /**
    * 계정 완전 삭제 (배치 처리)
