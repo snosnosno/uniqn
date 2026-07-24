@@ -32,12 +32,14 @@ const mockSyncSignOut = jest.fn();
 const mockTrackLogout = jest.fn();
 const mockSetUserId = jest.fn().mockResolvedValue(undefined);
 const mockGetUser = jest.fn();
+const mockRefreshSession = jest.fn();
 
 jest.mock('@/lib/supabase', () => ({
   supabase: {
     auth: {
       getUser: (...args: unknown[]) => mockGetUser(...args),
       signOut: () => mockSyncSignOut(),
+      refreshSession: () => mockRefreshSession(),
       onAuthStateChange: jest.fn(() => ({ data: { subscription: { unsubscribe: jest.fn() } } })),
     },
   },
@@ -100,6 +102,8 @@ describe('AuthStore', () => {
     mockTrackLogout.mockClear();
     mockSetUserId.mockClear();
     mockGetProtectedAuthFlowKind.mockReturnValue(null);
+    mockRefreshSession.mockReset();
+    mockRefreshSession.mockResolvedValue({ data: {}, error: null });
   });
 
   describe('Initial State', () => {
@@ -328,6 +332,143 @@ describe('AuthStore', () => {
 
       expect(useAuthStore.getState().isInitialized).toBe(true);
       expect(useAuthStore.getState().status).toBe('authenticated');
+    });
+  });
+
+  describe('refreshProfile', () => {
+    const supabaseUser = {
+      id: 'user-1',
+      email: 'user1@example.com',
+      user_metadata: {},
+      app_metadata: {},
+      aud: 'authenticated',
+      created_at: '',
+    };
+
+    const staffProfile = {
+      uid: 'user-1',
+      email: 'user1@example.com',
+      name: 'User One',
+      role: 'staff' as const,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    it('서버 프로필을 재조회해 role 플래그를 갱신한다 (staff → employer)', async () => {
+      act(() => {
+        useAuthStore.getState().setUser(supabaseUser as any);
+        useAuthStore.getState().setProfile(staffProfile);
+      });
+      expect(useAuthStore.getState().isEmployer).toBe(false);
+
+      mockGetUserProfile.mockResolvedValue({ ...staffProfile, role: 'employer' });
+
+      await act(async () => {
+        await useAuthStore.getState().refreshProfile();
+      });
+
+      expect(mockGetUserProfile).toHaveBeenCalledWith('user-1');
+      expect(useAuthStore.getState().profile?.role).toBe('employer');
+      expect(useAuthStore.getState().isEmployer).toBe(true);
+    });
+
+    it('세션(JWT)도 재발급한다 — RLS가 app_metadata.role을 읽으므로', async () => {
+      act(() => {
+        useAuthStore.getState().setUser(supabaseUser as any);
+        useAuthStore.getState().setProfile(staffProfile);
+      });
+      mockGetUserProfile.mockResolvedValue({ ...staffProfile, role: 'employer' });
+
+      await act(async () => {
+        await useAuthStore.getState().refreshProfile();
+      });
+
+      expect(mockRefreshSession).toHaveBeenCalledTimes(1);
+    });
+
+    it('세션 재발급이 실패해도 프로필 갱신은 계속 진행한다', async () => {
+      act(() => {
+        useAuthStore.getState().setUser(supabaseUser as any);
+        useAuthStore.getState().setProfile(staffProfile);
+      });
+      mockRefreshSession.mockRejectedValue(new Error('network'));
+      mockGetUserProfile.mockResolvedValue({ ...staffProfile, role: 'employer' });
+
+      await act(async () => {
+        await useAuthStore.getState().refreshProfile();
+      });
+
+      expect(useAuthStore.getState().isEmployer).toBe(true);
+    });
+
+    it('로그인 유저가 없으면 아무것도 하지 않는다', async () => {
+      await act(async () => {
+        await useAuthStore.getState().refreshProfile();
+      });
+
+      expect(mockGetUserProfile).not.toHaveBeenCalled();
+      expect(mockRefreshSession).not.toHaveBeenCalled();
+    });
+
+    it('조회 실패 시 기존 프로필을 유지한다', async () => {
+      act(() => {
+        useAuthStore.getState().setUser(supabaseUser as any);
+        useAuthStore.getState().setProfile(staffProfile);
+      });
+
+      mockGetUserProfile.mockRejectedValue(new Error('network'));
+
+      await act(async () => {
+        await useAuthStore.getState().refreshProfile();
+      });
+
+      expect(useAuthStore.getState().profile?.role).toBe('staff');
+      expect(useAuthStore.getState().isStaff).toBe(true);
+    });
+
+    it('동시 호출 시 중복 조회하지 않는다', async () => {
+      act(() => {
+        useAuthStore.getState().setUser(supabaseUser as any);
+        useAuthStore.getState().setProfile(staffProfile);
+      });
+
+      let resolveProfile: (value: unknown) => void = () => undefined;
+      mockGetUserProfile.mockImplementation(
+        () => new Promise((resolve) => (resolveProfile = resolve))
+      );
+
+      await act(async () => {
+        const first = useAuthStore.getState().refreshProfile();
+        const second = useAuthStore.getState().refreshProfile();
+        // refreshSession await를 지나 getUserProfile이 호출될 때까지 마이크로태스크 소진
+        while (mockGetUserProfile.mock.calls.length === 0) {
+          await Promise.resolve();
+        }
+        resolveProfile({ ...staffProfile, role: 'employer' });
+        await Promise.all([first, second]);
+      });
+
+      expect(mockGetUserProfile).toHaveBeenCalledTimes(1);
+      expect(useAuthStore.getState().isEmployer).toBe(true);
+    });
+
+    it('갱신 도중 로그아웃되면 stale 프로필을 주입하지 않는다', async () => {
+      act(() => {
+        useAuthStore.getState().setUser(supabaseUser as any);
+        useAuthStore.getState().setProfile(staffProfile);
+      });
+
+      mockGetUserProfile.mockImplementation(async () => {
+        useAuthStore.getState().clearAuthState();
+        return { ...staffProfile, role: 'employer' };
+      });
+
+      await act(async () => {
+        await useAuthStore.getState().refreshProfile();
+      });
+
+      expect(useAuthStore.getState().profile).toBeNull();
+      expect(useAuthStore.getState().isEmployer).toBe(false);
     });
   });
 

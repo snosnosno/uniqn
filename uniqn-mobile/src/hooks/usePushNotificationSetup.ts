@@ -29,7 +29,18 @@ import {
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 import { queryClient, queryKeys } from '@/lib/queryClient';
-import type { NotificationType } from '@/types/notification';
+import { NotificationType } from '@/types/notification';
+
+/**
+ * 구인자 승인 알림 → 로컬 role 캐시(authStore.profile.role) 즉시 동기화
+ *
+ * 승인은 관리자 기기에서 처리되므로 신청자 기기는 알림이 유일한 갱신 신호다.
+ */
+function maybeRefreshProfileForNotification(type: unknown): void {
+  if (type === NotificationType.EMPLOYER_APP_APPROVED) {
+    void useAuthStore.getState().refreshProfile();
+  }
+}
 
 // ============================================================================
 // Types
@@ -137,6 +148,8 @@ export function usePushNotificationSetup(
       app_state: 'foreground',
     });
 
+    maybeRefreshProfileForNotification(notification.data?.type);
+
     // Service 레이어를 통해 FCM payload → NotificationData 변환
     const notificationData = createNotificationFromFCM(notification, uid || '');
     if (notificationData) {
@@ -174,6 +187,8 @@ export function usePushNotificationSetup(
         notification_type: notificationType,
         action: actionIdentifier,
       });
+
+      maybeRefreshProfileForNotification(notificationType);
 
       onTapped?.(notification);
 
