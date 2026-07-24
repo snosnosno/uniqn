@@ -345,11 +345,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     useEmulator: process.env.EXPO_PUBLIC_USE_EMULATOR === 'true',
     // 빌드 시간
     buildDate: new Date().toISOString(),
-    // Apple 로그인 kill switch (2026-07-21 기본 비활성화로 전환)
-    // 소셜 로그인 동결: 실사용자 0명 + 웹 로그인 경로 부재(웹은 이메일/비밀번호 단일 경로).
-    // opt-out(!== 'false')에서 opt-in(=== 'true')으로 뒤집었다 — env 누락 시 OFF 로 수렴해야
-    // eas update 가 shell env 를 못 읽는 상황에서도 의도치 않게 켜지지 않는다.
-    appleLoginEnabled: process.env.EXPO_PUBLIC_ENABLE_APPLE_LOGIN === 'true',
+    // Apple 로그인 kill switch (2026-07-25 하드 OFF 전환)
+    // 2026-07-21 동결 시점엔 env opt-in(=== 'true')으로 남겨뒀으나, 07-19 빌드로 가입했던
+    // Apple 계정을 전부 정리(2026-07-25 prod 삭제)했고 웹 로그인 경로도 없어 재활성 계획이
+    // 없다. 배포자 shell 에 env 가 남아 있어도 켜지지 않도록 상수 false 로 고정한다.
+    // 재활성하려면 이 값을 env 기반으로 되돌리는 코드 변경 + 기존 사용자 마이그레이션 계획이 필요.
+    appleLoginEnabled: false,
     // PortOne KG Inicis identity verification.
     // storeId/channelKey 는 공개 식별자이므로 env 누락 시 fallback 으로 대응.
     // 2026-05-16 OTA 푸시에서 EXPO_PUBLIC_PORTONE_* 가 빈 값으로 박혀 본인인증 전면 차단된 사건 재발 방지.
