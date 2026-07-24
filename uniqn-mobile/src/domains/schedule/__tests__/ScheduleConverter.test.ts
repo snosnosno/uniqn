@@ -249,7 +249,8 @@ describe('createScheduleContainerContext (#6 — 근무표 직접배치 급여 �
   }
 
   it('컨테이너 역할별 단가표를 정산 컨텍스트 roles 로 주입한다(count/filled 채움)', () => {
-    const context = createScheduleContainerContext(createContainer());
+    const container = createContainer();
+    const context = createScheduleContainerContext(container.roleSalaries, container.name);
 
     expect(context.title).toBe('내 팀');
     expect(context.settlement.roles).toEqual([
@@ -263,8 +264,13 @@ describe('createScheduleContainerContext (#6 — 근무표 직접배치 급여 �
     ]);
   });
 
+  it('title 미지정 시 기본 라벨(이벤트)로 폴백한다', () => {
+    const context = createScheduleContainerContext(createContainer().roleSalaries);
+    expect(context.title).toBe('이벤트');
+  });
+
   it('설정된 역할의 급여가 기본 단가(15,000원) 폴백이 아니라 지점 단가로 해소된다', () => {
-    const context = createScheduleContainerContext(createContainer());
+    const context = createScheduleContainerContext(createContainer().roleSalaries);
     const event = ScheduleConverter.workLogToScheduleEvent(
       {
         id: 'wl-1',

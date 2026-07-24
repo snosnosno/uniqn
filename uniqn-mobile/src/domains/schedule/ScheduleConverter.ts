@@ -27,7 +27,7 @@ import {
 import { parseTimeSlotToDate } from '@/utils/date/ranges';
 import { toDate } from '@/utils/date';
 import { calculateSettlementBreakdown, DEFAULT_SALARY_INFO } from '@/utils/settlement';
-import type { VenueContainer } from '@/domains/weeklyGrid';
+import type { PostingRoleCatalogEntry } from '@/types';
 
 export interface SchedulePostingContext {
   title: string;
@@ -61,12 +61,15 @@ export function createSchedulePostingContext(posting: JobPosting): SchedulePosti
  * 항상 기본 단가(15,000원)로 폴백되던 버그(#6)를 복구한다. employer settlementVenueQuery 가
  * 쓰는 "컨테이너 2차 해소(roleSalaries 주입)"와 동일 규약 — role 매칭 시 지점 단가표가 적용된다.
  */
-export function createScheduleContainerContext(container: VenueContainer): SchedulePostingContext {
+export function createScheduleContainerContext(
+  roleSalaries: PostingRoleCatalogEntry[],
+  title?: string
+): SchedulePostingContext {
   return {
-    title: container.name || '이벤트',
+    title: title || '이벤트',
     location: '',
     settlement: {
-      roles: container.roleSalaries.map((entry) => ({
+      roles: roleSalaries.map((entry) => ({
         role: entry.role,
         customRole: entry.customRole,
         count: 0,

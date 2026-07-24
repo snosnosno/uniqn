@@ -15,6 +15,7 @@ import type {
   CreateJobPostingInput,
   UpdateJobPostingInput,
   TournamentApprovalStatus,
+  PostingRoleCatalogEntry,
 } from '@/types';
 
 // ============================================================================
@@ -187,6 +188,16 @@ export interface IJobPostingRepository {
 
   /** 운영처 컨테이너 단건 조회. status='container' 로 좁힌다. 없으면 null. */
   getVenueContainerById(id: string): Promise<VenueContainer | null>;
+
+  /**
+   * staff 본인이 배치된 지점 컨테이너들의 역할별 단가표 배치 조회(#6).
+   *
+   * @description job_postings SELECT RLS 는 container 를 제외하므로 staff 스케줄 경로가
+   *   getVenueContainerById 로 컨테이너를 못 읽는다. SECDEF RPC(get_my_venue_role_salaries)로
+   *   "본인이 work_log 를 가진 컨테이너"의 role/customRole/salary 만 반환한다.
+   *   반환: containerId → PostingRoleCatalogEntry[].
+   */
+  getMyVenueRoleSalaries(ids: string[]): Promise<Map<string, PostingRoleCatalogEntry[]>>;
 
   /**
    * 운영처(venue) 컨테이너 멱등 확보(get-or-create).

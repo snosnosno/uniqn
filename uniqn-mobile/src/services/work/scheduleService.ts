@@ -120,17 +120,18 @@ async function fetchJobPostingContextBatch(
   // 컨테이너 2차 해소(#6) — 근무표 직접배치 work_log 는 job_posting_id 가 지점 컨테이너
   // (status='container')를 가리키는데, getByIdBatch 는 컨테이너를 의도적으로 제외한다.
   // 그래서 이 슬롯들은 위 루프에서 postingMap 에 안 담기고 급여가 기본 단가(15,000원)로
-  // 폴백됐다. employer settlementVenueQuery 와 동일하게 getVenueContainerById 로 2차 조회해
-  // 지점 역할별 단가표(roleSalaries)를 정산 컨텍스트에 주입한다(실패/삭제분은 조용히 skip).
+  // 폴백됐다. staff 는 RLS 로 컨테이너 job_postings 를 직접 못 읽으므로(SELECT 정책이 container
+  // 제외), SECDEF RPC(getMyVenueRoleSalaries)로 "본인 배치가 있는 컨테이너"의 역할단가만 배치
+  // 조회해 정산 컨텍스트에 주입한다. 실패는 관측 가능하게 로그하고 기본 단가 폴백을 유지한다.
   const missingIds = uniqueIds.filter((id) => !postingMap.has(id));
   if (missingIds.length > 0) {
-    const containers = await Promise.all(
-      missingIds.map((id) => jobPostingRepository.getVenueContainerById(id).catch(() => null))
-    );
-    for (const container of containers) {
-      if (container) {
-        postingMap.set(container.id, createScheduleContainerContext(container));
+    try {
+      const salariesByContainer = await jobPostingRepository.getMyVenueRoleSalaries(missingIds);
+      for (const [containerId, roleSalaries] of salariesByContainer) {
+        postingMap.set(containerId, createScheduleContainerContext(roleSalaries));
       }
+    } catch (error) {
+      logger.warn('컨테이너 역할 단가 2차 해소 실패 — 기본 단가 폴백 유지', { error });
     }
   }
 
@@ -552,9 +553,13 @@ export async function getScheduleById(scheduleId: string): Promise<ScheduleEvent
         postingContext = createSchedulePostingContext(jobPosting);
       } else {
         // 컨테이너 2차 해소(#6) — 근무표 직접배치는 컨테이너를 가리켜 getById 가 제외한다.
-        const container = await jobPostingRepository.getVenueContainerById(normalizedJobId);
-        if (container) {
-          postingContext = createScheduleContainerContext(container);
+        // staff RLS 로 컨테이너를 직접 못 읽으므로 SECDEF RPC 로 본인 배치분 역할단가만 조회.
+        const salariesByContainer = await jobPostingRepository.getMyVenueRoleSalaries([
+          normalizedJobId,
+        ]);
+        const roleSalaries = salariesByContainer.get(normalizedJobId);
+        if (roleSalaries && roleSalaries.length > 0) {
+          postingContext = createScheduleContainerContext(roleSalaries);
         }
       }
     } catch (err) {
