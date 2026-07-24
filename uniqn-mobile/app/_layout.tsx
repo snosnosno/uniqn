@@ -28,6 +28,7 @@ import { getLayoutColor, getCssVarTokens } from '@/constants/colors';
 import { SheetProvider } from '@/components/app/SheetProvider';
 import { useAppInitialize } from '@/hooks/useAppInitialize';
 import { useAndroidOrientationPolicy } from '@/hooks/useAndroidOrientationPolicy';
+import { useOtaUpdateGate } from '@/hooks/useOtaUpdateGate';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { queryClient, initializeQueryFocusManager } from '@/lib/queryClient';
 import { initializeRootSentry } from '@/services/observability/rootSentry';
@@ -224,6 +225,8 @@ function AppContent() {
 
 export default function RootLayout() {
   useAndroidOrientationPolicy();
+  // 신규 설치 첫 세션에도 대기 중인 OTA를 즉시 적용 (5초 창 내 다운로드 완료 시 리로드)
+  useOtaUpdateGate();
 
   const [fontsLoaded, fontError] = useFonts({
     Outfit_600SemiBold,
