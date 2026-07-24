@@ -97,13 +97,20 @@ BEGIN
   -- public.users 동기화 + role 명시 (RPC create_workspace 의 PERMISSION_DENIED 회피)
   -- helpers seed 의 owner/editor/collab 은 employer, outsider 는 staff.
   -- ON CONFLICT 시 UPDATE: handle_new_user 트리거가 디폴트 'staff' 로 만들어둬도 보정.
-  INSERT INTO public.users (id, email, name, role, is_active, created_at, updated_at)
+  -- ⚠️ identity_verified=true 필수(2026-07-25, 마이그 20260725020000):
+  --    app_insert RLS 가 is_identity_verified(applicant_id) 를 with_check 에 요구한다.
+  --    컬럼 기본값이 false 라 세팅하지 않으면 지원 INSERT 가 전부 42501 로 죽는다
+  --    (#325 머지 직후 jpc_applications_rls·jpc_cascade·applications_tournament_approval_gate red).
+  --    페르소나는 "정상 사용자" 표준형이므로 verified 가 기본이고, 게이트 자체 검증은
+  --    applications_identity_verified_gate.test.sql 이 false/true 를 명시 토글해 수행한다.
+  INSERT INTO public.users (id, email, name, role, is_active, identity_verified, created_at, updated_at)
   SELECT id, email, 'jpc test',
     CASE WHEN id = v_outsider THEN 'staff'::user_role ELSE 'employer'::user_role END,
-    true, now(), now()
+    true, true, now(), now()
   FROM auth.users
   WHERE id IN (v_owner, v_editor, v_collab, v_outsider)
-  ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, is_active = EXCLUDED.is_active;
+  ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, is_active = EXCLUDED.is_active,
+    identity_verified = EXCLUDED.identity_verified;
 
   -- workspace + 멤버
   INSERT INTO public.workspaces (id, name, owner_id, created_at, updated_at)
@@ -318,13 +325,15 @@ BEGIN
           jsonb_build_object('role', p_role), '{}'::jsonb,
           now(), now(), '', '', '', '');
 
-  INSERT INTO public.users (id, email, name, role, is_active, created_at, updated_at)
+  -- identity_verified=true — jpc_test_seed 와 동일 이유(app_insert RLS 게이트).
+  INSERT INTO public.users (id, email, name, role, is_active, identity_verified, created_at, updated_at)
   VALUES (v_id, 'jpc_extra_'||v_id||'@test.local', 'jpc extra',
           CASE p_role WHEN 'admin' THEN 'admin'::user_role
                       WHEN 'employer' THEN 'employer'::user_role
                       ELSE 'staff'::user_role END,
-          true, now(), now())
-  ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, is_active = EXCLUDED.is_active;
+          true, true, now(), now())
+  ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, is_active = EXCLUDED.is_active,
+    identity_verified = EXCLUDED.identity_verified;
 
   RETURN v_id;
 END;
