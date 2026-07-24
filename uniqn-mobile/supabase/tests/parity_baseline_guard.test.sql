@@ -37,6 +37,10 @@
 --   2026-07-25 지원 본인인증 게이트(마이그 20260725020000, app_insert RLS 강화):
 --     함수 179 = 178 + is_identity_verified 1(SECDEF, users RLS 우회 헬퍼 — with_check 게이트용).
 --     정책 111 불변(app_insert 는 DROP/CREATE 재정의라 개수 불변, apply_with_capacity_check 도 재정의).
+--   2026-07-26 알림 중복 트리거 정리(마이그 20260726000000):
+--     함수 177 = 179 - fn_notify_review_created 1 - fn_notify_inquiry_created 1
+--       (레거시 notify_on_* 와 동일 이벤트 이중 발동하던 QA기 fn_ 계열 제거).
+--     정책 111 불변(트리거/함수만 변경, RLS 미변경).
 --
 -- ⚠️ 유지보수 계약: 이후 마이그레이션이 public 함수/정책을 추가·삭제하면
 --   이 기대값을 같은 PR에서 함께 갱신해야 한다. 갱신을 강제당하는 것 자체가
@@ -49,7 +53,7 @@
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=179
+-- PARITY_EXPECT_FUNCS=177
 -- PARITY_EXPECT_POLICIES=111
 -- ============================================================
 BEGIN;
@@ -69,8 +73,8 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  179,
-  'public function count == prod (179 = 178 + is_identity_verified 1(지원 본인인증 게이트), 2026-07-25)');
+  177,
+  'public function count == prod (177 = 179 - 알림 중복 fn_notify_* 2종 제거, 2026-07-26)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(
