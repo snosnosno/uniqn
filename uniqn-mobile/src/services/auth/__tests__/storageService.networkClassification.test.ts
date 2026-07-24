@@ -1,16 +1,14 @@
 /**
- * uploadProfileImage — 로컬 이미지 읽기 실패 처리 검증.
+ * uploadProfileImage — 이미지 읽기 실패 처리 검증.
  *
- * Sentry UNIQN-MOBILE-1H/1J (동일 trace, 이슈 2개로 이중 리포팅):
- * 실패 지점은 Supabase 업로드가 아니라 `prepareImage` 의
- * `fetch(manipulatedImage.uri)` — ImagePicker 가 만든 로컬 파일 읽기다.
- * (whatwg-fetch 가 `TypeError: Network request failed` 로 reject)
+ * 연혁: 과거 `prepareImage` 는 `fetch(file://)`→Blob 경로였고 이 스위트는
+ * whatwg-fetch 재시도 계약(Sentry UNIQN-MOBILE-1H/1J)을 고정했다.
+ * RN에서 그 경로가 0바이트 파일을 만들어(2026-07-24 실측) base64→ArrayBuffer 로
+ * 교체됐다 — fetch 재시도 계약은 소멸, 아래 두 계약은 유지한다:
  *
- * 고정하는 계약:
- *   1) 일시적 읽기 실패는 1회 재시도로 흡수한다
- *   2) 최종 실패는 재시도 가능(isRetryable) 으로 분류해 상위가 판단할 수 있게 한다
- *   3) 사용자 메시지는 "업로드 실패" 가 아니라 실제로 일어난 일을 말한다
- *      (업로드는 시작조차 안 됐다)
+ *   1) 읽기 실패(base64 누락/빈 바이트)는 재시도 가능(isRetryable) 으로 분류해
+ *      상위가 판단할 수 있게 한다 — 업로드는 시작조차 하지 않는다
+ *   2) 사용자 메시지는 "업로드 실패" 가 아니라 실제로 일어난 일을 말한다
  */
 import { uploadProfileImage } from '../storageService';
 import { isAppError } from '@/errors';
@@ -38,34 +36,16 @@ jest.mock('@/utils/blurhash', () => ({
   computeBlurhash: jest.fn().mockResolvedValue(undefined),
 }));
 
-function okBlobResponse(size = 1024) {
-  return { blob: () => Promise.resolve({ size, type: 'image/jpeg' }) };
-}
+const VALID_BASE64 = Buffer.alloc(1024, 7).toString('base64');
 
-describe('uploadProfileImage — 로컬 파일 읽기 실패', () => {
+describe('uploadProfileImage — 이미지 읽기 실패 분류', () => {
   beforeEach(() => {
-    mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg' });
+    jest.clearAllMocks();
     mockUpload.mockResolvedValue({ error: null });
   });
 
-  it('일시적 읽기 실패는 재시도로 흡수해 업로드까지 성공시킨다', async () => {
-    const fetchMock = jest
-      .fn()
-      .mockRejectedValueOnce(new TypeError('Network request failed'))
-      .mockResolvedValueOnce(okBlobResponse());
-    global.fetch = fetchMock as unknown as typeof fetch;
-
-    const result = await uploadProfileImage('user-1', 'file:///a.jpg');
-
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(result.downloadURL).toBe('https://example.com/a.jpg');
-    expect(mockUpload).toHaveBeenCalledTimes(1);
-  });
-
-  it('재시도 후에도 실패하면 재시도 가능한 AppError 로 분류한다', async () => {
-    global.fetch = jest
-      .fn()
-      .mockRejectedValue(new TypeError('Network request failed')) as unknown as typeof fetch;
+  it('base64 누락(읽기 실패)은 재시도 가능한 AppError 로 분류한다', async () => {
+    mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg' });
 
     const error = await uploadProfileImage('user-1', 'file:///a.jpg').catch((e: unknown) => e);
 
@@ -77,8 +57,20 @@ describe('uploadProfileImage — 로컬 파일 읽기 실패', () => {
     expect(mockUpload).not.toHaveBeenCalled();
   });
 
+  it('빈 바이트(0바이트)도 동일하게 업로드 전에 차단한다', async () => {
+    mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg', base64: '' });
+
+    const error = await uploadProfileImage('user-1', 'file:///a.jpg').catch((e: unknown) => e);
+
+    expect(isAppError(error)).toBe(true);
+    if (!isAppError(error)) return;
+    expect(error.isRetryable).toBe(true);
+    expect(error.userMessage).toContain('이미지를 읽지 못했어요');
+    expect(mockUpload).not.toHaveBeenCalled();
+  });
+
   it('업로드 단계 실패는 기존대로 업로드 실패 메시지를 유지한다', async () => {
-    global.fetch = jest.fn().mockResolvedValue(okBlobResponse()) as unknown as typeof fetch;
+    mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg', base64: VALID_BASE64 });
     mockUpload.mockResolvedValue({ error: { message: 'bucket policy violation' } });
 
     const error = await uploadProfileImage('user-1', 'file:///a.jpg').catch((e: unknown) => e);
