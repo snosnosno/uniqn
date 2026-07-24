@@ -19,8 +19,14 @@ export const opsBlindLevelSchema = z.object({
 });
 export type OpsBlindLevelInput = z.infer<typeof opsBlindLevelSchema>;
 
-/** 블라인드 구조 전체(최소 1레벨). ops_set_blind_levels 전체교체 입력. */
+/** 블라인드 레벨 개수 상한(클라 가드). 서버 상한은 없어 UX 폭주 방지용 — 프리셋 저장·전체교체 공용. */
+export const OPS_BLIND_LEVELS_MAX = 100;
+
+/** 블라인드 구조 전체(최소 1레벨·최대 100레벨). ops_set_blind_levels 전체교체 입력. */
 export const opsBlindLevelsSchema = z
   .array(opsBlindLevelSchema)
-  .min(1, { message: '블라인드 레벨을 1개 이상 입력해주세요' });
+  .min(1, { message: '블라인드 레벨을 1개 이상 입력해주세요' })
+  .max(OPS_BLIND_LEVELS_MAX, {
+    message: `블라인드 레벨은 최대 ${OPS_BLIND_LEVELS_MAX}개까지 입력할 수 있습니다`,
+  });
 export type OpsBlindLevelsInput = z.infer<typeof opsBlindLevelsSchema>;

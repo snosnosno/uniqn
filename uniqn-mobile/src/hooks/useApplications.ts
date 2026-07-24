@@ -49,6 +49,8 @@ interface RequestCancellationParams {
 }
 
 const APPLICATIONS_CACHE_SCHEMA_VERSION = 2;
+// 데이터 부재 시 매 렌더 새 배열 생성 방지 — 파생 useMemo/renderItem 안정성 (QW1 리뷰 반영)
+const EMPTY_APPLICATIONS: Application[] = [];
 const ACTIVE_APPLICATION_STATUSES = new Set<ApplicationStatus>([
   STATUS.APPLICATION.APPLIED,
   STATUS.APPLICATION.CONFIRMED,
@@ -93,12 +95,13 @@ export function useApplications() {
           userId: user.uid,
           schemaVersion: APPLICATIONS_CACHE_SCHEMA_VERSION,
         })?.data
-      : []) ?? [];
+      : EMPTY_APPLICATIONS) ?? EMPTY_APPLICATIONS;
 
   const shouldUseCachedApplications =
     !!user?.uid && !isOnline && myApplicationsQuery.data === undefined;
   const effectiveApplications =
-    myApplicationsQuery.data ?? (shouldUseCachedApplications ? cachedApplications : []);
+    myApplicationsQuery.data ??
+    (shouldUseCachedApplications ? cachedApplications : EMPTY_APPLICATIONS);
 
   const submitV2Mutation = useMutation({
     mutationFn: (params: SubmitApplicationV2Params) => {

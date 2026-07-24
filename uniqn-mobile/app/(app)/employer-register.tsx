@@ -7,7 +7,7 @@
  * - 이용약관 및 서약서 동의
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, Pressable, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -118,6 +118,17 @@ export default function EmployerRegisterScreen() {
 
   // 구인 소개글 (주로 구인하는 지역/매장/대회)
   const [intro, setIntro] = useState('');
+
+  // 거부된 이전 신청의 소개글 프리필 (QW9) — 로드 완료 후 첫 평가 1회만.
+  // 결과와 무관하게 즉시 마킹해, 사용자가 의도적으로 비운 입력을 이후 재실행이 덮지 않게 한다.
+  const didPrefillIntro = useRef(false);
+  useEffect(() => {
+    if (didPrefillIntro.current || isApplicationLoading) return;
+    didPrefillIntro.current = true;
+    if (currentApplication?.status === 'rejected' && currentApplication.intro && intro === '') {
+      setIntro(currentApplication.intro);
+    }
+  }, [currentApplication, isApplicationLoading, intro]);
 
   const introResult = employerIntroSchema.safeParse(intro);
   const introValid = introResult.success;

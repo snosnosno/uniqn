@@ -12,6 +12,8 @@ export { ClockControl } from './ClockControl';
 export { LiveStatsPanel } from './LiveStatsPanel';
 export { BlindLevelsTab } from './BlindLevelsTab';
 export { BlindLevelForm } from './BlindLevelForm';
+// 계획 B — 블라인드 프리셋 시트(BlindLevelsTab 프리셋 바가 소비).
+export { BlindPresetSheet } from './BlindPresetSheet';
 export { HistoryTab } from './HistoryTab';
 export { MonitorLinkButton } from './MonitorLinkButton';
 export { MonitorConfigCard } from './MonitorConfigCard';
@@ -29,5 +31,18 @@ export { PayoutLedger } from './PayoutLedger';
 export { PrizeCorrectSheet } from './PrizeCorrectSheet';
 // 1f(T10) — PLAYERS 탭 추출
 export { PlayersTab } from './PlayersTab';
+// L7 — 참가 등록 FAB→시트(인라인 폼 제거). PlayersTab 헤더 토글 폼 대체, 오픈 상태는 [id].tsx 소유.
+export { OpsRegisterParticipantSheet } from './OpsRegisterParticipantSheet';
+// 2부 리디자인(Task 7) — 참가·좌석 공용 액션시트(L5·L6)
+export { OpsParticipantActionSheet } from './OpsParticipantActionSheet';
 // 1f(T12) — 종료 결과 뷰(§7.3)
 export { TournamentResultCard } from './TournamentResultCard';
+// 2부 리디자인(Task 2) — 상시 한 줄 요약 스트립(L1)
+export { OpsSummaryStrip } from './OpsSummaryStrip';
+// 2부 리디자인(Task 3) — 상시 클럭 스트립 + 제어 시트(L1)
+export { OpsClockStrip } from './OpsClockStrip';
+export { OpsClockControlSheet } from './OpsClockControlSheet';
+// 2부 리디자인(Task 4) — 현황 탭 콘텐츠(L2, 클럭 제외)
+export { OpsStatusTab } from './OpsStatusTab';
+// 2부 리디자인(Task 5) — 반응형 콘솔 셸(폰 5탭+⋯ / 태블릿 사이드바 7탭)
+export { OpsConsoleShell, type OpsTabKey } from './OpsConsoleShell';

@@ -9,6 +9,7 @@ import { render, fireEvent } from '@testing-library/react-native';
 import React from 'react';
 import { TablesTab } from '../TablesTab';
 import {
+  useOpsTournament,
   useOpsTables,
   useOpsSeats,
   useOpsParticipants,
@@ -26,6 +27,8 @@ import type { OpsTable, OpsStaff } from '@/types/ops';
 jest.mock('@/components/ui', () => {
   const { View, Text, Pressable } = require('react-native');
   return {
+    // OpsParticipantActionSheet 가 소비 — 자식 통과 스텁(좌석 진입 액션시트 배선).
+    SheetModal: ({ visible, children }: any) => (visible ? <View>{children}</View> : null),
     SelectBottomSheet: ({ visible, title, options, onSelect, onClose }: any) =>
       visible ? (
         <View>
@@ -62,7 +65,17 @@ jest.mock('../DealerPickerSheet', () => {
   };
 });
 
+// 좌석 진입 액션시트 — 배선(props)만 캡처하는 스텁. 자체 로직은 OpsParticipantActionSheet.test 전담.
+let actionSheetProps: Record<string, unknown> | null = null;
+jest.mock('../OpsParticipantActionSheet', () => ({
+  OpsParticipantActionSheet: (props: Record<string, unknown>) => {
+    actionSheetProps = props;
+    return null;
+  },
+}));
+
 jest.mock('@/hooks/ops', () => ({
+  useOpsTournament: jest.fn(),
   useOpsTables: jest.fn(),
   useOpsSeats: jest.fn(),
   useOpsParticipants: jest.fn(),
@@ -74,8 +87,15 @@ jest.mock('@/hooks/ops', () => ({
   useAssignSeat: jest.fn(),
   useMoveSeat: jest.fn(),
   useFreeSeat: jest.fn(),
+  // 좌석 진입 액션시트(OpsParticipantActionSheet)가 호출하는 mutation 훅 — 렌더 시 undefined 방지.
+  useAddRebuy: jest.fn(() => ({ mutate: jest.fn() })),
+  useAddAddon: jest.fn(() => ({ mutate: jest.fn() })),
+  useBustParticipant: jest.fn(() => ({ mutate: jest.fn() })),
+  useReenterParticipant: jest.fn(() => ({ mutate: jest.fn() })),
+  useUndoBust: jest.fn(() => ({ mutate: jest.fn() })),
 }));
 
+const mockUseOpsTournament = useOpsTournament as unknown as jest.Mock;
 const mockUseOpsTables = useOpsTables as unknown as jest.Mock;
 const mockUseOpsSeats = useOpsSeats as unknown as jest.Mock;
 const mockUseOpsParticipants = useOpsParticipants as unknown as jest.Mock;
@@ -119,6 +139,9 @@ const ROSTER: OpsStaff[] = [
 
 function setupHooks(tableOverrides?: Partial<OpsTable>): OpsTable {
   const table = { ...TABLE, ...tableOverrides };
+  mockUseOpsTournament.mockReturnValue({
+    tournament: { id: 'trn1', status: 'active', bountyCost: null },
+  });
   mockUseOpsTables.mockReturnValue({ tables: [table], isLoading: false });
   mockUseOpsSeats.mockReturnValue({ seats: [] });
   mockUseOpsParticipants.mockReturnValue({ participants: [] });
@@ -135,7 +158,16 @@ function setupHooks(tableOverrides?: Partial<OpsTable>): OpsTable {
 
 beforeEach(() => {
   dealerPickerProps = null;
+  actionSheetProps = null;
   jest.clearAllMocks();
+});
+
+it('좌석 진입 액션시트에 onOpenPayouts 를 전달(PlayersTab 대칭 — ITM 탈락 후 상금 탭 링크)', () => {
+  setupHooks();
+  const onOpenPayouts = jest.fn();
+  render(<TablesTab tournamentId="trn1" onOpenPayouts={onOpenPayouts} />);
+  expect(actionSheetProps).not.toBeNull();
+  expect(actionSheetProps?.onOpenPayouts).toBe(onOpenPayouts);
 });
 
 it('테이블 상세의 "딜러 지정" 버튼을 누르면 DealerPickerSheet 를 tableId/currentStaffId 와 함께 연다', () => {

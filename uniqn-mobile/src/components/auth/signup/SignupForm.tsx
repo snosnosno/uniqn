@@ -349,7 +349,8 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
             onBack={handleIdentityBack}
             initialData={formData.identity}
             isLoading={isLoading}
-            submitLabel={isReverify ? '본인인증 완료' : isSocial ? '프로필 등록' : '가입완료'}
+            // QW8: 프로필 단계가 남아있으므로 여기서 "가입완료"를 선언하지 않는다 (1회화 — 최종 선언은 profile-setup)
+            submitLabel={isReverify ? '본인인증 완료' : isSocial ? '프로필 등록' : '다음'}
             hideBack={isReverify}
           />
         );

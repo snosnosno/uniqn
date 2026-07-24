@@ -7,6 +7,7 @@ import { SupabaseOpsParticipantRepository } from './supabase/OpsParticipantRepos
 import { SupabaseOpsTableRepository } from './supabase/OpsTableRepository';
 import { SupabaseOpsSeatRepository } from './supabase/OpsSeatRepository';
 import { SupabaseOpsBlindLevelRepository } from './supabase/OpsBlindLevelRepository';
+import { SupabaseOpsBlindPresetRepository } from './supabase/OpsBlindPresetRepository';
 import { SupabaseOpsClockRepository } from './supabase/OpsClockRepository';
 import { SupabaseOpsLiveStatsRepository } from './supabase/OpsLiveStatsRepository';
 import { SupabaseOpsEventRepository } from './supabase/OpsEventRepository';
@@ -42,6 +43,7 @@ export { SupabaseOpsParticipantRepository } from './supabase/OpsParticipantRepos
 export { SupabaseOpsTableRepository } from './supabase/OpsTableRepository';
 export { SupabaseOpsSeatRepository } from './supabase/OpsSeatRepository';
 export { SupabaseOpsBlindLevelRepository } from './supabase/OpsBlindLevelRepository';
+export { SupabaseOpsBlindPresetRepository } from './supabase/OpsBlindPresetRepository';
 export { SupabaseOpsClockRepository } from './supabase/OpsClockRepository';
 export { SupabaseOpsLiveStatsRepository } from './supabase/OpsLiveStatsRepository';
 export { SupabaseOpsEventRepository } from './supabase/OpsEventRepository';
@@ -56,6 +58,7 @@ export const opsParticipantRepository = new SupabaseOpsParticipantRepository();
 export const opsTableRepository = new SupabaseOpsTableRepository();
 export const opsSeatRepository = new SupabaseOpsSeatRepository();
 export const opsBlindLevelRepository = new SupabaseOpsBlindLevelRepository();
+export const opsBlindPresetRepository = new SupabaseOpsBlindPresetRepository();
 export const opsClockRepository = new SupabaseOpsClockRepository();
 export const opsLiveStatsRepository = new SupabaseOpsLiveStatsRepository();
 export const opsEventRepository = new SupabaseOpsEventRepository();

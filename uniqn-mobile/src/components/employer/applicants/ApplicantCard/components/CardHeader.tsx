@@ -38,6 +38,8 @@ export interface CardHeaderProps {
   onViewProfile?: () => void;
   /** 버블 점수 (없으면 배지 미노출) */
   bubbleScore?: number;
+  /** 점수 표본 크기 — "리뷰 N건" 병기 (QW12) */
+  reviewCount?: number;
 }
 
 // ============================================================================
@@ -54,6 +56,7 @@ export const CardHeader = React.memo(function CardHeader({
   onToggleExpand,
   onViewProfile,
   bubbleScore,
+  reviewCount,
 }: CardHeaderProps) {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
@@ -88,6 +91,11 @@ export const CardHeader = React.memo(function CardHeader({
             )}
             {typeof bubbleScore === 'number' ? (
               <BubbleScoreBadge score={bubbleScore} size="sm" />
+            ) : null}
+            {typeof bubbleScore === 'number' && typeof reviewCount === 'number' ? (
+              <Text className="text-xs text-content-secondary dark:text-secondary-400 font-sans">
+                리뷰 {reviewCount}건
+              </Text>
             ) : null}
           </View>
         </View>

@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { render, fireEvent } from '@testing-library/react-native';
 import { TodayOpsStrip } from '../TodayOpsStrip';
 import type { ConfirmedStaff, ConfirmedStaffGroup } from '@/types/confirmedStaff';
 
@@ -84,5 +84,21 @@ describe('TodayOpsStrip', () => {
 
     const withoutPending = render(<TodayOpsStrip todayGroup={group} pendingSettlementCount={0} />);
     expect(withoutPending.queryByText(/정산 대기/)).toBeNull();
+  });
+
+  it('정산 대기 배지를 누르면 onPressSettlement가 호출된다 (QW10)', () => {
+    const group = makeTodayGroup([makeStaff()]);
+    const onPressSettlement = jest.fn();
+
+    const { getByLabelText } = render(
+      <TodayOpsStrip
+        todayGroup={group}
+        pendingSettlementCount={2}
+        onPressSettlement={onPressSettlement}
+      />
+    );
+
+    fireEvent.press(getByLabelText('정산 대기 2건, 정산 탭으로 이동'));
+    expect(onPressSettlement).toHaveBeenCalledTimes(1);
   });
 });
