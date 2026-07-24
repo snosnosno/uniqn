@@ -228,13 +228,19 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
       isCustomRole ? customRole.trim() : undefined
     );
 
-  // 역할/커스텀명 변경 시 JIT 상태 리셋 + 기본값 시드('나중에 설정' 무효화).
+  // roleKey 변경 시에만 JIT 드래프트를 기본값으로 재시드('나중에 설정'도 함께 무효화).
+  // 커스텀명(customRole) 키 입력마다 재시드하면 사용자가 수정한 단가가 조용히 소실되므로 제외한다.
+  // 기타 역할의 기본 드래프트는 customRole 텍스트와 무관(defaultVenueSalaryDraft(roleKey) 고정)하고,
+  // 노출 자체는 needsJitSalary(roleReady 포함) 가 게이트하므로 roleKey 만으로 시드해도 안전하다.
   useEffect(() => {
     setJitDismissed(false);
-    setJitDraft(roleReady ? defaultVenueSalaryDraft(roleKey) : null);
-    // roleReady 파생값 자체가 roleKey/customRole 에 의존 — 둘만 의존성으로 둔다.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roleKey, customRole]);
+    setJitDraft(roleKey ? defaultVenueSalaryDraft(roleKey) : null);
+  }, [roleKey]);
+
+  // 커스텀명이 바뀌면 다른 역할 정체성 → '나중에 설정'만 무효화(드래프트 금액은 보존).
+  useEffect(() => {
+    setJitDismissed(false);
+  }, [customRole]);
 
   // 출근시간 피커 값('HH:mm' → TimeValue).
   const pickerValue = useMemo<TimeValue>(() => timeStringToValue(startTime), [startTime]);
@@ -258,8 +264,12 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
           customRole: isCustomRole ? customRole.trim() : undefined,
           salary: jitDraft,
         });
-      } catch {
-        logger.warn('지점 단가 JIT 저장 실패 — 배치는 계속', { containerId, roleKey });
+      } catch (error) {
+        logger.warn('지점 단가 JIT 저장 실패 — 배치는 계속', {
+          containerId,
+          roleKey,
+          cause: toError(error).message,
+        });
         addToast({
           type: 'info',
           message: '단가 저장에 실패했어요. 다음 배치 때 다시 물어볼게요.',
