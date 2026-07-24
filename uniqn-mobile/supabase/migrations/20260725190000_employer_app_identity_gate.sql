@@ -10,7 +10,8 @@
 --   - fail-closed: NULL도 차단 (IS DISTINCT FROM true) — decisions/secdef-hardening
 --   - 에러 prefix EMPLOYER_APP_IDENTITY_NOT_VERIFIED → 클라 mapRpcError 매핑
 --   - CREATE OR REPLACE: 기존 ACL·owner 보존, 함수 개수 불변(parity 가드 무관)
---   - search_path에 pg_temp 추가 (20260711 SECDEF 하드닝 배치에서 누락됐던 2건 정합)
+--   - search_path: 20260711100000 ALTER(30·79행)로 이미 (public, pg_temp) 적용된 상태 —
+--     본 재정의는 그 유효값을 함수 본문 정의에도 동일하게 명시(동작 변화 없음)
 
 -- 1) 신청 생성 게이트 — 미인증 사용자는 신청 자체를 차단 (조기 실패)
 CREATE OR REPLACE FUNCTION public.register_as_employer(p_employer_agreements jsonb DEFAULT NULL::jsonb, p_intro text DEFAULT NULL::text) RETURNS jsonb

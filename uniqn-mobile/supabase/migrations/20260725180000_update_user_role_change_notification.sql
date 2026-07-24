@@ -72,7 +72,8 @@ BEGIN
       CASE p_new_role
         WHEN 'admin' THEN '관리자'
         WHEN 'employer' THEN '구인자'
-        ELSE '스태프'
+        WHEN 'staff' THEN '스태프'
+        ELSE p_new_role  -- enum 신규 값 추가 시 오표기 대신 원문 표기
       END || ''' 역할로 변경되었습니다.',
     '/settings',
     false,

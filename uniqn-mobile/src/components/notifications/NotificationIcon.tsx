@@ -90,6 +90,7 @@ const typeIcons: Partial<Record<NotificationType, IconComponent>> = {
   [NotificationType.NEW_REPORT]: ExclamationCircleIcon,
   [NotificationType.NEW_INQUIRY]: ChatBubbleLeftIcon,
   [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: BriefcaseIcon,
+  [NotificationType.ROLE_CHANGED]: ShieldCheckIcon,
 
   // 리뷰/평가 관련
   [NotificationType.REVIEW_REQUEST]: ChatBubbleLeftIcon,
