@@ -58,6 +58,13 @@ export async function applyPendingOtaUpdate({
 
     if (raced === TIMED_OUT) {
       // 다운로드는 취소되지 않고 계속되며, 완료분은 다음 콜드 스타트에 적용된다.
+      // 창 초과 후 늦게 실패하는 다운로드도 관측 가능하도록 로그만 남긴다.
+      download.catch((error) => {
+        logger.debug('OTA 백그라운드 다운로드 실패', {
+          component: 'useOtaUpdateGate',
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
       logger.info('OTA 적용 창 초과 — 다음 실행 시 적용', {
         component: 'useOtaUpdateGate',
         windowMs,
@@ -85,8 +92,9 @@ export async function applyPendingOtaUpdate({
 }
 
 /**
- * 앱 시작 직후 대기 중인 OTA 업데이트를 확인해 짧은 창 안에 받히면 즉시 리로드한다.
- * 신규 설치 사용자(내장 번들로 첫 실행)도 첫 세션에서 최신 OTA 코드를 받게 하는 게이트.
+ * 매 콜드 스타트 직후 대기 중인 OTA 업데이트를 확인해 짧은 창 안에 받히면 즉시 리로드한다.
+ * 신규 설치 사용자(내장 번들로 첫 실행)를 포함한 모든 사용자가
+ * 다음 실행을 기다리지 않고 첫 세션에서 최신 OTA 코드를 받게 하는 게이트.
  */
 export function useOtaUpdateGate(): void {
   const hasRunRef = useRef(false);

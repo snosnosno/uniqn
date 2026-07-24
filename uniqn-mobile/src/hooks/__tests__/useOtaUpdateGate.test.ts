@@ -130,6 +130,22 @@ describe('applyPendingOtaUpdate', () => {
     expect(controller.reloadAsync).not.toHaveBeenCalled();
   });
 
+  it('리로드 자체가 실패해도 failed를 반환하고 앱 실행은 계속된다', async () => {
+    const controller = createController();
+    controller.checkForUpdateAsync.mockResolvedValue({ isAvailable: true });
+    controller.fetchUpdateAsync.mockResolvedValue(undefined);
+    controller.reloadAsync.mockRejectedValue(new Error('reload blocked'));
+
+    const result = await applyPendingOtaUpdate({
+      platformOS: 'ios',
+      isDev: false,
+      isEnabled: true,
+      controller,
+    });
+
+    expect(result).toBe('failed');
+  });
+
   it('확인 중 에러가 나면 failed를 반환하고 앱 실행은 계속된다', async () => {
     const controller = createController();
     controller.checkForUpdateAsync.mockRejectedValue(new Error('network down'));
