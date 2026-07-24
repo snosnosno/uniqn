@@ -56,6 +56,15 @@ describe('NonEmployerView', () => {
     expect(queryByText('구인자로 등록하기')).toBeNull();
   });
 
+  it('approved면 전환 중 안내를 보여주고 등록 CTA를 노출하지 않는다', () => {
+    setApplication({ status: 'approved' });
+    const { getByText, queryByText } = render(<NonEmployerView />);
+
+    expect(getByText('구인자 승인이 완료되었습니다')).toBeTruthy();
+    expect(getByText('신청 현황 보기')).toBeTruthy();
+    expect(queryByText('구인자로 등록하기')).toBeNull();
+  });
+
   it('rejected면 거절 안내와 재신청 CTA를 보여준다 (QW6)', () => {
     setApplication({ status: 'rejected' });
     const { getByText, queryByText } = render(<NonEmployerView />);
