@@ -2,20 +2,20 @@
  * UNIQN Mobile - useQRCode Hooks Tests
  *
  * @description Unit tests for QR code hooks
- * @version 2.0.0 - Updated for EventQR system
+ * @version 3.0.0 - 공고당 고정 QR 전환 (processQRCheckIn 단일 진입점)
  */
 
 import { renderHook, act } from '@testing-library/react-native';
-import type { QRCodeScanResult, EventQRDisplayData, QRCodeAction } from '@/types';
+import type { QRCodeScanResult, VenueQRDisplayData, QRCodeAction } from '@/types';
 
 // Import after mocks
-import { useQRCodeScanner, useQRScannerModal, useQRDisplayModal } from '@/hooks/useQRCode';
+import { useQRCodeScanner } from '@/hooks/useQRCode';
 
 // Mock eventQRService
-const mockProcessEventQRCheckIn = jest.fn();
+const mockProcessQRCheckIn = jest.fn();
 
 jest.mock('@/services/work/eventQRService', () => ({
-  processEventQRCheckIn: (...args: unknown[]) => mockProcessEventQRCheckIn(...args),
+  processQRCheckIn: (...args: unknown[]) => mockProcessQRCheckIn(...args),
 }));
 
 // Mock stores
@@ -41,20 +41,10 @@ jest.mock('@/utils/logger', () => ({
   },
 }));
 
-// Helper function to create mock EventQRDisplayData
-function createMockEventQRDisplayData(
-  overrides: Partial<EventQRDisplayData> = {}
-): EventQRDisplayData {
-  return {
-    type: 'event',
-    jobPostingId: 'event-123',
-    date: '2024-01-15',
-    action: 'checkIn',
-    securityCode: 'uuid-security-code',
-    createdAt: Date.now(),
-    expiresAt: Date.now() + 3 * 60 * 1000, // 3 minutes
-    ...overrides,
-  };
+// 고정 QR 문자열 생성 헬퍼 (공고 ID 만 담기며 만료·갱신 개념이 없다)
+function createVenueQRString(jobPostingId = 'posting-123'): string {
+  const data: VenueQRDisplayData = { type: 'venue', jobPostingId };
+  return JSON.stringify(data);
 }
 
 describe('useQRCode Hooks', () => {
@@ -106,7 +96,7 @@ describe('useQRCode Hooks', () => {
       });
     });
 
-    it('should process checkIn with EventQR system', async () => {
+    it('should process checkIn with fixed venue QR', async () => {
       const mockScanResult = {
         success: true,
         workLogId: 'worklog-123',
@@ -114,21 +104,21 @@ describe('useQRCode Hooks', () => {
         checkTime: new Date(),
         message: '출근이 완료되었습니다.',
       };
-      mockProcessEventQRCheckIn.mockResolvedValueOnce(mockScanResult);
+      mockProcessQRCheckIn.mockResolvedValueOnce(mockScanResult);
 
       const onSuccess = jest.fn();
       const { result } = renderHook(() => useQRCodeScanner({ onSuccess }));
 
       const scanResult: QRCodeScanResult = {
         success: true,
-        qrString: JSON.stringify(createMockEventQRDisplayData()),
+        qrString: createVenueQRString(),
       };
 
       await act(async () => {
         await result.current.handleScanResult(scanResult);
       });
 
-      expect(mockProcessEventQRCheckIn).toHaveBeenCalledWith(scanResult.qrString, 'test-user-id');
+      expect(mockProcessQRCheckIn).toHaveBeenCalledWith(scanResult.qrString, 'test-user-id');
       expect(mockAddToast).toHaveBeenCalledWith({
         type: 'success',
         message: '출근이 완료되었습니다.',
@@ -136,7 +126,8 @@ describe('useQRCode Hooks', () => {
       expect(onSuccess).toHaveBeenCalled();
     });
 
-    it('should process checkOut with EventQR system', async () => {
+    // 고정 QR 은 출근/퇴근을 구분하지 않는다 — 같은 문자열이라도 서버가 현재 status 로 결정한다.
+    it('should process checkOut with the same fixed venue QR', async () => {
       const mockScanResult = {
         success: true,
         workLogId: 'worklog-123',
@@ -144,14 +135,13 @@ describe('useQRCode Hooks', () => {
         checkTime: new Date(),
         message: '퇴근이 완료되었습니다.',
       };
-      mockProcessEventQRCheckIn.mockResolvedValueOnce(mockScanResult);
+      mockProcessQRCheckIn.mockResolvedValueOnce(mockScanResult);
 
       const { result } = renderHook(() => useQRCodeScanner({}));
 
-      const qrData = createMockEventQRDisplayData({ action: 'checkOut' });
       const scanResult: QRCodeScanResult = {
         success: true,
-        qrString: JSON.stringify(qrData),
+        qrString: createVenueQRString(),
       };
 
       await act(async () => {
@@ -165,14 +155,14 @@ describe('useQRCode Hooks', () => {
     });
 
     it('should handle processing error', async () => {
-      mockProcessEventQRCheckIn.mockRejectedValueOnce(new Error('처리 실패'));
+      mockProcessQRCheckIn.mockRejectedValueOnce(new Error('처리 실패'));
 
       const onError = jest.fn();
       const { result } = renderHook(() => useQRCodeScanner({ onError }));
 
       const scanResult: QRCodeScanResult = {
         success: true,
-        qrString: JSON.stringify(createMockEventQRDisplayData()),
+        qrString: createVenueQRString(),
       };
 
       await act(async () => {
@@ -186,105 +176,6 @@ describe('useQRCode Hooks', () => {
         isRetryable: expect.any(Boolean),
       });
       expect(onError).toHaveBeenCalled();
-    });
-  });
-
-  describe('useQRScannerModal', () => {
-    it('should return initial state correctly', () => {
-      const { result } = renderHook(() => useQRScannerModal());
-
-      expect(result.current.isVisible).toBe(false);
-      expect(result.current.action).toBeUndefined();
-      expect(result.current.openScanner).toBeDefined();
-      expect(result.current.closeScanner).toBeDefined();
-    });
-
-    it('should open scanner with action', () => {
-      const { result } = renderHook(() => useQRScannerModal());
-
-      act(() => {
-        result.current.openScanner('checkIn');
-      });
-
-      expect(result.current.isVisible).toBe(true);
-      expect(result.current.action).toBe('checkIn');
-    });
-
-    it('should close scanner and reset action', () => {
-      const { result } = renderHook(() => useQRScannerModal());
-
-      act(() => {
-        result.current.openScanner('checkOut');
-      });
-
-      expect(result.current.isVisible).toBe(true);
-
-      act(() => {
-        result.current.closeScanner();
-      });
-
-      expect(result.current.isVisible).toBe(false);
-      expect(result.current.action).toBeUndefined();
-    });
-  });
-
-  describe('useQRDisplayModal', () => {
-    it('should return initial state correctly', () => {
-      const { result } = renderHook(() => useQRDisplayModal());
-
-      expect(result.current.isVisible).toBe(false);
-      expect(result.current.displayData).toBeNull();
-      expect(result.current.action).toBeUndefined();
-      expect(result.current.openDisplay).toBeDefined();
-      expect(result.current.closeDisplay).toBeDefined();
-      expect(result.current.updateDisplayData).toBeDefined();
-    });
-
-    it('should open display with EventQRDisplayData', () => {
-      const { result } = renderHook(() => useQRDisplayModal());
-      const mockDisplayData = createMockEventQRDisplayData();
-
-      act(() => {
-        result.current.openDisplay(mockDisplayData, 'checkIn');
-      });
-
-      expect(result.current.isVisible).toBe(true);
-      expect(result.current.displayData).toBe(mockDisplayData);
-      expect(result.current.action).toBe('checkIn');
-    });
-
-    it('should close display', () => {
-      const { result } = renderHook(() => useQRDisplayModal());
-      const mockDisplayData = createMockEventQRDisplayData();
-
-      act(() => {
-        result.current.openDisplay(mockDisplayData);
-      });
-
-      act(() => {
-        result.current.closeDisplay();
-      });
-
-      expect(result.current.isVisible).toBe(false);
-      // Note: displayData is cleared after timeout in actual implementation
-    });
-
-    it('should update display data', () => {
-      const { result } = renderHook(() => useQRDisplayModal());
-      const initialData = createMockEventQRDisplayData();
-      const updatedData = createMockEventQRDisplayData({
-        jobPostingId: 'updated-event',
-      });
-
-      act(() => {
-        result.current.openDisplay(initialData);
-      });
-
-      act(() => {
-        result.current.updateDisplayData(updatedData);
-      });
-
-      expect(result.current.displayData).toBe(updatedData);
     });
   });
 });

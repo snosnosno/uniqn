@@ -26,6 +26,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { useBubbleScore } from '@/hooks/useReviews';
 import { useOpsHubEnabled } from '@/hooks/useOpsHubEnabled';
+import { useTabBarBottomPadding } from '@/hooks/useTabBarBottomPadding';
 import { useOpsHubImpressionOnce } from '@/hooks/ops/useOpsHubImpressionOnce';
 import { OpsHubIntroCard } from '@/components/ops/OpsHubIntroCard';
 import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';
@@ -76,6 +77,7 @@ export default function ProfileScreen() {
   const bubbleScore = useBubbleScore();
   // A1 진입 표면: ops 허브 게이트(전 회원). 로딩/OFF 면 enabled=false → 3표면 미노출.
   const { enabled: opsHubEnabled } = useOpsHubEnabled();
+  const bottomPadding = useTabBarBottomPadding();
   // 노출 시 impression 퍼널을 마운트당 1회만 발화(재렌더 반복 발화 가드).
   // 스켈레톤(auth 로딩) 구간엔 메뉴가 실제로 안 보이므로 !isLoading 까지 만족해야 발화.
   useOpsHubImpressionOnce(opsHubEnabled && !isLoading);
@@ -133,7 +135,10 @@ export default function ProfileScreen() {
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
       <TabHeader title="프로필" showThemeToggle />
 
-      <ScrollView className="flex-1" contentContainerClassName="p-4">
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ padding: 16, paddingBottom: bottomPadding }}
+      >
         {profile?.role === 'staff' && <EmployerApplicationStatusBanner />}
         <Card className="mb-4">
           <Pressable

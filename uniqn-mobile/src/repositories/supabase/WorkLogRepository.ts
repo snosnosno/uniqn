@@ -17,6 +17,7 @@ import { handleSupabaseError, createRealtimeSubscription } from '@/utils/supabas
 import { getTodayString } from '@/utils/date';
 import { STATUS } from '@/constants';
 import type { UnsubscribeFn } from '@/types/common';
+import { FIXED_DATE_MARKER } from '@/types/assignment';
 import type { WorkLog, PayrollStatus, QRCodeAction, QRProcessAction } from '@/types';
 import type {
   IWorkLogRepository,
@@ -447,6 +448,51 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
       return workLog;
     } catch (error) {
       rethrowOrHandle(error, '공고-스태프-날짜 근무 기록 조회', { jobPostingId, staffId, date });
+    }
+  }
+
+  /**
+   * QR 스캔용 work_log 후보 조회
+   *
+   * @description 오늘·어제·FIXED_SCHEDULE 세 값을 한 쿼리로 조회한다.
+   *   어제를 포함하는 이유는 자정 넘는 근무의 퇴근 스캔이다 — 18:00~02:00 근무의
+   *   work_logs.date 는 시작일이라 D+1 새벽 퇴근 QR 이 오늘 날짜로는 잡히지 않는다.
+   */
+  async findQRCandidates(
+    jobPostingId: string,
+    staffId: string,
+    today: string,
+    yesterday: string
+  ): Promise<WorkLog[]> {
+    try {
+      logger.info('QR 후보 근무 기록 조회', { jobPostingId, staffId, today, yesterday });
+
+      // 고정 공고는 date 가 'FIXED_SCHEDULE' 리터럴이라 오늘 날짜로는 잡히지 않는다.
+      // 어제는 자정 넘는 근무(시작일 = 어제)의 퇴근 스캔용이다.
+      // 세 값을 한 쿼리로 함께 조회해 고정/일반/자정넘김 공고를 모두 커버한다.
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select(TABLE_COLUMNS)
+        .eq('job_posting_id', jobPostingId)
+        .eq('staff_id', staffId)
+        .in('date', [today, yesterday, FIXED_DATE_MARKER]);
+
+      if (error) handleSupabaseError(error, { operation: 'QR 후보 근무 기록 조회', table: TABLE });
+
+      // 하루 다중 배정은 정상 케이스 — 예외를 던지지 않고 배열 그대로 반환한다.
+      const workLogs = rowsToWorkLogs((data ?? []) as Record<string, unknown>[]);
+
+      logger.info('QR 후보 근무 기록 조회 완료', {
+        jobPostingId,
+        staffId,
+        today,
+        yesterday,
+        count: workLogs.length,
+      });
+
+      return workLogs;
+    } catch (error) {
+      rethrowOrHandle(error, 'QR 후보 근무 기록 조회', { jobPostingId, staffId, today, yesterday });
     }
   }
 

@@ -53,11 +53,15 @@ export function initialOrderSheetValues(): OrderSheetFormValues {
   };
 }
 
-/** 날짜별 requirements가 참조를 공유하지 않도록 호출마다 새 슬롯 생성 + id 부여 (gridPrefill.ts 관례, F1). */
+/** 날짜별 requirements가 참조를 공유하지 않도록 호출마다 새 슬롯 생성 + id 부여 (gridPrefill.ts 관례, F1).
+ *  시간 미정 슬롯은 startTime을 **기록하지 않고** isTimeToBeAnnounced=true만 싣는다
+ *  (unified TimeSlotInfo 계약 — 미정이면 startTime null/부재, createTimeSlotInfo와 동형). */
 function toPostingTimeSlots(slots: OrderSheetGroupTimeSlots): PostingTimeSlot[] {
   return slots.map((slot) => ({
     id: generateId(),
-    startTime: slot.startTime,
+    ...(slot.isTimeToBeAnnounced === true
+      ? { isTimeToBeAnnounced: true as const }
+      : { startTime: slot.startTime }),
     roles: slot.roles.map((r) => ({
       id: generateId(),
       role: r.role,
@@ -212,10 +216,12 @@ export function valuesToDraft(values: OrderSheetValues): JobPostingDraft {
   };
 }
 
-/** 왕복 비교용 — draft 슬롯의 생성 id를 벗겨 구조만 비교한다. */
+/** 왕복 비교용 — draft 슬롯의 생성 id를 벗겨 구조만 비교한다. 미정 플래그는 시그니처에 포함
+ *  (미정 슬롯과 시각 슬롯이 같은 그룹으로 병합되는 오류 차단 — startTime 부재는 JSON에서 증발). */
 const stripSlotIds = (slots: PostingTimeSlot[]) =>
   slots.map((s) => ({
     startTime: s.startTime,
+    ...(s.isTimeToBeAnnounced === true ? { isTimeToBeAnnounced: true as const } : {}),
     roles: s.roles.map((r) => ({
       role: r.role,
       ...(r.customRole !== undefined ? { customRole: r.customRole } : {}),
@@ -223,10 +229,11 @@ const stripSlotIds = (slots: PostingTimeSlot[]) =>
     })),
   }));
 
-/** draft 슬롯 → 폼 슬롯(id 제거·구조만) — 그룹 복원 공용 */
+/** draft 슬롯 → 폼 슬롯(id 제거·구조만) — 그룹 복원 공용. 미정 플래그는 true일 때만 복원(optional 계약). */
 function toFormTimeSlots(slots: PostingTimeSlot[]): OrderSheetGroupTimeSlots {
   return slots.map((slot) => ({
     startTime: slot.startTime ?? '',
+    ...(slot.isTimeToBeAnnounced === true ? { isTimeToBeAnnounced: true as const } : {}),
     roles: slot.roles.map((r) => ({
       role: r.role ?? 'other',
       ...(r.customRole !== undefined ? { customRole: r.customRole } : {}),
@@ -427,7 +434,8 @@ export function primaryScheduleInfo(values: OrderSheetValues): {
       : values.scheduleGroups.find((g) => g.dates.includes(primaryDate));
   return {
     ...(primaryDate !== undefined ? { primaryDate } : {}),
-    ...(primaryGroup?.timeSlots[0]?.startTime !== undefined
+    // 미정 슬롯(startTime '')은 요약에 싣지 않는다 — "출근 " 빈 표기 방지
+    ...(primaryGroup?.timeSlots[0]?.startTime
       ? { startTime: primaryGroup.timeSlots[0].startTime }
       : {}),
     totalDates: uniqueDates.length,

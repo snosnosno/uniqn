@@ -30,7 +30,9 @@ describe('Formatters (Extended Coverage)', () => {
     it('should return display name for user roles', () => {
       expect(formatRole('admin')).toBe('관리자');
       expect(formatRole('employer')).toBe('구인자');
-      expect(formatRole('staff')).toBe('일반');
+      // formatRole 은 직무 라벨 맵(ROLE_DISPLAY_LABELS)을 읽으므로 staff → '직원'.
+      // UserRole 문맥의 '스태프'가 필요하면 USER_ROLE_LABELS 를 직접 쓸 것.
+      expect(formatRole('staff')).toBe('직원');
     });
 
     it('should return empty string for undefined/empty', () => {

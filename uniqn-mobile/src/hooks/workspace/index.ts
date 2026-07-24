@@ -39,3 +39,7 @@ export {
   useWorkspaceRevocationGuard,
   type UseWorkspaceRevocationGuardArgs,
 } from './useWorkspaceRevocationGuard';
+
+// 반환 타입(UseWorkspaceInviteSearchReturn)은 배럴로 올리지 않는다 — 소비처가 없어
+// knip 미사용 export 래칫만 올린다. 필요해지면 그때 훅 파일에서 직접 import 할 것.
+export { useWorkspaceInviteSearch } from './useWorkspaceInviteSearch';

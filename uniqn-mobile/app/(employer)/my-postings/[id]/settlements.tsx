@@ -42,6 +42,7 @@ export default function StaffSettlementsScreen() {
   const { addToast } = useToastStore();
   const { job: contextJob, isFixed, handleShowQR } = useJobDetailContext();
   const headerBackHref = `/(employer)/my-postings/${jobPostingId ?? ''}`;
+  // 고정 공고는 QR 진입점을 노출하지 않는다 (work_log 행 수명 미해결 — _layout.tsx 주석 참고).
   const headerRightAction = !isFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;
 
   // 탭 상태 (진입 동기 대부분이 "누가 왔나 확인" — 정산은 근무 종료 후 업무)
@@ -189,7 +190,11 @@ export default function StaffSettlementsScreen() {
       {stackHeader}
 
       {/* 당일 운영 요약 스트립 (M4) — 오늘 근무가 있을 때만 노출 */}
-      <TodayOpsStrip todayGroup={todayGroup} pendingSettlementCount={pendingSettlementCount} />
+      <TodayOpsStrip
+        todayGroup={todayGroup}
+        pendingSettlementCount={pendingSettlementCount}
+        onPressSettlement={() => setActiveTab('settlement')}
+      />
 
       {/* 탭 헤더 */}
       <TabHeader
@@ -204,7 +209,6 @@ export default function StaffSettlementsScreen() {
         <StaffManagementTab
           jobPostingId={jobPostingId || ''}
           jobPosting={posting ?? undefined}
-          onShowEventQR={modals.openEventQRModal}
           onShowRoleChange={modals.openRoleChangeModal}
           onShowReport={modals.openReportModal}
         />

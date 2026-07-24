@@ -98,8 +98,7 @@ export function PostingScheduleContent({
       ) : null}
 
       {schedule.sections.map((section) => {
-        const dateRangeText = display === 'card' ? section.label.split('\n')[0] : section.label;
-        const showCardDayCount = display === 'card' && section.dayCount > 1;
+        const dateRangeText = section.label; // 단일 행 라벨 — split 불필요
         // 그룹 섹션: card=요약만, detail=일별 전개(8일↑ 기본 접힘)
         const renderDays = display === 'detail' && section.days && section.days.length > 0;
 
@@ -119,11 +118,6 @@ export function PostingScheduleContent({
             >
               {dateRangeText}
             </Text>
-            {showCardDayCount ? (
-              <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-                {section.dayCount}일
-              </Text>
-            ) : null}
 
             {renderDays ? (
               <GroupedDaysBlock section={section} showFilledCount={showFilledCount} />
@@ -154,16 +148,16 @@ export function PostingScheduleContent({
                       </View>
                     </>
                   ) : (
-                    <>
-                      <Text className="mb-1 text-sm font-sans-medium text-content-secondary">
+                    <View className="flex-row items-start">
+                      <Text className="min-w-[44px] pr-2 pt-1 text-sm font-sans-medium text-content-secondary">
                         {slot.timeLabel}
                       </Text>
-                      <View className="ml-4 flex-row flex-wrap">
+                      <View className="flex-1 flex-row flex-wrap">
                         {slot.roles.map((role) => (
                           <RoleBadge key={role.key} role={role} showFilledCount={showFilledCount} />
                         ))}
                       </View>
-                    </>
+                    </View>
                   )}
                 </View>
               ))
@@ -195,11 +189,11 @@ function GroupedDaysBlock({
     return (
       <View className="ml-2 mt-2">
         {section.timeSlots.map((slot) => (
-          <View key={slot.key} className="mt-1">
-            <Text className="mb-1 text-sm font-sans-medium text-content-secondary">
+          <View key={slot.key} className="mt-1 flex-row items-start">
+            <Text className="min-w-[44px] pr-2 pt-1 text-sm font-sans-medium text-content-secondary">
               {slot.timeLabel}
             </Text>
-            <View className="ml-4 flex-row flex-wrap">
+            <View className="flex-1 flex-row flex-wrap">
               {slot.roles.map((role) => (
                 <RoleBadge key={role.key} role={role} showFilledCount={showFilledCount} />
               ))}
@@ -229,11 +223,11 @@ function GroupedDaysBlock({
             {day.label}
           </Text>
           {day.timeSlots.map((slot) => (
-            <View key={slot.key} className="ml-2 mt-1">
-              <Text className="mb-1 text-sm font-sans-medium text-content-secondary">
+            <View key={slot.key} className="ml-2 mt-1 flex-row items-start">
+              <Text className="min-w-[44px] pr-2 pt-1 text-sm font-sans-medium text-content-secondary">
                 {slot.timeLabel}
               </Text>
-              <View className="ml-4 flex-row flex-wrap">
+              <View className="flex-1 flex-row flex-wrap">
                 {slot.roles.map((role) => (
                   <RoleBadge key={role.key} role={role} showFilledCount={showFilledCount} />
                 ))}

@@ -4,7 +4,7 @@ import { AppFlashList } from '@/components/ui/AppFlashList';
 import { LIST_CONTAINER_STYLES } from '@/constants';
 import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import type { JobPostingCard } from '@/types';
-import { JobCard } from './JobCard';
+import { JobCard, type ApplicationStatusType } from './JobCard';
 import { PostingSurfaceState } from './shared';
 import { ScreenSkeleton } from '@/components/ui';
 
@@ -20,6 +20,16 @@ interface JobListProps {
   emptyMessage?: string;
   error?: Error | null;
   filledCounts?: Map<string, number>;
+  /** jobPostingId → 내 활성 지원 상태. 카드 "지원완료/확정" 칩 표시용 (O(1) lookup) */
+  applicationStatuses?: Map<string, ApplicationStatusType>;
+  /** 빈 상태 액션 버튼 (예: "필터 초기화"). label과 handler 둘 다 있어야 노출 */
+  emptyActionLabel?: string;
+  onEmptyAction?: () => void;
+  /**
+   * 리스트 하단 여백. 탭바가 있는 화면은 useTabBarBottomPadding() 값을 넘겨야
+   * 마지막 카드가 탭바에 가려지지 않는다. 미지정 시 기본 16px 패딩만 적용.
+   */
+  contentBottomPadding?: number;
 }
 
 export function JobList({
@@ -34,12 +44,21 @@ export function JobList({
   emptyMessage = '등록된 공고가 없습니다',
   error,
   filledCounts,
+  applicationStatuses,
+  emptyActionLabel,
+  onEmptyAction,
+  contentBottomPadding,
 }: JobListProps) {
   const renderItem = useCallback(
     ({ item }: { item: JobPostingCard }) => (
-      <JobCard job={item} onPress={onJobPress} filledCounts={filledCounts} />
+      <JobCard
+        job={item}
+        onPress={onJobPress}
+        filledCounts={filledCounts}
+        applicationStatus={applicationStatuses?.get(item.id)}
+      />
     ),
-    [onJobPress, filledCounts]
+    [onJobPress, filledCounts, applicationStatuses]
   );
 
   const renderFooter = useCallback(() => {
@@ -78,7 +97,14 @@ export function JobList({
 
   if (!isLoading && jobs.length === 0) {
     return (
-      <PostingSurfaceState mode="empty" scope="list" title="공고 없음" message={emptyMessage} />
+      <PostingSurfaceState
+        mode="empty"
+        scope="list"
+        title="공고 없음"
+        message={emptyMessage}
+        actionLabel={emptyActionLabel}
+        onAction={onEmptyAction}
+      />
     );
   }
 
@@ -98,7 +124,11 @@ export function JobList({
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         estimatedItemSize={160}
-        contentContainerStyle={LIST_CONTAINER_STYLES.padding16}
+        contentContainerStyle={
+          contentBottomPadding === undefined
+            ? LIST_CONTAINER_STYLES.padding16
+            : { ...LIST_CONTAINER_STYLES.padding16, paddingBottom: contentBottomPadding }
+        }
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} {...PTR_REFRESH_PROPS} />

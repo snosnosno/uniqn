@@ -6,7 +6,6 @@
 import React from 'react';
 import {
   WorkTimeEditor,
-  EventQRModal,
   RoleChangeModal,
   ReportModal,
   SettlementDetailModal,
@@ -74,14 +73,6 @@ export function SettlementModals({
 }: SettlementModalsProps) {
   return (
     <>
-      {/* 현장 QR 모달 */}
-      <EventQRModal
-        visible={modals.showEventQRModal}
-        onClose={modals.closeEventQRModal}
-        jobPostingId={jobPostingId}
-        jobTitle={posting?.title}
-      />
-
       {/* 역할 변경 모달 */}
       <RoleChangeModal
         visible={modals.showRoleChangeModal}
@@ -147,10 +138,10 @@ export function SettlementModals({
         title={modals.settleConfirm.isBulk ? '일괄 정산' : '정산 처리'}
         message={
           modals.settleConfirm.isBulk
-            ? `${modals.settleConfirm.workLogs.length}건의 근무를 정산하시겠습니까?\n예상 금액: ${formatNumber(modals.settleConfirm.amount)}원`
-            : `이 스태프의 근무를 정산하시겠습니까?\n정산 금액: ${formatNumber(modals.settleConfirm.amount)}원`
+            ? `${modals.settleConfirm.workLogs.length}건의 근무를 지급 완료로 표시할까요?\n예상 금액: ${formatNumber(modals.settleConfirm.amount)}원\n실제 이체는 앱 밖에서 진행해요.`
+            : `이 스태프의 근무를 지급 완료로 표시할까요?\n정산 금액: ${formatNumber(modals.settleConfirm.amount)}원\n실제 이체는 앱 밖에서 진행해요.`
         }
-        confirmText="정산하기"
+        confirmText="지급 완료로 표시"
         cancelText="취소"
       />
 

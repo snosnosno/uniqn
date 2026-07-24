@@ -179,13 +179,9 @@ export type {
   QRProcessAction,
   QRCodeScanResult,
   QRScanError,
-  // Event QR 타입 (eventQRCodes 컬렉션)
-  EventQRCode,
-  EventQRDisplayData,
+  // 고정 QR 타입 (공고당 1장, 회전·만료 없음)
   VenueQRDisplayData,
-  GenerateEventQRInput,
   EventQRScanResult,
-  EventQRValidationResult,
   // 통합 스케줄 타입 (연속/다중 날짜 표시용)
   DateStatus,
   GroupedScheduleEvent,

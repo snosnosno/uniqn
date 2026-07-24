@@ -13,6 +13,7 @@ export {
   toDateValue,
   toISODateString,
   getTodayString,
+  getYesterdayString,
   toDateString,
   parseDateString,
   generateId,
@@ -72,3 +73,6 @@ export {
   parseTimeSlot,
   parseTimeSlotToDate,
 } from './ranges';
+
+// Time slot display ordering
+export { sortTimeSlotsByStart } from './timeSlotOrder';

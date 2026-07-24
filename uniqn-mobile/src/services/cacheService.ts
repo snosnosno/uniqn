@@ -6,7 +6,7 @@
  */
 
 import { logger } from '@/utils/logger';
-import { queryClient } from '@/lib/queryClient';
+import { queryClient, queryKeys } from '@/lib/queryClient';
 import { getMMKVInstance, STORAGE_KEYS, removeStorageItem } from '@/lib/mmkvStorage';
 import { toError } from '@/errors';
 import { handleSilentError } from '@/errors/serviceErrorHandler';
@@ -193,7 +193,7 @@ export function clearJobPostingsCache(): void {
   try {
     removeStorageItem(STORAGE_KEYS.JOB_POSTINGS_CACHE);
     removeStorageItem(STORAGE_KEYS.RECENT_JOBS);
-    queryClient.invalidateQueries({ queryKey: ['jobPostings'] });
+    queryClient.invalidateQueries({ queryKey: queryKeys.jobPostings.all });
     logger.info('공고 캐시 삭제 완료');
   } catch (error) {
     // 캐시 삭제 실패는 앱 동작에 영향 없음 - 명시적 silent 처리
@@ -212,7 +212,7 @@ export function clearJobPostingsCache(): void {
 export function clearSchedulesCache(): void {
   try {
     removeStorageItem(STORAGE_KEYS.SCHEDULES_CACHE);
-    queryClient.invalidateQueries({ queryKey: ['schedules'] });
+    queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all });
     logger.info('스케줄 캐시 삭제 완료');
   } catch (error) {
     // 캐시 삭제 실패는 앱 동작에 영향 없음 - 명시적 silent 처리

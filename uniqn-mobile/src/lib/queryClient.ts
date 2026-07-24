@@ -9,95 +9,65 @@
  * - 재시도 가능 에러 자동 재시도
  * - 토큰 만료 시 자동 처리
  * - 카테고리별 재시도 조건 설정
- * - 오프라인 지원 (onlineManager + NetInfo)
+ * - 포그라운드 복귀 시 재조회 (focusManager + AppState)
+ *
+ * @note 오프라인/온라인(onlineManager) 연동은 services/offline/networkState.ts 담당
  */
 
-import { QueryClient, QueryCache, MutationCache, onlineManager } from '@tanstack/react-query';
+import { QueryClient, QueryCache, MutationCache, focusManager } from '@tanstack/react-query';
 import { Platform, AppState, type AppStateStatus } from 'react-native';
-import NetInfo from '@react-native-community/netinfo';
+import { POSTING_FILLED_COUNTS_QUERY_KEY } from '@/hooks/postingFilledCountsKey';
 import { logger } from '@/utils/logger';
 import { normalizeError, isRetryableError, requiresReauthentication } from '@/errors';
 
 // ============================================================================
-// 오프라인 지원
+// 포그라운드 복귀 감지 (focus)
 // ============================================================================
 
 /**
- * 네트워크 상태 리스너 초기화
+ * 앱 포그라운드 복귀를 React Query 의 focus 신호로 연결
  *
- * @description React Query의 onlineManager와 네트워크 상태를 연동하여
- * 오프라인/온라인 상태에 따라 자동으로 쿼리 동작을 조절합니다.
+ * @description React Native 에는 브라우저의 window focus 이벤트가 없다.
+ * focusManager 에 AppState 를 물려주지 않으면 `refetchOnWindowFocus` 를 켜도
+ * 영원히 발화하지 않는다 — 옵션만 켜고 배선을 빠뜨리면 조용히 아무 일도 안 일어난다.
  *
- * 웹 환경에서는 navigator.onLine을 사용하고,
- * 네이티브 환경에서는 @react-native-community/netinfo 패키지가 설치된 경우 활용합니다.
+ * 재조회 범위는 staleTime 이 통제한다: 활성(마운트된) + stale 인 쿼리만 다시 받는다.
+ * 따라서 도메인별 staleTime 정책이 곧 이 기능의 공격 반경이다.
+ *
+ * @note 네트워크(online/offline) 연동은 여기가 아니라
+ * `services/offline/networkState.ts` 가 담당한다 (onlineManager 단일 소스).
  *
  * @returns 리스너 해제 함수
  *
  * @example
  * ```tsx
- * // App.tsx에서 초기화
  * useEffect(() => {
- *   const unsubscribe = initializeQueryListeners();
+ *   const unsubscribe = initializeQueryFocusManager();
  *   return () => unsubscribe();
  * }, []);
  * ```
  */
-export function initializeQueryListeners(): () => void {
-  const subscriptions: (() => void)[] = [];
+const noop = (): void => undefined;
 
-  // 웹 환경: navigator.onLine 사용
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    const handleOnline = () => {
-      onlineManager.setOnline(true);
-      logger.info('네트워크 상태 변경: 온라인');
-    };
-    const handleOffline = () => {
-      onlineManager.setOnline(false);
-      logger.info('네트워크 상태 변경: 오프라인');
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    // 초기 상태 설정
-    onlineManager.setOnline(navigator.onLine);
-
-    subscriptions.push(() => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    });
+export function initializeQueryFocusManager(): () => void {
+  // 웹은 React Query 가 window focus 이벤트를 직접 처리하므로 배선이 불필요하다.
+  if (Platform.OS === 'web') {
+    return noop;
   }
 
-  // 네이티브 환경: NetInfo 연동
-  if (Platform.OS !== 'web') {
-    // NetInfo 구독 - 네트워크 상태 변경 시 onlineManager 업데이트
-    const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
-      const isOnline = state.isConnected === true && state.isInternetReachable !== false;
-      onlineManager.setOnline(isOnline);
-      logger.info('네트워크 상태 변경 (NetInfo)', {
-        isOnline,
-        type: state.type,
-        isInternetReachable: state.isInternetReachable,
-      });
+  focusManager.setEventListener((handleFocus) => {
+    const subscription = AppState.addEventListener('change', (state: AppStateStatus) => {
+      handleFocus(state === 'active');
     });
-    subscriptions.push(unsubscribeNetInfo);
 
-    // 앱 상태 변경 시 리페치 트리거
-    const handleAppStateChange = (nextAppState: AppStateStatus) => {
-      if (nextAppState === 'active') {
-        logger.debug('앱 포그라운드 전환, 쿼리 리페치 트리거');
-      }
-    };
+    return () => subscription.remove();
+  });
 
-    const appStateSubscription = AppState.addEventListener('change', handleAppStateChange);
-    subscriptions.push(() => appStateSubscription.remove());
-  }
+  logger.info('Query focusManager 초기화 (AppState 연동)', { platform: Platform.OS });
 
-  logger.info('Query 네트워크 리스너 초기화', { platform: Platform.OS });
-
-  // 모든 구독 해제 함수 반환
   return () => {
-    subscriptions.forEach((unsubscribe) => unsubscribe());
+    // 리스너를 no-op 으로 되돌려 구독을 해제한다.
+    focusManager.setEventListener(() => noop);
   };
 }
 
@@ -211,8 +181,10 @@ export const queryClient = new QueryClient({
       retry: shouldRetry,
       // 지수 백오프 + 지터 딜레이
       retryDelay: getRetryDelay,
-      // 창 포커스 시 리페치 비활성화 (모바일에서는 불필요)
-      refetchOnWindowFocus: false,
+      // 포그라운드 복귀 시 리페치 — initializeQueryFocusManager() 가 AppState 를
+      // focusManager 에 물려줘야 실제로 발화한다(배선 없이 true 만 켜면 무동작).
+      // stale 한 활성 쿼리만 대상이므로 실질 범위는 도메인별 staleTime 이 통제한다.
+      refetchOnWindowFocus: true,
       // 재연결 시 리페치
       refetchOnReconnect: true,
       // 오프라인 우선: 오프라인 시 캐시된 데이터 반환, 온라인 복귀 시 백그라운드 리페치
@@ -400,6 +372,9 @@ export const queryKeys = {
       [...queryKeys.settlement.all, 'summary', jobPostingId] as const,
     calculation: (workLogId: string) =>
       [...queryKeys.settlement.all, 'calculation', workLogId] as const,
+    /** 지점(운영처) 월 단위 정산 — 날짜범위 경계 포함 (JIT 급여 설계 §D) */
+    byVenue: (venueId: string, start: string, end: string) =>
+      [...queryKeys.settlement.all, 'byVenue', venueId, start, end] as const,
   },
 
   // 확정 스태프 관리 (구인자)
@@ -442,6 +417,8 @@ export const queryKeys = {
     dashboard: () => [...queryKeys.admin.all, 'dashboard'] as const,
     users: (filters: Record<string, unknown>) =>
       [...queryKeys.admin.all, 'users', filters] as const,
+    /** 필터 무관 사용자 목록 전체 무효화용 프리픽스 키 (['admin','users']) */
+    usersLists: () => [...queryKeys.admin.all, 'users'] as const,
     userDetail: (userId: string) => [...queryKeys.admin.all, 'userDetail', userId] as const,
     metrics: () => [...queryKeys.admin.all, 'metrics'] as const,
   },
@@ -538,6 +515,12 @@ export const queryKeys = {
     unansweredCount: () => [...queryKeys.inquiries.all, 'unansweredCount'] as const,
     /** FAQ */
     faq: (category?: string) => [...queryKeys.inquiries.all, 'faq', category] as const,
+    /**
+     * 첨부 이미지 signed URL (Storage path 기준).
+     * @remarks 기존 런타임 키(['inquiry-attachment-url', path])를 그대로 보존하기 위해
+     * 의도적으로 `all`(['inquiries']) 프리픽스를 붙이지 않는다 — 값을 바꾸면 캐시가 어긋난다.
+     */
+    attachmentUrl: (path: string) => ['inquiry-attachment-url', path] as const,
   },
   // 리뷰/평가 (버블)
   reviews: {
@@ -588,6 +571,8 @@ export const queryKeys = {
     prizes: (tournamentId: string) => [...queryKeys.ops.all, 'prizes', tournamentId] as const,
     // 1e — 스태프 로스터(공고연결 스냅샷 import + 수동 추가)
     staff: (tournamentId: string) => [...queryKeys.ops.all, 'staff', tournamentId] as const,
+    // 블라인드 프리셋(계획 B) — per-user 데이터. userId 스코프 필수(기기 계정 전환 시 캐시 격리).
+    blindPresets: (userId: string) => [...queryKeys.ops.all, 'blindPresets', userId] as const,
   },
 
   // 앱 설정 플래그 (app_config) — 원격 기능 토글
@@ -606,6 +591,7 @@ export const queryKeys = {
       [...queryKeys.weeklyGrid.all, 'summary', venueId, from, to] as const,
     daySlots: (venueId: string, date: string) =>
       [...queryKeys.weeklyGrid.all, 'daySlots', venueId, date] as const,
+    container: (venueId: string) => [...queryKeys.weeklyGrid.all, 'container', venueId] as const,
   },
 } as const;
 
@@ -726,7 +712,14 @@ export const invalidateQueries = {
   eventQR: () => queryClient.invalidateQueries({ queryKey: queryKeys.eventQR.all }),
   reports: () => queryClient.invalidateQueries({ queryKey: queryKeys.reports.all }),
   settlement: () => queryClient.invalidateQueries({ queryKey: queryKeys.settlement.all }),
-  /** 스태프 관리 관련 모든 쿼리 무효화 (스태프 + 정산 + 근무기록) */
+  /**
+   * 스태프 관리 관련 모든 쿼리 무효화 (스태프 + 정산 + 근무기록 + 파생 집계)
+   *
+   * 노쇼/상태변경/역할변경은 work_logs.status 를 바꾸고,
+   * count_posting_confirmed_by_slot 과 get_venue_grid_summary 는 둘 다
+   * status NOT IN ('cancelled','no_show') 로 집계한다 —
+   * 인원 카운트·그리드 배지를 같이 씻어내지 않으면 숫자가 어긋난 채 남는다.
+   */
   staffManagement: (jobPostingId: string) => {
     queryClient.invalidateQueries({
       queryKey: queryKeys.confirmedStaff.byJobPosting(jobPostingId),
@@ -735,6 +728,8 @@ export const invalidateQueries = {
     queryClient.invalidateQueries({ queryKey: queryKeys.workLogs.all });
     queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all });
     queryClient.invalidateQueries({ queryKey: queryKeys.reviews.pending() });
+    queryClient.invalidateQueries({ queryKey: [POSTING_FILLED_COUNTS_QUERY_KEY] });
+    queryClient.invalidateQueries({ queryKey: queryKeys.weeklyGrid.all });
   },
   /** 대회공고 승인 관련 모든 쿼리 무효화 */
   tournaments: () => queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.all }),

@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Loading } from '@/components';
 import { StackHeader } from '@/components/headers';
 import { OrderSheetScreen } from '@/components/employer/order-sheet/OrderSheetScreen';
+import { OrderSheetChainScrim } from '@/components/employer/order-sheet/OrderSheetChainScrim';
 import { TemplateModal } from '@/components/employer/job-form/modals/TemplateModal';
 import { useAuth } from '@/hooks/useAuth';
 import { useJobDetail } from '@/hooks/useJobDetail';
@@ -38,9 +39,12 @@ export default function EditJobPostingScreen() {
   const headerBackHref = `/(employer)/my-postings/${id ?? ''}`;
   const headerJobTitle = existingJob?.title ?? contextJob?.title ?? null;
   const headerTitleSuffix = <JobTitleSuffix jobTitle={headerJobTitle} />;
+  // 고정 공고는 QR 진입점을 노출하지 않는다 (work_log 행 수명 미해결 — _layout.tsx 주석 참고).
   const headerRightAction = !contextIsFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;
 
   const [isDirty, setIsDirty] = useState(false);
+  // 연쇄 전환 딤 위임(B1) — OrderSheetScreen 내부 딤은 형제인 StackHeader 를 못 덮는다.
+  const [chainScrimVisible, setChainScrimVisible] = useState(false);
   const { markClean } = useUnsavedChangesGuard(isDirty);
 
   const updateJobPosting = useUpdateJobPosting();
@@ -173,6 +177,7 @@ export default function EditJobPostingScreen() {
         myPhone={profile?.phone ?? ''}
         scheduleLocked={hasConfirmedApplicants}
         onSaveTemplate={handleOrderSheetSaveTemplate}
+        onChainSwappingChange={setChainScrimVisible}
       />
       {/* 템플릿 이름 입력 모달 — 주문서 시트 닫힘 상태에서만 열려 중첩 RN Modal(#244) 위험 없음 */}
       {templateManager.isTemplateModalOpen ? (
@@ -187,6 +192,8 @@ export default function EditJobPostingScreen() {
           isSaving={templateManager.isSavingTemplate}
         />
       ) : null}
+      {/* 연쇄 전환 딤(B1) — SafeAreaView 마지막 자식이라 StackHeader 까지 한 장으로 덮는다. */}
+      <OrderSheetChainScrim visible={chainScrimVisible} />
     </SafeAreaView>
   );
 }

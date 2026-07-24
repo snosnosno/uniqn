@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { WEEKDAYS_KO } from '@/constants/weekdays';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useMemo, useCallback, useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
@@ -67,7 +68,7 @@ interface CalendarDay {
 // Constants
 // ============================================================================
 
-const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+const WEEKDAYS = WEEKDAYS_KO;
 
 // ============================================================================
 // Utils

@@ -42,6 +42,10 @@ jest.mock('@/hooks/usePostingTypeCounts', () => ({
   usePostingTypeCounts: () => mockUsePostingTypeCounts(),
 }));
 
+jest.mock('@/hooks/useApplications', () => ({
+  useApplications: () => ({ myApplications: [] }),
+}));
+
 jest.mock('@/hooks/useJobPostings', () => ({
   useJobPostings: () => ({
     jobs: [],

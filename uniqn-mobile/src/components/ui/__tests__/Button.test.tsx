@@ -22,6 +22,33 @@ describe('Button', () => {
       // Component should render without errors with default props
       expect(screen.getByText('버튼')).toBeTruthy();
     });
+
+    // 회귀 방지: 텍스트+표현식 혼합 children 은 배열로 넘어와 <Text> 래핑을 건너뛰어
+    // 라벨이 화면에서 증발했다 (실기기 2026-07-19, VenueDayPanel.tsx:276 "부족 3명 공고로 모집").
+    it('should render interpolated children (text + expression)', () => {
+      const shortage = 3;
+      render(<Button>부족 {shortage}명 공고로 모집</Button>);
+
+      expect(screen.getByText('부족 3명 공고로 모집')).toBeTruthy();
+    });
+
+    it('should render interpolated children alongside an icon', () => {
+      const count = 2;
+      render(<Button icon={<View testID="btn-icon" />}>남은 {count}건 처리</Button>);
+
+      expect(screen.getByTestId('btn-icon')).toBeTruthy();
+      expect(screen.getByText('남은 2건 처리')).toBeTruthy();
+    });
+
+    it('should keep rendering element children untouched', () => {
+      render(
+        <Button>
+          <Text testID="custom-child">커스텀</Text>
+        </Button>
+      );
+
+      expect(screen.getByTestId('custom-child')).toBeTruthy();
+    });
   });
 
   describe('Variants', () => {

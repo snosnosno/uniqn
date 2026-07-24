@@ -13,6 +13,7 @@ export { formatCurrency, formatCurrencyCompact, formatNumber } from './currency'
 
 export {
   formatDateLong,
+  formatDateWithWeekday,
   formatISODate,
   formatRelative,
   formatShortDate,

@@ -381,6 +381,59 @@ describe('useAuthGuard', () => {
     });
   });
 
+  // 비밀번호 재설정 메일 링크는 복구 세션을 만든 채 (auth) 그룹에 착지한다.
+  // 일반 (auth) 규칙(인증됨 → 앱으로 replace)이 적용되면 사용자는 새 비밀번호를
+  // 입력할 기회 없이 앱 안으로 튕겨 나가 복구 경로가 끊긴다(2026-07-22).
+  it('keeps authenticated recovery sessions on the reset-password screen', async () => {
+    mockPathname = '/reset-password';
+    mockSegments = ['(auth)', 'reset-password'];
+    mockAuthState.user = { uid: 'staff-1', email: 'staff@example.com', phoneNumber: null };
+    mockAuthState.profile = {
+      role: 'staff',
+      socialProvider: null,
+      phoneVerified: true,
+      profileCompleted: true,
+    };
+
+    renderHook(() => useAuthGuard());
+
+    await waitFor(() => {
+      expect(mockCheckAuthState).not.toHaveBeenCalled();
+    });
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  // Android 는 uniqn.app 전 경로를 앱이 가로채므로 구식 복구 링크(루트 착지)도
+  // 네이티브로 들어온다. app/index 가 재설정 화면으로 넘기기 전에 가드가 앱 홈으로
+  // 튀면 비밀번호를 바꿀 기회가 사라진다(2026-07-22 Android 실기기 재현).
+  it('keeps native recovery deep-link landings unredirected until reset-password takes over', async () => {
+    const ExpoLinking = jest.requireMock('expo-linking');
+    ExpoLinking.useURL.mockReturnValue(
+      'https://uniqn.app/#access_token=guard-at&refresh_token=guard-rt&type=recovery'
+    );
+
+    try {
+      mockPathname = '/';
+      mockSegments = [];
+      mockAuthState.user = { uid: 'staff-1', email: 'staff@example.com', phoneNumber: null };
+      mockAuthState.profile = {
+        role: 'staff',
+        socialProvider: null,
+        phoneVerified: true,
+        profileCompleted: true,
+      };
+
+      renderHook(() => useAuthGuard());
+
+      await waitFor(() => {
+        expect(mockCheckAuthState).not.toHaveBeenCalled();
+      });
+      expect(mockReplace).not.toHaveBeenCalled();
+    } finally {
+      ExpoLinking.useURL.mockReturnValue(null);
+    }
+  });
+
   it('normalizes phone-only sessions off the social signup flow', async () => {
     mockPathname = '/signup';
     mockSegments = ['(auth)', 'signup'];

@@ -1,5 +1,5 @@
 import { handleSupabaseError, toCamelCase, toSnakeCase } from '@/utils/supabase';
-import { ERROR_CODES, isMaxCapacityReachedError } from '@/errors';
+import { ERROR_CODES, isMaxCapacityReachedError, isNetworkError } from '@/errors';
 
 describe('toCamelCase', () => {
   describe('기본 변환', () => {
@@ -217,6 +217,41 @@ describe('handleSupabaseError — P0001 (plpgsql RAISE EXCEPTION)', () => {
       expect(isMaxCapacityReachedError(error)).toBe(false);
       const appError = error as { code: string };
       expect(appError.code).toBe(ERROR_CODES.UNKNOWN);
+    }
+  });
+});
+
+describe('handleSupabaseError — 네트워크 단절 (PostgrestError 형태, Sentry 1M)', () => {
+  it('code="" + "Network request failed" → NetworkError (E7000 오분류 방지)', () => {
+    try {
+      handleSupabaseError(
+        {
+          code: '',
+          message: 'TypeError: Network request failed',
+          details: '',
+          hint: '',
+        },
+        { operation: '일반 공고 일자별 개수 조회', table: 'job_postings' }
+      );
+      throw new Error('should have thrown');
+    } catch (error) {
+      expect(isNetworkError(error)).toBe(true);
+      const appError = error as { code: string };
+      expect(appError.code).toBe(ERROR_CODES.NETWORK_REQUEST_FAILED);
+    }
+  });
+
+  it('매핑 없는 비네트워크 PostgrestError는 기존대로 UNKNOWN 유지', () => {
+    try {
+      handleSupabaseError(
+        { code: 'XX999', message: '알 수 없는 DB 오류', details: '', hint: '' },
+        { operation: 'test', table: 'job_postings' }
+      );
+      throw new Error('should have thrown');
+    } catch (error) {
+      const appError = error as { code: string; category: string };
+      expect(appError.code).toBe(ERROR_CODES.UNKNOWN);
+      expect(appError.category).toBe('infrastructure');
     }
   });
 });

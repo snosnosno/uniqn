@@ -1,7 +1,7 @@
 /**
  * WorkConditionSheet — 근무조건 시트 테스트 (S2 고정 공고)
  *
- * SheetModal 은 children+footer+overlay 만 렌더로 모킹(형제 TimeSlotsSheet.test 관례),
+ * SheetModal 은 children+footer+overlay 만 렌더로 모킹(형제 ScheduleSlotsSheet.test 관례),
  * TimeWheelPicker 는 확인 스텁으로 모킹해 오버레이 children/testID 가 테스트에서 보이게 한다.
  * 검증: (1) 확인 시 현재 값 onConfirm, (2) 협의 토글 시 출근시간 피커 숨김, (3) 주 출근일수 칩 반영.
  */

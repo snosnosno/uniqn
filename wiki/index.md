@@ -7,7 +7,7 @@
 - [[layers]] — Presentation→Hooks→Service→Repository→Supabase 단방향 5레이어
 - [[data-flow]] — 대표 데이터 흐름(읽기 TanStack Query 예외 + 쓰기 Service 경유)
 - [[rls-model]] — RLS 정책 3계층 + 재귀/SECDEF 함정 3건
-- [[ops-engine]] — 대회 운영 엔진(ops 1a~1f + S1 전면 개방·대회사 레일): 이벤트 스파인·SECDEF 쓰기 경계·anon SECDEF 2 불변·서버앵커 클럭·진입 허브/악용 방어/TV 프리셋 (PR#207~#265)
+- [[ops-engine]] — 대회 운영 엔진(ops 1a~1f + S1 전면 개방·대회사 레일 + 콘솔 리디자인·블라인드 프리셋): 이벤트 스파인·SECDEF 쓰기 경계·anon SECDEF 2 불변·서버앵커 클럭·진입 허브/악용 방어/TV 프리셋 (PR#207~#265·#313)
 
 ## decisions
 - [[enum-divergence]] — enum 발산 → 읽기 레코드 증발 방지 규칙 (3회 재발 클래스)
@@ -25,7 +25,8 @@
 - [[secdef-replace-search-path-loss]] — 기존 함수 `CREATE OR REPLACE` 시 DDL에 안 적은 속성(`search_path`·volatility)이 원본형으로 되돌아감 → 재정의 전 `proconfig`/`provolatile` 실측 필수. "STABLE이면 중첩 DML 거부"는 거짓 (PR#273)
 - [[type-honesty-runtime-vs-declared]] — 선언 타입 ≠ 런타임 진실: zod 경계가 정규화하는데 인터페이스가 이전 형태를 선언 → TS가 영원히 못 잡는 거짓말. 제네릭 기본값으로 도메인별 졸업 (PR#268)
 - [[supabase-write-pitfalls]] — Supabase 쓰기 경로 함정 종합: 카운터 트리거·realtime publication·RPC 예외 매핑·시드 zod·storage 정책·존재하지 않는 테이블 (memory 졸업)
-- [[nativewind-rn-pitfalls]] — NativeWind/RN UI 함정: 동적 className dark: 유실·flex-1 붕괴·Link asChild 터치 유실·중첩 accessibilityRole hydration (memory 졸업, PR#136)
+- [[nativewind-rn-pitfalls]] — NativeWind/RN UI 함정: 동적 className dark: 유실·flex-1 붕괴·Link asChild 터치 유실·중첩 Pressable/role hydration·style pointerEvents 드롭(웹 딤)·RNModal+gorhom z-순서 (memory 졸업, PR#136·#313)
+- [[headcount-daily-basis]] — 인원 표시 계약: 하루 기준 분수·분자=일별 max(통지원 전제)·마감=대기 지원 허용·hydrate 키 단일 소스(postingHydrateKeys) — capacity_full(공고 단위)과 의도된 이원화 (PR#309)
 
 ## domain
 - [[roles]] — UserRole(앱권한: admin/employer/staff) vs StaffRole(직무: dealer/floor/serving)
@@ -53,3 +54,5 @@
 - [[overnight-worktime-ssot]] — 자정 넘는 근무시간 SSOT 단일화(3입력+3표시 우회 수렴), 음수 `work_duration` 저장 차단. 클라 전용·서버 무변경 — ✅PR#271
 - [[nickname-search-unification]] — 스태프·협업자 검색을 닉네임 prefix로 통일(전화 검색 E.164 vs 010 포맷버그로 100% 실패) + 서버 rate limit·구 RPC 2종 DROP — ✅PR#273·prod 마이그 6
 - [[home-dashboard-removal]] — 홈 대시보드 전면 삭제(동선·중복·비용 3중 문제). 위젯이 `cancellation_requested` 딥링크 결함을 가리고 있어 선행 수정 필요 — ✅PR#276
+- [[headcount-daily-basis-display]] — 인원카운트 하루 기준 표시 통일(요약 곱셈 폐기·지원화면 dead counter 주입 해소·시간 정렬·hydrate 키 공용화) + 교훈 4종(키 중복=조용한 (0/N) 회귀 등) — ✅PR#309 머지 `ceb420ac9`
+- [[ops-console-redesign]] — ops 콘솔 리디자인+블라인드 프리셋(SDD 13태스크+후속 3묶음) + 교훈 5종(RNW pointerEvents 드롭·Pressable 중첩·RNModal z-순서·워크트리 EMFILE·parity 가드 누락 파급) — ✅PR#313 머지 `b76668b5e`

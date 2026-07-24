@@ -964,3 +964,44 @@ describe('fixed 역할 복원 — role 부재 fabrication 차단 (전체리뷰 P
     ]);
   });
 });
+
+describe('시간 미정 슬롯 왕복 (2026-07-22)', () => {
+  const tbaSlots = [
+    {
+      startTime: '',
+      isTimeToBeAnnounced: true as const,
+      roles: [{ role: 'dealer' as const, count: 1 }],
+    },
+  ];
+  const tbaValues: OrderSheetValues = {
+    ...baseValues,
+    scheduleGroups: singleGroup(['2026-07-14'], tbaSlots),
+  };
+
+  it('valuesToDraft: 미정 슬롯은 startTime 없이 isTimeToBeAnnounced=true로 기록된다', () => {
+    const draft = valuesToDraft(tbaValues);
+    if (draft.schedule.kind !== 'dated') throw new Error('dated 여야 함');
+    const slot = draft.schedule.requirements[0]!.timeSlots[0]!;
+    expect(slot.isTimeToBeAnnounced).toBe(true);
+    expect(slot.startTime).toBeUndefined();
+  });
+
+  it('왕복(draft→values): 미정 플래그와 빈 startTime이 복원된다', () => {
+    const values = draftToValues(valuesToDraft(tbaValues));
+    expect(values.scheduleGroups?.[0]?.timeSlots).toEqual([
+      { startTime: '', isTimeToBeAnnounced: true, roles: [{ role: 'dealer', count: 1 }] },
+    ]);
+  });
+
+  it('일반 슬롯 왕복에는 미정 플래그가 끼어들지 않는다 (무회귀)', () => {
+    const values = draftToValues(valuesToDraft(baseValues));
+    const slot = values.scheduleGroups?.[0]?.timeSlots[0];
+    expect(slot && 'isTimeToBeAnnounced' in slot).toBe(false);
+  });
+
+  it('primaryScheduleInfo: 첫 슬롯이 미정이면 startTime을 요약에 싣지 않는다', () => {
+    const info = primaryScheduleInfo(tbaValues);
+    expect(info.startTime).toBeUndefined();
+    expect(info.primaryDate).toBe('2026-07-14');
+  });
+});

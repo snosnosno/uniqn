@@ -22,10 +22,6 @@ export {
 
 export { GRID_BADGE_META, GRID_BADGE_ORDER, type GridBadgeMeta } from './gridBadgeMeta';
 
-export { getWeekRange, type WeekRange } from './weekRange';
-
-export { getSameWeekdayDatesInMonth } from './weekdayDates';
-
 export {
   parseVenueContainer,
   parseVenueContainers,
@@ -33,18 +29,11 @@ export {
   type VenueContainer,
 } from './venueContainer';
 
+export { getRoleSalaries, findRoleSalary, hasRoleSalary } from './roleSalaries';
+
 export { parseWeeklyGridFlag } from './weeklyGridFlag';
 
 export { buildGridCells, type GridSummaryRow } from './buildGridCells';
-
-export {
-  COPY_LAST_WEEK_SHIFT_DAYS,
-  shiftDateByDays,
-  toLastWeekDate,
-  toThisWeekDate,
-  buildCopyLastWeekPayload,
-  type CopyLastWeekGroup,
-} from './copyLastWeek';
 
 export {
   SLOT_COLOR_TOKENS,
@@ -67,11 +56,3 @@ export {
   type SlotConflict,
   type SlotConflictInput,
 } from './slotEdit';
-
-export {
-  buildWeeklyBatchConfirmNotification,
-  WEEKLY_GRID_NOTIFICATION_LINK,
-  WEEKLY_BATCH_CONFIRM_TYPE,
-  type WeeklyBatchConfirmInput,
-  type WeeklyBatchNotificationPayload,
-} from './weeklyBatchNotification';

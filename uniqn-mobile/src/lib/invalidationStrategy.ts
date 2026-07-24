@@ -19,6 +19,7 @@
  */
 
 import { queryClient, queryKeys } from './queryClient';
+import { POSTING_FILLED_COUNTS_QUERY_KEY } from '@/hooks/postingFilledCountsKey';
 import { logger } from '@/utils/logger';
 
 // ============================================================================
@@ -116,7 +117,11 @@ type InvalidationTarget =
   | 'reviews.myGiven'
   | 'reviews.pending'
   | 'reviews.bubbleScore'
-  | 'admin.all';
+  | 'admin.all'
+  // 공고 인원 카운트 — count_posting_confirmed_by_slot(work_logs 기준) 파생
+  | 'postingFilledCounts.all'
+  // 주간 배치 그리드 — get_venue_grid_summary(work_logs + job_postings.schedule) 파생
+  | 'weeklyGrid.all';
 
 // ============================================================================
 // Invalidation Graph
@@ -174,6 +179,7 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
    * - 근무기록 (WorkLog 생성됨)
    * - 정산 관련
    * - 공고 상세 (확정 인원)
+   * - 공고 인원 카운트 / 주간 그리드 (work_logs 생성 → 파생 집계 변동)
    */
   'applicant.confirm': [
     'applicantManagement.byJobPosting',
@@ -181,6 +187,8 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
     'workLogs.all',
     'settlement.byJobPosting',
     'jobPostings.detail',
+    'postingFilledCounts.all',
+    'weeklyGrid.all',
   ],
 
   /**
@@ -202,6 +210,8 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
     'workLogs.all',
     'settlement.byJobPosting',
     'jobPostings.detail',
+    'postingFilledCounts.all',
+    'weeklyGrid.all',
   ],
 
   /**
@@ -220,6 +230,8 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
     'settlement.byJobPosting',
     'reviews.pending',
     'jobPostings.detail',
+    'postingFilledCounts.all',
+    'weeklyGrid.all',
   ],
 
   // ========================================
@@ -231,7 +243,7 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
    * - 전체 공고 목록
    * - 내 공고 목록
    */
-  'jobPosting.create': ['jobPostings.all', 'jobPostings.mine'],
+  'jobPosting.create': ['jobPostings.all', 'jobPostings.mine', 'weeklyGrid.all'],
 
   /**
    * 공고 수정
@@ -239,7 +251,14 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
    * - 전체 공고 목록 (검색/필터 결과)
    * - 내 공고 목록
    */
-  'jobPosting.update': ['jobPostings.detail', 'jobPostings.all', 'jobPostings.mine'],
+  // 그리드 required_count 는 job_postings.schedule 에서 직접 파생되므로
+  // 요구 인원 수정이 곧 그리드 "부족 N명" 배지 변경이다.
+  'jobPosting.update': [
+    'jobPostings.detail',
+    'jobPostings.all',
+    'jobPostings.mine',
+    'weeklyGrid.all',
+  ],
 
   /**
    * 공고 삭제
@@ -247,7 +266,13 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
    * - 내 공고 목록
    * - 관련 지원자 관리 (cleanup)
    */
-  'jobPosting.delete': ['jobPostings.all', 'jobPostings.mine', 'applicantManagement.all'],
+  'jobPosting.delete': [
+    'jobPostings.all',
+    'jobPostings.mine',
+    'applicantManagement.all',
+    'postingFilledCounts.all',
+    'weeklyGrid.all',
+  ],
 
   /**
    * 공고 마감
@@ -255,7 +280,12 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
    * - 전체 공고 목록
    * - 내 공고 목록
    */
-  'jobPosting.close': ['jobPostings.detail', 'jobPostings.all', 'jobPostings.mine'],
+  'jobPosting.close': [
+    'jobPostings.detail',
+    'jobPostings.all',
+    'jobPostings.mine',
+    'weeklyGrid.all',
+  ],
 
   // ========================================
   // 근무 기록 이벤트
@@ -292,17 +322,28 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
 
   /**
    * 근무기록 생성 (수동)
-   * - 근무기록
-   * - 정산
+   * - 근무기록 / 정산 / 확정 스태프
+   * - 인원 카운트·그리드 (work_logs 행 증가 → 파생 집계 변동)
    */
-  'workLog.create': ['workLogs.all', 'settlement.byJobPosting'],
+  'workLog.create': [
+    'workLogs.all',
+    'settlement.byJobPosting',
+    'confirmedStaff.byJobPosting',
+    'postingFilledCounts.all',
+    'weeklyGrid.all',
+  ],
 
   /**
    * 근무기록 수정
-   * - 근무기록
-   * - 정산
+   * - 근무기록 / 정산 / 확정 스태프
+   * - 그리드 (셀에 표시되는 근무시간·역할이 work_logs 에서 옴)
    */
-  'workLog.update': ['workLogs.all', 'settlement.byJobPosting'],
+  'workLog.update': [
+    'workLogs.all',
+    'settlement.byJobPosting',
+    'confirmedStaff.byJobPosting',
+    'weeklyGrid.all',
+  ],
 
   // ========================================
   // 정산 이벤트
@@ -312,24 +353,28 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
    * 정산 처리
    * - 정산 목록
    * - 근무기록 (상태 업데이트)
+   * - 확정 스태프 (stats.settled 가 payrollStatus 에서 파생)
    */
   'settlement.process': [
     'settlement.byJobPosting',
     'settlement.all',
     'workLogs.all',
     'reviews.pending',
+    'confirmedStaff.byJobPosting',
   ],
 
   /**
    * 일괄 정산
    * - 정산 전체
    * - 근무기록
+   * - 확정 스태프 (stats.settled 가 payrollStatus 에서 파생)
    */
   'settlement.bulkProcess': [
     'settlement.all',
     'settlement.byJobPosting',
     'workLogs.all',
     'reviews.pending',
+    'confirmedStaff.all',
   ],
 
   // ========================================
@@ -519,6 +564,14 @@ function getQueryKeyForTarget(
       return queryKeys.announcements.all;
     case 'admin.all':
       return queryKeys.admin.all;
+
+    // 파생 집계 (공고 인원 카운트 / 주간 그리드)
+    // 둘 다 서버 RPC 가 work_logs·job_postings 를 집계해 만든 값이라,
+    // 원본을 쓰는 뮤테이션마다 같이 씻어내야 화면 숫자가 어긋나지 않는다.
+    case 'postingFilledCounts.all':
+      return [POSTING_FILLED_COUNTS_QUERY_KEY];
+    case 'weeklyGrid.all':
+      return queryKeys.weeklyGrid.all;
 
     default:
       logger.warn('알 수 없는 무효화 대상', { target });

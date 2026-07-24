@@ -1,6 +1,6 @@
 ---
 area: architecture
-updated: 2026-07-17
+updated: 2026-07-24
 status: current
 sources:
   - uniqn-mobile/supabase/migrations/20260625120000_ops_1a_enums_and_tables.sql
@@ -80,6 +80,11 @@ ops를 **employer 전용 발견 표면 → 회원 전원 개방**. 서버는 이
 **마이그 7개(`20260717090000`~`090600`) 전부 additive**(enum ADD VALUE·ADD COLUMN·신규 테이블·`CREATE OR REPLACE`). **배포 순서 BLOCKING**: prod 마이그 → OTA → 플래그 ON. 역순이면 신 클라의 `prize_paid_at`·`monitor_config` 참조가 **42703(undefined_column)으로 기존 ops 화면 즉사**. 진행/게이트 상세 = `memory/project_ops_open_access_monetization_20260716`.
 
 **불변 계약 유지(코드 검증됨)**: anon-executable ops SECDEF **정확히 2개**(monitor/player) — S1 마이그 전부 신규 함수 PUBLIC/anon REVOKE, 공개뷰 스냅샷은 `CREATE OR REPLACE`로 기존 anon ACL 보존, 신고는 anon RPC 대신 테이블+트리거로 우회(위 "anon SECDEF 불변 계약(=2)" 섹션). claim 토큰 읽기(view_token/anon)·쓰기(8자 PIN/bcrypt) 분리도 불변. 하드닝 규율 = [[secdef-hardening]].
+
+## 콘솔 리디자인 + 블라인드 프리셋 (PR#313, 2026-07-24 머지 — 코드 검증됨)
+운영 콘솔 UI 전면 개편: `OpsConsoleShell`(요약 스트립+`OpsClockStrip`+탭 재편+태블릿 600dp 사이드바+⋯ 오버플로 시트), 참가 등록 인라인 폼→FAB+`OpsRegisterParticipantSheet`, a11y(탭 role/selected·44px 터치).
+- **블라인드 프리셋**: `ops_blind_presets` 테이블(FORCE RLS, 소유자 전용 정책 1종) + `ops_save_blind_preset`/`ops_delete_blind_preset` SECDEF RPC(anon REVOKE — **=2 계약 불변**). 마이그 `20260724000000`·`20260724000100`.
+- 잔여: 서버 levels 상한(클라 zod `.max(100)`만 존재 — save RPC·`ops_set_blind_levels` 무상한) 후속 마이그. UI 함정 교훈은 [[ops-console-redesign]]·[[nativewind-rn-pitfalls]].
 
 ## 연결
 - 5레이어 쓰기 경계: [[layers]]

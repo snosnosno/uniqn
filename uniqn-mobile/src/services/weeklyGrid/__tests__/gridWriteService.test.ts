@@ -1,63 +1,77 @@
-/**
- * gridWriteService.setVenueSoftTargetBulk — 벌크 soft-target 순차 저장 검증
- *
- * "이번 달 같은 요일 전체 적용"(P1-5)의 벌크 위임이 각 날짜를 순차로 레포에 위임하는지 검증한다.
- * 순차성(병렬 아님)의 핵심 계약: 중간 실패 시 이후 날짜는 호출되지 않아야 한다 — Promise.all 이면
- * 실패 전에 전부 호출됐을 것이므로, "2회에서 멈춤"이 순차 증거다.
- * 나머지 서비스 경로(updateSlot/deleteSlot/createVenueContainer)는 다른 테스트가 담당 —
- * 여기선 벌크만 격리 검증하고, 모듈 로드에 필요한 값 import 는 최소 목으로 충족한다.
- */
-import { setVenueSoftTargetBulk } from '../gridWriteService';
-import { weeklyGridRepository } from '@/repositories/weeklyGrid';
+import { setVenueRoleSalary } from '../gridWriteService';
 
-// 벌크가 실제로 위임하는 유일한 협력자 — 이것만 스파이한다.
+import { ERROR_CODES, ValidationError } from '@/errors';
+import { weeklyGridRepository } from '@/repositories/weeklyGrid';
+import type { SetVenueRoleSalaryInput } from '@/repositories';
+
+// 레포 경계는 mock — 이 스위트는 Service 의 customRole 선차단(XSS·길이) 검증만 대상으로 한다.
+// xssValidation(@/utils/security)·에러 클래스(@/errors)는 실물 유지(선차단 로직의 실제 동작 검증).
 jest.mock('@/repositories/weeklyGrid', () => ({
   weeklyGridRepository: {
-    setVenueSoftTarget: jest.fn(),
+    setVenueRoleSalary: jest.fn(async () => undefined),
+    setVenueSoftTarget: jest.fn(async () => undefined),
   },
 }));
 
-// gridWriteService 모듈이 값으로 import 하는 레포 배럴 — 벌크 경로 미사용, 로드 충족용 최소 목.
 jest.mock('@/repositories', () => ({
   workLogRepository: { updateSlot: jest.fn() },
   jobPostingRepository: { getOrCreateVenueContainer: jest.fn() },
 }));
 
-// deleteSlot 경로 의존 — 벌크 테스트엔 무관하나 모듈 로드 충족용 최소 목.
 jest.mock('@/services/work/confirmedStaffService', () => ({
   cancelConfirmedStaffConfirmation: jest.fn(),
 }));
 
-const mockSet = weeklyGridRepository.setVenueSoftTarget as jest.Mock;
+const mockRepo = weeklyGridRepository as jest.Mocked<typeof weeklyGridRepository>;
 
-describe('gridWriteService.setVenueSoftTargetBulk', () => {
-  beforeEach(() => mockSet.mockReset());
+const baseInput = (customRole: string): SetVenueRoleSalaryInput => ({
+  role: 'custom',
+  customRole,
+  salary: { type: 'hourly', amount: 15000 },
+});
 
-  it('dates 각각을 setVenueSoftTarget 에 순차 위임(nth 호출 인수 검증)', async () => {
-    mockSet.mockResolvedValue(undefined);
+// 선차단은 async 함수가 아니라 동기 throw(레포 위임 promise 반환 전) 이므로 rejects 로는 잡히지 않는다 —
+// 호출을 감싸 던져진 에러를 포획해 code/인스턴스를 단언한다.
+const catchThrown = (fn: () => unknown): unknown => {
+  try {
+    fn();
+    return undefined;
+  } catch (error) {
+    return error;
+  }
+};
 
-    await setVenueSoftTargetBulk('v1', ['2026-07-05', '2026-07-12', '2026-07-19'], 5);
-
-    expect(mockSet).toHaveBeenCalledTimes(3);
-    expect(mockSet).toHaveBeenNthCalledWith(1, 'v1', '2026-07-05', 5);
-    expect(mockSet).toHaveBeenNthCalledWith(2, 'v1', '2026-07-12', 5);
-    expect(mockSet).toHaveBeenNthCalledWith(3, 'v1', '2026-07-19', 5);
+describe('gridWriteService.setVenueRoleSalary — customRole 선차단', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  it('dates 가 비면 레포를 호출하지 않는다', async () => {
-    await setVenueSoftTargetBulk('v1', [], 5);
+  it('XSS 패턴 customRole 은 SECURITY_XSS_DETECTED 로 차단하고 레포를 호출하지 않는다', () => {
+    const input = baseInput('<script>alert(1)</script>');
 
-    expect(mockSet).not.toHaveBeenCalled();
+    const thrown = catchThrown(() => setVenueRoleSalary('venue-1', input));
+
+    expect(thrown).toBeInstanceOf(ValidationError);
+    expect((thrown as ValidationError).code).toBe(ERROR_CODES.SECURITY_XSS_DETECTED);
+    expect(mockRepo.setVenueRoleSalary).not.toHaveBeenCalled();
   });
 
-  it('중간(2번째) 실패 시 예외를 전파하고 이후 날짜는 호출하지 않는다(순차 계약)', async () => {
-    mockSet.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('PERMISSION_DENIED'));
+  it('51자 customRole 은 길이 초과(VALIDATION_SCHEMA)로 차단하고 레포를 호출하지 않는다', () => {
+    const input = baseInput('가'.repeat(51));
 
-    await expect(
-      setVenueSoftTargetBulk('v1', ['2026-07-05', '2026-07-12', '2026-07-19'], 5)
-    ).rejects.toThrow('PERMISSION_DENIED');
+    const thrown = catchThrown(() => setVenueRoleSalary('venue-1', input));
 
-    // 병렬(Promise.all)이면 3회 모두 호출됐을 것 — 2회에서 멈춘 것이 순차 증거.
-    expect(mockSet).toHaveBeenCalledTimes(2);
+    expect(thrown).toBeInstanceOf(ValidationError);
+    expect((thrown as ValidationError).code).toBe(ERROR_CODES.VALIDATION_SCHEMA);
+    expect((thrown as ValidationError).field).toBe('customRole');
+    expect(mockRepo.setVenueRoleSalary).not.toHaveBeenCalled();
+  });
+
+  it('정상 한글 customRole 은 레포에 원본 인자 그대로 위임한다', async () => {
+    const input = baseInput('칩 러너');
+
+    await expect(setVenueRoleSalary('venue-1', input)).resolves.toBeUndefined();
+    expect(mockRepo.setVenueRoleSalary).toHaveBeenCalledTimes(1);
+    expect(mockRepo.setVenueRoleSalary).toHaveBeenCalledWith('venue-1', input);
   });
 });

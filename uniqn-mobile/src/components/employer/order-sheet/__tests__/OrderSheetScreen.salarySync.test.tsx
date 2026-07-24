@@ -82,8 +82,7 @@ describe('OrderSheetScreen — 역할별 급여 자동 프리필(syncRoleSalarie
     );
 
     fireEvent.press(getByTestId('order-sheet-row-roles')); // 슬롯 1개 → RolesSheet 직접
-    fireEvent.press(getByTestId('order-role-chip-dealer'));
-    fireEvent.press(getByTestId('order-role-add'));
+    fireEvent.press(getByTestId('order-role-chip-dealer')); // 칩 1탭 = 즉시 추가(RoleCountEditor)
     fireEvent.press(getByText('확인'));
     await flushValidation();
 
@@ -105,8 +104,7 @@ describe('OrderSheetScreen — 역할별 급여 자동 프리필(syncRoleSalarie
     );
 
     fireEvent.press(getByTestId('order-sheet-row-roles'));
-    fireEvent.press(getByTestId('order-role-chip-floor'));
-    fireEvent.press(getByTestId('order-role-add'));
+    fireEvent.press(getByTestId('order-role-chip-floor')); // 칩 1탭 = 즉시 추가(RoleCountEditor)
     fireEvent.press(getByText('확인'));
     await flushValidation();
 

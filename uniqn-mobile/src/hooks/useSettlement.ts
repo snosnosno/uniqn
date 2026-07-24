@@ -29,6 +29,10 @@ import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
 import { triggerBatchStart, triggerBatchEnd } from '@/utils/haptics';
 import { stableFilters } from '@/utils/queryUtils';
+import {
+  buildWorkLogNameMap,
+  formatBulkSettlementFailures,
+} from '@/utils/settlementFailureMessage';
 import { errorHandlerPresets, createMutationErrorHandler } from '@/shared/errors';
 import { requireAuth } from '@/errors/guardErrors';
 import { STATUS } from '@/constants';
@@ -267,10 +271,14 @@ export function useBulkSettlement() {
       }
 
       if (result.failedCount > 0) {
-        addToast({
-          type: 'warning',
-          message: `${result.failedCount}건 정산 실패`,
-        });
+        // 서버 results[]로 실패자 이름 나열 (QW3). 이름은 settlement 캐시에서 해소.
+        const nameByWorkLogId = buildWorkLogNameMap(
+          queryClient.getQueriesData({ queryKey: queryKeys.settlement.all })
+        );
+        const failureMessage = formatBulkSettlementFailures(result, nameByWorkLogId);
+        if (failureMessage) {
+          addToast({ type: 'warning', message: failureMessage });
+        }
       }
 
       // impeccable v2 §17 — 일괄 정산 "종료" 햅틱.

@@ -12,13 +12,13 @@ import {
   Pressable,
   Modal as RNModal,
   Keyboard,
-  KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ModalKeyboardAvoider } from '@/components/ui/ModalKeyboardAvoider';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -67,6 +67,9 @@ const MODAL_SIZES = {
 };
 
 const MODAL_FULL_MARGIN = 16; // 좌우 가장자리 여백 (px)
+
+/** 하단 시트 카드의 최소 하단 여백 — 비-노치 기기(insets.bottom=0)에서 기존 pb-8 유지용 */
+const BOTTOM_SHEET_MIN_PAD = 16;
 
 // ============================================================================
 // Web Modal Component
@@ -176,8 +179,10 @@ function WebModal({
           accessibilityLabel="모달 닫기"
         />
 
-        {/* Modal Container */}
-        <View className={`flex-1 ${containerStyle}`} style={{ pointerEvents: 'box-none' }}>
+        {/* Modal Container — pointerEvents 는 반드시 prop 으로:
+            style 의 'box-none' 은 유효 CSS 값이 아니라 RNW 가 드롭(computed auto)해
+            백드롭(형제 Pressable) 클릭이 이 컨테이너에 전부 삼켜진다(웹 실측). */}
+        <View className={`flex-1 ${containerStyle}`} pointerEvents="box-none">
           <View
             style={[
               modalMaxHeightStyle,
@@ -260,6 +265,7 @@ function NativeModal({
 }: ModalProps) {
   const { isDarkMode } = useThemeStore();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const fadeOpacity = useSharedValue(0);
   const scale = useSharedValue(0.9);
   const translateY = useSharedValue(100);
@@ -359,7 +365,8 @@ function NativeModal({
   const modalClassName =
     position === 'center'
       ? `bg-surface-card rounded-lg overflow-hidden ${MODAL_SIZES[size]}`
-      : 'bg-surface-card rounded-t-3xl w-full pb-8';
+      : // pb-8 은 style 의 paddingBottom(인셋 반영)으로 대체됐다 — 아래 카드 View 참조.
+        'bg-surface-card rounded-t-3xl w-full';
 
   // 모달 최대 높이 스타일 (숫자값으로 계산)
   const modalMaxHeightStyle = {
@@ -374,10 +381,9 @@ function NativeModal({
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
-      >
+      {/* Android: statusBarTranslucent 다이얼로그에선 KAV(height)가 무력 —
+          ModalKeyboardAvoider가 IME 인셋 기반 paddingBottom으로 직접 보정 */}
+      <ModalKeyboardAvoider>
         <View className={`flex-1 ${containerStyle}`} style={{ pointerEvents: 'box-none' }}>
           {/* 백드롭 - 별도 레이어로 분리 (button 중첩 방지) */}
           <Pressable
@@ -400,11 +406,27 @@ function NativeModal({
               size === 'full' ? { width: windowWidth - MODAL_FULL_MARGIN * 2 } : null,
             ]}
           >
-            <SafeAreaView
-              edges={position === 'center' ? ['top', 'bottom'] : ['bottom']}
-              style={{ flexShrink: 1 }}
+            <View
+              style={{
+                flexShrink: 1,
+                // center 모달은 화면 중앙에 뜨므로 래퍼 여백으로 가장자리 침범만 막으면 된다.
+                // bottom 시트는 바닥에 붙어야 하므로 여기서 여백을 주면 안 된다 —
+                // 이 래퍼에는 배경이 없어서 카드가 떠오르고 백드롭이 비친다.
+                paddingTop: position === 'center' ? insets.top : 0,
+                paddingBottom: position === 'center' ? insets.bottom : 0,
+              }}
             >
-              <View className={modalClassName} style={{ flexShrink: 1 }}>
+              <View
+                className={modalClassName}
+                style={{
+                  flexShrink: 1,
+                  // bottom 시트는 인셋을 카드 '안쪽' 패딩으로 흡수한다.
+                  // 비-노치 기기(insets.bottom=0)에서도 기존 pb-8(32px)과 같은 여백을 유지.
+                  ...(position === 'bottom'
+                    ? { paddingBottom: Math.max(insets.bottom, BOTTOM_SHEET_MIN_PAD) + 16 }
+                    : null),
+                }}
+              >
                 {/* Header */}
                 {(title || showCloseButton) && (
                   <View className="flex-row items-center justify-between px-5 py-2.5 border-b border-divider">
@@ -443,10 +465,10 @@ function NativeModal({
                   </View>
                 )}
               </View>
-            </SafeAreaView>
+            </View>
           </Animated.View>
         </View>
-      </KeyboardAvoidingView>
+      </ModalKeyboardAvoider>
     </RNModal>
   );
 }

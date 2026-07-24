@@ -11,8 +11,11 @@ import { STAFF_ROLE_LABELS, USER_ROLE_LABELS } from '../role';
 const ROLE_DISPLAY_LABELS: Record<string, string> = {
   ...USER_ROLE_LABELS,
   ...STAFF_ROLE_LABELS,
-  // Preserve existing UI behavior where the shared `staff` key reads as the generic staff label.
-  staff: '일반',
+  // 이 맵의 소비처(getRoleDisplayName → 공고 상세/카드/스케줄/정산)는 전부 **직무**
+  // 문맥이므로 StaffRole 기준 '직원'이 맞다. 공고 작성 화면은 이미 STAFF_ROLES 경유로
+  // '직원'을 표시하고 있어, 이 값이 '일반'이던 동안 같은 역할이 작성 화면에서는
+  // '직원', 구직자 상세에서는 '일반'으로 갈라져 보였다 (2026-07-19 정리).
+  staff: '직원',
   user: '일반 사용자',
   supervisor: '슈퍼바이저',
 };

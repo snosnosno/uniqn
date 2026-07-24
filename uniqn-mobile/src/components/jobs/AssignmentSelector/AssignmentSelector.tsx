@@ -1,7 +1,8 @@
 import React, { memo, useCallback, useMemo } from 'react';
 import { Text, View } from 'react-native';
 import { buildPostingFacts, createPostingLegacyDateRequirements } from '@/domains/job-posting';
-import { useJobSchedule } from '@/hooks';
+import { roleHydrateKey, slotHydrateKey } from '@/domains/schedule';
+import { useJobSchedule } from '@/hooks/useJobSchedule';
 import type { Assignment } from '@/types';
 import { TBA_TIME_MARKER, createSimpleAssignment } from '@/types/assignment';
 import type { TimeSlotInfo } from '@/types/unified';
@@ -12,6 +13,7 @@ import {
   type ScheduleGroup,
   type SelectionKey,
 } from '@/utils/assignment';
+import { sortTimeSlotsByStart } from '@/utils/date';
 import { DateGroupSelection } from './DateGroupSelection';
 import { DateSelection } from './DateSelection';
 import type { AssignmentSelectorProps, TimeOptions } from './types';
@@ -46,9 +48,33 @@ export const AssignmentSelector = memo(function AssignmentSelector({
   maxSelections,
   disabled = false,
   error,
+  filledCounts,
 }: AssignmentSelectorProps) {
   const { datedSchedules, isFixed } = useJobSchedule(jobPosting);
   const postingFacts = useMemo(() => buildPostingFacts(jobPosting), [jobPosting]);
+
+  // hydrate 키 규칙(서버 _posting_slot_key/_posting_role_key 정합)은 공용 유틸(postingHydrateKeys)로 통합.
+  // postingSurfaceModel 과 단일 소스 — 카드/상세/지원 선택이 동일 키를 파생한다.
+
+  // 확정 서브맵 주입: dead counter(filledCount=0) 대신 실확정으로 교체(불변 생성).
+  // 슬롯은 표시 정렬(시작시간 순) 동시 적용 — 카드/상세와 같은 순서.
+  const hydratedSchedules = useMemo(() => {
+    return datedSchedules.map((schedule) => ({
+      ...schedule,
+      // sortTimeSlotsByStart 는 SortableTimeSlot.startTime 을 `string | null` 로 넓혀 TimeSlotInfo 를
+      // 브릿지 캐스트 없이 직접 수용한다(표시 정렬용, 런타임 무영향).
+      timeSlots: sortTimeSlotsByStart(schedule.timeSlots).map((slot) => ({
+        ...slot,
+        roles: slot.roles.map((role) => ({
+          ...role,
+          filledCount:
+            filledCounts?.get(
+              `${schedule.date}__${slotHydrateKey(slot)}__${roleHydrateKey(role)}`
+            ) ?? 0,
+        })),
+      })),
+    }));
+  }, [datedSchedules, filledCounts]);
 
   const selectedKeys = useMemo(() => {
     const keys = new Set<SelectionKey>();
@@ -160,8 +186,29 @@ export const AssignmentSelector = memo(function AssignmentSelector({
   );
   const usesGroupedDateRanges = postingFacts.workflow.usesGroupedDateRanges;
   const scheduleGroups = useMemo(() => {
-    return groupDatedSchedules(datedSchedules, groupedRequirements, postingFacts.postingType);
-  }, [datedSchedules, groupedRequirements, postingFacts.postingType]);
+    const groups = groupDatedSchedules(
+      hydratedSchedules,
+      groupedRequirements,
+      postingFacts.postingType
+    );
+    return groups.map((group) => ({
+      ...group,
+      timeSlots: group.timeSlots.map((slot) => ({
+        ...slot,
+        roles: slot.roles.map((role) => ({
+          ...role,
+          // 그룹 표시 분자 = 날짜별 확정의 최대값(하루 기준·C안). 합산 금지.
+          filledCount: group.dates.reduce((max, schedule) => {
+            const daySlot = schedule.timeSlots.find(
+              (s) => slotHydrateKey(s) === slotHydrateKey(slot)
+            );
+            const dayRole = daySlot?.roles.find((r) => roleHydrateKey(r) === roleHydrateKey(role));
+            return Math.max(max, dayRole?.filledCount ?? 0);
+          }, 0),
+        })),
+      })),
+    }));
+  }, [hydratedSchedules, groupedRequirements, postingFacts.postingType]);
 
   if (isFixed) {
     return (
@@ -202,7 +249,7 @@ export const AssignmentSelector = memo(function AssignmentSelector({
                 disabled={disabled}
               />
             ))
-          : datedSchedules.map((schedule, index) => (
+          : hydratedSchedules.map((schedule, index) => (
               <DateSelection
                 key={schedule.date || index}
                 date={schedule.date}

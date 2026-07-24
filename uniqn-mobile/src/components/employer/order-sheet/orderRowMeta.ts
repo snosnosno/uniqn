@@ -59,6 +59,36 @@ export function orderGroupsFor(postingType: OrderSheetFormValues['postingType'])
   return postingType === 'fixed' ? FIXED_ORDER_GROUPS : ORDER_GROUPS;
 }
 
+/**
+ * 슬롯 완성 판정 — getRowState('time'/'roles') 와 ScheduleSlotsSheet 확인 게이팅이 공유하는
+ * 단일 소스. time 행은 시간만, roles 행은 역할만 보므로 반쪽 술어 2개(isSlotTimeSet·slotHasRoles)
+ * + 합성(isSlotComplete)으로 나눈다. 셋을 한 곳에 두어야 zod superRefine 과의 정렬(H5)이
+ * 세 소비처에서 드리프트하지 않는다. 시간 미정(isTimeToBeAnnounced)은 유효한 확정값이다(#303).
+ */
+export interface SlotCompletable {
+  startTime: string;
+  isTimeToBeAnnounced?: boolean;
+  roles: readonly unknown[];
+}
+
+/** 슬롯의 시간이 확정됐는가 — HH:MM 유효값 또는 시간 미정. */
+export const isSlotTimeSet = (s: SlotCompletable): boolean =>
+  s.isTimeToBeAnnounced === true || START_TIME_RE.test(s.startTime);
+
+/** 슬롯에 역할이 1개 이상 있는가. */
+export const slotHasRoles = (s: SlotCompletable): boolean => s.roles.length > 0;
+
+/** 슬롯이 완성됐는가 — 시간 확정 + 역할 있음. 역할 0개 확정은 급여 시트 데드엔드를 만든다. */
+export const isSlotComplete = (s: SlotCompletable): boolean => isSlotTimeSet(s) && slotHasRoles(s);
+
+/**
+ * 슬롯 목록 전체가 완성됐는가 — 확인 버튼 게이팅용.
+ * ⚠️ slots.length > 0 가드 필수: Array.every 는 빈 배열에서 진공적으로 true 라,
+ * 이 가드가 없으면 슬롯 0개일 때 확인이 열려 무효 확정으로 이어진다(리뷰 MEDIUM).
+ */
+export const areSlotsComplete = (slots: readonly SlotCompletable[]): boolean =>
+  slots.length > 0 && slots.every(isSlotComplete);
+
 /** RHF errors의 최상위 필드 → 행 매핑 (scheduleGroups는 아래 경로 워커가 처리) */
 const ERROR_FIELD_TO_ROW: Record<string, OrderRowKey> = {
   title: 'title',
@@ -400,10 +430,13 @@ export function getRowState(
       };
     }
     case 'time': {
-      // H5 근본 수정: 해당 그룹 모든 슬롯의 startTime이 유효해야 set — 하나라도 빈 값이면 unset (zod와 정렬)
+      // H5 근본 수정: 해당 그룹 모든 슬롯이 유효(시각 HH:MM 또는 시간 미정)해야 set — zod superRefine과 정렬
+      // 판정은 공유 술어 isSlotTimeSet 경유(3중 구현 통합, 드리프트 차단).
       const slots = group?.timeSlots ?? [];
-      const allValid = slots.length > 0 && slots.every((s) => START_TIME_RE.test(s.startTime));
-      const starts = slots.map((s) => s.startTime).filter((t) => START_TIME_RE.test(t));
+      const allValid = slots.length > 0 && slots.every(isSlotTimeSet);
+      const starts = slots
+        .filter(isSlotTimeSet)
+        .map((s) => (s.isTimeToBeAnnounced === true ? '미정' : s.startTime));
       return {
         label: '시간',
         value: allValid ? `출근 ${starts.join(' · ')}` : '',
@@ -438,7 +471,7 @@ export function getRowState(
         };
       }
       const slots = group?.timeSlots ?? [];
-      const allHaveRoles = slots.length > 0 && slots.every((s) => s.roles.length > 0);
+      const allHaveRoles = slots.length > 0 && slots.every(slotHasRoles);
       return {
         label: '역할',
         value: allHaveRoles ? summarizeRoles(slots) : '',
@@ -518,22 +551,79 @@ export function getRowState(
 }
 
 /**
- * 첫 미설정 행 타깃 — 일정·모집 섹션은 그룹 순회(그룹0 dates→time→roles → 그룹1 …).
- * 제출 유도(H5)와 에러 배지가 같은 타깃을 흘려받는다(리뷰 Design-M3).
+ * 화면에 보이는 순서대로의 전체 행 타깃 목록 — 일정·모집 섹션은 그룹 수만큼 반복한다.
+ * firstUnsetRow / nextUnsetRowAfter 의 공통 순회 소스(DRY).
  */
-export function firstUnsetRow(values: OrderSheetFormValues): OrderRowTarget | null {
+export function orderedRowTargets(values: OrderSheetFormValues): OrderRowTarget[] {
   const isFixed = values.postingType === 'fixed';
-  // fixed는 날짜 축이 없어 단일 그룹(index 0)만 순회 — dated는 그룹 수만큼 일정·모집 반복(S1)
+  // fixed 는 날짜 축이 없어 단일 그룹(index 0)만 순회 — dated 는 그룹 수만큼 일정·모집 반복(S1)
   const groupCount = isFixed ? 1 : Math.max(1, (values.scheduleGroups ?? []).length);
+  const targets: OrderRowTarget[] = [];
   for (const section of orderGroupsFor(values.postingType)) {
     const isSchedule = section.title === '일정 · 모집';
     const groupIndexes = isSchedule ? [...Array(groupCount).keys()] : [0];
     for (const groupIndex of groupIndexes) {
       for (const key of section.rows) {
-        const state = getRowState(values, key, groupIndex);
-        if (!state.optional && state.unset) return { key, groupIndex };
+        targets.push({ key, groupIndex });
       }
     }
+  }
+  return targets;
+}
+
+/** 해당 타깃이 "채워야 하는데 비어 있는" 상태인지 */
+function isUnsetTarget(values: OrderSheetFormValues, target: OrderRowTarget): boolean {
+  const state = getRowState(values, target.key, target.groupIndex);
+  return !state.optional && state.unset;
+}
+
+/**
+ * 첫 미설정 행 타깃 — 일정·모집 섹션은 그룹 순회(그룹0 dates→time→roles → 그룹1 …).
+ * 제출 유도(H5)와 에러 배지가 같은 타깃을 흘려받는다(리뷰 Design-M3).
+ */
+export function firstUnsetRow(values: OrderSheetFormValues): OrderRowTarget | null {
+  return orderedRowTargets(values).find((t) => isUnsetTarget(values, t)) ?? null;
+}
+
+/**
+ * 연쇄 입력용 — current 다음 위치부터 순환 순회하며 첫 미설정 행을 낸다.
+ *
+ * 전역 첫 미설정(firstUnsetRow)을 쓰면 뒤쪽 행을 확정했을 때 앞쪽 미설정 행으로 되돌아가
+ * 사용자가 끌려가는 느낌을 받는다. 한 바퀴 돌아 current 로 돌아오면 null 을 반환해
+ * 연쇄를 끝낸다 — current 가 확인 후에도 여전히 unset 인 경우(금액 0 확인 등)의
+ * 무한 재오픈을 구조적으로 차단한다.
+ *
+ * current 가 목록에 없으면(타입 전환 등으로 행 구성이 바뀐 경우) 앞에서부터 훑는다.
+ *
+ * @param coveredKeys 방금 확인한 시트가 함께 확정한 행들. 기본값은 current 하나.
+ *   ⚠️ 행과 시트는 1:1 이 아니다 — 시간·역할 두 행은 ScheduleSlotsSheet 하나로 열리고
+ *   확인은 roles 로만 보고된다. current 하나만 제외하면 time 이 곧바로 다음 타깃이 되어
+ *   **같은 시트가 무한 재오픈**된다(슬롯 추가 후 시간 미선택 확인으로 재현). 시트가
+ *   커버하는 행 전체를 넘겨야 "확인한 것은 다시 묻지 않는다"는 가드가 성립한다.
+ *   같은 그룹에만 적용되므로 다른 그룹의 동일 행은 정상적으로 다음 타깃이 된다.
+ * @param skipKeys 열어도 편집할 수 없는 행들(scheduleLocked 의 일정·역할 잠금). 연쇄가 이 행을
+ *   타깃으로 고르면 openRow 의 잠금 가드가 누른 적 없는 경고 토스트를 띄우며 연쇄가 그 자리에서
+ *   죽는다 — 순회에서 제외해 뒤쪽의 수정 가능한 미설정 행으로 넘어간다. 잠금은 그룹 무관이므로
+ *   coveredKeys 와 달리 **그룹 불문** 적용. 스킵 결과 남은 미설정이 없으면 조용히 종료(null).
+ */
+export function nextUnsetRowAfter(
+  values: OrderSheetFormValues,
+  current: OrderRowTarget,
+  coveredKeys: readonly OrderRowKey[] = [current.key],
+  skipKeys?: ReadonlySet<OrderRowKey>
+): OrderRowTarget | null {
+  const targets = orderedRowTargets(values);
+  const currentIndex = targets.findIndex(
+    (t) => t.key === current.key && t.groupIndex === current.groupIndex
+  );
+  const start = currentIndex + 1; // 못 찾으면 -1 → 0 부터 = 앞에서부터 훑기
+  for (let offset = 0; offset < targets.length; offset += 1) {
+    const target = targets[(start + offset) % targets.length];
+    if (target === undefined) continue;
+    if (currentIndex >= 0 && (start + offset) % targets.length === currentIndex) break;
+    if (skipKeys?.has(target.key)) continue;
+    if (target.groupIndex === current.groupIndex && coveredKeys.includes(target.key)) continue;
+    if (isUnsetTarget(values, target)) return target;
   }
   return null;
 }

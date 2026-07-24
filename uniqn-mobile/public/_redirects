@@ -8,5 +8,11 @@
 /privacy.html  /privacy.html  200
 /account-deletion.html  /account-deletion.html  200
 
+# 앱 소개 페이지 (홍보용) — privacy.html 과 동일 패턴.
+# 확장자 없는 /guide 는 CF Pages clean-URL 이 자동 서빙(/guide.html→/guide 308).
+# 확장자 없는 rewrite(/guide → /guide.html 200)를 넣으면 clean-URL 정규화와 충돌해
+# 308 무한 루프가 나므로 절대 추가하지 말 것(실측: privacy 는 이 줄 없이 200).
+/guide.html  /guide.html  200
+
 # SPA fallback (모든 경로를 index.html로)
 /*  /index.html  200

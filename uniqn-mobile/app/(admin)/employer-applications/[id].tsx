@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -18,6 +18,7 @@ import {
 } from '@/services/admin';
 import { confirmAction } from '@/utils/confirmAction';
 import { toDate } from '@/utils/date';
+import { openExternalUrl } from '@/utils/externalLink';
 import { formatE164ToDisplay } from '@/utils/phone';
 
 // ============================================================================
@@ -169,12 +170,22 @@ export default function AdminEmployerApplicationDetailPage() {
   const handleCallPhone = () => {
     if (!applicant?.phone) return;
     const digits = applicant.phone.replace(/[^\d+]/g, '');
-    void Linking.openURL(`tel:${digits}`);
+    void openExternalUrl(`tel:${digits}`, {
+      fallbackTitle: '전화 앱을 열 수 없어요',
+      fallbackHint: '아래 번호로 직접 전화해주세요.',
+      fallbackValue: applicant.phone,
+      component: 'EmployerApplicationDetail',
+    });
   };
 
   const handleSendEmail = () => {
     if (!applicant?.email) return;
-    void Linking.openURL(`mailto:${applicant.email}`);
+    void openExternalUrl(`mailto:${applicant.email}`, {
+      fallbackTitle: '메일 앱을 열 수 없어요',
+      fallbackHint: '아래 주소로 직접 메일을 보내주세요.',
+      fallbackValue: applicant.email,
+      component: 'EmployerApplicationDetail',
+    });
   };
 
   return (

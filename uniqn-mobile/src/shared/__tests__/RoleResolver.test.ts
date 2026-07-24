@@ -166,7 +166,9 @@ describe('RoleResolver', () => {
       ['floor', '플로어'],
       ['serving', '서빙'],
       ['manager', '매니저'],
-      ['staff', '일반'],
+      // 직무 역할 함수이므로 StaffRole 라벨('직원')이 맞다.
+      // 과거 '일반'은 UserRole/StaffRole 합성 맵의 충돌 회피값이었다 (2026-07-19 정리).
+      ['staff', '직원'],
     ] as const)('직무 %s → 표시명 %s', (roleId, expected) => {
       expect(RoleResolver.getStaffRoleDisplayName(roleId)).toBe(expected);
     });

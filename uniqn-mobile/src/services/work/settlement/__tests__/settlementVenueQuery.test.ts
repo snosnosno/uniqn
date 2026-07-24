@@ -18,6 +18,7 @@ import { getVenueSettlementWorkLogs } from '@/services/work/settlement/settlemen
 
 const mockGetByVenueSpanInRange = jest.fn();
 const mockGetByIdBatch = jest.fn();
+const mockGetVenueContainerById = jest.fn();
 const mockGetPostingSettlementContext = jest.fn();
 const mockCalculate = jest.fn();
 
@@ -27,6 +28,7 @@ jest.mock('@/repositories', () => ({
   },
   jobPostingRepository: {
     getByIdBatch: (...args: unknown[]) => mockGetByIdBatch(...args),
+    getVenueContainerById: (...args: unknown[]) => mockGetVenueContainerById(...args),
   },
 }));
 
@@ -35,7 +37,6 @@ jest.mock('@/domains/job-posting', () => ({
 }));
 
 jest.mock('@/utils/settlement', () => ({
-  getEffectiveSalaryInfoFromRoles: jest.fn(() => ({ type: 'hourly', amount: 15000 })),
   getEffectiveAllowances: jest.fn(() => undefined),
   getEffectiveTaxSettings: jest.fn(() => undefined),
 }));
@@ -44,11 +45,17 @@ jest.mock('@/utils/settlement/constants', () => ({
   DEFAULT_SALARY_INFO: { type: 'hourly', amount: 15000 },
 }));
 
-jest.mock('@/domains/settlement', () => ({
-  SettlementCalculator: {
-    calculate: (...args: unknown[]) => mockCalculate(...args),
-  },
-}));
+// resolveEffectiveSalaryWithSource 는 실제 구현(출처 판정)을 검증 대상으로 삼는다.
+// SettlementCalculator 만 목으로 대체해 금액 계산을 결정적으로 고정한다.
+jest.mock('@/domains/settlement', () => {
+  const actual = jest.requireActual('@/domains/settlement');
+  return {
+    SettlementCalculator: {
+      calculate: (...args: unknown[]) => mockCalculate(...args),
+    },
+    resolveEffectiveSalaryWithSource: actual.resolveEffectiveSalaryWithSource,
+  };
+});
 
 jest.mock('@/utils/logger', () => ({
   logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
@@ -89,6 +96,7 @@ const DATE_RANGE = { start: '2026-07-01', end: '2026-07-31' };
 beforeEach(() => {
   jest.clearAllMocks();
   mockGetByIdBatch.mockResolvedValue([openPosting]);
+  mockGetVenueContainerById.mockResolvedValue(null);
   mockGetPostingSettlementContext.mockReturnValue({
     roles: [],
     defaultSalary: { type: 'hourly', amount: 15000 },
@@ -187,5 +195,72 @@ describe('getVenueSettlementWorkLogs', () => {
     mockGetByVenueSpanInRange.mockRejectedValue(new Error('boom'));
 
     await expect(getVenueSettlementWorkLogs('v1', DATE_RANGE)).rejects.toThrow('boom');
+  });
+
+  it('컨테이너 직속 배치 + 단가표 매칭 → salarySource=roleTable(단가표 급여로 계산)', async () => {
+    const dealerSalary = { type: 'hourly', amount: 25000 };
+    mockGetVenueContainerById.mockResolvedValue({
+      id: 'v1',
+      name: '강남홀덤',
+      roleSalaries: [{ role: 'dealer', salary: dealerSalary }],
+    });
+    // 컨테이너 직속 배치(jobPostingId=venueId) — by-id 배치에서는 컨테이너 제외(B4).
+    mockGetByVenueSpanInRange.mockResolvedValue([
+      workLog({ id: 'wl-c', jobPostingId: 'v1', role: 'dealer' }),
+    ]);
+    mockGetByIdBatch.mockResolvedValue([]);
+
+    const result = await getVenueSettlementWorkLogs('v1', DATE_RANGE);
+
+    expect(mockGetVenueContainerById).toHaveBeenCalledWith('v1');
+    expect(result[0].salarySource).toBe('roleTable');
+    expect(result[0].salaryInfo).toEqual(dealerSalary);
+    // 금액이 폴백(₩15,000)이 아니라 단가표(₩25,000) 기준으로 계산됐는지 — calculator 입력 검증.
+    expect(mockCalculate).toHaveBeenCalledWith(
+      expect.objectContaining({ salaryInfo: dealerSalary })
+    );
+  });
+
+  it('컨테이너 직속 배치 + 단가표 미매칭 → salarySource=fallback(₩15,000 무회귀)', async () => {
+    mockGetVenueContainerById.mockResolvedValue({
+      id: 'v1',
+      name: '강남홀덤',
+      roleSalaries: [{ role: 'dealer', salary: { type: 'hourly', amount: 25000 } }],
+    });
+    mockGetByVenueSpanInRange.mockResolvedValue([
+      workLog({ id: 'wl-c', jobPostingId: 'v1', role: 'serving' }),
+    ]);
+    mockGetByIdBatch.mockResolvedValue([]);
+
+    const result = await getVenueSettlementWorkLogs('v1', DATE_RANGE);
+
+    expect(result[0].salarySource).toBe('fallback');
+    expect(result[0].salaryInfo).toEqual({ type: 'hourly', amount: 15000 });
+    expect(mockCalculate).toHaveBeenCalledWith(
+      expect.objectContaining({ salaryInfo: { type: 'hourly', amount: 15000 } })
+    );
+  });
+
+  it('customSalaryInfo 보유 → salarySource=override(단가표보다 우선)', async () => {
+    const override = { type: 'daily', amount: 200000 };
+    mockGetVenueContainerById.mockResolvedValue({
+      id: 'v1',
+      name: '강남홀덤',
+      roleSalaries: [{ role: 'dealer', salary: { type: 'hourly', amount: 25000 } }],
+    });
+    mockGetByVenueSpanInRange.mockResolvedValue([
+      workLog({
+        id: 'wl-c',
+        jobPostingId: 'v1',
+        role: 'dealer',
+        customSalaryInfo: override,
+      } as Partial<WorkLog>),
+    ]);
+    mockGetByIdBatch.mockResolvedValue([]);
+
+    const result = await getVenueSettlementWorkLogs('v1', DATE_RANGE);
+
+    expect(result[0].salarySource).toBe('override');
+    expect(result[0].salaryInfo).toEqual(override);
   });
 });

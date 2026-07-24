@@ -9,6 +9,7 @@ import { toJobPostingCard } from '@/domains/job-posting';
 import { useShare } from '@/hooks/useShare';
 import { extractPostingFilledSubmap } from '@/hooks/usePostingFilledCounts';
 import { getPostingStatusMeta } from '@/components/jobs/shared/postingSurfaceModel';
+import { isFixedJobPosting } from '@/utils/normalizers';
 import type { JobPosting, JobPostingStatus, TournamentApprovalStatus } from '@/types';
 
 /**
@@ -66,6 +67,7 @@ export const JobPostingCard = memo(function JobPostingCard({
   );
   const stripeTone = POSTING_STRIPE_TONE[posting.status];
   const statusLabel = getPostingStatusMeta(posting.status).label;
+  const isFixed = isFixedJobPosting(posting);
   const { shareJob, isSharing } = useShare();
 
   return (
@@ -78,6 +80,7 @@ export const JobPostingCard = memo(function JobPostingCard({
         stripeTone={stripeTone}
         containerClassName="overflow-hidden"
         filledCounts={cardFilledCounts}
+        showSeatTotals
         footer={
           <View className="mt-2 flex-row items-center justify-between border-t border-secondary-100 px-4 pt-2 dark:border-surface-overlay">
             <View className="flex-row items-center">
@@ -101,14 +104,20 @@ export const JobPostingCard = memo(function JobPostingCard({
                 <ShareIcon size={18} />
               </Pressable>
 
-              <Pressable
-                onPress={() => onShowQR(posting)}
-                className="p-1.5 active:opacity-70"
-                accessibilityLabel="현장 QR 표시"
-                accessibilityRole="button"
-              >
-                <QrCodeIcon size={18} color="#B8962E" />
-              </Pressable>
+              {/* 고정 공고는 QR 진입점을 노출하지 않는다. 고정 공고의 work_log 는 스태프·공고당
+                  1행이고 그 행을 scheduled 로 되돌리는 코드가 없어, 2일차부터 모든 스캔이
+                  "이미 퇴근 처리됐습니다"로 영구 실패한다. 행 수명 재설계는 별도 PR.
+                  (헤더 QR 버튼의 동일한 게이트는 app/(employer)/my-postings/[id]/_layout.tsx 참고) */}
+              {!isFixed ? (
+                <Pressable
+                  onPress={() => onShowQR(posting)}
+                  className="p-1.5 active:opacity-70"
+                  accessibilityLabel="현장 QR 표시"
+                  accessibilityRole="button"
+                >
+                  <QrCodeIcon size={18} color="#B8962E" />
+                </Pressable>
+              ) : null}
 
               {card.workflow.isTournament && posting.tournamentConfig?.approvalStatus ? (
                 <TournamentStatusBadge

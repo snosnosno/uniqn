@@ -7,7 +7,12 @@
 import { useEffect, useRef } from 'react';
 import { useGlobalSearchParams, usePathname, useRouter, useSegments } from 'expo-router';
 import { useIsMounted } from '@/hooks/useIsMounted';
+import { useURL } from 'expo-linking';
 import { isPhoneOnlySignupAuthUser } from '@/shared/auth/sessionState';
+import {
+  isPasswordRecoveryEntry,
+  shouldHandleNativeRecoveryUrl,
+} from '@/shared/auth/recoveryEntry';
 import {
   AUTH_ENTRY_ROUTES,
   appendRedirectToRoute,
@@ -124,6 +129,10 @@ export function useAuthGuard(): void {
     identityVerified,
   });
 
+  // 네이티브 복구 딥링크(루트 착지 포함) — app/index 가 재설정 화면으로 넘기는
+  // 동안 가드가 앱 홈으로 먼저 튀지 않게 유예 판정에 쓴다.
+  const incomingUrl = useURL();
+
   const routerRef = useRef(router);
   routerRef.current = router;
   const isMountedRef = useIsMounted();
@@ -148,6 +157,15 @@ export function useAuthGuard(): void {
     const postAuthRedirect = routeGroup === '(auth)' ? requestedRedirect : currentProtectedRoute;
     const pendingAuthRedirect = publicAliasRedirect ?? postAuthRedirect;
     const isOnSignup = segments.includes('signup' as never);
+    // 복구 링크 진입은 착지 위치와 무관하게 리다이렉트를 유예한다. 루트로 착지한
+    // 경우(구 번들·Site URL 폴백) app/index 가 재설정 화면으로 넘기기 전에 가드가
+    // 앱 홈으로 튕기면 비밀번호를 바꿀 기회가 사라진다.
+    const isOnPasswordReset =
+      isPasswordRecoveryEntry() ||
+      shouldHandleNativeRecoveryUrl(incomingUrl) ||
+      segments.includes('reset-password' as never) ||
+      pathname === '/reset-password' ||
+      browserPathname === '/reset-password';
     const signupModeParam = Array.isArray(searchParams.mode)
       ? searchParams.mode[0]
       : searchParams.mode;
@@ -165,6 +183,13 @@ export function useAuthGuard(): void {
     );
 
     if (isLoading) {
+      return;
+    }
+
+    // 비밀번호 재설정 화면은 메일 링크가 만든 복구 세션(=인증됨) 상태로 진입한다.
+    // 일반 (auth) 규칙을 적용하면 새 비밀번호를 저장하기도 전에 앱 안으로 튕겨
+    // 나가 복구 경로가 끊긴다. 어떤 리다이렉트도 적용하지 않는다.
+    if (isOnPasswordReset) {
       return;
     }
 
@@ -362,6 +387,7 @@ export function useAuthGuard(): void {
     authenticatedEntryRoute,
     checkAuthState,
     identityVerified,
+    incomingUrl,
     isAuthenticated,
     isLoading,
     isMountedRef,

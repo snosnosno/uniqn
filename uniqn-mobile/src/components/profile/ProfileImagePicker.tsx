@@ -15,6 +15,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useModalStore } from '@/stores/modalStore';
 import { replaceProfileImage, deleteProfileImage, updateProfilePhotoURL } from '@/services';
+import { isAppError } from '@/errors';
 import { logger } from '@/utils/logger';
 
 // ============================================================================
@@ -99,8 +100,13 @@ export function ProfileImagePicker({
       addToast({ type: 'success', message: '프로필 사진이 변경되었습니다' });
       onImageUpdated?.(newImageUrl);
     } catch (error) {
-      logger.error('프로필 이미지 업로드 실패', error as Error);
-      addToast({ type: 'error', message: '이미지 업로드에 실패했습니다' });
+      logger.error('프로필 이미지 업로드 실패', error as Error, { uid: user.uid });
+      // 서비스가 실제로 무엇이 실패했는지 담아 보낸다 (읽기 실패 vs 업로드 실패).
+      // 뭉뚱그린 메시지는 사용자가 다음에 뭘 해야 할지 알 수 없게 만든다.
+      addToast({
+        type: 'error',
+        message: isAppError(error) ? error.userMessage : '이미지 업로드에 실패했습니다',
+      });
     } finally {
       setIsUploading(false);
     }

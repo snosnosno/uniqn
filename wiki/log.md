@@ -99,3 +99,27 @@ sources 6 신설: **grid-order-sheet-security-hardening**(#267, 4축 리뷰 HIGH
 decisions 2 신설: **secdef-replace-search-path-loss**(`CREATE OR REPLACE`는 DDL 미기재 속성을 원본형으로 되돌림 → `check_rate_limit` 재정의가 `20260711100000`의 pg_temp 일괄보정을 삭제, CI parity test 7이 검거. "STABLE이면 중첩 DML 거부"는 거짓 — read-only 강제는 함수 자신의 `provolatile` 기준이고 전파되지 않음)·**type-honesty-runtime-vs-declared**(zod 경계가 정규화하는데 인터페이스가 이전 형태를 선언 → TS가 영원히 못 잡는 거짓말, 도메인별 런타임 진실이 다름).
 decisions 3 갱신: **wallet-pgtap-caller-binding** — `auth.uid()` 의존 강화가 pgTAP 하네스를 깨뜨리는 **2회 재발 클래스**로 일반화(1회차 미주입 #195→#198, 2회차 stale singular #267→#277) + 테스트 JWT 주입 헬퍼 단일경로 규칙·하네스 vs 운영 결함 판별법 추가. **secdef-hardening** — 규칙3 NULL fail-open 2회차 실증(#267 HIGH) 추가 + "재정의는 별개 문제" 절 신설. **worktime-ssot** — duration 축 확장(#271) + 서버 클램프 부재 리스크 명시.
 index 갱신(sources 6행+decisions 2행+wallet-pgtap 재작성). 작성=opus 에이전트 5기 병렬 + 메인이 #277 직접 집필·중앙 통합. 검증=신규 8페이지 frontmatter 5/5·dangling 링크 0·인용 repo 경로 133개 중 신규분 전건 실재(미실재 8건은 전부 기존 페이지의 baseline squash 후유증, /lint 후속). MEMORY.md 17,987자→13,985자(예산 14,000 달성), 냉이력 8건 MEMORY-archive.md 이관.
+## [2026-07-23] note | 주문서 미설정 항목 연쇄 입력 — 확인 시 다음 미설정 시트로 이어감
+
+공고작성 주문서에서 미설정 항목의 `확인`을 누르면 목록으로 돌아가지 않고 다음 미설정 항목 시트로 이어진다. 순회는 `nextUnsetRowAfter`(current 다음부터 순환, 제자리 복귀 시 null)로 분리해 무한 재오픈을 구조적으로 차단했고, 전환 연출은 `SheetChainContext`(`src/components/ui/`)로 `SheetModal`에만 전달해 시트 컴포넌트 12개를 건드리지 않았다.
+
+핵심 함정 3건:
+- 주문서 시트는 조건부 렌더라 `visible=false` 경로를 타지 않고 즉시 언마운트된다 — exit 애니메이션이 없으므로 전환 대기(`SHEET_CHAIN_SWAP_MS=180`)는 시각 대기가 아니라 iOS 네이티브 모달 겹침 회피용이다.
+- **시트 13종 중 `ScheduleDatesSheet`만 `SheetModal`이 아니라 `DatePickerModal`(`ui/Modal`) 래핑**이라 `onEntered` 통지 주체가 없다. 딤 인수인계를 `SheetModal`에만 걸면 날짜 시트 경로에서 딤이 영구 잔존한다(확인·취소 어느 쪽으로도 안 걷힘). 래퍼가 다른 시트를 Context 계약에서 빠뜨리면 같은 클래스가 재발한다.
+- `closeSheet`의 딤 해제는 **예약 존재로 분기해야 한다** — 모든 시트가 `onConfirm` 직후 `onClose`를 호출하므로, 무조건 해제하면 `confirmRow`가 방금 켠 딤이 꺼져 번쩍임이 복귀한다.
+
+테스트 함정: 예약 취소 시 딤 해제를 검증하려고 `SheetModal` 계열 시트를 탭하면, 그 시트의 `onEntered`가 딤을 대신 걷어 **가드를 제거해도 green**이 된다(프로덕션 `onShow`도 동일 마스킹 — mock 아티팩트 아님). `clearPendingSwap`이 유일한 해제 주체인 경로(그룹 삭제·일정 추가·언마운트)로 검증해야 한다.
+
+후속 함정 2건 (#307·#308):
+- **딤/스크림은 대상 컴포넌트 내부가 아니라 "커버해야 할 형제 트리의 최상위(호스트)"에서 렌더해야 한다** — `OrderSheetScreen` 내부 absolute-fill 딤은 `SafeAreaView`의 형제인 `StackHeader`·`VenueSelectChips`를 못 덮어 스왑 갭 동안 상단 띠가 번쩍였다. 해법은 콜백 위임(`onChainSwappingChange`) + 호스트 렌더(`OrderSheetChainScrim`, 非Modal View라 중첩 RN Modal 무위험). 이때 위임 콜백은 **안정 콜백 필수** — inline arrow면 useCallback deps 체인을 타고 cleanup-only effect가 재실행되어 대기 스왑 예약이 조기 취소된다(연쇄 침묵사).
+- **잠긴/무효 행은 연쇄 순회에서 그룹 불문 `skipKeys`로 제외해야 한다** — 그룹 스코프(`coveredKeys`)만으로 거르면 확정 지원자 잠금 상태에서 연쇄가 잠긴 행을 타깃해 조기 종료·유령 경고가 발생한다(#307).
+
+## [2026-07-24] ingest | 인원카운트 하루 기준 표시 통일 (PR#309)
+- 신규: `sources/headcount-daily-basis-display`(출하 기록+교훈 4종) · `decisions/headcount-daily-basis`(표시 계약: 분자=일별 max·마감=대기 지원·hydrate 키 단일 소스)
+- 갱신: `decisions/capacity-full` 관련 링크(표시 마감 vs 공고 상태 마감 층위 구분 — 모순 아님 명시) · index 2줄
+- memory 졸업: project_headcount_daily_display_20260723 → MEMORY.md 포인터 압축(잔여=실기기 QA·배포)
+
+## [2026-07-24] ingest | ops 콘솔 리디자인 + 블라인드 프리셋 (PR#313)
+- 신규: `sources/ops-console-redesign`(출하 기록+교훈 5종: RNW pointerEvents 드롭·Pressable 중첩 재발·RNModal+gorhom z-순서·워크트리 expo EMFILE·parity 가드 누락 파급)
+- 갱신: `decisions/nativewind-rn-pitfalls`(함정 3종 추가 — pointerEvents는 prop 필수·행/액션 형제 분리·시트 visible 게이트) · `decisions/prod-parity-baseline`(#311 갱신 누락 실패 사례 — red는 머지 후 master에서 터짐) · `architecture/ops-engine`(콘솔 리디자인+프리셋 절, 잔여=서버 levels 상한) · index 3줄
+- memory 졸업 예정: project_ops_console_redesign_20260723 → MEMORY.md 포인터 압축(잔여=실기기 QA 7항목·서버 levels 상한)

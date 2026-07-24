@@ -60,8 +60,12 @@ try {
   // git이 없는 환경에서는 무시
 }
 
-// 1. 웹 빌드
+// 1. 웹 빌드 (이전 산출물 제거 후 — 네이티브 export 잔재가 섞여 올라가는 것 방지)
 console.log('📦 Step 1: Expo Web 빌드...');
+if (fs.existsSync(DIST_DIR)) {
+  console.log('   🧹 이전 dist 제거');
+  fs.rmSync(DIST_DIR, { recursive: true, force: true });
+}
 try {
   execSync('npm run build:web', { stdio: 'inherit', cwd: path.join(__dirname, '..') });
 } catch (error) {
@@ -107,6 +111,17 @@ if (fs.existsSync(JS_DIR)) {
   process.exit(1);
 }
 
+// 3.5 산출물 검증 게이트 — 빈 번들이 프로덕션에 올라가는 것을 차단 (2026-07-21 사고 재발 방지)
+console.log('\n🔍 Step 3.5: 산출물 검증...');
+try {
+  execSync(`node "${path.join(__dirname, 'verify-web-build.js')}" "${DIST_DIR}"`, {
+    stdio: 'inherit',
+    cwd: ROOT_DIR,
+  });
+} catch (error) {
+  process.exit(1);
+}
+
 // 4. Wrangler 배포 (wrangler.toml 설정 사용)
 console.log('\n🌐 Step 4: Cloudflare Pages 배포...');
 const commitDirtyFlag = forceFlag ? ' --commit-dirty=true' : '';
@@ -135,9 +150,15 @@ const projectName = projectArg
   ? projectArg.slice('--project-name='.length)
   : process.env.CF_PROJECT_NAME || 'uniqn-app';
 
+// CF Pages 환경 결정용 브랜치명. 미지정 시 wrangler가 현재 git 브랜치를 사용한다
+// (= 프로덕션 브랜치가 아니면 Preview 배포). 워크트리/핫픽스 브랜치에서 프로덕션에
+// 올려야 할 때 `--branch=master`로 명시한다.
+const branchArg = process.argv.find((a) => a.startsWith('--branch='));
+const branchFlag = branchArg ? ` --branch=${branchArg.slice('--branch='.length)}` : '';
+
 try {
   execSync(
-    `npx wrangler pages deploy dist --project-name=${projectName}${commitDirtyFlag} --commit-message="${commitMessage}"`,
+    `npx wrangler pages deploy dist --project-name=${projectName}${branchFlag}${commitDirtyFlag} --commit-message="${commitMessage}"`,
     {
       stdio: 'inherit',
       cwd: ROOT_DIR,

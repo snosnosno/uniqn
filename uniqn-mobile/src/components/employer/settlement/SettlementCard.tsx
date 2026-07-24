@@ -152,7 +152,7 @@ export const SettlementCard = React.memo(function SettlementCard({
           </View>
         )}
 
-        {/* 하단: 상세보기 + 정산하기 버튼 */}
+        {/* 하단: 상세보기 + 지급 완료 표시 버튼 */}
         <View className="flex-row mt-3 pt-3 border-t border-secondary-100 dark:border-surface-overlay gap-2">
           {/* 상세보기 */}
           <Pressable
@@ -168,17 +168,17 @@ export const SettlementCard = React.memo(function SettlementCard({
             </Text>
           </Pressable>
 
-          {/* 정산하기 (미정산 + 출퇴근 완료일 때만) */}
+          {/* 지급 완료 표시 (미정산 + 출퇴근 완료일 때만) — 실이체 아님 명시 (QW4) */}
           {payrollStatus === STATUS.PAYROLL.PENDING && hasValidTimes && onSettle && (
             <Pressable
               onPress={handleSettle}
               accessibilityRole="button"
-              accessibilityLabel={`${displayName} 정산하기`}
-              accessibilityHint="스태프에게 급여를 정산합니다"
+              accessibilityLabel={`${displayName} 지급 완료로 표시`}
+              accessibilityHint="급여를 지급 완료 상태로 표시합니다. 실제 이체는 앱 밖에서 진행해요"
               className="flex-1 flex-row items-center justify-center py-2.5 rounded-lg bg-primary-500 active:opacity-70"
             >
               <BanknotesIcon size={16} color="#fff" />
-              <Text className="ml-1 text-sm font-sans-medium text-content-onGold">정산하기</Text>
+              <Text className="ml-1 text-sm font-sans-medium text-content-onGold">지급 완료</Text>
             </Pressable>
           )}
         </View>

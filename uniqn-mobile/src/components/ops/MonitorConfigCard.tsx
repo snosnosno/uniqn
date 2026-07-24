@@ -135,7 +135,7 @@ export function MonitorConfigCard({ tournamentId, monitorConfig }: Props) {
                       className={`text-sm ${
                         selected
                           ? 'font-sans-semibold text-primary-700 dark:text-primary-400'
-                          : 'text-content-primary'
+                          : 'text-content-primary dark:text-content-primary'
                       }`}
                     >
                       {p.label}

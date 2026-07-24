@@ -7,10 +7,23 @@
  * 날짜 정규화(E5)·색상 화이트리스트·메모 XSS 검증은 RPC/레포 경계가 담당(여기서 중복하지 않는다).
  */
 import { weeklyGridRepository } from '@/repositories/weeklyGrid';
-import { workLogRepository, jobPostingRepository, type UpdateSlotInput } from '@/repositories';
+import {
+  workLogRepository,
+  jobPostingRepository,
+  type UpdateSlotInput,
+  type SetVenueRoleSalaryInput,
+} from '@/repositories';
 import { cancelConfirmedStaffConfirmation } from '@/services/work/confirmedStaffService';
+import { ValidationError, ERROR_CODES } from '@/errors';
+import { xssValidation } from '@/utils/security';
 import type { VenueContainer } from '@/domains/weeklyGrid';
 import type { DeleteConfirmedStaffInput } from '@/types';
+
+/**
+ * 지점 단가표 customRole 자유입력 길이 상한 — RPC set_venue_role_salary 의 서버 규약(≤50자)과 동일.
+ * 클라를 서버보다 엄하게 두지 않아야(기존 저장된 30~50자 customRole 재저장 데드엔드 방지) 값을 맞춘다.
+ */
+const MAX_VENUE_CUSTOM_ROLE_LENGTH = 50;
 
 /** 운영처 날짜별 목표인원(soft-target) 저장. 날짜 정규화(E5)·권한은 RPC(레포 경계)가 담당. */
 export function setVenueSoftTarget(venueId: string, date: string, count: number): Promise<void> {
@@ -18,22 +31,29 @@ export function setVenueSoftTarget(venueId: string, date: string, count: number)
 }
 
 /**
- * 운영처 목표인원(soft-target) 벌크 저장 — "이번 달 같은 요일 전체 적용"용(P1-5).
- *
- * dates 를 순차(for..of await)로 setVenueSoftTarget 에 위임한다. 병렬이 아닌 순차인 이유:
- * 대상들이 같은 컨테이너의 schedule.softTargets(JSONB)를 읽고-쓰기(RMW)하므로, 동시쓰기하면
- * last-write-wins 로 일부 날짜가 유실될 수 있다. 순차면 각 RPC 가 직전 결과 위에 누적된다.
- * 부분 실패 후 재시도도 안전하다 — RPC(set_venue_soft_target)가 date 키 단위 멱등 RMW 라
- * 이미 반영된 날짜는 동일 count 로 다시 덮어써도 결과가 같다.
+ * 지점 역할별 단가 upsert/삭제(salary:null=삭제). 권한·정규화는 RPC(레포 경계)가 담당하되,
+ * customRole 자유입력의 XSS·길이 검증은 3표면(AddSlotSheet JIT·VenueSettingsSheet·venue-settlements)
+ * 공용 경계인 이 Service 에서 선차단한다(RPC 미도달 fail-closed). 슬롯 저장 경로(addSlotPayload)의
+ * assertSafeText 관용구(xssValidation + SECURITY_XSS_DETECTED)와 동일 함수·에러 타입 재사용.
  */
-export async function setVenueSoftTargetBulk(
-  venueId: string,
-  dates: readonly string[],
-  count: number
-): Promise<void> {
-  for (const date of dates) {
-    await weeklyGridRepository.setVenueSoftTarget(venueId, date, count);
+export function setVenueRoleSalary(venueId: string, input: SetVenueRoleSalaryInput): Promise<void> {
+  const trimmedCustom = input.customRole?.trim();
+  if (trimmedCustom) {
+    if (trimmedCustom.length > MAX_VENUE_CUSTOM_ROLE_LENGTH) {
+      throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+        field: 'customRole',
+        userMessage: `역할명은 ${MAX_VENUE_CUSTOM_ROLE_LENGTH}자를 초과할 수 없습니다.`,
+      });
+    }
+    if (!xssValidation(trimmedCustom)) {
+      throw new ValidationError(ERROR_CODES.SECURITY_XSS_DETECTED, {
+        category: 'security',
+        severity: 'medium',
+        userMessage: '역할명에 허용되지 않는 문자가 포함되어 있습니다',
+      });
+    }
   }
+  return weeklyGridRepository.setVenueRoleSalary(venueId, input);
 }
 
 /** 배치 슬롯 편집(시간·역할·색상·메모). 색상 화이트리스트·메모 XSS 검증은 레포 경계가 담당. */

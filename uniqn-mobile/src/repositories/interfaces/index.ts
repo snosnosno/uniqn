@@ -48,9 +48,6 @@ export type {
   UserNicknameSearchResult,
 } from './IUserRepository';
 
-// EventQR Repository
-export type { IEventQRRepository } from './IEventQRRepository';
-
 // Notification Repository
 export type { INotificationRepository, GetNotificationsOptions } from './INotificationRepository';
 
@@ -140,6 +137,7 @@ export type {
   IWorkspaceRepository,
   IWorkspaceMemberRepository,
   IWorkspaceInvitationRepository,
+  WorkspaceInviteCandidate,
 } from './IWorkspaceRepository';
 
 // 공고별 협업자 (Phase 5 — feat/job-posting-collaborators)

@@ -30,6 +30,7 @@ import {
   generateHours,
   generateMinutes,
   normalizeMinute as normalizeMinuteUtil,
+  snapIndex,
 } from '@/utils/timePickerUtils';
 
 // ============================================================================
@@ -56,6 +57,11 @@ export interface TimeWheelPickerProps {
   minuteInterval?: number;
   /** 확인 콜백 */
   onConfirm: (value: TimeValue) => void;
+  /**
+   * "시간 미정" 확정 콜백(선택). 전달하면 헤더 아래에 시간 미정 버튼이 렌더된다.
+   * 시각 확정(onConfirm)과 배타 — 호출부가 미정 상태 저장·피커 닫기를 책임진다.
+   */
+  onConfirmTBA?: () => void;
   /** 닫기 콜백 */
   onClose: () => void;
   /**
@@ -75,6 +81,24 @@ const VISIBLE_ITEMS = 5;
 const PICKER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
 
 // ============================================================================
+// 시간 미정 버튼 (웹/네이티브 공용) — onConfirmTBA 전달 시에만 렌더
+// ============================================================================
+
+function TbaButton({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      testID="time-wheel-tba"
+      accessibilityRole="button"
+      accessibilityLabel="시간 미정으로 설정"
+      className="mx-4 mt-3 min-h-[44px] items-center justify-center rounded-xl border border-secondary-200 dark:border-surface-overlay active:opacity-80"
+    >
+      <Text className="text-sm font-sans-medium text-content-secondary">시간 미정 (추후 공지)</Text>
+    </Pressable>
+  );
+}
+
+// ============================================================================
 // Web Fallback Component (시/분 분리 선택)
 // ============================================================================
 
@@ -85,6 +109,7 @@ function WebTimePicker({
   maxHour,
   minuteInterval,
   onConfirm,
+  onConfirmTBA,
   onClose,
 }: Omit<TimeWheelPickerProps, 'visible'>) {
   const [selectedHour, setSelectedHour] = useState(value.hour);
@@ -92,10 +117,13 @@ function WebTimePicker({
   const hourListRef = useRef<FlatList>(null);
   const minuteListRef = useRef<FlatList>(null);
 
+  // 네이티브 경로와 동일 이유로 원시값 의존 — 호출부의 매 렌더 새 `value` 객체가
+  // 사용자의 선택을 되돌리지 않게 한다.
+  const { hour: valueHour, minute: valueMinute } = value;
   useEffect(() => {
-    setSelectedHour(value.hour);
-    setSelectedMinute(normalizeMinuteUtil(value.minute, minuteInterval!));
-  }, [value, minuteInterval]);
+    setSelectedHour(valueHour);
+    setSelectedMinute(normalizeMinuteUtil(valueMinute, minuteInterval!));
+  }, [valueHour, valueMinute, minuteInterval]);
 
   // 시간/분 배열 (공유 유틸리티 사용)
   const hours = useMemo(() => generateHours(minHour!, maxHour!), [minHour, maxHour]);
@@ -224,6 +252,8 @@ function WebTimePicker({
         </Pressable>
       </View>
 
+      {onConfirmTBA ? <TbaButton onPress={onConfirmTBA} /> : null}
+
       {/* 라벨 */}
       <View className="flex-row px-4 pt-3">
         <View className="flex-1 items-center">
@@ -301,6 +331,7 @@ function NativeWheelPicker({
   maxHour,
   minuteInterval,
   onConfirm,
+  onConfirmTBA,
   onClose,
 }: Omit<TimeWheelPickerProps, 'visible'>) {
   const hourScrollRef = useRef<ScrollView>(null);
@@ -320,13 +351,17 @@ function NativeWheelPicker({
     [minuteInterval]
   );
 
-  // 초기 스크롤 위치 설정
+  // 초기 스크롤 위치 설정.
+  // 의존성은 `value` 객체가 아니라 **원시값(hour/minute)** 이다 — 호출부가 매 렌더
+  // `toTimeValue(...)` 로 새 객체를 만들기 때문에 참조를 의존하면 부모가 리렌더될 때마다
+  // 이 effect 가 재실행돼 사용자가 돌려놓은 휠을 원위치로 되돌린다(같은 "안 움직인다" 증상).
+  const { hour: valueHour, minute: valueMinute } = value;
   useEffect(() => {
-    const hourIndex = value.hour - minHour!;
-    const normalizedMinute = normalizeMinute(value.minute);
+    const hourIndex = valueHour - minHour!;
+    const normalizedMinute = normalizeMinute(valueMinute);
     const minuteIndex = normalizedMinute / minuteInterval!;
 
-    setSelectedHour(value.hour);
+    setSelectedHour(valueHour);
     setSelectedMinute(normalizedMinute);
 
     const timeoutId = setTimeout(() => {
@@ -341,38 +376,24 @@ function NativeWheelPicker({
     }, 50);
 
     return () => clearTimeout(timeoutId);
-  }, [value, minHour, minuteInterval, normalizeMinute]);
+  }, [valueHour, valueMinute, minHour, minuteInterval, normalizeMinute]);
 
-  // 시간 스크롤 종료 핸들러
+  // 스크롤 종료 핸들러 — **선택값만 갱신하고 scrollTo 는 하지 않는다.**
+  // snapToInterval 이 이미 OS 레벨에서 정렬하므로 프로그래매틱 스크롤은 중복이고,
+  // 그 중복이 momentum 재발화 → 재-scrollTo 무한 재진입을 만들어 휠을 먹통으로 만든다
+  // (2026-07-22 Android 실기기 — snapIndex docblock의 인과사슬 참조).
   const handleHourScrollEnd = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const offsetY = event.nativeEvent.contentOffset.y;
-      const index = Math.round(offsetY / ITEM_HEIGHT);
-      const clampedIndex = Math.max(0, Math.min(index, hours.length - 1));
-      const newHour = minHour! + clampedIndex;
-      setSelectedHour(newHour);
-
-      hourScrollRef.current?.scrollTo({
-        y: clampedIndex * ITEM_HEIGHT,
-        animated: true,
-      });
+      const index = snapIndex(event.nativeEvent.contentOffset.y, hours.length, ITEM_HEIGHT);
+      setSelectedHour(minHour! + index);
     },
     [minHour, hours.length]
   );
 
-  // 분 스크롤 종료 핸들러
   const handleMinuteScrollEnd = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const offsetY = event.nativeEvent.contentOffset.y;
-      const index = Math.round(offsetY / ITEM_HEIGHT);
-      const clampedIndex = Math.max(0, Math.min(index, minutes.length - 1));
-      const newMinute = clampedIndex * minuteInterval!;
-      setSelectedMinute(newMinute);
-
-      minuteScrollRef.current?.scrollTo({
-        y: clampedIndex * ITEM_HEIGHT,
-        animated: true,
-      });
+      const index = snapIndex(event.nativeEvent.contentOffset.y, minutes.length, ITEM_HEIGHT);
+      setSelectedMinute(index * minuteInterval!);
     },
     [minutes.length, minuteInterval]
   );
@@ -404,6 +425,8 @@ function NativeWheelPicker({
         </Pressable>
       </View>
 
+      {onConfirmTBA ? <TbaButton onPress={onConfirmTBA} /> : null}
+
       {/* 휠 피커 영역 */}
       <View
         style={{ height: PICKER_HEIGHT }}
@@ -423,6 +446,7 @@ function NativeWheelPicker({
         <View className="flex-1" style={{ height: PICKER_HEIGHT }}>
           <ScrollView
             ref={hourScrollRef}
+            testID="time-wheel-hours"
             showsVerticalScrollIndicator={false}
             snapToInterval={ITEM_HEIGHT}
             snapToAlignment="start"
@@ -483,6 +507,7 @@ function NativeWheelPicker({
         <View className="flex-1" style={{ height: PICKER_HEIGHT }}>
           <ScrollView
             ref={minuteScrollRef}
+            testID="time-wheel-minutes"
             showsVerticalScrollIndicator={false}
             snapToInterval={ITEM_HEIGHT}
             snapToAlignment="start"
@@ -559,6 +584,7 @@ function WebOverlay({
   maxHour,
   minuteInterval,
   onConfirm,
+  onConfirmTBA,
   onClose,
 }: TimeWheelPickerProps) {
   if (!visible) return null;
@@ -587,6 +613,7 @@ function WebOverlay({
           maxHour={maxHour}
           minuteInterval={minuteInterval}
           onConfirm={onConfirm}
+          onConfirmTBA={onConfirmTBA}
           onClose={onClose}
         />
       </div>
@@ -604,6 +631,7 @@ export function TimeWheelPicker({
   maxHour = 47,
   minuteInterval = 5,
   onConfirm,
+  onConfirmTBA,
   onClose,
   embedded = false,
 }: TimeWheelPickerProps) {
@@ -632,6 +660,7 @@ export function TimeWheelPicker({
         maxHour={maxHour}
         minuteInterval={minuteInterval}
         onConfirm={onConfirm}
+        onConfirmTBA={onConfirmTBA}
         onClose={onClose}
       />
     );
@@ -650,6 +679,7 @@ export function TimeWheelPicker({
         maxHour={maxHour}
         minuteInterval={minuteInterval}
         onConfirm={onConfirm}
+        onConfirmTBA={onConfirmTBA}
         onClose={onClose}
       />
     </View>

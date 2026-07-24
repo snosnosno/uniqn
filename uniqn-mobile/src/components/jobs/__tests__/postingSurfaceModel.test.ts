@@ -54,10 +54,10 @@ describe('postingSurfaceModel', () => {
       '09:00',
       '13:00',
     ]);
-    // 좌석 기준 일별 전개: 요약 dealer count = 하루치1 × 2일 = 2, filled = 04-01 적중 1(03-31 미적중 0).
-    // → 1/2 이므로 isFilled=false. floor 미적중=0. (dead counter role.filled 는 그룹 날짜별 폴백에서 억제)
+    // 하루 기준(C안): 요약 dealer 분모 = 하루치 1(구 곱셈 1×2=2 폐기), 분자 = 일별 max(1,0)=1.
+    // → 1/1 이므로 isFilled=true. floor 미적중 max=0. (dead counter role.filled 는 그룹 날짜별 폴백에서 억제)
     expect(schedule.sections[0]?.timeSlots[1]?.roles[0]?.filled).toBe(1);
-    expect(schedule.sections[0]?.timeSlots[1]?.roles[0]?.isFilled).toBe(false);
+    expect(schedule.sections[0]?.timeSlots[1]?.roles[0]?.isFilled).toBe(true);
     expect(schedule.sections[0]?.timeSlots[1]?.roles[1]?.filled).toBe(0);
   });
 

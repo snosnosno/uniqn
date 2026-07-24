@@ -9,6 +9,7 @@ import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useMemo, useCallback } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { CheckmarkIcon } from '@/components/icons';
+import { formatNumber } from '@/utils/formatters';
 import {
   calculateTaxAmount,
   calculateAfterTaxAmount,
@@ -175,7 +176,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
 
   const formattedFixedAmount = useMemo(() => {
     if (taxSettings.type !== 'fixed') return '';
-    return taxSettings.value > 0 ? taxSettings.value.toLocaleString('ko-KR') : '';
+    return taxSettings.value > 0 ? formatNumber(taxSettings.value) : '';
   }, [taxSettings]);
 
   return (

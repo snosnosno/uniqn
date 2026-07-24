@@ -97,13 +97,14 @@ describe('StaffManagementTab localization', () => {
     render(
       <StaffManagementTab
         jobPostingId="job-1"
-        onShowEventQR={jest.fn()}
         onShowRoleChange={jest.fn()}
         onShowReport={jest.fn()}
       />
     );
 
-    expect(screen.getByText('이벤트 QR 열기')).toBeTruthy();
+    expect(screen.getByText('새로고침')).toBeTruthy();
+    // QR 진입점은 헤더 QR 버튼 하나로 통일 — 정산 화면의 중복 진입점은 없어야 한다.
+    expect(screen.queryByText('이벤트 QR 열기')).toBeNull();
     expect(screen.getByText('전체 (1)')).toBeTruthy();
     expect(screen.getByText('출근 예정 (1)')).toBeTruthy();
     expect(screen.getByText('근무 중')).toBeTruthy();

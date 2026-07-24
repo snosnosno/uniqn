@@ -1,87 +1,39 @@
 /**
- * UNIQN Mobile - 이벤트 QR 서비스
+ * UNIQN Mobile - QR 출퇴근 서비스
  *
- * @description 현장 출퇴근용 QR 코드 생성/검증 서비스
- * @version 2.0.0
+ * @description 현장 출퇴근용 고정 QR 처리 서비스
+ * @version 3.0.0 - 회전 QR(event) 제거, 공고당 고정 QR(venue) 단일 경로
  *
  * 흐름:
- * 1. 구인자가 현장에서 QR 코드 생성 (출근/퇴근 모드 선택)
+ * 1. 구인자가 공고별 고정 QR 을 출력/공유해 현장에 비치 (QR 은 바뀌지 않는다)
  * 2. 스태프가 QR 스캔
- * 3. 서버에서 검증 후 출퇴근 처리
+ * 3. 처리 대상 work_log 자동 선택 후 서버가 출/퇴근을 자동 판정 (p_action='auto')
  *
  * QR 코드 데이터 구조:
- * {
- *   type: 'event',
- *   jobPostingId: string,   // 공고 ID (정규화된 필드명)
- *   date: string,           // 근무 날짜 (YYYY-MM-DD)
- *   action: 'checkIn' | 'checkOut',
- *   securityCode: string,   // 보안 코드 (UUID)
- *   createdAt: number,      // 생성 시간 (ms)
- *   expiresAt: number,      // 만료 시간 (ms)
- * }
+ * { type: 'venue', jobPostingId: string }
+ *
+ * @note 위치(GPS) 검증을 추가할 경우 이 파일의 processQRCheckIn 한 곳만 수정하면 된다.
  */
 
 import { logger } from '@/utils/logger';
 import { toError, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
-import { generateUUID } from '@/utils/generateId';
 import { InvalidQRCodeError } from '@/errors/BusinessErrors';
 import { trackCheckIn, trackCheckOut } from '@/services/observability';
-import { toISODateString, getTodayString } from '@/utils/date';
-import { eventQRRepository, workLogRepository } from '@/repositories';
-import type {
-  QRCodeAction,
-  EventQRCode,
-  EventQRDisplayData,
-  VenueQRDisplayData,
-  GenerateEventQRInput,
-  EventQRScanResult,
-  EventQRValidationResult,
-} from '@/types';
-
-/** QR 코드 유효 시간 (3분) */
-const QR_VALIDITY_DURATION_MS = 3 * 60 * 1000;
-
-/** QR 코드 자동 갱신 주기 (2분) */
-export const QR_REFRESH_INTERVAL_MS = 2 * 60 * 1000;
+import { toDate, toISODateString, getTodayString, getYesterdayString } from '@/utils/date';
+import { WORK_LOG_STATUS_VALUES } from '@/constants/statusValues';
+import { workLogRepository } from '@/repositories';
+import { selectWorkLogForQR, type QRSelectionFailureReason } from './selectWorkLogForQR';
+import type { VenueQRDisplayData, EventQRScanResult, WorkLog } from '@/types';
 
 // ============================================================================
 // Helper Functions
 // ============================================================================
 
 /**
- * 보안 코드 생성 (UUID v4)
- */
-function generateSecurityCode(): string {
-  return generateUUID();
-}
-
-/**
- * QR 데이터 파싱
- */
-function parseQRData(qrString: string): EventQRDisplayData | null {
-  try {
-    const data = JSON.parse(qrString);
-    if (data.type !== 'event') return null;
-
-    const jobPostingId = data.jobPostingId;
-    if (!jobPostingId || !data.date || !data.action || !data.securityCode) return null;
-
-    return {
-      ...data,
-      jobPostingId,
-    } as EventQRDisplayData;
-  } catch (error) {
-    logger.debug('QR 데이터 JSON 파싱 실패', { qrString: qrString.slice(0, 50), error });
-    return null;
-  }
-}
-
-/**
- * 고정 운영처(컨테이너) QR 데이터 파싱
+ * 고정 QR 데이터 파싱
  *
- * @description type='venue' + jobPostingId(컨테이너 공고 ID) 만 가진 고정 QR.
- *   event QR 등 다른 형식이면 null 반환(호출부에서 기존 경로로 흘려보냄).
+ * @description type='venue' + jobPostingId 만 가진 고정 QR. 그 외 형식은 null.
  */
 function parseVenueQRData(qrString: string): VenueQRDisplayData | null {
   try {
@@ -89,301 +41,161 @@ function parseVenueQRData(qrString: string): VenueQRDisplayData | null {
     if (data.type !== 'venue') return null;
     if (!data.jobPostingId || typeof data.jobPostingId !== 'string') return null;
 
-    return {
-      type: 'venue',
-      jobPostingId: data.jobPostingId,
-    };
+    return { type: 'venue', jobPostingId: data.jobPostingId };
   } catch (error) {
-    logger.debug('운영처 QR 데이터 JSON 파싱 실패', { qrString: qrString.slice(0, 50), error });
+    logger.debug('QR 데이터 JSON 파싱 실패', { qrString: qrString.slice(0, 50), error });
     return null;
   }
 }
 
-// ============================================================================
-// Event QR Service
-// ============================================================================
+/**
+ * 자정 넘는 근무로 인정할 출근 후 최대 경과 시간 (16시간)
+ *
+ * @description 정상적인 자정 넘김 근무(18:00 출근 → 다음날 02:00 퇴근 = 8시간)는 통과하고,
+ *   퇴근 스캔을 깜빡해 하루가 지난 건(20시간 이상)은 제외되는 경계값이다.
+ *
+ *   상한이 없으면 D일 퇴근을 깜빡한 스태프가 D+1 아침 출근 스캔을 할 때 어제 자
+ *   checked_in 이 선택되어(선택 규칙 ① checked_in 우선) 24시간짜리 허위 work_duration 이
+ *   기록되고, 정작 오늘 출근은 되지 않는다. RPC 의 시각 클램프는 p_check_time 과 서버
+ *   now() 의 편차만 보정하고 work_duration 은 `GREATEST(0, ...)` 로 음수만 막을 뿐 상한이
+ *   없어, 이 필터가 정산 오염을 막는 유일한 지점이다.
+ *
+ *   상한은 **날짜가 아니라 상태(checked_in)** 를 기준으로 건다. 날짜 기준으로 걸면
+ *   `date === 'FIXED_SCHEDULE'` 인 고정 공고 행이 검사를 통째로 건너뛴다.
+ * @remarks 어떤 값을 골라도 휴리스틱이다 — "가장 긴 정상 근무"와 "퇴근을 깜빡한 하루 경과"
+ *   사이 어딘가를 자르는 값이며, 16시간을 넘는 실제 근무는 이 경로로 퇴근할 수 없다.
+ */
+const MAX_OVERNIGHT_SHIFT_MS = 16 * 60 * 60 * 1000;
 
 /**
- * 이벤트 QR 코드 생성
+ * 상한을 넘겼거나 되살릴 수 없는 후보를 걸러낸다
  *
- * @description 구인자가 현장에서 출퇴근용 QR 생성
- * @returns QR 코드 문서 ID 및 표시용 데이터
+ * @description 두 축을 본다 — **상태 축**과 **날짜 축**.
+ *
+ *   ① 상태 축(모든 날짜에 적용): `checked_in` 후보는 출근 후 경과 시간이 0 이상
+ *      MAX_OVERNIGHT_SHIFT_MS 이내여야 한다. 이 검사를 어제 자에만 걸면 고정 공고
+ *      후보(`date === 'FIXED_SCHEDULE'`)가 상한을 통째로 우회한다 — 고정 공고는
+ *      스태프·공고당 work_log 가 1행뿐이라 퇴근 스캔을 놓치면 `checked_in` 으로
+ *      무기한 남고, 며칠 뒤 스캔이 그 행을 퇴근시켜 수십 시간짜리 work_duration 을
+ *      정산으로 흘려보낸다. 방어는 날짜가 아니라 상태에 걸어야 정직하다.
+ *   ② 날짜 축: 어제 자 배정은 자정 넘는 근무의 **퇴근 스캔용**이지, 지난 근무에 새로
+ *      출근하기 위한 것이 아니다. 그래서 어제 자는 `checked_in` 인 것만 남긴다.
+ *
+ * @remarks checkInTime 이 없거나 파싱 불가면 제외한다(fail-closed). 경과 시간을 판정할
+ *   근거가 없는데 통과시키면 근거 없이 24시간짜리 근무를 기록하게 된다 — 스캔 실패가 낫다.
+ * @remarks 경과 시간이 음수(미래 checkInTime — 기기 클럭 스큐·오염 데이터)인 것도 제외한다.
+ *   상한만 보면 미래 시각이 검사를 통과해 버린다.
+ * @remarks 새 배열을 반환한다(입력 불변).
  */
-export async function generateEventQR(
-  input: GenerateEventQRInput
-): Promise<{ qrId: string; displayData: EventQRDisplayData }> {
-  try {
-    logger.info('이벤트 QR 생성', { ...input });
+function filterStaleCandidates(candidates: WorkLog[], yesterday: string, now: Date): WorkLog[] {
+  return candidates.filter((workLog) => {
+    // ① 상태 축 — 날짜와 무관하게 출근 중인 후보의 경과 시간 상한을 강제한다.
+    if (workLog.status === WORK_LOG_STATUS_VALUES.CHECKED_IN) {
+      const checkInTime = toDate(workLog.checkInTime);
+      if (!checkInTime) return false;
 
-    const now = Date.now();
-    const expiresAt = now + QR_VALIDITY_DURATION_MS;
-    const securityCode = generateSecurityCode();
+      const elapsedMs = now.getTime() - checkInTime.getTime();
+      if (elapsedMs < 0 || elapsedMs > MAX_OVERNIGHT_SHIFT_MS) return false;
+    }
 
-    // 기존 활성 QR 비활성화 (같은 공고/날짜/액션) - Repository 사용
-    await eventQRRepository.deactivateByJobAndDate(input.jobPostingId, input.date, input.action, {
-      assignmentGroupId: input.assignmentGroupId,
-      timeSlot: input.timeSlot,
-    });
+    // ② 날짜 축 — 어제 자는 퇴근 스캔용이므로 출근 중인 것만 남긴다.
+    if (workLog.date === yesterday) {
+      return workLog.status === WORK_LOG_STATUS_VALUES.CHECKED_IN;
+    }
 
-    // 새 QR 코드 생성 - Repository 사용
-    const qrData: Omit<EventQRCode, 'id'> = {
-      jobPostingId: input.jobPostingId,
-      date: input.date,
-      assignmentGroupId: input.assignmentGroupId ?? null,
-      timeSlot: input.timeSlot ?? null,
-      action: input.action,
-      securityCode,
-      createdBy: input.createdBy,
-      createdAt: new Date(now),
-      expiresAt: new Date(expiresAt),
-      isActive: true,
-    };
-
-    const qrId = await eventQRRepository.create(qrData);
-
-    // 표시용 데이터
-    const displayData: EventQRDisplayData = {
-      type: 'event',
-      jobPostingId: input.jobPostingId,
-      date: input.date,
-      assignmentGroupId: input.assignmentGroupId ?? null,
-      timeSlot: input.timeSlot ?? null,
-      action: input.action,
-      securityCode,
-      createdAt: now,
-      expiresAt,
-    };
-
-    logger.info('이벤트 QR 생성 완료', { qrId });
-
-    return { qrId, displayData };
-  } catch (error) {
-    throw handleServiceError(error, {
-      operation: '이벤트 QR 생성',
-      component: 'eventQRService',
-      context: { ...input },
-    });
-  }
+    return true;
+  });
 }
 
-/**
- * QR 코드 검증
- *
- * @description 스태프가 스캔한 QR 코드 검증
- */
-export async function validateEventQR(qrString: string): Promise<EventQRValidationResult> {
-  try {
-    // 1. QR 데이터 파싱
-    const qrData = parseQRData(qrString);
-    if (!qrData) {
-      return {
-        isValid: false,
-        errorMessage: '유효하지 않은 QR 코드 형식입니다.',
-      };
-    }
+/** 선택 실패 사유별 사용자 문구 */
+const SELECTION_FAILURE_MESSAGES: Record<QRSelectionFailureReason, string> = {
+  no_assignment: '오늘 이 공고에 배정된 근무가 없습니다',
+  all_checked_out: '오늘 근무는 이미 퇴근 처리됐습니다',
+  not_active: '취소되었거나 처리할 수 없는 근무입니다',
+};
 
-    // 2. 만료 시간 확인 (클라이언트 측 1차 검증)
-    const now = Date.now();
-    if (now > qrData.expiresAt) {
-      return {
-        isValid: false,
-        errorMessage: 'QR 코드가 만료되었습니다. 새 QR 코드를 요청하세요.',
-      };
-    }
-
-    // 3. 서버 측 검증 (보안 코드 확인) - Repository 사용
-    const qrDoc = await eventQRRepository.validateSecurityCode(
-      qrData.jobPostingId,
-      qrData.date,
-      qrData.action,
-      qrData.securityCode,
-      {
-        assignmentGroupId: qrData.assignmentGroupId,
-        timeSlot: qrData.timeSlot,
-      }
-    );
-
-    if (!qrDoc) {
-      return {
-        isValid: false,
-        errorMessage: '유효하지 않거나 만료된 QR 코드입니다.',
-      };
-    }
-
-    return {
-      isValid: true,
-      jobPostingId: qrData.jobPostingId,
-      date: qrData.date,
-      assignmentGroupId: qrData.assignmentGroupId ?? null,
-      timeSlot: qrData.timeSlot ?? null,
-      action: qrData.action,
-    };
-  } catch (error) {
-    logger.error('QR 검증 실패', toError(error));
-    return {
-      isValid: false,
-      errorMessage: 'QR 코드 검증 중 오류가 발생했습니다.',
-    };
-  }
-}
+// ============================================================================
+// QR Service
+// ============================================================================
 
 /**
- * QR 스캔으로 출퇴근 처리 (스캔 진입점)
+ * QR 스캔 출퇴근 처리 (유일한 스캔 진입점)
  *
- * @description 스태프가 QR 스캔 시 출퇴근 처리 (트랜잭션 적용).
- *   스캔된 QR 형식에 따라 분기한다:
- *   - 고정 운영처(컨테이너) QR(type='venue') → processVenueQRCheckIn (p_action='auto')
- *   - 일반 이벤트 QR(type='event') → 기존 보안코드 검증 + 명시 액션 경로
+ * @description 고정 QR 스캔 → 오늘·어제·고정 스케줄 배정 후보 조회 →
+ *   어제 자 필터 → 처리 대상 자동 선택 → process_qr_checkin_atomically(p_action='auto').
+ *   서버가 현재 status 로 출근/퇴근을 결정한다(TOCTOU 방지).
+ *
+ *   어제까지 조회하는 이유는 자정 넘는 근무(18:00~02:00)다 — work_logs.date 가 시작일이라
+ *   D+1 새벽 퇴근 스캔이 오늘 날짜로는 후보를 못 찾는다.
  */
-export async function processEventQRCheckIn(
+export async function processQRCheckIn(
   qrString: string,
   staffId: string
 ): Promise<EventQRScanResult> {
-  // 고정 운영처 QR 이면 auto 경로로 위임(회전/만료/날짜 인코딩 없는 고정 QR).
   const venueData = parseVenueQRData(qrString);
-  if (venueData) {
-    return processVenueQRCheckIn(venueData.jobPostingId, staffId);
+
+  if (!venueData) {
+    throw new InvalidQRCodeError({
+      message: 'venue 형식이 아닌 QR',
+      userMessage: 'UNIQN 출근 QR이 아닙니다',
+    });
   }
 
+  const { jobPostingId } = venueData;
+
   try {
-    logger.info('QR 스캔 출퇴근 처리', { staffId });
+    logger.info('QR 스캔 출퇴근 처리', { jobPostingId, staffId });
 
-    // 1. QR 검증
-    const validation = await validateEventQR(qrString);
-    if (!validation.isValid) {
-      throw new InvalidQRCodeError({
-        message: validation.errorMessage || 'QR 검증 실패',
-        userMessage: validation.errorMessage || 'QR 코드가 유효하지 않습니다',
-      });
-    }
+    // 1. 스캔 시점 기준 날짜 (QR 에 날짜 미인코딩)
+    const today = getTodayString();
+    const yesterday = getYesterdayString();
 
-    const { jobPostingId, date, assignmentGroupId, timeSlot, action } = validation;
-
-    // 2. 해당 스태프의 WorkLog 찾기 - Repository 사용
-    const workLog = await workLogRepository.findByJobPostingStaffDate(
-      jobPostingId!,
+    // 2. 후보 조회 (고정 공고의 'FIXED_SCHEDULE' + 자정 넘는 근무용 어제 포함)
+    const rawCandidates = await workLogRepository.findQRCandidates(
+      jobPostingId,
       staffId,
-      date!,
-      assignmentGroupId,
-      timeSlot
+      today,
+      yesterday
     );
 
-    if (!workLog) {
+    // 3. 상한을 넘긴 후보 제거 — 출근 중(checked_in) 후보는 날짜와 무관하게 경과 시간 상한을
+    //    적용하고, 어제 자는 추가로 '출근 중'인 것만 인정한다(자정 넘는 근무의 퇴근 스캔용).
+    //    시계는 여기서 한 번만 읽어 필터와 선택이 같은 기준 시각을 쓰게 한다.
+    const checkTime = new Date();
+    const candidates = filterStaleCandidates(rawCandidates, yesterday, checkTime);
+
+    // 4. 처리 대상 자동 선택 (하루 다중 배정 대응)
+    const selection = selectWorkLogForQR(candidates, checkTime);
+
+    if (!selection.workLog) {
       throw new InvalidQRCodeError({
-        message: '해당 근무 기록을 찾을 수 없습니다',
-        userMessage: '이 공고에 확정된 스태프가 아닙니다',
+        message: `QR 처리 대상 없음: ${selection.reason}`,
+        userMessage: SELECTION_FAILURE_MESSAGES[selection.reason],
       });
     }
 
+    const workLog = selection.workLog;
     const workLogId = workLog.id;
-    const checkTime = new Date();
 
-    // 3. 트랜잭션으로 상태 확인 및 업데이트 (원자적 처리) - Repository 사용
-    //    공고 상태 확인도 트랜잭션 내부에서 수행 (TOCTOU 방지)
+    // 5. auto 액션으로 원자적 처리 — 서버가 현재 status 로 출/퇴근 결정
+    //    p_expected_date 는 **선택된 work_log 자신의 date**. 오늘 날짜를 고정으로 넘기면
+    //    자정 넘는 근무(어제 자 행)를 RPC 의 date_mismatch 가드가 거부한다.
     const result = await workLogRepository.processQRCheckInOutTransaction(
       workLogId,
       staffId,
-      jobPostingId!,
-      action!,
+      jobPostingId,
+      'auto',
       checkTime,
-      date!
+      workLog.date
     );
 
-    // 4. Analytics (트랜잭션 외부 — 실패해도 출퇴근은 성공)
+    // 6. Analytics (트랜잭션 외부 — 실패해도 출퇴근은 성공)
     if (result.action === 'checkIn') {
       trackCheckIn(toISODateString(checkTime) || '');
-      logger.info('QR 출근 처리 완료', {
-        workLogId,
-        staffId,
-        hasExistingCheckInTime: result.hasExistingCheckInTime,
-      });
+      logger.info('QR 출근 처리 완료', { workLogId, staffId });
     } else {
       trackCheckOut(toISODateString(checkTime) || '', result.workDuration);
       logger.info('QR 퇴근 처리 완료', { workLogId, staffId, workDuration: result.workDuration });
-    }
-
-    return {
-      success: true,
-      workLogId,
-      assignmentGroupId: workLog.assignmentGroupId ?? assignmentGroupId ?? null,
-      timeSlot: workLog.timeSlot ?? timeSlot ?? null,
-      action: result.action,
-      checkTime,
-      message: result.action === 'checkIn' ? '출근이 완료되었습니다.' : '퇴근이 완료되었습니다.',
-    };
-  } catch (error) {
-    logger.error('QR 스캔 출퇴근 처리 실패', toError(error), { staffId });
-
-    if (isAppError(error)) {
-      throw error;
-    }
-
-    throw handleServiceError(error, {
-      operation: 'QR 스캔 출퇴근 처리',
-      component: 'eventQRService',
-      context: { staffId },
-    });
-  }
-}
-
-/**
- * 고정 운영처(컨테이너) QR 출퇴근 처리
- *
- * @description 고정 운영처 QR 스캔 시: (스태프, 컨테이너 공고, 오늘) work_log 를 해소하고
- *   process_qr_checkin_atomically 를 p_action='auto' 로 호출(서버가 현재 status 로 출/퇴근 결정).
- *   고정 QR 이므로 회전 보안코드/만료 검증이 없고, 근무 날짜는 항상 스캔 시점의 오늘이다.
- *
- * @param containerJobPostingId 컨테이너 공고 ID(work_logs.job_posting_id)
- * @param staffId 스캔한 스태프 ID
- */
-export async function processVenueQRCheckIn(
-  containerJobPostingId: string,
-  staffId: string
-): Promise<EventQRScanResult> {
-  try {
-    logger.info('운영처 QR 스캔 출퇴근 처리', { containerJobPostingId, staffId });
-
-    // 1. 근무 날짜 = 오늘 (QR 에 날짜 미인코딩 — 스캔 시점 기준)
-    const date = getTodayString();
-
-    // 2. (스태프, 컨테이너 공고, 오늘) work_log 해소 — 기존 reader 재사용
-    const workLog = await workLogRepository.findByJobPostingStaffDate(
-      containerJobPostingId,
-      staffId,
-      date
-    );
-
-    if (!workLog) {
-      throw new InvalidQRCodeError({
-        message: '해당 근무 기록을 찾을 수 없습니다',
-        userMessage: '오늘 이 운영처에 배치된 스태프가 아닙니다',
-      });
-    }
-
-    const workLogId = workLog.id;
-    const checkTime = new Date();
-
-    // 3. auto 액션으로 원자적 처리 — 서버가 현재 status 로 출근/퇴근 결정 (TOCTOU 방지)
-    const result = await workLogRepository.processQRCheckInOutTransaction(
-      workLogId,
-      staffId,
-      containerJobPostingId,
-      'auto',
-      checkTime,
-      date
-    );
-
-    // 4. Analytics (트랜잭션 외부 — 실패해도 출퇴근은 성공)
-    if (result.action === 'checkIn') {
-      trackCheckIn(toISODateString(checkTime) || '');
-      logger.info('운영처 QR 출근 처리 완료', { workLogId, staffId });
-    } else {
-      trackCheckOut(toISODateString(checkTime) || '', result.workDuration);
-      logger.info('운영처 QR 퇴근 처리 완료', {
-        workLogId,
-        staffId,
-        workDuration: result.workDuration,
-      });
     }
 
     return {
@@ -396,63 +208,25 @@ export async function processVenueQRCheckIn(
       message: result.action === 'checkIn' ? '출근이 완료되었습니다.' : '퇴근이 완료되었습니다.',
     };
   } catch (error) {
-    logger.error('운영처 QR 스캔 출퇴근 처리 실패', toError(error), {
-      containerJobPostingId,
-      staffId,
-    });
+    logger.error('QR 스캔 출퇴근 처리 실패', toError(error), { jobPostingId, staffId });
 
-    if (isAppError(error)) {
-      throw error;
-    }
+    if (isAppError(error)) throw error;
 
     throw handleServiceError(error, {
-      operation: '운영처 QR 스캔 출퇴근 처리',
+      operation: 'QR 스캔 출퇴근 처리',
       component: 'eventQRService',
-      context: { containerJobPostingId, staffId },
+      context: { jobPostingId, staffId },
     });
   }
 }
 
 /**
- * 현재 활성 QR 코드 조회
+ * 공고별 고정 QR 문자열 생성
+ *
+ * @description 서버 왕복 없이 공고 ID 만으로 만들어진다. QR 은 바뀌지 않으므로
+ *   생성·만료·갱신 개념이 없다.
  */
-export async function getActiveEventQR(
-  jobPostingId: string,
-  date: string,
-  action: QRCodeAction,
-  options?: { assignmentGroupId?: string | null; timeSlot?: string | null }
-): Promise<EventQRCode | null> {
-  // Repository로 위임 (만료 시 자동 비활성화 포함)
-  return eventQRRepository.getActiveByJobAndDate(jobPostingId, date, action, options);
-}
-
-/**
- * QR 코드 삭제 (비활성화)
- */
-export async function deactivateEventQR(qrId: string): Promise<void> {
-  // Repository로 위임
-  return eventQRRepository.deactivate(qrId);
-}
-
-/**
- * 만료된 QR 코드 정리 (백그라운드 작업용)
- */
-export async function cleanupExpiredQRCodes(): Promise<number> {
-  // Repository로 위임
-  return eventQRRepository.deactivateExpired();
-}
-
-/**
- * QR 코드 남은 시간 계산 (초)
- */
-export function getQRRemainingSeconds(expiresAt: number): number {
-  const remaining = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
-  return remaining;
-}
-
-/**
- * QR 표시용 데이터를 JSON 문자열로 변환
- */
-export function stringifyQRData(displayData: EventQRDisplayData): string {
-  return JSON.stringify(displayData);
+export function buildVenueQRString(jobPostingId: string): string {
+  const data: VenueQRDisplayData = { type: 'venue', jobPostingId };
+  return JSON.stringify(data);
 }

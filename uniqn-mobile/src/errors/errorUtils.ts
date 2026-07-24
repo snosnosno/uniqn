@@ -108,6 +108,43 @@ export function getErrorMessageFromUnknown(error: unknown): string {
 // Error Normalization
 // ============================================================================
 
+/** 네트워크 장애로 분류할 메시지 패턴 (normalizeError · handleSupabaseError 공용) */
+const NETWORK_MESSAGE_PATTERNS = [
+  'network',
+  'timeout',
+  'offline',
+  'connection',
+  'ECONNREFUSED',
+  'ENOTFOUND',
+  'ETIMEDOUT',
+];
+
+/**
+ * 에러 메시지가 네트워크 장애 패턴인지 판별
+ *
+ * @description fetch 단절이 PostgrestError 형태(code='')로 전파되면 UNKNOWN(E7000)으로
+ * 오분류된다 (Sentry UNIQN-MOBILE-1M). Supabase 에러 매핑 경로에서도 공용으로 사용.
+ */
+export function isNetworkErrorMessage(message: string): boolean {
+  const lower = message.toLowerCase();
+  return NETWORK_MESSAGE_PATTERNS.some((pattern) => lower.includes(pattern.toLowerCase()));
+}
+
+/**
+ * message 없는 객체를 안전하게 직렬화 (순환 참조 방어, 300자 제한)
+ */
+function safeStringifyError(error: object): string {
+  try {
+    const json = JSON.stringify(error);
+    if (json && json !== '{}') {
+      return json.slice(0, 300);
+    }
+  } catch {
+    // 순환 참조 등 직렬화 불가 — String() 폴백
+  }
+  return String(error);
+}
+
 /**
  * 모든 종류의 에러를 AppError로 정규화
  */
@@ -127,22 +164,7 @@ export function normalizeError(error: unknown): AppError {
 
   // 일반 Error 객체
   if (error instanceof Error) {
-    // 네트워크 관련 에러 메시지 패턴
-    const networkPatterns = [
-      'network',
-      'timeout',
-      'offline',
-      'connection',
-      'ECONNREFUSED',
-      'ENOTFOUND',
-      'ETIMEDOUT',
-    ];
-
-    const isNetworkError = networkPatterns.some((pattern) =>
-      error.message.toLowerCase().includes(pattern.toLowerCase())
-    );
-
-    if (isNetworkError) {
+    if (isNetworkErrorMessage(error.message)) {
       return new NetworkError(ERROR_CODES.NETWORK_REQUEST_FAILED, {
         message: error.message,
         originalError: error,
@@ -166,7 +188,27 @@ export function normalizeError(error: unknown): AppError {
     });
   }
 
-  // 그 외 모든 경우
+  // message/code를 가진 객체 (Supabase 에러 등 Error 미상속 throw) —
+  // String()은 "[object Object]"로 원인을 소실시킨다 (Sentry UNIQN-MOBILE-1K)
+  if (error !== null && typeof error === 'object') {
+    const extracted = getErrorMessageFromUnknown(error);
+    const message = extracted === '[object Object]' ? safeStringifyError(error) : extracted;
+    const originalCode = getErrorCode(error);
+    const metadata = originalCode ? { originalCode } : undefined;
+
+    if (isNetworkErrorMessage(message)) {
+      return new NetworkError(ERROR_CODES.NETWORK_REQUEST_FAILED, { message, metadata });
+    }
+
+    return new AppError({
+      code: ERROR_CODES.UNKNOWN,
+      category: 'unknown',
+      message,
+      metadata,
+    });
+  }
+
+  // 그 외 원시값 (number/boolean 등)
   return new AppError({
     code: ERROR_CODES.UNKNOWN,
     category: 'unknown',

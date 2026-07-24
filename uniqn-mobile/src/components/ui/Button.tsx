@@ -47,8 +47,11 @@ const variantStyles: Record<ButtonVariant, string> = {
   primary: 'bg-primary-600 active:bg-primary-700 dark:bg-primary-500 dark:active:bg-primary-600',
   secondary:
     'bg-secondary-100 active:bg-secondary-200 dark:bg-surface-elevated dark:active:bg-surface-overlay',
+  // 테두리는 WCAG 1.4.11(비텍스트 3:1) 충족값 사용.
+  // secondary-300(1.66:1)/surface-overlay(1.31:1)는 실기기에서 테두리가 보이지 않아
+  // 버튼이 버튼으로 인지되지 않았다 (2026-07-19). secondary-600 = light 4.49:1 / dark 4.00:1.
   outline:
-    'bg-transparent border border-secondary-300 active:bg-secondary-50 dark:border-surface-overlay dark:active:bg-surface-elevated',
+    'bg-transparent border border-secondary-600 active:bg-secondary-50 dark:border-secondary-600 dark:active:bg-surface-elevated',
   ghost: 'bg-transparent active:bg-secondary-100 dark:active:bg-surface-elevated',
   danger: 'bg-error-600 active:bg-error-700 dark:bg-error-500 dark:active:bg-error-600',
   accent: 'bg-accent-500 active:bg-accent-600 dark:bg-accent-400 dark:active:bg-accent-500',
@@ -154,11 +157,29 @@ export const Button = memo(function Button({
   // Focus ring wrapper class — variant의 기존 border(outline 등)와 충돌 방지를 위해 외부 View로 감쌈
   // fullWidth는 inner Pressable이 가져가므로 wrapper에는 self-stretch만 필요 (inline-block 방지)
   const focusRingClass = `rounded m-[-2px] border-2 ${focused ? 'border-info-500' : 'border-transparent'}`;
+  // children 이 텍스트인지 판별해 <Text> 로 감싼다.
+  // `부족 {n}명 모집` 같은 보간 라벨은 JSX 가 배열로 넘기므로 typeof 검사만으로는
+  // 걸러지지 않아 날 문자열이 Pressable 아래로 들어가 RN 이 렌더하지 않는다
+  // (실기기 2026-07-19 라벨 증발). 평탄화 후 판정한다.
+  const childArray = React.Children.toArray(children);
+  const isTextual = (node: React.ReactNode): node is string | number =>
+    typeof node === 'string' || typeof node === 'number';
+
   const content =
-    typeof children === 'string' || typeof children === 'number' ? (
+    childArray.length > 0 && childArray.every(isTextual) ? (
+      // 전부 텍스트 — 하나의 Text 로 감싸 자연스러운 줄바꿈/말줄임 유지
       <Text className={textClass}>{children}</Text>
     ) : (
-      children
+      // 요소가 섞인 경우 — 요소는 보존하고 흩어진 텍스트 노드만 개별 래핑
+      childArray.map((child, index) =>
+        isTextual(child) ? (
+          <Text key={`btn-text-${index}`} className={textClass}>
+            {child}
+          </Text>
+        ) : (
+          child
+        )
+      )
     );
 
   return (

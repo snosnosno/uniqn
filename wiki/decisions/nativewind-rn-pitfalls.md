@@ -1,24 +1,27 @@
 ---
 area: decisions
-updated: 2026-07-17
+updated: 2026-07-24
 status: current
 sources:
   - uniqn-mobile/global.css
   - uniqn-mobile/tailwind.config.js
   - uniqn-mobile/src/utils/confirmAction.ts
   - uniqn-mobile/src/utils/showAlert.ts
+  - uniqn-mobile/src/components/ui/Modal.tsx
+  - uniqn-mobile/src/components/ui/SheetModal.tsx
   - memory/pitfall_nativewind_dynamic_className_dark.md
   - memory/pitfall_rn_flex1_minh_collapse.md
   - memory/pitfall_link_aschild_bare_pressable_native.md
   - memory/pitfall_rnw_nested_button_accessibilityrole.md
   - PR#136
   - PR#264
+  - PR#313
 tags: [nativewind, react-native, expo-router, ui, dark-mode, accessibility, web, alert]
 ---
 
 # 결정: NativeWind / React Native UI 함정 모음
 
-**한 줄:** 다크모드 유실·flex 붕괴·터치 유실·hydration 에러·웹 Alert 증발 — RN/NativeWind 프레젠테이션 레이어에서 조용히 재발하는 5함정과 회피 패턴.
+**한 줄:** 다크모드 유실·flex 붕괴·터치 유실·hydration 에러·웹 Alert 증발·pointerEvents 드롭·모달 z-순서 — RN/NativeWind 프레젠테이션 레이어에서 조용히 재발하는 함정 모음과 회피 패턴.
 
 ## 동적 className은 `dark:`를 유실 → CSS var 토큰 사용 (검증 필요)
 런타임에 문자열 조합으로 만든 className은 NativeWind가 `dark:` 배리언트를 정적 추출하지 못해 다크모드가 깨진다.
@@ -35,10 +38,20 @@ auto-height 부모 안에서 `flex-1`과 `min-h`가 겹치면 Yoga가 높이를 
 - 규칙: 목록/카드 내 이동은 `Link asChild` 대신 **`router.push()` 명령형** 핸들러.
 - 출처: memory `pitfall_link_aschild_bare_pressable_native`.
 
-## 중첩 `accessibilityRole="button"` → RNW hydration 에러 (검증됨: PR#136)
-React Native Web에서 `accessibilityRole="button"`은 `<button>`으로 렌더 → 버튼 중첩이 되어 hydration 에러.
-- 규칙: 중첩되는 안쪽 `Pressable`은 **role 미지정**(role 없는 Pressable은 `<div>`라 안전). 바깥 하나에만 button role.
-- 출처: memory `pitfall_rnw_nested_button_accessibilityrole`.
+## 중첩 `accessibilityRole="button"` / Pressable 중첩 → RNW hydration 에러 (검증됨: PR#136·PR#313)
+React Native Web에서 `accessibilityRole="button"`은 `<button>`으로 렌더 → 버튼 중첩이 되어 hydration 에러. **행 Pressable 안의 액션 Pressable도 같은 클래스**(PR#313 프리셋 행에서 재발).
+- 규칙: 중첩되는 안쪽 `Pressable`은 **role 미지정**(role 없는 Pressable은 `<div>`라 안전). 바깥 하나에만 button role. 행+행내 액션(삭제 등)은 중첩 대신 **형제로 분리**.
+- 출처: memory `pitfall_rnw_nested_button_accessibilityrole` · [[ops-console-redesign]].
+
+## RNW는 style 안의 `pointerEvents:'box-none'`을 드롭 → 웹 딤 클릭 삼킴 (검증됨: PR#313)
+`style={{pointerEvents:'box-none'}}`은 RNW에서 computed `auto`로 드롭된다(웹 실관찰 실측). 모달 딤 호스트가 클릭을 삼켜 **웹 백드롭 탭 닫기가 조용히 죽는다**.
+- 규칙: pointerEvents는 style이 아니라 **컴포넌트 prop**(`pointerEvents="box-none"`)으로. `Modal.tsx`·`SheetModal.tsx`가 준거 구현.
+- 출처: [[ops-console-redesign]].
+
+## RNModal + gorhom BottomSheet 동시 오픈 → 피커 가림 (검증됨: PR#313)
+gorhom 시트 위에서 RNModal(피커 등)을 열면 z-순서상 RNModal이 가려지거나 상호작용 불능.
+- 규칙: 부모 시트의 `visible`을 게이트로 **상호 배타 오픈**(피커 열 때 시트 숨김). 동시 표시 설계 금지.
+- 출처: [[ops-console-redesign]] (바운티 탈락 피커, fable Critical).
 
 ## rn-web `Alert.alert` 완전 no-op → 웹에서 다이얼로그 증발 (검증됨: PR#264)
 react-native-web 의 `Alert.alert`는 `static alert() {}` — **완전 no-op**이다. 웹(uniqn.app)은 실배포 표면이라 확인 다이얼로그가 게이트인 액션이 반응 없이 조용히 죽는다(최악: PIN 최초 발급이 웹에서 영영 미노출).
@@ -49,6 +62,7 @@ react-native-web 의 `Alert.alert`는 `static alert() {}` — **완전 no-op**�
 
 ## 관련
 - [[layers]] — Presentation 레이어(이 함정들이 사는 곳)
+- [[ops-console-redesign]] — pointerEvents 드롭·Pressable 중첩 재발·모달 z-순서 함정의 출처(PR#313)
 - [[alert-web-noop]] — 웹 Alert no-op 전수 교정 소스(수정 범위·검증 상세)
 - [[order-sheet-form-contract]] — 단일화면 카드+중첩 Modal embedded(RN Modal/터치 처리 선례)
 - [[ios-userflow-fixes]] — iOS UI 버그 실측 수정 묶음(같은 프레젠테이션 표면)

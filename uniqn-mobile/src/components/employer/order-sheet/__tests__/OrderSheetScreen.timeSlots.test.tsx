@@ -1,16 +1,14 @@
 /**
- * OrderSheetScreen — 일정·모집 시트 라우팅 + #244 지연 전환(switchSheet) 테스트
+ * OrderSheetScreen — 일정·모집 시트 라우팅 테스트
  *
- * (1) roles 행: 슬롯 1개면 역할 시트 직접, 복수면 TimeSlotsSheet 진입,
- * (2) TimeSlotsSheet→RolesSheet 스왑은 즉시 스왑이 아니라 닫고 SHEET_DISMISS_ANIMATION_MS 뒤 열림,
- * (3) 전환 예약 중 언마운트 시 타이머 정리(크래시·누수 없음).
- * SheetModal 은 children+footer+overlay 렌더로 모킹(reanimated 타이머 배제 — fake timer 격리).
+ * 시간·역할이 하나의 시트(ScheduleSlotsSheet)로 통합되어 시트→시트 스왑이 사라졌다.
+ * 구 #244 지연 전환(switchSheet) 테스트 4종은 지킬 동작이 없어져 삭제했다.
+ * SheetModal 은 children+footer+overlay 렌더로 모킹.
  */
-import { render, fireEvent, act } from '@testing-library/react-native';
+import { render, fireEvent, within } from '@testing-library/react-native';
 import React from 'react';
 import { OrderSheetScreen } from '../OrderSheetScreen';
 import { initialOrderSheetValues } from '@/utils/order-sheet/mappers';
-import { SHEET_DISMISS_ANIMATION_MS } from '@/constants/animation';
 
 jest.mock('@/components/ui/SheetModal', () => {
   const { View, Text } = require('react-native');
@@ -27,7 +25,7 @@ jest.mock('@/components/ui/SheetModal', () => {
   };
 });
 
-// DatePickerModal(dates 행)의 Modal/CalendarPicker 스텁 — 레이스 회귀 시 실제 렌더 크래시로 어설션이 가려지지 않게.
+// DatePickerModal(dates 행)의 Modal/CalendarPicker 스텁 — 실제 렌더 크래시로 어설션이 가려지지 않게.
 jest.mock('@/components/ui/Modal', () => {
   const { View } = require('react-native');
   return {
@@ -52,27 +50,8 @@ const withSlots = (slots: { startTime: string; roles: any[] }[]) => ({
   scheduleGroups: [{ dates: [], timeSlots: slots, grouped: false }],
 });
 
-describe('OrderSheetScreen — 일정·모집 라우팅 + #244 전환', () => {
-  afterEach(() => {
-    jest.useRealTimers();
-  });
-
-  it('roles 행 — 슬롯 복수면 TimeSlotsSheet 진입', () => {
-    const { getByTestId, getByText } = render(
-      <OrderSheetScreen
-        {...baseProps}
-        initialValues={withSlots([
-          { startTime: '19:00', roles: [] },
-          { startTime: '21:00', roles: [] },
-        ])}
-      />
-    );
-    fireEvent.press(getByTestId('order-sheet-row-roles'));
-    expect(getByText('출근 19:00')).toBeTruthy();
-    expect(getByText('출근 21:00')).toBeTruthy();
-  });
-
-  it('roles 행 — 슬롯 1개면 역할 시트 직접 진입', () => {
+describe('OrderSheetScreen — 일정·모집 라우팅', () => {
+  it('역할 행 — 슬롯 1개면 통합 시트에서 시간과 역할을 함께 보여준다', () => {
     const { getByTestId, getByText } = render(
       <OrderSheetScreen
         {...baseProps}
@@ -80,63 +59,41 @@ describe('OrderSheetScreen — 일정·모집 라우팅 + #244 전환', () => {
       />
     );
     fireEvent.press(getByTestId('order-sheet-row-roles'));
-    expect(getByText('어떤 역할이 필요하세요?')).toBeTruthy();
+    expect(getByText('시간 · 역할')).toBeTruthy();
+    // 주문서 본화면의 '시간' 행도 같은 문자열("출근 19:00")을 렌더하므로 전역 getByText 는 중복 매치된다.
+    // 펼친 SlotCard 안(order-time-start-0)으로 스코프를 좁혀 통합 시트가 시간을 보여주는지만 단언한다.
+    expect(within(getByTestId('order-time-start-0')).getByText('출근 19:00')).toBeTruthy();
+    expect(getByTestId('order-role-chip-dealer')).toBeTruthy();
   });
 
-  it('TimeSlotsSheet→RolesSheet 스왑은 지연 전환(즉시 스왑 금지)', async () => {
-    jest.useFakeTimers();
-    const { getByTestId, getByText, queryByText } = render(
+  it('시간 행도 같은 통합 시트를 연다', () => {
+    const { getByTestId, getByText } = render(
       <OrderSheetScreen
         {...baseProps}
-        initialValues={withSlots([
-          { startTime: '19:00', roles: [] },
-          { startTime: '21:00', roles: [] },
-        ])}
+        initialValues={withSlots([{ startTime: '19:00', roles: [] }])}
       />
     );
-    fireEvent.press(getByTestId('order-sheet-row-roles')); // TimeSlotsSheet
-    fireEvent.press(getByTestId('order-time-roles-0')); // 슬롯0 역할 편집 → switchSheet
-    // onConfirm(setValue shouldValidate)의 RHF 비동기 검증 microtask flush
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    // 닫힘 직후: TimeSlots 닫히고 RolesSheet 아직 안 열림
-    expect(queryByText('출근 19:00')).toBeNull();
-    expect(queryByText('어떤 역할이 필요하세요?')).toBeNull();
-
-    // dismiss 애니메이션 경과 후 RolesSheet 열림
-    act(() => {
-      jest.advanceTimersByTime(SHEET_DISMISS_ANIMATION_MS);
-    });
-    expect(getByText('어떤 역할이 필요하세요?')).toBeTruthy();
+    fireEvent.press(getByTestId('order-sheet-row-time'));
+    expect(getByText('시간 · 역할')).toBeTruthy();
+    expect(getByTestId('order-role-chip-dealer')).toBeTruthy();
   });
 
-  it('전환 예약 중 언마운트 → 타이머 정리(크래시 없음)', async () => {
-    jest.useFakeTimers();
-    const { getByTestId, unmount } = render(
+  it('슬롯 복수면 첫 미완성 슬롯이 펼쳐지고 나머지는 접힌다', () => {
+    const { getByTestId, getByText } = render(
       <OrderSheetScreen
         {...baseProps}
         initialValues={withSlots([
-          { startTime: '19:00', roles: [] },
+          { startTime: '19:00', roles: [{ role: 'dealer', count: 1 }] },
           { startTime: '21:00', roles: [] },
         ])}
       />
     );
     fireEvent.press(getByTestId('order-sheet-row-roles'));
-    fireEvent.press(getByTestId('order-time-roles-0')); // switchSheet 예약
-    await act(async () => {
-      await Promise.resolve();
-    });
-    expect(() => {
-      unmount();
-      act(() => {
-        jest.advanceTimersByTime(SHEET_DISMISS_ANIMATION_MS * 2);
-      });
-    }).not.toThrow();
+    expect(getByText('출근 21:00')).toBeTruthy(); // 미완성 = 펼침
+    expect(getByText('19:00 · 딜러 1명')).toBeTruthy(); // 완성 = 접힘 요약
   });
 
-  it('submit 시 역할 미설정이면 역할 시트가 열린다 (onInvalid roles — H5 죽은 버튼 방지)', async () => {
+  it('submit 시 역할 미설정이면 통합 시트가 열린다 (H5 죽은 버튼 방지)', async () => {
     const { getByTestId, findByText } = render(
       <OrderSheetScreen
         {...baseProps}
@@ -146,7 +103,7 @@ describe('OrderSheetScreen — 일정·모집 라우팅 + #244 전환', () => {
           location: { name: '강남 홀덤펍', region: '서울 강남구' },
           contactPhone: '010-1234-5678',
           scheduleGroups: [
-            // 역할만 미설정 → firstUnsetRow={roles, 0}
+            // 역할만 미설정 → firstUnsetRow={roles, 0} → handleRowPress 경유(OrderSheetScreen.tsx:550)
             {
               dates: ['2026-07-14'],
               timeSlots: [{ startTime: '19:00', roles: [] }],
@@ -156,38 +113,7 @@ describe('OrderSheetScreen — 일정·모집 라우팅 + #244 전환', () => {
         }}
       />
     );
-    // 제목~시간은 설정·역할 미설정 상태에서 등록 → 역할 시트 유도(setActiveSheet 직접이면 무반응이던 지점)
     fireEvent.press(getByTestId('job-posting-create-submit'));
-    expect(await findByText('어떤 역할이 필요하세요?')).toBeTruthy();
-  });
-
-  it('지연 전환 창 중 다른 행 탭은 무시되고 예약된 시트만 열린다 (#244 레이스 가드)', async () => {
-    jest.useFakeTimers();
-    const { getByTestId, getByText, queryByText } = render(
-      <OrderSheetScreen
-        {...baseProps}
-        initialValues={withSlots([
-          { startTime: '19:00', roles: [] },
-          { startTime: '21:00', roles: [] },
-        ])}
-      />
-    );
-    fireEvent.press(getByTestId('order-sheet-row-roles')); // TimeSlots
-    fireEvent.press(getByTestId('order-time-roles-0')); // switchSheet 예약(activeSheet=null)
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    // 전환 창(300ms) 중 dates 행 탭 → 가드로 무시(RolesSheet·dates 모두 미개봉)
-    fireEvent.press(getByTestId('order-sheet-row-dates'));
-    expect(queryByText('어떤 역할이 필요하세요?')).toBeNull();
-    expect(queryByText('선택한 날짜 (0개)')).toBeNull();
-
-    // 경과 후 예약된 RolesSheet만 열림 — 사용자 탭이 예약을 clobber하지 않음
-    act(() => {
-      jest.advanceTimersByTime(SHEET_DISMISS_ANIMATION_MS);
-    });
-    expect(getByText('어떤 역할이 필요하세요?')).toBeTruthy();
-    expect(queryByText('선택한 날짜 (0개)')).toBeNull();
+    expect(await findByText('시간 · 역할')).toBeTruthy();
   });
 });

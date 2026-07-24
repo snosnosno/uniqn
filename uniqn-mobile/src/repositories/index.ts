@@ -30,7 +30,6 @@ import {
   SupabaseJobPostingRepository,
   SupabaseWorkLogRepository,
   SupabaseUserRepository,
-  SupabaseEventQRRepository,
   SupabaseNotificationRepository,
   SupabaseReportRepository,
   SupabaseSettlementRepository,
@@ -74,8 +73,6 @@ export type {
   DeletionRequest,
   UserDataExport,
   UserNicknameSearchResult,
-  // EventQR
-  IEventQRRepository,
   // Notification
   INotificationRepository,
   GetNotificationsOptions,
@@ -145,7 +142,6 @@ export {
   SupabaseJobPostingRepository,
   SupabaseWorkLogRepository,
   SupabaseUserRepository,
-  SupabaseEventQRRepository,
   SupabaseNotificationRepository,
   SupabaseReportRepository,
   SupabaseSettlementRepository,
@@ -236,27 +232,6 @@ export const workLogRepository = new SupabaseWorkLogRepository();
  * ```
  */
 export const userRepository = new SupabaseUserRepository();
-
-/**
- * EventQR Repository 싱글톤 인스턴스
- *
- * @description 프로덕션에서 사용하는 기본 인스턴스
- *
- * @example
- * ```typescript
- * import { eventQRRepository } from '@/repositories';
- *
- * // 조회
- * const qr = await eventQRRepository.getActiveByJobAndDate(jobPostingId, date, 'checkIn');
- *
- * // 생성
- * const qrId = await eventQRRepository.create(qrData);
- *
- * // 비활성화
- * await eventQRRepository.deactivate(qrId);
- * ```
- */
-export const eventQRRepository = new SupabaseEventQRRepository();
 
 /**
  * Notification Repository 싱글톤 인스턴스
@@ -481,6 +456,7 @@ export type {
   IWorkspaceRepository,
   IWorkspaceMemberRepository,
   IWorkspaceInvitationRepository,
+  WorkspaceInviteCandidate,
 } from './interfaces';
 
 export {
@@ -502,3 +478,9 @@ export {
   SupabaseJobPostingCollaboratorRepository,
   jobPostingCollaboratorRepository,
 } from './supabase/JobPostingCollaboratorRepository';
+
+// ============================================================================
+// 주간 배치 그리드 (weeklyGrid) — 지점 단가 쓰기 입력 타입 재노출
+// ============================================================================
+
+export type { SetVenueRoleSalaryInput } from './interfaces/IWeeklyGridRepository';

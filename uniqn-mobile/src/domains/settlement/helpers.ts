@@ -258,6 +258,45 @@ export function getEffectiveSalaryInfoFromRoles(
   return getRoleSalaryFromRoles(roles, workLog.role, workLog.customRole, defaultSalary);
 }
 
+export type SalaryResolutionSource = 'override' | 'roleTable' | 'fallback';
+
+export interface ResolvedSalary {
+  salaryInfo: SalaryInfo;
+  source: SalaryResolutionSource;
+}
+
+/**
+ * getEffectiveSalaryInfoFromRoles 의 형제 — 같은 서열(override > 단가표 > 폴백)로 해소하되
+ * 출처를 함께 반환한다. 기존 헬퍼는 미매칭을 조용히 폴백하므로 "기본 단가 적용" 배지
+ * (조용한 오답 금지 — 정책 결정 2026-07-22)는 이 함수로만 만들 수 있다.
+ * salaryInfo 는 getEffectiveSalaryInfoFromRoles 와 항상 등가(회귀 테스트로 고정).
+ */
+export function resolveEffectiveSalaryWithSource(
+  workLog: WorkLogWithOverrides,
+  roles: { role?: string; name?: string; customRole?: string; salary?: SalaryInfo }[] | undefined,
+  defaultSalary?: SalaryInfo
+): ResolvedSalary {
+  if (workLog.customSalaryInfo) {
+    return { salaryInfo: workLog.customSalaryInfo, source: 'override' };
+  }
+  const fallback = defaultSalary ?? DEFAULT_SALARY_INFO;
+  if (!workLog.role || !roles?.length) {
+    return { salaryInfo: fallback, source: 'fallback' };
+  }
+  const effectiveRole =
+    workLog.role === 'other' && workLog.customRole ? workLog.customRole : workLog.role;
+  const roleData = roles.find((role) => {
+    const roleKey = role.role || role.name;
+    if (roleKey === 'other' && role.customRole) {
+      return role.customRole === effectiveRole;
+    }
+    return roleKey === effectiveRole;
+  });
+  return roleData?.salary
+    ? { salaryInfo: roleData.salary, source: 'roleTable' }
+    : { salaryInfo: fallback, source: 'fallback' };
+}
+
 export function getEffectiveAllowances(
   workLog: WorkLogWithOverrides,
   defaultAllowances?: Allowances

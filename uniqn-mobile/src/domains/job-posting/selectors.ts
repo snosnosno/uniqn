@@ -96,7 +96,7 @@ export function selectPostingRoleAvailability(
   const items = getPostingRoleStats(posting).map((role) => {
     // filledByRole 주입 시 DB 역할키로 실확정 수를 조회, 미주입 시 dead counter(role.filled=0) 유지.
     // bare other(customRole 없음)는 getPostingRoleKey 가 'other' 를 내지만 DB `_posting_role_key` 는
-    // 'other:'(콜론 포함) — roleMatchKey 계보에 맞춰 콜론 형식으로 조회한다.
+    // 'other:'(콜론 포함) — roleHydrateKey(domains/schedule/postingHydrateKeys) 계보에 맞춰 콜론 형식으로 조회한다.
     const dbRoleKey =
       role.role === 'other' ? `other:${role.customRole ?? ''}` : getPostingRoleKey(role);
     const filled = filledByRole ? (filledByRole[dbRoleKey] ?? 0) : role.filled;

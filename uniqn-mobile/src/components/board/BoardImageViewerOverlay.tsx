@@ -1,6 +1,6 @@
 import { Modal as RNModal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from '@/components/icons';
 import type { BoardImageAttachment } from '@/types/board';
 
@@ -19,6 +19,9 @@ export function BoardImageViewerOverlay({
   onClose,
   onChangeIndex,
 }: BoardImageViewerOverlayProps) {
+  // 조건부 early return 앞에서 호출해야 한다 (Rules of Hooks).
+  const insets = useSafeAreaInsets();
+
   if (!visible || images.length === 0 || !images[currentIndex]) {
     return null;
   }
@@ -44,10 +47,15 @@ export function BoardImageViewerOverlay({
           accessibilityLabel="이미지 뷰어 닫기"
         />
 
-        <SafeAreaView
+        <View
           className="flex-1"
-          edges={['top', 'bottom']}
-          style={{ pointerEvents: 'box-none' }}
+          style={{
+            pointerEvents: 'box-none',
+            // SafeAreaView 는 RNModal 의 별도 윈도우를 자기 기준으로 측정해 인셋이
+            // 0으로 떨어져 상단 닫기 버튼이 상태바와 겹친다 (2026-07-19).
+            paddingTop: insets.top,
+            paddingBottom: insets.bottom,
+          }}
         >
           <View className="flex-1" style={{ pointerEvents: 'box-none' }}>
             <View
@@ -116,7 +124,7 @@ export function BoardImageViewerOverlay({
               )}
             </View>
           </View>
-        </SafeAreaView>
+        </View>
       </View>
     </RNModal>
   );

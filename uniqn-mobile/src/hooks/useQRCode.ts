@@ -1,20 +1,21 @@
 /**
  * UNIQN Mobile - QR 코드 훅
  *
- * @description QR 코드 스캔 및 모달 상태 관리 훅
- * @version 2.0.0 - 레거시 훅 제거, eventQRService 통합
+ * @description QR 코드 스캔 처리 훅
+ * @version 3.1.0 - 공고당 고정 QR 전환, 회전 QR 표시 훅 및 스캐너 모달 훅 제거
  *
- * @note QR 생성은 useEventQR 훅 사용 (구인자용)
+ * @note QR 생성은 서버 왕복이 없다 — buildVenueQRString(jobPostingId) 참고.
  */
 
 import { useState, useCallback, useRef } from 'react';
-import { processEventQRCheckIn } from '@/services/work/eventQRService';
+import { processQRCheckIn } from '@/services/work/eventQRService';
 import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { queryClient, queryKeys } from '@/lib/queryClient';
 import { logger } from '@/utils/logger';
-import type { QRCodeAction, QRCodeScanResult, QRScanError, EventQRDisplayData } from '@/types';
+import { isWeb } from '@/utils/platform';
+import type { QRCodeScanResult, QRScanError } from '@/types';
 import { isAppError } from '@/errors/AppError';
 import { toError, normalizeError } from '@/errors';
 
@@ -36,8 +37,9 @@ interface UseQRCodeScannerOptions {
 /**
  * QR 코드 스캔 및 출퇴근 처리 훅
  *
- * @description Event QR 시스템을 통해 출퇴근 처리
- * - processEventQRCheckIn()이 eventQRCodes 컬렉션 검증 및 workLogs 업데이트 수행
+ * @description 공고당 고정 QR 로 출퇴근 처리
+ * - processQRCheckIn()이 QR 파싱·배정 후보 선택·출퇴근 반영을 모두 수행한다
+ * - 출근/퇴근 구분은 서버가 현재 status 로 결정한다 (QR 에 미인코딩)
  */
 export function useQRCodeScanner(options: UseQRCodeScannerOptions) {
   const { onSuccess, onError } = options;
@@ -51,7 +53,7 @@ export function useQRCodeScanner(options: UseQRCodeScannerOptions) {
 
   const clearError = useCallback(() => setLastError(null), []);
 
-  // QR 스캔 결과 처리 (Event QR 시스템 통합, 5초 throttle 적용)
+  // QR 스캔 결과 처리 (고정 QR 단일 진입점, 5초 throttle 적용)
   const handleScanResult = useCallback(
     async (result: QRCodeScanResult) => {
       // throttle: 5초 이내 중복 스캔 방지
@@ -94,8 +96,8 @@ export function useQRCodeScanner(options: UseQRCodeScannerOptions) {
         // (예전엔 가드 없이 RPC 직행 → 약전파 현장에서 raw 네트워크 에러 산발)
         requireOnlineForMutation('useQRCodeScanner.checkIn');
 
-        // Event QR 처리 (eventQRCodes 검증 + workLogs 업데이트)
-        const scanResult = await processEventQRCheckIn(qrString, user.uid);
+        // 고정 QR 처리 (QR 파싱 + 배정 후보 선택 + 출퇴근 반영)
+        const scanResult = await processQRCheckIn(qrString, user.uid);
 
         if (scanResult.success) {
           // 캐시 무효화: workLogs 변경 → schedules도 갱신 필요
@@ -125,7 +127,17 @@ export function useQRCodeScanner(options: UseQRCodeScannerOptions) {
           message: errorMessage,
           isRetryable: appError.isRetryable,
         });
-        // 토스트 생략: scanError UI가 스캐너 화면에서 에러를 표시
+
+        // 네이티브 스캐너는 scanError prop 으로 화면에 에러를 그리므로 토스트를 겹치지 않는다.
+        // 웹 스캐너(QRCodeScanner.web.tsx)에는 그 prop 자체가 없고, QR 인식 즉시 "스캔 완료!"를
+        // 띄운다 — 침묵이 아니라 **거짓 성공 표시**다. 웹에서만 토스트로 실패를 알린다.
+        if (isWeb) {
+          addToast({
+            type: 'error',
+            message: errorMessage,
+          });
+        }
+
         onError?.(toError(error));
       } finally {
         setIsProcessing(false);
@@ -142,76 +154,10 @@ export function useQRCodeScanner(options: UseQRCodeScannerOptions) {
   };
 }
 
-/**
- * QR 스캔 모달 상태 관리 훅
- */
-export function useQRScannerModal() {
-  const [isVisible, setIsVisible] = useState(false);
-  const [action, setAction] = useState<QRCodeAction | undefined>();
-
-  const openScanner = useCallback((scanAction?: QRCodeAction) => {
-    setAction(scanAction);
-    setIsVisible(true);
-  }, []);
-
-  const closeScanner = useCallback(() => {
-    setIsVisible(false);
-    setAction(undefined);
-  }, []);
-
-  return {
-    isVisible,
-    action,
-    openScanner,
-    closeScanner,
-  };
-}
-
-/**
- * QR 코드 표시 모달 상태 관리 훅
- *
- * @note EventQRDisplayData를 사용하여 이벤트 QR 시스템과 통합
- */
-export function useQRDisplayModal() {
-  const [isVisible, setIsVisible] = useState(false);
-  const [displayData, setDisplayData] = useState<EventQRDisplayData | null>(null);
-  const [action, setAction] = useState<QRCodeAction | undefined>();
-
-  const openDisplay = useCallback((data: EventQRDisplayData, displayAction?: QRCodeAction) => {
-    setDisplayData(data);
-    setAction(displayAction);
-    setIsVisible(true);
-  }, []);
-
-  const closeDisplay = useCallback(() => {
-    setIsVisible(false);
-    // 데이터는 애니메이션 완료 후 초기화
-    setTimeout(() => {
-      setDisplayData(null);
-      setAction(undefined);
-    }, 300);
-  }, []);
-
-  const updateDisplayData = useCallback((data: EventQRDisplayData) => {
-    setDisplayData(data);
-  }, []);
-
-  return {
-    isVisible,
-    displayData,
-    action,
-    openDisplay,
-    closeDisplay,
-    updateDisplayData,
-  };
-}
-
 // ============================================================================
 // Exports
 // ============================================================================
 
 export default {
   useQRCodeScanner,
-  useQRScannerModal,
-  useQRDisplayModal,
 };

@@ -1,20 +1,10 @@
-/** ops PLAYERS 탭 — 등록 폼·참가자 리스트·리바이/애드온/탈락/재진입·플레이어 링크. [id].tsx 에서 추출(T10). */
+/** ops PLAYERS 탭 — 참가자 리스트. 등록은 FAB→시트([id].tsx 소유, L7)로 분리. 행 탭 → 공용 액션시트(리바이/애드온/탈락/재진입/탈락취소). [id].tsx 에서 추출(T10). */
 import { useState } from 'react';
-import { View, Text, TextInput, Pressable, ActivityIndicator } from 'react-native';
-import { confirmAction } from '@/utils/confirmAction';
-import { showAlert } from '@/utils/showAlert';
+import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { AppFlashList } from '@/components/ui/AppFlashList';
-import { SelectBottomSheet } from '@/components/ui';
 import { PlayerClaimButton } from './PlayerClaimButton';
-import {
-  useRegisterParticipant,
-  useAddRebuy,
-  useAddAddon,
-  useBustParticipant,
-  useUndoBust,
-  useReenterParticipant,
-} from '@/hooks/ops';
-import type { OpsBustResult, OpsParticipant, OpsTournament } from '@/types/ops';
+import { OpsParticipantActionSheet } from './OpsParticipantActionSheet';
+import type { OpsParticipant, OpsTournament } from '@/types/ops';
 
 import { formatNumber as fmt } from '@/utils/formatters/currency';
 
@@ -22,154 +12,46 @@ interface PlayersTabProps {
   tournament: OpsTournament;
   participants: OpsParticipant[];
   isLoading: boolean;
+  /** ITM 탈락 후 상금 화면 링크(H7 — [id].tsx 에서 () => setTab('payouts') 주입, Task 7 예외). */
+  onOpenPayouts?: () => void;
 }
 
-export function PlayersTab({ tournament, participants, isLoading }: PlayersTabProps) {
+export function PlayersTab({
+  tournament,
+  participants,
+  isLoading,
+  onOpenPayouts,
+}: PlayersTabProps) {
   const tournamentId = tournament.id;
 
-  // 바운티 대회 여부 — bountyCost 설정 시 KO 배지·탈락자 지정 피커 노출.
+  // 바운티 대회 여부 — bountyCost 설정 시 KO 배지 노출. 탈락자 지정 피커는 액션시트로 이관(T7).
   const isBountyTournament = tournament.bountyCost !== null && tournament.bountyCost !== undefined;
 
-  const registerMut = useRegisterParticipant(tournamentId);
-  const rebuyMut = useAddRebuy(tournamentId);
-  const addonMut = useAddAddon(tournamentId);
-  const bustMut = useBustParticipant(tournamentId);
-  const undoMut = useUndoBust(tournamentId);
-  const reenterMut = useReenterParticipant(tournamentId);
-
-  const [showForm, setShowForm] = useState(false);
-  const [name, setName] = useState('');
-  const [nationality, setNationality] = useState('');
-  const [phone, setPhone] = useState('');
-  const [buyIn, setBuyIn] = useState('');
-  // 바운티 대회에서 "누가 눌렀나요?" 피커 대상(=탈락 처리할 참가자). null 이면 미표시.
-  const [eliminatorPickerFor, setEliminatorPickerFor] = useState<OpsParticipant | null>(null);
-
-  // bust 성공 후 우승/ITM/일반 종료 분기 안내(비-바운티·바운티 공통).
-  const handleBustSuccess = (r: OpsBustResult) => {
-    // RPC 계약: winnerFinalized=true면 v_active2=1 조건 동일로 winner 항상 non-null.
-    if (r.winnerFinalized && r.winner) {
-      showAlert(
-        '우승 확정',
-        `1위 · 상금 ${r.winner.prizeAmount !== null ? fmt(r.winner.prizeAmount) : '미설정'}`
-      );
-    } else {
-      showAlert(
-        r.prizeAmount !== null ? 'ITM 종료' : '탈락 처리 완료',
-        `${r.finishPosition}위${r.prizeAmount !== null ? ` · 상금 ${fmt(r.prizeAmount)}` : ''}`
-      );
-    }
-  };
-
-  // 탈락 버튼 — 비-바운티는 확인 다이얼로그, 바운티는 탈락자 지정 피커 진입.
-  const handleBustPress = (target: OpsParticipant) => {
-    if (!isBountyTournament) {
-      confirmAction({
-        title: '탈락 처리',
-        message: `${target.name} 님을 탈락 처리할까요?`,
-        confirmText: '탈락 처리',
-        destructive: true,
-        onConfirm: () =>
-          bustMut.mutate({ participantId: target.id }, { onSuccess: handleBustSuccess }),
-      });
-      return;
-    }
-    setEliminatorPickerFor(target);
-  };
-
-  const submitRegister = () => {
-    if (!name.trim()) return;
-    registerMut.mutate(
-      {
-        name: name.trim(),
-        nationality: nationality.trim() || undefined,
-        phone: phone.trim() || undefined,
-        buyInAmount: buyIn.trim() ? parseInt(buyIn.replace(/[^0-9]/g, ''), 10) : undefined,
-      },
-      {
-        onSuccess: () => {
-          setName('');
-          setNationality('');
-          setPhone('');
-          setBuyIn('');
-          setShowForm(false);
-        },
-      }
-    );
-  };
+  // 행 탭 → 액션시트 대상 참가자. null 이면 닫힘.
+  const [sheetParticipant, setSheetParticipant] = useState<OpsParticipant | null>(null);
 
   return (
     <View className="flex-1">
-      <View className="flex-row items-center justify-between px-4 py-2">
+      <View className="flex-row items-center px-4 py-2">
         <Text className="text-sm text-secondary-500 dark:text-secondary-400">
           {tournament.registrationOpen ? '등록 열림' : '등록 마감'}
         </Text>
-        <Pressable
-          onPress={() => setShowForm((s) => !s)}
-          accessibilityRole="button"
-          className="rounded-md bg-primary-600 px-3 py-1.5 active:opacity-70"
-        >
-          <Text className="font-sans-semibold text-sm text-white">
-            {showForm ? '닫기' : '+ 워크인 등록'}
-          </Text>
-        </Pressable>
       </View>
-
-      {showForm && (
-        <View className="mx-4 mb-2 rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
-          <TextInput
-            value={name}
-            onChangeText={setName}
-            placeholder="참가자 이름 *"
-            placeholderTextColor="#9CA3AF"
-            maxLength={50}
-            className="mb-2 rounded-md border border-gray-300 px-3 py-2 text-content-primary dark:border-gray-700 dark:text-off-white"
-          />
-          <View className="flex-row gap-2">
-            <TextInput
-              value={nationality}
-              onChangeText={setNationality}
-              placeholder="국적 (예: KR)"
-              placeholderTextColor="#9CA3AF"
-              className="mb-2 flex-1 rounded-md border border-gray-300 px-3 py-2 text-content-primary dark:border-gray-700 dark:text-off-white"
-            />
-            <TextInput
-              value={buyIn}
-              onChangeText={setBuyIn}
-              placeholder="바이인 금액"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="number-pad"
-              className="mb-2 flex-1 rounded-md border border-gray-300 px-3 py-2 text-content-primary dark:border-gray-700 dark:text-off-white"
-            />
-          </View>
-          <TextInput
-            value={phone}
-            onChangeText={setPhone}
-            placeholder="전화번호 (선택)"
-            placeholderTextColor="#9CA3AF"
-            keyboardType="phone-pad"
-            className="mb-2 rounded-md border border-gray-300 px-3 py-2 text-content-primary dark:border-gray-700 dark:text-off-white"
-          />
-          <Pressable
-            onPress={submitRegister}
-            disabled={!name.trim() || registerMut.isPending}
-            accessibilityRole="button"
-            className={`items-center rounded-md py-2.5 ${name.trim() && !registerMut.isPending ? 'bg-primary-600 active:opacity-70' : 'bg-gray-300 dark:bg-gray-700'}`}
-          >
-            <Text className="font-sans-semibold text-white">
-              {registerMut.isPending ? '등록 중…' : '등록'}
-            </Text>
-          </Pressable>
-        </View>
-      )}
 
       <AppFlashList
         data={participants}
         keyExtractor={(p: OpsParticipant) => p.id}
         estimatedItemSize={64}
-        contentContainerStyle={{ padding: 16, paddingTop: 4 }}
+        // 하단 96 = 등록 FAB(56 + bottom 16) 풋프린트 — 최하단 행의 QR·체브론 가림 방지
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 96 }}
         renderItem={({ item }: { item: OpsParticipant }) => (
-          <View className="mb-2 flex-row items-center rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
+          // 행 전체 탭 → 액션시트. QR(PlayerClaimButton)만 행에 잔류(M6 — 전 상태 1탭 노출).
+          <Pressable
+            onPress={() => setSheetParticipant(item)}
+            accessibilityRole="button"
+            accessibilityLabel={`#${item.entryNumber} ${item.name} 액션`}
+            className="mb-2 flex-row items-center rounded-lg border border-gray-200 bg-white p-3 active:opacity-70 dark:border-gray-700 dark:bg-gray-900"
+          >
             <Text className="w-10 font-sans-semibold text-sm text-secondary-500 dark:text-secondary-400">
               #{item.entryNumber}
             </Text>
@@ -206,71 +88,16 @@ export function PlayersTab({ tournament, participants, isLoading }: PlayersTabPr
                 </Text>
               )}
             </View>
-            <View className="flex-row gap-1">
-              {item.status === 'active' && (
-                <>
-                  <Pressable
-                    onPress={() => rebuyMut.mutate(item.id)}
-                    accessibilityRole="button"
-                    className="rounded-md bg-gray-100 px-2 py-1.5 active:opacity-70 dark:bg-gray-800"
-                  >
-                    <Text className="text-xs text-content-primary dark:text-off-white">리바이</Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => addonMut.mutate(item.id)}
-                    accessibilityRole="button"
-                    className="rounded-md bg-gray-100 px-2 py-1.5 active:opacity-70 dark:bg-gray-800"
-                  >
-                    <Text className="text-xs text-content-primary dark:text-off-white">애드온</Text>
-                  </Pressable>
-                  {/* 탈락 처리 — 비-바운티는 확인 Alert, 바운티는 탈락자 지정 피커 */}
-                  <Pressable
-                    onPress={() => handleBustPress(item)}
-                    accessibilityRole="button"
-                    className="min-h-[44px] items-center justify-center rounded-md border border-error-500 px-2 active:opacity-70 dark:border-error-400"
-                  >
-                    <Text className="text-xs text-error-600 dark:text-error-400">탈락</Text>
-                  </Pressable>
-                </>
-              )}
-              {/* 탈락 취소 — 대회 active & busted 참가자만(칩·좌석 복원) */}
-              {tournament.status === 'active' && item.status === 'busted' && (
-                <Pressable
-                  onPress={() =>
-                    confirmAction({
-                      title: '탈락 취소',
-                      message: `${item.name} 님의 탈락을 취소할까요?\n칩과 좌석이 복원됩니다.`,
-                      confirmText: '탈락 취소',
-                      destructive: true,
-                      onConfirm: () => undoMut.mutate(item.id),
-                    })
-                  }
-                  accessibilityRole="button"
-                  className="min-h-[44px] justify-center rounded-md border border-amber-500 px-3 active:opacity-70 dark:border-amber-400"
-                >
-                  <Text className="text-xs font-semibold text-amber-600 dark:text-amber-400">
-                    탈락 취소
-                  </Text>
-                </Pressable>
-              )}
-              {/* 재진입 — busted 참가자에게만 노출 */}
-              {item.status === 'busted' && (
-                <Pressable
-                  onPress={() => reenterMut.mutate(item.id)}
-                  accessibilityRole="button"
-                  className="min-h-[44px] items-center justify-center rounded-md bg-primary-600 px-2 active:opacity-70"
-                >
-                  <Text className="text-xs text-white">재진입</Text>
-                </Pressable>
-              )}
-              {/* 플레이어 링크(QR) — 전 상태 발급 가능 */}
+            <View className="flex-row items-center gap-1">
+              {/* 플레이어 링크(QR) — 전 상태 발급 가능. 행에 잔류(시트로 옮기지 않음). */}
               <PlayerClaimButton
                 tournamentId={tournamentId}
                 participantId={item.id}
                 viewToken={item.viewToken}
               />
+              <Text className="text-lg text-secondary-400 dark:text-secondary-500">›</Text>
             </View>
-          </View>
+          </Pressable>
         )}
         ListEmptyComponent={
           <View className="items-center py-10">
@@ -285,42 +112,13 @@ export function PlayersTab({ tournament, participants, isLoading }: PlayersTabPr
         }
       />
 
-      {/* 바운티 탈락자 지정 피커(🔨H3 스크롤·60/90% 스냅). 선택 → 확인 → bust(🔨H4). */}
-      <SelectBottomSheet
-        visible={eliminatorPickerFor !== null}
-        onClose={() => setEliminatorPickerFor(null)}
-        title={`${eliminatorPickerFor?.name ?? ''} 님을 누가 눌렀나요?`}
-        snapPoints={['60%', '90%']}
-        scrollable
-        options={[
-          // 🔨H3: 기본 이탈 경로를 최상단(항상 가시)
-          { label: '지정 안 함', value: '' },
-          ...participants
-            .filter((p) => p.status === 'active' && p.id !== eliminatorPickerFor?.id)
-            .map((p) => ({ label: `#${p.entryNumber} ${p.name}`, value: p.id })),
-        ]}
-        onSelect={(value) => {
-          const target = eliminatorPickerFor;
-          if (!target) return;
-          setEliminatorPickerFor(null);
-          const eliminatorId = value === '' ? null : value;
-          const eliminatorName =
-            eliminatorId === null
-              ? '지정 안 함'
-              : (participants.find((p) => p.id === eliminatorId)?.name ?? '');
-          // 🔨H4: 스펙 §7.2 "선택 → 확인 → bust" 확인 단계 — 즉시 mutate 금지(비가역 우승확정 대비).
-          confirmAction({
-            title: '탈락 처리',
-            message: `${target.name} 님 탈락 · KO: ${eliminatorName}`,
-            confirmText: '탈락 처리',
-            destructive: true,
-            onConfirm: () =>
-              bustMut.mutate(
-                { participantId: target.id, eliminatorId },
-                { onSuccess: handleBustSuccess }
-              ),
-          });
-        }}
+      {/* 공용 액션시트 — 참가 행 진입(seat 미전달 → 좌석 액션 자동 숨김). 바운티 피커·탈락 안내 이관(T7). */}
+      <OpsParticipantActionSheet
+        tournament={tournament}
+        participant={sheetParticipant}
+        participants={participants}
+        onClose={() => setSheetParticipant(null)}
+        onOpenPayouts={onOpenPayouts}
       />
     </View>
   );

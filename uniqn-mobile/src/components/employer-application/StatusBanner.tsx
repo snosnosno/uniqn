@@ -22,7 +22,7 @@ export function EmployerApplicationStatusBanner() {
       className="mx-4 mb-3 rounded-lg bg-warning-50 px-4 py-3 dark:bg-warning-900/20"
     >
       <Text className="text-sm font-sans-medium text-warning-700 dark:text-warning-300">
-        ⏳ 구인자 신청 심사 중
+        구인자 신청 심사 중
       </Text>
       <Text className="mt-0.5 text-xs text-warning-600 dark:text-warning-400 font-sans">
         관리자 검토 후 알림이 발송됩니다. 탭하여 확인하세요.

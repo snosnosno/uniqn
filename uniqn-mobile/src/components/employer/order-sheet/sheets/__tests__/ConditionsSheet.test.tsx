@@ -1,8 +1,9 @@
 /**
  * ConditionsSheet — 조건 시트 테스트
  *
- * (1) 프리셋 칩 선택 시 값 반영, (2) 프리셋 재탭 시 해제, (3) 직접 입력 모드 + 커스텀 값,
- * (4) 프리셋 상수 export 검증(e2e 문구 참조).
+ * 다중 선택(2026-07-22): 프리셋 칩은 checkbox 시맨틱으로 복수 선택 가능하고, 직접 입력은
+ * 항상 노출되어 선택된 프리셋과 **함께** ', ' 조인으로 확정된다. 기존 단일 문자열 필드
+ * (dressCode·experience) 유지 — DB/문서 스키마 무변경. 복원은 ', ' 분해 후 프리셋 매칭.
  */
 import { render, fireEvent } from '@testing-library/react-native';
 import React from 'react';
@@ -33,6 +34,34 @@ describe('ConditionsSheet', () => {
     expect(onConfirm).toHaveBeenCalledWith({ dressCode: DRESS_CODE_PRESETS[0] });
   });
 
+  it('프리셋 두 개를 모두 선택하면 ", " 조인으로 확정된다 (다중 선택)', () => {
+    const onConfirm = jest.fn();
+    const { getByText } = render(
+      <ConditionsSheet visible value={{}} onConfirm={onConfirm} onClose={jest.fn()} />
+    );
+
+    fireEvent.press(getByText(DRESS_CODE_PRESETS[0]));
+    fireEvent.press(getByText(DRESS_CODE_PRESETS[1]));
+    fireEvent.press(getByText('확인'));
+    expect(onConfirm).toHaveBeenCalledWith({
+      dressCode: `${DRESS_CODE_PRESETS[0]}, ${DRESS_CODE_PRESETS[1]}`,
+    });
+  });
+
+  it('프리셋 선택과 직접 입력을 병행하면 함께 조인된다', () => {
+    const onConfirm = jest.fn();
+    const { getByText, getByTestId } = render(
+      <ConditionsSheet visible value={{}} onConfirm={onConfirm} onClose={jest.fn()} />
+    );
+
+    fireEvent.press(getByText(EXPERIENCE_PRESETS[0]));
+    fireEvent.changeText(getByTestId('order-sheet-condition-경력-custom'), '해외 대회 경험');
+    fireEvent.press(getByText('확인'));
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({ experience: `${EXPERIENCE_PRESETS[0]}, 해외 대회 경험` })
+    );
+  });
+
   it('선택된 프리셋을 다시 누르면 해제된다(undefined)', () => {
     const onConfirm = jest.fn();
     const { getByText } = render(
@@ -49,14 +78,29 @@ describe('ConditionsSheet', () => {
     expect(onConfirm).toHaveBeenCalledWith({ dressCode: undefined });
   });
 
-  it('경력 직접 입력 모드로 커스텀 값 입력 후 확인하면 experience가 반영된다', () => {
+  it('저장된 "프리셋, 커스텀" 값은 칩 선택 + 직접 입력으로 복원된다', () => {
+    const { getByTestId } = render(
+      <ConditionsSheet
+        visible
+        value={{ dressCode: `${DRESS_CODE_PRESETS[0]}, 정장` }}
+        onConfirm={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+
+    expect(
+      getByTestId(`order-sheet-condition-복장-${DRESS_CODE_PRESETS[0]}`).props.accessibilityState
+        .checked
+    ).toBe(true);
+    expect(getByTestId('order-sheet-condition-복장-custom').props.value).toBe('정장');
+  });
+
+  it('직접 입력만 단독으로도 확정된다', () => {
     const onConfirm = jest.fn();
-    const { getByLabelText, getByTestId, getByText } = render(
+    const { getByTestId, getByText } = render(
       <ConditionsSheet visible value={{}} onConfirm={onConfirm} onClose={jest.fn()} />
     );
 
-    // 복장/경력 각각 '직접 입력' 칩이 있으므로 경력 섹션의 것을 accessibilityLabel로 조준
-    fireEvent.press(getByLabelText('경력 직접 입력'));
     fireEvent.changeText(getByTestId('order-sheet-condition-경력-custom'), 'TDA 3년');
     fireEvent.press(getByText('확인'));
     expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ experience: 'TDA 3년' }));
@@ -64,11 +108,10 @@ describe('ConditionsSheet', () => {
 
   it('커스텀 입력의 앞뒤 공백은 확인 시 trim 되어 반영된다', () => {
     const onConfirm = jest.fn();
-    const { getByLabelText, getByTestId, getByText } = render(
+    const { getByTestId, getByText } = render(
       <ConditionsSheet visible value={{}} onConfirm={onConfirm} onClose={jest.fn()} />
     );
 
-    fireEvent.press(getByLabelText('경력 직접 입력'));
     fireEvent.changeText(getByTestId('order-sheet-condition-경력-custom'), '  TDA 3년  ');
     fireEvent.press(getByText('확인'));
     expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ experience: 'TDA 3년' }));
@@ -76,11 +119,10 @@ describe('ConditionsSheet', () => {
 
   it('공백만 입력한 커스텀 값은 확인 시 undefined 로 떨군다', () => {
     const onConfirm = jest.fn();
-    const { getByLabelText, getByTestId, getByText } = render(
+    const { getByTestId, getByText } = render(
       <ConditionsSheet visible value={{}} onConfirm={onConfirm} onClose={jest.fn()} />
     );
 
-    fireEvent.press(getByLabelText('복장 직접 입력'));
     fireEvent.changeText(getByTestId('order-sheet-condition-복장-custom'), '   ');
     fireEvent.press(getByText('확인'));
     expect(onConfirm.mock.calls[0]?.[0]?.dressCode).toBeUndefined();
@@ -89,5 +131,57 @@ describe('ConditionsSheet', () => {
   it('프리셋 상수를 export한다 (e2e 문구 참조)', () => {
     expect(DRESS_CODE_PRESETS).toContain('검정셔츠/슬랙스');
     expect(EXPERIENCE_PRESETS).toContain('TDA 숙지자');
+  });
+
+  // 리뷰 MEDIUM(2026-07-22): TextInput maxLength는 신규 타이핑만 막고 기존 값은 소급 절단하지
+  // 않는다. 커스텀을 상한까지 채운 뒤 프리셋을 켜면 조인 결과가 zod safeText(50)을 넘어
+  // 제출이 거부됐다 → 프리셋 토글 시점에 커스텀을 새 상한으로 즉시 클램프해야 한다.
+  describe('조인 길이 상한 (safeText 50)', () => {
+    it('커스텀을 꽉 채운 뒤 프리셋을 켜도 조인 결과가 50자를 넘지 않는다', () => {
+      const onConfirm = jest.fn();
+      const { getByTestId, getByText } = render(
+        <ConditionsSheet visible value={{}} onConfirm={onConfirm} onClose={jest.fn()} />
+      );
+
+      fireEvent.changeText(getByTestId('order-sheet-condition-복장-custom'), 'ㄱ'.repeat(50));
+      fireEvent.press(getByText(DRESS_CODE_PRESETS[0])); // 8자 + ', ' → 클램프 없으면 60자
+      fireEvent.press(getByText('확인'));
+
+      const dressCode = onConfirm.mock.calls[0]?.[0]?.dressCode as string;
+      expect(dressCode.startsWith(DRESS_CODE_PRESETS[0])).toBe(true);
+      expect(dressCode.length).toBeLessThanOrEqual(50);
+    });
+
+    it('프리셋을 다시 끄면 남은 커스텀은 그대로 유지된다 (절단분은 복구되지 않음)', () => {
+      const onConfirm = jest.fn();
+      const { getByTestId, getByText } = render(
+        <ConditionsSheet visible value={{}} onConfirm={onConfirm} onClose={jest.fn()} />
+      );
+
+      fireEvent.changeText(getByTestId('order-sheet-condition-복장-custom'), 'ㄱ'.repeat(50));
+      fireEvent.press(getByText(DRESS_CODE_PRESETS[0]));
+      fireEvent.press(getByText(DRESS_CODE_PRESETS[0])); // 해제
+      fireEvent.press(getByText('확인'));
+
+      const dressCode = onConfirm.mock.calls[0]?.[0]?.dressCode as string;
+      expect(dressCode.length).toBeLessThanOrEqual(50);
+      expect(dressCode).toBe('ㄱ'.repeat(40)); // 켤 때 클램프된 길이가 유지
+    });
+
+    it('프리셋 2개를 켜도 조인 결과가 50자를 넘지 않는다', () => {
+      const onConfirm = jest.fn();
+      const { getByTestId, getByText } = render(
+        <ConditionsSheet visible value={{}} onConfirm={onConfirm} onClose={jest.fn()} />
+      );
+
+      fireEvent.changeText(getByTestId('order-sheet-condition-복장-custom'), 'ㄱ'.repeat(50));
+      fireEvent.press(getByText(DRESS_CODE_PRESETS[0]));
+      fireEvent.press(getByText(DRESS_CODE_PRESETS[1]));
+      fireEvent.press(getByText('확인'));
+
+      const dressCode = onConfirm.mock.calls[0]?.[0]?.dressCode as string;
+      expect(dressCode.length).toBeLessThanOrEqual(50);
+      expect(dressCode.startsWith(`${DRESS_CODE_PRESETS[0]}, ${DRESS_CODE_PRESETS[1]}`)).toBe(true);
+    });
   });
 });

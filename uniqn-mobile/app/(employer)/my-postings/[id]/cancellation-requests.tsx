@@ -49,6 +49,7 @@ export default function CancellationRequestsScreen() {
   const headerBackHref = `/(employer)/my-postings/${jobPostingId ?? ''}`;
   const headerJobTitle = posting?.title ?? contextJob?.title ?? null;
   const headerTitleSuffix = <JobTitleSuffix jobTitle={headerJobTitle} />;
+  // 고정 공고는 QR 진입점을 노출하지 않는다 (work_log 행 수명 미해결 — _layout.tsx 주석 참고).
   const headerRightAction = !isFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;
 
   const [approveModalVisible, setApproveModalVisible] = useState(false);

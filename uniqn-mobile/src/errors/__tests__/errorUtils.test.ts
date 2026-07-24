@@ -164,10 +164,27 @@ describe('normalizeError', () => {
       expect(result.code).toBe(ERROR_CODES.UNKNOWN);
     });
 
-    it('객체를 AppError로 변환', () => {
+    it('객체를 AppError로 변환 — "[object Object]" 대신 JSON 직렬화 (Sentry 1K)', () => {
       const result = normalizeError({ custom: 'error' });
 
       expect(isAppError(result)).toBe(true);
+      expect(result.message).not.toBe('[object Object]');
+      expect(result.message).toContain('"custom":"error"');
+    });
+
+    it('message 필드를 가진 객체 — message 보존 + code를 metadata로', () => {
+      const result = normalizeError({ message: '중복 확인 실패', code: 'PGRST999' });
+
+      expect(isAppError(result)).toBe(true);
+      expect(result.message).toBe('중복 확인 실패');
+      expect(result.metadata?.originalCode).toBe('PGRST999');
+    });
+
+    it('네트워크 메시지를 가진 non-Error 객체 → NetworkError (Sentry 1K 연쇄)', () => {
+      const result = normalizeError({ message: 'TypeError: Network request failed' });
+
+      expect(isNetworkError(result)).toBe(true);
+      expect(result.code).toBe(ERROR_CODES.NETWORK_REQUEST_FAILED);
     });
   });
 });
