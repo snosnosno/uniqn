@@ -162,7 +162,7 @@ export default function NotificationsScreen() {
               <Pressable
                 onPress={handleDeleteAll}
                 disabled={isDeletingAll}
-                className="px-2 py-1"
+                className={isDeletingAll ? 'px-2 py-1 opacity-40' : 'px-2 py-1'}
                 accessible
                 role="button"
                 accessibilityRole="button"
