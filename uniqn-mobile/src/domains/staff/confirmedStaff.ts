@@ -74,6 +74,7 @@ export function workLogToConfirmedStaff(
     noShowReason: workLog.noShowReason,
     noShowAt: workLog.noShowAt,
     timeSlot: workLog.timeSlot,
+    color: workLog.color,
     checkInTime: workLog.checkInTime,
     checkOutTime: workLog.checkOutTime,
     payrollStatus: workLog.payrollStatus as PayrollStatus | undefined,

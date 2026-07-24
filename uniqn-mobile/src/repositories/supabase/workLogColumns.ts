@@ -9,7 +9,7 @@
 
 // work_logs SELECT 컬럼 화이트리스트(정본). 컬럼 추가/삭제는 여기서만.
 export const WORK_LOG_COLUMNS =
-  'id,application_id,assignment_group_id,check_in_ts,check_out_ts,created_at,custom_allowances,custom_role,custom_salary_info,custom_tax_settings,date,has_time_modification_logs,is_fixed_posting,job_posting_id,modification_history,no_show_at,no_show_reason,notes,owner_id,payroll_amount,payroll_date,payroll_notes,payroll_status,role,role_change_history,settlement_modification_history,staff_id,staff_name,staff_nickname,staff_photo_url,staff_photo_url_blurhash,status,time_slot,updated_at' as const;
+  'id,application_id,assignment_group_id,check_in_ts,check_out_ts,color,created_at,custom_allowances,custom_role,custom_salary_info,custom_tax_settings,date,has_time_modification_logs,is_fixed_posting,job_posting_id,modification_history,no_show_at,no_show_reason,notes,owner_id,payroll_amount,payroll_date,payroll_notes,payroll_status,role,role_change_history,settlement_modification_history,staff_id,staff_name,staff_nickname,staff_photo_url,staff_photo_url_blurhash,status,time_slot,updated_at' as const;
 
 // Phase D: jsonb 컬럼 제거 후 checkInTs/checkOutTs (timestamptz, PostgREST ISO string) 단일 소스.
 export function applyTsPreference(camel: Record<string, unknown>): Record<string, unknown> {

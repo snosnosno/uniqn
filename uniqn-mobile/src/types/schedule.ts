@@ -455,6 +455,9 @@ export interface WorkLog extends FirebaseDocument {
 
   notes?: string;
 
+  /** 배치 색상 태그(근무표 슬롯 색상 토큰). 스태프 카드 색 스와치 표시(#4). */
+  color?: string;
+
   /** 시간대 문자열 (예: "18:00~02:00") - Firestore 데이터 */
   timeSlot?: string;
 

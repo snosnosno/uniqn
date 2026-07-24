@@ -5,3 +5,8 @@ export {
   sortStaffByStatus,
   resolveNoShowRevertStatus,
 } from './confirmedStaff';
+export {
+  assertWorkTimeReason,
+  appendWorkTimeModification,
+  MAX_WORK_TIME_REASON_LENGTH,
+} from './workTimeModification';
