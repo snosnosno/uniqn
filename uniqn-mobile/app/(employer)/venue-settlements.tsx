@@ -65,6 +65,9 @@ export default function VenueSettlementsScreen() {
 
   // 상세보기(#2) — 스태프 카드 탭 시 정산 상세 모달. 읽기 전용(정산 확정/시간 수정은
   // 컨테이너 정산 mutation 미배선이라 노출하지 않는다 — half-wired 파괴 액션 회피).
+  // visible 과 workLog 를 분리한다: 닫을 때 workLog 를 즉시 null 로 만들면 모달이 바로 언마운트돼
+  // 닫힘 애니메이션이 생략되므로, visible=false 로만 닫고 workLog 는 유지한다.
+  const [detailVisible, setDetailVisible] = useState(false);
   const [detailWorkLog, setDetailWorkLog] = useState<SettlementWorkLog | null>(null);
 
   // 폴백 배지는 컨테이너 직속 배치(jobPostingId===venueId)에만 뜬다. 공고 스팬 행은 공고 컨텍스트로
@@ -108,7 +111,10 @@ export default function VenueSettlementsScreen() {
           <SettlementCard
             workLog={item}
             salaryInfo={item.salaryInfo}
-            onPress={() => setDetailWorkLog(item)}
+            onPress={() => {
+              setDetailWorkLog(item);
+              setDetailVisible(true);
+            }}
           />
         ) : null}
         {/* 컨테이너 직속 행만 배지 노출 — 공고 스팬 행의 fallback 은 지점 단가표로 못 고친다(HIGH-1). */}
@@ -213,9 +219,9 @@ export default function VenueSettlementsScreen() {
 
       {/* 상세보기(#2) — 카드 탭으로 여는 정산 상세(읽기 전용). */}
       <SettlementDetailModal
-        visible={!!detailWorkLog}
-        onClose={() => setDetailWorkLog(null)}
-        workLog={detailWorkLog ?? null}
+        visible={detailVisible}
+        onClose={() => setDetailVisible(false)}
+        workLog={detailWorkLog}
         salaryInfo={detailWorkLog?.salaryInfo ?? { type: 'hourly', amount: 0 }}
       />
     </SafeAreaView>

@@ -340,8 +340,11 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
       }
 
       // 3. 업데이트 데이터 구성
+      // settlement_breakdown 리셋: 출퇴근 시각이 바뀌면 기존 정산 계산은 무효다. SettlementRepository
+      // .updateWorkTimeWithTransaction 정본과 정렬해 stale 정산 캐시를 남기지 않는다(read-time 재계산).
       const updateData: Record<string, unknown> = {
         has_time_modification_logs: true,
+        settlement_breakdown: null,
         updated_at: new Date().toISOString(),
       };
 

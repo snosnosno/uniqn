@@ -15,9 +15,12 @@ export function generateMinutes(interval: number): number[] {
   return Array.from({ length: 60 / interval }, (_, i) => i * interval);
 }
 
-/** 분 값을 interval에 맞게 정규화 */
+/** 분 값을 interval에 맞게 정규화 (0..60-interval 로 클램프) */
 export function normalizeMinute(minute: number, interval: number): number {
-  return Math.round(minute / interval) * interval;
+  // Math.round 는 상한 근처(예: 53,15 → 60)에서 generateMinutes 배열 밖 값을 낼 수 있어
+  // 인덱스가 어긋난다(선택 분 undefined). 유효 범위 [0, 60-interval] 로 클램프한다.
+  const normalized = Math.round(minute / interval) * interval;
+  return Math.min(60 - interval, Math.max(0, normalized));
 }
 
 /**

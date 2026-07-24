@@ -38,5 +38,8 @@ describe('기존 유틸 (동작 고정)', () => {
     expect(generateMinutes(15)).toEqual([0, 15, 30, 45]);
     expect(normalizeMinute(8, 15)).toBe(15); // 반올림 상향
     expect(normalizeMinute(5, 15)).toBe(0); // 반올림 하향 — 기존 19:05 값은 :00으로 정규화
+    // 상한 근처는 배열 밖(60)이 아니라 마지막 유효 분으로 클램프한다.
+    expect(normalizeMinute(53, 15)).toBe(45);
+    expect(normalizeMinute(58, 30)).toBe(30);
   });
 });
