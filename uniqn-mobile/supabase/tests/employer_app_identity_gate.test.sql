@@ -119,7 +119,10 @@ SELECT throws_like(
 );
 
 -- (8) 인증 유저의 신청 생성 성공
+-- identity_verified 세팅은 admin JWT로 수행 (20260725200000 컬럼 가드 트리거가 셀프 변경 차단)
+SELECT t_set_user((SELECT id FROM _ids WHERE k = 'admin'), 'admin');
 UPDATE public.users SET identity_verified = true WHERE id = (SELECT id FROM _ids WHERE k = 'registrant');
+SELECT t_set_user((SELECT id FROM _ids WHERE k = 'registrant'));
 SELECT is(
   (public.register_as_employer('{}'::jsonb, NULL)) ->> 'success',
   'true',
