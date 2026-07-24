@@ -48,6 +48,7 @@ interface AuthState {
   setBootstrapSource: (source: BootstrapSource) => void;
   initialize: () => Promise<void>;
   checkAuthState: (supabaseUser?: SupabaseUser | null) => Promise<void>;
+  refreshProfile: () => Promise<void>;
   reset: () => void;
   clearAuthUiState: (preserveUserId?: string | null) => void;
   clearAuthState: () => void;
@@ -70,6 +71,8 @@ const initialState = {
   isEmployer: false,
   isStaff: false,
 };
+
+let refreshProfileInFlight = false;
 
 let authStoreSet:
   | ((
@@ -487,6 +490,58 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             error: null,
           });
+        }
+      },
+
+      refreshProfile: async () => {
+        const uid = get().user?.uid;
+        if (!uid || refreshProfileInFlight) {
+          return;
+        }
+
+        refreshProfileInFlight = true;
+        try {
+          // RLS(get_my_role)는 JWT의 app_metadata.role을 읽으므로 세션(JWT)부터 재발급 —
+          // 프로필만 갱신하면 UI는 열려도 서버 쓰기가 stale 토큰으로 거부된다(42501)
+          try {
+            const { error: sessionError } = await supabase.auth.refreshSession();
+            if (sessionError) {
+              logger.warn(
+                '세션 재발급에 실패했습니다 — stale JWT로 서버 쓰기가 거부될 수 있습니다',
+                {
+                  component: 'authStore',
+                  uid,
+                  error: sessionError.message,
+                }
+              );
+            }
+          } catch (error) {
+            logger.warn('세션 재발급 중 예외가 발생했습니다', {
+              component: 'authStore',
+              uid,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+
+          const profile = await getUserProfile(uid);
+
+          // 갱신 도중 로그아웃/계정 전환 시 stale 프로필 주입 방지
+          if (profile && get().user?.uid === uid) {
+            get().setProfile(toStoreProfile(profile));
+            logger.info('프로필을 서버에서 갱신했습니다', {
+              component: 'authStore',
+              uid,
+              role: profile.role,
+            });
+          }
+        } catch (error) {
+          logger.warn('프로필 갱신에 실패했습니다', {
+            component: 'authStore',
+            uid,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        } finally {
+          refreshProfileInFlight = false;
         }
       },
 

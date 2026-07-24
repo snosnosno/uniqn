@@ -126,14 +126,12 @@ export {
   retryAppleTokenRevocation,
   cancelAccountDeletion,
   getMyData,
-  exportMyData,
   getDeletionStatus,
   DELETION_GRACE_PERIOD_DAYS,
   DELETION_REASONS,
   type DeletionReason,
   type DeletionRequest,
   type DeletionResult,
-  type UserDataExport,
 } from './accountDeletionService';
 
 // ============================================================================

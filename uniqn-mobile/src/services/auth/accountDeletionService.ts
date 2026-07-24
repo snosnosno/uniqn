@@ -14,7 +14,7 @@ import { logger } from '@/utils/logger';
 import { AuthError, ERROR_CODES, isAppError, toError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { userRepository } from '@/repositories';
-import type { DeletionReason, DeletionRequest, UserDataExport } from '@/repositories';
+import type { DeletionReason, DeletionRequest } from '@/repositories';
 import type { FirestoreUserProfile } from '@/types';
 import { STATUS } from '@/constants';
 import { toDate } from '@/utils/date';
@@ -23,7 +23,7 @@ import { requestAppleAuthorization } from './appleAuthService';
 /** 회원탈퇴 유예 기간 (일) */
 export const DELETION_GRACE_PERIOD_DAYS = 30;
 
-export type { DeletionReason, DeletionRequest, UserDataExport };
+export type { DeletionReason, DeletionRequest };
 
 export const DELETION_REASONS: Record<DeletionReason, string> = {
   no_longer_needed: '더 이상 서비스를 이용하지 않아요',
@@ -261,29 +261,6 @@ export async function getMyData(userId: string): Promise<FirestoreUserProfile | 
   } catch (error) {
     throw handleServiceError(error, {
       operation: '개인정보 조회',
-      component: 'accountDeletionService',
-      context: { userId },
-    });
-  }
-}
-
-/** 내 데이터 내보내기 (JSON) */
-export async function exportMyData(userId: string): Promise<UserDataExport> {
-  try {
-    logger.info('데이터 내보내기 시작', { userId });
-
-    const exportData = await userRepository.getExportData(userId);
-
-    logger.info('데이터 내보내기 완료', {
-      userId,
-      applicationsCount: exportData.applications.length,
-      workLogsCount: exportData.workLogs.length,
-    });
-
-    return exportData;
-  } catch (error) {
-    throw handleServiceError(error, {
-      operation: '데이터 내보내기',
       component: 'accountDeletionService',
       context: { userId },
     });
