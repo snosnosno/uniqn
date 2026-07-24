@@ -55,7 +55,7 @@ describe('ConditionsSheet', () => {
     );
 
     fireEvent.press(getByText(EXPERIENCE_PRESETS[0]));
-    fireEvent.changeText(getByTestId('order-sheet-condition-경력-custom'), '해외 대회 경험');
+    fireEvent.changeText(getByTestId('order-sheet-condition-조건-custom'), '해외 대회 경험');
     fireEvent.press(getByText('확인'));
     expect(onConfirm).toHaveBeenCalledWith(
       expect.objectContaining({ experience: `${EXPERIENCE_PRESETS[0]}, 해외 대회 경험` })
@@ -101,7 +101,7 @@ describe('ConditionsSheet', () => {
       <ConditionsSheet visible value={{}} onConfirm={onConfirm} onClose={jest.fn()} />
     );
 
-    fireEvent.changeText(getByTestId('order-sheet-condition-경력-custom'), 'TDA 3년');
+    fireEvent.changeText(getByTestId('order-sheet-condition-조건-custom'), 'TDA 3년');
     fireEvent.press(getByText('확인'));
     expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ experience: 'TDA 3년' }));
   });
@@ -112,7 +112,7 @@ describe('ConditionsSheet', () => {
       <ConditionsSheet visible value={{}} onConfirm={onConfirm} onClose={jest.fn()} />
     );
 
-    fireEvent.changeText(getByTestId('order-sheet-condition-경력-custom'), '  TDA 3년  ');
+    fireEvent.changeText(getByTestId('order-sheet-condition-조건-custom'), '  TDA 3년  ');
     fireEvent.press(getByText('확인'));
     expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ experience: 'TDA 3년' }));
   });

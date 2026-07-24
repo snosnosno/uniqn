@@ -139,7 +139,7 @@ describe('JobDetail', () => {
     });
     expect(getByText('bubble:88')).toBeTruthy();
   });
-  it('job.conditions 가 있으면 모집 조건 섹션에 복장·경력을 렌더한다', () => {
+  it('job.conditions 가 있으면 모집 조건 섹션에 복장·조건을 렌더한다', () => {
     const { getByText } = render(
       <JobDetail
         job={
@@ -151,7 +151,7 @@ describe('JobDetail', () => {
     expect(getByText('모집 조건')).toBeTruthy();
     expect(getByText('복장')).toBeTruthy();
     expect(getByText('검정셔츠/슬랙스')).toBeTruthy();
-    expect(getByText('경력')).toBeTruthy();
+    expect(getByText('조건')).toBeTruthy();
     expect(getByText('TDA 숙지자')).toBeTruthy();
   });
 

@@ -91,7 +91,7 @@ export function buildPostingFacts(posting: JobPosting): PostingFacts {
   const experience = posting.conditions?.experience?.trim();
   const conditionLabels = [
     ...(dressCode ? [`복장 ${dressCode}`] : []),
-    ...(experience ? [`경력 ${experience}`] : []),
+    ...(experience ? [`조건 ${experience}`] : []),
   ];
   const dateRequirements = getPostingDateRequirements(posting);
   const requiredRolesWithCount = getPostingRequiredRolesWithCount(posting);
