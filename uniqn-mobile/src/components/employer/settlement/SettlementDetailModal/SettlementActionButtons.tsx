@@ -1,7 +1,7 @@
 /**
  * UNIQN Mobile - 정산 액션 버튼 컴포넌트
  *
- * @description 시간 수정, 금액 수정, 정산하기 버튼
+ * @description 시간 수정, 금액 수정, 지급 완료 표시 버튼
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
@@ -77,17 +77,19 @@ export function SettlementActionButtons({
         )}
       </View>
 
-      {/* 두 번째 줄: 정산하기 버튼 */}
+      {/* 두 번째 줄: 지급 완료 표시 버튼 — 실제 이체가 아니라 상태 표시임을 명확히 (QW4) */}
       {onSettle && (
         <Pressable
           onPress={handleSettle}
           accessibilityRole="button"
-          accessibilityLabel="정산하기"
-          accessibilityHint="스태프에게 급여를 정산합니다"
+          accessibilityLabel="지급 완료로 표시"
+          accessibilityHint="급여를 지급 완료 상태로 표시합니다. 실제 이체는 앱 밖에서 진행해요"
           className="flex-row items-center justify-center py-3.5 rounded-lg bg-primary-500 active:opacity-70"
         >
           <BanknotesIcon size={18} color="#fff" />
-          <Text className="ml-2 text-base font-sans-semibold text-content-onGold">정산하기</Text>
+          <Text className="ml-2 text-base font-sans-semibold text-content-onGold">
+            지급 완료로 표시
+          </Text>
         </Pressable>
       )}
     </View>

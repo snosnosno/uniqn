@@ -9,6 +9,7 @@ export { useOpsStaff } from './useOpsStaff';
 export * from './useOpsTables';
 export * from './useOpsSeats';
 export { useOpsBlindLevels } from './useOpsBlindLevels';
+export { useOpsBlindPresets, useSaveBlindPreset, useDeleteBlindPreset } from './useOpsBlindPresets';
 export { useOpsLiveStats } from './useOpsLiveStats';
 export { useOpsClock } from './useOpsClock';
 export { useOpsEvents } from './useOpsEvents';
@@ -53,3 +54,4 @@ export {
   useSetLevel,
   useAdjustClock,
 } from './useOpsClockMutations';
+export { useOpsConsoleLayout } from './useOpsConsoleLayout';

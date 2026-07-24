@@ -113,3 +113,8 @@ sources 1 신설: **seat-basis-e2e-seed-drift** — `filled_positions` 유지 �
 - 신규: `sources/headcount-daily-basis-display`(출하 기록+교훈 4종) · `decisions/headcount-daily-basis`(표시 계약: 분자=일별 max·마감=대기 지원·hydrate 키 단일 소스)
 - 갱신: `decisions/capacity-full` 관련 링크(표시 마감 vs 공고 상태 마감 층위 구분 — 모순 아님 명시) · index 2줄
 - memory 졸업: project_headcount_daily_display_20260723 → MEMORY.md 포인터 압축(잔여=실기기 QA·배포)
+
+## [2026-07-24] ingest | ops 콘솔 리디자인 + 블라인드 프리셋 (PR#313)
+- 신규: `sources/ops-console-redesign`(출하 기록+교훈 5종: RNW pointerEvents 드롭·Pressable 중첩 재발·RNModal+gorhom z-순서·워크트리 expo EMFILE·parity 가드 누락 파급)
+- 갱신: `decisions/nativewind-rn-pitfalls`(함정 3종 추가 — pointerEvents는 prop 필수·행/액션 형제 분리·시트 visible 게이트) · `decisions/prod-parity-baseline`(#311 갱신 누락 실패 사례 — red는 머지 후 master에서 터짐) · `architecture/ops-engine`(콘솔 리디자인+프리셋 절, 잔여=서버 levels 상한) · index 3줄
+- memory 졸업 예정: project_ops_console_redesign_20260723 → MEMORY.md 포인터 압축(잔여=실기기 QA 7항목·서버 levels 상한)

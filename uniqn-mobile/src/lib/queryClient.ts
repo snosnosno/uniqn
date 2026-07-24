@@ -417,6 +417,8 @@ export const queryKeys = {
     dashboard: () => [...queryKeys.admin.all, 'dashboard'] as const,
     users: (filters: Record<string, unknown>) =>
       [...queryKeys.admin.all, 'users', filters] as const,
+    /** 필터 무관 사용자 목록 전체 무효화용 프리픽스 키 (['admin','users']) */
+    usersLists: () => [...queryKeys.admin.all, 'users'] as const,
     userDetail: (userId: string) => [...queryKeys.admin.all, 'userDetail', userId] as const,
     metrics: () => [...queryKeys.admin.all, 'metrics'] as const,
   },
@@ -513,6 +515,12 @@ export const queryKeys = {
     unansweredCount: () => [...queryKeys.inquiries.all, 'unansweredCount'] as const,
     /** FAQ */
     faq: (category?: string) => [...queryKeys.inquiries.all, 'faq', category] as const,
+    /**
+     * 첨부 이미지 signed URL (Storage path 기준).
+     * @remarks 기존 런타임 키(['inquiry-attachment-url', path])를 그대로 보존하기 위해
+     * 의도적으로 `all`(['inquiries']) 프리픽스를 붙이지 않는다 — 값을 바꾸면 캐시가 어긋난다.
+     */
+    attachmentUrl: (path: string) => ['inquiry-attachment-url', path] as const,
   },
   // 리뷰/평가 (버블)
   reviews: {
@@ -563,6 +571,8 @@ export const queryKeys = {
     prizes: (tournamentId: string) => [...queryKeys.ops.all, 'prizes', tournamentId] as const,
     // 1e — 스태프 로스터(공고연결 스냅샷 import + 수동 추가)
     staff: (tournamentId: string) => [...queryKeys.ops.all, 'staff', tournamentId] as const,
+    // 블라인드 프리셋(계획 B) — per-user 데이터. userId 스코프 필수(기기 계정 전환 시 캐시 격리).
+    blindPresets: (userId: string) => [...queryKeys.ops.all, 'blindPresets', userId] as const,
   },
 
   // 앱 설정 플래그 (app_config) — 원격 기능 토글

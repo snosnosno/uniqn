@@ -2,7 +2,7 @@ import React, { memo, useCallback, useMemo } from 'react';
 import { Text, View } from 'react-native';
 import { buildPostingFacts, createPostingLegacyDateRequirements } from '@/domains/job-posting';
 import { roleHydrateKey, slotHydrateKey } from '@/domains/schedule';
-import { useJobSchedule } from '@/hooks';
+import { useJobSchedule } from '@/hooks/useJobSchedule';
 import type { Assignment } from '@/types';
 import { TBA_TIME_MARKER, createSimpleAssignment } from '@/types/assignment';
 import type { TimeSlotInfo } from '@/types/unified';

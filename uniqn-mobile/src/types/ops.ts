@@ -5,6 +5,7 @@
  */
 import { Constants } from '@/types/supabase';
 import type { StaffRole } from '@/types/role';
+import type { OpsBlindLevelInput } from '@/schemas/opsBlindLevel.schema';
 
 export type OpsTournamentStatus = (typeof Constants.public.Enums.ops_tournament_status)[number];
 export type OpsParticipantStatus = (typeof Constants.public.Enums.ops_participant_status)[number];
@@ -195,6 +196,18 @@ export interface OpsBlindLevel {
   sort: number;
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * 블라인드 프리셋(계획 B) — owner 스코프 재사용 템플릿. levels 는 jsonb(camelCase 입력).
+ * RLS owner 스코프 → listMine 은 자동 필터(별도 owner 조건 불요).
+ */
+export interface OpsBlindPreset {
+  id: string;
+  ownerId: string;
+  name: string;
+  levels: OpsBlindLevelInput[];
+  createdAt: string;
 }
 
 /** 서버 동기 클럭(대회당 1행, 1c). 남은시간은 서버 앵커(levelStartedAt) 파생. */

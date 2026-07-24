@@ -26,6 +26,8 @@ import { useJobFilterStore, type SalaryFilter } from '@/stores/jobFilterStore';
 import type { StaffRole } from '@/types/role';
 import { TabHeader } from '@/components/headers';
 import { useJobPostings } from '@/hooks/useJobPostings';
+import { useApplications } from '@/hooks/useApplications';
+import { buildJobApplicationStatusMap } from '@/utils/applicationStatusMap';
 import { usePostingTypeCounts } from '@/hooks/usePostingTypeCounts';
 import { usePostingFilledCounts } from '@/hooks/usePostingFilledCounts';
 import { searchJobPostings, trackSearch } from '@/services';
@@ -209,6 +211,13 @@ export default function JobsScreen() {
     return visibleJobs.map((job) => focusPostingCardToDate(job, selectedDateString));
   }, [searchQuery.data, selectedDateString]);
 
+  // 내 지원 상태 칩 — 목록 카드에 "지원완료/확정" 표시 (QW1)
+  const { myApplications } = useApplications();
+  const applicationStatuses = useMemo(
+    () => buildJobApplicationStatusMap(myApplications),
+    [myApplications]
+  );
+
   const visibleJobIds = useMemo(
     () => (isSearchMode ? filteredSearchJobs : jobs).map((job) => job.id),
     [isSearchMode, filteredSearchJobs, jobs]
@@ -308,6 +317,7 @@ export default function JobsScreen() {
           onLoadMore={noop}
           onJobPress={handleJobPress}
           filledCounts={filledCountsQuery.data}
+          applicationStatuses={applicationStatuses}
           contentBottomPadding={bottomPadding}
           emptyMessage={`'${debouncedSearch || normalizedSearchText}' 검색 결과가 없습니다`}
         />
@@ -323,12 +333,15 @@ export default function JobsScreen() {
           onLoadMore={loadMore}
           onJobPress={handleJobPress}
           filledCounts={filledCountsQuery.data}
+          applicationStatuses={applicationStatuses}
           contentBottomPadding={bottomPadding}
           emptyMessage={
             hasActiveFilter
-              ? '조건에 맞는 공고가 없어요. 필터를 넓히거나 위 ‘초기화’로 전체 공고를 볼 수 있어요.'
+              ? '조건에 맞는 공고가 없어요. 필터를 넓히거나 초기화해서 전체 공고를 볼 수 있어요.'
               : undefined
           }
+          emptyActionLabel={hasActiveFilter ? '필터 초기화' : undefined}
+          onEmptyAction={hasActiveFilter ? clearAllFilters : undefined}
         />
       )}
 

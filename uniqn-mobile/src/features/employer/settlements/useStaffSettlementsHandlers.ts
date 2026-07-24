@@ -148,7 +148,7 @@ export function useStaffSettlementsHandlers({
     [rolesForList, salaryConfig]
   );
 
-  // 정산하기 클릭 (상세 모달에서)
+  // 지급 완료 표시 클릭 (상세 모달에서)
   const handleSettleFromDetail = useCallback(
     (workLog: WorkLog) => {
       modals.openSettleFromDetail(workLog, computeWorkLogAmount(workLog));

@@ -286,7 +286,7 @@ export function useDeleteMyInquiry() {
  */
 export function useInquiryAttachmentUrl(path: string | undefined) {
   return useQuery({
-    queryKey: ['inquiry-attachment-url', path],
+    queryKey: queryKeys.inquiries.attachmentUrl(path!),
     queryFn: () => getInquiryAttachmentSignedUrl(path!),
     enabled: !!path,
     staleTime: 1000 * 60 * 50, // 50분 (TTL 1시간 - 10분 여유)

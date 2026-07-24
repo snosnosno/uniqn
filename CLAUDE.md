@@ -32,6 +32,7 @@ Presentation → Hooks → Service → Repository → Supabase
 - DB 접근: Service → Repository → Supabase 경유 필수
 - Supabase Auth: authService + 인증 hook만 직접 호출 허용
 - TanStack Query 읽기 전용 조회: Repository 직접 호출 허용
+- 읽기 전용 realtime 구독: 훅에서 `createRealtimeSubscription`(@/utils/supabase) 직접 사용 허용 — 단, 콜백은 캐시 무효화(invalidateQueries)만, 쓰기 금지
 - Presentation/Hooks에서 Supabase 직접 호출 금지
 
 ## 역할

@@ -6,7 +6,7 @@ import type { UseJobScheduleResult } from '@/hooks/useJobSchedule';
 import type { ScheduleGroup } from '@/utils/assignment';
 import { AssignmentSelector } from '../AssignmentSelector';
 
-jest.mock('@/hooks', () => ({
+jest.mock('@/hooks/useJobSchedule', () => ({
   useJobSchedule: jest.fn(),
 }));
 
@@ -20,7 +20,7 @@ jest.mock('@/utils/assignment', () => ({
   makeSelectionKey: (date: string, timeSlot: string, role: string) => `${date}|${timeSlot}|${role}`,
 }));
 
-const { useJobSchedule } = jest.requireMock('@/hooks') as {
+const { useJobSchedule } = jest.requireMock('@/hooks/useJobSchedule') as {
   useJobSchedule: jest.MockedFunction<(job: JobPosting | null) => UseJobScheduleResult>;
 };
 

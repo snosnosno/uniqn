@@ -7,7 +7,7 @@
 
 import React, { memo } from 'react';
 import { Text, Pressable, ActivityIndicator, Platform } from 'react-native';
-import { useBiometricAuth } from '@/hooks';
+import { useBiometricAuth } from '@/hooks/useBiometricAuth';
 import { useThemeStore } from '@/stores/themeStore';
 import { PRIMARY_COLORS } from '@/constants/colors';
 import { FingerprintIcon, ScanFaceIcon } from '@/components/icons';
