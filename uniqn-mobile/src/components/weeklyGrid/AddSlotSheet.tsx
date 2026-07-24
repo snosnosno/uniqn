@@ -362,7 +362,7 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
       title="출근 시간"
       minHour={0}
       maxHour={23}
-      minuteInterval={30}
+      minuteInterval={15}
       onConfirm={handlePickerConfirm}
       onClose={() => setPickerOpen(false)}
       embedded

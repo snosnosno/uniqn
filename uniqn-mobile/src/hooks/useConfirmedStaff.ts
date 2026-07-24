@@ -149,6 +149,9 @@ export function useConfirmedStaff(
     mutationFn: updateConfirmedStaffWorkTime,
     onSuccess: () => {
       invalidateQueries.staffManagement(jobPostingId);
+      // 근무표(지점 배치) 상세도 같은 work_log 를 읽으므로 함께 무효화 — 근무표에서 출근
+      // 수정 시 카드 상태/시간이 즉시 갱신되게 한다(#3).
+      queryClient.invalidateQueries({ queryKey: queryKeys.weeklyGrid.all });
       addToast({ type: 'success', message: '근무 시간이 수정되었습니다.' });
     },
     // 서버 구체 사유(예: '이미 정산이 완료된 근무 기록은 수정할 수 없습니다.')를

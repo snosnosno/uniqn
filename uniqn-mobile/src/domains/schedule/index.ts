@@ -16,6 +16,10 @@ export type { TimeSlotInfo } from './WorkLogCreator';
 export { ScheduleMerger } from './ScheduleMerger';
 export { WorkLogCreator } from './WorkLogCreator';
 export type { SchedulePostingContext } from './ScheduleConverter';
-export { ScheduleConverter, createSchedulePostingContext } from './ScheduleConverter';
+export {
+  ScheduleConverter,
+  createSchedulePostingContext,
+  createScheduleContainerContext,
+} from './ScheduleConverter';
 export type { HydrateSlotSource, HydrateRoleSource } from './postingHydrateKeys';
 export { UNKNOWN_TIME_KEY, slotHydrateKey, roleHydrateKey } from './postingHydrateKeys';

@@ -1,5 +1,10 @@
-import { ScheduleConverter, createSchedulePostingContext } from '../ScheduleConverter';
+import {
+  ScheduleConverter,
+  createSchedulePostingContext,
+  createScheduleContainerContext,
+} from '../ScheduleConverter';
 import type { Application, JobPosting, WorkLog } from '@/types';
+import type { VenueContainer } from '@/domains/weeklyGrid';
 
 function createPosting(): JobPosting {
   return {
@@ -226,5 +231,55 @@ describe('ScheduleConverter.applicationToScheduleEvents', () => {
 
     expect(events).toHaveLength(1);
     expect(events[0]?.isCancellationPending).toBe(true);
+  });
+});
+
+describe('createScheduleContainerContext (#6 — 근무표 직접배치 급여 복구)', () => {
+  function createContainer(): VenueContainer {
+    return {
+      id: 'venue-1',
+      name: '내 팀',
+      workspaceId: 'ws-1',
+      ownerId: 'owner-1',
+      venueId: 'venue-1',
+      kind: 'dated',
+      softTargets: {},
+      roleSalaries: [{ role: 'dealer', salary: { type: 'hourly', amount: 20000 } }],
+    };
+  }
+
+  it('컨테이너 역할별 단가표를 정산 컨텍스트 roles 로 주입한다(count/filled 채움)', () => {
+    const context = createScheduleContainerContext(createContainer());
+
+    expect(context.title).toBe('내 팀');
+    expect(context.settlement.roles).toEqual([
+      {
+        role: 'dealer',
+        customRole: undefined,
+        count: 0,
+        filled: 0,
+        salary: { type: 'hourly', amount: 20000 },
+      },
+    ]);
+  });
+
+  it('설정된 역할의 급여가 기본 단가(15,000원) 폴백이 아니라 지점 단가로 해소된다', () => {
+    const context = createScheduleContainerContext(createContainer());
+    const event = ScheduleConverter.workLogToScheduleEvent(
+      {
+        id: 'wl-1',
+        jobPostingId: 'venue-1',
+        staffId: 'staff-1',
+        date: '2026-07-24',
+        role: 'dealer',
+        status: 'checked_out',
+        checkInTime: '2026-07-24T18:00:00+09:00',
+        checkOutTime: '2026-07-25T02:00:00+09:00',
+      } as unknown as WorkLog,
+      context
+    );
+
+    // 8시간 × 20,000원 = 160,000원 (기본단가라면 8 × 15,000 = 120,000원)
+    expect(event.settlementBreakdown?.basePay).toBe(160000);
   });
 });

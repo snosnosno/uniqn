@@ -53,6 +53,11 @@ const mockApplicationRepositoryGetByApplicantIdWithStatuses = jest.fn();
 const mockApplicationRepositorySubscribeByApplicantIdWithStatuses = jest.fn(() => jest.fn());
 const mockJobPostingRepositoryGetById = jest.fn();
 const mockJobPostingRepositoryGetByIdBatch = jest.fn();
+// 기본은 컨테이너 아님(null) — 대부분 테스트에서 2차 해소가 아무것도 붙이지 않아 기존 동작 유지.
+// jest.fn(impl) 의 구현은 clearAllMocks(mockClear) 로 지워지지 않는다(mockReset 만 제거).
+const mockJobPostingRepositoryGetVenueContainerById = jest.fn((..._args: unknown[]) =>
+  Promise.resolve(null)
+);
 
 jest.mock('@/repositories', () => ({
   workLogRepository: {
@@ -70,6 +75,8 @@ jest.mock('@/repositories', () => ({
   jobPostingRepository: {
     getById: (...args: unknown[]) => mockJobPostingRepositoryGetById(...args),
     getByIdBatch: (...args: unknown[]) => mockJobPostingRepositoryGetByIdBatch(...args),
+    getVenueContainerById: (...args: unknown[]) =>
+      mockJobPostingRepositoryGetVenueContainerById(...args),
   },
 }));
 
@@ -114,6 +121,12 @@ jest.mock('@/domains/schedule', () => ({
       }));
     },
   },
+  // 컨테이너 2차 해소(#6) — 근무표 직접배치 급여 복구용. 기본은 호출되지 않음(getVenueContainerById=null).
+  createScheduleContainerContext: (container: { name?: string }) => ({
+    title: container?.name || '이벤트',
+    location: '',
+    settlement: { roles: [], defaultSalary: { type: 'hourly', amount: 15000 } },
+  }),
 }));
 
 jest.mock('@/shared/id', () => ({

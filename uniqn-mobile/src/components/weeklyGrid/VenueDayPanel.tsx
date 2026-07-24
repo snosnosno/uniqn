@@ -29,8 +29,11 @@ import { toDateString } from '@/utils/date';
 import { useToastStore } from '@/stores/toastStore';
 import { useUser } from '@/stores/authStore';
 import { useSetVenueSoftTarget, useVenueDaySlots } from '@/hooks/weeklyGrid';
+import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import { computeShortage, type GridDayCell } from '@/domains/weeklyGrid';
 import type { VenueDaySlot } from '@/repositories/weeklyGrid';
+import type { ConfirmedStaff, WorkLog } from '@/types';
+import { WorkTimeEditor } from '@/components/employer/settlement/WorkTimeEditor';
 import { VenueDayDetail } from './VenueDayDetail';
 import { AddSlotSheet } from './AddSlotSheet';
 import { EditSlotSheet } from './EditSlotSheet';
@@ -106,6 +109,61 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
 
   const [addVisible, setAddVisible] = useState(false);
   const [editingSlot, setEditingSlot] = useState<VenueDaySlot | null>(null);
+
+  // 출근(실기록) 수정(#3) — 근무표 카드의 "시간 수정" → WorkTimeEditor.
+  // 컨테이너 확정 스태프(useConfirmedStaff)에서 workLog(출퇴근 시각 포함)를 해소해 프리필한다.
+  // get_venue_day_slots RPC 는 출퇴근 시각을 반환하지 않아 슬롯만으로는 프리필이 불가하기 때문.
+  const { grouped: confirmedGroups, updateWorkTime, isUpdatingTime } = useConfirmedStaff(venueId);
+  const confirmedById = useMemo(() => {
+    const map = new Map<string, ConfirmedStaff>();
+    for (const group of confirmedGroups) {
+      for (const s of group.staff) map.set(s.id, s);
+    }
+    return map;
+  }, [confirmedGroups]);
+  const [timeEditStaff, setTimeEditStaff] = useState<ConfirmedStaff | null>(null);
+
+  const handleEditTime = useCallback(
+    (slot: VenueDaySlot) => {
+      const full = confirmedById.get(slot.workLogId);
+      if (full?.workLog) {
+        setTimeEditStaff(full);
+      } else {
+        // 공고 스팬 배치 등 컨테이너 확정분에 없는 슬롯 — 출퇴근 원본을 못 찾으면 빈 값 덮어쓰기를
+        // 막기 위해 편집을 열지 않고 안내한다(해당 인원은 공고 스태프 관리에서 수정).
+        toastError('이 인원의 출퇴근 정보를 불러오지 못했어요. 공고 스태프 관리에서 수정해주세요.');
+      }
+    },
+    [confirmedById, toastError]
+  );
+
+  const timeEditWorkLog = useMemo<WorkLog | null>(
+    () =>
+      timeEditStaff?.workLog
+        ? {
+            ...timeEditStaff.workLog,
+            staffName: timeEditStaff.staffName,
+            staffNickname: timeEditStaff.staffNickname,
+            staffPhotoURL: timeEditStaff.staffPhotoURL,
+            staffPhotoURLBlurhash: timeEditStaff.staffPhotoURLBlurhash,
+          }
+        : null,
+    [timeEditStaff]
+  );
+
+  const handleSaveTime = useCallback(
+    (data: { startTime: Date | null; endTime: Date | null; reason: string }) => {
+      if (!timeEditStaff) return;
+      updateWorkTime({
+        workLogId: timeEditStaff.id,
+        checkInTime: data.startTime,
+        checkOutTime: data.endTime,
+        reason: data.reason,
+      });
+      setTimeEditStaff(null);
+    },
+    [timeEditStaff, updateWorkTime]
+  );
 
   // 소프트타깃 입력값(문자열) — 저장값/날짜 변경 시 동기화(재진입 시 이전 값 잔존 방지).
   const [targetInput, setTargetInput] = useState<string>(softTarget > 0 ? String(softTarget) : '');
@@ -248,6 +306,7 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
           venueId={venueId}
           date={date}
           onSlotPress={setEditingSlot}
+          onEditTime={handleEditTime}
           onAddPress={() => setAddVisible(true)}
         />
       </View>
@@ -268,6 +327,16 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
         date={date}
         siblingSlots={siblingSlots}
         editedBy={editedBy}
+      />
+
+      {/* 출근(실기록) 수정(#3) — WorkTimeEditor 재사용. updateWorkTime onSuccess 가
+          staffManagement + weeklyGrid.all 무효화 → 카드 상태/시간 자동 갱신. */}
+      <WorkTimeEditor
+        workLog={timeEditWorkLog}
+        visible={timeEditStaff !== null}
+        onClose={() => setTimeEditStaff(null)}
+        onSave={handleSaveTime}
+        isLoading={isUpdatingTime}
       />
     </View>
   );

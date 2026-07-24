@@ -39,6 +39,7 @@ export function mapVenueDaySlotToConfirmedStaff(slot: VenueDaySlot, date: string
     date,
     status: normalizeStatus(slot.status),
     timeSlot: slot.timeSlot ?? undefined,
+    color: slot.color ?? undefined,
     notes: slot.notes ?? undefined,
   };
 }

@@ -38,11 +38,22 @@ export interface VenueDayDetailProps {
    * staff.id(=workLogId)로 원본 VenueDaySlot 을 역해소해 전달한다.
    */
   onSlotPress?: (slot: VenueDaySlot) => void;
+  /**
+   * 출근(실기록) 수정 콜백(#3). 제공되면 카드에 "시간 수정" 액션이 노출돼 WorkTimeEditor 로
+   * 실제 출퇴근 시각을 편집한다(카드 본문 탭 = 근무 예정 편집과 별개 경로).
+   */
+  onEditTime?: (slot: VenueDaySlot) => void;
   /** 빈 상태 "인원 배치하기" CTA(임페커블 룰9 — 행동 단계). 미제공이면 안내문만. */
   onAddPress?: () => void;
 }
 
-export function VenueDayDetail({ venueId, date, onSlotPress, onAddPress }: VenueDayDetailProps) {
+export function VenueDayDetail({
+  venueId,
+  date,
+  onSlotPress,
+  onEditTime,
+  onAddPress,
+}: VenueDayDetailProps) {
   const { data, isLoading, error, refetch, isRefetching } = useVenueDaySlots(venueId, date);
 
   const grouped = useMemo(() => {
@@ -65,6 +76,14 @@ export function VenueDayDetail({ venueId, date, onSlotPress, onAddPress }: Venue
       if (slot) onSlotPress?.(slot);
     },
     [slotById, onSlotPress]
+  );
+
+  const handleStaffEditTime = useCallback(
+    (staff: ConfirmedStaff) => {
+      const slot = slotById.get(staff.id);
+      if (slot) onEditTime?.(slot);
+    },
+    [slotById, onEditTime]
   );
 
   // L4 방어: 비가상화 map 렌더라 슬롯이 과다하면 성능이 저하될 수 있음 — 임계 초과 시 1회 경고만.
@@ -125,7 +144,8 @@ export function VenueDayDetail({ venueId, date, onSlotPress, onAddPress }: Venue
           <ConfirmedStaffCard
             staff={staff}
             onPress={onSlotPress ? handleStaffPress : undefined}
-            showActions={false}
+            onEditTime={onEditTime ? handleStaffEditTime : undefined}
+            showActions={!!onEditTime}
           />
         </View>
       ))}
