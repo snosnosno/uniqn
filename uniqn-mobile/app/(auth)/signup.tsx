@@ -2,10 +2,10 @@
  * UNIQN Mobile - SignUp Screen
  * 3단계 회원가입 화면
  *
- * @description 약관동의 → 계정 → 본인인증 → 가입완료
+ * @description 약관동의 → 본인인증 → 계정 → 가입완료 (2026-07-25 재배치)
  *              소셜 모드: 약관동의 → 본인인증 → 가입완료 (계정 생략)
  *              프로필(닉네임 등)은 가입 후 profile-setup 화면에서 입력
- * @version 3.0.0
+ * @version 3.1.0
  */
 
 import { useState, useCallback, useEffect } from 'react';
@@ -109,6 +109,10 @@ export default function SignUpScreen() {
             message: extractUserMessage(error),
           });
         }
+        // 2026-07-25: rethrow — SignupForm 이 실패를 감지해야 draft 를 보존하고,
+        // 본인인증 만료(IV_TIMESTAMP_EXPIRED 등)면 본인인증 단계로 자동 복귀시킨다.
+        // (이전에는 삼켜서 SignupForm 의 실패 처리 catch 가 죽은 코드였다.)
+        throw error;
       } finally {
         setIsLoading(false);
       }
@@ -179,6 +183,8 @@ export default function SignUpScreen() {
             message: extractUserMessage(error),
           });
         }
+        // 2026-07-25: rethrow — SignupForm(social 경로) 이 실패를 감지해 draft 를 보존한다.
+        throw error;
       } finally {
         setIsLoading(false);
       }
@@ -230,6 +236,9 @@ export default function SignUpScreen() {
       } catch (error) {
         logger.error('본인인증 재인증 실패', error as Error);
         addToast({ type: 'error', message: extractUserMessage(error) });
+        // ⚠️ rethrow 금지 (리뷰 L2): SignupForm 의 reverify 경로(handleIdentityNext)는
+        // try/catch 없이 await onSubmit 하므로, 여기서 rethrow 하면 곧바로
+        // unhandled rejection 이 된다. default/social 과 대칭을 맞추려 하지 말 것.
       } finally {
         setIsLoading(false);
       }
