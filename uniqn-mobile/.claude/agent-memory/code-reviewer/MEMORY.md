@@ -19,6 +19,10 @@
 
 - [flex:1 → maxHeight/flexShrink 전환 리뷰 레시피](pattern_rn_flex_to_flexshrink_review.md) — flexShrink 기본0→KAV로 부모 줄면 헤더가 위로 오버플로. insets 패딩은 배경 가진 View에
 
+## 에러 계약 / 플로우 리뷰 레시피
+
+- [위저드 에러코드 복귀 리뷰 4지점](pattern_wizard_error_rollback_review.md) — metadata.code 사슬 끝까지(래퍼 pass-through 확인)·rethrow 매트릭스 전수·모드 비대칭·savedAt 단측 증명+런타임 안전망
+
 ## 필드 배선 리뷰 레시피
 
 - [라벨 리네임 리뷰 3지점](pattern_label_rename_review_recipe.md) — 수기 픽스처 드리프트(green 유지)·projected 오프라인캐시 스테일·조인 상한 node 실측. testID 라벨이면 e2e도 grep
