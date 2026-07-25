@@ -25,6 +25,14 @@ interface ChipItemProps {
   onPress: () => void;
 }
 
+/**
+ * 세로 슬롭을 4로 줄인 이유 — 칩 행과 바로 아래 FilterBar 필 행 사이 간격이 8px(pb-2)이라
+ * 양쪽이 slop 8을 쓰면 그 8px 전체가 두 행의 히트 영역에 이중 귀속된다. 두 행은 동작이
+ * 이질적이라(칩=타입 즉시 토글 / 필=필터 시트 열기) 오탭 비용이 크다.
+ * 36 + 4 + 4 = 44px 로 WCAG 2.5.5 최소 타깃은 유지한다(2026-07-25).
+ */
+const CHIP_HIT_SLOP = { top: 4, bottom: 4, left: 8, right: 8 } as const;
+
 const CHIPS: ChipConfig[] = [
   { id: 'urgent', label: '급구', value: 'urgent' },
   { id: 'tournament', label: '대회', value: 'tournament' },
@@ -43,6 +51,9 @@ const ChipItem = memo(function ChipItem({
   disabled,
   onPress,
 }: ChipItemProps) {
+  // FilterBar 필과 동일한 칩 언어(36px 알약·outline 비활성/골드 filled 활성)로 통일 —
+  // 두 행이 서로 다른 배경판·높이·모서리로 어긋나 보이던 문제 해소(2026-07-25).
+  // 눌림 피드백(active:opacity-70)도 필과 동일하게 맞춘다.
   const showCount = typeof count === 'number';
   const accessibilityLabel = showCount
     ? `${chip.label} 공고 ${count}건`
@@ -55,20 +66,24 @@ const ChipItem = memo(function ChipItem({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ selected: isSelected, disabled }}
-      hitSlop={8}
-      className={`min-h-[40px] flex-row items-center rounded-sm px-3 py-2 ${
-        isSelected ? 'bg-primary-600 dark:bg-primary-700' : 'bg-secondary-100 dark:bg-surface'
+      hitSlop={CHIP_HIT_SLOP}
+      className={`min-h-[36px] flex-row items-center rounded-full border px-3 py-1.5 active:opacity-70 ${
+        isSelected
+          ? 'border-transparent bg-primary-600 dark:bg-primary-700'
+          : 'border-secondary-300 bg-transparent dark:border-surface-overlay'
       }`}
     >
       <Text
-        className={`font-sans-medium ${isSelected ? 'text-content-onGold' : 'text-secondary-700 dark:text-secondary-300'}`}
+        className={`text-sm font-sans-medium ${isSelected ? 'text-content-onGold' : 'text-content-secondary dark:text-secondary-400'}`}
       >
         {chip.label}
       </Text>
       {showCount ? (
         <View
-          className={`ml-2 rounded-sm px-2 py-0.5 ${
-            isSelected ? 'bg-white/20 dark:bg-white/20' : 'bg-white dark:bg-surface-elevated'
+          className={`ml-1.5 min-w-[20px] items-center rounded-full px-1.5 py-0.5 ${
+            isSelected
+              ? 'bg-white/20 dark:bg-white/20'
+              : 'bg-secondary-100 dark:bg-surface-elevated'
           }`}
         >
           <Text
@@ -102,11 +117,12 @@ export const PostingTypeChips = memo(function PostingTypeChips({
   );
 
   return (
-    <View className={`bg-surface-card ${disabled ? 'opacity-50' : ''} ${className}`}>
+    // 배경판 없음 — 검색바·필터바와 같은 페이지 배경 위에 얹혀 한 덩어리로 보인다
+    <View className={`${disabled ? 'opacity-50' : ''} ${className}`}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerClassName="gap-2 px-4 py-3"
+        contentContainerClassName="flex-row items-center gap-2 px-4 pb-2"
       >
         {CHIPS.map((chip) => (
           <ChipItem
