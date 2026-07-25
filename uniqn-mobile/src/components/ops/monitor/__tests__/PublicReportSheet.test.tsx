@@ -66,7 +66,8 @@ describe('PublicReportSheet', () => {
         tokenKind: 'monitor',
         token: 'token-1',
         reason: 'other',
-        details: '  현장 상황 설명  ',
+        // trim 으로 검사했으니 전송도 trim 된 값 — 원문 전송은 공백 저장 + 절단 위치 어긋남
+        details: '현장 상황 설명',
       });
     });
 

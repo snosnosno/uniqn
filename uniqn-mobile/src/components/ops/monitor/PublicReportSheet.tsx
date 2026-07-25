@@ -46,7 +46,9 @@ export function PublicReportSheet({ visible, onClose, tokenKind, token }: Props)
         tokenKind,
         token,
         reason,
-        details: details.trim() ? details.slice(0, DETAILS_MAX) : null,
+        // trim 한 값으로 검사했으면 전송도 trim 한 값이어야 한다 — 원문을 보내면
+        // 앞뒤 공백이 그대로 저장되고 DETAILS_MAX 절단 위치도 어긋난다(2026-07-25).
+        details: details.trim() ? details.trim().slice(0, DETAILS_MAX) : null,
       });
       setDone(true);
     } catch (error) {
