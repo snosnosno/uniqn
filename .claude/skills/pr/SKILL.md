@@ -61,8 +61,13 @@ git diff master...HEAD --stat
 - Test plan: 어떻게 테스트하는지
 
 ### 5단계: PR 생성
+
+> ⚠️ **`git push`는 pre-push 훅이 `npm run quality`(css-vars-sync + type-check + lint + format:check)를 동기 실행**한다. `scripts/git-hooks/shared.js`의 `spawnSync`에 timeout이 없어 수 분이 걸릴 수 있다.
+> Bash 도구로 호출할 때는 **`timeout: 180000` 이상**을 지정하거나 `run_in_background: true`로 실행할 것. 기본 2분 타임아웃에 걸려 "훅 hang"으로 오인하고 `--no-verify`로 우회하는 패턴이 반복 관측됐다(2026-07-24·07-25).
+> `--no-verify`를 쓸 수밖에 없었다면 **품질 게이트를 건너뛴 것이므로**, 별도로 `npm run quality`를 돌려 결과를 확인하고 그 사실을 PR 설명에 남긴다.
+
 ```bash
-# 원격에 푸시 (필요시)
+# 원격에 푸시 (필요시) — Bash 도구 호출 시 timeout 180000 이상 지정
 git push -u origin <branch-name>
 
 # PR 생성
