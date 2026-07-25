@@ -47,8 +47,14 @@ export const ENVIRONMENT = (Constants.expoConfig?.extra?.environment ?? 'develop
 
 /**
  * 빌드 일시
+ *
+ * ⚠️ 2026-07-26 이후 항상 `null`. `app.config.ts` 의 `extra.buildDate` 를 제거했다 —
+ * runtimeVersion 'fingerprint' 정책은 expoConfig 전체를 해시 소스로 삼기 때문에,
+ * 평가 시점마다 달라지는 타임스탬프가 들어 있으면 빌드와 OTA 의 runtimeVersion 이
+ * 영구 불일치한다(실측 근거는 app.config.ts 주석).
+ * 런타임 현재 시각으로 폴백하면 "빌드 일시"라는 의미가 거짓이 되므로 null 로 둔다.
  */
-export const BUILD_DATE = Constants.expoConfig?.extra?.buildDate ?? new Date().toISOString();
+export const BUILD_DATE: string | null = Constants.expoConfig?.extra?.buildDate ?? null;
 
 /**
  * 런타임 버전 (EAS Update 호환)

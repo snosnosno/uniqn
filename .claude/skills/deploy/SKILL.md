@@ -127,6 +127,45 @@ eas build --platform all          # 둘 다
 
 EAS는 시간(15~30분)과 빌드 크레딧을 소모하므로 사용자가 직접 "EAS 빌드해줘"라고 한 경우에만 실행. "다 배포해줘" 요청에는 포함하지 말 것.
 
+## 5. EAS Update (OTA) — runtimeVersion `fingerprint` 규칙 (2026-07-25 #335 이후)
+
+`app.config.ts` 의 `runtimeVersion.policy` 가 `sdkVersion` → **`fingerprint`** 로 바뀌었다.
+fingerprint 는 **expoConfig 전체 + 네이티브 의존성**을 해시한다. 따라서:
+
+### 규칙 1 — expoConfig 에 비결정적 값 금지 (위반 시 OTA 영구 무력화)
+평가할 때마다 달라지는 값(`new Date()`, 랜덤, 실행 시각)이 `extra` 등에 있으면
+빌드가 계산한 runtimeVersion 과 `eas update` 가 계산한 runtimeVersion 이 **절대 일치하지 않는다**.
+2026-07-26 `extra.buildDate` 가 정확히 이 상태였고 제거했다(연속 2회 해시 불일치 실측).
+
+### 규칙 2 — OTA 발행 시 빌드와 **같은 env** 를 명시 export
+`eas update` 는 eas.json 의 `build.<profile>.env` 를 읽지 않는다(shell env 만 평가 — 메모리
+`pitfall_eas_update_shell_env_not_loaded`). `APP_ENV` 하나만 달라도 fingerprint 가 갈린다(실측).
+
+```bash
+cd uniqn-mobile
+# production OTA — eas.json build.production.env 와 동일하게 맞춘다
+APP_ENV=production \
+EXPO_PUBLIC_RELEASE_CHANNEL=production \
+EXPO_PUBLIC_PORTONE_STORE_ID=store-c1b44e1c-7620-445b-bb6c-9b6b62e7ab93 \
+EXPO_PUBLIC_PORTONE_INICIS_CHANNEL_KEY=channel-key-2dc155c9-46a1-4710-a687-245f45497b0c \
+EXPO_PUBLIC_PORTONE_INICIS_FRGND_INFO=N \
+RCT_NEW_ARCH_ENABLED=1 \
+npx eas update --branch production --message "<한글 요약>"
+```
+
+### 규칙 3 — 발행 전 runtimeVersion 대조 (필수 검증)
+```bash
+# OTA 가 도달할 runtimeVersion 을 발행 전에 실측하고, 대상 빌드의 값과 같은지 확인
+APP_ENV=production ... npx expo-updates fingerprint:generate --platform android
+APP_ENV=production ... npx expo-updates fingerprint:generate --platform ios
+```
+값이 대상 빌드와 다르면 **OTA 는 조용한 no-op** 이다(에러 없이 아무에게도 도달하지 않음).
+
+### 규칙 4 — 네이티브 구성이 바뀐 릴리즈는 OTA 로 못 넘긴다
+네이티브 모듈 추가/제거·플러그인 변경·SDK 업그레이드 = fingerprint 변경 = **새 빌드 필수**.
+구 빌드 사용자는 OTA 를 받지 못하므로 스토어 업데이트로 유도해야 한다
+(원격 `latestVersion` 상향 등). #335(react-native-keyboard-controller 도입)가 이 경우다.
+
 ## 멀티 배포 순서
 
 여러 대상을 동시에 배포할 때 순서:

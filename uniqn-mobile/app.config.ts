@@ -343,8 +343,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     version: VERSION,
     environment,
     useEmulator: process.env.EXPO_PUBLIC_USE_EMULATOR === 'true',
-    // 빌드 시간
-    buildDate: new Date().toISOString(),
+    // ⚠️ buildDate(`new Date().toISOString()`) 제거 (2026-07-26).
+    // runtimeVersion 정책이 'fingerprint'(아래 참조)가 되면서 **expoConfig 전체가 해시
+    // 소스**에 포함된다. 동적 타임스탬프가 extra 에 있으면 fingerprint 가 평가할 때마다
+    // 달라져, EAS Build 가 계산한 runtimeVersion 과 이후 `eas update` 가 계산한
+    // runtimeVersion 이 절대 일치하지 않는다 = OTA 영구 무력화.
+    // 실측(2026-07-26): 연속 2회 `expo-updates fingerprint:generate` 해시 불일치,
+    // 불일치 소스는 145개 중 `expoConfig` 단 1개(내용 diff = buildDate).
+    // extra 에는 평가 시점마다 달라지는 값을 절대 넣지 말 것.
     // Apple 로그인 kill switch (2026-07-25 하드 OFF 전환)
     // 2026-07-21 동결 시점엔 env opt-in(=== 'true')으로 남겨뒀으나, 07-19 빌드로 가입했던
     // Apple 계정을 전부 정리(2026-07-25 prod 삭제)했고 웹 로그인 경로도 없어 재활성 계획이

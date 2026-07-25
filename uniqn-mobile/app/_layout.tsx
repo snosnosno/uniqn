@@ -25,6 +25,7 @@ import {
   ScreenErrorBoundary,
   ToastManager,
 } from '@/components/ui';
+import { env } from '@/config/env';
 import { getLayoutColor, getCssVarTokens } from '@/constants/colors';
 import { SheetProvider } from '@/components/app/SheetProvider';
 import { useAppInitialize } from '@/hooks/useAppInitialize';
@@ -130,7 +131,16 @@ try {
   initializeRootSentry({
     dsn: SENTRY_DSN,
     enabled: SENTRY_ENABLED,
-    environment: process.env.EXPO_PUBLIC_RELEASE_CHANNEL || 'development',
+    // `EXPO_PUBLIC_RELEASE_CHANNEL` 직독은 값이 비는 경로에서 조용히 'development' 로
+    // 떨어진다. EAS Build 는 eas.json build 프로필이 이 변수를 주입하므로 빌드 산출물은
+    // 정상이지만, **OTA 는 아니다** — `eas update` 는 eas.json env 를 읽지 않고 shell env
+    // 만 평가한다(레포 기록: pitfall_eas_update_shell_env_not_loaded). 변수를 export 하지
+    // 않고 발행한 OTA 번들은 프로덕션 사용자 네이티브 에러를 development 로 태깅한다.
+    // `env.environment` 는 같은 변수에 더해 `NODE_ENV`(export 시 production)까지 보므로
+    // 그 경로에서도 올바른 값이 나오고, 앱 나머지가 쓰는 환경 판정과도 일치한다.
+    // (웹은 rootSentry.web.ts 가 no-op 스텁이고 sentryService.web 이 logger 폴백이라
+    //  Sentry 로 이벤트가 나가지 않는다 — 이 값은 네이티브 경로에서만 의미가 있다.)
+    environment: env.environment,
   });
 } catch (error) {
   if (__DEV__) {
