@@ -1,6 +1,6 @@
 # 인증 가이드
 
-최종 업데이트: 2026-04-18  
+최종 업데이트: 2026-07-25  
 기준 코드: `uniqn-mobile/src/services/auth/`, `uniqn-mobile/src/stores/authStore.ts`, `uniqn-mobile/src/lib/supabase.ts`, `uniqn-mobile/supabase/functions/`
 
 ## 현재 인증 구조
@@ -59,6 +59,23 @@ PortOne 기반 본인인증은 CI/DI 값을 포함한 결과를 Edge Function에
 - `admin`
 - `employer`
 - `staff`
+
+### 역할 갱신과 게이트 불일치 패턴 (2026-07-25)
+
+**UI 게이트(profile.role) ≠ 서버 게이트(JWT `app_metadata.role` → RLS).**
+`public.users.role`을 서버에서 바꾸면 트리거가 `auth.users.raw_app_meta_data.role`을
+동기화하지만, 이미 발급된 JWT는 만료(최대 1시간)까지 옛 role을 유지합니다.
+프로필만 재조회하면 UI는 열리는데 서버 쓰기는 42501로 거부되는 불일치가 생깁니다.
+
+- `authStore.refreshProfile()` — 세션 재발급(`supabase.auth.refreshSession()`) + 프로필 재조회를
+  한 번에 수행. **role이 바뀌는 모든 경로는 이 함수로 갱신해야 합니다** (프로필 재조회 단독 금지).
+- 대상 유저 기기에 갱신 신호를 주는 경로:
+  - 구인자 승인: `employer_app_approved` 알림 (employer_applications 트리거, PR#322)
+  - 관리자 직접 role 변경: `role_changed` 알림 (`update_user_role` RPC, 마이그 20260725180000)
+  - 두 알림 모두 수신/탭 시 `maybeRefreshProfileForNotification`(usePushNotificationSetup)이
+    `refreshProfile()`을 호출
+  - 자가 회복: `NonEmployerView` 등 stale role을 전제로 렌더되는 화면이
+    `application.status === 'approved'` 감지 시 `refreshProfile()` 재시도
 
 ## 자동 로그인 / 생체 인증
 

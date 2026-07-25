@@ -32,12 +32,14 @@ import { queryClient, queryKeys } from '@/lib/queryClient';
 import { NotificationType } from '@/types/notification';
 
 /**
- * 구인자 승인 알림 → 로컬 role 캐시(authStore.profile.role) 즉시 동기화
+ * role 변경 계열 알림 → 로컬 role 캐시(authStore.profile.role) 즉시 동기화
  *
- * 승인은 관리자 기기에서 처리되므로 신청자 기기는 알림이 유일한 갱신 신호다.
+ * 구인자 승인·관리자 직접 role 변경 모두 관리자 기기에서 처리되므로
+ * 대상 유저 기기는 알림이 유일한 갱신 신호다. refreshProfile은 세션 재발급
+ * (JWT app_metadata.role 갱신)까지 수행한다.
  */
 function maybeRefreshProfileForNotification(type: unknown): void {
-  if (type === NotificationType.EMPLOYER_APP_APPROVED) {
+  if (type === NotificationType.EMPLOYER_APP_APPROVED || type === NotificationType.ROLE_CHANGED) {
     void useAuthStore.getState().refreshProfile();
   }
 }

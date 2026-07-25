@@ -417,6 +417,24 @@ export class EmployerAppSelfApproveError extends AppError {
 }
 
 /**
+ * 본인인증 미완료 에러 (신청 생성·승인 서버 게이트)
+ */
+export class EmployerAppIdentityNotVerifiedError extends AppError {
+  constructor(options?: Partial<{ message: string; userMessage: string }>) {
+    super({
+      code: ERROR_CODES.BUSINESS_EMPLOYER_APP_IDENTITY_NOT_VERIFIED,
+      category: 'business',
+      severity: 'low',
+      isRetryable: false,
+      message: options?.message,
+      userMessage: options?.userMessage,
+    });
+    this.name = 'EmployerAppIdentityNotVerifiedError';
+    Object.setPrototypeOf(this, EmployerAppIdentityNotVerifiedError.prototype);
+  }
+}
+
+/**
  * 신청 내역 없음 에러
  */
 export class EmployerAppNotFoundError extends AppError {

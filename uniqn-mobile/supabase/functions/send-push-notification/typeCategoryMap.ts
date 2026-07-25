@@ -61,6 +61,7 @@ export const TYPE_CATEGORY_MAP: Record<string, string> = {
   employer_app_approved: 'system',
   employer_app_rejected: 'system',
   new_employer_application: 'admin',
+  role_changed: 'system',
 
   // 리뷰/평가 관련
   review_request: 'review',

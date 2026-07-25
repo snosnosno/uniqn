@@ -12,7 +12,7 @@ describe('NotificationRouteMap', () => {
   it('covers every NotificationType', () => {
     const allNotificationTypes = Object.values(NotificationType) as NotificationType[];
 
-    expect(allNotificationTypes.length).toBe(45);
+    expect(allNotificationTypes.length).toBe(46);
 
     allNotificationTypes.forEach((type) => {
       expect(NOTIFICATION_ROUTE_MAP[type]).toBeDefined();
@@ -21,6 +21,12 @@ describe('NotificationRouteMap', () => {
       const route = NOTIFICATION_ROUTE_MAP[type]();
       expect(route).toBeDefined();
       expect(typeof route.name).toBe('string');
+    });
+  });
+
+  it('ROLE_CHANGED는 설정 화면으로 라우팅된다 (관리자 직접 role 변경 알림)', () => {
+    expect(getRouteForNotificationType(NotificationType.ROLE_CHANGED)).toEqual({
+      name: 'settings',
     });
   });
 

@@ -107,6 +107,7 @@ export const NOTIFICATION_ROUTE_MAP: Record<
     data?.applicationId
       ? { name: 'admin/employer-application', params: { id: data.applicationId } }
       : { name: 'admin/employer-applications' },
+  [NotificationType.ROLE_CHANGED]: () => ({ name: 'settings' }),
 
   [NotificationType.REVIEW_REQUEST]: () => ({ name: 'reviews/pending' }),
   [NotificationType.REVIEW_RECEIVED]: () => ({ name: 'reviews/pending' }),
