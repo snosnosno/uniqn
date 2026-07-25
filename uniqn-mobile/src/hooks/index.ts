@@ -3,6 +3,7 @@
  */
 
 export { useAppInitialize } from './useAppInitialize';
+export { useOtaUpdateGate } from './useOtaUpdateGate';
 export { useVersionCheck, type UseVersionCheckReturn } from './useVersionCheck';
 export { useWeeklyGridEnabled, type UseWeeklyGridEnabledReturn } from './useWeeklyGridEnabled';
 

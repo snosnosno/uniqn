@@ -85,6 +85,12 @@ DECLARE
   v_qr          uuid := gen_random_uuid();
   v_work_date   date := current_date + 14;
 BEGIN
+  -- 시드 = 신뢰 재기준선: 이전 테스트 구간의 JWT 시뮬레이션이 남아 있으면
+  -- users 재시드(ON CONFLICT UPDATE 의 identity_verified 세팅)가 컬럼 가드 트리거
+  -- (20260725200000)에 차단된다(#327 머지 직후 jpc_cascade C5 red). 호출 시점에 해제한다 —
+  -- 모든 콜사이트는 시드 직후 jpc_test_set_user 로 유저를 다시 잡는다.
+  PERFORM jpc_test_clear_user();
+
   -- auth.users (메모리: pitfall_supabase_auth_users_seed — NULL 토큰 회피)
   INSERT INTO auth.users (id, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
                           confirmation_token, recovery_token, email_change_token_new, email_change)
@@ -97,13 +103,20 @@ BEGIN
   -- public.users 동기화 + role 명시 (RPC create_workspace 의 PERMISSION_DENIED 회피)
   -- helpers seed 의 owner/editor/collab 은 employer, outsider 는 staff.
   -- ON CONFLICT 시 UPDATE: handle_new_user 트리거가 디폴트 'staff' 로 만들어둬도 보정.
-  INSERT INTO public.users (id, email, name, role, is_active, created_at, updated_at)
+  -- ⚠️ identity_verified=true 필수(2026-07-25, 마이그 20260725020000):
+  --    app_insert RLS 가 is_identity_verified(applicant_id) 를 with_check 에 요구한다.
+  --    컬럼 기본값이 false 라 세팅하지 않으면 지원 INSERT 가 전부 42501 로 죽는다
+  --    (#325 머지 직후 jpc_applications_rls·jpc_cascade·applications_tournament_approval_gate red).
+  --    페르소나는 "정상 사용자" 표준형이므로 verified 가 기본이고, 게이트 자체 검증은
+  --    applications_identity_verified_gate.test.sql 이 false/true 를 명시 토글해 수행한다.
+  INSERT INTO public.users (id, email, name, role, is_active, identity_verified, created_at, updated_at)
   SELECT id, email, 'jpc test',
     CASE WHEN id = v_outsider THEN 'staff'::user_role ELSE 'employer'::user_role END,
-    true, now(), now()
+    true, true, now(), now()
   FROM auth.users
   WHERE id IN (v_owner, v_editor, v_collab, v_outsider)
-  ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, is_active = EXCLUDED.is_active;
+  ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, is_active = EXCLUDED.is_active,
+    identity_verified = EXCLUDED.identity_verified;
 
   -- workspace + 멤버
   INSERT INTO public.workspaces (id, name, owner_id, created_at, updated_at)
@@ -171,6 +184,20 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', p_user_id::text, true);
   PERFORM set_config('request.jwt.claims', json_build_object('sub', p_user_id, 'role', 'authenticated')::text, true);
   PERFORM set_config('role', 'authenticated', true);
+END;
+$$;
+
+-- JWT 시뮬레이션 해제 — auth.uid()/auth.jwt() 가 NULL 이 되는 신뢰(postgres) 컨텍스트로 복귀.
+-- 컬럼 가드 트리거(예: 20260725200000 prevent_identity_flag_self_update)는 auth.uid() IS NULL
+-- 을 신뢰 컨텍스트로 허용하므로, 픽스처가 users 민감 컬럼을 재세팅하기 전에 이걸 호출해야 한다.
+-- (role GUC 는 건드리지 않음 — 필요 시 RESET ROLE 별도 수행)
+CREATE OR REPLACE FUNCTION jpc_test_clear_user()
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  PERFORM set_config('request.jwt.claims', '', true);
 END;
 $$;
 
@@ -318,13 +345,15 @@ BEGIN
           jsonb_build_object('role', p_role), '{}'::jsonb,
           now(), now(), '', '', '', '');
 
-  INSERT INTO public.users (id, email, name, role, is_active, created_at, updated_at)
+  -- identity_verified=true — jpc_test_seed 와 동일 이유(app_insert RLS 게이트).
+  INSERT INTO public.users (id, email, name, role, is_active, identity_verified, created_at, updated_at)
   VALUES (v_id, 'jpc_extra_'||v_id||'@test.local', 'jpc extra',
           CASE p_role WHEN 'admin' THEN 'admin'::user_role
                       WHEN 'employer' THEN 'employer'::user_role
                       ELSE 'staff'::user_role END,
-          true, now(), now())
-  ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, is_active = EXCLUDED.is_active;
+          true, true, now(), now())
+  ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, is_active = EXCLUDED.is_active,
+    identity_verified = EXCLUDED.identity_verified;
 
   RETURN v_id;
 END;

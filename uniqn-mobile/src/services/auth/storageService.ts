@@ -2,15 +2,20 @@
  * UNIQN Mobile - Supabase Storage 서비스
  *
  * @description 이미지 업로드 및 관리 (프로필, 공지사항, 게시판)
- * @version 2.0.0
+ * @version 2.1.0
+ *
+ * 업로드 계약: manipulateAsync(base64: true) → base64 → ArrayBuffer.
+ * RN에서 fetch(file://)→Blob 을 supabase-js 에 넘기면 0바이트 파일이 저장된다
+ * (2026-07-24 profile-images·boards 전 버킷 실측). blurhash 파이프라인과 동일하게
+ * base64 경로만 사용한다 — Supabase RN 공식 권장 패턴.
  */
 
+import { toByteArray } from 'base64-js';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import { ValidationError, AppError, ERROR_CODES, toError, isAppError } from '@/errors';
 import { computeBlurhash } from '@/utils/blurhash';
-import { retryWithBackoff } from '@/utils/retry';
 import type { AnnouncementImage } from '@/types';
 
 // ============================================================================
@@ -73,9 +78,9 @@ async function computeBlurhashSafe(uri: string): Promise<string | null> {
  *
  * @param uri 로컬 이미지 URI
  * @param options 리사이즈 옵션
- * @returns 처리된 이미지 Blob
+ * @returns 처리된 이미지 바이트 (ArrayBuffer)
  */
-async function prepareImage(uri: string, options: ImageResizeOptions): Promise<Blob> {
+async function prepareImage(uri: string, options: ImageResizeOptions): Promise<ArrayBuffer> {
   const resizeAction: ImageManipulator.Action = options.height
     ? { resize: { width: options.width, height: options.height } }
     : { resize: { width: options.width } };
@@ -83,46 +88,31 @@ async function prepareImage(uri: string, options: ImageResizeOptions): Promise<B
   const manipulatedImage = await ImageManipulator.manipulateAsync(uri, [resizeAction], {
     compress: IMAGE_QUALITY,
     format: ImageManipulator.SaveFormat.JPEG,
+    base64: true,
   });
 
-  // 로컬 파일 읽기 — 네트워크 호출이 아니지만 whatwg-fetch 는 실패를
-  // `TypeError: Network request failed` 로 reject 한다 (Sentry UNIQN-MOBILE-1J).
-  // ImagePicker 캐시 파일은 일시적으로 못 읽히는 경우가 있어 1회 재시도로 흡수한다.
-  let blob: Blob;
-  try {
-    const { data } = await retryWithBackoff(
-      async () => {
-        const response = await fetch(manipulatedImage.uri);
-        return response.blob();
-      },
-      {
-        maxRetries: 1,
-        initialDelayMs: 300,
-        component: 'storageService',
-        operationName: '이미지 파일 읽기',
-      }
-    );
-    blob = data;
-  } catch (error) {
-    // 업로드는 시작조차 못 했다 — "업로드 실패" 라고 말하면 사용자가 원인을 오해한다.
+  // 웹은 data-URI 접두가 붙을 수 있다 — 순수 base64 만 남긴다.
+  const base64 = manipulatedImage.base64?.replace(/^data:[^;]+;base64,/, '');
+  const bytes = base64 ? toByteArray(base64) : new Uint8Array(0);
+
+  // 빈 바이트가 침묵 통과하면 "업로드 성공 + 0바이트 파일" 이 재발한다.
+  if (bytes.byteLength === 0) {
     throw new AppError({
       code: ERROR_CODES.INFRA_UNAVAILABLE,
       category: 'infrastructure',
       userMessage: '이미지를 읽지 못했어요. 사진을 다시 선택해주세요.',
-      // Sentry 태그 is_retryable 이 실제와 맞아야 분류가 오진을 부르지 않는다.
       isRetryable: true,
-      originalError: toError(error),
-      metadata: { stage: 'prepareImage' },
+      metadata: { stage: 'prepareImage', reason: 'empty-image-bytes' },
     });
   }
 
-  if (blob.size > MAX_IMAGE_SIZE) {
+  if (bytes.byteLength > MAX_IMAGE_SIZE) {
     throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
       userMessage: '이미지 크기가 5MB를 초과합니다',
     });
   }
 
-  return blob;
+  return bytes.buffer as ArrayBuffer;
 }
 
 /**
@@ -130,19 +120,19 @@ async function prepareImage(uri: string, options: ImageResizeOptions): Promise<B
  *
  * @param bucket 버킷 이름
  * @param filePath 버킷 내 파일 경로
- * @param blob 업로드할 Blob
+ * @param data 업로드할 이미지 바이트
  * @param isPublicBucket 공개 버킷 여부
  * @returns 업로드 결과 (URL + 경로)
  */
 async function uploadToStorage(
   bucket: string,
   filePath: string,
-  blob: Blob,
+  data: ArrayBuffer,
   isPublicBucket: boolean
 ): Promise<Pick<UploadResult, 'downloadURL' | 'path'>> {
   const { error: uploadError } = await supabase.storage
     .from(bucket)
-    .upload(filePath, blob, { contentType: 'image/jpeg', upsert: false });
+    .upload(filePath, data, { contentType: 'image/jpeg', upsert: false });
 
   if (uploadError) {
     throw new AppError({

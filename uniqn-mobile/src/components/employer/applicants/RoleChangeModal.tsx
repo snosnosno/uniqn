@@ -228,8 +228,27 @@ export function RoleChangeModal({
 
   if (!staff) return null;
 
+  // 액션은 footer prop 으로 — 역할 목록 길이가 가변이고 사유 입력까지 있어
+  // children 끝에 두면 버튼이 스크롤 아래로 밀린다(2026-07-25).
+  const actionFooter = (
+    <ModalFooterButtons
+      onCancel={handleClose}
+      onSubmit={handleSave}
+      isLoading={isLoading}
+      submitText="역할 변경"
+      submitDisabled={!isValid}
+      submitIcon={<EditIcon size={18} color="#FFFFFF" />}
+    />
+  );
+
   return (
-    <Modal visible={visible} onClose={handleClose} title="역할 변경" position="bottom">
+    <Modal
+      visible={visible}
+      onClose={handleClose}
+      title="역할 변경"
+      position="bottom"
+      footer={actionFooter}
+    >
       <View>
         {/* 스태프 정보 */}
         <Card variant="filled" padding="sm" className="mb-3">
@@ -300,16 +319,6 @@ export function RoleChangeModal({
             역할 변경 시 해당 역할의 시급이 적용되며, 스태프에게 알림이 발송됩니다.
           </Text>
         </View>
-
-        {/* 버튼 */}
-        <ModalFooterButtons
-          onCancel={handleClose}
-          onSubmit={handleSave}
-          isLoading={isLoading}
-          submitText="역할 변경"
-          submitDisabled={!isValid}
-          submitIcon={<EditIcon size={18} color="#FFFFFF" />}
-        />
       </View>
     </Modal>
   );

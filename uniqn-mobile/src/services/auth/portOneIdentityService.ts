@@ -432,8 +432,16 @@ export async function clearPortOneIdentityBindingToken(): Promise<void> {
  */
 function mapIdpErrorCodeToAppError(code: string, serverMessage?: string): ValidationError {
   switch (code) {
-    case 'IV_BINDING_MISMATCH':
+    // 2026-07-25: 만료는 별도 메시지 — 가입 순서 재배치(본인인증 → 계정)로 계정 입력이
+    // 5분(서버 isVerificationRecent 가드)을 넘기면 발생하는 정상 시나리오. "다른 인증
+    // 수단" 안내는 오답이라 재인증 안내로 분리. SignupForm 이 이 코드를 감지해
+    // 본인인증 단계로 자동 복귀시킨다 (입력한 계정 정보는 보존됨).
     case 'IV_TIMESTAMP_EXPIRED':
+      return new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+        userMessage: '본인인증 유효시간(5분)이 지났어요. 본인인증을 다시 진행해주세요.',
+        metadata: { code, serverMessage },
+      });
+    case 'IV_BINDING_MISMATCH':
     case 'PORTONE_NOT_VERIFIED':
     case 'PORTONE_INCOMPLETE':
     case 'IV_INVALID':
@@ -463,6 +471,29 @@ function mapIdpErrorCodeToAppError(code: string, serverMessage?: string): Valida
         metadata: { code, serverMessage },
       });
   }
+}
+
+/**
+ * 2026-07-25 — 제출 시점에 본인인증 결과가 더 이상 유효하지 않음을 뜻하는 IdP 코드 집합.
+ *
+ * 가입 순서 재배치(본인인증 → 계정)로 최종 제출이 인증보다 늦어져, 서버 신선도 가드
+ * (`supabase/functions/_shared/idp-binding.ts` isVerificationRecent, 5분)에 걸리는 경로가
+ * 생겼다. 이 코드들은 모두 "재인증하면 해결" — SignupForm 이 감지해 본인인증 단계로
+ * 자동 복귀시키는 데 사용한다. 코드 원본: `supabase/functions/_shared/idp-errors.ts`.
+ */
+const IDENTITY_INVALID_IDP_CODES: ReadonlySet<string> = new Set([
+  'IV_TIMESTAMP_EXPIRED',
+  'IV_BINDING_MISMATCH',
+  'PORTONE_NOT_VERIFIED',
+  'PORTONE_INCOMPLETE',
+  'IV_INVALID',
+]);
+
+/** 에러가 "본인인증 재진행으로만 해결되는" IdP 검증 실패인지 판별 */
+export function isIdentityVerificationInvalidError(error: unknown): boolean {
+  if (!isAppError(error)) return false;
+  const code = (error.metadata as { code?: string } | undefined)?.code;
+  return typeof code === 'string' && IDENTITY_INVALID_IDP_CODES.has(code);
 }
 
 export async function callVerifyPortOneIdentity(

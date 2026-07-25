@@ -146,6 +146,16 @@ export interface INotificationRepository {
    */
   deleteOlderThan(userId: string, daysToKeep: number): Promise<number>;
 
+  /**
+   * 수신자의 모든 알림 삭제
+   * @param userId - 사용자 ID
+   * @returns 삭제된 전체/미읽음 알림 수
+   */
+  deleteAllByRecipient(userId: string): Promise<{
+    deletedCount: number;
+    deletedUnreadCount: number;
+  }>;
+
   // ==========================================================================
   // 설정 (Settings)
   // ==========================================================================

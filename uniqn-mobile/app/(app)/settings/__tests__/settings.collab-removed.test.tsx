@@ -26,7 +26,14 @@ jest.mock('@/components/ui', () => {
 });
 
 jest.mock('@/components/headers', () => ({ StackHeader: () => null }));
-jest.mock('@/components/settings', () => ({ DangerZone: () => null }));
+jest.mock('@/components/settings', () => {
+  const { Text } = jest.requireActual('react-native') as typeof import('react-native');
+  return {
+    DangerZone: () => null,
+    // 라벨 텍스트 단언이 가능하도록 label 만 렌더하는 경량 passthrough
+    SettingItem: ({ label }: { label: string }) => <Text>{label}</Text>,
+  };
+});
 jest.mock('@/components/icons', () => ({
   BellIcon: () => null,
   BellSlashIcon: () => null,
@@ -71,10 +78,6 @@ jest.mock('@/stores/toastStore', () => ({
     selector({ addToast: jest.fn() }),
 }));
 
-jest.mock('@/hooks/useNotifications', () => ({
-  useNotificationSettingsQuery: () => ({ data: undefined }),
-  useSaveNotificationSettings: () => ({ saveSettings: jest.fn(), isSaving: false }),
-}));
 jest.mock('@/hooks/useClearCache', () => ({
   useClearCache: () => ({ clearCache: jest.fn(), isClearing: false, cacheStats: null }),
 }));
@@ -95,15 +98,8 @@ jest.mock('@/hooks', () => ({
   }),
   AUTO_LOGIN_HELPER_TEXT: '자동 로그인 안내',
 }));
-jest.mock('@/services/notifications/pushNotificationService', () => ({
-  pushNotificationService: {
-    checkPermission: jest.fn().mockResolvedValue({ status: 'granted' }),
-    requestPermission: jest.fn().mockResolvedValue({ status: 'granted' }),
-  },
-}));
 jest.mock('@/services/auth', () => ({
   signOut: jest.fn(),
-  updateMarketingConsent: jest.fn(),
 }));
 
 describe('설정 화면 — 공고 협업 섹션 제거(PR-3 진입점 단일화)', () => {

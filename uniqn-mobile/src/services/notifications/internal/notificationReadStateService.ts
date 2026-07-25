@@ -233,6 +233,23 @@ export async function deleteNotifications(notificationIds: string[]): Promise<vo
   }
 }
 
+export async function deleteAllNotifications(userId: string): Promise<number> {
+  try {
+    const { deletedCount } = await notificationRepository.deleteAllByRecipient(userId);
+    if (deletedCount > 0) {
+      // DB 행 트리거가 카운터를 감소시키지만, EF 리셋(멱등 upsert 0)으로 0 확정
+      await resetUnreadCounterWithRetry([], userId);
+    }
+    return deletedCount;
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '모든 알림 삭제',
+      component: COMPONENT,
+      context: { userId },
+    });
+  }
+}
+
 export async function cleanupOldNotifications(userId: string, daysToKeep = 30): Promise<number> {
   try {
     return await notificationRepository.deleteOlderThan(userId, daysToKeep);

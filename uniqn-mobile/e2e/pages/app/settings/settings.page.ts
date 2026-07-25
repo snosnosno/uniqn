@@ -14,10 +14,9 @@ export class SettingsPage extends BasePage {
   readonly businessInfoItem: Locator;
   readonly deleteAccountButton: Locator;
   readonly versionItem: Locator;
-  readonly pushNotificationLabel: Locator;
+  readonly notificationSettingsItem: Locator;
   readonly autoLoginLabel: Locator;
   readonly autoLoginHelperText: Locator;
-  readonly marketingLabel: Locator;
 
   constructor(page: Page) {
     super(page);
@@ -29,10 +28,11 @@ export class SettingsPage extends BasePage {
     this.businessInfoItem = page.getByRole('button', { name: /^사업자정보$/ }).first();
     this.deleteAccountButton = page.getByRole('button', { name: /^계정 삭제$/ }).last();
     this.versionItem = page.getByText('버전').last();
-    this.pushNotificationLabel = page.getByText('푸시 알림').last();
+    // 2026-07-25(#328): 푸시·마케팅 토글은 /settings/notifications 로 분리 —
+    // 메인에는 진입 행만 남는다. 토글 검증은 NotificationSettingsPage 사용.
+    this.notificationSettingsItem = page.getByRole('button', { name: /^알림 설정$/ }).first();
     this.autoLoginLabel = page.getByText('자동 로그인').last();
     this.autoLoginHelperText = page.getByText('끄면 다음 실행부터 다시 로그인해야 합니다.').last();
-    this.marketingLabel = page.getByText('마케팅 정보 수신').last();
   }
 
   async goto(): Promise<void> {
@@ -45,6 +45,14 @@ export class SettingsPage extends BasePage {
     await Promise.all([
       this.page.waitForURL(/change-password/, { timeout: 10_000 }),
       this.changePasswordItem.click(),
+    ]);
+  }
+
+  /** 알림 설정 페이지로 이동 */
+  async goToNotificationSettings(): Promise<void> {
+    await Promise.all([
+      this.page.waitForURL(/settings\/notifications/, { timeout: 10_000 }),
+      this.notificationSettingsItem.click(),
     ]);
   }
 
@@ -116,16 +124,6 @@ export class SettingsPage extends BasePage {
   /** 버전 정보 값 확인 */
   getVersionValue(): Locator {
     return this.page.getByText(/\d+\.\d+\.\d+ \(\d+\)/).last();
-  }
-
-  /** 알림 권한 거부 경고 확인 */
-  getPermissionDeniedAlert(): Locator {
-    return this.page.getByText('알림 권한이 거부되었습니다');
-  }
-
-  /** 알림 권한 미설정 안내 확인 */
-  getPermissionUndeterminedAlert(): Locator {
-    return this.page.getByText('푸시 알림이 꺼져있습니다');
   }
 
   private getSwitch(label: string): Locator {

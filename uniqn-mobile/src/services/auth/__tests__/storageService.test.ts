@@ -1,8 +1,11 @@
 /**
  * UNIQN Mobile - Storage Service Tests
  *
- * @description Firebase Storage 서비스 테스트
- * @version 1.0.0
+ * @description Supabase Storage 서비스 테스트
+ * @version 2.0.0
+ *
+ * 업로드 계약: manipulateAsync(base64: true) → base64 → ArrayBuffer 업로드.
+ * RN에서 fetch(file://)→Blob 경로는 0바이트 파일을 만들었다(2026-07-24 실측 회귀).
  */
 
 import {
@@ -19,7 +22,6 @@ import {
   deleteMultipleAnnouncementImages,
   deleteMultipleBoardImages,
 } from '../storageService';
-// UploadResult type is used implicitly
 
 // ============================================================================
 // Mock Dependencies
@@ -28,8 +30,6 @@ import {
 const mockUploadBytes = jest.fn();
 const mockGetDownloadURL = jest.fn();
 const mockDeleteObject = jest.fn();
-const mockRef = jest.fn();
-const mockGetFirebaseStorage = jest.fn();
 
 const mockManipulateAsync = jest.fn();
 
@@ -71,17 +71,26 @@ jest.mock('@/utils/logger', () => ({
   },
 }));
 
-global.fetch = jest.fn();
-
 // ============================================================================
 // Test Helpers
 // ============================================================================
 
-function createMockBlob(size: number): Blob {
-  return {
-    size,
-    type: 'image/jpeg',
-  } as Blob;
+/** size 바이트짜리 유효 base64 페이로드 (내용은 JPEG가 아니므로 blurhash는 null fallback) */
+function base64Of(size: number): string {
+  return Buffer.alloc(size, 7).toString('base64');
+}
+
+/** manipulateAsync 성공 결과 (base64 동봉 — 업로드 계약) */
+function mockManipulated(size: number) {
+  return { uri: 'file:///resized.jpg', base64: base64Of(size) };
+}
+
+/** 마지막 upload 호출의 body가 정확히 size 바이트인 ArrayBuffer인지 검증 */
+function expectUploadedBytes(size: number) {
+  const [, body, options] = mockUploadBytes.mock.calls[mockUploadBytes.mock.calls.length - 1];
+  expect(body).toBeInstanceOf(ArrayBuffer);
+  expect((body as ArrayBuffer).byteLength).toBe(size);
+  expect(options).toEqual({ contentType: 'image/jpeg', upsert: false });
 }
 
 // ============================================================================
@@ -91,8 +100,6 @@ function createMockBlob(size: number): Blob {
 describe('StorageService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockGetFirebaseStorage.mockReturnValue({});
-    mockRef.mockReturnValue({ toString: () => 'mock-ref' });
   });
 
   // ==========================================================================
@@ -104,13 +111,9 @@ describe('StorageService', () => {
     const imageUri = 'file:///path/to/image.jpg';
 
     it('프로필 이미지를 성공적으로 업로드해야 함', async () => {
-      const manipulatedUri = 'file:///path/to/resized.jpg';
       const downloadURL = 'https://storage.example.com/profile.jpg';
 
-      mockManipulateAsync.mockResolvedValue({ uri: manipulatedUri });
-      (global.fetch as jest.Mock).mockResolvedValue({
-        blob: () => Promise.resolve(createMockBlob(1024 * 1024)),
-      });
+      mockManipulateAsync.mockResolvedValue(mockManipulated(1024 * 1024));
       mockUploadBytes.mockResolvedValue({ error: null });
       mockGetDownloadURL.mockReturnValue(mockPublicUrl(downloadURL));
 
@@ -121,20 +124,40 @@ describe('StorageService', () => {
       expect(mockManipulateAsync).toHaveBeenCalledWith(
         imageUri,
         [{ resize: { width: 500, height: 500 } }],
-        { compress: 0.8, format: 'jpeg' }
+        { compress: 0.8, format: 'jpeg', base64: true }
       );
       expect(mockUploadBytes).toHaveBeenCalled();
     });
 
-    it('5MB를 초과하는 이미지는 거부해야 함', async () => {
-      const manipulatedUri = 'file:///path/to/resized.jpg';
+    it('업로드 body는 base64를 디코딩한 실제 바이트여야 함 (0바이트 업로드 회귀 방지)', async () => {
+      mockManipulateAsync.mockResolvedValue(mockManipulated(2048));
+      mockUploadBytes.mockResolvedValue({ error: null });
+      mockGetDownloadURL.mockReturnValue(mockPublicUrl('https://url.jpg'));
 
-      mockManipulateAsync.mockResolvedValue({ uri: manipulatedUri });
-      (global.fetch as jest.Mock).mockResolvedValue({
-        blob: () => Promise.resolve(createMockBlob(6 * 1024 * 1024)),
-      });
+      await uploadProfileImage(userId, imageUri);
+
+      expectUploadedBytes(2048);
+    });
+
+    it('manipulator가 base64를 반환하지 않으면 업로드 없이 에러를 던져야 함', async () => {
+      mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg' });
 
       await expect(uploadProfileImage(userId, imageUri)).rejects.toThrow();
+      expect(mockUploadBytes).not.toHaveBeenCalled();
+    });
+
+    it('디코딩 결과가 0바이트면 업로드 없이 에러를 던져야 함', async () => {
+      mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg', base64: '' });
+
+      await expect(uploadProfileImage(userId, imageUri)).rejects.toThrow();
+      expect(mockUploadBytes).not.toHaveBeenCalled();
+    });
+
+    it('5MB를 초과하는 이미지는 거부해야 함', async () => {
+      mockManipulateAsync.mockResolvedValue(mockManipulated(6 * 1024 * 1024));
+
+      await expect(uploadProfileImage(userId, imageUri)).rejects.toThrow();
+      expect(mockUploadBytes).not.toHaveBeenCalled();
     });
 
     it('이미지 리사이징 실패 시 에러를 던져야 함', async () => {
@@ -143,18 +166,8 @@ describe('StorageService', () => {
       await expect(uploadProfileImage(userId, imageUri)).rejects.toThrow();
     });
 
-    it('네트워크 에러 시 AppError를 던져야 함', async () => {
-      mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg' });
-      (global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'));
-
-      await expect(uploadProfileImage(userId, imageUri)).rejects.toThrow();
-    });
-
     it('업로드 실패 시 에러를 던져야 함', async () => {
-      mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg' });
-      (global.fetch as jest.Mock).mockResolvedValue({
-        blob: () => Promise.resolve(createMockBlob(1024)),
-      });
+      mockManipulateAsync.mockResolvedValue(mockManipulated(1024));
       mockUploadBytes.mockResolvedValue({ error: { message: 'Upload failed' } });
 
       await expect(uploadProfileImage(userId, imageUri)).rejects.toThrow();
@@ -215,10 +228,7 @@ describe('StorageService', () => {
 
     it('이전 이미지를 삭제하고 새 이미지를 업로드해야 함', async () => {
       mockDeleteObject.mockResolvedValue({ error: null });
-      mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg' });
-      (global.fetch as jest.Mock).mockResolvedValue({
-        blob: () => Promise.resolve(createMockBlob(1024)),
-      });
+      mockManipulateAsync.mockResolvedValue(mockManipulated(1024));
       mockUploadBytes.mockResolvedValue({ error: null });
       mockGetDownloadURL.mockReturnValue(mockPublicUrl('https://new-url.jpg'));
 
@@ -231,10 +241,7 @@ describe('StorageService', () => {
     });
 
     it('이전 이미지가 없으면 바로 업로드해야 함', async () => {
-      mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg' });
-      (global.fetch as jest.Mock).mockResolvedValue({
-        blob: () => Promise.resolve(createMockBlob(1024)),
-      });
+      mockManipulateAsync.mockResolvedValue(mockManipulated(1024));
       mockUploadBytes.mockResolvedValue({ error: null });
       mockGetDownloadURL.mockReturnValue(mockPublicUrl('https://new-url.jpg'));
 
@@ -258,10 +265,7 @@ describe('StorageService', () => {
     it('공지사항 이미지를 성공적으로 업로드해야 함', async () => {
       const downloadURL = 'https://storage.example.com/announcement.jpg';
 
-      mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg' });
-      (global.fetch as jest.Mock).mockResolvedValue({
-        blob: () => Promise.resolve(createMockBlob(2 * 1024 * 1024)),
-      });
+      mockManipulateAsync.mockResolvedValue(mockManipulated(2 * 1024 * 1024));
       mockUploadBytes.mockResolvedValue({ error: null });
       mockGetDownloadURL.mockReturnValue(mockPublicUrl(downloadURL));
 
@@ -272,16 +276,14 @@ describe('StorageService', () => {
       expect(mockManipulateAsync).toHaveBeenCalledWith(imageUri, [{ resize: { width: 1200 } }], {
         compress: 0.8,
         format: 'jpeg',
+        base64: true,
       });
     });
 
     it('진행률 콜백을 호출해야 함', async () => {
       const onProgress = jest.fn();
 
-      mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg' });
-      (global.fetch as jest.Mock).mockResolvedValue({
-        blob: () => Promise.resolve(createMockBlob(1024)),
-      });
+      mockManipulateAsync.mockResolvedValue(mockManipulated(1024));
       mockUploadBytes.mockResolvedValue({ error: null });
       mockGetDownloadURL.mockReturnValue(mockPublicUrl('https://url.jpg'));
 
@@ -294,10 +296,7 @@ describe('StorageService', () => {
     });
 
     it('5MB 초과 시 에러를 던져야 함', async () => {
-      mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg' });
-      (global.fetch as jest.Mock).mockResolvedValue({
-        blob: () => Promise.resolve(createMockBlob(6 * 1024 * 1024)),
-      });
+      mockManipulateAsync.mockResolvedValue(mockManipulated(6 * 1024 * 1024));
 
       await expect(uploadAnnouncementImage(userId, imageUri)).rejects.toThrow();
     });
@@ -351,10 +350,7 @@ describe('StorageService', () => {
       const newUrl = 'https://new-url.jpg';
 
       mockDeleteObject.mockResolvedValue({ error: null });
-      mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg' });
-      (global.fetch as jest.Mock).mockResolvedValue({
-        blob: () => Promise.resolve(createMockBlob(1024)),
-      });
+      mockManipulateAsync.mockResolvedValue(mockManipulated(1024));
       mockUploadBytes.mockResolvedValue({ error: null });
       mockGetDownloadURL.mockReturnValue(mockPublicUrl(newUrl));
 
@@ -368,10 +364,7 @@ describe('StorageService', () => {
       const onProgress = jest.fn();
 
       mockDeleteObject.mockResolvedValue({ error: null });
-      mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg' });
-      (global.fetch as jest.Mock).mockResolvedValue({
-        blob: () => Promise.resolve(createMockBlob(1024)),
-      });
+      mockManipulateAsync.mockResolvedValue(mockManipulated(1024));
       mockUploadBytes.mockResolvedValue({ error: null });
       mockGetDownloadURL.mockReturnValue(mockPublicUrl('https://url.jpg'));
 
@@ -386,10 +379,7 @@ describe('StorageService', () => {
     const imageUri = 'file:///board.jpg';
 
     it('stores board images under the boards path', async () => {
-      mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg' });
-      (global.fetch as jest.Mock).mockResolvedValue({
-        blob: () => Promise.resolve(createMockBlob(2 * 1024 * 1024)),
-      });
+      mockManipulateAsync.mockResolvedValue(mockManipulated(2 * 1024 * 1024));
       mockUploadBytes.mockResolvedValue({ error: null });
 
       const result = await uploadBoardImage(userId, imageUri);
@@ -425,10 +415,7 @@ describe('StorageService', () => {
     const uris = ['file:///img1.jpg', 'file:///img2.jpg', 'file:///img3.jpg'];
 
     it('여러 이미지를 순차적으로 업로드해야 함', async () => {
-      mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg' });
-      (global.fetch as jest.Mock).mockResolvedValue({
-        blob: () => Promise.resolve(createMockBlob(1024)),
-      });
+      mockManipulateAsync.mockResolvedValue(mockManipulated(1024));
       mockUploadBytes.mockResolvedValue({ error: null });
       mockGetDownloadURL
         .mockReturnValueOnce(mockPublicUrl('https://url1.jpg'))
@@ -449,10 +436,7 @@ describe('StorageService', () => {
     it('진행률 콜백을 각 이미지마다 호출해야 함', async () => {
       const onProgress = jest.fn();
 
-      mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg' });
-      (global.fetch as jest.Mock).mockResolvedValue({
-        blob: () => Promise.resolve(createMockBlob(1024)),
-      });
+      mockManipulateAsync.mockResolvedValue(mockManipulated(1024));
       mockUploadBytes.mockResolvedValue({ error: null });
       mockGetDownloadURL.mockReturnValue(mockPublicUrl('https://url.jpg'));
 
@@ -469,17 +453,14 @@ describe('StorageService', () => {
       // 해당 이미지 업로드 전체 실패로 처리되어 결과 배열에서 제외된다.
       mockManipulateAsync
         // 이미지 1: prepareImage + computeBlurhash
-        .mockResolvedValueOnce({ uri: 'file:///resized1.jpg' })
-        .mockResolvedValueOnce({ uri: 'file:///thumb1.jpg' })
+        .mockResolvedValueOnce(mockManipulated(1024))
+        .mockResolvedValueOnce({ uri: 'file:///thumb1.jpg', base64: base64Of(64) })
         // 이미지 2: prepareImage 실패 → 업로드 중단
         .mockRejectedValueOnce(new Error('Resize failed'))
         // 이미지 3: prepareImage + computeBlurhash
-        .mockResolvedValueOnce({ uri: 'file:///resized3.jpg' })
-        .mockResolvedValueOnce({ uri: 'file:///thumb3.jpg' });
+        .mockResolvedValueOnce(mockManipulated(1024))
+        .mockResolvedValueOnce({ uri: 'file:///thumb3.jpg', base64: base64Of(64) });
 
-      (global.fetch as jest.Mock).mockResolvedValue({
-        blob: () => Promise.resolve(createMockBlob(1024)),
-      });
       mockUploadBytes.mockResolvedValue({ error: null });
       mockGetDownloadURL
         .mockReturnValueOnce(mockPublicUrl('https://url1.jpg'))
@@ -504,10 +485,7 @@ describe('StorageService', () => {
     const uris = ['file:///img1.jpg', 'file:///img2.jpg'];
 
     it('preserves board image ordering', async () => {
-      mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg' });
-      (global.fetch as jest.Mock).mockResolvedValue({
-        blob: () => Promise.resolve(createMockBlob(1024)),
-      });
+      mockManipulateAsync.mockResolvedValue(mockManipulated(1024));
       mockUploadBytes.mockResolvedValue({ error: null });
       // boards use createSignedUrl (private), already mocked globally
 

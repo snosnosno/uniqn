@@ -16,6 +16,13 @@ import {
 } from '@/components/icons';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 
+/**
+ * 세로 슬롭 4 — 바로 위 PostingTypeChips 행과의 간격이 8px 뿐이라 양쪽이 slop 8을 쓰면
+ * 그 간격 전체가 두 행에 이중 귀속된다. 칩(타입 즉시 토글)과 필(시트 열기)은 동작이
+ * 이질적이라 오탭 비용이 크다. 36 + 4 + 4 = 44px 로 최소 타깃은 유지(2026-07-25).
+ */
+const PILL_HIT_SLOP = { top: 4, bottom: 4, left: 8, right: 8 } as const;
+
 interface FilterPillProps {
   label: string;
   active: boolean;
@@ -29,6 +36,7 @@ function FilterPill({ label, active, onPress, Icon, accessibilityLabel, testID }
   return (
     <Pressable
       onPress={onPress}
+      hitSlop={PILL_HIT_SLOP}
       className={`min-h-[36px] flex-row items-center gap-1 rounded-full border px-3 py-1.5 active:opacity-70 ${
         active
           ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30'
@@ -118,6 +126,7 @@ export const FilterBar = memo(function FilterBar({
         {onReset ? (
           <Pressable
             onPress={onReset}
+            hitSlop={PILL_HIT_SLOP}
             className="min-h-[36px] flex-row items-center gap-1 rounded-full border border-secondary-300 px-3 py-1.5 active:opacity-70 dark:border-surface-overlay"
             accessibilityRole="button"
             accessibilityLabel="필터 초기화"

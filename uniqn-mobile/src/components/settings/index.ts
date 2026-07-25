@@ -4,3 +4,4 @@
 
 export { PasswordStrength } from '../ui/PasswordStrength';
 export { DangerZone } from './DangerZone';
+export { SettingItem } from './SettingItem';

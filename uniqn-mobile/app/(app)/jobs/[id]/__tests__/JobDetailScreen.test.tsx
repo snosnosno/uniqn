@@ -189,7 +189,7 @@ describe('JobDetailScreen', () => {
       expect(mockErrorState).not.toHaveBeenCalled();
       expect(screen.UNSAFE_getByType(ScrollView)).toBeTruthy();
       expect(screen.getByText('미승인 대회공고 — 관리자 열람 전용')).toBeTruthy();
-      expect(screen.queryByText('지원하기 →')).toBeNull();
+      expect(screen.queryByText('지원하기')).toBeNull();
     });
 
     it('인증 초기화 전에는 차단 화면 대신 로딩을 보여 깜빡임을 막는다', () => {

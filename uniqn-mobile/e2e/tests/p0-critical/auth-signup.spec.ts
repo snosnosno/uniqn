@@ -1,40 +1,51 @@
 /**
- * P0 회원가입 테스트 (7 tests)
- * 비인증 상태에서 실행
+ * P0 회원가입 테스트 (2026-07-25 순서 재배치 재작성)
+ *
+ * 단계 순서: 1=약관동의 → 2=본인인증(PortOne) → 3=계정정보 (STEP_FLOW.default)
+ * 비인증 상태에서 실행.
+ *
+ * 본인인증(2단계)은 PortOne 실인증(iframe + Edge Function)이라 E2E 로 통과할 수 없다.
+ * 계정(3단계) 검증은 draft 주입(seedSignupDraft — 실제 A2 복원 기능 경유)으로 진입한다.
+ *
+ * 구버전 스펙에서 제거된 것:
+ * - "Step3: 14세 미만 생년월일 차단" — 순서 재배치와 무관하게 수동 생년월일 입력 UI 가
+ *   사라졌다(PortOne 이 생년월일을 제공). 14세 미만 차단은 서버 PORTONE_AGE_RESTRICTED
+ *   (verify-portone-identity EF)가 담당 — E2E 범위 밖.
+ * - Firebase emulator 전제 주석 — Supabase 전환 이후 유물.
  */
 import { test, expect } from '@playwright/test';
-import { SignupPage } from '../../pages/auth/signup.page';
-import { createSignupData } from '../../factories';
+import { SignupPage, SIGNUP_STEP_INDEX } from '../../pages/auth/signup.page';
+import { TEST_ACCOUNTS } from '../../fixtures/test-accounts';
 
 test.describe('회원가입', () => {
   let signupPage: SignupPage;
 
   test.beforeEach(async ({ page }) => {
     signupPage = new SignupPage(page);
-    await signupPage.goto();
   });
 
   // ============================================================
   // Step 1: 약관 동의
   // ============================================================
 
-  test('Step1: 전체 동의 → 다음 버튼 활성화 → Step2 이동', async () => {
+  test('Step1: 전체 동의 → 다음 버튼 활성화 → Step2(본인인증) 이동', async () => {
+    await signupPage.goto();
     await signupPage.acceptAllTerms();
     await signupPage.clickNext();
 
-    // Step 2로 이동 확인
     await signupPage.waitForStep(2);
     const step = await signupPage.getCurrentStep();
     expect(step).toBe(2);
   });
 
   test('Step1: 필수 약관 미동의 → 다음 버튼 비활성화', async () => {
-    // 아무것도 체크하지 않은 상태
+    await signupPage.goto();
     const isDisabled = await signupPage.nextButton.isDisabled();
     expect(isDisabled).toBeTruthy();
   });
 
   test('Step1: 필수만 동의 (마케팅 제외) → 다음 가능', async () => {
+    await signupPage.goto();
     await signupPage.acceptRequiredTermsOnly();
     await signupPage.clickNext();
 
@@ -44,106 +55,92 @@ test.describe('회원가입', () => {
   });
 
   // ============================================================
-  // Step 2: 계정 정보
+  // Step 2: 본인인증 (PortOne 실인증은 불가 — 노출/게이트만 검증)
   // ============================================================
 
-  test('Step2: 중복 이메일 → 에러 메시지', async () => {
-    // Step 1 통과
+  test('Step2: PortOne 안내 카드 노출 + 인증 전 다음 버튼 비활성', async () => {
+    await signupPage.goto();
     await signupPage.acceptAllTerms();
     await signupPage.clickNext();
     await signupPage.waitForStep(2);
 
-    // 이미 존재하는 이메일 사용
-    await signupPage.fillAccountInfo('staff@test.com', 'TestPass1!');
-    await signupPage.clickNext();
-
-    // 중복 이메일 에러 메시지 (Firebase emulator는 'EMAIL_EXISTS' 반환)
-    // 또는 Step 3로 진행되는 경우도 있음 (에뮬레이터에 계정 미등록 시)
-    // 또는 에뮬레이터 응답 지연으로 로딩 스피너가 계속 표시될 수 있음
-    const error = signupPage.page.getByText(/이미 사용 중|이미 등록|EMAIL_EXISTS|이메일은 이미 사용/);
-    const errorAlert = signupPage.page.locator('[role="alert"]');
-    const step3Text = signupPage.page.getByText('본인인증');
-    const errorOrAlert = error.or(errorAlert).or(step3Text);
-
-    // 에러 메시지 또는 다음 단계 진행 중 하나가 나타나면 통과
-    // (Firebase 에뮬레이터에 계정이 없으면 중복 에러 대신 정상 진행됨)
-    const visible = await errorOrAlert.first()
-      .waitFor({ state: 'visible', timeout: 15_000 })
-      .then(() => true)
-      .catch(() => false);
-
-    if (!visible) {
-      // Firebase 에뮬레이터 응답 지연 → 크래시 없이 대기 중 = 통과
-      // 테스트 목적: 중복 이메일 제출 시 앱이 크래시하지 않는지 확인
-      // (에뮬레이터 환경에서 createUser 응답이 15초 이상 걸릴 수 있음)
-    }
+    // 빈 상태 온보딩 카드(B9) + 인증 시작 CTA
+    await expect(signupPage.identityCard).toBeVisible();
+    await expect(signupPage.identityStartButton).toBeEnabled();
+    // 인증 완료 전에는 다음 단계로 진행 불가
+    await expect(signupPage.nextButton).toBeDisabled();
   });
 
-  test('Step2: 약한 비밀번호 → 검증 에러', async () => {
-    // Step 1 통과
-    await signupPage.acceptAllTerms();
-    await signupPage.clickNext();
-    await signupPage.waitForStep(2);
+  // ============================================================
+  // Step 3: 계정 정보 — draft 주입으로 본인인증 건너뛰고 진입
+  // ============================================================
 
-    // 약한 비밀번호
-    await signupPage.fillAccountInfo('new@test.com', '1234', '1234');
+  test('Step3: 약한 비밀번호 → 검증 에러', async () => {
+    await signupPage.seedSignupDraft({ stepIndex: SIGNUP_STEP_INDEX.account });
+    await signupPage.goto();
+    await signupPage.waitForStep(3);
+
+    await signupPage.fillAccountInfo('new-weak-pw@test.com', '1234', '1234');
     await signupPage.clickNext();
 
-    // 비밀번호 강도 에러 (정확한 메시지 매칭)
     const error = signupPage.page.getByText('비밀번호는 최소 8자 이상이어야 합니다');
     await expect(error).toBeVisible({ timeout: 5_000 });
   });
 
-  test('Step2: 비밀번호 불일치 → 검증 에러', async () => {
-    // Step 1 통과
-    await signupPage.acceptAllTerms();
-    await signupPage.clickNext();
-    await signupPage.waitForStep(2);
+  test('Step3: 비밀번호 불일치 → 검증 에러', async () => {
+    await signupPage.seedSignupDraft({ stepIndex: SIGNUP_STEP_INDEX.account });
+    await signupPage.goto();
+    await signupPage.waitForStep(3);
 
-    // 비밀번호 불일치
-    await signupPage.fillAccountInfo('new@test.com', 'TestPass1!', 'DifferentPass1!');
+    await signupPage.fillAccountInfo('new-mismatch@test.com', 'TestPass1!', 'DifferentPass1!');
     await signupPage.clickNext();
 
-    // 불일치 에러
-    const error = signupPage.page.getByText(/일치하지 않|일치하지않/);
+    const error = signupPage.page.getByText(/일치하지 않/);
     await expect(error).toBeVisible({ timeout: 3_000 });
   });
 
-  // ============================================================
-  // Step 3: 본인인증 (전화번호 인증은 에뮬레이터 제한으로 부분 테스트)
-  // ============================================================
+  test('Step3: 중복 이메일 → 에러 메시지', async () => {
+    await signupPage.seedSignupDraft({ stepIndex: SIGNUP_STEP_INDEX.account });
+    await signupPage.goto();
+    await signupPage.waitForStep(3);
 
-  test('Step3: 14세 미만 생년월일 → 차단', async () => {
-    // Step 1 + Step 2 통과
-    const data = createSignupData({ email: `signup-age-${Date.now()}@test.com` });
-
-    await signupPage.acceptAllTerms();
+    // pre-seeded QA 계정 이메일 — checkEmailExists 가 signUp 이전에 차단해야 한다
+    await signupPage.fillAccountInfo(TEST_ACCOUNTS.staff.email, 'TestPass1!');
     await signupPage.clickNext();
+
+    const error = signupPage.page.getByText('이미 사용 중인 이메일입니다');
+    await expect(error).toBeVisible({ timeout: 15_000 });
+  });
+
+  // ============================================================
+  // Draft 복원 — 순서 재배치 + 5분 신선도 가드 회귀 (2026-07-25 HIGH)
+  // ============================================================
+
+  test('Draft 복원: 신선한 draft 는 계정 단계로 복원 + 이메일 프리필', async () => {
+    await signupPage.seedSignupDraft({
+      stepIndex: SIGNUP_STEP_INDEX.account,
+      email: 'draft-restore@test.com',
+    });
+    await signupPage.goto();
+
+    await signupPage.waitForStep(3);
+    await expect(signupPage.emailInput).toHaveValue('draft-restore@test.com');
+  });
+
+  test('Draft 복원: 5분 지난 본인인증은 폐기하고 본인인증 단계로 복원', async () => {
+    // 서버(verify-and-save-portone-profile)가 verifiedAt 5분 초과를 거부하므로,
+    // 만료 identity 를 계정 단계로 복원하면 제출이 영원히 실패하는 dead-end 가 된다.
+    // SignupForm 은 savedAt 5분 초과 draft 의 identity 를 버리고 2단계로 복원해야 한다.
+    await signupPage.seedSignupDraft({
+      stepIndex: SIGNUP_STEP_INDEX.account,
+      savedAtOffsetMs: 6 * 60 * 1000,
+    });
+    await signupPage.goto();
+
     await signupPage.waitForStep(2);
-
-    await signupPage.fillAccountInfo(data.email, data.password);
-    await signupPage.clickNext();
-
-    // Step 3로 이동 대기 (계정 생성이 성공해야 Step 3로 진행)
-    // Firebase 에뮬레이터에서 계정 생성에 시간이 걸릴 수 있음
-    const step3Visible = await signupPage.page.getByText('본인인증')
-      .waitFor({ state: 'visible', timeout: 15_000 })
-      .then(() => true)
-      .catch(() => false);
-
-    if (!step3Visible) {
-      // Step 3로 이동 실패 시 (이메일 중복 등) 스킵
-      test.skip();
-      return;
-    }
-
-    // 이름 입력
-    await signupPage.nameInput.fill('테스트');
-
-    // 14세 미만 생년월일 입력 시 에러 확인
-    // 생년월일 선택은 DatePicker UI에 따라 다를 수 있음
-    // 여기서는 Step 3 도달 + 이름 입력 가능 확인
-    const nameInput = signupPage.nameInput;
-    await expect(nameInput).toBeVisible();
+    // 인증이 초기화되어 "본인인증 시작" CTA 가 다시 노출된다 (완료 카드 아님)
+    await expect(signupPage.identityStartButton).toBeVisible();
+    const step = await signupPage.getCurrentStep();
+    expect(step).toBe(2);
   });
 });

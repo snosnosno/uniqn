@@ -54,6 +54,27 @@ function ModalRenderer({ modal }: { modal: ModalConfig }) {
     handleClose();
   };
 
+  // custom·bottomSheet 공용 액션 푸터 — Modal 이 스크롤 영역 밖 형제로 sticky 렌더한다.
+  // modal.content 는 호출부 자유형 ReactNode 라 길이 상한이 없어, children 끝에 두면
+  // 긴 콘텐츠에서 버튼이 스크롤 아래로 밀린다(2026-07-25).
+  // bottomSheet 는 아예 버튼을 렌더하지 않아 호출부가 넘긴 confirm/cancel 이 조용히
+  // 증발하고 있었다 — 같은 푸터를 공유해 타입에 따른 계약 차이를 없앤다.
+  const actionFooter =
+    modal.confirmButton || modal.cancelButton ? (
+      <View className="flex-row justify-end gap-2">
+        {modal.cancelButton && (
+          <Button variant={modal.cancelButton.variant || 'ghost'} onPress={handleCancel}>
+            {modal.cancelButton.label}
+          </Button>
+        )}
+        {modal.confirmButton && (
+          <Button variant={modal.confirmButton.variant || 'primary'} onPress={handleConfirm}>
+            {modal.confirmButton.label}
+          </Button>
+        )}
+      </View>
+    ) : undefined;
+
   switch (modal.type) {
     case 'loading':
       return (
@@ -103,22 +124,9 @@ function ModalRenderer({ modal }: { modal: ModalConfig }) {
           title={modal.title}
           closeOnBackdrop={modal.dismissible}
           showCloseButton={modal.dismissible}
+          footer={actionFooter}
         >
           {modal.content}
-          {(modal.confirmButton || modal.cancelButton) && (
-            <View className="flex-row justify-end gap-2 mt-4">
-              {modal.cancelButton && (
-                <Button variant={modal.cancelButton.variant || 'ghost'} onPress={handleCancel}>
-                  {modal.cancelButton.label}
-                </Button>
-              )}
-              {modal.confirmButton && (
-                <Button variant={modal.confirmButton.variant || 'primary'} onPress={handleConfirm}>
-                  {modal.confirmButton.label}
-                </Button>
-              )}
-            </View>
-          )}
         </Modal>
       );
 
@@ -132,6 +140,7 @@ function ModalRenderer({ modal }: { modal: ModalConfig }) {
           position="bottom"
           closeOnBackdrop={modal.dismissible}
           showCloseButton={modal.dismissible}
+          footer={actionFooter}
         >
           {modal.content}
         </Modal>

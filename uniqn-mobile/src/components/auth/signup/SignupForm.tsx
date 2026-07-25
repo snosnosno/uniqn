@@ -1,10 +1,10 @@
 /**
  * UNIQN Mobile - 3단계 회원가입 폼 컴포넌트
  *
- * @description 플로우: 약관동의 → 계정 → 본인인증 → 가입완료
+ * @description 플로우: 약관동의 → 본인인증 → 계정 → 가입완료 (2026-07-25 재배치)
  *              프로필(닉네임 등)은 가입 후 앱 첫 진입 시 별도 화면에서 입력
  *              개인정보보호법 제15조에 따라 약관동의를 최우선 단계로 배치
- * @version 3.0.0
+ * @version 3.1.0
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
@@ -13,8 +13,8 @@ import Animated, { FadeInRight } from 'react-native-reanimated';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { StepIndicator, type StepInfo } from '@/components/auth/StepIndicator';
 import {
-  checkEmailExists,
   clearSignupDraft,
+  isIdentityVerificationInvalidError,
   loadSignupDraft,
   saveSignupDraft,
 } from '@/services/auth';
@@ -54,8 +54,8 @@ interface SignupFormProps {
  */
 const DEFAULT_SIGNUP_STEPS: StepInfo[] = [
   { label: '약관동의', shortLabel: '약관' },
-  { label: '계정정보', shortLabel: '계정' },
   { label: '본인인증', shortLabel: '인증' },
+  { label: '계정정보', shortLabel: '계정' },
   { label: '프로필', shortLabel: '프로필' },
 ];
 
@@ -78,11 +78,24 @@ interface FormDataState {
 // B13: stepKey 기반 — 모드별 flow 순서로 displayStep 도출, 1→3 점프 제거
 type StepKey = 'terms' | 'account' | 'identity';
 
+// 2026-07-25: default 순서를 본인인증 → 계정정보로 재배치.
+// 이전(계정 → 본인인증)은 본인인증(SMS/카드 등 되돌릴 수 없는 비용)을 마친 뒤에야
+// 이메일 중복이 최종 확정돼, 사용자가 이메일을 바꿔 재시도해야 했고 실패한 이메일이
+// orphan(auth.users + public.users, profile_completed=false)으로 DB에 잔존했다.
+// 계정(이메일)을 마지막 단계로 옮기면 이메일 입력 즉시 중복 검사 → 통과 시 바로 signUp
+// 이라 본인인증-이메일 사이 race 창이 사라지고, 이메일 변경 시 본인인증 재진행이 불필요.
 const STEP_FLOW: Record<'default' | 'social' | 'reverify', StepKey[]> = {
-  default: ['terms', 'account', 'identity'],
+  default: ['terms', 'identity', 'account'],
   social: ['terms', 'identity'],
   reverify: ['identity'],
 };
+
+// 2026-07-25: 서버(EF verify-and-save-portone-profile)는 PortOne verifiedAt 이 5분을
+// 넘긴 제출을 IV_TIMESTAMP_EXPIRED 로 거부한다(supabase/functions/_shared/idp-binding.ts
+// isVerificationRecent). draft 의 savedAt 은 항상 인증 시각 이후에 갱신되므로,
+// savedAt 이 이 창을 넘겼으면 저장된 identity 는 확실히 만료 — 복원 시 폐기한다.
+// 리터럴 유지(배럴 상수 순환 함정 — 도메인 상수 모듈 스코프 import 금지 이력).
+const IDENTITY_FRESHNESS_MS = 5 * 60 * 1000;
 
 // ============================================================================
 // Component
@@ -140,6 +153,23 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
     ) {
       restoredIndex = accountStepIndex;
     }
+
+    // 2026-07-25: 만료된 본인인증 복원 차단 — savedAt 이 서버 신선도 창(5분)을 넘긴
+    // draft 의 identity 를 그대로 복원하면 계정 단계에서 제출해도 항상
+    // IV_TIMESTAMP_EXPIRED 로 실패하는 dead-end 가 된다(draft TTL 은 24시간이라
+    // TTL 만으로는 못 거른다). identity 만 폐기하고 본인인증 단계부터 다시 진행시킨다.
+    let restoredIdentity = draft.formData.identity as SignUpIdentityData | undefined;
+    const identityStepIndex = flow.indexOf('identity');
+    const identityExpired =
+      Boolean(restoredIdentity) && Date.now() - draft.savedAt > IDENTITY_FRESHNESS_MS;
+    if (identityExpired) {
+      restoredIdentity = undefined;
+      if (identityStepIndex !== -1 && restoredIndex > identityStepIndex) {
+        restoredIndex = identityStepIndex;
+      }
+      // 리뷰 L1: 무통보 폐기 방지 — 사용자가 왜 본인인증 단계로 돌아왔는지 안내
+      toast.info('본인인증 유효시간이 지나 다시 인증이 필요해요.');
+    }
     setStepIndex(restoredIndex);
 
     setFormData({
@@ -148,7 +178,7 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
       account: draft.formData.accountEmail
         ? ({ email: draft.formData.accountEmail, password: '' } as SignUpAccountData)
         : undefined,
-      identity: draft.formData.identity as SignUpIdentityData | undefined,
+      identity: restoredIdentity,
     });
 
     logger.info('회원가입 draft 복원', {
@@ -157,9 +187,11 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
       stepIndex: restoredIndex,
       hasTerms: Boolean(draft.formData.terms),
       hasAccountEmail: Boolean(draft.formData.accountEmail),
-      hasIdentity: Boolean(draft.formData.identity),
+      hasIdentity: Boolean(restoredIdentity),
+      identityExpired,
     });
-  }, [flow, isReverify, isSocial, mode, socialUserId]);
+    // draftHydratedRef 가드로 1회만 실행 — toast 참조 변경에 의한 재실행 없음
+  }, [flow, isReverify, isSocial, mode, socialUserId, toast]);
 
   // A2: formData / stepIndex 변경 시 draft 저장. reverify·hydration 이전엔 skip.
   useEffect(() => {
@@ -193,10 +225,73 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
   // 계정 정보 (소셜 모드에서는 렌더링되지 않음)
   // ──────────────────────────────────────────────────────────────────────────
 
-  const handleAccountNext = useCallback((data: SignUpAccountData) => {
-    setFormData((prev) => ({ ...prev, account: data }));
-    setStepIndex((prev) => prev + 1);
-  }, []);
+  // 2026-07-25: default 모드의 최종 제출 지점. account(이메일/비번)가 마지막 단계이므로
+  // SignupStepAccount 내부 checkEmailExists 통과 직후 여기서 곧바로 onSubmit(signUp)한다.
+  // 이메일 중복 검사와 signUp 사이에 본인인증 같은 무거운 단계가 없어 race 창이 사라진다.
+  const handleAccountNext = useCallback(
+    async (data: SignUpAccountData) => {
+      const updatedFormData = { ...formData, account: data };
+      setFormData(updatedFormData);
+
+      // 방어 가드: 앞 단계(약관·본인인증) 데이터 누락 시 해당 단계로 복귀
+      if (!updatedFormData.terms) {
+        logger.error('필수 폼 데이터 누락', { component: 'SignupForm' });
+        toast.error('입력 데이터가 누락되었습니다. 처음부터 다시 시작해주세요.');
+        goToStep('terms');
+        return;
+      }
+      if (!updatedFormData.identity) {
+        logger.error('본인인증 정보 누락', { component: 'SignupForm' });
+        toast.error('본인인증 정보가 누락되었습니다. 다시 인증해주세요.');
+        goToStep('identity');
+        return;
+      }
+
+      // 전체 데이터 조합 (프로필 필드 제외 — 가입 후 별도 입력)
+      const identity = updatedFormData.identity;
+      const completeData: SignUpFormData = {
+        email: data.email,
+        password: data.password,
+        // PortOne 본인인증 결과 (앞 단계에서 확보)
+        name: identity.name,
+        birthDate: identity.birthDate,
+        gender: identity.gender,
+        phoneVerified: identity.phoneVerified as true,
+        verifiedPhone: identity.verifiedPhone,
+        identityVerificationId: identity.identityVerificationId,
+        // 약관동의
+        termsAgreed: updatedFormData.terms.termsAgreed,
+        privacyAgreed: updatedFormData.terms.privacyAgreed,
+        thirdPartyAgreed: updatedFormData.terms.thirdPartyAgreed,
+        marketingAgreed: updatedFormData.terms.marketingAgreed,
+      };
+
+      try {
+        await onSubmit(completeData);
+        // 성공 시 draft 정리. 실패 시 throw 되면 보존(다음 시도에 복원 가능).
+        clearSignupDraft();
+      } catch (error) {
+        // onSubmit 의 에러는 signup.tsx 에서 toast 처리 후 rethrow 된다.
+        // 여기서 삼킨다 — 호출자(SignupStepAccount)가 await 하지 않아 rethrow 하면
+        // unhandled rejection 이 된다. draft 는 clearSignupDraft 미실행으로 보존.
+        //
+        // 2026-07-25 HIGH 복구: 순서 재배치로 계정 입력이 5분(서버 신선도 가드)을
+        // 넘기면 IV_TIMESTAMP_EXPIRED 로 거부된다. 계정 단계에 머물면 재제출해도
+        // 영원히 실패하는 dead-end — 만료된 identity 를 버리고 본인인증 단계로
+        // 자동 복귀시킨다. 계정 입력(이메일·비밀번호)은 state 에 남아 재인증 후 유지.
+        if (isIdentityVerificationInvalidError(error)) {
+          setFormData((prev) => ({ ...prev, identity: undefined }));
+          goToStep('identity');
+          return;
+        }
+        logger.debug('회원가입 onSubmit 실패 — draft 유지', {
+          component: 'SignupForm',
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    },
+    [formData, onSubmit, toast, goToStep]
+  );
 
   const handleAccountBack = useCallback(() => {
     setStepIndex((prev) => Math.max(0, prev - 1));
@@ -211,7 +306,7 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
       const updatedFormData = { ...formData, identity: data };
       setFormData(updatedFormData);
 
-      // reverify: 약관/계정 검증 모두 스킵 — identity 만 onSubmit
+      // reverify: 약관/계정 검증 모두 스킵 — identity 만 onSubmit (identity 가 최종 단계)
       if (isReverify) {
         await onSubmit({
           email: '',
@@ -233,78 +328,56 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
         return;
       }
 
-      // 소셜 모드에서는 이메일 중복 체크 불필요 (계정정보 없음)
-      if (!isSocial) {
-        // 이메일 Race Condition 방지: 제출 직전 이메일 중복 재검증
-        try {
-          const emailExists = await checkEmailExists(updatedFormData.account!.email);
-          if (emailExists) {
-            toast.error('이미 사용 중인 이메일입니다. 다른 이메일을 입력해주세요.');
-            goToStep('account');
-            return;
-          }
-        } catch {
-          logger.warn('최종 제출 전 이메일 재검증 실패');
-          toast.error('이메일 확인 중 오류가 발생했습니다. 다시 시도해주세요.');
+      // social: identity 가 최종 단계(계정 입력 없음) → 프로필 완성 제출
+      if (isSocial) {
+        if (!updatedFormData.terms) {
+          logger.error('필수 폼 데이터 누락', { component: 'SignupForm' });
+          toast.error('입력 데이터가 누락되었습니다. 처음부터 다시 시작해주세요.');
+          goToStep('terms');
           return;
         }
-      }
 
-      // 필수 폼 데이터 방어적 체크
-      if (!updatedFormData.terms) {
-        logger.error('필수 폼 데이터 누락', { component: 'SignupForm' });
-        toast.error('입력 데이터가 누락되었습니다. 처음부터 다시 시작해주세요.');
-        goToStep('terms');
+        const completeData: SignUpFormData = {
+          // 계정 정보는 소셜 모드에서 빈 값 — signup.tsx에서 무시됨
+          email: '',
+          password: '',
+          name: data.name,
+          birthDate: data.birthDate,
+          gender: data.gender,
+          phoneVerified: data.phoneVerified as true,
+          verifiedPhone: data.verifiedPhone,
+          identityVerificationId: data.identityVerificationId,
+          termsAgreed: updatedFormData.terms.termsAgreed,
+          privacyAgreed: updatedFormData.terms.privacyAgreed,
+          thirdPartyAgreed: updatedFormData.terms.thirdPartyAgreed,
+          marketingAgreed: updatedFormData.terms.marketingAgreed,
+        };
+
+        try {
+          await onSubmit(completeData);
+          clearSignupDraft();
+        } catch (error) {
+          // signup.tsx 가 toast 처리 후 rethrow — 여기서 삼켜 draft 를 보존한다.
+          // (호출자가 await 하지 않으므로 rethrow 는 unhandled rejection 이 된다.)
+          //
+          // 리뷰 M1: 본인인증 만료 계열이면 identity 를 폐기해 "완료 카드 + 만료 toast"
+          // 모순을 없앤다. social 은 identity 가 현재 단계라 step 이동은 불필요 —
+          // 폐기만으로 "본인인증 시작" 카드로 되돌아간다 (default 모드와 동작 일치).
+          if (isIdentityVerificationInvalidError(error)) {
+            setFormData((prev) => ({ ...prev, identity: undefined }));
+            return;
+          }
+          logger.debug('소셜 프로필 완성 onSubmit 실패 — draft 유지', {
+            component: 'SignupForm',
+            message: error instanceof Error ? error.message : String(error),
+          });
+        }
         return;
       }
 
-      if (!isSocial && !updatedFormData.account) {
-        logger.error('계정 정보 누락', { component: 'SignupForm' });
-        toast.error('계정 정보가 누락되었습니다. 다시 입력해주세요.');
-        goToStep('account');
-        return;
-      }
-
-      // 방어 가드: draft 복원 후 password 가 비어 있으면(보안상 미저장) 빈 비밀번호로
-      // signUp 이 호출되어 정체불명 실패가 난다. 계정 단계로 보내 비밀번호 재입력을 유도.
-      if (!isSocial && !updatedFormData.account?.password) {
-        logger.warn('비밀번호 누락 — draft 복원 후 재입력 필요', { component: 'SignupForm' });
-        toast.error('보안을 위해 비밀번호를 다시 입력해주세요.');
-        goToStep('account');
-        return;
-      }
-
-      // 전체 데이터 조합 (프로필 필드 제외 — 가입 후 별도 입력)
-      const completeData: SignUpFormData = {
-        // 계정 정보 (소셜 모드에서는 빈 값 — signup.tsx에서 무시됨)
-        email: isSocial ? '' : updatedFormData.account!.email,
-        password: isSocial ? '' : updatedFormData.account!.password,
-        // PortOne 본인인증 결과
-        name: data.name,
-        birthDate: data.birthDate,
-        gender: data.gender,
-        phoneVerified: data.phoneVerified as true,
-        verifiedPhone: data.verifiedPhone,
-        identityVerificationId: data.identityVerificationId,
-        // 약관동의
-        termsAgreed: updatedFormData.terms.termsAgreed,
-        privacyAgreed: updatedFormData.terms.privacyAgreed,
-        thirdPartyAgreed: updatedFormData.terms.thirdPartyAgreed,
-        marketingAgreed: updatedFormData.terms.marketingAgreed,
-      };
-
-      try {
-        await onSubmit(completeData);
-        // A2: 성공 시 draft 정리. 실패 시 throw 되면 보존(다음 시도에 복원 가능).
-        clearSignupDraft();
-      } catch (error) {
-        // onSubmit 의 에러는 signup.tsx 에서 이미 toast 처리. 여기선 draft 만 유지.
-        logger.debug('회원가입 onSubmit 실패 — draft 유지', {
-          component: 'SignupForm',
-          message: error instanceof Error ? error.message : String(error),
-        });
-        throw error;
-      }
+      // default: identity 는 중간 단계 → 계정 입력(account)으로 이동.
+      // 최종 제출(이메일 중복 검사 + signUp)은 마지막 account 단계의 handleAccountNext 가 담당.
+      setStepIndex((prev) => prev + 1);
     },
     [formData, onSubmit, toast, isSocial, isReverify, goToStep]
   );

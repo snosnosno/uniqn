@@ -60,6 +60,7 @@ export {
   createPortOneIdentityVerificationId,
   getPendingPortOneIdentityRequest,
   getPortOneInicisIdentityConfig,
+  isIdentityVerificationInvalidError,
   isPortOneInicisIdentityConfigured,
   savePendingPortOneIdentityRequest,
   savePortOneIdentityVerificationResult,

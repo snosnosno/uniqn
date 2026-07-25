@@ -1,6 +1,6 @@
 ---
 area: decisions
-updated: 2026-07-24
+updated: 2026-07-25
 status: current
 sources:
   - uniqn-mobile/global.css
@@ -13,15 +13,19 @@ sources:
   - memory/pitfall_rn_flex1_minh_collapse.md
   - memory/pitfall_link_aschild_bare_pressable_native.md
   - memory/pitfall_rnw_nested_button_accessibilityrole.md
+  - uniqn-mobile/src/components/ui/ModalManager.tsx
+  - uniqn-mobile/src/components/region/RegionTaxonomyBrowser.tsx
   - PR#136
   - PR#264
   - PR#313
-tags: [nativewind, react-native, expo-router, ui, dark-mode, accessibility, web, alert]
+  - PR#332
+tags:
+  [nativewind, react-native, expo-router, ui, dark-mode, accessibility, web, alert, modal, overflow]
 ---
 
 # 결정: NativeWind / React Native UI 함정 모음
 
-**한 줄:** 다크모드 유실·flex 붕괴·터치 유실·hydration 에러·웹 Alert 증발·pointerEvents 드롭·모달 z-순서 — RN/NativeWind 프레젠테이션 레이어에서 조용히 재발하는 함정 모음과 회피 패턴.
+**한 줄:** 다크모드 유실·flex 붕괴·터치 유실·hydration 에러·웹 Alert 증발·pointerEvents 드롭·모달 z-순서·**웹 모달 높이 픽셀 계산과 footer prop 미사용** — RN/NativeWind 프레젠테이션 레이어에서 조용히 재발하는 함정 모음과 회피 패턴.
 
 ## 동적 className은 `dark:`를 유실 → CSS var 토큰 사용 (검증 필요)
 런타임에 문자열 조합으로 만든 className은 NativeWind가 `dark:` 배리언트를 정적 추출하지 못해 다크모드가 깨진다.
@@ -59,6 +63,26 @@ react-native-web 의 `Alert.alert`는 `static alert() {}` — **완전 no-op**�
 - 불변식: `Alert.alert`·`window.confirm`·`window.alert` 원시 호출은 두 유틸 파일 안에만 존재. `eslint.config.js`의 `no-restricted-syntax`가 직접 호출을 **error**로 기계 강제(유틸 2개만 예외).
 - 주의: `Share.share` 등 타 RN API는 이미 web 분기가 있었고, `Alert.alert`만이 "조용한 웹 스텁" 클래스였다.
 - 출처: [[alert-web-noop]] · `src/utils/confirmAction.ts` · `src/utils/showAlert.ts`.
+
+## 웹 모달 높이를 `innerHeight` 픽셀로 계산 → 주소창 변화와 어긋나 푸터 잘림 (검증됨: PR#332)
+`useWindowDimensions()` 높이로 `maxHeight: windowHeight * 0.9` 처럼 **픽셀**을 계산하면, 모바일 브라우저 주소창이 접히고 펴질 때 실제 가시 영역과 어긋나 카드 하단(=액션 버튼)이 화면 밖으로 나간다.
+- 규칙(웹): 카드 상한은 **`'90%'` 같은 % 문자열**로. 부모가 `position:fixed`(뷰포트 확정)라 브라우저가 자동 추종한다. `Modal.tsx` WebModal · `SheetModal.tsx` WebSheetModal 이 준거 구현.
+- ⚠️ **네이티브는 고치지 말 것**: 주소창이 없어 픽셀 계산이 정확하다. `Modal.tsx` NativeModal 과 `SheetModal.tsx:417`은 의도적으로 픽셀을 유지한다. 웹/네이티브를 한 번에 바꾸면 네이티브가 회귀한다.
+- 함께: 고정 높이 스크롤 예산(`maxHeight: windowHeight*0.7`)도 헤더/푸터 고정 높이와 합쳐지면 상한을 넘긴다 → `flexShrink: 1` 로 **스크롤 영역만 줄여** 헤더/푸터를 가시 영역에 남긴다.
+- 출처: PR#332 · [[modal-overflow-contract]](없으면 이 노트가 원장).
+
+## `Modal`에 `footer` prop 이 있는데 안 쓰는 것이 오버플로 결함의 실제 원인 (검증됨: PR#332)
+`Modal`/`SheetModal`은 `footer` prop 을 **스크롤 영역 밖 형제**로 sticky 렌더한다. 그런데 액션 버튼을 `children` 끝에 두는 소비처가 다수 남아, 본문이 길면(가변 사용자 입력·긴 목록) 버튼이 스크롤 아래로 밀려 저높이 뷰포트에서 도달이 어려웠다.
+- 규칙: **모달 레벨 확인/취소는 반드시 `footer` prop**. `children` 끝의 버튼 행은 리뷰에서 결함으로 취급한다.
+- 예외: 목록 끝의 인라인 어포던스("역할 추가" 등)나 인라인 폼 컨트롤은 맥락상 본문에 속하므로 footer 로 올리지 않는다(`VenueSettingsSheet` 판정).
+- `ModalManager`의 `bottomSheet` 케이스는 confirm/cancel 을 아예 렌더하지 않아 호출부가 넘긴 버튼이 **조용히 증발**했다 — 타입별 계약 차이를 없애고 공용 푸터를 공유한다.
+- 출처: PR#332 (ReportModal·ConfirmModal·RoleChangeModal·ModalManager·CancellationRequestCard·DeletionScheduledModal).
+
+## `flex-1` 루트 컴포넌트는 "부모가 높이를 bound" 를 요구 → 시트를 flex 로 못 바꾼다 (검증됨: PR#332)
+`RegionTaxonomyBrowser` 는 루트가 `flex-1` 이고 주석에 **"부모가 높이를 bound 해야 한다"**고 명시돼 있다. 이걸 쓰는 시트를 고정 픽셀 높이 → flex 로 바꾸면 내부 2패널 스크롤이 죽는다(부모가 auto-height 면 `flex-1` 이 콘텐츠 높이로 붕괴 — 위 Yoga 함정과 같은 뿌리).
+- 규칙: 이런 컴포넌트를 담는 시트는 **고정 높이를 유지**하되, 그 값이 모달 카드 예산(90%/95%)에서 **크롬(헤더+패딩) 몫을 뺀 값**을 넘지 않도록 상한만 조인다. `RegionFilterSheet` · `PlaceSheet` 가 준거.
+- 증상: 본문만 `0.72H` 를 잡으면 헤더·패딩과 합쳐 카드 90% 를 넘겨 하단 "적용" 버튼이 잘린다.
+- 출처: PR#332.
 
 ## 관련
 - [[layers]] — Presentation 레이어(이 함정들이 사는 곳)
