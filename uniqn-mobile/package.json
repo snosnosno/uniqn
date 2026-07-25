@@ -153,7 +153,8 @@
   "expo": {
     "install": {
       "exclude": [
-        "expo-modules-core"
+        "expo-modules-core",
+        "react-native-keyboard-controller"
       ]
     }
   },

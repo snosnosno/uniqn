@@ -161,6 +161,18 @@ APP_ENV=production ... npx expo-updates fingerprint:generate --platform ios
 ```
 값이 대상 빌드와 다르면 **OTA 는 조용한 no-op** 이다(에러 없이 아무에게도 도달하지 않음).
 
+⚠️ 로컬 실행은 Expo CLI 가 `.env.development.local` / `.env.local` 을 **자동 로드**한다
+(실행 로그의 `env: load …` 줄로 확인 가능). 이 파일들은 gitignore 라 EAS 빌더에는 없다.
+따라서 로컬에서 뽑은 해시는 **참고값**이고, 권위 있는 값은 EAS 가 빌드에 기록한
+runtimeVersion(`eas build:list` 출력)이다. 대조는 그 값을 기준으로 하라.
+
+### 규칙 3-1 — 네이티브 패키지 버전 고정
+Expo SDK 가 기대하는 버전과 의도적으로 다른 네이티브 패키지는 `package.json` 의
+`expo.install.exclude` 에 반드시 등록한다. 등록하지 않으면 누군가 `expo install --fix` 를
+돌리는 순간 조용히 다운그레이드되어 기능이 회귀한다.
+(현재 등록: `expo-modules-core`, `react-native-keyboard-controller`[#335 가 1.22.2 의
+`ModalAttachedWatcher` 를 겨냥해 채택 — SDK 55 기대값 1.20.7 로 내려가면 #302 회귀])
+
 ### 규칙 4 — 네이티브 구성이 바뀐 릴리즈는 OTA 로 못 넘긴다
 네이티브 모듈 추가/제거·플러그인 변경·SDK 업그레이드 = fingerprint 변경 = **새 빌드 필수**.
 구 빌드 사용자는 OTA 를 받지 못하므로 스토어 업데이트로 유도해야 한다
