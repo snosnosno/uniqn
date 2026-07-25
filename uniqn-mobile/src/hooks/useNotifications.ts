@@ -13,6 +13,7 @@ import {
   markAsRead as markAsReadService,
   markAllAsRead as markAllAsReadService,
   deleteNotification as deleteNotificationService,
+  deleteAllNotifications as deleteAllNotificationsService,
   subscribeToNotifications,
   getNotificationSettings,
   saveNotificationSettings,
@@ -384,6 +385,63 @@ export function useDeleteNotification() {
 }
 
 // ============================================================================
+// useDeleteAllNotifications
+// ============================================================================
+
+/**
+ * 모든 알림 삭제 훅 (Optimistic Update 적용)
+ */
+export function useDeleteAllNotifications() {
+  const user = useAuthStore((state) => state.user);
+  const queryClient = useQueryClient();
+  const { notifications, setNotifications, clearNotifications } = useNotificationStore();
+  const addToast = useToastStore((state) => state.addToast);
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      if (!user?.uid) throw new Error('로그인이 필요합니다.');
+      requireOnlineForMutation('useNotifications.deleteAllNotifications');
+      return await deleteAllNotificationsService(user.uid);
+    },
+    // Optimistic Update: 서버 응답 전에 목록·카운터 즉시 초기화
+    onMutate: async () => {
+      if (!shouldApplyOptimisticUpdate()) {
+        return { previousNotifications: undefined };
+      }
+      const previousNotifications = [...notifications];
+      clearNotifications();
+      return { previousNotifications };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+      addToast({
+        type: 'success',
+        message: '알림을 모두 삭제했습니다.',
+      });
+    },
+    onError: (error: Error, _, context) => {
+      logger.error('모든 알림 삭제 실패', error);
+
+      // 롤백: 이전 목록 복원 (카운터는 setNotifications가 재계산)
+      if (context?.previousNotifications) {
+        setNotifications(context.previousNotifications);
+      }
+
+      addToast({
+        type: 'error',
+        message: '알림 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.',
+      });
+    },
+  });
+
+  return {
+    deleteAllNotifications: mutation.mutate,
+    isDeletingAll: mutation.isPending,
+    error: mutation.error,
+  };
+}
+
+// ============================================================================
 // useNotificationSettings
 // ============================================================================
 
@@ -686,6 +744,7 @@ export default {
   useMarkAsRead,
   useMarkAllAsRead,
   useDeleteNotification,
+  useDeleteAllNotifications,
   useNotificationSettingsQuery,
   useSaveNotificationSettings,
   useNotificationPermission,

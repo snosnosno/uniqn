@@ -390,6 +390,8 @@ export const useNotificationStore = create<NotificationState>()(
           notifications: [],
           unreadCount: 0,
           unreadByCategory: createEmptyUnreadByCategory(),
+          // Race Condition 방지: 서버 DELETE 진행 중 realtime 중간값이 낙관적 0을 덮지 않게
+          lastCounterLocalUpdate: Date.now(),
         });
       },
 
