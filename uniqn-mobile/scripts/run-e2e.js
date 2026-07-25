@@ -44,12 +44,29 @@ const distPath = path.join(appRoot, 'dist');
 const buildRevPath = path.join(distPath, '.build-rev');
 const forceBuild = extraArgs.includes('--force-build');
 
+// 웹 번들 산출에 실제로 들어가는 경로만 dirty 판정에 넣는다. 레포 전체를 보면
+// 병렬 세션이 만든 무관한 미커밋 파일(CLAUDE.md 등) 때문에 매번 재빌드가 걸린다.
+const BUNDLE_SOURCES = [
+  'app',
+  'src',
+  'assets',
+  'package.json',
+  'app.config.ts',
+  'babel.config.js',
+  'metro.config.js',
+  'tailwind.config.js',
+  'global.css',
+];
+
 function currentBuildRev() {
   const head = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: appRoot, encoding: 'utf8' });
   if (head.status !== 0) {
     return null;
   }
-  const dirty = spawnSync('git', ['status', '--porcelain'], { cwd: appRoot, encoding: 'utf8' });
+  const dirty = spawnSync('git', ['status', '--porcelain', '--', ...BUNDLE_SOURCES], {
+    cwd: appRoot,
+    encoding: 'utf8',
+  });
   const dirtySuffix = dirty.status === 0 && dirty.stdout.trim() ? '-dirty' : '';
   return `${head.stdout.trim()}${dirtySuffix}`;
 }
