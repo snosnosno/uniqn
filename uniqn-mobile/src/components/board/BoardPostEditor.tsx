@@ -1,6 +1,6 @@
 import React from 'react';
-import { Platform, Text, View } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { Text, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { BoardImagePicker } from './BoardImagePicker';
 import {
   Badge,
@@ -72,10 +72,7 @@ export function BoardPostEditor({
         contentContainerStyle={{ paddingBottom: 24 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        enableOnAndroid
-        enableAutomaticScroll
-        extraScrollHeight={Platform.OS === 'ios' ? 20 : 100}
-        keyboardOpeningTime={0}
+        bottomOffset={20}
       >
         <View className="p-4">
           <Card className="mb-4">
@@ -161,10 +158,7 @@ export function BoardPostEditorLoading({
         contentContainerStyle={{ paddingBottom: 24 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        enableOnAndroid
-        enableAutomaticScroll
-        extraScrollHeight={Platform.OS === 'ios' ? 20 : 100}
-        keyboardOpeningTime={0}
+        bottomOffset={20}
       >
         <View className="p-4">
           <Card className="mb-4">

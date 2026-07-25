@@ -7,9 +7,9 @@
  */
 
 import { useState, useCallback } from 'react';
-import { View, Text, Platform } from 'react-native';
+import { View, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SignupStepProfile } from '@/components/auth/signup/SignupStepProfile';
 import { completeProfile, checkNicknameExists, getUserProfile } from '@/services/auth';
@@ -92,10 +92,7 @@ export default function ProfileSetupScreen() {
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        enableOnAndroid
-        enableAutomaticScroll
-        extraScrollHeight={Platform.OS === 'ios' ? 20 : 100}
-        keyboardOpeningTime={0}
+        bottomOffset={20}
       >
         <View className="flex-1 p-4">
           {/* 헤더 — 가입 진행률 연속성: 마지막 단계임을 명시 (QW8) */}

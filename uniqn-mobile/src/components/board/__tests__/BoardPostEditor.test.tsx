@@ -2,7 +2,7 @@ import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { BoardPostEditor } from '../BoardPostEditor';
 
-jest.mock('react-native-keyboard-aware-scroll-view', () => {
+jest.mock('react-native-keyboard-controller', () => {
   const ReactNative = jest.requireActual('react-native') as typeof import('react-native');
 
   return {

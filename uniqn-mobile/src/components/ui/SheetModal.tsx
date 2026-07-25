@@ -384,8 +384,9 @@ function NativeSheetModal({
       onShow={() => chainOnEnteredRef.current?.()}
       statusBarTranslucent
     >
-      {/* Android: statusBarTranslucent 다이얼로그에선 KAV(height)가 무력 —
-          ModalKeyboardAvoider가 IME 인셋 기반 paddingBottom으로 직접 보정 */}
+      {/* Android: statusBarTranslucent 다이얼로그에선 RN 기본 KAV(height)가 무력 —
+          ModalKeyboardAvoider가 keyboard-controller에 위임해 dialog.window의
+          IME 인셋을 프레임 단위로 추종한다(2026-07-25 전환) */}
       <ModalKeyboardAvoider>
         <View className="flex-1 justify-end" style={{ pointerEvents: 'box-none' }}>
           {/* Backdrop */}
