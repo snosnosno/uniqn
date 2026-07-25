@@ -45,7 +45,7 @@ jest.mock('@/components/auth/StepIndicator', () => ({
   StepIndicator: () => null,
 }));
 
-jest.mock('react-native-keyboard-aware-scroll-view', () => ({
+jest.mock('react-native-keyboard-controller', () => ({
   KeyboardAwareScrollView: ({ children }: { children: React.ReactNode }) => children,
 }));
 
