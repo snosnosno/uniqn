@@ -1,8 +1,12 @@
 # react-native-keyboard-controller 도입 계획 (2026-07-25)
 
-> 상태: **설계 확정 대기 — 코드 미작성**
-> HARD-GATE 대상(네이티브 의존성 + 3+ 파일). 승인 없이 착수 금지.
+> 상태: **Phase 1·2 구현 완료 — 실기기 QA 대기** (2026-07-25 갱신)
+> 브랜치 `feat/keyboard-controller-phase1`. 로컬 검증 green(tsc 0 / eslint 0 /
+> prettier 통과 / Jest 543스위트 6016테스트). **실기기 검증은 EAS 빌드 이후.**
 > 선행 이슈: #302 Android 키보드 모달 가림 (머지 완료, 잔여 MEDIUM 1건)
+>
+> 사용자 결정(2026-07-25): 릴리스 빌드지만 리스크 감수하고 포함.
+> 안전장치 = 세 플래그 명시 + Phase 1/2 커밋 분리(개별 revert 가능).
 
 ## 1. 결론
 

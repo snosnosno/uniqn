@@ -361,12 +361,28 @@ export const triggerHaptic = (type: HapticType) => {
 
 ## 20. 키보드 UX
 
-- `KeyboardAvoidingView`: iOS=`padding`, Android=`height`
+> **2026-07-25 전환**: 키보드 회피 단일 경로 = `react-native-keyboard-controller`.
+> `react-native-keyboard-aware-scroll-view`는 **제거됨**(미유지보수) — 참조 금지.
+
+| 맥락 | 사용할 것 |
+|------|-----------|
+| 모달·시트 내부 | `ModalKeyboardAvoider`(`@/components/ui`) — 이미 SheetModal/Modal에 내장 |
+| 긴 폼·스크롤 화면 | `KeyboardAwareScrollView`(keyboard-controller) + `bottomOffset={20}` |
+| 화면 레벨 단순 폼 | RN 기본 `KeyboardAvoidingView` 잔존 17곳은 **동작 중이라 유지**. 신규 화면은 keyboard-controller |
+
+- **구 라이브러리 prop 금지**: `extraScrollHeight` / `enableOnAndroid` /
+  `enableAutomaticScroll` / `keyboardOpeningTime`은 신 라이브러리에 없다.
+  플랫폼 분기 없이 `bottomOffset` 하나로 끝난다(IME 인셋을 직접 읽으므로).
+- **RNModal 안에서 RN 기본 KAV 금지**: statusBarTranslucent 다이얼로그는 별도
+  윈도우라 `adjustResize`가 무시되고 KAV(height)도 `relativeKeyboardHeight=0`으로
+  붕괴한다(#302 실기기 재현).
 - 스크롤 영역: `keyboardDismissMode="on-drag"` + `keyboardShouldPersistTaps="handled"`
 - `returnKeyType` 체인: 다음 인풋 `next`, 마지막 `done`
 - **`autoFocus` 금지**: 스크린리더 혼선, 예기치 못한 키보드 팝업
-- 긴 폼: 섹션별 `ScrollView` + `scrollToInput` 대신 `KeyboardAwareScrollView`
-  (`react-native-keyboard-aware-scroll-view` 이미 설치됨)
+- ⚠️ 루트 `KeyboardProvider`는 **세 플래그 명시 필수**
+  (`statusBarTranslucent` / `navigationBarTranslucent` / `preserveEdgeToEdge`).
+  생략하면 Android 네이티브가 rootView content의 layoutParams 마진을 덮어써
+  `SafeAreaProvider`와 인셋 소유권이 충돌한다 — 근거는 `app/_layout.tsx` 주석.
 
 ## 21. Pressed 피드백 — 다크/라이트 반대 방향
 
@@ -590,7 +606,7 @@ DESIGN.md의 **Midnight Craft**(Industrial/Utilitarian + subtle Luxury) 방향�
 
 ```
 0. 정산 화면, 금액 TextInput 포커스
-   └ 룰 20: KeyboardAvoidingView padding(iOS)
+   └ 룰 20: 시트 내부면 ModalKeyboardAvoider가 자동 보정
    └ 룰 20: autoFocus 금지 — 사용자가 탭해서 시작
 1. 숫자 키패드로 "120000" 입력
    └ 룰 19: 입력 중 raw, blur 시 ₩120,000 포맷 적용
@@ -636,7 +652,7 @@ DESIGN.md의 **Midnight Craft**(Industrial/Utilitarian + subtle Luxury) 방향�
 - [ ] Haptics는 결정적 순간 + 200ms throttle만?
 - [ ] 원격 이미지에 blurhash placeholder + expo-image 적용?
 - [ ] 금액/날짜/전화번호 포맷이 `utils/formatters`로 일관화?
-- [ ] 폼에 `KeyboardAvoidingView` + `autoFocus` 없음?
+- [ ] 신규 폼이 keyboard-controller 경로(`ModalKeyboardAvoider`/`KeyboardAwareScrollView`)이고 `autoFocus` 없음?
 - [ ] Pressed 피드백이 다크/라이트 반대 방향(밝기 변화)?
 - [ ] Focus ring = Info 블루 `#2563EB` 2px(골드 아님)?
 - [ ] 화면별 `statusBarStyle`이 배경과 대비?
