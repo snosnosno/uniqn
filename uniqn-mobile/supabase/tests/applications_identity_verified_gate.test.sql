@@ -46,8 +46,10 @@ SELECT throws_ok(
 -- ============================================================================
 -- 2) 본인인증 완료 스태프 → ALLOW
 -- ============================================================================
--- postgres 롤 복귀 후 identity_verified=true 로 세팅
+-- postgres 롤 복귀 + JWT 해제 후 identity_verified=true 로 세팅
+-- (JWT 가 남아 있으면 컬럼 가드 트리거 20260725200000 이 셀프 변경으로 오인·차단)
 RESET ROLE;
+SELECT jpc_test_clear_user();
 UPDATE public.users SET identity_verified = true
 WHERE id = (current_setting('t.staff'))::uuid;
 
