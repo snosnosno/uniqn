@@ -30,6 +30,17 @@ export interface PlaceSheetProps {
   onClose: () => void;
 }
 
+/** 넓은 화면에서 브라우저가 과하게 길어지지 않게 하는 상한 */
+const REGION_BROWSER_MAX_HEIGHT = 520;
+/**
+ * SheetModal 크롬(헤더 + 본문 패딩) 몫 — 브라우저 높이에서 미리 뺀다.
+ * 시트 카드는 뷰포트의 95% 를 넘지 않는데, 브라우저만 0.6H 를 잡으면 저높이 뷰포트에서
+ * 크롬과 합쳐 그 예산을 넘겨 리스트 하단이 잘린다(RegionFilterSheet 와 동일 계열, 2026-07-25).
+ */
+const SHEET_CHROME_HEIGHT = 120;
+/** 이 아래로는 2-패널 탐색이 의미를 잃는다 — 그래도 잘리는 것보다는 낫다 */
+const REGION_BROWSER_MIN_HEIGHT = 200;
+
 type Mode = 'list' | 'new' | 'region';
 
 export function PlaceSheet({
@@ -62,8 +73,16 @@ export function PlaceSheet({
   const placeholderColor = isDarkMode ? SECONDARY_PALETTE[500] : SECONDARY_PALETTE[400];
   const nameTrimmed = draft.name.trim();
   const confirmDisabled = nameTrimmed.length === 0 || !draft.region; // 지역 필수(2026-07-15)
-  // 브라우저는 flex-1 — SheetModal 인라인이라 명시 높이로 bound(실기기 그라운딩 대상)
-  const regionBrowserHeight = Math.min(Math.round(windowHeight * 0.6), 520);
+  // 브라우저는 flex-1 — SheetModal 인라인이라 명시 높이로 bound(실기기 그라운딩 대상).
+  // 시트 카드 95% 예산에서 크롬을 뺀 값을 넘지 않게 조인다 — 넘으면 리스트 하단이 잘린다.
+  const regionBrowserHeight = Math.max(
+    REGION_BROWSER_MIN_HEIGHT,
+    Math.min(
+      Math.round(windowHeight * 0.6),
+      REGION_BROWSER_MAX_HEIGHT,
+      Math.round(windowHeight * 0.95) - SHEET_CHROME_HEIGHT
+    )
+  );
 
   return (
     <SheetModal

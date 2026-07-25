@@ -42,6 +42,15 @@
 --       (Supabase 전환 때 클라이언트만 출하되고 함수 마이그가 누락됐던 관리자 문의 응답 경로 복구).
 --     정책 111 불변(RPC 신설만, RLS 미변경).
 --     ↑ #325(본인인증 게이트)와 본 PR 이 각각 prod 선적용 후 합류 — 2026-07-25 prod 실측 181 확인.
+--   2026-07-25 identity_verified 컬럼 가드(마이그 20260725200000, 셀프 승격 차단):
+--     함수 182 = 181 + prevent_identity_flag_self_update 1(SECDEF 트리거 fn — users_update
+--       RLS 셀프 UPDATE로 identity_verified 직접 쓰기가 가능하던 게이트 우회 봉합).
+--     정책 111 불변(트리거 신설만, RLS 미변경). 같은 배치의 20260725180000·190000은
+--     기존 함수 CREATE OR REPLACE라 개수 불변. (#326의 181과 머지 합집합 = 182)
+--   2026-07-26 알림 중복 트리거 정리(마이그 20260726000000, prod 적용 완료 — 재적용 금지):
+--     함수 180 = 182 - fn_notify_review_created 1 - fn_notify_inquiry_created 1
+--       (레거시 notify_on_* 와 동일 이벤트 이중 발동하던 QA기 fn_ 계열 제거 — 중복 알림 해소).
+--     정책 111 불변(트리거/함수만 변경, RLS 미변경). (#327의 182와 머지 합집합 = 180)
 --
 -- ⚠️ 유지보수 계약: 이후 마이그레이션이 public 함수/정책을 추가·삭제하면
 --   이 기대값을 같은 PR에서 함께 갱신해야 한다. 갱신을 강제당하는 것 자체가
@@ -54,7 +63,7 @@
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=181
+-- PARITY_EXPECT_FUNCS=180
 -- PARITY_EXPECT_POLICIES=111
 -- ============================================================
 BEGIN;
@@ -74,8 +83,8 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  181,
-  'public function count == prod (181 = 179 + 관리자 문의 응답 RPC 2, 2026-07-25)');
+  180,
+  'public function count == prod (180 = 182 - 알림 중복 fn_notify_* 2종 제거, 2026-07-26)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(

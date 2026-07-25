@@ -45,8 +45,10 @@ export const SearchBar = memo(function SearchBar({
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
   const placeholderColor = isDarkMode ? PLACEHOLDER_COLORS.dark : PLACEHOLDER_COLORS.light;
 
+  // 배경 미지정 — 페이지 배경(bg-surface-page/dark:bg-surface)을 그대로 이어받아
+  // 아래 칩·필터 행과 한 덩어리로 보인다 (라이트모드 흰 띠 제거, 2026-07-25)
   return (
-    <View className="bg-white px-4 pb-2 dark:bg-surface" accessibilityRole="search">
+    <View className="px-4 pb-2" accessibilityRole="search">
       <View className="flex-row items-center rounded-lg bg-surface-card px-3 dark:bg-surface-elevated">
         <SearchIcon size={20} color={placeholderColor} />
 

@@ -267,6 +267,17 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
         title="취소 요청 거절"
         size="sm"
         position="center"
+        // 액션은 footer prop 으로 — 200자 사유 입력 + 키보드가 겹치면 children 끝의
+        // 버튼이 스크롤 아래로 밀린다. size='sm' 이라 여유가 특히 좁다(2026-07-25).
+        footer={
+          <ModalFooterButtons
+            onCancel={handleCloseRejectModal}
+            onSubmit={handleSubmitReject}
+            submitText="거절하기"
+            isLoading={isProcessing}
+            submitDisabled={rejectionReason.trim().length < 3 || isProcessing}
+          />
+        }
       >
         <View className="-mt-2">
           <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-4 font-sans">
@@ -285,18 +296,9 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
             className="bg-surface-page dark:bg-surface rounded-lg p-3 text-content-primary dark:text-off-white text-base font-sans min-h-[80px] mb-4"
             textAlignVertical="top"
           />
-          <Text className="text-xs text-content-placeholder text-right mb-4 font-sans">
+          <Text className="text-xs text-content-placeholder text-right font-sans">
             {rejectionReason.length}/200
           </Text>
-
-          {/* 버튼 */}
-          <ModalFooterButtons
-            onCancel={handleCloseRejectModal}
-            onSubmit={handleSubmitReject}
-            submitText="거절하기"
-            isLoading={isProcessing}
-            submitDisabled={rejectionReason.trim().length < 3 || isProcessing}
-          />
         </View>
       </Modal>
     </>

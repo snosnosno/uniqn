@@ -344,6 +344,13 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     icon: '📋',
   },
 
+  [NotificationType.ROLE_CHANGED]: {
+    title: '계정 권한 변경',
+    body: (d) => `계정 권한이 '${d.roleLabel || '변경된 역할'}' 역할로 변경되었습니다.`,
+    link: () => '/settings',
+    icon: '🔑',
+  },
+
   [NotificationType.NEGATIVE_SETTLEMENT_ALERT]: {
     title: '⚠️ 음수 정산 경고',
     body: (d) => `${d.staffName || '스태프'}님의 정산 금액이 -${d.amount || '0'}원입니다.`,

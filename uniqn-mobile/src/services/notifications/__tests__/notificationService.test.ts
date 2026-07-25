@@ -20,6 +20,7 @@ import {
   markAllAsRead,
   deleteNotification,
   deleteNotifications,
+  deleteAllNotifications,
   cleanupOldNotifications,
   subscribeToNotifications,
   subscribeToUnreadCount,
@@ -33,6 +34,7 @@ import {
 } from '../notificationService';
 import { notificationRepository } from '@/repositories';
 import * as pushNotificationService from '@/services/notifications/pushNotificationService';
+import { invokeEdgeFunction } from '@/lib/supabaseFunctions';
 
 // ============================================================================
 // Mocks (jest.mock is hoisted, so use inline factory functions)
@@ -48,6 +50,7 @@ jest.mock('@/repositories', () => ({
     markAllAsRead: jest.fn(),
     delete: jest.fn(),
     deleteMany: jest.fn(),
+    deleteAllByRecipient: jest.fn(),
     deleteOlderThan: jest.fn(),
     getSettings: jest.fn(),
     saveSettings: jest.fn(),
@@ -74,9 +77,14 @@ jest.mock('@/services/notifications/pushNotificationService', () => ({
   requestPermission: jest.fn(),
 }));
 
+jest.mock('@/lib/supabaseFunctions', () => ({
+  invokeEdgeFunction: jest.fn(),
+}));
+
 // Get typed mock references
 const mockRepo = notificationRepository as jest.Mocked<typeof notificationRepository>;
 const mockPushService = pushNotificationService as jest.Mocked<typeof pushNotificationService>;
+const mockInvokeEdgeFunction = invokeEdgeFunction as jest.MockedFunction<typeof invokeEdgeFunction>;
 
 // ============================================================================
 // Test Data Helpers
@@ -381,6 +389,45 @@ describe('NotificationService', () => {
       mockRepo.deleteMany.mockRejectedValue(new Error('Batch delete failed'));
 
       await expect(deleteNotifications(['n-1'])).rejects.toThrow('Batch delete failed');
+    });
+  });
+
+  // ==========================================================================
+  // deleteAllNotifications
+  // ==========================================================================
+  describe('deleteAllNotifications', () => {
+    it('should delete all notifications and reset the unread counter', async () => {
+      mockRepo.deleteAllByRecipient.mockResolvedValue({
+        deletedCount: 5,
+        deletedUnreadCount: 2,
+      });
+      mockInvokeEdgeFunction.mockResolvedValue({ data: null, error: null } as any);
+
+      const result = await deleteAllNotifications('user-1');
+
+      expect(mockRepo.deleteAllByRecipient).toHaveBeenCalledWith('user-1');
+      expect(mockInvokeEdgeFunction).toHaveBeenCalledWith('reset-unread-counter', {
+        body: { notificationIds: [] },
+      });
+      expect(result).toBe(5);
+    });
+
+    it('should skip counter reset when nothing was deleted', async () => {
+      mockRepo.deleteAllByRecipient.mockResolvedValue({
+        deletedCount: 0,
+        deletedUnreadCount: 0,
+      });
+
+      const result = await deleteAllNotifications('user-1');
+
+      expect(mockInvokeEdgeFunction).not.toHaveBeenCalled();
+      expect(result).toBe(0);
+    });
+
+    it('should propagate repository errors', async () => {
+      mockRepo.deleteAllByRecipient.mockRejectedValue(new Error('Delete all failed'));
+
+      await expect(deleteAllNotifications('user-1')).rejects.toThrow('Delete all failed');
     });
   });
 

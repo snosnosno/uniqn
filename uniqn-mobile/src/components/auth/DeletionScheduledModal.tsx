@@ -103,6 +103,32 @@ export function DeletionScheduledModal({
       size="md"
       showCloseButton={false}
       closeOnBackdrop={false}
+      // 액션은 footer prop 으로 — 이 모달은 닫기가 막혀 있어 버튼이 유일한 탈출구다.
+      // 긴 안내문(예정일 경과 문구)에 큰 글꼴이 겹치면 children 끝의 버튼이 스크롤
+      // 아래로 밀려 dead-end 가 된다(2026-07-25).
+      footer={
+        <View className="gap-3">
+          {isErrorMode ? (
+            <>
+              <Button onPress={onRetry} disabled={isProcessing || !onRetry} fullWidth>
+                다시 시도
+              </Button>
+              <Button onPress={handleLogout} variant="ghost" disabled={isProcessing} fullWidth>
+                로그아웃
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button onPress={handleKeepAccount} disabled={isProcessing} fullWidth>
+                탈퇴 철회하고 계속 사용
+              </Button>
+              <Button onPress={handleLogout} variant="ghost" disabled={isProcessing} fullWidth>
+                로그아웃
+              </Button>
+            </>
+          )}
+        </View>
+      }
     >
       <View className="gap-4 p-2">
         {isErrorMode ? (
@@ -114,14 +140,6 @@ export function DeletionScheduledModal({
               네트워크 또는 서버 일시적 오류로 보입니다. 안전을 위해 진행 전 다시 시도하거나
               로그아웃해주세요.
             </Text>
-            <View className="gap-3 mt-2">
-              <Button onPress={onRetry} disabled={isProcessing || !onRetry} fullWidth>
-                다시 시도
-              </Button>
-              <Button onPress={handleLogout} variant="ghost" disabled={isProcessing} fullWidth>
-                로그아웃
-              </Button>
-            </View>
           </>
         ) : (
           <>
@@ -133,14 +151,6 @@ export function DeletionScheduledModal({
                 ? `${daysLeft}일 후(${dateLabel})에 계정과 모든 데이터가 영구 삭제됩니다. 계속 이용하시려면 탈퇴를 철회해주세요.`
                 : `예정일(${dateLabel})이 지났습니다. 계속 이용하시려면 즉시 탈퇴를 철회해주세요.`}
             </Text>
-            <View className="gap-3 mt-2">
-              <Button onPress={handleKeepAccount} disabled={isProcessing} fullWidth>
-                탈퇴 철회하고 계속 사용
-              </Button>
-              <Button onPress={handleLogout} variant="ghost" disabled={isProcessing} fullWidth>
-                로그아웃
-              </Button>
-            </View>
           </>
         )}
       </View>

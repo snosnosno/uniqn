@@ -88,7 +88,9 @@ function WebModal({
   closeAccessibilityLabel = '닫기',
 }: ModalProps) {
   const { isDarkMode } = useThemeStore();
-  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  // 높이는 더 이상 읽지 않는다 — maxHeight 를 % 로 바꿔 뷰포트를 자동 추종한다(아래 참조).
+  // 너비는 size='full' 여백 계산에 여전히 필요하다.
+  const { width: windowWidth } = useWindowDimensions();
   const [shouldRender, setShouldRender] = useState(visible);
   const [isAnimating, setIsAnimating] = useState(false);
   const previouslyFocusedRef = useRef<Element | null>(null);
@@ -149,9 +151,12 @@ function WebModal({
       ? `bg-surface-card rounded-lg overflow-hidden ${MODAL_SIZES[size]}`
       : 'bg-surface-card rounded-t-3xl w-full pb-8';
 
-  // 모달 최대 높이 스타일 (숫자값으로 계산)
+  // % 상한 — fixed 부모(뷰포트 크기)를 기준으로 브라우저 주소창 변화를 자동 추종한다.
+  // innerHeight 스냅샷(windowHeight) 기준 픽셀 계산은 모바일 웹에서 실제 가시 영역보다
+  // 커져 카드 하단이 잘렸다(SheetModal 웹 경로와 동일 근본원인, 2026-07-25).
+  // 네이티브(NativeModal)는 주소창이 없어 픽셀 계산을 그대로 유지한다.
   const modalMaxHeightStyle = {
-    maxHeight: position === 'center' ? windowHeight * 0.85 : windowHeight * 0.9,
+    maxHeight: position === 'center' ? ('85%' as const) : ('90%' as const),
   };
 
   return (

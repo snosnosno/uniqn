@@ -18,6 +18,7 @@ import {
   EmployerAppPendingExistsError,
   EmployerAppAlreadyProcessedError,
   EmployerAppSelfApproveError,
+  EmployerAppIdentityNotVerifiedError,
   EmployerAppNotFoundError,
 } from '@/errors/BusinessErrors';
 import { handleSupabaseError, toCamelCase, paginatedQuery } from '@/utils/supabase';
@@ -131,6 +132,9 @@ function mapRpcError(error: unknown): never {
   }
   if (msg.includes('EMPLOYER_APP_SELF_APPROVE')) {
     throw new EmployerAppSelfApproveError({ message: msg });
+  }
+  if (msg.includes('EMPLOYER_APP_IDENTITY_NOT_VERIFIED')) {
+    throw new EmployerAppIdentityNotVerifiedError({ message: msg });
   }
   if (msg.includes('EMPLOYER_APP_NOT_FOUND')) {
     throw new EmployerAppNotFoundError({ message: msg });

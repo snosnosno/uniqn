@@ -85,6 +85,12 @@ DECLARE
   v_qr          uuid := gen_random_uuid();
   v_work_date   date := current_date + 14;
 BEGIN
+  -- 시드 = 신뢰 재기준선: 이전 테스트 구간의 JWT 시뮬레이션이 남아 있으면
+  -- users 재시드(ON CONFLICT UPDATE 의 identity_verified 세팅)가 컬럼 가드 트리거
+  -- (20260725200000)에 차단된다(#327 머지 직후 jpc_cascade C5 red). 호출 시점에 해제한다 —
+  -- 모든 콜사이트는 시드 직후 jpc_test_set_user 로 유저를 다시 잡는다.
+  PERFORM jpc_test_clear_user();
+
   -- auth.users (메모리: pitfall_supabase_auth_users_seed — NULL 토큰 회피)
   INSERT INTO auth.users (id, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
                           confirmation_token, recovery_token, email_change_token_new, email_change)
@@ -178,6 +184,20 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', p_user_id::text, true);
   PERFORM set_config('request.jwt.claims', json_build_object('sub', p_user_id, 'role', 'authenticated')::text, true);
   PERFORM set_config('role', 'authenticated', true);
+END;
+$$;
+
+-- JWT 시뮬레이션 해제 — auth.uid()/auth.jwt() 가 NULL 이 되는 신뢰(postgres) 컨텍스트로 복귀.
+-- 컬럼 가드 트리거(예: 20260725200000 prevent_identity_flag_self_update)는 auth.uid() IS NULL
+-- 을 신뢰 컨텍스트로 허용하므로, 픽스처가 users 민감 컬럼을 재세팅하기 전에 이걸 호출해야 한다.
+-- (role GUC 는 건드리지 않음 — 필요 시 RESET ROLE 별도 수행)
+CREATE OR REPLACE FUNCTION jpc_test_clear_user()
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  PERFORM set_config('request.jwt.claims', '', true);
 END;
 $$;
 

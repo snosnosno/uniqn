@@ -1,10 +1,10 @@
 /**
  * UNIQN Mobile - 3단계 회원가입 폼 컴포넌트
  *
- * @description 플로우: 약관동의 → 계정 → 본인인증 → 가입완료
+ * @description 플로우: 약관동의 → 본인인증 → 계정 → 가입완료 (2026-07-25 재배치)
  *              프로필(닉네임 등)은 가입 후 앱 첫 진입 시 별도 화면에서 입력
  *              개인정보보호법 제15조에 따라 약관동의를 최우선 단계로 배치
- * @version 3.0.0
+ * @version 3.1.0
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
@@ -12,7 +12,12 @@ import { View, Platform } from 'react-native';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { StepIndicator, type StepInfo } from '@/components/auth/StepIndicator';
-import { clearSignupDraft, loadSignupDraft, saveSignupDraft } from '@/services/auth';
+import {
+  clearSignupDraft,
+  isIdentityVerificationInvalidError,
+  loadSignupDraft,
+  saveSignupDraft,
+} from '@/services/auth';
 import { useAuthStore } from '@/stores/authStore';
 import { useToast } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
@@ -85,6 +90,13 @@ const STEP_FLOW: Record<'default' | 'social' | 'reverify', StepKey[]> = {
   reverify: ['identity'],
 };
 
+// 2026-07-25: 서버(EF verify-and-save-portone-profile)는 PortOne verifiedAt 이 5분을
+// 넘긴 제출을 IV_TIMESTAMP_EXPIRED 로 거부한다(supabase/functions/_shared/idp-binding.ts
+// isVerificationRecent). draft 의 savedAt 은 항상 인증 시각 이후에 갱신되므로,
+// savedAt 이 이 창을 넘겼으면 저장된 identity 는 확실히 만료 — 복원 시 폐기한다.
+// 리터럴 유지(배럴 상수 순환 함정 — 도메인 상수 모듈 스코프 import 금지 이력).
+const IDENTITY_FRESHNESS_MS = 5 * 60 * 1000;
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -141,6 +153,23 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
     ) {
       restoredIndex = accountStepIndex;
     }
+
+    // 2026-07-25: 만료된 본인인증 복원 차단 — savedAt 이 서버 신선도 창(5분)을 넘긴
+    // draft 의 identity 를 그대로 복원하면 계정 단계에서 제출해도 항상
+    // IV_TIMESTAMP_EXPIRED 로 실패하는 dead-end 가 된다(draft TTL 은 24시간이라
+    // TTL 만으로는 못 거른다). identity 만 폐기하고 본인인증 단계부터 다시 진행시킨다.
+    let restoredIdentity = draft.formData.identity as SignUpIdentityData | undefined;
+    const identityStepIndex = flow.indexOf('identity');
+    const identityExpired =
+      Boolean(restoredIdentity) && Date.now() - draft.savedAt > IDENTITY_FRESHNESS_MS;
+    if (identityExpired) {
+      restoredIdentity = undefined;
+      if (identityStepIndex !== -1 && restoredIndex > identityStepIndex) {
+        restoredIndex = identityStepIndex;
+      }
+      // 리뷰 L1: 무통보 폐기 방지 — 사용자가 왜 본인인증 단계로 돌아왔는지 안내
+      toast.info('본인인증 유효시간이 지나 다시 인증이 필요해요.');
+    }
     setStepIndex(restoredIndex);
 
     setFormData({
@@ -149,7 +178,7 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
       account: draft.formData.accountEmail
         ? ({ email: draft.formData.accountEmail, password: '' } as SignUpAccountData)
         : undefined,
-      identity: draft.formData.identity as SignUpIdentityData | undefined,
+      identity: restoredIdentity,
     });
 
     logger.info('회원가입 draft 복원', {
@@ -158,9 +187,11 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
       stepIndex: restoredIndex,
       hasTerms: Boolean(draft.formData.terms),
       hasAccountEmail: Boolean(draft.formData.accountEmail),
-      hasIdentity: Boolean(draft.formData.identity),
+      hasIdentity: Boolean(restoredIdentity),
+      identityExpired,
     });
-  }, [flow, isReverify, isSocial, mode, socialUserId]);
+    // draftHydratedRef 가드로 1회만 실행 — toast 참조 변경에 의한 재실행 없음
+  }, [flow, isReverify, isSocial, mode, socialUserId, toast]);
 
   // A2: formData / stepIndex 변경 시 draft 저장. reverify·hydration 이전엔 skip.
   useEffect(() => {
@@ -240,12 +271,23 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
         // 성공 시 draft 정리. 실패 시 throw 되면 보존(다음 시도에 복원 가능).
         clearSignupDraft();
       } catch (error) {
-        // onSubmit 의 에러는 signup.tsx 에서 이미 toast 처리. 여기선 draft 만 유지.
+        // onSubmit 의 에러는 signup.tsx 에서 toast 처리 후 rethrow 된다.
+        // 여기서 삼킨다 — 호출자(SignupStepAccount)가 await 하지 않아 rethrow 하면
+        // unhandled rejection 이 된다. draft 는 clearSignupDraft 미실행으로 보존.
+        //
+        // 2026-07-25 HIGH 복구: 순서 재배치로 계정 입력이 5분(서버 신선도 가드)을
+        // 넘기면 IV_TIMESTAMP_EXPIRED 로 거부된다. 계정 단계에 머물면 재제출해도
+        // 영원히 실패하는 dead-end — 만료된 identity 를 버리고 본인인증 단계로
+        // 자동 복귀시킨다. 계정 입력(이메일·비밀번호)은 state 에 남아 재인증 후 유지.
+        if (isIdentityVerificationInvalidError(error)) {
+          setFormData((prev) => ({ ...prev, identity: undefined }));
+          goToStep('identity');
+          return;
+        }
         logger.debug('회원가입 onSubmit 실패 — draft 유지', {
           component: 'SignupForm',
           message: error instanceof Error ? error.message : String(error),
         });
-        throw error;
       }
     },
     [formData, onSubmit, toast, goToStep]
@@ -315,11 +357,20 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
           await onSubmit(completeData);
           clearSignupDraft();
         } catch (error) {
+          // signup.tsx 가 toast 처리 후 rethrow — 여기서 삼켜 draft 를 보존한다.
+          // (호출자가 await 하지 않으므로 rethrow 는 unhandled rejection 이 된다.)
+          //
+          // 리뷰 M1: 본인인증 만료 계열이면 identity 를 폐기해 "완료 카드 + 만료 toast"
+          // 모순을 없앤다. social 은 identity 가 현재 단계라 step 이동은 불필요 —
+          // 폐기만으로 "본인인증 시작" 카드로 되돌아간다 (default 모드와 동작 일치).
+          if (isIdentityVerificationInvalidError(error)) {
+            setFormData((prev) => ({ ...prev, identity: undefined }));
+            return;
+          }
           logger.debug('소셜 프로필 완성 onSubmit 실패 — draft 유지', {
             component: 'SignupForm',
             message: error instanceof Error ? error.message : String(error),
           });
-          throw error;
         }
         return;
       }

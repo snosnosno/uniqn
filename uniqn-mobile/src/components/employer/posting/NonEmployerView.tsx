@@ -31,7 +31,7 @@ const DEFAULT_CONTENT: ViewContent = {
   ctaRoute: '/(app)/employer-register',
 };
 
-const CONTENT_BY_STATUS: Partial<Record<'pending' | 'rejected', ViewContent>> = {
+const CONTENT_BY_STATUS: Partial<Record<'pending' | 'rejected' | 'approved', ViewContent>> = {
   pending: {
     title: '구인자 신청 심사 중입니다',
     message: '관리자 검토 후 알림으로 결과를 알려드려요.\n심사 현황을 확인할 수 있습니다.',
@@ -42,6 +42,14 @@ const CONTENT_BY_STATUS: Partial<Record<'pending' | 'rejected', ViewContent>> = 
     title: '구인자 신청이 거절되었습니다',
     message: '거절 사유를 확인한 뒤\n다시 신청할 수 있어요.',
     ctaLabel: '거절 사유 확인·재신청',
+    ctaRoute: '/(app)/employer-application-status',
+  },
+  // 승인 직후 refreshProfile(세션 재발급)이 끝나기 전까지 잠깐 보이는 상태 —
+  // "구인자로 등록하기" CTA가 순간 노출되지 않도록 전용 안내를 둔다
+  approved: {
+    title: '구인자 승인이 완료되었습니다',
+    message: '구인자 권한을 적용하고 있어요.\n잠시 후 자동으로 전환됩니다.',
+    ctaLabel: '신청 현황 보기',
     ctaRoute: '/(app)/employer-application-status',
   },
 };
@@ -59,7 +67,9 @@ export function NonEmployerView() {
   }, [application?.status, dataUpdatedAt, refreshProfile]);
   const content =
     (application &&
-      (application.status === 'pending' || application.status === 'rejected'
+      (application.status === 'pending' ||
+      application.status === 'rejected' ||
+      application.status === 'approved'
         ? CONTENT_BY_STATUS[application.status]
         : undefined)) ||
     DEFAULT_CONTENT;

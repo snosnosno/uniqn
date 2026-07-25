@@ -171,6 +171,7 @@ export const ERROR_CODES = {
   BUSINESS_EMPLOYER_APP_ALREADY_PROCESSED: 'E6071', // 이미 처리된 신청 (동시성 충돌)
   BUSINESS_EMPLOYER_APP_SELF_APPROVE: 'E6072', // 본인 신청 직접 처리 시도
   BUSINESS_EMPLOYER_APP_NOT_FOUND: 'E6073', // 신청 내역 없음
+  BUSINESS_EMPLOYER_APP_IDENTITY_NOT_VERIFIED: 'E6074', // 본인인증 미완료 (신청/승인 서버 게이트)
 
   // 대회 공고 승인 게이트 (E6080~)
   BUSINESS_TOURNAMENT_NOT_APPROVED: 'E6080', // 미승인(pending/rejected/누락) 대회 공고 지원 시도
@@ -361,6 +362,8 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.BUSINESS_EMPLOYER_APP_ALREADY_PROCESSED]: '다른 관리자가 먼저 처리한 신청입니다',
   [ERROR_CODES.BUSINESS_EMPLOYER_APP_SELF_APPROVE]: '본인 신청을 직접 처리할 수 없습니다',
   [ERROR_CODES.BUSINESS_EMPLOYER_APP_NOT_FOUND]: '구인자 신청 내역을 찾을 수 없습니다',
+  [ERROR_CODES.BUSINESS_EMPLOYER_APP_IDENTITY_NOT_VERIFIED]:
+    '본인인증이 완료되지 않아 처리할 수 없습니다',
   // 대회 공고 승인 게이트
   [ERROR_CODES.BUSINESS_TOURNAMENT_NOT_APPROVED]:
     '승인 대기 중인 대회 공고에는 지원할 수 없습니다.',

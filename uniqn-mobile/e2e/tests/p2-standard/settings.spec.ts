@@ -1,9 +1,10 @@
 /**
- * P2 설정 테스트 (14 tests)
+ * P2 설정 테스트 (17 tests)
  * 인증된 staff 상태에서 실행
  */
 import { test, expect } from '@playwright/test';
 import { SettingsPage } from '../../pages/app/settings/settings.page';
+import { NotificationSettingsPage } from '../../pages/app/settings/notification-settings.page';
 import { ProfileEditPage } from '../../pages/app/settings/profile-edit.page';
 import { ChangePasswordPage } from '../../pages/app/settings/change-password.page';
 import { DeleteAccountPage } from '../../pages/app/settings/delete-account.page';
@@ -70,9 +71,31 @@ test.describe('설정 메인', () => {
     await expect(settingsPage.deleteAccountButton).toBeVisible();
   });
 
+  test('알림 설정 클릭 시 해당 페이지로 이동한다', async () => {
+    await settingsPage.goToNotificationSettings();
+    expect(settingsPage.getCurrentPath()).toContain('settings/notifications');
+  });
+});
+
+// ==========================================================================
+// 알림 설정 (#328 — 설정 메인에서 전용 화면으로 분리)
+// ==========================================================================
+
+test.describe('알림 설정', () => {
+  let notificationSettingsPage: NotificationSettingsPage;
+
+  test.beforeEach(async ({ page }) => {
+    notificationSettingsPage = new NotificationSettingsPage(page);
+    await notificationSettingsPage.goto();
+  });
+
+  test('푸시 알림 마스터 토글이 표시된다', async () => {
+    await expect(notificationSettingsPage.pushMasterLabel).toBeVisible({ timeout: 10_000 });
+  });
+
   test('마케팅 정보 수신 토글이 표시된다', async () => {
-    await settingsPage.marketingLabel.scrollIntoViewIfNeeded();
-    await expect(settingsPage.marketingLabel).toBeVisible();
+    await notificationSettingsPage.marketingLabel.scrollIntoViewIfNeeded();
+    await expect(notificationSettingsPage.marketingLabel).toBeVisible();
   });
 });
 
