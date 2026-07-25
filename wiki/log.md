@@ -123,3 +123,22 @@ index 갱신(sources 6행+decisions 2행+wallet-pgtap 재작성). 작성=opus �
 - 신규: `sources/ops-console-redesign`(출하 기록+교훈 5종: RNW pointerEvents 드롭·Pressable 중첩 재발·RNModal+gorhom z-순서·워크트리 expo EMFILE·parity 가드 누락 파급)
 - 갱신: `decisions/nativewind-rn-pitfalls`(함정 3종 추가 — pointerEvents는 prop 필수·행/액션 형제 분리·시트 visible 게이트) · `decisions/prod-parity-baseline`(#311 갱신 누락 실패 사례 — red는 머지 후 master에서 터짐) · `architecture/ops-engine`(콘솔 리디자인+프리셋 절, 잔여=서버 levels 상한) · index 3줄
 - memory 졸업 예정: project_ops_console_redesign_20260723 → MEMORY.md 포인터 압축(잔여=실기기 QA 7항목·서버 levels 상한)
+
+## [2026-07-25] note | 머지 이력 공백 메움 (#314~#332)
+
+`#313` 이후 로그가 끊겨 있어 19개 PR을 소급 기록한다. 상세는 `CHANGELOG.md` [Unreleased] 참조.
+
+- **유지보수·ops**: #314 전체 유지보수 감사(중복 통합·순환 차단·SDK55 의존성) · #315 wiki 졸업(ops 콘솔) · #316 블라인드 levels 서버 상한 100 · #317 지점 역할별 급여 JIT 후속
+- **출하·정리**: #318 Apple 로그인 하드 OFF · #319 근무표·정산 버그 6종 + 급여 SECDEF RPC · #320 조건 시트 프리셋 칩 · #321 내정보 정리+동의정합성
+- **인증·권한 계열(4연쇄)**: #322 구인자 승인 role 즉시 갱신 · #325 웹 Enter 로그인 + 회원가입 순서 재설계 + 지원 본인인증 게이트 · #327 관리자 role 즉시 반영 + 구인자 본인인증 서버 게이트 + **identity 셀프승격 차단(보안 HIGH)** · #330 순서 재배치 부작용인 본인인증 만료 dead-end 복구
+- **인프라·수정**: #323 신규 설치 첫 세션 OTA 즉시 적용 · #324 이미지 업로드 0바이트 회귀(RN fetch(file://)→Blob=0바이트) · #326 관리자 문의 응답 RPC 부재(PGRST202) · #328 중복 알림 트리거 3쌍 정리 + 알림설정 화면 분리 + 모두삭제 · #329 jpc 픽스처 JWT 잔류로 red된 DB Tests 복구 · #331 설정 E2E 마케팅 토글 회귀 · #332 시트·모달 푸터 잘림 오버플로 전면 수정
+
+## [2026-07-25] ingest | E2E 회귀 3-PR 전파 + parity-smoke 첫 실가동
+
+- 신규: `decisions/e2e-gate-absence`(요구 체크 부재가 회귀를 전파시킨 구조 + 승격 선결과제)
+- 갱신: `decisions/prod-parity-baseline`(주간 parity-smoke 첫 실가동 실측 + Session pooler 접속 함정 2종) · index 2줄
+- memory: `project_rls_secdef_audit_20260710` 잔여 해소 반영 · master E2E red 줄을 "원인 확정·수정 머지"로 정정 · `pitfall_e2e_spec_stale_after_screen_split` 신설
+
+핵심 실측 2건:
+- **E2E가 required check가 아니어서 결정적 회귀가 3개 PR을 타고 전파**됐다. #328이 마케팅·푸시 토글을 `settings/index.tsx`→`settings/notifications.tsx`로 분리하며 E2E spec을 안 옮겼고, `settings.spec.ts:73`이 retry 포함 60초 타임아웃으로 죽은 채 #327·#328·#330이 전부 머지됐다(#331에서 해소). `gh api .../branches/master/protection` 실측 결과 **master에는 branch protection이 아예 없다** — E2E뿐 아니라 ci.yml의 quality-gate·test조차 required가 아니다.
+- **주간 파리티 감시가 07-11 설계 이래 처음으로 실제 가동**됐다. `PROD_DB_URL` 미설정으로 매주 skip을 성공 처리하고 있었고(마지막 07-20 실행 로그가 skip notice), 시크릿 등록 후 첫 실측이 `repo 기대값 180/111/0 == prod 180/111/0`으로 일치. 드리프트는 없었으나 감시 자체가 꺼져 있던 기간에 prod로 마이그레이션 12건이 직접 들어갔다는 점이 위험 신호다.
