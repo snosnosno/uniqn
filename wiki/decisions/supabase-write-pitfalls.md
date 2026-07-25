@@ -1,9 +1,12 @@
 ---
 area: decisions
-updated: 2026-07-16
+updated: 2026-07-25
 status: current
 sources:
   - uniqn-mobile/src/utils/supabase.ts
+  - uniqn-mobile/scripts/check-rpc-migrations.js
+  - uniqn-mobile/supabase/tests/inquiry_admin_rpcs.test.sql
+  - memory/project_inquiry_rpc_missing_fix_20260725.md
   - memory/pitfall_denormalized_counter_drift.md
   - memory/pitfall_realtime_publication_required.md
   - memory/pitfall_rpc_raise_exception_unmapped_unknown.md
@@ -52,6 +55,20 @@ raw JSONB `INSERT`는 앱의 zod 검증을 우회하므로, **읽기 시점에 s
 - `notification_outbox` **없음** → `public.notifications` 직접 INSERT + AFTER trigger.
 - `staff_assignments`/`settlements` **없음** → 스태프=`applications`, 정산=`work_logs.payroll_*`.
 - `users`는 RLS self/admin only → cross lookup은 SECDEF RPC 필수(`from('users')` 직접호출 0건).
+
+## 클라이언트가 부르는 RPC ≠ 스키마가 가진 RPC (실측 확정)
+호출부만 출하되고 함수 마이그레이션이 없으면 런타임 **PGRST202 404**("Could not find the function ... in the schema cache")로 죽는다. 코드는 컴파일되고 테스트도 통과한다 — 자동생성 타입에 이름이 없어도 `runRpc<T>('name')` 문자열이라 타입체커가 못 잡는다.
+
+- 실증: Supabase 전환 커밋 `b69f6aae8`이 `InquiryRepository`의 `respond_inquiry`·`update_inquiry_status` **호출부만** 출하 → 관리자 문의 응답이 prod 전 구간 404, **3개월간 미검출**(PR#326, Sentry UNIQN-MOBILE-1N).
+- 🔑 **parity 가드는 이 클래스를 못 잡는다** — `parity_baseline_guard`는 "repo 형상 vs prod 형상"을 대조하는데, 함수가 양쪽에서 **대칭으로 누락**되면 카운트가 일치한다. 잡으려면 "코드가 부르는 것 vs 스키마가 가진 것"을 대조해야 한다.
+- 규칙: `scripts/check-rpc-migrations.js`가 `.rpc('x')`/`runRpc<T>('x')` 리터럴을 `supabase/migrations/*.sql`(archive 제외)의 `CREATE [OR REPLACE] FUNCTION`과 대조한다. `npm run quality` + CI quality 매트릭스에 배선(2026-07-25). 동적 이름은 정적 추출 불가라 미커버.
+- 시그니처(파라미터 이름)까지는 이 가드가 보지 않는다 → [[test-seed-contract-drift]] 인접 규칙과 pgTAP 시그니처 고정으로 보완(아래).
+
+## 출하된 클라이언트를 따라가는 역방향 계약은 pgTAP으로 고정 (실측 확정)
+보통은 스키마가 먼저고 클라이언트가 따라가지만, **이미 배포된 앱 바이너리가 특정 파라미터 이름에 의존**하는 경우 방향이 뒤집힌다. 이때 함수 시그니처는 리팩터링 대상이 아니라 **동결된 계약**이다.
+
+- 규칙: pgTAP에서 `pg_get_function_identity_arguments(p.oid)`를 기대 리터럴과 `is()` 비교해 고정한다. 파라미터 이름을 바꾸면 테스트가 즉시 red — 기출하 바이너리 재파손을 기계가 막는다.
+- 실증: `supabase/tests/inquiry_admin_rpcs.test.sql` 케이스 1·2 (PR#326). PostgREST는 named-args로 호출하므로 이름 변경 = 404 재발.
 
 ## 관련
 - [[rls-model]] — RLS 계층·재귀 함정(쓰기 시 42501의 원인 중 하나)
