@@ -372,7 +372,19 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
 
   // 런타임 버전 (EAS Update 호환)
+  //
+  // ⚠️ 'sdkVersion' 에서 'fingerprint' 로 전환 (2026-07-25).
+  // 'sdkVersion' 은 runtimeVersion 을 exposdk:55.x 로만 고정해 **네이티브 구성이
+  // 바뀌어도 값이 그대로**다. react-native-keyboard-controller(네이티브 모듈) 도입 시
+  // 구 빌드와 신 빌드가 같은 runtimeVersion 을 갖게 되어, 신 코드가 담긴 OTA 가
+  // 네이티브 모듈이 없는 구 빌드로도 전달된다 → 없는 코드 호출 → 오류/롤백.
+  // (Expo 공식 문서 eas-update/runtime-versions 가 경고하는 시나리오와 동일)
+  //
+  // 'fingerprint' 는 네이티브 런타임 구성이 바뀌면 runtimeVersion 이 자동으로 갈라져
+  // 호환되지 않는 OTA 가 구 빌드에 전달되는 것을 원천 차단한다.
+  // 대가: 네이티브 의존성이 바뀌면 새 빌드가 필요하다(= 올바른 동작).
+  // 구 빌드 사용자는 더 이상 OTA 를 받지 않고 스토어 업데이트로 넘어와야 한다.
   runtimeVersion: {
-    policy: 'sdkVersion',
+    policy: 'fingerprint',
   },
 });
