@@ -1,111 +1,41 @@
 /**
  * ModalKeyboardAvoider 테스트
  *
- * Android에서 RNModal(statusBarTranslucent) 별도 윈도우는 adjustResize가 무시되고
- * KeyboardAvoidingView(height)도 무력화되므로(relativeKeyboardHeight=0 붕괴),
- * keyboardDidShow의 endCoordinates.height(IME 인셋 직산)를 paddingBottom으로
- * 직접 적용하는지 검증한다.
+ * RNModal(statusBarTranslucent) 내부의 키보드 회피를
+ * react-native-keyboard-controller의 KeyboardAvoidingView에 위임하는지 검증한다.
+ *
+ * 실제 인셋 계산은 네이티브(ModalAttachedWatcher가 dialog.window에 부착하는
+ * WindowInsetsAnimationCallback)에서 일어나므로 유닛 테스트로는 관찰할 수 없다.
+ * 여기서는 위임 계약(behavior/flex/children/testID)만 고정하고,
+ * 실제 회피 동작은 실기기 QA로 검증한다.
+ *
+ * 🔑 jest.mock 팩토리는 out-of-scope 변수를 참조할 수 없다 —
+ * `mock` 접두 변수만 예외로 허용되므로 스파이 이름을 그렇게 둔다.
  */
 import React from 'react';
-import { Keyboard, Text } from 'react-native';
-import { render, act } from '@testing-library/react-native';
-import { AndroidKeyboardInsetView, ModalKeyboardAvoider } from '../ModalKeyboardAvoider';
+import { Text, View } from 'react-native';
+import { render } from '@testing-library/react-native';
+import { ModalKeyboardAvoider } from '../ModalKeyboardAvoider';
 
-describe('AndroidKeyboardInsetView', () => {
-  // jest restoreMocks:true — 모듈 스코프 spyOn은 2번째 테스트부터 무력화되므로 beforeEach에서 재설치
-  let listeners: Record<string, (event?: unknown) => void>;
-  let removeSpies: jest.Mock[];
+const mockKeyboardAvoidingView = jest.fn();
 
-  beforeEach(() => {
-    listeners = {};
-    removeSpies = [];
-    jest.spyOn(Keyboard, 'addListener').mockImplementation(((
-      eventName: string,
-      callback: (event?: unknown) => void
-    ) => {
-      listeners[eventName] = callback;
-      const remove = jest.fn();
-      removeSpies.push(remove);
-      return { remove };
-    }) as never);
-    jest.spyOn(Keyboard, 'isVisible').mockReturnValue(false);
-  });
+jest.mock('react-native-keyboard-controller', () => {
+  const ReactNative = jest.requireActual('react-native') as typeof import('react-native');
 
-  it('키보드 이벤트 전에는 paddingBottom 0', () => {
-    const { getByTestId } = render(
-      <AndroidKeyboardInsetView>
-        <Text>내용</Text>
-      </AndroidKeyboardInsetView>
-    );
-
-    expect(getByTestId('modal-keyboard-inset')).toHaveStyle({ paddingBottom: 0 });
-  });
-
-  it('keyboardDidShow 시 endCoordinates.height만큼 paddingBottom 적용', () => {
-    const { getByTestId } = render(
-      <AndroidKeyboardInsetView>
-        <Text>내용</Text>
-      </AndroidKeyboardInsetView>
-    );
-
-    act(() => {
-      listeners['keyboardDidShow']?.({ endCoordinates: { height: 336 } });
-    });
-
-    expect(getByTestId('modal-keyboard-inset')).toHaveStyle({ paddingBottom: 336 });
-  });
-
-  it('keyboardDidHide 시 paddingBottom 0으로 복귀', () => {
-    const { getByTestId } = render(
-      <AndroidKeyboardInsetView>
-        <Text>내용</Text>
-      </AndroidKeyboardInsetView>
-    );
-
-    act(() => {
-      listeners['keyboardDidShow']?.({ endCoordinates: { height: 336 } });
-    });
-    act(() => {
-      listeners['keyboardDidHide']?.();
-    });
-
-    expect(getByTestId('modal-keyboard-inset')).toHaveStyle({ paddingBottom: 0 });
-  });
-
-  it('마운트 시 키보드가 이미 떠 있으면 초기값으로 반영', () => {
-    (Keyboard.isVisible as jest.Mock).mockReturnValue(true);
-    jest.spyOn(Keyboard, 'metrics').mockReturnValue({
-      height: 280,
-      screenX: 0,
-      screenY: 0,
-      width: 0,
-    });
-
-    const { getByTestId } = render(
-      <AndroidKeyboardInsetView>
-        <Text>내용</Text>
-      </AndroidKeyboardInsetView>
-    );
-
-    expect(getByTestId('modal-keyboard-inset')).toHaveStyle({ paddingBottom: 280 });
-  });
-
-  it('언마운트 시 리스너 해제', () => {
-    const { unmount } = render(
-      <AndroidKeyboardInsetView>
-        <Text>내용</Text>
-      </AndroidKeyboardInsetView>
-    );
-
-    unmount();
-
-    expect(removeSpies.length).toBeGreaterThanOrEqual(2);
-    removeSpies.forEach((remove) => expect(remove).toHaveBeenCalled());
-  });
+  return {
+    KeyboardAvoidingView: (props: Record<string, unknown>) => {
+      mockKeyboardAvoidingView(props);
+      return <ReactNative.View {...props} />;
+    },
+  };
 });
 
 describe('ModalKeyboardAvoider', () => {
-  it('children을 렌더링한다 (iOS/기타 플랫폼 KAV 경로)', () => {
+  beforeEach(() => {
+    mockKeyboardAvoidingView.mockClear();
+  });
+
+  it('children을 렌더링한다', () => {
     const { getByText } = render(
       <ModalKeyboardAvoider>
         <Text>모달 내용</Text>
@@ -113,5 +43,40 @@ describe('ModalKeyboardAvoider', () => {
     );
 
     expect(getByText('모달 내용')).toBeTruthy();
+  });
+
+  it('keyboard-controller의 KeyboardAvoidingView에 behavior="padding"으로 위임한다', () => {
+    render(
+      <ModalKeyboardAvoider>
+        <View />
+      </ModalKeyboardAvoider>
+    );
+
+    expect(mockKeyboardAvoidingView).toHaveBeenCalledTimes(1);
+    expect(mockKeyboardAvoidingView).toHaveBeenCalledWith(
+      expect.objectContaining({ behavior: 'padding' })
+    );
+  });
+
+  it('컨테이너가 flex-1을 유지한다 (시트 높이 붕괴 방지)', () => {
+    render(
+      <ModalKeyboardAvoider>
+        <View />
+      </ModalKeyboardAvoider>
+    );
+
+    expect(mockKeyboardAvoidingView).toHaveBeenCalledWith(
+      expect.objectContaining({ className: 'flex-1' })
+    );
+  });
+
+  it('testID를 유지한다 (소비처 회귀 감지용)', () => {
+    const { getByTestId } = render(
+      <ModalKeyboardAvoider>
+        <View />
+      </ModalKeyboardAvoider>
+    );
+
+    expect(getByTestId('modal-keyboard-inset')).toBeTruthy();
   });
 });

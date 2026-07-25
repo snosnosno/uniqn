@@ -5,6 +5,7 @@ import { setStatusBarStyle } from 'expo-status-bar';
 import { LogBox, Platform, View } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { colorScheme as nativeWindColorScheme, vars } from 'nativewind';
 import { useFonts } from 'expo-font';
@@ -267,13 +268,21 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-        <QueryClientProvider client={queryClient}>
-          <SheetProvider>
-            <AppContent />
-          </SheetProvider>
-        </QueryClientProvider>
-      </SafeAreaProvider>
+      {/* 세 플래그 명시(true)는 필수 — 생략 시 Android 네이티브가 rootView content의
+          layoutParams 마진을 직접 덮어써 SafeAreaProvider와 인셋 소유권이 충돌한다.
+          라이브러리는 `IS_EDGE_TO_EDGE || prop` 으로 평가하는데, edge-to-edge 감지는
+          런타임 TurboModule 조회(RNEdgeToEdge / DeviceInfo.isEdgeToEdge)에 의존해
+          정적으로 보장되지 않는다. 명시하면 감지 결과와 무관하게 확정된다.
+          → 상/하 마진 0, 좌/우만 navigationBars 인셋(가로모드) = 인셋 소유권은 SafeAreaProvider 유지 */}
+      <KeyboardProvider statusBarTranslucent navigationBarTranslucent preserveEdgeToEdge>
+        <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+          <QueryClientProvider client={queryClient}>
+            <SheetProvider>
+              <AppContent />
+            </SheetProvider>
+          </QueryClientProvider>
+        </SafeAreaProvider>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }
