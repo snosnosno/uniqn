@@ -4,9 +4,24 @@ import { ReportModal } from '../ReportModal';
 
 const mockAddToast = jest.fn();
 
+// 실제 Modal 은 footer 를 스크롤 영역 밖 형제로 렌더한다 — mock 도 같은 계약을 지켜야
+// 액션 버튼이 사라지지 않는다(2026-07-25 footer prop 전환 시 이 mock 이 먼저 깨졌다).
 jest.mock('../../ui/Modal', () => ({
-  Modal: ({ visible, children }: { visible: boolean; children: React.ReactNode }) =>
-    visible ? <>{children}</> : null,
+  Modal: ({
+    visible,
+    children,
+    footer,
+  }: {
+    visible: boolean;
+    children: React.ReactNode;
+    footer?: React.ReactNode;
+  }) =>
+    visible ? (
+      <>
+        {children}
+        {footer}
+      </>
+    ) : null,
 }));
 
 jest.mock('../../ui/Button', () => {

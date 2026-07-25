@@ -3,10 +3,10 @@ import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { HEADER_CLASSES, STATUS } from '@/constants';
-import { getIconColor, getLayoutColor } from '@/constants/colors';
+import { getIconColor, getLayoutColor, TEXT_COLORS } from '@/constants/colors';
 import { JobDetail } from '@/components/jobs';
 import { StackHeader } from '@/components/headers';
-import { ShareIcon } from '@/components/icons';
+import { ArrowRightIcon, ShareIcon } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, Loading } from '@/components/ui';
 import {
@@ -46,7 +46,6 @@ export default function JobDetailScreen() {
   const { shareJob, isSharing } = useShare();
   const { job, isLoading, isRefreshing, error, refresh } = useJobDetail(id ?? '');
   const [bottomActionHeight, setBottomActionHeight] = useState(DEFAULT_BOTTOM_ACTION_HEIGHT);
-  const [ctaFocused, setCtaFocused] = useState(false);
 
   const handleShare = useCallback(() => {
     if (!job) {
@@ -323,25 +322,17 @@ export default function JobDetailScreen() {
                   로그인 후 지원할 수 있어요
                 </Text>
               ) : null}
-              {/* Focus ring — Button과 동일 idiom: m-[-2px] + border-2 border-transparent, focus 시 info-500 */}
-              <View
-                className={`rounded-md m-[-2px] border-2 ${
-                  ctaFocused ? 'border-info-500' : 'border-transparent'
-                }`}
+              {/* 공용 Button 사용 — 수제 Pressable은 화살표 글리프가 텍스트에 붙어
+                  베이스라인이 어긋나 보였다. 아이콘은 icon prop 으로 분리(정렬 일관). */}
+              <Button
+                onPress={handleApply}
+                fullWidth
+                icon={<ArrowRightIcon size={18} color={TEXT_COLORS.onGold} />}
+                iconPosition="right"
+                accessibilityLabel="공고에 지원하기"
               >
-                <Pressable
-                  onPress={handleApply}
-                  onFocus={() => setCtaFocused(true)}
-                  onBlur={() => setCtaFocused(false)}
-                  className="bg-primary-500 active:bg-primary-600 rounded-md py-3 min-h-[44px] items-center justify-center"
-                  accessibilityRole="button"
-                  accessibilityLabel="공고에 지원하기"
-                >
-                  <Text className="text-content-onGold text-center font-sans-bold text-base">
-                    지원하기 →
-                  </Text>
-                </Pressable>
-              </View>
+                지원하기
+              </Button>
             </View>
           )}
         </SafeAreaView>
