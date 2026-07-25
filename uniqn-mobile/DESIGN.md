@@ -93,7 +93,12 @@
 - **Base unit:** 4px
 - **Density:** Comfortable
 - **Scale:** 2xs(2) xs(4) sm(8) md(16) lg(24) xl(32) 2xl(48) 3xl(64)
-- **Touch target:** 최소 40px (WCAG)
+- **Touch target:** **단독·모달 버튼 44px** (WCAG 2.5.5) / **인접 버튼 그룹 내부 40px 허용**(탭바·세그먼트·필터 칩 행)
+  - 시각 크기가 44px 미만이면 `hitSlop` 으로 실효 타깃을 44px 까지 확장한다.
+  - ⚠️ **인접 행 간 `hitSlop` 겹침 금지**: 두 행의 간격이 좁을 때 양쪽에 같은 slop 을 주면
+    그 간격 전체가 두 행에 이중 귀속된다. 두 행의 동작이 이질적이면(토글 vs 시트 열기)
+    오탭 비용이 크므로 세로 slop 을 줄여 겹침을 없애되 실효 44px 은 유지한다(2026-07-25).
+  - 상세 근거: `.claude/rules/impeccable-design.md` §5
 
 ## Layout
 
@@ -127,7 +132,7 @@
 
 - border-radius: 6px (sm)
 - Primary: 골드 배경, 블랙 텍스트
-- min-height: 40px
+- min-height: 44px (단독·모달 버튼) / 40px (인접 버튼 그룹 내부) — 위 Touch target 규칙과 동일 기준
 
 ### 카드
 
