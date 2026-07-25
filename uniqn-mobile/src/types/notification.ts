@@ -112,6 +112,13 @@ export const NotificationType = {
   EMPLOYER_APP_REJECTED: 'employer_app_rejected',
   /** 새 구인자 신청 접수 (관리자에게) */
   NEW_EMPLOYER_APPLICATION: 'new_employer_application',
+  /**
+   * ⚠️ ROLE_CHANGED 값은 supabase/migrations/20260725180000_update_user_role_change_notification.sql
+   * 의 update_user_role RPC에서 문자열로 하드코딩되어 INSERT됩니다. 값 변경 시 반드시
+   * 새 마이그레이션으로 RPC도 함께 수정해야 합니다.
+   */
+  /** 관리자에 의한 계정 권한 변경 (대상 유저에게) — 수신 시 refreshProfile로 세션 재발급 */
+  ROLE_CHANGED: 'role_changed',
 
   // === 리뷰/평가 관련 ===
   /** 평가 요청 (근무 완료 후 양쪽에게) */
@@ -215,6 +222,7 @@ export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, Notificatio
   [NotificationType.EMPLOYER_APP_APPROVED]: NotificationCategory.SYSTEM,
   [NotificationType.EMPLOYER_APP_REJECTED]: NotificationCategory.SYSTEM,
   [NotificationType.NEW_EMPLOYER_APPLICATION]: NotificationCategory.ADMIN,
+  [NotificationType.ROLE_CHANGED]: NotificationCategory.SYSTEM,
 
   // 리뷰/평가 관련
   [NotificationType.REVIEW_REQUEST]: NotificationCategory.REVIEW,
@@ -292,6 +300,7 @@ export const NOTIFICATION_DEFAULT_PRIORITY: Record<NotificationType, Notificatio
   [NotificationType.EMPLOYER_APP_APPROVED]: 'high',
   [NotificationType.EMPLOYER_APP_REJECTED]: 'normal',
   [NotificationType.NEW_EMPLOYER_APPLICATION]: 'high',
+  [NotificationType.ROLE_CHANGED]: 'high',
 
   // 리뷰/평가 관련
   [NotificationType.REVIEW_REQUEST]: 'normal',
@@ -473,6 +482,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   [NotificationType.EMPLOYER_APP_APPROVED]: '구인자 신청 승인',
   [NotificationType.EMPLOYER_APP_REJECTED]: '구인자 신청 거부',
   [NotificationType.NEW_EMPLOYER_APPLICATION]: '새 구인자 신청',
+  [NotificationType.ROLE_CHANGED]: '계정 권한 변경',
 
   // 리뷰/평가 관련
   [NotificationType.REVIEW_REQUEST]: '평가 요청',

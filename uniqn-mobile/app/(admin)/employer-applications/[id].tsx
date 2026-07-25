@@ -413,7 +413,8 @@ export default function AdminEmployerApplicationDetailPage() {
             <Button
               className="flex-1"
               loading={approveMutation.isPending}
-              disabled={approveMutation.isPending || rejectMutation.isPending}
+              // 본인인증 미완료 신청은 승인 불가 — 서버 게이트(EMPLOYER_APP_IDENTITY_NOT_VERIFIED)와 동일 기준
+              disabled={approveMutation.isPending || rejectMutation.isPending || !identityVerified}
               onPress={handleApprove}
             >
               승인
