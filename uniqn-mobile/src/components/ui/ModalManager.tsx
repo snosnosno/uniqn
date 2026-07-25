@@ -103,22 +103,29 @@ function ModalRenderer({ modal }: { modal: ModalConfig }) {
           title={modal.title}
           closeOnBackdrop={modal.dismissible}
           showCloseButton={modal.dismissible}
+          // footer prop 으로 — modal.content 는 호출부 자유형 ReactNode 라 길이 상한이 없다.
+          // children 끝에 두면 긴 콘텐츠에서 버튼이 스크롤 아래로 밀린다(2026-07-25).
+          footer={
+            modal.confirmButton || modal.cancelButton ? (
+              <View className="flex-row justify-end gap-2">
+                {modal.cancelButton && (
+                  <Button variant={modal.cancelButton.variant || 'ghost'} onPress={handleCancel}>
+                    {modal.cancelButton.label}
+                  </Button>
+                )}
+                {modal.confirmButton && (
+                  <Button
+                    variant={modal.confirmButton.variant || 'primary'}
+                    onPress={handleConfirm}
+                  >
+                    {modal.confirmButton.label}
+                  </Button>
+                )}
+              </View>
+            ) : undefined
+          }
         >
           {modal.content}
-          {(modal.confirmButton || modal.cancelButton) && (
-            <View className="flex-row justify-end gap-2 mt-4">
-              {modal.cancelButton && (
-                <Button variant={modal.cancelButton.variant || 'ghost'} onPress={handleCancel}>
-                  {modal.cancelButton.label}
-                </Button>
-              )}
-              {modal.confirmButton && (
-                <Button variant={modal.confirmButton.variant || 'primary'} onPress={handleConfirm}>
-                  {modal.confirmButton.label}
-                </Button>
-              )}
-            </View>
-          )}
         </Modal>
       );
 

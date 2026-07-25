@@ -29,6 +29,17 @@ import { usePostingTypeCounts } from '@/hooks/usePostingTypeCounts';
 import type { StaffRole } from '@/types/role';
 import type { SalaryFilter } from '@/stores/jobFilterStore';
 
+/** 넓은 화면에서 시트가 과하게 길어지지 않게 하는 상한 */
+const SHEET_MAX_HEIGHT = 640;
+/**
+ * Modal 카드 크롬(헤더 + 본문 상하 패딩) 몫 — 시트 본문 높이에서 미리 뺀다.
+ * Modal 카드는 뷰포트의 90% 를 넘지 않는데, 본문만 0.72H 를 잡으면 크롬과 합쳐
+ * 그 예산을 넘겨 하단 "적용" 버튼이 잘렸다(저높이 뷰포트 실측, 2026-07-25).
+ */
+const MODAL_CHROME_HEIGHT = 96;
+/** 이 아래로는 2-패널 탐색이 의미를 잃는다 — 버튼 가시성이 우선이라 본문만 스크롤에 맡긴다 */
+const SHEET_MIN_HEIGHT = 200;
+
 export interface RegionFilterSheetProps {
   visible: boolean;
   onClose: () => void;
@@ -116,7 +127,15 @@ function SheetBody({
     keepPreviousCounts: true,
   });
 
-  const sheetHeight = Math.min(Math.round(windowHeight * 0.72), 640);
+  // Modal 카드 90% 예산에서 크롬을 뺀 값을 넘지 않게 — 넘으면 하단 "적용"이 잘린다.
+  const sheetHeight = Math.max(
+    SHEET_MIN_HEIGHT,
+    Math.min(
+      Math.round(windowHeight * 0.72),
+      SHEET_MAX_HEIGHT,
+      Math.round(windowHeight * 0.9) - MODAL_CHROME_HEIGHT
+    )
+  );
 
   const handleToggle = (token: RegionToken) => {
     const result = toggleRegionToken(pending, token);
