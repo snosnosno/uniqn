@@ -155,8 +155,32 @@ export function ApplicantConfirmModal({
 
   if (!applicant) return null;
 
+  // 액션은 footer prop 으로 — 지원자 메시지 길이가 가변이라 children 끝에 두면
+  // 본문이 길 때 버튼이 스크롤 아래로 밀린다(2026-07-25).
+  const actionFooter = (
+    <View className="flex-row gap-3">
+      <Button variant="secondary" onPress={handleClose} disabled={isLoading} className="flex-1">
+        취소
+      </Button>
+      <Button
+        variant={config.buttonVariant}
+        onPress={handleAction}
+        loading={isLoading}
+        className="flex-1"
+      >
+        {config.buttonText}
+      </Button>
+    </View>
+  );
+
   return (
-    <Modal visible={visible} onClose={handleClose} title={config.title} position="center">
+    <Modal
+      visible={visible}
+      onClose={handleClose}
+      title={config.title}
+      position="center"
+      footer={actionFooter}
+    >
       <View>
         {/* 지원자 정보 */}
         <View className="flex-row items-center p-3 bg-surface-page dark:bg-surface rounded-md mb-3">
@@ -280,21 +304,6 @@ export function ApplicantConfirmModal({
             />
           </View>
         )}
-
-        {/* 버튼 */}
-        <View className="flex-row gap-3">
-          <Button variant="secondary" onPress={handleClose} disabled={isLoading} className="flex-1">
-            취소
-          </Button>
-          <Button
-            variant={config.buttonVariant}
-            onPress={handleAction}
-            loading={isLoading}
-            className="flex-1"
-          >
-            {config.buttonText}
-          </Button>
-        </View>
       </View>
     </Modal>
   );

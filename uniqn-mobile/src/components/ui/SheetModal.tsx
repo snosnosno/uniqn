@@ -202,8 +202,11 @@ function WebSheetModal({
           <View
             style={[
               {
-                maxHeight: fullHeight ? windowHeight : windowHeight * 0.95,
-                height: fullHeight ? windowHeight : undefined,
+                // % 상한 — fixed 부모(뷰포트 크기)를 기준으로 브라우저 주소창 변화를
+                // 자동 추종한다. innerHeight 스냅샷(windowHeight) 기준 픽셀 계산은
+                // 모바일 웹에서 실제 가시 영역보다 커져 푸터가 잘렸다(2026-07-25).
+                maxHeight: fullHeight ? ('100%' as const) : ('95%' as const),
+                height: fullHeight ? ('100%' as const) : undefined,
                 // 연쇄 진입은 제자리에서 내용만 갈린다 — 슬라이드 없이 fade 만(네이티브와 동일).
                 opacity: isChainEntryRef.current ? (chainContentIn ? 1 : 0) : isAnimating ? 1 : 0,
                 transform: [
@@ -216,7 +219,7 @@ function WebSheetModal({
                 pointerEvents: 'auto' as const,
               },
             ]}
-            className={`bg-surface-card w-full ${fullHeight ? 'h-full' : 'rounded-t-3xl'}`}
+            className={`bg-surface-card w-full overflow-hidden ${fullHeight ? 'h-full' : 'rounded-t-3xl'}`}
           >
             {/* Header */}
             <View className="flex-row items-center justify-between px-4 py-4 border-b border-divider">
@@ -240,10 +243,13 @@ function WebSheetModal({
               )}
             </View>
 
-            {/* Content */}
+            {/* Content — 고정 0.7H 예산은 헤더+푸터 고정 높이와 합쳐지면 저높이 뷰포트에서
+                컨테이너 상한을 초과해 푸터가 화면 밖으로 밀렸다(2026-07-25 모바일 웹).
+                네이티브(2026-07-19 수정)와 동일하게 flexShrink 로 스크롤 영역만 줄여
+                헤더/푸터를 항상 가시 영역에 남긴다. */}
             <ScrollView
-              style={fullHeight ? { flex: 1 } : { flex: 1, maxHeight: windowHeight * 0.7 }}
-              contentContainerStyle={{ flexGrow: 1 }}
+              style={fullHeight ? { flex: 1 } : { flexGrow: 0, flexShrink: 1 }}
+              contentContainerStyle={fullHeight ? { flexGrow: 1 } : undefined}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}

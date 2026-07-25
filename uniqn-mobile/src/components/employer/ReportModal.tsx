@@ -278,8 +278,46 @@ export function ReportModal({
   // 신고 대상이 없으면 렌더링하지 않음
   if (!reportTarget) return null;
 
+  // 액션은 footer prop 으로 — Modal 이 스크롤 영역 밖 형제로 sticky 렌더한다.
+  // children 끝에 두면 본문(유형 목록 + 500자 상세 설명 + 안내)이 길어질 때
+  // 버튼이 스크롤 아래로 밀려 저높이 뷰포트·키보드 오픈 시 도달이 어려웠다(2026-07-25).
+  const actionFooter = (
+    <View className="flex-row gap-3">
+      <Button
+        variant="secondary"
+        onPress={handleClose}
+        disabled={isLoading}
+        style={{ flex: 1 }}
+        accessibilityLabel="신고 취소"
+        accessibilityHint="신고를 취소하고 모달을 닫습니다"
+      >
+        취소
+      </Button>
+      <Button
+        variant="danger"
+        onPress={handleSubmit}
+        loading={isLoading}
+        disabled={isLoading}
+        style={{ flex: 1 }}
+        icon={<AlertTriangleIcon size={18} color="#FFFFFF" />}
+        accessibilityLabel="신고 제출"
+        accessibilityHint={
+          isValid ? '선택한 유형으로 신고를 제출합니다' : '신고 유형과 설명을 모두 입력해주세요'
+        }
+      >
+        신고하기
+      </Button>
+    </View>
+  );
+
   return (
-    <Modal visible={visible} onClose={handleClose} title={modalTitle} position="bottom">
+    <Modal
+      visible={visible}
+      onClose={handleClose}
+      title={modalTitle}
+      position="bottom"
+      footer={actionFooter}
+    >
       <View>
         {/* 신고 대상 정보 */}
         <Card variant="filled" padding="sm" className="mb-3 bg-error-50 dark:bg-error-900/20">
@@ -376,34 +414,6 @@ export function ReportModal({
               처리됩니다
             </Text>
           </View>
-        </View>
-
-        {/* 버튼 */}
-        <View className="flex-row gap-3">
-          <Button
-            variant="secondary"
-            onPress={handleClose}
-            disabled={isLoading}
-            style={{ flex: 1 }}
-            accessibilityLabel="신고 취소"
-            accessibilityHint="신고를 취소하고 모달을 닫습니다"
-          >
-            취소
-          </Button>
-          <Button
-            variant="danger"
-            onPress={handleSubmit}
-            loading={isLoading}
-            disabled={isLoading}
-            style={{ flex: 1 }}
-            icon={<AlertTriangleIcon size={18} color="#FFFFFF" />}
-            accessibilityLabel="신고 제출"
-            accessibilityHint={
-              isValid ? '선택한 유형으로 신고를 제출합니다' : '신고 유형과 설명을 모두 입력해주세요'
-            }
-          >
-            신고하기
-          </Button>
         </View>
       </View>
     </Modal>

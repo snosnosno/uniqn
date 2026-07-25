@@ -99,6 +99,9 @@
 
 - **Approach:** Grid-disciplined — 스케줄, 정산, 리스트 데이터가 많은 앱
 - **Border radius:** xs: 4px, sm: 6px, md: 8px, lg: 10px (rounded-full 사용 금지, 아바타 포함)
+  - **예외 — 필터 칩/필(pill)만 `rounded-full` 허용** (2026-07-25 결정): 가로 스크롤 필터 행은
+    알약 형태가 "선택 가능한 토글"이라는 관례적 어포던스를 만든다. 컨테이너·카드·배지·아바타에는
+    여전히 금지. 해당 범위: `PostingTypeChips`, `FilterBar`, 각 필터 시트의 선택 칩.
 - **Max content width:** 모바일 앱이므로 화면 너비 기준
 
 ## Motion
