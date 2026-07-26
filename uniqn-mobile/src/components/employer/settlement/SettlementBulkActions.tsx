@@ -82,7 +82,7 @@ export const SettlementBulkActions = React.memo(function SettlementBulkActions({
         disabled={selectedCount === 0}
         className={`
           flex-row items-center px-4 py-2 rounded-lg
-          ${selectedCount > 0 ? 'bg-primary-500 active:opacity-70' : 'bg-secondary-300 dark:bg-surface'}
+          ${selectedCount > 0 ? 'bg-primary-500 active:opacity-70' : 'bg-secondary-300 dark:bg-surface-elevated'}
         `}
       >
         <BanknotesIcon size={16} color={selectedCount > 0 ? '#fff' : SECONDARY_PALETTE[400]} />

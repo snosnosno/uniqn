@@ -13,6 +13,10 @@ import {
 } from '@/components/ui';
 import { BOARD_TYPE_LABELS, type BoardImageAttachment, type BoardType } from '@/types/board';
 import { useBoardImages } from '@/hooks/useBoardImages';
+import { useTabBarBottomPadding } from '@/hooks/useTabBarBottomPadding';
+
+/** 하단 고정 액션 바의 상/하 여백(px) — `pt-3` 과 같은 값을 paddingBottom 계산에 재사용 */
+const ACTION_BAR_VERTICAL_PADDING = 12;
 
 interface BoardPostEditorProps {
   boardType: Extract<BoardType, 'free' | 'tda'>;
@@ -49,6 +53,7 @@ export function BoardPostEditor({
   } = useBoardImages({
     initialImages,
   });
+  const tabBarInset = useTabBarBottomPadding(0);
   const [title, setTitle] = React.useState(initialTitle);
   const [body, setBody] = React.useState(initialBody);
   const isSubmitDisabled = isSubmitting || isUploading || !title.trim() || !body.trim();
@@ -125,8 +130,15 @@ export function BoardPostEditor({
 
       {/* 하단 고정 액션 바 — 스크롤 콘텐츠 끝이 아니라 화면 하단에 항상 보인다.
           콘텐츠(제목/내용/이미지)가 한 화면을 넘으면 버튼이 접힌 화면 밖으로
-          밀리던 문제의 해소(2026-07-25). 탭바는 비-absolute라 별도 인셋 불필요. */}
-      <View className="flex-row gap-3 border-t border-divider bg-surface-page px-4 py-3 dark:bg-surface">
+          밀리던 문제의 해소(2026-07-25).
+          이 화면은 (tabs) 하위라 하단 탭바가 콘텐츠 위에 겹친다 — 인셋을 예약하지 않아
+          버튼이 탭바에 가려졌다(2026-07-26 실기기). 같은 이유로 만들어진 것이
+          useTabBarBottomPadding 이며, 여기서는 고정 바라 breathingRoom 0 으로 쓴다.
+          배경이 탭바 아래까지 이어지도록 margin 이 아니라 padding 으로 확보한다. */}
+      <View
+        className="flex-row gap-3 border-t border-divider bg-surface-page px-4 pt-3 dark:bg-surface"
+        style={{ paddingBottom: ACTION_BAR_VERTICAL_PADDING + tabBarInset }}
+      >
         <Button variant="outline" fullWidth className="flex-1" onPress={onCancel}>
           취소
         </Button>
@@ -151,6 +163,8 @@ interface BoardPostEditorLoadingProps {
 export function BoardPostEditorLoading({
   title = '게시글 편집 화면을 준비하는 중이에요.',
 }: BoardPostEditorLoadingProps) {
+  const tabBarInset = useTabBarBottomPadding(0);
+
   return (
     <View className="flex-1 bg-surface-page dark:bg-surface">
       <KeyboardAwareScrollView
@@ -188,7 +202,10 @@ export function BoardPostEditorLoading({
         </View>
       </KeyboardAwareScrollView>
 
-      <View className="flex-row gap-3 border-t border-divider bg-surface-page px-4 py-3 dark:bg-surface">
+      <View
+        className="flex-row gap-3 border-t border-divider bg-surface-page px-4 pt-3 dark:bg-surface"
+        style={{ paddingBottom: ACTION_BAR_VERTICAL_PADDING + tabBarInset }}
+      >
         <SkeletonButton width="48%" />
         <SkeletonButton width="48%" />
       </View>

@@ -316,7 +316,7 @@ export default function ResetPasswordScreen() {
           <Pressable
             onPress={handleSubmit(onSubmit)}
             disabled={isSubmitting}
-            className={`min-h-[44px] justify-center rounded-lg py-4 ${isSubmitting ? 'bg-secondary-300 dark:bg-surface' : 'bg-primary-600 active:bg-primary-700'}`}
+            className={`min-h-[44px] justify-center rounded-lg py-4 ${isSubmitting ? 'bg-secondary-300 dark:bg-surface-elevated' : 'bg-primary-600 active:bg-primary-700'}`}
             accessibilityRole="button"
           >
             {isSubmitting ? (

@@ -218,6 +218,8 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
     }
   };
 
+  const isSaveDisabled = isSaving || (!isDirty && !pendingGender) || nicknameStatus === 'taken';
+
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="프로필 수정" fallbackHref="/(app)/settings" />
@@ -515,20 +517,27 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
             </View>
           </Card>
 
-          {/* 저장 버튼 — gender 보완 입력이 있으면 폼이 untouched 여도 활성 */}
+          {/* 저장 버튼 — gender 보완 입력이 있으면 폼이 untouched 여도 활성.
+              비활성 배경은 surface-elevated(#1C1C22). `dark:bg-surface`(#0B0B0E)는 페이지
+              배경과 완전히 같은 값이라 버튼이 통째로 사라졌다(2026-07-26 실기기).
+              라벨도 마찬가지 — onGold(#09090B)는 어두운 배경 위에서 보이지 않는다. */}
           <Pressable
             onPress={handleSubmit(onSubmit)}
-            disabled={isSaving || (!isDirty && !pendingGender) || nicknameStatus === 'taken'}
+            disabled={isSaveDisabled}
             className={`rounded-lg py-4 ${
-              isSaving || (!isDirty && !pendingGender) || nicknameStatus === 'taken'
-                ? 'bg-secondary-300 dark:bg-surface'
+              isSaveDisabled
+                ? 'bg-secondary-300 dark:bg-surface-elevated'
                 : 'bg-primary-600 active:bg-primary-700'
             }`}
           >
             {isSaving ? (
               <ActivityIndicator color={isDarkMode ? '#FFFFFF' : '#09090B'} />
             ) : (
-              <Text className="text-center text-base font-sans-semibold text-content-onGold">
+              <Text
+                className={`text-center text-base font-sans-semibold ${
+                  isSaveDisabled ? 'text-content-muted' : 'text-content-onGold'
+                }`}
+              >
                 저장
               </Text>
             )}

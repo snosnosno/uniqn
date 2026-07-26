@@ -61,7 +61,7 @@ function FormErrorFallback({
 
         <Pressable
           onPress={onReset}
-          className="flex-1 bg-secondary-200 dark:bg-surface min-h-[44px] py-2.5 rounded-lg active:bg-secondary-300 dark:active:bg-secondary-600 items-center justify-center"
+          className="flex-1 bg-secondary-200 dark:bg-surface-elevated min-h-[44px] py-2.5 rounded-lg active:bg-secondary-300 dark:active:bg-secondary-600 items-center justify-center"
           accessibilityRole="button"
           accessibilityLabel="초기화"
         >

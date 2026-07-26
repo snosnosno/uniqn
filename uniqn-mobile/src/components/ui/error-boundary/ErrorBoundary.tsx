@@ -190,7 +190,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                   // 앱 재시작을 유도하는 UI (실제 재시작은 네이티브에서 처리)
                   this.handleReset();
                 }}
-                className="bg-secondary-200 dark:bg-surface px-6 py-3 rounded-md active:bg-secondary-300 dark:active:bg-secondary-600"
+                className="bg-secondary-200 dark:bg-surface-elevated px-6 py-3 rounded-md active:bg-secondary-300 dark:active:bg-secondary-600"
                 accessibilityRole="button"
                 accessibilityLabel="홈으로"
               >
