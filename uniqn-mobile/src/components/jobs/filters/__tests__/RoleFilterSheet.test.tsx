@@ -68,7 +68,7 @@ describe('RoleFilterSheet', () => {
         appliedRoles={['dealer']}
         onApply={jest.fn()}
         appliedRegions={['서울 강남구']}
-        appliedSalary={{ type: 'hourly', min: 13000 }}
+        appliedSalary={{ type: 'hourly', min: 15000, sort: 'high' }}
       />
     );
 
@@ -77,7 +77,8 @@ describe('RoleFilterSheet', () => {
         regions: ['서울 강남구'],
         roles: ['dealer'],
         salaryType: 'hourly',
-        salaryMin: 13000,
+        salaryMin: 15000,
+        salarySort: 'high',
         keepPreviousCounts: true,
       })
     );
