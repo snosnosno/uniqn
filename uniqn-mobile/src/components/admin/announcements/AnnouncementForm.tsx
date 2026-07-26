@@ -418,7 +418,7 @@ export function AnnouncementForm({
             <Pressable
               onPress={onCancel}
               disabled={isSubmitting}
-              className="flex-1 bg-secondary-200 dark:bg-surface rounded-lg py-3 items-center"
+              className="flex-1 bg-secondary-200 dark:bg-surface-elevated rounded-lg py-3 items-center"
             >
               <Text className="text-content-secondary font-sans-medium">취소</Text>
             </Pressable>

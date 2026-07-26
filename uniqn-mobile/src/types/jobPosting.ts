@@ -44,6 +44,9 @@ export type SalaryType = 'hourly' | 'daily' | 'monthly' | 'other';
 /** 급여 필터가 지원하는 타입 — 'other'(협의)는 금액 비교가 불가해 제외 */
 export type FilterableSalaryType = Exclude<SalaryType, 'other'>;
 
+/** 급여 정렬 방향 — 'high'(높은순, 내림차순) / 'low'(낮은순, 오름차순) */
+export type SalarySortDirection = 'high' | 'low';
+
 export interface SalaryInfo {
   type: SalaryType;
   amount: number;
@@ -241,6 +244,14 @@ export interface JobPostingFilters {
    */
   salaryType?: FilterableSalaryType;
   salaryMin?: number;
+  /**
+   * 급여 정렬 — salaryType 과 함께 있어야 적용된다. 지정 시 목록이 해당 타입의
+   * salary_*_max 기준으로 정렬되며(work_date 기본 정렬 대체), 금액이 없는
+   * 협의(other) 공고는 NULL 이라 제외한다(정렬 위치가 무의미).
+   * 근무일이 모두 지난 공고(last_work_date < 오늘)도 함께 제외한다 — 순위를 만드는
+   * 정렬에서 종료 공고가 급여만 높다고 최상단을 차지하면 안 되기 때문.
+   */
+  salarySort?: SalarySortDirection;
   searchTerm?: string;
   isUrgent?: boolean;
   ownerId?: string;

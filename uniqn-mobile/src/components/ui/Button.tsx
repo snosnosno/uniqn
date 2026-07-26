@@ -50,8 +50,11 @@ const variantStyles: Record<ButtonVariant, string> = {
   // 테두리는 WCAG 1.4.11(비텍스트 3:1) 충족값 사용.
   // secondary-300(1.66:1)/surface-overlay(1.31:1)는 실기기에서 테두리가 보이지 않아
   // 버튼이 버튼으로 인지되지 않았다 (2026-07-19). secondary-600 = light 4.49:1 / dark 4.00:1.
+  // 두께는 `border`(=1px 선언이지만 웹 실측 0.67px) 가 아니라 `border-2`(2px).
+  // 그동안 focus ring 용 border-2 가 얹혀 실제로는 2px 로 보였으므로, 겹침을 걷어내면서
+  // 두께를 변형 자체에 명시해 기존 굵기를 보존한다 (2026-07-26 웹 computed style 실측).
   outline:
-    'bg-transparent border border-secondary-600 active:bg-secondary-50 dark:border-secondary-600 dark:active:bg-surface-elevated',
+    'bg-transparent border-2 border-secondary-600 active:bg-secondary-50 dark:border-secondary-600 dark:active:bg-surface-elevated',
   ghost: 'bg-transparent active:bg-secondary-100 dark:active:bg-surface-elevated',
   danger: 'bg-error-600 active:bg-error-700 dark:bg-error-500 dark:active:bg-error-600',
   accent: 'bg-accent-500 active:bg-accent-600 dark:bg-accent-400 dark:active:bg-accent-500',
@@ -137,12 +140,14 @@ export const Button = memo(function Button({
   const resolvedAccessibilityLabel =
     accessibilityLabel ?? (typeof children === 'string' ? children : undefined);
 
-  // impeccable v2 §22 — 외부 키보드 사용자용 focus ring(Info 블루 #2563EB 2px).
-  // NativeWind focus: modifier + outset 예약(투명 border)으로 layout shift 방지.
+  // focus ring 은 아래 wrapper View 가 전담한다. 여기(안쪽 Pressable)에 focus ring 용
+  // `border-2 border-transparent` 를 같이 얹으면 variant 의 테두리와 충돌한다 —
+  // Tailwind 는 클래스 문자열 순서가 아니라 **생성된 CSS 순서**로 승부가 나는데
+  // `.border-transparent` 가 `.border-secondary-600` 보다 뒤에 생성되어 라이트모드에서
+  // outline 테두리가 투명으로 덮였다(다크는 `dark:` 변형 명시도가 높아 살아남아 증상이
+  // 라이트에서만 보였다 — 2026-07-26 실기기).
   const buttonClass = [
     'flex-row items-center justify-center rounded',
-    'border-2 border-transparent',
-    'focus:border-[#2563EB]',
     variantStyles[variant],
     sizeStyles[size],
     fullWidth ? 'w-full' : '',
@@ -154,9 +159,28 @@ export const Button = memo(function Button({
     .trim();
 
   const textClass = `font-sans-semibold ${variantTextStyles[variant]} ${sizeTextStyles[size]}`;
-  // Focus ring wrapper class — variant의 기존 border(outline 등)와 충돌 방지를 위해 외부 View로 감쌈
-  // fullWidth는 inner Pressable이 가져가므로 wrapper에는 self-stretch만 필요 (inline-block 방지)
-  const focusRingClass = `rounded m-[-2px] border-2 ${focused ? 'border-info-500' : 'border-transparent'}`;
+
+  // 부모 flex 레이아웃의 실제 자식은 wrapper View 다. `fullWidth`/`className` 이 안쪽
+  // Pressable 에만 걸리면 wrapper 가 content 폭으로 고정되고, RN 은 flexShrink 기본값이
+  // 0 이라 줄어들지도 못해 flex-row 2버튼 배치가 화면 오른쪽으로 넘쳤다(2026-07-26 실기기).
+  // → 부모 레이아웃에 참여하는 클래스만 wrapper 로 승격한다. 나머지(테두리 색 오버라이드
+  //   등 시각 클래스)는 그대로 안쪽에 남겨 기존 호출부 동작을 보존한다.
+  const hasLayoutClass = (token: string) =>
+    new RegExp(`(^|\\s)${token}(\\s|$)`).test(className ?? '');
+  const wrapperLayoutClass = hasLayoutClass('flex-1')
+    ? 'flex-1' // flex-1 이 w-full 보다 우선 — 둘 다 주면 flexBasis 0% 가 이겨 의미가 겹친다
+    : fullWidth || hasLayoutClass('w-full')
+      ? 'w-full'
+      : '';
+
+  // Focus ring wrapper — variant 의 기존 border(outline 등)와 충돌 방지를 위해 외부 View로 감쌈
+  const focusRingClass = [
+    'rounded m-[-2px] border-2',
+    focused ? 'border-info-500' : 'border-transparent',
+    wrapperLayoutClass,
+  ]
+    .filter(Boolean)
+    .join(' ');
   // children 이 텍스트인지 판별해 <Text> 로 감싼다.
   // `부족 {n}명 모집` 같은 보간 라벨은 JSX 가 배열로 넘기므로 typeof 검사만으로는
   // 걸러지지 않아 날 문자열이 Pressable 아래로 들어가 RN 이 렌더하지 않는다

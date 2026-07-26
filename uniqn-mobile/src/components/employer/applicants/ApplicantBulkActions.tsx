@@ -72,7 +72,7 @@ export const ApplicantBulkActions = React.memo(function ApplicantBulkActions({
         disabled={disabled}
         className={`
           flex-row items-center px-4 py-2 rounded-lg
-          ${disabled ? 'bg-secondary-300 dark:bg-surface' : 'bg-primary-500 active:opacity-70'}
+          ${disabled ? 'bg-secondary-300 dark:bg-surface-elevated' : 'bg-primary-500 active:opacity-70'}
         `}
         accessibilityRole="button"
         accessibilityLabel={`${selectedCount}명 일괄 확정`}

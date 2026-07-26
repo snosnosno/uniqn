@@ -99,6 +99,7 @@ export default function JobsScreen() {
     roles: roleFilters,
     salaryType: salaryFilter?.type ?? null,
     salaryMin: salaryFilter?.min ?? null,
+    salarySort: salaryFilter?.sort ?? null,
   });
 
   useEffect(() => {
@@ -167,7 +168,8 @@ export default function JobsScreen() {
 
     if (salaryFilter) {
       result.salaryType = salaryFilter.type;
-      result.salaryMin = salaryFilter.min;
+      if (salaryFilter.min !== null) result.salaryMin = salaryFilter.min;
+      if (salaryFilter.sort !== null) result.salarySort = salaryFilter.sort;
     }
 
     return result;

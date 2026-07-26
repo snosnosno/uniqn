@@ -106,3 +106,17 @@ export const DEFAULT_ROLE_HOURLY_FALLBACK = 20_000; // serving·manager·staff·
  * 급여 금액 상한 (Eng-M4 — 역할별 입력 지점 N개 확대 시점에 조임. 프리셋 경유 이상치도 재검증)
  */
 export const MAX_SALARY_AMOUNT = 100_000_000;
+
+/**
+ * 구인구직 급여 필터의 최소 금액 프리셋(원) — 시트 칩과 스토어 정화의 단일 소스.
+ *
+ * @description 여기 없는 금액은 필터로 존재할 수 없다. 프리셋을 줄일 때 MMKV 에 남은
+ *   옛 값(예: 폐기된 시급 1.1만)이 살아남으면 pill 은 표시되는데 시트에는 대응 칩이 없어
+ *   재현·해제가 불가능한 상태가 되므로, sanitizeSalaryFilter 가 이 목록으로 검증한다.
+ *   월급은 표본이 적어 금액 구간을 나누지 않고 정렬만 제공한다(빈 배열).
+ */
+export const SALARY_FILTER_PRESETS = {
+  hourly: [15_000, 20_000],
+  daily: [200_000, 300_000],
+  monthly: [],
+} as const satisfies Record<'hourly' | 'daily' | 'monthly', readonly number[]>;

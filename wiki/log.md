@@ -120,10 +120,22 @@ index 갱신(sources 6행+decisions 2행+wallet-pgtap 재작성). 작성=opus �
 - memory 졸업: project_headcount_daily_display_20260723 → MEMORY.md 포인터 압축(잔여=실기기 QA·배포)
 
 ## [2026-07-24] ingest | ops 콘솔 리디자인 + 블라인드 프리셋 (PR#313)
+
+## [2026-07-25] note | 내정보 화면 정리 + 동의정보 정합성 (PR#321 머지 `14def4e40`) — 🎓 ingest 후보
+- **결함**: 가입 EF `verify-and-save-portone-profile`이 `user_consents`의 **존재하지 않는 컬럼**(terms_of_service/privacy_policy/marketing)에 upsert하고 반환 에러를 확인하지 않아, 가입 때마다 조용히 전건 실패(prod 0행 실측). `users.terms/privacy/marketing_agreed`도 미기록 → 내정보 '동의 정보' 전원 미동의 표시.
+- **수정**: EF가 `users.*_agreed` 저장 + `user_consents` 행 단위(consent_type) 원장 upsert(onConflict `user_id,consent_type`, 실패 시 CRITICAL 로그). 마이그 `20260725014644`: uq 인덱스 + 기존 사용자 terms/privacy 백필(third_party_agreed 근거, 4→20). UI 정리(닉네임 수정·내보내기 버튼 제거+데드코드 체인).
+- **🎓 졸업 후보 교훈**(Supabase 쓰기 함정 계열, wiki `decisions/supabase-write-pitfalls` 편입 검토): ①Supabase upsert는 존재하지 않는 컬럼/스키마 불일치를 반환 에러로 주는데 미확인 시 침묵 실패 — **EF의 모든 DB 쓰기는 error 확인+가시 로깅 필수**. ②표시 소스와 원장(user_consents) 이중 기록의 drift — 설정 토글이 원장 미경유(후속 MEDIUM). ③`user_consents`는 self UPDATE RLS 정책 부재로 클라 직접 upsert의 on-conflict UPDATE가 막힘 → 원장 경유는 SECDEF RPC 필요.
+- **잔여**: 실기기 QA(동의 표시·신규가입 원장 3행)·마케팅 토글 원장 후속.
 - 신규: `sources/ops-console-redesign`(출하 기록+교훈 5종: RNW pointerEvents 드롭·Pressable 중첩 재발·RNModal+gorhom z-순서·워크트리 expo EMFILE·parity 가드 누락 파급)
 - 갱신: `decisions/nativewind-rn-pitfalls`(함정 3종 추가 — pointerEvents는 prop 필수·행/액션 형제 분리·시트 visible 게이트) · `decisions/prod-parity-baseline`(#311 갱신 누락 실패 사례 — red는 머지 후 master에서 터짐) · `architecture/ops-engine`(콘솔 리디자인+프리셋 절, 잔여=서버 levels 상한) · index 3줄
 - memory 졸업 예정: project_ops_console_redesign_20260723 → MEMORY.md 포인터 압축(잔여=실기기 QA 7항목·서버 levels 상한)
 
+## [2026-07-25] note | 관리자 문의 응답 RPC 부재 404 수정 (PR#326)
+- 근본원인: Supabase 전환(`b69f6aae8`)이 `InquiryRepository`의 `respond_inquiry`·`update_inquiry_status` RPC **호출부만 출하**하고 함수 마이그레이션을 만들지 않음 → prod 404(PGRST202). baseline(prod 덤프)·prod `pg_proc` 양쪽 0행 실측으로 확정(시그니처 불일치·스키마 캐시 stale 가설 기각).
+- 수정: 마이그 `20260725150000` SECDEF RPC 2종(admin 게이트+actor 바인딩+response 1~2000자·XSS 서버검증+anon REVOKE) — prod 적용 완료. pgTAP 11케이스, parity 가드 178→181(#325의 179와 합류).
+- 부수 복구: `#325`가 `app_insert` with_check에 `is_identity_verified`를 추가하고 fixture 페르소나 시드를 갱신하지 않아 pgTAP 3스위트(`jpc_applications_rls`·`applications_tournament_approval_gate`·`jpc_cascade`)가 red였다 → `jpc_helpers.sql` 페르소나 `identity_verified=true`로 복구. **전건 실행에서만 드러나는 클래스**(`decisions/test-seed-contract-drift` 3번째 재발).
+- 미해결: E2E `auth-signup` 4케이스 red — `#325`의 스텝 순서 변경(`['terms','identity','account']`)에 `e2e/pages/auth/signup.page.ts`의 `stepTexts`(2=계정정보·3=본인인증)가 미추종. 라벨 스왑만으로는 불가 — 계정정보 검증 케이스가 이제 PortOne 본인인증 뒤라 목킹 인프라 부재로 원천 도달 불가(다일 작업).
+- 교훈 후보(졸업 대기): ①pgTAP `pg_get_function_identity_arguments` 리터럴 비교로 **출하된 클라이언트를 따라가는 역방향 계약** 고정 ②클라 RPC 호출부↔마이그레이션 함수 존재 대조는 parity 가드가 못 잡는다(prod·repo 대칭 누락이라 카운트가 일치)
 ## [2026-07-25] note | 머지 이력 공백 메움 (#314~#332)
 
 `#313` 이후 로그가 끊겨 있어 19개 PR을 소급 기록한다. 상세는 `CHANGELOG.md` [Unreleased] 참조.
