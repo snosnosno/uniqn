@@ -506,8 +506,16 @@ export default function ScheduleScreen() {
   );
 
   // 취소 요청 핸들러 (confirmed 상태) — 인라인 바텀시트로 표시
+  // 지원서 재조회 중 재진입 가드 — 사전 검증에 왕복이 한 번 더 있어 응답이 느리면
+  // 사용자가 다시 눌러 시트가 두 번 열리거나 경고 토스트가 중복으로 뜬다.
+  const cancellationLookupRef = useRef<string | null>(null);
+  const [isLoadingCancellationTarget, setIsLoadingCancellationTarget] = useState(false);
+
   const handleRequestCancellation = useCallback(
     async (applicationId: string) => {
+      if (cancellationLookupRef.current === applicationId) return;
+      cancellationLookupRef.current = applicationId;
+      setIsLoadingCancellationTarget(true);
       try {
         const application = await getApplicationById(applicationId);
 
@@ -555,6 +563,9 @@ export default function ScheduleScreen() {
       } catch (error) {
         logger.error('지원서 조회 실패', error as Error, { applicationId });
         addToast({ type: 'error', message: '지원서를 불러오는 중 오류가 발생했습니다' });
+      } finally {
+        cancellationLookupRef.current = null;
+        setIsLoadingCancellationTarget(false);
       }
     },
     [addToast]
@@ -948,6 +959,19 @@ export default function ScheduleScreen() {
               다시 시도
             </Text>
           </FocusablePressable>
+        </View>
+      )}
+
+      {isLoadingCancellationTarget && (
+        <View
+          className="mx-4 mt-2 rounded-md bg-secondary-100 px-4 py-2 dark:bg-surface-overlay"
+          accessibilityRole="progressbar"
+          accessibilityLabel="취소 요청 정보를 불러오고 있어요"
+          accessibilityLiveRegion="polite"
+        >
+          <Text className="text-sm font-sans-medium text-content-secondary">
+            취소 요청 정보를 불러오고 있어요…
+          </Text>
         </View>
       )}
 
