@@ -299,6 +299,8 @@ describe('Button', () => {
       const pressableClass = screen.getByLabelText('Outline button').props.className as string;
       expect(pressableClass).toContain('border-secondary-600');
       expect(pressableClass).not.toContain('border-transparent');
+      // 두께는 변형이 직접 선언한다 — focus ring 겹침에 기대 2px 로 보이던 것을 보존
+      expect(pressableClass).toContain('border-2');
     });
 
     it('should keep the focus ring reserve on the wrapper, not the pressable', () => {

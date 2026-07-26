@@ -50,8 +50,11 @@ const variantStyles: Record<ButtonVariant, string> = {
   // 테두리는 WCAG 1.4.11(비텍스트 3:1) 충족값 사용.
   // secondary-300(1.66:1)/surface-overlay(1.31:1)는 실기기에서 테두리가 보이지 않아
   // 버튼이 버튼으로 인지되지 않았다 (2026-07-19). secondary-600 = light 4.49:1 / dark 4.00:1.
+  // 두께는 `border`(=1px 선언이지만 웹 실측 0.67px) 가 아니라 `border-2`(2px).
+  // 그동안 focus ring 용 border-2 가 얹혀 실제로는 2px 로 보였으므로, 겹침을 걷어내면서
+  // 두께를 변형 자체에 명시해 기존 굵기를 보존한다 (2026-07-26 웹 computed style 실측).
   outline:
-    'bg-transparent border border-secondary-600 active:bg-secondary-50 dark:border-secondary-600 dark:active:bg-surface-elevated',
+    'bg-transparent border-2 border-secondary-600 active:bg-secondary-50 dark:border-secondary-600 dark:active:bg-surface-elevated',
   ghost: 'bg-transparent active:bg-secondary-100 dark:active:bg-surface-elevated',
   danger: 'bg-error-600 active:bg-error-700 dark:bg-error-500 dark:active:bg-error-600',
   accent: 'bg-accent-500 active:bg-accent-600 dark:bg-accent-400 dark:active:bg-accent-500',
