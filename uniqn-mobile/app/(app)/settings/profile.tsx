@@ -533,9 +533,16 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
             {isSaving ? (
               <ActivityIndicator color={isDarkMode ? '#FFFFFF' : '#09090B'} />
             ) : (
+              // 비활성 라벨은 테마별로 다른 토큰이어야 한다 — 배경이 다르기 때문이다.
+              // 라이트 비활성 배경 secondary-300(#C0C0C8) 위에서 content-muted(#888890)
+              // 는 1.95:1 로 묻히고(활성 대비 11.00:1 에서 붕괴), 다크 비활성 배경
+              // surface-elevated(#1C1C22) 위에서는 content-muted 가 5.92:1 로 알맞다.
+              // → 라이트는 content-secondary(#606068, 3.45:1)로 §31 보조 텍스트 3:1 충족.
               <Text
                 className={`text-center text-base font-sans-semibold ${
-                  isSaveDisabled ? 'text-content-muted' : 'text-content-onGold'
+                  isSaveDisabled
+                    ? 'text-content-secondary dark:text-content-muted'
+                    : 'text-content-onGold'
                 }`}
               >
                 저장
