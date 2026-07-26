@@ -861,8 +861,8 @@ BEP = 400,000 / 850 ≈ 470건/월
 |------|------|
 | 개발 가이드 | CLAUDE.md |
 | 포인트 시스템 설계 | mobile-payment-plan.md |
-| 아키텍처 | specs/react-native-app/architecture.md |
-| 화면 설계 | specs/react-native-app/04-screens.md |
+| 아키텍처 | ~~specs/react-native-app/architecture.md~~ (2026-07-26 제거 — 원본은 git `82cee067e`, 복원법은 `specs/react-native-app/README.md` 참조) |
+| 화면 설계 | ~~specs/react-native-app/04-screens.md~~ (2026-07-26 제거 — 원본은 git `82cee067e`, 복원법은 `specs/react-native-app/README.md` 참조) |
 | 데이터 스키마 | docs/reference/DATA_SCHEMA.md |
 
 ---

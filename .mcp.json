@@ -33,17 +33,6 @@
       ],
       "env": {}
     },
-    "tosspayments-integration-guide": {
-      "type": "stdio",
-      "command": "cmd",
-      "args": [
-        "/c",
-        "npx",
-        "-y",
-        "@tosspayments/integration-guide-mcp@latest"
-      ],
-      "env": {}
-    },
     "graphify": {
       "type": "stdio",
       "command": "cmd",
@@ -59,10 +48,6 @@
     "supabase": {
       "type": "http",
       "url": "https://mcp.supabase.com/mcp?project_ref=ygfxukhktpqymahfrvbz&features=storage%2Cbranching%2Cfunctions%2Cdevelopment%2Cdebugging%2Cdatabase%2Caccount%2Cdocs"
-    },
-    "revenuecat": {
-      "type": "http",
-      "url": "https://mcp.revenuecat.ai/mcp"
     }
   }
 }

@@ -6,13 +6,7 @@ import React, { useMemo, useCallback } from 'react';
 import { View, Text } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import type { DateData, MarkedDates } from 'react-native-calendars/src/types';
-import {
-  ACCENT_COLORS,
-  PRIMARY_COLORS,
-  STATUS_COLORS,
-  SECONDARY_PALETTE,
-  TEXT_COLORS,
-} from '@/constants/colors';
+import { PRIMARY_COLORS, STATUS_COLORS, SECONDARY_PALETTE, TEXT_COLORS } from '@/constants/colors';
 import { WEEKDAYS_KO } from '@/constants/weekdays';
 import { useThemeStore } from '@/stores/themeStore';
 import type { ScheduleEvent, ScheduleType } from '@/types';
@@ -70,7 +64,7 @@ const SCHEDULE_DOT_COLORS: Record<ScheduleType, string> = {
   // 구분되게 해 색상 단독 의존을 완화한다(색약 대응). 범례도 같은 상수를 참조해 자동 일치.
   applied: `${STATUS_COLORS.warning}73`,
   confirmed: STATUS_COLORS.success,
-  completed: ACCENT_COLORS[500],
+  completed: PRIMARY_COLORS[500],
   cancelled: STATUS_COLORS.error,
 };
 
@@ -83,7 +77,7 @@ const calendarTheme = {
   textSectionTitleDisabledColor: SECONDARY_PALETTE[400],
   selectedDayBackgroundColor: PRIMARY_COLORS[600],
   selectedDayTextColor: '#FFFFFF',
-  todayTextColor: ACCENT_COLORS[600],
+  todayTextColor: PRIMARY_COLORS[600],
   dayTextColor: TEXT_COLORS.primary.light,
   textDisabledColor: SECONDARY_PALETTE[200],
   dotColor: PRIMARY_COLORS[500],
@@ -103,7 +97,7 @@ const darkCalendarTheme = {
   ...calendarTheme,
   textSectionTitleColor: SECONDARY_PALETTE[400],
   textSectionTitleDisabledColor: SECONDARY_PALETTE[500],
-  todayTextColor: ACCENT_COLORS[300],
+  todayTextColor: PRIMARY_COLORS[300],
   dayTextColor: TEXT_COLORS.primary.dark,
   textDisabledColor: SECONDARY_PALETTE[500],
   monthTextColor: TEXT_COLORS.primary.dark,

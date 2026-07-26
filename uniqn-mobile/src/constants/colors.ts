@@ -86,8 +86,6 @@ export const PRIMARY_COLORS = {
   900: '#524318',
 } as const;
 
-export const ACCENT_COLORS = PRIMARY_COLORS;
-
 export const SURFACE_COLORS = {
   DEFAULT: '#0B0B0E',
   dark: '#07070A',

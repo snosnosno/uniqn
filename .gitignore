@@ -80,11 +80,10 @@ serviceAccountKey*.json
 *-service-account*.json
 *-adminsdk-*.json
 firebase-adminsdk-*.json
+# Firebase 네이티브 설정은 절대 추적하지 않는다 (공개 레포).
+# EAS Build 시 EAS Secrets 에서 복원 — uniqn-mobile/scripts/eas-build-pre-install.sh 참조
 google-services.json
 GoogleService-Info.plist
-# EAS Build용 Firebase 설정 (FCM push 토큰)
-!uniqn-mobile/google-services.json
-!uniqn-mobile/GoogleService-Info.plist
 
 # Security certificates and keys
 *.key

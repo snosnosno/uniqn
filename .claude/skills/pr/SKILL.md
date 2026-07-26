@@ -110,7 +110,7 @@ EOF
 ### 버그 수정 PR
 ```markdown
 ## Summary
-Firebase에서 undefined 필드 저장 시 발생하는 에러를 수정합니다.
+Supabase 저장 시 `undefined` 필드가 JSON 직렬화에서 누락돼 기존 값이 갱신되지 않는 문제를 수정합니다.
 
 ## Changes
 - notes, assignmentGroupId 필드를 undefined 대신 null로 저장
@@ -118,7 +118,7 @@ Firebase에서 undefined 필드 저장 시 발생하는 에러를 수정합니�
 
 ## Test plan
 - [ ] 지원자 확정 시 에러 없이 저장되는지 확인
-- [ ] Firestore에서 필드 값이 null로 저장되는지 확인
+- [ ] Supabase 테이블에서 해당 컬럼이 null로 저장되는지 확인
 ```
 
 ## 주의사항

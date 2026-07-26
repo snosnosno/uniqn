@@ -15,10 +15,10 @@ gstack의 4단계 근본 원인 조사 방식을 따릅니다.
 ## 프로젝트 컨텍스트
 
 ```yaml
-스택: Expo SDK 54 / RN 0.81.5 / TS 5.9.2 / Firebase 12.6
+스택: Expo SDK 55 / RN 0.83.6 / React 19.2 / TS 5.9.2 / Supabase (@supabase/supabase-js 2.x)
 로거: logger.info() / logger.error() (console.log 금지)
 에러 체계: AppError 계층 (src/errors/)
-에러 코드: E1xxx(네트워크) E2xxx(인증) E3xxx(검증) E4xxx(Firebase) E5xxx(보안) E6xxx(비즈니스) E7xxx(알 수 없음)
+에러 코드: E1xxx(네트워크) E2xxx(인증) E3xxx(검증) E4xxx(인프라·DB) E5xxx(보안) E6xxx(비즈니스) E7xxx(알 수 없음)
 ```
 
 ## 4단계 조사 프로세스
@@ -31,19 +31,19 @@ gstack의 4단계 근본 원인 조사 방식을 따릅니다.
 | 코드 | 분류 | 조사 방향 |
 |------|------|----------|
 | E1xxx | 네트워크 | API 엔드포인트, 타임아웃, CORS |
-| E2xxx | 인증 | Firebase Auth 토큰, 세션, Custom Claims |
+| E2xxx | 인증 | Supabase Auth 세션·JWT, 토큰 갱신, `app_metadata.role` |
 | E3xxx | 검증 | Zod 스키마, 입력 데이터, 타입 불일치 |
-| E4xxx | Firebase | Security Rules, 인덱스, 문서 경로, undefined 필드 |
+| E4xxx | 인프라(DB) | RLS 정책, 인덱스, RPC 시그니처, 제약 위반 |
 | E5xxx | 보안 | 권한, XSS, 접근 제어 |
 | E6xxx | 비즈니스 | 도메인 로직, 상태 전이, 규칙 위반 |
 | E7xxx | 알 수 없음 | 전체 스택 트레이스 분석 |
 
-**Firebase 전용 체크리스트:**
-- [ ] Security Rules가 접근을 허용하는가?
-- [ ] 문서/컬렉션 경로가 올바른가?
-- [ ] undefined 필드가 Firestore에 전달되는가? (→ null)
-- [ ] 복합 쿼리에 인덱스가 생성되어 있는가?
-- [ ] Transaction 없이 다중 문서를 수정하는가?
+**Supabase 전용 체크리스트:**
+- [ ] RLS 정책이 접근을 허용하는가? (app role = `(auth.jwt() -> 'app_metadata' ->> 'role')`)
+- [ ] 테이블/컬럼명·RPC 시그니처가 올바른가? (PostgREST 404 / PGRST202)
+- [ ] SECURITY DEFINER 함수의 `search_path`·실행 권한이 올바른가?
+- [ ] 복합 조건 쿼리에 인덱스가 생성되어 있는가?
+- [ ] RPC 없이 클라이언트에서 다중 행을 나눠 쓰는가?
 
 **React Native 전용 체크리스트:**
 - [ ] Hook 사용 규칙 위반? (조건부 호출, 루프 내 호출)
@@ -90,12 +90,13 @@ grep -rn "같은 함수/패턴" uniqn-mobile/src/
 
 ## 자주 발생하는 Uniqn 에러 패턴
 
-### Firebase undefined 에러
+### Supabase 에러의 네트워크 오분류
 ```typescript
-// ❌ Firestore는 undefined를 거부
-await setDoc(ref, { notes: undefined });
-// ✅ null 사용
-await setDoc(ref, { notes: null });
+// ❌ fetch 단절이 PostgrestError 형태(code='')로 오면 UNKNOWN(E7000)으로 오분류
+if (error.code) return new AppError({ code: ERROR_CODES.UNKNOWN, ... });
+// ✅ 메시지 패턴으로 네트워크 장애를 먼저 판별 (src/errors/errorUtils.ts)
+// 매핑 진입점: handleSupabaseError (src/utils/supabase.ts)
+if (isNetworkErrorMessage(error.message)) return new NetworkError(...);
 ```
 
 ### RN Text 감싸기 누락
@@ -125,7 +126,7 @@ useQuery({ queryKey: ['data', url], queryFn: fetchData })
 
 ### 에러 분류
 - 코드: [Exxx]
-- 유형: [네트워크/인증/검증/Firebase/보안/비즈니스]
+- 유형: [네트워크/인증/검증/인프라(DB)/보안/비즈니스]
 
 ### 수정 내용
 [수정 설명 + 코드 diff]

@@ -11,8 +11,8 @@ allowed-tools: Read, Grep, Glob, Bash, Agent, Task
 ## 프로젝트 컨텍스트
 
 ```yaml
-스택: Expo SDK 54 / RN 0.81.5 / TS 5.9.2 / Firebase 12.6 / Zustand 5 / TanStack Query 5
-아키텍처: Presentation → Hooks → Service → Repository → Firebase
+스택: Expo 55 / RN 0.83.6 / React 19.2 / TS 5.9 strict / Supabase(PostgreSQL + RLS + Edge Functions) / NativeWind 4.2 / Zustand 5 / TanStack Query 5
+아키텍처: Presentation → Hooks → Service → Repository → Supabase
 에러 코드: E1xxx~E7xxx
 역할: admin(100) > employer(50) > staff(10)
 ```
@@ -32,9 +32,9 @@ allowed-tools: Read, Grep, Glob, Bash, Agent, Task
 각 레이어에서 필요한 변경을 구분합니다:
 
 ```markdown
-#### Firebase (데이터 모델)
-- Firestore 컬렉션/문서 구조
-- Security Rules 변경
+#### Supabase (데이터 모델)
+- 테이블/컬럼 스키마 변경 (`supabase/migrations/` 마이그레이션)
+- RLS 정책 · SECURITY DEFINER 함수 변경 → pgTAP 회귀 테스트(`supabase/tests/`) 동반 필수
 - 인덱스 추가
 
 #### Repository (데이터 접근)
@@ -43,7 +43,7 @@ allowed-tools: Read, Grep, Glob, Bash, Agent, Task
 
 #### Service (비즈니스 로직)
 - 도메인 규칙
-- 트랜잭션 (다중 문서 수정 시 필수)
+- 다중 쓰기 원자성 → Supabase RPC(PL/pgSQL 함수) 호출 (클라이언트 다단계 뮤테이션 금지)
 - 에러 코드 할당
 
 #### Hooks (상태 관리)
@@ -62,14 +62,14 @@ allowed-tools: Read, Grep, Glob, Bash, Agent, Task
 
 자동으로 다음을 검토합니다:
 - 기존 코드 재사용 가능성 (유사 기능 검색)
-- Firebase 비용 영향 (읽기/쓰기 증가량)
+- Supabase 부하·비용 영향 (쿼리 수·조회 행 수·Edge Function 호출 증가량)
 - 타입 안전성 (TypeScript strict 통과 여부)
 - 테스트 가능성 (단위 테스트 작성 용이성)
 
-### 4단계: 마이그레이션 계획 (Firestore 변경 시)
+### 4단계: 마이그레이션 계획 (DB 스키마 변경 시)
 
-Firestore 데이터 모델이 변경되면 자동으로 포함:
-- 기존 문서 마이그레이션 스크립트
+Supabase 스키마가 변경되면 자동으로 포함:
+- 마이그레이션 SQL (`supabase/migrations/`) + 기존 행 백필
 - 하위 호환성 유지 방법
 - 롤백 계획
 
@@ -81,7 +81,7 @@ Firestore 데이터 모델이 변경되면 자동으로 포함:
 | E1xxx | 네트워크 에러 |
 | E2xxx | 인증 에러 |
 | E3xxx | 검증 에러 |
-| E4xxx | Firebase 에러 |
+| E4xxx | 인프라 에러 (DB·권한·가용성) |
 | E5xxx | 보안 에러 |
 | E6xxx | 비즈니스 로직 에러 |
 | E7xxx | 알 수 없는 에러 |
@@ -99,7 +99,7 @@ Firestore 데이터 모델이 변경되면 자동으로 포함:
 
 ### 레이어별 변경 계획
 
-#### 1. Firebase 데이터 모델
+#### 1. Supabase 데이터 모델
 [변경 내용]
 
 #### 2. Repository

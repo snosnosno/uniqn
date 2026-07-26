@@ -9,7 +9,7 @@
 > **모바일앱 알림**: uniqn-mobile/은 FCM(APNs) + expo-notifications를 통해 푸시 알림을 지원합니다. 서버 측은 Supabase Edge Functions + PostgreSQL 트리거 기반입니다.
 >
 > 📚 **관련 문서 (역할별 참조)**:
-> - 💻 **모바일앱 구현 상세**: [10-notifications.md](../../specs/react-native-app/10-notifications.md) (앱개발자용 — FCM, Zustand, UI, 30개 타입)
+> - 💻 **모바일앱 구현 상세**: `specs/react-native-app/10-notifications.md` (2026-07-26 제거 — 원본은 git `82cee067e`, 복원법은 `specs/react-native-app/README.md` 참조). 현행 구현은 `uniqn-mobile/src/services/notification/` 코드와 이 문서를 기준으로 확인하세요.
 > - 💼 **운영 가이드**: [NOTIFICATION_OPERATIONS.md](../operations/NOTIFICATION_OPERATIONS.md) (운영팀용 — Edge Functions 관리, 모니터링)
 >
 > 이 문서는 **구현 현황 추적용**입니다. Phase 진행도, 테스트 결과, 해결된 이슈에 집중합니다.

@@ -11,8 +11,8 @@ gstack의 specialist review army 방식을 따르되, Uniqn 프로젝트 규칙�
 ## 프로젝트 컨텍스트
 
 ```yaml
-스택: Expo SDK 54 / RN 0.81.5 / TS 5.9.2 / Firebase 12.6
-아키텍처: Presentation → Hooks → Service → Repository → Firebase
+스택: Expo SDK 55 / RN 0.83.6 / React 19.2 / TS 5.9.2 / Supabase(@supabase/supabase-js 2.x)
+아키텍처: Presentation → Hooks → Service → Repository → Supabase
 작업 디렉토리: uniqn-mobile/
 품질 게이트: npm run quality (type-check + lint + format:check)
 에러 코드: E1xxx~E7xxx (src/errors/)
@@ -31,15 +31,15 @@ git diff HEAD~1 --name-only
 각 전문가는 독립적으로 변경 사항을 분석합니다:
 
 #### 전문가 1: 아키텍처 감사관
-- 레이어 위반 탐지: Presentation/Hooks에서 Firestore 직접 호출
+- 레이어 위반 탐지: Presentation/Hooks에서 Supabase 직접 호출
 - 의존성 방향: 상위→하위만 허용, 역방향 금지
-- 허용 예외: Firebase Auth(인증 hook), TanStack Query 읽기전용 조회(Repository 직접), 인프라성 Service(Firebase SDK 직접)
+- 허용 예외: Supabase Auth(authService·인증 hook·authStore의 세션/프로필 갱신 액션), TanStack Query 읽기전용 조회(Repository 직접), 읽기전용 realtime 구독(`createRealtimeSubscription`, 콜백은 캐시 무효화만)
 - 파일 크기: 800줄 초과 경고
 - 함수 크기: 50줄 초과 경고
 
 #### 전문가 2: 타입 안전성 검사관
 - `any` 타입 사용 탐지
-- `undefined` → Firebase 필드 (null로 변경 필요)
+- Supabase row의 `null` → `undefined` 정규화 누락 (Zod optional 파싱 전 필수)
 - 명시적 타입 선언 누락
 - Zod 스키마와 TypeScript 타입 일치 여부
 
@@ -47,7 +47,7 @@ git diff HEAD~1 --name-only
 - `xssValidation` 미적용 사용자 입력
 - `console.log()` 앱 런타임 코드 (logger 사용 필수)
 - 하드코딩된 시크릿/API 키
-- `runTransaction` 누락 (다중 문서 동시 수정)
+- 다중 테이블 쓰기에 Supabase RPC(PL/pgSQL 함수) 미사용 (클라이언트 다단계 뮤테이션 금지)
 - SecureStore 미사용 (민감 데이터)
 
 #### 전문가 4: UI/UX 감사관
@@ -99,6 +99,6 @@ cd uniqn-mobile && npm run quality
 
 CRITICAL/HIGH 이슈는 사용자 확인 후 자동으로 수정합니다:
 - `console.log` → `logger.info`
-- `undefined` 필드 → `null`
+- Supabase row의 `null` → `undefined` 정규화 추가
 - `<Image>` → `Image` from `expo-image`
 - `FlatList` (대형) → `FlashList`

@@ -118,22 +118,23 @@ function process(data: unknown) {
 }
 ```
 
-### 7. Firebase 타입 에러
+### 7. Supabase 타입 에러
 ```typescript
 // ❌ 에러
-const data = doc.data();
-console.log(data.name);  // 'DocumentData' 타입
+const { data } = await supabase.from('users').select('id, name, email');
+const name = data.name;  // data 는 배열이며 null 가능
 
-// ✅ 해결: 타입 단언 또는 제네릭
-interface UserDoc {
-  name: string;
-  email: string;
-}
+// ✅ 해결: 생성 타입(@/types/supabase) + null 처리
+import type { Tables } from '@/types/supabase';
 
-const data = doc.data() as UserDoc;
-// 또는
-const userRef = doc(db, 'users', id) as DocumentReference<UserDoc>;
+type UserRow = Tables<'users'>;
+
+const { data, error } = await supabase.from('users').select('id, name, email');
+if (error) handleSupabaseError(error, { operation: '유저 조회', table: 'users' });
+const users: Pick<UserRow, 'id' | 'name' | 'email'>[] = data ?? [];
 ```
+
+> 스키마를 바꿨는데 타입이 안 맞으면 먼저 타입을 재생성한다 (`mcp__supabase__generate_typescript_types` → `src/types/supabase.ts`).
 
 ### 8. React/React Native 타입 에러
 ```tsx

@@ -43,7 +43,7 @@ async function processApplication(app: Application) {
   // 검증
   if (!app.userId) throw new Error();
   // 저장
-  await setDoc(ref, app);
+  await applicationRepository.applyWithTransaction(app, context);
   // 알림
   await sendNotification(app.userId);
   // 로깅
@@ -205,11 +205,10 @@ npm test
 리팩토링 전 변경 대상의 위험도를 평가합니다:
 
 ### CRITICAL 영역 (추가 확인 필수)
-- Firebase Security Rules 관련 코드
-- RevenueCat 결제 로직
+- Supabase RLS 정책 / SECURITY DEFINER 함수 (마이그레이션)
 - UserRole 권한 체계
-- Firebase Auth 인증 흐름
-- runTransaction 포함 코드
+- Supabase Auth 인증 흐름
+- Supabase RPC(PL/pgSQL 함수) 호출 코드
 
 ### HIGH 영역 (신중하게 진행)
 - Service 레이어 (비즈니스 로직)

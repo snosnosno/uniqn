@@ -42,7 +42,7 @@ UserRole(앱권한) ≠ StaffRole(현장 직무: dealer/floor/serving)
 ## 커밋 / 보안 / 트랜잭션 / 에러
 - 커밋: `<type>(<scope>): <한글>` — feat/fix/refactor/style/docs/test/chore/perf
 - XSS: `z.string().refine(xssValidation)` — 모든 사용자 입력에 필수
-- 다중 문서: `runTransaction` 필수 (지원/취소/출퇴근/정산/역할 변경)
+- 다중 쓰기: Supabase **RPC(PL/pgSQL 함수)** 필수 — 클라이언트 다단계 뮤테이션 금지 (지원/취소/출퇴근/정산/역할 변경)
 - 에러: AppError (`src/errors/`) — E1~E7 (네트워크/인증/검증/DB/보안/비즈/미분류)
 
 ## 명령어

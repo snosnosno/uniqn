@@ -105,18 +105,18 @@ import { FlashList } from '@shopify/flash-list';
 
 ### 3. 네트워크 성능
 
-#### Firebase 쿼리 최적화
+#### Supabase 쿼리 최적화
 ```typescript
-// ❌ 전체 조회
-const snapshot = await getDocs(collection(db, 'items'));
+// ❌ 전체 컬럼·전체 행 조회
+const { data } = await supabase.from('items').select('*');
 
-// ✅ 필요한 것만 조회
-const q = query(
-  collection(db, 'items'),
-  where('status', '==', 'active'),
-  orderBy('createdAt', 'desc'),
-  limit(20)
-);
+// ✅ 필요한 컬럼·행만 조회 (Repository 계층에서)
+const { data } = await supabase
+  .from('items')
+  .select('id, title, status, created_at')
+  .eq('status', 'active')
+  .order('created_at', { ascending: false })
+  .limit(20);
 ```
 
 #### 캐싱 전략
@@ -157,11 +157,13 @@ import { Image } from 'expo-image';
 ### 5. 메모리 관리
 
 ```typescript
-// 구독 해제 필수
+// 구독 해제 필수 (Supabase Realtime)
 useEffect(() => {
-  const unsubscribe = onSnapshot(query, callback);
+  const unsubscribe = createRealtimeSubscription('applications', `job_posting_id=eq.${id}`, () => {
+    queryClient.invalidateQueries({ queryKey: ['applications', id] });
+  });
   return () => unsubscribe();  // 클린업
-}, []);
+}, [id]);
 
 // 타이머 정리
 useEffect(() => {
@@ -175,7 +177,7 @@ useEffect(() => {
 ### 웹 성능 측정
 ```bash
 # Lighthouse CI
-npx lighthouse https://tholdem-ebc18.web.app --view
+npx lighthouse https://uniqn.app --view
 
 # Web Vitals
 import { getCLS, getFID, getLCP } from 'web-vitals';
@@ -250,7 +252,7 @@ const ExpensiveChild = React.memo(() => { ... });
 - [ ] 이미지 최적화
 
 ### 네트워크
-- [ ] Firebase 쿼리 최적화
+- [ ] Supabase 쿼리 최적화
 - [ ] 적절한 캐싱 적용
 - [ ] 배치 요청 사용
 

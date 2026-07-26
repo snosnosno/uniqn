@@ -6,7 +6,7 @@ allowed-tools: Bash, Read, Grep, Glob, mcp__supabase__apply_migration, mcp__supa
 
 # UNIQN 배포 스킬
 
-> 작업 디렉토리: `uniqn-mobile/` | Firebase 제거됨 (2026-04-11) | 백엔드: Supabase + Cloudflare Pages
+> 작업 디렉토리: `uniqn-mobile/` | Firestore·Firebase Auth·Firebase Hosting 제거됨 (2026-04-11, FCM 푸시는 유지) | 백엔드: Supabase + Cloudflare Pages
 
 ## 프로젝트 정보
 
@@ -283,7 +283,7 @@ wrangler pages rollback <deployment-id> --project-name=uniqn-app
 
 | 금지 | 이유 |
 |------|------|
-| `firebase deploy *` | Firebase 제거됨 (2026-04-11) |
+| `firebase deploy *` | Firebase Hosting/Firestore 미사용 (2026-04-11 제거) — 웹은 Cloudflare Pages. FCM 푸시는 살아있지만 `firebase deploy` 대상이 아님 (앱 빌드의 `google-services.json` + Edge Function `send-push-notification` 경유) |
 | `supabase db push` | 메모리 feedback_supabase_migration_workflow |
 | 루트에서 `npm run *` 실행 | 작업 디렉토리는 `uniqn-mobile/` |
 | 품질 게이트 스킵 | type-check 실패 그대로 프로덕션 배포 위험 |
