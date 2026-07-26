@@ -3,6 +3,8 @@ paths:
   - "src/repositories/supabase/**/*.ts"
   - "src/schemas/**/*.ts"
   - "src/services/**/*.ts"
+  - "supabase/migrations/**/*.sql"
+  - "supabase/tests/**/*.sql"
 ---
 
 # Supabase 패턴 규칙
@@ -101,6 +103,22 @@ await supabase.from('applications').update({ status: 'confirmed' }).eq('id', id)
 await supabase.from('work_logs').insert({ ... });
 ```
 
+## 8. upsert — unique constraint 기반
+
+ID가 없는 upsert는 unique constraint 컬럼 지정:
+
+```typescript
+// ✅ CORRECT
+await supabase
+  .from('board_memberships')
+  .upsert(data, { onConflict: 'user_id,post_id' });
+
+// ❌ WRONG — composite string을 UUID 컬럼 id에 넣으면 22P02 에러
+await supabase
+  .from('board_memberships')
+  .upsert({ id: `${postId}_${userId}`, ...data });
+```
+
 ## 9. DB 컬럼 추가 워크플로우 (nullable 컬럼)
 
 새 선택적 컬럼 추가 시 4단계 순서를 반드시 준수:
@@ -128,18 +146,37 @@ interface MyEntity {
 }
 ```
 
-## 8. upsert — unique constraint 기반
+## 10. 트리거 추가·변경 시 중복 검사 (필수)
 
-ID가 없는 upsert는 unique constraint 컬럼 지정:
+같은 테이블·같은 이벤트에 트리거가 둘 걸리면 알림이 2번 나가는 등 조용히 중복 실행된다.
+**실제로 두 번 터졌다** — `20260620151331`(work_logs 체크인)과
+`20260726000000`(리뷰·문의·대회 알림 3쌍, PR #328). grep으로는 새 트리거가
+기존 것과 겹치는지 알 수 없다.
 
-```typescript
-// ✅ CORRECT
-await supabase
-  .from('board_memberships')
-  .upsert(data, { onConflict: 'user_id,post_id' });
-
-// ❌ WRONG — composite string을 UUID 컬럼 id에 넣으면 22P02 에러
-await supabase
-  .from('board_memberships')
-  .upsert({ id: `${postId}_${userId}`, ...data });
+```bash
+node scripts/graph-db-deps.mjs triggers    # 그래프 불필요, 항상 최신
 ```
+
+- **그래프가 필요 없다.** `.sql`을 직접 스캔하고, 나중 마이그레이션의 `DROP TRIGGER`까지
+  타임스탬프 순으로 재생해 *지금 살아있는* 트리거만 센다. graphify 설치 여부와 무관.
+- 판정 기준은 **같은 테이블 + 같은 타이밍 + 같은 이벤트**다. 함수가 달라도 잡힌다 —
+  실제 버그가 `review_notify_insert → notify_on_review_insert()` vs
+  `tr_notify_review_created → fn_notify_review_created()` 처럼 **함수가 다른** 형태였다.
+- ⚠️ **`중복_후보` 0건은 "안전 확정"이 아니다.** 같은 테이블·시점에 트리거가 여럿인 건
+  대부분 정상이라(updated_at + 상태전이 + XSS검사…) 함수명 토큰이 겹치는 쌍만 올린다.
+  이름이 전혀 안 겹치는 중복은 사람이 봐야 한다. 전체 목록은 `--verbose`.
+
+### 컬럼·테이블 변경 전 영향도 (이쪽은 그래프 필요)
+
+```bash
+graphify update uniqn-mobile --force --no-cluster   # 약 1분, LLM 토큰 0
+node scripts/graph-db-deps.mjs table <테이블명>      # 읽는 SQL 함수를 file:line 으로
+```
+
+- graphify 미설치 시 `uv tool install "graphifyy[sql,mcp]"`. `graphify-out/`은 gitignore
+  대상이라 **새 워크트리·머신에는 없다** — 위 갱신 명령을 먼저 한 번 돌려야 한다.
+- 그래프가 최신 `.sql`보다 낡으면 **exit 2로 차단**된다. `--allow-stale`로 우회하지 말 것.
+- ⚠️ `graphify install`/`claude install`은 **쓰지 말 것** — CLAUDE.md를 고치고 PreToolUse
+  훅을 심어 fablize 게이트와 충돌한다. CLI와 MCP 서버만 쓴다.
+- MCP `graphify` 서버(툴 10종)로도 조회 가능하나 `query_graph`는 임베딩이 없어 한글 질의가
+  0건이다. `get_node`/`get_neighbors`/`shortest_path`를 쓸 것.
