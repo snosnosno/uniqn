@@ -2,7 +2,10 @@
  * UNIQN Mobile - Expo 동적 설정
  *
  * @description 환경별 설정, 버전 관리, 빌드 설정을 동적으로 관리
- * @version 1.0.2
+ *
+ * ⚠️ 앱 버전을 여기에 적지 말 것 — 단일 소스는 `package.json` 의 `version` 이고
+ *    아래 VERSION 상수가 그것을 읽는다. 예전 헤더에 박혀 있던 `@version 1.0.2` 는
+ *    실제 버전이 1.0.5 가 된 뒤에도 그대로 남아 있었다(런타임 무영향, 오독 유발).
  *
  * 사용법:
  * - EAS Build에서 EAS_BUILD_RUNNER 환경변수로 빌드 환경 자동 감지

@@ -256,14 +256,20 @@ describe('Button', () => {
       expect(wrapperClassOf()).toContain('flex-1');
     });
 
-    it('should propagate fullWidth to the focus-ring wrapper', () => {
+    // ⚠️ `w-full` 은 wrapper 로 올리면 안 된다. wrapper 는 `m-[-2px] border-2` 를 갖는데
+    // 확정 폭(width:100%)이 붙으면 Yoga 가 stretch 재레이아웃을 건너뛰어 테두리 박스가
+    // 컨테이너 폭과 같아지고, content box 가 4px 줄면서 음수 마진 탓에 좌측으로 2px 밀려
+    // **우측에만 4px 빈틈**이 생긴다(같은 열의 Input 과 오른쪽 끝 어긋남).
+    it('should NOT propagate fullWidth to the focus-ring wrapper (right-gap guard)', () => {
       render(
         <Button accessibilityLabel="Full button" fullWidth>
           등록하기
         </Button>
       );
 
-      expect(wrapperClassOf()).toContain('w-full');
+      expect(wrapperClassOf() ?? '').not.toContain('w-full');
+      // 폭은 안쪽 Pressable 이 가져간다 — 부모의 stretch 가 wrapper 를 늘려주기 때문.
+      expect(screen.getByLabelText('Full button').props.className).toContain('w-full');
     });
 
     it('should let flex-1 win over fullWidth on the wrapper', () => {
@@ -303,12 +309,33 @@ describe('Button', () => {
       expect(pressableClass).toContain('border-2');
     });
 
-    it('should keep the focus ring reserve on the wrapper, not the pressable', () => {
+    it('should keep the focus ring color on the wrapper, not the pressable', () => {
       render(<Button accessibilityLabel="Ring button">링</Button>);
 
-      expect(wrapperClassOf()).toContain('border-transparent');
-      expect(screen.getByLabelText('Ring button').props.className).not.toContain('border-2');
+      const wrapperClass = wrapperClassOf() ?? '';
+      expect(wrapperClass).toContain('border-2');
+      expect(wrapperClass).toContain('border-transparent');
+      // focus 링 **색**은 wrapper 전담 — Pressable 이 border-info-500 을 갖지 않는다.
+      expect(screen.getByLabelText('Ring button').props.className).not.toContain('border-info-500');
     });
+
+    // outline 만 2px 테두리를 갖고 나머지는 테두리가 없으면, 나란히 놓인 두 버튼의
+    // 높이가 4px 어긋난다(승인 모달 취소/승인 등). 비-outline 변형은 같은 두께의
+    // 투명 테두리를 **각자** 들고 있어야 한다 — base 에 두면 outline 테두리를 덮는다.
+    it.each(['primary', 'secondary', 'ghost', 'danger', 'accent'] as const)(
+      'should reserve a 2px transparent border on the %s variant (height parity with outline)',
+      (variant) => {
+        render(
+          <Button variant={variant} accessibilityLabel={`${variant} button`}>
+            버튼
+          </Button>
+        );
+
+        const pressableClass = screen.getByLabelText(`${variant} button`).props.className as string;
+        expect(pressableClass).toContain('border-2');
+        expect(pressableClass).toContain('border-transparent');
+      }
+    );
   });
 
   describe('Accessibility', () => {

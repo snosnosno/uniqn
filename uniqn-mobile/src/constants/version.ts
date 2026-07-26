@@ -2,7 +2,10 @@
  * UNIQN Mobile - 버전 관리 상수
  *
  * @description 앱 버전 정보 및 업데이트 관련 상수
- * @version 1.0.0
+ *
+ * ⚠️ 버전 리터럴을 이 파일에 적지 말 것 — `APP_VERSION` 은 `expoConfig.version`
+ *    (= package.json)을 읽는다. 헤더에 박혀 있던 `@version 1.0.0` 은 실제 버전과
+ *    무관하게 굳어 있었다.
  *
  * 버전 규칙:
  * - MAJOR: 하위 호환되지 않는 API 변경

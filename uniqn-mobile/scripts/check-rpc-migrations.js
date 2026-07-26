@@ -17,15 +17,25 @@
  *    가진 것"을 대조해야 잡힌다.
  *
  * 대조 방식:
- *   호출부  — src/**\/*.ts(x) 에서 .rpc('name') / .rpc<T>('name') / runRpc<T>('name')
+ *   호출부  — src/ + app/ 의 *.ts(x) 에서 .rpc('name') / .rpc<T>('name') / runRpc<T>('name')
  *   정의부  — supabase/migrations/*.sql 의 CREATE [OR REPLACE] FUNCTION [public.]name
  *            (archive/ 는 재실행되지 않으므로 제외)
+ *
+ * ⚠️ 호출부는 **파일 전체를 한 번에** 스캔해야 한다. 라인 단위로 훑으면
+ *    prettier 가 감싼 멀티라인 호출을 통째로 놓친다 —
+ *      const { data } = await supabase.rpc(
+ *        'search_collaborator_candidates_by_nickname',   // ← .rpc( 와 다른 줄
+ *    초판이 정확히 이 형태 1건(전체 91종 중)을 못 보고 있었고, "✅ 통과"는
+ *    그 호출에 대해 아무것도 증명하지 못했다. 정규식의 `\s*` 는 개행도 먹으므로
+ *    전체 내용 스캔이면 그대로 잡힌다. **red-green 통과는 커버리지를 증명하지 않는다**
+ *    (graphify 트리거 추출 46% 누락과 같은 클래스).
  *
  * 한계(의도적):
  *   - 동적 이름(변수로 조립한 RPC 명)은 정적 추출 불가 — 리터럴만 검사한다.
  *   - 시그니처(파라미터)까지는 보지 않는다. 그건 pgTAP 이
  *     pg_get_function_identity_arguments 리터럴 비교로 고정한다
  *     (예: supabase/tests/inquiry_admin_rpcs.test.sql).
+ *   - Edge Function(supabase/functions/)은 Deno 런타임이라 대상 밖이다.
  *
  * 사용: node scripts/check-rpc-migrations.js
  * flags: --json (기계 판독용 출력)
@@ -35,7 +45,9 @@ const fs = require('fs');
 const path = require('path');
 
 const projectRoot = path.resolve(__dirname, '..');
-const SRC_DIR = path.join(projectRoot, 'src');
+// 앱 코드는 src/ 와 app/(Expo Router 화면) 두 뿌리에 나뉘어 있다. 화면에서 RPC 를
+// 부르는 코드가 아직 0건이라도 뿌리를 빠뜨리면 그 순간부터 조용히 감시 밖이 된다.
+const SOURCE_DIRS = [path.join(projectRoot, 'src'), path.join(projectRoot, 'app')];
 const MIGRATIONS_DIR = path.join(projectRoot, 'supabase', 'migrations');
 
 // .rpc('x') / .rpc<T>('x') / runRpc<T>('x') / runRpc('x') 의 리터럴 이름만 추출.
@@ -66,22 +78,26 @@ function collectFiles(dir, extensions, out = []) {
   return out;
 }
 
-/** 소스 파일들에서 RPC 호출 이름 → [파일:줄] 목록을 만든다. */
+/**
+ * 소스 파일들에서 RPC 호출 이름 → [파일:줄] 목록을 만든다.
+ *
+ * 파일 **전체 내용**을 한 번에 스캔한다(라인 단위 금지 — 상단 ⚠️ 참고).
+ * 줄 번호는 매치 시작 오프셋에서 역산한다.
+ */
 function collectRpcCalls(files) {
   const calls = new Map();
   for (const file of files) {
     const content = fs.readFileSync(file, 'utf8');
-    const lines = content.split(/\r?\n/);
-    lines.forEach((line, index) => {
-      RPC_CALL_RE.lastIndex = 0;
-      let match;
-      while ((match = RPC_CALL_RE.exec(line)) !== null) {
-        const name = match[1];
-        const location = `${path.relative(projectRoot, file).replace(/\\/g, '/')}:${index + 1}`;
-        const existing = calls.get(name);
-        calls.set(name, existing ? [...existing, location] : [location]);
-      }
-    });
+    const rel = path.relative(projectRoot, file).replace(/\\/g, '/');
+    RPC_CALL_RE.lastIndex = 0;
+    let match;
+    while ((match = RPC_CALL_RE.exec(content)) !== null) {
+      const name = match[1];
+      const line = content.slice(0, match.index).split(/\r?\n/).length;
+      const location = `${rel}:${line}`;
+      const existing = calls.get(name);
+      calls.set(name, existing ? [...existing, location] : [location]);
+    }
   }
   return calls;
 }
@@ -110,7 +126,10 @@ function findMissing(calls, defined) {
 function main() {
   const asJson = process.argv.includes('--json');
 
-  const sourceFiles = collectFiles(SRC_DIR, ['.ts', '.tsx']);
+  const sourceFiles = SOURCE_DIRS.reduce(
+    (acc, dir) => collectFiles(dir, ['.ts', '.tsx'], acc),
+    /** @type {string[]} */ ([])
+  );
   const migrationFiles = collectFiles(MIGRATIONS_DIR, ['.sql']);
 
   if (migrationFiles.length === 0) {
