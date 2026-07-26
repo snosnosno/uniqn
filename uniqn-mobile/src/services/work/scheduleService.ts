@@ -73,11 +73,38 @@ export interface ScheduleQueryResult {
   stats: ScheduleStats;
   /** 부분 실패 시 경고 메시지 */
   warning?: string;
+  /**
+   * 조회한 달 **밖**이지만 같은 지원에 속한 근무일.
+   *
+   * 월 단위로만 조회하면 월 경계를 넘는 연속 근무가 두 카드로 쪼개져, 7일짜리 대회가
+   * 7월 화면에서 '4일'로 표기된다 — 대회사 D-7 집중 인력이라는 이 앱의 핵심 시나리오가
+   * 정확히 여기서 깨지고, 8월 초까지 잡혀 있다는 사실이 안 보여 이중 예약이 난다.
+   *
+   * 그룹핑에만 합쳐 쓰고, 캘린더 dot·통계·필터는 `schedules`(그 달만)를 그대로 쓴다.
+   */
+  boundarySchedules?: ScheduleEvent[];
 }
 
 // ============================================================================
 // Helper Functions
 // ============================================================================
+
+/** 월 경계를 넘는 연속 근무를 한 그룹으로 잡기 위한 조회 여유(일) */
+const MONTH_BOUNDARY_PADDING_DAYS = 7;
+
+/** 조회 범위를 앞뒤로 N일 넓힌다 */
+function padDateRange(
+  range: { start: string; end: string },
+  days: number
+): { start: string; end: string } {
+  const shift = (value: string, delta: number) => {
+    const date = new Date(`${value}T00:00:00`);
+    date.setDate(date.getDate() + delta);
+    return toDateString(date);
+  };
+
+  return { start: shift(range.start, -days), end: shift(range.end, days) };
+}
 
 /**
  * 월의 시작일과 끝일 계산
@@ -535,8 +562,36 @@ export async function getSchedulesByMonth(
     logger.info('월별 스케줄 조회', { staffId, year, month });
 
     const dateRange = getMonthRange(year, month);
+    // 앞뒤로 여유를 두고 조회해야 월 경계를 넘는 연속 근무가 한 그룹으로 성립한다.
+    const paddedRange = padDateRange(dateRange, MONTH_BOUNDARY_PADDING_DAYS);
 
-    return await getMySchedules(staffId, { dateRange }, 100);
+    const result = await getMySchedules(staffId, { dateRange: paddedRange }, 100);
+
+    // 표시·집계 기준은 그대로 '그 달'이고, 패딩분은 그룹핑 재료로만 따로 넘긴다.
+    const inMonth: ScheduleEvent[] = [];
+    const outOfMonth: ScheduleEvent[] = [];
+    for (const schedule of result.schedules) {
+      if (schedule.date >= dateRange.start && schedule.date <= dateRange.end) {
+        inMonth.push(schedule);
+      } else {
+        outOfMonth.push(schedule);
+      }
+    }
+
+    // 그 달에 근무가 하나도 없는 지원의 패딩분까지 끌고 오면 남의 달 일정이 섞인다.
+    const monthApplicationIds = new Set(
+      inMonth.map((schedule) => schedule.applicationId).filter(Boolean)
+    );
+    const boundarySchedules = outOfMonth.filter(
+      (schedule) => schedule.applicationId && monthApplicationIds.has(schedule.applicationId)
+    );
+
+    return {
+      ...result,
+      schedules: inMonth,
+      stats: calculateScheduleStats(inMonth),
+      ...(boundarySchedules.length > 0 && { boundarySchedules }),
+    };
   } catch (error) {
     throw handleServiceError(error, {
       operation: '월별 스케줄 조회',

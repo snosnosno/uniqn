@@ -9,7 +9,13 @@
 import React, { memo, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import { CalendarIcon, ClockIcon, MapIcon, QrCodeIcon } from '@/components/icons';
+import {
+  CalendarIcon,
+  ClockIcon,
+  MapIcon,
+  QrCodeIcon,
+  AlertTriangleIcon,
+} from '@/components/icons';
 import { Badge } from '@/components/ui';
 import { getRoleDisplayName } from '@/types/unified';
 import { STATUS } from '@/constants';
@@ -27,6 +33,8 @@ export interface NextShiftCardProps {
   onQRScan?: () => void;
   /** 현재 시각 주입점 (테스트용). 기본값은 렌더 시점. */
   now?: Date;
+  /** 같은 시간대 다른 확정 근무가 있을 때의 경고 — 다음 근무야말로 미리 알아야 한다. */
+  overlapWarning?: string | null;
 }
 
 export const NextShiftCard = memo(function NextShiftCard({
@@ -34,6 +42,7 @@ export const NextShiftCard = memo(function NextShiftCard({
   onPress,
   onQRScan,
   now,
+  overlapWarning,
 }: NextShiftCardProps) {
   const timeInfo = useMemo(
     () => (schedule ? WorkTimeDisplay.getDisplayInfo(schedule) : null),
@@ -107,6 +116,15 @@ export const NextShiftCard = memo(function NextShiftCard({
           </Text>
           <Text className="ml-2 text-sm text-content-muted dark:text-secondary-400 font-sans">
             {getRoleDisplayName(schedule.role, schedule.customRole)}
+          </Text>
+        </View>
+      )}
+
+      {overlapWarning && (
+        <View className="mt-2 flex-row items-center rounded-md bg-warning-50 px-3 py-2 dark:bg-warning-900/20">
+          <AlertTriangleIcon size={14} color="#D4A017" />
+          <Text className="ml-1.5 flex-1 text-xs text-warning-700 dark:text-warning-400 font-sans">
+            {overlapWarning}
           </Text>
         </View>
       )}

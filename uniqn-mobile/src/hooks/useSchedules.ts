@@ -53,6 +53,8 @@ interface UseSchedulesByMonthOptions {
 
 interface ScheduleQueryPayload {
   schedules: ScheduleEvent[];
+  /** 조회한 달 밖이지만 같은 지원에 속한 근무일 — 그룹핑 재료로만 쓴다 */
+  boundarySchedules?: ScheduleEvent[];
   stats?: ScheduleStats;
   groupedSchedules?: ScheduleGroup[];
   markedDates?: Record<string, { marked: boolean; dotColor: string; type?: ScheduleType }>;
@@ -83,6 +85,7 @@ function normalizeScheduleQueryPayload(
 
   return {
     schedules,
+    boundarySchedules: payload.boundarySchedules,
     stats: payload.stats,
     groupedSchedules: payload.groupedSchedules ?? groupSchedulesByDate(schedules),
     markedDates: payload.markedDates ?? getCalendarMarkedDates(schedules),
@@ -385,6 +388,7 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
 
   return {
     schedules,
+    boundarySchedules: effectivePayload.boundarySchedules,
     groupedSchedules,
     markedDates,
     stats,
@@ -608,6 +612,7 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
 
   const {
     schedules,
+    boundarySchedules,
     groupedSchedules,
     markedDates,
     stats,
@@ -648,13 +653,23 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
     }
   }, [currentMonth, schedules, selectedDate]);
 
-  const groupedByApplication = useMemo(
-    () =>
-      enableGrouping
-        ? groupScheduleEvents(schedules, { enabled: true, minGroupSize: 2 })
-        : schedules,
-    [enableGrouping, schedules]
-  );
+  /**
+   * 그룹핑에만 월 경계 근무일을 합친다.
+   *
+   * 캘린더 dot·통계·필터는 `schedules`(그 달만)를 그대로 쓰고, 여기서만 패딩분을 더해
+   * 7일짜리 대회가 7월 화면에서도 '7일'로 온전히 표기되게 한다. 예전에는 월 경계에서
+   * 두 카드로 쪼개져 8월 초까지 잡혀 있다는 사실 자체가 안 보였다.
+   */
+  const groupedByApplication = useMemo(() => {
+    const groupingSource =
+      boundarySchedules && boundarySchedules.length > 0
+        ? [...schedules, ...boundarySchedules]
+        : schedules;
+
+    return enableGrouping
+      ? groupScheduleEvents(groupingSource, { enabled: true, minGroupSize: 2 })
+      : schedules;
+  }, [enableGrouping, schedules, boundarySchedules]);
 
   const selectedDateSchedules = useMemo(() => {
     if (enableGrouping) {

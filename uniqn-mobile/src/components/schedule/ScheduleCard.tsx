@@ -13,6 +13,7 @@ import {
   BriefcaseIcon,
   BanknotesIcon,
   UserIcon,
+  AlertTriangleIcon,
 } from '@/components/icons';
 import { getRoleDisplayName } from '@/types/unified';
 import {
@@ -41,9 +42,18 @@ import type { ScheduleEvent, PayrollStatus } from '@/types';
 export interface ScheduleCardProps {
   schedule: ScheduleEvent;
   onPress?: () => void;
+  /**
+   * 같은 시간대에 다른 확정 근무가 있을 때의 경고 문구.
+   * 차단이 아니라 경고 — 당일에야 알아채고 한쪽을 노쇼하는 상황을 막는 게 목적이다.
+   */
+  overlapWarning?: string | null;
 }
 
-export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: ScheduleCardProps) {
+export const ScheduleCard = memo(function ScheduleCard({
+  schedule,
+  onPress,
+  overlapWarning,
+}: ScheduleCardProps) {
   const status = statusConfig[schedule.type];
   const attendance = attendanceConfig[schedule.status];
   const ownerName = schedule.postingProjection?.ownerName;
@@ -133,6 +143,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
     typeof completedAmount === 'number' ? formatCurrency(completedAmount) : null,
     schedule.type === STATUS.SCHEDULE.COMPLETED ? payrollStatusConfig?.label : null,
     hasPendingCancellation ? '취소 요청 검토 중' : null,
+    overlapWarning,
   ]
     .filter(Boolean)
     .join(', ');
@@ -299,6 +310,15 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
                   </View>
                 )}
               </View>
+            </View>
+          )}
+
+          {overlapWarning && (
+            <View className="mt-3 flex-row items-center rounded-lg bg-warning-50 px-3 py-2 dark:bg-warning-900/20">
+              <AlertTriangleIcon size={14} color="#D4A017" />
+              <Text className="ml-1.5 flex-1 text-xs text-warning-700 dark:text-warning-400 font-sans">
+                {overlapWarning}
+              </Text>
             </View>
           )}
 

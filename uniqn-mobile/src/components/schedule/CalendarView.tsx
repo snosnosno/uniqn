@@ -43,6 +43,8 @@ LocaleConfig.locales.ko = {
   dayNames: ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'],
   dayNamesShort: [...WEEKDAYS_KO],
   today: '오늘',
+  // 지정하지 않으면 라이브러리가 'Monday 13 July 2026' 를 영어로 읽는다.
+  formatAccessibilityLabel: 'yyyy년 M월 d일 dddd',
 };
 LocaleConfig.defaultLocale = 'ko';
 
@@ -91,6 +93,16 @@ const calendarTheme = {
   textDayFontWeight: '400' as const,
   textMonthFontWeight: '600' as const,
   textDayHeaderFontWeight: '500' as const,
+  // 날짜 셀 터치 타깃 44×44 (WCAG 2.5.5). 기본값 32 에 hitSlop 도 없어
+  // 새벽 근무 후 한 손 조작에서 탭이 자주 먹지 않았다.
+  'stylesheet.day.basic': {
+    base: {
+      width: 44,
+      height: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  },
 };
 
 const darkCalendarTheme = {
@@ -116,6 +128,28 @@ function getDotsForSchedules(schedules: ScheduleEvent[]): DotInfo[] {
     }));
 }
 
+const SCHEDULE_TYPE_LABEL: Record<ScheduleType, string> = {
+  applied: '지원 중',
+  confirmed: '확정',
+  completed: '완료',
+  cancelled: '취소',
+};
+
+/** '7월 13일, 확정 1건 · 지원 중 1건' — 날짜 뒤에 붙어 낭독된다. */
+function buildDayAccessibilityLabel(date: string, schedules: ScheduleEvent[]): string {
+  const counts = new Map<ScheduleType, number>();
+  schedules.forEach((schedule) => {
+    counts.set(schedule.type, (counts.get(schedule.type) ?? 0) + 1);
+  });
+
+  const [, month, day] = date.split('-');
+  const summary = Array.from(counts.entries())
+    .map(([type, count]) => `${SCHEDULE_TYPE_LABEL[type]} ${count}건`)
+    .join(' · ');
+
+  return `${Number(month)}월 ${Number(day)}일, ${summary || '일정 없음'}`;
+}
+
 function convertToMarkedDates(schedules: ScheduleEvent[], selectedDate: string): MarkedDates {
   const markedDates: MarkedDates = {};
   const schedulesByDate = new Map<string, ScheduleEvent[]>();
@@ -136,6 +170,9 @@ function convertToMarkedDates(schedules: ScheduleEvent[], selectedDate: string):
       marked: true,
       selected: date === selectedDate,
       selectedColor: date === selectedDate ? PRIMARY_COLORS[600] : undefined,
+      // 라이브러리는 marking.accessibilityLabel 을 최우선으로 읽는다. 이걸 주지 않으면
+      // 건수도 상태(색 점)도 낭독되지 않아 스크린리더 사용자에겐 점이 존재하지 않는 것과 같다.
+      accessibilityLabel: buildDayAccessibilityLabel(date, dateSchedules),
     };
   });
 

@@ -55,6 +55,7 @@ import {
 } from '@/utils/scheduleDeepLink';
 import { triggerHaptic } from '@/utils/haptics';
 import { getTodayString } from '@/utils/date';
+import { detectScheduleOverlaps, formatOverlapWarning } from '@/utils/scheduleOverlap';
 import {
   filterSchedulesByStatus,
   countSchedulesByType,
@@ -408,6 +409,10 @@ export default function ScheduleScreen() {
   // 기본 그룹 정렬은 최신순 내림차순이라 27일인 사용자에게 31일 카드가 맨 위에 왔다.
   const todayStr = getTodayString();
 
+  // 더블부킹 경고 — 확정 권한은 각 구인자에게 있어 서로 모르게 같은 시간대에 둘 다
+  // 확정될 수 있다. 감지기는 구인자 화면에만 있었고 정작 곤란해지는 쪽엔 경고가 없었다.
+  const overlapMap = useMemo(() => detectScheduleOverlaps(schedules), [schedules]);
+
   // '내 다음 근무' 히어로 — 이미 구현돼 있으나 소비자가 없던 useTodaySchedules(60초 폴링·
   // 오프라인 캐시 완비)를 오늘 근무 원천으로 쓰고, 오늘 것이 없으면 이번 달 확정 건에서 찾는다.
   const { schedules: todaySchedules } = useTodaySchedules();
@@ -744,10 +749,15 @@ export default function ScheduleScreen() {
         );
       }
       return (
-        <ScheduleCard key={item.id} schedule={item} onPress={() => handleOpenDetailSheet(item)} />
+        <ScheduleCard
+          key={item.id}
+          schedule={item}
+          onPress={() => handleOpenDetailSheet(item)}
+          overlapWarning={formatOverlapWarning(overlapMap.get(item.id) ?? [])}
+        />
       );
     },
-    [handleOpenGroupedDetailSheet, handleGroupDatePress, handleOpenDetailSheet]
+    [handleOpenGroupedDetailSheet, handleGroupDatePress, handleOpenDetailSheet, overlapMap]
   );
 
   // 스케줄 상세 시트 닫기
@@ -828,6 +838,7 @@ export default function ScheduleScreen() {
         schedule={nextShift}
         onPress={() => nextShift && handleOpenDetailSheet(nextShift)}
         onQRScan={handleQRScan}
+        overlapWarning={nextShift ? formatOverlapWarning(overlapMap.get(nextShift.id) ?? []) : null}
       />
 
       {/* 월 네비게이터 — 통계보다 먼저 와야 '어느 달의 숫자인지'가 먼저 읽힌다. */}

@@ -218,7 +218,13 @@ export interface SlotConflict {
  * 자정을 넘는 구간은 end 가 1440 을 초과한다(deriveOvernightPreview.durationMinutes 로 익일 반영).
  * 시작/종료 미파싱·시작==종료(0분 근무)면 구간을 만들 수 없어 null(충돌 판정 제외).
  */
-function toSlotInterval(timeSlot: string | null): { start: number; end: number } | null {
+/**
+ * timeSlot("18:00-02:00") → 분 단위 절대 구간. 자정을 넘는 구간도 정확히 환산한다.
+ * 스케줄 탭의 더블부킹 감지가 같은 판정을 공유하도록 export 한다.
+ */
+export function toSlotInterval(
+  timeSlot: string | null | undefined
+): { start: number; end: number } | null {
   const { start, end } = parseTimeSlotParts(timeSlot);
   if (!start || !end) return null;
   const startMin = toMinutes(start);

@@ -446,13 +446,15 @@ describe('scheduleService', () => {
       mockAppRepoGetByApplicantIdWithStatuses.mockResolvedValue([]);
 
       await getMySchedules('staff-123', {
-        dateRange: { start: '2025-01-01', end: '2025-01-31' },
+        // 월 경계를 넘는 연속 근무를 한 그룹으로 잡으려 앞뒤 7일을 더 조회한다.
+        dateRange: { start: '2024-12-25', end: '2025-02-07' },
       });
 
       expect(mockWorkLogRepoGetByStaffIdWithFilters).toHaveBeenCalledWith(
         'staff-123',
         expect.objectContaining({
-          dateRange: { start: '2025-01-01', end: '2025-01-31' },
+          // 월 경계를 넘는 연속 근무를 한 그룹으로 잡으려 앞뒤 7일을 더 조회한다.
+          dateRange: { start: '2024-12-25', end: '2025-02-07' },
         })
       );
     });
@@ -476,7 +478,8 @@ describe('scheduleService', () => {
       mockJobPostingRepoGetByIdBatch.mockResolvedValue([posting]);
 
       const result = await getMySchedules('staff-123', {
-        dateRange: { start: '2025-01-01', end: '2025-01-31' },
+        // 월 경계를 넘는 연속 근무를 한 그룹으로 잡으려 앞뒤 7일을 더 조회한다.
+        dateRange: { start: '2024-12-25', end: '2025-02-07' },
         searchTerm: '강남',
       });
 
@@ -517,7 +520,8 @@ describe('scheduleService', () => {
       expect(mockWorkLogRepoGetByStaffIdWithFilters).toHaveBeenCalledWith(
         'staff-123',
         expect.objectContaining({
-          dateRange: { start: '2025-01-01', end: '2025-01-31' },
+          // 월 경계를 넘는 연속 근무를 한 그룹으로 잡으려 앞뒤 7일을 더 조회한다.
+          dateRange: { start: '2024-12-25', end: '2025-02-07' },
         })
       );
     });
@@ -531,7 +535,7 @@ describe('scheduleService', () => {
       expect(mockWorkLogRepoGetByStaffIdWithFilters).toHaveBeenCalledWith(
         'staff-123',
         expect.objectContaining({
-          dateRange: { start: '2024-02-01', end: '2024-02-29' },
+          dateRange: { start: '2024-01-25', end: '2024-03-07' },
         })
       );
     });
