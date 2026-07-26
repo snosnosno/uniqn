@@ -48,8 +48,8 @@ cd uniqn-mobile && npm test -- --coverage --silent 2>&1 | tail -20
 
 ### 4. 아키텍처 준수 (1.5점)
 ```bash
-# Presentation/Hooks에서 Firestore 직접 호출 (위반)
-grep -rn "collection(\|doc(\|getDoc\|setDoc\|updateDoc\|deleteDoc" uniqn-mobile/src/components/ uniqn-mobile/src/app/ --include="*.ts" --include="*.tsx" | grep -v "test\|spec\|__test" | wc -l
+# Presentation/Hooks에서 Supabase 직접 호출 (위반) — 반드시 Service → Repository 경유
+grep -rn "supabase\.\(from\|rpc\)(" uniqn-mobile/app/ uniqn-mobile/src/components/ uniqn-mobile/src/hooks/ --include="*.ts" --include="*.tsx" | grep -v "test\|spec\|__test" | wc -l
 ```
 - 0 위반 = 1.5
 - 1~3 위반 = 1.0

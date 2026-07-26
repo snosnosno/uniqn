@@ -31,10 +31,10 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 | `perf` | 성능 개선 |
 
 ### 스코프 (선택)
-- `mobile`: uniqn-mobile/ 관련
-- `web`: app2/ 관련
-- `functions`: Firebase Functions 관련
-- `rules`: Firestore Security Rules 관련
+- `mobile`: uniqn-mobile/ 앱 코드 관련
+- `web`: 웹(Cloudflare Pages) 빌드·웹 전용 동작 관련
+- `functions`: Supabase Edge Functions / Cloudflare Pages Functions(`uniqn-mobile/functions/`) 관련
+- `db`: Supabase 마이그레이션·RLS 정책 관련
 
 ## 프로세스
 
@@ -81,10 +81,10 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 ### 버그 수정
 ```
-fix(mobile): Firebase undefined 필드 에러 수정
+fix(mobile): 지원 취소 시 카운터 불일치 수정
 
-- notes, assignmentGroupId 필드를 null로 변경
-- undefined는 Firestore에서 에러 발생
+- cancel_application_atomically RPC로 다중 테이블 갱신을 원자화
+- 클라이언트 다단계 뮤테이션은 중간 실패 시 카운터가 어긋남
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 ```

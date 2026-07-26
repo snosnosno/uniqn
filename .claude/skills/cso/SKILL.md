@@ -11,12 +11,12 @@ gstack의 인프라 우선 보안 감사를 Uniqn 프로젝트에 적용합니�
 ## 프로젝트 컨텍스트
 
 ```yaml
-스택: Expo SDK 54 / Firebase 12.6 / RevenueCat
-인증: Firebase Auth (이메일/비밀번호, Custom Claims)
-저장소: Firestore, Firebase Storage
-결제: RevenueCat 인앱 결제
+스택: Expo SDK 55 / RN 0.83 / React 19 / Supabase (PostgreSQL + RLS + Edge Functions)
+인증: Supabase Auth (이메일/비밀번호, app_metadata.role)
+저장소: PostgreSQL (RLS), Supabase Storage
+본인인증: PortOne
 역할: admin(100) > employer(50) > staff(10)
-보안 유틸: xssValidation, sanitizeHtml (src/utils/security)
+보안 유틸: xssValidation, sanitizeInput (src/utils/security.ts)
 ```
 
 ## 감사 모드
@@ -35,16 +35,23 @@ gstack의 인프라 우선 보안 감사를 Uniqn 프로젝트에 적용합니�
 grep -rn "api_key\|apikey\|secret\|password\|token" uniqn-mobile/src/ --include="*.ts" --include="*.tsx"
 # .env 파일 git 추적 여부
 git ls-files | grep -i "\.env"
-# Firebase config 노출
-grep -rn "apiKey\|authDomain\|projectId" uniqn-mobile/src/ --include="*.ts" | grep -v "firebaseConfig\|firebase.ts\|\.env"
+# Supabase service_role 키 클라이언트 노출 (치명)
+grep -rn "service_role\|SERVICE_ROLE\|sb_secret_" uniqn-mobile/src/ uniqn-mobile/app/ --include="*.ts" --include="*.tsx"
 ```
 
-### 2. Firebase Security Rules 검증
-- [ ] 모든 컬렉션에 read/write 규칙 설정
-- [ ] `allow read, write: if true` 패턴 없음
-- [ ] 역할 기반 접근 제어 (admin/employer/staff)
-- [ ] 문서 소유권 검증 (request.auth.uid == resource.data.userId)
-- [ ] 데이터 유효성 검증 (request.resource.data 타입 체크)
+### 2. Supabase RLS / SECURITY DEFINER 검증
+```bash
+# 무조건 허용 정책 탐지
+grep -rniE "using *\( *true *\)|with check *\( *true *\)" uniqn-mobile/supabase/migrations/
+# SECURITY DEFINER 함수 목록 — 각 함수의 search_path 고정 여부 확인
+grep -rn "SECURITY DEFINER" uniqn-mobile/supabase/migrations/
+```
+- [ ] 모든 public 테이블에 RLS 활성화 + 정책 존재
+- [ ] `USING (true)` / `WITH CHECK (true)` 무조건 허용 정책 없음
+- [ ] 역할 기반 접근 제어 — `(auth.jwt() -> 'app_metadata' ->> 'role')` (admin/employer/staff)
+- [ ] 행 소유권 검증 (`auth.uid() = user_id`)
+- [ ] SECURITY DEFINER 함수 하드닝 (`SET search_path`, anon REVOKE, NULL fail-open 차단)
+- [ ] 변경된 정책·함수에 pgTAP 회귀 테스트 존재 (`uniqn-mobile/supabase/tests/`)
 
 ### 3. 입력 검증 (OWASP A03)
 ```bash
@@ -59,7 +66,7 @@ grep -rn "eval(" uniqn-mobile/src/
 ### 4. 인증/인가 (OWASP A01, A07)
 - [ ] 모든 보호 라우트에 인증 가드 적용
 - [ ] UserRole 기반 접근 제어 (라우트 그룹별)
-- [ ] Firebase Custom Claims 서버사이드 검증
+- [ ] JWT `app_metadata.role` 서버사이드(RLS/RPC) 검증 — 클라이언트가 보낸 role 신뢰 금지
 - [ ] 토큰 만료/갱신 처리
 - [ ] SecureStore로 민감 토큰 저장 (AsyncStorage 아님)
 
@@ -77,21 +84,16 @@ cd uniqn-mobile && npm audit 2>&1 | head -50
 npm outdated --json 2>/dev/null | head -30
 ```
 
-### 7. RevenueCat 결제 보안
-- [ ] 서버사이드 영수증 검증 (클라이언트만 의존하지 않음)
-- [ ] 결제 상태 Firestore 동기화
-- [ ] 무료/유료 기능 분리 서버 검증
-
-### 8. STRIDE 위협 모델링
+### 7. STRIDE 위협 모델링
 
 | 위협 | 항목 | 검사 내용 |
 |------|------|----------|
-| Spoofing | 인증 | Firebase Auth 우회 가능성 |
-| Tampering | 데이터 | Firestore Security Rules 무결성 |
+| Spoofing | 인증 | Supabase Auth 우회 가능성 (anon 키 남용, JWT 클레임 위조) |
+| Tampering | 데이터 | RLS 정책·SECURITY DEFINER 함수 무결성 |
 | Repudiation | 감사 | 중요 작업 로깅 여부 |
 | Information Disclosure | 노출 | 에러 메시지에 민감 정보 포함 여부 |
 | Denial of Service | 가용성 | Rate limiting, 대량 쿼리 방지 |
-| Elevation of Privilege | 권한 | UserRole 변경 보호 (runTransaction 필수) |
+| Elevation of Privilege | 권한 | UserRole 변경 보호 (Supabase RPC 경유 필수, 클라 직접 UPDATE 차단) |
 
 ## 출력 형식
 

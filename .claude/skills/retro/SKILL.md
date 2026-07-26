@@ -13,7 +13,7 @@ allowed-tools: Read, Grep, Glob, Bash, Task
 ```yaml
 커밋 컨벤션: <타입>(스코프): 한글 제목
 타입: feat / fix / refactor / style / docs / test / chore / perf
-스코프: mobile / functions / firestore / web
+스코프: 변경 도메인 (실제 사용 예: workspace / auth / e2e / ops / security / wiki / jobs / ui / mobile / db / web / release)
 ```
 
 ## 회고 프로세스

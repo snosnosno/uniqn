@@ -10,11 +10,11 @@ allowed-tools: Read, Write, Edit, Bash, Grep, Glob
 
 ## 테스트 스택
 
-| 프로젝트 | 프레임워크 | 위치 |
-|----------|-----------|------|
-| uniqn-mobile | Jest + @testing-library/react-native | `__tests__/` |
-| app2 | Jest + @testing-library/react | `src/**/*.test.ts` |
-| functions | Jest | `functions/__tests__/` |
+| 대상 | 프레임워크 | 위치 |
+|------|-----------|------|
+| uniqn-mobile (앱) | Jest + @testing-library/react-native | `__tests__/`, `src/**/__tests__/` |
+| Pages Functions | Jest | `functions/**/__tests__/` |
+| DB (RLS·RPC) | pgTAP | `supabase/tests/*.test.sql` |
 
 ## 테스트 종류
 
@@ -89,36 +89,99 @@ describe('myUtil', () => {
 });
 ```
 
-### 서비스 테스트 (Firebase 모킹)
+### 서비스 테스트 (Repository 모킹)
+
+Service는 Repository를 경유하므로 서비스 테스트에서는 **Repository를 모킹**합니다.
+
 ```typescript
-import { jobManagementService } from '@/services/jobManagementService';
+import { createJobPosting } from '@/services/jobs/jobManagementService';
 
-// Firebase 모킹
-jest.mock('@/lib/firebase', () => ({
-  db: {},
-  auth: { currentUser: { uid: 'test-user' } },
+jest.mock('@/repositories', () => ({
+  jobPostingRepository: {
+    createWithTransaction: jest.fn(),
+    enqueueScheduleBoardSync: jest.fn(),
+  },
 }));
 
-jest.mock('firebase/firestore', () => ({
-  collection: jest.fn(),
-  doc: jest.fn(),
-  getDoc: jest.fn(),
-  setDoc: jest.fn(),
-  // ...
+// workspaceId 미전달 시 createJobPosting 이 기본 워크스페이스를 조회하므로 함께 모킹
+jest.mock('@/services/workspace', () => ({
+  workspaceService: {
+    getDefaultWorkspaceIdForOwner: jest.fn().mockResolvedValue('workspace-1'),
+  },
 }));
 
-describe('jobManagementService', () => {
+jest.mock('@/utils/logger', () => ({
+  logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
+}));
+
+describe('createJobPosting', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   it('공고를 생성한다', async () => {
-    const mockSetDoc = require('firebase/firestore').setDoc;
-    mockSetDoc.mockResolvedValue(undefined);
+    const { jobPostingRepository } = require('@/repositories');
+    jobPostingRepository.createWithTransaction.mockResolvedValue({ id: 'posting-1' });
 
-    await jobManagementService.createJob(mockJobData);
+    const result = await createJobPosting(mockInput, 'owner-1', '홍길동');
 
-    expect(mockSetDoc).toHaveBeenCalled();
+    expect(jobPostingRepository.createWithTransaction).toHaveBeenCalled();
+    expect(result.id).toBe('posting-1');
+  });
+});
+```
+
+### Repository 테스트 (Supabase 모킹)
+
+Supabase 클라이언트는 `@/lib/supabase`, 응답 헬퍼는 `@/utils/supabase`를 모킹합니다.
+다중 쓰기는 RPC(PL/pgSQL 함수)로 처리되므로 `supabase.rpc` 호출 인자를 검증합니다.
+
+```typescript
+import { executeCancelConfirmation } from '@/repositories/supabase/ApplicationRepositoryTransactions';
+
+const mockRpc = jest.fn();
+
+jest.mock('@/lib/supabase', () => ({
+  supabase: {
+    rpc: (...args: unknown[]) => mockRpc(...args),
+  },
+}));
+
+jest.mock('@/utils/supabase', () => ({
+  handleSupabaseError: (error: { message?: string } | null) => {
+    throw new Error(`supabase: ${error?.message ?? 'unknown'}`);
+  },
+  toCamelCase: <T>(x: T) => x,
+}));
+
+jest.mock('@/utils/logger', () => ({
+  logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
+}));
+
+// helpers 는 RPC 경로에서 호출되지 않지만 import 트리 유지를 위해 모킹
+jest.mock('@/repositories/supabase/ApplicationRepositoryHelpers', () => ({
+  TABLES: { APPLICATIONS: 'applications' },
+  rethrowOrHandle: (error: unknown) => {
+    throw error;
+  },
+  loadApplication: jest.fn(),
+  loadAndVerifyJobPostingAccess: jest.fn(),
+}));
+
+describe('executeCancelConfirmation', () => {
+  beforeEach(() => {
+    mockRpc.mockReset();
+  });
+
+  it('cancel_application_atomically RPC를 올바른 인자로 호출한다', async () => {
+    mockRpc.mockResolvedValueOnce({ data: { success: true }, error: null });
+
+    await executeCancelConfirmation('app-1', 'staff-1');
+
+    expect(mockRpc).toHaveBeenCalledWith(
+      'cancel_application_atomically',
+      expect.objectContaining({ p_application_id: 'app-1' })
+    );
   });
 });
 ```
@@ -196,6 +259,9 @@ npm run test:coverage
 
 # Watch 모드
 npm test -- --watch
+
+# DB(pgTAP) 테스트 — 로컬 Supabase 기동 필요
+npm run test:db
 ```
 
 ## 커버리지 목표
@@ -214,10 +280,10 @@ npm test -- --watch
 ### 보안 QA
 - [ ] 사용자 입력에 xssValidation 적용 여부
 - [ ] 권한 체크 로직 테스트 (admin/employer/staff 각각)
-- [ ] Firebase Security Rules 시뮬레이터 테스트
+- [ ] RLS 정책·SECURITY DEFINER 함수 pgTAP 회귀 테스트 (`npm run test:db`)
 
 ### 데이터 무결성 QA
-- [ ] 다중 문서 수정 시 runTransaction 사용 확인
+- [ ] 다중 쓰기 시 Supabase RPC(PL/pgSQL 함수) 경유 확인 — 클라이언트 다단계 뮤테이션 금지
 - [ ] undefined → null 변환 테스트
 - [ ] 낙관적 업데이트 롤백 테스트
 
