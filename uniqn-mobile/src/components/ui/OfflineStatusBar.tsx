@@ -35,6 +35,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { WifiIcon, WifiOff } from '@/components/icons';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { getNetworkState, subscribeToNetworkState } from '@/services/offline/networkState';
 
 type BannerPhase = 'hidden' | 'offline' | 'reconnected';
@@ -59,29 +60,6 @@ const TOKENS = {
     text: '#09090B', // content-primary light
   },
 } as const;
-
-function useReduceMotion(): boolean {
-  const [enabled, setEnabled] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-
-    AccessibilityInfo.isReduceMotionEnabled().then((v) => {
-      if (mounted) setEnabled(v);
-    });
-
-    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', (v: boolean) => {
-      if (mounted) setEnabled(v);
-    });
-
-    return () => {
-      mounted = false;
-      sub?.remove?.();
-    };
-  }, []);
-
-  return enabled;
-}
 
 export function OfflineStatusBar(): React.ReactElement | null {
   const [phase, setPhase] = useState<BannerPhase>(() =>

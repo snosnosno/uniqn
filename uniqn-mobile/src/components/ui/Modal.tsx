@@ -19,14 +19,11 @@ import {
 } from 'react-native';
 import { ModalKeyboardAvoider } from '@/components/ui/ModalKeyboardAvoider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { XMarkIcon } from '@/components/icons';
 import { getIconColor } from '@/constants';
+import { MOTION_EASING, MOTION_DURATION } from '@/constants/motion';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { useThemeStore } from '@/stores/themeStore';
 import { isWeb } from '@/utils/platform';
 import { WebPortal } from '@/components/ui/WebPortal';
@@ -271,6 +268,7 @@ function NativeModal({
   const { isDarkMode } = useThemeStore();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const reduceMotion = useReduceMotion();
   const fadeOpacity = useSharedValue(0);
   const scale = useSharedValue(0.9);
   const translateY = useSharedValue(100);
@@ -308,33 +306,49 @@ function NativeModal({
 
     if (visible) {
       // 열기 애니메이션
-      fadeOpacity.value = withTiming(1, { duration: 200, easing: Easing.ease });
+      fadeOpacity.value = withTiming(1, {
+        duration: MOTION_DURATION.base,
+        easing: MOTION_EASING.fade,
+      });
 
-      if (position === 'center') {
+      if (reduceMotion) {
+        // reduce motion: transform 은 즉시 목표값, opacity 페이드만 유지
+        scale.value = 1;
+        translateY.value = 0;
+      } else if (position === 'center') {
         scale.value = withTiming(1, {
-          duration: 250,
-          easing: Easing.out(Easing.cubic),
+          duration: MOTION_DURATION.emphasized,
+          easing: MOTION_EASING.enter,
         });
       } else {
         translateY.value = withTiming(0, {
-          duration: 300,
-          easing: Easing.out(Easing.ease),
+          duration: MOTION_DURATION.sheet,
+          easing: MOTION_EASING.sheet,
         });
       }
     } else {
       // 닫기 애니메이션
-      fadeOpacity.value = withTiming(0, { duration: 150, easing: Easing.ease });
+      fadeOpacity.value = withTiming(0, {
+        duration: MOTION_DURATION.fast,
+        easing: MOTION_EASING.fade,
+      });
 
-      if (position === 'center') {
-        scale.value = withTiming(0.9, { duration: 150, easing: Easing.ease });
+      if (reduceMotion) {
+        scale.value = 0.9;
+        translateY.value = 100;
+      } else if (position === 'center') {
+        scale.value = withTiming(0.9, {
+          duration: MOTION_DURATION.fast,
+          easing: MOTION_EASING.fade,
+        });
       } else {
         translateY.value = withTiming(100, {
-          duration: 200,
-          easing: Easing.in(Easing.ease),
+          duration: MOTION_DURATION.sheetExit,
+          easing: MOTION_EASING.exitTravel,
         });
       }
     }
-  }, [visible, position, fadeOpacity, scale, translateY]);
+  }, [visible, position, reduceMotion, fadeOpacity, scale, translateY]);
 
   const handleBackdropPress = () => {
     Keyboard.dismiss();
