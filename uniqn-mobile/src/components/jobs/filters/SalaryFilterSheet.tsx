@@ -1,7 +1,8 @@
 /**
- * UNIQN Mobile - 급여 필터 시트 (타입 세그먼트 + 프리셋 칩)
+ * UNIQN Mobile - 급여 필터 시트 (타입 세그먼트 + 정렬 칩 + 금액 프리셋 칩)
  *
- * @description 시급/일급/월급 세그먼트 + 최소 금액 프리셋 칩(단일선택) + 적용.
+ * @description 시급/일급/월급 세그먼트 + 정렬(높은순/낮은순) + 최소 금액 프리셋 칩 + 적용.
+ * 정렬·금액은 각각 단일선택이며 서로 독립 조합된다(정렬만·금액만·둘 다 모두 유효).
  * 매칭 의미론: 해당 타입 급여 행(default+역할별) 최대값 ≥ 기준 — 그 이상 받을 수 있는
  * 역할이 존재하면 노출(설계 §4). 협의(other) 공고는 salary_*_max NULL 이라 제외된다.
  * 미리보기 카운트는 적용 중인 지역/역할 필터를 포함해 목록(getList)과 정합을 유지한다.
@@ -13,10 +14,10 @@ import { Modal } from '@/components/ui/Modal';
 import { InformationCircleIcon } from '@/components/icons';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { SALARY_TYPE_LABELS } from '@/constants';
-import type { FilterableSalaryType } from '@/types/jobPosting';
+import type { FilterableSalaryType, SalarySortDirection } from '@/types/jobPosting';
 import type { StaffRole } from '@/types/role';
 import type { SalaryFilter } from '@/stores/jobFilterStore';
-import { formatManWon } from '@/utils/jobFilterLabels';
+import { formatManWon, SALARY_SORT_LABELS } from '@/utils/jobFilterLabels';
 import { usePostingTypeCounts } from '@/hooks/usePostingTypeCounts';
 
 export interface SalaryFilterSheetProps {
@@ -35,12 +36,52 @@ type SheetBodyProps = Omit<SalaryFilterSheetProps, 'visible'>;
 
 const SALARY_TYPES: readonly FilterableSalaryType[] = ['hourly', 'daily', 'monthly'];
 
-/** 타입별 최소 금액 프리셋(원) — 설계 §4 (월급은 매니저·상주 직무 레인지 기준) */
-const SALARY_PRESETS: Record<FilterableSalaryType, number[]> = {
-  hourly: [11000, 12000, 13000, 15000, 20000],
-  daily: [100000, 120000, 150000, 200000],
-  monthly: [2000000, 2500000, 3000000, 4000000],
+const SALARY_SORTS: readonly SalarySortDirection[] = ['high', 'low'];
+
+/**
+ * 타입별 최소 금액 프리셋(원). 시급·일급만 금액 칩을 제공하고 월급은 정렬만 쓴다 —
+ * 월급 공고는 표본이 적어 금액 구간을 나눌 실익이 없다.
+ */
+const SALARY_PRESETS: Record<FilterableSalaryType, readonly number[]> = {
+  hourly: [15000, 20000],
+  daily: [200000, 300000],
+  monthly: [],
 };
+
+/** 정렬·금액 칩 공용 — 단일선택(재탭 해제) 시각 규칙을 한 곳에 둔다 */
+function ChoiceChip({
+  label,
+  selected,
+  accessibilityLabel,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  accessibilityLabel: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: selected }}
+      accessibilityLabel={accessibilityLabel}
+      className={`min-h-[40px] flex-row items-center rounded-full border px-4 active:opacity-70 ${
+        selected
+          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30'
+          : 'border-secondary-200 dark:border-surface-overlay'
+      }`}
+    >
+      <Text
+        className={`text-sm font-sans-medium ${
+          selected ? 'text-primary-700 dark:text-primary-300' : 'text-content-primary'
+        }`}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
 
 function SheetBody({
   onClose,
@@ -54,28 +95,45 @@ function SheetBody({
     () => appliedSalary?.type ?? 'hourly'
   );
   const [pendingMin, setPendingMin] = useState<number | null>(() => appliedSalary?.min ?? null);
+  const [pendingSort, setPendingSort] = useState<SalarySortDirection | null>(
+    () => appliedSalary?.sort ?? null
+  );
+
+  const hasSelection = pendingMin !== null || pendingSort !== null;
 
   // 적용 전 미리보기 카운트 — 목록/칩과 동일 스코프(getTypeCounts + 적용 중 타 필터 포함).
+  // 정렬만 선택해도 협의(NULL) 공고가 목록에서 빠지므로 salarySort 도 함께 넘긴다.
   const { counts, hasCounts } = usePostingTypeCounts({
     regions: appliedRegions,
     regionPrefixes: appliedRegionPrefixes,
     roles: appliedRoles,
-    salaryType: pendingMin ? pendingType : null,
+    salaryType: hasSelection ? pendingType : null,
     salaryMin: pendingMin,
+    salarySort: pendingSort,
     keepPreviousCounts: true,
   });
 
   const handleSelectType = (type: FilterableSalaryType) => {
     if (type === pendingType) return;
     setPendingType(type);
-    // 프리셋 레인지가 타입마다 달라 금액 선택은 초기화한다.
+    // 프리셋 레인지가 타입마다 달라 금액 선택은 초기화한다(정렬은 타입 무관하게 유지).
     setPendingMin(null);
   };
 
   const handleApply = () => {
-    onApply(pendingMin ? { type: pendingType, min: pendingMin } : null);
+    onApply(hasSelection ? { type: pendingType, min: pendingMin, sort: pendingSort } : null);
     onClose();
   };
+
+  const handleReset = () => {
+    setPendingMin(null);
+    setPendingSort(null);
+  };
+
+  const summaryParts = [
+    ...(pendingMin !== null ? [`${formatManWon(pendingMin)} 이상`] : []),
+    ...(pendingSort !== null ? [SALARY_SORT_LABELS[pendingSort]] : []),
+  ];
 
   const applyLabel = hasCounts ? `공고 ${counts?.total ?? 0}건 보기` : '적용';
 
@@ -111,32 +169,31 @@ function SheetBody({
           })}
         </View>
 
-        {/* 최소 금액 프리셋 칩 (단일선택 — 재탭 시 해제) */}
+        {/* 정렬 + 최소 금액 칩 (각각 단일선택 — 재탭 시 해제, 서로 독립 조합) */}
         <View className="flex-row flex-wrap gap-2">
+          {SALARY_SORTS.map((sort) => {
+            const selected = pendingSort === sort;
+            return (
+              <ChoiceChip
+                key={sort}
+                label={SALARY_SORT_LABELS[sort]}
+                selected={selected}
+                accessibilityLabel={`${SALARY_TYPE_LABELS[pendingType]} ${SALARY_SORT_LABELS[sort]}`}
+                onPress={() => setPendingSort(selected ? null : sort)}
+              />
+            );
+          })}
           {SALARY_PRESETS[pendingType].map((amount) => {
             const selected = pendingMin === amount;
             const label = `${formatManWon(amount)}+`;
             return (
-              <Pressable
+              <ChoiceChip
                 key={amount}
-                onPress={() => setPendingMin(selected ? null : amount)}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: selected }}
+                label={label}
+                selected={selected}
                 accessibilityLabel={`${SALARY_TYPE_LABELS[pendingType]} ${label}`}
-                className={`min-h-[40px] flex-row items-center rounded-full border px-4 active:opacity-70 ${
-                  selected
-                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30'
-                    : 'border-secondary-200 dark:border-surface-overlay'
-                }`}
-              >
-                <Text
-                  className={`text-sm font-sans-medium ${
-                    selected ? 'text-primary-700 dark:text-primary-300' : 'text-content-primary'
-                  }`}
-                >
-                  {label}
-                </Text>
-              </Pressable>
+                onPress={() => setPendingMin(selected ? null : amount)}
+              />
             );
           })}
         </View>
@@ -151,13 +208,13 @@ function SheetBody({
 
       {/* 확인층: 선택 요약 + 적용 */}
       <View className="gap-2 border-t border-secondary-100 px-4 pb-4 pt-3 dark:border-surface-overlay">
-        {pendingMin ? (
+        {hasSelection ? (
           <View className="flex-row items-center gap-2">
             <Text className="flex-1 font-sans-medium text-sm text-primary-700 dark:text-primary-300">
-              {SALARY_TYPE_LABELS[pendingType]} {formatManWon(pendingMin)} 이상
+              {SALARY_TYPE_LABELS[pendingType]} {summaryParts.join(' · ')}
             </Text>
             <Pressable
-              onPress={() => setPendingMin(null)}
+              onPress={handleReset}
               hitSlop={12}
               accessibilityRole="button"
               accessibilityLabel="급여 선택 해제"

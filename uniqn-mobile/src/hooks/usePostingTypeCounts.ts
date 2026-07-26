@@ -3,7 +3,7 @@ import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { jobPostingRepository } from '@/repositories';
 import type { PostingTypeCounts } from '@/repositories/interfaces/IJobPostingRepository';
 import { useAuthStore } from '@/stores/authStore';
-import type { FilterableSalaryType, PostingType } from '@/types';
+import type { FilterableSalaryType, PostingType, SalarySortDirection } from '@/types';
 import type { StaffRole } from '@/types/role';
 import { logger } from '@/utils/logger';
 
@@ -31,6 +31,7 @@ interface PostingTypeCountsScope {
   roles: StaffRole[];
   salaryType: FilterableSalaryType | null;
   salaryMin: number | null;
+  salarySort: SalarySortDirection | null;
 }
 
 async function fetchPostingTypeCounts(scope: PostingTypeCountsScope): Promise<PostingTypeCounts> {
@@ -39,7 +40,7 @@ async function fetchPostingTypeCounts(scope: PostingTypeCountsScope): Promise<Po
     // (EF-jobsearch-11: 정원 마감 공고가 칩 카운트에서 누락되던 회귀)
     // 지역/역할/급여 지정 시 해당 조건으로 좁혀 브라우즈 목록(getList)과 정합(A1).
     // regions/regionPrefixes(멀티·그룹 스코프)가 region(단일)보다 우선 — applyRegionScope 와 동일 규칙.
-    const { region, regions, regionPrefixes, roles, salaryType, salaryMin } = scope;
+    const { region, regions, regionPrefixes, roles, salaryType, salaryMin, salarySort } = scope;
     const hasRegionScope = regions.length > 0 || regionPrefixes.length > 0;
     return await jobPostingRepository.getTypeCounts({
       ...(hasRegionScope
@@ -51,7 +52,14 @@ async function fetchPostingTypeCounts(scope: PostingTypeCountsScope): Promise<Po
           ? { region }
           : {}),
       ...(roles.length > 0 ? { roles } : {}),
-      ...(salaryType && salaryMin ? { salaryType, salaryMin } : {}),
+      // 금액·정렬 중 하나만 있어도 스코프가 좁혀진다(정렬은 협의 공고 제외 효과).
+      ...(salaryType && (salaryMin || salarySort)
+        ? {
+            salaryType,
+            ...(salaryMin ? { salaryMin } : {}),
+            ...(salarySort ? { salarySort } : {}),
+          }
+        : {}),
     });
   } catch (error) {
     logger.warn('공고 타입 개수 조회 실패', { error });
@@ -68,9 +76,14 @@ export interface UsePostingTypeCountsOptions {
   regionPrefixes?: string[];
   /** 역할 필터 (FILTERABLE_STAFF_ROLES). 지정 시 role_keys overlaps 로 좁힌다. */
   roles?: StaffRole[];
-  /** 급여 필터 — salaryType 과 salaryMin 이 모두 있어야 적용(repository 와 동일 규칙). */
+  /**
+   * 급여 필터 — salaryType 과 함께 salaryMin·salarySort 중 최소 하나가 있어야 적용
+   * (repository 와 동일 규칙). salarySort 는 집계 순서와 무관하지만 협의(NULL) 공고를
+   * 제외시키므로 목록과 카운트 정합을 위해 함께 넘긴다.
+   */
   salaryType?: FilterableSalaryType | null;
   salaryMin?: number | null;
+  salarySort?: SalarySortDirection | null;
   /**
    * 필터 변경으로 캐시 키가 바뀌어도 직전 카운트를 placeholder 로 유지.
    * 필터 시트의 "공고 N건 보기" 라벨 플리커 방지용 — 목록 화면 칩은 기본값(false) 유지.
@@ -86,6 +99,7 @@ export function usePostingTypeCounts(options?: UsePostingTypeCountsOptions) {
   const roles = options?.roles ?? [];
   const salaryType = options?.salaryType ?? null;
   const salaryMin = options?.salaryMin ?? null;
+  const salarySort = options?.salarySort ?? null;
   // 배열 identity 무관하게 캐시 키 안정화 (slug/역할 key 에 ',' 미포함 — 상수 계약).
   // 역할은 선택 순서가 결과에 무영향이라 정렬로 캐시 적중률을 올린다(리뷰 L3).
   const regionScopeKey =
@@ -93,7 +107,10 @@ export function usePostingTypeCounts(options?: UsePostingTypeCountsOptions) {
       ? [...regions, ...regionPrefixes.map((p) => `${p}*`)].join(',')
       : region;
   const roleScopeKey = roles.length > 0 ? [...roles].sort().join(',') : null;
-  const salaryScopeKey = salaryType && salaryMin ? `${salaryType}:${salaryMin}` : null;
+  const salaryScopeKey =
+    salaryType && (salaryMin || salarySort)
+      ? `${salaryType}:${salaryMin ?? ''}:${salarySort ?? ''}`
+      : null;
 
   const queryResult = useQuery({
     queryKey: [
@@ -104,7 +121,15 @@ export function usePostingTypeCounts(options?: UsePostingTypeCountsOptions) {
       salaryScopeKey,
     ] as const,
     queryFn: () =>
-      fetchPostingTypeCounts({ region, regions, regionPrefixes, roles, salaryType, salaryMin }),
+      fetchPostingTypeCounts({
+        region,
+        regions,
+        regionPrefixes,
+        roles,
+        salaryType,
+        salaryMin,
+        salarySort,
+      }),
     staleTime: cachingPolicies.frequent,
     gcTime: cachingPolicies.standard * 2,
     enabled: status === 'authenticated',

@@ -51,16 +51,20 @@ export function useJobPostings(options: UseJobPostingsOptions = {}) {
         page.items.map((posting) => projectPostingCard(buildPostingFacts(posting)))
       ) ?? [];
 
+    // 급여 정렬이 걸리면 서버가 이미 salary_*_max 순으로 페이지를 넘겨준다.
+    // 여기서 날짜 정렬을 다시 걸면 그 순서가 통째로 덮어써지므로 서버 순서를 보존한다.
+    const preserveServerOrder = filters.salarySort !== undefined;
+
     if (!filters.workDate) {
-      return sortJobPostings(allJobs);
+      return preserveServerOrder ? allJobs : sortJobPostings(allJobs);
     }
 
     const focusedJobs = allJobs
       .filter((job) => matchesPostingDate(job, filters.workDate))
       .map((job) => focusPostingCardToDate(job, filters.workDate));
 
-    return sortJobPostings(focusedJobs);
-  }, [filters.workDate, query.data?.pages]);
+    return preserveServerOrder ? focusedJobs : sortJobPostings(focusedJobs);
+  }, [filters.salarySort, filters.workDate, query.data?.pages]);
 
   const shouldUseCachedJobs = enabled && isDefaultFilter && !isOnline && query.data === undefined;
 

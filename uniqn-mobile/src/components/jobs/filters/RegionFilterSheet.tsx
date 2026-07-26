@@ -124,6 +124,7 @@ function SheetBody({
     roles: appliedRoles,
     salaryType: appliedSalary?.type ?? null,
     salaryMin: appliedSalary?.min ?? null,
+    salarySort: appliedSalary?.sort ?? null,
     keepPreviousCounts: true,
   });
 

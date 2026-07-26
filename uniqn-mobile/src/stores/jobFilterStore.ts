@@ -3,7 +3,7 @@
  *
  * @description 구인구직 탭의 지역/역할/급여 필터 선택 + 최근 지역을 MMKV 로 영속화한다.
  * 지역 선택 단위는 지역 토큰(RegionToken = slug | 'group:서울') — 모델은 utils/regionSelection.
- * 역할은 FILTERABLE_STAFF_ROLES(5종, 'other' 제외), 급여는 타입+최소금액 쌍.
+ * 역할은 FILTERABLE_STAFF_ROLES(5종, 'other' 제외), 급여는 타입 + (최소금액 | 정렬) 조합.
  * 작성 폼 등 다른 접점도 최근 지역을 공유할 수 있도록 화면 상태가 아닌 스토어로 둔다.
  */
 
@@ -12,16 +12,20 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { mmkvStorage } from '@/lib/mmkvStorage';
 import { sanitizeRegionTokens, type RegionToken } from '@/utils/regionSelection';
 import { isFilterableStaffRole, type StaffRole } from '@/types/role';
-import type { FilterableSalaryType } from '@/types/jobPosting';
+import type { FilterableSalaryType, SalarySortDirection } from '@/types/jobPosting';
 
 const MAX_RECENT_REGIONS = 3;
 
 const FILTERABLE_SALARY_TYPES: readonly FilterableSalaryType[] = ['hourly', 'daily', 'monthly'];
 
+const SALARY_SORT_DIRECTIONS: readonly SalarySortDirection[] = ['high', 'low'];
+
 export interface SalaryFilter {
   type: FilterableSalaryType;
-  /** 최소 금액(원) — salary_*_max ≥ min 매칭 */
-  min: number;
+  /** 최소 금액(원) — salary_*_max ≥ min 매칭. null 이면 금액 조건 없음(정렬만) */
+  min: number | null;
+  /** 정렬 방향 — null 이면 기본(work_date) 정렬 유지 */
+  sort: SalarySortDirection | null;
 }
 
 interface JobFilterState {
@@ -66,13 +70,21 @@ export function sanitizeRoleFilters(roles: unknown): StaffRole[] {
   return result;
 }
 
-/** persist 복원/외부 입력 방어 — 타입·금액이 유효한 쌍만 통과 */
+/**
+ * persist 복원/외부 입력 방어 — 유효한 타입 + (금액 | 정렬) 중 최소 하나가 있어야 통과.
+ * 금액·정렬이 모두 비면 "급여 조건 없음"과 동치라 null 로 접는다.
+ */
 export function sanitizeSalaryFilter(filter: unknown): SalaryFilter | null {
   if (typeof filter !== 'object' || filter === null) return null;
-  const { type, min } = filter as { type?: unknown; min?: unknown };
+  const { type, min, sort } = filter as { type?: unknown; min?: unknown; sort?: unknown };
   if (!FILTERABLE_SALARY_TYPES.includes(type as FilterableSalaryType)) return null;
-  if (typeof min !== 'number' || !Number.isFinite(min) || min <= 0) return null;
-  return { type: type as FilterableSalaryType, min: Math.floor(min) };
+  const validMin =
+    typeof min === 'number' && Number.isFinite(min) && min > 0 ? Math.floor(min) : null;
+  const validSort = SALARY_SORT_DIRECTIONS.includes(sort as SalarySortDirection)
+    ? (sort as SalarySortDirection)
+    : null;
+  if (validMin === null && validSort === null) return null;
+  return { type: type as FilterableSalaryType, min: validMin, sort: validSort };
 }
 
 export const useJobFilterStore = create<JobFilterState>()(

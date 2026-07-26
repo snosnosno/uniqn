@@ -165,15 +165,24 @@ export interface IJobPostingRepository {
 
   /**
    * 공고 타입별 개수 조회
-   * @param filters - 필터 조건 (status, region/regions, roles, salaryType/salaryMin).
+   * @param filters - 필터 조건 (status, region/regions, roles, salaryType/salaryMin/salarySort).
    *                  지역/역할/급여 지정 시 해당 조건으로 좁혀 집계해 칩 카운트가
    *                  브라우즈 목록(getList)의 필터와 정합을 이룬다(공용 스코프 헬퍼).
+   *                  salarySort 는 집계 순서와 무관하지만 협의(NULL) 공고를 제외시키므로
+   *                  목록과 같은 모수를 세려면 함께 전달해야 한다.
    * @returns 타입별 개수
    */
   getTypeCounts(
     filters?: Pick<
       JobPostingFilters,
-      'status' | 'region' | 'regions' | 'regionPrefixes' | 'roles' | 'salaryType' | 'salaryMin'
+      | 'status'
+      | 'region'
+      | 'regions'
+      | 'regionPrefixes'
+      | 'roles'
+      | 'salaryType'
+      | 'salaryMin'
+      | 'salarySort'
     >
   ): Promise<PostingTypeCounts>;
 
