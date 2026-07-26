@@ -366,7 +366,7 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
   const stats = effectivePayload.stats;
   const groupedSchedules = effectivePayload.groupedSchedules;
   const markedDates = effectivePayload.markedDates;
-  const warning = shouldPreferQueryPayload ? effectivePayload.warning : undefined;
+  const warning = effectivePayload.warning ?? queryPayload.warning;
   const hasBootstrapData =
     schedules.length > 0 ||
     stats !== undefined ||
@@ -406,6 +406,12 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
           : (realtimeError ?? query.error)
         : query.error
       : null,
+    /**
+     * 카드가 이미 떠 있는 상태의 갱신 실패. `error` 는 데이터가 있으면 null 로 접히므로
+     * 이 값이 없으면 새로고침 실패가 완전히 무음이 되고, 근무 당일 확정 여부를 확인하러
+     * 당긴 사용자가 옛 데이터를 최신으로 믿게 된다.
+     */
+    refreshError: isOnline && hasBootstrapData ? (query.error ?? realtimeError) : null,
     refresh,
   };
 }
@@ -609,6 +615,7 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
     isLoading,
     isRefreshing,
     error,
+    refreshError,
     refresh,
   } = useSchedulesByMonth({
     year: currentMonth.year,
@@ -675,6 +682,7 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
     isLoading,
     isRefreshing,
     error,
+    refreshError,
     setView,
     setSelectedDate: selectDate,
     goToMonth,

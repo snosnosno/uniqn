@@ -104,12 +104,28 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
   // 그룹은 동일 공고의 동일 ScheduleType 일정만 묶이므로 group.type 으로 tone 결정.
   const stripeTone = SCHEDULE_STATUS_STRIPE_TONE[group.type];
 
+  // 스크린리더 라벨은 완결 문장이어야 한다. 예전엔 '○○홀덤 일정 상세 보기, 3일' 한 문장뿐이라
+  // 상태·기간·근무지·출퇴근 요약이 전부 빠졌다.
+  const cardAccessibilityLabel = [
+    status.label,
+    group.jobPostingName,
+    dateDisplay,
+    group.location,
+    attendanceSummary?.label,
+    hasPendingCancellation ? '취소 요청 검토 중' : null,
+  ]
+    .filter(Boolean)
+    .join(', ');
+
   return (
     <Pressable
       onPress={onPress}
       disabled={!onPress}
+      // RN Pressable 은 기본 accessible=true 라 내부 요소(펼치기 버튼·날짜 행)를 통째로
+      // 흡수한다. 컨테이너를 접근성에서 빼야 안쪽 컨트롤이 스크린리더에 도달한다.
+      accessible={false}
       accessibilityRole="button"
-      accessibilityLabel={`${group.jobPostingName} 일정 상세 보기, ${group.dateRange.totalDays}일`}
+      accessibilityLabel={cardAccessibilityLabel}
     >
       <CardStripe tone={stripeTone} style={{ marginBottom: 12 }}>
         <View
@@ -254,7 +270,8 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
                         ? 'border-b border-secondary-100 dark:border-surface-overlay/50'
                         : ''
                     }`}
-                    accessibilityLabel={`${dateStatus.formattedDate} ${attendance.label}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${dateStatus.formattedDate} ${attendance.label}, 이 날짜 상세 보기`}
                   >
                     <Text className="text-sm text-content-secondary font-sans">
                       {dateStatus.formattedDate}

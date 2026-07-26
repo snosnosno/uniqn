@@ -3,7 +3,7 @@
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import React, { memo, useMemo } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, Linking } from 'react-native';
 import { Badge } from '@/components/ui';
 import {
@@ -30,6 +30,8 @@ import {
 } from '@/domains/settlement';
 import { WorkTimeDisplay } from '@/shared/time';
 import { formatPhoneNumber } from '@/utils/phone';
+import { openMapSearch } from '@/utils/mapLink';
+import { useToast } from '@/stores/toastStore';
 import { STATUS } from '@/constants';
 import { PAYROLL_STATUS } from '@/constants/statusConfig';
 import type { ScheduleEvent, PayrollStatus } from '@/types';
@@ -79,6 +81,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
   const description = schedule.postingProjection?.description;
   const payrollStatus = (schedule.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus;
   const payrollStatusConfig = PAYROLL_STATUS[payrollStatus];
+  const toast = useToast();
 
   const salaryInfo = useMemo(() => {
     if (schedule.settlementBreakdown?.salaryInfo) {
@@ -136,6 +139,16 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
   }, [allowances]);
 
   const hasTax = taxSettings.type !== 'none';
+
+  // 상세 주소가 있으면 그걸 우선한다 — 지도 검색 정확도가 높다.
+  const mapQuery = schedule.detailedAddress?.trim() || schedule.location?.trim() || '';
+
+  const handleOpenMap = useCallback(async () => {
+    const opened = await openMapSearch(mapQuery);
+    if (!opened) {
+      toast.error('지도 앱을 열지 못했어요. 주소를 직접 검색해 주세요.');
+    }
+  }, [mapQuery, toast]);
 
   if (schedule.type === STATUS.SCHEDULE.CANCELLED) {
     return (
@@ -202,6 +215,22 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
             )}
           </View>
         </View>
+
+        {/* 길찾기 — 전화 행과 같은 시각 언어. 주소만 죽은 텍스트로 두면
+            처음 가는 근무지를 지도 앱에 손으로 다시 쳐야 한다. */}
+        {mapQuery && (
+          <Pressable
+            onPress={handleOpenMap}
+            accessibilityRole="button"
+            accessibilityLabel={`${mapQuery} 길찾기`}
+            className="ml-8 mt-2 flex-row items-center rounded-lg bg-primary-50 px-3 py-2 active:bg-primary-100 dark:bg-primary-900/20 dark:active:bg-primary-900/30"
+          >
+            <MapIcon size={16} color="#B8962E" />
+            <Text className="ml-1.5 text-sm font-sans-medium text-primary-600 dark:text-primary-400">
+              길찾기
+            </Text>
+          </Pressable>
+        )}
       </View>
 
       <Section icon={<CalendarIcon size={18} color={SECONDARY_PALETTE[500]} />} title="일정">

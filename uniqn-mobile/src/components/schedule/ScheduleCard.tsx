@@ -124,9 +124,18 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
   }, [schedule.type, timeDisplayInfo]);
 
   const isCancelled = schedule.type === STATUS.SCHEDULE.CANCELLED;
-  const accessibilityLabel = `${schedule.jobPostingName}, ${status.label}, ${formatDate(schedule.date)}${
-    schedule.location ? `, ${schedule.location}` : ''
-  }`;
+  // 스크린리더로 카드 하나를 들었을 때 완결 문장이 되도록 금액·취소요청 여부까지 넣는다.
+  const accessibilityLabel = [
+    status.label,
+    schedule.jobPostingName,
+    formatDate(schedule.date),
+    schedule.location,
+    typeof completedAmount === 'number' ? formatCurrency(completedAmount) : null,
+    schedule.type === STATUS.SCHEDULE.COMPLETED ? payrollStatusConfig?.label : null,
+    hasPendingCancellation ? '취소 요청 검토 중' : null,
+  ]
+    .filter(Boolean)
+    .join(', ');
 
   const stripeTone = SCHEDULE_STATUS_STRIPE_TONE[schedule.type];
 

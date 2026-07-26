@@ -343,7 +343,8 @@ export default function ScheduleScreen() {
   const { pendingCount } = usePendingReviews();
 
   // 지원 취소 훅
-  const { cancelApplication, requestCancellation, isRequestingCancellation } = useApplications();
+  const { cancelApplication, requestCancellation, isRequestingCancellation, isCancelling } =
+    useApplications();
 
   // A1 진입 표면 ③: ops 허브 게이트(빈 상태 보조 크로스링크). OFF 면 보조 링크 미노출.
   const { enabled: opsHubEnabled } = useOpsHubEnabled();
@@ -361,6 +362,7 @@ export default function ScheduleScreen() {
     isLoading,
     isRefreshing,
     error,
+    refreshError,
     setSelectedDate,
     goToPrevMonth,
     goToNextMonth,
@@ -470,10 +472,12 @@ export default function ScheduleScreen() {
   const handleCancelApplication = useCallback(
     (applicationId: string) => {
       void triggerHaptic('warning');
+      // refresh() 를 여기서 부르지 않는다 — mutation onSuccess 가 schedules.all 을 무효화하고,
+      // onMutate 가 캐시에서 낙관 제거까지 한다. 여기서 또 부르면 무거운 월 조회가
+      // 뮤테이션이 끝나기도 전에 헛돌 뿐이다.
       cancelApplication(applicationId);
-      refresh();
     },
-    [cancelApplication, refresh]
+    [cancelApplication]
   );
 
   // 취소 요청 핸들러 (confirmed 상태) — 인라인 바텀시트로 표시
@@ -810,17 +814,9 @@ export default function ScheduleScreen() {
     [goToMonth]
   );
 
-  // 에러 상태
-  if (error && !isLoading) {
-    return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
-        <TabHeader title="내 스케줄" />
-        <View className="flex-1 justify-center items-center p-4">
-          <ErrorState title="스케줄을 불러오지 못했어요" error={error} onRetry={refresh} />
-        </View>
-      </SafeAreaView>
-    );
-  }
+  // 조회 실패는 콘텐츠 영역만 대체한다. 전면 차단하면 월 네비게이션도 PTR 도 함께 사라져
+  // 사용자가 할 수 있는 일이 앱 재시작밖에 남지 않는다.
+  const hasBlockingError = Boolean(error) && !isLoading;
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
@@ -865,6 +861,52 @@ export default function ScheduleScreen() {
         </View>
       )}
 
+      {/* 갱신 실패 — 카드가 떠 있으면 error 는 null 로 접히므로 예전에는 완전 무음이었다.
+          근무 당일 확정 여부를 확인하러 당긴 사용자가 옛 데이터를 최신으로 믿게 된다. */}
+      {refreshError && !isRefreshing && (
+        <View
+          className="mx-4 mt-2 flex-row items-center rounded-md border border-warning-200 bg-warning-50 px-4 py-3 dark:border-warning-700 dark:bg-warning-900/20"
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+        >
+          <View className="flex-1">
+            <Text className="text-sm font-sans-semibold text-warning-700 dark:text-warning-300">
+              최신 정보를 불러오지 못했어요
+            </Text>
+            <Text className="mt-0.5 text-xs font-sans text-warning-600 dark:text-warning-400">
+              지금 보이는 내용은 이전에 받아둔 정보예요.
+            </Text>
+          </View>
+          <FocusablePressable
+            onPress={refresh}
+            hitSlop={8}
+            focusRingRadius={6}
+            className="ml-3 rounded-md px-3 py-2 active:bg-warning-100 dark:active:bg-warning-900/40"
+            accessibilityRole="button"
+            accessibilityLabel="스케줄 다시 불러오기"
+          >
+            <Text className="text-sm font-sans-semibold text-warning-700 dark:text-warning-300">
+              다시 시도
+            </Text>
+          </FocusablePressable>
+        </View>
+      )}
+
+      {/* 취소 처리 중 — 낙관 갱신으로 카드는 이미 사라지지만, 아무 표시도 없으면
+          "정말 취소된 건가" 싶어 다시 누르게 된다. 서버 확정 전까지 진행 상황을 밝힌다. */}
+      {isCancelling && (
+        <View
+          className="mx-4 mt-2 rounded-md bg-secondary-100 px-4 py-2 dark:bg-surface-overlay"
+          accessibilityRole="progressbar"
+          accessibilityLabel="지원 취소를 처리하고 있어요"
+          accessibilityLiveRegion="polite"
+        >
+          <Text className="text-sm font-sans-medium text-content-secondary">
+            지원 취소를 처리하고 있어요…
+          </Text>
+        </View>
+      )}
+
       {/* 미작성 평가 배너 */}
       {pendingCount > 0 && (
         <View className="mt-2">
@@ -875,8 +917,34 @@ export default function ScheduleScreen() {
         </View>
       )}
 
+      {/* 조회 실패 — 콘텐츠 영역만 대체. 헤더·월 네비게이터·PTR 은 살아있다. */}
+      {hasBlockingError && (
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{
+            paddingBottom: bottomPadding,
+            flexGrow: 1,
+            justifyContent: 'center',
+          }}
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={refresh} {...PTR_REFRESH_PROPS} />
+          }
+        >
+          <View className="items-center p-4">
+            <ErrorState
+              title="스케줄을 불러오지 못했어요"
+              error={error}
+              onRetry={refresh}
+              // 조회 재실행은 부작용이 없다 — isRetryable=false 인 RLS·파싱 실패에서도
+              // '다시 시도'를 남겨야 사용자가 갇히지 않는다.
+              alwaysAllowRetry
+            />
+          </View>
+        </ScrollView>
+      )}
+
       {/* 캘린더 뷰 */}
-      {viewMode === 'calendar' && (
+      {!hasBlockingError && viewMode === 'calendar' && (
         <ScrollView
           className="flex-1"
           // 정적 pb-20(80px)은 탭바 실높이(56 + insets.bottom ≈ 90px)를 못 덮어
@@ -956,7 +1024,7 @@ export default function ScheduleScreen() {
       )}
 
       {/* 상태 필터 (리스트 뷰 전용, M1) — 지원/확정/완료를 탭 전환 없이 구분 */}
-      {viewMode === 'list' && groupedByApplication.length > 0 && (
+      {!hasBlockingError && viewMode === 'list' && groupedByApplication.length > 0 && (
         <View className="px-4 pt-3">
           <FilterTabs
             options={statusFilterOptions}
@@ -967,7 +1035,7 @@ export default function ScheduleScreen() {
       )}
 
       {/* 리스트 뷰 (그룹화 적용) */}
-      {viewMode === 'list' && (
+      {!hasBlockingError && viewMode === 'list' && (
         <ScrollView
           className="flex-1"
           contentContainerStyle={{ paddingBottom: bottomPadding }}
