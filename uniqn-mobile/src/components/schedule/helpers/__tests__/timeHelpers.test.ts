@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import { formatTime, formatTimeRange, calculateDuration, formatDate } from '../timeHelpers';
+import { formatTime, formatDate } from '../timeHelpers';
 
 // ============================================================================
 // formatTime Tests
@@ -34,76 +34,6 @@ describe('formatTime', () => {
   it('should format late night time correctly', () => {
     const date = new Date('2024-01-15T23:59:00');
     expect(formatTime(date)).toBe('23:59');
-  });
-});
-
-// ============================================================================
-// formatTimeRange Tests
-// ============================================================================
-
-describe('formatTimeRange', () => {
-  it('should format time range with valid Dates', () => {
-    const start = new Date('2024-01-15T09:00:00');
-    const end = new Date('2024-01-15T18:00:00');
-    expect(formatTimeRange(start, end)).toBe('09:00 - 18:00');
-  });
-
-  it('should handle null start time', () => {
-    const end = new Date('2024-01-15T18:00:00');
-    expect(formatTimeRange(null, end)).toBe('--:-- - 18:00');
-  });
-
-  it('should handle null end time', () => {
-    const start = new Date('2024-01-15T09:00:00');
-    expect(formatTimeRange(start, null)).toBe('09:00 - --:--');
-  });
-
-  it('should handle both null times', () => {
-    expect(formatTimeRange(null, null)).toBe('--:-- - --:--');
-  });
-});
-
-// ============================================================================
-// calculateDuration Tests
-// ============================================================================
-
-describe('calculateDuration', () => {
-  it('should return "-" for null start', () => {
-    const end = new Date('2024-01-15T18:00:00');
-    expect(calculateDuration(null, end)).toBe('-');
-  });
-
-  it('should return "-" for null end', () => {
-    const start = new Date('2024-01-15T09:00:00');
-    expect(calculateDuration(start, null)).toBe('-');
-  });
-
-  it('should calculate hours only', () => {
-    const start = new Date('2024-01-15T09:00:00');
-    const end = new Date('2024-01-15T17:00:00');
-    expect(calculateDuration(start, end)).toBe('8시간');
-  });
-
-  it('should calculate hours and minutes', () => {
-    const start = new Date('2024-01-15T09:00:00');
-    const end = new Date('2024-01-15T17:30:00');
-    expect(calculateDuration(start, end)).toBe('8시간 30분');
-  });
-
-  it('should calculate minutes only', () => {
-    const start = new Date('2024-01-15T09:00:00');
-    const end = new Date('2024-01-15T09:45:00');
-    expect(calculateDuration(start, end)).toBe('45분');
-  });
-
-  it('should handle overnight shifts (crossing midnight)', () => {
-    const start = new Date('2024-01-15T22:00:00');
-    const end = new Date('2024-01-15T02:00:00'); // Next day but same date object
-    expect(calculateDuration(start, end)).toBe('4시간');
-  });
-
-  it('should calculate duration from plain HH:mm strings', () => {
-    expect(calculateDuration('09:00', '18:30')).toBe('9시간 30분');
   });
 });
 

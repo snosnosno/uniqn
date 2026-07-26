@@ -408,5 +408,3 @@ export function getStatusVariant<T extends string>(
 ): BadgeVariant {
   return getStatusConfig(configMap, status).variant;
 }
-
-export const attendanceConfig = ATTENDANCE_STATUS;

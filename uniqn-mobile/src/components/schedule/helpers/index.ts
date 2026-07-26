@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-export { formatTime, formatTimeRange, calculateDuration, formatDate } from './timeHelpers';
+export { formatTime, formatDate } from './timeHelpers';
 
 export { getRoleSalaryFromProjection, formatSalaryDisplay } from './salaryHelpers';
 
