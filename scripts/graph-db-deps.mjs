@@ -142,11 +142,20 @@ const labelOf = (nodes, id) => nodes.get(id)?.label ?? id;
 function normalizeFn(raw) {
   raw = String(raw ?? '');
   if (/^[a-z_]+\.[a-z0-9_]+\(\)$/i.test(raw)) return raw.toLowerCase();
+
+  // normalizeTable 과 동일 규칙 — 마지막에 등장하는 스키마 마커 기준으로 자른다.
+  // (SCHEMAS 배열 순서로 첫 매치를 쓰면 `_public_`·`_auth_` 가 함께 든 이름에서
+  //  더 왼쪽 마커를 골라 함수명이 잘못 잘린다)
+  let best = null;
   for (const schema of SCHEMAS) {
-    const at = raw.lastIndexOf(`_${schema}_`);
-    if (at !== -1) return `${schema}.${raw.slice(at + schema.length + 2)}()`.toLowerCase();
+    const marker = `_${schema}_`;
+    const at = raw.lastIndexOf(marker);
+    if (at === -1) continue;
+    const fn = raw.slice(at + marker.length);
+    if (!/^[a-z0-9_]+$/i.test(fn)) continue;
+    if (!best || at > best.at) best = { at, value: `${schema}.${fn}()`.toLowerCase() };
   }
-  return raw.toLowerCase();
+  return best?.value ?? raw.toLowerCase();
 }
 
 // ---------------------------------------------------------------------------
