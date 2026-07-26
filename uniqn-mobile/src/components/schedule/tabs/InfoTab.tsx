@@ -367,7 +367,8 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
                   {formatCurrency(schedule.settlementBreakdown.afterTaxPay)}
                 </Text>
               )}
-              {schedule.payrollAmount && schedule.payrollAmount > 0 && (
+              {/* 0 원 확정도 표시 — truthy 가드는 0 을 숨기고 숫자 0 을 View 로 흘린다. */}
+              {typeof schedule.payrollAmount === 'number' && (
                 <Text className="mt-0.5 text-sm text-success-600 dark:text-success-400 font-sans">
                   확정: {formatCurrency(schedule.payrollAmount)}
                 </Text>

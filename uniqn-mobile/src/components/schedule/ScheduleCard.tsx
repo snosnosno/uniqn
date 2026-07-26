@@ -21,11 +21,7 @@ import {
   type Allowances,
   type TaxSettings,
 } from '@/utils/settlement';
-import {
-  calculateSettlementWithTax,
-  DEFAULT_SALARY_INFO,
-  DEFAULT_TAX_SETTINGS,
-} from '@/domains/settlement';
+import { calculateSettlementWithTax, DEFAULT_TAX_SETTINGS } from '@/domains/settlement';
 import {
   formatTime,
   formatDate,
@@ -75,11 +71,15 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
     }
 
     if (schedule.checkInTime && schedule.checkOutTime) {
-      const salaryInfo: SalaryInfo =
+      // 급여 근거가 하나도 없으면 계산하지 않는다 — DEFAULT_SALARY_INFO(시급 15,000원)로
+      // 메우면 아무도 합의한 적 없는 금액이 카드에 확정처럼 찍힌다.
+      const agreedSalary =
         schedule.customSalaryInfo ||
         projectedSalary ||
-        schedule.postingProjection?.settlement.defaultSalary ||
-        DEFAULT_SALARY_INFO;
+        schedule.postingProjection?.settlement.defaultSalary;
+      if (!agreedSalary) return null;
+
+      const salaryInfo: SalaryInfo = agreedSalary;
       const allowances: Allowances | undefined =
         schedule.customAllowances || schedule.postingProjection?.settlement.allowances;
       const taxSettings: TaxSettings =
@@ -160,7 +160,9 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
               )}
             </View>
 
-            {schedule.type === STATUS.SCHEDULE.COMPLETED && completedAmount && (
+            {/* 0 원 확정(노쇼 차감·'협의' 급여)도 표시해야 한다. truthy 가드는 0 을 숨길 뿐
+                아니라 숫자 0 을 View 의 직접 자식으로 흘려 RN 렌더를 죽인다. */}
+            {schedule.type === STATUS.SCHEDULE.COMPLETED && typeof completedAmount === 'number' && (
               <Text className="text-base font-sans-bold text-primary-600 dark:text-primary-400">
                 {formatCurrency(completedAmount)}
               </Text>

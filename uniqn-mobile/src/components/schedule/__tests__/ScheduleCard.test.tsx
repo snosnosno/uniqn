@@ -55,6 +55,22 @@ describe('ScheduleCard', () => {
     expect(queryByText('취소 요청')).toBeNull();
   });
 
+  // 정산 0원 확정(노쇼 차감·'협의' 급여)은 `shouldUseFrozenPayrollAmount` 가 Number.isFinite 로
+  // 판정해 0 을 그대로 통과시킨다. 렌더 가드가 truthy(`amount && …`)면 두 가지가 동시에 깨진다:
+  // ① 0 원이 화면에서 사라져 이의 제기 시점을 놓치고 ② 숫자 0 이 <View> 의 직접 자식으로 새어
+  // RN 이 "Text strings must be rendered within a <Text> component" 로 죽는다.
+  it('renders a settled amount of exactly zero instead of leaking a bare 0 node', () => {
+    const schedule = {
+      ...createMockScheduleEvent({ type: 'completed' }),
+      payrollAmount: 0,
+    } as unknown as ScheduleEvent;
+
+    const { getByText, toJSON } = render(<ScheduleCard schedule={schedule} />);
+
+    expect(getByText('₩0')).toBeTruthy();
+    expect(JSON.stringify(toJSON())).not.toContain('"children":[0]');
+  });
+
   it('drops the pending-cancellation notice once approval resolves to cancelled', () => {
     const schedule = createMockScheduleEvent({
       type: 'cancelled',

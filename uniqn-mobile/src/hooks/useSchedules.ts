@@ -20,6 +20,7 @@ import {
   getCalendarMarkedDates,
 } from '@/services/work/scheduleService';
 import { groupScheduleEvents, filterSchedulesByDate } from '@/utils/scheduleGrouping';
+import { shouldPreferQuerySchedulePayload } from '@/utils/scheduleRealtimePreference';
 import { getTodayString } from '@/utils/date';
 import { stableFilters } from '@/utils/queryUtils';
 import { AuthError, ERROR_CODES, isAppError } from '@/errors/AppError';
@@ -347,10 +348,15 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
   const queryPayload =
     normalizedQueryPayload ??
     (shouldUseCachedPayload ? cachedPayload : EMPTY_SCHEDULE_QUERY_PAYLOAD);
-  const shouldPreferQueryPayload =
-    !realtime ||
-    !hasReceivedRealtimeSnapshot ||
-    (!!normalizedQueryPayload && query.dataUpdatedAt > lastRealtimeSnapshotAt);
+  const shouldPreferQueryPayload = shouldPreferQuerySchedulePayload({
+    realtime,
+    hasReceivedRealtimeSnapshot,
+    hasQueryPayload: !!normalizedQueryPayload,
+    queryUpdatedAt: query.dataUpdatedAt,
+    realtimeSnapshotAt: lastRealtimeSnapshotAt,
+    realtimeScheduleCount: realtimePayload.schedules.length,
+    queryScheduleCount: queryPayload.schedules.length,
+  });
   const effectivePayload = shouldPreferQueryPayload ? queryPayload : realtimePayload;
   const schedules = effectivePayload.schedules;
   const stats = effectivePayload.stats;

@@ -170,7 +170,7 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
           </Text>
         </View>
 
-        {workLog.payrollAmount && workLog.payrollAmount > 0 && (
+        {typeof workLog.payrollAmount === 'number' && (
           <View className="flex-row items-center">
             {payrollConfig && (
               <View className={`px-2 py-0.5 rounded-sm mr-2 ${payrollConfig.bgColor}`}>

@@ -38,7 +38,14 @@ import { SHEET_DISMISS_ANIMATION_MS } from '@/constants/animation';
 import { SCHEDULE_TYPE_LABELS } from '@/shared/status';
 import { getApplicationById } from '@/services/jobs/applicationService';
 import { logger } from '@/utils/logger';
-import { resolveApplicationDeepLink } from '@/utils/scheduleDeepLink';
+import {
+  advanceDeepLinkGate,
+  buildApplicationDeepLinkKey,
+  resolveApplicationDeepLink,
+  resolveMissingApplicationDeepLink,
+  DEEP_LINK_APPLICATION_NOT_FOUND_MESSAGE,
+  type DeepLinkGate,
+} from '@/utils/scheduleDeepLink';
 import { triggerHaptic } from '@/utils/haptics';
 import {
   filterSchedulesByStatus,
@@ -467,55 +474,103 @@ export default function ScheduleScreen() {
     setCancellationApp(null);
   }, []);
 
-  // 알림 딥링크 → 자동 액션 (한 번만 실행)
+  // 알림 딥링크 → 자동 액션
   // - applicationId: 해당 스케줄 상세 모달 자동 오픈
   // - cancelApplicationId: 취소 요청 바텀시트 자동 오픈 (cancel.tsx 호환성)
-  const [didHandleSearchParam, setDidHandleSearchParam] = useState(false);
-  // missing 판정 전 refresh 1회 재검증 — stale 부트스트랩 캐시로 인한 오탐 토스트 방지 (QW2 리뷰 반영)
-  const didRetryDeepLinkRef = useRef(false);
+  //
+  // 처리 단위는 boolean 이 아니라 **파라미터 값(key)** 이다. 스케줄은 (tabs) 스크린이라
+  // 한 번 마운트되면 앱 수명 동안 언마운트되지 않는데, 1회성 boolean 플래그를 쓰면
+  // 두 번째 알림부터 앱을 강제 종료할 때까지 영구히 무반응이 된다.
+  const deepLinkGateRef = useRef<DeepLinkGate | null>(null);
+  // missing 판정 후 지원서 직접 조회가 중복 발사되지 않게 하는 in-flight 키
+  const missingLookupKeyRef = useRef<string | null>(null);
+  // useLocalSearchParams 는 매 렌더 새 객체를 반환하므로 deps 에는 원시값만 싣는다.
+  const { applicationId: deepLinkApplicationId, cancelApplicationId: deepLinkCancelApplicationId } =
+    searchParams;
   useEffect(() => {
-    if (didHandleSearchParam) return;
+    const deepLinkKey = buildApplicationDeepLinkKey({
+      applicationId: deepLinkApplicationId,
+      cancelApplicationId: deepLinkCancelApplicationId,
+    });
+    if (!deepLinkKey) return;
 
-    const targetApplicationId = searchParams.applicationId;
-    const targetCancelApplicationId = searchParams.cancelApplicationId;
+    const { next, shouldProcess } = advanceDeepLinkGate(deepLinkGateRef.current, deepLinkKey);
+    deepLinkGateRef.current = next;
+    if (!shouldProcess) return;
 
-    if (!targetApplicationId && !targetCancelApplicationId) return;
+    // 처리 완료 표시 + 파라미터 소비. 파라미터를 비워야 같은 알림을 다시 탭했을 때도
+    // 착지가 살아난다(값이 그대로면 key 가 같아 게이트에서 걸린다).
+    const markHandled = () => {
+      deepLinkGateRef.current = { key: deepLinkKey, retried: true, done: true };
+      router.setParams({ applicationId: undefined, cancelApplicationId: undefined });
+    };
+    const notifyMissing = (message: string) => {
+      markHandled();
+      addToast({ type: 'info', message });
+    };
 
-    if (targetCancelApplicationId) {
-      setDidHandleSearchParam(true);
-      void handleRequestCancellation(targetCancelApplicationId);
+    if (deepLinkCancelApplicationId) {
+      markHandled();
+      void handleRequestCancellation(deepLinkCancelApplicationId);
       return;
     }
 
-    if (targetApplicationId) {
+    if (deepLinkApplicationId) {
       const landing = resolveApplicationDeepLink(
         schedules,
-        targetApplicationId,
+        deepLinkApplicationId,
         isLoading || isRefreshing,
         error
       );
       if (landing.kind === 'open') {
-        setDidHandleSearchParam(true);
+        markHandled();
         setSelectedSchedule(landing.schedule);
         setIsDetailSheetVisible(true);
       } else if (landing.kind === 'missing') {
-        if (!didRetryDeepLinkRef.current) {
+        if (!next.retried) {
           // 캐시가 stale일 수 있으니 fresh 데이터로 1회 재판정 (확정 알림 착지 오탐 방지)
-          didRetryDeepLinkRef.current = true;
+          deepLinkGateRef.current = { ...next, retried: true };
           void refresh();
           return;
         }
-        // 거절/취소된 지원은 스케줄 쿼리에서 제외 → 무반응 착지 대신 안내 (QW2, 근본 해소는 M1)
-        setDidHandleSearchParam(true);
-        addToast({
-          type: 'info',
-          message:
-            '해당 지원 일정을 찾을 수 없어요. 지원이 거절되었거나 취소되어 목록에 없을 수 있어요.',
-        });
+
+        // 근무월로 이미 점프했는데도 없으면 더 볼 곳이 없다.
+        if (next.jumpedMonth) {
+          notifyMissing(DEEP_LINK_APPLICATION_NOT_FOUND_MESSAGE);
+          return;
+        }
+
+        // 조회는 '이번 달' 스코프라, 다른 달 확정 건은 여기까지 온다. 원인을 구분하지 않고
+        // '거절되었거나 취소되어'를 띄우면 확정 알림에 사실과 정반대 안내가 나간다.
+        // 지원서를 직접 조회해 근무월로 이동하거나, 진짜 사유를 알린다.
+        if (missingLookupKeyRef.current === deepLinkKey) return; // 조회 진행 중
+        missingLookupKeyRef.current = deepLinkKey;
+        void (async () => {
+          let application: Application | null = null;
+          try {
+            application = await getApplicationById(deepLinkApplicationId);
+          } catch (lookupError) {
+            logger.error('딥링크 지원서 조회 실패', lookupError as Error, {
+              applicationId: deepLinkApplicationId,
+            });
+          }
+
+          const outcome = resolveMissingApplicationDeepLink(application, currentMonth, false);
+          if (outcome.kind === 'jump-month') {
+            deepLinkGateRef.current = {
+              key: deepLinkKey,
+              retried: true,
+              done: false,
+              jumpedMonth: true,
+            };
+            goToMonth(outcome.year, outcome.month);
+            return;
+          }
+          notifyMissing(outcome.message);
+        })();
       }
     }
   }, [
-    didHandleSearchParam,
     handleRequestCancellation,
     schedules,
     isLoading,
@@ -523,8 +578,10 @@ export default function ScheduleScreen() {
     error,
     addToast,
     refresh,
-    searchParams.applicationId,
-    searchParams.cancelApplicationId,
+    currentMonth,
+    goToMonth,
+    deepLinkApplicationId,
+    deepLinkCancelApplicationId,
   ]);
 
   // 단일 스케줄 상세 시트 열기

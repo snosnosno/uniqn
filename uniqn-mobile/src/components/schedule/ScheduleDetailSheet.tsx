@@ -202,7 +202,7 @@ export function ScheduleDetailSheet({
           label="역할"
           value={getRoleDisplayName(schedule.role, schedule.customRole)}
         />
-        {schedule.payrollAmount && schedule.payrollAmount > 0 && (
+        {typeof schedule.payrollAmount === 'number' && (
           <DetailRow
             icon={<CurrencyDollarIcon size={18} color={SECONDARY_PALETTE[500]} />}
             label="급여"
