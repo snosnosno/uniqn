@@ -38,6 +38,10 @@ const mockFilterSchedulesByDate = jest.fn();
 jest.mock('@/utils/scheduleGrouping', () => ({
   groupScheduleEvents: (...args: unknown[]) => mockGroupScheduleEvents(...args),
   filterSchedulesByDate: (...args: unknown[]) => mockFilterSchedulesByDate(...args),
+  // 선택 날짜 재정렬은 순수 함수라 실제 구현을 그대로 쓴다 — 부분 mock 으로 빼면
+  // 훅이 호출하는 순간 "is not a function" 으로 터진다.
+  resolveSelectedDateForMonth: jest.requireActual('@/utils/scheduleGrouping')
+    .resolveSelectedDateForMonth,
 }));
 
 jest.mock('@/utils/queryUtils', () => ({
@@ -805,8 +809,11 @@ describe('useSchedules hooks', () => {
       });
 
       expect(result.current.view).toBe('day');
-      expect(result.current.selectedDate).toBe('2024-02-20');
       expect(result.current.currentMonth).toEqual({ year: 2025, month: 6 });
+      // 월을 옮기면 선택 날짜도 그 달로 따라간다. 예전처럼 '2024-02-20' 에 남으면
+      // 캘린더에 점은 찍혔는데 아래 목록은 비고 선택 표시도 사라져,
+      // 지난달 기록을 보러 온 사용자가 "기록이 사라졌다"고 오해한다.
+      expect(result.current.selectedDate).toBe('2025-06-01');
 
       act(() => {
         result.current.goToPrevMonth();
@@ -829,6 +836,23 @@ describe('useSchedules hooks', () => {
         year: today.getFullYear(),
         month: today.getMonth() + 1,
       });
+    });
+
+    // 자동 재정렬이 사용자의 명시적 선택을 덮으면, 날짜를 탭할 때마다 되돌아가 버린다.
+    it('사용자가 직접 고른 날짜는 같은 달 안에서 유지된다', () => {
+      mockQueryData = { schedules: [], stats: createMockStats() };
+
+      const { result } = renderHook(() => useCalendarView('month' as CalendarView));
+
+      act(() => {
+        result.current.goToMonth(2025, 6);
+      });
+      expect(result.current.selectedDate).toBe('2025-06-01');
+
+      act(() => {
+        result.current.setSelectedDate('2025-06-14');
+      });
+      expect(result.current.selectedDate).toBe('2025-06-14');
     });
   });
 });

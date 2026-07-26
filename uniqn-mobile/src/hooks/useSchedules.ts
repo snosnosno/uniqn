@@ -19,7 +19,11 @@ import {
   groupSchedulesByDate,
   getCalendarMarkedDates,
 } from '@/services/work/scheduleService';
-import { groupScheduleEvents, filterSchedulesByDate } from '@/utils/scheduleGrouping';
+import {
+  groupScheduleEvents,
+  filterSchedulesByDate,
+  resolveSelectedDateForMonth,
+} from '@/utils/scheduleGrouping';
 import { shouldPreferQuerySchedulePayload } from '@/utils/scheduleRealtimePreference';
 import { getTodayString } from '@/utils/date';
 import { stableFilters } from '@/utils/queryUtils';
@@ -550,11 +554,24 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
     month: new Date().getMonth() + 1,
   });
 
+  /**
+   * 사용자가 날짜를 직접 골랐는지. 자동 재정렬이 사용자의 선택을 덮지 않게 한다.
+   * 월을 이동하면 다시 false 로 돌아가 새 달 기준으로 재정렬된다.
+   */
+  const userPickedDateRef = useRef(false);
+
+  const selectDate = useCallback((date: string) => {
+    userPickedDateRef.current = true;
+    setSelectedDate(date);
+  }, []);
+
   const goToMonth = useCallback((year: number, month: number) => {
+    userPickedDateRef.current = false;
     setCurrentMonth({ year, month });
   }, []);
 
   const goToPrevMonth = useCallback(() => {
+    userPickedDateRef.current = false;
     setCurrentMonth((prev) => {
       if (prev.month === 1) {
         return { year: prev.year - 1, month: 12 };
@@ -564,6 +581,7 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
   }, []);
 
   const goToNextMonth = useCallback(() => {
+    userPickedDateRef.current = false;
     setCurrentMonth((prev) => {
       if (prev.month === 12) {
         return { year: prev.year + 1, month: 1 };
@@ -574,6 +592,7 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
 
   const goToToday = useCallback(() => {
     const today = new Date();
+    userPickedDateRef.current = true;
     setCurrentMonth({
       year: today.getFullYear(),
       month: today.getMonth() + 1,
@@ -596,6 +615,31 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
     month: currentMonth.month,
     realtime,
   });
+
+  /**
+   * 월 이동 시 선택 날짜를 이동한 달로 재정렬한다.
+   *
+   * 월만 바꾸고 selectedDate 를 그대로 두면 선택일이 이전 달에 남아, 캘린더에는 점이
+   * 찍혔는데 아래 목록은 비고 어느 날짜에도 선택 표시가 없다 — 지난달 기록을 보러 온
+   * 사용자가 "기록이 사라졌다"고 오해한다. 좌우 스와이프 전환도 같은 경로다.
+   *
+   * 데이터가 도착하면 한 번 더 돌아 '일정이 있는 가장 이른 날'로 좁혀진다.
+   * 사용자가 날짜를 직접 탭한 뒤에는(userPickedDateRef) 개입하지 않는다.
+   */
+  useEffect(() => {
+    if (userPickedDateRef.current) return;
+
+    const target = resolveSelectedDateForMonth(
+      currentMonth.year,
+      currentMonth.month,
+      schedules.map((schedule) => schedule.date),
+      getTodayString()
+    );
+
+    if (target !== selectedDate) {
+      setSelectedDate(target);
+    }
+  }, [currentMonth, schedules, selectedDate]);
 
   const groupedByApplication = useMemo(
     () =>
@@ -632,7 +676,7 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
     isRefreshing,
     error,
     setView,
-    setSelectedDate,
+    setSelectedDate: selectDate,
     goToMonth,
     goToPrevMonth,
     goToNextMonth,

@@ -15,7 +15,12 @@ import {
   Skeleton,
 } from '@/components/ui';
 import type { FilterTabOption } from '@/components/ui';
-import { ScheduleCard, ScheduleDetailModal, GroupedScheduleCard } from '@/components/schedule';
+import {
+  ScheduleCard,
+  ScheduleDetailModal,
+  GroupedScheduleCard,
+  NextShiftCard,
+} from '@/components/schedule';
 import { CancellationRequestForm } from '@/components/applications';
 import { ReportModal } from '@/components/employer/ReportModal';
 import { useOwnerReport } from '@/components/schedule/useOwnerReport';
@@ -23,6 +28,8 @@ import { TabHeader } from '@/components/headers';
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, MenuIcon } from '@/components/icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCalendarView, useApplications } from '@/hooks';
+import { useTodaySchedules } from '@/hooks/useSchedules';
+import { pickNextShift } from '@/components/schedule/helpers/nextShift';
 import { useOpsHubEnabled } from '@/hooks/useOpsHubEnabled';
 import { useTabBarBottomPadding } from '@/hooks/useTabBarBottomPadding';
 import { useAuthStore } from '@/stores/authStore';
@@ -47,9 +54,13 @@ import {
   type DeepLinkGate,
 } from '@/utils/scheduleDeepLink';
 import { triggerHaptic } from '@/utils/haptics';
+import { getTodayString } from '@/utils/date';
 import {
   filterSchedulesByStatus,
   countSchedulesByType,
+  splitSchedulesByToday,
+  pickGroupFocusDate,
+  formatSingleDate,
   type ScheduleStatusFilter,
 } from '@/utils/scheduleGrouping';
 import type { Application, ScheduleEvent, GroupedScheduleEvent } from '@/types';
@@ -349,20 +360,66 @@ export default function ScheduleScreen() {
     [statusCounts]
   );
 
-  // 총 일수 계산 (그룹화된 스케줄의 실제 일수 합계) — 리스트 헤더용이라 필터 반영
-  const totalDays = useMemo(() => {
-    return filteredSchedules.reduce((sum, item) => {
-      if (isGroupedScheduleEvent(item)) {
-        return sum + item.dateRange.totalDays;
-      }
-      return sum + 1;
-    }, 0);
-  }, [filteredSchedules]);
+  // 리스트 뷰를 시간 축으로 가른다 — '다가오는 근무'가 먼저, 그 안에서도 가까운 날이 먼저.
+  // 기본 그룹 정렬은 최신순 내림차순이라 27일인 사용자에게 31일 카드가 맨 위에 왔다.
+  const todayStr = getTodayString();
+
+  // '내 다음 근무' 히어로 — 이미 구현돼 있으나 소비자가 없던 useTodaySchedules(60초 폴링·
+  // 오프라인 캐시 완비)를 오늘 근무 원천으로 쓰고, 오늘 것이 없으면 이번 달 확정 건에서 찾는다.
+  const { schedules: todaySchedules } = useTodaySchedules();
+  const nextShift = useMemo(
+    () => pickNextShift([...todaySchedules, ...schedules], todayStr),
+    [todaySchedules, schedules, todayStr]
+  );
+  const listSections = useMemo(() => {
+    const { upcoming, past } = splitSchedulesByToday(filteredSchedules, todayStr);
+    const countDays = (items: (ScheduleEvent | GroupedScheduleEvent)[]) =>
+      items.reduce(
+        (sum, item) => sum + (isGroupedScheduleEvent(item) ? item.dateRange.totalDays : 1),
+        0
+      );
+
+    return [
+      { key: 'upcoming' as const, label: '다가오는 근무', items: upcoming },
+      { key: 'past' as const, label: '지난 근무', items: past },
+    ]
+      .filter((section) => section.items.length > 0)
+      .map((section) => ({
+        ...section,
+        title: `${section.label} ${section.items.length}건 · ${countDays(section.items)}일`,
+      }));
+  }, [filteredSchedules, todayStr]);
+
+  // sticky 헤더 위치 — 섹션마다 [헤더, 카드묶음] 2개 자식을 밀어넣으므로 짝수 인덱스가 헤더다.
+  const listStickyIndices = useMemo(
+    () => listSections.map((_, index) => index * 2),
+    [listSections]
+  );
+
+  // 선택일에 일정이 없을 때 안내할 '가장 가까운 일정 날짜'
+  const nearestScheduleDate = useMemo(() => {
+    const dates = Array.from(new Set(schedules.map((schedule) => schedule.date)))
+      .filter(Boolean)
+      .sort();
+    if (dates.length === 0) return null;
+    return dates.find((date) => date >= selectedDate) ?? dates[dates.length - 1];
+  }, [schedules, selectedDate]);
 
   // 뷰 토글 핸들러
   const handleToggleView = useCallback(() => {
     setViewMode((prev) => (prev === 'list' ? 'calendar' : 'list'));
   }, []);
+
+  // 리스트 뷰 스크롤 제어 — '오늘' 버튼이 목록에서 아무 반응이 없던 문제를 없앤다.
+  // 목록은 '다가오는 근무'가 맨 위이므로 최상단으로 올리면 오늘/최근접 근무가 보인다.
+  const listScrollRef = useRef<ScrollView>(null);
+
+  const handleGoToToday = useCallback(() => {
+    goToToday();
+    if (viewMode === 'list') {
+      listScrollRef.current?.scrollTo({ y: 0, animated: true });
+    }
+  }, [goToToday, viewMode]);
 
   // 지원 취소 핸들러 (applied 상태)
   // 확인 다이얼로그는 호출자(ScheduleCard / ScheduleDetailModal)가 각자 띄운다.
@@ -596,9 +653,14 @@ export default function ScheduleScreen() {
     (group: GroupedScheduleEvent) => {
       if (group.originalEvents.length === 0) return;
 
-      // 캘린더에서 선택한 날짜(selectedDate)와 일치하는 이벤트 찾기
+      // 캘린더에서 선택한 날짜(selectedDate)가 그룹에 있으면 그 날짜를 먼저 존중하고,
+      // 없으면(리스트 뷰 경로) '오늘 이후 가장 가까운 근무일'을 연다. 예전 폴백인
+      // originalEvents[0] 은 내림차순 정렬의 가장 나중 날짜라 3일 대회가 '3 / 3일'부터 열렸다.
+      const focusDate = pickGroupFocusDate(group.dateRange.dates, getTodayString());
       const targetEvent =
-        group.originalEvents.find((e) => e.date === selectedDate) || group.originalEvents[0]; // 없으면 첫 번째로 대체
+        group.originalEvents.find((e) => e.date === selectedDate) ??
+        group.originalEvents.find((e) => e.date === focusDate) ??
+        group.originalEvents[0];
 
       setSelectedSchedule(targetEvent);
       setSelectedGroupedSchedule(group);
@@ -620,6 +682,26 @@ export default function ScheduleScreen() {
       }
     },
     []
+  );
+
+  // 카드 렌더 — 캘린더 뷰와 리스트 뷰가 같은 규칙을 쓰도록 한 곳에서 만든다.
+  const renderScheduleItem = useCallback(
+    (item: ScheduleEvent | GroupedScheduleEvent) => {
+      if (isGroupedScheduleEvent(item)) {
+        return (
+          <GroupedScheduleCard
+            key={item.id}
+            group={item}
+            onPress={() => handleOpenGroupedDetailSheet(item)}
+            onDatePress={(date, eventId) => handleGroupDatePress(date, eventId, item)}
+          />
+        );
+      }
+      return (
+        <ScheduleCard key={item.id} schedule={item} onPress={() => handleOpenDetailSheet(item)} />
+      );
+    },
+    [handleOpenGroupedDetailSheet, handleGroupDatePress, handleOpenDetailSheet]
   );
 
   // 스케줄 상세 시트 닫기
@@ -703,7 +785,14 @@ export default function ScheduleScreen() {
       {/* 헤더 */}
       <TabHeader title="내 스케줄" />
 
-      {/* 통계 카드 — 월 요약을 먼저 노출 (대시보드 상태 우선) */}
+      {/* 내 다음 근무 — 이 탭을 여는 1순위 질문에 먼저 답한다. 월 집계는 그 아래로. */}
+      <NextShiftCard
+        schedule={nextShift}
+        onPress={() => nextShift && handleOpenDetailSheet(nextShift)}
+        onQRScan={handleQRScan}
+      />
+
+      {/* 통계 카드 — 월 요약 (히어로 아래로 강등) */}
       <StatsCard stats={stats} isLoading={isLoading} />
 
       {/* 월 네비게이터 — StatsCard 바로 아래, 캘린더/리스트 바로 위에 배치해
@@ -714,7 +803,7 @@ export default function ScheduleScreen() {
         viewMode={viewMode}
         onPrev={goToPrevMonth}
         onNext={goToNextMonth}
-        onToday={goToToday}
+        onToday={handleGoToToday}
         onToggleView={handleToggleView}
       />
 
@@ -777,31 +866,11 @@ export default function ScheduleScreen() {
               {/* 1: sticky 헤더 — 배경 solid로 아래 콘텐츠 가림 */}
               <View className="bg-surface-page dark:bg-surface px-4 pt-3 pb-2 border-b border-divider">
                 <Text className="text-sm font-sans-medium text-content-secondary">
-                  {selectedDate} 스케줄 ({selectedDateSchedules.length}건)
+                  {formatSingleDate(selectedDate)} 스케줄 ({selectedDateSchedules.length}건)
                 </Text>
               </View>
               {/* 2: 카드 리스트 */}
-              <View className="px-4 pt-3">
-                {selectedDateSchedules.map((item) => {
-                  if (isGroupedScheduleEvent(item)) {
-                    return (
-                      <GroupedScheduleCard
-                        key={item.id}
-                        group={item}
-                        onPress={() => handleOpenGroupedDetailSheet(item)}
-                        onDatePress={(date, eventId) => handleGroupDatePress(date, eventId, item)}
-                      />
-                    );
-                  }
-                  return (
-                    <ScheduleCard
-                      key={item.id}
-                      schedule={item}
-                      onPress={() => handleOpenDetailSheet(item)}
-                    />
-                  );
-                })}
-              </View>
+              <View className="px-4 pt-3">{selectedDateSchedules.map(renderScheduleItem)}</View>
             </>
           ) : !isLoading && groupedByApplication.length === 0 ? (
             // 캘린더 뷰 빈 상태 — 리스트 뷰와 동일한 온보딩 EmptyState (월 전체 0건일 때만)
@@ -818,6 +887,28 @@ export default function ScheduleScreen() {
                 }
                 variant="content"
               />
+            </View>
+          ) : !isLoading ? (
+            // 선택일에 일정이 없고 그 달엔 있는 경우 — 예전에는 아무것도 렌더하지 않아
+            // 날짜를 눌렀는데 화면이 그대로인 '먹통'처럼 보였다.
+            <View className="items-center px-4 pt-8">
+              <Text className="text-sm text-content-muted dark:text-secondary-400 font-sans">
+                이 날은 일정이 없어요.
+              </Text>
+              {nearestScheduleDate && (
+                <FocusablePressable
+                  onPress={() => setSelectedDate(nearestScheduleDate)}
+                  hitSlop={8}
+                  focusRingRadius={6}
+                  className="mt-3 rounded-md px-4 py-2.5 active:bg-secondary-100 dark:active:bg-secondary-700"
+                  accessibilityRole="button"
+                  accessibilityLabel={`가장 가까운 일정 ${formatSingleDate(nearestScheduleDate)} 보기`}
+                >
+                  <Text className="text-sm font-sans-semibold text-primary-600 dark:text-primary-400">
+                    가장 가까운 일정 보기 ({formatSingleDate(nearestScheduleDate)})
+                  </Text>
+                </FocusablePressable>
+              )}
             </View>
           ) : null}
         </ScrollView>
@@ -839,8 +930,11 @@ export default function ScheduleScreen() {
         <ScrollView
           className="flex-1"
           contentContainerStyle={{ paddingBottom: bottomPadding }}
-          // impeccable §24 — 월 스케줄 요약 헤더를 sticky로: 카드 실제 렌더 시에만 활성.
-          stickyHeaderIndices={!isLoading && filteredSchedules.length > 0 ? [0] : undefined}
+          ref={listScrollRef}
+          // impeccable §24 — 섹션 헤더를 sticky로: 카드 실제 렌더 시에만 활성.
+          stickyHeaderIndices={
+            !isLoading && listSections.length > 0 ? listStickyIndices : undefined
+          }
           refreshControl={
             <RefreshControl refreshing={isRefreshing} onRefresh={refresh} {...PTR_REFRESH_PROPS} />
           }
@@ -874,36 +968,21 @@ export default function ScheduleScreen() {
               />
             </View>
           ) : (
-            <>
-              {/* 0: sticky 헤더 — MonthNavigator 아래 바로 붙음 (pt-3로 최소 호흡) */}
-              <View className="bg-surface-page dark:bg-surface px-4 pt-3 pb-2 border-b border-divider">
+            // 섹션마다 [sticky 헤더, 카드묶음] 2개를 평평하게 밀어넣는다 — Fragment 로 감싸면
+            // stickyHeaderIndices 가 세는 자식 인덱스와 어긋난다.
+            listSections.flatMap((section) => [
+              <View
+                key={`${section.key}-header`}
+                className="bg-surface-page dark:bg-surface px-4 pt-3 pb-2 border-b border-divider"
+              >
                 <Text className="text-sm font-sans-medium text-content-secondary">
-                  {currentMonth.month}월 스케줄 ({filteredSchedules.length}건, {totalDays}일)
+                  {section.title}
                 </Text>
-              </View>
-              {/* 1: 카드 리스트 */}
-              <View className="px-4 pt-3">
-                {filteredSchedules.map((item) => {
-                  if (isGroupedScheduleEvent(item)) {
-                    return (
-                      <GroupedScheduleCard
-                        key={item.id}
-                        group={item}
-                        onPress={() => handleOpenGroupedDetailSheet(item)}
-                        onDatePress={(date, eventId) => handleGroupDatePress(date, eventId, item)}
-                      />
-                    );
-                  }
-                  return (
-                    <ScheduleCard
-                      key={item.id}
-                      schedule={item}
-                      onPress={() => handleOpenDetailSheet(item)}
-                    />
-                  );
-                })}
-              </View>
-            </>
+              </View>,
+              <View key={`${section.key}-cards`} className="px-4 pt-3">
+                {section.items.map(renderScheduleItem)}
+              </View>,
+            ])
           )}
         </ScrollView>
       )}

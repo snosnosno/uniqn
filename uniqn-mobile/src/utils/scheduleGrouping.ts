@@ -391,3 +391,92 @@ export function countSchedulesByType(
 
   return counts;
 }
+
+// ============================================================================
+// 시간 축 정렬 — "다가오는 근무" 우선
+// ============================================================================
+
+/** 스케줄/그룹의 대표 시작 날짜 */
+function scheduleStartDate(item: ScheduleEvent | GroupedScheduleEvent): string {
+  return 'dateRange' in item ? item.dateRange.start : item.date;
+}
+
+/** 스케줄/그룹의 대표 종료 날짜 (그룹이면 마지막 근무일) */
+function scheduleEndDate(item: ScheduleEvent | GroupedScheduleEvent): string {
+  return 'dateRange' in item ? item.dateRange.end : item.date;
+}
+
+export interface ScheduleTimeSplit<T> {
+  /** 오늘 포함 이후 — 가까운 순(오름차순) */
+  upcoming: T[];
+  /** 지난 근무 — 최근 순(내림차순) */
+  past: T[];
+}
+
+/**
+ * 목록을 '다가오는 근무'와 '지난 근무'로 가른다.
+ *
+ * 기본 그룹 정렬(`groupScheduleEvents`)은 최신순 내림차순이라, 27일인 사용자가
+ * 목록을 열면 31일 카드가 맨 위에 온다. "오늘/내일 어디로 출근하지"에 답하려면
+ * 다가오는 근무가 먼저, 그 안에서도 가까운 날이 먼저여야 한다.
+ *
+ * 캘린더 뷰가 공유하는 원본 정렬은 건드리지 않고 **목록 표시 단계에서만** 재정렬한다.
+ * 여러 날에 걸친 그룹은 마지막 근무일이 오늘 이후면 아직 '다가오는' 것으로 본다.
+ */
+export function splitSchedulesByToday<T extends ScheduleEvent | GroupedScheduleEvent>(
+  schedules: T[],
+  todayStr: string
+): ScheduleTimeSplit<T> {
+  const upcoming: T[] = [];
+  const past: T[] = [];
+
+  for (const schedule of schedules) {
+    if (scheduleEndDate(schedule) >= todayStr) {
+      upcoming.push(schedule);
+    } else {
+      past.push(schedule);
+    }
+  }
+
+  upcoming.sort((a, b) => scheduleStartDate(a).localeCompare(scheduleStartDate(b)));
+  past.sort((a, b) => scheduleStartDate(b).localeCompare(scheduleStartDate(a)));
+
+  return { upcoming, past };
+}
+
+/**
+ * 그룹 상세를 열 때 먼저 보여줄 날짜.
+ *
+ * 폴백이 `originalEvents[0]`(내림차순 정렬의 **가장 나중** 날짜)이면 3일짜리 대회가
+ * '3 / 3일'부터 열려, 정작 급한 첫날 출근 시간과 QR 이 가장 멀리 놓인다.
+ * 오늘 이후 가장 가까운 근무일을 먼저 보여주고, 전부 지났으면 마지막 근무일을 쓴다.
+ */
+export function pickGroupFocusDate(dates: readonly string[], todayStr: string): string | null {
+  if (dates.length === 0) return null;
+  return dates.find((date) => date >= todayStr) ?? dates[dates.length - 1];
+}
+
+/**
+ * 월을 이동했을 때 선택할 날짜.
+ *
+ * 월만 바꾸고 selectedDate 를 그대로 두면 선택일이 이전 달에 남아, 캘린더에 점은
+ * 찍혀 있는데 아래 목록은 비고 어느 날짜도 선택 표시가 없다 — 지난달 기록을 보러 온
+ * 사용자가 "기록이 사라졌다"고 오해한다.
+ *
+ * 우선순위: ① 그 달에 오늘이 있으면 오늘 → ② 일정이 있는 가장 이른 날 → ③ 1일.
+ */
+export function resolveSelectedDateForMonth(
+  year: number,
+  month: number,
+  scheduleDates: readonly string[],
+  todayStr: string
+): string {
+  const monthPrefix = `${year}-${String(month).padStart(2, '0')}`;
+
+  if (todayStr.startsWith(monthPrefix)) {
+    return todayStr;
+  }
+
+  const datesInMonth = scheduleDates.filter((date) => date.startsWith(monthPrefix)).sort();
+  return datesInMonth[0] ?? `${monthPrefix}-01`;
+}
