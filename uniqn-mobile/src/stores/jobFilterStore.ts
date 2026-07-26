@@ -12,6 +12,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { mmkvStorage } from '@/lib/mmkvStorage';
 import { sanitizeRegionTokens, type RegionToken } from '@/utils/regionSelection';
 import { isFilterableStaffRole, type StaffRole } from '@/types/role';
+import { SALARY_FILTER_PRESETS } from '@/constants/jobPosting';
 import type { FilterableSalaryType, SalarySortDirection } from '@/types/jobPosting';
 
 const MAX_RECENT_REGIONS = 3;
@@ -72,19 +73,25 @@ export function sanitizeRoleFilters(roles: unknown): StaffRole[] {
 
 /**
  * persist 복원/외부 입력 방어 — 유효한 타입 + (금액 | 정렬) 중 최소 하나가 있어야 통과.
- * 금액·정렬이 모두 비면 "급여 조건 없음"과 동치라 null 로 접는다.
+ *
+ * @description 금액은 **현재 프리셋에 존재하는 값만** 통과한다. 프리셋을 줄였을 때 MMKV 에
+ *   남은 옛 금액(예: 폐기된 시급 1.1만)을 그대로 복원하면 pill 은 그 필터를 표시하는데
+ *   시트에는 대응 칩이 없어 사용자가 재현도 해제도 못 하는 상태가 된다.
+ *   금액·정렬이 모두 비면 "급여 조건 없음"과 동치라 null 로 접는다.
  */
 export function sanitizeSalaryFilter(filter: unknown): SalaryFilter | null {
   if (typeof filter !== 'object' || filter === null) return null;
   const { type, min, sort } = filter as { type?: unknown; min?: unknown; sort?: unknown };
   if (!FILTERABLE_SALARY_TYPES.includes(type as FilterableSalaryType)) return null;
+  const salaryType = type as FilterableSalaryType;
+  const presets: readonly number[] = SALARY_FILTER_PRESETS[salaryType];
   const validMin =
-    typeof min === 'number' && Number.isFinite(min) && min > 0 ? Math.floor(min) : null;
+    typeof min === 'number' && Number.isFinite(min) && presets.includes(min) ? min : null;
   const validSort = SALARY_SORT_DIRECTIONS.includes(sort as SalarySortDirection)
     ? (sort as SalarySortDirection)
     : null;
   if (validMin === null && validSort === null) return null;
-  return { type: type as FilterableSalaryType, min: validMin, sort: validSort };
+  return { type: salaryType, min: validMin, sort: validSort };
 }
 
 export const useJobFilterStore = create<JobFilterState>()(

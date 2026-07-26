@@ -14,6 +14,7 @@ import { Modal } from '@/components/ui/Modal';
 import { InformationCircleIcon } from '@/components/icons';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { SALARY_TYPE_LABELS } from '@/constants';
+import { SALARY_FILTER_PRESETS } from '@/constants/jobPosting';
 import type { FilterableSalaryType, SalarySortDirection } from '@/types/jobPosting';
 import type { StaffRole } from '@/types/role';
 import type { SalaryFilter } from '@/stores/jobFilterStore';
@@ -39,14 +40,10 @@ const SALARY_TYPES: readonly FilterableSalaryType[] = ['hourly', 'daily', 'month
 const SALARY_SORTS: readonly SalarySortDirection[] = ['high', 'low'];
 
 /**
- * 타입별 최소 금액 프리셋(원). 시급·일급만 금액 칩을 제공하고 월급은 정렬만 쓴다 —
- * 월급 공고는 표본이 적어 금액 구간을 나눌 실익이 없다.
+ * 타입별 최소 금액 프리셋(원) — 단일 소스는 constants/jobPosting.
+ * 스토어 정화(sanitizeSalaryFilter)가 같은 목록으로 검증하므로 여기서 재정의하지 않는다.
  */
-const SALARY_PRESETS: Record<FilterableSalaryType, readonly number[]> = {
-  hourly: [15000, 20000],
-  daily: [200000, 300000],
-  monthly: [],
-};
+const SALARY_PRESETS: Record<FilterableSalaryType, readonly number[]> = SALARY_FILTER_PRESETS;
 
 /** 정렬·금액 칩 공용 — 단일선택(재탭 해제) 시각 규칙을 한 곳에 둔다 */
 function ChoiceChip({

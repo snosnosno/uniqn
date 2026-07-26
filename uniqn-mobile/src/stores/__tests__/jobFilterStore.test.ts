@@ -134,17 +134,30 @@ describe('sanitizeRoleFilters', () => {
 });
 
 describe('sanitizeSalaryFilter', () => {
-  it('타입이 유효하고 금액·정렬 중 하나는 있어야 통과하며 금액은 정수로 내림한다', () => {
+  it('타입이 유효하고 금액·정렬 중 하나는 있어야 통과한다', () => {
     expect(sanitizeSalaryFilter(null)).toBeNull();
     // 금액·정렬이 모두 없으면 조건 없음과 동치
     expect(sanitizeSalaryFilter({ type: 'hourly' })).toBeNull();
     expect(sanitizeSalaryFilter({ type: 'hourly', min: Number.NaN })).toBeNull();
     expect(sanitizeSalaryFilter({ type: 'hourly', min: -1 })).toBeNull();
-    expect(sanitizeSalaryFilter({ type: 'monthly', min: 2500000.9 })).toEqual({
-      type: 'monthly',
-      min: 2500000,
+    expect(sanitizeSalaryFilter({ type: 'hourly', min: 20000 })).toEqual({
+      type: 'hourly',
+      min: 20000,
       sort: null,
     });
+  });
+
+  it('프리셋에 없는 금액은 떨군다 — 프리셋 축소 후 MMKV 에 남은 옛 값 방어', () => {
+    // 폐기된 시급 1.1만: 재현·해제 불가한 pill 이 남지 않도록 필터 자체를 접는다
+    expect(sanitizeSalaryFilter({ type: 'hourly', min: 11000 })).toBeNull();
+    // 정렬이 함께 있으면 금액만 떨구고 정렬은 살린다
+    expect(sanitizeSalaryFilter({ type: 'hourly', min: 11000, sort: 'high' })).toEqual({
+      type: 'hourly',
+      min: null,
+      sort: 'high',
+    });
+    // 월급은 금액 프리셋이 없으므로 어떤 금액도 통과하지 못한다
+    expect(sanitizeSalaryFilter({ type: 'monthly', min: 2500000 })).toBeNull();
   });
 
   it('정렬 값은 high/low 만 통과하고, 무효 정렬은 null 로 떨군다', () => {
