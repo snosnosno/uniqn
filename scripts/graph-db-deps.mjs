@@ -14,16 +14,27 @@
  * graphify CLI의 affected/query는 SQL 함수명 매칭에 실패하고 기본 relation 목록에
  * triggers/reads_from이 빠져 있어 쓸 수 없다. 그래서 graph.json을 직접 읽는다.
  *
+ * ⚠️ 단, `triggers` 명령만은 그래프를 **쓰지 않는다**. graphify 의 trigger 추출이
+ * baseline 기준 69개 중 37개만 잡아(46% 누락) "중복 0건"이 거짓 안전 신호가 되기 때문이다.
+ * triggers 는 .sql 을 직접 스캔하므로 그래프 설치·신선도와 무관하게 항상 동작한다.
+ *
  * 사용법:
- *   node scripts/graph-db-deps.mjs stats
- *   node scripts/graph-db-deps.mjs triggers            # 중복 트리거 검사
+ *   node scripts/graph-db-deps.mjs triggers            # 중복 트리거 검사 (그래프 불필요)
+ *   node scripts/graph-db-deps.mjs stats               # 이하 3개는 graph.json 필요
  *   node scripts/graph-db-deps.mjs table work_logs     # 이 테이블을 읽는 함수 (변경 전 영향도)
  *   node scripts/graph-db-deps.mjs fn my_venue_role_salaries
  *
- * 옵션: --graph <path> | --include-archive | --allow-stale
+ * 옵션: --graph <path> | --include-archive | --allow-stale | --verbose(triggers)
  *
  * 그래프가 최신 .sql 보다 오래되면 **차단**한다(구 번들이 E2E를 거짓 통과시켰던 것과
  * 같은 계열의 함정). 재생성: graphify update uniqn-mobile --force --no-cluster
+ * graphify 미설치 시: uv tool install "graphifyy[sql,mcp]"
+ *
+ * ## triggers 결과 읽는 법 (중요)
+ * `중복_후보`는 **판정이 아니라 순위 매긴 힌트**다. 같은 테이블·시점에 트리거가 여럿인 건
+ * 대부분 정상이므로(updated_at + 상태전이 + XSS검사...), 함수명 토큰이 겹치는 쌍만 올린다.
+ * 테이블명 유래 토큰과 범용 동사(enforce/sync/check…)는 제외하고 비교한다.
+ * 0건이 "안전 확정"은 아니다 — 이름이 전혀 안 겹치는 중복은 사람이 봐야 한다.
  */
 
 import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs';
@@ -138,15 +149,67 @@ function normalizeFn(raw) {
   return raw.toLowerCase();
 }
 
-/** CREATE TRIGGER 문을 소스에서 읽어 대상 테이블을 확정한다 (그래프 엣지엔 없는 정보) */
-function triggerTable(link) {
-  const file = resolve(REPO_ROOT, String(link.source_file || ''));
-  const lineNo = Number(String(link.source_location || '').replace(/^L/, ''));
-  if (!existsSync(file) || !Number.isFinite(lineNo)) return null;
-  const lines = readFileSync(file, 'utf8').split(/\r?\n/);
-  // CREATE TRIGGER 는 여러 줄에 걸칠 수 있어 앞뒤로 넉넉히 본다
-  const window = lines.slice(Math.max(0, lineNo - 2), lineNo + 8).join(' ');
-  return window.match(/\bON\s+([A-Za-z_][\w.]*)/i)?.[1]?.toLowerCase() ?? null;
+// ---------------------------------------------------------------------------
+// 트리거 스캔 — 그래프를 쓰지 않고 .sql 을 직접 읽는다
+// ---------------------------------------------------------------------------
+//
+// ⚠️ graphify 의 `triggers` 엣지는 쓰면 안 된다. baseline 한 파일만 봐도
+// CREATE TRIGGER 69개 중 37개만 추출됐다(46% 누락 — `review_notify_insert` 는
+// 포맷이 동일한데도 통째로 빠졌다). 누락된 트리거는 중복 검사에 영원히 안 걸리므로
+// "중복 0건"이 거짓 안전 신호가 된다. 그래서 여기서는 정규식으로 직접 스캔한다.
+//
+// 그리고 CREATE 만 세면 안 된다. 나중 마이그레이션이 DROP 한 트리거는 이미 죽었는데
+// 살아있는 것으로 세면 해소된 중복이 계속 재검출된다. 파일명(타임스탬프) 순으로
+// CREATE/DROP 을 재생해 **현재 살아있는 트리거 집합**을 구한다.
+
+const CREATE_TRIGGER_RE =
+  /CREATE\s+(?:OR\s+REPLACE\s+)?(?:CONSTRAINT\s+)?TRIGGER\s+([A-Za-z_]\w*)\s+(BEFORE|AFTER|INSTEAD\s+OF)\s+([\s\S]*?)\s+ON\s+([A-Za-z_][\w.]*)([\s\S]*?)EXECUTE\s+(?:PROCEDURE|FUNCTION)\s+([A-Za-z_][\w.]*)\s*\(/gi;
+const DROP_TRIGGER_RE =
+  /DROP\s+TRIGGER\s+(?:IF\s+EXISTS\s+)?([A-Za-z_]\w*)\s+ON\s+([A-Za-z_][\w.]*)/gi;
+
+const EVENT_RE = /\b(INSERT|UPDATE|DELETE|TRUNCATE)\b/gi;
+const qualify = (name) => (name.includes('.') ? name.toLowerCase() : `public.${name}`.toLowerCase());
+const lineOf = (text, index) => text.slice(0, index).split('\n').length;
+
+/** 마이그레이션을 시간순으로 재생해 현재 살아있는 트리거를 구한다 */
+function scanLiveTriggers({ includeArchive, extraDirs = [] }) {
+  const roots = [resolve(REPO_ROOT, 'uniqn-mobile/supabase/migrations'), ...extraDirs];
+  const files = [];
+  const walk = (dir) => {
+    if (!existsSync(dir)) return;
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.name === 'archive' && !includeArchive) continue;
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name.endsWith('.sql')) files.push(full);
+    }
+  };
+  roots.forEach(walk);
+  // 파일명(타임스탬프) 순 — 경로가 아니라 basename 기준이어야 archive 와 섞여도 순서가 맞다
+  files.sort((a, b) => (a.split(/[\\/]/).pop() < b.split(/[\\/]/).pop() ? -1 : 1));
+
+  const live = new Map(); // "table::triggerName" -> 정보
+  for (const file of files) {
+    const sql = readFileSync(file, 'utf8');
+    const rel = file.replace(REPO_ROOT, '.').replace(/\\/g, '/');
+
+    for (const m of sql.matchAll(DROP_TRIGGER_RE)) {
+      live.delete(`${qualify(m[2])}::${m[1].toLowerCase()}`);
+    }
+    for (const m of sql.matchAll(CREATE_TRIGGER_RE)) {
+      const [, name, timing, eventPart, table, , fn] = m;
+      const events = [...new Set([...eventPart.matchAll(EVENT_RE)].map((e) => e[1].toUpperCase()))];
+      live.set(`${qualify(table)}::${name.toLowerCase()}`, {
+        name,
+        table: qualify(table),
+        timing: timing.replace(/\s+/g, ' ').toUpperCase(),
+        events,
+        fn: qualify(fn) + '()',
+        at: `${rel}:L${lineOf(sql, m.index)}`,
+      });
+    }
+  }
+  return [...live.values()];
 }
 
 // ---------------------------------------------------------------------------
@@ -173,26 +236,104 @@ function cmdStats({ g, nodes, links }) {
 }
 
 /**
- * 중복 트리거 검사 — 같은 테이블에서 같은 함수를 호출하는 트리거가 2개 이상이면 진짜 중복.
- * (서로 다른 테이블이 공용 set_updated_at() 함수를 쓰는 건 정상 설계이므로 걸러진다.)
+ * 중복 트리거 검사 — **같은 테이블 + 같은 타이밍 + 겹치는 이벤트**에 트리거가 2개 이상이면 후보.
+ *
+ * 🔑 함수명으로 묶으면 안 된다. 실제로 터진 중복(20260726000000 이 해소한 리뷰·문의·대회 알림
+ * 3쌍)은 `review_notify_insert → notify_on_review_insert()` 와
+ * `tr_notify_review_created → fn_notify_review_created()` 처럼 **함수가 서로 다른데** 같은
+ * 테이블·같은 이벤트에 둘 다 걸려 알림이 2번 나가는 형태였다. 함수 기준 그룹핑은 이걸 못 잡는다.
+ *
+ * 대신 공용 함수 오탐(여러 테이블이 fn_ops_set_updated_at() 공유)은 테이블이 다르므로 자연히 빠진다.
  */
-function cmdTriggers({ nodes, links }) {
+function cmdTriggers({ includeArchive, verbose }) {
+  const triggers = scanLiveTriggers({ includeArchive });
   const groups = new Map();
-  for (const l of links.filter((x) => x.relation === 'triggers')) {
-    const fn = normalizeFn(labelOf(nodes, l.target));
-    const table = triggerTable(l);
-    const key = `${table ?? '(테이블미상)'}::${fn}`;
-    if (!groups.has(key)) groups.set(key, { table, fn, triggers: new Map() });
-    groups.get(key).triggers.set(labelOf(nodes, l.source), `${l.source_file}:${l.source_location}`);
+  for (const t of triggers) {
+    for (const event of t.events.length ? t.events : ['(이벤트미상)']) {
+      const key = `${t.table}::${t.timing}::${event}`;
+      if (!groups.has(key)) groups.set(key, { table: t.table, timing: t.timing, event, list: [] });
+      groups.get(key).list.push(t);
+    }
   }
-  const dupes = [...groups.values()]
-    .filter((entry) => entry.triggers.size > 1)
-    .map((entry) => ({
+  // 같은 테이블·시점에 트리거가 여럿인 건 정상이 대부분이다(updated_at + 상태전이 + XSS검사...).
+  // 진짜 중복은 **두 트리거가 같은 일을 하는** 경우다. 함수명 토큰이 2개 이상 겹치면 강한 후보로 본다.
+  // 실측: notify_on_review_insert vs fn_notify_review_created → {notify, review} 2개 겹침 → 적발.
+  //       enforce_jp_status_transition vs enforce_tournament_approval_authority → {enforce} 1개 → 제외.
+  const scored = [...groups.values()]
+    .filter((entry) => entry.list.length > 1)
+    .map((entry) => {
+      const pairs = [];
+      for (let i = 0; i < entry.list.length; i++) {
+        for (let j = i + 1; j < entry.list.length; j++) {
+          const [a, b] = [entry.list[i], entry.list[j]];
+          const skip = tableTokens(entry.table);
+          const tb = fnTokens(b.fn, skip);
+          const shared = [...fnTokens(a.fn, skip)].filter((t) => tb.has(t));
+          if (a.fn === b.fn || shared.length >= 1) {
+            pairs.push({ 겹침: a.fn === b.fn ? ['(동일 함수)'] : shared, 쌍: [a, b] });
+          }
+        }
+      }
+      return { entry, pairs };
+    });
+
+  const strong = scored
+    .filter((s) => s.pairs.length)
+    .map(({ entry, pairs }) => ({
       테이블: entry.table,
-      함수: entry.fn,
-      트리거: [...entry.triggers.entries()].map(([name, at]) => ({ name, at })),
+      시점: `${entry.timing} ${entry.event}`,
+      의심쌍: pairs.map((p) => ({
+        겹치는_토큰: p.겹침,
+        트리거: p.쌍.map((t) => ({ name: t.name, fn: t.fn, at: t.at })),
+      })),
     }));
-  return { 트리거_총계: groups.size, 중복_후보: dupes };
+
+  return {
+    살아있는_트리거: triggers.length,
+    중복_후보: strong,
+    참고_동일시점_다중트리거: scored.length, // 대부분 정상. 전체는 --verbose
+    ...(verbose
+      ? {
+          전체_동일시점_그룹: scored.map(({ entry }) => ({
+            테이블: entry.table,
+            시점: `${entry.timing} ${entry.event}`,
+            트리거: entry.list.map((t) => ({ name: t.name, fn: t.fn, at: t.at })),
+          })),
+        }
+      : {}),
+  };
+}
+
+/**
+ * 함수명에서 "무슨 일을 하는가"를 나타내는 토큰만 남긴다.
+ *
+ * 제거 대상 세 부류:
+ *  1) 스키마·관용 접두사(fn/tr/trg) 와 DML 키워드
+ *  2) **테이블명에서 유래한 토큰** — board_comments 테이블의 두 트리거는 함수명에
+ *     board·comment 가 당연히 들어가므로 그대로 두면 전부 겹친다(실측 오탐).
+ *  3) 범용 동사 — enforce/sync/check 류는 하는 일이 달라도 이름만 겹친다.
+ *     단 `notify` 는 제거하지 않는다. 실제 중복 3쌍의 유일한 공통 신호였다.
+ */
+const FN_STOPWORDS = new Set([
+  'public', 'fn', 'tr', 'trg', 'tg', 'on', 'set', 'at', 'insert', 'delete', 'update', 'updated',
+  'check', 'enforce', 'sync', 'recalc', 'validate', 'guard', 'prevent', 'log', 'audit', 'count',
+]);
+const singular = (t) => (t.length > 3 && t.endsWith('s') ? t.slice(0, -1) : t);
+
+function fnTokens(fn, skip = new Set()) {
+  return new Set(
+    fn
+      .replace(/^[a-z_]+\./, '')
+      .replace(/\(\)$/, '')
+      .split('_')
+      .map(singular)
+      .filter((t) => t && !FN_STOPWORDS.has(t) && !skip.has(t)),
+  );
+}
+
+/** 테이블명 유래 토큰 (단복수 통일) */
+function tableTokens(table) {
+  return new Set(table.replace(/^[a-z_]+\./, '').split('_').map(singular));
 }
 
 /** 이 테이블을 읽는 SQL 함수 — 컬럼/테이블 변경 전 영향도 조회 */
@@ -242,15 +383,22 @@ function main() {
     process.exit(command ? 0 : 1);
   }
 
+  const includeArchive = flag('--include-archive');
+
+  // triggers 는 .sql 을 직접 스캔하므로 그래프도, 신선도 검사도 필요 없다 (항상 최신).
+  if (command === 'triggers') {
+    console.log(JSON.stringify(cmdTriggers({ includeArchive, verbose: flag('--verbose') }), null, 2));
+    return;
+  }
+
   const ctx = loadGraph({
     graphPath: opt('--graph') ? resolve(opt('--graph')) : DEFAULT_GRAPH,
-    includeArchive: flag('--include-archive'),
+    includeArchive,
     allowStale: flag('--allow-stale'),
   });
 
   let result;
   if (command === 'stats') result = cmdStats(ctx);
-  else if (command === 'triggers') result = cmdTriggers(ctx);
   else if (command === 'table') result = arg ? cmdTable(ctx, arg) : null;
   else if (command === 'fn') result = arg ? cmdFn(ctx, arg) : null;
   else {
