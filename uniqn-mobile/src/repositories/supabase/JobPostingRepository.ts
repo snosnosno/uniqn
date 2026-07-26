@@ -22,6 +22,7 @@ import {
   serializeJobPostingV3,
 } from '@/domains/job-posting';
 import { removeUndefined } from '@/utils/removeUndefined';
+import { getTodayString } from '@/utils/date';
 import { generateUUID } from '@/utils/generateId';
 import { STATUS } from '@/constants';
 import type { VenueContainer } from '@/domains/weeklyGrid';
@@ -130,21 +131,30 @@ const SALARY_MAX_COLUMNS = {
  * - salaryMin: 타입별 salary_*_max ≥ salaryMin(gte). 협의(other) 공고는 컬럼이 NULL 이라
  *   자연 제외(설계 §4).
  * - salarySort: 금액 조건 없이 정렬만 걸어도 NULL 은 순서가 무의미하므로 명시 제외한다.
- *   getList 와 getTypeCounts 가 같은 모수를 보도록 두 경로 모두 이 헬퍼를 쓴다.
+ *   더해서 **근무일이 모두 지난 공고를 제외**한다 — 정렬은 순위를 만드는데, 기본
+ *   정렬(work_date)에서 sortJobPostings 가 뒤로 밀어두던 종료 공고가 급여만 높다는
+ *   이유로 최상단을 차지하면 안 된다. last_work_date 가 NULL 인 건(상시 공고·날짜
+ *   미지정)은 종료 개념이 없으므로 남긴다.
+ *
+ * getList 와 getTypeCounts 가 같은 모수를 보도록 두 경로 모두 이 헬퍼를 쓴다 —
+ * 목록에서 빠진 공고가 칩 카운트에는 남는 불일치를 구조적으로 차단한다.
  */
 function applySalaryScope<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  T extends { gte: any; not: any },
+  T extends { gte: any; not: any; or: any },
 >(query: T, filters?: Pick<JobPostingFilters, 'salaryType' | 'salaryMin' | 'salarySort'>): T {
   if (!filters?.salaryType) return query;
   const column = SALARY_MAX_COLUMNS[filters.salaryType];
+  let scoped = query;
   if (typeof filters.salaryMin === 'number' && filters.salaryMin > 0) {
-    return query.gte(column, filters.salaryMin) as T;
+    scoped = scoped.gte(column, filters.salaryMin) as T;
+  } else if (filters.salarySort) {
+    scoped = scoped.not(column, 'is', null) as T;
   }
   if (filters.salarySort) {
-    return query.not(column, 'is', null) as T;
+    scoped = scoped.or(`last_work_date.is.null,last_work_date.gte.${getTodayString()}`) as T;
   }
-  return query;
+  return scoped;
 }
 
 /**
