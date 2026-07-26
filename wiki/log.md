@@ -168,3 +168,18 @@ index 갱신(sources 6행+decisions 2행+wallet-pgtap 재작성). 작성=opus �
 - **그래프의 SQL 트리거 추출은 신뢰할 수 없다.** graphify가 baseline `CREATE TRIGGER` 69개 중 37개만 잡아(46% 누락) "중복 0건"이 거짓 안전 신호가 됐다. `graph-db-deps.mjs triggers`는 그래프를 버리고 `.sql`을 직접 스캔한다. **red-green 통과는 커버리지를 증명하지 못한다** — 초판도 red-green은 통과했으나 절반을 못 보고 있었다.
 - **트리거 중복 판정 기준은 `테이블+타이밍+이벤트`**여야 한다. 함수 기준으로 묶으면 실제 버그(#328이 해소한 알림 3쌍 — 서로 *다른* 함수가 같은 이벤트에 이중 등록)를 구조적으로 못 잡는다.
 - **`.claude/rules/*.md`의 `paths:`는 레포 루트 기준으로 매칭된다.** 앱 코드가 `uniqn-mobile/` 하위인데 `src/components/**/*.tsx`처럼 접두사 없이 쓴 규칙은 **한 번도 첨부된 적이 없다**(`nativewind-patterns` 전체 + `supabase-patterns` 5경로). 같은 파일에 대해 접두사 있는 `impeccable-design`만 첨부되는 것으로 확인. 규칙 신설 시 실제 첨부 여부를 파일 하나 열어 검증할 것.
+
+## [2026-07-26] note | 1.0.5 이후 머지 5건 + 다음 스토어 빌드 준비 (#336·#339·#343·#344·#345·#346)
+
+스토어 제출본 v1.0.5(Android 40 / iOS 42, 커밋 `a01414503`)는 아직 심사 전인데 그 뒤로 앱 코드 46파일이 바뀌어 다음 빌드를 낸다. 상세 변경은 CHANGELOG `[Unreleased]`.
+
+- **#346 급여 필터 정렬 + 죽은 크론 복구** — 정렬 경로만 keyset→offset 분기(비유일 컬럼에서 동점 행 유실), `applySalaryScope` 로 목록↔칩 카운트 모수 일치, `last_work_date` writer 트리거 신설(prod `20260726125349` 적용)
+- **#344·#345 실기기 UI 4뿌리** — focus ring 과 variant 테두리 충돌(생성된 CSS 순서), wrapper/inner 레이아웃 클래스 귀속, 다크 취소버튼 대비, 게시판 칩 전환 애니메이션 제거
+- **#336 RPC↔마이그레이션 대조 가드** — `npm run quality` 체인 편입
+- **#343 레포 전면 정리** — 오염 spec 25개 제거·규칙 모순 정정·`@portone/browser-sdk` dev→prod 이동
+
+재사용 교훈 3:
+
+- **`appVersion` runtimeVersion 정책에서 version bump 판정은 "네이티브 구성 변경 여부" 단일 기준이다.** 이번 범위의 빌드 구성 변경은 `package.json`(스크립트·knip·의존성 섹션 이동)·`package-lock.json`(±2줄)·`tsconfig.json` 뿐이고, 이동된 `@portone/browser-sdk` 는 `dist/`만 있는 JS 전용 패키지(android/ios/podspec/app.plugin.js 전무)다. → **version 1.0.5 유지 + build number 자동 증가**가 정책상 옳다. 근거 명령: `git diff --name-status <base> <head> -- uniqn-mobile/{package.json,package-lock.json,app.config.ts,eas.json,android,ios}` + `npx expo-updates runtimeversion:resolve`(양 플랫폼 `1.0.5`, `fingerprintSources: null`).
+- **워크트리의 `node_modules` 정션을 먼저 해제하지 않고 `git worktree remove` 하면 메인 레포 `node_modules` 가 날아갈 수 있다.** 순서는 ①`[System.IO.Directory]::Delete(path, $false)` 로 리파스 포인트만 제거 ②메인 엔트리 수 대조(818 유지) ③`git worktree remove` ④재대조. `rm -rf` 는 MSYS 가 정션을 따라갈 수 있어 쓰지 않는다.
+- **범위 대조는 `git diff --name-status A B -- <paths>` 로만 하라.** `git rev-parse "ref:파일"` 를 루프로 돌려 blob 해시를 비교하면 Git Bash MSYS 가 인자를 망가뜨려 **"62파일 내용 다름" 같은 거짓 결론**이 나온다(이번에도 재현). 같은 브랜치를 `git diff --stat master <branch>` 로 다시 재면 빈 출력 = 완전 흡수였다.
