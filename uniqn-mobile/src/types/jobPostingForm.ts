@@ -95,7 +95,7 @@ export interface JobPostingFormData {
   /** 공고 타입 */
   postingType: PostingType;
 
-  /** 공고 제목 (최대 25자) */
+  /** 공고 제목 (최대 MAX_POSTING_TITLE_LENGTH 자 — constants/jobPosting.ts 단일 소스) */
   title: string;
 
   /** 근무 장소 */

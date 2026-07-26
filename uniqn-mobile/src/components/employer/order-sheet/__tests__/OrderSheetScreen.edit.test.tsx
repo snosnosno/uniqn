@@ -126,78 +126,52 @@ describe('OrderSheetScreen — 편집 모드(S3)', () => {
   });
 });
 
-describe('OrderSheetScreen — 일정 잠금(scheduleLocked, 확정 지원자)', () => {
-  it('잠금 배너를 노출한다', () => {
-    const { getByTestId } = render(
-      <OrderSheetScreen {...baseProps} mode="edit" scheduleLocked initialValues={completeValues} />
-    );
-    expect(getByTestId('order-sheet-schedule-locked-notice')).toBeTruthy();
-  });
-
-  it('일정 행 탭 시 시트가 열리지 않는다', () => {
-    const { getByTestId, queryByText } = render(
-      <OrderSheetScreen {...baseProps} mode="edit" scheduleLocked initialValues={completeValues} />
-    );
-    fireEvent.press(getByTestId('order-sheet-row-dates'));
-    // 날짜 시트(DatePickerModal title '날짜 선택')가 열리지 않음 — 잠금 토스트만
-    expect(queryByText('날짜 선택')).toBeNull();
-  });
-
-  it('제목 등 비일정 행은 잠기지 않는다', () => {
-    const { getByTestId, getByText } = render(
-      <OrderSheetScreen {...baseProps} mode="edit" scheduleLocked initialValues={completeValues} />
-    );
-    fireEvent.press(getByTestId('order-sheet-row-title'));
-    // 제목 시트(SheetModal title '공고 제목')는 정상 오픈 — 행 라벨 '제목'과 구분되는 시트 전용 문자열
-    expect(getByText('공고 제목')).toBeTruthy();
-  });
-});
-
-describe('OrderSheetScreen — 잠금 부가 가드(그룹 삭제·일정 추가·토스트 문구, S3 이월)', () => {
+/**
+ * 확정 지원자 일정 잠금 폐지 회귀 게이트.
+ *
+ * 예전에는 확정자가 1명이라도 있으면 `scheduleLocked` 로 일정·역할 행 전체를 잠갔다. 그 보호는
+ * 서버에서 "확정자가 배정된 역할의 소멸"만 막는 형태로 좁아졌고(assertConfirmedRolesSurvive),
+ * 편집 화면은 잠금 개념 자체를 갖지 않는다. 아래는 잠금이 되살아나면 깨지는 방향으로 고정한다.
+ */
+describe('OrderSheetScreen — 편집 모드 일정 개방(확정자 잠금 폐지)', () => {
   beforeEach(() => {
     mockAddToast.mockClear();
   });
 
-  it('잠금: 그룹 삭제 버튼이 토스트만 내고 그룹을 제거하지 않는다', () => {
-    const { getByTestId, queryAllByTestId } = render(
-      <OrderSheetScreen
-        {...baseProps}
-        mode="edit"
-        scheduleLocked
-        initialValues={twoGroupCompleteValues}
-      />
+  it('잠금 배너를 렌더하지 않는다', () => {
+    const { queryByTestId } = render(
+      <OrderSheetScreen {...baseProps} mode="edit" initialValues={completeValues} />
     );
-    // 그룹 2개 → 삭제 버튼 노출(E4). 잠금 상태에서 눌러도 guardScheduleLock이 선차단한다.
-    fireEvent.press(getByTestId('order-sheet-group-delete-0'));
-    expect(mockAddToast).toHaveBeenCalledWith(expect.objectContaining({ type: 'warning' }));
-    // 삭제 성공 토스트(success)로 오분기하지 않음 — 경고만 1회
-    expect(mockAddToast).toHaveBeenCalledTimes(1);
-    // 그룹 수 불변(서브그룹 헤더 2개 유지) — 삭제가 실행되면 단일 레이아웃으로 붕괴해 0이 된다
-    expect(queryAllByTestId(/order-sheet-group-dates-/)).toHaveLength(2);
+    expect(queryByTestId('order-sheet-schedule-locked-notice')).toBeNull();
   });
 
-  it('잠금: 일정 추가 버튼이 날짜 시트를 열지 않는다', () => {
-    const { getByTestId, queryByText } = render(
-      <OrderSheetScreen {...baseProps} mode="edit" scheduleLocked initialValues={completeValues} />
-    );
-    fireEvent.press(getByTestId('order-sheet-add-schedule'));
-    // 날짜 시트(ScheduleDatesSheet title '날짜 선택')가 열리지 않음 — 잠금 토스트만
-    expect(queryByText('날짜 선택')).toBeNull();
-    expect(mockAddToast).toHaveBeenCalledTimes(1);
-    expect(mockAddToast).toHaveBeenCalledWith(expect.objectContaining({ type: 'warning' }));
-  });
-
-  it('잠금 토스트 문구 고정 — 확정 지원자 안내', () => {
-    const { getByTestId } = render(
-      <OrderSheetScreen {...baseProps} mode="edit" scheduleLocked initialValues={completeValues} />
+  it('일정 행 탭이 날짜 시트를 연다', () => {
+    const { getByTestId, getByText } = render(
+      <OrderSheetScreen {...baseProps} mode="edit" initialValues={completeValues} />
     );
     fireEvent.press(getByTestId('order-sheet-row-dates'));
-    expect(mockAddToast).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'warning',
-        message: '확정된 지원자가 있어 일정과 역할은 수정할 수 없어요.',
-      })
+    expect(getByText('날짜 선택')).toBeTruthy();
+    // 경고 토스트가 끼어들지 않는다(옛 잠금 경로의 흔적).
+    expect(mockAddToast).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'warning' }));
+  });
+
+  it('일정 추가 버튼이 날짜 시트를 연다', () => {
+    const { getByTestId, getByText } = render(
+      <OrderSheetScreen {...baseProps} mode="edit" initialValues={completeValues} />
     );
+    fireEvent.press(getByTestId('order-sheet-add-schedule'));
+    expect(getByText('날짜 선택')).toBeTruthy();
+  });
+
+  it('그룹 삭제 버튼이 실제로 그룹을 제거한다', () => {
+    const { getByTestId, queryAllByTestId } = render(
+      <OrderSheetScreen {...baseProps} mode="edit" initialValues={twoGroupCompleteValues} />
+    );
+    expect(queryAllByTestId(/order-sheet-group-dates-/)).toHaveLength(2);
+    fireEvent.press(getByTestId('order-sheet-group-delete-0'));
+    // 그룹이 1개로 줄면 서브그룹 헤더 레이아웃이 해제된다(0개).
+    expect(queryAllByTestId(/order-sheet-group-dates-/)).toHaveLength(0);
+    expect(mockAddToast).toHaveBeenCalledWith(expect.objectContaining({ type: 'success' }));
   });
 });
 
