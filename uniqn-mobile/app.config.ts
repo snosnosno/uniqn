@@ -379,18 +379,39 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
 
   // 런타임 버전 (EAS Update 호환)
   //
-  // ⚠️ 'sdkVersion' 에서 'fingerprint' 로 전환 (2026-07-25).
-  // 'sdkVersion' 은 runtimeVersion 을 exposdk:55.x 로만 고정해 **네이티브 구성이
-  // 바뀌어도 값이 그대로**다. react-native-keyboard-controller(네이티브 모듈) 도입 시
-  // 구 빌드와 신 빌드가 같은 runtimeVersion 을 갖게 되어, 신 코드가 담긴 OTA 가
-  // 네이티브 모듈이 없는 구 빌드로도 전달된다 → 없는 코드 호출 → 오류/롤백.
-  // (Expo 공식 문서 eas-update/runtime-versions 가 경고하는 시나리오와 동일)
+  // 정책 이력: 'sdkVersion' → 'fingerprint'(2026-07-25) → 'appVersion'(2026-07-26)
   //
-  // 'fingerprint' 는 네이티브 런타임 구성이 바뀌면 runtimeVersion 이 자동으로 갈라져
-  // 호환되지 않는 OTA 가 구 빌드에 전달되는 것을 원천 차단한다.
-  // 대가: 네이티브 의존성이 바뀌면 새 빌드가 필요하다(= 올바른 동작).
-  // 구 빌드 사용자는 더 이상 OTA 를 받지 않고 스토어 업데이트로 넘어와야 한다.
+  // ① 'sdkVersion' 을 버린 이유 (#335)
+  //    runtimeVersion 이 exposdk:55.x 로 고정돼 **네이티브 구성이 바뀌어도 값이 그대로**였다.
+  //    react-native-keyboard-controller(네이티브 모듈) 도입 시 구·신 빌드가 같은
+  //    runtimeVersion 을 갖게 되어, 신 코드 OTA 가 네이티브 모듈이 없는 구 빌드로도
+  //    전달된다 → 없는 코드 호출 → 오류/롤백.
+  //
+  // ② 'fingerprint' 를 다시 버린 이유 (2026-07-26, 실측)
+  //    fingerprint 는 **로컬에서 해시를 계산해 EAS 가 계산한 값과 대조**한다. 불일치면
+  //    EAS Build 가 CONFIGURE_EXPO_UPDATES 단계에서 하드 실패시킨다(경고 아님).
+  //    이 프로젝트는 Windows 에서 개발하는데 EAS 빌더는 Linux/macOS 라서
+  //    `rncoreAutolinkingIos` 해시(async-storage·reanimated·safe-area-context·screens·
+  //    svg·worklets 6종)와 `ios` 디렉터리 유무가 영구히 어긋난다 = 로컬에서 정렬 불가.
+  //    Android·iOS 빌드 각 2회 전부 이 지점에서 실패했다(3ec03455·b31c3164·ff09997d·4f127370).
+  //    ⚠️ `EAS_SKIP_AUTO_FINGERPRINT=1` 은 해결책이 아니다 — 그 플래그는 eas-cli 의
+  //    fingerprint **진단/비교** 경로(fingerprint/cli.js)만 막고, 빌드에 실제로 첨부되는
+  //    runtimeVersion 은 build/build.js → project/resolveRuntimeVersionAsync.js 가
+  //    산출하는데 여기엔 플래그 분기가 없다.
+  //    같은 이유로 `eas update` 도 이 PC 에서 발행하면 빌드에 도달하지 못한다.
+  //
+  // ③ 'appVersion' 을 택한 이유
+  //    runtimeVersion = version(=package.json 의 값) 이라 **해시 계산이 없고 머신 간
+  //    불일치가 원리적으로 불가능**하다. ①의 사고도 그대로 막는다 — 그 사례는
+  //    1.0.4 ↔ 1.0.5 로 갈라지므로 OTA 가 애초에 도달하지 않는다.
+  //
+  // 🔴 이 정책의 유일한 규율: **네이티브 구성을 바꾸면 version 을 반드시 올려라.**
+  //    version 을 그대로 두고 네이티브를 바꾼 새 빌드를 내면, 같은 version 을 가진
+  //    구 빌드로 OTA 가 새어 ①과 똑같은 사고가 난다. 네이티브 의존성 추가·제거·업그레이드
+  //    PR 은 version bump 를 동반해야 한다(규칙 전문 = .claude/skills/deploy §5).
+  //    fingerprint 의 자동 보호를 되찾으려면 로컬 계산을 없애야 하므로
+  //    EAS Workflows 안에서 빌드·OTA 를 발행하는 방식으로 옮겨야 한다.
   runtimeVersion: {
-    policy: 'fingerprint',
+    policy: 'appVersion',
   },
 });
