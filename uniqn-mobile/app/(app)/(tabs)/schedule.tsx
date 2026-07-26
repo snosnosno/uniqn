@@ -58,6 +58,7 @@ import { getTodayString } from '@/utils/date';
 import {
   filterSchedulesByStatus,
   countSchedulesByType,
+  countUnpaidSchedules,
   splitSchedulesByToday,
   pickGroupFocusDate,
   formatSingleDate,
@@ -83,6 +84,16 @@ const CalendarView = lazy(() => import('@/components/schedule/CalendarViewLazyEn
 function formatMonthTitle(year: number, month: number): string {
   return `${year}년 ${month}월`;
 }
+
+/** 필터 라벨 — 'unpaid' 는 상태가 아니라 정산 관점 축이라 따로 이름을 준다. */
+const STATUS_FILTER_LABELS: Record<ScheduleStatusFilter, string> = {
+  all: '전체',
+  applied: SCHEDULE_TYPE_LABELS.applied,
+  confirmed: SCHEDULE_TYPE_LABELS.confirmed,
+  completed: SCHEDULE_TYPE_LABELS.completed,
+  cancelled: SCHEDULE_TYPE_LABELS.cancelled,
+  unpaid: '미지급',
+};
 
 // ============================================================================
 // Sub Components
@@ -181,7 +192,9 @@ interface StatsCardProps {
         upcomingSchedules: number;
         confirmedSchedules: number;
         completedSchedules: number;
-        thisMonthEarnings: number;
+        completedWorkDays: number;
+        settledEarnings: number;
+        estimatedEarnings: number;
       }
     | undefined;
   isLoading: boolean;
@@ -251,7 +264,7 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
         <View
           className="items-center"
           accessible
-          accessibilityLabel={`${SCHEDULE_STATS_LABELS.completed} 통계`}
+          accessibilityLabel={`${SCHEDULE_STATS_LABELS.completed} ${stats.completedSchedules}건, 근무 ${stats.completedWorkDays}일`}
         >
           <Text className="text-xs text-secondary-600 dark:text-secondary-400 font-sans">
             {SCHEDULE_STATS_LABELS.completed}
@@ -259,20 +272,39 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
           <Text className="text-lg font-display text-content-primary dark:text-secondary-100">
             {stats.completedSchedules}
           </Text>
+          {/* 세 지표는 모두 '건' 단위다. 근무 일수는 단위를 밝혀 따로 붙인다. */}
+          <Text className="text-[10px] text-content-muted dark:text-secondary-500 font-sans">
+            {stats.completedWorkDays}일 근무
+          </Text>
         </View>
       </View>
       {/* 내부 구분선 */}
       <View className="h-px bg-secondary-200 dark:bg-surface-overlay my-2.5" />
-      {/* 2행: 수익 */}
+      {/* 2행: 수익 — '수익' 한 단어는 스코프(어느 달)와 성격(받은 돈/추정치)을 둘 다 숨겨
+          입금 예정액으로 오해된다. 정산 완료분과 예정분을 분리해 밝힌다. */}
       <View
-        className="flex-row justify-between items-center px-2"
+        className="px-2"
         accessible
-        accessibilityLabel="수익 통계"
+        accessibilityLabel={`정산 완료 ${formatCurrency(stats.settledEarnings)}, 정산 예정 ${formatCurrency(
+          stats.estimatedEarnings
+        )}`}
       >
-        <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">수익</Text>
-        <Text className="text-xl font-display text-primary-600 dark:text-primary-400">
-          {formatCurrency(stats.thisMonthEarnings)}
-        </Text>
+        <View className="flex-row justify-between items-center">
+          <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+            정산 완료
+          </Text>
+          <Text className="text-xl font-display text-primary-600 dark:text-primary-400">
+            {formatCurrency(stats.settledEarnings)}
+          </Text>
+        </View>
+        <View className="mt-1 flex-row justify-between items-center">
+          <Text className="text-xs text-content-muted dark:text-secondary-500 font-sans">
+            정산 예정 (추정)
+          </Text>
+          <Text className="text-sm font-sans-medium text-content-secondary">
+            {formatCurrency(stats.estimatedEarnings)}
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -350,15 +382,25 @@ export default function ScheduleScreen() {
     [groupedByApplication, statusFilter]
   );
 
-  const statusFilterOptions = useMemo<FilterTabOption<ScheduleStatusFilter>[]>(
-    () => [
-      { value: 'all', label: '전체' },
-      { value: 'applied', label: SCHEDULE_TYPE_LABELS.applied, count: statusCounts.applied },
-      { value: 'confirmed', label: SCHEDULE_TYPE_LABELS.confirmed, count: statusCounts.confirmed },
-      { value: 'completed', label: SCHEDULE_TYPE_LABELS.completed, count: statusCounts.completed },
-    ],
-    [statusCounts]
+  const unpaidCount = useMemo(
+    () => countUnpaidSchedules(groupedByApplication),
+    [groupedByApplication]
   );
+
+  const statusFilterOptions = useMemo<FilterTabOption<ScheduleStatusFilter>[]>(() => {
+    const options: FilterTabOption<ScheduleStatusFilter>[] = [
+      { value: 'all', label: STATUS_FILTER_LABELS.all },
+      { value: 'applied', label: STATUS_FILTER_LABELS.applied, count: statusCounts.applied },
+      { value: 'confirmed', label: STATUS_FILTER_LABELS.confirmed, count: statusCounts.confirmed },
+      { value: 'completed', label: STATUS_FILTER_LABELS.completed, count: statusCounts.completed },
+    ];
+
+    // '아직 못 받은 근무'는 있을 때만 노출한다 — 늘 0 인 탭은 소음이다.
+    if (unpaidCount > 0) {
+      options.push({ value: 'unpaid', label: STATUS_FILTER_LABELS.unpaid, count: unpaidCount });
+    }
+    return options;
+  }, [statusCounts, unpaidCount]);
 
   // 리스트 뷰를 시간 축으로 가른다 — '다가오는 근무'가 먼저, 그 안에서도 가까운 날이 먼저.
   // 기본 그룹 정렬은 최신순 내림차순이라 27일인 사용자에게 31일 카드가 맨 위에 왔다.
@@ -792,11 +834,7 @@ export default function ScheduleScreen() {
         onQRScan={handleQRScan}
       />
 
-      {/* 통계 카드 — 월 요약 (히어로 아래로 강등) */}
-      <StatsCard stats={stats} isLoading={isLoading} />
-
-      {/* 월 네비게이터 — StatsCard 바로 아래, 캘린더/리스트 바로 위에 배치해
-          섹션 사이 공백 제거. 구분은 Navigator 자체 border-b로 처리. */}
+      {/* 월 네비게이터 — 통계보다 먼저 와야 '어느 달의 숫자인지'가 먼저 읽힌다. */}
       <MonthNavigator
         year={currentMonth.year}
         month={currentMonth.month}
@@ -806,6 +844,9 @@ export default function ScheduleScreen() {
         onToday={handleGoToToday}
         onToggleView={handleToggleView}
       />
+
+      {/* 통계 카드 — 월 요약 (히어로·월 네비게이터 아래) */}
+      <StatsCard stats={stats} isLoading={isLoading} />
 
       {/* 부분조회 실패 경고 — 일부 소스(근무/지원) fetch 실패 시 비차단 안내(P1#11).
           경고를 버리면 근무 일부가 빠진 캘린더를 정상으로 오인하므로 명시 노출한다. */}
@@ -962,7 +1003,7 @@ export default function ScheduleScreen() {
             // 필터 결과 빈 상태 — 월 자체는 일정이 있으므로 온보딩 대신 필터 안내
             <View className="p-4">
               <EmptyState
-                title={`${statusFilter === 'all' ? '전체' : SCHEDULE_TYPE_LABELS[statusFilter]} 일정이 없어요`}
+                title={`${STATUS_FILTER_LABELS[statusFilter]} 일정이 없어요`}
                 description="다른 상태를 선택하거나 전체 탭에서 확인해보세요."
                 variant="content"
               />

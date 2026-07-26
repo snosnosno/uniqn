@@ -18,7 +18,7 @@ import {
 } from '@/components/icons';
 import { formatDateDisplay, formatRolesDisplay } from '@/utils/scheduleGrouping';
 import { parseTimeSlot } from '@/utils/date/ranges';
-import { formatSalaryDisplay, SCHEDULE_STATUS_STRIPE_TONE } from './helpers';
+import { formatGroupSalaryDisplay, SCHEDULE_STATUS_STRIPE_TONE } from './helpers';
 import { STATUS } from '@/constants';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 import { WorkTimeDisplay } from '@/shared/time';
@@ -51,9 +51,10 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
     () => formatDateDisplay(group.dateRange.dates),
     [group.dateRange.dates]
   );
+  // 공고 기본 단가가 아니라 **내가 맡은 역할**의 단가를 쓴다.
   const salaryDisplay = useMemo(
-    () => formatSalaryDisplay(group.postingProjection?.settlement.defaultSalary),
-    [group.postingProjection]
+    () => formatGroupSalaryDisplay(group.postingProjection, group.roles, group.customRoles),
+    [group.postingProjection, group.roles, group.customRoles]
   );
   const ownerName = group.postingProjection?.ownerName;
 
@@ -199,23 +200,28 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
               </Text>
             </View>
 
-            {group.type === STATUS.SCHEDULE.APPLIED && salaryDisplay && (
-              <View className="mr-3 flex-row items-center">
-                <BanknotesIcon size={14} color={SECONDARY_PALETTE[500]} />
-                <Text className="ml-1.5 text-sm font-sans-medium text-content-secondary">
-                  {salaryDisplay}
-                </Text>
-              </View>
-            )}
+            {/* 확정에도 급여를 남긴다 — '언제/어디서/얼마'가 카드 3요소인데, 지원 중에 보이던
+                금액이 확정되는 순간(실제로 돈이 걸린 순간) 사라지고 있었다. */}
+            {(group.type === STATUS.SCHEDULE.APPLIED || group.type === STATUS.SCHEDULE.CONFIRMED) &&
+              salaryDisplay && (
+                <View className="mr-3 flex-row items-center">
+                  <BanknotesIcon size={14} color={SECONDARY_PALETTE[500]} />
+                  <Text className="ml-1.5 text-sm font-sans-medium text-content-secondary">
+                    {salaryDisplay}
+                  </Text>
+                </View>
+              )}
 
-            {ownerName && group.type === STATUS.SCHEDULE.APPLIED && (
-              <View className="flex-row items-center">
-                <UserIcon size={14} color={SECONDARY_PALETTE[400]} />
-                <Text className="ml-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-                  {ownerName}
-                </Text>
-              </View>
-            )}
+            {ownerName &&
+              (group.type === STATUS.SCHEDULE.APPLIED ||
+                group.type === STATUS.SCHEDULE.CONFIRMED) && (
+                <View className="flex-row items-center">
+                  <UserIcon size={14} color={SECONDARY_PALETTE[400]} />
+                  <Text className="ml-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                    {ownerName}
+                  </Text>
+                </View>
+              )}
           </View>
 
           {group.dateRange.totalDays > 1 && (

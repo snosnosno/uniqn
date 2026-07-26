@@ -32,10 +32,11 @@ import {
   SCHEDULE_STATUS_STRIPE_TONE,
 } from './helpers';
 import { STATUS } from '@/constants';
+import { PAYROLL_STATUS } from '@/constants/statusConfig';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 import { WorkTimeDisplay } from '@/shared/time';
 import { shouldUseFrozenPayrollAmount } from '@/utils/settlementGrouping';
-import type { ScheduleEvent } from '@/types';
+import type { ScheduleEvent, PayrollStatus } from '@/types';
 
 export interface ScheduleCardProps {
   schedule: ScheduleEvent;
@@ -112,6 +113,9 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
     schedule.postingProjection,
   ]);
 
+  const payrollStatusConfig =
+    PAYROLL_STATUS[(schedule.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus];
+
   const timeDisplayInfo = useMemo(() => WorkTimeDisplay.getDisplayInfo(schedule), [schedule]);
 
   const confirmedTimeDisplay = useMemo(() => {
@@ -163,9 +167,18 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
             {/* 0 원 확정(노쇼 차감·'협의' 급여)도 표시해야 한다. truthy 가드는 0 을 숨길 뿐
                 아니라 숫자 0 을 View 의 직접 자식으로 흘려 RN 렌더를 죽인다. */}
             {schedule.type === STATUS.SCHEDULE.COMPLETED && typeof completedAmount === 'number' && (
-              <Text className="text-base font-sans-bold text-primary-600 dark:text-primary-400">
-                {formatCurrency(completedAmount)}
-              </Text>
+              <View className="items-end">
+                <Text className="text-base font-sans-bold text-primary-600 dark:text-primary-400">
+                  {formatCurrency(completedAmount)}
+                </Text>
+                {/* '입금 됐나'는 근무 후 가장 잦은 확인인데, 예전에는 카드를 하나씩 열어
+                      정산 탭까지 들어가야 알 수 있었다. 모달과 같은 SSOT 배지를 카드에 올린다. */}
+                <View className="mt-1">
+                  <Badge variant={payrollStatusConfig.variant} size="sm">
+                    {payrollStatusConfig.label}
+                  </Badge>
+                </View>
+              </View>
             )}
           </View>
 
@@ -249,11 +262,33 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
                 </Text>
               </View>
 
-              <View className="mt-2 flex-row items-center">
-                <BriefcaseIcon size={14} color={SECONDARY_PALETTE[500]} />
-                <Text className="ml-1.5 text-sm text-content-secondary font-sans">
-                  {getRoleDisplayName(schedule.role, schedule.customRole)}
-                </Text>
+              <View className="mt-2 flex-row flex-wrap items-center">
+                <View className="mr-3 flex-row items-center">
+                  <BriefcaseIcon size={14} color={SECONDARY_PALETTE[500]} />
+                  <Text className="ml-1.5 text-sm text-content-secondary font-sans">
+                    {getRoleDisplayName(schedule.role, schedule.customRole)}
+                  </Text>
+                </View>
+
+                {/* 확정에도 급여를 남긴다 — '언제/어디서/얼마'가 카드 3요소인데, 지원 중에
+                    보이던 금액이 확정되는 순간(실제로 돈이 걸린 순간) 사라지고 있었다. */}
+                {schedule.type === STATUS.SCHEDULE.CONFIRMED && salaryDisplay && (
+                  <View className="mr-3 flex-row items-center">
+                    <BanknotesIcon size={14} color={SECONDARY_PALETTE[500]} />
+                    <Text className="ml-1.5 text-sm font-sans-medium text-content-secondary">
+                      {salaryDisplay}
+                    </Text>
+                  </View>
+                )}
+
+                {schedule.type === STATUS.SCHEDULE.CONFIRMED && ownerName && (
+                  <View className="flex-row items-center">
+                    <UserIcon size={14} color={SECONDARY_PALETTE[400]} />
+                    <Text className="ml-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                      {ownerName}
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
           )}

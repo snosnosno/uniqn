@@ -7,6 +7,10 @@
 
 export { formatTime, formatDate } from './timeHelpers';
 
-export { getRoleSalaryFromProjection, formatSalaryDisplay } from './salaryHelpers';
+export {
+  getRoleSalaryFromProjection,
+  formatSalaryDisplay,
+  formatGroupSalaryDisplay,
+} from './salaryHelpers';
 
 export { statusConfig, attendanceConfig, SCHEDULE_STATUS_STRIPE_TONE } from './statusConfig';

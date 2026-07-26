@@ -186,8 +186,11 @@ function createMockStats(): ScheduleStats {
     completedSchedules: 5,
     confirmedSchedules: 3,
     upcomingSchedules: 2,
+    completedWorkDays: 7,
     totalEarnings: 1000000,
     thisMonthEarnings: 500000,
+    settledEarnings: 300000,
+    estimatedEarnings: 200000,
     hoursWorked: 40,
   };
 }

@@ -13,7 +13,13 @@ import { areAllDatesConsecutive, parseDateString } from '@/utils/date';
 import type { ScheduleEvent, GroupedScheduleEvent, DateStatus, ScheduleType } from '@/types';
 
 /** 스케줄탭 상태 필터 값 — 'all'은 전체(취소 포함) 노출, 나머지는 type 단일 매칭 */
-export type ScheduleStatusFilter = 'all' | ScheduleType;
+/**
+ * 리스트 필터.
+ *
+ * 'unpaid' 는 상태(type)가 아니라 **정산 관점** 축이다 — 근무 후 가장 잦은 확인이
+ * '입금 됐나'인데, 예전에는 완료 카드를 하나씩 열어 정산 탭까지 들어가야 알 수 있었다.
+ */
+export type ScheduleStatusFilter = 'all' | ScheduleType | 'unpaid';
 
 // ============================================================================
 // Types
@@ -367,7 +373,26 @@ export function filterSchedulesByStatus<T extends ScheduleEvent | GroupedSchedul
   statusFilter: ScheduleStatusFilter
 ): T[] {
   if (statusFilter === 'all') return schedules;
+  if (statusFilter === 'unpaid') return schedules.filter(isUnpaidCompleted);
   return schedules.filter((schedule) => schedule.type === statusFilter);
+}
+
+/**
+ * 완료했는데 아직 정산이 끝나지 않은 건인지.
+ * payrollStatus 가 없으면 미처리(pending)로 본다 — 기본값이 곧 '아직 못 받음'이다.
+ */
+export function isUnpaidCompleted(item: ScheduleEvent | GroupedScheduleEvent): boolean {
+  if (item.type !== 'completed') return false;
+
+  if ('dateRange' in item) {
+    return item.originalEvents.some((event) => event.payrollStatus !== 'completed');
+  }
+  return item.payrollStatus !== 'completed';
+}
+
+/** '미지급' 필터 배지에 쓰는 건수 */
+export function countUnpaidSchedules(schedules: (ScheduleEvent | GroupedScheduleEvent)[]): number {
+  return schedules.filter(isUnpaidCompleted).length;
 }
 
 /**

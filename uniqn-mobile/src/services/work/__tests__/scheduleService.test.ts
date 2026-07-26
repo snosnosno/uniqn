@@ -914,6 +914,49 @@ describe('scheduleService - calculateScheduleStats', () => {
     expect(stats.confirmedSchedules).toBe(1);
   });
 
+  // 회귀 방어: 완료만 원본 row 를 그대로 세서, 3일 대회 1건이 상단 통계엔 '완료 3',
+  // 목록 필터탭엔 '완료 1' 로 동시에 나왔다. 세 지표의 단위를 '건' 으로 통일한다.
+  it('하나의 지원이 여러 일정으로 펼쳐져도 완료는 1건으로 집계하고 근무 일수를 따로 센다', () => {
+    const stats = calculateScheduleStats(
+      ['2026-07-15', '2026-07-16', '2026-07-17'].map((date, index) =>
+        createMockScheduleEvent({
+          id: `done-${index + 1}`,
+          applicationId: 'app-done',
+          date,
+          type: STATUS.SCHEDULE.COMPLETED,
+        })
+      )
+    );
+
+    expect(stats.completedSchedules).toBe(1);
+    expect(stats.completedWorkDays).toBe(3);
+  });
+
+  it('정산 완료분과 정산 예정분을 분리해 집계한다', () => {
+    const stats = calculateScheduleStats([
+      createMockScheduleEvent({
+        id: 'paid',
+        applicationId: 'app-paid',
+        date: '2026-07-10',
+        type: STATUS.SCHEDULE.COMPLETED,
+        payrollAmount: 200000,
+        payrollStatus: STATUS.PAYROLL.COMPLETED,
+      }),
+      createMockScheduleEvent({
+        id: 'pending',
+        applicationId: 'app-pending',
+        date: '2026-07-11',
+        type: STATUS.SCHEDULE.COMPLETED,
+        payrollAmount: 150000,
+        payrollStatus: STATUS.PAYROLL.PENDING,
+      }),
+    ]);
+
+    expect(stats.settledEarnings).toBe(200000);
+    expect(stats.estimatedEarnings).toBe(150000);
+    expect(stats.thisMonthEarnings).toBe(350000);
+  });
+
   it('하나의 지원이 여러 일정으로 펼쳐져도 지원중은 1건으로 집계한다', () => {
     const stats = calculateScheduleStats(
       ['2099-01-15', '2099-01-16', '2099-01-17'].map((date, index) =>

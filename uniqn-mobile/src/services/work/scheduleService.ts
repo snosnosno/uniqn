@@ -245,16 +245,22 @@ export function calculateScheduleStats(schedules: ScheduleEvent[]): ScheduleStat
   const datedSchedules = schedules.filter((schedule) => hasScheduleDate(schedule.date));
   const confirmedScheduleKeys = new Set<string>();
   const upcomingScheduleKeys = new Set<string>();
+  // 완료도 확정/지원과 같은 '건' 단위로 센다. 예전에는 여기만 원본 row 를 그대로 세서
+  // 3일짜리 대회 1건이 상단 통계엔 '완료 3', 목록 필터탭엔 '완료 1' 로 동시에 나왔다.
+  const completedScheduleKeys = new Set<string>();
 
-  let completedSchedules = 0;
+  let completedWorkDays = 0;
   let totalEarnings = 0;
   let thisMonthEarnings = 0;
+  let settledEarnings = 0;
+  let estimatedEarnings = 0;
   let hoursWorked = 0;
 
   schedules.forEach((schedule) => {
     // 완료된 스케줄
     if (schedule.type === STATUS.SCHEDULE.COMPLETED) {
-      completedSchedules++;
+      completedWorkDays++;
+      completedScheduleKeys.add(buildScheduleStatsCountKey(schedule));
 
       // 수익 계산 (payrollAmount 우선, 없으면 settlementBreakdown 사용)
       let amount = 0;
@@ -272,6 +278,14 @@ export function calculateScheduleStats(schedules: ScheduleEvent[]): ScheduleStat
       if (amount > 0) {
         totalEarnings += amount;
         thisMonthEarnings += amount;
+
+        // 정산 완료분과 아직 처리 전인 추정치를 분리한다. 한 숫자로 합치면
+        // 입금 예정액으로 오해돼 급여 문의·분쟁의 출발점이 된다.
+        if (schedule.payrollStatus === STATUS.PAYROLL.COMPLETED) {
+          settledEarnings += amount;
+        } else if (schedule.payrollStatus !== STATUS.PAYROLL.FAILED) {
+          estimatedEarnings += amount;
+        }
       }
 
       // 근무 시간 계산
@@ -302,11 +316,14 @@ export function calculateScheduleStats(schedules: ScheduleEvent[]): ScheduleStat
 
   return {
     totalSchedules: schedules.length,
-    completedSchedules,
+    completedSchedules: completedScheduleKeys.size,
     confirmedSchedules: confirmedScheduleKeys.size,
     upcomingSchedules: upcomingScheduleKeys.size,
+    completedWorkDays,
     totalEarnings,
     thisMonthEarnings,
+    settledEarnings,
+    estimatedEarnings,
     hoursWorked: Math.round(hoursWorked * 10) / 10, // 소수점 1자리
   };
 }

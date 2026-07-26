@@ -192,8 +192,18 @@ export interface ScheduleStats {
   confirmedSchedules: number;
   /** 대기 중인 스케줄 수 (지원됨, type === 'applied') */
   upcomingSchedules: number;
+  /**
+   * 완료한 근무 '일수'. completedSchedules 는 지원 단위(건)라, 3일짜리 대회 1건이면
+   * completedSchedules=1 / completedWorkDays=3 이 된다. 두 숫자를 한 칸에 섞으면
+   * 상단 통계는 '완료 3', 목록 필터탭은 '완료 1' 을 동시에 보여주게 된다.
+   */
+  completedWorkDays: number;
   totalEarnings: number;
   thisMonthEarnings: number;
+  /** 구인자가 정산을 완료 처리한 금액 (payrollStatus === 'completed') */
+  settledEarnings: number;
+  /** 아직 정산 처리 전인 금액 (pending·processing). 추정치라 확정 금액과 섞지 않는다. */
+  estimatedEarnings: number;
   hoursWorked: number;
 }
 

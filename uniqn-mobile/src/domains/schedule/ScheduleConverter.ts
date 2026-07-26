@@ -17,6 +17,7 @@ import type {
   SchedulePostingProjection,
   ScheduleType,
   WorkLog,
+  PostingRoleCatalogEntry,
 } from '@/types';
 import {
   FIXED_DATE_MARKER,
@@ -27,7 +28,6 @@ import {
 import { parseTimeSlotToDate } from '@/utils/date/ranges';
 import { toDate } from '@/utils/date';
 import { calculateSettlementBreakdown, DEFAULT_SALARY_INFO } from '@/utils/settlement';
-import type { PostingRoleCatalogEntry } from '@/types';
 
 export interface SchedulePostingContext {
   title: string;
@@ -142,6 +142,9 @@ export class ScheduleConverter {
       status: attendanceStatus,
       payrollStatus: workLog.payrollStatus,
       payrollAmount: workLog.payrollAmount,
+      // 지급 처리 시각. DB(payroll_date)→WorkLog 까지는 오는데 여기서 끊겨 있어
+      // 스태프는 '정산 완료' 배지만 보고 언제 처리됐는지 알 수 없었다.
+      payrollDate: workLog.payrollDate,
       ownerPhone: postingContext?.contactPhone,
       ownerId: workLog.ownerId || postingContext?.ownerId,
       notes: workLog.notes,

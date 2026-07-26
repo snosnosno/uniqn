@@ -25,6 +25,7 @@ import {
 } from '@/domains/settlement';
 import { STATUS } from '@/constants';
 import { PAYROLL_STATUS } from '@/constants/statusConfig';
+import { formatDateKorean } from '@/utils/date';
 import type { ScheduleEvent, PayrollStatus } from '@/types';
 
 export interface SettlementTabProps {
@@ -251,6 +252,19 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
           {payrollStatusConfig.label}
         </Badge>
       </View>
+
+      {/* 지급 처리 시각 — '정산 완료' 배지만으로는 언제 처리됐는지 알 수 없어
+          결국 구인자에게 전화하게 된다. 단, 처리 시각 ≠ 입금 시각이라 그 차이를 밝힌다. */}
+      {schedule.payrollStatus === STATUS.PAYROLL.COMPLETED && schedule.payrollDate && (
+        <View className="mb-4 rounded-md bg-success-50 px-3 py-2 dark:bg-success-900/20">
+          <Text className="text-sm font-sans-medium text-success-700 dark:text-success-300">
+            {formatDateKorean(schedule.payrollDate)} 지급 처리
+          </Text>
+          <Text className="mt-0.5 text-xs text-success-600 dark:text-success-400 font-sans">
+            실제 입금은 구인자 이체 시점에 따라 다를 수 있어요.
+          </Text>
+        </View>
+      )}
 
       {isEstimate && (
         <View className="mb-4 rounded-lg bg-primary-50 p-3 dark:bg-primary-900/20">

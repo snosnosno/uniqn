@@ -1,4 +1,8 @@
-import { getRoleSalaryFromProjection, formatSalaryDisplay } from '../salaryHelpers';
+import {
+  getRoleSalaryFromProjection,
+  formatSalaryDisplay,
+  formatGroupSalaryDisplay,
+} from '../salaryHelpers';
 import type { SchedulePostingProjection } from '@/types';
 import type { SalaryInfo } from '@/utils/settlement';
 
@@ -80,5 +84,31 @@ describe('formatSalaryDisplay', () => {
   it('accepts large amounts', () => {
     const salary: SalaryInfo = { type: 'monthly', amount: 10000000 };
     expect(formatSalaryDisplay(salary)).toBe('월급 ₩10,000,000');
+  });
+});
+
+describe('formatGroupSalaryDisplay', () => {
+  // 회귀 방어: 예전에는 공고 defaultSalary(시급 10,000원)를 그려, 매니저로 지원했는데
+  // 남의 단가가 카드에 떴다.
+  it('그룹에 담긴 역할의 단가를 쓴다 (공고 기본값이 아니라)', () => {
+    expect(formatGroupSalaryDisplay(createProjection(), ['other'], ['매니저'])).toBe(
+      '일급 ₩200,000'
+    );
+    expect(formatGroupSalaryDisplay(createProjection(), ['dealer'])).toBe('시급 ₩15,000');
+  });
+
+  it('역할마다 단가가 다르면 하나를 대표로 내세우지 않는다', () => {
+    expect(
+      formatGroupSalaryDisplay(createProjection(), ['dealer', 'other'], [undefined, '매니저'])
+    ).toBe('역할별 상이');
+  });
+
+  it('역할이 여럿이어도 단가가 같으면 그 단가를 쓴다', () => {
+    expect(formatGroupSalaryDisplay(createProjection(), ['dealer', 'dealer'])).toBe('시급 ₩15,000');
+  });
+
+  it('공고 정보나 역할이 없으면 null', () => {
+    expect(formatGroupSalaryDisplay(undefined, ['dealer'])).toBeNull();
+    expect(formatGroupSalaryDisplay(createProjection(), [])).toBeNull();
   });
 });
