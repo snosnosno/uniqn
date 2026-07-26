@@ -3,6 +3,8 @@ paths:
   - "src/repositories/supabase/**/*.ts"
   - "src/schemas/**/*.ts"
   - "src/services/**/*.ts"
+  - "supabase/migrations/**/*.sql"
+  - "supabase/tests/**/*.sql"
 ---
 
 # Supabase 패턴 규칙
@@ -127,6 +129,25 @@ interface MyEntity {
   description?: string; // Supabase에서 null이 오면 타입 불일치
 }
 ```
+
+## 10. 트리거 추가·변경 시 중복 검사 (필수)
+
+같은 테이블에 같은 함수를 부르는 트리거가 둘 생기면 알림이 2배로 나가는 등
+조용히 중복 실행된다. 실제로 두 번 터졌다 — `20260620151331`(work_logs 체크인)과
+PR #328(알림 3쌍). grep으로는 새 트리거가 기존 것과 겹치는지 알 수 없다.
+
+```bash
+graphify update uniqn-mobile --force --no-cluster   # 그래프 갱신 (약 1분, LLM 토큰 0)
+node scripts/graph-db-deps.mjs triggers             # 중복 후보 0건이어야 통과
+```
+
+- 그래프가 최신 `.sql`보다 낡으면 **exit 2로 차단**된다. 우회(`--allow-stale`)하지 말고 갱신할 것.
+- 중복 판정 기준은 **같은 테이블 + 같은 함수**다. 서로 다른 테이블이 공용
+  `fn_ops_set_updated_at()` 같은 함수를 함께 쓰는 건 정상 설계이므로 걸리지 않는다.
+- 컬럼·테이블 변경 전 영향도: `node scripts/graph-db-deps.mjs table <테이블명>` —
+  해당 테이블을 읽는 SQL 함수를 `file:line`으로 전부 뽑는다.
+- MCP `graphify` 서버(툴 10종)로도 조회 가능하나 `query_graph`는 임베딩이 없어
+  한글 질의가 0건이다. `get_node`/`get_neighbors`/`shortest_path`를 쓸 것.
 
 ## 8. upsert — unique constraint 기반
 
