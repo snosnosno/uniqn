@@ -281,7 +281,7 @@ export default function ChangePasswordScreen() {
           <Pressable
             onPress={handleSubmit(onSubmit)}
             disabled={isSubmitting}
-            className={`rounded-lg py-4 ${isSubmitting ? 'bg-secondary-300 dark:bg-surface' : 'bg-primary-600 active:bg-primary-700'}`}
+            className={`rounded-lg py-4 ${isSubmitting ? 'bg-secondary-300 dark:bg-surface-elevated' : 'bg-primary-600 active:bg-primary-700'}`}
           >
             {isSubmitting ? (
               <ActivityIndicator color={isDarkMode ? '#FFFFFF' : '#09090B'} />
