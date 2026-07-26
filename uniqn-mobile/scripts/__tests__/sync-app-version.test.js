@@ -1,4 +1,4 @@
-const { buildVersionValue, parseArgs } = require('../sync-app-version');
+const { buildVersionValue, parseArgs, resolveKeysToUpdate } = require('../sync-app-version');
 
 describe('sync-app-version: buildVersionValue', () => {
   it('지정 플랫폼만 새 버전으로 덮어쓰고 나머지는 보존한다', () => {
@@ -32,5 +32,31 @@ describe('sync-app-version: parseArgs', () => {
   it('--platform 목록을 파싱한다', () => {
     expect(parseArgs(['--platform=ios,web']).platforms).toEqual(['ios', 'web']);
     expect(parseArgs(['--platform=android']).platforms).toEqual(['android']);
+  });
+});
+
+describe('sync-app-version: resolveKeysToUpdate', () => {
+  // 업데이트 모달은 recommended_version 을 기준으로 뜬다.
+  // versionService.checkVersion: shouldUpdate = recommendedVersion
+  //   ? current < recommendedVersion : current < latestVersion
+  // → recommended_version 행이 존재하는 한 latest_version 만 올려서는 안내가 뜨지 않는다.
+  it('기본 갱신 대상에 latest_version 과 recommended_version 을 모두 포함한다', () => {
+    expect(resolveKeysToUpdate({ force: false })).toEqual([
+      'latest_version',
+      'recommended_version',
+    ]);
+  });
+
+  it('--force 는 force_update_version 을 추가한다 (앱 잠금 레버 — opt-in)', () => {
+    expect(resolveKeysToUpdate({ force: true })).toEqual([
+      'latest_version',
+      'recommended_version',
+      'force_update_version',
+    ]);
+  });
+
+  it('force 가 아니면 force_update_version 을 절대 포함하지 않는다', () => {
+    expect(resolveKeysToUpdate({ force: false })).not.toContain('force_update_version');
+    expect(resolveKeysToUpdate({})).not.toContain('force_update_version');
   });
 });
