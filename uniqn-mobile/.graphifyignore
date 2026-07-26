@@ -11,3 +11,8 @@
 # squash된 과거 마이그레이션. 라이브 스키마로 오독되면 이미 고쳐진 버그가
 # 되살아난다(실측 — 20260620151331 이 제거한 중복 트리거가 재검출됨).
 supabase/migrations/archive/
+
+# pgTAP 테스트 전용 SECURITY DEFINER 헬퍼. 프로덕션에 등록되지 않는데도
+# reads_from/triggers 엣지 222개 중 15개(6.8%)를 차지해, `table <이름>` 영향도 조회 시
+# 실제 프로덕션 소비자와 섞여 나온다.
+supabase/fixtures/
