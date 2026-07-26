@@ -51,7 +51,7 @@
 
 - `archive/firebase-legacy/` (Firebase 시절 규칙/스펙/설계 기록)
 - `archive/planning/2026-04/` (2026-04 분기 계획 아카이브)
-- `../specs/react-native-app/*`
+- `../specs/react-native-app/*` — 2026-07-26 제거(내용 오염). 원본은 git `82cee067e`, 복원법은 `../specs/react-native-app/README.md` 참조
 - `planning/*`
 - `features/*`
 - 날짜가 들어간 운영 로그/감사 대응 문서

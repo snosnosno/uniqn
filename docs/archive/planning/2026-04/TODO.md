@@ -62,4 +62,4 @@
 - [개발 가이드](CLAUDE.md) - Claude Code 전용
 - [변경 이력](CHANGELOG.md)
 - [로드맵](ROADMAP.md)
-- [모바일앱 스펙](specs/react-native-app/00-overview.md)
+- 모바일앱 스펙: `specs/react-native-app/00-overview.md` (2026-07-26 제거 — 원본은 git `82cee067e`, 복원법은 `specs/react-native-app/README.md` 참조)

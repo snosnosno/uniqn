@@ -591,7 +591,7 @@ feat: Phase 3 - 멀티 테넌트 아키텍처 페이지 컴포넌트 수정 완�
 > **모바일앱 알림**: uniqn-mobile/은 FCM + expo-notifications를 통해 푸시 알림을 지원합니다.
 >
 > 📚 **관련 문서 (역할별 참조)**:
-> - 💻 **모바일앱 구현 상세**: [10-notifications.md](../../specs/react-native-app/10-notifications.md) (앱개발자용 — FCM, Zustand, UI, 30개 타입)
+> - 💻 **모바일앱 구현 상세**: `specs/react-native-app/10-notifications.md` (2026-07-26 제거 — 원본은 git `82cee067e`, 복원법은 `specs/react-native-app/README.md` 참조)
 > - 💼 **운영 가이드**: [NOTIFICATION_OPERATIONS.md](../operations/NOTIFICATION_OPERATIONS.md) (운영팀용 — Functions 관리, 모니터링)
 >
 > 이 문서는 **구현 현황 추적용**입니다. Phase 진행도, 테스트 결과, 해결된 이슈에 집중합니다.
