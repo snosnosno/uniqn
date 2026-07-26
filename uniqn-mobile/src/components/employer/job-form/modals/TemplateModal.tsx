@@ -127,7 +127,7 @@ export function TemplateModal({
         <Pressable
           onPress={onClose}
           disabled={isSaving}
-          className="flex-1 bg-secondary-200 dark:bg-surface py-3 rounded-md"
+          className="flex-1 bg-secondary-200 dark:bg-surface-elevated py-3 rounded-md"
           accessibilityRole="button"
           accessibilityLabel="취소"
         >

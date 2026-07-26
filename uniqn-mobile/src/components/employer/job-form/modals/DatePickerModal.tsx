@@ -163,7 +163,7 @@ export function DatePickerModal({
     <View className="flex-row gap-3">
       <Pressable
         onPress={handleClose}
-        className="flex-1 bg-secondary-200 dark:bg-surface py-2.5 rounded-md"
+        className="flex-1 bg-secondary-200 dark:bg-surface-elevated py-2.5 rounded-md"
         accessibilityRole="button"
         accessibilityLabel="취소"
         testID="job-posting-date-cancel-button"

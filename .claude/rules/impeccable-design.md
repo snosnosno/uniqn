@@ -361,12 +361,28 @@ export const triggerHaptic = (type: HapticType) => {
 
 ## 20. 키보드 UX
 
-- `KeyboardAvoidingView`: iOS=`padding`, Android=`height`
+> **2026-07-25 전환**: 키보드 회피 단일 경로 = `react-native-keyboard-controller`.
+> `react-native-keyboard-aware-scroll-view`는 **제거됨**(미유지보수) — 참조 금지.
+
+| 맥락 | 사용할 것 |
+|------|-----------|
+| 모달·시트 내부 | `ModalKeyboardAvoider`(`@/components/ui`) — 이미 SheetModal/Modal에 내장 |
+| 긴 폼·스크롤 화면 | `KeyboardAwareScrollView`(keyboard-controller) + `bottomOffset={20}` |
+| 화면 레벨 단순 폼 | RN 기본 `KeyboardAvoidingView` 잔존 17곳은 **동작 중이라 유지**. 신규 화면은 keyboard-controller |
+
+- **구 라이브러리 prop 금지**: `extraScrollHeight` / `enableOnAndroid` /
+  `enableAutomaticScroll` / `keyboardOpeningTime`은 신 라이브러리에 없다.
+  플랫폼 분기 없이 `bottomOffset` 하나로 끝난다(IME 인셋을 직접 읽으므로).
+- **RNModal 안에서 RN 기본 KAV 금지**: statusBarTranslucent 다이얼로그는 별도
+  윈도우라 `adjustResize`가 무시되고 KAV(height)도 `relativeKeyboardHeight=0`으로
+  붕괴한다(#302 실기기 재현).
 - 스크롤 영역: `keyboardDismissMode="on-drag"` + `keyboardShouldPersistTaps="handled"`
 - `returnKeyType` 체인: 다음 인풋 `next`, 마지막 `done`
 - **`autoFocus` 금지**: 스크린리더 혼선, 예기치 못한 키보드 팝업
-- 긴 폼: 섹션별 `ScrollView` + `scrollToInput` 대신 `KeyboardAwareScrollView`
-  (`react-native-keyboard-aware-scroll-view` 이미 설치됨)
+- ⚠️ 루트 `KeyboardProvider`는 **세 플래그 명시 필수**
+  (`statusBarTranslucent` / `navigationBarTranslucent` / `preserveEdgeToEdge`).
+  생략하면 Android 네이티브가 rootView content의 layoutParams 마진을 덮어써
+  `SafeAreaProvider`와 인셋 소유권이 충돌한다 — 근거는 `app/_layout.tsx` 주석.
 
 ## 21. Pressed 피드백 — 다크/라이트 반대 방향
 
@@ -590,7 +606,7 @@ DESIGN.md의 **Midnight Craft**(Industrial/Utilitarian + subtle Luxury) 방향�
 
 ```
 0. 정산 화면, 금액 TextInput 포커스
-   └ 룰 20: KeyboardAvoidingView padding(iOS)
+   └ 룰 20: 시트 내부면 ModalKeyboardAvoider가 자동 보정
    └ 룰 20: autoFocus 금지 — 사용자가 탭해서 시작
 1. 숫자 키패드로 "120000" 입력
    └ 룰 19: 입력 중 raw, blur 시 ₩120,000 포맷 적용
@@ -636,7 +652,7 @@ DESIGN.md의 **Midnight Craft**(Industrial/Utilitarian + subtle Luxury) 방향�
 - [ ] Haptics는 결정적 순간 + 200ms throttle만?
 - [ ] 원격 이미지에 blurhash placeholder + expo-image 적용?
 - [ ] 금액/날짜/전화번호 포맷이 `utils/formatters`로 일관화?
-- [ ] 폼에 `KeyboardAvoidingView` + `autoFocus` 없음?
+- [ ] 신규 폼이 keyboard-controller 경로(`ModalKeyboardAvoider`/`KeyboardAwareScrollView`)이고 `autoFocus` 없음?
 - [ ] Pressed 피드백이 다크/라이트 반대 방향(밝기 변화)?
 - [ ] Focus ring = Info 블루 `#2563EB` 2px(골드 아님)?
 - [ ] 화면별 `statusBarStyle`이 배경과 대비?
@@ -644,3 +660,122 @@ DESIGN.md의 **Midnight Craft**(Industrial/Utilitarian + subtle Luxury) 방향�
 - [ ] Offline 배너 + 접근성 `accessibilityLiveRegion="polite"`?
 - [ ] Text truncation 정책: 금액·에러는 truncation 금지?
 - [ ] 아이콘은 Lucide(`@/components/icons`) + stroke 2.0 + Size 화이트리스트?
+
+---
+
+# v3 — 네이티브 출고 게이트 (2026-07-25 추가)
+
+> v1·v2가 커버하지 못한 **출고 직전 품질 누수** 지점만 보강. 중복 룰은 의도적으로 배제했다.
+> 출처: [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)
+> `references/pro-rules.md` (MIT). 스킬 전체는 웹/랜딩 편향이라 미도입 — 네이티브 체크리스트만 발췌.
+
+## 28. 아이콘 정렬 · 대비 · 에셋 포맷
+
+룰 27(패밀리·스트로크·사이즈)이 다루지 않는 **배치와 가독성** 축.
+
+- **베이스라인 정렬**: 텍스트에 인접한 아이콘은 캡 높이 중앙에 맞추고, 주변 패딩을
+  좌우 동일하게. 미세 어긋남이 "완성도 낮음"의 가장 흔한 원인.
+
+```tsx
+// ✅ 아이콘-텍스트 정렬
+<View className="flex-row items-center gap-2">
+  <Icon size={16} />
+  <Text className="text-body leading-5">지원자 3명</Text>
+</View>
+
+// ❌ items-start / gap 없이 margin 혼용 → 반 픽셀 어긋남 누적
+```
+
+- **아이콘 대비**: 작은 글리프(≤16px) **4.5:1**, 큰 UI 글리프(≥24px) **최소 3:1**.
+  라이트/다크 각각 검증 — 룰 21의 pressed 대비와 별개 축이다.
+- **래스터 금지**: 아이콘·로고는 SVG/벡터만. PNG는 확대 시 뭉개지고 다크모드
+  틴팅이 불가능. 예외는 사진성 콘텐츠(`expo-image` + blurhash, 룰 18).
+
+## 29. 제스처 충돌 방지
+
+우리 앱은 근무표 그리드·스와이프 액션·바텀시트가 한 화면에 겹친다. **영역당 주
+제스처 1개** 원칙.
+
+| 충돌 유형 | 증상 | 대응 |
+|---|---|---|
+| 가로 스크롤 ↔ iOS back-swipe | 좌측 엣지에서 뒤로가기 오발동 | 좌측 20pt 엣지는 제스처 영역에서 제외 |
+| 리스트 세로 스크롤 ↔ 행 스와이프 삭제 | 스크롤 중 삭제 액션 노출 | `activeOffsetX` 임계값 설정 |
+| 바텀시트 드래그 ↔ 내부 스크롤 | 시트가 안 닫히거나 내용이 안 밀림 | `BottomSheetScrollView`/`BottomSheetFlatList` 사용 (일반 ScrollView 금지) |
+| 중첩 Pressable | 부모·자식 동시 반응 | 자식에만 핸들러, 부모는 `pointerEvents` 조정 |
+
+**금지**: 같은 방향 드래그를 처리하는 제스처를 중첩 배치.
+
+## 30. 스크린리더 포커스 순서 = 시각 순서
+
+룰 22(포커스 링)는 **보이는 것**, 이 룰은 **읽히는 순서**.
+
+- `absolute`/`zIndex`로 시각 위치를 바꾼 요소는 스크린리더 순서가 DOM(JSX) 순서
+  그대로 남는다 → 실제로 읽어보고 확인.
+- 모달·시트 오픈 시 배경 콘텐츠는 `accessibilityElementsHidden`(iOS) +
+  `importantForAccessibility="no-hide-descendants"`(Android)로 차단.
+- 그룹 읽기: 카드 전체를 하나로 읽히려면 `accessible={true}` + 통합
+  `accessibilityLabel`. 자식마다 label을 달면 카드 1개가 5번 읽힌다.
+
+## 31. 양 테마 대비 패리티
+
+룰 21은 pressed 상태 한정. 이 룰은 **정적 요소 전반**.
+
+| 요소 | 기준 | 흔한 실패 |
+|---|---|---|
+| 본문 텍스트 | 양 테마 ≥ **4.5:1** | 다크에서만 회색이 배경에 묻힘 |
+| 보조 텍스트 | 양 테마 ≥ **3:1** | `content-secondary`가 라이트에서만 검증됨 |
+| 보더·디바이더 | 양 테마에서 **모두 보일 것** | `border-border`가 한쪽 테마에서 소실 |
+| 모달·시트 스크림 | **40~60% 검정** | 스크림이 옅어 배경이 시각적으로 경쟁 |
+| 상태(pressed/focus/disabled) | 양 테마 동일 구분성 | 한 테마만 정의 |
+
+**규칙**: 새 색 토큰 추가 시 **라이트·다크 양쪽 대비를 동시에 측정**. 한쪽 값에서
+다른 쪽을 추론하지 않는다.
+
+## 32. 고정 바 ↔ 스크롤 콘텐츠 공존
+
+하단 CTA 바·탭바·스티키 헤더가 있는 화면은 **콘텐츠 인셋**을 명시한다.
+
+```tsx
+// ✅ 마지막 아이템이 CTA 바에 가리지 않음
+const insets = useSafeAreaInsets();
+<FlashList
+  contentContainerStyle={{ paddingBottom: CTA_HEIGHT + insets.bottom + 16 }}
+/>
+
+// ❌ 인셋 없음 → 리스트 끝 항목이 영구히 가려짐 (스크롤해도 안 나옴)
+```
+
+- 고정 헤더가 반투명이면 `paddingTop`도 동일하게 예약.
+- 세이프에어리어는 **고정 UI 전부**에 적용: 헤더·탭바·하단 CTA·스낵바.
+- 제스처 홈 인디케이터 영역에 탭 타깃을 두지 않는다(오작동).
+
+## 33. 디바이스 클래스 적응
+
+출고 전 **최소 3종**에서 확인: 소형폰(375pt) · 대형폰 · 태블릿(가로 포함).
+
+| 축 | 규칙 |
+|---|---|
+| 가로 거터 | 폰 `px-4` / 태블릿·랜드스케이프는 확대(`px-6`~`px-8`) — 전 기기 동일 좁은 거터 금지 |
+| 콘텐츠 최대폭 | 태블릿에서 본문이 화면 끝까지 늘어나지 않게 최대폭 제한 |
+| 긴 텍스트 measure | 한 줄이 과도하게 길면 가독성 저하 — 태블릿에서 폭 제한 |
+| 랜드스케이프 | 세로 공간 축소 시 고정 CTA + 키보드가 콘텐츠를 전멸시키지 않는지 확인 |
+| Dynamic Type | 시스템 최대 텍스트 크기에서 레이아웃이 깨지지 않을 것(룰 27 fontScale 참조) |
+
+---
+
+## v3 체크리스트 — 출고 전 게이트(11항목)
+
+### 프로세스
+- [ ] **375pt 소형폰**과 **랜드스케이프**에서 확인?
+- [ ] **Reduce Motion** ON + **시스템 최대 텍스트 크기**에서 레이아웃 정상?
+- [ ] 다크모드를 라이트에서 추론하지 않고 **독립 검증**?
+
+### 항목
+- [ ] 텍스트 인접 아이콘이 베이스라인 정렬 + 대비 3:1(대형)/4.5:1(소형)?
+- [ ] 아이콘·로고가 벡터(SVG)만? 래스터 PNG 없음?
+- [ ] 한 영역에 주 제스처 1개? (스와이프×스크롤×back-swipe×시트 충돌 없음)
+- [ ] 스크린리더 읽기 순서 = 시각 순서? 모달 오픈 시 배경 접근성 차단?
+- [ ] 본문 4.5:1 / 보조 3:1 / 디바이더 가시성을 **양 테마** 모두 충족?
+- [ ] 모달·시트 스크림이 40~60% 검정?
+- [ ] 고정 바 높이만큼 `contentContainerStyle` 인셋 예약? (마지막 항목 안 가림)
+- [ ] 태블릿·랜드스케이프에서 거터 확대 + 콘텐츠 최대폭 제한?

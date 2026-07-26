@@ -343,8 +343,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     version: VERSION,
     environment,
     useEmulator: process.env.EXPO_PUBLIC_USE_EMULATOR === 'true',
-    // 빌드 시간
-    buildDate: new Date().toISOString(),
+    // ⚠️ buildDate(`new Date().toISOString()`) 제거 (2026-07-26).
+    // runtimeVersion 정책이 'fingerprint'(아래 참조)가 되면서 **expoConfig 전체가 해시
+    // 소스**에 포함된다. 동적 타임스탬프가 extra 에 있으면 fingerprint 가 평가할 때마다
+    // 달라져, EAS Build 가 계산한 runtimeVersion 과 이후 `eas update` 가 계산한
+    // runtimeVersion 이 절대 일치하지 않는다 = OTA 영구 무력화.
+    // 실측(2026-07-26): 연속 2회 `expo-updates fingerprint:generate` 해시 불일치,
+    // 불일치 소스는 145개 중 `expoConfig` 단 1개(내용 diff = buildDate).
+    // extra 에는 평가 시점마다 달라지는 값을 절대 넣지 말 것.
     // Apple 로그인 kill switch (2026-07-25 하드 OFF 전환)
     // 2026-07-21 동결 시점엔 env opt-in(=== 'true')으로 남겨뒀으나, 07-19 빌드로 가입했던
     // Apple 계정을 전부 정리(2026-07-25 prod 삭제)했고 웹 로그인 경로도 없어 재활성 계획이
@@ -372,7 +378,40 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
 
   // 런타임 버전 (EAS Update 호환)
+  //
+  // 정책 이력: 'sdkVersion' → 'fingerprint'(2026-07-25) → 'appVersion'(2026-07-26)
+  //
+  // ① 'sdkVersion' 을 버린 이유 (#335)
+  //    runtimeVersion 이 exposdk:55.x 로 고정돼 **네이티브 구성이 바뀌어도 값이 그대로**였다.
+  //    react-native-keyboard-controller(네이티브 모듈) 도입 시 구·신 빌드가 같은
+  //    runtimeVersion 을 갖게 되어, 신 코드 OTA 가 네이티브 모듈이 없는 구 빌드로도
+  //    전달된다 → 없는 코드 호출 → 오류/롤백.
+  //
+  // ② 'fingerprint' 를 다시 버린 이유 (2026-07-26, 실측)
+  //    fingerprint 는 **로컬에서 해시를 계산해 EAS 가 계산한 값과 대조**한다. 불일치면
+  //    EAS Build 가 CONFIGURE_EXPO_UPDATES 단계에서 하드 실패시킨다(경고 아님).
+  //    이 프로젝트는 Windows 에서 개발하는데 EAS 빌더는 Linux/macOS 라서
+  //    `rncoreAutolinkingIos` 해시(async-storage·reanimated·safe-area-context·screens·
+  //    svg·worklets 6종)와 `ios` 디렉터리 유무가 영구히 어긋난다 = 로컬에서 정렬 불가.
+  //    Android·iOS 빌드 각 2회 전부 이 지점에서 실패했다(3ec03455·b31c3164·ff09997d·4f127370).
+  //    ⚠️ `EAS_SKIP_AUTO_FINGERPRINT=1` 은 해결책이 아니다 — 그 플래그는 eas-cli 의
+  //    fingerprint **진단/비교** 경로(fingerprint/cli.js)만 막고, 빌드에 실제로 첨부되는
+  //    runtimeVersion 은 build/build.js → project/resolveRuntimeVersionAsync.js 가
+  //    산출하는데 여기엔 플래그 분기가 없다.
+  //    같은 이유로 `eas update` 도 이 PC 에서 발행하면 빌드에 도달하지 못한다.
+  //
+  // ③ 'appVersion' 을 택한 이유
+  //    runtimeVersion = version(=package.json 의 값) 이라 **해시 계산이 없고 머신 간
+  //    불일치가 원리적으로 불가능**하다. ①의 사고도 그대로 막는다 — 그 사례는
+  //    1.0.4 ↔ 1.0.5 로 갈라지므로 OTA 가 애초에 도달하지 않는다.
+  //
+  // 🔴 이 정책의 유일한 규율: **네이티브 구성을 바꾸면 version 을 반드시 올려라.**
+  //    version 을 그대로 두고 네이티브를 바꾼 새 빌드를 내면, 같은 version 을 가진
+  //    구 빌드로 OTA 가 새어 ①과 똑같은 사고가 난다. 네이티브 의존성 추가·제거·업그레이드
+  //    PR 은 version bump 를 동반해야 한다(규칙 전문 = .claude/skills/deploy §5).
+  //    fingerprint 의 자동 보호를 되찾으려면 로컬 계산을 없애야 하므로
+  //    EAS Workflows 안에서 빌드·OTA 를 발행하는 방식으로 옮겨야 한다.
   runtimeVersion: {
-    policy: 'sdkVersion',
+    policy: 'appVersion',
   },
 });

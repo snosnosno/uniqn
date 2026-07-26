@@ -1,6 +1,6 @@
 {
   "name": "uniqn-mobile",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
@@ -96,8 +96,8 @@
     "react-native": "0.83.6",
     "react-native-calendars": "^1.1313.0",
     "react-native-gesture-handler": "~2.30.0",
-    "react-native-keyboard-aware-scroll-view": "^0.9.5",
-    "react-native-mmkv": "^4.1.2",
+    "react-native-keyboard-controller": "^1.22.2",
+    "react-native-mmkv": "4.1.2",
     "react-native-nitro-modules": "0.33.2",
     "react-native-qrcode-svg": "^6.3.21",
     "react-native-reanimated": "4.2.1",
@@ -154,7 +154,8 @@
   "expo": {
     "install": {
       "exclude": [
-        "expo-modules-core"
+        "expo-modules-core",
+        "react-native-keyboard-controller"
       ]
     }
   },

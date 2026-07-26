@@ -127,6 +127,85 @@ eas build --platform all          # 둘 다
 
 EAS는 시간(15~30분)과 빌드 크레딧을 소모하므로 사용자가 직접 "EAS 빌드해줘"라고 한 경우에만 실행. "다 배포해줘" 요청에는 포함하지 말 것.
 
+## 5. EAS Update (OTA) — runtimeVersion `appVersion` 규칙 (2026-07-26 이후)
+
+`app.config.ts` 의 `runtimeVersion.policy` 이력: `sdkVersion` → `fingerprint`(07-25 #335) → **`appVersion`**(07-26).
+`appVersion` 은 `runtimeVersion = version`(package.json 값) 이다. 해시 계산이 없어 머신 간 불일치가 없다.
+
+### 🔴 규칙 0 (최우선) — 네이티브 구성을 바꾸면 `version` 을 반드시 올려라
+`appVersion` 정책의 유일한 약점이다. **fingerprint 가 자동으로 해주던 보호를 사람이 대신 져야 한다.**
+`version` 을 그대로 두고 네이티브를 바꾼 새 빌드를 내면, 같은 `version` 을 가진 **구 빌드로 OTA 가 새어**
+없는 네이티브 코드를 호출한다 = #335 사고 재현.
+
+version bump 를 **동반해야 하는 변경**:
+- 네이티브 모듈 의존성 추가·제거·업그레이드 (`react-native-*`, `expo-*` 네이티브 패키지)
+- `app.config.ts` 의 plugins / 네이티브 설정 / 권한 변경
+- Expo SDK·RN 버전 변경
+
+### 규칙 1 — expoConfig 에 비결정적 값 금지 (여전히 유효)
+`new Date()` 같은 값이 `extra` 에 있으면 안 된다. `appVersion` 정책에서는 runtimeVersion 을
+깨뜨리지 않지만, fingerprint 로 되돌릴 때 즉시 OTA 를 영구 무력화한다.
+2026-07-26 `extra.buildDate` 가 정확히 이 상태였고 제거했다(연속 2회 해시 불일치 실측).
+
+### 규칙 2 — OTA 발행 시 빌드와 **같은 env** 를 명시 export
+`eas update` 는 eas.json 의 `build.<profile>.env` 를 읽지 않는다(shell env 만 평가 — 메모리
+`pitfall_eas_update_shell_env_not_loaded`). runtimeVersion 에는 더 이상 영향이 없지만,
+**번들에 박히는 값**이 빌드와 달라지므로 여전히 맞춰야 한다.
+
+```bash
+cd uniqn-mobile
+# production OTA — eas.json build.production.env 와 동일하게 맞춘다
+APP_ENV=production \
+EXPO_PUBLIC_RELEASE_CHANNEL=production \
+EXPO_PUBLIC_PORTONE_STORE_ID=store-c1b44e1c-7620-445b-bb6c-9b6b62e7ab93 \
+EXPO_PUBLIC_PORTONE_INICIS_CHANNEL_KEY=channel-key-2dc155c9-46a1-4710-a687-245f45497b0c \
+EXPO_PUBLIC_PORTONE_INICIS_FRGND_INFO=N \
+RCT_NEW_ARCH_ENABLED=1 \
+npx eas update --branch production --message "<한글 요약>"
+```
+
+### 규칙 3 — 발행 전 runtimeVersion 대조 (필수 검증)
+```bash
+cd uniqn-mobile
+npx expo-updates runtimeversion:resolve --platform android --workflow managed
+npx expo-updates runtimeversion:resolve --platform ios --workflow managed
+# → {"runtimeVersion":"1.0.5","fingerprintSources":null,...} 이어야 한다
+```
+이 값이 대상 빌드의 runtimeVersion(`eas build:list` 출력)과 같아야 한다.
+다르면 **OTA 는 조용한 no-op** 이다(에러 없이 아무에게도 도달하지 않음).
+`fingerprintSources` 가 `null` 이 아니면 정책이 fingerprint 로 되돌아간 것이니 §5 를 다시 읽어라.
+
+⚠️ 구 빌드는 OTA 를 받지 못한다. `exposdk:55.0.0`(~1.0.4) 과 fingerprint 해시로 빌드된
+1.0.5/39 iOS 빌드는 runtimeVersion 이 달라 스토어 업데이트만이 경로다.
+
+### 왜 fingerprint 를 버렸는가 (2026-07-26 실측 — 되돌리려면 필독)
+fingerprint 는 **로컬에서 계산한 해시를 EAS 가 계산한 해시와 대조**하고, 다르면
+`CONFIGURE_EXPO_UPDATES` 단계에서 빌드를 **하드 실패**시킨다(경고 아님).
+- 이 프로젝트는 Windows 에서 개발하는데 EAS 빌더는 Linux/macOS 다. `rncoreAutolinkingIos`
+  해시 6종(async-storage·reanimated·safe-area-context·screens·svg·worklets) 과 `ios` 디렉터리
+  유무가 **영구히 어긋난다** = 로컬에서 정렬 불가. Android·iOS 4개 빌드가 전부 여기서 죽었다.
+- Android 쪽 diff 는 `google-services.json` 1건이었다(gitignore 파일이라 EAS 시크릿에서 복원되며
+  내용이 드리프트했다). 이건 시크릿 재업로드로 해소 가능하지만 iOS 는 불가능하다.
+- ⚠️ `EAS_SKIP_AUTO_FINGERPRINT=1` 은 **해결책이 아니다.** 그 플래그는 eas-cli 의 fingerprint
+  진단·비교 경로(`fingerprint/cli.js`)만 막고, 빌드에 첨부되는 runtimeVersion 은
+  `build/build.js` → `project/resolveRuntimeVersionAsync.js` 가 산출하며 플래그 분기가 없다.
+  플래그를 붙인 재시도도 동일한 diff 로 실패했다(실측).
+
+fingerprint 의 자동 보호를 되찾으려면 **로컬 계산을 없애야** 한다 = EAS Workflows 안에서
+빌드·OTA 를 발행하도록 옮겨라. Windows 로컬에서 fingerprint 정책은 성립하지 않는다.
+
+### 규칙 3-1 — 네이티브 패키지 버전 고정
+Expo SDK 가 기대하는 버전과 의도적으로 다른 네이티브 패키지는 `package.json` 의
+`expo.install.exclude` 에 반드시 등록한다. 등록하지 않으면 누군가 `expo install --fix` 를
+돌리는 순간 조용히 다운그레이드되어 기능이 회귀한다.
+(현재 등록: `expo-modules-core`, `react-native-keyboard-controller`[#335 가 1.22.2 의
+`ModalAttachedWatcher` 를 겨냥해 채택 — SDK 55 기대값 1.20.7 로 내려가면 #302 회귀])
+
+### 규칙 4 — 네이티브 구성이 바뀐 릴리즈는 OTA 로 못 넘긴다
+네이티브 모듈 추가/제거·플러그인 변경·SDK 업그레이드 = fingerprint 변경 = **새 빌드 필수**.
+구 빌드 사용자는 OTA 를 받지 못하므로 스토어 업데이트로 유도해야 한다
+(원격 `latestVersion` 상향 등). #335(react-native-keyboard-controller 도입)가 이 경우다.
+
 ## 멀티 배포 순서
 
 여러 대상을 동시에 배포할 때 순서:

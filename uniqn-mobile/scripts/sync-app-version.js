@@ -2,13 +2,17 @@
 /**
  * UNIQN Mobile - 릴리스 버전 동기화 스크립트
  *
- * @description package.json 의 version 을 Supabase `app_config.latest_version` 에 반영해
- *   앱 내 버전 체크(versionService.checkForceUpdate)가 실제 출시 버전을 인지하게 한다.
+ * @description package.json 의 version 을 Supabase `app_config` 에 반영해
+ *   앱 내 버전 체크(versionService.checkVersion)가 실제 출시 버전을 인지하게 한다.
  *
- * 실행 시점: 스토어 제출 성공 직후 (`npm run release` 체인의 마지막 단계).
- *   - 빌드 성공만으로는 스토어에 아직 없으므로 latest_version 을 올리지 않는다.
+ * 실행 시점: **스토어 출시(승인·공개) 직후** (`npm run release` 체인의 마지막 단계).
+ *   - 빌드/제출 성공만으로는 스토어에서 받을 수 없으므로 미리 올리면 존재하지 않는
+ *     버전으로 업데이트하라고 안내하게 된다.
  *
- * 자동 갱신 대상: latest_version (ios/android) — "최신 버전 있음" 안내용. 안전.
+ * 자동 갱신 대상 (ios/android):
+ *   - latest_version      — "최신 버전" 표시값
+ *   - recommended_version — **업데이트 모달의 실제 트리거** (resolveKeysToUpdate 주석 참조).
+ *                           둘 다 올려야 사용자에게 안내가 뜬다. 안내일 뿐 앱을 잠그지 않음.
  * 비대상(수동 정책 레버): force_update_version — 자동으로 현재 버전까지 올리면
  *   아직 업데이트하지 않은 사용자가 즉시 앱 잠김. 의도적 결정이 필요해 `--force` opt-in.
  *
@@ -86,6 +90,32 @@ function buildVersionValue(current, version, platforms) {
   return next;
 }
 
+/**
+ * 갱신할 app_config 키 목록 결정 (순수 함수, 테스트 대상)
+ *
+ * `recommended_version` 이 기본 대상인 이유 — 업데이트 모달의 실제 트리거이기 때문:
+ *   versionService.checkVersion:
+ *     shouldUpdate = recommendedVersion ? current < recommendedVersion
+ *                                       : current < latestVersion
+ *   useVersionCheck: shouldUpdate 일 때만 모달을 띄우고, 아니면 숨긴다.
+ * 즉 `recommended_version` 행이 존재하는 한 판정은 항상 그 값으로 내려간다.
+ * `latest_version` 만 올리면 updateType 이 'optional' 에 그쳐 **사용자에게 아무 안내도
+ * 뜨지 않는다**(2026-07-26 실측: 두 키 모두 1.0.3 에 고착돼 1.0.4 출시 안내가 나가지 않음).
+ *
+ * `force_update_version` 만 opt-in 인 이유: 현재 버전까지 올리면 아직 업데이트하지 않은
+ * 사용자가 즉시 앱 잠김 — 의도적 정책 결정이 필요하다.
+ *
+ * @param {{ force?: boolean }} args
+ * @returns {string[]}
+ */
+function resolveKeysToUpdate(args) {
+  const keys = ['latest_version', 'recommended_version'];
+  if (args && args.force) {
+    keys.push('force_update_version');
+  }
+  return keys;
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const fileEnv = loadEnvLocal();
@@ -107,7 +137,7 @@ async function main() {
     throw new Error(`비정상 버전 형식: ${version}`);
   }
 
-  const keysToUpdate = args.force ? ['latest_version', 'force_update_version'] : ['latest_version'];
+  const keysToUpdate = resolveKeysToUpdate(args);
 
   const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
@@ -154,4 +184,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { buildVersionValue, parseArgs, loadEnvLocal };
+module.exports = { buildVersionValue, parseArgs, resolveKeysToUpdate, loadEnvLocal };

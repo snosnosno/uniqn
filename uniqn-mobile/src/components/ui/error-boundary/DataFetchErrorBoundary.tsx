@@ -59,7 +59,7 @@ function DataFetchErrorFallback({
 
       <Pressable
         onPress={onRetry}
-        className="bg-secondary-200 dark:bg-surface px-5 min-h-[44px] py-2.5 rounded-lg active:bg-secondary-300 dark:active:bg-secondary-600 items-center justify-center"
+        className="bg-secondary-200 dark:bg-surface-elevated px-5 min-h-[44px] py-2.5 rounded-lg active:bg-secondary-300 dark:active:bg-secondary-600 items-center justify-center"
         accessibilityRole="button"
         accessibilityLabel="새로고침"
       >

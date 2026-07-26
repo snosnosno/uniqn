@@ -7,7 +7,7 @@
 
 import { SALARY_TYPE_LABELS } from '@/constants';
 import { STAFF_ROLE_LABELS, type StaffRole } from '@/types/role';
-import type { FilterableSalaryType } from '@/types/jobPosting';
+import type { FilterableSalaryType, SalarySortDirection } from '@/types/jobPosting';
 
 /** 역할 pill 라벨 — 없음: '역할' / 1개: '딜러' / n개: '딜러 외 1' */
 export function formatRoleFiltersLabel(roles: StaffRole[]): string {
@@ -23,10 +23,26 @@ export function formatManWon(amount: number): string {
   return `${man}만`;
 }
 
-/** 급여 pill 라벨 — 없음: '급여' / 있음: '시급 1.3만+' */
+/** 급여 정렬 라벨 */
+export const SALARY_SORT_LABELS: Record<SalarySortDirection, string> = {
+  high: '높은순',
+  low: '낮은순',
+};
+
+/**
+ * 급여 pill 라벨 — 없음: '급여' / 금액만: '시급 1.5만+' / 정렬만: '시급 높은순' /
+ * 둘 다: '시급 1.5만+ 높은순'
+ */
 export function formatSalaryFilterLabel(
-  filter: { type: FilterableSalaryType; min: number } | null
+  filter: {
+    type: FilterableSalaryType;
+    min: number | null;
+    sort: SalarySortDirection | null;
+  } | null
 ): string {
-  if (!filter) return '급여';
-  return `${SALARY_TYPE_LABELS[filter.type]} ${formatManWon(filter.min)}+`;
+  if (!filter || (filter.min === null && filter.sort === null)) return '급여';
+  const parts: string[] = [SALARY_TYPE_LABELS[filter.type]];
+  if (filter.min !== null) parts.push(`${formatManWon(filter.min)}+`);
+  if (filter.sort !== null) parts.push(SALARY_SORT_LABELS[filter.sort]);
+  return parts.join(' ');
 }

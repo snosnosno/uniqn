@@ -5,6 +5,7 @@ import { setStatusBarStyle } from 'expo-status-bar';
 import { LogBox, Platform, View } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { colorScheme as nativeWindColorScheme, vars } from 'nativewind';
 import { useFonts } from 'expo-font';
@@ -24,6 +25,7 @@ import {
   ScreenErrorBoundary,
   ToastManager,
 } from '@/components/ui';
+import { env } from '@/config/env';
 import { getLayoutColor, getCssVarTokens } from '@/constants/colors';
 import { SheetProvider } from '@/components/app/SheetProvider';
 import { useAppInitialize } from '@/hooks/useAppInitialize';
@@ -129,7 +131,16 @@ try {
   initializeRootSentry({
     dsn: SENTRY_DSN,
     enabled: SENTRY_ENABLED,
-    environment: process.env.EXPO_PUBLIC_RELEASE_CHANNEL || 'development',
+    // `EXPO_PUBLIC_RELEASE_CHANNEL` 직독은 값이 비는 경로에서 조용히 'development' 로
+    // 떨어진다. EAS Build 는 eas.json build 프로필이 이 변수를 주입하므로 빌드 산출물은
+    // 정상이지만, **OTA 는 아니다** — `eas update` 는 eas.json env 를 읽지 않고 shell env
+    // 만 평가한다(레포 기록: pitfall_eas_update_shell_env_not_loaded). 변수를 export 하지
+    // 않고 발행한 OTA 번들은 프로덕션 사용자 네이티브 에러를 development 로 태깅한다.
+    // `env.environment` 는 같은 변수에 더해 `NODE_ENV`(export 시 production)까지 보므로
+    // 그 경로에서도 올바른 값이 나오고, 앱 나머지가 쓰는 환경 판정과도 일치한다.
+    // (웹은 rootSentry.web.ts 가 no-op 스텁이고 sentryService.web 이 logger 폴백이라
+    //  Sentry 로 이벤트가 나가지 않는다 — 이 값은 네이티브 경로에서만 의미가 있다.)
+    environment: env.environment,
   });
 } catch (error) {
   if (__DEV__) {
@@ -267,13 +278,21 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-        <QueryClientProvider client={queryClient}>
-          <SheetProvider>
-            <AppContent />
-          </SheetProvider>
-        </QueryClientProvider>
-      </SafeAreaProvider>
+      {/* 세 플래그 명시(true)는 필수 — 생략 시 Android 네이티브가 rootView content의
+          layoutParams 마진을 직접 덮어써 SafeAreaProvider와 인셋 소유권이 충돌한다.
+          라이브러리는 `IS_EDGE_TO_EDGE || prop` 으로 평가하는데, edge-to-edge 감지는
+          런타임 TurboModule 조회(RNEdgeToEdge / DeviceInfo.isEdgeToEdge)에 의존해
+          정적으로 보장되지 않는다. 명시하면 감지 결과와 무관하게 확정된다.
+          → 상/하 마진 0, 좌/우만 navigationBars 인셋(가로모드) = 인셋 소유권은 SafeAreaProvider 유지 */}
+      <KeyboardProvider statusBarTranslucent navigationBarTranslucent preserveEdgeToEdge>
+        <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+          <QueryClientProvider client={queryClient}>
+            <SheetProvider>
+              <AppContent />
+            </SheetProvider>
+          </QueryClientProvider>
+        </SafeAreaProvider>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }

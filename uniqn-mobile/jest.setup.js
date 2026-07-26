@@ -109,6 +109,13 @@ jest.mock('expo-router', () => ({
 jest.mock('react-native-worklets', () => require('react-native-worklets/lib/module/mock'));
 require('react-native-reanimated').setUpTests();
 
+// react-native-keyboard-controller: 네이티브 TurboModule 의존이라 jest 환경에서 직접 로드 불가.
+// 라이브러리가 공식 제공하는 목(View/ScrollView로 대체 렌더)을 사용한다.
+// 개별 파일에서 자체 jest.mock 을 두면 그 파일 목이 우선한다.
+jest.mock('react-native-keyboard-controller', () =>
+  require('react-native-keyboard-controller/jest')
+);
+
 // react-native-safe-area-context: useSafeAreaInsets 훅은 SafeAreaProvider 없으면 throw
 // ('No safe area value available'). 컴포넌트(SafeAreaProvider/SafeAreaView/initialWindowMetrics)는
 // 실제 구현을 유지(requireActual)하고 훅만 0 인셋으로 오버라이드 — provider 미래핑 렌더 전역 안전화.

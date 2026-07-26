@@ -8,9 +8,9 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { View, Platform } from 'react-native';
+import { View } from 'react-native';
 import Animated, { FadeInRight } from 'react-native-reanimated';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { StepIndicator, type StepInfo } from '@/components/auth/StepIndicator';
 import {
   clearSignupDraft,
@@ -438,10 +438,7 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
       contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
-      enableOnAndroid
-      enableAutomaticScroll
-      extraScrollHeight={Platform.OS === 'ios' ? 20 : 100}
-      keyboardOpeningTime={0}
+      bottomOffset={20}
     >
       <View className="flex-1 p-4">
         {/* 스텝 인디케이터 */}

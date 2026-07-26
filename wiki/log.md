@@ -120,6 +120,12 @@ index 갱신(sources 6행+decisions 2행+wallet-pgtap 재작성). 작성=opus �
 - memory 졸업: project_headcount_daily_display_20260723 → MEMORY.md 포인터 압축(잔여=실기기 QA·배포)
 
 ## [2026-07-24] ingest | ops 콘솔 리디자인 + 블라인드 프리셋 (PR#313)
+
+## [2026-07-25] note | 내정보 화면 정리 + 동의정보 정합성 (PR#321 머지 `14def4e40`) — 🎓 ingest 후보
+- **결함**: 가입 EF `verify-and-save-portone-profile`이 `user_consents`의 **존재하지 않는 컬럼**(terms_of_service/privacy_policy/marketing)에 upsert하고 반환 에러를 확인하지 않아, 가입 때마다 조용히 전건 실패(prod 0행 실측). `users.terms/privacy/marketing_agreed`도 미기록 → 내정보 '동의 정보' 전원 미동의 표시.
+- **수정**: EF가 `users.*_agreed` 저장 + `user_consents` 행 단위(consent_type) 원장 upsert(onConflict `user_id,consent_type`, 실패 시 CRITICAL 로그). 마이그 `20260725014644`: uq 인덱스 + 기존 사용자 terms/privacy 백필(third_party_agreed 근거, 4→20). UI 정리(닉네임 수정·내보내기 버튼 제거+데드코드 체인).
+- **🎓 졸업 후보 교훈**(Supabase 쓰기 함정 계열, wiki `decisions/supabase-write-pitfalls` 편입 검토): ①Supabase upsert는 존재하지 않는 컬럼/스키마 불일치를 반환 에러로 주는데 미확인 시 침묵 실패 — **EF의 모든 DB 쓰기는 error 확인+가시 로깅 필수**. ②표시 소스와 원장(user_consents) 이중 기록의 drift — 설정 토글이 원장 미경유(후속 MEDIUM). ③`user_consents`는 self UPDATE RLS 정책 부재로 클라 직접 upsert의 on-conflict UPDATE가 막힘 → 원장 경유는 SECDEF RPC 필요.
+- **잔여**: 실기기 QA(동의 표시·신규가입 원장 3행)·마케팅 토글 원장 후속.
 - 신규: `sources/ops-console-redesign`(출하 기록+교훈 5종: RNW pointerEvents 드롭·Pressable 중첩 재발·RNModal+gorhom z-순서·워크트리 expo EMFILE·parity 가드 누락 파급)
 - 갱신: `decisions/nativewind-rn-pitfalls`(함정 3종 추가 — pointerEvents는 prop 필수·행/액션 형제 분리·시트 visible 게이트) · `decisions/prod-parity-baseline`(#311 갱신 누락 실패 사례 — red는 머지 후 master에서 터짐) · `architecture/ops-engine`(콘솔 리디자인+프리셋 절, 잔여=서버 levels 상한) · index 3줄
 - memory 졸업 예정: project_ops_console_redesign_20260723 → MEMORY.md 포인터 압축(잔여=실기기 QA 7항목·서버 levels 상한)
@@ -148,3 +154,17 @@ index 갱신(sources 6행+decisions 2행+wallet-pgtap 재작성). 작성=opus �
 핵심 실측 2건:
 - **E2E가 required check가 아니어서 결정적 회귀가 3개 PR을 타고 전파**됐다. #328이 마케팅·푸시 토글을 `settings/index.tsx`→`settings/notifications.tsx`로 분리하며 E2E spec을 안 옮겼고, `settings.spec.ts:73`이 retry 포함 60초 타임아웃으로 죽은 채 #327·#328·#330이 전부 머지됐다(#331에서 해소). `gh api .../branches/master/protection` 실측 결과 **master에는 branch protection이 아예 없다** — E2E뿐 아니라 ci.yml의 quality-gate·test조차 required가 아니다.
 - **주간 파리티 감시가 07-11 설계 이래 처음으로 실제 가동**됐다. `PROD_DB_URL` 미설정으로 매주 skip을 성공 처리하고 있었고(마지막 07-20 실행 로그가 skip notice), 시크릿 등록 후 첫 실측이 `repo 기대값 180/111/0 == prod 180/111/0`으로 일치. 드리프트는 없었으나 감시 자체가 꺼져 있던 기간에 prod로 마이그레이션 12건이 직접 들어갔다는 점이 위험 신호다.
+
+## [2026-07-26] note | 도구 스택 변경 — graphify 지식그래프 MCP + obsidian-markdown 스킬 (PR#340)
+
+`[2026-04-17] Firebase MCP 제거` 이후 첫 도구 스택 변경. 상세 근거는 memory `project_oss_adoption_20260714`.
+
+- **추가**: `graphify` MCP(stdio, 코드·SQL 구조 전용 지식그래프, 툴 10종) · `obsidian-markdown` 스킬(kepano/obsidian-skills, MIT) · `scripts/graph-db-deps.mjs`(DB 의존성·트리거 중복 조회) · `uniqn-mobile/.graphifyignore`
+- **탈락**: `Buoy`(RN 인앱 devtools — MCP·프로덕션 빌드가 Pro 유료) · `context-mode`(ELv2 라이선스 + `UserPromptSubmit`/`PostToolUse`/`Stop` 훅을 fablize 게이트와 정면 공유)
+- **금지**: `graphify install` / `claude install` — CLAUDE.md를 고치고 PreToolUse 훅을 심어 fablize 게이트와 충돌한다. CLI + MCP 서버만 쓴다.
+
+재사용 교훈 3:
+
+- **그래프의 SQL 트리거 추출은 신뢰할 수 없다.** graphify가 baseline `CREATE TRIGGER` 69개 중 37개만 잡아(46% 누락) "중복 0건"이 거짓 안전 신호가 됐다. `graph-db-deps.mjs triggers`는 그래프를 버리고 `.sql`을 직접 스캔한다. **red-green 통과는 커버리지를 증명하지 못한다** — 초판도 red-green은 통과했으나 절반을 못 보고 있었다.
+- **트리거 중복 판정 기준은 `테이블+타이밍+이벤트`**여야 한다. 함수 기준으로 묶으면 실제 버그(#328이 해소한 알림 3쌍 — 서로 *다른* 함수가 같은 이벤트에 이중 등록)를 구조적으로 못 잡는다.
+- **`.claude/rules/*.md`의 `paths:`는 레포 루트 기준으로 매칭된다.** 앱 코드가 `uniqn-mobile/` 하위인데 `src/components/**/*.tsx`처럼 접두사 없이 쓴 규칙은 **한 번도 첨부된 적이 없다**(`nativewind-patterns` 전체 + `supabase-patterns` 5경로). 같은 파일에 대해 접두사 있는 `impeccable-design`만 첨부되는 것으로 확인. 규칙 신설 시 실제 첨부 여부를 파일 하나 열어 검증할 것.

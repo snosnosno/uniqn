@@ -22,6 +22,7 @@ import {
   serializeJobPostingV3,
 } from '@/domains/job-posting';
 import { removeUndefined } from '@/utils/removeUndefined';
+import { getTodayString } from '@/utils/date';
 import { generateUUID } from '@/utils/generateId';
 import { STATUS } from '@/constants';
 import type { VenueContainer } from '@/domains/weeklyGrid';
@@ -35,6 +36,7 @@ import type {
   UpdateJobPostingInput,
   TournamentApprovalStatus,
   PostingRoleCatalogEntry,
+  SalarySortDirection,
 } from '@/types';
 import type {
   IJobPostingRepository,
@@ -125,18 +127,76 @@ const SALARY_MAX_COLUMNS = {
 } as const;
 
 /**
- * 급여 조건 공용 적용 — 타입별 salary_*_max ≥ salaryMin(gte). 두 값이 모두 있어야
- * 적용된다. 협의(other) 공고는 컬럼이 NULL 이라 자연 제외(설계 §4).
+ * 급여 조건 공용 적용 — salaryType 이 있고 salaryMin·salarySort 중 하나 이상이 있어야 적용.
+ * - salaryMin: 타입별 salary_*_max ≥ salaryMin(gte). 협의(other) 공고는 컬럼이 NULL 이라
+ *   자연 제외(설계 §4).
+ * - salarySort: 금액 조건 없이 정렬만 걸어도 NULL 은 순서가 무의미하므로 명시 제외한다.
+ *   더해서 **근무일이 모두 지난 공고를 제외**한다 — 정렬은 순위를 만드는데, 기본
+ *   정렬(work_date)에서 sortJobPostings 가 뒤로 밀어두던 종료 공고가 급여만 높다는
+ *   이유로 최상단을 차지하면 안 된다. last_work_date 가 NULL 인 건(상시 공고·날짜
+ *   미지정)은 종료 개념이 없으므로 남긴다.
+ *
+ * getList 와 getTypeCounts 가 같은 모수를 보도록 두 경로 모두 이 헬퍼를 쓴다 —
+ * 목록에서 빠진 공고가 칩 카운트에는 남는 불일치를 구조적으로 차단한다.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function applySalaryScope<T extends { gte: any }>(
-  query: T,
-  filters?: Pick<JobPostingFilters, 'salaryType' | 'salaryMin'>
-): T {
-  if (filters?.salaryType && typeof filters.salaryMin === 'number' && filters.salaryMin > 0) {
-    return query.gte(SALARY_MAX_COLUMNS[filters.salaryType], filters.salaryMin) as T;
+function applySalaryScope<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  T extends { gte: any; not: any; or: any },
+>(query: T, filters?: Pick<JobPostingFilters, 'salaryType' | 'salaryMin' | 'salarySort'>): T {
+  if (!filters?.salaryType) return query;
+  const column = SALARY_MAX_COLUMNS[filters.salaryType];
+  let scoped = query;
+  if (typeof filters.salaryMin === 'number' && filters.salaryMin > 0) {
+    scoped = scoped.gte(column, filters.salaryMin) as T;
+  } else if (filters.salarySort) {
+    scoped = scoped.not(column, 'is', null) as T;
   }
-  return query;
+  if (filters.salarySort) {
+    scoped = scoped.or(`last_work_date.is.null,last_work_date.gte.${getTodayString()}`) as T;
+  }
+  return scoped;
+}
+
+/**
+ * 급여 정렬 목록 페이지 — offset(range) 기반 페이지네이션.
+ *
+ * @description salary_*_max 는 유일하지도, NOT NULL 도 아니라 keyset 커서(lt/gt)를 쓰면
+ *   동점 행이 통째로 유실된다. 정렬이 걸린 경우에만 offset 으로 전환하고 id 를 2차 정렬키로
+ *   붙여 동점 구간의 순서를 안정화한다. cursor 는 이전 페이지까지 소비한 행 수(offset).
+ * @param applyFilters getList 가 만든 브라우즈 필터 체인(급여 NULL 제외 포함)
+ */
+async function salarySortedPage(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  applyFilters: (query: any) => any,
+  column: string,
+  sort: SalarySortDirection,
+  pageSize: number,
+  cursor?: PaginationCursor
+): Promise<PaginatedJobPostings> {
+  const offset =
+    typeof cursor === 'number' && Number.isFinite(cursor) && cursor > 0 ? Math.floor(cursor) : 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query: any = supabase.from(TABLE).select('*');
+  query = applyFilters(query);
+  query = query
+    .order(column, { ascending: sort === 'low' })
+    .order('id', { ascending: true })
+    // hasMore 판별용으로 pageSize + 1 행을 가져온다(range 는 양끝 포함).
+    .range(offset, offset + pageSize);
+
+  const { data, error } = await query;
+  if (error) {
+    handleSupabaseError(error, { operation: '공고 목록 조회(급여 정렬)', table: TABLE });
+  }
+  const rows = (data ?? []) as Record<string, unknown>[];
+  const hasMore = rows.length > pageSize;
+  const pageRows = hasMore ? rows.slice(0, pageSize) : rows;
+  return {
+    // 다음 offset 은 파싱 결과(Zod 증발 가능)가 아니라 실제 소비한 raw 행 수로 센다.
+    lastDoc: hasMore ? offset + pageRows.length : null,
+    hasMore,
+    items: rowsToJobPostings(pageRows),
+  };
 }
 
 // ── Repository ───────────────────────────────────────────────────────────────
@@ -199,50 +259,69 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
   ): Promise<PaginatedJobPostings> {
     try {
       logger.info('공고 목록 조회', { filters, pageSize });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const applyBrowseFilters = (q: any) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let qr: any = q;
+        // 명시적 status 가 없으면 구직자 브라우즈 기본값: active + capacity_full.
+        // capacity_full(정원 마감)은 spec §4/§6 + 공개 RLS(M4)상 "정원 마감" 라벨로
+        // 사용자에게 노출되어야 한다. active 만 필터하면 정원이 찬 공고가 목록에서
+        // 사라진다(pitfall_enum_divergence_read_disappearance).
+        if (filters?.status) {
+          qr = qr.eq('status', filters.status);
+        } else {
+          qr = qr.in('status', [...BROWSABLE_POSTING_STATUSES]);
+        }
+        // fail-closed(R2): 운영처 컨테이너(status='container')는 브라우즈/공개/운영자 목록에서
+        // 항상 제외한다(명시 status·기본값 무관). 컨테이너는 JobPosting 으로 표현되지 않으며
+        // 전용 venue read 경로(getVenueContainers/getVenueContainerById)로만 조회한다.
+        qr = qr.neq('status', STATUS.JOB_POSTING.CONTAINER);
+        qr = applyRoleScope(qr, filters);
+        if (filters?.district) qr = qr.eq('location->>district', filters.district);
+        qr = applyRegionScope(qr, filters);
+        qr = applySalaryScope(qr, filters);
+        if (filters?.ownerId) qr = qr.eq('owner_id', filters.ownerId);
+        if (filters?.dateRange) {
+          qr = qr.gte('work_date', filters.dateRange.start).lte('work_date', filters.dateRange.end);
+        }
+        if (filters?.isUrgent === true) qr = qr.eq('posting_type', 'urgent');
+        if (filters?.postingType === 'tournament') {
+          qr = qr
+            .eq('posting_type', 'tournament')
+            .eq('tournament_config->>approvalStatus', STATUS.TOURNAMENT.APPROVED);
+        } else if (filters?.postingType) {
+          qr = qr.eq('posting_type', filters.postingType);
+        }
+        if (filters?.workDate && !filters?.dateRange) {
+          qr = qr.contains('work_dates', [filters.workDate]);
+        }
+        return qr;
+      };
+
+      // 급여 정렬은 커서(keyset) 페이지네이션을 쓸 수 없다 — salary_*_max 는 유일하지 않아
+      // lt/gt 커서가 동점 행을 통째로 건너뛴다. 정렬 시에만 offset(range) 방식으로 전환하고
+      // id 를 2차 정렬키로 붙여 페이지 경계에서 순서가 흔들리지 않게 고정한다.
+      if (filters?.salaryType && filters?.salarySort) {
+        const result = await salarySortedPage(
+          applyBrowseFilters,
+          SALARY_MAX_COLUMNS[filters.salaryType],
+          filters.salarySort,
+          pageSize,
+          lastDocument
+        );
+        logger.info('공고 목록 조회 완료(급여 정렬)', {
+          count: result.items.length,
+          hasMore: result.hasMore,
+        });
+        return result;
+      }
+
       const result = await paginatedQuery<Record<string, unknown>>(TABLE, {
         orderBy: 'work_date',
         ascending: false,
         pageSize,
         cursor: lastDocument,
-        filters: (q) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          let qr: any = q;
-          // 명시적 status 가 없으면 구직자 브라우즈 기본값: active + capacity_full.
-          // capacity_full(정원 마감)은 spec §4/§6 + 공개 RLS(M4)상 "정원 마감" 라벨로
-          // 사용자에게 노출되어야 한다. active 만 필터하면 정원이 찬 공고가 목록에서
-          // 사라진다(pitfall_enum_divergence_read_disappearance).
-          if (filters?.status) {
-            qr = qr.eq('status', filters.status);
-          } else {
-            qr = qr.in('status', [...BROWSABLE_POSTING_STATUSES]);
-          }
-          // fail-closed(R2): 운영처 컨테이너(status='container')는 브라우즈/공개/운영자 목록에서
-          // 항상 제외한다(명시 status·기본값 무관). 컨테이너는 JobPosting 으로 표현되지 않으며
-          // 전용 venue read 경로(getVenueContainers/getVenueContainerById)로만 조회한다.
-          qr = qr.neq('status', STATUS.JOB_POSTING.CONTAINER);
-          qr = applyRoleScope(qr, filters);
-          if (filters?.district) qr = qr.eq('location->>district', filters.district);
-          qr = applyRegionScope(qr, filters);
-          qr = applySalaryScope(qr, filters);
-          if (filters?.ownerId) qr = qr.eq('owner_id', filters.ownerId);
-          if (filters?.dateRange) {
-            qr = qr
-              .gte('work_date', filters.dateRange.start)
-              .lte('work_date', filters.dateRange.end);
-          }
-          if (filters?.isUrgent === true) qr = qr.eq('posting_type', 'urgent');
-          if (filters?.postingType === 'tournament') {
-            qr = qr
-              .eq('posting_type', 'tournament')
-              .eq('tournament_config->>approvalStatus', STATUS.TOURNAMENT.APPROVED);
-          } else if (filters?.postingType) {
-            qr = qr.eq('posting_type', filters.postingType);
-          }
-          if (filters?.workDate && !filters?.dateRange) {
-            qr = qr.contains('work_dates', [filters.workDate]);
-          }
-          return qr;
-        },
+        filters: applyBrowseFilters,
       });
       const items = rowsToJobPostings(result.items);
       logger.info('공고 목록 조회 완료', { count: items.length, hasMore: result.hasMore });
@@ -303,7 +382,14 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
   async getTypeCounts(
     filters?: Pick<
       JobPostingFilters,
-      'status' | 'region' | 'regions' | 'regionPrefixes' | 'roles' | 'salaryType' | 'salaryMin'
+      | 'status'
+      | 'region'
+      | 'regions'
+      | 'regionPrefixes'
+      | 'roles'
+      | 'salaryType'
+      | 'salaryMin'
+      | 'salarySort'
     >
   ): Promise<PostingTypeCounts> {
     try {

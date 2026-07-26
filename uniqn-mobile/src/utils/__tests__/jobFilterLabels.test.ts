@@ -23,10 +23,20 @@ describe('formatManWon', () => {
 });
 
 describe('formatSalaryFilterLabel', () => {
-  it("없음: '급여' / 있음: '시급 1.3만+'", () => {
+  it("없음: '급여' / 금액만: '시급 1.5만+'", () => {
     expect(formatSalaryFilterLabel(null)).toBe('급여');
-    expect(formatSalaryFilterLabel({ type: 'hourly', min: 13000 })).toBe('시급 1.3만+');
-    expect(formatSalaryFilterLabel({ type: 'daily', min: 150000 })).toBe('일급 15만+');
-    expect(formatSalaryFilterLabel({ type: 'monthly', min: 3000000 })).toBe('월급 300만+');
+    expect(formatSalaryFilterLabel({ type: 'hourly', min: 15000, sort: null })).toBe('시급 1.5만+');
+    expect(formatSalaryFilterLabel({ type: 'daily', min: 200000, sort: null })).toBe('일급 20만+');
+  });
+
+  it("정렬만: '월급 높은순' / 둘 다: '일급 30만+ 낮은순'", () => {
+    expect(formatSalaryFilterLabel({ type: 'monthly', min: null, sort: 'high' })).toBe(
+      '월급 높은순'
+    );
+    expect(formatSalaryFilterLabel({ type: 'daily', min: 300000, sort: 'low' })).toBe(
+      '일급 30만+ 낮은순'
+    );
+    // 금액·정렬이 모두 없으면 미선택과 동치
+    expect(formatSalaryFilterLabel({ type: 'hourly', min: null, sort: null })).toBe('급여');
   });
 });

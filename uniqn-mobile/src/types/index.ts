@@ -52,6 +52,7 @@ export type {
   JobPostingStatus,
   SalaryType,
   FilterableSalaryType,
+  SalarySortDirection,
   SalaryInfo,
   Allowances,
   TaxSettings,
