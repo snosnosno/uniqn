@@ -24,8 +24,8 @@ import {
 } from '@/utils/settlement';
 import { calculateSettlementWithTax, DEFAULT_TAX_SETTINGS } from '@/domains/settlement';
 import {
-  formatTime,
   formatDate,
+  formatWorkTimeRange,
   formatSalaryDisplay,
   getRoleSalaryFromProjection,
   statusConfig,
@@ -128,10 +128,8 @@ export const ScheduleCard = memo(function ScheduleCard({
 
   const timeDisplayInfo = useMemo(() => WorkTimeDisplay.getDisplayInfo(schedule), [schedule]);
 
-  const confirmedTimeDisplay = useMemo(() => {
-    if (schedule.type !== STATUS.SCHEDULE.CONFIRMED) return null;
-    return `${timeDisplayInfo.effectiveStart} - ${timeDisplayInfo.effectiveEnd}`;
-  }, [schedule.type, timeDisplayInfo]);
+  // 표기는 helpers 한 곳에서만 만든다 — 카드마다 다른 문장이 나오지 않게.
+  const timeRangeDisplay = useMemo(() => formatWorkTimeRange(timeDisplayInfo), [timeDisplayInfo]);
 
   const isCancelled = schedule.type === STATUS.SCHEDULE.CANCELLED;
   // 스크린리더로 카드 하나를 들었을 때 완결 문장이 되도록 금액·취소요청 여부까지 넣는다.
@@ -235,7 +233,7 @@ export const ScheduleCard = memo(function ScheduleCard({
                 <View className="mx-2 h-3 w-px bg-secondary-300 dark:bg-surface-elevated" />
                 <ClockIcon size={14} color={SECONDARY_PALETTE[500]} />
                 <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
-                  {formatTime(schedule.startTime)}
+                  {timeRangeDisplay}
                 </Text>
               </View>
 
@@ -278,7 +276,7 @@ export const ScheduleCard = memo(function ScheduleCard({
                 <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
                   {schedule.type === STATUS.SCHEDULE.COMPLETED
                     ? timeDisplayInfo.duration
-                    : confirmedTimeDisplay}
+                    : timeRangeDisplay}
                 </Text>
               </View>
 

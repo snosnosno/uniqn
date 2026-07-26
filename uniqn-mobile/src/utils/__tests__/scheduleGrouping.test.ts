@@ -805,3 +805,23 @@ describe('isUnpaidCompleted / filterSchedulesByStatus("unpaid")', () => {
     expect(countUnpaidSchedules(items)).toBe(1);
   });
 });
+
+describe('그룹 id 충돌 방어', () => {
+  // 회귀 방어: id 가 `grouped_${applicationId}` 뿐이라, 한 지원이 '일부 완료 + 일부 예정'으로
+  // 갈리면 서로 다른 그룹 2장이 같은 React key 를 가져 카드가 뒤섞였다.
+  it('같은 지원이 상태별로 갈려도 그룹 id가 서로 다르다', () => {
+    const base = { applicationId: 'app-1', jobPostingId: 'post-1', timeSlot: '18:00~23:00' };
+    const events = [
+      createScheduleEvent({ ...base, id: 'a', date: '2026-07-01', type: 'completed' }),
+      createScheduleEvent({ ...base, id: 'b', date: '2026-07-02', type: 'completed' }),
+      createScheduleEvent({ ...base, id: 'c', date: '2026-07-20', type: 'confirmed' }),
+      createScheduleEvent({ ...base, id: 'd', date: '2026-07-21', type: 'confirmed' }),
+    ];
+
+    const grouped = groupScheduleEvents(events, { enabled: true, minGroupSize: 2 });
+    const ids = grouped.map((item) => item.id);
+
+    expect(ids).toHaveLength(2);
+    expect(new Set(ids).size).toBe(2);
+  });
+});

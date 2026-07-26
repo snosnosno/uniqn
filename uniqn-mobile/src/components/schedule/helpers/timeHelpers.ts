@@ -87,3 +87,41 @@ export function describeNextShiftCountdown(
 
   return { label: dayGap === 0 ? '오늘 근무' : '지난 근무', urgency: 'today' };
 }
+
+// ============================================================================
+// 근무 시간 범위 표기 — 카드·상세가 같은 문장을 쓰게 하는 단일 출처
+// ============================================================================
+
+/**
+ * 근무 시간 범위를 사람이 읽는 한 문장으로.
+ *
+ * 예전엔 호출부마다 표기가 달랐다 — 지원 카드는 시작 시각만 보여주고, 파싱 실패 시
+ * `formatTime` 의 '--:--' 가 그대로 노출됐으며, 자정을 넘는 근무의 '익일' 표기는
+ * 그룹 카드에만 있고 단일 카드·상세 탭에는 없었다.
+ *
+ * @param info WorkTimeDisplay.getDisplayInfo 결과
+ * @param useEffective 실제 출퇴근 시각을 우선할지(true) 예정 시각을 볼지(false)
+ */
+export function formatWorkTimeRange(
+  info: {
+    effectiveStart: string;
+    effectiveEnd: string;
+    scheduledStart: string;
+    scheduledEnd: string;
+    isEndNextDay: boolean;
+  },
+  useEffective = true
+): string {
+  const start = useEffective ? info.effectiveStart : info.scheduledStart;
+  const end = useEffective ? info.effectiveEnd : info.scheduledEnd;
+
+  // '미정'/'--:--' 을 그대로 노출하지 않는다 — 시간이 안 정해진 공고라는 뜻이지
+  // 데이터가 깨진 게 아니다.
+  const isUnset = (value: string) => !value || value === '미정' || value === '--:--';
+
+  if (isUnset(start) && isUnset(end)) return '시간 협의';
+  if (isUnset(end)) return `${start} 시작`;
+  if (isUnset(start)) return `${end} 종료`;
+
+  return info.isEndNextDay ? `${start} – 익일 ${end}` : `${start} – ${end}`;
+}

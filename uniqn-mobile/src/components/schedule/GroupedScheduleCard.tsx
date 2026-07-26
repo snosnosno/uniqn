@@ -3,8 +3,8 @@
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import React, { memo, useState, useCallback, useMemo } from 'react';
-import { View, Text, Pressable, LayoutAnimation } from 'react-native';
+import React, { memo, useState, useEffect, useCallback, useMemo } from 'react';
+import { View, Text, Pressable, LayoutAnimation, AccessibilityInfo } from 'react-native';
 import { CardStripe, Badge } from '@/components/ui';
 import {
   CalendarIcon,
@@ -89,10 +89,28 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
     return { label: '출근 전', status: STATUS.ATTENDANCE.NOT_STARTED };
   }, [group.type, group.dateStatuses]);
 
-  const toggleExpanded = useCallback(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setIsExpanded((prev) => !prev);
+  // Reduce Motion 대응. 공용 `useReduceMotion` 훅은 애니메이션 토큰 브랜치에 있어
+  // 여기서는 중복 훅을 만들지 않고 직접 읽는다(머지 후 공용 훅으로 교체).
+  const [reduceMotion, setReduceMotion] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (!cancelled) setReduceMotion(enabled);
+    });
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => {
+      cancelled = true;
+      subscription.remove();
+    };
   }, []);
+
+  const toggleExpanded = useCallback(() => {
+    // 모션을 줄이도록 설정한 사용자에게 펼침 애니메이션을 강행하지 않는다.
+    if (!reduceMotion) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    }
+    setIsExpanded((prev) => !prev);
+  }, [reduceMotion]);
 
   const handleDatePress = useCallback(
     (date: string, scheduleEventId: string) => {

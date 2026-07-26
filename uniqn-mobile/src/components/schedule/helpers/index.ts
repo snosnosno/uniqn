@@ -5,7 +5,12 @@
  * @version 1.0.0
  */
 
-export { formatTime, formatDate } from './timeHelpers';
+export {
+  formatTime,
+  formatDate,
+  formatWorkTimeRange,
+  describeNextShiftCountdown,
+} from './timeHelpers';
 
 export {
   getRoleSalaryFromProjection,

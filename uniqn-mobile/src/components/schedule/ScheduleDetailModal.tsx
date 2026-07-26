@@ -26,7 +26,7 @@ import { InfoTab, WorkTab, SettlementTab } from './tabs';
 import type { OwnerReportRequest } from './useOwnerReport';
 import { useModal } from '@/stores/modalStore';
 import { useThemeStore } from '@/stores/themeStore';
-import { formatSingleDate } from '@/utils/scheduleGrouping';
+import { formatSingleDate, formatDateDisplay } from '@/utils/scheduleGrouping';
 import { STATUS } from '@/constants';
 import { SHEET_DISMISS_ANIMATION_MS } from '@/constants/animation';
 import { SCHEDULE_STATUS } from '@/constants/statusConfig';
@@ -57,6 +57,10 @@ export interface ScheduleDetailModalProps {
   onDateChange?: (date: string, schedule: ScheduleEvent) => void;
   /** 스케줄 데이터 리페치 콜백 (탭 간 동기화용) */
   onRefreshSchedule?: () => void;
+  /** 이 근무의 평가가 아직 미작성이면 해당 workLogId. 없으면 CTA 를 띄우지 않는다. */
+  pendingReviewWorkLogId?: string;
+  /** 평가 작성 화면으로 이동 */
+  onWriteReview?: (workLogId: string) => void;
 }
 
 type TabId = 'info' | 'work' | 'settlement';
@@ -91,6 +95,8 @@ export function ScheduleDetailModal({
   groupedSchedule,
   onDateChange,
   onRefreshSchedule,
+  pendingReviewWorkLogId,
+  onWriteReview,
 }: ScheduleDetailModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>('info');
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
@@ -141,7 +147,8 @@ export function ScheduleDetailModal({
   // 모달 열릴 때 첫 번째 탭으로 리셋 + 데이터 리프레시
   useEffect(() => {
     if (visible) {
-      setActiveTab('info');
+      // 탭을 'info' 로 되돌리지 않는다 — QR 출퇴근처럼 시트를 닫았다 다시 여는 왕복에서
+      // 매번 '정보'로 리셋되면 방금 보던 근무 기록을 다시 찾아 들어가야 한다.
       // 모달 열릴 때 데이터 리프레시 요청 (쿨다운 적용)
       triggerRefresh();
     }
@@ -195,16 +202,33 @@ export function ScheduleDetailModal({
     if (!schedule?.applicationId || !onCancelApplication) return;
 
     const applicationId = schedule.applicationId;
+    // 다중일 지원은 한 번의 취소로 여러 날이 함께 사라진다. 며칠치가 없어지는지 밝히지
+    // 않으면 '오늘 하루만 빼는 것'으로 오해한 채 3일 대회를 통째로 날린다.
+    const totalDays = groupedSchedule?.dateRange.totalDays ?? 1;
+    const isMultiDay = totalDays > 1;
+    const rangeLabel = groupedSchedule
+      ? formatDateDisplay(groupedSchedule.dateRange.dates)
+      : formatSingleDate(schedule.date);
+
     closeSheetThen(() => {
       modal.showConfirm(
-        '지원 취소',
-        '정말 지원을 취소하시겠습니까?\n취소 후에는 다시 지원해야 합니다.',
+        isMultiDay ? `${totalDays}일 지원 취소` : '지원 취소',
+        isMultiDay
+          ? `${rangeLabel} 전체가 취소됩니다.\n취소 후에는 다시 지원해야 합니다.`
+          : '정말 지원을 취소하시겠습니까?\n취소 후에는 다시 지원해야 합니다.',
         () => {
           onCancelApplication(applicationId);
         }
       );
     });
-  }, [schedule?.applicationId, onCancelApplication, closeSheetThen, modal]);
+  }, [
+    schedule?.applicationId,
+    schedule?.date,
+    groupedSchedule,
+    onCancelApplication,
+    closeSheetThen,
+    modal,
+  ]);
 
   // 취소 요청 핸들러 (확인 모달)
   const handleRequestCancellation = useCallback(() => {
@@ -458,6 +482,20 @@ export function ScheduleDetailModal({
                 </Button>
               </View>
             )}
+
+          {/* 이 근무 평가하기 — 완료 직후 가장 자연스러운 다음 행동인데, 예전에는
+              배너 → 평가 허브 → 목록에서 재검색으로 우회해야 했다. */}
+          {pendingReviewWorkLogId && onWriteReview && (
+            <View className="flex-1">
+              <Button
+                variant="primary"
+                size="md"
+                onPress={() => onWriteReview(pendingReviewWorkLogId)}
+              >
+                <Text className="font-sans-semibold text-content-onGold">이 근무 평가하기</Text>
+              </Button>
+            </View>
+          )}
 
           {/* 신고 버튼 */}
           {schedule.ownerId && (

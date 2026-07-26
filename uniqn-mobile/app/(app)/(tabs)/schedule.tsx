@@ -342,7 +342,7 @@ export default function ScheduleScreen() {
   const [cancellationApp, setCancellationApp] = useState<Application | null>(null);
 
   // 미작성 평가 수
-  const { pendingCount } = usePendingReviews();
+  const { pendingCount, pendingReviews } = usePendingReviews();
 
   // 지원 취소 훅
   const { cancelApplication, requestCancellation, isRequestingCancellation, isCancelling } =
@@ -455,6 +455,17 @@ export default function ScheduleScreen() {
   );
 
   // 선택일에 일정이 없을 때 안내할 '가장 가까운 일정 날짜'
+  // 캘린더 dot·선택일 카드도 리스트와 같은 상태 필터를 따른다.
+  // 예전엔 리스트 전용이라 뷰를 토글하면 필터가 조용히 무효화되고 UI 단서도 사라졌다.
+  const filteredCalendarSchedules = useMemo(
+    () => filterSchedulesByStatus(schedules, statusFilter),
+    [schedules, statusFilter]
+  );
+  const filteredSelectedDateSchedules = useMemo(
+    () => filterSchedulesByStatus(selectedDateSchedules, statusFilter),
+    [selectedDateSchedules, statusFilter]
+  );
+
   const nearestScheduleDate = useMemo(() => {
     const dates = Array.from(new Set(schedules.map((schedule) => schedule.date)))
       .filter(Boolean)
@@ -779,6 +790,34 @@ export default function ScheduleScreen() {
     }, SHEET_DISMISS_ANIMATION_MS);
   }, []);
 
+  // 완료 근무 → 평가 직행. 예전에는 배너 → 평가 허브 → 목록에서 재검색으로 우회해야 했다.
+  const pendingReviewByWorkLogId = useMemo(
+    () => new Map(pendingReviews.map((item) => [item.workLogId, item])),
+    [pendingReviews]
+  );
+
+  const handleWriteReview = useCallback(
+    (workLogId: string) => {
+      const item = pendingReviewByWorkLogId.get(workLogId);
+      if (!item) return;
+
+      handleCloseDetailSheet();
+      router.push({
+        pathname: '/(app)/reviews/write',
+        params: {
+          workLogId: item.workLogId,
+          revieweeId: item.revieweeId,
+          revieweeName: item.revieweeName,
+          reviewerType: item.reviewerType,
+          jobPostingId: item.jobPostingId,
+          jobPostingTitle: item.jobPostingTitle,
+          workDate: item.workDate,
+        },
+      });
+    },
+    [pendingReviewByWorkLogId, handleCloseDetailSheet]
+  );
+
   // 구인자 신고 모달 — 상위 소유. 시트를 닫은 뒤 형제로 열어 iOS 중첩 Modal 터치 먹통을 피한다.
   const ownerReport = useOwnerReport();
 
@@ -937,6 +976,17 @@ export default function ScheduleScreen() {
         </View>
       )}
 
+      {/* 상태 필터 — 두 뷰 공통. 뷰를 토글해도 필터가 유지된다. */}
+      {!hasBlockingError && groupedByApplication.length > 0 && (
+        <View className="px-4 pt-3">
+          <FilterTabs
+            options={statusFilterOptions}
+            selectedValue={statusFilter}
+            onSelect={setStatusFilter}
+          />
+        </View>
+      )}
+
       {/* 조회 실패 — 콘텐츠 영역만 대체. 헤더·월 네비게이터·PTR 은 살아있다. */}
       {hasBlockingError && (
         <ScrollView
@@ -972,7 +1022,7 @@ export default function ScheduleScreen() {
           contentContainerStyle={{ paddingBottom: bottomPadding }}
           // impeccable §24 — 선택 날짜 헤더를 sticky로: 스크롤해도 현재 컨텍스트 유지.
           // 선택 날짜 스케줄이 있을 때만 sticky 활성 (index 1 = 헤더).
-          stickyHeaderIndices={selectedDateSchedules.length > 0 ? [1] : undefined}
+          stickyHeaderIndices={filteredSelectedDateSchedules.length > 0 ? [1] : undefined}
           refreshControl={
             <RefreshControl refreshing={isRefreshing} onRefresh={refresh} {...PTR_REFRESH_PROPS} />
           }
@@ -981,7 +1031,7 @@ export default function ScheduleScreen() {
           <View>
             <Suspense fallback={<Skeleton width="100%" height={320} />}>
               <CalendarView
-                schedules={schedules}
+                schedules={filteredCalendarSchedules}
                 selectedDate={selectedDate}
                 currentMonth={currentMonth}
                 onDateSelect={handleDateSelect}
@@ -990,16 +1040,18 @@ export default function ScheduleScreen() {
             </Suspense>
           </View>
 
-          {selectedDateSchedules.length > 0 ? (
+          {filteredSelectedDateSchedules.length > 0 ? (
             <>
               {/* 1: sticky 헤더 — 배경 solid로 아래 콘텐츠 가림 */}
               <View className="bg-surface-page dark:bg-surface px-4 pt-3 pb-2 border-b border-divider">
                 <Text className="text-sm font-sans-medium text-content-secondary">
-                  {formatSingleDate(selectedDate)} 스케줄 ({selectedDateSchedules.length}건)
+                  {formatSingleDate(selectedDate)} 스케줄 ({filteredSelectedDateSchedules.length}건)
                 </Text>
               </View>
               {/* 2: 카드 리스트 */}
-              <View className="px-4 pt-3">{selectedDateSchedules.map(renderScheduleItem)}</View>
+              <View className="px-4 pt-3">
+                {filteredSelectedDateSchedules.map(renderScheduleItem)}
+              </View>
             </>
           ) : !isLoading && groupedByApplication.length === 0 ? (
             // 캘린더 뷰 빈 상태 — 리스트 뷰와 동일한 온보딩 EmptyState (월 전체 0건일 때만)
@@ -1041,17 +1093,6 @@ export default function ScheduleScreen() {
             </View>
           ) : null}
         </ScrollView>
-      )}
-
-      {/* 상태 필터 (리스트 뷰 전용, M1) — 지원/확정/완료를 탭 전환 없이 구분 */}
-      {!hasBlockingError && viewMode === 'list' && groupedByApplication.length > 0 && (
-        <View className="px-4 pt-3">
-          <FilterTabs
-            options={statusFilterOptions}
-            selectedValue={statusFilter}
-            onSelect={setStatusFilter}
-          />
-        </View>
       )}
 
       {/* 리스트 뷰 (그룹화 적용) */}
@@ -1136,6 +1177,12 @@ export default function ScheduleScreen() {
         onCancelApplication={handleCancelApplication}
         onRequestCancellation={handleRequestCancellation}
         onReport={ownerReport.open}
+        pendingReviewWorkLogId={
+          selectedSchedule?.workLogId && pendingReviewByWorkLogId.has(selectedSchedule.workLogId)
+            ? selectedSchedule.workLogId
+            : undefined
+        }
+        onWriteReview={handleWriteReview}
         groupedSchedule={selectedGroupedSchedule}
         onDateChange={handleModalDateChange}
         onRefreshSchedule={refresh}

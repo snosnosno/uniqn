@@ -125,6 +125,21 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
           <Text className="text-sm text-warning-700 dark:text-warning-400 font-sans">
             검토 결과가 나오기 전까지 현재 일정 상태가 유지됩니다.
           </Text>
+          {/* 검토 중에는 남는 액션이 '신고' 뿐이라 막다른 길이었다. 급하면 직접 연락할
+              경로를 남긴다 — 확정 상태에서 이미 쓰고 있는 것과 같은 CTA. */}
+          {schedule.ownerPhone && (
+            <Pressable
+              onPress={() => Linking.openURL(`tel:${schedule.ownerPhone}`)}
+              accessibilityRole="button"
+              accessibilityLabel="구인자에게 전화하기"
+              className="mt-3 flex-row items-center justify-center rounded-lg bg-warning-100 py-2 active:bg-warning-200 dark:bg-warning-900/40 dark:active:bg-warning-900/60"
+            >
+              <PhoneIcon size={16} color="#D4A017" />
+              <Text className="ml-1.5 text-sm font-sans-semibold text-warning-700 dark:text-warning-300">
+                구인자에게 전화
+              </Text>
+            </Pressable>
+          )}
         </View>
       )}
       {/* 역할 */}

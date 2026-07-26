@@ -5,7 +5,12 @@
  * @version 1.0.0
  */
 
-import { formatTime, formatDate, describeNextShiftCountdown } from '../timeHelpers';
+import {
+  formatTime,
+  formatDate,
+  describeNextShiftCountdown,
+  formatWorkTimeRange,
+} from '../timeHelpers';
 
 // ============================================================================
 // formatTime Tests
@@ -116,5 +121,48 @@ describe('describeNextShiftCountdown', () => {
       label: '오늘 근무',
       urgency: 'today',
     });
+  });
+});
+
+describe('formatWorkTimeRange', () => {
+  const info = (overrides: Record<string, unknown> = {}) => ({
+    effectiveStart: '18:00',
+    effectiveEnd: '23:00',
+    scheduledStart: '18:00',
+    scheduledEnd: '23:00',
+    isEndNextDay: false,
+    ...overrides,
+  });
+
+  it('시작–종료 범위로 표기한다', () => {
+    expect(formatWorkTimeRange(info())).toBe('18:00 – 23:00');
+  });
+
+  // 자정 넘김 표기는 그룹 카드에만 있고 단일 카드·상세에는 없었다.
+  it('자정을 넘으면 익일을 병기한다', () => {
+    expect(formatWorkTimeRange(info({ effectiveEnd: '02:00', isEndNextDay: true }))).toBe(
+      '18:00 – 익일 02:00'
+    );
+  });
+
+  it('둘 다 미정이면 시간 협의로 표기한다', () => {
+    expect(formatWorkTimeRange(info({ effectiveStart: '미정', effectiveEnd: '미정' }))).toBe(
+      '시간 협의'
+    );
+  });
+
+  // '--:--' 는 formatTime 의 파싱 실패 폴백이다 — 사용자에게 그대로 보이면 고장으로 읽힌다.
+  it("'--:--' 를 사용자에게 노출하지 않는다", () => {
+    expect(formatWorkTimeRange(info({ effectiveEnd: '--:--' }))).toBe('18:00 시작');
+    expect(formatWorkTimeRange(info({ effectiveStart: '--:--' }))).toBe('23:00 종료');
+  });
+
+  it('예정 시각만 보고 싶으면 useEffective=false 로 고른다', () => {
+    expect(
+      formatWorkTimeRange(
+        info({ effectiveStart: '18:07', scheduledStart: '18:00', scheduledEnd: '23:00' }),
+        false
+      )
+    ).toBe('18:00 – 23:00');
   });
 });

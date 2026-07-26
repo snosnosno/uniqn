@@ -75,7 +75,7 @@ function FilterTabsInner<T extends string = string>({
   return (
     <View className={className ?? 'px-4 mb-4'}>
       <View
-        className="flex-row bg-surface-card dark:bg-surface rounded-lg p-1"
+        className="flex-row bg-surface-page dark:bg-surface rounded-lg p-1"
         accessibilityRole="tablist"
       >
         {options.map((option) => {
@@ -88,6 +88,10 @@ function FilterTabsInner<T extends string = string>({
               className="flex-1 items-center justify-center py-2 rounded-md"
               style={{
                 backgroundColor: isSelected ? (isDarkMode ? '#141418' : '#FFFFFF') : 'transparent',
+                // 라이트 모드에서 pill 과 트랙이 둘 다 흰색이면 선택 상태가 보이지 않는다.
+                // 배경만으로 부족한 대비를 테두리로 보완한다.
+                borderWidth: isSelected ? 1 : 0,
+                borderColor: isSelected ? (isDarkMode ? '#222228' : '#E5E5E2') : 'transparent',
               }}
               accessibilityRole="tab"
               accessibilityState={{ selected: isSelected }}

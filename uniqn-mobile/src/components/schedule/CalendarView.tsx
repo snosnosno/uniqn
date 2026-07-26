@@ -59,6 +59,7 @@ interface CalendarViewProps {
 interface DotInfo {
   key: string;
   color: string;
+  selectedDotColor?: string;
 }
 
 const SCHEDULE_DOT_COLORS: Record<ScheduleType, string> = {
@@ -116,15 +117,24 @@ const darkCalendarTheme = {
   arrowColor: SECONDARY_PALETTE[200],
 };
 
+/** 점이 3개를 넘칠 때 무엇을 남길지 — 지금 행동이 필요한 순서 */
+const DOT_PRIORITY: ScheduleType[] = ['confirmed', 'applied', 'completed', 'cancelled'];
+const MAX_DOTS = 3;
+
 function getDotsForSchedules(schedules: ScheduleEvent[]): DotInfo[] {
   const typeSet = new Set<ScheduleType>();
   schedules.forEach((schedule) => typeSet.add(schedule.type));
 
-  return Array.from(typeSet)
-    .slice(0, 3)
+  // 예전엔 Set 순회 순서를 그대로 잘라 4종이 겹치면 아무거나 하나가 조용히 빠졌다.
+  // 지금 행동이 필요한 것(확정 > 지원 중)부터 남긴다.
+  return DOT_PRIORITY.filter((type) => typeSet.has(type))
+    .slice(0, MAX_DOTS)
     .map((type) => ({
       key: type,
       color: SCHEDULE_DOT_COLORS[type],
+      // 선택된 날짜 셀은 배경이 골드라 원래 색 점이 묻혀 사라진다. 라이브러리는
+      // multi-dot 경로에서 테마의 selectedDotColor 를 무시하고 marking 값만 본다.
+      selectedDotColor: '#FFFFFF',
     }));
 }
 

@@ -29,6 +29,7 @@ import {
   getRoleSalaryFromSettlementSource,
 } from '@/domains/settlement';
 import { WorkTimeDisplay } from '@/shared/time';
+import { formatWorkTimeRange } from '../helpers';
 import { formatPhoneNumber } from '@/utils/phone';
 import { openMapSearch } from '@/utils/mapLink';
 import { useToast } from '@/stores/toastStore';
@@ -42,8 +43,8 @@ export interface InfoTabProps {
 }
 
 function getTimeDisplay(schedule: ScheduleEvent): string {
-  const info = WorkTimeDisplay.getDisplayInfo(schedule);
-  return `${info.effectiveStart} - ${info.effectiveEnd}`;
+  // 자정 넘김('익일')과 '미정' 처리를 카드와 같은 규칙으로 맞춘다.
+  return formatWorkTimeRange(WorkTimeDisplay.getDisplayInfo(schedule));
 }
 
 function getActualTimeDisplay(schedule: ScheduleEvent): string | null {

@@ -203,6 +203,19 @@ function createGroupKey(schedule: ScheduleEvent): string | null {
 }
 
 /**
+ * 그룹 React key.
+ *
+ * 예전엔 `grouped_${applicationId}` 만 썼는데, 그룹핑 축에는 type·timeSlot 도 들어간다.
+ * 그래서 한 지원이 '일부 완료 + 일부 예정'으로 갈리면 **서로 다른 그룹 2장이 같은 key** 를
+ * 갖게 되고, React 가 둘을 같은 노드로 취급해 카드가 뒤섞이거나 하나가 사라진다.
+ * 키와 id 를 한 곳에서 파생시켜 축이 어긋나지 않게 한다.
+ */
+function createGroupId(schedule: ScheduleEvent): string {
+  const groupKey = createGroupKey(schedule);
+  return `grouped_${groupKey ?? schedule.id}`;
+}
+
+/**
  * ScheduleEvent 배열을 GroupedScheduleEvent로 변환
  */
 function createGroupedScheduleEvent(events: ScheduleEvent[]): GroupedScheduleEvent {
@@ -242,7 +255,7 @@ function createGroupedScheduleEvent(events: ScheduleEvent[]): GroupedScheduleEve
   const timeSlot = firstEvent.timeSlot?.replace('~', ' ~ ') || '';
 
   return {
-    id: `grouped_${firstEvent.applicationId}`,
+    id: createGroupId(firstEvent),
     type: firstEvent.type,
     jobPostingId: firstEvent.jobPostingId,
     jobPostingName: firstEvent.jobPostingName,

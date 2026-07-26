@@ -20,7 +20,7 @@ import { Badge } from '@/components/ui';
 import { getRoleDisplayName } from '@/types/unified';
 import { STATUS } from '@/constants';
 import { TimeNormalizer, WorkTimeDisplay } from '@/shared/time';
-import { describeNextShiftCountdown } from './helpers/timeHelpers';
+import { describeNextShiftCountdown, formatWorkTimeRange } from './helpers/timeHelpers';
 import { formatSingleDate } from '@/utils/scheduleGrouping';
 import type { ScheduleEvent } from '@/types';
 
@@ -99,9 +99,7 @@ export const NextShiftCard = memo(function NextShiftCard({
         <View className="mx-2 h-3 w-px bg-secondary-300 dark:bg-surface-elevated" />
         <ClockIcon size={14} color={SECONDARY_PALETTE[500]} />
         <Text className="ml-1.5 text-sm text-content-secondary font-sans">
-          {timeInfo.effectiveStart === '미정'
-            ? '시간 협의'
-            : `${timeInfo.effectiveStart} - ${timeInfo.effectiveEnd}`}
+          {formatWorkTimeRange(timeInfo)}
         </Text>
       </View>
 
