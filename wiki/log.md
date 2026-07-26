@@ -130,6 +130,12 @@ index 갱신(sources 6행+decisions 2행+wallet-pgtap 재작성). 작성=opus �
 - 갱신: `decisions/nativewind-rn-pitfalls`(함정 3종 추가 — pointerEvents는 prop 필수·행/액션 형제 분리·시트 visible 게이트) · `decisions/prod-parity-baseline`(#311 갱신 누락 실패 사례 — red는 머지 후 master에서 터짐) · `architecture/ops-engine`(콘솔 리디자인+프리셋 절, 잔여=서버 levels 상한) · index 3줄
 - memory 졸업 예정: project_ops_console_redesign_20260723 → MEMORY.md 포인터 압축(잔여=실기기 QA 7항목·서버 levels 상한)
 
+## [2026-07-25] note | 관리자 문의 응답 RPC 부재 404 수정 (PR#326)
+- 근본원인: Supabase 전환(`b69f6aae8`)이 `InquiryRepository`의 `respond_inquiry`·`update_inquiry_status` RPC **호출부만 출하**하고 함수 마이그레이션을 만들지 않음 → prod 404(PGRST202). baseline(prod 덤프)·prod `pg_proc` 양쪽 0행 실측으로 확정(시그니처 불일치·스키마 캐시 stale 가설 기각).
+- 수정: 마이그 `20260725150000` SECDEF RPC 2종(admin 게이트+actor 바인딩+response 1~2000자·XSS 서버검증+anon REVOKE) — prod 적용 완료. pgTAP 11케이스, parity 가드 178→181(#325의 179와 합류).
+- 부수 복구: `#325`가 `app_insert` with_check에 `is_identity_verified`를 추가하고 fixture 페르소나 시드를 갱신하지 않아 pgTAP 3스위트(`jpc_applications_rls`·`applications_tournament_approval_gate`·`jpc_cascade`)가 red였다 → `jpc_helpers.sql` 페르소나 `identity_verified=true`로 복구. **전건 실행에서만 드러나는 클래스**(`decisions/test-seed-contract-drift` 3번째 재발).
+- 미해결: E2E `auth-signup` 4케이스 red — `#325`의 스텝 순서 변경(`['terms','identity','account']`)에 `e2e/pages/auth/signup.page.ts`의 `stepTexts`(2=계정정보·3=본인인증)가 미추종. 라벨 스왑만으로는 불가 — 계정정보 검증 케이스가 이제 PortOne 본인인증 뒤라 목킹 인프라 부재로 원천 도달 불가(다일 작업).
+- 교훈 후보(졸업 대기): ①pgTAP `pg_get_function_identity_arguments` 리터럴 비교로 **출하된 클라이언트를 따라가는 역방향 계약** 고정 ②클라 RPC 호출부↔마이그레이션 함수 존재 대조는 parity 가드가 못 잡는다(prod·repo 대칭 누락이라 카운트가 일치)
 ## [2026-07-25] note | 머지 이력 공백 메움 (#314~#332)
 
 `#313` 이후 로그가 끊겨 있어 19개 PR을 소급 기록한다. 상세는 `CHANGELOG.md` [Unreleased] 참조.

@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        check: [type-check, lint, format:check]
+        check: [type-check, lint, format:check, check:rpc-migrations]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
