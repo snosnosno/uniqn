@@ -56,6 +56,7 @@ import {
 import { triggerHaptic } from '@/utils/haptics';
 import { getTodayString } from '@/utils/date';
 import { detectScheduleOverlaps, formatOverlapWarning } from '@/utils/scheduleOverlap';
+import { syncShiftReminders } from '@/services/work/shiftReminderScheduler';
 import {
   filterSchedulesByStatus,
   countSchedulesByType,
@@ -412,6 +413,14 @@ export default function ScheduleScreen() {
   // 더블부킹 경고 — 확정 권한은 각 구인자에게 있어 서로 모르게 같은 시간대에 둘 다
   // 확정될 수 있다. 감지기는 구인자 화면에만 있었고 정작 곤란해지는 쪽엔 경고가 없었다.
   const overlapMap = useMemo(() => detectScheduleOverlaps(schedules), [schedules]);
+
+  // 근무 리마인더 예약 동기화 — 확정 근무를 잊는 것이 단발 알바의 1순위 사고인데
+  // CHECKIN_REMINDER 는 타입·템플릿·딥링크가 다 있고 발송 주체만 0 이었다.
+  // fire-and-forget: 알림 예약 실패가 스케줄 화면을 막지 않는다.
+  useEffect(() => {
+    if (schedules.length === 0) return;
+    void syncShiftReminders(schedules);
+  }, [schedules]);
 
   // '내 다음 근무' 히어로 — 이미 구현돼 있으나 소비자가 없던 useTodaySchedules(60초 폴링·
   // 오프라인 캐시 완비)를 오늘 근무 원천으로 쓰고, 오늘 것이 없으면 이번 달 확정 건에서 찾는다.
