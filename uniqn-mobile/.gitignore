@@ -82,3 +82,9 @@ sentry.properties
 # Supabase CLI
 supabase/.temp/
 supabase/.branches/
+
+# Cloudflare Wrangler 로컬 캐시
+.wrangler/
+
+# 로컬 워크트리 — .git/info/exclude 는 공유되지 않으므로 여기 명시
+.worktrees/

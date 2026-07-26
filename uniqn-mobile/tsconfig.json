@@ -12,30 +12,6 @@
     "paths": {
       "@/*": [
         "src/*"
-      ],
-      "@/components/*": [
-        "src/components/*"
-      ],
-      "@/hooks/*": [
-        "src/hooks/*"
-      ],
-      "@/stores/*": [
-        "src/stores/*"
-      ],
-      "@/services/*": [
-        "src/services/*"
-      ],
-      "@/types/*": [
-        "src/types/*"
-      ],
-      "@/utils/*": [
-        "src/utils/*"
-      ],
-      "@/lib/*": [
-        "src/lib/*"
-      ],
-      "@/constants/*": [
-        "src/constants/*"
       ]
     }
   },

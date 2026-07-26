@@ -50,6 +50,7 @@
     "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
     "@gorhom/bottom-sheet": "^5.2.8",
     "@hookform/resolvers": "^5.2.2",
+    "@portone/browser-sdk": "^0.1.3",
     "@portone/react-native-sdk": "^0.6.0",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/netinfo": "11.5.2",
@@ -113,7 +114,6 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
-    "@portone/browser-sdk": "^0.1.3",
     "@testing-library/react-native": "^13.3.3",
     "@types/jest": "^29.5.14",
     "@types/react": "~19.2.10",
@@ -163,7 +163,9 @@
       "babel.config.js",
       "supabase/functions/**",
       "e2e/**",
-      "src/__tests__/mocks/**"
+      "src/__tests__/mocks/**",
+      "functions/**",
+      "scripts/verify-web-build.js"
     ],
     "ignoreBinaries": [
       "supabase",
@@ -174,7 +176,8 @@
       "react-native-nitro-modules",
       "expo-intent-launcher",
       "expo-modules-core",
-      "babel-preset-expo"
+      "babel-preset-expo",
+      "react-refresh"
     ]
   },
   "private": true
