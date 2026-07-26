@@ -4,6 +4,9 @@
 -- 사용처: `supabase start` 직후 자동 적용 (CI: .github/workflows/e2e.yml)
 -- 멱등성: 모든 INSERT는 ON CONFLICT DO NOTHING — 재실행 안전
 --
+-- ⚠️ 로컬/CI 전용 — PROD 실행 절대 금지.
+--    알려진 비밀번호의 admin 계정이 생성되므로 프로덕션에 적용하면 즉시 계정 탈취 경로가 된다.
+--
 -- 주의:
 --   1. auth.users INSERT 후 sync_user_role_to_app_metadata 트리거가
 --      app_metadata.role을 자동 동기화 (public.users INSERT 시점)

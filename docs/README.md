@@ -1,6 +1,6 @@
 # 문서 허브
 
-최종 업데이트: 2026-04-18  
+최종 업데이트: 2026-07-26  
 현재 기준: `uniqn-mobile/` (백엔드: Supabase)
 
 이 폴더는 현재 운영 문서와 아카이브 문서를 분리해서 관리합니다. 현재 제품 동작을 확인할 때는 아래의 활성 문서만 먼저 읽어 주세요.
@@ -22,16 +22,20 @@
 - `reference/DATA_SCHEMA.md`
 - `reference/REFACTOR_BASELINE.md`
 - `reference/SUPABASE_SETUP.md`
+- `reference/BUSINESS_CASE.md`
 
 ### Guides
 
 - `guides/DEPLOYMENT.md`
 - `guides/ROLLBACK_PROCEDURES.md`
+- `guides/I18N_GUIDE.md`
+- `guides/PERFORMANCE.md`
 
 ### Operations
 
 - `operations/MONITORING.md`
 - `operations/TROUBLESHOOTING.md`
+- `operations/NOTIFICATION_OPERATIONS.md`
 
 ### User
 

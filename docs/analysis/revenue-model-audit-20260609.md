@@ -1,5 +1,11 @@
 # UNIQN 수익모델 전체 분석 (2026-06-09)
 
+> ⛔ **폐기 (2026-06-22~23)** — 이 분석이 전제한 이중통화(하트·다이아) 지갑 + RevenueCat 인앱결제
+> 수익 시스템은 PR #196~206 으로 **코드·DB·RevenueCat 대시보드까지 전량 제거**됐다.
+> 아래 본문의 현재형 서술과 리스크 항목은 **현행 제품에 존재하지 않는다.**
+> 제거 경위: `docs/archive/wallet-iap-removal/`. 현행 수익모델 판단은 `wiki/` 를 우선 확인하라.
+> 과거 의사결정 배경을 확인할 때만 참고한다.
+
 > 9개 차원 병렬 감사(A1 DB정합성·A2 가격/게이트·A3 IAP/RevenueCat·A4 하트적립·A5 UI/UX·A6 아키텍처·A7 보안·A8 환불/머니정확·A9 비즈니스/전략) → 종합 → 적대적 코드대조 검증.
 > 검증 신뢰도: 적대검증 단계에서 Supabase MCP로 **프로덕션 직접 쿼리**(`app_config.monetization`, `wallet_ledger` reason 집계, `has_function_privilege`, `list_migrations`)로 핵심 주장을 실측 확정.
 
