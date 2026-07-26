@@ -235,6 +235,82 @@ describe('Button', () => {
     });
   });
 
+  // 회귀 방지 (실기기 2026-07-26)
+  describe('Layout & border regressions', () => {
+    // Button 은 focus ring wrapper View > Pressable 2층이다. 부모 flex 의 실제 자식은
+    // wrapper 이므로 레이아웃 클래스가 wrapper 에 없으면 content 폭으로 고정되고,
+    // RN 은 flexShrink 기본값이 0 이라 flex-row 2버튼 배치가 화면 밖으로 넘친다.
+    // `.parent` 는 Pressable 내부 View 로 내려가 Pressable 의 className 을 그대로 돌려준다
+    // → 그걸로 단언하면 wrapper 를 검사하지 않고도 통과하는 거짓 가드가 된다(실측 확인).
+    // 렌더 트리의 첫 View 가 focus ring wrapper 다.
+    const wrapperClassOf = () =>
+      screen.UNSAFE_getAllByType(View)[0].props.className as string | undefined;
+
+    it('should propagate flex-1 to the focus-ring wrapper (row overflow guard)', () => {
+      render(
+        <Button accessibilityLabel="Row button" className="flex-1">
+          취소
+        </Button>
+      );
+
+      expect(wrapperClassOf()).toContain('flex-1');
+    });
+
+    it('should propagate fullWidth to the focus-ring wrapper', () => {
+      render(
+        <Button accessibilityLabel="Full button" fullWidth>
+          등록하기
+        </Button>
+      );
+
+      expect(wrapperClassOf()).toContain('w-full');
+    });
+
+    it('should let flex-1 win over fullWidth on the wrapper', () => {
+      render(
+        <Button accessibilityLabel="Both button" fullWidth className="flex-1">
+          추가
+        </Button>
+      );
+
+      const wrapperClass = wrapperClassOf() ?? '';
+      expect(wrapperClass).toContain('flex-1');
+      expect(wrapperClass).not.toContain('w-full');
+    });
+
+    it('should not size the wrapper when no layout class is given', () => {
+      render(<Button accessibilityLabel="Auto button">자동</Button>);
+
+      const wrapperClass = wrapperClassOf() ?? '';
+      expect(wrapperClass).not.toContain('flex-1');
+      expect(wrapperClass).not.toContain('w-full');
+    });
+
+    // `.border-transparent` 는 생성된 CSS 에서 `.border-secondary-600` 보다 뒤에 온다.
+    // 둘을 같은 Pressable 에 얹으면 라이트모드에서 outline 테두리가 투명으로 덮인다
+    // (다크는 `dark:` 변형 명시도가 높아 살아남아 증상이 라이트에서만 나타났다).
+    it('should not put a transparent border on the outline variant pressable', () => {
+      render(
+        <Button variant="outline" accessibilityLabel="Outline button">
+          근무표
+        </Button>
+      );
+
+      const pressableClass = screen.getByLabelText('Outline button').props.className as string;
+      expect(pressableClass).toContain('border-secondary-600');
+      expect(pressableClass).not.toContain('border-transparent');
+      // 두께는 변형이 직접 선언한다 — focus ring 겹침에 기대 2px 로 보이던 것을 보존
+      expect(pressableClass).toContain('border-2');
+    });
+
+    it('should keep the focus ring reserve on the wrapper, not the pressable', () => {
+      render(<Button accessibilityLabel="Ring button">링</Button>);
+
+      expect(wrapperClassOf()).toContain('border-transparent');
+      expect(screen.getByLabelText('Ring button').props.className).not.toContain('border-2');
+    });
+  });
+
   describe('Accessibility', () => {
     it('should pass accessibility props', () => {
       render(

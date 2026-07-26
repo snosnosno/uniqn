@@ -96,7 +96,7 @@ function RoleOption({ role, isSelected, isCurrentRole, isFull, onSelect }: RoleO
         <View
           className={`
             h-10 w-10 rounded-sm items-center justify-center
-            ${isSelected ? 'bg-primary-600' : 'bg-secondary-200 dark:bg-surface'}
+            ${isSelected ? 'bg-primary-600' : 'bg-secondary-200 dark:bg-surface-elevated'}
           `}
         >
           <UserIcon size={20} color={isSelected ? '#FFFFFF' : SECONDARY_PALETTE[500]} />

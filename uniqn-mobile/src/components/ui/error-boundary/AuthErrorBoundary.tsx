@@ -72,7 +72,7 @@ function AuthErrorFallback({
 
         <Pressable
           onPress={onRetry}
-          className="bg-secondary-200 dark:bg-surface px-6 py-3 rounded-md active:bg-secondary-300 dark:active:bg-secondary-600"
+          className="bg-secondary-200 dark:bg-surface-elevated px-6 py-3 rounded-md active:bg-secondary-300 dark:active:bg-secondary-600"
           accessibilityRole="button"
           accessibilityLabel="다시 시도"
         >

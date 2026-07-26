@@ -558,7 +558,7 @@ export function ConfirmModal({
       <View className="flex-row gap-3">
         <Pressable
           onPress={onClose}
-          className="flex-1 bg-secondary-200 dark:bg-surface py-3 rounded-md"
+          className="flex-1 bg-secondary-200 dark:bg-surface-elevated py-3 rounded-md"
           accessibilityRole="button"
           testID={cancelTestID}
         >
