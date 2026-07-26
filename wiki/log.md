@@ -183,3 +183,19 @@ index 갱신(sources 6행+decisions 2행+wallet-pgtap 재작성). 작성=opus �
 - **`appVersion` runtimeVersion 정책에서 version bump 판정은 "네이티브 구성 변경 여부" 단일 기준이다.** 이번 범위의 빌드 구성 변경은 `package.json`(스크립트·knip·의존성 섹션 이동)·`package-lock.json`(±2줄)·`tsconfig.json` 뿐이고, 이동된 `@portone/browser-sdk` 는 `dist/`만 있는 JS 전용 패키지(android/ios/podspec/app.plugin.js 전무)다. → **version 1.0.5 유지 + build number 자동 증가**가 정책상 옳다. 근거 명령: `git diff --name-status <base> <head> -- uniqn-mobile/{package.json,package-lock.json,app.config.ts,eas.json,android,ios}` + `npx expo-updates runtimeversion:resolve`(양 플랫폼 `1.0.5`, `fingerprintSources: null`).
 - **워크트리의 `node_modules` 정션을 먼저 해제하지 않고 `git worktree remove` 하면 메인 레포 `node_modules` 가 날아갈 수 있다.** 순서는 ①`[System.IO.Directory]::Delete(path, $false)` 로 리파스 포인트만 제거 ②메인 엔트리 수 대조(818 유지) ③`git worktree remove` ④재대조. `rm -rf` 는 MSYS 가 정션을 따라갈 수 있어 쓰지 않는다.
 - **범위 대조는 `git diff --name-status A B -- <paths>` 로만 하라.** `git rev-parse "ref:파일"` 를 루프로 돌려 blob 해시를 비교하면 Git Bash MSYS 가 인자를 망가뜨려 **"62파일 내용 다름" 같은 거짓 결론**이 나온다(이번에도 재현). 같은 브랜치를 `git diff --stat master <branch>` 로 다시 재면 빈 출력 = 완전 흡수였다.
+
+## [2026-07-27] note | 애니메이션 모션 시스템 A 묶음 재구현 (PR #350)
+
+2026-07-17 에 하루 만에 만든 `feat/animation-motion-polish`(13커밋)를 **머지하지 않고 폐기**하고, 그 안에서 아직 유효한 조각만 master 위로 다시 옮겼다. 폐기본은 태그 `archive/2026-07-27/feat-animation-motion-polish` 에 보존. 남은 B 묶음(SheetModal 드래그 dismiss)은 실기기 QA 게이트가 걸려 별도 브랜치로 이월했다.
+
+- **신설** `uniqn-mobile/src/constants/motion.ts`(`MOTION_EASING`·`MOTION_DURATION`) · `uniqn-mobile/src/hooks/useReduceMotion.ts`(+ 테스트 4케이스)
+- **전환** `Toast.tsx` · `Modal.tsx`(NativeModal 이펙트 한정) 토큰 치환 + reduce motion 분기
+- **중복 제거** `Skeleton.tsx` · `OfflineStatusBar.tsx` 의 로컬 `useReduceMotion` 정의 2곳 → 공유 훅
+- **무변경** `SheetModal.tsx` 파일 전체 · `constants/animation.ts` · `hooks/index.ts` · `LoadingOverlay.tsx`
+- 검증: quality EXIT 0 · jest 544 스위트 / 6028 테스트 / 122 스냅샷 · CI 9종 green(E2E 10m15s 포함)
+
+재사용 교훈 3:
+
+- **오래된 브랜치는 "충돌만 풀면 된다"가 성립하지 않는다.** 분기점 이후 master 가 `SheetModal.tsx` 하나만 7커밋 다시 썼다. 브랜치 hunk 를 채택하면 실기기에서만 발견됐던 수정 5건(#280 안전영역·#302/#335 Android 키보드·#306~#308 연쇄 진입·#332 시트 높이)이 한꺼번에 되돌아가고, master hunk 를 채택하면 브랜치 기여가 0이 된다 — **중간 지대가 없다.** 게다가 git 은 브랜치 전용 식별자(`reduceMotion`·`MOTION_DURATION`)를 충돌 마커 *밖으로* 자동머지하므로, master 쪽으로 충돌을 풀면 결과는 "기여 0"이 아니라 **미정의 참조가 남은 컴파일 불가 파일**이다. 판정은 `REWORK_ON_MASTER`(파일을 골라 옮기기)가 옳았다.
+- **공용 토큰 모듈은 "무엇을 import 하는가"로 배치가 갈린다.** 모션 토큰은 모듈 스코프에서 `Easing.bezier()` 를 평가한다(reanimated 의존). 기존 `constants/animation.ts` 에 얹으면 그 의존이 소비처 4곳(`OrderSheetScreen`·그 연쇄 테스트·`schedule`·`ScheduleDetailModal`)으로 전파된다. 이름이 비슷하다고 합치지 말 것 — animation.ts 의 상수들은 연출 커브가 아니라 **네이티브 dismiss 커밋 대기 시간**으로 개념 자체가 다르다.
+- **핸드오프에 적힌 검증 게이트도 틀릴 수 있다.** §4 의 `grep "Easing\." {Toast,Modal,Skeleton,OfflineStatusBar}.tsx` → 0건 요구는 과대했다. Skeleton(shimmer)·OfflineStatusBar(배너 페이드)는 **자체 애니메이션이 있고 어느 계획도 토큰화 대상으로 잡지 않았다.** 문자 그대로 맞추려 했다면 범위 밖 파일의 커브를 바꿔 "실기기 QA 불필요"라는 A 묶음 전제를 스스로 깨뜨렸을 것이다. 게이트와 범위 정의가 충돌하면 **범위 정의가 이긴다** — 대신 갭을 보고한다.

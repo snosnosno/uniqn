@@ -1,24 +1,32 @@
 # 애니메이션 모션 시스템 재구현 — 다음 세션 핸드오프 (2026-07-27)
 
+> ## ✅ A 묶음 완료 — PR #350 (`ab097c0fc`)
+> 2026-07-27, master 위에서 재구현 완료. 남은 것은 **B 묶음(§5)뿐**이다.
+> §2 A 묶음 내용은 이제 **완료 기록**으로 읽을 것(재실행 금지 — 이미 존재하는 파일과 충돌한다).
+> 계획 파일 Status: 001 DONE · 002 DONE · 003 PARTIAL · 004 PARTIAL · 005/006 TODO.
+
 > `feat/animation-motion-polish` 브랜치는 **폐기**됐다(판정 `REWORK_ON_MASTER`).
 > 사양과 코드는 태그 `archive/2026-07-27/feat-animation-motion-polish`(13커밋)에 보존돼 있다.
 > 이 문서는 그 작업을 **master 위에서 다시 구현**하기 위한 착수점이다.
 
 ---
 
-## 0. 새 세션에 붙여넣을 프롬프트
+## 0. 새 세션에 붙여넣을 프롬프트 (B 묶음용)
 
 ```
 docs/planning/2026-07-27-animation-reimplementation-handoff.md 를 읽고
-A 묶음(저위험, 실기기 QA 불필요)을 구현해줘.
+B 묶음(SheetModal 드래그 dismiss)을 구현해줘. A 묶음은 PR #350 으로 이미 끝났다.
+
+먼저 §5 B-2 의 선행 게이트를 해소해야 한다:
+1) 계획 006 (실기기 관찰 선행 — 퇴장이 '팝 소멸'로 보이는지 / 짧은 시트 드래그 체감)
+2) jest.setup.js 에 react-native-gesture-handler mock 추가 (현재 부재, 20+ 스위트 영향)
 
 폐기된 브랜치의 코드는 태그 archive/2026-07-27/feat-animation-motion-polish 에 있고,
-사양서는 docs/planning/animation-plans/001~006 에 있다.
+사양서는 docs/planning/animation-plans/004~006 에 있다.
 브랜치를 체크아웃하거나 머지하지 말 것 — 파일을 골라 옮기는 방식으로만 작업한다.
 
-핸드오프의 §3 "절대 건드리지 말 것" 목록을 먼저 확인하고,
-§4 검증 게이트를 통과한 뒤 PR 을 올려줘.
-B 묶음(드래그 dismiss)은 이번 범위가 아니다.
+§3 "절대 건드리지 말 것" 목록을 먼저 확인할 것.
+이 작업은 네이티브 제스처라 OTA 로 회수되지 않는다 — 실기기 QA 없이 머지 금지.
 ```
 
 ---
@@ -131,17 +139,26 @@ master 무변경 파일이라 브랜치 diff 를 거의 그대로 적용할 수 
 
 ---
 
-## 4. 검증 게이트 (A 묶음)
+## 4. 검증 게이트 (A 묶음) — ✅ 2026-07-27 통과
 
 ```bash
 cd uniqn-mobile
 npm run quality                          # EXIT 0 (css-vars · rpc-migrations · tsc · eslint · prettier)
-npx jest src/components/ui src/hooks      # 전량 green
-grep -rn "Easing\." src/components/ui/{Toast,Modal,Skeleton,OfflineStatusBar}.tsx   # 0건이어야 함
+npx jest                                  # 전량 green (배럴 순환 이력 때문에 전체를 돌린다)
+grep -rn "Easing\." src/components/ui/{Toast,Modal}.tsx   # 0건이어야 함
 ```
+
+⚠️ **초판의 grep 대상 4파일은 오류였다.** `Skeleton.tsx`(shimmer `Easing.inOut`)와
+`OfflineStatusBar.tsx`(배너 페이드 `Easing.out/in(quad)`)에는 **자체 애니메이션이 있고 정상이다** —
+A-3 의 범위는 그 두 파일의 *중복 `useReduceMotion` 정의 제거*뿐이며, 계획 001~004 중 어디도
+이 둘의 커브를 토큰화 대상으로 잡지 않았다(§2 A-3 "나머지 로직은 절대 건드리지 말 것"). 문자
+그대로 실행하면 **끝난 작업을 실패로 오판하거나 범위 밖 파일을 잘못 고치게 된다.**
 
 `npm run knip:gate` 래칫은 현재 **2212 로 이미 red**(정리 전부터). A 묶음이 그 수를
 **늘리지 않는지**만 확인하면 된다.
+
+**2026-07-27 실측 결과**: quality EXIT 0 · jest 544 스위트 / 6028 테스트 / 122 스냅샷 통과 ·
+`Toast.tsx`·`Modal.tsx` `Easing.` 0건 · knip 신규 export 3종 모두 소비(래칫 미증가).
 
 ---
 

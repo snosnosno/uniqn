@@ -153,12 +153,20 @@ withTiming(1, { duration: 300, easing: Easing.bezier(0.25, 1, 0.5, 1) });
 **필수**: `AccessibilityInfo.isReduceMotionEnabled()` 체크 후 fade로 대체.
 
 ```tsx
-const [reduceMotion, setReduceMotion] = useState(false);
-useEffect(() => {
-  AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-}, []);
-// reduceMotion이면 transform 애니메이션 스킵, opacity만
+import { useReduceMotion } from '@/hooks/useReduceMotion';
+
+const reduceMotion = useReduceMotion();
+// reduceMotion이면 transform은 즉시 목표값, opacity 페이드만 유지
 ```
+
+> ⚠️ **컴포넌트 안에 `useState`+`AccessibilityInfo` 로 다시 구현하지 말 것.** 공유 훅
+> `@/hooks/useReduceMotion` 하나만 쓴다(PR #350 에서 `Skeleton`·`OfflineStatusBar` 의 중복 정의
+> 2곳을 여기로 수렴시켰다). **배럴 `@/hooks` 경유 금지** — 리프 UI 에서 배럴을 import 하면 상수
+> 순환 참조로 모듈스코프 값이 `undefined` 가 되는 함정이 3회 재발했다. 직접 경로로 import 한다.
+>
+> 커브·지속시간도 손으로 쓰지 말고 `@/constants/motion` 의 `MOTION_EASING`·`MOTION_DURATION` 을
+> 소비한다(같은 PR 에서 신설). ⚠️ 이름이 비슷한 `@/constants/animation` 은 **다른 개념**이다 —
+> 그쪽은 네이티브 dismiss 커밋 대기 시간이지 연출 커브가 아니다.
 
 ## 9. 빈 상태(Empty State) = 온보딩 기회
 

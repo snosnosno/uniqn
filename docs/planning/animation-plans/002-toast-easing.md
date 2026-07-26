@@ -1,6 +1,8 @@
 # 002 — Toast 입장 이징 강화 (최고빈도 모션)
 
-- **Status**: TODO
+- **Status**: **DONE** (PR #350 `ab097c0fc`) — Target 그대로. import 경로만 `@/constants/motion`
+  (001 이 신규 파일로 구현됐기 때문). 계획 밖 개선 2건 동반: `reduceMotionRef` 로 deps 분리,
+  퇴장 완료 콜백을 `translateY` → `opacity` 로 이동(003 범위와 겹침).
 - **Commit**: c0c6113e5
 - **Severity**: HIGH
 - **Category**: 이징·지속시간 (Easing & duration)
