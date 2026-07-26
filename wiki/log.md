@@ -120,6 +120,12 @@ index 갱신(sources 6행+decisions 2행+wallet-pgtap 재작성). 작성=opus �
 - memory 졸업: project_headcount_daily_display_20260723 → MEMORY.md 포인터 압축(잔여=실기기 QA·배포)
 
 ## [2026-07-24] ingest | ops 콘솔 리디자인 + 블라인드 프리셋 (PR#313)
+
+## [2026-07-25] note | 내정보 화면 정리 + 동의정보 정합성 (PR#321 머지 `14def4e40`) — 🎓 ingest 후보
+- **결함**: 가입 EF `verify-and-save-portone-profile`이 `user_consents`의 **존재하지 않는 컬럼**(terms_of_service/privacy_policy/marketing)에 upsert하고 반환 에러를 확인하지 않아, 가입 때마다 조용히 전건 실패(prod 0행 실측). `users.terms/privacy/marketing_agreed`도 미기록 → 내정보 '동의 정보' 전원 미동의 표시.
+- **수정**: EF가 `users.*_agreed` 저장 + `user_consents` 행 단위(consent_type) 원장 upsert(onConflict `user_id,consent_type`, 실패 시 CRITICAL 로그). 마이그 `20260725014644`: uq 인덱스 + 기존 사용자 terms/privacy 백필(third_party_agreed 근거, 4→20). UI 정리(닉네임 수정·내보내기 버튼 제거+데드코드 체인).
+- **🎓 졸업 후보 교훈**(Supabase 쓰기 함정 계열, wiki `decisions/supabase-write-pitfalls` 편입 검토): ①Supabase upsert는 존재하지 않는 컬럼/스키마 불일치를 반환 에러로 주는데 미확인 시 침묵 실패 — **EF의 모든 DB 쓰기는 error 확인+가시 로깅 필수**. ②표시 소스와 원장(user_consents) 이중 기록의 drift — 설정 토글이 원장 미경유(후속 MEDIUM). ③`user_consents`는 self UPDATE RLS 정책 부재로 클라 직접 upsert의 on-conflict UPDATE가 막힘 → 원장 경유는 SECDEF RPC 필요.
+- **잔여**: 실기기 QA(동의 표시·신규가입 원장 3행)·마케팅 토글 원장 후속.
 - 신규: `sources/ops-console-redesign`(출하 기록+교훈 5종: RNW pointerEvents 드롭·Pressable 중첩 재발·RNModal+gorhom z-순서·워크트리 expo EMFILE·parity 가드 누락 파급)
 - 갱신: `decisions/nativewind-rn-pitfalls`(함정 3종 추가 — pointerEvents는 prop 필수·행/액션 형제 분리·시트 visible 게이트) · `decisions/prod-parity-baseline`(#311 갱신 누락 실패 사례 — red는 머지 후 master에서 터짐) · `architecture/ops-engine`(콘솔 리디자인+프리셋 절, 잔여=서버 levels 상한) · index 3줄
 - memory 졸업 예정: project_ops_console_redesign_20260723 → MEMORY.md 포인터 압축(잔여=실기기 QA 7항목·서버 levels 상한)
