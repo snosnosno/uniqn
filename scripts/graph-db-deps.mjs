@@ -20,11 +20,14 @@
  *   node scripts/graph-db-deps.mjs table work_logs     # 이 테이블을 읽는 함수 (변경 전 영향도)
  *   node scripts/graph-db-deps.mjs fn my_venue_role_salaries
  *
- * 옵션: --graph <path> | --include-archive | --json
+ * 옵션: --graph <path> | --include-archive | --allow-stale
+ *
+ * 그래프가 최신 .sql 보다 오래되면 **차단**한다(구 번들이 E2E를 거짓 통과시켰던 것과
+ * 같은 계열의 함정). 재생성: graphify update uniqn-mobile --force --no-cluster
  */
 
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs';
+import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -66,12 +69,54 @@ function normalizeTable(raw) {
   return best?.value ?? null;
 }
 
-function loadGraph({ graphPath, includeArchive }) {
+const REBUILD_CMD = 'graphify update uniqn-mobile --force --no-cluster';
+
+/** `supabase/` 아래 .sql 중 가장 최근 수정본 (archive 제외) */
+function newestSqlFile(dir, acc = { at: 0, file: null }) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === 'archive' || entry.name === 'node_modules') continue;
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) newestSqlFile(full, acc);
+    else if (entry.name.endsWith('.sql')) {
+      const at = statSync(full).mtimeMs;
+      if (at > acc.at) Object.assign(acc, { at, file: full });
+    }
+  }
+  return acc;
+}
+
+/**
+ * stale 그래프 = 거짓 결과. `dist/` 구 번들이 E2E를 거짓 통과시켰던 것과 같은 계열이므로
+ * 경고가 아니라 **차단**한다. 이 스크립트는 SQL 사실만 보고하므로 .sql 기준으로만 비교.
+ */
+function assertFresh(graphPath, allowStale) {
+  const sqlRoot = resolve(REPO_ROOT, 'uniqn-mobile/supabase');
+  if (!existsSync(sqlRoot)) return;
+  const newest = newestSqlFile(sqlRoot);
+  if (!newest.file || statSync(graphPath).mtimeMs >= newest.at) return;
+
+  const msg = [
+    '그래프가 SQL보다 오래됐습니다 — 결과가 거짓일 수 있습니다.',
+    `  그래프: ${new Date(statSync(graphPath).mtimeMs).toISOString()}`,
+    `  최신 SQL: ${new Date(newest.at).toISOString()}  ${newest.file.replace(REPO_ROOT, '.')}`,
+    `  재생성: ${REBUILD_CMD}`,
+  ].join('\n');
+  if (allowStale) {
+    console.error(`[경고] ${msg}\n  (--allow-stale 지정되어 계속 진행)\n`);
+    return;
+  }
+  console.error(`[차단] ${msg}\n  무시하려면 --allow-stale`);
+  process.exit(2);
+}
+
+function loadGraph({ graphPath, includeArchive, allowStale }) {
   if (!existsSync(graphPath)) {
     console.error(`그래프를 찾을 수 없습니다: ${graphPath}`);
-    console.error('먼저 생성하세요: graphify update uniqn-mobile --no-cluster');
+    console.error(`먼저 생성하세요: ${REBUILD_CMD}`);
+    console.error('(graphify-out/ 은 gitignore 대상이라 새 워크트리·머신에는 없습니다)');
     process.exit(1);
   }
+  assertFresh(graphPath, allowStale);
   const g = JSON.parse(readFileSync(graphPath, 'utf8'));
   const nodes = new Map(g.nodes.map((n) => [n.id, n]));
   const links = includeArchive
@@ -200,6 +245,7 @@ function main() {
   const ctx = loadGraph({
     graphPath: opt('--graph') ? resolve(opt('--graph')) : DEFAULT_GRAPH,
     includeArchive: flag('--include-archive'),
+    allowStale: flag('--allow-stale'),
   });
 
   let result;

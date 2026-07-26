@@ -44,6 +44,18 @@
       ],
       "env": {}
     },
+    "graphify": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "graphify-mcp",
+        "uniqn-mobile/graphify-out/graph.json"
+      ],
+      "env": {
+        "PYTHONUTF8": "1"
+      }
+    },
     "supabase": {
       "type": "http",
       "url": "https://mcp.supabase.com/mcp?project_ref=ygfxukhktpqymahfrvbz&features=storage%2Cbranching%2Cfunctions%2Cdevelopment%2Cdebugging%2Cdatabase%2Caccount%2Cdocs"
