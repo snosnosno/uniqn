@@ -1,8 +1,7 @@
 ---
 paths:
-  - "src/components/**/*.tsx"
-  - "app/**/*.tsx"
-  - "app/_layout.tsx"
+  - "uniqn-mobile/src/components/**/*.tsx"
+  - "uniqn-mobile/app/**/*.tsx"
 ---
 
 # NativeWind 패턴 규칙

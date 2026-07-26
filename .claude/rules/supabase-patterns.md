@@ -1,10 +1,10 @@
 ---
 paths:
-  - "src/repositories/supabase/**/*.ts"
-  - "src/schemas/**/*.ts"
-  - "src/services/**/*.ts"
-  - "supabase/migrations/**/*.sql"
-  - "supabase/tests/**/*.sql"
+  - "uniqn-mobile/src/repositories/supabase/**/*.ts"
+  - "uniqn-mobile/src/schemas/**/*.ts"
+  - "uniqn-mobile/src/services/**/*.ts"
+  - "uniqn-mobile/supabase/migrations/**/*.sql"
+  - "uniqn-mobile/supabase/tests/**/*.sql"
 ---
 
 # Supabase 패턴 규칙
