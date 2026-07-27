@@ -308,7 +308,10 @@ export function StaffManagementTab({
     );
   }
 
-  if (error) {
+  // 전면 ErrorState 는 **보여줄 데이터가 하나도 없을 때만**. 이미 받아둔 목록이 있는데
+  // 일시적 구독 실패로 화면 전체를 덮으면 대회 D-day 운영 중에 운영 화면을 잃는다.
+  // 데이터가 있으면 아래 목록의 error prop 으로 내려 배너 수준으로 알린다.
+  if (error && grouped.length === 0) {
     return (
       <ErrorState title="확정된 스태프를 불러오지 못했습니다" error={error} onRetry={refresh} />
     );
@@ -326,7 +329,7 @@ export function StaffManagementTab({
         <ConfirmedStaffList
           grouped={grouped}
           isLoading={false}
-          error={null}
+          error={error}
           onRefresh={refresh}
           isRefreshing={isRefreshing}
           onStaffPress={handleStaffPress}

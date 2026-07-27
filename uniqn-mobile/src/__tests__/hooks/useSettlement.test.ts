@@ -638,15 +638,42 @@ describe('useSettlement Hooks', () => {
         });
       });
 
+      // 4번째 인자는 지급 완료 되돌리기 사유(SETTLE-3). 되돌리기가 아니면 undefined 로 흐른다.
       expect(mockUpdateSettlementStatus).toHaveBeenCalledWith(
         'worklog-1',
         'completed',
-        'employer-1'
+        'employer-1',
+        {
+          reason: undefined,
+        }
       );
       expect(mockAddToast).toHaveBeenCalledWith({
         type: 'success',
         message: '정산이 완료되었습니다.',
       });
+    });
+
+    it('되돌리기 사유를 서비스까지 전달한다 (SETTLE-3)', async () => {
+      mockUpdateSettlementStatus.mockResolvedValueOnce(undefined);
+
+      const { result } = renderHook(() => useUpdateSettlementStatus());
+
+      await act(async () => {
+        result.current.mutate({
+          workLogId: 'worklog-1',
+          status: 'pending',
+          reason: '금액 재산정 필요',
+        });
+      });
+
+      expect(mockUpdateSettlementStatus).toHaveBeenCalledWith(
+        'worklog-1',
+        'pending',
+        'employer-1',
+        {
+          reason: '금액 재산정 필요',
+        }
+      );
     });
 
     it('should show appropriate message for each status', async () => {

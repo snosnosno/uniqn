@@ -84,6 +84,11 @@ export function useConfirmedStaff(
     ? queryKeys.confirmedStaff.byDate(jobPostingId, date)
     : queryKeys.confirmedStaff.byJobPosting(jobPostingId);
   const [realtimeData, setRealtimeData] = useState<GetConfirmedStaffResult | null>(null);
+  // realtime 경로 전용 상태 — useQuery 가 disabled 라 그쪽 error/isRefetching 은 영구 초기값이다.
+  // 이게 없으면 구독이 죽어도 error=null·isLoading=true 로 굳어 무한 스피너가 된다(STAFF-1).
+  // 형제 훅 useApplicantsByJobPosting 이 이미 쓰는 패턴을 그대로 맞춘다.
+  const [realtimeError, setRealtimeError] = useState<Error | null>(null);
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
   const { data, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: staffQueryKey,
@@ -113,11 +118,14 @@ export function useConfirmedStaff(
     const unsubscribe = subscribeToConfirmedStaff(jobPostingId, {
       onUpdate: (result) => {
         setRealtimeData(result);
+        setRealtimeError(null);
       },
       onError: (subscriptionError) => {
         logger.error('Confirmed staff subscription failed', toError(subscriptionError), {
           jobPostingId,
         });
+        // 토스트로 끝내지 않고 상태로 보존한다 — 토스트는 사라지고 화면은 스피너에 남는다.
+        setRealtimeError(toError(subscriptionError));
         addToast({
           type: 'error',
           message: '실시간 스태프 정보를 불러오지 못했습니다.',
@@ -307,11 +315,41 @@ export function useConfirmedStaff(
     },
   });
 
+  /**
+   * 수동 새로고침 — realtime 모드에서도 동작한다.
+   *
+   * 예전엔 `if (!realtime) refetch()` 라 realtime 소비자에게는 문자 그대로 빈 함수였고,
+   * 새로고침 버튼과 pull-to-refresh 가 시각 피드백조차 없이 아무 일도 안 했다(STAFF-11).
+   * TanStack Query 는 `enabled:false` 여도 수동 refetch 를 허용하므로, 결과를 realtimeData
+   * 에 직접 반영해 화면까지 도달시킨다(그러지 않으면 data 축이 갈려 여전히 안 보인다).
+   *
+   * 반환 타입은 `void` 로 유지한다 — Promise 를 흘리면 호출부 두 곳(RefreshControl·
+   * QuickActions)이 그대로 미처리 rejection 을 만든다. 실패는 여기서 토스트로 닫는다.
+   */
   const refresh = useCallback(() => {
     if (!realtime) {
       refetch();
+      return;
     }
-  }, [realtime, refetch]);
+
+    setIsManualRefreshing(true);
+    void refetch()
+      .then((result) => {
+        if (result.data) {
+          setRealtimeData(result.data);
+          setRealtimeError(null);
+        } else if (result.error) {
+          setRealtimeError(toError(result.error));
+        }
+      })
+      .catch((refreshError: unknown) => {
+        logger.error('확정 스태프 새로고침 실패', toError(refreshError), { jobPostingId });
+        addToast({ type: 'error', message: '스태프 정보를 새로고침하지 못했습니다.' });
+      })
+      .finally(() => {
+        setIsManualRefreshing(false);
+      });
+  }, [realtime, refetch, jobPostingId, addToast]);
 
   const changeRole = useCallback(
     (input: Omit<UpdateStaffRoleInput, 'changedBy'> & { changedBy?: string }) => {
@@ -372,10 +410,12 @@ export function useConfirmedStaff(
     staff: resultData?.staff ?? [],
     grouped: resultData?.grouped ?? [],
     stats: resultData?.stats ?? emptyStats,
-    isLoading: realtime ? !realtimeData : isLoading,
-    error: error ? toError(error) : null,
+    // realtime 계약: 구독 실패를 error 로 승격하고, 실패한 뒤에는 로딩을 끝낸다.
+    // (예전엔 error 가 항상 null 이라 화면의 ErrorState 가 도달 불가한 죽은 코드였다.)
+    isLoading: realtime ? !realtimeData && !realtimeError : isLoading,
+    error: realtimeError ?? (error ? toError(error) : null),
     refresh,
-    isRefreshing: isRefetching,
+    isRefreshing: realtime ? isManualRefreshing : isRefetching,
     changeRole,
     updateWorkTime,
     removeStaff,

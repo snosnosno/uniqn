@@ -11,6 +11,9 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card, Badge, ConfirmModal } from '@/components';
+import { logger } from '@/utils/logger';
+import { toError } from '@/errors';
+import { useToastStore } from '@/stores/toastStore';
 import { StackHeader } from '@/components/headers';
 import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
 import {
@@ -120,6 +123,7 @@ export default function JobPostingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const isDark = useThemeStore((state) => state.isDarkMode);
   const router = useRouter();
+  const addToast = useToastStore((s) => s.addToast);
   const { isFixed: contextIsFixed, handleShowQR } = useJobDetailContext();
   const {
     job: posting,
@@ -228,9 +232,20 @@ export default function JobPostingDetailScreen() {
     void shareJob(posting);
   }, [posting, shareJob]);
 
+  // refreshApplicants(=refreshRealtimeData)는 조회 실패 시 실제로 throw 한다. try/catch 가
+  // 없으면 onRetry·RefreshControl 두 호출부가 반환 Promise 를 버려 미처리 rejection 이 되고,
+  // 사용자에겐 아무 피드백도 남지 않는다(ORDER-9).
   const handleRefresh = useCallback(async () => {
-    await Promise.all([refresh(), refreshApplicants()]);
-  }, [refresh, refreshApplicants]);
+    try {
+      await Promise.all([refresh(), refreshApplicants()]);
+    } catch (refreshError) {
+      logger.error('공고 상세 새로고침 실패', toError(refreshError), { jobPostingId: id });
+      addToast({
+        type: 'error',
+        message: '새로고침하지 못했어요. 잠시 후 다시 시도해주세요.',
+      });
+    }
+  }, [refresh, refreshApplicants, id, addToast]);
 
   if (isLoading) {
     return (
