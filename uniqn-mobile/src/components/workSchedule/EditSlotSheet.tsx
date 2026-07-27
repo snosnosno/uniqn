@@ -131,7 +131,9 @@ export function EditSlotSheet({
         timeSlot: s.timeSlot,
       }))
     );
-  }, [slot, siblingSlots, startTime, endTime]);
+    // timeDecided 필수: 사용자가 기본값과 똑같은 시각을 골라 startTime/endTime 이 안 바뀌는
+    // 경우에도 "미정 → 확정" 전환은 일어나므로, 이게 빠지면 충돌 경고가 stale 해진다.
+  }, [slot, siblingSlots, startTime, endTime, timeDecided]);
 
   // 입력 중 익일 여부·근무시간 프리뷰(SSOT 파생). end==start 는 저장 차단.
   const timePreview = useMemo(
