@@ -3,7 +3,7 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Linking } from 'react-native';
 import { showAlert } from '@/utils/showAlert';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -67,6 +67,53 @@ function AlreadyAppliedState({ isFixed }: { isFixed: boolean }) {
           fullWidth
         >
           {isFixed ? '프로필 보기' : '내 일정 보기'}
+        </Button>
+      </View>
+    </View>
+  );
+}
+
+/**
+ * 고정(장기) 공고 — 앱 내 지원 비대상 정책 안내.
+ *
+ * @description 에러가 아니라 **정책 상태**다. `public/guide.html` 이 "고정(장기) 공고는 앱 내
+ * 지원 대신 연락처로 직접 문의하는 방식"이라고 사용자에게 공표하고 있고, 공개 공고 상세
+ * (`app/jobs/[id].tsx`)도 같은 축으로 전화 문의를 designed channel 로 제시한다. 따라서 문구를
+ * "지원 불가"가 아니라 **다음 행동(전화)** 중심으로 쓴다.
+ */
+function FixedPostingState({
+  contactPhone,
+  onReturn,
+}: {
+  contactPhone?: string;
+  onReturn: () => void;
+}) {
+  const phone = contactPhone?.trim();
+
+  return (
+    <View className="flex-1 items-center justify-center bg-surface-page dark:bg-surface p-6">
+      <View className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-primary-50 dark:bg-primary-900/30">
+        <InformationCircleIcon size={40} color={PRIMARY_COLORS[600]} />
+      </View>
+      <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
+        상시 모집 공고예요
+      </Text>
+      <Text className="mb-6 text-center text-content-secondary font-sans">
+        고정(장기) 공고는 앱 내 지원 대신 연락처로 직접 문의하는 방식이에요.
+      </Text>
+      <View className="w-full max-w-xs gap-3">
+        {phone ? (
+          <Button onPress={() => void Linking.openURL(`tel:${phone}`)} fullWidth>
+            전화 문의
+          </Button>
+        ) : (
+          // 죽은 버튼 금지 — 누를 수 없는 이유를 라벨에 명시한다.
+          <Button disabled fullWidth>
+            전화 문의 (연락처 미등록)
+          </Button>
+        )}
+        <Button onPress={onReturn} variant="outline" fullWidth>
+          공고 상세로 돌아가기
         </Button>
       </View>
     </View>
@@ -255,6 +302,20 @@ export default function ApplyScreen() {
         <Stack.Screen options={{ headerShown: false }} />
         <StackHeader title="지원하기" fallbackHref={fallbackHref} />
         <AlreadyAppliedState isFixed={isFixed} />
+      </SafeAreaView>
+    );
+  }
+
+  // 고정 공고는 앱 내 지원 비대상 — 두 공고 상세 화면의 CTA 만 막혀 있었고 이 라우트 자체는
+  // 열려 있어 딥링크·URL 직접 입력으로 정책이 뚫렸다. 위 isSupportedReleasePosting 가드는
+  // fixed 를 **명시적으로 통과**시키므로(jobPostingVisibility.ts) 여기서 별도로 막는다.
+  // 이미 지원한 레거시 행은 위 AlreadyAppliedState 가 먼저 잡도록 순서를 뒤에 둔다.
+  if (isFixed) {
+    return (
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <StackHeader title="지원하기" fallbackHref={fallbackHref} />
+        <FixedPostingState contactPhone={job.contactPhone} onReturn={handleReturnToJob} />
       </SafeAreaView>
     );
   }
