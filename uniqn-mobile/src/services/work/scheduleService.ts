@@ -5,13 +5,15 @@
  * @version 1.0.0
  */
 
-import { SECONDARY_PALETTE } from '@/constants/colors';
 import type { UnsubscribeFn } from '@/types/common';
 import { logger } from '@/utils/logger';
 import { NetworkError, ERROR_CODES, isAppError, toError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { STATUS } from '@/constants';
-import { shouldUseFrozenPayrollAmount } from '@/utils/settlementGrouping';
+import {
+  hasPendingPayrollEstimate,
+  shouldUseFrozenPayrollAmount,
+} from '@/utils/settlementGrouping';
 import { formatDateWithDay, toDateString } from '@/utils/date';
 import { TimeNormalizer } from '@/shared/time';
 import type {
@@ -19,7 +21,6 @@ import type {
   ScheduleFilters,
   ScheduleStats,
   ScheduleGroup,
-  ScheduleType,
   WorkLog,
   Application,
   WorkLogStatus,
@@ -74,11 +75,38 @@ export interface ScheduleQueryResult {
   stats: ScheduleStats;
   /** 부분 실패 시 경고 메시지 */
   warning?: string;
+  /**
+   * 조회한 달 **밖**이지만 같은 지원에 속한 근무일.
+   *
+   * 월 단위로만 조회하면 월 경계를 넘는 연속 근무가 두 카드로 쪼개져, 7일짜리 대회가
+   * 7월 화면에서 '4일'로 표기된다 — 대회사 D-7 집중 인력이라는 이 앱의 핵심 시나리오가
+   * 정확히 여기서 깨지고, 8월 초까지 잡혀 있다는 사실이 안 보여 이중 예약이 난다.
+   *
+   * 그룹핑에만 합쳐 쓰고, 캘린더 dot·통계·필터는 `schedules`(그 달만)를 그대로 쓴다.
+   */
+  boundarySchedules?: ScheduleEvent[];
 }
 
 // ============================================================================
 // Helper Functions
 // ============================================================================
+
+/** 월 경계를 넘는 연속 근무를 한 그룹으로 잡기 위한 조회 여유(일) */
+const MONTH_BOUNDARY_PADDING_DAYS = 7;
+
+/** 조회 범위를 앞뒤로 N일 넓힌다 */
+function padDateRange(
+  range: { start: string; end: string },
+  days: number
+): { start: string; end: string } {
+  const shift = (value: string, delta: number) => {
+    const date = new Date(`${value}T00:00:00`);
+    date.setDate(date.getDate() + delta);
+    return toDateString(date);
+  };
+
+  return { start: shift(range.start, -days), end: shift(range.end, days) };
+}
 
 /**
  * 월의 시작일과 끝일 계산
@@ -246,18 +274,24 @@ export function calculateScheduleStats(schedules: ScheduleEvent[]): ScheduleStat
   const datedSchedules = schedules.filter((schedule) => hasScheduleDate(schedule.date));
   const confirmedScheduleKeys = new Set<string>();
   const upcomingScheduleKeys = new Set<string>();
+  // 완료도 확정/지원과 같은 '건' 단위로 센다. 예전에는 여기만 원본 row 를 그대로 세서
+  // 3일짜리 대회 1건이 상단 통계엔 '완료 3', 목록 필터탭엔 '완료 1' 로 동시에 나왔다.
+  const completedScheduleKeys = new Set<string>();
 
-  let completedSchedules = 0;
+  let completedWorkDays = 0;
   let totalEarnings = 0;
   let thisMonthEarnings = 0;
+  let settledEarnings = 0;
+  let estimatedEarnings = 0;
   let hoursWorked = 0;
 
   schedules.forEach((schedule) => {
     // 완료된 스케줄
     if (schedule.type === STATUS.SCHEDULE.COMPLETED) {
-      completedSchedules++;
+      completedWorkDays++;
+      completedScheduleKeys.add(buildScheduleStatsCountKey(schedule));
 
-      // 수익 계산 — 동결값 SSOT(shouldUseFrozenPayrollAmount)를 유일 관문으로 쓴다.
+      // 수익 계산 — 동결값 판정은 shouldUseFrozenPayrollAmount 를 유일 관문으로 쓴다.
       // 과거의 `payrollAmount > 0` 가드는 **정산 0원 완료 건**(노쇼 등)을 동결값으로 인정하지
       // 않고 재계산으로 흘려보내, 실제로 0원 지급한 근무를 수입 합계에 양수로 올렸다.
       let amount = 0;
@@ -270,6 +304,10 @@ export function calculateScheduleStats(schedules: ScheduleEvent[]): ScheduleStat
       ) {
         // 1순위: 구인자 확정 금액(동결값). 0원도 존중한다.
         amount = schedule.payrollAmount;
+      } else if (hasPendingPayrollEstimate(schedule.payrollAmount)) {
+        // 2순위: 아직 정산 완료 전이지만 금액이 잡힌 건 — '정산 예정' 집계의 근거다.
+        // 여기를 지우면 예정액이 통째로 0원으로 보인다(구인자가 금액을 넣어둔 상태인데도).
+        amount = schedule.payrollAmount;
       } else if (schedule.settlementBreakdown) {
         // 2순위: 미리 계산된 정산 세부 내역
         const breakdown = schedule.settlementBreakdown;
@@ -280,6 +318,14 @@ export function calculateScheduleStats(schedules: ScheduleEvent[]): ScheduleStat
       if (amount > 0) {
         totalEarnings += amount;
         thisMonthEarnings += amount;
+
+        // 정산 완료분과 아직 처리 전인 추정치를 분리한다. 한 숫자로 합치면
+        // 입금 예정액으로 오해돼 급여 문의·분쟁의 출발점이 된다.
+        if (schedule.payrollStatus === STATUS.PAYROLL.COMPLETED) {
+          settledEarnings += amount;
+        } else if (schedule.payrollStatus !== STATUS.PAYROLL.FAILED) {
+          estimatedEarnings += amount;
+        }
       }
 
       // 근무 시간 계산
@@ -310,11 +356,14 @@ export function calculateScheduleStats(schedules: ScheduleEvent[]): ScheduleStat
 
   return {
     totalSchedules: schedules.length,
-    completedSchedules,
+    completedSchedules: completedScheduleKeys.size,
     confirmedSchedules: confirmedScheduleKeys.size,
     upcomingSchedules: upcomingScheduleKeys.size,
+    completedWorkDays,
     totalEarnings,
     thisMonthEarnings,
+    settledEarnings,
+    estimatedEarnings,
     hoursWorked: Math.round(hoursWorked * 10) / 10, // 소수점 1자리
   };
 }
@@ -526,8 +575,36 @@ export async function getSchedulesByMonth(
     logger.info('월별 스케줄 조회', { staffId, year, month });
 
     const dateRange = getMonthRange(year, month);
+    // 앞뒤로 여유를 두고 조회해야 월 경계를 넘는 연속 근무가 한 그룹으로 성립한다.
+    const paddedRange = padDateRange(dateRange, MONTH_BOUNDARY_PADDING_DAYS);
 
-    return await getMySchedules(staffId, { dateRange }, 100);
+    const result = await getMySchedules(staffId, { dateRange: paddedRange }, 100);
+
+    // 표시·집계 기준은 그대로 '그 달'이고, 패딩분은 그룹핑 재료로만 따로 넘긴다.
+    const inMonth: ScheduleEvent[] = [];
+    const outOfMonth: ScheduleEvent[] = [];
+    for (const schedule of result.schedules) {
+      if (schedule.date >= dateRange.start && schedule.date <= dateRange.end) {
+        inMonth.push(schedule);
+      } else {
+        outOfMonth.push(schedule);
+      }
+    }
+
+    // 그 달에 근무가 하나도 없는 지원의 패딩분까지 끌고 오면 남의 달 일정이 섞인다.
+    const monthApplicationIds = new Set(
+      inMonth.map((schedule) => schedule.applicationId).filter(Boolean)
+    );
+    const boundarySchedules = outOfMonth.filter(
+      (schedule) => schedule.applicationId && monthApplicationIds.has(schedule.applicationId)
+    );
+
+    return {
+      ...result,
+      schedules: inMonth,
+      stats: calculateScheduleStats(inMonth),
+      ...(boundarySchedules.length > 0 && { boundarySchedules }),
+    };
   } catch (error) {
     throw handleServiceError(error, {
       operation: '월별 스케줄 조회',
@@ -696,49 +773,4 @@ export function subscribeToSchedules(
       applicationUnsubscribe();
     };
   });
-}
-
-/**
- * 캘린더용 날짜별 마킹 데이터 생성
- */
-export function getCalendarMarkedDates(
-  schedules: ScheduleEvent[]
-): Record<string, { marked: boolean; dotColor: string; type?: ScheduleType }> {
-  const markedDates: Record<string, { marked: boolean; dotColor: string; type?: ScheduleType }> =
-    {};
-
-  const colorMap: Record<ScheduleType, string> = {
-    applied: '#D4AF37', // primary (gold)
-    confirmed: '#22C55E', // success
-    completed: SECONDARY_PALETTE[500], // secondary (과거 근무 — confirmed와 시각 구분)
-    cancelled: '#DC2626', // error
-  };
-
-  schedules.forEach((schedule) => {
-    // 이미 마킹된 날짜가 있으면 우선순위에 따라 결정
-    // 우선순위: confirmed > applied > completed > cancelled
-    if (!hasScheduleDate(schedule.date)) {
-      return;
-    }
-
-    if (!markedDates[schedule.date]) {
-      markedDates[schedule.date] = {
-        marked: true,
-        dotColor: colorMap[schedule.type],
-        type: schedule.type,
-      };
-    } else if (
-      schedule.type === STATUS.SCHEDULE.CONFIRMED ||
-      (schedule.type === STATUS.SCHEDULE.APPLIED &&
-        markedDates[schedule.date].type !== STATUS.SCHEDULE.CONFIRMED)
-    ) {
-      markedDates[schedule.date] = {
-        marked: true,
-        dotColor: colorMap[schedule.type],
-        type: schedule.type,
-      };
-    }
-  });
-
-  return markedDates;
 }

@@ -6,11 +6,11 @@
  */
 
 import { useState, useCallback } from 'react';
-import { Share, Platform } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 import { trackEvent, createJobDeepLink } from '@/services/observability';
+import { useShareSheet } from '@/hooks/share/useShareSheet';
 import { useToast } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { getJobDetailQueryOptions } from '@/hooks/useJobDetail';
@@ -65,44 +65,8 @@ export function useShare(): UseShareReturn {
   const toast = useToast();
   const queryClient = useQueryClient();
   const userId = useAuthStore((state) => state.user?.uid);
-
-  /**
-   * 웹 플랫폼 공유 (Web Share API → 클립보드 fallback)
-   */
-  const webShare = useCallback(
-    async (options: {
-      title: string;
-      text: string;
-      url?: string;
-    }): Promise<'shared' | 'dismissed'> => {
-      // Web Share API 시도
-      if (typeof navigator !== 'undefined' && navigator.share) {
-        try {
-          await navigator.share({
-            title: options.title,
-            text: options.text,
-            url: options.url,
-          });
-          return 'shared';
-        } catch (e) {
-          // AbortError = 사용자가 공유 시트 닫음
-          if (e instanceof Error && e.name === 'AbortError') {
-            return 'dismissed';
-          }
-          // 그 외 에러는 클립보드 fallback
-        }
-      }
-
-      // 클립보드 fallback
-      const copyText = options.url || options.text;
-      if (typeof navigator !== 'undefined' && navigator.clipboard) {
-        await navigator.clipboard.writeText(copyText);
-      }
-      toast.success('링크가 복사되었습니다');
-      return 'shared';
-    },
-    [toast]
-  );
+  // 웹/네이티브 분기는 어댑터가 담당 — 묶음 공유(useBulkShare)와 동일 경로를 쓴다.
+  const { openShareSheet } = useShareSheet();
 
   /**
    * 일반 콘텐츠 공유
@@ -116,27 +80,11 @@ export function useShare(): UseShareReturn {
       setIsSharing(true);
 
       try {
-        let action: 'shared' | 'dismissed';
-
-        if (Platform.OS === 'web') {
-          action = await webShare({
-            title: options.title,
-            text: options.message,
-            url: options.url,
-          });
-        } else {
-          const result = await Share.share(
-            {
-              title: options.title,
-              message: options.message,
-              ...(Platform.OS === 'ios' && options.url ? { url: options.url } : {}),
-            },
-            {
-              dialogTitle: options.title,
-            }
-          );
-          action = result.action === Share.sharedAction ? 'shared' : 'dismissed';
-        }
+        const action = await openShareSheet({
+          title: options.title,
+          message: options.message,
+          url: options.url,
+        });
 
         logger.info('콘텐츠 공유 완료', { action, title: options.title });
 
@@ -150,7 +98,7 @@ export function useShare(): UseShareReturn {
         setIsSharing(false);
       }
     },
-    [isSharing, webShare]
+    [isSharing, openShareSheet]
   );
 
   /**
@@ -187,24 +135,13 @@ export function useShare(): UseShareReturn {
         // 공유 메시지 구성 (일정·역할·인원·급여·복리후생·세금 포함, url 은 본문 마지막 1회)
         const message = buildJobShareText(job, url, filledCounts);
 
-        let action: 'shared' | 'dismissed';
-
-        if (Platform.OS === 'web') {
-          // url 은 message 본문에 이미 포함 — 별도 url 미전달로 중복 미리보기 방지
-          action = await webShare({ title: job.title, text: message });
-        } else {
-          // iOS 에서 url 을 별도 전달하면 카톡이 본문+링크를 이중 렌더 → message 만 전달
-          const result = await Share.share(
-            {
-              title: job.title,
-              message,
-            },
-            {
-              dialogTitle: '공고 공유하기',
-            }
-          );
-          action = result.action === Share.sharedAction ? 'shared' : 'dismissed';
-        }
+        // url 은 message 본문에 이미 포함 — 별도 url 미전달로 중복 미리보기 방지.
+        // (iOS 에서 url 을 따로 주면 카톡이 본문+링크를 이중 렌더한다)
+        const action = await openShareSheet({
+          title: job.title,
+          message,
+          dialogTitle: '공고 공유하기',
+        });
 
         // Analytics 이벤트
         if (action === 'shared') {
@@ -222,7 +159,7 @@ export function useShare(): UseShareReturn {
         return { success: false, error: toError(error) };
       }
     },
-    [webShare, toast]
+    [openShareSheet, toast]
   );
 
   /**

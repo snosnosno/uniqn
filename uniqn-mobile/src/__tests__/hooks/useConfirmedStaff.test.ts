@@ -91,8 +91,8 @@ jest.mock('@/lib/queryClient', () => ({
       byJobPosting: (id: string) => ['confirmedStaff', 'byJobPosting', id],
       byDate: (id: string, date: string) => ['confirmedStaff', 'byDate', id, date],
     },
-    weeklyGrid: {
-      all: ['weeklyGrid'],
+    workSchedule: {
+      all: ['workSchedule'],
     },
   },
   cachingPolicies: {
@@ -439,7 +439,7 @@ describe('useConfirmedStaff', () => {
     });
   });
 
-  it('adds direct staff and invalidates staff, jobPostings, and weeklyGrid caches (W-1)', async () => {
+  it('adds direct staff and invalidates staff, jobPostings, and workSchedule caches (W-1)', async () => {
     mockAddDirectStaff.mockResolvedValue(['worklog-new']);
 
     const { result } = renderHook(() => useConfirmedStaff('job-1'));
@@ -455,8 +455,8 @@ describe('useConfirmedStaff', () => {
     expect(mockAddDirectStaff).toHaveBeenCalled();
     expect(mockInvalidateStaffManagement).toHaveBeenCalledWith('job-1');
     expect(mockInvalidateJobPostings).toHaveBeenCalled();
-    // W-1: 스태프탭 직접추가가 주간 배치 그리드에 즉시 반영되도록 weeklyGrid 캐시 무효화
-    expect(mockInvalidateQueriesClient).toHaveBeenCalledWith({ queryKey: ['weeklyGrid'] });
+    // W-1: 스태프탭 직접추가가 근무표에 즉시 반영되도록 workSchedule 캐시 무효화
+    expect(mockInvalidateQueriesClient).toHaveBeenCalledWith({ queryKey: ['workSchedule'] });
     expect(mockAddToast).toHaveBeenCalledWith({
       type: 'success',
       message: '스태프가 추가되었습니다.',

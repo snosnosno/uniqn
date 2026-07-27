@@ -6,6 +6,7 @@
  */
 
 import type { UserRole } from '@/types';
+import type { AttendanceStatus, ScheduleType } from '@/shared/status';
 
 // ============================================================================
 // Types
@@ -374,7 +375,9 @@ export function createReadNotification(): MockNotification {
 // ============================================================================
 export interface MockScheduleEvent {
   id: string;
-  type: 'applied' | 'confirmed' | 'completed' | 'cancelled';
+  // 값을 다시 적지 않는다 — 하드코딩 사본이면 상태를 하나 늘릴 때 픽스처만 조용히
+  // 옛 세계에 남아, 신규 상태를 다루는 테스트를 아예 작성할 수 없게 된다.
+  type: ScheduleType;
   date: string;
   startTime: { toMillis: () => number; toDate: () => Date } | null;
   endTime: { toMillis: () => number; toDate: () => Date } | null;
@@ -383,12 +386,14 @@ export interface MockScheduleEvent {
   jobPostingName: string;
   location: string;
   role: string;
-  status: 'not_started' | 'checked_in' | 'checked_out';
+  status: AttendanceStatus;
   sourceCollection: 'workLogs' | 'applications';
   sourceId: string;
   workLogId?: string;
   applicationId?: string;
   isCancellationPending?: boolean;
+  /** 구인자가 남긴 노쇼 사유 (work_logs.no_show_reason) */
+  noShowReason?: string;
 }
 
 export function createMockScheduleEvent(

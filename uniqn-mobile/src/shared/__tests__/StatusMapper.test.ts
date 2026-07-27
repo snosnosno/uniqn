@@ -22,9 +22,17 @@ describe('StatusMapper', () => {
       ['checked_out', 'completed'],
       ['completed', 'completed'],
       ['cancelled', 'cancelled'],
-      ['no_show', 'cancelled'],
+      // 예전엔 'cancelled' 를 기대했다 — 그 기대가 결함을 고정하고 있었다. 노쇼는 스태프의
+      // 평판·정산에 불리한 기록이라 취소로 접히면 본인만 사실을 모르고 이의 제기 기회를 놓친다.
+      ['no_show', 'no_show'],
     ] as const)('maps WorkLogStatus %s to ScheduleType %s', (input, expected) => {
       expect(StatusMapper.workLogToSchedule(input as WorkLogStatus)).toBe(expected);
+    });
+
+    it('노쇼와 취소를 서로 다른 ScheduleType 으로 가른다', () => {
+      expect(StatusMapper.workLogToSchedule('no_show')).not.toBe(
+        StatusMapper.workLogToSchedule('cancelled')
+      );
     });
   });
 

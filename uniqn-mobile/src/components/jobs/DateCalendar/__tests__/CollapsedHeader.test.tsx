@@ -53,6 +53,18 @@ describe('CollapsedHeader', () => {
     expect(baseProps.onExpand).not.toHaveBeenCalled();
   });
 
+  // ✕ 는 확인 없이 즉시 실행되는 필터 리셋이라, §17 이 허용하는 '삭제 확인'(되돌리기
+  // 어려운 삭제의 확인 단계)이 아니다. 펼치기도 disclosure 라 금지 축에 든다.
+  it('펼치기·필터 해제에 햅틱을 쓰지 않는다 (impeccable §17)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { triggerHaptic } = require('@/utils/haptics');
+    const { getByLabelText } = render(<CollapsedHeader {...baseProps} />);
+
+    fireEvent.press(getByLabelText('날짜 필터 해제'));
+
+    expect(triggerHaptic).not.toHaveBeenCalled();
+  });
+
   it('count=0이어도 요약에 "0건" 표시', () => {
     const { getByText } = render(<CollapsedHeader {...baseProps} count={0} />);
     expect(getByText(/0건/)).toBeTruthy();

@@ -5,7 +5,6 @@
  * @version 1.0.0
  */
 
-import { SECONDARY_PALETTE } from '@/constants/colors';
 import {
   createMockScheduleEvent,
   createTodaySchedule,
@@ -22,7 +21,6 @@ import type { WorkLog, Application, ScheduleEvent } from '@/types';
 // Import after mocks
 import {
   groupSchedulesByDate,
-  getCalendarMarkedDates,
   getMySchedules,
   getSchedulesByDate,
   getSchedulesByMonth,
@@ -338,80 +336,6 @@ describe('scheduleService', () => {
     });
   });
 
-  describe('getCalendarMarkedDates', () => {
-    it('should return marked dates with correct colors', () => {
-      const schedules: ScheduleEvent[] = [
-        createMockScheduleEvent({
-          date: '2025-01-15',
-          type: 'confirmed',
-        }) as unknown as ScheduleEvent,
-        createMockScheduleEvent({
-          date: '2025-01-16',
-          type: 'applied',
-        }) as unknown as ScheduleEvent,
-        createMockScheduleEvent({
-          date: '2025-01-17',
-          type: 'completed',
-        }) as unknown as ScheduleEvent,
-        createMockScheduleEvent({
-          date: '2025-01-18',
-          type: 'cancelled',
-        }) as unknown as ScheduleEvent,
-      ];
-
-      const markedDates = getCalendarMarkedDates(schedules);
-
-      expect(markedDates['2025-01-15'].marked).toBe(true);
-      expect(markedDates['2025-01-15'].dotColor).toBe('#22C55E'); // success-500 for confirmed
-
-      expect(markedDates['2025-01-16'].dotColor).toBe('#D4AF37'); // primary-500 for applied
-
-      expect(markedDates['2025-01-17'].dotColor).toBe(SECONDARY_PALETTE[500]); // secondary-500 for completed (과거 근무)
-
-      expect(markedDates['2025-01-18'].dotColor).toBe('#DC2626'); // error-500 for cancelled
-    });
-
-    it('should prioritize confirmed over other types for same date', () => {
-      const schedules: ScheduleEvent[] = [
-        createMockScheduleEvent({
-          date: '2025-01-15',
-          type: 'applied',
-        }) as unknown as ScheduleEvent,
-        createMockScheduleEvent({
-          date: '2025-01-15',
-          type: 'confirmed',
-        }) as unknown as ScheduleEvent,
-      ];
-
-      const markedDates = getCalendarMarkedDates(schedules);
-
-      expect(markedDates['2025-01-15'].type).toBe('confirmed');
-      expect(markedDates['2025-01-15'].dotColor).toBe('#22C55E');
-    });
-
-    it('should prioritize applied over completed for same date', () => {
-      const schedules: ScheduleEvent[] = [
-        createMockScheduleEvent({
-          date: '2025-01-15',
-          type: 'completed',
-        }) as unknown as ScheduleEvent,
-        createMockScheduleEvent({
-          date: '2025-01-15',
-          type: 'applied',
-        }) as unknown as ScheduleEvent,
-      ];
-
-      const markedDates = getCalendarMarkedDates(schedules);
-
-      expect(markedDates['2025-01-15'].type).toBe('applied');
-    });
-
-    it('should return empty object for no schedules', () => {
-      const markedDates = getCalendarMarkedDates([]);
-      expect(markedDates).toEqual({});
-    });
-  });
-
   describe('getMySchedules', () => {
     it('should return schedules for a staff member', async () => {
       const workLog = createMockWorkLog({
@@ -446,13 +370,15 @@ describe('scheduleService', () => {
       mockAppRepoGetByApplicantIdWithStatuses.mockResolvedValue([]);
 
       await getMySchedules('staff-123', {
-        dateRange: { start: '2025-01-01', end: '2025-01-31' },
+        // 월 경계를 넘는 연속 근무를 한 그룹으로 잡으려 앞뒤 7일을 더 조회한다.
+        dateRange: { start: '2024-12-25', end: '2025-02-07' },
       });
 
       expect(mockWorkLogRepoGetByStaffIdWithFilters).toHaveBeenCalledWith(
         'staff-123',
         expect.objectContaining({
-          dateRange: { start: '2025-01-01', end: '2025-01-31' },
+          // 월 경계를 넘는 연속 근무를 한 그룹으로 잡으려 앞뒤 7일을 더 조회한다.
+          dateRange: { start: '2024-12-25', end: '2025-02-07' },
         })
       );
     });
@@ -476,7 +402,8 @@ describe('scheduleService', () => {
       mockJobPostingRepoGetByIdBatch.mockResolvedValue([posting]);
 
       const result = await getMySchedules('staff-123', {
-        dateRange: { start: '2025-01-01', end: '2025-01-31' },
+        // 월 경계를 넘는 연속 근무를 한 그룹으로 잡으려 앞뒤 7일을 더 조회한다.
+        dateRange: { start: '2024-12-25', end: '2025-02-07' },
         searchTerm: '강남',
       });
 
@@ -517,7 +444,8 @@ describe('scheduleService', () => {
       expect(mockWorkLogRepoGetByStaffIdWithFilters).toHaveBeenCalledWith(
         'staff-123',
         expect.objectContaining({
-          dateRange: { start: '2025-01-01', end: '2025-01-31' },
+          // 월 경계를 넘는 연속 근무를 한 그룹으로 잡으려 앞뒤 7일을 더 조회한다.
+          dateRange: { start: '2024-12-25', end: '2025-02-07' },
         })
       );
     });
@@ -531,7 +459,7 @@ describe('scheduleService', () => {
       expect(mockWorkLogRepoGetByStaffIdWithFilters).toHaveBeenCalledWith(
         'staff-123',
         expect.objectContaining({
-          dateRange: { start: '2024-02-01', end: '2024-02-29' },
+          dateRange: { start: '2024-01-25', end: '2024-03-07' },
         })
       );
     });

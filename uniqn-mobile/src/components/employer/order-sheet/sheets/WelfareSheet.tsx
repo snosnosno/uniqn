@@ -138,7 +138,7 @@ export function WelfareSheet({ visible, value, onConfirm, onClose }: WelfareShee
                   placeholder="금액(선택)"
                   placeholderTextColor={placeholderColor}
                   testID={`order-sheet-welfare-${key}-input`}
-                  className="w-24 rounded-lg border border-secondary-200 dark:border-surface-overlay px-2 py-1.5 text-right text-sm text-content-primary font-sans"
+                  className="w-24 rounded-lg border border-secondary-200 dark:border-surface-overlay px-2 py-1.5 text-right text-sm text-content-primary dark:text-content-primary font-sans"
                 />
               )}
             </View>
@@ -173,7 +173,9 @@ export function WelfareSheet({ visible, value, onConfirm, onClose }: WelfareShee
                     : 'border-secondary-300 dark:border-surface-overlay'
                 }`}
               />
-              <Text className="text-sm font-sans-medium text-content-primary">보장시간</Text>
+              <Text className="text-sm font-sans-medium text-content-primary dark:text-content-primary">
+                보장시간
+              </Text>
             </Pressable>
             {ghChecked && (
               <TextInput
@@ -183,7 +185,7 @@ export function WelfareSheet({ visible, value, onConfirm, onClose }: WelfareShee
                 placeholder="시간"
                 placeholderTextColor={placeholderColor}
                 testID={`order-sheet-welfare-${GUARANTEED_HOURS_KEY}-input`}
-                className="w-24 rounded-lg border border-secondary-200 dark:border-surface-overlay px-2 py-1.5 text-right text-sm text-content-primary font-sans"
+                className="w-24 rounded-lg border border-secondary-200 dark:border-surface-overlay px-2 py-1.5 text-right text-sm text-content-primary dark:text-content-primary font-sans"
               />
             )}
           </View>

@@ -3,7 +3,7 @@
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import React, { memo, useMemo } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, Linking } from 'react-native';
 import { Badge } from '@/components/ui';
 import {
@@ -17,21 +17,19 @@ import {
   BanknotesIcon,
 } from '@/components/icons';
 import { getRoleDisplayName } from '@/types/unified';
-import {
-  formatCurrency,
-  SALARY_TYPE_LABELS,
-  type Allowances,
-  type TaxSettings,
-} from '@/utils/settlement';
+// formatCurrency 는 더 이상 쓰지 않는다 — 금액 표기는 정산 탭 한 곳으로 모았다.
+import { SALARY_TYPE_LABELS, type Allowances, type TaxSettings } from '@/utils/settlement';
 import {
   PROVIDED_FLAG,
   DEFAULT_TAX_SETTINGS,
   getRoleSalaryFromSettlementSource,
 } from '@/domains/settlement';
 import { WorkTimeDisplay } from '@/shared/time';
+import { formatWorkTimeRange, NO_SHOW_NOTICE_TITLE, NO_SHOW_NOTICE_DESCRIPTION } from '../helpers';
 import { formatPhoneNumber } from '@/utils/phone';
+import { openMapSearch } from '@/utils/mapLink';
+import { useToast } from '@/stores/toastStore';
 import { STATUS } from '@/constants';
-import { shouldUseFrozenPayrollAmount } from '@/utils/settlementGrouping';
 import { PAYROLL_STATUS } from '@/constants/statusConfig';
 import type { ScheduleEvent, PayrollStatus } from '@/types';
 import { formatDateKoreanWithDay } from '@/utils/date';
@@ -41,8 +39,8 @@ export interface InfoTabProps {
 }
 
 function getTimeDisplay(schedule: ScheduleEvent): string {
-  const info = WorkTimeDisplay.getDisplayInfo(schedule);
-  return `${info.effectiveStart} - ${info.effectiveEnd}`;
+  // 자정 넘김('익일')과 '미정' 처리를 카드와 같은 규칙으로 맞춘다.
+  return formatWorkTimeRange(WorkTimeDisplay.getDisplayInfo(schedule));
 }
 
 function getActualTimeDisplay(schedule: ScheduleEvent): string | null {
@@ -80,6 +78,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
   const description = schedule.postingProjection?.description;
   const payrollStatus = (schedule.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus;
   const payrollStatusConfig = PAYROLL_STATUS[payrollStatus];
+  const toast = useToast();
 
   const salaryInfo = useMemo(() => {
     if (schedule.settlementBreakdown?.salaryInfo) {
@@ -137,6 +136,51 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
   }, [allowances]);
 
   const hasTax = taxSettings.type !== 'none';
+
+  // 상세 주소가 있으면 그걸 우선한다 — 지도 검색 정확도가 높다.
+  const mapQuery = schedule.detailedAddress?.trim() || schedule.location?.trim() || '';
+
+  const handleOpenMap = useCallback(async () => {
+    const opened = await openMapSearch(mapQuery);
+    if (!opened) {
+      toast.error('지도 앱을 열지 못했어요. 주소를 직접 검색해 주세요.');
+    }
+  }, [mapQuery, toast]);
+
+  // 노쇼는 취소 분기(opacity-70 로 흐려짐)에 섞지 않는다 — 이의 제기 기한이 있는 기록이라
+  // 공고·일정 정보를 흐리지 않고 그대로 읽을 수 있어야 근거를 맞춰볼 수 있다.
+  if (schedule.type === STATUS.SCHEDULE.NO_SHOW) {
+    return (
+      <View className="py-2">
+        <View className="mb-4 rounded-md bg-error-50 p-4 dark:bg-error-900/20">
+          <Text className="text-sm font-sans-semibold text-error-700 dark:text-error-300">
+            {NO_SHOW_NOTICE_TITLE}
+          </Text>
+          <Text className="mt-1 text-sm text-error-600 dark:text-error-400 font-sans">
+            {NO_SHOW_NOTICE_DESCRIPTION}
+          </Text>
+        </View>
+
+        <Section icon={<DocumentIcon size={18} color={SECONDARY_PALETTE[400]} />} title="공고 정보">
+          <Text className="text-base text-content-primary dark:text-content-primary font-sans">
+            {schedule.jobPostingName}
+          </Text>
+        </Section>
+
+        <Section icon={<CalendarIcon size={18} color={SECONDARY_PALETTE[400]} />} title="일정">
+          <Text className="text-base text-content-primary dark:text-content-primary font-sans">
+            {formatFullDate(schedule.date)}
+          </Text>
+          <View className="mt-1 flex-row items-center">
+            <ClockIcon size={14} color={SECONDARY_PALETTE[400]} />
+            <Text className="ml-1.5 text-sm text-content-secondary font-sans">
+              {getTimeDisplay(schedule)}
+            </Text>
+          </View>
+        </Section>
+      </View>
+    );
+  }
 
   if (schedule.type === STATUS.SCHEDULE.CANCELLED) {
     return (
@@ -203,6 +247,22 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
             )}
           </View>
         </View>
+
+        {/* 길찾기 — 전화 행과 같은 시각 언어. 주소만 죽은 텍스트로 두면
+            처음 가는 근무지를 지도 앱에 손으로 다시 쳐야 한다. */}
+        {mapQuery && (
+          <Pressable
+            onPress={handleOpenMap}
+            accessibilityRole="button"
+            accessibilityLabel={`${mapQuery} 길찾기`}
+            className="ml-8 mt-2 flex-row items-center rounded-lg bg-primary-50 px-3 py-2 active:bg-primary-100 dark:bg-primary-900/20 dark:active:bg-primary-900/30"
+          >
+            <MapIcon size={16} color="#B8962E" />
+            <Text className="ml-1.5 text-sm font-sans-medium text-primary-600 dark:text-primary-400">
+              길찾기
+            </Text>
+          </Pressable>
+        )}
       </View>
 
       <Section icon={<CalendarIcon size={18} color={SECONDARY_PALETTE[500]} />} title="일정">
@@ -361,36 +421,14 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           icon={<BanknotesIcon size={18} color={SECONDARY_PALETTE[500]} />}
           title="정산 현황"
         >
+          {/* 금액은 정산 탭이 단일 소스다. 예전엔 여기가 재계산치(settlementBreakdown)를
+              큰 글씨로, 정산 탭은 확정액(payrollAmount)을 큰 글씨로 띄워서 서로 다른 두
+              숫자가 나란히 보였다 — "어느 게 받을 돈인지"를 사용자가 판정하게 만든 것이다.
+              여기서는 상태만 말하고 금액은 정산 탭으로 넘긴다. */}
           <View className="flex-row items-center justify-between rounded-lg bg-surface-page dark:bg-surface p-3 dark:bg-surface/30">
-            {/* 금액은 하나만 보여준다 — 과거엔 재계산액과 동결액을 동시에 그려서, 공고 급여를
-                바꾸면 한 카드 안에 서로 모순되는 두 숫자가 남았다. 정산이 완료됐으면 동결값이
-                진실원이고(0원도 포함), 아직이면 재계산 예상액이다. */}
-            <View>
-              {shouldUseFrozenPayrollAmount(
-                schedule.payrollStatus === STATUS.PAYROLL.COMPLETED,
-                schedule.payrollAmount
-              ) ? (
-                <>
-                  <Text className="text-base font-sans-medium text-content-primary dark:text-off-white">
-                    {formatCurrency(schedule.payrollAmount)}
-                  </Text>
-                  <Text className="mt-0.5 text-sm text-success-600 dark:text-success-400 font-sans">
-                    확정 금액
-                  </Text>
-                </>
-              ) : (
-                schedule.settlementBreakdown && (
-                  <>
-                    <Text className="text-base font-sans-medium text-content-primary dark:text-off-white">
-                      {formatCurrency(schedule.settlementBreakdown.afterTaxPay)}
-                    </Text>
-                    <Text className="mt-0.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
-                      정산 예정 금액
-                    </Text>
-                  </>
-                )
-              )}
-            </View>
+            <Text className="text-sm text-content-secondary font-sans">
+              금액은 정산 탭에서 확인할 수 있어요
+            </Text>
             <Badge variant={payrollStatusConfig.variant} size="sm">
               {payrollStatusConfig.label}
             </Badge>

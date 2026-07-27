@@ -17,6 +17,7 @@ import type {
   SchedulePostingProjection,
   ScheduleType,
   WorkLog,
+  PostingRoleCatalogEntry,
 } from '@/types';
 import {
   FIXED_DATE_MARKER,
@@ -27,7 +28,6 @@ import {
 import { parseTimeSlotToDate } from '@/utils/date/ranges';
 import { toDate } from '@/utils/date';
 import { calculateSettlementBreakdown, DEFAULT_SALARY_INFO } from '@/utils/settlement';
-import type { PostingRoleCatalogEntry } from '@/types';
 
 export interface SchedulePostingContext {
   title: string;
@@ -142,6 +142,9 @@ export class ScheduleConverter {
       status: attendanceStatus,
       payrollStatus: workLog.payrollStatus,
       payrollAmount: workLog.payrollAmount,
+      // 지급 처리 시각. DB(payroll_date)→WorkLog 까지는 오는데 여기서 끊겨 있어
+      // 스태프는 '정산 완료' 배지만 보고 언제 처리됐는지 알 수 없었다.
+      payrollDate: workLog.payrollDate,
       ownerPhone: postingContext?.contactPhone,
       ownerId: workLog.ownerId || postingContext?.ownerId,
       notes: workLog.notes,
@@ -152,6 +155,9 @@ export class ScheduleConverter {
       // 합성키(`${jobPostingId}_${staffId}`)를 쓰면 invalid uuid(22P02)로 터진다.
       // 레거시/수동 work_log로 applicationId가 없으면 undefined → 취소 버튼 숨김 + 그룹화 제외(안전).
       applicationId: workLog.applicationId ?? undefined,
+      // 노쇼 사유 — 구인자만 보던 값이다. 스태프에게 안 넘기면 "왜 노쇼로 잡혔는지"를
+      // 전화로 물어보는 것 말고는 알 방법이 없다.
+      noShowReason: workLog.noShowReason,
       customSalaryInfo: workLog.customSalaryInfo,
       customAllowances: workLog.customAllowances,
       customTaxSettings: workLog.customTaxSettings,

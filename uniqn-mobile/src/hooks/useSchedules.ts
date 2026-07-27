@@ -2,7 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useAuthStore } from '@/stores/authStore';
-import { queryKeys, cachingPolicies, queryCachingOptions } from '@/lib/queryClient';
+import {
+  queryKeys,
+  cachingPolicies,
+  queryCachingOptions,
+  offlineCachePolicies,
+} from '@/lib/queryClient';
 import {
   getCriticalOfflineCache,
   setCriticalOfflineCache,
@@ -17,9 +22,13 @@ import {
   getTodaySchedules,
   subscribeToSchedules,
   groupSchedulesByDate,
-  getCalendarMarkedDates,
 } from '@/services/work/scheduleService';
-import { groupScheduleEvents, filterSchedulesByDate } from '@/utils/scheduleGrouping';
+import {
+  groupScheduleEvents,
+  filterSchedulesByDate,
+  resolveSelectedDateForMonth,
+} from '@/utils/scheduleGrouping';
+import { shouldPreferQuerySchedulePayload } from '@/utils/scheduleRealtimePreference';
 import { getTodayString } from '@/utils/date';
 import { stableFilters } from '@/utils/queryUtils';
 import { AuthError, ERROR_CODES, isAppError } from '@/errors/AppError';
@@ -29,7 +38,6 @@ import type {
   ScheduleFilters,
   ScheduleGroup,
   ScheduleStats,
-  ScheduleType,
   CalendarView as CalendarViewType,
 } from '@/types';
 
@@ -48,15 +56,15 @@ interface UseSchedulesByMonthOptions {
 
 interface ScheduleQueryPayload {
   schedules: ScheduleEvent[];
+  /** 조회한 달 밖이지만 같은 지원에 속한 근무일 — 그룹핑 재료로만 쓴다 */
+  boundarySchedules?: ScheduleEvent[];
   stats?: ScheduleStats;
   groupedSchedules?: ScheduleGroup[];
-  markedDates?: Record<string, { marked: boolean; dotColor: string; type?: ScheduleType }>;
   warning?: string;
 }
 
 interface NormalizedScheduleQueryPayload extends ScheduleQueryPayload {
   groupedSchedules: ScheduleGroup[];
-  markedDates: Record<string, { marked: boolean; dotColor: string; type?: ScheduleType }>;
 }
 
 const SCHEDULE_CACHE_SCHEMA_VERSION = 3;
@@ -64,7 +72,6 @@ const MONTH_REALTIME_OBSERVATION_LIMIT = 50;
 const EMPTY_SCHEDULE_QUERY_PAYLOAD: NormalizedScheduleQueryPayload = {
   schedules: [],
   groupedSchedules: [],
-  markedDates: {},
 };
 
 function buildScheduleCacheKey(userId: string | undefined, scope: string, suffix?: string): string {
@@ -78,9 +85,9 @@ function normalizeScheduleQueryPayload(
 
   return {
     schedules,
+    boundarySchedules: payload.boundarySchedules,
     stats: payload.stats,
     groupedSchedules: payload.groupedSchedules ?? groupSchedulesByDate(schedules),
-    markedDates: payload.markedDates ?? getCalendarMarkedDates(schedules),
     warning: payload.warning,
   };
 }
@@ -111,11 +118,7 @@ export function useSchedules(options: UseSchedulesOptions = {}) {
     ...queryKeys.schedules.list(normalizedFilters),
     staffId ?? 'anonymous',
   ] as const;
-  const cachedPayload = useCachedSchedulePayload(
-    cacheKey,
-    queryCachingOptions.schedules.staleTime,
-    staffId
-  );
+  const cachedPayload = useCachedSchedulePayload(cacheKey, offlineCachePolicies.schedules, staffId);
   const [realtimeSchedules, setRealtimeSchedules] = useState<ScheduleEvent[]>([]);
 
   const query = useQuery({
@@ -173,7 +176,6 @@ export function useSchedules(options: UseSchedulesOptions = {}) {
   const schedules = effectivePayload.schedules;
   const stats = realtime ? undefined : effectivePayload.stats;
   const groupedSchedules = effectivePayload.groupedSchedules;
-  const markedDates = effectivePayload.markedDates;
   const warning = realtime ? undefined : effectivePayload.warning;
 
   const refresh = useCallback(async () => {
@@ -189,7 +191,6 @@ export function useSchedules(options: UseSchedulesOptions = {}) {
   return {
     schedules,
     groupedSchedules,
-    markedDates,
     stats,
     warning,
     isLoading: schedules.length === 0 ? query.isLoading : false,
@@ -217,11 +218,7 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
     () => [...queryKeys.schedules.byMonth(year, month), staffId ?? 'anonymous'] as const,
     [month, staffId, year]
   );
-  const cachedPayload = useCachedSchedulePayload(
-    cacheKey,
-    queryCachingOptions.schedules.staleTime,
-    staffId
-  );
+  const cachedPayload = useCachedSchedulePayload(cacheKey, offlineCachePolicies.schedules, staffId);
   const [realtimeSchedules, setRealtimeSchedules] = useState<ScheduleEvent[]>([]);
   const [hasReceivedRealtimeSnapshot, setHasReceivedRealtimeSnapshot] = useState(false);
   const [lastRealtimeSnapshotAt, setLastRealtimeSnapshotAt] = useState(0);
@@ -347,21 +344,23 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
   const queryPayload =
     normalizedQueryPayload ??
     (shouldUseCachedPayload ? cachedPayload : EMPTY_SCHEDULE_QUERY_PAYLOAD);
-  const shouldPreferQueryPayload =
-    !realtime ||
-    !hasReceivedRealtimeSnapshot ||
-    (!!normalizedQueryPayload && query.dataUpdatedAt > lastRealtimeSnapshotAt);
+  const shouldPreferQueryPayload = shouldPreferQuerySchedulePayload({
+    realtime,
+    hasReceivedRealtimeSnapshot,
+    hasQueryPayload: !!normalizedQueryPayload,
+    queryUpdatedAt: query.dataUpdatedAt,
+    realtimeSnapshotAt: lastRealtimeSnapshotAt,
+    realtimeScheduleCount: realtimePayload.schedules.length,
+    queryScheduleCount: queryPayload.schedules.length,
+  });
   const effectivePayload = shouldPreferQueryPayload ? queryPayload : realtimePayload;
   const schedules = effectivePayload.schedules;
   const stats = effectivePayload.stats;
   const groupedSchedules = effectivePayload.groupedSchedules;
-  const markedDates = effectivePayload.markedDates;
-  const warning = shouldPreferQueryPayload ? effectivePayload.warning : undefined;
-  const hasBootstrapData =
-    schedules.length > 0 ||
-    stats !== undefined ||
-    warning !== undefined ||
-    Object.keys(markedDates).length > 0;
+  const warning = effectivePayload.warning ?? queryPayload.warning;
+  // markedDates 절이 있었지만 그 값은 schedules 에서 파생된 것이라 첫 절에 이미 포함된다
+  // (빈 schedules → 빈 markedDates). 중복 판정이었다.
+  const hasBootstrapData = schedules.length > 0 || stats !== undefined || warning !== undefined;
 
   const refresh = useCallback(async () => {
     if (!isOnline) {
@@ -375,8 +374,8 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
 
   return {
     schedules,
+    boundarySchedules: effectivePayload.boundarySchedules,
     groupedSchedules,
-    markedDates,
     stats,
     warning,
     isLoading: realtime
@@ -396,6 +395,18 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
           : (realtimeError ?? query.error)
         : query.error
       : null,
+    /**
+     * 카드가 이미 떠 있는 상태의 갱신 실패. `error` 는 데이터가 있으면 null 로 접히므로
+     * 이 값이 없으면 새로고침 실패가 완전히 무음이 되고, 근무 당일 확정 여부를 확인하러
+     * 당긴 사용자가 옛 데이터를 최신으로 믿게 된다.
+     */
+    refreshError: isOnline && hasBootstrapData ? (query.error ?? realtimeError) : null,
+    /**
+     * 오프라인 여부. 화면이 이걸 못 보면 '네트워크가 없어 비어 있는 것'과 '정말 0건'을
+     * 구분할 수 없어, 지하 홀덤펍에서 확정 근무가 있는데도 온보딩 문구가 뜬다.
+     * error 는 오프라인일 때 위에서 항상 null 로 접히므로 그 경로로도 드러나지 않는다.
+     */
+    isOffline: !isOnline,
     refresh,
   };
 }
@@ -406,11 +417,7 @@ export function useSchedulesByDate(date: string, enabled = true) {
   const { isOnline } = useNetworkStatus();
   const cacheKey = buildScheduleCacheKey(staffId, 'date', date);
   const dateQueryKey = [...queryKeys.schedules.byDate(date), staffId ?? 'anonymous'] as const;
-  const cachedPayload = useCachedSchedulePayload(
-    cacheKey,
-    queryCachingOptions.schedules.staleTime,
-    staffId
-  );
+  const cachedPayload = useCachedSchedulePayload(cacheKey, offlineCachePolicies.schedules, staffId);
 
   const query = useQuery({
     queryKey: dateQueryKey,
@@ -476,7 +483,7 @@ export function useTodaySchedules(enabled = true) {
   const { isOnline } = useNetworkStatus();
   const cacheKey = buildScheduleCacheKey(staffId, 'today', today);
   const todayQueryKey = [...queryKeys.schedules.byDate(today), staffId ?? 'anonymous'] as const;
-  const cachedPayload = useCachedSchedulePayload(cacheKey, cachingPolicies.realtime, staffId);
+  const cachedPayload = useCachedSchedulePayload(cacheKey, offlineCachePolicies.today, staffId);
 
   const query = useQuery({
     queryKey: todayQueryKey,
@@ -544,11 +551,24 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
     month: new Date().getMonth() + 1,
   });
 
+  /**
+   * 사용자가 날짜를 직접 골랐는지. 자동 재정렬이 사용자의 선택을 덮지 않게 한다.
+   * 월을 이동하면 다시 false 로 돌아가 새 달 기준으로 재정렬된다.
+   */
+  const userPickedDateRef = useRef(false);
+
+  const selectDate = useCallback((date: string) => {
+    userPickedDateRef.current = true;
+    setSelectedDate(date);
+  }, []);
+
   const goToMonth = useCallback((year: number, month: number) => {
+    userPickedDateRef.current = false;
     setCurrentMonth({ year, month });
   }, []);
 
   const goToPrevMonth = useCallback(() => {
+    userPickedDateRef.current = false;
     setCurrentMonth((prev) => {
       if (prev.month === 1) {
         return { year: prev.year - 1, month: 12 };
@@ -558,6 +578,7 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
   }, []);
 
   const goToNextMonth = useCallback(() => {
+    userPickedDateRef.current = false;
     setCurrentMonth((prev) => {
       if (prev.month === 12) {
         return { year: prev.year + 1, month: 1 };
@@ -568,6 +589,7 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
 
   const goToToday = useCallback(() => {
     const today = new Date();
+    userPickedDateRef.current = true;
     setCurrentMonth({
       year: today.getFullYear(),
       month: today.getMonth() + 1,
@@ -577,13 +599,15 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
 
   const {
     schedules,
+    boundarySchedules,
     groupedSchedules,
-    markedDates,
     stats,
     warning,
     isLoading,
     isRefreshing,
     error,
+    refreshError,
+    isOffline,
     refresh,
   } = useSchedulesByMonth({
     year: currentMonth.year,
@@ -591,13 +615,48 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
     realtime,
   });
 
-  const groupedByApplication = useMemo(
-    () =>
-      enableGrouping
-        ? groupScheduleEvents(schedules, { enabled: true, minGroupSize: 2 })
-        : schedules,
-    [enableGrouping, schedules]
-  );
+  /**
+   * 월 이동 시 선택 날짜를 이동한 달로 재정렬한다.
+   *
+   * 월만 바꾸고 selectedDate 를 그대로 두면 선택일이 이전 달에 남아, 캘린더에는 점이
+   * 찍혔는데 아래 목록은 비고 어느 날짜에도 선택 표시가 없다 — 지난달 기록을 보러 온
+   * 사용자가 "기록이 사라졌다"고 오해한다. 좌우 스와이프 전환도 같은 경로다.
+   *
+   * 데이터가 도착하면 한 번 더 돌아 '일정이 있는 가장 이른 날'로 좁혀진다.
+   * 사용자가 날짜를 직접 탭한 뒤에는(userPickedDateRef) 개입하지 않는다.
+   */
+  useEffect(() => {
+    if (userPickedDateRef.current) return;
+
+    const target = resolveSelectedDateForMonth(
+      currentMonth.year,
+      currentMonth.month,
+      schedules.map((schedule) => schedule.date),
+      getTodayString()
+    );
+
+    if (target !== selectedDate) {
+      setSelectedDate(target);
+    }
+  }, [currentMonth, schedules, selectedDate]);
+
+  /**
+   * 그룹핑에만 월 경계 근무일을 합친다.
+   *
+   * 캘린더 dot·통계·필터는 `schedules`(그 달만)를 그대로 쓰고, 여기서만 패딩분을 더해
+   * 7일짜리 대회가 7월 화면에서도 '7일'로 온전히 표기되게 한다. 예전에는 월 경계에서
+   * 두 카드로 쪼개져 8월 초까지 잡혀 있다는 사실 자체가 안 보였다.
+   */
+  const groupedByApplication = useMemo(() => {
+    const groupingSource =
+      boundarySchedules && boundarySchedules.length > 0
+        ? [...schedules, ...boundarySchedules]
+        : schedules;
+
+    return enableGrouping
+      ? groupScheduleEvents(groupingSource, { enabled: true, minGroupSize: 2 })
+      : schedules;
+  }, [enableGrouping, schedules, boundarySchedules]);
 
   const selectedDateSchedules = useMemo(() => {
     if (enableGrouping) {
@@ -616,7 +675,6 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
     currentMonth,
     schedules,
     groupedSchedules,
-    markedDates,
     stats,
     warning,
     groupedByApplication,
@@ -625,8 +683,10 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
     isLoading,
     isRefreshing,
     error,
+    refreshError,
+    isOffline,
     setView,
-    setSelectedDate,
+    setSelectedDate: selectDate,
     goToMonth,
     goToPrevMonth,
     goToNextMonth,

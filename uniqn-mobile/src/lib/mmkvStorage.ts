@@ -376,6 +376,9 @@ export const STORAGE_KEYS = {
 
   // 토큰 갱신
   TOKEN_REFRESH_STATE: 'token-refresh-state',
+
+  /** 근무 리마인더 로컬 알림 식별자 원장 (key → identifier) */
+  SHIFT_REMINDERS: 'shift-reminders-v1',
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

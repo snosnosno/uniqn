@@ -578,20 +578,20 @@ export const queryKeys = {
   // 앱 설정 플래그 (app_config) — 원격 기능 토글
   appConfig: {
     all: ['appConfig'] as const,
-    weeklyGridEnabled: () => [...queryKeys.appConfig.all, 'weeklyGridEnabled'] as const,
+    workScheduleEnabled: () => [...queryKeys.appConfig.all, 'workScheduleEnabled'] as const,
     opsHubEnabled: () => [...queryKeys.appConfig.all, 'opsHubEnabled'] as const,
   },
 
-  // 주간 배치 그리드(운영처) — 운영처(컨테이너) 목록 + 월 요약 셀맵 + 하루 슬롯
-  weeklyGrid: {
-    all: ['weeklyGrid'] as const,
+  // 근무표(운영처) — 운영처(컨테이너) 목록 + 월 요약 셀맵 + 하루 슬롯
+  workSchedule: {
+    all: ['workSchedule'] as const,
     containers: (workspaceId: string) =>
-      [...queryKeys.weeklyGrid.all, 'containers', workspaceId] as const,
+      [...queryKeys.workSchedule.all, 'containers', workspaceId] as const,
     summary: (venueId: string, from: string, to: string) =>
-      [...queryKeys.weeklyGrid.all, 'summary', venueId, from, to] as const,
+      [...queryKeys.workSchedule.all, 'summary', venueId, from, to] as const,
     daySlots: (venueId: string, date: string) =>
-      [...queryKeys.weeklyGrid.all, 'daySlots', venueId, date] as const,
-    container: (venueId: string) => [...queryKeys.weeklyGrid.all, 'container', venueId] as const,
+      [...queryKeys.workSchedule.all, 'daySlots', venueId, date] as const,
+    container: (venueId: string) => [...queryKeys.workSchedule.all, 'container', venueId] as const,
   },
 } as const;
 
@@ -622,6 +622,26 @@ export const cachingPolicies = {
   stable: 60 * 60 * 1000,
   /** 오프라인 우선 - 무제한 */
   offlineFirst: Infinity,
+} as const;
+
+/**
+ * 오프라인 MMKV 캐시 보존기간 — 위 staleTime 과 **다른 축**이다.
+ *
+ * staleTime 은 "온라인에서 언제 다시 받아올까"이고, 여기 값은 "네트워크가 없을 때
+ * 마지막으로 받아둔 것을 언제까지 보여줄까"다. 두 값을 한 상수로 겸용하면
+ * getCriticalOfflineCache 가 만료를 stale 표시가 아니라 **완전 삭제**로 처리하기 때문에,
+ * 지하 홀덤펍·지하철에서 5분만 지나도 확정 근무가 통째로 사라지고 화면이
+ * "아직 예정된 스케줄이 없어요"로 위장된다. 안전망은 오래 살아 있어야 안전망이다.
+ *
+ * 대신 오래된 데이터를 최신처럼 보여주지 않도록, 화면은 오프라인일 때
+ * "지금 보이는 내용은 이전에 받아둔 정보"임을 함께 밝힌다.
+ */
+export const offlineCachePolicies = {
+  /** 스케줄 — 24시간. 하루 한 번은 온라인이 된다는 가정. */
+  schedules: 24 * 60 * 60 * 1000,
+  /** 오늘 근무(히어로) — 스케줄과 같은 창을 쓴다. 두 소스가 다른 시점에 만료되면
+   *  카드가 깜빡이듯 나타났다 사라진다. */
+  today: 24 * 60 * 60 * 1000,
 } as const;
 
 /**
@@ -729,7 +749,7 @@ export const invalidateQueries = {
     queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all });
     queryClient.invalidateQueries({ queryKey: queryKeys.reviews.pending() });
     queryClient.invalidateQueries({ queryKey: [POSTING_FILLED_COUNTS_QUERY_KEY] });
-    queryClient.invalidateQueries({ queryKey: queryKeys.weeklyGrid.all });
+    queryClient.invalidateQueries({ queryKey: queryKeys.workSchedule.all });
   },
   /** 대회공고 승인 관련 모든 쿼리 무효화 */
   tournaments: () => queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.all }),

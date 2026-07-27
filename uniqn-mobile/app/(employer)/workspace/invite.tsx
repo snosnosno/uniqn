@@ -140,8 +140,8 @@ export default function WorkspaceInviteScreen() {
               {selected ? (
                 <View className="mt-4 rounded-md bg-white p-4 dark:bg-surface-elevated">
                   <Text className="text-sm text-content-secondary dark:text-content-secondary">
-                    초대를 수락하면 이 팀의 모든 공고를 만들고 수정할 수 있어요. 삭제는 소유자만
-                    가능해요.
+                    초대를 수락하면 이 팀의 모든 공고를 만들고 수정할 수 있어요. 근무표와 지점 급여
+                    단가도 함께 보고 바꿀 수 있어요. 삭제는 소유자만 가능해요.
                   </Text>
                   <View className="mt-4">
                     <Button

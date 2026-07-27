@@ -159,7 +159,7 @@ export interface JobPostingDocumentV3 extends FirebaseDocument<string> {
   /** 워크스페이스 협업 (M1+) — INSERT 시 owner 의 default workspace 자동 주입. M3 에서 NOT NULL */
   workspaceId?: string;
   /**
-   * 운영처(venue) 컨테이너 self-FK (주간 배치 그리드). 일반 공고는 미설정(undefined).
+   * 운영처(venue) 컨테이너 self-FK (근무표). 일반 공고는 미설정(undefined).
    * 컨테이너로 묶인 공고만 보유. DB 컬럼 job_postings.venue_id 와 camelCase 매핑.
    */
   venueId?: string;
@@ -266,7 +266,7 @@ export interface JobPostingInput {
   description?: string;
   location: PostingLocation;
   contactPhone?: string;
-  /** 운영처(venue) 컨테이너 self-FK (주간 배치 그리드). 일반 공고는 미설정. */
+  /** 운영처(venue) 컨테이너 self-FK (근무표). 일반 공고는 미설정. */
   venueId?: string;
   tags?: string[];
   schedule: PostingSchedule;

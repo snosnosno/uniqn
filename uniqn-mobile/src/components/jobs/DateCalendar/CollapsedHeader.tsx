@@ -7,12 +7,11 @@
  * @version 1.1.0
  */
 
-import React, { memo, useCallback } from 'react';
+import React, { memo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
 import { CalendarIcon, ChevronDownIcon, XIcon } from '@/components/icons';
-import { triggerHaptic } from '@/utils/haptics';
 
 interface CollapsedHeaderProps {
   selectedDate: Date | null;
@@ -29,15 +28,8 @@ export const CollapsedHeader = memo(function CollapsedHeader({
   onExpand,
   onClear,
 }: CollapsedHeaderProps) {
-  const handleExpand = useCallback(() => {
-    void triggerHaptic('light');
-    onExpand();
-  }, [onExpand]);
-
-  const handleClear = useCallback(() => {
-    void triggerHaptic('light');
-    onClear();
-  }, [onClear]);
+  // 펼치기(disclosure)·필터 해제(✕)도 §17 금지 축이다. ✕ 는 확인 없이 즉시 실행되는
+  // 필터 리셋이라 §17 이 허용하는 '삭제 확인'(되돌리기 어려운 삭제의 확인 단계)이 아니다.
 
   if (!selectedDate) {
     const monthLabel = format(visibleMonth, 'yyyy년 M월', { locale: ko });
@@ -47,7 +39,7 @@ export const CollapsedHeader = memo(function CollapsedHeader({
         style={{ minHeight: 48 }}
       >
         <Pressable
-          onPress={handleExpand}
+          onPress={onExpand}
           accessibilityRole="button"
           accessibilityLabel={`달력 펼치기, 현재 ${monthLabel} 전체 보기`}
           className="flex-1 flex-row items-center px-4 py-3 active:bg-secondary-100 dark:active:bg-surface-hover"
@@ -69,7 +61,7 @@ export const CollapsedHeader = memo(function CollapsedHeader({
       style={{ minHeight: 48 }}
     >
       <Pressable
-        onPress={handleExpand}
+        onPress={onExpand}
         accessibilityRole="button"
         accessibilityLabel={`날짜 필터 펼치기, 현재 ${summary} 선택됨`}
         className="flex-1 flex-row items-center px-4 py-3 active:bg-secondary-100 dark:active:bg-surface-hover"
@@ -79,7 +71,7 @@ export const CollapsedHeader = memo(function CollapsedHeader({
       </Pressable>
 
       <Pressable
-        onPress={handleClear}
+        onPress={onClear}
         accessibilityRole="button"
         accessibilityLabel="날짜 필터 해제"
         hitSlop={10}

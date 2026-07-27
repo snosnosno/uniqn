@@ -16,8 +16,15 @@ import {
   ChevronRightIcon,
   EllipsisHorizontalIcon,
   PlusIcon,
+  ShareIcon,
   UserPlusIcon,
 } from '@/components/icons';
+import {
+  BulkShareActionBar,
+  BULK_SHARE_ACTION_BAR_HEIGHT,
+} from '@/components/share/BulkShareActionBar';
+import { useBulkShare } from '@/hooks/share/useBulkShare';
+import { useBulkShareSelection } from '@/hooks/share/useBulkShareSelection';
 import { getIconColor } from '@/constants';
 import { buildPostingFacts } from '@/domains/job-posting';
 import {
@@ -29,7 +36,7 @@ import { useSharedJobPostings } from '@/hooks/job-posting/useSharedJobPostings';
 import { usePostingFilledCounts } from '@/hooks/usePostingFilledCounts';
 import { useSubmitGate } from '@/hooks/useSubmitGate';
 import { useTabBarBottomPadding } from '@/hooks/useTabBarBottomPadding';
-import { useWeeklyGridEnabled } from '@/hooks';
+import { useWorkScheduleEnabled } from '@/hooks';
 import { useReceivedWorkspaceInvitations } from '@/hooks/workspace';
 import { useHasRole } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
@@ -199,11 +206,13 @@ function EmployerView() {
   const closeMutation = useCloseJobPosting();
   const reopenMutation = useReopenJobPosting();
   const isDarkMode = useThemeStore((s) => s.isDarkMode);
-  // 주간 배치 그리드(holdem 펍 운영 그리드) 진입점 — 플래그 ON 일 때만 노출(무회귀)
-  const { enabled: weeklyGridEnabled } = useWeeklyGridEnabled();
+  // 근무표(holdem 펍 운영 그리드) 진입점 — 플래그 ON 일 때만 노출(무회귀)
+  const { enabled: workScheduleEnabled } = useWorkScheduleEnabled();
   const [filter, setFilter] = useState<FilterStatus>('all');
   const [closeTargetId, setCloseTargetId] = useState<string | null>(null);
   const [reopenTargetId, setReopenTargetId] = useState<string | null>(null);
+  const selection = useBulkShareSelection();
+  const { shareJobs, isSharing: isBulkSharing } = useBulkShare();
 
   const filteredPostings = useMemo(() => {
     if (!postings) {
@@ -315,8 +324,33 @@ function EmployerView() {
     router.push('/(employer)/my-postings/create');
   }, []);
 
-  const handleWeeklyGrid = useCallback(() => {
-    router.push('/(employer)/weekly-grid');
+  // 묶음 공유 — 지금 필터에 보이는 공고가 전체선택 대상이다(안 보이는 공고가 딸려가면 놀란다).
+  // 상한(10건)에서 잘린 것도 "전부"로 친다 — 안 그러면 11건일 때 영원히 "전체 해제" 로 안 바뀐다.
+  const shareableCount = useMemo(
+    () => filteredPostings.filter((posting) => selection.canSelect(posting)).length,
+    [filteredPostings, selection]
+  );
+  const isAllSelected =
+    selection.selectedCount > 0 &&
+    selection.selectedCount >= Math.min(shareableCount, selection.maxCount);
+
+  const handleSelectAll = useCallback(() => {
+    if (isAllSelected) {
+      selection.clear();
+      return;
+    }
+    selection.selectAll(filteredPostings);
+  }, [filteredPostings, isAllSelected, selection]);
+
+  const handleBulkShare = useCallback(async () => {
+    const result = await shareJobs(Array.from(selection.selectedIds), 'employer');
+    if (result.success) {
+      selection.exitSelectionMode();
+    }
+  }, [selection, shareJobs]);
+
+  const handleWorkSchedule = useCallback(() => {
+    router.push('/(employer)/work-schedule');
   }, []);
 
   // 공유받은 공고 (collaborator 본인 시점)
@@ -362,10 +396,10 @@ function EmployerView() {
         >
           <Text className="ml-2 font-sans-semibold text-content-onGold">새 공고 작성</Text>
         </Button>
-        {weeklyGridEnabled ? (
+        {workScheduleEnabled ? (
           <Button
             variant="outline"
-            onPress={handleWeeklyGrid}
+            onPress={handleWorkSchedule}
             icon={<CalendarDaysIcon size={20} color={getIconColor(isDarkMode, 'primary')} />}
             className="mt-2"
             accessibilityLabel="근무표 열기"
@@ -376,6 +410,21 @@ function EmployerView() {
       </View>
 
       <FilterTabs selected={filter} onChange={setFilter} counts={filterCounts} />
+
+      {!selection.isSelectionMode && filteredPostings.length > 1 ? (
+        <View className="flex-row justify-end px-4 pb-1">
+          <Pressable
+            onPress={selection.enterSelectionMode}
+            hitSlop={8}
+            className="min-h-[44px] flex-row items-center gap-1.5 active:opacity-70"
+            accessibilityRole="button"
+            accessibilityLabel="여러 공고 묶어서 공유하기"
+          >
+            <ShareIcon size={16} />
+            <Text className="text-sm font-sans-medium text-content-secondary">묶음 공유</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       {sharedPostings.length > 0 ? (
         <View className="mx-4 mb-3">
@@ -435,6 +484,10 @@ function EmployerView() {
               isClosing={closeMutation.isPending}
               isReopening={reopenMutation.isPending}
               filledCounts={filledCountsQuery.data}
+              selectionMode={selection.isSelectionMode}
+              selected={selection.selectedIds.has(item.id)}
+              selectable={selection.canSelect(item)}
+              onToggleSelect={selection.toggle}
             />
           )}
           keyExtractor={(item) => item.id}
@@ -443,9 +496,26 @@ function EmployerView() {
             <RefreshControl refreshing={isRefetching} onRefresh={refetch} {...PTR_REFRESH_PROPS} />
           }
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: bottomPadding }}
+          // 선택 모드에서는 하단 액션 바 높이만큼 더 비워 마지막 카드가 가리지 않게 한다.
+          contentContainerStyle={{
+            paddingBottom:
+              bottomPadding + (selection.isSelectionMode ? BULK_SHARE_ACTION_BAR_HEIGHT + 16 : 0),
+          }}
         />
       )}
+
+      {selection.isSelectionMode ? (
+        <BulkShareActionBar
+          selectedCount={selection.selectedCount}
+          maxCount={selection.maxCount}
+          onSelectAll={handleSelectAll}
+          isAllSelected={isAllSelected}
+          onShare={handleBulkShare}
+          onCancel={selection.exitSelectionMode}
+          isSharing={isBulkSharing}
+          bottomOffset={bottomPadding}
+        />
+      ) : null}
 
       <ConfirmModal
         visible={Boolean(closeTargetId)}

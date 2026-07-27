@@ -6,7 +6,7 @@
  */
 
 import React, { useEffect, useCallback, useRef } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, AccessibilityInfo, Platform } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -23,6 +23,14 @@ import {
 import { MOTION_EASING, MOTION_DURATION } from '@/constants/motion';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import type { Toast as ToastType } from '@/stores/toastStore';
+
+/** 스크린리더가 읽는 접두. 영문 enum('error: …')을 그대로 읽히게 두지 않는다. */
+const TOAST_TYPE_LABELS: Record<ToastType['type'], string> = {
+  success: '완료',
+  error: '오류',
+  warning: '주의',
+  info: '안내',
+};
 
 // ============================================================================
 // Types
@@ -105,6 +113,16 @@ export function Toast({ toast, onDismiss }: ToastProps) {
     }
   }, [opacity, translateY, callOnDismiss, toast.id]);
 
+  // iOS VoiceOver 는 RN 의 accessibilityLiveRegion 을 지원하지 않는다. 토스트가 이 탭의
+  // 유일한 피드백 채널(취소 성공·딥링크 실패·사전 검증 경고)이라, 낭독이 없으면 시각장애
+  // 사용자는 액션 성공 여부를 알 방법이 없다. OfflineStatusBar 와 동일한 경로로 명시 호출한다.
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+    AccessibilityInfo.announceForAccessibility(
+      `${TOAST_TYPE_LABELS[toast.type] ?? '안내'}: ${toast.message}`
+    );
+  }, [toast.type, toast.message]);
+
   useEffect(() => {
     // 입장 애니메이션 — reduce motion 은 마운트 시점 값(ref)만 읽는다(상단 주석 참조).
     opacity.value = withTiming(1, { duration: MOTION_DURATION.base, easing: MOTION_EASING.enter });
@@ -140,7 +158,10 @@ export function Toast({ toast, onDismiss }: ToastProps) {
         onPress={handleDismiss}
         className={`flex-row items-center px-4 py-3 rounded-md shadow-lg ${style.container}`}
         accessibilityRole="alert"
-        accessibilityLabel={`${toast.type}: ${toast.message}`}
+        // Android 는 liveRegion 이 자동 낭독한다. iOS 는 RN liveRegion 미지원이라
+        // 아래 useEffect 에서 announceForAccessibility 로 명시 호출한다(이중 낭독 방지).
+        accessibilityLiveRegion={toast.type === 'error' ? 'assertive' : 'polite'}
+        accessibilityLabel={`${TOAST_TYPE_LABELS[toast.type] ?? '안내'}: ${toast.message}`}
       >
         <View className="mr-3">
           <IconComponent size={20} color="#FFFFFF" />

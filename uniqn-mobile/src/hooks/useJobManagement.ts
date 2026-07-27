@@ -133,7 +133,7 @@ export function useCreateJobPosting() {
       });
       // 그리드 "공고 열기/부족 모집" 발행 시 셀 +N 뱃지·스팬 집계 갱신(venue 무관 무해).
       queryClient.invalidateQueries({
-        queryKey: queryKeys.weeklyGrid.all,
+        queryKey: queryKeys.workSchedule.all,
       });
     },
     onError: createMutationErrorHandler('공고 생성', addToast),
@@ -169,6 +169,10 @@ export function useUpdateJobPosting() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobPostings.lists(),
       });
+      // 공고의 인원·상태가 바뀌면 근무표 셀(부족/공고 뱃지·필요 인원)도 다시 계산돼야 한다.
+      // 종전에는 '생성'에만 이 무효화가 있어, 수정·마감·삭제·재개방 후 근무표가 옛 수치를
+      // 그대로 보여줬다(같은 날 중복 공고를 유도하는 경로). 라이프사이클 전체로 확장한다.
+      queryClient.invalidateQueries({ queryKey: queryKeys.workSchedule.all });
     },
     onError: createMutationErrorHandler('공고 수정', addToast),
   });
@@ -213,6 +217,8 @@ export function useDeleteJobPosting() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobPostings.all,
       });
+      // 근무표 셀 재계산(공고 라이프사이클 전체 무효화 — useUpdateJobPosting 주석 참고).
+      queryClient.invalidateQueries({ queryKey: queryKeys.workSchedule.all });
     },
     onError: createMutationErrorHandler('공고 삭제', addToast, {
       onRollback: (ctx) => {
@@ -265,6 +271,8 @@ export function useCloseJobPosting() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobPostings.lists(),
       });
+      // 근무표 셀 재계산(공고 라이프사이클 전체 무효화 — useUpdateJobPosting 주석 참고).
+      queryClient.invalidateQueries({ queryKey: queryKeys.workSchedule.all });
     },
     onError: createMutationErrorHandler('공고 마감', addToast, {
       onRollback: (ctx) => {
@@ -317,6 +325,8 @@ export function useReopenJobPosting() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobPostings.lists(),
       });
+      // 근무표 셀 재계산(공고 라이프사이클 전체 무효화 — useUpdateJobPosting 주석 참고).
+      queryClient.invalidateQueries({ queryKey: queryKeys.workSchedule.all });
     },
     onError: createMutationErrorHandler('공고 재오픈', addToast, {
       onRollback: (ctx) => {
@@ -369,6 +379,8 @@ export function useBulkUpdateStatus() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobPostings.all,
       });
+      // 근무표 셀 재계산(공고 라이프사이클 전체 무효화 — useUpdateJobPosting 주석 참고).
+      queryClient.invalidateQueries({ queryKey: queryKeys.workSchedule.all });
     },
     onError: createMutationErrorHandler('공고 일괄 상태 변경', addToast, {
       onRollback: (ctx) => {

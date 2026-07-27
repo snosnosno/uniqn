@@ -41,8 +41,10 @@ export class StatusMapper {
       case STATUS.WORK_LOG.COMPLETED:
         return STATUS.SCHEDULE.COMPLETED as ScheduleType;
       case STATUS.WORK_LOG.CANCELLED:
-      case STATUS.WORK_LOG.NO_SHOW:
         return STATUS.SCHEDULE.CANCELLED as ScheduleType;
+      // 노쇼를 취소로 접지 않는다 — 스태프에게 불리한 기록이므로 본인이 볼 수 있어야 한다.
+      case STATUS.WORK_LOG.NO_SHOW:
+        return STATUS.SCHEDULE.NO_SHOW as ScheduleType;
       default:
         return STATUS.SCHEDULE.CONFIRMED as ScheduleType;
     }

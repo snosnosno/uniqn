@@ -140,7 +140,9 @@ export const JobCard = memo(function JobCard({
       filledCounts={cardFilledCounts}
       topStatus={
         applicationStatus ? (
-          <Badge variant="chip" dot>
+          // 라벨은 SCHEDULE_STATUS 에서 가져오면서 색은 골드로 덮어쓰고 있었다 —
+          // 스케줄 탭 카드와 같은 결함이라 같이 고친다(상태 색은 SCHEDULE_STATUS 단일 소스).
+          <Badge variant={SCHEDULE_STATUS[applicationStatus].variant} dot>
             {SCHEDULE_STATUS[applicationStatus].label}
           </Badge>
         ) : undefined

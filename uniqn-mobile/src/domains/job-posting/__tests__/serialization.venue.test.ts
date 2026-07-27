@@ -1,7 +1,7 @@
 /**
  * serializeJobPostingV3 / deserializeJobPostingDocument — venueId 보존 회귀 가드.
  *
- * 배경: 주간 배치 그리드 "공고 열기" 는 일반 공고를 input.venueId(=운영처 컨테이너 id)와 함께
+ * 배경: 근무표 "공고 열기" 는 일반 공고를 input.venueId(=운영처 컨테이너 id)와 함께
  * 생성한다. 직렬화/역직렬화 경계에서 venueId 가 silent drop 되면(=#194 region 유실 동일 클래스)
  * 신규 공고가 venue_id NULL 고아로 INSERT 되어 venue_span_posting_ids(venue_id=:V OR id=:V)의
  * venue_id 암(arm)에 영영 안 잡히고, 편집 진입 시 venue 연결이 왕복 불가가 된다.

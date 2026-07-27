@@ -24,10 +24,9 @@ import React, { memo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { format, isBefore, startOfDay } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
-import { triggerHaptic } from '@/utils/haptics';
 import { Skeleton } from '@/components/ui/Skeleton';
 // 뱃지 표시 메타(글리프/라벨/토큰 클래스)는 도메인 SSOT — 범례(GridBadgeLegend)와 공유(P0-3).
-import { GRID_BADGE_META, type GridDayCell } from '@/domains/weeklyGrid';
+import { GRID_BADGE_META, type GridDayCell } from '@/domains/workSchedule';
 
 interface CalendarCellProps {
   date: Date;
@@ -40,7 +39,7 @@ interface CalendarCellProps {
   /** true일 때 뱃지 위치에 Skeleton shimmer 표시 (Rule 16) */
   loading?: boolean;
   /**
-   * 주간 그리드 셀 데이터(weekly_grid_enabled 플래그 뒤). 제공되면 그리드 모드로 동작:
+   * 근무표 셀 데이터(weekly_grid_enabled 플래그 뒤). 제공되면 그리드 모드로 동작:
    * priorityBadge/status 기반 렌더. 미제공이면 기존 count 동작 100% 유지(무회귀).
    */
   gridCell?: GridDayCell;
@@ -66,9 +65,9 @@ export const CalendarCell = memo(function CalendarCell({
   const fullLabel = format(date, 'M월 d일 EEEE', { locale: ko });
   const countLabel = count > 0 ? `공고 ${count}건` : '공고 없음';
 
+  // 날짜 셀 탭은 impeccable §17 이 문자 그대로 금지하는 '리스트 선택'이다.
   const handlePress = useCallback(() => {
     if (disabled) return;
-    void triggerHaptic('light');
     onPress(date);
   }, [date, disabled, onPress]);
 
