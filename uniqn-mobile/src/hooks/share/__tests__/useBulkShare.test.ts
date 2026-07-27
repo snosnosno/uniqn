@@ -12,11 +12,12 @@ import { Share } from 'react-native';
 import { renderHook, waitFor } from '@testing-library/react-native';
 import { useBulkShare } from '../useBulkShare';
 import { jobPostingRepository } from '@/repositories';
+import { buildBulkJobShareText } from '@/utils/bulkJobShareMessage';
 import { confirmActionAsync } from '@/utils/confirmAction';
 import type { JobPosting } from '@/types';
 
 jest.mock('@/services/observability', () => ({
-  createJobDeepLink: (jobId: string) => `https://uniqn.app/jobs/${jobId}`,
+  createDeepLink: () => 'https://uniqn.app/jobs',
   trackEvent: jest.fn(),
 }));
 
@@ -41,6 +42,7 @@ jest.mock('@/stores/toastStore', () => ({
 }));
 
 const mockConfirm = confirmActionAsync as jest.MockedFunction<typeof confirmActionAsync>;
+const mockBuildText = buildBulkJobShareText as jest.MockedFunction<typeof buildBulkJobShareText>;
 
 const posting = (id: string, overrides: Partial<JobPosting> = {}): JobPosting =>
   ({
@@ -100,6 +102,21 @@ describe('useBulkShare', () => {
     expect(batchSpy).toHaveBeenCalledTimes(1);
     expect(countSpy).toHaveBeenCalledTimes(1);
     expect(countSpy).toHaveBeenCalledWith(['a', 'b', 'c']);
+  });
+
+  it('본문 링크는 개별 공고가 아니라 구인구직 탭 하나를 넘긴다', async () => {
+    batchSpy.mockResolvedValue([posting('a'), posting('b')]);
+
+    await share(['a', 'b']);
+
+    // 두 번째 인자가 목록 URL — 개별 공고 URL 생성 함수가 아니다
+    expect(mockBuildText).toHaveBeenCalledWith(
+      expect.any(Array),
+      'https://uniqn.app/jobs',
+      expect.any(Function)
+    );
+    // 공유 시트에도 url 을 따로 넘기지 않는다 (iOS 이중 렌더 방지)
+    expect(shareSpy.mock.calls[0][0]).not.toHaveProperty('url');
   });
 
   it('전건이 공유 불가면 공유 시트를 열지 않는다', async () => {

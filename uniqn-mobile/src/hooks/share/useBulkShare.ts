@@ -12,7 +12,7 @@
 import { useCallback, useState } from 'react';
 import { logger } from '@/utils/logger';
 import { BusinessError, ERROR_CODES, ValidationError, toError } from '@/errors';
-import { trackEvent, createJobDeepLink } from '@/services/observability';
+import { trackEvent, createDeepLink } from '@/services/observability';
 import { useShareSheet } from '@/hooks/share/useShareSheet';
 import { extractPostingFilledSubmap } from '@/hooks/usePostingFilledCounts';
 import { jobPostingRepository } from '@/repositories';
@@ -102,13 +102,14 @@ export function useBulkShare(): UseBulkShareReturn {
           });
         }
 
-        const message = buildBulkJobShareText(
-          shareable,
-          (jobId) => createJobDeepLink(jobId, true),
-          (jobId) => extractPostingFilledSubmap(filledCounts, jobId)
+        // 링크는 구인구직 탭 하나 — 개별 공고 링크를 N개 넣으면 카톡이 그중 하나만
+        // 스크랩해 목록 공유인데 특정 공고 카드가 뜬다.
+        const listUrl = createDeepLink({ name: 'jobs' }, { useWebUrl: true });
+        const message = buildBulkJobShareText(shareable, listUrl, (jobId) =>
+          extractPostingFilledSubmap(filledCounts, jobId)
         );
 
-        // 링크가 본문에 이미 N개 들어 있으므로 url 을 따로 넘기지 않는다.
+        // url 은 본문 마지막에 이미 포함 — 따로 넘기면 iOS 에서 이중 렌더된다.
         const action = await openShareSheet({
           title: `공고 ${shareable.length}건`,
           message,

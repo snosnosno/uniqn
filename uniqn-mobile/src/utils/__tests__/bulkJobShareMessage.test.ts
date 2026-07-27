@@ -11,13 +11,14 @@ import type { JobPosting } from '@/types';
 
 type ScheduleModel = Parameters<typeof summarizeSchedule>[0];
 
+const LIST_URL = 'https://uniqn.app/jobs';
+
 const item = (overrides: Partial<BulkShareItem> = {}): BulkShareItem => ({
   title: '강남 홀덤펍',
   location: '',
   scheduleLabel: '7/29(수) 18:00',
   roleLine: '딜러 1/4명',
   salary: '일급 ₩150,000',
-  url: 'https://uniqn.app/jobs/p1',
   ...overrides,
 });
 
@@ -154,38 +155,69 @@ describe('isRedundantLocation', () => {
 
 describe('composeBulkJobShareText', () => {
   it('헤더에 건수를 표기하고 항목을 번호로 나열', () => {
-    const text = composeBulkJobShareText([item(), item({ title: '홍대 라운지' })]);
+    const text = composeBulkJobShareText([item(), item({ title: '홍대 라운지' })], LIST_URL);
     expect(text).toContain('[UNIQN] 공고 2건 모집');
     expect(text).toContain('1. 강남 홀덤펍');
     expect(text).toContain('2. 홍대 라운지');
   });
 
-  it('빈 값 라인은 통째로 생략 (링크는 항상 포함)', () => {
-    const text = composeBulkJobShareText([
-      item({ location: '', roleLine: '', salary: '', scheduleLabel: '' }),
-    ]);
+  it('링크는 구인구직 탭 하나만, 본문 맨 끝에 붙는다', () => {
+    const text = composeBulkJobShareText([item(), item({ title: '홍대 라운지' })], LIST_URL);
+
+    // 카톡이 여러 링크 중 하나만 스크랩해 엉뚱한 카드가 뜨는 걸 막는 계약
+    expect(text.match(/https?:\/\//g)).toHaveLength(1);
+    expect(text.endsWith(`👉 지원하기\n${LIST_URL}`)).toBe(true);
+  });
+
+  it('항목 블록에는 개별 공고 링크가 없다', () => {
+    const text = composeBulkJobShareText([item()], LIST_URL);
+    expect(text).not.toContain('/jobs/p1');
+  });
+
+  it('빈 값 라인은 통째로 생략 (꼬리 링크는 항상 포함)', () => {
+    const text = composeBulkJobShareText(
+      [item({ location: '', roleLine: '', salary: '', scheduleLabel: '' })],
+      LIST_URL
+    );
     expect(text).not.toContain('📍');
     expect(text).not.toContain('🙋');
     expect(text).not.toContain('💰');
     expect(text).not.toContain('📅');
-    expect(text).toContain('👉 https://uniqn.app/jobs/p1');
+    expect(text).toContain(`👉 지원하기\n${LIST_URL}`);
   });
 
   it('근무지가 있으면 📍 라인을 노출', () => {
-    expect(composeBulkJobShareText([item({ location: '코엑스 이벤트홀' })])).toContain(
+    expect(composeBulkJobShareText([item({ location: '코엑스 이벤트홀' })], LIST_URL)).toContain(
       '📍 코엑스 이벤트홀'
     );
   });
 
   it('길이 상한을 넘으면 초과분을 잘라내고 "외 N건" 안내', () => {
-    const text = composeBulkJobShareText([item(), item(), item()], { maxChars: 130 });
+    const text = composeBulkJobShareText([item(), item(), item()], LIST_URL, { maxChars: 130 });
     expect(text).toContain('1. 강남 홀덤펍');
-    expect(text).not.toContain('3. 강남 홀덤펍');
+    expect(text).not.toContain('2. 강남 홀덤펍');
     expect(text).toContain('…외 2건은 앱에서 확인해주세요');
   });
 
+  it('절단되어도 꼬리 링크는 살아남고 상한을 넘지 않는다', () => {
+    const text = composeBulkJobShareText([item(), item(), item()], LIST_URL, { maxChars: 130 });
+    expect(text.endsWith(LIST_URL)).toBe(true);
+    // 생략 안내문까지 포함해 상한 안에 들어와야 한다
+    expect(text.length).toBeLessThanOrEqual(130);
+  });
+
+  it('절단 지점 뒤의 짧은 항목을 끼워 넣지 않는다 (번호 연속성)', () => {
+    const long = item({ title: '아주 긴 제목의 공고 '.repeat(4) });
+    const short = item({ title: '짧', location: '', roleLine: '', salary: '', scheduleLabel: '' });
+    const text = composeBulkJobShareText([item(), long, short], LIST_URL, { maxChars: 170 });
+
+    expect(text).toContain('1. 강남 홀덤펍');
+    // 2번이 잘렸으면 3번도 들어오면 안 된다 — 번호가 1, 3으로 튀는 걸 막는다
+    expect(text).not.toContain('3. 짧');
+  });
+
   it('상한이 아무리 작아도 최소 1건은 포함 (빈 메시지 전송 방지)', () => {
-    const text = composeBulkJobShareText([item(), item()], { maxChars: 1 });
+    const text = composeBulkJobShareText([item(), item()], LIST_URL, { maxChars: 1 });
     expect(text).toContain('1. 강남 홀덤펍');
     expect(text).toContain('…외 1건은 앱에서 확인해주세요');
   });
@@ -264,15 +296,13 @@ describe('sortJobsForBulkShare', () => {
 });
 
 describe('buildBulkJobShareText', () => {
-  const urlOf = (id: string) => `https://uniqn.app/jobs/${id}`;
-
   it('실제 파생 모델로 압축 본문을 만들고 날짜순으로 정렬', () => {
     const text = buildBulkJobShareText(
       [
         posting('2026-08-03', { id: 'later', title: '2번' }),
         posting('2026-07-29', { id: 'earlier', title: '1번' }),
       ],
-      urlOf
+      LIST_URL
     );
 
     expect(text).toContain('[UNIQN] 공고 2건 모집');
@@ -283,7 +313,7 @@ describe('buildBulkJobShareText', () => {
   it('확정 인원 맵을 주입하면 확정/총원으로 표시', () => {
     const text = buildBulkJobShareText(
       [posting('2026-07-29', { id: 'p1' })],
-      urlOf,
+      LIST_URL,
       () =>
         // 키는 `date__slot__role` (공고 접두 제거된 서브맵)
         new Map([['2026-07-29__18:00__dealer', 2]])
@@ -296,13 +326,12 @@ describe('buildBulkShareItem', () => {
   it('파생이 실패해도 제목·링크만 담아 공유를 이어간다', () => {
     // schedule/compensation 이 깨진 공고 — buildPostingFacts 단계에서 throw
     const broken = { id: 'x', title: '깨진 공고' } as unknown as JobPosting;
-    expect(buildBulkShareItem(broken, 'https://uniqn.app/jobs/x')).toEqual({
+    expect(buildBulkShareItem(broken)).toEqual({
       title: '깨진 공고',
       location: '',
       scheduleLabel: '',
       roleLine: '',
       salary: '',
-      url: 'https://uniqn.app/jobs/x',
     });
   });
 });
