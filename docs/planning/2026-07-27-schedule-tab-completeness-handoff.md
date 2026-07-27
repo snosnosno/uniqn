@@ -29,81 +29,44 @@ node_modules 정션은 이미 걸려 있다. 작업 디렉토리는 `uniqn-mobil
 마지막 검증(HEAD 기준): `tsc --noEmit` exit 0 · lint 0 errors(경고 86, 시작 시점 88) ·
 prettier clean · jest **550 스위트 / 6129 테스트 전부 통과**.
 
-## 남은 작업 — 이 순서로
+## 남은 작업 — ✅ 전부 완료 (2026-07-27 후속 세션)
 
-선행관계가 있다. **35 → 29 → 41** 은 순서를 지킬 것.
+P2 8건을 문서에 적힌 순서(35→29→32→36→31→37→40→41)대로 전부 처리했다.
 
-### 1. rank35 (P2/M) 노쇼가 '취소'로 뭉개진다 — 가장 무겁다
+> ⚠️ **작업 위치가 바뀌었다.** 착수 시점에 `T-HOLDEM-schedule` 워크트리에서 다른 세션이
+> `weeklyGrid → workSchedule` 전면 리네임(131파일)을 미커밋 상태로 진행 중이었다.
+> 커밋이 섞이지 않도록 `121bc26f9` 에서 분기해 격리했다:
+> **워크트리 `C:\Users\user\Desktop\T-HOLDEM-schedule-p2` · 브랜치 `feat/schedule-completeness-p2`**
 
-구인자가 무단결근으로 처리해도 스태프에겐 "이 일정이 취소되었습니다"만 뜬다.
-평판·정산에 불리한 기록이 남은 걸 **본인만 모르고** 이의 제기 기회를 놓친다.
-P2 중 유일하게 "사용자가 불이익을 모르는" 축이라 먼저 한다.
+| 커밋 | 랭크 | 내용 |
+|---|---|---|
+| `ac23d66c0` | 35 | 노쇼를 취소와 분리 — `ScheduleType` 에 `no_show` 신설, 노쇼 사유 배선 |
+| `76ea41a2e` | 29 | 상태 색을 `SCHEDULE_STATUS` 단일 소스로 (카드·JobCard·캘린더 점) |
+| `bd379a5c6` | 32 | 오프라인 캐시 TTL 분리(24h) + 오프라인 전용 빈 상태 |
+| `4d65679fc` | 36 | 상세 탭 상태별 구성 + 금액 정산 탭 단일화 |
+| `9827474f0` | 31 | 캘린더 로딩 스켈레톤 |
+| `fcdaaa23d` | 37 | 취소 확인을 시트 안 인라인 2단으로 |
+| `d6a6e6a3d` | 40 | 공고 달력 햅틱 7곳 제거 (impeccable §17) |
+| `c761a1c94` | 41 | 죽은 자산 3종 제거 |
 
-- 근인: `src/domains/schedule/StatusMapper.ts:43-45` 가 `CANCELLED` 와 `NO_SHOW` 를
-  모두 `SCHEDULE.CANCELLED` 로 접는다.
-- 방향: `ScheduleType` 에 `no_show` 를 추가하거나, 최소한 `ScheduleEvent` 에 원본
-  workLog status 를 보존한다. 렌더 지점 3곳: `ScheduleCard.tsx`(취소 배너),
-  `tabs/WorkTab.tsx`, `tabs/SettlementTab.tsx`.
-- ⚠️ `ScheduleType` 을 늘리면 `Record<ScheduleType, …>` 매핑이 여러 곳에 있다
-  (`CalendarView.SCHEDULE_DOT_COLORS` / `DOT_PRIORITY` / `countSchedulesByType` /
-  `SCHEDULE_STATUS_STRIPE_TONE` / `SCHEDULE_TYPE_LABELS`). 타입체커가 전부 잡아주니
-  `npx tsc --noEmit` 을 나침반으로 쓸 것.
+최종 검증(HEAD 기준): `npm run quality` green(0 errors, 경고 86 — 시작 시점과 동일) ·
+jest **549 스위트 / 6140 테스트 전부 통과**(스위트 −2·테스트 −12 는 rank41 이 지운 죽은 코드의 자체 테스트).
 
-### 2. rank29 (P2/M) 상태 색 언어가 화면마다 다르다
+### 착수 전 문서와 실제가 달랐던 것
 
-카드 배지가 상태 무관 골드 고정이라 "확정된 게 뭐지"를 글자로 읽어야 하고,
-상세로 들어가면 같은 상태가 초록·노랑으로 바뀐다. impeccable §3(골드 화면당 3곳) 위반.
-
-- `ScheduleCard.tsx` / `GroupedScheduleCard.tsx` 의 `<Badge variant="chip">` 을
-  `variant={status.variant}` 로 바꿔 상세 모달과 색 언어를 통일.
-- 상태→색 매핑을 `constants/statusConfig.ts` 의 `SCHEDULE_STATUS` 한 곳으로 모을 것.
-  chip(골드)은 금액·CTA 전용으로 남긴다.
-
-### 3. rank32 (P2/M) 오프라인이 "일정 없음"으로 위장된다
-
-지하 홀덤펍·지하철 콜드스타트에서 확정 근무가 있는데도 "아직 예정된 스케줄이 없어요" +
-동작 안 하는 '공고 둘러보기' 버튼이 뜬다.
-
-- ① 스케줄 오프라인 캐시 TTL 을 staleTime(5분)에서 분리해 24시간 이상으로
-  (`useSchedules.ts` 의 `useCachedSchedulePayload` ttlMs — 지금은 queryClient
-  frequent 정책을 그대로 재사용 중).
-- ② `isOffline && schedules.length === 0` 전용 빈 상태 신설.
-
-### 4. rank36 (P2/M) 상세 3탭이 상태 무관 고정
-
-지원 중이면 근무·정산 탭이 안내문뿐이라 헛탭 2번. 완료 건은 정보탭 '정산 현황'(확정액)과
-정산탭 '총 정산'(재계산액)이 **서로 다른 숫자**로 병렬 노출돼 어느 게 받을 돈인지 모른다.
-
-- `ScheduleDetailModal.tsx` tabs 배열을 `schedule.type` 기반으로 계산:
-  applied/cancelled = 탭바 숨김 + 정보 단일, confirmed = 정보+근무, completed = 3탭.
-- 금액은 **정산 탭을 단일 소스로**, InfoTab 의 '정산 현황'은 배지 + 안내로 축소.
-
-### 5. rank31 (P2/M) 캘린더 모드 스켈레톤 부재
-
-기본 뷰인데 로딩 중 빈 격자만 뜬다. 리스트 모드는 같은 순간 `ScreenSkeleton` 4행.
-impeccable §16 위반. `CalendarView` 에 `isLoading` prop 추가.
-
-### 6. rank37 (P2/M) 취소 다이얼로그에서 '아니오' → 상세로 못 돌아감
-
-시트를 닫고 300ms 뒤 다이얼로그를 띄우는 `closeSheetThen` 체이닝 탓.
-**근본 개선**: 시트 내부 인라인 2단 확인으로 바꾸면 체이닝 자체가 사라진다
-(체이닝의 목적이 iOS 중첩 Modal 회피였으므로 인라인이면 제약이 없어진다).
-
-### 7. rank40 (P2/S) 두 달력의 햅틱 규칙이 두 벌
-
-규칙(impeccable §17: 일반 탭·리스트 선택·네비게이션 햅틱 금지) 기준으로
-**스케줄 탭이 준수, 공고 달력이 위반**이다. 고칠 곳은 스케줄 탭 밖:
-`CalendarHeader.tsx:40/46/51/102` · `CalendarCell.tsx:71` · `CollapsedHeader.tsx:33/38`.
-이번 세션에서 "범위 밖"으로 남겨둔 항목 — 착수 전에 공고 달력 담당 변경과 겹치는지 확인.
-
-### 8. rank41 (P2/S) 죽은 자산 3종 제거 — **반드시 마지막**
-
-`ScheduleDetailSheet.tsx` · `WorkLogList.tsx` (둘 다 배럴에서만 export, 소비처 0 — 실측
-확인함) · `getCalendarMarkedDates` 파이프라인(매 payload 계산 + MMKV 캐시까지 되는데 소비자 0).
-
-- ⚠️ **선행조건**: 28(익일 표기)·14(지급 배지)는 이번 세션에 이식 완료. **35(노쇼)·29(색 SSOT)
-  가 아직**이라 지금 지우면 참조가 사라진다. 위 1·2를 끝낸 뒤에 착수할 것.
-- 코드 삭제는 고위험이라 `refactor-cleaner`(opus 고정) 경유 권장.
+- `StatusMapper` 경로는 `src/domains/schedule/` 이 아니라 **`src/shared/status/StatusMapper.ts`**.
+- rank35 의 진짜 사각지대는 `Record<ScheduleType,…>` 8곳이 아니라 **타입체커가 대조하지
+  않는 런타임 경계**였다: `schemas/schedule.schema.ts` 의 zod enum 이 하드코딩 4값이라
+  신규 상태가 파싱에서 조용히 drop 될 수 있었다. `SCHEDULE_TYPE_LABELS` 에서 파생시켜
+  드리프트를 성립 불가로 만들었다. 테스트 픽스처(`MockScheduleEvent.type`)도 같은 사본이었다.
+- rank35 는 **노쇼 사유까지 살릴 수 있었다.** `work_logs.no_show_reason` 은
+  `workLogColumns`·`workLog.schema` 를 거쳐 스태프 조회 경로까지 이미 내려오는데
+  `ScheduleConverter` 에서 버려지고 있었다. 사유 없이는 이의 제기 근거를 잡을 수 없다.
+- rank41 의 `getCalendarMarkedDates` 는 "배럴만 죽은" 자산이 아니라 **쓰기는 살아있고
+  읽기만 죽은** 파이프라인이었다(매 payload 계산 + MMKV 저장). 파일 삭제가 아니라
+  4개 훅·payload 타입·테스트 3파일을 가로지르는 절개가 필요했다.
+- rank41 의 `WorkLogList` 에는 2026-07-11 핸드오프에 **"삭제하지 말 것"** 이라는 반대
+  결정이 있었다. 그 근거(M1 부활 후보)가 무효가 된 것을 확인하고 그 문서를 갱신했다.
 
 ## 하지 말 것 (감사가 기각한 것 + 이번 세션 판정)
 
@@ -139,7 +102,12 @@ impeccable §16 위반. `CalendarView` 에 `isLoading` prop 추가.
 
 1. **실기기 QA** — 로컬 알림 실제 발사(Jest 는 예약 *계획* 로직까지만 검증) · 캘린더 44px
    터치 · iOS VoiceOver 토스트 낭독 · 지도 앱 연동(네이버/카카오 폴백) · 월 경계 그룹 표기
-2. **push / PR** — 커밋 8개 전부 로컬
+   - P2 추가분: **노쇼 건 실제 렌더**(카드 배너·근무 탭 사유·정산 0원 도달) ·
+     **기내모드 콜드스타트**(오프라인 빈 상태 + 24h 캐시 생존) · 상태별 탭 노출 ·
+     취소 확인 '아니오' 복귀 · 캘린더 월 이동 스켈레톤 · 공고 달력 무진동
+2. **push / PR** — 로컬 커밋 **16개**(기존 8 + P2 8). 두 브랜치가 갈렸다:
+   `feat/schedule-completeness`(기존 8, 단 다른 세션의 리네임 작업이 얹혀 있음) ·
+   `feat/schedule-completeness-p2`(P2 8, `121bc26f9` 분기). 머지 순서·합류 방식은 사람 판단.
 3. **머지 후 정리** — `GroupedScheduleCard` 의 reduce motion 을 애니메이션 브랜치
    (`ab097c0fc`)의 공용 `useReduceMotion` 훅으로 교체. 지금은 중복 훅 생성을 피하려고
    `AccessibilityInfo` 를 직접 읽는다.
