@@ -1,5 +1,5 @@
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { fireEvent, render } from '@testing-library/react-native';
 import { JobPostingCard } from '../JobPostingCard';
 import type { JobPosting } from '@/types';
 
@@ -223,5 +223,72 @@ describe('JobPostingCard', () => {
     );
 
     expect(queryByLabelText('현장 QR 표시')).toBeNull();
+  });
+
+  describe('묶음 공유 선택 모드', () => {
+    const selectionProps = {
+      onPress: jest.fn(),
+      onClose: jest.fn(),
+      onReopen: jest.fn(),
+      onShowQR: jest.fn(),
+      isClosing: false,
+      isReopening: false,
+    };
+
+    beforeEach(() => jest.clearAllMocks());
+
+    it('선택 모드에서는 개별 공유·QR·마감 액션을 감춘다 (오조작 방지)', () => {
+      const { queryByLabelText } = render(
+        <JobPostingCard posting={basePosting} {...selectionProps} selectionMode />
+      );
+
+      expect(queryByLabelText('공고 공유하기')).toBeNull();
+      expect(queryByLabelText('현장 QR 표시')).toBeNull();
+      expect(queryByLabelText(/공고 마감하기/)).toBeNull();
+    });
+
+    it('카드 전체 탭이 선택 토글로 동작한다 (상세 이동 아님)', () => {
+      const onToggleSelect = jest.fn();
+      const { getByLabelText } = render(
+        <JobPostingCard
+          posting={basePosting}
+          {...selectionProps}
+          selectionMode
+          onToggleSelect={onToggleSelect}
+        />
+      );
+
+      fireEvent.press(getByLabelText('Test Posting 공고 선택'));
+
+      expect(onToggleSelect).toHaveBeenCalledWith(basePosting);
+      expect(selectionProps.onPress).not.toHaveBeenCalled();
+    });
+
+    it('공유 불가 공고(selectable=false)는 탭해도 선택되지 않는다', () => {
+      const onToggleSelect = jest.fn();
+      const { getByLabelText } = render(
+        <JobPostingCard
+          posting={basePosting}
+          {...selectionProps}
+          selectionMode
+          selectable={false}
+          onToggleSelect={onToggleSelect}
+        />
+      );
+
+      fireEvent.press(getByLabelText('Test Posting 공고 선택'));
+
+      expect(onToggleSelect).not.toHaveBeenCalled();
+    });
+
+    it('선택 모드가 아니면 기존대로 상세로 이동한다', () => {
+      const { getByLabelText } = render(
+        <JobPostingCard posting={basePosting} {...selectionProps} />
+      );
+
+      fireEvent.press(getByLabelText('Test Posting 공고 상세보기'));
+
+      expect(selectionProps.onPress).toHaveBeenCalledWith(basePosting);
+    });
   });
 });

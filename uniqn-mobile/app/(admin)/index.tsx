@@ -9,6 +9,7 @@ import {
   FlagOutlineIcon,
   PeopleOutlineIcon,
   RefreshIcon,
+  ShareIcon,
   TrophyOutlineIcon,
   type IconComponent,
 } from '@/components/icons';
@@ -65,6 +66,14 @@ export default function AdminDashboard() {
       iconColor: '#EAB308',
       href: '/(admin)/tournaments',
       bgColor: 'bg-warning-100 dark:bg-warning-900/30',
+    },
+    {
+      title: '공고 묶음 공유',
+      description: '여러 공고를 골라 카톡·SNS로 한 번에 공유합니다.',
+      icon: ShareIcon,
+      iconColor: '#B8962E',
+      href: '/(admin)/postings',
+      bgColor: 'bg-primary-100 dark:bg-primary-900/30',
     },
     {
       title: '사용자 관리',
