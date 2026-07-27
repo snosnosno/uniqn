@@ -94,6 +94,7 @@ const STATUS_FILTER_LABELS: Record<ScheduleStatusFilter, string> = {
   confirmed: SCHEDULE_TYPE_LABELS.confirmed,
   completed: SCHEDULE_TYPE_LABELS.completed,
   cancelled: SCHEDULE_TYPE_LABELS.cancelled,
+  no_show: SCHEDULE_TYPE_LABELS.no_show,
   unpaid: '미지급',
 };
 

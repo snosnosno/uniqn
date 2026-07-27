@@ -29,7 +29,7 @@ import {
   getRoleSalaryFromSettlementSource,
 } from '@/domains/settlement';
 import { WorkTimeDisplay } from '@/shared/time';
-import { formatWorkTimeRange } from '../helpers';
+import { formatWorkTimeRange, NO_SHOW_NOTICE_TITLE, NO_SHOW_NOTICE_DESCRIPTION } from '../helpers';
 import { formatPhoneNumber } from '@/utils/phone';
 import { openMapSearch } from '@/utils/mapLink';
 import { useToast } from '@/stores/toastStore';
@@ -150,6 +150,41 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
       toast.error('지도 앱을 열지 못했어요. 주소를 직접 검색해 주세요.');
     }
   }, [mapQuery, toast]);
+
+  // 노쇼는 취소 분기(opacity-70 로 흐려짐)에 섞지 않는다 — 이의 제기 기한이 있는 기록이라
+  // 공고·일정 정보를 흐리지 않고 그대로 읽을 수 있어야 근거를 맞춰볼 수 있다.
+  if (schedule.type === STATUS.SCHEDULE.NO_SHOW) {
+    return (
+      <View className="py-2">
+        <View className="mb-4 rounded-md bg-error-50 p-4 dark:bg-error-900/20">
+          <Text className="text-sm font-sans-semibold text-error-700 dark:text-error-300">
+            {NO_SHOW_NOTICE_TITLE}
+          </Text>
+          <Text className="mt-1 text-sm text-error-600 dark:text-error-400 font-sans">
+            {NO_SHOW_NOTICE_DESCRIPTION}
+          </Text>
+        </View>
+
+        <Section icon={<DocumentIcon size={18} color={SECONDARY_PALETTE[400]} />} title="공고 정보">
+          <Text className="text-base text-content-primary dark:text-content-primary font-sans">
+            {schedule.jobPostingName}
+          </Text>
+        </Section>
+
+        <Section icon={<CalendarIcon size={18} color={SECONDARY_PALETTE[400]} />} title="일정">
+          <Text className="text-base text-content-primary dark:text-content-primary font-sans">
+            {formatFullDate(schedule.date)}
+          </Text>
+          <View className="mt-1 flex-row items-center">
+            <ClockIcon size={14} color={SECONDARY_PALETTE[400]} />
+            <Text className="ml-1.5 text-sm text-content-secondary font-sans">
+              {getTimeDisplay(schedule)}
+            </Text>
+          </View>
+        </Section>
+      </View>
+    );
+  }
 
   if (schedule.type === STATUS.SCHEDULE.CANCELLED) {
     return (

@@ -155,6 +155,9 @@ export class ScheduleConverter {
       // 합성키(`${jobPostingId}_${staffId}`)를 쓰면 invalid uuid(22P02)로 터진다.
       // 레거시/수동 work_log로 applicationId가 없으면 undefined → 취소 버튼 숨김 + 그룹화 제외(안전).
       applicationId: workLog.applicationId ?? undefined,
+      // 노쇼 사유 — 구인자만 보던 값이다. 스태프에게 안 넘기면 "왜 노쇼로 잡혔는지"를
+      // 전화로 물어보는 것 말고는 알 방법이 없다.
+      noShowReason: workLog.noShowReason,
       customSalaryInfo: workLog.customSalaryInfo,
       customAllowances: workLog.customAllowances,
       customTaxSettings: workLog.customTaxSettings,

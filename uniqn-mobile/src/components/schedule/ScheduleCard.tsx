@@ -31,6 +31,8 @@ import {
   statusConfig,
   attendanceConfig,
   SCHEDULE_STATUS_STRIPE_TONE,
+  NO_SHOW_NOTICE_TITLE,
+  NO_SHOW_NOTICE_DESCRIPTION,
 } from './helpers';
 import { STATUS } from '@/constants';
 import { PAYROLL_STATUS } from '@/constants/statusConfig';
@@ -132,6 +134,9 @@ export const ScheduleCard = memo(function ScheduleCard({
   const timeRangeDisplay = useMemo(() => formatWorkTimeRange(timeDisplayInfo), [timeDisplayInfo]);
 
   const isCancelled = schedule.type === STATUS.SCHEDULE.CANCELLED;
+  // 노쇼는 취소와 달리 흐리게 처리하지 않는다 — 이의 제기 기한이 있는 기록이라
+  // 눈에 덜 띄게 만들면 이 화면이 고치려는 문제(본인만 모른다)를 그대로 되풀이한다.
+  const isNoShow = schedule.type === STATUS.SCHEDULE.NO_SHOW;
   // 스크린리더로 카드 하나를 들었을 때 완결 문장이 되도록 금액·취소요청 여부까지 넣는다.
   const accessibilityLabel = [
     status.label,
@@ -141,6 +146,7 @@ export const ScheduleCard = memo(function ScheduleCard({
     typeof completedAmount === 'number' ? formatCurrency(completedAmount) : null,
     schedule.type === STATUS.SCHEDULE.COMPLETED ? payrollStatusConfig?.label : null,
     hasPendingCancellation ? '취소 요청 검토 중' : null,
+    isNoShow ? NO_SHOW_NOTICE_TITLE : null,
     overlapWarning,
   ]
     .filter(Boolean)
@@ -332,6 +338,17 @@ export const ScheduleCard = memo(function ScheduleCard({
             <View className="mt-3 rounded-lg bg-error-50 px-3 py-2 dark:bg-error-900/20">
               <Text className="text-center text-xs text-error-600 dark:text-error-400 font-sans">
                 이 일정이 취소되었습니다.
+              </Text>
+            </View>
+          )}
+
+          {isNoShow && (
+            <View className="mt-3 rounded-lg bg-error-50 px-3 py-2 dark:bg-error-900/20">
+              <Text className="text-center text-xs font-sans-semibold text-error-700 dark:text-error-300">
+                {NO_SHOW_NOTICE_TITLE}
+              </Text>
+              <Text className="mt-1 text-center text-xs text-error-600 dark:text-error-400 font-sans">
+                {NO_SHOW_NOTICE_DESCRIPTION}
               </Text>
             </View>
           )}

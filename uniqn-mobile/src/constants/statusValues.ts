@@ -87,6 +87,7 @@ export const SCHEDULE_TYPE_VALUES = {
   CONFIRMED: 'confirmed',
   COMPLETED: 'completed',
   CANCELLED: 'cancelled',
+  NO_SHOW: 'no_show',
 } as const satisfies Record<string, ScheduleType>;
 
 export const ATTENDANCE_VALUES = {

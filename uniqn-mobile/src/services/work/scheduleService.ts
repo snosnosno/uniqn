@@ -776,6 +776,7 @@ export function getCalendarMarkedDates(
     confirmed: '#22C55E', // success
     completed: SECONDARY_PALETTE[500], // secondary (과거 근무 — confirmed와 시각 구분)
     cancelled: '#DC2626', // error
+    no_show: '#DC2626', // error
   };
 
   schedules.forEach((schedule) => {

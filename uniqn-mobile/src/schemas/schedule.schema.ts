@@ -6,6 +6,8 @@
  */
 
 import { z } from 'zod';
+import { SCHEDULE_TYPE_LABELS } from '@/shared/status';
+import type { ScheduleType } from '@/shared/status';
 import { xssValidation } from '@/utils/security';
 
 // ============================================================================
@@ -22,7 +24,13 @@ export type AttendanceStatusSchema = z.infer<typeof attendanceStatusSchema>;
 /**
  * 스케줄 타입 스키마
  */
-export const scheduleTypeSchema = z.enum(['applied', 'confirmed', 'completed', 'cancelled']);
+// 값 목록을 여기서 다시 적지 않는다 — 예전엔 하드코딩 4값이라 ScheduleType 에 상태를
+// 하나 더해도 타입체커가 대조해주지 않아, 신규 상태가 파싱 경계에서 조용히 drop 될 수 있었다.
+// SCHEDULE_TYPE_LABELS 는 Record<ScheduleType, string> 이라 누락이 컴파일 에러로 잡히는
+// 유일한 전수 목록이다. 여기서 파생시키면 드리프트 자체가 성립하지 않는다.
+export const scheduleTypeSchema = z.enum(
+  Object.keys(SCHEDULE_TYPE_LABELS) as [ScheduleType, ...ScheduleType[]]
+);
 
 export type ScheduleTypeSchema = z.infer<typeof scheduleTypeSchema>;
 

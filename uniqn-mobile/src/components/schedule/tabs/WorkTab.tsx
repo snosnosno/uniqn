@@ -15,6 +15,7 @@ import { useCurrentWorkStatus } from '@/hooks/useWorkLogs';
 import { STATUS } from '@/constants';
 import { ATTENDANCE_STATUS } from '@/constants/statusConfig';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
+import { NO_SHOW_NOTICE_TITLE, NO_SHOW_NOTICE_DESCRIPTION } from '../helpers';
 import { WorkTimeDisplay } from '@/shared/time';
 import type { ScheduleEvent } from '@/types';
 import { useThemeStore } from '@/stores/themeStore';
@@ -110,6 +111,47 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
           <Text className="text-sm text-error-600 dark:text-error-400 text-center font-sans">
             취소된 스케줄입니다.
           </Text>
+        </View>
+      </View>
+    );
+  }
+
+  // 노쇼 — 취소와 한 덩어리로 묶으면 안 된다. 무엇이 기록됐는지 밝히고,
+  // 이의 제기 경로(구인자 전화)를 같은 화면에서 준다. 취소요청 검토 중 블록과 같은 CTA.
+  if (schedule.type === STATUS.SCHEDULE.NO_SHOW) {
+    return (
+      <View className="py-6 items-center">
+        <View className="w-full rounded-md bg-error-50 p-4 dark:bg-error-900/20">
+          <Text className="text-sm font-sans-semibold text-error-700 dark:text-error-300">
+            {NO_SHOW_NOTICE_TITLE}
+          </Text>
+          <Text className="mt-1 text-sm text-error-600 dark:text-error-400 font-sans">
+            {NO_SHOW_NOTICE_DESCRIPTION}
+          </Text>
+          {/* 구인자가 남긴 사유. 이게 없으면 무엇을 반박해야 하는지조차 알 수 없다. */}
+          {schedule.noShowReason?.trim() && (
+            <View className="mt-3 rounded-md bg-surface-card p-3 dark:bg-surface-elevated">
+              <Text className="text-xs text-content-muted dark:text-secondary-400 font-sans">
+                구인자가 남긴 사유
+              </Text>
+              <Text className="mt-1 text-sm text-content-primary dark:text-content-primary font-sans">
+                {schedule.noShowReason}
+              </Text>
+            </View>
+          )}
+          {schedule.ownerPhone && (
+            <Pressable
+              onPress={() => Linking.openURL(`tel:${schedule.ownerPhone}`)}
+              accessibilityRole="button"
+              accessibilityLabel="구인자에게 전화하기"
+              className="mt-3 flex-row items-center justify-center rounded-lg bg-error-100 py-2 active:bg-error-200 dark:bg-error-900/40 dark:active:bg-error-900/60"
+            >
+              <PhoneIcon size={16} color={SECONDARY_PALETTE[600]} />
+              <Text className="ml-2 text-sm font-sans-semibold text-error-700 dark:text-error-300">
+                구인자에게 문의 ({formatPhoneNumber(schedule.ownerPhone)})
+              </Text>
+            </Pressable>
+          )}
         </View>
       </View>
     );

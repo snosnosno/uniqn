@@ -143,6 +143,13 @@ export interface ScheduleEvent extends FirebaseDocument {
   workLogId?: string;
   applicationId?: string;
   isCancellationPending?: boolean;
+  /**
+   * 구인자가 남긴 노쇼 사유(work_logs.no_show_reason).
+   *
+   * 컬럼은 스태프 조회 경로(workLogColumns)까지 이미 내려오는데 ScheduleEvent 로 옮겨지지
+   * 않아 버려지고 있었다. 사유 없이 "노쇼로 기록됨"만 보면 이의를 제기할 근거를 못 잡는다.
+   */
+  noShowReason?: string;
 
   // 媛쒕퀎 ?ㅻ쾭?쇱씠??(援ъ씤?먭? ?ㅽ깭?꾨퀎濡??섏젙???뺤궛 ?뺣낫)
   /** 媛쒕퀎 湲됱뿬 ?뺣낫 (?ㅻ쾭?쇱씠?? */

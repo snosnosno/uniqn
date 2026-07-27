@@ -649,7 +649,7 @@ describe('countSchedulesByType', () => {
       createScheduleEvent({ id: 'c-1', type: 'confirmed' }),
     ]);
 
-    expect(counts).toEqual({ applied: 2, confirmed: 1, completed: 0, cancelled: 0 });
+    expect(counts).toEqual({ applied: 2, confirmed: 1, completed: 0, cancelled: 0, no_show: 0 });
   });
 
   it('빈 배열이면 전 타입 0으로 집계한다', () => {
@@ -658,7 +658,18 @@ describe('countSchedulesByType', () => {
       confirmed: 0,
       completed: 0,
       cancelled: 0,
+      no_show: 0,
     });
+  });
+
+  it('노쇼를 취소와 별도 키로 집계한다', () => {
+    const counts = countSchedulesByType([
+      createScheduleEvent({ id: 'n-1', type: 'no_show' }),
+      createScheduleEvent({ id: 'x-1', type: 'cancelled' }),
+    ]);
+
+    expect(counts.no_show).toBe(1);
+    expect(counts.cancelled).toBe(1);
   });
 });
 

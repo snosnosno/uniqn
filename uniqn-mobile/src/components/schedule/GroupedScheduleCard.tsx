@@ -18,7 +18,12 @@ import {
 } from '@/components/icons';
 import { formatDateDisplay, formatRolesDisplay } from '@/utils/scheduleGrouping';
 import { parseTimeSlot } from '@/utils/date/ranges';
-import { formatGroupSalaryDisplay, SCHEDULE_STATUS_STRIPE_TONE } from './helpers';
+import {
+  formatGroupSalaryDisplay,
+  SCHEDULE_STATUS_STRIPE_TONE,
+  NO_SHOW_NOTICE_TITLE,
+  NO_SHOW_NOTICE_DESCRIPTION,
+} from './helpers';
 import { STATUS } from '@/constants';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 import { WorkTimeDisplay } from '@/shared/time';
@@ -41,6 +46,9 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const status = SCHEDULE_STATUS[group.type];
   const isCancelled = group.type === STATUS.SCHEDULE.CANCELLED;
+  // 그룹 키에 type 이 들어가므로(createGroupKey) 노쇼 일자는 별도 그룹/카드로 갈라진다.
+  // 취소와 달리 흐리게 처리하지 않는다 — 이의 제기 기한이 있는 기록이다.
+  const isNoShow = group.type === STATUS.SCHEDULE.NO_SHOW;
   const hasPendingCancellation = group.originalEvents.some((event) => event.isCancellationPending);
 
   const rolesDisplay = useMemo(
@@ -131,6 +139,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
     group.location,
     attendanceSummary?.label,
     hasPendingCancellation ? '취소 요청 검토 중' : null,
+    isNoShow ? NO_SHOW_NOTICE_TITLE : null,
   ]
     .filter(Boolean)
     .join(', ');
@@ -317,6 +326,17 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
             <View className="mt-3 rounded-lg bg-error-50 px-3 py-2 dark:bg-error-900/20">
               <Text className="text-center text-xs text-error-600 dark:text-error-400 font-sans">
                 이 일정이 취소되었습니다.
+              </Text>
+            </View>
+          )}
+
+          {isNoShow && (
+            <View className="mt-3 rounded-lg bg-error-50 px-3 py-2 dark:bg-error-900/20">
+              <Text className="text-center text-xs font-sans-semibold text-error-700 dark:text-error-300">
+                {NO_SHOW_NOTICE_TITLE}
+              </Text>
+              <Text className="mt-1 text-center text-xs text-error-600 dark:text-error-400 font-sans">
+                {NO_SHOW_NOTICE_DESCRIPTION}
               </Text>
             </View>
           )}

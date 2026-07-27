@@ -81,4 +81,42 @@ describe('ScheduleCard', () => {
     expect(queryByText('취소 요청 검토 중입니다.')).toBeNull();
     expect(getByText('이 일정이 취소되었습니다.')).toBeTruthy();
   });
+
+  // 구인자가 무단결근으로 처리해도 스태프에겐 "취소되었습니다"만 떴다 — 평판·정산에
+  // 불리한 기록이 남은 걸 본인만 모르고 이의 제기 기회를 놓쳤다.
+  it('노쇼를 취소로 뭉개지 않고 무단결근 기록임을 밝힌다', () => {
+    const schedule = createMockScheduleEvent({
+      type: 'no_show',
+    }) as unknown as ScheduleEvent;
+
+    const { getByText, queryByText } = render(<ScheduleCard schedule={schedule} />);
+
+    expect(queryByText('이 일정이 취소되었습니다.')).toBeNull();
+    expect(getByText('무단결근(노쇼)으로 기록되었습니다')).toBeTruthy();
+    // 이의 제기 경로를 함께 말하지 않으면 "알려주기만 하고 끝"이 된다.
+    expect(
+      getByText(
+        '이 기록은 평판과 정산에 영향을 줄 수 있어요. 사실과 다르면 구인자에게 문의해 주세요.'
+      )
+    ).toBeTruthy();
+  });
+
+  it('노쇼 카드의 스크린리더 라벨이 상태를 취소가 아닌 노쇼로 낭독한다', () => {
+    const schedule = createMockScheduleEvent({
+      type: 'no_show',
+    }) as unknown as ScheduleEvent;
+
+    // 배지 자체도 '노쇼' 라벨을 가지므로 카드 컨테이너 라벨을 따로 특정한다 —
+    // 카드 하나를 들었을 때 상태와 무슨 기록인지가 한 문장으로 들려야 한다.
+    const { getAllByLabelText } = render(<ScheduleCard schedule={schedule} onPress={jest.fn()} />);
+
+    const cardLabels = getAllByLabelText(/노쇼/).map(
+      (node) => node.props.accessibilityLabel as string
+    );
+
+    expect(cardLabels.some((label) => label.includes('무단결근(노쇼)으로 기록되었습니다'))).toBe(
+      true
+    );
+    expect(cardLabels.every((label) => !label.includes('취소'))).toBe(true);
+  });
 });

@@ -9,6 +9,9 @@ import type { DateData, MarkedDates } from 'react-native-calendars/src/types';
 import { PRIMARY_COLORS, STATUS_COLORS, SECONDARY_PALETTE, TEXT_COLORS } from '@/constants/colors';
 import { WEEKDAYS_KO } from '@/constants/weekdays';
 import { useThemeStore } from '@/stores/themeStore';
+// 라벨은 shared/status 한 곳에서만 만든다 — 예전에는 이 파일이 같은 표를 두 번 하드코딩해
+// 상태를 하나 늘릴 때마다 세 곳이 조용히 어긋날 수 있었다.
+import { SCHEDULE_TYPE_LABELS } from '@/shared/status';
 import type { ScheduleEvent, ScheduleType } from '@/types';
 
 LocaleConfig.locales.ko = {
@@ -68,7 +71,11 @@ const SCHEDULE_DOT_COLORS: Record<ScheduleType, string> = {
   applied: `${STATUS_COLORS.warning}73`,
   confirmed: STATUS_COLORS.success,
   completed: PRIMARY_COLORS[500],
-  cancelled: STATUS_COLORS.error,
+  // 취소와 노쇼는 같은 '빨강 계열'이되 같은 색이면 안 된다 — 범례에 똑같은 점 두 개가 서면
+  // 구분이 label 낭독에만 의존하게 된다. 위 applied 와 같은 투명도 관용구를 재사용해
+  // 끝난 일(취소=반투명)과 지금 대응이 필요한 일(노쇼=불투명)을 휘도로 가른다.
+  cancelled: `${STATUS_COLORS.error}73`,
+  no_show: STATUS_COLORS.error,
 };
 
 const CALENDAR_WEEKDAYS = WEEKDAYS_KO;
@@ -118,7 +125,14 @@ const darkCalendarTheme = {
 };
 
 /** 점이 3개를 넘칠 때 무엇을 남길지 — 지금 행동이 필요한 순서 */
-const DOT_PRIORITY: ScheduleType[] = ['confirmed', 'applied', 'completed', 'cancelled'];
+const DOT_PRIORITY: ScheduleType[] = [
+  'confirmed',
+  'applied',
+  // 노쇼는 이의 제기 기한이 있는 유일한 과거 항목이라 완료·취소보다 먼저 남긴다.
+  'no_show',
+  'completed',
+  'cancelled',
+];
 const MAX_DOTS = 3;
 
 function getDotsForSchedules(schedules: ScheduleEvent[]): DotInfo[] {
@@ -138,13 +152,6 @@ function getDotsForSchedules(schedules: ScheduleEvent[]): DotInfo[] {
     }));
 }
 
-const SCHEDULE_TYPE_LABEL: Record<ScheduleType, string> = {
-  applied: '지원 중',
-  confirmed: '확정',
-  completed: '완료',
-  cancelled: '취소',
-};
-
 /** '7월 13일, 확정 1건 · 지원 중 1건' — 날짜 뒤에 붙어 낭독된다. */
 function buildDayAccessibilityLabel(date: string, schedules: ScheduleEvent[]): string {
   const counts = new Map<ScheduleType, number>();
@@ -154,7 +161,7 @@ function buildDayAccessibilityLabel(date: string, schedules: ScheduleEvent[]): s
 
   const [, month, day] = date.split('-');
   const summary = Array.from(counts.entries())
-    .map(([type, count]) => `${SCHEDULE_TYPE_LABEL[type]} ${count}건`)
+    .map(([type, count]) => `${SCHEDULE_TYPE_LABELS[type]} ${count}건`)
     .join(' · ');
 
   return `${Number(month)}월 ${Number(day)}일, ${summary || '일정 없음'}`;
@@ -201,13 +208,6 @@ interface LegendProps {
 }
 
 function CalendarLegend({ types }: LegendProps) {
-  const labels: Record<ScheduleType, string> = {
-    applied: '지원 중',
-    confirmed: '확정',
-    completed: '완료',
-    cancelled: '취소',
-  };
-
   return (
     <View className="mb-1 mt-3 flex-row flex-wrap justify-center gap-3 px-2">
       {types.map((type) => (
@@ -217,7 +217,7 @@ function CalendarLegend({ types }: LegendProps) {
             style={{ backgroundColor: SCHEDULE_DOT_COLORS[type] }}
           />
           <Text className="text-xs text-content-muted dark:text-secondary-400 font-sans">
-            {labels[type]}
+            {SCHEDULE_TYPE_LABELS[type]}
           </Text>
         </View>
       ))}

@@ -124,6 +124,15 @@ export const SCHEDULE_STATUS: Record<ScheduleStatusType, StatusConfig> = {
     bgColor: 'bg-error-100 dark:bg-error-900/30',
     hexColor: STATUS_COLORS.error,
   },
+  // 노쇼는 취소와 같은 error 톤을 쓰되 라벨이 다르다 — 스태프가 "취소됐구나"로 읽고
+  // 넘기지 않도록, 카드/상세는 여기에 더해 사유·이의 제기 안내 배너를 따로 띄운다.
+  no_show: {
+    label: SCHEDULE_TYPE_LABELS.no_show,
+    variant: 'error',
+    textColor: 'text-error-600 dark:text-error-400',
+    bgColor: 'bg-error-100 dark:bg-error-900/30',
+    hexColor: STATUS_COLORS.error,
+  },
 };
 
 export type AttendanceStatusType = AttendanceStatus;

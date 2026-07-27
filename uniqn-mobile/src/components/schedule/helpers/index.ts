@@ -18,4 +18,10 @@ export {
   formatGroupSalaryDisplay,
 } from './salaryHelpers';
 
-export { statusConfig, attendanceConfig, SCHEDULE_STATUS_STRIPE_TONE } from './statusConfig';
+export {
+  statusConfig,
+  attendanceConfig,
+  SCHEDULE_STATUS_STRIPE_TONE,
+  NO_SHOW_NOTICE_TITLE,
+  NO_SHOW_NOTICE_DESCRIPTION,
+} from './statusConfig';

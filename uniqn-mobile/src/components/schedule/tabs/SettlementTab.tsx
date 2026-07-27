@@ -26,6 +26,7 @@ import {
 import { STATUS } from '@/constants';
 import { PAYROLL_STATUS } from '@/constants/statusConfig';
 import { formatDateKorean } from '@/utils/date';
+import { NO_SHOW_NOTICE_TITLE, NO_SHOW_NOTICE_DESCRIPTION } from '../helpers';
 import type { ScheduleEvent, PayrollStatus } from '@/types';
 
 export interface SettlementTabProps {
@@ -243,6 +244,20 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
 
   return (
     <View className="py-2">
+      {/* 노쇼는 취소처럼 조기 return 하지 않는다 — 아래 '확정 정산 금액' 블록(0원 차감 표시)은
+          정확히 이 경우를 위해 쓰인 것인데, 예전엔 노쇼가 cancelled 로 접혀 조기 return 에
+          걸리는 바람에 코드에 있는 그 안내에 영영 도달하지 못했다. */}
+      {schedule.type === STATUS.SCHEDULE.NO_SHOW && (
+        <View className="mb-4 rounded-md bg-error-50 p-4 dark:bg-error-900/20">
+          <Text className="text-sm font-sans-semibold text-error-700 dark:text-error-300">
+            {NO_SHOW_NOTICE_TITLE}
+          </Text>
+          <Text className="mt-1 text-sm text-error-600 dark:text-error-400 font-sans">
+            {NO_SHOW_NOTICE_DESCRIPTION}
+          </Text>
+        </View>
+      )}
+
       <View className="mb-4 flex-row items-center justify-between">
         <View className="flex-row items-center">
           <BanknotesIcon size={18} color={SECONDARY_PALETTE[500]} />

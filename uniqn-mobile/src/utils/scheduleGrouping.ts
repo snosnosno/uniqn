@@ -421,6 +421,7 @@ export function countSchedulesByType(
     confirmed: 0,
     completed: 0,
     cancelled: 0,
+    no_show: 0,
   };
 
   for (const schedule of schedules) {
