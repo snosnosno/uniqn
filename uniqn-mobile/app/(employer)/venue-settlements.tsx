@@ -56,13 +56,7 @@ export default function VenueSettlementsScreen() {
       : format(new Date(), 'yyyy-MM');
 
   const [month, setMonth] = useState(initialMonth);
-  const {
-    data: workLogs,
-    isLoading,
-    isError,
-    error: settlementError,
-    refetch,
-  } = useVenueSettlement(venueId, month);
+  const { data: workLogs, isLoading, isError, refetch } = useVenueSettlement(venueId, month);
   const mutation = useSetVenueRoleSalary();
   const { addToast } = useToastStore();
 
@@ -188,12 +182,13 @@ export default function VenueSettlementsScreen() {
         // 금전 화면에서 조회 실패를 "정산할 근무가 없어요"로 흘리면 사장이 그 달 지급액을
         // 0 으로 오판한다. "없다"와 "못 읽었다"는 반드시 구분한다.
         <View className="px-4 py-8">
+          {/* error 를 넘기지 않는 이유: ErrorState 는 error 가 AppError 면 isRetryable 로 재시도
+              버튼을 감춘다. 여기 재시도는 부작용 없는 읽기(refetch)라 항상 열려 있어야 하고,
+              표시 문구도 message 가 error 보다 우선하므로 error 는 기여하는 바가 없다. */}
           <ErrorState
             title="정산 내역을 불러오지 못했어요"
             message="네트워크 상태를 확인하고 다시 시도해주세요. 정산할 근무가 없는 게 아니라 목록을 읽지 못한 상태예요."
-            error={settlementError}
             onRetry={refetch}
-            alwaysAllowRetry
           />
         </View>
       ) : (workLogs ?? []).length === 0 ? (
