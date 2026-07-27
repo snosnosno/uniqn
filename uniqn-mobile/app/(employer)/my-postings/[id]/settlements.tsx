@@ -111,6 +111,7 @@ export default function StaffSettlementsScreen() {
   // 핸들러 다발 (클로저 의존은 인자로 주입해 deps 보존)
   const {
     handleRoleChangeSave,
+    isChangingRole,
     handleReportSubmit,
     handleSettleFromDetail,
     handleSettle,
@@ -248,6 +249,7 @@ export default function StaffSettlementsScreen() {
         filledByRole={filledByRole}
         isUpdating={isUpdating}
         isReverting={isReverting}
+        isChangingRole={isChangingRole}
         onRevertSettlement={handleRevertSettlement}
         onRoleChangeSave={handleRoleChangeSave}
         onReportSubmit={handleReportSubmit}

@@ -42,6 +42,8 @@ interface SettlementModalsProps {
   isUpdating: boolean;
   /** 지급 완료 취소 진행 중 (SETTLE-3) */
   isReverting?: boolean;
+  /** 역할 변경 진행 중 — 성공에서만 닫히므로 모달이 열린 채 기다린다. 없으면 무피드백으로 멈춘 듯 보인다. */
+  isChangingRole?: boolean;
   /** 지급 완료 취소 실행 — 사유는 서버가 필수로 강제한다. */
   onRevertSettlement: (reason: string) => void;
   onRoleChangeSave: (data: {
@@ -69,6 +71,7 @@ export function SettlementModals({
   filledByRole,
   isUpdating,
   isReverting,
+  isChangingRole,
   onRevertSettlement,
   onRoleChangeSave,
   onReportSubmit,
@@ -89,6 +92,7 @@ export function SettlementModals({
         availableRoles={availableRoles}
         filledByRole={filledByRole}
         onSave={onRoleChangeSave}
+        isLoading={isChangingRole}
       />
 
       {/* 신고 모달 */}

@@ -25,9 +25,12 @@ interface UpdateCall {
 const mockDb: {
   calls: UpdateCall[];
   result: { data: unknown[] | null; error: unknown };
+  /** 0행일 때 원인 진단용 재조회가 돌려줄 현재 행. */
+  currentRow: { status?: string; updated_at?: string } | null;
 } = {
   calls: [],
   result: { data: [{ id: 'placeholder' }], error: null },
+  currentRow: null,
 };
 
 jest.mock('@/lib/supabase', () => ({
@@ -41,6 +44,14 @@ jest.mock('@/lib/supabase', () => ({
             call.filters.push([column, value]);
             return builder;
           },
+          gte: (column: string, value: unknown) => {
+            call.filters.push([`${column}@gte`, value]);
+            return builder;
+          },
+          lt: (column: string, value: unknown) => {
+            call.filters.push([`${column}@lt`, value]);
+            return builder;
+          },
           select: (columns: string) => {
             call.selected = columns;
             return Promise.resolve(mockDb.result);
@@ -48,7 +59,12 @@ jest.mock('@/lib/supabase', () => ({
         };
         return builder;
       },
-      select: jest.fn().mockReturnThis(),
+      // 0행 원인 진단 재조회 — select('status,updated_at').eq('id').maybeSingle()
+      select: () => ({
+        eq: () => ({
+          maybeSingle: () => Promise.resolve({ data: mockDb.currentRow, error: null }),
+        }),
+      }),
       insert: jest.fn().mockReturnThis(),
     }),
     rpc: jest.fn(),
@@ -118,6 +134,8 @@ const patch = { title: '제목만 변경' } as UpdateJobPostingInput;
 beforeEach(() => {
   mockDb.calls = [];
   mockDb.result = { data: [{ id: POSTING }], error: null };
+  // 기본값 = 다른 사람이 먼저 저장한 상태(충돌). 케이스별로 갈아끼운다.
+  mockDb.currentRow = { status: 'active', updated_at: '2026-07-01T09:30:00.000Z' };
   mockLoadMutate.mockReset();
   mockLoadMutate.mockResolvedValue(currentPosting());
   mockLoadRoleKeys.mockReset();
@@ -127,14 +145,33 @@ beforeEach(() => {
 describe('낙관적 잠금 — 내가 편집을 시작한 그 버전일 때만 쓴다', () => {
   const repo = new SupabaseJobPostingRepository();
 
-  it('baseline 이 있으면 updated_at 을 조건에 실어 보낸다', async () => {
+  it('🚨 등호가 아니라 밀리초 구간으로 잠근다 — DB 는 마이크로초, 클라는 밀리초로 잘린다', async () => {
     await repo.updateWithTransaction(POSTING, patch, OWNER, BASELINE);
 
     expect(mockDb.calls).toHaveLength(1);
+    // `.eq('updated_at', baseline)` 이면 로컬 DB 실측상 **항상 0행**이다:
+    //   DB `2026-07-01T00:00:00.427647+00:00` vs 클라 `2026-07-01T00:00:00.427Z`
     expect(mockDb.calls[0]!.filters).toEqual([
       ['id', POSTING],
-      ['updated_at', BASELINE],
+      ['updated_at@gte', BASELINE],
+      ['updated_at@lt', '2026-07-01T00:00:00.001Z'],
     ]);
+  });
+
+  it('구간이 같은 밀리초 안의 마이크로초 원본을 감싼다 (실 DB 포맷 회귀)', async () => {
+    // PostgREST 가 돌려준 실제 값 → 클라이언트 정규화(Date.toISOString) → baseline
+    const dbValue = '2026-07-27T14:15:55.427647+00:00';
+    const clientBaseline = new Date(dbValue).toISOString();
+    expect(clientBaseline).toBe('2026-07-27T14:15:55.427Z'); // 절단이 실제로 일어난다
+
+    await repo.updateWithTransaction(POSTING, patch, OWNER, clientBaseline);
+
+    const filters = Object.fromEntries(mockDb.calls[0]!.filters);
+    const lo = Date.parse(String(filters['updated_at@gte']));
+    const hi = Date.parse(String(filters['updated_at@lt']));
+    const actual = Date.parse(dbValue); // Date.parse 는 μs 를 ms 로 내림
+    expect(lo).toBeLessThanOrEqual(actual);
+    expect(hi).toBeGreaterThan(actual);
   });
 
   it('payload 가 아니라 필터로 잠근다 — BEFORE 트리거가 payload 의 updated_at 을 덮기 때문', async () => {
@@ -189,5 +226,36 @@ describe('영향 행 수 검증 — 0행 false success 차단', () => {
     const result = await repo.updateWithTransaction(POSTING, patch, OWNER, null);
 
     expect(result.title).toBe('제목만 변경');
+  });
+});
+
+describe('0행 원인 분기 — 잠금 여부만으로 단정하면 거짓 안내가 된다', () => {
+  const repo = new SupabaseJobPostingRepository();
+
+  it('container 공고는 영구 0행이다 — 충돌이 아니라 그 사실을 말한다', async () => {
+    mockDb.result = { data: [], error: null };
+    mockDb.currentRow = { status: 'container', updated_at: BASELINE };
+
+    await expect(repo.updateWithTransaction(POSTING, patch, OWNER, BASELINE)).rejects.toMatchObject(
+      { userMessage: expect.stringContaining('근무표') }
+    );
+  });
+
+  it('행이 사라졌으면 삭제되었다고 말한다', async () => {
+    mockDb.result = { data: [], error: null };
+    mockDb.currentRow = null;
+
+    await expect(repo.updateWithTransaction(POSTING, patch, OWNER, BASELINE)).rejects.toMatchObject(
+      { userMessage: expect.stringContaining('찾을 수 없습니다') }
+    );
+  });
+
+  it('행도 살아 있고 baseline 도 그대로인데 0행이면 충돌로 단정하지 않는다 (RLS 등)', async () => {
+    mockDb.result = { data: [], error: null };
+    mockDb.currentRow = { status: 'active', updated_at: BASELINE };
+
+    await expect(repo.updateWithTransaction(POSTING, patch, OWNER, BASELINE)).rejects.toMatchObject(
+      { code: ERROR_CODES.BUSINESS_INVALID_STATE }
+    );
   });
 });

@@ -16,8 +16,12 @@ export interface SubmitGate<TArgs extends unknown[] = []> {
 export interface UseSubmitGateOptions<TArgs extends unknown[]> {
   /** 실제 제출. `mutate` 가 아니라 **`mutateAsync`** 를 넘겨야 결과를 볼 수 있다. */
   action: (...args: TArgs) => Promise<unknown>;
-  /** 성공 후 부수효과 — 모달 닫기·네비게이션·필터 전환. 실패하면 절대 돌지 않는다. */
-  onSuccess?: (...args: TArgs) => void;
+  /**
+   * 성공 후 부수효과 — 모달 닫기·네비게이션·필터 전환. 실패하면 절대 돌지 않는다.
+   * async 를 넘겨도 된다(await 한다) — 안 그러면 refetch 가 끝나기 전에 잠금이 풀리고,
+   * 그 안의 reject 가 미처리 rejection 으로 샌다.
+   */
+  onSuccess?: (...args: TArgs) => void | Promise<void>;
   /** 실패 로그 메시지. 사용자 토스트는 발행하지 않는다(아래 주석 참고). */
   errorMessage: string;
   /** 실패 로그에 함께 남길 식별자. */
@@ -63,23 +67,33 @@ export function useSubmitGate<TArgs extends unknown[] = []>({
   // state 는 리렌더 후에야 보이므로 같은 틱의 재탭을 못 막는다 — 잠금의 진실원은 이 ref 다.
   const inFlightRef = useRef(false);
 
-  const submit = useCallback(
-    async (...args: TArgs) => {
-      if (inFlightRef.current) return;
-      inFlightRef.current = true;
-      setIsSubmitting(true);
-      try {
-        await action(...args);
-        onSuccess?.(...args);
-      } catch (error) {
-        logger.error(errorMessage, toError(error), context);
-      } finally {
-        inFlightRef.current = false;
-        setIsSubmitting(false);
-      }
-    },
-    [action, onSuccess, errorMessage, context]
-  );
+  // 호출부는 전부 인라인 화살표(`action: (x) => mutateAsync(...)`)를 넘긴다. 이것들을 deps 에
+  // 두면 `submit` 아이덴티티가 매 렌더 바뀌어 useCallback 이 무의미해지고, 이 값을 그대로
+  // 노출하는 소비자(useStaffSettlementsHandlers)가 안정 참조로 오해한다. 최신 값은 ref 로
+  // 미러링하고 submit 은 마운트 동안 고정한다.
+  const latestRef = useRef({ action, onSuccess, errorMessage, context });
+  latestRef.current = { action, onSuccess, errorMessage, context };
+
+  const submit = useCallback(async (...args: TArgs) => {
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
+    setIsSubmitting(true);
+    const {
+      action: run,
+      onSuccess: after,
+      errorMessage: message,
+      context: ctx,
+    } = latestRef.current;
+    try {
+      await run(...args);
+      await after?.(...args);
+    } catch (error) {
+      logger.error(message, toError(error), ctx);
+    } finally {
+      inFlightRef.current = false;
+      setIsSubmitting(false);
+    }
+  }, []);
 
   return { submit, isSubmitting };
 }

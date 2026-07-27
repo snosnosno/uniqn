@@ -170,6 +170,34 @@ describe('ORDER-11 — 타입 전환이 데이터를 치우면 알린다', () =>
     expect(mockAddToast).not.toHaveBeenCalled();
   });
 
+  // 리뷰 지적: dated→fixed 전환이 defaultFixedSchedule() 을 자동 시드하므로 `!== undefined`
+  // 로 판정하면 사용자가 넣은 적 없는 값을 "치워뒀다" 고 말한다.
+  it('빈 폼에서 고정↔지원을 오가도 알리지 않는다 (자동 시드는 사용자 입력이 아니다)', () => {
+    const { getByText } = render(
+      <OrderSheetScreen {...baseProps} initialValues={initialOrderSheetValues()} />
+    );
+
+    fireEvent.press(getByText('고정'));
+    fireEvent.press(getByText('지원'));
+
+    expect(mockAddToast).not.toHaveBeenCalled();
+  });
+
+  it('되돌리기가 두 번째 토스트를 낳지 않는다 (핑퐁 금지)', () => {
+    const { getByText } = render(
+      <OrderSheetScreen {...baseProps} initialValues={valuesWithDates(2)} />
+    );
+
+    fireEvent.press(getByText('고정'));
+    expect(mockAddToast).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      lastToast()?.action?.onPress?.();
+    });
+
+    expect(mockAddToast).toHaveBeenCalledTimes(1);
+  });
+
   it('되돌리기를 누르면 치웠던 날짜가 돌아온다', () => {
     const { getByText, queryByTestId } = render(
       <OrderSheetScreen {...baseProps} initialValues={valuesWithDates(2)} />

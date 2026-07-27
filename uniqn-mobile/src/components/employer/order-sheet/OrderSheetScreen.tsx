@@ -84,6 +84,18 @@ const SLOTS_SHEET_ROWS: readonly OrderRowKey[] = ['time', 'roles'];
 const cloneSlots = (slots: GroupTimeSlots | undefined): GroupTimeSlots =>
   (slots ?? []).map((s) => ({ ...s, roles: s.roles.map((r) => ({ ...r })) }));
 
+/** 자동 시드된 기본값과 다른, **사용자가 실제로 넣은** 근무조건이 있는가. */
+function hasUserFixedInput(fixed: OrderSheetFormValues['fixedSchedule']): boolean {
+  if (fixed === undefined) return false;
+  const seed = defaultFixedSchedule();
+  return (
+    (fixed.roles?.length ?? 0) > 0 ||
+    fixed.startTime !== undefined ||
+    fixed.isStartTimeNegotiable !== seed.isStartTimeNegotiable ||
+    fixed.daysPerWeek !== seed.daysPerWeek
+  );
+}
+
 /** 고정 전환/방어 시드 기본값 — 제품 기본 주 5일(레거시 INITIAL은 0=협의, jobPostingForm.ts:202) */
 const defaultFixedSchedule = (): NonNullable<OrderSheetFormValues['fixedSchedule']> => ({
   daysPerWeek: 5,
@@ -619,7 +631,9 @@ export function OrderSheetScreen({
   const stashedGroupsRef = useRef<ScheduleGroups | null>(null);
   const stashedFixedRef = useRef<OrderSheetFormValues['fixedSchedule'] | null>(null);
   // Undo 가 handleTypeChange 자신을 부르므로 ref 로 우회한다(선언 순환 회피).
-  const handleTypeChangeRef = useRef<((t: PostingType) => void) | null>(null);
+  const handleTypeChangeRef = useRef<
+    ((t: PostingType, options?: { silent?: boolean }) => void) | null
+  >(null);
 
   /** 전환으로 사라진 입력을 고지하고 되돌릴 길을 준다 — 스태시가 있어도 알려주지 않으면 없는 것과 같다. */
   const notifyTypeSwitch = useCallback(
@@ -632,7 +646,8 @@ export function OrderSheetScreen({
         action: {
           label: '되돌리기',
           // 되돌리기는 이전 타입으로 다시 전환하는 것 — 스태시 복원 경로를 그대로 재사용한다.
-          onPress: () => handleTypeChangeRef.current?.(previousType),
+          // silent — 되돌리기가 반대 축을 다시 치우면서 두 번째 토스트를 띄우면 핑퐁이 된다.
+          onPress: () => handleTypeChangeRef.current?.(previousType, { silent: true }),
         },
       });
     },
@@ -640,7 +655,7 @@ export function OrderSheetScreen({
   );
 
   const handleTypeChange = useCallback(
-    (t: PostingType) => {
+    (t: PostingType, options?: { silent?: boolean }) => {
       // 연쇄 예약 취소 — 대기 창(180ms) 안에서 폼 구조(행 구성)가 바뀌면 예약된 타깃이
       // 새 타입의 폼 위에서 phantom 시트가 된다(fixed→dated 전환 시 '근무조건' 시트 팝업 실측).
       clearPendingSwap();
@@ -649,6 +664,9 @@ export function OrderSheetScreen({
       const previousType = cur.postingType;
       // 전환이 **실제로 데이터를 치웠을 때만** 신호를 낸다. 지금까지는 날짜·시간대가 화면에서
       // 사라지는데 아무 알림이 없어(ORDER-11), 사장은 자기가 지운 줄도 몰랐다.
+      // ⚠️ fixed 축은 `!== undefined` 로 보면 안 된다 — dated→fixed 전환이 defaultFixedSchedule()
+      //    을 **자동 시드**하므로, 빈 폼에서 '고정' 탭을 눌렀다 되돌리기만 해도 "치워뒀어요" 가
+      //    뜬다. dated 축처럼 **사용자가 실제로 넣은 값**이 있는지로 판정한다.
       const clearedLabel =
         t === 'fixed'
           ? (cur.scheduleGroups ?? []).some(
@@ -656,7 +674,7 @@ export function OrderSheetScreen({
             )
             ? '일정·모집 입력'
             : null
-          : cur.fixedSchedule !== undefined
+          : hasUserFixedInput(cur.fixedSchedule)
             ? '근무조건 입력'
             : null;
       if (t === 'fixed') {
@@ -677,7 +695,7 @@ export function OrderSheetScreen({
             shouldValidate: true,
           });
         }
-        notifyTypeSwitch(clearedLabel, previousType);
+        if (!options?.silent) notifyTypeSwitch(clearedLabel, previousType);
         return;
       }
       // dated(regular|urgent|tournament) — fixed에서 오면 근무조건 스태시 후 정리(M7), 그룹 복원/시드
@@ -696,11 +714,15 @@ export function OrderSheetScreen({
           { shouldDirty: true, shouldValidate: true }
         );
       }
-      notifyTypeSwitch(clearedLabel, previousType);
+      if (!options?.silent) notifyTypeSwitch(clearedLabel, previousType);
     },
     [form, clearPendingSwap, notifyTypeSwitch]
   );
-  handleTypeChangeRef.current = handleTypeChange;
+  // 렌더 중 ref 쓰기는 React 규칙 위반(동시 렌더에서 폐기된 렌더의 쓰기가 남는다).
+  // 토스트 탭은 커밋 이후에만 가능하므로 effect 타이밍으로 충분하다.
+  useEffect(() => {
+    handleTypeChangeRef.current = handleTypeChange;
+  }, [handleTypeChange]);
 
   const handleSubmitPress = form.handleSubmit(
     (valid) => {

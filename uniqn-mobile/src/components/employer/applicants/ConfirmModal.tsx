@@ -6,7 +6,7 @@
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, TextInput, ScrollView } from 'react-native';
 import { useThemeStore } from '@/stores/themeStore';
 import { Modal } from '@/components/ui/Modal';
@@ -151,6 +151,14 @@ export function ApplicantConfirmModal({
     setInputValue('');
     onClose();
   }, [onClose]);
+
+  // ⚠️ 이 모달은 조건부 렌더가 아니라 **상시 마운트**다(visible=false 도 언마운트가 아니다).
+  //    성공 경로는 호출부가 부모 state 만 내리므로 handleClose 를 타지 않아, 닫힐 때 여기서
+  //    지우지 않으면 지원자 A 의 거절 사유가 지원자 B 의 확정 메모로 이월된다.
+  //    TextInput 하나가 두 액션을 겸하므로 액션 축까지 넘어간다.
+  useEffect(() => {
+    if (!visible) setInputValue('');
+  }, [visible]);
 
   // 액션 실행 — 여기서 입력을 지우지 않는다. 옛 코드는 제출 직후 `setInputValue('')` 로
   // 비웠고 호출부는 동기적으로 모달을 닫아, 실패하면 사용자가 쓴 사유가 통째로 사라졌다.

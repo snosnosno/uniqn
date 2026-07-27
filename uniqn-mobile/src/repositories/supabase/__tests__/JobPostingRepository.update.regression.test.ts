@@ -34,6 +34,9 @@ describe('SupabaseJobPostingRepository.updateWithTransaction (회귀: 22007 차�
    */
   interface MockUpdateBuilder {
     eq: () => MockUpdateBuilder;
+    /** 낙관적 잠금은 eq 가 아니라 [baseline, +1ms) 구간이다 — DB 는 μs, 클라는 ms 로 잘린다. */
+    gte: () => MockUpdateBuilder;
+    lt: () => MockUpdateBuilder;
     select: () => Promise<{ data: unknown[]; error: null }>;
   }
 
@@ -43,6 +46,8 @@ describe('SupabaseJobPostingRepository.updateWithTransaction (회귀: 22007 차�
       capturedUpdatePayload = payload;
       const builder: MockUpdateBuilder = {
         eq: () => builder,
+        gte: () => builder,
+        lt: () => builder,
         select: () => Promise.resolve({ data: [{ id: 'job-1' }], error: null }),
       };
       return builder;

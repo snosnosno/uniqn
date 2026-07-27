@@ -97,6 +97,7 @@ export function useStaffSettlementsHandlers({
     errorMessage: '역할 변경 실패',
   });
   const handleRoleChangeSave = roleChangeGate.submit;
+  const isChangingRole = roleChangeGate.isSubmitting;
 
   const handleReportSubmit = useCallback(
     async (input: CreateReportInput) => {
@@ -388,6 +389,7 @@ export function useStaffSettlementsHandlers({
 
   return {
     handleRoleChangeSave,
+    isChangingRole,
     handleReportSubmit,
     computeWorkLogAmount,
     handleSettleFromDetail,
