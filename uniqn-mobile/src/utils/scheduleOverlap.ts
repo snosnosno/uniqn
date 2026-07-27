@@ -9,7 +9,7 @@
  * 판정은 구인자 화면과 같은 `toSlotInterval`(자정 넘김 처리 포함)을 공유해,
  * 두 화면이 서로 다른 답을 내지 않게 한다. 차단이 아니라 경고다.
  */
-import { toSlotInterval } from '@/domains/weeklyGrid/slotEdit';
+import { toSlotInterval } from '@/domains/workSchedule/slotEdit';
 import { STATUS } from '@/constants';
 import type { ScheduleEvent } from '@/types';
 

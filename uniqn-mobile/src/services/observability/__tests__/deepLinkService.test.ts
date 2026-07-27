@@ -341,11 +341,11 @@ describe('deepLinkService', () => {
       });
     });
 
-    it('parses the weekly-grid employer link instead of the my-postings catch-all', () => {
-      // 회귀: 배치확인 알림 link('/employer/weekly-grid') 는 종전 case 'employer' catch-all 때문에
-      // employer/my-postings('내 공고')로 오해소됐다. 이제 employer/weekly-grid 로 해소돼야 한다.
-      const route = deepLinkService.parseDeepLink('/employer/weekly-grid').route;
-      expect(route).toEqual({ name: 'employer/weekly-grid' });
+    it('parses the work-schedule employer link instead of the my-postings catch-all', () => {
+      // 회귀: 배치확인 알림 link('/employer/work-schedule') 는 종전 case 'employer' catch-all 때문에
+      // employer/my-postings('내 공고')로 오해소됐다. 이제 employer/work-schedule 로 해소돼야 한다.
+      const route = deepLinkService.parseDeepLink('/employer/work-schedule').route;
+      expect(route).toEqual({ name: 'employer/work-schedule' });
       expect(route).not.toEqual({ name: 'employer/my-postings' });
     });
 
@@ -469,17 +469,31 @@ describe('deepLinkService', () => {
       });
     });
 
-    it('resolves the weekly batch confirm link to the weekly-grid route, not my-postings', () => {
-      // 회귀: 배치확인 알림(SCHEDULE_CREATED 재사용)은 weekly-grid 딥링크를 link 로 싣는다.
-      // executor 는 link 를 type 라우트맵보다 우선하므로 employer/weekly-grid 로 해소돼야 한다.
+    it('resolves the placement confirm link to the work-schedule route, not my-postings', () => {
+      // 회귀: 배치확인 알림(SCHEDULE_CREATED 재사용)은 work-schedule 딥링크를 link 로 싣는다.
+      // executor 는 link 를 type 라우트맵보다 우선하므로 employer/work-schedule 로 해소돼야 한다.
       const route = deepLinkService.getRouteFromNotification(
         'schedule_created' as NotificationType,
         { venueId: 'venue-1', weekLabel: '6월 5주차' },
+        '/employer/work-schedule'
+      );
+
+      expect(route).toEqual({ name: 'employer/work-schedule' });
+      expect(route).not.toEqual({ name: 'employer/my-postings' });
+    });
+
+    it('resolves the legacy weekly-grid link to the work-schedule route (하위호환)', () => {
+      // 회귀: 리네이밍(2026-07-27) 이전에 발송된 알림의 link 에는 구 세그먼트
+      // '/employer/weekly-grid' 가 박제돼 있다. 이미 나간 알림은 회수할 수 없으므로
+      // 구 경로도 반드시 같은 라우트로 해소돼야 한다 — 아니면 과거 알림 탭이 dead-end 가 된다.
+      const legacyRoute = deepLinkService.getRouteFromNotification(
+        'schedule_created' as NotificationType,
+        { venueId: 'venue-1' },
         '/employer/weekly-grid'
       );
 
-      expect(route).toEqual({ name: 'employer/weekly-grid' });
-      expect(route).not.toEqual({ name: 'employer/my-postings' });
+      expect(legacyRoute).toEqual({ name: 'employer/work-schedule' });
+      expect(legacyRoute).not.toEqual({ name: 'employer/my-postings' });
     });
 
     it('falls back to notifications for unknown notification types', () => {

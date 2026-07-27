@@ -16,7 +16,7 @@ import type {
 } from '@/types';
 
 /**
- * 슬롯 편집(주간 배치 그리드 B2) 입력. 부분 업데이트 — 제공된 필드만 반영한다.
+ * 슬롯 편집(근무표 B2) 입력. 부분 업데이트 — 제공된 필드만 반영한다.
  *
  * @property startTime - 시작시각 'HH:MM' (endTime 과 함께 제공 시 time_slot 갱신)
  * @property endTime - 종료시각 'HH:MM'
@@ -132,7 +132,7 @@ export interface IWorkLogRepository {
   getByJobPostingId(jobPostingId: string): Promise<WorkLog[]>;
 
   /**
-   * 운영처(venue) 스팬 + 날짜범위 근무 기록 조회 (주간 배치 그리드 Phase 4 정산)
+   * 운영처(venue) 스팬 + 날짜범위 근무 기록 조회 (근무표 Phase 4 정산)
    *
    * @description 운영처 컨테이너 V 의 정산 대상 근무 기록을 SQL 레벨에서 좁혀 조회한다.
    * - E1: venue 스팬은 `venue_span_posting_ids`(SSOT) RPC 경유 — 컨테이너 자기행(id=V)과
@@ -368,7 +368,7 @@ export interface IWorkLogRepository {
   }>;
 
   /**
-   * 슬롯 편집(주간 배치 그리드 B2) — 시간/역할/색상/메모 부분 수정.
+   * 슬롯 편집(근무표 B2) — 시간/역할/색상/메모 부분 수정.
    *
    * 검증 경계(Repository): color 는 토큰 화이트리스트(자유 hex 거부), memo 는 XSS 검증
    * 통과분만 기록한다(S1/U3). startTime+endTime 둘 다 제공 시 time_slot('HH:MM - HH:MM')을 갱신.

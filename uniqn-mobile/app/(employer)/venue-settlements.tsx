@@ -17,7 +17,7 @@ import { SettlementDetailModal } from '@/components/employer/settlement/Settleme
 import { BanknotesIcon, ChevronLeftIcon, ChevronRightIcon } from '@/components/icons';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { getRoleDisplayName } from '@/types/unified';
-import { useVenueSettlement, useSetVenueRoleSalary } from '@/hooks/weeklyGrid';
+import { useVenueSettlement, useSetVenueRoleSalary } from '@/hooks/workSchedule';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
@@ -25,7 +25,7 @@ import {
   RoleSalaryField,
   defaultVenueSalaryDraft,
   type VenueSalaryDraft,
-} from '@/components/weeklyGrid/RoleSalaryField';
+} from '@/components/workSchedule/RoleSalaryField';
 import type { SettlementWorkLog } from '@/services/work/settlement/types';
 
 /** 배지 탭으로 여는 단가 설정 대상(역할 단위) */
@@ -139,7 +139,7 @@ export default function VenueSettlementsScreen() {
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-surface-page dark:bg-surface">
-      <StackHeader title="지점 정산" fallbackHref="/(employer)/weekly-grid" />
+      <StackHeader title="지점 정산" fallbackHref="/(employer)/work-schedule" />
 
       {/* 월 네비게이션 */}
       <View className="flex-row items-center justify-center gap-4 py-3">

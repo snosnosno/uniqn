@@ -1,7 +1,7 @@
 /**
  * WorkLogRepository.getByVenueSpanInRange — 운영처 스팬 + 날짜범위 정산 reader contract test
  *
- * 주간 배치 그리드 Phase 4(정산). 검증 대상:
+ * 근무표 Phase 4(정산). 검증 대상:
  * - E1: venue 스팬은 venue_span_posting_ids(SSOT) RPC 로 취득 → 반환 id 배열을 그대로
  *   work_logs.in('job_posting_id', spanIds) 에 사용(손수 venue_id=:V OR id=:V 재작성 금지).
  * - R5: 날짜범위는 SQL 경계(.gte/.lte) — from=to inclusive 경계 포함.

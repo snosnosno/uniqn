@@ -1,7 +1,7 @@
 /**
  * JobPostingRepository — 컨테이너(status='container') fail-closed 중앙 deny contract test
  *
- * @description 주간 배치 그리드의 운영처 컨테이너는 공개/운영자 조회에 절대 노출되면 안 된다(R2).
+ * @description 근무표의 운영처 컨테이너는 공개/운영자 조회에 절대 노출되면 안 된다(R2).
  *   설계 §5: "N곳 allow-list 관례" → "1곳 deny 강제". repo 의 4개 reader(getList/getByOwnerId/
  *   getManagedJobPostings/getTypeCounts)는 기본적으로 `.neq('status','container')` 로 컨테이너를
  *   제외하고, 컨테이너 자체를 조회할 때만 includeContainer 로 opt-in 한다.
