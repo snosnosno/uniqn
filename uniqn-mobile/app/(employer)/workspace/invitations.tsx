@@ -92,7 +92,7 @@ export default function WorkspaceInvitationsScreen() {
 
         <Text className="mt-3 text-xs text-content-secondary">
           {item.workspaceName} 팀의 편집자가 되면, 이 팀의 모든 공고를 만들고 수정할 수 있어요.
-          삭제는 소유자만 가능해요.
+          근무표와 지점 급여 단가도 함께 보고 바꿀 수 있어요. 삭제는 소유자만 가능해요.
         </Text>
 
         <View className="mt-4 flex-row gap-2">

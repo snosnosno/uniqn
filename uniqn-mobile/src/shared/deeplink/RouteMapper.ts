@@ -97,8 +97,8 @@ export class RouteMapper {
         return EXPO_ROUTES.postingSettlements.replace('[id]', route.params.jobId);
       case 'employer/cancellation-requests':
         return EXPO_ROUTES.postingCancellationRequests.replace('[id]', route.params.jobId);
-      case 'employer/weekly-grid':
-        return EXPO_ROUTES.weeklyGrid;
+      case 'employer/work-schedule':
+        return EXPO_ROUTES.workSchedule;
 
       case 'admin/dashboard':
         return EXPO_ROUTES.adminDashboard;

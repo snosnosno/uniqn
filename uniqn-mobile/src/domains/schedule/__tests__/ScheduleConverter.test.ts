@@ -4,7 +4,7 @@ import {
   createScheduleContainerContext,
 } from '../ScheduleConverter';
 import type { Application, JobPosting, WorkLog } from '@/types';
-import type { VenueContainer } from '@/domains/weeklyGrid';
+import type { VenueContainer } from '@/domains/workSchedule';
 
 function createPosting(): JobPosting {
   return {

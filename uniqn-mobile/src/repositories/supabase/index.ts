@@ -12,7 +12,7 @@ export { SupabaseReportRepository } from './ReportRepository';
 export { SupabaseInquiryRepository } from './InquiryRepository';
 export { SupabaseTemplateRepository } from './TemplateRepository';
 export { SupabaseAdminRepository } from './AdminRepository';
-export { SupabaseWeeklyGridRepository } from './WeeklyGridRepository';
+export { SupabaseWorkScheduleRepository } from './WorkScheduleRepository';
 
 // 워크스페이스 협업 편집 (PR #2)
 export { SupabaseWorkspaceRepository, workspaceRepository } from './WorkspaceRepository';

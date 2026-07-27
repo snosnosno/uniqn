@@ -34,7 +34,7 @@ export type DeepLinkRoute =
   | { name: 'employer/applicants'; params: { jobId: string } }
   | { name: 'employer/settlement'; params: { jobId: string } }
   | { name: 'employer/cancellation-requests'; params: { jobId: string } }
-  | { name: 'employer/weekly-grid' }
+  | { name: 'employer/work-schedule' }
   | { name: 'admin/dashboard' }
   | { name: 'admin/users' }
   | { name: 'admin/user'; params: { id: string } }

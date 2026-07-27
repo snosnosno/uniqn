@@ -7,7 +7,7 @@
 --   넣어 BEFORE 트리거의 서버 재계산(=6)을 검증한다. + 컨테이너 1(filled 불변 검증).
 --
 -- 안전: BEGIN/ROLLBACK 래핑 + 마커 이메일(__sql_fixture_seat_*@test.local) + 임시 uuid.
--- 하네스: weekly_grid_container_staff_softtarget 과 동형(CREATE TEMP TABLE _t + DO block + is()).
+-- 하네스: work_schedule_container_staff_softtarget 과 동형(CREATE TEMP TABLE _t + DO block + is()).
 -- ============================================================
 BEGIN;
 SELECT plan(11);

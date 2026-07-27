@@ -7,7 +7,7 @@
 
 import type { UnsubscribeFn, PaginationCursor } from '@/types/common';
 import type { TaxSettings } from '@/utils/settlement';
-import type { VenueContainer } from '@/domains/weeklyGrid';
+import type { VenueContainer } from '@/domains/workSchedule';
 import type {
   JobPosting,
   JobPostingFilters,
@@ -187,7 +187,7 @@ export interface IJobPostingRepository {
   ): Promise<PostingTypeCounts>;
 
   /**
-   * 운영처(venue) 컨테이너 목록 조회 (주간 배치 그리드 전용 read 경로).
+   * 운영처(venue) 컨테이너 목록 조회 (근무표 전용 read 경로).
    *
    * @description 컨테이너(status='container')는 rigid JobPosting 으로 표현하지 않고 경량
    *   VenueContainer 로 파싱한다(jobPostingDocumentSchema strict 충돌로 인한 null 증발 회피).

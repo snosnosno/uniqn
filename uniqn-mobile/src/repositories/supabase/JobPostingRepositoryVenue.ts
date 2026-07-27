@@ -1,7 +1,7 @@
 /**
  * UNIQN Mobile - Supabase JobPosting Repository Venue (운영처 컨테이너 read/get-or-create)
  *
- * @description 주간 배치 그리드의 운영처(venue) 컨테이너 전용 경로.
+ * @description 근무표의 운영처(venue) 컨테이너 전용 경로.
  * 컨테이너는 rigid JobPosting 으로 표현하지 않는다(strict 스키마 null 증발 회피).
  * status='container' 로 좁혀 경량 VenueContainer 로 파싱한다. RLS(owner/멤버/admin)가 가시성 제한.
  *
@@ -21,7 +21,7 @@ import {
   parseVenueContainers,
   VENUE_CONTAINER_COLUMNS,
   type VenueContainer,
-} from '@/domains/weeklyGrid';
+} from '@/domains/workSchedule';
 import type { PostingRoleCatalogEntry, SalaryType } from '@/types';
 import { TABLE, rethrowOrHandle } from './JobPostingRepositoryHelpers';
 

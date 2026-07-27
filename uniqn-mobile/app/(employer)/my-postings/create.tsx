@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
 import { useCreateJobPosting, useMyJobPostings } from '@/hooks/useJobManagement';
 import { useActiveWorkspace } from '@/hooks/workspace';
-import { useVenueContainers } from '@/hooks/weeklyGrid';
+import { useVenueContainers } from '@/hooks/workSchedule';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { useTemplateManager } from '@/hooks/useTemplateManager';
 import { useToastStore } from '@/stores/toastStore';
@@ -38,7 +38,7 @@ export default function CreateJobPostingScreen() {
   const { profile } = useAuth();
   const { addToast } = useToastStore();
 
-  // 주간 배치 그리드 "공고 열기/부족 모집" 진입 — venueId(운영처)·date(선택일)·count(부족 인원)를
+  // 근무표 "공고 열기/부족 모집" 진입 — venueId(운영처)·date(선택일)·count(부족 인원)를
   // 받아 초기값에 프리필(P2-1). 일반 생성(파라미터 없음)은 완전 무회귀(gridParamsToValues 폴백).
   const params = useLocalSearchParams<{
     venueId?: string | string[];
@@ -57,7 +57,7 @@ export default function CreateJobPostingScreen() {
   // 연쇄 전환 딤 위임(B1) — OrderSheetScreen 내부 딤은 형제인 StackHeader·칩을 못 덮는다.
   const [chainScrimVisible, setChainScrimVisible] = useState(false);
 
-  // 다중 지점 employer — 이 공고를 어느 지점 배치(주간 그리드)에 반영할지 고르는 칩(B5).
+  // 다중 지점 employer — 이 공고를 어느 지점 배치(근무표)에 반영할지 고르는 칩(B5).
   // 그리드 "공고 열기"(venueId 라우트 파라미터) 진입은 이미 지점이 정해져 미노출.
   const { activeWorkspace } = useActiveWorkspace();
   const venuesQuery = useVenueContainers(activeWorkspace?.id);
@@ -160,7 +160,7 @@ export default function CreateJobPostingScreen() {
         // 걸리지 않게 동기 표식(S3 이월 ④). 그리드 복귀·완료 화면 두 분기 공통 지점.
         markClean();
         // 그리드 진입(venueId)이면 스택 하부 그리드로 복귀(선택 운영처·날짜 보존) — 완료 화면 우회.
-        // 셀 +N 뱃지 갱신은 useCreateJobPosting 의 weeklyGrid 무효화가 담당.
+        // 셀 +N 뱃지 갱신은 useCreateJobPosting 의 workSchedule 무효화가 담당.
         if (venueId && router.canGoBack()) {
           addToast({
             type: 'success',

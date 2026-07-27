@@ -27,7 +27,7 @@ import { ko } from 'date-fns/locale/ko';
 import { triggerHaptic } from '@/utils/haptics';
 import { Skeleton } from '@/components/ui/Skeleton';
 // 뱃지 표시 메타(글리프/라벨/토큰 클래스)는 도메인 SSOT — 범례(GridBadgeLegend)와 공유(P0-3).
-import { GRID_BADGE_META, type GridDayCell } from '@/domains/weeklyGrid';
+import { GRID_BADGE_META, type GridDayCell } from '@/domains/workSchedule';
 
 interface CalendarCellProps {
   date: Date;
@@ -40,7 +40,7 @@ interface CalendarCellProps {
   /** true일 때 뱃지 위치에 Skeleton shimmer 표시 (Rule 16) */
   loading?: boolean;
   /**
-   * 주간 그리드 셀 데이터(weekly_grid_enabled 플래그 뒤). 제공되면 그리드 모드로 동작:
+   * 근무표 셀 데이터(weekly_grid_enabled 플래그 뒤). 제공되면 그리드 모드로 동작:
    * priorityBadge/status 기반 렌더. 미제공이면 기존 count 동작 100% 유지(무회귀).
    */
   gridCell?: GridDayCell;
