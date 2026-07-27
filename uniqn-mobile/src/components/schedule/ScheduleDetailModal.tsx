@@ -31,7 +31,7 @@ import { STATUS } from '@/constants';
 import { SHEET_DISMISS_ANIMATION_MS } from '@/constants/animation';
 import { SCHEDULE_STATUS } from '@/constants/statusConfig';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
-import type { ScheduleEvent, GroupedScheduleEvent } from '@/types';
+import type { ScheduleEvent, GroupedScheduleEvent, ScheduleType } from '@/types';
 
 // ============================================================================
 // Types
@@ -79,6 +79,28 @@ interface TabConfig {
 
 /** 중복 리페치 방지를 위한 쿨다운 (3초) */
 const REFETCH_COOLDOWN_MS = 3000;
+
+const ALL_TABS: TabConfig[] = [
+  { id: 'info', label: '정보', icon: <DocumentIcon size={16} /> },
+  { id: 'work', label: '근무', icon: <ClockIcon size={16} /> },
+  { id: 'settlement', label: '정산', icon: <BanknotesIcon size={16} /> },
+];
+
+/**
+ * 상태별로 실제 내용이 있는 탭.
+ *
+ * 예전엔 3탭 고정이라 지원 중인 건에서도 근무·정산 탭이 열리고 안내문만 있었다 —
+ * 헛탭 두 번. 전수 테이블로 두면 상태를 하나 늘릴 때 tsc 가 누락을 잡는다.
+ */
+const TAB_VISIBILITY: Record<ScheduleType, TabId[]> = {
+  applied: ['info'],
+  confirmed: ['info', 'work'],
+  completed: ['info', 'work', 'settlement'],
+  cancelled: ['info'],
+  // 노쇼는 세 탭이 각자 다른 것을 말한다 — 정보=기록 고지, 근무=구인자가 남긴 사유와
+  // 이의 제기 경로, 정산=확정 0원 여부. 어느 하나도 다른 탭이 대신하지 못한다.
+  no_show: ['info', 'work', 'settlement'],
+};
 
 // ============================================================================
 // Component
@@ -259,26 +281,14 @@ export function ScheduleDetailModal({
     closeSheetThen(() => onReport(request));
   }, [schedule, onReport, closeSheetThen]);
 
-  // 탭 설정 (상태에 따라 동적으로 구성)
-  const tabs: TabConfig[] = [
-    {
-      id: 'info',
-      label: '정보',
-      icon: <DocumentIcon size={16} />,
-    },
-    {
-      id: 'work',
-      label: '근무',
-      icon: <ClockIcon size={16} />,
-    },
-    {
-      id: 'settlement',
-      label: '정산',
-      icon: <BanknotesIcon size={16} />,
-    },
-  ];
-
   if (!schedule) return null;
+
+  const tabs = ALL_TABS.filter((tab) => TAB_VISIBILITY[schedule.type].includes(tab.id));
+
+  // 선택 탭은 파생값으로 푼다 — 그룹 모드에서 날짜를 옮기면 상태가 바뀌어 보고 있던 탭이
+  // 사라질 수 있다. useEffect 로 되돌리면 한 프레임 동안 없는 탭이 그려진다.
+  // 파생값이면 그 깜빡임이 없고, 유효한 상태로 되돌아왔을 때 원래 탭도 그대로 복구된다.
+  const currentTab = tabs.some((tab) => tab.id === activeTab) ? activeTab : (tabs[0]?.id ?? 'info');
 
   const status = SCHEDULE_STATUS[schedule.type];
   const hasPendingCancellation = Boolean(schedule.isCancellationPending);
@@ -388,59 +398,61 @@ export function ScheduleDetailModal({
         </TouchableOpacity>
       </View>
 
-      {/* Tab Navigation */}
-      <View className="flex-row bg-surface-card dark:bg-surface p-1 rounded-md mb-4">
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.id;
-          return (
-            <TouchableOpacity
-              key={tab.id}
-              onPress={() => handleTabPress(tab.id)}
-              style={{
-                flex: 1,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingVertical: 10,
-                borderRadius: 8,
-                backgroundColor: isActive ? (isDarkMode ? '#141418' : '#FFFFFF') : 'transparent',
-              }}
-              activeOpacity={0.7}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: isActive }}
-            >
-              <View style={{ opacity: isActive ? 1 : 0.6 }}>
-                {React.cloneElement(tab.icon as React.ReactElement<{ color?: string }>, {
-                  color: isActive
-                    ? getLayoutColor(isDarkMode, 'tabBarActive')
-                    : SECONDARY_PALETTE[500],
-                })}
-              </View>
-              <Text
+      {/* Tab Navigation — 탭이 하나뿐이면 탭바 자체가 소음이다(누를 곳이 없는 탭). */}
+      {tabs.length > 1 && (
+        <View className="flex-row bg-surface-card dark:bg-surface p-1 rounded-md mb-4">
+          {tabs.map((tab) => {
+            const isActive = currentTab === tab.id;
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                onPress={() => handleTabPress(tab.id)}
                 style={{
-                  marginLeft: 6,
-                  fontSize: 14,
-                  fontWeight: '500',
-                  fontFamily: 'PlusJakartaSans_500Medium',
-                  color: isActive
-                    ? getLayoutColor(isDarkMode, 'tabBarActive')
-                    : SECONDARY_PALETTE[500],
+                  flex: 1,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  backgroundColor: isActive ? (isDarkMode ? '#141418' : '#FFFFFF') : 'transparent',
                 }}
+                activeOpacity={0.7}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: isActive }}
               >
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+                <View style={{ opacity: isActive ? 1 : 0.6 }}>
+                  {React.cloneElement(tab.icon as React.ReactElement<{ color?: string }>, {
+                    color: isActive
+                      ? getLayoutColor(isDarkMode, 'tabBarActive')
+                      : SECONDARY_PALETTE[500],
+                  })}
+                </View>
+                <Text
+                  style={{
+                    marginLeft: 6,
+                    fontSize: 14,
+                    fontWeight: '500',
+                    fontFamily: 'PlusJakartaSans_500Medium',
+                    color: isActive
+                      ? getLayoutColor(isDarkMode, 'tabBarActive')
+                      : SECONDARY_PALETTE[500],
+                  }}
+                >
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
 
       {/* 콘텐츠 + 버튼 영역 */}
       <View>
         {/* Tab Content */}
         <View>
-          {activeTab === 'info' && <InfoTab schedule={schedule} />}
-          {activeTab === 'work' && <WorkTab schedule={schedule} onQRScan={onQRScan} />}
-          {activeTab === 'settlement' && <SettlementTab schedule={schedule} />}
+          {currentTab === 'info' && <InfoTab schedule={schedule} />}
+          {currentTab === 'work' && <WorkTab schedule={schedule} onQRScan={onQRScan} />}
+          {currentTab === 'settlement' && <SettlementTab schedule={schedule} />}
         </View>
 
         {/* 하단 버튼 영역: 취소 + 신고 (2열) - 고정 푸터 */}

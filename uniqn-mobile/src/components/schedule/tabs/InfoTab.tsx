@@ -17,12 +17,8 @@ import {
   BanknotesIcon,
 } from '@/components/icons';
 import { getRoleDisplayName } from '@/types/unified';
-import {
-  formatCurrency,
-  SALARY_TYPE_LABELS,
-  type Allowances,
-  type TaxSettings,
-} from '@/utils/settlement';
+// formatCurrency 는 더 이상 쓰지 않는다 — 금액 표기는 정산 탭 한 곳으로 모았다.
+import { SALARY_TYPE_LABELS, type Allowances, type TaxSettings } from '@/utils/settlement';
 import {
   PROVIDED_FLAG,
   DEFAULT_TAX_SETTINGS,
@@ -425,20 +421,14 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           icon={<BanknotesIcon size={18} color={SECONDARY_PALETTE[500]} />}
           title="정산 현황"
         >
+          {/* 금액은 정산 탭이 단일 소스다. 예전엔 여기가 재계산치(settlementBreakdown)를
+              큰 글씨로, 정산 탭은 확정액(payrollAmount)을 큰 글씨로 띄워서 서로 다른 두
+              숫자가 나란히 보였다 — "어느 게 받을 돈인지"를 사용자가 판정하게 만든 것이다.
+              여기서는 상태만 말하고 금액은 정산 탭으로 넘긴다. */}
           <View className="flex-row items-center justify-between rounded-lg bg-surface-page dark:bg-surface p-3 dark:bg-surface/30">
-            <View>
-              {schedule.settlementBreakdown && (
-                <Text className="text-base font-sans-medium text-content-primary dark:text-off-white">
-                  {formatCurrency(schedule.settlementBreakdown.afterTaxPay)}
-                </Text>
-              )}
-              {/* 0 원 확정도 표시 — truthy 가드는 0 을 숨기고 숫자 0 을 View 로 흘린다. */}
-              {typeof schedule.payrollAmount === 'number' && (
-                <Text className="mt-0.5 text-sm text-success-600 dark:text-success-400 font-sans">
-                  확정: {formatCurrency(schedule.payrollAmount)}
-                </Text>
-              )}
-            </View>
+            <Text className="text-sm text-content-secondary font-sans">
+              금액은 정산 탭에서 확인할 수 있어요
+            </Text>
             <Badge variant={payrollStatusConfig.variant} size="sm">
               {payrollStatusConfig.label}
             </Badge>

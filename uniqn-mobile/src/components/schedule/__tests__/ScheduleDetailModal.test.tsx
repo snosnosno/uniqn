@@ -280,4 +280,80 @@ describe('ScheduleDetailModal', () => {
       expect(mockShowConfirm).toHaveBeenCalledTimes(1);
     });
   });
+
+  // 예전엔 tabs 배열이 schedule.type 과 무관한 리터럴이라 3탭이 항상 떴다 —
+  // 지원 중인 건에서 근무·정산 탭을 눌러도 안내문뿐이라 헛탭이 두 번씩 났다.
+  describe('상태별 탭 가시성', () => {
+    const renderFor = (type: ScheduleEvent['type']) =>
+      render(
+        <ScheduleDetailModal
+          schedule={createMockScheduleEvent({ type }) as unknown as ScheduleEvent}
+          visible={true}
+          onClose={jest.fn()}
+        />
+      );
+
+    it('지원 중이면 정보 하나만 — 탭바 자체를 띄우지 않는다', () => {
+      const { getByText, queryByText } = renderFor('applied');
+
+      expect(getByText('info-tab')).toBeTruthy();
+      expect(queryByText('work-tab')).toBeNull();
+      expect(queryByText('settlement-tab')).toBeNull();
+      // 탭이 하나뿐이면 탭바는 누를 곳 없는 장식이다.
+      expect(queryByText('근무')).toBeNull();
+      expect(queryByText('정산')).toBeNull();
+      expect(queryByText('정보')).toBeNull();
+    });
+
+    it('취소도 정보 단일이다', () => {
+      const { getByText, queryByText } = renderFor('cancelled');
+
+      expect(getByText('info-tab')).toBeTruthy();
+      expect(queryByText('근무')).toBeNull();
+      expect(queryByText('정산')).toBeNull();
+    });
+
+    it('확정이면 정보+근무 — 아직 정산할 것이 없다', () => {
+      const { getByText, queryByText } = renderFor('confirmed');
+
+      expect(getByText('정보')).toBeTruthy();
+      expect(getByText('근무')).toBeTruthy();
+      expect(queryByText('정산')).toBeNull();
+    });
+
+    it('완료면 3탭 전부', () => {
+      const { getByText } = renderFor('completed');
+
+      expect(getByText('정보')).toBeTruthy();
+      expect(getByText('근무')).toBeTruthy();
+      expect(getByText('정산')).toBeTruthy();
+    });
+
+    it('노쇼도 3탭 — 근무=사유·이의 제기, 정산=확정 0원 여부를 각자 말한다', () => {
+      const { getByText } = renderFor('no_show');
+
+      expect(getByText('정보')).toBeTruthy();
+      expect(getByText('근무')).toBeTruthy();
+      expect(getByText('정산')).toBeTruthy();
+    });
+
+    it('보던 탭이 사라지면 첫 유효 탭으로 떨어진다', () => {
+      const { getByText, queryByText, rerender } = renderFor('completed');
+
+      fireEvent.press(getByText('정산'));
+      expect(getByText('settlement-tab')).toBeTruthy();
+
+      // 그룹 모드에서 날짜를 옮기면 같은 모달이 다른 상태의 건을 그린다.
+      rerender(
+        <ScheduleDetailModal
+          schedule={createMockScheduleEvent({ type: 'applied' }) as unknown as ScheduleEvent}
+          visible={true}
+          onClose={jest.fn()}
+        />
+      );
+
+      expect(queryByText('settlement-tab')).toBeNull();
+      expect(getByText('info-tab')).toBeTruthy();
+    });
+  });
 });
