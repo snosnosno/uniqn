@@ -148,9 +148,12 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
       });
 
       // 4. 업데이트 데이터 구성
+      // 정산 내역 무효화 컬럼은 없다 — settlementBreakdown 은 ScheduleConverter 가 읽기 시점에
+      // 계산하는 파생값이라 시간만 바뀌면 자동으로 새 값이 나온다. 과거 이 payload 에 있던
+      // `settlement_breakdown: null` 은 work_logs 에 없는 컬럼이라 PostgREST 가 요청 전체를
+      // PGRST204 로 거부했다(= 근무 시간 수정 전량 실패). 회귀 가드는 workLogWriteColumns.test.ts.
       const updateData: Record<string, unknown> = {
         updated_at: new Date().toISOString(),
-        settlement_breakdown: null, // 시간 수정 시 기존 정산 계산 무효화
         has_time_modification_logs: true,
         modification_history: newModificationHistory,
       };
