@@ -10,7 +10,6 @@ import { View, Text, Pressable } from 'react-native';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
 import { ChevronLeftIcon, ChevronRightIcon, ChevronUpIcon } from '@/components/icons';
-import { triggerHaptic } from '@/utils/haptics';
 
 interface CalendarHeaderProps {
   visibleMonth: Date;
@@ -35,22 +34,18 @@ export const CalendarHeader = memo(function CalendarHeader({
 }: CalendarHeaderProps) {
   const monthLabel = format(visibleMonth, 'yyyy년 M월', { locale: ko });
 
+  // 월 이동·접기·필터 해제에는 햅틱을 쓰지 않는다 — impeccable §17 금지 목록의
+  // '네비게이션'·'일반 탭'에 해당한다. 스케줄 탭 달력은 같은 동작에 원래 진동이 없었고,
+  // 두 달력이 같은 일을 하는데 한쪽만 떨리는 게 이 항목의 결함이다.
   const handlePrev = useCallback(() => {
     if (!canGoPrev) return;
-    void triggerHaptic('light');
     onPrev();
   }, [canGoPrev, onPrev]);
 
   const handleNext = useCallback(() => {
     if (!canGoNext) return;
-    void triggerHaptic('light');
     onNext();
   }, [canGoNext, onNext]);
-
-  const handleCollapse = useCallback(() => {
-    void triggerHaptic('light');
-    onCollapse();
-  }, [onCollapse]);
 
   return (
     <View className="flex-row items-center px-4 py-2">
@@ -69,7 +64,7 @@ export const CalendarHeader = memo(function CalendarHeader({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="달력 접기"
-        onPress={handleCollapse}
+        onPress={onCollapse}
         hitSlop={10}
         className="flex-1 flex-row items-center justify-center gap-1 active:opacity-70"
       >
@@ -98,10 +93,7 @@ export const CalendarHeader = memo(function CalendarHeader({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="전체 날짜 보기"
-          onPress={() => {
-            void triggerHaptic('light');
-            onClearSelection();
-          }}
+          onPress={onClearSelection}
           hitSlop={10}
           className="ml-2 px-2 py-1"
         >

@@ -24,7 +24,6 @@ import React, { memo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { format, isBefore, startOfDay } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
-import { triggerHaptic } from '@/utils/haptics';
 import { Skeleton } from '@/components/ui/Skeleton';
 // 뱃지 표시 메타(글리프/라벨/토큰 클래스)는 도메인 SSOT — 범례(GridBadgeLegend)와 공유(P0-3).
 import { GRID_BADGE_META, type GridDayCell } from '@/domains/weeklyGrid';
@@ -66,9 +65,9 @@ export const CalendarCell = memo(function CalendarCell({
   const fullLabel = format(date, 'M월 d일 EEEE', { locale: ko });
   const countLabel = count > 0 ? `공고 ${count}건` : '공고 없음';
 
+  // 날짜 셀 탭은 impeccable §17 이 문자 그대로 금지하는 '리스트 선택'이다.
   const handlePress = useCallback(() => {
     if (disabled) return;
-    void triggerHaptic('light');
     onPress(date);
   }, [date, disabled, onPress]);
 

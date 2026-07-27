@@ -50,12 +50,15 @@ describe('CalendarCell', () => {
     expect(baseProps.onPress).toHaveBeenCalledWith(BASE_DATE);
   });
 
-  it('탭 시 햅틱 light 트리거', () => {
+  // 이 테스트는 원래 '탭 시 햅틱 light 트리거'를 단언해 규칙 위반을 고정하고 있었다.
+  // impeccable §17 은 '리스트 선택'을 문자 그대로 금지한다 — 날짜 셀 탭이 정확히 그것이고,
+  // 같은 일을 하는 스케줄 탭 달력은 원래 진동이 없다. 재도입 방지 가드로 뒤집는다.
+  it('날짜 선택에 햅틱을 쓰지 않는다 (impeccable §17 — 리스트 선택 금지)', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { triggerHaptic } = require('@/utils/haptics');
     const { getByTestId } = render(<CalendarCell {...baseProps} testID="cell" />);
     fireEvent.press(getByTestId('cell'));
-    expect(triggerHaptic).toHaveBeenCalledWith('light');
+    expect(triggerHaptic).not.toHaveBeenCalled();
   });
 
   it('accessibilityLabel에 날짜+요일+카운트 포함', () => {

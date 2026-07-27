@@ -81,4 +81,19 @@ describe('CalendarHeader', () => {
     fireEvent.press(getByLabelText('달력 접기'));
     expect(baseProps.onCollapse).toHaveBeenCalled();
   });
+
+  // impeccable §17 금지: 일반 탭·네비게이션. 예전에는 월 이동·접기·필터 해제 넷 다
+  // 진동했는데, 같은 일을 하는 스케줄 탭 달력은 원래 조용했다.
+  it('월 이동·접기·필터 해제 어디에도 햅틱을 쓰지 않는다', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { triggerHaptic } = require('@/utils/haptics');
+    const { getByLabelText } = render(<CalendarHeader {...baseProps} hasSelection />);
+
+    fireEvent.press(getByLabelText('이전 달'));
+    fireEvent.press(getByLabelText('다음 달'));
+    fireEvent.press(getByLabelText('달력 접기'));
+    fireEvent.press(getByLabelText('전체 날짜 보기'));
+
+    expect(triggerHaptic).not.toHaveBeenCalled();
+  });
 });
