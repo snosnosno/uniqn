@@ -35,6 +35,8 @@ export { parseWorkScheduleFlag } from './workScheduleFlag';
 
 export { buildGridCells, type GridSummaryRow } from './buildGridCells';
 
+export { resolveSelectedDateForMonth } from './monthNavigation';
+
 export {
   SLOT_COLOR_TOKENS,
   SLOT_COLOR_CHIPS,

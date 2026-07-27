@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { format } from 'date-fns';
 import { StackHeader } from '@/components/headers';
-import { Button, EmptyState, Loading, SheetModal } from '@/components/ui';
+import { Button, EmptyState, ErrorState, Loading, SheetModal } from '@/components/ui';
 import { SettlementCard } from '@/components/employer/settlement/SettlementCard';
 import { SettlementDetailModal } from '@/components/employer/settlement/SettlementDetailModal';
 import { BanknotesIcon, ChevronLeftIcon, ChevronRightIcon } from '@/components/icons';
@@ -56,7 +56,13 @@ export default function VenueSettlementsScreen() {
       : format(new Date(), 'yyyy-MM');
 
   const [month, setMonth] = useState(initialMonth);
-  const { data: workLogs, isLoading, refetch } = useVenueSettlement(venueId, month);
+  const {
+    data: workLogs,
+    isLoading,
+    isError,
+    error: settlementError,
+    refetch,
+  } = useVenueSettlement(venueId, month);
   const mutation = useSetVenueRoleSalary();
   const { addToast } = useToastStore();
 
@@ -117,13 +123,15 @@ export default function VenueSettlementsScreen() {
             }}
           />
         ) : null}
-        {/* 컨테이너 직속 행만 배지 노출 — 공고 스팬 행의 fallback 은 지점 단가표로 못 고친다(HIGH-1). */}
+        {/* 컨테이너 직속 행만 배지 노출 — 공고 스팬 행의 fallback 은 지점 단가표로 못 고친다(HIGH-1).
+            배경은 warning-50/100 — 종전 `bg-warning/10` 은 warning 팔레트에 DEFAULT 키가 없어
+            무효 클래스였고, 그래서 이 경고 띠의 배경이 아예 그려지지 않았다. */}
         {item.salarySource === 'fallback' && item.jobPostingId === venueId ? (
           <Pressable
             onPress={() => openFix(item)}
             accessibilityRole="button"
             accessibilityLabel={`${getRoleDisplayName(item.role ?? '', item.customRole)} 기본 단가 적용 — 탭해서 단가 설정`}
-            className="mt-1 min-h-[44px] flex-row items-center gap-2 rounded-md bg-warning/10 px-3 py-2"
+            className="mt-1 min-h-[44px] flex-row items-center gap-2 rounded-md bg-warning-50 px-3 py-2 dark:bg-warning-100"
           >
             <BanknotesIcon size={16} color={SECONDARY_PALETTE[500]} />
             <Text className="flex-1 text-sm text-content-secondary font-sans">
@@ -175,6 +183,18 @@ export default function VenueSettlementsScreen() {
       {isLoading ? (
         <View className="items-center py-10">
           <Loading size="small" />
+        </View>
+      ) : isError ? (
+        // 금전 화면에서 조회 실패를 "정산할 근무가 없어요"로 흘리면 사장이 그 달 지급액을
+        // 0 으로 오판한다. "없다"와 "못 읽었다"는 반드시 구분한다.
+        <View className="px-4 py-8">
+          <ErrorState
+            title="정산 내역을 불러오지 못했어요"
+            message="네트워크 상태를 확인하고 다시 시도해주세요. 정산할 근무가 없는 게 아니라 목록을 읽지 못한 상태예요."
+            error={settlementError}
+            onRetry={refetch}
+            alwaysAllowRetry
+          />
         </View>
       ) : (workLogs ?? []).length === 0 ? (
         <View className="px-4 py-8">
