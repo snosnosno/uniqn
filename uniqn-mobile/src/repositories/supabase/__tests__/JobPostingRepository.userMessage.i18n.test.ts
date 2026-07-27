@@ -36,10 +36,12 @@ jest.mock('@/lib/supabase', () => ({
 // load*Access 는 supabase/parse 의존이라 stub 로 상태만 주입한다.
 const mockLoadMutate = jest.fn();
 const mockLoadDelete = jest.fn();
+const mockLoadRoleKeys = jest.fn();
 jest.mock('../JobPostingRepositoryHelpers', () => ({
   ...jest.requireActual('../JobPostingRepositoryHelpers'),
   loadAndVerifyMutateAccess: (...args: unknown[]) => mockLoadMutate(...args),
   loadAndVerifyDeleteAccess: (...args: unknown[]) => mockLoadDelete(...args),
+  loadActiveWorkLogRoleKeys: (...args: unknown[]) => mockLoadRoleKeys(...args),
 }));
 
 jest.mock('@/utils/logger', () => ({
@@ -60,6 +62,8 @@ beforeEach(() => {
   mockEq.mockClear();
   mockLoadMutate.mockReset();
   mockLoadDelete.mockReset();
+  mockLoadRoleKeys.mockReset();
+  mockLoadRoleKeys.mockResolvedValue(new Set<string>());
 });
 
 describe('JobPosting BusinessError userMessage 한글화 (P1#12)', () => {
@@ -105,23 +109,33 @@ describe('JobPosting BusinessError userMessage 한글화 (P1#12)', () => {
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
-  it('수정: 확정 인원이 있는데 일정/역할 변경 시 한글 userMessage', async () => {
-    mockLoadMutate.mockResolvedValue({
-      ownerId: OWNER,
-      filledPositions: 1,
-      roleCatalog: [],
-    });
+  it('수정: 확정 스태프가 배정된 역할을 빼면 한글 userMessage (역할 소멸 가드)', async () => {
+    mockLoadMutate.mockResolvedValue({ ownerId: OWNER, filledPositions: 1, roleCatalog: [] });
+    // 확정 근무 1건이 dealer 로 잡혀 있는데, 새 스케줄에는 floor 만 남는다.
+    mockLoadRoleKeys.mockResolvedValue(new Set(['dealer']));
 
     await expect(
       repo.updateWithTransaction(
         POSTING,
-        // 일정 변경을 시도해 확정 후 변경 차단 분기를 트리거한다.
-        { schedule: {} } as never,
+        {
+          schedule: {
+            kind: 'dated',
+            primaryDate: '2026-08-01',
+            allDates: ['2026-08-01'],
+            requirements: [
+              {
+                date: '2026-08-01',
+                timeSlots: [{ startTime: '19:00', roles: [{ role: 'floor', count: 1 }] }],
+              },
+            ],
+          },
+        } as never,
         OWNER
       )
     ).rejects.toMatchObject({
       code: ERROR_CODES.BUSINESS_INVALID_STATE,
-      userMessage: '확정된 지원자가 있어 일정이나 역할을 변경할 수 없습니다.',
+      userMessage:
+        '확정된 스태프가 배정된 역할(딜러)은 공고에서 뺄 수 없습니다. 해당 확정을 먼저 취소해 주세요.',
     });
     expect(mockUpdate).not.toHaveBeenCalled();
   });

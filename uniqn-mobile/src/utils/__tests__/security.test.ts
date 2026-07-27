@@ -1,12 +1,11 @@
 /**
  * security 유틸리티 테스트
  *
- * @description XSS/SQL Injection 탐지, 입력 검증, 비밀번호 강도 등 보안 유틸리티 테스트
+ * @description XSS 탐지, 입력 검증, 비밀번호 강도 등 보안 유틸리티 테스트
  */
 
 import {
   hasXSSPattern,
-  hasSQLInjectionPattern,
   xssValidation,
   sanitizeInput,
   isSafeUrl,
@@ -168,25 +167,6 @@ describe('security', () => {
 
     it('잘못된 URL 인코딩은 무시', () => {
       expect(normalizeForSecurity('%ZZ')).toBe('%ZZ');
-    });
-  });
-
-  // ============================================================================
-  // hasSQLInjectionPattern 테스트
-  // ============================================================================
-  describe('hasSQLInjectionPattern', () => {
-    it('안전한 텍스트는 false', () => {
-      expect(hasSQLInjectionPattern('일반 텍스트')).toBe(false);
-    });
-
-    it('SQL 패턴 탐지', () => {
-      expect(hasSQLInjectionPattern('union select * from users')).toBe(true);
-      expect(hasSQLInjectionPattern("'; drop table users;--")).toBe(true);
-      expect(hasSQLInjectionPattern('delete from users')).toBe(true);
-    });
-
-    it('빈 문자열은 false', () => {
-      expect(hasSQLInjectionPattern('')).toBe(false);
     });
   });
 

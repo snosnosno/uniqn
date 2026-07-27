@@ -8,7 +8,13 @@
 import { z } from 'zod';
 import { xssValidation } from '@/utils/security';
 import { isRegionSlug } from '@/constants/regions';
-import { DATE_CONSTRAINTS, MAX_SALARY_AMOUNT } from '@/constants/jobPosting';
+import {
+  DATE_CONSTRAINTS,
+  MAX_SALARY_AMOUNT,
+  MAX_POSTING_TITLE_LENGTH,
+  MAX_ROLES_PER_SLOT,
+  MAX_TIME_SLOTS_PER_DATE,
+} from '@/constants/jobPosting';
 import { PROVIDED_FLAG } from '@/utils/settlement';
 import { preQuestionsArraySchema } from '@/schemas/preQuestion.schema';
 import type { TaxSettings } from '@/types/jobPosting';
@@ -56,7 +62,10 @@ export const orderSheetTimeSlotSchema = z
   .object({
     startTime: z.string(),
     isTimeToBeAnnounced: z.literal(true).optional(),
-    roles: z.array(orderSheetRoleSchema).min(1, '역할을 추가해주세요'),
+    roles: z
+      .array(orderSheetRoleSchema)
+      .min(1, '역할을 추가해주세요')
+      .max(MAX_ROLES_PER_SLOT, `역할은 최대 ${MAX_ROLES_PER_SLOT}개까지 추가할 수 있어요`),
   })
   .superRefine((s, ctx) => {
     if (s.isTimeToBeAnnounced !== true && !START_TIME_RE.test(s.startTime)) {
@@ -74,7 +83,10 @@ export const orderSheetFixedScheduleSchema = z
     daysPerWeek: z.number().int().min(0).max(7),
     startTime: z.string().regex(START_TIME_RE, '출근 시간을 선택해주세요').optional(),
     isStartTimeNegotiable: z.boolean().default(false),
-    roles: z.array(orderSheetRoleSchema).min(1, '역할을 추가해주세요'),
+    roles: z
+      .array(orderSheetRoleSchema)
+      .min(1, '역할을 추가해주세요')
+      .max(MAX_ROLES_PER_SLOT, `역할은 최대 ${MAX_ROLES_PER_SLOT}개까지 추가할 수 있어요`),
   })
   .superRefine((fs, ctx) => {
     // 역방향(협의=true + startTime 잔존)은 의도적 관용 — 레거시 draft 수용. 표시·쓰기 소비측
@@ -93,7 +105,13 @@ export const orderSheetFixedScheduleSchema = z
  */
 export const orderSheetScheduleGroupSchema = z.object({
   dates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).min(1, '날짜를 선택해주세요'),
-  timeSlots: z.array(orderSheetTimeSlotSchema).min(1, '시간대를 추가해주세요'),
+  timeSlots: z
+    .array(orderSheetTimeSlotSchema)
+    .min(1, '시간대를 추가해주세요')
+    .max(
+      MAX_TIME_SLOTS_PER_DATE,
+      `시간대는 최대 ${MAX_TIME_SLOTS_PER_DATE}개까지 추가할 수 있어요`
+    ),
   grouped: z.boolean().default(false),
 });
 
@@ -138,7 +156,7 @@ export const orderSheetAllowancesSchema = z.object({
 export const orderSheetValuesSchema = z
   .object({
     postingType: z.enum(['regular', 'urgent', 'tournament', 'fixed']),
-    title: safeText(25).min(1, '제목을 입력해주세요'),
+    title: safeText(MAX_POSTING_TITLE_LENGTH).min(1, '제목을 입력해주세요'),
     // ⚠️ 아래 refine의 TS 추론 프레디킷이 z.output에서 null을 제거한다(의도된 동작 — 매퍼가 가드 없이 소비)
     location: orderSheetLocationSchema.nullable().refine((v) => v !== null, '장소를 선택해주세요'),
     contactPhone: safeText(20).min(1, '연락처를 입력해주세요'),

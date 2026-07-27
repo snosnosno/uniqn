@@ -14,6 +14,7 @@ import {
   NotCheckedInError,
 } from '@/errors/BusinessErrors';
 import { handleSupabaseError } from '@/utils/supabase';
+import { settledLockMessage, ALREADY_SETTLED_MESSAGE } from '@/domains/settlement';
 import { STATUS } from '@/constants';
 import type { PayrollStatus, QRCodeAction, QRProcessAction } from '@/types';
 import { TABLE, TABLE_COLUMNS, toWorkLog, rethrowOrHandle } from './WorkLogRepositoryHelpers';
@@ -54,7 +55,7 @@ export async function executeUpdatePayrollStatus(
     // 2. 중복 정산 방지
     if (status === STATUS.PAYROLL.COMPLETED && workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
       throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_SETTLED, {
-        userMessage: '이미 정산 완료된 근무 기록입니다',
+        userMessage: ALREADY_SETTLED_MESSAGE,
       });
     }
 
@@ -104,7 +105,7 @@ function mapQRCheckinErrorToException(errorCode: string, workLogId: string): nev
   switch (errorCode) {
     case 'already_settled':
       throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_SETTLED, {
-        userMessage: '정산이 끝난 근무는 변경할 수 없습니다',
+        userMessage: settledLockMessage('출퇴근을 처리할'),
       });
     case 'already_checked_in':
       throw new AlreadyCheckedInError({

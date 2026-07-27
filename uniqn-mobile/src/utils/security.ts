@@ -182,22 +182,10 @@ export const XSS_PATTERNS: RegExp[] = [
  */
 const PROTOCOL_PATTERNS: RegExp[] = [JS_PROTOCOL_PATTERN, VB_PROTOCOL_PATTERN];
 
-/**
- * SQL Injection 패턴 목록
- *
- * Firebase/Firestore 사용 시 직접적인 SQL Injection은 없지만,
- * 추가 보안 계층으로 유지
- */
-export const SQL_INJECTION_PATTERNS: RegExp[] = [
-  /union.*select/gi,
-  /select.*from/gi,
-  /insert.*into/gi,
-  /delete.*from/gi,
-  /drop.*table/gi,
-  /update.*set/gi,
-  /exec\s*\(/gi,
-  /;.*--/gi,
-];
+// SQL_INJECTION_PATTERNS / hasSQLInjectionPattern 은 제거됐다(2026-07-27).
+// 호출처가 0곳이었고, 주석은 아직 Firebase 시절을 가리키고 있었다. 현재 쓰기 경로는 전부
+// PostgREST·RPC 파라미터 바인딩이라 클라이언트 문자열 패턴 검사로 막을 대상이 없다.
+// 오히려 '주말 select 근무'처럼 정상 한국어 입력을 거절할 여지만 남는다.
 
 /**
  * XSS 공격 패턴 검사
@@ -228,21 +216,6 @@ export function hasXSSPattern(text: string): boolean {
   return PROTOCOL_PATTERNS.some((pattern) => {
     pattern.lastIndex = 0;
     return pattern.test(controlStripped);
-  });
-}
-
-/**
- * SQL Injection 패턴 검사
- *
- * @param text - 검사할 텍스트
- * @returns SQL Injection 패턴이 발견되면 true
- */
-export function hasSQLInjectionPattern(text: string): boolean {
-  if (!text || typeof text !== 'string') return false;
-  const normalized = normalizeForSecurity(text);
-  return SQL_INJECTION_PATTERNS.some((pattern) => {
-    pattern.lastIndex = 0;
-    return pattern.test(normalized);
   });
 }
 
