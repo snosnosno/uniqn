@@ -24,7 +24,6 @@ import {
 } from '@/components/icons';
 import { InfoTab, WorkTab, SettlementTab } from './tabs';
 import type { OwnerReportRequest } from './useOwnerReport';
-import { useModal } from '@/stores/modalStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { formatSingleDate, formatDateDisplay } from '@/utils/scheduleGrouping';
 import { STATUS } from '@/constants';
@@ -121,9 +120,11 @@ export function ScheduleDetailModal({
   onWriteReview,
 }: ScheduleDetailModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>('info');
+  // 시트 안에서 물어보는 2단 확인. null 이면 평소 화면.
+  const [confirmStep, setConfirmStep] = useState<
+    'cancelApplication' | 'requestCancellation' | null
+  >(null);
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
-
-  const modal = useModal();
 
   // 중복 리페치 방지를 위한 마지막 리페치 시간
   const lastRefetchTimeRef = useRef<number>(0);
@@ -165,6 +166,16 @@ export function ScheduleDetailModal({
       onRefreshSchedule();
     }
   }, [onRefreshSchedule]);
+
+  // 시트가 닫히면 확인 단계를 접는다 — 다시 열었을 때 묻는 중인 화면부터 뜨면
+  // 무엇에 대한 질문인지 맥락이 없다. 그룹 모드에서 다른 날짜로 옮길 때도 같다.
+  useEffect(() => {
+    if (!visible) setConfirmStep(null);
+  }, [visible]);
+
+  useEffect(() => {
+    setConfirmStep(null);
+  }, [schedule?.id]);
 
   // 모달 열릴 때 첫 번째 탭으로 리셋 + 데이터 리프레시
   useEffect(() => {
@@ -219,11 +230,22 @@ export function ScheduleDetailModal({
   // 언마운트 시 예약 취소
   useEffect(() => clearPendingAction, [clearPendingAction]);
 
-  // 지원 취소 핸들러 (확인 모달) — applicationId 는 클로저로 캡처해 시트가 닫혀도 안전.
-  const handleCancelApplication = useCallback(() => {
-    if (!schedule?.applicationId || !onCancelApplication) return;
+  /**
+   * 확인 문구. 예전에는 시트를 닫고 300ms 뒤 전역 ConfirmModal 을 띄웠는데,
+   * 그러면 '아니오'를 눌러도 돌아갈 상세가 이미 사라져 목록에 덩그러니 남았다.
+   * 시트 안에서 2단으로 물으면 그 체이닝 자체가 없어진다.
+   */
+  const confirmCopy = useMemo(() => {
+    if (!confirmStep || !schedule) return null;
 
-    const applicationId = schedule.applicationId;
+    if (confirmStep === 'requestCancellation') {
+      return {
+        title: '취소 요청',
+        message: '확정된 일정의 취소를 요청하시겠습니까?\n구인자가 승인해야 취소가 완료됩니다.',
+        confirmLabel: '취소 요청하기',
+      };
+    }
+
     // 다중일 지원은 한 번의 취소로 여러 날이 함께 사라진다. 며칠치가 없어지는지 밝히지
     // 않으면 '오늘 하루만 빼는 것'으로 오해한 채 3일 대회를 통째로 날린다.
     const totalDays = groupedSchedule?.dateRange.totalDays ?? 1;
@@ -232,41 +254,38 @@ export function ScheduleDetailModal({
       ? formatDateDisplay(groupedSchedule.dateRange.dates)
       : formatSingleDate(schedule.date);
 
-    closeSheetThen(() => {
-      modal.showConfirm(
-        isMultiDay ? `${totalDays}일 지원 취소` : '지원 취소',
-        isMultiDay
-          ? `${rangeLabel} 전체가 취소됩니다.\n취소 후에는 다시 지원해야 합니다.`
-          : '정말 지원을 취소하시겠습니까?\n취소 후에는 다시 지원해야 합니다.',
-        () => {
-          onCancelApplication(applicationId);
-        }
-      );
-    });
-  }, [
-    schedule?.applicationId,
-    schedule?.date,
-    groupedSchedule,
-    onCancelApplication,
-    closeSheetThen,
-    modal,
-  ]);
+    return {
+      title: isMultiDay ? `${totalDays}일 지원 취소` : '지원 취소',
+      message: isMultiDay
+        ? `${rangeLabel} 전체가 취소됩니다.\n취소 후에는 다시 지원해야 합니다.`
+        : '정말 지원을 취소하시겠습니까?\n취소 후에는 다시 지원해야 합니다.',
+      confirmLabel: '지원 취소하기',
+    };
+  }, [confirmStep, schedule, groupedSchedule]);
 
-  // 취소 요청 핸들러 (확인 모달)
-  const handleRequestCancellation = useCallback(() => {
-    if (!schedule?.applicationId || !onRequestCancellation) return;
+  // '예' 확정 — 여기서만 시트를 닫는다. 다음에 열릴 것이 RN Modal(취소요청 시트·전역
+  // 토스트 경로)이므로 iOS 중첩 Modal 터치 먹통 회피 제약은 그대로 지켜야 한다.
+  const handleConfirmStep = useCallback(() => {
+    if (!confirmStep || !schedule?.applicationId) return;
 
     const applicationId = schedule.applicationId;
+    const step = confirmStep;
+    setConfirmStep(null);
+
     closeSheetThen(() => {
-      modal.showConfirm(
-        '취소 요청',
-        '확정된 일정의 취소를 요청하시겠습니까?\n구인자가 승인해야 취소가 완료됩니다.',
-        () => {
-          onRequestCancellation(applicationId);
-        }
-      );
+      if (step === 'cancelApplication') {
+        onCancelApplication?.(applicationId);
+      } else {
+        onRequestCancellation?.(applicationId);
+      }
     });
-  }, [schedule?.applicationId, onRequestCancellation, closeSheetThen, modal]);
+  }, [
+    confirmStep,
+    schedule?.applicationId,
+    onCancelApplication,
+    onRequestCancellation,
+    closeSheetThen,
+  ]);
 
   // 신고 버튼 — 시트를 먼저 닫고 상위(schedule.tsx)에서 신고 모달을 연다.
   // 대상 정보는 클로저로 캡처해 시트가 닫혀도 안전.
@@ -446,85 +465,123 @@ export function ScheduleDetailModal({
         </View>
       )}
 
-      {/* 콘텐츠 + 버튼 영역 */}
-      <View>
-        {/* Tab Content */}
-        <View>
-          {currentTab === 'info' && <InfoTab schedule={schedule} />}
-          {currentTab === 'work' && <WorkTab schedule={schedule} onQRScan={onQRScan} />}
-          {currentTab === 'settlement' && <SettlementTab schedule={schedule} />}
-        </View>
+      {/* 인라인 2단 확인 — 시트를 닫지 않고 이 자리에서 묻는다. '아니오'는 패널만 걷어
+          원래 상세로 돌아온다(예전에는 시트가 이미 닫혀 있어 목록에 남았다). */}
+      {confirmCopy && (
+        <View className="pt-2" accessibilityViewIsModal>
+          <View className="rounded-md border border-error-200 bg-error-50 p-4 dark:border-error-700 dark:bg-error-900/20">
+            <Text className="text-base font-sans-semibold text-error-700 dark:text-error-300">
+              {confirmCopy.title}
+            </Text>
+            <Text className="mt-1 text-sm text-error-600 dark:text-error-400 font-sans">
+              {confirmCopy.message}
+            </Text>
+          </View>
 
-        {/* 하단 버튼 영역: 취소 + 신고 (2열) - 고정 푸터 */}
-        <View className="pt-4 border-t border-divider flex-row gap-3">
-          {/* 지원 취소 버튼 (지원중 상태) */}
-          {schedule.type === STATUS.SCHEDULE.APPLIED &&
-            onCancelApplication &&
-            schedule.applicationId &&
-            !hasPendingCancellation && (
-              <View className="flex-1">
-                <Button
-                  variant="outline"
-                  size="md"
-                  onPress={handleCancelApplication}
-                  className="border-error-300 dark:border-error-700"
-                >
-                  <Text className="text-error-600 dark:text-error-400 font-sans-semibold">
-                    지원 취소
-                  </Text>
-                </Button>
-              </View>
-            )}
-
-          {/* 취소 요청 버튼 (확정 상태) */}
-          {schedule.type === STATUS.SCHEDULE.CONFIRMED &&
-            onRequestCancellation &&
-            schedule.applicationId &&
-            !hasPendingCancellation && (
-              <View className="flex-1">
-                <Button
-                  variant="outline"
-                  size="md"
-                  onPress={handleRequestCancellation}
-                  className="border-orange-300 dark:border-orange-700"
-                >
-                  <Text className="text-orange-600 dark:text-orange-400 font-sans-semibold">
-                    취소 요청
-                  </Text>
-                </Button>
-              </View>
-            )}
-
-          {/* 이 근무 평가하기 — 완료 직후 가장 자연스러운 다음 행동인데, 예전에는
-              배너 → 평가 허브 → 목록에서 재검색으로 우회해야 했다. */}
-          {pendingReviewWorkLogId && onWriteReview && (
+          <View className="mt-4 flex-row gap-3 border-t border-divider pt-4">
+            <View className="flex-1">
+              <Button variant="outline" size="md" onPress={() => setConfirmStep(null)}>
+                <Text className="font-sans-semibold text-content-secondary">아니오</Text>
+              </Button>
+            </View>
             <View className="flex-1">
               <Button
                 variant="primary"
                 size="md"
-                onPress={() => onWriteReview(pendingReviewWorkLogId)}
+                onPress={handleConfirmStep}
+                accessibilityLabel={confirmCopy.confirmLabel}
               >
-                <Text className="font-sans-semibold text-content-onGold">이 근무 평가하기</Text>
+                <Text className="font-sans-semibold text-content-onGold">
+                  {confirmCopy.confirmLabel}
+                </Text>
               </Button>
             </View>
-          )}
-
-          {/* 신고 버튼 */}
-          {schedule.ownerId && (
-            <View className="flex-1">
-              <Button
-                variant="outline"
-                size="md"
-                onPress={handleReport}
-                className="border-secondary-300 dark:border-surface-overlay"
-                icon={<AlertTriangleIcon size={16} color={SECONDARY_PALETTE[500]} />}
-              >
-                <Text className="text-content-muted dark:text-secondary-400 font-sans">신고</Text>
-              </Button>
-            </View>
-          )}
+          </View>
         </View>
-      </View>
+      )}
+
+      {/* 콘텐츠 + 버튼 영역 — 확인 중에는 걷어낸다. 남겨두면 확인 패널 아래에서
+          '지원 취소'를 또 누를 수 있어 무엇을 묻고 있는지가 흐려진다. */}
+      {!confirmCopy && (
+        <View>
+          {/* Tab Content */}
+          <View>
+            {currentTab === 'info' && <InfoTab schedule={schedule} />}
+            {currentTab === 'work' && <WorkTab schedule={schedule} onQRScan={onQRScan} />}
+            {currentTab === 'settlement' && <SettlementTab schedule={schedule} />}
+          </View>
+
+          {/* 하단 버튼 영역: 취소 + 신고 (2열) - 고정 푸터 */}
+          <View className="pt-4 border-t border-divider flex-row gap-3">
+            {/* 지원 취소 버튼 (지원중 상태) */}
+            {schedule.type === STATUS.SCHEDULE.APPLIED &&
+              onCancelApplication &&
+              schedule.applicationId &&
+              !hasPendingCancellation && (
+                <View className="flex-1">
+                  <Button
+                    variant="outline"
+                    size="md"
+                    onPress={() => setConfirmStep('cancelApplication')}
+                    className="border-error-300 dark:border-error-700"
+                  >
+                    <Text className="text-error-600 dark:text-error-400 font-sans-semibold">
+                      지원 취소
+                    </Text>
+                  </Button>
+                </View>
+              )}
+
+            {/* 취소 요청 버튼 (확정 상태) */}
+            {schedule.type === STATUS.SCHEDULE.CONFIRMED &&
+              onRequestCancellation &&
+              schedule.applicationId &&
+              !hasPendingCancellation && (
+                <View className="flex-1">
+                  <Button
+                    variant="outline"
+                    size="md"
+                    onPress={() => setConfirmStep('requestCancellation')}
+                    className="border-orange-300 dark:border-orange-700"
+                  >
+                    <Text className="text-orange-600 dark:text-orange-400 font-sans-semibold">
+                      취소 요청
+                    </Text>
+                  </Button>
+                </View>
+              )}
+
+            {/* 이 근무 평가하기 — 완료 직후 가장 자연스러운 다음 행동인데, 예전에는
+              배너 → 평가 허브 → 목록에서 재검색으로 우회해야 했다. */}
+            {pendingReviewWorkLogId && onWriteReview && (
+              <View className="flex-1">
+                <Button
+                  variant="primary"
+                  size="md"
+                  onPress={() => onWriteReview(pendingReviewWorkLogId)}
+                >
+                  <Text className="font-sans-semibold text-content-onGold">이 근무 평가하기</Text>
+                </Button>
+              </View>
+            )}
+
+            {/* 신고 버튼 */}
+            {schedule.ownerId && (
+              <View className="flex-1">
+                <Button
+                  variant="outline"
+                  size="md"
+                  onPress={handleReport}
+                  className="border-secondary-300 dark:border-surface-overlay"
+                  icon={<AlertTriangleIcon size={16} color={SECONDARY_PALETTE[500]} />}
+                >
+                  <Text className="text-content-muted dark:text-secondary-400 font-sans">신고</Text>
+                </Button>
+              </View>
+            )}
+          </View>
+        </View>
+      )}
     </Modal>
   );
 }
