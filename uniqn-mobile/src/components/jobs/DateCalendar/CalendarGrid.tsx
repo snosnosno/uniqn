@@ -20,7 +20,7 @@ import {
 import { CalendarCell } from './CalendarCell';
 import { WEEKDAYS_KO } from '@/constants/weekdays';
 import { toDateString } from '@/utils/date';
-import type { GridDayCell } from '@/domains/weeklyGrid';
+import type { GridDayCell } from '@/domains/workSchedule';
 
 interface CalendarGridProps {
   visibleMonth: Date;
@@ -30,7 +30,7 @@ interface CalendarGridProps {
   /** true이면 셀 뱃지 위치에 Skeleton shimmer 표시 (Rule 16) */
   isLoading?: boolean;
   /**
-   * 주간 그리드 셀 맵(yyyy-MM-dd → GridDayCell). 제공되면 각 셀이 그리드 모드로 렌더.
+   * 근무표 셀 맵(yyyy-MM-dd → GridDayCell). 제공되면 각 셀이 그리드 모드로 렌더.
    * 미제공이면 기존 캘린더 동작 그대로(공개 캘린더 무회귀).
    */
   gridCells?: Record<string, GridDayCell>;

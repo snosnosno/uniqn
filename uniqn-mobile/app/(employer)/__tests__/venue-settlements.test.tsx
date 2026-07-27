@@ -11,7 +11,7 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: jest.fn(),
 }));
 
-jest.mock('@/hooks/weeklyGrid', () => ({
+jest.mock('@/hooks/workSchedule', () => ({
   useVenueSettlement: jest.fn(),
   useSetVenueRoleSalary: jest.fn(),
 }));
@@ -37,7 +37,7 @@ jest.mock('@/components/employer/settlement/SettlementCard', () => ({
   SettlementCard: 'SettlementCard',
 }));
 
-jest.mock('@/components/weeklyGrid/RoleSalaryField', () => ({
+jest.mock('@/components/workSchedule/RoleSalaryField', () => ({
   RoleSalaryField: 'RoleSalaryField',
   defaultVenueSalaryDraft: () => ({ type: 'hourly', amount: 15000 }),
 }));
@@ -62,7 +62,7 @@ function makeWorkLog(overrides: Partial<SettlementWorkLog> = {}): SettlementWork
 
 type Mocks = { useVenueSettlement: jest.Mock; useSetVenueRoleSalary: jest.Mock };
 function getMocks(): Mocks {
-  return jest.requireMock('@/hooks/weeklyGrid') as Mocks;
+  return jest.requireMock('@/hooks/workSchedule') as Mocks;
 }
 function getParams(): jest.Mock {
   return (jest.requireMock('expo-router') as { useLocalSearchParams: jest.Mock })

@@ -7,7 +7,7 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import { WorkTimeDisplay } from '@/shared/time';
 import { useThemeStore } from '@/stores/themeStore';
 import { getRoleDisplayName } from '@/types/unified';
-import { slotColorSwatchClassName } from '@/domains/weeklyGrid';
+import { slotColorSwatchClassName } from '@/domains/workSchedule';
 import type { ConfirmedStaff } from '@/types/confirmedStaff';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';

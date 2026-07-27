@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import { CalendarCell } from '../CalendarCell';
-import { computeDayCell } from '@/domains/weeklyGrid';
+import { computeDayCell } from '@/domains/workSchedule';
 
 jest.mock('@/utils/haptics', () => ({
   triggerHaptic: jest.fn(),

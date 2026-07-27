@@ -40,7 +40,7 @@ export const EXPO_ROUTES = {
   postingSettlements: '/(employer)/my-postings/[id]/settlements',
   postingCancellationRequests: '/(employer)/my-postings/[id]/cancellation-requests',
   postingQR: '/(employer)/my-postings/[id]/qr',
-  weeklyGrid: '/(employer)/weekly-grid',
+  workSchedule: '/(employer)/work-schedule',
 
   adminDashboard: '/(admin)',
   adminUsers: '/(admin)/users',
@@ -113,7 +113,7 @@ export const AUTH_REQUIRED_ROUTES: ExpoRouteName[] = [
   'postingSettlements',
   'postingCancellationRequests',
   'postingQR',
-  'weeklyGrid',
+  'workSchedule',
   'reviewDetail',
   'reviewsPending',
   'employerApplicationStatus',
@@ -131,7 +131,7 @@ export const EMPLOYER_REQUIRED_ROUTES: ExpoRouteName[] = [
   'postingSettlements',
   'postingCancellationRequests',
   'postingQR',
-  'weeklyGrid',
+  'workSchedule',
 ];
 
 export const ADMIN_REQUIRED_ROUTES: ExpoRouteName[] = [

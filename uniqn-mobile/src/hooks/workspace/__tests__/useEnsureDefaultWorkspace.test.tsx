@@ -1,7 +1,7 @@
 /**
  * useEnsureDefaultWorkspace — 기본 워크스페이스 자동 보장 훅 테스트
  *
- * 신규 employer(워크스페이스 0개)가 주간 그리드/운영처 생성 경로에서 workspaceId undefined
+ * 신규 employer(워크스페이스 0개)가 근무표/운영처 생성 경로에서 workspaceId undefined
  * 데드엔드에 빠지지 않도록, 조회가 "성공적으로 끝났고 0개"일 때만 1회 자동 생성한다.
  * (1) 준비완료+빈 목록 → 정확히 1회 발사, (2) 비어있지 않으면 미발사, (3) 준비 전(로딩/에러) 미발사,
  * (4) 리렌더에도 재발사 없음(create_workspace 는 멱등 아님 → 중복 생성 가드),

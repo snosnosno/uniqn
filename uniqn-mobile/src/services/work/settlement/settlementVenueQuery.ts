@@ -1,5 +1,5 @@
 /**
- * UNIQN Mobile - 운영처(venue) 정산 조회 서비스 (주간 배치 그리드 Phase 4)
+ * UNIQN Mobile - 운영처(venue) 정산 조회 서비스 (근무표 Phase 4)
  *
  * @description 운영처 컨테이너의 정산 대상 근무 기록을 venue 스팬 + 날짜범위 SQL 집계로 조회한다.
  * 기존 공고별 정산(settlementQuery.getWorkLogsByJobPosting)은 클라이언트단에서 dateRange 를

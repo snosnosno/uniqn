@@ -578,20 +578,20 @@ export const queryKeys = {
   // 앱 설정 플래그 (app_config) — 원격 기능 토글
   appConfig: {
     all: ['appConfig'] as const,
-    weeklyGridEnabled: () => [...queryKeys.appConfig.all, 'weeklyGridEnabled'] as const,
+    workScheduleEnabled: () => [...queryKeys.appConfig.all, 'workScheduleEnabled'] as const,
     opsHubEnabled: () => [...queryKeys.appConfig.all, 'opsHubEnabled'] as const,
   },
 
-  // 주간 배치 그리드(운영처) — 운영처(컨테이너) 목록 + 월 요약 셀맵 + 하루 슬롯
-  weeklyGrid: {
-    all: ['weeklyGrid'] as const,
+  // 근무표(운영처) — 운영처(컨테이너) 목록 + 월 요약 셀맵 + 하루 슬롯
+  workSchedule: {
+    all: ['workSchedule'] as const,
     containers: (workspaceId: string) =>
-      [...queryKeys.weeklyGrid.all, 'containers', workspaceId] as const,
+      [...queryKeys.workSchedule.all, 'containers', workspaceId] as const,
     summary: (venueId: string, from: string, to: string) =>
-      [...queryKeys.weeklyGrid.all, 'summary', venueId, from, to] as const,
+      [...queryKeys.workSchedule.all, 'summary', venueId, from, to] as const,
     daySlots: (venueId: string, date: string) =>
-      [...queryKeys.weeklyGrid.all, 'daySlots', venueId, date] as const,
-    container: (venueId: string) => [...queryKeys.weeklyGrid.all, 'container', venueId] as const,
+      [...queryKeys.workSchedule.all, 'daySlots', venueId, date] as const,
+    container: (venueId: string) => [...queryKeys.workSchedule.all, 'container', venueId] as const,
   },
 } as const;
 
@@ -729,7 +729,7 @@ export const invalidateQueries = {
     queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all });
     queryClient.invalidateQueries({ queryKey: queryKeys.reviews.pending() });
     queryClient.invalidateQueries({ queryKey: [POSTING_FILLED_COUNTS_QUERY_KEY] });
-    queryClient.invalidateQueries({ queryKey: queryKeys.weeklyGrid.all });
+    queryClient.invalidateQueries({ queryKey: queryKeys.workSchedule.all });
   },
   /** 대회공고 승인 관련 모든 쿼리 무효화 */
   tournaments: () => queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.all }),

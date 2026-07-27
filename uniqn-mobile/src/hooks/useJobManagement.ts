@@ -128,7 +128,7 @@ export function useCreateJobPosting() {
       });
       // 그리드 "공고 열기/부족 모집" 발행 시 셀 +N 뱃지·스팬 집계 갱신(venue 무관 무해).
       queryClient.invalidateQueries({
-        queryKey: queryKeys.weeklyGrid.all,
+        queryKey: queryKeys.workSchedule.all,
       });
     },
     onError: createMutationErrorHandler('공고 생성', addToast),

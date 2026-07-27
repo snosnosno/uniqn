@@ -28,7 +28,7 @@ import {
 import { useSharedJobPostings } from '@/hooks/job-posting/useSharedJobPostings';
 import { usePostingFilledCounts } from '@/hooks/usePostingFilledCounts';
 import { useTabBarBottomPadding } from '@/hooks/useTabBarBottomPadding';
-import { useWeeklyGridEnabled } from '@/hooks';
+import { useWorkScheduleEnabled } from '@/hooks';
 import { useReceivedWorkspaceInvitations } from '@/hooks/workspace';
 import { useHasRole } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
@@ -198,8 +198,8 @@ function EmployerView() {
   const closeMutation = useCloseJobPosting();
   const reopenMutation = useReopenJobPosting();
   const isDarkMode = useThemeStore((s) => s.isDarkMode);
-  // 주간 배치 그리드(holdem 펍 운영 그리드) 진입점 — 플래그 ON 일 때만 노출(무회귀)
-  const { enabled: weeklyGridEnabled } = useWeeklyGridEnabled();
+  // 근무표(holdem 펍 운영 그리드) 진입점 — 플래그 ON 일 때만 노출(무회귀)
+  const { enabled: workScheduleEnabled } = useWorkScheduleEnabled();
   const [filter, setFilter] = useState<FilterStatus>('all');
   const [closeTargetId, setCloseTargetId] = useState<string | null>(null);
   const [reopenTargetId, setReopenTargetId] = useState<string | null>(null);
@@ -304,8 +304,8 @@ function EmployerView() {
     router.push('/(employer)/my-postings/create');
   }, []);
 
-  const handleWeeklyGrid = useCallback(() => {
-    router.push('/(employer)/weekly-grid');
+  const handleWorkSchedule = useCallback(() => {
+    router.push('/(employer)/work-schedule');
   }, []);
 
   // 공유받은 공고 (collaborator 본인 시점)
@@ -351,10 +351,10 @@ function EmployerView() {
         >
           <Text className="ml-2 font-sans-semibold text-content-onGold">새 공고 작성</Text>
         </Button>
-        {weeklyGridEnabled ? (
+        {workScheduleEnabled ? (
           <Button
             variant="outline"
-            onPress={handleWeeklyGrid}
+            onPress={handleWorkSchedule}
             icon={<CalendarDaysIcon size={20} color={getIconColor(isDarkMode, 'primary')} />}
             className="mt-2"
             accessibilityLabel="근무표 열기"
