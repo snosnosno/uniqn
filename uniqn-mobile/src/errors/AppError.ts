@@ -111,6 +111,7 @@ export const ERROR_CODES = {
   VALIDATION_MIN_LENGTH: 'E3003',
   VALIDATION_MAX_LENGTH: 'E3004',
   VALIDATION_SCHEMA: 'E3005',
+  VALIDATION_BULK_SHARE_LIMIT: 'E3006', // 묶음 공유 선택 상한(MAX_BULK_SHARE_COUNT) 초과
 
   // 인프라 에러 (E4xxx)
   INFRA_PERMISSION_DENIED: 'E4001',
@@ -220,6 +221,9 @@ export const ERROR_CODES = {
   OPS_REPORT_TOKEN_INVALID: 'E6137', // S1 B2: 신고 대상 토큰 무효
   OPS_REPORT_RATE_LIMITED: 'E6138', // S1 B2: 신고 rate limit
 
+  // 묶음 공유 (E6140~)
+  BUSINESS_BULK_SHARE_NONE_SHAREABLE: 'E6140', // 선택한 공고가 전부 공유 불가 상태
+
   // 알 수 없는 에러 (E7xxx)
   UNKNOWN: 'E7000',
 } as const;
@@ -302,6 +306,9 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.VALIDATION_MIN_LENGTH]: '입력값이 너무 짧습니다',
   [ERROR_CODES.VALIDATION_MAX_LENGTH]: '입력값이 너무 깁니다',
   [ERROR_CODES.VALIDATION_SCHEMA]: '입력값을 확인해주세요',
+  [ERROR_CODES.VALIDATION_BULK_SHARE_LIMIT]: '한 번에 공유할 수 있는 공고 수를 넘었습니다',
+  [ERROR_CODES.BUSINESS_BULK_SHARE_NONE_SHAREABLE]:
+    '선택한 공고를 지금은 공유할 수 없어요. (마감·승인 대기 상태)',
 
   // 인프라
   [ERROR_CODES.INFRA_PERMISSION_DENIED]: '권한이 없습니다',
