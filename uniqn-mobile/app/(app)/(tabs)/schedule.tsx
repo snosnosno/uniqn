@@ -366,6 +366,7 @@ export default function ScheduleScreen() {
     isRefreshing,
     error,
     refreshError,
+    isOffline,
     setSelectedDate,
     goToPrevMonth,
     goToNextMonth,
@@ -888,6 +889,37 @@ export default function ScheduleScreen() {
   // 사용자가 할 수 있는 일이 앱 재시작밖에 남지 않는다.
   const hasBlockingError = Boolean(error) && !isLoading;
 
+  // 오프라인인데 아무것도 없다 = "일정이 없다"가 아니라 "지금은 알 수 없다"이다.
+  // 지하 홀덤펍·지하철 콜드스타트에서 확정 근무가 있는데도 온보딩 문구 + 동작 안 하는
+  // '공고 둘러보기' 버튼이 떠서, 사용자가 근무를 잊거나 앱을 불신하게 된다.
+  const isOfflineEmpty = isOffline && groupedByApplication.length === 0 && !isLoading;
+
+  const renderEmptyState = () =>
+    isOfflineEmpty ? (
+      <EmptyState
+        title="지금은 일정을 불러올 수 없어요"
+        description={
+          '오프라인 상태예요. 저장해둔 일정도 없어서 이 달에 근무가 있는지 확인할 수 없어요.\n' +
+          '네트워크가 연결되면 자동으로 다시 불러옵니다.'
+        }
+        // 오프라인에서 '공고 둘러보기'는 눌러도 아무 일이 없다 — 막다른 길을 만들지 않는다.
+        actionLabel="다시 시도"
+        onAction={refresh}
+        variant="content"
+      />
+    ) : (
+      <EmptyState
+        title="아직 예정된 스케줄이 없어요"
+        description={`${currentMonth.year}년 ${currentMonth.month}월 일정이 비어있어요.\n공고에 지원하면 여기에 바로 표시돼요.`}
+        actionLabel="공고 둘러보기"
+        onAction={() => router.push('/(app)/(tabs)/home-jobs')}
+        // A1 진입 표면 ③: ops 허브 게이트 ON 시에만 보조 크로스링크(기본 액션은 유지).
+        secondaryActionLabel={opsHubEnabled ? '라이브 대회 운영' : undefined}
+        onSecondaryAction={opsHubEnabled ? () => router.push('/(ops)/tournaments') : undefined}
+        variant="content"
+      />
+    );
+
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
       {/* 헤더 */}
@@ -928,6 +960,24 @@ export default function ScheduleScreen() {
           </Text>
           <Text className="mt-0.5 text-xs font-sans text-warning-600 dark:text-warning-400">
             당겨서 새로고침해 주세요.
+          </Text>
+        </View>
+      )}
+
+      {/* 오프라인 + 저장된 일정이 있음. 오프라인 캐시 보존기간을 24시간으로 늘린 대가로,
+          "지금 보이는 게 실시간이 아니다"를 반드시 같이 말해야 한다. 그러지 않으면
+          확정이 취소된 근무를 살아있는 것으로 믿고 현장에 나가게 된다. */}
+      {isOffline && groupedByApplication.length > 0 && (
+        <View
+          className="mx-4 mt-2 rounded-md border border-secondary-200 bg-secondary-50 px-4 py-3 dark:border-surface-overlay dark:bg-surface-overlay"
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+        >
+          <Text className="text-sm font-sans-semibold text-content-secondary">
+            오프라인 상태예요
+          </Text>
+          <Text className="mt-0.5 text-xs font-sans text-content-muted dark:text-secondary-400">
+            지금 보이는 일정은 이전에 받아둔 정보예요. 연결되면 자동으로 최신화됩니다.
           </Text>
         </View>
       )}
@@ -1079,21 +1129,8 @@ export default function ScheduleScreen() {
               </View>
             </>
           ) : !isLoading && groupedByApplication.length === 0 ? (
-            // 캘린더 뷰 빈 상태 — 리스트 뷰와 동일한 온보딩 EmptyState (월 전체 0건일 때만)
-            <View className="p-4">
-              <EmptyState
-                title="아직 예정된 스케줄이 없어요"
-                description={`${currentMonth.year}년 ${currentMonth.month}월 일정이 비어있어요.\n공고에 지원하면 여기에 바로 표시돼요.`}
-                actionLabel="공고 둘러보기"
-                onAction={() => router.push('/(app)/(tabs)/home-jobs')}
-                // A1 진입 표면 ③: ops 허브 게이트 ON 시에만 보조 크로스링크(기본 액션은 유지).
-                secondaryActionLabel={opsHubEnabled ? '라이브 대회 운영' : undefined}
-                onSecondaryAction={
-                  opsHubEnabled ? () => router.push('/(ops)/tournaments') : undefined
-                }
-                variant="content"
-              />
-            </View>
+            // 캘린더 뷰 빈 상태 — 리스트 뷰와 같은 규칙(온보딩 / 오프라인 분기)을 공유한다.
+            <View className="p-4">{renderEmptyState()}</View>
           ) : !isLoading ? (
             // 선택일에 일정이 없고 그 달엔 있는 경우 — 예전에는 아무것도 렌더하지 않아
             // 날짜를 눌렀는데 화면이 그대로인 '먹통'처럼 보였다.
@@ -1139,20 +1176,7 @@ export default function ScheduleScreen() {
               <ScreenSkeleton type="scheduleList" count={4} />
             </View>
           ) : groupedByApplication.length === 0 ? (
-            <View className="p-4">
-              <EmptyState
-                title="아직 예정된 스케줄이 없어요"
-                description={`${currentMonth.year}년 ${currentMonth.month}월 일정이 비어있어요.\n공고에 지원하면 여기에 바로 표시돼요.`}
-                actionLabel="공고 둘러보기"
-                onAction={() => router.push('/(app)/(tabs)/home-jobs')}
-                // A1 진입 표면 ③: ops 허브 게이트 ON 시에만 보조 크로스링크(기본 액션은 유지).
-                secondaryActionLabel={opsHubEnabled ? '라이브 대회 운영' : undefined}
-                onSecondaryAction={
-                  opsHubEnabled ? () => router.push('/(ops)/tournaments') : undefined
-                }
-                variant="content"
-              />
-            </View>
+            <View className="p-4">{renderEmptyState()}</View>
           ) : filteredSchedules.length === 0 ? (
             // 필터 결과 빈 상태 — 월 자체는 일정이 있으므로 온보딩 대신 필터 안내
             <View className="p-4">

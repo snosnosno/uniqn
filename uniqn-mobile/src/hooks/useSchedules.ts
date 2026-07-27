@@ -2,7 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useAuthStore } from '@/stores/authStore';
-import { queryKeys, cachingPolicies, queryCachingOptions } from '@/lib/queryClient';
+import {
+  queryKeys,
+  cachingPolicies,
+  queryCachingOptions,
+  offlineCachePolicies,
+} from '@/lib/queryClient';
 import {
   getCriticalOfflineCache,
   setCriticalOfflineCache,
@@ -119,11 +124,7 @@ export function useSchedules(options: UseSchedulesOptions = {}) {
     ...queryKeys.schedules.list(normalizedFilters),
     staffId ?? 'anonymous',
   ] as const;
-  const cachedPayload = useCachedSchedulePayload(
-    cacheKey,
-    queryCachingOptions.schedules.staleTime,
-    staffId
-  );
+  const cachedPayload = useCachedSchedulePayload(cacheKey, offlineCachePolicies.schedules, staffId);
   const [realtimeSchedules, setRealtimeSchedules] = useState<ScheduleEvent[]>([]);
 
   const query = useQuery({
@@ -225,11 +226,7 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
     () => [...queryKeys.schedules.byMonth(year, month), staffId ?? 'anonymous'] as const,
     [month, staffId, year]
   );
-  const cachedPayload = useCachedSchedulePayload(
-    cacheKey,
-    queryCachingOptions.schedules.staleTime,
-    staffId
-  );
+  const cachedPayload = useCachedSchedulePayload(cacheKey, offlineCachePolicies.schedules, staffId);
   const [realtimeSchedules, setRealtimeSchedules] = useState<ScheduleEvent[]>([]);
   const [hasReceivedRealtimeSnapshot, setHasReceivedRealtimeSnapshot] = useState(false);
   const [lastRealtimeSnapshotAt, setLastRealtimeSnapshotAt] = useState(0);
@@ -416,6 +413,12 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
      * 당긴 사용자가 옛 데이터를 최신으로 믿게 된다.
      */
     refreshError: isOnline && hasBootstrapData ? (query.error ?? realtimeError) : null,
+    /**
+     * 오프라인 여부. 화면이 이걸 못 보면 '네트워크가 없어 비어 있는 것'과 '정말 0건'을
+     * 구분할 수 없어, 지하 홀덤펍에서 확정 근무가 있는데도 온보딩 문구가 뜬다.
+     * error 는 오프라인일 때 위에서 항상 null 로 접히므로 그 경로로도 드러나지 않는다.
+     */
+    isOffline: !isOnline,
     refresh,
   };
 }
@@ -426,11 +429,7 @@ export function useSchedulesByDate(date: string, enabled = true) {
   const { isOnline } = useNetworkStatus();
   const cacheKey = buildScheduleCacheKey(staffId, 'date', date);
   const dateQueryKey = [...queryKeys.schedules.byDate(date), staffId ?? 'anonymous'] as const;
-  const cachedPayload = useCachedSchedulePayload(
-    cacheKey,
-    queryCachingOptions.schedules.staleTime,
-    staffId
-  );
+  const cachedPayload = useCachedSchedulePayload(cacheKey, offlineCachePolicies.schedules, staffId);
 
   const query = useQuery({
     queryKey: dateQueryKey,
@@ -496,7 +495,7 @@ export function useTodaySchedules(enabled = true) {
   const { isOnline } = useNetworkStatus();
   const cacheKey = buildScheduleCacheKey(staffId, 'today', today);
   const todayQueryKey = [...queryKeys.schedules.byDate(today), staffId ?? 'anonymous'] as const;
-  const cachedPayload = useCachedSchedulePayload(cacheKey, cachingPolicies.realtime, staffId);
+  const cachedPayload = useCachedSchedulePayload(cacheKey, offlineCachePolicies.today, staffId);
 
   const query = useQuery({
     queryKey: todayQueryKey,
@@ -621,6 +620,7 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
     isRefreshing,
     error,
     refreshError,
+    isOffline,
     refresh,
   } = useSchedulesByMonth({
     year: currentMonth.year,
@@ -698,6 +698,7 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
     isRefreshing,
     error,
     refreshError,
+    isOffline,
     setView,
     setSelectedDate: selectDate,
     goToMonth,

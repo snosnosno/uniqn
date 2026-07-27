@@ -66,10 +66,12 @@ jest.mock('@/services/offline/criticalOfflineCache', () => ({
   setCriticalOfflineCache: jest.fn(),
 }));
 
-const { setCriticalOfflineCache: mockSetCriticalOfflineCache } = jest.requireMock(
-  '@/services/offline/criticalOfflineCache'
-) as {
+const {
+  setCriticalOfflineCache: mockSetCriticalOfflineCache,
+  getCriticalOfflineCache: mockGetCriticalOfflineCache,
+} = jest.requireMock('@/services/offline/criticalOfflineCache') as {
   setCriticalOfflineCache: jest.Mock;
+  getCriticalOfflineCache: jest.Mock;
 };
 
 type MockUser = { uid: string } | null;
@@ -141,6 +143,14 @@ jest.mock('@/lib/queryClient', () => ({
     realtime: 0,
     standard: 0,
     stable: 0,
+  },
+  // ⚠️ 이 mock 은 손으로 쓴 부분 사본이다 — @/lib/queryClient 에 훅이 쓰는 export 를
+  // 하나 추가하면 여기가 undefined 가 되어 25건이 한꺼번에 터진다(실제로 그랬다).
+  // 오프라인 캐시 보존기간은 온라인 staleTime 과 다른 축이라 값도 실제와 같게 둔다
+  // (getCriticalOfflineCache 는 위에서 null 로 mock 돼 있어 동작엔 영향 없음).
+  offlineCachePolicies: {
+    schedules: 24 * 60 * 60 * 1000,
+    today: 24 * 60 * 60 * 1000,
   },
 }));
 
@@ -461,6 +471,29 @@ describe('useSchedules hooks', () => {
   });
 
   describe('useSchedulesByMonth', () => {
+    // 오프라인 캐시 TTL 로 온라인 staleTime(5분)을 겸용하면, 만료 시 캐시가 stale 표시가
+    // 아니라 **완전 삭제**되기 때문에 지하 홀덤펍에서 확정 근무가 통째로 사라지고
+    // 화면이 "아직 예정된 스케줄이 없어요"로 위장된다.
+    it('오프라인 캐시 보존기간을 온라인 staleTime 과 겸용하지 않는다', () => {
+      renderHook(() => useSchedulesByMonth({ year: 2024, month: 2 }));
+
+      const ttls = mockGetCriticalOfflineCache.mock.calls.map(
+        (call) => (call[1] as { ttlMs: number }).ttlMs
+      );
+
+      expect(ttls.length).toBeGreaterThan(0);
+      // mock 의 온라인 staleTime 은 0 — 그 값이 그대로 흘러들면 캐시가 즉시 소거된다.
+      expect(ttls.every((ttl) => ttl >= 24 * 60 * 60 * 1000)).toBe(true);
+    });
+
+    it('오프라인 여부를 화면이 구분할 수 있게 노출한다', () => {
+      // error 는 오프라인일 때 훅 내부에서 null 로 접히므로, 이 필드가 없으면
+      // 화면은 '네트워크가 없어 비어 있음'과 '정말 0건'을 구분할 수단이 없다.
+      const { result } = renderHook(() => useSchedulesByMonth({ year: 2024, month: 2 }));
+
+      expect(result.current).toHaveProperty('isOffline');
+    });
+
     it('returns monthly schedules and invalidates month-scoped cache on refresh', async () => {
       const schedules = [createMockSchedule()];
       const stats = createMockStats();
