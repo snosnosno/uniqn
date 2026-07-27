@@ -6,12 +6,13 @@ import React, { useMemo, useCallback } from 'react';
 import { View, Text } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import type { DateData, MarkedDates } from 'react-native-calendars/src/types';
-import { PRIMARY_COLORS, STATUS_COLORS, SECONDARY_PALETTE, TEXT_COLORS } from '@/constants/colors';
+import { PRIMARY_COLORS, SECONDARY_PALETTE, TEXT_COLORS } from '@/constants/colors';
 import { WEEKDAYS_KO } from '@/constants/weekdays';
 import { useThemeStore } from '@/stores/themeStore';
 // 라벨은 shared/status 한 곳에서만 만든다 — 예전에는 이 파일이 같은 표를 두 번 하드코딩해
 // 상태를 하나 늘릴 때마다 세 곳이 조용히 어긋날 수 있었다.
 import { SCHEDULE_TYPE_LABELS } from '@/shared/status';
+import { SCHEDULE_STATUS, getStatusHexColor } from '@/constants/statusConfig';
 import type { ScheduleEvent, ScheduleType } from '@/types';
 
 LocaleConfig.locales.ko = {
@@ -65,17 +66,25 @@ interface DotInfo {
   selectedDotColor?: string;
 }
 
+/**
+ * 같은 계열에서 덜 급한 쪽에 얹는 hex8 알파(45%).
+ *
+ * 색상만으로 가르면 색약 사용자에게는 구분이 사라진다. 휘도 축을 하나 더 줘서
+ * 지원 중(vs 확정) · 취소(vs 노쇼)를 색 단독에 의존하지 않고 구분한다.
+ */
+const PALE_DOT_ALPHA = '73';
+
+/**
+ * 상태 → 점 색. 값을 여기서 따로 정하지 않는다 — 예전엔 원시 hex 를 직접 조합한
+ * 독립 매핑이라 배지(SCHEDULE_STATUS)와 어긋났다(completed 가 배지=회색인데 점은 골드).
+ * SCHEDULE_STATUS 를 단일 소스로 두고 위 알파 규칙만 얹는다. 범례도 이 상수를 참조한다.
+ */
 const SCHEDULE_DOT_COLORS: Record<ScheduleType, string> = {
-  // 지원 중은 반투명(hex8 알파 45%) 점: 확정(불투명)과 색상뿐 아니라 휘도 차이로도
-  // 구분되게 해 색상 단독 의존을 완화한다(색약 대응). 범례도 같은 상수를 참조해 자동 일치.
-  applied: `${STATUS_COLORS.warning}73`,
-  confirmed: STATUS_COLORS.success,
-  completed: PRIMARY_COLORS[500],
-  // 취소와 노쇼는 같은 '빨강 계열'이되 같은 색이면 안 된다 — 범례에 똑같은 점 두 개가 서면
-  // 구분이 label 낭독에만 의존하게 된다. 위 applied 와 같은 투명도 관용구를 재사용해
-  // 끝난 일(취소=반투명)과 지금 대응이 필요한 일(노쇼=불투명)을 휘도로 가른다.
-  cancelled: `${STATUS_COLORS.error}73`,
-  no_show: STATUS_COLORS.error,
+  applied: `${getStatusHexColor(SCHEDULE_STATUS, 'applied')}${PALE_DOT_ALPHA}`,
+  confirmed: getStatusHexColor(SCHEDULE_STATUS, 'confirmed'),
+  completed: getStatusHexColor(SCHEDULE_STATUS, 'completed'),
+  cancelled: `${getStatusHexColor(SCHEDULE_STATUS, 'cancelled')}${PALE_DOT_ALPHA}`,
+  no_show: getStatusHexColor(SCHEDULE_STATUS, 'no_show'),
 };
 
 const CALENDAR_WEEKDAYS = WEEKDAYS_KO;

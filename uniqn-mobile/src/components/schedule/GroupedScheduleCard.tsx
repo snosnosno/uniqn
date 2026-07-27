@@ -162,7 +162,8 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
         >
           <View className="mb-2 flex-row items-start justify-between">
             <View className="flex-1 flex-row flex-wrap items-center">
-              <Badge variant="chip" dot>
+              {/* ScheduleCard 와 같은 규칙 — 상태 색은 SCHEDULE_STATUS 한 곳에서만 온다. */}
+              <Badge variant={status.variant} dot>
                 {status.label}
               </Badge>
 

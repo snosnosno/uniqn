@@ -169,7 +169,11 @@ export const ScheduleCard = memo(function ScheduleCard({
         >
           <View className="mb-2 flex-row items-start justify-between">
             <View className="flex-1 flex-row flex-wrap items-center">
-              <Badge variant="chip" dot>
+              {/* 색이 상태를 말한다 — 예전엔 variant="chip"(골드) 고정이라 네 상태가 전부
+                  같은 색이었고, 같은 건을 상세 모달에서 열면 초록·노랑으로 바뀌었다.
+                  SCHEDULE_STATUS 를 유일한 색 소스로 두고 모달(variant={status.variant})에
+                  맞춘다. 골드 chip 은 금액·CTA 전용으로 남긴다. */}
+              <Badge variant={status.variant} dot>
                 {status.label}
               </Badge>
 

@@ -119,4 +119,28 @@ describe('ScheduleCard', () => {
     );
     expect(cardLabels.every((label) => !label.includes('취소'))).toBe(true);
   });
+
+  // 예전엔 카드 배지가 variant="chip"(골드) 고정이라 네 상태가 전부 같은 색이었고,
+  // 같은 건을 상세 모달에서 열면 초록·노랑으로 바뀌었다. 색이 상태를 말해야 한다.
+  describe('상태 배지 색 (SCHEDULE_STATUS 단일 소스)', () => {
+    const renderTree = (type: ScheduleEvent['type']) =>
+      JSON.stringify(
+        render(
+          <ScheduleCard schedule={createMockScheduleEvent({ type }) as unknown as ScheduleEvent} />
+        ).toJSON()
+      );
+
+    it('상태마다 다른 색을 쓴다', () => {
+      // Badge variantStyles — success/warning/default 는 서로 다른 배경 클래스를 낸다.
+      expect(renderTree('confirmed')).toContain('bg-success-100');
+      expect(renderTree('applied')).toContain('bg-warning-100');
+    });
+
+    it('골드 chip 을 상태 배지로 쓰지 않는다 (금액·CTA 전용)', () => {
+      // tracking-chip 은 Badge 의 chip variant 만 내는 클래스다.
+      for (const type of ['applied', 'confirmed', 'completed', 'cancelled', 'no_show'] as const) {
+        expect(renderTree(type)).not.toContain('tracking-chip');
+      }
+    });
+  });
 });
