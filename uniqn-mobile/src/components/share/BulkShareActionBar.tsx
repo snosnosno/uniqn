@@ -17,8 +17,13 @@ export const BULK_SHARE_ACTION_BAR_HEIGHT = 64;
 export interface BulkShareActionBarProps {
   selectedCount: number;
   maxCount: number;
-  /** 전체선택 (화면에 보이는 공유 가능 공고 대상) */
+  /**
+   * 전체선택 토글 (화면에 보이는 공유 가능 공고 대상).
+   * 선택/해제 어느 쪽이든 같은 콜백으로 전달한다 — 무엇이 "전부"인지는 목록을 쥔 화면만 안다.
+   */
   onSelectAll: () => void;
+  /** 화면의 공유 가능 공고가 (상한 내에서) 전부 선택된 상태인가. 라벨을 "전체 해제" 로 바꾼다. */
+  isAllSelected?: boolean;
   onShare: () => void;
   onCancel: () => void;
   isSharing?: boolean;
@@ -30,6 +35,7 @@ export const BulkShareActionBar = memo(function BulkShareActionBar({
   selectedCount,
   maxCount,
   onSelectAll,
+  isAllSelected = false,
   onShare,
   onCancel,
   isSharing = false,
@@ -37,6 +43,7 @@ export const BulkShareActionBar = memo(function BulkShareActionBar({
 }: BulkShareActionBarProps) {
   const insets = useSafeAreaInsets();
   const canShare = selectedCount > 0 && !isSharing;
+  const selectAllLabel = isAllSelected ? '전체 해제' : '전체 선택';
 
   return (
     <View
@@ -60,19 +67,27 @@ export const BulkShareActionBar = memo(function BulkShareActionBar({
           <NumericText className="text-sm font-sans-semibold text-content-primary dark:text-off-white">
             {selectedCount}/{maxCount} 선택
           </NumericText>
-          <Pressable
-            onPress={onSelectAll}
-            disabled={isSharing}
-            hitSlop={8}
-            className="active:opacity-70"
-            accessibilityRole="button"
-            accessibilityLabel="공유 가능한 공고 전체 선택"
-          >
-            <Text className="mt-0.5 text-xs font-sans-medium text-content-secondary">
-              전체 선택
-            </Text>
-          </Pressable>
         </View>
+
+        {/*
+          전체선택은 원래 카운트 라벨 아래 붙은 12px 회색 텍스트였다. 라벨의 일부처럼 보여
+          누를 수 있는 요소로 안 읽혔고 "기능이 없다"는 보고까지 나왔다 — 테두리를 줘서
+          버튼으로 승격한다. 카운트 옆 같은 줄에 두어 바 높이(BULK_SHARE_ACTION_BAR_HEIGHT)는
+          그대로 유지한다.
+        */}
+        <Pressable
+          onPress={onSelectAll}
+          disabled={isSharing}
+          hitSlop={8}
+          className="min-h-[40px] justify-center rounded-md border border-secondary-300 px-3 active:bg-surface-hover dark:border-surface-overlay dark:active:bg-surface-overlay"
+          accessibilityRole="button"
+          accessibilityState={{ disabled: isSharing }}
+          accessibilityLabel={
+            isAllSelected ? '선택한 공고 전체 해제' : '공유 가능한 공고 전체 선택'
+          }
+        >
+          <Text className="text-xs font-sans-medium text-content-secondary">{selectAllLabel}</Text>
+        </Pressable>
 
         <Pressable
           onPress={onShare}

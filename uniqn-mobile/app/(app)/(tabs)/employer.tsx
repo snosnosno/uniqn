@@ -314,10 +314,22 @@ function EmployerView() {
   }, []);
 
   // 묶음 공유 — 지금 필터에 보이는 공고가 전체선택 대상이다(안 보이는 공고가 딸려가면 놀란다).
-  const handleSelectAll = useCallback(
-    () => selection.selectAll(filteredPostings),
+  // 상한(10건)에서 잘린 것도 "전부"로 친다 — 안 그러면 11건일 때 영원히 "전체 해제" 로 안 바뀐다.
+  const shareableCount = useMemo(
+    () => filteredPostings.filter((posting) => selection.canSelect(posting)).length,
     [filteredPostings, selection]
   );
+  const isAllSelected =
+    selection.selectedCount > 0 &&
+    selection.selectedCount >= Math.min(shareableCount, selection.maxCount);
+
+  const handleSelectAll = useCallback(() => {
+    if (isAllSelected) {
+      selection.clear();
+      return;
+    }
+    selection.selectAll(filteredPostings);
+  }, [filteredPostings, isAllSelected, selection]);
 
   const handleBulkShare = useCallback(async () => {
     const result = await shareJobs(Array.from(selection.selectedIds), 'employer');
@@ -486,6 +498,7 @@ function EmployerView() {
           selectedCount={selection.selectedCount}
           maxCount={selection.maxCount}
           onSelectAll={handleSelectAll}
+          isAllSelected={isAllSelected}
           onShare={handleBulkShare}
           onCancel={selection.exitSelectionMode}
           isSharing={isBulkSharing}
