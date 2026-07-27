@@ -34,6 +34,24 @@ describe('PresetCarousel', () => {
     expect(queryByTestId('order-sheet-preset-save')).toBeNull();
   });
 
+  // W1-12 / ORDER-9: 로딩 중에 '없어요' 를 단정하면 재방문 사장에게 거짓말이 된다 —
+  // 잠시 뒤 카드가 나타나면서 안내가 뒤집힌다.
+  it('불러오는 중이면 없다고 단정하지 않고 스켈레톤을 보여준다', () => {
+    const { queryByText, getByTestId } = render(
+      <PresetCarousel presets={[]} onSelect={jest.fn()} onSavePress={jest.fn()} isLoading />
+    );
+    expect(queryByText(/아직 프리셋이 없어요/)).toBeNull();
+    expect(getByTestId('order-sheet-preset-skeleton')).toBeTruthy();
+  });
+
+  it('다 불러왔는데 정말 없으면 그때 온보딩 안내를 보여준다', () => {
+    const { getByText, queryByTestId } = render(
+      <PresetCarousel presets={[]} onSelect={jest.fn()} onSavePress={jest.fn()} isLoading={false} />
+    );
+    expect(getByText(/아직 프리셋이 없어요/)).toBeTruthy();
+    expect(queryByTestId('order-sheet-preset-skeleton')).toBeNull();
+  });
+
   it('프리셋 카드 탭 시 해당 프리셋으로 onSelect 호출', () => {
     const onSelect = jest.fn();
     const preset: OrderSheetPreset = {

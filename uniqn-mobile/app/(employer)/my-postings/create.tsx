@@ -247,6 +247,7 @@ export default function CreateJobPostingScreen() {
         onDirtyChange={setIsDirty}
         myPhone={profile?.phone ?? ''}
         presets={presets}
+        presetsLoading={myPostingsQuery.isLoading || templateManager.templatesLoading}
         onSaveTemplate={handleOrderSheetSaveTemplate}
         onChainSwappingChange={setChainScrimVisible}
       />

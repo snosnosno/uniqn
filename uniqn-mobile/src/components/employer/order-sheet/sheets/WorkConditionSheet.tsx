@@ -53,6 +53,10 @@ export function WorkConditionSheet({
   const [negotiable, setNegotiable] = useState(value.isStartTimeNegotiable);
   const [pickerOpen, setPickerOpen] = useState(false);
 
+  // orderRowMeta 의 미설정 판정(`!negotiable && !startTime`)과 **같은 식**이어야 한다.
+  // 어긋나면 확인은 되는데 행은 미설정으로 남는 지금의 결함이 그대로 재현된다.
+  const confirmDisabled = !negotiable && !startTime;
+
   const toggleNegotiable = () => {
     setNegotiable((prev) => {
       const next = !prev;
@@ -67,18 +71,31 @@ export function WorkConditionSheet({
       onClose={onClose}
       title="근무조건"
       footer={
-        <Button
-          onPress={() => {
-            onConfirm({
-              daysPerWeek,
-              isStartTimeNegotiable: negotiable,
-              ...(negotiable ? {} : startTime ? { startTime } : {}),
-            });
-            onClose();
-          }}
-        >
-          확인
-        </Button>
+        // 출근시간도 없고 협의도 아니면 확인해도 근무조건 행이 '미설정'으로 남는다. 그러면
+        // 연쇄·제출 유도가 같은 자리를 무한히 다시 열어 사장이 빠져나갈 수 없다(닫힌 고리).
+        // ⚠️ 대안이던 'defaultFixedSchedule 에 startTime 시드'는 채택하지 않았다 — 행이 처음부터
+        //    set 으로 판정돼 시트가 한 번도 안 열리고, 사장이 고른 적 없는 19:00 이 조용히 확정된다.
+        //    무음 유실을 무음 확정으로 바꿀 뿐이다. 힌트 패턴은 PlaceSheet 를 따랐다.
+        <View className="gap-2">
+          {confirmDisabled ? (
+            <Text className="text-center text-xs text-content-muted font-sans">
+              출근 시간을 고르거나 &lsquo;시간 협의&rsquo;를 켜면 확인할 수 있어요
+            </Text>
+          ) : null}
+          <Button
+            disabled={confirmDisabled}
+            onPress={() => {
+              onConfirm({
+                daysPerWeek,
+                isStartTimeNegotiable: negotiable,
+                ...(negotiable ? {} : startTime ? { startTime } : {}),
+              });
+              onClose();
+            }}
+          >
+            확인
+          </Button>
+        </View>
       }
       overlay={
         pickerOpen ? (

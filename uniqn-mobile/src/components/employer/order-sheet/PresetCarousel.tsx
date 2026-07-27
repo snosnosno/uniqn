@@ -9,6 +9,7 @@
 import React from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { ZapIcon } from '@/components/icons';
+import { Skeleton } from '@/components/ui/Skeleton';
 import type { OrderSheetFormValues } from '@/schemas/orderSheet.schema';
 
 export interface OrderSheetPreset {
@@ -24,9 +25,31 @@ export interface PresetCarouselProps {
   presets: OrderSheetPreset[];
   onSelect: (preset: OrderSheetPreset) => void;
   onSavePress: () => void;
+  /** 프리셋 목록을 아직 불러오는 중인지. 로딩과 '없음'을 구분하지 않으면 거짓말이 된다. */
+  isLoading?: boolean;
 }
 
-export function PresetCarousel({ presets, onSelect, onSavePress }: PresetCarouselProps) {
+export function PresetCarousel({
+  presets,
+  onSelect,
+  onSavePress,
+  isLoading = false,
+}: PresetCarouselProps) {
+  // 로딩 중에 '아직 프리셋이 없어요' 를 단정하면 재방문 사장에게 거짓말이 된다 —
+  // 잠시 뒤 카드가 나타나면서 안내가 뒤집힌다. 구조를 유지하는 스켈레톤으로 대체(impeccable §16).
+  if (isLoading && presets.length === 0) {
+    return (
+      <View
+        className="mb-3 flex-row gap-2"
+        accessibilityRole="progressbar"
+        accessibilityLabel="프리셋 불러오는 중"
+        testID="order-sheet-preset-skeleton"
+      >
+        <Skeleton width={130} height={52} borderRadius={12} accessible={false} />
+        <Skeleton width={130} height={52} borderRadius={12} accessible={false} />
+      </View>
+    );
+  }
   if (presets.length === 0) {
     return (
       <View className="mb-3 rounded-xl border border-dashed border-secondary-300 dark:border-surface-overlay px-4 py-3">

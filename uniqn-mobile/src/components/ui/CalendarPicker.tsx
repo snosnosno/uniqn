@@ -337,8 +337,11 @@ export const CalendarPicker = memo(function CalendarPicker({
           // 이미 선택된 날짜면 제거
           onMultiSelectChange(selectedDates.filter((d) => !isSameDay(d, date)));
         } else {
-          // 최대 선택 개수 확인
-          if (maxSelections && selectedDates.length >= maxSelections) {
+          // 최대 선택 개수 확인.
+          // ⚠️ `maxSelections &&` 로 쓰면 **0 이 falsy 로 새어** 상한이 통째로 무력화된다.
+          //    남은 자리 0개(remainingSlots=0)가 정확히 그 경우다 — 사용자가 날짜를 계속
+          //    고를 수 있었고, 호출부가 그제야 '최대 0개까지 선택할 수 있습니다' 를 띄웠다.
+          if (typeof maxSelections === 'number' && selectedDates.length >= maxSelections) {
             return; // 최대 개수 초과 시 추가 안함
           }
           // 새 날짜 추가
