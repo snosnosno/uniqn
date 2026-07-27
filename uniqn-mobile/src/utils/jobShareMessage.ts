@@ -95,8 +95,11 @@ export function buildScheduleBlocks(schedule: ScheduleModel): {
   return { blocks: dateLabel ? [{ dateLabel, roleLine: '' }] : [], header: '' };
 }
 
-/** 급여 라인 (역할별 급여면 행 나열, 단일이면 대표 금액). */
-function buildSalaryLine(comp: PostingCompensationModel): string {
+/**
+ * 급여 라인 (역할별 급여면 행 나열, 단일이면 대표 금액).
+ * 묶음 공유(bulkJobShareMessage)도 같은 규칙을 써야 단일/묶음 급여 표기가 갈라지지 않는다.
+ */
+export function buildSalaryLine(comp: PostingCompensationModel): string {
   if (!comp.useSameSalary && comp.rows.length > 0) {
     return comp.rows.map((row) => `${row.roleLabel} ${row.text}`).join(', ');
   }
