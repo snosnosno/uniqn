@@ -31,6 +31,7 @@ import {
 import { WorkTimeDisplay } from '@/shared/time';
 import { formatPhoneNumber } from '@/utils/phone';
 import { STATUS } from '@/constants';
+import { shouldUseFrozenPayrollAmount } from '@/utils/settlementGrouping';
 import { PAYROLL_STATUS } from '@/constants/statusConfig';
 import type { ScheduleEvent, PayrollStatus } from '@/types';
 import { formatDateKoreanWithDay } from '@/utils/date';
@@ -361,16 +362,33 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           title="정산 현황"
         >
           <View className="flex-row items-center justify-between rounded-lg bg-surface-page dark:bg-surface p-3 dark:bg-surface/30">
+            {/* 금액은 하나만 보여준다 — 과거엔 재계산액과 동결액을 동시에 그려서, 공고 급여를
+                바꾸면 한 카드 안에 서로 모순되는 두 숫자가 남았다. 정산이 완료됐으면 동결값이
+                진실원이고(0원도 포함), 아직이면 재계산 예상액이다. */}
             <View>
-              {schedule.settlementBreakdown && (
-                <Text className="text-base font-sans-medium text-content-primary dark:text-off-white">
-                  {formatCurrency(schedule.settlementBreakdown.afterTaxPay)}
-                </Text>
-              )}
-              {schedule.payrollAmount && schedule.payrollAmount > 0 && (
-                <Text className="mt-0.5 text-sm text-success-600 dark:text-success-400 font-sans">
-                  확정: {formatCurrency(schedule.payrollAmount)}
-                </Text>
+              {shouldUseFrozenPayrollAmount(
+                schedule.payrollStatus === STATUS.PAYROLL.COMPLETED,
+                schedule.payrollAmount
+              ) ? (
+                <>
+                  <Text className="text-base font-sans-medium text-content-primary dark:text-off-white">
+                    {formatCurrency(schedule.payrollAmount)}
+                  </Text>
+                  <Text className="mt-0.5 text-sm text-success-600 dark:text-success-400 font-sans">
+                    확정 금액
+                  </Text>
+                </>
+              ) : (
+                schedule.settlementBreakdown && (
+                  <>
+                    <Text className="text-base font-sans-medium text-content-primary dark:text-off-white">
+                      {formatCurrency(schedule.settlementBreakdown.afterTaxPay)}
+                    </Text>
+                    <Text className="mt-0.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
+                      정산 예정 금액
+                    </Text>
+                  </>
+                )
               )}
             </View>
             <Badge variant={payrollStatusConfig.variant} size="sm">

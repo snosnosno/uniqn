@@ -26,6 +26,7 @@ import { WorkTimeDisplay } from '@/shared/time';
 import type { ScheduleEvent } from '@/types';
 import { useThemeStore } from '@/stores/themeStore';
 import { STATUS } from '@/constants';
+import { shouldUseFrozenPayrollAmount } from '@/utils/settlementGrouping';
 import { SCHEDULE_STATUS, ATTENDANCE_STATUS } from '@/constants/statusConfig';
 import { formatDateKoreanWithDay } from '@/utils/date';
 
@@ -202,7 +203,11 @@ export function ScheduleDetailSheet({
           label="역할"
           value={getRoleDisplayName(schedule.role, schedule.customRole)}
         />
-        {schedule.payrollAmount && schedule.payrollAmount > 0 && (
+        {/* 동결값 SSOT — `> 0` 가드로 판정하면 정산 0원 완료 건(노쇼 등)의 행이 통째로 사라진다. */}
+        {shouldUseFrozenPayrollAmount(
+          schedule.payrollStatus === STATUS.PAYROLL.COMPLETED,
+          schedule.payrollAmount
+        ) && (
           <DetailRow
             icon={<CurrencyDollarIcon size={18} color={SECONDARY_PALETTE[500]} />}
             label="급여"

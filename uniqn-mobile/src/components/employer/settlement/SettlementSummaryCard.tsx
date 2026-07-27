@@ -99,9 +99,14 @@ export const SettlementSummaryCard = React.memo(function SettlementSummaryCard({
           <Text className="text-micro text-content-placeholder font-sans">수당 포함</Text>
         </View>
       </View>
+      {/* 과거 문구는 '스태프 확정=기본급 기준, 여기 총 정산액=수당 포함' 이었는데 둘 다 사실과
+          반대였다. 동결값(payroll_amount)은 calculateSettlementAmount 의 afterTaxPay — 유효
+          수당을 포함한 세후 금액이고(SettlementRepository), 정산 완료분의 '총 정산액' 은 바로
+          그 동결값 자체다. 이 거짓 고지가 실제 금액 불일치(SETTLE-5/8)를 '원래 다른 값' 으로
+          정당화해 결함 인지 자체를 막고 있었다. */}
       <Text className="mt-2 text-micro text-content-placeholder font-sans text-center">
         {
-          '※ 스태프 화면의 \u201C확정\u201D 금액은 기본급 기준이며, 여기 \u201C총 정산액\u201D은 수당을 포함합니다.'
+          '※ 금액은 모두 수당 포함 · 세후 기준이에요. 정산이 끝난 근무는 그때 확정된 금액이 그대로 남고, 남은 근무는 현재 설정으로 계산한 예상액이에요.'
         }
       </Text>
     </Card>

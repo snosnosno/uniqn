@@ -11,6 +11,7 @@ import { logger } from '@/utils/logger';
 import { NetworkError, ERROR_CODES, isAppError, toError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { STATUS } from '@/constants';
+import { shouldUseFrozenPayrollAmount } from '@/utils/settlementGrouping';
 import { formatDateWithDay, toDateString } from '@/utils/date';
 import { TimeNormalizer } from '@/shared/time';
 import type {
@@ -256,11 +257,18 @@ export function calculateScheduleStats(schedules: ScheduleEvent[]): ScheduleStat
     if (schedule.type === STATUS.SCHEDULE.COMPLETED) {
       completedSchedules++;
 
-      // 수익 계산 (payrollAmount 우선, 없으면 settlementBreakdown 사용)
+      // 수익 계산 — 동결값 SSOT(shouldUseFrozenPayrollAmount)를 유일 관문으로 쓴다.
+      // 과거의 `payrollAmount > 0` 가드는 **정산 0원 완료 건**(노쇼 등)을 동결값으로 인정하지
+      // 않고 재계산으로 흘려보내, 실제로 0원 지급한 근무를 수입 합계에 양수로 올렸다.
       let amount = 0;
 
-      if (schedule.payrollAmount && schedule.payrollAmount > 0) {
-        // 1순위: 구인자 확정 금액
+      if (
+        shouldUseFrozenPayrollAmount(
+          schedule.payrollStatus === STATUS.PAYROLL.COMPLETED,
+          schedule.payrollAmount
+        )
+      ) {
+        // 1순위: 구인자 확정 금액(동결값). 0원도 존중한다.
         amount = schedule.payrollAmount;
       } else if (schedule.settlementBreakdown) {
         // 2순위: 미리 계산된 정산 세부 내역

@@ -17,6 +17,7 @@ import type { WorkLog, PayrollStatus } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
 import { formatCurrency } from '@/utils/settlement';
 import { STATUS } from '@/constants';
+import { shouldUseFrozenPayrollAmount } from '@/utils/settlementGrouping';
 import { formatDateShortWithDay } from '@/utils/date';
 import { PAYROLL_STATUS_LABELS } from '@/shared/status';
 
@@ -170,7 +171,11 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
           </Text>
         </View>
 
-        {workLog.payrollAmount && workLog.payrollAmount > 0 && (
+        {/* 동결값 SSOT — `> 0` 가드는 정산 0원 완료 건의 배지·금액을 통째로 숨긴다. */}
+        {shouldUseFrozenPayrollAmount(
+          workLog.payrollStatus === STATUS.PAYROLL.COMPLETED,
+          workLog.payrollAmount
+        ) && (
           <View className="flex-row items-center">
             {payrollConfig && (
               <View className={`px-2 py-0.5 rounded-sm mr-2 ${payrollConfig.bgColor}`}>

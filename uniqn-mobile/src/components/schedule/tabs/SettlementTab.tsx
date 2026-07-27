@@ -24,6 +24,7 @@ import {
   getRoleSalaryFromSettlementSource,
 } from '@/domains/settlement';
 import { STATUS } from '@/constants';
+import { shouldUseFrozenPayrollAmount } from '@/utils/settlementGrouping';
 import { PAYROLL_STATUS } from '@/constants/statusConfig';
 import type { ScheduleEvent, PayrollStatus } from '@/types';
 
@@ -345,7 +346,11 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
         </View>
       )}
 
-      {schedule.payrollAmount && schedule.payrollAmount > 0 && (
+      {/* 동결값 SSOT — 0원 완료 건도 '확정 ₩0' 으로 보여야 위 재계산 블록과 모순되지 않는다. */}
+      {shouldUseFrozenPayrollAmount(
+        schedule.payrollStatus === STATUS.PAYROLL.COMPLETED,
+        schedule.payrollAmount
+      ) && (
         <View className="mt-4 rounded-md bg-primary-50 p-4 dark:bg-primary-900/20">
           <Text className="mb-1 text-xs text-primary-600 dark:text-primary-400 font-sans">
             확정 정산 금액

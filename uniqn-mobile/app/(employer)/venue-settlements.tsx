@@ -108,9 +108,13 @@ export default function VenueSettlementsScreen() {
     ({ item }: { item: SettlementWorkLog }) => (
       <View className="mb-2">
         {item.salaryInfo ? (
+          /* calculatedAmount 는 settlementVenueQuery 가 유효 급여·수당·세금을 해소해 만든
+             canonical(afterTaxPay)이다. 예전엔 salaryInfo 만 넘겨 카드가 수당·세금 없이
+             다시 계산했고, 그래서 같은 근무가 서비스 값과 다른 금액으로 보였다(SETTLE-8). */
           <SettlementCard
             workLog={item}
             salaryInfo={item.salaryInfo}
+            calculatedAmount={item.calculatedAmount}
             onPress={() => {
               setDetailWorkLog(item);
               setDetailVisible(true);
