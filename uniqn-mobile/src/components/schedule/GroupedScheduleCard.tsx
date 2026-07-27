@@ -3,8 +3,8 @@
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import React, { memo, useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, Pressable, LayoutAnimation, AccessibilityInfo } from 'react-native';
+import React, { memo, useState, useCallback, useMemo } from 'react';
+import { View, Text, Pressable, LayoutAnimation } from 'react-native';
 import { CardStripe, Badge } from '@/components/ui';
 import {
   CalendarIcon,
@@ -25,6 +25,8 @@ import {
   NO_SHOW_NOTICE_DESCRIPTION,
 } from './helpers';
 import { STATUS } from '@/constants';
+// 배럴(@/hooks)이 아니라 직접 경로 — 훅 파일 주석의 순환 참조 경고를 따른다.
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 import { WorkTimeDisplay } from '@/shared/time';
 import { SCHEDULE_STATUS, ATTENDANCE_STATUS } from '@/constants/statusConfig';
@@ -97,20 +99,10 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
     return { label: '출근 전', status: STATUS.ATTENDANCE.NOT_STARTED };
   }, [group.type, group.dateStatuses]);
 
-  // Reduce Motion 대응. 공용 `useReduceMotion` 훅은 애니메이션 토큰 브랜치에 있어
-  // 여기서는 중복 훅을 만들지 않고 직접 읽는다(머지 후 공용 훅으로 교체).
-  const [reduceMotion, setReduceMotion] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
-      if (!cancelled) setReduceMotion(enabled);
-    });
-    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
-    return () => {
-      cancelled = true;
-      subscription.remove();
-    };
-  }, []);
+  // Reduce Motion 대응 — 공용 훅(SSOT). 여기 있던 로컬 구현은 useState(false) 로 시작해
+  // RM 사용자에게도 마운트 첫 1~2프레임 동안 모션이 재생됐고, isReduceMotionEnabled 를
+  // 옵셔널 호출하지 않아 그 메서드가 없는 mock 환경에서 터졌다. 공용 훅은 둘 다 해결돼 있다.
+  const reduceMotion = useReduceMotion();
 
   const toggleExpanded = useCallback(() => {
     // 모션을 줄이도록 설정한 사용자에게 펼침 애니메이션을 강행하지 않는다.
