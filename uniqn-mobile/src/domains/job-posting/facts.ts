@@ -8,7 +8,7 @@ import type {
 } from '@/types';
 import { FIXED_TIME_MARKER } from '@/types/assignment';
 import { getRoleDisplayName } from '@/types/unified';
-import { getAllowanceItems } from '@/utils/allowanceUtils';
+import { getAllowanceItems, getGuaranteedHoursLabel } from '@/utils/allowanceUtils';
 import { isSupportedReleasePosting } from '@/utils/jobPostingVisibility';
 import { logger } from '@/utils/logger';
 import {
@@ -86,10 +86,13 @@ export function buildPostingFacts(posting: JobPosting): PostingFacts {
   const defaultSalary = getPostingDefaultSalary(posting);
   const filledPositions = resolveFilledPositions(posting);
   const allowanceLabels = getAllowanceItems(posting.compensation.allowances);
+  const guaranteedHoursLabel = getGuaranteedHoursLabel(posting.compensation.allowances);
   // 모집 조건 라벨(S3) — 공백만 있는 값은 미설정으로 취급(쓰기 XSS refine은 zod 완료, 표시는 RN Text)
   const dressCode = posting.conditions?.dressCode?.trim();
   const experience = posting.conditions?.experience?.trim();
   const conditionLabels = [
+    // 보장시간은 금액에 반영되지 않는 근무 조건이라 수당 칩이 아니라 여기로 온다(SETTLE-2).
+    ...(guaranteedHoursLabel ? [guaranteedHoursLabel] : []),
     ...(dressCode ? [`복장 ${dressCode}`] : []),
     // '경력 1년이상' 같은 칩은 문구가 이미 '경력'으로 시작 — 이중 접두 방지
     ...(experience ? [experience.startsWith('경력') ? experience : `경력 ${experience}`] : []),

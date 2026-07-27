@@ -23,12 +23,18 @@ import type { OrderSheetValues } from '@/schemas/orderSheet.schema';
 type Welfare = OrderSheetValues['allowances'];
 type WelfareKey = keyof Welfare;
 
+/**
+ * 금액·현물 복지 3종. 보장시간은 **여기 없다** — 금액 축이 아니라 근무 조건 축이라
+ * 아래에서 구분선으로 분리해 렌더한다(SETTLE-2). 섞어 두면 사장·스태프 양쪽이
+ * 보장시간을 지급 금액으로 읽는다.
+ */
 const ITEMS = [
   { key: 'meal', label: '식사' },
   { key: 'transportation', label: '교통' },
-  { key: 'guaranteedHours', label: '보장시간' },
   { key: 'accommodation', label: '숙소' },
 ] as const;
+
+const GUARANTEED_HOURS_KEY = 'guaranteedHours' as const;
 
 /** 보장시간 축 분리 — welfare 상태는 금액 3종만 들고 간다 */
 const stripGuaranteedHours = ({ guaranteedHours: _gh, ...rest }: Welfare): Welfare => rest;
@@ -95,14 +101,9 @@ export function WelfareSheet({ visible, value, onConfirm, onClose }: WelfareShee
     >
       <View className="px-4 pt-3 pb-2 gap-2">
         {ITEMS.map(({ key, label }) => {
-          const isHours = key === 'guaranteedHours';
           const v = welfare[key];
-          const checked = isHours ? ghChecked : v !== undefined;
-          const inputValue = isHours
-            ? ghText
-            : v !== undefined && v !== PROVIDED_FLAG
-              ? String(v)
-              : '';
+          const checked = v !== undefined;
+          const inputValue = v !== undefined && v !== PROVIDED_FLAG ? String(v) : '';
           return (
             <View
               key={key}
@@ -134,7 +135,7 @@ export function WelfareSheet({ visible, value, onConfirm, onClose }: WelfareShee
                   value={inputValue}
                   onChangeText={(t) => setAmount(key, t)}
                   keyboardType="number-pad"
-                  placeholder={isHours ? '시간' : '금액(선택)'}
+                  placeholder="금액(선택)"
                   placeholderTextColor={placeholderColor}
                   testID={`order-sheet-welfare-${key}-input`}
                   className="w-24 rounded-lg border border-secondary-200 dark:border-surface-overlay px-2 py-1.5 text-right text-sm text-content-primary font-sans"
@@ -143,6 +144,50 @@ export function WelfareSheet({ visible, value, onConfirm, onClose }: WelfareShee
             </View>
           );
         })}
+
+        {/* 근무 조건 축 — 보장시간은 금액이 아니라 근무 조건이라 복지 3종과 구분선으로 분리한다.
+            같은 목록에 두면 사장·스태프 양쪽이 지급 금액으로 읽는다(SETTLE-2). */}
+        <View className="mt-3 border-t border-secondary-200 pt-3 dark:border-surface-overlay">
+          <Text className="mb-2 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+            근무 조건
+          </Text>
+          <View
+            className={`flex-row items-center gap-3 rounded-xl border px-4 py-3 ${
+              ghChecked
+                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30'
+                : 'border-secondary-200 dark:border-surface-overlay bg-surface-card'
+            }`}
+          >
+            <Pressable
+              onPress={() => toggle(GUARANTEED_HOURS_KEY)}
+              className="flex-row items-center gap-3 flex-1 min-h-[44px] active:opacity-80"
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: ghChecked }}
+              accessibilityLabel="보장시간"
+              testID={`order-sheet-welfare-${GUARANTEED_HOURS_KEY}`}
+            >
+              <View
+                className={`w-5 h-5 rounded-md border ${
+                  ghChecked
+                    ? 'bg-primary-500 border-primary-500'
+                    : 'border-secondary-300 dark:border-surface-overlay'
+                }`}
+              />
+              <Text className="text-sm font-sans-medium text-content-primary">보장시간</Text>
+            </Pressable>
+            {ghChecked && (
+              <TextInput
+                value={ghText}
+                onChangeText={(t) => setAmount(GUARANTEED_HOURS_KEY, t)}
+                keyboardType="number-pad"
+                placeholder="시간"
+                placeholderTextColor={placeholderColor}
+                testID={`order-sheet-welfare-${GUARANTEED_HOURS_KEY}-input`}
+                className="w-24 rounded-lg border border-secondary-200 dark:border-surface-overlay px-2 py-1.5 text-right text-sm text-content-primary font-sans"
+              />
+            )}
+          </View>
+        </View>
       </View>
     </SheetModal>
   );

@@ -264,6 +264,11 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
                 </Text>
               )}
             </View>
+            {/* 보장시간은 금액이 아니라 근무 조건이다 — '수당' 블록 안에 있으면 앱이 금액을
+                약속하는 것처럼 보인다. 실제 계산(basePay·수당 합산) 어디에도 반영되지 않는다. */}
+            {allowances?.guaranteedHours && allowances.guaranteedHours > 0 ? (
+              <Row label="보장시간" value={`${allowances.guaranteedHours}시간`} />
+            ) : null}
             <Row label="기본급" value={formatCurrency(settlement.basePay)} />
           </View>
 
@@ -272,10 +277,6 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
               <Text className="mb-2 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                 수당
               </Text>
-
-              {allowances.guaranteedHours && allowances.guaranteedHours > 0 && (
-                <Row label="보장시간" value={`${allowances.guaranteedHours}시간`} />
-              )}
 
               {allowances.meal !== undefined && allowances.meal !== 0 && (
                 <Row
