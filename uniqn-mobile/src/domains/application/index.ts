@@ -75,10 +75,6 @@ export {
   type SlotCapacityValidationResult,
 } from './slotCapacity';
 
-export {
-  ApplicationStatusMachine,
-  applicationStatusMachine,
-  type StatusAction,
-  type TransitionResult,
-  type StatusMetadata,
-} from './ApplicationStatusMachine';
+// ApplicationStatusMachine 은 제거됐다(2026-07-27). 전이표·상태 메타·취소 가드를 담고 있었지만
+// 앱 어디서도 소비하지 않았고, 같은 규칙이 ApplicationRepository 에 독립 구현돼 그쪽만 실행됐다.
+// 규칙이 두 벌이면 다음 수정자가 죽은 쪽을 고칠 위험이 있어 단일화했다.

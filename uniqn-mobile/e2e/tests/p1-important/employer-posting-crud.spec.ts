@@ -228,13 +228,18 @@ test.describe('Employer posting CRUD', () => {
     await page.goto('/my-postings/create', { waitUntil: 'domcontentloaded' });
     await waitForReady(page);
 
-    // 제목 행 탭 → TitleSheet 오픈 → 입력. TextInput maxLength=25 로 타이핑 즉시 25자 캡.
+    // 제목 행 탭 → TitleSheet 오픈 → 입력. TextInput maxLength 로 타이핑 즉시 캡된다.
+    // 상한 단일 소스는 src/constants/jobPosting.ts 의 MAX_POSTING_TITLE_LENGTH.
+    // e2e/tsconfig.json 은 rootDir='.' 이라 src 를 import 할 수 없어 값을 복제한다 —
+    // 상한을 바꾸면 여기도 같이 고칠 것(25→40 상향 때 이 단언만 남아 CI 가 red 였다).
+    const MAX_TITLE_LENGTH = 40;
     await visibleByTestId(page, 'order-sheet-row-title').click();
     const titleInput = visibleByTestId(page, 'order-sheet-title-input');
     await expect(titleInput).toBeVisible({ timeout: 10_000 });
-    await titleInput.fill('a'.repeat(40));
+    // 상한을 '넘겨' 입력해야 캡이 실제로 걸리는지가 검증된다(정확히 상한만큼 넣으면 무캡도 통과).
+    await titleInput.fill('a'.repeat(MAX_TITLE_LENGTH + 5));
 
-    await expect(titleInput).toHaveValue(/^[\s\S]{0,25}$/);
+    await expect(titleInput).toHaveValue('a'.repeat(MAX_TITLE_LENGTH));
   });
 
   test('renders the create page without crashing when the latest posting is fixed', async ({

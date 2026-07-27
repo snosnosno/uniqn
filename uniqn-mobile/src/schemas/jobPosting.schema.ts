@@ -15,6 +15,7 @@ import {
 } from '@/domains/job-posting';
 import { JOB_POSTING_SCHEMA_VERSION } from '@/types/jobPosting';
 import { isWithinUrgentDateLimit } from '@/utils/date';
+import { MAX_POSTING_TITLE_LENGTH } from '@/constants/jobPosting';
 import { Constants } from '@/types/supabase';
 import { isRegionSlug } from '@/constants/regions';
 
@@ -66,7 +67,9 @@ export const basicInfoSchema = z.object({
   title: z
     .string()
     .min(1, { message: 'Enter a title' })
-    .max(25, { message: 'Title must be 25 characters or less' })
+    .max(MAX_POSTING_TITLE_LENGTH, {
+      message: `Title must be ${MAX_POSTING_TITLE_LENGTH} characters or less`,
+    })
     .trim()
     .refine(xssValidation, { message: 'Unsafe text is not allowed' }),
   location: z
@@ -468,7 +471,7 @@ export const jobPostingDocumentSchema = z
     ownerId: z.string(),
     ownerName: z.string().optional(),
     workspaceId: z.string().uuid({ message: '올바른 팀 ID 가 아닙니다' }),
-    // 운영처(venue) 컨테이너 FK(주간 배치 그리드). 일반 공고는 미설정. `.strict()` 스키마라
+    // 운영처(venue) 컨테이너 FK(근무표). 일반 공고는 미설정. `.strict()` 스키마라
     // 키를 등록하지 않으면 venue_id 를 select 하는 순간 read 가 증발하고(#194 클래스),
     // 직렬화에 venueId 가 실리면 assertCanonical 이 throw 한다 — 양 경계의 필수 등록.
     venueId: z.string().uuid({ message: '올바른 지점 ID 가 아닙니다' }).optional(),

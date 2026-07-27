@@ -1,7 +1,8 @@
 /**
  * TitleSheet — 공고 제목 입력 시트 (주문서 기본정보)
  *
- * @description 텍스트 입력(25자 카운터) + 최근 제목 칩. onConfirm 은 trim 된 제목을 부모로
+ * @description 텍스트 입력(길이 카운터, 상한은 MAX_POSTING_TITLE_LENGTH 단일 소스) + 최근 제목 칩.
+ * onConfirm 은 trim 된 제목을 부모로
  * 흘려보내고, 부모(OrderSheetScreen)가 form.setValue(shouldValidate) 로 zod safeText(XSS) 경계를 태운다.
  * SheetModal(단일) 내부 렌더 — 중첩 Modal 없음(#186/#243 회피).
  */
@@ -11,6 +12,7 @@ import { SheetModal } from '@/components/ui/SheetModal';
 import { Button } from '@/components/ui/Button';
 import { useThemeStore } from '@/stores/themeStore';
 import { SECONDARY_PALETTE } from '@/constants/colors';
+import { MAX_POSTING_TITLE_LENGTH } from '@/constants/jobPosting';
 
 export interface TitleSheetProps {
   visible: boolean;
@@ -51,14 +53,14 @@ export function TitleSheet({ visible, value, recentTitles, onConfirm, onClose }:
       <TextInput
         value={text}
         onChangeText={setText}
-        maxLength={25}
+        maxLength={MAX_POSTING_TITLE_LENGTH}
         placeholder="예: 주말 딜러 구합니다"
         placeholderTextColor={isDarkMode ? SECONDARY_PALETTE[500] : SECONDARY_PALETTE[400]}
         className="rounded-xl border border-secondary-200 dark:border-surface-overlay bg-surface-card px-4 py-3 text-content-primary font-sans"
         testID="order-sheet-title-input"
       />
       <Text className="text-xs text-content-muted mt-1 mb-3 text-right font-sans">
-        {text.length}/25
+        {text.length}/{MAX_POSTING_TITLE_LENGTH}
       </Text>
       {recentTitles.length > 0 && (
         <View className="flex-row flex-wrap gap-2">

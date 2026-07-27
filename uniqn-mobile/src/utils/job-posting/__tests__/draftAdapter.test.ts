@@ -236,10 +236,8 @@ describe('draftAdapter venue_id 전수배선', () => {
     expect((update as { venueId?: string }).venueId).toBe(VENUE_ID);
   });
 
-  it('confirmed 분기 update 에서도 venueId 를 보존한다', () => {
-    const update = draftToUpdateJobPostingInput(draftWithVenueId(), {
-      hasConfirmedApplicants: true,
-    });
+  it('draft 직접 조립 경로에서도 venueId 를 보존한다', () => {
+    const update = draftToUpdateJobPostingInput(draftWithVenueId());
     expect((update as { venueId?: string }).venueId).toBe(VENUE_ID);
   });
 

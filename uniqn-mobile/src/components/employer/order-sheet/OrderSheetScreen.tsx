@@ -104,8 +104,6 @@ export interface OrderSheetScreenProps {
   onSaveTemplate?: (values: OrderSheetFormValues) => void;
   /** 편집 모드(S3) — 타입 세그먼트 잠금·'이대로 수정' 라벨·대회 생성 배너 숨김(승인상태 보존 ⑥) */
   mode?: 'create' | 'edit';
-  /** 확정 지원자 존재(S3) — 일정·역할 행 잠금. 서버 updateWithTransaction 가드와 대칭(급여는 열어둠) */
-  scheduleLocked?: boolean;
   /** 연쇄 전환 딤을 호스트로 위임(B1) — 이 화면 밖 형제(StackHeader 등)까지 덮으려면 호스트가
    *  통지를 받아 OrderSheetChainScrim 을 SafeAreaView 레벨에 렌더한다. 제공 시 내부 딤은
    *  렌더하지 않는다(black/50 이중 적층 방지).
@@ -124,7 +122,6 @@ export function OrderSheetScreen({
   presets,
   onSaveTemplate,
   mode = 'create',
-  scheduleLocked = false,
   onChainSwappingChange,
 }: OrderSheetScreenProps) {
   const { addToast } = useToastStore();
@@ -278,25 +275,6 @@ export function OrderSheetScreen({
     }
   }, [form]);
 
-  // 확정 지원자 일정 잠금(S3) — 서버 BusinessError(일정/역할 변경 불가)를 UI에서 선제 안내.
-  // 급여 행은 잠그지 않는다(identity 비교는 역할 키 집합만 — 금액 수정은 서버 허용 실측).
-  const LOCKED_ROW_KEYS: ReadonlySet<OrderRowKey> = useMemo(
-    () => new Set<OrderRowKey>(['dates', 'time', 'roles', 'workConditions']),
-    []
-  );
-  const guardScheduleLock = useCallback(
-    (key?: OrderRowKey): boolean => {
-      if (!scheduleLocked) return false;
-      if (key !== undefined && !LOCKED_ROW_KEYS.has(key)) return false;
-      addToast({
-        type: 'warning',
-        message: '확정된 지원자가 있어 일정과 역할은 수정할 수 없어요.',
-      });
-      return true;
-    },
-    [scheduleLocked, LOCKED_ROW_KEYS, addToast]
-  );
-
   /**
    * 행 → 시트 라우팅 + 연쇄 무장 판정. 사용자 탭과 연쇄 예약이 공유하는 단일 진입점.
    * 무장 = 지금 여는 행이 "필수인데 비어 있음" — 이미 채워진 행 수정은 확인 시 목록으로 복귀한다.
@@ -306,12 +284,6 @@ export function OrderSheetScreen({
    */
   const openRow = useCallback(
     (key: OrderRowKey, groupIndex = 0) => {
-      if (guardScheduleLock(key)) {
-        // 잠금 차단 시 딤 해제 — 토스트만 띄우고 나가면 시트가 뜰 주체가 없어
-        // chainSwapping 이 켜진 채 고착된다(화면 전체가 어두운 데드엔드).
-        updateChainSwapping(false);
-        return;
-      }
       const current = form.getValues();
       const state = getRowState(current, key, groupIndex);
       chainArmedRef.current = !state.optional && state.unset;
@@ -353,7 +325,7 @@ export function OrderSheetScreen({
       // 나머지는 행 키 그대로 시트 오픈.
       setActiveSheet(key);
     },
-    [form, seedFixedScheduleIfMissing, guardScheduleLock, updateChainSwapping]
+    [form, seedFixedScheduleIfMissing, updateChainSwapping]
   );
 
   /**
@@ -383,15 +355,7 @@ export function OrderSheetScreen({
       if (!chainArmedRef.current) return;
       chainArmedRef.current = false;
       // setValue 직후라 watch 값은 아직 옛것 — getValues 로 최신 폼을 읽는다.
-      // 잠금(scheduleLocked) 시 일정·역할 행은 순회에서 제외한다 — 연쇄가 잠긴 행을 타깃으로
-      // 고르면 openRow 의 잠금 가드가 누른 적 없는 경고 토스트를 띄우며 연쇄가 죽는다.
-      // (경고 토스트는 사용자가 직접 잠긴 행을 탭한 handleRowPress 경로에서만 떠야 한다.)
-      const next = nextUnsetRowAfter(
-        form.getValues(),
-        target,
-        coveredKeys,
-        scheduleLocked ? LOCKED_ROW_KEYS : undefined
-      );
+      const next = nextUnsetRowAfter(form.getValues(), target, coveredKeys);
       if (next === null) {
         // 연쇄 완료(연출 B3) — 무장된 연쇄에서 마지막 미설정 항목을 채웠다. 결정적 순간이라
         // 성공 햅틱 1회로 완료를 알린다(룰 17). 웹은 no-op이지만 CTA가 '이대로 등록'으로
@@ -409,7 +373,7 @@ export function OrderSheetScreen({
         openRow(next.key, next.groupIndex);
       }, SHEET_CHAIN_SWAP_MS);
     },
-    [form, openRow, scheduleLocked, LOCKED_ROW_KEYS, updateChainSwapping]
+    [form, openRow, updateChainSwapping]
   );
 
   // 시트가 화면에 올라오면 딤을 걷는다 — 백드롭과 딤이 겹쳐 이중으로 어두워지는 프레임을 최소화.
@@ -441,7 +405,6 @@ export function OrderSheetScreen({
    *  복원은 삭제 그룹 단건 재삽입(리뷰 L-6) — 5초 내 타 그룹 편집을 함께 되돌리지 않는다. */
   const handleDeleteGroup = useCallback(
     (groupIndex: number) => {
-      if (guardScheduleLock()) return;
       // 연쇄 예약 취소 — 180ms 대기 창 안에서 그룹을 삭제하면 예약된 groupIndex 가 stale 이 되어
       // phantom 시트가 뜨고, 거기서 확인한 입력은 groupIndex 매치 실패로 조용히 유실된다.
       clearPendingSwap();
@@ -477,7 +440,7 @@ export function OrderSheetScreen({
         },
       });
     },
-    [form, addToast, guardScheduleLock, clearPendingSwap]
+    [form, addToast, clearPendingSwap]
   );
 
   /** "+ 일정 추가" — 새 그룹은 날짜 시트부터, 시간/역할은 직전 그룹 깊은복사 시드(리뷰 Design-L2).
@@ -485,12 +448,11 @@ export function OrderSheetScreen({
    *  전체 날짜 whole+② 경로(동일 조건)로 우회 가능하고, 조건이 다른 복수 묶음 구간은 v1 범위 밖.
    *  confirm-시점-분할 단순성(E6 구조적 회피)을 유지하는 절충이다. */
   const handleAddSchedule = useCallback(() => {
-    if (guardScheduleLock()) return;
     clearPendingSwap();
     const groups = form.getValues().scheduleGroups ?? [];
     chainArmedRef.current = true; // 새 그룹은 정의상 미설정 — 날짜 확정 후 시간·역할로 이어간다
     setActiveSheet({ key: 'dates', groupIndex: groups.length, mode: 'add' });
-  }, [form, guardScheduleLock, clearPendingSwap]);
+  }, [form, clearPendingSwap]);
 
   /** 날짜 시트 확정 — whole 모드는 세그먼트에 따라 그룹 분할/유지(분할은 confirm 시점에만 실행) */
   const handleDatesConfirm = useCallback(
@@ -730,19 +692,6 @@ export function OrderSheetScreen({
               disabled={mode === 'edit'}
             />
           </View>
-          {/* 확정 지원자 일정 잠금(S3) — 일정·역할 행 편집 차단 안내. 서버 identity 가드와 대칭(급여는 열림). */}
-          {scheduleLocked ? (
-            <View
-              className="flex-row items-start gap-2 mb-3 rounded-xl bg-surface-card border border-warning-200 dark:border-warning-800 px-3.5 py-3"
-              accessibilityRole="alert"
-              testID="order-sheet-schedule-locked-notice"
-            >
-              <InformationCircleIcon size={18} />
-              <Text className="flex-1 text-xs font-sans text-content-secondary leading-[1.125rem] dark:leading-5">
-                확정된 지원자가 있어 일정과 역할 정보는 수정할 수 없어요.
-              </Text>
-            </View>
-          ) : null}
           {/* 대회 승인 안내(S1) — 대회 공고는 관리자 승인 게시. 편집은 승인상태 보존(⑥)이라 숨김(S3). */}
           {values.postingType === 'tournament' && mode !== 'edit' ? (
             <View

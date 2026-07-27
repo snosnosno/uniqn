@@ -95,7 +95,7 @@ export interface JobPostingFormData {
   /** 공고 타입 */
   postingType: PostingType;
 
-  /** 공고 제목 (최대 25자) */
+  /** 공고 제목 (최대 MAX_POSTING_TITLE_LENGTH 자 — constants/jobPosting.ts 단일 소스) */
   title: string;
 
   /** 근무 장소 */
@@ -175,7 +175,7 @@ export interface JobPostingFormData {
   tags: string[];
 
   /**
-   * 운영처(venue) 컨테이너 self-FK (주간 배치 그리드).
+   * 운영처(venue) 컨테이너 self-FK (근무표).
    * 일반 공고 폼은 미설정. 컨테이너 "공고 열기" 경로에서만 주입.
    */
   venueId?: string;

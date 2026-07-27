@@ -178,10 +178,12 @@ function pathToRoute(path: string, params: Record<string, string>): DeepLinkRout
       if (second === 'settlement' && third) {
         return { name: 'employer/settlement', params: { jobId: third } };
       }
-      // 주간 배치 그리드(배치확인 알림 딥링크). catch-all(my-postings)보다 먼저 분기해야
-      // '/employer/weekly-grid' 가 '내 공고'로 오해소되지 않는다.
-      if (second === 'weekly-grid') {
-        return { name: 'employer/weekly-grid' };
+      // 근무표(배치확인 알림 딥링크). catch-all(my-postings)보다 먼저 분기해야
+      // '/employer/work-schedule' 가 '내 공고'로 오해소되지 않는다.
+      // 'weekly-grid' 는 리네이밍(2026-07-27) 이전에 발송된 알림의 link 에 박제된 구 세그먼트다.
+      // 이미 나간 알림은 되돌릴 수 없으므로 구 경로도 같은 라우트로 흡수한다(하위호환).
+      if (second === 'work-schedule' || second === 'weekly-grid') {
+        return { name: 'employer/work-schedule' };
       }
       return { name: 'employer/my-postings' };
 

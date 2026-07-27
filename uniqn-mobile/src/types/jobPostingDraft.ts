@@ -25,7 +25,7 @@ export interface JobPostingDraft {
   description: string;
   location: PostingLocation | null;
   contactPhone: string;
-  /** 운영처(venue) 컨테이너 self-FK (주간 배치 그리드). 일반 공고 draft 는 미설정. */
+  /** 운영처(venue) 컨테이너 self-FK (근무표). 일반 공고 draft 는 미설정. */
   venueId?: string;
   tags: string[];
   schedule: JobPostingDraftSchedule;

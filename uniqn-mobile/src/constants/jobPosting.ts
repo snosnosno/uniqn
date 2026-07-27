@@ -40,12 +40,24 @@ export const DATE_CONSTRAINTS: Record<PostingType, DateConstraint> = {
 };
 
 /**
- * 날짜당 최대 시간대 개수
+ * 공고 제목 최대 길이 — 입력 시트(TextInput maxLength·카운터)·주문서 스키마·문서 게이트가 공유한다.
+ *
+ * @description 세 곳에 25가 하드코딩돼 있었고, 그 값은 실제 공고 제목
+ * ("○○홀덤펍 12/25 크리스마스 토너먼트 딜러 모집" = 28자)이 안 들어가는 크기였다.
+ * 앱 내 다른 제목류(공지·문의·대회명)는 100자다. 값을 바꾸려면 여기만 고칠 것.
+ */
+export const MAX_POSTING_TITLE_LENGTH = 40;
+
+/**
+ * 날짜당 최대 시간대 개수 — `orderSheetScheduleGroupSchema.timeSlots` 가 강제한다.
+ *
+ * ⚠️ 2026-07-27 이전에는 상수만 있고 강제 지점이 0곳이었다("상한이 있다"는 착각만 주는 상태).
+ * 값을 바꾸면 주문서 검증이 함께 움직이므로, 여기서 조정하고 스키마를 따로 고치지 말 것.
  */
 export const MAX_TIME_SLOTS_PER_DATE = 10;
 
 /**
- * 시간대당 최대 역할 개수
+ * 시간대당 최대 역할 개수 — `orderSheetTimeSlotSchema.roles` / `orderSheetFixedScheduleSchema.roles` 가 강제한다.
  */
 export const MAX_ROLES_PER_SLOT = 10;
 

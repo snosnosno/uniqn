@@ -23,7 +23,7 @@ export interface JobPostingTemplateData {
   description?: string;
   location?: PostingLocation;
   contactPhone?: string;
-  /** 운영처(venue) 컨테이너 self-FK (주간 배치 그리드). 일반 템플릿은 미설정. */
+  /** 운영처(venue) 컨테이너 self-FK (근무표). 일반 템플릿은 미설정. */
   venueId?: string;
   tags?: string[];
   roleCatalog?: PostingRoleCatalogEntry[];
