@@ -11,7 +11,41 @@ export interface CreateSubstitutePostInput {
   authorRole: BoardAuthorRole;
   applicationId: string;
   jobSummary: BoardJobSummary;
-  reason: string;
+}
+
+/**
+ * 대타 구인 글 제목·본문 — 폼 미리보기와 실제 게시물이 **같은 함수**를 쓰도록 분리했다.
+ * 둘이 갈라지면 "이렇게 올라갑니다" 가 거짓 고지가 된다.
+ */
+export function buildSubstitutePostTitle(jobSummary: BoardJobSummary): string {
+  return `대타 구해요 · ${jobSummary.title}`;
+}
+
+/**
+ * ⚠️ 취소 사유는 **절대 싣지 않는다**(W1-10 / CANCEL-12).
+ *
+ * 이 게시판은 실명(작성자 = 프로필 이름)으로 전체 공개(`visibility: 'public'`)된다.
+ * 예전에는 취소 사유 원문이 본문 첫 줄이었다 — 사용자는 사장에게만 말한다고 믿고
+ * 질병·가족 문제 같은 사적 사유를 적는다. 사유는 사장에게만 전달하고, 게시판에는
+ * 대타를 구하는 데 실제로 필요한 정보(일정·지점·보상)만 싣는다.
+ *
+ * 첫 줄 고정 문구는 장식이 아니다 — 프로덕션 호출부는 compensationLabel 을 넘기지 않고
+ * workDate 도 빌 수 있어, 이 줄이 없으면 본문이 통째로 비어 assertSafeText 가 throw 한다.
+ */
+export function buildSubstitutePostBody(jobSummary: BoardJobSummary): string {
+  const dateInfo = jobSummary.workDate || '';
+  const locationInfo = jobSummary.locationName || '';
+  const compensationInfo = jobSummary.compensationLabel || '';
+
+  return [
+    '아래 일정에 함께할 대타를 구합니다.',
+    '',
+    dateInfo ? `📅 ${dateInfo}` : '',
+    locationInfo ? `📍 ${locationInfo}` : '',
+    compensationInfo ? `💰 ${compensationInfo}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
 }
 
 export async function createSubstitutePost(input: CreateSubstitutePostInput): Promise<string> {
@@ -27,20 +61,8 @@ export async function createSubstitutePost(input: CreateSubstitutePostInput): Pr
     });
   }
 
-  const title = `대타 구해요 · ${input.jobSummary.title}`;
-  const dateInfo = input.jobSummary.workDate || '';
-  const locationInfo = input.jobSummary.locationName || '';
-  const compensationInfo = input.jobSummary.compensationLabel || '';
-
-  const body = [
-    input.reason,
-    '',
-    dateInfo ? `📅 ${dateInfo}` : '',
-    locationInfo ? `📍 ${locationInfo}` : '',
-    compensationInfo ? `💰 ${compensationInfo}` : '',
-  ]
-    .filter(Boolean)
-    .join('\n');
+  const title = buildSubstitutePostTitle(input.jobSummary);
+  const body = buildSubstitutePostBody(input.jobSummary);
 
   assertSafeText('title', title, 120);
   assertSafeText('body', body, 5000);

@@ -44,6 +44,11 @@ interface CancellationRequestFormProps {
   onSubmit: (applicationId: string, reason: string, wantsSubstitutePost: boolean) => void;
   /** 닫기 */
   onClose: () => void;
+  /**
+   * 게시판에 실제로 올라갈 제목·본문. `buildSubstitutePostTitle/Body` 가 만든 것을
+   * 그대로 받아 미리보기로 노출한다 — 폼이 따로 조립하면 고지와 실물이 갈라진다.
+   */
+  substitutePreview?: { title: string; body: string };
 }
 
 // ============================================================================
@@ -56,10 +61,12 @@ export function CancellationRequestForm({
   isSubmitting,
   onSubmit,
   onClose,
+  substitutePreview,
 }: CancellationRequestFormProps) {
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [wantsSubstitutePost, setWantsSubstitutePost] = useState(true);
+  // 기본 OFF — 실명으로 전체 공개되는 게시물이라 사용자가 켠 경우에만 올린다(W1-10).
+  const [wantsSubstitutePost, setWantsSubstitutePost] = useState(false);
 
   // 제출 가능 여부 (5자 이상)
   const canSubmit = reason.trim().length >= 5 && !isSubmitting;
@@ -90,7 +97,7 @@ export function CancellationRequestForm({
   const handleClose = useCallback(() => {
     setReason('');
     setError(null);
-    setWantsSubstitutePost(true);
+    setWantsSubstitutePost(false);
     onClose();
   }, [onClose]);
 
@@ -220,10 +227,31 @@ export function CancellationRequestForm({
                 대타 구해요 글 올리기
               </Text>
               <Text className="text-xs text-content-muted dark:text-secondary-300 mt-0.5 font-sans">
-                게시판에 대타 구인 글이 자동으로 올라갑니다
+                게시판에 <Text className="font-sans-semibold">내 이름으로 공개</Text> 게시됩니다.
+                일정·지점 정보만 실리고, 위에 적은 취소 사유는 구인자에게만 전달됩니다.
               </Text>
             </View>
           </Pressable>
+
+          {/* 미리보기 — 켠 경우에만. 실제 게시물과 같은 함수가 만든 텍스트를 그대로 보여준다. */}
+          {wantsSubstitutePost && substitutePreview ? (
+            <View
+              className="mt-3 rounded-lg border border-divider bg-surface-elevated dark:bg-surface-elevated p-4"
+              accessible
+              accessibilityLabel={`게시판 미리보기. 제목 ${substitutePreview.title}. 본문 ${substitutePreview.body}`}
+            >
+              <SectionLabel>게시판에 이렇게 올라갑니다</SectionLabel>
+              <Text className="text-sm font-sans-semibold text-content-primary dark:text-off-white">
+                {substitutePreview.title}
+              </Text>
+              <Text
+                className="text-xs text-content-secondary dark:text-secondary-300 mt-1 font-sans"
+                style={{ lineHeight: 18 }}
+              >
+                {substitutePreview.body}
+              </Text>
+            </View>
+          ) : null}
         </View>
 
         {/* 주의사항 */}

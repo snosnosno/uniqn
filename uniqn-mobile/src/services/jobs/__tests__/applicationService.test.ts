@@ -155,11 +155,13 @@ describe('applicationService', () => {
         )
       ).resolves.toEqual({ substitutePost: 'skipped' });
 
+      // W1-10(CANCEL-12): 필드 생략 = 게시하지 않음. 대타 구인 글은 실명 전체공개라
+      // 사용자가 명시적으로 켠 경우에만 올린다.
       expect(mockRequestCancellationWithTransaction).toHaveBeenCalledWith(
         {
           applicationId: 'app-1',
           reason: 'Need to cancel due to illness',
-          wantsSubstitutePost: true,
+          wantsSubstitutePost: false,
         },
         'user-1'
       );

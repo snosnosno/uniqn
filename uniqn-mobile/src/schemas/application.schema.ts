@@ -115,7 +115,10 @@ export const cancellationRequestSchema = z.object({
     .min(5, { message: '취소 사유는 최소 5자 이상 입력해주세요' })
     .max(500, { message: '취소 사유는 500자를 초과할 수 없습니다' })
     .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }),
-  wantsSubstitutePost: z.boolean().optional().default(true),
+  // 기본 OFF — 대타 구인 글은 실명으로 전체 공개되는 게시물이다. 사용자가 명시적으로
+  // 켰을 때만 올린다(W1-10 / CANCEL-12). UI 기본값을 고쳐도 필드 생략 경로가 남으므로
+  // 최종 결정자인 이 default 가 진실원이다.
+  wantsSubstitutePost: z.boolean().optional().default(false),
 });
 
 export type CancellationRequestData = z.infer<typeof cancellationRequestSchema>;
