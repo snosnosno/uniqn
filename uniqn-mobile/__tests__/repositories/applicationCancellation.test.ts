@@ -66,7 +66,12 @@ describe('executeCancelConfirmation — cancel_application_atomically RPC', () =
       error: null,
     });
 
-    const result = await executeCancelConfirmation(APPLICATION_ID, ACTOR_ID, '개인 사정');
+    const result = await executeCancelConfirmation(
+      APPLICATION_ID,
+      ACTOR_ID,
+      '개인 사정',
+      'staff_initiates'
+    );
 
     expect(mockRpc).toHaveBeenCalledTimes(1);
     expect(mockRpc).toHaveBeenCalledWith('cancel_application_atomically', {
@@ -96,7 +101,7 @@ describe('executeCancelConfirmation — cancel_application_atomically RPC', () =
       error: null,
     });
 
-    await executeCancelConfirmation(APPLICATION_ID, ACTOR_ID);
+    await executeCancelConfirmation(APPLICATION_ID, ACTOR_ID, undefined, 'staff_initiates');
 
     expect(mockRpc).toHaveBeenCalledWith(
       'cancel_application_atomically',
@@ -110,7 +115,12 @@ describe('executeCancelConfirmation — cancel_application_atomically RPC', () =
       error: null,
     });
 
-    const result = await executeCancelConfirmation(APPLICATION_ID, ACTOR_ID);
+    const result = await executeCancelConfirmation(
+      APPLICATION_ID,
+      ACTOR_ID,
+      undefined,
+      'staff_initiates'
+    );
 
     expect(result.applicationId).toBe(APPLICATION_ID);
     expect(result.restoredStatus).toBe('applied');
@@ -124,9 +134,9 @@ describe('executeCancelConfirmation — cancel_application_atomically RPC', () =
       error: { message: 'connection refused', code: 'PGRST000' },
     });
 
-    await expect(executeCancelConfirmation(APPLICATION_ID, ACTOR_ID)).rejects.toThrow(
-      /supabase: connection refused/
-    );
+    await expect(
+      executeCancelConfirmation(APPLICATION_ID, ACTOR_ID, undefined, 'staff_initiates')
+    ).rejects.toThrow(/supabase: connection refused/);
   });
 
   it('success=false 응답: BusinessError 로 throw하며 errorCode 매핑', async () => {
@@ -137,7 +147,7 @@ describe('executeCancelConfirmation — cancel_application_atomically RPC', () =
 
     expect.assertions(3);
     try {
-      await executeCancelConfirmation(APPLICATION_ID, ACTOR_ID);
+      await executeCancelConfirmation(APPLICATION_ID, ACTOR_ID, undefined, 'staff_initiates');
     } catch (err) {
       expect(isAppError(err)).toBe(true);
       if (isAppError(err)) {
@@ -158,7 +168,7 @@ describe('executeCancelConfirmation — cancel_application_atomically RPC', () =
     });
 
     try {
-      await executeCancelConfirmation(APPLICATION_ID, ACTOR_ID);
+      await executeCancelConfirmation(APPLICATION_ID, ACTOR_ID, undefined, 'staff_initiates');
       throw new Error('expected throw');
     } catch (err) {
       expect(isAppError(err)).toBe(true);
@@ -172,7 +182,7 @@ describe('executeCancelConfirmation — cancel_application_atomically RPC', () =
     mockRpc.mockResolvedValueOnce({ data: null, error: null });
 
     try {
-      await executeCancelConfirmation(APPLICATION_ID, ACTOR_ID);
+      await executeCancelConfirmation(APPLICATION_ID, ACTOR_ID, undefined, 'staff_initiates');
       throw new Error('expected throw');
     } catch (err) {
       expect(isAppError(err)).toBe(true);

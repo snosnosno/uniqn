@@ -495,8 +495,8 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
   async cancelConfirmationTransaction(
     applicationId: string,
     ownerId: string,
-    cancelReason?: string,
-    actorType?: CancelActorType
+    cancelReason: string | undefined,
+    actorType: CancelActorType
   ): Promise<CancelConfirmationResult> {
     return executeCancelConfirmation(applicationId, ownerId, cancelReason, actorType);
   }

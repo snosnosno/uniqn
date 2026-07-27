@@ -264,6 +264,7 @@ export default function ApplicantsScreen() {
         onReject={handleModalReject}
         isLoading={isProcessing}
         selectedAssignments={selectedAssignmentsForConfirm}
+        totalAssignmentCount={selectedApplicant?.assignments?.length}
       />
 
       {/* 프로필 상세보기 모달 */}

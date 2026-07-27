@@ -223,11 +223,18 @@ export async function executeReviewCancellation(
  * @param actorType - 취소 주체 유형(기본 staff_initiates). 구인자 해제는 employer_initiates.
  * @see docs/qa/2026-04-14/team-b-atomicity-spec.md §2
  */
+/**
+ * ⚠️ `actorType` 에 기본값을 두지 않는다 — RPC 는 actorType 에 따라 인가 대상을 바꾸므로
+ * (staff_initiates=applicant_id 대조 / employer_initiates=공고 권한 대조), 기본값이 있으면
+ * 구인자 경로가 조용히 staff_initiates 로 나가 **항상 unauthorized** 가 된다. 서비스 계층에서
+ * 같은 결함이 실제로 발생했고(CANCEL-2), 그때 기본값 제거를 컴파일 타임 가드로 삼아 호출부
+ * 3곳을 즉시 검출했다. 같은 함정이 이 계층에 남아 있어 함께 없앤다.
+ */
 export async function executeCancelConfirmation(
   applicationId: string,
   actorId: string,
-  cancelReason?: string,
-  actorType: CancelActorType = 'staff_initiates'
+  cancelReason: string | undefined,
+  actorType: CancelActorType
 ): Promise<CancelConfirmationResult> {
   try {
     logger.info('확정 취소 시작 (RPC)', { applicationId, actorId, actorType });

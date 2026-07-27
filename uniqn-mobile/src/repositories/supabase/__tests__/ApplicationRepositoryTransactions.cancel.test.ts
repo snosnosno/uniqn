@@ -37,7 +37,9 @@ describe('executeCancelConfirmation — H5 staff_already_checked_in 매핑', () 
       error: null,
     });
 
-    await expect(executeCancelConfirmation('app-1', 'staff-1')).rejects.toMatchObject({
+    await expect(
+      executeCancelConfirmation('app-1', 'staff-1', undefined, 'staff_initiates')
+    ).rejects.toMatchObject({
       userMessage: expect.stringContaining('이미 출근'),
     });
   });
@@ -48,13 +50,16 @@ describe('executeCancelConfirmation — actorType 배관 (P0-B)', () => {
     jest.clearAllMocks();
   });
 
-  it('actorType 미지정 시 기본값 staff_initiates 로 RPC를 호출한다', async () => {
+  // 기본값을 의도적으로 제거했다 — actorType 은 RPC 의 인가 대상을 바꾸므로(staff=applicant_id
+  // 대조 / employer=공고 권한 대조) 기본값이 있으면 구인자 경로가 조용히 staff 로 나가 항상
+  // unauthorized 가 된다(CANCEL-2 의 실제 원인). 이제 필수 인자라 컴파일 타임에 막힌다.
+  it('staff_initiates 를 넘기면 p_actor_type 에 그대로 전달한다', async () => {
     mockRpc.mockResolvedValue({
       data: { success: true, deleted_work_log_count: 1, cancelled_at: '2026-07-11T00:00:00.000Z' },
       error: null,
     });
 
-    await executeCancelConfirmation('app-1', 'staff-1', '개인 사정');
+    await executeCancelConfirmation('app-1', 'staff-1', '개인 사정', 'staff_initiates');
 
     expect(mockRpc).toHaveBeenCalledWith(
       'cancel_application_atomically',

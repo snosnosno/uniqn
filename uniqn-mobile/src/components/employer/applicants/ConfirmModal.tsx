@@ -36,6 +36,11 @@ export interface ApplicantConfirmModalProps {
   isLoading?: boolean;
   /** 선택된 일정 (확정 시 표시) */
   selectedAssignments?: Assignment[];
+  /**
+   * 지원자가 원래 신청한 전체 일정 수. 선택분보다 많으면 부분 확정 경고를 띄운다(APPL-1).
+   * 부분 확정은 UI 의 기본 경로(초기 선택 0건)라, 사장이 의도를 모른 채 축소 확정하기 쉽다.
+   */
+  totalAssignmentCount?: number;
 }
 
 // ============================================================================
@@ -87,6 +92,7 @@ export function ApplicantConfirmModal({
   onReject,
   isLoading = false,
   selectedAssignments,
+  totalAssignmentCount,
 }: ApplicantConfirmModalProps) {
   const [inputValue, setInputValue] = useState('');
   const config = ACTION_CONFIG[action];
@@ -218,6 +224,15 @@ export function ApplicantConfirmModal({
             >
               확정할 일정 ({formattedAssignments.length}건)
             </Text>
+            {/* 부분 확정 경고 — 선택하지 않은 일정은 확정에서 빠지고, 확정 해제 전까지
+                지원자에게도 그 자리가 남지 않는다. 기본 경로라 침묵하면 사고가 된다. */}
+            {typeof totalAssignmentCount === 'number' &&
+              totalAssignmentCount > formattedAssignments.length && (
+                <Text className="mb-1.5 text-xs text-warning-700 dark:text-warning-400 font-sans">
+                  선택하지 않은 {totalAssignmentCount - formattedAssignments.length}개 일정은
+                  확정에서 제외돼요. 나중에 확정을 해제하면 다시 선택할 수 있어요.
+                </Text>
+              )}
             <ScrollView className="max-h-36" showsVerticalScrollIndicator={true}>
               {formattedAssignments.map((item) => (
                 <View
