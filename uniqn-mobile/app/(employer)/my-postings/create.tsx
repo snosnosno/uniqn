@@ -213,12 +213,10 @@ export default function CreateJobPostingScreen() {
           });
         }
       } catch (error) {
-        // 기존 handleSubmit과 동일 — unhandled rejection 금지(리뷰 MEDIUM)
+        // unhandled rejection 금지(리뷰 MEDIUM). 토스트는 발행하지 않는다 — useCreateJobPosting
+        // 의 onError 가 이미 띄웠고, 여기서 한 장 더 얹으면 같은 실패가 두 번 뜨는 데다
+        // Supabase 영문 원문(error.message)이 사용자에게 그대로 노출된다(edit.tsx:89 선례).
         logger.error('주문서 공고 등록 실패', toError(error));
-        addToast({
-          type: 'error',
-          message: error instanceof Error ? error.message : '공고 등록에 실패했습니다.',
-        });
       }
     },
     [

@@ -238,6 +238,13 @@ export function useApplicantManagement(
     reviewCancellation: reviewCancellationMutation.mutate,
     reviewCancellationAsync: reviewCancellationMutation.mutateAsync,
     isReviewingCancellation: reviewCancellationMutation.isPending,
+    /**
+     * 지금 검토 중인 지원서 id — 전역 isPending 을 목록 전체에 뿌리면 1건 처리 중에
+     * 나머지 카드까지 잠긴다(CANCEL-15). 대상 카드만 잠그는 데 쓴다.
+     */
+    reviewingCancellationId: reviewCancellationMutation.isPending
+      ? (reviewCancellationMutation.variables?.applicationId ?? null)
+      : null,
 
     filterApplicants,
     countByStatus,

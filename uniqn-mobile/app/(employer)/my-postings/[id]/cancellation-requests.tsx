@@ -21,6 +21,7 @@ import { ScreenSkeleton } from '@/components/ui';
 import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import { useApplicantManagement } from '@/hooks/applicant';
 import { useJobDetail } from '@/hooks/useJobDetail';
+import { useSubmitGate } from '@/hooks/useSubmitGate';
 import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import type { Application } from '@/types';
 import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
@@ -60,8 +61,8 @@ export default function CancellationRequestsScreen() {
     isLoadingCancellationRequests,
     isRefetchingCancellationRequests,
     refreshCancellationRequests,
-    reviewCancellation,
-    isReviewingCancellation,
+    reviewCancellationAsync,
+    reviewingCancellationId,
     error,
   } = useApplicantManagement(jobPostingId || '', { realtime: true });
 
@@ -80,31 +81,35 @@ export default function CancellationRequestsScreen() {
     setApproveModalVisible(true);
   }, []);
 
-  const handleConfirmApprove = useCallback(() => {
-    if (pendingApproveId) {
-      reviewCancellation({
-        applicationId: pendingApproveId,
-        approved: true,
-      });
-    }
-    setApproveModalVisible(false);
-    setPendingApproveId(null);
-  }, [pendingApproveId, reviewCancellation]);
-
   const handleCancelApprove = useCallback(() => {
     setApproveModalVisible(false);
     setPendingApproveId(null);
   }, []);
 
+  // 승인 (CANCEL-14 의 실제 원인) — 결과를 보고 성공에서만 닫는다.
+  // 옛 코드는 mutate 직후 동기적으로 닫아, 확인 다이얼로그의 '처리 중...' 라벨이 렌더될 일이
+  // 없는 죽은 코드였다. 실패하면 다이얼로그만 사라지고 요청은 그대로 남았다.
+  const approveGate = useSubmitGate({
+    action: () =>
+      reviewCancellationAsync({ applicationId: pendingApproveId ?? '', approved: true }),
+    onSuccess: handleCancelApprove,
+    errorMessage: '취소 요청 승인 실패',
+  });
+
+  const handleConfirmApprove = useCallback(() => {
+    if (!pendingApproveId) return;
+    void approveGate.submit();
+  }, [pendingApproveId, approveGate]);
+
   const handleReject = useCallback(
-    (applicationId: string, reason: string) => {
-      reviewCancellation({
+    async (applicationId: string, reason: string) => {
+      await reviewCancellationAsync({
         applicationId,
         approved: false,
         rejectionReason: reason,
       });
     },
-    [reviewCancellation]
+    [reviewCancellationAsync]
   );
 
   const renderItem = useCallback(
@@ -114,11 +119,13 @@ export default function CancellationRequestsScreen() {
           application={item}
           onApprove={handleApprove}
           onReject={handleReject}
-          isProcessing={isReviewingCancellation}
+          // 전역 isPending 을 모든 카드에 뿌리면 1건 처리 중에 목록 전체가 잠긴다(CANCEL-15).
+          // 진행 중인 mutation 의 대상 id 와 대조해 **그 카드만** 잠근다.
+          isProcessing={reviewingCancellationId === item.id}
         />
       </View>
     ),
-    [handleApprove, handleReject, isReviewingCancellation]
+    [handleApprove, handleReject, reviewingCancellationId]
   );
 
   const keyExtractor = useCallback((item: Application) => item.id, []);
@@ -258,9 +265,9 @@ export default function CancellationRequestsScreen() {
                 onPress={handleConfirmApprove}
                 variant="primary"
                 className="flex-1"
-                disabled={isReviewingCancellation}
+                disabled={approveGate.isSubmitting}
               >
-                {isReviewingCancellation ? '처리 중...' : '승인'}
+                {approveGate.isSubmitting ? '처리 중...' : '승인'}
               </Button>
             </View>
           </Pressable>

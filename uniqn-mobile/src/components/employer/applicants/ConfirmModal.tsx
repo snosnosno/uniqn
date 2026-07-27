@@ -57,6 +57,8 @@ const ACTION_CONFIG: Record<
     showTextInput: boolean;
     inputLabel: string;
     inputPlaceholder: string;
+    /** 서버 zod 한도와 동일 — 초과 입력 자체를 막는다. TextInput 하나가 두 액션을 겸하므로 액션별로 갈린다. */
+    inputMaxLength: number;
   }
 > = {
   confirm: {
@@ -67,6 +69,8 @@ const ACTION_CONFIG: Record<
     showTextInput: true,
     inputLabel: '메모 (선택)',
     inputPlaceholder: '추가 메모를 입력하세요',
+    // application.schema.ts:76 notes max(500)
+    inputMaxLength: 500,
   },
   reject: {
     title: '지원자 거절',
@@ -76,6 +80,8 @@ const ACTION_CONFIG: Record<
     showTextInput: true,
     inputLabel: '거절 사유 (선택)',
     inputPlaceholder: '거절 사유를 입력하세요',
+    // application.schema.ts:90 reject reason max(200)
+    inputMaxLength: 200,
   },
 };
 
@@ -146,7 +152,9 @@ export function ApplicantConfirmModal({
     onClose();
   }, [onClose]);
 
-  // 액션 실행
+  // 액션 실행 — 여기서 입력을 지우지 않는다. 옛 코드는 제출 직후 `setInputValue('')` 로
+  // 비웠고 호출부는 동기적으로 모달을 닫아, 실패하면 사용자가 쓴 사유가 통째로 사라졌다.
+  // 초기화는 실제로 닫힐 때(handleClose)만 한다.
   const handleAction = useCallback(() => {
     switch (action) {
       case 'confirm':
@@ -156,7 +164,6 @@ export function ApplicantConfirmModal({
         onReject(inputValue.trim() || undefined);
         break;
     }
-    setInputValue('');
   }, [action, inputValue, onConfirm, onReject]);
 
   if (!applicant) return null;
@@ -314,9 +321,14 @@ export function ApplicantConfirmModal({
               placeholderTextColor={SECONDARY_PALETTE[400]}
               multiline
               numberOfLines={2}
+              maxLength={config.inputMaxLength}
+              editable={!isLoading}
               textAlignVertical="top"
               className="p-2.5 border border-divider rounded-lg bg-surface-card text-content-primary dark:text-off-white min-h-[60px]"
             />
+            <Text className="text-xs text-content-placeholder text-right mt-1 font-sans">
+              {inputValue.length}/{config.inputMaxLength}
+            </Text>
           </View>
         )}
       </View>

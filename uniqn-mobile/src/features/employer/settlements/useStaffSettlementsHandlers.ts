@@ -15,6 +15,7 @@ import {
 } from '@/services';
 import { type SettlementEditData, type SettlementSettingsData } from '@/components/employer';
 import { useSettlementModals } from '@/hooks/useSettlementModals';
+import { useSubmitGate } from '@/hooks/useSubmitGate';
 import { isDuplicateReportError, isCannotReportSelfError, toError } from '@/errors';
 import { logger } from '@/utils/logger';
 import { STATUS } from '@/constants';
@@ -40,7 +41,11 @@ interface UseStaffSettlementsHandlersParams {
   addToast: (toast: Omit<Toast, 'id'>) => void;
   refresh: () => void;
   refreshJobDetail: () => Promise<void> | void;
-  changeRole: (input: UpdateStaffRoleInput) => void;
+  /**
+   * 역할 변경 (STAFF-4) — `mutate` 가 아니라 Async 를 받는다. `mutate` 는 throw 하지 않아
+   * try/catch 의 catch 가 죽은 코드가 되고, 서버 결과와 무관하게 성공 토스트가 먼저 떴다.
+   */
+  changeRoleAsync: (input: UpdateStaffRoleInput) => Promise<void>;
   updateWorkTime: (input: {
     workLogId: string;
     checkInTime: Date | null;
@@ -65,7 +70,7 @@ export function useStaffSettlementsHandlers({
   addToast,
   refresh,
   refreshJobDetail,
-  changeRole,
+  changeRoleAsync,
   updateWorkTime,
   settleWorkLog,
   bulkSettle,
@@ -75,28 +80,23 @@ export function useStaffSettlementsHandlers({
   // 스태프 관리 핸들러
   // ============================================================================
 
-  const handleRoleChangeSave = useCallback(
-    async (data: { staffId: string; workLogId: string; newRole: string; reason: string }) => {
-      try {
-        changeRole({
-          workLogId: data.workLogId,
-          newRole: data.newRole,
-          reason: data.reason,
-        });
-        addToast({
-          type: 'success',
-          message: '역할이 변경되었습니다.',
-        });
-        modals.closeRoleChangeModal();
-      } catch {
-        addToast({
-          type: 'error',
-          message: '역할 변경에 실패했습니다.',
-        });
-      }
-    },
-    [changeRole, addToast, modals]
-  );
+  // 역할 변경 (STAFF-4) — 결과를 보고 성공에서만 닫는다.
+  // 옛 코드는 `mutate` 를 쏘고 **서버 응답 전에** 성공 토스트를 발행했다. mutate 는 throw 하지
+  // 않으므로 감싼 catch 절도 죽은 코드였고, 실패해도 '역할이 변경되었습니다' 가 남았다.
+  // 성공/실패 토스트는 useConfirmedStaff 의 mutation 이 이미 담당한다(화면 중복 발행 제거).
+  const roleChangeGate = useSubmitGate<
+    [{ staffId: string; workLogId: string; newRole: string; reason: string }]
+  >({
+    action: (data) =>
+      changeRoleAsync({
+        workLogId: data.workLogId,
+        newRole: data.newRole,
+        reason: data.reason,
+      }),
+    onSuccess: () => modals.closeRoleChangeModal(),
+    errorMessage: '역할 변경 실패',
+  });
+  const handleRoleChangeSave = roleChangeGate.submit;
 
   const handleReportSubmit = useCallback(
     async (input: CreateReportInput) => {

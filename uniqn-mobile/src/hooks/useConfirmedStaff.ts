@@ -46,6 +46,8 @@ export interface UseConfirmedStaffReturn {
   refresh: () => void;
   isRefreshing: boolean;
   changeRole: (input: UpdateStaffRoleInput) => void;
+  /** 결과를 기다리는 변형 — 모달을 성공에서만 닫으려면 이쪽을 써야 한다(STAFF-4). */
+  changeRoleAsync: (input: UpdateStaffRoleInput) => Promise<void>;
   updateWorkTime: (input: UpdateWorkTimeInput) => void;
   removeStaff: (input: DeleteConfirmedStaffInput) => void;
   setNoShow: (workLogId: string, reason?: string) => void;
@@ -361,6 +363,20 @@ export function useConfirmedStaff(
     [changeRoleMutation, user?.uid]
   );
 
+  /**
+   * 결과를 기다리는 변형 — 모달을 성공에서만 닫으려면 `mutate` 로는 불가능하다
+   * (throw 하지 않으므로 catch 가 죽은 코드가 되고 실패해도 모달이 닫힌다).
+   */
+  const changeRoleAsync = useCallback(
+    async (input: Omit<UpdateStaffRoleInput, 'changedBy'> & { changedBy?: string }) => {
+      await changeRoleMutation.mutateAsync({
+        ...input,
+        changedBy: input.changedBy ?? user?.uid ?? 'system',
+      });
+    },
+    [changeRoleMutation, user?.uid]
+  );
+
   const updateWorkTime = useCallback(
     (input: Omit<UpdateWorkTimeInput, 'modifiedBy'> & { modifiedBy?: string }) => {
       updateWorkTimeMutation.mutate({
@@ -417,6 +433,7 @@ export function useConfirmedStaff(
     refresh,
     isRefreshing: realtime ? isManualRefreshing : isRefetching,
     changeRole,
+    changeRoleAsync,
     updateWorkTime,
     removeStaff,
     setNoShow,

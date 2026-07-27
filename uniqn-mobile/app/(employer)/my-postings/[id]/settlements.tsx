@@ -62,7 +62,7 @@ export default function StaffSettlementsScreen() {
   const {
     stats: staffStats,
     grouped: staffGrouped,
-    changeRole,
+    changeRoleAsync,
   } = useConfirmedStaff(jobPostingId || '', { realtime: true });
 
   // 오늘 날짜 그룹 (당일 운영 요약 스트립용)
@@ -128,7 +128,7 @@ export default function StaffSettlementsScreen() {
     addToast,
     refresh,
     refreshJobDetail,
-    changeRole,
+    changeRoleAsync,
     updateWorkTime,
     settleWorkLog,
     bulkSettle,

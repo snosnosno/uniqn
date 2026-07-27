@@ -17,6 +17,7 @@ import { Loading, ErrorState } from '@/components';
 import { StackHeader } from '@/components/headers';
 import { useApplicantManagement } from '@/hooks/applicant';
 import { useShare } from '@/hooks/useShare';
+import { useSubmitGate } from '@/hooks/useSubmitGate';
 import { confirmAction } from '@/utils/confirmAction';
 import { buildPostingFacts, projectPostingSurface } from '@/domains/job-posting';
 import type { ApplicantWithDetails } from '@/services';
@@ -59,12 +60,10 @@ export default function ApplicantsScreen() {
     isRefreshing,
     error,
     refresh,
-    confirmWithHistory,
-    rejectApplication,
+    confirmWithHistoryAsync,
+    rejectApplicationAsync,
     cancelConfirmationAsync,
     bulkConfirm,
-    isConfirmingWithHistory,
-    isRejecting,
     isBulkConfirming,
     markAsRead,
   } = useApplicantManagement(jobPostingId || '', { realtime: true });
@@ -134,44 +133,50 @@ export default function ApplicantsScreen() {
     [cancelConfirmationAsync]
   );
 
-  // 모달에서 확정 처리
-  const handleModalConfirm = useCallback(
-    (notes?: string) => {
-      if (!selectedApplicant) return;
-
-      confirmWithHistory({
-        applicationId: selectedApplicant.id,
-        selectedAssignments: selectedAssignmentsForConfirm,
-        notes,
-      });
-      setIsModalVisible(false);
-      setSelectedApplicant(null);
-      setSelectedAssignmentsForConfirm(undefined);
-    },
-    [selectedApplicant, selectedAssignmentsForConfirm, confirmWithHistory]
-  );
-
-  // 모달에서 거절 처리
-  const handleModalReject = useCallback(
-    (reason?: string) => {
-      if (!selectedApplicant) return;
-
-      rejectApplication({
-        applicationId: selectedApplicant.id,
-        reason,
-      });
-      setIsModalVisible(false);
-      setSelectedApplicant(null);
-    },
-    [selectedApplicant, rejectApplication]
-  );
-
   // 모달 닫기
   const handleCloseModal = useCallback(() => {
     setIsModalVisible(false);
     setSelectedApplicant(null);
     setSelectedAssignmentsForConfirm(undefined);
   }, []);
+
+  // 확정/거절 (APPL-7) — 결과를 보고 성공에서만 닫는다.
+  // 옛 코드는 mutate 를 쏘고 **동기적으로** 모달을 닫아, 실패하면 사용자가 입력한 메모·사유가
+  // 통째로 사라지고 에러 토스트만 남았다. 그래서 모달의 isLoading prop 도 렌더될 일이 없는
+  // 죽은 코드였다. 성공/실패 토스트는 mutation 훅이 담당한다.
+  const confirmGate = useSubmitGate<[string | undefined]>({
+    action: (notes) =>
+      confirmWithHistoryAsync({
+        applicationId: selectedApplicant?.id ?? '',
+        selectedAssignments: selectedAssignmentsForConfirm,
+        notes,
+      }),
+    onSuccess: handleCloseModal,
+    errorMessage: '지원자 확정 실패',
+  });
+
+  const rejectGate = useSubmitGate<[string | undefined]>({
+    action: (reason) =>
+      rejectApplicationAsync({ applicationId: selectedApplicant?.id ?? '', reason }),
+    onSuccess: handleCloseModal,
+    errorMessage: '지원자 거절 실패',
+  });
+
+  const handleModalConfirm = useCallback(
+    (notes?: string) => {
+      if (!selectedApplicant) return;
+      void confirmGate.submit(notes);
+    },
+    [selectedApplicant, confirmGate]
+  );
+
+  const handleModalReject = useCallback(
+    (reason?: string) => {
+      if (!selectedApplicant) return;
+      void rejectGate.submit(reason);
+    },
+    [selectedApplicant, rejectGate]
+  );
 
   // 로딩 상태
   if (isLoading) {
@@ -212,7 +217,7 @@ export default function ApplicantsScreen() {
     );
   }
 
-  const isProcessing = isConfirmingWithHistory || isRejecting;
+  const isProcessing = confirmGate.isSubmitting || rejectGate.isSubmitting;
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
