@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/Button';
 import { TimeWheelPicker, type TimeValue } from '@/components/ui/TimeWheelPicker';
 import { TimeTriggerField, timeStringToValue, timeValueToString } from './SlotTimeField';
 import { OvernightPreviewBanner } from './OvernightPreviewBanner';
+import { resolveSlotTimePayload, UNSET_END_TIME_LABEL } from './editSlotPayload';
 import { STAFF_ROLES } from '@/constants';
 import { useToastStore } from '@/stores/toastStore';
 import { isAppError } from '@/errors';
@@ -72,6 +73,11 @@ export function EditSlotSheet({
 
   const [startTime, setStartTime] = useState(DEFAULT_START);
   const [endTime, setEndTime] = useState(DEFAULT_END);
+  /**
+   * 사용자가 종료 시각을 실제로 정했는가. `endTime` 은 피커 조작을 위해 항상 유효한 값을
+   * 들고 있어야 해서 기본값이 들어가는데, 그걸 저장 신호로 오해하면 없던 8시간이 확정된다.
+   */
+  const [endTimeSet, setEndTimeSet] = useState(false);
   const [role, setRole] = useState<StaffRole>('dealer');
   const [color, setColor] = useState<SlotColorToken | null>(null);
   const [memo, setMemo] = useState('');
@@ -88,6 +94,8 @@ export function EditSlotSheet({
     const parts = parseTimeSlotParts(slot.timeSlot);
     setStartTime(parts.start || DEFAULT_START);
     setEndTime(parts.end || DEFAULT_END);
+    // 원본에 종료가 없으면(단일 시각·미정 슬롯) 기본값은 피커용 초기값일 뿐 저장 대상이 아니다.
+    setEndTimeSet(Boolean(parts.end));
     setRole((slot.role as StaffRole) ?? 'dealer');
     setColor((slot.color as SlotColorToken | null) ?? null);
     setMemo(slot.notes ?? '');
@@ -108,7 +116,8 @@ export function EditSlotSheet({
       {
         workLogId: slot.workLogId,
         staffId: slot.staffId,
-        timeSlot: composeTimeSlot(startTime, endTime),
+        // 종료 미설정이면 저장 시에도 시간을 안 보내므로 원본 표기로 충돌을 판정한다.
+        timeSlot: endTimeSet ? composeTimeSlot(startTime, endTime) : slot.timeSlot,
       },
       siblingSlots.map((s) => ({
         workLogId: s.workLogId,
@@ -140,6 +149,7 @@ export function EditSlotSheet({
         setStartTime(next);
       } else if (activePicker === 'end') {
         setEndTime(next);
+        setEndTimeSet(true); // 사용자가 직접 고른 순간부터 저장 대상이 된다
       }
       setActivePicker(null);
     },
@@ -148,13 +158,14 @@ export function EditSlotSheet({
 
   const handleSave = () => {
     if (!slot) return;
-    if (timePreview.isEqual) return; // 시작==종료는 저장 불가(익일 오해석 방지)
+    if (endTimeSet && timePreview.isEqual) return; // 시작==종료는 저장 불가(익일 오해석 방지)
     updateSlot.mutate(
       {
         workLogId: slot.workLogId,
         input: {
-          startTime,
-          endTime,
+          // 종료 미설정이면 시간 축을 통째로 생략한다 — 기본값 주입으로 없던 근무가
+          // 확정되던 경로 차단(GRID-1). 레포는 startTime+endTime 동시 제공 시에만 갱신한다.
+          ...resolveSlotTimePayload({ startTime, endTime, endTimeSet }),
           staffRole: role,
           color: color ?? undefined,
           memo,
@@ -232,7 +243,7 @@ export function EditSlotSheet({
           onPress={handleSave}
           fullWidth
           loading={updateSlot.isPending}
-          disabled={!slot || isBusy || timePreview.isEqual}
+          disabled={!slot || isBusy || (endTimeSet && timePreview.isEqual)}
         >
           저장
         </Button>
@@ -314,12 +325,18 @@ export function EditSlotSheet({
             />
           </View>
           <View className="flex-1">
-            <TimeTriggerField label="종료" value={endTime} onPress={() => setActivePicker('end')} />
+            <TimeTriggerField
+              label="종료"
+              value={endTimeSet ? endTime : UNSET_END_TIME_LABEL}
+              onPress={() => setActivePicker('end')}
+            />
           </View>
         </View>
 
-        {/* 익일 프리뷰 / 시작==종료 오류 안내(저장 차단은 아래 timePreview.isEqual 가드) */}
-        <OvernightPreviewBanner startTime={startTime} endTime={endTime} />
+        {/* 익일 프리뷰 / 시작==종료 오류 안내(저장 차단은 아래 timePreview.isEqual 가드).
+            종료 미설정이면 근무 길이를 알 수 없으므로 프리뷰를 띄우지 않는다 — 기본값 기준
+            "8시간 근무" 라고 알려주면 사용자가 그걸 사실로 믿는다. */}
+        {endTimeSet && <OvernightPreviewBanner startTime={startTime} endTime={endTime} />}
 
         {/* 중복충돌 경고(차단 아님) */}
         {conflicts.length > 0 && (
