@@ -16,12 +16,25 @@ import type { PostingSchedule, UpdateJobPostingInput } from '@/types';
 
 const mockUpdate = jest.fn();
 
+/** `.eq(id).eq(updated_at)?.select('id')` 체인 — 낙관적 잠금 + 영향 행 수 검증(W1-9) 이후 형상. */
+interface MockUpdateBuilder {
+  eq: () => MockUpdateBuilder;
+  select: () => Promise<{ data: unknown[]; error: null }>;
+}
+function mockUpdateBuilder(): MockUpdateBuilder {
+  const builder: MockUpdateBuilder = {
+    eq: () => builder,
+    select: () => Promise.resolve({ data: [{ id: 'updated' }], error: null }),
+  };
+  return builder;
+}
+
 jest.mock('@/lib/supabase', () => ({
   supabase: {
     from: () => ({
       update: (...a: unknown[]) => {
         mockUpdate(...a);
-        return { eq: () => Promise.resolve({ error: null }) };
+        return mockUpdateBuilder();
       },
       select: jest.fn().mockReturnThis(),
       insert: jest.fn().mockReturnThis(),
@@ -133,12 +146,12 @@ describe('확정 스태프가 있어도 허용되는 편집', () => {
     ],
     ['인원 감축(2 → 1, 역할은 유지)', { schedule: scheduleWith([{ role: 'dealer', count: 1 }]) }],
   ])('%s 은 저장된다', async (_label, patch) => {
-    await repo.updateWithTransaction(POSTING, patch as UpdateJobPostingInput, OWNER);
+    await repo.updateWithTransaction(POSTING, patch as UpdateJobPostingInput, OWNER, null);
     expect(mockUpdate).toHaveBeenCalledTimes(1);
   });
 
   it('스케줄을 건드리지 않는 수정은 work_logs 조회조차 하지 않는다', async () => {
-    await repo.updateWithTransaction(POSTING, { title: '제목만 변경' }, OWNER);
+    await repo.updateWithTransaction(POSTING, { title: '제목만 변경' }, OWNER, null);
     expect(mockLoadRoleKeys).not.toHaveBeenCalled();
     expect(mockUpdate).toHaveBeenCalledTimes(1);
   });
@@ -148,7 +161,8 @@ describe('확정 스태프가 있어도 허용되는 편집', () => {
     await repo.updateWithTransaction(
       POSTING,
       { schedule: scheduleWith([{ role: 'serving', count: 3 }]) } as UpdateJobPostingInput,
-      OWNER
+      OWNER,
+      null
     );
     expect(mockUpdate).toHaveBeenCalledTimes(1);
   });
@@ -162,7 +176,8 @@ describe('확정 스태프가 배정된 역할의 소멸만 차단', () => {
       repo.updateWithTransaction(
         POSTING,
         { schedule: scheduleWith([{ role: 'floor', count: 2 }]) } as UpdateJobPostingInput,
-        OWNER
+        OWNER,
+        null
       )
     ).rejects.toMatchObject({ code: ERROR_CODES.BUSINESS_INVALID_STATE });
     expect(mockUpdate).not.toHaveBeenCalled();
@@ -177,7 +192,8 @@ describe('확정 스태프가 배정된 역할의 소멸만 차단', () => {
         {
           schedule: scheduleWith([{ role: 'other', count: 1, customRole: '주차요원' }]),
         } as UpdateJobPostingInput,
-        OWNER
+        OWNER,
+        null
       )
     ).rejects.toMatchObject({ code: ERROR_CODES.BUSINESS_INVALID_STATE });
 
@@ -187,7 +203,8 @@ describe('확정 스태프가 배정된 역할의 소멸만 차단', () => {
       {
         schedule: scheduleWith([{ role: 'other', count: 1, customRole: '바텐더' }]),
       } as UpdateJobPostingInput,
-      OWNER
+      OWNER,
+      null
     );
     expect(mockUpdate).toHaveBeenCalledTimes(1);
   });
@@ -197,7 +214,8 @@ describe('확정 스태프가 배정된 역할의 소멸만 차단', () => {
       repo.updateWithTransaction(
         POSTING,
         { schedule: scheduleWith([{ role: 'floor', count: 2 }]) } as UpdateJobPostingInput,
-        OWNER
+        OWNER,
+        null
       )
     ).rejects.toMatchObject({ userMessage: expect.stringContaining('딜러') });
   });

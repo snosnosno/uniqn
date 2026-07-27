@@ -14,6 +14,7 @@ import {
   toSnakeCase,
   paginatedQuery,
   createRealtimeSubscription,
+  assertUpdated,
 } from '@/utils/supabase';
 import {
   BROWSABLE_POSTING_STATUSES,
@@ -114,6 +115,35 @@ async function assertConfirmedRolesSurvive(
   throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
     userMessage: `확정된 스태프가 배정된 역할(${labels})은 공고에서 뺄 수 없습니다. 해당 확정을 먼저 취소해 주세요.`,
   });
+}
+
+/**
+ * 공고 수정이 실제로 한 행에 닿았는지 검증 — 0행 false success 차단.
+ *
+ * @description PostgREST 는 조건 불일치·RLS 차단으로 **0행이 갱신돼도 error 를 주지 않는다**.
+ *   이 저장소는 그 실패 모드를 JobPostingRepositoryHelpers.ts 주석에 이미 문서화해 두고
+ *   admin 분기만 막아 뒀다 — 나머지 경로(낙관적 잠금 충돌, RESTRICTIVE `jp_container_no_direct_update`
+ *   등)는 그대로 열려 있어 '공고가 수정되었습니다' 토스트만 뜨고 아무것도 저장되지 않았다.
+ *
+ *   0행의 원인이 두 종류라 안내를 나눈다:
+ *   · 잠금 걸린 저장 → 다른 사람이 먼저 저장했다. 사용자가 다시 누르면 덮어쓰기로 진행된다
+ *     (편집 화면이 충돌을 받으면 baseline 을 놓는다).
+ *   · 잠금 없는 저장 → 상태 전이·RLS. 새로고침 후 재시도가 유일한 경로다.
+ */
+function assertPostingUpdateApplied(
+  updatedRows: unknown[] | null,
+  jobPostingId: string,
+  expectedUpdatedAt: string | null
+): void {
+  if (updatedRows && updatedRows.length > 0) return;
+
+  if (expectedUpdatedAt !== null) {
+    throw new BusinessError(ERROR_CODES.BUSINESS_EDIT_CONFLICT, {
+      message: `공고 수정: 낙관적 잠금 충돌 (expectedUpdatedAt=${expectedUpdatedAt})`,
+      metadata: { jobPostingId, expectedUpdatedAt },
+    });
+  }
+  assertUpdated(updatedRows, { operation: '공고 수정', table: TABLE, id: jobPostingId });
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -670,10 +700,11 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
   async updateWithTransaction(
     jobPostingId: string,
     input: UpdateJobPostingInput,
-    ownerId: string
+    ownerId: string,
+    expectedUpdatedAt: string | null
   ): Promise<JobPosting> {
     try {
-      logger.info('공고 수정', { jobPostingId, ownerId });
+      logger.info('공고 수정', { jobPostingId, ownerId, locked: expectedUpdatedAt !== null });
       const cur = await loadAndVerifyMutateAccess(jobPostingId, ownerId, '공고 수정');
 
       // 병합 전에 판정한다 — `mergeJobPostingInput` 의 schedule 규칙이 `patch.schedule ?? base.schedule`
@@ -699,8 +730,19 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       const { id: _id, ...rest } = removeUndefined(
         serialized as unknown as Record<string, unknown>
       );
-      const { error } = await supabase.from(TABLE).update(toSnakeCase(rest)).eq('id', jobPostingId);
+      // 낙관적 잠금 — 편집을 시작한 그 버전일 때만 쓴다. 전송 payload 는 patch 가 아니라 문서
+      // 전체(카운터·조회수·status 포함)라, 조건 없이 쓰면 읽기~쓰기 사이 다른 사람의 저장과
+      // 트리거 갱신분이 통째로 되감긴다.
+      // ⚠️ 잠금 키는 payload 가 아니라 **필터**로만 성립한다 — BEFORE 트리거
+      //    job_postings_updated_at 이 NEW.updated_at 을 무조건 now() 로 덮기 때문.
+      const baseQuery = supabase.from(TABLE).update(toSnakeCase(rest)).eq('id', jobPostingId);
+      const lockedQuery =
+        expectedUpdatedAt !== null ? baseQuery.eq('updated_at', expectedUpdatedAt) : baseQuery;
+      // .select() 없이는 PostgREST 가 갱신 건수를 돌려주지 않는다 — RLS·조건 불일치로 0행이어도
+      // error 는 null 이라 지금까지 false success 로 끝났다.
+      const { data: updatedRows, error } = await lockedQuery.select('id');
       if (error) handleSupabaseError(error, { operation: '공고 수정', table: TABLE });
+      assertPostingUpdateApplied(updatedRows, jobPostingId, expectedUpdatedAt);
       logger.info('공고 수정 완료', { jobPostingId });
       return validated;
     } catch (error) {

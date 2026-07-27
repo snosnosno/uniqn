@@ -130,7 +130,8 @@ describe('JobPosting BusinessError userMessage 한글화 (P1#12)', () => {
             ],
           },
         } as never,
-        OWNER
+        OWNER,
+        null
       )
     ).rejects.toMatchObject({
       code: ERROR_CODES.BUSINESS_INVALID_STATE,

@@ -277,11 +277,15 @@ export interface IJobPostingRepository {
    * @param jobPostingId - 공고 ID
    * @param input - 수정 입력
    * @param ownerId - 수정 요청자 ID (권한 검증용)
+   * @param expectedUpdatedAt - 편집을 시작한 시점의 `updatedAt`. 이 값일 때만 저장한다(낙관적 잠금).
+   *   `null` 은 **명시적 잠금 해제** — 사용자가 충돌 안내를 보고 덮어쓰기를 택했거나, 애초에
+   *   baseline 을 알 수 없는 경로다. 기본값을 두지 않는 이유는 잠금이 조용히 꺼지는 것을 막기 위함.
    */
   updateWithTransaction(
     jobPostingId: string,
     input: UpdateJobPostingInput,
-    ownerId: string
+    ownerId: string,
+    expectedUpdatedAt: string | null
   ): Promise<JobPosting>;
 
   /**

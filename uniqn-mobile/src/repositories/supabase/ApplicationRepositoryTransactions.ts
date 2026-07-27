@@ -8,7 +8,7 @@
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import { BusinessError, MaxCapacityReachedError, ValidationError, ERROR_CODES } from '@/errors';
-import { handleSupabaseError } from '@/utils/supabase';
+import { handleSupabaseError, assertUpdated } from '@/utils/supabase';
 import {
   createHistoryEntry,
   findActiveConfirmation,
@@ -397,7 +397,10 @@ async function executeRejectCancellation(
     rejectionReason: input.rejectionReason?.trim() || '거절',
   };
 
-  const { error } = await supabase
+  // CAS 가드는 있으나 PostgREST 는 0행 갱신에도 error 를 주지 않는다 — 스태프가 그사이 스스로
+  // 취소를 철회했거나 다른 관리자가 먼저 처리했으면 아무것도 안 바뀐 채 함수가 void 로 끝나고,
+  // 호출부(useCancellationManagement)가 '거절 처리되었습니다' 토스트를 띄운다.
+  const { data: updatedRows, error } = await supabase
     .from(TABLES.APPLICATIONS)
     .update({
       status: STATUS.APPLICATION.CONFIRMED,
@@ -405,8 +408,14 @@ async function executeRejectCancellation(
       updated_at: now,
     })
     .eq('id', input.applicationId)
-    .eq('status', STATUS.APPLICATION.CANCELLATION_PENDING);
+    .eq('status', STATUS.APPLICATION.CANCELLATION_PENDING)
+    .select('id');
 
   if (error)
     handleSupabaseError(error, { operation: '취소 요청 거절', table: TABLES.APPLICATIONS });
+  assertUpdated(updatedRows, {
+    operation: '취소 요청 거절',
+    table: TABLES.APPLICATIONS,
+    id: input.applicationId,
+  });
 }

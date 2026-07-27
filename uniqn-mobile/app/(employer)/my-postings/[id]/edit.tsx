@@ -10,11 +10,12 @@ import { TemplateModal } from '@/components/employer/job-form/modals/TemplateMod
 import { useAuth } from '@/hooks/useAuth';
 import { useJobDetail } from '@/hooks/useJobDetail';
 import { useUpdateJobPosting } from '@/hooks/useJobManagement';
+import { useOptimisticLockBaseline } from '@/hooks/useOptimisticLockBaseline';
 import { useTemplateManager } from '@/hooks/useTemplateManager';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
-import { toError } from '@/errors';
+import { toError, isAppError, ERROR_CODES } from '@/errors';
 import { buildJobPostingDraft } from '@/utils/job-posting/submission';
 import { isEmployerManageablePosting } from '@/utils/jobPostingVisibility';
 import { draftToValues, formValuesToDraft, valuesToUpdateInput } from '@/utils/order-sheet/mappers';
@@ -76,12 +77,19 @@ export default function EditJobPostingScreen() {
     }
   }, [existingJob, id]);
 
+  // 낙관적 잠금 baseline — 진입 시점의 updatedAt 을 동결한다. 상세 레이아웃의 realtime 구독이
+  // 같은 queryKey 캐시를 갈아치우므로, 살아있는 값을 그대로 쓰면 협업자가 저장하는 순간
+  // baseline 도 따라 올라가 잠금이 스스로 풀린다.
+  const { expectedUpdatedAt, releaseForOverwrite } = useOptimisticLockBaseline(
+    existingJob?.updatedAt
+  );
+
   const handleSubmit = useCallback(
     async (values: OrderSheetValues) => {
       if (!id) return;
       try {
         const input = valuesToUpdateInput(values);
-        await updateJobPosting.mutateAsync({ jobPostingId: id, input });
+        await updateJobPosting.mutateAsync({ jobPostingId: id, input, expectedUpdatedAt });
         setIsDirty(false);
         // 저장 성공 — setIsDirty(false) 리렌더 전 같은 틱의 back()이 stale 가드에 걸리지 않게
         // 동기 표식(S3 이월 ④). markClean 없이는 저장 후에도 "변경사항 저장 안 됨"이 뜰 수 있다.
@@ -89,10 +97,16 @@ export default function EditJobPostingScreen() {
         // 성공·실패 토스트는 useUpdateJobPosting(onSuccess/onError)가 담당 — 화면 중복 발행 제거.
         router.back();
       } catch (error) {
+        // 동시 편집 충돌은 **한 번만** 막는다. 안내 토스트("다시 저장하면 내 내용으로 덮어씁니다")를
+        // 본 사용자가 다시 저장하면 통과시킨다 — baseline 을 계속 들고 있으면 그 안내가
+        // 영원히 실패하는 거짓말이 되고, 사용자는 입력을 잃지 않고서는 화면을 벗어날 수 없다.
+        if (isAppError(error) && error.code === ERROR_CODES.BUSINESS_EDIT_CONFLICT) {
+          releaseForOverwrite();
+        }
         logger.error('주문서 공고 수정 실패', toError(error), { jobPostingId: id });
       }
     },
-    [id, updateJobPosting, router, markClean]
+    [id, updateJobPosting, router, markClean, expectedUpdatedAt, releaseForOverwrite]
   );
 
   // 템플릿 저장 — create.tsx와 동일 굳힘 패턴.

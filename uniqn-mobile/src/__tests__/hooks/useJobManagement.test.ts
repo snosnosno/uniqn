@@ -376,11 +376,12 @@ describe('useJobManagement hooks', () => {
       await result.current.mutateAsync({
         jobPostingId: 'job-1',
         input,
+        expectedUpdatedAt: null,
       });
     });
 
     await waitFor(() => {
-      expect(mockUpdateJobPosting).toHaveBeenCalledWith('job-1', input, 'employer-1');
+      expect(mockUpdateJobPosting).toHaveBeenCalledWith('job-1', input, 'employer-1', null);
     });
     expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ['jobManagement'] });
     expect(mockInvalidateQueries).toHaveBeenCalledWith({

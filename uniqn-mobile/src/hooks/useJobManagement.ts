@@ -36,6 +36,11 @@ interface CreateJobParams {
 interface UpdateJobParams {
   jobPostingId: string;
   input: UpdateJobPostingInput;
+  /**
+   * 편집을 시작한 시점의 `updatedAt`(낙관적 잠금 baseline).
+   * `null` 이면 잠금 없이 덮어쓴다 — 충돌 안내를 본 사용자가 재저장한 경우.
+   */
+  expectedUpdatedAt: string | null;
 }
 
 interface BulkStatusParams {
@@ -144,7 +149,12 @@ export function useUpdateJobPosting() {
     mutationFn: (params: UpdateJobParams) => {
       requireAuth(user?.uid, 'useJobManagement');
       requireOnlineForMutation('useJobManagement.updateJobPosting');
-      return updateJobPosting(params.jobPostingId, params.input, user.uid);
+      return updateJobPosting(
+        params.jobPostingId,
+        params.input,
+        user.uid,
+        params.expectedUpdatedAt
+      );
     },
     onSuccess: (_, params) => {
       logger.info('공고 수정 완료', { jobPostingId: params.jobPostingId });

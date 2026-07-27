@@ -177,12 +177,18 @@ export async function createJobPosting(
 export async function updateJobPosting(
   jobPostingId: string,
   input: UpdateJobPostingInput,
-  ownerId: string
+  ownerId: string,
+  expectedUpdatedAt: string | null
 ): Promise<JobPosting> {
   try {
     logger.info('공고 수정 시작', { jobPostingId, ownerId });
 
-    const result = await jobPostingRepository.updateWithTransaction(jobPostingId, input, ownerId);
+    const result = await jobPostingRepository.updateWithTransaction(
+      jobPostingId,
+      input,
+      ownerId,
+      expectedUpdatedAt
+    );
     await enqueueScheduleBoardSync(jobPostingId, 'update', { jobPostingId, ownerId });
 
     logger.info('공고 수정 완료', { jobPostingId });

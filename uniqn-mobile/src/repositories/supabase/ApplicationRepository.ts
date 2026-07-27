@@ -21,7 +21,7 @@ import {
   ValidationError,
   ERROR_CODES,
 } from '@/errors';
-import { handleSupabaseError } from '@/utils/supabase';
+import { handleSupabaseError, assertUpdated } from '@/utils/supabase';
 import { applicationValidator } from '@/domains/application';
 import { selectPostingWorkflow } from '@/domains/job-posting';
 import { normalizeAssignmentRole } from '@/types/assignment';
@@ -387,7 +387,11 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
         status: STATUS.CANCELLATION_REQUEST.PENDING,
       };
 
-      const { error } = await supabase
+      // 위 확정 상태 검사와 이 UPDATE 사이에 다른 탭·사장 화면이 상태를 바꿀 수 있다. CAS
+      // 가드(`.eq('status', CONFIRMED)`)가 그 경합을 막지만, PostgREST 는 0행 갱신에도
+      // error 를 주지 않으므로 `.select()` 로 실제 반영 여부를 봐야 한다 — 안 보면
+      // 아무것도 안 바뀐 채 '취소 요청 성공' 토스트만 뜬다.
+      const { data: updatedRows, error } = await supabase
         .from(TABLES.APPLICATIONS)
         .update({
           status: STATUS.APPLICATION.CANCELLATION_PENDING,
@@ -395,10 +399,16 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
           updated_at: new Date().toISOString(),
         })
         .eq('id', input.applicationId)
-        .eq('status', STATUS.APPLICATION.CONFIRMED);
+        .eq('status', STATUS.APPLICATION.CONFIRMED)
+        .select('id');
 
       if (error)
         handleSupabaseError(error, { operation: '취소 요청 제출', table: TABLES.APPLICATIONS });
+      assertUpdated(updatedRows, {
+        operation: '취소 요청 제출',
+        table: TABLES.APPLICATIONS,
+        id: input.applicationId,
+      });
 
       logger.info('취소 요청 제출 성공', { applicationId: input.applicationId });
     } catch (error) {

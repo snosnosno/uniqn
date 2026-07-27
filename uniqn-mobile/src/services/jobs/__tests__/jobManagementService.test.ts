@@ -166,6 +166,9 @@ function createPosting(overrides: Partial<JobPosting> = {}): JobPosting {
   };
 }
 
+/** 편집 진입 시점 baseline — 서비스는 이 값을 저장소로 그대로 통과시키기만 한다. */
+const BASELINE = '2026-07-01T00:00:00.000Z';
+
 describe('jobManagementService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -390,9 +393,14 @@ describe('jobManagementService', () => {
       });
       mockUpdateWithTransaction.mockResolvedValue(updated);
 
-      const result = await updateJobPosting('job-1', update, 'employer-1');
+      const result = await updateJobPosting('job-1', update, 'employer-1', BASELINE);
 
-      expect(mockUpdateWithTransaction).toHaveBeenCalledWith('job-1', update, 'employer-1');
+      expect(mockUpdateWithTransaction).toHaveBeenCalledWith(
+        'job-1',
+        update,
+        'employer-1',
+        BASELINE
+      );
       expect(result.compensation.defaultSalary?.amount).toBe(20000);
     });
 
@@ -426,9 +434,14 @@ describe('jobManagementService', () => {
       });
       mockUpdateWithTransaction.mockResolvedValue(updated);
 
-      const result = await updateJobPosting('job-1', update, 'employer-1');
+      const result = await updateJobPosting('job-1', update, 'employer-1', BASELINE);
 
-      expect(mockUpdateWithTransaction).toHaveBeenCalledWith('job-1', update, 'employer-1');
+      expect(mockUpdateWithTransaction).toHaveBeenCalledWith(
+        'job-1',
+        update,
+        'employer-1',
+        BASELINE
+      );
       expect(result.schedule.kind).toBe('fixed');
     });
   });
