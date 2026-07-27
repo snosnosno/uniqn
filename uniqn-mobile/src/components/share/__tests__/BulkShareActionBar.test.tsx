@@ -55,4 +55,35 @@ describe('BulkShareActionBar', () => {
     fireEvent.press(getByLabelText('선택 모드 종료'));
     expect(baseProps.onCancel).toHaveBeenCalledTimes(1);
   });
+
+  // 전체선택은 원래 있었지만 "0/10 선택" 라벨 아래 붙은 12px 회색 텍스트라
+  // 누를 수 있는 요소로 안 읽혔다(사용자가 "기능이 없다"고 보고). 버튼으로 승격 + 해제 토글.
+  describe('전체 선택 토글', () => {
+    it('전부 선택된 상태에서는 "전체 해제" 로 바뀐다', () => {
+      const { getByText, queryByText } = render(
+        <BulkShareActionBar {...baseProps} selectedCount={5} isAllSelected />
+      );
+
+      expect(getByText('전체 해제')).toBeTruthy();
+      expect(queryByText('전체 선택')).toBeNull();
+    });
+
+    it('전체 해제도 같은 콜백으로 전달된다 (토글은 호출자가 판단)', () => {
+      const { getByLabelText } = render(
+        <BulkShareActionBar {...baseProps} selectedCount={5} isAllSelected />
+      );
+
+      fireEvent.press(getByLabelText('선택한 공고 전체 해제'));
+      expect(baseProps.onSelectAll).toHaveBeenCalledTimes(1);
+    });
+
+    it('공유 진행 중에는 눌리지 않는다', () => {
+      const { getByLabelText } = render(
+        <BulkShareActionBar {...baseProps} selectedCount={2} isSharing />
+      );
+
+      fireEvent.press(getByLabelText('공유 가능한 공고 전체 선택'));
+      expect(baseProps.onSelectAll).not.toHaveBeenCalled();
+    });
+  });
 });

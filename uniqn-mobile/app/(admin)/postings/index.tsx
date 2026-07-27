@@ -54,7 +54,23 @@ export default function AdminPostingsScreen() {
   const filledCountIds = useMemo(() => jobs.map((job) => job.id), [jobs]);
   const filledCountsQuery = usePostingFilledCounts(filledCountIds);
 
-  const handleSelectAll = useCallback(() => selection.selectAll(jobs), [jobs, selection]);
+  // 전체선택 토글. "전부"의 기준은 화면에 보이는 공유 가능 공고이되, 상한(10건)에서 잘린다 —
+  // 상한을 안 끼우면 공유 가능 공고가 11건일 때 영원히 "전체 해제" 로 안 바뀐다.
+  const shareableCount = useMemo(
+    () => jobs.filter((job) => selection.canSelect(job)).length,
+    [jobs, selection]
+  );
+  const isAllSelected =
+    selection.selectedCount > 0 &&
+    selection.selectedCount >= Math.min(shareableCount, selection.maxCount);
+
+  const handleSelectAll = useCallback(() => {
+    if (isAllSelected) {
+      selection.clear();
+      return;
+    }
+    selection.selectAll(jobs);
+  }, [isAllSelected, jobs, selection]);
 
   const handleBulkShare = useCallback(async () => {
     const result = await shareJobs(Array.from(selection.selectedIds), 'admin');
@@ -199,6 +215,7 @@ export default function AdminPostingsScreen() {
         selectedCount={selection.selectedCount}
         maxCount={selection.maxCount}
         onSelectAll={handleSelectAll}
+        isAllSelected={isAllSelected}
         onShare={handleBulkShare}
         onCancel={selection.clear}
         isSharing={isSharing}
