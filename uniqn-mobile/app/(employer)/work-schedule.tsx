@@ -38,7 +38,11 @@ import {
 import { useWorkScheduleEnabled } from '@/hooks';
 import { useActiveWorkspace, useEnsureDefaultWorkspace } from '@/hooks/workspace';
 import { useGridSummary, useVenueContainers, useEnsureDefaultVenue } from '@/hooks/workSchedule';
-import { computeDayCell, type GridDayCell } from '@/domains/workSchedule';
+import {
+  computeDayCell,
+  resolveSelectedDateForMonth,
+  type GridDayCell,
+} from '@/domains/workSchedule';
 import { toDateString } from '@/utils/date';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 
@@ -132,6 +136,14 @@ export default function WorkScheduleScreen() {
   const handleNextMonth = useCallback(() => setVisibleMonth((m) => addMonths(m, 1)), []);
   const handleDateSelect = useCallback((date: Date) => setSelectedDate(date), []);
 
+  // 월이 바뀌면 선택 날짜도 그 달 안으로 끌어온다.
+  // 이게 없으면 캘린더는 새 달을 그리는데 하단 패널은 이전 달 날짜를 계속 붙들어, 같은 화면이
+  // 한 날짜에 대해 두 값을 동시에 말하고(요약 칩 vs 카드), 그 상태로 목표 인원을 저장하면
+  // 화면에 보이지도 않는 이전 달 날짜에 저장된다.
+  useEffect(() => {
+    setSelectedDate((cur) => resolveSelectedDateForMonth(cur, visibleMonth, new Date()));
+  }, [visibleMonth]);
+
   // 당겨서 새로고침 — 단일 ScrollView 전환(P1-3)으로 리스트 RefreshControl 이 사라진 것을 화면
   // 레벨에서 복원. 타 운영자의 배치 변경(비-realtime)을 수동 갱신하는 유일한 경로.
   const queryClient = useQueryClient();
@@ -205,7 +217,11 @@ export default function WorkScheduleScreen() {
           운영처(venue)는 워크스페이스에 속하므로 activeWorkspace 부재 시 "운영처 만들기"는 데드엔드
           (workspaceId undefined → 생성 버튼 영구 비활성)다. 따라서 아래 순서로 분기:
           로딩(자동 워크스페이스/운영처 생성·재조회 포함) → 워크스페이스 로드실패(재조회) →
-          워크스페이스 준비실패(재생성) → 운영처 없음(생성) → (자기-치유 대기)로딩. */}
+          워크스페이스 준비실패(재생성) → **지점 조회실패(재조회)** → 운영처 없음(생성) →
+          (자기-치유 대기)로딩.
+          지점 조회실패를 "지점이 없어요"로 흘리면 사용자가 시키는 대로 지점을 새로 만들고,
+          이름이 한 글자만 달라도 진짜 중복 지점이 생긴다(현재 지점 삭제 수단이 없어 영구 잔존).
+          "없다"와 "못 읽었다"는 다른 사실이므로 반드시 분리한다. */}
       {!hasVenue ? (
         <View className="flex-1 items-center justify-center px-6">
           {wsLoading ||
@@ -229,6 +245,14 @@ export default function WorkScheduleScreen() {
               description="잠시 후 다시 시도해주세요."
               actionLabel="다시 시도"
               onAction={retryCreateWorkspace}
+            />
+          ) : containersQuery.isError ? (
+            <EmptyState
+              icon={<MapPinIcon size={48} color={SECONDARY_PALETTE[400]} />}
+              title="지점을 불러오지 못했어요"
+              description="네트워크 상태를 확인하고 다시 시도해주세요. 지점이 없는 게 아니라 목록을 읽지 못한 상태예요."
+              actionLabel="다시 시도"
+              onAction={containersQuery.refetch}
             />
           ) : containers.length === 0 ? (
             <EmptyState

@@ -76,6 +76,17 @@ export function EditSlotSheet({
   const [color, setColor] = useState<SlotColorToken | null>(null);
   const [memo, setMemo] = useState('');
 
+  /**
+   * 이 슬롯의 시간이 "정해진 값"인지 여부.
+   *
+   * 시간 미정 슬롯(time_slot 이 비어 있음)을 열면 startTime/endTime 은 화면을 그리기 위한
+   * 기본값(18:00~02:00)으로 채워질 뿐 실제 저장된 값이 아니다. 이걸 그대로 저장하면
+   * 색상·메모만 고치려던 사용자가 8시간 근무를 확정시켜 정산 금액까지 오염시킨다.
+   * 그래서 미정 상태에서는 저장 payload 에 시간을 싣지 않는다(Repository 는 startTime+endTime
+   * 둘 다 있을 때만 time_slot 을 갱신하는 부분 업데이트다). 사용자가 피커로 직접 고르면 true.
+   */
+  const [timeDecided, setTimeDecided] = useState(false);
+
   // 휠 피커 상태(시작/종료 구분). 중첩 Modal 없이 SheetModal overlay 로 단일 렌더.
   const [activePicker, setActivePicker] = useState<'start' | 'end' | null>(null);
 
@@ -86,6 +97,8 @@ export function EditSlotSheet({
   useEffect(() => {
     if (!slot) return;
     const parts = parseTimeSlotParts(slot.timeSlot);
+    // 둘 다 파싱될 때만 "정해진 시간". 하나라도 비면 미정으로 두고 기본값은 피커 초기 위치로만 쓴다.
+    setTimeDecided(Boolean(parts.start && parts.end));
     setStartTime(parts.start || DEFAULT_START);
     setEndTime(parts.end || DEFAULT_END);
     setRole((slot.role as StaffRole) ?? 'dealer');
@@ -104,6 +117,8 @@ export function EditSlotSheet({
   // 중복충돌 경고(같은 스태프의 근무 구간 겹침). 차단이 아닌 경고.
   const conflicts = useMemo(() => {
     if (!slot) return [];
+    // 미정 시간은 실제 구간이 아니므로 충돌 판정 대상이 아니다(기본값끼리 겹쳤다고 경고하면 오탐).
+    if (!timeDecided) return [];
     return detectSlotConflicts(
       {
         workLogId: slot.workLogId,
@@ -141,6 +156,8 @@ export function EditSlotSheet({
       } else if (activePicker === 'end') {
         setEndTime(next);
       }
+      // 사용자가 직접 고른 순간부터 시간은 "정해진 값" — 이제부터 저장 payload 에 실린다.
+      setTimeDecided(true);
       setActivePicker(null);
     },
     [activePicker]
@@ -148,13 +165,13 @@ export function EditSlotSheet({
 
   const handleSave = () => {
     if (!slot) return;
-    if (timePreview.isEqual) return; // 시작==종료는 저장 불가(익일 오해석 방지)
+    if (timeDecided && timePreview.isEqual) return; // 시작==종료는 저장 불가(익일 오해석 방지)
     updateSlot.mutate(
       {
         workLogId: slot.workLogId,
         input: {
-          startTime,
-          endTime,
+          // 미정 시간은 싣지 않는다 — 색상·메모만 고치려던 저장이 근무시간을 확정시키지 않도록.
+          ...(timeDecided ? { startTime, endTime } : {}),
           staffRole: role,
           color: color ?? undefined,
           memo,
@@ -232,7 +249,7 @@ export function EditSlotSheet({
           onPress={handleSave}
           fullWidth
           loading={updateSlot.isPending}
-          disabled={!slot || isBusy || timePreview.isEqual}
+          disabled={!slot || isBusy || (timeDecided && timePreview.isEqual)}
         >
           저장
         </Button>
@@ -305,21 +322,33 @@ export function EditSlotSheet({
     >
       <View className="px-4 pb-2">
         {/* 시간(시작/종료) */}
+        {/* 시간 미정 슬롯은 빈 값('시간 선택')으로 보여준다 — 기본값을 실제 값처럼 보여주면
+            사용자가 "이미 18:00~02:00 이구나"로 오해하고 그대로 저장해 근무시간이 확정된다. */}
         <View className="flex-row gap-3">
           <View className="flex-1">
             <TimeTriggerField
               label="시작"
-              value={startTime}
+              value={timeDecided ? startTime : ''}
               onPress={() => setActivePicker('start')}
             />
           </View>
           <View className="flex-1">
-            <TimeTriggerField label="종료" value={endTime} onPress={() => setActivePicker('end')} />
+            <TimeTriggerField
+              label="종료"
+              value={timeDecided ? endTime : ''}
+              onPress={() => setActivePicker('end')}
+            />
           </View>
         </View>
 
-        {/* 익일 프리뷰 / 시작==종료 오류 안내(저장 차단은 아래 timePreview.isEqual 가드) */}
-        <OvernightPreviewBanner startTime={startTime} endTime={endTime} />
+        {timeDecided ? (
+          /* 익일 프리뷰 / 시작==종료 오류 안내(저장 차단은 위 timePreview.isEqual 가드) */
+          <OvernightPreviewBanner startTime={startTime} endTime={endTime} />
+        ) : (
+          <Text className="mt-2 text-sm text-content-secondary font-sans dark:text-content-secondary">
+            근무 시간이 아직 정해지지 않았어요. 시간을 고르지 않으면 미정 그대로 저장돼요.
+          </Text>
+        )}
 
         {/* 중복충돌 경고(차단 아님) */}
         {conflicts.length > 0 && (

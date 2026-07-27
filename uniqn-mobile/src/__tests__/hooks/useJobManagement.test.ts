@@ -405,6 +405,64 @@ describe('useJobManagement hooks', () => {
     });
   });
 
+  describe('공고 라이프사이클 → 근무표 캐시 무효화', () => {
+    // 회귀: 종전에는 '생성' 경로에만 workSchedule 무효화가 있었다. 그래서 공고를 수정·마감·
+    // 삭제·재개방해도 근무표 셀의 부족/공고 뱃지와 필요 인원이 옛 수치로 남아, 사장이 이미
+    // 모집 중인 날에 중복 공고를 내도록 유도했다. 다섯 경로 전부 무효화돼야 한다.
+    const WORK_SCHEDULE_KEY = { queryKey: ['workSchedule'] };
+
+    it('useUpdateJobPosting — 수정 후 근무표를 무효화한다', async () => {
+      mockUpdateJobPosting.mockResolvedValue(undefined);
+      const { result } = renderHook(() => useUpdateJobPosting());
+
+      await act(async () => {
+        await result.current.mutateAsync({ jobPostingId: 'job-1', input: {} });
+      });
+
+      expect(mockInvalidateQueries).toHaveBeenCalledWith(WORK_SCHEDULE_KEY);
+    });
+
+    it('useDeleteJobPosting — 삭제 후 근무표를 무효화한다', async () => {
+      const { result } = renderHook(() => useDeleteJobPosting());
+
+      await act(async () => {
+        await result.current.mutateAsync('job-1');
+      });
+
+      expect(mockInvalidateQueries).toHaveBeenCalledWith(WORK_SCHEDULE_KEY);
+    });
+
+    it('useCloseJobPosting — 마감 후 근무표를 무효화한다', async () => {
+      const { result } = renderHook(() => useCloseJobPosting());
+
+      await act(async () => {
+        await result.current.mutateAsync('job-1');
+      });
+
+      expect(mockInvalidateQueries).toHaveBeenCalledWith(WORK_SCHEDULE_KEY);
+    });
+
+    it('useReopenJobPosting — 재개방 후 근무표를 무효화한다', async () => {
+      const { result } = renderHook(() => useReopenJobPosting());
+
+      await act(async () => {
+        await result.current.mutateAsync('job-1');
+      });
+
+      expect(mockInvalidateQueries).toHaveBeenCalledWith(WORK_SCHEDULE_KEY);
+    });
+
+    it('useBulkUpdateStatus — 일괄 상태 변경 후 근무표를 무효화한다', async () => {
+      const { result } = renderHook(() => useBulkUpdateStatus());
+
+      await act(async () => {
+        await result.current.mutateAsync({ jobPostingIds: ['job-1'], status: 'closed' });
+      });
+
+      expect(mockInvalidateQueries).toHaveBeenCalledWith(WORK_SCHEDULE_KEY);
+    });
+  });
+
   describe('Phase 2A.후속 — mutation hook query key alignment', () => {
     // Verifies that each mutation hook passes activeWorkspace.id to
     // getMyJobPostingsQueryKey so optimistic updates target the live cache key

@@ -104,8 +104,10 @@ function ModeTab({
       }`}
     >
       {icon}
+      {/* 골드(primary-500 #D4AF37) 위 흰 글씨는 약 1.9:1 로 WCAG 실패 — 선택된 칩의 글자가
+          사실상 안 보인다. 같은 목적의 기존 토큰 content-onGold(#09090B)로 교체(약 10:1). */}
       <Text
-        className={`text-sm font-sans-medium ${active ? 'text-white' : 'text-content-secondary'}`}
+        className={`text-sm font-sans-medium ${active ? 'text-content-onGold' : 'text-content-secondary'}`}
       >
         {label}
       </Text>
