@@ -281,9 +281,12 @@ describe('buildBulkJobShareText', () => {
   });
 
   it('확정 인원 맵을 주입하면 확정/총원으로 표시', () => {
-    const text = buildBulkJobShareText([posting('2026-07-29', { id: 'p1' })], urlOf, () =>
-      // 키는 `date__slot__role` (공고 접두 제거된 서브맵)
-      new Map([['2026-07-29__18:00__dealer', 2]])
+    const text = buildBulkJobShareText(
+      [posting('2026-07-29', { id: 'p1' })],
+      urlOf,
+      () =>
+        // 키는 `date__slot__role` (공고 접두 제거된 서브맵)
+        new Map([['2026-07-29__18:00__dealer', 2]])
     );
     expect(text).toContain('🙋 딜러 2/4명');
   });

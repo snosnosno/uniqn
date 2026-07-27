@@ -21,12 +21,13 @@ jest.mock('@/stores/toastStore', () => ({
 
 const active = (id: string): ShareSelectable => ({ id, status: 'active', postingType: 'regular' });
 const closed = (id: string): ShareSelectable => ({ id, status: 'closed', postingType: 'regular' });
-const pendingTournament = (id: string): ShareSelectable => ({
-  id,
-  status: 'active',
-  postingType: 'tournament',
-  tournamentConfig: { approvalStatus: 'pending' },
-} as ShareSelectable);
+const pendingTournament = (id: string): ShareSelectable =>
+  ({
+    id,
+    status: 'active',
+    postingType: 'tournament',
+    tournamentConfig: { approvalStatus: 'pending' },
+  }) as ShareSelectable;
 
 describe('useBulkShareSelection', () => {
   beforeEach(() => jest.clearAllMocks());

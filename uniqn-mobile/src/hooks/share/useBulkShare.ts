@@ -17,10 +17,7 @@ import { useShareSheet } from '@/hooks/share/useShareSheet';
 import { extractPostingFilledSubmap } from '@/hooks/usePostingFilledCounts';
 import { jobPostingRepository } from '@/repositories';
 import { canShareJob } from '@/domains/job-posting';
-import {
-  buildBulkJobShareText,
-  MAX_BULK_SHARE_COUNT,
-} from '@/utils/bulkJobShareMessage';
+import { buildBulkJobShareText, MAX_BULK_SHARE_COUNT } from '@/utils/bulkJobShareMessage';
 import { confirmActionAsync } from '@/utils/confirmAction';
 import { useToast } from '@/stores/toastStore';
 

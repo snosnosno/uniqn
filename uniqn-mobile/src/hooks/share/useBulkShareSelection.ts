@@ -17,7 +17,10 @@ import { useToast } from '@/stores/toastStore';
 import type { JobPosting } from '@/types';
 
 /** 선택 가능 판정에 필요한 최소 형태 — 카드 뷰모델도 이 필드만 있으면 넘길 수 있다. */
-export type ShareSelectable = Pick<JobPosting, 'id' | 'status' | 'postingType' | 'tournamentConfig'>;
+export type ShareSelectable = Pick<
+  JobPosting,
+  'id' | 'status' | 'postingType' | 'tournamentConfig'
+>;
 
 export interface UseBulkShareSelectionReturn {
   /** 선택 모드 진입 여부 */

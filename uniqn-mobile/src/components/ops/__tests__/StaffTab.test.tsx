@@ -337,7 +337,9 @@ describe('import CTA', () => {
       expect.arrayContaining([
         expect.objectContaining({ text: '취소' }),
         expect.objectContaining({ text: '가져오기', onPress: expect.any(Function) }),
-      ])
+      ]),
+      // 안드로이드 뒤로가기 dismiss 도 취소로 수렴시키는 옵션 (confirmAction)
+      expect.objectContaining({ onDismiss: expect.any(Function) })
     );
   });
 
