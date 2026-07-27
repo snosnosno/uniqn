@@ -122,10 +122,17 @@ describe('confirmAction (웹 분기)', () => {
       onConfirm,
     });
 
-    expect(alertSpy).toHaveBeenCalledWith('PIN 재발급', '진행할까요?', [
-      { text: '취소', style: 'cancel' },
-      { text: '재발급', style: 'destructive', onPress: expect.any(Function) },
-    ]);
+    expect(alertSpy).toHaveBeenCalledWith(
+      'PIN 재발급',
+      '진행할까요?',
+      [
+        // 취소도 onPress 를 갖는다 — onCancel 콜백(confirmActionAsync 의 false 해소)을 받아야 한다
+        { text: '취소', style: 'cancel', onPress: expect.any(Function) },
+        { text: '재발급', style: 'destructive', onPress: expect.any(Function) },
+      ],
+      // 안드로이드 뒤로가기 dismiss 도 취소로 수렴
+      { onDismiss: expect.any(Function) }
+    );
     expect(windowConfirm).not.toHaveBeenCalled();
   });
 });

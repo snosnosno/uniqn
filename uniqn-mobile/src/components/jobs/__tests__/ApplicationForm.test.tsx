@@ -142,7 +142,9 @@ describe('ApplicationForm', () => {
       expect.arrayContaining([
         expect.objectContaining({ text: '계속 편집' }),
         expect.objectContaining({ text: '닫기', onPress: expect.any(Function) }),
-      ])
+      ]),
+      // 안드로이드 뒤로가기 dismiss 도 취소로 수렴시키는 옵션 (confirmAction)
+      expect.objectContaining({ onDismiss: expect.any(Function) })
     );
     expect(onClose).not.toHaveBeenCalled();
 

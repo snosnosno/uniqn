@@ -309,8 +309,9 @@ describe('OpsTournamentListScreen — 복제 액션(A4)', () => {
 
     fireEvent.press(getByTestId('ops-duplicate-t-done'));
     const buttons = alertSpy.mock.calls[0]?.[2] as { text: string; onPress?: () => void }[];
-    // 취소 버튼은 단순 닫기(onPress 없음)
-    expect(buttons.find((b) => b.text === '취소')?.onPress).toBeUndefined();
+    // 취소 버튼은 onCancel 콜백만 실행하고 복제는 건드리지 않는다
+    // (confirmAction 이 취소를 알려야 confirmActionAsync 가 false 로 해소된다)
+    buttons.find((b) => b.text === '취소')?.onPress?.();
     expect(mockDuplicateMutate).not.toHaveBeenCalled();
   });
 
