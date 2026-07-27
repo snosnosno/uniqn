@@ -37,6 +37,9 @@ export type {
   SettlementEditData,
 } from './settlement/SettlementEditModal';
 
+export { SettlementRevertModal } from './settlement/SettlementRevertModal';
+export type { SettlementRevertModalProps } from './settlement/SettlementRevertModal';
+
 export { SettlementSettingsModal } from './settlement/SettlementSettingsModal';
 export type {
   SettlementSettingsModalProps,

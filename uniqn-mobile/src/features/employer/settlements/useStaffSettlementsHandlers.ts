@@ -15,11 +15,18 @@ import {
 } from '@/services';
 import { type SettlementEditData, type SettlementSettingsData } from '@/components/employer';
 import { useSettlementModals } from '@/hooks/useSettlementModals';
-import { isDuplicateReportError, isCannotReportSelfError } from '@/errors';
+import { isDuplicateReportError, isCannotReportSelfError, toError } from '@/errors';
 import { logger } from '@/utils/logger';
+import { STATUS } from '@/constants';
 import { getEffectiveSalaryInfoFromRoles } from '@/domains/settlement';
 import { serializeTaxSettings, type SalaryInfo } from '@/utils/settlement';
-import type { WorkLog, Allowances, CreateReportInput, UpdateStaffRoleInput } from '@/types';
+import type {
+  WorkLog,
+  Allowances,
+  CreateReportInput,
+  UpdateStaffRoleInput,
+  PayrollStatus,
+} from '@/types';
 import type { Toast } from '@/stores/toastStore';
 import { calculateWorkLogAmount, type RoleWithSalary, type SalaryConfig } from './settlementCalc';
 
@@ -42,6 +49,12 @@ interface UseStaffSettlementsHandlersParams {
   }) => void;
   settleWorkLog: (input: { workLogId: string; amount: number }) => void;
   bulkSettle: (input: { workLogIds: string[] }) => void;
+  /** 지급 완료 되돌리기 (SETTLE-3) — 결과를 보고 모달을 닫아야 해서 Async 를 받는다. */
+  updateStatusAsync: (input: {
+    workLogId: string;
+    status: PayrollStatus;
+    reason?: string;
+  }) => Promise<void>;
 }
 
 export function useStaffSettlementsHandlers({
@@ -56,6 +69,7 @@ export function useStaffSettlementsHandlers({
   updateWorkTime,
   settleWorkLog,
   bulkSettle,
+  updateStatusAsync,
 }: UseStaffSettlementsHandlersParams) {
   // ============================================================================
   // 스태프 관리 핸들러
@@ -221,6 +235,27 @@ export function useStaffSettlementsHandlers({
     [modals, updateWorkTime]
   );
 
+  // 지급 완료 취소 (SETTLE-3) — 금전 역행이라 결과를 확인하고 성공에서만 닫는다.
+  // 실패 시 모달과 입력한 사유를 그대로 유지해 재시도할 수 있게 둔다(에러 토스트는 훅이 담당).
+  const handleRevertSettlement = useCallback(
+    async (reason: string) => {
+      const workLog = modals.selectedWorkLogForRevert;
+      if (!workLog) return;
+
+      try {
+        await updateStatusAsync({
+          workLogId: workLog.id,
+          status: STATUS.PAYROLL.PENDING,
+          reason,
+        });
+        modals.closeRevertModal();
+      } catch (error) {
+        logger.error('지급 완료 취소 실패', toError(error), { workLogId: workLog.id });
+      }
+    },
+    [modals, updateStatusAsync]
+  );
+
   // ============================================================================
   // 정산 설정/금액 수정 핸들러
   // ============================================================================
@@ -362,5 +397,6 @@ export function useStaffSettlementsHandlers({
     handleSaveTimeEdit,
     handleSaveAmountEdit,
     handleSaveSettings,
+    handleRevertSettlement,
   };
 }

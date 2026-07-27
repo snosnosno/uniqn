@@ -170,16 +170,23 @@ export async function updateWorkLogCustomSettlement(
 /**
  * 정산 상태 변경
  *
- * @description 정산 상태만 변경 (금액 변경 없음)
+ * @description 정산 상태만 변경 (금액 변경 없음).
+ *   지급 완료 되돌리기(completed → 그 외)는 사유가 필수다 — 리포지토리가 강제한다.
  */
 export async function updateSettlementStatus(
   workLogId: string,
   status: PayrollStatus,
-  actorId: string
+  actorId: string,
+  options?: { reason?: string }
 ): Promise<void> {
   logger.info('정산 상태 변경', { workLogId, status, actorId });
 
-  await settlementRepository.updatePayrollStatusWithTransaction(workLogId, status, actorId);
+  await settlementRepository.updatePayrollStatusWithTransaction(
+    workLogId,
+    status,
+    actorId,
+    options
+  );
 
   logger.info('정산 상태 변경 완료', { workLogId, status });
 }

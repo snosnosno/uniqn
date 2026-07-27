@@ -19,6 +19,7 @@ import { logger } from '@/utils/logger';
 import {
   BusinessError,
   PermissionError,
+  ValidationError,
   AlreadySettledError,
   ERROR_CODES,
   isAppError,
@@ -41,6 +42,7 @@ import { resolvePostingAuthority, canManagePosting } from './postingAuthority';
 import { TABLE_COLUMNS as JOB_POSTING_COLUMNS } from './JobPostingRepositoryHelpers';
 // work_logs SELECT 화이트리스트·ts 매핑 정본(자체 사본 드리프트 금지).
 import { WORK_LOG_COLUMNS, applyTsPreference } from './workLogColumns';
+import { resolveWorkTimeStatus } from './workLogTimeStatus';
 import type { TaxSettings } from '@/utils/settlement';
 import type { WorkLog, JobPosting, PayrollStatus } from '@/types';
 import type {
@@ -65,6 +67,28 @@ const JOB_POSTINGS_TABLE = 'job_postings';
  * 실패(비배열·비객체 항목) 시 [] 폴백 + logger.error 관측(throw 금지 — 현 폴백 동작 유지).
  */
 const settlementModificationHistorySchema = z.array(z.record(z.string(), z.unknown()));
+
+/**
+ * 정산 금액 수정 이력을 안전하게 읽어 새 항목을 덧붙인다.
+ *
+ * 오염(비배열·비객체)이면 [] 폴백 + 관측만 하고 throw 하지 않는다 —
+ * `updateWorkLogCustomSettlement` 의 기존 규약과 동일.
+ */
+function appendSettlementStatusRevert(
+  rawHistory: unknown,
+  entry: Record<string, unknown>,
+  workLogId: string
+): Record<string, unknown>[] {
+  const parsed = settlementModificationHistorySchema.safeParse(rawHistory ?? []);
+  if (!parsed.success) {
+    logger.error('정산 수정 이력 형식 오류 — 빈 배열로 폴백', {
+      workLogId,
+      issues: parsed.error.issues,
+    });
+  }
+  const existing = parsed.success ? parsed.data : [];
+  return [...existing, { type: 'payroll_status_revert', ...entry }];
+}
 
 /** Supabase에는 Firestore의 500 배치 제한이 없지만 합리적 청크 크기 유지 */
 const BATCH_CHUNK_SIZE = 100;
@@ -168,6 +192,20 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
 
       if (context.notes !== undefined) {
         updateData.notes = context.notes;
+      }
+
+      // 5. status 승격 — 서버 정산 게이트(:settleWorkLogWithTransaction)가 status 로 판정하므로
+      // 시각만 쓰고 status 를 두면 '시간을 고쳐도 영원히 정산 불가' 인 막다른 길이 된다(SET-1).
+      // 형제 경로(ConfirmedStaffRepository)와 같은 헬퍼를 통과시켜 두 화면이 어긋나지 않게 한다.
+      const resolvedStatus = resolveWorkTimeStatus({
+        currentStatus: workLog.status,
+        incomingCheckIn: context.checkInTime,
+        incomingCheckOut: context.checkOutTime,
+        existingCheckIn: workLog.checkInTime,
+        existingCheckOut: workLog.checkOutTime,
+      });
+      if (resolvedStatus !== undefined) {
+        updateData.status = resolvedStatus;
       }
 
       const { error } = await supabase
@@ -532,13 +570,14 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
   async updatePayrollStatusWithTransaction(
     workLogId: string,
     status: PayrollStatus,
-    actorId: string
+    actorId: string,
+    options?: { reason?: string }
   ): Promise<void> {
     try {
       logger.info('정산 상태 변경', { workLogId, status, actorId });
 
       // 소유권 검증
-      await this.validateWorkLogOwnership(workLogId, actorId, '정산 상태 변경');
+      const { workLog } = await this.validateWorkLogOwnership(workLogId, actorId, '정산 상태 변경');
 
       // 상태 업데이트
       const now = new Date().toISOString();
@@ -549,6 +588,38 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
 
       if (status === STATUS.PAYROLL.COMPLETED) {
         updateData.payroll_date = now;
+      }
+
+      // 지급 완료 되돌리기 — 금전 상태를 역행시키는 조작이라 사유·감사 이력을 서버에서 강제한다.
+      // DB 는 이 2단계 경로(completed→pending 후 수정)를 이미 허용해 두었다(20260712010000 헤더).
+      const isRevertFromCompleted =
+        workLog.payrollStatus === STATUS.PAYROLL.COMPLETED && status !== STATUS.PAYROLL.COMPLETED;
+
+      if (isRevertFromCompleted) {
+        const trimmedReason = options?.reason?.trim() ?? '';
+        if (trimmedReason.length === 0) {
+          throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+            userMessage: '지급 완료를 취소하려면 사유를 입력해주세요.',
+          });
+        }
+        // XSS·길이 경계는 시간 수정 사유와 같은 규약을 재사용한다.
+        const safeReason = assertWorkTimeReason(trimmedReason);
+
+        // 지급일은 더 이상 유효하지 않다. 동결 표시액(payroll_amount)은 남긴다 —
+        // shouldUseFrozenPayrollAmount 가 완료 상태에서만 쓰므로 표시에 새어나가지 않고,
+        // '얼마를 지급 완료로 찍었었는지' 기록은 이의 처리에 필요하다.
+        updateData.payroll_date = null;
+        updateData.settlement_modification_history = appendSettlementStatusRevert(
+          (workLog as unknown as Record<string, unknown>).settlementModificationHistory,
+          {
+            previousStatus: STATUS.PAYROLL.COMPLETED,
+            newStatus: status,
+            reason: safeReason,
+            modifiedBy: actorId,
+            modifiedAt: now,
+          },
+          workLogId
+        );
       }
 
       const { error } = await supabase.from(WORK_LOGS_TABLE).update(updateData).eq('id', workLogId);

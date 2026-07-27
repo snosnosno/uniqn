@@ -11,6 +11,7 @@ import {
   SettlementDetailModal,
   SettlementEditModal,
   SettlementSettingsModal,
+  SettlementRevertModal,
   type SettlementEditData,
   type SettlementSettingsData,
 } from '@/components/employer';
@@ -39,6 +40,10 @@ interface SettlementModalsProps {
   /** 역할별 실확정 인원(aggregateRoleFilledFromSubmap 결과) — RoleChangeModal 마감 표시용. */
   filledByRole?: Record<string, number>;
   isUpdating: boolean;
+  /** 지급 완료 취소 진행 중 (SETTLE-3) */
+  isReverting?: boolean;
+  /** 지급 완료 취소 실행 — 사유는 서버가 필수로 강제한다. */
+  onRevertSettlement: (reason: string) => void;
   onRoleChangeSave: (data: {
     staffId: string;
     workLogId: string;
@@ -63,6 +68,8 @@ export function SettlementModals({
   availableRoles,
   filledByRole,
   isUpdating,
+  isReverting,
+  onRevertSettlement,
   onRoleChangeSave,
   onReportSubmit,
   onSettleFromDetail,
@@ -118,7 +125,18 @@ export function SettlementModals({
         onEditTime={modals.openEditTimeFromDetail}
         onEditAmount={modals.openEditAmountFromDetail}
         onSettle={onSettleFromDetail}
+        onRevertSettlement={modals.openRevertFromDetail}
         jobPostingTitle={posting?.title}
+      />
+
+      {/* 지급 완료 취소 모달 (SETTLE-3) */}
+      <SettlementRevertModal
+        visible={modals.isRevertModalVisible}
+        onClose={modals.closeRevertModal}
+        staffName={modals.selectedWorkLogForRevert?.staffName}
+        payrollAmount={modals.selectedWorkLogForRevert?.payrollAmount}
+        onConfirm={onRevertSettlement}
+        isSubmitting={isReverting}
       />
 
       {/* 시간 수정 모달 (정산 탭용) */}

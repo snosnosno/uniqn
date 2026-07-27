@@ -27,6 +27,7 @@ import {
 } from '@/domains/staff';
 // work_logs SELECT 화이트리스트·ts 매핑 정본(자체 사본 드리프트 금지).
 import { WORK_LOG_COLUMNS as TABLE_COLUMNS, applyTsPreference } from './workLogColumns';
+import { resolveWorkTimeStatus } from './workLogTimeStatus';
 import type { UnsubscribeFn } from '@/types/common';
 import type { RoleChangeHistory, WorkLog } from '@/types';
 import type {
@@ -67,8 +68,8 @@ function toWorkLog(row: Record<string, unknown>): WorkLog | null {
 
 /**
  * 수동 상태 변경 시 종결 status 와 타임스탬프(check_in_ts/check_out_ts) 정합을 위한
- * 패치 계산(순수 함수). 정산 게이트가 status 가 아닌 타임스탬프로 판정하므로,
- * 수동 출근/퇴근/완료 처리 시에도 타임스탬프를 함께 기록/정리해야 정산이 풀린다.
+ * 패치 계산(순수 함수). 서버 정산 게이트는 status 로, 화면 게이트는 타임스탬프로 판정하므로
+ * 수동 출근/퇴근/완료 처리 시에도 타임스탬프를 함께 기록/정리해야 두 축이 어긋나지 않는다.
  *
  * - scheduled        → 근무 전: 타임스탬프 정리(null)
  * - checked_in       → 출근: check_in 기록(기존 우선), check_out 비움
@@ -421,14 +422,18 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
         updateData.check_out_ts = context.checkOutTime ? context.checkOutTime.toISOString() : null;
       }
 
-      // 상태 결정: 양쪽 다 있으면 checked_out
-      const finalCheckIn = context.checkInTime ?? workLog.checkInTime;
-      const finalCheckOut = context.checkOutTime ?? workLog.checkOutTime;
-
-      if (finalCheckIn && finalCheckOut) {
-        updateData.status = STATUS.WORK_LOG.CHECKED_OUT;
-      } else if (finalCheckIn) {
-        updateData.status = STATUS.WORK_LOG.CHECKED_IN;
+      // 상태 결정 — 정산 화면 경로와 같은 헬퍼를 통과시킨다(SET-1 대칭).
+      // 이전 인라인 구현은 `context.checkInTime ?? workLog.checkInTime` 이라 **시각 삭제(null)가
+      // 무시**됐고, 시각을 지운 뒤 status 가 그대로 남아 CHECK 제약 23514 를 부를 수 있었다.
+      const resolvedStatus = resolveWorkTimeStatus({
+        currentStatus: workLog.status,
+        incomingCheckIn: context.checkInTime,
+        incomingCheckOut: context.checkOutTime,
+        existingCheckIn: workLog.checkInTime,
+        existingCheckOut: workLog.checkOutTime,
+      });
+      if (resolvedStatus !== undefined) {
+        updateData.status = resolvedStatus;
       }
 
       const { error } = await supabase.from(TABLE).update(updateData).eq('id', context.workLogId);
@@ -550,9 +555,11 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
       await verifyPostingAuthority(jobPostingId, context.actorId, '스태프 상태 변경');
 
       // 3. 상태 업데이트 — 종결 status 와 타임스탬프 정합 유지.
-      //    정산 게이트가 status 가 아닌 check_in_ts/check_out_ts 로 판정하므로(SSOT),
-      //    수동으로 출근/퇴근/완료 처리 시 타임스탬프를 함께 기록해야 정산이 풀린다.
-      //    (미기록 시 스태프관리=완료/정산=출퇴근 미완료 모순 발생)
+      //    ⚠️ 서버 정산 게이트는 **status** 로 판정하고(SettlementRepository :206-213 / :421-431),
+      //    화면 게이트는 **타임스탬프** 로 판정한다(SettlementDetailModal hasValidTimes 등 3곳).
+      //    두 축이 다르므로 어느 한쪽만 쓰면 '버튼은 눌리는데 서버가 영구 거부' 가 된다.
+      //    그래서 status 를 쓸 때는 타임스탬프를, 타임스탬프를 쓸 때는 status 를 함께 맞춘다
+      //    (역방향은 이 패치, 정방향은 workLogTimeStatus.resolveWorkTimeStatus).
       const now = new Date().toISOString();
       const existingCheckIn = workLog.checkInTime
         ? new Date(workLog.checkInTime).toISOString()

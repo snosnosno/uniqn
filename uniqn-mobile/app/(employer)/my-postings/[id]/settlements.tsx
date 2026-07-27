@@ -78,7 +78,9 @@ export default function StaffSettlementsScreen() {
     updateWorkTime,
     settleWorkLog,
     bulkSettle,
+    updateStatusAsync,
     isUpdatingTime: isUpdating,
+    isUpdatingStatus: isReverting,
     isSettling: _isSettling,
     isBulkSettling: _isBulkSettling,
   } = useSettlement(jobPostingId || '');
@@ -117,6 +119,7 @@ export default function StaffSettlementsScreen() {
     handleSaveTimeEdit,
     handleSaveAmountEdit,
     handleSaveSettings,
+    handleRevertSettlement,
   } = useStaffSettlementsHandlers({
     jobPostingId,
     modals,
@@ -129,6 +132,7 @@ export default function StaffSettlementsScreen() {
     updateWorkTime,
     settleWorkLog,
     bulkSettle,
+    updateStatusAsync,
   });
 
   // ============================================================================
@@ -243,6 +247,8 @@ export default function StaffSettlementsScreen() {
         availableRoles={availableRoles}
         filledByRole={filledByRole}
         isUpdating={isUpdating}
+        isReverting={isReverting}
+        onRevertSettlement={handleRevertSettlement}
         onRoleChangeSave={handleRoleChangeSave}
         onReportSubmit={handleReportSubmit}
         onSettleFromDetail={handleSettleFromDetail}
