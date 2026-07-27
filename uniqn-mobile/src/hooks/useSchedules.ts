@@ -22,7 +22,6 @@ import {
   getTodaySchedules,
   subscribeToSchedules,
   groupSchedulesByDate,
-  getCalendarMarkedDates,
 } from '@/services/work/scheduleService';
 import {
   groupScheduleEvents,
@@ -39,7 +38,6 @@ import type {
   ScheduleFilters,
   ScheduleGroup,
   ScheduleStats,
-  ScheduleType,
   CalendarView as CalendarViewType,
 } from '@/types';
 
@@ -62,13 +60,11 @@ interface ScheduleQueryPayload {
   boundarySchedules?: ScheduleEvent[];
   stats?: ScheduleStats;
   groupedSchedules?: ScheduleGroup[];
-  markedDates?: Record<string, { marked: boolean; dotColor: string; type?: ScheduleType }>;
   warning?: string;
 }
 
 interface NormalizedScheduleQueryPayload extends ScheduleQueryPayload {
   groupedSchedules: ScheduleGroup[];
-  markedDates: Record<string, { marked: boolean; dotColor: string; type?: ScheduleType }>;
 }
 
 const SCHEDULE_CACHE_SCHEMA_VERSION = 3;
@@ -76,7 +72,6 @@ const MONTH_REALTIME_OBSERVATION_LIMIT = 50;
 const EMPTY_SCHEDULE_QUERY_PAYLOAD: NormalizedScheduleQueryPayload = {
   schedules: [],
   groupedSchedules: [],
-  markedDates: {},
 };
 
 function buildScheduleCacheKey(userId: string | undefined, scope: string, suffix?: string): string {
@@ -93,7 +88,6 @@ function normalizeScheduleQueryPayload(
     boundarySchedules: payload.boundarySchedules,
     stats: payload.stats,
     groupedSchedules: payload.groupedSchedules ?? groupSchedulesByDate(schedules),
-    markedDates: payload.markedDates ?? getCalendarMarkedDates(schedules),
     warning: payload.warning,
   };
 }
@@ -182,7 +176,6 @@ export function useSchedules(options: UseSchedulesOptions = {}) {
   const schedules = effectivePayload.schedules;
   const stats = realtime ? undefined : effectivePayload.stats;
   const groupedSchedules = effectivePayload.groupedSchedules;
-  const markedDates = effectivePayload.markedDates;
   const warning = realtime ? undefined : effectivePayload.warning;
 
   const refresh = useCallback(async () => {
@@ -198,7 +191,6 @@ export function useSchedules(options: UseSchedulesOptions = {}) {
   return {
     schedules,
     groupedSchedules,
-    markedDates,
     stats,
     warning,
     isLoading: schedules.length === 0 ? query.isLoading : false,
@@ -365,13 +357,10 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
   const schedules = effectivePayload.schedules;
   const stats = effectivePayload.stats;
   const groupedSchedules = effectivePayload.groupedSchedules;
-  const markedDates = effectivePayload.markedDates;
   const warning = effectivePayload.warning ?? queryPayload.warning;
-  const hasBootstrapData =
-    schedules.length > 0 ||
-    stats !== undefined ||
-    warning !== undefined ||
-    Object.keys(markedDates).length > 0;
+  // markedDates 절이 있었지만 그 값은 schedules 에서 파생된 것이라 첫 절에 이미 포함된다
+  // (빈 schedules → 빈 markedDates). 중복 판정이었다.
+  const hasBootstrapData = schedules.length > 0 || stats !== undefined || warning !== undefined;
 
   const refresh = useCallback(async () => {
     if (!isOnline) {
@@ -387,7 +376,6 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
     schedules,
     boundarySchedules: effectivePayload.boundarySchedules,
     groupedSchedules,
-    markedDates,
     stats,
     warning,
     isLoading: realtime
@@ -613,7 +601,6 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
     schedules,
     boundarySchedules,
     groupedSchedules,
-    markedDates,
     stats,
     warning,
     isLoading,
@@ -688,7 +675,6 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
     currentMonth,
     schedules,
     groupedSchedules,
-    markedDates,
     stats,
     warning,
     groupedByApplication,

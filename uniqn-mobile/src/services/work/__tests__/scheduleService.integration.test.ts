@@ -5,7 +5,6 @@
  * @version 1.0.0
  */
 
-import { SECONDARY_PALETTE } from '@/constants/colors';
 import {
   createMockScheduleEvent,
   createTodaySchedule,
@@ -22,7 +21,6 @@ import type { WorkLog, Application, ScheduleEvent } from '@/types';
 // Import after mocks
 import {
   groupSchedulesByDate,
-  getCalendarMarkedDates,
   getMySchedules,
   getSchedulesByDate,
   getSchedulesByMonth,
@@ -335,80 +333,6 @@ describe('scheduleService', () => {
 
       expect(groups[0].formattedDate).toContain('12월');
       expect(groups[0].formattedDate).toContain('25일');
-    });
-  });
-
-  describe('getCalendarMarkedDates', () => {
-    it('should return marked dates with correct colors', () => {
-      const schedules: ScheduleEvent[] = [
-        createMockScheduleEvent({
-          date: '2025-01-15',
-          type: 'confirmed',
-        }) as unknown as ScheduleEvent,
-        createMockScheduleEvent({
-          date: '2025-01-16',
-          type: 'applied',
-        }) as unknown as ScheduleEvent,
-        createMockScheduleEvent({
-          date: '2025-01-17',
-          type: 'completed',
-        }) as unknown as ScheduleEvent,
-        createMockScheduleEvent({
-          date: '2025-01-18',
-          type: 'cancelled',
-        }) as unknown as ScheduleEvent,
-      ];
-
-      const markedDates = getCalendarMarkedDates(schedules);
-
-      expect(markedDates['2025-01-15'].marked).toBe(true);
-      expect(markedDates['2025-01-15'].dotColor).toBe('#22C55E'); // success-500 for confirmed
-
-      expect(markedDates['2025-01-16'].dotColor).toBe('#D4AF37'); // primary-500 for applied
-
-      expect(markedDates['2025-01-17'].dotColor).toBe(SECONDARY_PALETTE[500]); // secondary-500 for completed (과거 근무)
-
-      expect(markedDates['2025-01-18'].dotColor).toBe('#DC2626'); // error-500 for cancelled
-    });
-
-    it('should prioritize confirmed over other types for same date', () => {
-      const schedules: ScheduleEvent[] = [
-        createMockScheduleEvent({
-          date: '2025-01-15',
-          type: 'applied',
-        }) as unknown as ScheduleEvent,
-        createMockScheduleEvent({
-          date: '2025-01-15',
-          type: 'confirmed',
-        }) as unknown as ScheduleEvent,
-      ];
-
-      const markedDates = getCalendarMarkedDates(schedules);
-
-      expect(markedDates['2025-01-15'].type).toBe('confirmed');
-      expect(markedDates['2025-01-15'].dotColor).toBe('#22C55E');
-    });
-
-    it('should prioritize applied over completed for same date', () => {
-      const schedules: ScheduleEvent[] = [
-        createMockScheduleEvent({
-          date: '2025-01-15',
-          type: 'completed',
-        }) as unknown as ScheduleEvent,
-        createMockScheduleEvent({
-          date: '2025-01-15',
-          type: 'applied',
-        }) as unknown as ScheduleEvent,
-      ];
-
-      const markedDates = getCalendarMarkedDates(schedules);
-
-      expect(markedDates['2025-01-15'].type).toBe('applied');
-    });
-
-    it('should return empty object for no schedules', () => {
-      const markedDates = getCalendarMarkedDates([]);
-      expect(markedDates).toEqual({});
     });
   });
 

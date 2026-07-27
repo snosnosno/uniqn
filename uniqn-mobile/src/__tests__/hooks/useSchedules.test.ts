@@ -18,7 +18,6 @@ const mockGetTodaySchedules = jest.fn();
 const mockSubscribeToSchedules = jest.fn();
 const mockCalculateScheduleStats = jest.fn();
 const mockGroupSchedulesByDate = jest.fn();
-const mockGetCalendarMarkedDates = jest.fn();
 
 jest.mock('@/services/work/scheduleService', () => ({
   getMySchedules: (...args: unknown[]) => mockGetMySchedules(...args),
@@ -29,7 +28,6 @@ jest.mock('@/services/work/scheduleService', () => ({
   subscribeToSchedules: (...args: unknown[]) => mockSubscribeToSchedules(...args),
   calculateScheduleStats: (...args: unknown[]) => mockCalculateScheduleStats(...args),
   groupSchedulesByDate: (...args: unknown[]) => mockGroupSchedulesByDate(...args),
-  getCalendarMarkedDates: (...args: unknown[]) => mockGetCalendarMarkedDates(...args),
 }));
 
 const mockGroupScheduleEvents = jest.fn();
@@ -253,12 +251,6 @@ describe('useSchedules hooks', () => {
         events: schedules,
       },
     ]);
-    mockGetCalendarMarkedDates.mockImplementation((schedules: ScheduleEvent[]) =>
-      schedules.reduce<Record<string, { marked: true }>>((acc, schedule) => {
-        acc[schedule.date] = { marked: true };
-        return acc;
-      }, {})
-    );
     mockGroupScheduleEvents.mockImplementation((schedules: unknown[]) => schedules);
     mockFilterSchedulesByDate.mockImplementation(
       (schedules: { date?: string }[] | undefined, selectedDate: string) =>
@@ -272,11 +264,9 @@ describe('useSchedules hooks', () => {
       const schedules = [createMockSchedule()];
       const stats = createMockStats();
       const groupedSchedules = [{ date: '2024-02-15', events: schedules }];
-      const markedDates = { '2024-02-15': { marked: true } };
 
       mockQueryData = { schedules, stats };
       mockGroupSchedulesByDate.mockReturnValue(groupedSchedules);
-      mockGetCalendarMarkedDates.mockReturnValue(markedDates);
 
       const { result } = renderHook(() => useSchedules());
 
@@ -287,7 +277,6 @@ describe('useSchedules hooks', () => {
       expect(result.current.schedules).toEqual(schedules);
       expect(result.current.stats).toEqual(stats);
       expect(result.current.groupedSchedules).toEqual(groupedSchedules);
-      expect(result.current.markedDates).toEqual(markedDates);
     });
 
     it('does not query when disabled', () => {
@@ -416,11 +405,9 @@ describe('useSchedules hooks', () => {
       const schedules = [createMockSchedule()];
       const stats = createMockStats();
       const groupedSchedules = [{ date: '2024-02-15', events: schedules }];
-      const markedDates = { '2024-02-15': { marked: true } };
 
       mockQueryData = { schedules, stats };
       mockGroupSchedulesByDate.mockReturnValue(groupedSchedules);
-      mockGetCalendarMarkedDates.mockReturnValue(markedDates);
 
       renderHook(() => useSchedules());
 
@@ -431,7 +418,6 @@ describe('useSchedules hooks', () => {
             schedules,
             stats,
             groupedSchedules,
-            markedDates,
           }),
           expect.objectContaining({
             userId: 'staff-1',

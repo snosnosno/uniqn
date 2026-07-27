@@ -5,7 +5,6 @@
  * @version 1.0.0
  */
 
-import { SECONDARY_PALETTE } from '@/constants/colors';
 import type { UnsubscribeFn } from '@/types/common';
 import { logger } from '@/utils/logger';
 import { NetworkError, ERROR_CODES, isAppError, toError } from '@/errors';
@@ -18,7 +17,6 @@ import type {
   ScheduleFilters,
   ScheduleStats,
   ScheduleGroup,
-  ScheduleType,
   WorkLog,
   Application,
   WorkLogStatus,
@@ -760,50 +758,4 @@ export function subscribeToSchedules(
       applicationUnsubscribe();
     };
   });
-}
-
-/**
- * 캘린더용 날짜별 마킹 데이터 생성
- */
-export function getCalendarMarkedDates(
-  schedules: ScheduleEvent[]
-): Record<string, { marked: boolean; dotColor: string; type?: ScheduleType }> {
-  const markedDates: Record<string, { marked: boolean; dotColor: string; type?: ScheduleType }> =
-    {};
-
-  const colorMap: Record<ScheduleType, string> = {
-    applied: '#D4AF37', // primary (gold)
-    confirmed: '#22C55E', // success
-    completed: SECONDARY_PALETTE[500], // secondary (과거 근무 — confirmed와 시각 구분)
-    cancelled: '#DC2626', // error
-    no_show: '#DC2626', // error
-  };
-
-  schedules.forEach((schedule) => {
-    // 이미 마킹된 날짜가 있으면 우선순위에 따라 결정
-    // 우선순위: confirmed > applied > completed > cancelled
-    if (!hasScheduleDate(schedule.date)) {
-      return;
-    }
-
-    if (!markedDates[schedule.date]) {
-      markedDates[schedule.date] = {
-        marked: true,
-        dotColor: colorMap[schedule.type],
-        type: schedule.type,
-      };
-    } else if (
-      schedule.type === STATUS.SCHEDULE.CONFIRMED ||
-      (schedule.type === STATUS.SCHEDULE.APPLIED &&
-        markedDates[schedule.date].type !== STATUS.SCHEDULE.CONFIRMED)
-    ) {
-      markedDates[schedule.date] = {
-        marked: true,
-        dotColor: colorMap[schedule.type],
-        type: schedule.type,
-      };
-    }
-  });
-
-  return markedDates;
 }

@@ -5,7 +5,6 @@
  * @version 2.0.0
  */
 
-import { SECONDARY_PALETTE } from '@/constants/colors';
 import type { ScheduleEvent, WorkLog, Application, ScheduleFilters } from '@/types';
 
 // Import after mocks
@@ -17,7 +16,6 @@ import {
   getTodaySchedules,
   subscribeToSchedules,
   groupSchedulesByDate,
-  getCalendarMarkedDates,
   calculateScheduleStats,
 } from '@/services/work/scheduleService';
 import { STATUS } from '@/constants';
@@ -844,72 +842,6 @@ describe('scheduleService - groupSchedulesByDate', () => {
 
     expect(groups[0].formattedDate).toContain('12월');
     expect(groups[0].formattedDate).toContain('25일');
-  });
-});
-
-describe('scheduleService - getCalendarMarkedDates', () => {
-  it('스케줄 타입별로 올바른 색상을 반환해야 함', () => {
-    const schedules = [
-      createMockScheduleEvent({ date: '2025-01-15', type: STATUS.SCHEDULE.CONFIRMED }),
-      createMockScheduleEvent({ date: '2025-01-16', type: STATUS.SCHEDULE.APPLIED }),
-      createMockScheduleEvent({ date: '2025-01-17', type: STATUS.SCHEDULE.COMPLETED }),
-      createMockScheduleEvent({ date: '2025-01-18', type: STATUS.SCHEDULE.CANCELLED }),
-    ];
-
-    const markedDates = getCalendarMarkedDates(schedules);
-
-    expect(markedDates['2025-01-15'].dotColor).toBe('#22C55E');
-    expect(markedDates['2025-01-16'].dotColor).toBe('#D4AF37');
-    expect(markedDates['2025-01-17'].dotColor).toBe(SECONDARY_PALETTE[500]);
-    expect(markedDates['2025-01-18'].dotColor).toBe('#DC2626');
-  });
-
-  it('confirmed가 다른 타입보다 우선순위가 높아야 함', () => {
-    const schedules = [
-      createMockScheduleEvent({ date: '2025-01-15', type: STATUS.SCHEDULE.APPLIED }),
-      createMockScheduleEvent({ date: '2025-01-15', type: STATUS.SCHEDULE.CONFIRMED }),
-    ];
-
-    const markedDates = getCalendarMarkedDates(schedules);
-
-    expect(markedDates['2025-01-15'].type).toBe(STATUS.SCHEDULE.CONFIRMED);
-  });
-
-  it('applied가 completed보다 우선순위가 높아야 함', () => {
-    const schedules = [
-      createMockScheduleEvent({ date: '2025-01-15', type: STATUS.SCHEDULE.COMPLETED }),
-      createMockScheduleEvent({ date: '2025-01-15', type: STATUS.SCHEDULE.APPLIED }),
-    ];
-
-    const markedDates = getCalendarMarkedDates(schedules);
-
-    expect(markedDates['2025-01-15'].type).toBe(STATUS.SCHEDULE.APPLIED);
-  });
-
-  it('빈 배열에 대해 빈 객체를 반환해야 함', () => {
-    const markedDates = getCalendarMarkedDates([]);
-    expect(markedDates).toEqual({});
-  });
-
-  it('모든 날짜에 marked 플래그가 설정되어야 함', () => {
-    const schedules = [
-      createMockScheduleEvent({ date: '2025-01-15' }),
-      createMockScheduleEvent({ date: '2025-01-16' }),
-    ];
-
-    const markedDates = getCalendarMarkedDates(schedules);
-
-    expect(markedDates['2025-01-15'].marked).toBe(true);
-    expect(markedDates['2025-01-16'].marked).toBe(true);
-  });
-  it('빈 날짜 schedule은 캘린더 마킹에서 제외한다', () => {
-    const markedDates = getCalendarMarkedDates([
-      createMockScheduleEvent({ date: '' }),
-      createMockScheduleEvent({ date: '2025-01-15' }),
-    ]);
-
-    expect(markedDates['']).toBeUndefined();
-    expect(markedDates['2025-01-15']).toBeDefined();
   });
 });
 
