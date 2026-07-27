@@ -1,7 +1,7 @@
 /**
  * UNIQN Mobile - Supabase WorkLog Repository Venue (운영처 스팬 정산 / 슬롯 편집)
  *
- * @description 주간 배치 그리드의 work_logs 경로.
+ * @description 근무표의 work_logs 경로.
  * - getByVenueSpanInRange: 운영처 스팬 + 날짜범위 정산 근무 기록 조회(Phase 4).
  * - updateSlot: 슬롯 편집(B2) — 시간/역할/색상/메모 부분 수정.
  *
@@ -12,7 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import { handleSupabaseError } from '@/utils/supabase';
 import { STATUS } from '@/constants';
-import { assertSlotColor, assertSlotMemo, composeTimeSlot } from '@/domains/weeklyGrid';
+import { assertSlotColor, assertSlotMemo, composeTimeSlot } from '@/domains/workSchedule';
 import type { WorkLog } from '@/types';
 import type { UpdateSlotInput } from '../interfaces';
 import {
@@ -24,7 +24,7 @@ import {
 } from './WorkLogRepositoryHelpers';
 
 /**
- * 운영처(venue) 스팬 + 날짜범위 근무 기록 조회 (주간 배치 그리드 Phase 4 정산).
+ * 운영처(venue) 스팬 + 날짜범위 근무 기록 조회 (근무표 Phase 4 정산).
  *
  * E1: venue 스팬은 venue_span_posting_ids(SSOT) RPC 로 취득 — `venue_id=:V OR id=:V` 손수
  * 재작성 금지(발산 방지). R5: 날짜범위는 SQL 경계(.gte/.lte)에서 적용(전기간 풀 pull 금지).
@@ -94,7 +94,7 @@ export async function getByVenueSpanInRange(
 }
 
 /**
- * 슬롯 편집(주간 배치 그리드 B2) — 시간/역할/색상/메모 부분 수정.
+ * 슬롯 편집(근무표 B2) — 시간/역할/색상/메모 부분 수정.
  *
  * 검증 경계(Repository): color 는 토큰 화이트리스트(자유 hex 거부), memo 는 XSS 검증
  * 통과분만 기록(S1/U3). startTime+endTime 둘 다 제공 시에만 time_slot 갱신(읽기-수정-쓰기 회피).

@@ -148,7 +148,7 @@ export function useConfirmedStaff(
   const updateWorkTimeMutation = useMutation({
     mutationFn: updateConfirmedStaffWorkTime,
     onSuccess: () => {
-      // invalidateQueries.staffManagement 가 weeklyGrid.all 까지 무효화하므로(근무표 출근 수정 #3
+      // invalidateQueries.staffManagement 가 workSchedule.all 까지 무효화하므로(근무표 출근 수정 #3
       // 후 카드 상태/시간 자동 갱신) 별도 호출은 불필요하다.
       invalidateQueries.staffManagement(jobPostingId);
       addToast({ type: 'success', message: '근무 시간이 수정되었습니다.' });
@@ -294,9 +294,9 @@ export function useConfirmedStaff(
       invalidateQueries.staffManagement(jobPostingId);
       // 정원/자동마감(capacity_full) 상태가 바뀌므로 공고 상세·목록 캐시도 무효화
       invalidateQueries.jobPostings();
-      // 스태프탭 직접추가가 주간 배치 그리드(부족셀·하루 슬롯)에 즉시 반영되도록 무효화 (W-1).
+      // 스태프탭 직접추가가 근무표(부족셀·하루 슬롯)에 즉시 반영되도록 무효화 (W-1).
       // AddSlotSheet(그리드) 경로도 같은 addStaff 를 쓰므로 단일 지점에서 그리드 캐시를 갱신한다.
-      queryClient.invalidateQueries({ queryKey: queryKeys.weeklyGrid.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.workSchedule.all });
       addToast({ type: 'success', message: '스태프가 추가되었습니다.' });
     },
     onError: (mutationError: Error) => {

@@ -1,7 +1,7 @@
 /**
  * useEnsureDefaultWorkspace — 워크스페이스 0개 신규 employer에게 기본 워크스페이스 자동 보장.
  *
- * 배경: 운영처(venue) 생성·주간 그리드는 workspace_id 를 전제한다. 공고 작성 경로엔
+ * 배경: 운영처(venue) 생성·근무표는 workspace_id 를 전제한다. 공고 작성 경로엔
  * 안전망(workspaceService.getDefaultWorkspaceIdForOwner — 0개면 자동 생성)이 있으나,
  * 그리드 경로엔 없어 워크스페이스가 0개인 신규 employer 는 "운영처 만들기" 데드엔드
  * (workspaceId undefined → 생성 버튼 영구 비활성)에 빠진다. 이 훅이 그 안전망을 미러링한다.

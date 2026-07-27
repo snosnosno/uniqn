@@ -74,8 +74,8 @@ jest.mock('../queryClient', () => ({
     admin: {
       all: ['admin'],
     },
-    weeklyGrid: {
-      all: ['weeklyGrid'],
+    workSchedule: {
+      all: ['workSchedule'],
     },
   },
 }));
@@ -114,24 +114,24 @@ describe('invalidationStrategy', () => {
     });
   });
 
-  // 파생 집계(인원 카운트·주간 그리드)는 work_logs 를 서버에서 집계한 값이라,
+  // 파생 집계(인원 카운트·근무표)는 work_logs 를 서버에서 집계한 값이라,
   // 확정 뮤테이션이 이 둘을 같이 씻어내지 않으면 화면 숫자만 옛값으로 남는다.
-  it('invalidates derived aggregates (filled counts, weekly grid) when an applicant is confirmed', () => {
+  it('invalidates derived aggregates (filled counts, work schedule) when an applicant is confirmed', () => {
     invalidateRelated('applicant.confirm', { jobPostingId: 'job-1' });
 
     expect(mockedQueryClient.invalidateQueries).toHaveBeenCalledWith({
       queryKey: ['postingFilledCounts'],
     });
     expect(mockedQueryClient.invalidateQueries).toHaveBeenCalledWith({
-      queryKey: ['weeklyGrid'],
+      queryKey: ['workSchedule'],
     });
   });
 
-  it('invalidates the weekly grid when a job posting requirement changes', () => {
+  it('invalidates the work schedule when a job posting requirement changes', () => {
     invalidateRelated('jobPosting.update', { jobPostingId: 'job-1' });
 
     expect(mockedQueryClient.invalidateQueries).toHaveBeenCalledWith({
-      queryKey: ['weeklyGrid'],
+      queryKey: ['workSchedule'],
     });
   });
 });

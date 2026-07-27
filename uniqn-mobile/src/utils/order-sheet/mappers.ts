@@ -21,7 +21,7 @@ import {
   draftToUpdateJobPostingInput,
 } from '@/utils/job-posting/draftAdapter';
 import { toDateString } from '@/utils/date';
-import { DEFAULT_SLOT_START_TIME } from '@/domains/weeklyGrid';
+import { DEFAULT_SLOT_START_TIME } from '@/domains/workSchedule';
 import { DEFAULT_SALARY_BY_TYPE } from '@/constants/jobPosting';
 import { syncRoleSalaries } from '@/utils/order-sheet/roleSalaries';
 import { generateId } from '@/utils/generateId';
@@ -485,7 +485,7 @@ export function formValuesToDraft(values: OrderSheetFormValues): JobPostingDraft
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** 주간 배치 그리드 "부족 N명 → 공고 열기" 프리필 파라미터(구 gridPrefill.ts에서 이주 — 유일 소비자). */
+/** 근무표 "부족 N명 → 공고 열기" 프리필 파라미터(구 gridPrefill.ts에서 이주 — 유일 소비자). */
 export interface GridPrefillParams {
   venueId?: string;
   /** YYYY-MM-DD (그리드 선택일) */
@@ -509,7 +509,7 @@ export function gridParamsToValues(params: GridPrefillParams): OrderSheetFormVal
     ...(venueId !== undefined ? { venueId } : {}),
     ...(hasDate
       ? {
-          // 단일 그룹 형태로 이행(S1) — 주간그리드 프리필 의미 무변
+          // 단일 그룹 형태로 이행(S1) — 근무표 프리필 의미 무변
           scheduleGroups: [{ dates: [params.date as string], timeSlots, grouped: false as const }],
           // 반환 직전 프리필(Eng-H3) — 미적용 시 그리드 출하 플로우가 "급여 시트 강제 방문"으로 회귀
           roleSalaries: syncRoleSalaries(timeSlots, [], base.salary.type),

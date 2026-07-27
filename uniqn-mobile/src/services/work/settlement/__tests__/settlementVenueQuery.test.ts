@@ -1,7 +1,7 @@
 /**
  * settlementVenueQuery.getVenueSettlementWorkLogs — 운영처 정산 reader 테스트
  *
- * 주간 배치 그리드 Phase 4(정산). 검증 대상:
+ * 근무표 Phase 4(정산). 검증 대상:
  * - 날짜범위를 repo(SQL .gte/.lte)로 이전 — 본 서비스는 클라 날짜필터를 하지 않는다(R5).
  *   repo 가 반환한 work_log 는 추가 날짜 잘림 없이 전부 결과에 포함.
  * - SettlementCalculator 재사용으로 예상 정산액(calculatedAmount)/근무시간(hoursWorked) 부가.

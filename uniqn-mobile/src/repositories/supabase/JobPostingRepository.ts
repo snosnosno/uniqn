@@ -25,7 +25,7 @@ import { removeUndefined } from '@/utils/removeUndefined';
 import { getTodayString } from '@/utils/date';
 import { generateUUID } from '@/utils/generateId';
 import { STATUS } from '@/constants';
-import type { VenueContainer } from '@/domains/weeklyGrid';
+import type { VenueContainer } from '@/domains/workSchedule';
 import type { UnsubscribeFn, PaginationCursor } from '@/types/common';
 import type { TaxSettings } from '@/utils/settlement';
 import type {
@@ -442,7 +442,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
     }
   }
 
-  // 운영처(venue) 컨테이너 경로(주간 배치 그리드) — 구현은 JobPostingRepositoryVenue 로 분리(800줄 하드캡). 동작 무변경 위임.
+  // 운영처(venue) 컨테이너 경로(근무표) — 구현은 JobPostingRepositoryVenue 로 분리(800줄 하드캡). 동작 무변경 위임.
   async getVenueContainers(workspaceId: string): Promise<VenueContainer[]> {
     return venue.getVenueContainers(workspaceId);
   }

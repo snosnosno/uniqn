@@ -48,7 +48,7 @@ jest.mock('@/hooks/workspace', () => ({
 }));
 
 const mockUseVenueContainers = jest.fn();
-jest.mock('@/hooks/weeklyGrid', () => ({
+jest.mock('@/hooks/workSchedule', () => ({
   useVenueContainers: () => mockUseVenueContainers(),
 }));
 
