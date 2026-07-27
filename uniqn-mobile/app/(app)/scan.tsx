@@ -40,7 +40,7 @@ export default function ScanScreen() {
   }, []);
 
   // 스캔 결과 처리는 훅이 전담 (토스트·캐시 무효화·에러 문구)
-  const { lastError, clearError, handleScanResult } = useQRCodeScanner({
+  const { lastError, clearError, handleScanResult, isProcessing } = useQRCodeScanner({
     onSuccess: () => {
       // 출퇴근 체크 완료 — 결정적 순간이므로 Success 햅틱 (impeccable §17).
       void triggerHaptic('success');
@@ -85,6 +85,7 @@ export default function ScanScreen() {
         title="출퇴근 QR 스캔"
         scanError={lastError}
         onClearError={clearError}
+        isProcessing={isProcessing}
       />
       {isTutorialVisible && (
         <View className="absolute inset-0 z-10">
