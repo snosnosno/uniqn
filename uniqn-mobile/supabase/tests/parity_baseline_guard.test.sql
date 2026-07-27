@@ -56,6 +56,11 @@
 --       이 컬럼에 값을 쓰는 코드가 없어 자동 마감 크론(expire-by-last-work-date)이
 --       매일 0건을 닫고 있던 결함을 봉합 — 기존 28행 백필 동반.
 --     정책 111 불변(트리거 신설만, RLS 미변경).
+--   2026-07-27 공고 자동 마감 사각지대 정리(마이그 20260727000000):
+--     함수 183 = 181 + fn_expire_pending_applications_on_close 1(자동 마감 시 미확정 지원 종결)
+--       + fn_log_scheduled_close 1(마감 크론 처리 건수를 action_logs 에 기록 —
+--         job_run_details.return_message 가 항상 "1 row" 라 0건 처리를 구분할 수 없었다).
+--     정책 111 불변(트리거·함수만 변경, 테이블·RLS 미변경 — action_logs 재사용).
 --
 -- ⚠️ 유지보수 계약: 이후 마이그레이션이 public 함수/정책을 추가·삭제하면
 --   이 기대값을 같은 PR에서 함께 갱신해야 한다. 갱신을 강제당하는 것 자체가
@@ -68,7 +73,7 @@
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=181
+-- PARITY_EXPECT_FUNCS=183
 -- PARITY_EXPECT_POLICIES=111
 -- ============================================================
 BEGIN;
@@ -88,8 +93,8 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  181,
-  'public function count == prod (181 = 180 + fn_sync_last_work_date, 2026-07-26)');
+  183,
+  'public function count == prod (183 = 181 + 자동마감 사각지대 정리 2종, 2026-07-27)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(

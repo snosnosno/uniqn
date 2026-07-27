@@ -15,6 +15,7 @@ import {
 } from '@/domains/job-posting';
 import { JOB_POSTING_SCHEMA_VERSION } from '@/types/jobPosting';
 import { isWithinUrgentDateLimit } from '@/utils/date';
+import { MAX_POSTING_TITLE_LENGTH } from '@/constants/jobPosting';
 import { Constants } from '@/types/supabase';
 import { isRegionSlug } from '@/constants/regions';
 
@@ -66,7 +67,9 @@ export const basicInfoSchema = z.object({
   title: z
     .string()
     .min(1, { message: 'Enter a title' })
-    .max(25, { message: 'Title must be 25 characters or less' })
+    .max(MAX_POSTING_TITLE_LENGTH, {
+      message: `Title must be ${MAX_POSTING_TITLE_LENGTH} characters or less`,
+    })
     .trim()
     .refine(xssValidation, { message: 'Unsafe text is not allowed' }),
   location: z

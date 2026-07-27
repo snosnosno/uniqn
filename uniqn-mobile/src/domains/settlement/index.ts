@@ -37,3 +37,5 @@ export {
   getRoleSalaryFromJobPostingCard,
   calculateSettlementBreakdown,
 } from './helpers';
+
+export { settledLockMessage, ALREADY_SETTLED_MESSAGE } from './settledLockMessage';

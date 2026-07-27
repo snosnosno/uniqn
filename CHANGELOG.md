@@ -5,7 +5,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.0.0/)를 기반으로 하며,
 이 프로젝트는 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 준수합니다.
 
-## [Unreleased] - 2026-07-26
+## [Unreleased] - 2026-07-27
+
+### Added
+- **모션 토큰 신설 + 코어 UI Reduce Motion 대응** (PR #350, DB 변경 0): 화면마다 손으로 박혀 있던 애니메이션 커브·지속시간을 `src/constants/motion.ts`(`MOTION_EASING`·`MOTION_DURATION`) 한 곳으로 수렴시키고, `Toast.tsx`·`Modal.tsx`(NativeModal 이펙트 한정)를 그 토큰의 첫 소비처로 전환했다. 토큰을 기존 `constants/animation.ts` 에 얹지 않고 **새 파일로 분리**한 것이 핵심 — 그 파일은 주문서 연쇄 로직과 그 테스트가 소비하는데 reanimated 의존과 모듈스코프 `Easing.bezier()` 평가가 들어가면 전파 범위가 불필요하게 넓어지고, 두 파일은 개념도 다르다(연출 커브 vs 네이티브 dismiss 커밋 대기). 함께 OS 접근성 설정 "동작 줄이기"를 앱이 처음으로 존중한다 — 활성 시 transform 은 즉시 목표값으로 세팅하고 opacity 페이드만 유지한다. 공유 훅 `src/hooks/useReduceMotion.ts` 를 신설해 `Skeleton.tsx`·`OfflineStatusBar.tsx` 에 복사돼 있던 중복 정의 2곳을 제거했다(배럴 상수 순환 3회 재발 이력 때문에 `hooks/index.ts` 배럴에는 export 하지 않는다). Toast 의 퇴장 완료 콜백은 `translateY` → `opacity` 로 옮겼다 — reduce motion 은 `translateY` 를 즉시 세팅하므로 콜백이 유실돼 `onDismiss` 가 호출되지 않고 토스트가 목록에 계속 쌓이기 때문. 폐기된 `feat/animation-motion-polish` 브랜치(태그 `archive/2026-07-27/*`)에서 아직 유효한 조각만 골라 옮기는 방식으로 재구현했다 — 머지했다면 #280·#302·#306~#308·#332·#335 의 실기기 수정이 되돌아갔다. `SheetModal.tsx` 는 파일 전체 무변경(B 묶음 = 드래그 dismiss, 실기기 QA 게이트로 이월). 검증: quality EXIT 0 · jest 544 스위트 6028 테스트 통과 · CI 9종 green
+
+## [2026-07-26]
 
 ### Added
 - **구인탭 급여 필터 정렬(높은순/낮은순) + 금액 프리셋 재구성** (PR #346, 마이그 `sync_last_work_date` prod 적용): 시급/일급은 "정렬 2개 + 금액 프리셋 2개", 월급은 표본이 적어 정렬만 제공한다. `salary_*_max` 는 유일하지도 NOT NULL 도 아니라 keyset 커서(lt/gt)를 쓰면 **동점 행이 통째로 유실**되므로, 정렬이 걸린 경로만 `offset(range)` + `id` 2차 정렬키로 분기했다(`salarySortedPage`). `useJobPostings` 가 서버 정렬 결과를 `sortJobPostings`(날짜순)로 통째로 덮어쓰고 있던 결함도 함께 수정 — `salarySort` 가 있으면 서버 순서를 보존한다. 목록↔칩 카운트 모수는 `applySalaryScope` 단일 헬퍼를 `getList`/`getTypeCounts` 양쪽에서 호출해 구조적으로 일치시켰고, 정렬만 걸어도 급여 NULL(협의) 공고와 근무일이 모두 지난 공고를 제외한다. **프리셋 축소 시 영속 계층도 함께 정화** — `SALARY_FILTER_PRESETS` 를 시트 칩과 `sanitizeSalaryFilter` 의 단일 소스로 두어, 폐기된 금액(시급 1.1만)이 MMKV 에 남아 pill 은 표시되는데 시트에 대응 칩이 없어 **재현도 해제도 못 하는** 상태를 차단한다

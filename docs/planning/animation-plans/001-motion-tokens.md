@@ -1,6 +1,13 @@
 # 001 — 모션 토큰 신설: MOTION_EASING · MOTION_DURATION
 
-- **Status**: TODO
+- **Status**: **DONE** (PR #350 `ab097c0fc`) — ⚠️ 아래 Target 과 **다르게** 구현됨
+  - 기존 `constants/animation.ts` 확장이 아니라 **신규 파일 `src/constants/motion.ts`** 로 신설했다.
+    animation.ts 에 reanimated 의존과 모듈스코프 `Easing.bezier()` 평가가 들어가면 소비처
+    4곳(`OrderSheetScreen` · `OrderSheetScreen.chain.test` · `schedule` · `ScheduleDetailModal`)으로
+    전파되고, 두 파일은 개념도 다르다(연출 커브 vs 네이티브 dismiss 커밋 대기).
+    근거: `../2026-07-27-animation-reimplementation-handoff.md` §2 A-1.
+  - Steps 2 의 **LoadingOverlay 소비 전환은 무효** — `LoadingOverlay.tsx` 는 #263 `cbeaad9dd`
+    에서 죽은 코드로 삭제됐다(참조 0). 첫 소비처는 `Toast.tsx` · `Modal.tsx` 가 됐다.
 - **Commit**: c0c6113e5
 - **Severity**: HIGH
 - **Category**: 응집·토큰 (Cohesion & tokens)

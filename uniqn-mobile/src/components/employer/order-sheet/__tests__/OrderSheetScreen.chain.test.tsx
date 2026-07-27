@@ -197,7 +197,7 @@ const completePreset = (): OrderSheetPreset => ({
  * 잠긴 '날짜' 행이 미설정이지만 연쇄는 이를 건너뛰어야 한다(skipKeys).
  * (실사용에서도 발생 가능: 확정 후 서버/타 세션에서 날짜가 비워진 공고를 편집 진입)
  */
-const lockedWithDatesMissing = (): OrderSheetFormValues => ({
+const datesMissingValues = (): OrderSheetFormValues => ({
   ...onlyTitleMissing(),
   scheduleGroups: [
     {
@@ -588,14 +588,13 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
     expect(sheetTitleOf(queryByTestId)).toBeNull();
   });
 
-  it('잠긴 행(dates)이 미설정이어도 연쇄가 건너뛰어 수정 가능한 행(급여)으로 간다 — 경고 토스트 없음', async () => {
-    // 구 증상: 연쇄가 잠긴 dates 를 타깃으로 골라 guardScheduleLock 이 누른 적 없는 경고
-    // 토스트를 띄우며 연쇄가 죽었다 — 뒤쪽의 수정 가능한 미설정 행(급여)으로 넘어가야 한다.
+  it('미설정 dates 가 연쇄 타깃이 된다 — 잠금으로 건너뛰지 않는다', async () => {
+    // 확정자 잠금 폐지 회귀 게이트. 옛 계약에서는 dates 가 잠긴 행이라 연쇄가 이를 스킵하고
+    // 뒤쪽 급여로 넘어갔다. 잠금이 사라졌으므로 dates 가 정상적으로 다음 타깃이어야 한다.
     const { getByTestId, getByText, queryByTestId } = render(
       <OrderSheetScreen
         {...baseProps}
-        initialValues={{ ...lockedWithDatesMissing(), salary: { type: 'hourly', amount: 0 } }}
-        scheduleLocked
+        initialValues={{ ...datesMissingValues(), salary: { type: 'hourly', amount: 0 } }}
       />
     );
 
@@ -605,32 +604,8 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
 
     await advanceSwap();
 
-    // 잠긴 dates(미설정)를 건너뛰고 급여 시트가 열린다 — 날짜 시트가 아니다
-    expect(queryByTestId('job-posting-date-confirm-button')).toBeNull();
-    expect(sheetTitleOf(queryByTestId)).toBe('급여');
-    // 잠금 경고 토스트는 사용자가 직접 잠긴 행을 탭했을 때만 떠야 한다
-    expect(mockAddToast).not.toHaveBeenCalled();
-  });
-
-  it('잠긴 행이 유일한 미설정이면 연쇄가 조용히 끝난다 — 토스트·딤·시트·예약 없음', async () => {
-    const { getByTestId, getByText, queryByTestId } = render(
-      <OrderSheetScreen {...baseProps} initialValues={lockedWithDatesMissing()} scheduleLocked />
-    );
-
-    fireEvent.press(getByTestId('order-sheet-row-title'));
-    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러 구합니다');
-    fireEvent.press(getByText('확인'));
-
-    // 잠긴 dates 를 스킵하면 남은 미설정이 없다 — 예약 자체가 걸리지 않는다
-    expect(jest.getTimerCount()).toBe(0);
-    expect(queryByTestId('order-sheet-chain-scrim')).toBeNull();
-
-    await advanceSwap();
-
-    expect(mockAddToast).not.toHaveBeenCalled();
-    expect(sheetTitleOf(queryByTestId)).toBeNull();
-    expect(queryByTestId('job-posting-date-confirm-button')).toBeNull();
-    expect(queryByTestId('order-sheet-chain-scrim')).toBeNull();
+    expect(queryByTestId('job-posting-date-confirm-button')).toBeTruthy();
+    expect(mockAddToast).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'warning' }));
   });
 
   // 대기 창(180ms) 중 딤은 pointerEvents='none' — 화면 전체가 탭 가능하다.

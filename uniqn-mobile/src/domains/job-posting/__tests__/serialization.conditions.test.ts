@@ -88,9 +88,9 @@ describe('conditions 해제 왕복(update 경로 — S3 리뷰 I-2/I-1)', () => 
     expect(doc.conditions).toEqual({}); // serialize 의 `!== undefined` 통과 → 빈 {} wholesale 기록
   });
 
-  it('확정 지원자 축소 payload도 conditions 변경을 문서에 반영한다(I-1)', () => {
+  it('update patch 가 conditions 변경을 문서에 반영한다(I-1)', () => {
     const editedDraft = { ...draftWithConditions, conditions: { dressCode: '유니폼 지급' } };
-    const patch = draftToUpdateJobPostingInput(editedDraft, { hasConfirmedApplicants: true });
+    const patch = draftToUpdateJobPostingInput(editedDraft);
     const entity = entityWithConditions();
     const doc = serializeJobPostingV3(mergeJobPostingInput(entity, patch), {
       ownerId: 'u1',

@@ -525,14 +525,9 @@ export function valuesToCreateInput(values: OrderSheetValues): CreateJobPostingI
 /**
  * 주문서 값 → 공고 수정 입력(S3). 레거시 draftToUpdateJobPostingInput에 위임해
  * 신·구 등가성이 구조적으로 성립한다(valuesToCreateInput과 동형 패턴).
- * hasConfirmedApplicants=true면 레거시 계약 그대로 schedule·conditions를 제외한 축소
- * payload(서버 updateWithTransaction의 filledPositions 가드와 대칭)를 만든다.
  * tournamentConfig는 UpdateJobPostingInput 타입에 없어 이 경로가 승인 상태를 만질 수
  * 없다(설계 확정 ⑥ — update 직렬화가 current에서 보존, serialization.ts tournament 분기).
  */
-export function valuesToUpdateInput(
-  values: OrderSheetValues,
-  options?: { hasConfirmedApplicants?: boolean }
-): UpdateJobPostingInput {
-  return draftToUpdateJobPostingInput(valuesToDraft(values), options);
+export function valuesToUpdateInput(values: OrderSheetValues): UpdateJobPostingInput {
+  return draftToUpdateJobPostingInput(valuesToDraft(values));
 }

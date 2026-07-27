@@ -35,6 +35,33 @@ interface SerializeJobPostingV3Options {
 
 export const FIXED_POSTING_DURATION_DAYS = 7 as const;
 
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * 고정 공고 만료 계약 — 신규 생성 시 fixedConfig 를 만들어 넣는다.
+ *
+ * 이 fallback 이 없으면 신규 고정 공고의 `fixed_config` 가 NULL 로 저장되고,
+ * 자동 마감 경로가 **전부** 막힌다:
+ *   - 크론 `expire-fixed-postings` / 트리거 `tr_fixed_posting_expired`
+ *     → 둘 다 `(fixed_config->>'expiresAt') IS NOT NULL` 가드에서 탈락
+ *   - 크론 `expire-by-last-work-date`
+ *     → `posting_type IN ('regular','urgent','tournament')` 이라 fixed 는 애초에 대상 밖
+ * 결과적으로 만료 시각이 없는 고정 공고는 어떤 경로로도 마감되지 않는다
+ * (last_work_date writer 부재와 동일 계열 — 값을 쓰는 코드만 없었던 결함).
+ *
+ * urgentConfig 와 같은 형태의 fallback 이며, 기존 값이 있으면 그대로 보존한다.
+ */
+function buildFixedConfig(createdAtIso?: string): NonNullable<JobPostingDocumentV3['fixedConfig']> {
+  const parsed = createdAtIso ? new Date(createdAtIso) : new Date();
+  const createdAt = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+
+  return {
+    durationDays: FIXED_POSTING_DURATION_DAYS,
+    createdAt,
+    expiresAt: new Date(createdAt.getTime() + FIXED_POSTING_DURATION_DAYS * DAY_IN_MS),
+  };
+}
+
 export function getCanonicalPostingType(postingType?: PostingType | null): PostingType {
   return postingType ?? 'regular';
 }
@@ -365,12 +392,14 @@ export function serializeJobPostingV3(
       : current?.conditions !== undefined
         ? { conditions: current.conditions }
         : {}),
-    ...(postingType === 'fixed' && current?.fixedConfig
+    ...(postingType === 'fixed'
       ? {
-          fixedConfig: {
-            ...current.fixedConfig,
-            durationDays: FIXED_POSTING_DURATION_DAYS,
-          },
+          fixedConfig: current?.fixedConfig
+            ? {
+                ...current.fixedConfig,
+                durationDays: FIXED_POSTING_DURATION_DAYS,
+              }
+            : buildFixedConfig(options.createdAt),
         }
       : {}),
     ...(postingType === 'tournament' && current?.tournamentConfig

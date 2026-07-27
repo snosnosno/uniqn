@@ -1,6 +1,12 @@
 # 003 — 코어 UI 4종 Reduce Motion 대응 + 공유 훅 추출
 
-- **Status**: TODO
+- **Status**: **PARTIAL** (PR #350 `ab097c0fc`) — "코어 4종" 중 실제 반영은 **2종**뿐이다.
+  - ✅ 공유 훅 `src/hooks/useReduceMotion.ts` 추출 + Skeleton·OfflineStatusBar 중복 정의 제거.
+    단 **`hooks/index.ts` 배럴에는 export 하지 않는다**(배럴 상수 순환 3회 재발) — Target 1의
+    "barrel 에 export 추가"는 폐기됐다. 소비처는 `@/hooks/useReduceMotion` 직접 경로.
+  - ✅ `Modal.tsx`(NativeModal) · `Toast.tsx` reduce motion 분기.
+  - ⏸ `SheetModal.tsx` — 미착수, B 묶음으로 이월(핸드오프 §5).
+  - ❌ `LoadingOverlay.tsx` — 대상 소멸(#263 `cbeaad9dd` 에서 삭제).
 - **Commit**: c0c6113e5
 - **Severity**: HIGH
 - **Category**: 접근성 (Accessibility)

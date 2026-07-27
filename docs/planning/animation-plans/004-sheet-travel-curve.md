@@ -1,6 +1,11 @@
 # 004 — 시트류 travel 커브 교체 + 75% 퇴장 규칙 정렬
 
-- **Status**: TODO
+- **Status**: **PARTIAL** (PR #350 `ab097c0fc`) — `Modal.tsx` 만 반영.
+  - ✅ `Modal.tsx` bottom 분기(`sheet` 300 / `sheetExit` 225 + `exitTravel`) · center 분기
+    (`emphasized` 250 + `enter`) · 퇴장 페이드(`fast` + `fade`) 전부 Target 대로.
+  - ⏸ `SheetModal.tsx` 네이티브 분기 — 미착수, B 묶음으로 이월(핸드오프 §5 B-1).
+    퇴장 250ms→225ms 는 **눈에 보이는 변화**라 실기기 확인 대상이고, 연쇄 진입
+    early-return · `contentOpacity` · `onShow` 를 반드시 보존해야 한다.
 - **Commit**: c0c6113e5
 - **Severity**: HIGH
 - **Category**: 이징·지속시간 (Easing & duration)

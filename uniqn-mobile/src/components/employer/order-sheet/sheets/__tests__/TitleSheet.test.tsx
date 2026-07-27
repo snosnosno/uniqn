@@ -8,6 +8,7 @@
 import { render, fireEvent } from '@testing-library/react-native';
 import React from 'react';
 import { TitleSheet } from '../TitleSheet';
+import { MAX_POSTING_TITLE_LENGTH } from '@/constants/jobPosting';
 
 // 무거운 의존(SheetModal=RNModal+reanimated) 모킹: visible 일 때 children+footer 만 렌더
 jest.mock('@/components/ui/SheetModal', () => {
@@ -54,7 +55,8 @@ describe('TitleSheet', () => {
     );
 
     fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 딜러');
-    expect(getByText('5/25')).toBeTruthy();
+    // 상한은 상수 단일 소스를 따른다 — 여기에 숫자를 박으면 상수 변경이 조용히 어긋난다.
+    expect(getByText(`5/${MAX_POSTING_TITLE_LENGTH}`)).toBeTruthy();
   });
 
   it('최근 제목 칩 탭 시 입력창을 그 값으로 채운다', () => {

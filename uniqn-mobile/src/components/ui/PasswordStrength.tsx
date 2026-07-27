@@ -31,27 +31,22 @@ interface Requirement {
 // Constants
 // ============================================================================
 
+/**
+ * 체크리스트는 `passwordSchema`(schemas/auth.schema.ts)의 **거울**이다 — 항목이 어긋나면
+ * 사용자는 통과할 수 없어 보이는 조건을 보면서 가입은 되는(또는 그 반대의) 상태에 놓인다.
+ * 스키마를 고치면 여기도 같이 고칠 것.
+ *
+ * 2026-07-27 정합화 2건:
+ *   · '연속 문자 3자 이상 금지' 제거 — 스키마에서 같이 폐기(사유는 auth.schema.ts 주석).
+ *   · 특수문자 판정을 스키마와 동일한 "영문·숫자·공백 외 전부"로 넓힘. 옛 `[!@#$%^&*]` 는
+ *     `~`·`-` 같은 문자를 쓴 비밀번호에서 가입은 되는데 체크는 안 켜지는 어긋남을 만들었다.
+ */
 const REQUIREMENTS: Requirement[] = [
   { key: 'length', label: '최소 8자 이상', test: (p) => p.length >= 8 },
   { key: 'lowercase', label: '소문자 포함', test: (p) => /[a-z]/.test(p) },
   { key: 'uppercase', label: '대문자 포함', test: (p) => /[A-Z]/.test(p) },
   { key: 'number', label: '숫자 포함', test: (p) => /[0-9]/.test(p) },
-  { key: 'special', label: '특수문자 포함 (!@#$%^&*)', test: (p) => /[!@#$%^&*]/.test(p) },
-  {
-    key: 'sequential',
-    label: '연속 문자 3자 이상 금지',
-    test: (p) => {
-      for (let i = 0; i < p.length - 2; i++) {
-        const c1 = p.charCodeAt(i);
-        const c2 = p.charCodeAt(i + 1);
-        const c3 = p.charCodeAt(i + 2);
-        if ((c2 === c1 + 1 && c3 === c2 + 1) || (c2 === c1 - 1 && c3 === c2 - 1)) {
-          return false;
-        }
-      }
-      return true;
-    },
-  },
+  { key: 'special', label: '특수문자 포함', test: (p) => /[^a-zA-Z0-9\s]/.test(p) },
 ];
 
 const STRENGTH_CONFIG: Record<StrengthLevel, { label: string; color: string; barColor: string }> = {
@@ -91,9 +86,10 @@ function calculateStrength(password: string): { level: StrengthLevel; score: num
   if (/[a-z]/.test(password)) score += 15;
   if (/[A-Z]/.test(password)) score += 15;
   if (/[0-9]/.test(password)) score += 15;
-  if (/[!@#$%^&*]/.test(password)) score += 15;
+  if (/[^a-zA-Z0-9\s]/.test(password)) score += 15;
 
-  // 연속 문자 감점
+  // 연속 문자 감점 — 게이트가 아니라 **강도 신호**로만 남긴다. 실제 엔트로피를 깎는 건 맞지만,
+  // 통과 조건으로 쓰면 패스워드 매니저 생성 문자열을 이유 없이 막게 된다(체크리스트에서는 제거).
   for (let i = 0; i < password.length - 2; i++) {
     const c1 = password.charCodeAt(i);
     const c2 = password.charCodeAt(i + 1);
