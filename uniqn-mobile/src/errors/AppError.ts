@@ -154,6 +154,9 @@ export const ERROR_CODES = {
   BUSINESS_ALREADY_REQUESTED: 'E6043',
   BUSINESS_PREVIOUSLY_REJECTED: 'E6044',
 
+  // 동시 편집 충돌 (낙관적 잠금)
+  BUSINESS_EDIT_CONFLICT: 'E6045',
+
   // 알림 관련 (E6050~)
   NOTIFICATION_PERMISSION_DENIED: 'E6050',
   NOTIFICATION_TOKEN_FAILED: 'E6051',
@@ -350,6 +353,8 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.BUSINESS_INVALID_STATE]: '현재 상태에서는 이 작업을 수행할 수 없습니다',
   [ERROR_CODES.BUSINESS_ALREADY_REQUESTED]: '이미 취소 요청이 진행 중입니다',
   [ERROR_CODES.BUSINESS_PREVIOUSLY_REJECTED]: '이전에 거절된 요청입니다',
+  [ERROR_CODES.BUSINESS_EDIT_CONFLICT]:
+    '다른 사람이 이 공고를 먼저 수정했습니다. 다시 저장하면 내 내용으로 덮어씁니다.',
 
   // 알림 관련
   [ERROR_CODES.NOTIFICATION_PERMISSION_DENIED]: '알림 권한이 필요합니다',

@@ -51,6 +51,10 @@ export function useSettlementModals() {
   const [isEditAmountModalVisible, setIsEditAmountModalVisible] = useState(false);
   const [selectedWorkLogForEdit, setSelectedWorkLogForEdit] = useState<WorkLog | null>(null);
 
+  // 지급 완료 취소 (SETTLE-3)
+  const [isRevertModalVisible, setIsRevertModalVisible] = useState(false);
+  const [selectedWorkLogForRevert, setSelectedWorkLogForRevert] = useState<WorkLog | null>(null);
+
   // 정산 설정 모달
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
 
@@ -102,6 +106,22 @@ export function useSettlementModals() {
   const closeEditAmountModal = useCallback(() => {
     setIsEditAmountModalVisible(false);
     setSelectedWorkLogForEdit(null);
+  }, []);
+
+  // --- 지급 완료 취소 모달 (상세 모달 전환, SETTLE-3) ---
+
+  const openRevertFromDetail = useCallback((workLog: WorkLog) => {
+    setIsDetailModalVisible(false);
+    setSelectedWorkLogForDetail(null);
+    setTimeout(() => {
+      setSelectedWorkLogForRevert(workLog);
+      setIsRevertModalVisible(true);
+    }, MODAL_TRANSITION_DELAY_MS);
+  }, []);
+
+  const closeRevertModal = useCallback(() => {
+    setIsRevertModalVisible(false);
+    setSelectedWorkLogForRevert(null);
   }, []);
 
   // --- 정산 확인 모달 ---
@@ -181,6 +201,11 @@ export function useSettlementModals() {
     isEditAmountModalVisible,
     openEditAmountFromDetail,
     closeEditAmountModal,
+    // 지급 완료 취소
+    selectedWorkLogForRevert,
+    isRevertModalVisible,
+    openRevertFromDetail,
+    closeRevertModal,
     // 정산 확인
     settleConfirm,
     openSettleConfirm,

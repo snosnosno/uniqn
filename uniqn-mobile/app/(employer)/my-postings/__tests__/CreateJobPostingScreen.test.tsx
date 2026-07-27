@@ -67,8 +67,11 @@ jest.mock('@/hooks/useTemplateManager', () => ({
   }),
 }));
 
+// ⚠️ 호출마다 새 jest.fn 을 만들면 '토스트가 몇 번 떴는가' 를 단언할 수 없다 —
+//    모듈 스코프 안정 참조로 고정한다(W1-11 / ORDER-5 이중 토스트 회귀 가드).
+const mockAddToast = jest.fn();
 jest.mock('@/stores/toastStore', () => ({
-  useToastStore: () => ({ addToast: jest.fn() }),
+  useToastStore: () => ({ addToast: mockAddToast }),
 }));
 
 jest.mock('@/components/headers', () => ({
@@ -202,5 +205,18 @@ describe('CreateJobPostingScreen — 대회 지점칩 선택의 값 흐름(B5)',
 
     const passed = mockCreateMutateAsync.mock.calls[0]?.[0] as { input: { venueId?: string } };
     expect(passed.input.venueId).toBeUndefined();
+  });
+
+  // W1-11 / ORDER-5: 훅(useCreateJobPosting.onError)이 이미 토스트를 띄우는데 화면이 한 장 더
+  // 얹어, 같은 실패가 두 번 뜨고 Supabase 영문 원문이 사용자에게 그대로 노출됐다.
+  it('등록 실패 시 화면은 토스트를 추가로 발행하지 않는다 (훅이 담당)', async () => {
+    mockCreateMutateAsync.mockRejectedValue(new Error('duplicate key value violates constraint'));
+    render(<CreateJobPostingScreen />);
+
+    await act(async () => {
+      await mockCapturedSubmit?.(tournamentValues);
+    });
+
+    expect(mockAddToast).not.toHaveBeenCalled();
   });
 });

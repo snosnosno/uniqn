@@ -245,7 +245,7 @@ export async function requestCancellation(
           authorRole: applicantContext.role,
           applicationId: input.applicationId,
           jobSummary: applicantContext.jobSummary,
-          reason: validationResult.data.reason,
+          // 취소 사유는 넘기지 않는다 — 게시판은 실명 전체공개라 사적 사유가 노출된다(W1-10).
         });
         substitutePost = 'created';
         logger.info('Substitute post created', { applicationId: input.applicationId });

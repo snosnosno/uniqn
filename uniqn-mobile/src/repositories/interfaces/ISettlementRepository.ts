@@ -153,14 +153,20 @@ export interface ISettlementRepository {
    * @description 정산 상태만 변경 (금액 변경 없음)
    * - 소유권 검증
    * - completed로 변경 시 payrollDate 자동 설정
+   * - **completed → 그 외(지급 완료 되돌리기)** 는 금전 역행이라 추가 강제:
+   *   사유 필수 · payrollDate 클리어 · settlementModificationHistory 감사 항목 append
+   *
+   * @param options.reason 지급 완료 되돌리기 사유. 되돌리기가 아니면 무시된다.
    *
    * @throws BusinessError 근무 기록/공고를 찾을 수 없는 경우
    * @throws PermissionError 소유권이 없는 경우
+   * @throws ValidationError 되돌리기인데 사유가 비어 있는 경우
    */
   updatePayrollStatusWithTransaction(
     workLogId: string,
     status: PayrollStatus,
-    actorId: string
+    actorId: string,
+    options?: { reason?: string }
   ): Promise<void>;
 
   // ==========================================================================

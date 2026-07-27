@@ -10,3 +10,5 @@ export {
   appendWorkTimeModification,
   MAX_WORK_TIME_REASON_LENGTH,
 } from './workTimeModification';
+export { getManualStatusTransitions } from './statusTransitions';
+export type { ManualStatusTransition } from './statusTransitions';

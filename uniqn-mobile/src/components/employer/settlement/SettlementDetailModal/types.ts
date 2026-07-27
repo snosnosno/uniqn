@@ -21,6 +21,11 @@ export interface SettlementDetailModalProps {
   onEditTime?: (workLog: WorkLog) => void;
   onEditAmount?: (workLog: WorkLog) => void;
   onSettle?: (workLog: WorkLog) => void;
+  /**
+   * 지급 완료 되돌리기 (SETTLE-3). 미전달이면 버튼을 렌더하지 않는다 —
+   * 지점 정산 화면처럼 되돌리기 배선이 없는 호출부의 기존 동작을 보존한다.
+   */
+  onRevertSettlement?: (workLog: WorkLog) => void;
   /** 통합 그룹 정보 (날짜 선택용) */
   groupedSettlement?: GroupedSettlement;
   /** 날짜 변경 콜백 */

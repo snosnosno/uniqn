@@ -215,7 +215,13 @@ export function useApplicantsByJobPosting(
 
   if (realtime) {
     return {
-      data: realtimeData ?? query.data,
+      // query.data 를 먼저 본다 — 구독 onUpdate 가 realtimeData 와 쿼리 캐시를 **함께** 쓰므로
+      // (:111-114) 두 값은 정상 경로에서 같다. 반대로 낙관 갱신(useApplicantMutations 의
+      // onMutate → setQueriesData)은 캐시에만 반영되는데, realtimeData 를 먼저 읽으면 그
+      // 그림자에 가려 낙관 갱신 3곳과 롤백이 통째로 죽은 코드가 된다(APPL-5).
+      // `?? undefined` 는 빈 값 표현을 undefined 로 유지하기 위한 것 — realtimeData 는
+      // 초기화 시 null 이라 그대로 흘리면 '데이터 없음' 이 null 로 바뀌어 계약이 달라진다.
+      data: query.data ?? realtimeData ?? undefined,
       isLoading: !realtimeData && !query.data && !realtimeError,
       error: realtimeError ?? query.error,
       refetch: refreshRealtimeData,

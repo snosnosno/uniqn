@@ -24,6 +24,7 @@ import {
   getRoleSalaryFromSettlementSource,
 } from '@/domains/settlement';
 import { STATUS } from '@/constants';
+import { shouldUseFrozenPayrollAmount } from '@/utils/settlementGrouping';
 import { PAYROLL_STATUS } from '@/constants/statusConfig';
 import { formatDateKorean } from '@/utils/date';
 import { NO_SHOW_NOTICE_TITLE, NO_SHOW_NOTICE_DESCRIPTION } from '../helpers';
@@ -315,6 +316,11 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
                 </Text>
               )}
             </View>
+            {/* 보장시간은 금액이 아니라 근무 조건이다 — '수당' 블록 안에 있으면 앱이 금액을
+                약속하는 것처럼 보인다. 실제 계산(basePay·수당 합산) 어디에도 반영되지 않는다. */}
+            {allowances?.guaranteedHours && allowances.guaranteedHours > 0 ? (
+              <Row label="보장시간" value={`${allowances.guaranteedHours}시간`} />
+            ) : null}
             <Row label="기본급" value={formatCurrency(settlement.basePay)} />
           </View>
 
@@ -324,10 +330,8 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
                 수당
               </Text>
 
-              {typeof allowances.guaranteedHours === 'number' && allowances.guaranteedHours > 0 && (
-                <Row label="보장시간" value={`${allowances.guaranteedHours}시간`} />
-              )}
-
+              {/* 보장시간은 위 '근무 조건'에 있다 — 수당 섹션에 다시 넣으면 같은 값이 두 번
+                  보이고, 금액 합산에 들어가는 것처럼 오해된다(W1-2). */}
               {allowances.meal !== undefined && allowances.meal !== 0 && (
                 <Row
                   label="식비"
@@ -397,9 +401,13 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
         </View>
       )}
 
-      {/* 0 원 확정(노쇼 차감·'협의' 급여)도 표시해야 이의 제기 시점을 놓치지 않는다.
-          truthy 가드는 0 을 숨길 뿐 아니라 숫자 0 을 View 의 직접 자식으로 흘려 RN 을 죽인다. */}
-      {typeof schedule.payrollAmount === 'number' && (
+      {/* 동결값 SSOT — 0 원 확정(노쇼 차감·'협의' 급여)도 '확정 ₩0' 으로 보여야 위 재계산
+          블록과 모순되지 않고, 이의 제기 시점을 놓치지 않는다. 헬퍼는 타입가드(boolean)라
+          숫자 0 이 View 의 직접 자식으로 새어 RN 을 죽이는 경로도 함께 막는다. */}
+      {shouldUseFrozenPayrollAmount(
+        schedule.payrollStatus === STATUS.PAYROLL.COMPLETED,
+        schedule.payrollAmount
+      ) && (
         <View className="mt-4 rounded-md bg-primary-50 p-4 dark:bg-primary-900/20">
           <Text className="mb-1 text-xs text-primary-600 dark:text-primary-400 font-sans">
             확정 정산 금액

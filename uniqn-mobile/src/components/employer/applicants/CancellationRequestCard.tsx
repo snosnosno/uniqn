@@ -17,6 +17,7 @@ import { ModalFooterButtons } from '@/components/ui/ModalFooterButtons';
 import { NumericText } from '@/components/ui/NumericText';
 import { ClockIcon, MessageIcon, CheckIcon, XMarkIcon, CalendarIcon } from '@/components/icons';
 import { STATUS } from '@/constants';
+import { useSubmitGate } from '@/hooks/useSubmitGate';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { formatAppliedDate, formatRelativeTime } from '@/utils/date';
 import { getRoleDisplayName } from '@/types/unified';
@@ -32,9 +33,13 @@ export interface CancellationRequestCardProps {
   application: Application;
   /** 승인 버튼 클릭 */
   onApprove: (applicationId: string) => void;
-  /** 거절 버튼 클릭 (거절 사유 포함) */
-  onReject: (applicationId: string, reason: string) => void;
-  /** 처리 중 여부 */
+  /**
+   * 거절 버튼 클릭 (거절 사유 포함).
+   * ⚠️ **Promise 를 돌려줘야 한다** — 결과를 보고 성공에서만 모달을 닫기 때문이다.
+   * void 를 돌려주면 실패해도 모달이 닫혀 사용자가 쓴 200자 사유가 사라진다(CANCEL-14).
+   */
+  onReject: (applicationId: string, reason: string) => Promise<void>;
+  /** 이 카드가 처리 중인지 — 목록 전체가 아니라 **대상 카드만** 잠근다(CANCEL-15). */
   isProcessing?: boolean;
 }
 
@@ -115,14 +120,25 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
     setRejectionReason('');
   }, []);
 
-  // 거절 제출 — 처리 중이면 중복 제출 차단(EF-CAN-2)
+  // 거절 제출 (CANCEL-14) — 결과를 보고 **성공에서만** 닫는다.
+  // 옛 코드는 결과를 안 보고 동기적으로 닫아, 실패하면 사유 200자가 사라지고 에러 토스트만
+  // 남았다. 그래서 footer 의 isLoading 도 렌더될 일이 없는 죽은 코드였다.
+  // 중복 제출 차단(EF-CAN-2)은 useSubmitGate 의 in-flight 가드가 이어받는다.
+  const rejectGate = useSubmitGate<[string]>({
+    action: (reason) => onReject(application.id, reason),
+    onSuccess: handleCloseRejectModal,
+    errorMessage: '취소 요청 거절 실패',
+    context: { applicationId: application.id },
+  });
+
   const handleSubmitReject = useCallback(() => {
     if (isProcessing) return;
     if (rejectionReason.trim().length >= 3) {
-      onReject(application.id, rejectionReason.trim());
-      handleCloseRejectModal();
+      void rejectGate.submit(rejectionReason.trim());
     }
-  }, [isProcessing, application.id, rejectionReason, onReject, handleCloseRejectModal]);
+  }, [isProcessing, rejectionReason, rejectGate]);
+
+  const isRejecting = isProcessing || rejectGate.isSubmitting;
 
   // 취소 요청이 없으면 렌더링하지 않음
   if (!cancellationRequest) {
@@ -274,8 +290,8 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
             onCancel={handleCloseRejectModal}
             onSubmit={handleSubmitReject}
             submitText="거절하기"
-            isLoading={isProcessing}
-            submitDisabled={rejectionReason.trim().length < 3 || isProcessing}
+            isLoading={isRejecting}
+            submitDisabled={rejectionReason.trim().length < 3 || isRejecting}
           />
         }
       >

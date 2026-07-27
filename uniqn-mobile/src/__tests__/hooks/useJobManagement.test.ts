@@ -376,11 +376,12 @@ describe('useJobManagement hooks', () => {
       await result.current.mutateAsync({
         jobPostingId: 'job-1',
         input,
+        expectedUpdatedAt: null,
       });
     });
 
     await waitFor(() => {
-      expect(mockUpdateJobPosting).toHaveBeenCalledWith('job-1', input, 'employer-1');
+      expect(mockUpdateJobPosting).toHaveBeenCalledWith('job-1', input, 'employer-1', null);
     });
     expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ['jobManagement'] });
     expect(mockInvalidateQueries).toHaveBeenCalledWith({
@@ -416,7 +417,12 @@ describe('useJobManagement hooks', () => {
       const { result } = renderHook(() => useUpdateJobPosting());
 
       await act(async () => {
-        await result.current.mutateAsync({ jobPostingId: 'job-1', input: {} });
+        // expectedUpdatedAt 은 기본값이 없다(W1-9) — 낙관적 잠금을 건너뛰려면 null 을 명시한다.
+        await result.current.mutateAsync({
+          jobPostingId: 'job-1',
+          input: {},
+          expectedUpdatedAt: null,
+        });
       });
 
       expect(mockInvalidateQueries).toHaveBeenCalledWith(WORK_SCHEDULE_KEY);

@@ -62,7 +62,7 @@ export default function StaffSettlementsScreen() {
   const {
     stats: staffStats,
     grouped: staffGrouped,
-    changeRole,
+    changeRoleAsync,
   } = useConfirmedStaff(jobPostingId || '', { realtime: true });
 
   // 오늘 날짜 그룹 (당일 운영 요약 스트립용)
@@ -78,7 +78,9 @@ export default function StaffSettlementsScreen() {
     updateWorkTime,
     settleWorkLog,
     bulkSettle,
+    updateStatusAsync,
     isUpdatingTime: isUpdating,
+    isUpdatingStatus: isReverting,
     isSettling: _isSettling,
     isBulkSettling: _isBulkSettling,
   } = useSettlement(jobPostingId || '');
@@ -109,6 +111,7 @@ export default function StaffSettlementsScreen() {
   // 핸들러 다발 (클로저 의존은 인자로 주입해 deps 보존)
   const {
     handleRoleChangeSave,
+    isChangingRole,
     handleReportSubmit,
     handleSettleFromDetail,
     handleSettle,
@@ -117,6 +120,7 @@ export default function StaffSettlementsScreen() {
     handleSaveTimeEdit,
     handleSaveAmountEdit,
     handleSaveSettings,
+    handleRevertSettlement,
   } = useStaffSettlementsHandlers({
     jobPostingId,
     modals,
@@ -125,10 +129,11 @@ export default function StaffSettlementsScreen() {
     addToast,
     refresh,
     refreshJobDetail,
-    changeRole,
+    changeRoleAsync,
     updateWorkTime,
     settleWorkLog,
     bulkSettle,
+    updateStatusAsync,
   });
 
   // ============================================================================
@@ -243,6 +248,9 @@ export default function StaffSettlementsScreen() {
         availableRoles={availableRoles}
         filledByRole={filledByRole}
         isUpdating={isUpdating}
+        isReverting={isReverting}
+        isChangingRole={isChangingRole}
+        onRevertSettlement={handleRevertSettlement}
         onRoleChangeSave={handleRoleChangeSave}
         onReportSubmit={handleReportSubmit}
         onSettleFromDetail={handleSettleFromDetail}

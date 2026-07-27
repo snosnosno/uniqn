@@ -56,13 +56,27 @@ export function useQRCodeScanner(options: UseQRCodeScannerOptions) {
   // QR 스캔 결과 처리 (고정 QR 단일 진입점, 5초 throttle 적용)
   const handleScanResult = useCallback(
     async (result: QRCodeScanResult) => {
-      // throttle: 5초 이내 중복 스캔 방지
+      // throttle: 5초 이내 중복 스캔 방지.
+      //
+      // [QR-2] 과거엔 진입 즉시 타임스탬프를 갱신하고 **되돌리지 않아서**, 실패한 시도가
+      // 이후 5초를 통째로 잠갔다. 카메라가 QR 을 계속 인식하는데 아무 반응이 없는(토스트조차
+      // 없는) 무음 구간이 생기고, 화면은 그동안 초록 '스캔 완료!' 를 그리고 있었다 — 거짓 성공.
+      //
+      // 그래서 '진입 시 갱신 + 실패 시 되돌림' 으로 바꾼다. 진입 시 갱신은 서버 왕복 중
+      // 연사 스캔을 막는 원래 목적이라 유지해야 한다(제거하면 중복 제출이 열린다).
       const now = Date.now();
       if (now - lastScanTimeRef.current < QR_SCAN_THROTTLE_MS) {
         return;
       }
+      const previousScanTime = lastScanTimeRef.current;
       lastScanTimeRef.current = now;
+      /** 실패 경로에서 throttle 창을 되돌려 즉시 재시도할 수 있게 한다. */
+      const releaseThrottle = () => {
+        lastScanTimeRef.current = previousScanTime;
+      };
+
       if (!result.success) {
+        releaseThrottle();
         addToast({
           type: 'error',
           message: result.error || '스캔에 실패했습니다.',
@@ -74,6 +88,7 @@ export function useQRCodeScanner(options: UseQRCodeScannerOptions) {
       const qrString = result.qrString;
 
       if (!qrString) {
+        releaseThrottle();
         addToast({
           type: 'error',
           message: 'QR 코드를 읽을 수 없습니다.',
@@ -82,6 +97,7 @@ export function useQRCodeScanner(options: UseQRCodeScannerOptions) {
       }
 
       if (!user?.uid) {
+        releaseThrottle();
         addToast({
           type: 'error',
           message: '로그인이 필요합니다.',
@@ -110,12 +126,14 @@ export function useQRCodeScanner(options: UseQRCodeScannerOptions) {
           });
           onSuccess?.();
         } else {
+          releaseThrottle();
           addToast({
             type: 'error',
             message: '처리에 실패했습니다.',
           });
         }
       } catch (error) {
+        releaseThrottle();
         logger.error('QR 스캔 처리 실패', toError(error));
         // AppError의 userMessage 활용 (사용자 친화적 메시지)
         const errorMessage = isAppError(error)

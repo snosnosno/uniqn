@@ -338,15 +338,18 @@ export interface IApplicationRepository {
    * @param applicationId - 지원서 ID
    * @param ownerId - 액션 수행자 ID (호출자 본인의 uid)
    * @param cancelReason - 취소 사유
-   * @param actorType - 취소 주체 유형(기본 staff_initiates). 인가 주체 판정은 RPC가 수행하며,
-   *                    클라이언트는 어떤 경로에서 호출했는지만 전달한다.
+   * @param actorType - 취소 주체 유형. **기본값 금지** — RPC 가 이 값으로 인가 대상을 바꾸므로
+   *                    (staff_initiates=applicant_id 대조 / employer_initiates=공고 권한 대조)
+   *                    기본값이 있으면 구인자 경로가 조용히 staff_initiates 로 나가 항상
+   *                    unauthorized 가 된다(CANCEL-2 의 실제 원인). 필수 인자로 두어 컴파일
+   *                    타임에 호출부를 강제한다.
    * @returns 취소 결과
    */
   cancelConfirmationTransaction(
     applicationId: string,
     ownerId: string,
-    cancelReason?: string,
-    actorType?: CancelActorType
+    cancelReason: string | undefined,
+    actorType: CancelActorType
   ): Promise<CancelConfirmationResult>;
 
   // ==========================================================================

@@ -40,6 +40,11 @@ interface QRCodeScannerProps {
   scanError?: QRScanError | null;
   /** 에러 초기화 콜백 */
   onClearError?: () => void;
+  /**
+   * 서버 왕복 진행 중 여부(QR-7). 인식만으로 초록 '스캔 완료!' 를 그리면 **거짓 성공**이라,
+   * 성공 응답을 받기 전까지는 중립 '확인 중...' 을 보여준다.
+   */
+  isProcessing?: boolean;
 }
 
 // ============================================================================
@@ -57,6 +62,7 @@ export function QRCodeScanner({
   title = 'QR 코드 스캔',
   scanError,
   onClearError,
+  isProcessing = false,
 }: QRCodeScannerProps) {
   const { width: windowWidth } = useWindowDimensions();
   const [permission, requestPermission] = useCameraPermissions();
@@ -64,6 +70,9 @@ export function QRCodeScanner({
   // (실기기 2026-07-19: 상단 닫기/플래시 버튼이 상태바와 겹쳐 탭 불가).
   const insets = useSafeAreaInsets();
   const [scanned, setScanned] = useState(false);
+  // [QR-7] 초록(성공)은 서버 응답 뒤에만. scanned 는 '카메라가 인식했다' 일 뿐이고
+  // 그 시점엔 아직 아무것도 확정되지 않았다. 처리 중이거나 에러가 있으면 중립을 유지한다.
+  const isConfirmedSuccess = scanned && !isProcessing && !scanError;
   const [flashEnabled, setFlashEnabled] = useState(false);
   const [permissionTimedOut, setPermissionTimedOut] = useState(false);
   const scanAreaSize = Math.min(Math.max(windowWidth * 0.7, 220), 320);
@@ -261,26 +270,26 @@ export function QRCodeScanner({
                 width: scanAreaSize,
                 height: scanAreaSize,
                 borderWidth: 2,
-                borderColor: scanned ? '#22C55E' : '#FFFFFF',
+                borderColor: isConfirmedSuccess ? '#22C55E' : '#FFFFFF',
                 borderRadius: 16,
               }}
             >
               {/* 코너 장식 */}
               <View
                 className="absolute -top-1 -left-1 w-8 h-8 border-t-4 border-l-4 rounded-tl-lg"
-                style={{ borderColor: scanned ? '#22C55E' : '#D4AF37' }}
+                style={{ borderColor: isConfirmedSuccess ? '#22C55E' : '#D4AF37' }}
               />
               <View
                 className="absolute -top-1 -right-1 w-8 h-8 border-t-4 border-r-4 rounded-tr-lg"
-                style={{ borderColor: scanned ? '#22C55E' : '#D4AF37' }}
+                style={{ borderColor: isConfirmedSuccess ? '#22C55E' : '#D4AF37' }}
               />
               <View
                 className="absolute -bottom-1 -left-1 w-8 h-8 border-b-4 border-l-4 rounded-bl-lg"
-                style={{ borderColor: scanned ? '#22C55E' : '#D4AF37' }}
+                style={{ borderColor: isConfirmedSuccess ? '#22C55E' : '#D4AF37' }}
               />
               <View
                 className="absolute -bottom-1 -right-1 w-8 h-8 border-b-4 border-r-4 rounded-br-lg"
-                style={{ borderColor: scanned ? '#22C55E' : '#D4AF37' }}
+                style={{ borderColor: isConfirmedSuccess ? '#22C55E' : '#D4AF37' }}
               />
             </View>
 
@@ -303,14 +312,18 @@ export function QRCodeScanner({
               </View>
             ) : (
               <Text className="text-white text-center mt-6 px-8 font-sans">
-                {scanned ? '스캔 완료!' : 'QR 코드를 영역 안에 맞춰주세요'}
+                {isProcessing
+                  ? '확인 중...'
+                  : isConfirmedSuccess
+                    ? '스캔 완료!'
+                    : 'QR 코드를 영역 안에 맞춰주세요'}
               </Text>
             )}
           </View>
         </View>
 
         {/* 하단 버튼 */}
-        {(scanned || scanError) && (
+        {(scanned || scanError) && !isProcessing && (
           <View className="px-6 py-4 bg-black/50">
             <Button
               variant="outline"

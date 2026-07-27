@@ -182,9 +182,9 @@ describe('jobManagementService — activeWorkspace 스코프 (P1#8)', () => {
       mockUpdateWithTransaction.mockResolvedValue(createPosting());
       const update = { title: 'changed' } as never;
 
-      await updateJobPosting('job-1', update, 'employer-1');
+      await updateJobPosting('job-1', update, 'employer-1', null);
 
-      expect(mockUpdateWithTransaction).toHaveBeenCalledWith('job-1', update, 'employer-1');
+      expect(mockUpdateWithTransaction).toHaveBeenCalledWith('job-1', update, 'employer-1', null);
       expect(mockGetDefaultWorkspaceIdForOwner).not.toHaveBeenCalled();
       expect(mockIsMemberOfWorkspace).not.toHaveBeenCalled();
     });

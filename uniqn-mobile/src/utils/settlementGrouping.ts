@@ -58,6 +58,21 @@ export function shouldUseFrozenPayrollAmount(
   return isCompleted && Number.isFinite(payrollAmount);
 }
 
+/**
+ * 아직 정산 완료 전이지만 구인자가 금액을 입력해 둔 건인지 판정한다 — 동결값의 짝 개념.
+ *
+ * 동결값(위 헬퍼)이 아닐 때 **2순위**로만 쓴다. 이 축이 없으면 '정산 예정' 집계가
+ * 통째로 0원이 된다(구인자가 금액을 넣어둔 상태인데도).
+ *
+ * ⚠️ 여기서만 `> 0`이 정당하다. 완료 전 0원은 "0원으로 확정"이 아니라 "아직 안 정함"
+ * 이므로 예정액으로 셀 근거가 없다 — 동결값 0을 존중하는 위 헬퍼와 의도적으로 다르다.
+ */
+export function hasPendingPayrollEstimate(
+  payrollAmount: number | null | undefined
+): payrollAmount is number {
+  return Number.isFinite(payrollAmount) && (payrollAmount as number) > 0;
+}
+
 // ============================================================================
 // Types
 // ============================================================================

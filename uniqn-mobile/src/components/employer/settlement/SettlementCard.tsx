@@ -26,6 +26,7 @@ import {
 import { getRoleDisplayName } from '@/types/unified';
 import type { WorkLog, PayrollStatus } from '@/types';
 import { STATUS } from '@/constants';
+import { shouldUseFrozenPayrollAmount } from '@/utils/settlementGrouping';
 import { PAYROLL_STATUS_CONFIG } from './helpers/settlementConfig';
 
 // Re-export types for backward compatibility
@@ -41,6 +42,12 @@ export interface SettlementCardProps {
   allowances?: Allowances;
   /** 세금 설정 (공고 전체에 적용) */
   taxSettings?: TaxSettings;
+  /**
+   * 서비스가 이미 계산한 canonical 금액(afterTaxPay).
+   * 지점 정산처럼 유효 급여·수당·세금 해소를 서비스가 끝낸 경로에서 넘긴다 —
+   * 안 넘기면 카드가 불완전한 컨텍스트로 다시 계산해 서비스 값과 어긋난다(SETTLE-8).
+   */
+  calculatedAmount?: number;
   onPress?: (workLog: WorkLog) => void;
   onSettle?: (workLog: WorkLog) => void;
 }
@@ -54,6 +61,7 @@ export const SettlementCard = React.memo(function SettlementCard({
   salaryInfo,
   allowances,
   taxSettings,
+  calculatedAmount,
   onPress,
   onSettle,
 }: SettlementCardProps) {
@@ -74,6 +82,19 @@ export const SettlementCard = React.memo(function SettlementCard({
 
   const payrollStatus = (workLog.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus;
   const statusConfig = PAYROLL_STATUS_CONFIG[payrollStatus];
+
+  // 표시 금액 우선순위 (SETTLE-5·SETTLE-8):
+  //   1) 정산 완료 → 동결값. 완료 시점에 확정·지급된 금액은 이후 공고 급여가 바뀌어도 불변이다.
+  //   2) 서비스가 계산한 canonical → 그대로 존중. 카드가 다시 계산하면 서비스가 해소한
+  //      유효 급여·수당·세금 컨텍스트를 잃는다.
+  //   3) 그 외 → 카드 자체 재계산(기존 동작).
+  const displayAmount = shouldUseFrozenPayrollAmount(
+    payrollStatus === STATUS.PAYROLL.COMPLETED,
+    workLog.payrollAmount
+  )
+    ? workLog.payrollAmount
+    : (calculatedAmount ??
+      (settlement.taxAmount > 0 ? settlement.afterTaxPay : settlement.totalPay));
 
   // 출퇴근 시간 유효 여부
   const startTime = parseTimestamp(workLog.checkInTime);
@@ -134,9 +155,7 @@ export const SettlementCard = React.memo(function SettlementCard({
                     textAlign: 'right',
                   }}
                 >
-                  {formatCurrency(
-                    settlement.taxAmount > 0 ? settlement.afterTaxPay : settlement.totalPay
-                  )}
+                  {formatCurrency(displayAmount)}
                 </NumericText>
               )}
             </View>

@@ -157,7 +157,8 @@ describe('applicationHistoryService', () => {
   });
 
   describe('cancelConfirmation', () => {
-    it('delegates cancellation to the repository transaction (기본 staff_initiates)', async () => {
+    // actorType 은 기본값이 없다 — 조용한 기본값이 구인자 경로를 항상 unauthorized 로 떨어뜨렸다.
+    it('delegates cancellation to the repository transaction (staff_initiates 명시)', async () => {
       const repositoryResult = {
         applicationId: 'app-1',
         restoredStatus: 'applied',
@@ -167,7 +168,12 @@ describe('applicationHistoryService', () => {
         repositoryResult as never
       );
 
-      const result = await cancelConfirmation('app-1', 'owner-1', 'Release slot');
+      const result = await cancelConfirmation(
+        'app-1',
+        'owner-1',
+        'Release slot',
+        'staff_initiates'
+      );
 
       expect(mockApplicationRepository.cancelConfirmationTransaction).toHaveBeenCalledWith(
         'app-1',
@@ -203,7 +209,9 @@ describe('applicationHistoryService', () => {
       mockApplicationRepository.cancelConfirmationTransaction.mockRejectedValue(appError);
       mockIsAppError.mockReturnValue(true);
 
-      await expect(cancelConfirmation('app-1', 'owner-1')).rejects.toBe(appError);
+      await expect(
+        cancelConfirmation('app-1', 'owner-1', undefined, 'staff_initiates')
+      ).rejects.toBe(appError);
       expect(mockHandleServiceError).not.toHaveBeenCalled();
     });
 
@@ -212,7 +220,9 @@ describe('applicationHistoryService', () => {
       mockApplicationRepository.cancelConfirmationTransaction.mockRejectedValue(error);
       mockHandleServiceError.mockReturnValue(error as never);
 
-      await expect(cancelConfirmation('app-1', 'owner-1')).rejects.toBe(error);
+      await expect(
+        cancelConfirmation('app-1', 'owner-1', undefined, 'staff_initiates')
+      ).rejects.toBe(error);
       expect(mockHandleServiceError).toHaveBeenCalledWith(
         error,
         expect.objectContaining({

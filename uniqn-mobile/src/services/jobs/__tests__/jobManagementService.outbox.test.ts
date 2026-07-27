@@ -180,7 +180,7 @@ describe('jobManagementService — outbox enqueue', () => {
 
   it('updateJobPosting → enqueue update', async () => {
     mockUpdateWithTransaction.mockResolvedValue(createPosting());
-    await updateJobPosting('job-2', {} as never, 'employer-1');
+    await updateJobPosting('job-2', {} as never, 'employer-1', null);
 
     expect(mockOutboxInsert).toHaveBeenCalledWith(
       expect.objectContaining({ job_posting_id: 'job-2', action: 'update' })

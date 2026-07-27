@@ -6,7 +6,7 @@
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, TextInput, ScrollView } from 'react-native';
 import { useThemeStore } from '@/stores/themeStore';
 import { Modal } from '@/components/ui/Modal';
@@ -36,6 +36,11 @@ export interface ApplicantConfirmModalProps {
   isLoading?: boolean;
   /** 선택된 일정 (확정 시 표시) */
   selectedAssignments?: Assignment[];
+  /**
+   * 지원자가 원래 신청한 전체 일정 수. 선택분보다 많으면 부분 확정 경고를 띄운다(APPL-1).
+   * 부분 확정은 UI 의 기본 경로(초기 선택 0건)라, 사장이 의도를 모른 채 축소 확정하기 쉽다.
+   */
+  totalAssignmentCount?: number;
 }
 
 // ============================================================================
@@ -52,6 +57,8 @@ const ACTION_CONFIG: Record<
     showTextInput: boolean;
     inputLabel: string;
     inputPlaceholder: string;
+    /** 서버 zod 한도와 동일 — 초과 입력 자체를 막는다. TextInput 하나가 두 액션을 겸하므로 액션별로 갈린다. */
+    inputMaxLength: number;
   }
 > = {
   confirm: {
@@ -62,6 +69,8 @@ const ACTION_CONFIG: Record<
     showTextInput: true,
     inputLabel: '메모 (선택)',
     inputPlaceholder: '추가 메모를 입력하세요',
+    // application.schema.ts:76 notes max(500)
+    inputMaxLength: 500,
   },
   reject: {
     title: '지원자 거절',
@@ -71,6 +80,8 @@ const ACTION_CONFIG: Record<
     showTextInput: true,
     inputLabel: '거절 사유 (선택)',
     inputPlaceholder: '거절 사유를 입력하세요',
+    // application.schema.ts:90 reject reason max(200)
+    inputMaxLength: 200,
   },
 };
 
@@ -87,6 +98,7 @@ export function ApplicantConfirmModal({
   onReject,
   isLoading = false,
   selectedAssignments,
+  totalAssignmentCount,
 }: ApplicantConfirmModalProps) {
   const [inputValue, setInputValue] = useState('');
   const config = ACTION_CONFIG[action];
@@ -140,7 +152,17 @@ export function ApplicantConfirmModal({
     onClose();
   }, [onClose]);
 
-  // 액션 실행
+  // ⚠️ 이 모달은 조건부 렌더가 아니라 **상시 마운트**다(visible=false 도 언마운트가 아니다).
+  //    성공 경로는 호출부가 부모 state 만 내리므로 handleClose 를 타지 않아, 닫힐 때 여기서
+  //    지우지 않으면 지원자 A 의 거절 사유가 지원자 B 의 확정 메모로 이월된다.
+  //    TextInput 하나가 두 액션을 겸하므로 액션 축까지 넘어간다.
+  useEffect(() => {
+    if (!visible) setInputValue('');
+  }, [visible]);
+
+  // 액션 실행 — 여기서 입력을 지우지 않는다. 옛 코드는 제출 직후 `setInputValue('')` 로
+  // 비웠고 호출부는 동기적으로 모달을 닫아, 실패하면 사용자가 쓴 사유가 통째로 사라졌다.
+  // 초기화는 실제로 닫힐 때(handleClose)만 한다.
   const handleAction = useCallback(() => {
     switch (action) {
       case 'confirm':
@@ -150,7 +172,6 @@ export function ApplicantConfirmModal({
         onReject(inputValue.trim() || undefined);
         break;
     }
-    setInputValue('');
   }, [action, inputValue, onConfirm, onReject]);
 
   if (!applicant) return null;
@@ -218,6 +239,15 @@ export function ApplicantConfirmModal({
             >
               확정할 일정 ({formattedAssignments.length}건)
             </Text>
+            {/* 부분 확정 경고 — 선택하지 않은 일정은 확정에서 빠지고, 확정 해제 전까지
+                지원자에게도 그 자리가 남지 않는다. 기본 경로라 침묵하면 사고가 된다. */}
+            {typeof totalAssignmentCount === 'number' &&
+              totalAssignmentCount > formattedAssignments.length && (
+                <Text className="mb-1.5 text-xs text-warning-700 dark:text-warning-400 font-sans">
+                  선택하지 않은 {totalAssignmentCount - formattedAssignments.length}개 일정은
+                  확정에서 제외돼요. 나중에 확정을 해제하면 다시 선택할 수 있어요.
+                </Text>
+              )}
             <ScrollView className="max-h-36" showsVerticalScrollIndicator={true}>
               {formattedAssignments.map((item) => (
                 <View
@@ -299,9 +329,14 @@ export function ApplicantConfirmModal({
               placeholderTextColor={SECONDARY_PALETTE[400]}
               multiline
               numberOfLines={2}
+              maxLength={config.inputMaxLength}
+              editable={!isLoading}
               textAlignVertical="top"
               className="p-2.5 border border-divider rounded-lg bg-surface-card text-content-primary dark:text-off-white min-h-[60px]"
             />
+            <Text className="text-xs text-content-placeholder text-right mt-1 font-sans">
+              {inputValue.length}/{config.inputMaxLength}
+            </Text>
           </View>
         )}
       </View>

@@ -26,6 +26,7 @@ import {
 } from './orderRowMeta';
 import { OrderGroup } from './OrderGroup';
 import { OrderRow } from './OrderRow';
+import { DATE_CONSTRAINTS } from '@/constants';
 import { TypeSegment } from './TypeSegment';
 import { TitleSheet } from './sheets/TitleSheet';
 import { PlaceSheet, type OrderSheetLocation } from './sheets/PlaceSheet';
@@ -83,6 +84,18 @@ const SLOTS_SHEET_ROWS: readonly OrderRowKey[] = ['time', 'roles'];
 const cloneSlots = (slots: GroupTimeSlots | undefined): GroupTimeSlots =>
   (slots ?? []).map((s) => ({ ...s, roles: s.roles.map((r) => ({ ...r })) }));
 
+/** 자동 시드된 기본값과 다른, **사용자가 실제로 넣은** 근무조건이 있는가. */
+function hasUserFixedInput(fixed: OrderSheetFormValues['fixedSchedule']): boolean {
+  if (fixed === undefined) return false;
+  const seed = defaultFixedSchedule();
+  return (
+    (fixed.roles?.length ?? 0) > 0 ||
+    fixed.startTime !== undefined ||
+    fixed.isStartTimeNegotiable !== seed.isStartTimeNegotiable ||
+    fixed.daysPerWeek !== seed.daysPerWeek
+  );
+}
+
 /** 고정 전환/방어 시드 기본값 — 제품 기본 주 5일(레거시 INITIAL은 0=협의, jobPostingForm.ts:202) */
 const defaultFixedSchedule = (): NonNullable<OrderSheetFormValues['fixedSchedule']> => ({
   daysPerWeek: 5,
@@ -100,6 +113,8 @@ export interface OrderSheetScreenProps {
   myPhone?: string;
   /** 프리셋 캐러셀(마지막 공고 + 저장 템플릿) — create.tsx가 조립해 전달(Task 9). */
   presets?: OrderSheetPreset[];
+  /** 프리셋을 아직 불러오는 중인지 — 로딩과 '없음'을 구분해야 거짓 안내를 막는다(ORDER-9). */
+  presetsLoading?: boolean;
   /** "＋ 저장" 카드 → 현재 폼 값을 상위(create.tsx)로 넘겨 템플릿 저장 모달을 연다. */
   onSaveTemplate?: (values: OrderSheetFormValues) => void;
   /** 편집 모드(S3) — 타입 세그먼트 잠금·'이대로 수정' 라벨·대회 생성 배너 숨김(승인상태 보존 ⑥) */
@@ -120,6 +135,7 @@ export function OrderSheetScreen({
   onDirtyChange,
   myPhone = '',
   presets,
+  presetsLoading = false,
   onSaveTemplate,
   mode = 'create',
   onChainSwappingChange,
@@ -454,6 +470,14 @@ export function OrderSheetScreen({
     setActiveSheet({ key: 'dates', groupIndex: groups.length, mode: 'add' });
   }, [form, clearPendingSwap]);
 
+  /** 담긴 날짜가 타입별 상한에 도달했는지 — 도달하면 '+ 일정 추가' 진입 자체를 막는다(ORDER-8). */
+  const dateCapReached = useMemo(() => {
+    const max = DATE_CONSTRAINTS[values.postingType]?.maxDates ?? 0;
+    if (max <= 0) return false; // fixed 는 이 섹션을 쓰지 않는다
+    const used = (values.scheduleGroups ?? []).reduce((n, g) => n + (g.dates?.length ?? 0), 0);
+    return used >= max;
+  }, [values.postingType, values.scheduleGroups]);
+
   /** 날짜 시트 확정 — whole 모드는 세그먼트에 따라 그룹 분할/유지(분할은 confirm 시점에만 실행) */
   const handleDatesConfirm = useCallback(
     (target: DatesTarget, dates: string[], segment: ScheduleSplitMode) => {
@@ -532,29 +556,55 @@ export function OrderSheetScreen({
       // 연쇄 예약 취소 — 대기 창(180ms) 안에서 폼 전체가 교체되면 예약된 타깃이 새 프리셋 값 위에
       // phantom 시트로 재등장한다(리뷰 실측: 프리셋 적용 직후 '연락처' 시트 팝업).
       clearPendingSwap();
+      // 카드 1탭이 폼 **전체**를 갈아치운다 — 되돌릴 자산이 같은 파일(handleDeleteGroup)에
+      // 이미 있는데 안 쓰고 있었다. 지금까지 쓴 입력이 있을 때만 스냅샷+Undo 를 얹는다
+      // (impeccable §12 Undo > Confirm — 확인 다이얼로그는 1탭 적용의 속도를 죽인다).
+      const hadInput = form.formState.isDirty;
+      const snapshot = hadInput ? structuredClone(form.getValues()) : null;
       const v = preset.values;
+      // ⚠️ keepDefaultValues — 기본 reset 은 defaultValues 까지 프리셋으로 바꿔 isDirty 를
+      //    false 로 떨어뜨린다. 그러면 프리셋을 얹은 채 화면을 나가도 이탈 경고가 안 뜬다.
+      const resetOptions = { keepDefaultValues: true } as const;
       if (v.useSameSalary ?? false) {
-        form.reset(v);
+        form.reset(v, resetOptions);
       } else {
-        form.reset({
-          ...v,
-          roleSalaries:
-            v.postingType === 'fixed'
-              ? syncRoleSalariesForRoles(
-                  v.fixedSchedule?.roles ?? [],
-                  v.roleSalaries ?? [],
-                  v.salary.type
-                )
-              : syncRoleSalaries(
-                  (v.scheduleGroups ?? []).flatMap((g) => g.timeSlots ?? []),
-                  v.roleSalaries ?? [],
-                  v.salary.type
-                ),
-        });
+        form.reset(
+          {
+            ...v,
+            roleSalaries:
+              v.postingType === 'fixed'
+                ? syncRoleSalariesForRoles(
+                    v.fixedSchedule?.roles ?? [],
+                    v.roleSalaries ?? [],
+                    v.salary.type
+                  )
+                : syncRoleSalaries(
+                    (v.scheduleGroups ?? []).flatMap((g) => g.timeSlots ?? []),
+                    v.roleSalaries ?? [],
+                    v.salary.type
+                  ),
+          },
+          resetOptions
+        );
       }
       setSalaryConfirmed(false);
+      if (snapshot) {
+        addToast({
+          type: 'success',
+          message: `'${preset.title}' 구성으로 바꿨어요`,
+          duration: 5000,
+          action: {
+            label: '되돌리기',
+            onPress: () => {
+              clearPendingSwap();
+              form.reset(snapshot, resetOptions);
+              setSalaryConfirmed(false);
+            },
+          },
+        });
+      }
     },
-    [form, clearPendingSwap]
+    [form, clearPendingSwap, addToast]
   );
   const handleSavePreset = useCallback(() => {
     // 상위(create/edit)가 TemplateModal 을 연다 — 그 모달은 "주문서 시트가 닫힌 상태에서만 열린다"는
@@ -580,14 +630,53 @@ export function OrderSheetScreen({
   // 담당하던 create.tsx 레거시 전환 Alert는 S2 내부화로 사문 — 여기가 승계 지점.
   const stashedGroupsRef = useRef<ScheduleGroups | null>(null);
   const stashedFixedRef = useRef<OrderSheetFormValues['fixedSchedule'] | null>(null);
+  // Undo 가 handleTypeChange 자신을 부르므로 ref 로 우회한다(선언 순환 회피).
+  const handleTypeChangeRef = useRef<
+    ((t: PostingType, options?: { silent?: boolean }) => void) | null
+  >(null);
+
+  /** 전환으로 사라진 입력을 고지하고 되돌릴 길을 준다 — 스태시가 있어도 알려주지 않으면 없는 것과 같다. */
+  const notifyTypeSwitch = useCallback(
+    (clearedLabel: string | null, previousType: PostingType) => {
+      if (!clearedLabel) return;
+      addToast({
+        type: 'info',
+        message: `${clearedLabel}을 잠시 치워뒀어요`,
+        duration: 5000,
+        action: {
+          label: '되돌리기',
+          // 되돌리기는 이전 타입으로 다시 전환하는 것 — 스태시 복원 경로를 그대로 재사용한다.
+          // silent — 되돌리기가 반대 축을 다시 치우면서 두 번째 토스트를 띄우면 핑퐁이 된다.
+          onPress: () => handleTypeChangeRef.current?.(previousType, { silent: true }),
+        },
+      });
+    },
+    [addToast]
+  );
 
   const handleTypeChange = useCallback(
-    (t: PostingType) => {
+    (t: PostingType, options?: { silent?: boolean }) => {
       // 연쇄 예약 취소 — 대기 창(180ms) 안에서 폼 구조(행 구성)가 바뀌면 예약된 타깃이
       // 새 타입의 폼 위에서 phantom 시트가 된다(fixed→dated 전환 시 '근무조건' 시트 팝업 실측).
       clearPendingSwap();
       const cur = form.getValues();
       if (cur.postingType === t) return; // 동일 타입 재탭 no-op — 오탭이 dirty만 남기는 것 방지
+      const previousType = cur.postingType;
+      // 전환이 **실제로 데이터를 치웠을 때만** 신호를 낸다. 지금까지는 날짜·시간대가 화면에서
+      // 사라지는데 아무 알림이 없어(ORDER-11), 사장은 자기가 지운 줄도 몰랐다.
+      // ⚠️ fixed 축은 `!== undefined` 로 보면 안 된다 — dated→fixed 전환이 defaultFixedSchedule()
+      //    을 **자동 시드**하므로, 빈 폼에서 '고정' 탭을 눌렀다 되돌리기만 해도 "치워뒀어요" 가
+      //    뜬다. dated 축처럼 **사용자가 실제로 넣은 값**이 있는지로 판정한다.
+      const clearedLabel =
+        t === 'fixed'
+          ? (cur.scheduleGroups ?? []).some(
+              (g) => g.dates.length > 0 || (g.timeSlots ?? []).length > 0
+            )
+            ? '일정·모집 입력'
+            : null
+          : hasUserFixedInput(cur.fixedSchedule)
+            ? '근무조건 입력'
+            : null;
       if (t === 'fixed') {
         form.setValue('postingType', 'fixed', { shouldDirty: true });
         // 고정은 scheduleGroups가 반드시 비어야 한다(배열 원소 스키마 회피) — 소거 전 의미 있는
@@ -606,6 +695,7 @@ export function OrderSheetScreen({
             shouldValidate: true,
           });
         }
+        if (!options?.silent) notifyTypeSwitch(clearedLabel, previousType);
         return;
       }
       // dated(regular|urgent|tournament) — fixed에서 오면 근무조건 스태시 후 정리(M7), 그룹 복원/시드
@@ -624,9 +714,15 @@ export function OrderSheetScreen({
           { shouldDirty: true, shouldValidate: true }
         );
       }
+      if (!options?.silent) notifyTypeSwitch(clearedLabel, previousType);
     },
-    [form, clearPendingSwap]
+    [form, clearPendingSwap, notifyTypeSwitch]
   );
+  // 렌더 중 ref 쓰기는 React 규칙 위반(동시 렌더에서 폐기된 렌더의 쓰기가 남는다).
+  // 토스트 탭은 커밋 이후에만 가능하므로 effect 타이밍으로 충분하다.
+  useEffect(() => {
+    handleTypeChangeRef.current = handleTypeChange;
+  }, [handleTypeChange]);
 
   const handleSubmitPress = form.handleSubmit(
     (valid) => {
@@ -681,6 +777,7 @@ export function OrderSheetScreen({
           {presets !== undefined && (
             <PresetCarousel
               presets={presets}
+              isLoading={presetsLoading}
               onSelect={handleApplyPreset}
               onSavePress={handleSavePreset}
             />
@@ -801,15 +898,29 @@ export function OrderSheetScreen({
                     })}
                   </>
                 )}
+                {/* 날짜 상한을 다 쓰면 여는 것 자체를 막는다 — 열어봐야 아무 날짜도 못 고르고
+                    '최대 0개까지 선택할 수 있습니다' 라는 사람이 안 쓰는 문장만 보게 된다. */}
                 <Pressable
                   onPress={handleAddSchedule}
-                  className="min-h-[44px] items-center justify-center border-t border-secondary-100 dark:border-surface-overlay active:opacity-80"
+                  disabled={dateCapReached}
+                  className={`min-h-[44px] items-center justify-center border-t border-secondary-100 dark:border-surface-overlay ${
+                    dateCapReached ? 'opacity-50' : 'active:opacity-80'
+                  }`}
                   accessibilityRole="button"
+                  accessibilityState={{ disabled: dateCapReached }}
                   accessibilityLabel="일정 추가"
                   testID="order-sheet-add-schedule"
                 >
-                  <Text className="text-sm font-sans-medium text-primary-600 dark:text-primary-400">
-                    ＋ 일정 추가
+                  <Text
+                    className={`text-sm font-sans-medium ${
+                      dateCapReached
+                        ? 'text-content-muted'
+                        : 'text-primary-600 dark:text-primary-400'
+                    }`}
+                  >
+                    {dateCapReached
+                      ? `날짜는 ${DATE_CONSTRAINTS[values.postingType].maxDates}개까지 담을 수 있어요`
+                      : '＋ 일정 추가'}
                   </Text>
                 </Pressable>
               </OrderGroup>

@@ -8,7 +8,7 @@
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import { BusinessError, MaxCapacityReachedError, ValidationError, ERROR_CODES } from '@/errors';
-import { handleSupabaseError } from '@/utils/supabase';
+import { handleSupabaseError, assertUpdated } from '@/utils/supabase';
 import {
   createHistoryEntry,
   findActiveConfirmation,
@@ -223,11 +223,18 @@ export async function executeReviewCancellation(
  * @param actorType - 취소 주체 유형(기본 staff_initiates). 구인자 해제는 employer_initiates.
  * @see docs/qa/2026-04-14/team-b-atomicity-spec.md §2
  */
+/**
+ * ⚠️ `actorType` 에 기본값을 두지 않는다 — RPC 는 actorType 에 따라 인가 대상을 바꾸므로
+ * (staff_initiates=applicant_id 대조 / employer_initiates=공고 권한 대조), 기본값이 있으면
+ * 구인자 경로가 조용히 staff_initiates 로 나가 **항상 unauthorized** 가 된다. 서비스 계층에서
+ * 같은 결함이 실제로 발생했고(CANCEL-2), 그때 기본값 제거를 컴파일 타임 가드로 삼아 호출부
+ * 3곳을 즉시 검출했다. 같은 함정이 이 계층에 남아 있어 함께 없앤다.
+ */
 export async function executeCancelConfirmation(
   applicationId: string,
   actorId: string,
-  cancelReason?: string,
-  actorType: CancelActorType = 'staff_initiates'
+  cancelReason: string | undefined,
+  actorType: CancelActorType
 ): Promise<CancelConfirmationResult> {
   try {
     logger.info('확정 취소 시작 (RPC)', { applicationId, actorId, actorType });
@@ -390,7 +397,10 @@ async function executeRejectCancellation(
     rejectionReason: input.rejectionReason?.trim() || '거절',
   };
 
-  const { error } = await supabase
+  // CAS 가드는 있으나 PostgREST 는 0행 갱신에도 error 를 주지 않는다 — 스태프가 그사이 스스로
+  // 취소를 철회했거나 다른 관리자가 먼저 처리했으면 아무것도 안 바뀐 채 함수가 void 로 끝나고,
+  // 호출부(useCancellationManagement)가 '거절 처리되었습니다' 토스트를 띄운다.
+  const { data: updatedRows, error } = await supabase
     .from(TABLES.APPLICATIONS)
     .update({
       status: STATUS.APPLICATION.CONFIRMED,
@@ -398,8 +408,14 @@ async function executeRejectCancellation(
       updated_at: now,
     })
     .eq('id', input.applicationId)
-    .eq('status', STATUS.APPLICATION.CANCELLATION_PENDING);
+    .eq('status', STATUS.APPLICATION.CANCELLATION_PENDING)
+    .select('id');
 
   if (error)
     handleSupabaseError(error, { operation: '취소 요청 거절', table: TABLES.APPLICATIONS });
+  assertUpdated(updatedRows, {
+    operation: '취소 요청 거절',
+    table: TABLES.APPLICATIONS,
+    id: input.applicationId,
+  });
 }

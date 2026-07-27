@@ -100,8 +100,11 @@ describe('requestCancellation with substitute post', () => {
         authorRole: 'staff',
         applicationId: 'app-1',
         jobSummary,
-        reason: '갑자기 몸이 아파서 출근이 어렵습니다.',
       })
+    );
+    // W1-10(CANCEL-12): 취소 사유는 구인자에게만 간다. 게시판 경로로는 넘기지 않는다.
+    expect(mockCreateSubstitutePost).not.toHaveBeenCalledWith(
+      expect.objectContaining({ reason: expect.anything() })
     );
   });
 

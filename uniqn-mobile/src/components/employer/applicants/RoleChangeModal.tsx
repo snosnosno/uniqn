@@ -34,6 +34,7 @@ export interface RoleChangeModalProps {
    */
   filledByRole?: Record<string, number>;
   onSave: (data: { staffId: string; workLogId: string; newRole: string; reason: string }) => void;
+  /** 제출 중 — 성공에서만 닫히므로 실제로 렌더된다(옛 구조에서는 죽은 prop 이었다). */
   isLoading?: boolean;
 }
 
@@ -42,6 +43,14 @@ export interface RoleChangeModalProps {
 // ============================================================================
 
 /** 기본 역할 목록 (STAFF_ROLES에서 추출) */
+/**
+ * 역할 변경 사유 길이 상한.
+ * ⚠️ 서버(updateStaffRole)는 이 필드를 zod 로 파싱하지 않아 **맞출 서버 한도가 없다.**
+ * SettlementRevertModal 의 수정 사유(200)를 선례로 삼아 값을 정했다 — 서버 검증이
+ * 생기면 그쪽 한도를 진실원으로 삼고 이 상수를 맞춰야 한다.
+ */
+const REASON_MAX_LENGTH = 200;
+
 const DEFAULT_ROLES = STAFF_ROLES.map((r) => r.key);
 
 // ============================================================================
@@ -305,11 +314,16 @@ export function RoleChangeModal({
             placeholderTextColor={SECONDARY_PALETTE[400]}
             multiline
             numberOfLines={2}
+            maxLength={REASON_MAX_LENGTH}
+            editable={!isLoading}
             textAlignVertical="top"
             accessibilityLabel="역할 변경 사유 입력"
             accessibilityHint="역할 변경 사유를 입력하세요. 필수 입력 항목입니다."
             className="p-2.5 border border-divider rounded-lg bg-surface-card text-content-primary dark:text-off-white min-h-[48px]"
           />
+          <Text className="text-xs text-content-placeholder text-right mt-1 font-sans">
+            {reason.length}/{REASON_MAX_LENGTH}
+          </Text>
         </View>
 
         {/* 안내 메시지 */}

@@ -462,4 +462,104 @@ describe('useConfirmedStaff', () => {
       message: '스태프가 추가되었습니다.',
     });
   });
+  // --- realtime 계약 (STAFF-1 CRITICAL · STAFF-11) ---------------------------
+  // useQuery 가 `enabled: !realtime` 로 영구 disabled 라, 이 모드에서는 훅이 자체 상태로
+  // error·isRefreshing 을 만들어야 한다. 예전엔 그게 없어 구독이 죽어도 error=null +
+  // isLoading=true 로 굳었고(무한 스피너), 화면의 ErrorState 는 도달 불가한 죽은 코드였다.
+
+  it('realtime 구독이 실패하면 error 를 노출하고 로딩을 끝낸다 (무한 스피너 방지)', async () => {
+    let onError: ((error: Error) => void) | undefined;
+    mockSubscribeToConfirmedStaff.mockImplementation(
+      (_jobPostingId: string, callbacks: { onError: typeof onError }) => {
+        onError = callbacks.onError;
+        return jest.fn();
+      }
+    );
+
+    const { result } = renderHook(() => useConfirmedStaff('job-1', { realtime: true }));
+
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.error).toBeNull();
+
+    act(() => {
+      onError?.(new Error('subscription dead'));
+    });
+
+    await waitFor(() => {
+      expect(result.current.error).not.toBeNull();
+    });
+    expect(result.current.error?.message).toBe('subscription dead');
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it('realtime 모드에서도 refresh 가 실제로 조회를 호출한다 (no-op 아님)', async () => {
+    mockSubscribeToConfirmedStaff.mockImplementation(() => jest.fn());
+    mockRefetch.mockResolvedValue({ data: undefined, error: null });
+
+    const { result } = renderHook(() => useConfirmedStaff('job-1', { realtime: true }));
+
+    await act(async () => {
+      result.current.refresh();
+    });
+
+    expect(mockRefetch).toHaveBeenCalled();
+  });
+
+  it('realtime 새로고침 결과가 화면 데이터에 반영된다', async () => {
+    mockSubscribeToConfirmedStaff.mockImplementation(() => jest.fn());
+    const refreshed = {
+      staff: [createMockConfirmedStaff()],
+      grouped: [],
+      stats: { total: 1, checkedIn: 0, checkedOut: 0, noShow: 0 },
+    };
+    mockRefetch.mockResolvedValue({ data: refreshed, error: null });
+
+    const { result } = renderHook(() => useConfirmedStaff('job-1', { realtime: true }));
+
+    await act(async () => {
+      result.current.refresh();
+    });
+
+    await waitFor(() => {
+      expect(result.current.staff).toHaveLength(1);
+    });
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it('구독이 성공하면 이전 에러가 해소된다', async () => {
+    let onUpdate: ((result: unknown) => void) | undefined;
+    let onError: ((error: Error) => void) | undefined;
+    mockSubscribeToConfirmedStaff.mockImplementation(
+      (
+        _jobPostingId: string,
+        callbacks: { onUpdate: typeof onUpdate; onError: typeof onError }
+      ) => {
+        onUpdate = callbacks.onUpdate;
+        onError = callbacks.onError;
+        return jest.fn();
+      }
+    );
+
+    const { result } = renderHook(() => useConfirmedStaff('job-1', { realtime: true }));
+
+    act(() => {
+      onError?.(new Error('temporary'));
+    });
+    await waitFor(() => {
+      expect(result.current.error).not.toBeNull();
+    });
+
+    act(() => {
+      onUpdate?.({
+        staff: [createMockConfirmedStaff()],
+        grouped: [],
+        stats: { total: 1, checkedIn: 0, checkedOut: 0, noShow: 0 },
+      });
+    });
+
+    await waitFor(() => {
+      expect(result.current.error).toBeNull();
+    });
+    expect(result.current.staff).toHaveLength(1);
+  });
 });

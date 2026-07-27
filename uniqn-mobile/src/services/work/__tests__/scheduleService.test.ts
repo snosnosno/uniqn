@@ -430,8 +430,12 @@ describe('scheduleService - getMySchedules', () => {
         id: 'undated',
         date: '',
         type: STATUS.SCHEDULE.COMPLETED,
+        // payroll_amount 는 항상 payroll_status='completed' 와 **함께만** 기록된다
+        // (SettlementRepository :276-278 개별 · :490-492 일괄). 동결값 판정이 정산 축으로
+        // 통일되면서 이 픽스처도 실제 데이터 모양을 따른다.
+        payrollStatus: STATUS.PAYROLL.COMPLETED,
         payrollAmount: 120000,
-      }),
+      } as Partial<ScheduleEvent>),
     ];
 
     mockWorkLogRepositoryGetByStaffIdWithFilters.mockResolvedValue([]);
@@ -929,5 +933,71 @@ describe('scheduleService - calculateScheduleStats', () => {
     );
 
     expect(stats.upcomingSchedules).toBe(1);
+  });
+
+  // --- 동결값 SSOT (SETTLE-5) -------------------------------------------------
+  // `payrollAmount > 0` 가드는 **정산 0원 완료 건**(노쇼 등)을 동결값으로 인정하지 않고
+  // settlementBreakdown 재계산으로 흘려보낸다. 그러면 실제로 0원을 지급한 근무가 수입
+  // 합계에 양수로 잡힌다 — 5개 위반 지점 중 유일하게 금액 오차가 실제로 발생하는 곳.
+  it('정산 0원으로 완료된 근무는 수입 합계에 0원으로 잡힌다 (재계산으로 새지 않는다)', () => {
+    const stats = calculateScheduleStats([
+      createMockScheduleEvent({
+        id: 'zero-settled',
+        applicationId: 'app-zero',
+        date: '2025-01-15',
+        type: STATUS.SCHEDULE.COMPLETED,
+        payrollStatus: STATUS.PAYROLL.COMPLETED,
+        payrollAmount: 0,
+        settlementBreakdown: {
+          basePay: 90000,
+          totalPay: 90000,
+          afterTaxPay: 90000,
+          taxSettings: { type: 'none' },
+        },
+      } as Partial<ScheduleEvent>),
+    ]);
+
+    expect(stats.totalEarnings).toBe(0);
+  });
+
+  it('정산 완료 건은 동결값을 쓰고 settlementBreakdown 재계산을 무시한다', () => {
+    const stats = calculateScheduleStats([
+      createMockScheduleEvent({
+        id: 'settled',
+        applicationId: 'app-settled',
+        date: '2025-01-15',
+        type: STATUS.SCHEDULE.COMPLETED,
+        payrollStatus: STATUS.PAYROLL.COMPLETED,
+        payrollAmount: 80000,
+        settlementBreakdown: {
+          basePay: 120000,
+          totalPay: 120000,
+          afterTaxPay: 120000,
+          taxSettings: { type: 'none' },
+        },
+      } as Partial<ScheduleEvent>),
+    ]);
+
+    expect(stats.totalEarnings).toBe(80000);
+  });
+
+  it('정산 미완료 건은 settlementBreakdown 재계산으로 폴백한다', () => {
+    const stats = calculateScheduleStats([
+      createMockScheduleEvent({
+        id: 'pending',
+        applicationId: 'app-pending',
+        date: '2025-01-15',
+        type: STATUS.SCHEDULE.COMPLETED,
+        payrollStatus: STATUS.PAYROLL.PENDING,
+        settlementBreakdown: {
+          basePay: 70000,
+          totalPay: 70000,
+          afterTaxPay: 70000,
+          taxSettings: { type: 'none' },
+        },
+      } as Partial<ScheduleEvent>),
+    ]);
+
+    expect(stats.totalEarnings).toBe(70000);
   });
 });

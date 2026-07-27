@@ -733,10 +733,27 @@ describe('settlementService', () => {
         updateSettlementStatus('worklog-1', 'processing', 'employer-1')
       ).resolves.not.toThrow();
 
+      // 4번째 인자는 지급 완료 되돌리기 사유(SETTLE-3). 되돌리기가 아니면 undefined 로 흐른다.
       expect(mockUpdatePayrollStatusWithTransaction).toHaveBeenCalledWith(
         'worklog-1',
         'processing',
-        'employer-1'
+        'employer-1',
+        undefined
+      );
+    });
+
+    it('되돌리기 사유를 리포지토리까지 그대로 전달한다 (SETTLE-3)', async () => {
+      mockUpdatePayrollStatusWithTransaction.mockResolvedValue(undefined);
+
+      await updateSettlementStatus('worklog-1', 'pending', 'employer-1', {
+        reason: '금액 재산정 필요',
+      });
+
+      expect(mockUpdatePayrollStatusWithTransaction).toHaveBeenCalledWith(
+        'worklog-1',
+        'pending',
+        'employer-1',
+        { reason: '금액 재산정 필요' }
       );
     });
 

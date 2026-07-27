@@ -14,6 +14,8 @@ import {
   UserPlusIcon,
   XCircleIcon,
 } from '@/components/icons';
+import { getManualStatusTransitions } from '@/domains/staff';
+import { formatTimeShort } from '@/utils/formatters';
 import { ActionSheet, type ActionSheetOption } from '@/components/ui/ActionSheet';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Loading } from '@/components/ui/Loading';
@@ -28,6 +30,20 @@ export interface StaffManagementTabProps {
   jobPosting?: JobPosting;
   onShowRoleChange?: (staff: ConfirmedStaff) => void;
   onShowReport?: (staff: ConfirmedStaff) => void;
+}
+
+/** 상태 전이 값 → 시트 아이콘. 전이 규칙 자체는 getManualStatusTransitions 가 소유한다. */
+const STATUS_OPTION_ICON: Record<string, React.ReactElement> = {
+  [STATUS.WORK_LOG.SCHEDULED]: <CalendarIcon size={20} color={SECONDARY_PALETTE[500]} />,
+  [STATUS.WORK_LOG.CHECKED_IN]: <CheckCircleIcon size={20} color="#22C55E" />,
+  [STATUS.WORK_LOG.CHECKED_OUT]: <ClockIcon size={20} color="#8A7228" />,
+  [STATUS.WORK_LOG.COMPLETED]: <CheckCircleIcon size={20} color="#22C55E" />,
+  [STATUS.WORK_LOG.NO_SHOW]: <XCircleIcon size={20} color="#EF4444" />,
+};
+
+/** 출퇴근 기록이 하나라도 있는가 — 되돌리기의 파괴성과 퇴근/완료 노출 여부를 가른다. */
+function hasAttendanceRecord(staff: ConfirmedStaff): boolean {
+  return Boolean(staff.checkInTime || staff.checkOutTime);
 }
 
 interface QuickActionsProps {
@@ -97,6 +113,8 @@ export function StaffManagementTab({
   const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
   const [statusSheetTarget, setStatusSheetTarget] = useState<ConfirmedStaff | null>(null);
   const [noShowTarget, setNoShowTarget] = useState<ConfirmedStaff | null>(null);
+  /** 출퇴근 기록이 있는 행을 '출근 예정'으로 되돌리기 전 확인 대상 */
+  const [revertTarget, setRevertTarget] = useState<ConfirmedStaff | null>(null);
   const [cancelNoShowTarget, setCancelNoShowTarget] = useState<ConfirmedStaff | null>(null);
 
   const handleStaffPress = useCallback((staff: ConfirmedStaff) => {
@@ -202,10 +220,26 @@ export function StaffManagementTab({
         return;
       }
 
+      // 기록이 있는 행을 '출근 예정'으로 되돌리면 QR 실측 시각이 삭제된다 — 노쇼와 같은 무게의
+      // 파괴적 액션이라 무엇이 지워지는지 보여주고 확인을 받는다.
+      if (status === STATUS.WORK_LOG.SCHEDULED && hasAttendanceRecord(statusSheetTarget)) {
+        setRevertTarget(statusSheetTarget);
+        return;
+      }
+
       changeStatus(statusSheetTarget.id, status as WorkLogStatus);
     },
     [changeStatus, statusSheetTarget]
   );
+
+  const handleRevertConfirm = useCallback(() => {
+    if (!revertTarget) {
+      return;
+    }
+
+    changeStatus(revertTarget.id, STATUS.WORK_LOG.SCHEDULED as WorkLogStatus);
+    setRevertTarget(null);
+  }, [changeStatus, revertTarget]);
 
   const handleNoShowConfirm = useCallback(() => {
     if (!noShowTarget) {
@@ -234,52 +268,20 @@ export function StaffManagementTab({
       return [];
     }
 
-    const currentStatus = statusSheetTarget.status;
-    const options: ActionSheetOption[] = [];
-
-    if (currentStatus !== STATUS.WORK_LOG.SCHEDULED) {
-      options.push({
-        label: '출근 예정으로 변경',
-        value: STATUS.WORK_LOG.SCHEDULED,
-        icon: <CalendarIcon size={20} color={SECONDARY_PALETTE[500]} />,
-      });
-    }
-
-    if (currentStatus !== STATUS.WORK_LOG.CHECKED_IN) {
-      options.push({
-        label: '출근 처리',
-        value: STATUS.WORK_LOG.CHECKED_IN,
-        icon: <CheckCircleIcon size={20} color="#22C55E" />,
-      });
-    }
-
-    if (currentStatus !== STATUS.WORK_LOG.CHECKED_OUT) {
-      options.push({
-        label: '퇴근 처리',
-        value: STATUS.WORK_LOG.CHECKED_OUT,
-        icon: <ClockIcon size={20} color="#8A7228" />,
-      });
-    }
-
-    if (currentStatus !== STATUS.WORK_LOG.COMPLETED) {
-      options.push({
-        label: '근무 완료 처리',
-        value: STATUS.WORK_LOG.COMPLETED,
-        icon: <CheckCircleIcon size={20} color="#22C55E" />,
-      });
-    }
-
-    // 노쇼 처리 — 운영 사실 기록(신고와 별개). 정산 0원 동반이라 파괴적 표시.
-    if (currentStatus !== STATUS.WORK_LOG.NO_SHOW) {
-      options.push({
-        label: '노쇼 처리',
-        value: STATUS.WORK_LOG.NO_SHOW,
-        icon: <XCircleIcon size={20} color="#EF4444" />,
-        destructive: true,
-      });
-    }
-
-    return options;
+    // 전이 규칙(어떤 선택지를 보일지·무엇이 파괴적인지)은 순수 함수가 소유한다.
+    // 여기서는 아이콘만 입힌다. 출근 기록이 없으면 퇴근/완료가 아예 빠지므로
+    // '출근 처리' 바로 아래 '퇴근 처리'가 붙어 근무 0분이 박히던 오탭 경로가 사라진다.
+    return getManualStatusTransitions(
+      statusSheetTarget.status,
+      hasAttendanceRecord(statusSheetTarget)
+    ).map((transition) => ({
+      label: transition.label,
+      value: transition.value,
+      icon: STATUS_OPTION_ICON[transition.value] ?? (
+        <CalendarIcon size={20} color={SECONDARY_PALETTE[500]} />
+      ),
+      destructive: transition.destructive,
+    }));
   }, [statusSheetTarget]);
 
   const selectedWorkLog: WorkLog | null = selectedStaff?.workLog
@@ -306,7 +308,10 @@ export function StaffManagementTab({
     );
   }
 
-  if (error) {
+  // 전면 ErrorState 는 **보여줄 데이터가 하나도 없을 때만**. 이미 받아둔 목록이 있는데
+  // 일시적 구독 실패로 화면 전체를 덮으면 대회 D-day 운영 중에 운영 화면을 잃는다.
+  // 데이터가 있으면 아래 목록의 error prop 으로 내려 배너 수준으로 알린다.
+  if (error && grouped.length === 0) {
     return (
       <ErrorState title="확정된 스태프를 불러오지 못했습니다" error={error} onRetry={refresh} />
     );
@@ -324,7 +329,7 @@ export function StaffManagementTab({
         <ConfirmedStaffList
           grouped={grouped}
           isLoading={false}
-          error={null}
+          error={error}
           onRefresh={refresh}
           isRefreshing={isRefreshing}
           onStaffPress={handleStaffPress}
@@ -373,6 +378,19 @@ export function StaffManagementTab({
         }님을 노쇼로 처리할까요? 출근하지 않은 것으로 기록되며 정산 대상에서 제외됩니다.`}
         confirmText="노쇼 처리"
         cancelText="취소"
+        isDestructive
+      />
+
+      <ConfirmModal
+        visible={Boolean(revertTarget)}
+        onClose={() => setRevertTarget(null)}
+        onConfirm={handleRevertConfirm}
+        title="출근 예정으로 되돌리기"
+        message={`기록된 출근 ${formatTimeShort(revertTarget?.checkInTime)} · 퇴근 ${formatTimeShort(
+          revertTarget?.checkOutTime
+        )} 이 삭제됩니다. 삭제 사실은 수정 이력에 남고 스태프에게도 알림이 갑니다.`}
+        confirmText="시각 삭제하고 되돌리기"
+        cancelText="유지"
         isDestructive
       />
 

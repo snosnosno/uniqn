@@ -94,7 +94,6 @@ function makeInput(overrides: Partial<CreateSubstitutePostInput> = {}): CreateSu
     authorRole: 'staff',
     applicationId: 'app-456',
     jobSummary: makeJobSummary(),
-    reason: '갑자기 몸이 아파서 대타를 구합니다.',
     ...overrides,
   };
 }
@@ -164,13 +163,45 @@ describe('createSubstitutePost', () => {
     expect(callArg.title).toContain('강북 딜러 모집');
   });
 
-  it('should include reason in body', async () => {
-    const input = makeInput({ reason: '개인 사정으로 출근이 어렵습니다.' });
+  // W1-10(CANCEL-12): 취소 사유는 **사장에게만** 간다. 게시판은 실명 공개 공간이라
+  // 질병·가족 문제 같은 사적 사유가 본문 첫 줄로 노출되고 있었다.
+  it('취소 사유 원문을 본문에 싣지 않는다 (개인정보 노출 차단)', async () => {
+    // 타입에서 reason 을 없앴으므로 컴파일 타임에 막히지만, 레거시 호출부가 남아
+    // 런타임으로 흘러들어와도 본문에 실리지 않아야 한다.
+    const withLegacyReason = {
+      ...makeInput(),
+      reason: '유산 수술로 출근이 어렵습니다.',
+    } as CreateSubstitutePostInput;
 
-    await createSubstitutePost(input);
+    await createSubstitutePost(withLegacyReason);
 
     const callArg = (mockBoardRepository.createPost as jest.Mock).mock.calls[0][0];
-    expect(callArg.body).toContain('개인 사정으로 출근이 어렵습니다.');
+    expect(callArg.body).not.toContain('유산');
+    expect(callArg.body).not.toContain('출근이 어렵습니다');
+  });
+
+  it('사유 대신 일정·지점·보상만 싣는다', async () => {
+    await createSubstitutePost(makeInput());
+
+    const callArg = (mockBoardRepository.createPost as jest.Mock).mock.calls[0][0];
+    expect(callArg.body).toContain('2026-04-20');
+    expect(callArg.body).toContain('강남구');
+    expect(callArg.body).toContain('시급 15,000원');
+  });
+
+  // 프로덕션 호출부(schedule.tsx)는 compensationLabel 을 넘기지 않고 workDate 도 빌 수 있다.
+  // 사유를 빼면 본문이 통째로 비어 assertSafeText 가 throw 하므로, 고정 안내 문구가 필요하다.
+  it('일정·지점·보상이 모두 비어도 본문이 비지 않는다', async () => {
+    const jobSummary = {
+      jobPostingId: 'job-123',
+      title: '강남 홀덤펍 딜러',
+      workDate: '',
+    } as BoardJobSummary;
+
+    await expect(createSubstitutePost(makeInput({ jobSummary }))).resolves.toBeDefined();
+
+    const callArg = (mockBoardRepository.createPost as jest.Mock).mock.calls[0][0];
+    expect(callArg.body.trim().length).toBeGreaterThan(0);
   });
 
   it('rejects creation when jobSummary.jobPostingId is missing', async () => {
@@ -179,7 +210,6 @@ describe('createSubstitutePost', () => {
       authorName: '홍길동',
       authorRole: 'staff' as const,
       applicationId: 'app-1',
-      reason: '갑자기 몸이 아파서 대타를 구합니다.',
       jobSummary: {
         // jobPostingId 의도적 누락
         title: 'Bar Shift',

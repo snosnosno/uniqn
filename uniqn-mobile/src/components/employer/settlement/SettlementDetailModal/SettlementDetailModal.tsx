@@ -50,6 +50,7 @@ export function SettlementDetailModal({
   onEditTime,
   onEditAmount,
   onSettle,
+  onRevertSettlement,
   groupedSettlement,
   onDateChange,
   jobPostingTitle,
@@ -128,6 +129,12 @@ export function SettlementDetailModal({
       onEditAmount(workLog);
     }
   }, [workLog, onEditAmount]);
+
+  const handleRevertSettlement = useCallback(() => {
+    if (workLog && onRevertSettlement) {
+      onRevertSettlement(workLog);
+    }
+  }, [workLog, onRevertSettlement]);
 
   if (!workLog) return null;
 
@@ -232,6 +239,25 @@ export function SettlementDetailModal({
                 </Text>
               </Pressable>
             </View>
+
+            {/* 지급 완료 취소 (SETTLE-3) — 오지급 정정의 유일한 진입점.
+                파괴적이라 위계를 낮춘 텍스트 버튼으로 두고, 실제 확인·사유는 다음 모달이 받는다. */}
+            {onRevertSettlement && (
+              <View className="px-4 pb-2">
+                <Pressable
+                  onPress={handleRevertSettlement}
+                  hitSlop={8}
+                  className="min-h-[44px] flex-row items-center justify-center rounded-lg px-4 py-3 active:bg-surface-hover dark:active:bg-surface-hover"
+                  accessibilityLabel="지급 완료 취소"
+                  accessibilityHint="정산 대기 상태로 되돌려 금액과 시간을 다시 수정할 수 있게 합니다"
+                  accessibilityRole="button"
+                >
+                  <Text className="text-sm font-sans-medium text-error-600 dark:text-error-400">
+                    지급 완료 취소
+                  </Text>
+                </Pressable>
+              </View>
+            )}
           </>
         )}
 

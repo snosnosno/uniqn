@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/Button';
 import { TimeWheelPicker, type TimeValue } from '@/components/ui/TimeWheelPicker';
 import { TimeTriggerField, timeStringToValue, timeValueToString } from './SlotTimeField';
 import { OvernightPreviewBanner } from './OvernightPreviewBanner';
+import { resolveSlotTimePayload } from './editSlotPayload';
 import { STAFF_ROLES } from '@/constants';
 import { useToastStore } from '@/stores/toastStore';
 import { isAppError } from '@/errors';
@@ -72,6 +73,11 @@ export function EditSlotSheet({
 
   const [startTime, setStartTime] = useState(DEFAULT_START);
   const [endTime, setEndTime] = useState(DEFAULT_END);
+  /**
+   * 사용자가 종료 시각을 실제로 정했는가. `endTime` 은 피커 조작을 위해 항상 유효한 값을
+   * 들고 있어야 해서 기본값이 들어가는데, 그걸 저장 신호로 오해하면 없던 8시간이 확정된다.
+   */
+  const [endTimeSet, setEndTimeSet] = useState(false);
   const [role, setRole] = useState<StaffRole>('dealer');
   const [color, setColor] = useState<SlotColorToken | null>(null);
   const [memo, setMemo] = useState('');
@@ -101,6 +107,8 @@ export function EditSlotSheet({
     setTimeDecided(Boolean(parts.start && parts.end));
     setStartTime(parts.start || DEFAULT_START);
     setEndTime(parts.end || DEFAULT_END);
+    // 원본에 종료가 없으면(단일 시각·미정 슬롯) 기본값은 피커용 초기값일 뿐 저장 대상이 아니다.
+    setEndTimeSet(Boolean(parts.end));
     setRole((slot.role as StaffRole) ?? 'dealer');
     setColor((slot.color as SlotColorToken | null) ?? null);
     setMemo(slot.notes ?? '');
@@ -123,7 +131,8 @@ export function EditSlotSheet({
       {
         workLogId: slot.workLogId,
         staffId: slot.staffId,
-        timeSlot: composeTimeSlot(startTime, endTime),
+        // 종료 미설정이면 저장 시에도 시간을 안 보내므로 원본 표기로 충돌을 판정한다.
+        timeSlot: endTimeSet ? composeTimeSlot(startTime, endTime) : slot.timeSlot,
       },
       siblingSlots.map((s) => ({
         workLogId: s.workLogId,
@@ -131,9 +140,10 @@ export function EditSlotSheet({
         timeSlot: s.timeSlot,
       }))
     );
-    // timeDecided 필수: 사용자가 기본값과 똑같은 시각을 골라 startTime/endTime 이 안 바뀌는
-    // 경우에도 "미정 → 확정" 전환은 일어나므로, 이게 빠지면 충돌 경고가 stale 해진다.
-  }, [slot, siblingSlots, startTime, endTime, timeDecided]);
+    // timeDecided·endTimeSet 필수: 사용자가 기본값과 똑같은 시각을 골라 startTime/endTime 이
+    // 안 바뀌는 경우에도 "미정 → 확정" 전환은 일어나므로, 이게 빠지면 충돌 경고가 stale 해진다.
+    // endTimeSet 은 위에서 판정 대상 timeSlot 자체를 가르므로 더더욱 빠지면 안 된다.
+  }, [slot, siblingSlots, startTime, endTime, timeDecided, endTimeSet]);
 
   // 입력 중 익일 여부·근무시간 프리뷰(SSOT 파생). end==start 는 저장 차단.
   const timePreview = useMemo(
@@ -157,6 +167,7 @@ export function EditSlotSheet({
         setStartTime(next);
       } else if (activePicker === 'end') {
         setEndTime(next);
+        setEndTimeSet(true); // 사용자가 직접 고른 순간부터 저장 대상이 된다
       }
       // 사용자가 직접 고른 순간부터 시간은 "정해진 값" — 이제부터 저장 payload 에 실린다.
       setTimeDecided(true);
@@ -167,13 +178,16 @@ export function EditSlotSheet({
 
   const handleSave = () => {
     if (!slot) return;
-    if (timeDecided && timePreview.isEqual) return; // 시작==종료는 저장 불가(익일 오해석 방지)
+    if (endTimeSet && timePreview.isEqual) return; // 시작==종료는 저장 불가(익일 오해석 방지)
     updateSlot.mutate(
       {
         workLogId: slot.workLogId,
         input: {
-          // 미정 시간은 싣지 않는다 — 색상·메모만 고치려던 저장이 근무시간을 확정시키지 않도록.
-          ...(timeDecided ? { startTime, endTime } : {}),
+          // 종료 미설정이면 시간 축을 통째로 생략한다 — 기본값 주입으로 없던 근무가
+          // 확정되던 경로 차단(GRID-1). 레포는 startTime+endTime 동시 제공 시에만 갱신한다.
+          // ⚠️ `timeDecided` 로 가르면 안 된다 — 시작만 골라도 true 가 되어 종료 기본값이
+          // 그대로 실려 나간다. 저장 축의 진실원은 `endTimeSet` 하나다.
+          ...resolveSlotTimePayload({ startTime, endTime, endTimeSet }),
           staffRole: role,
           color: color ?? undefined,
           memo,
@@ -251,7 +265,7 @@ export function EditSlotSheet({
           onPress={handleSave}
           fullWidth
           loading={updateSlot.isPending}
-          disabled={!slot || isBusy || (timeDecided && timePreview.isEqual)}
+          disabled={!slot || isBusy || (endTimeSet && timePreview.isEqual)}
         >
           저장
         </Button>
@@ -335,18 +349,22 @@ export function EditSlotSheet({
             />
           </View>
           <View className="flex-1">
+            {/* 종료는 `timeDecided` 가 아니라 `endTimeSet` 로 가른다 — 시작만 고른 상태에서
+                `timeDecided` 를 쓰면 고른 적 없는 기본값('02:00')이 실제 값처럼 표시된다. */}
             <TimeTriggerField
               label="종료"
-              value={timeDecided ? endTime : ''}
+              value={endTimeSet ? endTime : ''}
               onPress={() => setActivePicker('end')}
             />
           </View>
         </View>
 
-        {timeDecided ? (
+        {endTimeSet ? (
           /* 익일 프리뷰 / 시작==종료 오류 안내(저장 차단은 위 timePreview.isEqual 가드) */
           <OvernightPreviewBanner startTime={startTime} endTime={endTime} />
         ) : (
+          /* 종료 미설정이면 근무 길이를 알 수 없으므로 프리뷰를 띄우지 않는다 — 기본값 기준
+             "8시간 근무" 라고 알려주면 사용자가 그걸 사실로 믿는다. 대신 미정 상태임을 말한다. */
           <Text className="mt-2 text-sm text-content-secondary font-sans dark:text-content-secondary">
             근무 시간이 아직 정해지지 않았어요. 시간을 고르지 않으면 미정 그대로 저장돼요.
           </Text>

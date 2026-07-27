@@ -27,6 +27,7 @@ import {
 } from '@/domains/staff';
 // work_logs SELECT 화이트리스트·ts 매핑 정본(자체 사본 드리프트 금지).
 import { WORK_LOG_COLUMNS as TABLE_COLUMNS, applyTsPreference } from './workLogColumns';
+import { resolveWorkTimeStatus } from './workLogTimeStatus';
 import type { UnsubscribeFn } from '@/types/common';
 import type { RoleChangeHistory, WorkLog } from '@/types';
 import type {
@@ -67,8 +68,8 @@ function toWorkLog(row: Record<string, unknown>): WorkLog | null {
 
 /**
  * 수동 상태 변경 시 종결 status 와 타임스탬프(check_in_ts/check_out_ts) 정합을 위한
- * 패치 계산(순수 함수). 정산 게이트가 status 가 아닌 타임스탬프로 판정하므로,
- * 수동 출근/퇴근/완료 처리 시에도 타임스탬프를 함께 기록/정리해야 정산이 풀린다.
+ * 패치 계산(순수 함수). 서버 정산 게이트는 status 로, 화면 게이트는 타임스탬프로 판정하므로
+ * 수동 출근/퇴근/완료 처리 시에도 타임스탬프를 함께 기록/정리해야 두 축이 어긋나지 않는다.
  *
  * - scheduled        → 근무 전: 타임스탬프 정리(null)
  * - checked_in       → 출근: check_in 기록(기존 우선), check_out 비움
@@ -91,6 +92,51 @@ export function buildStatusTimestampPatch(
     default:
       return {};
   }
+}
+
+/** 수동 상태 변경이 타임스탬프를 만들거나 지울 때 이력에 남길 사유 문구 */
+const MANUAL_STATUS_REASON: Record<string, string> = {
+  [STATUS.WORK_LOG.SCHEDULED]: '수동 출근 예정 처리 — 기록된 출퇴근 시각 삭제',
+  [STATUS.WORK_LOG.CHECKED_IN]: '수동 출근 처리',
+  [STATUS.WORK_LOG.CHECKED_OUT]: '수동 퇴근 처리',
+  [STATUS.WORK_LOG.COMPLETED]: '수동 근무 완료 처리',
+};
+
+/**
+ * 수동 상태 변경으로 출퇴근 시각이 **실제로 바뀔 때만** 남길 감사 이력을 계산한다(순수 함수).
+ *
+ * @description 시간 수정 경로는 사유 입력 + `appendWorkTimeModification` 으로 이력을 강제하는데,
+ *   수동 상태 변경은 그러지 않아 두 가지 구멍이 있었다.
+ *   ① `scheduled` 로 되돌리면 QR 로 찍힌 시각이 이력 없이 사라져 복원 근거가 0이 된다.
+ *   ② 수동 출근/퇴근으로 만들어진 시각이 실측값과 DB 상 구별되지 않는다.
+ *
+ *   체크인 알림 트리거는 `NULL → 값` 전이만 보므로 삭제는 통보되지 않았는데,
+ *   이 이력을 남기면 `modification_history` 길이 증가로 `notify_on_work_log_update` 가 발화해
+ *   스태프 통보 공백도 함께 닫힌다(새 트리거 불필요).
+ *
+ * @returns 변화가 없으면 `null`. 변한 축만 `newStartTime`/`newEndTime` 에 담는다(미변경 축은
+ *   `undefined` 로 남겨 표시 컴포넌트가 "변경 없음"으로 처리하게 한다 — appendWorkTimeModification 계약).
+ */
+export function buildManualStatusAudit(
+  status: string,
+  patch: { check_in_ts?: string | null; check_out_ts?: string | null },
+  existingCheckIn: string | null,
+  existingCheckOut: string | null
+): { newStartTime?: string | null; newEndTime?: string | null; reason: string } | null {
+  const nextCheckIn = 'check_in_ts' in patch ? (patch.check_in_ts ?? null) : undefined;
+  const nextCheckOut = 'check_out_ts' in patch ? (patch.check_out_ts ?? null) : undefined;
+
+  const startChanged = nextCheckIn !== undefined && nextCheckIn !== existingCheckIn;
+  const endChanged = nextCheckOut !== undefined && nextCheckOut !== existingCheckOut;
+
+  if (!startChanged && !endChanged) return null;
+
+  const audit: { newStartTime?: string | null; newEndTime?: string | null; reason: string } = {
+    reason: MANUAL_STATUS_REASON[status] ?? '수동 상태 변경',
+  };
+  if (startChanged) audit.newStartTime = nextCheckIn ?? null;
+  if (endChanged) audit.newEndTime = nextCheckOut ?? null;
+  return audit;
 }
 
 /** 공통 catch 핸들러 */
@@ -359,12 +405,12 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
       });
 
       // 4. 업데이트 데이터 구성
-      // settlement_breakdown 리셋: 출퇴근 시각이 바뀌면 기존 정산 계산은 무효다. SettlementRepository
-      // .updateWorkTimeWithTransaction 정본과 정렬해 stale 정산 캐시를 남기지 않는다(read-time 재계산).
+      // 정산 내역은 read-time 재계산이라 무효화할 컬럼이 없다. 과거 여기 있던
+      // `settlement_breakdown: null` 은 work_logs 에 존재하지 않는 컬럼이라 UPDATE 전체가
+      // PGRST204 로 거부됐다(SettlementRepository 정본과 동일 결함). 가드=workLogWriteColumns.test.ts.
       const updateData: Record<string, unknown> = {
         has_time_modification_logs: true,
         modification_history: newModificationHistory,
-        settlement_breakdown: null,
         updated_at: new Date().toISOString(),
       };
 
@@ -376,14 +422,18 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
         updateData.check_out_ts = context.checkOutTime ? context.checkOutTime.toISOString() : null;
       }
 
-      // 상태 결정: 양쪽 다 있으면 checked_out
-      const finalCheckIn = context.checkInTime ?? workLog.checkInTime;
-      const finalCheckOut = context.checkOutTime ?? workLog.checkOutTime;
-
-      if (finalCheckIn && finalCheckOut) {
-        updateData.status = STATUS.WORK_LOG.CHECKED_OUT;
-      } else if (finalCheckIn) {
-        updateData.status = STATUS.WORK_LOG.CHECKED_IN;
+      // 상태 결정 — 정산 화면 경로와 같은 헬퍼를 통과시킨다(SET-1 대칭).
+      // 이전 인라인 구현은 `context.checkInTime ?? workLog.checkInTime` 이라 **시각 삭제(null)가
+      // 무시**됐고, 시각을 지운 뒤 status 가 그대로 남아 CHECK 제약 23514 를 부를 수 있었다.
+      const resolvedStatus = resolveWorkTimeStatus({
+        currentStatus: workLog.status,
+        incomingCheckIn: context.checkInTime,
+        incomingCheckOut: context.checkOutTime,
+        existingCheckIn: workLog.checkInTime,
+        existingCheckOut: workLog.checkOutTime,
+      });
+      if (resolvedStatus !== undefined) {
+        updateData.status = resolvedStatus;
       }
 
       const { error } = await supabase.from(TABLE).update(updateData).eq('id', context.workLogId);
@@ -505,9 +555,11 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
       await verifyPostingAuthority(jobPostingId, context.actorId, '스태프 상태 변경');
 
       // 3. 상태 업데이트 — 종결 status 와 타임스탬프 정합 유지.
-      //    정산 게이트가 status 가 아닌 check_in_ts/check_out_ts 로 판정하므로(SSOT),
-      //    수동으로 출근/퇴근/완료 처리 시 타임스탬프를 함께 기록해야 정산이 풀린다.
-      //    (미기록 시 스태프관리=완료/정산=출퇴근 미완료 모순 발생)
+      //    ⚠️ 서버 정산 게이트는 **status** 로 판정하고(SettlementRepository :206-213 / :421-431),
+      //    화면 게이트는 **타임스탬프** 로 판정한다(SettlementDetailModal hasValidTimes 등 3곳).
+      //    두 축이 다르므로 어느 한쪽만 쓰면 '버튼은 눌리는데 서버가 영구 거부' 가 된다.
+      //    그래서 status 를 쓸 때는 타임스탬프를, 타임스탬프를 쓸 때는 status 를 함께 맞춘다
+      //    (역방향은 이 패치, 정방향은 workLogTimeStatus.resolveWorkTimeStatus).
       const now = new Date().toISOString();
       const existingCheckIn = workLog.checkInTime
         ? new Date(workLog.checkInTime).toISOString()
@@ -516,11 +568,40 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
         ? new Date(workLog.checkOutTime).toISOString()
         : null;
 
+      const timestampPatch = buildStatusTimestampPatch(
+        context.status,
+        existingCheckIn,
+        existingCheckOut,
+        now
+      );
+
       const updateData: Record<string, unknown> = {
         status: context.status,
         updated_at: now,
-        ...buildStatusTimestampPatch(context.status, existingCheckIn, existingCheckOut, now),
+        ...timestampPatch,
       };
+
+      // 4. 타임스탬프가 실제로 바뀌면 감사 이력을 남긴다 — 시간 수정 경로와 대칭.
+      //    삭제(scheduled 복귀)도 여기서 이력이 남아야 복원 근거가 생기고, 길이 증가가
+      //    notify_on_work_log_update 를 발화시켜 스태프에게도 통보된다.
+      const audit = buildManualStatusAudit(
+        context.status,
+        timestampPatch,
+        existingCheckIn,
+        existingCheckOut
+      );
+      if (audit) {
+        updateData.modification_history = appendWorkTimeModification(workLog.modificationHistory, {
+          previousStartTime: workLog.checkInTime,
+          previousEndTime: workLog.checkOutTime,
+          newStartTime: audit.newStartTime,
+          newEndTime: audit.newEndTime,
+          reason: audit.reason,
+          modifiedBy: context.actorId,
+          modifiedAt: new Date(now),
+        });
+        updateData.has_time_modification_logs = true;
+      }
 
       const { error } = await supabase.from(TABLE).update(updateData).eq('id', context.workLogId);
 

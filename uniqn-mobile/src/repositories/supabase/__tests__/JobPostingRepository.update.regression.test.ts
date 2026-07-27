@@ -27,15 +27,30 @@ describe('SupabaseJobPostingRepository.updateWithTransaction (회귀: 22007 차�
   const repo = new SupabaseJobPostingRepository();
   let capturedUpdatePayload: Record<string, unknown> | null = null;
 
+  /**
+   * `.eq(id).eq(updated_at)?.select('id')` — 낙관적 잠금 + 영향 행 수 검증(W1-9) 이후 형상.
+   * 옛 mock 은 `.eq().eq()` 2단에서 끝나 `.select()` 가 없었고, 당시 구현이 `.eq()` 하나만
+   * 호출했기 때문에 `const { error } = <plain 객체>` 가 undefined 로 떨어져 **우연히** 통과했다.
+   */
+  interface MockUpdateBuilder {
+    eq: () => MockUpdateBuilder;
+    /** 낙관적 잠금은 eq 가 아니라 [baseline, +1ms) 구간이다 — DB 는 μs, 클라는 ms 로 잘린다. */
+    gte: () => MockUpdateBuilder;
+    lt: () => MockUpdateBuilder;
+    select: () => Promise<{ data: unknown[]; error: null }>;
+  }
+
   function setupMock(existingRow: Record<string, unknown>) {
     capturedUpdatePayload = null;
     const updateMock = jest.fn().mockImplementation((payload: Record<string, unknown>) => {
       capturedUpdatePayload = payload;
-      return {
-        eq: jest.fn().mockReturnValue({
-          eq: jest.fn().mockResolvedValue({ error: null }),
-        }),
+      const builder: MockUpdateBuilder = {
+        eq: () => builder,
+        gte: () => builder,
+        lt: () => builder,
+        select: () => Promise.resolve({ data: [{ id: 'job-1' }], error: null }),
       };
+      return builder;
     });
     (supabase.from as jest.Mock).mockReturnValue({
       select: jest.fn().mockReturnValue({
@@ -46,6 +61,9 @@ describe('SupabaseJobPostingRepository.updateWithTransaction (회귀: 22007 차�
       update: updateMock,
     });
   }
+
+  /** 편집 진입 시점의 baseline — baseRow.updated_at 과 같아야 갱신이 성사된다. */
+  const BASELINE = '2026-04-19T11:00:00.000Z';
 
   const baseRow: Record<string, unknown> = {
     id: 'job-1',
@@ -79,7 +97,7 @@ describe('SupabaseJobPostingRepository.updateWithTransaction (회귀: 22007 차�
 
   it('cur.createdAt이 string인 경우 update payload에 string으로 들어간다', async () => {
     setupMock(baseRow);
-    await repo.updateWithTransaction('job-1', { title: '수정' }, 'owner-1');
+    await repo.updateWithTransaction('job-1', { title: '수정' }, 'owner-1', BASELINE);
 
     expect(capturedUpdatePayload).not.toBeNull();
     const json = JSON.stringify(capturedUpdatePayload);
@@ -97,7 +115,7 @@ describe('SupabaseJobPostingRepository.updateWithTransaction (회귀: 22007 차�
       ...baseRow,
       created_at: { seconds: 1776525546, nanoseconds: 985000000 } as unknown as string,
     });
-    await repo.updateWithTransaction('job-1', { title: '수정' }, 'owner-1');
+    await repo.updateWithTransaction('job-1', { title: '수정' }, 'owner-1', BASELINE);
 
     const json = JSON.stringify(capturedUpdatePayload);
     expect(json).not.toContain('"seconds"');
@@ -111,7 +129,7 @@ describe('SupabaseJobPostingRepository.updateWithTransaction (회귀: 22007 차�
       closed_at: '2026-04-19T12:00:00.000Z',
       closed_reason: 'manual',
     });
-    await repo.updateWithTransaction('job-1', { title: '수정' }, 'owner-1');
+    await repo.updateWithTransaction('job-1', { title: '수정' }, 'owner-1', BASELINE);
 
     const json = JSON.stringify(capturedUpdatePayload);
     expect(json).not.toContain('"seconds"');
@@ -124,7 +142,7 @@ describe('SupabaseJobPostingRepository.updateWithTransaction (회귀: 22007 차�
 
   it('updated_at은 항상 새로 생성된 Date/ISO string (JSON 직렬화 시 ISO string)', async () => {
     setupMock(baseRow);
-    await repo.updateWithTransaction('job-1', { title: '수정' }, 'owner-1');
+    await repo.updateWithTransaction('job-1', { title: '수정' }, 'owner-1', BASELINE);
 
     // updated_at은 Date 인스턴스 또는 ISO string. 핵심은 JSON 직렬화 시 ISO string이 되어
     // PostgreSQL timestamptz가 받을 수 있어야 한다는 것(22007 방지).

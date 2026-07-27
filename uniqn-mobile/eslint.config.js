@@ -237,6 +237,17 @@ module.exports = [
           message:
             'window.confirm/alert 직접 호출 금지 — confirmAction/showAlert (@/utils) 경유 (네이티브 분기 일관성).',
         },
+        // 정산 동결값 SSOT 가드 (2026-07-27, SETTLE-5)
+        // `payrollAmount > 0` 로 동결값을 판정하면 **정산 0원 완료 건**(노쇼 등)이 재계산
+        // fallback 으로 새어나가, 같은 근무 1건이 화면마다 다른 금액으로 보인다. 실제로
+        // 5곳이 같은 방식으로 어긋나 있었고 헬퍼는 주석으로 이 패턴을 금지해 뒀는데도
+        // 소비처 전부가 우회했다 — 사람 기억 대신 기계로 막는다.
+        {
+          selector:
+            'BinaryExpression[operator=">"][left.property.name="payrollAmount"][right.value=0]',
+          message:
+            'payrollAmount > 0 로 동결값을 판정하지 마세요 — 0원 완료 건이 재계산으로 새어나갑니다. shouldUseFrozenPayrollAmount (@/utils/settlementGrouping) 를 쓰세요.',
+        },
       ],
     },
   },

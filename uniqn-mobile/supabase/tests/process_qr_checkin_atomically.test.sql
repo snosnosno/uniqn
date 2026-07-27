@@ -168,6 +168,65 @@ BEGIN
     RAISE EXCEPTION 'S3 fail: %', v_result;
   END IF;
 
+  -- ----------------------------------------------------------
+  -- S7~S10: 출근 상태 화이트리스트 (RPC-1, W1-8)
+  -- 과거 가드는 IN ('checked_in','checked_out') 블랙리스트라 no_show/cancelled/completed 가
+  -- 전부 통과했다. 노쇼는 check_in_ts 를 안 남기므로 직접 호출로 checked_in 을 만든 뒤에는
+  -- 정상 인앱 스캔만으로 퇴근까지 완료돼 없던 유급 근무가 생겼다.
+  -- ----------------------------------------------------------
+  -- 앞선 케이스(S3)가 payroll_status='completed' 를 남겨 already_settled 가드가 먼저 걸린다.
+  -- payroll_* 컬럼은 protect_work_log_payroll_columns 가 staff 컨텍스트 쓰기를 막으므로
+  -- 구인자 컨텍스트에서 한 번만 초기화한다.
+  -- protect_work_log_payroll_columns 는 app_metadata.role 로 employer 를 판정한다 —
+  -- 최상위 role 만 넣으면 통과하지 못한다.
+  PERFORM set_config('request.jwt.claims', json_build_object(
+    'sub', v_owner_id, 'role', 'authenticated',
+    'app_metadata', json_build_object('role', 'employer'))::text, true);
+  UPDATE public.work_logs SET payroll_status = 'pending' WHERE id = v_work_log_id;
+
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_staff_id, 'role', 'authenticated')::text, true);
+
+  -- S7: cancelled → 거부 (구분된 코드)
+  UPDATE public.work_logs SET status = 'cancelled', check_in_ts = NULL, check_out_ts = NULL WHERE id = v_work_log_id;
+  v_result := public.process_qr_checkin_atomically(v_work_log_id, v_staff_id, v_job_id, 'checkIn', now(), NULL);
+  IF (v_result->>'success')::bool OR v_result->>'error' != 'work_log_cancelled' THEN
+    RAISE EXCEPTION 'S7 fail (cancelled 가 출근 통과): %', v_result;
+  END IF;
+
+  -- S8: completed → 거부 (구분된 코드)
+  UPDATE public.work_logs SET status = 'completed', check_in_ts = now(), check_out_ts = now() WHERE id = v_work_log_id;
+  v_result := public.process_qr_checkin_atomically(v_work_log_id, v_staff_id, v_job_id, 'checkIn', now(), NULL);
+  IF (v_result->>'success')::bool OR v_result->>'error' != 'work_log_completed' THEN
+    RAISE EXCEPTION 'S8 fail (completed 가 출근 통과): %', v_result;
+  END IF;
+
+  -- S9: no_show → **구제 허용**(제품 결정). 되돌린 사실이 이력에 남아야 한다.
+  UPDATE public.work_logs SET status = 'no_show', check_in_ts = NULL, check_out_ts = NULL,
+    modification_history = '[]'::jsonb WHERE id = v_work_log_id;
+  v_result := public.process_qr_checkin_atomically(v_work_log_id, v_staff_id, v_job_id, 'checkIn', now(), NULL);
+  IF NOT (v_result->>'success')::bool THEN RAISE EXCEPTION 'S9 fail (노쇼 구제 거부됨): %', v_result; END IF;
+  IF NOT (v_result->>'no_show_recovered')::bool THEN RAISE EXCEPTION 'S9 flag: %', v_result; END IF;
+  IF (SELECT status::text FROM public.work_logs WHERE id = v_work_log_id) != 'checked_in' THEN
+    RAISE EXCEPTION 'S9 side: status';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.work_logs w, jsonb_array_elements(w.modification_history) e
+    WHERE w.id = v_work_log_id AND e->>'type' = 'no_show_recovered_by_qr'
+  ) THEN
+    RAISE EXCEPTION 'S9 audit: 노쇼 구제 이력이 남지 않았다';
+  END IF;
+
+  -- S10: 일반 scheduled 출근은 이력을 남기지 않는다(구제 이력 오염 방지)
+  UPDATE public.work_logs SET status = 'scheduled', check_in_ts = NULL, check_out_ts = NULL,
+    modification_history = '[]'::jsonb WHERE id = v_work_log_id;
+  v_result := public.process_qr_checkin_atomically(v_work_log_id, v_staff_id, v_job_id, 'checkIn', now(), NULL);
+  IF NOT (v_result->>'success')::bool THEN RAISE EXCEPTION 'S10 fail: %', v_result; END IF;
+  IF (v_result->>'no_show_recovered')::bool THEN RAISE EXCEPTION 'S10 flag: %', v_result; END IF;
+  IF jsonb_array_length((SELECT w.modification_history FROM public.work_logs w WHERE w.id = v_work_log_id)) != 0 THEN
+    RAISE EXCEPTION 'S10 audit: 일반 출근이 이력을 남겼다';
+  END IF;
+
+
   -- Cleanup (역순)
   DELETE FROM public.work_logs WHERE id = v_work_log_id;
   DELETE FROM public.applications WHERE id = v_app_id;

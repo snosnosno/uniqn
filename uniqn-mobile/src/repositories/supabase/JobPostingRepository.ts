@@ -14,6 +14,7 @@ import {
   toSnakeCase,
   paginatedQuery,
   createRealtimeSubscription,
+  assertUpdated,
 } from '@/utils/supabase';
 import {
   BROWSABLE_POSTING_STATUSES,
@@ -114,6 +115,81 @@ async function assertConfirmedRolesSurvive(
   throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
     userMessage: `확정된 스태프가 배정된 역할(${labels})은 공고에서 뺄 수 없습니다. 해당 확정을 먼저 취소해 주세요.`,
   });
+}
+
+/**
+ * 밀리초 baseline 의 상한(배타) — `[baseline, baseline+1ms)` 반열린 구간의 오른쪽 끝.
+ *
+ * @description 클라이언트가 가진 `updatedAt` 은 DB 의 마이크로초 값을 밀리초로 내린 것이라
+ *   등호 비교가 성립하지 않는다. 같은 밀리초 안의 어떤 마이크로초 값이든 잡으려면 구간이 필요하다.
+ */
+function nextMillisecondIso(iso: string): string {
+  const ms = Date.parse(iso);
+  if (Number.isNaN(ms)) {
+    throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+      message: `공고 수정: 잠금 baseline 형식이 올바르지 않습니다 (${iso})`,
+      userMessage: '공고 정보를 다시 불러온 뒤 저장해 주세요.',
+    });
+  }
+  return new Date(ms + 1).toISOString();
+}
+
+/**
+ * 공고 수정이 실제로 한 행에 닿았는지 검증 — 0행 false success 차단.
+ *
+ * @description PostgREST 는 조건 불일치·RLS 차단으로 **0행이 갱신돼도 error 를 주지 않는다**.
+ *   이 저장소는 그 실패 모드를 JobPostingRepositoryHelpers.ts 주석에 이미 문서화해 두고
+ *   admin 분기만 막아 뒀다 — 나머지 경로(낙관적 잠금 충돌, RESTRICTIVE `jp_container_no_direct_update`
+ *   등)는 그대로 열려 있어 '공고가 수정되었습니다' 토스트만 뜨고 아무것도 저장되지 않았다.
+ *
+ *   ⚠️ 0행의 원인은 **최소 셋**이라 잠금 여부만으로 단정하면 거짓 안내가 된다:
+ *   ① 낙관적 잠금 충돌 — 다른 사람이 먼저 저장했다. 재저장하면 덮어쓰기로 통과한다.
+ *   ② RESTRICTIVE `jp_container_no_direct_update` — container(근무표) 공고는 **영구 0행**이다.
+ *      이걸 '충돌' 로 안내하면 사용자는 무한 재시도에 빠진다.
+ *   ③ 그 밖의 RLS 차단·행 소멸.
+ *   그래서 0행일 때 현재 행을 한 번 더 읽어 ①과 ②③을 실제로 갈라낸다(실패 경로에서만 드는 왕복).
+ */
+async function assertPostingUpdateApplied(
+  updatedRows: unknown[] | null,
+  jobPostingId: string,
+  expectedUpdatedAt: string | null
+): Promise<void> {
+  if (updatedRows && updatedRows.length > 0) return;
+
+  const { data: currentRow } = await supabase
+    .from(TABLE)
+    .select('status,updated_at')
+    .eq('id', jobPostingId)
+    .maybeSingle();
+
+  if (!currentRow) {
+    throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
+      message: `공고 수정: 대상 행 없음 (${jobPostingId})`,
+      userMessage: '공고를 찾을 수 없습니다. 이미 삭제되었을 수 있어요.',
+    });
+  }
+
+  const row = currentRow as { status?: string; updated_at?: string };
+  if (row.status === STATUS.JOB_POSTING.CONTAINER) {
+    throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+      message: `공고 수정: container 공고는 직접 UPDATE 가 차단된다 (${jobPostingId})`,
+      userMessage: '근무표 공고는 이 화면에서 수정할 수 없습니다. 근무표에서 변경해 주세요.',
+      metadata: { jobPostingId },
+    });
+  }
+
+  // 행은 살아 있고 container 도 아닌데 0행 — baseline 이 실제로 밀렸으면 충돌이다.
+  const movedOn =
+    expectedUpdatedAt !== null &&
+    row.updated_at !== undefined &&
+    Date.parse(row.updated_at) >= Date.parse(expectedUpdatedAt) + 1;
+  if (movedOn) {
+    throw new BusinessError(ERROR_CODES.BUSINESS_EDIT_CONFLICT, {
+      message: `공고 수정: 낙관적 잠금 충돌 (expected=${expectedUpdatedAt}, actual=${row.updated_at})`,
+      metadata: { jobPostingId, expectedUpdatedAt, actualUpdatedAt: row.updated_at },
+    });
+  }
+  assertUpdated(updatedRows, { operation: '공고 수정', table: TABLE, id: jobPostingId });
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -670,10 +746,11 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
   async updateWithTransaction(
     jobPostingId: string,
     input: UpdateJobPostingInput,
-    ownerId: string
+    ownerId: string,
+    expectedUpdatedAt: string | null
   ): Promise<JobPosting> {
     try {
-      logger.info('공고 수정', { jobPostingId, ownerId });
+      logger.info('공고 수정', { jobPostingId, ownerId, locked: expectedUpdatedAt !== null });
       const cur = await loadAndVerifyMutateAccess(jobPostingId, ownerId, '공고 수정');
 
       // 병합 전에 판정한다 — `mergeJobPostingInput` 의 schedule 규칙이 `patch.schedule ?? base.schedule`
@@ -699,8 +776,29 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       const { id: _id, ...rest } = removeUndefined(
         serialized as unknown as Record<string, unknown>
       );
-      const { error } = await supabase.from(TABLE).update(toSnakeCase(rest)).eq('id', jobPostingId);
+      // 낙관적 잠금 — 편집을 시작한 그 버전일 때만 쓴다. 전송 payload 는 patch 가 아니라 문서
+      // 전체(카운터·조회수·status 포함)라, 조건 없이 쓰면 읽기~쓰기 사이 다른 사람의 저장과
+      // 트리거 갱신분이 통째로 되감긴다.
+      // ⚠️ 잠금 키는 payload 가 아니라 **필터**로만 성립한다 — BEFORE 트리거
+      //    job_postings_updated_at 이 NEW.updated_at 을 무조건 now() 로 덮기 때문.
+      const baseQuery = supabase.from(TABLE).update(toSnakeCase(rest)).eq('id', jobPostingId);
+      // 🚨 `.eq('updated_at', baseline)` 은 절대 매칭되지 않는다 — 로컬 DB 실측:
+      //    DB 원본 `2026-07-27T14:15:55.427647+00:00`(timestamptz = 마이크로초)를 클라이언트가
+      //    읽으면 timestampSchema→normalizeToIsoString 이 `Date.toISOString()` 으로 정규화해
+      //    `2026-07-27T14:15:55.427Z`(밀리초)로 **잘린다**. eq 로 걸면 0행 → 모든 저장이
+      //    거짓 충돌로 실패하고, 안내를 본 사용자의 재저장이 무조건 전체 덮어쓰기가 된다.
+      //    baseline 은 항상 원본을 밀리초로 내림한 값이므로 원본은 [baseline, +1ms) 안에 있다.
+      const lockedQuery =
+        expectedUpdatedAt !== null
+          ? baseQuery
+              .gte('updated_at', expectedUpdatedAt)
+              .lt('updated_at', nextMillisecondIso(expectedUpdatedAt))
+          : baseQuery;
+      // .select() 없이는 PostgREST 가 갱신 건수를 돌려주지 않는다 — RLS·조건 불일치로 0행이어도
+      // error 는 null 이라 지금까지 false success 로 끝났다.
+      const { data: updatedRows, error } = await lockedQuery.select('id');
       if (error) handleSupabaseError(error, { operation: '공고 수정', table: TABLE });
+      await assertPostingUpdateApplied(updatedRows, jobPostingId, expectedUpdatedAt);
       logger.info('공고 수정 완료', { jobPostingId });
       return validated;
     } catch (error) {

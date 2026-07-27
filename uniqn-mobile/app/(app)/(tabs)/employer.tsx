@@ -34,6 +34,7 @@ import {
 } from '@/hooks/useJobManagement';
 import { useSharedJobPostings } from '@/hooks/job-posting/useSharedJobPostings';
 import { usePostingFilledCounts } from '@/hooks/usePostingFilledCounts';
+import { useSubmitGate } from '@/hooks/useSubmitGate';
 import { useTabBarBottomPadding } from '@/hooks/useTabBarBottomPadding';
 import { useWorkScheduleEnabled } from '@/hooks';
 import { useReceivedWorkspaceInvitations } from '@/hooks/workspace';
@@ -277,37 +278,47 @@ function EmployerView() {
     setCloseTargetId(postingId);
   }, []);
 
+  // 마감 (ORDER-3 허브) — 필터 전환을 onSettled 에 걸면 **실패해도** 실행된다.
+  // 마감에 실패했는데 '마감' 탭으로 넘어가면 사용자는 방금 그 공고를 찾지 못한 채
+  // 처리가 된 줄 안다. 성공에서만 전환한다.
+  const closeGate = useSubmitGate<[string]>({
+    action: (postingId) => closeMutation.mutateAsync(postingId),
+    onSuccess: async () => {
+      await refetch();
+      setFilter('closed');
+    },
+    errorMessage: '공고 마감 실패',
+  });
+
   const handleCloseConfirm = useCallback(() => {
     if (!closeTargetId) {
       return;
     }
-
-    closeMutation.mutate(closeTargetId, {
-      onSettled: async () => {
-        await refetch();
-        setFilter('closed');
-      },
-    });
+    void closeGate.submit(closeTargetId);
     setCloseTargetId(null);
-  }, [closeMutation, closeTargetId, refetch]);
+  }, [closeGate, closeTargetId]);
 
   const handleReopenPosting = useCallback((postingId: string) => {
     setReopenTargetId(postingId);
   }, []);
 
+  // 재오픈 (ORDER-3 허브) — 마감과 같은 이유로 성공에서만 전환한다.
+  const reopenGate = useSubmitGate<[string]>({
+    action: (postingId) => reopenMutation.mutateAsync(postingId),
+    onSuccess: async () => {
+      await refetch();
+      setFilter('active');
+    },
+    errorMessage: '공고 재오픈 실패',
+  });
+
   const handleReopenConfirm = useCallback(() => {
     if (!reopenTargetId) {
       return;
     }
-
-    reopenMutation.mutate(reopenTargetId, {
-      onSettled: async () => {
-        await refetch();
-        setFilter('active');
-      },
-    });
+    void reopenGate.submit(reopenTargetId);
     setReopenTargetId(null);
-  }, [refetch, reopenMutation, reopenTargetId]);
+  }, [reopenGate, reopenTargetId]);
 
   const handleCreatePosting = useCallback(() => {
     router.push('/(employer)/my-postings/create');

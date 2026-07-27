@@ -10,6 +10,10 @@ import { logger } from '@/utils/logger';
 import { NetworkError, ERROR_CODES, isAppError, toError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { STATUS } from '@/constants';
+import {
+  hasPendingPayrollEstimate,
+  shouldUseFrozenPayrollAmount,
+} from '@/utils/settlementGrouping';
 import { formatDateWithDay, toDateString } from '@/utils/date';
 import { TimeNormalizer } from '@/shared/time';
 import type {
@@ -287,11 +291,22 @@ export function calculateScheduleStats(schedules: ScheduleEvent[]): ScheduleStat
       completedWorkDays++;
       completedScheduleKeys.add(buildScheduleStatsCountKey(schedule));
 
-      // 수익 계산 (payrollAmount 우선, 없으면 settlementBreakdown 사용)
+      // 수익 계산 — 동결값 판정은 shouldUseFrozenPayrollAmount 를 유일 관문으로 쓴다.
+      // 과거의 `payrollAmount > 0` 가드는 **정산 0원 완료 건**(노쇼 등)을 동결값으로 인정하지
+      // 않고 재계산으로 흘려보내, 실제로 0원 지급한 근무를 수입 합계에 양수로 올렸다.
       let amount = 0;
 
-      if (schedule.payrollAmount && schedule.payrollAmount > 0) {
-        // 1순위: 구인자 확정 금액
+      if (
+        shouldUseFrozenPayrollAmount(
+          schedule.payrollStatus === STATUS.PAYROLL.COMPLETED,
+          schedule.payrollAmount
+        )
+      ) {
+        // 1순위: 구인자 확정 금액(동결값). 0원도 존중한다.
+        amount = schedule.payrollAmount;
+      } else if (hasPendingPayrollEstimate(schedule.payrollAmount)) {
+        // 2순위: 아직 정산 완료 전이지만 금액이 잡힌 건 — '정산 예정' 집계의 근거다.
+        // 여기를 지우면 예정액이 통째로 0원으로 보인다(구인자가 금액을 넣어둔 상태인데도).
         amount = schedule.payrollAmount;
       } else if (schedule.settlementBreakdown) {
         // 2순위: 미리 계산된 정산 세부 내역

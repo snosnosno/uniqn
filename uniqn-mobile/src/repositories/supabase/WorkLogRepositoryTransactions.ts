@@ -148,6 +148,20 @@ function mapQRCheckinErrorToException(errorCode: string, workLogId: string): nev
         message: 'QR date와 WorkLog date 불일치',
         userMessage: 'QR 코드의 날짜가 근무 날짜와 일치하지 않습니다',
       });
+    // 출근 상태 화이트리스트 전환(W1-8)으로 새로 생긴 거부 코드들.
+    // 매핑을 빠뜨리면 default 폴백이 raw 영문 코드를 사용자에게 그대로 노출한다.
+    case 'work_log_cancelled':
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+        userMessage: '취소된 근무예요. 담당자에게 문의해주세요.',
+      });
+    case 'work_log_completed':
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+        userMessage: '이미 종료된 근무예요. 출근 처리가 필요하면 담당자에게 문의해주세요.',
+      });
+    case 'invalid_status_for_checkin':
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+        userMessage: '지금은 출근할 수 없는 상태예요. 담당자에게 문의해주세요.',
+      });
     default:
       throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
         userMessage: `출퇴근 처리 실패: ${errorCode}`,

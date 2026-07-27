@@ -100,14 +100,21 @@ export async function confirmApplicationWithHistory(
 /**
  * 확정을 취소합니다.
  *
- * @param actorType - 취소 주체 유형(기본 staff_initiates). 구인자 해제 경로는 employer_initiates.
- *                    인가 주체 판정은 RPC가 수행한다.
+ * @param actorType - 취소 주체 유형. **기본값을 두지 않는다** — 호출부가 반드시 밝혀야 한다.
+ *   과거 기본값이 `'staff_initiates'` 였는데 구인자 훅이 인자를 생략해, RPC 의
+ *   `IF v_application.applicant_id != p_actor_id THEN 'unauthorized'`
+ *   (20260711020000_cancel_application_employer_initiates.sql:88-89) 분기에 걸려
+ *   사장님의 '확정 해제' 가 **항상 실패**했다. 구인자 경로 전용 분기(`employer_initiates`)는
+ *   그 사고를 위해 신설돼 있었는데 클라가 쓰지 않았다.
+ *
+ *   기본값을 없애면 타입 검사가 호출부에 의도를 강제한다 — 같은 종류의 무음 오배선이
+ *   컴파일 단계에서 막힌다. 인가 주체 판정 자체는 RPC 가 수행한다.
  */
 export async function cancelConfirmation(
   applicationId: string,
   ownerId: string,
-  cancelReason?: string,
-  actorType: CancelActorType = 'staff_initiates'
+  cancelReason: string | undefined,
+  actorType: CancelActorType
 ): Promise<CancelConfirmationResult> {
   try {
     logger.info('확정 취소 시작', { applicationId, ownerId, actorType });

@@ -67,7 +67,11 @@ import {
   type ScheduleStatusFilter,
 } from '@/utils/scheduleGrouping';
 import type { Application, ScheduleEvent, GroupedScheduleEvent } from '@/types';
-import type { BoardAuthorRole } from '@/types/board';
+import {
+  buildSubstitutePostBody,
+  buildSubstitutePostTitle,
+} from '@/services/board/boardSubstituteService';
+import type { BoardAuthorRole, BoardJobSummary } from '@/types/board';
 import { isGroupedScheduleEvent } from '@/types/schedule';
 
 // react-native-calendars(112KB) + moment(60KB) + lodash(73KB) — schedule 탭 calendar 모드 진입 시점에만 로드.
@@ -573,22 +577,38 @@ export default function ScheduleScreen() {
     [addToast]
   );
 
+  // 대타 구인 글의 원본 데이터 — 미리보기와 실제 게시물이 같은 값을 쓰도록 한 곳에서 만든다.
+  const cancellationJobSummary = useMemo<BoardJobSummary | null>(() => {
+    if (!cancellationApp) return null;
+    return {
+      jobPostingId: cancellationApp.jobPostingId,
+      title: cancellationApp.jobPostingTitle ?? cancellationApp.jobPosting?.title ?? '',
+      workDate: cancellationApp.jobPostingDate ?? cancellationApp.jobPosting?.workDate ?? '',
+      workDates: cancellationApp.jobPosting?.workDates,
+      locationName: cancellationApp.jobPosting?.location?.name,
+    };
+  }, [cancellationApp]);
+
+  const substitutePreview = useMemo(
+    () =>
+      cancellationJobSummary
+        ? {
+            title: buildSubstitutePostTitle(cancellationJobSummary),
+            body: buildSubstitutePostBody(cancellationJobSummary),
+          }
+        : undefined,
+    [cancellationJobSummary]
+  );
+
   // 취소 요청 제출 핸들러
   const handleSubmitCancellation = useCallback(
     (applicationId: string, reason: string, wantsSubstitutePost: boolean) => {
       const applicantContext =
-        user && cancellationApp
+        user && cancellationJobSummary
           ? {
               name: profile?.name || profile?.nickname || user.displayName || '익명',
               role: (profile?.role ?? 'staff') as BoardAuthorRole,
-              jobSummary: {
-                jobPostingId: cancellationApp.jobPostingId,
-                title: cancellationApp.jobPostingTitle ?? cancellationApp.jobPosting?.title ?? '',
-                workDate:
-                  cancellationApp.jobPostingDate ?? cancellationApp.jobPosting?.workDate ?? '',
-                workDates: cancellationApp.jobPosting?.workDates,
-                locationName: cancellationApp.jobPosting?.location?.name,
-              },
+              jobSummary: cancellationJobSummary,
             }
           : undefined;
 
@@ -608,7 +628,7 @@ export default function ScheduleScreen() {
         }
       );
     },
-    [user, profile, cancellationApp, requestCancellation, refresh, addToast]
+    [user, profile, cancellationJobSummary, requestCancellation, refresh, addToast]
   );
 
   const handleCloseCancellationSheet = useCallback(() => {
@@ -1225,6 +1245,7 @@ export default function ScheduleScreen() {
           isSubmitting={isRequestingCancellation}
           onSubmit={handleSubmitCancellation}
           onClose={handleCloseCancellationSheet}
+          substitutePreview={substitutePreview}
         />
       )}
 

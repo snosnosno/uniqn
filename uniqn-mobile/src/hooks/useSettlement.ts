@@ -305,9 +305,18 @@ export function useUpdateSettlementStatus() {
   const { user } = useAuthStore();
 
   return useMutation({
-    mutationFn: ({ workLogId, status }: { workLogId: string; status: PayrollStatus }) => {
+    mutationFn: ({
+      workLogId,
+      status,
+      reason,
+    }: {
+      workLogId: string;
+      status: PayrollStatus;
+      /** 지급 완료 되돌리기 사유 — completed→그 외 전환에서는 필수(서버 강제). */
+      reason?: string;
+    }) => {
       requireAuth(user?.uid, 'useSettlement');
-      return updateSettlementStatus(workLogId, status, user.uid);
+      return updateSettlementStatus(workLogId, status, user.uid, { reason });
     },
     onMutate: async ({ workLogId, status }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.settlement.all });
@@ -450,8 +459,9 @@ export function useSettlement(jobPostingId: string) {
     isBulkSettling: bulkSettleMutation.isPending,
     bulkSettleResult: bulkSettleMutation.data,
 
-    // 상태 변경
+    // 상태 변경 — 지급 완료 되돌리기는 결과를 보고 모달을 닫아야 하므로 Async 도 함께 노출한다.
     updateStatus: updateStatusMutation.mutate,
+    updateStatusAsync: updateStatusMutation.mutateAsync,
     isUpdatingStatus: updateStatusMutation.isPending,
 
     // 필터링 헬퍼

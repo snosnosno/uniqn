@@ -115,7 +115,10 @@ export const cancellationRequestSchema = z.object({
     .min(5, { message: '취소 사유는 최소 5자 이상 입력해주세요' })
     .max(500, { message: '취소 사유는 500자를 초과할 수 없습니다' })
     .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }),
-  wantsSubstitutePost: z.boolean().optional().default(true),
+  // 기본 OFF — 대타 구인 글은 실명으로 전체 공개되는 게시물이다. 사용자가 명시적으로
+  // 켰을 때만 올린다(W1-10 / CANCEL-12). UI 기본값을 고쳐도 필드 생략 경로가 남으므로
+  // 최종 결정자인 이 default 가 진실원이다.
+  wantsSubstitutePost: z.boolean().optional().default(false),
 });
 
 export type CancellationRequestData = z.infer<typeof cancellationRequestSchema>;
@@ -225,7 +228,42 @@ const cancellationRequestTimestampSchema = timestampSchema;
  *   timestampSchema가 ISO string 반환으로 통일된 후(Task 2+4) union이 불필요해져
  *   단일 스키마로 정리. safeParse 기반이므로 실패 시 해당 레코드만 drop.
  */
-export const cancellationRequestStoredSchema = z.discriminatedUnion('status', [
+/**
+ * RPC 가 저장한 snake_case 메타 키를 camelCase 로 승격한다(읽기 경계 관용).
+ *
+ * `cancel_application_atomically` 의 취소요청 승인 분기는
+ * `jsonb_build_object('status','approved','reviewed_at',…,'reviewed_by',…)` 로 snake_case 를 쓰는데,
+ * `toCamelCase` 는 얕은 변환이라 중첩 JSONB 키를 바꾸지 않는다(utils/supabase.ts:727).
+ * 그 결과 union 이 깨지고 `cancellationRequest` 를 품은 **지원서 객체 전체**가 파싱 실패해
+ * 목록에서 통째로 사라졌다.
+ *
+ * 마이그레이션으로 RPC 를 고쳐도 이미 저장된 행은 남으므로 읽기 쪽 관용이 근본 복구다.
+ * camelCase 가 이미 있으면 그쪽이 정본이다(관용이 정본을 덮지 않는다).
+ */
+const CANCELLATION_LEGACY_KEY_MAP: Record<string, string> = {
+  requested_at: 'requestedAt',
+  reviewed_at: 'reviewedAt',
+  reviewed_by: 'reviewedBy',
+  rejection_reason: 'rejectionReason',
+};
+
+function normalizeCancellationRequestKeys(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return value;
+
+  const source = value as Record<string, unknown>;
+  const normalized: Record<string, unknown> = { ...source };
+
+  for (const [snake, camel] of Object.entries(CANCELLATION_LEGACY_KEY_MAP)) {
+    if (source[camel] === undefined && source[snake] !== undefined) {
+      normalized[camel] = source[snake];
+    }
+    delete normalized[snake];
+  }
+
+  return normalized;
+}
+
+const cancellationRequestStoredUnion = z.discriminatedUnion('status', [
   z.object({
     status: z.literal('pending'),
     requestedAt: cancellationRequestTimestampSchema,
@@ -248,7 +286,12 @@ export const cancellationRequestStoredSchema = z.discriminatedUnion('status', [
   }),
 ]);
 
-export type CancellationRequestStored = z.infer<typeof cancellationRequestStoredSchema>;
+export const cancellationRequestStoredSchema = z.preprocess(
+  normalizeCancellationRequestKeys,
+  cancellationRequestStoredUnion
+);
+
+export type CancellationRequestStored = z.infer<typeof cancellationRequestStoredUnion>;
 
 const cancellationRequestDocumentSchema = cancellationRequestStoredSchema;
 
