@@ -51,7 +51,6 @@ export default function EditJobPostingScreen() {
   const templateManager = useTemplateManager();
 
   const isManageable = existingJob ? isEmployerManageablePosting(existingJob) : true;
-  const hasConfirmedApplicants = (existingJob?.filledPositions ?? 0) > 0;
 
   // 진입 안내 — 저장 후 쿼리 무효화로 existingJob이 갱신돼도 재발행 금지(1회 가드)
   const notifiedRef = useRef(false);
@@ -61,13 +60,6 @@ export default function EditJobPostingScreen() {
     if (!isEmployerManageablePosting(existingJob)) {
       addToast({ type: 'warning', message: '지원하지 않는 공고 형식입니다.' });
       router.replace('/(app)/(tabs)/employer');
-      return;
-    }
-    if ((existingJob.filledPositions ?? 0) > 0) {
-      addToast({
-        type: 'warning',
-        message: '확정된 지원자가 있어 일정과 역할 정보 수정이 제한됩니다.',
-      });
     }
   }, [existingJob, addToast, router]);
 
@@ -88,7 +80,7 @@ export default function EditJobPostingScreen() {
     async (values: OrderSheetValues) => {
       if (!id) return;
       try {
-        const input = valuesToUpdateInput(values, { hasConfirmedApplicants });
+        const input = valuesToUpdateInput(values);
         await updateJobPosting.mutateAsync({ jobPostingId: id, input });
         setIsDirty(false);
         // 저장 성공 — setIsDirty(false) 리렌더 전 같은 틱의 back()이 stale 가드에 걸리지 않게
@@ -100,7 +92,7 @@ export default function EditJobPostingScreen() {
         logger.error('주문서 공고 수정 실패', toError(error), { jobPostingId: id });
       }
     },
-    [id, hasConfirmedApplicants, updateJobPosting, router, markClean]
+    [id, updateJobPosting, router, markClean]
   );
 
   // 템플릿 저장 — create.tsx와 동일 굳힘 패턴.
@@ -175,7 +167,6 @@ export default function EditJobPostingScreen() {
         isSubmitting={updateJobPosting.isPending}
         onDirtyChange={setIsDirty}
         myPhone={profile?.phone ?? ''}
-        scheduleLocked={hasConfirmedApplicants}
         onSaveTemplate={handleOrderSheetSaveTemplate}
         onChainSwappingChange={setChainScrimVisible}
       />

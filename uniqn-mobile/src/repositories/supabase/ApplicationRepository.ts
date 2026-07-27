@@ -22,9 +22,9 @@ import {
   ERROR_CODES,
 } from '@/errors';
 import { handleSupabaseError } from '@/utils/supabase';
-import { applicationValidator, validateRequiredAnswers } from '@/domains/application';
+import { applicationValidator } from '@/domains/application';
 import { selectPostingWorkflow } from '@/domains/job-posting';
-import { normalizeAssignmentRole, isValidAssignment } from '@/types/assignment';
+import { normalizeAssignmentRole } from '@/types/assignment';
 import { STATUS } from '@/constants';
 import type { UnsubscribeFn } from '@/types/common';
 import type {
@@ -182,15 +182,9 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
         applicantId: context.applicantId,
       });
 
-      for (const assignment of input.assignments) {
-        if (!isValidAssignment(assignment)) {
-          throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
-            userMessage: '지원 정보가 올바르지 않습니다. 역할, 시간, 날짜를 확인해 주세요.',
-          });
-        }
-      }
-
       // 1. 공고 로드 + 상태 확인
+      //    ApplicationClosedError 는 호출자가 "마감"을 따로 다루는 전용 타입이라,
+      //    validateApplication 의 JOB_NOT_ACTIVE(일반 ValidationError)보다 먼저 구체적으로 던진다.
       const jobData = await loadJobPosting(input.jobPostingId);
 
       if (jobData.status !== STATUS.JOB_POSTING.ACTIVE) {
@@ -200,42 +194,29 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
         });
       }
 
-      // 2. Assignment 정규화 + 검증
+      // 2. Assignment 정규화 (fixed 는 역할 1개 단일 선택 → canonical assignment 로 치환)
       const isFixedPosting = jobData.schedule.kind === 'fixed';
       const normalizedAssignments = isFixedPosting
         ? normalizeFixedAssignment(jobData, input.assignments)
         : input.assignments;
 
-      if (!isFixedPosting) {
-        const validation = applicationValidator.validateApplication(
-          jobData,
-          normalizedAssignments,
-          input.preQuestionAnswers
-        );
-        if (!validation.isValid) {
-          const firstError = validation.errors[0];
-          throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-            userMessage: firstError?.message ?? '지원 정보를 확인해 주세요.',
-          });
-        }
+      // 3. 통합 검증 — fixed·dated 가 같은 게이트를 지난다.
+      //    예전에는 assignment 유효성·사전질문을 이 앞뒤로 한 번씩 더 검사했다(dated 는 2회 중복,
+      //    fixed 는 별도 블록만 유효). 검증 규칙이 두 벌로 갈라져 한쪽만 고치는 사고를 부르는
+      //    형태였다 — validateApplication 하나로 모은다.
+      const validation = applicationValidator.validateApplication(
+        jobData,
+        normalizedAssignments,
+        input.preQuestionAnswers
+      );
+      if (!validation.isValid) {
+        const firstError = validation.errors[0];
+        throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+          userMessage: firstError?.message ?? '지원 정보를 확인해 주세요.',
+        });
       }
 
-      // 사전 질문 답변 검증
-      const questions = jobData.questions.items ?? [];
-      if (questions.length > 0) {
-        if (!input.preQuestionAnswers?.length) {
-          throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-            userMessage: '사전질문에 답변해 주세요.',
-          });
-        }
-        if (!validateRequiredAnswers(input.preQuestionAnswers)) {
-          throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-            userMessage: '필수 질문에 모두 답변해 주세요.',
-          });
-        }
-      }
-
-      // 3. 중복 지원 확인 (낙관적 잠금 대신 사전 확인)
+      // 4. 중복 지원 확인 (낙관적 잠금 대신 사전 확인)
       const { data: existingData } = await supabase
         .from(TABLES.APPLICATIONS)
         .select('id, status')

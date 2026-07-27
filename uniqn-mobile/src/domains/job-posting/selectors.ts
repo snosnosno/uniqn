@@ -33,9 +33,14 @@ export function selectPostingWorkflow(posting: JobPosting): PostingWorkflow {
 /**
  * 공고 삭제 가능 여부 — 확정된 지원자가 1명이라도 있으면 삭제할 수 없다(EF-crud-4).
  *
- * 상세 화면의 캡션("확정된 지원자가 있는 공고는 삭제할 수 없습니다")과 삭제 버튼
- * 활성 상태의 단일 근거. 이 규칙을 우회해 삭제 버튼을 항상 활성화하면 확정 인력이
- * 배정된 공고가 흔적 없이 삭제될 수 있다.
+ * @description 상세 화면의 캡션("확정된 지원자가 있는 공고는 삭제할 수 없습니다")과 삭제 버튼
+ * 활성 상태의 단일 근거.
+ *
+ * ⚠️ 근거 정정(2026-07-27): 예전 주석은 "흔적 없이 삭제될 수 있다"였지만 사실이 아니다 —
+ * `deleteWithTransaction` 은 hard delete 가 아니라 status='cancelled' 로 내리는 soft cancel 이고
+ * 행은 남는다. 진짜 이유는 **연쇄 처리의 부재**다: 공고가 취소돼도 확정 스태프의 work_logs 를
+ * 정리하는 트리거·RPC 가 없어서(마이그레이션 전수 확인), 스태프 근무표와 정산에 취소된 공고의
+ * 유령 근무가 그대로 남는다. 이 가드를 풀려면 취소 연쇄 RPC 가 먼저 있어야 한다.
  */
 export function isPostingDeletable(confirmedApplicants: number): boolean {
   return confirmedApplicants <= 0;

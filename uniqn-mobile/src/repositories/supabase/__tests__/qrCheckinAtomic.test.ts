@@ -12,6 +12,7 @@ import {
   NotCheckedInError,
 } from '@/errors/BusinessErrors';
 import { BusinessError } from '@/errors';
+import { settledLockMessage } from '@/domains/settlement';
 
 const mockRpc = jest.fn();
 
@@ -127,7 +128,8 @@ describe('executeProcessQRCheckInOut — 에러 매핑', () => {
         CHECK_TIME,
         EXPECTED_DATE
       )
-    ).rejects.toMatchObject({ userMessage: '정산이 끝난 근무는 변경할 수 없습니다' });
+      // 정산 잠금 문구는 settledLockMessage 단일 소스를 따른다(화면마다 다른 말을 하던 4종을 통일).
+    ).rejects.toMatchObject({ userMessage: settledLockMessage('출퇴근을 처리할') });
   });
 
   it('already_checked_in → AlreadyCheckedInError', async () => {

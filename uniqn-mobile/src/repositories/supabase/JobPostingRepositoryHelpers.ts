@@ -11,6 +11,7 @@ import { handleSupabaseError, toCamelCase } from '@/utils/supabase';
 import { parseJobPostingDocument } from '@/schemas';
 import type { JobPosting } from '@/types';
 import { resolvePostingAuthority, canManagePosting } from './postingAuthority';
+import { settlementRoleMatchKey } from './JobPostingRepositorySettlement';
 
 export const TABLE = 'job_postings';
 export const DEFAULT_PAGE_SIZE = 20;
@@ -199,4 +200,31 @@ export function assertCanonical(
 /** (date, timeSlot, roleKey) 매칭 키. work_logs raw 값 기준(TBA→'미정'). */
 export function buildSlotRoleKey(date: string, timeSlot: string, roleKey: string): string {
   return `${date}__${timeSlot}__${roleKey}`;
+}
+
+/**
+ * 공고에 배정된 **활성** 근무의 정산 역할 키 집합.
+ *
+ * @description "활성"의 정의는 좌석 트리거 `fn_sync_filled_positions_seat` 와 동일하게
+ * `cancelled`·`no_show` 를 제외한 전부다. filled_positions 를 세는 기준과 이 가드가 보는 기준이
+ * 달라지면 "정원은 찼는데 가드는 비었다고 본다" 같은 어긋남이 생긴다.
+ * 반환 키는 `settlementRoleMatchKey` 규칙(other → customRole)이며, 정산 단가표 조회 키와 같다.
+ */
+export async function loadActiveWorkLogRoleKeys(jobPostingId: string): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from('work_logs')
+    .select('role,custom_role')
+    .eq('job_posting_id', jobPostingId)
+    .not('status', 'in', '(cancelled,no_show)');
+
+  if (error) {
+    handleSupabaseError(error, { operation: '확정 근무 역할 조회', table: 'work_logs' });
+  }
+
+  const keys = new Set<string>();
+  for (const row of (data ?? []) as { role?: string | null; custom_role?: string | null }[]) {
+    const key = settlementRoleMatchKey(row.role, row.custom_role);
+    if (key) keys.add(key);
+  }
+  return keys;
 }

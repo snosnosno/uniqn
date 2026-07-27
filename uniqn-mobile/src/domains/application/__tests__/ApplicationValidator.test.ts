@@ -406,7 +406,9 @@ describe('ApplicationValidator', () => {
       expect(result.available).toBe(true);
     });
 
-    it('headcount가 0이면 해당 슬롯은 무시된다', () => {
+    it('headcount가 0이어도 역할 자체는 존재하므로 available: true (정원 판정은 슬롯 검사 담당)', () => {
+      // checkRoleCapacity 는 "역할이 공고에 있는가"만 본다 — 좌석 수 판정은
+      // validateAssignmentSlotCapacity(아래 대조군)가 맡는다.
       const jobData = createJobPosting({
         dateSpecificRequirements: [
           {
@@ -420,8 +422,7 @@ describe('ApplicationValidator', () => {
         ],
       });
 
-      const result = validator.checkRoleCapacity(jobData, 'dealer');
-      expect(result.available).toBe(false);
+      expect(validator.checkRoleCapacity(jobData, 'dealer').available).toBe(true);
     });
 
     it('filled가 undefined이면 0으로 취급된다', () => {
@@ -709,6 +710,25 @@ describe('ApplicationValidator', () => {
       const assignments = [createAssignment({ roleIds: ['dealer'] })];
 
       const result = validator.validateApplication(jobData, assignments);
+      expect(result.errors.some((e) => e.code === 'ROLE_CAPACITY_REACHED')).toBe(true);
+    });
+
+    it('좌석 0인 역할은 집계 검증에서 걸러진다 — checkRoleCapacity 완화의 대조군', () => {
+      // checkRoleCapacity 는 좌석 수를 보지 않게 좁아졌다. 좌석 0 거부가 통째로 사라지지 않았음을
+      // 이 대조군이 고정한다(실효 담당은 validateAssignmentSlotCapacity).
+      const jobData = createJobPosting({
+        status: 'active',
+        dateSpecificRequirements: [
+          {
+            date: '2025-01-10',
+            timeSlots: [{ roles: [{ role: 'dealer', headcount: 0, filled: 0 }] }],
+          },
+        ],
+      });
+
+      const result = validator.validateApplication(jobData, [
+        createAssignment({ roleIds: ['dealer'] }),
+      ]);
       expect(result.errors.some((e) => e.code === 'ROLE_CAPACITY_REACHED')).toBe(true);
     });
 

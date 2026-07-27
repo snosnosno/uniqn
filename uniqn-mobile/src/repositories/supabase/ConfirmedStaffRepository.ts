@@ -17,6 +17,7 @@ import { logger } from '@/utils/logger';
 import { toError, BusinessError, ERROR_CODES, isAppError } from '@/errors';
 import { handleSupabaseError, toCamelCase, createRealtimeSubscription } from '@/utils/supabase';
 import { parseWorkLogDocuments, parseWorkLogDocument } from '@/schemas';
+import { settledLockMessage } from '@/domains/settlement';
 import { STATUS } from '@/constants';
 import { resolvePostingAuthority, canManagePosting } from './postingAuthority';
 import {
@@ -384,7 +385,7 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
       // 2. 정산 완료된 경우 수정 불가
       if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
         throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_SETTLED, {
-          userMessage: '이미 정산이 완료된 근무 기록은 수정할 수 없습니다.',
+          userMessage: settledLockMessage('시간을 수정할'),
         });
       }
 
@@ -504,7 +505,7 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
       // 4. 정산 완료된 경우 취소 불가 (updateWorkTimeWithTransaction과 동일 정책)
       if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
         throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_SETTLED, {
-          userMessage: '이미 정산이 완료된 근무 기록은 노쇼를 취소할 수 없습니다.',
+          userMessage: settledLockMessage('노쇼를 취소할'),
         });
       }
 

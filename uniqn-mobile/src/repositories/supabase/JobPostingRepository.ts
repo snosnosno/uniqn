@@ -36,8 +36,10 @@ import type {
   UpdateJobPostingInput,
   TournamentApprovalStatus,
   PostingRoleCatalogEntry,
+  PostingSchedule,
   SalarySortDirection,
 } from '@/types';
+import { getRoleDisplayName } from '@/types/unified';
 import type {
   IJobPostingRepository,
   PaginatedJobPostings,
@@ -58,12 +60,13 @@ import {
   rethrowOrHandle,
   loadAndVerifyMutateAccess,
   loadAndVerifyDeleteAccess,
+  loadActiveWorkLogRoleKeys,
   assertCanonical,
   buildSlotRoleKey,
 } from './JobPostingRepositoryHelpers';
 import {
   mergeSettlementRoles,
-  hasRoleCatalogIdentityMutation,
+  collectScheduleRoleMatchKeys,
 } from './JobPostingRepositorySettlement';
 import * as venue from './JobPostingRepositoryVenue';
 
@@ -76,6 +79,43 @@ export { buildSlotRoleKey } from './JobPostingRepositoryHelpers';
  * 아니면 regions(멀티 확장) in, 없으면 region(단일) eq.
  * 접두 압축 사유: 그룹 4개+ 선택 시 in() 160+ slug 나열이 게이트웨이 URL 한도 초과(실측).
  */
+/**
+ * 확정 스태프 보호 — **역할 소멸 한 가지만** 막는다.
+ *
+ * @description 예전에는 확정자가 1명이라도 있으면 일정·역할 편집 전체를 잠갔다. 그러나 실측 결과
+ * 확장 방향(날짜 추가·인원 증감·역할 추가·시간 변경)은 확정자에게 무해하다:
+ *   · `total_positions` 와 `active↔capacity_full` 전이는 DB BEFORE 트리거
+ *     `fn_recalc_total_and_capacity` 가 schedule 변경마다 자동 재계산한다.
+ *   · `filled_positions` 는 work_logs 좌석 델타 트리거가 관리해 스케줄과 무관하다.
+ *   · 이미 만들어진 work_logs 는 date/time_slot/role 을 **사본으로** 들고 있어 편집의 영향을 받지 않는다.
+ *   · 변경 통지는 `notify_on_job_posting_update` 가 확정 지원자에게 발송한다.
+ * 반대로 딱 하나, **확정자가 배정된 역할이 편집 결과 스케줄에서 사라지면** 정산이 조용히 기본 단가로
+ * 떨어진다 — 정산은 JIT 라 `settlementCalculation` 이 정산 시점 공고를 다시 읽어 `work_log.role` 로
+ * 단가를 찾기 때문이다. 옛 가드는 이 축을 정확히 겨냥하지 못했다(역할 **추가**는 막으면서 급여
+ * 인하는 허용했다). 그래서 넓은 잠금을 걷어내고 이 한 축만 남긴다.
+ */
+async function assertConfirmedRolesSurvive(
+  jobPostingId: string,
+  input: UpdateJobPostingInput,
+  nextSchedule: PostingSchedule
+): Promise<void> {
+  // 스케줄·역할 카탈로그를 건드리지 않는 수정(제목·설명·연락처 등)은 검사 자체가 불필요.
+  if (input.schedule === undefined && input.roleCatalog === undefined) return;
+
+  const assignedRoleKeys = await loadActiveWorkLogRoleKeys(jobPostingId);
+  if (assignedRoleKeys.size === 0) return;
+
+  const survivingRoleKeys = collectScheduleRoleMatchKeys(nextSchedule);
+  const removed = [...assignedRoleKeys].filter((key) => !survivingRoleKeys.has(key));
+  if (removed.length === 0) return;
+
+  // 키가 곧 커스텀 역할명인 other 는 ROLE_DISPLAY_LABELS 미등록 → getRoleDisplayName 이 키를 그대로 돌려준다.
+  const labels = removed.map((key) => getRoleDisplayName(key)).join(', ');
+  throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+    userMessage: `확정된 스태프가 배정된 역할(${labels})은 공고에서 뺄 수 없습니다. 해당 확정을 먼저 취소해 주세요.`,
+  });
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function applyRegionScope<T extends { eq: any; in: any; or: any }>(
   query: T,
@@ -636,15 +676,9 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       logger.info('공고 수정', { jobPostingId, ownerId });
       const cur = await loadAndVerifyMutateAccess(jobPostingId, ownerId, '공고 수정');
 
-      if (
-        (cur.filledPositions ?? 0) > 0 &&
-        (input.schedule !== undefined ||
-          hasRoleCatalogIdentityMutation(cur.roleCatalog, input.roleCatalog))
-      ) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '확정된 지원자가 있어 일정이나 역할을 변경할 수 없습니다.',
-        });
-      }
+      // 병합 전에 판정한다 — `mergeJobPostingInput` 의 schedule 규칙이 `patch.schedule ?? base.schedule`
+      // 이고 base 는 `toCreateJobPostingInput` 의 pass-through 라 아래 식과 등가다(serialization.ts:427,451).
+      await assertConfirmedRolesSurvive(jobPostingId, input, input.schedule ?? cur.schedule);
 
       const merged = mergeJobPostingInput(cur, input);
       const updatedAt = new Date().toISOString();

@@ -30,6 +30,13 @@ function getCapacityKey(date: string, timeSlot: string, roleId: string): string 
   return `${date}__${timeSlot}__${roleId}`;
 }
 
+/**
+ * 공고가 제공하는 (날짜·슬롯·역할) 조합과 각 정원.
+ *
+ * ⚠️ `filled` 은 항상 0 이다 — 역할별 충원 카운터가 SP3 에서 제거됐고 클라이언트는 실확정 수를
+ * 모른다. 따라서 이 맵으로 만드는 판정은 사실상 **"고른 조합이 공고에 존재하는가"**이지 정원
+ * 검사가 아니다. 실제 overfill 차단은 서버 `confirm_application`(H1)이 권위를 갖는다.
+ */
 export function buildPostingSlotCapacityMap(posting: JobPosting): Map<string, SlotCapacityIssue> {
   const capacityMap = new Map<string, SlotCapacityIssue>();
 

@@ -29,7 +29,11 @@ export const emailSchema = z
  * - 소문자 1개 이상
  * - 숫자 1개 이상
  * - 특수문자 1개 이상 (영문/숫자/공백 외 모든 문자)
- * - 3자 이상 연속 문자 금지 (123, abc 등)
+ *
+ * ⚠️ "3자 이상 연속 문자 금지"(abc·123)는 2026-07-27에 제거했다. 보안 이득이 없는 대신
+ * **패스워드 매니저가 만든 무작위 문자열이 우연히 `789`·`rst` 를 품으면 이유 불명으로 거부**되는
+ * 실패를 만들었다. NIST SP 800-63B 도 연속·반복 금지 같은 구성 규칙을 권장하지 않는다
+ * (사용자가 예측 가능한 패턴으로 회피하게 만든다). 남은 조합 규칙 4종은 유지한다.
  */
 export const passwordSchema = z
   .string()
@@ -47,23 +51,7 @@ export const passwordSchema = z
   })
   .refine((val) => /[^a-zA-Z0-9\s]/.test(val), {
     message: '특수문자를 포함해야 합니다',
-  })
-  .refine(
-    (val) => {
-      // 3자 이상 연속 문자 검사 (abc, 123, cba, 321 등)
-      for (let i = 0; i < val.length - 2; i++) {
-        const c1 = val.charCodeAt(i);
-        const c2 = val.charCodeAt(i + 1);
-        const c3 = val.charCodeAt(i + 2);
-        // 오름차순 연속 (abc, 123)
-        if (c2 === c1 + 1 && c3 === c2 + 1) return false;
-        // 내림차순 연속 (cba, 321)
-        if (c2 === c1 - 1 && c3 === c2 - 1) return false;
-      }
-      return true;
-    },
-    { message: '3자 이상 연속된 문자는 사용할 수 없습니다 (예: 123, abc)' }
-  );
+  });
 
 /**
  * 비밀번호 확인 검증 (단순)

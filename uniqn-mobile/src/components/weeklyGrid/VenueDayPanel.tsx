@@ -16,6 +16,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { STATUS } from '@/constants';
+import { settledLockMessage } from '@/domains/settlement';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import {
@@ -136,7 +137,7 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
         // 정산 완료 건은 서버(updateWorkTimeWithTransaction)가 수정을 거부하므로 진입 전 차단한다
         // (사유까지 입력한 뒤 거부 토스트를 받는 헛수고 방지 — ConfirmedStaffCard 계약과 정렬).
         if (full.payrollStatus === STATUS.PAYROLL.COMPLETED) {
-          toastError('정산이 완료된 근무는 시간을 수정할 수 없어요.');
+          toastError(settledLockMessage('시간을 수정할'));
           return;
         }
         setTimeEditStaff(full);
