@@ -8,6 +8,7 @@ import { Calendar, LocaleConfig } from 'react-native-calendars';
 import type { DateData, MarkedDates } from 'react-native-calendars/src/types';
 import { PRIMARY_COLORS, SECONDARY_PALETTE, TEXT_COLORS } from '@/constants/colors';
 import { WEEKDAYS_KO } from '@/constants/weekdays';
+import { Skeleton } from '@/components/ui';
 import { useThemeStore } from '@/stores/themeStore';
 // 라벨은 shared/status 한 곳에서만 만든다 — 예전에는 이 파일이 같은 표를 두 번 하드코딩해
 // 상태를 하나 늘릴 때마다 세 곳이 조용히 어긋날 수 있었다.
@@ -58,6 +59,8 @@ interface CalendarViewProps {
   currentMonth: { year: number; month: number };
   onDateSelect: (date: string) => void;
   onMonthChange: (year: number, month: number) => void;
+  /** 조회 중이고 보여줄 데이터가 아직 없을 때 — 빈 격자 대신 자리표시자를 그린다. */
+  isLoading?: boolean;
 }
 
 interface DotInfo {
@@ -253,12 +256,39 @@ function CalendarWeekdayHeader() {
   );
 }
 
+/**
+ * 로딩 중 격자 자리표시자.
+ *
+ * 캘린더는 기본 뷰인데 월을 옮길 때마다 빈 격자가 그대로 노출돼, '불러오는 중'과
+ * '이 달은 진짜 0건'이 시각적으로 같았다(리스트 모드는 같은 순간 ScreenSkeleton 4행).
+ * 격자는 리스트가 아니라서 ScreenSkeleton 을 재사용할 수 없어 여기서 조립한다.
+ */
+function CalendarGridSkeleton() {
+  return (
+    <View
+      className="px-4 pb-4"
+      accessibilityRole="progressbar"
+      accessibilityLabel="캘린더를 불러오는 중"
+    >
+      {Array.from({ length: 6 }).map((_, row) => (
+        <View key={row} className="mb-1 flex-row justify-between">
+          {Array.from({ length: 7 }).map((__, col) => (
+            // 셀 하나하나를 낭독하면 42번을 듣는다 — 컨테이너 라벨 하나로 충분하다.
+            <Skeleton key={col} width={36} height={36} borderRadius={18} accessible={false} />
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export function CalendarView({
   schedules,
   selectedDate,
   currentMonth,
   onDateSelect,
   onMonthChange,
+  isLoading = false,
 }: CalendarViewProps) {
   const { isDarkMode, mode } = useThemeStore();
   const theme = isDarkMode ? darkCalendarTheme : calendarTheme;
@@ -289,6 +319,17 @@ export function CalendarView({
   );
 
   const currentMonthString = `${currentMonth.year}-${String(currentMonth.month).padStart(2, '0')}-01`;
+
+  // 훅은 전부 위에서 호출한 뒤 분기한다(hooks 규칙). 바깥 wrapper 를 그대로 유지해야
+  // 스켈레톤 → 실제 캘린더 전환에서 폭·모서리가 튀지 않는다.
+  if (isLoading) {
+    return (
+      <View className="mx-4 overflow-hidden rounded-md bg-surface-card">
+        <CalendarWeekdayHeader />
+        <CalendarGridSkeleton />
+      </View>
+    );
+  }
 
   return (
     <View className="mx-4 overflow-hidden rounded-md bg-surface-card">

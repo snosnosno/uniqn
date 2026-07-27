@@ -1104,13 +1104,24 @@ export default function ScheduleScreen() {
         >
           {/* 0: 캘린더 — MonthNavigator border-b 바로 아래 붙임 */}
           <View>
-            <Suspense fallback={<Skeleton width="100%" height={320} />}>
+            {/* lazy chunk 최초 로드용 fallback 도 실제 캘린더와 같은 마진을 쓴다 —
+                edge-to-edge 로 두면 로드 직후 폭이 한 번 튄다. */}
+            <Suspense
+              fallback={
+                <View className="mx-4">
+                  <Skeleton width="100%" height={320} />
+                </View>
+              }
+            >
               <CalendarView
                 schedules={filteredCalendarSchedules}
                 selectedDate={selectedDate}
                 currentMonth={currentMonth}
                 onDateSelect={handleDateSelect}
                 onMonthChange={handleMonthChange}
+                // 리스트 모드(ScreenSkeleton)와 같은 이중 가드 — 이미 받아둔 달을 다시
+                // 열 때까지 스켈레톤이 뜨면 오히려 더 느리게 느껴진다.
+                isLoading={isLoading && filteredCalendarSchedules.length === 0}
               />
             </Suspense>
           </View>
