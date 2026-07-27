@@ -63,7 +63,9 @@ export function useCancelConfirmation() {
   return useMutation({
     mutationFn: ({ applicationId, reason }: { applicationId: string; reason?: string }) => {
       requireAuth(user?.uid, 'useStaffConversion');
-      return cancelConfirmation(applicationId, user.uid, reason);
+      // 이 훅의 유일한 소비처는 구인자 지원자 화면(my-postings/[id]/applicants.tsx)이다.
+      // 주체를 밝히지 않으면 RPC 가 지원자 본인만 허용하는 분기로 떨어져 항상 실패한다.
+      return cancelConfirmation(applicationId, user.uid, reason, 'employer_initiates');
     },
     onSuccess: (result) => {
       const jobPostingId = findJobPostingIdForApplications(queryClient, [result.applicationId]);
