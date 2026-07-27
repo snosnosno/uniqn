@@ -18,7 +18,6 @@ const mockGetTodaySchedules = jest.fn();
 const mockSubscribeToSchedules = jest.fn();
 const mockCalculateScheduleStats = jest.fn();
 const mockGroupSchedulesByDate = jest.fn();
-const mockGetCalendarMarkedDates = jest.fn();
 
 jest.mock('@/services/work/scheduleService', () => ({
   getMySchedules: (...args: unknown[]) => mockGetMySchedules(...args),
@@ -29,7 +28,6 @@ jest.mock('@/services/work/scheduleService', () => ({
   subscribeToSchedules: (...args: unknown[]) => mockSubscribeToSchedules(...args),
   calculateScheduleStats: (...args: unknown[]) => mockCalculateScheduleStats(...args),
   groupSchedulesByDate: (...args: unknown[]) => mockGroupSchedulesByDate(...args),
-  getCalendarMarkedDates: (...args: unknown[]) => mockGetCalendarMarkedDates(...args),
 }));
 
 const mockGroupScheduleEvents = jest.fn();
@@ -38,6 +36,10 @@ const mockFilterSchedulesByDate = jest.fn();
 jest.mock('@/utils/scheduleGrouping', () => ({
   groupScheduleEvents: (...args: unknown[]) => mockGroupScheduleEvents(...args),
   filterSchedulesByDate: (...args: unknown[]) => mockFilterSchedulesByDate(...args),
+  // 선택 날짜 재정렬은 순수 함수라 실제 구현을 그대로 쓴다 — 부분 mock 으로 빼면
+  // 훅이 호출하는 순간 "is not a function" 으로 터진다.
+  resolveSelectedDateForMonth: jest.requireActual('@/utils/scheduleGrouping')
+    .resolveSelectedDateForMonth,
 }));
 
 jest.mock('@/utils/queryUtils', () => ({
@@ -62,10 +64,12 @@ jest.mock('@/services/offline/criticalOfflineCache', () => ({
   setCriticalOfflineCache: jest.fn(),
 }));
 
-const { setCriticalOfflineCache: mockSetCriticalOfflineCache } = jest.requireMock(
-  '@/services/offline/criticalOfflineCache'
-) as {
+const {
+  setCriticalOfflineCache: mockSetCriticalOfflineCache,
+  getCriticalOfflineCache: mockGetCriticalOfflineCache,
+} = jest.requireMock('@/services/offline/criticalOfflineCache') as {
   setCriticalOfflineCache: jest.Mock;
+  getCriticalOfflineCache: jest.Mock;
 };
 
 type MockUser = { uid: string } | null;
@@ -138,6 +142,14 @@ jest.mock('@/lib/queryClient', () => ({
     standard: 0,
     stable: 0,
   },
+  // ⚠️ 이 mock 은 손으로 쓴 부분 사본이다 — @/lib/queryClient 에 훅이 쓰는 export 를
+  // 하나 추가하면 여기가 undefined 가 되어 25건이 한꺼번에 터진다(실제로 그랬다).
+  // 오프라인 캐시 보존기간은 온라인 staleTime 과 다른 축이라 값도 실제와 같게 둔다
+  // (getCriticalOfflineCache 는 위에서 null 로 mock 돼 있어 동작엔 영향 없음).
+  offlineCachePolicies: {
+    schedules: 24 * 60 * 60 * 1000,
+    today: 24 * 60 * 60 * 1000,
+  },
 }));
 
 jest.mock('@/utils/logger', () => ({
@@ -182,8 +194,11 @@ function createMockStats(): ScheduleStats {
     completedSchedules: 5,
     confirmedSchedules: 3,
     upcomingSchedules: 2,
+    completedWorkDays: 7,
     totalEarnings: 1000000,
     thisMonthEarnings: 500000,
+    settledEarnings: 300000,
+    estimatedEarnings: 200000,
     hoursWorked: 40,
   };
 }
@@ -236,12 +251,6 @@ describe('useSchedules hooks', () => {
         events: schedules,
       },
     ]);
-    mockGetCalendarMarkedDates.mockImplementation((schedules: ScheduleEvent[]) =>
-      schedules.reduce<Record<string, { marked: true }>>((acc, schedule) => {
-        acc[schedule.date] = { marked: true };
-        return acc;
-      }, {})
-    );
     mockGroupScheduleEvents.mockImplementation((schedules: unknown[]) => schedules);
     mockFilterSchedulesByDate.mockImplementation(
       (schedules: { date?: string }[] | undefined, selectedDate: string) =>
@@ -255,11 +264,9 @@ describe('useSchedules hooks', () => {
       const schedules = [createMockSchedule()];
       const stats = createMockStats();
       const groupedSchedules = [{ date: '2024-02-15', events: schedules }];
-      const markedDates = { '2024-02-15': { marked: true } };
 
       mockQueryData = { schedules, stats };
       mockGroupSchedulesByDate.mockReturnValue(groupedSchedules);
-      mockGetCalendarMarkedDates.mockReturnValue(markedDates);
 
       const { result } = renderHook(() => useSchedules());
 
@@ -270,7 +277,6 @@ describe('useSchedules hooks', () => {
       expect(result.current.schedules).toEqual(schedules);
       expect(result.current.stats).toEqual(stats);
       expect(result.current.groupedSchedules).toEqual(groupedSchedules);
-      expect(result.current.markedDates).toEqual(markedDates);
     });
 
     it('does not query when disabled', () => {
@@ -399,11 +405,9 @@ describe('useSchedules hooks', () => {
       const schedules = [createMockSchedule()];
       const stats = createMockStats();
       const groupedSchedules = [{ date: '2024-02-15', events: schedules }];
-      const markedDates = { '2024-02-15': { marked: true } };
 
       mockQueryData = { schedules, stats };
       mockGroupSchedulesByDate.mockReturnValue(groupedSchedules);
-      mockGetCalendarMarkedDates.mockReturnValue(markedDates);
 
       renderHook(() => useSchedules());
 
@@ -414,7 +418,6 @@ describe('useSchedules hooks', () => {
             schedules,
             stats,
             groupedSchedules,
-            markedDates,
           }),
           expect.objectContaining({
             userId: 'staff-1',
@@ -454,6 +457,29 @@ describe('useSchedules hooks', () => {
   });
 
   describe('useSchedulesByMonth', () => {
+    // 오프라인 캐시 TTL 로 온라인 staleTime(5분)을 겸용하면, 만료 시 캐시가 stale 표시가
+    // 아니라 **완전 삭제**되기 때문에 지하 홀덤펍에서 확정 근무가 통째로 사라지고
+    // 화면이 "아직 예정된 스케줄이 없어요"로 위장된다.
+    it('오프라인 캐시 보존기간을 온라인 staleTime 과 겸용하지 않는다', () => {
+      renderHook(() => useSchedulesByMonth({ year: 2024, month: 2 }));
+
+      const ttls = mockGetCriticalOfflineCache.mock.calls.map(
+        (call) => (call[1] as { ttlMs: number }).ttlMs
+      );
+
+      expect(ttls.length).toBeGreaterThan(0);
+      // mock 의 온라인 staleTime 은 0 — 그 값이 그대로 흘러들면 캐시가 즉시 소거된다.
+      expect(ttls.every((ttl) => ttl >= 24 * 60 * 60 * 1000)).toBe(true);
+    });
+
+    it('오프라인 여부를 화면이 구분할 수 있게 노출한다', () => {
+      // error 는 오프라인일 때 훅 내부에서 null 로 접히므로, 이 필드가 없으면
+      // 화면은 '네트워크가 없어 비어 있음'과 '정말 0건'을 구분할 수단이 없다.
+      const { result } = renderHook(() => useSchedulesByMonth({ year: 2024, month: 2 }));
+
+      expect(result.current).toHaveProperty('isOffline');
+    });
+
     it('returns monthly schedules and invalidates month-scoped cache on refresh', async () => {
       const schedules = [createMockSchedule()];
       const stats = createMockStats();
@@ -805,8 +831,11 @@ describe('useSchedules hooks', () => {
       });
 
       expect(result.current.view).toBe('day');
-      expect(result.current.selectedDate).toBe('2024-02-20');
       expect(result.current.currentMonth).toEqual({ year: 2025, month: 6 });
+      // 월을 옮기면 선택 날짜도 그 달로 따라간다. 예전처럼 '2024-02-20' 에 남으면
+      // 캘린더에 점은 찍혔는데 아래 목록은 비고 선택 표시도 사라져,
+      // 지난달 기록을 보러 온 사용자가 "기록이 사라졌다"고 오해한다.
+      expect(result.current.selectedDate).toBe('2025-06-01');
 
       act(() => {
         result.current.goToPrevMonth();
@@ -829,6 +858,23 @@ describe('useSchedules hooks', () => {
         year: today.getFullYear(),
         month: today.getMonth() + 1,
       });
+    });
+
+    // 자동 재정렬이 사용자의 명시적 선택을 덮으면, 날짜를 탭할 때마다 되돌아가 버린다.
+    it('사용자가 직접 고른 날짜는 같은 달 안에서 유지된다', () => {
+      mockQueryData = { schedules: [], stats: createMockStats() };
+
+      const { result } = renderHook(() => useCalendarView('month' as CalendarView));
+
+      act(() => {
+        result.current.goToMonth(2025, 6);
+      });
+      expect(result.current.selectedDate).toBe('2025-06-01');
+
+      act(() => {
+        result.current.setSelectedDate('2025-06-14');
+      });
+      expect(result.current.selectedDate).toBe('2025-06-14');
     });
   });
 });

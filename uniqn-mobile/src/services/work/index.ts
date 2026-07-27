@@ -23,7 +23,6 @@ export {
   getTodaySchedules,
   subscribeToSchedules,
   groupSchedulesByDate,
-  getCalendarMarkedDates,
   type ScheduleQueryResult,
 } from './scheduleService';
 

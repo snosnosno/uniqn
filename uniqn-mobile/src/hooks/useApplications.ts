@@ -30,6 +30,34 @@ import { STATUS } from '@/constants';
 import type { Application, ApplicationStatus, Assignment, PreQuestionAnswer } from '@/types';
 import type { BoardAuthorRole, BoardJobSummary } from '@/types/board';
 
+/**
+ * 스케줄 캐시 payload 에서 해당 지원의 일정을 걷어낸다 (낙관 갱신용).
+ *
+ * 스케줄 쿼리는 키마다 모양이 다르다 — 월 조회는 `{ schedules, stats }` 객체,
+ * 날짜·오늘 조회는 배열이다. 둘 다 처리하고, 알 수 없는 모양은 손대지 않는다.
+ */
+function removeApplicationFromSchedulePayload(data: unknown, applicationId: string): unknown {
+  const drop = (items: unknown[]) =>
+    items.filter(
+      (item) => (item as { applicationId?: string } | null)?.applicationId !== applicationId
+    );
+
+  if (Array.isArray(data)) {
+    return drop(data);
+  }
+
+  if (
+    data &&
+    typeof data === 'object' &&
+    Array.isArray((data as { schedules?: unknown }).schedules)
+  ) {
+    const payload = data as { schedules: unknown[] };
+    return { ...payload, schedules: drop(payload.schedules) };
+  }
+
+  return data;
+}
+
 interface SubmitApplicationV2Params {
   jobPostingId: string;
   assignments: Assignment[];
@@ -185,7 +213,14 @@ export function useApplications() {
         );
       }
 
-      return { previousApplications };
+      // 스케줄 캐시도 같이 비운다. 지원 목록만 낙관 갱신하면 스케줄 탭 카드는 그대로 남아,
+      // 통신이 느린 지하 홀덤펍에서는 실패한 줄 알고 다시 누르게 된다.
+      const previousSchedules = queryClient.getQueriesData({ queryKey: queryKeys.schedules.all });
+      queryClient.setQueriesData({ queryKey: queryKeys.schedules.all }, (data: unknown) =>
+        removeApplicationFromSchedulePayload(data, applicationId)
+      );
+
+      return { previousApplications, previousSchedules };
     },
     onSuccess: (_, applicationId) => {
       logger.info('Application cancelled', { applicationId });
@@ -204,10 +239,16 @@ export function useApplications() {
     },
     onError: createMutationErrorHandler('지원 취소', addToast, {
       onRollback: (ctx) => {
-        const rollbackCtx = ctx as { previousApplications?: Application[] };
+        const rollbackCtx = ctx as {
+          previousApplications?: Application[];
+          previousSchedules?: [readonly unknown[], unknown][];
+        };
         if (rollbackCtx?.previousApplications) {
           queryClient.setQueryData(myApplicationsQueryKey, rollbackCtx.previousApplications);
         }
+        rollbackCtx?.previousSchedules?.forEach(([key, data]) => {
+          queryClient.setQueryData(key, data);
+        });
       },
     }),
     onSettled: () => {
@@ -276,10 +317,16 @@ export function useApplications() {
     },
     onError: createMutationErrorHandler('취소 요청', addToast, {
       onRollback: (ctx) => {
-        const rollbackCtx = ctx as { previousApplications?: Application[] };
+        const rollbackCtx = ctx as {
+          previousApplications?: Application[];
+          previousSchedules?: [readonly unknown[], unknown][];
+        };
         if (rollbackCtx?.previousApplications) {
           queryClient.setQueryData(myApplicationsQueryKey, rollbackCtx.previousApplications);
         }
+        rollbackCtx?.previousSchedules?.forEach(([key, data]) => {
+          queryClient.setQueryData(key, data);
+        });
       },
     }),
     onSettled: () => {

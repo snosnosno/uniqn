@@ -22,6 +22,11 @@ interface ErrorStateProps {
   onRetry?: () => void;
   retryText?: string;
   compact?: boolean;
+  /**
+   * isRetryable 과 무관하게 재시도 버튼을 노출한다.
+   * 읽기(조회) 화면 전용 — 재실행에 부작용이 없는 경로에서만 켠다.
+   */
+  alwaysAllowRetry?: boolean;
 }
 
 // ============================================================================
@@ -35,6 +40,7 @@ export function ErrorState({
   onRetry,
   retryText = '다시 시도',
   compact = false,
+  alwaysAllowRetry = false,
 }: ErrorStateProps) {
   // 에러 메시지 추출
   const errorMessage = React.useMemo(() => {
@@ -57,13 +63,18 @@ export function ErrorState({
   }, [error, message]);
 
   // 재시도 가능 여부
+  //
+  // AppError 는 기본 isRetryable=false 라, RLS 거부·파싱 실패 같은 조회 실패에서는
+  // '다시 시도' 버튼조차 사라진다. 읽기 재실행은 부작용이 없으므로 조회 화면은
+  // alwaysAllowRetry 로 버튼을 남길 수 있게 한다(쓰기 경로는 기존 판정 유지).
   const canRetry = React.useMemo(() => {
     if (!onRetry) return false;
+    if (alwaysAllowRetry) return true;
     if (isAppError(error)) {
       return error.isRetryable;
     }
     return true;
-  }, [error, onRetry]);
+  }, [error, onRetry, alwaysAllowRetry]);
 
   if (compact) {
     return (

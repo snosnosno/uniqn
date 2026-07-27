@@ -18,8 +18,15 @@ import {
 } from '@/components/icons';
 import { formatDateDisplay, formatRolesDisplay } from '@/utils/scheduleGrouping';
 import { parseTimeSlot } from '@/utils/date/ranges';
-import { formatSalaryDisplay, SCHEDULE_STATUS_STRIPE_TONE } from './helpers';
+import {
+  formatGroupSalaryDisplay,
+  SCHEDULE_STATUS_STRIPE_TONE,
+  NO_SHOW_NOTICE_TITLE,
+  NO_SHOW_NOTICE_DESCRIPTION,
+} from './helpers';
 import { STATUS } from '@/constants';
+// 배럴(@/hooks)이 아니라 직접 경로 — 훅 파일 주석의 순환 참조 경고를 따른다.
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 import { WorkTimeDisplay } from '@/shared/time';
 import { SCHEDULE_STATUS, ATTENDANCE_STATUS } from '@/constants/statusConfig';
@@ -41,6 +48,9 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const status = SCHEDULE_STATUS[group.type];
   const isCancelled = group.type === STATUS.SCHEDULE.CANCELLED;
+  // 그룹 키에 type 이 들어가므로(createGroupKey) 노쇼 일자는 별도 그룹/카드로 갈라진다.
+  // 취소와 달리 흐리게 처리하지 않는다 — 이의 제기 기한이 있는 기록이다.
+  const isNoShow = group.type === STATUS.SCHEDULE.NO_SHOW;
   const hasPendingCancellation = group.originalEvents.some((event) => event.isCancellationPending);
 
   const rolesDisplay = useMemo(
@@ -51,9 +61,10 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
     () => formatDateDisplay(group.dateRange.dates),
     [group.dateRange.dates]
   );
+  // 공고 기본 단가가 아니라 **내가 맡은 역할**의 단가를 쓴다.
   const salaryDisplay = useMemo(
-    () => formatSalaryDisplay(group.postingProjection?.settlement.defaultSalary),
-    [group.postingProjection]
+    () => formatGroupSalaryDisplay(group.postingProjection, group.roles, group.customRoles),
+    [group.postingProjection, group.roles, group.customRoles]
   );
   const ownerName = group.postingProjection?.ownerName;
 
@@ -88,10 +99,18 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
     return { label: '출근 전', status: STATUS.ATTENDANCE.NOT_STARTED };
   }, [group.type, group.dateStatuses]);
 
+  // Reduce Motion 대응 — 공용 훅(SSOT). 여기 있던 로컬 구현은 useState(false) 로 시작해
+  // RM 사용자에게도 마운트 첫 1~2프레임 동안 모션이 재생됐고, isReduceMotionEnabled 를
+  // 옵셔널 호출하지 않아 그 메서드가 없는 mock 환경에서 터졌다. 공용 훅은 둘 다 해결돼 있다.
+  const reduceMotion = useReduceMotion();
+
   const toggleExpanded = useCallback(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    // 모션을 줄이도록 설정한 사용자에게 펼침 애니메이션을 강행하지 않는다.
+    if (!reduceMotion) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    }
     setIsExpanded((prev) => !prev);
-  }, []);
+  }, [reduceMotion]);
 
   const handleDatePress = useCallback(
     (date: string, scheduleEventId: string) => {
@@ -103,12 +122,29 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
   // 그룹은 동일 공고의 동일 ScheduleType 일정만 묶이므로 group.type 으로 tone 결정.
   const stripeTone = SCHEDULE_STATUS_STRIPE_TONE[group.type];
 
+  // 스크린리더 라벨은 완결 문장이어야 한다. 예전엔 '○○홀덤 일정 상세 보기, 3일' 한 문장뿐이라
+  // 상태·기간·근무지·출퇴근 요약이 전부 빠졌다.
+  const cardAccessibilityLabel = [
+    status.label,
+    group.jobPostingName,
+    dateDisplay,
+    group.location,
+    attendanceSummary?.label,
+    hasPendingCancellation ? '취소 요청 검토 중' : null,
+    isNoShow ? NO_SHOW_NOTICE_TITLE : null,
+  ]
+    .filter(Boolean)
+    .join(', ');
+
   return (
     <Pressable
       onPress={onPress}
       disabled={!onPress}
+      // RN Pressable 은 기본 accessible=true 라 내부 요소(펼치기 버튼·날짜 행)를 통째로
+      // 흡수한다. 컨테이너를 접근성에서 빼야 안쪽 컨트롤이 스크린리더에 도달한다.
+      accessible={false}
       accessibilityRole="button"
-      accessibilityLabel={`${group.jobPostingName} 일정 상세 보기, ${group.dateRange.totalDays}일`}
+      accessibilityLabel={cardAccessibilityLabel}
     >
       <CardStripe tone={stripeTone} style={{ marginBottom: 12 }}>
         <View
@@ -118,7 +154,8 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
         >
           <View className="mb-2 flex-row items-start justify-between">
             <View className="flex-1 flex-row flex-wrap items-center">
-              <Badge variant="chip" dot>
+              {/* ScheduleCard 와 같은 규칙 — 상태 색은 SCHEDULE_STATUS 한 곳에서만 온다. */}
+              <Badge variant={status.variant} dot>
                 {status.label}
               </Badge>
 
@@ -199,23 +236,28 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
               </Text>
             </View>
 
-            {group.type === STATUS.SCHEDULE.APPLIED && salaryDisplay && (
-              <View className="mr-3 flex-row items-center">
-                <BanknotesIcon size={14} color={SECONDARY_PALETTE[500]} />
-                <Text className="ml-1.5 text-sm font-sans-medium text-content-secondary">
-                  {salaryDisplay}
-                </Text>
-              </View>
-            )}
+            {/* 확정에도 급여를 남긴다 — '언제/어디서/얼마'가 카드 3요소인데, 지원 중에 보이던
+                금액이 확정되는 순간(실제로 돈이 걸린 순간) 사라지고 있었다. */}
+            {(group.type === STATUS.SCHEDULE.APPLIED || group.type === STATUS.SCHEDULE.CONFIRMED) &&
+              salaryDisplay && (
+                <View className="mr-3 flex-row items-center">
+                  <BanknotesIcon size={14} color={SECONDARY_PALETTE[500]} />
+                  <Text className="ml-1.5 text-sm font-sans-medium text-content-secondary">
+                    {salaryDisplay}
+                  </Text>
+                </View>
+              )}
 
-            {ownerName && group.type === STATUS.SCHEDULE.APPLIED && (
-              <View className="flex-row items-center">
-                <UserIcon size={14} color={SECONDARY_PALETTE[400]} />
-                <Text className="ml-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-                  {ownerName}
-                </Text>
-              </View>
-            )}
+            {ownerName &&
+              (group.type === STATUS.SCHEDULE.APPLIED ||
+                group.type === STATUS.SCHEDULE.CONFIRMED) && (
+                <View className="flex-row items-center">
+                  <UserIcon size={14} color={SECONDARY_PALETTE[400]} />
+                  <Text className="ml-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                    {ownerName}
+                  </Text>
+                </View>
+              )}
           </View>
 
           {group.dateRange.totalDays > 1 && (
@@ -248,7 +290,8 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
                         ? 'border-b border-secondary-100 dark:border-surface-overlay/50'
                         : ''
                     }`}
-                    accessibilityLabel={`${dateStatus.formattedDate} ${attendance.label}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${dateStatus.formattedDate} ${attendance.label}, 이 날짜 상세 보기`}
                   >
                     <Text className="text-sm text-content-secondary font-sans">
                       {dateStatus.formattedDate}
@@ -276,6 +319,17 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
             <View className="mt-3 rounded-lg bg-error-50 px-3 py-2 dark:bg-error-900/20">
               <Text className="text-center text-xs text-error-600 dark:text-error-400 font-sans">
                 이 일정이 취소되었습니다.
+              </Text>
+            </View>
+          )}
+
+          {isNoShow && (
+            <View className="mt-3 rounded-lg bg-error-50 px-3 py-2 dark:bg-error-900/20">
+              <Text className="text-center text-xs font-sans-semibold text-error-700 dark:text-error-300">
+                {NO_SHOW_NOTICE_TITLE}
+              </Text>
+              <Text className="mt-1 text-center text-xs text-error-600 dark:text-error-400 font-sans">
+                {NO_SHOW_NOTICE_DESCRIPTION}
               </Text>
             </View>
           )}

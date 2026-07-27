@@ -143,6 +143,13 @@ export interface ScheduleEvent extends FirebaseDocument {
   workLogId?: string;
   applicationId?: string;
   isCancellationPending?: boolean;
+  /**
+   * 구인자가 남긴 노쇼 사유(work_logs.no_show_reason).
+   *
+   * 컬럼은 스태프 조회 경로(workLogColumns)까지 이미 내려오는데 ScheduleEvent 로 옮겨지지
+   * 않아 버려지고 있었다. 사유 없이 "노쇼로 기록됨"만 보면 이의를 제기할 근거를 못 잡는다.
+   */
+  noShowReason?: string;
 
   // 媛쒕퀎 ?ㅻ쾭?쇱씠??(援ъ씤?먭? ?ㅽ깭?꾨퀎濡??섏젙???뺤궛 ?뺣낫)
   /** 媛쒕퀎 湲됱뿬 ?뺣낫 (?ㅻ쾭?쇱씠?? */
@@ -192,8 +199,18 @@ export interface ScheduleStats {
   confirmedSchedules: number;
   /** 대기 중인 스케줄 수 (지원됨, type === 'applied') */
   upcomingSchedules: number;
+  /**
+   * 완료한 근무 '일수'. completedSchedules 는 지원 단위(건)라, 3일짜리 대회 1건이면
+   * completedSchedules=1 / completedWorkDays=3 이 된다. 두 숫자를 한 칸에 섞으면
+   * 상단 통계는 '완료 3', 목록 필터탭은 '완료 1' 을 동시에 보여주게 된다.
+   */
+  completedWorkDays: number;
   totalEarnings: number;
   thisMonthEarnings: number;
+  /** 구인자가 정산을 완료 처리한 금액 (payrollStatus === 'completed') */
+  settledEarnings: number;
+  /** 아직 정산 처리 전인 금액 (pending·processing). 추정치라 확정 금액과 섞지 않는다. */
+  estimatedEarnings: number;
   hoursWorked: number;
 }
 

@@ -24,7 +24,10 @@ export type ApplicationStatus =
   | 'completed'
   | 'cancellation_pending';
 
-export type ScheduleType = 'applied' | 'confirmed' | 'completed' | 'cancelled';
+// 'no_show' 는 work_log 의 no_show 를 그대로 승격시킨 값이다. 예전에는 cancelled 로 접혀
+// 스태프 화면에 "이 일정이 취소되었습니다"만 떴다 — 평판·정산에 불리한 기록이 남은 걸
+// 정작 본인만 모르고 이의 제기 기회를 놓쳤다.
+export type ScheduleType = 'applied' | 'confirmed' | 'completed' | 'cancelled' | 'no_show';
 
 // DB enum payroll_status = ['pending','completed','failed']. 'processing'는 UI 표시 전용 값.
 export type PayrollStatus = 'pending' | 'processing' | 'completed' | 'failed';
@@ -67,6 +70,9 @@ export const SCHEDULE_TYPE_LABELS: Record<ScheduleType, string> = {
   confirmed: '확정',
   completed: '완료',
   cancelled: '취소',
+  // 구인자 화면(CONFIRMED_STAFF_STATUS_LABELS)과 같은 단어를 쓴다 — 같은 사건을
+  // 양쪽이 다른 이름으로 부르면 이의 제기 대화가 어긋난다.
+  no_show: '노쇼',
 };
 
 // 스케줄 상세 모달(ScheduleDetailModal)의 헤더가 SCHEDULE_TYPE_LABELS.completed('완료')를 동시에

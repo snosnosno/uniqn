@@ -39,7 +39,7 @@ QW에서 `src/shared/status/types.ts`의 `PAYROLL_STATUS_LABELS`를 "정산 대�
 1. `src/components/employer/settlement/helpers/settlementConfig.ts` — "미정산/처리중/정산완료/정산실패" (띄어쓰기 없음)
 2. `src/components/employer/settlement/SettlementDetailModal/constants.ts` — 1과 동일 값 재정의
 3. `src/components/employer/settlement/GroupedSettlementCard.tsx` — 로컬 재정의
-4. `src/components/schedule/WorkLogList.tsx` — 로컬 정의(값은 이미 SSOT와 동일 형태. **주의: 이 컴포넌트는 현재 소비자 0 죽은 코드** — M1에서 부활 후보이니 삭제하지 말고 라벨만 SSOT 참조로)
+4. ~~`src/components/schedule/WorkLogList.tsx`~~ — **2026-07-27 삭제됨**(rank41). 여기 남겼던 "부활 후보이니 삭제하지 말 것" 판단은 M1 의 필수 스펙(리스트 뷰 상태 필터 탭)이 `schedule.tsx` 에 직접 구현되면서 무효가 됐다 — 이 컴포넌트는 그 뒤로도 소비자 0인 채 유지비만 냈다. 근무 이력 화면이 다시 필요해지면 git 이력에서 복원할 것.
 
 스펙: 4곳 전부 `PAYROLL_STATUS_LABELS` import로 교체. "미정산"처럼 짧은 라벨이 필터 칩 등에서 필요하면 SSOT에 `PAYROLL_STATUS_SHORT_LABELS` 변형을 추가하는 방식으로 해결(로컬 재정의 금지). 라벨 문자열을 기대하는 테스트 전수 grep 후 갱신.
 
@@ -52,7 +52,7 @@ QW에서 `src/shared/status/types.ts`의 `PAYROLL_STATUS_LABELS`를 "정산 대�
 - 리스트 뷰에 상태 필터 탭(전체/지원중/확정/완료) — 기존 `groupedByApplication` 데이터 재사용 (`app/(app)/(tabs)/schedule.tsx`)
 - 캘린더의 applied 점을 confirmed와 다른 시각 언어로(테두리만/반투명) — `src/components/schedule/CalendarView.tsx:67-72` `SCHEDULE_DOT_COLORS` 참조. 색상 단독 의존(색약 취약) 해소가 목적
 - (선택) "지원 현황 N건" 접이식 카드를 리스트 상단에
-- (선택) 과거 이력 접근 개선 — `MonthNavigator` 월 타이틀 탭 → 연/월 피커 바텀시트(감사 S1). 죽은 코드 `WorkLogList`(페이지네이션 근무이력) 부활도 검토
+- (선택) 과거 이력 접근 개선 — `MonthNavigator` 월 타이틀 탭 → 연/월 피커 바텀시트(감사 S1). ~~죽은 코드 `WorkLogList` 부활도 검토~~ → 2026-07-27 삭제(위 4번 참조)
 - QW에서 상세화면(`jobs/[id]`)에 applied 취소 진입점을 이미 넣었으므로, 스케줄탭 쪽 흐름과 문구 일관성 확인
 
 ### M2. 노쇼 되돌리기 (서버 경로 포함 — `/guard` 먼저)

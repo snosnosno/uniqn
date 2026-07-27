@@ -5,7 +5,6 @@
  * @version 2.0.0
  */
 
-import { SECONDARY_PALETTE } from '@/constants/colors';
 import type { ScheduleEvent, WorkLog, Application, ScheduleFilters } from '@/types';
 
 // Import after mocks
@@ -17,7 +16,6 @@ import {
   getTodaySchedules,
   subscribeToSchedules,
   groupSchedulesByDate,
-  getCalendarMarkedDates,
   calculateScheduleStats,
 } from '@/services/work/scheduleService';
 import { STATUS } from '@/constants';
@@ -480,6 +478,8 @@ describe('scheduleService - getSchedulesByDate', () => {
 });
 
 describe('scheduleService - getSchedulesByMonth', () => {
+  // 조회 범위는 월 경계를 넘는 연속 근무를 한 그룹으로 잡기 위해 앞뒤 7일 패딩된다.
+  // (표시·집계 기준은 그대로 '그 달' — 아래 '그 달 밖 근무일' 테스트가 그 계약을 지킨다)
   beforeEach(() => {
     jest.clearAllMocks();
     mockWorkLogRepositoryGetByStaffIdWithFilters.mockResolvedValue([]);
@@ -488,11 +488,36 @@ describe('scheduleService - getSchedulesByMonth', () => {
     mockScheduleMergerMerge.mockReturnValue([]);
   });
 
+  // 회귀 방어: 조회는 앞뒤 7일 넓게 하되, **표시·집계 기준은 그대로 그 달**이어야 한다.
+  // 패딩분이 schedules 로 새면 남의 달 일정이 캘린더 dot·통계·필터에 섞인다.
+  it('패딩으로 딸려온 그 달 밖 근무일은 schedules 가 아니라 boundarySchedules 로 분리한다', async () => {
+    const july = (date: string, applicationId: string, id: string) => ({
+      id,
+      applicationId,
+      date,
+      type: STATUS.SCHEDULE.CONFIRMED,
+    });
+
+    mockScheduleMergerMerge.mockReturnValue([
+      july('2025-01-30', 'app-1', 's1'),
+      july('2025-01-31', 'app-1', 's2'),
+      july('2025-02-02', 'app-1', 's3'), // 같은 지원의 다음 달 근무일 — 그룹핑 재료
+      july('2025-02-05', 'app-other', 's4'), // 그 달에 근무가 없는 지원 — 끌고 오지 않는다
+    ]);
+
+    const result = await getSchedulesByMonth('staff-123', 2025, 1);
+
+    expect(result.schedules.map((s) => s.id)).toEqual(['s1', 's2']);
+    expect(result.boundarySchedules?.map((s) => s.id)).toEqual(['s3']);
+    // 통계도 그 달 기준이라 경계 근무일이 건수를 부풀리지 않는다.
+    expect(result.stats.confirmedSchedules).toBe(1);
+  });
+
   it('월의 시작일과 끝일로 조회해야 함', async () => {
     await getSchedulesByMonth('staff-123', 2025, 1);
 
     expect(mockWorkLogRepositoryGetByStaffIdWithFilters).toHaveBeenCalledWith('staff-123', {
-      dateRange: { start: '2025-01-01', end: '2025-01-31' },
+      dateRange: { start: '2024-12-25', end: '2025-02-07' },
       status: undefined,
       pageSize: 100,
     });
@@ -502,7 +527,7 @@ describe('scheduleService - getSchedulesByMonth', () => {
     await getSchedulesByMonth('staff-123', 2024, 2);
 
     expect(mockWorkLogRepositoryGetByStaffIdWithFilters).toHaveBeenCalledWith('staff-123', {
-      dateRange: { start: '2024-02-01', end: '2024-02-29' },
+      dateRange: { start: '2024-01-25', end: '2024-03-07' },
       status: undefined,
       pageSize: 100,
     });
@@ -512,7 +537,7 @@ describe('scheduleService - getSchedulesByMonth', () => {
     await getSchedulesByMonth('staff-123', 2025, 2);
 
     expect(mockWorkLogRepositoryGetByStaffIdWithFilters).toHaveBeenCalledWith('staff-123', {
-      dateRange: { start: '2025-02-01', end: '2025-02-28' },
+      dateRange: { start: '2025-01-25', end: '2025-03-07' },
       status: undefined,
       pageSize: 100,
     });
@@ -522,7 +547,7 @@ describe('scheduleService - getSchedulesByMonth', () => {
     await getSchedulesByMonth('staff-123', 2025, 12);
 
     expect(mockWorkLogRepositoryGetByStaffIdWithFilters).toHaveBeenCalledWith('staff-123', {
-      dateRange: { start: '2025-12-01', end: '2025-12-31' },
+      dateRange: { start: '2025-11-24', end: '2026-01-07' },
       status: undefined,
       pageSize: 100,
     });
@@ -820,72 +845,6 @@ describe('scheduleService - groupSchedulesByDate', () => {
   });
 });
 
-describe('scheduleService - getCalendarMarkedDates', () => {
-  it('스케줄 타입별로 올바른 색상을 반환해야 함', () => {
-    const schedules = [
-      createMockScheduleEvent({ date: '2025-01-15', type: STATUS.SCHEDULE.CONFIRMED }),
-      createMockScheduleEvent({ date: '2025-01-16', type: STATUS.SCHEDULE.APPLIED }),
-      createMockScheduleEvent({ date: '2025-01-17', type: STATUS.SCHEDULE.COMPLETED }),
-      createMockScheduleEvent({ date: '2025-01-18', type: STATUS.SCHEDULE.CANCELLED }),
-    ];
-
-    const markedDates = getCalendarMarkedDates(schedules);
-
-    expect(markedDates['2025-01-15'].dotColor).toBe('#22C55E');
-    expect(markedDates['2025-01-16'].dotColor).toBe('#D4AF37');
-    expect(markedDates['2025-01-17'].dotColor).toBe(SECONDARY_PALETTE[500]);
-    expect(markedDates['2025-01-18'].dotColor).toBe('#DC2626');
-  });
-
-  it('confirmed가 다른 타입보다 우선순위가 높아야 함', () => {
-    const schedules = [
-      createMockScheduleEvent({ date: '2025-01-15', type: STATUS.SCHEDULE.APPLIED }),
-      createMockScheduleEvent({ date: '2025-01-15', type: STATUS.SCHEDULE.CONFIRMED }),
-    ];
-
-    const markedDates = getCalendarMarkedDates(schedules);
-
-    expect(markedDates['2025-01-15'].type).toBe(STATUS.SCHEDULE.CONFIRMED);
-  });
-
-  it('applied가 completed보다 우선순위가 높아야 함', () => {
-    const schedules = [
-      createMockScheduleEvent({ date: '2025-01-15', type: STATUS.SCHEDULE.COMPLETED }),
-      createMockScheduleEvent({ date: '2025-01-15', type: STATUS.SCHEDULE.APPLIED }),
-    ];
-
-    const markedDates = getCalendarMarkedDates(schedules);
-
-    expect(markedDates['2025-01-15'].type).toBe(STATUS.SCHEDULE.APPLIED);
-  });
-
-  it('빈 배열에 대해 빈 객체를 반환해야 함', () => {
-    const markedDates = getCalendarMarkedDates([]);
-    expect(markedDates).toEqual({});
-  });
-
-  it('모든 날짜에 marked 플래그가 설정되어야 함', () => {
-    const schedules = [
-      createMockScheduleEvent({ date: '2025-01-15' }),
-      createMockScheduleEvent({ date: '2025-01-16' }),
-    ];
-
-    const markedDates = getCalendarMarkedDates(schedules);
-
-    expect(markedDates['2025-01-15'].marked).toBe(true);
-    expect(markedDates['2025-01-16'].marked).toBe(true);
-  });
-  it('빈 날짜 schedule은 캘린더 마킹에서 제외한다', () => {
-    const markedDates = getCalendarMarkedDates([
-      createMockScheduleEvent({ date: '' }),
-      createMockScheduleEvent({ date: '2025-01-15' }),
-    ]);
-
-    expect(markedDates['']).toBeUndefined();
-    expect(markedDates['2025-01-15']).toBeDefined();
-  });
-});
-
 describe('scheduleService - invalid date fallback', () => {
   it('keeps the raw date label when grouping invalid dates', () => {
     const groups = groupSchedulesByDate([createMockScheduleEvent({ date: 'invalid-date' })]);
@@ -912,6 +871,49 @@ describe('scheduleService - calculateScheduleStats', () => {
     ]);
 
     expect(stats.confirmedSchedules).toBe(1);
+  });
+
+  // 회귀 방어: 완료만 원본 row 를 그대로 세서, 3일 대회 1건이 상단 통계엔 '완료 3',
+  // 목록 필터탭엔 '완료 1' 로 동시에 나왔다. 세 지표의 단위를 '건' 으로 통일한다.
+  it('하나의 지원이 여러 일정으로 펼쳐져도 완료는 1건으로 집계하고 근무 일수를 따로 센다', () => {
+    const stats = calculateScheduleStats(
+      ['2026-07-15', '2026-07-16', '2026-07-17'].map((date, index) =>
+        createMockScheduleEvent({
+          id: `done-${index + 1}`,
+          applicationId: 'app-done',
+          date,
+          type: STATUS.SCHEDULE.COMPLETED,
+        })
+      )
+    );
+
+    expect(stats.completedSchedules).toBe(1);
+    expect(stats.completedWorkDays).toBe(3);
+  });
+
+  it('정산 완료분과 정산 예정분을 분리해 집계한다', () => {
+    const stats = calculateScheduleStats([
+      createMockScheduleEvent({
+        id: 'paid',
+        applicationId: 'app-paid',
+        date: '2026-07-10',
+        type: STATUS.SCHEDULE.COMPLETED,
+        payrollAmount: 200000,
+        payrollStatus: STATUS.PAYROLL.COMPLETED,
+      }),
+      createMockScheduleEvent({
+        id: 'pending',
+        applicationId: 'app-pending',
+        date: '2026-07-11',
+        type: STATUS.SCHEDULE.COMPLETED,
+        payrollAmount: 150000,
+        payrollStatus: STATUS.PAYROLL.PENDING,
+      }),
+    ]);
+
+    expect(stats.settledEarnings).toBe(200000);
+    expect(stats.estimatedEarnings).toBe(150000);
+    expect(stats.thisMonthEarnings).toBe(350000);
   });
 
   it('하나의 지원이 여러 일정으로 펼쳐져도 지원중은 1건으로 집계한다', () => {

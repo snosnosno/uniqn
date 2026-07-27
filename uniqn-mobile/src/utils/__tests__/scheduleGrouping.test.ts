@@ -15,6 +15,11 @@ import {
   filterSchedulesByDate,
   filterSchedulesByStatus,
   countSchedulesByType,
+  countUnpaidSchedules,
+  isUnpaidCompleted,
+  splitSchedulesByToday,
+  pickGroupFocusDate,
+  resolveSelectedDateForMonth,
 } from '../scheduleGrouping';
 
 // ============================================================================
@@ -644,7 +649,7 @@ describe('countSchedulesByType', () => {
       createScheduleEvent({ id: 'c-1', type: 'confirmed' }),
     ]);
 
-    expect(counts).toEqual({ applied: 2, confirmed: 1, completed: 0, cancelled: 0 });
+    expect(counts).toEqual({ applied: 2, confirmed: 1, completed: 0, cancelled: 0, no_show: 0 });
   });
 
   it('빈 배열이면 전 타입 0으로 집계한다', () => {
@@ -653,6 +658,181 @@ describe('countSchedulesByType', () => {
       confirmed: 0,
       completed: 0,
       cancelled: 0,
+      no_show: 0,
     });
+  });
+
+  it('노쇼를 취소와 별도 키로 집계한다', () => {
+    const counts = countSchedulesByType([
+      createScheduleEvent({ id: 'n-1', type: 'no_show' }),
+      createScheduleEvent({ id: 'x-1', type: 'cancelled' }),
+    ]);
+
+    expect(counts.no_show).toBe(1);
+    expect(counts.cancelled).toBe(1);
+  });
+});
+
+// ============================================================================
+// 시간 축 정렬
+// ============================================================================
+
+describe('splitSchedulesByToday', () => {
+  const TODAY = '2026-07-27';
+
+  it('오늘 이후는 가까운 순, 지난 근무는 최근 순으로 가른다', () => {
+    const schedules = [
+      createScheduleEvent({ id: 'a', date: '2026-07-31' }),
+      createScheduleEvent({ id: 'b', date: '2026-07-20' }),
+      createScheduleEvent({ id: 'c', date: '2026-07-28' }),
+      createScheduleEvent({ id: 'd', date: '2026-07-25' }),
+    ];
+
+    const { upcoming, past } = splitSchedulesByToday(schedules, TODAY);
+
+    expect(upcoming.map((s) => s.id)).toEqual(['c', 'a']);
+    expect(past.map((s) => s.id)).toEqual(['d', 'b']);
+  });
+
+  it('오늘 근무는 다가오는 쪽에 넣는다', () => {
+    const { upcoming, past } = splitSchedulesByToday(
+      [createScheduleEvent({ id: 'today', date: TODAY })],
+      TODAY
+    );
+
+    expect(upcoming.map((s) => s.id)).toEqual(['today']);
+    expect(past).toHaveLength(0);
+  });
+
+  it('진행 중인 다중일 그룹은 시작일이 지났어도 다가오는 쪽에 둔다', () => {
+    const group = {
+      id: 'g1',
+      type: 'confirmed',
+      dateRange: {
+        start: '2026-07-25',
+        end: '2026-07-29',
+        dates: ['2026-07-25', '2026-07-27', '2026-07-29'],
+        totalDays: 3,
+      },
+    } as unknown as GroupedScheduleEvent;
+
+    const { upcoming, past } = splitSchedulesByToday([group], TODAY);
+
+    expect(upcoming).toHaveLength(1);
+    expect(past).toHaveLength(0);
+  });
+
+  it('빈 목록은 양쪽 다 비어있다', () => {
+    expect(splitSchedulesByToday([], TODAY)).toEqual({ upcoming: [], past: [] });
+  });
+});
+
+describe('pickGroupFocusDate', () => {
+  const TODAY = '2026-07-27';
+
+  // 회귀 방어: originalEvents[0] 폴백은 내림차순 정렬의 '가장 나중' 날짜라
+  // 3일짜리 대회가 '3 / 3일'부터 열렸다.
+  it('오늘 이후 가장 가까운 근무일을 고른다', () => {
+    expect(pickGroupFocusDate(['2026-07-26', '2026-07-28', '2026-07-30'], TODAY)).toBe(
+      '2026-07-28'
+    );
+  });
+
+  it('오늘 근무가 있으면 오늘을 고른다', () => {
+    expect(pickGroupFocusDate(['2026-07-25', TODAY, '2026-07-30'], TODAY)).toBe(TODAY);
+  });
+
+  it('전부 지난 그룹이면 마지막 근무일을 고른다', () => {
+    expect(pickGroupFocusDate(['2026-07-20', '2026-07-22'], TODAY)).toBe('2026-07-22');
+  });
+
+  it('날짜가 없으면 null', () => {
+    expect(pickGroupFocusDate([], TODAY)).toBeNull();
+  });
+});
+
+describe('resolveSelectedDateForMonth', () => {
+  const TODAY = '2026-07-27';
+
+  it('이동한 달에 오늘이 있으면 오늘을 선택한다', () => {
+    expect(resolveSelectedDateForMonth(2026, 7, ['2026-07-03'], TODAY)).toBe(TODAY);
+  });
+
+  // 회귀 방어: 월만 바꾸고 selectedDate 를 두면 선택일이 이전 달에 남아
+  // 캘린더에 점은 있는데 아래는 비고 선택 표시도 사라졌다.
+  it('다른 달로 이동하면 그 달에서 일정이 있는 가장 이른 날을 선택한다', () => {
+    expect(
+      resolveSelectedDateForMonth(2026, 8, ['2026-07-30', '2026-08-14', '2026-08-03'], TODAY)
+    ).toBe('2026-08-03');
+  });
+
+  it('그 달에 일정이 없으면 1일을 선택한다', () => {
+    expect(resolveSelectedDateForMonth(2026, 9, ['2026-08-03'], TODAY)).toBe('2026-09-01');
+  });
+
+  it('한 자리 월도 zero-pad 한다', () => {
+    expect(resolveSelectedDateForMonth(2027, 3, [], TODAY)).toBe('2027-03-01');
+  });
+});
+
+describe('isUnpaidCompleted / filterSchedulesByStatus("unpaid")', () => {
+  it('완료가 아니면 미지급이 아니다', () => {
+    expect(isUnpaidCompleted(createScheduleEvent({ type: 'confirmed' }))).toBe(false);
+  });
+
+  // payrollStatus 가 없으면 곧 '아직 못 받음'이다 — 기본값을 지급 완료로 오해하면 안 된다.
+  it('정산 상태가 비어 있으면 미지급으로 본다', () => {
+    expect(isUnpaidCompleted(createScheduleEvent({ type: 'completed' }))).toBe(true);
+  });
+
+  it('정산 완료 건은 미지급이 아니다', () => {
+    expect(
+      isUnpaidCompleted(createScheduleEvent({ type: 'completed', payrollStatus: 'completed' }))
+    ).toBe(false);
+  });
+
+  it('그룹은 한 날짜라도 미정산이면 미지급으로 본다', () => {
+    const group = {
+      id: 'g1',
+      type: 'completed',
+      dateRange: { start: '2026-07-01', end: '2026-07-02', dates: [], totalDays: 2 },
+      originalEvents: [
+        createScheduleEvent({ type: 'completed', payrollStatus: 'completed' }),
+        createScheduleEvent({ type: 'completed', payrollStatus: 'pending' }),
+      ],
+    } as unknown as GroupedScheduleEvent;
+
+    expect(isUnpaidCompleted(group)).toBe(true);
+  });
+
+  it('unpaid 필터와 건수 집계가 같은 기준을 쓴다', () => {
+    const items = [
+      createScheduleEvent({ id: 'a', type: 'completed', payrollStatus: 'completed' }),
+      createScheduleEvent({ id: 'b', type: 'completed', payrollStatus: 'pending' }),
+      createScheduleEvent({ id: 'c', type: 'confirmed' }),
+    ];
+
+    expect(filterSchedulesByStatus(items, 'unpaid').map((s) => s.id)).toEqual(['b']);
+    expect(countUnpaidSchedules(items)).toBe(1);
+  });
+});
+
+describe('그룹 id 충돌 방어', () => {
+  // 회귀 방어: id 가 `grouped_${applicationId}` 뿐이라, 한 지원이 '일부 완료 + 일부 예정'으로
+  // 갈리면 서로 다른 그룹 2장이 같은 React key 를 가져 카드가 뒤섞였다.
+  it('같은 지원이 상태별로 갈려도 그룹 id가 서로 다르다', () => {
+    const base = { applicationId: 'app-1', jobPostingId: 'post-1', timeSlot: '18:00~23:00' };
+    const events = [
+      createScheduleEvent({ ...base, id: 'a', date: '2026-07-01', type: 'completed' }),
+      createScheduleEvent({ ...base, id: 'b', date: '2026-07-02', type: 'completed' }),
+      createScheduleEvent({ ...base, id: 'c', date: '2026-07-20', type: 'confirmed' }),
+      createScheduleEvent({ ...base, id: 'd', date: '2026-07-21', type: 'confirmed' }),
+    ];
+
+    const grouped = groupScheduleEvents(events, { enabled: true, minGroupSize: 2 });
+    const ids = grouped.map((item) => item.id);
+
+    expect(ids).toHaveLength(2);
+    expect(new Set(ids).size).toBe(2);
   });
 });

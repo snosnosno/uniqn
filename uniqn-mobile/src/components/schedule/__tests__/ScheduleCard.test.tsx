@@ -55,6 +55,22 @@ describe('ScheduleCard', () => {
     expect(queryByText('취소 요청')).toBeNull();
   });
 
+  // 정산 0원 확정(노쇼 차감·'협의' 급여)은 `shouldUseFrozenPayrollAmount` 가 Number.isFinite 로
+  // 판정해 0 을 그대로 통과시킨다. 렌더 가드가 truthy(`amount && …`)면 두 가지가 동시에 깨진다:
+  // ① 0 원이 화면에서 사라져 이의 제기 시점을 놓치고 ② 숫자 0 이 <View> 의 직접 자식으로 새어
+  // RN 이 "Text strings must be rendered within a <Text> component" 로 죽는다.
+  it('renders a settled amount of exactly zero instead of leaking a bare 0 node', () => {
+    const schedule = {
+      ...createMockScheduleEvent({ type: 'completed' }),
+      payrollAmount: 0,
+    } as unknown as ScheduleEvent;
+
+    const { getByText, toJSON } = render(<ScheduleCard schedule={schedule} />);
+
+    expect(getByText('₩0')).toBeTruthy();
+    expect(JSON.stringify(toJSON())).not.toContain('"children":[0]');
+  });
+
   it('drops the pending-cancellation notice once approval resolves to cancelled', () => {
     const schedule = createMockScheduleEvent({
       type: 'cancelled',
@@ -64,5 +80,67 @@ describe('ScheduleCard', () => {
 
     expect(queryByText('취소 요청 검토 중입니다.')).toBeNull();
     expect(getByText('이 일정이 취소되었습니다.')).toBeTruthy();
+  });
+
+  // 구인자가 무단결근으로 처리해도 스태프에겐 "취소되었습니다"만 떴다 — 평판·정산에
+  // 불리한 기록이 남은 걸 본인만 모르고 이의 제기 기회를 놓쳤다.
+  it('노쇼를 취소로 뭉개지 않고 무단결근 기록임을 밝힌다', () => {
+    const schedule = createMockScheduleEvent({
+      type: 'no_show',
+    }) as unknown as ScheduleEvent;
+
+    const { getByText, queryByText } = render(<ScheduleCard schedule={schedule} />);
+
+    expect(queryByText('이 일정이 취소되었습니다.')).toBeNull();
+    expect(getByText('무단결근(노쇼)으로 기록되었습니다')).toBeTruthy();
+    // 이의 제기 경로를 함께 말하지 않으면 "알려주기만 하고 끝"이 된다.
+    expect(
+      getByText(
+        '이 기록은 평판과 정산에 영향을 줄 수 있어요. 사실과 다르면 구인자에게 문의해 주세요.'
+      )
+    ).toBeTruthy();
+  });
+
+  it('노쇼 카드의 스크린리더 라벨이 상태를 취소가 아닌 노쇼로 낭독한다', () => {
+    const schedule = createMockScheduleEvent({
+      type: 'no_show',
+    }) as unknown as ScheduleEvent;
+
+    // 배지 자체도 '노쇼' 라벨을 가지므로 카드 컨테이너 라벨을 따로 특정한다 —
+    // 카드 하나를 들었을 때 상태와 무슨 기록인지가 한 문장으로 들려야 한다.
+    const { getAllByLabelText } = render(<ScheduleCard schedule={schedule} onPress={jest.fn()} />);
+
+    const cardLabels = getAllByLabelText(/노쇼/).map(
+      (node) => node.props.accessibilityLabel as string
+    );
+
+    expect(cardLabels.some((label) => label.includes('무단결근(노쇼)으로 기록되었습니다'))).toBe(
+      true
+    );
+    expect(cardLabels.every((label) => !label.includes('취소'))).toBe(true);
+  });
+
+  // 예전엔 카드 배지가 variant="chip"(골드) 고정이라 네 상태가 전부 같은 색이었고,
+  // 같은 건을 상세 모달에서 열면 초록·노랑으로 바뀌었다. 색이 상태를 말해야 한다.
+  describe('상태 배지 색 (SCHEDULE_STATUS 단일 소스)', () => {
+    const renderTree = (type: ScheduleEvent['type']) =>
+      JSON.stringify(
+        render(
+          <ScheduleCard schedule={createMockScheduleEvent({ type }) as unknown as ScheduleEvent} />
+        ).toJSON()
+      );
+
+    it('상태마다 다른 색을 쓴다', () => {
+      // Badge variantStyles — success/warning/default 는 서로 다른 배경 클래스를 낸다.
+      expect(renderTree('confirmed')).toContain('bg-success-100');
+      expect(renderTree('applied')).toContain('bg-warning-100');
+    });
+
+    it('골드 chip 을 상태 배지로 쓰지 않는다 (금액·CTA 전용)', () => {
+      // tracking-chip 은 Badge 의 chip variant 만 내는 클래스다.
+      for (const type of ['applied', 'confirmed', 'completed', 'cancelled', 'no_show'] as const) {
+        expect(renderTree(type)).not.toContain('tracking-chip');
+      }
+    });
   });
 });
