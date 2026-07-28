@@ -1,16 +1,18 @@
 ---
 area: decisions
-updated: 2026-07-19
+updated: 2026-07-28
 status: current
 sources:
+  - uniqn-mobile/supabase/migrations/20260727180000_cancel_rpc_rebase_on_seat_basis.sql
   - uniqn-mobile/supabase/migrations/20260719070500_rate_limit_insert_atomic.sql
   - uniqn-mobile/supabase/migrations/20260711100000_secdef_pg_temp_batch_and_overload_drop.sql
   - uniqn-mobile/supabase/migrations/20260719061931_nickname_search_rate_limit.sql
   - uniqn-mobile/supabase/tests/parity_baseline_guard.test.sql
   - uniqn-mobile/supabase/tests/weekly_grid_security_regression.test.sql
   - PR#273
+  - PR#360
   - memory/project_nickname_search_unification_20260718
-tags: [secdef, postgres, search-path, volatility, pgtap, migration, regression]
+tags: [secdef, postgres, search-path, volatility, pgtap, migration, regression, rebase]
 ---
 
 # 결정: 기존 함수를 `CREATE OR REPLACE` 할 때 조용히 잃는 것들
@@ -29,6 +31,22 @@ tags: [secdef, postgres, search-path, volatility, pgtap, migration, regression]
 - 기존 SECDEF 함수를 REPLACE하기 전에 `SELECT proconfig, provolatile FROM pg_proc WHERE oid = '…'::regprocedure` **실측** → DDL에 그대로 재기입.
 - 특히 **일괄 보정 마이그레이션의 대상 함수**(여기선 62종)는 baseline 원본 DDL을 복붙하면 100% 회귀한다. baseline은 보정 **이전** 상태이기 때문이다([[prod-parity-baseline]]).
 - 이 회귀는 런타임 증상이 없다 → **가드가 유일한 탐지 수단**. parity 가드 없이 prod에 나갔으면 다음 감사 때까지 몰랐을 것.
+
+## 확장 (2026-07-28, PR#360) — 재정의의 **베이스는 "가장 최근 정의"여야 한다**
+
+위 절은 "DDL에 안 적은 속성"이 유실된다는 이야기였다. 더 넓은 회귀 클래스가 하나 더 있다: **어느 마이그레이션 파일을 복사해 와서 고치는가**.
+
+- PR#360 이 취소 RPC 를 재정의하면서 07-11 판 정의를 베이스로 삼았다. 그 사이 07-18 이 같은 함수에 세 가지 개선(`pg_temp` search_path·DELETE 선행 순서·트리거 위임)을 넣어 뒀는데, 07-11 을 복사한 순간 **그 셋이 통째로 되돌아갔다**. 파일 diff 상으로는 "RPC 를 고쳤다"로만 보인다.
+- 이 상태로 **prod 적용까지 갔고**, 머지 직전 CI(pgTAP)가 검거했다. E2E 실패도 flake 가 아니라 이 회귀가 원인이었다.
+- 해소본이 `20260727180000_cancel_rpc_rebase_on_seat_basis.sql` 이다("rebase" 라는 파일명이 이 사고의 이름이다). 코드로 검증됨.
+
+### 규칙 (재정의 전 30초)
+```bash
+grep -l "CREATE OR REPLACE FUNCTION <함수명>" uniqn-mobile/supabase/migrations/*.sql | sort | tail -1
+```
+이 한 줄이 반환하는 파일이 **유일한 정당한 베이스**다. 파일명 검색·기억·"내가 저번에 만든 그거"로 고르지 말 것 — 마이그레이션은 타임스탬프 순 적용이므로 **최신 정의만이 현재 prod 의 함수 본문**이다([[prod-parity-baseline]]).
+
+병합 국면에서는 이 함정이 [[semantic-merge-conflicts]] 와 겹친다: 두 브랜치가 같은 함수를 각자의 베이스에서 재정의하면 텍스트 충돌이 안 나면서 **나중에 적용되는 쪽이 이긴다**.
 
 ## 반증된 전제 — "STABLE이면 중첩 DML을 거부한다"는 거짓
 

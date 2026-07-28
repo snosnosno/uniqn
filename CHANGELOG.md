@@ -5,10 +5,36 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.0.0/)를 기반으로 하며,
 이 프로젝트는 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 준수합니다.
 
-## [Unreleased] - 2026-07-27
+## [Unreleased] - 2026-07-28
+
+> 1.0.5 스토어 빌드(2026-07-26, iOS 43 / Android 41) 이후 머지분. **네이티브 구성 변경 0건** → `version` bump 없이 OTA 로 전량 전달된다. 웨이브 전체 합성 = `wiki/sources/post-1-0-5-merge-wave.md`.
 
 ### Added
 - **모션 토큰 신설 + 코어 UI Reduce Motion 대응** (PR #350, DB 변경 0): 화면마다 손으로 박혀 있던 애니메이션 커브·지속시간을 `src/constants/motion.ts`(`MOTION_EASING`·`MOTION_DURATION`) 한 곳으로 수렴시키고, `Toast.tsx`·`Modal.tsx`(NativeModal 이펙트 한정)를 그 토큰의 첫 소비처로 전환했다. 토큰을 기존 `constants/animation.ts` 에 얹지 않고 **새 파일로 분리**한 것이 핵심 — 그 파일은 주문서 연쇄 로직과 그 테스트가 소비하는데 reanimated 의존과 모듈스코프 `Easing.bezier()` 평가가 들어가면 전파 범위가 불필요하게 넓어지고, 두 파일은 개념도 다르다(연출 커브 vs 네이티브 dismiss 커밋 대기). 함께 OS 접근성 설정 "동작 줄이기"를 앱이 처음으로 존중한다 — 활성 시 transform 은 즉시 목표값으로 세팅하고 opacity 페이드만 유지한다. 공유 훅 `src/hooks/useReduceMotion.ts` 를 신설해 `Skeleton.tsx`·`OfflineStatusBar.tsx` 에 복사돼 있던 중복 정의 2곳을 제거했다(배럴 상수 순환 3회 재발 이력 때문에 `hooks/index.ts` 배럴에는 export 하지 않는다). Toast 의 퇴장 완료 콜백은 `translateY` → `opacity` 로 옮겼다 — reduce motion 은 `translateY` 를 즉시 세팅하므로 콜백이 유실돼 `onDismiss` 가 호출되지 않고 토스트가 목록에 계속 쌓이기 때문. 폐기된 `feat/animation-motion-polish` 브랜치(태그 `archive/2026-07-27/*`)에서 아직 유효한 조각만 골라 옮기는 방식으로 재구현했다 — 머지했다면 #280·#302·#306~#308·#332·#335 의 실기기 수정이 되돌아갔다. `SheetModal.tsx` 는 파일 전체 무변경(B 묶음 = 드래그 dismiss, 실기기 QA 게이트로 이월). 검증: quality EXIT 0 · jest 544 스위트 6028 테스트 통과 · CI 9종 green
+
+- **공고 묶음 공유 + /jobs OG 카드** (PR#359 + 선행 3커밋, DB 변경 0): 관리자(전체)·구인자(내 공고) 공고를 다중 선택해 **한 번에** 공유한다. 본문 빌더(`src/utils/bulkJobShareMessage.ts`)·훅(`src/hooks/share/useBulkShare.ts`)·공유 시트 어댑터를 분리했고, 링크는 개별 공고가 아니라 **구인구직 탭 하나로 통합**해 Cloudflare Pages Function `functions/jobs/index.ts` 에 OG 카드를 붙였다. #359 는 접근성 후속 — 전체선택 컨트롤이 스크린리더에 버튼으로 읽히지 않아 role 승격 + 전체 해제 토글을 넣었다.
+- **내 스케줄 탭 완성도 P0~P2 41건** (PR#356, DB 변경 0): 노쇼를 결근에서 분리, 상태 색을 SSOT 로 수렴, 오프라인 캐시·탭 동적화. 핵심은 상태 zod 를 라벨표(`SCHEDULE_TYPE_LABELS`)에서 **파생**시킨 것 — 하드코딩된 enum 은 신규 상태를 조용히 drop 하는데 `tsc` 는 이 경계를 대조하지 않는다. 오프라인 TTL 을 온라인 `staleTime` 으로 겸용하지 말 것(만료=삭제)이라는 잔여 과제가 훅 4개에 남아 있다.
+- **모니터링 가능한 공고 자동 마감** (PR#351): 아래 Fixed 참조.
+
+### Changed
+
+- **근무표 "주간" 표현 제거 — `weeklyGrid` → `workSchedule`** (PR#354, prod 마이그 `20260727112025` 적용완료): 라이브 결함 7종 동반 수정. ⚠️ DB 계약 키 `weekly_grid_enabled` 와 딥링크 구 세그먼트 `weekly-grid` 는 **리네임하지 않는다**(하위호환).
+- **근무표 빼기를 소프트 취소로 전환** (PR#357, prod 마이그 적용완료): 하드 `DELETE` → `status='cancelled'`. 취소 알림이 복구되고 부족 인원 계산에서 죽은 공고가 빠진다. 취소 행이 스태프 목록에 남지만 `StatusMapper.workLogToSchedule` 매핑으로 '취소' 카드로 표시되고 통계(완료/확정/지원)엔 미산입된다.
+- **앱 전반 과잉·중복·죽은 검증 정리 12건 — 확정자 일정 잠금 폐지** (PR#353, DB 변경 0): 넓은 잠금에 근거가 없었다. total/capacity 전이는 DB 트리거가 자동 재계산하고 `work_logs` 는 비정규화 사본이라 편집이 영향을 주지 않는다. 실질 위험은 **역할 소멸 → 정산 기본단가 폴백** 하나뿐이었고 옛 가드는 그 축을 겨냥하지도 못했다(역할 추가는 막으면서 시급 인하는 허용). 죽은 가드 4종·삼중 중복 검증·비밀번호 연속문자 규칙 제거, 공고 제목 상한 25→40.
+- **데스크톱 웹 공유를 클립보드 복사로 전환** (PR#358, DB 변경 0): 갈림 기준은 "Web Share API 지원 여부"가 아니라 **"모바일인가"** 다 — 데스크톱 브라우저도 API 를 지원하지만 공유 시트에 카톡이 없어 사용자에겐 먹통으로 보였다. `AbortError` 를 사용자 취소로 단정하지 않도록 고쳤다(activation 없는 share 도 같은 에러를 던져 폴백이 침묵했다).
+
+### Fixed
+
+- **공고 도메인 감사 W1 12항목 — 취소·정산·QR·수정 경로의 무음 유실과 금전 영향** (PR#360, prod 마이그 4건 적용완료): 공고 연결 10개 영역을 32 에이전트로 감사해 결함 189건(CRITICAL 7 / HIGH 37 / MEDIUM 104 / LOW 41)을 도출하고 W1 을 먼저 출하했다.
+  - **근무시간 수정이 프로덕션에서 전량 실패** — UPDATE payload 에 `settlement_breakdown: null` 이 섞였는데 `work_logs` 에 그 컬럼이 없다. PostgREST 는 모르는 컬럼이 하나라도 있으면 요청 전체를 PGRST204 로 거부하므로 정산 화면·스태프 관리 양쪽 시간수정이 통째로 죽어 있었다. `settlementBreakdown` 은 DB 컬럼이 아니라 읽기 시점 파생값이라 무효화할 대상 자체가 없었다. 기존 테스트가 **SELECT 화이트리스트만** 지켜 쓰기 payload 가 무방비였던 것이 원인 — 실측 정본 `WORK_LOG_ALL_COLUMNS` + 쓰기 payload 부분집합 검증을 신설했다.
+  - **수동 상태 변경에 감사 이력 부재** — '출근 예정으로 변경'이 `check_in_ts`/`check_out_ts` 를 null 로 덮어쓰는데 이력도 알림도 없었다. 체크인 알림 트리거는 NULL→값 전이만 보므로 **삭제는 통보조차 되지 않았다**. 타임스탬프가 실제로 바뀔 때만 이력을 남기도록 하고, 부수효과로 `modification_history` 증가가 기존 트리거를 발화시켜 스태프 통보 공백도 함께 닫았다(새 트리거 불필요).
+  - **취소 RPC 회귀 복구** — 재정의 베이스를 낡은 판(07-11)으로 잡아 07-18 개선 3종(`pg_temp`·DELETE 선행 순서·트리거 위임)을 되돌린 채 prod 까지 적용됐고 머지 직전 CI 가 검거했다. 규칙 = `wiki/decisions/secdef-replace-search-path-loss.md`.
+- **공고 자동 마감 사각지대 5종** (PR#351, prod 마이그 `posting_auto_close_gaps` 적용완료): 유령 크론(120/120 실패)·미확정 지원 방치·고정공고 영구 미마감·관측 부재·죽은 수정 알림. `AFTER UPDATE OF status` 는 BEFORE 트리거가 뒤집는 경로를 놓치므로 `WHEN` 절로 교체했다. EXCEPTION 핸들러가 있는 트리거는 테스트 green 이 아무것도 보증하지 않는다 — **로그 WARNING 27건이 방치돼 있었다**. 공고 수정 알림이 이 PR 이후 실제로 발송되기 시작한다.
+- **지원 라우트 고정공고 가드 부재** (PR#355, DB 변경 0): 딥링크로 "고정공고는 앱 지원 비대상" 정책이 우회되던 구멍을 막았다. 이 차단은 실수가 아니라 의도된 정책이며 `public/guide.html` 이 "연락처로 직접 문의"를 공표 중이다. ⚠️ 서버·RLS 는 여전히 fixed 지원을 허용한다(의도적 잔여).
+
+### Docs
+
+- **수익모델 원점 재분석 + 운영 과금 설계** (PR#361, 코드 0줄): 다른 세션에서 작성돼 머지되지 않은 채 남아 있던 분석 문서 2건을 편입했다.
 
 ## [2026-07-26]
 

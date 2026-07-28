@@ -46,13 +46,16 @@ jest.mock('@/utils/queryUtils', () => ({
   stableFilters: (filters: unknown) => filters,
 }));
 
+// 기본은 온라인. 오프라인 캐시 경로를 타는 테스트만 이 플래그를 내린다.
+let mockIsOnline = true;
+
 jest.mock('@/hooks/useNetworkStatus', () => ({
   useNetworkStatus: () => ({
-    isOnline: true,
-    isOffline: false,
+    isOnline: mockIsOnline,
+    isOffline: !mockIsOnline,
     isChecking: false,
-    connectionType: 'wifi',
-    isInternetReachable: true,
+    connectionType: mockIsOnline ? 'wifi' : 'none',
+    isInternetReachable: mockIsOnline,
     lastChecked: null,
     details: null,
     checkConnection: jest.fn(),
@@ -207,6 +210,7 @@ describe('useSchedules hooks', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUser = { uid: 'staff-1' };
+    mockIsOnline = true;
     mockQueryData = undefined;
     mockQueryError = null;
     mockIsLoading = false;
@@ -277,6 +281,44 @@ describe('useSchedules hooks', () => {
       expect(result.current.schedules).toEqual(schedules);
       expect(result.current.stats).toEqual(stats);
       expect(result.current.groupedSchedules).toEqual(groupedSchedules);
+    });
+
+    it('오프라인 캐시에 남은 구버전 stats 의 신규 필드를 0 으로 메운다', async () => {
+      // 회귀 배경: ScheduleStats 에 completedWorkDays·settledEarnings·estimatedEarnings 를
+      // 추가하면서 SCHEDULE_CACHE_SCHEMA_VERSION 을 올리지 않았다(올리면 잔여 캐시가 통째로
+      // 폐기돼 오프라인 안전망이 사라진다). 캐시 읽기는 버전·유저·TTL 만 보므로 구버전
+      // payload 가 그대로 통과해 `undefined일 근무` / formatCurrency(undefined) 가 렌더된다.
+      const schedules = [createMockSchedule()];
+      const legacyStats = {
+        totalSchedules: 4,
+        completedSchedules: 2,
+        confirmedSchedules: 1,
+        upcomingSchedules: 1,
+        totalEarnings: 800000,
+        thisMonthEarnings: 400000,
+        hoursWorked: 32,
+      } as unknown as ScheduleStats;
+
+      mockIsOnline = false;
+      mockQueryData = undefined;
+      mockGetCriticalOfflineCache.mockReturnValue({
+        data: { schedules, stats: legacyStats, groupedSchedules: [] },
+      });
+
+      const { result } = renderHook(() => useSchedules());
+
+      expect(result.current.stats).toEqual({
+        totalSchedules: 4,
+        completedSchedules: 2,
+        confirmedSchedules: 1,
+        upcomingSchedules: 1,
+        completedWorkDays: 0,
+        totalEarnings: 800000,
+        thisMonthEarnings: 400000,
+        settledEarnings: 0,
+        estimatedEarnings: 0,
+        hoursWorked: 32,
+      });
     });
 
     it('does not query when disabled', () => {
