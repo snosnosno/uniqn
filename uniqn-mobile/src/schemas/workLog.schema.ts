@@ -11,6 +11,8 @@ import { xssValidation } from '@/utils/security';
 import { payrollStatusSchema } from './schedule.schema';
 import { timestampSchema, optionalTimestampSchema } from './common';
 import { staffRoleSchema } from './application.schema';
+import { WORK_LOG_STATUS_LABELS } from '@/shared/status';
+import type { WorkLogStatus } from '@/shared/status';
 import type { WorkLog } from '@/types';
 
 // ============================================================================
@@ -20,14 +22,14 @@ import type { WorkLog } from '@/types';
 /**
  * 근무 기록 상태 스키마
  */
-export const workLogStatusSchema = z.enum([
-  'scheduled',
-  'checked_in',
-  'checked_out',
-  'completed',
-  'cancelled',
-  'no_show',
-]);
+// 값 목록을 여기서 다시 적지 않는다 — scheduleTypeSchema 와 같은 이유다.
+// 하드코딩된 z.enum 은 WorkLogStatus 에 상태가 추가돼도 타입체커가 대조해주지 않아,
+// 신규 상태가 파싱 경계에서 조용히 drop 된다(레코드 자체가 사라진다).
+// WORK_LOG_STATUS_LABELS 는 Record<WorkLogStatus, string> 이라 누락이 컴파일 에러로
+// 잡히는 유일한 전수 목록이다. 여기서 파생시키면 드리프트가 성립하지 않는다.
+export const workLogStatusSchema = z.enum(
+  Object.keys(WORK_LOG_STATUS_LABELS) as [WorkLogStatus, ...WorkLogStatus[]]
+);
 
 export type WorkLogStatusSchema = z.infer<typeof workLogStatusSchema>;
 

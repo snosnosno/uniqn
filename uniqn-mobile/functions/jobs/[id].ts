@@ -1,4 +1,5 @@
 import { buildOgHtml, isCrawlerUserAgent, escapeHtml } from '../_shared/ogHtml';
+import { BROWSABLE_POSTING_STATUS_SET } from '../_shared/postingStatus';
 
 interface Env {
   SUPABASE_URL: string;
@@ -6,8 +7,9 @@ interface Env {
   ASSETS: { fetch: (req: Request) => Promise<Response> };
 }
 
-// 공유 가능 상태(클라이언트 canShareJob 과 동일 규칙: active/capacity_full + 승인 대회)
-const SHAREABLE = new Set(['active', 'capacity_full']);
+// 공유 가능 상태(클라이언트 canShareJob 과 동일 규칙: active/capacity_full + 승인 대회).
+// 값은 ../_shared/postingStatus 단일 소스에서 온다(src 원본과의 일치는 파리티 테스트가 강제).
+const SHAREABLE = BROWSABLE_POSTING_STATUS_SET;
 const BRAND_IMAGE = 'https://uniqn.app/og-default.png'; // public/og-default.png 정적 폴백
 
 export const onRequest: (ctx: {

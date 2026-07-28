@@ -6,8 +6,8 @@
  */
 
 import { z } from 'zod';
-import { SCHEDULE_TYPE_LABELS } from '@/shared/status';
-import type { ScheduleType } from '@/shared/status';
+import { ATTENDANCE_STATUS_LABELS, SCHEDULE_TYPE_LABELS } from '@/shared/status';
+import type { AttendanceStatus, ScheduleType } from '@/shared/status';
 import { xssValidation } from '@/utils/security';
 
 // ============================================================================
@@ -17,7 +17,10 @@ import { xssValidation } from '@/utils/security';
 /**
  * 출석 상태 스키마
  */
-export const attendanceStatusSchema = z.enum(['not_started', 'checked_in', 'checked_out']);
+// scheduleTypeSchema 와 동일한 이유로 ATTENDANCE_STATUS_LABELS 에서 파생한다(하드코딩 금지).
+export const attendanceStatusSchema = z.enum(
+  Object.keys(ATTENDANCE_STATUS_LABELS) as [AttendanceStatus, ...AttendanceStatus[]]
+);
 
 export type AttendanceStatusSchema = z.infer<typeof attendanceStatusSchema>;
 
