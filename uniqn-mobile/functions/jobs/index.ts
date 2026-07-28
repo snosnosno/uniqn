@@ -9,6 +9,7 @@
  */
 
 import { buildOgHtml, isCrawlerUserAgent } from '../_shared/ogHtml';
+import { BROWSABLE_POSTING_STATUSES } from '../_shared/postingStatus';
 
 interface Env {
   SUPABASE_URL: string;
@@ -17,7 +18,7 @@ interface Env {
 }
 
 // 상세 OG(functions/jobs/[id].ts)와 동일 규칙 — 브라우징 가능 상태만 센다.
-const BROWSABLE = ['active', 'capacity_full'];
+// 값은 ../_shared/postingStatus 단일 소스에서 온다(src 원본과의 일치는 파리티 테스트가 강제).
 const BRAND_IMAGE = 'https://uniqn.app/og-default.png'; // public/og-default.png
 const URL = 'https://uniqn.app/jobs';
 const TITLE = 'UNIQN 구인구직';
@@ -30,7 +31,7 @@ const FALLBACK_DESCRIPTION = '홀덤펍·대회 단기 인력 매칭 — 모집 
 async function fetchOpenPostingCount(env: Env): Promise<number | undefined> {
   const query =
     `${env.SUPABASE_URL}/rest/v1/job_postings` +
-    `?select=id&status=in.(${BROWSABLE.join(',')})` +
+    `?select=id&status=in.(${BROWSABLE_POSTING_STATUSES.join(',')})` +
     // 승인 대기 대회는 공유 대상이 아니다 — 일반 공고(tournament_config IS NULL)와
     // 승인 완료 대회만 센다.
     `&or=(tournament_config.is.null,tournament_config->>approvalStatus.eq.approved)`;
