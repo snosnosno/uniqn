@@ -199,3 +199,21 @@ index 갱신(sources 6행+decisions 2행+wallet-pgtap 재작성). 작성=opus �
 - **오래된 브랜치는 "충돌만 풀면 된다"가 성립하지 않는다.** 분기점 이후 master 가 `SheetModal.tsx` 하나만 7커밋 다시 썼다. 브랜치 hunk 를 채택하면 실기기에서만 발견됐던 수정 5건(#280 안전영역·#302/#335 Android 키보드·#306~#308 연쇄 진입·#332 시트 높이)이 한꺼번에 되돌아가고, master hunk 를 채택하면 브랜치 기여가 0이 된다 — **중간 지대가 없다.** 게다가 git 은 브랜치 전용 식별자(`reduceMotion`·`MOTION_DURATION`)를 충돌 마커 *밖으로* 자동머지하므로, master 쪽으로 충돌을 풀면 결과는 "기여 0"이 아니라 **미정의 참조가 남은 컴파일 불가 파일**이다. 판정은 `REWORK_ON_MASTER`(파일을 골라 옮기기)가 옳았다.
 - **공용 토큰 모듈은 "무엇을 import 하는가"로 배치가 갈린다.** 모션 토큰은 모듈 스코프에서 `Easing.bezier()` 를 평가한다(reanimated 의존). 기존 `constants/animation.ts` 에 얹으면 그 의존이 소비처 4곳(`OrderSheetScreen`·그 연쇄 테스트·`schedule`·`ScheduleDetailModal`)으로 전파된다. 이름이 비슷하다고 합치지 말 것 — animation.ts 의 상수들은 연출 커브가 아니라 **네이티브 dismiss 커밋 대기 시간**으로 개념 자체가 다르다.
 - **핸드오프에 적힌 검증 게이트도 틀릴 수 있다.** §4 의 `grep "Easing\." {Toast,Modal,Skeleton,OfflineStatusBar}.tsx` → 0건 요구는 과대했다. Skeleton(shimmer)·OfflineStatusBar(배너 페이드)는 **자체 애니메이션이 있고 어느 계획도 토큰화 대상으로 잡지 않았다.** 문자 그대로 맞추려 했다면 범위 밖 파일의 커브를 바꿔 "실기기 QA 불필요"라는 A 묶음 전제를 스스로 깨뜨렸을 것이다. 게이트와 범위 정의가 충돌하면 **범위 정의가 이긴다** — 대신 갭을 보고한다.
+
+
+## [2026-07-28] ingest | 1.0.5 이후 머지 웨이브 11건 + 저장소 정리 + 배포 사전 검증 (PR#350~#361)
+
+1.0.5 스토어 빌드(07-26) 직후부터 `3c6efef93` 까지 11 PR / 435 파일. 세 갈래로 수렴한다 — **공고 도메인 전면 감사 W1**(#351·#360), **근무표·내 스케줄 축**(#353·#354·#356·#357), **공유 3종 + 모션**(#350·#355·#358·#359 + 묶음 공유). 상세 = [[post-1-0-5-merge-wave]].
+
+- **생성** `wiki/decisions/semantic-merge-conflicts.md` — 병합은 텍스트가 아니라 의미에서 충돌한다(실증 5종)
+- **생성** `wiki/sources/post-1-0-5-merge-wave.md` — 웨이브 요약 + DB 변화 + 배포 판정표
+- **확장** `wiki/decisions/secdef-replace-search-path-loss.md` — 재정의 베이스는 반드시 "최신 정의"(PR#360 실증)
+- **정리** 브랜치 4개(#353·#355·#359·#360 잔재) 아카이브 태그 후 삭제 · 스테일 워크트리 1개 prune · 미머지였던 수익모델 분석 2건을 PR#361 로 편입
+
+배포 사전 검증(실측): `npm run quality` exit 0 · jest 579 스위트 / 6333 테스트 통과 · master CI + DB Tests success · 미적용 마이그 0 · Edge Function 변경 0 · 네이티브 영향 파일 0(→ `runtimeVersion` 1.0.5 유지, `fingerprintSources: null` 확인).
+
+재사용 교훈 3:
+
+- **"텍스트 충돌 0" 은 종료 조건이 아니다.** 자동병합이 조용히 성공하는 5가지 방식이 한 주에 다 나왔다 — 같은 결함을 양쪽이 다르게 고쳐 두 상태가 공존 · 내 변경이 상대의 신규 테스트를 죽임 · 리네임이 끼면 modify/delete 가 충돌로 안 잡힘 · 래칫이 병합 산술로 넘어감 · **SQL 전용 PR 이 클라이언트 상태 매핑을 흔듦**. 종료 조건은 재통합 **후** 전체 검증 green 이다.
+- **마이그레이션 재정의의 베이스는 "가장 최근 정의"다.** 07-11 판을 복사해 고치는 순간 07-18 개선 3종(`pg_temp`·DELETE 선행 순서·트리거 위임)이 통째로 되돌아갔고 **prod 적용까지 갔다**. `grep -l "CREATE OR REPLACE FUNCTION <name>" migrations/*.sql | sort | tail -1` 이 유일한 정당한 베이스다.
+- **머지 판정은 커밋 메시지가 아니라 파일 내용으로 한다.** 스쿼시 저장소라 조상 관계가 끊긴다. `git diff <브랜치 tip> origin/master -- <그 커밋이 건드린 파일>` 이 공백이면 반영된 것 — 3-dot diff 는 브랜치가 master 에 뒤처진 만큼을 전부 얹어 보여줘서 판정에 쓸 수 없다.

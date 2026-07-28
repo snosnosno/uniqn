@@ -24,10 +24,11 @@
 - [[order-sheet-form-contract]] — 주문서 폼 계약: 3제네릭 zodResolver(z.input/z.output)·canonical 매퍼 등가성·Design B(단일화면 카드+시트)·#244 지연전환·중첩Modal embedded·update=patch conditions 상시 전달·전 타입 단일 경로+레거시 은퇴 (PR#246/#247/#261)
 - [[ops-no-money-flow]] — ops 엔진 돈-흐름 비관여 경계: 프라이즈 계산만, 바이인 결제·시드권 발급·상금 정산 금지 (관광진흥법 카지노업 유사행위 리스크)
 - [[secdef-hardening]] — SECURITY DEFINER 함수 하드닝 3규칙: anon EXECUTE 명시 REVOKE·search_path에 extensions·plpgsql NULL fail-open 차단 (memory 졸업, PR#195)
-- [[secdef-replace-search-path-loss]] — 기존 함수 `CREATE OR REPLACE` 시 DDL에 안 적은 속성(`search_path`·volatility)이 원본형으로 되돌아감 → 재정의 전 `proconfig`/`provolatile` 실측 필수. "STABLE이면 중첩 DML 거부"는 거짓 (PR#273)
+- [[secdef-replace-search-path-loss]] — 기존 함수 `CREATE OR REPLACE` 시 DDL에 안 적은 속성(`search_path`·volatility)이 원본형으로 되돌아감 → 재정의 전 `proconfig`/`provolatile` 실측 필수. "STABLE이면 중첩 DML 거부"는 거짓 (PR#273). **확장(PR#360)**: 재정의 베이스는 반드시 `grep -l "CREATE OR REPLACE FUNCTION <name>" migrations/*.sql | sort | tail -1` 이 가리키는 **최신 정의** — 낡은 판을 복사하면 그 사이 개선이 통째로 되돌아간 채 prod 까지 간다
 - [[type-honesty-runtime-vs-declared]] — 선언 타입 ≠ 런타임 진실: zod 경계가 정규화하는데 인터페이스가 이전 형태를 선언 → TS가 영원히 못 잡는 거짓말. 제네릭 기본값으로 도메인별 졸업 (PR#268)
 - [[supabase-write-pitfalls]] — Supabase 쓰기 경로 함정 종합: 카운터 트리거·realtime publication·RPC 예외 매핑·시드 zod·storage 정책·존재하지 않는 테이블 (memory 졸업)
 - [[nativewind-rn-pitfalls]] — NativeWind/RN UI 함정: 동적 className dark: 유실·flex-1 붕괴·Link asChild 터치 유실·중첩 Pressable/role hydration·style pointerEvents 드롭(웹 딤)·RNModal+gorhom z-순서 (memory 졸업, PR#136·#313)
+- [[semantic-merge-conflicts]] — 병합은 텍스트가 아니라 **의미**에서 충돌한다: 충돌 0 ≠ 안전. 실증 5종(같은 결함 양쪽 수정·상대 신규 테스트 사망·리네임+삭제·래칫 병합 산술·SQL 전용 PR 이 클라 상태 매핑 흔듦) + 종료조건=재통합 후 전체검증 green (PR#356·#357·#360)
 - [[headcount-daily-basis]] — 인원 표시 계약: 하루 기준 분수·분자=일별 max(통지원 전제)·마감=대기 지원 허용·hydrate 키 단일 소스(postingHydrateKeys) — capacity_full(공고 단위)과 의도된 이원화 (PR#309)
 
 ## domain
@@ -57,4 +58,5 @@
 - [[nickname-search-unification]] — 스태프·협업자 검색을 닉네임 prefix로 통일(전화 검색 E.164 vs 010 포맷버그로 100% 실패) + 서버 rate limit·구 RPC 2종 DROP — ✅PR#273·prod 마이그 6
 - [[home-dashboard-removal]] — 홈 대시보드 전면 삭제(동선·중복·비용 3중 문제). 위젯이 `cancellation_requested` 딥링크 결함을 가리고 있어 선행 수정 필요 — ✅PR#276
 - [[headcount-daily-basis-display]] — 인원카운트 하루 기준 표시 통일(요약 곱셈 폐기·지원화면 dead counter 주입 해소·시간 정렬·hydrate 키 공용화) + 교훈 4종(키 중복=조용한 (0/N) 회귀 등) — ✅PR#309 머지 `ceb420ac9`
+- [[post-1-0-5-merge-wave]] — 1.0.5 스토어 빌드 이후 머지 웨이브 11 PR(공고 도메인 감사 W1 / 근무표·스케줄 축 / 공유 3종+모션) + prod 마이그 6·네이티브 변경 0 → OTA 전량 전달 가능 · 배포 사전 검증 실측 (PR#350~#361)
 - [[ops-console-redesign]] — ops 콘솔 리디자인+블라인드 프리셋(SDD 13태스크+후속 3묶음) + 교훈 5종(RNW pointerEvents 드롭·Pressable 중첩·RNModal z-순서·워크트리 EMFILE·parity 가드 누락 파급) — ✅PR#313 머지 `b76668b5e`
