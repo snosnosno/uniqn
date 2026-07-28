@@ -51,4 +51,4 @@ zod 경계(`timestampSchema` 등)가 값을 정규화하는데 **수기 인터�
 5. `@ts-expect-error` 계약 테스트 + Red-Green(규칙 7)
 6. squash 저장소이므로 **머지 직전 master 재통합 후 재검증** — stale-base 위 green 은 무효
 
-관련: [[jobposting-timestamp-type-honesty]](실증 소스) · [[enum-divergence]](같은 zod 경계의 다른 실패 모드 — 파싱 실패로 레코드 증발) · [[whitelist-silent-drop]](에러 없이 조용히 틀리는 이웃 클래스) · [[layers]](변환이 일어나야 할 Repository 경계) · [[worktime-ssot]](표시 계층의 시간 SSOT 규율)
+관련: [[jobposting-timestamp-type-honesty]](실증 소스) · [[enum-divergence]](같은 zod 경계의 다른 실패 모드 — 파싱 실패로 레코드 증발) · [[whitelist-silent-drop]](에러 없이 조용히 틀리는 이웃 클래스) · [[persisted-cache-shape-drift]](**타입은 옳은데 데이터가 구세대**인 자매 클래스 — 지속 캐시가 OTA 를 건너 살아남는다) · [[layers]](변환이 일어나야 할 Repository 경계) · [[worktime-ssot]](표시 계층의 시간 SSOT 규율)

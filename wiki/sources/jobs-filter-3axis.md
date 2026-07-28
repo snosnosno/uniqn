@@ -61,7 +61,7 @@ tags: [job-posting, filter, region, salary, role, taxonomy]
 - **로컬 qa-staff 시드**: terms/phone_verified/identity_verified/profile_completed false → 로그인해도 signup 강제. db reset 시 UPDATE 재실행 필요.
 
 ## 잔여 (사용자 게이트)
-- **OTA 미출하** — #245/#252/#253과 일괄 권장([[feedback-ota-refetch-local-tree-before-update]] 관례).
+- **OTA 미출하** — #245/#252/#253과 일괄 권장(memory `feedback_ota_refetch_local_tree_before_update` 관례).
 - **실기기 QA** — 필터 시트 3종(iOS 터치·다크모드) + 조합 필터 칩카운트-목록 일치 스모크.
 - 후속 백로그(선택): `text_pattern_ops` 인덱스(접두 like 스케일) · 주소 기반 구 백필.
 

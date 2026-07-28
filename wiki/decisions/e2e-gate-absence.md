@@ -59,10 +59,12 @@ tags: [ci, e2e, testing, gate, adr]
 
 - **UI 요소를 다른 화면/파일로 옮기는 PR은 `e2e/**/*.spec.ts`에서 옛 위치 참조를 grep해 같은 PR에서 이동**시킨다. 화면 분리는 리팩토링이 아니라 계약 변경이다.
 - E2E 로컬 검증은 **`dist/` 재export 후**에 한다. `uniqn-mobile/scripts/run-e2e.js`가 `fs.existsSync(dist)`만 보고 빌드를 건너뛰므로, 구 번들이 남아 있으면 거짓 통과/거짓 실패가 난다(2026-07-25 실측 — `#328` 이전 번들이 남아 있었다).
-- CI E2E가 red일 때 **로컬 단일 spec을 돌려 결정적인지 flake인지 먼저 가른다**. 로컬 즉시 통과 + CI 반복 타임아웃 = 러너 경합([[pitfall_e2e_runner_contention_timeout]] 계열), 로컬도 실패 = 진짜 회귀.
+- CI E2E가 red일 때 **로컬 단일 spec을 돌려 결정적인지 flake인지 먼저 가른다**. 로컬 즉시 통과 + CI 반복 타임아웃 = 러너 경합(memory `pitfall_e2e_runner_contention_timeout` 계열), 로컬도 실패 = 진짜 회귀.
 
 ## 연계
 
 - 러너 경합 진단 패턴: memory `pitfall_e2e_runner_contention_timeout`
 - 화면 분리 시 spec stale: memory `pitfall_e2e_spec_stale_after_screen_split`
 - 파리티 가드가 꺼져 있던 동종 문제: [[prod-parity-baseline]]
+- 게이트가 없어 늦게 드러나는 회귀의 다른 형태: [[semantic-merge-conflicts]](텍스트 충돌 0 이 안전을 뜻하지 않는다 — 종료 조건은 재통합 **후** 전체 검증 green)
+- 테스트가 green 인데 아무것도 보증하지 못하는 경우: [[test-seed-contract-drift]](red 보다 **vacuous green** 이 위험하다)

@@ -19,10 +19,10 @@ Repository에서 Zod 파싱 전에 반드시 정규화:
 const cleaned = Object.fromEntries(
   Object.entries(camelRow).map(([k, v]) => [k, v === null ? undefined : v])
 );
-return parseDocument({ ...cleaned, id: row.id });
+return schema.parse({ ...cleaned, id: row.id });
 
 // ❌ WRONG — null이 Zod optional 필드에서 파싱 실패
-return parseDocument({ ...camelRow, id: row.id });
+return schema.parse({ ...camelRow, id: row.id });
 ```
 
 ## 2. 기존 레코드 조회 — 컬럼 필터 사용 (CRITICAL)
@@ -126,8 +126,8 @@ await supabase
 ```bash
 # 1. migration 파일 생성 (ADD COLUMN IF NOT EXISTS)
 # 2. Supabase MCP 또는 대시보드에서 마이그레이션 적용
-# 3. database.types.ts 재생성
-mcp__supabase__generate_typescript_types → src/lib/database.types.ts 갱신
+# 3. 생성 타입 재생성 (파일명 주의 — database.types.ts 아님)
+mcp__supabase__generate_typescript_types → src/types/supabase.ts 갱신
 # 4. Repository의 TABLE_COLUMNS 상수에 새 컬럼 추가
 const TABLE_COLUMNS = 'id,...,new_column,...' as const;
 ```
@@ -154,6 +154,7 @@ interface MyEntity {
 기존 것과 겹치는지 알 수 없다.
 
 ```bash
+# ⚠️ 레포 루트에서 실행 (uniqn-mobile/ 안이면 ../scripts/) — 이 스크립트는 앱이 아니라 레포 루트 소유
 node scripts/graph-db-deps.mjs triggers    # 그래프 불필요, 항상 최신
 ```
 
@@ -169,6 +170,7 @@ node scripts/graph-db-deps.mjs triggers    # 그래프 불필요, 항상 최신
 ### 컬럼·테이블 변경 전 영향도 (이쪽은 그래프 필요)
 
 ```bash
+# ⚠️ 둘 다 레포 루트에서 실행 (uniqn-mobile/ 안이면 ../scripts/)
 graphify update uniqn-mobile --force --no-cluster   # 약 1분, LLM 토큰 0
 node scripts/graph-db-deps.mjs table <테이블명>      # 읽는 SQL 함수를 file:line 으로
 ```
@@ -180,3 +182,18 @@ node scripts/graph-db-deps.mjs table <테이블명>      # 읽는 SQL 함수를 
   훅을 심어 fablize 게이트와 충돌한다. CLI와 MCP 서버만 쓴다.
 - MCP `graphify` 서버(툴 10종)로도 조회 가능하나 `query_graph`는 임베딩이 없어 한글 질의가
   0건이다. `get_node`/`get_neighbors`/`shortest_path`를 쓸 것.
+
+
+## 11. work_logs 읽기 — 소프트 취소 필터 (필수)
+
+근무표 "빼기"는 2026-07-27(PR#357, 마이그 `20260727120000_work_schedule_soft_cancel_and_required_status_filter`)부터 **하드 `DELETE` 가 아니라 `status='cancelled'` 소프트 취소**다. 취소 행은 테이블에 **남아 있다.**
+
+```sql
+-- work_logs 를 세거나 목록에 내보내는 모든 쿼리
+AND wl.status NOT IN ('cancelled', 'no_show')
+```
+
+- 이 필터를 빠뜨리면 **취소된 인원이 근무표·부족인원·단가표에 되살아난다.** 에러는 나지 않는다.
+- 현재 마이그레이션 8개 파일에 **30회** 반복돼 있다(`grep -rn "NOT IN ('cancelled'" uniqn-mobile/supabase/migrations/*.sql`). 반복이 많다는 건 규칙이 없으면 다음 쿼리가 조용히 놓친다는 뜻이다.
+- 🔑 **한쪽 취소 경로만 영속 의미론을 바꾸면, 그 전제에 기대던 리더가 조용히 결함이 된다.** PR#357 이 형제 리더 2개는 고쳤지만 지점 단가표 리더를 놓쳤다(후속 마이그 `20260728185802` 로 봉합). 리더 전수 조사는 `grep` 이 아니라 **`pg_proc.prosrc`** 로 하라 — 함수 본문은 파일이 아니라 DB 에 있다.
+- 클라이언트 쪽: 취소 행은 `src/shared/status/StatusMapper.ts` 의 `workLogToSchedule` 매핑을 타야 '취소' 카드로 표시되고 통계(완료/확정/지원)에서 빠진다. **SQL 만 고치고 클라 매핑을 안 보면 취소 행이 정상 근무처럼 렌더된다** — DB 전용 변경이어도 클라 상태 매핑을 실측할 것.

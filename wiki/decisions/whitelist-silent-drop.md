@@ -1,6 +1,6 @@
 ---
 area: decisions
-updated: 2026-07-17
+updated: 2026-07-28
 status: current
 sources:
   - uniqn-mobile/src/repositories/supabase/JobPostingRepositoryHelpers.ts
@@ -34,4 +34,4 @@ tags: [serialization, whitelist, regression-class, mapper]
 4. 계획/리뷰 단계에서 이 클래스를 의심하는 질문: "이 필드를 **읽는** 경로는 어디를 지나는가?" — 쓰기 경로만 나열된 계획은 미완성.
 5. **읽기 배선 ≠ 표시 UI**(2026-07-14 실증): conditions는 9지점 왕복(읽기 hydration 포함)이 PR#246에서 완료됐지만, 지원자가 보는 **표시 UI**(`JobDetail.tsx` '모집 조건' 섹션)는 별개 갭으로 남아 PR#247이 완결했다. entity에 필드가 있는 것과 화면에 렌더되는 것은 다른 질문 — 왕복 전수 조사에 "이 필드가 **화면에** 뜨는 경로"를 별도 항목으로 포함하라.
 
-관련: [[ios-userflow-fixes]] · [[enum-divergence]](읽기 레코드 증발의 zod 변형) · [[layers]] · [[parity-baseline-squash]] · [[job-posting-kiosk-order-sheet]]
+관련: [[ios-userflow-fixes]] · [[enum-divergence]](읽기 레코드 증발의 zod 변형) · [[persisted-cache-shape-drift]](신규 필드가 조용히 비는 또 다른 경로 — 이쪽은 **이전 빌드가 남긴 캐시**가 원인) · [[layers]] · [[parity-baseline-squash]] · [[job-posting-kiosk-order-sheet]]

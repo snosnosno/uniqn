@@ -5,7 +5,7 @@
 > 작업 디렉토리: uniqn-mobile/ | 배포 전: `npm run quality`
 
 ## 프로젝트
-홀덤펍·대회사 대상 단발 인력 매칭 앱 — Expo 55 / RN 0.83.4 / React 19.2 / TS strict / NativeWind 4.2 / Supabase
+홀덤펍·대회사 대상 단발 인력 매칭 앱 — Expo 55 / RN 0.83.6 / React 19.2 / TS strict / NativeWind 4.2 / Supabase
 타깃: 홀덤펍 사장(상시 단발 알바) + 대회사 운영팀(대회 D-7~D-day 집중 인력). 포커룸은 비타깃.
 
 ## 핵심 규칙
@@ -20,7 +20,7 @@
 | 리스트 | FlashList (대형) / FlatList (소형) | 대형에 FlatList |
 | 이미지 | expo-image | RN `<Image>` |
 
-예외: `functions/**/*.ts` Cloudflare Pages Functions는 `console.log()` 허용
+예외(eslint ignores 등록됨 — `uniqn-mobile/eslint.config.js:301-302`): `functions/**/*.ts`(Cloudflare Pages Functions) · `supabase/functions/**/*.ts`(Supabase Edge Functions, Deno)
 
 ## 지식 위키
 프로젝트 지식 합성 레이어는 `wiki/`. 위키 작업(ingest/query/lint) 시 `wiki/AGENTS.md` 규약 준수. 운영: `/ingest` `/query` `/lint`.
@@ -36,8 +36,12 @@ Presentation → Hooks → Service → Repository → Supabase
 - Presentation/Hooks에서 Supabase 직접 호출 금지
 
 ## 역할
-`admin > employer > staff` | (public/auth)→없음 | (app)→staff | (employer)→employer | (admin)→admin
-UserRole(앱권한) ≠ StaffRole(현장 직무: dealer/floor/serving)
+**UserRole**(앱 권한, `src/types/role.ts:57`) `admin > employer > staff`
+라우트 게이트: (public/auth)→없음 | (app)→staff | (employer)→employer | (admin)→admin | **(ops)→역할 무관·인증만**(데이터 접근은 RLS 가 owner/workspace 로 통제)
+
+**StaffRole**(현장 직무, `src/types/role.ts:100`) `dealer / floor / serving / manager / staff / other` — **6종**. 라벨=`STAFF_ROLE_LABELS`, 옵션 목록=`src/constants/jobPosting.ts:78`. `other` 는 `customRole` 과 짝.
+
+⚠️ UserRole ≠ StaffRole 이고, **`'staff'` 는 두 타입에 동시에 존재**한다(앱 권한 '구직자' vs 현장 직무 '직원'). 문자열만 보고 분기 금지 — 타입 가드(`isStaffRole`) 경유.
 
 ## 커밋 / 보안 / 트랜잭션 / 에러
 - 커밋: `<type>(<scope>): <한글>` — feat/fix/refactor/style/docs/test/chore/perf
@@ -48,7 +52,7 @@ UserRole(앱권한) ≠ StaffRole(현장 직무: dealer/floor/serving)
 ## 명령어
 ```bash
 npm start       # 개발 서버
-npm run quality # type-check + lint + format:check
+npm run quality # css-vars-sync + check:rpc-migrations + type-check + lint + format:check
 npm test        # Jest
 eas build --platform ios|android
 ```
@@ -65,7 +69,11 @@ Skill 요청 시 Skill tool 먼저 호출 (직접 답하지 말 것):
 PR→`/pr` | 배포→`/deploy` | 보안→`/cso` | 품질→`/health` | 회고→`/retro`
 디자인→`/design-review` | 타입에러→`/type-check` | 테스트→`/test`
 리팩토링→`/refactor` | 성능→`/performance` | 국제화→`/i18n` | 접근성→`/a11y` | 마이그레이션→`/migration`
+애니메이션·모션→`/improve-animations`(감사·계획) · `/review-animations`(diff 리뷰, **명시 호출 전용** — `disable-model-invocation`) | 모션 용어→`/animation-vocabulary`
+OSS·MCP·패키지 도입 **전**→`/oss-vet` | 옵시디언 마크다운→`/obsidian-markdown`
 RLS/권한/위험 변경 전→`/guard` 먼저
+
+⚠️ **eslint 사각지대**: `eslint.config.js` ignores 에 `scripts/`·`e2e/`·`functions/`·`supabase/functions/` 가 있다 → **상수·enum·사용자 문구를 단일 소스로 바꿔도 `e2e/` 는 `npm run quality` 가 못 잡는다**(PR#353 실사고: 제목 상한 25→40 상향 때 E2E 단언만 25 로 남아 CI red). 상수/enum/문구 변경 시 `e2e/` 별도 Grep 필수.
 
 ## 세션 오케스트레이션 (자동 적용)
 - 에이전트 분담·병렬 디스패치·Workflow 옵트인·훅·지식 4계층: `.claude/rules/orchestration.md` **상시 준수**

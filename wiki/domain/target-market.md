@@ -39,6 +39,7 @@ CLAUDE.md 1줄 "포커룸 스태프 관리 앱" 표현은 outdated. 실제: "홀
 
 ## 관련
 
-- [[revenue-model]] — 대회사가 최대 ARPU 잠재 세그먼트(현재 과금 미적용)
+- [[revenue-model]] — 대회사가 최대 ARPU 잠재 세그먼트(현재 과금 미구현)
+- [[revenue-model-rebuild-2026-07]] — 대회사의 **D-7~D-day 집중형** 수요 형태가 상시 구독을 부적합하게 만든다 → 건당 패스로 설계된 근거
 - [[roles]] — employer/staff UserRole과 타깃 매핑
 - [[data-flow]] — 구인/구직 흐름의 비즈니스 컨텍스트

@@ -1,6 +1,6 @@
 ---
 area: architecture
-updated: 2026-07-16
+updated: 2026-07-28
 status: current
 sources:
   - CLAUDE.md
@@ -8,6 +8,7 @@ sources:
   - uniqn-mobile/src/services/jobs/jobManagementService.ts
   - uniqn-mobile/src/hooks/useJobPostings.ts
   - uniqn-mobile/src/repositories/supabase/JobPostingRepository.ts
+  - uniqn-mobile/src/utils/supabase.ts
   - uniqn-mobile/supabase/migrations/20260710000002_baseline_schema_from_prod.sql
 tags: [architecture, data-flow, tanstack-query, repository]
 ---
@@ -33,7 +34,7 @@ CLAUDE.md: "TanStack Query 읽기 전용 조회: Repository 직접 호출 허용
 
 ## 흐름 2 — 공고 게시 (쓰기, Service 필수)
 
-검증됨 (`uniqn-mobile/src/services/jobs/jobManagementService.ts:85,93`, `uniqn-mobile/src/repositories/supabase/JobPostingRepository.ts:470,510`):
+검증됨 (`uniqn-mobile/src/services/jobs/jobManagementService.ts:125,134`, `uniqn-mobile/src/repositories/supabase/JobPostingRepository.ts:691,732-734`):
 ```
 PostingForm (Presentation)
   → jobManagementService.createSinglePosting()    ← Service
@@ -53,8 +54,9 @@ PostingForm (Presentation)
 
 ## 실시간 구독 (Realtime)
 
-검증됨 (`uniqn-mobile/src/repositories/supabase/JobPostingRepository.ts`에 `createRealtimeSubscription` 임포트):
-Repository가 `supabase.channel().on('postgres_changes')` 래퍼 제공.
+래퍼는 `uniqn-mobile/src/utils/supabase.ts:461` 의 `createRealtimeSubscription(...)` 이 **단일 제공**한다(채널 레지스트리로 동일 채널 refCount 재사용). Repository 는 제공자가 아니라 **소비자**다 — `JobPostingRepository.ts:16`(import)·`:1063`(`subscribeById` 에서 호출), **검증됨**.
+
+훅도 같은 래퍼를 **직접** 소비할 수 있다(읽기 전용 구독 예외 — [[layers]] 예외 3). 콜백은 `invalidateQueries` 만 허용하고 쓰기는 금지다.
 
 ## 관련
 

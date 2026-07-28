@@ -217,3 +217,98 @@ index 갱신(sources 6행+decisions 2행+wallet-pgtap 재작성). 작성=opus �
 - **"텍스트 충돌 0" 은 종료 조건이 아니다.** 자동병합이 조용히 성공하는 5가지 방식이 한 주에 다 나왔다 — 같은 결함을 양쪽이 다르게 고쳐 두 상태가 공존 · 내 변경이 상대의 신규 테스트를 죽임 · 리네임이 끼면 modify/delete 가 충돌로 안 잡힘 · 래칫이 병합 산술로 넘어감 · **SQL 전용 PR 이 클라이언트 상태 매핑을 흔듦**. 종료 조건은 재통합 **후** 전체 검증 green 이다.
 - **마이그레이션 재정의의 베이스는 "가장 최근 정의"다.** 07-11 판을 복사해 고치는 순간 07-18 개선 3종(`pg_temp`·DELETE 선행 순서·트리거 위임)이 통째로 되돌아갔고 **prod 적용까지 갔다**. `grep -l "CREATE OR REPLACE FUNCTION <name>" migrations/*.sql | sort | tail -1` 이 유일한 정당한 베이스다.
 - **머지 판정은 커밋 메시지가 아니라 파일 내용으로 한다.** 스쿼시 저장소라 조상 관계가 끊긴다. `git diff <브랜치 tip> origin/master -- <그 커밋이 건드린 파일>` 이 공백이면 반영된 것 — 3-dot diff 는 브랜치가 master 에 뒤처진 만큼을 전부 얹어 보여줘서 판정에 쓸 수 없다.
+
+
+## [2026-07-28] ingest | OTA 가 유발한 오프라인 캐시 형태 드리프트 (PR#362)
+
+1.0.5 웨이브의 마지막 PR 이 **웨이브 자신이 만든 회귀**를 닫았다. PR#356 이 `ScheduleStats` 에 필드 3개를 추가하면서 `SCHEDULE_CACHE_SCHEMA_VERSION` 을 3 그대로 뒀고, `criticalOfflineCache` 는 버전·유저·TTL 만 검사하고 형태를 보지 않으므로 1.0.5 빌드가 써 둔 payload 가 신 코드로 그대로 통과했다 — `undefined일 근무`, 빈 금액. 상세 = [[persisted-cache-shape-drift]].
+
+- **생성** `wiki/decisions/persisted-cache-shape-drift.md` — 지속 캐시 형태 드리프트 회귀 클래스 + 착수 체크리스트
+- **확장** `wiki/sources/post-1-0-5-merge-wave.md` — 네 번째 갈래(웨이브가 스스로 만든 회귀) 추가, 범위를 `9541590db` 까지로 갱신
+- **갱신** `wiki/index.md` decisions 1항목
+
+재사용 교훈 3:
+
+- **배포 단위(코드)와 데이터 수명(캐시)이 어긋나면 어떤 단일-버전 검증도 못 잡는다.** quality·jest·CI 는 전부 "지금 코드 한 벌"만 본다. 지속 캐시는 **이전 빌드가 쓴 값**이라 그 시야 밖에 있다. 리뷰어도 타입 체커도 같은 맹점을 공유한다.
+- **직관적 해법(`schemaVersion` +1)이 안전망을 죽인다.** 버전이 어긋난 잔여 캐시는 통째로 폐기되므로 `undefined` 대신 화면 자체가 사라진다. 필드 **추가**는 하위호환 변경 — 폐기할 이유가 없다. 버전 승격은 필드 의미가 바뀌거나 제거돼 옛 값이 적극적으로 틀릴 때만 정당하다.
+- **오프라인 분기는 mock 기본값 때문에 조용히 무테스트로 남는다.** 기존 `useSchedules` 테스트는 `useNetworkStatus` mock 이 전부 온라인 기본값이라 오프라인 경로가 한 번도 실행되지 않았다. 커버리지 숫자는 이걸 드러내지 않는다 — mock 을 가변 플래그로 바꿔 **실제로 태워야** 한다.
+
+
+## [2026-07-28] ingest | 수익모델 원점 재분석 + 운영 과금 확정 설계 (PR#361)
+
+`wiki/domain/revenue-model.md` 가 **폐기된 이중통화·IAP 구조를 본문으로 서술**하고 있었다(updated 2026-06-23). PR#361 이 머지한 분석 2건이 반영되지 않아, 위키가 죽은 모델을 현행처럼 보여주는 상태였다. 도메인 페이지를 현행 설계로 재작성하고 원천을 소스 페이지로 졸업시켰다.
+
+- **생성** `wiki/sources/revenue-model-rebuild-2026-07.md` — 두 문서 관계(배경 분석 vs 확정 요금)·기각 후보 4종·복잡도 억제 규칙 4개·기구현 훅
+- **재작성** `wiki/domain/revenue-model.md` — 현행 = 매칭 영구 무료 / 매장 월 5만 · 대회 건당 10만 · 긴급공고 1만. 폐기 이중통화 이력은 하단 🧊 절로 강등
+- **갱신** `wiki/index.md` domain 1항목 + sources 1항목
+
+재사용 교훈 3:
+
+- **요금 수치가 두 문서에서 갈릴 때 판정 규칙을 문서에 박아야 한다.** `revenue-model-rebuild` §5 요금표는 초안이고 `operations-billing-design` 이 확정본이다(59,000→50,000 등). 문서 자신이 그렇게 명시해 둔 덕에 판정이 가능했다 — 없었다면 최신 날짜만 보고 틀린 표를 인용했을 것이다.
+- **한도가 복잡함의 근원이다.** 무료 사용량 한도(월 30건)를 없애자 사용량 집계·초과 판정·잔여량 UI·월초 리셋 크론·초과 청구가 **설계에서 통째로 사라졌다**. 가격을 한도 없는 값으로 잡는 편이 싸다(월 5만 = 딜러 4시간 인건비).
+- **폐기 이력을 입력에서 배제한 재분석이 같은 결론에 수렴했다.** 지갑/IAP 문서를 의도적으로 빼고 코드 자산과 시장 구조만으로 다시 세웠는데 "매칭 과금은 진다"가 재도출됐다. 결론을 **이어받은 것이 아니라 독립 재확인**한 것이므로 신뢰도가 다르다 — 다만 신규 수익모델 착수 전 폐기 이력 확인은 여전히 필수다([[wallet-iap-removal]]).
+
+
+## [2026-07-28] lint | 위키 건강 진단 + 링크 위생 (52 페이지)
+
+| 항목 | 결과 |
+|---|---|
+| frontmatter 5필드 | 결손 **0** |
+| 200줄 초과 | **0** |
+| dangling 링크 | 4 → **2** (남은 2개는 AGENTS.md §3 이 허용하는 "쓸 거리" TODO: `e2e-runner-contention`·`modal-overflow-contract`) |
+| cross-link <3 | 1 → **0** |
+| 고아(백링크 ≤1) | 11 → 9 (전부 sources 영역 — 성격상 단방향이 정상) |
+| STALE(스크립트) | 75페이지 / UNVERIFIABLE 5 |
+| 미흡수 docs | 128 |
+
+조치:
+- 메모리 파일 슬러그를 위키링크로 쓴 2건을 평문 참조로 교정(`[[pitfall_e2e_runner_contention_timeout]]`·`[[feedback-ota-refetch-local-tree-before-update]]`) — 그 이름의 위키 페이지는 **생길 수 없으므로** TODO 가 아니라 오기였다.
+- 신규 2페이지 백링크 보강: `type-honesty-runtime-vs-declared`·`whitelist-silent-drop` → [[persisted-cache-shape-drift]], `target-market` → [[revenue-model-rebuild-2026-07]].
+- `e2e-gate-absence` cross-link 보강([[semantic-merge-conflicts]]·[[test-seed-contract-drift]]).
+
+판정 메모 2:
+
+- **STALE 75건은 대부분 `sources/` 영역이고 이는 정상이다.** 소스 요약은 특정 시점의 PR 을 서술하므로 원천 파일이 나중에 바뀌는 것이 당연하다. 실제 위험은 `architecture/`·`decisions/`·`domain/` 의 stale 이며, 이번에 그 22건을 별도 검증했다.
+- **링크만 고친 페이지의 `updated` 는 올리지 않았다.** 올리면 내용 검증 없이 staleness 경보만 꺼져 다음 lint 가 그 페이지를 놓친다 — 날짜는 "내용을 실측 대조한 날"이어야 한다.
+
+
+## [2026-07-28] ingest | STALE 핵심 6페이지 실측 대조 — 5건 내용 괴리 교정 (CLAUDE.md 오류 포함)
+
+lint 이 표기한 STALE 중 `architecture`·`decisions`·`domain` 6페이지를 코드·prod 로 대조했다. **5건이 타임스탬프가 아니라 실제 내용 괴리**였고, 그중 하나는 보안 계약이 정반대로 기록돼 있었다. 괴리 원인은 4갈래 — PR#267 RLS 하드닝 · baseline squash 의 마이그 archive 이동 · 지갑/IAP 제거 · CLAUDE.md 아키텍처 규칙 확장.
+
+| 페이지 | 판정 | 핵심 |
+|---|---|---|
+| `architecture/rls-model.md` | **내용 괴리(중대)** | INSERT RLS 를 "의도적 느슨(전원 ALLOW)"으로 기록 — prod 는 역할 게이트 + owner 바인딩 |
+| `domain/roles.md` | 내용 괴리 | StaffRole 3종 → 실제 **6종** · `(ops)/` 라우트 누락 |
+| `architecture/layers.md` | 내용 괴리 | 예외 2 에 `authStore` 누락 · realtime 예외 3 부재 |
+| `decisions/enum-divergence.md` | 내용 괴리 | **없는 심볼**(`jobFilterSchema`)을 "검증됨" 증거로 인용 |
+| `architecture/data-flow.md` | 내용 괴리(경미) | realtime 래퍼 제공자를 Repository 로 오기(실제 `utils/supabase.ts:461`) |
+| `decisions/whitelist-silent-drop.md` | 타임스탬프만 | 주장 4건·규칙 5개 전부 현행 유지, 라인만 밀림 |
+
+**CLAUDE.md 도 함께 교정**: `StaffRole(현장 직무: dealer/floor/serving)` → 실제는 `dealer/floor/serving/manager/staff/other` **6종**(`src/types/role.ts:100`). `(ops)` 라우트 게이트와 `'staff'` 문자열 충돌 경고도 추가.
+
+재사용 교훈 3:
+
+- **위키가 코드를 인용하면서 정반대를 말할 수 있다.** `job_postings` INSERT 를 "느슨"으로 적어 뒀지만 prod `pg_policy` 는 `get_my_role() ∈ {admin,employer} AND owner_id = auth.uid()` 였다. 원인은 `migrations/archive/` 의 구세대 정의를 현행처럼 옮겨 적은 것 — **archive 는 이력이지 현행이 아니다.** 이 페이지를 근거로 "조여야겠다"고 판단했다면 이미 있는 impersonation 방어를 되돌렸을 것이다.
+- **틀린 문서는 스스로를 "검증됨"이라 부른다.** `jobFilterSchema :115` 는 코드에 존재하지 않는데 "검증됨" 태그가 붙어 있었다. 검증 표기는 **검증한 시점의 사실**이고 그 시점은 문서에 안 적힌다 — 태그가 아니라 `updated` 와 실제 grep 을 믿을 것.
+- **CLAUDE.md 의 축약이 하위 문서로 전파된다.** roles.md 는 CLAUDE.md 를 유일 소스로 삼아 StaffRole 3종을 그대로 옮겼다. **열거의 SSOT 는 타입 파일이지 규칙 문서가 아니다** — 위키가 규칙 문서를 인용할 때는 "축약일 수 있다"를 전제하고 코드로 한 번 더 내려가야 한다. 이번에 roles.md `sources` 에 `src/types/role.ts` 를 추가한 이유다.
+
+
+## [2026-07-28] memory-sync | MEMORY.md 예산 복귀 + 거짓 주장 3건 정정
+
+MEMORY.md 가 예산(14,000자)을 3,900자 초과해 옵시디언 훅이 매 세션 경고 중이었다. wiki 졸업이 끝난 상세를 `MEMORY-archive.md` 로 **이동**(삭제 아님)하고 포인터로 압축했다. **18,041 → 12,822자**, 깨진 링크 0건, 예산 경고 해소 확인.
+
+- **웨이브 7줄 → 2줄**: PR#350~#362 상세는 [[post-1-0-5-merge-wave]] 외 3페이지로 졸업 완료. MEMORY 에 남긴 건 **잔여 게이트 + 코드만 봐선 안 드러나는 계약**(리네임 금지 키·의도적 잔여·`e2e/` 별도 Grep·오프라인 TTL 겸용 패턴 4훅)뿐.
+- **07-25 머지완료 10줄 → 1줄**: 잔여가 "실기기 QA·웹/OTA"뿐이라 밀도가 없었다. prod 마이그 재적용 금지 경고만 병합 보존.
+- **잔여 해소분 1줄 삭제**: fablize 게이트 오탐 — `FAILURE_RE` 가 이미 앵커로 재작성돼 잔여 없음.
+
+정정한 **거짓/모순** 3건(전부 실측 대조):
+
+- `Sentry beforeSend redact 부재` → **거짓**. `src/services/observability/rootSentry.ts:22-24` 에 event·transaction·breadcrumb 3종 redact 배선 완료.
+- `knip 기준선 2212` ↔ `래칫 2189` 동시 기재 → `package.json` 의 `knip:gate --max-issues=2189` 가 판정. 2212 삭제.
+- `parity 180/111`·`181` 잔재 → prod 실측 **183/111** 로 통일하고 "함수 수는 마이그마다 증가, 옛 값은 스냅샷"을 명시.
+
+재사용 교훈 2:
+
+- **아카이브는 안전지대가 아니라 지뢰밭이 될 수 있다.** 세션에 로딩되지 않을 뿐 Read 하면 읽힌다. 폐기된 지갑/하트-다이아/RevenueCat 모델을 **현재형으로** 서술한 토픽 4건이 아카이브에 남아 있어, PR#361 이 확정한 정반대 결론(매칭 영구 무료 + 운영 레이어 과금)으로부터 사람을 되돌릴 수 있었다. 폐기 항목에는 "폐기"만 적지 말고 **현행이 어디인지 포인터**를 달아야 한다.
+- **동시 편집 중인 파일은 접두 매칭으로만 손댄다.** 다른 세션이 MEMORY.md 를 쓰는 중이었다(작업 도중 +675자). 전체 재작성 대신 줄 접두 식별 → 못 찾으면 즉시 중단하는 스크립트를 썼고, 실행 전 백업을 떴다. `Write` 였다면 상대 항목을 조용히 지웠을 것이다.

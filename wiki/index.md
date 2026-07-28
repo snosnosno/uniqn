@@ -29,12 +29,13 @@
 - [[supabase-write-pitfalls]] — Supabase 쓰기 경로 함정 종합: 카운터 트리거·realtime publication·RPC 예외 매핑·시드 zod·storage 정책·존재하지 않는 테이블 (memory 졸업)
 - [[nativewind-rn-pitfalls]] — NativeWind/RN UI 함정: 동적 className dark: 유실·flex-1 붕괴·Link asChild 터치 유실·중첩 Pressable/role hydration·style pointerEvents 드롭(웹 딤)·RNModal+gorhom z-순서 (memory 졸업, PR#136·#313)
 - [[semantic-merge-conflicts]] — 병합은 텍스트가 아니라 **의미**에서 충돌한다: 충돌 0 ≠ 안전. 실증 5종(같은 결함 양쪽 수정·상대 신규 테스트 사망·리네임+삭제·래칫 병합 산술·SQL 전용 PR 이 클라 상태 매핑 흔듦) + 종료조건=재통합 후 전체검증 green (PR#356·#357·#360)
+- [[persisted-cache-shape-drift]] — 지속 캐시는 OTA 를 건너 살아남는다: 코드만 갈리고 기기의 구 payload 는 그대로 → 신규 필드가 `undefined` 로 화면까지. 버전 승격 금지(안전망 폐기), **정규화 경계에서 필드 전량 기본값** (PR#356→#362). ⚠️`useApplications`·`useJobDetail` 은 아직 정규화 0
 - [[headcount-daily-basis]] — 인원 표시 계약: 하루 기준 분수·분자=일별 max(통지원 전제)·마감=대기 지원 허용·hydrate 키 단일 소스(postingHydrateKeys) — capacity_full(공고 단위)과 의도된 이원화 (PR#309)
 
 ## domain
 - [[roles]] — UserRole(앱권한: admin/employer/staff) vs StaffRole(직무: dealer/floor/serving)
 - [[target-market]] — 홀덤펍 + 대회사 (포커룸 비타깃)
-- [[revenue-model]] — ⚠️ 이중통화(하트·다이아)·IAP — **전체 제거 완료**(PR#196 머지 `967e9f5e2`, [[wallet-iap-removal]])
+- [[revenue-model]] — **구인구직 영구 무료 · 과금은 운영 레이어**(매장 월 5만 / 대회 건당 10만 / 긴급공고 1만). 설계 확정·구현 미착수 (PR#361). 폐기된 이중통화·IAP 이력은 페이지 하단
 
 ## sources
 - [[db-tests-cli-grant-drift]] — pg_prove red 근본원인: setup-cli `version:latest` 드리프트로 implicit 테이블 GRANT 소실 (PR#179/#180)
@@ -58,5 +59,6 @@
 - [[nickname-search-unification]] — 스태프·협업자 검색을 닉네임 prefix로 통일(전화 검색 E.164 vs 010 포맷버그로 100% 실패) + 서버 rate limit·구 RPC 2종 DROP — ✅PR#273·prod 마이그 6
 - [[home-dashboard-removal]] — 홈 대시보드 전면 삭제(동선·중복·비용 3중 문제). 위젯이 `cancellation_requested` 딥링크 결함을 가리고 있어 선행 수정 필요 — ✅PR#276
 - [[headcount-daily-basis-display]] — 인원카운트 하루 기준 표시 통일(요약 곱셈 폐기·지원화면 dead counter 주입 해소·시간 정렬·hydrate 키 공용화) + 교훈 4종(키 중복=조용한 (0/N) 회귀 등) — ✅PR#309 머지 `ceb420ac9`
-- [[post-1-0-5-merge-wave]] — 1.0.5 스토어 빌드 이후 머지 웨이브 11 PR(공고 도메인 감사 W1 / 근무표·스케줄 축 / 공유 3종+모션) + prod 마이그 6·네이티브 변경 0 → OTA 전량 전달 가능 · 배포 사전 검증 실측 (PR#350~#361)
+- [[post-1-0-5-merge-wave]] — 1.0.5 스토어 빌드 이후 머지 웨이브 12 PR(공고 도메인 감사 W1 / 근무표·스케줄 축 / 공유 3종+모션 / 웨이브가 스스로 만든 OTA 회귀) + prod 마이그 6·네이티브 변경 0 → OTA 전량 전달 가능 · 배포 사전 검증 실측 (PR#350~#362)
+- [[revenue-model-rebuild-2026-07]] — 수익모델 원점 재분석 + 운영 과금 **확정** 설계: 매칭 무료·운영 유료, 기각 후보 4종 사유, 복잡도 억제 규칙 4개(핵심=**한도 없음**). 요금 수치는 operations-billing-design 이 최신 (PR#361, 코드 0줄)
 - [[ops-console-redesign]] — ops 콘솔 리디자인+블라인드 프리셋(SDD 13태스크+후속 3묶음) + 교훈 5종(RNW pointerEvents 드롭·Pressable 중첩·RNModal z-순서·워크트리 EMFILE·parity 가드 누락 파급) — ✅PR#313 머지 `b76668b5e`

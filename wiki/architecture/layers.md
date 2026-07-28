@@ -1,6 +1,6 @@
 ---
 area: architecture
-updated: 2026-07-16
+updated: 2026-07-28
 status: current
 sources:
   - CLAUDE.md
@@ -8,6 +8,8 @@ sources:
   - uniqn-mobile/src/services/jobs/jobManagementService.ts
   - uniqn-mobile/src/errors/serviceErrorHandler.ts
   - uniqn-mobile/src/repositories/supabase/JobPostingRepository.ts
+  - uniqn-mobile/src/stores/authStore.ts
+  - uniqn-mobile/src/utils/supabase.ts
   - uniqn-mobile/src/hooks
 tags: [architecture, layers, dependency]
 ---
@@ -28,7 +30,7 @@ tags: [architecture, layers, dependency]
 
 ### Service → Repository 예시
 
-검증됨 (`uniqn-mobile/src/services/jobs/jobManagementService.ts:85,93`):
+검증됨 (`uniqn-mobile/src/services/jobs/jobManagementService.ts:125,134`):
 ```
 jobManagementService.createSinglePosting()
   → jobPostingRepository.createWithTransaction()   ← runTransaction
@@ -37,12 +39,15 @@ jobManagementService.createSinglePosting()
 
 Repository 직접 Supabase 호출은 `uniqn-mobile/src/repositories/supabase/JobPostingRepository.ts:9`에서 `import { supabase } from '@/lib/supabase'` 패턴으로 확인됨.
 
-## 호출 규칙 (검증됨: CLAUDE.md)
+## 호출 규칙 (검증됨: CLAUDE.md 아키텍처 절)
 
 - **DB 접근**: Service → Repository → Supabase 경유 필수
 - **예외 1**: TanStack Query **읽기전용** 조회 — Repository 직접 호출 허용
-- **예외 2**: Supabase Auth — `authService` + 인증 hook만 직접 호출 허용
-- **금지**: Presentation/Hooks 에서 Supabase 직접 임포트
+- **예외 2**: Supabase Auth — `authService` + 인증 hook + **`authStore`**(세션·프로필 갱신 액션 한정: `refreshSession`/`getUser`/`signOut`/`refreshProfile`)만 직접 호출 허용. 실증: `uniqn-mobile/src/stores/authStore.ts:194,213,350,507` 이 `supabase.auth.*` 를 직접 호출한다(**검증됨**)
+- **예외 3**: **읽기 전용 realtime 구독** — 훅에서 `createRealtimeSubscription`(`uniqn-mobile/src/utils/supabase.ts:461`) 직접 사용 허용. 단 **콜백은 캐시 무효화(`invalidateQueries`)만**, 쓰기 금지. 실사용 12+ 훅(`src/hooks/ops/*` 8개 · `src/hooks/job-posting/useSharedJobPostings.ts` · `useJobPostingCollaborators.ts` · `src/hooks/workspace/*`)
+- **금지**: 위 예외를 벗어난 Presentation/Hooks 의 Supabase 직접 호출
+
+> ⚠️ 2026-07-28 정정: 예외 2 에 `authStore` 가 빠져 있었고 예외 3 은 아예 없었다. 옛 문구("Hooks 에서 Supabase 직접 임포트 금지")대로면 **실사용 중인 훅 12개 이상이 전부 위반으로 읽힌다** — 규칙이 코드보다 뒤처지면 규칙이 아니라 소음이 된다.
 
 ## 에러 처리 패턴
 
