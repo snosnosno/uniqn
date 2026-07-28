@@ -1,6 +1,6 @@
 ---
 area: decisions
-updated: 2026-07-16
+updated: 2026-07-28
 status: current
 sources:
   - memory/pitfall_enum_divergence_read_disappearance.md
@@ -50,7 +50,11 @@ normalizeLegacyInput(raw)   ← safeParse 이전에 흡수
 
 주장 (memory 기반): `payroll_status`(앱 'processing' ↔ DB 'failed'). 현재 dead writer 0건이나 값 쓰면 즉시 발동.
 
-검증됨 (`uniqn-mobile/src/schemas/jobPosting.schema.ts:25, 115, 504`, 2026-07-16 재확인): `posting_status`는 SSOT 패턴 유지 — `Constants.public.Enums.posting_status` 파생(`POSTING_STATUS_VALUES`, :25), `z.enum(POSTING_STATUS_VALUES)` 사용(jobFilterSchema :115, jobPostingDocumentSchema :504). 2026-07 필터 개편(#250/#251/#254: 지역 택소노미·`salary_*_max`·역할필터)은 **전부 additive** — enum 발산 규칙 불변(라인만 이동).
+검증됨 (`uniqn-mobile/src/schemas/jobPosting.schema.ts:26, 464, 470`, 2026-07-28 재확인): `posting_status`는 SSOT 패턴 유지 — `Constants.public.Enums.posting_status` 파생(`POSTING_STATUS_VALUES`, :26)을 `jobPostingDocumentSchema`(:464)의 `status: z.enum(POSTING_STATUS_VALUES)`(:470)가 **유일하게** 소비한다. 2026-07 필터 개편(#250/#251/#254: 지역 택소노미·`salary_*_max`·역할필터)은 전부 additive.
+
+> ⚠️ 2026-07-28 정정: 이전 판은 `jobFilterSchema :115` 를 소비처로 "검증됨" 표기했으나 **그 심볼은 코드에 존재하지 않는다**(`grep -rn "jobFilterSchema" src/` = 0건). 필터 zod 는 이후 개편에서 제거됐다. 소비 지점이 1곳으로 줄었다는 건 발산 위험이 사라졌다는 뜻이 **아니라**, 읽기 경로가 이 한 줄에 전량 의존한다는 뜻이다.
+>
+> 또한 이 페이지의 "인라인 하드코딩 금지" 규칙은 실제로 `posting_status` **에만** 적용돼 있다 — 같은 파일의 `postingTypeSchema`(:28)·`salaryTypeSchema`(:34)·`closedReason`(:495)은 여전히 인라인 하드코딩이다. 규칙의 적용 범위와 실제 적용 상태를 혼동하지 말 것.
 
 ## 관련
 

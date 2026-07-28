@@ -20,12 +20,13 @@ sources:
   - PR#359
   - PR#360
   - PR#361
+  - PR#362
 tags: [release, merge-wave, schedule, share, posting, ota, deploy]
 ---
 
 # 소스: 1.0.5 스토어 빌드 이후 머지 웨이브 (2026-07-26 ~ 07-28)
 
-**범위:** 1.0.5 빌드(iOS 43 / Android 41, 2026-07-26) 직후 `191d21641` 부터 `3c6efef93` 까지. 11 PR / 435 파일 / +24.9k −3.4k. **네이티브 구성 변경 0** → `version` bump 불필요, OTA 로 전량 전달 가능.
+**범위:** 1.0.5 빌드(iOS 43 / Android 41, 2026-07-26) 직후 `191d21641` 부터 `9541590db` 까지. 12 PR / 437 파일. **네이티브 구성 변경 0** → `version` bump 불필요, OTA 로 전량 전달 가능.
 
 ## 세 갈래로 수렴한다
 
@@ -48,6 +49,11 @@ tags: [release, merge-wave, schedule, share, posting, ota, deploy]
 - **고정공고 지원 차단**(#355): 딥링크로 정책이 우회되던 구멍. 차단은 실수가 아니라 **의도된 정책**이며 `public/guide.html:780` 이 "연락처로 직접 문의"를 공표 중이다 — **배포되는 사용자 문서도 정책 증거**다.
 - **모션 토큰**(#350): `constants/motion.ts` 신설 + OS "동작 줄이기" 최초 존중.
 
+### 4. 웨이브가 스스로 만든 회귀 (PR#362)
+이 웨이브의 마지막 PR 은 **웨이브 자신이 유발한 OTA 회귀**를 닫는다. #356 이 `ScheduleStats` 에 필드 3개를 추가했지만 오프라인 캐시 스키마 버전을 그대로 둬서, 1.0.5 빌드가 써 둔 구 payload 가 신 코드로 통과해 `undefined일 근무`·빈 금액이 오프라인 화면에 렌더됐다. 버전 승격 대신 **정규화 경계에서 기본값을 메우는** 방식을 채택했다 — 버전을 올리면 잔여 캐시가 통째로 폐기돼 오프라인 안전망 자체가 사라지기 때문. 클래스 전문 = [[persisted-cache-shape-drift]].
+
+교훈이 웨이브 차원에서 갖는 의미: **OTA 이전 빌드가 남긴 데이터는 배포 경계를 넘어 살아남는다.** 위 세 갈래의 검증(quality·jest·CI)은 전부 "한 버전의 코드"만 봤기 때문에 이 결함을 구조적으로 볼 수 없었다.
+
 ## DB 변화
 
 prod 적용 완료 6건(`list_migrations` 실측, **재적용 금지**): `posting_auto_close_gaps` · `work_schedule_soft_cancel_and_required_status_filter` · `fix_cancellation_request_camel_keys` · `restore_original_assignments_on_cancel` · `qr_checkin_status_whitelist` · `cancel_rpc_rebase_on_seat_basis`. parity 함수 183 / 정책 111 불변([[prod-parity-baseline]]).
@@ -59,7 +65,7 @@ prod 적용 완료 6건(`list_migrations` 실측, **재적용 금지**): `postin
 | 항목 | 결과 |
 |---|---|
 | `npm run quality` | exit 0 (type-check·prettier 통과, lint 0 errors / 92 warnings) |
-| `npm test` | 579 스위트 / 6333 테스트 / 122 스냅샷 전부 통과 |
+| `npm test` | 579 스위트 / 6333 테스트 / 122 스냅샷 전부 통과 (PR#362 후 6334) |
 | master CI | CI · DB Tests(pg_prove) 모두 success |
 | 미적용 마이그레이션 | 0건 |
 | Supabase Edge Function 변경 | 0건 |

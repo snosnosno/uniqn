@@ -1,6 +1,6 @@
 # 문서 허브
 
-최종 업데이트: 2026-07-26  
+최종 업데이트: 2026-07-28  
 현재 기준: `uniqn-mobile/` (백엔드: Supabase)
 
 이 폴더는 현재 운영 문서와 아카이브 문서를 분리해서 관리합니다. 현재 제품 동작을 확인할 때는 아래의 활성 문서만 먼저 읽어 주세요.
@@ -42,6 +42,19 @@
 - `user/ONBOARDING.md`
 - `user/USER_MANUAL.md`
 - `user/ADMIN_GUIDE.md`
+
+### Analysis (의사결정 입력 — 최신순)
+
+- `analysis/2026-07-27-operations-billing-design.md` — **운영 과금 확정 설계**(요금 구조의 최신 진실원)
+- `analysis/2026-07-27-revenue-model-rebuild.md` — 수익모델 원점 재분석(시장·경쟁·단위경제 배경). ⚠️ §5 요금표는 초안 — 수치가 갈리면 위 문서가 최신
+- `analysis/2026-07-27-posting-domain-audit.md` — 공고 도메인 전면 감사(결함 189건, W1 출하분은 PR#360)
+- `analysis/2026-07-24-benchmark-ux-audit.md` — 벤치마크 UX 감사(토스/배민/당근 렌즈)
+
+> 합성·요약본은 `wiki/`(`/query` 로 인용 조회). `analysis/` 는 원천이므로 결론이 갈리면 wiki 가 아니라 이쪽이 근거다.
+
+### Decisions (ADR)
+
+- `decisions/` — 워크스페이스 정산 RLS 점검 · 템플릿 owner-only · 일괄 상태변경 권한 모델 · 클라이언트 쓰기 헬퍼 통일
 
 ### Mobile Release Docs
 
