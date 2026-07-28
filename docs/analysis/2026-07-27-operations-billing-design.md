@@ -1,4 +1,4 @@
-# 운영 과금 설계 (2026-07-27, rev.2)
+# 운영 과금 설계 (2026-07-27, rev.3)
 
 > **확정**: 구인구직 = 영구 무료. 매칭 영역 과금은 **긴급공고 1건뿐**.
 > **설계 목표**: 요금 안내를 스크롤 없이 이해할 것. 요금제 비교표가 필요하면 실패한 설계다.
@@ -13,7 +13,7 @@
 | **구인구직** — 공고·지원자 관리·확정·리뷰·게시판 | **무료** (영구, 무제한) |
 | **긴급공고** — 상단 고정 + 타겟 푸시 + 미충원 환불 | **건당 5,000원** |
 | **매장 운영** — QR 근태 · 정산 · 근무표 전부 | **월 50,000원** — *런칭 프로모션: 2027-12-31까지 무료* |
-| **대회 운영** — 등록데스크 · 좌석 · 클럭 · 전광판 · 상금 | **대회 1건당 30,000원** (첫 1건 무료) |
+| **대회 운영** — 등록데스크 · 좌석 · 클럭 · 전광판 · 상금 | **1일권 10,000원 / 30일권 50,000원** — 기간 내 대회 **개수 무제한** (첫 1일권 무료) |
 | **스폰서 슬롯** — 공고 목록 · 전광판 · 게시판 (직접 판매) | 월 300,000~500,000원 / 슬롯 |
 
 *VAT 별도*
@@ -33,18 +33,64 @@
 
 **단, 묶음 할인(10건 40,000원)은 만들지 않는다** — 잔액 개념이 생기는 순간 크레딧이고, §8에서 기각한 항목이다.
 
-### 2.2 대회 운영 30,000원 — 금액 채택, **형태는 건당으로**
+### 2.2 대회 운영 — **기간권**으로 (건당·월구독 둘 다 기각)
 
-금액은 그대로 쓰되 **월 구독이 아니라 대회 1건당**으로 간다. 이유:
+rev.2에서 "대회 1건당 30,000원"을 제안했으나 **철회한다.** 다일 대회에서 명백히 깨진다.
 
-| 월 구독의 문제 | 건당의 이점 |
-|---|---|
-| 대회사 수요는 **간헐적·시즌성**(D-7~D-day 집중). 안 여는 달엔 즉시 해지 압력 | 열 때만 낸다. 안 열면 0원 |
-| 이탈률이 높아 구독의 유일한 장점(예측 가능성)이 사라진다 | **해지라는 개념 자체가 없다** → 이탈률 관리 불필요 |
-| 갱신·유예·해지·재개 로직을 전부 만들어야 한다 | `purchases` 한 행이면 끝 |
-| 월 3만 × 40곳 = 120만 원. 그 관리비용을 정당화 못 한다 | 월 30건 × 3만 = 90만 원, 관리비용 0 |
+#### 왜 건당이 깨지는가 — 스키마가 답을 준다
 
-대회 1건 총예산(장소·상금·인력) 대비 3만 원은 부담이 아니고, "이번 대회 운영비 3만 원"이 "매달 3만 원씩 빠져나감"보다 훨씬 팔기 쉽다.
+`ops_tournaments.event_date`는 **단일 `date` 컬럼**이고, 다일 대회를 표현하는 부모-자식·시리즈 개념이 없다. 실제로 `ops_duplicate_tournament(uuid, uuid, text, date)`가 **새 날짜로 행을 복제**하는 방식이다. 즉 **하루 = 1행**이다.
+
+| 실제 대회 | `ops_tournaments` 행 수 | 건당 30,000원이면 |
+|---|---|---|
+| 단발 토너먼트 | 1 | 30,000원 |
+| 3일 대회 (Day1A/1B/1C) | 3 | **90,000원** |
+| 7일 대회 | 7 | **210,000원** |
+| 15일 시리즈 (일 2~3 이벤트) | 30~45 | **90만~135만 원** |
+
+대회사가 낼 리 없는 금액이다. 그런데 더 나쁜 문제가 있다:
+
+> **건당 과금은 `ops_duplicate_tournament` 버튼을 누르지 못하게 만든다.**
+> 복제는 다일 대회를 편하게 만들라고 넣은 편의 기능인데, 여기에 돈이 붙으면 사용자는 복제를 피한다. **제품이 권장하는 행동에 과금이 벌금을 매기는 구조** — 과금 설계에서 가장 피해야 할 형태다.
+
+#### 월 구독도 기각인 이유
+
+대회사 수요는 **간헐적·시즌성**(D-7~D-day 집중)이다. 안 여는 달엔 즉시 해지하고 다음 대회 때 재가입한다. 이탈률이 높아 구독의 유일한 장점인 예측 가능성이 사라지고, 갱신·유예·해지·재개 로직만 남는다.
+
+#### 채택: 기간권 (자동 갱신 없음, 기간 내 개수 무제한)
+
+| 기간권 | 가격 | 일당 | 대상 |
+|---|---|---|---|
+| **1일권** | 10,000원 | 10,000원 | 홀덤펍 단발 토너먼트 (첫 1건 무료) |
+| **30일권** | 50,000원 | 1,667원 | 다일 대회 · 시리즈 · 페스티벌 |
+
+**질문에 대한 직접 답:**
+
+| 대회 | 무엇을 사나 | 얼마 |
+|---|---|---|
+| 하루 대회 | 1일권 | 10,000원 |
+| 3일 대회 | 1일권 3개 | 30,000원 |
+| **7일 대회** | **30일권** | **50,000원** |
+| **15일 대회** | **30일권** | **50,000원** |
+| 한 달 내내 시리즈 (이벤트 40개) | 30일권 | 50,000원 |
+
+**기간권 2개만 두는 이유** — 경계가 딱 하나(5일)이고, 규칙이 한 문장으로 끝난다:
+
+> **"5일 넘으면 30일권."**
+
+3개 이상 두면 반드시 사용자가 계산기를 두드리는 구간이 생긴다(7일권 3개 vs 30일권 같은). 2개면 그 구간이 존재할 수 없다. 선택지 2개는 "요금제 비교표"가 아니다.
+
+**이 방식이 해결하는 것**
+- 복제 버튼에 벌금이 사라진다 → Day1 다중 플라이트를 마음껏 만든다 → 엔진 사용량·락인 증가
+- 시리즈 대회사가 이벤트를 늘려도 비용이 고정 → 사이드 이벤트를 UNIQN으로 돌린다
+- 해지 개념이 없다 → 이탈률 관리 불필요 (건당의 장점 유지)
+- 기간을 연장 구매하면 `valid_until`이 누적된다 → 로직 한 줄
+
+#### 만료 시점 처리 — 진행 중 대회는 절대 멈추지 않는다
+
+**검사는 `ops_create_tournament` / `ops_duplicate_tournament` 시점에만 한다.** 한 번 생성된 대회는 기간권 만료 후에도 영구히 운영 가능하다.
+
+15일 시리즈 도중 기간권이 만료돼 클럭이 멈추거나 좌석 배정이 잠기면 그건 서비스 사고다. 라이브 운영 중인 대회를 과금으로 건드리는 일은 없어야 한다. `ops_tournaments`에 `entitled_at`을 기록해 감사만 남긴다.
 
 ### 2.3 매장 운영 무료 — **되돌릴 수 없는 결정이라 형태를 바꿔 제안**
 
@@ -131,8 +177,8 @@
 |---|---|---|
 | 1 | **요금제는 1개다.** 매장 운영은 켜거나 끈다 | Free/Pro/Business 비교표 |
 | 2 | **한도가 없다.** 무제한이므로 셀 필요가 없다 | "월 30건까지 무료" · 초과 UI · 카운터 테이블 · 월초 리셋 크론 |
-| 3 | **단위는 눈에 보이는 것으로.** 매장 1곳/월, 대회 1건, 공고 1건 | 좌석·크레딧 등 추상 단위 |
-| 4 | **처음은 무료.** 대회 첫 1건, 매장은 프로모션 기간 전체 | 체험 자격 심사 |
+| 3 | **단위는 눈에 보이는 것으로.** 매장 1곳/월, 대회 기간권 1장, 공고 1건 | 좌석·크레딧 등 추상 단위 |
+| 4 | **처음은 무료.** 대회 첫 1일권, 매장은 프로모션 기간 전체 | 체험 자격 심사 |
 
 > 규칙 2가 가장 중요하다. **한도가 복잡함의 근원**이다. 없애는 순간 사용량 집계·초과 판정·잔여량 표시·월초 리셋·초과 청구가 전부 사라진다.
 
@@ -142,7 +188,7 @@
 
 > **"사람 구하는 건 공짜, 사람 굴리는 건 유료."**
 
-| 무료 (영구) | 매장 운영 | 대회 건당 |
+| 무료 (영구) | 매장 운영 | 대회 운영 (기간권) |
 |---|---|---|
 | 공고 등록·수정·마감 | QR 출퇴근 체크인 | 대회 생성·복제 |
 | 지원자 조회·확정·취소 처리 | 근무시간 수정 | 등록데스크·체크인 |
@@ -182,46 +228,54 @@
 - **판정식은 `valid_until > now()` 하나뿐.** 유예기간은 상태 분기가 아니라 `valid_until`에 +7일을 반영해 처리 → 코드에 `if (status === 'past_due')` 분기가 존재하지 않는다
 - `status`는 **화면 표시 전용**. 권한 판정에 쓰지 않는다
 - **런칭 프로모션 기간에는 `valid_until`을 프로모션 종료일로 넣기만 하면 된다** — 별도 무료 로직이 필요 없다. 이것이 "정가 + 프로모션" 형태를 권하는 실무적 이유이기도 하다
-- 대회 패스는 생명주기가 없다. 결제했으면 그 대회는 영구히 열린다
+- **대회 기간권은 `auto_renew=false`** — 만료되면 그냥 끝난다. 갱신 독촉·유예·해지 흐름이 존재하지 않는다. 다음 대회 때 다시 사면 된다
+- **만료돼도 이미 생성된 대회는 계속 운영된다** (§2.2) — 기간권은 "새 대회를 만들 권리"이지 "운영을 계속할 권리"가 아니다
 
 ---
 
 ## 8. 데이터 모델 — 테이블 2개, 함수 2개
 
+대회가 기간권이 되면서 **매장 운영과 대회 운영이 같은 모양**이 됐다. 둘 다 "제품 × 유효기간"이므로 한 테이블로 합친다 — rev.2보다 오히려 단순해진다.
+
 ```sql
--- ① 매장 운영 구독: 워크스페이스당 0 또는 1행
-create table public.workspace_subscriptions (
-  workspace_id uuid primary key references public.workspaces(id) on delete cascade,
-  status       text not null check (status in ('trialing','active','past_due','locked','canceled')),
+-- ① 기간형 이용권: 매장 운영(자동 갱신) · 대회 운영(수동 구매)
+create table public.entitlements (
+  workspace_id uuid not null references public.workspaces(id) on delete cascade,
+  product      text not null check (product in ('operations','tournament')),
   valid_until  timestamptz not null,        -- ★ 권한 판정의 유일한 근거
-  price_krw    integer not null default 50000, -- 얼리버드 반값(25000) 고정용
+  price_krw    integer not null,            -- 얼리버드 반값(25000) 등 고정용
+  auto_renew   boolean not null default false,  -- operations=true / tournament=false
+  status       text not null check (status in ('trialing','active','past_due','locked','canceled')),
   billing_key  text,                        -- PortOne 빌링키
   started_at   timestamptz not null default now(),
-  updated_at   timestamptz not null default now()
+  updated_at   timestamptz not null default now(),
+  primary key (workspace_id, product)
 );
 
--- ② 단건 결제: 긴급공고 · 대회 (영수증 겸 이용권)
+-- ② 단건 결제: 긴급공고 + 모든 결제 영수증
 create table public.purchases (
   id           uuid primary key default gen_random_uuid(),
   workspace_id uuid not null references public.workspaces(id),
-  kind         text not null check (kind in ('urgent_posting','tournament')),
-  target_id    uuid not null,               -- job_postings.id | ops_tournaments.id
+  kind         text not null check (kind in ('urgent_posting','operations','tournament')),
+  target_id    uuid,                        -- 긴급공고만 사용 (job_postings.id)
   amount_krw   integer not null,            -- 0 = 무료 제공분
   status       text not null check (status in ('paid','refunded')),
-  paid_at      timestamptz not null default now(),
-  unique (kind, target_id)                  -- 같은 대상 중복 결제 불가
+  paid_at      timestamptz not null default now()
 );
+create unique index on public.purchases (kind, target_id) where target_id is not null;
 ```
 
 ```sql
-create function public.has_operations(p_workspace uuid) returns boolean
+-- 기간형 판정 — 매장 운영·대회 운영 공용
+create function public.has_entitlement(p_workspace uuid, p_product text) returns boolean
   language sql stable security definer set search_path = public, pg_temp as $$
   select exists (
-    select 1 from public.workspace_subscriptions
-    where workspace_id = p_workspace and valid_until > now()
+    select 1 from public.entitlements
+    where workspace_id = p_workspace and product = p_product and valid_until > now()
   );
 $$;
 
+-- 단건 판정 — 긴급공고
 create function public.is_purchased(p_kind text, p_target uuid) returns boolean
   language sql stable security definer set search_path = public, pg_temp as $$
   select exists (
@@ -231,7 +285,13 @@ create function public.is_purchased(p_kind text, p_target uuid) returns boolean
 $$;
 ```
 
-**요금제 테이블은 만들지 않는다.** 가격은 `app_config` 값 3개(`price.operations_monthly`, `price.urgent_posting`, `price.tournament`)면 충분하다.
+**기간권 구매는 연장 누적이다** — 남은 기간이 있으면 그 위에 얹는다. 로직 한 줄:
+
+```sql
+valid_until = greatest(coalesce(valid_until, now()), now()) + p_days * interval '1 day'
+```
+
+**요금제 테이블은 만들지 않는다.** 가격은 `app_config` 값 4개(`price.operations_monthly`, `price.urgent_posting`, `price.tournament_1d`, `price.tournament_30d`)면 충분하다.
 
 **과금 주체는 `workspace`.** `job_postings.workspace_id`가 이미 NOT NULL이라 경계가 스키마상 확정돼 있다.
 
@@ -241,7 +301,7 @@ $$;
 
 쓰기는 전부 SECDEF RPC 경유이므로, RPC 진입부에 검사 한 줄 추가로 끝난다.
 
-### 매장 운영 (`has_operations(workspace_id)`)
+### 매장 운영 (`has_entitlement(workspace_id, 'operations')`)
 
 | 대상 | 지점 |
 |---|---|
@@ -257,11 +317,15 @@ $$;
 - 흐름: 작성 → draft 저장(무료) → **발행 시 결제** → open. 결제 전 작성 내용은 draft로 보존
 - **미충원 자동 환불**: 마감 시각까지 확정 인원 0명이면 `status='refunded'` + 환불
 
-### 대회 운영 (`is_purchased('tournament', tournament_id)`)
+### 대회 운영 (`has_entitlement(workspace_id, 'tournament')`)
 
-- 지점: `ops_create_tournament` · `ops_duplicate_tournament`
+- 지점: `ops_create_tournament` · `ops_duplicate_tournament` — **생성 시점에만** 검사
+- 통과 시 `ops_tournaments.entitled_at = now()` 기록 (감사용)
+- 이후 모든 운영 RPC(`ops_clock_*` · `ops_assign_seat` · `ops_bust_participant` 등 50여 종)에는 **게이트를 걸지 않는다.** 라이브 운영 중 과금 검사로 대회가 멈추는 사고를 원천 차단
 - 대회 **공고**(스태프 모집)는 무료. 과금은 **운영 엔진을 켤 때**만
 - 결제 실패 시 대회 행을 만들지 않는다(고아 데이터 방지)
+
+> 게이트를 2개 RPC에만 거는 것은 구현 부담 면에서도 큰 이점이다. ops RPC 50여 종에 검사를 뿌리면 anon SECDEF 계약·락 순서 같은 기존 불변식과 충돌할 여지가 생긴다.
 
 ### 검사 실패 시
 
@@ -287,7 +351,10 @@ $$;
 | 좌석(멤버)당 과금 | 협업자 초대를 억제해 활성도를 떨어뜨린다. 멤버 무제한 |
 | 요금제 3단계 | 규칙 1 위반. 비교표를 읽게 만드는 순간 진다 |
 | 크레딧 선불 충전·묶음 할인 | 잔액 = 또 하나의 통화. 지갑을 걷어낸 이력이 있다 |
-| 대회 **월 구독** | §2.2 — 수요가 간헐적이라 이탈률이 구독의 장점을 지운다 |
+| 대회 **건당** 과금 | §2.2 — 하루=1행 스키마라 다일 대회에서 폭발하고, 복제 버튼에 벌금을 매긴다 |
+| 대회 **월 구독**(자동 갱신) | §2.2 — 수요가 간헐적이라 이탈률이 구독의 장점을 지운다 |
+| 기간권 3종 이상 (7일권 추가 등) | §2.2 — 사용자가 계산기를 두드리는 구간이 생긴다. 2종이면 경계가 하나 |
+| 대회 규모(참가자 수) 연동 과금 | 사전에 금액을 알 수 없다. 예측 가능성이 공정성보다 중요하다 |
 | CPM 네트워크 광고 | §3 — 금액이 무의미하고 공급측 경험을 깎는다 |
 | 지점별·다지점 번들 할인 | 과금 단위가 workspace 하나로 유지되어야 판정이 한 줄로 끝난다 |
 | 기능별 개별 판매 (근태만, 정산만) | 조합 폭발. 매장 운영은 하나의 묶음 |
@@ -311,7 +378,7 @@ $$;
 | 2 | 게이트 검사 코드 삽입 | 여전히 전원 통과. 회귀 테스트만 확인 |
 | 3 | PortOne 빌링키 + 결제 페이지 | |
 | 4 | **긴급공고 5,000원 오픈** | 가장 단순·저가·즉시 검증. 지불의사 실측 |
-| 5 | 대회 운영 건당 30,000원 오픈 | 대회 시즌에 맞춰 |
+| 5 | 대회 운영 기간권(1일/30일) 오픈 | 대회 시즌에 맞춰 |
 | 6 | 스폰서 슬롯 직접 판매 | 대회·트래픽 확보 후 |
 | 7 | 스카우트 / 아카데미 제휴 | |
 | 8 | 매장 운영 프로모션 종료 → 유료 전환 | 2027-12-31 |
@@ -328,12 +395,12 @@ $$;
 |---|---|---|
 | 긴급공고 (5,000원 × 600건) | 300만 | 300만 |
 | 매장 운영 | **0** | 얼리버드 120곳×25,000 + 신규 80곳×50,000 = **700만** |
-| 대회 운영 (30,000원 × 30건) | 90만 | 90만 |
+| 대회 운영 (30일권 25곳 + 1일권 40건) | 165만 | 165만 |
 | 스폰서 슬롯 | 150만 | 150만 |
 | 스카우트 | 100만 | 100만 |
-| **MRR** | **약 640만 원** | **약 1,340만 원** |
-| **ARR** | 약 7,700만 원 | 약 1.6억 원 |
-| 고정비 500만/월 기준 마진 | 140만 (10개월 누적 1,400만) | 840만 |
+| **MRR** | **약 715만 원** | **약 1,415만 원** |
+| **ARR** | 약 8,600만 원 | 약 1.7억 원 |
+| 고정비 500만/월 기준 마진 | 215만 | 915만 |
 
 - A안도 흑자는 난다. 다만 **1인 운영 유지 수준**이고 재투자 여력이 거의 없다
 - 차이 700만 원의 전부가 "매장 운영을 무료로 확정하느냐"에서 나온다
@@ -346,7 +413,7 @@ $$;
 | 항목 | 제안 | 상태 |
 |---|---|---|
 | 긴급공고 5,000원 | 그대로 | ✅ 확정 |
-| 대회 운영 30,000원 | 금액 유지, **월 구독 → 건당**으로 형태 변경 | ✅ 권고 |
+| 대회 운영 | **기간권 1일권 10,000원 / 30일권 50,000원** (건당·월구독 모두 기각) | ✅ 권고 |
 | 매장 운영 무료 | **정가 5만 원 + 기간 한정 프로모션 무료 + 얼리버드 반값** | ⚠️ 결정 필요 |
 | 광고 | CPM 네트워크 ❌ / **직접 판매 스폰서 슬롯** ✅ | ✅ 권고 |
 | 보완 수익원 | 스카우트 · 아카데미 제휴 · 스폰서 | ✅ 권고 |
