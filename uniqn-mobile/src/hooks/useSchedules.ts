@@ -78,6 +78,33 @@ function buildScheduleCacheKey(userId: string | undefined, scope: string, suffix
   return ['schedules', userId ?? 'anonymous', scope, suffix].filter(Boolean).join(':');
 }
 
+/**
+ * 오프라인 캐시에 남아 있는 **구버전 payload** 를 현재 형태로 메운다.
+ *
+ * `ScheduleStats` 에 필드를 추가해도 `SCHEDULE_CACHE_SCHEMA_VERSION` 을 올리지 않으면
+ * 캐시 읽기는 버전·유저·TTL 만 보고 통과시키므로(criticalOfflineCache 는 형태 검증을 하지
+ * 않는다) 신규 필드가 `undefined` 인 채 화면까지 간다 — `undefined일 근무`·`formatCurrency(undefined)`.
+ * 그렇다고 버전을 올리면 잔여 키가 통째로 폐기돼 **오프라인 안전망 자체가 사라진다**.
+ * 그래서 버전이 아니라 이 경계에서 기본값으로 메운다. 첫 온라인 조회가 실값으로 덮는다.
+ */
+function normalizeScheduleStats(stats: ScheduleStats | undefined): ScheduleStats | undefined {
+  if (!stats) return undefined;
+
+  return {
+    ...stats,
+    totalSchedules: stats.totalSchedules ?? 0,
+    completedSchedules: stats.completedSchedules ?? 0,
+    confirmedSchedules: stats.confirmedSchedules ?? 0,
+    upcomingSchedules: stats.upcomingSchedules ?? 0,
+    completedWorkDays: stats.completedWorkDays ?? 0,
+    totalEarnings: stats.totalEarnings ?? 0,
+    thisMonthEarnings: stats.thisMonthEarnings ?? 0,
+    settledEarnings: stats.settledEarnings ?? 0,
+    estimatedEarnings: stats.estimatedEarnings ?? 0,
+    hoursWorked: stats.hoursWorked ?? 0,
+  };
+}
+
 function normalizeScheduleQueryPayload(
   payload: ScheduleQueryPayload
 ): NormalizedScheduleQueryPayload {
@@ -86,7 +113,7 @@ function normalizeScheduleQueryPayload(
   return {
     schedules,
     boundarySchedules: payload.boundarySchedules,
-    stats: payload.stats,
+    stats: normalizeScheduleStats(payload.stats),
     groupedSchedules: payload.groupedSchedules ?? groupSchedulesByDate(schedules),
     warning: payload.warning,
   };
