@@ -17,12 +17,17 @@
 --    버튼(ScheduleDetailModal.tsx)이 있다. 무음 변경 금지의 짝은 "거부할 수 있는 경로"다.
 --  * DROP + CREATE 가 아니라 CREATE OR REPLACE 다. DROP 하면 20260731090000 이 회수한
 --    PUBLIC EXECUTE 권한이 기본값으로 되살아난다.
---  * SECURITY DEFINER 와 SET search_path 는 원본 그대로 보존한다(REPLACE 시 누락되면
---    search_path 방어가 조용히 사라진다).
+--  * 🔴 search_path 의 정본은 baseline 이 아니다. baseline(`…5490`)은 `public, extensions` 지만
+--    그 뒤 `20260711100000_secdef_pg_temp_batch_and_overload_drop.sql:76` 이 본문은 안 건드리고
+--    `ALTER FUNCTION … SET search_path = public, extensions, pg_temp` 로 하드닝을 얹었다.
+--    `CREATE OR REPLACE` 의 `SET` 절은 proconfig 를 통째로 갈아치우므로 여기에 pg_temp 를
+--    안 적으면 그 하드닝이 조용히 되돌아간다(prod 실측 proconfig = public, extensions, pg_temp).
+--    pg_temp 를 명시하지 않으면 임시 스키마가 pg_catalog 보다 먼저 검색돼, SECDEF 함수 안의
+--    미한정 호출이 shadowing 대상이 된다. 회귀 가드: `supabase/tests/parity_baseline_guard.test.sql:134`.
 
 CREATE OR REPLACE FUNCTION public.notify_on_work_log_update() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
-    SET search_path TO 'public', 'extensions'
+    SET search_path TO 'public', 'extensions', 'pg_temp'
     AS $$
 DECLARE
   v_job_title text;
@@ -37,6 +42,7 @@ DECLARE
   v_admin_id uuid;
   v_prev_slot_label text;
   v_next_slot_label text;
+  v_cancel_hint text;
 BEGIN
   SELECT title, owner_id INTO v_job_title, v_owner_id
   FROM public.job_postings
@@ -154,19 +160,32 @@ BEGIN
       ELSE NEW.time_slot
     END;
 
+    -- 🔴 '취소를 요청할 수 있어요' 는 그 버튼이 실제로 있을 때만 말한다.
+    -- 스케줄 상세의 취소 요청 버튼(ScheduleDetailModal.tsx:536)은
+    -- `schedule.applicationId` 로 게이트되는데, 근무표에서 직접 배치한 스태프의 work_log 는
+    -- application_id 가 NULL 이다(add_direct_staff). 그런 사람에게 취소를 권하면
+    -- 눌러야 할 버튼이 없는 화면으로 보낸다 — 이 브랜치가 없애려던 바로 그 종류의 거짓말이다.
+    -- 이미 시작·종료된 근무도 제외한다(지난 근무의 기록 정정에 취소를 권할 수는 없다).
+    v_cancel_hint := CASE
+      WHEN NEW.application_id IS NOT NULL AND NEW.status = 'scheduled'
+        THEN ' 어려우시면 취소를 요청할 수 있어요.'
+      ELSE ''
+    END;
+
     INSERT INTO public.notifications (
       recipient_id, type, title, body, link, data, priority
     ) VALUES (
       NEW.staff_id,
       'schedule_change',
       '출근 예정 시간 변경',
-      -- 조사(로/으로)는 앞말 받침에 따라 갈리고 '18:00'·'미정' 이 뒤섞이므로 아예 쓰지 않는다.
+        -- 조사(로/으로)는 앞말 받침에 따라 갈리고 '18:00'·'미정' 이 뒤섞이므로 아예 쓰지 않는다.
       format(
-        '%s %s 출근 예정 시간이 변경되었습니다: %s → %s. 어려우시면 취소를 요청할 수 있어요.',
+        '%s %s 출근 예정 시간이 변경되었습니다: %s → %s.%s',
         v_label,
         COALESCE(NEW.date, ''),
         v_prev_slot_label,
-        v_next_slot_label
+        v_next_slot_label,
+        v_cancel_hint
       ),
       '/schedule',
       jsonb_build_object(
@@ -247,3 +266,7 @@ EXCEPTION WHEN OTHERS THEN
   RETURN NEW;
 END;
 $$;
+
+-- CREATE OR REPLACE 는 코멘트를 보존하므로 '4가지'로 남아 있던 설명을 갱신한다.
+COMMENT ON FUNCTION public.notify_on_work_log_update() IS
+  'work_logs UPDATE 시 5가지 알림 통합 처리: 취소 / 이력 기반 근무시간 변경 / 출근 예정 시각(time_slot) 변경 / 정산 완료 / 음수 정산 admin broadcast';

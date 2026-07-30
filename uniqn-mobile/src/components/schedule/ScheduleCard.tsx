@@ -135,15 +135,20 @@ export const ScheduleCard = memo(function ScheduleCard({
   // 표기는 helpers 한 곳에서만 만든다 — 카드마다 다른 문장이 나오지 않게.
   const timeRangeDisplay = useMemo(() => formatWorkTimeRange(timeDisplayInfo), [timeDisplayInfo]);
 
-  // '출근 시간 미정'만으로는 "언제 알 수 있나"에 답이 없다. 안심 문구를 아래 줄에 덧댄다.
-  // 협의(고정공고)는 정해질 값이 아니므로 이 문구를 붙이지 않는다.
-  const showUndecidedTimeHint =
-    timeDisplayInfo.scheduleTimeState === 'undecided' && timeRangeDisplay === UNDECIDED_TIME_LABEL;
-
   const isCancelled = schedule.type === STATUS.SCHEDULE.CANCELLED;
   // 노쇼는 취소와 달리 흐리게 처리하지 않는다 — 이의 제기 기한이 있는 기록이라
   // 눈에 덜 띄게 만들면 이 화면이 고치려는 문제(본인만 모른다)를 그대로 되풀이한다.
   const isNoShow = schedule.type === STATUS.SCHEDULE.NO_SHOW;
+
+  // '출근 시간 미정'만으로는 "언제 알 수 있나"에 답이 없다. 안심 문구를 아래 줄에 덧댄다.
+  // 협의(고정공고)는 정해질 값이 아니므로 붙이지 않는다.
+  // 이미 끝난 일정(취소·노쇼)에도 붙이지 않는다 — '정해지면 알려드려요'는 미래형 약속이라,
+  // 다시 오지 않을 근무에 얹으면 지키지 못할 말이 된다.
+  const showUndecidedTimeHint =
+    timeDisplayInfo.scheduleTimeState === 'undecided' &&
+    timeRangeDisplay === UNDECIDED_TIME_LABEL &&
+    !isCancelled &&
+    !isNoShow;
   // 스크린리더로 카드 하나를 들었을 때 완결 문장이 되도록 금액·취소요청 여부까지 넣는다.
   const accessibilityLabel = [
     status.label,

@@ -80,6 +80,7 @@ function Section({ icon, title, children }: SectionProps) {
 }
 
 export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
+  const timeDisplay = getTimeDisplay(schedule);
   const ownerName = schedule.postingProjection?.ownerName;
   const description = schedule.postingProjection?.description;
   const payrollStatus = (schedule.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus;
@@ -294,6 +295,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           {formatFullDate(schedule.date)}
         </Text>
 
+        {/* 렌더마다 두 번 계산하지 않도록 한 번만 만든다(문구 비교에도 같은 값을 쓴다). */}
         {schedule.type === STATUS.SCHEDULE.COMPLETED ? (
           <View className="mt-2">
             {getActualTimeDisplay(schedule) && (
@@ -313,11 +315,12 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
             <View className="flex-row items-center">
               <ClockIcon size={14} color={SECONDARY_PALETTE[400]} />
               <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
-                {getTimeDisplay(schedule)}
+                {timeDisplay}
               </Text>
             </View>
-            {getTimeDisplay(schedule) === UNDECIDED_TIME_LABEL && (
-              <Text className="ml-[19px] mt-1 text-xs text-content-muted dark:text-secondary-500 font-sans">
+            {/* 취소·노쇼는 위에서 조기 반환되므로 여기 도달하는 건 아직 살아있는 일정뿐이다. */}
+            {timeDisplay === UNDECIDED_TIME_LABEL && (
+              <Text className="mt-1 text-xs text-content-muted dark:text-secondary-500 font-sans">
                 {UNDECIDED_TIME_HINT}
               </Text>
             )}
