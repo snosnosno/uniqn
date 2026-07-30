@@ -34,7 +34,7 @@ jobs:
     env:
       PROD_DB_URL: ${{ secrets.PROD_DB_URL }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: prod 카운트 실측 vs repo 기대값 대조
         run: |
