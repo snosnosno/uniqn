@@ -8,6 +8,55 @@
 import { Linking, Platform } from 'react-native';
 import { logger } from './logger';
 
+/**
+ * 주소 꼴 판정.
+ *
+ * 행정구역·도로명 어미가 있거나, 번지 숫자를 낀 두 토막 이상이면 주소로 본다.
+ * '홈'·'홈게임' 같은 장소 별칭을 지도에 던지면 전혀 다른 곳으로 안내하므로(실사고),
+ * 확신이 없으면 검색하지 않는 쪽을 택한다.
+ */
+function looksLikeAddress(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+
+  const hasAdministrativeSuffix =
+    /(특별시|광역시|시|도|군|구|읍|면|동|리|로|길|가|번지)(\s|$)/.test(trimmed);
+  const hasBuildingNumber = /\d/.test(trimmed) && trimmed.split(/\s+/).length >= 2;
+
+  return hasAdministrativeSuffix || hasBuildingNumber;
+}
+
+export interface MapQueryInput {
+  /** 공고 장소명 (예: '라운더스 홀덤펍') — 주소가 아닐 수 있다 */
+  placeName?: string;
+  /** 공고 상세주소 */
+  detailedAddress?: string;
+  /** 공고 주소(주문서 '주소' 입력 — canonical 에서는 district 로 저장된다) */
+  address?: string;
+}
+
+/**
+ * 지도 검색어 결정. 안내할 수 있는 근거가 없으면 null 을 돌려 호출부가 길찾기를 감춘다.
+ *
+ * 우선순위는 정확도 순 — 상세주소 > 주소 > (주소 꼴인 경우에 한해) 장소명.
+ */
+export function resolveMapQuery({
+  placeName,
+  detailedAddress,
+  address,
+}: MapQueryInput): string | null {
+  const detailed = detailedAddress?.trim();
+  if (detailed) return detailed;
+
+  const addr = address?.trim();
+  if (addr) return addr;
+
+  const name = placeName?.trim();
+  if (name && looksLikeAddress(name)) return name;
+
+  return null;
+}
+
 /** 지도 앱 후보 URL 목록. 앞에서부터 열 수 있는 첫 번째를 쓴다. */
 export function buildMapSearchUrls(query: string, platform: 'ios' | 'android' | 'web'): string[] {
   const encoded = encodeURIComponent(query.trim());

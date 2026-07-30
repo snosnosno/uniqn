@@ -19,7 +19,7 @@ import { NO_SHOW_NOTICE_TITLE, NO_SHOW_NOTICE_DESCRIPTION } from '../helpers';
 import { WorkTimeDisplay } from '@/shared/time';
 import type { ScheduleEvent } from '@/types';
 import { useThemeStore } from '@/stores/themeStore';
-import { formatPhoneNumber } from '@/utils/phone';
+import { formatPhoneForDisplay } from '@/utils/phone';
 
 // ============================================================================
 // Types
@@ -148,7 +148,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
             >
               <PhoneIcon size={16} color={SECONDARY_PALETTE[600]} />
               <Text className="ml-2 text-sm font-sans-semibold text-error-700 dark:text-error-300">
-                구인자에게 문의 ({formatPhoneNumber(schedule.ownerPhone)})
+                구인자에게 문의 ({formatPhoneForDisplay(schedule.ownerPhone)})
               </Text>
             </Pressable>
           )}
@@ -211,7 +211,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
             className="ml-6 flex-row items-center py-2 px-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg active:bg-primary-100 dark:active:bg-primary-900/30"
           >
             <Text className="text-base text-primary-600 dark:text-primary-400 font-sans-medium">
-              {formatPhoneNumber(schedule.ownerPhone)}
+              {formatPhoneForDisplay(schedule.ownerPhone)}
             </Text>
             <View className="ml-auto flex-row items-center">
               <PhoneIcon size={16} color="#B8962E" />

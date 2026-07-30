@@ -116,6 +116,12 @@ export interface ScheduleEvent extends FirebaseDocument {
   jobPostingName: string;
   location: string;
   detailedAddress?: string;
+  /**
+   * 공고에 입력된 주소(canonical 에서는 location.district 로 저장된다).
+   * 상세주소가 없을 때 화면 표시·길찾기가 기댈 유일한 근거다 — 이게 없으면
+   * 장소명만 남아 지도가 엉뚱한 곳을 안내한다.
+   */
+  locationAddress?: string;
 
   // ??븷 ?뺣낫
   role: string;
@@ -278,6 +284,9 @@ export interface GroupedScheduleEvent {
 
   /** ?곸꽭 二쇱냼 */
   detailedAddress?: string;
+
+  /** 공고에 입력된 주소(canonical location.district) */
+  locationAddress?: string;
 
   /**
    * ?좎쭨 踰붿쐞 ?뺣낫

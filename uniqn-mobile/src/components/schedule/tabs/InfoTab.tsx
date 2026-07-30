@@ -26,8 +26,8 @@ import {
 } from '@/domains/settlement';
 import { WorkTimeDisplay } from '@/shared/time';
 import { formatWorkTimeRange, NO_SHOW_NOTICE_TITLE, NO_SHOW_NOTICE_DESCRIPTION } from '../helpers';
-import { formatPhoneNumber } from '@/utils/phone';
-import { openMapSearch } from '@/utils/mapLink';
+import { formatPhoneForDisplay } from '@/utils/phone';
+import { openMapSearch, resolveMapQuery } from '@/utils/mapLink';
 import { useToast } from '@/stores/toastStore';
 import { STATUS } from '@/constants';
 import { PAYROLL_STATUS } from '@/constants/statusConfig';
@@ -137,10 +137,22 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
 
   const hasTax = taxSettings.type !== 'none';
 
-  // 상세 주소가 있으면 그걸 우선한다 — 지도 검색 정확도가 높다.
-  const mapQuery = schedule.detailedAddress?.trim() || schedule.location?.trim() || '';
+  // 안내할 근거(주소)가 없으면 null — 장소명만으로 검색하면 전혀 다른 곳으로 데려간다.
+  const mapQuery = useMemo(
+    () =>
+      resolveMapQuery({
+        placeName: schedule.location,
+        detailedAddress: schedule.detailedAddress,
+        address: schedule.locationAddress,
+      }),
+    [schedule.location, schedule.detailedAddress, schedule.locationAddress]
+  );
+
+  /** 장소 아래에 덧붙일 주소 한 줄 — 상세주소가 없으면 공고 주소로 대신한다. */
+  const addressLine = schedule.detailedAddress?.trim() || schedule.locationAddress?.trim() || '';
 
   const handleOpenMap = useCallback(async () => {
+    if (!mapQuery) return;
     const opened = await openMapSearch(mapQuery);
     if (!opened) {
       toast.error('지도 앱을 열지 못했어요. 주소를 직접 검색해 주세요.');
@@ -240,17 +252,19 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
             <Text className="text-base font-sans-medium text-content-primary dark:text-off-white">
               {schedule.location || '-'}
             </Text>
-            {schedule.detailedAddress && (
+            {addressLine !== '' && (
               <Text className="mt-0.5 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-                {schedule.detailedAddress}
+                {addressLine}
               </Text>
             )}
           </View>
         </View>
 
         {/* 길찾기 — 전화 행과 같은 시각 언어. 주소만 죽은 텍스트로 두면
-            처음 가는 근무지를 지도 앱에 손으로 다시 쳐야 한다. */}
-        {mapQuery && (
+            처음 가는 근무지를 지도 앱에 손으로 다시 쳐야 한다.
+            반대로 주소가 없을 땐 버튼을 감춘다 — 장소명('홈' 같은 별칭)으로 검색하면
+            엉뚱한 곳으로 안내해, 없는 것보다 나쁘다. */}
+        {mapQuery ? (
           <Pressable
             onPress={handleOpenMap}
             accessibilityRole="button"
@@ -262,6 +276,10 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
               길찾기
             </Text>
           </Pressable>
+        ) : (
+          <Text className="ml-8 mt-2 text-xs text-content-muted dark:text-secondary-400 font-sans">
+            주소가 등록되지 않아 길찾기를 열 수 없어요. 구인자에게 문의해 주세요.
+          </Text>
         )}
       </View>
 
@@ -314,7 +332,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
               className="flex-row items-center rounded-lg bg-primary-50 px-3 py-2 active:bg-primary-100 dark:bg-primary-900/20 dark:active:bg-primary-900/30"
             >
               <Text className="text-base font-sans-medium text-primary-600 dark:text-primary-400">
-                {formatPhoneNumber(schedule.ownerPhone)}
+                {formatPhoneForDisplay(schedule.ownerPhone)}
               </Text>
               <View className="ml-auto flex-row items-center">
                 <PhoneIcon size={16} color="#B8962E" />

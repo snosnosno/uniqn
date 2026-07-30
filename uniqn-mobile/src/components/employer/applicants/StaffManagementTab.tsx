@@ -55,30 +55,32 @@ interface QuickActionsProps {
 // QR 진입점은 헤더 QR 버튼 하나로 통일됐다 — 여기 있던 "이벤트 QR 열기" 버튼은
 // 같은 화면을 여는 중복 진입점이라 제거했다 (도착지는 하나).
 function QuickActions({ onRefresh, onAddStaff, isRefreshing }: QuickActionsProps) {
+  // 한 행 — 주행동(추가)이 폭을 더 갖고, 새로고침은 보조로 옆에 붙는다.
+  // 세로로 쌓았을 때는 목록이 두 번 접힌 만큼 아래로 밀려 첫 스태프가 화면 밖으로 나갔다.
   return (
-    <View className="mb-4 px-4 pt-4">
+    <View className="mb-4 flex-row gap-3 px-4 pt-4">
       <Pressable
         onPress={onAddStaff}
-        className="mb-3 flex-row items-center justify-center rounded-md bg-primary-600 p-4 active:opacity-80 dark:bg-primary-700"
+        accessibilityRole="button"
+        accessibilityLabel="스태프 추가"
+        className="flex-[2] min-h-[52px] flex-row items-center justify-center rounded-md bg-primary-600 px-4 py-3 active:opacity-80 dark:bg-primary-700"
       >
-        <UserPlusIcon size={22} color="#FFFFFF" />
+        <UserPlusIcon size={20} color="#FFFFFF" />
         <Text className="ml-2 text-base font-sans-semibold text-content-onGold">스태프 추가</Text>
       </Pressable>
 
-      <View className="flex-row gap-3">
-        <Pressable
-          onPress={onRefresh}
-          disabled={isRefreshing}
-          accessibilityRole="button"
-          accessibilityLabel="스태프 목록 새로고침"
-          className={`flex-1 flex-row items-center justify-center rounded-md bg-surface-card p-4 active:opacity-80 dark:bg-surface ${
-            isRefreshing ? 'opacity-50' : ''
-          }`}
-        >
-          <RefreshIcon size={24} color={SECONDARY_PALETTE[500]} />
-          <Text className="ml-2 text-base font-sans-semibold text-content-primary">새로고침</Text>
-        </Pressable>
-      </View>
+      <Pressable
+        onPress={onRefresh}
+        disabled={isRefreshing}
+        accessibilityRole="button"
+        accessibilityLabel="스태프 목록 새로고침"
+        className={`flex-1 min-h-[52px] flex-row items-center justify-center rounded-md bg-surface-card px-4 py-3 active:opacity-80 dark:bg-surface ${
+          isRefreshing ? 'opacity-50' : ''
+        }`}
+      >
+        <RefreshIcon size={20} color={SECONDARY_PALETTE[500]} />
+        <Text className="ml-2 text-base font-sans-semibold text-content-primary">새로고침</Text>
+      </Pressable>
     </View>
   );
 }

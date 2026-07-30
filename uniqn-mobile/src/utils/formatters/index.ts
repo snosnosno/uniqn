@@ -26,6 +26,7 @@ export { formatDuration, formatDurationFromMinutes } from './duration';
 export {
   cleanPhoneNumber,
   formatE164ToDisplay,
+  formatPhoneForDisplay,
   formatPhoneNumber,
   isE164,
   isValidKoreanPhone,
