@@ -1,7 +1,8 @@
-import { setVenueRoleSalary } from '../gridWriteService';
+import { setVenueRoleSalary, updateVenueContainer } from '../gridWriteService';
 
 import { ERROR_CODES, ValidationError } from '@/errors';
 import { workScheduleRepository } from '@/repositories/workSchedule';
+import { jobPostingRepository } from '@/repositories';
 import type { SetVenueRoleSalaryInput } from '@/repositories';
 
 // 레포 경계는 mock — 이 스위트는 Service 의 customRole 선차단(XSS·길이) 검증만 대상으로 한다.
@@ -15,7 +16,10 @@ jest.mock('@/repositories/workSchedule', () => ({
 
 jest.mock('@/repositories', () => ({
   workLogRepository: { updateSlot: jest.fn() },
-  jobPostingRepository: { getOrCreateVenueContainer: jest.fn() },
+  jobPostingRepository: {
+    getOrCreateVenueContainer: jest.fn(),
+    updateVenueContainer: jest.fn(async () => undefined),
+  },
 }));
 
 jest.mock('@/services/work/confirmedStaffService', () => ({
@@ -73,5 +77,68 @@ describe('gridWriteService.setVenueRoleSalary — customRole 선차단', () => {
     await expect(setVenueRoleSalary('venue-1', input)).resolves.toBeUndefined();
     expect(mockRepo.setVenueRoleSalary).toHaveBeenCalledTimes(1);
     expect(mockRepo.setVenueRoleSalary).toHaveBeenCalledWith('venue-1', input);
+  });
+});
+
+describe('gridWriteService.updateVenueContainer — 지점 프로필 선차단 + 부분 갱신 의미론', () => {
+  const mockJobPostingRepo = jobPostingRepository as jest.Mocked<typeof jobPostingRepository>;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  // 🔴 이 프로젝트의 관용구는 null→undefined 정규화다. 그 습관이 이 경로에 새어 들어오면
+  //    사용자가 칸을 비운 행위가 조용히 "안 바꿈"이 된다(서버는 ''를 "제거"로 읽는다).
+  it('빈 문자열을 undefined 로 뭉개지 않고 그대로 레포에 넘긴다(= 제거 신호 보존)', async () => {
+    await updateVenueContainer('venue-1', { name: '강남점', contactPhone: '', description: '' });
+
+    expect(mockJobPostingRepo.updateVenueContainer).toHaveBeenCalledWith('venue-1', {
+      name: '강남점',
+      contactPhone: '',
+      description: '',
+    });
+  });
+
+  it('넘기지 않은 필드는 입력에 나타나지 않는다(= 미변경 신호 보존)', async () => {
+    await updateVenueContainer('venue-1', { name: '강남점' });
+
+    const [, input] = mockJobPostingRepo.updateVenueContainer.mock.calls[0]!;
+    expect(Object.keys(input)).toEqual(['name']);
+  });
+
+  it('공백만인 지점명은 레포에 도달하지 않는다', () => {
+    const error = catchThrown(() => updateVenueContainer('venue-1', { name: '   ' }));
+    expect(error).toBeInstanceOf(ValidationError);
+    expect(mockJobPostingRepo.updateVenueContainer).not.toHaveBeenCalled();
+  });
+
+  it('지점명 XSS 는 RPC 미도달로 선차단한다', () => {
+    const error = catchThrown(() =>
+      updateVenueContainer('venue-1', { name: '<script>alert(1)</script>' })
+    );
+    expect(error).toBeInstanceOf(ValidationError);
+    expect((error as ValidationError).code).toBe(ERROR_CODES.SECURITY_XSS_DETECTED);
+    expect(mockJobPostingRepo.updateVenueContainer).not.toHaveBeenCalled();
+  });
+
+  it('장소명 XSS 도 선차단한다(location 은 서버 XSS 트리거 대상이 아니다)', () => {
+    const error = catchThrown(() =>
+      updateVenueContainer('venue-1', { location: { name: '<iframe src=x>' } })
+    );
+    expect(error).toBeInstanceOf(ValidationError);
+    expect(mockJobPostingRepo.updateVenueContainer).not.toHaveBeenCalled();
+  });
+
+  it('길이 상한은 서버 규약(이름 50 / 연락처 25 / 소개 500)과 같다', () => {
+    expect(catchThrown(() => updateVenueContainer('v', { name: 'ㄱ'.repeat(51) }))).toBeInstanceOf(
+      ValidationError
+    );
+    expect(
+      catchThrown(() => updateVenueContainer('v', { contactPhone: '0'.repeat(26) }))
+    ).toBeInstanceOf(ValidationError);
+    expect(
+      catchThrown(() => updateVenueContainer('v', { description: 'ㄱ'.repeat(501) }))
+    ).toBeInstanceOf(ValidationError);
+    expect(mockJobPostingRepo.updateVenueContainer).not.toHaveBeenCalled();
   });
 });

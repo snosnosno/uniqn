@@ -17,6 +17,7 @@ import {
   restoreWorkspaceSchema,
 } from '@/schemas/workspace.schema';
 import { ValidationError, BusinessError, ERROR_CODES, isAppError } from '@/errors';
+import { DEFAULT_WORKSPACE_NAME } from '@/constants/defaultNames';
 import { logger } from '@/utils/logger';
 import type { Workspace, WorkspaceMemberWithUser } from '@/types/workspace';
 import type { WorkspaceInviteCandidate } from '@/repositories';
@@ -88,7 +89,7 @@ export const workspaceService = {
 
     logger.warn('default workspace not found — auto-creating', { ownerId });
     try {
-      await workspaceRepository.create('내 팀');
+      await workspaceRepository.create(DEFAULT_WORKSPACE_NAME);
     } catch (createError) {
       logger.error('default workspace auto-create 실패', {
         ownerId,

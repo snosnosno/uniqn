@@ -50,7 +50,9 @@ import type {
   JobPostingStats,
   JobPostingSubscriptionCallbacks,
   ScheduleBoardSyncAction,
+  UpdateVenueContainerInput,
 } from '../interfaces';
+import type { ScheduleContainerContextInput } from '@/domains/schedule/ScheduleConverter';
 import {
   TABLE,
   DEFAULT_PAGE_SIZE,
@@ -569,6 +571,14 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
 
   async getMyVenueRoleSalaries(ids: string[]): Promise<Map<string, PostingRoleCatalogEntry[]>> {
     return venue.getMyVenueRoleSalaries(ids);
+  }
+
+  async getMyVenueContexts(ids: string[]): Promise<Map<string, ScheduleContainerContextInput>> {
+    return venue.getMyVenueContexts(ids);
+  }
+
+  async updateVenueContainer(containerId: string, input: UpdateVenueContainerInput): Promise<void> {
+    return venue.updateVenueContainer(containerId, input);
   }
 
   async getOrCreateVenueContainer(

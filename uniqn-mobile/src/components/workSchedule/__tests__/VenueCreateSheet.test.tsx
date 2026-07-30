@@ -54,6 +54,9 @@ const FAKE_CONTAINER: VenueContainer = {
   kind: 'dated',
   softTargets: {},
   roleSalaries: [],
+  location: null,
+  contactPhone: null,
+  description: null,
 };
 
 it('이름 입력 후 제출 시 trim 된 이름으로 mutate 호출', () => {

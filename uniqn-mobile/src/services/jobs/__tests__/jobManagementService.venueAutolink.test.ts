@@ -13,6 +13,7 @@
 import type { CreateJobPostingInput, JobPosting, StaffRole } from '@/types';
 import { JOB_POSTING_SCHEMA_VERSION } from '@/types/jobPosting';
 import { createJobPosting } from '@/services/jobs/jobManagementService';
+import { defaultVenueName } from '@/constants/defaultNames';
 
 const mockCreateWithTransaction = jest.fn();
 const mockEnqueueScheduleBoardSync = jest.fn();
@@ -128,7 +129,7 @@ function createPosting(overrides: Partial<JobPosting> = {}): JobPosting {
   };
 }
 
-function venueContainer(id: string, name = '기본 지점') {
+function venueContainer(id: string, name = DEFAULT_VENUE_NAME) {
   return {
     id,
     name,
@@ -144,6 +145,12 @@ function venueContainer(id: string, name = '기본 지점') {
 function passedInput(): CreateJobPostingInput {
   return mockCreateWithTransaction.mock.calls[0][0] as CreateJobPostingInput;
 }
+
+/**
+ * 자동 생성 지점명은 constants/defaultNames SSOT 가 정한다(S1). 여기에 문자열을 다시 적으면
+ * 여섯 번째 포크가 되므로, 서비스가 쓰는 것과 같은 함수에서 받아 쓴다.
+ */
+const DEFAULT_VENUE_NAME = defaultVenueName();
 
 describe('jobManagementService — 비-대회 공고 기본 지점 자동 연결(B4)', () => {
   beforeEach(() => {
@@ -170,7 +177,7 @@ describe('jobManagementService — 비-대회 공고 기본 지점 자동 연결
     await createJobPosting(createInput(), 'employer-1', 'Owner', 'workspace-1');
 
     expect(mockGetOrCreateVenueContainer).toHaveBeenCalledWith('workspace-1', {
-      name: '기본 지점',
+      name: DEFAULT_VENUE_NAME,
       kind: 'dated',
     });
     expect(passedInput().venueId).toBe('venue-new');
@@ -214,7 +221,7 @@ describe('jobManagementService — 비-대회 공고 기본 지점 자동 연결
     );
 
     expect(mockGetOrCreateVenueContainer).toHaveBeenCalledWith('workspace-1', {
-      name: '기본 지점',
+      name: DEFAULT_VENUE_NAME,
       kind: 'dated',
     });
     expect(passedInput().venueId).toBe('venue-new');

@@ -39,8 +39,10 @@ jest.mock('@/components/ui/SheetModal', () => {
 // 저장 경로: 서비스 경계를 목해 (venueId, input) 인자를 검증(실물 훅이 spread 를 담당)
 // (jest.mock 팩토리는 `mock` 접두 변수만 참조 허용)
 const mockSetVenueRoleSalary = jest.fn().mockResolvedValue(undefined);
+const mockUpdateVenueContainer = jest.fn().mockResolvedValue(undefined);
 jest.mock('@/services/workSchedule/gridWriteService', () => ({
   setVenueRoleSalary: (...args: unknown[]) => mockSetVenueRoleSalary(...args),
+  updateVenueContainer: (...args: unknown[]) => mockUpdateVenueContainer(...args),
 }));
 
 // 토스트 안내는 이 테스트 범위 밖 — 스토어 경계에서 목
@@ -63,6 +65,9 @@ const container = {
     { role: 'dealer', salary: { type: 'hourly', amount: 20000 } },
     { role: 'other', customRole: '칩 러너', salary: { type: 'daily', amount: 150000 } },
   ],
+  location: { name: '강남역 2번 출구' },
+  contactPhone: '02-123-4567',
+  description: null,
 };
 
 function renderSheet(ui: React.ReactElement) {
@@ -77,8 +82,76 @@ function renderSheet(ui: React.ReactElement) {
 
 beforeEach(() => {
   mockSetVenueRoleSalary.mockClear();
+  mockUpdateVenueContainer.mockClear();
   mockAddToast.mockClear();
   mockConfirmAction.mockReset();
+});
+
+// S1 — 지점 정보 섹션. 이 값들이 배치된 스태프의 근무 상세에 그대로 보인다.
+describe('지점 정보 섹션(S1)', () => {
+  it('저장된 지점명·장소·연락처로 프리필한다', () => {
+    const { getByDisplayValue } = renderSheet(
+      <VenueSettingsSheet visible onClose={jest.fn()} container={container as never} />
+    );
+    expect(getByDisplayValue('강남점')).toBeTruthy();
+    expect(getByDisplayValue('강남역 2번 출구')).toBeTruthy();
+    expect(getByDisplayValue('02-123-4567')).toBeTruthy();
+  });
+
+  it('바뀐 값이 없으면 저장이 발사되지 않는다(불필요한 쓰기·알림 방지)', async () => {
+    const { getByText } = renderSheet(
+      <VenueSettingsSheet visible onClose={jest.fn()} container={container as never} />
+    );
+    fireEvent.press(getByText('지점 정보 저장'));
+
+    await waitFor(() => expect(mockUpdateVenueContainer).not.toHaveBeenCalled());
+  });
+
+  it('지점명을 고치면 trim 된 값으로 서비스가 호출된다', async () => {
+    const { getByDisplayValue, getByText } = renderSheet(
+      <VenueSettingsSheet visible onClose={jest.fn()} container={container as never} />
+    );
+    fireEvent.changeText(getByDisplayValue('강남점'), '  홀덤펍 강남점  ');
+    fireEvent.press(getByText('지점 정보 저장'));
+
+    await waitFor(() => expect(mockUpdateVenueContainer).toHaveBeenCalledTimes(1));
+    expect(mockUpdateVenueContainer).toHaveBeenCalledWith('v1', {
+      name: '홀덤펍 강남점',
+      location: { name: '강남역 2번 출구' },
+      contactPhone: '02-123-4567',
+    });
+  });
+
+  // 서버 규약상 ''=제거다. 사용자가 칸을 비운 행위가 undefined 로 뭉개지면 조용히 안 지워진다.
+  it('연락처를 비우면 빈 문자열(=제거 신호)로 보낸다', async () => {
+    const { getByDisplayValue, getByText } = renderSheet(
+      <VenueSettingsSheet visible onClose={jest.fn()} container={container as never} />
+    );
+    fireEvent.changeText(getByDisplayValue('02-123-4567'), '');
+    fireEvent.press(getByText('지점 정보 저장'));
+
+    await waitFor(() => expect(mockUpdateVenueContainer).toHaveBeenCalledTimes(1));
+    expect(mockUpdateVenueContainer.mock.calls[0][1].contactPhone).toBe('');
+  });
+
+  it('동명 지점 등 서버 사유는 뭉개지 않고 그대로 안내한다', async () => {
+    mockUpdateVenueContainer.mockRejectedValueOnce(
+      Object.assign(new Error('boom'), {
+        name: 'ValidationError',
+        code: 'E3001',
+        userMessage: '같은 이름의 지점이 이미 있습니다',
+        isAppError: true,
+      })
+    );
+    const { getByDisplayValue, getByText } = renderSheet(
+      <VenueSettingsSheet visible onClose={jest.fn()} container={container as never} />
+    );
+    fireEvent.changeText(getByDisplayValue('강남점'), '홍대점');
+    fireEvent.press(getByText('지점 정보 저장'));
+
+    await waitFor(() => expect(mockAddToast).toHaveBeenCalled());
+    expect(mockAddToast.mock.calls.at(-1)?.[0].message).toContain('지점');
+  });
 });
 
 it('등록된 역할 행을 라벨+단가로 렌더한다', () => {

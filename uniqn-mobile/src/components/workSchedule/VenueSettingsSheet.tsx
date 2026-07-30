@@ -1,9 +1,18 @@
 /**
- * VenueSettingsSheet — 지점 역할별 단가표 관리 시트 (JIT 급여 설계 §C, 보조 진입점)
+ * VenueSettingsSheet — 지점 설정 시트 (지점 정보 + 역할별 단가표)
  *
- * 주 입력은 배치 시 JIT(AddSlotSheet) — 이 시트는 일괄 조회·수정(시급 인상 등)·삭제용.
+ * v1 은 단가표 전용이었다(설계 §C 범위 컷). 그 결과 지점 이름·장소·연락처를 고칠 수단이
+ * 어디에도 없었고, 배치된 스태프는 상세 화면에서 '이벤트 / 장소 : -' 를 봤다. S1 에서
+ * 지점 정보 섹션을 얹어 그 경로를 뚫는다.
+ *
+ * 단가표: 주 입력은 배치 시 JIT(AddSlotSheet) — 여기는 일괄 조회·수정(시급 인상 등)·삭제용.
  * 행 편집/역할 추가 폼은 RoleSalaryField 재사용. 저장은 useSetVenueRoleSalary 단일 경로.
- * v1 범위: 단가표만(지점 이름 변경 등 기타 설정 제외 — 설계 §C 범위 컷).
+ *
+ * ⚠️ 의도적으로 넣지 않은 것 두 가지:
+ *  - **기본 근무시간** — 시간은 지점 설정이 아니라 배치·공고 작성 때마다 명시 입력한다
+ *    (사용자 결정 4). 기본값이 있으면 색상만 고치려던 사용자가 8시간 근무를 확정시킨다.
+ *  - **주소 자유 텍스트** — 주소는 검색 컴포넌트가 붙은 뒤 얹는다. 자유 입력으로 받으면
+ *    길찾기가 그 문자열로 검색돼 엉뚱한 곳을 안내한다. 지금은 장소명·연락처만 받는다.
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -14,9 +23,10 @@ import { TrashIcon } from '@/components/icons';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { RoleChips } from '@/components/staffPicker';
 import { getRoleDisplayName } from '@/types/unified';
-import { useSetVenueRoleSalary } from '@/hooks/workSchedule';
+import { useSetVenueRoleSalary, useUpdateVenueContainer } from '@/hooks/workSchedule';
 import { useToastStore } from '@/stores/toastStore';
 import { confirmAction } from '@/utils/confirmAction';
+import { isAppError } from '@/errors';
 import type { VenueContainer } from '@/domains/workSchedule';
 import type { PostingRoleCatalogEntry } from '@/types';
 import { RoleSalaryField, defaultVenueSalaryDraft, type VenueSalaryDraft } from './RoleSalaryField';
@@ -40,7 +50,13 @@ export interface VenueSettingsSheetProps {
 export function VenueSettingsSheet({ visible, onClose, container }: VenueSettingsSheetProps) {
   const { addToast } = useToastStore();
   const mutation = useSetVenueRoleSalary();
+  const profileMutation = useUpdateVenueContainer();
   const entries = container?.roleSalaries ?? [];
+
+  // 지점 정보 폼 — 저장된 값으로 프리필하고, 시트를 다시 열거나 지점을 바꾸면 되돌린다.
+  const [name, setName] = useState('');
+  const [placeName, setPlaceName] = useState('');
+  const [phone, setPhone] = useState('');
 
   // 편집 중인 행 키 / 추가 폼 상태
   const [editingKey, setEditingKey] = useState<string | null>(null);
@@ -64,7 +80,50 @@ export function VenueSettingsSheet({ visible, onClose, container }: VenueSetting
     setEditingKey(null);
     setEditDraft(null);
     resetAddForm();
-  }, [visible, container?.id, resetAddForm]);
+    setName(container?.name ?? '');
+    setPlaceName(container?.location?.name ?? '');
+    setPhone(container?.contactPhone ?? '');
+  }, [
+    visible,
+    container?.id,
+    container?.name,
+    container?.location?.name,
+    container?.contactPhone,
+    resetAddForm,
+  ]);
+
+  // 지점 정보 저장. 서버 규약상 undefined=미변경 / 빈 문자열=제거이므로, 사용자가 비운 칸은
+  // undefined 로 뭉개지 말고 '' 를 그대로 보내야 실제로 지워진다.
+  const saveProfile = useCallback(async () => {
+    if (!container) return;
+    const trimmedName = name.trim();
+    if (trimmedName.length === 0) {
+      addToast({ type: 'error', message: '지점명을 입력해주세요' });
+      return;
+    }
+    try {
+      await profileMutation.mutateAsync({
+        containerId: container.id,
+        name: trimmedName,
+        location: { name: placeName.trim() },
+        contactPhone: phone.trim(),
+      });
+      addToast({ type: 'success', message: '지점 정보를 저장했어요' });
+    } catch (err) {
+      // 동명 지점(23505)·검증 실패는 서버가 한글 사유를 준다 — 뭉개면 사용자가 원인을 못 안다.
+      const message =
+        isAppError(err) && err.userMessage
+          ? err.userMessage
+          : '지점 정보 저장에 실패했어요. 잠시 후 다시 시도해주세요.';
+      addToast({ type: 'error', message });
+    }
+  }, [container, name, placeName, phone, profileMutation, addToast]);
+
+  const profileDirty =
+    !!container &&
+    (name.trim() !== container.name ||
+      placeName.trim() !== (container.location?.name ?? '') ||
+      phone.trim() !== (container.contactPhone ?? ''));
 
   const save = useCallback(
     async (role: string, customRole: string | undefined, salary: VenueSalaryDraft | null) => {
@@ -104,10 +163,53 @@ export function VenueSettingsSheet({ visible, onClose, container }: VenueSetting
     <SheetModal
       visible={visible}
       onClose={onClose}
-      title="역할별 단가"
-      isLoading={mutation.isPending}
+      title="지점 설정"
+      isLoading={mutation.isPending || profileMutation.isPending}
     >
       <View className="gap-3 p-5">
+        {/* 지점 정보 — 이 값들이 배치된 스태프의 스케줄 상세에 그대로 보인다 */}
+        <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
+          지점 정보
+        </Text>
+        <Text className="text-sm text-content-secondary font-sans">
+          여기 적은 지점명·장소·연락처가 배치된 스태프의 근무 상세에 보여요.
+        </Text>
+        <Input
+          label="지점명"
+          value={name}
+          onChangeText={setName}
+          placeholder="예: 홀덤펍 강남점"
+          maxLength={50}
+        />
+        <Input
+          label="장소"
+          value={placeName}
+          onChangeText={setPlaceName}
+          placeholder="예: 강남역 2번 출구 앞"
+          maxLength={100}
+        />
+        <Input
+          label="연락처"
+          value={phone}
+          onChangeText={setPhone}
+          placeholder="예: 02-123-4567"
+          keyboardType="phone-pad"
+          maxLength={25}
+        />
+        <Button
+          variant="primary"
+          disabled={!profileDirty || profileMutation.isPending}
+          onPress={saveProfile}
+          fullWidth
+        >
+          지점 정보 저장
+        </Button>
+
+        <View className="mt-2 border-t border-secondary-200 pt-4 dark:border-surface-overlay">
+          <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
+            역할별 단가
+          </Text>
+        </View>
         <Text className="text-sm text-content-secondary font-sans">
           처음 쓰는 역할은 배치 시 자동으로 여쭤봐요. 여기서는 한 번에 확인·수정할 수 있어요.
         </Text>

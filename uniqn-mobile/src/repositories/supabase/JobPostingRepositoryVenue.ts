@@ -19,10 +19,13 @@ import { STATUS } from '@/constants';
 import {
   parseVenueContainer,
   parseVenueContainers,
+  parseVenueContainerLocation,
   VENUE_CONTAINER_COLUMNS,
   type VenueContainer,
 } from '@/domains/workSchedule';
+import type { ScheduleContainerContextInput } from '@/domains/schedule/ScheduleConverter';
 import type { PostingRoleCatalogEntry, SalaryType } from '@/types';
+import type { UpdateVenueContainerInput } from '../interfaces/IJobPostingRepository';
 import { TABLE, rethrowOrHandle } from './JobPostingRepositoryHelpers';
 
 const SALARY_TYPES: readonly SalaryType[] = ['hourly', 'daily', 'monthly', 'other'];
@@ -113,6 +116,78 @@ export async function getMyVenueRoleSalaries(
     return result;
   } catch (error) {
     rethrowOrHandle(error, '지점 역할 단가 배치 조회', { count: ids.length });
+  }
+}
+
+/** get_my_venue_contexts RPC 한 행(snake_case). location 은 jsonb 원문. */
+interface MyVenueContextRow {
+  job_posting_id: string;
+  title: string | null;
+  location: unknown;
+  contact_phone: string | null;
+  description: string | null;
+  owner_name: string | null;
+}
+
+/**
+ * staff 본인이 배치된 지점 컨테이너들의 표시 정보를 배치 조회한다(S1).
+ *
+ * getMyVenueRoleSalaries 와 나란히 쓰지만 다른 RPC 다 — 그쪽은 CROSS JOIN LATERAL 이라
+ * 단가표가 비면 행이 0개라서, 단가를 아직 안 정한 신규 지점은 이름·장소도 못 받는다.
+ * 이 RPC 는 지점당 1행을 보장한다. 조회 실패는 상위(scheduleService)가 폴백 처리.
+ */
+export async function getMyVenueContexts(
+  ids: string[]
+): Promise<Map<string, ScheduleContainerContextInput>> {
+  const result = new Map<string, ScheduleContainerContextInput>();
+  if (ids.length === 0) return result;
+  try {
+    const { data, error } = await supabase.rpc('get_my_venue_contexts', { p_ids: ids });
+    if (error) {
+      handleSupabaseError(error, { operation: '지점 표시 정보 배치 조회', table: TABLE });
+    }
+    for (const row of (data ?? []) as MyVenueContextRow[]) {
+      if (!row?.job_posting_id) continue;
+      result.set(row.job_posting_id, {
+        title: row.title,
+        location: parseVenueContainerLocation(row.location),
+        contactPhone: row.contact_phone,
+        description: row.description,
+        ownerName: row.owner_name,
+      });
+    }
+    return result;
+  } catch (error) {
+    rethrowOrHandle(error, '지점 표시 정보 배치 조회', { count: ids.length });
+  }
+}
+
+/**
+ * 지점 컨테이너 프로필 수정. 컨테이너는 RESTRICTIVE 정책으로 직접 UPDATE 가 막혀 있어
+ * SECDEF RPC 가 유일 경로다. 부분 갱신 — undefined 필드는 NULL 로 보내 "미변경"을 뜻하고,
+ * 빈 문자열은 그대로 보내 "제거"를 뜻한다(서버 규약과 동일).
+ */
+export async function updateVenueContainer(
+  containerId: string,
+  input: UpdateVenueContainerInput
+): Promise<void> {
+  try {
+    logger.info('지점 프로필 수정', {
+      containerId,
+      fields: Object.keys(input).filter(
+        (k) => input[k as keyof UpdateVenueContainerInput] !== undefined
+      ),
+    });
+    const { error } = await supabase.rpc('update_venue_container', {
+      p_container_id: containerId,
+      p_name: input.name ?? null,
+      p_location: input.location ?? null,
+      p_contact_phone: input.contactPhone ?? null,
+      p_description: input.description ?? null,
+    });
+    if (error) handleSupabaseError(error, { operation: '지점 프로필 수정', table: TABLE });
+  } catch (error) {
+    rethrowOrHandle(error, '지점 프로필 수정', { containerId });
   }
 }
 

@@ -7,6 +7,7 @@ export { useVenueContainers } from './useVenueContainers';
 export { useVenueContainer } from './useVenueContainer';
 export { useSetVenueSoftTarget, type SetVenueSoftTargetVars } from './useSetVenueSoftTarget';
 export { useSetVenueRoleSalary, type SetVenueRoleSalaryVars } from './useSetVenueRoleSalary';
+export { useUpdateVenueContainer, type UpdateVenueContainerVars } from './useUpdateVenueContainer';
 export { useUpdateSlot, type UpdateSlotVars } from './useUpdateSlot';
 export { useDeleteSlot } from './useDeleteSlot';
 export { useCreateVenueContainer } from './useCreateVenueContainer';
