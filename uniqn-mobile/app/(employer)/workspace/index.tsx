@@ -14,6 +14,7 @@ import { router } from 'expo-router';
 import { StackHeader } from '@/components/headers';
 import { Avatar, Badge, Button, EmptyState, ErrorState, Input } from '@/components/ui';
 import { useAuthStore } from '@/stores/authStore';
+import { DEFAULT_WORKSPACE_NAME } from '@/constants/defaultNames';
 import { useToastStore } from '@/stores/toastStore';
 import { useModalStore } from '@/stores/modalStore';
 import {
@@ -122,14 +123,16 @@ export default function WorkspaceSettingsScreen() {
 
   const handleCreateFirstWorkspace = useCallback(async () => {
     try {
-      const created = await createMutation.mutateAsync(`${user?.displayName ?? '내'} 팀`);
+      // 기본 팀명은 SSOT 상수 고정 — 여기만 `${displayName} 팀` 이라 세 경로가 갈라져 있었다.
+      // 후속 일괄 rename 마이그가 "사용자가 손대지 않은 기본값"을 이 문자열로 판별한다.
+      const created = await createMutation.mutateAsync(DEFAULT_WORKSPACE_NAME);
       addToast({ type: 'success', message: '팀이 생성되었어요' });
       logger.info('첫 워크스페이스 생성', { workspaceId: created.id });
     } catch (err) {
       const message = isAppError(err) && err.userMessage ? err.userMessage : '팀 생성에 실패했어요';
       addToast({ type: 'error', message });
     }
-  }, [createMutation, user?.displayName, addToast]);
+  }, [createMutation, addToast]);
 
   if (isLoading) {
     return (

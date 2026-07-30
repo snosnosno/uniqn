@@ -4,6 +4,7 @@ import { jobPostingRepository } from '@/repositories';
 import { requireCurrentUser } from '@/services/auth/authCoreService';
 import { workspaceService } from '@/services/workspace';
 import { BusinessError, PermissionError, ERROR_CODES } from '@/errors';
+import { defaultVenueName } from '@/constants/defaultNames';
 import type { TaxSettings } from '@/utils/settlement';
 import type {
   CreateJobPostingResult,
@@ -82,8 +83,12 @@ async function resolveWorkspaceId(ownerId: string, requestedWorkspaceId?: string
   return requestedWorkspaceId;
 }
 
-/** 지점 0개 워크스페이스에 자동 생성할 기본 운영처명(코스메틱 — 그리드 useEnsureDefaultVenue 와 카운트검사로 수렴). */
-const DEFAULT_VENUE_NAME = '기본 지점';
+/**
+ * 지점 0개 워크스페이스에 자동 생성할 기본 운영처명(코스메틱 — 그리드 useEnsureDefaultVenue 와
+ * 카운트검사로 수렴). 이 경로는 서버 성격이라 닉네임을 모르므로 폴백('내 지점')을 받는다.
+ * 상수를 따로 두지 않는 이유는 그게 다섯 번째 기본명 포크였기 때문이다(S1, defaultNames SSOT).
+ */
+const DEFAULT_VENUE_NAME = defaultVenueName();
 
 /**
  * 공고를 담을 기본 지점(venue 컨테이너)을 정한다.

@@ -61,20 +61,47 @@ export function createSchedulePostingContext(posting: JobPosting): SchedulePosti
 }
 
 /**
- * 지점 컨테이너(근무표 직접배치) → 스케줄 정산 컨텍스트.
+ * 지점 컨테이너 표시 정보 — `get_my_venue_contexts` RPC 한 행의 클라 투영.
+ * 필드 구성은 일반 공고 경로(createSchedulePostingContext)와 의도적으로 대칭이다.
+ */
+export interface ScheduleContainerContextInput {
+  title?: string | null;
+  location?: {
+    name?: string;
+    district?: string;
+    detailedAddress?: string;
+  } | null;
+  contactPhone?: string | null;
+  description?: string | null;
+  ownerName?: string | null;
+}
+
+/**
+ * 지점 컨테이너(근무표 직접배치) → 스케줄 컨텍스트.
  *
  * 컨테이너 직속 work_log(job_posting_id = venueId, status='container')는 일반 공고 조회에서
  * 의도적으로 제외(fail-closed)되므로, staff "내 스케줄" 경로가 이 컨텍스트를 못 얻어 급여가
  * 항상 기본 단가(15,000원)로 폴백되던 버그(#6)를 복구한다. employer settlementVenueQuery 가
  * 쓰는 "컨테이너 2차 해소(roleSalaries 주입)"와 동일 규약 — role 매칭 시 지점 단가표가 적용된다.
+ *
+ * 2026-07-31(S1): 두 번째 인자를 title 문자열에서 컨텍스트 객체로 확장했다. 이전에는 호출부
+ * 두 곳이 title 을 아예 안 넘겨 지점명이 항상 '이벤트' 였고 `location: ''` 이 하드코딩돼
+ * 상세 모달이 "장소 : -" 를 보여줬다. 매핑 규칙은 일반 공고 경로와 동일하게 맞춘다 —
+ * 소비처(InfoTab·NextShiftCard)가 두 경로를 구분하지 않기 때문이다.
  */
 export function createScheduleContainerContext(
   roleSalaries: PostingRoleCatalogEntry[],
-  title?: string
+  context?: ScheduleContainerContextInput
 ): SchedulePostingContext {
+  const location = context?.location ?? undefined;
   return {
-    title: title || '이벤트',
-    location: '',
+    title: context?.title || '이벤트',
+    location: location?.name || '',
+    ...(location?.detailedAddress ? { detailedAddress: location.detailedAddress } : {}),
+    ...(location?.district ? { locationAddress: location.district } : {}),
+    ...(context?.contactPhone ? { contactPhone: context.contactPhone } : {}),
+    ...(context?.ownerName ? { ownerName: context.ownerName } : {}),
+    ...(context?.description ? { description: context.description } : {}),
     settlement: {
       roles: roleSalaries.map((entry) => ({
         role: entry.role,

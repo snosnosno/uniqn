@@ -483,3 +483,4 @@ export {
 // ============================================================================
 
 export type { SetVenueRoleSalaryInput } from './interfaces/IWorkScheduleRepository';
+export type { UpdateVenueContainerInput } from './interfaces/IJobPostingRepository';

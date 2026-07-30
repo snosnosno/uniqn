@@ -25,8 +25,10 @@ export { GRID_BADGE_META, GRID_BADGE_ORDER, type GridBadgeMeta } from './gridBad
 export {
   parseVenueContainer,
   parseVenueContainers,
+  parseVenueContainerLocation,
   VENUE_CONTAINER_COLUMNS,
   type VenueContainer,
+  type VenueContainerLocation,
 } from './venueContainer';
 
 export { getRoleSalaries, findRoleSalary, hasRoleSalary } from './roleSalaries';

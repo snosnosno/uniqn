@@ -28,6 +28,7 @@ export type {
   JobPostingStats,
   JobPostingSubscriptionCallbacks,
   ScheduleBoardSyncAction,
+  UpdateVenueContainerInput,
 } from './IJobPostingRepository';
 
 // WorkLog Repository

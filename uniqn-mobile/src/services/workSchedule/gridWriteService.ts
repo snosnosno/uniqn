@@ -12,6 +12,7 @@ import {
   jobPostingRepository,
   type UpdateSlotInput,
   type SetVenueRoleSalaryInput,
+  type UpdateVenueContainerInput,
 } from '@/repositories';
 import { cancelConfirmedStaffConfirmation } from '@/services/work/confirmedStaffService';
 import { ValidationError, ERROR_CODES } from '@/errors';
@@ -76,4 +77,61 @@ export function deleteSlot(input: DeleteConfirmedStaffInput): Promise<void> {
  */
 export function createVenueContainer(workspaceId: string, name: string): Promise<VenueContainer> {
   return jobPostingRepository.getOrCreateVenueContainer(workspaceId, { name, kind: 'dated' });
+}
+
+/** 지점 프로필 각 필드의 길이 상한 — RPC 서버 규약과 동일하게 맞춘다(클라를 서버보다 엄히 두지 않음). */
+const MAX_VENUE_NAME_LENGTH = 50;
+const MAX_VENUE_PHONE_LENGTH = 25;
+const MAX_VENUE_DESCRIPTION_LENGTH = 500;
+const MAX_VENUE_PLACE_NAME_LENGTH = 100;
+
+/** 자유입력 텍스트의 XSS·길이 선차단(RPC 미도달 fail-closed). setVenueRoleSalary 관용구 재사용. */
+function assertVenueText(value: string, field: string, max: number, label: string): void {
+  if (value.length > max) {
+    throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+      field,
+      userMessage: `${label}은(는) ${max}자를 초과할 수 없습니다.`,
+    });
+  }
+  if (value.length > 0 && !xssValidation(value)) {
+    throw new ValidationError(ERROR_CODES.SECURITY_XSS_DETECTED, {
+      category: 'security',
+      severity: 'medium',
+      userMessage: `${label}에 허용되지 않는 문자가 포함되어 있습니다`,
+    });
+  }
+}
+
+/**
+ * 지점 프로필(이름·장소명·연락처·소개) 수정. 권한 게이트·23505 변환은 RPC 경계가 담당하고,
+ * 자유입력의 XSS·길이만 여기서 선차단한다.
+ *
+ * ⚠️ 부분 갱신 의미론을 여기서 훼손하지 말 것 — undefined 는 "미변경", 빈 문자열은 "제거"다.
+ *   이 프로젝트의 관용구인 null→undefined 정규화를 적용하면 사용자가 필드를 비운 행위가
+ *   조용히 "안 바꿈"이 된다(에러 0으로 실패한다).
+ */
+export function updateVenueContainer(
+  containerId: string,
+  input: UpdateVenueContainerInput
+): Promise<void> {
+  if (input.name !== undefined) {
+    const trimmed = input.name.trim();
+    if (trimmed.length === 0) {
+      throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+        field: 'name',
+        userMessage: '지점명을 입력해주세요.',
+      });
+    }
+    assertVenueText(input.name, 'name', MAX_VENUE_NAME_LENGTH, '지점명');
+  }
+  if (input.contactPhone !== undefined) {
+    assertVenueText(input.contactPhone, 'contactPhone', MAX_VENUE_PHONE_LENGTH, '연락처');
+  }
+  if (input.description !== undefined) {
+    assertVenueText(input.description, 'description', MAX_VENUE_DESCRIPTION_LENGTH, '지점 소개');
+  }
+  if (input.location?.name !== undefined) {
+    assertVenueText(input.location.name, 'location', MAX_VENUE_PLACE_NAME_LENGTH, '장소명');
+  }
+  return jobPostingRepository.updateVenueContainer(containerId, input);
 }
