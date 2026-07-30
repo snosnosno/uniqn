@@ -19,10 +19,26 @@ import { deriveOvernightPreview } from '@/shared/time';
 // ============================================================================
 
 /**
- * 슬롯 색상 토큰. tailwind.config.js Midnight Craft 팔레트의 부분집합만 허용.
+ * 슬롯 색상 토큰(현행 팔레트 — 피커에 보이는 4종).
+ *
  * work_logs.color 에는 hex 가 아닌 이 토큰 식별자를 저장한다(렌더 className 은 칩 메타에서 정적 매핑).
+ *
+ * 예전 팔레트는 15종이었지만 실제로는 골드 4단계·회색 7단계가 서로 구분되지 않아
+ * "구분되는 색"은 사실상 4개였다. 게다가 success/warning/error/info 를 배치색으로 쓰면
+ * 같은 그리드의 상태 배지와 색조가 겹쳐 "조 구분"이 "출근 완료"로 오독된다.
+ * 그래서 상태가 점유하지 않은 색조 4종(tailwind `slot.*`)만 남겼다.
  */
-export const SLOT_COLOR_TOKENS = [
+export const SLOT_COLOR_TOKENS = ['slot-teal', 'slot-sky', 'slot-violet', 'slot-pink'] as const;
+
+/**
+ * 퇴역한 옛 팔레트 토큰.
+ *
+ * ⚠️ 지우면 안 된다. 이미 저장된 슬롯의 `work_logs.color` 가 이 값들이고, 화이트리스트에서
+ * 빠지는 순간 ①`slotColorSwatchClassName` 이 null 을 돌려줘 카드에서 **색이 조용히 사라지고**
+ * ②그 슬롯을 저장할 때 `assertSlotColor` 가 ValidationError 로 막는다.
+ * 읽기·쓰기 모두 계속 통과시키되, 피커에는 노출하지 않는다.
+ */
+export const LEGACY_SLOT_COLOR_TOKENS = [
   'primary-300',
   'primary-500',
   'primary-600',
@@ -40,9 +56,17 @@ export const SLOT_COLOR_TOKENS = [
   'info',
 ] as const;
 
+/** 피커에서 고를 수 있는 현행 토큰. */
 export type SlotColorToken = (typeof SLOT_COLOR_TOKENS)[number];
+/** 퇴역했지만 DB 에 남아 있는 토큰. */
+export type LegacySlotColorToken = (typeof LEGACY_SLOT_COLOR_TOKENS)[number];
+/** 저장·렌더가 받아들이는 모든 토큰(현행 + 레거시). */
+export type StoredSlotColorToken = SlotColorToken | LegacySlotColorToken;
 
-const SLOT_COLOR_SET: ReadonlySet<string> = new Set(SLOT_COLOR_TOKENS);
+const SLOT_COLOR_SET: ReadonlySet<string> = new Set<string>([
+  ...SLOT_COLOR_TOKENS,
+  ...LEGACY_SLOT_COLOR_TOKENS,
+]);
 
 /** 색상 칩 메타(라벨 + 정적 className). NativeWind dark: 유실 방지를 위해 리터럴 문자열만 사용. */
 export interface SlotColorChip {
@@ -53,31 +77,55 @@ export interface SlotColorChip {
 }
 
 export const SLOT_COLOR_CHIPS: readonly SlotColorChip[] = [
-  { token: 'primary-300', label: '골드 라이트', swatchClassName: 'bg-primary-300' },
-  { token: 'primary-500', label: '골드', swatchClassName: 'bg-primary-500' },
-  { token: 'primary-600', label: '골드 딥', swatchClassName: 'bg-primary-600' },
-  { token: 'primary-700', label: '골드 다크', swatchClassName: 'bg-primary-700' },
-  { token: 'surface-elevated', label: '그레이', swatchClassName: 'bg-surface-elevated' },
-  { token: 'surface-overlay', label: '그레이 딥', swatchClassName: 'bg-surface-overlay' },
-  { token: 'surface-hover', label: '그레이 라이트', swatchClassName: 'bg-surface-hover' },
-  { token: 'secondary-50', label: '뉴트럴 50', swatchClassName: 'bg-secondary-50' },
-  { token: 'secondary-100', label: '뉴트럴 100', swatchClassName: 'bg-secondary-100' },
-  { token: 'secondary-200', label: '뉴트럴 200', swatchClassName: 'bg-secondary-200' },
-  { token: 'secondary-900', label: '뉴트럴 900', swatchClassName: 'bg-secondary-900' },
-  { token: 'success', label: '성공', swatchClassName: 'bg-success-500 dark:bg-success-400' },
-  { token: 'warning', label: '경고', swatchClassName: 'bg-warning-500 dark:bg-warning-400' },
-  { token: 'error', label: '에러', swatchClassName: 'bg-error-500 dark:bg-error-400' },
-  { token: 'info', label: '정보', swatchClassName: 'bg-info-500 dark:bg-info-400' },
+  { token: 'slot-teal', label: '청록', swatchClassName: 'bg-slot-teal-500 dark:bg-slot-teal-400' },
+  { token: 'slot-sky', label: '하늘', swatchClassName: 'bg-slot-sky-500 dark:bg-slot-sky-400' },
+  {
+    token: 'slot-violet',
+    label: '보라',
+    swatchClassName: 'bg-slot-violet-500 dark:bg-slot-violet-400',
+  },
+  { token: 'slot-pink', label: '자홍', swatchClassName: 'bg-slot-pink-500 dark:bg-slot-pink-400' },
 ];
 
-/** 화이트리스트 색상 토큰 여부(자유 hex/미등록 값은 false). */
-export function isValidSlotColor(value: unknown): value is SlotColorToken {
+/**
+ * 퇴역 토큰의 스와치 className.
+ *
+ * 피커에는 안 보이지만 **렌더에는 계속 쓰인다** — 이 표가 없으면 옛 색으로 저장된 슬롯이
+ * 색을 잃는다. NativeWind 는 빌드 시점에 소스의 리터럴만 보므로 여기 문자열을 그대로 남겨
+ * 클래스가 purge 되지 않게 한다(템플릿 조합 금지).
+ */
+const LEGACY_SLOT_COLOR_SWATCHES: Readonly<Record<LegacySlotColorToken, string>> = {
+  'primary-300': 'bg-primary-300',
+  'primary-500': 'bg-primary-500',
+  'primary-600': 'bg-primary-600',
+  'primary-700': 'bg-primary-700',
+  'surface-elevated': 'bg-surface-elevated',
+  'surface-overlay': 'bg-surface-overlay',
+  'surface-hover': 'bg-surface-hover',
+  'secondary-50': 'bg-secondary-50',
+  'secondary-100': 'bg-secondary-100',
+  'secondary-200': 'bg-secondary-200',
+  'secondary-900': 'bg-secondary-900',
+  success: 'bg-success-500 dark:bg-success-400',
+  warning: 'bg-warning-500 dark:bg-warning-400',
+  error: 'bg-error-500 dark:bg-error-400',
+  info: 'bg-info-500 dark:bg-info-400',
+};
+
+/** 화이트리스트 색상 토큰 여부(현행+레거시 통과, 자유 hex/미등록 값은 false). */
+export function isValidSlotColor(value: unknown): value is StoredSlotColorToken {
   return typeof value === 'string' && SLOT_COLOR_SET.has(value);
 }
 
-const SLOT_COLOR_SWATCH_BY_TOKEN: ReadonlyMap<string, string> = new Map(
-  SLOT_COLOR_CHIPS.map((chip) => [chip.token, chip.swatchClassName])
-);
+/** 피커에 현재 보이는 색인가(레거시 색이면 false — 시트가 별도 칩으로 보여준다). */
+export function isCurrentSlotColor(value: unknown): value is SlotColorToken {
+  return typeof value === 'string' && SLOT_COLOR_CHIPS.some((chip) => chip.token === value);
+}
+
+const SLOT_COLOR_SWATCH_BY_TOKEN: ReadonlyMap<string, string> = new Map<string, string>([
+  ...SLOT_COLOR_CHIPS.map((chip) => [chip.token, chip.swatchClassName] as const),
+  ...Object.entries(LEGACY_SLOT_COLOR_SWATCHES),
+]);
 
 /**
  * 색상 토큰 → 정적 배경 className(스태프 카드 색상 태그 렌더용, #4).
@@ -88,8 +136,11 @@ export function slotColorSwatchClassName(token: string | null | undefined): stri
   return SLOT_COLOR_SWATCH_BY_TOKEN.get(token) ?? null;
 }
 
-/** 색상 토큰 검증(쓰기 경계). 화이트리스트 외(자유 hex 등)면 ValidationError. */
-export function assertSlotColor(value: string): SlotColorToken {
+/**
+ * 색상 토큰 검증(쓰기 경계). 화이트리스트 외(자유 hex 등)면 ValidationError.
+ * 레거시 토큰도 통과시킨다 — 옛 색 슬롯의 메모·시간만 고치려는 저장을 막으면 안 된다.
+ */
+export function assertSlotColor(value: string): StoredSlotColorToken {
   if (!isValidSlotColor(value)) {
     throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
       field: 'color',
