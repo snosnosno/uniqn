@@ -261,6 +261,7 @@ function createGroupedScheduleEvent(events: ScheduleEvent[]): GroupedScheduleEve
     jobPostingName: firstEvent.jobPostingName,
     location: firstEvent.location,
     detailedAddress: firstEvent.detailedAddress,
+    locationAddress: firstEvent.locationAddress,
     dateRange: {
       start: dates[0],
       end: dates[dates.length - 1],

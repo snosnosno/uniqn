@@ -109,6 +109,10 @@ jest.mock('expo-router', () => ({
 jest.mock('react-native-worklets', () => require('react-native-worklets/lib/module/mock'));
 require('react-native-reanimated').setUpTests();
 
+// react-native-gesture-handler: 네이티브 모듈 의존이라 jest 에서 직접 로드하면 터진다.
+// 라이브러리가 공식 제공하는 setup 을 쓴다(시트 드래그 닫기 도입, Modal.tsx).
+require('react-native-gesture-handler/jestSetup');
+
 // react-native-keyboard-controller: 네이티브 TurboModule 의존이라 jest 환경에서 직접 로드 불가.
 // 라이브러리가 공식 제공하는 목(View/ScrollView로 대체 렌더)을 사용한다.
 // 개별 파일에서 자체 jest.mock 을 두면 그 파일 목이 우선한다.

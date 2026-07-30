@@ -1,4 +1,34 @@
-import { buildMapSearchUrls } from '@/utils/mapLink';
+import { buildMapSearchUrls, resolveMapQuery } from '@/utils/mapLink';
+
+describe('resolveMapQuery', () => {
+  it('상세주소가 있으면 그것을 검색어로 쓴다 — 정확도가 가장 높다', () => {
+    expect(
+      resolveMapQuery({ placeName: '라운더스', detailedAddress: '서울 강남구 테헤란로 123' })
+    ).toBe('서울 강남구 테헤란로 123');
+  });
+
+  it('상세주소가 없으면 공고에 입력된 주소를 쓴다', () => {
+    expect(resolveMapQuery({ placeName: '라운더스', address: '서울 강남구 역삼동 123-4' })).toBe(
+      '서울 강남구 역삼동 123-4'
+    );
+  });
+
+  it('주소가 전혀 없고 장소명이 주소 꼴이 아니면 검색하지 않는다', () => {
+    // '홈' 을 지도에 던지면 전혀 다른 곳으로 안내한다(실사고) — 아무 데도 안내하지 않는 게 낫다.
+    expect(resolveMapQuery({ placeName: '홈' })).toBeNull();
+    expect(resolveMapQuery({ placeName: '홈게임' })).toBeNull();
+    expect(resolveMapQuery({})).toBeNull();
+  });
+
+  it('장소명 자체가 주소 꼴이면 그것으로 검색한다', () => {
+    expect(resolveMapQuery({ placeName: '서울 강남구 테헤란로 1' })).toBe('서울 강남구 테헤란로 1');
+    expect(resolveMapQuery({ placeName: '강남구' })).toBe('강남구');
+  });
+
+  it('공백뿐인 값은 없는 것으로 본다', () => {
+    expect(resolveMapQuery({ placeName: '홈', detailedAddress: '   ', address: '  ' })).toBeNull();
+  });
+});
 
 describe('buildMapSearchUrls', () => {
   it('빈 주소면 후보가 없다', () => {
