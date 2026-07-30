@@ -138,7 +138,7 @@ schedule.ts, user.ts
 ### 환경 변수 (`.env.local`)
 
 ```
-EXPO_PUBLIC_FIREBASE_API_KEY=AIzaSyDiwCKWr83N1NRy5NwA1WLc5bRD73VaqRo
+EXPO_PUBLIC_FIREBASE_API_KEY=<redacted — 폐기된 Firebase 웹 키>
 EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=tholdem-ebc18.firebaseapp.com
 EXPO_PUBLIC_FIREBASE_PROJECT_ID=tholdem-ebc18
 EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=tholdem-ebc18.firebasestorage.app

@@ -1,0 +1,51 @@
+# Dependabot 설정
+#
+# 목적: 취약 의존성 자동 알림 + 보안 패치 PR. 기능 업데이트 PR 노이즈는 억제한다.
+#
+# ⚠️ ignore 규칙은 버전 업데이트와 보안 업데이트에 **모두** 적용된다.
+#    아래 핀 고정 패키지는 Dependabot 이 절대 건드리면 안 되는 것들이므로 의도적으로 전면 차단한다.
+
+version: 2
+
+updates:
+  # ── 앱 의존성 ─────────────────────────────────────────────
+  - package-ecosystem: npm
+    directory: /uniqn-mobile
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Asia/Seoul
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: 'chore(deps)'
+    ignore:
+      # 🚨 정확 핀 유지 필수 — react-native-mmkv 의 peer 가 "*" 라 npm 이 nitro 버전을 못 잡는다.
+      #    캐럿으로 드리프트하면 Android Kotlin 컴파일이 깨진다. Dependabot 도 예외 없음.
+      - dependency-name: react-native-mmkv
+      - dependency-name: react-native-nitro-modules
+
+      # Expo SDK / RN / React 메이저는 SDK 업그레이드 작업으로 묶어서 처리한다.
+      # 개별 PR 로 올라오면 반드시 red 이므로 메이저만 차단(마이너·패치는 허용).
+      - dependency-name: expo
+        update-types: ['version-update:semver-major']
+      - dependency-name: react-native
+        update-types: ['version-update:semver-major']
+      - dependency-name: react
+        update-types: ['version-update:semver-major']
+      - dependency-name: react-dom
+        update-types: ['version-update:semver-major']
+
+  # ── GitHub Actions ────────────────────────────────────────
+  # 서드파티 액션이 태그 이동으로 탈취되면 PROD_DB_URL·SUPABASE_ACCESS_TOKEN 이 노출된다.
+  # 업데이트 추적으로 최소한 가시성을 확보한다(SHA 핀 전환은 별건).
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Asia/Seoul
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: 'ci(deps)'
