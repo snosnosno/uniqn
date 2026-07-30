@@ -5,7 +5,7 @@
  * @version 3.0.0 - 웹 호환성 추가
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -19,7 +19,20 @@ import {
 } from 'react-native';
 import { ModalKeyboardAvoider } from '@/components/ui/ModalKeyboardAvoider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import {
+  Gesture,
+  GestureDetector,
+  GestureHandlerRootView,
+  ScrollView as GestureScrollView,
+} from 'react-native-gesture-handler';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  useAnimatedScrollHandler,
+  withTiming,
+  withSpring,
+  runOnJS,
+} from 'react-native-reanimated';
 import { XMarkIcon } from '@/components/icons';
 import { getIconColor } from '@/constants';
 import { MOTION_EASING, MOTION_DURATION } from '@/constants/motion';
@@ -67,6 +80,16 @@ const MODAL_FULL_MARGIN = 16; // 좌우 가장자리 여백 (px)
 
 /** 하단 시트 카드의 최소 하단 여백 — 비-노치 기기(insets.bottom=0)에서 기존 pb-8 유지용 */
 const BOTTOM_SHEET_MIN_PAD = 16;
+
+/** 이만큼 끌어내리면 손을 떼는 순간 닫는다 */
+const SHEET_DISMISS_DRAG_PX = 110;
+/** 짧게 튕겨도(플릭) 닫히게 하는 속도 임계 (px/s) */
+const SHEET_DISMISS_VELOCITY = 900;
+/** 세로 팬을 시트 드래그로 인정하기 시작하는 이동량 — 탭·미세 흔들림과 구분 */
+const SHEET_PAN_ACTIVATION_PX = 12;
+
+/** 시트 본문 스크롤 — 드래그 제스처와 동시 인식되어야 해서 gesture-handler 쪽 ScrollView 를 쓴다. */
+const AnimatedGestureScrollView = Animated.createAnimatedComponent(GestureScrollView);
 
 // ============================================================================
 // Web Modal Component
@@ -273,6 +296,13 @@ function NativeModal({
   const scale = useSharedValue(0.9);
   const translateY = useSharedValue(100);
   const isKeyboardVisible = useRef(false);
+  const isBottomSheet = position === 'bottom';
+  /** 본문 스크롤 위치 — 맨 위(0)일 때만 아래로 끄는 팬이 시트를 움직인다. */
+  const contentScrollY = useSharedValue(0);
+  /** 드래그 닫기 진행 중에는 열기/닫기 effect 가 translateY 를 덮어쓰지 않게 한다. */
+  const isDismissingByDrag = useSharedValue(false);
+  /** 팬과 동시 인식시킬 본문 스크롤 핸들러 참조 */
+  const scrollRef = useRef(null);
 
   // 초기 렌더링 시 불필요한 애니메이션 방지
   const isFirstRender = useRef(true);
@@ -305,6 +335,11 @@ function NativeModal({
     }
 
     if (visible) {
+      // 드래그로 닫은 직후 다시 열릴 수 있다 — 남은 드래그 상태를 걷어내지 않으면
+      // 열기 애니메이션이 "화면 밖에서 시작"으로 오인된다.
+      isDismissingByDrag.value = false;
+      contentScrollY.value = 0;
+
       // 열기 애니메이션
       fadeOpacity.value = withTiming(1, {
         duration: MOTION_DURATION.base,
@@ -341,14 +376,79 @@ function NativeModal({
           duration: MOTION_DURATION.fast,
           easing: MOTION_EASING.fade,
         });
-      } else {
+      } else if (!isDismissingByDrag.value) {
+        // 드래그로 닫는 중이면 시트는 이미 손끝을 따라 화면 밖으로 나가고 있다.
+        // 여기서 100 으로 되돌리면 사라지기 직전에 위로 튀어 오른다.
         translateY.value = withTiming(100, {
           duration: MOTION_DURATION.sheetExit,
           easing: MOTION_EASING.exitTravel,
         });
       }
     }
-  }, [visible, position, reduceMotion, fadeOpacity, scale, translateY]);
+  }, [
+    visible,
+    position,
+    reduceMotion,
+    fadeOpacity,
+    scale,
+    translateY,
+    isDismissingByDrag,
+    contentScrollY,
+  ]);
+
+  const scrollHandler = useAnimatedScrollHandler((event) => {
+    contentScrollY.value = event.contentOffset.y;
+  });
+
+  /**
+   * 시트 끌어내려 닫기.
+   *
+   * 예전엔 손잡이(핸들 바)만 그려 두고 제스처가 없어서, 시트를 당기면 안쪽 스크롤만
+   * 움직이고 시트는 제자리에 남았다(iOS 실기기). 본문 스크롤이 맨 위일 때만 팬이
+   * 시트를 잡고, 그 외에는 스크롤에 양보한다.
+   */
+  const panGesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .enabled(isBottomSheet)
+        .activeOffsetY([-SHEET_PAN_ACTIVATION_PX, SHEET_PAN_ACTIVATION_PX])
+        .simultaneousWithExternalGesture(scrollRef)
+        .onUpdate((event) => {
+          if (contentScrollY.value > 0) return;
+          // 위로 미는 방향으로는 따라가지 않는다 — 시트가 상한을 넘어 떠오르면 배경이 비친다.
+          translateY.value = Math.max(0, event.translationY);
+        })
+        .onEnd((event) => {
+          const dragged = translateY.value;
+          const shouldDismiss =
+            dragged > 0 &&
+            (dragged > SHEET_DISMISS_DRAG_PX || event.velocityY > SHEET_DISMISS_VELOCITY);
+
+          if (!shouldDismiss) {
+            // 되돌아가는 반동은 '동작 줄이기'가 켜져 있으면 생략한다.
+            translateY.value = reduceMotion ? 0 : withSpring(0, { damping: 22, stiffness: 220 });
+            return;
+          }
+
+          isDismissingByDrag.value = true;
+          translateY.value = withTiming(
+            windowHeight,
+            { duration: MOTION_DURATION.sheetExit, easing: MOTION_EASING.exitTravel },
+            (finished) => {
+              if (finished) runOnJS(onClose)();
+            }
+          );
+        }),
+    [
+      isBottomSheet,
+      contentScrollY,
+      translateY,
+      isDismissingByDrag,
+      windowHeight,
+      onClose,
+      reduceMotion,
+    ]
+  );
 
   const handleBackdropPress = () => {
     Keyboard.dismiss();
@@ -403,92 +503,103 @@ function NativeModal({
       {/* Android: statusBarTranslucent 다이얼로그에선 RN 기본 KAV(height)가 무력 —
           ModalKeyboardAvoider가 keyboard-controller에 위임해 dialog.window의
           IME 인셋을 프레임 단위로 추종한다(2026-07-25 전환) */}
-      <ModalKeyboardAvoider>
-        <View className={`flex-1 ${containerStyle}`} style={{ pointerEvents: 'box-none' }}>
-          {/* 백드롭 - 별도 레이어로 분리 (button 중첩 방지) */}
-          <Pressable
-            onPress={handleBackdropPress}
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-            accessibilityRole="button"
-            accessibilityLabel="모달 닫기"
-          >
-            <Animated.View style={backdropAnimatedStyle} className="flex-1 bg-black/50" />
-          </Pressable>
-
-          {/* 모달 컨텐츠 - 백드롭과 형제 관계 */}
-          {/* size='full' — items-center 가 cross-axis stretch 막으므로 windowWidth 기반 명시 폭 부여.
-              내부 child 는 align-items default stretch 로 자연스럽게 채워짐 (별도 w-full 불필요) */}
-          <Animated.View
-            style={[
-              modalAnimatedStyle,
-              modalMaxHeightStyle,
-              { flexShrink: 1 },
-              size === 'full' ? { width: windowWidth - MODAL_FULL_MARGIN * 2 } : null,
-            ]}
-          >
-            <View
-              style={{
-                flexShrink: 1,
-                // center 모달은 화면 중앙에 뜨므로 래퍼 여백으로 가장자리 침범만 막으면 된다.
-                // bottom 시트는 바닥에 붙어야 하므로 여기서 여백을 주면 안 된다 —
-                // 이 래퍼에는 배경이 없어서 카드가 떠오르고 백드롭이 비친다.
-                paddingTop: position === 'center' ? insets.top : 0,
-                paddingBottom: position === 'center' ? insets.bottom : 0,
-              }}
+      {/* RNModal 은 별도 윈도우라 앱 루트의 GestureHandlerRootView 가 닿지 않는다 —
+          시트 드래그를 쓰려면 이 안에 하나 더 깔아야 한다(RNGH 공식 제약). */}
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <ModalKeyboardAvoider>
+          <View className={`flex-1 ${containerStyle}`} style={{ pointerEvents: 'box-none' }}>
+            {/* 백드롭 - 별도 레이어로 분리 (button 중첩 방지) */}
+            <Pressable
+              onPress={handleBackdropPress}
+              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+              accessibilityRole="button"
+              accessibilityLabel="모달 닫기"
             >
-              <View
-                className={modalClassName}
-                style={{
-                  flexShrink: 1,
-                  // bottom 시트는 인셋을 카드 '안쪽' 패딩으로 흡수한다.
-                  // 비-노치 기기(insets.bottom=0)에서도 기존 pb-8(32px)과 같은 여백을 유지.
-                  ...(position === 'bottom'
-                    ? { paddingBottom: Math.max(insets.bottom, BOTTOM_SHEET_MIN_PAD) + 16 }
-                    : null),
-                }}
+              <Animated.View style={backdropAnimatedStyle} className="flex-1 bg-black/50" />
+            </Pressable>
+
+            {/* 모달 컨텐츠 - 백드롭과 형제 관계 */}
+            {/* size='full' — items-center 가 cross-axis stretch 막으므로 windowWidth 기반 명시 폭 부여.
+              내부 child 는 align-items default stretch 로 자연스럽게 채워짐 (별도 w-full 불필요) */}
+            <GestureDetector gesture={panGesture}>
+              <Animated.View
+                style={[
+                  modalAnimatedStyle,
+                  modalMaxHeightStyle,
+                  { flexShrink: 1 },
+                  size === 'full' ? { width: windowWidth - MODAL_FULL_MARGIN * 2 } : null,
+                ]}
               >
-                {/* Header */}
-                {(title || showCloseButton) && (
-                  <View className="flex-row items-center justify-between px-5 py-2.5 border-b border-divider">
-                    <Text className="text-base font-display-semibold text-content-primary dark:text-off-white">
-                      {title || ''}
-                    </Text>
-                    {showCloseButton && (
-                      <Pressable
-                        onPress={onClose}
-                        className="w-9 h-9 items-center justify-center rounded-sm bg-surface-card dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
-                        accessibilityRole="button"
-                        accessibilityLabel={closeAccessibilityLabel}
-                        hitSlop={8}
-                      >
-                        <XMarkIcon size={18} color={getIconColor(isDarkMode, 'primary')} />
-                      </Pressable>
+                <View
+                  style={{
+                    flexShrink: 1,
+                    // center 모달은 화면 중앙에 뜨므로 래퍼 여백으로 가장자리 침범만 막으면 된다.
+                    // bottom 시트는 바닥에 붙어야 하므로 여기서 여백을 주면 안 된다 —
+                    // 이 래퍼에는 배경이 없어서 카드가 떠오르고 백드롭이 비친다.
+                    paddingTop: position === 'center' ? insets.top : 0,
+                    paddingBottom: position === 'center' ? insets.bottom : 0,
+                  }}
+                >
+                  <View
+                    className={modalClassName}
+                    style={{
+                      flexShrink: 1,
+                      // bottom 시트는 인셋을 카드 '안쪽' 패딩으로 흡수한다.
+                      // 비-노치 기기(insets.bottom=0)에서도 기존 pb-8(32px)과 같은 여백을 유지.
+                      ...(position === 'bottom'
+                        ? { paddingBottom: Math.max(insets.bottom, BOTTOM_SHEET_MIN_PAD) + 16 }
+                        : null),
+                    }}
+                  >
+                    {/* Header */}
+                    {(title || showCloseButton) && (
+                      <View className="flex-row items-center justify-between px-5 py-2.5 border-b border-divider">
+                        <Text className="text-base font-display-semibold text-content-primary dark:text-off-white">
+                          {title || ''}
+                        </Text>
+                        {showCloseButton && (
+                          <Pressable
+                            onPress={onClose}
+                            className="w-9 h-9 items-center justify-center rounded-sm bg-surface-card dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
+                            accessibilityRole="button"
+                            accessibilityLabel={closeAccessibilityLabel}
+                            hitSlop={8}
+                          >
+                            <XMarkIcon size={18} color={getIconColor(isDarkMode, 'primary')} />
+                          </Pressable>
+                        )}
+                      </View>
+                    )}
+
+                    {/* Content — 시트에서는 바운스를 끈다. 맨 위에서 아래로 당길 때
+                    바운스와 시트 드래그가 같이 일어나면 어느 쪽이 반응했는지 읽히지 않는다. */}
+                    <AnimatedGestureScrollView
+                      ref={scrollRef}
+                      onScroll={scrollHandler}
+                      scrollEventThrottle={16}
+                      bounces={!isBottomSheet}
+                      style={{ flexShrink: 1 }}
+                      contentContainerStyle={{ flexGrow: 1 }}
+                      showsVerticalScrollIndicator={false}
+                      keyboardShouldPersistTaps="handled"
+                      keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+                    >
+                      <View className="p-5">{children}</View>
+                    </AnimatedGestureScrollView>
+
+                    {/* Footer (sticky) */}
+                    {footer && (
+                      <View className="px-5 py-3 border-t border-divider bg-surface-card">
+                        {footer}
+                      </View>
                     )}
                   </View>
-                )}
-
-                {/* Content */}
-                <ScrollView
-                  style={{ flexShrink: 1 }}
-                  contentContainerStyle={{ flexGrow: 1 }}
-                  showsVerticalScrollIndicator={false}
-                  keyboardShouldPersistTaps="handled"
-                  keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
-                >
-                  <View className="p-5">{children}</View>
-                </ScrollView>
-
-                {/* Footer (sticky) */}
-                {footer && (
-                  <View className="px-5 py-3 border-t border-divider bg-surface-card">
-                    {footer}
-                  </View>
-                )}
-              </View>
-            </View>
-          </Animated.View>
-        </View>
-      </ModalKeyboardAvoider>
+                </View>
+              </Animated.View>
+            </GestureDetector>
+          </View>
+        </ModalKeyboardAvoider>
+      </GestureHandlerRootView>
     </RNModal>
   );
 }

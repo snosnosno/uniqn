@@ -11,6 +11,7 @@ import {
   isE164,
   isValidKoreanPhone,
   formatE164ToDisplay,
+  formatPhoneForDisplay,
 } from '../phone';
 
 describe('Phone Utils', () => {
@@ -125,7 +126,39 @@ describe('Phone Utils', () => {
 
     it('should pass through non-+82 numbers', () => {
       expect(formatE164ToDisplay('+11234567890')).toBe('+11234567890');
-      expect(formatE164ToDisplay('01012345678')).toBe('01012345678');
+      expect(formatE164ToDisplay('01012345678')).toBe('010-1234-5678');
+    });
+  });
+
+  // 화면 표시 전용 — 저장 형태(E.164 / 로컬 / 하이픈 포함)가 섞여 들어온다.
+  describe('formatPhoneForDisplay', () => {
+    it('E.164 국가코드를 로컬 표기로 되돌린다', () => {
+      expect(formatPhoneForDisplay('+821012345678')).toBe('010-1234-5678');
+    });
+
+    it("'+' 없이 저장된 국가코드도 로컬 표기로 되돌린다", () => {
+      // 실사고: 이 값이 그대로 3-4-4 로 잘려 '821-0980-0903' 처럼 보였다.
+      expect(formatPhoneForDisplay('821012345678')).toBe('010-1234-5678');
+    });
+
+    it('국가코드 뒤 자릿수가 짧아도 숫자를 잘라먹지 않는다', () => {
+      expect(formatPhoneForDisplay('+82109800903')).toBe('010-980-0903');
+    });
+
+    it('로컬 번호는 하이픈만 넣는다', () => {
+      expect(formatPhoneForDisplay('01012345678')).toBe('010-1234-5678');
+      expect(formatPhoneForDisplay('010-1234-5678')).toBe('010-1234-5678');
+      expect(formatPhoneForDisplay('021234567')).toBe('021-234-567');
+    });
+
+    it('한국 번호가 아니면 원문을 그대로 둔다 — 임의 정규화가 오히려 오표기를 만든다', () => {
+      expect(formatPhoneForDisplay('+11234567890')).toBe('+11234567890');
+      expect(formatPhoneForDisplay('+8112345678')).toBe('+8112345678');
+    });
+
+    it('빈 값·공백은 빈 문자열', () => {
+      expect(formatPhoneForDisplay('')).toBe('');
+      expect(formatPhoneForDisplay('   ')).toBe('');
     });
   });
 });

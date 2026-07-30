@@ -48,9 +48,35 @@ export function isValidKoreanPhone(phone: string): boolean {
   return e164Regex.test(phone) || localRegex.test(phone);
 }
 
+/**
+ * 화면 표시 전용 포맷터.
+ *
+ * 저장 형태가 한 가지가 아니다 — 프로필은 E.164(`+8210…`), 공고 연락처는 사용자가 친
+ * 로컬 문자열이 그대로 들어온다. 국가코드를 모른 채 3-4-4 로 자르면 `+821012345678` 이
+ * `821-0980-0903` 처럼 보이고 마지막 자리는 잘려 나간다(실사고). 국가코드는 여기서
+ * 한 번만 벗기고, 한국 번호가 아니면 손대지 않는다.
+ */
+export function formatPhoneForDisplay(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+
+  const digits = trimmed.replace(/\D/g, '');
+  if (!digits) return trimmed;
+
+  // '+' 유무와 무관하게 82 국가코드를 벗긴다. 뒤가 0 으로 시작하면(+82 0 10…) 중복 0 을 만들지 않는다.
+  const isKoreanCountryCode = digits.startsWith('82') && digits.length >= 11;
+  if (isKoreanCountryCode) {
+    const rest = digits.slice(2);
+    return formatPhoneNumber(rest.startsWith('0') ? rest : `0${rest}`);
+  }
+
+  // 해외 번호는 원문 유지 — 한국 규칙으로 하이픈을 넣으면 오히려 잘못된 번호로 읽힌다.
+  if (trimmed.startsWith('+')) return trimmed;
+
+  return formatPhoneNumber(trimmed);
+}
+
 /** E.164 → 로컬 표시 형식 변환 (+821012345678 → 010-1234-5678) */
 export function formatE164ToDisplay(e164: string): string {
-  if (!e164.startsWith('+82')) return e164;
-  const local = `0${e164.slice(3)}`;
-  return formatPhoneNumber(local);
+  return formatPhoneForDisplay(e164);
 }

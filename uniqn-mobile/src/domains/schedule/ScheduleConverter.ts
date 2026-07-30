@@ -33,6 +33,12 @@ export interface SchedulePostingContext {
   title: string;
   location: string;
   detailedAddress?: string;
+  /**
+   * 공고 주소. 주문서 '주소' 입력은 canonical 에서 district 로 저장되므로 여기서 함께
+   * 걷어온다 — 예전엔 detailedAddress 만 넘겨서, 주소를 적어 둔 공고인데도 스태프
+   * 화면엔 장소명만 남고 길찾기가 그 이름으로 검색돼 엉뚱한 곳을 안내했다.
+   */
+  locationAddress?: string;
   contactPhone?: string;
   ownerId?: string;
   ownerName?: string;
@@ -45,6 +51,7 @@ export function createSchedulePostingContext(posting: JobPosting): SchedulePosti
     title: posting.title || '이벤트',
     location: posting.location?.name || '',
     detailedAddress: posting.location?.detailedAddress,
+    locationAddress: posting.location?.district || posting.location?.address,
     contactPhone: posting.contactPhone,
     ownerId: posting.ownerId,
     ownerName: posting.ownerName,
@@ -137,6 +144,7 @@ export class ScheduleConverter {
       jobPostingName,
       location: postingContext?.location || '',
       detailedAddress: postingContext?.detailedAddress,
+      locationAddress: postingContext?.locationAddress,
       role: workLog.role,
       customRole: workLog.customRole,
       status: attendanceStatus,
@@ -207,6 +215,7 @@ export class ScheduleConverter {
             jobPostingName: postingContext?.title || application.jobPostingTitle || '공고',
             location: postingContext?.location || '',
             detailedAddress: postingContext?.detailedAddress,
+            locationAddress: postingContext?.locationAddress,
             role: normalizedRole.role,
             customRole: normalizedRole.customRole ?? application.customRole,
             status: STATUS.ATTENDANCE.NOT_STARTED,
