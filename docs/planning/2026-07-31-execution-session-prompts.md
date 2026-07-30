@@ -16,8 +16,8 @@
 | 0-1 | 병렬 워크트리 미커밋 정리 | `fix/sheet-drag-map-phone` | ✅ | #366 | `b2064c8c4`. `mapLink`·`InfoTab`·`ScheduleConverter` 점유 해제됨 |
 | 0-2 | 알림 착지 브랜치 머지 | `fix/notification-landing-and-apply-success` | ✅ | #365 | `8fb10f5d2` |
 | 0-3 | 핸드오프 문서 1-A 완료 반영 | — | ✅ | — | 2026-07-31 |
-| **0-4** | **Supabase 안전 정리 미푸시 커밋 처리** | `chore/supabase-safe-cleanup-20260731` | ⬜ | | `632adcbae` — 트리거 함수 33개 PUBLIC EXECUTE 회수 등. **DB 권한 변경이므로 S1 전에 PR/머지 또는 명시적 보류 결정 필요** |
-| **S1** | 1-B + 1-C | `feat/venue-profile` | ⬜ | | |
+| ~~**0-4**~~ | Supabase 안전 정리 | — | ✅ | **#367** | 사용자는 "보류"로 결정했으나 **병렬 세션이 PR#367 로 머지**(`5aeab44b3`). 로컬 `chore/supabase-safe-cleanup-20260731` 브랜치는 이제 불필요 — 삭제 가능 |
+| **S1** | 1-B + 1-C | ~~`feat/venue-profile`~~ | ✅ **머지** | **#370** | `dbf1e49d1`. CI 11잡 green(E2E 는 러너 포트 충돌로 1회 fail → 재실행 pass). 브랜치·워크트리 정리 완료 |
 | **S2** | 2-A + 2-B | `fix/worklog-time-model` | ⬜ | | |
 | **S3** | 2-C + 2-D + 별-2 | `feat/worklog-time-notify` | ⬜ | | |
 | **S4** | 3-B + 3-E + 별-1 | `feat/qr-badge-and-entry` | ⬜ | | |
@@ -31,8 +31,8 @@
 
 | 세션 | 워크트리 경로 | 상태 |
 |---|---|---|
-| 0-4 | `T-HOLDEM-dbcleanup` | ⬜ |
-| S1 | `T-HOLDEM-venue` | ⬜ |
+| 0-4 | — | ✅ 불필요(PR#367 로 머지됨) |
+| S1 | ~~`T-HOLDEM-venue`~~ | ✅ 정리완료(정션 해제 → worktree remove 순서 준수) |
 | S2 | `T-HOLDEM-time` | ⬜ |
 | S3 | `T-HOLDEM-notify` | ⬜ |
 | S4 | `T-HOLDEM-qr` | ⬜ |
@@ -43,13 +43,25 @@
 전부 `C:/Users/user/Desktop/` 아래. 머지 완료 세션의 워크트리는 다음 세션 착수 시 정리한다
 (⚠️ **정션 해제 선행** — `rmdir` 로 `node_modules` 정션을 먼저 끊지 않으면 원본이 지워질 수 있다).
 
-**prod 파리티 추적**: 마지막 실측 **함수 183 / 정책 111** (2026-07-28)
-⚠️ 0-4 커밋(`632adcbae`)이 함수 33개의 EXECUTE 권한을 회수했다 — **S1 착수 시 카운트를 재실측**하고
-이 표의 시작값을 갱신할 것. 2026-07-28 값을 그대로 베이스라인으로 쓰지 말 것.
+**prod 파리티 추적**: **함수 183 / 정책 111** — 2026-07-31 S1 착수 시 재실측 확정.
+0-4(`632adcbae`)는 EXECUTE 권한만 회수했으므로 함수·정책 **수는 불변**이었다(183/111 그대로).
+prod 최신 마이그 = `20260730174826_cron_run_details_retention`.
+
+⚠️ **다른 레인 미커밋 마이그 1건 발견** (2026-07-31): 워크트리 `T-HOLDEM-wt-board-body`
+(`fix/schedule-board-body-array-literal`)에 미추적 파일
+`20260731100000_fix_schedule_board_body_array_literal.sql` 이 있다. **prod 미적용**.
+"마이그는 전 레인 동시 1건" 규칙 대상 — S1 마이그 적용 시 이 파일과 순서가 엇갈릴 수 있다.
 
 | 세션 | 마이그 | 적용 후 함수/정책 |
 |---|---|---|
-| S1 | RPC 2개 신설 | (기록) |
+| S1 | `20260731120000_venue_profile_rpcs` (RPC 2개 신설) | 레포 기대 **185 / 111** (PR#370 머지). ⚠️ 아래 경고 참조 |
+
+> 🚨 **파리티 레포↔prod 불일치 (2026-07-31, S1 머지 직후)** — 레포 기대 **185**, prod 실측 **184**.
+> 원인은 S1 이 아니다. 병렬 세션(`fix/notification-counter-guard`, `T-HOLDEM-noti`)이 함수 1개를
+> 줄이는 마이그를 **PR 보다 먼저 prod 에 적용**해 놓았고 그 PR 이 아직 미머지다.
+> 183(master) + 2(S1) − 1(알림 카운터) = **184** 가 prod 값이다.
+> → **그 PR 이 머지될 때 `PARITY_EXPECT_FUNCS` 를 182 가 아니라 `184` 로 적어야 한다**(베이스가 185 로 바뀌었으므로).
+> 그때까지 주간 `parity-smoke`(월 01:17 UTC)와 일간 `prod-health` 는 이 항목에서 red 일 수 있다.
 | S3 | 알림 트리거 | (기록) |
 | S5 | rename 마이그 | (기록) |
 | B2 | 컬럼 추가 | 불변 예상 |
@@ -446,6 +458,43 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 
 > 형식은 §2 세션 종료 프로토콜 4번 참조. **삭제하지 말고 쌓는다** —
 > 중단된 세션을 다시 여는 사람이 읽을 유일한 기록이다.
+
+### S1 (1-B + 1-C) — 2026-07-31 · 상태: 완료 (PR 미생성)
+- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-venue` / `feat/venue-profile` · HEAD `0752c09c6`
+- 커밋 4개: `de79d4095`(1-B DB) → `b0619c0fc`(1-C 클라) → `092310611`(master 재통합) → `0752c09c6`(리뷰 반영)
+- **끝난 것** (전부 이 세션에서 실행한 출력 기준):
+  - 1-B: 마이그 `20260731120000_venue_profile_rpcs` **prod 적용 완료**. 파리티 실측 **183 → 185 / 정책 111**.
+    pgTAP 15/15 신규(`venue_profile_rpcs.test.sql`). schedule 형제 키 보존 단언은 **red→green 실증**.
+  - 1-C: 컨테이너 read 3컬럼 확장 · ScheduleConverter 시그니처 확장 · scheduleService 2차 해소를
+    두 RPC **키 합집합** 순회로 · VenueSettingsSheet 지점 설정 전체화 · 기본명 SSOT(`constants/defaultNames.ts`).
+  - 리뷰: code-reviewer(fable) HIGH 1건 반영(P0001 접두사 매핑 신설 + vacuous 테스트 실질화).
+  - 최종 게이트: `npm run quality` **exit 0** · `npm test` **584 스위트 / 6400 테스트 / 122 스냅샷 전부 통과 exit 0** ·
+    pgTAP 22/22(파리티 가드 포함) · `e2e/` 별도 Grep 파급 **0건**.
+  - `PARITY_EXPECT_FUNCS` 183 → **185** 갱신(방치 시 주간 parity-smoke red).
+  - 최신 master(#367·#368·#369) 재통합 완료 — 무충돌, 마이그 정렬 무결(내 것이 마지막).
+- **안 끝난 것**:
+  - 🔴 **push/PR 미실행** — 사용자 명시 요청 대기(커밋 사전승인 범위 밖).
+  - ⚠️ `p_defaults` 는 계약 예약 상태(UI 없음). 요소 검증(문자열·길이·개수 상한)은
+    소비 UI 를 붙이는 후속 마이그에서 반드시 추가할 것 — 지금은 소비자 0이라 실해 없음.
+  - ⚠️ `VenueSettingsSheet` `saveProfile` 이 `location` 을 항상 `{name}` 으로 **전체 교체**한다.
+    B1(주소검색) 머지로 district/detailedAddress 가 생기면 이 저장 버튼이 주소를 **소거**한다 —
+    그때 기존 location 병합 필수.
+  - ⚠️ DB `handle_new_user` 는 여전히 `{닉네임} 워크스페이스` 를 만든다 → **3-D 범위에 트리거 수정 포함 필수**.
+    안 하면 기본명 SSOT 통합이 신규 가입자에게 효과 없다.
+- **막힌 지점**: 없음. 다만 세션 중 **공유 `node_modules` 가 외부 요인으로 손상**(818→345 엔트리)돼
+  테스트가 대량 red 였다. `npm ci` 로 복구 후 재실행해 확정. 상세=메모리
+  `pitfall_shared_node_modules_corruption_junction`.
+- **다음 세션에 넘기는 주의**:
+  - 🔑 **XSS 트리거 인자는 레포↔prod 가 어긋나 있다** — 레포 baseline 은 `('title','description')`,
+    **prod 실측은 `('title','description','contact_phone')`**. `location` 은 여전히 대상 밖.
+    트리거 인자는 **prod 에서 확인**할 것.
+  - 🔑 **`jpc_test_set_user` 는 role GUC 까지 `authenticated` 로 바꾼다**(= `SET LOCAL ROLE`).
+    이후 픽스처 INSERT 가 RLS 에 막히고 TEMP 테이블 쓰기도 권한 오류가 난다. SECDEF RPC 의
+    `auth.uid()` 게이트만 볼 때는 JWT 주입 직후 role 만 postgres 로 되돌리는 `pg_temp` 래퍼를 쓸 것.
+  - 🚨 **커밋 메시지에 백틱 금지** — 큰따옴표 안에서 명령 치환으로 먹혀 문장이 조용히 사라진다.
+    히어독(`-F -`)을 쓸 것.
+  - ⚠️ 0-4 는 사용자가 "보류"로 결정했으나 **병렬 세션이 PR#367 로 이미 머지**했다.
+    로컬 `chore/supabase-safe-cleanup-20260731` 브랜치는 정리 가능.
 
 ### 계획 세션 — 2026-07-31 · 상태: 완료
 - 워크트리/브랜치: `T-HOLDEM`(메인) / `chore/supabase-safe-cleanup-20260731`

@@ -32,7 +32,8 @@ gstack 기반 커스텀 스킬 + superpowers + 프로젝트 전용 스킬 조합
 | 단순화 | `/simplify` | 구현 직후 복잡도 축소 |
 | 지식 질의 | `/query` | wiki 인용 답변 (읽기 전용) |
 | 지식 반영 | `/ingest` | 머지·해결된 교훈을 wiki로 졸업 |
-| 세션 마무리 | `/session-wrap` | 문서/패턴/학습/후속 4병렬 탐지 |
+| 세션 종료 | `/session-end` | 착지(PR·머지)·최신화(메모리·파리티)·정리(워크트리)·인계 **실행** |
+| 세션 마무리 탐지 | `/session-wrap` | 문서/패턴/학습/후속 4병렬 **탐지·제안** |
 | 메모리 감사 | `/memory-audit` | 월 1회 — claim 실존 검증 |
 | OSS 도입 검증 | `/oss-vet` | 스킬·MCP·패키지 도입 **전** 6항목 |
 
@@ -61,7 +62,8 @@ gstack 기반 커스텀 스킬 + superpowers + 프로젝트 전용 스킬 조합
 | "커밋해줘" | `/commit` |
 | "PR 만들어줘" | `/pr` |
 | "이거 왜 이렇게 됐지" (과거 결정) | `/query` |
-| "세션 정리해줘" / 작업 마무리 | `/session-wrap` |
+| "세션종료" / "마무리하자" / "끝내자" | `/session-end` |
+| "세션 정리해줘" / 회고성 탐지 | `/session-wrap` |
 | "이 도구 써볼까" / OSS·MCP 도입 검토 | `/oss-vet` 먼저 → 도입 |
 
 에이전트 분담·병렬 디스패치·모델 3계층 라우팅·훅 규칙은 `.claude/rules/orchestration.md` 참조. 스킬이 서브에이전트를 디스패치할 때도 모델 라우팅(읽기=haiku/sonnet·구현=opus·판정=fable) 준수.
