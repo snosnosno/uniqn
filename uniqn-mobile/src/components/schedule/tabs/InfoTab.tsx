@@ -192,9 +192,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           </Text>
           <View className="mt-1 flex-row items-center">
             <ClockIcon size={14} color={SECONDARY_PALETTE[400]} />
-            <Text className="ml-1.5 text-sm text-content-secondary font-sans">
-              {getTimeDisplay(schedule)}
-            </Text>
+            <Text className="ml-1.5 text-sm text-content-secondary font-sans">{timeDisplay}</Text>
           </View>
         </Section>
       </View>
@@ -222,9 +220,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           </Text>
           <View className="mt-1 flex-row items-center">
             <ClockIcon size={14} color={SECONDARY_PALETTE[400]} />
-            <Text className="ml-1.5 text-sm text-content-placeholder font-sans">
-              {getTimeDisplay(schedule)}
-            </Text>
+            <Text className="ml-1.5 text-sm text-content-placeholder font-sans">{timeDisplay}</Text>
           </View>
         </Section>
       </View>
