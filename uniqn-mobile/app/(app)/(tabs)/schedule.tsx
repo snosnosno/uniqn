@@ -685,6 +685,10 @@ export default function ScheduleScreen() {
       );
       if (landing.kind === 'open') {
         markHandled();
+        // 상세 시트만 열고 끝내면 시트를 닫는 순간 캘린더는 여전히 오늘에 머문다 —
+        // "확정된 그 날짜"를 보러 온 사용자가 다시 손으로 날짜를 찾아야 했다.
+        // 선택 날짜를 근무일로 옮겨 시트 뒤·시트를 닫은 뒤 모두 해당 날짜를 가리키게 한다.
+        setSelectedDate(landing.schedule.date);
         setSelectedSchedule(landing.schedule);
         setIsDetailSheetVisible(true);
       } else if (landing.kind === 'missing') {
@@ -741,6 +745,7 @@ export default function ScheduleScreen() {
     refresh,
     currentMonth,
     goToMonth,
+    setSelectedDate,
     deepLinkApplicationId,
     deepLinkCancelApplicationId,
   ]);

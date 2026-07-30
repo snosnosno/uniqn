@@ -24,9 +24,11 @@ describe('NotificationRouteMap', () => {
     });
   });
 
-  it('ROLE_CHANGED는 설정 화면으로 라우팅된다 (관리자 직접 role 변경 알림)', () => {
+  // 설정 화면에는 역할 표기가 한 곳도 없어 "무엇이 바뀌었는지" 확인 불가능한 도착지였다.
+  // 역할 배지는 프로필 탭 헤더에 있다.
+  it('ROLE_CHANGED는 역할 배지가 보이는 프로필 탭으로 라우팅된다', () => {
     expect(getRouteForNotificationType(NotificationType.ROLE_CHANGED)).toEqual({
-      name: 'settings',
+      name: 'profile',
     });
   });
 
