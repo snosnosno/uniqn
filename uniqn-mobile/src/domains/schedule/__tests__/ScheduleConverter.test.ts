@@ -245,12 +245,17 @@ describe('createScheduleContainerContext (#6 — 근무표 직접배치 급여 �
       kind: 'dated',
       softTargets: {},
       roleSalaries: [{ role: 'dealer', salary: { type: 'hourly', amount: 20000 } }],
+      location: null,
+      contactPhone: null,
+      description: null,
     };
   }
 
   it('컨테이너 역할별 단가표를 정산 컨텍스트 roles 로 주입한다(count/filled 채움)', () => {
     const container = createContainer();
-    const context = createScheduleContainerContext(container.roleSalaries, container.name);
+    const context = createScheduleContainerContext(container.roleSalaries, {
+      title: container.name,
+    });
 
     expect(context.title).toBe('내 팀');
     expect(context.settlement.roles).toEqual([
@@ -287,5 +292,44 @@ describe('createScheduleContainerContext (#6 — 근무표 직접배치 급여 �
 
     // 8시간 × 20,000원 = 160,000원 (기본단가라면 8 × 15,000 = 120,000원)
     expect(event.settlementBreakdown?.basePay).toBe(160000);
+  });
+
+  // S1 — 지점 표시 정보 전달. 매핑 규칙은 일반 공고 경로와 대칭이어야 한다(소비처가 두 경로를
+  // 구분하지 않는다). 예전엔 location 이 '' 로 하드코딩돼 상세 모달이 "장소 : -" 를 보여줬다.
+  describe('지점 표시 정보 전달(S1)', () => {
+    it('컨텍스트의 location/연락처/소개/담당자를 공고 경로와 같은 필드로 투영한다', () => {
+      const context = createScheduleContainerContext([], {
+        title: '홀덤펍 강남점',
+        location: { name: '강남역 2번 출구', district: '강남구', detailedAddress: '3층' },
+        contactPhone: '02-123-4567',
+        description: '역삼역 도보 2분',
+        ownerName: '김사장',
+      });
+
+      expect(context.title).toBe('홀덤펍 강남점');
+      expect(context.location).toBe('강남역 2번 출구');
+      expect(context.locationAddress).toBe('강남구');
+      expect(context.detailedAddress).toBe('3층');
+      expect(context.contactPhone).toBe('02-123-4567');
+      expect(context.description).toBe('역삼역 도보 2분');
+      expect(context.ownerName).toBe('김사장');
+    });
+
+    it('컨텍스트가 없으면 종전대로 이벤트/빈 장소로 폴백한다(회귀 방어)', () => {
+      const context = createScheduleContainerContext([]);
+      expect(context.title).toBe('이벤트');
+      expect(context.location).toBe('');
+      expect(context.contactPhone).toBeUndefined();
+      expect(context.locationAddress).toBeUndefined();
+    });
+
+    it('location 이 null 이거나 이름이 비면 빈 장소로 둔다', () => {
+      expect(createScheduleContainerContext([], { title: '지점', location: null }).location).toBe(
+        ''
+      );
+      expect(
+        createScheduleContainerContext([], { location: { district: '강남구' } }).location
+      ).toBe('');
+    });
   });
 });

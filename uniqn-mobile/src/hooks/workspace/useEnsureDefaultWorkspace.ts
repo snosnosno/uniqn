@@ -14,10 +14,8 @@
  * 실패 시 재발사하지 않는다(무한루프 가드) — 화면은 명시적 "다시 시도" 폴백으로 내려간다.
  */
 import { useCallback, useEffect, useRef } from 'react';
+import { DEFAULT_WORKSPACE_NAME } from '@/constants/defaultNames';
 import { useCreateWorkspace } from './useWorkspaces';
-
-/** 신규 employer 기본 워크스페이스 이름 — 공고 경로 안전망(getDefaultWorkspaceIdForOwner)과 동일. */
-const DEFAULT_WORKSPACE_NAME = '내 팀';
 
 export interface EnsureDefaultWorkspaceInput {
   /** 워크스페이스 조회가 성공적으로 끝났는가(로딩/에러 중 발사 금지) + 상위 게이트(기능 플래그 등). */

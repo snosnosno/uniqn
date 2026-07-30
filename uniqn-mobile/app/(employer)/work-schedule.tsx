@@ -45,6 +45,7 @@ import {
 } from '@/domains/workSchedule';
 import { toDateString } from '@/utils/date';
 import { SECONDARY_PALETTE } from '@/constants/colors';
+import { useAuthStore } from '@/stores/authStore';
 
 const EMPTY_COUNTS: Record<string, number> = {};
 
@@ -97,6 +98,7 @@ export default function WorkScheduleScreen() {
   const containers = useMemo(() => containersQuery.data ?? [], [containersQuery.data]);
 
   const router = useRouter();
+  const { user } = useAuthStore();
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
   const [visibleMonth, setVisibleMonth] = useState<Date>(() => startOfMonth(new Date()));
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
@@ -107,11 +109,12 @@ export default function WorkScheduleScreen() {
     [containers, selectedVenueId]
   );
 
-  // P1-1: 운영처 0개면 워크스페이스 이름으로 기본 운영처 자동 생성(체감 2계층).
+  // P1-1: 운영처 0개면 기본 운영처 자동 생성(체감 2계층).
   // 실패 시 재발사 없음(훅 내부 가드) → 아래 수동 EmptyState 폴백.
+  // 이름은 워크스페이스명 복사가 아니라 `{닉네임}의 지점` — 팀과 지점이 같은 이름이 되던 문제(S1).
   const { isCreating: isAutoCreatingVenue } = useEnsureDefaultVenue({
     workspaceId: activeWorkspace?.id,
-    workspaceName: activeWorkspace?.name,
+    displayName: user?.displayName,
     isReady: enabled && !wsLoading && containersQuery.isSuccess,
     isEmpty: containers.length === 0,
   });

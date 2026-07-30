@@ -7,7 +7,8 @@
 
 import type { UnsubscribeFn, PaginationCursor } from '@/types/common';
 import type { TaxSettings } from '@/utils/settlement';
-import type { VenueContainer } from '@/domains/workSchedule';
+import type { VenueContainer, VenueContainerLocation } from '@/domains/workSchedule';
+import type { ScheduleContainerContextInput } from '@/domains/schedule/ScheduleConverter';
 import type {
   JobPosting,
   JobPostingFilters,
@@ -21,6 +22,22 @@ import type {
 // ============================================================================
 // Types
 // ============================================================================
+
+/**
+ * 지점 컨테이너 프로필 수정 입력 (update_venue_container RPC).
+ *
+ * ⚠️ 부분 갱신 의미론 — 서버와 정확히 맞춰야 한다:
+ *   - 필드를 **넘기지 않으면**(undefined) 그 필드는 변경되지 않는다.
+ *   - **빈 문자열**을 넘기면 그 필드는 제거된다(location 은 빈 객체 `{}` 가 제거).
+ *   즉 "비우기"를 하려면 undefined 가 아니라 '' 를 보내야 한다. 이 프로젝트의 관용구인
+ *   null→undefined 정규화를 이 경로에 적용하면 "제거"가 조용히 "미변경"이 된다.
+ */
+export interface UpdateVenueContainerInput {
+  name?: string;
+  location?: VenueContainerLocation;
+  contactPhone?: string;
+  description?: string;
+}
 
 /**
  * 페이지네이션된 공고 목록 결과
@@ -207,6 +224,25 @@ export interface IJobPostingRepository {
    *   반환: containerId → PostingRoleCatalogEntry[].
    */
   getMyVenueRoleSalaries(ids: string[]): Promise<Map<string, PostingRoleCatalogEntry[]>>;
+
+  /**
+   * staff 본인이 배치된 지점 컨테이너들의 표시 정보 배치 조회(S1).
+   *
+   * @description 위 getMyVenueRoleSalaries 와 목적이 다르다 — 그쪽은 CROSS JOIN LATERAL 이라
+   *   단가표가 비어 있으면 행이 0개다. 단가를 아직 안 정한 신규 지점도 이름·장소는 보여야 하므로
+   *   SECDEF RPC(get_my_venue_contexts)가 **지점당 1행**을 따로 반환한다.
+   *   반환: containerId → 표시 컨텍스트.
+   */
+  getMyVenueContexts(ids: string[]): Promise<Map<string, ScheduleContainerContextInput>>;
+
+  /**
+   * 지점 컨테이너 프로필(이름·장소·연락처·소개) 수정.
+   *
+   * @description 컨테이너는 RESTRICTIVE 정책으로 직접 UPDATE 가 막혀 있어 SECDEF RPC
+   *   (update_venue_container)가 유일 경로다. 부분 갱신 — 넘기지 않은 필드는 변경되지 않고,
+   *   빈 문자열은 "제거" 를 뜻한다.
+   */
+  updateVenueContainer(containerId: string, input: UpdateVenueContainerInput): Promise<void>;
 
   /**
    * 운영처(venue) 컨테이너 멱등 확보(get-or-create).

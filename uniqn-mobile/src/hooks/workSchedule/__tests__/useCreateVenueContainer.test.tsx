@@ -36,6 +36,9 @@ const FAKE_VENUE: VenueContainer = {
   kind: 'dated',
   softTargets: {},
   roleSalaries: [],
+  location: null,
+  contactPhone: null,
+  description: null,
 };
 
 /** 낙관적 시드 시나리오: 이미 캐시에 있는 기존 컨테이너 */
@@ -48,6 +51,9 @@ const EXISTING_VENUE: VenueContainer = {
   kind: 'dated',
   softTargets: {},
   roleSalaries: [],
+  location: null,
+  contactPhone: null,
+  description: null,
 };
 
 /** 낙관적 시드 시나리오: 신규 생성되는 컨테이너 */
@@ -60,6 +66,9 @@ const NEW_VENUE: VenueContainer = {
   kind: 'dated',
   softTargets: {},
   roleSalaries: [],
+  location: null,
+  contactPhone: null,
+  description: null,
 };
 
 function createClient() {

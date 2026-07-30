@@ -121,6 +121,53 @@ function getMonthRange(year: number, month: number): { start: string; end: strin
 }
 
 /**
+ * 컨테이너 2차 해소(#6, S1 확장) — 근무표 직접배치 work_log 는 job_posting_id 가 지점 컨테이너
+ * (status='container')를 가리키는데, 일반 공고 조회는 컨테이너를 의도적으로 제외한다.
+ * staff 는 RLS 로 컨테이너 job_postings 를 직접 못 읽으므로(SELECT 정책이 container 제외)
+ * SECDEF RPC 2종이 유일 경로다.
+ *
+ * 두 RPC 를 나란히 쓰되 **실패를 각각 흡수하고 키 합집합으로 순회**한다:
+ * - get_my_venue_contexts   → 지점명·장소·연락처·소개 (지점당 1행 보장)
+ * - get_my_venue_role_salaries → 역할별 단가 (CROSS JOIN LATERAL 이라 단가표가 비면 0행)
+ *
+ * 합집합인 이유는 둘의 행 집합이 다르기 때문이다 — 단가 미설정 지점은 salaries 에만 없고,
+ * contexts 호출이 실패하면 salaries 에만 있다. 어느 한쪽이 죽어도 나머지는 살아남아야 한다.
+ * contexts 만 실패 = 종전대로 '이벤트' 표시 + 단가는 정상. salaries 만 실패 = 이름·장소는
+ * 보이고 급여만 기본 단가(15,000원)로 폴백. 둘 다 관측 가능하게 로그를 남긴다.
+ */
+async function resolveContainerContexts(
+  containerIds: string[]
+): Promise<Map<string, SchedulePostingContext>> {
+  const resolved = new Map<string, SchedulePostingContext>();
+  if (containerIds.length === 0) return resolved;
+
+  const [contextResult, salaryResult] = await Promise.allSettled([
+    jobPostingRepository.getMyVenueContexts(containerIds),
+    jobPostingRepository.getMyVenueRoleSalaries(containerIds),
+  ]);
+
+  if (contextResult.status === 'rejected') {
+    logger.warn('지점 표시 정보 조회 실패 — 지점명 폴백 유지', { error: contextResult.reason });
+  }
+  if (salaryResult.status === 'rejected') {
+    logger.warn('컨테이너 역할 단가 2차 해소 실패 — 기본 단가 폴백 유지', {
+      error: salaryResult.reason,
+    });
+  }
+
+  const contexts = contextResult.status === 'fulfilled' ? contextResult.value : new Map();
+  const salaries = salaryResult.status === 'fulfilled' ? salaryResult.value : new Map();
+
+  for (const containerId of new Set([...contexts.keys(), ...salaries.keys()])) {
+    resolved.set(
+      containerId,
+      createScheduleContainerContext(salaries.get(containerId) ?? [], contexts.get(containerId))
+    );
+  }
+  return resolved;
+}
+
+/**
  * 공고 정보 일괄 조회 (부분 실패 허용)
  * @description JobPostingCard 전체 데이터를 반환하여 스케줄 탭에서 JobCard 사용 가능
  */
@@ -146,22 +193,9 @@ async function fetchJobPostingContextBatch(
     logger.warn('공고 배치 조회 실패', { error });
   }
 
-  // 컨테이너 2차 해소(#6) — 근무표 직접배치 work_log 는 job_posting_id 가 지점 컨테이너
-  // (status='container')를 가리키는데, getByIdBatch 는 컨테이너를 의도적으로 제외한다.
-  // 그래서 이 슬롯들은 위 루프에서 postingMap 에 안 담기고 급여가 기본 단가(15,000원)로
-  // 폴백됐다. staff 는 RLS 로 컨테이너 job_postings 를 직접 못 읽으므로(SELECT 정책이 container
-  // 제외), SECDEF RPC(getMyVenueRoleSalaries)로 "본인 배치가 있는 컨테이너"의 역할단가만 배치
-  // 조회해 정산 컨텍스트에 주입한다. 실패는 관측 가능하게 로그하고 기본 단가 폴백을 유지한다.
   const missingIds = uniqueIds.filter((id) => !postingMap.has(id));
-  if (missingIds.length > 0) {
-    try {
-      const salariesByContainer = await jobPostingRepository.getMyVenueRoleSalaries(missingIds);
-      for (const [containerId, roleSalaries] of salariesByContainer) {
-        postingMap.set(containerId, createScheduleContainerContext(roleSalaries));
-      }
-    } catch (error) {
-      logger.warn('컨테이너 역할 단가 2차 해소 실패 — 기본 단가 폴백 유지', { error });
-    }
+  for (const [containerId, context] of await resolveContainerContexts(missingIds)) {
+    postingMap.set(containerId, context);
   }
 
   // 컨테이너로도 못 찾은 ID 로깅 (삭제된 공고 등)
@@ -638,14 +672,8 @@ export async function getScheduleById(scheduleId: string): Promise<ScheduleEvent
         postingContext = createSchedulePostingContext(jobPosting);
       } else {
         // 컨테이너 2차 해소(#6) — 근무표 직접배치는 컨테이너를 가리켜 getById 가 제외한다.
-        // staff RLS 로 컨테이너를 직접 못 읽으므로 SECDEF RPC 로 본인 배치분 역할단가만 조회.
-        const salariesByContainer = await jobPostingRepository.getMyVenueRoleSalaries([
-          normalizedJobId,
-        ]);
-        const roleSalaries = salariesByContainer.get(normalizedJobId);
-        if (roleSalaries && roleSalaries.length > 0) {
-          postingContext = createScheduleContainerContext(roleSalaries);
-        }
+        // 목록 경로와 같은 헬퍼를 쓴다(두 곳이 갈라지면 상세만 조용히 낡는다).
+        postingContext = (await resolveContainerContexts([normalizedJobId])).get(normalizedJobId);
       }
     } catch (err) {
       logger.debug('공고 정보 조회 실패 (상세)', { jobPostingId: normalizedJobId, error: err });

@@ -56,6 +56,9 @@ const mockJobPostingRepositoryGetByIdBatch = jest.fn();
 const mockJobPostingRepositoryGetMyVenueRoleSalaries = jest.fn((..._args: unknown[]) =>
   Promise.resolve(new Map())
 );
+const mockJobPostingRepositoryGetMyVenueContexts = jest.fn((..._args: unknown[]) =>
+  Promise.resolve(new Map())
+);
 
 jest.mock('@/repositories', () => ({
   workLogRepository: {
@@ -75,6 +78,7 @@ jest.mock('@/repositories', () => ({
     getByIdBatch: (...args: unknown[]) => mockJobPostingRepositoryGetByIdBatch(...args),
     getMyVenueRoleSalaries: (...args: unknown[]) =>
       mockJobPostingRepositoryGetMyVenueRoleSalaries(...args),
+    getMyVenueContexts: (...args: unknown[]) => mockJobPostingRepositoryGetMyVenueContexts(...args),
   },
 }));
 
@@ -119,10 +123,13 @@ jest.mock('@/domains/schedule', () => ({
       }));
     },
   },
-  // 컨테이너 2차 해소(#6) — 근무표 직접배치 급여 복구용. 기본은 호출되지 않음(getMyVenueRoleSalaries=빈 Map).
-  createScheduleContainerContext: (_roleSalaries: unknown, title?: string) => ({
-    title: title || '이벤트',
-    location: '',
+  // 컨테이너 2차 해소(#6·S1) — 두 RPC 가 기본은 빈 Map 이므로 이 팩토리도 기본 미호출.
+  createScheduleContainerContext: (
+    _roleSalaries: unknown,
+    context?: { title?: string | null; location?: { name?: string } | null }
+  ) => ({
+    title: context?.title || '이벤트',
+    location: context?.location?.name || '',
     settlement: { roles: [], defaultSalary: { type: 'hourly', amount: 15000 } },
   }),
 }));
