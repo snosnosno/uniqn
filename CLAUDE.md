@@ -72,6 +72,7 @@ PR→`/pr` | 배포→`/deploy` | 보안→`/cso` | 품질→`/health` | 회고�
 애니메이션·모션→`/improve-animations`(감사·계획) · `/review-animations`(diff 리뷰, **명시 호출 전용** — `disable-model-invocation`) | 모션 용어→`/animation-vocabulary`
 OSS·MCP·패키지 도입 **전**→`/oss-vet` | 옵시디언 마크다운→`/obsidian-markdown`
 RLS/권한/위험 변경 전→`/guard` 먼저
+세션 종료·마무리→`/session-end`(착지·최신화·정리·인계 **실행**) · 회고형 탐지는 `/session-wrap`
 
 ⚠️ **eslint 사각지대**: `eslint.config.js` ignores 에 `scripts/`·`e2e/`·`functions/`·`supabase/functions/` 가 있다 → **상수·enum·사용자 문구를 단일 소스로 바꿔도 `e2e/` 는 `npm run quality` 가 못 잡는다**(PR#353 실사고: 제목 상한 25→40 상향 때 E2E 단언만 25 로 남아 CI red). 상수/enum/문구 변경 시 `e2e/` 별도 Grep 필수.
 
