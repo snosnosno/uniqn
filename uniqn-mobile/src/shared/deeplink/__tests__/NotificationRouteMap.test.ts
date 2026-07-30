@@ -97,6 +97,14 @@ describe('NotificationRouteMap', () => {
     });
   });
 
+  // 출근 예정 시각 변경(트리거 Case 2-B)은 스케줄 목록이 아니라 상세 모달까지 닿아야 한다.
+  // 그 화면에만 '취소 요청' 버튼이 있어서, 목록에 떨구면 무음 변경을 거부할 경로가 끊긴다.
+  it('lands schedule change on the detail sheet when applicationId is present', () => {
+    expect(
+      NOTIFICATION_ROUTE_MAP[NotificationType.SCHEDULE_CHANGE]({ applicationId: 'app-77' })
+    ).toEqual({ name: 'schedule', params: { applicationId: 'app-77' } });
+  });
+
   it('maps job events to the public job detail or jobs list', () => {
     expect(NOTIFICATION_ROUTE_MAP[NotificationType.JOB_UPDATED]({ jobPostingId: 'job-1' })).toEqual(
       { name: 'job', params: { id: 'job-1' } }
