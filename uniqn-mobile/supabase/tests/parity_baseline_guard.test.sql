@@ -61,6 +61,15 @@
 --       + fn_log_scheduled_close 1(마감 크론 처리 건수를 action_logs 에 기록 —
 --         job_run_details.return_message 가 항상 "1 row" 라 0건 처리를 구분할 수 없었다).
 --     정책 111 불변(트리거·함수만 변경, 테이블·RLS 미변경 — action_logs 재사용).
+--   2026-07-31 알림 카운터 INSERT 가드(마이그 20260731130000):
+--     함수 182 = 183 - fn_notification_insert_increment 1
+--       (트리거 0개 고아 — archive/20260412192356 이 INSERT 트리거만 재등록하지 않아
+--        "is_read 검사가 있던 버전"이 호출자 없이 남아 있던 것. 검사는 살아있는
+--        increment_unread_counter 로 이관 후 제거).
+--     정책 111 불변(함수 제거·재정의와 컬럼 NOT NULL 조이기만, RLS 미변경).
+--     ⚠️ prod 실측은 이 시점 185 — feat/venue-profile 의 마이그 2건이 prod 선적용·
+--        PR 미머지 상태라 레포보다 2 많다. 그 PR 이 나중에 머지되면 기대값은
+--        185 가 아니라 184(= 182 + 2)로 합류시켜야 한다.
 --
 -- ⚠️ 유지보수 계약: 이후 마이그레이션이 public 함수/정책을 추가·삭제하면
 --   이 기대값을 같은 PR에서 함께 갱신해야 한다. 갱신을 강제당하는 것 자체가
@@ -73,7 +82,7 @@
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=183
+-- PARITY_EXPECT_FUNCS=182
 -- PARITY_EXPECT_POLICIES=111
 -- ============================================================
 BEGIN;
@@ -93,8 +102,8 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  183,
-  'public function count == prod (183 = 181 + 자동마감 사각지대 정리 2종, 2026-07-27)');
+  182,
+  'public function count == prod (182 = 183 - fn_notification_insert_increment 고아 1, 2026-07-31)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(
