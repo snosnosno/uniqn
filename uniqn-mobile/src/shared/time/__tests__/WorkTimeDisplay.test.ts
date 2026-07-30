@@ -85,3 +85,53 @@ describe('WorkTimeDisplay.getDisplayInfo — 출근 예정 단일값(§K 정본)
     expect(info.isEndNextDay).toBe(true);
   });
 });
+
+/**
+ * 3상태 판정 — 확정 / 미정 / 협의.
+ *
+ * `time_slot` 이 NULL 인 것과 `'NEGOTIABLE'` 인 것은 둘 다 시각으로 파싱되지 않아서
+ * 예전엔 표시 계층에서 구분할 방법이 아예 없었다. 그 결과 "아직 안 정해진 시간"이
+ * "협의하기로 한 시간"으로 둔갑했다.
+ */
+describe('WorkTimeDisplay.getDisplayInfo — scheduleTimeState 3상태', () => {
+  it('예정 시각이 있으면 confirmed', () => {
+    expect(
+      WorkTimeDisplay.getDisplayInfo({ timeSlot: '19:00', date: '2026-08-01' }).scheduleTimeState
+    ).toBe('confirmed');
+  });
+
+  it('time_slot 이 없으면 undecided — 명시 미정과 레거시 미기록은 스태프에게 같은 사실이다', () => {
+    expect(WorkTimeDisplay.getDisplayInfo({ date: '2026-08-01' }).scheduleTimeState).toBe(
+      'undecided'
+    );
+    expect(
+      WorkTimeDisplay.getDisplayInfo({ timeSlot: undefined, date: '2026-08-01' }).scheduleTimeState
+    ).toBe('undecided');
+  });
+
+  it("고정공고의 'NEGOTIABLE' 만 negotiable — 미정과 섞이면 안 된다", () => {
+    expect(
+      WorkTimeDisplay.getDisplayInfo({ timeSlot: 'NEGOTIABLE', date: '2026-08-01' })
+        .scheduleTimeState
+    ).toBe('negotiable');
+  });
+
+  it('레거시 startTime 폴백으로 예정이 잡히면 confirmed', () => {
+    expect(
+      WorkTimeDisplay.getDisplayInfo({
+        startTime: new Date(2026, 7, 1, 19, 0, 0),
+        date: '2026-08-01',
+      }).scheduleTimeState
+    ).toBe('confirmed');
+  });
+
+  it('예정이 미정이어도 실제 출근 기록은 상태를 바꾸지 않는다', () => {
+    const info = WorkTimeDisplay.getDisplayInfo({
+      checkInTime: new Date(2026, 7, 1, 19, 4, 0),
+      date: '2026-08-01',
+    });
+
+    expect(info.scheduleTimeState).toBe('undecided');
+    expect(info.isEffectiveStartActual).toBe(true);
+  });
+});

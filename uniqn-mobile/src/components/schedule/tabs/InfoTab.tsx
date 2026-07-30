@@ -25,7 +25,13 @@ import {
   getRoleSalaryFromSettlementSource,
 } from '@/domains/settlement';
 import { WorkTimeDisplay } from '@/shared/time';
-import { formatWorkTimeRange, NO_SHOW_NOTICE_TITLE, NO_SHOW_NOTICE_DESCRIPTION } from '../helpers';
+import {
+  formatWorkTimeRange,
+  NO_SHOW_NOTICE_TITLE,
+  NO_SHOW_NOTICE_DESCRIPTION,
+  UNDECIDED_TIME_LABEL,
+  UNDECIDED_TIME_HINT,
+} from '../helpers';
 import { formatPhoneForDisplay } from '@/utils/phone';
 import { openMapSearch, resolveMapQuery } from '@/utils/mapLink';
 import { useToast } from '@/stores/toastStore';
@@ -303,11 +309,18 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
             )}
           </View>
         ) : (
-          <View className="mt-2 flex-row items-center">
-            <ClockIcon size={14} color={SECONDARY_PALETTE[400]} />
-            <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
-              {getTimeDisplay(schedule)}
-            </Text>
+          <View className="mt-2">
+            <View className="flex-row items-center">
+              <ClockIcon size={14} color={SECONDARY_PALETTE[400]} />
+              <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
+                {getTimeDisplay(schedule)}
+              </Text>
+            </View>
+            {getTimeDisplay(schedule) === UNDECIDED_TIME_LABEL && (
+              <Text className="ml-[19px] mt-1 text-xs text-content-muted dark:text-secondary-500 font-sans">
+                {UNDECIDED_TIME_HINT}
+              </Text>
+            )}
           </View>
         )}
       </Section>

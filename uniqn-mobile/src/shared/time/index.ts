@@ -16,6 +16,7 @@ export {
   WorkTimeDisplay,
   type WorkTimeSource,
   type WorkTimeDisplayResult,
+  type ScheduleTimeState,
 } from './WorkTimeDisplay';
 
 // 익일 근무시간 공용 프리뷰 헬퍼 (근무표·정산 입력 화면)

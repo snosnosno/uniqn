@@ -20,7 +20,12 @@ import { Badge } from '@/components/ui';
 import { getRoleDisplayName } from '@/types/unified';
 import { STATUS } from '@/constants';
 import { TimeNormalizer, WorkTimeDisplay } from '@/shared/time';
-import { describeNextShiftCountdown, formatWorkTimeRange } from './helpers/timeHelpers';
+import {
+  describeNextShiftCountdown,
+  formatWorkTimeRange,
+  UNDECIDED_TIME_LABEL,
+  UNDECIDED_TIME_HINT,
+} from './helpers/timeHelpers';
 import { formatSingleDate } from '@/utils/scheduleGrouping';
 import type { ScheduleEvent } from '@/types';
 
@@ -61,6 +66,12 @@ export const NextShiftCard = memo(function NextShiftCard({
 
   if (!schedule || !countdown || !timeInfo) return null;
 
+  const timeRangeDisplay = formatWorkTimeRange(timeInfo);
+  // 다음 근무 카드는 "지금 뭘 해야 하나"를 답하는 자리다. 시각이 미정이면 그 사실과 함께
+  // 언제 알게 되는지까지 말해준다. 협의 근무는 정해질 값이 아니라 문구를 붙이지 않는다.
+  const showUndecidedTimeHint =
+    timeInfo.scheduleTimeState === 'undecided' && timeRangeDisplay === UNDECIDED_TIME_LABEL;
+
   const isWorking = countdown.urgency === 'working';
   const isImminent = countdown.urgency === 'imminent';
   const canScan = Boolean(schedule.workLogId && onQRScan);
@@ -98,10 +109,14 @@ export const NextShiftCard = memo(function NextShiftCard({
         </Text>
         <View className="mx-2 h-3 w-px bg-secondary-300 dark:bg-surface-elevated" />
         <ClockIcon size={14} color={SECONDARY_PALETTE[500]} />
-        <Text className="ml-1.5 text-sm text-content-secondary font-sans">
-          {formatWorkTimeRange(timeInfo)}
-        </Text>
+        <Text className="ml-1.5 text-sm text-content-secondary font-sans">{timeRangeDisplay}</Text>
       </View>
+
+      {showUndecidedTimeHint && (
+        <Text className="mt-1 text-xs text-content-muted dark:text-secondary-500 font-sans">
+          {UNDECIDED_TIME_HINT}
+        </Text>
+      )}
 
       {schedule.location && (
         <View className="mt-1.5 flex-row items-center">

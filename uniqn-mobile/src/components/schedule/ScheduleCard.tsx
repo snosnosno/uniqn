@@ -33,6 +33,8 @@ import {
   SCHEDULE_STATUS_STRIPE_TONE,
   NO_SHOW_NOTICE_TITLE,
   NO_SHOW_NOTICE_DESCRIPTION,
+  UNDECIDED_TIME_LABEL,
+  UNDECIDED_TIME_HINT,
 } from './helpers';
 import { STATUS } from '@/constants';
 import { PAYROLL_STATUS } from '@/constants/statusConfig';
@@ -132,6 +134,11 @@ export const ScheduleCard = memo(function ScheduleCard({
 
   // 표기는 helpers 한 곳에서만 만든다 — 카드마다 다른 문장이 나오지 않게.
   const timeRangeDisplay = useMemo(() => formatWorkTimeRange(timeDisplayInfo), [timeDisplayInfo]);
+
+  // '출근 시간 미정'만으로는 "언제 알 수 있나"에 답이 없다. 안심 문구를 아래 줄에 덧댄다.
+  // 협의(고정공고)는 정해질 값이 아니므로 이 문구를 붙이지 않는다.
+  const showUndecidedTimeHint =
+    timeDisplayInfo.scheduleTimeState === 'undecided' && timeRangeDisplay === UNDECIDED_TIME_LABEL;
 
   const isCancelled = schedule.type === STATUS.SCHEDULE.CANCELLED;
   // 노쇼는 취소와 달리 흐리게 처리하지 않는다 — 이의 제기 기한이 있는 기록이라
@@ -247,6 +254,12 @@ export const ScheduleCard = memo(function ScheduleCard({
                 </Text>
               </View>
 
+              {showUndecidedTimeHint && (
+                <Text className="mt-1 text-xs text-content-muted dark:text-secondary-500 font-sans">
+                  {UNDECIDED_TIME_HINT}
+                </Text>
+              )}
+
               <View className="mt-2 flex-row flex-wrap items-center">
                 <View className="mr-3 flex-row items-center">
                   <BriefcaseIcon size={14} color={SECONDARY_PALETTE[500]} />
@@ -289,6 +302,12 @@ export const ScheduleCard = memo(function ScheduleCard({
                     : timeRangeDisplay}
                 </Text>
               </View>
+
+              {schedule.type !== STATUS.SCHEDULE.COMPLETED && showUndecidedTimeHint && (
+                <Text className="mt-1 text-xs text-content-muted dark:text-secondary-500 font-sans">
+                  {UNDECIDED_TIME_HINT}
+                </Text>
+              )}
 
               <View className="mt-2 flex-row flex-wrap items-center">
                 <View className="mr-3 flex-row items-center">

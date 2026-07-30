@@ -17,9 +17,9 @@ import {
   ChevronUpIcon,
 } from '@/components/icons';
 import { formatDateDisplay, formatRolesDisplay } from '@/utils/scheduleGrouping';
-import { parseTimeSlot } from '@/utils/date/ranges';
 import {
   formatGroupSalaryDisplay,
+  formatWorkTimeRange,
   SCHEDULE_STATUS_STRIPE_TONE,
   NO_SHOW_NOTICE_TITLE,
   NO_SHOW_NOTICE_DESCRIPTION,
@@ -68,21 +68,24 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
   );
   const ownerName = group.postingProjection?.ownerName;
 
-  // 시간 표시는 SSOT(WorkTimeDisplay) 경유 — 심야(자정 넘김) 근무는 종료 시각에 "익일"을 병기한다.
-  // 시작·종료가 모두 해석되는 "HH:mm - HH:mm" 만 라벨로 변환하고,
-  // 파싱 불가(단일 시각·"협의" 등)면 원문을 그대로 유지한다(빈칸/미정 표시 방지).
-  const timeSlotLabel = useMemo(() => {
-    const parsed = parseTimeSlot(group.timeSlot);
-    if (!parsed || !parsed.end) return group.timeSlot;
-
-    const info = WorkTimeDisplay.getDisplayInfo({
-      timeSlot: group.timeSlot,
-      date: group.dateRange.start,
-    });
-    return info.isEndNextDay
-      ? `${info.scheduledStart} – 익일 ${info.scheduledEnd}`
-      : `${info.scheduledStart} – ${info.scheduledEnd}`;
-  }, [group.timeSlot, group.dateRange.start]);
+  // 시간 표시는 SSOT(WorkTimeDisplay + formatWorkTimeRange) 경유 — 심야(자정 넘김) 근무는
+  // 종료 시각에 "익일"을 병기하고, 단일 시각은 "HH:mm 시작", 시각이 없으면 상태에 맞는
+  // 문장('출근 시간 미정' / '시간 협의')을 받는다.
+  //
+  // 예전엔 이 카드만 자체 규칙을 썼다: 파싱 실패 시 원문을 그대로 노출하고, 시간대가 비면
+  // 아래 렌더에서 행을 통째로 숨겼다. 그래서 같은 근무가 스케줄 카드에선 "시간 협의",
+  // 그룹 카드에선 아무것도 안 보이는 상태가 됐다. 예정 시각은 항상 그린다.
+  const timeSlotLabel = useMemo(
+    () =>
+      formatWorkTimeRange(
+        WorkTimeDisplay.getDisplayInfo({
+          timeSlot: group.timeSlot,
+          date: group.dateRange.start,
+        }),
+        false
+      ),
+    [group.timeSlot, group.dateRange.start]
+  );
 
   const attendanceSummary = useMemo(() => {
     if (group.type !== STATUS.SCHEDULE.CONFIRMED) return null;
@@ -219,14 +222,12 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
             </Text>
           </View>
 
-          {group.timeSlot && (
-            <View className="mb-2 flex-row items-center">
-              <ClockIcon size={14} color={SECONDARY_PALETTE[500]} />
-              <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
-                {timeSlotLabel}
-              </Text>
-            </View>
-          )}
+          <View className="mb-2 flex-row items-center">
+            <ClockIcon size={14} color={SECONDARY_PALETTE[500]} />
+            <Text className="ml-1.5 flex-1 text-sm text-content-muted dark:text-secondary-400 font-sans">
+              {timeSlotLabel}
+            </Text>
+          </View>
 
           <View className="flex-row flex-wrap items-center">
             <View className="mr-3 flex-row items-center">
