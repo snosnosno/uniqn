@@ -41,7 +41,7 @@ import { timeStringToValue, timeValueToString } from '@/components/workSchedule/
 import { buildAddSlotPayload } from '@/components/workSchedule/addSlotPayload';
 import { DEFAULT_SLOT_START_TIME } from '@/domains/workSchedule';
 import { useStaffNicknameSearch } from '@/hooks/useStaffNicknameSearch';
-import { toError } from '@/errors';
+import { isAppError, toError } from '@/errors';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 import { isWeb } from '@/utils/platform';
@@ -87,7 +87,7 @@ export function AddStaffModal({
   const [startTime, setStartTime] = useState('');
   const [isTimeUndefined, setIsTimeUndefined] = useState(false);
   const [timeOpen, setTimeOpen] = useState(false);
-  const addToast = useToastStore((s) => s.addToast);
+  const toastError = useToastStore((s) => s.error);
 
   const resetAll = useCallback(() => {
     reset();
@@ -171,10 +171,10 @@ export function AddStaffModal({
         timeUndefined: isTimeUndefined,
       });
     } catch (error) {
-      const userMessage =
-        (error as { userMessage?: string }).userMessage ?? '스태프 추가에 실패했습니다.';
+      // 평문 캐스팅은 실제 가드(__isAppError 브랜드 검사)를 우회한다 — 형제 시트와 동일하게
+      // isAppError 로 판정하고, 아니면 일반 안내로 물러선다.
       logger.error('스태프 직접 추가 입력 검증 실패', toError(error), { jobPostingId });
-      addToast({ type: 'error', message: userMessage });
+      toastError(isAppError(error) ? error.userMessage : '스태프 추가에 실패했습니다.');
       return;
     }
 
@@ -195,7 +195,7 @@ export function AddStaffModal({
     jobPostingId,
     onSubmit,
     handleClose,
-    addToast,
+    toastError,
   ]);
 
   // 날짜 선택 오버레이 — SheetModal 루트에 렌더(중첩 Modal 회피).

@@ -1,14 +1,11 @@
 /**
- * SlotTimeField — 배치 시간 입력(추가·편집 시트) 공용 시간 트리거 필드 + 변환 헬퍼.
+ * SlotTimeField — 배치 시간 입력 공용 변환 헬퍼('HH:mm' ↔ TimeValue ↔ 표시 문구).
  *
- * EditSlotSheet(B2)에서 정의하던 트리거 필드/변환 헬퍼를 추출해 AddSlotSheet(B1)과 공유한다.
- * 트리거 필드는 탭 시 상위가 TimeWheelPicker(embedded 오버레이)를 여는 Pressable 이다.
- * 이 화면들은 0~23 표기만 사용(다음날 24+ 미표기) — 익일 판정은 deriveOvernightPreview 가 담당.
+ * 근무표 두 시트(AddSlotSheet·EditSlotSheet)와 공고 경로(AddStaffModal)가 공유한다.
+ * 트리거 UI 자체는 `StartTimeField`(단일 시각 + '미정' 토글) 하나로 통일했다 —
+ * 예정 종료가 사라지면서(§K) 시작/종료 두 칸을 그리던 `TimeTriggerField` 는 소비처가 없어졌다.
+ * 이 화면들은 0~23 표기만 사용한다(다음날 24+ 미표기).
  */
-import React from 'react';
-import { Pressable, Text, View } from 'react-native';
-import { SECONDARY_PALETTE } from '@/constants/colors';
-import { ChevronDownIcon } from '@/components/icons';
 import type { TimeValue } from '@/components/ui/TimeWheelPicker';
 
 const TIME_RE = /^(\d{1,2}):(\d{2})$/;
@@ -38,35 +35,4 @@ export function formatTimeDisplay(time: string): string {
   const period = hour < 12 ? '오전' : '오후';
   const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
   return `${period} ${displayHour}:${minutes}`;
-}
-
-/** 시간 트리거 필드 — 탭 시 상위가 휠 피커를 연다(TimePicker 트리거 스타일 동등). */
-export function TimeTriggerField({
-  label,
-  value,
-  onPress,
-}: {
-  label: string;
-  value: string;
-  onPress: () => void;
-}) {
-  return (
-    <View>
-      <Text className="mb-2 font-sans-medium text-content-primary dark:text-off-white">
-        {label}
-      </Text>
-      <Pressable
-        onPress={onPress}
-        accessibilityRole="button"
-        accessibilityLabel={`${label} 시간 선택`}
-        accessibilityHint="탭하여 시간을 선택하세요"
-        className="flex-row items-center px-4 py-3 rounded-lg border-2 bg-surface-card border-secondary-300 dark:border-surface-overlay"
-      >
-        <Text className="flex-1 text-base text-content-primary font-sans">
-          {formatTimeDisplay(value)}
-        </Text>
-        <ChevronDownIcon size={20} color={SECONDARY_PALETTE[500]} />
-      </Pressable>
-    </View>
-  );
 }

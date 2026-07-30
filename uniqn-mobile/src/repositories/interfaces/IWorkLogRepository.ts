@@ -18,8 +18,8 @@ import type {
 /**
  * 슬롯 편집(근무표 B2) 입력. 부분 업데이트 — 제공된 필드만 반영한다.
  *
- * @property startTime - 시작시각 'HH:MM' (endTime 과 함께 제공 시 time_slot 갱신)
- * @property endTime - 종료시각 'HH:MM'
+ * @property startTime - 출근 예정 시각 'HH:mm' 단일값(제공 시 time_slot 갱신 — 예정 종료는 없다)
+ * @property timeUndecided - 출근 예정 미정(제공 시 time_slot 을 비운다, startTime 보다 우선)
  * @property staffRole - 직무 역할(StaffRole)
  * @property color - 셀 색상 토큰(화이트리스트, 자유 hex 금지)
  * @property memo - 메모(XSS 검증 통과분만 기록)
@@ -379,11 +379,12 @@ export interface IWorkLogRepository {
    * 슬롯 편집(근무표 B2) — 시간/역할/색상/메모 부분 수정.
    *
    * 검증 경계(Repository): color 는 토큰 화이트리스트(자유 hex 거부), memo 는 XSS 검증
-   * 통과분만 기록한다(S1/U3). startTime+endTime 둘 다 제공 시 time_slot('HH:MM - HH:MM')을 갱신.
+   * 통과분만 기록한다(S1/U3). 시간은 출근 예정 **단일값**만 저장하고(§K), 미정이면 비운다.
+   * 시간 축을 안 보내면 time_slot 키를 만들지 않아 기존 값이 보존된다.
    *
    * @param workLogId - 근무 기록 ID
    * @param input - 수정할 필드(제공된 것만 반영)
-   * @throws ValidationError - 색상 화이트리스트 위반/메모 XSS·길이 위반 시
+   * @throws ValidationError - 색상 화이트리스트 위반/메모 XSS·길이 위반/시각 형식 위반 시
    */
   updateSlot(workLogId: string, input: UpdateSlotInput): Promise<void>;
 }

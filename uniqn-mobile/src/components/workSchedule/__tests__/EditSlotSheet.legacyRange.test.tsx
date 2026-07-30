@@ -118,6 +118,20 @@ describe('EditSlotSheet — 레거시 범위 슬롯', () => {
     expect(payload.input.staffRole).toBe('dealer');
   });
 
+  it("'미정'을 체크했다 **다시 해제**하면 원래대로 아무것도 보내지 않는다", () => {
+    // 되돌리기가 되돌리기여야 한다. dirty 를 한 번 true 로 굳히면, 마음을 바꾼 사용자에게도
+    // 저장 시 startTime 이 실려 나가 레거시 범위가 조용히 잘린다.
+    const { getByText, getByLabelText } = renderSheet();
+
+    fireEvent.press(getByLabelText('출근 예정 미정'));
+    fireEvent.press(getByLabelText('출근 예정 미정'));
+    fireEvent.press(getByText('저장'));
+
+    const payload = updateMutate.mock.calls[0][0] as { input: Record<string, unknown> };
+    expect(payload.input).not.toHaveProperty('startTime');
+    expect(payload.input).not.toHaveProperty('timeUndecided');
+  });
+
   it("'미정'을 명시 선택하면 미정을 보낸다(레거시 범위를 사용자 의사로 비운다)", () => {
     const { getByText, getByLabelText } = renderSheet();
 

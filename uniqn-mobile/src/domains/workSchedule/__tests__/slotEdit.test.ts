@@ -156,6 +156,31 @@ describe('slotEdit — 기존 범위 데이터 읽기 하위호환 + 중복충�
     expect(detectSlotConflicts(target, siblings)).toEqual([{ workLogId: 'w2', reason: 'overlap' }]);
   });
 
+  it('단일값 출근 시각이 레거시 범위 **안**에 들어가면 경고한다', () => {
+    // 시작시각 일치만 보면 20:00 이 18:00~익일02:00 한복판인데도 놓친다 — 명백한 중복배치다.
+    const target = { workLogId: 'w1', staffId: 's1', timeSlot: '20:00' };
+    const siblings = [
+      { workLogId: 'w2', staffId: 's1', timeSlot: '18:00 - 02:00' }, // 안에 있음(충돌)
+      { workLogId: 'w3', staffId: 's1', timeSlot: '09:00 - 12:00' }, // 밖(무충돌)
+    ];
+    expect(detectSlotConflicts(target, siblings)).toEqual([{ workLogId: 'w2', reason: 'overlap' }]);
+  });
+
+  it('자정을 넘긴 범위 안의 새벽 시각도 경고한다(익일 보정)', () => {
+    const target = { workLogId: 'w1', staffId: 's1', timeSlot: '01:00' };
+    const siblings = [
+      { workLogId: 'w2', staffId: 's1', timeSlot: '18:00 - 02:00' }, // 익일 01:00 = 안(충돌)
+      { workLogId: 'w3', staffId: 's1', timeSlot: '18:00 - 23:00' }, // 자정 안 넘김 = 밖
+    ];
+    expect(detectSlotConflicts(target, siblings)).toEqual([{ workLogId: 'w2', reason: 'overlap' }]);
+  });
+
+  it('범위 밖 단일값은 경고하지 않는다(오탐 방지)', () => {
+    const target = { workLogId: 'w1', staffId: 's1', timeSlot: '03:00' };
+    const siblings = [{ workLogId: 'w2', staffId: 's1', timeSlot: '18:00 - 02:00' }];
+    expect(detectSlotConflicts(target, siblings)).toEqual([]);
+  });
+
   it('같은 스태프의 겹치는 구간만 충돌로 경고하고 자기 자신은 제외한다', () => {
     const target = { workLogId: 'w1', staffId: 's1', timeSlot: '18:00 - 02:00' };
     const siblings = [

@@ -6,12 +6,14 @@
  * 겹쳐 띄우면 iOS 터치가 먹통이 된다(#186/#188 사고 이력).
  *
  * 고정하는 계약:
- *  1. 인계 시 시트를 **먼저 닫고** 편집기를 연다 — 두 모달이 동시에 열려 있으면 안 된다.
+ *  1. 인계 시 시트를 **먼저 닫고**, dismiss 애니메이션이 끝난 뒤에 편집기를 연다.
+ *     두 setState 를 한 핸들러에서 부르면 React 가 한 커밋으로 배칭해 닫힘/열림이 같은
+ *     프레임에 떨어진다 — 그래서 "닫는 즉시 열기"는 겹쳐 띄우는 것과 다르지 않다.
  *  2. 열기에 실패하면(정산 완료로 잠김) 시트를 닫지 않는다. 닫아버리면 사용자는
  *     아무 일도 안 일어난 채 맥락만 잃는다.
  *  3. 컨테이너 직속 배치가 아니면 실적 자체를 넘기지 않는다(공고 스팬 슬롯은 여기서 해소 불가).
  */
-import { render, fireEvent } from '@testing-library/react-native';
+import { render, fireEvent, act } from '@testing-library/react-native';
 import React from 'react';
 import { VenueDayPanel } from '../VenueDayPanel';
 import { useSetVenueSoftTarget, useVenueDaySlots } from '@/hooks/workSchedule';
@@ -141,29 +143,52 @@ function renderPanel() {
 }
 
 describe('VenueDayPanel — 예정→실적 편집기 인계', () => {
-  it('인계 시 시트를 먼저 닫고 편집기를 연다(두 모달 동시 노출 금지)', () => {
-    const api = renderPanel();
+  it('시트를 닫은 뒤 지연을 두고 편집기를 연다(같은 프레임 동시 전환 금지)', () => {
+    jest.useFakeTimers();
+    try {
+      const api = renderPanel();
 
-    fireEvent.press(api.getByText('슬롯 열기'));
-    expect(api.getByText('시트 열림')).toBeTruthy();
-    expect(api.queryByText('편집기 열림')).toBeNull();
+      fireEvent.press(api.getByText('슬롯 열기'));
+      expect(api.getByText('시트 열림')).toBeTruthy();
+      expect(api.queryByText('편집기 열림')).toBeNull();
 
-    fireEvent.press(api.getByText('출퇴근 시간 수정'));
+      fireEvent.press(api.getByText('출퇴근 시간 수정'));
 
-    expect(api.queryByText('시트 열림')).toBeNull();
-    expect(api.getByText('편집기 열림')).toBeTruthy();
+      // 같은 프레임: 시트는 닫혔지만 편집기는 아직 열리지 않아야 한다.
+      // 여기서 편집기가 이미 열려 있으면 두 RN Modal 이 겹치는 그 상태다.
+      expect(api.queryByText('시트 열림')).toBeNull();
+      expect(api.queryByText('편집기 열림')).toBeNull();
+
+      act(() => {
+        jest.advanceTimersByTime(300);
+      });
+
+      expect(api.getByText('편집기 열림')).toBeTruthy();
+      expect(api.queryByText('시트 열림')).toBeNull();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('정산 완료로 잠긴 근무는 편집기를 열지 않고 시트도 닫지 않는다', () => {
-    setConfirmed(STATUS.PAYROLL.COMPLETED);
-    const api = renderPanel();
+    jest.useFakeTimers();
+    try {
+      setConfirmed(STATUS.PAYROLL.COMPLETED);
+      const api = renderPanel();
 
-    fireEvent.press(api.getByText('슬롯 열기'));
-    fireEvent.press(api.getByText('출퇴근 시간 수정'));
+      fireEvent.press(api.getByText('슬롯 열기'));
+      fireEvent.press(api.getByText('출퇴근 시간 수정'));
 
-    expect(api.getByText('시트 열림')).toBeTruthy();
-    expect(api.queryByText('편집기 열림')).toBeNull();
-    expect(toastErrorSpy).toHaveBeenCalled();
+      act(() => {
+        jest.advanceTimersByTime(300);
+      });
+
+      expect(api.getByText('시트 열림')).toBeTruthy();
+      expect(api.queryByText('편집기 열림')).toBeNull();
+      expect(toastErrorSpy).toHaveBeenCalled();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('컨테이너 직속 배치가 아니면 실적 입구를 아예 넘기지 않는다', () => {

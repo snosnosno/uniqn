@@ -19,6 +19,9 @@
  * 모달 구조: SheetModal + overlay 패턴(WorkTimeEditor 검증본 복제).
  * - 시간은 트리거 필드(Pressable)로 표시하고, 탭 시 단일 TimeWheelPicker 를 SheetModal 의
  *   overlay 로 렌더 → 중첩 RN Modal 회피(iOS 터치먹통 #186/#188 방지).
+ * - 색상 칩 className 은 SLOT_COLOR_CHIPS 의 **정적 리터럴만** 사용한다(NativeWind 는 동적으로
+ *   조립한 클래스를 빌드 시점에 못 보고 dark: 변형이 통째로 유실된다).
+ * - 배치 빼기(P0-1): useDeleteSlot 경유(직접추가/지원확정 분기는 서비스 담당), overlay 확인 패널.
  *
  * 플래그 OFF면 상위에서 미노출(이 시트는 weekly_grid_enabled 뒤에서만 사용).
  */
@@ -39,6 +42,7 @@ import {
   SLOT_COLOR_CHIPS,
   DEFAULT_SLOT_START_TIME,
   MAX_SLOT_MEMO_LENGTH,
+  isValidSlotStartTime,
   parseTimeSlotParts,
   detectSlotConflicts,
   type SlotColorToken,
@@ -99,17 +103,26 @@ export function EditSlotSheet({
   const toastSuccess = useToastStore((s) => s.success);
   const toastError = useToastStore((s) => s.error);
 
-  /** 출근 예정 시각('HH:mm'). 정해진 적 없으면 null — 피커 위치는 별도 폴백을 쓴다. */
-  const [startTime, setStartTime] = useState<string | null>(null);
+  /** 원본에 저장돼 있던 출근 예정 시각. **정본 형식('HH:mm')으로 읽히는 값만** 인정한다. */
+  const [originalStart, setOriginalStart] = useState<string | null>(null);
+  /** 원본 time_slot 에 값은 있는데 읽을 수 없는 경우(폐지 전 자유 텍스트 입력의 잔재). */
+  const [originalUnreadable, setOriginalUnreadable] = useState(false);
+  /** 이번 편집에서 사용자가 고른 시각. 안 골랐으면 null. */
+  const [pickedTime, setPickedTime] = useState<string | null>(null);
   /** '미정' 명시 선택(결정 4 — 미정은 명시 선택으로만 도달한다). */
   const [timeUndecided, setTimeUndecided] = useState(false);
-  /**
-   * 이번 편집에서 시간 축을 실제로 건드렸는가. 이게 저장 전송의 유일한 진실원이다 —
-   * 화면 상태를 저장 신호로 오해하면 색상만 고치려던 저장이 근무 시간을 바꾼다.
-   */
-  const [timeDirty, setTimeDirty] = useState(false);
   /** 원본에 예정 종료가 저장돼 있었는가(폐지된 범위 데이터) — 안내 문구용. */
   const [hadLegacyEnd, setHadLegacyEnd] = useState(false);
+
+  /**
+   * 이번 편집에서 시간 축을 실제로 건드렸는가 — 저장 전송의 유일한 진실원이다.
+   *
+   * 상태로 들고 있다가 true 로 굳히면, 미정을 체크했다 **다시 해제한** 사용자에게도 dirty 가 남아
+   * 원본(레거시 범위)이 조용히 단일값으로 잘린다. 되돌리기가 되돌리기여야 하므로 파생값으로 둔다.
+   */
+  const timeDirty = pickedTime !== null || timeUndecided;
+  /** 화면에 보여줄 출근 예정 시각(고른 값 우선, 없으면 원본). */
+  const displayStart = pickedTime ?? originalStart ?? '';
 
   const [role, setRole] = useState<StaffRole>('dealer');
   const [color, setColor] = useState<SlotColorToken | null>(null);
@@ -126,10 +139,14 @@ export function EditSlotSheet({
     if (!slot) return;
     // 이미 저장된 범위 데이터도 읽어서 시작만 취한다(읽기 하위호환). 종료는 표시하지 않는다.
     const parts = parseTimeSlotParts(slot.timeSlot);
-    setStartTime(parts.start || null);
+    const readableStart = isValidSlotStartTime(parts.start) ? parts.start.trim() : null;
+    setOriginalStart(readableStart);
+    // 값은 있는데 못 읽으면 "정해진 시간"으로 인정하지 않는다 — 그대로 두면 파싱 불가 값이
+    // 저장 게이트를 통과하고, 트리거에는 '저녁 6시' 같은 원문이 시각인 척 노출된다.
+    setOriginalUnreadable(Boolean(slot.timeSlot) && readableStart === null);
     setHadLegacyEnd(Boolean(parts.end));
+    setPickedTime(null);
     setTimeUndecided(false);
-    setTimeDirty(false);
     setRole((slot.role as StaffRole) ?? 'dealer');
     setColor((slot.color as SlotColorToken | null) ?? null);
     setMemo(slot.notes ?? '');
@@ -145,8 +162,8 @@ export function EditSlotSheet({
 
   /** 저장 시 서버로 보낼 시간 축(안 건드렸으면 빈 객체 — 기존 값 보존). */
   const timePayload = useMemo(
-    () => resolveSlotTimePayload({ startTime, timeUndecided, timeDirty }),
-    [startTime, timeUndecided, timeDirty]
+    () => resolveSlotTimePayload({ startTime: pickedTime, timeUndecided, timeDirty }),
+    [pickedTime, timeUndecided, timeDirty]
   );
 
   // 중복충돌 경고(같은 스태프의 출근 예정 겹침). 차단이 아닌 경고.
@@ -155,7 +172,7 @@ export function EditSlotSheet({
     // 미정은 비교할 시각 자체가 없다 — 판정 대상에서 뺀다.
     if (timeUndecided) return [];
     // 사용자가 시간을 바꿨으면 바뀐 값으로, 아니면 원본 표기로 판정한다.
-    const effectiveTimeSlot = timeDirty ? startTime : slot.timeSlot;
+    const effectiveTimeSlot = pickedTime ?? slot.timeSlot;
     if (!effectiveTimeSlot) return [];
     return detectSlotConflicts(
       { workLogId: slot.workLogId, staffId: slot.staffId, timeSlot: effectiveTimeSlot },
@@ -165,7 +182,7 @@ export function EditSlotSheet({
         timeSlot: s.timeSlot,
       }))
     );
-  }, [slot, siblingSlots, startTime, timeUndecided, timeDirty]);
+  }, [slot, siblingSlots, pickedTime, timeUndecided]);
 
   // 실제 출퇴근 표시(SSOT). 예정 시각은 넘기지 않는다 — 이 섹션은 실적만 말해야 한다.
   const attendanceInfo = useMemo(() => {
@@ -179,28 +196,22 @@ export function EditSlotSheet({
 
   // 휠 피커 값('HH:mm' → TimeValue). 아직 안 골랐으면 저녁 운영 기준 위치에서 시작한다.
   const pickerValue = useMemo<TimeValue>(
-    () => timeStringToValue(startTime ?? PICKER_FALLBACK_TIME),
-    [startTime]
+    () => timeStringToValue(displayStart || PICKER_FALLBACK_TIME),
+    [displayStart]
   );
 
   const handlePickerConfirm = useCallback((timeValue: TimeValue) => {
-    setStartTime(timeValueToString(timeValue));
+    setPickedTime(timeValueToString(timeValue));
     // 시각을 고르면 '미정'은 자동 해제된다(둘은 배타 관계).
     setTimeUndecided(false);
-    setTimeDirty(true);
     setPickerOpen(false);
-  }, []);
-
-  const handleToggleUndecided = useCallback((next: boolean) => {
-    setTimeUndecided(next);
-    setTimeDirty(true);
   }, []);
 
   /**
    * 저장 게이트: 시각이 정해진 적 없는 슬롯은 시간 선택 또는 '미정' 명시 체크 전까지 저장 불가.
    * 이미 시각이 있는 슬롯은 그 값이 곧 사용자의 선택이므로 게이트를 걸지 않는다.
    */
-  const timeGateSatisfied = Boolean(slot?.timeSlot) || timeDirty;
+  const timeGateSatisfied = originalStart !== null || timeDirty;
 
   const handleSave = () => {
     if (!slot || !timeGateSatisfied) return;
@@ -361,9 +372,9 @@ export function EditSlotSheet({
         {/* 출근 예정 — 단일 시각 + '미정' 토글(인원 추가 시트와 동일 필드) */}
         <StartTimeField
           label="출근 예정"
-          value={startTime ?? ''}
+          value={displayStart}
           isUndefined={timeUndecided}
-          onToggleUndefined={handleToggleUndecided}
+          onToggleUndefined={setTimeUndecided}
           onPress={() => setPickerOpen(true)}
         />
 
@@ -374,10 +385,20 @@ export function EditSlotSheet({
           </Text>
         ) : null}
 
+        {originalUnreadable ? (
+          /* 폐지 전 자유 텍스트로 저장된 값 — 시각인 척 보여주는 대신 다시 고르게 한다. */
+          <Text className="mt-2 text-sm text-content-secondary font-sans">
+            저장된 출근 시간을 읽을 수 없어요. 시간을 다시 골라주세요.
+          </Text>
+        ) : null}
+
         {hadLegacyEnd ? (
           /* 폐지된 범위 데이터 — 화면에서 종료가 사라진 이유를 밝힌다(조용한 소실 방지). */
           <Text className="mt-2 text-sm text-content-secondary font-sans">
-            예정 종료 시간은 더 이상 쓰지 않아요. 실제 퇴근은 아래 출퇴근 기록으로 남습니다.
+            {attendanceInfo
+              ? '예정 종료 시간은 더 이상 쓰지 않아요. 실제 퇴근은 아래 출퇴근 기록으로 남습니다.'
+              : /* 공고 스팬 슬롯은 이 시트에 실적 섹션이 없다 — 있지도 않은 '아래'를 가리키면 안 된다. */
+                '예정 종료 시간은 더 이상 쓰지 않아요. 실제 퇴근은 출퇴근 기록으로 남습니다.'}
           </Text>
         ) : null}
 

@@ -149,6 +149,9 @@ export function assertSlotMemo(memo: string): string {
 // 시간 파싱 / 정렬 / 조합
 // ============================================================================
 
+/** 하루의 분 수 — 자정 넘김 구간 보정에 쓴다. */
+const MINUTES_PER_DAY = 24 * 60;
+
 /** 'HH:MM' 을 0~1439 분으로 파싱(범위 밖/형식 오류는 null). */
 function toMinutes(hhmm: string): number | null {
   const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm.trim());
@@ -186,6 +189,15 @@ export function sortSlotsByStartTime<T extends { timeSlot: string | null }>(
   slots: readonly T[]
 ): T[] {
   return [...slots].sort(compareSlotsByStartTime);
+}
+
+/**
+ * 정본 형식('HH:mm' 단일 시각)인가. 던지지 않는 판정용 — 표시·게이트 분기에 쓴다.
+ * 레거시 자유 텍스트('저녁 6시')나 범위 문자열이 저장된 슬롯을 "시각이 정해진 값"으로
+ * 오인하지 않게 하는 것이 주 용도다.
+ */
+export function isValidSlotStartTime(value: string | null | undefined): boolean {
+  return typeof value === 'string' && toMinutes(value.trim()) !== null;
 }
 
 /**
@@ -260,39 +272,70 @@ export function toSlotInterval(
 }
 
 /**
+ * 겹침 판정에 쓸 수 있는 시각인가. 미정·'NEGOTIABLE' 처럼 읽을 수 없는 값이면 false.
+ * 단일값('19:00')과 레거시 범위('18:00 - 02:00') 모두 true — 형식이 아니라 가독 여부만 본다.
+ */
+export function hasComparableSlotTime(timeSlot: string | null | undefined): boolean {
+  return Number.isFinite(parseSlotStartMinutes(timeSlot));
+}
+
+/** 분 단위 시각이 구간 [start, end) 안인가. 자정 넘김 구간(end>1440)은 +1일 보정해 한 번 더 본다. */
+function isMinuteInInterval(point: number, interval: { start: number; end: number }): boolean {
+  return (
+    (point >= interval.start && point < interval.end) ||
+    (point + MINUTES_PER_DAY >= interval.start && point + MINUTES_PER_DAY < interval.end)
+  );
+}
+
+/**
+ * 두 근무가 시간상 겹치는가 — **저장 형식이 섞여 있어도 한 가지 답만 낸다.**
+ *
+ * `time_slot` 정본은 출근 예정 시각 단일값이지만(§K), 폐지 전에 저장된 범위 데이터가 DB 에
+ * 남아 있다. 그래서 세 조합을 모두 다뤄야 한다:
+ * - **양쪽 다 범위**(레거시): 분 절대구간 반열림 겹침 `aStart < bEnd && bStart < aEnd`.
+ *   경계가 맞닿기만 하면 겹침이 아니다.
+ * - **한쪽만 범위**: 단일값은 구간이 없으니 **점이 구간 안에 있는가**로 본다.
+ *   시작시각 일치만 보면 20:00 이 18:00~익일02:00 한복판인데도 놓친다.
+ * - **양쪽 다 단일값**(정본): 출근 예정 시각 일치.
+ * 시각을 못 읽으면(미정) 겹침 아님 — 비교할 값이 없다.
+ *
+ * 🔑 구인자 근무표(detectSlotConflicts)와 구직자 내 스케줄(detectScheduleOverlaps)이 **이 함수를
+ * 공유해야 한다.** 한쪽만 갈래를 늘리면 같은 근무를 두고 두 화면이 다른 답을 내고, 정작
+ * 곤란해지는 스태프 쪽에만 경고가 없던 옛 비대칭이 되살아난다.
+ */
+export function slotsOverlap(a: string | null | undefined, b: string | null | undefined): boolean {
+  const aInterval = toSlotInterval(a);
+  const bInterval = toSlotInterval(b);
+  if (aInterval && bInterval) {
+    return aInterval.start < bInterval.end && bInterval.start < aInterval.end;
+  }
+
+  const aStart = parseSlotStartMinutes(a);
+  const bStart = parseSlotStartMinutes(b);
+  if (aInterval) {
+    return Number.isFinite(bStart) && isMinuteInInterval(bStart, aInterval);
+  }
+  if (bInterval) {
+    return Number.isFinite(aStart) && isMinuteInInterval(aStart, bInterval);
+  }
+  return Number.isFinite(aStart) && Number.isFinite(bStart) && aStart === bStart;
+}
+
+/**
  * 같은 스태프의 근무가 겹치는 슬롯을 충돌로 표시(자기 자신 제외). 차단이 아닌 경고용.
- *
- * 판정은 두 갈래다:
- * - **양쪽 다 범위 데이터**(레거시): 분 절대구간으로 환산해 자정 넘김(18:00-02:00)까지 정확히 겹침 판정.
- *   표준 반열림 겹침식 `aStart < bEnd && bStart < aEnd` — 경계가 맞닿기만 하면 겹침 아님.
- * - **한쪽이라도 단일값**(정본 형식): 종료가 없어 구간을 못 만드니 **출근 예정 시각 일치**로 판정한다.
- *   이 갈래가 없으면 정본 형식으로 전환한 순간 중복배치 경고가 통째로 죽는다(조용한 기능 소실).
- *
- * staffId 누락·시각 미파싱(미정)·시작==종료면 충돌 없음으로 본다(기존 가드 유지).
+ * 판정은 `slotsOverlap` 이 유일 관문이다 — 구직자 화면과 답이 갈리지 않게 하기 위함이다.
+ * staffId 누락·시각 미파싱(미정)이면 충돌 없음으로 본다(기존 가드 유지).
  */
 export function detectSlotConflicts(
   target: SlotConflictInput,
   siblings: readonly SlotConflictInput[]
 ): SlotConflict[] {
   if (!target.staffId) return [];
-  const targetInterval = toSlotInterval(target.timeSlot);
-  const targetStart = parseSlotStartMinutes(target.timeSlot);
-  // 구간도 못 만들고 시작시각도 못 읽으면(미정) 비교할 게 없다.
-  if (!targetInterval && !Number.isFinite(targetStart)) return [];
   return siblings
     .filter((s) => {
       if (s.workLogId === target.workLogId) return false;
       if (s.staffId !== target.staffId) return false;
-      const interval = toSlotInterval(s.timeSlot);
-      if (targetInterval && interval) {
-        return targetInterval.start < interval.end && interval.start < targetInterval.end;
-      }
-      const siblingStart = parseSlotStartMinutes(s.timeSlot);
-      return (
-        Number.isFinite(targetStart) &&
-        Number.isFinite(siblingStart) &&
-        siblingStart === targetStart
-      );
+      return slotsOverlap(target.timeSlot, s.timeSlot);
     })
     .map((s) => ({ workLogId: s.workLogId, reason: 'overlap' as const }));
 }

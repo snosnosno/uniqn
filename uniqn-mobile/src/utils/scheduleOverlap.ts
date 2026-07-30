@@ -6,10 +6,14 @@
  * 한쪽을 노쇼한다 — 매칭 신뢰도를 직접 갉아먹는 지점인데, 정작 곤란해지는 쪽에만 경고가
  * 없었다(감지기는 구인자 화면에만 배선돼 있었다).
  *
- * 판정은 구인자 화면과 같은 `toSlotInterval`(자정 넘김 처리 포함)을 공유해,
+ * 판정은 구인자 화면과 같은 `slotsOverlap`(자정 넘김 + 단일값/범위 혼합 처리 포함)을 공유해,
  * 두 화면이 서로 다른 답을 내지 않게 한다. 차단이 아니라 경고다.
+ *
+ * ⚠️ `time_slot` 정본이 출근 예정 단일값으로 바뀌면서(§K) 구간 기반 판정만으로는 단일값 근무가
+ * 통째로 탈락한다. 판정 갈래를 늘릴 일이 생기면 **반드시 `slotsOverlap` 한 곳만** 고칠 것 —
+ * 여기서 따로 늘리면 사장 화면엔 경고가 뜨고 스태프 화면엔 안 뜨는 옛 비대칭이 되살아난다.
  */
-import { toSlotInterval } from '@/domains/workSchedule/slotEdit';
+import { slotsOverlap, hasComparableSlotTime } from '@/domains/workSchedule/slotEdit';
 import { STATUS } from '@/constants';
 import type { ScheduleEvent } from '@/types';
 
@@ -37,7 +41,8 @@ export function detectScheduleOverlaps<T extends OverlapCandidate>(
   for (const schedule of schedules) {
     if (schedule.type !== STATUS.SCHEDULE.CONFIRMED) continue;
     if (!schedule.date) continue;
-    if (!toSlotInterval(schedule.timeSlot)) continue;
+    // 시각을 읽을 수 없는 근무(미정·NEGOTIABLE)는 비교 대상에서 뺀다. 단일값도 통과해야 한다.
+    if (!hasComparableSlotTime(schedule.timeSlot)) continue;
 
     byDate.set(schedule.date, [...(byDate.get(schedule.date) ?? []), schedule]);
   }
@@ -48,14 +53,9 @@ export function detectScheduleOverlaps<T extends OverlapCandidate>(
     if (sameDay.length < 2) continue;
 
     for (const target of sameDay) {
-      const targetInterval = toSlotInterval(target.timeSlot);
-      if (!targetInterval) continue;
-
       const conflicts = sameDay.filter((other) => {
         if (other.id === target.id) return false;
-        const interval = toSlotInterval(other.timeSlot);
-        if (!interval) return false;
-        return targetInterval.start < interval.end && interval.start < targetInterval.end;
+        return slotsOverlap(target.timeSlot, other.timeSlot);
       });
 
       if (conflicts.length > 0) {
