@@ -44,3 +44,44 @@ describe('WorkTimeDisplay.getDisplayInfo — isEndNextDay', () => {
     expect(info.effectiveEnd).toBe('미정');
   });
 });
+
+describe('WorkTimeDisplay.getDisplayInfo — 출근 예정 단일값(§K 정본) 하위호환', () => {
+  /**
+   * `time_slot` 정본이 출근 예정 시각 단일값이 되면서, 예정만 있는 근무에는 종료가 없다.
+   * **구 빌드도 이 값을 읽는다** — 범위를 기대하던 코드가 단일값을 만나도 깨지지 않고
+   * '미정'/'-' 로 물러서야 한다(파싱 실패나 잘못된 숫자가 아니라).
+   */
+  it("단일값 timeSlot 은 종료를 '미정', 근무시간을 '-' 로 물러선다", () => {
+    const info = WorkTimeDisplay.getDisplayInfo({ timeSlot: '19:00', date: '2026-07-02' });
+
+    expect(info.scheduledStart).toBe('19:00');
+    expect(info.effectiveStart).toBe('19:00');
+    expect(info.effectiveEnd).toBe('미정');
+    expect(info.duration).toBe('-');
+    expect(info.isEndNextDay).toBe(false);
+  });
+
+  it('실제 출근만 찍힌 단일값 근무도 근무시간을 지어내지 않는다', () => {
+    const info = WorkTimeDisplay.getDisplayInfo({
+      timeSlot: '19:00',
+      date: '2026-07-02',
+      checkInTime: new Date('2026-07-02T19:04:00'),
+    });
+
+    expect(info.isEffectiveStartActual).toBe(true);
+    expect(info.effectiveEnd).toBe('미정');
+    expect(info.duration).toBe('-');
+  });
+
+  it('퇴근이 찍히면 그때 비로소 근무시간이 나온다', () => {
+    const info = WorkTimeDisplay.getDisplayInfo({
+      timeSlot: '19:00',
+      date: '2026-07-02',
+      checkInTime: new Date('2026-07-02T19:00:00'),
+      checkOutTime: new Date('2026-07-03T02:00:00'),
+    });
+
+    expect(info.duration).toBe('7시간');
+    expect(info.isEndNextDay).toBe(true);
+  });
+});

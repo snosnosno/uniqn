@@ -12,10 +12,11 @@
  * 쓰기 무효화는 각 훅/시트가 queryKeys.workSchedule.all prefix 로 담당 → 부족셀·상세 자동 갱신.
  * 플래그 OFF면 상위(work-schedule 화면)에서 미노출.
  */
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { STATUS } from '@/constants';
+import { SHEET_DISMISS_ANIMATION_MS } from '@/constants/animation';
 import { settledLockMessage } from '@/domains/settlement';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -129,29 +130,78 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
     return map;
   }, [confirmedGroups]);
   const [timeEditStaff, setTimeEditStaff] = useState<ConfirmedStaff | null>(null);
+  // 모달 스왑 지연 타이머 — 언마운트 시 정리하지 않으면 사라진 화면에 setState 가 날아간다.
+  const modalSwapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (modalSwapTimerRef.current) clearTimeout(modalSwapTimerRef.current);
+    },
+    []
+  );
 
-  const handleEditTime = useCallback(
-    (slot: VenueDaySlot) => {
+  /**
+   * 실제 출퇴근 편집 대상 해소 + 진입 가드. 열 수 없으면 사유를 토스트로 안내하고 null 을 준다.
+   * 해소를 **여는 것과 분리한** 이유 — 실패 판정은 즉시 끝내야 하고(맥락 유지), 실제로 여는 건
+   * 시트가 닫힌 뒤여야 하기 때문이다(아래 handleEditAttendance).
+   */
+  const resolveAttendanceTarget = useCallback(
+    (slot: VenueDaySlot): ConfirmedStaff | null => {
       const full = confirmedById.get(slot.workLogId);
       if (full?.workLog) {
         // 정산 완료 건은 서버(updateWorkTimeWithTransaction)가 수정을 거부하므로 진입 전 차단한다
         // (사유까지 입력한 뒤 거부 토스트를 받는 헛수고 방지 — ConfirmedStaffCard 계약과 정렬).
         if (full.payrollStatus === STATUS.PAYROLL.COMPLETED) {
           toastError(settledLockMessage('시간을 수정할'));
-          return;
+          return null;
         }
-        setTimeEditStaff(full);
-      } else if (isConfirmedLoading) {
+        return full;
+      }
+      if (isConfirmedLoading) {
         // 확정 스태프 로딩과 슬롯 렌더 시점 차 — 아직 로딩 중이면 일시 안내(구조적 미지원과 구분).
         toastError('출퇴근 정보를 불러오는 중이에요. 잠시 후 다시 시도해주세요.');
-      } else {
-        // 여기 도달 = 컨테이너 확정분에 없는 슬롯. VenueDayDetail 이 isContainer 로 버튼을
-        // 미리 걸러 정상 경로에선 오지 않지만, 방어적으로 안내한다.
-        toastError('이 인원의 출퇴근 정보를 불러오지 못했어요. 공고 스태프 관리에서 수정해주세요.');
+        return null;
       }
+      // 여기 도달 = 컨테이너 확정분에 없는 슬롯. 근무 수정 시트가 isContainer 로 입구를
+      // 미리 걸러 정상 경로에선 오지 않지만, 방어적으로 안내한다.
+      toastError('이 인원의 출퇴근 정보를 불러오지 못했어요. 공고 스태프 관리에서 수정해주세요.');
+      return null;
     },
     [confirmedById, isConfirmedLoading, toastError]
   );
+
+  /** 편집 중인 슬롯의 실제 출퇴근(실적) — 근무 수정 시트가 예정과 함께 보여준다. */
+  const editingAttendance = useMemo(() => {
+    if (!editingSlot?.isContainer) return null;
+    const full = confirmedById.get(editingSlot.workLogId);
+    if (!full?.workLog) return null;
+    return {
+      checkInTime: full.checkInTime,
+      checkOutTime: full.checkOutTime,
+      settled: full.payrollStatus === STATUS.PAYROLL.COMPLETED,
+    };
+  }, [editingSlot, confirmedById]);
+
+  /**
+   * 근무 수정 시트 → 실제 출퇴근 편집기.
+   *
+   * ⚠️ 두 화면 모두 RN Modal 이라 겹쳐 띄우면 iOS 터치가 먹통이 된다(#186/#188).
+   * 두 setState 를 한 핸들러에서 부르면 React 가 **한 커밋으로 배칭**해 닫힘/열림이 같은
+   * 프레임에 떨어진다 — "먼저 닫는" 구간이 실제로는 없다. 그래서 닫기만 즉시 하고, 여는 것은
+   * 시트 dismiss 애니메이션이 끝난 뒤로 미룬다. 대기값은 이 용도의 SSOT 인
+   * `constants/animation.ts` 의 SHEET_DISMISS_ANIMATION_MS 를 쓴다(로컬 상수 복제 금지).
+   * 실패 판정은 지연 밖에서 끝내므로 "열지 못하면 시트를 그대로 둔다" 계약은 그대로 산다.
+   */
+  const handleEditAttendance = useCallback(() => {
+    if (!editingSlot) return;
+    const target = resolveAttendanceTarget(editingSlot);
+    if (!target) return;
+    setEditingSlot(null);
+    if (modalSwapTimerRef.current) clearTimeout(modalSwapTimerRef.current);
+    modalSwapTimerRef.current = setTimeout(() => {
+      modalSwapTimerRef.current = null;
+      setTimeEditStaff(target);
+    }, SHEET_DISMISS_ANIMATION_MS);
+  }, [editingSlot, resolveAttendanceTarget]);
 
   const timeEditWorkLog = useMemo<WorkLog | null>(
     () =>
@@ -318,11 +368,12 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
 
       {/* 선택 날짜 배치 상세(행 탭 → 편집) — 직접 렌더(가상화 없음), 스크롤은 상위 담당 */}
       <View className="mt-1">
+        {/* 카드에 별도 '시간 수정' 버튼을 두지 않는다 — 예정·실적 편집 입구를 근무 수정 시트
+            하나로 통합했다(2-B). 두 입구가 나란히 있으면 어느 쪽이 정산에 반영되는지 알 수 없다. */}
         <VenueDayDetail
           venueId={venueId}
           date={date}
           onSlotPress={setEditingSlot}
-          onEditTime={handleEditTime}
           onAddPress={() => setAddVisible(true)}
         />
       </View>
@@ -343,6 +394,8 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
         date={date}
         siblingSlots={siblingSlots}
         editedBy={editedBy}
+        attendance={editingAttendance}
+        onEditAttendance={editingAttendance ? handleEditAttendance : undefined}
       />
 
       {/* 출근(실기록) 수정(#3) — WorkTimeEditor 재사용. updateWorkTime onSuccess 가

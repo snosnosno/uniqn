@@ -12,7 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import { handleSupabaseError } from '@/utils/supabase';
 import { STATUS } from '@/constants';
-import { assertSlotColor, assertSlotMemo, composeTimeSlot } from '@/domains/workSchedule';
+import { assertSlotColor, assertSlotMemo, assertSlotStartTime } from '@/domains/workSchedule';
 import type { WorkLog } from '@/types';
 import type { UpdateSlotInput } from '../interfaces';
 import {
@@ -97,7 +97,13 @@ export async function getByVenueSpanInRange(
  * 슬롯 편집(근무표 B2) — 시간/역할/색상/메모 부분 수정.
  *
  * 검증 경계(Repository): color 는 토큰 화이트리스트(자유 hex 거부), memo 는 XSS 검증
- * 통과분만 기록(S1/U3). startTime+endTime 둘 다 제공 시에만 time_slot 갱신(읽기-수정-쓰기 회피).
+ * 통과분만 기록(S1/U3), 출근 예정 시각은 'HH:mm' 형식 검증(범위·자유 텍스트 거부).
+ *
+ * 시간 축(§K 정본): `time_slot` = 출근 예정 시각 **단일값** 또는 미기록(=미정).
+ * 예전엔 이 함수가 앱에서 유일하게 범위 문자열('18:00 - 02:00')을 생산했고, 종료가 없으면
+ * 시간을 아예 못 쓰는 부분 업데이트였다. 이제 시작 하나만으로 갱신하고 미정은 명시적으로 비운다.
+ * 시간 축을 안 보내면 time_slot 키를 만들지 않는다 — 색상·메모만 고치는 저장이 기존 시간을
+ * 덮어쓰지 않도록(GRID-1).
  */
 export async function updateSlot(workLogId: string, input: UpdateSlotInput): Promise<void> {
   try {
@@ -107,9 +113,12 @@ export async function updateSlot(workLogId: string, input: UpdateSlotInput): Pro
       updated_at: new Date().toISOString(),
     };
 
-    // 시간: 시작/종료 둘 다 제공 시에만 time_slot('HH:MM - HH:MM') 갱신.
-    if (input.startTime && input.endTime) {
-      updateData.time_slot = composeTimeSlot(input.startTime, input.endTime);
+    // 시간: 미정이면 비우고(null), 아니면 출근 예정 시각 단일값으로 갱신(형식 위반은 throw).
+    // 미정 우선 — 인원 추가 경로(addSlotPayload.buildTimeSlot)와 우선순위를 맞춘다.
+    if (input.timeUndecided) {
+      updateData.time_slot = null;
+    } else if (input.startTime !== undefined) {
+      updateData.time_slot = assertSlotStartTime(input.startTime);
     }
 
     // 역할(StaffRole)

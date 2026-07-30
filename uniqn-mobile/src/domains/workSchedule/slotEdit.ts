@@ -104,8 +104,13 @@ export function assertSlotColor(value: string): SlotColorToken {
 // ============================================================================
 
 /**
- * 슬롯 기본 시작시간 SSOT — 홀덤펍 저녁 운영 기준.
- * EditSlotSheet(편집 기본값)와 gridPrefill(프리필 공고 시작시간)이 공유(발산 방지).
+ * 슬롯 시작시간 SSOT — 홀덤펍 저녁 운영 기준.
+ *
+ * ⚠️ 이건 **저장되는 기본값이 아니라 휠 피커의 초기 위치**다(결정 4 · §J). 시간 입력 칸은
+ * 빈 값으로 시작하고, 사용자가 피커에서 고른 값만 저장된다 — 기본값이 그대로 저장돼
+ * 없던 근무시간이 확정되던 경로를 막기 위함이다.
+ * gridPrefill(주문서→공고 변환, utils/order-sheet/mappers.ts)은 **다른 맥락**에서 이 상수를
+ * 공고 슬롯 시작시간 기본값으로 소비한다 — 그쪽은 이 규칙의 대상이 아니다.
  */
 export const DEFAULT_SLOT_START_TIME = '18:00';
 
@@ -143,6 +148,9 @@ export function assertSlotMemo(memo: string): string {
 // ============================================================================
 // 시간 파싱 / 정렬 / 조합
 // ============================================================================
+
+/** 하루의 분 수 — 자정 넘김 구간 보정에 쓴다. */
+const MINUTES_PER_DAY = 24 * 60;
 
 /** 'HH:MM' 을 0~1439 분으로 파싱(범위 밖/형식 오류는 null). */
 function toMinutes(hhmm: string): number | null {
@@ -183,12 +191,41 @@ export function sortSlotsByStartTime<T extends { timeSlot: string | null }>(
   return [...slots].sort(compareSlotsByStartTime);
 }
 
-/** 시작/종료 'HH:MM' → 'HH:MM - HH:MM' timeSlot 문자열 조합(앱 표준 구분자 ' - '). */
-export function composeTimeSlot(startTime: string, endTime: string): string {
-  return `${startTime} - ${endTime}`;
+/**
+ * 정본 형식('HH:mm' 단일 시각)인가. 던지지 않는 판정용 — 표시·게이트 분기에 쓴다.
+ * 레거시 자유 텍스트('저녁 6시')나 범위 문자열이 저장된 슬롯을 "시각이 정해진 값"으로
+ * 오인하지 않게 하는 것이 주 용도다.
+ */
+export function isValidSlotStartTime(value: string | null | undefined): boolean {
+  return typeof value === 'string' && toMinutes(value.trim()) !== null;
 }
 
-/** timeSlot 문자열을 시작/종료 'HH:MM' 으로 분해(없으면 빈 문자열). */
+/**
+ * 출근 예정 시각 검증(쓰기 경계). 정본은 **단일 시각 'HH:mm'** 이다(§K).
+ *
+ * 범위 문자열('18:00 - 02:00')·자유 텍스트('저녁 6시')·범위 밖 시각('25:00')을 전부 거부해
+ * 폐지된 범위 저장이 다시 `time_slot` 으로 흘러드는 경로를 형식 단계에서 끊는다.
+ * 인원 추가 경로(addSlotPayload)와 슬롯 편집 경로(updateSlot)가 공유하는 단일 관문.
+ *
+ * @throws ValidationError 형식 위반 시(작업 미수행 — fail-closed).
+ */
+export function assertSlotStartTime(value: string): string {
+  const trimmed = value.trim();
+  if (toMinutes(trimmed) === null) {
+    throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+      field: 'timeSlot',
+      userMessage: '출근 시간 형식이 올바르지 않습니다',
+    });
+  }
+  return trimmed;
+}
+
+/**
+ * timeSlot 문자열을 시작/종료 'HH:MM' 으로 분해(없으면 빈 문자열).
+ *
+ * 정본 형식은 단일값이라 종료는 보통 빈 문자열이다. **이미 저장된 범위 데이터를 읽기 위한
+ * 하위호환**으로 남긴다(§K) — 새로 범위를 만드는 경로는 없다.
+ */
 export function parseTimeSlotParts(timeSlot: string | null | undefined): {
   start: string;
   end: string;
@@ -235,25 +272,70 @@ export function toSlotInterval(
 }
 
 /**
- * 같은 스태프의 근무 구간이 실제로 겹치는 슬롯을 충돌로 표시(자기 자신 제외). 차단이 아닌 경고용.
- * 시작/종료를 분 절대구간으로 환산해 자정을 넘는 구간(예: 18:00-02:00)도 정확히 감지한다.
- * 표준 반열림 겹침식 `aStart < bEnd && bStart < aEnd` 를 쓰므로 경계가 맞닿기만 하면 겹침 아님.
- * staffId 누락/시간 미파싱/시작==종료면 충돌 없음으로 본다(기존 가드 유지).
+ * 겹침 판정에 쓸 수 있는 시각인가. 미정·'NEGOTIABLE' 처럼 읽을 수 없는 값이면 false.
+ * 단일값('19:00')과 레거시 범위('18:00 - 02:00') 모두 true — 형식이 아니라 가독 여부만 본다.
+ */
+export function hasComparableSlotTime(timeSlot: string | null | undefined): boolean {
+  return Number.isFinite(parseSlotStartMinutes(timeSlot));
+}
+
+/** 분 단위 시각이 구간 [start, end) 안인가. 자정 넘김 구간(end>1440)은 +1일 보정해 한 번 더 본다. */
+function isMinuteInInterval(point: number, interval: { start: number; end: number }): boolean {
+  return (
+    (point >= interval.start && point < interval.end) ||
+    (point + MINUTES_PER_DAY >= interval.start && point + MINUTES_PER_DAY < interval.end)
+  );
+}
+
+/**
+ * 두 근무가 시간상 겹치는가 — **저장 형식이 섞여 있어도 한 가지 답만 낸다.**
+ *
+ * `time_slot` 정본은 출근 예정 시각 단일값이지만(§K), 폐지 전에 저장된 범위 데이터가 DB 에
+ * 남아 있다. 그래서 세 조합을 모두 다뤄야 한다:
+ * - **양쪽 다 범위**(레거시): 분 절대구간 반열림 겹침 `aStart < bEnd && bStart < aEnd`.
+ *   경계가 맞닿기만 하면 겹침이 아니다.
+ * - **한쪽만 범위**: 단일값은 구간이 없으니 **점이 구간 안에 있는가**로 본다.
+ *   시작시각 일치만 보면 20:00 이 18:00~익일02:00 한복판인데도 놓친다.
+ * - **양쪽 다 단일값**(정본): 출근 예정 시각 일치.
+ * 시각을 못 읽으면(미정) 겹침 아님 — 비교할 값이 없다.
+ *
+ * 🔑 구인자 근무표(detectSlotConflicts)와 구직자 내 스케줄(detectScheduleOverlaps)이 **이 함수를
+ * 공유해야 한다.** 한쪽만 갈래를 늘리면 같은 근무를 두고 두 화면이 다른 답을 내고, 정작
+ * 곤란해지는 스태프 쪽에만 경고가 없던 옛 비대칭이 되살아난다.
+ */
+export function slotsOverlap(a: string | null | undefined, b: string | null | undefined): boolean {
+  const aInterval = toSlotInterval(a);
+  const bInterval = toSlotInterval(b);
+  if (aInterval && bInterval) {
+    return aInterval.start < bInterval.end && bInterval.start < aInterval.end;
+  }
+
+  const aStart = parseSlotStartMinutes(a);
+  const bStart = parseSlotStartMinutes(b);
+  if (aInterval) {
+    return Number.isFinite(bStart) && isMinuteInInterval(bStart, aInterval);
+  }
+  if (bInterval) {
+    return Number.isFinite(aStart) && isMinuteInInterval(aStart, bInterval);
+  }
+  return Number.isFinite(aStart) && Number.isFinite(bStart) && aStart === bStart;
+}
+
+/**
+ * 같은 스태프의 근무가 겹치는 슬롯을 충돌로 표시(자기 자신 제외). 차단이 아닌 경고용.
+ * 판정은 `slotsOverlap` 이 유일 관문이다 — 구직자 화면과 답이 갈리지 않게 하기 위함이다.
+ * staffId 누락·시각 미파싱(미정)이면 충돌 없음으로 본다(기존 가드 유지).
  */
 export function detectSlotConflicts(
   target: SlotConflictInput,
   siblings: readonly SlotConflictInput[]
 ): SlotConflict[] {
   if (!target.staffId) return [];
-  const targetInterval = toSlotInterval(target.timeSlot);
-  if (!targetInterval) return [];
   return siblings
     .filter((s) => {
       if (s.workLogId === target.workLogId) return false;
       if (s.staffId !== target.staffId) return false;
-      const interval = toSlotInterval(s.timeSlot);
-      if (!interval) return false;
-      return targetInterval.start < interval.end && interval.start < targetInterval.end;
+      return slotsOverlap(target.timeSlot, s.timeSlot);
     })
     .map((s) => ({ workLogId: s.workLogId, reason: 'overlap' as const }));
 }

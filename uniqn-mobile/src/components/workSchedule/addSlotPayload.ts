@@ -5,7 +5,8 @@
  * - E5: 날짜키 `toDateString`(YYYY-MM-DD) 정규화 — write 경계에서 1회 정규화(그리드 COUNT 키와 동일 포맷).
  * - S1: customRole(자유입력)은 `xssValidation` 통과분만. 실패 시 ValidationError(미호출 fail-closed).
  * - 시간대: 형제 화면 AddStaffModal·지원/확정 흐름과 동일하게 **출근시간(start) 하나만** 받는다.
- *   출근시간('HH:mm')이 있으면 TIME_RE 형식 검증 후 단일 시각 그대로 저장(종료·익일 개념 없음).
+ *   출근시간('HH:mm')이 있으면 `assertSlotStartTime`(도메인 SSOT) 검증 후 단일 시각 그대로
+ *   저장한다(종료·익일 개념 없음). 편집 경로(updateSlot)와 **같은 관문**을 쓴다.
  *   미정(timeUndefined) 또는 미입력이면 timeSlot 을 생략한다(시간 미기록). 형식 위반은
  *   ValidationError(RPC 미호출). 자유 텍스트 시간 입력은 부활 금지 — 피커의 0패딩 'HH:mm' 만 통과.
  * - role==='other' 일 때만 customRole 을 동봉(confirm_application 평탄화 규약과 동일).
@@ -14,13 +15,11 @@
  */
 import type { AddDirectStaffInput, DirectStaffAssignmentInput } from '@/types';
 import { ValidationError, ERROR_CODES } from '@/errors';
+import { assertSlotStartTime } from '@/domains/workSchedule';
 import { toDateString } from '@/utils/date';
 import { xssValidation } from '@/utils/security';
 
 const OTHER_ROLE_KEY = 'other';
-
-/** 시각 형식('HH:mm', 시 1~2자리·분 2자리). EditSlotSheet 와 동일 계약. */
-const TIME_RE = /^(\d{1,2}):(\d{2})$/;
 
 export interface BuildAddSlotPayloadParams {
   /** venue 컨테이너 job_posting_id (= venueId) */
@@ -47,23 +46,18 @@ function requireValue(value: string, userMessage: string): string {
   return value;
 }
 
-/** 시각 형식 검증('HH:mm'). 위반 시 ValidationError(requireValue 와 동일 fail-closed 패턴). */
-function requireTimeFormat(value: string, userMessage: string): string {
-  if (!TIME_RE.test(value)) {
-    throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, { userMessage });
-  }
-  return value;
-}
-
 /**
  * 출근시간 단일 → timeSlot('HH:mm'). 미정(timeUndefined) 또는 미입력이면 undefined(시간 미기록).
- * 입력이 있으면 TIME_RE 형식 검증 후 단일 시각 그대로 반환한다(종료·조합 없음, 오형식은 거부).
+ *
+ * 형식 검증은 도메인 SSOT(`assertSlotStartTime`)에 위임한다 — 예전엔 여기 로컬 정규식이
+ * 따로 있었는데 시/분 **범위 검사가 없어** '25:00'·'18:99' 를 통과시켰다. 편집 경로가 거부하는
+ * 값을 추가 경로가 받아주면, 같은 컬럼을 읽는 QR·정산·표시가 파싱할 수 없는 값이 저장된다.
  */
 function buildTimeSlot(startTime?: string, timeUndefined?: boolean): string | undefined {
   if (timeUndefined) return undefined; // 미정 우선 — 지원/확정과 동일하게 시간 미기록
   const start = startTime?.trim() ?? '';
   if (!start) return undefined;
-  return requireTimeFormat(start, '출근 시간 형식이 올바르지 않습니다');
+  return assertSlotStartTime(start);
 }
 
 /** S1: 자유입력 XSS 검증 — 패턴 감지 시 ValidationError(RPC 미호출). */

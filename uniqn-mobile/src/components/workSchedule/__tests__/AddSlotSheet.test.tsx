@@ -154,12 +154,13 @@ it('풀에서 인원 선택 → 출근시간 단일 필드(기본 오후 6:00) �
 
   const { getByText, queryByText } = renderSheet();
 
-  // 후보행(이름) 탭 → picked 설정 → 출근시간 필드(기본 18:00 = 오후 6:00) 렌더
+  // 후보행(이름) 탭 → picked 설정 → 출근시간 필드 렌더
   fireEvent.press(getByText('홍길동'));
 
-  // 출근시간 라벨 + 기본 시각 표시. 종료 필드/익일 프리뷰는 이 화면에서 제거됨.
+  // 출근시간 라벨 + **빈 값**. 프리필을 되살리면 고른 적 없는 시간이 확정된다(결정 4 · §J).
   expect(getByText('출근 시간')).toBeTruthy();
-  expect(getByText('오후 6:00')).toBeTruthy();
+  expect(getByText('시간 선택')).toBeTruthy();
+  expect(queryByText('오후 6:00')).toBeNull();
   expect(queryByText('종료')).toBeNull();
   expect(queryByText(/익일/)).toBeNull();
 });
@@ -175,14 +176,26 @@ it('출근시간 미정 토글 → 트리거가 "미정"으로 전환(구체 시
   const { getByText, getAllByText, queryByText } = renderSheet();
 
   fireEvent.press(getByText('홍길동'));
-  // 토글 전: 미정 라벨(체크박스)만 1개, 구체 시각 노출.
+  // 토글 전: 미정 라벨(체크박스)만 1개, 트리거는 빈 값('시간 선택').
   expect(getAllByText('미정')).toHaveLength(1);
-  expect(getByText('오후 6:00')).toBeTruthy();
+  expect(getByText('시간 선택')).toBeTruthy();
 
-  // '미정' 체크박스 탭 → 트리거도 '미정' 표시(라벨+트리거 = 2개), 구체 시각 숨김.
+  // '미정' 체크박스 탭 → 트리거도 '미정' 표시(라벨+트리거 = 2개).
   fireEvent.press(getByText('미정'));
   expect(getAllByText('미정')).toHaveLength(2);
-  expect(queryByText('오후 6:00')).toBeNull();
+  expect(queryByText('시간 선택')).toBeNull();
+});
+
+it('시간을 고르지도 미정을 체크하지도 않으면 추가할 수 없다(저장 게이트)', () => {
+  setPoolWithOneStaff();
+  const { getByText } = renderSheet();
+
+  fireEvent.press(getByText('홍길동'));
+  fireEvent.press(getByText('🍸 서빙'));
+  // 역할까지 골랐지만 시간 축은 미결정 — '추가' 를 눌러도 아무 일도 일어나지 않아야 한다.
+  fireEvent.press(getByText('추가'));
+
+  expect(addStaffMock).not.toHaveBeenCalled();
 });
 
 // ── JIT 급여 접점(Task 6): 미설정 역할만 그 자리서 묻고, 단가 먼저 저장 후 슬롯 추가 ──
@@ -228,6 +241,8 @@ it('추가 시 단가 먼저 저장 후 슬롯 추가(호출 순서)', async () 
 
   fireEvent.press(getByText('홍길동'));
   fireEvent.press(getByText('🍸 서빙'));
+  // 저장 게이트 통과 — 시간 축을 명시 결정해야 '추가'가 활성화된다(결정 4 · §J).
+  fireEvent.press(getByText('미정'));
   fireEvent.press(getByText('추가'));
 
   await waitFor(() => expect(addStaffMock).toHaveBeenCalled());
@@ -251,6 +266,8 @@ it('단가 저장 실패해도 슬롯 추가는 진행되고 토스트로 안내
 
   fireEvent.press(getByText('홍길동'));
   fireEvent.press(getByText('🍸 서빙'));
+  // 저장 게이트 통과 — 시간 축을 명시 결정해야 '추가'가 활성화된다(결정 4 · §J).
+  fireEvent.press(getByText('미정'));
   fireEvent.press(getByText('추가'));
 
   // 단가 저장이 실패해도 배치는 계속 진행되고, info 토스트로 재안내한다(설계 §B).
