@@ -296,30 +296,11 @@ export default function ApplyScreen() {
 
   const isFixed = job.schedule.kind === 'fixed';
 
-  if (hasApplied(job.id) || hasAppliedDirect) {
-    return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
-        <Stack.Screen options={{ headerShown: false }} />
-        <StackHeader title="지원하기" fallbackHref={fallbackHref} />
-        <AlreadyAppliedState isFixed={isFixed} />
-      </SafeAreaView>
-    );
-  }
-
-  // 고정 공고는 앱 내 지원 비대상 — 두 공고 상세 화면의 CTA 만 막혀 있었고 이 라우트 자체는
-  // 열려 있어 딥링크·URL 직접 입력으로 정책이 뚫렸다. 위 isSupportedReleasePosting 가드는
-  // fixed 를 **명시적으로 통과**시키므로(jobPostingVisibility.ts) 여기서 별도로 막는다.
-  // 이미 지원한 레거시 행은 위 AlreadyAppliedState 가 먼저 잡도록 순서를 뒤에 둔다.
-  if (isFixed) {
-    return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
-        <Stack.Screen options={{ headerShown: false }} />
-        <StackHeader title="지원하기" fallbackHref={fallbackHref} />
-        <FixedPostingState contactPhone={job.contactPhone} onReturn={handleReturnToJob} />
-      </SafeAreaView>
-    );
-  }
-
+  // ⚠️ 제출 완료 화면은 **모든 상태 가드보다 위**에 있어야 한다.
+  // 제출 성공 시 mutation 이 내 지원 목록 캐시를 무효화하므로, 재조회가 끝나는 순간
+  // hasApplied 가 true 로 뒤집힌다. 아래 AlreadyAppliedState 가 먼저 있으면 방금 만든
+  // 성공 화면이 "이미 지원한 공고입니다"로 덮여, 사용자가 자기 지원을 실패로 오해한다.
+  // (showForm=false 는 이 화면에서 제출이 성공한 경우에만 만들어지는 상태다)
   if (!showForm) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
@@ -344,6 +325,30 @@ export default function ApplyScreen() {
             </Button>
           </View>
         </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (hasApplied(job.id) || hasAppliedDirect) {
+    return (
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <StackHeader title="지원하기" fallbackHref={fallbackHref} />
+        <AlreadyAppliedState isFixed={isFixed} />
+      </SafeAreaView>
+    );
+  }
+
+  // 고정 공고는 앱 내 지원 비대상 — 두 공고 상세 화면의 CTA 만 막혀 있었고 이 라우트 자체는
+  // 열려 있어 딥링크·URL 직접 입력으로 정책이 뚫렸다. 위 isSupportedReleasePosting 가드는
+  // fixed 를 **명시적으로 통과**시키므로(jobPostingVisibility.ts) 여기서 별도로 막는다.
+  // 이미 지원한 레거시 행은 위 AlreadyAppliedState 가 먼저 잡도록 순서를 뒤에 둔다.
+  if (isFixed) {
+    return (
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <StackHeader title="지원하기" fallbackHref={fallbackHref} />
+        <FixedPostingState contactPhone={job.contactPhone} onReturn={handleReturnToJob} />
       </SafeAreaView>
     );
   }

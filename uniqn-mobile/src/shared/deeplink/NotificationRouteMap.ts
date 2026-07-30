@@ -107,7 +107,12 @@ export const NOTIFICATION_ROUTE_MAP: Record<
     data?.applicationId
       ? { name: 'admin/employer-application', params: { id: data.applicationId } }
       : { name: 'admin/employer-applications' },
-  [NotificationType.ROLE_CHANGED]: () => ({ name: 'settings' }),
+  // 설정 화면에는 역할이 어디에도 표기되지 않는다 — 무엇이 바뀌었는지 확인할 수 없는
+  // 도착지였다. 역할 배지는 프로필 탭 헤더에 있다(app/(app)/(tabs)/profile.tsx).
+  // ⚠️ DB RPC(update_user_role)는 여전히 link='/settings' 를 심는다. 이미 발송된 알림은
+  //    되돌릴 수 없으므로 getRouteFromNotification 의 ROUTE_MAP_PRIORITY_TYPES 가
+  //    이 타입만은 link 보다 이 매핑을 우선하도록 흡수한다.
+  [NotificationType.ROLE_CHANGED]: () => ({ name: 'profile' }),
 
   [NotificationType.REVIEW_REQUEST]: () => ({ name: 'reviews/pending' }),
   [NotificationType.REVIEW_RECEIVED]: () => ({ name: 'reviews/pending' }),
