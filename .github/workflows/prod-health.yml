@@ -64,8 +64,16 @@ jobs:
               WHERE status = 'pending' AND created_at < now() - interval '1 hour')
             || ' ' ||
             -- ④ 최근 24시간 크론 실패. run_details 는 7일 보존(purge-cron-run-details).
-            (SELECT count(*) FROM cron.job_run_details
-              WHERE status <> 'succeeded' AND start_time > now() - interval '24 hours');
+            --    ⚠️ cron 스키마 접근 권한이 없으면 ON_ERROR_STOP 때문에 쿼리 전체가 죽어
+            --    "건강 문제가 아닌데 red" 가 된다. 오경보는 감시를 무시하게 만들어
+            --    없느니만 못하므로, 권한을 먼저 확인하고 없으면 -1(=skip 신호)을 낸다.
+            (SELECT CASE
+                      WHEN has_schema_privilege(current_user, 'cron', 'USAGE')
+                        THEN (SELECT count(*) FROM cron.job_run_details
+                               WHERE status <> 'succeeded'
+                                 AND start_time > now() - interval '24 hours')
+                      ELSE -1
+                    END);
           SQL
           )
           read -r OUTBOX_FAILED OUTBOX_STUCK OUTBOX_BACKLOG CRON_FAILED <<< "$ACTUAL"
@@ -75,5 +83,10 @@ jobs:
           [ "$OUTBOX_FAILED" = "0" ] || { echo "::error::스케줄 보드 동기화 실패 누적: $OUTBOX_FAILED 건 (schedule_board_sync_outbox.status='failed_retry_limit'). error_message 를 확인하고 원인 수정 후 status='pending', retry_count=0 으로 재큐잉할 것"; FAIL=1; }
           [ "$OUTBOX_STUCK" = "0" ] || { echo "::error::outbox 워커가 processing 에서 멈춤: $OUTBOX_STUCK 건 (10분 초과). sync-schedule-board-outbox EF 로그 확인"; FAIL=1; }
           [ "$OUTBOX_BACKLOG" = "0" ] || { echo "::error::outbox pending 적체: $OUTBOX_BACKLOG 건 (1시간 초과). 크론 sync-schedule-board-outbox 가 도는지 확인"; FAIL=1; }
-          [ "$CRON_FAILED" = "0" ] || { echo "::error::pg_cron 잡 실패: 최근 24시간 $CRON_FAILED 건. cron.job_run_details 의 return_message 확인"; FAIL=1; }
+          if [ "$CRON_FAILED" = "-1" ]; then
+            echo "::warning::cron 스키마 접근 권한 없음 — 크론 실패 검사 skip (①~③ 은 정상 수행됨)"
+          elif [ "$CRON_FAILED" != "0" ]; then
+            echo "::error::pg_cron 잡 실패: 최근 24시간 $CRON_FAILED 건. cron.job_run_details 의 return_message 확인"
+            FAIL=1
+          fi
           exit $FAIL
