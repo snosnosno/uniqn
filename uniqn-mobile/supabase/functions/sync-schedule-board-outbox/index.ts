@@ -121,10 +121,27 @@ async function markRetryOrFailed(
   return reachedLimit ? 'failed_retry_limit' : 'retry';
 }
 
-// T-B11: failed_retry_limit 행 발생 시 Slack 알림.
-// SLACK_OUTBOX_ALERT_WEBHOOK 환경변수 미설정 시 silent skip — 시스템은 정상 동작.
+// T-B11: failed_retry_limit 행 발생 시 Slack 알림 (선택).
+//
+// ⚠️ 2026-07-31: SLACK_OUTBOX_ALERT_WEBHOOK 은 **한 번도 설정된 적이 없다**(시크릿 실측).
+//    이 경로는 작성된 순간부터 dead 였고, 옛 주석의 "미설정 시 silent skip — 시스템은
+//    정상 동작"이라는 표현이 "알림이 배선돼 있다"는 착각을 만들어 outbox 실패 35건이
+//    두 달간(06-03~07-30) 아무에게도 안 보였다.
+//
+//    실제 안전망은 `.github/workflows/prod-health.yml` 이다(일간, failed_retry_limit>0
+//    이면 GitHub 이 알림). 이 Slack 경로는 즉시성이 필요할 때 켜는 **보조** 수단이며,
+//    끄더라도 감시 공백은 없다. 다만 미설정 상태에서 실패가 나면 아래처럼 로그를 남겨
+//    다시는 조용히 넘어가지 않게 한다.
 async function sendSlackAlert(failed: ProcessResult[]): Promise<void> {
-  if (!SLACK_WEBHOOK || failed.length === 0) return;
+  if (failed.length === 0) return;
+
+  if (!SLACK_WEBHOOK) {
+    console.warn(
+      `[outbox] failed_retry_limit ${failed.length}건 발생 — SLACK_OUTBOX_ALERT_WEBHOOK 미설정으로 Slack 알림 생략. ` +
+        `탐지는 prod-health 워크플로우가 담당한다.`
+    );
+    return;
+  }
 
   const lines = failed.map(
     (r) => `• \`${r.id}\` (job_posting=${r.job_posting_id}): ${r.error ?? 'unknown'}`
@@ -210,7 +227,8 @@ Deno.serve(async (req: Request) => {
       results,
     };
 
-    // T-B11: failed_retry_limit 행 발생 시 Slack 알림 (webhook 미설정 시 silent)
+    // T-B11: failed_retry_limit 행 발생 시 Slack 알림 — webhook 미설정이면 console.warn.
+    //        탐지의 안전망은 .github/workflows/prod-health.yml (일간)이다.
     const failedRows = results.filter((r) => r.outcome === 'failed_retry_limit');
     if (failedRows.length > 0) {
       await sendSlackAlert(failedRows);

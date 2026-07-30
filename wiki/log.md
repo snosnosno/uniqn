@@ -329,3 +329,41 @@ MEMORY.md 가 예산(14,000자)을 3,900자 초과해 옵시디언 훅이 매 �
 - **같은 값을 그리는 함수가 화면마다 다르면 한 화면만 조용히 틀린다.** 표시 포맷터는 단일 진입점으로 모을 것.
 
 검증: jest 582 스위트 / 6364건 · `npm run quality` 0 errors · InfoTab 회귀 6건 Red-Green 확인. 잔여 = 실기기 QA(시트 스크롤 충돌·center 모달 백드롭 회귀·주소 없는 공고 안내문).
+
+## [2026-07-31] note | Supabase 프로덕션 안전 정리 + 스케줄 보드 동기화 2개월 무증상 실패 수정 (PR#367·#368)
+
+감사 → 안전한 것만 정리 → 그 과정에서 드러난 라이브 결함 추적, 한 세션. prod 마이그레이션 3건 적용완료(재적용 금지): `revoke_public_execute_trigger_functions`·`cron_run_details_retention`·`fix_schedule_board_body_array_literal`.
+
+### 안전 정리 (PR#367, `5aeab44b3`)
+
+- **트리거 전용 SECDEF 함수 33개의 PUBLIC EXECUTE 회수** — 어드바이저는 "`anon` 이 실행 가능"이라 경고했지만 실제 ACL 은 `=X/postgres`, 즉 **grant 주체가 `anon` 이 아니라 PUBLIC** 이었다. `REVOKE ... FROM anon` 만 했다면 PUBLIC 경유 권한이 남아 **아무것도 안 바뀐 채 "고쳤다"** 가 됐을 것이다. 안전 근거는 ①트리거는 테이블 소유자 권한으로 실행되므로 role EXECUTE 와 무관 ②같은 성격 함수 16개(`fn_ops_*` 등)가 **이미 같은 상태**였다(초기 33개만 누락). 실측 33 → 0, `service_role` 48/49 유지.
+- **로그가 DB 를 삼켰다** — 431MB 중 410MB 가 `cron.job_run_details`(218MB/158,630행) + `net._http_response`(192MB/**362행**, 전부 블로트). 둘 다 `last_autovacuum IS NULL` — autovacuum 이 한 번도 돈 적이 없다. 7일 보존 크론 신설 + VACUUM FULL(트랜잭션 밖이라 마이그레이션 불가). **431MB → 27MB**(public 실데이터는 4.1MB).
+- **레포에 없는 Edge Function 은 어떤 리뷰에도 안 걸린다** — `create-qa-users` 가 프로덕션에 ACTIVE 였다(대시보드 임시 배포, 3개월 방치). `verify_jwt:false` + 하드코딩 헤더만으로 service_role 을 써 **admin 계정을 고정 비밀번호로 발급**하는 공개 엔드포인트. git 에 없으니 grep·리뷰·보안스캔 어디에도 안 걸렸다. 삭제(16→15). 유령 시크릿 `REVENUECAT_WEBHOOK_SECRET` 도 제거(지갑/IAP 는 #196~206 으로 전면 제거됨).
+- 어드바이저 **187 → 119건**(anon 노출 43→10, search_path 2→0). 파리티 불변(183/111/0).
+- **안전하지 않다고 판단해 제외**: 미사용 인덱스 45개(`idx_scan=0` 이 트래픽 부재 탓일 수 있음) · 빈 버킷 8개/빈 테이블 16개 · `job_postings` SELECT 정책 3중 중복 · `ops_public_reports.opr_insert` WITH CHECK always true.
+
+### 스케줄 보드 동기화 결함 (PR#368, `c490718de`)
+
+`schedule_board_sync_outbox` 에 `failed_retry_limit` 35건이 06-03~07-30 누적. 원인은 `_build_schedule_board_body` 의 한 줄이다.
+
+```sql
+v_lines := v_lines || '';   -- v_lines 는 text[]
+```
+
+`''` 는 **unknown 타입 리터럴**이라 `text[] || unknown` 이 `anyarray || anyelement` 가 아니라 **`anyarray || anyarray`** 로 해소돼 `array_in('')` 를 호출한다 → `malformed array literal: ""`. 고침은 `''::text` 하나. 같은 함수의 다른 append 2개는 멀쩡했다 — 하나는 `'...' || COALESCE(...)`, 하나는 `trim(v_description)` 으로 **이미 text 로 확정된** 식이다. 그리고 문제의 줄은 `IF length(trim(v_description)) > 0` 안에 있어 **설명이 있는 공고에서만** 터졌다.
+
+밀린 35행 재큐잉 완료 — outbox 68행 전부 success, 스케줄 보드 16개 신규 생성, **알림 0건**(사전 예측 적중: `notify_on_board_post_update` 는 `is_locked` 전환에만 발화).
+
+### 재발 감지 — `.github/workflows/prod-health.yml` 신설
+
+두 달간 아무도 몰랐던 이유가 따로 있다. EF 의 Slack 알림 코드는 있는데 `SLACK_OUTBOX_ALERT_WEBHOOK` 이 **한 번도 설정된 적이 없었다**. 크론은 매분 succeeded 였고 실패는 테이블 안에만 쌓였다. `parity-smoke` 가 이미 `PROD_DB_URL` 로 prod 에 붙는 경로를 만들어 뒀으므로 그 패턴을 복제해 **새 자격증명 0개**로 감시를 붙였다(parity-smoke=스키마 드리프트/주간, prod-health=런타임 상태/일간). 첫 실행 실측 `outbox: failed=0 stuck=0 backlog=0 | cron_failed_24h=0`.
+
+### 재사용 교훈 5
+
+- **어드바이저의 "anon 이 실행 가능"은 grant 주체를 말해주지 않는다.** ACL 을 직접 보고 PUBLIC 인지 확인할 것. 회수 전후 `has_function_privilege` 실측이 유일한 증거다.
+- **성공과 실패가 시간상 뒤섞여 있으면 타입 가설을 기각하고 조건 분기 안을 보라.** 순수 타입 오류라면 100% 실패한다. 이 관찰 하나가 수사를 좁혔고 상관은 예외 0건이었다.
+- **재현은 추론보다 싸다.** 헬퍼를 직접 `SELECT` 하면 쓰기 없이 RED 를 잡고 Postgres 가 줄번호까지 알려준다(`CONTEXT: ... line 13 at assignment`).
+- **크론이 "돌고 있다"≠"일하고 있다".** 실행 성공은 업무 성공이 아니다 — 처리 건수와 실패 잔량을 봐야 한다(`last_work_date` 데드 크론과 같은 형태, 두 번째).
+- **죽은 코드보다 위험한 건 "배선돼 있다"고 말하는 주석이다.** "미설정 시 silent skip — 시스템은 정상 동작"이 알림이 있다는 착각을 만들었다. 지우는 대신 정직하게 만들었다(미설정+실패 시 `console.warn`, 실제 안전망은 prod-health 임을 명시).
+
+검증: CI 10종 양쪽 SUCCESS · prod-health 첫 실행 success(실환경) · Red-Green(수정 전 22P02 → 후 17건 정상 렌더) · 게이트 4케이스 red-green. 잔여 = 실기기 QA(뒤늦게 생성된 closed 공고 16개 보드 노출) · Auth "Prevent use of leaked passwords" 대시보드 토글.
