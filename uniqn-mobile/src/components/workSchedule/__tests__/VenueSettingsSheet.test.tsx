@@ -16,6 +16,7 @@ import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { confirmAction } from '@/utils/confirmAction';
+import { ValidationError, ERROR_CODES } from '@/errors';
 import { VenueSettingsSheet } from '../VenueSettingsSheet';
 
 // jest.setup.js 전역 react-query 스텁(useMutation no-op) 복원 — 실물 mutateAsync 로 서비스 호출 검증
@@ -134,13 +135,14 @@ describe('지점 정보 섹션(S1)', () => {
     expect(mockUpdateVenueContainer.mock.calls[0][1].contactPhone).toBe('');
   });
 
+  // 🔴 서버 사유가 도달하는지 확인하려면 **실물 AppError** 를 던져야 한다. 평문 객체에
+  //    `isAppError: true` 를 얹으면 브랜드 검사(__isAppError)를 통과하지 못해 폴백 분기만 타고,
+  //    폴백 문구에도 '지점'이 들어 있어서 매핑이 통째로 없어도 green 이 된다(vacuous).
+  //    그래서 실물 ValidationError + 폴백 문구에 없는 문자열로 단언한다.
   it('동명 지점 등 서버 사유는 뭉개지 않고 그대로 안내한다', async () => {
     mockUpdateVenueContainer.mockRejectedValueOnce(
-      Object.assign(new Error('boom'), {
-        name: 'ValidationError',
-        code: 'E3001',
+      new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
         userMessage: '같은 이름의 지점이 이미 있습니다',
-        isAppError: true,
       })
     );
     const { getByDisplayValue, getByText } = renderSheet(
@@ -150,7 +152,21 @@ describe('지점 정보 섹션(S1)', () => {
     fireEvent.press(getByText('지점 정보 저장'));
 
     await waitFor(() => expect(mockAddToast).toHaveBeenCalled());
-    expect(mockAddToast.mock.calls.at(-1)?.[0].message).toContain('지점');
+    expect(mockAddToast.mock.calls.at(-1)?.[0].message).toBe('같은 이름의 지점이 이미 있습니다');
+  });
+
+  it('사유를 모르는 실패는 일반 안내로 내려간다(대조군)', async () => {
+    mockUpdateVenueContainer.mockRejectedValueOnce(new Error('boom'));
+    const { getByDisplayValue, getByText } = renderSheet(
+      <VenueSettingsSheet visible onClose={jest.fn()} container={container as never} />
+    );
+    fireEvent.changeText(getByDisplayValue('강남점'), '홍대점');
+    fireEvent.press(getByText('지점 정보 저장'));
+
+    await waitFor(() => expect(mockAddToast).toHaveBeenCalled());
+    expect(mockAddToast.mock.calls.at(-1)?.[0].message).toBe(
+      '지점 정보 저장에 실패했어요. 잠시 후 다시 시도해주세요.'
+    );
   });
 });
 

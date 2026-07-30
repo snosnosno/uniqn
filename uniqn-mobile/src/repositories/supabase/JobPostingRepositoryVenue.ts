@@ -12,7 +12,7 @@
 import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
-import { BusinessError, ValidationError, ERROR_CODES } from '@/errors';
+import { BusinessError, ValidationError, PermissionError, ERROR_CODES } from '@/errors';
 import { xssValidation } from '@/utils/security';
 import { handleSupabaseError } from '@/utils/supabase';
 import { STATUS } from '@/constants';
@@ -163,6 +163,39 @@ export async function getMyVenueContexts(
 }
 
 /**
+ * update_venue_container 의 P0001 RAISE 접두사 → AppError 매핑.
+ *
+ * 🔴 이게 없으면 서버가 준 한글 사유가 사용자에게 도달하지 않는다. handleSupabaseError 의
+ *   P0001 특수분기는 다른 도메인 3종뿐이고 POSTGREST_ERROR_MAP 에도 P0001 이 없어서,
+ *   '같은 이름의 지점이 이미 있습니다' 가 **'알 수 없는 오류가 발생했습니다'** 로 뭉개진다.
+ *   특히 동명 충돌(23505)은 유일성이 서버 상태라 클라 선차단이 원리적으로 불가능한 거부다 —
+ *   사용자는 이름을 고칠 때마다 원인 불명으로 실패한다.
+ * 관용구는 opsRpcError / EmployerApplicationRepository.mapRpcError 와 동일(접두사 → 도메인 에러).
+ */
+function throwMappedVenueRpcError(error: { message?: string; code?: string }): never {
+  const message = error?.message ?? '';
+  const detail = (prefix: string) => message.slice(prefix.length).trim();
+
+  if (message.startsWith('INVALID_INPUT:')) {
+    throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+      userMessage: detail('INVALID_INPUT:'),
+    });
+  }
+  if (message.startsWith('PERMISSION_DENIED:')) {
+    throw new PermissionError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
+      userMessage: detail('PERMISSION_DENIED:'),
+    });
+  }
+  if (message.startsWith('VENUE_NOT_FOUND:')) {
+    throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+      userMessage: '지점을 찾을 수 없어요. 목록을 새로고침해주세요.',
+    });
+  }
+  // 알려지지 않은 형태는 기존 분류로 폴백(전송 오류 등).
+  handleSupabaseError(error, { operation: '지점 프로필 수정', table: TABLE });
+}
+
+/**
  * 지점 컨테이너 프로필 수정. 컨테이너는 RESTRICTIVE 정책으로 직접 UPDATE 가 막혀 있어
  * SECDEF RPC 가 유일 경로다. 부분 갱신 — undefined 필드는 NULL 로 보내 "미변경"을 뜻하고,
  * 빈 문자열은 그대로 보내 "제거"를 뜻한다(서버 규약과 동일).
@@ -185,7 +218,7 @@ export async function updateVenueContainer(
       p_contact_phone: input.contactPhone ?? null,
       p_description: input.description ?? null,
     });
-    if (error) handleSupabaseError(error, { operation: '지점 프로필 수정', table: TABLE });
+    if (error) throwMappedVenueRpcError(error);
   } catch (error) {
     rethrowOrHandle(error, '지점 프로필 수정', { containerId });
   }
