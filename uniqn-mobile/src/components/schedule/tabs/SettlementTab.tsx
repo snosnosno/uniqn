@@ -282,7 +282,10 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
         </View>
       )}
 
-      {isEstimate && (
+      {/* 예상 금액 배너는 **실제로 예상액이 계산됐을 때만** 띄운다. 계산 결과가 없는데도
+          "예정 시간 기준으로 계산한 예상 금액입니다" 라고 하면, 아래 '계산 전' 안내와 정면으로
+          모순되고 사용자는 금액이 어딘가 있는데 안 보이는 줄 안다. */}
+      {isEstimate && settlement && (
         <View className="mb-4 rounded-lg bg-primary-50 p-3 dark:bg-primary-900/20">
           <Text className="text-center text-xs text-primary-700 dark:text-primary-300 font-sans">
             출퇴근 기록이 없어 예정 시간 기준으로 계산한 예상 금액입니다.
@@ -394,9 +397,16 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
           />
         </View>
       ) : (
+        /* 근무 전에는 금액을 낼 수 없다 — 예정 종료 시각을 저장하지 않기 때문이다(§K).
+           퇴근은 실적이라 "몇 시에 끝날지"를 약속으로 저장하면 없던 근무시간이 확정된다.
+           그래서 여기서는 0원이나 "계산할 수 없습니다"(고장으로 읽힌다) 대신 **계산 전**이라고
+           말하고, 언제 숫자가 나오는지 알려준다. */
         <View className="rounded-md bg-surface-page dark:bg-surface p-4 dark:bg-surface/50">
-          <Text className="text-center text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-            정산 정보를 계산할 수 없습니다.
+          <Text className="text-center text-sm font-sans-semibold text-content-primary dark:text-off-white">
+            계산 전
+          </Text>
+          <Text className="mt-1 text-center text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+            출근·퇴근이 모두 기록되면 정산 금액이 계산돼요.
           </Text>
         </View>
       )}

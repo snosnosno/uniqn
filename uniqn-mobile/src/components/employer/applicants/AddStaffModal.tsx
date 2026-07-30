@@ -3,16 +3,21 @@
  *
  * @description 지원 절차 없이 앱 가입자를 스태프로 직접 추가한다.
  *   1단계: 닉네임 검색 → 가입자 선택
- *   2단계: 근무 날짜/역할/(선택)시간대 입력 → 추가
+ *   2단계: 근무 날짜/역할/출근 예정 시각 입력 → 추가
  *
  * 백엔드 정합(정원 가드/정원 카운트)은 add_direct_staff RPC가 보장한다.
  *
- * @remarks 날짜 선택은 SheetModal 의 `overlay`(Modal 루트 렌더)로 띄운다.
- *   부모 SheetModal(RN Modal) 안에서 DatePicker 의 자체 RN Modal 을 임베드하면
- *   iOS 중첩 Modal 터치 먹통이 발생하므로, absoluteFill 오버레이만 사용한다.
+ * @remarks 시간 입력은 **자유 텍스트가 아니라 휠 피커**다. 예전엔 '예: 18:00~02:00' 플레이스홀더의
+ *   자유 입력이라 검증 없이 임의 문자열(범위·오타·한글)이 그대로 `time_slot` 으로 들어갔다 —
+ *   같은 컬럼을 읽는 QR 대상 선택·정산·표시가 전부 그 문자열을 파싱하는데도. 이제 형제 경로와
+ *   동일하게 `buildAddSlotPayload`(TIME_RE·XSS·날짜 정규화)를 거친다(§K 정본: 출근 예정 단일값).
+ *
+ * @remarks 날짜 선택과 시간 피커는 SheetModal 의 `overlay`(Modal 루트 렌더)로 띄운다.
+ *   부모 SheetModal(RN Modal) 안에서 자체 RN Modal 을 임베드하면 iOS 중첩 Modal 터치 먹통이
+ *   발생하므로, absoluteFill 오버레이만 사용한다.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { BackHandler, Keyboard, Pressable, StyleSheet, Text, View } from 'react-native';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
@@ -22,6 +27,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { CalendarPicker } from '@/components/ui/CalendarPicker';
 import { Loading } from '@/components/ui/Loading';
+import { TimeWheelPicker, type TimeValue } from '@/components/ui/TimeWheelPicker';
 import { ChevronDownIcon, UserPlusIcon, XMarkIcon } from '@/components/icons';
 import {
   CandidateRow,
@@ -29,7 +35,15 @@ import {
   NicknameSearchField,
   SearchErrorNotice,
 } from '@/components/staffPicker';
+// 시간 저장 규약(§K) SSOT — 근무표 화면 전용이 아니라 플래그 밖 이 경로도 공유하는 프리미티브.
+import { StartTimeField } from '@/components/workSchedule/StartTimeField';
+import { timeStringToValue, timeValueToString } from '@/components/workSchedule/SlotTimeField';
+import { buildAddSlotPayload } from '@/components/workSchedule/addSlotPayload';
+import { DEFAULT_SLOT_START_TIME } from '@/domains/workSchedule';
 import { useStaffNicknameSearch } from '@/hooks/useStaffNicknameSearch';
+import { toError } from '@/errors';
+import { useToastStore } from '@/stores/toastStore';
+import { logger } from '@/utils/logger';
 import { isWeb } from '@/utils/platform';
 import type { UserNicknameSearchResult } from '@/repositories';
 import type { AddDirectStaffInput } from '@/types';
@@ -43,6 +57,9 @@ export interface AddStaffModalProps {
 }
 
 const OTHER_ROLE_KEY = 'other';
+
+/** 휠 피커의 초기 위치. 저장되는 기본값이 아니다 — 입력 칸은 빈 값으로 시작한다(결정 4 · §J). */
+const PICKER_FALLBACK_TIME = DEFAULT_SLOT_START_TIME;
 
 export function AddStaffModal({
   visible,
@@ -66,7 +83,11 @@ export function AddStaffModal({
   const [dateOpen, setDateOpen] = useState(false);
   const [roleKey, setRoleKey] = useState('');
   const [customRole, setCustomRole] = useState('');
-  const [timeSlot, setTimeSlot] = useState('');
+  // 출근 예정 시각('HH:mm'). 프리필 없음 — 고른 값만 저장된다.
+  const [startTime, setStartTime] = useState('');
+  const [isTimeUndefined, setIsTimeUndefined] = useState(false);
+  const [timeOpen, setTimeOpen] = useState(false);
+  const addToast = useToastStore((s) => s.addToast);
 
   const resetAll = useCallback(() => {
     reset();
@@ -76,7 +97,9 @@ export function AddStaffModal({
     setDateOpen(false);
     setRoleKey('');
     setCustomRole('');
-    setTimeSlot('');
+    setStartTime('');
+    setIsTimeUndefined(false);
+    setTimeOpen(false);
   }, [reset]);
 
   const handleClose = useCallback(() => {
@@ -113,30 +136,47 @@ export function AddStaffModal({
   }, [nickname, search]);
 
   const isCustomRole = roleKey === OTHER_ROLE_KEY;
+  // 저장 게이트: 시간을 고르거나 '미정'을 명시 체크해야 추가할 수 있다(결정 4 · §J).
+  const timeDecided = isTimeUndefined || startTime !== '';
   const canSubmit =
     !!selected &&
     !!date &&
     !!roleKey &&
     (!isCustomRole || customRole.trim().length > 0) &&
+    timeDecided &&
     !isSubmitting;
+
+  // 휠 피커 값. 아직 안 골랐으면 저녁 운영 기준 위치에서 시작(입력 칸은 여전히 빈 값).
+  const timePickerValue = useMemo<TimeValue>(
+    () => timeStringToValue(startTime || PICKER_FALLBACK_TIME),
+    [startTime]
+  );
 
   const handleSubmit = useCallback(async () => {
     if (!selected || !date || !roleKey) {
       return;
     }
 
-    const input: AddDirectStaffInput = {
-      jobPostingId,
-      staffId: selected.uid,
-      assignments: [
-        {
-          date: format(date, 'yyyy-MM-dd'),
-          role: roleKey,
-          customRole: isCustomRole ? customRole.trim() : undefined,
-          timeSlot: timeSlot.trim() ? timeSlot.trim() : undefined,
-        },
-      ],
-    };
+    let input: AddDirectStaffInput;
+    try {
+      // write 경계: 형제 경로(근무표 인원 추가)와 동일한 빌더 — 날짜 정규화(E5)·시각 형식(TIME_RE)·
+      // XSS(S1) 검증을 여기서 끝낸다. 검증 실패는 RPC 미호출(fail-closed).
+      input = buildAddSlotPayload({
+        containerId: jobPostingId,
+        staffId: selected.uid,
+        date,
+        role: roleKey,
+        customRole: isCustomRole ? customRole : undefined,
+        startTime,
+        timeUndefined: isTimeUndefined,
+      });
+    } catch (error) {
+      const userMessage =
+        (error as { userMessage?: string }).userMessage ?? '스태프 추가에 실패했습니다.';
+      logger.error('스태프 직접 추가 입력 검증 실패', toError(error), { jobPostingId });
+      addToast({ type: 'error', message: userMessage });
+      return;
+    }
 
     try {
       await onSubmit(input);
@@ -150,10 +190,12 @@ export function AddStaffModal({
     roleKey,
     isCustomRole,
     customRole,
-    timeSlot,
+    startTime,
+    isTimeUndefined,
     jobPostingId,
     onSubmit,
     handleClose,
+    addToast,
   ]);
 
   // 날짜 선택 오버레이 — SheetModal 루트에 렌더(중첩 Modal 회피).
@@ -219,7 +261,27 @@ export function AddStaffModal({
       title="스태프 추가"
       isLoading={isSubmitting}
       footer={footer}
-      overlay={dateOverlay}
+      overlay={
+        <>
+          {dateOverlay}
+          {/* 시간 피커도 같은 오버레이 계층에 둔다 — 중첩 RN Modal 회피(embedded) */}
+          <TimeWheelPicker
+            visible={timeOpen}
+            value={timePickerValue}
+            title="출근 예정 시간"
+            minHour={0}
+            maxHour={23}
+            minuteInterval={15}
+            onConfirm={(value) => {
+              setStartTime(timeValueToString(value));
+              setIsTimeUndefined(false);
+              setTimeOpen(false);
+            }}
+            onClose={() => setTimeOpen(false)}
+            embedded
+          />
+        </>
+      }
     >
       <View className="p-5">
         {/* 1단계: 닉네임 검색 */}
@@ -301,11 +363,13 @@ export function AddStaffModal({
               />
             ) : null}
 
-            <Input
-              label="시간대 (선택)"
-              value={timeSlot}
-              onChangeText={setTimeSlot}
-              placeholder="예: 18:00~02:00"
+            {/* 출근 예정 — 자유 텍스트 부활 금지(피커의 0패딩 'HH:mm' 만 통과) */}
+            <StartTimeField
+              label="출근 예정"
+              value={startTime}
+              isUndefined={isTimeUndefined}
+              onToggleUndefined={setIsTimeUndefined}
+              onPress={() => setTimeOpen(true)}
             />
           </View>
         ) : null}

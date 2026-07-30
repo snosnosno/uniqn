@@ -11,9 +11,9 @@
  * 가 confirmedStaff/jobPostings 와 함께 담당한다(W-1) — 시트는 별도 무효화하지 않는다.
  *
  * 후보행·역할칩·닉네임검색 폼은 AddStaffModal 과 공유하는 프리미티브(@/components/staffPicker)로 통합.
- * 시간대는 형제 화면 AddStaffModal·지원/확정 흐름과 동일하게 **출근시간(start) 하나만** 받는다
- * (StartTimeField: 단일 wheel-picker + '미정' 토글). 종료·익일 개념은 이 화면에 없으므로
- * SlotTimeField/OvernightPreviewBanner 는 쓰지 않는다(그것들은 근무표 슬롯 편집 EditSlotSheet 전용).
+ * 시간대는 앱 전체 정본(§K)대로 **출근 예정 시각 하나만** 받는다(StartTimeField: 단일
+ * wheel-picker + '미정' 토글). 예정 종료 개념은 앱에 없다 — 퇴근은 실적(check_out_ts)이다.
+ * 입력 칸은 **빈 값으로 시작**하고, 시간을 고르거나 '미정'을 체크해야 추가할 수 있다(결정 4 · §J).
  * 저장은 출근시간 있으면 'HH:mm' 단일, 미정이면 timeSlot 미기록(형식 검증은 addSlotPayload).
  *
  * 중첩 RN Modal iOS 터치먹통(pitfall_nested_rn_modal_touch_dead) 회피 — 닉네임검색은 AddStaffModal
@@ -60,8 +60,11 @@ type AddMode = 'pool' | 'nickname' | 'posting';
 const OTHER_ROLE_KEY = 'other';
 const KNOWN_ROLE_KEYS = new Set<string>(STAFF_ROLES.map((role) => role.key));
 
-// 출근시간 기본값 SSOT — 홀덤펍 저녁 운영 기준.
-const DEFAULT_START = DEFAULT_SLOT_START_TIME;
+/**
+ * 휠 피커의 **초기 위치**(홀덤펍 저녁 운영 기준). 저장되는 기본값이 아니다 —
+ * 입력 칸은 빈 값으로 시작하고 사용자가 고른 값만 저장된다(결정 4 · §J).
+ */
+const PICKER_FALLBACK_TIME = DEFAULT_SLOT_START_TIME;
 
 export interface AddSlotSheetProps {
   visible: boolean;
@@ -133,7 +136,9 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
   const [picked, setPicked] = useState<PickedStaff | null>(null);
   const [roleKey, setRoleKey] = useState('');
   const [customRole, setCustomRole] = useState('');
-  const [startTime, setStartTime] = useState(DEFAULT_START);
+  // 프리필 없음 — 빈 값으로 시작한다. 기본값을 실제 값처럼 보여주면 사용자가 그대로 저장해
+  // 고른 적 없는 출근시간이 확정된다(결정 4 · §J). 피커 초기 위치만 PICKER_FALLBACK_TIME.
+  const [startTime, setStartTime] = useState('');
   // 출근시간 미정 — 체크 시 timeSlot 미기록(지원/확정 모델과 동일).
   const [isTimeUndefined, setIsTimeUndefined] = useState(false);
   // 출근시간 휠 피커 열림 여부. 중첩 Modal 없이 SheetModal overlay 로 단일 렌더.
@@ -152,7 +157,7 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
     setPicked(null);
     setRoleKey('');
     setCustomRole('');
-    setStartTime(DEFAULT_START);
+    setStartTime('');
     setIsTimeUndefined(false);
     setPickerOpen(false);
   }, []);
@@ -201,7 +206,7 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
       person.defaultRole && KNOWN_ROLE_KEYS.has(person.defaultRole) ? person.defaultRole : ''
     );
     setCustomRole('');
-    setStartTime(DEFAULT_START);
+    setStartTime('');
     setIsTimeUndefined(false);
     setPickerOpen(false);
   }, []);
@@ -212,9 +217,18 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
   }, [nickname, nicknameSearch]);
 
   const isCustomRole = roleKey === OTHER_ROLE_KEY;
-  // 출근시간은 단일 시각 또는 미정 — 항상 유효(시작==종료 같은 가드 불필요).
+  /**
+   * 저장 게이트: 시간을 고르거나 '미정'을 명시 체크해야 추가할 수 있다(결정 4 · §J).
+   * 빈 값으로 그냥 넘어갈 수 있으면 "미정"이 선택이 아니라 방치의 결과가 되고,
+   * 구직자 화면의 "출근 시간 미정" 안내가 의미를 잃는다.
+   */
+  const timeDecided = isTimeUndefined || startTime !== '';
   const canSubmit =
-    !!picked && !!roleKey && (!isCustomRole || customRole.trim().length > 0) && !isAddingStaff;
+    !!picked &&
+    !!roleKey &&
+    (!isCustomRole || customRole.trim().length > 0) &&
+    timeDecided &&
+    !isAddingStaff;
 
   // 역할 선택 완료 여부(표준=칩, 커스텀=이름 입력) + JIT 단가 필요 판정.
   const roleReady = !!roleKey && (!isCustomRole || customRole.trim().length > 0);
@@ -244,8 +258,12 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
     setJitDismissed(false);
   }, [customRole]);
 
-  // 출근시간 피커 값('HH:mm' → TimeValue).
-  const pickerValue = useMemo<TimeValue>(() => timeStringToValue(startTime), [startTime]);
+  // 출근시간 피커 값('HH:mm' → TimeValue). 아직 안 골랐으면 저녁 운영 기준 위치에서 시작한다
+  // (입력 칸은 여전히 빈 값 — 피커를 0시에 열어 헛돌게 만들지 않기 위한 초기 위치일 뿐).
+  const pickerValue = useMemo<TimeValue>(
+    () => timeStringToValue(startTime || PICKER_FALLBACK_TIME),
+    [startTime]
+  );
 
   // 휠 피커 선택 완료 → 'HH:mm'(0패딩) 로 되돌려 반영.
   const handlePickerConfirm = useCallback((timeValue: TimeValue) => {

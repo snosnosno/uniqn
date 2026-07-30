@@ -5,7 +5,7 @@
  * - 색상 화이트리스트: 자유 hex/미등록 토큰 거부 + 팔레트 토큰 통과
  * - 메모 XSS: 위험 문자열/초과 길이 거부 + 정상 메모 통과
  * - 시작시간 자동정렬 비교자: timeSlot 시작시각 기준 오름차순(불변성)
- * - timeSlot 조합/분해 + 중복충돌 경고(차단 아님)
+ * - 출근 예정 시각 형식 검증(쓰기 경계) + 기존 범위 데이터 읽기 하위호환 + 중복충돌 경고(차단 아님)
  */
 import { ValidationError } from '@/errors';
 import {
@@ -18,7 +18,7 @@ import {
   parseSlotStartMinutes,
   compareSlotsByStartTime,
   sortSlotsByStartTime,
-  composeTimeSlot,
+  assertSlotStartTime,
   parseTimeSlotParts,
   detectSlotConflicts,
 } from '../slotEdit';
@@ -109,12 +109,51 @@ describe('slotEdit — 시작시간 정렬', () => {
   });
 });
 
-describe('slotEdit — timeSlot 조합/분해 + 중복충돌', () => {
-  it('조합/분해는 앱 표준 구분자(" - ")를 사용한다', () => {
-    expect(composeTimeSlot('18:00', '02:00')).toBe('18:00 - 02:00');
+describe('slotEdit — 출근 예정 시각 형식 검증(쓰기 경계)', () => {
+  it("피커가 만드는 0패딩 'HH:mm' 만 통과시킨다", () => {
+    expect(assertSlotStartTime('18:00')).toBe('18:00');
+    expect(assertSlotStartTime('09:30')).toBe('09:30');
+    // 앞뒤 공백은 정규화해서 통과(피커 경유가 아닌 프리필 문자열 방어)
+    expect(assertSlotStartTime(' 18:00 ')).toBe('18:00');
+  });
+
+  it('자유 텍스트·범위 문자열·범위 밖 시각은 ValidationError 로 거부한다', () => {
+    // 범위 저장 폐지(§K) — 범위 문자열이 다시 time_slot 으로 흘러드는 경로를 형식에서 차단한다.
+    expect(() => assertSlotStartTime('18:00 - 02:00')).toThrow(ValidationError);
+    expect(() => assertSlotStartTime('저녁 6시')).toThrow(ValidationError);
+    expect(() => assertSlotStartTime('25:00')).toThrow(ValidationError);
+    expect(() => assertSlotStartTime('18:60')).toThrow(ValidationError);
+    expect(() => assertSlotStartTime('')).toThrow(ValidationError);
+  });
+});
+
+describe('slotEdit — 기존 범위 데이터 읽기 하위호환 + 중복충돌', () => {
+  it('이미 저장된 범위 문자열도 계속 분해할 수 있다(읽기 하위호환)', () => {
     expect(parseTimeSlotParts('18:00 - 02:00')).toEqual({ start: '18:00', end: '02:00' });
     expect(parseTimeSlotParts('09:30~12:00')).toEqual({ start: '09:30', end: '12:00' });
+    // 단일값(정본 형식)은 종료가 빈 문자열
+    expect(parseTimeSlotParts('19:00')).toEqual({ start: '19:00', end: '' });
     expect(parseTimeSlotParts(null)).toEqual({ start: '', end: '' });
+  });
+
+  it('단일값 슬롯끼리는 출근 예정 시각이 같을 때 충돌로 경고한다', () => {
+    // 단일값에는 구간이 없어 겹침 판정이 불가능하다. 여기서 아무 것도 경고하지 않으면
+    // 정본 형식으로 전환한 순간 중복배치 경고가 통째로 죽는다(조용한 기능 소실).
+    const target = { workLogId: 'w1', staffId: 's1', timeSlot: '19:00' };
+    const siblings = [
+      { workLogId: 'w1', staffId: 's1', timeSlot: '19:00' }, // 자기 자신
+      { workLogId: 'w2', staffId: 's1', timeSlot: '19:00' }, // 같은 출근 시각(충돌)
+      { workLogId: 'w3', staffId: 's2', timeSlot: '19:00' }, // 다른 스태프
+      { workLogId: 'w4', staffId: 's1', timeSlot: '21:00' }, // 다른 출근 시각
+      { workLogId: 'w5', staffId: 's1', timeSlot: null }, // 미정 — 판정 불가
+    ];
+    expect(detectSlotConflicts(target, siblings)).toEqual([{ workLogId: 'w2', reason: 'overlap' }]);
+  });
+
+  it('범위 슬롯과 단일값 슬롯이 섞여도 시작시각이 같으면 경고한다', () => {
+    const target = { workLogId: 'w1', staffId: 's1', timeSlot: '18:00' };
+    const siblings = [{ workLogId: 'w2', staffId: 's1', timeSlot: '18:00 - 02:00' }];
+    expect(detectSlotConflicts(target, siblings)).toEqual([{ workLogId: 'w2', reason: 'overlap' }]);
   });
 
   it('같은 스태프의 겹치는 구간만 충돌로 경고하고 자기 자신은 제외한다', () => {

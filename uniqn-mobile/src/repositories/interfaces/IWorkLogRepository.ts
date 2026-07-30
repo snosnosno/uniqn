@@ -26,8 +26,16 @@ import type {
  * @property editedBy - 수정 행위자(운영자) user id
  */
 export interface UpdateSlotInput {
+  /**
+   * 출근 예정 시각('HH:mm' 단일값). 제공 시 time_slot 을 이 값으로 갱신한다(§K 정본).
+   * 범위 저장은 폐지 — 예정 종료 시각은 더 이상 저장하지 않는다.
+   */
   startTime?: string;
-  endTime?: string;
+  /**
+   * 출근 예정 미정 — true 면 time_slot 을 비운다(null). '미정'은 명시 선택으로만 도달한다.
+   * startTime 보다 우선한다(인원 추가 경로 buildTimeSlot 과 동일 우선순위).
+   */
+  timeUndecided?: boolean;
   staffRole?: StaffRole;
   color?: string;
   memo?: string;

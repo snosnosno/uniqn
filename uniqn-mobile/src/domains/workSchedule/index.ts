@@ -53,7 +53,7 @@ export {
   parseSlotStartMinutes,
   compareSlotsByStartTime,
   sortSlotsByStartTime,
-  composeTimeSlot,
+  assertSlotStartTime,
   parseTimeSlotParts,
   detectSlotConflicts,
   type SlotColorToken,
