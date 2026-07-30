@@ -50,7 +50,9 @@ jest.mock('../VenueDayDetail', () => {
   const { Text, Pressable } = require('react-native');
   return {
     VenueDayDetail: ({ onSlotPress }: { onSlotPress?: (s: unknown) => void }) => (
-      <Pressable onPress={() => onSlotPress?.(globalThis.__TEST_SLOT__)}>
+      <Pressable
+        onPress={() => onSlotPress?.((globalThis as Record<string, unknown>).__TEST_SLOT__)}
+      >
         <Text>슬롯 열기</Text>
       </Pressable>
     ),
