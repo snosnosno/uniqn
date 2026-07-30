@@ -1,0 +1,79 @@
+# prod 런타임 헬스 — "돌고 있다"와 "일하고 있다"를 구분하는 감시
+#
+# 배경 (2026-07-31)
+#   schedule_board_sync_outbox 가 두 달간(06-03~07-30) 35건 실패를 쌓는 동안 아무도 몰랐다.
+#   크론은 매분 실행돼 `cron.job_run_details` 에 전부 succeeded 로 기록됐고, Edge Function 의
+#   Slack 알림 코드는 `SLACK_OUTBOX_ALERT_WEBHOOK` 미설정이라 silent skip 이었다(작성된
+#   순간부터 죽어 있었다). 즉 **실행 성공은 업무 성공이 아니다** — 실패는 테이블 안에만 쌓였다.
+#   같은 형태를 이 프로젝트에서 두 번 겪었다(last_work_date 데드 크론).
+#
+#   그래서 감시를 앱 밖에 둔다. 이 워크플로우가 red 면 GitHub 이 알린다 — 새 자격증명도,
+#   새 알림 타입도, 아무도 안 보는 대시보드도 필요 없다.
+#
+# parity-smoke.yml 과의 분업
+#   parity-smoke = **스키마** 드리프트(주간, 변화가 느림).
+#   prod-health  = **런타임** 상태(일간, 하루 방치도 길다). 신호를 섞지 않으려고 분리했다.
+#
+# 필요 시크릿: PROD_DB_URL — parity-smoke 와 동일한 Session pooler URI 를 재사용한다.
+#   미설정 시 notice 만 남기고 skip(성공 처리).
+# PR 게이트 아님: schedule/dispatch 전용.
+
+name: prod-health
+
+on:
+  schedule:
+    - cron: '23 0 * * *' # 매일 00:23 UTC (09:23 KST)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prod-health
+  cancel-in-progress: true
+
+jobs:
+  prod-health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PROD_DB_URL: ${{ secrets.PROD_DB_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 런타임 헬스 실측
+        run: |
+          if [ -z "$PROD_DB_URL" ]; then
+            echo "::notice::PROD_DB_URL 시크릿 미설정 — prod 헬스 skip"
+            exit 0
+          fi
+
+          ACTUAL=$(psql "$PROD_DB_URL" -tA -v ON_ERROR_STOP=1 <<'SQL'
+          SELECT
+            -- ① 재시도 한도 소진 = 사람이 봐야 하는 실패. 정상값 0.
+            (SELECT count(*) FROM public.schedule_board_sync_outbox
+              WHERE status = 'failed_retry_limit')
+            || ' ' ||
+            -- ② processing 에서 10분 넘게 멈춘 행 = 워커가 중간에 죽었다는 뜻.
+            --    (크론은 매분, 배치 10 이므로 정상이면 즉시 전이된다)
+            (SELECT count(*) FROM public.schedule_board_sync_outbox
+              WHERE status = 'processing' AND updated_at < now() - interval '10 minutes')
+            || ' ' ||
+            -- ③ pending 적체 = 워커가 배수 속도를 못 따라가거나 아예 안 돌고 있다.
+            (SELECT count(*) FROM public.schedule_board_sync_outbox
+              WHERE status = 'pending' AND created_at < now() - interval '1 hour')
+            || ' ' ||
+            -- ④ 최근 24시간 크론 실패. run_details 는 7일 보존(purge-cron-run-details).
+            (SELECT count(*) FROM cron.job_run_details
+              WHERE status <> 'succeeded' AND start_time > now() - interval '24 hours');
+          SQL
+          )
+          read -r OUTBOX_FAILED OUTBOX_STUCK OUTBOX_BACKLOG CRON_FAILED <<< "$ACTUAL"
+          echo "outbox: failed=$OUTBOX_FAILED stuck=$OUTBOX_STUCK backlog=$OUTBOX_BACKLOG | cron_failed_24h=$CRON_FAILED"
+
+          FAIL=0
+          [ "$OUTBOX_FAILED" = "0" ] || { echo "::error::스케줄 보드 동기화 실패 누적: $OUTBOX_FAILED 건 (schedule_board_sync_outbox.status='failed_retry_limit'). error_message 를 확인하고 원인 수정 후 status='pending', retry_count=0 으로 재큐잉할 것"; FAIL=1; }
+          [ "$OUTBOX_STUCK" = "0" ] || { echo "::error::outbox 워커가 processing 에서 멈춤: $OUTBOX_STUCK 건 (10분 초과). sync-schedule-board-outbox EF 로그 확인"; FAIL=1; }
+          [ "$OUTBOX_BACKLOG" = "0" ] || { echo "::error::outbox pending 적체: $OUTBOX_BACKLOG 건 (1시간 초과). 크론 sync-schedule-board-outbox 가 도는지 확인"; FAIL=1; }
+          [ "$CRON_FAILED" = "0" ] || { echo "::error::pg_cron 잡 실패: 최근 24시간 $CRON_FAILED 건. cron.job_run_details 의 return_message 확인"; FAIL=1; }
+          exit $FAIL
