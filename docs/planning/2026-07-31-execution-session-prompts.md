@@ -1,0 +1,458 @@
+# 실행 세션 프롬프트 원장 (2026-07-31)
+
+> venue 근무표·내 스케줄 재설계 + 주소 검색 3단계를 **세션 단위로 이어서** 실행하기 위한 문서.
+> 각 세션은 §0 공통 블록 + 해당 세션 블록을 **통째로 복사해 붙여넣는다.**
+> 세션이 끝나면 §1 상태 보드를 갱신한다 — 이 문서가 세션 간 유일한 인수인계 수단이다.
+>
+> 원천 설계: [`2026-07-28-venue-schedule-redesign-handoff.md`](2026-07-28-venue-schedule-redesign-handoff.md) ·
+> [`2026-07-31-address-search-3phase-design.md`](2026-07-31-address-search-3phase-design.md)
+
+---
+
+## 1. 상태 보드 (세션 종료 시 반드시 갱신)
+
+| 세션 | 범위 | 브랜치 | 상태 | PR | 비고 |
+|---|---|---|---|---|---|
+| 0-1 | 병렬 워크트리 미커밋 정리 | `fix/sheet-drag-map-phone` | ✅ | #366 | `b2064c8c4`. `mapLink`·`InfoTab`·`ScheduleConverter` 점유 해제됨 |
+| 0-2 | 알림 착지 브랜치 머지 | `fix/notification-landing-and-apply-success` | ✅ | #365 | `8fb10f5d2` |
+| 0-3 | 핸드오프 문서 1-A 완료 반영 | — | ✅ | — | 2026-07-31 |
+| **0-4** | **Supabase 안전 정리 미푸시 커밋 처리** | `chore/supabase-safe-cleanup-20260731` | ⬜ | | `632adcbae` — 트리거 함수 33개 PUBLIC EXECUTE 회수 등. **DB 권한 변경이므로 S1 전에 PR/머지 또는 명시적 보류 결정 필요** |
+| **S1** | 1-B + 1-C | `feat/venue-profile` | ⬜ | | |
+| **S2** | 2-A + 2-B | `fix/worklog-time-model` | ⬜ | | |
+| **S3** | 2-C + 2-D + 별-2 | `feat/worklog-time-notify` | ⬜ | | |
+| **S4** | 3-B + 3-E + 별-1 | `feat/qr-badge-and-entry` | ⬜ | | |
+| **S5** | 3-A + 3-D | `feat/settlement-and-rename` | ⬜ | | 🔴 착수 전 사용자 승인 2건 |
+| **B1** | 주소 1단계 | `claude/job-posting-address-map-lbrvzd` | ⬜ | | 독립 워크트리 |
+| **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
+| **S6** | 3-C 설계 | — | ⬜ | | 사용자 결정 필요 |
+| **S7** | 3-C 구현 | `feat/posting-time-change` | ⬜ | | S6 승인 후 |
+
+### 워크트리 배정 (🔴 모든 세션 예외 없이 격리)
+
+| 세션 | 워크트리 경로 | 상태 |
+|---|---|---|
+| 0-4 | `T-HOLDEM-dbcleanup` | ⬜ |
+| S1 | `T-HOLDEM-venue` | ⬜ |
+| S2 | `T-HOLDEM-time` | ⬜ |
+| S3 | `T-HOLDEM-notify` | ⬜ |
+| S4 | `T-HOLDEM-qr` | ⬜ |
+| S5 | `T-HOLDEM-settle` | ⬜ |
+| B1·B2 | `T-HOLDEM-address` | ⬜ |
+| S7 | `T-HOLDEM-timechange` | ⬜ |
+
+전부 `C:/Users/user/Desktop/` 아래. 머지 완료 세션의 워크트리는 다음 세션 착수 시 정리한다
+(⚠️ **정션 해제 선행** — `rmdir` 로 `node_modules` 정션을 먼저 끊지 않으면 원본이 지워질 수 있다).
+
+**prod 파리티 추적**: 마지막 실측 **함수 183 / 정책 111** (2026-07-28)
+⚠️ 0-4 커밋(`632adcbae`)이 함수 33개의 EXECUTE 권한을 회수했다 — **S1 착수 시 카운트를 재실측**하고
+이 표의 시작값을 갱신할 것. 2026-07-28 값을 그대로 베이스라인으로 쓰지 말 것.
+
+| 세션 | 마이그 | 적용 후 함수/정책 |
+|---|---|---|
+| S1 | RPC 2개 신설 | (기록) |
+| S3 | 알림 트리거 | (기록) |
+| S5 | rename 마이그 | (기록) |
+| B2 | 컬럼 추가 | 불변 예상 |
+
+---
+
+## 2. 공통 블록 (모든 세션 프롬프트 앞에 붙인다)
+
+```
+## 팀 편성 (이 세션 고정)
+
+| 역할 | 모델 | 에이전트 |
+|---|---|---|
+| 설계·계획·판정 | fable | planner / architect / Plan |
+| 탐색·수집 | sonnet | Explore / general-purpose |
+| 구현·작성 | opus | 메인 세션 · tdd-guide |
+| 중간 리뷰 | opus | code-reviewer |
+| **최종 리뷰** | **fable** | code-reviewer (PR 직전 1회) |
+
+- 독립 작업 2개 이상이면 한 메시지에 병렬 디스패치. 팬아웃은 5개 단위 배치.
+- 서브에이전트 보고의 "성공"은 그대로 믿지 말고 diff·테스트 실행으로 독립 검증.
+- 디스패치 프롬프트에 금지사항 명시: mcp__supabase__* 직접 호출 금지 ·
+  기존 마이그레이션 파일 수정 금지 · PROD 우회 금지.
+- 한도(429) 시 폴백 사다리 fable→opus→sonnet, 보고에 다운그레이드 명시.
+
+## 착수 전 필수 — 🔴 격리 워크트리 상시 규칙
+
+**이 프로젝트의 모든 실행 세션은 예외 없이 전용 워크트리에서 진행한다.**
+미커밋 변경이 없어도, 혼자 작업 중이어도 마찬가지다. 메인 체크아웃(`T-HOLDEM`)에서는
+읽기·계획·문서만 하고 코드를 고치지 않는다.
+
+1. `git fetch origin && git log --oneline origin/master -3` — 최신 master 확인
+2. 전용 워크트리 생성 (§1 워크트리 배정 표에서 경로 확인):
+   ```bash
+   git worktree add C:/Users/user/Desktop/<워크트리명> -b <브랜치명> origin/master
+   ```
+   ```cmd
+   mklink /J C:\Users\user\Desktop\<워크트리명>\uniqn-mobile\node_modules C:\Users\user\Desktop\T-HOLDEM\uniqn-mobile\node_modules
+   ```
+   ⚠️ MSYS 경로 변환 주의 — 실패하면 PowerShell `New-Item -ItemType Junction` 대안
+   ⚠️ expo 실행 시 `EXPO_ROUTER_APP_ROOT` 절대경로 + `--clear` (정션이면 라우트 0건 함정)
+   ⚠️ 워크트리 안 코드는 시스템 절대경로 하드코딩 금지 — `@/` alias 강제
+3. `git status` — 내가 만들지 않은 미커밋 변경이 남아 있으면 그것부터 사용자에게 보고
+4. `docs/planning/2026-07-31-execution-session-prompts.md` §1 상태 보드로 선행 세션 완료 확인
+5. DB를 건드리는 세션이면 `mcp__supabase__list_migrations` 로 대기 마이그 0건 확인
+   (마이그는 전 레인 통틀어 **동시 1건**만)
+6. §1 워크트리 배정 표의 해당 행을 🔨(진행중)으로 갱신
+
+## 프로젝트 규율 (위반 시 사고 이력 있음)
+
+- 언어: 응답·커밋·문서·주석 전부 한글
+- 마이그레이션 = Supabase MCP `apply_migration` 전용. `db push` 금지
+- 마이그 재정의 베이스는 "가장 최근 정의":
+  `grep -l "CREATE OR REPLACE FUNCTION <name>" supabase/migrations/*.sql | sort | tail -1`
+- `e2e/` 는 `npm run quality` 범위 밖 — 상수·enum·문구를 바꿨으면 **별도 Grep 필수**
+- `functions/` 는 ESLint·tsc·prettier가 전부 건너뛴다 (Jest만 잡음)
+- 커밋 사전승인 O · **push/PR 은 사용자 명시 요청 시에만**
+- 완료 주장 전 이 세션에서 실행한 증거 필수
+
+## 실기기 QA 생략 결정 (2026-07-31 사용자 확정)
+
+실기기 QA 게이트는 제외한다. 대신 **아래 3개로 대체하며, 이건 생략 불가**:
+1. 금액·시간에 닿는 변경은 **Jest 회귀 테스트 red→green** 확인 (예상액 0원 사고 이력)
+2. 묶음별 PR 유지 — 여러 묶음을 한 번에 배포하지 않는다
+3. 웹 렌더가 걸린 변경(CSP·WebView)은 **브라우저 콘솔 직접 관찰**. 정적 검사 불충분
+
+## 🔴 세션 종료 프로토콜 (미완료여도 반드시 실행 — 이어가기의 유일한 수단)
+
+컨텍스트가 차거나 사용자가 중단하면, **끝나지 않았어도** 아래를 실행하고 끝낸다.
+"다음에 이어서 하겠다"고 말만 하고 종료하지 말 것.
+
+1. **작업 보존** — 미완이어도 커밋한다(커밋 사전승인 O). 커밋 못 할 상태면
+   `git stash` 대신 `wip:` 커밋을 남긴다. **워크트리는 지우지 않는다.**
+2. **종료 게이트 실행** → 출력을 읽고 결과를 보고 (통과/실패 모두 사실대로)
+3. **§1 상태 보드 갱신** — 상태·PR 번호·파리티 카운트·워크트리 상태
+4. **§5 인수인계 로그에 항목 추가** — 아래 형식 그대로:
+   ```
+   ### <세션ID> — <날짜> · 상태: 완료 | 중단(사유)
+   - 워크트리/브랜치: <경로> / <브랜치> · HEAD <sha>
+   - 끝난 것: (검증 증거와 함께)
+   - 안 끝난 것: (다음 세션이 손댈 첫 파일:줄까지)
+   - 막힌 지점: (있으면 증상·시도·실패 지점)
+   - 다음 세션에 넘기는 주의: (이 세션에서 새로 알아낸 것만)
+   ```
+5. **새로 드러난 함정은 메모리에 기록** — 이 문서에는 한 줄 포인터만
+6. 마지막 줄에 **다음 세션이 붙여넣을 프롬프트**를 출력한다
+   (§3 의 다음 세션 블록 + 4번에서 적은 이어가기 지점)
+```
+
+---
+
+## 3. 세션별 프롬프트
+
+### S1 — 지점 프로필 (1-B + 1-C)
+
+```
+[§2 공통 블록 붙여넣기]
+
+UNIQN 근무표 재설계 세션 1이다.
+docs/planning/2026-07-28-venue-schedule-redesign-handoff.md 를 먼저 읽어라.
+"이미 확인된 사실"은 file:line 까지 검증됐다 — 재조사 금지.
+
+범위: 1-B + 1-C. 브랜치 feat/venue-profile.
+
+1-B — DB
+- `update_venue_container(p_container_id, p_name, p_location, p_contact_phone, p_description, p_defaults)`
+- `get_my_venue_contexts(p_ids uuid[])`
+- 둘 다 SECDEF + search_path + anon REVOKE + authenticated GRANT + is_workspace_member 게이트
+- 🔴 unique 인덱스 23505 → `INVALID_INPUT: 같은 이름의 지점이 이미 있습니다` 로 변환
+- 권한 술어는 20260728185802 와 동일 (soft cancel 필터, .claude/rules/supabase-patterns.md §11)
+- ⚠️ `get_my_venue_role_salaries` 를 확장하지 말 것 (CROSS JOIN LATERAL → 빈 배열이면 0행, §C)
+- pgTAP 작성 + 파리티 카운트 기록 (183/111 → 185 예상)
+
+1-C — 클라 배선
+- scheduleService.ts:160,647 → createScheduleContainerContext 에 title/location/phone 전달
+- ScheduleConverter.ts:64 시그니처 확장
+  ⚠️ 0-1 세션이 SchedulePostingContext 에 `locationAddress` 를 이미 추가했다.
+     그 위에 얹을 것 — 같은 인터페이스다.
+- venueContainer.ts: VenueContainer + VENUE_CONTAINER_COLUMNS 갱신
+- VenueSettingsSheet.tsx: 단가표 전용 → 지점 설정 전체
+- useEnsureDefaultVenue.ts: 워크스페이스명 복사 중단 → `{닉네임}의 지점`
+- 기본명 SSOT 통합: useEnsureDefaultWorkspace.ts:20 + workspaceService.ts:91 + workspace/index.tsx:125
+
+금지
+- '내 팀' 일괄 rename 마이그는 S5(3-D) 몫 — 여기서 하지 말 것
+- 지점 설정에 **기본 근무시간 넣지 말 것** (결정 4 · §J)
+- 지점 "주소" 입력 필드를 자유 텍스트로 만들지 말 것 — 주소검색 컴포넌트(B1)가 머지된 뒤 얹는다.
+  이번엔 **장소명·연락처만** 받는다.
+- 1-C 를 쪼개지 말 것 — 입력만 배포하면 안 보이고 표시만 배포하면 볼 게 없다
+
+종료 게이트
+1. npm run quality   2. npm test   3. pgTAP + 파리티 카운트 기록
+4. code-reviewer(opus) → 수정 → **최종 code-reviewer(fable) 1회**
+```
+
+---
+
+### S2 — 시간 모델 (2-A + 2-B)
+
+```
+[§2 공통 블록 붙여넣기]
+
+UNIQN 근무표 재설계 세션 2다.
+docs/planning/2026-07-28-venue-schedule-redesign-handoff.md §K + §J 를 먼저 읽어라.
+§J 의 "시작+종료 둘 다 입력" 지침은 폐기됐고 §K 가 정본이다.
+
+범위: 2-A + 2-B. 브랜치 fix/worklog-time-model.
+선행: S1 머지 완료 상태여야 한다 (scheduleService.ts 의미 접점).
+
+2-A — 시간 저장 규약 (🔴 반드시 단일 PR)
+- time_slot = **출근 예정 시각 단일값** 'HH:mm' 또는 미기록(=미정)
+- composeTimeSlot 의 슬롯 쓰기 소비를 끊는다.
+  parseTimeSlotParts 는 **기존 범위 데이터 읽기 하위호환으로 유지**
+- EditSlotSheet: 종료 입력 제거 → 출근 예정 단일 칸 + 실제 출퇴근 섹션
+- AddSlotSheet: 프리필 제거(빈 값 시작). 출근시간 하나만 받는 현행 구조는 **정본이므로 유지**
+- 저장 게이트: 시간 선택 or '미정' 명시 체크 전까지 저장 비활성
+- AddStaffModal.tsx:69 자유 텍스트 → 피커 전환 (addSlotPayload.ts:9 규약)
+- ⚠️ DEFAULT_SLOT_START_TIME 상수 자체는 지우지 말 것 —
+  utils/order-sheet/mappers.ts:505 가 다른 맥락에서 소비한다
+- 🔴 **"계산 전" 표시를 같은 PR에** — 직접 배치는 예상 금액 미표시, 공고 근무는 예상액 유지.
+  종료 제거만 배포하면 calculateSettlementBreakdown 이 duration 을 못 내
+  "정산 예정(추정)"이 **조용히 0원**이 된다. 동일 사고 이력 있음.
+- 🔴 대체 검증: 예상액 회귀 테스트를 **red→green 으로 확인**하고 출력을 보고할 것
+
+2-B — 근무 수정 창 통합 (근무표 경로만)
+- EditSlotSheet / VenueDayPanel / ConfirmedStaffCard
+- ⚠️ EditSlotSheet(예정) 과 WorkTimeEditor(실제)는 중복이 아니다 — §D 표 확인.
+  WorkTimeEditor 사용처 3곳은 건드리지 말 것
+
+종료 게이트
+1. npm run quality   2. npm test (예상액 회귀 포함)   3. e2e/ Grep (시간 문구 변경분)
+4. 구 빌드 하위호환 확인 — parseTimeSlotToDate 가 end 없으면 duration '-'
+5. code-reviewer(opus) → **최종 code-reviewer(fable)**
+```
+
+---
+
+### S3 — 알림·표시 (2-C + 2-D + 별-2)
+
+```
+[§2 공통 블록 붙여넣기]
+
+UNIQN 근무표 재설계 세션 3이다. 브랜치 feat/worklog-time-notify.
+선행: S2 머지 완료 (같은 EditSlotSheet.tsx 를 만진다).
+
+2-C — 출근 예정 변경 알림 배선
+- 🔴 알림이 거꾸로다: 트리거 notify_on_work_log_update Case 2 는
+  modification_history 배열 길이 증가로만 발화하는데,
+  updateSlot(WorkLogRepositoryVenue.ts:112)은 이력을 안 써서 무음이다
+- time_slot 쓰기 경로는 updateSlot 단 하나 — 여기에 이력 기록을 붙인다
+- 사용자 결정 1: 변경 시 **즉시 알림 + 이전값 병기**, 구직자 **취소 요청 경로 필수**.
+  무음 변경 절대 금지
+- 트리거 변경 시 `node scripts/graph-db-deps.mjs triggers` (레포 루트)
+
+2-D — 구직자 카드 출근시간 3상태
+- ScheduleCard / NextShiftCard / WorkTimeDisplay / InfoTab
+- '미정'은 명시 선택으로만 도달 → "출근 시간 미정 · 정해지면 알려드려요"
+
+별-2 — 색상 팔레트
+- slotEdit.ts:55 SLOT_COLOR_CHIPS 15종 → 구분되는 4개 기준으로 재구성
+- ⚠️ 토큰 제거 시 기존 저장값이 slotColorSwatchClassName 에서 null → **색이 조용히 사라진다.**
+  하위호환 필수
+- ⚠️ 시맨틱색을 배치색으로 쓰지 말 것 (상태 배지와 충돌)
+
+종료 게이트
+1. npm run quality   2. npm test   3. 파리티 카운트 기록 (트리거 변경분)
+4. code-reviewer(opus) → **최종 code-reviewer(fable)**
+```
+
+---
+
+### S4 — 저위험 묶음 (3-B + 3-E + 별-1)
+
+```
+[§2 공통 블록 붙여넣기]
+
+UNIQN 근무표 재설계 세션 4다. 브랜치 feat/qr-badge-and-entry.
+선행: S1(3-E), S3(별-1 은 독립이나 ScheduleCard 접점) 머지 완료.
+
+3-B — QR 표시 보강 + 퇴근 미기록 배지 + 리마인더 정리
+- QR 기록 vs 수동 수정 구분 표시 (`19:04 ✓QR`)
+- 근무표에 "퇴근 미기록 N건" 배지 — 🔴 자동 퇴근을 만들지 않기로 했으므로
+  **이 배지가 유일한 안전망**이다. 빼먹지 말 것
+- shiftReminderPlan.ts:17 HOURS_BEFORE_START 제거, DAY_BEFORE_HOUR=20 은 **현행 유지**
+  ⚠️ "정확히 24시간 전"으로 바꾸지 말 것 — 새벽 2시 근무면 전날 새벽 2시에 발송된다
+- 퇴근 리마인드는 만들지 않는다 (스태프 독촉 금지)
+
+3-E — 진입점 정리 (팀↔근무표)
+- VenueSettingsSheet.tsx · employer.tsx:123
+
+별-1 — 대시보드 접기 + 필터 이동
+- app/(app)/(tabs)/schedule.tsx
+- 🔴 statusFilter 의 `unpaid` 축은 **미지급 근무를 찾는 유일한 경로** — 삭제 금지,
+  접힌 대시보드 안으로 이동
+- 소비 3곳(리스트·캘린더 dot·선택일 카드) 전부 갱신. 줄번호는 이동했으니 grep 으로 재확인
+- ⚠️ e2e/ 필터 셀렉터 별도 Grep
+
+종료 게이트
+1. npm run quality   2. npm test   3. e2e/ Grep
+4. code-reviewer(opus) → **최종 code-reviewer(fable)**
+```
+
+---
+
+### S5 — 되돌리기 어려운 것 (3-A + 3-D) 🔴 착수 전 사용자 승인
+
+```
+[§2 공통 블록 붙여넣기]
+
+🔴 이 세션은 착수 전 사용자 승인 2건이 필요하다. 승인 없이 실행하지 말 것.
+   ① 3-A: 지급완료 알림은 **회수 불가**
+   ② 3-D: '내 팀' rename 은 되돌리기 어렵다 — 사전 카운트 결과를 사용자에게 보고하고 승인받을 것
+
+UNIQN 근무표 재설계 세션 5다. 브랜치 feat/settlement-and-rename.
+선행: S1(1-C) 머지 완료 — 이름이 바뀐 사용자가 즉시 고칠 화면이 먼저 있어야 한다.
+
+3-A — 정산 2단 축소 + 지점 정산 확정 배선 + 지급 알림
+- venue-settlements.tsx 는 **읽기 전용이 의도된 상태**였다(half-wired 회피).
+  useSettleWorkLog 를 재사용해 배선한다
+- payrollStatus 참조는 소스 36파일 110곳 — **전면 제거 금지, UI 어휘만 2단 축소**
+- 죽은 상태 2종 정리: 'processing'(DB enum 에 없는 UI 전용값, GroupedSettlementCard.tsx:251) ·
+  'failed'(scheduleService.ts:326)
+- 사용자 결정 2: 지급완료 알림 O, **일괄 체크는 묶어서 1통**, **체크 취소 시 알림 없음**
+
+3-D — '내 팀' 일괄 rename 마이그
+- 🔴 순서: ① 사전 카운트 실측 → ② 사용자 보고·승인 → ③ 충돌 검사 → ④ UPDATE
+- 사용자 결정 3: **미변경 기본값만** 대상(사용자가 지은 이름 불가침),
+  unique 충돌 사전 카운트, 대상자에게 **1회 인앱 안내**
+- workspaces 와 job_postings(container) **양쪽** 대상.
+  지점은 unique 인덱스(workspace_id, lower(title), schedule->>'kind') 때문에 더 위험
+
+종료 게이트
+1. npm run quality   2. npm test   3. pgTAP + 파리티 카운트 기록
+4. security-reviewer(fable) — 알림 발신 경로
+5. code-reviewer(opus) → **최종 code-reviewer(fable)**
+```
+
+---
+
+### B1 — 주소 검색 1단계 (독립 워크트리, A레인과 동시 가능)
+
+```
+[§2 공통 블록 붙여넣기]
+
+docs/planning/2026-07-31-address-search-3phase-design.md 를 읽고 **1단계**를 구현해라.
+"이미 확인된 사실"은 file:line 까지 검증됐다 — 재조사 금지.
+§3 "원안 대비 정정" 5건을 반드시 먼저 읽어라.
+
+브랜치: claude/job-posting-address-map-lbrvzd
+워크트리: 별도 생성 (A레인과 파일이 겹치지 않으므로 동시 진행 가능)
+  git worktree add C:/Users/user/Desktop/T-HOLDEM-address -b claude/job-posting-address-map-lbrvzd master
+  mklink /J ...\T-HOLDEM-address\uniqn-mobile\node_modules ...\T-HOLDEM\uniqn-mobile\node_modules
+  ⚠️ expo 실행 시 EXPO_ROUTER_APP_ROOT 절대경로 + --clear (정션이면 라우트 0건 함정)
+
+1단계는 외부 키가 전혀 필요 없고 DB 마이그레이션도 없다.
+2·3단계는 이번 범위가 아니다.
+
+핵심
+- district = roadAddress · region = `${sido} ${sigungu}` slug · detailedAddress = 층/호 신규 UI
+- region 폴백 4단 — ④ 실패 시 mode:'region' 수동 선택으로. **조용히 넘어가지 말 것**(제출 필수 게이트)
+- findRegionByAddress(regions.ts:707) 재사용 — 새 매핑 유틸을 만들면 4번째 구현체다
+- 🔴 중첩 RN Modal 금지 → `mode: 'postcode'` 인라인 렌더 (PlaceSheet.tsx:4-8, iOS 터치먹통 이력)
+- CSP: script-src += https://t1.daumcdn.net · frame-src += https://postcode.map.kakao.com
+  ⚠️ iframe 오리진은 daum.net 이 아니라 **postcode.map.kakao.com**
+
+🔴 종료 게이트 — 브라우저 렌더 관찰은 대체 불가
+1. npm run quality   2. npm test (sido+sigungu 조합 유닛 테스트 신규)
+3. e2e/ Grep   4. **웹 브라우저에서 실제로 우편번호 검색이 뜨는지 + 콘솔 CSP 위반 0건 확인**
+   (CSP 위반은 에러 없이 빈 화면이라 정적 검사로 안 잡힌다)
+5. code-reviewer(opus) → **최종 code-reviewer(fable)**
+```
+
+---
+
+### B2 — 주소 2단계 (좌표) 🔴 REST 키 재발급 선행
+
+```
+[§2 공통 블록 붙여넣기]
+
+🔴 착수 조건: 카카오 REST API 키 **재발급 완료 + Supabase EF 시크릿 KAKAO_REST_API_KEY 등록**.
+   미완이면 이 세션을 시작하지 말 것.
+
+docs/planning/2026-07-31-address-search-3phase-design.md §5 2단계를 구현해라.
+브랜치 feat/posting-geocoding. 선행: B1 머지.
+
+핵심
+- 지오코딩은 **쓰기 시점 1회**, Edge Function 에서. 읽기 경로에 키가 안 붙는다
+- 🔴 좌표를 location jsonb 에 넣지 말 것 — 구버전 앱에서 **공고가 통째로 사라진다**(§2-A)
+- 새 컬럼(geo_lat/geo_lng)은 **3곳에 동시 등록**:
+  ① TABLE_COLUMNS (JobPostingRepositoryHelpers.ts:18-19)
+  ② ALLOWED_CAMEL_COLUMNS (위에서 자동 파생)
+  ③ jobPostingDocumentSchema (jobPosting.schema.ts:464-508)
+  한 곳만 빠져도 read 증발 또는 assertCanonical throw (#194 클래스)
+- 🔴 REST 키에 EXPO_PUBLIC_ 접두사 금지
+- ⚠️ eas update 는 shell env 만 평가 — app.config fallback + 명시 export
+- mapLink.ts 좌표 승격: link/search/{주소} → link/to/{이름},{lat},{lng}
+  ⚠️ 0-1 세션이 resolveMapQuery/looksLikeAddress 를 추가했다 — 그 위에 얹을 것
+- 지오코딩 실패 시 NULL 허용 → 기존 텍스트 폴백 (fail-open 금지)
+
+종료 게이트
+1. npm run quality   2. npm test   3. 컬럼 3곳 등록 확인 (read 왕복 테스트)
+4. 파리티 카운트 기록 (컬럼만 추가이므로 불변 예상)
+5. security-reviewer(fable) — 키 노출 경로   6. **최종 code-reviewer(fable)**
+```
+
+---
+
+### S6 — 3-C 설계 세션 (구현 금지)
+
+```
+[§2 공통 블록 붙여넣기]
+
+3-C(공고 시간 전체/개인 2축 변경) **설계만** 하는 세션이다. 코드 작성 금지.
+설계 판정은 model:"fable" 서브에이전트에 위임하라.
+
+미결 질문 — 사용자 결정이 필요하다
+1. "확정 전원의 시간 일괄 변경"은 단순 UPDATE 가 아닐 수 있다.
+   이미 그 시간에 맞춰 다른 일정을 잡은 스태프가 있으면 **거절/재확인 흐름**이 필요한가?
+2. 거절이 나오면 그 자리는 어떻게 되나 — 자동 취소? 구인자 수동 처리?
+3. 개인 시간 변경과 전체 변경이 충돌하면(개인이 이미 조정됨) 어느 쪽이 이기나?
+
+산출물: 설계 문서 1개 (docs/planning/) + S7 프롬프트를 이 문서 §3 에 추가
+```
+
+---
+
+### S7 — 3-C 구현
+
+```
+[§2 공통 블록 붙여넣기]
+
+S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-change.
+(S6 종료 시 이 블록을 구체화할 것 — 설계 전에는 상세를 쓸 수 없다)
+```
+
+---
+
+## 4. 레인 간 규칙 (세션이 바뀌어도 유지)
+
+1. **마이그레이션은 전 레인 통틀어 동시 1건.** S1·S3·S5·B2 가 전부 DB를 건드린다.
+2. **A레인이 머지될 때마다 B 워크트리는 즉시 재베이스** (`git fetch && git merge origin/master`).
+3. **한 파일은 한 레인만.** 충돌 핫스팟:
+   `ScheduleConverter.ts`·`InfoTab.tsx`·`types/schedule.ts` (0-1 · S1 · S3) ·
+   `EditSlotSheet.tsx` (S2 · S3) · `scheduleService.ts` (S1 · S2 · S5) ·
+   `ScheduleCard.tsx` (S2 · S3 · S4) · `mapLink.ts` (0-1 · B2)
+4. **누적 배포 금지** — 실기기 QA를 뺀 대가로 묶음별 PR·배포를 유지한다.
+5. 새로 드러난 함정은 **이 문서가 아니라 메모리**에 기록하고, 이 문서에는 한 줄 포인터만 남긴다.
+6. **워크트리는 머지 확인 후에만 정리한다.** 정리 순서: 정션 해제(`rmdir node_modules`) →
+   `git worktree remove` → 브랜치 삭제. 순서를 바꾸면 원본 `node_modules` 가 지워질 수 있다.
+
+---
+
+## 5. 인수인계 로그 (세션 종료 시 append — 최신이 위)
+
+> 형식은 §2 세션 종료 프로토콜 4번 참조. **삭제하지 말고 쌓는다** —
+> 중단된 세션을 다시 여는 사람이 읽을 유일한 기록이다.
+
+### 계획 세션 — 2026-07-31 · 상태: 완료
+- 워크트리/브랜치: `T-HOLDEM`(메인) / `chore/supabase-safe-cleanup-20260731`
+- 끝난 것: 0단계 완료 확인(#365·#366 머지 실측) · 두 계획 문서 교차 검증 ·
+  실행 순서/병렬 매트릭스 확정 · 이 원장 작성 · 핸드오프 문서 1-A 완료 반영
+- 안 끝난 것: 0-4(미푸시 `632adcbae` Supabase 안전 정리) 처리 미결
+- 다음 세션에 넘기는 주의:
+  - 파리티 183/111 은 0-4 때문에 **신뢰 불가** — S1 착수 시 재실측
+  - PR#366 이 `SchedulePostingContext.locationAddress` 를 이미 추가함 — 1-C 는 그 위에 얹을 것
+  - 계획 문서 3개는 미추적 상태 (커밋 여부 사용자 결정 대기)
