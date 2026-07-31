@@ -446,6 +446,17 @@ export interface WorkLog extends FirebaseDocument {
   checkInTime?: TimeInput;
   /** 실제 퇴근 시간 */
   checkOutTime?: TimeInput;
+  /**
+   * 퇴근 시각의 출처.
+   *
+   * `'qr'` 은 `process_qr_checkin_atomically` RPC 만 기록한다. 출근 쪽에는 대응 컬럼이
+   * 없어(스키마에 `start_time_source` 부재) 출근 시각은 출처를 알 수 없다.
+   *
+   * ⚠️ 레거시 행은 QR 퇴근 뒤 수동 수정을 해도 `'qr'` 로 남아 있다 — 2026-07-31 이전의
+   * 수동 수정 경로가 이 컬럼을 갱신하지 않았기 때문이다. 그대로 믿고 표시하면 거짓
+   * "QR 기록" 이 뜬다. 판정은 반드시 `resolveTimeProvenance` 를 경유할 것.
+   */
+  endTimeSource?: 'qr' | 'manual' | null;
 
   // 상태
   status: WorkLogStatus;

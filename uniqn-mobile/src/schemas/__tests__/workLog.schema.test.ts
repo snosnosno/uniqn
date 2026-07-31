@@ -77,4 +77,12 @@ describe('workLog.schema fixed compatibility', () => {
       })
     );
   });
+
+  // 스키마에 명시되지 않은 신규 필드가 조용히 사라지면 출처 배지가 통째로 죽는다.
+  // (에러 없이 표시만 없어지는 종류라 배지 부재로는 원인을 못 찾는다)
+  it('endTimeSource 를 파싱 결과에 보존한다', () => {
+    const parsed = parseWorkLogDocument({ ...baseWorkLog, endTimeSource: 'qr' });
+
+    expect(parsed).toEqual(expect.objectContaining({ endTimeSource: 'qr' }));
+  });
 });

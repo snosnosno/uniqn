@@ -11,14 +11,24 @@
 import { STATUS } from '@/constants';
 import type { ScheduleEvent } from '@/types';
 
-/** 전날 알림을 울릴 시각 (로컬 20시) */
+/**
+ * 전날 알림을 울릴 시각 (로컬 20시).
+ *
+ * ⚠️ "정확히 24시간 전"으로 바꾸지 말 것 — 새벽 2시 근무면 전날 새벽 2시에 발사된다.
+ * 고정 20시가 결과적으로 "하루 전"이면서 취침 시간을 피한다.
+ */
 const DAY_BEFORE_HOUR = 20;
-/** 당일 알림을 울릴 시점 — 출근 N시간 전 */
-const HOURS_BEFORE_START = 2;
 /** 이보다 먼 근무는 아직 예약하지 않는다 (OS 예약 슬롯 낭비 방지) */
 const MAX_LOOKAHEAD_DAYS = 30;
 
-export type ShiftReminderKind = 'day-before' | 'hours-before';
+/**
+ * 종류는 전날 알림 하나뿐이다.
+ *
+ * 예전에는 '출근 2시간 전'도 함께 울렸으나 제거했다(설계 결정 6). 키 접두사로 계속
+ * 쓰이므로 단일 멤버 유니온을 유지한다 — `kind` 를 없애면 MMKV 원장의 기존 키
+ * (`{workLogId}:day-before`)가 전부 stale 로 판정돼 불필요한 취소·재예약이 돈다.
+ */
+export type ShiftReminderKind = 'day-before';
 
 export interface ShiftReminder {
   /** 예약 식별용 안정 키 — 같은 근무·같은 종류면 항상 같다 */
@@ -48,7 +58,7 @@ function daysBetween(from: Date, toDate: Date): number {
  *
  * - 확정이고 아직 퇴근하지 않은 근무만 본다.
  * - 이미 지난 시각은 예약하지 않는다(OS 가 즉시 발사해 버린다).
- * - 시작 시각을 모르면 당일 알림은 건너뛰고 전날 알림만 남긴다.
+ * - 출근 시각은 보지 않는다 — 전날 20시 하나만 울리므로 '미정'인 근무도 동일하게 예약된다.
  */
 export function planShiftReminders(
   schedules: readonly ScheduleEvent[],
@@ -82,22 +92,6 @@ export function planShiftReminders(
           jobPostingName,
           workDate: schedule.date,
           remainingLabel: '하루',
-        });
-      }
-    }
-
-    // 출근 2시간 전
-    if (schedule.startTime) {
-      const hoursBefore = new Date(schedule.startTime.getTime() - HOURS_BEFORE_START * 3600_000);
-      if (hoursBefore.getTime() > now.getTime()) {
-        reminders.push({
-          key: `${schedule.workLogId}:hours-before`,
-          workLogId: schedule.workLogId,
-          kind: 'hours-before',
-          fireAt: hoursBefore,
-          jobPostingName,
-          workDate: schedule.date,
-          remainingLabel: `${HOURS_BEFORE_START}시간`,
         });
       }
     }

@@ -16,6 +16,8 @@ import { parseTimestamp, calculateSettlementFromWorkLog } from '@/utils/settleme
 import { parseTimeSlotToDate } from '@/utils/date';
 import { getAllowanceItems } from '@/utils/allowanceUtils';
 
+import { resolveTimeProvenance } from '@/shared/time/timeProvenance';
+
 // Sub-components
 import { DateNavigationHeader } from './DateNavigationHeader';
 import { StaffProfileHeader } from './StaffProfileHeader';
@@ -173,6 +175,15 @@ export function SettlementDetailModal({
           scheduledStartTime={scheduledTimes.startTime}
           scheduledEndTime={scheduledTimes.endTime}
           hoursWorked={settlement?.hoursWorked}
+          startProvenance={resolveTimeProvenance({
+            axis: 'start',
+            modificationHistory: workLog.modificationHistory,
+          })}
+          endProvenance={resolveTimeProvenance({
+            axis: 'end',
+            endTimeSource: workLog.endTimeSource,
+            modificationHistory: workLog.modificationHistory,
+          })}
         />
 
         {/* 정산 금액 섹션 */}

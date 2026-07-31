@@ -188,6 +188,10 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
 
       if (context.checkOutTime !== undefined) {
         updateData.check_out_ts = context.checkOutTime ? context.checkOutTime.toISOString() : null;
+        // 출처를 사람으로 되돌린다. 이걸 빼면 QR 로 찍힌 뒤 수정된 행이 계속 'qr' 로 남아
+        // 화면에 거짓 "QR 기록" 이 뜬다(2026-07-31 이전 데이터가 실제로 그 상태다).
+        updateData.end_time_source = 'manual';
+        updateData.edited_by = actorId;
       }
 
       if (context.notes !== undefined) {

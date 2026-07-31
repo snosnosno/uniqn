@@ -420,6 +420,10 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
       if (context.checkOutTime !== undefined) {
         updateData.check_out_ts = context.checkOutTime ? context.checkOutTime.toISOString() : null;
+        // 출처를 사람으로 되돌린다(SettlementRepository 정본과 동일). 빼면 QR 로 찍힌 뒤
+        // 수정된 행이 계속 'qr' 로 남아 화면에 거짓 "QR 기록" 이 뜬다.
+        updateData.end_time_source = 'manual';
+        updateData.edited_by = context.actorId;
       }
 
       // 상태 결정 — 정산 화면 경로와 같은 헬퍼를 통과시킨다(SET-1 대칭).
