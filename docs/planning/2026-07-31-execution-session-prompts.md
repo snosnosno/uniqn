@@ -20,7 +20,7 @@
 | **S1** | 1-B + 1-C | ~~`feat/venue-profile`~~ | ✅ **머지** | **#370** | `dbf1e49d1`. CI 11잡 green(E2E 는 러너 포트 충돌로 1회 fail → 재실행 pass). 브랜치·워크트리 정리 완료 |
 | **S2** | 2-A + 2-B | ~~`fix/worklog-time-model`~~ | ✅ **머지** | **#374** | `a06f5311`. CI 9잡 green(E2E 1회 통과). 브랜치·워크트리 정리 완료. 클라 전용·**마이그 0건**. master(#370·#371·#373) 재통합 완료 — 파리티 충돌은 master 판 **184** 채택 |
 | **S3** | 2-C + 2-D + 별-2 | ~~`feat/worklog-time-notify`~~ | ✅ **머지** | **#382** | `11a2390a0`. CI 9잡 green(E2E 포함 1회 통과). 브랜치 삭제됨, 워크트리는 유지. | HEAD `fd8d7b52b`(5커밋). 🔴 **마이그 1건 prod 미적용** |
-| **S4** | 3-B + 3-E + 별-1 | `feat/qr-badge-and-entry` | 🔨 **구현·게이트 완료 · PR 미생성** | | 커밋 4개. **마이그 0건** — 파리티 **184/111 prod 실측 재확인**(레포 기대값과 일치). S3 머지 확인돼 별-1 도 이번 범위에 포함 |
+| **S4** | 3-B + 3-E + 별-1 | `feat/qr-badge-and-entry` | 🔨 **구현·게이트·리뷰 완료 · PR 미생성** | | 커밋 7개(HEAD `e5d305650`). **마이그 0건** — 파리티 **184/111 prod 실측 재확인**(레포 기대값과 일치). S3 머지 확인돼 별-1 도 이번 범위에 포함. 리뷰 opus→fable 2회, 지적 전량 반영 |
 | **S5** | 3-A + 3-D | `feat/settlement-and-rename` | ⬜ | | 🔴 착수 전 사용자 승인 2건 |
 | **B1** | 주소 1단계 | `claude/job-posting-address-map-lbrvzd` | ⬜ | | 독립 워크트리 |
 | **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
