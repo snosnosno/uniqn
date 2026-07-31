@@ -18,8 +18,8 @@
 | 0-3 | 핸드오프 문서 1-A 완료 반영 | — | ✅ | — | 2026-07-31 |
 | ~~**0-4**~~ | Supabase 안전 정리 | — | ✅ | **#367** | 사용자는 "보류"로 결정했으나 **병렬 세션이 PR#367 로 머지**(`5aeab44b3`). 로컬 `chore/supabase-safe-cleanup-20260731` 브랜치는 이제 불필요 — 삭제 가능 |
 | **S1** | 1-B + 1-C | ~~`feat/venue-profile`~~ | ✅ **머지** | **#370** | `dbf1e49d1`. CI 11잡 green(E2E 는 러너 포트 충돌로 1회 fail → 재실행 pass). 브랜치·워크트리 정리 완료 |
-| **S2** | 2-A + 2-B | `fix/worklog-time-model` | ⬜ | | |
-| **S3** | 2-C + 2-D + 별-2 | `feat/worklog-time-notify` | ⬜ | | |
+| **S2** | 2-A + 2-B | ~~`fix/worklog-time-model`~~ | ✅ **머지** | **#374** | `a06f5311`. CI 9잡 green(E2E 1회 통과). 브랜치·워크트리 정리 완료. 클라 전용·**마이그 0건**. master(#370·#371·#373) 재통합 완료 — 파리티 충돌은 master 판 **184** 채택 |
+| **S3** | 2-C + 2-D + 별-2 | ~~`feat/worklog-time-notify`~~ | ✅ **머지** | **#382** | `11a2390a0`. CI 9잡 green(E2E 포함 1회 통과). 브랜치 삭제됨, 워크트리는 유지. | HEAD `fd8d7b52b`(5커밋). 🔴 **마이그 1건 prod 미적용** |
 | **S4** | 3-B + 3-E + 별-1 | `feat/qr-badge-and-entry` | ⬜ | | |
 | **S5** | 3-A + 3-D | `feat/settlement-and-rename` | ⬜ | | 🔴 착수 전 사용자 승인 2건 |
 | **B1** | 주소 1단계 | `claude/job-posting-address-map-lbrvzd` | ⬜ | | 독립 워크트리 |
@@ -33,8 +33,8 @@
 |---|---|---|
 | 0-4 | — | ✅ 불필요(PR#367 로 머지됨) |
 | S1 | ~~`T-HOLDEM-venue`~~ | ✅ 정리완료(정션 해제 → worktree remove 순서 준수) |
-| S2 | `T-HOLDEM-time` | ⬜ |
-| S3 | `T-HOLDEM-notify` | ⬜ |
+| S2 | ~~`T-HOLDEM-time`~~ | ✅ 정리완료(정션 해제 → worktree remove 순서 준수) |
+| S3 | `T-HOLDEM-notify` | 🟡 **유지 중**(PR·머지 전까지 지우지 말 것) |
 | S4 | `T-HOLDEM-qr` | ⬜ |
 | S5 | `T-HOLDEM-settle` | ⬜ |
 | B1·B2 | `T-HOLDEM-address` | ⬜ |
@@ -55,6 +55,9 @@ prod 최신 마이그 = `20260730174826_cron_run_details_retention`.
 | 세션 | 마이그 | 적용 후 함수/정책 |
 |---|---|---|
 | S1 | `20260731120000_venue_profile_rpcs` (RPC 2개 신설) | 레포 기대 **185 / 111** (PR#370 머지). ⚠️ 아래 경고 참조 |
+| S3 (#382) | 알림 트리거 | **184 / 111 불변** — `20260731140000_notify_on_time_slot_change.sql` 은 기존 함수 `CREATE OR REPLACE` 라 함수·정책 수를 바꾸지 않는다(prod 실측 184/111, 적용 전후 동일). 🔴 아직 prod 미적용 |
+| S5 | rename 마이그 | (기록) |
+| B2 | 컬럼 추가 | 불변 예상 |
 
 > 🚨 **파리티 레포↔prod 불일치 (2026-07-31, S1 머지 직후)** — 레포 기대 **185**, prod 실측 **184**.
 > 원인은 S1 이 아니다. 병렬 세션(`fix/notification-counter-guard`, `T-HOLDEM-noti`)이 함수 1개를
@@ -62,9 +65,8 @@ prod 최신 마이그 = `20260730174826_cron_run_details_retention`.
 > 183(master) + 2(S1) − 1(알림 카운터) = **184** 가 prod 값이다.
 > → **그 PR 이 머지될 때 `PARITY_EXPECT_FUNCS` 를 182 가 아니라 `184` 로 적어야 한다**(베이스가 185 로 바뀌었으므로).
 > 그때까지 주간 `parity-smoke`(월 01:17 UTC)와 일간 `prod-health` 는 이 항목에서 red 일 수 있다.
-| S3 | 알림 트리거 | (기록) |
-| S5 | rename 마이그 | (기록) |
-| B2 | 컬럼 추가 | 불변 예상 |
+>
+> ✅ **해소됨 (2026-07-31, S2 세션 실측)** — 그 PR 은 **#371 로 머지됐다**(`605cc1bf4`). master 의 `PARITY_EXPECT_FUNCS` 는 이미 **184**, 정책 **111** 이고 단언 리터럴도 일치한다. S2(#374)는 마이그 0건이라 이 값을 건드리지 않는다 — **레포↔prod 불일치는 남아 있지 않다.**
 
 ---
 
@@ -459,6 +461,52 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 > 형식은 §2 세션 종료 프로토콜 4번 참조. **삭제하지 말고 쌓는다** —
 > 중단된 세션을 다시 여는 사람이 읽을 유일한 기록이다.
 
+### S2 (2-A + 2-B) — 2026-07-31 · 상태: 완료 (**PR #374 머지** `a06f5311`)
+- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-time` / `fix/worklog-time-model` · HEAD `3a6c53f8e`
+- 커밋 5개: `5d7a614c1`(2-A+2-B 본체) → `5f6b91bd5`(인계 순서 가드) → `1d1e79b5e`(master 재통합)
+  → `20273ba28`(타입 수정) → `3a6c53f8e`(리뷰 반영)
+- **DB 마이그레이션 0건** (클라 전용). 파리티 기대값은 master 판 **184/111** 채택 — 내 브랜치는
+  함수·정책을 건드리지 않으므로 `PARITY_EXPECT_FUNCS` 를 손대지 말 것.
+- **끝난 것** (전부 이 세션에서 실행한 출력 기준):
+  - 2-A: `time_slot` 정본을 출근 예정 단일값으로 통일. **범위를 생산하던 유일한 지점이
+    `updateSlot` 이었다** — 시작 하나로 갱신 + 미정은 명시적 null. 형식 검증(`assertSlotStartTime`)을
+    도메인 SSOT 로 올려 인원추가·편집 두 경로가 같은 관문을 쓴다.
+  - `EditSlotSheet` 재구성(종료 입력·익일 프리뷰·시작==종료 가드 제거, 실적 섹션 신설),
+    `AddSlotSheet`·`AddStaffModal` 프리필 제거 + 저장 게이트. **AddStaffModal 은 자유 텍스트였다** —
+    검증 0으로 임의 문자열이 `time_slot` 에 들어가던 구멍을 닫았다.
+  - "계산 전" 표시: 근무 전에는 금액을 못 낸다. "정산 정보를 계산할 수 없습니다"(고장으로 읽힘)를
+    교체하고, 결과 없이 예상액 배너만 뜨던 모순도 함께 막았다.
+  - 2-B: 카드의 '시간 수정' 버튼을 없애고 예정·실적 입구를 근무 수정 시트 하나로 통합.
+    `WorkTimeEditor` 사용처 3곳 렌더는 **불변**(`StaffManagementTab:349`·`VenueDayPanel:385`·
+    `SettlementModals:147`), `DEFAULT_SLOT_START_TIME` 과 `mappers.ts:505` 소비도 **존치**.
+  - 리뷰: opus 중간 + fable 최종이 **독립적으로 같은 HIGH 2건** 지적 → 전부 반영(아래 주의 참조).
+  - 최종 게이트: `npm run quality` **exit 0**(0 errors/97 warnings=기존 baseline) ·
+    `npm test` **588 스위트 / 6436 테스트 / 122 스냅샷 전량 통과 exit 0** ·
+    `e2e/` 별도 Grep **파급 0건**(시딩이 이미 단일값 `'18:00'`) ·
+    knip 은 **2209 통과/2189 실패 = master baseline 과 동일**(악화 없음).
+  - red→green 실증 2건: ①"계산 전" 표시 — 수정 원복 시 2건 실패 ②모달 인계 순서 — 지연 제거 시 1건 실패.
+- **안 끝난 것**:
+  - 🔴 **iOS 실기기 QA 1건은 유닛으로 대체 불가**: 근무 수정 시트 → '출퇴근 시간 수정' → 저장/취소 후
+    터치 반응. 모달 전환은 jsdom 이 최종 상태만 보므로 지연이 실제로 충분한지는 실기기에서만 안다.
+  - ⚠️ 확정 스태프 로딩 중에는 시트에 실적 섹션이 아예 안 보인다(로딩 완료 시 자가치유). 예전 카드
+    버튼은 "불러오는 중" 토스트라도 줬다. 부수로 `resolveAttendanceTarget` 의 로딩 갈래는 이 경로에서
+    도달 불가 방어코드가 됐다.
+- **막힌 지점**: 없음.
+- **다음 세션에 넘기는 주의**:
+  - 🔑 **`time_slot` 판정 갈래를 늘릴 일이 생기면 `slotsOverlap`(domains/workSchedule/slotEdit) 한
+    곳만 고칠 것.** 구인자(`detectSlotConflicts`)와 구직자(`detectScheduleOverlaps`)가 이걸 공유한다.
+    이번에 내가 한쪽만 고쳐 "사장 화면엔 경고, 스태프 화면엔 침묵" 을 만들었고 리뷰가 잡았다.
+  - 🔑 **모달→모달 전환에는 `SHEET_DISMISS_ANIMATION_MS`(constants/animation.ts) 를 쓸 것.**
+    닫기·열기를 한 핸들러에서 부르면 React 가 한 커밋으로 배칭해 "먼저 닫는" 구간이 **없다**.
+    레포에 이미 지연 상수가 있으니 로컬 복제하지 말 것(하마터면 네 번째 복사본을 만들 뻔했다).
+  - 🚨 **pre-commit 훅은 eslint/prettier 만 돌고 tsc 는 안 돈다.** 테스트 파일의 타입 오류가
+    jest(babel)를 통과해 커밋됐다가 `npm run quality` 에서 잡혔다. 커밋 전 type-check 를 따로 볼 것.
+  - 🔑 **S3 은 같은 `EditSlotSheet.tsx` 를 만진다** — 시간 상태가 `pickedTime`/`timeUndecided` 파생
+    구조로 바뀌었고 `timeDirty` 는 **상태가 아니라 파생값**이다. 상태로 되돌리면 "미정 체크했다
+    해제" 가 레거시 범위를 조용히 자른다.
+  - ⚠️ **DB 는 여전히 굵은 값을 심을 수 있다** — 이번 변경은 클라 전용이라 `add_direct_staff`·
+    `confirm_application` RPC 가 `time_slot` 에 무엇을 쓰는지는 손대지 않았다(현재는 단일값).
+
 ### S1 (1-B + 1-C) — 2026-07-31 · 상태: 완료 (PR 미생성)
 - 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-venue` / `feat/venue-profile` · HEAD `0752c09c6`
 - 커밋 4개: `de79d4095`(1-B DB) → `b0619c0fc`(1-C 클라) → `092310611`(master 재통합) → `0752c09c6`(리뷰 반영)
@@ -505,3 +553,24 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
   - 파리티 183/111 은 0-4 때문에 **신뢰 불가** — S1 착수 시 재실측
   - PR#366 이 `SchedulePostingContext.locationAddress` 를 이미 추가함 — 1-C 는 그 위에 얹을 것
   - 계획 문서 3개는 미추적 상태 (커밋 여부 사용자 결정 대기)
+
+### S3 (2-C + 2-D + 별-2) — 2026-07-31 · 상태: 완료 (**PR #382 머지** `11a2390a0`)
+
+- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-notify` / `feat/worklog-time-notify` · HEAD `fd8d7b52b` (5커밋, `d3d484a07`(#375) 리베이스) · **PR #382**
+- 끝난 것
+  - **2-C** `407063fb4` — 트리거 `notify_on_work_log_update` 에 Case 2-B 신설. `time_slot` 변경 자체를 감지(이력 배열 경유 안 함). 알림 타입은 기존 `schedule_change` 재사용, `data.applicationId` 로 스케줄 상세 정밀 착지. 로컬 Docker 무오염 red→green 4케이스.
+  - **2-D** `9e2990a85` — `WorkTimeDisplay.scheduleTimeState`(confirmed/undecided/negotiable) 신설. 미정을 '시간 협의'라 부르던 거짓 표시 제거. `WorkTab`(헬퍼 미사용 재구현)·`GroupedScheduleCard`(시간 행 은닉) 두 갈래를 SSOT 로 흡수. red 4건 → green.
+  - **별-2** `597eca3fe` — tailwind `slot.*` 4종 신설(청록·하늘·보라·자홍), 레거시 15종은 읽기·쓰기 모두 보존.
+  - **리뷰 반영** `9b8eb9d80` + `fd8d7b52b` — 아래 '막힌 지점' 참조.
+  - 게이트: `npm run quality` exit 0 · `npm test` 588 suites / 6452 tests · `e2e/` 별도 Grep 0건 · code-reviewer opus → fable **"PR 진행 가능"(CRITICAL/HIGH 0)**
+- 안 끝난 것 (🔴 사용자 결정 대기)
+  1. **마이그레이션 prod 미적용** — `uniqn-mobile/supabase/migrations/20260731140000_notify_on_time_slot_change.sql`. prod 실측 `case_2b_applied=0`. 적용해도 파리티 184/111 불변(`CREATE OR REPLACE`).
+  2. ~~push / PR~~ → ✅ **PR #382 머지**(`11a2390a0`). CI 9잡 green — `DB Tests (pg_prove)` 가 신규 pgTAP 과 `parity_baseline_guard` 를 모두 통과했다(로컬에서 red 이던 함수 수 항목은 CI 의 새 스택에서 green — 로컬 드리프트 확정).
+  3. 이 원장 파일은 **메인 체크아웃에 미커밋** 상태(S2 세션 종료분 + 이 S3 항목이 함께 쌓여 있음). 커밋 주체 미정.
+- 막힌 지점: 없음. 다만 리뷰가 잡은 함정 2개는 재발 위험이 크다 —
+  - 🚨 **`CREATE OR REPLACE` 의 `SET` 절은 proconfig 를 통째로 갈아치운다.** baseline 의 `search_path` 를 그대로 베끼면 그 뒤 `ALTER FUNCTION` 으로 얹은 `pg_temp` 하드닝(`20260711100000`)이 조용히 사라진다. **베이스는 baseline 이 아니라 `pg_proc.proconfig` 실측값**이어야 한다. `parity_baseline_guard.test.sql:134` 가 CI 에서 잡는다(RED 재현 완료).
+  - 🚨 **알림 본문이 약속한 버튼이 실제로 있는지 확인할 것.** 취소 요청 버튼은 `schedule.applicationId` 로 게이트되는데, 근무표 직접 배치 work_log 는 `application_id` 가 NULL 이다(prod 3건 중 2건).
+- 다음 세션에 넘기는 주의
+  - `EditSlotSheet.tsx` 는 S2·S3 가 연속으로 만졌다. S4 는 이 파일을 피한다.
+  - `ScheduleCard.tsx` 는 S3·S4(별-1) 접점 — S3 머지 후 착수 권장.
+  - 신규 pgTAP `supabase/tests/worklog_time_slot_change_notify.test.sql` 은 마이그 적용 후에만 통과한다. prod/로컬 적용 전에 `npm run test:db` 를 돌리면 T1 이 red 다(정상).
