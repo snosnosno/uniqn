@@ -463,7 +463,7 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 
 ### S4 (3-B + 3-E + 별-1) — 2026-07-31 · 상태: 구현·게이트 완료 (🔴 **PR 미생성** — 사용자 명시 요청 대기)
 
-- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-qr` / `feat/qr-badge-and-entry` · HEAD `92f3e5ef2` (커밋 5개)
+- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-qr` / `feat/qr-badge-and-entry` · HEAD `6dd836b74` (커밋 6개)
 - **DB 마이그레이션 0건.** 파리티 **prod 실측 184 / 111** = 레포 기대값(`parity_baseline_guard.test.sql:91-92`) 일치.
 - 착수 시 정리: 머지 완료된 S3 워크트리 `T-HOLDEM-notify` 제거(정션 해제 선행, 원본 `node_modules` 821 무손상 확인).
 - **끝난 것** (전부 이 세션에서 실행한 출력 기준)
@@ -473,10 +473,11 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
   - **3-E 진입점** `2a54183e9` — 팀 화면에 근무표 진입 행 신설(기존 링크 **0개**였다). `VenueSelector` ⚙ a11y 라벨을 "단가 설정"→"설정" 로 정정(S1 이 시트를 확장했는데 라벨이 안 따라왔다).
   - **별-1 대시보드 접기** `f587a8eba` — 요약+필터를 한 덩어리로 접고 MMKV 에 영속. 접어도 활성 필터·미지급 건수는 계속 보인다(칩 제거 시 red 로 실증). 부수로 `schedule.tsx` 1412→1203줄, `ScheduleDashboard` 분리.
   - **리뷰 반영** `92f3e5ef2` — opus 리뷰 HIGH 1 + MEDIUM 6 + LOW 2 반영(아래 '주의' 참조).
-  - 최종 게이트: `npm run quality` **exit 0**(0 errors / 97 warnings = baseline) · `npm test` **592 스위트 / 6492 테스트 / 122 스냅샷 전량 통과 exit 0** · `e2e/` 별도 Grep **파급 0건** · knip **델타 0**(master 1249/911 == 브랜치, 동일 명령 실측).
+  - **최종 리뷰 반영** `6dd836b74` — fable 리뷰가 잡은 HIGH 1건. 앞 커밋에서 얼리 리턴을 없앤 것이 새 결함을 만들었다(로딩·에러 구간의 빈 배열로 유효 예약 전체 취소). 게이트 축을 "비었나"→"로드가 끝났나" 로 바꾸고 `shouldSyncShiftReminders` 순수 함수로 분리. fable 판정: 이 1건 외 **CRITICAL 0 / 나머지 비차단**.
+  - 최종 게이트: `npm run quality` **exit 0**(0 errors / 97 warnings = baseline) · `npm test` **593 스위트 / 6496 테스트 / 122 스냅샷 전량 통과 exit 0** · `e2e/` 별도 Grep **파급 0건** · knip **델타 0**(master 1249/911 == 브랜치, 동일 명령 실측).
 - **안 끝난 것**
   - 🔴 **push / PR 미실행** — 커밋 사전승인 범위 밖(사용자 명시 요청 필요).
-  - ⚠️ 최종 `code-reviewer(fable)` 판정이 이 로그 작성 시점에 진행 중이었다. 지적이 남았으면 그것부터.
+  - ⚠️ fable 리뷰의 **비차단 백로그**: ①리마인더 sync 입력이 **월 스코프**라 다른 달의 유효 예약을 "사라진 계획" 으로 오판한다(선재 결함 — 8/1 근무 알림은 8월 화면을 봐야 예약되고 7월로 돌아오면 취소된다). ②`timeProvenance` 는 "수동 수정 → checked_in 복귀 → 재QR" 시퀀스에서 이력이 이겨 '수정됨' 오라벨(보수적 방향이라 비차단). ③배너 쿼리 **에러가 무음**이라 조회 실패와 "0건" 이 화면상 같다.
   - ⚠️ 배너 스코프 = **보이는 달**. 더 오래된 미기록은 사용자가 월을 넘겨야 발견된다(의도된 한계, 주석에 명시).
   - ⚠️ 출근축은 원리적으로 QR 판정 불가 — `start_time_source` 컬럼을 추가하는 마이그레이션은 별도 세션 몫.
 - **막힌 지점**: 없음.
