@@ -13,6 +13,7 @@ export type {
   ApplicationStatus,
   ScheduleType,
   PayrollStatus,
+  SettlementDisplayStatus,
 } from './types';
 
 export {
@@ -22,6 +23,7 @@ export {
   APPLICATION_STATUS_LABELS,
   SCHEDULE_TYPE_LABELS,
   PAYROLL_STATUS_LABELS,
+  toSettlementDisplayStatus,
 } from './types';
 
 // 상태 흐름 규칙

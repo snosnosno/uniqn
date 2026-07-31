@@ -28,9 +28,10 @@ import { formatCurrency } from '@/utils/settlement';
 import { getRoleDisplayName } from '@/types/unified';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import type { GroupedSettlement, DateSettlementStatus } from '@/types/settlement';
-import type { WorkLog, PayrollStatus } from '@/types';
+import type { WorkLog } from '@/types';
 import { STATUS } from '@/constants';
-import { PAYROLL_STATUS_LABELS } from '@/shared/status';
+import { PAYROLL_STATUS_LABELS, toSettlementDisplayStatus } from '@/shared/status';
+import type { SettlementDisplayStatus } from '@/shared/status';
 
 // ============================================================================
 // Types
@@ -61,8 +62,13 @@ export interface GroupedSettlementCardProps {
 // Constants
 // ============================================================================
 
+// 날짜 행 전용 색 조합(700/300). statusConfig 의 PAYROLL_STATUS 는 600/400 이라 값이 다르다 —
+// 이 행은 카드 안에 촘촘히 쌓여서 한 단계 진한 대비를 쓴다. 라벨만 SSOT 를 공유한다.
+// ⚠️ 정산 라벨 맵이 아직 4곳에 흩어져 있다(여기 · settlementConfig · SettlementDetailModal/constants
+//    · constants/statusConfig). 라벨은 PAYROLL_STATUS_LABELS 한 곳으로 모았지만 색/variant 는
+//    화면마다 달라 통합하지 않았다 — 합치려면 배지 음영이 바뀌므로 시각 확인이 필요하다.
 const PAYROLL_STATUS_CONFIG: Record<
-  PayrollStatus,
+  SettlementDisplayStatus,
   { label: string; bgColor: string; textColor: string }
 > = {
   pending: {
@@ -70,20 +76,10 @@ const PAYROLL_STATUS_CONFIG: Record<
     bgColor: 'bg-warning-100 dark:bg-warning-900/30',
     textColor: 'text-warning-700 dark:text-warning-300',
   },
-  processing: {
-    label: PAYROLL_STATUS_LABELS.processing,
-    bgColor: 'bg-primary-100 dark:bg-primary-900/30',
-    textColor: 'text-primary-700 dark:text-primary-300',
-  },
   completed: {
     label: PAYROLL_STATUS_LABELS.completed,
     bgColor: 'bg-success-50 dark:bg-success-900/30',
     textColor: 'text-success-700 dark:text-success-300',
-  },
-  failed: {
-    label: PAYROLL_STATUS_LABELS.failed,
-    bgColor: 'bg-error-100 dark:bg-error-900/30',
-    textColor: 'text-error-700 dark:text-error-300',
   },
 };
 
@@ -113,7 +109,7 @@ const DateStatusRow = memo(function DateStatusRow({
   onPress?: (workLog: WorkLog, group: GroupedSettlement) => void;
   onSettle?: (workLog: WorkLog) => void;
 }) {
-  const payrollConfig = PAYROLL_STATUS_CONFIG[status.payrollStatus];
+  const payrollConfig = PAYROLL_STATUS_CONFIG[toSettlementDisplayStatus(status.payrollStatus)];
   const roleDisplay = getRoleDisplayName(status.role, status.customRole);
   const canSettle = status.hasValidTimes && status.payrollStatus !== STATUS.PAYROLL.COMPLETED;
 
@@ -243,16 +239,15 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
   // 전체 선택 여부
   const isAllSelected = selectedCount === group.originalWorkLogs.length;
 
-  // 그룹 대표 상태 → stripe tone
-  // 우선순위: pending(미정산) > processing(처리중) > completed(완료)
-  const groupPayrollStatus: PayrollStatus = useMemo(() => {
-    if (group.summary.pendingCount > 0) return STATUS.PAYROLL.PENDING;
-    const hasProcessing = group.dateStatuses.some((s) => s.payrollStatus === 'processing');
-    if (hasProcessing) return 'processing';
-    return STATUS.PAYROLL.COMPLETED;
-  }, [group.summary.pendingCount, group.dateStatuses]);
+  // 그룹 대표 상태 → stripe tone. 한 건이라도 미정산이면 미정산으로 본다.
+  // 예전엔 그 사이에 'processing' 우선순위 분기가 있었지만 DB enum 에 없는 값이라
+  // `some(s => s.payrollStatus === 'processing')` 이 참이 될 수 없었다 — 죽은 분기였다.
+  const groupDisplayStatus: SettlementDisplayStatus = useMemo(
+    () => (group.summary.pendingCount > 0 ? 'pending' : 'completed'),
+    [group.summary.pendingCount]
+  );
 
-  const stripeTone = PAYROLL_STATUS_SHARED[groupPayrollStatus].stripeTone;
+  const stripeTone = PAYROLL_STATUS_SHARED[groupDisplayStatus].stripeTone;
 
   // 펼침/접힘 토글
   const toggleExpanded = useCallback(() => {

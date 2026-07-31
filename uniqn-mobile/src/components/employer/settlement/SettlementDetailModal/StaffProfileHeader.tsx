@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/Badge';
 import { formatDate } from '@/utils/date';
 import { getRoleDisplayName } from '@/types/unified';
 import { PAYROLL_STATUS_CONFIG } from './constants';
+import { toSettlementDisplayStatus } from '@/shared/status';
 import type { PayrollStatus } from '@/types';
 
 export interface StaffProfileHeaderProps {
@@ -51,7 +52,7 @@ export function StaffProfileHeader({
   customRole,
   workDate,
 }: StaffProfileHeaderProps) {
-  const statusConfig = PAYROLL_STATUS_CONFIG[payrollStatus];
+  const statusConfig = PAYROLL_STATUS_CONFIG[toSettlementDisplayStatus(payrollStatus)];
 
   return (
     <View className="items-center py-6 bg-surface-page dark:bg-surface">

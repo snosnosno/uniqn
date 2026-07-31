@@ -38,10 +38,10 @@ import {
 } from './helpers';
 import { STATUS } from '@/constants';
 import { PAYROLL_STATUS } from '@/constants/statusConfig';
-import { APPLICATION_STATUS_LABELS } from '@/shared/status';
+import { APPLICATION_STATUS_LABELS, toSettlementDisplayStatus } from '@/shared/status';
 import { WorkTimeDisplay } from '@/shared/time';
 import { shouldUseFrozenPayrollAmount } from '@/utils/settlementGrouping';
-import type { ScheduleEvent, PayrollStatus } from '@/types';
+import type { ScheduleEvent } from '@/types';
 
 export interface ScheduleCardProps {
   schedule: ScheduleEvent;
@@ -127,8 +127,7 @@ export const ScheduleCard = memo(function ScheduleCard({
     schedule.postingProjection,
   ]);
 
-  const payrollStatusConfig =
-    PAYROLL_STATUS[(schedule.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus];
+  const payrollStatusConfig = PAYROLL_STATUS[toSettlementDisplayStatus(schedule.payrollStatus)];
 
   const timeDisplayInfo = useMemo(() => WorkTimeDisplay.getDisplayInfo(schedule), [schedule]);
 

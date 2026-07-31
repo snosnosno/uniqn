@@ -37,6 +37,7 @@ import { openMapSearch, resolveMapQuery } from '@/utils/mapLink';
 import { useToast } from '@/stores/toastStore';
 import { STATUS } from '@/constants';
 import { PAYROLL_STATUS } from '@/constants/statusConfig';
+import { toSettlementDisplayStatus } from '@/shared/status';
 import type { ScheduleEvent, PayrollStatus } from '@/types';
 import { formatDateKoreanWithDay } from '@/utils/date';
 
@@ -84,7 +85,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
   const ownerName = schedule.postingProjection?.ownerName;
   const description = schedule.postingProjection?.description;
   const payrollStatus = (schedule.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus;
-  const payrollStatusConfig = PAYROLL_STATUS[payrollStatus];
+  const payrollStatusConfig = PAYROLL_STATUS[toSettlementDisplayStatus(payrollStatus)];
   const toast = useToast();
 
   const salaryInfo = useMemo(() => {

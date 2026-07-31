@@ -13,6 +13,7 @@ import type {
   ConfirmedStaffStatus,
   PayrollStatus,
   ScheduleType,
+  SettlementDisplayStatus,
 } from '@/shared/status';
 
 export interface StatusConfig {
@@ -163,7 +164,9 @@ export const ATTENDANCE_STATUS: Record<AttendanceStatusType, AttendanceStatusCon
 
 export type PayrollStatusType = PayrollStatus;
 
-export const PAYROLL_STATUS: Record<PayrollStatusType, StatusConfig> = {
+// 정산 표시는 2단이다. 인덱싱은 반드시 `toSettlementDisplayStatus()` 를 거친다 —
+// 데이터 상태(3값)로 직접 인덱싱하면 'failed' 에서 undefined 가 나온다.
+export const PAYROLL_STATUS: Record<SettlementDisplayStatus, StatusConfig> = {
   pending: {
     label: PAYROLL_STATUS_LABELS.pending,
     variant: 'warning',
@@ -171,26 +174,12 @@ export const PAYROLL_STATUS: Record<PayrollStatusType, StatusConfig> = {
     bgColor: 'bg-warning-100 dark:bg-warning-900/30',
     hexColor: STATUS_COLORS.warning,
   },
-  processing: {
-    label: PAYROLL_STATUS_LABELS.processing,
-    variant: 'primary',
-    textColor: 'text-primary-600 dark:text-primary-400',
-    bgColor: 'bg-primary-100 dark:bg-primary-900/30',
-    hexColor: PRIMARY_COLORS[300],
-  },
   completed: {
     label: PAYROLL_STATUS_LABELS.completed,
     variant: 'success',
     textColor: 'text-success-600 dark:text-success-400',
     bgColor: 'bg-success-100 dark:bg-success-900/30',
     hexColor: STATUS_COLORS.success,
-  },
-  failed: {
-    label: PAYROLL_STATUS_LABELS.failed,
-    variant: 'error',
-    textColor: 'text-error-600 dark:text-error-400',
-    bgColor: 'bg-error-100 dark:bg-error-900/30',
-    hexColor: STATUS_COLORS.error,
   },
 };
 

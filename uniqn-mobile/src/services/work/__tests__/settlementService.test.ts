@@ -730,13 +730,13 @@ describe('settlementService', () => {
       mockUpdatePayrollStatusWithTransaction.mockResolvedValue(undefined);
 
       await expect(
-        updateSettlementStatus('worklog-1', 'processing', 'employer-1')
+        updateSettlementStatus('worklog-1', 'failed', 'employer-1')
       ).resolves.not.toThrow();
 
       // 4번째 인자는 지급 완료 되돌리기 사유(SETTLE-3). 되돌리기가 아니면 undefined 로 흐른다.
       expect(mockUpdatePayrollStatusWithTransaction).toHaveBeenCalledWith(
         'worklog-1',
-        'processing',
+        'failed',
         'employer-1',
         undefined
       );
