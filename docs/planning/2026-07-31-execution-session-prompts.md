@@ -20,7 +20,7 @@
 | **S1** | 1-B + 1-C | ~~`feat/venue-profile`~~ | ✅ **머지** | **#370** | `dbf1e49d1`. CI 11잡 green(E2E 는 러너 포트 충돌로 1회 fail → 재실행 pass). 브랜치·워크트리 정리 완료 |
 | **S2** | 2-A + 2-B | ~~`fix/worklog-time-model`~~ | ✅ **머지** | **#374** | `a06f5311`. CI 9잡 green(E2E 1회 통과). 브랜치·워크트리 정리 완료. 클라 전용·**마이그 0건**. master(#370·#371·#373) 재통합 완료 — 파리티 충돌은 master 판 **184** 채택 |
 | **S3** | 2-C + 2-D + 별-2 | ~~`feat/worklog-time-notify`~~ | ✅ **머지** | **#382** | `11a2390a0`. CI 9잡 green(E2E 포함 1회 통과). 브랜치 삭제됨, 워크트리는 유지. | HEAD `fd8d7b52b`(5커밋). 🔴 **마이그 1건 prod 미적용** |
-| **S4** | 3-B + 3-E + 별-1 | `feat/qr-badge-and-entry` | 🔨 **구현·게이트·리뷰 완료 · PR 미생성** | | 커밋 7개(HEAD `e5d305650`). **마이그 0건** — 파리티 **184/111 prod 실측 재확인**(레포 기대값과 일치). S3 머지 확인돼 별-1 도 이번 범위에 포함. 리뷰 opus→fable 2회, 지적 전량 반영 |
+| **S4** | 3-B + 3-E + 별-1 | ~~`feat/qr-badge-and-entry`~~ | ✅ **머지** | **#384** | `40dc21779`. CI **9잡 전부 SUCCESS**(E2E 9m55s 포함, 재실행 없이 1회 통과). 브랜치·워크트리 정리 완료. **마이그 0건** — 파리티 **184/111 불변**(prod 실측 재확인). 리뷰 opus→fable 2회, HIGH 2건 포함 지적 전량 반영 |
 | **S5** | 3-A + 3-D | `feat/settlement-and-rename` | ⬜ | | 🔴 착수 전 사용자 승인 2건 |
 | **B1** | 주소 1단계 | `claude/job-posting-address-map-lbrvzd` | ⬜ | | 독립 워크트리 |
 | **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
@@ -35,7 +35,7 @@
 | S1 | ~~`T-HOLDEM-venue`~~ | ✅ 정리완료(정션 해제 → worktree remove 순서 준수) |
 | S2 | ~~`T-HOLDEM-time`~~ | ✅ 정리완료(정션 해제 → worktree remove 순서 준수) |
 | S3 | ~~`T-HOLDEM-notify`~~ | ✅ 정리완료(S4 착수 시 — 정션 해제 선행 → `worktree remove`, 원본 `node_modules` 821 무손상 확인) |
-| S4 | `T-HOLDEM-qr` | 🔨 **유지 중**(PR·머지 전까지 지우지 말 것) |
+| S4 | ~~`T-HOLDEM-qr`~~ | ✅ 정리완료(정션 해제 → `worktree remove` → 브랜치 삭제, 원본 `node_modules` 821 무손상) |
 | S5 | `T-HOLDEM-settle` | ⬜ |
 | B1·B2 | `T-HOLDEM-address` | ⬜ |
 | S7 | `T-HOLDEM-timechange` | ⬜ |
@@ -461,9 +461,9 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 > 형식은 §2 세션 종료 프로토콜 4번 참조. **삭제하지 말고 쌓는다** —
 > 중단된 세션을 다시 여는 사람이 읽을 유일한 기록이다.
 
-### S4 (3-B + 3-E + 별-1) — 2026-07-31 · 상태: 구현·게이트 완료 (🔴 **PR 미생성** — 사용자 명시 요청 대기)
+### S4 (3-B + 3-E + 별-1) — 2026-07-31 · 상태: 완료 (**PR #384 머지** `40dc21779`)
 
-- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-qr` / `feat/qr-badge-and-entry` · HEAD `6dd836b74` (커밋 6개)
+- 워크트리/브랜치: ~~`C:/Users/user/Desktop/T-HOLDEM-qr`~~ / ~~`feat/qr-badge-and-entry`~~ · 머지 전 HEAD `4ec631230`(커밋 8개) → **머지 `40dc21779`**. 브랜치·워크트리 **정리 완료**
 - **DB 마이그레이션 0건.** 파리티 **prod 실측 184 / 111** = 레포 기대값(`parity_baseline_guard.test.sql:91-92`) 일치.
 - 착수 시 정리: 머지 완료된 S3 워크트리 `T-HOLDEM-notify` 제거(정션 해제 선행, 원본 `node_modules` 821 무손상 확인).
 - **끝난 것** (전부 이 세션에서 실행한 출력 기준)
@@ -476,7 +476,7 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
   - **최종 리뷰 반영** `6dd836b74` — fable 리뷰가 잡은 HIGH 1건. 앞 커밋에서 얼리 리턴을 없앤 것이 새 결함을 만들었다(로딩·에러 구간의 빈 배열로 유효 예약 전체 취소). 게이트 축을 "비었나"→"로드가 끝났나" 로 바꾸고 `shouldSyncShiftReminders` 순수 함수로 분리. fable 판정: 이 1건 외 **CRITICAL 0 / 나머지 비차단**.
   - 최종 게이트: `npm run quality` **exit 0**(0 errors / 97 warnings = baseline) · `npm test` **593 스위트 / 6496 테스트 / 122 스냅샷 전량 통과 exit 0** · `e2e/` 별도 Grep **파급 0건** · knip **델타 0**(master 1249/911 == 브랜치, 동일 명령 실측).
 - **안 끝난 것**
-  - 🔴 **push / PR 미실행** — 커밋 사전승인 범위 밖(사용자 명시 요청 필요).
+  - ~~push / PR~~ → ✅ **PR #384 머지**(`40dc21779`). CI 9잡 전부 SUCCESS, 재실행 없이 1회 통과.
   - ⚠️ fable 리뷰의 **비차단 백로그**: ①리마인더 sync 입력이 **월 스코프**라 다른 달의 유효 예약을 "사라진 계획" 으로 오판한다(선재 결함 — 8/1 근무 알림은 8월 화면을 봐야 예약되고 7월로 돌아오면 취소된다). ②`timeProvenance` 는 "수동 수정 → checked_in 복귀 → 재QR" 시퀀스에서 이력이 이겨 '수정됨' 오라벨(보수적 방향이라 비차단). ③배너 쿼리 **에러가 무음**이라 조회 실패와 "0건" 이 화면상 같다.
   - ⚠️ 배너 스코프 = **보이는 달**. 더 오래된 미기록은 사용자가 월을 넘겨야 발견된다(의도된 한계, 주석에 명시).
   - ⚠️ 출근축은 원리적으로 QR 판정 불가 — `start_time_source` 컬럼을 추가하는 마이그레이션은 별도 세션 몫.
