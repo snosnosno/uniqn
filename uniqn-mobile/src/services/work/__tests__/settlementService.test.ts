@@ -175,8 +175,8 @@ jest.mock('@/constants', () => ({
     },
     PAYROLL: {
       PENDING: 'pending',
-      PROCESSING: 'processing',
       COMPLETED: 'completed',
+      FAILED: 'failed',
     },
     // P0 hotfix (PR #76) 후속: settlementQuery.ts → ApplicationRepositoryHelpers.ts 가
     // STATUS.APPLICATION 의존 → transitive import 시 mock 누락으로 TypeError 회귀.

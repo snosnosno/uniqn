@@ -253,12 +253,26 @@ export function useBulkSettlement() {
 
       return { previousData };
     },
-    onSuccess: (result) => {
+    onSuccess: (result, _variables, context) => {
       logger.info('일괄 정산 완료', {
         success: result.successCount,
         failed: result.failedCount,
         totalAmount: result.totalAmount,
       });
+
+      // 부분 실패는 reject 가 아니라 resolve 로 돌아온다 → onError 롤백이 안 걸린다.
+      // onMutate 가 요청한 **전 행**을 이미 '정산 완료' 로 칠해 둔 상태라, 실패분까지
+      // 초록으로 보인다. 아래 invalidate 가 결국 진실로 덮지만 오프라인·refetch 실패 시
+      // 잘못된 완료 표시가 그대로 남는다 — 금전 화면에서 이건 조용한 오답이다.
+      // 실패가 하나라도 있으면 낙관 갱신을 통째로 되돌리고 서버 값으로 다시 채운다.
+      if (result.failedCount > 0) {
+        const { previousData } = (context ?? {}) as {
+          previousData?: [readonly unknown[], unknown][];
+        };
+        previousData?.forEach(([key, data]) => {
+          queryClient.setQueryData(key, data);
+        });
+      }
 
       if (result.successCount > 0) {
         addToast({

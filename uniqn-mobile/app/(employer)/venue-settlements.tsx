@@ -92,13 +92,18 @@ export default function VenueSettlementsScreen() {
     [workLogs, venueId]
   );
 
-  // 정산 가능 = 미정산 + 출퇴근이 모두 기록됨. 두 조건은 서버(settleWorkLogWithTransaction)가
-  // 다시 검사하므로 여기서 거르는 건 "누를 수 있는데 항상 실패하는 버튼" 을 없애기 위해서다.
+  // 정산 가능 판정은 **서버 게이트와 같은 축**을 봐야 한다.
+  // 서버(settleWorkLogWithTransaction)는 `status ∈ {checked_out, completed}` 를 검사하는데
+  // 여기서 시각(checkInTime/checkOutTime)만 보면, 시각은 있는데 status 가 승격되지 않은
+  // 레거시 행에서 버튼이 보이고 누르면 "출퇴근이 완료된 근무 기록만 정산할 수 있습니다" 로
+  // 실패한다 — "누를 수 있는데 항상 실패하는 버튼" 을 없애려던 목적이 그 지점에서 깨진다.
+  // 시각 조건도 함께 유지한다(금액 계산에 실제로 필요한 값이다).
   const settleableWorkLogs = useMemo(
     () =>
       (workLogs ?? []).filter(
         (wl) =>
           (wl.payrollStatus ?? STATUS.PAYROLL.PENDING) === STATUS.PAYROLL.PENDING &&
+          (wl.status === STATUS.WORK_LOG.CHECKED_OUT || wl.status === STATUS.WORK_LOG.COMPLETED) &&
           !!wl.checkInTime &&
           !!wl.checkOutTime
       ),
@@ -213,7 +218,9 @@ export default function VenueSettlementsScreen() {
   );
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-surface-page dark:bg-surface">
+    // 일괄 정산 바가 화면 최하단에 붙으므로 bottom 인셋도 확보한다 —
+    // top 만 두면 iOS 홈 인디케이터가 버튼을 덮는다.
+    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-surface-page dark:bg-surface">
       <StackHeader title="지점 정산" fallbackHref="/(employer)/work-schedule" />
 
       {/* 월 네비게이션 */}

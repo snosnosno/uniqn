@@ -119,8 +119,45 @@ function toWorkLog(row: Record<string, unknown>): WorkLog | null {
   return parseWorkLogDocument({ ...applyTsPreference(camel), id: row.id });
 }
 
+/**
+ * 정산 경로 전용 공고 해소.
+ *
+ * 🔴 컨테이너(지점)를 `parseJobPostingDocument` 로 읽으면 **null 로 증발한다.**
+ * 컨테이너의 `schedule` 은 `{kind, softTargets, roleSalaries}` 인데 dated 분기는
+ * `.strict()` + `primaryDate/allDates/requirements` 필수라 "Unrecognized key: softTargets"
+ * 로 거부된다(prod 실측 행으로 재현 확인). 레포도 이 계약을 문서화하고 있다 —
+ * `JobPostingRepository.venue.test.ts:1-6`, 그래서 읽기 경로는 전용 경량 파서를 쓴다.
+ *
+ * 증발하면 `validateWorkLogOwnership` 이 '공고 데이터를 파싱할 수 없습니다' 로 던지고
+ * 일괄 경로는 `jobPostingMap` 에 안 담겨 '권한이 없는 공고입니다' 가 된다 —
+ * 즉 **지점 직속 배치는 정산 자체가 불가능**해진다(지점 정산 화면의 존재 이유가 바로 그 행들이다).
+ *
+ * 정산이 실제로 읽는 값은 id/ownerId/workspaceId/status/schedule/compensation 뿐이므로
+ * 컨테이너는 스키마를 우회해 경량 투영으로 만든다. 권한 판정은 일반 공고와 동일하게
+ * ownerId/workspaceId 로 이뤄지고, RLS `wl_update` 가 최종 관문으로 남는다.
+ */
 function toJobPosting(row: Record<string, unknown>): JobPosting | null {
   const camel = toCamelCase<Record<string, unknown>>(row);
+
+  if (camel.status === 'container') {
+    const id = typeof row.id === 'string' ? row.id : '';
+    const ownerId = typeof camel.ownerId === 'string' ? camel.ownerId : '';
+    // ownerId 가 없으면 권한 판정 자체가 불가능하다 — fail-closed 로 증발시킨다.
+    if (!id || !ownerId) return null;
+
+    return {
+      id,
+      ownerId,
+      workspaceId: typeof camel.workspaceId === 'string' ? camel.workspaceId : undefined,
+      status: 'container',
+      title: typeof camel.title === 'string' ? camel.title : '',
+      // 급여 근거는 schedule.roleSalaries 에 있다(buildVenueContainerContext 가 읽는다).
+      schedule: camel.schedule,
+      // 컨테이너에는 공고 수당·세금 설정이 없다. 근무별 override 만 얹힌다.
+      compensation: {},
+    } as unknown as JobPosting;
+  }
+
   return parseJobPostingDocument({ ...camel, id: row.id });
 }
 
