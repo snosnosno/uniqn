@@ -13,6 +13,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { StackHeader } from '@/components/headers';
 import { Avatar, Badge, Button, EmptyState, ErrorState, Input } from '@/components/ui';
+import { CalendarIcon, ChevronRightIcon } from '@/components/icons';
+import { SECONDARY_PALETTE, getIconColor } from '@/constants/colors';
+import { useThemeStore } from '@/stores/themeStore';
+import { useWorkScheduleEnabled } from '@/hooks';
 import { useAuthStore } from '@/stores/authStore';
 import { DEFAULT_WORKSPACE_NAME } from '@/constants/defaultNames';
 import { useToastStore } from '@/stores/toastStore';
@@ -38,6 +42,9 @@ export default function WorkspaceSettingsScreen() {
   const { user } = useAuthStore();
   const { addToast } = useToastStore();
   const { showConfirm } = useModalStore();
+  const { isDarkMode } = useThemeStore();
+  // 근무표 진입점 게이트 — OFF 면 근무표 화면 자체가 이 화면으로 리다이렉트하므로 링크도 숨긴다.
+  const { enabled: workScheduleEnabled } = useWorkScheduleEnabled();
   // useActiveWorkspace 가 내부에서 useWorkspaces 를 호출 — TanStack Query 가 동일 키로
   // 중복 조회 dedup. error 만 별도로 노출되지 않으므로 useWorkspaces 한 번 더 호출.
   const { error } = useWorkspaces();
@@ -256,6 +263,29 @@ export default function WorkspaceSettingsScreen() {
             </View>
           )}
         </View>
+
+        {/* 근무표 진입점 — 근무표는 팀에 속한 지점의 일정인데(플래그 OFF 시 근무표 화면이
+            이 화면으로 리다이렉트한다) 정작 팀에서 근무표로 가는 링크가 없었다. 반대 방향도
+            헤더 뒤로가기 fallback 뿐이라 발견 가능한 경로가 아니었다.
+            플래그 OFF 면 미노출 — employer 홈 버튼과 같은 불변식. */}
+        {workScheduleEnabled && (
+          <Pressable
+            onPress={() => router.push('/(employer)/work-schedule')}
+            accessibilityRole="button"
+            accessibilityLabel="근무표 열기"
+            testID="workspace-work-schedule-entry"
+            className="mt-4 min-h-[44px] flex-row items-center border-y border-secondary-200 bg-white px-4 py-4 dark:border-surface-overlay dark:bg-surface"
+          >
+            <CalendarIcon size={20} color={getIconColor(isDarkMode, 'primary')} />
+            <View className="ml-3 flex-1">
+              <Text className="text-base font-sans-medium text-content-primary">근무표</Text>
+              <Text className="mt-0.5 text-sm text-content-secondary">
+                이 팀 지점의 날짜별 배치와 출퇴근
+              </Text>
+            </View>
+            <ChevronRightIcon size={18} color={SECONDARY_PALETTE[400]} />
+          </Pressable>
+        )}
 
         {/* 멤버 섹션 */}
         <View className="mt-4 px-4">

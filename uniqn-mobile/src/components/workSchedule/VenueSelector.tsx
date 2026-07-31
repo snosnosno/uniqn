@@ -26,7 +26,13 @@ export interface VenueSelectorProps {
   isLoadingContainers?: boolean;
   /** 제공 시 운영처 칩 줄에 "+ 운영처 추가" 진입점 노출. */
   onAddVenue?: () => void;
-  /** 제공 시 선택된 지점 칩 옆에 ⚙(역할별 단가 설정) 진입점 노출. */
+  /**
+   * 제공 시 선택된 지점 칩 옆에 ⚙(지점 설정) 진입점 노출.
+   *
+   * 여는 대상은 `VenueSettingsSheet` 로, 지점 정보(이름·장소·연락처)와 역할별 단가를
+   * 모두 담는다. 단가만 있던 시절의 라벨이 남아 스크린리더가 "단가 설정" 이라고만
+   * 안내하던 것을 바로잡았다(S1 이 시트를 확장했을 때 함께 옮겨가지 않았다).
+   */
   onOpenSettings?: (venueId: string) => void;
 }
 
@@ -133,7 +139,7 @@ export function VenueSelector({
                   <Pressable
                     onPress={() => onOpenSettings(c.id)}
                     accessibilityRole="button"
-                    accessibilityLabel={`지점 ${c.name} 단가 설정`}
+                    accessibilityLabel={`지점 ${c.name} 설정`}
                     hitSlop={10}
                     className="-ml-1 mr-2 h-10 w-10 items-center justify-center"
                   >
