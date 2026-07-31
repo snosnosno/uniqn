@@ -258,8 +258,8 @@ jest.mock('@/constants', () => ({
   STATUS: {
     PAYROLL: {
       PENDING: 'pending',
-      PROCESSING: 'processing',
       COMPLETED: 'completed',
+      FAILED: 'failed',
     },
   },
 }));
@@ -276,7 +276,7 @@ function createMockSettlementWorkLog(
     jobPostingTitle?: string;
     hoursWorked?: number;
     calculatedAmount?: number;
-    payrollStatus?: 'pending' | 'processing' | 'completed';
+    payrollStatus?: 'pending' | 'completed' | 'failed';
     payrollAmount?: number;
     role?: string;
     customRole?: string;
@@ -676,7 +676,7 @@ describe('useSettlement Hooks', () => {
       );
     });
 
-    it('should show appropriate message for each status', async () => {
+    it('되돌리기(pending) 상태 변경 문구를 노출한다', async () => {
       mockUpdateSettlementStatus.mockResolvedValueOnce(undefined);
 
       const { result } = renderHook(() => useUpdateSettlementStatus());
@@ -684,13 +684,13 @@ describe('useSettlement Hooks', () => {
       await act(async () => {
         result.current.mutate({
           workLogId: 'worklog-1',
-          status: 'processing',
+          status: 'pending',
         });
       });
 
       expect(mockAddToast).toHaveBeenCalledWith({
         type: 'success',
-        message: '정산 처리 중으로 변경되었습니다.',
+        message: '정산 대기로 변경되었습니다.',
       });
     });
   });
@@ -976,9 +976,9 @@ describe('useSettlement Hooks', () => {
       expect(filtered.length).toBeGreaterThanOrEqual(0);
     });
 
-    it('should handle processing payroll status', () => {
+    it('should handle failed payroll status', () => {
       const workLogs = [
-        createMockSettlementWorkLog({ id: 'wl-1', payrollStatus: 'processing' }),
+        createMockSettlementWorkLog({ id: 'wl-1', payrollStatus: 'failed' }),
         createMockSettlementWorkLog({ id: 'wl-2', payrollStatus: 'pending' }),
       ];
       mockData = workLogs;

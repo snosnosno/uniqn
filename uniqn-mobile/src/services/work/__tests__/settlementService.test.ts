@@ -175,8 +175,8 @@ jest.mock('@/constants', () => ({
     },
     PAYROLL: {
       PENDING: 'pending',
-      PROCESSING: 'processing',
       COMPLETED: 'completed',
+      FAILED: 'failed',
     },
     // P0 hotfix (PR #76) 후속: settlementQuery.ts → ApplicationRepositoryHelpers.ts 가
     // STATUS.APPLICATION 의존 → transitive import 시 mock 누락으로 TypeError 회귀.
@@ -730,13 +730,13 @@ describe('settlementService', () => {
       mockUpdatePayrollStatusWithTransaction.mockResolvedValue(undefined);
 
       await expect(
-        updateSettlementStatus('worklog-1', 'processing', 'employer-1')
+        updateSettlementStatus('worklog-1', 'failed', 'employer-1')
       ).resolves.not.toThrow();
 
       // 4번째 인자는 지급 완료 되돌리기 사유(SETTLE-3). 되돌리기가 아니면 undefined 로 흐른다.
       expect(mockUpdatePayrollStatusWithTransaction).toHaveBeenCalledWith(
         'worklog-1',
-        'processing',
+        'failed',
         'employer-1',
         undefined
       );

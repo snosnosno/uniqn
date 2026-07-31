@@ -253,15 +253,26 @@ export function useBulkSettlement() {
 
       return { previousData };
     },
-    onSuccess: (result) => {
+    onSuccess: (result, _variables, context) => {
       logger.info('일괄 정산 완료', {
         success: result.successCount,
         failed: result.failedCount,
         totalAmount: result.totalAmount,
       });
 
-      // §17 — 종료 햅틱. 실패 0건이면 success, 일부라도 실패면 warning.
-      void triggerBatchEnd(result.failedCount === 0);
+      // 부분 실패는 reject 가 아니라 resolve 로 돌아온다 → onError 롤백이 안 걸린다.
+      // onMutate 가 요청한 **전 행**을 이미 '정산 완료' 로 칠해 둔 상태라, 실패분까지
+      // 초록으로 보인다. 아래 invalidate 가 결국 진실로 덮지만 오프라인·refetch 실패 시
+      // 잘못된 완료 표시가 그대로 남는다 — 금전 화면에서 이건 조용한 오답이다.
+      // 실패가 하나라도 있으면 낙관 갱신을 통째로 되돌리고 서버 값으로 다시 채운다.
+      if (result.failedCount > 0) {
+        const { previousData } = (context ?? {}) as {
+          previousData?: [readonly unknown[], unknown][];
+        };
+        previousData?.forEach(([key, data]) => {
+          queryClient.setQueryData(key, data);
+        });
+      }
 
       if (result.successCount > 0) {
         addToast({
@@ -281,8 +292,11 @@ export function useBulkSettlement() {
         }
       }
 
-      // impeccable v2 §17 — 일괄 정산 "종료" 햅틱.
-      // 부분 성공은 성공(success) 톤 유지, 전체 실패만 warning.
+      // impeccable v2 §17 — 일괄 정산 "종료" 햅틱. 여기 **한 번만** 울린다.
+      // 예전엔 이 함수 앞부분에서 `triggerBatchEnd(result.failedCount === 0)` 을 한 번 더
+      // 호출해, 일괄 정산 한 번에 햅틱이 두 번 울리고 두 호출의 성공 판정마저 서로 달랐다
+      // (실패 1건이면 앞은 warning, 뒤는 success). 부분 성공은 성공 톤 유지가 맞다 —
+      // 실패분은 아래 warning 토스트가 이미 이름까지 나열해 알린다.
       void triggerBatchEnd(result.successCount > 0);
 
       // 이벤트 기반 캐시 무효화
@@ -334,9 +348,10 @@ export function useUpdateSettlementStatus() {
     onSuccess: (_, { status }) => {
       logger.info('정산 상태 변경 완료', { status });
 
+      // 실제 호출부는 PENDING(되돌리기)과 COMPLETED 둘뿐이다. 'failed' 로 전이시키는
+      // 경로는 UI 에 존재하지 않지만 타입상 가능하므로 문구는 남겨 둔다.
       const statusMessages: Record<PayrollStatus, string> = {
         pending: '정산 대기로 변경되었습니다.',
-        processing: '정산 처리 중으로 변경되었습니다.',
         completed: '정산이 완료되었습니다.',
         failed: '정산이 실패 처리되었습니다.',
       };

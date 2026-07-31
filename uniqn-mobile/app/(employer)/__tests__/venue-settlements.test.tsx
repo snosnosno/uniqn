@@ -22,6 +22,15 @@ jest.mock('@/stores/toastStore', () => ({
   useToastStore: () => ({ addToast: mockAddToast }),
 }));
 
+// 정산 확정 배선(3-A). 실제 훅은 useQueryClient 를 쓰므로 Provider 없이 렌더되는 이 스모크에서는
+// 모듈 목으로 대체한다 — 다른 훅(useVenueSettlement 등)과 같은 방식이다.
+const mockSettleMutate = jest.fn();
+const mockBulkSettleMutate = jest.fn();
+jest.mock('@/hooks/useSettlement', () => ({
+  useSettleWorkLog: () => ({ mutate: mockSettleMutate, isPending: false }),
+  useBulkSettlement: () => ({ mutate: mockBulkSettleMutate, isPending: false }),
+}));
+
 jest.mock('@/components/headers', () => {
   const RN = jest.requireActual('react-native') as typeof import('react-native');
   return {

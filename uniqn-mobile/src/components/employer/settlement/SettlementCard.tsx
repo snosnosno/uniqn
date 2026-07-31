@@ -28,6 +28,7 @@ import type { WorkLog, PayrollStatus } from '@/types';
 import { STATUS } from '@/constants';
 import { shouldUseFrozenPayrollAmount } from '@/utils/settlementGrouping';
 import { PAYROLL_STATUS_CONFIG } from './helpers/settlementConfig';
+import { toSettlementDisplayStatus } from '@/shared/status';
 
 // Re-export types for backward compatibility
 export type { SalaryType, SalaryInfo };
@@ -81,7 +82,7 @@ export const SettlementCard = React.memo(function SettlementCard({
   );
 
   const payrollStatus = (workLog.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus;
-  const statusConfig = PAYROLL_STATUS_CONFIG[payrollStatus];
+  const statusConfig = PAYROLL_STATUS_CONFIG[toSettlementDisplayStatus(payrollStatus)];
 
   // 표시 금액 우선순위 (SETTLE-5·SETTLE-8):
   //   1) 정산 완료 → 동결값. 완료 시점에 확정·지급된 금액은 이후 공고 급여가 바뀌어도 불변이다.

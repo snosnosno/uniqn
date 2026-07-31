@@ -21,7 +21,7 @@
 | **S2** | 2-A + 2-B | ~~`fix/worklog-time-model`~~ | ✅ **머지** | **#374** | `a06f5311`. CI 9잡 green(E2E 1회 통과). 브랜치·워크트리 정리 완료. 클라 전용·**마이그 0건**. master(#370·#371·#373) 재통합 완료 — 파리티 충돌은 master 판 **184** 채택 |
 | **S3** | 2-C + 2-D + 별-2 | ~~`feat/worklog-time-notify`~~ | ✅ **머지** | **#382** | `11a2390a0`. CI 9잡 green(E2E 포함 1회 통과). 브랜치 삭제됨, 워크트리는 유지. | HEAD `fd8d7b52b`(5커밋). 🔴 **마이그 1건 prod 미적용** |
 | **S4** | 3-B + 3-E + 별-1 | ~~`feat/qr-badge-and-entry`~~ | ✅ **머지** | **#384** | `40dc21779`. CI **9잡 전부 SUCCESS**(E2E 9m55s 포함, 재실행 없이 1회 통과). 브랜치·워크트리 정리 완료. **마이그 0건** — 파리티 **184/111 불변**(prod 실측 재확인). 리뷰 opus→fable 2회, HIGH 2건 포함 지적 전량 반영 |
-| **S5** | 3-A + 3-D | `feat/settlement-and-rename` | ⬜ **착수 가능** | | ✅ **사용자 승인 완료(2026-08-01)** — 3-A 지급완료 알림 O · 3-D rename 착수 O. ⚠️ 단 **3-D 의 UPDATE 는 여전히 2단계**: 사전 카운트를 실측·보고하고 승인을 받은 뒤에 실행한다(원장 §3 S5 순서 ①→④). 승인은 '착수' 에 대한 것이지 '무보고 실행' 에 대한 것이 아니다 |
+| **S5** | 3-A + 3-D | `feat/settlement-and-rename` | ✅ **구현·리뷰 완료 · 🔴PR 미생성** | | 커밋 8개. 최종 fable 리뷰 **APPROVE**(CRITICAL 0·HIGH 0, LOW 3 비차단). 게이트: quality exit 0 · **595 스위트 / 6503 테스트 전량 통과** · e2e Grep 0건. **3-D 완료**(사전 카운트 보고 → 사용자 승인 → 충돌 0 확인 → prod UPDATE 4행). **3-A 완료**(2단 축소 + 지점 정산 배선). 마이그 2건 prod 적용(S3 잔여분 + rename). 파리티 **184/111 불변**. 상세=§5 |
 | **B1** | 주소 1단계 | `claude/job-posting-address-map-lbrvzd` | ⬜ | | 독립 워크트리 |
 | **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
 | **S6** | 3-C 설계 | — | ⬜ | | 사용자 결정 필요 |
@@ -36,7 +36,7 @@
 | S2 | ~~`T-HOLDEM-time`~~ | ✅ 정리완료(정션 해제 → worktree remove 순서 준수) |
 | S3 | ~~`T-HOLDEM-notify`~~ | ✅ 정리완료(S4 착수 시 — 정션 해제 선행 → `worktree remove`, 원본 `node_modules` 821 무손상 확인) |
 | S4 | ~~`T-HOLDEM-qr`~~ | ✅ 정리완료(정션 해제 → `worktree remove` → 브랜치 삭제, 원본 `node_modules` 821 무손상) |
-| S5 | `T-HOLDEM-settle` | ⬜ |
+| S5 | `T-HOLDEM-settle` | 🔨 진행중(머지 전까지 유지) |
 | B1·B2 | `T-HOLDEM-address` | ⬜ |
 | S7 | `T-HOLDEM-timechange` | ⬜ |
 
@@ -55,8 +55,8 @@ prod 최신 마이그 = `20260730174826_cron_run_details_retention`.
 | 세션 | 마이그 | 적용 후 함수/정책 |
 |---|---|---|
 | S1 | `20260731120000_venue_profile_rpcs` (RPC 2개 신설) | 레포 기대 **185 / 111** (PR#370 머지). ⚠️ 아래 경고 참조 |
-| S3 (#382) | 알림 트리거 | **184 / 111 불변** — `20260731140000_notify_on_time_slot_change.sql` 은 기존 함수 `CREATE OR REPLACE` 라 함수·정책 수를 바꾸지 않는다(prod 실측 184/111, 적용 전후 동일). 🔴 아직 prod 미적용 |
-| S5 | rename 마이그 | (기록) |
+| S3 (#382) | 알림 트리거 | **184 / 111 불변**. ✅ **prod 적용 완료(2026-08-01, S5 세션이 레인 정리 차원에서 적용)**. 적용 후 실측 184/111, `proconfig = public, extensions, pg_temp` 보존, PUBLIC/anon EXECUTE 0 확인 |
+| S5 | `20260801100000_rename_default_venue_containers` | **184 / 111 불변** — 데이터 UPDATE 전용(DDL 없음). prod 적용 완료, 4행 rename, 충돌 0건 |
 | B2 | 컬럼 추가 | 불변 예상 |
 
 > 🚨 **파리티 레포↔prod 불일치 (2026-07-31, S1 머지 직후)** — 레포 기대 **185**, prod 실측 **184**.
@@ -461,6 +461,49 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 
 > 형식은 §2 세션 종료 프로토콜 4번 참조. **삭제하지 말고 쌓는다** —
 > 중단된 세션을 다시 여는 사람이 읽을 유일한 기록이다.
+
+### S5 (3-A + 3-D) — 2026-08-01 · 상태: 구현·리뷰 완료 (🔴 PR 미생성)
+
+- 리뷰 3종 전부 통과: security-reviewer(fable) **CRITICAL 0 / HIGH 0**(MEDIUM 1 은 선재 — RLS `wl_update` WITH CHECK 부재로 `staff_id` 재지정 알림 위조 가능, 별도 PR 권고) · code-reviewer(opus) CRITICAL 1·HIGH 1·MEDIUM 3·LOW 2 **전량 반영** · 최종 code-reviewer(fable) **APPROVE**(LOW 3 비차단).
+- 최종 게이트 실행 증거: `npm run quality` exit 0(0 errors / 97 warnings = S4 baseline) · `npm test` **595 스위트 / 6503 테스트 / 122 스냅샷 전량 통과** · `tsc --noEmit` exit 0 · `e2e/` Grep 파급 0건.
+
+- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-settle` / `feat/settlement-and-rename` · 커밋 4개
+- ⚠️ **prod 기록명 ≠ 레포 파일명이다.** `mcp__supabase__apply_migration` 이 적용 시각으로 자체 버전을 매기기 때문에, 레포 `20260801100000_rename_default_venue_containers.sql` 은 prod 에 `20260731195336_rename_default_venue_containers` 로, 레포 `20260731140000_notify_on_time_slot_change.sql` 은 `20260731195045_notify_on_time_slot_change` 로 기록돼 있다. **`list_migrations` 로 "재적용 금지" 를 대조할 때 파일명으로 찾으면 못 찾는다 — 이름 뒷부분(스네이크 케이스 본명)으로 대조할 것.**
+- **DB 마이그레이션 2건 prod 적용.** 파리티 **184 / 111 불변**(적용 전·후 실측 동일, 레포 기대값 `parity_baseline_guard.test.sql:91-92` 와 일치)
+  - `20260731195045_notify_on_time_slot_change` — **S3(#382)가 남긴 미적용분**. 레인을 막고 있어 사용자 승인 후 먼저 적용했다. 적용 후 신규 `time_slot` 분기 존재·`settlement_completed` 보존·`proconfig = public, extensions, pg_temp` 보존·PUBLIC/anon EXECUTE 0 전부 실측 확인.
+  - `20260731195336_rename_default_venue_containers` — 이번 세션 신규(데이터 UPDATE 전용, DDL 없음).
+
+- **끝난 것**
+  - **3-D 지점 기본명 소급 rename** `9e5389880` — 게이트 순서 준수(①사전 카운트 실측 → ②사용자 보고·승인 → ③충돌 검사 → ④UPDATE). prod 4행 rename, unique 충돌 **0건**, 발송 알림 **0건**(적용 후 실측). `'기본 지점'→'로즈의 지점'` / `'기본 지점'→'정태규의 지점'` / `'내 팀'→'스노의 지점'` / `'ㅇ 팀'→'ㅋ의 지점'`.
+  - **3-A 정산 UI 어휘 2단 축소** `92ee16dee` — `PayrollStatus` 에서 `'processing'` 제거, `SettlementDisplayStatus`(2값)+`toSettlementDisplayStatus()` 신설, 표시 맵 4종을 2키로 축소, 인덱싱 7곳에 fold 적용.
+  - **3-A 지점 정산 확정 배선** `453db187e` — `venue-settlements.tsx` 에 개별+일괄 정산. 배선 전에 컨테이너 단가표 canonical 불일치를 먼저 봉합(아래 주의 참조).
+  - 게이트: `npm run quality` **exit 0**(0 errors / 97 warnings = S4 baseline 동일) · `tsc --noEmit` exit 0 · `e2e/` 별도 Grep **파급 0건**(e2e 는 이미 `'pending'|'completed'` 2값만 씀).
+
+  - **리뷰 반영** `90006d3e5` — opus 리뷰가 잡은 **CRITICAL 1건**(아래 주의 참조) + MEDIUM 3 + LOW 2. 레포 진입점 테스트 신설로 HIGH(vacuous green) 도 해소.
+
+- **안 끝난 것**
+  - 🔴 **push / PR 미생성** — 사용자 명시 요청 대기(커밋만 사전 승인).
+  - 🔴 **정산 확정 경로 실사용 검증 없음.** prod 에서 한 번도 눌러보지 않았다(확정은 스태프에게 회수 불가 알림이 나가므로 테스트 발송 금지 지시를 지켰다). 유닛·타입·레포 진입점까지만 검증됨.
+  - 🔴 **지점 정산에 "지급 완료 취소"(SETTLE-3) 진입점이 없다 — 편도 문.** `SettlementDetailModal` 에 `onRevertSettlement` 를 안 넘겨 되돌리기 버튼이 안 뜬다. 컨테이너 직속 행은 공고 정산 화면에 아예 나오지 않으므로 **오지급 정정 경로가 앱 전체에 존재하지 않는다.** 확정 문구는 비가역성을 고지하는데 정정 수단이 없어 반쪽이다. 이번엔 세션 후반 신규 기능 추가(사유 입력 포함)를 QA 없이 얹는 위험이 더 크다고 판단해 남긴다 — **다음 세션 최우선.**
+  - ⚠️ **rename 마이그의 fail-closed 가드가 후보 간(intra-batch) 충돌을 못 본다.** 한 워크스페이스에 컨테이너 2건(`'내 팀'`+`'기본 지점'`)이 있으면 목표명이 **같아지는데**, 가드의 `EXISTS` 는 "이미 존재하는" title 만 보므로 서로를 못 본다 → `uniq_venue_container` raw 위반으로 마이그 전체 abort. **prod 는 4행·충돌 0으로 이미 통과했고 파일은 적용된 내용의 기록이므로 수정하지 않았다**(기존 마이그 수정 금지). `db:reset`·새 환경에서 재생 시 터질 수 있다 — 그때는 `ROW_NUMBER() OVER (PARTITION BY workspace_id, lower(new_title), kind)` 로 후보 간 중복을 먼저 걸러야 한다.
+  - ⚠️ 마이그 UPDATE 가 `job_postings_updated_at` 을 발화시켰다 → **"대상 행은 rename UI 도입 이전에 마지막 수정" 이라는 판별 근거는 이 마이그 실행 후로는 더 이상 성립하지 않는다.** 재실행·재판정 시 다른 근거가 필요하다.
+  - 라벨 맵이 아직 **4곳**에 흩어져 있다(라벨 문자열만 SSOT 로 모았고 색/variant 는 화면별로 달라 통합 보류 — 합치면 배지 음영이 바뀌어 시각 확인이 필요하다).
+  - 비차단: 개별 "지급 완료" 버튼이 `isSettling` 중 얼리 리턴으로 **무피드백 무시**된다(`SettlementCard` 에 `disabled` prop 부재).
+  - 비차단(최종 fable 리뷰 LOW): **개별 카드 버튼은 `status` 축을 안 본다.** 일괄 바는 `status ∈ {checked_out, completed}` 를 보는데 `SettlementCard.tsx:192` 게이트는 `pending && hasValidTimes` 뿐이라, 시각은 있고 status 미승격인 레거시 행에서 개별 버튼만 "누르면 항상 실패" 로 남는다. 선재 공유 컴포넌트 게이트라 공고 정산 화면에 동시 영향 — **별도 커밋 권장**(`canSettle` prop 개방 또는 게이트에 status 축 추가).
+  - 비차단(최종 fable 리뷰 LOW): `'failed'` 행은 배지가 '정산 대기' 로 접히는데 필터·버튼 게이트는 raw `pending` 비교라 제외된다 → "대기 배지인데 필터에서 사라지고 버튼도 없는" 행이 된다. **현재 `'failed'` writer 가 UI 에 0곳이라 발화 불가.** `'failed'` 전이 경로를 만들 때 필터·게이트도 `toSettlementDisplayStatus` 축으로 통일할 것.
+
+- **막힌 지점**: 없음.
+
+- **다음 세션에 넘기는 주의** (이 세션에서 새로 알아낸 것만)
+  - 🚨 **세션 프롬프트의 전제 2건이 실측으로 뒤집혔다.**
+    ① "지급완료 알림 발송 경로를 붙여라" → **이미 있다.** prod 트리거 `notify_on_work_log_update` Case 3 가 `payroll_status → 'completed'` 전이에서 행마다 1통 INSERT 한다. 클라에 발송 코드를 넣으면 중복이 된다. 그래서 "일괄 체크 1통" 은 클라가 아니라 **트리거** 작업이었고, 사용자가 "행당 1통 유지" 로 결정해 트리거는 건드리지 않았다.
+    ② "`handle_new_user` 트리거가 `{닉네임} 워크스페이스` 를 만든다" → **stale.** 최신 정의(`20260719233000_team_terminology_unification.sql:30`)는 `{이름|이메일로컬|'내'} 팀` 을 만들고 같은 마이그가 `' 워크스페이스$' → ' 팀'` 소급 UPDATE 까지 끝냈다(prod 에 `~워크스페이스` 0건). 고칠 결함이 없어 **트리거는 그대로 두고 주석만 정정**했다(사용자 결정).
+  - 🚨🚨 **컨테이너 공고는 `parseJobPostingDocument` 를 통과하지 못한다 — 정산 경로 전체가 여기서 죽었다.** 컨테이너 `schedule` 은 `{kind, softTargets, roleSalaries}` 인데 dated 분기가 `.strict()` + `primaryDate/allDates/requirements` 필수라 `"Unrecognized key: softTargets"` 로 거부된다(prod 행 전체를 파서에 넣어 재현, 결과 null). 증발하면 개별 경로는 '공고 데이터를 파싱할 수 없습니다', 일괄 경로는 `jobPostingMap` 미등록으로 '권한이 없는 공고입니다'(**소유자인데도**)가 된다. 레포는 이 계약을 이미 문서화하고 있었다 — `JobPostingRepository.venue.test.ts:1-6`. 🔑 **교훈: 컨테이너를 일반 공고 경로에 태우는 코드는 타입도 tsc 도 안 잡는다. 런타임에만 죽고, 그것도 "권한 없음" 이라는 엉뚱한 메시지로 죽는다.** 새 기능이 컨테이너를 만지면 반드시 레포 진입점까지 태우는 테스트를 쓸 것.
+  - 🚨 **순수 헬퍼만 검증하는 테스트는 이런 결함을 못 잡는다.** 첫 시도의 회귀 테스트 3건은 `as unknown as JobPosting` 캐스트로 픽스처를 만들어 zod 게이트를 건너뛰었고, **CRITICAL 이 살아 있는 상태에서도 green** 이었다. 지금은 `parseJobPostingDocument` 를 항상 null 로 목한 레포 진입점 테스트가 있다 — 성공 자체가 우회 증거가 되도록.
+  - 🚨 **`getPostingSettlementContext` 를 컨테이너에 쓰면 안 된다.** 그 함수는 `schedule.requirements[]` 를 훑는데 컨테이너엔 requirements 가 없어 **roles 가 빈 배열**이 된다 → 지점 역할별 단가표가 통째로 무시되고 폴백(시급 15,000원)으로 계산된다. 그리고 이 canonical 값은 **호출자가 넘긴 amount 를 덮어쓴다**. 즉 배선만 했으면 화면 20,000원 / 지급 기록 15,000원이 됐을 것이다. 읽기·쓰기 공용 헬퍼 `domains/settlement/venueSettlementContext.ts` 로 봉합했고 회귀 테스트 3건을 걸어 뒀다.
+  - 🔑 **컨테이너 `title` UPDATE 는 알림을 깨울 수 있다.** `notify_on_job_posting_update` 가 `OLD.title IS DISTINCT FROM NEW.title` 로 `job_updated` 를 보낸다. 다만 수신자가 `applications` 행이고 컨테이너엔 지원 행이 붙지 않아 이번엔 0건이었다. **일반 공고 title 을 건드리는 마이그는 이 경로를 반드시 먼저 세어 볼 것.**
+  - 🔑 `'failed'` 는 UI 어휘에선 `'정산 대기'` 로 접히지만 **금액 집계에서는 접으면 안 된다**(`scheduleService`) — 지급 무산 건을 "받을 예정" 으로 세면 오지 않을 돈을 약속하게 된다.
+  - 🔑 `settlement.byVenue` 는 `settlement.all` 접두라 기존 `invalidateRelated('settlement.process')` 가 지점 화면까지 그대로 덮는다(`queryClient.ts:376`). 별도 무효화 배선 불요.
 
 ### S4 (3-B + 3-E + 별-1) — 2026-07-31 · 상태: 완료 (**PR #384 머지** `40dc21779`)
 

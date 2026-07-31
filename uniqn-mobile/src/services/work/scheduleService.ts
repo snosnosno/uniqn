@@ -355,6 +355,9 @@ export function calculateScheduleStats(schedules: ScheduleEvent[]): ScheduleStat
 
         // 정산 완료분과 아직 처리 전인 추정치를 분리한다. 한 숫자로 합치면
         // 입금 예정액으로 오해돼 급여 문의·분쟁의 출발점이 된다.
+        // 'failed' 는 UI 어휘에선 '정산 대기' 로 접히지만 **금액 집계에서는 접지 않는다** —
+        // 지급이 무산된 건을 "받을 예정" 으로 세면 스태프에게 오지 않을 돈을 약속하게 된다.
+        // (현재 이 값을 쓰는 코드는 없다. 생기더라도 예정액에 섞이지 않게 남겨 두는 가드다.)
         if (schedule.payrollStatus === STATUS.PAYROLL.COMPLETED) {
           settledEarnings += amount;
         } else if (schedule.payrollStatus !== STATUS.PAYROLL.FAILED) {

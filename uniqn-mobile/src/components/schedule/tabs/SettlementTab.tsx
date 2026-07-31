@@ -26,6 +26,7 @@ import {
 import { STATUS } from '@/constants';
 import { shouldUseFrozenPayrollAmount } from '@/utils/settlementGrouping';
 import { PAYROLL_STATUS } from '@/constants/statusConfig';
+import { toSettlementDisplayStatus } from '@/shared/status';
 import { formatDateKorean } from '@/utils/date';
 import { NO_SHOW_NOTICE_TITLE, NO_SHOW_NOTICE_DESCRIPTION } from '../helpers';
 import type { ScheduleEvent, PayrollStatus } from '@/types';
@@ -206,7 +207,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
     ? schedule.settlementBreakdown!.isEstimate
     : !schedule.checkInTime || !schedule.checkOutTime;
   const payrollStatus = (schedule.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus;
-  const payrollStatusConfig = PAYROLL_STATUS[payrollStatus];
+  const payrollStatusConfig = PAYROLL_STATUS[toSettlementDisplayStatus(payrollStatus)];
 
   if (schedule.type === STATUS.SCHEDULE.APPLIED) {
     return (
