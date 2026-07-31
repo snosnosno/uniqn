@@ -14,7 +14,7 @@ import { StackHeader } from '@/components/headers';
 import { Button, EmptyState, ErrorState, Loading, SheetModal } from '@/components/ui';
 import { SettlementCard } from '@/components/employer/settlement/SettlementCard';
 import { SettlementDetailModal } from '@/components/employer/settlement/SettlementDetailModal';
-import { SettlementRevertModal } from '@/components/employer';
+import { SettlementRevertModal } from '@/components/employer/settlement/SettlementRevertModal';
 import { BanknotesIcon, ChevronLeftIcon, ChevronRightIcon } from '@/components/icons';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { SHEET_DISMISS_ANIMATION_MS } from '@/constants/animation';
@@ -36,6 +36,7 @@ import {
   type VenueSalaryDraft,
 } from '@/components/workSchedule/RoleSalaryField';
 import type { SettlementWorkLog } from '@/services/work/settlement/types';
+import type { WorkLog } from '@/types';
 
 /** 배지 탭으로 여는 단가 설정 대상(역할 단위) */
 interface FixTarget {
@@ -169,14 +170,18 @@ export default function VenueSettlementsScreen() {
 
   // 상세 → 취소 모달 전환. 두 네이티브 Modal 을 겹쳐 present 하면 iOS 터치 라우팅이 깨지므로
   // 상세를 먼저 닫고 기다린 뒤 연다. 대기 값은 `constants/animation.ts` SSOT 를 쓴다(로컬 복제 금지).
-  const handleOpenRevert = useCallback(() => {
-    if (!detailWorkLog) return;
+  //
+  // 🔑 대상은 **모달이 넘겨준 workLog** 를 쓴다(클로저의 detailWorkLog 가 아니라).
+  // 상세 모달은 그룹 모드에서 날짜 네비게이션으로 자기 내부 workLog 를 교체할 수 있어서,
+  // 클로저를 쓰면 나중에 그룹 모드를 붙이는 순간 "화면에 보이던 행이 아닌 처음 탭한 행" 의
+  // 지급 완료가 취소된다. TS 는 인자를 덜 받는 콜백을 허용하므로 tsc 가 침묵하는 종류의 결함이다.
+  const handleOpenRevert = useCallback((workLog: WorkLog) => {
     setDetailVisible(false);
     setTimeout(() => {
-      setRevertWorkLog(detailWorkLog);
+      setRevertWorkLog(workLog as SettlementWorkLog);
       setRevertVisible(true);
     }, SHEET_DISMISS_ANIMATION_MS);
-  }, [detailWorkLog]);
+  }, []);
 
   const closeRevert = useCallback(() => {
     // 상세 모달과 같은 이유로 workLog 는 유지한다 — 즉시 null 로 만들면 닫힘 애니메이션 중에

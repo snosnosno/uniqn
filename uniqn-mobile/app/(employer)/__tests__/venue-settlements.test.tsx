@@ -249,7 +249,7 @@ describe('VenueSettlementsScreen 지급 완료 취소 (SETTLE-3)', () => {
       staffName: '홍길동',
       payrollStatus: 'completed',
       payrollAmount: 80000,
-      payrollDate: '2026-08-01T15:00:00.000Z',
+      payrollDate: new Date('2026-08-01T15:00:00.000Z'),
       checkInTime: '2026-07-10T10:00:00.000Z',
       checkOutTime: '2026-07-10T14:00:00.000Z',
     } as Partial<SettlementWorkLog>);

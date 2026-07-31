@@ -23,7 +23,11 @@ import {
   ClockIcon,
   ExclamationCircleIcon,
 } from '@/components/icons';
-import { formatDateDisplay, formatGroupRolesDisplay } from '@/utils/settlementGrouping';
+import {
+  formatDateDisplay,
+  formatGroupRolesDisplay,
+  getSettlableWorkLogIds,
+} from '@/utils/settlementGrouping';
 import { formatCurrency } from '@/utils/settlement';
 import { getRoleDisplayName } from '@/types/unified';
 import { useUserProfile } from '@/hooks/useUserProfile';
@@ -111,7 +115,12 @@ const DateStatusRow = memo(function DateStatusRow({
 }) {
   const payrollConfig = PAYROLL_STATUS_CONFIG[toSettlementDisplayStatus(status.payrollStatus)];
   const roleDisplay = getRoleDisplayName(status.role, status.customRole);
-  const canSettle = status.hasValidTimes && status.payrollStatus !== STATUS.PAYROLL.COMPLETED;
+  // 정산 버튼 게이트는 서버 게이트와 같은 축을 봐야 한다 — 시각만 보면 status 미승격 레거시 행에서
+  // "누르면 항상 실패하는 버튼" 이 된다. 개별 카드(SettlementCard)와 같은 술어를 쓴다.
+  const canSettle =
+    status.hasValidTimes &&
+    status.isSettlableStatus &&
+    status.payrollStatus !== STATUS.PAYROLL.COMPLETED;
 
   const handlePress = useCallback(() => {
     if (selectionMode && onToggleSelect) {
@@ -171,7 +180,13 @@ const DateStatusRow = memo(function DateStatusRow({
       ) : (
         <View className={`px-2 py-0.5 rounded-sm ${payrollConfig.bgColor}`}>
           <Text className={`text-xs font-sans-medium ${payrollConfig.textColor}`}>
-            {status.hasValidTimes ? payrollConfig.label : '출퇴근 미완료'}
+            {/* 시각은 있는데 status 미승격인 행은 '정산 대기' 로만 보이면 왜 버튼이 없는지 알 수 없다.
+                차단 사유를 배지에 드러낸다(개별 카드의 안내 배너와 같은 목적). */}
+            {!status.hasValidTimes
+              ? '출퇴근 미완료'
+              : !status.isSettlableStatus && status.payrollStatus !== STATUS.PAYROLL.COMPLETED
+                ? '출퇴근 미확정'
+                : payrollConfig.label}
           </Text>
         </View>
       )}
@@ -215,13 +230,10 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
     return formatDateDisplay(group.dateRange.dates);
   }, [group.dateRange.dates]);
 
-  // 정산 가능 WorkLog 목록
+  // 정산 가능 WorkLog 목록 — 판정은 getSettlableWorkLogIds 하나만 쓴다.
+  // 예전엔 같은 조건을 여기서 다시 썼고, 그 복제본에만 status 축이 빠져 있었다.
   const settlableWorkLogs = useMemo(() => {
-    const settlableIds = new Set(
-      group.dateStatuses
-        .filter((s) => s.hasValidTimes && s.payrollStatus !== STATUS.PAYROLL.COMPLETED)
-        .map((s) => s.workLogId)
-    );
+    const settlableIds = new Set(getSettlableWorkLogIds(group));
     return group.originalWorkLogs.filter((wl) => settlableIds.has(wl.id));
   }, [group]);
 

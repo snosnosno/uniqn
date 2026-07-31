@@ -77,6 +77,20 @@ describe('SettlementCard 지급 완료 버튼 게이트', () => {
     expect(queryByLabelText(SETTLE_LABEL)).toBeNull();
   });
 
+  it('status 로 막힌 행에는 차단 사유를 안내한다 — 버튼만 사라지면 이유를 알 수 없다', () => {
+    const { getByText, queryByText } = renderCard(
+      makeWorkLog({ status: STATUS.WORK_LOG.CHECKED_IN } as Partial<WorkLog>)
+    );
+    expect(getByText('출퇴근 상태가 확정되지 않아 아직 정산할 수 없어요')).toBeTruthy();
+    // 시각은 있으므로 '출퇴근 기록 미완료' 배너와 혼동되면 안 된다.
+    expect(queryByText('출퇴근 기록 미완료')).toBeNull();
+  });
+
+  it('정상 정산 가능 행에는 안내 배너를 그리지 않는다', () => {
+    const { queryByText } = renderCard(makeWorkLog());
+    expect(queryByText('출퇴근 상태가 확정되지 않아 아직 정산할 수 없어요')).toBeNull();
+  });
+
   it('onSettle 이 없으면 버튼을 그리지 않는다 (읽기 전용 사용처)', () => {
     const { queryByLabelText } = render(
       <SettlementCard workLog={makeWorkLog()} salaryInfo={{ type: 'hourly', amount: 15000 }} />

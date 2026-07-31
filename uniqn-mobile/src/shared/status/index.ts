@@ -24,6 +24,7 @@ export {
   SCHEDULE_TYPE_LABELS,
   PAYROLL_STATUS_LABELS,
   toSettlementDisplayStatus,
+  isSettlableWorkLogStatus,
 } from './types';
 
 // 상태 흐름 규칙

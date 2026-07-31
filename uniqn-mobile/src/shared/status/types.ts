@@ -50,6 +50,21 @@ export function toSettlementDisplayStatus(
   return status === 'completed' ? 'completed' : 'pending';
 }
 
+/**
+ * 근무 기록이 **서버 정산 게이트를 통과할 수 있는 status** 인가.
+ *
+ * 서버(`SettlementRepository.settleWorkLogWithTransaction`)가 `status ∈ {checked_out, completed}`
+ * 를 검사한다. UI 가 이 축을 안 보고 시각(checkInTime/checkOutTime)만 보면, 시각은 있는데
+ * status 가 승격되지 않은 레거시 행에서 "누를 수 있는데 항상 실패하는" 정산 버튼이 남는다
+ * ("출퇴근이 완료된 근무 기록만 정산할 수 있습니다").
+ *
+ * 정산 버튼·일괄 집계를 그리는 모든 경로는 이 술어 하나를 거친다 — 화면마다 조건을 복제하면
+ * 한쪽만 고쳐진 채 갈라진다(개별 카드와 그룹 카드가 실제로 그렇게 갈라져 있었다).
+ */
+export function isSettlableWorkLogStatus(status: string | null | undefined): boolean {
+  return status === 'checked_out' || status === 'completed';
+}
+
 export const ATTENDANCE_STATUS_LABELS: Record<AttendanceStatus, string> = {
   not_started: '출근 전',
   checked_in: '근무 중',

@@ -28,7 +28,7 @@ import type { WorkLog, PayrollStatus } from '@/types';
 import { STATUS } from '@/constants';
 import { shouldUseFrozenPayrollAmount } from '@/utils/settlementGrouping';
 import { PAYROLL_STATUS_CONFIG } from './helpers/settlementConfig';
-import { toSettlementDisplayStatus } from '@/shared/status';
+import { toSettlementDisplayStatus, isSettlableWorkLogStatus } from '@/shared/status';
 
 // Re-export types for backward compatibility
 export type { SalaryType, SalaryInfo };
@@ -102,13 +102,9 @@ export const SettlementCard = React.memo(function SettlementCard({
   const endTime = parseTimestamp(workLog.checkOutTime);
   const hasValidTimes = startTime && endTime;
 
-  // 정산 버튼 게이트는 **서버 게이트와 같은 축**을 봐야 한다.
-  // 서버(settleWorkLogWithTransaction)는 `status ∈ {checked_out, completed}` 를 검사한다.
-  // 시각만 보면, 시각은 있는데 status 가 승격되지 않은 레거시 행에서 버튼이 보이고
-  // 누르면 "출퇴근이 완료된 근무 기록만 정산할 수 있습니다" 로 항상 실패한다.
+  // 정산 버튼 게이트는 **서버 게이트와 같은 축**을 봐야 한다(술어 SSOT = shared/status).
   // 시각 조건도 함께 유지한다 — 금액 계산에 실제로 필요한 값이다.
-  const isSettlableStatus =
-    workLog.status === STATUS.WORK_LOG.CHECKED_OUT || workLog.status === STATUS.WORK_LOG.COMPLETED;
+  const isSettlableStatus = isSettlableWorkLogStatus(workLog.status);
 
   // 핸들러
   const handlePress = useCallback(() => {
@@ -176,6 +172,17 @@ export const SettlementCard = React.memo(function SettlementCard({
           <View className="mt-3 p-2 bg-warning-50 dark:bg-warning-900/20 rounded-lg">
             <Text className="text-xs text-warning-700 dark:text-warning-300 text-center font-sans">
               출퇴근 기록 미완료
+            </Text>
+          </View>
+        )}
+
+        {/* 시각은 있는데 status 가 승격되지 않은 행 — 게이트로 버튼을 감추기만 하면
+            "왜 정산이 안 되는지" 를 알 수 없다(위 '출퇴근 기록 미완료' 배너도 안 뜬다).
+            버튼을 없애는 대신 사유를 남긴다. */}
+        {hasValidTimes && !isSettlableStatus && payrollStatus === STATUS.PAYROLL.PENDING && (
+          <View className="mt-3 p-2 bg-warning-50 dark:bg-warning-900/20 rounded-lg">
+            <Text className="text-xs text-warning-700 dark:text-warning-300 text-center font-sans">
+              출퇴근 상태가 확정되지 않아 아직 정산할 수 없어요
             </Text>
           </View>
         )}
