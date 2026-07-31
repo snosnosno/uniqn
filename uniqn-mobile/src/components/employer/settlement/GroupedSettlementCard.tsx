@@ -122,6 +122,15 @@ const DateStatusRow = memo(function DateStatusRow({
     status.isSettlableStatus &&
     status.payrollStatus !== STATUS.PAYROLL.COMPLETED;
 
+  // 배지 문구 = 스크린리더 문구. RN Pressable 은 자식 텍스트를 삼키고 명시 accessibilityLabel 이
+  // 그걸 덮으므로, 배지를 그리기만 하면 차단 사유가 스크린리더엔 **아무것도 안 간다**.
+  // 한 값에서 합성해 시각·낭독이 갈라지지 않게 한다.
+  const statusText = !status.hasValidTimes
+    ? '출퇴근 미완료'
+    : !status.isSettlableStatus && status.payrollStatus !== STATUS.PAYROLL.COMPLETED
+      ? '출퇴근 미확정'
+      : payrollConfig.label;
+
   const handlePress = useCallback(() => {
     if (selectionMode && onToggleSelect) {
       onToggleSelect(workLog);
@@ -140,7 +149,7 @@ const DateStatusRow = memo(function DateStatusRow({
       className={`flex-row items-center py-2.5 ${
         !isLast ? 'border-b border-secondary-100 dark:border-surface-overlay/50' : ''
       }`}
-      accessibilityLabel={`${status.formattedDate} ${roleDisplay} ${payrollConfig.label}`}
+      accessibilityLabel={`${status.formattedDate} ${roleDisplay} ${statusText}`}
     >
       {/* 선택 모드: 체크박스 */}
       {selectionMode && (
@@ -179,14 +188,11 @@ const DateStatusRow = memo(function DateStatusRow({
         </Pressable>
       ) : (
         <View className={`px-2 py-0.5 rounded-sm ${payrollConfig.bgColor}`}>
+          {/* 시각은 있는데 status 미승격인 행은 '정산 대기' 로만 보이면 왜 버튼이 없는지 알 수 없다.
+              차단 사유를 배지에 드러낸다(개별 카드의 안내 배너와 같은 목적).
+              문구는 위 statusText 한 곳에서 나오고 accessibilityLabel 도 같은 값을 쓴다. */}
           <Text className={`text-xs font-sans-medium ${payrollConfig.textColor}`}>
-            {/* 시각은 있는데 status 미승격인 행은 '정산 대기' 로만 보이면 왜 버튼이 없는지 알 수 없다.
-                차단 사유를 배지에 드러낸다(개별 카드의 안내 배너와 같은 목적). */}
-            {!status.hasValidTimes
-              ? '출퇴근 미완료'
-              : !status.isSettlableStatus && status.payrollStatus !== STATUS.PAYROLL.COMPLETED
-                ? '출퇴근 미확정'
-                : payrollConfig.label}
+            {statusText}
           </Text>
         </View>
       )}
