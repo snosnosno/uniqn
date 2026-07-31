@@ -23,6 +23,21 @@ import type { ScheduleEvent } from '@/types';
 /** key → OS 알림 식별자 */
 type ReminderLedger = Record<string, string>;
 
+/**
+ * 지금 동기화를 돌려도 되는가.
+ *
+ * 🔴 게이트는 "목록이 비었나" 가 아니라 **"로드가 끝났나"** 다.
+ *
+ * - 성공했는데 0건이면 **돌려야 한다.** sync 는 예약뿐 아니라 원장 정리도 하므로,
+ *   빈 목록에서 건너뛰면 계획에서 사라진 예약(취소·퇴근·종류 폐지)이 영영 취소되지 않는다.
+ * - 로딩·에러 중에는 **돌리면 안 된다.** 그 구간의 목록은 실제 0건이 아니라 폴백 빈 배열이라,
+ *   그대로 넘기면 원장의 모든 키가 "계획에서 사라진 것" 으로 판정돼 취소된다. 조회가 에러로
+ *   끝나면 재예약도 없어 확정 근무 알림이 통째로 무음 소실된다.
+ */
+export function shouldSyncShiftReminders(state: { isLoading: boolean; error?: unknown }): boolean {
+  return !state.isLoading && !state.error;
+}
+
 function readLedger(): ReminderLedger {
   return getStorageItem<ReminderLedger>(STORAGE_KEYS.SHIFT_REMINDERS) ?? {};
 }

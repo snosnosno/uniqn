@@ -57,7 +57,10 @@ import {
 import { triggerHaptic } from '@/utils/haptics';
 import { getTodayString } from '@/utils/date';
 import { detectScheduleOverlaps, formatOverlapWarning } from '@/utils/scheduleOverlap';
-import { syncShiftReminders } from '@/services/work/shiftReminderScheduler';
+import {
+  syncShiftReminders,
+  shouldSyncShiftReminders,
+} from '@/services/work/shiftReminderScheduler';
 import {
   filterSchedulesByStatus,
   countSchedulesByType,
@@ -316,13 +319,21 @@ export default function ScheduleScreen() {
   // 근무 리마인더 예약 동기화 — 확정 근무를 잊는 것이 단발 알바의 1순위 사고인데
   // CHECKIN_REMINDER 는 타입·템플릿·딥링크가 다 있고 발송 주체만 0 이었다.
   // fire-and-forget: 알림 예약 실패가 스케줄 화면을 막지 않는다.
-  // 빈 목록에서도 돌린다 — sync 는 예약뿐 아니라 **원장 정리**도 하기 때문이다.
-  // 얼리 리턴을 두면 계획에서 사라진 예약(취소·퇴근·종류 폐지)이 영영 취소되지 않는다.
-  // 실제 사고 경로: 'hours-before' 종류를 폐지했는데, 이번 달 근무가 0건인 스태프는
-  // 스케줄 탭을 열어도 sync 가 안 돌아 옛 "출근 2시간 전" 알림이 그대로 발사된다.
+  //
+  // 🔴 게이트는 "목록이 비었나" 가 아니라 **"로드가 끝났나"** 다. 두 가지를 동시에 지켜야 한다.
+  //
+  // ① 성공했는데 0건이면 **반드시 돌려야 한다.** sync 는 예약뿐 아니라 원장 정리도 하므로,
+  //    `length === 0` 얼리 리턴을 두면 계획에서 사라진 예약(취소·퇴근·종류 폐지)이 영영
+  //    취소되지 않는다. 실제로 'hours-before' 를 폐지했는데 이번 달 근무가 0건인 스태프는
+  //    옛 "출근 2시간 전" 알림을 계속 받게 된다.
+  // ② 로딩·에러 중에는 **돌리면 안 된다.** 그 구간의 `schedules` 는 실제 0건이 아니라
+  //    `EMPTY_SCHEDULE_QUERY_PAYLOAD` 폴백(useSchedules.ts)이다. 그대로 넘기면 원장의
+  //    모든 키가 "계획에서 사라진 것" 으로 판정돼 취소되고, 조회가 에러로 끝나면 재예약도
+  //    없어 확정 근무 알림이 통째로 무음 소실된다.
   useEffect(() => {
+    if (!shouldSyncShiftReminders({ isLoading, error })) return;
     void syncShiftReminders(schedules);
-  }, [schedules]);
+  }, [schedules, isLoading, error]);
 
   // '내 다음 근무' 히어로 — 이미 구현돼 있으나 소비자가 없던 useTodaySchedules(60초 폴링·
   // 오프라인 캐시 완비)를 오늘 근무 원천으로 쓰고, 오늘 것이 없으면 이번 달 확정 건에서 찾는다.
