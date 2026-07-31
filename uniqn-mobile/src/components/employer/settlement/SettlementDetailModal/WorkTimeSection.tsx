@@ -182,6 +182,15 @@ export function WorkTimeSection({
               아직 출퇴근 기록 전이에요. 시간 수정에서 기록하면 정산할 수 있어요.
             </Text>
           ) : null}
+
+          {/* 퇴근에만 ✓QR 이 뜨고 출근엔 아무것도 없으면 "출근은 QR 이 아니었다" 로 읽힌다.
+              실제로는 출근 시각의 출처를 기록하는 컬럼이 스키마에 없어 알 수 없는 것뿐이다.
+              정산 분쟁 근거로 쓰이는 표시라 이 비대칭을 화면에서 밝힌다. */}
+          {endProvenance === 'qr' && startProvenance === 'unknown' ? (
+            <Text className="mt-2 text-xs text-secondary-500 dark:text-secondary-400 text-center font-sans">
+              출근 시각은 출처가 기록되지 않아 QR 여부를 알 수 없어요.
+            </Text>
+          ) : null}
         </>
       ) : (
         <View className="p-3 bg-warning-50 dark:bg-warning-900/20 rounded-lg">

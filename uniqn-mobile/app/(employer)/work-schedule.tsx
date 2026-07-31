@@ -36,10 +36,14 @@ import {
   GridBadgeLegend,
 } from '@/components/workSchedule';
 import { useWorkScheduleEnabled } from '@/hooks';
-import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import { summarizeMissingCheckouts } from '@/domains/staff';
 import { useActiveWorkspace, useEnsureDefaultWorkspace } from '@/hooks/workspace';
-import { useGridSummary, useVenueContainers, useEnsureDefaultVenue } from '@/hooks/workSchedule';
+import {
+  useGridSummary,
+  useVenueContainers,
+  useEnsureDefaultVenue,
+  useVenueSettlement,
+} from '@/hooks/workSchedule';
 import {
   computeDayCell,
   resolveSelectedDateForMonth,
@@ -137,13 +141,19 @@ export default function WorkScheduleScreen() {
     [summaryQuery.data, visibleMonth]
   );
 
-  // 퇴근 미기록 안전망 — 자동 퇴근을 만들지 않기로 했으므로 이 배지가 구인자에게 알리는
+  // 퇴근 미기록 안전망 — 자동 퇴근을 만들지 않기로 했으므로 이 배너가 구인자에게 알리는
   // 유일한 경로다(정산 게이트에 영영 도달하지 못하는 근무를 여기서만 발견할 수 있다).
-  // VenueDayPanel 도 같은 훅·같은 쿼리키를 쓰므로 추가 요청은 발생하지 않는다.
-  const { grouped: confirmedGroups } = useConfirmedStaff(selectedVenueId ?? '');
+  //
+  // 🔑 **지점 스팬** 리더를 쓴다. 컨테이너 직속 배치만 보는 리더(useConfirmedStaff)를 쓰면
+  // 지점에서 공고로 뽑은 스태프의 미기록이 통째로 빠져 안전망이 조용히 절반만 본다.
+  // 정산 화면과 같은 쿼리 키라 그 화면을 오간 뒤에는 캐시를 공유한다.
+  const missingCheckoutQuery = useVenueSettlement(selectedVenueId, format(visibleMonth, 'yyyy-MM'));
+  // `now` 를 넘기는 이유: 리더가 붙이는 파생 플래그는 조회 시점 스냅샷이라 야간 교차 근무를
+  // 구분하지 못하고, 화면을 열어둔 채 자정을 넘기면 낡는다. 집계가 직접 판정한다.
+  // (유예 시각 경계는 다음 refetch·재렌더에서 반영된다 — 분 단위 타이머를 둘 만한 값이 아니다)
   const missingCheckouts = useMemo(
-    () => summarizeMissingCheckouts(confirmedGroups),
-    [confirmedGroups]
+    () => summarizeMissingCheckouts(missingCheckoutQuery.data ?? [], new Date()),
+    [missingCheckoutQuery.data]
   );
 
   // 배지를 누르면 가장 오래된 미기록 날짜로 이동한다. 지난 달일 수 있으므로 달도 함께 옮긴다

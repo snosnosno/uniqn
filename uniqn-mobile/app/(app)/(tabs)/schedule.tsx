@@ -269,12 +269,11 @@ export default function ScheduleScreen() {
     if (!reduceMotion) {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     }
-    setDashboardCollapsed((prev) => {
-      const next = !prev;
-      setStorageItem(STORAGE_KEYS.SCHEDULE_DASHBOARD_COLLAPSED, next);
-      return next;
-    });
-  }, [reduceMotion]);
+    // 부수효과를 updater 밖으로 — React 19 StrictMode 는 updater 를 의도적으로 2회 호출한다.
+    const next = !dashboardCollapsed;
+    setDashboardCollapsed(next);
+    setStorageItem(STORAGE_KEYS.SCHEDULE_DASHBOARD_COLLAPSED, next);
+  }, [dashboardCollapsed, reduceMotion]);
 
   const statusCounts = useMemo(
     () => countSchedulesByType(groupedByApplication),
@@ -317,8 +316,11 @@ export default function ScheduleScreen() {
   // 근무 리마인더 예약 동기화 — 확정 근무를 잊는 것이 단발 알바의 1순위 사고인데
   // CHECKIN_REMINDER 는 타입·템플릿·딥링크가 다 있고 발송 주체만 0 이었다.
   // fire-and-forget: 알림 예약 실패가 스케줄 화면을 막지 않는다.
+  // 빈 목록에서도 돌린다 — sync 는 예약뿐 아니라 **원장 정리**도 하기 때문이다.
+  // 얼리 리턴을 두면 계획에서 사라진 예약(취소·퇴근·종류 폐지)이 영영 취소되지 않는다.
+  // 실제 사고 경로: 'hours-before' 종류를 폐지했는데, 이번 달 근무가 0건인 스태프는
+  // 스케줄 탭을 열어도 sync 가 안 돌아 옛 "출근 2시간 전" 알림이 그대로 발사된다.
   useEffect(() => {
-    if (schedules.length === 0) return;
     void syncShiftReminders(schedules);
   }, [schedules]);
 

@@ -9,18 +9,14 @@
  */
 import React from 'react';
 import { render } from '@testing-library/react-native';
-import type { ConfirmedStaffGroup } from '@/types/confirmedStaff';
+import type { WorkLog } from '@/types/schedule';
 import WorkScheduleScreen from '../work-schedule';
 
-let mockGroups: ConfirmedStaffGroup[] = [];
+let mockWorkLogs: WorkLog[] = [];
 
 jest.mock('@tanstack/react-query', () => ({
   ...jest.requireActual('@tanstack/react-query'),
   useQueryClient: () => ({ invalidateQueries: jest.fn() }),
-}));
-
-jest.mock('@/hooks/useConfirmedStaff', () => ({
-  useConfirmedStaff: () => ({ grouped: mockGroups }),
 }));
 
 jest.mock('@/components/headers', () => ({ StackHeader: () => null }));
@@ -74,30 +70,38 @@ jest.mock('@/hooks/workSchedule', () => ({
     refetch: jest.fn(),
   }),
   useEnsureDefaultVenue: () => ({ isCreating: false }),
+  // 🔑 지점 스팬 리더 — 컨테이너 직속뿐 아니라 그 지점에 걸린 공고 근무까지 포함한다.
+  useVenueSettlement: () => ({ data: mockWorkLogs }),
 }));
 
-function group(overrides: Partial<ConfirmedStaffGroup> = {}): ConfirmedStaffGroup {
+let seq = 0;
+
+function log(date: string, status: WorkLog['status'] = 'checked_in'): WorkLog {
+  seq += 1;
   return {
-    date: '2026-07-20',
-    formattedDate: '7월 20일',
-    staff: [],
-    isToday: false,
-    isPast: true,
-    stats: { total: 2, checkedIn: 0, completed: 2, noShow: 0 },
-    ...overrides,
-  };
+    id: `wl-${seq}`,
+    staffId: `staff-${seq}`,
+    jobPostingId: 'jp-1',
+    date,
+    status,
+    role: 'dealer',
+  } as unknown as WorkLog;
 }
 
 describe('근무표 화면 — 퇴근 미기록 배너', () => {
+  // 판정이 "오늘" 에 의존하므로 시계를 고정한다. 실시간에 맡기면 날짜가 바뀔 때 깨진다.
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-07-31T14:00:00'));
+  });
+
   afterEach(() => {
-    mockGroups = [];
+    jest.useRealTimers();
+    mockWorkLogs = [];
   });
 
   it('지난 날짜에 퇴근 미기록이 있으면 건수와 함께 배너를 그린다', () => {
-    mockGroups = [
-      group({ date: '2026-07-20', stats: { total: 2, checkedIn: 2, completed: 0, noShow: 0 } }),
-      group({ date: '2026-07-22', stats: { total: 1, checkedIn: 1, completed: 0, noShow: 0 } }),
-    ];
+    mockWorkLogs = [log('2026-07-20'), log('2026-07-20'), log('2026-07-22')];
 
     const { queryByText, queryByLabelText, queryByTestId } = render(<WorkScheduleScreen />);
 
@@ -109,7 +113,7 @@ describe('근무표 화면 — 퇴근 미기록 배너', () => {
   });
 
   it('미기록이 없으면 배너를 그리지 않는다', () => {
-    mockGroups = [group()];
+    mockWorkLogs = [log('2026-07-20', 'completed'), log('2026-07-22', 'checked_out')];
 
     const { queryByLabelText, queryByTestId } = render(<WorkScheduleScreen />);
 
@@ -119,14 +123,7 @@ describe('근무표 화면 — 퇴근 미기록 배너', () => {
 
   // 🔴 오늘 근무 중인 사람은 미기록이 아니다. 세면 배너가 영업시간 내내 켜져 안전망이 죽는다.
   it('오늘 근무 중인 인원만 있으면 배너를 그리지 않는다', () => {
-    mockGroups = [
-      group({
-        date: '2026-07-31',
-        isToday: true,
-        isPast: false,
-        stats: { total: 4, checkedIn: 4, completed: 0, noShow: 0 },
-      }),
-    ];
+    mockWorkLogs = [log('2026-07-31'), log('2026-07-31')];
 
     const { queryByLabelText, queryByTestId } = render(<WorkScheduleScreen />);
 

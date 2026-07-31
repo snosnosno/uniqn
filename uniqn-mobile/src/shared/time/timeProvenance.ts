@@ -28,8 +28,8 @@ export type TimeProvenance =
   /** 근거가 없어 아무것도 주장하지 않는다 */
   | 'unknown';
 
-/** 판정 대상 시간축 */
-export type TimeAxis = 'start' | 'end';
+/** 판정 대상 시간축 (이 모듈 내부 계약) */
+type TimeAxis = 'start' | 'end';
 
 export interface ResolveTimeProvenanceInput {
   axis: TimeAxis;

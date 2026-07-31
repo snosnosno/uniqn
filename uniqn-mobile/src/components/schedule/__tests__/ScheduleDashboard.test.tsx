@@ -89,6 +89,29 @@ describe('ScheduleDashboard', () => {
       expect(queryByText(/미지급 \d+건/)).toBeNull();
     });
 
+    // 🔴 Pressable 이 자식 텍스트를 삼키므로, 칩을 화면에 그리는 것만으로는 스크린리더에
+    //    아무것도 전달되지 않는다. 라벨을 상태에서 합성해야 불변식이 음성에서도 성립한다.
+    it('접힘 헤더의 접근성 라벨에 활성 필터와 미지급 건수를 담는다', () => {
+      const { getByTestId } = renderDashboard({
+        collapsed: true,
+        activeFilterLabel: '미지급',
+        unpaidCount: 3,
+      });
+
+      const label = getByTestId('schedule-dashboard-toggle').props.accessibilityLabel;
+
+      expect(label).toContain('필터 미지급 적용 중');
+      expect(label).toContain('미지급 3건');
+    });
+
+    it('필터도 미지급도 없으면 라벨은 펼치기 안내만 담는다', () => {
+      const { getByTestId } = renderDashboard({ collapsed: true });
+
+      expect(getByTestId('schedule-dashboard-toggle').props.accessibilityLabel).toBe(
+        '이번 달 요약과 필터 펼치기'
+      );
+    });
+
     it('펼치기 버튼을 누르면 onToggle 이 호출된다', () => {
       const onToggle = jest.fn();
       const { getByTestId } = renderDashboard({ collapsed: true, onToggle });

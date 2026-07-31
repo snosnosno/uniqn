@@ -168,6 +168,19 @@ export function ScheduleDashboard({
   unpaidCount,
   children,
 }: ScheduleDashboardProps) {
+  // 🔴 접힘 헤더의 접근성 라벨은 칩 상태에서 **합성해야 한다.**
+  // Pressable 은 기본 accessible=true 라 자식 텍스트가 한 노드로 병합되는데, 명시
+  // accessibilityLabel 이 그 파생 라벨을 통째로 덮어쓴다. 고정 문구만 두면 필터 칩과
+  // 미지급 칩이 화면에만 있고 음성으로는 존재하지 않아, "접어도 계속 보인다" 는
+  // 이 컴포넌트의 불변식이 스크린리더 사용자에게만 깨진다.
+  const collapsedA11yLabel = [
+    '이번 달 요약과 필터 펼치기',
+    activeFilterLabel ? `필터 ${activeFilterLabel} 적용 중` : null,
+    unpaidCount > 0 ? `미지급 ${unpaidCount}건` : null,
+  ]
+    .filter(Boolean)
+    .join(', ');
+
   return (
     <View>
       {collapsed ? (
@@ -176,7 +189,7 @@ export function ScheduleDashboard({
             onPress={onToggle}
             accessibilityRole="button"
             accessibilityState={{ expanded: false }}
-            accessibilityLabel="이번 달 요약과 필터 펼치기"
+            accessibilityLabel={collapsedA11yLabel}
             testID="schedule-dashboard-toggle"
             className="min-h-[44px] flex-row items-center justify-between"
           >
