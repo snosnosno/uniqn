@@ -33,6 +33,8 @@ import {
   SCHEDULE_STATUS_STRIPE_TONE,
   NO_SHOW_NOTICE_TITLE,
   NO_SHOW_NOTICE_DESCRIPTION,
+  UNDECIDED_TIME_LABEL,
+  UNDECIDED_TIME_HINT,
 } from './helpers';
 import { STATUS } from '@/constants';
 import { PAYROLL_STATUS } from '@/constants/statusConfig';
@@ -137,6 +139,16 @@ export const ScheduleCard = memo(function ScheduleCard({
   // 노쇼는 취소와 달리 흐리게 처리하지 않는다 — 이의 제기 기한이 있는 기록이라
   // 눈에 덜 띄게 만들면 이 화면이 고치려는 문제(본인만 모른다)를 그대로 되풀이한다.
   const isNoShow = schedule.type === STATUS.SCHEDULE.NO_SHOW;
+
+  // '출근 시간 미정'만으로는 "언제 알 수 있나"에 답이 없다. 안심 문구를 아래 줄에 덧댄다.
+  // 협의(고정공고)는 정해질 값이 아니므로 붙이지 않는다.
+  // 이미 끝난 일정(취소·노쇼)에도 붙이지 않는다 — '정해지면 알려드려요'는 미래형 약속이라,
+  // 다시 오지 않을 근무에 얹으면 지키지 못할 말이 된다.
+  const showUndecidedTimeHint =
+    timeDisplayInfo.scheduleTimeState === 'undecided' &&
+    timeRangeDisplay === UNDECIDED_TIME_LABEL &&
+    !isCancelled &&
+    !isNoShow;
   // 스크린리더로 카드 하나를 들었을 때 완결 문장이 되도록 금액·취소요청 여부까지 넣는다.
   const accessibilityLabel = [
     status.label,
@@ -247,6 +259,12 @@ export const ScheduleCard = memo(function ScheduleCard({
                 </Text>
               </View>
 
+              {showUndecidedTimeHint && (
+                <Text className="mt-1 text-xs text-content-muted dark:text-secondary-500 font-sans">
+                  {UNDECIDED_TIME_HINT}
+                </Text>
+              )}
+
               <View className="mt-2 flex-row flex-wrap items-center">
                 <View className="mr-3 flex-row items-center">
                   <BriefcaseIcon size={14} color={SECONDARY_PALETTE[500]} />
@@ -289,6 +307,12 @@ export const ScheduleCard = memo(function ScheduleCard({
                     : timeRangeDisplay}
                 </Text>
               </View>
+
+              {schedule.type !== STATUS.SCHEDULE.COMPLETED && showUndecidedTimeHint && (
+                <Text className="mt-1 text-xs text-content-muted dark:text-secondary-500 font-sans">
+                  {UNDECIDED_TIME_HINT}
+                </Text>
+              )}
 
               <View className="mt-2 flex-row flex-wrap items-center">
                 <View className="mr-3 flex-row items-center">

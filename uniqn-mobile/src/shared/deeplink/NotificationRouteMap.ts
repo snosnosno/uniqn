@@ -50,7 +50,12 @@ export const NOTIFICATION_ROUTE_MAP: Record<
   [NotificationType.CHECK_OUT_CONFIRMED]: () => ({ name: 'schedule' }),
   [NotificationType.CHECKIN_REMINDER]: () => ({ name: 'schedule' }),
   [NotificationType.NO_SHOW_ALERT]: () => ({ name: 'schedule' }),
-  [NotificationType.SCHEDULE_CHANGE]: () => ({ name: 'schedule' }),
+  // 출근 예정 시각 변경(트리거 Case 2-B)은 applicationId 를 실어 보낸다. 스케줄 상세 모달로
+  // 정밀 착지해야 그 화면의 '취소 요청' 버튼에 바로 닿는다 — 무음 변경 금지의 짝은 거부 경로다.
+  [NotificationType.SCHEDULE_CHANGE]: (data) =>
+    data?.applicationId
+      ? { name: 'schedule', params: { applicationId: data.applicationId } }
+      : { name: 'schedule' },
   [NotificationType.SCHEDULE_CREATED]: () => ({ name: 'schedule' }),
   [NotificationType.SCHEDULE_CANCELLED]: () => ({ name: 'schedule' }),
 

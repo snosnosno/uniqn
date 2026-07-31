@@ -41,11 +41,13 @@ export { resolveSelectedDateForMonth } from './monthNavigation';
 
 export {
   SLOT_COLOR_TOKENS,
+  LEGACY_SLOT_COLOR_TOKENS,
   SLOT_COLOR_CHIPS,
   DEFAULT_SLOT_START_TIME,
   MAX_SLOT_MEMO_LENGTH,
   slotMemoSchema,
   isValidSlotColor,
+  isCurrentSlotColor,
   assertSlotColor,
   slotColorSwatchClassName,
   isSafeSlotMemo,
@@ -59,6 +61,8 @@ export {
   parseTimeSlotParts,
   detectSlotConflicts,
   type SlotColorToken,
+  type LegacySlotColorToken,
+  type StoredSlotColorToken,
   type SlotColorChip,
   type SlotConflict,
   type SlotConflictInput,

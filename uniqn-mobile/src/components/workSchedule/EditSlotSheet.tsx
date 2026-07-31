@@ -43,9 +43,11 @@ import {
   DEFAULT_SLOT_START_TIME,
   MAX_SLOT_MEMO_LENGTH,
   isValidSlotStartTime,
+  isCurrentSlotColor,
+  slotColorSwatchClassName,
   parseTimeSlotParts,
   detectSlotConflicts,
-  type SlotColorToken,
+  type StoredSlotColorToken,
 } from '@/domains/workSchedule';
 import { WorkTimeDisplay, type TimeInput } from '@/shared/time';
 import type { StaffRole } from '@/types';
@@ -125,8 +127,12 @@ export function EditSlotSheet({
   const displayStart = pickedTime ?? originalStart ?? '';
 
   const [role, setRole] = useState<StaffRole>('dealer');
-  const [color, setColor] = useState<SlotColorToken | null>(null);
+  const [color, setColor] = useState<StoredSlotColorToken | null>(null);
   const [memo, setMemo] = useState('');
+
+  // 현재 색이 퇴역 팔레트면 그 스와치를 따로 그린다(현행 4종이면 null).
+  const legacyColorSwatch =
+    color && !isCurrentSlotColor(color) ? slotColorSwatchClassName(color) : null;
 
   // 휠 피커 열림 여부. 중첩 Modal 없이 SheetModal overlay 로 단일 렌더.
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -148,7 +154,7 @@ export function EditSlotSheet({
     setPickedTime(null);
     setTimeUndecided(false);
     setRole((slot.role as StaffRole) ?? 'dealer');
-    setColor((slot.color as SlotColorToken | null) ?? null);
+    setColor((slot.color as StoredSlotColorToken | null) ?? null);
     setMemo(slot.notes ?? '');
   }, [slot]);
 
@@ -514,7 +520,23 @@ export function EditSlotSheet({
               />
             );
           })}
+
+          {/* 옛 팔레트로 저장된 슬롯은 현재 색이 위 4개에 없다. 그대로 두면 아무것도 선택되지
+              않은 것처럼 보여, 색만 확인하려던 사용자가 멀쩡한 색을 갈아치우게 된다.
+              현재 색을 선택된 칩으로 함께 보여주되 새로 고를 수는 없게 한다. */}
+          {legacyColorSwatch && (
+            <View
+              accessibilityRole="image"
+              accessibilityLabel="현재 색상 (지난 팔레트)"
+              className={`h-9 w-9 rounded-full border-2 border-content-primary ${legacyColorSwatch}`}
+            />
+          )}
         </View>
+        {legacyColorSwatch && (
+          <Text className="mt-1.5 text-xs text-content-muted dark:text-secondary-400 font-sans">
+            지난 팔레트로 지정된 색이에요. 위에서 고르면 새 색으로 바뀝니다.
+          </Text>
+        )}
 
         {/* 메모(S1 XSS 검증은 레포 경계) */}
         <View className="mt-4">
