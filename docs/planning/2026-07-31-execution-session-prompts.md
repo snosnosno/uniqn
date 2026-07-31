@@ -21,7 +21,7 @@
 | **S2** | 2-A + 2-B | ~~`fix/worklog-time-model`~~ | ✅ **머지** | **#374** | `a06f5311`. CI 9잡 green(E2E 1회 통과). 브랜치·워크트리 정리 완료. 클라 전용·**마이그 0건**. master(#370·#371·#373) 재통합 완료 — 파리티 충돌은 master 판 **184** 채택 |
 | **S3** | 2-C + 2-D + 별-2 | ~~`feat/worklog-time-notify`~~ | ✅ **머지** | **#382** | `11a2390a0`. CI 9잡 green(E2E 포함 1회 통과). 브랜치 삭제됨, 워크트리는 유지. | HEAD `fd8d7b52b`(5커밋). 🔴 **마이그 1건 prod 미적용** |
 | **S4** | 3-B + 3-E + 별-1 | ~~`feat/qr-badge-and-entry`~~ | ✅ **머지** | **#384** | `40dc21779`. CI **9잡 전부 SUCCESS**(E2E 9m55s 포함, 재실행 없이 1회 통과). 브랜치·워크트리 정리 완료. **마이그 0건** — 파리티 **184/111 불변**(prod 실측 재확인). 리뷰 opus→fable 2회, HIGH 2건 포함 지적 전량 반영 |
-| **S5** | 3-A + 3-D | `feat/settlement-and-rename` | 🔨 **구현 완료 · PR 미생성** | | 커밋 4개. **3-D 완료**(사전 카운트 보고 → 사용자 승인 → 충돌 0 확인 → prod UPDATE 4행). **3-A 완료**(2단 축소 + 지점 정산 배선). 마이그 2건 prod 적용(S3 잔여분 + rename). 파리티 **184/111 불변**. 상세=§5 |
+| **S5** | 3-A + 3-D | `feat/settlement-and-rename` | ✅ **구현·리뷰 완료 · 🔴PR 미생성** | | 커밋 8개. 최종 fable 리뷰 **APPROVE**(CRITICAL 0·HIGH 0, LOW 3 비차단). 게이트: quality exit 0 · **595 스위트 / 6503 테스트 전량 통과** · e2e Grep 0건. **3-D 완료**(사전 카운트 보고 → 사용자 승인 → 충돌 0 확인 → prod UPDATE 4행). **3-A 완료**(2단 축소 + 지점 정산 배선). 마이그 2건 prod 적용(S3 잔여분 + rename). 파리티 **184/111 불변**. 상세=§5 |
 | **B1** | 주소 1단계 | `claude/job-posting-address-map-lbrvzd` | ⬜ | | 독립 워크트리 |
 | **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
 | **S6** | 3-C 설계 | — | ⬜ | | 사용자 결정 필요 |
@@ -462,9 +462,13 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 > 형식은 §2 세션 종료 프로토콜 4번 참조. **삭제하지 말고 쌓는다** —
 > 중단된 세션을 다시 여는 사람이 읽을 유일한 기록이다.
 
-### S5 (3-A + 3-D) — 2026-08-01 · 상태: 구현 완료 (PR 미생성)
+### S5 (3-A + 3-D) — 2026-08-01 · 상태: 구현·리뷰 완료 (🔴 PR 미생성)
+
+- 리뷰 3종 전부 통과: security-reviewer(fable) **CRITICAL 0 / HIGH 0**(MEDIUM 1 은 선재 — RLS `wl_update` WITH CHECK 부재로 `staff_id` 재지정 알림 위조 가능, 별도 PR 권고) · code-reviewer(opus) CRITICAL 1·HIGH 1·MEDIUM 3·LOW 2 **전량 반영** · 최종 code-reviewer(fable) **APPROVE**(LOW 3 비차단).
+- 최종 게이트 실행 증거: `npm run quality` exit 0(0 errors / 97 warnings = S4 baseline) · `npm test` **595 스위트 / 6503 테스트 / 122 스냅샷 전량 통과** · `tsc --noEmit` exit 0 · `e2e/` Grep 파급 0건.
 
 - 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-settle` / `feat/settlement-and-rename` · 커밋 4개
+- ⚠️ **prod 기록명 ≠ 레포 파일명이다.** `mcp__supabase__apply_migration` 이 적용 시각으로 자체 버전을 매기기 때문에, 레포 `20260801100000_rename_default_venue_containers.sql` 은 prod 에 `20260731195336_rename_default_venue_containers` 로, 레포 `20260731140000_notify_on_time_slot_change.sql` 은 `20260731195045_notify_on_time_slot_change` 로 기록돼 있다. **`list_migrations` 로 "재적용 금지" 를 대조할 때 파일명으로 찾으면 못 찾는다 — 이름 뒷부분(스네이크 케이스 본명)으로 대조할 것.**
 - **DB 마이그레이션 2건 prod 적용.** 파리티 **184 / 111 불변**(적용 전·후 실측 동일, 레포 기대값 `parity_baseline_guard.test.sql:91-92` 와 일치)
   - `20260731195045_notify_on_time_slot_change` — **S3(#382)가 남긴 미적용분**. 레인을 막고 있어 사용자 승인 후 먼저 적용했다. 적용 후 신규 `time_slot` 분기 존재·`settlement_completed` 보존·`proconfig = public, extensions, pg_temp` 보존·PUBLIC/anon EXECUTE 0 전부 실측 확인.
   - `20260731195336_rename_default_venue_containers` — 이번 세션 신규(데이터 UPDATE 전용, DDL 없음).
@@ -485,6 +489,8 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
   - ⚠️ 마이그 UPDATE 가 `job_postings_updated_at` 을 발화시켰다 → **"대상 행은 rename UI 도입 이전에 마지막 수정" 이라는 판별 근거는 이 마이그 실행 후로는 더 이상 성립하지 않는다.** 재실행·재판정 시 다른 근거가 필요하다.
   - 라벨 맵이 아직 **4곳**에 흩어져 있다(라벨 문자열만 SSOT 로 모았고 색/variant 는 화면별로 달라 통합 보류 — 합치면 배지 음영이 바뀌어 시각 확인이 필요하다).
   - 비차단: 개별 "지급 완료" 버튼이 `isSettling` 중 얼리 리턴으로 **무피드백 무시**된다(`SettlementCard` 에 `disabled` prop 부재).
+  - 비차단(최종 fable 리뷰 LOW): **개별 카드 버튼은 `status` 축을 안 본다.** 일괄 바는 `status ∈ {checked_out, completed}` 를 보는데 `SettlementCard.tsx:192` 게이트는 `pending && hasValidTimes` 뿐이라, 시각은 있고 status 미승격인 레거시 행에서 개별 버튼만 "누르면 항상 실패" 로 남는다. 선재 공유 컴포넌트 게이트라 공고 정산 화면에 동시 영향 — **별도 커밋 권장**(`canSettle` prop 개방 또는 게이트에 status 축 추가).
+  - 비차단(최종 fable 리뷰 LOW): `'failed'` 행은 배지가 '정산 대기' 로 접히는데 필터·버튼 게이트는 raw `pending` 비교라 제외된다 → "대기 배지인데 필터에서 사라지고 버튼도 없는" 행이 된다. **현재 `'failed'` writer 가 UI 에 0곳이라 발화 불가.** `'failed'` 전이 경로를 만들 때 필터·게이트도 `toSettlementDisplayStatus` 축으로 통일할 것.
 
 - **막힌 지점**: 없음.
 
