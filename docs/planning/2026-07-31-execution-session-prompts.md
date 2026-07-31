@@ -21,7 +21,8 @@
 | **S2** | 2-A + 2-B | ~~`fix/worklog-time-model`~~ | ✅ **머지** | **#374** | `a06f5311`. CI 9잡 green(E2E 1회 통과). 브랜치·워크트리 정리 완료. 클라 전용·**마이그 0건**. master(#370·#371·#373) 재통합 완료 — 파리티 충돌은 master 판 **184** 채택 |
 | **S3** | 2-C + 2-D + 별-2 | ~~`feat/worklog-time-notify`~~ | ✅ **머지** | **#382** | `11a2390a0`. CI 9잡 green(E2E 포함 1회 통과). 브랜치 삭제됨, 워크트리는 유지. | HEAD `fd8d7b52b`(5커밋). 🔴 **마이그 1건 prod 미적용** |
 | **S4** | 3-B + 3-E + 별-1 | ~~`feat/qr-badge-and-entry`~~ | ✅ **머지** | **#384** | `40dc21779`. CI **9잡 전부 SUCCESS**(E2E 9m55s 포함, 재실행 없이 1회 통과). 브랜치·워크트리 정리 완료. **마이그 0건** — 파리티 **184/111 불변**(prod 실측 재확인). 리뷰 opus→fable 2회, HIGH 2건 포함 지적 전량 반영 |
-| **S5** | 3-A + 3-D | `feat/settlement-and-rename` | ✅ **구현·리뷰 완료 · 🔴PR 미생성** | | 커밋 8개. 최종 fable 리뷰 **APPROVE**(CRITICAL 0·HIGH 0, LOW 3 비차단). 게이트: quality exit 0 · **595 스위트 / 6503 테스트 전량 통과** · e2e Grep 0건. **3-D 완료**(사전 카운트 보고 → 사용자 승인 → 충돌 0 확인 → prod UPDATE 4행). **3-A 완료**(2단 축소 + 지점 정산 배선). 마이그 2건 prod 적용(S3 잔여분 + rename). 파리티 **184/111 불변**. 상세=§5 |
+| **S5** | 3-A + 3-D | ~~`feat/settlement-and-rename`~~ | ✅ **머지** | **#387** | `97bf7e85c`. CI **10잡 전부 SUCCESS**(E2E 10m14s 포함, 재실행 없이 1회 통과). 브랜치·워크트리 정리 완료. 마이그 2건은 **PR 이전에 prod 선적용**됨 — 재적용 금지. 상세=§5 |
+| **S5-후속** | SETTLE-3 되돌리기 + 정산 게이트 status 축 | `feat/settlement-revert-entry` | 🔨 **구현·리뷰 완료 · 🔴PR 미생성** | | 커밋 4개. 마이그 **0건**, 파리티 **184/111 불변**(prod 실측). 게이트: quality exit 0 · **598 스위트 / 6534 테스트 전량 통과** · e2e Grep 0건. 최종 fable 리뷰 **APPROVE**. 워크트리 `T-HOLDEM-revert` 유지 |
 | **B1** | 주소 1단계 | `claude/job-posting-address-map-lbrvzd` | ⬜ | | 독립 워크트리 |
 | **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
 | **S6** | 3-C 설계 | — | ⬜ | | 사용자 결정 필요 |
@@ -36,7 +37,8 @@
 | S2 | ~~`T-HOLDEM-time`~~ | ✅ 정리완료(정션 해제 → worktree remove 순서 준수) |
 | S3 | ~~`T-HOLDEM-notify`~~ | ✅ 정리완료(S4 착수 시 — 정션 해제 선행 → `worktree remove`, 원본 `node_modules` 821 무손상 확인) |
 | S4 | ~~`T-HOLDEM-qr`~~ | ✅ 정리완료(정션 해제 → `worktree remove` → 브랜치 삭제, 원본 `node_modules` 821 무손상) |
-| S5 | `T-HOLDEM-settle` | 🔨 진행중(머지 전까지 유지) |
+| S5 | ~~`T-HOLDEM-settle`~~ | ✅ 정리완료(정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818** 무손상 확인) |
+| S5-후속 | `T-HOLDEM-revert` | 🔨 진행중(PR 대기 — 지우지 말 것) |
 | B1·B2 | `T-HOLDEM-address` | ⬜ |
 | S7 | `T-HOLDEM-timechange` | ⬜ |
 
@@ -56,7 +58,8 @@ prod 최신 마이그 = `20260730174826_cron_run_details_retention`.
 |---|---|---|
 | S1 | `20260731120000_venue_profile_rpcs` (RPC 2개 신설) | 레포 기대 **185 / 111** (PR#370 머지). ⚠️ 아래 경고 참조 |
 | S3 (#382) | 알림 트리거 | **184 / 111 불변**. ✅ **prod 적용 완료(2026-08-01, S5 세션이 레인 정리 차원에서 적용)**. 적용 후 실측 184/111, `proconfig = public, extensions, pg_temp` 보존, PUBLIC/anon EXECUTE 0 확인 |
-| S5 | `20260801100000_rename_default_venue_containers` | **184 / 111 불변** — 데이터 UPDATE 전용(DDL 없음). prod 적용 완료, 4행 rename, 충돌 0건 |
+| S5 (#387) | `20260801100000_rename_default_venue_containers` | **184 / 111 불변** — 데이터 UPDATE 전용(DDL 없음). prod 적용 완료, 4행 rename, 충돌 0건. ⚠️ **prod 기록명은 `20260731195336_rename_default_venue_containers`** — 파일명으로 `list_migrations` 대조하면 못 찾는다 |
+| S5-후속 | 없음 | **184 / 111 불변**(2026-08-01 prod 실측) |
 | B2 | 컬럼 추가 | 불변 예상 |
 
 > 🚨 **파리티 레포↔prod 불일치 (2026-07-31, S1 머지 직후)** — 레포 기대 **185**, prod 실측 **184**.
@@ -461,6 +464,39 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 
 > 형식은 §2 세션 종료 프로토콜 4번 참조. **삭제하지 말고 쌓는다** —
 > 중단된 세션을 다시 여는 사람이 읽을 유일한 기록이다.
+
+### S5-후속 (SETTLE-3 + 정산 게이트 status 축) — 2026-08-01 · 상태: 구현·리뷰 완료 (🔴 PR 미생성)
+
+- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-revert` / `feat/settlement-revert-entry` · HEAD `00d900693`(커밋 4개, base `97bf7e85c`)
+- **DB 마이그레이션 0건.** 파리티 **prod 실측 184 / 111** = 레포 기대값 일치(세션 시작·종료 두 번 측정, 동일).
+- 착수 시 정리: **S5 를 PR #387 로 착지**(사용자 결정). CI **10잡 전부 SUCCESS**(E2E 10m14s 포함, 재실행 없이 1회 통과) → 스쿼시 머지 `97bf7e85c`. 워크트리 `T-HOLDEM-settle` 제거(정션 해제 선행, 원본 `node_modules` 818 무손상), 브랜치 삭제.
+
+- **끝난 것** (전부 이 세션에서 실행한 출력 기준)
+  - **SETTLE-3 지급 완료 취소 진입점** `741f9cf00` — `venue-settlements.tsx` 에 `useUpdateSettlementStatus` + `SettlementRevertModal` 배선. 상세 모달에 `onRevertSettlement` 를 넘겨 취소 버튼이 렌더된다. 전환 대기는 `SHEET_DISMISS_ANIMATION_MS` SSOT. 실패 시 모달 유지(성공에서만 닫음).
+  - **정산 게이트 status 축** `e01011032` → `564614f9d` → `00d900693` — 서버(`settleWorkLogWithTransaction`, `status ∈ {checked_out, completed}`)와 UI 축을 맞춰 "누르면 항상 실패하는 버튼" 을 제거. 술어 `isSettlableWorkLogStatus` 를 `@/shared/status` 에 SSOT 로 신설하고 **정산 어포던스 4곳 전부**를 통과시켰다.
+  - **차단 사유 노출** — 개별 카드는 안내 배너, 그룹 행은 배지 `'출퇴근 미확정'`(+ accessibilityLabel 동일 값 합성).
+  - 게이트: `npm run quality` **exit 0**(0 errors / 97 warnings = S4·S5 baseline 동일) · `npm test` **598 스위트 / 6534 테스트 / 122 스냅샷 전량 통과 exit 0** · `e2e/` 별도 Grep **파급 0건**.
+  - 리뷰: code-reviewer(opus) CRITICAL 0 / HIGH 0 / MEDIUM 3 / LOW 5 → **MEDIUM 3 + LOW 2 반영** · 최종 code-reviewer(fable) **APPROVE**(MEDIUM 1 = 선재 결함 잔존) → **그 MEDIUM 도 마저 반영**.
+
+- **안 끝난 것**
+  - 🔴 **push / PR 미생성** — 사용자 명시 요청 대기(커밋만 사전 승인).
+  - 🔴 **되돌리기 경로 실사용 검증 없음.** prod 에서 눌러보지 않았다. 유닛·타입·레포 진입점·화면 진입점까지만 검증됨.
+  - ⚠️ **`GroupedSettlementCard` 는 렌더 레벨 테스트가 여전히 0건**(선재 갭). 배지·라벨은 `statusText` 한 값에서 합성해 원리적으로 갈라질 수 없게 해 뒀지만, 그 행 자체를 렌더하는 테스트는 없다.
+  - ⚠️ 정산 라벨 맵은 아직 **4곳**에 흩어져 있다(S5 에서 이월된 항목, 색/variant 통합은 시각 확인 필요).
+  - 비차단: `handleOpenRevert` 의 `workLog as SettlementWorkLog` 캐스트(`onRevertSettlement` 제네릭화가 더 정직하나 소비 필드가 id/staffName/payrollAmount 뿐이라 실해 없음).
+  - 비차단: 되돌리기 사실이 **스태프에게 통지되지 않는다**(트리거가 `completed` 전이에서만 발화 — 코드는 의도대로 동작). 금전 상태 역행이므로 제품 결정으로 명시해 둘 값어치가 있다.
+
+- **막힌 지점**: 없음.
+
+- **다음 세션에 넘기는 주의** (이 세션에서 새로 알아낸 것만)
+  - 🚨 **`SettlementCard` 는 공유 컴포넌트가 아니다.** 원장 S5 백로그와 내 첫 커밋 메시지가 둘 다 "공고 정산 화면 동시 영향" 이라고 적었는데 **사실이 아니었다** — `SettlementCard` 의 렌더 소비처는 `venue-settlements.tsx` **단 1곳**이고, 공고 정산 화면(`SettlementList`)이 쓰는 것은 이름만 닮은 **별개 컴포넌트 `GroupedSettlementCard`** 다. 그 전제대로 한 곳만 고치면 "고쳤다고 적힌 채 공고 화면엔 결함이 그대로" 가 된다. **이름이 닮았다는 이유로 공유를 가정하지 말고 렌더 소비처를 grep 할 것.**
+  - 🔑 **같은 판정이 4곳에 복제돼 있었다** — 개별 카드 버튼 · 그룹 행 버튼 · 그룹 일괄 집계 · 리스트 선택 모집합. 넷 중 **서버 축을 보는 곳이 0곳**이었고, 그룹 카드는 자기 파일 안에서 `getSettlableWorkLogIds` 와 인라인 복제본을 **동시에** 갖고 있었다(복제본에만 축이 빠짐). 판정을 고칠 땐 술어를 SSOT 로 세우고 **소비처를 전수로 세어 볼 것**.
+  - 🔑 **필수 필드로 추가하면 tsc 가 누락 생성 지점을 전수로 잡아 준다.** `DateSettlementStatus.isSettlableStatus` 를 optional 로 뒀다면 기존 픽스처 5곳이 조용히 `undefined` 가 돼 게이트가 전부 닫히는(=정산 불가) 반대 방향 사고가 났을 것이다. 필수로 두니 tsc exit 2 로 5곳을 정확히 지목했다.
+  - 🚨 **RN `Pressable` 함정 재확인** — 배지를 그려도 명시 `accessibilityLabel` 이 자식 텍스트를 덮으므로 스크린리더엔 아무것도 안 간다. 이번엔 배지 문구와 라벨을 **한 값(`statusText`)에서 합성**해 구조적으로 못 갈라지게 했다. 문구를 두 번 쓰면 다음에 또 갈라진다.
+  - 🔑 **컨테이너 되돌리기는 확정과 같은 소유권 검증 경로**(`validateWorkLogOwnership` → `toJobPosting`)를 탄다. 즉 S5 가 봉합한 컨테이너 증발 결함이 살아 있었다면 확정뿐 아니라 취소도 함께 죽어 **완전한 편도 문**이 됐을 것이다. 레포 진입점 테스트는 `parseJobPostingDocument` 를 **항상 null 로 목**한 채 통과해야 증거가 된다(비컨테이너 행으로 `/파싱/` 거부를 단언해 그 목이 load-bearing 임을 반증해 둠).
+  - 🔑 **`e2e/` 는 문자열 grep 만으로 판정하지 말 것.** 이번 변경은 문구가 아니라 **게이트 축**을 바꿨으므로, 시드 데이터의 `status` 축을 봐야 파급을 안다. 실측: `employer-settlement.spec.ts:134`·`work-log.factory.ts:28` 이 미정산 행을 `checked_out` 으로 심는다 → 새 게이트를 그대로 통과, 파급 0건.
+  - 🔑 **pre-push 훅이 `npm run quality` 전체를 돈다** — push 가 2분 넘게 "멈춘 것처럼" 보인다. 죽은 게 아니니 타임아웃 늘리거나 백그라운드로 돌릴 것.
+  - ⚠️ **전체 jest 에서 "A worker process has failed to exit gracefully" 경고가 뜬다**(exit 0, 598/598 통과). 신규 테스트 3파일을 개별 실행했을 땐 안 뜬다 — 이 브랜치가 만든 것이 아니라 기존 스위트발이다. 원인 스위트는 미특정.
 
 ### S5 (3-A + 3-D) — 2026-08-01 · 상태: 구현·리뷰 완료 (🔴 PR 미생성)
 
