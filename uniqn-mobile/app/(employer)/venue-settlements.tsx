@@ -14,11 +14,17 @@ import { StackHeader } from '@/components/headers';
 import { Button, EmptyState, ErrorState, Loading, SheetModal } from '@/components/ui';
 import { SettlementCard } from '@/components/employer/settlement/SettlementCard';
 import { SettlementDetailModal } from '@/components/employer/settlement/SettlementDetailModal';
+import { SettlementRevertModal } from '@/components/employer';
 import { BanknotesIcon, ChevronLeftIcon, ChevronRightIcon } from '@/components/icons';
 import { SECONDARY_PALETTE } from '@/constants/colors';
+import { SHEET_DISMISS_ANIMATION_MS } from '@/constants/animation';
 import { getRoleDisplayName } from '@/types/unified';
 import { useVenueSettlement, useSetVenueRoleSalary } from '@/hooks/workSchedule';
-import { useSettleWorkLog, useBulkSettlement } from '@/hooks/useSettlement';
+import {
+  useSettleWorkLog,
+  useBulkSettlement,
+  useUpdateSettlementStatus,
+} from '@/hooks/useSettlement';
 import { useToastStore } from '@/stores/toastStore';
 import { confirmAction } from '@/utils/confirmAction';
 import { STATUS } from '@/constants';
@@ -81,6 +87,15 @@ export default function VenueSettlementsScreen() {
   // 닫힘 애니메이션이 생략되므로, visible=false 로만 닫고 workLog 는 유지한다.
   const [detailVisible, setDetailVisible] = useState(false);
   const [detailWorkLog, setDetailWorkLog] = useState<SettlementWorkLog | null>(null);
+
+  // 지급 완료 취소(SETTLE-3) — 컨테이너 직속 배치는 공고 정산 화면에 아예 나오지 않으므로
+  // 이 화면이 오지급을 정정할 수 있는 **앱 전체의 유일한 진입점**이다. 없으면 확정이 편도 문이 된다
+  // (확정 문구는 비가역성을 고지하는데 정정 수단이 없는 반쪽 상태였다).
+  // 되돌리기(completed→pending)는 알림 트리거 조건에 걸리지 않는다 —
+  // notify_on_work_log_update Case 3 은 completed **전이**에서만 발화하므로 "취소 시 무알림"은 이미 성립한다.
+  const revertMutation = useUpdateSettlementStatus();
+  const [revertVisible, setRevertVisible] = useState(false);
+  const [revertWorkLog, setRevertWorkLog] = useState<SettlementWorkLog | null>(null);
 
   // 폴백 배지는 컨테이너 직속 배치(jobPostingId===venueId)에만 뜬다. 공고 스팬 행은 공고 컨텍스트로
   // 해소되며 그 'fallback'은 공고 defaultSalary 해소라 지점 단가표와 무관 — 배지를 탭해 지점 단가를
@@ -151,6 +166,43 @@ export default function VenueSettlementsScreen() {
       },
     });
   }, [settleableWorkLogs, settleableTotal, bulkSettleMutation, isSettling]);
+
+  // 상세 → 취소 모달 전환. 두 네이티브 Modal 을 겹쳐 present 하면 iOS 터치 라우팅이 깨지므로
+  // 상세를 먼저 닫고 기다린 뒤 연다. 대기 값은 `constants/animation.ts` SSOT 를 쓴다(로컬 복제 금지).
+  const handleOpenRevert = useCallback(() => {
+    if (!detailWorkLog) return;
+    setDetailVisible(false);
+    setTimeout(() => {
+      setRevertWorkLog(detailWorkLog);
+      setRevertVisible(true);
+    }, SHEET_DISMISS_ANIMATION_MS);
+  }, [detailWorkLog]);
+
+  const closeRevert = useCallback(() => {
+    // 상세 모달과 같은 이유로 workLog 는 유지한다 — 즉시 null 로 만들면 닫힘 애니메이션 중에
+    // 이름·금액이 사라져 깜빡인다. 다음 열기에서 덮어쓴다.
+    setRevertVisible(false);
+  }, []);
+
+  const handleConfirmRevert = useCallback(
+    async (reason: string) => {
+      const workLogId = revertWorkLog?.id;
+      if (!workLogId) return;
+      try {
+        await revertMutation.mutateAsync({
+          workLogId,
+          status: STATUS.PAYROLL.PENDING,
+          reason,
+        });
+        closeRevert();
+      } catch (error) {
+        // 실패 토스트는 뮤테이션 공통 에러 핸들러가 띄운다. 모달은 열어 둬서 사용자가
+        // 입력한 사유를 다시 쓰지 않게 한다(성공에서만 닫는다).
+        logger.error('지점 정산 지급 완료 취소 실패', toError(error), { workLogId });
+      }
+    },
+    [revertWorkLog?.id, revertMutation, closeRevert]
+  );
 
   const openFix = useCallback((wl: SettlementWorkLog) => {
     const role = wl.role ?? '';
@@ -333,12 +385,24 @@ export default function VenueSettlementsScreen() {
         </View>
       </SheetModal>
 
-      {/* 상세보기(#2) — 카드 탭으로 여는 정산 상세(읽기 전용). */}
+      {/* 상세보기(#2) — 카드 탭으로 여는 정산 상세. 지급 완료 행에서만 취소 진입점이 뜬다
+          (SettlementDetailModal 내부 게이트: payrollStatus === COMPLETED). */}
       <SettlementDetailModal
         visible={detailVisible}
         onClose={() => setDetailVisible(false)}
         workLog={detailWorkLog}
         salaryInfo={detailWorkLog?.salaryInfo ?? { type: 'hourly', amount: 0 }}
+        onRevertSettlement={handleOpenRevert}
+      />
+
+      {/* 지급 완료 취소 모달 (SETTLE-3) — 사유는 서버가 필수로 강제한다. */}
+      <SettlementRevertModal
+        visible={revertVisible}
+        onClose={closeRevert}
+        staffName={revertWorkLog?.staffName}
+        payrollAmount={revertWorkLog?.payrollAmount}
+        onConfirm={handleConfirmRevert}
+        isSubmitting={revertMutation.isPending}
       />
     </SafeAreaView>
   );
