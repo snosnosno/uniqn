@@ -379,6 +379,9 @@ export const STORAGE_KEYS = {
 
   /** 근무 리마인더 로컬 알림 식별자 원장 (key → identifier) */
   SHIFT_REMINDERS: 'shift-reminders-v1',
+
+  /** 내 스케줄 화면 요약 대시보드 접힘 여부 (boolean) */
+  SCHEDULE_DASHBOARD_COLLAPSED: 'schedule-dashboard-collapsed-v1',
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
