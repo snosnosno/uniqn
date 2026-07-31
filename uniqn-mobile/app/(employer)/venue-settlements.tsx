@@ -18,7 +18,10 @@ import { BanknotesIcon, ChevronLeftIcon, ChevronRightIcon } from '@/components/i
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { getRoleDisplayName } from '@/types/unified';
 import { useVenueSettlement, useSetVenueRoleSalary } from '@/hooks/workSchedule';
+import { useSettleWorkLog, useBulkSettlement } from '@/hooks/useSettlement';
 import { useToastStore } from '@/stores/toastStore';
+import { confirmAction } from '@/utils/confirmAction';
+import { STATUS } from '@/constants';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 import {
@@ -63,8 +66,17 @@ export default function VenueSettlementsScreen() {
   const [fixTarget, setFixTarget] = useState<FixTarget | null>(null);
   const [fixDraft, setFixDraft] = useState<VenueSalaryDraft | null>(null);
 
-  // 상세보기(#2) — 스태프 카드 탭 시 정산 상세 모달. 읽기 전용(정산 확정/시간 수정은
-  // 컨테이너 정산 mutation 미배선이라 노출하지 않는다 — half-wired 파괴 액션 회피).
+  // 정산 확정 — 공고 정산과 **같은 mutation** 을 재사용한다(useSettleWorkLog/useBulkSettlement).
+  // 예전엔 "컨테이너 정산 mutation 미배선" 이라 이 화면 전체가 읽기 전용이었다. 배선하면서
+  // 쓰기 경로의 canonical 재계산이 컨테이너 단가표를 못 읽던 결함을 함께 고쳤다
+  // (domains/settlement/venueSettlementContext.ts) — 안 고치고 배선했다면 화면은 20,000원,
+  // 지급 기록은 15,000원이 되는 더 나쁜 half-wired 가 됐을 것이다.
+  // 정산 완료 알림은 DB 트리거(notify_on_work_log_update Case 3)가 payroll_status 전이에서
+  // 자동 발송한다 — 클라에서 따로 보내면 중복이 된다.
+  const settleMutation = useSettleWorkLog();
+  const bulkSettleMutation = useBulkSettlement();
+
+  // 상세보기(#2) — 스태프 카드 탭 시 정산 상세 모달.
   // visible 과 workLog 를 분리한다: 닫을 때 workLog 를 즉시 null 로 만들면 모달이 바로 언마운트돼
   // 닫힘 애니메이션이 생략되므로, visible=false 로만 닫고 workLog 는 유지한다.
   const [detailVisible, setDetailVisible] = useState(false);
@@ -79,6 +91,61 @@ export default function VenueSettlementsScreen() {
         .length,
     [workLogs, venueId]
   );
+
+  // 정산 가능 = 미정산 + 출퇴근이 모두 기록됨. 두 조건은 서버(settleWorkLogWithTransaction)가
+  // 다시 검사하므로 여기서 거르는 건 "누를 수 있는데 항상 실패하는 버튼" 을 없애기 위해서다.
+  const settleableWorkLogs = useMemo(
+    () =>
+      (workLogs ?? []).filter(
+        (wl) =>
+          (wl.payrollStatus ?? STATUS.PAYROLL.PENDING) === STATUS.PAYROLL.PENDING &&
+          !!wl.checkInTime &&
+          !!wl.checkOutTime
+      ),
+    [workLogs]
+  );
+
+  const settleableTotal = useMemo(
+    () => settleableWorkLogs.reduce((sum, wl) => sum + (wl.calculatedAmount ?? 0), 0),
+    [settleableWorkLogs]
+  );
+
+  const isSettling = settleMutation.isPending || bulkSettleMutation.isPending;
+
+  const handleSettle = useCallback(
+    (workLog: SettlementWorkLog) => {
+      if (!workLog.id || isSettling) return;
+      const amount = workLog.calculatedAmount ?? 0;
+      confirmAction({
+        title: '정산 확정',
+        // 금액을 문구에 박아 넣는다 — 확정은 되돌리려면 별도 경로가 필요하고,
+        // 스태프에게 지급 완료 알림이 즉시 나간다(회수 불가).
+        message: `${workLog.staffName ?? '스태프'}님의 ${workLog.date} 근무를 ${amount.toLocaleString()}원으로 정산할까요? 확정하면 스태프에게 정산 완료 알림이 갑니다.`,
+        confirmText: '정산 확정',
+        onConfirm: () => {
+          settleMutation.mutate({ workLogId: workLog.id as string, amount });
+        },
+      });
+    },
+    [settleMutation, isSettling]
+  );
+
+  const handleBulkSettle = useCallback(() => {
+    if (settleableWorkLogs.length === 0 || isSettling) return;
+    const workLogIds = settleableWorkLogs
+      .map((wl) => wl.id)
+      .filter((id): id is string => Boolean(id));
+    if (workLogIds.length === 0) return;
+
+    confirmAction({
+      title: '미정산 전체 정산',
+      message: `미정산 ${workLogIds.length}건(합계 ${settleableTotal.toLocaleString()}원)을 한 번에 정산할까요? 확정하면 각 스태프에게 정산 완료 알림이 갑니다.`,
+      confirmText: `${workLogIds.length}건 정산`,
+      onConfirm: () => {
+        bulkSettleMutation.mutate({ workLogIds });
+      },
+    });
+  }, [settleableWorkLogs, settleableTotal, bulkSettleMutation, isSettling]);
 
   const openFix = useCallback((wl: SettlementWorkLog) => {
     const role = wl.role ?? '';
@@ -119,6 +186,8 @@ export default function VenueSettlementsScreen() {
               setDetailWorkLog(item);
               setDetailVisible(true);
             }}
+            /* 카드가 미정산 + 출퇴근 기록 완료일 때만 정산 버튼을 그린다(SettlementCard 내부 게이트). */
+            onSettle={handleSettle}
           />
         ) : null}
         {/* 컨테이너 직속 행만 배지 노출 — 공고 스팬 행의 fallback 은 지점 단가표로 못 고친다(HIGH-1).
@@ -140,7 +209,7 @@ export default function VenueSettlementsScreen() {
         ) : null}
       </View>
     ),
-    [openFix, venueId]
+    [openFix, venueId, handleSettle]
   );
 
   return (
@@ -204,12 +273,33 @@ export default function VenueSettlementsScreen() {
           />
         </View>
       ) : (
-        <FlatList
-          data={workLogs}
-          keyExtractor={(item) => item.id ?? `${item.staffId}-${item.date}`}
-          renderItem={renderItem}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
-        />
+        <>
+          <FlatList
+            data={workLogs}
+            keyExtractor={(item) => item.id ?? `${item.staffId}-${item.date}`}
+            renderItem={renderItem}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
+          />
+
+          {/* 미정산이 남아 있을 때만 일괄 정산 바를 띄운다. 건수와 합계를 버튼 위에 먼저
+              보여주는 이유: 확정은 스태프에게 즉시 알림이 나가고 회수할 수 없다. */}
+          {settleableWorkLogs.length > 0 ? (
+            <View className="border-t border-secondary-200 px-4 py-3 dark:border-surface-overlay">
+              <Text className="mb-2 text-sm text-content-secondary font-sans">
+                미정산 {settleableWorkLogs.length}건 · 합계 {settleableTotal.toLocaleString()}원
+              </Text>
+              <Button
+                variant="primary"
+                onPress={handleBulkSettle}
+                loading={bulkSettleMutation.isPending}
+                disabled={isSettling}
+                fullWidth
+              >
+                미정산 전체 정산
+              </Button>
+            </View>
+          ) : null}
+        </>
       )}
 
       {/* 배지 탭 → 단가 설정 시트 (RoleSalaryField 재사용 — 접점 1과 동일 컴포넌트) */}

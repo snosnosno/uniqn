@@ -28,7 +28,8 @@ import {
 import { handleSupabaseError, toCamelCase } from '@/utils/supabase';
 import { parseWorkLogDocument, parseJobPostingDocument } from '@/schemas';
 import { getPostingSettlementContext } from '@/domains/job-posting';
-import { SettlementCalculator } from '@/domains/settlement';
+import { SettlementCalculator, buildVenueContainerContext } from '@/domains/settlement';
+import { getRoleSalaries } from '@/domains/workSchedule/roleSalaries';
 import { assertWorkTimeReason, appendWorkTimeModification } from '@/domains/staff';
 import {
   getEffectiveSalaryInfoFromRoles,
@@ -796,7 +797,17 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
    * 정산 금액 계산
    */
   private calculateSettlementAmount(workLog: WorkLogWithOverrides, jobPosting: JobPosting): number {
-    const postingSettlement = getPostingSettlementContext(jobPosting);
+    // 🔴 컨테이너(지점 직속 배치)는 급여 근거가 다른 곳에 있다.
+    // `getPostingSettlementContext` 는 `schedule.requirements[]` 를 훑는데 컨테이너에는
+    // requirements 가 없어 roles 가 **빈 배열**이 된다 → 지점 역할별 단가표가 통째로 무시되고
+    // 폴백 단가(시급 15,000원)로 계산된다. 그런데 이 canonical 값은 호출자가 넘긴 amount 를
+    // 덮어쓰므로, 지점 정산 화면이 20,000원을 보여주고 저장은 15,000원으로 되는
+    // "화면과 지급 기록이 다른" 상태가 만들어진다. 읽기 경로(settlementVenueQuery)와
+    // **같은 헬퍼**를 통과시켜 두 값이 구조적으로 같아지게 한다.
+    const postingSettlement =
+      jobPosting.status === 'container'
+        ? buildVenueContainerContext(getRoleSalaries(jobPosting.schedule))
+        : getPostingSettlementContext(jobPosting);
     const salaryInfo = getEffectiveSalaryInfoFromRoles(
       workLog,
       postingSettlement.roles,

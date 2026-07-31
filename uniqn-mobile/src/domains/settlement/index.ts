@@ -13,6 +13,9 @@ export type {
   SalaryResolutionSource,
 } from './helpers';
 
+export type { SettlementResolutionContext } from './venueSettlementContext';
+export { buildVenueContainerContext } from './venueSettlementContext';
+
 export { DEFAULT_SALARY_INFO, PROVIDED_FLAG } from '@/utils/settlement/constants';
 export { DEFAULT_TAX_SETTINGS } from '@/utils/settlement/tax';
 
