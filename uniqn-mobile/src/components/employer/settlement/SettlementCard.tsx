@@ -102,6 +102,14 @@ export const SettlementCard = React.memo(function SettlementCard({
   const endTime = parseTimestamp(workLog.checkOutTime);
   const hasValidTimes = startTime && endTime;
 
+  // 정산 버튼 게이트는 **서버 게이트와 같은 축**을 봐야 한다.
+  // 서버(settleWorkLogWithTransaction)는 `status ∈ {checked_out, completed}` 를 검사한다.
+  // 시각만 보면, 시각은 있는데 status 가 승격되지 않은 레거시 행에서 버튼이 보이고
+  // 누르면 "출퇴근이 완료된 근무 기록만 정산할 수 있습니다" 로 항상 실패한다.
+  // 시각 조건도 함께 유지한다 — 금액 계산에 실제로 필요한 값이다.
+  const isSettlableStatus =
+    workLog.status === STATUS.WORK_LOG.CHECKED_OUT || workLog.status === STATUS.WORK_LOG.COMPLETED;
+
   // 핸들러
   const handlePress = useCallback(() => {
     onPress?.(workLog);
@@ -188,19 +196,23 @@ export const SettlementCard = React.memo(function SettlementCard({
             </Text>
           </Pressable>
 
-          {/* 지급 완료 표시 (미정산 + 출퇴근 완료일 때만) — 실이체 아님 명시 (QW4) */}
-          {payrollStatus === STATUS.PAYROLL.PENDING && hasValidTimes && onSettle && (
-            <Pressable
-              onPress={handleSettle}
-              accessibilityRole="button"
-              accessibilityLabel={`${displayName} 지급 완료로 표시`}
-              accessibilityHint="급여를 지급 완료 상태로 표시합니다. 실제 이체는 앱 밖에서 진행해요"
-              className="flex-1 flex-row items-center justify-center py-2.5 rounded-lg bg-primary-500 active:opacity-70"
-            >
-              <BanknotesIcon size={16} color="#fff" />
-              <Text className="ml-1 text-sm font-sans-medium text-content-onGold">지급 완료</Text>
-            </Pressable>
-          )}
+          {/* 지급 완료 표시 (미정산 + 출퇴근 완료 + 서버 게이트 통과 status 일 때만)
+              — 실이체 아님 명시 (QW4) */}
+          {payrollStatus === STATUS.PAYROLL.PENDING &&
+            hasValidTimes &&
+            isSettlableStatus &&
+            onSettle && (
+              <Pressable
+                onPress={handleSettle}
+                accessibilityRole="button"
+                accessibilityLabel={`${displayName} 지급 완료로 표시`}
+                accessibilityHint="급여를 지급 완료 상태로 표시합니다. 실제 이체는 앱 밖에서 진행해요"
+                className="flex-1 flex-row items-center justify-center py-2.5 rounded-lg bg-primary-500 active:opacity-70"
+              >
+                <BanknotesIcon size={16} color="#fff" />
+                <Text className="ml-1 text-sm font-sans-medium text-content-onGold">지급 완료</Text>
+              </Pressable>
+            )}
         </View>
       </View>
     </CardStripe>
