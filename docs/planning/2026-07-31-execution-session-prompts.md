@@ -19,7 +19,7 @@
 | ~~**0-4**~~ | Supabase 안전 정리 | — | ✅ | **#367** | 사용자는 "보류"로 결정했으나 **병렬 세션이 PR#367 로 머지**(`5aeab44b3`). 로컬 `chore/supabase-safe-cleanup-20260731` 브랜치는 이제 불필요 — 삭제 가능 |
 | **S1** | 1-B + 1-C | ~~`feat/venue-profile`~~ | ✅ **머지** | **#370** | `dbf1e49d1`. CI 11잡 green(E2E 는 러너 포트 충돌로 1회 fail → 재실행 pass). 브랜치·워크트리 정리 완료 |
 | **S2** | 2-A + 2-B | ~~`fix/worklog-time-model`~~ | ✅ **머지** | **#374** | `a06f5311`. CI 9잡 green(E2E 1회 통과). 브랜치·워크트리 정리 완료. 클라 전용·**마이그 0건**. master(#370·#371·#373) 재통합 완료 — 파리티 충돌은 master 판 **184** 채택 |
-| **S3** | 2-C + 2-D + 별-2 | `feat/worklog-time-notify` | 🟡 **PR 오픈** | **#382** | HEAD `fd8d7b52b`(5커밋), `d3d484a07`(#375) 리베이스. quality exit 0 · 6452 tests green · code-reviewer opus→fable "PR 진행 가능". 🔴 **마이그 1건 prod 미적용** |
+| **S3** | 2-C + 2-D + 별-2 | ~~`feat/worklog-time-notify`~~ | ✅ **머지** | **#382** | `11a2390a0`. CI 9잡 green(E2E 포함 1회 통과). 브랜치 삭제됨, 워크트리는 유지. | HEAD `fd8d7b52b`(5커밋). 🔴 **마이그 1건 prod 미적용** |
 | **S4** | 3-B + 3-E + 별-1 | `feat/qr-badge-and-entry` | ⬜ | | |
 | **S5** | 3-A + 3-D | `feat/settlement-and-rename` | ⬜ | | 🔴 착수 전 사용자 승인 2건 |
 | **B1** | 주소 1단계 | `claude/job-posting-address-map-lbrvzd` | ⬜ | | 독립 워크트리 |
@@ -55,7 +55,7 @@ prod 최신 마이그 = `20260730174826_cron_run_details_retention`.
 | 세션 | 마이그 | 적용 후 함수/정책 |
 |---|---|---|
 | S1 | `20260731120000_venue_profile_rpcs` (RPC 2개 신설) | 레포 기대 **185 / 111** (PR#370 머지). ⚠️ 아래 경고 참조 |
-| S3 | 알림 트리거 | **184 / 111 불변** — `20260731140000_notify_on_time_slot_change.sql` 은 기존 함수 `CREATE OR REPLACE` 라 함수·정책 수를 바꾸지 않는다(prod 실측 184/111, 적용 전후 동일). 🔴 아직 prod 미적용 |
+| S3 (#382) | 알림 트리거 | **184 / 111 불변** — `20260731140000_notify_on_time_slot_change.sql` 은 기존 함수 `CREATE OR REPLACE` 라 함수·정책 수를 바꾸지 않는다(prod 실측 184/111, 적용 전후 동일). 🔴 아직 prod 미적용 |
 | S5 | rename 마이그 | (기록) |
 | B2 | 컬럼 추가 | 불변 예상 |
 
@@ -554,7 +554,7 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
   - PR#366 이 `SchedulePostingContext.locationAddress` 를 이미 추가함 — 1-C 는 그 위에 얹을 것
   - 계획 문서 3개는 미추적 상태 (커밋 여부 사용자 결정 대기)
 
-### S3 (2-C + 2-D + 별-2) — 2026-07-31 · 상태: **PR #382 오픈**
+### S3 (2-C + 2-D + 별-2) — 2026-07-31 · 상태: 완료 (**PR #382 머지** `11a2390a0`)
 
 - 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-notify` / `feat/worklog-time-notify` · HEAD `fd8d7b52b` (5커밋, `d3d484a07`(#375) 리베이스) · **PR #382**
 - 끝난 것
@@ -565,7 +565,7 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
   - 게이트: `npm run quality` exit 0 · `npm test` 588 suites / 6452 tests · `e2e/` 별도 Grep 0건 · code-reviewer opus → fable **"PR 진행 가능"(CRITICAL/HIGH 0)**
 - 안 끝난 것 (🔴 사용자 결정 대기)
   1. **마이그레이션 prod 미적용** — `uniqn-mobile/supabase/migrations/20260731140000_notify_on_time_slot_change.sql`. prod 실측 `case_2b_applied=0`. 적용해도 파리티 184/111 불변(`CREATE OR REPLACE`).
-  2. ~~push / PR~~ → ✅ **PR #382 오픈**(2026-07-31).
+  2. ~~push / PR~~ → ✅ **PR #382 머지**(`11a2390a0`). CI 9잡 green — `DB Tests (pg_prove)` 가 신규 pgTAP 과 `parity_baseline_guard` 를 모두 통과했다(로컬에서 red 이던 함수 수 항목은 CI 의 새 스택에서 green — 로컬 드리프트 확정).
   3. 이 원장 파일은 **메인 체크아웃에 미커밋** 상태(S2 세션 종료분 + 이 S3 항목이 함께 쌓여 있음). 커밋 주체 미정.
 - 막힌 지점: 없음. 다만 리뷰가 잡은 함정 2개는 재발 위험이 크다 —
   - 🚨 **`CREATE OR REPLACE` 의 `SET` 절은 proconfig 를 통째로 갈아치운다.** baseline 의 `search_path` 를 그대로 베끼면 그 뒤 `ALTER FUNCTION` 으로 얹은 `pg_temp` 하드닝(`20260711100000`)이 조용히 사라진다. **베이스는 baseline 이 아니라 `pg_proc.proconfig` 실측값**이어야 한다. `parity_baseline_guard.test.sql:134` 가 CI 에서 잡는다(RED 재현 완료).
