@@ -36,6 +36,8 @@ import {
   GridBadgeLegend,
 } from '@/components/workSchedule';
 import { useWorkScheduleEnabled } from '@/hooks';
+import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
+import { summarizeMissingCheckouts } from '@/domains/staff';
 import { useActiveWorkspace, useEnsureDefaultWorkspace } from '@/hooks/workspace';
 import { useGridSummary, useVenueContainers, useEnsureDefaultVenue } from '@/hooks/workSchedule';
 import {
@@ -135,6 +137,25 @@ export default function WorkScheduleScreen() {
     [summaryQuery.data, visibleMonth]
   );
 
+  // 퇴근 미기록 안전망 — 자동 퇴근을 만들지 않기로 했으므로 이 배지가 구인자에게 알리는
+  // 유일한 경로다(정산 게이트에 영영 도달하지 못하는 근무를 여기서만 발견할 수 있다).
+  // VenueDayPanel 도 같은 훅·같은 쿼리키를 쓰므로 추가 요청은 발생하지 않는다.
+  const { grouped: confirmedGroups } = useConfirmedStaff(selectedVenueId ?? '');
+  const missingCheckouts = useMemo(
+    () => summarizeMissingCheckouts(confirmedGroups),
+    [confirmedGroups]
+  );
+
+  // 배지를 누르면 가장 오래된 미기록 날짜로 이동한다. 지난 달일 수 있으므로 달도 함께 옮긴다
+  // — 날짜만 바꾸면 월 동기화 useEffect 가 그 날짜를 현재 달 안으로 도로 끌어와 무반응이 된다.
+  const handleGoToMissingCheckout = useCallback(() => {
+    if (!missingCheckouts.earliestDate) return;
+    const [year, month, day] = missingCheckouts.earliestDate.split('-').map(Number);
+    if (!year || !month || !day) return;
+    setVisibleMonth(startOfMonth(new Date(year, month - 1, day)));
+    setSelectedDate(new Date(year, month - 1, day));
+  }, [missingCheckouts.earliestDate]);
+
   const handlePrevMonth = useCallback(() => setVisibleMonth((m) => subMonths(m, 1)), []);
   const handleNextMonth = useCallback(() => setVisibleMonth((m) => addMonths(m, 1)), []);
   const handleDateSelect = useCallback((date: Date) => setSelectedDate(date), []);
@@ -215,6 +236,27 @@ export default function WorkScheduleScreen() {
         onAddVenue={() => setCreateSheetVisible(true)}
         onOpenSettings={() => setSettingsOpen(true)}
       />
+
+      {/* 퇴근 미기록 안전망 — 지난 날짜에 퇴근이 안 찍힌 근무는 정산 게이트에 영영 도달하지
+          못한다. 자동 퇴근을 만들지 않기로 했으므로 이 배너가 그 사실을 알리는 유일한 경로다.
+          누르면 가장 오래된 미기록 날짜로 이동해 바로 고칠 수 있게 한다. */}
+      {hasVenue && missingCheckouts.count > 0 ? (
+        <Pressable
+          onPress={handleGoToMissingCheckout}
+          accessibilityRole="button"
+          accessibilityLabel={`퇴근 미기록 ${missingCheckouts.count}건. 눌러서 가장 오래된 날짜로 이동`}
+          testID="missing-checkout-banner"
+          className="mx-4 mt-2 min-h-[44px] flex-row items-center justify-between rounded-lg bg-warning-50 px-3 py-2 dark:bg-warning-900/20"
+        >
+          <Text className="flex-1 font-sans-medium text-sm text-warning-700 dark:text-warning-300">
+            퇴근 미기록 {missingCheckouts.count}건
+          </Text>
+          <Text className="ml-2 font-sans text-xs text-warning-700 dark:text-warning-300">
+            확인
+          </Text>
+          <ChevronRightIcon size={16} color={SECONDARY_PALETTE[400]} />
+        </Pressable>
+      ) : null}
 
       {/* U4: 운영처 0 상태 — 워크스페이스/운영처 준비 단계를 명확히 구분한다.
           운영처(venue)는 워크스페이스에 속하므로 activeWorkspace 부재 시 "운영처 만들기"는 데드엔드

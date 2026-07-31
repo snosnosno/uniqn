@@ -45,6 +45,11 @@ jest.mock('@/hooks', () => ({
   useWorkScheduleEnabled: () => ({ enabled: true, isLoading: false }),
 }));
 
+// 퇴근 미기록 배너용 훅 — 실물은 useQuery 라 QueryClientProvider 없이는 throw 한다.
+jest.mock('@/hooks/useConfirmedStaff', () => ({
+  useConfirmedStaff: () => ({ grouped: [] }),
+}));
+
 jest.mock('@/hooks/workspace', () => ({
   useActiveWorkspace: () => ({
     workspaces: [{ id: 'ws-1', name: '팀' }],

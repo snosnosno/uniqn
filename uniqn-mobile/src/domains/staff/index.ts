@@ -12,3 +12,5 @@ export {
 } from './workTimeModification';
 export { getManualStatusTransitions } from './statusTransitions';
 export type { ManualStatusTransition } from './statusTransitions';
+export { summarizeMissingCheckouts } from './missingCheckout';
+export type { MissingCheckoutSummary } from './missingCheckout';
