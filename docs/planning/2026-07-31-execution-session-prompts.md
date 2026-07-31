@@ -475,10 +475,16 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
   - **3-A 지점 정산 확정 배선** `453db187e` — `venue-settlements.tsx` 에 개별+일괄 정산. 배선 전에 컨테이너 단가표 canonical 불일치를 먼저 봉합(아래 주의 참조).
   - 게이트: `npm run quality` **exit 0**(0 errors / 97 warnings = S4 baseline 동일) · `tsc --noEmit` exit 0 · `e2e/` 별도 Grep **파급 0건**(e2e 는 이미 `'pending'|'completed'` 2값만 씀).
 
+  - **리뷰 반영** `90006d3e5` — opus 리뷰가 잡은 **CRITICAL 1건**(아래 주의 참조) + MEDIUM 3 + LOW 2. 레포 진입점 테스트 신설로 HIGH(vacuous green) 도 해소.
+
 - **안 끝난 것**
   - 🔴 **push / PR 미생성** — 사용자 명시 요청 대기(커밋만 사전 승인).
-  - 🔴 **정산 확정 경로 실사용 검증 없음.** 이번 배선은 prod 에서 한 번도 눌러보지 않았다(정산 확정은 스태프에게 회수 불가 알림이 나가므로 테스트 발송 금지 지시를 지켰다). 유닛/타입 수준까지만 검증됨.
+  - 🔴 **정산 확정 경로 실사용 검증 없음.** prod 에서 한 번도 눌러보지 않았다(확정은 스태프에게 회수 불가 알림이 나가므로 테스트 발송 금지 지시를 지켰다). 유닛·타입·레포 진입점까지만 검증됨.
+  - 🔴 **지점 정산에 "지급 완료 취소"(SETTLE-3) 진입점이 없다 — 편도 문.** `SettlementDetailModal` 에 `onRevertSettlement` 를 안 넘겨 되돌리기 버튼이 안 뜬다. 컨테이너 직속 행은 공고 정산 화면에 아예 나오지 않으므로 **오지급 정정 경로가 앱 전체에 존재하지 않는다.** 확정 문구는 비가역성을 고지하는데 정정 수단이 없어 반쪽이다. 이번엔 세션 후반 신규 기능 추가(사유 입력 포함)를 QA 없이 얹는 위험이 더 크다고 판단해 남긴다 — **다음 세션 최우선.**
+  - ⚠️ **rename 마이그의 fail-closed 가드가 후보 간(intra-batch) 충돌을 못 본다.** 한 워크스페이스에 컨테이너 2건(`'내 팀'`+`'기본 지점'`)이 있으면 목표명이 **같아지는데**, 가드의 `EXISTS` 는 "이미 존재하는" title 만 보므로 서로를 못 본다 → `uniq_venue_container` raw 위반으로 마이그 전체 abort. **prod 는 4행·충돌 0으로 이미 통과했고 파일은 적용된 내용의 기록이므로 수정하지 않았다**(기존 마이그 수정 금지). `db:reset`·새 환경에서 재생 시 터질 수 있다 — 그때는 `ROW_NUMBER() OVER (PARTITION BY workspace_id, lower(new_title), kind)` 로 후보 간 중복을 먼저 걸러야 한다.
+  - ⚠️ 마이그 UPDATE 가 `job_postings_updated_at` 을 발화시켰다 → **"대상 행은 rename UI 도입 이전에 마지막 수정" 이라는 판별 근거는 이 마이그 실행 후로는 더 이상 성립하지 않는다.** 재실행·재판정 시 다른 근거가 필요하다.
   - 라벨 맵이 아직 **4곳**에 흩어져 있다(라벨 문자열만 SSOT 로 모았고 색/variant 는 화면별로 달라 통합 보류 — 합치면 배지 음영이 바뀌어 시각 확인이 필요하다).
+  - 비차단: 개별 "지급 완료" 버튼이 `isSettling` 중 얼리 리턴으로 **무피드백 무시**된다(`SettlementCard` 에 `disabled` prop 부재).
 
 - **막힌 지점**: 없음.
 
@@ -486,6 +492,8 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
   - 🚨 **세션 프롬프트의 전제 2건이 실측으로 뒤집혔다.**
     ① "지급완료 알림 발송 경로를 붙여라" → **이미 있다.** prod 트리거 `notify_on_work_log_update` Case 3 가 `payroll_status → 'completed'` 전이에서 행마다 1통 INSERT 한다. 클라에 발송 코드를 넣으면 중복이 된다. 그래서 "일괄 체크 1통" 은 클라가 아니라 **트리거** 작업이었고, 사용자가 "행당 1통 유지" 로 결정해 트리거는 건드리지 않았다.
     ② "`handle_new_user` 트리거가 `{닉네임} 워크스페이스` 를 만든다" → **stale.** 최신 정의(`20260719233000_team_terminology_unification.sql:30`)는 `{이름|이메일로컬|'내'} 팀` 을 만들고 같은 마이그가 `' 워크스페이스$' → ' 팀'` 소급 UPDATE 까지 끝냈다(prod 에 `~워크스페이스` 0건). 고칠 결함이 없어 **트리거는 그대로 두고 주석만 정정**했다(사용자 결정).
+  - 🚨🚨 **컨테이너 공고는 `parseJobPostingDocument` 를 통과하지 못한다 — 정산 경로 전체가 여기서 죽었다.** 컨테이너 `schedule` 은 `{kind, softTargets, roleSalaries}` 인데 dated 분기가 `.strict()` + `primaryDate/allDates/requirements` 필수라 `"Unrecognized key: softTargets"` 로 거부된다(prod 행 전체를 파서에 넣어 재현, 결과 null). 증발하면 개별 경로는 '공고 데이터를 파싱할 수 없습니다', 일괄 경로는 `jobPostingMap` 미등록으로 '권한이 없는 공고입니다'(**소유자인데도**)가 된다. 레포는 이 계약을 이미 문서화하고 있었다 — `JobPostingRepository.venue.test.ts:1-6`. 🔑 **교훈: 컨테이너를 일반 공고 경로에 태우는 코드는 타입도 tsc 도 안 잡는다. 런타임에만 죽고, 그것도 "권한 없음" 이라는 엉뚱한 메시지로 죽는다.** 새 기능이 컨테이너를 만지면 반드시 레포 진입점까지 태우는 테스트를 쓸 것.
+  - 🚨 **순수 헬퍼만 검증하는 테스트는 이런 결함을 못 잡는다.** 첫 시도의 회귀 테스트 3건은 `as unknown as JobPosting` 캐스트로 픽스처를 만들어 zod 게이트를 건너뛰었고, **CRITICAL 이 살아 있는 상태에서도 green** 이었다. 지금은 `parseJobPostingDocument` 를 항상 null 로 목한 레포 진입점 테스트가 있다 — 성공 자체가 우회 증거가 되도록.
   - 🚨 **`getPostingSettlementContext` 를 컨테이너에 쓰면 안 된다.** 그 함수는 `schedule.requirements[]` 를 훑는데 컨테이너엔 requirements 가 없어 **roles 가 빈 배열**이 된다 → 지점 역할별 단가표가 통째로 무시되고 폴백(시급 15,000원)으로 계산된다. 그리고 이 canonical 값은 **호출자가 넘긴 amount 를 덮어쓴다**. 즉 배선만 했으면 화면 20,000원 / 지급 기록 15,000원이 됐을 것이다. 읽기·쓰기 공용 헬퍼 `domains/settlement/venueSettlementContext.ts` 로 봉합했고 회귀 테스트 3건을 걸어 뒀다.
   - 🔑 **컨테이너 `title` UPDATE 는 알림을 깨울 수 있다.** `notify_on_job_posting_update` 가 `OLD.title IS DISTINCT FROM NEW.title` 로 `job_updated` 를 보낸다. 다만 수신자가 `applications` 행이고 컨테이너엔 지원 행이 붙지 않아 이번엔 0건이었다. **일반 공고 title 을 건드리는 마이그는 이 경로를 반드시 먼저 세어 볼 것.**
   - 🔑 `'failed'` 는 UI 어휘에선 `'정산 대기'` 로 접히지만 **금액 집계에서는 접으면 안 된다**(`scheduleService`) — 지급 무산 건을 "받을 예정" 으로 세면 오지 않을 돈을 약속하게 된다.
