@@ -54,6 +54,9 @@ jest.mock('@/domains/settlement', () => {
       calculate: (...args: unknown[]) => mockCalculate(...args),
     },
     resolveEffectiveSalaryWithSource: actual.resolveEffectiveSalaryWithSource,
+    // 순수 함수 — 실물을 그대로 쓴다. 이게 목이면 읽기 경로가 쓰기 경로와 같은 컨텍스트를
+    // 쓰는지를 이 테스트가 더 이상 검증하지 못한다(그게 이 함수의 존재 이유다).
+    buildVenueContainerContext: actual.buildVenueContainerContext,
   };
 });
 
