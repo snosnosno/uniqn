@@ -9,6 +9,64 @@ describe('WorkTimeSection', () => {
   const overnightStart = new Date('2026-03-30T18:00:00');
   const overnightEnd = new Date('2026-03-31T02:00:00');
 
+  describe('출처 배지 (QR / 수정됨)', () => {
+    it('QR 로 찍힌 퇴근 시각에 ✓QR 을 붙인다', () => {
+      const { getByText } = render(
+        <WorkTimeSection
+          startTime={scheduledStart}
+          endTime={scheduledEnd}
+          hoursWorked={9}
+          endProvenance="qr"
+        />
+      );
+
+      expect(getByText('✓QR')).toBeTruthy();
+    });
+
+    it('수정된 시각에는 수정됨을 붙인다', () => {
+      const { getByText } = render(
+        <WorkTimeSection
+          startTime={scheduledStart}
+          endTime={scheduledEnd}
+          hoursWorked={9}
+          startProvenance="edited"
+        />
+      );
+
+      expect(getByText('수정됨')).toBeTruthy();
+    });
+
+    it('근거가 없으면 아무 배지도 그리지 않는다', () => {
+      const { queryByText } = render(
+        <WorkTimeSection
+          startTime={scheduledStart}
+          endTime={scheduledEnd}
+          hoursWorked={9}
+          startProvenance="unknown"
+          endProvenance="unknown"
+        />
+      );
+
+      expect(queryByText('✓QR')).toBeNull();
+      expect(queryByText('수정됨')).toBeNull();
+    });
+
+    // 예정시간에 "QR 로 찍힘" 을 붙이면 명백한 거짓말이 된다.
+    it('실제 기록이 없는 예정시간에는 출처를 붙이지 않는다', () => {
+      const { queryByText } = render(
+        <WorkTimeSection
+          startTime={null}
+          endTime={null}
+          scheduledStartTime={scheduledStart}
+          scheduledEndTime={scheduledEnd}
+          endProvenance="qr"
+        />
+      );
+
+      expect(queryByText('✓QR')).toBeNull();
+    });
+  });
+
   it('shows the scheduled time with a 예정 badge when there is no actual record', () => {
     const { getByText } = render(
       <WorkTimeSection

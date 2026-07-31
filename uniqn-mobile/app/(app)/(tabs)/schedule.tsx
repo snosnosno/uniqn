@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback, useEffect, useMemo, useRef, Suspense, lazy } from 'react';
-import { View, Text, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, LayoutAnimation } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   EmptyState,
@@ -21,6 +21,7 @@ import {
   GroupedScheduleCard,
   NextShiftCard,
 } from '@/components/schedule';
+import { ScheduleDashboard } from '@/components/schedule/ScheduleDashboard';
 import { CancellationRequestForm } from '@/components/applications';
 import { ReportModal } from '@/components/employer/ReportModal';
 import { useOwnerReport } from '@/components/schedule/useOwnerReport';
@@ -28,6 +29,8 @@ import { TabHeader } from '@/components/headers';
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, MenuIcon } from '@/components/icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCalendarView, useApplications } from '@/hooks';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
+import { getStorageItem, setStorageItem, STORAGE_KEYS } from '@/lib/mmkvStorage';
 import { useTodaySchedules } from '@/hooks/useSchedules';
 import { pickNextShift } from '@/components/schedule/helpers/nextShift';
 import { useOpsHubEnabled } from '@/hooks/useOpsHubEnabled';
@@ -38,8 +41,6 @@ import ReviewPromptBanner from '@/components/review/ReviewPromptBanner';
 import { useToastStore } from '@/stores/toastStore';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { PTR_REFRESH_PROPS } from '@/constants/ptr';
-import { formatCurrency } from '@/utils/formatters';
-import { SCHEDULE_STATS_LABELS } from '@/utils/applicationStatusLabel';
 import { STATUS } from '@/constants';
 import { SHEET_DISMISS_ANIMATION_MS } from '@/constants/animation';
 import { SCHEDULE_TYPE_LABELS } from '@/shared/status';
@@ -56,7 +57,10 @@ import {
 import { triggerHaptic } from '@/utils/haptics';
 import { getTodayString } from '@/utils/date';
 import { detectScheduleOverlaps, formatOverlapWarning } from '@/utils/scheduleOverlap';
-import { syncShiftReminders } from '@/services/work/shiftReminderScheduler';
+import {
+  syncShiftReminders,
+  shouldSyncShiftReminders,
+} from '@/services/work/shiftReminderScheduler';
 import {
   filterSchedulesByStatus,
   countSchedulesByType,
@@ -193,130 +197,6 @@ function MonthNavigator({
   );
 }
 
-interface StatsCardProps {
-  stats:
-    | {
-        upcomingSchedules: number;
-        confirmedSchedules: number;
-        completedSchedules: number;
-        completedWorkDays: number;
-        settledEarnings: number;
-        estimatedEarnings: number;
-      }
-    | undefined;
-  isLoading: boolean;
-}
-
-// StatsCard — full-bleed 밴드로 전환 (옵션 A). MonthNavigator와 동일한 시각 언어
-// (bg-surface-card + px-4 py-3 + border-b border-divider)를 사용해
-// TabHeader 아래 정보 패널이 하나의 띠 구조로 연결되도록 함.
-function StatsCard({ stats, isLoading }: StatsCardProps) {
-  const BAND_CLASS = 'bg-surface-card px-4 py-3 border-b border-divider';
-
-  if (isLoading) {
-    return (
-      <View className={BAND_CLASS}>
-        {/* 1행: 지원/확정/완료 스켈레톤 */}
-        <View className="flex-row justify-around">
-          {[1, 2, 3].map((i) => (
-            <View key={i} className="items-center">
-              <Skeleton width={50} height={14} />
-              <Skeleton width={36} height={20} className="mt-1" />
-            </View>
-          ))}
-        </View>
-        {/* 내부 구분선 */}
-        <View className="h-px bg-secondary-200 dark:bg-surface-overlay my-2.5" />
-        {/* 2행: 수익 스켈레톤 */}
-        <View className="flex-row justify-between items-center px-2">
-          <Skeleton width={40} height={14} />
-          <Skeleton width={120} height={22} />
-        </View>
-      </View>
-    );
-  }
-
-  if (!stats) return null;
-
-  return (
-    <View className={BAND_CLASS}>
-      {/* 1행: 대기중/확정/완료 — 지원 상태 어휘와 통일 */}
-      <View className="flex-row justify-around">
-        <View
-          className="items-center"
-          accessible
-          accessibilityLabel={`${SCHEDULE_STATS_LABELS.upcoming} 통계`}
-        >
-          <Text className="text-xs text-secondary-600 dark:text-secondary-400 font-sans">
-            {SCHEDULE_STATS_LABELS.upcoming}
-          </Text>
-          <Text className="text-lg font-display text-warning-600 dark:text-warning-400">
-            {stats.upcomingSchedules}
-          </Text>
-        </View>
-        <View className="h-6 w-px bg-secondary-200 dark:bg-surface-overlay" />
-        <View
-          className="items-center"
-          accessible
-          accessibilityLabel={`${SCHEDULE_STATS_LABELS.confirmed} 통계`}
-        >
-          <Text className="text-xs text-secondary-600 dark:text-secondary-400 font-sans">
-            {SCHEDULE_STATS_LABELS.confirmed}
-          </Text>
-          <Text className="text-lg font-display text-success-600 dark:text-success-400">
-            {stats.confirmedSchedules}
-          </Text>
-        </View>
-        <View className="h-6 w-px bg-secondary-200 dark:bg-surface-overlay" />
-        <View
-          className="items-center"
-          accessible
-          accessibilityLabel={`${SCHEDULE_STATS_LABELS.completed} ${stats.completedSchedules}건, 근무 ${stats.completedWorkDays}일`}
-        >
-          <Text className="text-xs text-secondary-600 dark:text-secondary-400 font-sans">
-            {SCHEDULE_STATS_LABELS.completed}
-          </Text>
-          <Text className="text-lg font-display text-content-primary dark:text-secondary-100">
-            {stats.completedSchedules}
-          </Text>
-          {/* 세 지표는 모두 '건' 단위다. 근무 일수는 단위를 밝혀 따로 붙인다. */}
-          <Text className="text-[10px] text-content-muted dark:text-secondary-500 font-sans">
-            {stats.completedWorkDays}일 근무
-          </Text>
-        </View>
-      </View>
-      {/* 내부 구분선 */}
-      <View className="h-px bg-secondary-200 dark:bg-surface-overlay my-2.5" />
-      {/* 2행: 수익 — '수익' 한 단어는 스코프(어느 달)와 성격(받은 돈/추정치)을 둘 다 숨겨
-          입금 예정액으로 오해된다. 정산 완료분과 예정분을 분리해 밝힌다. */}
-      <View
-        className="px-2"
-        accessible
-        accessibilityLabel={`정산 완료 ${formatCurrency(stats.settledEarnings)}, 정산 예정 ${formatCurrency(
-          stats.estimatedEarnings
-        )}`}
-      >
-        <View className="flex-row justify-between items-center">
-          <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
-            정산 완료
-          </Text>
-          <Text className="text-xl font-display text-primary-600 dark:text-primary-400">
-            {formatCurrency(stats.settledEarnings)}
-          </Text>
-        </View>
-        <View className="mt-1 flex-row justify-between items-center">
-          <Text className="text-xs text-content-muted dark:text-secondary-500 font-sans">
-            정산 예정 (추정)
-          </Text>
-          <Text className="text-sm font-sans-medium text-content-secondary">
-            {formatCurrency(stats.estimatedEarnings)}
-          </Text>
-        </View>
-      </View>
-    </View>
-  );
-}
-
 // ============================================================================
 // Main Component
 // ============================================================================
@@ -382,6 +262,22 @@ export default function ScheduleScreen() {
   // 상태 필터 (리스트 뷰 전용, M1) — 'all'은 취소 포함 전체 노출
   const [statusFilter, setStatusFilter] = useState<ScheduleStatusFilter>('all');
 
+  // 요약 대시보드 접힘 — 매번 초기화되면 접는 의미가 없어 기기에 남긴다.
+  const [dashboardCollapsed, setDashboardCollapsed] = useState<boolean>(
+    () => getStorageItem<boolean>(STORAGE_KEYS.SCHEDULE_DASHBOARD_COLLAPSED) ?? false
+  );
+  const reduceMotion = useReduceMotion();
+  const handleToggleDashboard = useCallback(() => {
+    // 접기/펼치기 높이 변화는 Accordion 과 같은 방식(LayoutAnimation)으로 통일한다.
+    if (!reduceMotion) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    }
+    // 부수효과를 updater 밖으로 — React 19 StrictMode 는 updater 를 의도적으로 2회 호출한다.
+    const next = !dashboardCollapsed;
+    setDashboardCollapsed(next);
+    setStorageItem(STORAGE_KEYS.SCHEDULE_DASHBOARD_COLLAPSED, next);
+  }, [dashboardCollapsed, reduceMotion]);
+
   const statusCounts = useMemo(
     () => countSchedulesByType(groupedByApplication),
     [groupedByApplication]
@@ -423,10 +319,21 @@ export default function ScheduleScreen() {
   // 근무 리마인더 예약 동기화 — 확정 근무를 잊는 것이 단발 알바의 1순위 사고인데
   // CHECKIN_REMINDER 는 타입·템플릿·딥링크가 다 있고 발송 주체만 0 이었다.
   // fire-and-forget: 알림 예약 실패가 스케줄 화면을 막지 않는다.
+  //
+  // 🔴 게이트는 "목록이 비었나" 가 아니라 **"로드가 끝났나"** 다. 두 가지를 동시에 지켜야 한다.
+  //
+  // ① 성공했는데 0건이면 **반드시 돌려야 한다.** sync 는 예약뿐 아니라 원장 정리도 하므로,
+  //    `length === 0` 얼리 리턴을 두면 계획에서 사라진 예약(취소·퇴근·종류 폐지)이 영영
+  //    취소되지 않는다. 실제로 'hours-before' 를 폐지했는데 이번 달 근무가 0건인 스태프는
+  //    옛 "출근 2시간 전" 알림을 계속 받게 된다.
+  // ② 로딩·에러 중에는 **돌리면 안 된다.** 그 구간의 `schedules` 는 실제 0건이 아니라
+  //    `EMPTY_SCHEDULE_QUERY_PAYLOAD` 폴백(useSchedules.ts)이다. 그대로 넘기면 원장의
+  //    모든 키가 "계획에서 사라진 것" 으로 판정돼 취소되고, 조회가 에러로 끝나면 재예약도
+  //    없어 확정 근무 알림이 통째로 무음 소실된다.
   useEffect(() => {
-    if (schedules.length === 0) return;
+    if (!shouldSyncShiftReminders({ isLoading, error })) return;
     void syncShiftReminders(schedules);
-  }, [schedules]);
+  }, [schedules, isLoading, error]);
 
   // '내 다음 근무' 히어로 — 이미 구현돼 있으나 소비자가 없던 useTodaySchedules(60초 폴링·
   // 오프라인 캐시 완비)를 오늘 근무 원천으로 쓰고, 오늘 것이 없으면 이번 달 확정 건에서 찾는다.
@@ -969,8 +876,27 @@ export default function ScheduleScreen() {
         onToggleView={handleToggleView}
       />
 
-      {/* 통계 카드 — 월 요약 (히어로·월 네비게이터 아래) */}
-      <StatsCard stats={stats} isLoading={isLoading} />
+      {/* 월 요약 + 상태 필터 — 접을 수 있는 한 덩어리(히어로·월 네비게이터 아래).
+          필터를 여기로 옮겨, 리스트가 시작하기까지의 세로를 한 번에 줄일 수 있게 했다. */}
+      <ScheduleDashboard
+        stats={stats}
+        isLoading={isLoading}
+        collapsed={dashboardCollapsed}
+        onToggle={handleToggleDashboard}
+        activeFilterLabel={statusFilter === 'all' ? null : STATUS_FILTER_LABELS[statusFilter]}
+        unpaidCount={unpaidCount}
+      >
+        {/* 상태 필터 — 두 뷰 공통. 뷰를 토글해도 필터가 유지된다. */}
+        {!hasBlockingError && groupedByApplication.length > 0 ? (
+          <View className="bg-surface-card px-4 pt-3">
+            <FilterTabs
+              options={statusFilterOptions}
+              selectedValue={statusFilter}
+              onSelect={setStatusFilter}
+            />
+          </View>
+        ) : null}
+      </ScheduleDashboard>
 
       {/* 부분조회 실패 경고 — 일부 소스(근무/지원) fetch 실패 시 비차단 안내(P1#11).
           경고를 버리면 근무 일부가 빠진 캘린더를 정상으로 오인하므로 명시 노출한다. */}
@@ -1072,17 +998,6 @@ export default function ScheduleScreen() {
           <ReviewPromptBanner
             pendingCount={pendingCount}
             onPress={() => router.push('/(app)/reviews/history')}
-          />
-        </View>
-      )}
-
-      {/* 상태 필터 — 두 뷰 공통. 뷰를 토글해도 필터가 유지된다. */}
-      {!hasBlockingError && groupedByApplication.length > 0 && (
-        <View className="px-4 pt-3">
-          <FilterTabs
-            options={statusFilterOptions}
-            selectedValue={statusFilter}
-            onSelect={setStatusFilter}
           />
         </View>
       )}

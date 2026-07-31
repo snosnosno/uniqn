@@ -2,7 +2,7 @@
  * 근무 리마인더 로컬 알림 동기화.
  *
  * `CHECKIN_REMINDER` 타입·템플릿·딥링크는 이미 있었고 **발송 주체만 0** 이었다.
- * 서버 크론 없이 즉시 가능한 경로로, 확정 근무마다 전날 20시와 출근 2시간 전을 예약한다.
+ * 서버 크론 없이 즉시 가능한 경로로, 확정 근무마다 전날 20시를 예약한다.
  *
  * 원칙:
  * - 화면을 절대 막지 않는다(fire-and-forget). 어떤 실패도 스케줄 조회를 방해하지 않는다.
@@ -22,6 +22,21 @@ import type { ScheduleEvent } from '@/types';
 
 /** key → OS 알림 식별자 */
 type ReminderLedger = Record<string, string>;
+
+/**
+ * 지금 동기화를 돌려도 되는가.
+ *
+ * 🔴 게이트는 "목록이 비었나" 가 아니라 **"로드가 끝났나"** 다.
+ *
+ * - 성공했는데 0건이면 **돌려야 한다.** sync 는 예약뿐 아니라 원장 정리도 하므로,
+ *   빈 목록에서 건너뛰면 계획에서 사라진 예약(취소·퇴근·종류 폐지)이 영영 취소되지 않는다.
+ * - 로딩·에러 중에는 **돌리면 안 된다.** 그 구간의 목록은 실제 0건이 아니라 폴백 빈 배열이라,
+ *   그대로 넘기면 원장의 모든 키가 "계획에서 사라진 것" 으로 판정돼 취소된다. 조회가 에러로
+ *   끝나면 재예약도 없어 확정 근무 알림이 통째로 무음 소실된다.
+ */
+export function shouldSyncShiftReminders(state: { isLoading: boolean; error?: unknown }): boolean {
+  return !state.isLoading && !state.error;
+}
 
 function readLedger(): ReminderLedger {
   return getStorageItem<ReminderLedger>(STORAGE_KEYS.SHIFT_REMINDERS) ?? {};

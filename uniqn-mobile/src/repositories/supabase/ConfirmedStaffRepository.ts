@@ -420,6 +420,10 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
       if (context.checkOutTime !== undefined) {
         updateData.check_out_ts = context.checkOutTime ? context.checkOutTime.toISOString() : null;
+        // 출처를 사람으로 되돌린다(SettlementRepository 정본과 동일). 빼면 QR 로 찍힌 뒤
+        // 수정된 행이 계속 'qr' 로 남아 화면에 거짓 "QR 기록" 이 뜬다.
+        updateData.end_time_source = 'manual';
+        updateData.edited_by = context.actorId;
       }
 
       // 상태 결정 — 정산 화면 경로와 같은 헬퍼를 통과시킨다(SET-1 대칭).
@@ -580,6 +584,21 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
         updated_at: now,
         ...timestampPatch,
       };
+
+      // 퇴근 시각이 이 경로에서 바뀌면 출처도 함께 되돌린다.
+      //
+      // 이력(modification_history)만으로도 출처 판정은 되지만, 그건 side-channel 이다.
+      // 이력을 남기는 buildManualStatusAudit 은 #360(2026-07-28)에서야 들어왔고 그 이전에는
+      // 이 경로가 이력 없이 타임스탬프를 만들고 지웠다 — QR 퇴근(`'qr'`) → scheduled 복귀
+      // (시각만 삭제, 출처는 'qr' 잔류) → 수동 퇴근 처리 순서를 밟은 레거시 행은 사람이 박은
+      // 시각에 "✓QR" 이 붙는다. 컬럼을 자기 정합적으로 만들어 그 경로를 닫는다.
+      if (
+        'check_out_ts' in timestampPatch &&
+        (timestampPatch.check_out_ts ?? null) !== existingCheckOut
+      ) {
+        updateData.end_time_source = timestampPatch.check_out_ts === null ? null : 'manual';
+        updateData.edited_by = context.actorId;
+      }
 
       // 4. 타임스탬프가 실제로 바뀌면 감사 이력을 남긴다 — 시간 수정 경로와 대칭.
       //    삭제(scheduled 복귀)도 여기서 이력이 남아야 복원 근거가 생기고, 길이 증가가

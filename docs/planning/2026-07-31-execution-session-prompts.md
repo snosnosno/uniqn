@@ -20,7 +20,7 @@
 | **S1** | 1-B + 1-C | ~~`feat/venue-profile`~~ | ✅ **머지** | **#370** | `dbf1e49d1`. CI 11잡 green(E2E 는 러너 포트 충돌로 1회 fail → 재실행 pass). 브랜치·워크트리 정리 완료 |
 | **S2** | 2-A + 2-B | ~~`fix/worklog-time-model`~~ | ✅ **머지** | **#374** | `a06f5311`. CI 9잡 green(E2E 1회 통과). 브랜치·워크트리 정리 완료. 클라 전용·**마이그 0건**. master(#370·#371·#373) 재통합 완료 — 파리티 충돌은 master 판 **184** 채택 |
 | **S3** | 2-C + 2-D + 별-2 | ~~`feat/worklog-time-notify`~~ | ✅ **머지** | **#382** | `11a2390a0`. CI 9잡 green(E2E 포함 1회 통과). 브랜치 삭제됨, 워크트리는 유지. | HEAD `fd8d7b52b`(5커밋). 🔴 **마이그 1건 prod 미적용** |
-| **S4** | 3-B + 3-E + 별-1 | `feat/qr-badge-and-entry` | ⬜ | | |
+| **S4** | 3-B + 3-E + 별-1 | `feat/qr-badge-and-entry` | 🔨 **구현·게이트·리뷰 완료 · PR 미생성** | | 커밋 7개(HEAD `e5d305650`). **마이그 0건** — 파리티 **184/111 prod 실측 재확인**(레포 기대값과 일치). S3 머지 확인돼 별-1 도 이번 범위에 포함. 리뷰 opus→fable 2회, 지적 전량 반영 |
 | **S5** | 3-A + 3-D | `feat/settlement-and-rename` | ⬜ | | 🔴 착수 전 사용자 승인 2건 |
 | **B1** | 주소 1단계 | `claude/job-posting-address-map-lbrvzd` | ⬜ | | 독립 워크트리 |
 | **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
@@ -34,8 +34,8 @@
 | 0-4 | — | ✅ 불필요(PR#367 로 머지됨) |
 | S1 | ~~`T-HOLDEM-venue`~~ | ✅ 정리완료(정션 해제 → worktree remove 순서 준수) |
 | S2 | ~~`T-HOLDEM-time`~~ | ✅ 정리완료(정션 해제 → worktree remove 순서 준수) |
-| S3 | `T-HOLDEM-notify` | 🟡 **유지 중**(PR·머지 전까지 지우지 말 것) |
-| S4 | `T-HOLDEM-qr` | ⬜ |
+| S3 | ~~`T-HOLDEM-notify`~~ | ✅ 정리완료(S4 착수 시 — 정션 해제 선행 → `worktree remove`, 원본 `node_modules` 821 무손상 확인) |
+| S4 | `T-HOLDEM-qr` | 🔨 **유지 중**(PR·머지 전까지 지우지 말 것) |
 | S5 | `T-HOLDEM-settle` | ⬜ |
 | B1·B2 | `T-HOLDEM-address` | ⬜ |
 | S7 | `T-HOLDEM-timechange` | ⬜ |
@@ -460,6 +460,34 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 
 > 형식은 §2 세션 종료 프로토콜 4번 참조. **삭제하지 말고 쌓는다** —
 > 중단된 세션을 다시 여는 사람이 읽을 유일한 기록이다.
+
+### S4 (3-B + 3-E + 별-1) — 2026-07-31 · 상태: 구현·게이트 완료 (🔴 **PR 미생성** — 사용자 명시 요청 대기)
+
+- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-qr` / `feat/qr-badge-and-entry` · HEAD `6dd836b74` (커밋 6개)
+- **DB 마이그레이션 0건.** 파리티 **prod 실측 184 / 111** = 레포 기대값(`parity_baseline_guard.test.sql:91-92`) 일치.
+- 착수 시 정리: 머지 완료된 S3 워크트리 `T-HOLDEM-notify` 제거(정션 해제 선행, 원본 `node_modules` 821 무손상 확인).
+- **끝난 것** (전부 이 세션에서 실행한 출력 기준)
+  - **3-B QR 출처 표시** `da1a735c4` — 실측이 원안을 두 군데 고쳤다. ①`✓QR` 은 **퇴근에만** 붙는다(출근축엔 출처 컬럼이 스키마에 없다). ②레거시 행은 QR 퇴근을 수동 수정해도 `'qr'` 로 남아 있어, `modification_history` 의 해당 축 수정 이력을 먼저 보고 근거 없으면 아무것도 주장하지 않는다. 수동 경로 3곳이 이제 `end_time_source`·`edited_by` 를 남긴다.
+  - **3-B 리마인더** `da1a735c4` — `hours-before` 제거, `DAY_BEFORE_HOUR=20` 현행 유지(근거를 상수 주석에 못박음).
+  - **3-B 퇴근 미기록 배너** `113fe0863` + `92f3e5ef2` — 지점 스팬 리더 기반, 지난 날짜만, 누르면 가장 오래된 미기록 날짜로 이동.
+  - **3-E 진입점** `2a54183e9` — 팀 화면에 근무표 진입 행 신설(기존 링크 **0개**였다). `VenueSelector` ⚙ a11y 라벨을 "단가 설정"→"설정" 로 정정(S1 이 시트를 확장했는데 라벨이 안 따라왔다).
+  - **별-1 대시보드 접기** `f587a8eba` — 요약+필터를 한 덩어리로 접고 MMKV 에 영속. 접어도 활성 필터·미지급 건수는 계속 보인다(칩 제거 시 red 로 실증). 부수로 `schedule.tsx` 1412→1203줄, `ScheduleDashboard` 분리.
+  - **리뷰 반영** `92f3e5ef2` — opus 리뷰 HIGH 1 + MEDIUM 6 + LOW 2 반영(아래 '주의' 참조).
+  - **최종 리뷰 반영** `6dd836b74` — fable 리뷰가 잡은 HIGH 1건. 앞 커밋에서 얼리 리턴을 없앤 것이 새 결함을 만들었다(로딩·에러 구간의 빈 배열로 유효 예약 전체 취소). 게이트 축을 "비었나"→"로드가 끝났나" 로 바꾸고 `shouldSyncShiftReminders` 순수 함수로 분리. fable 판정: 이 1건 외 **CRITICAL 0 / 나머지 비차단**.
+  - 최종 게이트: `npm run quality` **exit 0**(0 errors / 97 warnings = baseline) · `npm test` **593 스위트 / 6496 테스트 / 122 스냅샷 전량 통과 exit 0** · `e2e/` 별도 Grep **파급 0건** · knip **델타 0**(master 1249/911 == 브랜치, 동일 명령 실측).
+- **안 끝난 것**
+  - 🔴 **push / PR 미실행** — 커밋 사전승인 범위 밖(사용자 명시 요청 필요).
+  - ⚠️ fable 리뷰의 **비차단 백로그**: ①리마인더 sync 입력이 **월 스코프**라 다른 달의 유효 예약을 "사라진 계획" 으로 오판한다(선재 결함 — 8/1 근무 알림은 8월 화면을 봐야 예약되고 7월로 돌아오면 취소된다). ②`timeProvenance` 는 "수동 수정 → checked_in 복귀 → 재QR" 시퀀스에서 이력이 이겨 '수정됨' 오라벨(보수적 방향이라 비차단). ③배너 쿼리 **에러가 무음**이라 조회 실패와 "0건" 이 화면상 같다.
+  - ⚠️ 배너 스코프 = **보이는 달**. 더 오래된 미기록은 사용자가 월을 넘겨야 발견된다(의도된 한계, 주석에 명시).
+  - ⚠️ 출근축은 원리적으로 QR 판정 불가 — `start_time_source` 컬럼을 추가하는 마이그레이션은 별도 세션 몫.
+- **막힌 지점**: 없음.
+- **다음 세션에 넘기는 주의** (이 세션에서 새로 알아낸 것만)
+  - 🚨 **`work_logs.date` 로 "지났다" 를 판정하지 말 것.** 홀덤펍 표준 18:00~02:00 근무는 date 가 전날이라 새벽엔 이미 "어제" 다 — 사전 비교만 쓰면 **근무 중인 사람이 매일 밤 집계에 잡힌다**. 내가 그 실패 모드를 주석에 써 놓고도 `isToday` 축만 막아 리뷰가 잡았다. 야간 유예(`OVERNIGHT_GRACE_HOUR`) 필요.
+  - 🚨 **지점 단위 집계는 `useConfirmedStaff`(= `job_posting_id` 단일 매칭)로 하면 안 된다.** 컨테이너 직속 배치만 잡혀 공고로 뽑은 스태프가 통째로 빠진다. 지점 스팬은 `venue_span_posting_ids` RPC 경유(`getByVenueSpanInRange`).
+  - 🔑 **`end_time_source` 는 절반만 배선돼 있었다** — QR RPC 퇴근 분기만 쓰고, SELECT 화이트리스트엔 없었다. 이런 "DB엔 있는데 안 읽는 컬럼" 은 타입에도 없어 존재 자체가 안 보인다.
+  - 🚨 **RN `Pressable` 은 기본 `accessible=true` 라 자식 텍스트를 한 노드로 병합하고, 명시 `accessibilityLabel` 이 그걸 덮어쓴다.** 눌리는 영역 안에 상태 칩을 그려도 스크린리더엔 **아무것도 안 간다** — 라벨을 상태에서 합성할 것. `queryByText` 테스트는 이 갭을 못 잡는다.
+  - 🔑 **동기화 함수의 얼리 리턴은 "정리" 까지 같이 죽인다** — `syncShiftReminders` 는 예약뿐 아니라 원장 정리도 하는데 `length===0` 리턴이 폐지된 알림 종류의 취소를 막고 있었다.
+  - 🔑 `git worktree`/jest 경로에 괄호가 있으면(`app/(employer)/`) `npx jest <path>` 가 정규식으로 먹혀 0건이 된다 — `--runTestsByPath` 사용.
 
 ### S2 (2-A + 2-B) — 2026-07-31 · 상태: 완료 (**PR #374 머지** `a06f5311`)
 - 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-time` / `fix/worklog-time-model` · HEAD `3a6c53f8e`
