@@ -60,6 +60,7 @@ export const NOTIFICATION_ROUTE_MAP: Record<
   [NotificationType.SCHEDULE_CANCELLED]: () => ({ name: 'schedule' }),
 
   [NotificationType.SETTLEMENT_COMPLETED]: () => ({ name: 'schedule' }),
+  [NotificationType.SETTLEMENT_REVERTED]: () => ({ name: 'schedule' }),
   [NotificationType.SETTLEMENT_REQUESTED]: (data) =>
     data?.jobPostingId
       ? { name: 'employer/settlement', params: { jobId: data.jobPostingId } }
