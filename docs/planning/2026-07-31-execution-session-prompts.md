@@ -23,7 +23,7 @@
 | **S4** | 3-B + 3-E + 별-1 | ~~`feat/qr-badge-and-entry`~~ | ✅ **머지** | **#384** | `40dc21779`. CI **9잡 전부 SUCCESS**(E2E 9m55s 포함, 재실행 없이 1회 통과). 브랜치·워크트리 정리 완료. **마이그 0건** — 파리티 **184/111 불변**(prod 실측 재확인). 리뷰 opus→fable 2회, HIGH 2건 포함 지적 전량 반영 |
 | **S5** | 3-A + 3-D | ~~`feat/settlement-and-rename`~~ | ✅ **머지** | **#387** | `97bf7e85c`. CI **10잡 전부 SUCCESS**(E2E 10m14s 포함, 재실행 없이 1회 통과). 브랜치·워크트리 정리 완료. 마이그 2건은 **PR 이전에 prod 선적용**됨 — 재적용 금지. 상세=§5 |
 | **S5-후속** | SETTLE-3 되돌리기 + 정산 게이트 status 축 | ~~`feat/settlement-revert-entry`~~ | ✅ **머지** | **#388** | `0ec9abc2c`. CI **9잡 전부 SUCCESS**(E2E 9m56s 포함, 재실행 없이 1회 통과. DB Tests 는 마이그 0건이라 미실행). 브랜치·워크트리 정리 완료. 마이그 **0건** — 파리티 **184/111 불변**(prod 실측). 상세=§5 |
-| **A-감사** | A레인 전체 사후 감사 | — (메인 체크아웃, 읽기 전용) | ✅ | — | 산출물=[`docs/analysis/2026-08-01-work-schedule-wave-audit.md`](../analysis/2026-08-01-work-schedule-wave-audit.md). **코드 변경 0건.** CRITICAL 0 / HIGH 1(선재) / MEDIUM 11 / LOW 12. 파리티 **184/111 prod 실측 일치**. 상세=§5 |
+| **A-감사** | A레인 전체 사후 감사 | ~~`docs/wave-audit-20260801`~~ | ✅ **머지** | **#390** | `16a5bb1fa`. 분석은 메인 체크아웃에서 **읽기 전용**, 문서 커밋만 워크트리 `T-HOLDEM-audit` 에서. 산출물=[`docs/analysis/2026-08-01-work-schedule-wave-audit.md`](../analysis/2026-08-01-work-schedule-wave-audit.md). **코드 변경 0건.** CRITICAL 0 / HIGH 1(선재) / MEDIUM 11 / LOW 12. 파리티 **184/111 prod 실측 일치**. 상세=§5 |
 | **B1** | 주소 1단계 | `claude/job-posting-address-map-lbrvzd` | 🔨 **구현완료·리뷰반영 완료·PR 미생성** | | HEAD `ccd1cbe26`(4커밋). 마이그 **0건** — 파리티 184/111 불변. quality exit 0 · jest **599스위트 6573테스트 전량 통과** · knip 델타 0 · 브라우저 실관찰 통과(CSP 위반 0건, 리뷰 수정 후 재관찰까지). 리뷰 fable **APPROVE**(HIGH 0) / opus HIGH 3건 **전량 반영**. 🔴 **머지 전 P4(M9) 선행 필수**(단, B1 diff 자체는 M9 를 활성화하지 않음 — §5 참조) |
 | **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
 | **S6** | 3-C 설계 | — | ⬜ | | 사용자 결정 필요 |
@@ -41,6 +41,7 @@
 | S5 | ~~`T-HOLDEM-settle`~~ | ✅ 정리완료(정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818** 무손상 확인) |
 | S5-후속 | ~~`T-HOLDEM-revert`~~ | ✅ 정리완료(정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818** 무손상 확인) |
 | B1·B2 | `T-HOLDEM-address` | 🔨 **유지 중**(B1 구현완료, PR 미생성). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성(818 확인). `.env.local`·`.env.development.local` 은 gitignore 라 메인에서 복사해야 앱이 뜬다 |
+| A-감사 | ~~`T-HOLDEM-audit`~~ | ✅ **머지 완료(#390)** — 정리 대상(정션 없음. `worktree remove` → 브랜치 삭제) |
 | S7 | `T-HOLDEM-timechange` | ⬜ |
 
 전부 `C:/Users/user/Desktop/` 아래. 머지 완료 세션의 워크트리는 다음 세션 착수 시 정리한다
@@ -468,33 +469,37 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 
 ### A-감사 (A레인 전체 사후 감사) — 2026-08-01 · 상태: 완료
 
-- 워크트리/브랜치: **없음** — 메인 체크아웃 `T-HOLDEM` / `master` `0d4d99309` 에서 **읽기 전용**으로 수행. 결함을 고치지 않았으므로 `T-HOLDEM-audit` 워크트리를 만들지 않았다. **소스 코드 변경 0건**(추가된 파일은 감사 산출물 1개 + 이 원장 갱신뿐).
+- 워크트리/브랜치: 분석은 메인 체크아웃 `T-HOLDEM` / `master` `0d4d99309` 에서 **읽기 전용**으로 수행(**소스 코드 변경 0건**). 아래 '막힌 지점'의 세션 충돌 때문에 문서 커밋만 `C:/Users/user/Desktop/T-HOLDEM-audit` / `docs/wave-audit-20260801` 에서 했다(커밋 1건). → **PR #390 머지 완료** (`16a5bb1fa`). 정리 순서는 §4-6 준수.
 - **산출물**: [`docs/analysis/2026-08-01-work-schedule-wave-audit.md`](../analysis/2026-08-01-work-schedule-wave-audit.md)
 - **DB 마이그레이션 0건.** 파리티 **prod 실측 184 / 111** = 레포 기대값(`parity_baseline_guard.test.sql:91-92`) 일치.
 
 - **끝난 것** (전부 이 세션의 도구 출력 기준)
-  - 감사 축 **A~G 7축 전부** 수행(7 탐색 sonnet → 6 적대적 검증 fable, 13 에이전트 0 실패) + 메인 세션 독립 재검증.
-  - 판정: **CRITICAL 0 / HIGH 1 / MEDIUM 11 / LOW 12**. HIGH 1건은 이 웨이브가 만든 것이 아니라 **선재**(#356).
-  - 🔑 **이 세션의 핵심 발견 — 판정 복제 누락이 2건 더 있었다.** 둘 다 #388 이 `isSettlableWorkLogStatus` SSOT 를 세우며 소비처를 빠뜨린 것: ①`settlementGrouping.ts:252-254` summary 집계가 3축 중 1축만 봄 ②`GroupedSettlementCard.tsx:258` 그룹 체크박스가 '전체 행수' 축으로 남아 **혼합 그룹에서 해제 불가**(신규 회귀).
-  - 게이트: `npm test` **598 스위트 / 6534 테스트 / 122 스냅샷 전량 통과 exit 0**(기준값과 정확히 일치) · 파리티 prod 재실측 184/111 · 마이그 4건 **스네이크 본명으로 prod 대조 완료** · `e2e/` 별도 Grep **파급 0건** · `npm run quality` = **해당 없음**(코드 변경 0건).
-  - 최종 검증: 산출물 문서를 code-reviewer(fable)에 근거 검증 디스패치.
+  - 감사 축 **A~G 7축 전부** 수행(탐색 sonnet 7 → 적대적 검증 fable 6, 13 에이전트 0 실패) + 메인 세션 prod 실측 독립 재검증.
+  - 판정 **CRITICAL 0 / HIGH 1 / MEDIUM 11 / LOW 12**. HIGH 1건은 이 웨이브 산물이 아니라 **선재**(#356).
+  - 🔑 **핵심 발견 — 판정 복제 누락 2건 추가.** 둘 다 #388 이 `isSettlableWorkLogStatus` SSOT 를 세우며 소비처를 빠뜨린 것: ①`settlementGrouping.ts:251-253` 집계에 `status` 축 누락 ②`GroupedSettlementCard.tsx:258` 그룹 체크박스가 '전체 행수' 축으로 남아 **혼합 그룹에서 해제 불가**(신규 회귀).
+  - 게이트: `npm test` **598 스위트 / 6534 테스트 / 122 스냅샷 전량 통과 exit 0**(기준값 정확 일치) · 파리티 prod 재실측 184/111 · 마이그 4건 **스네이크 본명 대조 완료** · `e2e/` 별도 Grep **파급 0건** · `npm run quality` **해당 없음**(코드 변경 0건).
+  - 최종 검증: 산출물을 code-reviewer(fable)에 근거 검증 디스패치 → **수정 후 APPROVE, 기각 0건**. 인용 정정 3건 반영(상세=산출물 §9).
 
 - **안 끝난 것**
-  - 🔴 **결함 수선 0건** — 이 세션은 감사가 범위였다. 후속 PR 6묶음(P1~P6)을 산출물 §7 에 제안해 뒀다.
-  - 🔴 **E축 red-green 실증 미수행** — 읽기 전용이라 소스를 되돌려 red 를 확인하지 못했다. 정적 논증까지. 최우선 후보 3건은 산출물 §5 에 명시.
-  - 🔴 **M4 익스플로잇 미실행** — prod 무단 쓰기를 피하려 의도적으로 안 했다. 정책·권한·트리거 실측 근거 판정.
-  - jest "worker process failed to exit gracefully" 원인 스위트 미특정(exit 0·전량 통과라 신규 결함 아님까지만 확인).
+  - 🔴 **결함 수선 0건** — 감사가 범위였다. 후속 PR 6묶음(P1~P6)은 산출물 §7.
+  - 🔴 **E축 red-green 실증 미수행**(읽기 전용이라 소스를 되돌릴 수 없었다). 최우선 후보 3건은 산출물 §5.
+  - 🔴 **M4 익스플로잇 미실행** — prod 무단 쓰기 회피. 정책·권한·트리거 실측 근거 판정.
+  - ✅ **PR #390 머지 완료**(`16a5bb1fa`) — 워크트리 `T-HOLDEM-audit` 는 정리 대상(정션 없음 → `worktree remove` → 브랜치 삭제).
+  - jest "worker process failed to exit gracefully" 원인 스위트 미특정(exit 0·전량 통과 확인까지만).
 
-- **막힌 지점**: 없음.
+- **막힌 지점**: 🚨 **세션 충돌 — 메인 체크아웃 git 상태가 다른 세션 소유다.** B1 세션이 메인 체크아웃 `master` 에서 원장을 커밋(`6e7a98384`, 13:18)하면서 **내 미커밋 편집을 함께 삼켰고**, 이후 `reset` 으로 master 가 `0d4d99309` 로 되돌아가 그 커밋이 dangling 이 됐다(내 편집도 작업 트리에서 소실 → 재적용함). 추가로 **7/20 자 stale cherry-pick 상태**가 남아 있다(`.git/sequencer/` Jul 20, `CHERRY_PICK_HEAD` 빈 파일) — 내 것이 아니라 손대지 않았다.
+  - 🔴 **B1 세션이 확인할 것**: dangling 커밋 `6e7a98384` 에는 **B1 의 원장 갱신분(주소 검색 1단계 인수인계 로그)이 들어 있고 현재 어느 브랜치에도 없다.** reflog 에서만 접근 가능하니 필요하면 `git show 6e7a98384` 로 회수할 것. 이 감사 세션은 그 커밋에서 **내 몫만** 재적용했고 B1 몫은 건드리지 않았다.
+  - 해결 방식: 메인 체크아웃에서 브랜치를 만들면 HEAD 가 움직여 B1 을 방해하므로, **전용 워크트리 `T-HOLDEM-audit`** 를 파서 거기서만 커밋했다. 메인 체크아웃은 발견 당시 상태(`0d4d99309` 클린)로 되돌려 놓았다.
 
 - **다음 세션에 넘기는 주의** (이 세션에서 새로 알아낸 것만)
-  - 🔴 **B1 머지 전에 M9 를 먼저 넣어라.** `VenueSettingsSheet.saveProfile` 이 `location` 을 `{name}` 으로 **전체 교체**한다 → B1 이 `district`/`detailedAddress` 를 추가하는 순간 지점 설정 저장 버튼이 사용자 주소를 소거한다. 순서를 놓치면 데이터가 사라진다.
-  - 🚨 **"막는 계층이 없다"와 "그래서 새로 할 수 있는 일이 있다"는 다른 명제다.** 선재 MEDIUM(`wl_update` WITH CHECK 부재)을 가설 3개로 쪼갠 결과 2개가 기각됐다(`fn_work_logs_pin_posting_id` 가 `job_posting_id` 를 고정, `protect_work_log_payroll_columns` 가 payroll 을 고정). 남은 `staff_id` 도 "위조 알림"은 증분이 아니다 — **`add_direct_staff` 가 이미 `authenticated` 에 GRANT 돼 있고 동의 검사가 없다**(prod 실측). 진짜 증분은 *출근·정산 완료 기록의 무음 삭제* 하나뿐. 권한 결함은 **차분(differential)으로 판정할 것.**
-  - 🚨 **알림 계약을 세우는 마이그가 그 계약을 스스로 어길 수 있다.** `20260731140000...sql:163-168` 이 *"그 버튼이 실제로 있을 때만 말한다"* 는 불변식을 주석으로 못박고도, 조건을 클라(`ScheduleDetailModal.tsx:536-539`)의 **진부분집합**으로 잡아 `cancellation_pending` 케이스를 놓쳤다. **트리거 조건은 클라 게이트와 집합 연산으로 대조할 것** — 문구를 읽는 것으로는 안 잡힌다.
-  - 🔑 **`e2e/` 시드와 prod 데이터 분포가 어긋나 있다.** prod `work_logs` 3행 중 **2행이 레거시 범위 `time_slot`** 인데 e2e 시드는 전부 단일값이다 — 실제 데이터 다수가 밟는 경로를 E2E 가 한 번도 안 밟는다. `application_id` 도 3행 중 2행이 NULL(취소 버튼 게이트가 걸리는 비율).
-  - 🔑 **prod 함수 검색은 이름 추측 금지.** `settleWorkLogWithTransaction` 은 DB RPC 가 아니라 **클라 TypeScript 메서드**다(prod 에 `%settle%` 함수 0개). "서버 게이트"라 불리던 것이 실은 클라 게이트였다 — 정산은 RPC 없이 원시 `.update()` 로 나간다(CLAUDE.md 규약 위반, LOW 로 기록).
-  - 🔑 **문서가 stale 인 방향은 한쪽이 아니다.** F축 재판정 16건 중 **2건이 이미 해소**돼 있었다(`handle_new_user` 기본명 · 레거시 색상 하위호환). 잔여 목록은 쌓이기만 하고 줄지 않는 경향이 있으니 주기적 재판정이 값어치가 있다.
-  - ⚠️ `proconfig` 하드닝은 이 웨이브에서 **실제로는 안 터졌다** — 재정의 4함수 전부 `pg_temp` 보존(prod 실측). 가장 크게 걱정한 함정이 무사했다는 사실도 기록해 둔다.
+  - ⚠️ ~~**B1 머지 전에 M9 를 먼저 넣어라.**~~ → **B1 세션 실측으로 정정됨**(아래 B1 항목 주의 4번): B1 은 공고 `location` 만 건드리고 지점 컨테이너 `location` 의 유일한 writer 는 `VenueSettingsSheet` 뿐이라 **B1 diff 는 M9 를 활성화하지 않는다**. M9 는 선재 결함이며 지점 시트에 주소를 넣는 순간 활성화된다. 원문: `VenueSettingsSheet.tsx:108` 이 `location: { name }` 으로 **전체 교체**하고 서버 RPC 도 `'{}'` 에서 재구성해 교체한다(`20260731120000...sql:147-174,212`) → B1 이 `district`/`detailedAddress` 를 추가하는 순간 저장 버튼이 주소를 **소거**한다.
+  - 🚨 **"막는 계층이 없다" ≠ "새로 할 수 있는 일이 있다".** 선재 MEDIUM(`wl_update` WITH CHECK 부재)을 가설 3개로 쪼개 2개를 기각했다(`fn_work_logs_pin_posting_id` 가 `job_posting_id` 고정, `protect_work_log_payroll_columns` 가 payroll 고정). 남은 `staff_id` 도 "위조 알림"은 증분이 아니다 — **`add_direct_staff` 가 `authenticated` 에 GRANT + 동의 검사 없음**(prod 실측). 진짜 증분은 *출근·정산 완료 기록의 무음 삭제* 하나. **권한 결함은 차분으로 판정할 것.**
+  - 🚨 **알림 계약을 세우는 마이그가 그 계약을 스스로 어길 수 있다.** `20260731140000...sql:163-168` 이 *"버튼이 실제로 있을 때만 말한다"* 를 주석으로 못박고도 조건을 클라(`ScheduleDetailModal.tsx:536-539`)의 **진부분집합**으로 잡아 `cancellation_pending` 을 놓쳤다. **트리거 조건은 클라 게이트와 집합 연산으로 대조할 것.**
+  - 🔑 **`settleWorkLogWithTransaction` 은 DB RPC 가 아니다** — prod 에 `%settle%` 함수 **0개**. 클라 TS 메서드이고 정산은 원시 `.update()` 로 나간다(CLAUDE.md '정산=RPC 필수' 위반, LOW 기록). 문서·주석 여러 곳이 이걸 "서버 게이트"라 부른다.
+  - 🔑 **`e2e/` 시드와 prod 분포가 어긋나 있다** — prod `work_logs` 3행 중 **2행이 레거시 범위 `time_slot`**, **2행이 `application_id` NULL** 인데 e2e 시드는 전부 단일값·정상.
+  - 🔑 **잔여 목록은 줄지 않는 경향이 있다** — F축 재판정 16건 중 **2건이 이미 해소**돼 있었다(`handle_new_user` 는 `{이름} 팀` 이 맞고 S1 기재가 stale · 레거시 색상 15종은 정확히 구현). 주기적 재판정이 값어치가 있다.
+  - ⚠️ **`proconfig` 하드닝은 실제로는 안 터졌다** — 재정의 4함수 전부 `pg_temp` 보존(prod 실측). 가장 크게 걱정한 함정이 무사했다는 사실도 기록해 둔다.
+  - 🔴 **메인 체크아웃에서 커밋하지 말 것** — 이 세션이 실증했듯 두 세션이 같은 트리를 쓰면 한쪽의 미커밋 편집이 다른 쪽 커밋에 조용히 삼켜진다. 문서만 고치는 세션도 예외가 아니다.
 
 ### B1 (주소 검색 1단계) — 2026-08-01 · 상태: **구현 완료 · PR 미생성**(push/PR 은 사용자 명시 요청 대기)
 
@@ -535,7 +540,6 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 11. 🔑 **리뷰 에이전트가 0바이트로 멈출 수 있다** — opus 리뷰가 13분간 출력 0바이트인 채 살아 있었다(형제 fable 은 211KB 작성 중). 출력 파일 크기·mtime 으로 생사를 판별해 재디스패치했고, 원래 것도 결국 18분 만에 완주했다(둘 다 유효). 판정이 갈리면 **양쪽 근거를 직접 실측해 채택**할 것 — 이번에도 `composeFullAddress` 반례에서 두 리뷰가 정면 충돌했고 opus 가 맞았다.
 
 ---
-
 ### S5-후속 (SETTLE-3 + 정산 게이트 status 축) — 2026-08-01 · 상태: 완료 (**PR #388 머지** `0ec9abc2c`)
 
 - 워크트리/브랜치: ~~`C:/Users/user/Desktop/T-HOLDEM-revert`~~ / ~~`feat/settlement-revert-entry`~~ · 머지 전 HEAD `d707fb6fc`(커밋 5개, base `97bf7e85c`) → **머지 `0ec9abc2c`**. 브랜치·워크트리 **정리 완료**
