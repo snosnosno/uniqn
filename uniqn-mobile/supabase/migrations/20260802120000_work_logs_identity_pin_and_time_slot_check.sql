@@ -49,14 +49,22 @@
 --   · SECDEF 함수 내부의 UPDATE 도 트리거는 발화한다(SECDEF 라고 건너뛰지 않는다)
 --     → permanently_delete_user 를 통과시키려면 예외 조건이 트리거 안에 있어야 한다.
 --
--- 알려진 잔여 위험 (의도적으로 열어 둠):
---   `NEW.owner_id IS NULL` 예외 때문에 공격자도 owner_id 를 NULL 로 만들 수는 있다.
---   이것도 로컬에서 실제로 통과시켜 확인했다. 증분은 좁다 —
---   RLS 가 자기 워크스페이스 행만 노출하므로 남의 기록에는 닿지 않고,
---   owner_id 가 NULL 이 되어도 wl_select/wl_update 의 workspace 분기로 접근성이 유지되며,
---   permanently_delete_user 가 만드는 정상 상태와 구분되지 않는다.
---   완전히 닫으려면 트랜잭션 로컬 GUC 마커를 permanently_delete_user 에 심어야 하는데,
---   그건 계정 삭제 경로(고위험 SECDEF)를 재정의해야 해서 이 방어가 갚는 값보다 비싸다.
+-- 🔴 owner_id 를 "NULL 이면 무조건 허용"으로 두면 구멍이 남는다 — 실측으로 확인했다.
+--   클라는 `.eq('owner_id', ownerId)` 로 구인자별 완료 근무 기록을 조회한다
+--   (WorkLogRepository.ts:226,264). 즉 owner_id 를 NULL 로 만들면 그 행이
+--   **공고 소유자의 정산 목록에서 사라진다.** 그리고 wl_update 의 USING 은
+--   워크스페이스 멤버·협업자를 통과시키므로, 이건 자해가 아니라 **타인에 대한 피해**다.
+--   (에디터가 남의 공고 행을 지울 수 있다 — 로컬에서 실제로 재현했다.)
+--
+--   그래서 NULL 화도 "원래 자기 소유였거나 관리자일 때"로 좁힌다. 이 조건은
+--   permanently_delete_user 의 두 정당 경로를 모두 통과시킨다(로컬 실증):
+--     · 본인 계정 삭제  — `UPDATE ... WHERE owner_id = p_user_id` 이고 p_user_id = auth.uid()
+--     · 관리자 대행 삭제 — public.is_admin()
+--   반면 에디터·협업자가 남의 공고 행을 NULL 로 만드는 경로는 차단된다.
+--
+--   ⚠️ 남는 잔여 위험은 "자기 소유 행을 자기가 NULL 로 만드는 것" 하나뿐이고, 이는 자해라
+--      수용한다. GUC 마커로 완전히 닫으려면 계정 삭제 경로(고위험 SECDEF)를 재정의해야 해서
+--      이 방어가 갚는 값보다 비싸다.
 -- ------------------------------------------------------------
 
 CREATE OR REPLACE FUNCTION public.fn_work_logs_pin_identity()
@@ -71,8 +79,15 @@ BEGIN
       USING ERRCODE = '42501';  -- insufficient_privilege
   END IF;
 
-  -- owner_id 는 permanently_delete_user 가 NULL 로만 지운다. 그 형태만 허용한다.
-  IF NEW.owner_id IS DISTINCT FROM OLD.owner_id AND NEW.owner_id IS NOT NULL THEN
+  -- owner_id 는 permanently_delete_user 의 참조 해제(NULL)만 허용하되,
+  -- 그 NULL 화도 "원래 자기 소유였거나 관리자"일 때로 좁힌다.
+  -- 그렇지 않으면 에디터·협업자가 남의 공고 행을 NULL 로 만들어
+  -- 공고 소유자의 정산 목록에서 감출 수 있다(헤더 주석 참조).
+  IF NEW.owner_id IS DISTINCT FROM OLD.owner_id
+     AND NOT (
+       NEW.owner_id IS NULL
+       AND (OLD.owner_id = auth.uid() OR public.is_admin())
+     ) THEN
     RAISE EXCEPTION 'WORK_LOG_OWNER_IMMUTABLE: work_logs.owner_id 는 다른 사용자로 변경할 수 없습니다 (소유 이전 차단)'
       USING ERRCODE = '42501';  -- insufficient_privilege
   END IF;
@@ -82,9 +97,10 @@ END;
 $$;
 
 COMMENT ON FUNCTION public.fn_work_logs_pin_identity() IS
-  'work_logs.staff_id 불변 + owner_id 는 NULL 로만 변경 허용. 워크스페이스 멤버가 raw PostgREST 로 '
-  '출근·정산 완료 기록을 타인에게 재지정해 무음 삭제하는 경로를 차단한다(감사 M4). '
-  'owner_id NULL 예외는 permanently_delete_user 의 참조 해제 경로 전용.';
+  'work_logs.staff_id 불변 + owner_id 는 (본인 소유였거나 관리자일 때만) NULL 로 지우기 허용. '
+  '워크스페이스 멤버가 raw PostgREST 로 출근·정산 완료 기록을 타인에게 재지정해 무음 삭제하거나, '
+  'owner_id 를 NULL 로 만들어 공고 소유자의 정산 목록에서 감추는 경로를 차단한다(감사 M4). '
+  'NULL 예외는 permanently_delete_user 의 참조 해제(본인 삭제·관리자 대행) 전용.';
 
 -- 트리거 함수는 직접 호출 대상이 아니다. prod 하드닝 관례(20260731090000)와 정합.
 REVOKE EXECUTE ON FUNCTION public.fn_work_logs_pin_identity() FROM PUBLIC, anon, authenticated;

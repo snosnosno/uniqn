@@ -18,7 +18,7 @@
 --    레포에 컬럼 권한 pgTAP 선례가 0건이라 이 형식으로 새로 세웠다.
 -- ============================================================
 BEGIN;
-SELECT plan(7);
+SELECT plan(8);
 
 DO $$
 DECLARE s RECORD;
@@ -99,13 +99,28 @@ SELECT lives_ok(
   ),
   '두 컬럼을 건드리지 않는 정상 UPDATE 는 영향받지 않는다');
 
--- 5. permanently_delete_user 의 참조 해제 경로 — owner_id 를 NULL 로 지우는 것만 허용.
+-- 5. 🔴 "NULL 이면 무조건 허용" 이 남기던 구멍 — 에디터(워크스페이스 멤버)는 wl_update 정책을
+--    통과하므로, NULL 화를 무조건 허용하면 **남의 공고 행**을 NULL 로 만들어
+--    공고 소유자의 정산 목록(`.eq('owner_id', ...)`)에서 감출 수 있었다. 자해가 아니라 타인 피해다.
+--    이 단언은 그 구멍이 닫혀 있음을 지킨다.
+--    ⚠️ 반드시 에디터 컨텍스트여야 한다 — owner 로는 `OLD.owner_id = auth.uid()` 라 정당하게 통과한다.
+SELECT jpc_test_set_user((current_setting('wlp.editor_id'))::uuid);
+SELECT throws_ok(
+  format(
+    $q$UPDATE public.work_logs SET owner_id = NULL WHERE id = %L$q$,
+    current_setting('wlp.wl_id')
+  ),
+  '42501', NULL,
+  '남의 소유 행을 NULL 로 지우는 것은 워크스페이스 멤버여도 차단된다');
+
+-- 6. permanently_delete_user 의 참조 해제 경로 — owner_id 를 NULL 로 지우는 것만 허용.
 --    ⚠️ 이 예외가 없으면 계정 삭제가 42501 로 죽는다. SECDEF 함수 내부의 UPDATE 도
 --       트리거는 발화하기 때문이다(SECDEF 라고 건너뛰지 않는다 — 로컬 실증).
 --    ⚠️ 알려진 잔여 위험: 이 예외 때문에 공격자도 owner_id 를 NULL 로는 만들 수 있다.
 --       증분이 좁다고 판단해 의도적으로 열어 뒀다(마이그레이션 헤더 주석 참조).
 --    맨 마지막에 둔다 — owner_id 가 NULL 이 되면 wl_update 의 첫 분기가 깨지고
 --    workspace 분기로만 통과하게 되어 뒤 테스트의 전제가 바뀐다.
+SELECT jpc_test_set_user((current_setting('wlp.owner_id'))::uuid);
 SELECT lives_ok(
   format(
     $q$UPDATE public.work_logs SET owner_id = NULL WHERE id = %L$q$,
