@@ -56,15 +56,18 @@
 --   워크스페이스 멤버·협업자를 통과시키므로, 이건 자해가 아니라 **타인에 대한 피해**다.
 --   (에디터가 남의 공고 행을 지울 수 있다 — 로컬에서 실제로 재현했다.)
 --
---   그래서 NULL 화도 "원래 자기 소유였거나 관리자일 때"로 좁힌다. 이 조건은
---   permanently_delete_user 의 두 정당 경로를 모두 통과시킨다(로컬 실증):
---     · 본인 계정 삭제  — `UPDATE ... WHERE owner_id = p_user_id` 이고 p_user_id = auth.uid()
---     · 관리자 대행 삭제 — public.is_admin()
---   반면 에디터·협업자가 남의 공고 행을 NULL 로 만드는 경로는 차단된다.
+--   그래서 NULL 화는 **채널**로 가른다 — `current_user` 데니리스트.
+--   로컬 실증으로 확인한 판별 원리:
+--     · 직접 PostgREST PATCH   → `current_user = 'authenticated'`
+--     · SECDEF 함수 경유        → `current_user = 'postgres'`(definer). `auth.uid()` 는 호출자 유지
+--   `permanently_delete_user` 는 SECDEF 이고 소유자가 postgres 임을 prod 에서 확인했으므로
+--   본인 삭제·관리자 대행 삭제 **둘 다** 통과하고, 재정의가 전혀 필요 없다.
 --
---   ⚠️ 남는 잔여 위험은 "자기 소유 행을 자기가 NULL 로 만드는 것" 하나뿐이고, 이는 자해라
---      수용한다. GUC 마커로 완전히 닫으려면 계정 삭제 경로(고위험 SECDEF)를 재정의해야 해서
---      이 방어가 갚는 값보다 비싸다.
+--   ⚠️ 대안이었던 트랜잭션 로컬 GUC 마커는 원리상 안전하지만(PostgREST 는 pg_catalog 의
+--      set_config 를 노출하지 않는다) 계정 삭제 경로(고위험 SECDEF)를 재정의해야 해서
+--      이 방어가 갚는 값보다 비싸다. 데니리스트는 그 비용이 0이다.
+--   ⚠️ 운영자가 owner_id 를 수동 백필해야 할 일이 생기면 postgres 로 접속하거나
+--      `ALTER TABLE public.work_logs DISABLE TRIGGER tr_work_logs_pin_identity` 후 작업하고 재활성화한다.
 -- ------------------------------------------------------------
 
 CREATE OR REPLACE FUNCTION public.fn_work_logs_pin_identity()
@@ -79,17 +82,25 @@ BEGIN
       USING ERRCODE = '42501';  -- insufficient_privilege
   END IF;
 
-  -- owner_id 는 permanently_delete_user 의 참조 해제(NULL)만 허용하되,
-  -- 그 NULL 화도 "원래 자기 소유였거나 관리자"일 때로 좁힌다.
-  -- 그렇지 않으면 에디터·협업자가 남의 공고 행을 NULL 로 만들어
-  -- 공고 소유자의 정산 목록에서 감출 수 있다(헤더 주석 참조).
-  IF NEW.owner_id IS DISTINCT FROM OLD.owner_id
-     AND NOT (
-       NEW.owner_id IS NULL
-       AND (OLD.owner_id = auth.uid() OR public.is_admin())
-     ) THEN
-    RAISE EXCEPTION 'WORK_LOG_OWNER_IMMUTABLE: work_logs.owner_id 는 다른 사용자로 변경할 수 없습니다 (소유 이전 차단)'
-      USING ERRCODE = '42501';  -- insufficient_privilege
+  IF NEW.owner_id IS DISTINCT FROM OLD.owner_id THEN
+    -- 다른 사용자로의 재지정은 채널과 무관하게 전면 차단한다(정당 writer 0곳).
+    IF NEW.owner_id IS NOT NULL THEN
+      RAISE EXCEPTION 'WORK_LOG_OWNER_IMMUTABLE: work_logs.owner_id 는 다른 사용자로 변경할 수 없습니다 (소유 이전 차단)'
+        USING ERRCODE = '42501';  -- insufficient_privilege
+    END IF;
+
+    -- NULL 화(참조 해제)는 **신뢰 컨텍스트에서만** 허용한다.
+    -- 판별 원리(로컬 실증): SECDEF 함수 안에서 `auth.uid()` 는 호출자 JWT 를 그대로 보지만
+    -- `current_user` 는 definer 로 바뀐다 — 직접 PostgREST PATCH 는 `authenticated`,
+    -- `permanently_delete_user`(SECDEF, 소유자 postgres) 경유는 `postgres` 다.
+    -- 그래서 `auth.uid() IS NULL` 류의 기존 신뢰 게이트는 여기 쓸 수 없다
+    -- (계정 삭제도 사용자가 PostgREST 로 호출하므로 그 안에서 auth.uid() 는 NOT NULL 이다).
+    -- 데니리스트로 쓰는 이유: service_role·postgres·supabase_admin 경로가 소유자 이름과
+    -- 무관하게 열려 있어 allow-list 보다 안전하다.
+    IF current_user IN ('authenticated', 'anon') THEN
+      RAISE EXCEPTION 'WORK_LOG_OWNER_IMMUTABLE: work_logs.owner_id 는 직접 변경할 수 없습니다 (계정 삭제 경로 전용)'
+        USING ERRCODE = '42501';  -- insufficient_privilege
+    END IF;
   END IF;
 
   RETURN NEW;
@@ -103,7 +114,16 @@ COMMENT ON FUNCTION public.fn_work_logs_pin_identity() IS
   'NULL 예외는 permanently_delete_user 의 참조 해제(본인 삭제·관리자 대행) 전용.';
 
 -- 트리거 함수는 직접 호출 대상이 아니다. prod 하드닝 관례(20260731090000)와 정합.
+-- (트리거 발화는 호출자 EXECUTE 권한과 무관하다 — 권한 검사는 CREATE TRIGGER 시점에 끝난다.)
 REVOKE EXECUTE ON FUNCTION public.fn_work_logs_pin_identity() FROM PUBLIC, anon, authenticated;
+
+-- 선례 정리(위생) — `fn_work_logs_pin_posting_id` 는 20260731090000 의 일괄 REVOKE 33종에서
+-- 빠져 있어 PUBLIC EXECUTE 가 남아 있다(prod `proacl` 실측: `=X/postgres`).
+-- 그 배치는 SECDEF 함수 대상이었고 이 함수는 INVOKER 라 스코프 밖이었던 것으로 보인다.
+-- 실위험은 0에 가깝다 — 트리거 함수를 /rpc 로 호출하면 0A000
+-- ('trigger functions can only be called as triggers')으로 막힌다. 어드바이저 잡음과
+-- 일관성 차원에서 같은 계열인 이번 마이그에 소급한다.
+REVOKE EXECUTE ON FUNCTION public.fn_work_logs_pin_posting_id() FROM PUBLIC, anon, authenticated;
 
 DROP TRIGGER IF EXISTS tr_work_logs_pin_identity ON public.work_logs;
 CREATE TRIGGER tr_work_logs_pin_identity
