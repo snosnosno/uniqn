@@ -120,7 +120,7 @@ export function PostcodeSearch({ height, onComplete, onError }: PostcodeSearchPr
     <View style={{ height }} className="overflow-hidden rounded-xl">
       <div ref={containerRef} style={{ height: '100%', width: '100%' }} />
       {loading ? (
-        <View className="absolute inset-0 items-center justify-center gap-2">
+        <View pointerEvents="none" className="absolute inset-0 items-center justify-center gap-2">
           <ActivityIndicator />
           <Text className="text-xs text-content-muted font-sans">우편번호 검색을 불러오는 중…</Text>
         </View>

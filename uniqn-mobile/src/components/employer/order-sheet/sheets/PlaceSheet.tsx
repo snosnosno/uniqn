@@ -258,23 +258,37 @@ export function PlaceSheet({
             </Pressable>
           )}
 
+          {/* `status-*` 토큰은 이 레포에 없다 — 레포 관행은 error-600/dark:error-400.
+              실패 안내는 "조용히 통과 금지" 설계의 유일한 사용자 피드백 채널이라
+              색이 안 먹으면(다크에서 검정) 사실상 사라진다 */}
           {postcodeError ? (
-            <Text className="text-xs text-status-error font-sans">{postcodeError}</Text>
+            <Text className="text-xs text-error-600 dark:text-error-400 font-sans">
+              {postcodeError}
+            </Text>
           ) : null}
 
           <Pressable
-            onPress={() => setManualAddress((v) => !v)}
+            onPress={() => {
+              // 정상 동작하는 수동 입력 아래에 직전 실패 문구를 남겨두지 않는다
+              setPostcodeError(null);
+              setManualAddress((v) => !v);
+            }}
             className="min-h-[44px] justify-center active:opacity-80"
             accessibilityRole="button"
-            accessibilityLabel={manualAddress ? '주소 검색으로 돌아가기' : '주소 직접 입력하기'}
+            accessibilityLabel={
+              manualAddress ? '주소 검색으로 입력' : '주소를 못 찾겠다면 직접 입력'
+            }
           >
             <Text className="text-xs text-content-secondary font-sans">
               {manualAddress ? '주소 검색으로 입력' : '주소를 못 찾겠다면 직접 입력'}
             </Text>
           </Pressable>
 
-          {/* 주소가 정해진 뒤에만 상세주소를 묻는다 — 층/호만 덩그러니 남는 데이터를 막는다 */}
-          {draft.address ? (
+          {/* 주소가 정해진 뒤에 상세주소를 묻는다 — 층/호만 덩그러니 남는 데이터를 막는다.
+              단 **이미 값이 있으면 주소가 비어도 계속 보여준다**. 조건을 `draft.address` 하나로
+              두면 ①주소를 지운 사용자에게 상세주소가 숨겨진 채 그대로 제출되고(막으려던 바로 그 형태)
+              ②상세주소만 있고 주소가 없는 레거시 공고를 편집할 때 그 값이 화면에서 사라진다. */}
+          {draft.address || draft.detailedAddress ? (
             <TextInput
               value={draft.detailedAddress ?? ''}
               onChangeText={(detailedAddress) => setDraft((d) => ({ ...d, detailedAddress }))}
@@ -330,7 +344,12 @@ export function PlaceSheet({
         <View className="gap-2" style={{ height: inlinePanelHeight }}>
           {/* 지역 모드 dead-end 방지 — 선택 없이 새 입력으로 복귀 */}
           <Pressable
-            onPress={() => setMode('new')}
+            onPress={() => {
+              // 안내문은 이 진입에 대한 것이다 — 나가면 지운다(안 지우면 이후 사용자가 스스로
+              // '지역 선택'을 눌러 들어가도 "자동으로 찾지 못했어요"가 계속 뜬다)
+              setRegionAutoFailed(false);
+              setMode('new');
+            }}
             className="flex-row items-center gap-1 min-h-[44px] justify-center active:opacity-80"
             accessibilityRole="button"
             accessibilityLabel="지역 선택 취소하고 돌아가기"

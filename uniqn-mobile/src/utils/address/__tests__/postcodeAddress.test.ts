@@ -236,7 +236,7 @@ describe('parsePostcodeResult — 외부 경계 검증', () => {
 });
 
 describe('실제 위젯 응답 (2026-08-01 브라우저 실측 캡처)', () => {
-  // 위젯이 실제로 돌려준 39개 키 원문. 문서가 아니라 관찰에서 온 값이라
+  // 위젯 실응답(총 39키)에서 발췌한 21키. 문서가 아니라 관찰에서 온 값이라
   // "sido 는 축약형" · "sigungu 는 2단계 한 문자열" 전제를 여기서 못 박는다.
   const REAL_PAYLOAD = {
     postcode: '',
@@ -262,7 +262,7 @@ describe('실제 위젯 응답 (2026-08-01 브라우저 실측 캡처)', () => {
     roadname: '판교역로',
   };
 
-  it('선언하지 않은 키가 34개 더 있어도 파스가 깨지지 않는다(.strict() 아님)', () => {
+  it('선언하지 않은 키가 잔뜩 더 있어도 파스가 깨지지 않는다(.strict() 아님)', () => {
     const parsed = parsePostcodeResult(REAL_PAYLOAD);
     expect(parsed).not.toBeNull();
     expect(parsed?.roadAddress).toBe('경기 성남시 분당구 판교역로 235');
