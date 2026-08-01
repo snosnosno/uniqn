@@ -290,8 +290,16 @@ BEGIN
     -- 이번 UPDATE 에서 실제로 늘어난 항목만 신뢰한다(과거 이력의 사유를 재탕하지 않는다).
     -- ⚠️ 이 텍스트는 사용자 입력이다. 클라가 assertWorkTimeReason 으로 검증하지만 DB 계층엔
     --    강제가 없으므로(work_logs_xss_check 대상은 notes·custom_role 뿐) 길이를 여기서 자른다.
-    v_settle_hist_before := COALESCE(jsonb_array_length(OLD.settlement_modification_history), 0);
-    v_settle_hist_after  := COALESCE(jsonb_array_length(NEW.settlement_modification_history), 0);
+    -- ⚠️ jsonb_array_length 는 배열이 아니면 22023 을 던진다. 이 함수의 EXCEPTION 블록은
+    --    BEGIN 전체를 되감으므로, 오염된 jsonb 하나가 Case 1~3 의 알림까지 통째로 삼킨다.
+    --    (기존 Case 2 의 modification_history 도 같은 노출을 갖고 있으나 그건 이 PR 범위 밖이다.)
+    --    컬럼 default 는 '[]' 이고 클라는 항상 배열을 쓰지만, raw PostgREST 로는 객체도 들어간다.
+    v_settle_hist_before := CASE
+      WHEN jsonb_typeof(OLD.settlement_modification_history) = 'array'
+        THEN jsonb_array_length(OLD.settlement_modification_history) ELSE 0 END;
+    v_settle_hist_after := CASE
+      WHEN jsonb_typeof(NEW.settlement_modification_history) = 'array'
+        THEN jsonb_array_length(NEW.settlement_modification_history) ELSE 0 END;
     v_revert_reason := NULL;
 
     IF v_settle_hist_after > v_settle_hist_before THEN

@@ -14,9 +14,17 @@
 --      (4) settlement_reverted 정확히 1건
 --      (5) 본문에 지급액 + 되돌리기 사유(settlement_modification_history 마지막 항목)
 --      (6) 정방향(pending → completed)에서는 settlement_reverted 0 / settlement_completed 1
+--      (8) settlement_modification_history 가 배열이 아니어도(raw PostgREST 오염) 알림은 나간다 —
+--          jsonb_array_length 가 22023 을 던지면 함수의 EXCEPTION 블록이 되감아
+--          **이 UPDATE 의 모든 알림**이 통째로 사라진다. jsonb_typeof 가드의 관측 가능한 효과.
 --
 -- (7) CREATE OR REPLACE 의 SET 절이 pg_temp 하드닝을 지우지 않았는지 —
 --     20260711100000 이 ALTER FUNCTION 으로 얹은 방어의 국소 회귀 가드.
+--
+-- 🔗 형제 파일: `worklog_time_slot_change_notify.test.sql` 이 Case 2-B 의 **발화 조건**
+--    (T1 발화 · T2 취소 중복금지 · T3 무관컬럼 침묵 · T4 applicationId NULL · T5 힌트 있음)을
+--    이미 고정한다. 이 파일은 그 위에 얹히는 **힌트 억제 축**(M3)과 **Case 3-B**(M5)만 본다.
+--    새 단언을 추가할 때 어느 쪽에 속하는지 먼저 판단할 것 — 세 번째 파일을 만들지 말 것.
 --
 -- ⚠️ JWT 주입은 헬퍼(jpc_test_set_user_with_role) 경유만 — 인라인 set_config 금지
 --    (wiki decisions/wallet-pgtap-caller-binding: singular/plural GUC 동시 갱신 필수).
@@ -25,7 +33,7 @@
 -- ============================================================
 
 BEGIN;
-SELECT plan(7);
+SELECT plan(8);
 
 -- ─── 시드 (superuser 컨텍스트, set_user 이전) ───
 DO $$
@@ -35,6 +43,7 @@ DECLARE
   v_staff_b uuid;   -- M3 본체   (cancellation_pending)
   v_staff_c uuid;   -- M5 되돌리기
   v_staff_d uuid;   -- M5 정방향
+  v_staff_e uuid;   -- M5 이력 오염(비배열)
   v_ws uuid := gen_random_uuid();
   v_job uuid := gen_random_uuid();
   v_app_a uuid := gen_random_uuid();
@@ -43,12 +52,14 @@ DECLARE
   v_wl_b uuid := gen_random_uuid();
   v_wl_c uuid := gen_random_uuid();
   v_wl_d uuid := gen_random_uuid();
+  v_wl_e uuid := gen_random_uuid();
 BEGIN
   v_owner   := jpc_test_create_user('employer');
   v_staff_a := jpc_test_create_user('staff');
   v_staff_b := jpc_test_create_user('staff');
   v_staff_c := jpc_test_create_user('staff');
   v_staff_d := jpc_test_create_user('staff');
+  v_staff_e := jpc_test_create_user('staff');
 
   INSERT INTO public.workspaces (id, name, owner_id, created_at, updated_at)
   VALUES (v_ws, '__sql_fixture_nwc_ws', v_owner, now(), now());
@@ -82,11 +93,22 @@ BEGIN
     (v_wl_d, v_staff_d, v_job, v_owner, '2026-08-09', 'checked_out', 'dealer',
      now() - interval '8 hour', now() - interval '1 hour', 'pending', 300000, NULL, now(), now());
 
+  -- 이력 오염 픽스처: 배열이 아닌 jsonb. 컬럼에 CHECK 가 없어 raw PostgREST 로 실제 가능하다.
+  INSERT INTO public.work_logs (
+    id, staff_id, job_posting_id, owner_id, date, status, role,
+    check_in_ts, check_out_ts, payroll_status, payroll_amount, payroll_date,
+    settlement_modification_history, created_at, updated_at
+  ) VALUES
+    (v_wl_e, v_staff_e, v_job, v_owner, '2026-08-08', 'checked_out', 'dealer',
+     now() - interval '8 hour', now() - interval '1 hour', 'completed', 200000, now(),
+     '{"corrupted": true}'::jsonb, now(), now());
+
   PERFORM set_config('nwc.owner', v_owner::text, true);
   PERFORM set_config('nwc.wl_a', v_wl_a::text, true);
   PERFORM set_config('nwc.wl_b', v_wl_b::text, true);
   PERFORM set_config('nwc.wl_c', v_wl_c::text, true);
   PERFORM set_config('nwc.wl_d', v_wl_d::text, true);
+  PERFORM set_config('nwc.wl_e', v_wl_e::text, true);
 END $$;
 
 -- ─── 행위: 구인자(employer JWT + RLS 경유)로 4건을 각각 UPDATE ───
@@ -119,6 +141,11 @@ BEGIN
   UPDATE public.work_logs
      SET payroll_status = 'completed', payroll_date = now()
    WHERE id = (current_setting('nwc.wl_d'))::uuid;
+
+  -- M5 이력 오염: 되돌리기를 하되 이력 배열은 손대지 않는다(비배열 그대로).
+  UPDATE public.work_logs
+     SET payroll_status = 'pending', payroll_date = NULL
+   WHERE id = (current_setting('nwc.wl_e'))::uuid;
 END $$;
 
 RESET ROLE;
@@ -187,6 +214,17 @@ SELECT is(
       AND c LIKE 'search_path=%'),
   true,
   'notify_on_work_log_update search_path 에 pg_temp 보존(CREATE OR REPLACE SET 절 회귀 가드)');
+
+-- ─── (8) 이력이 배열이 아니어도 알림이 살아남는다 ───
+SELECT is(
+  (SELECT format('%s/%s',
+     count(*),
+     COALESCE(max(CASE WHEN body LIKE '%사유:%' THEN 1 ELSE 0 END), 0))
+     FROM public.notifications
+    WHERE type = 'settlement_reverted'
+      AND data->>'workLogId' = current_setting('nwc.wl_e')),
+  '1/0',
+  'M5: settlement_modification_history 가 비배열이어도 되돌리기 알림 1건(사유 없이) — jsonb_typeof 가드');
 
 SELECT * FROM finish();
 ROLLBACK;
