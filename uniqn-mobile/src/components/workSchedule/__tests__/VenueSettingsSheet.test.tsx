@@ -123,6 +123,56 @@ describe('지점 정보 섹션(S1)', () => {
     });
   });
 
+  // 🔴 감사 M9 회귀 — `p_location` 은 전체 치환이라, 시트가 아는 필드(`name`)만 담아 보내면
+  //    서버가 '{}' 에서 재조립하며 주소가 소거된다. 소거는 조용하다: 지우는 화면(이 시트)과
+  //    보이는 화면(스태프 근무상세 주소 줄)이 달라 저장한 사람은 결과를 못 본다.
+  //    ⚠️ 이 단언은 기본 픽스처(location 에 name 만 있음)로는 성립하지 않는다 —
+  //       name 만 있는 컨테이너는 병합하든 재조립하든 결과가 같아 vacuous 하다.
+  //       그래서 **주소가 채워진 별도 픽스처**로 검증한다.
+  it('주소가 채워진 지점을 저장해도 district·region·detailedAddress 가 보존된다', async () => {
+    const withAddress = {
+      ...container,
+      location: {
+        name: '강남역 2번 출구',
+        district: '서울특별시 강남구 테헤란로 129',
+        region: 'seoul-gangnam',
+        detailedAddress: '3층 302호',
+      },
+    };
+    const { getByDisplayValue, getByText } = renderSheet(
+      <VenueSettingsSheet visible onClose={jest.fn()} container={withAddress as never} />
+    );
+    fireEvent.changeText(getByDisplayValue('강남점'), '홀덤펍 강남점');
+    fireEvent.press(getByText('지점 정보 저장'));
+
+    await waitFor(() => expect(mockUpdateVenueContainer).toHaveBeenCalledTimes(1));
+    expect(mockUpdateVenueContainer.mock.calls[0][1].location).toEqual({
+      name: '강남역 2번 출구',
+      district: '서울특별시 강남구 테헤란로 129',
+      region: 'seoul-gangnam',
+      detailedAddress: '3층 302호',
+    });
+  });
+
+  // 병합이 "덮어쓰기를 막는" 방향으로 새지 않는지 — 장소명 자체는 여전히 폼 값이 이긴다.
+  it('장소명을 고치면 기존 주소는 두고 장소명만 새 값으로 덮어쓴다', async () => {
+    const withAddress = {
+      ...container,
+      location: { name: '강남역 2번 출구', detailedAddress: '3층 302호' },
+    };
+    const { getByDisplayValue, getByText } = renderSheet(
+      <VenueSettingsSheet visible onClose={jest.fn()} container={withAddress as never} />
+    );
+    fireEvent.changeText(getByDisplayValue('강남역 2번 출구'), '  강남역 11번 출구  ');
+    fireEvent.press(getByText('지점 정보 저장'));
+
+    await waitFor(() => expect(mockUpdateVenueContainer).toHaveBeenCalledTimes(1));
+    expect(mockUpdateVenueContainer.mock.calls[0][1].location).toEqual({
+      name: '강남역 11번 출구',
+      detailedAddress: '3층 302호',
+    });
+  });
+
   // 서버 규약상 ''=제거다. 사용자가 칸을 비운 행위가 undefined 로 뭉개지면 조용히 안 지워진다.
   it('연락처를 비우면 빈 문자열(=제거 신호)로 보낸다', async () => {
     const { getByDisplayValue, getByText } = renderSheet(
