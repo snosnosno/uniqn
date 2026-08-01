@@ -24,7 +24,7 @@
 | **S5** | 3-A + 3-D | ~~`feat/settlement-and-rename`~~ | ✅ **머지** | **#387** | `97bf7e85c`. CI **10잡 전부 SUCCESS**(E2E 10m14s 포함, 재실행 없이 1회 통과). 브랜치·워크트리 정리 완료. 마이그 2건은 **PR 이전에 prod 선적용**됨 — 재적용 금지. 상세=§5 |
 | **S5-후속** | SETTLE-3 되돌리기 + 정산 게이트 status 축 | ~~`feat/settlement-revert-entry`~~ | ✅ **머지** | **#388** | `0ec9abc2c`. CI **9잡 전부 SUCCESS**(E2E 9m56s 포함, 재실행 없이 1회 통과. DB Tests 는 마이그 0건이라 미실행). 브랜치·워크트리 정리 완료. 마이그 **0건** — 파리티 **184/111 불변**(prod 실측). 상세=§5 |
 | **A-감사** | A레인 전체 사후 감사 | — (메인 체크아웃, 읽기 전용) | ✅ | — | 산출물=[`docs/analysis/2026-08-01-work-schedule-wave-audit.md`](../analysis/2026-08-01-work-schedule-wave-audit.md). **코드 변경 0건.** CRITICAL 0 / HIGH 1(선재) / MEDIUM 11 / LOW 12. 파리티 **184/111 prod 실측 일치**. 상세=§5 |
-| **B1** | 주소 1단계 | `claude/job-posting-address-map-lbrvzd` | 🔨 **구현완료·PR 미생성** | | HEAD `41da9114d`(1커밋). 마이그 **0건**. quality exit 0 · jest **599스위트 6566테스트 전량 통과** · 브라우저 실관찰 통과(CSP 위반 0건). 리뷰 opus→fable 진행. 🔴 **머지 전 P4(M9) 선행 필수**(단, B1 diff 자체는 M9 를 활성화하지 않음 — §5 참조) |
+| **B1** | 주소 1단계 | `claude/job-posting-address-map-lbrvzd` | 🔨 **구현완료·리뷰반영 완료·PR 미생성** | | HEAD `ccd1cbe26`(4커밋). 마이그 **0건** — 파리티 184/111 불변. quality exit 0 · jest **599스위트 6573테스트 전량 통과** · knip 델타 0 · 브라우저 실관찰 통과(CSP 위반 0건, 리뷰 수정 후 재관찰까지). 리뷰 fable **APPROVE**(HIGH 0) / opus HIGH 3건 **전량 반영**. 🔴 **머지 전 P4(M9) 선행 필수**(단, B1 diff 자체는 M9 를 활성화하지 않음 — §5 참조) |
 | **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
 | **S6** | 3-C 설계 | — | ⬜ | | 사용자 결정 필요 |
 | **S7** | 3-C 구현 | `feat/posting-time-change` | ⬜ | | S6 승인 후 |
@@ -506,8 +506,13 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 - 신규 `src/utils/address/postcodeAddress.ts`(zod 경계 검증 + region 해석) · `src/components/address/PostcodeSearch{,.web}.tsx`
 - CSP: `script-src += t1.daumcdn.net` · `frame-src += postcode.map.kakao.com`
 - **같이 고친 결함**(이번 변경이 만들어낼 것): `resolveMapQuery` 가 `detailedAddress` 최우선이라 '3층 301호'가 지도 검색어가 되는 문제 → `composeFullAddress` SSOT 로 교체(red→green 확인). `InfoTab` 주소 줄 동반 수정. `orderSheet.schema` district 50→200.
-- 검증: `npm run quality` **exit 0**(lint 0 errors) · jest **599 스위트 / 6566 테스트 전량 통과** · e2e 축 확인(PlaceSheet testID 0건, 주소 표시·길찾기 단언 0건)
-- **브라우저 실관찰**(정적 검사 대체 불가 게이트): ①프로덕션 CSP 를 실제 헤더로 붙인 페이지에서 위젯 정상 렌더 + 콘솔 위반 **0건** ②실제 앱(주문서→장소→주소 검색)에서 검색·선택·지역 자동선택(`분당구`)·상세주소 노출 확인
+- 검증: `npm run quality` **exit 0**(lint 0 errors) · jest **599 스위트 / 6573 테스트 전량 통과** · e2e 축 확인(PlaceSheet testID 0건, 주소 표시·길찾기 단언 0건) · knip **델타 0**(master 2223 / 브랜치 2223 실측 대조, 래칫 red 는 master 부터 선재)
+- **브라우저 실관찰**(정적 검사 대체 불가 게이트): ①프로덕션 CSP 를 실제 헤더로 붙인 페이지에서 위젯 정상 렌더 + 콘솔 위반 **0건** ②실제 앱(주문서→장소→주소 검색)에서 검색·선택·지역 자동선택·상세주소 노출 확인. 리뷰 수정 후 **재관찰까지 완료**
+- **리뷰 2회**(opus 중간 → fable 최종). fable = **APPROVE**(CRITICAL 0 / HIGH 0), opus = REQUEST CHANGES(HIGH 3). **HIGH 3건 전부 반영**(`ccd1cbe26`):
+  ① `text-status-error` 는 이 레포에 없는 토큰이라 실패 안내가 다크모드에서 사실상 투명했다 → `error-600/dark:error-400`
+  ② 네이티브 WebView 가 SheetModal 의 ScrollView 안이라 Android 가 제스처를 가져간다(`nestedScrollEnabled` 기본 false) → prop 추가
+  ③ 이 기능의 린치핀인 `district` 동시 쓰기에 회귀 가드 0건 → PlaceSheet 컴포넌트 테스트 4건 신설, **red-green 확인**(`district: address` 제거 시 정확히 2건 red)
+  MEDIUM 도 반영: 상세주소 렌더 조건 `address || detailedAddress`(주소를 지우면 상세주소가 숨겨진 채 제출되던 경로) · 브릿지 파싱 실패 `onError` · `originWhitelist` 축소 + `domStorageEnabled` · 네이티브 HTML 이 위젯 옵션을 리터럴 재선언하던 드리프트 제거
 
 **안 끝난 것**
 - 🔴 **PR 미생성** — push/PR 은 사용자 명시 요청 시에만(원장 §2 규율). 워크트리·브랜치 유지 중
@@ -525,6 +530,9 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 6. 🔑 **지역 택소노미는 2026-07 개편이 이미 반영돼 있다**(설계 문서 §8 미확인 항목의 답) — 인천 신설 4구·화성시 4구 전부 존재. 위험은 반대 방향(위젯이 개편 전 구명을 줄 때)이라 ②단계 폴백이 그걸 받는다.
 7. 🔑 **위젯 실응답은 39개 키** — 우리가 쓰는 건 5개뿐이라 zod `.strict()` 금지. `sido` 축약형(`경기`)·`sigungu` 2단계 문자열(`성남시 분당구`)을 **관찰로** 확정해 픽스처에 고정했다.
 8. 🔑 새 워크트리는 `.env.local`·`.env.development.local`(gitignore)을 메인에서 복사해야 앱이 뜬다 — 없으면 "환경변수 검증 실패"로 부팅 실패.
+9. 🔑 **`composeFullAddress` 의 포함 검사는 완전 토큰이어야 한다** — 단순 `includes` 면 `'강남구청길 5'` 가 `'강남구'` 를 품은 것으로 판정돼 **시·구가 조용히 사라진다**. 역방향 포함, 그리고 "주소 칸이 주소 꼴이 아니면 앞에 붙이지 않는다"(레거시 자유텍스트 별칭 방어)까지 세 갈래가 필요하다.
+10. ⚠️ **`fullLabel`(`core.ts:44`)은 이 PR 이 건드리지 않았다** — 구직자 화면 `근무지` 행은 `name [+detailedAddress] · regionLabel` 이고 **도로명주소는 원래부터 안 보인다**(확정 스태프의 `InfoTab` 에서만 보인다). B1 이 뺏은 게 아니라 선재 경계다. 지원 전 주소 공개 여부는 **제품 결정**이라 범위 밖으로 남겼다 — 바꾸려면 사용자 확인 먼저.
+11. 🔑 **리뷰 에이전트가 0바이트로 멈출 수 있다** — opus 리뷰가 13분간 출력 0바이트인 채 살아 있었다(형제 fable 은 211KB 작성 중). 출력 파일 크기·mtime 으로 생사를 판별해 재디스패치했고, 원래 것도 결국 18분 만에 완주했다(둘 다 유효). 판정이 갈리면 **양쪽 근거를 직접 실측해 채택**할 것 — 이번에도 `composeFullAddress` 반례에서 두 리뷰가 정면 충돌했고 opus 가 맞았다.
 
 ---
 
