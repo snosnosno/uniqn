@@ -13,6 +13,11 @@
  *    (사용자 결정 4). 기본값이 있으면 색상만 고치려던 사용자가 8시간 근무를 확정시킨다.
  *  - **주소 자유 텍스트** — 주소는 검색 컴포넌트가 붙은 뒤 얹는다. 자유 입력으로 받으면
  *    길찾기가 그 문자열로 검색돼 엉뚱한 곳을 안내한다. 지금은 장소명·연락처만 받는다.
+ *
+ * 🔴 그래서 지켜야 하는 불변식: **이 시트는 자기가 모르는 location 필드를 보존해야 한다.**
+ *    `update_venue_container` 의 `p_location` 은 전체 치환이라, 아는 필드만 담아 보내면
+ *    나머지가 지워진다. 주소 입력 UI 를 얹을 때도 "폼에 있는 것만 조립" 하지 말고
+ *    기존 location 위에 덮어쓰는 형태를 유지할 것(saveProfile 참조).
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -105,7 +110,17 @@ export function VenueSettingsSheet({ visible, onClose, container }: VenueSetting
       await profileMutation.mutateAsync({
         containerId: container.id,
         name: trimmedName,
-        location: { name: placeName.trim() },
+        // 🔴 `p_location` 은 부분 병합이 아니라 **전체 치환**이다
+        //    (20260731120000_venue_profile_rpcs.sql:26-33 계약 · :147 이 '{}' 에서 재조립).
+        //    같은 함수에서 `p_defaults` 는 병합인데 location 만 치환인 것은 의도된 비대칭이다 —
+        //    `p_location='{}'` 로 장소 정보 전체를 지우는 경로를 남기기 위해서다.
+        //    따라서 **보낼 객체를 완성하는 책임은 클라에 있다.** 이 시트가 아는 필드는 `name`
+        //    하나뿐이므로 기존 location 을 펼친 뒤 name 만 덮어쓴다. `{ name }` 만 보내면
+        //    district·region·detailedAddress 가 저장 버튼 한 번에 소거된다(감사 M9).
+        //    소거는 조용하다 — 지우는 화면과 보이는 화면(InfoTab 주소 줄)이 다르기 때문이다.
+        //    ⚠️ 펼쳐도 안전한 이유: parseVenueContainerLocation(venueContainer.ts:81-88)이
+        //       화이트리스트 4키만 남기므로 서버가 거부할 미지의 키가 섞일 수 없다.
+        location: { ...(container.location ?? {}), name: placeName.trim() },
         contactPhone: phone.trim(),
       });
       addToast({ type: 'success', message: '지점 정보를 저장했어요' });
