@@ -18,6 +18,14 @@
  *    `update_venue_container` 의 `p_location` 은 전체 치환이라, 아는 필드만 담아 보내면
  *    나머지가 지워진다. 주소 입력 UI 를 얹을 때도 "폼에 있는 것만 조립" 하지 말고
  *    기존 location 위에 덮어쓰는 형태를 유지할 것(saveProfile 참조).
+ *
+ *    ⚠️ 보존 범위는 `parseVenueContainerLocation`(domains/workSchedule/venueContainer.ts)의
+ *       화이트리스트까지다. 서버 `c_loc_keys` 에 키가 추가되면 그 파서도 **함께** 넓혀야 한다 —
+ *       파서가 모르는 키는 read 에서 떨어지고 이 치환 write 로 조용히 소거되어, 지금 고친 것과
+ *       동형의 결함이 새 키에서 재발한다(구 버전 클라가 도는 동안의 소거 창도 함께 고려할 것).
+ *    ⚠️ 저장은 연락처만 고쳐도 location 을 통째로 보낸다. 주소 UI 가 붙으면 stale 스냅샷이
+ *       타 기기의 주소 갱신을 되돌릴 수 있으므로, 그때 "장소명이 바뀐 경우에만 location 전송"
+ *       (미변경은 `p_location=NULL`)을 함께 검토할 것. 지금은 주소 writer 가 0곳이라 도달 불가.
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -112,8 +120,11 @@ export function VenueSettingsSheet({ visible, onClose, container }: VenueSetting
         name: trimmedName,
         // 🔴 `p_location` 은 부분 병합이 아니라 **전체 치환**이다
         //    (20260731120000_venue_profile_rpcs.sql:26-33 계약 · :147 이 '{}' 에서 재조립).
-        //    같은 함수에서 `p_defaults` 는 병합인데 location 만 치환인 것은 의도된 비대칭이다 —
-        //    `p_location='{}'` 로 장소 정보 전체를 지우는 경로를 남기기 위해서다.
+        //    서버를 병합으로 바꾸면 안 되는 이유는 "전체 제거 경로"가 아니다 — 그건 형제
+        //    파라미터 `p_defaults` 가 `'{}'` 센티널 + 병합으로 이미 양립시키고 있다(:198-203).
+        //    진짜 이유는 **단일 키 삭제**다: 서버가 빈 문자열 값을 건너뛰므로(:159-161)
+        //    병합 의미론에서는 `{ name: '' }` 이 아무것도 지우지 못해 "장소명만 비우고 주소는
+        //    유지"가 원리적으로 불가능해진다 — 이 시트가 실제로 쓰는 UX 다.
         //    따라서 **보낼 객체를 완성하는 책임은 클라에 있다.** 이 시트가 아는 필드는 `name`
         //    하나뿐이므로 기존 location 을 펼친 뒤 name 만 덮어쓴다. `{ name }` 만 보내면
         //    district·region·detailedAddress 가 저장 버튼 한 번에 소거된다(감사 M9).
