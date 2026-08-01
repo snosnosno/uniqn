@@ -24,7 +24,7 @@
 | **S5** | 3-A + 3-D | ~~`feat/settlement-and-rename`~~ | ✅ **머지** | **#387** | `97bf7e85c`. CI **10잡 전부 SUCCESS**(E2E 10m14s 포함, 재실행 없이 1회 통과). 브랜치·워크트리 정리 완료. 마이그 2건은 **PR 이전에 prod 선적용**됨 — 재적용 금지. 상세=§5 |
 | **S5-후속** | SETTLE-3 되돌리기 + 정산 게이트 status 축 | ~~`feat/settlement-revert-entry`~~ | ✅ **머지** | **#388** | `0ec9abc2c`. CI **9잡 전부 SUCCESS**(E2E 9m56s 포함, 재실행 없이 1회 통과. DB Tests 는 마이그 0건이라 미실행). 브랜치·워크트리 정리 완료. 마이그 **0건** — 파리티 **184/111 불변**(prod 실측). 상세=§5 |
 | **A-감사** | A레인 전체 사후 감사 | ~~`docs/wave-audit-20260801`~~ | ✅ **머지** | **#390** | `16a5bb1fa`. 분석은 메인 체크아웃에서 **읽기 전용**, 문서 커밋만 워크트리 `T-HOLDEM-audit` 에서. 산출물=[`docs/analysis/2026-08-01-work-schedule-wave-audit.md`](../analysis/2026-08-01-work-schedule-wave-audit.md). **코드 변경 0건.** CRITICAL 0 / HIGH 1(선재) / MEDIUM 11 / LOW 12. 파리티 **184/111 prod 실측 일치**. 상세=§5 |
-| **B1** | 주소 1단계 | `claude/job-posting-address-map-lbrvzd` | 🔨 **구현완료·리뷰반영 완료·PR 미생성** | | HEAD `ccd1cbe26`(4커밋). 마이그 **0건** — 파리티 184/111 불변. quality exit 0 · jest **599스위트 6573테스트 전량 통과** · knip 델타 0 · 브라우저 실관찰 통과(CSP 위반 0건, 리뷰 수정 후 재관찰까지). 리뷰 fable **APPROVE**(HIGH 0) / opus HIGH 3건 **전량 반영**. 🔴 **머지 전 P4(M9) 선행 필수**(단, B1 diff 자체는 M9 를 활성화하지 않음 — §5 참조) |
+| **B1** | 주소 1단계 | `claude/job-posting-address-map-lbrvzd` | 🔨 **PR 생성·CI 대기** | **#391** | HEAD `87cbf19be`(6커밋 = 구현 5 + master 재통합 1). 마이그 **0건** — 파리티 184/111 불변. 재통합 후 재검증: quality **exit 0** · jest **599스위트 6573테스트 122스냅샷 전량 통과 exit 0** · e2e 주소 단언 **0건**(시드만) · knip 델타 0(이전 세션 실측). 리뷰 fable **APPROVE**(HIGH 0) / opus HIGH 3건 **전량 반영**. ✅ **M9 선행 불필요**(실측 정정 — B1 diff 는 지점 `location` 을 건드리지 않는다. §5 B1 주의 4번) |
 | **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
 | **S6** | 3-C 설계 | — | ⬜ | | 사용자 결정 필요 |
 | **S7** | 3-C 구현 | `feat/posting-time-change` | ⬜ | | S6 승인 후 |
@@ -40,7 +40,7 @@
 | S4 | ~~`T-HOLDEM-qr`~~ | ✅ 정리완료(정션 해제 → `worktree remove` → 브랜치 삭제, 원본 `node_modules` 821 무손상) |
 | S5 | ~~`T-HOLDEM-settle`~~ | ✅ 정리완료(정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818** 무손상 확인) |
 | S5-후속 | ~~`T-HOLDEM-revert`~~ | ✅ 정리완료(정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818** 무손상 확인) |
-| B1·B2 | `T-HOLDEM-address` | 🔨 **유지 중**(B1 구현완료, PR 미생성). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성(818 확인). `.env.local`·`.env.development.local` 은 gitignore 라 메인에서 복사해야 앱이 뜬다 |
+| B1·B2 | `T-HOLDEM-address` | 🔨 **유지 중**(B1 PR #391 대기 중 — 머지 확인 후 정리). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성(818 확인). `.env.local`·`.env.development.local` 은 gitignore 라 메인에서 복사해야 앱이 뜬다 |
 | A-감사 | ~~`T-HOLDEM-audit`~~ | ✅ **머지 완료(#390)** — 정리 대상(정션 없음. `worktree remove` → 브랜치 삭제) |
 | S7 | `T-HOLDEM-timechange` | ⬜ |
 
@@ -501,10 +501,28 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
   - ⚠️ **`proconfig` 하드닝은 실제로는 안 터졌다** — 재정의 4함수 전부 `pg_temp` 보존(prod 실측). 가장 크게 걱정한 함정이 무사했다는 사실도 기록해 둔다.
   - 🔴 **메인 체크아웃에서 커밋하지 말 것** — 이 세션이 실증했듯 두 세션이 같은 트리를 쓰면 한쪽의 미커밋 편집이 다른 쪽 커밋에 조용히 삼켜진다. 문서만 고치는 세션도 예외가 아니다.
 
-### B1 (주소 검색 1단계) — 2026-08-01 · 상태: **구현 완료 · PR 미생성**(push/PR 은 사용자 명시 요청 대기)
+### B1-PR (주소 검색 1단계 착지) — 2026-08-02 · 상태: **PR #391 생성 · CI 대기**
 
-- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-address` / `claude/job-posting-address-map-lbrvzd` · HEAD `41da9114d`(1커밋, master `0d4d99309` 기준)
-- **마이그 0건** — 파리티 **184/111 불변**(DB 미접촉)
+- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-address` / `claude/job-posting-address-map-lbrvzd` · HEAD `87cbf19be`(6커밋, master `16a5bb1fa` 재통합 포함)
+- **마이그 0건** — 파리티 184/111 불변(DB 미접촉)
+- 사용자 결정: 선택지 A(B1 PR 생성) + 리스크 2건 수용 + WebView 경로 웹 프리뷰 추가 관찰
+
+**이 세션에서 한 것**
+- **최신 master 재통합** — 착수 직후 `origin/master` 가 `0d4d99309` → `16a5bb1fa`(A-감사 문서 **PR #390 머지**)로 움직여 있었다. merge 로 재통합(rebase 금지 규율), 충돌은 **실행 원장 4구간뿐이고 코드 충돌 0건**. §5 A-감사 항목은 origin/master 판이 최종본이라 그쪽 채택(브랜치 판은 구버전 스냅샷이었다).
+- **재통합 후 재검증**: `npm run quality` **exit 0**(lint 0 errors / warning 98 은 선재) · `npx jest` **599 스위트 / 6573 테스트 / 122 스냅샷 전량 통과 exit 0** · 주소 스위트 단독 재실행 **3/3 스위트 57/57 테스트** · `e2e/` 주소 관련 **`expect` 단언 0건** 독립 확인(시드 데이터만 존재)
+- **네이티브 WebView 브릿지 실관찰**(리스크 부분 보강) — `PostcodeSearch.tsx` 의 `POSTCODE_HTML` 을 그대로 재현한 페이지를 브라우저에서 실행(`ReactNativeWebView` 만 스텁 주입). 벤더 스크립트 로드 true · 위젯 iframe `postcode.map.kakao.com` 생성 확인 · '테헤란로 152' 검색 → 결과 클릭 → **브릿지 페이로드 1건 수신**(39키) · 페이지 에러·콘솔 에러 **0건**. 회수한 실페이로드를 `parsePostcodeBridgeMessage` → `resolveRegionSlug` 에 통과시켜 `'서울 강남구'` 확인(임시 테스트 1/1 통과 후 파일 제거).
+- **PR #391 생성** — push 시 pre-push 훅의 quality 전체 통과(exit 0).
+
+**안 끝난 것**
+- 🔴 **CI 결과 미확인**(이 항목 작성 시점) — 감시 중. 결과는 §1 상태 보드에 반영
+- 🔴 **네이티브 WebView 실기기 미검증은 그대로** — 브릿지 페이로드·파싱까지는 실관찰로 덮었지만 **WebView 렌더·가상키보드·iframe 터치 입력**은 여전히 검증 수단이 없다(사용자 수용)
+- 지원 전 도로명주소 공개 여부 = 제품 결정 미정(현행 비공개 유지, 사용자 수용)
+
+**이 세션에서 새로 알아낸 주의**
+1. 🚨 **세션 착수 시점의 `origin/master` 를 신뢰하지 말 것** — 첫 `git fetch` 직후 `0d4d99309` 였는데 수 분 뒤 `16a5bb1fa` 로 바뀌어 있었다(다른 경로로 #390 이 머지됨). **머지 직전 재통합은 규율이 아니라 실제로 필요**하다. 워크트리별 `git rev-parse origin/master` 가 어긋나 보이면 그건 워크트리 문제가 아니라 그 사이 fetch 가 일어난 것이다.
+2. 🚨 **검증 실행 중에 워크트리에 임시 파일을 만들지 말 것** — `quality` 가 도는 도중 임시 테스트를 만들어 lint·prettier 결과를 오염시킬 뻔했다(발견 즉시 워크트리 밖으로 이동). 임시 검증 파일은 **scratchpad 에 두고 실행 직전에만 복사**한다.
+3. 🔑 **playwright MCP 브라우저가 "already in use" 면 죽이지 말고 레포 playwright 로 직접 몰아라** — 다른 세션이 같은 프로파일(`mcp-chrome-*`)을 쓰고 있을 수 있다. `node_modules/@playwright/test` 를 **절대경로로 require** 하면 scratchpad 스크립트에서도 바로 쓸 수 있다(스크립트 위치 기준 모듈 해석이라 상대 require 는 실패한다).
+4. 🔑 **위젯 실응답 39키를 실물로 재확인**했다 — `sido:'서울'`·`sigungu:'강남구'`·`zonecode:'06236'`·`roadAddress:'서울 강남구 테헤란로 152'`. 기존 픽스처와 **정확히 일치**. iframe URL 에 `origin=http%3A%2F%2Flocalhost%3A8899` 가 실려 나가므로 http 로컬 프로브에서도 위젯 자체는 정상 동작한다(막히는 건 CSP `frame-src https://` 쪽뿐).
 
 **끝난 것** (검증 증거와 함께)
 - 우편번호 검색 전환: `PlaceSheet` 에 `mode:'postcode'` 인라인 추가(중첩 RN Modal 금지 준수), 주소 TextInput → 검색 버튼, 상세주소(층/호) 입력 신설, region 4단 폴백
