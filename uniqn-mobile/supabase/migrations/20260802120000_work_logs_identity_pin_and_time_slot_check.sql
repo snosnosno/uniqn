@@ -111,10 +111,10 @@ END;
 $$;
 
 COMMENT ON FUNCTION public.fn_work_logs_pin_identity() IS
-  'work_logs.staff_id 불변 + owner_id 는 (본인 소유였거나 관리자일 때만) NULL 로 지우기 허용. '
+  'work_logs.staff_id 불변 + owner_id 재지정 차단. NULL 화(참조 해제)는 신뢰 컨텍스트에서만 '
+  '허용한다(current_user 데니리스트 — SECDEF 경유는 definer 로 바뀌므로 통과, 직접 PATCH 는 차단). '
   '워크스페이스 멤버가 raw PostgREST 로 출근·정산 완료 기록을 타인에게 재지정해 무음 삭제하거나, '
-  'owner_id 를 NULL 로 만들어 공고 소유자의 정산 목록에서 감추는 경로를 차단한다(감사 M4). '
-  'NULL 예외는 permanently_delete_user 의 참조 해제(본인 삭제·관리자 대행) 전용.';
+  'owner_id 를 고아화해 공고 소유자의 owner 축 조회(미작성 리뷰 대상 등)에서 감추는 경로를 막는다(감사 M4).';
 
 -- 트리거 함수는 직접 호출 대상이 아니다. prod 하드닝 관례(20260731090000)와 정합.
 -- (트리거 발화는 호출자 EXECUTE 권한과 무관하다 — 권한 검사는 CREATE TRIGGER 시점에 끝난다.)
