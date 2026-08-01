@@ -55,7 +55,7 @@ import {
   type DeepLinkGate,
 } from '@/utils/scheduleDeepLink';
 import { triggerHaptic } from '@/utils/haptics';
-import { getTodayString } from '@/utils/date';
+import { getMonthRange, getTodayString } from '@/utils/date';
 import { detectScheduleOverlaps, formatOverlapWarning } from '@/utils/scheduleOverlap';
 import {
   syncShiftReminders,
@@ -330,10 +330,19 @@ export default function ScheduleScreen() {
   //    `EMPTY_SCHEDULE_QUERY_PAYLOAD` 폴백(useSchedules.ts)이다. 그대로 넘기면 원장의
   //    모든 키가 "계획에서 사라진 것" 으로 판정돼 취소되고, 조회가 에러로 끝나면 재예약도
   //    없어 확정 근무 알림이 통째로 무음 소실된다.
+  //
+  // ③ 🔴 이 화면의 `schedules` 는 **보고 있는 달** 것만이다(useCalendarView → useSchedulesByMonth
+  //    가 그 달로 하드 필터링한다). 그래서 "이 목록이 실제로 관측한 날짜 창"을 함께 넘긴다.
+  //    안 넘기면 스케줄러가 '계획에 없다' 를 '취소됐다' 로 읽어, 지난 정산을 보려고 7월로
+  //    한 번 넘기는 것만으로 8월 확정 근무의 알림이 침묵 취소된다(감사 H1).
+  const reminderCoverage = useMemo(
+    () => getMonthRange(new Date(currentMonth.year, currentMonth.month - 1, 1)),
+    [currentMonth.year, currentMonth.month]
+  );
   useEffect(() => {
     if (!shouldSyncShiftReminders({ isLoading, error })) return;
-    void syncShiftReminders(schedules);
-  }, [schedules, isLoading, error]);
+    void syncShiftReminders(schedules, reminderCoverage);
+  }, [schedules, isLoading, error, reminderCoverage]);
 
   // '내 다음 근무' 히어로 — 이미 구현돼 있으나 소비자가 없던 useTodaySchedules(60초 폴링·
   // 오프라인 캐시 완비)를 오늘 근무 원천으로 쓰고, 오늘 것이 없으면 이번 달 확정 건에서 찾는다.
