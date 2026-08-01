@@ -88,6 +88,7 @@ function createGroupedSettlement(overrides: Partial<GroupedSettlement> = {}): Gr
         workLogId: 'wl-1',
         role: 'dealer',
         hasValidTimes: true,
+        isSettlableStatus: true,
       },
       {
         date: '2025-01-16',
@@ -97,6 +98,7 @@ function createGroupedSettlement(overrides: Partial<GroupedSettlement> = {}): Gr
         workLogId: 'wl-2',
         role: 'dealer',
         hasValidTimes: true,
+        isSettlableStatus: true,
       },
       {
         date: '2025-01-17',
@@ -106,6 +108,7 @@ function createGroupedSettlement(overrides: Partial<GroupedSettlement> = {}): Gr
         workLogId: 'wl-3',
         role: 'dealer',
         hasValidTimes: true,
+        isSettlableStatus: true,
       },
     ],
     originalWorkLogs: [],
@@ -164,6 +167,23 @@ describe('groupSettlementsByStaff', () => {
     const staffIds = result.map((g) => g.staffId);
     expect(staffIds).toContain('staff-1');
     expect(staffIds).toContain('staff-2');
+  });
+
+  it('dateStatuses 에 work_log status 축(isSettlableStatus)을 실어 나른다', () => {
+    // 그룹 카드의 정산 버튼·일괄 집계가 이 값으로 게이트한다 — 여기서 안 실으면
+    // 그룹 카드는 시각만 보고 판단하게 되고, 서버가 거부할 행에 버튼이 남는다.
+    const workLogs = [
+      createWorkLog({
+        id: 'wl-out',
+        date: '2025-01-15',
+        status: 'checked_out',
+      } as Partial<WorkLog>),
+      createWorkLog({ id: 'wl-in', date: '2025-01-16', status: 'checked_in' } as Partial<WorkLog>),
+    ];
+    const result = groupSettlementsByStaff(workLogs, defaultContext);
+    const byId = new Map(result[0].dateStatuses.map((s) => [s.workLogId, s.isSettlableStatus]));
+    expect(byId.get('wl-out')).toBe(true);
+    expect(byId.get('wl-in')).toBe(false);
   });
 
   it('결과가 최신 날짜순으로 정렬된다', () => {
@@ -339,6 +359,7 @@ describe('getSettlableWorkLogIds', () => {
           workLogId: 'wl-1',
           role: 'dealer',
           hasValidTimes: true,
+          isSettlableStatus: true,
         },
       ],
     });
@@ -357,6 +378,28 @@ describe('getSettlableWorkLogIds', () => {
           workLogId: 'wl-1',
           role: 'dealer',
           hasValidTimes: false,
+          isSettlableStatus: true,
+        },
+      ],
+    });
+    const ids = getSettlableWorkLogIds(group);
+    expect(ids).toEqual([]);
+  });
+
+  it('시각은 있지만 status 가 승격되지 않은 항목은 제외한다', () => {
+    // 서버(settleWorkLogWithTransaction)가 status ∈ {checked_out, completed} 를 검사하므로,
+    // 이 축이 빠지면 그런 행이 일괄 정산에 섞여 부분 실패를 만든다.
+    const group = createGroupedSettlement({
+      dateStatuses: [
+        {
+          date: '2025-01-15',
+          formattedDate: '1/15(수)',
+          payrollStatus: 'pending',
+          amount: 125710,
+          workLogId: 'wl-1',
+          role: 'dealer',
+          hasValidTimes: true,
+          isSettlableStatus: false,
         },
       ],
     });

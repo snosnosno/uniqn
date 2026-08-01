@@ -182,3 +182,69 @@ describe('지점 컨테이너 정산 확정', () => {
     expect(updateCalls).toHaveLength(0);
   });
 });
+
+// ============================================================================
+// SETTLE-3 — 지급 완료 취소
+// ============================================================================
+//
+// 확정과 **같은 소유권 검증 경로**(validateWorkLogOwnership → toJobPosting)를 탄다.
+// 즉 컨테이너 증발 결함이 살아 있으면 확정뿐 아니라 되돌리기도 함께 죽는다 —
+// 그러면 컨테이너 직속 행은 확정도 취소도 못 하는 완전한 편도 문이 된다.
+// 여기서도 `parseJobPostingDocument` 는 항상 null 이다(그 우회를 통과해야 증거가 된다).
+describe('지점 컨테이너 지급 완료 취소 (SETTLE-3)', () => {
+  const REASON = '금액을 잘못 산정해 다시 계산합니다';
+
+  beforeEach(() => {
+    workLogFixture = {
+      ...workLogFixture,
+      payrollStatus: STATUS.PAYROLL.COMPLETED,
+      payrollDate: '2026-08-01T15:00:00.000Z',
+      payrollAmount: VENUE_HOURLY * HOURS,
+    } as unknown as WorkLog;
+  });
+
+  it('컨테이너 공고가 증발하지 않고 정산 대기로 되돌아간다', async () => {
+    await repo.updatePayrollStatusWithTransaction(WORK_LOG_ID, STATUS.PAYROLL.PENDING, OWNER, {
+      reason: REASON,
+    });
+
+    expect(updateCalls).toHaveLength(1);
+    expect(updateCalls[0].data.payroll_status).toBe(STATUS.PAYROLL.PENDING);
+  });
+
+  it('지급일은 지우고 취소 사유는 정산 이력에 남긴다', async () => {
+    await repo.updatePayrollStatusWithTransaction(WORK_LOG_ID, STATUS.PAYROLL.PENDING, OWNER, {
+      reason: REASON,
+    });
+
+    // 지급일은 더 이상 유효하지 않다. 동결 표시액(payroll_amount)은 이의 처리 근거로 남긴다.
+    expect(updateCalls[0].data.payroll_date).toBeNull();
+    expect(updateCalls[0].data.payroll_amount).toBeUndefined();
+    expect(JSON.stringify(updateCalls[0].data.settlement_modification_history)).toContain(REASON);
+  });
+
+  it('사유가 공백뿐이면 되돌리지 않는다 (서버 강제)', async () => {
+    await expect(
+      repo.updatePayrollStatusWithTransaction(WORK_LOG_ID, STATUS.PAYROLL.PENDING, OWNER, {
+        reason: '   ',
+      })
+    ).rejects.toThrow();
+
+    expect(updateCalls).toHaveLength(0);
+  });
+
+  it('일반 공고는 여전히 스키마 파서를 거친다 — 증발하면 되돌리기도 실패한다', async () => {
+    jobPostingReadResult = {
+      data: { ...makeContainerRow([]), status: 'active' },
+      error: null,
+    };
+
+    await expect(
+      repo.updatePayrollStatusWithTransaction(WORK_LOG_ID, STATUS.PAYROLL.PENDING, OWNER, {
+        reason: REASON,
+      })
+    ).rejects.toThrow(/파싱/);
+
+    expect(updateCalls).toHaveLength(0);
+  });
+});

@@ -34,7 +34,7 @@ import {
 import type { GroupedSettlement } from '@/types/settlement';
 import type { WorkLog, PayrollStatus } from '@/types';
 import { STATUS } from '@/constants';
-import { PAYROLL_STATUS_LABELS } from '@/shared/status';
+import { PAYROLL_STATUS_LABELS, isSettlableWorkLogStatus } from '@/shared/status';
 
 // Re-export types for backward compatibility
 export type { SalaryType, SalaryInfo };
@@ -143,15 +143,24 @@ export function SettlementList({
     });
   }, [filteredWorkLogs, groupingContext, enableGrouping]);
 
-  // 선택 가능한 항목 (미정산 + 출퇴근 완료)
+  // 선택 가능한 항목 (미정산 + 출퇴근 완료 + 서버 게이트 통과 status)
+  // status 축이 없으면 "전체 선택" 이 서버가 거부할 행까지 담아 일괄 정산이 부분 실패한다 —
+  // 카드 버튼과 같은 술어를 쓴다(shared/status SSOT).
   const selectableWorkLogs = useMemo(() => {
     return workLogs.filter(
       (log) =>
         (log.payrollStatus || STATUS.PAYROLL.PENDING) === STATUS.PAYROLL.PENDING &&
+        isSettlableWorkLogStatus(log.status) &&
         log.checkInTime &&
         log.checkOutTime
     );
   }, [workLogs]);
+
+  /** 이 근무를 선택 모드에서 고를 수 있는가 — 체크박스 노출·토글·전체 선택이 같은 축을 본다. */
+  const selectableIds = useMemo(
+    () => new Set(selectableWorkLogs.map((log) => log.id)),
+    [selectableWorkLogs]
+  );
 
   // 필터 옵션 (카운트 포함)
   const filterOptions = useMemo(() => {
@@ -215,18 +224,21 @@ export function SettlementList({
     return totalAmount;
   }, [groupedSettlements, selectedIds]);
 
-  // 선택 핸들러
-  const handleSelect = useCallback((workLog: WorkLog) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(workLog.id)) {
-        next.delete(workLog.id);
-      } else {
-        next.add(workLog.id);
-      }
-      return next;
-    });
-  }, []);
+  // 선택 핸들러 — 선택 불가 행은 담지 않는다(전체 선택과 같은 축).
+  const handleSelect = useCallback(
+    (workLog: WorkLog) => {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(workLog.id)) {
+          next.delete(workLog.id);
+        } else if (selectableIds.has(workLog.id)) {
+          next.add(workLog.id);
+        }
+        return next;
+      });
+    },
+    [selectableIds]
+  );
 
   const handleSelectAll = useCallback(() => {
     setSelectedIds(new Set(selectableWorkLogs.map((log) => log.id)));

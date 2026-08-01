@@ -28,7 +28,7 @@ import type { WorkLog, PayrollStatus } from '@/types';
 import { STATUS } from '@/constants';
 import { shouldUseFrozenPayrollAmount } from '@/utils/settlementGrouping';
 import { PAYROLL_STATUS_CONFIG } from './helpers/settlementConfig';
-import { toSettlementDisplayStatus } from '@/shared/status';
+import { toSettlementDisplayStatus, isSettlableWorkLogStatus } from '@/shared/status';
 
 // Re-export types for backward compatibility
 export type { SalaryType, SalaryInfo };
@@ -102,6 +102,10 @@ export const SettlementCard = React.memo(function SettlementCard({
   const endTime = parseTimestamp(workLog.checkOutTime);
   const hasValidTimes = startTime && endTime;
 
+  // 정산 버튼 게이트는 **서버 게이트와 같은 축**을 봐야 한다(술어 SSOT = shared/status).
+  // 시각 조건도 함께 유지한다 — 금액 계산에 실제로 필요한 값이다.
+  const isSettlableStatus = isSettlableWorkLogStatus(workLog.status);
+
   // 핸들러
   const handlePress = useCallback(() => {
     onPress?.(workLog);
@@ -172,6 +176,17 @@ export const SettlementCard = React.memo(function SettlementCard({
           </View>
         )}
 
+        {/* 시각은 있는데 status 가 승격되지 않은 행 — 게이트로 버튼을 감추기만 하면
+            "왜 정산이 안 되는지" 를 알 수 없다(위 '출퇴근 기록 미완료' 배너도 안 뜬다).
+            버튼을 없애는 대신 사유를 남긴다. */}
+        {hasValidTimes && !isSettlableStatus && payrollStatus === STATUS.PAYROLL.PENDING && (
+          <View className="mt-3 p-2 bg-warning-50 dark:bg-warning-900/20 rounded-lg">
+            <Text className="text-xs text-warning-700 dark:text-warning-300 text-center font-sans">
+              출퇴근 상태가 확정되지 않아 아직 정산할 수 없어요
+            </Text>
+          </View>
+        )}
+
         {/* 하단: 상세보기 + 지급 완료 표시 버튼 */}
         <View className="flex-row mt-3 pt-3 border-t border-secondary-100 dark:border-surface-overlay gap-2">
           {/* 상세보기 */}
@@ -188,19 +203,23 @@ export const SettlementCard = React.memo(function SettlementCard({
             </Text>
           </Pressable>
 
-          {/* 지급 완료 표시 (미정산 + 출퇴근 완료일 때만) — 실이체 아님 명시 (QW4) */}
-          {payrollStatus === STATUS.PAYROLL.PENDING && hasValidTimes && onSettle && (
-            <Pressable
-              onPress={handleSettle}
-              accessibilityRole="button"
-              accessibilityLabel={`${displayName} 지급 완료로 표시`}
-              accessibilityHint="급여를 지급 완료 상태로 표시합니다. 실제 이체는 앱 밖에서 진행해요"
-              className="flex-1 flex-row items-center justify-center py-2.5 rounded-lg bg-primary-500 active:opacity-70"
-            >
-              <BanknotesIcon size={16} color="#fff" />
-              <Text className="ml-1 text-sm font-sans-medium text-content-onGold">지급 완료</Text>
-            </Pressable>
-          )}
+          {/* 지급 완료 표시 (미정산 + 출퇴근 완료 + 서버 게이트 통과 status 일 때만)
+              — 실이체 아님 명시 (QW4) */}
+          {payrollStatus === STATUS.PAYROLL.PENDING &&
+            hasValidTimes &&
+            isSettlableStatus &&
+            onSettle && (
+              <Pressable
+                onPress={handleSettle}
+                accessibilityRole="button"
+                accessibilityLabel={`${displayName} 지급 완료로 표시`}
+                accessibilityHint="급여를 지급 완료 상태로 표시합니다. 실제 이체는 앱 밖에서 진행해요"
+                className="flex-1 flex-row items-center justify-center py-2.5 rounded-lg bg-primary-500 active:opacity-70"
+              >
+                <BanknotesIcon size={16} color="#fff" />
+                <Text className="ml-1 text-sm font-sans-medium text-content-onGold">지급 완료</Text>
+              </Pressable>
+            )}
         </View>
       </View>
     </CardStripe>

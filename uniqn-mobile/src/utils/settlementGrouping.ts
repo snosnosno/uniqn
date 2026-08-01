@@ -23,6 +23,7 @@ import {
   type TaxSettings,
 } from './settlement';
 import { SettlementCalculator } from '@/domains/settlement';
+import { isSettlableWorkLogStatus } from '@/shared/status';
 import { isConsecutiveDates, formatSingleDate } from './scheduleGrouping';
 
 // ============================================================================
@@ -189,6 +190,7 @@ function createDateSettlementStatus(
     role: workLog.role,
     customRole: workLog.customRole,
     hasValidTimes,
+    isSettlableStatus: isSettlableWorkLogStatus(workLog.status),
   };
 }
 
@@ -366,13 +368,20 @@ export function groupSettlementsByStaff(
  * 정산 가능 조건:
  * 1. 출퇴근 완료 (hasValidTimes = true)
  * 2. 미정산 상태 (payrollStatus !== 'completed')
+ * 3. 서버 게이트를 통과할 수 있는 status (isSettlableStatus) — 이 축이 없으면
+ *    시각만 있고 status 미승격인 레거시 행이 일괄 정산에 섞여 **부분 실패**를 만든다.
  *
  * @param group - GroupedSettlement
  * @returns 정산 가능한 WorkLog ID 배열
  */
 export function getSettlableWorkLogIds(group: GroupedSettlement): string[] {
   return group.dateStatuses
-    .filter((status) => status.hasValidTimes && status.payrollStatus !== STATUS.PAYROLL.COMPLETED)
+    .filter(
+      (status) =>
+        status.hasValidTimes &&
+        status.isSettlableStatus &&
+        status.payrollStatus !== STATUS.PAYROLL.COMPLETED
+    )
     .map((status) => status.workLogId);
 }
 

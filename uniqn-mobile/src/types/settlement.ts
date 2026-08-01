@@ -31,6 +31,12 @@ export interface DateSettlementStatus {
   customRole?: string;
   /** 출퇴근 완료 여부 */
   hasValidTimes: boolean;
+  /**
+   * 서버 정산 게이트를 통과할 수 있는 status 인가 (`isSettlableWorkLogStatus`).
+   * 시각(`hasValidTimes`)과 별개 축이다 — 시각은 있는데 status 가 승격되지 않은 레거시 행이 있고,
+   * 그런 행에 정산 버튼을 그리면 눌러도 서버가 거부한다.
+   */
+  isSettlableStatus: boolean;
 }
 
 /**

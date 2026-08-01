@@ -5,6 +5,7 @@
 import React from 'react';
 import { act, fireEvent, render } from '@testing-library/react-native';
 import VenueSettlementsScreen from '../venue-settlements';
+import { SHEET_DISMISS_ANIMATION_MS } from '@/constants/animation';
 import type { SettlementWorkLog } from '@/services/work/settlement/types';
 
 jest.mock('expo-router', () => ({
@@ -26,9 +27,21 @@ jest.mock('@/stores/toastStore', () => ({
 // 모듈 목으로 대체한다 — 다른 훅(useVenueSettlement 등)과 같은 방식이다.
 const mockSettleMutate = jest.fn();
 const mockBulkSettleMutate = jest.fn();
+const mockRevertMutateAsync = jest.fn();
 jest.mock('@/hooks/useSettlement', () => ({
   useSettleWorkLog: () => ({ mutate: mockSettleMutate, isPending: false }),
   useBulkSettlement: () => ({ mutate: mockBulkSettleMutate, isPending: false }),
+  useUpdateSettlementStatus: () => ({ mutateAsync: mockRevertMutateAsync, isPending: false }),
+}));
+
+// SettlementDetailModal 이 실제로 렌더되면 프로필 훅이 react-query 를 탄다 — Provider 가 없는
+// 이 스모크에서는 표시 이름만 고정해 둔다.
+jest.mock('@/hooks/useUserProfile', () => ({
+  useUserProfile: ({ fallbackName }: { fallbackName?: string }) => ({
+    displayName: fallbackName ?? '스태프',
+    profilePhotoURL: undefined,
+    profilePhotoURLBlurhash: undefined,
+  }),
 }));
 
 jest.mock('@/components/headers', () => {
@@ -42,9 +55,22 @@ jest.mock('@/components/headers', () => {
   };
 });
 
-jest.mock('@/components/employer/settlement/SettlementCard', () => ({
-  SettlementCard: 'SettlementCard',
-}));
+// 카드 자체는 별도 테스트 대상이지만, 상세 모달을 여는 유일한 경로가 카드 탭이라
+// onPress 를 실제로 발화시킬 수 있는 최소 목으로 둔다(문자열 목이면 press 를 못 건다).
+jest.mock('@/components/employer/settlement/SettlementCard', () => {
+  const RN = jest.requireActual('react-native') as typeof import('react-native');
+  return {
+    SettlementCard: ({ workLog, onPress }: { workLog: { id?: string }; onPress?: () => void }) => (
+      <RN.Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`카드-${workLog.id}`}
+        onPress={onPress}
+      >
+        <RN.Text>{`카드-${workLog.id}`}</RN.Text>
+      </RN.Pressable>
+    ),
+  };
+});
 
 jest.mock('@/components/workSchedule/RoleSalaryField', () => ({
   RoleSalaryField: 'RoleSalaryField',
@@ -202,5 +228,117 @@ describe('VenueSettlementsScreen 렌더 스모크', () => {
       message: '단가를 저장했어요. 정산을 다시 계산합니다.',
     });
     expect(mockAddToast).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+  });
+});
+
+// ============================================================================
+// SETTLE-3 — 지급 완료 취소 진입점
+// ============================================================================
+//
+// 컨테이너 직속 배치는 공고 정산 화면에 나오지 않는다 → 이 화면이 오지급 정정의 **유일한 진입점**이다.
+// `onRevertSettlement` 를 상세 모달에 안 넘기면 버튼 자체가 렌더되지 않아 조용히 편도 문이 된다
+// (타입도 tsc 도 못 잡는다 — optional prop 이라서). 그래서 카드 탭부터 뮤테이션 호출까지 통으로 태운다.
+describe('VenueSettlementsScreen 지급 완료 취소 (SETTLE-3)', () => {
+  const REVERT_BUTTON_LABEL = '지급 완료 취소';
+  const REASON = '금액을 잘못 산정해 다시 계산합니다';
+
+  function completedWorkLog(): SettlementWorkLog {
+    return makeWorkLog({
+      id: 'wl-done',
+      jobPostingId: 'v1',
+      staffName: '홍길동',
+      payrollStatus: 'completed',
+      payrollAmount: 80000,
+      payrollDate: new Date('2026-08-01T15:00:00.000Z'),
+      checkInTime: '2026-07-10T10:00:00.000Z',
+      checkOutTime: '2026-07-10T14:00:00.000Z',
+    } as Partial<SettlementWorkLog>);
+  }
+
+  /** 카드 탭 → 상세 모달 → 취소 버튼 탭 → (전환 대기) → 취소 모달 */
+  function openRevertModal(workLog: SettlementWorkLog) {
+    getMocks().useVenueSettlement.mockReturnValue({
+      data: [workLog],
+      isLoading: false,
+      refetch: jest.fn(),
+    });
+    const view = render(<VenueSettlementsScreen />);
+    fireEvent.press(view.getByLabelText(`카드-${workLog.id}`));
+    fireEvent.press(view.getByLabelText(REVERT_BUTTON_LABEL));
+    // 상세 → 취소 모달 전환은 SHEET_DISMISS_ANIMATION_MS 뒤에 일어난다.
+    act(() => {
+      jest.advanceTimersByTime(SHEET_DISMISS_ANIMATION_MS);
+    });
+    return view;
+  }
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    mockRevertMutateAsync.mockReset();
+    mockRevertMutateAsync.mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('지급 완료 행의 상세에는 취소 진입점이 있다', () => {
+    getMocks().useVenueSettlement.mockReturnValue({
+      data: [completedWorkLog()],
+      isLoading: false,
+      refetch: jest.fn(),
+    });
+    const { getByLabelText } = render(<VenueSettlementsScreen />);
+    fireEvent.press(getByLabelText('카드-wl-done'));
+
+    expect(getByLabelText(REVERT_BUTTON_LABEL)).toBeTruthy();
+  });
+
+  it('미정산 행에는 취소 진입점이 없다', () => {
+    getMocks().useVenueSettlement.mockReturnValue({
+      data: [makeWorkLog({ id: 'wl-pending', jobPostingId: 'v1', payrollStatus: 'pending' })],
+      isLoading: false,
+      refetch: jest.fn(),
+    });
+    const { getByLabelText, queryByLabelText } = render(<VenueSettlementsScreen />);
+    fireEvent.press(getByLabelText('카드-wl-pending'));
+
+    expect(queryByLabelText(REVERT_BUTTON_LABEL)).toBeNull();
+  });
+
+  it('사유를 입력해야 취소를 실행할 수 있다 — 빈 사유로는 뮤테이션이 호출되지 않는다', () => {
+    const { getByLabelText } = openRevertModal(completedWorkLog());
+
+    fireEvent.press(getByLabelText('지급 완료 취소하기'));
+
+    expect(mockRevertMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('사유와 함께 정산 대기로 되돌리기를 호출한다', async () => {
+    const { getByLabelText } = openRevertModal(completedWorkLog());
+
+    fireEvent.changeText(getByLabelText('지급 완료 취소 사유'), REASON);
+    await act(async () => {
+      fireEvent.press(getByLabelText('지급 완료 취소하기'));
+    });
+
+    expect(mockRevertMutateAsync).toHaveBeenCalledWith({
+      workLogId: 'wl-done',
+      status: 'pending',
+      reason: REASON,
+    });
+  });
+
+  it('되돌리기가 실패하면 모달을 닫지 않는다 — 입력한 사유를 다시 쓰지 않게', async () => {
+    mockRevertMutateAsync.mockRejectedValue(new Error('network'));
+    const { getByLabelText } = openRevertModal(completedWorkLog());
+
+    fireEvent.changeText(getByLabelText('지급 완료 취소 사유'), REASON);
+    await act(async () => {
+      fireEvent.press(getByLabelText('지급 완료 취소하기'));
+    });
+
+    // 실패 후에도 사유 입력란이 살아 있어야 한다(모달 유지).
+    expect(getByLabelText('지급 완료 취소 사유')).toBeTruthy();
   });
 });
