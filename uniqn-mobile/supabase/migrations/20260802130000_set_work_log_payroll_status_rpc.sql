@@ -64,8 +64,11 @@ BEGIN
 
   -- enum 캐스팅을 직접 하면 22P02 가 그대로 새어나가 사용자에게 설명할 수 없다.
   -- 화이트리스트로 먼저 걸러 앱이 매핑할 수 있는 코드를 던진다.
+  -- ⚠️ 접두사를 INVALID_INPUT 이 아니라 INVALID_STATUS 로 쓴다 — 클라 매퍼는 INVALID_INPUT 안에서
+  --    '사유를 입력' 포함 여부로만 갈라서, 이 케이스가 XSS 분기(보안 코드/severity medium)로
+  --    오분류돼 보안 지표를 오염시킨다. 이건 사용자 입력 오류가 아니라 호출 계약 위반이다.
   IF p_status IS NULL OR p_status NOT IN ('pending', 'completed', 'failed') THEN
-    RAISE EXCEPTION 'INVALID_INPUT: 알 수 없는 정산 상태입니다: %', COALESCE(p_status, '(null)');
+    RAISE EXCEPTION 'INVALID_STATUS: 알 수 없는 정산 상태입니다: %', COALESCE(p_status, '(null)');
   END IF;
   v_status := p_status::payroll_status;
 
@@ -82,8 +85,14 @@ BEGIN
     RAISE EXCEPTION 'POSTING_NOT_FOUND: %', v_wl.job_posting_id;
   END IF;
 
-  -- 권한 술어는 클라 validateWorkLogOwnership 과 동일한 의미다:
-  -- owner 는 workspace 유무와 무관하게 통과(레거시 행 포함), 비-owner 만 멤버십·협업자 판정.
+  -- 권한 술어. ⚠️ 클라 `validateWorkLogOwnership` 과 **동일하지 않다** — 두 곳이 넓어졌고
+  -- 둘 다 의식적인 결정이다(둘 다 확대 방향이라 정상 사용자 회귀는 없다):
+  --   1) `is_admin()` 추가. 클라 쪽 `postingAuthority.ts` 는 admin 을 **의도적으로 배제**했는데,
+  --      이유가 "후속 RLS 에 admin 분기가 없어 UPDATE 가 0행 silent no-op 이 되고 caller 가
+  --      false success 를 인식"이었다. 이 함수는 SECDEF 라 RLS 를 타지 않으므로 그 사유가
+  --      소멸하고 admin 이 실제로 쓰기를 성사시킨다 — 관리자 지원 업무를 위해 의도적으로 연다.
+  --   2) 비-owner 이고 workspace_id 가 NULL 인 레거시 행: 클라는 즉시 거부했지만 여기서는
+  --      `is_posting_collaborator` 로 통과할 수 있다.
   IF NOT (
     COALESCE(v_job.owner_id = v_actor, false)
     OR COALESCE(public.is_workspace_member(v_job.workspace_id, v_actor), false)
@@ -93,7 +102,10 @@ BEGIN
     RAISE EXCEPTION 'PERMISSION_DENIED: 권한이 있는 공고의 근무 기록만 정산 상태를 변경할 수 있습니다';
   END IF;
 
-  v_is_revert := (v_wl.payroll_status = 'completed' AND v_status <> 'completed');
+  -- ⚠️ payroll_status 는 DEFAULT 'pending' 이지만 NOT NULL 이 **아니다**(baseline 스키마).
+  --    NULL 행이면 비교가 NULL 이 되어 v_is_revert 가 NULL 이 되고, 반환 jsonb 의 'reverted' 가
+  --    false 가 아니라 null 로 나간다. COALESCE 로 3값 논리를 닫는다.
+  v_is_revert := COALESCE(v_wl.payroll_status = 'completed' AND v_status <> 'completed', false);
 
   -- 지급 완료 되돌리기는 금전 상태를 역행시키는 조작이라 사유·감사 이력을 서버가 강제한다.
   -- 검증 규약은 클라 assertWorkTimeReason 과 동일(200자 상한 + XSS 패턴).
@@ -129,7 +141,9 @@ BEGIN
               ELSE '[]'::jsonb END)
         || jsonb_build_array(jsonb_build_object(
              'type',           'payroll_status_revert',
-             'previousStatus', 'completed',
+             -- 리터럴 'completed' 를 박지 않고 실제 이전 상태를 쓴다 — 되돌리기 게이트가
+             -- 나중에 넓어져도 이력이 사실을 유지한다(현재 게이트에선 항상 'completed').
+             'previousStatus', v_wl.payroll_status::text,
              'newStatus',      v_status::text,
              'reason',         v_reason,
              'modifiedBy',     v_actor,

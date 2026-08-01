@@ -30,7 +30,7 @@
 --      이번 변경의 회귀는 아니다. 별도 항목으로 남긴다.
 -- ============================================================
 BEGIN;
-SELECT plan(11);
+SELECT plan(16);
 
 DO $$
 DECLARE
@@ -145,6 +145,51 @@ SELECT is(
    WHERE w.id = (current_setting('sps.wl_id'))::uuid),
   '금액 산정 오류로 취소',
   '되돌리기 사유가 이력에 그대로 기록된다');
+
+-- 12. 🔴 인가 — 이 RPC 는 SECDEF 라 **RLS 가 적용되지 않는다.** 따라서 함수 안의 권한 술어가
+--     유일한 관문이고, 그것이 깨져도 다른 무엇도 막아주지 않는다.
+--     ⚠️ app_metadata.role 을 'employer' 로 실어야 한다 — 그래야 거부한 주체가
+--        payroll 가드 트리거가 아니라 **RPC 술어**임이 증명된다(헤더의 대조법).
+SELECT jpc_test_set_user_with_role((current_setting('sps.outsider_id'))::uuid, 'employer');
+SELECT throws_like(
+  format($q$SELECT public.set_work_log_payroll_status(%L::uuid, 'pending', '무관한 사용자의 시도')$q$,
+         current_setting('sps.wl_id')),
+  'PERMISSION_DENIED%',
+  '공고와 무관한 사용자는 정산 상태를 바꿀 수 없다 (SECDEF 라 RLS 가 못 막는 자리)');
+
+-- 13. 존재하지 않는 근무 기록
+SELECT throws_like(
+  $q$SELECT public.set_work_log_payroll_status('00000000-0000-0000-0000-000000000000'::uuid, 'pending', '사유')$q$,
+  'WORK_LOG_NOT_FOUND%',
+  '없는 근무 기록은 WORK_LOG_NOT_FOUND 로 거부한다');
+
+-- 소유자 컨텍스트로 복귀
+SELECT jpc_test_set_user_with_role((current_setting('sps.owner_id'))::uuid, 'employer');
+
+-- 14. 되돌리기가 아닌 정상 전이(pending→completed)는 사유 없이 통과하고 이력을 남기지 않는다.
+--     헤더가 계약으로 선언한 의미론인데 8~11번이 되돌리기만 보고 있어 비어 있던 자리다.
+SELECT lives_ok(
+  format($q$SELECT public.set_work_log_payroll_status(%L::uuid, 'completed', NULL)$q$,
+         current_setting('sps.wl_id')),
+  '되돌리기가 아닌 전이는 사유 없이 통과한다');
+
+SELECT is(
+  (SELECT (payroll_date IS NOT NULL)::text || '|' || jsonb_array_length(settlement_modification_history)::text
+   FROM public.work_logs WHERE id = (current_setting('sps.wl_id'))::uuid),
+  'true|1',
+  'completed 로 갈 때 지급일을 찍고 이력은 늘리지 않는다 (되돌리기 1건만 남아 있다)');
+
+-- 15. jsonb_typeof 배열 폴백 — 이력이 배열이 아닌 값으로 오염돼 있어도 예외 없이 복구한다.
+--     P2(#397)가 정확히 이 클래스로 데였다(배열 아닌 jsonb 하나가 상류 알림까지 삼켰다).
+SELECT jpc_test_clear_user();
+RESET ROLE;
+UPDATE public.work_logs SET settlement_modification_history = '{"corrupted": true}'::jsonb, payroll_status = 'completed'
+ WHERE id = (current_setting('sps.wl_id'))::uuid;
+SELECT jpc_test_set_user_with_role((current_setting('sps.owner_id'))::uuid, 'employer');
+SELECT lives_ok(
+  format($q$SELECT public.set_work_log_payroll_status(%L::uuid, 'pending', '오염 이력 복구 확인')$q$,
+         current_setting('sps.wl_id')),
+  '이력이 배열이 아니어도 예외 없이 되돌리기가 성공한다 (jsonb_typeof 폴백)');
 
 SELECT * FROM finish();
 ROLLBACK;

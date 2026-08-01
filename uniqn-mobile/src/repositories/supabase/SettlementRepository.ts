@@ -100,6 +100,14 @@ function toPayrollStatusError(
       userMessage: '공고를 찾을 수 없습니다',
     });
   }
+  // ⚠️ INVALID_STATUS 를 여기서 반드시 잡아야 한다. 놓치면 공통 핸들러의
+  //    `P0001 && INVALID_STATUS` 특례(confirm_application 동시성용)로 떨어져
+  //    "다른 사용자가 먼저 처리했어요" 라는 **거짓 안내**가 나간다.
+  if (message.includes('INVALID_STATUS')) {
+    return new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+      userMessage: userMessage('알 수 없는 정산 상태입니다'),
+    });
+  }
   if (message.includes('INVALID_INPUT')) {
     // 사유 미입력만 VALIDATION_REQUIRED, 나머지(길이·XSS)는 보안 코드로 — 기존 클라 분기와 동일.
     const isMissingReason = message.includes('사유를 입력');

@@ -9,8 +9,9 @@
 --   **스태프 본인 이력에서 무음으로 지우는** 경로를 닫는다.
 --   work_logs 에는 DELETE 정책이 아예 없고 remove_direct_staff 는 출근 이후를
 --   거부하므로, 이 재지정이 그 가드를 우회하는 유일한 무음 삭제 수단이었다.
---   owner_id 쪽은 NULL 로 고아화해 **공고 소유자의 정산 목록에서 행을 감추는** 경로를 닫는다
---   (클라가 `.eq('owner_id', ...)` 로 조회한다 — WorkLogRepository.ts:226,264).
+--   owner_id 쪽은 NULL 로 고아화해 **공고 소유자의 owner 축 조회에서 행을 감추는** 경로를 닫는다
+--   (클라가 `.eq('owner_id', ...)` 로 조회한다 — WorkLogRepository.ts:226,264.
+--    그 둘의 유일한 소비처는 `useReviews.ts:316,320` = 미작성 리뷰 대상 목록이다).
 --
 -- ⚠️ 컬럼 권한 REVOKE 로는 못 막는다(감사 §7 P5 의 원 처방은 무효).
 --    authenticated 가 테이블 레벨 UPDATE 전권을 갖고 있어 컬럼 부분집합을 뺄 수 없다.

@@ -51,10 +51,13 @@
 --
 -- 🔴 owner_id 를 "NULL 이면 무조건 허용"으로 두면 구멍이 남는다 — 실측으로 확인했다.
 --   클라는 `.eq('owner_id', ownerId)` 로 구인자별 완료 근무 기록을 조회한다
---   (WorkLogRepository.ts:226,264). 즉 owner_id 를 NULL 로 만들면 그 행이
---   **공고 소유자의 정산 목록에서 사라진다.** 그리고 wl_update 의 USING 은
---   워크스페이스 멤버·협업자를 통과시키므로, 이건 자해가 아니라 **타인에 대한 피해**다.
---   (에디터가 남의 공고 행을 지울 수 있다 — 로컬에서 실제로 재현했다.)
+--   (WorkLogRepository.ts:226 getCompletedByOwnerId · :264 getUndatedCompletedByOwnerId).
+--   ⚠️ 소비처를 전수로 따라가면 이 둘의 유일한 호출부는 `hooks/useReviews.ts:316,320` —
+--      구인자의 **미작성 리뷰 대상 목록**이다(정산 조회는 전부 job_posting_id 축이라 무관).
+--   즉 owner_id 를 NULL 로 만들면 그 근무가 **리뷰 대상에서 증발**하고, owner 축 조회 전반에서
+--   사라진다. 그리고 wl_update 의 USING 은 워크스페이스 멤버·협업자를 통과시키므로,
+--   이건 자해가 아니라 **타인에 대한 피해**다
+--   (에디터가 남의 공고 행을 고아화할 수 있다 — 로컬에서 실제로 재현했다).
 --
 --   그래서 NULL 화는 **채널**로 가른다 — `current_user` 데니리스트.
 --   로컬 실증으로 확인한 판별 원리:

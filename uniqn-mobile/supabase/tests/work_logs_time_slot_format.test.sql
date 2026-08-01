@@ -18,7 +18,7 @@
 --    아래 5번이 그 회귀를 막는 단언이다.
 -- ============================================================
 BEGIN;
-SELECT plan(13);
+SELECT plan(15);
 
 DO $$
 DECLARE s RECORD;
@@ -98,6 +98,42 @@ SELECT throws_ok(
   format($q$UPDATE public.work_logs SET time_slot = '25:00' WHERE id = %L$q$, current_setting('wlt.wl_id')),
   '23514', NULL,
   '시 범위를 벗어난 값을 차단한다');
+
+-- ------------------------------------------------------------
+-- 🔴 헤더가 지목한 **실제 위협 경로**를 탄다.
+-- 위 단언들은 UPDATE 로 제약의 술어만 증명한다. 정작 이 CHECK 이 막으려던 것은
+-- `add_direct_staff` 가 **클라가 보낸 jsonb** 의 timeSlot 을 무검증으로 INSERT 하는 경로다.
+-- 그 경로를 직접 쏴야 위협과 방어가 1:1로 닿는다.
+-- 겸사 "정상 시각은 여전히 성공한다"(=확정이 깨지지 않는다)도 같은 자리에서 증명된다.
+-- ------------------------------------------------------------
+DO $$
+DECLARE s RECORD;
+BEGIN
+  SELECT * INTO s FROM jpc_test_seed();
+  PERFORM set_config('wlt.jp_id',    s.job_posting_id::text, true);
+  PERFORM set_config('wlt.owner_id', s.owner_id::text,       true);
+  PERFORM set_config('wlt.staff_id', s.outsider_id::text,    true);
+END $$;
+SELECT jpc_test_set_user_with_role((current_setting('wlt.owner_id'))::uuid, 'employer');
+
+SELECT throws_ok(
+  format(
+    $q$SELECT public.add_direct_staff(%L::uuid, %L::uuid,
+        jsonb_build_array(jsonb_build_object(
+          'date', to_char(now(),'YYYY-MM-DD'), 'role', 'dealer',
+          'timeSlot', '<script>alert(1)</script>')))$q$,
+    current_setting('wlt.jp_id'), current_setting('wlt.staff_id')),
+  '23514', NULL,
+  'add_direct_staff 로 주입한 불량 timeSlot 이 CHECK 에서 막힌다 (클라 무검증 INSERT 경로 차단)');
+
+SELECT lives_ok(
+  format(
+    $q$SELECT public.add_direct_staff(%L::uuid, %L::uuid,
+        jsonb_build_array(jsonb_build_object(
+          'date', to_char(now(),'YYYY-MM-DD'), 'role', 'dealer',
+          'timeSlot', '19:00')))$q$,
+    current_setting('wlt.jp_id'), current_setting('wlt.staff_id')),
+  '정상 시각으로는 스태프 확정이 그대로 성공한다 (CHECK 이 정상 경로를 깨지 않는다)');
 
 SELECT * FROM finish();
 ROLLBACK;
