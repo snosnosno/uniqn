@@ -29,27 +29,75 @@ function looksLikeAddress(value: string): boolean {
 export interface MapQueryInput {
   /** 공고 장소명 (예: '라운더스 홀덤펍') — 주소가 아닐 수 있다 */
   placeName?: string;
-  /** 공고 상세주소 */
+  /**
+   * 공고 상세주소. 주소 검색 도입(B1) 이후로는 **층/호 조각**('3층 301호')이다.
+   * 그 이전 자유입력 공고에는 번지까지 담긴 사실상 전체 주소가 들어 있다 — 둘 다 살아 있다.
+   */
   detailedAddress?: string;
-  /** 공고 주소(주문서 '주소' 입력 — canonical 에서는 district 로 저장된다) */
+  /** 공고 주소(주문서 주소 검색 결과 = 도로명주소. canonical 에서는 district 로 저장된다) */
   address?: string;
+}
+
+/**
+ * 공백 경계로 둘러싸인 **완전 토큰** 포함인지.
+ *
+ * 단순 `includes` 면 `'강남구청길 5'` 가 `'강남구'` 를 품은 것으로 판정돼 시·구가 조용히 사라진다.
+ */
+function containsAsToken(haystack: string, needle: string): boolean {
+  if (!needle) return false;
+  const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(^|\\s)${escaped}(\\s|$)`).test(haystack);
+}
+
+/**
+ * 주소 + 상세주소를 사람이 읽을 한 줄로 합친다. 지도 검색어와 화면 표시가 **같은 규칙**을
+ * 써야 해서 여기 한 곳에 둔다(따로 두면 한쪽만 고쳐지고 조용히 어긋난다).
+ *
+ * 규칙 순서:
+ * 1. 한쪽이 다른 쪽을 **완전 토큰으로** 품고 있으면 넓은 쪽만 쓴다 — 자유입력 시절 데이터에서
+ *    '강남구 서울 강남구 테헤란로 1' 같은 중복이 생기는 것을 막는다
+ * 2. 주소가 **주소 꼴이 아니면**(장소 별칭 등 자유 텍스트) 덧붙이지 않는다 — 별칭을 지도에
+ *    던지면 전혀 다른 곳으로 안내한다(위 실사고와 같은 클래스). 이 경우 예전 규칙 그대로 상세주소만
+ * 3. 그 외에는 주소 뒤에 상세주소를 붙인다. B1 이후 상세주소는 '3층 301호' 조각이라
+ *    단독으로는 어디인지 알 수 없다
+ */
+export function composeFullAddress(
+  address?: string | null,
+  detailedAddress?: string | null
+): string {
+  const addr = address?.trim();
+  const detailed = detailedAddress?.trim();
+
+  if (!addr) return detailed ?? '';
+  if (!detailed) return addr;
+
+  if (containsAsToken(detailed, addr)) return detailed;
+  if (containsAsToken(addr, detailed)) return addr;
+  if (!looksLikeAddress(addr)) return detailed;
+
+  return `${addr} ${detailed}`;
 }
 
 /**
  * 지도 검색어 결정. 안내할 수 있는 근거가 없으면 null 을 돌려 호출부가 길찾기를 감춘다.
  *
- * 우선순위는 정확도 순 — 상세주소 > 주소 > (주소 꼴인 경우에 한해) 장소명.
+ * 주소와 상세주소가 둘 다 있으면 **합친다**. 어느 한쪽만 던지면 어딘가에서 틀리기 때문:
+ * - 상세주소만 → B1 이후 데이터에서는 '3층 301호' 를 지도에 던지게 된다(위 실사고와 같은 클래스)
+ * - 주소만 → 레거시 데이터에서는 '강남구' 같은 구 단위만 남아 핀이 뭉개진다
+ *
+ * 단, 상세주소가 이미 주소를 통째로 품고 있으면(자유입력 시절 데이터) 덧붙여봐야
+ * '강남구 서울 강남구 테헤란로 1' 처럼 중복만 생기므로 상세주소를 그대로 쓴다.
+ * 부분 문자열 포함 검사라 추측이 아니다 — '101동 502호' 같은 조각을 주소로 오인하지 않는다.
+ *
+ * 폴백: 주소·상세주소가 전혀 없을 때만 (주소 꼴인 경우에 한해) 장소명.
  */
 export function resolveMapQuery({
   placeName,
   detailedAddress,
   address,
 }: MapQueryInput): string | null {
-  const detailed = detailedAddress?.trim();
-  if (detailed) return detailed;
-
-  const addr = address?.trim();
-  if (addr) return addr;
+  const composed = composeFullAddress(address, detailedAddress);
+  if (composed) return composed;
 
   const name = placeName?.trim();
   if (name && looksLikeAddress(name)) return name;

@@ -23,8 +23,8 @@
 | **S4** | 3-B + 3-E + 별-1 | ~~`feat/qr-badge-and-entry`~~ | ✅ **머지** | **#384** | `40dc21779`. CI **9잡 전부 SUCCESS**(E2E 9m55s 포함, 재실행 없이 1회 통과). 브랜치·워크트리 정리 완료. **마이그 0건** — 파리티 **184/111 불변**(prod 실측 재확인). 리뷰 opus→fable 2회, HIGH 2건 포함 지적 전량 반영 |
 | **S5** | 3-A + 3-D | ~~`feat/settlement-and-rename`~~ | ✅ **머지** | **#387** | `97bf7e85c`. CI **10잡 전부 SUCCESS**(E2E 10m14s 포함, 재실행 없이 1회 통과). 브랜치·워크트리 정리 완료. 마이그 2건은 **PR 이전에 prod 선적용**됨 — 재적용 금지. 상세=§5 |
 | **S5-후속** | SETTLE-3 되돌리기 + 정산 게이트 status 축 | ~~`feat/settlement-revert-entry`~~ | ✅ **머지** | **#388** | `0ec9abc2c`. CI **9잡 전부 SUCCESS**(E2E 9m56s 포함, 재실행 없이 1회 통과. DB Tests 는 마이그 0건이라 미실행). 브랜치·워크트리 정리 완료. 마이그 **0건** — 파리티 **184/111 불변**(prod 실측). 상세=§5 |
-| **A-감사** | A레인 전체 사후 감사 | `docs/wave-audit-20260801` | ✅ | 미생성 | 분석은 메인 체크아웃에서 **읽기 전용**, 문서 커밋만 워크트리 `T-HOLDEM-audit` 에서. 산출물=[`docs/analysis/2026-08-01-work-schedule-wave-audit.md`](../analysis/2026-08-01-work-schedule-wave-audit.md). **코드 변경 0건.** CRITICAL 0 / HIGH 1(선재) / MEDIUM 11 / LOW 12. 파리티 **184/111 prod 실측 일치**. 상세=§5 |
-| **B1** | 주소 1단계 | `claude/job-posting-address-map-lbrvzd` | ⬜ | | 독립 워크트리. 🔴 **머지 전 P4(M9) 선행 필수** — `VenueSettingsSheet.tsx:108` 이 `location` 을 전체 교체해 주소를 소거한다 |
+| **A-감사** | A레인 전체 사후 감사 | ~~`docs/wave-audit-20260801`~~ | ✅ **머지** | **#390** | `16a5bb1fa`. 분석은 메인 체크아웃에서 **읽기 전용**, 문서 커밋만 워크트리 `T-HOLDEM-audit` 에서. 산출물=[`docs/analysis/2026-08-01-work-schedule-wave-audit.md`](../analysis/2026-08-01-work-schedule-wave-audit.md). **코드 변경 0건.** CRITICAL 0 / HIGH 1(선재) / MEDIUM 11 / LOW 12. 파리티 **184/111 prod 실측 일치**. 상세=§5 |
+| **B1** | 주소 1단계 | `claude/job-posting-address-map-lbrvzd` | 🔨 **구현완료·리뷰반영 완료·PR 미생성** | | HEAD `ccd1cbe26`(4커밋). 마이그 **0건** — 파리티 184/111 불변. quality exit 0 · jest **599스위트 6573테스트 전량 통과** · knip 델타 0 · 브라우저 실관찰 통과(CSP 위반 0건, 리뷰 수정 후 재관찰까지). 리뷰 fable **APPROVE**(HIGH 0) / opus HIGH 3건 **전량 반영**. 🔴 **머지 전 P4(M9) 선행 필수**(단, B1 diff 자체는 M9 를 활성화하지 않음 — §5 참조) |
 | **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
 | **S6** | 3-C 설계 | — | ⬜ | | 사용자 결정 필요 |
 | **S7** | 3-C 구현 | `feat/posting-time-change` | ⬜ | | S6 승인 후 |
@@ -40,8 +40,8 @@
 | S4 | ~~`T-HOLDEM-qr`~~ | ✅ 정리완료(정션 해제 → `worktree remove` → 브랜치 삭제, 원본 `node_modules` 821 무손상) |
 | S5 | ~~`T-HOLDEM-settle`~~ | ✅ 정리완료(정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818** 무손상 확인) |
 | S5-후속 | ~~`T-HOLDEM-revert`~~ | ✅ 정리완료(정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818** 무손상 확인) |
-| B1·B2 | `T-HOLDEM-address` | ⬜ |
-| A-감사 | `T-HOLDEM-audit` | 🔨 `docs/wave-audit-20260801` 문서 커밋 보관 중 — **머지 확인 후 정리**(정션 없음) |
+| B1·B2 | `T-HOLDEM-address` | 🔨 **유지 중**(B1 구현완료, PR 미생성). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성(818 확인). `.env.local`·`.env.development.local` 은 gitignore 라 메인에서 복사해야 앱이 뜬다 |
+| A-감사 | ~~`T-HOLDEM-audit`~~ | ✅ **머지 완료(#390)** — 정리 대상(정션 없음. `worktree remove` → 브랜치 삭제) |
 | S7 | `T-HOLDEM-timechange` | ⬜ |
 
 전부 `C:/Users/user/Desktop/` 아래. 머지 완료 세션의 워크트리는 다음 세션 착수 시 정리한다
@@ -469,7 +469,7 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 
 ### A-감사 (A레인 전체 사후 감사) — 2026-08-01 · 상태: 완료
 
-- 워크트리/브랜치: 분석은 메인 체크아웃 `T-HOLDEM` / `master` `0d4d99309` 에서 **읽기 전용**으로 수행(**소스 코드 변경 0건**). 아래 '막힌 지점'의 세션 충돌 때문에 문서 커밋만 `C:/Users/user/Desktop/T-HOLDEM-audit` / `docs/wave-audit-20260801` 에서 했다(커밋 1건). **PR 미생성**(사용자 명시 요청 대기). 정리 순서는 §4-6 준수.
+- 워크트리/브랜치: 분석은 메인 체크아웃 `T-HOLDEM` / `master` `0d4d99309` 에서 **읽기 전용**으로 수행(**소스 코드 변경 0건**). 아래 '막힌 지점'의 세션 충돌 때문에 문서 커밋만 `C:/Users/user/Desktop/T-HOLDEM-audit` / `docs/wave-audit-20260801` 에서 했다(커밋 1건). → **PR #390 머지 완료** (`16a5bb1fa`). 정리 순서는 §4-6 준수.
 - **산출물**: [`docs/analysis/2026-08-01-work-schedule-wave-audit.md`](../analysis/2026-08-01-work-schedule-wave-audit.md)
 - **DB 마이그레이션 0건.** 파리티 **prod 실측 184 / 111** = 레포 기대값(`parity_baseline_guard.test.sql:91-92`) 일치.
 
@@ -484,7 +484,7 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
   - 🔴 **결함 수선 0건** — 감사가 범위였다. 후속 PR 6묶음(P1~P6)은 산출물 §7.
   - 🔴 **E축 red-green 실증 미수행**(읽기 전용이라 소스를 되돌릴 수 없었다). 최우선 후보 3건은 산출물 §5.
   - 🔴 **M4 익스플로잇 미실행** — prod 무단 쓰기 회피. 정책·권한·트리거 실측 근거 판정.
-  - 🔴 **PR 미생성** — 커밋은 워크트리 `T-HOLDEM-audit` / `docs/wave-audit-20260801` 에 있다. push·PR 은 사용자 명시 요청 대기(커밋 사전승인 범위 밖). **워크트리 정리는 머지 확인 후**(§4-6: 정션 해제 → `worktree remove` → 브랜치 삭제. 이 워크트리는 정션을 만들지 않았으므로 첫 단계 불요).
+  - ✅ **PR #390 머지 완료**(`16a5bb1fa`) — 워크트리 `T-HOLDEM-audit` 는 정리 대상(정션 없음 → `worktree remove` → 브랜치 삭제).
   - jest "worker process failed to exit gracefully" 원인 스위트 미특정(exit 0·전량 통과 확인까지만).
 
 - **막힌 지점**: 🚨 **세션 충돌 — 메인 체크아웃 git 상태가 다른 세션 소유다.** B1 세션이 메인 체크아웃 `master` 에서 원장을 커밋(`6e7a98384`, 13:18)하면서 **내 미커밋 편집을 함께 삼켰고**, 이후 `reset` 으로 master 가 `0d4d99309` 로 되돌아가 그 커밋이 dangling 이 됐다(내 편집도 작업 트리에서 소실 → 재적용함). 추가로 **7/20 자 stale cherry-pick 상태**가 남아 있다(`.git/sequencer/` Jul 20, `CHERRY_PICK_HEAD` 빈 파일) — 내 것이 아니라 손대지 않았다.
@@ -492,7 +492,7 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
   - 해결 방식: 메인 체크아웃에서 브랜치를 만들면 HEAD 가 움직여 B1 을 방해하므로, **전용 워크트리 `T-HOLDEM-audit`** 를 파서 거기서만 커밋했다. 메인 체크아웃은 발견 당시 상태(`0d4d99309` 클린)로 되돌려 놓았다.
 
 - **다음 세션에 넘기는 주의** (이 세션에서 새로 알아낸 것만)
-  - 🔴 **B1 머지 전에 M9 를 먼저 넣어라.** `VenueSettingsSheet.tsx:108` 이 `location: { name }` 으로 **전체 교체**하고 서버 RPC 도 `'{}'` 에서 재구성해 교체한다(`20260731120000...sql:147-174,212`) → B1 이 `district`/`detailedAddress` 를 추가하는 순간 저장 버튼이 주소를 **소거**한다.
+  - ⚠️ ~~**B1 머지 전에 M9 를 먼저 넣어라.**~~ → **B1 세션 실측으로 정정됨**(아래 B1 항목 주의 4번): B1 은 공고 `location` 만 건드리고 지점 컨테이너 `location` 의 유일한 writer 는 `VenueSettingsSheet` 뿐이라 **B1 diff 는 M9 를 활성화하지 않는다**. M9 는 선재 결함이며 지점 시트에 주소를 넣는 순간 활성화된다. 원문: `VenueSettingsSheet.tsx:108` 이 `location: { name }` 으로 **전체 교체**하고 서버 RPC 도 `'{}'` 에서 재구성해 교체한다(`20260731120000...sql:147-174,212`) → B1 이 `district`/`detailedAddress` 를 추가하는 순간 저장 버튼이 주소를 **소거**한다.
   - 🚨 **"막는 계층이 없다" ≠ "새로 할 수 있는 일이 있다".** 선재 MEDIUM(`wl_update` WITH CHECK 부재)을 가설 3개로 쪼개 2개를 기각했다(`fn_work_logs_pin_posting_id` 가 `job_posting_id` 고정, `protect_work_log_payroll_columns` 가 payroll 고정). 남은 `staff_id` 도 "위조 알림"은 증분이 아니다 — **`add_direct_staff` 가 `authenticated` 에 GRANT + 동의 검사 없음**(prod 실측). 진짜 증분은 *출근·정산 완료 기록의 무음 삭제* 하나. **권한 결함은 차분으로 판정할 것.**
   - 🚨 **알림 계약을 세우는 마이그가 그 계약을 스스로 어길 수 있다.** `20260731140000...sql:163-168` 이 *"버튼이 실제로 있을 때만 말한다"* 를 주석으로 못박고도 조건을 클라(`ScheduleDetailModal.tsx:536-539`)의 **진부분집합**으로 잡아 `cancellation_pending` 을 놓쳤다. **트리거 조건은 클라 게이트와 집합 연산으로 대조할 것.**
   - 🔑 **`settleWorkLogWithTransaction` 은 DB RPC 가 아니다** — prod 에 `%settle%` 함수 **0개**. 클라 TS 메서드이고 정산은 원시 `.update()` 로 나간다(CLAUDE.md '정산=RPC 필수' 위반, LOW 기록). 문서·주석 여러 곳이 이걸 "서버 게이트"라 부른다.
@@ -501,6 +501,45 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
   - ⚠️ **`proconfig` 하드닝은 실제로는 안 터졌다** — 재정의 4함수 전부 `pg_temp` 보존(prod 실측). 가장 크게 걱정한 함정이 무사했다는 사실도 기록해 둔다.
   - 🔴 **메인 체크아웃에서 커밋하지 말 것** — 이 세션이 실증했듯 두 세션이 같은 트리를 쓰면 한쪽의 미커밋 편집이 다른 쪽 커밋에 조용히 삼켜진다. 문서만 고치는 세션도 예외가 아니다.
 
+### B1 (주소 검색 1단계) — 2026-08-01 · 상태: **구현 완료 · PR 미생성**(push/PR 은 사용자 명시 요청 대기)
+
+- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-address` / `claude/job-posting-address-map-lbrvzd` · HEAD `41da9114d`(1커밋, master `0d4d99309` 기준)
+- **마이그 0건** — 파리티 **184/111 불변**(DB 미접촉)
+
+**끝난 것** (검증 증거와 함께)
+- 우편번호 검색 전환: `PlaceSheet` 에 `mode:'postcode'` 인라인 추가(중첩 RN Modal 금지 준수), 주소 TextInput → 검색 버튼, 상세주소(층/호) 입력 신설, region 4단 폴백
+- 신규 `src/utils/address/postcodeAddress.ts`(zod 경계 검증 + region 해석) · `src/components/address/PostcodeSearch{,.web}.tsx`
+- CSP: `script-src += t1.daumcdn.net` · `frame-src += postcode.map.kakao.com`
+- **같이 고친 결함**(이번 변경이 만들어낼 것): `resolveMapQuery` 가 `detailedAddress` 최우선이라 '3층 301호'가 지도 검색어가 되는 문제 → `composeFullAddress` SSOT 로 교체(red→green 확인). `InfoTab` 주소 줄 동반 수정. `orderSheet.schema` district 50→200.
+- 검증: `npm run quality` **exit 0**(lint 0 errors) · jest **599 스위트 / 6573 테스트 전량 통과** · e2e 축 확인(PlaceSheet testID 0건, 주소 표시·길찾기 단언 0건) · knip **델타 0**(master 2223 / 브랜치 2223 실측 대조, 래칫 red 는 master 부터 선재)
+- **브라우저 실관찰**(정적 검사 대체 불가 게이트): ①프로덕션 CSP 를 실제 헤더로 붙인 페이지에서 위젯 정상 렌더 + 콘솔 위반 **0건** ②실제 앱(주문서→장소→주소 검색)에서 검색·선택·지역 자동선택·상세주소 노출 확인. 리뷰 수정 후 **재관찰까지 완료**
+- **리뷰 2회**(opus 중간 → fable 최종). fable = **APPROVE**(CRITICAL 0 / HIGH 0), opus = REQUEST CHANGES(HIGH 3). **HIGH 3건 전부 반영**(`ccd1cbe26`):
+  ① `text-status-error` 는 이 레포에 없는 토큰이라 실패 안내가 다크모드에서 사실상 투명했다 → `error-600/dark:error-400`
+  ② 네이티브 WebView 가 SheetModal 의 ScrollView 안이라 Android 가 제스처를 가져간다(`nestedScrollEnabled` 기본 false) → prop 추가
+  ③ 이 기능의 린치핀인 `district` 동시 쓰기에 회귀 가드 0건 → PlaceSheet 컴포넌트 테스트 4건 신설, **red-green 확인**(`district: address` 제거 시 정확히 2건 red)
+  MEDIUM 도 반영: 상세주소 렌더 조건 `address || detailedAddress`(주소를 지우면 상세주소가 숨겨진 채 제출되던 경로) · 브릿지 파싱 실패 `onError` · `originWhitelist` 축소 + `domStorageEnabled` · 네이티브 HTML 이 위젯 옵션을 리터럴 재선언하던 드리프트 제거
+
+**안 끝난 것**
+- 🔴 **PR 미생성** — push/PR 은 사용자 명시 요청 시에만(원장 §2 규율). 워크트리·브랜치 유지 중
+- 🔴 **네이티브 WebView 실기기 미검증** — 실기기 QA 제외 결정이라 이 경로는 검증 수단이 0이다. 브릿지 파싱만 유닛 테스트로 고정했고 WebView 렌더·가상키보드·iframe 입력은 미검증
+- knip 래칫 미확인(종료 게이트 밖)
+
+**막힌 지점**: 없음
+
+**다음 세션에 넘기는 주의** (이 세션에서 새로 알아낸 것만)
+1. 🚨 **설계 문서 §2-H 가 틀렸다** — `react-native-webview` 를 `src/` 에서 직접 import 하는 코드는 **0건**이었다(PortOne RN SDK 가 내부적으로 쓸 뿐). 이번이 레포 최초 직접 사용이고, **jest 목이 없어 order-sheet 계열 10개 스위트가 통째로 실행조차 안 됐다**(실패 테스트 1개인데 실패 스위트 11개면 이 신호). `jest.setup.js` 에 목 추가로 해결.
+2. 🚨 **CSP 검증은 dev 서버로 불가** — `_headers` 는 Cloudflare Pages 파일이라 `expo start --web` 에 적용되지 않는다. 또 위젯 iframe **스킴이 페이지 프로토콜을 따라간다**(`postcode.v2.js`: `w = "http:" !== CONT.PROTOCOL`) → http 로컬 프로브는 `frame-src https://...` 에 걸린다. playwright 는 self-signed 인증서를 거부하므로 https 프로브 불가.
+3. 🚨 **`district` 는 시군구가 아니라 주소다.** `district ?? address` 붕괴가 **4곳 전부 district 우선**이라, 편집 화면에서 `address` 만 갱신하면 stale district 가 이겨 새 주소가 조용히 사라진다.
+4. 🔑 **M9 는 B1 diff 가 활성화하지 않는다**(실측 정정) — B1 은 공고 location 만 건드리고, 지점 컨테이너 location 의 **유일한 writer** 는 `VenueSettingsSheet` 뿐이다(`update_venue_container` 호출부 전수 확인). 감사 문서는 B1 이 지점 시트에도 주소를 넣는다고 가정했으나 1단계 범위가 아니다. M9 는 선재 결함이며 **지점 시트에 주소를 넣는 순간** 활성화된다.
+5. ⚠️ **`update_venue_profile` RPC 는 district 100자 서버 게이트**(`20260731120000_venue_profile_rpcs.sql:168-170`) — 클라 200 / 지점서버 100 / 공고 무제한 **3원 불일치**. B2 나 지점 주소 확장 시 서버가 거부한다.
+6. 🔑 **지역 택소노미는 2026-07 개편이 이미 반영돼 있다**(설계 문서 §8 미확인 항목의 답) — 인천 신설 4구·화성시 4구 전부 존재. 위험은 반대 방향(위젯이 개편 전 구명을 줄 때)이라 ②단계 폴백이 그걸 받는다.
+7. 🔑 **위젯 실응답은 39개 키** — 우리가 쓰는 건 5개뿐이라 zod `.strict()` 금지. `sido` 축약형(`경기`)·`sigungu` 2단계 문자열(`성남시 분당구`)을 **관찰로** 확정해 픽스처에 고정했다.
+8. 🔑 새 워크트리는 `.env.local`·`.env.development.local`(gitignore)을 메인에서 복사해야 앱이 뜬다 — 없으면 "환경변수 검증 실패"로 부팅 실패.
+9. 🔑 **`composeFullAddress` 의 포함 검사는 완전 토큰이어야 한다** — 단순 `includes` 면 `'강남구청길 5'` 가 `'강남구'` 를 품은 것으로 판정돼 **시·구가 조용히 사라진다**. 역방향 포함, 그리고 "주소 칸이 주소 꼴이 아니면 앞에 붙이지 않는다"(레거시 자유텍스트 별칭 방어)까지 세 갈래가 필요하다.
+10. ⚠️ **`fullLabel`(`core.ts:44`)은 이 PR 이 건드리지 않았다** — 구직자 화면 `근무지` 행은 `name [+detailedAddress] · regionLabel` 이고 **도로명주소는 원래부터 안 보인다**(확정 스태프의 `InfoTab` 에서만 보인다). B1 이 뺏은 게 아니라 선재 경계다. 지원 전 주소 공개 여부는 **제품 결정**이라 범위 밖으로 남겼다 — 바꾸려면 사용자 확인 먼저.
+11. 🔑 **리뷰 에이전트가 0바이트로 멈출 수 있다** — opus 리뷰가 13분간 출력 0바이트인 채 살아 있었다(형제 fable 은 211KB 작성 중). 출력 파일 크기·mtime 으로 생사를 판별해 재디스패치했고, 원래 것도 결국 18분 만에 완주했다(둘 다 유효). 판정이 갈리면 **양쪽 근거를 직접 실측해 채택**할 것 — 이번에도 `composeFullAddress` 반례에서 두 리뷰가 정면 충돌했고 opus 가 맞았다.
+
+---
 ### S5-후속 (SETTLE-3 + 정산 게이트 status 축) — 2026-08-01 · 상태: 완료 (**PR #388 머지** `0ec9abc2c`)
 
 - 워크트리/브랜치: ~~`C:/Users/user/Desktop/T-HOLDEM-revert`~~ / ~~`feat/settlement-revert-entry`~~ · 머지 전 HEAD `d707fb6fc`(커밋 5개, base `97bf7e85c`) → **머지 `0ec9abc2c`**. 브랜치·워크트리 **정리 완료**
