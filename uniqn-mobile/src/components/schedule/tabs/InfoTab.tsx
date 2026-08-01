@@ -33,7 +33,7 @@ import {
   UNDECIDED_TIME_HINT,
 } from '../helpers';
 import { formatPhoneForDisplay } from '@/utils/phone';
-import { openMapSearch, resolveMapQuery } from '@/utils/mapLink';
+import { composeFullAddress, openMapSearch, resolveMapQuery } from '@/utils/mapLink';
 import { useToast } from '@/stores/toastStore';
 import { STATUS } from '@/constants';
 import { PAYROLL_STATUS } from '@/constants/statusConfig';
@@ -156,8 +156,12 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
     [schedule.location, schedule.detailedAddress, schedule.locationAddress]
   );
 
-  /** 장소 아래에 덧붙일 주소 한 줄 — 상세주소가 없으면 공고 주소로 대신한다. */
-  const addressLine = schedule.detailedAddress?.trim() || schedule.locationAddress?.trim() || '';
+  /**
+   * 장소 아래에 덧붙일 주소 한 줄 — 지도 검색어와 **같은 합성 규칙**을 쓴다(SSOT).
+   * 상세주소 우선 단일 선택이던 예전 규칙이면, 주소 검색 도입(B1) 이후 데이터에서
+   * '3층 301호' 만 남고 도로명주소가 화면에서 통째로 사라진다.
+   */
+  const addressLine = composeFullAddress(schedule.locationAddress, schedule.detailedAddress);
 
   const handleOpenMap = useCallback(async () => {
     if (!mapQuery) return;

@@ -32,6 +32,9 @@ export function getPostingLocationLabels(posting: JobPosting): {
   regionLabel?: string;
 } {
   const name = posting.location?.name || '';
+  // 주소 검색 도입(B1) 이후 detailedAddress 는 층/호 조각이라 fullLabel 은 '라운더스 홀덤펍 3층'
+  // 꼴이 된다. 도로명주소(district)를 여기 넣지 않는 것은 **의도** — fullLabel 은 카드 제목·공유
+  // 메시지 한 줄에 쓰이고, 전체 주소는 별도 주소 줄(InfoTab)·지도 링크가 담당한다.
   const detailed = posting.location?.detailedAddress || '';
   // 구조화 지역(region slug) → 표시 라벨(예: '서울 강남구' → '강남구'). 미설정/미지정 slug 는 undefined.
   const regionLabel = getRegionLabel(posting.location?.region);
