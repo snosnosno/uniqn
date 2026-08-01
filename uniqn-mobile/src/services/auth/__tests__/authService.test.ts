@@ -119,6 +119,12 @@ jest.mock('@/services/notifications', () => ({
     mockUnregisterPushTokensForSignOut(...args),
 }));
 
+const mockClearShiftReminders = jest.fn<Promise<void>, []>();
+
+jest.mock('@/services/work/shiftReminderScheduler', () => ({
+  clearShiftReminders: () => mockClearShiftReminders(),
+}));
+
 const { getUserProfile: mockFetchUserProfile } = jest.requireMock('../userProfileService') as {
   getUserProfile: jest.Mock;
 };
@@ -132,6 +138,7 @@ describe('authCoreService', () => {
     mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
     mockSignOut.mockResolvedValue({ error: null });
     mockUnregisterPushTokensForSignOut.mockResolvedValue(undefined);
+    mockClearShiftReminders.mockResolvedValue(undefined);
   });
 
   it('logs in with Supabase signInWithPassword', async () => {
@@ -387,6 +394,24 @@ describe('authCoreService', () => {
 
     await expect(signOut()).resolves.toBeUndefined();
     expect(mockUnregisterPushTokensForSignOut).toHaveBeenCalledWith('user-1');
+  });
+
+  // A3 의 로컬 알림 짝 — 서버 푸시 토큰을 해제해도 **기기에 이미 예약된 로컬 알림**은 남는다.
+  // 근무 리마인더 원장(MMKV)은 사용자 스코프가 아니라, 안 지우면 다음 사용자의 기기에서
+  // 이전 계정의 지점명·근무일이 발화한다.
+  it('로그아웃 시 예약된 근무 리마인더 로컬 알림을 정리한다', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+
+    await expect(signOut()).resolves.toBeUndefined();
+    expect(mockClearShiftReminders).toHaveBeenCalledTimes(1);
+  });
+
+  it('리마인더 정리가 실패해도 로그아웃은 완료된다 (fail-safe)', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+    mockClearShiftReminders.mockRejectedValueOnce(new Error('MMKV busy'));
+
+    await expect(signOut()).resolves.toBeUndefined();
+    expect(mockSignOut).toHaveBeenCalled();
   });
 
   it('푸시 토큰 해제는 supabase 세션 종료 이전에 호출된다 (세션 유효 시점)', async () => {
