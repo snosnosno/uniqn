@@ -88,7 +88,7 @@
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=184
+-- PARITY_EXPECT_FUNCS=186
 -- PARITY_EXPECT_POLICIES=111
 -- ============================================================
 BEGIN;
@@ -108,8 +108,8 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  184,
-  'public function count == prod (184 = 185 - fn_notification_insert_increment 고아 1, 2026-07-31)');
+  186,
+  'public function count == prod (186 = 184 + fn_work_logs_pin_identity·set_work_log_payroll_status 2, 2026-08-02 P5)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(

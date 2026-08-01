@@ -160,11 +160,24 @@ describe('slotEdit — 시작시간 정렬', () => {
 });
 
 describe('slotEdit — 출근 예정 시각 형식 검증(쓰기 경계)', () => {
-  it("피커가 만드는 0패딩 'HH:mm' 만 통과시킨다", () => {
+  it("정본 'HH:mm' 을 통과시킨다", () => {
     expect(assertSlotStartTime('18:00')).toBe('18:00');
     expect(assertSlotStartTime('09:30')).toBe('09:30');
     // 앞뒤 공백은 정규화해서 통과(피커 경유가 아닌 프리필 문자열 방어)
     expect(assertSlotStartTime(' 18:00 ')).toBe('18:00');
+  });
+
+  /**
+   * 🔴 무패딩 입력을 그대로 돌려주면 두 가지가 깨진다(감사 P5/L2 리뷰 지적):
+   *   · DB CHECK `work_logs_time_slot_format` 이 23514 로 거부한다
+   *   · `_posting_slot_key` 가 **원문 문자열**을 슬롯 키로 쓰므로 '9:00' 과 '09:00' 이
+   *     다른 슬롯으로 쪼개져 정원·중복배정 판정이 조용히 갈린다
+   * 피커는 항상 0패딩을 만들지만 프리필·레거시 문자열 경로가 무패딩으로 들어온다.
+   */
+  it('무패딩 시각을 0패딩 정본으로 정규화해 돌려준다', () => {
+    expect(assertSlotStartTime('9:00')).toBe('09:00');
+    expect(assertSlotStartTime('9:05')).toBe('09:05');
+    expect(assertSlotStartTime(' 0:00 ')).toBe('00:00');
   });
 
   it('자유 텍스트·범위 문자열·범위 밖 시각은 ValidationError 로 거부한다', () => {

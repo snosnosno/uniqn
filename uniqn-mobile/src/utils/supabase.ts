@@ -25,6 +25,7 @@ import {
   MaxCapacityReachedError,
   NetworkError,
   PermissionError,
+  ValidationError,
   AuthError as AppAuthError,
   ERROR_CODES,
   isAppError,
@@ -122,6 +123,18 @@ export function handleSupabaseError(error: unknown, context: SupabaseErrorContex
       throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
         message: error.message,
         userMessage: '다른 사용자가 먼저 처리했어요. 새로고침 후 확인해 주세요.',
+        metadata,
+      });
+    }
+
+    // work_logs.time_slot 형식 CHECK(감사 P5/L2). 23514 는 기본 매핑이 VALIDATION_SCHEMA 라
+    // '입력 형식이 올바르지 않습니다' 급의 generic 문구로 떨어진다 — 어느 값이 문제인지
+    // 알 수 없어 구인자가 손쓸 방법이 없다. 제약명으로 특례를 잡아 무엇을 고쳐야 하는지 말한다.
+    // (제약명 기반 특례의 레포 선례: JobPostingCollaboratorRepository 의 unique 제약 처리)
+    if (error.code === '23514' && error.message.includes('work_logs_time_slot_format')) {
+      throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+        message: error.message,
+        userMessage: '근무 시간 형식이 올바르지 않습니다. 시간을 다시 선택해 주세요.',
         metadata,
       });
     }
