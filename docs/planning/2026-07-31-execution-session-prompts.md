@@ -519,6 +519,18 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
    `subagents/agent-*.jsonl` 에서 직접 회수했다 — 같은 증상이면 파일을 열어라.
 9. ⚠️ prod 실측 정정: 공고 `schedule` 에 `timeSlot` 키 **0건**(실제 키는 `timeSlots[].startTime`).
    startTime 전수 **109건 17종이 전부 새 CHECK 을 통과**한다(확정이 깨지는 경로 0).
+10. 🔴 **Lost Update 는 축소됐을 뿐 소멸하지 않았다.** revert 는 서버 `FOR UPDATE` 로 닫혔지만
+    `updateWorkTimeWithTransaction`·`updateWorkLogCustomSettlement` 두 경로가 여전히 클라에서
+    이력 jsonb 를 read-modify-write 한다. **`settlement_modification_history`·`custom_allowances`
+    직접 쓰기는 아직 열려 있다** — 그 두 경로까지 전환해야 이력 컬럼 보호(③ 2단계)를 걸 수 있다.
+11. 🚨 **③ 설계 시 "행 접근 권한"과 "공고 관리 권한"을 혼동하지 말 것.** `wl_update` 의 USING 은
+    `owner_id = auth.uid()` 도 통과시키므로, ③ 이후 채널이 열린 RPC 의 권한 절을 행 접근으로 쓰면
+    **staff 가 자기 근무기록에 호출해 셀프 정산**할 수 있다. 이번 RPC 는 `job_postings` 기준 술어라
+    이미 안전하고, pgTAP 12번이 정확히 그 케이스(work_log 의 staff 본인 = outsider)를 고정한다.
+12. ⚠️ **`updatePayrollStatusWithTransaction` 은 completed "진입"도 허용하는데 금액을 쓰지 않는다**
+    (payroll_date 만 세팅). 이 경로로 들어가면 금액 없는 지급완료가 생긴다. 선재 행동이라
+    이번 RPC 가 그대로 재현했다 — 확정 RPC 화 때 **completed 진입을 settle 전용으로 좁힐지**
+    클라 호출부의 completed 진입 사용례를 grep 확인한 뒤 결정하라(행동 변경이므로 의식적 판단 필요).
 
 ---
 
