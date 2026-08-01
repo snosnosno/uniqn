@@ -32,6 +32,7 @@ export const TYPE_CATEGORY_MAP: Record<string, string> = {
 
   // 정산 관련
   settlement_completed: 'settlement',
+  settlement_reverted: 'settlement',
   settlement_requested: 'settlement',
   negative_settlement_alert: 'admin',
 
