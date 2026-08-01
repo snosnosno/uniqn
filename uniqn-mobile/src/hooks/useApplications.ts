@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { getJobDetailQueryKey } from '@/hooks/useJobDetail';
-import { queryKeys, cachingPolicies } from '@/lib/queryClient';
+import { queryKeys, cachingPolicies, offlineCachePolicies } from '@/lib/queryClient';
 import {
   getCriticalOfflineCache,
   setCriticalOfflineCache,
@@ -119,7 +119,7 @@ export function useApplications() {
   const cachedApplications =
     (user?.uid
       ? getCriticalOfflineCache<Application[]>(applicationsCacheKey, {
-          ttlMs: cachingPolicies.standard,
+          ttlMs: offlineCachePolicies.applications,
           userId: user.uid,
           schemaVersion: APPLICATIONS_CACHE_SCHEMA_VERSION,
         })?.data

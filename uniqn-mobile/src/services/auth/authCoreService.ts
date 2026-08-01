@@ -16,6 +16,7 @@ import { clearProtectedAuthFlow, protectAuthFlow } from '@/shared/auth/protected
 import { RealtimeManager } from '@/shared/realtime';
 import { userSessionStorage } from '@/lib/secureStorage';
 import { clearBiometricCredentials } from './biometricService';
+import { clearShiftReminders } from '@/services/work/shiftReminderScheduler';
 import {
   clearPortOneIdentityBindingToken,
   callVerifyAndSavePortOneProfile,
@@ -417,10 +418,15 @@ export async function signOut(): Promise<void> {
     // P0 #3 — 공용 디바이스 다음 사용자에게 자격증명 잔존 방지
     // C4 fix — bindingToken도 함께 정리 (PortOne 본인인증 도중 강제 signOut 대비)
     // 모두 idempotent. 한쪽 실패해도 signOut 계속 진행 (SecureStore 일시적 잠금 등)
+    //
+    // clearShiftReminders — 예약된 **로컬** 근무 알림도 같은 이유로 지운다. 위 푸시 토큰
+    // 해제가 서버발 알림을 막는 동안, 기기에 이미 예약된 로컬 알림은 그대로 남아 다음
+    // 사용자의 화면에 이전 계정의 지점명·근무일을 띄웠다(원장이 사용자 스코프가 아니다).
     await Promise.allSettled([
       clearPortOneIdentityBindingToken(),
       clearBiometricCredentials(),
       userSessionStorage.clearSession(),
+      clearShiftReminders(),
     ]);
 
     await supabase.auth.signOut();

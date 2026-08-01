@@ -1,5 +1,8 @@
 import { getMMKVInstance } from '@/lib/mmkvStorage';
 import { logger } from '@/utils/logger';
+// 타입만 가져온다(런타임 import 아님) — lib/queryClient 는 이 모듈을 import 하지 않으므로
+// 순환도 없다. 값의 정체를 타입으로 강제하는 것이 목적이다(아래 ttlMs 주석 참조).
+import type { OfflineTtlMs } from '@/lib/queryClient';
 
 export interface CachedEnvelope<T> {
   version: number;
@@ -15,7 +18,13 @@ export interface CacheSerializer<T> {
 }
 
 interface CacheReadOptions {
-  ttlMs?: number;
+  /**
+   * 오프라인 보존기간. 🔴 **온라인 `staleTime` 을 여기 넘기지 말 것** — 만료는 stale 표시가
+   * 아니라 **완전 삭제**(:133-147)라, 30초~10분짜리 값을 꽂으면 지하에서 화면이
+   * "데이터 없음"으로 위장된다. 그래서 맨 `number` 를 받지 않고 `offlineCachePolicies`
+   * 만 만들 수 있는 `OfflineTtlMs` 로 좁혔다(감사 M6 — 같은 실수가 6곳까지 늘었다).
+   */
+  ttlMs?: OfflineTtlMs;
   userId?: string;
   schemaVersion?: number;
 }

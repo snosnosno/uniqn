@@ -31,7 +31,7 @@
 | **P3**(감사후속) | 리마인더 스코프 수선 (H1, **유일한 HIGH**) | ~~`fix/reminder-scope`~~ | ✅ **머지** | **#396** | `170fd8a2f`. CI **9잡 전부 pass**(E2E 9m45s 포함, **재실행 0회**). 재통합(#397 P2 · #395 P4) 후 재검증: 전체 jest **601스위트 6591테스트 122스냅샷 전량 통과 exit 0** · pre-push quality **0 errors**(경고 98은 선재). 마이그 **0건**. `syncShiftReminders` 에 관측 창(`coverage`) 필수 인자 + 원장 v1→v2. quality 통과 · **red-green 3회**(창 가드/지난근무 가드/`signOut` 배선을 각각 제거하면 해당 1건만 red) · 리뷰 fable **APPROVE**(CRITICAL 0/HIGH 0, MEDIUM 2 **전량 반영**). 🔑 리뷰가 찾은 **이 PR 이 걷어낸 보호막**(공용 기기 계정 전환 시 이전 계정 알림 발화)을 같은 PR 에서 닫음 — `clearShiftReminders()` 를 `signOut` 에 배선 |
 | **P4**(감사후속) | 지점 `location` 병합 (M9) | ~~`fix/venue-location-merge`~~ | ✅ **머지** | **#395** | `2e8255dd5`. CI **9잡 전부 pass**(E2E 10m26s 포함, 재실행 0회). 마이그 **0건**(서버 RPC 무변경 — 치환은 의도된 계약). quality 통과 · jest 14/14 · red-green 실증(병합을 되돌리면 신규 2건만 red) · 리뷰 fable **APPROVE**(CRITICAL/HIGH/MEDIUM 0, LOW 3 중 2건 반영). ✅ **B1 선행 불필요 확정** |
 | **P6**(감사후속) | 오프라인 캐시 TTL 분리 (M6) | ~~`fix/offline-cache-policies`~~ | ✅ **머지** | **#398** | `40040c8fb`. CI **9잡 전부 pass**(E2E 11m5s 포함, **재실행 0회**). 재통합(#397 P2 · #395 P4 · **#396 P3**) 후 재검증: quality **0 errors**(eslint 경고 98 선재 · prettier clean) · 전체 jest **602스위트 6599테스트 122스냅샷 전량 통과** · pre-push quality 통과. 마이그 **0건**. 감사 5줄 → **실측 6줄**(`useWorkLogs.ts:269` 추가 발견). `offlineCachePolicies` 5키 + **브랜드 타입 `OfflineTtlMs`** 로 컴파일 타임 차단. quality 통과 · jest 600스위트 6583테스트 · **red-green 2종**(호출부 원복 시 tsc 6곳 TS2322 + 테스트 5건 red / 정책값 오염 시 백스톱 2건 red) · 리뷰 fable **APPROVE**(CRITICAL 0/HIGH 0, MEDIUM 1 반영) |
-| **P5**(감사후속) | 방어심화 (M4+L1+L2) | ~~`feat/settlement-rpc-and-defense`~~ | ✅ **머지** | **#400** | `95772ce49`. **타 세션 소관** — 세션 A2 가 P6 를 머지하는 사이에 착지했다. 신원 컬럼 고정 트리거 + `time_slot` CHECK + 정산 상태 RPC 화. **마이그 2건 prod 선적용**(기록명 `20260801212753 work_logs_identity_pin_and_time_slot_check` + `20260801212843 set_work_log_payroll_status_rpc`) — **재적용 금지**. 파리티 **184 → 186**(정책 111 불변), `PARITY_EXPECT_FUNCS` 도 이 PR 에서 186 으로 갱신됨. 감사의 M4 처방(컬럼 REVOKE)은 무효였고 트리거로 대체 |
+| **P5**(감사후속) | 방어심화 (M4+L2+L1 절반) | ~~`feat/settlement-rpc-and-defense`~~ | ✅ **머지** | **#400** | `95772ce49`. **타 세션 소관** — 세션 A2 가 P6 를 머지하는 사이에 착지했다. 신원 컬럼 고정 트리거 + `time_slot` CHECK + 정산 상태 RPC 화. 🔴**마이그 2건 prod 적용 완료 — 재적용 금지**(기록명 `20260801212753 work_logs_identity_pin_and_time_slot_check`·`20260801212843 set_work_log_payroll_status_rpc`, 파일명과 다름). 파리티 **184→186** / 정책 111 불변(prod 실측), `PARITY_EXPECT_FUNCS` 도 이 PR 에서 186 으로 갱신됨. quality exit 0 · jest **600스위트 6583테스트** · pgTAP **91파일 951테스트**(기준선 88/912) · red-green **5종 1:1 실증**. 리뷰 fable planner·fable/opus database-reviewer 3인 반영. 감사의 M4 처방(컬럼 REVOKE)은 무효였고 트리거로 대체. **L1 은 절반** — 확정·일괄 RPC화와 직접쓰기 차단은 다음 세션(상세=§5) |
 | **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
 | **S6** | 3-C 설계 | — | ⬜ | | 사용자 결정 필요 |
 | **S7** | 3-C 구현 | `feat/posting-time-change` | ⬜ | | S6 승인 후 |
@@ -611,7 +611,72 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 - 🔴 P6 LOW: `currentWorkStatus` 12시간은 벽시계 근사치다. 궁극형은 `cachedAt` 의 달력 날짜 비교.
 - ⚠️ **P2 는 타 세션이 진행 중**(`T-HOLDEM-notifyfix` / `fix/notification-contract-alignment`,
   HEAD `d51465f55`). **마이그 1건 포함** — "마이그는 전 레인 동시 1건" 슬롯을 그 레인이 점유한다.
-- 🔴 감사 후속 **P5 미착수**.
+- 🔴 감사 후속 **P5 미착수**. → **정정**: 이 기재는 곧 stale 이 됐다. P5 는 타 세션이 진행해
+  **PR #400 로 머지**됐다(`95772ce49`). 아래 P5 항목 참조.
+
+---
+
+### P5 (감사 후속 — 방어 심화 M4+L2+L1) — 2026-08-02 · 상태: 완료(L1 은 의도적 절반) · **PR #400**
+
+- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-notifyfix` / `feat/settlement-rpc-and-defense` · HEAD `fd1172555`(5커밋)
+- 🔴 **마이그 2건 prod 적용 완료 — 재적용 금지.** 기록명 `20260801212753 work_logs_identity_pin_and_time_slot_check` ·
+  `20260801212843 set_work_log_payroll_status_rpc` (레포 파일명 `20260802120000`·`20260802130000` 과 **다르다**)
+- 파리티 **184 → 186** / 정책 **111 불변**(prod 실측). `parity_baseline_guard.test.sql` `:91` 마커 + `:111` 리터럴 둘 다 갱신
+
+**끝난 것** (전부 이 세션의 도구 출력 기준)
+- **M4** `fn_work_logs_pin_identity` + `tr_work_logs_pin_identity`(`BEFORE UPDATE OF staff_id, owner_id`).
+  staff_id 는 전면 차단, owner_id 는 재지정 전면 차단 + NULL 화는 `current_user` 데니리스트로 신뢰 채널만 허용
+- **L2** `work_logs_time_slot_format` CHECK. 클라 `assertSlotStartTime` 0패딩 정규화 + 23514 전용 사용자 문구까지 동반
+- **L1(절반)** `set_work_log_payroll_status` RPC 신설 + `updatePayrollStatusWithTransaction` 전환 + 테스트 2파일 재편
+- 게이트: quality **exit 0** · jest **600스위트 6583테스트 122스냅샷** · pgTAP **91파일 951테스트**(기준선 88/912 → +3파일 +39) ·
+  `check:rpc-migrations` 통과(94종) · e2e 는 정산 쓰기 흐름 미단언이라 파급 0
+- **red-green 5종 1:1 실증**: 트리거 DROP → identity_pin 만 red / CHECK DROP → time_slot_format 만 red /
+  RPC 사유가드 제거 → payroll_status_rpc 만 red / 강화조건 제거 → 해당 단언만 red / throws_like 스왑방지 확인
+- 리뷰 3인 전량 반영 — fable planner(갈래 판정) · fable database-reviewer(REQUEST CHANGES) · opus database-reviewer(REQUEST CHANGES)
+
+**안 끝난 것**
+- 🔴 **PR 미생성**(push/PR 은 사용자 명시 요청 사항). 워크트리 유지 중
+- 🔴 **L1 나머지** — `settleWorkLog`·`bulkSettlement` RPC 화 + 전환. **반쪽 전환은 퇴행**이다(아래 주의 1번)
+- 🔴 **L1 3단계 = payroll 컬럼 직접 UPDATE 차단** — 확정·일괄 전환 + 롤아웃 확인 **뒤**에만 가능
+- ⚠️ §1 상태보드 P5 행이 PR **#399** 와 충돌할 수 있다(그쪽이 먼저 P5 행을 ⏸ 로 넣어 뒀다)
+
+**다음 세션에 넘기는 주의** (이 세션에서 새로 알아낸 것만)
+1. 🚨 **확정(settle)만 RPC 로 옮기면 개선이 아니라 퇴행이다.** 계산기를 포팅하지 않은 채 옮기면
+   서버가 클라 금액을 그대로 받아 **지금 있는 canonical 재계산 방어가 사라진다.** 확정은 계산 포팅과 한 묶음이어야 한다.
+   그 계산기는 **4갈래로 발산한 병렬 구현**이고(과거 실제 발산 이력) 타임존·이중반올림·3값논리·클라상수 4개가 전부
+   "조용히 다른 금액"을 만드는 유형이다. bulk 는 **부분성공 계약**을 반드시 보존할 것(항목별 서브트랜잭션).
+2. 🔑 **SECDEF 안에서 `current_user` 는 definer 로 바뀌지만 `auth.uid()` 는 호출자를 유지한다**(로컬 실증).
+   직접 PostgREST PATCH 와 SECDEF 경유를 가르는 **유일한 판별자**다 — `auth.uid() IS NULL` 류 신뢰 게이트는 못 쓴다.
+3. 🚨 **42501 단독 단언은 red-스왑된다** — `wl_update` 의 WITH CHECK(=USING 재사용) 위반도 같은 42501 이라
+   트리거를 빼도 green 이 유지될 수 있다. 차단 단언은 `throws_like` 로 메시지 접두사를 볼 것.
+4. 🚨 **CRLF 워크트리에서 `docker cp` + `psql -f` 로 적용하면 prosrc 에 CR 이 섞인다.**
+   로컬 1383자 vs prod 1352자로 31자 차이가 났는데 줄 수와 정확히 같았고, CR 제거 후 md5 가 완전 일치했다 —
+   **전사 누락으로 오판하기 직전이었다.** `replace(prosrc, chr(13), '')` 로 한 번 거르고 판정하라.
+5. 🚨 **"잔여 위험이 좁다"를 서버 소비처만 보고 판단하면 틀린다.** `work_logs.owner_id` 를 읽는 서버 코드는
+   RLS 정책 2개뿐이라(함수들이 쓰는 owner_id 는 전부 `jp.owner_id`) 처음엔 수용했는데,
+   **클라가 `.eq('owner_id', …)` 로 조회**하는 경로에서 타인 피해임이 드러났다.
+   ⚠️ 그 두 메서드(`WorkLogRepository.ts:226,264`)의 유일한 소비처는 정산이 아니라 **미작성 리뷰 대상 목록**이다.
+6. 🚨 **에러 접두사를 바꾸면 공통 핸들러의 다른 특례에 걸릴 수 있다** — `INVALID_STATUS` 로 바꾸자
+   `handleSupabaseError` 의 confirm_application 동시성 특례로 떨어져 **"다른 사용자가 먼저 처리했어요"라는
+   거짓 안내**가 나갈 뻔했다.
+7. 🔑 **`protect_work_log_payroll_columns` 는 SECDEF RPC 도 우회시키지 않는다**(호출자 JWT 의 app_metadata.role 을 읽는다).
+   pgTAP 은 `jpc_test_set_user_with_role(…, 'employer')` 필수. **협업자가 employer 역할이 아니면 RPC 통과여도 트리거가 막는다**(선재).
+8. ⚠️ **fable 서브에이전트 2인의 판정이 메인 세션에 전달되지 않았다**(SendMessage 유실, 25분 정지처럼 보였다).
+   `subagents/agent-*.jsonl` 에서 직접 회수했다 — 같은 증상이면 파일을 열어라.
+9. ⚠️ prod 실측 정정: 공고 `schedule` 에 `timeSlot` 키 **0건**(실제 키는 `timeSlots[].startTime`).
+   startTime 전수 **109건 17종이 전부 새 CHECK 을 통과**한다(확정이 깨지는 경로 0).
+10. 🔴 **Lost Update 는 축소됐을 뿐 소멸하지 않았다.** revert 는 서버 `FOR UPDATE` 로 닫혔지만
+    `updateWorkTimeWithTransaction`·`updateWorkLogCustomSettlement` 두 경로가 여전히 클라에서
+    이력 jsonb 를 read-modify-write 한다. **`settlement_modification_history`·`custom_allowances`
+    직접 쓰기는 아직 열려 있다** — 그 두 경로까지 전환해야 이력 컬럼 보호(③ 2단계)를 걸 수 있다.
+11. 🚨 **③ 설계 시 "행 접근 권한"과 "공고 관리 권한"을 혼동하지 말 것.** `wl_update` 의 USING 은
+    `owner_id = auth.uid()` 도 통과시키므로, ③ 이후 채널이 열린 RPC 의 권한 절을 행 접근으로 쓰면
+    **staff 가 자기 근무기록에 호출해 셀프 정산**할 수 있다. 이번 RPC 는 `job_postings` 기준 술어라
+    이미 안전하고, pgTAP 12번이 정확히 그 케이스(work_log 의 staff 본인 = outsider)를 고정한다.
+12. ⚠️ **`updatePayrollStatusWithTransaction` 은 completed "진입"도 허용하는데 금액을 쓰지 않는다**
+    (payroll_date 만 세팅). 이 경로로 들어가면 금액 없는 지급완료가 생긴다. 선재 행동이라
+    이번 RPC 가 그대로 재현했다 — 확정 RPC 화 때 **completed 진입을 settle 전용으로 좁힐지**
+    클라 호출부의 completed 진입 사용례를 grep 확인한 뒤 결정하라(행동 변경이므로 의식적 판단 필요).
 
 ---
 

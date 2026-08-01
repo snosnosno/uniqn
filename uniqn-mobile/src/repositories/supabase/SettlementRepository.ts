@@ -70,25 +70,56 @@ const JOB_POSTINGS_TABLE = 'job_postings';
 const settlementModificationHistorySchema = z.array(z.record(z.string(), z.unknown()));
 
 /**
- * 정산 금액 수정 이력을 안전하게 읽어 새 항목을 덧붙인다.
+ * `set_work_log_payroll_status` RPC 가 RAISE 한 도메인 에러를 앱 에러로 변환.
+ * (매칭되지 않으면 null 반환 → 공통 핸들러로 위임)
  *
- * 오염(비배열·비객체)이면 [] 폴백 + 관측만 하고 throw 하지 않는다 —
- * `updateWorkLogCustomSettlement` 의 기존 규약과 동일.
+ * 서버 메시지는 `CODE: 사용자 문구` 형식이라 접두사를 떼어 그대로 노출한다 —
+ * 사유 상한·XSS 문구를 클라와 서버 두 곳에서 따로 관리하면 조용히 갈라진다.
  */
-function appendSettlementStatusRevert(
-  rawHistory: unknown,
-  entry: Record<string, unknown>,
-  workLogId: string
-): Record<string, unknown>[] {
-  const parsed = settlementModificationHistorySchema.safeParse(rawHistory ?? []);
-  if (!parsed.success) {
-    logger.error('정산 수정 이력 형식 오류 — 빈 배열로 폴백', {
-      workLogId,
-      issues: parsed.error.issues,
+function toPayrollStatusError(
+  error: unknown
+): BusinessError | PermissionError | ValidationError | null {
+  const message = error instanceof Error ? error.message : String(error);
+  const userMessage = (fallback: string): string => {
+    const idx = message.indexOf(': ');
+    return idx >= 0 ? message.slice(idx + 2).trim() : fallback;
+  };
+
+  if (message.includes('PERMISSION_DENIED')) {
+    return new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
+      userMessage: userMessage('권한이 있는 공고의 근무 기록만 정산 상태를 변경할 수 있습니다'),
     });
   }
-  const existing = parsed.success ? parsed.data : [];
-  return [...existing, { type: 'payroll_status_revert', ...entry }];
+  if (message.includes('WORK_LOG_NOT_FOUND')) {
+    return new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
+      userMessage: '근무 기록을 찾을 수 없습니다',
+    });
+  }
+  if (message.includes('POSTING_NOT_FOUND')) {
+    return new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
+      userMessage: '공고를 찾을 수 없습니다',
+    });
+  }
+  // ⚠️ INVALID_STATUS 를 여기서 반드시 잡아야 한다. 놓치면 공통 핸들러의
+  //    `P0001 && INVALID_STATUS` 특례(confirm_application 동시성용)로 떨어져
+  //    "다른 사용자가 먼저 처리했어요" 라는 **거짓 안내**가 나간다.
+  if (message.includes('INVALID_STATUS')) {
+    return new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+      userMessage: userMessage('알 수 없는 정산 상태입니다'),
+    });
+  }
+  if (message.includes('INVALID_INPUT')) {
+    // 사유 미입력만 VALIDATION_REQUIRED, 나머지(길이·XSS)는 보안 코드로 — 기존 클라 분기와 동일.
+    const isMissingReason = message.includes('사유를 입력');
+    return new ValidationError(
+      isMissingReason ? ERROR_CODES.VALIDATION_REQUIRED : ERROR_CODES.SECURITY_XSS_DETECTED,
+      {
+        ...(isMissingReason ? {} : { category: 'security' as const, severity: 'medium' as const }),
+        userMessage: userMessage('정산 상태 변경 요청이 올바르지 않습니다'),
+      }
+    );
+  }
+  return null;
 }
 
 /** Supabase에는 Firestore의 500 배치 제한이 없지만 합리적 청크 크기 유지 */
@@ -618,59 +649,31 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
     try {
       logger.info('정산 상태 변경', { workLogId, status, actorId });
 
-      // 소유권 검증
-      const { workLog } = await this.validateWorkLogOwnership(workLogId, actorId, '정산 상태 변경');
+      // 서버 RPC 단일 왕복 (감사 L1). 이전에는 select→select→(권한 RPC)→update 다단계
+      // 뮤테이션이었고 CLAUDE.md 의 "정산=RPC 필수" 규약과 어긋났다.
+      //
+      // 이 전환이 실제로 고치는 것:
+      //   1) 되돌리기 사유 필수·XSS·200자 상한이 클라에만 있어 raw PostgREST 로 우회됐다 → 서버 강제
+      //   2) settlement_modification_history 를 select 로 읽고 update 로 통째 덮어써서
+      //      동시 요청이 앞의 이력 항목을 조용히 지웠다(Lost Update) → 서버가 FOR UPDATE + 단일 문장
+      //   3) 소유권 확인 시점과 update 시점 사이 payrollStatus 가 바뀌어도 재확인이 없었다(TOCTOU)
+      //
+      // actorId 는 서버가 auth.uid() 로 다시 판정한다 — 여기서는 관측용으로만 남긴다.
+      const { error } = await supabase.rpc('set_work_log_payroll_status', {
+        p_work_log_id: workLogId,
+        p_status: status,
+        p_reason: options?.reason ?? null,
+      });
 
-      // 상태 업데이트
-      const now = new Date().toISOString();
-      const updateData: Record<string, unknown> = {
-        payroll_status: status,
-        updated_at: now,
-      };
-
-      if (status === STATUS.PAYROLL.COMPLETED) {
-        updateData.payroll_date = now;
-      }
-
-      // 지급 완료 되돌리기 — 금전 상태를 역행시키는 조작이라 사유·감사 이력을 서버에서 강제한다.
-      // DB 는 이 2단계 경로(completed→pending 후 수정)를 이미 허용해 두었다(20260712010000 헤더).
-      const isRevertFromCompleted =
-        workLog.payrollStatus === STATUS.PAYROLL.COMPLETED && status !== STATUS.PAYROLL.COMPLETED;
-
-      if (isRevertFromCompleted) {
-        const trimmedReason = options?.reason?.trim() ?? '';
-        if (trimmedReason.length === 0) {
-          throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-            userMessage: '지급 완료를 취소하려면 사유를 입력해주세요.',
-          });
-        }
-        // XSS·길이 경계는 시간 수정 사유와 같은 규약을 재사용한다.
-        const safeReason = assertWorkTimeReason(trimmedReason);
-
-        // 지급일은 더 이상 유효하지 않다. 동결 표시액(payroll_amount)은 남긴다 —
-        // shouldUseFrozenPayrollAmount 가 완료 상태에서만 쓰므로 표시에 새어나가지 않고,
-        // '얼마를 지급 완료로 찍었었는지' 기록은 이의 처리에 필요하다.
-        updateData.payroll_date = null;
-        updateData.settlement_modification_history = appendSettlementStatusRevert(
-          (workLog as unknown as Record<string, unknown>).settlementModificationHistory,
-          {
-            previousStatus: STATUS.PAYROLL.COMPLETED,
-            newStatus: status,
-            reason: safeReason,
-            modifiedBy: actorId,
-            modifiedAt: now,
-          },
-          workLogId
-        );
-      }
-
-      const { error } = await supabase.from(WORK_LOGS_TABLE).update(updateData).eq('id', workLogId);
-
-      if (error)
+      if (error) {
+        const mapped = toPayrollStatusError(error);
+        if (mapped) throw mapped;
         handleSupabaseError(error, { operation: '정산 상태 변경', table: WORK_LOGS_TABLE });
+      }
 
       logger.info('정산 상태 변경 완료', { workLogId, status });
     } catch (error) {
+      // 매핑된 앱 에러는 rethrowOrHandle 의 isAppError 분기로 그대로 재전파된다.
       rethrowOrHandle(error, '정산 상태 변경', { workLogId, status, actorId });
     }
   }

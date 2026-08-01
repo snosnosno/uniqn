@@ -1,32 +1,35 @@
 /**
- * 지급 완료 되돌리기 계약 (SETTLE-3)
+ * 지급 완료 되돌리기 계약 (SETTLE-3 → 감사 P5/L1 로 서버 이전)
  *
- * @description `updatePayrollStatusWithTransaction` 은 구현·반환까지 돼 있는데 **소비처가 레포
- *   전체에 0곳** 이라 오지급 정정 수단이 앱에 없었다. DB 쪽은 이미 이 경로를 전제해 뒀다 —
- *   마이그레이션 20260712010000 헤더가 'employer 가 payroll_status 를 completed→pending 으로
- *   되돌린 뒤 수정하는 2단계 경로는 허용한다' 고 명문화한다.
+ * @description 금전 상태를 역행시키는 조작이므로 되돌리기에는 (1) 사유 강제 (2) 감사 이력
+ *   (3) payroll_date 클리어가 강제돼야 한다. 사유 없이 되돌릴 수 있으면 '누가 왜 되돌렸나' 가 사라진다.
  *
- *   금전 상태를 역행시키는 조작이므로 되돌리기에는 (1) 사유 강제 (2) 감사 이력 (3) payroll_date
- *   클리어를 서버측에서 강제한다. 사유 없이 되돌릴 수 있으면 '누가 왜 되돌렸나' 가 사라진다.
+ *   🔴 **그 강제가 어디에 있는지가 바뀌었다.** 예전에는 이 클라 메서드가 직접 검증하고
+ *   `.update()` 로 이력을 통째 덮어썼다. 그래서 raw PostgREST 로 우회할 수 있었고,
+ *   select→update read-modify-write 라 동시 요청이 앞 이력 항목을 조용히 지웠다(Lost Update).
+ *   이제는 `set_work_log_payroll_status` RPC 가 FOR UPDATE 로 잠그고 서버에서 강제한다
+ *   (마이그 20260802130000).
+ *
+ *   따라서 이 파일의 책임도 바뀐다:
+ *     · 사유 필수·XSS·200자·이력 형태의 **실질 계약**은 pgTAP
+ *       `supabase/tests/settlement_payroll_status_rpc.test.sql`(11 assertion)이 지킨다.
+ *     · 여기서는 **RPC 를 올바른 인자로 부르는가**, **서버 예외를 앱 에러로 옳게 매핑하는가**,
+ *       그리고 **더 이상 work_logs 를 직접 UPDATE 하지 않는가**(전환 회귀 방지)를 지킨다.
  */
 
 import { SupabaseSettlementRepository } from '../SettlementRepository';
 import { STATUS } from '@/constants';
-import { ValidationError } from '@/errors';
-import type { WorkLog, JobPosting } from '@/types';
+import { ValidationError, PermissionError, BusinessError, ERROR_CODES } from '@/errors';
 
 const WORK_LOG_ID = 'wl-1';
-const JOB_POSTING_ID = 'jp-1';
 const ACTOR_ID = 'owner-1';
 
-let workLogUpdatePayloads: Record<string, unknown>[] = [];
-let currentWorkLog: WorkLog;
-
+const mockRpc = jest.fn();
 const mockFrom = jest.fn();
 jest.mock('@/lib/supabase', () => ({
   supabase: {
+    rpc: (...args: unknown[]) => mockRpc(...args),
     from: (...args: unknown[]) => mockFrom(...args),
-    rpc: jest.fn(),
     channel: jest.fn(),
   },
 }));
@@ -37,160 +40,139 @@ jest.mock('@/utils/logger', () => ({
 
 jest.mock('@sentry/react-native', () => ({ __esModule: true, addBreadcrumb: jest.fn() }));
 
-jest.mock('../postingAuthority', () => ({
-  resolvePostingAuthority: jest.fn().mockResolvedValue({ role: 'owner' }),
-  canManagePosting: jest.fn().mockReturnValue(true),
-}));
-
-const mockParseWorkLog = jest.fn();
-const mockParseJobPosting = jest.fn();
-jest.mock('@/schemas', () => {
-  const actual = jest.requireActual('@/schemas');
-  return {
-    ...actual,
-    parseWorkLogDocument: (...a: unknown[]) => mockParseWorkLog(...a),
-    parseJobPostingDocument: (...a: unknown[]) => mockParseJobPosting(...a),
-  };
-});
-
-function makeWorkLog(overrides: Record<string, unknown> = {}): WorkLog {
-  return {
-    id: WORK_LOG_ID,
-    jobPostingId: JOB_POSTING_ID,
-    status: STATUS.WORK_LOG.CHECKED_OUT,
-    payrollStatus: STATUS.PAYROLL.COMPLETED,
-    payrollAmount: 120000,
-    settlementModificationHistory: [],
-    ...overrides,
-  } as unknown as WorkLog;
-}
-
-function installSupabaseChain() {
-  mockFrom.mockImplementation((table: string) => {
-    let pendingUpdate: Record<string, unknown> | undefined;
-    const chain: Record<string, unknown> = {
-      select: () => chain,
-      update: (data: Record<string, unknown>) => {
-        pendingUpdate = data;
-        return chain;
-      },
-      eq: () => {
-        if (pendingUpdate !== undefined) {
-          if (table === 'work_logs') workLogUpdatePayloads.push(pendingUpdate);
-          return Promise.resolve({ data: null, error: null });
-        }
-        return chain;
-      },
-      maybeSingle: () =>
-        Promise.resolve({
-          data:
-            table === 'work_logs'
-              ? { id: WORK_LOG_ID, job_posting_id: JOB_POSTING_ID }
-              : { id: JOB_POSTING_ID, owner_id: ACTOR_ID, workspace_id: 'ws-1' },
-          error: null,
-        }),
-    };
-    return chain;
-  });
-}
-
-beforeEach(() => {
-  workLogUpdatePayloads = [];
-  currentWorkLog = makeWorkLog();
-  mockParseWorkLog.mockImplementation(() => currentWorkLog);
-  mockParseJobPosting.mockReturnValue({
-    id: JOB_POSTING_ID,
-    ownerId: ACTOR_ID,
-    workspaceId: 'ws-1',
-  } as unknown as JobPosting);
-  installSupabaseChain();
-});
-
 const REASON = '금액을 잘못 산정해 지급 완료를 취소합니다';
 
-describe('updatePayrollStatusWithTransaction — 지급 완료 되돌리기', () => {
-  it('사유 없이 완료를 되돌리려 하면 거부한다', async () => {
+beforeEach(() => {
+  mockRpc.mockReset();
+  mockFrom.mockReset();
+  mockRpc.mockResolvedValue({ data: { success: true }, error: null });
+});
+
+describe('updatePayrollStatusWithTransaction — 서버 RPC 위임 계약', () => {
+  it('set_work_log_payroll_status 를 정확한 파라미터로 호출한다', async () => {
+    const repo = new SupabaseSettlementRepository();
+
+    await repo.updatePayrollStatusWithTransaction(WORK_LOG_ID, STATUS.PAYROLL.PENDING, ACTOR_ID, {
+      reason: REASON,
+    });
+
+    expect(mockRpc).toHaveBeenCalledTimes(1);
+    const [rpcName, rpcParams] = mockRpc.mock.calls[0];
+    expect(rpcName).toBe('set_work_log_payroll_status');
+    expect(rpcParams).toEqual({
+      p_work_log_id: WORK_LOG_ID,
+      p_status: STATUS.PAYROLL.PENDING,
+      p_reason: REASON,
+    });
+  });
+
+  it('사유가 없으면 p_reason 을 null 로 보낸다 (서버가 되돌리기일 때만 강제한다)', async () => {
+    const repo = new SupabaseSettlementRepository();
+
+    await repo.updatePayrollStatusWithTransaction(WORK_LOG_ID, STATUS.PAYROLL.COMPLETED, ACTOR_ID);
+
+    expect(mockRpc.mock.calls[0][1]).toEqual({
+      p_work_log_id: WORK_LOG_ID,
+      p_status: STATUS.PAYROLL.COMPLETED,
+      p_reason: null,
+    });
+  });
+
+  /**
+   * 🔑 전환 회귀 방지 — 이 단언이 없으면 누군가 클라 직접 UPDATE 를 되살려도 아무도 모른다.
+   * 직접 UPDATE 경로가 살아 있으면 서버 강제(사유 필수·FOR UPDATE)가 통째로 우회된다.
+   */
+  it('work_logs 를 클라에서 직접 UPDATE 하지 않는다', async () => {
+    const repo = new SupabaseSettlementRepository();
+
+    await repo.updatePayrollStatusWithTransaction(WORK_LOG_ID, STATUS.PAYROLL.PENDING, ACTOR_ID, {
+      reason: REASON,
+    });
+
+    expect(mockFrom).not.toHaveBeenCalled();
+  });
+});
+
+describe('updatePayrollStatusWithTransaction — 서버 예외 매핑', () => {
+  it('사유 미입력(INVALID_INPUT)은 VALIDATION_REQUIRED 로 매핑한다', async () => {
+    mockRpc.mockResolvedValue({
+      data: null,
+      error: new Error('INVALID_INPUT: 지급 완료를 취소하려면 사유를 입력해주세요.'),
+    });
+    const repo = new SupabaseSettlementRepository();
+
+    await expect(
+      repo.updatePayrollStatusWithTransaction(WORK_LOG_ID, STATUS.PAYROLL.PENDING, ACTOR_ID)
+    ).rejects.toMatchObject({ code: ERROR_CODES.VALIDATION_REQUIRED });
+  });
+
+  it('사유 미입력은 ValidationError 인스턴스로 전파된다', async () => {
+    mockRpc.mockResolvedValue({
+      data: null,
+      error: new Error('INVALID_INPUT: 지급 완료를 취소하려면 사유를 입력해주세요.'),
+    });
     const repo = new SupabaseSettlementRepository();
 
     await expect(
       repo.updatePayrollStatusWithTransaction(WORK_LOG_ID, STATUS.PAYROLL.PENDING, ACTOR_ID)
     ).rejects.toBeInstanceOf(ValidationError);
-
-    expect(workLogUpdatePayloads).toHaveLength(0);
   });
 
-  it('공백뿐인 사유도 거부한다', async () => {
+  it('XSS·길이 위반(INVALID_INPUT)은 보안 코드로 매핑한다', async () => {
+    mockRpc.mockResolvedValue({
+      data: null,
+      error: new Error('INVALID_INPUT: 수정 사유에 허용되지 않는 문자가 포함되어 있습니다'),
+    });
     const repo = new SupabaseSettlementRepository();
 
     await expect(
       repo.updatePayrollStatusWithTransaction(WORK_LOG_ID, STATUS.PAYROLL.PENDING, ACTOR_ID, {
-        reason: '   ',
+        reason: '<script>alert(1)</script>',
       })
-    ).rejects.toBeInstanceOf(ValidationError);
+    ).rejects.toMatchObject({ code: ERROR_CODES.SECURITY_XSS_DETECTED });
   });
 
-  it('사유와 함께 되돌리면 payroll_date 를 클리어한다', async () => {
-    const repo = new SupabaseSettlementRepository();
-
-    await repo.updatePayrollStatusWithTransaction(WORK_LOG_ID, STATUS.PAYROLL.PENDING, ACTOR_ID, {
-      reason: REASON,
-    });
-
-    expect(workLogUpdatePayloads).toHaveLength(1);
-    expect(workLogUpdatePayloads[0].payroll_status).toBe(STATUS.PAYROLL.PENDING);
-    expect(workLogUpdatePayloads[0].payroll_date).toBeNull();
-  });
-
-  it('되돌리기는 감사 이력(누가·언제·왜)을 남긴다', async () => {
-    const repo = new SupabaseSettlementRepository();
-
-    await repo.updatePayrollStatusWithTransaction(WORK_LOG_ID, STATUS.PAYROLL.PENDING, ACTOR_ID, {
-      reason: REASON,
-    });
-
-    const history = workLogUpdatePayloads[0].settlement_modification_history as Record<
-      string,
-      unknown
-    >[];
-    expect(history).toHaveLength(1);
-    expect(history[0]).toMatchObject({
-      type: 'payroll_status_revert',
-      previousStatus: STATUS.PAYROLL.COMPLETED,
-      newStatus: STATUS.PAYROLL.PENDING,
-      reason: REASON,
-      modifiedBy: ACTOR_ID,
-    });
-    expect(history[0].modifiedAt).toEqual(expect.any(String));
-  });
-
-  it('기존 감사 이력을 보존하고 뒤에 덧붙인다', async () => {
-    currentWorkLog = makeWorkLog({
-      settlementModificationHistory: [{ type: 'amount_edit', reason: '수당 정정' }],
+  it('PERMISSION_DENIED 는 PermissionError 로 매핑한다', async () => {
+    mockRpc.mockResolvedValue({
+      data: null,
+      error: new Error(
+        'PERMISSION_DENIED: 권한이 있는 공고의 근무 기록만 정산 상태를 변경할 수 있습니다'
+      ),
     });
     const repo = new SupabaseSettlementRepository();
 
-    await repo.updatePayrollStatusWithTransaction(WORK_LOG_ID, STATUS.PAYROLL.PENDING, ACTOR_ID, {
-      reason: REASON,
-    });
-
-    const history = workLogUpdatePayloads[0].settlement_modification_history as Record<
-      string,
-      unknown
-    >[];
-    expect(history).toHaveLength(2);
-    expect(history[0]).toMatchObject({ type: 'amount_edit' });
+    await expect(
+      repo.updatePayrollStatusWithTransaction(WORK_LOG_ID, STATUS.PAYROLL.PENDING, ACTOR_ID, {
+        reason: REASON,
+      })
+    ).rejects.toBeInstanceOf(PermissionError);
   });
 
-  it('완료가 아닌 건의 상태 변경은 사유 없이도 통과한다 (기존 동작 보존)', async () => {
-    currentWorkLog = makeWorkLog({ payrollStatus: STATUS.PAYROLL.PENDING });
+  it('WORK_LOG_NOT_FOUND 는 NOT_FOUND BusinessError 로 매핑한다', async () => {
+    mockRpc.mockResolvedValue({
+      data: null,
+      error: new Error('WORK_LOG_NOT_FOUND: wl-1'),
+    });
     const repo = new SupabaseSettlementRepository();
 
-    await repo.updatePayrollStatusWithTransaction(WORK_LOG_ID, STATUS.PAYROLL.COMPLETED, ACTOR_ID);
+    await expect(
+      repo.updatePayrollStatusWithTransaction(WORK_LOG_ID, STATUS.PAYROLL.PENDING, ACTOR_ID, {
+        reason: REASON,
+      })
+    ).rejects.toBeInstanceOf(BusinessError);
+  });
 
-    expect(workLogUpdatePayloads).toHaveLength(1);
-    expect(workLogUpdatePayloads[0].payroll_status).toBe(STATUS.PAYROLL.COMPLETED);
-    // 완료 처리는 지급일을 찍는다.
-    expect(workLogUpdatePayloads[0].payroll_date).toEqual(expect.any(String));
-    expect(workLogUpdatePayloads[0]).not.toHaveProperty('settlement_modification_history');
+  it('서버 문구를 그대로 사용자에게 전달한다 (클라·서버 문구 이중 관리 방지)', async () => {
+    mockRpc.mockResolvedValue({
+      data: null,
+      error: new Error('INVALID_INPUT: 수정 사유는 200자 이하여야 합니다'),
+    });
+    const repo = new SupabaseSettlementRepository();
+
+    await expect(
+      repo.updatePayrollStatusWithTransaction(WORK_LOG_ID, STATUS.PAYROLL.PENDING, ACTOR_ID, {
+        reason: 'x'.repeat(201),
+      })
+    ).rejects.toMatchObject({ userMessage: '수정 사유는 200자 이하여야 합니다' });
   });
 });

@@ -262,13 +262,23 @@ export function isValidSlotStartTime(value: string | null | undefined): boolean 
  */
 export function assertSlotStartTime(value: string): string {
   const trimmed = value.trim();
-  if (toMinutes(trimmed) === null) {
+  const minutes = toMinutes(trimmed);
+  if (minutes === null) {
     throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
       field: 'timeSlot',
       userMessage: '출근 시간 형식이 올바르지 않습니다',
     });
   }
-  return trimmed;
+  // 🔴 0패딩으로 정규화해서 돌려준다 — 검증만 하고 원문을 그대로 반환하면 안 된다.
+  //   `toMinutes` 의 정규식은 `\d{1,2}` 라 `'9:00'` 을 통과시키는데(피커는 항상 0패딩이지만
+  //   프리필·레거시 문자열 경로가 무패딩으로 들어온다), 그대로 저장하면 두 가지가 깨진다:
+  //     · DB CHECK `work_logs_time_slot_format` 이 거부한다(감사 P5/L2)
+  //     · `_posting_slot_key` 가 **원문 문자열**을 슬롯 키로 쓰므로 `'9:00'` 과 `'09:00'` 이
+  //       다른 슬롯으로 쪼개져 정원·중복배정 판정이 조용히 갈린다
+  //   파싱된 분에서 재구성하므로 입력 표기와 무관하게 항상 정본 'HH:mm' 이 나온다.
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
 }
 
 /**

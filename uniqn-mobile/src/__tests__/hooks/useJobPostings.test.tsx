@@ -101,21 +101,26 @@ jest.mock('@/utils/queryUtils', () => ({
   stableFilters: (filters: unknown) => filters,
 }));
 
+// 오프라인 캐시 읽기는 `!isOnline` 게이트 뒤에 있다(useJobPostings.ts:69) — TTL 회귀 단언을
+// 하려면 오프라인으로 내릴 수 있어야 해서 목을 변수 구동으로 바꿨다(useWorkLogs.test.ts 와 동형).
+let mockIsOnline = true;
+
 jest.mock('@/hooks/useNetworkStatus', () => ({
   useNetworkStatus: () => ({
-    isOnline: true,
-    isOffline: false,
+    isOnline: mockIsOnline,
+    isOffline: !mockIsOnline,
     isChecking: false,
     connectionType: 'wifi',
-    isInternetReachable: true,
+    isInternetReachable: mockIsOnline,
     lastChecked: null,
     details: null,
     checkConnection: jest.fn(),
   }),
 }));
 
+const mockGetCriticalOfflineCache = jest.fn((..._args: unknown[]) => null);
 jest.mock('@/services/offline/criticalOfflineCache', () => ({
-  getCriticalOfflineCache: jest.fn(() => null),
+  getCriticalOfflineCache: (...args: unknown[]) => mockGetCriticalOfflineCache(...args),
   setCriticalOfflineCache: jest.fn(),
 }));
 
@@ -132,6 +137,11 @@ jest.mock('@/lib/queryClient', () => ({
       staleTime: 0,
       gcTime: 0,
     },
+  },
+  // ⚠️ 손으로 쓴 부분 사본 — 실물에 키를 추가하면 여기도 추가할 것(누락 시 undefined).
+  //    위 온라인 staleTime 은 0 이라, 그 값이 TTL 로 새면 아래 단언이 곧바로 잡는다.
+  offlineCachePolicies: {
+    jobPostings: 24 * 60 * 60 * 1000,
   },
 }));
 
@@ -214,9 +224,26 @@ function createMockJobPosting(
 describe('useJobPostings', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockIsOnline = true;
     mockConvertToCard.mockImplementation((posting) => posting);
     mockMatchesPostingDate.mockClear();
     mockFocusPostingCardToDate.mockClear();
+  });
+
+  // 오프라인 MMKV 캐시는 만료를 stale 표시가 아니라 **완전 삭제**로 처리한다
+  // (criticalOfflineCache.ts:133-147). 온라인 staleTime(10분)을 TTL 로 겸용하면
+  // 지하에서 10분 만에 공고 목록이 통째로 사라져 "공고가 없는 앱"이 된다.
+  it('오프라인 캐시 보존기간을 온라인 staleTime 과 겸용하지 않는다', () => {
+    mockIsOnline = false;
+    renderHook(() => useJobPostings(), { wrapper: createWrapper() });
+
+    const ttls = mockGetCriticalOfflineCache.mock.calls.map(
+      (call) => (call[1] as unknown as { ttlMs: number }).ttlMs
+    );
+
+    // 이 단언이 0 이면 오프라인 게이트를 못 밟은 것 — 통과해도 아무것도 증명 못 한다.
+    expect(ttls.length).toBeGreaterThan(0);
+    expect(ttls.every((ttl) => ttl === 24 * 60 * 60 * 1000)).toBe(true);
   });
 
   describe('기본 기능', () => {
