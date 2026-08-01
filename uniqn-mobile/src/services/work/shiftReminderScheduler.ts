@@ -16,12 +16,34 @@ import {
 import { createNotificationMessage } from '@/constants/notificationTemplates';
 import { NotificationType } from '@/types/notification';
 import { getStorageItem, setStorageItem, STORAGE_KEYS } from '@/lib/mmkvStorage';
+import { toDateString } from '@/utils/date';
 import { logger } from '@/utils/logger';
 import { planShiftReminders, type ShiftReminder } from './shiftReminderPlan';
 import type { ScheduleEvent } from '@/types';
 
-/** key → OS 알림 식별자 */
-type ReminderLedger = Record<string, string>;
+/**
+ * 이번 동기화에 넘어온 `schedules` 가 **실제로 관측한 날짜 창**(양끝 포함, YYYY-MM-DD).
+ *
+ * 호출자는 자기가 가진 목록이 전체가 아닐 수 있음을 여기서 밝힌다. 이 선언이 없으면
+ * 스케줄러는 "계획에 없다" 를 "취소됐다" 로 읽을 수밖에 없다 — 두 명제는 다르다.
+ */
+export interface ShiftReminderCoverage {
+  start: string;
+  end: string;
+}
+
+interface ReminderLedgerEntry {
+  /** OS 알림 식별자 */
+  id: string;
+  /**
+   * 이 예약이 가리키는 근무일(YYYY-MM-DD).
+   * 없으면 이 필드 도입 이전(v1)에 쓰인 항목이다 — 취소 규칙의 주석 참조.
+   */
+  workDate?: string;
+}
+
+/** key → 예약 항목 */
+type ReminderLedger = Record<string, ReminderLedgerEntry>;
 
 /**
  * 지금 동기화를 돌려도 되는가.
@@ -38,12 +60,57 @@ export function shouldSyncShiftReminders(state: { isLoading: boolean; error?: un
   return !state.isLoading && !state.error;
 }
 
+/**
+ * 원장 raw 값 → 항목. v1 은 값이 **식별자 문자열 그 자체**였으므로 그 형태도 읽는다.
+ * 형태를 못 알아보는 값은 버린다(식별자를 모르면 취소도 못 하고 재예약도 못 한다).
+ */
+function toLedgerEntry(raw: unknown): ReminderLedgerEntry | null {
+  if (typeof raw === 'string') {
+    return raw.length > 0 ? { id: raw } : null;
+  }
+  if (raw !== null && typeof raw === 'object') {
+    const { id, workDate } = raw as { id?: unknown; workDate?: unknown };
+    if (typeof id !== 'string' || id.length === 0) return null;
+    return typeof workDate === 'string' && workDate.length > 0 ? { id, workDate } : { id };
+  }
+  return null;
+}
+
 function readLedger(): ReminderLedger {
-  return getStorageItem<ReminderLedger>(STORAGE_KEYS.SHIFT_REMINDERS) ?? {};
+  const raw = getStorageItem<Record<string, unknown>>(STORAGE_KEYS.SHIFT_REMINDERS) ?? {};
+  return Object.entries(raw).reduce<ReminderLedger>((acc, [key, value]) => {
+    const entry = toLedgerEntry(value);
+    return entry ? { ...acc, [key]: entry } : acc;
+  }, {});
 }
 
 function writeLedger(ledger: ReminderLedger): void {
   setStorageItem(STORAGE_KEYS.SHIFT_REMINDERS, ledger);
+}
+
+/**
+ * 계획에 없는 원장 항목을 **취소해도 되는가**.
+ *
+ * 🔴 이 판정이 없던 시절, 스케줄러는 '이번 입력의 계획에 없음' 을 그대로 '취소됨' 으로 읽었다.
+ *    입력이 이미 한 달로 좁혀져 있었기 때문에, 스태프가 지난 정산을 보려고 달력을 **한 번만
+ *    넘겨도** 다음 달 확정 근무의 알림이 조용히 취소됐다(감사 H1). 더 나쁜 쪽은 다음 달 초
+ *    근무다 — 기본 뷰(이번 달)에 아예 없어서 '다음 달 보기 → 돌아오기' 만으로 파괴됐다.
+ */
+function canCancel(
+  entry: ReminderLedgerEntry,
+  coverage: ShiftReminderCoverage,
+  todayStr: string
+): boolean {
+  // 근무일을 모르는 v1 항목은 판단 근거가 없다 → 예전 규칙 그대로 정리한다.
+  // 안전한 이유: 예전 동작이 원장을 '보고 있던 달' 로 수렴시켜 놓았으므로, 업그레이드 직후
+  // 남아 있는 v1 항목은 사실상 전부 이번 계획에 포함돼 여기까지 오지 않는다.
+  if (!entry.workDate) return true;
+
+  // 이미 지난 근무 — 알림은 발사됐거나 무의미하다. 창 밖이어도 정리해야 원장이 무한정 자라지 않는다.
+  if (entry.workDate < todayStr) return true;
+
+  // 관측하지 못한 날짜는 건드리지 않는다. 그 날을 실제로 본 동기화가 정리한다.
+  return entry.workDate >= coverage.start && entry.workDate <= coverage.end;
 }
 
 async function scheduleOne(reminder: ShiftReminder): Promise<string | null> {
@@ -73,40 +140,59 @@ async function scheduleOne(reminder: ShiftReminder): Promise<string | null> {
  *
  * 계획에 없어진 예약은 취소하고(취소·시간변경·퇴근), 새로 생긴 것만 예약한다.
  * 이미 같은 키로 예약돼 있으면 건드리지 않는다 — 매 렌더마다 재예약하면 OS 슬롯이 샌다.
+ *
+ * 🔴 `coverage` 는 선택이 아니다. 호출자가 넘기는 `schedules` 는 대개 전체가 아니라
+ *    화면이 보고 있는 구간(예: 이번 달)이라, 그 사실을 함께 넘겨야 창 밖의 유효 예약을
+ *    "사라진 것" 으로 오판하지 않는다. 목록 전체를 가진 호출자는 그 전체 범위를 넘기면 된다.
  */
 export async function syncShiftReminders(
   schedules: readonly ScheduleEvent[],
+  coverage: ShiftReminderCoverage,
   now: Date = new Date()
 ): Promise<void> {
   try {
     const planned = planShiftReminders(schedules, now);
     const plannedKeys = new Set(planned.map((reminder) => reminder.key));
-    const ledger = readLedger();
+    const previous = readLedger();
+    const todayStr = toDateString(now);
 
-    // 1. 계획에서 사라진 예약 취소
-    const staleKeys = Object.keys(ledger).filter((key) => !plannedKeys.has(key));
-    for (const key of staleKeys) {
-      await cancelScheduledNotification(ledger[key]);
-      delete ledger[key];
+    // 1. 계획에서 사라졌고, **이번 입력이 실제로 관측한 날짜**인 예약만 취소
+    const next: ReminderLedger = {};
+    let cancelled = 0;
+    for (const [key, entry] of Object.entries(previous)) {
+      if (plannedKeys.has(key) || !canCancel(entry, coverage, todayStr)) {
+        next[key] = entry;
+        continue;
+      }
+      await cancelScheduledNotification(entry.id);
+      cancelled += 1;
     }
 
-    // 2. 아직 예약되지 않은 것만 예약
+    // 2. 아직 예약되지 않은 것만 예약. 이미 있는 v1 항목은 근무일을 채워 넣는다
+    //    — 그래야 다음 동기화부터 창 판정이 가능해진다.
     for (const reminder of planned) {
-      if (ledger[reminder.key]) continue;
+      const existing = next[reminder.key];
+      if (existing) {
+        if (!existing.workDate) {
+          next[reminder.key] = { ...existing, workDate: reminder.workDate };
+        }
+        continue;
+      }
 
       const identifier = await scheduleOne(reminder);
       if (identifier) {
-        ledger[reminder.key] = identifier;
+        next[reminder.key] = { id: identifier, workDate: reminder.workDate };
       }
     }
 
-    writeLedger(ledger);
+    writeLedger(next);
 
-    if (staleKeys.length > 0 || planned.length > 0) {
+    if (cancelled > 0 || planned.length > 0) {
       logger.info('근무 리마인더 동기화', {
         planned: planned.length,
-        cancelled: staleKeys.length,
-        active: Object.keys(ledger).length,
+        cancelled,
+        active: Object.keys(next).length,
+        coverage: `${coverage.start}~${coverage.end}`,
       });
     }
   } catch (error) {
