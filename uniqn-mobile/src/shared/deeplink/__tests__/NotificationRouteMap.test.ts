@@ -12,7 +12,8 @@ describe('NotificationRouteMap', () => {
   it('covers every NotificationType', () => {
     const allNotificationTypes = Object.values(NotificationType) as NotificationType[];
 
-    expect(allNotificationTypes.length).toBe(46);
+    // 47 = 46 + settlement_reverted(지급 완료 되돌리기, 2026-08-02 감사 M5)
+    expect(allNotificationTypes.length).toBe(47);
 
     allNotificationTypes.forEach((type) => {
       expect(NOTIFICATION_ROUTE_MAP[type]).toBeDefined();

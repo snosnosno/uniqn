@@ -174,6 +174,14 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     icon: '💰',
   },
 
+  [NotificationType.SETTLEMENT_REVERTED]: {
+    title: '지급 완료 취소',
+    body: (d) =>
+      `"${d.jobTitle}" 정산 지급 완료가 취소되어 정산 대기로 되돌아갔습니다. 지급액: ${d.amount}원`,
+    link: () => '/schedule',
+    icon: '↩️',
+  },
+
   [NotificationType.SETTLEMENT_REQUESTED]: {
     title: '정산 요청',
     body: (d) => `${d.staffName}님이 정산을 요청했습니다.`,
