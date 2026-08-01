@@ -27,7 +27,8 @@
 | **B1** | 주소 1단계 | ~~`claude/job-posting-address-map-lbrvzd`~~ | ✅ **머지** | **#391** | `33472d8be`. CI **9잡 전부 SUCCESS**(E2E 11m4s 포함, 재실행 없이 1회 통과). 마이그 **0건** — 파리티 184/111 불변. 재통합 후 재검증: quality **exit 0** · jest **599스위트 6573테스트 122스냅샷 전량 통과 exit 0** · e2e 주소 단언 **0건**(시드만) · knip 델타 0(이전 세션 실측). 리뷰 fable **APPROVE**(HIGH 0) / opus HIGH 3건 **전량 반영**. ✅ **M9 선행 불필요**(실측 정정 — B1 diff 는 지점 `location` 을 건드리지 않는다. §5 B1 주의 4번) |
 | **P1**(감사후속) | 정산 선택·집계 축 (M1+M2+M10) | `fix/settlement-selection-axis` | 🔨 **PR 생성** | **#393** | 감사 §7 P1. 마이그 **0건**. quality exit 0 · jest **600스위트 6578테스트 전량 통과** · red-green 실증(M1·M2 각각 되돌리면 해당 1건만 red) · 리뷰 fable **APPROVE**(CRITICAL 0/HIGH 0), MEDIUM 1건 반영 |
 | **P1**(감사후속) | 정산 선택·집계 축 (M1+M2+M10) | ~~`fix/settlement-selection-axis`~~ | ✅ **머지** | **#393** | `bc295df49`. CI **9잡 전부 pass**(E2E 는 `board.spec:88` 알려진 flake 로 1회 fail → 실패 잡 재실행 9m36s pass). 마이그 **0건**. quality exit 0 · jest **600스위트 6578테스트 전량 통과** · red-green 실증(M1·M2 각각 되돌리면 해당 1건만 red) · 리뷰 fable **APPROVE**(CRITICAL 0/HIGH 0), MEDIUM 1건 반영 |
-| **P5**(감사후속) | 방어심화 (M4+L2+L1 절반) | `feat/settlement-rpc-and-defense` | 🔨 **커밋 5건·PR 미생성** | | HEAD `fd1172555`. 🔴**마이그 2건 prod 적용 완료 — 재적용 금지**(기록명 `20260801212753`·`20260801212843`, 파일명과 다름). 파리티 **184→186** / 정책 111 불변(prod 실측). quality exit 0 · jest **600스위트 6583테스트** · pgTAP **91파일 951테스트**(기준선 88/912) · red-green **5종 1:1 실증**. 리뷰 fable planner·fable/opus database-reviewer 3인 반영. **L1 은 절반** — 확정·일괄 RPC화와 직접쓰기 차단은 다음 세션(상세=§5) |
+| **P2**(감사후속) | 알림 계약 정합 (M5+M3) | ~~`fix/notification-contract-alignment`~~ | ✅ **머지** | **#397** | `0808f8ae5`. CI **10잡 전부 pass**(DB Tests pg_prove 1m50s · E2E 11m4s 포함, **재실행 0회**). 🔴**마이그 2건 prod 선적용 — 재적용 금지**(기록명 `20260801174901 notify_settlement_revert_and_cancel_hint_gate` + `20260801180734 notify_work_log_contract_review_fixes`, 파일은 `20260802093000` 1개). 파리티 **184/111 불변**(prod 실측). 본문 md5 대조 `563d0272…`(12720자) 레포=prod 일치. red-green **4종** 실증. 리뷰 opus·fable 둘 다 **APPROVE**, MEDIUM 전량 반영. 상세=§5 |
+| **P5**(감사후속) | 방어심화 (M4+L2+L1 절반) | `feat/settlement-rpc-and-defense` | 🔨 **PR 생성** | **#400** | 🔴**마이그 2건 prod 적용 완료 — 재적용 금지**(기록명 `20260801212753`·`20260801212843`, 파일명과 다름). 파리티 **184→186** / 정책 111 불변(prod 실측). quality exit 0 · jest **600스위트 6583테스트** · pgTAP **91파일 951테스트**(기준선 88/912) · red-green **5종 1:1 실증**. 리뷰 fable planner·fable/opus database-reviewer 3인 반영. **L1 은 절반** — 확정·일괄 RPC화와 직접쓰기 차단은 다음 세션(상세=§5) |
 | **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
 | **S6** | 3-C 설계 | — | ⬜ | | 사용자 결정 필요 |
 | **S7** | 3-C 구현 | `feat/posting-time-change` | ⬜ | | S6 승인 후 |
@@ -65,6 +66,7 @@ prod 최신 마이그 = `20260730174826_cron_run_details_retention`.
 | S3 (#382) | 알림 트리거 | **184 / 111 불변**. ✅ **prod 적용 완료(2026-08-01, S5 세션이 레인 정리 차원에서 적용)**. 적용 후 실측 184/111, `proconfig = public, extensions, pg_temp` 보존, PUBLIC/anon EXECUTE 0 확인 |
 | S5 (#387) | `20260801100000_rename_default_venue_containers` | **184 / 111 불변** — 데이터 UPDATE 전용(DDL 없음). prod 적용 완료, 4행 rename, 충돌 0건. ⚠️ **prod 기록명은 `20260731195336_rename_default_venue_containers`** — 파일명으로 `list_migrations` 대조하면 못 찾는다 |
 | S5-후속 | 없음 | **184 / 111 불변**(2026-08-01 prod 실측) |
+| P2 (#397) | `20260802093000_notify_settlement_revert_and_cancel_hint_gate` (트리거 함수 `CREATE OR REPLACE`) | **184 / 111 불변**(2026-08-02 prod 실측). ✅ **prod 적용 완료 — 재적용 금지.** ⚠️ **prod 기록은 2건**(리뷰 반영으로 재적용): `20260801174901` + `20260801180734`. 파일명으로 `list_migrations` 대조하면 못 찾는다 |
 | B2 | 컬럼 추가 | 불변 예상 |
 
 > 🚨 **파리티 레포↔prod 불일치 (2026-07-31, S1 머지 직후)** — 레포 기대 **185**, prod 실측 **184**.
@@ -470,7 +472,7 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 > 형식은 §2 세션 종료 프로토콜 4번 참조. **삭제하지 말고 쌓는다** —
 > 중단된 세션을 다시 여는 사람이 읽을 유일한 기록이다.
 
-### P5 (감사 후속 — 방어 심화 M4+L2+L1) — 2026-08-02 · 상태: 완료(L1 은 의도적 절반) · **PR 미생성**
+### P5 (감사 후속 — 방어 심화 M4+L2+L1) — 2026-08-02 · 상태: 완료(L1 은 의도적 절반) · **PR #400**
 
 - 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-notifyfix` / `feat/settlement-rpc-and-defense` · HEAD `fd1172555`(5커밋)
 - 🔴 **마이그 2건 prod 적용 완료 — 재적용 금지.** 기록명 `20260801212753 work_logs_identity_pin_and_time_slot_check` ·
@@ -532,6 +534,38 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
     이번 RPC 가 그대로 재현했다 — 확정 RPC 화 때 **completed 진입을 settle 전용으로 좁힐지**
     클라 호출부의 completed 진입 사용례를 grep 확인한 뒤 결정하라(행동 변경이므로 의식적 판단 필요).
 
+---
+
+### P2 (감사 후속 — 알림 계약 정합) — 2026-08-02 · 상태: 완료 (**PR #397 머지** `0808f8ae5`)
+
+- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-notifyfix` / `fix/notification-contract-alignment` · 머지 전 HEAD `d51465f55`(4커밋)
+- 🔴 **마이그 prod 선적용 완료 — 재적용 금지.** 기록명 2건(파일은 1개):
+  `20260801174901 notify_settlement_revert_and_cancel_hint_gate` · `20260801180734 notify_work_log_contract_review_fixes`
+- 파리티 **184 / 111 불변**(prod 실측). `get_advisors(security)` ERROR 0 / WARN 121 — 전부 선재, 이번 변경 참조 **0건**
+
+**끝난 것** (전부 이 세션의 도구 출력 기준)
+- **M3** Case 2-B 의 취소 힌트 조건에 `NOT EXISTS(applications.status='cancellation_pending')` 추가 → `T' ⊆ C` 회복
+- **M5** Case 3-B 신설(`payroll_status: completed → 그 외`). 사유는 이미 서버에 있던 `settlement_modification_history` 의 `payroll_status_revert` 항목에서 읽어 본문에 싣는다. 새 타입 `settlement_reverted` 배선 5파일
+- 게이트: quality **exit 0** · jest **600스위트 6579테스트 122스냅샷 전량 통과** · 로컬 pgTAP **88파일 912테스트 전량 통과**(`parity_baseline_guard` 포함) · `check:rpc-migrations` 통과 · `graph-db-deps triggers` **master 와 출력 md5 동일**(트리거 델타 0) · `e2e/` Grep **0건**
+- **red-green 4종 실증**: M3 `NOT EXISTS` 제거→**2번만** red · Case 3-B 제거→4·5번 · 정산이력 `jsonb_typeof` 제거→**8번만** · 수정이력 `jsonb_typeof` 제거→**9번만**
+- CI **10잡 전부 pass, 재실행 0회**(DB Tests pg_prove 1m50s · E2E 11m4s 포함)
+- 리뷰 2인 **둘 다 APPROVE** — opus(이 diff 귀속 CRITICAL 0/HIGH 0, 선재 HIGH 1·MEDIUM 4·LOW 4) · fable database-reviewer(CRITICAL 0/HIGH 0/MEDIUM 1). 지적 전량 반영 또는 별도 항목 이관
+
+**안 끝난 것**
+- 🔴 **P5 미착수 — 사용자 결정 대기**(아래 주의 1·2번). 워크트리 `T-HOLDEM-notifyfix` 유지 중
+- 🔴 **신규 발견 = 병합 키 결함**(아래 주의 3번). 감사에 없던 항목이라 **후속 PR 신규 묶음**이 필요하다
+- 🔴 실기기/실사용 알림 수신 미확인(실기기 QA 제외 결정 범위)
+
+**다음 세션에 넘기는 주의** (이 세션에서 새로 알아낸 것만)
+1. 🚨 **감사 §7 P5 의 M4 처방이 틀렸다 — `REVOKE UPDATE (staff_id, owner_id) … FROM authenticated` 는 아무것도 회수하지 못한다.** 로컬에서 실제로 실행해 확인했다: `REVOKE` 를 성공 반환하지만 `information_schema.column_privileges` 도 `relacl` 도 불변이다. `authenticated` 가 **테이블 레벨** UPDATE(`authenticated=arwdDxtm/postgres`)를 갖고 있고 PostgreSQL 은 테이블 레벨 GRANT 에서 컬럼 부분집합을 뺄 수 없다. 실제 선택지는 ①`REVOKE UPDATE ON work_logs` 후 나머지 36컬럼 재GRANT(새 컬럼 추가 때마다 조용히 권한 누락) ②**BEFORE UPDATE 트리거**(레포에 정확한 선례 `fn_work_logs_pin_posting_id` 가 있다 — `job_posting_id` 를 예외 없이 42501 로 차단).
+2. 🔑 **`staff_id` 는 정당한 writer 가 DB·클라 통틀어 0곳이다**(감사는 "SECDEF RPC 2개"라 했으나 실측은 1개). prod `pg_proc` 전수: `permanently_delete_user` 만이 `UPDATE work_logs SET owner_id = NULL` 을 쓰고, `staff_id` 는 손대지 않는다(`staff_name/nickname/photo_url` 익명화만). `remove_direct_staff` 는 두 컬럼 모두 미사용.
+3. 🚨 **M3 는 서버 계약을 바로잡았지만 그 이득이 아직 사용자에게 안 보인다 — 선재 결함 하나가 더 있다.** `ScheduleMerger.generateScheduleKey:187-196` 이 병합 키에 `timeSlot` 을 넣는데, `updateSlot` 은 `work_logs.time_slot` 만 쓰고 `applications.assignments[].timeSlot` 은 그대로 둔다(`WorkLogRepositoryVenue.ts:108-122`). **시각을 바꾸는 순간 키가 어긋나 `isCancellationPending` 를 얹는 유일한 지점(`ScheduleMerger.ts:238-251`)이 실행되지 않아 취소 요청 버튼이 오히려 그대로 보인다.** 덤으로 같은 날짜 카드가 2장 뜬다. 클라 전용 수선이라 **감사에 없던 신규 후속 묶음**이다.
+4. 🚨 **가드를 넣은 자리보다 상류를 봐라.** Case 3-B 에 `jsonb_typeof` 가드를 넣었는데 리뷰 2인이 *각각 독립적으로* 실측 재현한 결과 **그 가드가 지키지 못했다** — Case 2 의 `jsonb_array_length(modification_history)` 가 IF 밖 최상단이라 무조건 먼저 실행되고, 거기서 22023 이 터지면 `EXCEPTION WHEN OTHERS` 가 BEGIN 전체를 되감아 가드에 도달조차 못 한다. **`WHEN OTHERS` 블록 안에 가드를 넣을 땐 그 블록의 최상단 무조건 실행 구간부터 봐야 한다.**
+5. 🔑 **재정의 베이스 판정 + 전사 검증은 `md5(prosrc)` 로 한다.** 적용 전 prod md5 = 레포 마이그 파일 본문 md5 정확 일치(`da652c36…`, 7811자)로 베이스를 확정했고, 적용 후에도 로컬(파일 직접 적용) md5 와 prod md5 를 대조해 **주석 한 줄 전사 누락을 잡아냈다**(3자 차이 → 청크 md5 20분할로 위치 특정). MCP `apply_migration` 에 본문을 붙여 넣는 방식은 이 대조 없이는 검증되지 않는다.
+6. ⚠️ **로컬 Supabase 스택은 조용히 뒤처져 있었다** — `20260728185802` 에 멈춰 있어 `notify_on_work_log_update` 가 prod 와 다른 판(md5 불일치)이었다. `npx supabase migration up --local` 로 7건을 올리자 **`parity_baseline_guard` 가 통과**했다(메모리의 "로컬 파리티는 원래 red" 기재는 **드리프트 때문이었고 이제 stale**).
+7. 🔑 **`e2e/` 는 알림 타입·문구 단언이 0건**이라 이 축에서는 사각지대가 없다. 대신 `NotificationRouteMap.test.ts:15` 가 **타입 개수 리터럴**을 박아 두고 있어 타입 추가 시 반드시 red 가 된다(46→47).
+8. 🔑 EF `send-push-notification` 은 `TYPE_CATEGORY_MAP` 미매핑 타입을 **fail-open** 으로 통과시킨다(`index.ts:128-140`). 즉 배선을 빼먹어도 푸시는 나가고, **배선의 실효는 "수신거부 설정이 적용되는가"** 다.
+9. ⚠️ **prod `time_slot` 실측 = `'18:30 - 03:00'` · `'17:00 - 00:00'` · `'19:00'`** — 레거시 범위는 **하이픈 양쪽에 공백**이 있다. L2 의 CHECK 를 순진한 정규식으로 쓰면 기존 행이 즉시 깨진다.
 ---
 
 ### A-감사 (A레인 전체 사후 감사) — 2026-08-01 · 상태: 완료
