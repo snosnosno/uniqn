@@ -9,7 +9,7 @@
  * 계획 함수는 목하지 않는다. 목하면 "어떤 입력이 어떤 계획을 낳는가"가 사라져
  * 정작 이 결함(입력 범위 ↔ 취소 판정의 어긋남)을 못 잡는다.
  */
-import { syncShiftReminders } from '../shiftReminderScheduler';
+import { clearShiftReminders, syncShiftReminders } from '../shiftReminderScheduler';
 import type { ScheduleEvent } from '@/types';
 
 const LEDGER_KEY = 'shift-reminders-v1';
@@ -20,6 +20,9 @@ jest.mock('@/lib/mmkvStorage', () => ({
   getStorageItem: (key: string) => mockStore[key],
   setStorageItem: (key: string, value: unknown) => {
     mockStore[key] = value;
+  },
+  removeStorageItem: (key: string) => {
+    delete mockStore[key];
   },
 }));
 
@@ -134,5 +137,46 @@ describe('syncShiftReminders — 원장 v1 하위호환', () => {
 
     await syncShiftReminders([julyShift], JULY, NOW);
     expect(mockScheduleLocalNotification).toHaveBeenCalledTimes(1);
+  });
+
+  // 창 보호는 근무일을 아는 항목에만 적용된다. v1 항목은 판단 근거가 없어 예전 규칙대로
+  // 정리되며, 이 손실 상한은 구 동작과 같다 — 그 사실을 단언으로 못박아 둔다.
+  // (마지막으로 본 달 ≠ 전환 후 첫 화면의 달이면 실제로 여기까지 온다.)
+  it('근무일을 모르는 v1 항목은 창 밖이어도 계획에 없으면 취소된다', async () => {
+    mockStore[LEDGER_KEY] = { 'wl-aug:day-before': 'os-legacy-aug' };
+
+    await syncShiftReminders([julyShift], JULY, NOW);
+
+    expect(mockCancelScheduledNotification).toHaveBeenCalledWith('os-legacy-aug');
+    expect(ledger()).not.toHaveProperty('wl-aug:day-before');
+  });
+});
+
+describe('clearShiftReminders — 공용 기기 계정 전환', () => {
+  // 🔴 원장은 사용자 스코프가 아니다. 관측 창을 도입하기 전에는 H1 결함이 이걸 우연히 가렸다
+  //    — B 가 스케줄 탭을 열면 sync 가 계획에 없는 키를 전량 취소했기 때문이다.
+  //    이제 창 밖 항목이 살아남으므로, 로그아웃에서 명시적으로 지우지 않으면
+  //    A 의 지점명·근무일이 B 의 기기에서 발화한다.
+  it('원장의 모든 예약을 취소하고 원장을 비운다', async () => {
+    await syncShiftReminders(
+      [julyShift, augustShift],
+      { start: '2026-07-01', end: '2026-08-31' },
+      NOW
+    );
+    const identifiers = Object.values(ledger()).map((entry) => entry.id);
+    expect(identifiers).toHaveLength(2);
+
+    mockCancelScheduledNotification.mockClear();
+    await clearShiftReminders();
+
+    for (const identifier of identifiers) {
+      expect(mockCancelScheduledNotification).toHaveBeenCalledWith(identifier);
+    }
+    expect(mockStore[LEDGER_KEY]).toBeUndefined();
+  });
+
+  it('원장이 비어 있어도 안전하다(로그아웃을 막지 않는다)', async () => {
+    await expect(clearShiftReminders()).resolves.toBeUndefined();
+    expect(mockCancelScheduledNotification).not.toHaveBeenCalled();
   });
 });

@@ -15,7 +15,7 @@ import {
 } from '@/services/notifications/internal/pushNotificationHandlers';
 import { createNotificationMessage } from '@/constants/notificationTemplates';
 import { NotificationType } from '@/types/notification';
-import { getStorageItem, setStorageItem, STORAGE_KEYS } from '@/lib/mmkvStorage';
+import { getStorageItem, setStorageItem, removeStorageItem, STORAGE_KEYS } from '@/lib/mmkvStorage';
 import { toDateString } from '@/utils/date';
 import { logger } from '@/utils/logger';
 import { planShiftReminders, type ShiftReminder } from './shiftReminderPlan';
@@ -102,15 +102,49 @@ function canCancel(
   todayStr: string
 ): boolean {
   // 근무일을 모르는 v1 항목은 판단 근거가 없다 → 예전 규칙 그대로 정리한다.
-  // 안전한 이유: 예전 동작이 원장을 '보고 있던 달' 로 수렴시켜 놓았으므로, 업그레이드 직후
-  // 남아 있는 v1 항목은 사실상 전부 이번 계획에 포함돼 여기까지 오지 않는다.
+  //
+  // ⚠️ "업그레이드 직후엔 어차피 전부 계획에 포함된다"는 **보장이 아니다.** 마지막으로 본 달과
+  //    전환 후 첫 화면의 달이 다르면(예: 8월을 보다가 종료 → 7월에 재실행) v1 항목은 여기서
+  //    취소된다. 그래도 받아들이는 이유는 **손실 상한이 구 동작과 같기 때문**이다 —
+  //    구 코드의 취소 조건도 자구 그대로 "계획에 없음"이었다. 즉 이 분기는 회귀가 아니라
+  //    전환 주기 1회에 한한 잔여이고, 해당 달을 다시 열면 재예약으로 치유된다.
   if (!entry.workDate) return true;
 
   // 이미 지난 근무 — 알림은 발사됐거나 무의미하다. 창 밖이어도 정리해야 원장이 무한정 자라지 않는다.
   if (entry.workDate < todayStr) return true;
 
   // 관측하지 못한 날짜는 건드리지 않는다. 그 날을 실제로 본 동기화가 정리한다.
+  //
+  // 감수하는 트레이드오프: 창 밖에서 근무가 취소되면 그 달을 다시 열기 전까지 알림이 남아
+  // "내일 출근"이 한 번 잘못 울릴 수 있다. 그러나 이건 **거짓 양성**이고, 이 함수가 막으려는
+  // 거짓 음성(유효한 근무의 알림이 사라져 노쇼)보다 훨씬 가볍다.
   return entry.workDate >= coverage.start && entry.workDate <= coverage.end;
+}
+
+/**
+ * 원장의 모든 예약을 취소하고 원장을 비운다. **로그아웃 전용.**
+ *
+ * 🔴 원장(MMKV `shift-reminders-v1`)은 **사용자 스코프가 아니다.** 그래서 공용 기기에서
+ *    A 가 로그아웃하고 B 가 로그인하면, A 의 예약이 그대로 남아 B 의 기기에서
+ *    A 의 지점명·근무일을 띄운다. 같은 위협을 `signOut` 은 푸시 토큰에 대해 이미 다루고
+ *    있었는데(authCoreService: "공용 기기에서 이전 계정으로 푸시가 잔존하는 것을 막기 위해")
+ *    **로컬 알림만 빠져 있었다.**
+ *
+ *    이전에는 H1 결함이 이걸 우연히 가렸다 — B 가 스케줄 탭을 열면 sync 가 계획에 없는 키를
+ *    전량 취소했기 때문이다. 관측 창을 도입해 그 부수 효과가 사라졌으므로 명시적으로 닫는다.
+ *
+ * fire-and-forget: 정리 실패가 로그아웃을 막아선 안 된다.
+ */
+export async function clearShiftReminders(): Promise<void> {
+  try {
+    const ledger = readLedger();
+    for (const entry of Object.values(ledger)) {
+      await cancelScheduledNotification(entry.id);
+    }
+    removeStorageItem(STORAGE_KEYS.SHIFT_REMINDERS);
+  } catch (error) {
+    logger.warn('근무 리마인더 원장 정리 실패', { message: (error as Error).message });
+  }
 }
 
 async function scheduleOne(reminder: ShiftReminder): Promise<string | null> {
