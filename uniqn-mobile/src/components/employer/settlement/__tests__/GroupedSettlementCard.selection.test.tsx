@@ -117,20 +117,37 @@ describe('GroupedSettlementCard — 선택 축(M2)', () => {
     expect(getByText('0건 선택')).toBeTruthy();
   });
 
-  it('선택 가능한 행이 하나도 없으면 그룹 체크박스가 켜지지 않는다', () => {
-    // 전부 지급완료. `selectableInGroup.length > 0` 가드가 없으면 0 === 0 으로
-    // '전체 선택됨'이 참이 되어 체크 표시가 켜진 채 시작한다.
-    const { queryByText, getByText, getAllByRole } = renderList([
-      makeWorkLog({ id: 'wl-paid-1', payrollStatus: STATUS.PAYROLL.COMPLETED }),
+  it('선택 가능한 행이 없는 그룹은 체크박스가 꺼진 채이고 탭해도 아무것도 선택되지 않는다', () => {
+    // 그룹을 둘로 나눈다: staff-1 은 선택 가능(선택 모드 진입점을 열어주는 역할),
+    // staff-2 는 **전량 지급완료**라 이 그룹에서는 고를 수 있는 행이 하나도 없다.
+    // 앞선 케이스와 달리 여기서는 그룹 하나가 통째로 선택 불가여야 의미가 있다 —
+    // 같은 그룹에 선택 가능 행이 한 건이라도 섞이면 이 경로를 아예 안 밟는다.
+    const { getByText, getAllByRole } = renderList([
+      makeWorkLog({ id: 'wl-a', date: '2026-07-20' }),
       makeWorkLog({
-        id: 'wl-ok',
+        id: 'wl-paid-1',
+        staffId: 'staff-2',
+        staffName: '김철수',
+        date: '2026-07-10',
+        payrollStatus: STATUS.PAYROLL.COMPLETED,
+      }),
+      makeWorkLog({
+        id: 'wl-paid-2',
+        staffId: 'staff-2',
+        staffName: '김철수',
         date: '2026-07-11',
+        payrollStatus: STATUS.PAYROLL.COMPLETED,
       }),
     ]);
 
     fireEvent.press(getByText(BULK_TOGGLE));
-    const groupCheckbox = getAllByRole('checkbox')[0];
-    expect(groupCheckbox.props.accessibilityState?.checked).toBe(false);
-    expect(queryByText('1건 선택')).toBeNull();
+
+    // 그룹은 시작일 내림차순 — staff-1(7/20)이 먼저, 전량 지급완료인 staff-2(7/10)가 두 번째
+    const paidGroupCheckbox = getAllByRole('checkbox')[1];
+    expect(paidGroupCheckbox.props.accessibilityState?.checked).toBe(false);
+
+    fireEvent.press(paidGroupCheckbox);
+    expect(getByText('0건 선택')).toBeTruthy();
+    expect(getAllByRole('checkbox')[1].props.accessibilityState?.checked).toBe(false);
   });
 });

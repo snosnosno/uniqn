@@ -264,7 +264,11 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
   }, [selectedIds, group.originalWorkLogs]);
 
   // 이 그룹에서 실제로 선택할 수 있는 행 — 부모가 내려준 축이 있으면 그것이 진실원이다.
-  // 부모가 안 내려준 경우(단독 렌더)에만 그룹 자체 판정으로 폴백한다.
+  //
+  // ⚠️ 폴백(`settlableWorkLogs`)은 부모 축과 **미묘하게 다르다**: 부모는 `payrollStatus === 'pending'`,
+  // 폴백은 `!== 'completed'` 라 `'failed'` 행에서 갈린다. 지금은 `'failed'` writer 가 0곳이라
+  // 휴면이고, 유일한 렌더 소비처(`SettlementList`)가 항상 prop 을 내려주므로 실경로는 부모 축 하나다.
+  // 이 카드를 다른 곳에서 단독 렌더하게 되면 그때 축을 맞춰야 한다.
   const selectableInGroup = useMemo(() => {
     if (!selectableIds) return settlableWorkLogs;
     return group.originalWorkLogs.filter((wl) => selectableIds.has(wl.id));
@@ -273,6 +277,10 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
   // 전체 선택 여부 — 분모는 '그룹의 모든 행'이 아니라 '선택 가능한 행'이다.
   // 지급완료가 섞인 그룹은 애초에 전량 선택이 불가능하므로, 전자로 재면 영구 false 가 되어
   // 해제 분기에 영원히 도달하지 못한다(= 체크는 켜지는데 꺼지지 않는다).
+  //
+  // `length > 0` 가드는 **현재 관찰 불가능하다**(실측: 제거해도 테스트 전량 green).
+  // `isAllSelected` 의 유일한 소비처인 아래 루프가 같은 빈 집합을 순회하므로 결과가 같기 때문이다.
+  // 체크 표시가 `isAllSelected` 를 다시 참조하게 되는 날을 위한 보험으로만 남긴다.
   const isAllSelected = selectableInGroup.length > 0 && selectedCount === selectableInGroup.length;
 
   // 그룹 대표 상태 → stripe tone. 한 건이라도 미정산이면 미정산으로 본다.
