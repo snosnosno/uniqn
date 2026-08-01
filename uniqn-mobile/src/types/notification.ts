@@ -58,6 +58,14 @@ export const NotificationType = {
   // === 정산 관련 ===
   /** 정산 완료 (스태프에게) */
   SETTLEMENT_COMPLETED: 'settlement_completed',
+  /**
+   * 지급 완료 되돌리기 (스태프에게) — SETTLEMENT_COMPLETED 의 짝.
+   *
+   * ⚠️ 이 값은 supabase/migrations/20260802093000_notify_settlement_revert_and_cancel_hint_gate.sql
+   * 의 트리거 함수(notify_on_work_log_update Case 3-B)에서 문자열로 하드코딩되어 INSERT됩니다.
+   * 값 변경 시 반드시 새 마이그레이션으로 트리거 함수도 함께 수정해야 합니다.
+   */
+  SETTLEMENT_REVERTED: 'settlement_reverted',
   /** 정산 요청 (구인자에게) */
   SETTLEMENT_REQUESTED: 'settlement_requested',
   /** 음수 정산 경고 (관리자에게) */
@@ -193,6 +201,7 @@ export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, Notificatio
 
   // 정산 관련
   [NotificationType.SETTLEMENT_COMPLETED]: NotificationCategory.SETTLEMENT,
+  [NotificationType.SETTLEMENT_REVERTED]: NotificationCategory.SETTLEMENT,
   [NotificationType.SETTLEMENT_REQUESTED]: NotificationCategory.SETTLEMENT,
   [NotificationType.NEGATIVE_SETTLEMENT_ALERT]: NotificationCategory.ADMIN,
 
@@ -271,6 +280,8 @@ export const NOTIFICATION_DEFAULT_PRIORITY: Record<NotificationType, Notificatio
 
   // 정산 관련
   [NotificationType.SETTLEMENT_COMPLETED]: 'high',
+  // 금전 상태 역행은 완료 통지와 같은 무게로 다룬다 — 이의 제기 시점을 놓치면 회복이 어렵다.
+  [NotificationType.SETTLEMENT_REVERTED]: 'high',
   [NotificationType.SETTLEMENT_REQUESTED]: 'normal',
   [NotificationType.NEGATIVE_SETTLEMENT_ALERT]: 'urgent',
 
@@ -453,6 +464,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
 
   // 정산 관련
   [NotificationType.SETTLEMENT_COMPLETED]: '정산 완료',
+  [NotificationType.SETTLEMENT_REVERTED]: '지급 완료 취소',
   [NotificationType.SETTLEMENT_REQUESTED]: '정산 요청',
   [NotificationType.NEGATIVE_SETTLEMENT_ALERT]: '음수 정산 경고',
 
