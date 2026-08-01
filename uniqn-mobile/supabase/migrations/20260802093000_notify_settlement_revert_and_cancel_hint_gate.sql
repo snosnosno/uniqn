@@ -315,7 +315,7 @@ BEGIN
     --    강제가 없으므로(work_logs_xss_check 대상은 notes·custom_role 뿐) 길이를 여기서 자른다.
     -- ⚠️ jsonb_array_length 는 배열이 아니면 22023 을 던진다. 이 함수의 EXCEPTION 블록은
     --    BEGIN 전체를 되감으므로, 오염된 jsonb 하나가 Case 1~3 의 알림까지 통째로 삼킨다.
-    --    (기존 Case 2 의 modification_history 도 같은 노출을 갖고 있으나 그건 이 PR 범위 밖이다.)
+    --    (Case 2 의 modification_history 에도 같은 가드를 얹었다 — 그쪽이 상류라 더 위험하다.)
     --    컬럼 default 는 '[]' 이고 클라는 항상 배열을 쓰지만, raw PostgREST 로는 객체도 들어간다.
     v_settle_hist_before := CASE
       WHEN jsonb_typeof(OLD.settlement_modification_history) = 'array'
