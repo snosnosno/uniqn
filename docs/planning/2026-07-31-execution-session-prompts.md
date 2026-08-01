@@ -22,7 +22,7 @@
 | **S3** | 2-C + 2-D + 별-2 | ~~`feat/worklog-time-notify`~~ | ✅ **머지** | **#382** | `11a2390a0`. CI 9잡 green(E2E 포함 1회 통과). 브랜치 삭제됨, 워크트리는 유지. | HEAD `fd8d7b52b`(5커밋). 🔴 **마이그 1건 prod 미적용** |
 | **S4** | 3-B + 3-E + 별-1 | ~~`feat/qr-badge-and-entry`~~ | ✅ **머지** | **#384** | `40dc21779`. CI **9잡 전부 SUCCESS**(E2E 9m55s 포함, 재실행 없이 1회 통과). 브랜치·워크트리 정리 완료. **마이그 0건** — 파리티 **184/111 불변**(prod 실측 재확인). 리뷰 opus→fable 2회, HIGH 2건 포함 지적 전량 반영 |
 | **S5** | 3-A + 3-D | ~~`feat/settlement-and-rename`~~ | ✅ **머지** | **#387** | `97bf7e85c`. CI **10잡 전부 SUCCESS**(E2E 10m14s 포함, 재실행 없이 1회 통과). 브랜치·워크트리 정리 완료. 마이그 2건은 **PR 이전에 prod 선적용**됨 — 재적용 금지. 상세=§5 |
-| **S5-후속** | SETTLE-3 되돌리기 + 정산 게이트 status 축 | `feat/settlement-revert-entry` | 🔨 **구현·리뷰 완료 · 🔴PR 미생성** | | 커밋 4개. 마이그 **0건**, 파리티 **184/111 불변**(prod 실측). 게이트: quality exit 0 · **598 스위트 / 6534 테스트 전량 통과** · e2e Grep 0건. 최종 fable 리뷰 **APPROVE**. 워크트리 `T-HOLDEM-revert` 유지 |
+| **S5-후속** | SETTLE-3 되돌리기 + 정산 게이트 status 축 | ~~`feat/settlement-revert-entry`~~ | ✅ **머지** | **#388** | `0ec9abc2c`. CI **9잡 전부 SUCCESS**(E2E 9m56s 포함, 재실행 없이 1회 통과. DB Tests 는 마이그 0건이라 미실행). 브랜치·워크트리 정리 완료. 마이그 **0건** — 파리티 **184/111 불변**(prod 실측). 상세=§5 |
 | **B1** | 주소 1단계 | `claude/job-posting-address-map-lbrvzd` | ⬜ | | 독립 워크트리 |
 | **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
 | **S6** | 3-C 설계 | — | ⬜ | | 사용자 결정 필요 |
@@ -38,7 +38,7 @@
 | S3 | ~~`T-HOLDEM-notify`~~ | ✅ 정리완료(S4 착수 시 — 정션 해제 선행 → `worktree remove`, 원본 `node_modules` 821 무손상 확인) |
 | S4 | ~~`T-HOLDEM-qr`~~ | ✅ 정리완료(정션 해제 → `worktree remove` → 브랜치 삭제, 원본 `node_modules` 821 무손상) |
 | S5 | ~~`T-HOLDEM-settle`~~ | ✅ 정리완료(정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818** 무손상 확인) |
-| S5-후속 | `T-HOLDEM-revert` | 🔨 진행중(PR 대기 — 지우지 말 것) |
+| S5-후속 | ~~`T-HOLDEM-revert`~~ | ✅ 정리완료(정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818** 무손상 확인) |
 | B1·B2 | `T-HOLDEM-address` | ⬜ |
 | S7 | `T-HOLDEM-timechange` | ⬜ |
 
@@ -465,9 +465,9 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 > 형식은 §2 세션 종료 프로토콜 4번 참조. **삭제하지 말고 쌓는다** —
 > 중단된 세션을 다시 여는 사람이 읽을 유일한 기록이다.
 
-### S5-후속 (SETTLE-3 + 정산 게이트 status 축) — 2026-08-01 · 상태: 구현·리뷰 완료 (🔴 PR 미생성)
+### S5-후속 (SETTLE-3 + 정산 게이트 status 축) — 2026-08-01 · 상태: 완료 (**PR #388 머지** `0ec9abc2c`)
 
-- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-revert` / `feat/settlement-revert-entry` · HEAD `00d900693`(커밋 4개, base `97bf7e85c`)
+- 워크트리/브랜치: ~~`C:/Users/user/Desktop/T-HOLDEM-revert`~~ / ~~`feat/settlement-revert-entry`~~ · 머지 전 HEAD `d707fb6fc`(커밋 5개, base `97bf7e85c`) → **머지 `0ec9abc2c`**. 브랜치·워크트리 **정리 완료**
 - **DB 마이그레이션 0건.** 파리티 **prod 실측 184 / 111** = 레포 기대값 일치(세션 시작·종료 두 번 측정, 동일).
 - 착수 시 정리: **S5 를 PR #387 로 착지**(사용자 결정). CI **10잡 전부 SUCCESS**(E2E 10m14s 포함, 재실행 없이 1회 통과) → 스쿼시 머지 `97bf7e85c`. 워크트리 `T-HOLDEM-settle` 제거(정션 해제 선행, 원본 `node_modules` 818 무손상), 브랜치 삭제.
 
@@ -479,7 +479,7 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
   - 리뷰: code-reviewer(opus) CRITICAL 0 / HIGH 0 / MEDIUM 3 / LOW 5 → **MEDIUM 3 + LOW 2 반영** · 최종 code-reviewer(fable) **APPROVE**(MEDIUM 1 = 선재 결함 잔존) → **그 MEDIUM 도 마저 반영**.
 
 - **안 끝난 것**
-  - 🔴 **push / PR 미생성** — 사용자 명시 요청 대기(커밋만 사전 승인).
+  - ~~push / PR~~ → ✅ **PR #388 머지**(`0ec9abc2c`).
   - 🔴 **되돌리기 경로 실사용 검증 없음.** prod 에서 눌러보지 않았다. 유닛·타입·레포 진입점·화면 진입점까지만 검증됨.
   - ⚠️ **`GroupedSettlementCard` 는 렌더 레벨 테스트가 여전히 0건**(선재 갭). 배지·라벨은 `statusText` 한 값에서 합성해 원리적으로 갈라질 수 없게 해 뒀지만, 그 행 자체를 렌더하는 테스트는 없다.
   - ⚠️ 정산 라벨 맵은 아직 **4곳**에 흩어져 있다(S5 에서 이월된 항목, 색/variant 통합은 시각 확인 필요).
@@ -498,7 +498,7 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
   - 🔑 **pre-push 훅이 `npm run quality` 전체를 돈다** — push 가 2분 넘게 "멈춘 것처럼" 보인다. 죽은 게 아니니 타임아웃 늘리거나 백그라운드로 돌릴 것.
   - ⚠️ **전체 jest 에서 "A worker process has failed to exit gracefully" 경고가 뜬다**(exit 0, 598/598 통과). 신규 테스트 3파일을 개별 실행했을 땐 안 뜬다 — 이 브랜치가 만든 것이 아니라 기존 스위트발이다. 원인 스위트는 미특정.
 
-### S5 (3-A + 3-D) — 2026-08-01 · 상태: 구현·리뷰 완료 (🔴 PR 미생성)
+### S5 (3-A + 3-D) — 2026-08-01 · 상태: 완료 (**PR #387 머지** `97bf7e85c`)
 
 - 리뷰 3종 전부 통과: security-reviewer(fable) **CRITICAL 0 / HIGH 0**(MEDIUM 1 은 선재 — RLS `wl_update` WITH CHECK 부재로 `staff_id` 재지정 알림 위조 가능, 별도 PR 권고) · code-reviewer(opus) CRITICAL 1·HIGH 1·MEDIUM 3·LOW 2 **전량 반영** · 최종 code-reviewer(fable) **APPROVE**(LOW 3 비차단).
 - 최종 게이트 실행 증거: `npm run quality` exit 0(0 errors / 97 warnings = S4 baseline) · `npm test` **595 스위트 / 6503 테스트 / 122 스냅샷 전량 통과** · `tsc --noEmit` exit 0 · `e2e/` Grep 파급 0건.
@@ -518,7 +518,7 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
   - **리뷰 반영** `90006d3e5` — opus 리뷰가 잡은 **CRITICAL 1건**(아래 주의 참조) + MEDIUM 3 + LOW 2. 레포 진입점 테스트 신설로 HIGH(vacuous green) 도 해소.
 
 - **안 끝난 것**
-  - 🔴 **push / PR 미생성** — 사용자 명시 요청 대기(커밋만 사전 승인).
+  - ~~push / PR~~ → ✅ **PR #387 머지**(`97bf7e85c`). CI 10잡 전부 SUCCESS(E2E 10m14s 포함, 재실행 없이 1회 통과).
   - 🔴 **정산 확정 경로 실사용 검증 없음.** prod 에서 한 번도 눌러보지 않았다(확정은 스태프에게 회수 불가 알림이 나가므로 테스트 발송 금지 지시를 지켰다). 유닛·타입·레포 진입점까지만 검증됨.
   - 🔴 **지점 정산에 "지급 완료 취소"(SETTLE-3) 진입점이 없다 — 편도 문.** `SettlementDetailModal` 에 `onRevertSettlement` 를 안 넘겨 되돌리기 버튼이 안 뜬다. 컨테이너 직속 행은 공고 정산 화면에 아예 나오지 않으므로 **오지급 정정 경로가 앱 전체에 존재하지 않는다.** 확정 문구는 비가역성을 고지하는데 정정 수단이 없어 반쪽이다. 이번엔 세션 후반 신규 기능 추가(사유 입력 포함)를 QA 없이 얹는 위험이 더 크다고 판단해 남긴다 — **다음 세션 최우선.**
   - ⚠️ **rename 마이그의 fail-closed 가드가 후보 간(intra-batch) 충돌을 못 본다.** 한 워크스페이스에 컨테이너 2건(`'내 팀'`+`'기본 지점'`)이 있으면 목표명이 **같아지는데**, 가드의 `EXISTS` 는 "이미 존재하는" title 만 보므로 서로를 못 본다 → `uniq_venue_container` raw 위반으로 마이그 전체 abort. **prod 는 4행·충돌 0으로 이미 통과했고 파일은 적용된 내용의 기록이므로 수정하지 않았다**(기존 마이그 수정 금지). `db:reset`·새 환경에서 재생 시 터질 수 있다 — 그때는 `ROW_NUMBER() OVER (PARTITION BY workspace_id, lower(new_title), kind)` 로 후보 간 중복을 먼저 걸러야 한다.
