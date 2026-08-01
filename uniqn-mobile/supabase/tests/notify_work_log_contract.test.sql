@@ -17,6 +17,9 @@
 --      (8) settlement_modification_history 가 배열이 아니어도(raw PostgREST 오염) 알림은 나간다 —
 --          jsonb_array_length 가 22023 을 던지면 함수의 EXCEPTION 블록이 되감아
 --          **이 UPDATE 의 모든 알림**이 통째로 사라진다. jsonb_typeof 가드의 관측 가능한 효과.
+--      (9) 같은 함정이 **modification_history**(Case 2)에도 있고 그쪽이 더 위험하다 — IF 밖
+--          최상단이라 무조건 실행되므로, 오염되면 (8)의 가드조차 상류에서 죽어 무력해진다.
+--          리뷰 2인이 각각 실측으로 재현한 결함이다.
 --
 -- (7) CREATE OR REPLACE 의 SET 절이 pg_temp 하드닝을 지우지 않았는지 —
 --     20260711100000 이 ALTER FUNCTION 으로 얹은 방어의 국소 회귀 가드.
@@ -33,7 +36,7 @@
 -- ============================================================
 
 BEGIN;
-SELECT plan(8);
+SELECT plan(9);
 
 -- ─── 시드 (superuser 컨텍스트, set_user 이전) ───
 DO $$
@@ -43,7 +46,8 @@ DECLARE
   v_staff_b uuid;   -- M3 본체   (cancellation_pending)
   v_staff_c uuid;   -- M5 되돌리기
   v_staff_d uuid;   -- M5 정방향
-  v_staff_e uuid;   -- M5 이력 오염(비배열)
+  v_staff_e uuid;   -- M5 정산이력 오염(비배열)
+  v_staff_f uuid;   -- M5 수정이력 오염(비배열, 상류 폭발)
   v_ws uuid := gen_random_uuid();
   v_job uuid := gen_random_uuid();
   v_app_a uuid := gen_random_uuid();
@@ -53,6 +57,7 @@ DECLARE
   v_wl_c uuid := gen_random_uuid();
   v_wl_d uuid := gen_random_uuid();
   v_wl_e uuid := gen_random_uuid();
+  v_wl_f uuid := gen_random_uuid();
 BEGIN
   v_owner   := jpc_test_create_user('employer');
   v_staff_a := jpc_test_create_user('staff');
@@ -60,6 +65,7 @@ BEGIN
   v_staff_c := jpc_test_create_user('staff');
   v_staff_d := jpc_test_create_user('staff');
   v_staff_e := jpc_test_create_user('staff');
+  v_staff_f := jpc_test_create_user('staff');
 
   INSERT INTO public.workspaces (id, name, owner_id, created_at, updated_at)
   VALUES (v_ws, '__sql_fixture_nwc_ws', v_owner, now(), now());
@@ -103,12 +109,23 @@ BEGIN
      now() - interval '8 hour', now() - interval '1 hour', 'completed', 200000, now(),
      '{"corrupted": true}'::jsonb, now(), now());
 
+  -- 상류 오염 픽스처: Case 2 가 무조건 읽는 modification_history 를 비배열로 만든다.
+  INSERT INTO public.work_logs (
+    id, staff_id, job_posting_id, owner_id, date, status, role,
+    check_in_ts, check_out_ts, payroll_status, payroll_amount, payroll_date,
+    modification_history, created_at, updated_at
+  ) VALUES
+    (v_wl_f, v_staff_f, v_job, v_owner, '2026-08-07', 'checked_out', 'dealer',
+     now() - interval '8 hour', now() - interval '1 hour', 'completed', 100000, now(),
+     '{"corrupted": true}'::jsonb, now(), now());
+
   PERFORM set_config('nwc.owner', v_owner::text, true);
   PERFORM set_config('nwc.wl_a', v_wl_a::text, true);
   PERFORM set_config('nwc.wl_b', v_wl_b::text, true);
   PERFORM set_config('nwc.wl_c', v_wl_c::text, true);
   PERFORM set_config('nwc.wl_d', v_wl_d::text, true);
   PERFORM set_config('nwc.wl_e', v_wl_e::text, true);
+  PERFORM set_config('nwc.wl_f', v_wl_f::text, true);
 END $$;
 
 -- ─── 행위: 구인자(employer JWT + RLS 경유)로 4건을 각각 UPDATE ───
@@ -142,10 +159,15 @@ BEGIN
      SET payroll_status = 'completed', payroll_date = now()
    WHERE id = (current_setting('nwc.wl_d'))::uuid;
 
-  -- M5 이력 오염: 되돌리기를 하되 이력 배열은 손대지 않는다(비배열 그대로).
+  -- M5 정산이력 오염: 되돌리기를 하되 이력 배열은 손대지 않는다(비배열 그대로).
   UPDATE public.work_logs
      SET payroll_status = 'pending', payroll_date = NULL
    WHERE id = (current_setting('nwc.wl_e'))::uuid;
+
+  -- M5 수정이력(Case 2) 오염: 같은 되돌리기. 상류가 던지면 이 UPDATE 의 알림이 전멸한다.
+  UPDATE public.work_logs
+     SET payroll_status = 'pending', payroll_date = NULL
+   WHERE id = (current_setting('nwc.wl_f'))::uuid;
 END $$;
 
 RESET ROLE;
@@ -225,6 +247,14 @@ SELECT is(
       AND data->>'workLogId' = current_setting('nwc.wl_e')),
   '1/0',
   'M5: settlement_modification_history 가 비배열이어도 되돌리기 알림 1건(사유 없이) — jsonb_typeof 가드');
+
+-- ─── (9) 상류(Case 2) 이력이 비배열이어도 알림이 살아남는다 ───
+SELECT is(
+  (SELECT count(*)::int FROM public.notifications
+    WHERE type = 'settlement_reverted'
+      AND data->>'workLogId' = current_setting('nwc.wl_f')),
+  1,
+  'M5: modification_history 가 비배열이어도 되돌리기 알림 1건 — Case 2 상단 jsonb_typeof 가드');
 
 SELECT * FROM finish();
 ROLLBACK;

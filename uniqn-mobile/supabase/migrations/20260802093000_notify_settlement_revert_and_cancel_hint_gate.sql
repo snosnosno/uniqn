@@ -35,8 +35,21 @@
 -- SettlementRepository.ts:637-663 이 되돌리기 시 사유를 필수로 받아
 -- settlement_modification_history 에 {type:'payroll_status_revert', previousStatus, newStatus,
 -- reason, modifiedBy, modifiedAt} 로 append 한다. 그 배열의 마지막 항목에서 읽어 본문에 싣는다.
--- 되돌리기 경로는 단일 행 UPDATE 하나뿐이므로(payroll_status writer 3곳 중 :627 만 역방향,
--- :318 개별정산·:532 일괄정산은 정방향) 이 Case 가 N통을 만들 일은 없다.
+-- 앱에서 도달 가능한 되돌리기 경로는 단일 행 UPDATE 하나뿐이라(SettlementRepository.ts:627,
+-- 일괄 되돌리기 UI 없음) 이 Case 가 N통을 만들 일은 없다.
+-- ⚠️ 다만 `payroll_status` writer 는 SettlementRepository 3곳이 전부가 아니다 — 앱 호출부가
+--    0곳인 `WorkLogRepository.ts:634` · `WorkLogRepositoryTransactions.ts:65` 도 이력 append
+--    없이 completed→pending 을 쓸 수 있다. Case 3-B 는 컬럼 전이로 판정하므로 그쪽도 잡히고,
+--    이력이 없으면 사유 없이 통지된다(무음보다 낫다).
+--
+-- 🔴 알아둘 것 — M3 는 **계약(T' ⊆ C)** 을 회복하지만, 그 이득이 지금 사용자에게 보이지는 않는다.
+--    선재 결함이 하나 더 있다: ScheduleMerger.generateScheduleKey(:187-196)가 병합 키에
+--    `timeSlot` 을 넣는데, updateSlot 은 work_logs.time_slot 만 쓰고
+--    applications.assignments[].timeSlot 은 그대로 둔다(WorkLogRepositoryVenue.ts:108-122).
+--    → 시각을 바꾸는 순간 키가 어긋나 병합이 끊기고, `isCancellationPending` 를 얹는 유일한
+--    지점(ScheduleMerger.ts:238-251)이 실행되지 않아 **취소 요청 버튼이 오히려 그대로 보인다.**
+--    즉 현재는 "말은 안 하는데 버튼은 있는" 안전한 쪽으로 어긋나 있다. 이 마이그는 서버 계약을
+--    바로잡아 두고, 병합 키 수선은 클라 전용이라 별도 PR 로 남긴다(감사 후속 신규 항목).
 --
 -- ── 형식 규율 ────────────────────────────────────────────────────────────────
 --  * DROP + CREATE 가 아니라 CREATE OR REPLACE 다. DROP 하면 20260731090000 이 회수한
@@ -115,8 +128,18 @@ BEGIN
 
   -- ==================== Case 2: 근무 시간 변경 ====================
   -- modification_history 배열 길이가 증가하면 시간 수정으로 간주
-  v_modification_count_before := COALESCE(jsonb_array_length(OLD.modification_history), 0);
-  v_modification_count_after := COALESCE(jsonb_array_length(NEW.modification_history), 0);
+  -- ⚠️ [2026-08-02 리뷰 반영] jsonb_typeof 가드 — Case 3-B 와 같은 이유인데 폭발반경이 더 크다.
+  --    이 두 줄은 IF 밖·최상단이라 **모든 work_logs UPDATE 에서 무조건 실행**된다. 오염된
+  --    modification_history(비배열 jsonb) 한 행이 22023 을 던지면 말미의 EXCEPTION 블록이
+  --    BEGIN 전체를 되감아 그 UPDATE 의 알림이 전멸한다 — Case 3-B 에만 가드를 넣으면
+  --    상류에서 먼저 죽으므로 그 가드가 무력해진다(리뷰 2인이 각각 실측으로 재현).
+  --    NULL 입력은 jsonb_typeof 가 SQL NULL 을 돌려 ELSE 0 → 기존 COALESCE 와 완전 동치다.
+  v_modification_count_before := CASE
+    WHEN jsonb_typeof(OLD.modification_history) = 'array'
+      THEN jsonb_array_length(OLD.modification_history) ELSE 0 END;
+  v_modification_count_after := CASE
+    WHEN jsonb_typeof(NEW.modification_history) = 'array'
+      THEN jsonb_array_length(NEW.modification_history) ELSE 0 END;
 
   IF v_modification_count_after > v_modification_count_before THEN
     -- 가장 최근 수정 항목 조회
@@ -307,8 +330,10 @@ BEGIN
       IF v_latest_revert ->> 'type' = 'payroll_status_revert'
          AND v_latest_revert ->> 'previousStatus' = 'completed' THEN
         v_revert_reason := NULLIF(btrim(COALESCE(v_latest_revert ->> 'reason', '')), '');
-        IF v_revert_reason IS NOT NULL THEN
-          v_revert_reason := left(v_revert_reason, 100);
+        -- 클라 상한은 200자(workTimeModification.ts:18)라 잘릴 수 있다. 말없이 자르면
+        -- 사유가 문장 중간에서 끊긴 것인지 원래 그런 것인지 스태프가 구분할 수 없다.
+        IF length(v_revert_reason) > 100 THEN
+          v_revert_reason := left(v_revert_reason, 99) || '…';
         END IF;
       END IF;
     END IF;
