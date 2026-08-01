@@ -44,6 +44,9 @@ jest.mock('@/lib/queryClient', () => ({
     },
   },
   cachingPolicies: { frequent: 120000, standard: 300000 },
+  // ⚠️ 손으로 쓴 부분 사본 — 실물에 키를 추가하면 여기도 추가할 것(누락 시 undefined).
+  //    위 온라인 상수(2분·5분)와 다른 값이어야 아래 회귀 단언이 유효하다.
+  offlineCachePolicies: { applications: 24 * 60 * 60 * 1000 },
 }));
 
 jest.mock('@/hooks/useNetworkStatus', () => ({
@@ -59,8 +62,9 @@ jest.mock('@/hooks/useNetworkStatus', () => ({
   }),
 }));
 
+const mockGetCriticalOfflineCache = jest.fn((..._args: unknown[]) => null);
 jest.mock('@/services/offline/criticalOfflineCache', () => ({
-  getCriticalOfflineCache: jest.fn(() => null),
+  getCriticalOfflineCache: (...args: unknown[]) => mockGetCriticalOfflineCache(...args),
   setCriticalOfflineCache: jest.fn(),
 }));
 
@@ -118,6 +122,20 @@ function createWrapper() {
 describe('useApplications', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  // 오프라인 MMKV 캐시는 만료를 stale 표시가 아니라 **완전 삭제**로 처리한다
+  // (criticalOfflineCache.ts:133-147). 온라인 상수(5·10분)를 TTL 로 겸용하면 지하에서
+  // 내 지원 현황이 통째로 사라져 "지원한 곳이 없어요"로 위장된다.
+  it('오프라인 캐시 보존기간을 온라인 staleTime 과 겸용하지 않는다', () => {
+    renderHook(() => useApplications(), { wrapper: createWrapper() });
+
+    const ttls = mockGetCriticalOfflineCache.mock.calls.map(
+      (call) => (call[1] as unknown as { ttlMs: number }).ttlMs
+    );
+
+    expect(ttls.length).toBeGreaterThan(0);
+    expect(ttls.every((ttl) => ttl === 24 * 60 * 60 * 1000)).toBe(true);
   });
 
   describe('Hook API 구조', () => {

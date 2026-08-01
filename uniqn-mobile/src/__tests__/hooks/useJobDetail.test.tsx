@@ -58,6 +58,11 @@ jest.mock('@/lib/queryClient', () => ({
   cachingPolicies: {
     standard: 300000,
   },
+  // ⚠️ 손으로 쓴 부분 사본 — 실물에 키를 추가하면 여기도 추가할 것(누락 시 undefined).
+  //    위 온라인 상수(5분)와 다른 값이어야 아래 회귀 단언이 유효하다.
+  offlineCachePolicies: {
+    jobDetail: 24 * 60 * 60 * 1000,
+  },
 }));
 
 function createMockJobPosting(id: string): JobPosting {
@@ -85,6 +90,20 @@ describe('useJobDetail', () => {
       error: null,
       refetch: mockRefetch,
     });
+  });
+
+  // 오프라인 MMKV 캐시는 만료를 stale 표시가 아니라 **완전 삭제**로 처리한다
+  // (criticalOfflineCache.ts:133-147). 온라인 상수(5분)를 TTL 로 겸용하면 지하에서
+  // 목록은 보이는데 상세만 비어 이동이 막힌 것처럼 보인다.
+  it('오프라인 캐시 보존기간을 온라인 staleTime 과 겸용하지 않는다', () => {
+    renderHook(() => useJobDetail('job-1'));
+
+    const ttls = mockGetCriticalOfflineCache.mock.calls.map(
+      (call) => (call[1] as { ttlMs: number }).ttlMs
+    );
+
+    expect(ttls.length).toBeGreaterThan(0);
+    expect(ttls.every((ttl) => ttl === 24 * 60 * 60 * 1000)).toBe(true);
   });
 
   it('does not fall back to cached data when the live query resolves to null', () => {

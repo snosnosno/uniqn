@@ -7,7 +7,7 @@ import {
   projectPostingCard,
 } from '@/domains/job-posting';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
-import { queryCachingOptions, queryKeys } from '@/lib/queryClient';
+import { offlineCachePolicies, queryCachingOptions, queryKeys } from '@/lib/queryClient';
 import {
   getCriticalOfflineCache,
   setCriticalOfflineCache,
@@ -75,7 +75,7 @@ export function useJobPostings(options: UseJobPostingsOptions = {}) {
 
     return (
       getCriticalOfflineCache<JobPostingCard[]>('public-job-postings:default-list', {
-        ttlMs: queryCachingOptions.jobPostings.staleTime,
+        ttlMs: offlineCachePolicies.jobPostings,
         schemaVersion: PUBLIC_JOB_POSTINGS_CACHE_SCHEMA_VERSION,
       })?.data ?? []
     );

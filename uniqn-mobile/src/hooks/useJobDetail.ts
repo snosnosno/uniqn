@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { ERROR_CODES, isAppError, isPermissionError } from '@/errors/AppError';
-import { cachingPolicies, queryKeys } from '@/lib/queryClient';
+import { cachingPolicies, offlineCachePolicies, queryKeys } from '@/lib/queryClient';
 import { useAuthStore } from '@/stores/authStore';
 import {
   getCriticalOfflineCache,
@@ -136,7 +136,7 @@ export function useJobDetail(jobId: string, options: UseJobDetailOptions = {}) {
 
     return (
       getCriticalOfflineCache<JobPosting>(cacheKey, {
-        ttlMs: cachingPolicies.standard,
+        ttlMs: offlineCachePolicies.jobDetail,
         schemaVersion: JOB_DETAIL_CACHE_SCHEMA_VERSION,
         userId,
       })?.data ?? null

@@ -7,6 +7,7 @@ import {
   cachingPolicies,
   queryCachingOptions,
   offlineCachePolicies,
+  type OfflineTtlMs,
 } from '@/lib/queryClient';
 import {
   getCriticalOfflineCache,
@@ -119,7 +120,7 @@ function normalizeScheduleQueryPayload(
   };
 }
 
-function useCachedSchedulePayload(cacheKey: string, ttlMs: number, userId?: string) {
+function useCachedSchedulePayload(cacheKey: string, ttlMs: OfflineTtlMs, userId?: string) {
   return useMemo(
     () =>
       normalizeScheduleQueryPayload(

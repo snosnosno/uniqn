@@ -158,6 +158,12 @@ jest.mock('@/lib/queryClient', () => ({
     standard: 10 * 60 * 1000,
     stable: 60 * 60 * 1000,
   },
+  // ⚠️ 손으로 쓴 부분 사본이다 — 실물에 키를 추가하면 여기도 추가해야 한다(누락 시 undefined).
+  //    온라인 값(위 realtime 30초)과 **의도적으로 다른 값**을 넣어야 아래 회귀 단언이 유효하다.
+  offlineCachePolicies: {
+    workLogs: 24 * 60 * 60 * 1000,
+    currentWorkStatus: 12 * 60 * 60 * 1000,
+  },
   queryCachingOptions: {
     workLogs: {
       staleTime: 30 * 1000,
@@ -248,6 +254,21 @@ describe('useWorkLogs Hooks', () => {
   // ==========================================================================
 
   describe('useWorkLogs', () => {
+    // 오프라인 MMKV 캐시는 만료를 stale 표시가 아니라 **완전 삭제**로 처리한다
+    // (criticalOfflineCache.ts:133-147). 그래서 온라인 staleTime(30초)을 TTL 로 겸용하면
+    // 지하 홀덤펍에서 30초만 지나도 내 근무기록이 통째로 사라지고 "기록이 없어요"로 위장된다.
+    it('오프라인 캐시 보존기간을 온라인 staleTime 과 겸용하지 않는다', () => {
+      renderHook(() => useWorkLogs());
+
+      const ttls = mockGetCriticalOfflineCache.mock.calls.map(
+        (call) => (call[1] as { ttlMs: number }).ttlMs
+      );
+
+      expect(ttls.length).toBeGreaterThan(0);
+      // 목의 온라인 staleTime 은 30초 — 그 값이 흘러들면 여기서 걸린다.
+      expect(ttls.every((ttl) => ttl === 24 * 60 * 60 * 1000)).toBe(true);
+    });
+
     it('should return correct initial structure', () => {
       const { result } = renderHook(() => useWorkLogs());
 
@@ -455,6 +476,20 @@ describe('useWorkLogs Hooks', () => {
   // ==========================================================================
 
   describe('useCurrentWorkStatus', () => {
+    // 감사 M6 이 놓쳤던 6번째 호출부. '지금 출근 중인가'는 안전망이 가장 필요한 값인데
+    // 30초 TTL 이면 오프라인에서 곧바로 삭제돼 '출근 안 함'으로 뒤집힌다.
+    // 반대로 24시간이면 어제 상태가 오늘 아침까지 살아남으므로 여기만 12시간이다.
+    it('오프라인 캐시 보존기간을 온라인 staleTime 과 겸용하지 않는다', () => {
+      renderHook(() => useCurrentWorkStatus());
+
+      const ttls = mockGetCriticalOfflineCache.mock.calls.map(
+        (call) => (call[1] as { ttlMs: number }).ttlMs
+      );
+
+      expect(ttls.length).toBeGreaterThan(0);
+      expect(ttls.every((ttl) => ttl === 12 * 60 * 60 * 1000)).toBe(true);
+    });
+
     it('should return correct structure', () => {
       const { result } = renderHook(() => useCurrentWorkStatus());
 
