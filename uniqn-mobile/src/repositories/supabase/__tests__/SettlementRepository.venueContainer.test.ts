@@ -187,11 +187,16 @@ describe('지점 컨테이너 정산 확정', () => {
 // SETTLE-3 — 지급 완료 취소
 // ============================================================================
 //
-// 확정과 **같은 소유권 검증 경로**(validateWorkLogOwnership → toJobPosting)를 탄다.
-// 즉 컨테이너 증발 결함이 살아 있으면 확정뿐 아니라 되돌리기도 함께 죽는다 —
-// 그러면 컨테이너 직속 행은 확정도 취소도 못 하는 완전한 편도 문이 된다.
-// 여기서도 `parseJobPostingDocument` 는 항상 null 이다(그 우회를 통과해야 증거가 된다).
-describe('지점 컨테이너 지급 완료 취소 (SETTLE-3)', () => {
+// 🔴 이 블록의 계약이 바뀌었다 (감사 P5/L1).
+// 되돌리기는 이제 `set_work_log_payroll_status` RPC 에 위임한다(마이그 20260802130000).
+// 클라가 공고를 더 이상 파싱하지 않으므로 **컨테이너 증발 결함의 영향권에서 아예 벗어났다** —
+// 전환의 부수 효과이고, 아래 두 번째 테스트가 그것을 증거로 고정한다.
+//
+// 사유 필수·XSS·200자·이력 형태의 실질 계약은 서버로 옮겨갔고
+// pgTAP `supabase/tests/settlement_payroll_status_rpc.test.sql`(11 assertion)이 지킨다.
+// 확정(settleWorkLogWithTransaction)은 아직 클라 파서를 거치므로
+// 위 '지점 컨테이너 정산 확정' describe 가 증발 회귀를 계속 지킨다.
+describe('지점 컨테이너 지급 완료 취소 (SETTLE-3 → 서버 RPC 위임)', () => {
   const REASON = '금액을 잘못 산정해 다시 계산합니다';
 
   beforeEach(() => {
@@ -203,48 +208,29 @@ describe('지점 컨테이너 지급 완료 취소 (SETTLE-3)', () => {
     } as unknown as WorkLog;
   });
 
-  it('컨테이너 공고가 증발하지 않고 정산 대기로 되돌아간다', async () => {
+  it('되돌리기는 RPC 에 위임하고 work_logs 를 직접 UPDATE 하지 않는다', async () => {
     await repo.updatePayrollStatusWithTransaction(WORK_LOG_ID, STATUS.PAYROLL.PENDING, OWNER, {
       reason: REASON,
     });
 
-    expect(updateCalls).toHaveLength(1);
-    expect(updateCalls[0].data.payroll_status).toBe(STATUS.PAYROLL.PENDING);
-  });
-
-  it('지급일은 지우고 취소 사유는 정산 이력에 남긴다', async () => {
-    await repo.updatePayrollStatusWithTransaction(WORK_LOG_ID, STATUS.PAYROLL.PENDING, OWNER, {
-      reason: REASON,
+    expect(mockRpc).toHaveBeenCalledWith('set_work_log_payroll_status', {
+      p_work_log_id: WORK_LOG_ID,
+      p_status: STATUS.PAYROLL.PENDING,
+      p_reason: REASON,
     });
-
-    // 지급일은 더 이상 유효하지 않다. 동결 표시액(payroll_amount)은 이의 처리 근거로 남긴다.
-    expect(updateCalls[0].data.payroll_date).toBeNull();
-    expect(updateCalls[0].data.payroll_amount).toBeUndefined();
-    expect(JSON.stringify(updateCalls[0].data.settlement_modification_history)).toContain(REASON);
-  });
-
-  it('사유가 공백뿐이면 되돌리지 않는다 (서버 강제)', async () => {
-    await expect(
-      repo.updatePayrollStatusWithTransaction(WORK_LOG_ID, STATUS.PAYROLL.PENDING, OWNER, {
-        reason: '   ',
-      })
-    ).rejects.toThrow();
-
+    // 직접 UPDATE 경로가 되살아나면 서버 강제(사유 필수·FOR UPDATE)가 통째로 우회된다.
     expect(updateCalls).toHaveLength(0);
   });
 
-  it('일반 공고는 여전히 스키마 파서를 거친다 — 증발하면 되돌리기도 실패한다', async () => {
-    jobPostingReadResult = {
-      data: { ...makeContainerRow([]), status: 'active' },
-      error: null,
-    };
+  it('공고 파서가 null 을 반환해도 되돌리기가 막히지 않는다 — 컨테이너 증발 영향권 이탈', async () => {
+    // 전환 전에는 이 상황에서 '파싱할 수 없습니다' 로 죽어, 컨테이너 직속 행이
+    // 확정도 취소도 못 하는 편도 문이 됐다. 이제 클라는 공고를 아예 읽지 않는다.
+    mockParseJobPosting.mockReturnValue(null);
 
     await expect(
       repo.updatePayrollStatusWithTransaction(WORK_LOG_ID, STATUS.PAYROLL.PENDING, OWNER, {
         reason: REASON,
       })
-    ).rejects.toThrow(/파싱/);
-
-    expect(updateCalls).toHaveLength(0);
+    ).resolves.toBeUndefined();
   });
 });
