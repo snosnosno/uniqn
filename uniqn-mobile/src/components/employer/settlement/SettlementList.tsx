@@ -284,12 +284,23 @@ export function SettlementList({
             onSettle={onSettle}
             selectionMode={selectionMode}
             selectedIds={selectedIds}
+            // 선택 게이트(`handleSelect`)와 **같은 축**을 카드에도 내려준다.
+            // 카드가 자체 판정하면 부모가 거부하는 행을 전체 선택에 넣어 편도 토글이 된다.
+            selectableIds={selectableIds}
             onToggleSelect={handleSelect}
           />
         </View>
       );
     },
-    [handleGroupBulkSettle, onWorkLogPress, onSettle, selectionMode, selectedIds, handleSelect]
+    [
+      handleGroupBulkSettle,
+      onWorkLogPress,
+      onSettle,
+      selectionMode,
+      selectedIds,
+      selectableIds,
+      handleSelect,
+    ]
   );
 
   const keyExtractor = useCallback((item: GroupedSettlement) => item.id, []);

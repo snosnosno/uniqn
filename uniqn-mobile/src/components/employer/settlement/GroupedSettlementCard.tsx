@@ -58,6 +58,14 @@ export interface GroupedSettlementCardProps {
   selectionMode?: boolean;
   /** 선택된 WorkLog ID 집합 */
   selectedIds?: Set<string>;
+  /**
+   * **선택 가능한** WorkLog ID 집합 — 부모(`SettlementList`)의 선택 게이트와 같은 축이다.
+   *
+   * 🔴 이 카드가 "선택 가능"을 스스로 판정하면 부모의 게이트와 어긋나 편도 토글이 된다:
+   * 카드는 전체 선택으로 여기고 해제 분기를 태우는데 부모는 그 행 추가를 거부해
+   * **아무 일도 일어나지 않는** 상태가 실제로 있었다. 판정은 부모 한 곳에서만 한다.
+   */
+  selectableIds?: Set<string>;
   /** 선택 토글 핸들러 */
   onToggleSelect?: (workLog: WorkLog) => void;
 }
@@ -213,6 +221,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
   defaultExpanded = false,
   selectionMode = false,
   selectedIds,
+  selectableIds,
   onToggleSelect,
 }: GroupedSettlementCardProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
@@ -254,8 +263,17 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
     return group.originalWorkLogs.filter((wl) => selectedIds.has(wl.id)).length;
   }, [selectedIds, group.originalWorkLogs]);
 
-  // 전체 선택 여부
-  const isAllSelected = selectedCount === group.originalWorkLogs.length;
+  // 이 그룹에서 실제로 선택할 수 있는 행 — 부모가 내려준 축이 있으면 그것이 진실원이다.
+  // 부모가 안 내려준 경우(단독 렌더)에만 그룹 자체 판정으로 폴백한다.
+  const selectableInGroup = useMemo(() => {
+    if (!selectableIds) return settlableWorkLogs;
+    return group.originalWorkLogs.filter((wl) => selectableIds.has(wl.id));
+  }, [selectableIds, group.originalWorkLogs, settlableWorkLogs]);
+
+  // 전체 선택 여부 — 분모는 '그룹의 모든 행'이 아니라 '선택 가능한 행'이다.
+  // 지급완료가 섞인 그룹은 애초에 전량 선택이 불가능하므로, 전자로 재면 영구 false 가 되어
+  // 해제 분기에 영원히 도달하지 못한다(= 체크는 켜지는데 꺼지지 않는다).
+  const isAllSelected = selectableInGroup.length > 0 && selectedCount === selectableInGroup.length;
 
   // 그룹 대표 상태 → stripe tone. 한 건이라도 미정산이면 미정산으로 본다.
   // 예전엔 그 사이에 'processing' 우선순위 분기가 있었지만 DB enum 에 없는 값이라
@@ -291,8 +309,9 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
   const handleToggleAllSelect = useCallback(() => {
     if (!onToggleSelect) return;
 
-    // 전체 선택 상태면 전체 해제, 아니면 전체 선택
-    for (const workLog of group.originalWorkLogs) {
+    // 전체 선택 상태면 전체 해제, 아니면 전체 선택.
+    // 순회 대상도 '선택 가능한 행'이다 — 지급완료 행에 토글을 부르면 부모가 어차피 거부한다.
+    for (const workLog of selectableInGroup) {
       if (isAllSelected) {
         // 선택되어 있으면 해제
         if (selectedIds?.has(workLog.id)) {
@@ -305,7 +324,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
         }
       }
     }
-  }, [onToggleSelect, group.originalWorkLogs, isAllSelected, selectedIds]);
+  }, [onToggleSelect, selectableInGroup, isAllSelected, selectedIds]);
 
   return (
     <CardStripe tone={stripeTone} style={{ marginBottom: 12 }}>
@@ -320,10 +339,9 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
             {/* 선택 모드: 체크박스 */}
             {selectionMode && (
               <View className="mr-3">
-                <Checkbox
-                  checked={isAllSelected || (selectedCount > 0 && !isAllSelected)}
-                  onChange={handleToggleAllSelect}
-                />
+                {/* 한 건이라도 선택돼 있으면 체크로 보인다(부분 선택도 포함).
+                    `isAllSelected || (selectedCount > 0 && !isAllSelected)` 는 이 식과 동치였다 */}
+                <Checkbox checked={selectedCount > 0} onChange={handleToggleAllSelect} />
               </View>
             )}
 

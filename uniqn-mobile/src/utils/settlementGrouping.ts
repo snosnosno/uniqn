@@ -146,6 +146,29 @@ function extractStaffProfile(workLog: WorkLog): GroupedSettlement['staffProfile'
 }
 
 /**
+ * 정산 가능 판정 — **이 파일에서 "정산 가능"을 묻는 곳은 전부 이 술어를 거친다.**
+ *
+ * 조건:
+ * 1. 출퇴근 완료 (`hasValidTimes`)
+ * 2. 서버 게이트를 통과할 수 있는 status (`isSettlableStatus`) — 이 축이 없으면
+ *    시각만 있고 status 미승격인 레거시 행이 일괄 정산에 섞여 **부분 실패**를 만든다
+ * 3. 미정산 (`payrollStatus !== 'completed'`)
+ *
+ * 🔴 조건을 호출부에 인라인으로 다시 쓰지 말 것. 실제로 그렇게 복제됐다가
+ * 배지 집계에만 2번 축이 빠졌다. 증상(실측): 정산 대기 2건 중 1건이 레거시 미승격일 때
+ * `settlableCount` 가 2로 부풀어 **"출퇴근 미완료 1건" 배지가 사라지고**, 그런데
+ * 일괄 정산 버튼은 실제 가능한 1건만 잡는다 — 구인자는 "미완료가 없다는데 왜 1건만?"을
+ * 설명 없이 마주한다.
+ */
+function isSettlableDateStatus(status: DateSettlementStatus): boolean {
+  return (
+    status.hasValidTimes &&
+    status.isSettlableStatus &&
+    status.payrollStatus !== STATUS.PAYROLL.COMPLETED
+  );
+}
+
+/**
  * WorkLog에서 DateSettlementStatus 생성
  */
 function createDateSettlementStatus(
@@ -247,8 +270,8 @@ function createGroupedSettlement(
       pendingCount++;
       pendingAmount += status.amount;
 
-      // 정산 가능: 출퇴근 완료 + 미정산
-      if (status.hasValidTimes) {
+      // 판정은 술어 하나만 쓴다 — 여기서 조건을 다시 쓰면 일괄 정산 대상과 어긋난다
+      if (isSettlableDateStatus(status)) {
         settlableCount++;
       }
     }
@@ -365,24 +388,14 @@ export function groupSettlementsByStaff(
 /**
  * 그룹에서 정산 가능한 WorkLog ID 배열 반환
  *
- * 정산 가능 조건:
- * 1. 출퇴근 완료 (hasValidTimes = true)
- * 2. 미정산 상태 (payrollStatus !== 'completed')
- * 3. 서버 게이트를 통과할 수 있는 status (isSettlableStatus) — 이 축이 없으면
- *    시각만 있고 status 미승격인 레거시 행이 일괄 정산에 섞여 **부분 실패**를 만든다.
+ * 판정은 `isSettlableDateStatus` 하나만 쓴다 — 조건을 여기 인라인으로 다시 쓰면
+ * 배지 집계와 어긋난다(실제로 그렇게 어긋나 있었다. 파일 상단 술어 주석 참조).
  *
  * @param group - GroupedSettlement
  * @returns 정산 가능한 WorkLog ID 배열
  */
 export function getSettlableWorkLogIds(group: GroupedSettlement): string[] {
-  return group.dateStatuses
-    .filter(
-      (status) =>
-        status.hasValidTimes &&
-        status.isSettlableStatus &&
-        status.payrollStatus !== STATUS.PAYROLL.COMPLETED
-    )
-    .map((status) => status.workLogId);
+  return group.dateStatuses.filter(isSettlableDateStatus).map((status) => status.workLogId);
 }
 
 /**
