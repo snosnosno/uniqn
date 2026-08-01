@@ -23,7 +23,7 @@ const safeAddressText = (max: number) =>
  * 파스가 깨지면 안 된다). 반대로 우리가 쓰는 필드는 전부 **필수**로 둔다: optional 로 두면
  * 벤더 응답 변경이 `undefined` 로 조용히 흘러 주소가 빈 채로 저장된다.
  */
-export const postcodeResultSchema = z.object({
+const postcodeResultSchema = z.object({
   /** 도로명주소 — 예: '서울 강남구 테헤란로 152' */
   roadAddress: safeAddressText(200),
   /** 지번주소 — 도로명 미부여 건물의 폴백 */

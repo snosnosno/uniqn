@@ -13,9 +13,6 @@
 export const POSTCODE_SCRIPT_SRC =
   'https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
 
-/** 위젯이 iframe 을 붙이는 오리진 — CSP `frame-src` 에 등록해야 하는 값 */
-export const POSTCODE_FRAME_ORIGIN = 'https://postcode.map.kakao.com';
-
 /**
  * 임베드 옵션.
  * - `autoClose: false` — 선택 직후 위젯이 스스로 컨테이너를 걷어내면 언마운트 순서가 꼬인다.
