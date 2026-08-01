@@ -25,6 +25,8 @@
 | **S5-후속** | SETTLE-3 되돌리기 + 정산 게이트 status 축 | ~~`feat/settlement-revert-entry`~~ | ✅ **머지** | **#388** | `0ec9abc2c`. CI **9잡 전부 SUCCESS**(E2E 9m56s 포함, 재실행 없이 1회 통과. DB Tests 는 마이그 0건이라 미실행). 브랜치·워크트리 정리 완료. 마이그 **0건** — 파리티 **184/111 불변**(prod 실측). 상세=§5 |
 | **A-감사** | A레인 전체 사후 감사 | ~~`docs/wave-audit-20260801`~~ | ✅ **머지** | **#390** | `16a5bb1fa`. 분석은 메인 체크아웃에서 **읽기 전용**, 문서 커밋만 워크트리 `T-HOLDEM-audit` 에서. 산출물=[`docs/analysis/2026-08-01-work-schedule-wave-audit.md`](../analysis/2026-08-01-work-schedule-wave-audit.md). **코드 변경 0건.** CRITICAL 0 / HIGH 1(선재) / MEDIUM 11 / LOW 12. 파리티 **184/111 prod 실측 일치**. 상세=§5 |
 | **B1** | 주소 1단계 | ~~`claude/job-posting-address-map-lbrvzd`~~ | ✅ **머지** | **#391** | `33472d8be`. CI **9잡 전부 SUCCESS**(E2E 11m4s 포함, 재실행 없이 1회 통과). 마이그 **0건** — 파리티 184/111 불변. 재통합 후 재검증: quality **exit 0** · jest **599스위트 6573테스트 122스냅샷 전량 통과 exit 0** · e2e 주소 단언 **0건**(시드만) · knip 델타 0(이전 세션 실측). 리뷰 fable **APPROVE**(HIGH 0) / opus HIGH 3건 **전량 반영**. ✅ **M9 선행 불필요**(실측 정정 — B1 diff 는 지점 `location` 을 건드리지 않는다. §5 B1 주의 4번) |
+| **P1**(감사후속) | 정산 선택·집계 축 (M1+M2+M10) | `fix/settlement-selection-axis` | 🔨 **PR 생성** | **#393** | 감사 §7 P1. 마이그 **0건**. quality exit 0 · jest **600스위트 6578테스트 전량 통과** · red-green 실증(M1·M2 각각 되돌리면 해당 1건만 red) · 리뷰 fable **APPROVE**(CRITICAL 0/HIGH 0), MEDIUM 1건 반영 |
+| **P1**(감사후속) | 정산 선택·집계 축 (M1+M2+M10) | ~~`fix/settlement-selection-axis`~~ | ✅ **머지** | **#393** | `bc295df49`. CI **9잡 전부 pass**(E2E 는 `board.spec:88` 알려진 flake 로 1회 fail → 실패 잡 재실행 9m36s pass). 마이그 **0건**. quality exit 0 · jest **600스위트 6578테스트 전량 통과** · red-green 실증(M1·M2 각각 되돌리면 해당 1건만 red) · 리뷰 fable **APPROVE**(CRITICAL 0/HIGH 0), MEDIUM 1건 반영 |
 | **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
 | **S6** | 3-C 설계 | — | ⬜ | | 사용자 결정 필요 |
 | **S7** | 3-C 구현 | `feat/posting-time-change` | ⬜ | | S6 승인 후 |
@@ -500,6 +502,32 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
   - 🔑 **잔여 목록은 줄지 않는 경향이 있다** — F축 재판정 16건 중 **2건이 이미 해소**돼 있었다(`handle_new_user` 는 `{이름} 팀` 이 맞고 S1 기재가 stale · 레거시 색상 15종은 정확히 구현). 주기적 재판정이 값어치가 있다.
   - ⚠️ **`proconfig` 하드닝은 실제로는 안 터졌다** — 재정의 4함수 전부 `pg_temp` 보존(prod 실측). 가장 크게 걱정한 함정이 무사했다는 사실도 기록해 둔다.
   - 🔴 **메인 체크아웃에서 커밋하지 말 것** — 이 세션이 실증했듯 두 세션이 같은 트리를 쓰면 한쪽의 미커밋 편집이 다른 쪽 커밋에 조용히 삼켜진다. 문서만 고치는 세션도 예외가 아니다.
+
+### P1 (감사 후속 — 정산 선택·집계 축) — 2026-08-02 · 상태: 완료 (**PR #393 머지** `bc295df49`)
+
+- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-settlefix` / `fix/settlement-selection-axis` · HEAD `32c1f8d9a`(3커밋 = 구현 1 + 리뷰반영 1 + master 재통합 1)
+- **마이그 0건** — 파리티 불변(DB 미접촉). 근거 = 감사 산출물 §7 P1
+
+**끝난 것**
+- **M1** `settlementGrouping.ts` — 배지 집계가 `hasValidTimes` 만 보고 `isSettlableStatus` 를 빠뜨렸다. `isSettlableDateStatus` 술어를 뽑아 집계·일괄정산이 같은 축을 쓰게 했다. 파일 내 인라인 잔존 0건
+- **M2** `GroupedSettlementCard.tsx` — `isAllSelected` 분모를 '선택 가능한 행'으로 바꾸고, **그 축을 부모가 `selectableIds` 로 내려준다**(카드 자체 판정 = 부모 게이트와 어긋나는 구조라 판정처를 하나로 줄였다). 순회 대상·`Checkbox checked` 동치식 정리
+- **M10** `GroupedSettlementCard.selection.test.tsx` 5건 신설 — `SettlementList` 경유 렌더로 실배선을 밟는다
+- 검증: quality **exit 0** · jest **600 스위트 6578 테스트 122 스냅샷 전량 통과 exit 0** · 정산 도메인 단독 10스위트 105테스트 · e2e 파급 0건 · **red-green 실증**(M1 되돌리면 집계 1건만 red, M2 되돌리면 왕복 1건만 red)
+- 리뷰 fable **APPROVE**(CRITICAL 0 / HIGH 0 / MEDIUM 1 / LOW 3). MEDIUM 반영
+
+**이 세션에서 새로 알아낸 주의**
+1. 🚨 **"green 이다"는 "그 테스트가 결함을 잡는다"가 아니다.** 내가 쓴 테스트 1건이 지킨다고 주장한 가드를 못 잡았다 — 가드를 제거해도 5/5 green 이었고(직접 재현), 픽스처가 "전부 지급완료"라던 주석과 달리 pending 을 한 건 품어 정작 그 경로를 안 밟았다. **가드를 넣었으면 가드를 제거해 red 를 확인하라.**
+2. 🔑 **관찰 불가능한 방어는 그렇다고 적어라.** `selectableInGroup.length > 0` 가드는 현재 소비처 구조상 결과를 바꾸지 못한다(`isAllSelected` 의 유일 소비처인 루프가 같은 빈 집합을 순회). 제거하지 않되 **주석에 사실대로** 남겼다.
+3. 🚨 **`origin/master` 가 세션 도중 두 번 움직였다**(#390, #392). PR 직전 `fetch` + `merge` 는 형식이 아니라 실제 필요.
+4. ⚠️ **남은 축 불일치(휴면)**: `SettlementList.selectableWorkLogs` 는 `payrollStatus === 'pending'`, `getSettlableWorkLogIds` 는 `!== 'completed'` — `'failed'` 행에서 갈린다. writer 0곳이라 휴면이고 실경로는 부모 축 하나. 감사 M11 과 함께 처리할 것
+5. ⚠️ **선재 잔존**: 펼침+선택 모드에서 선택 불가 행에도 체크박스가 그려지고 눌러도 no-op — 이 PR 이 없앤 것과 같은 클래스다. `selectableIds` 가 카드까지 내려왔으므로 행에 스레딩하면 싸게 닫힌다
+
+**안 끝난 것**
+- ✅ CI **9잡 전부 pass** → 스쿼시 머지 `bc295df49`. ⚠️ E2E 는 1회차에 `board.spec.ts:88`(게시판, `page.goto: net::ERR_ABORTED`)로 fail — **정산 변경과 인과 없음**이고 메모리에 이미 기록된 알려진 flake다. 실패 잡만 재실행해 9m36s pass
+- 🔴 워크트리 `T-HOLDEM-settlefix` 정리 대기(정션 해제 선행 → `worktree remove` → 브랜치 삭제)
+- 🔴 후속 남음: **P3(유일한 HIGH, 권장 다음)** · P2 · P4 · P5 · P6 — 상세는 감사 산출물 §7
+
+---
 
 ### B1-PR (주소 검색 1단계 착지) — 2026-08-02 · 상태: 완료 (**PR #391 머지** `33472d8be`)
 
