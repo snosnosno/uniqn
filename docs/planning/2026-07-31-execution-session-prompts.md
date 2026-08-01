@@ -23,7 +23,8 @@
 | **S4** | 3-B + 3-E + 별-1 | ~~`feat/qr-badge-and-entry`~~ | ✅ **머지** | **#384** | `40dc21779`. CI **9잡 전부 SUCCESS**(E2E 9m55s 포함, 재실행 없이 1회 통과). 브랜치·워크트리 정리 완료. **마이그 0건** — 파리티 **184/111 불변**(prod 실측 재확인). 리뷰 opus→fable 2회, HIGH 2건 포함 지적 전량 반영 |
 | **S5** | 3-A + 3-D | ~~`feat/settlement-and-rename`~~ | ✅ **머지** | **#387** | `97bf7e85c`. CI **10잡 전부 SUCCESS**(E2E 10m14s 포함, 재실행 없이 1회 통과). 브랜치·워크트리 정리 완료. 마이그 2건은 **PR 이전에 prod 선적용**됨 — 재적용 금지. 상세=§5 |
 | **S5-후속** | SETTLE-3 되돌리기 + 정산 게이트 status 축 | ~~`feat/settlement-revert-entry`~~ | ✅ **머지** | **#388** | `0ec9abc2c`. CI **9잡 전부 SUCCESS**(E2E 9m56s 포함, 재실행 없이 1회 통과. DB Tests 는 마이그 0건이라 미실행). 브랜치·워크트리 정리 완료. 마이그 **0건** — 파리티 **184/111 불변**(prod 실측). 상세=§5 |
-| **B1** | 주소 1단계 | `claude/job-posting-address-map-lbrvzd` | ⬜ | | 독립 워크트리 |
+| **A-감사** | A레인 전체 사후 감사 | — (메인 체크아웃, 읽기 전용) | ✅ | — | 산출물=[`docs/analysis/2026-08-01-work-schedule-wave-audit.md`](../analysis/2026-08-01-work-schedule-wave-audit.md). **코드 변경 0건.** CRITICAL 0 / HIGH 1(선재) / MEDIUM 11 / LOW 12. 파리티 **184/111 prod 실측 일치**. 상세=§5 |
+| **B1** | 주소 1단계 | `claude/job-posting-address-map-lbrvzd` | 🔨 **구현완료·PR 미생성** | | HEAD `41da9114d`(1커밋). 마이그 **0건**. quality exit 0 · jest **599스위트 6566테스트 전량 통과** · 브라우저 실관찰 통과(CSP 위반 0건). 리뷰 opus→fable 진행. 🔴 **머지 전 P4(M9) 선행 필수**(단, B1 diff 자체는 M9 를 활성화하지 않음 — §5 참조) |
 | **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
 | **S6** | 3-C 설계 | — | ⬜ | | 사용자 결정 필요 |
 | **S7** | 3-C 구현 | `feat/posting-time-change` | ⬜ | | S6 승인 후 |
@@ -39,7 +40,7 @@
 | S4 | ~~`T-HOLDEM-qr`~~ | ✅ 정리완료(정션 해제 → `worktree remove` → 브랜치 삭제, 원본 `node_modules` 821 무손상) |
 | S5 | ~~`T-HOLDEM-settle`~~ | ✅ 정리완료(정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818** 무손상 확인) |
 | S5-후속 | ~~`T-HOLDEM-revert`~~ | ✅ 정리완료(정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818** 무손상 확인) |
-| B1·B2 | `T-HOLDEM-address` | ⬜ |
+| B1·B2 | `T-HOLDEM-address` | 🔨 **유지 중**(B1 구현완료, PR 미생성). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성(818 확인). `.env.local`·`.env.development.local` 은 gitignore 라 메인에서 복사해야 앱이 뜬다 |
 | S7 | `T-HOLDEM-timechange` | ⬜ |
 
 전부 `C:/Users/user/Desktop/` 아래. 머지 완료 세션의 워크트리는 다음 세션 착수 시 정리한다
@@ -464,6 +465,68 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 
 > 형식은 §2 세션 종료 프로토콜 4번 참조. **삭제하지 말고 쌓는다** —
 > 중단된 세션을 다시 여는 사람이 읽을 유일한 기록이다.
+
+### A-감사 (A레인 전체 사후 감사) — 2026-08-01 · 상태: 완료
+
+- 워크트리/브랜치: **없음** — 메인 체크아웃 `T-HOLDEM` / `master` `0d4d99309` 에서 **읽기 전용**으로 수행. 결함을 고치지 않았으므로 `T-HOLDEM-audit` 워크트리를 만들지 않았다. **소스 코드 변경 0건**(추가된 파일은 감사 산출물 1개 + 이 원장 갱신뿐).
+- **산출물**: [`docs/analysis/2026-08-01-work-schedule-wave-audit.md`](../analysis/2026-08-01-work-schedule-wave-audit.md)
+- **DB 마이그레이션 0건.** 파리티 **prod 실측 184 / 111** = 레포 기대값(`parity_baseline_guard.test.sql:91-92`) 일치.
+
+- **끝난 것** (전부 이 세션의 도구 출력 기준)
+  - 감사 축 **A~G 7축 전부** 수행(7 탐색 sonnet → 6 적대적 검증 fable, 13 에이전트 0 실패) + 메인 세션 독립 재검증.
+  - 판정: **CRITICAL 0 / HIGH 1 / MEDIUM 11 / LOW 12**. HIGH 1건은 이 웨이브가 만든 것이 아니라 **선재**(#356).
+  - 🔑 **이 세션의 핵심 발견 — 판정 복제 누락이 2건 더 있었다.** 둘 다 #388 이 `isSettlableWorkLogStatus` SSOT 를 세우며 소비처를 빠뜨린 것: ①`settlementGrouping.ts:252-254` summary 집계가 3축 중 1축만 봄 ②`GroupedSettlementCard.tsx:258` 그룹 체크박스가 '전체 행수' 축으로 남아 **혼합 그룹에서 해제 불가**(신규 회귀).
+  - 게이트: `npm test` **598 스위트 / 6534 테스트 / 122 스냅샷 전량 통과 exit 0**(기준값과 정확히 일치) · 파리티 prod 재실측 184/111 · 마이그 4건 **스네이크 본명으로 prod 대조 완료** · `e2e/` 별도 Grep **파급 0건** · `npm run quality` = **해당 없음**(코드 변경 0건).
+  - 최종 검증: 산출물 문서를 code-reviewer(fable)에 근거 검증 디스패치.
+
+- **안 끝난 것**
+  - 🔴 **결함 수선 0건** — 이 세션은 감사가 범위였다. 후속 PR 6묶음(P1~P6)을 산출물 §7 에 제안해 뒀다.
+  - 🔴 **E축 red-green 실증 미수행** — 읽기 전용이라 소스를 되돌려 red 를 확인하지 못했다. 정적 논증까지. 최우선 후보 3건은 산출물 §5 에 명시.
+  - 🔴 **M4 익스플로잇 미실행** — prod 무단 쓰기를 피하려 의도적으로 안 했다. 정책·권한·트리거 실측 근거 판정.
+  - jest "worker process failed to exit gracefully" 원인 스위트 미특정(exit 0·전량 통과라 신규 결함 아님까지만 확인).
+
+- **막힌 지점**: 없음.
+
+- **다음 세션에 넘기는 주의** (이 세션에서 새로 알아낸 것만)
+  - 🔴 **B1 머지 전에 M9 를 먼저 넣어라.** `VenueSettingsSheet.saveProfile` 이 `location` 을 `{name}` 으로 **전체 교체**한다 → B1 이 `district`/`detailedAddress` 를 추가하는 순간 지점 설정 저장 버튼이 사용자 주소를 소거한다. 순서를 놓치면 데이터가 사라진다.
+  - 🚨 **"막는 계층이 없다"와 "그래서 새로 할 수 있는 일이 있다"는 다른 명제다.** 선재 MEDIUM(`wl_update` WITH CHECK 부재)을 가설 3개로 쪼갠 결과 2개가 기각됐다(`fn_work_logs_pin_posting_id` 가 `job_posting_id` 를 고정, `protect_work_log_payroll_columns` 가 payroll 을 고정). 남은 `staff_id` 도 "위조 알림"은 증분이 아니다 — **`add_direct_staff` 가 이미 `authenticated` 에 GRANT 돼 있고 동의 검사가 없다**(prod 실측). 진짜 증분은 *출근·정산 완료 기록의 무음 삭제* 하나뿐. 권한 결함은 **차분(differential)으로 판정할 것.**
+  - 🚨 **알림 계약을 세우는 마이그가 그 계약을 스스로 어길 수 있다.** `20260731140000...sql:163-168` 이 *"그 버튼이 실제로 있을 때만 말한다"* 는 불변식을 주석으로 못박고도, 조건을 클라(`ScheduleDetailModal.tsx:536-539`)의 **진부분집합**으로 잡아 `cancellation_pending` 케이스를 놓쳤다. **트리거 조건은 클라 게이트와 집합 연산으로 대조할 것** — 문구를 읽는 것으로는 안 잡힌다.
+  - 🔑 **`e2e/` 시드와 prod 데이터 분포가 어긋나 있다.** prod `work_logs` 3행 중 **2행이 레거시 범위 `time_slot`** 인데 e2e 시드는 전부 단일값이다 — 실제 데이터 다수가 밟는 경로를 E2E 가 한 번도 안 밟는다. `application_id` 도 3행 중 2행이 NULL(취소 버튼 게이트가 걸리는 비율).
+  - 🔑 **prod 함수 검색은 이름 추측 금지.** `settleWorkLogWithTransaction` 은 DB RPC 가 아니라 **클라 TypeScript 메서드**다(prod 에 `%settle%` 함수 0개). "서버 게이트"라 불리던 것이 실은 클라 게이트였다 — 정산은 RPC 없이 원시 `.update()` 로 나간다(CLAUDE.md 규약 위반, LOW 로 기록).
+  - 🔑 **문서가 stale 인 방향은 한쪽이 아니다.** F축 재판정 16건 중 **2건이 이미 해소**돼 있었다(`handle_new_user` 기본명 · 레거시 색상 하위호환). 잔여 목록은 쌓이기만 하고 줄지 않는 경향이 있으니 주기적 재판정이 값어치가 있다.
+  - ⚠️ `proconfig` 하드닝은 이 웨이브에서 **실제로는 안 터졌다** — 재정의 4함수 전부 `pg_temp` 보존(prod 실측). 가장 크게 걱정한 함정이 무사했다는 사실도 기록해 둔다.
+
+### B1 (주소 검색 1단계) — 2026-08-01 · 상태: **구현 완료 · PR 미생성**(push/PR 은 사용자 명시 요청 대기)
+
+- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-address` / `claude/job-posting-address-map-lbrvzd` · HEAD `41da9114d`(1커밋, master `0d4d99309` 기준)
+- **마이그 0건** — 파리티 **184/111 불변**(DB 미접촉)
+
+**끝난 것** (검증 증거와 함께)
+- 우편번호 검색 전환: `PlaceSheet` 에 `mode:'postcode'` 인라인 추가(중첩 RN Modal 금지 준수), 주소 TextInput → 검색 버튼, 상세주소(층/호) 입력 신설, region 4단 폴백
+- 신규 `src/utils/address/postcodeAddress.ts`(zod 경계 검증 + region 해석) · `src/components/address/PostcodeSearch{,.web}.tsx`
+- CSP: `script-src += t1.daumcdn.net` · `frame-src += postcode.map.kakao.com`
+- **같이 고친 결함**(이번 변경이 만들어낼 것): `resolveMapQuery` 가 `detailedAddress` 최우선이라 '3층 301호'가 지도 검색어가 되는 문제 → `composeFullAddress` SSOT 로 교체(red→green 확인). `InfoTab` 주소 줄 동반 수정. `orderSheet.schema` district 50→200.
+- 검증: `npm run quality` **exit 0**(lint 0 errors) · jest **599 스위트 / 6566 테스트 전량 통과** · e2e 축 확인(PlaceSheet testID 0건, 주소 표시·길찾기 단언 0건)
+- **브라우저 실관찰**(정적 검사 대체 불가 게이트): ①프로덕션 CSP 를 실제 헤더로 붙인 페이지에서 위젯 정상 렌더 + 콘솔 위반 **0건** ②실제 앱(주문서→장소→주소 검색)에서 검색·선택·지역 자동선택(`분당구`)·상세주소 노출 확인
+
+**안 끝난 것**
+- 🔴 **PR 미생성** — push/PR 은 사용자 명시 요청 시에만(원장 §2 규율). 워크트리·브랜치 유지 중
+- 🔴 **네이티브 WebView 실기기 미검증** — 실기기 QA 제외 결정이라 이 경로는 검증 수단이 0이다. 브릿지 파싱만 유닛 테스트로 고정했고 WebView 렌더·가상키보드·iframe 입력은 미검증
+- knip 래칫 미확인(종료 게이트 밖)
+
+**막힌 지점**: 없음
+
+**다음 세션에 넘기는 주의** (이 세션에서 새로 알아낸 것만)
+1. 🚨 **설계 문서 §2-H 가 틀렸다** — `react-native-webview` 를 `src/` 에서 직접 import 하는 코드는 **0건**이었다(PortOne RN SDK 가 내부적으로 쓸 뿐). 이번이 레포 최초 직접 사용이고, **jest 목이 없어 order-sheet 계열 10개 스위트가 통째로 실행조차 안 됐다**(실패 테스트 1개인데 실패 스위트 11개면 이 신호). `jest.setup.js` 에 목 추가로 해결.
+2. 🚨 **CSP 검증은 dev 서버로 불가** — `_headers` 는 Cloudflare Pages 파일이라 `expo start --web` 에 적용되지 않는다. 또 위젯 iframe **스킴이 페이지 프로토콜을 따라간다**(`postcode.v2.js`: `w = "http:" !== CONT.PROTOCOL`) → http 로컬 프로브는 `frame-src https://...` 에 걸린다. playwright 는 self-signed 인증서를 거부하므로 https 프로브 불가.
+3. 🚨 **`district` 는 시군구가 아니라 주소다.** `district ?? address` 붕괴가 **4곳 전부 district 우선**이라, 편집 화면에서 `address` 만 갱신하면 stale district 가 이겨 새 주소가 조용히 사라진다.
+4. 🔑 **M9 는 B1 diff 가 활성화하지 않는다**(실측 정정) — B1 은 공고 location 만 건드리고, 지점 컨테이너 location 의 **유일한 writer** 는 `VenueSettingsSheet` 뿐이다(`update_venue_container` 호출부 전수 확인). 감사 문서는 B1 이 지점 시트에도 주소를 넣는다고 가정했으나 1단계 범위가 아니다. M9 는 선재 결함이며 **지점 시트에 주소를 넣는 순간** 활성화된다.
+5. ⚠️ **`update_venue_profile` RPC 는 district 100자 서버 게이트**(`20260731120000_venue_profile_rpcs.sql:168-170`) — 클라 200 / 지점서버 100 / 공고 무제한 **3원 불일치**. B2 나 지점 주소 확장 시 서버가 거부한다.
+6. 🔑 **지역 택소노미는 2026-07 개편이 이미 반영돼 있다**(설계 문서 §8 미확인 항목의 답) — 인천 신설 4구·화성시 4구 전부 존재. 위험은 반대 방향(위젯이 개편 전 구명을 줄 때)이라 ②단계 폴백이 그걸 받는다.
+7. 🔑 **위젯 실응답은 39개 키** — 우리가 쓰는 건 5개뿐이라 zod `.strict()` 금지. `sido` 축약형(`경기`)·`sigungu` 2단계 문자열(`성남시 분당구`)을 **관찰로** 확정해 픽스처에 고정했다.
+8. 🔑 새 워크트리는 `.env.local`·`.env.development.local`(gitignore)을 메인에서 복사해야 앱이 뜬다 — 없으면 "환경변수 검증 실패"로 부팅 실패.
+
+---
 
 ### S5-후속 (SETTLE-3 + 정산 게이트 status 축) — 2026-08-01 · 상태: 완료 (**PR #388 머지** `0ec9abc2c`)
 
