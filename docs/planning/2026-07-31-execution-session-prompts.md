@@ -32,7 +32,7 @@
 | **P4**(감사후속) | 지점 `location` 병합 (M9) | ~~`fix/venue-location-merge`~~ | ✅ **머지** | **#395** | `2e8255dd5`. CI **9잡 전부 pass**(E2E 10m26s 포함, 재실행 0회). 마이그 **0건**(서버 RPC 무변경 — 치환은 의도된 계약). quality 통과 · jest 14/14 · red-green 실증(병합을 되돌리면 신규 2건만 red) · 리뷰 fable **APPROVE**(CRITICAL/HIGH/MEDIUM 0, LOW 3 중 2건 반영). ✅ **B1 선행 불필요 확정** |
 | **P6**(감사후속) | 오프라인 캐시 TTL 분리 (M6) | ~~`fix/offline-cache-policies`~~ | ✅ **머지** | **#398** | `40040c8fb`. CI **9잡 전부 pass**(E2E 11m5s 포함, **재실행 0회**). 재통합(#397 P2 · #395 P4 · **#396 P3**) 후 재검증: quality **0 errors**(eslint 경고 98 선재 · prettier clean) · 전체 jest **602스위트 6599테스트 122스냅샷 전량 통과** · pre-push quality 통과. 마이그 **0건**. 감사 5줄 → **실측 6줄**(`useWorkLogs.ts:269` 추가 발견). `offlineCachePolicies` 5키 + **브랜드 타입 `OfflineTtlMs`** 로 컴파일 타임 차단. quality 통과 · jest 600스위트 6583테스트 · **red-green 2종**(호출부 원복 시 tsc 6곳 TS2322 + 테스트 5건 red / 정책값 오염 시 백스톱 2건 red) · 리뷰 fable **APPROVE**(CRITICAL 0/HIGH 0, MEDIUM 1 반영) |
 | **P5**(감사후속) | 방어심화 (M4+L2+L1 절반) | ~~`feat/settlement-rpc-and-defense`~~ | ✅ **머지** | **#400** | `95772ce49`. **타 세션 소관** — 세션 A2 가 P6 를 머지하는 사이에 착지했다. 신원 컬럼 고정 트리거 + `time_slot` CHECK + 정산 상태 RPC 화. 🔴**마이그 2건 prod 적용 완료 — 재적용 금지**(기록명 `20260801212753 work_logs_identity_pin_and_time_slot_check`·`20260801212843 set_work_log_payroll_status_rpc`, 파일명과 다름). 파리티 **184→186** / 정책 111 불변(prod 실측), `PARITY_EXPECT_FUNCS` 도 이 PR 에서 186 으로 갱신됨. quality exit 0 · jest **600스위트 6583테스트** · pgTAP **91파일 951테스트**(기준선 88/912) · red-green **5종 1:1 실증**. 리뷰 fable planner·fable/opus database-reviewer 3인 반영. 감사의 M4 처방(컬럼 REVOKE)은 무효였고 트리거로 대체. **L1 은 절반** — 확정·일괄 RPC화와 직접쓰기 차단은 다음 세션(상세=§5) |
-| **세션 E**(P2·P3 후속) | 병합 키 표류 + 오프라인 침묵 취소 (클라 전용 2건) | `fix/schedule-merge-key` | 🔨 **커밋 3건** | — | HEAD `3fb6a4326`. **마이그 0건** — 파리티 **186/111 불변**(`PARITY_EXPECT_FUNCS` 미변경). quality **0 errors**(eslint 경고 98 선재·prettier clean) · tsc 0 errors · 전체 jest **602스위트 6612테스트 122스냅샷 전량 통과**. **red-green 6종 1:1 실증**. 리뷰 fable **APPROVE**(CRITICAL/HIGH/MEDIUM **전부 0**, LOW 3 — 2건 반영·1건은 지적 아님). 상세=§5 |
+| **세션 E**(P2·P3 후속) | 병합 키 표류 + 오프라인 침묵 취소 (클라 전용 2건) | `fix/schedule-merge-key` | 🔨 **커밋 3건** | — | HEAD `a2aaa66d8`. **마이그 0건** — **파리티 기여 0**(`PARITY_EXPECT_FUNCS` 미변경). ⚠️ 착수 시점 값은 186/111 이었으나 **절대값은 세션 D 의 prod 선적용으로 이동했다**(그 세션 소관) — 이 브랜치는 그 값을 건드리지 않는다. quality **0 errors**(eslint 경고 98 선재·prettier clean) · tsc 0 errors · 전체 jest **602스위트 6612테스트 122스냅샷 전량 통과**. **red-green 6종 1:1 실증**. 리뷰 fable **APPROVE**(CRITICAL/HIGH/MEDIUM **전부 0**, LOW 3 — 2건 반영·1건은 지적 아님). 상세=§5 |
 | **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
 | **S6** | 3-C 설계 | — | ⬜ | | 사용자 결정 필요 |
 | **S7** | 3-C 구현 | `feat/posting-time-change` | ⬜ | | S6 승인 후 |
@@ -498,7 +498,7 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 ### 세션 E (P2·P3 후속 — 병합 키 표류 + 오프라인 침묵 취소) — 2026-08-02 · 상태: 완료(PR 미생성, 사용자 결정 대기)
 
 - 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-schedkey` / `fix/schedule-merge-key` · HEAD `3fb6a4326`(3커밋)
-- **마이그레이션 0건** (세션 D 가 슬롯 점유 중이라 절대 조건이었다). 파리티 **186/111 불변** — `PARITY_EXPECT_FUNCS` 미변경.
+- **마이그레이션 0건** (세션 D 가 슬롯 점유 중이라 절대 조건이었다). **파리티 기여 0** — `PARITY_EXPECT_FUNCS` 미변경. ⚠️ 착수 시점 186/111 이었으나 절대값은 세션 D 의 prod 선적용으로 이동했다(그 세션 소관).
 - 파일 5개 전부 내 레인 — 세션 D(`settlement/**`)와 겹침 0. 배럴·공용 상수 미변경.
 
 **끝난 것** (전부 이 세션의 도구 출력 기준)
