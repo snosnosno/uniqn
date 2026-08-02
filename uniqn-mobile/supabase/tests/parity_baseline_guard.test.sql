@@ -80,9 +80,10 @@
 --   2026-08-02 정산 확정·일괄 RPC 화(L1 잔여, prod 적용 완료 — 재적용 금지):
 --     함수 189 = 186 + fn_settlement_amount·settle_work_log·bulk_settle_work_logs 3
 --     정책 111 불변(RPC 신설만, RLS 미변경).
---     🔴 prod 기록은 **3건**인데 레포 파일은 2개다 — `settlement_amount_calculator_comments`
---        (20260802003419)는 계산기 본문 주석 누락을 고친 **재적용**이라 별도 파일이 없다.
---        레포↔prod 는 md5(prosrc) 대조로 4/4 일치 확인했다.
+--     🔴 prod 기록은 **4건**인데 레포 파일은 2개다. 뒤 2건은 같은 두 함수의 **재정의**라
+--        별도 파일이 없다: `settlement_amount_calculator_comments`(20260802003419, 본문 주석 누락 복구) ·
+--        `settlement_calc_json_null_and_notes_guard`(리뷰 지적 반영 — JSON null 3지점 + 메모 가드).
+--        레포↔prod↔로컬은 md5(prosrc, CR 제거) 대조로 4/4 일치 확인했다. **함수 수는 불변**.
 --
 -- ⚠️ 유지보수 계약: 이후 마이그레이션이 public 함수/정책을 추가·삭제하면
 --   이 기대값을 같은 PR에서 함께 갱신해야 한다. 갱신을 강제당하는 것 자체가

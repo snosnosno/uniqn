@@ -47,9 +47,25 @@ DECLARE
   v_calc       jsonb;
   v_amount     numeric;
   v_allow_snap jsonb;
+  v_notes      text;
 BEGIN
   IF v_actor IS NULL THEN
     RAISE EXCEPTION 'PERMISSION_DENIED: 인증이 필요합니다';
+  END IF;
+
+  -- 메모 검증. 형제 함수 set_work_log_payroll_status 의 p_reason 은 상한·XSS 를 강제하는데
+  -- 여기만 무검증이면 비대칭이고, `work_logs_xss_check` 트리거는 ('notes','custom_role') 만
+  -- 커버해서 payroll_notes 에는 서버 계층이 아예 없다.
+  -- 🔴 L1 3단계(직접 UPDATE 차단) 뒤에는 이 RPC 가 payroll_notes 로 가는 **유일한 문**이 된다.
+  -- 상한이 사유(200자)보다 넉넉한 건 메모의 용도가 달라서다(정산 회차 메모 등).
+  v_notes := p_notes;
+  IF v_notes IS NOT NULL THEN
+    IF length(v_notes) > 500 THEN
+      RAISE EXCEPTION 'INVALID_INPUT: 정산 메모는 500자 이하여야 합니다';
+    END IF;
+    IF v_notes ~* '<\s*script|javascript\s*:|on\w+\s*=|<\s*iframe|<\s*object|<\s*embed' THEN
+      RAISE EXCEPTION 'INVALID_INPUT: 정산 메모에 허용되지 않는 문자가 포함되어 있습니다';
+    END IF;
   END IF;
 
   -- 🔑 FOR UPDATE — 확정은 금전 기록을 만드는 조작이라 상태 확인과 쓰기 사이가 벌어지면 안 된다.
@@ -104,10 +120,13 @@ BEGIN
   -- ES-003: 확정 시점에 공고 수당을 스냅샷한다(공고를 나중에 고쳐도 과거 정산이 흔들리지 않게).
   -- ⚠️ 컨테이너는 스냅샷 대상이 아니다 — 클라의 경량 투영이 compensation 을 {} 로 만들어
   --    애초에 스냅샷할 값이 없었다. 그 동작을 그대로 옮긴다.
+  -- 🔴 JSON null 주의: `compensation -> 'allowances'` 가 `'null'::jsonb` 면 그대로 컬럼에 써 넣게 되고,
+  --    되돌리기 후 재확정 때 `custom_allowances IS NOT NULL` 이 참이 되어 **override 로 오판**된다.
+  --    구 클라는 `postingAllowances` truthy 가드로 우연히 걸러내고 있었다.
   v_allow_snap := CASE
     WHEN v_is_container THEN NULL
-    WHEN v_wl.custom_allowances IS NOT NULL THEN NULL
-    ELSE v_job.compensation -> 'allowances'
+    WHEN NULLIF(v_wl.custom_allowances, 'null'::jsonb) IS NOT NULL THEN NULL
+    ELSE NULLIF(v_job.compensation -> 'allowances', 'null'::jsonb)
   END;
 
   UPDATE public.work_logs SET
@@ -116,7 +135,7 @@ BEGIN
     payroll_date   = v_now,
     -- p_notes 가 NULL 이면 "미지정" 이다(클라의 `notes !== undefined` 와 같은 의미).
     -- 기존 메모를 지우는 경로는 전환 전에도 없었다.
-    payroll_notes  = COALESCE(p_notes, payroll_notes),
+    payroll_notes  = COALESCE(v_notes, payroll_notes),
     custom_allowances = COALESCE(v_allow_snap, custom_allowances),
     updated_at     = v_now
   WHERE id = p_work_log_id;

@@ -264,6 +264,60 @@ const FIXTURES: Fixture[] = [
     posting: REAL_POSTING,
     expected: 116040, // defaultSalary 20000 × 5h = 100000 + 20000 = 120000, 세금 3960
   },
+  // ── 17~21: fable 리뷰(2026-08-02)가 지목한 "조용히 0원" 클래스. 5건 중 3건이 실제 결함이었고
+  //          2건(M1-c allowances=null · M2 role='')은 양쪽이 이미 같은 값을 내 **오탐**이었다.
+  //          오탐도 픽스처로 남긴다 — 다음에 같은 의심이 들 때 다시 파헤치지 않게.
+  {
+    name: '17 compensation.defaultSalary 가 JSON null 이면 카탈로그 첫 단가로 폴백한다',
+    workLog: { checkInTime: IN, checkOutTime: OUT_5H, role: 'serving' },
+    posting: {
+      status: 'active',
+      schedule: { requirements: [{ timeSlots: [{ roles: [{ role: 'dealer', count: 1 }] }] }] },
+      roleCatalog: [{ role: 'dealer', salary: { type: 'hourly', amount: 20000 } }],
+      compensation: { defaultSalary: null },
+    },
+    expected: 100000, // 🔴 SQL 이 'null'::jsonb 를 급여 객체로 오인해 0원을 내던 자리
+  },
+  {
+    name: '18 카탈로그 항목의 salary 가 JSON null 이면 없는 것으로 본다',
+    workLog: { checkInTime: IN, checkOutTime: OUT_5H, role: 'dealer' },
+    posting: {
+      status: 'active',
+      schedule: { requirements: [{ timeSlots: [{ roles: [{ role: 'dealer', count: 1 }] }] }] },
+      roleCatalog: [{ role: 'dealer', salary: null }],
+      compensation: {},
+    },
+    expected: 75000, // 폴백 15,000 × 5h. 🔴 SQL 이 0원을 내던 자리
+  },
+  {
+    name: '19 컨테이너 단가표 항목에 salary 가 없으면 폴백 15,000/h',
+    workLog: { checkInTime: IN, checkOutTime: OUT_5H, role: 'dealer' },
+    posting: CONTAINER([{ role: 'dealer' }]),
+    expected: 75000, // 🔴 SQL 이 salary 키를 JSON null 로 만들어 0원을 내던 자리
+  },
+  {
+    name: '20 taxableItems 값이 문자열 "false" 면 제외되지 않는다 (JS 는 !== false)',
+    workLog: {
+      checkInTime: IN,
+      checkOutTime: OUT_1H,
+      role: 'dealer',
+      customSalaryInfo: { type: 'hourly', amount: 10000 },
+      customTaxSettings: { type: 'rate', value: 10, taxableItems: { basePay: 'false' } },
+    },
+    posting: BARE_POSTING,
+    expected: 9000, // 과세표준 10000 → 세금 1000. 🔴 SQL 이 문자열을 불리언과 합류시켜 10000 을 내던 자리
+  },
+  {
+    name: '21 schedule 역할이 빈 문자열이면 매칭 불가 — 폴백(카탈로그 첫 단가)로 간다',
+    workLog: { checkInTime: IN, checkOutTime: OUT_5H, role: 'dealer' },
+    posting: {
+      status: 'active',
+      schedule: { requirements: [{ timeSlots: [{ roles: [{ role: '', count: 1 }] }] }] },
+      roleCatalog: [{ role: 'dealer', salary: { type: 'hourly', amount: 30000 } }],
+      compensation: {},
+    },
+    expected: 150000, // getPostingDefaultSalary 가 카탈로그 첫 salary 로 폴백해 결과가 같다(오탐이었던 축)
+  },
 ];
 
 describe('정산 금액 계산기 짝 픽스처 (클라 ↔ fn_settlement_amount)', () => {
@@ -273,6 +327,6 @@ describe('정산 금액 계산기 짝 픽스처 (클라 ↔ fn_settlement_amount
 
   it('🔴 픽스처 수가 짝 pgTAP 파일과 같다 (한쪽만 추가하면 여기서 깨진다)', () => {
     // supabase/tests/settlement_amount_calc.test.sql 의 plan() 도 같은 수를 쓴다.
-    expect(FIXTURES).toHaveLength(16);
+    expect(FIXTURES).toHaveLength(21);
   });
 });

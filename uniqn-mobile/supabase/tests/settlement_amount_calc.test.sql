@@ -6,7 +6,7 @@
 -- 🔴 이 파일은 짝이 있다:
 --      src/domains/settlement/__tests__/settlementAmountParity.test.ts
 --    같은 입력 · 같은 기대값이며, 케이스를 한쪽에만 추가하면 양쪽의 개수 단언이 깨진다.
---    (여기 plan(17) = 픽스처 16 + 시그니처 1, 저쪽 FIXTURES.length === 16)
+--    (여기 plan(22) = 픽스처 21 + 시그니처 1, 저쪽 FIXTURES.length === 21)
 --
 -- 왜 이 형태인가:
 --   `fn_settlement_amount` 는 테이블을 읽지 않는 **순수 함수**(IMMUTABLE)라
@@ -24,11 +24,16 @@
 --   14    빈 객체 수당 override 도 override 다(공고 수당 무시)
 --   15    role='other' + customRole 매칭
 --   16    role 이 빈 문자열이면 단가표를 보지 않고 폴백으로 간다(NULL 만 보면 놓친다)
+--   17~21 fable 리뷰(2026-08-02)가 지목한 "조용히 0원" 클래스. 🔴 **jsonb 의 JSON null 은 SQL NULL 이 아니다** —
+--         `'{"defaultSalary":null}'::jsonb -> 'defaultSalary'` 는 `'null'::jsonb` 라 `IS NULL` 을 통과 못 하고,
+--         amount 없는 급여 객체로 계산돼 0원이 확정된다. 17·18·19 가 그 3지점을 각각 고정한다.
+--         20 은 taxableItems 값이 문자열 `"false"` 인 경우(JS `!== false` 는 포함).
+--         21 은 리뷰가 발산이라 본 축인데 **양쪽이 같은 값**이었다(오탐) — 재조사를 막으려 남긴다.
 --
 -- 안전: BEGIN/ROLLBACK, 쓰기 없음.
 -- ============================================================
 BEGIN;
-SELECT plan(17);
+SELECT plan(22);
 
 -- 0. 시그니처 고정 — 인자 순서가 바뀌면 호출부가 조용히 다른 값을 넣게 된다.
 SELECT is(
@@ -182,6 +187,53 @@ SELECT is(
   116040::numeric,
   '16 역할 미지정(빈 문자열)은 단가표를 보지 않고 폴백으로 간다')
 FROM sac_posting p;
+
+-- 17 🔴 defaultSalary 가 JSON null → 카탈로그 첫 단가로 폴백
+SELECT is(
+  (public.fn_settlement_amount('2026-08-01T10:00:00Z', '2026-08-01T15:00:00Z', 'serving', NULL,
+    NULL, NULL, NULL, 'active',
+    '{"requirements":[{"timeSlots":[{"roles":[{"role":"dealer","count":1}]}]}]}'::jsonb,
+    '[{"role":"dealer","salary":{"type":"hourly","amount":20000}}]'::jsonb,
+    '{"defaultSalary":null}'::jsonb) ->> 'afterTaxPay')::numeric,
+  100000::numeric,
+  '17 compensation.defaultSalary 가 JSON null 이면 카탈로그 첫 단가로 폴백한다');
+
+-- 18 🔴 카탈로그 salary 가 JSON null → 없는 것으로 본다
+SELECT is(
+  (public.fn_settlement_amount('2026-08-01T10:00:00Z', '2026-08-01T15:00:00Z', 'dealer', NULL,
+    NULL, NULL, NULL, 'active',
+    '{"requirements":[{"timeSlots":[{"roles":[{"role":"dealer","count":1}]}]}]}'::jsonb,
+    '[{"role":"dealer","salary":null}]'::jsonb, '{}'::jsonb) ->> 'afterTaxPay')::numeric,
+  75000::numeric,
+  '18 카탈로그 항목의 salary 가 JSON null 이면 없는 것으로 본다');
+
+-- 19 🔴 컨테이너 단가표 항목에 salary 가 없음 → 폴백 15,000/h
+SELECT is(
+  (public.fn_settlement_amount('2026-08-01T10:00:00Z', '2026-08-01T15:00:00Z', 'dealer', NULL,
+    NULL, NULL, NULL, 'container',
+    '{"kind":"dated","roleSalaries":[{"role":"dealer"}]}'::jsonb,
+    '[]'::jsonb, '{}'::jsonb) ->> 'afterTaxPay')::numeric,
+  75000::numeric,
+  '19 컨테이너 단가표 항목에 salary 가 없으면 폴백 15,000/h');
+
+-- 20 🔴 taxableItems 값이 문자열 "false" 면 제외되지 않는다
+SELECT is(
+  (public.fn_settlement_amount('2026-08-01T10:00:00Z', '2026-08-01T11:00:00Z', 'dealer', NULL,
+    '{"type":"hourly","amount":10000}'::jsonb, NULL,
+    '{"type":"rate","value":10,"taxableItems":{"basePay":"false"}}'::jsonb, 'active',
+    '{"requirements":[]}'::jsonb, '[]'::jsonb, '{}'::jsonb) ->> 'afterTaxPay')::numeric,
+  9000::numeric,
+  '20 taxableItems 값이 문자열 "false" 면 제외되지 않는다 (JS 는 !== false)');
+
+-- 21 schedule 역할이 빈 문자열 → 매칭 불가, 폴백(카탈로그 첫 단가)
+SELECT is(
+  (public.fn_settlement_amount('2026-08-01T10:00:00Z', '2026-08-01T15:00:00Z', 'dealer', NULL,
+    NULL, NULL, NULL, 'active',
+    '{"requirements":[{"timeSlots":[{"roles":[{"role":"","count":1}]}]}]}'::jsonb,
+    '[{"role":"dealer","salary":{"type":"hourly","amount":30000}}]'::jsonb,
+    '{}'::jsonb) ->> 'afterTaxPay')::numeric,
+  150000::numeric,
+  '21 schedule 역할이 빈 문자열이면 매칭 불가 — 폴백(카탈로그 첫 단가)로 간다');
 
 SELECT * FROM finish();
 ROLLBACK;

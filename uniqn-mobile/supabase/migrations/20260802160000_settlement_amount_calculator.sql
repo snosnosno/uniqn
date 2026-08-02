@@ -124,8 +124,9 @@ BEGIN
     -- getPostingRoleKey(= role==='other' && customRole ? 'other:'||customRole : role ?? '')
     -- 로 중복 제거하고, salary 는 **roleCatalog 에서 같은 키**로 찾아 붙인다.
     -- ⚠️ 요구사항(requirements)에 등장하지 않는 카탈로그 역할은 목록에 없다 → 매칭 실패 → 폴백.
-    -- ⚠️ toRoleRequirement 가 role 결측을 'dealer' 로 기본값 처리한다(키는 '' 인데 엔트리는 dealer).
-    --    기이하지만 원본 동작이라 그대로 옮긴다.
+    -- ⚠️ toRoleRequirement 의 `role.role ?? 'dealer'` 는 **nullish** 라 결측만 dealer 로 만들고
+    --    빈 문자열은 통과시킨다. 그래서 `COALESCE(->>)` 만 쓰고 NULLIF 로 '' 를 승격시키면 안 된다 —
+    --    승격하면 카탈로그 키까지 dealer 가 되어 없는 단가를 붙이고 JS 와 갈라진다.
     SELECT COALESCE(jsonb_agg(e ORDER BY ord), '[]'::jsonb) INTO v_roles
     FROM (
       SELECT DISTINCT ON (d.k) d.k, d.ord, d.e
@@ -136,7 +137,7 @@ BEGIN
                ELSE COALESCE(rl.obj ->> 'role', '') END AS k,
           (req.i * 1000000 + ts.i * 1000 + rl.i)                                     AS ord,
           jsonb_build_object(
-            'role',       COALESCE(NULLIF(rl.obj ->> 'role', ''), 'dealer'),
+            'role',       COALESCE(rl.obj ->> 'role', 'dealer'),
             'customRole', rl.obj -> 'customRole'
           )                                                                          AS e
         FROM jsonb_array_elements(
@@ -163,7 +164,7 @@ BEGIN
       INTO v_roles
     FROM jsonb_array_elements(v_roles) WITH ORDINALITY AS r(e, ord)
     LEFT JOIN LATERAL (
-      SELECT c.obj -> 'salary' AS salary
+      SELECT NULLIF(c.obj -> 'salary', 'null'::jsonb) AS salary
       FROM jsonb_array_elements(
              CASE WHEN jsonb_typeof(p_posting_role_catalog) = 'array'
                   THEN p_posting_role_catalog ELSE '[]'::jsonb END
@@ -179,28 +180,32 @@ BEGIN
 
     -- getPostingDefaultSalary: compensation.defaultSalary ?? roleCatalog 의 첫 salary 보유 항목.
     -- ?? 는 nullish 라 amount:0 이어도 객체가 있으면 그대로 채택된다.
-    v_default_salary := p_posting_compensation -> 'defaultSalary';
+    v_default_salary := NULLIF(p_posting_compensation -> 'defaultSalary', 'null'::jsonb);
     IF v_default_salary IS NULL THEN
-      SELECT c.obj -> 'salary' INTO v_default_salary
+      SELECT NULLIF(c.obj -> 'salary', 'null'::jsonb) INTO v_default_salary
       FROM jsonb_array_elements(
              CASE WHEN jsonb_typeof(p_posting_role_catalog) = 'array'
                   THEN p_posting_role_catalog ELSE '[]'::jsonb END
            ) WITH ORDINALITY AS c(obj, i)
-      WHERE c.obj -> 'salary' IS NOT NULL
+      WHERE NULLIF(c.obj -> 'salary', 'null'::jsonb) IS NOT NULL
       ORDER BY c.i
       LIMIT 1;
     END IF;
 
-    v_allow_src := p_posting_compensation -> 'allowances';
-    v_tax_src   := p_posting_compensation -> 'taxSettings';
+    v_allow_src := NULLIF(p_posting_compensation -> 'allowances', 'null'::jsonb);
+    v_tax_src   := NULLIF(p_posting_compensation -> 'taxSettings', 'null'::jsonb);
   END IF;
 
   -- ==========================================================
   -- 2. 유효 급여/수당/세금 — override 는 **객체 존재 여부**로만 판정한다.
   --    JS 가 `workLog.customAllowances ? … : …` 로 객체 truthy 를 보므로 빈 객체 {} 도 override 다.
   --    "비었으니 공고값으로 폴백" 같은 보정을 넣으면 원본과 달라진다.
+  -- 🔴 단, **jsonb 의 JSON null 은 SQL NULL 이 아니다.** `'{"defaultSalary":null}'::jsonb -> 'defaultSalary'`
+  --    는 `'null'::jsonb` 를 돌려주고 `IS NULL` 을 통과하지 못한다. 그대로 두면 amount 가 없는
+  --    급여 객체로 계산돼 **조용히 0원**이 확정된다(리뷰 지적 + 실측 확증: 3지점에서 0원 재현).
+  --    그래서 jsonb 를 꺼내는 모든 지점에 `NULLIF(x, 'null'::jsonb)` 를 건다.
   -- ==========================================================
-  IF p_custom_salary_info IS NOT NULL THEN
+  IF NULLIF(p_custom_salary_info, 'null'::jsonb) IS NOT NULL THEN
     v_salary := p_custom_salary_info;
   ELSE
     -- getRoleSalaryFromRoles
@@ -216,7 +221,7 @@ BEGIN
       -- Array.prototype.find 의미론 = **첫 일치**. 순서를 지켜야 한다.
       -- 카탈로그 항목이 role='other' + customRole 을 가지면 customRole 로 비교하고,
       -- 아니면 (role || name) 을 그대로 비교한다.
-      SELECT r.e -> 'salary' INTO v_salary
+      SELECT NULLIF(r.e -> 'salary', 'null'::jsonb) INTO v_salary
       FROM jsonb_array_elements(v_roles) WITH ORDINALITY AS r(e, ord)
       WHERE CASE
               WHEN (r.e ->> 'role') = 'other' AND COALESCE(r.e ->> 'customRole', '') <> ''
@@ -231,8 +236,8 @@ BEGIN
     v_salary := COALESCE(v_salary, v_default_salary, '{"type":"hourly","amount":15000}'::jsonb);
   END IF;
 
-  v_allow := COALESCE(p_custom_allowances, v_allow_src, '{}'::jsonb);
-  v_tax   := COALESCE(p_custom_tax_settings, v_tax_src, '{"type":"none","value":0}'::jsonb);
+  v_allow := COALESCE(NULLIF(p_custom_allowances, 'null'::jsonb), v_allow_src, '{}'::jsonb);
+  v_tax   := COALESCE(NULLIF(p_custom_tax_settings, 'null'::jsonb), v_tax_src, '{"type":"none","value":0}'::jsonb);
 
   -- ==========================================================
   -- 3. 근무 시간 — 반올림 없는 **원값**이다.
@@ -317,15 +322,17 @@ BEGIN
     v_items := v_tax -> 'taxableItems';
     -- ⚠️ opt-out 설계: `taxableItems.x !== false` — 키가 없으면 **포함**이다.
     --    `= 'true'` 로 쓰면 미지정 항목이 반대로 판정된다.
+    -- ⚠️ 비교는 `->>`(텍스트)가 아니라 `->`(jsonb) 로 한다. `->>` 를 쓰면 문자열 `"false"` 가
+    --    불리언 false 와 합류해 제외되는데, JS `!== false` 는 문자열을 **포함**시킨다.
     v_taxable :=
-        CASE WHEN COALESCE(v_items ->> 'basePay', '') <> 'false' THEN v_base ELSE 0 END
-      + CASE WHEN COALESCE(v_items ->> 'meal', '') <> 'false'
+        CASE WHEN NOT COALESCE(v_items -> 'basePay' = 'false'::jsonb, false) THEN v_base ELSE 0 END
+      + CASE WHEN NOT COALESCE(v_items -> 'meal' = 'false'::jsonb, false)
                   AND COALESCE(v_meal, 0) > 0 AND v_meal IS DISTINCT FROM -1 THEN v_meal ELSE 0 END
-      + CASE WHEN COALESCE(v_items ->> 'transportation', '') <> 'false'
+      + CASE WHEN NOT COALESCE(v_items -> 'transportation' = 'false'::jsonb, false)
                   AND COALESCE(v_trans, 0) > 0 AND v_trans IS DISTINCT FROM -1 THEN v_trans ELSE 0 END
-      + CASE WHEN COALESCE(v_items ->> 'accommodation', '') <> 'false'
+      + CASE WHEN NOT COALESCE(v_items -> 'accommodation' = 'false'::jsonb, false)
                   AND COALESCE(v_accom, 0) > 0 AND v_accom IS DISTINCT FROM -1 THEN v_accom ELSE 0 END
-      + CASE WHEN COALESCE(v_items ->> 'additional', '') <> 'false'
+      + CASE WHEN NOT COALESCE(v_items -> 'additional' = 'false'::jsonb, false)
                   AND COALESCE(v_addl, 0) > 0 THEN v_addl ELSE 0 END;
 
     -- 반올림은 **여기 한 곳**(과세표준 합산 후 1회). 항목별 개별 반올림이 아니다.

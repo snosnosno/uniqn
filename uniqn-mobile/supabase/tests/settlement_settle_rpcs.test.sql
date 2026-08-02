@@ -19,7 +19,7 @@
 --      위반과 겹쳐 게이트를 빼도 green 이 유지되는 red-스왑이 난다.
 -- ============================================================
 BEGIN;
-SELECT plan(16);
+SELECT plan(18);
 
 DO $$
 DECLARE
@@ -141,6 +141,20 @@ SELECT throws_like(
   format($q$SELECT public.settle_work_log(%L::uuid, NULL)$q$, current_setting('swl.wl_open')),
   'INVALID_STATUS%',
   '출퇴근이 완료되지 않은 근무 기록은 확정할 수 없다');
+
+-- 9-1. 🔴 메모 검증 — payroll_notes 는 `work_logs_xss_check` 트리거 커버 밖('notes','custom_role' 만)이라
+--      서버 계층이 이 RPC 뿐이다. L1 3단계 뒤에는 여기가 유일한 문이 된다.
+SELECT throws_like(
+  format($q$SELECT public.settle_work_log(%L::uuid, '<script>alert(1)</script>')$q$,
+         current_setting('swl.wl_ok')),
+  'INVALID_INPUT%',
+  'XSS 패턴이 든 정산 메모는 차단된다');
+
+SELECT throws_like(
+  format($q$SELECT public.settle_work_log(%L::uuid, %L)$q$,
+         current_setting('swl.wl_ok'), repeat('가', 501)),
+  'INVALID_INPUT%',
+  '500자를 넘는 정산 메모는 차단된다');
 
 -- 9. 없는 근무 기록
 SELECT throws_like(
