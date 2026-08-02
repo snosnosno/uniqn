@@ -114,11 +114,26 @@ function toUpdateSlotError(error: unknown): AppError | null {
       : typeof error === 'object' && error !== null && 'message' in error
         ? String((error as { message: unknown }).message)
         : String(error);
+  const code =
+    typeof error === 'object' && error !== null && 'code' in error
+      ? String((error as { code: unknown }).code)
+      : '';
 
   const userMessage = (fallback: string): string => {
     const idx = message.indexOf(': ');
     return idx >= 0 ? message.slice(idx + 2).trim() : fallback;
   };
+
+  // 🔑 데드락은 **재시도하면 성공하는** 실패다. 이 RPC 는 applications → work_logs 순으로 잠그는데,
+  //    QR 체크아웃 경로는 work_logs 를 잠근 뒤 `tr_sync_application_completion` 트리거가
+  //    applications 를 갱신해 순서가 역전된다(선재 클래스 — `cancel_application_atomically` 와
+  //    같은 트리거 사이에도 이미 존재한다). 같은 지원서에서 두 작업이 겹치면 한쪽이 40P01 로 중단된다.
+  //    매핑하지 않으면 '알 수 없는 오류'로 보여 사용자가 재시도할 이유를 알 수 없다.
+  if (code === '40P01' || message.includes('deadlock detected')) {
+    return new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+      userMessage: '다른 작업과 겹쳤어요. 잠시 후 다시 시도해주세요.',
+    });
+  }
 
   if (message.includes('PERMISSION_DENIED')) {
     return new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {

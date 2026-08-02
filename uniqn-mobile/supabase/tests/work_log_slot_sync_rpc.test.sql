@@ -26,7 +26,7 @@
 --    먼저 끝내고 반환값을 GUC 로 넘긴다.
 -- ============================================================
 BEGIN;
-SELECT plan(23);
+SELECT plan(27);
 
 DO $$
 DECLARE
@@ -53,25 +53,28 @@ DECLARE
   v_app_one   uuid := gen_random_uuid();
   v_app_dup   uuid := gen_random_uuid();
   v_app_cust  uuid := gen_random_uuid();
+  v_app_mr    uuid := gen_random_uuid();
   v_u_multi   uuid := gen_random_uuid();
   v_u_one     uuid := gen_random_uuid();
   v_u_dup     uuid := gen_random_uuid();
   v_u_cust    uuid := gen_random_uuid();
   v_u_direct  uuid := gen_random_uuid();
+  v_u_mr      uuid := gen_random_uuid();
   v_wl_d2     uuid := gen_random_uuid();
   v_wl_one    uuid := gen_random_uuid();
   v_wl_dup    uuid := gen_random_uuid();
   v_wl_cust   uuid := gen_random_uuid();
   v_wl_direct uuid := gen_random_uuid();
+  v_wl_mr     uuid := gen_random_uuid();
 BEGIN
   INSERT INTO auth.users (id, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
                           confirmation_token, recovery_token, email_change_token_new, email_change)
   SELECT u, 'uws_' || u || '@test.local', '{"role":"staff"}'::jsonb, '{}'::jsonb, now(), now(), '', '', '', ''
-  FROM unnest(ARRAY[v_u_multi, v_u_one, v_u_dup, v_u_cust, v_u_direct]) u;
+  FROM unnest(ARRAY[v_u_multi, v_u_one, v_u_dup, v_u_cust, v_u_direct, v_u_mr]) u;
 
   INSERT INTO public.users (id, email, name, role, is_active, identity_verified, created_at, updated_at)
   SELECT id, email, 'uws applicant', 'staff'::user_role, true, true, now(), now()
-  FROM auth.users WHERE id IN (v_u_multi, v_u_one, v_u_dup, v_u_cust, v_u_direct)
+  FROM auth.users WHERE id IN (v_u_multi, v_u_one, v_u_dup, v_u_cust, v_u_direct, v_u_mr)
   ON CONFLICT (id) DO UPDATE SET is_active = true, identity_verified = true;
 
   PERFORM set_config('uws.app_multi', v_app_multi::text, true);
@@ -83,6 +86,8 @@ BEGIN
   PERFORM set_config('uws.wl_dup',    v_wl_dup::text,    true);
   PERFORM set_config('uws.wl_cust',   v_wl_cust::text,   true);
   PERFORM set_config('uws.wl_direct', v_wl_direct::text, true);
+  PERFORM set_config('uws.app_mr',    v_app_mr::text,    true);
+  PERFORM set_config('uws.wl_mr',     v_wl_mr::text,     true);
 
   INSERT INTO public.applications (id, job_posting_id, applicant_id, applicant_name, status,
                                    assignments, created_at, updated_at)
@@ -108,6 +113,12 @@ BEGIN
     (v_app_cust, v_jp, v_u_cust, 'cust', 'confirmed',
      '[{"dates":["2026-09-25"],"roleIds":["바리스타"],"timeSlot":"18:00",
         "isGrouped":false,"groupId":"grp-cust","checkMethod":"individual"}]'::jsonb,
+     now(), now()),
+    -- ⑤ 한 원소가 **서로 다른 역할 2종**을 덮는다. 이것만이 분할의 B 조각
+    --    (같은 날 × 나머지 역할)을 실행시킨다 — 위 네 픽스처는 전부 A 또는 C 만 탄다.
+    (v_app_mr, v_jp, v_u_mr, 'mr', 'confirmed',
+     '[{"dates":["2026-09-15"],"roleIds":["dealer","floor"],"timeSlot":"19:00",
+        "isGrouped":false,"groupId":"grp-mr","checkMethod":"individual"}]'::jsonb,
      now(), now());
 
   INSERT INTO public.work_logs (id, application_id, assignment_group_id, staff_id, job_posting_id,
@@ -119,6 +130,8 @@ BEGIN
     (v_wl_dup, v_app_dup,   'grp-dup',   v_u_dup, v_jp, v_own, '2026-09-20', 'scheduled', 'dealer', NULL, '19:00', now(), now()),
     -- 커스텀 역할 행: 역할 키는 'other:바리스타' 다. time_slot 은 지원서와 이미 어긋나 있다.
     (v_wl_cust, v_app_cust, 'grp-cust',  v_u_cust, v_jp, v_own, '2026-09-25', 'scheduled', 'other', '바리스타', '20:30', now(), now()),
+    -- 다역할 원소의 dealer 셀. floor 셀은 work_log 없이 지원서에만 있다(형제 역할).
+    (v_wl_mr,  v_app_mr,   'grp-mr',    v_u_mr, v_jp, v_own, '2026-09-15', 'scheduled', 'dealer', NULL, '19:00', now(), now()),
     -- 🔑 add_direct_staff 산 행의 형태: application_id 가 NULL 이라 동기화 상대가 아예 없다.
     (v_wl_direct, NULL, NULL, v_u_direct, v_jp, v_own, '2026-09-30', 'scheduled', 'floor', NULL, '17:00', now(), now());
 END $$;
@@ -326,6 +339,47 @@ SELECT is(
   (SELECT w.time_slot FROM public.work_logs w WHERE w.id = (current_setting('uws.wl_direct'))::uuid),
   'no_application|18:30',
   'application_id 가 없는 행은 work_logs 만 갱신하고 이유를 반환한다');
+
+-- ── 다역할 원소 — 분할의 B 조각(같은 날 × 나머지 역할) ──────
+-- 🔑 리뷰(fable)가 짚은 구멍이다: 위 픽스처는 전부 roleIds 가 1종이라
+--    `v_rest_roles` 조립과 B 조각 생성이 **한 번도 실행되지 않았다.**
+--    B 가 회귀하면 형제 역할의 배정이 assignments 에서 조용히 증발하는데도 green 이었다.
+-- 24.
+SELECT lives_ok(
+  format($q$SELECT public.update_work_log_slot(%L::uuid, '{"startTime":"23:00"}'::jsonb)$q$,
+         current_setting('uws.wl_mr')),
+  '다역할 원소에서 한 역할만 편집하는 저장이 성공한다');
+
+-- 25. B 조각 — 편집하지 않은 형제 역할(floor)은 **원래 시각을 유지**해야 한다.
+SELECT is(
+  (SELECT (e->>'timeSlot') || '|' || (e->'roleIds')::text || '|' || (e->>'groupId')
+   FROM public.applications a, LATERAL jsonb_array_elements(a.assignments) e
+   WHERE a.id = (current_setting('uws.app_mr'))::uuid
+     AND e->'roleIds' @> '["floor"]'::jsonb),
+  '19:00|["floor"]|grp-mr',
+  '형제 역할(floor)은 19:00 을 유지하고 groupId 도 보존된다');
+
+-- 26. C 조각 — 편집한 역할(dealer)만 새 시각을 갖는다.
+SELECT is(
+  (SELECT (e->>'timeSlot') || '|' || (e->'roleIds')::text || '|' || (e->>'groupId')
+   FROM public.applications a, LATERAL jsonb_array_elements(a.assignments) e
+   WHERE a.id = (current_setting('uws.app_mr'))::uuid
+     AND e->'roleIds' @> '["dealer"]'::jsonb),
+  '23:00|["dealer"]|grp-mr',
+  '편집한 역할(dealer)만 23:00 으로 분리된다');
+
+-- 27. 🔴 전수 가드 — 이 세션이 건드린 어느 지원서에도 **JSON null 이 실리지 않아야** 한다.
+--     zod 는 `timeSlot: z.string()` 이라 널 하나가 지원서 레코드를 통째로 증발시킨다(A2 선례).
+--     19번은 미정 갈래 하나만 보지만 이건 모든 갈래의 모든 키를 본다.
+SELECT is(
+  (SELECT count(*)::int
+   FROM public.applications a,
+        LATERAL jsonb_array_elements(COALESCE(a.assignments, '[]'::jsonb)) e,
+        LATERAL jsonb_each(e) kv
+   WHERE a.job_posting_id = (current_setting('uws.jp_id'))::uuid
+     AND jsonb_typeof(kv.value) = 'null'),
+  0,
+  '갱신된 assignments 어느 키에도 JSON null 이 실리지 않는다 (zod 널 금지)');
 
 SELECT * FROM finish();
 ROLLBACK;

@@ -78,6 +78,19 @@ describe('updateSlot — 저장 경로(RPC 단일 관문)', () => {
     await expect(updateSlot('wl-1', { startTime: '19:00' })).resolves.toBeUndefined();
   });
 
+  it('데드락(40P01)은 재시도 가능한 안내로 변환한다', async () => {
+    // 이 RPC(applications→work_logs)와 QR 체크아웃 경로(work_logs→트리거→applications)의
+    // 잠금 순서가 역전돼 같은 지원서에서 겹치면 한쪽이 40P01 로 중단된다.
+    mockRpc.mockResolvedValue({
+      data: null,
+      error: { code: '40P01', message: 'deadlock detected' },
+    });
+
+    await expect(updateSlot('wl-1', { startTime: '19:00' })).rejects.toThrow(
+      '다른 작업과 겹쳤어요. 잠시 후 다시 시도해주세요.'
+    );
+  });
+
   it('서버가 던진 PERMISSION_DENIED 는 앱 에러로 변환한다', async () => {
     mockRpc.mockResolvedValue({
       data: null,
