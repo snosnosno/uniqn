@@ -113,7 +113,6 @@ export function ApplicationForm({
   const [message, setMessage] = useState('');
   const [selectedAssignments, setSelectedAssignments] = useState<Assignment[]>([]);
   const [selectedFixedRoleId, setSelectedFixedRoleId] = useState<string | null>(null);
-  const [errorQuestionIds, setErrorQuestionIds] = useState<string[]>([]);
   const questions = postingFacts.questions.items;
   const [preQuestionAnswers, setPreQuestionAnswers] = useState<PreQuestionAnswer[]>(() =>
     initializePreQuestionAnswers(questions)
@@ -189,14 +188,6 @@ export function ApplicationForm({
       return;
     }
 
-    if (hasPreQuestions) {
-      const unanswered = findUnansweredRequired(preQuestionAnswers);
-      if (unanswered.length > 0) {
-        setErrorQuestionIds(unanswered);
-        return;
-      }
-    }
-
     onSubmit(
       assignmentsForSubmit,
       message.trim() || undefined,
@@ -212,7 +203,6 @@ export function ApplicationForm({
     setMessage('');
     setSelectedAssignments([]);
     setSelectedFixedRoleId(null);
-    setErrorQuestionIds([]);
     setPreQuestionAnswers(initializePreQuestionAnswers(questions));
   }, [questions]);
 
@@ -318,7 +308,6 @@ export function ApplicationForm({
               answers={preQuestionAnswers}
               onAnswersChange={setPreQuestionAnswers}
               disabled={isSubmitting}
-              errorQuestionIds={errorQuestionIds}
             />
           </View>
         )}

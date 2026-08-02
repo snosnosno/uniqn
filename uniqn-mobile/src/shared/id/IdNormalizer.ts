@@ -1,12 +1,12 @@
 /**
  * UNIQN Mobile - ID 정규화 유틸리티
  *
- * @description jobPostingId, staffId/applicantId 정규화
- * @version 2.0.0
+ * @description jobPostingId 정규화
+ * @version 3.0.0 - Firebase 합성 키(`{jobPostingId}_{applicantId}`) 시절 헬퍼 제거.
+ *                  Supabase UUID PK 체계에서는 합성 키를 만들 이유가 없다.
  *
  * ## 역할
  * - WorkLog/Application에서 통합 jobPostingId 추출
- * - staffId/applicantId 정규화
  */
 
 import type { WorkLog, Application } from '@/types';
@@ -22,23 +22,6 @@ export interface JobIdDocument {
   jobPostingId?: string;
 }
 
-/**
- * 사용자 ID 필드를 가진 문서 타입
- */
-export interface UserIdDocument {
-  staffId?: string;
-  applicantId?: string;
-  userId?: string; // 레거시 호환
-}
-
-/**
- * Application ID 파싱 결과
- */
-export interface ParsedApplicationId {
-  jobPostingId: string;
-  applicantId: string;
-}
-
 // ============================================================================
 // IdNormalizer Class
 // ============================================================================
@@ -50,12 +33,8 @@ export interface ParsedApplicationId {
  * // 공고 ID 정규화
  * const jobId = IdNormalizer.normalizeJobId(workLog);
  *
- * // 사용자 ID 정규화
- * const userId = IdNormalizer.normalizeUserId(confirmedStaff);
- *
- * // 복합 ID 생성/파싱
- * const appId = IdNormalizer.generateApplicationId(jobPostingId, applicantId);
- * const { jobPostingId, applicantId } = IdNormalizer.parseApplicationId(appId);
+ * // WorkLog + Application 통합 공고 ID 추출
+ * const ids = IdNormalizer.extractUnifiedIds(workLogs, applications);
  */
 export class IdNormalizer {
   // ============================================================================
@@ -76,88 +55,8 @@ export class IdNormalizer {
   }
 
   // ============================================================================
-  // 사용자 ID 정규화
-  // ============================================================================
-
-  /**
-   * 문서에서 사용자 ID 추출 (정규화)
-   *
-   * @description 우선순위: staffId > applicantId > userId
-   * @param doc - staffId, applicantId, userId 중 하나를 가진 문서
-   * @returns 정규화된 사용자 ID (없으면 빈 문자열)
-   *
-   * @example
-   * // WorkLog (staffId 사용)
-   * IdNormalizer.normalizeUserId({ staffId: 'USER123' }) // 'USER123'
-   *
-   * // Application (applicantId 사용)
-   * IdNormalizer.normalizeUserId({ applicantId: 'USER123' }) // 'USER123'
-   */
-  static normalizeUserId(doc: UserIdDocument): string {
-    return doc.staffId || doc.applicantId || doc.userId || '';
-  }
-
-  // ============================================================================
-  // 복합 키 생성/파싱
-  // ============================================================================
-
-  /**
-   * Application ID 생성 (복합 키)
-   *
-   * @description WorkLog와 Application 연결을 위한 복합 키
-   * @param jobPostingId - 공고 ID
-   * @param applicantId - 지원자 ID
-   * @returns 복합 키 (jobPostingId_applicantId)
-   *
-   * @example
-   * IdNormalizer.generateApplicationId('JOB123', 'USER456')
-   * // 'JOB123_USER456'
-   */
-  static generateApplicationId(jobPostingId: string, applicantId: string): string {
-    return `${jobPostingId}_${applicantId}`;
-  }
-
-  /**
-   * Application ID 파싱 (복합 키 분해)
-   *
-   * @param applicationId - 복합 키 (jobPostingId_applicantId)
-   * @returns { jobPostingId, applicantId }
-   *
-   * @example
-   * IdNormalizer.parseApplicationId('JOB123_USER456')
-   * // { jobPostingId: 'JOB123', applicantId: 'USER456' }
-   */
-  static parseApplicationId(applicationId: string): ParsedApplicationId {
-    const parts = applicationId.split('_');
-    if (parts.length < 2) {
-      return { jobPostingId: applicationId, applicantId: '' };
-    }
-    // 첫 번째 부분이 jobPostingId, 나머지가 applicantId (userId에 _가 포함될 수 있음)
-    const [jobPostingId, ...rest] = parts;
-    return {
-      jobPostingId,
-      applicantId: rest.join('_'),
-    };
-  }
-
-  // ============================================================================
   // 배치 정규화
   // ============================================================================
-
-  /**
-   * WorkLog 배열에서 정규화된 공고 ID 추가
-   *
-   * @param workLogs - WorkLog 배열
-   * @returns 정규화된 ID가 추가된 배열
-   */
-  static normalizeWorkLogs<T extends JobIdDocument>(
-    workLogs: T[]
-  ): (T & { normalizedJobPostingId: string })[] {
-    return workLogs.map((wl) => ({
-      ...wl,
-      normalizedJobPostingId: this.normalizeJobId(wl),
-    }));
-  }
 
   /**
    * WorkLog와 Application에서 통합된 공고 ID Set 추출
@@ -193,44 +92,6 @@ export class IdNormalizer {
 
     return ids;
   }
-
-  /**
-   * 문서 배열에서 공고 ID 배열 추출 (중복 제거)
-   *
-   * @param docs - jobPostingId를 가진 문서 배열
-   * @returns 정규화된 공고 ID 배열 (중복 제거됨)
-   */
-  static extractJobIds(docs: JobIdDocument[]): string[] {
-    const ids = new Set<string>();
-
-    docs.forEach((doc) => {
-      const id = this.normalizeJobId(doc);
-      if (id) {
-        ids.add(id);
-      }
-    });
-
-    return Array.from(ids);
-  }
-
-  /**
-   * 문서 배열에서 사용자 ID 배열 추출 (중복 제거)
-   *
-   * @param docs - staffId 또는 applicantId를 가진 문서 배열
-   * @returns 정규화된 사용자 ID 배열 (중복 제거됨)
-   */
-  static extractUserIds(docs: UserIdDocument[]): string[] {
-    const ids = new Set<string>();
-
-    docs.forEach((doc) => {
-      const id = this.normalizeUserId(doc);
-      if (id) {
-        ids.add(id);
-      }
-    });
-
-    return Array.from(ids);
-  }
 }
 
 // ============================================================================
@@ -243,21 +104,6 @@ export class IdNormalizer {
 export const normalizeJobId = IdNormalizer.normalizeJobId.bind(IdNormalizer);
 
 /**
- * 사용자 ID 정규화 (함수형 API)
- */
-export const normalizeUserId = IdNormalizer.normalizeUserId.bind(IdNormalizer);
-
-/**
  * 통합 ID 추출 (함수형 API)
  */
 export const extractUnifiedIds = IdNormalizer.extractUnifiedIds.bind(IdNormalizer);
-
-/**
- * Application ID 생성 (함수형 API)
- */
-export const generateApplicationId = IdNormalizer.generateApplicationId.bind(IdNormalizer);
-
-/**
- * Application ID 파싱 (함수형 API)
- */
-export const parseApplicationId = IdNormalizer.parseApplicationId.bind(IdNormalizer);

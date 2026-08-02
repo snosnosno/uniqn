@@ -69,7 +69,6 @@ const typeIcons: Partial<Record<NotificationType, IconComponent>> = {
   [NotificationType.SETTLEMENT_COMPLETED]: BanknotesIcon,
   // 되돌리기는 완료와 같은 '돈' 계열이지만 방향이 반대라 경고 아이콘으로 구분한다.
   [NotificationType.SETTLEMENT_REVERTED]: ExclamationCircleIcon,
-  [NotificationType.SETTLEMENT_REQUESTED]: BanknotesIcon,
   [NotificationType.NEGATIVE_SETTLEMENT_ALERT]: ExclamationCircleIcon,
 
   // 공고 관련

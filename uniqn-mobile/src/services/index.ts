@@ -31,12 +31,8 @@ export {
   getSystemMetrics,
   reportService,
   createReport,
-  getReportsByJobPosting,
-  getReportsByStaff,
-  getMyReports,
   getReportById,
   reviewReport,
-  getReportCountByStaff,
   getAllReports,
 } from './admin';
 

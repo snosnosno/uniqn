@@ -211,7 +211,6 @@ export const queryKeys = {
   // 사용자
   user: {
     all: ['user'] as const,
-    current: () => [...queryKeys.user.all, 'current'] as const,
     profile: (uid: string) => [...queryKeys.user.all, 'profile', uid] as const,
     profileBatch: (userIds: string[]) =>
       [...queryKeys.user.all, 'profileBatch', [...userIds].sort().join(',')] as const,
@@ -232,9 +231,6 @@ export const queryKeys = {
   // 지원서
   applications: {
     all: ['applications'] as const,
-    lists: () => [...queryKeys.applications.all, 'list'] as const,
-    list: (filters: Record<string, unknown>) =>
-      [...queryKeys.applications.all, 'list', filters] as const,
     detail: (id: string) => [...queryKeys.applications.all, 'detail', id] as const,
     mine: () => [...queryKeys.applications.all, 'mine'] as const,
     byJobPosting: (jobPostingId: string) =>
@@ -264,7 +260,6 @@ export const queryKeys = {
   // 알림
   notifications: {
     all: ['notifications'] as const,
-    lists: () => [...queryKeys.notifications.all, 'list'] as const,
     // P2 아키텍처: 제네릭 타입으로 NotificationFilter 등 다양한 필터 지원
     list: <T extends object>(filters: T) =>
       [...queryKeys.notifications.all, 'list', filters] as const,
@@ -272,13 +267,6 @@ export const queryKeys = {
     unreadCount: () => [...queryKeys.notifications.all, 'unreadCount'] as const,
     // P2 아키텍처: Query Keys 중앙 관리 확장
     settings: () => [...queryKeys.notifications.all, 'settings'] as const,
-  },
-
-  // 설정
-  settings: {
-    all: ['settings'] as const,
-    user: () => [...queryKeys.settings.all, 'user'] as const,
-    notification: () => [...queryKeys.settings.all, 'notification'] as const,
   },
 
   // ============================================================================
@@ -331,7 +319,6 @@ export const queryKeys = {
       userId === undefined
         ? ([...queryKeys.templates.all, 'list'] as const)
         : ([...queryKeys.templates.all, 'list', userId] as const),
-    detail: (id: string) => [...queryKeys.templates.all, 'detail', id] as const,
   },
 
   // 지원자 관리 (구인자)
@@ -389,22 +376,10 @@ export const queryKeys = {
       [...queryKeys.confirmedStaff.all, 'grouped', jobPostingId] as const,
   },
 
-  // 이벤트 QR (구인자 - 현장 출퇴근)
-  eventQR: {
-    all: ['eventQR'] as const,
-    current: (jobPostingId: string, date: string, action: 'checkIn' | 'checkOut') =>
-      [...queryKeys.eventQR.all, 'current', jobPostingId, date, action] as const,
-    history: (jobPostingId: string) => [...queryKeys.eventQR.all, 'history', jobPostingId] as const,
-  },
-
-  // 신고 관리 (구인자)
+  // 신고 관리 (관리자 콘솔)
   reports: {
     all: ['reports'] as const,
-    byJobPosting: (jobPostingId: string) =>
-      [...queryKeys.reports.all, 'byJobPosting', jobPostingId] as const,
-    byStaff: (staffId: string) => [...queryKeys.reports.all, 'byStaff', staffId] as const,
     detail: (reportId: string) => [...queryKeys.reports.all, 'detail', reportId] as const,
-    myReports: () => [...queryKeys.reports.all, 'myReports'] as const,
   },
 
   // ============================================================================
@@ -528,9 +503,6 @@ export const queryKeys = {
     byWorkLog: (workLogId: string) => [...queryKeys.reviews.all, 'byWorkLog', workLogId] as const,
     myGiven: () => [...queryKeys.reviews.all, 'myGiven'] as const,
     myReceived: () => [...queryKeys.reviews.all, 'myReceived'] as const,
-    bubbleScore: (userId: string) => [...queryKeys.reviews.all, 'bubbleScore', userId] as const,
-    eligibility: (workLogId: string) =>
-      [...queryKeys.reviews.all, 'eligibility', workLogId] as const,
     pending: () => [...queryKeys.reviews.all, 'pending'] as const,
   },
 
@@ -758,15 +730,7 @@ export const queryCachingOptions = {
  */
 export const invalidateQueries = {
   jobPostings: () => queryClient.invalidateQueries({ queryKey: queryKeys.jobPostings.all }),
-  applications: () => queryClient.invalidateQueries({ queryKey: queryKeys.applications.all }),
-  schedules: () => queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all }),
-  workLogs: () => queryClient.invalidateQueries({ queryKey: queryKeys.workLogs.all }),
-  notifications: () => queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all }),
   user: () => queryClient.invalidateQueries({ queryKey: queryKeys.user.all }),
-  confirmedStaff: () => queryClient.invalidateQueries({ queryKey: queryKeys.confirmedStaff.all }),
-  eventQR: () => queryClient.invalidateQueries({ queryKey: queryKeys.eventQR.all }),
-  reports: () => queryClient.invalidateQueries({ queryKey: queryKeys.reports.all }),
-  settlement: () => queryClient.invalidateQueries({ queryKey: queryKeys.settlement.all }),
   /**
    * 스태프 관리 관련 모든 쿼리 무효화 (스태프 + 정산 + 근무기록 + 파생 집계)
    *
@@ -786,8 +750,6 @@ export const invalidateQueries = {
     queryClient.invalidateQueries({ queryKey: [POSTING_FILLED_COUNTS_QUERY_KEY] });
     queryClient.invalidateQueries({ queryKey: queryKeys.workSchedule.all });
   },
-  /** 대회공고 승인 관련 모든 쿼리 무효화 */
-  tournaments: () => queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.all }),
   /** 대회공고 승인 후 관련 데이터 무효화 (대회공고 + 구인공고 목록) */
   tournamentApproval: () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.all });
@@ -796,10 +758,7 @@ export const invalidateQueries = {
   /** 공지사항 관련 모든 쿼리 무효화 */
   announcements: () => queryClient.invalidateQueries({ queryKey: queryKeys.announcements.all }),
   boards: () => queryClient.invalidateQueries({ queryKey: queryKeys.boards.all }),
-  /** 리뷰/평가 관련 모든 쿼리 무효화 */
-  reviews: () => queryClient.invalidateQueries({ queryKey: queryKeys.reviews.all }),
   /** 구인자 신청 관련 모든 쿼리 무효화 (유저 상태 + admin 목록/상세) */
   employerApplications: () =>
     queryClient.invalidateQueries({ queryKey: queryKeys.employerApplications.all }),
-  all: () => queryClient.invalidateQueries(),
 };

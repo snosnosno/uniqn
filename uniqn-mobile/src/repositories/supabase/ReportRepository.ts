@@ -26,7 +26,6 @@ import type {
   CreateReportContext,
   FetchReportsOptions,
   FetchReportsResult,
-  ReportCounts,
 } from '../interfaces';
 import type { Report, CreateReportInput, ReviewReportInput } from '@/types/report';
 
@@ -80,18 +79,6 @@ export class SupabaseReportRepository implements IReportRepository {
     }
   }
 
-  async getByJobPostingId(jobPostingId: string): Promise<Report[]> {
-    return this.queryReports('job_posting_id', jobPostingId, '공고별 신고 목록 조회');
-  }
-
-  async getByTargetId(targetId: string): Promise<Report[]> {
-    return this.queryReports('target_id', targetId, '대상별 신고 목록 조회');
-  }
-
-  async getByReporterId(reporterId: string): Promise<Report[]> {
-    return this.queryReports('reporter_id', reporterId, '신고자별 신고 목록 조회');
-  }
-
   async getAll(options: FetchReportsOptions = {}): Promise<FetchReportsResult> {
     try {
       const { filters, pageSize = 50, cursor } = options;
@@ -125,43 +112,6 @@ export class SupabaseReportRepository implements IReportRepository {
     } catch (error) {
       if (isAppError(error)) throw error;
       handleSupabaseError(error, { operation: '전체 신고 목록 조회', table: TABLES.REPORTS });
-    }
-  }
-
-  async getCountsByTargetId(targetId: string): Promise<ReportCounts> {
-    try {
-      logger.info('대상별 신고 통계 조회', { targetId });
-
-      const severities = ['critical', 'high', 'medium', 'low'] as const;
-
-      const counts = await Promise.all(
-        severities.map(async (severity) => {
-          const { count, error } = await supabase
-            .from(TABLES.REPORTS)
-            .select('id', { count: 'exact', head: true })
-            .eq('target_id', targetId)
-            .eq('severity', severity);
-
-          if (error) {
-            handleSupabaseError(error, { operation: '신고 통계 조회', table: TABLES.REPORTS });
-          }
-
-          return count ?? 0;
-        })
-      );
-
-      const [critical, high, medium, low] = counts;
-
-      return {
-        total: critical + high + medium + low,
-        critical,
-        high,
-        medium,
-        low,
-      };
-    } catch (error) {
-      if (isAppError(error)) throw error;
-      handleSupabaseError(error, { operation: '대상별 신고 통계 조회', table: TABLES.REPORTS });
     }
   }
 
@@ -260,35 +210,6 @@ export class SupabaseReportRepository implements IReportRepository {
         });
       }
       handleSupabaseError(error, { operation: '신고 처리', table: TABLES.REPORTS });
-    }
-  }
-
-  // ==========================================================================
-  // Private Helpers
-  // ==========================================================================
-
-  private async queryReports(
-    field: string,
-    value: string,
-    operationName: string
-  ): Promise<Report[]> {
-    try {
-      logger.info(operationName, { [field]: value });
-
-      const { data, error } = await supabase
-        .from(TABLES.REPORTS)
-        .select(TABLE_COLUMNS)
-        .eq(field, value)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        handleSupabaseError(error, { operation: operationName, table: TABLES.REPORTS });
-      }
-
-      return ((data ?? []) as Record<string, unknown>[]).map(rowToReport);
-    } catch (error) {
-      if (isAppError(error)) throw error;
-      handleSupabaseError(error, { operation: operationName, table: TABLES.REPORTS });
     }
   }
 }

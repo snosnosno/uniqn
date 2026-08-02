@@ -25,13 +25,13 @@ import {
   formatDateRangeDisplay,
   isDuplicateRole,
   clampHeadcount,
-  isValidTimeFormat,
-  isValidDateFormat,
   calculateTotalFromDateReqs,
   calculateFilledFromDateReqs,
   isFullyClosed,
   getClosingStatus,
 } from '../dateUtils';
+// 형식 검증 함수는 date/validation 이 원본 — dateUtils 하위호환 재수출 심 제거로 직접 경로 사용
+import { isValidTimeFormat, isValidDateFormat } from '@/utils/date/validation';
 
 jest.mock('@/utils/date/core', () => ({
   toISODateString: jest.fn((date: Date | null) => {
@@ -41,7 +41,6 @@ jest.mock('@/utils/date/core', () => ({
     const d = String(date.getDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
   }),
-  generateId: jest.fn(() => 'mock-id'),
 }));
 
 jest.mock('@/utils/date/formatting', () => ({
@@ -82,20 +81,6 @@ jest.mock('@/utils/date/grouping', () => ({
     groups.push(current);
     return groups;
   }),
-}));
-
-jest.mock('@/utils/date/validation', () => ({
-  ...jest.requireActual('@/utils/date/validation'),
-  isDuplicateDate: jest.fn((dates: string[], newDate: string) => dates.includes(newDate)),
-  validateDateCount: jest.fn(),
-  isWithinUrgentDateLimit: jest.fn(),
-  parseDate: jest.fn(),
-  getDateAfterDays: jest.fn(),
-}));
-
-jest.mock('@/utils/date/ranges', () => ({
-  generateDateRange: jest.fn(),
-  sortDates: jest.fn((dates: string[]) => [...dates].sort()),
 }));
 
 // ============================================================================

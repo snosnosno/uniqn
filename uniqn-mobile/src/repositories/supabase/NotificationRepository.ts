@@ -51,8 +51,10 @@ const PAGE_SIZE = 20;
 const NOTIFICATION_REALTIME_LIMIT = 50;
 const NOTIFICATION_COLUMNS =
   'id,body,category,created_at,data,is_read,link,priority,read_at,recipient_id,title,type' as const;
+// 방해 금지 시간(quiet_hours)은 읽지 않는다 — 발신 게이트·UI 가 모두 제거된 회로라
+// 조회해도 소비처가 없다. DB 컬럼은 그대로 두고(별건) 앱은 select 하지 않는다.
 const NOTIFICATION_SETTINGS_COLUMNS =
-  'id,user_id,enabled,push_enabled,categories,quiet_hours,grouping,updated_at' as const;
+  'id,user_id,enabled,push_enabled,categories,grouping,updated_at' as const;
 
 // ============================================================================
 // Helpers

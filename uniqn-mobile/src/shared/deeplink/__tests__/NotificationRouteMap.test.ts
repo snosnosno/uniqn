@@ -12,8 +12,8 @@ describe('NotificationRouteMap', () => {
   it('covers every NotificationType', () => {
     const allNotificationTypes = Object.values(NotificationType) as NotificationType[];
 
-    // 47 = 46 + settlement_reverted(지급 완료 되돌리기, 2026-08-02 감사 M5)
-    expect(allNotificationTypes.length).toBe(47);
+    // 46 = 47 - settlement_requested(정산 요청, 2026-08-02 죽은 회로 정리로 제거 — 발신 코드가 이력 전체에 0건이었다)
+    expect(allNotificationTypes.length).toBe(46);
 
     allNotificationTypes.forEach((type) => {
       expect(NOTIFICATION_ROUTE_MAP[type]).toBeDefined();
@@ -69,9 +69,6 @@ describe('NotificationRouteMap', () => {
 
   it('falls back employer application events to the employer root when ids are missing', () => {
     expect(NOTIFICATION_ROUTE_MAP[NotificationType.NEW_APPLICATION]()).toEqual({
-      name: 'employer/my-postings',
-    });
-    expect(NOTIFICATION_ROUTE_MAP[NotificationType.SETTLEMENT_REQUESTED]()).toEqual({
       name: 'employer/my-postings',
     });
   });
@@ -239,7 +236,6 @@ describe('NotificationRouteMap', () => {
     expect(isEmployerOnlyNotification(NotificationType.APPLICATION_CANCELLED)).toBe(true);
     expect(isEmployerOnlyNotification(NotificationType.STAFF_CHECKED_IN)).toBe(true);
     expect(isEmployerOnlyNotification(NotificationType.STAFF_CHECKED_OUT)).toBe(true);
-    expect(isEmployerOnlyNotification(NotificationType.SETTLEMENT_REQUESTED)).toBe(true);
     expect(isEmployerOnlyNotification(NotificationType.APP_UPDATE)).toBe(false);
   });
 

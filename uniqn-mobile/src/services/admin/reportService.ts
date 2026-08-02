@@ -87,32 +87,6 @@ export async function createReport(input: CreateReportInput): Promise<string> {
 // ============================================================================
 
 /**
- * 공고별 신고 목록 조회
- */
-export async function getReportsByJobPosting(jobPostingId: string): Promise<Report[]> {
-  logger.info('Getting reports by job posting', { jobPostingId });
-  return reportRepository.getByJobPostingId(jobPostingId);
-}
-
-/**
- * 스태프별 신고 목록 조회
- */
-export async function getReportsByStaff(staffId: string): Promise<Report[]> {
-  logger.info('Getting reports by staff', { staffId });
-  return reportRepository.getByTargetId(staffId);
-}
-
-/**
- * 내가 신고한 목록 조회
- */
-export async function getMyReports(): Promise<Report[]> {
-  const user = await requireCurrentUser();
-
-  logger.info('Getting my reports', { userId: user.id });
-  return reportRepository.getByReporterId(user.id);
-}
-
-/**
  * 신고 상세 조회
  */
 export async function getReportById(reportId: string): Promise<Report | null> {
@@ -156,24 +130,6 @@ export async function reviewReport(input: ReviewReportInput): Promise<void> {
 }
 
 // ============================================================================
-// Statistics
-// ============================================================================
-
-/**
- * 스태프별 신고 횟수 조회
- */
-export async function getReportCountByStaff(staffId: string): Promise<{
-  total: number;
-  critical: number;
-  high: number;
-  medium: number;
-  low: number;
-}> {
-  logger.info('Getting report count by staff', { staffId });
-  return reportRepository.getCountsByTargetId(staffId);
-}
-
-// ============================================================================
 // Admin Functions
 // ============================================================================
 
@@ -196,11 +152,7 @@ export async function getAllReports(filters: ReportFilters = {}): Promise<FetchR
 
 export const reportService = {
   createReport,
-  getReportsByJobPosting,
-  getReportsByStaff,
-  getMyReports,
   getReportById,
   reviewReport,
-  getReportCountByStaff,
   getAllReports,
 };

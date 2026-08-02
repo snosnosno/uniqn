@@ -262,17 +262,6 @@ describe('notificationTemplates', () => {
       expect(body).toContain('150,000');
       expect(body).toContain('정산');
     });
-
-    it('should generate SETTLEMENT_REQUESTED body', () => {
-      const template = NotificationTemplates[NotificationType.SETTLEMENT_REQUESTED];
-      const body =
-        typeof template.body === 'function'
-          ? template.body({ staffName: '홍길동' })
-          : template.body;
-
-      expect(body).toContain('홍길동');
-      expect(body).toContain('정산');
-    });
   });
 
   // ============================================================================

@@ -59,7 +59,6 @@ export type {
   FetchReportsOptions,
   FetchReportsResult,
   ReportFilters,
-  ReportCounts,
 } from './IReportRepository';
 
 // Settlement Repository

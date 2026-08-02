@@ -5,15 +5,7 @@
  */
 
 import { act } from '@testing-library/react-native';
-import {
-  useNotificationStore,
-  selectNotifications,
-  selectUnreadCount,
-  selectHasMore,
-  selectSettings,
-  selectFilter,
-  selectUnreadByCategory,
-} from '../notificationStore';
+import { useNotificationStore, selectUnreadCount, selectSettings } from '../notificationStore';
 import {
   NotificationType,
   NotificationCategory,
@@ -251,75 +243,6 @@ describe('NotificationStore', () => {
       });
 
       expect(useNotificationStore.getState().unreadCount).toBe(2);
-    });
-  });
-
-  // ============================================================================
-  // updateNotification
-  // ============================================================================
-
-  describe('updateNotification', () => {
-    it('should update notification fields', () => {
-      act(() => {
-        useNotificationStore
-          .getState()
-          .setNotifications([createMockNotification({ id: 'n1', title: 'Old Title' })]);
-      });
-
-      act(() => {
-        useNotificationStore.getState().updateNotification('n1', { title: 'New Title' });
-      });
-
-      expect(useNotificationStore.getState().notifications[0].title).toBe('New Title');
-    });
-
-    it('should decrement unread when marking as read', () => {
-      act(() => {
-        useNotificationStore
-          .getState()
-          .setNotifications([
-            createMockNotification({ id: 'n1', isRead: false }),
-            createMockNotification({ id: 'n2', isRead: false }),
-          ]);
-      });
-
-      expect(useNotificationStore.getState().unreadCount).toBe(2);
-
-      act(() => {
-        useNotificationStore.getState().updateNotification('n1', { isRead: true });
-      });
-
-      expect(useNotificationStore.getState().unreadCount).toBe(1);
-    });
-
-    it('should increment unread when marking as unread', () => {
-      act(() => {
-        useNotificationStore
-          .getState()
-          .setNotifications([createMockNotification({ id: 'n1', isRead: true })]);
-      });
-
-      expect(useNotificationStore.getState().unreadCount).toBe(0);
-
-      act(() => {
-        useNotificationStore.getState().updateNotification('n1', { isRead: false });
-      });
-
-      expect(useNotificationStore.getState().unreadCount).toBe(1);
-    });
-
-    it('should not change count for non-existent notification', () => {
-      act(() => {
-        useNotificationStore
-          .getState()
-          .setNotifications([createMockNotification({ id: 'n1', isRead: false })]);
-      });
-
-      act(() => {
-        useNotificationStore.getState().updateNotification('non-existent', { isRead: true });
-      });
-
-      expect(useNotificationStore.getState().unreadCount).toBe(1);
     });
   });
 
@@ -807,17 +730,6 @@ describe('NotificationStore', () => {
   // ============================================================================
 
   describe('Selectors', () => {
-    it('should select notifications', () => {
-      const notifications = [createMockNotification({ id: 'n1' })];
-
-      act(() => {
-        useNotificationStore.getState().setNotifications(notifications);
-      });
-
-      const state = useNotificationStore.getState();
-      expect(selectNotifications(state)).toEqual(notifications);
-    });
-
     it('should select unread count', () => {
       act(() => {
         useNotificationStore.getState().setUnreadCount(10);
@@ -826,31 +738,9 @@ describe('NotificationStore', () => {
       expect(selectUnreadCount(useNotificationStore.getState())).toBe(10);
     });
 
-    it('should select hasMore', () => {
-      act(() => {
-        useNotificationStore.getState().setHasMore(false);
-      });
-
-      expect(selectHasMore(useNotificationStore.getState())).toBe(false);
-    });
-
     it('should select settings', () => {
       const state = useNotificationStore.getState();
       expect(selectSettings(state)).toBe(state.settings);
-    });
-
-    it('should select filter', () => {
-      act(() => {
-        useNotificationStore.getState().setFilter({ isRead: false });
-      });
-
-      const state = useNotificationStore.getState();
-      expect(selectFilter(state)).toEqual({ isRead: false });
-    });
-
-    it('should select unreadByCategory', () => {
-      const state = useNotificationStore.getState();
-      expect(selectUnreadByCategory(state)).toBe(state.unreadByCategory);
     });
   });
 });

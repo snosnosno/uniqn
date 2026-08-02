@@ -82,7 +82,6 @@ export type {
   FetchReportsOptions,
   FetchReportsResult,
   ReportFilters,
-  ReportCounts,
   // Settlement
   ISettlementRepository,
   UpdateWorkTimeContext,
