@@ -339,10 +339,14 @@ export default function ScheduleScreen() {
     () => getMonthRange(new Date(currentMonth.year, currentMonth.month - 1, 1)),
     [currentMonth.year, currentMonth.month]
   );
+  //
+  // ④ 🔴 오프라인이면 `error` 가 항상 null 로 접혀(useSchedules) 게이트가 열리는데, 캐시가
+  //    없으면 `schedules` 는 다시 빈 폴백이다. 그래서 오프라인 여부를 함께 넘겨 **취소만**
+  //    막는다 — 게이트를 닫아 통째로 건너뛰면 ① 의 원장 정리가 같이 멈춘다.
   useEffect(() => {
     if (!shouldSyncShiftReminders({ isLoading, error })) return;
-    void syncShiftReminders(schedules, reminderCoverage);
-  }, [schedules, isLoading, error, reminderCoverage]);
+    void syncShiftReminders(schedules, reminderCoverage, { offline: isOffline });
+  }, [schedules, isLoading, error, reminderCoverage, isOffline]);
 
   // '내 다음 근무' 히어로 — 이미 구현돼 있으나 소비자가 없던 useTodaySchedules(60초 폴링·
   // 오프라인 캐시 완비)를 오늘 근무 원천으로 쓰고, 오늘 것이 없으면 이번 달 확정 건에서 찾는다.

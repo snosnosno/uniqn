@@ -55,6 +55,12 @@ type ReminderLedger = Record<string, ReminderLedgerEntry>;
  * - 로딩·에러 중에는 **돌리면 안 된다.** 그 구간의 목록은 실제 0건이 아니라 폴백 빈 배열이라,
  *   그대로 넘기면 원장의 모든 키가 "계획에서 사라진 것" 으로 판정돼 취소된다. 조회가 에러로
  *   끝나면 재예약도 없어 확정 근무 알림이 통째로 무음 소실된다.
+ *
+ * ⚠️ **오프라인은 이 게이트가 판정하지 않는다.** 오프라인이면 `useSchedules` 가 `error` 를
+ *    항상 `null` 로 접기 때문에(useSchedules.ts 의 `error: isOnline ? … : null`) 여기서는
+ *    원리적으로 볼 수 없다. 그렇다고 게이트를 닫아 sync 를 건너뛰면 원장 정리까지 멈춘다 —
+ *    그래서 오프라인은 **게이트가 아니라 `syncShiftReminders` 의 `offline` 인자**로 다룬다.
+ *    취소만 막고 예약·지난근무 정리는 살리는 비대칭 처리가 필요하기 때문이다.
  */
 export function shouldSyncShiftReminders(state: { isLoading: boolean; error?: unknown }): boolean {
   return !state.isLoading && !state.error;
@@ -99,8 +105,27 @@ function writeLedger(ledger: ReminderLedger): void {
 function canCancel(
   entry: ReminderLedgerEntry,
   coverage: ShiftReminderCoverage,
-  todayStr: string
+  todayStr: string,
+  offline: boolean
 ): boolean {
+  // 이미 지난 근무 — 알림은 발사됐거나 무의미하다. 창 밖이어도 정리해야 원장이 무한정 자라지 않는다.
+  //
+  // 🔴 이 판정만은 **오프라인에서도 살린다.** 근거가 시계뿐이라 네트워크가 필요 없고,
+  //    이걸 같이 막으면 "오프라인이면 sync 를 건너뛴다" 와 다를 바 없어져 원장이 무한정 자란다.
+  if (entry.workDate && entry.workDate < todayStr) return true;
+
+  // 🔴 오프라인에서는 '계획에 없음' 이 '취소됨' 을 뜻하지 않는다.
+  //
+  //    오프라인이면 쿼리가 아예 실행되지 않고(`enabled: … && isOnline`) 캐시도 없으면
+  //    `EMPTY_SCHEDULE_QUERY_PAYLOAD` 빈 배열로 접힌다. 그 빈 배열을 그대로 믿으면 관측 창
+  //    안의 유효 예약이 전부 취소된다 — P3(#396)이 폭발 반경을 원장 전체에서 '보고 있는 달'로
+  //    줄였을 뿐, 없앤 것이 아니다. 캐시가 있어도 stale 이라 '사라졌다' 판정의 근거가 못 된다.
+  //
+  //    감수하는 트레이드오프는 창 밖 규칙과 같다: 오프라인 중에 근무가 실제로 취소되면
+  //    온라인 복귀 후 그 달을 볼 때까지 알림이 남아 한 번 잘못 울릴 수 있다. 거짓 양성이고,
+  //    막으려는 거짓 음성(유효한 근무의 알림이 사라져 노쇼)보다 훨씬 가볍다.
+  if (offline) return false;
+
   // 근무일을 모르는 v1 항목은 판단 근거가 없다 → 예전 규칙 그대로 정리한다.
   //
   // ⚠️ "업그레이드 직후엔 어차피 전부 계획에 포함된다"는 **보장이 아니다.** 마지막으로 본 달과
@@ -109,9 +134,6 @@ function canCancel(
   //    구 코드의 취소 조건도 자구 그대로 "계획에 없음"이었다. 즉 이 분기는 회귀가 아니라
   //    전환 주기 1회에 한한 잔여이고, 해당 달을 다시 열면 재예약으로 치유된다.
   if (!entry.workDate) return true;
-
-  // 이미 지난 근무 — 알림은 발사됐거나 무의미하다. 창 밖이어도 정리해야 원장이 무한정 자라지 않는다.
-  if (entry.workDate < todayStr) return true;
 
   // 관측하지 못한 날짜는 건드리지 않는다. 그 날을 실제로 본 동기화가 정리한다.
   //
@@ -178,12 +200,18 @@ async function scheduleOne(reminder: ShiftReminder): Promise<string | null> {
  * 🔴 `coverage` 는 선택이 아니다. 호출자가 넘기는 `schedules` 는 대개 전체가 아니라
  *    화면이 보고 있는 구간(예: 이번 달)이라, 그 사실을 함께 넘겨야 창 밖의 유효 예약을
  *    "사라진 것" 으로 오판하지 않는다. 목록 전체를 가진 호출자는 그 전체 범위를 넘기면 된다.
+ *
+ * 🔴 `offline` 도 선택이 아니다. 같은 이유의 다른 축이다 — `coverage` 가 "어디를 봤나" 라면
+ *    `offline` 은 "본 것을 믿어도 되나" 다. 필수로 두어 호출자가 조용히 빠뜨리지 못하게 한다
+ *    (기본값을 주면 새 호출부가 아무 말 없이 '온라인' 으로 취급된다).
  */
 export async function syncShiftReminders(
   schedules: readonly ScheduleEvent[],
   coverage: ShiftReminderCoverage,
-  now: Date = new Date()
+  options: { offline: boolean; now?: Date }
 ): Promise<void> {
+  const { offline, now = new Date() } = options;
+
   try {
     const planned = planShiftReminders(schedules, now);
     const plannedKeys = new Set(planned.map((reminder) => reminder.key));
@@ -194,7 +222,7 @@ export async function syncShiftReminders(
     const next: ReminderLedger = {};
     let cancelled = 0;
     for (const [key, entry] of Object.entries(previous)) {
-      if (plannedKeys.has(key) || !canCancel(entry, coverage, todayStr)) {
+      if (plannedKeys.has(key) || !canCancel(entry, coverage, todayStr, offline)) {
         next[key] = entry;
         continue;
       }
@@ -227,6 +255,7 @@ export async function syncShiftReminders(
         cancelled,
         active: Object.keys(next).length,
         coverage: `${coverage.start}~${coverage.end}`,
+        offline,
       });
     }
   } catch (error) {

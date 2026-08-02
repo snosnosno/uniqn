@@ -32,6 +32,9 @@
 | **P4**(감사후속) | 지점 `location` 병합 (M9) | ~~`fix/venue-location-merge`~~ | ✅ **머지** | **#395** | `2e8255dd5`. CI **9잡 전부 pass**(E2E 10m26s 포함, 재실행 0회). 마이그 **0건**(서버 RPC 무변경 — 치환은 의도된 계약). quality 통과 · jest 14/14 · red-green 실증(병합을 되돌리면 신규 2건만 red) · 리뷰 fable **APPROVE**(CRITICAL/HIGH/MEDIUM 0, LOW 3 중 2건 반영). ✅ **B1 선행 불필요 확정** |
 | **P6**(감사후속) | 오프라인 캐시 TTL 분리 (M6) | ~~`fix/offline-cache-policies`~~ | ✅ **머지** | **#398** | `40040c8fb`. CI **9잡 전부 pass**(E2E 11m5s 포함, **재실행 0회**). 재통합(#397 P2 · #395 P4 · **#396 P3**) 후 재검증: quality **0 errors**(eslint 경고 98 선재 · prettier clean) · 전체 jest **602스위트 6599테스트 122스냅샷 전량 통과** · pre-push quality 통과. 마이그 **0건**. 감사 5줄 → **실측 6줄**(`useWorkLogs.ts:269` 추가 발견). `offlineCachePolicies` 5키 + **브랜드 타입 `OfflineTtlMs`** 로 컴파일 타임 차단. quality 통과 · jest 600스위트 6583테스트 · **red-green 2종**(호출부 원복 시 tsc 6곳 TS2322 + 테스트 5건 red / 정책값 오염 시 백스톱 2건 red) · 리뷰 fable **APPROVE**(CRITICAL 0/HIGH 0, MEDIUM 1 반영) |
 | **P5**(감사후속) | 방어심화 (M4+L2+L1 절반) | ~~`feat/settlement-rpc-and-defense`~~ | ✅ **머지** | **#400** | `95772ce49`. **타 세션 소관** — 세션 A2 가 P6 를 머지하는 사이에 착지했다. 신원 컬럼 고정 트리거 + `time_slot` CHECK + 정산 상태 RPC 화. 🔴**마이그 2건 prod 적용 완료 — 재적용 금지**(기록명 `20260801212753 work_logs_identity_pin_and_time_slot_check`·`20260801212843 set_work_log_payroll_status_rpc`, 파일명과 다름). 파리티 **184→186** / 정책 111 불변(prod 실측), `PARITY_EXPECT_FUNCS` 도 이 PR 에서 186 으로 갱신됨. quality exit 0 · jest **600스위트 6583테스트** · pgTAP **91파일 951테스트**(기준선 88/912) · red-green **5종 1:1 실증**. 리뷰 fable planner·fable/opus database-reviewer 3인 반영. 감사의 M4 처방(컬럼 REVOKE)은 무효였고 트리거로 대체. **L1 은 절반** — 확정·일괄 RPC화와 직접쓰기 차단은 다음 세션(상세=§5) |
+| **L1-잔여**(감사후속) | 정산 확정·일괄 RPC 화 + 계산기 서버 이식 | ~~`feat/settlement-rpc-phase2`~~ | ✅ **머지** | **#402** | `d8e3e2dca`. CI **10잡 전부 pass**(DB Tests 2m0s · E2E 포함, **재실행 0회**). `178ecf1ad` + 리뷰반영 `b753aa332`(2커밋). P5 가 남긴 L1 나머지 절반. `SettlementRepository.calculateSettlementAmount`(TS)를 **삭제하고** `fn_settlement_amount`(PL/pgSQL)로 이식 — 복제가 아니라 **이동**이라 클라 계산기 갈래 수는 불변. 신규 함수 3종(`fn_settlement_amount`·`settle_work_log`·`bulk_settle_work_logs`). 🔴**마이그 prod 적용 완료 — 재적용 금지. 기록 4건인데 레포 파일은 2개**(뒤 2건은 같은 함수 재정의라 별도 파일 없음 — 주석 누락 복구 + 리뷰 반영). 파리티 **186→189**/정책 111 불변, `PARITY_EXPECT_FUNCS` 갱신. quality exit 0 · jest **603스위트 6627테스트 122스냅샷** · pgTAP **93파일 991테스트**(기준선 91/951) · **짝 픽스처 21/21 SQL↔TS 일치** · red-green **4종 1:1** · 레포↔prod↔로컬 md5 4함수 일치. `set_work_log_payroll_status` 의 `completed` 진입 차단(호출부 0건 실측 후 결정). fable 리뷰 **APPROVE**(CRITICAL/HIGH 0) — 지적 5건을 prod 프로브로 재판정해 **3건 확증 수정 · 2건 오탐 기각 · 리뷰가 놓친 1건 추가 발견**. 상세=§5 |
+| **세션 E**(P2·P3 후속) | 병합 키 표류 + 오프라인 침묵 취소 (클라 전용 2건) | ~~`fix/schedule-merge-key`~~ | ✅ **머지** | **#404** | `c97389daf`. CI **9잡 전부 pass**(E2E 재실행 0). 재통합(#402·#403) 후 재검증: quality exit 0 · jest **603스위트 6639테스트 전량 통과**. 마이그 0건. |
+| **세션 F** | 세션 D·E 착지 + 근본수선 설계 | ~~`docs/session-f-ledger`~~ | ✅ **착지 3건** | **#402·#403·#404** | **코드 변경 0건**(착지 전용). 파리티 간극 해소 — 레포 **186 → 189** = prod 189/111 실측 일치. 🔴 **과제 4(근본 수선)는 미착수 — 설계만 완료**, 사용자 결정으로 새 세션 이관. 상세=§5 |
 | **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
 | **S6** | 3-C 설계 | — | ⬜ | | 사용자 결정 필요 |
 | **S7** | 3-C 구현 | `feat/posting-time-change` | ⬜ | | S6 승인 후 |
@@ -54,6 +57,10 @@
 | P6 | ~~`T-HOLDEM-offline`~~ | ✅ **정리완료**(2026-08-02 세션 A2 — 정션 해제 선행 → `worktree remove` → 브랜치 삭제. 해제 전후 원본 `node_modules` **821 → 821** 실측 무손상) |
 | 세션A-원장 | `T-HOLDEM-ledger` | 🔨 이 문서 커밋용(정션 없음). **원장 PR 머지 후 정리 대상**(정션 없으므로 `worktree remove` → 브랜치 삭제만) |
 | **P2·P5(타 세션)** | ~~`T-HOLDEM-notifyfix`~~ | ✅ **타 세션이 스스로 정리**(2026-08-02 세션 A2 종료 시 `git worktree list` 에서 사라짐). P2 는 #397, P5 는 #400 으로 머지됐다 |
+| **L1-잔여** | ~~`T-HOLDEM-settlerpc`~~ | ✅ **머지 완료(#402)** — 정리 대상(정션 해제 선행 → `worktree remove` → 브랜치 삭제). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성(821 확인) |
+| L1-잔여-원장 | `T-HOLDEM-ledger2` | 🔨 이 문서 커밋용(정션 없음). 원장 PR 머지 후 정리 대상 |
+| **세션 E** | ~~`T-HOLDEM-schedkey`~~ | ✅ **정리완료**(세션 F — 정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **821 → 821** 실측 무손상) |
+<!-- 🔨 **유지 중**(PR 미생성 — 사용자 결정 대기). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성, 원본 `node_modules` **821 → 821** 실측 무손상 | -->
 | S7 | `T-HOLDEM-timechange` | ⬜ |
 
 전부 `C:/Users/user/Desktop/` 아래. 머지 완료 세션의 워크트리는 다음 세션 착수 시 정리한다
@@ -492,6 +499,192 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 
 > 형식은 §2 세션 종료 프로토콜 4번 참조. **삭제하지 말고 쌓는다** —
 > 중단된 세션을 다시 여는 사람이 읽을 유일한 기록이다.
+
+### 세션 F (세션 D·E 착지 + 근본수선 설계) — 2026-08-02 · 상태: 완료(과제 1~3) · **과제 4 미착수 — 새 세션 이관**
+
+- **소스 코드 변경 0건.** 앞선 두 세션이 만든 브랜치를 재검증·착지시키고, 과제 4 는 설계만 냈다.
+- 착지 3건: **#402** `d8e3e2dca`(세션 D 코드) · **#403** `8b4702000`(세션 D 원장) · **#404** `c97389daf`(세션 E)
+
+**끝난 것** (전부 이 세션의 도구 출력 기준)
+
+| 대상 | CI | 머지 전 재검증 |
+|---|---|---|
+| #402 세션 D | **10잡 pass**(DB Tests 2m0s · E2E 포함, 재실행 0) | quality exit 0 · jest **603/6627** · pgTAP **93파일 991테스트 PASS** · md5 3자 대조 **4/4** |
+| #403 원장 | 체크 없음(문서 전용) | — |
+| #404 세션 E | **9잡 pass**(E2E 재실행 0) | 재통합 후 quality exit 0 · jest **603/6639** |
+
+- 🔴 **파리티 간극 해소** — 착수 시 레포 `PARITY_EXPECT_FUNCS=186` vs prod 실측 **189** 였다.
+  #402 머지로 레포가 189 로 올라가 **189/111 = prod 189/111 일치**. 주간 parity-smoke red 위험 제거.
+- 워크트리 3개 정리 완료(`T-HOLDEM-settlerpc`·`T-HOLDEM-schedkey`·`T-HOLDEM-ledger2`).
+  정션 해제 선행, 원본 `node_modules` **821 → 821** 실측 무손상.
+
+**안 끝난 것 — 🔴 과제 4(근본 수선). 설계 완료, 구현 0.**
+
+원인: `updateSlot` 이 `work_logs` 의 `time_slot`·`role` 만 갱신하고 `applications.assignments[]` 를
+그대로 둬 두 원천이 표류한다. 세션 E 는 병합 키를 FK 기반 2단계로 바꿔 **증상만** 막았다.
+
+**채택 설계** (fable planner 판정 + 이 세션 실측 정정):
+- `update_work_log_slot(p_work_log_id uuid, p_patch jsonb)` **SECDEF RPC 1개** 신설.
+  jsonb 패치인 이유 = 기존 계약이 3상("키를 안 보내면 그 컬럼을 만들지 않는다" — GRID-1).
+- multi-date 원소는 **(date × role) 셀 단위로 분할**하되 **`groupId` 는 원본 유지**.
+  새 groupId 를 발급하면 `assignment_group_id`(work_logs)와 어긋나 병합이 다시 깨진다.
+  분할 후에도 키에 `date` 가 있어 dates 가 서로소면 1:1 이 유지된다.
+- 매칭 실패·모호 시 **assignments 동기화만 skip**(work_logs 만 갱신, `assignmentSynced:false`).
+  남의 원소를 오염시키는 것보다 표류가 싸다.
+- 🔴 **권한은 RLS `wl_update` 를 정확히 그대로 반영한다(확대 0).** 이 세션 prod 실측:
+  `owner_id = auth.uid() OR job_posting_id IN (SELECT id FROM job_postings WHERE is_workspace_member(workspace_id, auth.uid()) OR is_posting_collaborator(id, auth.uid()))`.
+  planner 는 `is_admin()`·`job_postings.owner_id` 추가를 "순수 확대"로 권했으나 **채택하지 않았다** —
+  현행 RLS 에 둘 다 없고, 권한 확대는 조용히 넣을 성질이 아니다. 선례가 admin 을 연 것은 그 함수의 결정이다.
+- 파리티 **189 → 190**(신규 함수 1개, 정책 불변). 마커(:91)와 단언 리터럴 **동시 갱신** 필수.
+
+**🔑 planner 설계의 전제 하나를 이 세션이 정정했다 (다음 세션은 이걸 먼저 읽어라)**
+planner 는 "`generateApplicationLinkKey` 가 없다 → 표류하면 지금도 병합이 끊긴다"를 근거로
+(다)안(multi-date skip)을 기각했다. 그 관찰은 **당시 master 기준으로 정확**했지만, 이유는
+**세션 E 가 아직 머지 안 됐기 때문**이었다. #404 머지로 링크 키가 들어왔으므로
+(`ScheduleMerger.ts` 2단계 병합) **표류해도 병합은 안 끊긴다.**
+→ 과제 4 는 "사용자에게 보이는 파손 수리"가 아니라 **데이터 정합성 수선**이다.
+   채택안 (나)는 그대로 유효하지만(과제가 원인 제거를 요구), **긴급도는 planner 판정보다 낮다.**
+
+**다음 세션에 넘기는 주의** (이 세션에서 새로 알아낸 것만)
+
+1. 🚨 **로컬 Docker 스택은 prod·레포 어느 쪽과도 다를 수 있다 — pgTAP red 를 브랜치 결함으로 오판하지 마라.**
+   #402 검증 중 `parity_baseline_guard` 가 1건 red 였는데 원인은 브랜치가 아니라
+   **로컬에만 있던 고아 함수** `notify_on_report_review`(+트리거 `report_notify_review`)였다.
+   prod 0건 · 레포 전체 0건(마이그 파일에 존재한 적 없음)으로 확인 후 로컬에서 DROP → 991/991 green.
+   **CI 는 fresh 스택이라 애초에 영향 없었다**(DB Tests pass 로 독립 확인).
+2. 🚨 **`migration list --local` 의 "적용됨"은 DDL 이 실제로 돌았다는 뜻이 아니다.**
+   `20260802160000` 이 적용 기록은 있는데 `fn_settlement_amount` 가 **로컬에 없었다.**
+   고아 기록 2건(`20260802150000`·`20260802160100`, 파일로 커밋된 적 없음)도 있었다.
+   복구 = `migration repair --status reverted <ver>` → `migration up --local --include-all`.
+   **믿을 것은 기록이 아니라 `pg_proc` 실측이다.**
+3. 🔑 **md5 3자 대조는 이렇게 한다** — 레포 마이그 파일에서 `$$…$$` 본문을 추출해 md5,
+   prod·로컬은 `md5(replace(prosrc, chr(13), ''))`. 이번엔 4/4 길이·해시 모두 일치했다.
+   (#402 는 이전 세션에서 드리프트가 있었고 이미 고쳐진 상태였다 — 재확인해서 확정했다.)
+4. 🔑 **`gh pr merge --delete-branch` 의 로컬 삭제 실패는 이번 세션에도 3/3 재현됐다.**
+   머지·원격삭제는 정상. 판정은 반드시 `gh pr view <n> --json state,mergeCommit`.
+5. ⚠️ **원장 워크트리 pre-push 훅은 `node_modules` 부재로 tsc 에러를 낸다** — 문서 전용이면
+   `--no-verify`(선례). 코드가 섞였다면 그러면 안 된다.
+6. 🚨 **PowerShell `.ps1` 에 한글을 쓰면 cp949 로 깨져 파서 에러가 난다.**
+   정션 조작 스크립트는 **ASCII 로만** 써라(이번에 실제로 한 번 깨졌다).
+7. 🔑 **원장 충돌은 "양쪽 보존"이 기계적으로 가능하다** — 세 훅 전부 같은 앵커의 순수 추가라
+   §1 표는 시간순, §5 는 "최신이 위"로 배치하면 끝난다. `git merge-tree` 로 **머지 전에 미리** 범위를
+   확인할 수 있다(이번엔 충돌 파일이 원장 1개뿐임을 사전 확인).
+
+### 세션 E (P2·P3 후속 — 병합 키 표류 + 오프라인 침묵 취소) — 2026-08-02 · 상태: 완료(PR 미생성, 사용자 결정 대기)
+
+- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-schedkey` / `fix/schedule-merge-key` · HEAD `3fb6a4326`(3커밋)
+- **마이그레이션 0건** (세션 D 가 슬롯 점유 중이라 절대 조건이었다). **파리티 기여 0** — `PARITY_EXPECT_FUNCS` 미변경. ⚠️ 착수 시점 186/111 이었으나 절대값은 세션 D 의 prod 선적용으로 이동했다(그 세션 소관).
+- 파일 5개 전부 내 레인 — 세션 D(`settlement/**`)와 겹침 0. 배럴·공용 상수 미변경.
+
+**끝난 것** (전부 이 세션의 도구 출력 기준)
+
+| 대상 | 내용 |
+|---|---|
+| 과제 1 병합 키 | 2단계 병합 — ①엄격 키(불변)로 전부 소진 → ②남은 것만 **지원서 링크 키**(`applicationId + date + assignmentGroupId`)로 재시도, **양쪽 후보 1:1 일 때만** |
+| 과제 2 오프라인 | `syncShiftReminders` 에 `offline` **필수** 인자. 취소만 차단하고 지난근무 정리·재예약은 유지(비대칭) |
+| 게이트 | quality **0 errors**(eslint 경고 98 선재·prettier clean) · tsc **0 errors** · 전체 jest **602스위트 6612테스트 122스냅샷 전량 통과** · `e2e/` 참조 **0건** |
+| red-green | **6종 1:1 실증** — 링크 3가드(work_log 모호성/지원서 모호성/`consumed` 제외) 각각 제거 시 해당 1건만 red · 오프라인 취소 보호 제거 시 오프라인 2건만 red(**온라인 대조군 green 유지**) · 지난근무 정리를 오프라인 뒤로 밀면 해당 1건만 red |
+| 리뷰 | fable code-reviewer **APPROVE** — CRITICAL/HIGH/**MEDIUM 전부 0**, LOW 3(2건 반영, 1건은 전제검증 기록). 요청한 반증 6축(오병합·dateRange 회귀·`canCancel` 진리표·보호막 상실·테스트 실효성·e2e) **전부 불성립** |
+
+**안 끝난 것**
+
+- 🔴 **PR 미생성** — push/PR 은 사용자 명시 요청 사항. 워크트리 유지 중.
+- 🔴 **근본 수선은 이 세션 범위 밖**: `updateSlot` 이 `applications.assignments[].timeSlot`(+`role`)도 함께 갱신해야 원인이 사라진다. 다중 쓰기라 **RPC 필수 → 마이그 슬롯 필요**. 이번 수선은 클라에서 **증상을 정확히 가리는** 것이지 원인 제거가 아니다.
+- `generateScheduleKey` 는 `createGroupKey`(`scheduleGrouping.ts:200`)와 달리 **구분자 정규화를 하지 않는다**(`'18:30 - 03:00'` vs `'18:30~03:00'`). 링크 병합이 결과적으로 가려 주지만 원인은 남아 있다.
+
+**다음 세션에 넘기는 주의** (이 세션에서 새로 알아낸 것만)
+
+1. 🚨 **`updateSlot` 은 시각뿐 아니라 `role` 도 표류시킨다**(`WorkLogRepositoryVenue.ts:125-127`). 인계 프롬프트는 `timeSlot` 만 지목했는데 실측하니 두 축이었다. **"표류하는 축"을 셀 때 UPDATE 페이로드 전체를 봐라** — 하나만 보고 키를 설계하면 반쪽짜리가 된다.
+2. 🔑 **병합 키의 정답은 FK 였다.** `work_logs.application_id` 는 `confirm_application` 이 심는, **이 병합이 찾으려는 링크 그 자체**다. 표류하는 표시 속성(시각·역할)으로 동일성을 추론하지 말고 **기록된 링크를 써라.** 어느 경로도 UPDATE 하지 않는 축만 고른 것이 안전 논거이고, 리뷰가 마이그레이션 전수(`UPDATE work_logs SET` 10곳)로 반증 시도해 불성립을 확인했다.
+3. 🚨 **`add_direct_staff` 는 `assignment_group_id` 를 안 쓸 뿐 아니라 `application_id` 도 명시적으로 NULL 로 넣는다**(`20260718000000…:298-315`). 그래서 수동 추가 행은 **지원서 쪽 짝이 아예 없어** 병합 대상이 아니다 — "groupId 가 NULL 이라 위험하다"는 우려는 이 경로에선 성립하지 않는다. **NULL 컬럼을 보고 위험을 세기 전에 그 행에 상대편이 있는지부터 확인하라.**
+4. 🚨 **"green 이다" ≠ "그 테스트가 결함을 잡는다" 를 또 만났다.** `ScheduleMerger.test.ts:28` 의 제목은 "assignmentGroupId **or** timeSlot differs" 인데 픽스처는 **둘 다** 다르게 잡혀 있어 `timeSlot` 을 전혀 지키지 못했다. 실제로 키에서 `timeSlot` 을 빼고 70테스트를 돌렸더니 red 는 **키 문자열 리터럴 단언 1건뿐**이었다. **설계 판단을 스위트에 기대지 말고, 위험을 반증할 땐 스키마를 직접 읽어라.**
+5. 🔑 **관찰 불가능한 방어가 이 diff 에 2개 있었고 둘 다 주석에 명시했다** — 링크 키의 `applicationId` 없음 분기, `linkCandidates.delete(key)`. 둘 다 제거해도 red 0건임을 실측했다. 첫 번째는 내가 스스로 찾았고 **두 번째는 리뷰가 찾았다** — 자기 코드의 dead defense 는 스스로 다 못 찾는다.
+6. ⚠️ **jest 는 타입을 안 본다.** `syncShiftReminders(…, NOW)` 를 options 객체로 바꾸며 여러 줄 호출 1곳을 놓쳤는데, `Date` 가 `{offline}` 자리에 들어가도 babel 은 통과시켰고 **단언이 깨져서야** 드러났다(`now` 가 실시간으로 잡혀 계획이 1건으로 줄었다). 시그니처를 바꿨으면 **jest 말고 `tsc --noEmit` 로 호출부를 확인**하라.
+7. 🔑 **오프라인 판정 자산은 이미 완비돼 있다** — SSOT `src/services/offline/networkState.ts`(NetInfo→`onlineManager`), 훅 `useNetworkStatus`, `useSchedules` 가 `isOffline` 반환(`:437`), 화면도 이미 구조분해 중(`schedule.tsx:253`). **새로 만들 필요가 없었다.**
+8. 🔑 **`useSchedules` 는 오프라인이면 `error` 를 항상 `null` 로 접는다**(`:419-425`, 주석 `:432-437` 이 그 사실을 명시). 그래서 `{isLoading, error}` 만 보는 게이트는 **원리적으로 오프라인을 볼 수 없다.** 로딩/에러 기반 게이트를 쓰는 다른 화면도 같은 사각지대일 수 있다.
+### L1-잔여 (정산 확정·일괄 RPC 화 + 계산기 서버 이식) — 2026-08-02 · 상태: 완료 (**PR #402 머지** `d8e3e2dca`)
+
+- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-settlerpc` / `feat/settlement-rpc-phase2` · HEAD `178ecf1ad`(1커밋)
+- 🔴 **마이그 prod 적용 완료 — 재적용 금지. 기록 3건인데 레포 파일은 2개다.**
+  `20260802002505 settlement_amount_calculator` · `20260802003147 settle_work_log_rpcs` ·
+  `20260802003419 settlement_amount_calculator_comments`(← 대응 파일 없음. 아래 주의 1번)
+- 파리티 **186 → 189** / 정책 **111 불변**(prod 실측). `PARITY_EXPECT_FUNCS` 마커 + 단언 리터럴 둘 다 갱신
+
+**끝난 것** (전부 이 세션의 도구 출력 기준)
+- **리뷰 반영**(`b753aa332`) fable **APPROVE**(CRITICAL/HIGH 0). 지적 5건을 그대로 믿지 않고
+  prod 재현 프로브로 판정했다 — **3건 확증** · **2건 오탐 기각** · **리뷰가 놓친 같은 클래스 1건 추가 발견**.
+  🔴 확증분은 전부 **"조용히 0원 확정"** — `jsonb 의 JSON null 은 SQL NULL 이 아니다`
+  (`'{"defaultSalary":null}'::jsonb -> 'defaultSalary'` = `'null'::jsonb` → `IS NULL` 미통과).
+  수정 전→후 실측: defaultSalary=null 0→100,000 · catalog salary=null 0→75,000 ·
+  컨테이너 항목 salary 없음 0→75,000(내가 만든 `jsonb_build_object('salary', NULL)` 이 원인).
+  `taxableItems` 값이 문자열 `"false"` 인 경우도 10,000→9,000 으로 정정(`->>` → `->`).
+  `payroll_notes` 는 `work_logs_xss_check` 커버 밖이라 XSS+500자 가드 신설.
+- **계산기 이식** `fn_settlement_amount`(IMMUTABLE, 순수). `SettlementRepository.calculateSettlementAmount`(TS)는
+  **삭제**했다 — 복제가 아니라 이동이라 클라 계산기 갈래 수는 그대로다.
+  컨테이너/일반 분기 · 역할 단가표 해소 · PROVIDED_FLAG(-1) 비대칭 · opt-out `taxableItems` ·
+  "basePay 는 반올림 전 원값 시간을 쓴다"까지 원본 의미론 그대로. JS 가 NaN 을 만드는 두 자리만 0 으로 닫음
+- **확정** `settle_work_log` — FOR UPDATE 로 TOCTOU·중복 확정 차단, 금액은 서버 재계산.
+  권한 술어는 **job_postings 기준**(행 접근으로 쓰면 staff 셀프 정산이 열린다)
+- **일괄** `bulk_settle_work_logs` — 항목별 `BEGIN…EXCEPTION` 서브트랜잭션으로 부분 성공 계약 보존.
+  `settle_work_log` 를 그대로 호출해 규칙을 한 곳에만 둠. 상한 100 = 클라 `BATCH_CHUNK_SIZE`
+- **계약 변경** `set_work_log_payroll_status` 가 `'completed'` 진입을 거부한다(P5 가 남긴 판단 과제).
+  프로덕션 호출부 **0건 실측** 후 결정 — 이 함수는 payroll_amount 를 안 써서 금액 없는 지급완료를 만든다
+- 게이트: quality **exit 0**(eslint 0 errors · 경고 98 선재) · jest **603스위트 6622테스트 122스냅샷** ·
+  pgTAP **93파일 984테스트**(P5 기준선 91/951 → +2파일 +33) · `check:rpc-migrations` 96종 통과
+- **짝 픽스처 16/16 SQL↔TS 일치** — pgTAP `settlement_amount_calc.test.sql` ↔ Jest `settlementAmountParity.test.ts`
+- **red-green 3종 1:1**: 권한 술어를 행 접근으로 약화 → 셀프 정산 단언(5번)만 red /
+  컨테이너 폴백 단가 변조 → 07 픽스처만 red / `completed` 차단 제거 → 14·15만 red. 복원 후 md5 원상 확인
+- 레포 ↔ prod ↔ 로컬 `md5(replace(prosrc, chr(13),''))` **4함수 전부 일치**
+
+**안 끝난 것**
+- ✅ **PR #402 머지 완료**(`d8e3e2dca`) — 세션 F 가 착지시켰다. 머지 직전 재검증: quality exit 0 · jest **603스위트 6627테스트** · pgTAP **93파일 991테스트 PASS** · 레포↔prod↔로컬 md5 **4/4 일치** · CI **10잡 pass, E2E 재실행 0**. 파리티 **레포 189/111 = prod 189/111 일치**(간극 해소)
+- 🔴 **L1 3단계 = payroll 컬럼 직접 UPDATE 차단.** 순서 엄수: 이 PR 머지 → 웹 배포 + OTA →
+  롤아웃 확인(사용자 게이트) → 그때 차단. 역순이면 미전환 구 빌드가 즉사한다
+- 🔴 **Lost Update 잔존** — `updateWorkTimeWithTransaction`·`updateWorkLogCustomSettlement` 두 경로가
+  아직 클라에서 이력 jsonb 를 read-modify-write 한다(P5 주의 10번, 이번에도 미해결)
+
+**다음 세션에 넘기는 주의** (이 세션에서 새로 알아낸 것만)
+0. 🚨 **`jsonb -> 'key'` 의 JSON null 은 SQL NULL 이 아니다.** `IS NULL` 을 통과하지 못해
+   "값이 없다"는 판정이 통째로 뒤집힌다. 금액 경로에서는 그대로 **0원 확정**으로 이어진다.
+   jsonb 에서 객체를 꺼내 "있으면 쓰고 없으면 폴백"하는 코드는 **전부** `NULLIF(x,'null'::jsonb)` 를 걸어라.
+   ⚠️ 내가 `jsonb_build_object('salary', <SQL NULL>)` 로 **JSON null 을 스스로 만들어** 같은 함정에 빠졌다 —
+   입력만 방어하면 부족하다.
+1. 🚨 **적용할 SQL 을 손으로 줄이면 레포와 조용히 갈라진다.** 마이그 파일에 있던 본문 주석을
+   `apply_migration` 에 안 실어 prod 만 9280자, 레포 13599자로 갈렸다. **md5(prosrc) 대조가 유일한 적발 수단**이고
+   실제로 4함수 중 1건을 잡았다(그래서 마이그 기록이 3건). 대조는 반드시 CR 제거 후.
+2. 🔑 **계산기 이식은 "5번째 구현 추가"가 아니라 "이동"으로 설계하라.** TS 원본을 남겼으면
+   판정 복제가 하나 더 늘었을 것이다 — 이 레포의 상습 결함 클래스다.
+3. 🔑 **순수 함수로 만들면 두 언어를 한 표로 묶을 수 있다.** `fn_settlement_amount` 를 테이블 행이 아니라
+   11개 스칼라/jsonb 인자로 받게 해서 pgTAP 이 **시딩 없이 리터럴 픽스처**로 호출한다.
+   같은 16 케이스를 Jest 에도 물려 이식 드리프트를 잡는다. 이게 없으면 드리프트는 관측 불가능하다.
+4. 🚨 **손계산을 기대값으로 쓰면 틀린 쪽은 사람이다.** 픽스처 16개 중 2건의 기대값을 내가 잘못 계산했고
+   클라 구현이 맞았다. 짝 테스트가 없었으면 **SQL 을 클라에 맞춰 틀리게 고칠 뻔했다.**
+   기대값은 양쪽 구현에 각각 물려 보고 확정하라.
+5. 🚨 **차단 계약을 새로 걸면 그 상태를 시드로 쓰던 테스트가 깨진다.** `completed` 진입을 막자
+   기존 pgTAP 15번이 "14번이 RPC 로 만들어 둔 completed 상태"에 의존하던 게 드러났다
+   (직접 UPDATE 는 `protect_work_log_payroll_columns` 가 42501). → 완료 행은 **UPDATE 가 아니라 INSERT 로** 세운다.
+6. 🔑 **약화·복원은 `tr -d '\r' | docker exec -i psql` 로 파이프**하면 CR 오염 없이 왕복한다
+   (`docker cp` + `psql -f` 는 CRLF 워크트리에서 prosrc 에 CR 을 섞는다 — P5 실증).
+7. ⚠️ **`instanceof Error` 만 보는 에러 매퍼는 통째로 무력화될 수 있다.** `String(error)` 로 떨어지면
+   평범한 객체가 `'[object Object]'` 가 되어 접두사 매칭이 전부 실패한다. 실측: supabase-js
+   `PostgrestError` 는 **Error 를 상속한다**(`postgrest-js/dist/index.d.cts:26`) — 즉 프로덕션은 멀쩡했고
+   **내 테스트 목이 비현실적이었다.** 목을 실제 형태로 고치고 `.message` 폴백도 넣었다.
+8. 🔑 **계산기 4갈래는 값이 갈라져 있지 않다**(실측). 세금 코어(`calculateItemizedRateTax`)와
+   시간 변환(`TimeNormalizer`)은 실제로 공유된다. 발산 지점은 ①시간 출처 폴백 유무 ②세전/세후 반환
+   ③공고 데이터 신선도(캐시 vs 재조회) 셋이다. `services/work/settlement/settlementCalculation.ts` 는
+   **소비처 0건(죽은 경로)** 이며 유일하게 `deductions` 개념을 갖고 있다 — 되살리면 즉시 갈라진다.
+9. ⚠️ **`guaranteedHours` 는 금액에 반영되지 않는다**(표시 전용, SETTLE-2 계약 테스트가 고정).
+   prod 공고 `compensation.allowances` 에 실제로 들어 있어 착각하기 쉽다.
+10. ⚠️ **prod 데이터는 사실상 비어 있다** — `work_logs` 3건, 정산 완료 **0건**. 이식 위험의 실데이터 노출은 0이다.
+11. 🔑 **리뷰 지적은 재현 프로브로 판정하라.** fable 리뷰 5건 중 2건은 **오탐**이었다
+    (`allowances: null` 은 양쪽 다 수당 0 · schedule `role:''` 는 `getPostingDefaultSalary` 가
+    카탈로그 첫 단가로 폴백해 양쪽이 수렴). 그대로 "고쳤으면" 멀쩡한 동작을 바꿨을 것이다.
+    반대로 프로브를 돌린 덕에 **리뷰가 놓친 인스턴스 1건**을 찾았다.
+    오탐도 픽스처(21번)로 남겨 다음 사람이 같은 의심을 다시 파헤치지 않게 했다.
+12. ⚠️ 이 세션 중 병렬 워크트리 2개(`T-HOLDEM-cleanup`·`T-HOLDEM-schedkey`)가 새로 떴다.
+    **로컬 Docker 스택과 `node_modules` 는 공유**다 — pgTAP·quality 전에 재확인할 것.
+
+---
 
 ### 세션 A2 (세션 A 착지 — P3·P6 머지 + 원장) — 2026-08-02 · 상태: 완료
 
