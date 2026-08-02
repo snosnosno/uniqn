@@ -35,7 +35,7 @@
 | **L1-잔여**(감사후속) | 정산 확정·일괄 RPC 화 + 계산기 서버 이식 | ~~`feat/settlement-rpc-phase2`~~ | ✅ **머지** | **#402** | `d8e3e2dca`. CI **10잡 전부 pass**(DB Tests 2m0s · E2E 포함, **재실행 0회**). `178ecf1ad` + 리뷰반영 `b753aa332`(2커밋). P5 가 남긴 L1 나머지 절반. `SettlementRepository.calculateSettlementAmount`(TS)를 **삭제하고** `fn_settlement_amount`(PL/pgSQL)로 이식 — 복제가 아니라 **이동**이라 클라 계산기 갈래 수는 불변. 신규 함수 3종(`fn_settlement_amount`·`settle_work_log`·`bulk_settle_work_logs`). 🔴**마이그 prod 적용 완료 — 재적용 금지. 기록 4건인데 레포 파일은 2개**(뒤 2건은 같은 함수 재정의라 별도 파일 없음 — 주석 누락 복구 + 리뷰 반영). 파리티 **186→189**/정책 111 불변, `PARITY_EXPECT_FUNCS` 갱신. quality exit 0 · jest **603스위트 6627테스트 122스냅샷** · pgTAP **93파일 991테스트**(기준선 91/951) · **짝 픽스처 21/21 SQL↔TS 일치** · red-green **4종 1:1** · 레포↔prod↔로컬 md5 4함수 일치. `set_work_log_payroll_status` 의 `completed` 진입 차단(호출부 0건 실측 후 결정). fable 리뷰 **APPROVE**(CRITICAL/HIGH 0) — 지적 5건을 prod 프로브로 재판정해 **3건 확증 수정 · 2건 오탐 기각 · 리뷰가 놓친 1건 추가 발견**. 상세=§5 |
 | **세션 E**(P2·P3 후속) | 병합 키 표류 + 오프라인 침묵 취소 (클라 전용 2건) | ~~`fix/schedule-merge-key`~~ | ✅ **머지** | **#404** | `c97389daf`. CI **9잡 전부 pass**(E2E 재실행 0). 재통합(#402·#403) 후 재검증: quality exit 0 · jest **603스위트 6639테스트 전량 통과**. 마이그 0건. |
 | **세션 F** | 세션 D·E 착지 + 근본수선 설계 | ~~`docs/session-f-ledger`~~ | ✅ **착지 3건** | **#402·#403·#404** | **코드 변경 0건**(착지 전용). 파리티 간극 해소 — 레포 **186 → 189** = prod 189/111 실측 일치. 🔴 **과제 4(근본 수선)는 미착수 — 설계만 완료**, 사용자 결정으로 새 세션 이관. 상세=§5 |
-| **세션 G** | 과제 4 — 슬롯 편집 표류 근본 수선 | `feat/work-log-slot-sync` | 🔨 **PR 미생성** | | 신규 SECDEF RPC `update_work_log_slot(uuid, jsonb)` 로 `work_logs`+`applications.assignments` 동시 갱신. 🔴**마이그 1건 prod 적용 완료 — 재적용 금지**(기록명 `20260802180000`, 레포 파일명과 동일). 파리티 **189 → 190**/정책 111 불변. quality exit 0 · jest **604스위트 6647테스트** · pgTAP **23/23**(전체 94파일 1014테스트 중 파리티 1건만 red — 아래 ⚠️) · **red-swap 7종 1:1** · md5 3자 일치 `70f323c8…`. ⚠️**prod 실측은 191** — 타 세션이 신고(reports) 함수 2개를 prod 선적용·미머지. 상세=§5 |
+| **세션 G** | 과제 4 — 슬롯 편집 표류 근본 수선 | `feat/work-log-slot-sync` | 🔨 **PR 미생성** | | 신규 SECDEF RPC `update_work_log_slot(uuid, jsonb)` 로 `work_logs`+`applications.assignments` 동시 갱신. 🔴**마이그 1건 prod 적용 완료 — 재적용 금지**(기록명 `20260802180000`, 레포 파일명과 동일). 파리티 **189 → 190**/정책 111 불변. quality exit 0 · jest **604스위트 6648테스트** · pgTAP **27/27**(전체 94파일 1018테스트 중 파리티 1건만 red — 아래 ⚠️) · **red-swap 9종 1:1** · md5 3자 일치 `70f323c8…`. 리뷰 fable **APPROVE**(CRITICAL 0/HIGH 0) — MEDIUM 3건 중 **2건 반영·1건 프로브로 오탐 기각**. ⚠️**prod 실측은 191** — 타 세션이 신고(reports) 함수 2개를 prod 선적용·미머지. 상세=§5 |
 | **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
 | **S6** | 3-C 설계 | — | ⬜ | | 사용자 결정 필요 |
 | **S7** | 3-C 구현 | `feat/posting-time-change` | ⬜ | | S6 승인 후 |
@@ -504,7 +504,7 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 
 ### 세션 G (과제 4 — 슬롯 편집 표류 근본 수선) — 2026-08-02 · 상태: 완료(**PR 미생성** — 사용자 결정 대기)
 
-- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-slotsync` / `feat/work-log-slot-sync` · HEAD `cab446dd9`(2커밋)
+- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-slotsync` / `feat/work-log-slot-sync` · HEAD `32c8ba704`(4커밋)
 - 🔴 **마이그 1건 prod 적용 완료 — 재적용 금지.** 기록명 `20260802180000 update_work_log_slot_rpc`
   (이번엔 레포 파일명과 **같다**). 레포↔prod↔로컬 md5 3자 일치 `70f323c84ac9d9f268f2589af9eb5f84`(13990자).
 
@@ -513,10 +513,18 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 - 신규 SECDEF RPC `update_work_log_slot(p_work_log_id uuid, p_patch jsonb)` — `work_logs` 와
   `applications.assignments[]` 를 한 트랜잭션에서 갱신. `updateSlot` 이 `.update()` → `rpc()` 1회로 전환.
 - 파리티 **189 → 190**(함수 1개, 정책 111 불변). 마커(:99)와 단언 리터럴(:119) 동시 갱신.
-- 검증: quality **exit 0**(0 errors) · jest **604스위트 6647테스트** · pgTAP 신규 **23/23** ·
-  **red-swap 7종이 각각 대응 단언만 red**(분할 제거→9·10 / groupId 재발급→11 / JSON null→19 /
-  다중집합 가드 제거→22 / 권한 술어 제거→6 / 미지 키 허용→3 / 직접 UPDATE 복귀→8건 /
-  applications 무효화 제거→1건).
+- 검증: quality **exit 0**(0 errors) · jest **604스위트 6648테스트** · pgTAP 신규 **27/27** ·
+  **red-swap 9종이 각각 대응 단언만 red**(분할 제거→9·10 / groupId 재발급→11 / JSON null→19 /
+  다중집합 가드 제거→22 / 권한 술어 제거→6 / 미지 키 허용→3 / B 조각 제거→25 /
+  직접 UPDATE 복귀→8건 / applications 무효화 제거→1건 / 40P01 매핑 제거→1건).
+- 리뷰 fable **APPROVE**(CRITICAL 0 / HIGH 0). MEDIUM 3건 중 2건 반영, 1건은 **재현 프로브로 오탐 기각**:
+  - ✅ **B 조각 무커버**(실효) — 픽스처 4종이 전부 roleIds 1종이라 분할의 B 조각(같은 날 × 나머지 역할)이
+    **한 번도 실행되지 않았다**. 형제 역할 배정이 증발해도 green 이었다 → 픽스처 ⑤ + 단언 4건 추가.
+  - ✅ **데드락 40P01 미매핑**(실효) — 이 RPC(A→W)와 QR 체크아웃(W→트리거→A)의 순서 역전은 실재한다
+    (선재 클래스). '알 수 없는 오류'로 보이던 것을 재시도 안내로 매핑.
+  - ❌ **custom_role↔StaffRole 리터럴 충돌로 역매핑이 깨진다**(오탐) — 프로브 실측:
+    work_log 키 `'other:dealer'` vs 원소 키 `'dealer'` 로 **매칭 자체가 성립하지 않아** `no_match` skip 된다.
+    역매핑에 도달할 수 없어 이미 안전하다. 가드를 추가하지 않았다.
 
 **🔴 다음 세션이 반드시 먼저 알아야 할 것 — 파리티가 다시 벌어져 있다**
 
@@ -560,7 +568,11 @@ OID 순서(31296·31307 > `settle_work_log` 31272)로 보아 **#402 이후에** 
 
 **안 끝난 것**
 
-- 🔴 **PR 미생성**(사용자 명시 요청 시에만). 브랜치 `feat/work-log-slot-sync` · HEAD `cab446dd9`.
+- 🔴 **PR 미생성**(사용자 명시 요청 시에만). 브랜치 `feat/work-log-slot-sync` · HEAD `32c8ba704`.
+- ⚠️ 리뷰 LOW 3건은 수용(미수정): ①자가 치유가 레거시 범위 timeSlot 의 종료시각을 지운다
+  (§K 정본이 단일값이라 정합인 수렴) ②역할 편집이 형제 키와 충돌하면 그 셀이 영구 `ambiguous_match` skip
+  (정책 "모호하면 손대지 않는다"와 정합, `logger.warn` 으로 관측) ③구 경로의 무음 0-row no-op 이
+  신 경로에서 명시 에러로 바뀐다(개선).
 - 🔴 **직접 UPDATE 차단(REVOKE)** 은 의도적으로 이번에 넣지 않았다. 순서 = 이 PR 머지 →
   웹 배포 + OTA → 롤아웃 확인(사용자 게이트) → 그 다음. 역순이면 미전환 구 빌드가 즉사한다.
   🔑 배포도 **마이그가 먼저**다(이미 prod 적용 완료 — 이 조건은 충족).
