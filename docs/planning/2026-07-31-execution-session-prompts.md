@@ -33,7 +33,8 @@
 | **P6**(감사후속) | 오프라인 캐시 TTL 분리 (M6) | ~~`fix/offline-cache-policies`~~ | ✅ **머지** | **#398** | `40040c8fb`. CI **9잡 전부 pass**(E2E 11m5s 포함, **재실행 0회**). 재통합(#397 P2 · #395 P4 · **#396 P3**) 후 재검증: quality **0 errors**(eslint 경고 98 선재 · prettier clean) · 전체 jest **602스위트 6599테스트 122스냅샷 전량 통과** · pre-push quality 통과. 마이그 **0건**. 감사 5줄 → **실측 6줄**(`useWorkLogs.ts:269` 추가 발견). `offlineCachePolicies` 5키 + **브랜드 타입 `OfflineTtlMs`** 로 컴파일 타임 차단. quality 통과 · jest 600스위트 6583테스트 · **red-green 2종**(호출부 원복 시 tsc 6곳 TS2322 + 테스트 5건 red / 정책값 오염 시 백스톱 2건 red) · 리뷰 fable **APPROVE**(CRITICAL 0/HIGH 0, MEDIUM 1 반영) |
 | **P5**(감사후속) | 방어심화 (M4+L2+L1 절반) | ~~`feat/settlement-rpc-and-defense`~~ | ✅ **머지** | **#400** | `95772ce49`. **타 세션 소관** — 세션 A2 가 P6 를 머지하는 사이에 착지했다. 신원 컬럼 고정 트리거 + `time_slot` CHECK + 정산 상태 RPC 화. 🔴**마이그 2건 prod 적용 완료 — 재적용 금지**(기록명 `20260801212753 work_logs_identity_pin_and_time_slot_check`·`20260801212843 set_work_log_payroll_status_rpc`, 파일명과 다름). 파리티 **184→186** / 정책 111 불변(prod 실측), `PARITY_EXPECT_FUNCS` 도 이 PR 에서 186 으로 갱신됨. quality exit 0 · jest **600스위트 6583테스트** · pgTAP **91파일 951테스트**(기준선 88/912) · red-green **5종 1:1 실증**. 리뷰 fable planner·fable/opus database-reviewer 3인 반영. 감사의 M4 처방(컬럼 REVOKE)은 무효였고 트리거로 대체. **L1 은 절반** — 확정·일괄 RPC화와 직접쓰기 차단은 다음 세션(상세=§5) |
 | **L1-잔여**(감사후속) | 정산 확정·일괄 RPC 화 + 계산기 서버 이식 | ~~`feat/settlement-rpc-phase2`~~ | ✅ **머지** | **#402** | `d8e3e2dca`. CI **10잡 전부 pass**(DB Tests 2m0s · E2E 포함, **재실행 0회**). `178ecf1ad` + 리뷰반영 `b753aa332`(2커밋). P5 가 남긴 L1 나머지 절반. `SettlementRepository.calculateSettlementAmount`(TS)를 **삭제하고** `fn_settlement_amount`(PL/pgSQL)로 이식 — 복제가 아니라 **이동**이라 클라 계산기 갈래 수는 불변. 신규 함수 3종(`fn_settlement_amount`·`settle_work_log`·`bulk_settle_work_logs`). 🔴**마이그 prod 적용 완료 — 재적용 금지. 기록 4건인데 레포 파일은 2개**(뒤 2건은 같은 함수 재정의라 별도 파일 없음 — 주석 누락 복구 + 리뷰 반영). 파리티 **186→189**/정책 111 불변, `PARITY_EXPECT_FUNCS` 갱신. quality exit 0 · jest **603스위트 6627테스트 122스냅샷** · pgTAP **93파일 991테스트**(기준선 91/951) · **짝 픽스처 21/21 SQL↔TS 일치** · red-green **4종 1:1** · 레포↔prod↔로컬 md5 4함수 일치. `set_work_log_payroll_status` 의 `completed` 진입 차단(호출부 0건 실측 후 결정). fable 리뷰 **APPROVE**(CRITICAL/HIGH 0) — 지적 5건을 prod 프로브로 재판정해 **3건 확증 수정 · 2건 오탐 기각 · 리뷰가 놓친 1건 추가 발견**. 상세=§5 |
-| **세션 E**(P2·P3 후속) | 병합 키 표류 + 오프라인 침묵 취소 (클라 전용 2건) | `fix/schedule-merge-key` | 🔨 **커밋 3건** | — | HEAD `a2aaa66d8`. **마이그 0건** — **파리티 기여 0**(`PARITY_EXPECT_FUNCS` 미변경). ⚠️ 착수 시점 값은 186/111 이었으나 **절대값은 세션 D 의 prod 선적용으로 이동했다**(그 세션 소관) — 이 브랜치는 그 값을 건드리지 않는다. quality **0 errors**(eslint 경고 98 선재·prettier clean) · tsc 0 errors · 전체 jest **602스위트 6612테스트 122스냅샷 전량 통과**. **red-green 6종 1:1 실증**. 리뷰 fable **APPROVE**(CRITICAL/HIGH/MEDIUM **전부 0**, LOW 3 — 2건 반영·1건은 지적 아님). 상세=§5 |
+| **세션 E**(P2·P3 후속) | 병합 키 표류 + 오프라인 침묵 취소 (클라 전용 2건) | ~~`fix/schedule-merge-key`~~ | ✅ **머지** | **#404** | `c97389daf`. CI **9잡 전부 pass**(E2E 재실행 0). 재통합(#402·#403) 후 재검증: quality exit 0 · jest **603스위트 6639테스트 전량 통과**. 마이그 0건. |
+| **세션 F** | 세션 D·E 착지 + 근본수선 설계 | ~~`docs/session-f-ledger`~~ | ✅ **착지 3건** | **#402·#403·#404** | **코드 변경 0건**(착지 전용). 파리티 간극 해소 — 레포 **186 → 189** = prod 189/111 실측 일치. 🔴 **과제 4(근본 수선)는 미착수 — 설계만 완료**, 사용자 결정으로 새 세션 이관. 상세=§5 |
 | **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
 | **S6** | 3-C 설계 | — | ⬜ | | 사용자 결정 필요 |
 | **S7** | 3-C 구현 | `feat/posting-time-change` | ⬜ | | S6 승인 후 |
@@ -58,7 +59,8 @@
 | **P2·P5(타 세션)** | ~~`T-HOLDEM-notifyfix`~~ | ✅ **타 세션이 스스로 정리**(2026-08-02 세션 A2 종료 시 `git worktree list` 에서 사라짐). P2 는 #397, P5 는 #400 으로 머지됐다 |
 | **L1-잔여** | ~~`T-HOLDEM-settlerpc`~~ | ✅ **머지 완료(#402)** — 정리 대상(정션 해제 선행 → `worktree remove` → 브랜치 삭제). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성(821 확인) |
 | L1-잔여-원장 | `T-HOLDEM-ledger2` | 🔨 이 문서 커밋용(정션 없음). 원장 PR 머지 후 정리 대상 |
-| **세션 E** | `T-HOLDEM-schedkey` | 🔨 **유지 중**(PR 미생성 — 사용자 결정 대기). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성, 원본 `node_modules` **821 → 821** 실측 무손상 |
+| **세션 E** | ~~`T-HOLDEM-schedkey`~~ | ✅ **정리완료**(세션 F — 정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **821 → 821** 실측 무손상) |
+<!-- 🔨 **유지 중**(PR 미생성 — 사용자 결정 대기). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성, 원본 `node_modules` **821 → 821** 실측 무손상 | -->
 | S7 | `T-HOLDEM-timechange` | ⬜ |
 
 전부 `C:/Users/user/Desktop/` 아래. 머지 완료 세션의 워크트리는 다음 세션 착수 시 정리한다
@@ -497,6 +499,76 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 
 > 형식은 §2 세션 종료 프로토콜 4번 참조. **삭제하지 말고 쌓는다** —
 > 중단된 세션을 다시 여는 사람이 읽을 유일한 기록이다.
+
+### 세션 F (세션 D·E 착지 + 근본수선 설계) — 2026-08-02 · 상태: 완료(과제 1~3) · **과제 4 미착수 — 새 세션 이관**
+
+- **소스 코드 변경 0건.** 앞선 두 세션이 만든 브랜치를 재검증·착지시키고, 과제 4 는 설계만 냈다.
+- 착지 3건: **#402** `d8e3e2dca`(세션 D 코드) · **#403** `8b4702000`(세션 D 원장) · **#404** `c97389daf`(세션 E)
+
+**끝난 것** (전부 이 세션의 도구 출력 기준)
+
+| 대상 | CI | 머지 전 재검증 |
+|---|---|---|
+| #402 세션 D | **10잡 pass**(DB Tests 2m0s · E2E 포함, 재실행 0) | quality exit 0 · jest **603/6627** · pgTAP **93파일 991테스트 PASS** · md5 3자 대조 **4/4** |
+| #403 원장 | 체크 없음(문서 전용) | — |
+| #404 세션 E | **9잡 pass**(E2E 재실행 0) | 재통합 후 quality exit 0 · jest **603/6639** |
+
+- 🔴 **파리티 간극 해소** — 착수 시 레포 `PARITY_EXPECT_FUNCS=186` vs prod 실측 **189** 였다.
+  #402 머지로 레포가 189 로 올라가 **189/111 = prod 189/111 일치**. 주간 parity-smoke red 위험 제거.
+- 워크트리 3개 정리 완료(`T-HOLDEM-settlerpc`·`T-HOLDEM-schedkey`·`T-HOLDEM-ledger2`).
+  정션 해제 선행, 원본 `node_modules` **821 → 821** 실측 무손상.
+
+**안 끝난 것 — 🔴 과제 4(근본 수선). 설계 완료, 구현 0.**
+
+원인: `updateSlot` 이 `work_logs` 의 `time_slot`·`role` 만 갱신하고 `applications.assignments[]` 를
+그대로 둬 두 원천이 표류한다. 세션 E 는 병합 키를 FK 기반 2단계로 바꿔 **증상만** 막았다.
+
+**채택 설계** (fable planner 판정 + 이 세션 실측 정정):
+- `update_work_log_slot(p_work_log_id uuid, p_patch jsonb)` **SECDEF RPC 1개** 신설.
+  jsonb 패치인 이유 = 기존 계약이 3상("키를 안 보내면 그 컬럼을 만들지 않는다" — GRID-1).
+- multi-date 원소는 **(date × role) 셀 단위로 분할**하되 **`groupId` 는 원본 유지**.
+  새 groupId 를 발급하면 `assignment_group_id`(work_logs)와 어긋나 병합이 다시 깨진다.
+  분할 후에도 키에 `date` 가 있어 dates 가 서로소면 1:1 이 유지된다.
+- 매칭 실패·모호 시 **assignments 동기화만 skip**(work_logs 만 갱신, `assignmentSynced:false`).
+  남의 원소를 오염시키는 것보다 표류가 싸다.
+- 🔴 **권한은 RLS `wl_update` 를 정확히 그대로 반영한다(확대 0).** 이 세션 prod 실측:
+  `owner_id = auth.uid() OR job_posting_id IN (SELECT id FROM job_postings WHERE is_workspace_member(workspace_id, auth.uid()) OR is_posting_collaborator(id, auth.uid()))`.
+  planner 는 `is_admin()`·`job_postings.owner_id` 추가를 "순수 확대"로 권했으나 **채택하지 않았다** —
+  현행 RLS 에 둘 다 없고, 권한 확대는 조용히 넣을 성질이 아니다. 선례가 admin 을 연 것은 그 함수의 결정이다.
+- 파리티 **189 → 190**(신규 함수 1개, 정책 불변). 마커(:91)와 단언 리터럴 **동시 갱신** 필수.
+
+**🔑 planner 설계의 전제 하나를 이 세션이 정정했다 (다음 세션은 이걸 먼저 읽어라)**
+planner 는 "`generateApplicationLinkKey` 가 없다 → 표류하면 지금도 병합이 끊긴다"를 근거로
+(다)안(multi-date skip)을 기각했다. 그 관찰은 **당시 master 기준으로 정확**했지만, 이유는
+**세션 E 가 아직 머지 안 됐기 때문**이었다. #404 머지로 링크 키가 들어왔으므로
+(`ScheduleMerger.ts` 2단계 병합) **표류해도 병합은 안 끊긴다.**
+→ 과제 4 는 "사용자에게 보이는 파손 수리"가 아니라 **데이터 정합성 수선**이다.
+   채택안 (나)는 그대로 유효하지만(과제가 원인 제거를 요구), **긴급도는 planner 판정보다 낮다.**
+
+**다음 세션에 넘기는 주의** (이 세션에서 새로 알아낸 것만)
+
+1. 🚨 **로컬 Docker 스택은 prod·레포 어느 쪽과도 다를 수 있다 — pgTAP red 를 브랜치 결함으로 오판하지 마라.**
+   #402 검증 중 `parity_baseline_guard` 가 1건 red 였는데 원인은 브랜치가 아니라
+   **로컬에만 있던 고아 함수** `notify_on_report_review`(+트리거 `report_notify_review`)였다.
+   prod 0건 · 레포 전체 0건(마이그 파일에 존재한 적 없음)으로 확인 후 로컬에서 DROP → 991/991 green.
+   **CI 는 fresh 스택이라 애초에 영향 없었다**(DB Tests pass 로 독립 확인).
+2. 🚨 **`migration list --local` 의 "적용됨"은 DDL 이 실제로 돌았다는 뜻이 아니다.**
+   `20260802160000` 이 적용 기록은 있는데 `fn_settlement_amount` 가 **로컬에 없었다.**
+   고아 기록 2건(`20260802150000`·`20260802160100`, 파일로 커밋된 적 없음)도 있었다.
+   복구 = `migration repair --status reverted <ver>` → `migration up --local --include-all`.
+   **믿을 것은 기록이 아니라 `pg_proc` 실측이다.**
+3. 🔑 **md5 3자 대조는 이렇게 한다** — 레포 마이그 파일에서 `$$…$$` 본문을 추출해 md5,
+   prod·로컬은 `md5(replace(prosrc, chr(13), ''))`. 이번엔 4/4 길이·해시 모두 일치했다.
+   (#402 는 이전 세션에서 드리프트가 있었고 이미 고쳐진 상태였다 — 재확인해서 확정했다.)
+4. 🔑 **`gh pr merge --delete-branch` 의 로컬 삭제 실패는 이번 세션에도 3/3 재현됐다.**
+   머지·원격삭제는 정상. 판정은 반드시 `gh pr view <n> --json state,mergeCommit`.
+5. ⚠️ **원장 워크트리 pre-push 훅은 `node_modules` 부재로 tsc 에러를 낸다** — 문서 전용이면
+   `--no-verify`(선례). 코드가 섞였다면 그러면 안 된다.
+6. 🚨 **PowerShell `.ps1` 에 한글을 쓰면 cp949 로 깨져 파서 에러가 난다.**
+   정션 조작 스크립트는 **ASCII 로만** 써라(이번에 실제로 한 번 깨졌다).
+7. 🔑 **원장 충돌은 "양쪽 보존"이 기계적으로 가능하다** — 세 훅 전부 같은 앵커의 순수 추가라
+   §1 표는 시간순, §5 는 "최신이 위"로 배치하면 끝난다. `git merge-tree` 로 **머지 전에 미리** 범위를
+   확인할 수 있다(이번엔 충돌 파일이 원장 1개뿐임을 사전 확인).
 
 ### 세션 E (P2·P3 후속 — 병합 키 표류 + 오프라인 침묵 취소) — 2026-08-02 · 상태: 완료(PR 미생성, 사용자 결정 대기)
 
