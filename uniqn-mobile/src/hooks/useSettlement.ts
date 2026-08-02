@@ -348,8 +348,13 @@ export function useUpdateSettlementStatus() {
     onSuccess: (_, { status }) => {
       logger.info('정산 상태 변경 완료', { status });
 
-      // 실제 호출부는 PENDING(되돌리기)과 COMPLETED 둘뿐이다. 'failed' 로 전이시키는
-      // 경로는 UI 에 존재하지 않지만 타입상 가능하므로 문구는 남겨 둔다.
+      // ⚠️ 실제 호출부는 **PENDING(되돌리기) 하나뿐**이다(전수 grep 실측 —
+      //    useStaffSettlementsHandlers 의 handleRevertSettlement 만 이 훅을 부른다).
+      //    이전 주석은 "PENDING 과 COMPLETED 둘뿐"이라고 적혀 있었으나 stale 이었다.
+      //    🔴 지급 완료 진입은 이제 서버가 거부한다 — 이 경로는 payroll_amount 를 쓰지 않아
+      //    completed 로 들어가면 **금액 없는 지급완료**가 생긴다(감사 L1 잔여에서 차단).
+      //    확정은 settleWorkLog(→ settle_work_log RPC)가 금액 재계산과 함께 전담한다.
+      //    아래 completed/failed 문구는 타입 전체를 채우기 위해 남는다(도달하지 않는다).
       const statusMessages: Record<PayrollStatus, string> = {
         pending: '정산 대기로 변경되었습니다.',
         completed: '정산이 완료되었습니다.',
