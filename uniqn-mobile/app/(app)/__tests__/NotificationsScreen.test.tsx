@@ -7,7 +7,10 @@ import NotificationsScreen from '../notifications';
 const mockRouterPush = jest.fn();
 const mockConfirmAction = jest.fn();
 const mockDeleteAllNotifications = jest.fn();
+const mockDeleteNotification = jest.fn();
 const mockMarkAllAsRead = jest.fn();
+// NotificationList 가 실제로 받은 props (삭제·무한스크롤 배선 검증용)
+const mockListProps: { current: Record<string, unknown> | null } = { current: null };
 const mockGroupedResult = {
   groupedNotifications: [] as unknown[],
   rawNotifications: [{ id: 'n-1' }] as unknown[],
@@ -40,7 +43,10 @@ jest.mock('@/components/headers', () => {
 });
 
 jest.mock('@/components/notifications', () => ({
-  NotificationList: () => null,
+  NotificationList: (props: Record<string, unknown>) => {
+    mockListProps.current = props;
+    return null;
+  },
   NotificationCategoryTabs: () => null,
 }));
 
@@ -51,7 +57,8 @@ jest.mock('@/components/icons', () => ({
 jest.mock('@/hooks/useNotifications', () => ({
   useGroupedNotifications: () => mockGroupedResult,
   useMarkAllAsRead: () => ({ markAllAsRead: mockMarkAllAsRead }),
-  useDeleteNotification: () => ({ deleteNotification: jest.fn() }),
+  // 목 키(deleteNotification·deleteAllNotifications·isDeletingAll)는 화면 계약이므로 유지
+  useDeleteNotification: () => ({ deleteNotification: mockDeleteNotification }),
   useDeleteAllNotifications: () => ({
     deleteAllNotifications: mockDeleteAllNotifications,
     isDeletingAll: false,
@@ -78,6 +85,7 @@ jest.mock('@/utils/haptics', () => ({
 describe('알림 목록 화면 헤더 액션', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockListProps.current = null;
     mockGroupedResult.rawNotifications = [{ id: 'n-1' }];
     mockGroupedResult.unreadCount = 1;
   });
@@ -126,5 +134,42 @@ describe('알림 목록 화면 헤더 액션', () => {
     fireEvent.press(getByTestId('notifications-mark-all-read'));
 
     expect(mockMarkAllAsRead).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ============================================================================
+// 목록 배선 — 개별 삭제·무한스크롤이 훅까지 연결돼 있는지
+// ============================================================================
+
+describe('알림 목록 화면 목록 배선', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockListProps.current = null;
+    mockGroupedResult.rawNotifications = [{ id: 'n-1' }];
+    mockGroupedResult.unreadCount = 1;
+  });
+
+  it('개별 삭제 콜백이 삭제 훅으로 그대로 전달된다', () => {
+    render(<NotificationsScreen />);
+
+    const onDelete = mockListProps.current?.onDeleteNotification as (id: string) => void;
+    expect(typeof onDelete).toBe('function');
+
+    onDelete('n-1');
+
+    // 확인 다이얼로그 없이 바로 훅으로 간다 — 구제 경로는 훅의 되돌리기 토스트가 담당
+    expect(mockConfirmAction).not.toHaveBeenCalled();
+    expect(mockDeleteNotification).toHaveBeenCalledWith('n-1');
+  });
+
+  it('목록 끝 도달 콜백이 fetchNextPage 를 호출한다', async () => {
+    render(<NotificationsScreen />);
+
+    const onLoadMore = mockListProps.current?.onLoadMore as () => Promise<void>;
+    expect(typeof onLoadMore).toBe('function');
+
+    await onLoadMore();
+
+    expect(mockGroupedResult.fetchNextPage).toHaveBeenCalledTimes(1);
   });
 });

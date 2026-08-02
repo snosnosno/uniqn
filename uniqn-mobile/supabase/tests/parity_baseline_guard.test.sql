@@ -76,7 +76,6 @@
 --     ↑ 이 마이그는 #370 보다 먼저 prod 에 적용됐고 PR 은 나중에 합류했다.
 --       그래서 브랜치 시점엔 183-1=182 였고, #370 머지 후 185-1=184 로 재산정했다.
 --       🔑 PR 보다 먼저 prod 적용하면 다른 레인의 기대값이 자동으로 어긋난다.
---
 --   2026-08-02 정산 확정·일괄 RPC 화(L1 잔여, prod 적용 완료 — 재적용 금지):
 --     함수 189 = 186 + fn_settlement_amount·settle_work_log·bulk_settle_work_logs 3
 --     정책 111 불변(RPC 신설만, RLS 미변경).
@@ -84,6 +83,21 @@
 --        별도 파일이 없다: `settlement_amount_calculator_comments`(20260802003419, 본문 주석 누락 복구) ·
 --        `settlement_calc_json_null_and_notes_guard`(리뷰 지적 반영 — JSON null 3지점 + 메모 가드).
 --        레포↔prod↔로컬은 md5(prosrc, CR 제거) 대조로 4/4 일치 확인했다. **함수 수는 불변**.
+--   2026-08-02 신고 처리 결과 알림 + 신원 고정(prod 미적용 — 머지와 동기):
+--     함수 191 = 189 + notify_on_report_review 1 (20260802170000)
+--                    + fn_reports_pin_identity 1 (20260802170300)
+--       (앱 FAQ 가 "처리 결과는 앱 내 알림으로 안내드립니다"라고 약속했는데 reports 에
+--        UPDATE 알림 트리거가 없어 report_resolved 가 한 번도 발송된 적이 없었다.
+--        그 트리거가 NEW.reporter_id 를 믿는데 rep_update 에 WITH CHECK 이 없어
+--        관리자 raw PATCH 로 수신자를 바꿔치기할 수 있었다 — 신원 고정 트리거로 봉쇄).
+--     정책 111 불변(트리거 신설만, 테이블·RLS 미변경).
+--     같은 배치의 20260802170100(notify_on_job_posting_update 본문 라벨링)과
+--     20260802170200(create_report 증빙 서버 검증)은 CREATE OR REPLACE 재정의라 개수 불변.
+--     20260802150000(신고 증빙 Storage 버킷·정책)은 storage 스키마 소관이라
+--     public 함수/정책 카운트에 영향이 없다.
+--     ⚠️ 이 브랜치는 착수 시점 base(186)에서 188 로 잡았다가, 정산 레인(#402)이 먼저
+--        머지되어 기준선이 189 가 된 뒤 191 로 재산정했다 — 위 2026-07-31 항목이 경고한
+--        "PR 보다 먼저 prod 적용하면 다른 레인의 기대값이 어긋난다"가 그대로 재현된 사례다.
 --
 -- ⚠️ 유지보수 계약: 이후 마이그레이션이 public 함수/정책을 추가·삭제하면
 --   이 기대값을 같은 PR에서 함께 갱신해야 한다. 갱신을 강제당하는 것 자체가
@@ -96,7 +110,7 @@
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=189
+-- PARITY_EXPECT_FUNCS=191
 -- PARITY_EXPECT_POLICIES=111
 -- ============================================================
 BEGIN;
@@ -116,8 +130,8 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  189,
-  'public function count == prod (189 = 186 + fn_settlement_amount·settle_work_log·bulk_settle_work_logs 3, 2026-08-02 L1 잔여)');
+  191,
+  'public function count == prod (191 = 189 + notify_on_report_review 1 + fn_reports_pin_identity 1, 2026-08-02 신고 축)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(

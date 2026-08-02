@@ -1,9 +1,12 @@
 /**
- * UNIQN Mobile - 회원가입 Step 3: 프로필 정보
+ * UNIQN Mobile - 프로필 정보 입력 폼
  *
  * @description 닉네임(필수) + 지역/경력/이력/기타사항(선택) 입력
  *              "나중에 입력하기" 버튼으로 선택 필드 건너뛰기 가능
- * @version 1.2.0
+ *
+ *              ⚠️ 이름은 `SignupStep*` 이지만 **더 이상 가입 위저드의 단계가 아니다.**
+ *              커밋 1d7b2a950 이후 소비처는 `app/(app)/profile-setup.tsx` 한 곳뿐이다.
+ * @version 1.3.0 - onBack(죽은 '이전') → onExit(로그아웃) 로 교체
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
@@ -24,7 +27,19 @@ import { logger } from '@/utils/logger';
 
 interface SignupStepProfileProps {
   onNext: (data: SignUpProfileData) => void;
-  onBack: () => void;
+  /**
+   * 화면에서 이탈(로그아웃)한다.
+   *
+   * ⚠️ 2026-08-02: 예전 이름은 `onBack`(= 가입 위저드 3단계로 복귀)이었다. 커밋 1d7b2a950
+   * ("회원가입 4단계→3단계 축소 및 프로필 분리")이 이 컴포넌트를 위저드에서 떼어내
+   * `app/(app)/profile-setup.tsx` 단독 화면으로 승격했는데, **prop 계약과 버튼 JSX 는
+   * 그대로 두고 구현만 토스트로 바꿔** 돌아갈 곳이 없는 '이전' 버튼이 잔해로 남았다.
+   * 그 결과 신규 가입자는 프로필 설정 화면에서 앱 삭제 외에 빠져나갈 수단이 없었다
+   * (`(app)/_layout.tsx` 의 gestureEnabled:false + useAuthGuard 리다이렉트로 사방이 막힘).
+   * 이 컴포넌트는 더 이상 위저드 단계가 아니므로 "이전 단계" 개념 자체가 없다 —
+   * 다시 `onBack` 으로 되돌리지 말 것. 유일한 합법 출구는 로그아웃이다.
+   */
+  onExit: () => void;
   initialData?: Partial<SignUpProfileData>;
   isLoading?: boolean;
   /**
@@ -42,7 +57,7 @@ type NicknameStatus = 'idle' | 'checking' | 'available' | 'taken';
 
 export function SignupStepProfile({
   onNext,
-  onBack,
+  onExit,
   initialData,
   isLoading = false,
   requireGender = false,
@@ -420,8 +435,9 @@ export function SignupStepProfile({
           나중에 입력하기
         </Button>
 
-        <Button onPress={onBack} variant="ghost" disabled={isLoading} fullWidth>
-          이전
+        {/* 이 화면의 유일한 출구. 라벨이 '이전'이면 잔해다 — prop 문서 참조. */}
+        <Button onPress={onExit} variant="ghost" disabled={isLoading} fullWidth>
+          로그아웃
         </Button>
       </View>
     </View>

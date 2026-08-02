@@ -55,13 +55,7 @@ export {
   type JobPostingStats,
 } from './jobManagementService';
 
-export {
-  getTemplates,
-  saveTemplate,
-  loadTemplate,
-  deleteTemplate,
-  updateTemplate,
-} from './templateService';
+export { getTemplates, saveTemplate, deleteTemplate, updateTemplate } from './templateService';
 
 export {
   getApplicantsByJobPosting,

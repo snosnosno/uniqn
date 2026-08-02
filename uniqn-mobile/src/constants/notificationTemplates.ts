@@ -182,13 +182,6 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     icon: '↩️',
   },
 
-  [NotificationType.SETTLEMENT_REQUESTED]: {
-    title: '정산 요청',
-    body: (d) => `${d.staffName}님이 정산을 요청했습니다.`,
-    link: (d) => `/employer/settlement/${d.jobPostingId}`,
-    icon: '📋',
-  },
-
   // =========================================================================
   // 공고 관련
   // =========================================================================

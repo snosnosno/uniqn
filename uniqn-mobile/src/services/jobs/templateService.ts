@@ -53,28 +53,6 @@ export async function saveTemplate(input: CreateTemplateInput, userId: string): 
 }
 
 /**
- * 템플릿 불러오기
- *
- * @description 사용 통계 업데이트 포함
- * @param templateId 템플릿 ID
- * @returns 템플릿 데이터
- */
-export async function loadTemplate(templateId: string): Promise<JobPostingTemplate> {
-  try {
-    return await templateRepository.loadTemplate(templateId);
-  } catch (error) {
-    if (isAppError(error)) {
-      throw error;
-    }
-    throw handleServiceError(error, {
-      operation: '템플릿 불러오기',
-      component: 'templateService',
-      context: { templateId },
-    });
-  }
-}
-
-/**
  * 템플릿 삭제
  *
  * @param templateId 템플릿 ID

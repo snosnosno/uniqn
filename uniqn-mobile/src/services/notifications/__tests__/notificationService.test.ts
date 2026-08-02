@@ -115,7 +115,6 @@ function createMockSettings() {
       system: { enabled: true, pushEnabled: true },
       admin: { enabled: true, pushEnabled: true },
     },
-    quietHours: { enabled: false, start: '22:00', end: '08:00' },
   };
 }
 
