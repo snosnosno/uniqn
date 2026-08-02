@@ -334,6 +334,41 @@ describe('ScheduleMerger.merge', () => {
     ).toBeUndefined();
   });
 
+  // 2단계를 도입하며 dateRange 적용 지점이 `.filter()` 안에서 바깥으로 옮겨갔다.
+  // 링크 키에는 `date` 가 들어 있어 양쪽 날짜가 반드시 같으므로, 창 밖 지원서가 창 안
+  // work_log 에 얹히는 누수는 구조적으로 불가능하다 — 그 사실을 단언으로 못박는다.
+  it('dateRange 밖의 짝은 링크 병합을 거쳐도 결과에 새지 않는다', () => {
+    const workLogSchedules = [
+      createScheduleEvent({
+        id: 'worklog-out',
+        sourceCollection: 'workLogs',
+        sourceId: 'wl-out',
+        workLogId: 'wl-out',
+        applicationId: 'app-out',
+        assignmentGroupId: null,
+        date: '2025-02-20',
+        timeSlot: '14:00',
+      }),
+    ];
+    const applicationSchedules = [
+      createScheduleEvent({
+        id: 'application-out',
+        sourceId: 'app-out',
+        applicationId: 'app-out',
+        assignmentGroupId: null,
+        date: '2025-02-20',
+        timeSlot: '09:00',
+        isCancellationPending: true,
+      }),
+    ];
+
+    const merged = ScheduleMerger.merge(workLogSchedules, applicationSchedules, {
+      dateRange: { start: '2025-01-01', end: '2025-01-31' },
+    });
+
+    expect(merged).toHaveLength(0);
+  });
+
   it('uses role as a fallback identity when assignmentGroupId is missing', () => {
     const workLogSchedules = [
       createScheduleEvent({
