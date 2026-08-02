@@ -28,7 +28,10 @@
 | **P1**(감사후속) | 정산 선택·집계 축 (M1+M2+M10) | `fix/settlement-selection-axis` | 🔨 **PR 생성** | **#393** | 감사 §7 P1. 마이그 **0건**. quality exit 0 · jest **600스위트 6578테스트 전량 통과** · red-green 실증(M1·M2 각각 되돌리면 해당 1건만 red) · 리뷰 fable **APPROVE**(CRITICAL 0/HIGH 0), MEDIUM 1건 반영 |
 | **P1**(감사후속) | 정산 선택·집계 축 (M1+M2+M10) | ~~`fix/settlement-selection-axis`~~ | ✅ **머지** | **#393** | `bc295df49`. CI **9잡 전부 pass**(E2E 는 `board.spec:88` 알려진 flake 로 1회 fail → 실패 잡 재실행 9m36s pass). 마이그 **0건**. quality exit 0 · jest **600스위트 6578테스트 전량 통과** · red-green 실증(M1·M2 각각 되돌리면 해당 1건만 red) · 리뷰 fable **APPROVE**(CRITICAL 0/HIGH 0), MEDIUM 1건 반영 |
 | **P2**(감사후속) | 알림 계약 정합 (M5+M3) | ~~`fix/notification-contract-alignment`~~ | ✅ **머지** | **#397** | `0808f8ae5`. CI **10잡 전부 pass**(DB Tests pg_prove 1m50s · E2E 11m4s 포함, **재실행 0회**). 🔴**마이그 2건 prod 선적용 — 재적용 금지**(기록명 `20260801174901 notify_settlement_revert_and_cancel_hint_gate` + `20260801180734 notify_work_log_contract_review_fixes`, 파일은 `20260802093000` 1개). 파리티 **184/111 불변**(prod 실측). 본문 md5 대조 `563d0272…`(12720자) 레포=prod 일치. red-green **4종** 실증. 리뷰 opus·fable 둘 다 **APPROVE**, MEDIUM 전량 반영. 상세=§5 |
-| **P5**(감사후속) | 방어심화 (M4+L2+L1 절반) | `feat/settlement-rpc-and-defense` | 🔨 **PR 생성** | **#400** | 🔴**마이그 2건 prod 적용 완료 — 재적용 금지**(기록명 `20260801212753`·`20260801212843`, 파일명과 다름). 파리티 **184→186** / 정책 111 불변(prod 실측). quality exit 0 · jest **600스위트 6583테스트** · pgTAP **91파일 951테스트**(기준선 88/912) · red-green **5종 1:1 실증**. 리뷰 fable planner·fable/opus database-reviewer 3인 반영. **L1 은 절반** — 확정·일괄 RPC화와 직접쓰기 차단은 다음 세션(상세=§5) |
+| **P3**(감사후속) | 리마인더 스코프 수선 (H1, **유일한 HIGH**) | ~~`fix/reminder-scope`~~ | ✅ **머지** | **#396** | `170fd8a2f`. CI **9잡 전부 pass**(E2E 9m45s 포함, **재실행 0회**). 재통합(#397 P2 · #395 P4) 후 재검증: 전체 jest **601스위트 6591테스트 122스냅샷 전량 통과 exit 0** · pre-push quality **0 errors**(경고 98은 선재). 마이그 **0건**. `syncShiftReminders` 에 관측 창(`coverage`) 필수 인자 + 원장 v1→v2. quality 통과 · **red-green 3회**(창 가드/지난근무 가드/`signOut` 배선을 각각 제거하면 해당 1건만 red) · 리뷰 fable **APPROVE**(CRITICAL 0/HIGH 0, MEDIUM 2 **전량 반영**). 🔑 리뷰가 찾은 **이 PR 이 걷어낸 보호막**(공용 기기 계정 전환 시 이전 계정 알림 발화)을 같은 PR 에서 닫음 — `clearShiftReminders()` 를 `signOut` 에 배선 |
+| **P4**(감사후속) | 지점 `location` 병합 (M9) | ~~`fix/venue-location-merge`~~ | ✅ **머지** | **#395** | `2e8255dd5`. CI **9잡 전부 pass**(E2E 10m26s 포함, 재실행 0회). 마이그 **0건**(서버 RPC 무변경 — 치환은 의도된 계약). quality 통과 · jest 14/14 · red-green 실증(병합을 되돌리면 신규 2건만 red) · 리뷰 fable **APPROVE**(CRITICAL/HIGH/MEDIUM 0, LOW 3 중 2건 반영). ✅ **B1 선행 불필요 확정** |
+| **P6**(감사후속) | 오프라인 캐시 TTL 분리 (M6) | ~~`fix/offline-cache-policies`~~ | ✅ **머지** | **#398** | `40040c8fb`. CI **9잡 전부 pass**(E2E 11m5s 포함, **재실행 0회**). 재통합(#397 P2 · #395 P4 · **#396 P3**) 후 재검증: quality **0 errors**(eslint 경고 98 선재 · prettier clean) · 전체 jest **602스위트 6599테스트 122스냅샷 전량 통과** · pre-push quality 통과. 마이그 **0건**. 감사 5줄 → **실측 6줄**(`useWorkLogs.ts:269` 추가 발견). `offlineCachePolicies` 5키 + **브랜드 타입 `OfflineTtlMs`** 로 컴파일 타임 차단. quality 통과 · jest 600스위트 6583테스트 · **red-green 2종**(호출부 원복 시 tsc 6곳 TS2322 + 테스트 5건 red / 정책값 오염 시 백스톱 2건 red) · 리뷰 fable **APPROVE**(CRITICAL 0/HIGH 0, MEDIUM 1 반영) |
+| **P5**(감사후속) | 방어심화 (M4+L2+L1 절반) | ~~`feat/settlement-rpc-and-defense`~~ | ✅ **머지** | **#400** | `95772ce49`. **타 세션 소관** — 세션 A2 가 P6 를 머지하는 사이에 착지했다. 신원 컬럼 고정 트리거 + `time_slot` CHECK + 정산 상태 RPC 화. 🔴**마이그 2건 prod 적용 완료 — 재적용 금지**(기록명 `20260801212753 work_logs_identity_pin_and_time_slot_check`·`20260801212843 set_work_log_payroll_status_rpc`, 파일명과 다름). 파리티 **184→186** / 정책 111 불변(prod 실측), `PARITY_EXPECT_FUNCS` 도 이 PR 에서 186 으로 갱신됨. quality exit 0 · jest **600스위트 6583테스트** · pgTAP **91파일 951테스트**(기준선 88/912) · red-green **5종 1:1 실증**. 리뷰 fable planner·fable/opus database-reviewer 3인 반영. 감사의 M4 처방(컬럼 REVOKE)은 무효였고 트리거로 대체. **L1 은 절반** — 확정·일괄 RPC화와 직접쓰기 차단은 다음 세션(상세=§5) |
 | **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
 | **S6** | 3-C 설계 | — | ⬜ | | 사용자 결정 필요 |
 | **S7** | 3-C 구현 | `feat/posting-time-change` | ⬜ | | S6 승인 후 |
@@ -46,6 +49,11 @@
 | S5-후속 | ~~`T-HOLDEM-revert`~~ | ✅ 정리완료(정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818** 무손상 확인) |
 | B1·B2 | `T-HOLDEM-address` | 🔨 **유지 중**(B1 #391 머지 완료 — B2 가 이어서 쓰거나, 안 쓰면 정션 해제 선행 → `worktree remove` → 브랜치 삭제). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성(818 확인). `.env.local`·`.env.development.local` 은 gitignore 라 메인에서 복사해야 앱이 뜬다 |
 | A-감사 | ~~`T-HOLDEM-audit`~~ | ✅ **머지 완료(#390)** — 정리 대상(정션 없음. `worktree remove` → 브랜치 삭제) |
+| P3 | ~~`T-HOLDEM-reminder`~~ | ✅ **정리완료**(2026-08-02 세션 A2 — 정션 해제 선행 → `worktree remove` → 브랜치 삭제. 해제 전후 원본 `node_modules` **821 → 821** 실측 무손상) |
+| P4 | ~~`T-HOLDEM-venueloc`~~ | ✅ **정리완료**(2026-08-02 세션 A2 — 정션 해제 선행 → `worktree remove` → 브랜치 삭제. 해제 전후 원본 `node_modules` **821 → 821** 실측 무손상) |
+| P6 | ~~`T-HOLDEM-offline`~~ | ✅ **정리완료**(2026-08-02 세션 A2 — 정션 해제 선행 → `worktree remove` → 브랜치 삭제. 해제 전후 원본 `node_modules` **821 → 821** 실측 무손상) |
+| 세션A-원장 | `T-HOLDEM-ledger` | 🔨 이 문서 커밋용(정션 없음). **원장 PR 머지 후 정리 대상**(정션 없으므로 `worktree remove` → 브랜치 삭제만) |
+| **P2·P5(타 세션)** | ~~`T-HOLDEM-notifyfix`~~ | ✅ **타 세션이 스스로 정리**(2026-08-02 세션 A2 종료 시 `git worktree list` 에서 사라짐). P2 는 #397, P5 는 #400 으로 머지됐다 |
 | S7 | `T-HOLDEM-timechange` | ⬜ |
 
 전부 `C:/Users/user/Desktop/` 아래. 머지 완료 세션의 워크트리는 다음 세션 착수 시 정리한다
@@ -67,7 +75,20 @@ prod 최신 마이그 = `20260730174826_cron_run_details_retention`.
 | S5 (#387) | `20260801100000_rename_default_venue_containers` | **184 / 111 불변** — 데이터 UPDATE 전용(DDL 없음). prod 적용 완료, 4행 rename, 충돌 0건. ⚠️ **prod 기록명은 `20260731195336_rename_default_venue_containers`** — 파일명으로 `list_migrations` 대조하면 못 찾는다 |
 | S5-후속 | 없음 | **184 / 111 불변**(2026-08-01 prod 실측) |
 | P2 (#397) | `20260802093000_notify_settlement_revert_and_cancel_hint_gate` (트리거 함수 `CREATE OR REPLACE`) | **184 / 111 불변**(2026-08-02 prod 실측). ✅ **prod 적용 완료 — 재적용 금지.** ⚠️ **prod 기록은 2건**(리뷰 반영으로 재적용): `20260801174901` + `20260801180734`. 파일명으로 `list_migrations` 대조하면 못 찾는다 |
+| P3 (#396) · P6 (#398) | 없음 | **수 불변** — 두 묶음 모두 마이그 0건. PR diff 에 `supabase/**` 가 0건이라 **DB Tests 잡 자체가 트리거되지 않았다**(재통합해도 마찬가지 — merge-base 가 master HEAD 로 옮겨가 이미 머지된 마이그는 diff 에 안 들어온다) |
 | B2 | 컬럼 추가 | 불변 예상 |
+
+> ⚠️ **파리티 기준값이 184 → 186 으로 바뀌었다 (2026-08-02, 세션 A2 실측).** 위 표의 "184/111 불변"
+> 기재들은 **그 시점 사실**이고, **현재 값은 186 / 111** 이다. 원인은 P3·P6 가 아니라(둘 다 마이그 0건)
+> **P5 방어심화**가 함수 2개를 늘린 것이다 — prod `schema_migrations` 직접 조회 실측:
+> `20260801212753 work_logs_identity_pin_and_time_slot_check` + `20260801212843 set_work_log_payroll_status_rpc`.
+>
+> 🚨 **세션 A2 도중 한동안 레포↔prod 가 어긋나 있었다** — P5 가 **prod 선적용만 하고 PR 이 없던** 구간에서
+> 레포 기대 **184** vs prod 실측 **186**. 그 사이 주간 `parity-smoke`(월 01:17 UTC)·일간 `prod-health` 는
+> 이 항목에서 red 가 날 수 있는 상태였다.
+> ✅ **해소됨** — P5 가 **PR #400 으로 머지**(`95772ce49`)되며 `PARITY_EXPECT_FUNCS=186` /
+> `PARITY_EXPECT_POLICIES=111` 로 갱신됐다. 세션 A2 종료 시점 실측 대조: **레포 186/111 = prod 186/111 일치.**
+> 🔑 교훈은 그대로다 — **prod 선적용 + PR 지연은 그 간격만큼 감시를 red 로 만든다.**
 
 > 🚨 **파리티 레포↔prod 불일치 (2026-07-31, S1 머지 직후)** — 레포 기대 **185**, prod 실측 **184**.
 > 원인은 S1 이 아니다. 병렬 세션(`fix/notification-counter-guard`, `T-HOLDEM-noti`)이 함수 1개를
@@ -471,6 +492,129 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 
 > 형식은 §2 세션 종료 프로토콜 4번 참조. **삭제하지 말고 쌓는다** —
 > 중단된 세션을 다시 여는 사람이 읽을 유일한 기록이다.
+
+### 세션 A2 (세션 A 착지 — P3·P6 머지 + 원장) — 2026-08-02 · 상태: 완료
+
+- **소스 코드 변경 0건.** 세션 A 가 만든 PR 을 재통합·재검증·머지만 했다. 머지 순서는 사용자 승인대로 **P4 → P3 → P6**.
+- 워크트리/브랜치: `T-HOLDEM-reminder`/`fix/reminder-scope`(#396) · `T-HOLDEM-offline`/`fix/offline-cache-policies`(#398) · `T-HOLDEM-ledger`/`docs/session-a-followups`(이 문서)
+
+**끝난 것** (전부 이 세션의 도구 출력 기준)
+
+| 대상 | 머지 SHA | CI | 재통합 후 로컬 재검증 |
+|---|---|---|---|
+| P4 #395 | `2e8255dd5` | 9잡 pass (E2E 10m26s, 재실행 0) | 이전 세션 검증분 |
+| P3 #396 | `170fd8a2f` | **9잡 pass** (E2E 9m45s, **재실행 0**) | jest **601스위트 6591테스트 122스냅샷** 전량 통과 · pre-push quality **0 errors** |
+| P6 #398 | `40040c8fb` | **9잡 pass** (E2E 11m5s, **재실행 0**) | quality **0 errors**(eslint 98 warning 은 선재, prettier clean) · jest **602스위트 6599테스트 122스냅샷** 전량 통과 |
+| 타 세션 #399 | `7d1d4c1c7` | 체크 없음(문서 전용) | 사용자 승인 후 머지 — 내 원장 PR 이 그 위에 얹히도록 |
+
+- **P3·P6 둘 다 E2E 재실행 0회** — `board.spec:88` 알려진 flake 가 이번엔 나오지 않았다.
+- 워크트리 정리 **3건 완료**(`T-HOLDEM-venueloc` · `T-HOLDEM-reminder` · `T-HOLDEM-offline`).
+  전부 **정션 해제 선행 → `worktree remove` → 브랜치 삭제** 순서, 매 건 원본 `node_modules`
+  **821 → 821** 실측 확인. 남은 워크트리는 메인 + `T-HOLDEM-ledger` 뿐이다.
+- ⚠️ **P5 가 이 세션 도중 `#400` 으로 착지했다**(`95772ce49`, 타 세션). 인계 프롬프트의
+  "P5 미착수" 는 이미 stale 이었다 — 착수 정도가 아니라 **마이그 2건이 prod 에 적용된 상태**였다.
+
+**다음 세션에 넘기는 주의** (이 세션에서 새로 알아낸 것만)
+
+1. 🔑 **master 재통합은 DB Tests 를 켜지 않는다 — 인계 프롬프트의 경고는 기우였다.** 재통합하면
+   merge-base 가 master HEAD 로 옮겨가므로 **이미 머지된 마이그는 PR diff 에서 빠진다.**
+   실측: 두 PR 모두 `git diff --name-only origin/master...HEAD` 에 `supabase/**` **0건**,
+   실제로 시작된 워크플로 런도 **CI·E2E 2개뿐**(db-tests.yml 은 `paths: uniqn-mobile/supabase/**`).
+2. 🚨 **파리티가 184 → 186 으로 벌어져 있다**(§1 파리티 경고 참조). 원인은 P3·P6 가 아니라
+   **P5 가 prod 선적용만 하고 PR 이 없는 것**이다. prod `schema_migrations` 직접 조회로 확인.
+   **P5 PR 이 생길 때 `PARITY_EXPECT_FUNCS` 를 186 으로** 올려야 주간 감시가 green 으로 돌아온다.
+3. 🔑 **`gh pr merge --delete-branch` 는 워크트리가 브랜치를 점유하면 로컬 삭제만 실패한다** —
+   원격은 정상 삭제되고 머지도 정상 완료된다(실측). 에러 메시지만 보고 "머지 실패"로 오판하지 말 것.
+4. ⚠️ **원장 워크트리는 `node_modules` 가 없어 pre-commit 훅이 깨진다**(`eslint-config-expo/flat`
+   모듈 없음). 문서 전용 커밋이므로 `--no-verify` 로 통과시켰다 — 코드가 섞였다면 그러면 안 된다.
+5. ⚠️ **병렬 세션의 quality/push 가 내 검증 시간을 배로 늘린다.** P6 quality+jest 가 평소의 2배
+   넘게 걸려 hang 을 의심했는데, `Win32_Process` 커맨드라인을 보니 **타 세션이 같은 시각
+   `T-HOLDEM-notifyfix` 에서 pre-push 훅 + eslint 를 돌리고 있었다**(node 프로세스 87~97개).
+   **"멈춘 것 같다" 싶으면 프로세스 커맨드라인부터 봐라** — 워크트리별로 누가 뭘 도는지 드러난다.
+6. ⚠️ **`cmd //c "dir ..."` 는 MSYS 에서 조용히 빈 셸만 띄운다**(정션 판별이 전부 거짓 음성으로
+   나왔다). 또 인라인 `powershell -Command` 는 `\$var` 이스케이프가 경로를 망가뜨린다.
+   **정션 판별·해제는 `.ps1` 파일로 써서 `-File` 로 실행**할 것 — `(attributes -band ReparsePoint)`
+   와 `.Target` 이 정확하다.
+
+---
+
+### 세션 A (감사 후속 P3 + P4 + P6) — 2026-08-02 · 상태: 완료(PR 3건 생성, 머지는 사용자 결정 대기)
+
+- 워크트리/브랜치 3개 — **묶음별 PR 분리**(실기기 QA 대체 규칙 3번, 롤백 단위 최소화)
+  - `T-HOLDEM-reminder` / `fix/reminder-scope` · HEAD `5bf2c2352`(2커밋) → **PR #396**
+  - `T-HOLDEM-venueloc` / `fix/venue-location-merge` · HEAD `767cb5d90`(2커밋) → **PR #395**
+  - `T-HOLDEM-offline` / `fix/offline-cache-policies` · HEAD `4026abdff`(1커밋) → **PR #398**
+- **마이그레이션 0건 (3묶음 전부)** — 파리티 **184/111 불변**. 착수 시 `list_migrations` 로 prod 대기 0건 확인.
+
+**끝난 것** (전부 이 세션의 도구 출력 기준)
+
+- **P3 (H1 — 이 웨이브 유일한 HIGH)**: `syncShiftReminders(schedules, coverage, now?)` 로
+  "이 목록이 실제로 관측한 날짜 창"을 필수 선언하게 했다. 창 밖 항목은 건드리지 않고,
+  지난 근무 항목만 시간 근거로 정리. 원장 v1(string)→v2(`{id, workDate}`) 하위호환.
+  조회 원천을 전체 지평 쿼리로 바꾸는 대안은 **기각**(쿼리 증가 + 빈 캐시 오프라인 시 원장 전소).
+- **P4 (M9)**: `saveProfile` 이 기존 `location` 을 병합. **서버 RPC 무변경 = 마이그 0건.**
+- **P6 (M6)**: `offlineCachePolicies` 도메인 키 5개 + 호출부 6곳 + **브랜드 타입 `OfflineTtlMs`**.
+- 게이트: 3워크트리 모두 `npm run quality` 체인 끝까지 통과(tsc 0 errors · eslint 0 errors ·
+  prettier clean) · `npm test` P3 **601/6583/122**, P6 **600/6583/122** 전량 통과 ·
+  `e2e/` 파급 **0건**(Grep 도구 재확인) · **red-green 총 6회 실증**(아래).
+- 리뷰: 3묶음 전부 code-reviewer(**fable**) → **APPROVE**. CRITICAL 0 / HIGH 0.
+  MEDIUM 3건 **전량 반영**, LOW 는 선별 반영.
+
+**red-green 실증 6회** (가드를 제거해 red 를 본 것만 셈)
+
+| 대상 | 제거한 것 | 결과 |
+|---|---|---|
+| P3 | 창 판정 | 해당 1건만 red (1F/4P) |
+| P3 | 지난 근무 정리 | 해당 1건만 red (1F/4P) |
+| P3 | `signOut` 의 `clearShiftReminders()` 배선 | 해당 1건만 red (1F/17P) |
+| P4 | `location` 병합 | 신규 2건만 red (2F/12P) |
+| P6 | 호출부 6곳 원복 | tsc 6곳 TS2322 + 테스트 5건 red(무관 1건만 pass) |
+| P6 | 정책값 오염(`as OfflineTtlMs` 로 tsc 우회) | 백스톱 2건 red |
+
+**다음 세션에 넘기는 주의** (이 세션에서 새로 알아낸 것만)
+
+1. 🚨 **결함을 고치면 그 결함이 우연히 막고 있던 것이 열린다.** H1(월 스코프 전량 취소)은
+   공용 기기 계정 전환 시 이전 계정의 로컬 알림도 같이 지우고 있었다. 창 보호를 넣자 그게
+   살아남아 **A 의 지점명·근무일이 B 의 기기에서 울리게 됐다.** `signOut` 은 푸시 토큰·세션·
+   생체·PortOne 토큰까지 지우면서 **로컬 알림만 빠져 있었다**(같은 함수 주석이 "공용 기기"
+   위협을 이미 적고 있었는데도). **방어를 추가할 때 "지금까지 이걸 대신 막던 게 뭐였나"를 물어라.**
+2. 🚨 **감사 문서의 순서 전제가 틀렸다 — P4 는 B1 머지 전에 넣을 필요가 없었다.** 그러나
+   **휴면도 아니었다**: `ScheduleConverter:100-101` 이 이미 `district`/`detailedAddress` 를 읽어
+   스태프 근무상세 주소 줄로 렌더한다. **채우는 UI 만 없고 지우는 경로는 열려 있었다.**
+3. 🔑 **`p_location` 치환을 유지해야 하는 진짜 이유는 "전체 제거 경로"가 아니다.** 형제
+   파라미터 `p_defaults` 가 `'{}'` 센티널 + 병합으로 그 경로를 이미 양립시킨다(`:198-203`).
+   진짜 이유는 **단일 키 삭제** — 서버가 빈 문자열을 건너뛰므로(`:159-161`) 병합에서는
+   `{name:''}` 이 아무것도 못 지워 "장소명만 비우기"가 원리적으로 불가능해진다.
+4. 🚨 **서브에이전트가 워크트리에 파일을 만들어 내 quality 를 깼다.** P6 리뷰어(fable)가
+   "파일 수정 금지" 지시를 어기고 `src/__ttl_brand_probe__.ts` 를 만들었다 지웠고, 그 사이
+   돌던 `npm run quality` 가 그 파일의 tsc 에러로 실패해 **eslint·prettier 가 아예 실행되지
+   못했다**. **리뷰 디스패치와 quality 를 같은 워크트리에서 동시에 돌리지 말 것.**
+5. 🔑 **목(mock) 기반 회귀 테스트는 "배선"만 지킨다.** 훅 테스트 5건은 `@/lib/queryClient` 를
+   부분 목으로 대체하므로 실물 값이 오염돼도 전부 green 이다 — 실물 import 백스톱을 따로 뒀다.
+6. 🔑 **`useCurrentWorkStatus` 는 오프라인에서 MMKV 캐시가 유일한 원천**이다
+   (`useQuery` 가 `enabled: false`, 라이브 소스는 realtime 구독). 그런데 TTL 이 30초라
+   자기 캐시를 스스로 지웠다 — 감사 M6 목록에 없던 **6번째 호출부**.
+7. ⚠️ `jest.fn(() => null)` 은 rest 파라미터가 없어 `(...args)` 위임 목으로 쓰면 tsc 가 **TS2556**
+   을 낸다(babel 은 통과 → quality 에서만 터진다). `jest.fn((..._args: unknown[]) => null)` 로 쓸 것.
+8. ⚠️ `git push` 가 pre-push 훅(quality 전체)으로 **5분을 넘긴다** — 포그라운드로 돌리면 타임아웃.
+
+**안 끝난 것 / 잔여**
+
+- 🔴 **머지 미실행** — 사용자가 요청한 범위는 PR 3건까지다. 머지는 사용자 결정.
+- 🔴 **오프라인 빈 폴백 침묵 취소는 선재로 남았다**(P3 범위 밖). 오프라인이면 `error` 가 null 로
+  접히고 `isLoading` 도 false 라 `shouldSyncShiftReminders` 게이트가 열린다. P3 은 폭발 반경을
+  **원장 전체 → 보고 있는 달**로 축소했을 뿐 없애지 않았다. **후속 후보.**
+- 🔴 P4 LOW-3: 연락처만 고쳐도 `location` 전체가 전송된다. 주소 writer 가 0곳이라 현재 도달
+  불가지만 **주소 UI 를 지점 시트에 얹는 PR 에서 MEDIUM 으로 재평가**할 것(파일 헤더에 기재).
+- 🔴 P3 LOW: 같은 `workLogId` 의 `workDate` 가 바뀌면 낡은 날짜로 발화(선재). 이제 원장에
+  `workDate` 가 있어 drift 감지가 가능해졌으나 쓰지 않았다.
+- 🔴 P6 LOW: `currentWorkStatus` 12시간은 벽시계 근사치다. 궁극형은 `cachedAt` 의 달력 날짜 비교.
+- ⚠️ **P2 는 타 세션이 진행 중**(`T-HOLDEM-notifyfix` / `fix/notification-contract-alignment`,
+  HEAD `d51465f55`). **마이그 1건 포함** — "마이그는 전 레인 동시 1건" 슬롯을 그 레인이 점유한다.
+- 🔴 감사 후속 **P5 미착수**. → **정정**: 이 기재는 곧 stale 이 됐다. P5 는 타 세션이 진행해
+  **PR #400 로 머지**됐다(`95772ce49`). 아래 P5 항목 참조.
+
+---
 
 ### P5 (감사 후속 — 방어 심화 M4+L2+L1) — 2026-08-02 · 상태: 완료(L1 은 의도적 절반) · **PR #400**
 
