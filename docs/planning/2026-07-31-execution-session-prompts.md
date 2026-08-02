@@ -32,7 +32,7 @@
 | **P4**(감사후속) | 지점 `location` 병합 (M9) | ~~`fix/venue-location-merge`~~ | ✅ **머지** | **#395** | `2e8255dd5`. CI **9잡 전부 pass**(E2E 10m26s 포함, 재실행 0회). 마이그 **0건**(서버 RPC 무변경 — 치환은 의도된 계약). quality 통과 · jest 14/14 · red-green 실증(병합을 되돌리면 신규 2건만 red) · 리뷰 fable **APPROVE**(CRITICAL/HIGH/MEDIUM 0, LOW 3 중 2건 반영). ✅ **B1 선행 불필요 확정** |
 | **P6**(감사후속) | 오프라인 캐시 TTL 분리 (M6) | ~~`fix/offline-cache-policies`~~ | ✅ **머지** | **#398** | `40040c8fb`. CI **9잡 전부 pass**(E2E 11m5s 포함, **재실행 0회**). 재통합(#397 P2 · #395 P4 · **#396 P3**) 후 재검증: quality **0 errors**(eslint 경고 98 선재 · prettier clean) · 전체 jest **602스위트 6599테스트 122스냅샷 전량 통과** · pre-push quality 통과. 마이그 **0건**. 감사 5줄 → **실측 6줄**(`useWorkLogs.ts:269` 추가 발견). `offlineCachePolicies` 5키 + **브랜드 타입 `OfflineTtlMs`** 로 컴파일 타임 차단. quality 통과 · jest 600스위트 6583테스트 · **red-green 2종**(호출부 원복 시 tsc 6곳 TS2322 + 테스트 5건 red / 정책값 오염 시 백스톱 2건 red) · 리뷰 fable **APPROVE**(CRITICAL 0/HIGH 0, MEDIUM 1 반영) |
 | **P5**(감사후속) | 방어심화 (M4+L2+L1 절반) | ~~`feat/settlement-rpc-and-defense`~~ | ✅ **머지** | **#400** | `95772ce49`. **타 세션 소관** — 세션 A2 가 P6 를 머지하는 사이에 착지했다. 신원 컬럼 고정 트리거 + `time_slot` CHECK + 정산 상태 RPC 화. 🔴**마이그 2건 prod 적용 완료 — 재적용 금지**(기록명 `20260801212753 work_logs_identity_pin_and_time_slot_check`·`20260801212843 set_work_log_payroll_status_rpc`, 파일명과 다름). 파리티 **184→186** / 정책 111 불변(prod 실측), `PARITY_EXPECT_FUNCS` 도 이 PR 에서 186 으로 갱신됨. quality exit 0 · jest **600스위트 6583테스트** · pgTAP **91파일 951테스트**(기준선 88/912) · red-green **5종 1:1 실증**. 리뷰 fable planner·fable/opus database-reviewer 3인 반영. 감사의 M4 처방(컬럼 REVOKE)은 무효였고 트리거로 대체. **L1 은 절반** — 확정·일괄 RPC화와 직접쓰기 차단은 다음 세션(상세=§5) |
-| **L1-잔여**(감사후속) | 정산 확정·일괄 RPC 화 + 계산기 서버 이식 | `feat/settlement-rpc-phase2` | 🔨 **커밋만**(PR 미생성) | — | `178ecf1ad`. P5 가 남긴 L1 나머지 절반. `SettlementRepository.calculateSettlementAmount`(TS)를 **삭제하고** `fn_settlement_amount`(PL/pgSQL)로 이식 — 복제가 아니라 **이동**이라 클라 계산기 갈래 수는 불변. 신규 함수 3종(`fn_settlement_amount`·`settle_work_log`·`bulk_settle_work_logs`). 🔴**마이그 prod 적용 완료 — 재적용 금지. 기록 3건인데 레포 파일은 2개**(`20260802002505`·`20260802003147`·`20260802003419 settlement_amount_calculator_comments`←본문 주석 누락 재적용분). 파리티 **186→189**/정책 111 불변, `PARITY_EXPECT_FUNCS` 갱신. quality exit 0 · jest **603스위트 6622테스트 122스냅샷** · pgTAP **93파일 984테스트**(기준선 91/951) · **짝 픽스처 16/16 SQL↔TS 일치** · red-green **3종 1:1** · 레포↔prod↔로컬 md5 4함수 일치. `set_work_log_payroll_status` 의 `completed` 진입 차단(호출부 0건 실측 후 결정). 상세=§5 |
+| **L1-잔여**(감사후속) | 정산 확정·일괄 RPC 화 + 계산기 서버 이식 | `feat/settlement-rpc-phase2` | 🔨 **커밋만**(PR 미생성) | — | `178ecf1ad` + 리뷰반영 `b753aa332`(2커밋). P5 가 남긴 L1 나머지 절반. `SettlementRepository.calculateSettlementAmount`(TS)를 **삭제하고** `fn_settlement_amount`(PL/pgSQL)로 이식 — 복제가 아니라 **이동**이라 클라 계산기 갈래 수는 불변. 신규 함수 3종(`fn_settlement_amount`·`settle_work_log`·`bulk_settle_work_logs`). 🔴**마이그 prod 적용 완료 — 재적용 금지. 기록 4건인데 레포 파일은 2개**(뒤 2건은 같은 함수 재정의라 별도 파일 없음 — 주석 누락 복구 + 리뷰 반영). 파리티 **186→189**/정책 111 불변, `PARITY_EXPECT_FUNCS` 갱신. quality exit 0 · jest **603스위트 6627테스트 122스냅샷** · pgTAP **93파일 991테스트**(기준선 91/951) · **짝 픽스처 21/21 SQL↔TS 일치** · red-green **4종 1:1** · 레포↔prod↔로컬 md5 4함수 일치. `set_work_log_payroll_status` 의 `completed` 진입 차단(호출부 0건 실측 후 결정). fable 리뷰 **APPROVE**(CRITICAL/HIGH 0) — 지적 5건을 prod 프로브로 재판정해 **3건 확증 수정 · 2건 오탐 기각 · 리뷰가 놓친 1건 추가 발견**. 상세=§5 |
 | **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
 | **S6** | 3-C 설계 | — | ⬜ | | 사용자 결정 필요 |
 | **S7** | 3-C 구현 | `feat/posting-time-change` | ⬜ | | S6 승인 후 |
@@ -505,6 +505,14 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 - 파리티 **186 → 189** / 정책 **111 불변**(prod 실측). `PARITY_EXPECT_FUNCS` 마커 + 단언 리터럴 둘 다 갱신
 
 **끝난 것** (전부 이 세션의 도구 출력 기준)
+- **리뷰 반영**(`b753aa332`) fable **APPROVE**(CRITICAL/HIGH 0). 지적 5건을 그대로 믿지 않고
+  prod 재현 프로브로 판정했다 — **3건 확증** · **2건 오탐 기각** · **리뷰가 놓친 같은 클래스 1건 추가 발견**.
+  🔴 확증분은 전부 **"조용히 0원 확정"** — `jsonb 의 JSON null 은 SQL NULL 이 아니다`
+  (`'{"defaultSalary":null}'::jsonb -> 'defaultSalary'` = `'null'::jsonb` → `IS NULL` 미통과).
+  수정 전→후 실측: defaultSalary=null 0→100,000 · catalog salary=null 0→75,000 ·
+  컨테이너 항목 salary 없음 0→75,000(내가 만든 `jsonb_build_object('salary', NULL)` 이 원인).
+  `taxableItems` 값이 문자열 `"false"` 인 경우도 10,000→9,000 으로 정정(`->>` → `->`).
+  `payroll_notes` 는 `work_logs_xss_check` 커버 밖이라 XSS+500자 가드 신설.
 - **계산기 이식** `fn_settlement_amount`(IMMUTABLE, 순수). `SettlementRepository.calculateSettlementAmount`(TS)는
   **삭제**했다 — 복제가 아니라 이동이라 클라 계산기 갈래 수는 그대로다.
   컨테이너/일반 분기 · 역할 단가표 해소 · PROVIDED_FLAG(-1) 비대칭 · opt-out `taxableItems` ·
@@ -530,6 +538,11 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
   아직 클라에서 이력 jsonb 를 read-modify-write 한다(P5 주의 10번, 이번에도 미해결)
 
 **다음 세션에 넘기는 주의** (이 세션에서 새로 알아낸 것만)
+0. 🚨 **`jsonb -> 'key'` 의 JSON null 은 SQL NULL 이 아니다.** `IS NULL` 을 통과하지 못해
+   "값이 없다"는 판정이 통째로 뒤집힌다. 금액 경로에서는 그대로 **0원 확정**으로 이어진다.
+   jsonb 에서 객체를 꺼내 "있으면 쓰고 없으면 폴백"하는 코드는 **전부** `NULLIF(x,'null'::jsonb)` 를 걸어라.
+   ⚠️ 내가 `jsonb_build_object('salary', <SQL NULL>)` 로 **JSON null 을 스스로 만들어** 같은 함정에 빠졌다 —
+   입력만 방어하면 부족하다.
 1. 🚨 **적용할 SQL 을 손으로 줄이면 레포와 조용히 갈라진다.** 마이그 파일에 있던 본문 주석을
    `apply_migration` 에 안 실어 prod 만 9280자, 레포 13599자로 갈렸다. **md5(prosrc) 대조가 유일한 적발 수단**이고
    실제로 4함수 중 1건을 잡았다(그래서 마이그 기록이 3건). 대조는 반드시 CR 제거 후.
@@ -557,7 +570,12 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 9. ⚠️ **`guaranteedHours` 는 금액에 반영되지 않는다**(표시 전용, SETTLE-2 계약 테스트가 고정).
    prod 공고 `compensation.allowances` 에 실제로 들어 있어 착각하기 쉽다.
 10. ⚠️ **prod 데이터는 사실상 비어 있다** — `work_logs` 3건, 정산 완료 **0건**. 이식 위험의 실데이터 노출은 0이다.
-11. ⚠️ 이 세션 중 병렬 워크트리 2개(`T-HOLDEM-cleanup`·`T-HOLDEM-schedkey`)가 새로 떴다.
+11. 🔑 **리뷰 지적은 재현 프로브로 판정하라.** fable 리뷰 5건 중 2건은 **오탐**이었다
+    (`allowances: null` 은 양쪽 다 수당 0 · schedule `role:''` 는 `getPostingDefaultSalary` 가
+    카탈로그 첫 단가로 폴백해 양쪽이 수렴). 그대로 "고쳤으면" 멀쩡한 동작을 바꿨을 것이다.
+    반대로 프로브를 돌린 덕에 **리뷰가 놓친 인스턴스 1건**을 찾았다.
+    오탐도 픽스처(21번)로 남겨 다음 사람이 같은 의심을 다시 파헤치지 않게 했다.
+12. ⚠️ 이 세션 중 병렬 워크트리 2개(`T-HOLDEM-cleanup`·`T-HOLDEM-schedkey`)가 새로 떴다.
     **로컬 Docker 스택과 `node_modules` 는 공유**다 — pgTAP·quality 전에 재확인할 것.
 
 ---
