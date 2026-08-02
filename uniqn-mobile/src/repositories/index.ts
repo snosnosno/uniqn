@@ -82,7 +82,6 @@ export type {
   FetchReportsOptions,
   FetchReportsResult,
   ReportFilters,
-  ReportCounts,
   // Settlement
   ISettlementRepository,
   UpdateWorkTimeContext,
@@ -418,8 +417,8 @@ export const reviewRepository = new SupabaseReviewRepository();
  * // 저장
  * const templateId = await templateRepository.saveTemplate(input, userId);
  *
- * // 불러오기
- * const template = await templateRepository.loadTemplate(templateId);
+ * // 이름 변경(부분 갱신)
+ * await templateRepository.updateTemplate(templateId, { name: '새 이름' }, userId);
  * ```
  */
 export const templateRepository = new SupabaseTemplateRepository();

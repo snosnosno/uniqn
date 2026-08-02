@@ -2,15 +2,32 @@
  * UNIQN Mobile - Notification Store
  *
  * @description 알림 상태 관리 (Zustand + MMKV)
- * @version 1.2.0
+ * @version 1.3.0
  *
  * @changelog
+ * - 1.3.0: 이중 소스 경계 명문화 — 이 스토어는 목록의 주인이 아니다(아래 참조)
  * - 1.2.0: React Query와 중복되는 isLoading 상태 제거
  *          (서버 데이터 로딩은 React Query가 담당, 스토어는 UI/오프라인 상태만 관리)
  *
+ * ## 이중 소스 경계 — 역할 절단 (반드시 지킬 것)
+ *
+ * 알림 데이터는 React Query 캐시와 이 스토어 두 곳에 산다. 역할이 절단돼 있다:
+ *
+ * 1. **목록 축 = React Query 캐시 단독.**
+ *    화면(`useNotificationList`)이 온라인에서 그리는 것은 `query.data` 다.
+ *    ⚠️ 삭제·전체 삭제·페이지네이션을 이 스토어에만 반영하면 **화면은 한 픽셀도 안 바뀐다.**
+ *    실제로 그 배선 누락 때문에 "삭제가 안 먹어 다시 누름" · "무한스크롤이 태어날 때부터 무효"가
+ *    장기간 살아 있었다. 목록 변경은 반드시 `setQueryData` 로 렌더 소스를 패치할 것.
+ * 2. **오프라인 스냅샷 · 미읽음 배지 축 = 이 스토어 단독.**
+ *    쿼리 캐시는 persist 가 없어 앱 재시작 후 배지·오프라인 목록을 원리적으로 복원할 수 없다.
+ *    `notifications`/`unreadCount`/`unreadByCategory` 는 그 목적의 상태다.
+ * 3. **흐름은 한 방향(쿼리 → 스토어)만.**
+ *    쿼리 결과를 이 스토어에 미러링하는 것은 OK. 반대로 이 스토어를 목록의 진실원 삼아
+ *    쿼리 캐시로 되쓰는 것은 금지(두 축이 서로 덮어써서 되살아나는 항목이 생긴다).
+ *
  * 아키텍처 분리:
- * - React Query: 서버 데이터 캐싱, 로딩 상태, 에러 상태
- * - Zustand: 오프라인 캐시, 설정, 필터, 실시간 카운터
+ * - React Query: 서버 데이터 캐싱, 목록 축, 로딩 상태, 에러 상태
+ * - Zustand: 오프라인 스냅샷, 미읽음 배지, 설정, 필터
  */
 
 import { create } from 'zustand';
@@ -46,7 +63,9 @@ interface NotificationPersistState {
 }
 
 interface NotificationState {
-  // 오프라인 캐시 (React Query 데이터와 별도로 MMKV에 저장)
+  // 오프라인 스냅샷 (React Query 데이터와 별도로 MMKV에 저장)
+  // ⚠️ 화면 목록의 진실원이 아니다 — 파일 상단 "이중 소스 경계" 참조.
+  //    여기만 바꾸면 온라인 화면은 안 바뀐다. 목록 변경은 쿼리 캐시(setQueryData) 가 먼저다.
   notifications: NotificationData[];
 
   // 실시간 카운터 (Firestore 리스너에서 직접 업데이트)
@@ -73,7 +92,6 @@ interface NotificationState {
   setNotifications: (notifications: NotificationData[]) => void;
   addNotification: (notification: NotificationData) => void;
   addNotifications: (notifications: NotificationData[]) => void;
-  updateNotification: (id: string, updates: Partial<NotificationData>) => void;
   removeNotification: (id: string) => void;
   clearNotifications: () => void;
 
@@ -328,43 +346,6 @@ export const useNotificationStore = create<NotificationState>()(
         });
       },
 
-      updateNotification: (id, updates) => {
-        set((state) => {
-          const notification = state.notifications.find((n) => n.id === id);
-          if (!notification) return state;
-
-          const notifications = state.notifications.map((n) =>
-            n.id === id ? { ...n, ...updates } : n
-          );
-
-          // isRead 변경 여부에 따라 증분 계산 적용
-          let { unreadCount, unreadByCategory } = state;
-
-          if ('isRead' in updates && updates.isRead !== notification.isRead) {
-            if (updates.isRead) {
-              // 읽음으로 변경: 카운트 감소
-              const counts = decrementUnreadCounts(unreadCount, unreadByCategory, notification);
-              unreadCount = counts.unreadCount;
-              unreadByCategory = counts.unreadByCategory;
-            } else {
-              // 읽지 않음으로 변경: 카운트 증가
-              const counts = incrementUnreadCounts(unreadCount, unreadByCategory, {
-                ...notification,
-                isRead: false,
-              });
-              unreadCount = counts.unreadCount;
-              unreadByCategory = counts.unreadByCategory;
-            }
-          }
-
-          return {
-            notifications,
-            unreadCount,
-            unreadByCategory,
-          };
-        });
-      },
-
       removeNotification: (id) => {
         set((state) => {
           const notification = state.notifications.find((n) => n.id === id);
@@ -603,12 +584,11 @@ export const useNotificationStore = create<NotificationState>()(
 // Selectors
 // ============================================================================
 
-export const selectNotifications = (state: NotificationState) => state.notifications;
+// 알림 목록·필터·카테고리 셀렉터는 소비처가 0 이라 제거했다. 목록의 주인은
+// React Query(useNotifications 훅)이고, 스토어는 배지 카운트·오프라인 캐시·설정만
+// 담당한다. 스토어 상태가 필요하면 useNotificationStore 로 직접 구독할 것.
 export const selectUnreadCount = (state: NotificationState) => state.unreadCount;
-export const selectHasMore = (state: NotificationState) => state.hasMore;
 export const selectSettings = (state: NotificationState) => state.settings;
-export const selectFilter = (state: NotificationState) => state.filter;
-export const selectUnreadByCategory = (state: NotificationState) => state.unreadByCategory;
 
 // ============================================================================
 // Utility Hooks
@@ -618,52 +598,5 @@ export const selectUnreadByCategory = (state: NotificationState) => state.unread
  * 읽지 않은 알림 수
  */
 export const useUnreadCount = () => useNotificationStore(selectUnreadCount);
-
-/**
- * 알림 목록
- */
-export const useNotifications = () => useNotificationStore(selectNotifications);
-
-/**
- * 알림 설정
- */
-export const useNotificationSettings = () => useNotificationStore(selectSettings);
-
-/**
- * 카테고리별 읽지 않은 알림 수
- */
-export const useUnreadByCategory = () => useNotificationStore(selectUnreadByCategory);
-
-// ============================================================================
-// Action Selectors (불필요한 리렌더링 방지)
-// ============================================================================
-
-export const selectSetNotifications = (state: NotificationState) => state.setNotifications;
-export const selectAddNotification = (state: NotificationState) => state.addNotification;
-export const selectAddNotifications = (state: NotificationState) => state.addNotifications;
-export const selectRemoveNotification = (state: NotificationState) => state.removeNotification;
-export const selectSetHasMore = (state: NotificationState) => state.setHasMore;
-export const selectMarkAsRead = (state: NotificationState) => state.markAsRead;
-export const selectMarkAllAsRead = (state: NotificationState) => state.markAllAsRead;
-
-/**
- * 알림 목록 관리 액션 훅
- *
- * @description 전체 store 구독 대신 액션만 구독하여 리렌더링 최소화
- * @note isLoading은 React Query가 관리 (useNotificationList 훅에서 query.isLoading 사용)
- */
-export const useNotificationListActions = () => ({
-  setNotifications: useNotificationStore(selectSetNotifications),
-  addNotifications: useNotificationStore(selectAddNotifications),
-  setHasMore: useNotificationStore(selectSetHasMore),
-});
-
-/**
- * 알림 읽음 처리 액션 훅
- */
-export const useNotificationReadActions = () => ({
-  markAsRead: useNotificationStore(selectMarkAsRead),
-  markAllAsRead: useNotificationStore(selectMarkAllAsRead),
-});
 
 export default useNotificationStore;

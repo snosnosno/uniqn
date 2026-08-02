@@ -44,29 +44,11 @@ export type { ThemeMode } from './themeStore';
 
 // Notification Store
 // Note: isLoading 관련 export 제거됨 (v1.2.0) - React Query가 로딩 상태 관리
+// Note: 소비처 0 이던 목록/필터/카테고리 셀렉터와 편의 훅 제거됨 - 알림 목록의 주인은
+//       React Query(useNotifications 훅)이고, 스토어는 배지 카운트/오프라인 캐시/설정만 담당
 export {
   useNotificationStore,
   useUnreadCount,
-  useNotifications,
-  useNotificationSettings,
-  useUnreadByCategory,
-  selectNotifications,
   selectUnreadCount,
-  selectHasMore,
   selectSettings,
-  selectFilter,
-  selectUnreadByCategory,
 } from './notificationStore';
-
-// Bookmark Store
-export {
-  useBookmarkStore,
-  selectBookmarkCount,
-  selectBookmarks,
-  selectIsBookmarked,
-  selectToggleBookmark,
-  selectAddBookmark,
-  selectRemoveBookmark,
-  selectClearAllBookmarks,
-} from './bookmarkStore';
-export type { BookmarkedJob } from './bookmarkStore';

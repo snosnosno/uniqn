@@ -15,19 +15,36 @@ import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { AlertTriangleIcon, CheckIcon, AlertCircleIcon, UserIcon, BriefcaseIcon } from '../icons';
+import { InquiryAttachmentPicker } from '@/components/support/InquiryAttachmentPicker';
+import { useUploadReportEvidence } from '@/hooks/useReportEvidence';
 import {
   EMPLOYEE_REPORT_TYPES,
   EMPLOYER_REPORT_TYPES,
   REPORT_SEVERITY_COLORS,
+  REPORT_EVIDENCE_LIMITS,
   getReportSeverity,
   type ReportType,
   type ReporterType,
   type ReportTypeInfo,
   type CreateReportInput,
+  type LocalReportEvidence,
 } from '@/types/report';
 import { getRoleDisplayName } from '@/types/unified';
 import type { ConfirmedStaff } from '@/types';
 import { useToastStore } from '@/stores/toastStore';
+import { logger } from '@/utils/logger';
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+/**
+ * 증빙 첨부 안내 문구
+ *
+ * JSX 텍스트로 두면 prettier 가 줄바꿈을 재배치해 문구가 흔들린다 — 문자열 상수로 고정한다.
+ * 장수는 `REPORT_EVIDENCE_LIMITS` 한 곳에서만 읽는다(숫자 하드코딩 금지).
+ */
+const EVIDENCE_HINT_TEXT = `현장 사진·대화 캡처처럼 상황을 뒷받침할 이미지를 최대 ${REPORT_EVIDENCE_LIMITS.MAX_COUNT}장까지 첨부할 수 있어요. 접수 후에는 삭제할 수 없습니다.`;
 
 // ============================================================================
 // Types
@@ -183,7 +200,9 @@ export function ReportModal({
 }: ReportModalProps) {
   const [selectedType, setSelectedType] = useState<ReportType | null>(null);
   const [description, setDescription] = useState('');
+  const [evidenceFiles, setEvidenceFiles] = useState<LocalReportEvidence[]>([]);
   const addToast = useToastStore((state) => state.addToast);
+  const { mutateAsync: uploadEvidence, isPending: isUploadingEvidence } = useUploadReportEvidence();
 
   // 모드에 따른 신고 유형 목록 (메모이제이션)
   const reportTypes = useMemo(() => {
@@ -209,6 +228,7 @@ export function ReportModal({
     if (staff || target) {
       setSelectedType(null);
       setDescription('');
+      setEvidenceFiles([]);
     }
   }, [staff, target]);
 
@@ -223,7 +243,11 @@ export function ReportModal({
   }, []);
 
   // 제출
-  const handleSubmit = useCallback(() => {
+  //
+  // 증빙을 **먼저 업로드하고 그 경로로 신고를 1회 생성**한다.
+  // 반대 순서(신고 먼저 → 첨부)로 만들면 첨부 실패 시 이미 접수된 신고를 서버에서 되돌려야 하는데,
+  // 그 롤백은 신고 자체를 지우는 위험한 동작이 된다. 업로드가 앞서면 실패 시 "신고를 안 만들면" 끝이다.
+  const handleSubmit = useCallback(async () => {
     if (!reportTarget) {
       addToast({ type: 'error', message: '신고 대상을 찾을 수 없습니다.' });
       return;
@@ -237,6 +261,24 @@ export function ReportModal({
     if (description.trim().length < 10) {
       addToast({ type: 'error', message: '상세 설명을 10자 이상 입력해주세요.' });
       return;
+    }
+
+    let evidenceUrls: string[] = [];
+    if (evidenceFiles.length > 0) {
+      try {
+        evidenceUrls = await uploadEvidence(evidenceFiles);
+      } catch (error) {
+        logger.error('report.evidence.upload_failed', {
+          component: 'ReportModal',
+          count: evidenceFiles.length,
+          error,
+        });
+        addToast({
+          type: 'error',
+          message: '증빙 사진 업로드에 실패했어요. 신고가 접수되지 않았습니다.',
+        });
+        return;
+      }
     }
 
     const input: CreateReportInput = {
@@ -253,6 +295,7 @@ export function ReportModal({
           workDate: staff.date,
         }),
       description: description.trim(),
+      evidenceUrls,
     };
 
     onSubmit(input);
@@ -264,6 +307,8 @@ export function ReportModal({
     jobPostingId,
     jobPostingTitle,
     description,
+    evidenceFiles,
+    uploadEvidence,
     onSubmit,
     addToast,
   ]);
@@ -272,6 +317,7 @@ export function ReportModal({
   const handleClose = useCallback(() => {
     setSelectedType(null);
     setDescription('');
+    setEvidenceFiles([]);
     onClose();
   }, [onClose]);
 
@@ -281,12 +327,15 @@ export function ReportModal({
   // 액션은 footer prop 으로 — Modal 이 스크롤 영역 밖 형제로 sticky 렌더한다.
   // children 끝에 두면 본문(유형 목록 + 500자 상세 설명 + 안내)이 길어질 때
   // 버튼이 스크롤 아래로 밀려 저높이 뷰포트·키보드 오픈 시 도달이 어려웠다(2026-07-25).
+  // 증빙 업로드 중에도 제출 버튼은 진행 상태를 보여야 한다 — 업로드는 제출의 첫 단계다.
+  const isBusy = isLoading || isUploadingEvidence;
+
   const actionFooter = (
     <View className="flex-row gap-3">
       <Button
         variant="secondary"
         onPress={handleClose}
-        disabled={isLoading}
+        disabled={isBusy}
         style={{ flex: 1 }}
         accessibilityLabel="신고 취소"
         accessibilityHint="신고를 취소하고 모달을 닫습니다"
@@ -295,9 +344,11 @@ export function ReportModal({
       </Button>
       <Button
         variant="danger"
-        onPress={handleSubmit}
-        loading={isLoading}
-        disabled={isLoading}
+        onPress={() => {
+          void handleSubmit();
+        }}
+        loading={isBusy}
+        disabled={isBusy}
         style={{ flex: 1 }}
         icon={<AlertTriangleIcon size={18} color="#FFFFFF" />}
         accessibilityLabel="신고 제출"
@@ -305,7 +356,7 @@ export function ReportModal({
           isValid ? '선택한 유형으로 신고를 제출합니다' : '신고 유형과 설명을 모두 입력해주세요'
         }
       >
-        신고하기
+        {isUploadingEvidence ? '증빙 업로드 중...' : '신고하기'}
       </Button>
     </View>
   );
@@ -400,6 +451,21 @@ export function ReportModal({
           <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
             {description.length}/500자 (최소 10자)
           </Text>
+        </View>
+
+        {/* 증빙 사진 (선택) — 1:1 문의와 동일한 첨부 파이프라인을 재사용한다 */}
+        <View className="mb-3">
+          <Text className="text-sm font-sans-medium text-content-secondary mb-1.5">
+            증빙 사진 (선택)
+          </Text>
+          <Text className="mb-2 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+            {EVIDENCE_HINT_TEXT}
+          </Text>
+          <InquiryAttachmentPicker
+            value={evidenceFiles}
+            onChange={setEvidenceFiles}
+            disabled={isBusy}
+          />
         </View>
 
         {/* 안내 메시지 */}

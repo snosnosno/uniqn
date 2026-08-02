@@ -65,17 +65,6 @@ export interface FetchReportsResult {
   hasMore: boolean;
 }
 
-/**
- * 신고 통계
- */
-export interface ReportCounts {
-  total: number;
-  critical: number;
-  high: number;
-  medium: number;
-  low: number;
-}
-
 // ============================================================================
 // Interface
 // ============================================================================
@@ -100,39 +89,11 @@ export interface IReportRepository {
   getById(reportId: string): Promise<Report | null>;
 
   /**
-   * 공고별 신고 목록 조회
-   * @param jobPostingId - 공고 ID
-   * @returns 신고 목록 (최신순 정렬)
-   */
-  getByJobPostingId(jobPostingId: string): Promise<Report[]>;
-
-  /**
-   * 대상(스태프)별 신고 목록 조회
-   * @param targetId - 피신고자 ID
-   * @returns 신고 목록 (최신순 정렬)
-   */
-  getByTargetId(targetId: string): Promise<Report[]>;
-
-  /**
-   * 신고자별 신고 목록 조회
-   * @param reporterId - 신고자 ID
-   * @returns 신고 목록 (최신순 정렬)
-   */
-  getByReporterId(reporterId: string): Promise<Report[]>;
-
-  /**
    * 전체 신고 목록 조회 (관리자용, 페이지네이션)
    * @param options - 필터 + 페이지네이션 옵션
    * @returns 페이지네이션된 신고 목록
    */
   getAll(options?: FetchReportsOptions): Promise<FetchReportsResult>;
-
-  /**
-   * 대상별 신고 통계 조회
-   * @param targetId - 피신고자 ID
-   * @returns 심각도별 신고 횟수
-   */
-  getCountsByTargetId(targetId: string): Promise<ReportCounts>;
 
   // ==========================================================================
   // 트랜잭션 (Write) - 원자적 처리

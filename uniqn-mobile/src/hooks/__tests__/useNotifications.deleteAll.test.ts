@@ -2,6 +2,10 @@
  * UNIQN Mobile - useDeleteAllNotifications Hook Tests
  *
  * @description 모든 알림 삭제 훅 — 낙관적 초기화·롤백·캐시 무효화 검증
+ *
+ * ⚠️ 단언 기준이 "스토어 호출"이 아니라 **목록 캐시(setQueryData)** 다.
+ *    화면이 그리는 것은 React Query 캐시이므로, 스토어만 비우면 "배지는 0인데 목록은 그대로"가 된다.
+ *    (렌더 소스까지 실제로 바뀌는지는 `src/__tests__/hooks/useNotifications.listAxis.test.tsx` 가 잠근다)
  */
 
 import { renderHook } from '@testing-library/react-native';
@@ -9,12 +13,22 @@ import { useDeleteAllNotifications } from '../useNotifications';
 
 const mockUseMutation = jest.fn();
 const mockInvalidateQueries = jest.fn();
+const mockGetQueriesData = jest.fn();
+const mockSetQueryData = jest.fn();
+const mockGetQueryData = jest.fn();
 const mockClearNotifications = jest.fn();
 const mockSetNotifications = jest.fn();
 const mockAddToast = jest.fn();
 const mockDeleteAllNotificationsService = jest.fn();
 const mockRequireOnlineForMutation = jest.fn();
 const mockShouldApplyOptimisticUpdate = jest.fn(() => true);
+
+const LIST_KEY = ['notifications', 'list', {}];
+const SETTINGS_KEY = ['notifications', 'settings'];
+const CACHED_LIST = [
+  { id: 'n-1', isRead: false },
+  { id: 'n-2', isRead: true },
+];
 
 const mockStoreState = {
   notifications: [
@@ -23,6 +37,7 @@ const mockStoreState = {
   ],
   setNotifications: mockSetNotifications,
   clearNotifications: mockClearNotifications,
+  addNotification: jest.fn(),
   addNotifications: jest.fn(),
   setHasMore: jest.fn(),
   lastFetchedAt: null,
@@ -36,7 +51,12 @@ const mockStoreState = {
 jest.mock('@tanstack/react-query', () => ({
   useQuery: jest.fn(() => ({ data: undefined, isLoading: false })),
   useMutation: (...args: unknown[]) => mockUseMutation(...args),
-  useQueryClient: () => ({ invalidateQueries: mockInvalidateQueries }),
+  useQueryClient: () => ({
+    invalidateQueries: mockInvalidateQueries,
+    getQueriesData: (...args: unknown[]) => mockGetQueriesData(...args),
+    setQueryData: (...args: unknown[]) => mockSetQueryData(...args),
+    getQueryData: (...args: unknown[]) => mockGetQueryData(...args),
+  }),
 }));
 
 jest.mock('@/services/notifications/notificationService', () => ({
@@ -113,17 +133,16 @@ jest.mock('@/utils/logger', () => ({
   },
 }));
 
+type DeleteAllContext = {
+  previousLists?: [unknown, unknown[]][];
+  previousNotifications?: unknown[];
+};
+
 type MutationOptions = {
   mutationFn: () => Promise<number>;
-  onMutate: () =>
-    | { previousNotifications?: unknown[] }
-    | Promise<{ previousNotifications?: unknown[] }>;
+  onMutate: () => DeleteAllContext | Promise<DeleteAllContext>;
   onSuccess: () => void;
-  onError: (
-    error: Error,
-    variables: unknown,
-    context?: { previousNotifications?: unknown[] }
-  ) => void;
+  onError: (error: Error, variables: unknown, context?: DeleteAllContext) => void;
 };
 
 function renderAndCaptureOptions(): MutationOptions {
@@ -144,6 +163,11 @@ describe('useDeleteAllNotifications', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockShouldApplyOptimisticUpdate.mockReturnValue(true);
+    // 배열 캐시(목록) + 비배열 캐시(설정)를 함께 돌려줘 "설정 캐시는 안 건드린다"를 검증한다
+    mockGetQueriesData.mockReturnValue([
+      [LIST_KEY, CACHED_LIST],
+      [SETTINGS_KEY, { enabled: true }],
+    ]);
   });
 
   it('mutationFn은 온라인 가드 후 서비스에 사용자 ID를 전달한다', async () => {
@@ -159,33 +183,46 @@ describe('useDeleteAllNotifications', () => {
     expect(result).toBe(5);
   });
 
-  it('onMutate는 목록 스냅샷을 남기고 스토어를 즉시 초기화한다', async () => {
+  it('onMutate는 목록 캐시(렌더 소스)를 비우고 스토어도 초기화한다', async () => {
     const options = renderAndCaptureOptions();
 
     const context = await options.onMutate();
 
+    // 렌더 소스인 목록 캐시가 실제로 비워져야 한다 (스토어만 비우면 화면은 그대로다)
+    expect(mockSetQueryData).toHaveBeenCalledWith(LIST_KEY, []);
+    // 배열이 아닌 캐시(설정)는 건드리지 않는다
+    expect(mockSetQueryData).toHaveBeenCalledTimes(1);
+    expect(mockSetQueryData).not.toHaveBeenCalledWith(SETTINGS_KEY, expect.anything());
+
+    // 스냅샷 축(스토어)도 함께 비운다
     expect(mockClearNotifications).toHaveBeenCalledTimes(1);
+
+    expect(context.previousLists).toEqual([[LIST_KEY, CACHED_LIST]]);
     expect(context.previousNotifications).toEqual(mockStoreState.notifications);
   });
 
-  it('낙관적 업데이트 비활성 시 onMutate는 스토어를 건드리지 않는다', async () => {
+  it('낙관적 업데이트 비활성 시 onMutate는 캐시도 스토어도 건드리지 않는다', async () => {
     mockShouldApplyOptimisticUpdate.mockReturnValue(false);
     const options = renderAndCaptureOptions();
 
     const context = await options.onMutate();
 
+    expect(mockSetQueryData).not.toHaveBeenCalled();
     expect(mockClearNotifications).not.toHaveBeenCalled();
+    expect(context.previousLists).toBeUndefined();
     expect(context.previousNotifications).toBeUndefined();
   });
 
-  it('onError는 스냅샷으로 롤백하고 에러 토스트를 띄운다', () => {
+  it('onError는 목록 캐시와 스토어를 함께 롤백하고 에러 토스트를 띄운다', () => {
     const options = renderAndCaptureOptions();
     const previous = [{ id: 'n-1' }];
 
     options.onError(new Error('삭제 실패'), undefined, {
+      previousLists: [[LIST_KEY, previous]],
       previousNotifications: previous,
     });
 
+    expect(mockSetQueryData).toHaveBeenCalledWith(LIST_KEY, previous);
     expect(mockSetNotifications).toHaveBeenCalledWith(previous);
     expect(mockAddToast).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
   });

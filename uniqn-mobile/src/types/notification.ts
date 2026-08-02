@@ -66,8 +66,6 @@ export const NotificationType = {
    * 값 변경 시 반드시 새 마이그레이션으로 트리거 함수도 함께 수정해야 합니다.
    */
   SETTLEMENT_REVERTED: 'settlement_reverted',
-  /** 정산 요청 (구인자에게) */
-  SETTLEMENT_REQUESTED: 'settlement_requested',
   /** 음수 정산 경고 (관리자에게) */
   NEGATIVE_SETTLEMENT_ALERT: 'negative_settlement_alert',
 
@@ -202,7 +200,6 @@ export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, Notificatio
   // 정산 관련
   [NotificationType.SETTLEMENT_COMPLETED]: NotificationCategory.SETTLEMENT,
   [NotificationType.SETTLEMENT_REVERTED]: NotificationCategory.SETTLEMENT,
-  [NotificationType.SETTLEMENT_REQUESTED]: NotificationCategory.SETTLEMENT,
   [NotificationType.NEGATIVE_SETTLEMENT_ALERT]: NotificationCategory.ADMIN,
 
   // 공고 관련
@@ -282,7 +279,6 @@ export const NOTIFICATION_DEFAULT_PRIORITY: Record<NotificationType, Notificatio
   [NotificationType.SETTLEMENT_COMPLETED]: 'high',
   // 금전 상태 역행은 완료 통지와 같은 무게로 다룬다 — 이의 제기 시점을 놓치면 회복이 어렵다.
   [NotificationType.SETTLEMENT_REVERTED]: 'high',
-  [NotificationType.SETTLEMENT_REQUESTED]: 'normal',
   [NotificationType.NEGATIVE_SETTLEMENT_ALERT]: 'urgent',
 
   // 공고 관련
@@ -376,12 +372,6 @@ export interface NotificationSettings {
       pushEnabled: boolean;
     };
   };
-  /** 방해 금지 시간 */
-  quietHours?: {
-    enabled: boolean;
-    start: string; // "22:00"
-    end: string; // "08:00"
-  };
   /** 알림 그룹화 설정 */
   grouping?: {
     /** 그룹화 활성화 여부 (기본: true) */
@@ -465,7 +455,6 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   // 정산 관련
   [NotificationType.SETTLEMENT_COMPLETED]: '정산 완료',
   [NotificationType.SETTLEMENT_REVERTED]: '지급 완료 취소',
-  [NotificationType.SETTLEMENT_REQUESTED]: '정산 요청',
   [NotificationType.NEGATIVE_SETTLEMENT_ALERT]: '음수 정산 경고',
 
   // 공고 관련
@@ -556,11 +545,6 @@ export function createDefaultNotificationSettings(): NotificationSettings {
   return {
     enabled: true,
     categories,
-    quietHours: {
-      enabled: false,
-      start: '22:00',
-      end: '08:00',
-    },
     grouping: {
       enabled: true,
       minGroupSize: 2,

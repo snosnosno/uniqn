@@ -33,11 +33,6 @@ import {
   setUserId,
   setUserProperties,
 } from '@/services/observability/analyticsService';
-import {
-  checkLoginAttempts,
-  incrementLoginAttempts,
-  resetLoginAttempts,
-} from './loginAttemptService';
 import { unregisterPushTokensForSignOut } from '@/services/notifications';
 import type { SignUpFormData, LoginFormData } from '@/schemas';
 import { type UserProfile, type AuthResult } from './authTypes';
@@ -75,8 +70,6 @@ function trackSignupAnalytics(uid: string, role: 'staff' | 'employer' | 'admin')
  */
 export async function login(data: LoginFormData): Promise<AuthResult> {
   try {
-    await checkLoginAttempts(data.email);
-
     logger.info('로그인 시도', { email: maskEmail(data.email), platform: Platform.OS });
 
     const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
@@ -118,9 +111,6 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
 
     logger.info('로그인 성공', { uid: user.id });
 
-    // 로그인 성공 시도 횟수 초기화
-    await resetLoginAttempts(data.email);
-
     // Analytics 이벤트
     trackLogin('email');
     setUserId(user.id);
@@ -131,19 +121,6 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
 
     return { user, profile };
   } catch (error) {
-    // 로그인 실패 시 시도 횟수 증가
-    const skipIncrement =
-      error instanceof AuthError &&
-      (error.code === ERROR_CODES.AUTH_RATE_LIMITED ||
-        error.code === ERROR_CODES.AUTH_USER_NOT_FOUND);
-    if (!skipIncrement) {
-      try {
-        await incrementLoginAttempts(data.email);
-      } catch {
-        // Rate limiting 업데이트 실패는 무시 (원래 에러가 우선)
-      }
-    }
-
     throw handleServiceError(error, {
       operation: '로그인',
       component: 'authService',

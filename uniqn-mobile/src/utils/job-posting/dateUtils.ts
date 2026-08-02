@@ -1,33 +1,15 @@
 /**
  * 구인공고 날짜 관련 유틸리티
  *
- * @version 3.0.0 - 중복 함수 제거, date/ 폴더에서 import
+ * @version 4.0.0 - date/ 하위호환 재수출 심 제거 (date/ 모듈을 직접 import 할 것)
  * @description 날짜별 요구사항 섹션에서 사용하는 유틸리티 함수들
  */
 
-import { toISODateString, generateId as generateIdBase } from '../date/core';
+import { toISODateString } from '../date/core';
 import { formatDateWithDay } from '../date/formatting';
 import { groupConsecutiveDates as groupConsecutiveDatesBase } from '../date/grouping';
 import { calculateTotalPositionsFromSchedule } from '@/domains/job-posting/stats';
 import type { PostingSchedule } from '@/types/jobPosting';
-
-// Re-export from date/ for backward compatibility
-export { groupConsecutiveDatesBase as groupConsecutiveDates };
-export { generateIdBase as generateId };
-
-// Re-export validation functions
-export {
-  isDuplicateDate,
-  validateDateCount,
-  isWithinUrgentDateLimit,
-  parseDate,
-  getDateAfterDays,
-  isValidTimeFormat,
-  isValidDateFormat,
-} from '../date/validation';
-
-// Re-export range functions
-export { generateDateRange, sortDates } from '../date/ranges';
 
 /**
  * 오늘 날짜 문자열 (yyyy-MM-dd)

@@ -30,7 +30,7 @@
 Presentation → Hooks → Service → Repository → Supabase
 ```
 - DB 접근: Service → Repository → Supabase 경유 필수
-- Supabase Auth: authService + 인증 hook + authStore(세션·프로필 갱신 액션 한정: refreshSession/getUser/signOut/refreshProfile)만 직접 호출 허용
+- Supabase Auth: authService + 인증 hook + authStore(세션·프로필 갱신 액션 한정: refreshSession/getUser/signOut/refreshProfile/**reset**)만 직접 호출 허용 — `reset` 은 `signOut()` **직후** 화면이 스토어 잔여 세션을 비우는 용도로만 허용(선례: `app/(app)/(tabs)/profile.tsx` 로그아웃, `app/(app)/profile-setup.tsx` 이탈). 서버 세션 종료 없이 단독 호출 금지
 - TanStack Query 읽기 전용 조회: Repository 직접 호출 허용
 - 읽기 전용 realtime 구독: 훅에서 `createRealtimeSubscription`(@/utils/supabase) 직접 사용 허용 — 단, 콜백은 캐시 무효화(invalidateQueries)만, 쓰기 금지
 - Presentation/Hooks에서 Supabase 직접 호출 금지

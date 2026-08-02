@@ -49,17 +49,6 @@ export interface ITemplateRepository {
   saveTemplate(input: CreateTemplateInput, userId: string): Promise<string>;
 
   // ==========================================================================
-  // 조회 + 통계 (Read + Stats)
-  // ==========================================================================
-
-  /**
-   * 템플릿 불러오기 (사용 통계 업데이트 포함)
-   * @param templateId - 템플릿 ID
-   * @returns 템플릿 데이터
-   */
-  loadTemplate(templateId: string): Promise<JobPostingTemplate>;
-
-  // ==========================================================================
   // 삭제 (Delete)
   // ==========================================================================
 

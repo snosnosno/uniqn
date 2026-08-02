@@ -83,12 +83,6 @@ jest.mock('@/services/observability/analyticsService', () => ({
   setUserProperties: (...args: unknown[]) => mockSetUserProperties(...args),
 }));
 
-jest.mock('@/services/observability/sessionService', () => ({
-  checkLoginAttempts: jest.fn(async () => undefined),
-  incrementLoginAttempts: jest.fn(async () => undefined),
-  resetLoginAttempts: jest.fn(async () => undefined),
-}));
-
 const mockClearBiometricCredentials = jest.fn<Promise<void>, []>();
 const mockClearSession = jest.fn<Promise<void>, []>();
 
