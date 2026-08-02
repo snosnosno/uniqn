@@ -293,8 +293,9 @@ describe('ScheduleMerger.merge', () => {
     expect(merged).toHaveLength(3);
   });
 
-  // 단계를 섞으면(링크 매칭을 엄격 매칭보다 먼저 허용하면) 앞선 일정이 뒤에 올 일정의
-  // 짝을 가로챈다. 엄격 단계에서 소진된 work_log 를 후보에서 빼는 것이 그 방어다.
+  // 이 테스트가 고정하는 것은 **`consumed` 제외**다(단계 순서가 아니다 — 순서를 스왑해도
+  // 같은 키의 leftover 가 2개가 되어 count 가드가 먼저 막는다). 엄격 단계에서 이미 짝지어진
+  // work_log 를 링크 후보에 남겨 두면, 야간 일정이 오전 work_log 에 얹혀 취소 요청이 오배치된다.
   it('엄격하게 짝지어진 work_log 는 링크 단계의 후보에서 빠진다', () => {
     const workLogSchedules = [
       createScheduleEvent({

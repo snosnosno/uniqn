@@ -69,8 +69,11 @@ export class ScheduleMerger {
     const mergedWorkLogs = [...workLogSchedules];
 
     // 1단계 — 엄격 키(시각 포함). 시각까지 일치하는 짝을 **모두** 먼저 소진한다.
-    // 🔴 단계를 섞으면 안 된다. 느슨한 매칭을 먼저 허용하면, 뒤에 올 지원서가 엄격하게
-    //    맞출 수 있었던 work_log 를 앞선 지원서가 가로챈다.
+    //
+    // 단계를 나눈 것은 보수적 설계다. "링크 매칭을 먼저 하면 앞선 지원서가 뒤에 올 지원서의
+    // 짝을 가로챈다" 는 것이 의도이지만, 실제로 그 가로채기를 막는 것은 아래 1:1 count 가드다
+    // (링크를 먼저 돌리면 같은 키의 leftover 가 2개가 되어 어차피 차단된다). 즉 순서 자체는
+    // 이 파일의 테스트로 고정돼 있지 않다 — 아래 `consumed` 제외가 테스트로 고정되는 부분이다.
     const strictKeyMap = new Map<string, number>();
     for (const [index, schedule] of mergedWorkLogs.entries()) {
       strictKeyMap.set(this.generateScheduleKey(schedule), index);
@@ -118,6 +121,10 @@ export class ScheduleMerger {
 
       if (key !== null && candidates?.length === 1 && linkLeftoverCounts.get(key) === 1) {
         const existingIndex = candidates[0]!;
+        // ⚠️ 이 `delete` 도 **현재는 관찰되지 않는 방어**다(제거해도 red 0건, 실측). 바로 위
+        //    count 가드가 같은 키의 leftover 재방문을 원천 차단하기 때문이다. 그래도 남겨 둔다 —
+        //    count 가드를 나중에 완화하면 같은 work_log 에 여러 일정이 겹쳐 얹히는데, 그때
+        //    이 줄이 유일한 안전망이 된다.
         linkCandidates.delete(key);
         mergedWorkLogs[existingIndex] = this.mergeApplicationMetadata(
           mergedWorkLogs[existingIndex]!,
