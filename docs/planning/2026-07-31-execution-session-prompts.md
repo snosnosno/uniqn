@@ -32,6 +32,7 @@
 | **P4**(감사후속) | 지점 `location` 병합 (M9) | ~~`fix/venue-location-merge`~~ | ✅ **머지** | **#395** | `2e8255dd5`. CI **9잡 전부 pass**(E2E 10m26s 포함, 재실행 0회). 마이그 **0건**(서버 RPC 무변경 — 치환은 의도된 계약). quality 통과 · jest 14/14 · red-green 실증(병합을 되돌리면 신규 2건만 red) · 리뷰 fable **APPROVE**(CRITICAL/HIGH/MEDIUM 0, LOW 3 중 2건 반영). ✅ **B1 선행 불필요 확정** |
 | **P6**(감사후속) | 오프라인 캐시 TTL 분리 (M6) | ~~`fix/offline-cache-policies`~~ | ✅ **머지** | **#398** | `40040c8fb`. CI **9잡 전부 pass**(E2E 11m5s 포함, **재실행 0회**). 재통합(#397 P2 · #395 P4 · **#396 P3**) 후 재검증: quality **0 errors**(eslint 경고 98 선재 · prettier clean) · 전체 jest **602스위트 6599테스트 122스냅샷 전량 통과** · pre-push quality 통과. 마이그 **0건**. 감사 5줄 → **실측 6줄**(`useWorkLogs.ts:269` 추가 발견). `offlineCachePolicies` 5키 + **브랜드 타입 `OfflineTtlMs`** 로 컴파일 타임 차단. quality 통과 · jest 600스위트 6583테스트 · **red-green 2종**(호출부 원복 시 tsc 6곳 TS2322 + 테스트 5건 red / 정책값 오염 시 백스톱 2건 red) · 리뷰 fable **APPROVE**(CRITICAL 0/HIGH 0, MEDIUM 1 반영) |
 | **P5**(감사후속) | 방어심화 (M4+L2+L1 절반) | ~~`feat/settlement-rpc-and-defense`~~ | ✅ **머지** | **#400** | `95772ce49`. **타 세션 소관** — 세션 A2 가 P6 를 머지하는 사이에 착지했다. 신원 컬럼 고정 트리거 + `time_slot` CHECK + 정산 상태 RPC 화. 🔴**마이그 2건 prod 적용 완료 — 재적용 금지**(기록명 `20260801212753 work_logs_identity_pin_and_time_slot_check`·`20260801212843 set_work_log_payroll_status_rpc`, 파일명과 다름). 파리티 **184→186** / 정책 111 불변(prod 실측), `PARITY_EXPECT_FUNCS` 도 이 PR 에서 186 으로 갱신됨. quality exit 0 · jest **600스위트 6583테스트** · pgTAP **91파일 951테스트**(기준선 88/912) · red-green **5종 1:1 실증**. 리뷰 fable planner·fable/opus database-reviewer 3인 반영. 감사의 M4 처방(컬럼 REVOKE)은 무효였고 트리거로 대체. **L1 은 절반** — 확정·일괄 RPC화와 직접쓰기 차단은 다음 세션(상세=§5) |
+| **L1-잔여**(감사후속) | 정산 확정·일괄 RPC 화 + 계산기 서버 이식 | `feat/settlement-rpc-phase2` | 🔨 **커밋만**(PR 미생성) | — | `178ecf1ad`. P5 가 남긴 L1 나머지 절반. `SettlementRepository.calculateSettlementAmount`(TS)를 **삭제하고** `fn_settlement_amount`(PL/pgSQL)로 이식 — 복제가 아니라 **이동**이라 클라 계산기 갈래 수는 불변. 신규 함수 3종(`fn_settlement_amount`·`settle_work_log`·`bulk_settle_work_logs`). 🔴**마이그 prod 적용 완료 — 재적용 금지. 기록 3건인데 레포 파일은 2개**(`20260802002505`·`20260802003147`·`20260802003419 settlement_amount_calculator_comments`←본문 주석 누락 재적용분). 파리티 **186→189**/정책 111 불변, `PARITY_EXPECT_FUNCS` 갱신. quality exit 0 · jest **603스위트 6622테스트 122스냅샷** · pgTAP **93파일 984테스트**(기준선 91/951) · **짝 픽스처 16/16 SQL↔TS 일치** · red-green **3종 1:1** · 레포↔prod↔로컬 md5 4함수 일치. `set_work_log_payroll_status` 의 `completed` 진입 차단(호출부 0건 실측 후 결정). 상세=§5 |
 | **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
 | **S6** | 3-C 설계 | — | ⬜ | | 사용자 결정 필요 |
 | **S7** | 3-C 구현 | `feat/posting-time-change` | ⬜ | | S6 승인 후 |
@@ -54,6 +55,8 @@
 | P6 | ~~`T-HOLDEM-offline`~~ | ✅ **정리완료**(2026-08-02 세션 A2 — 정션 해제 선행 → `worktree remove` → 브랜치 삭제. 해제 전후 원본 `node_modules` **821 → 821** 실측 무손상) |
 | 세션A-원장 | `T-HOLDEM-ledger` | 🔨 이 문서 커밋용(정션 없음). **원장 PR 머지 후 정리 대상**(정션 없으므로 `worktree remove` → 브랜치 삭제만) |
 | **P2·P5(타 세션)** | ~~`T-HOLDEM-notifyfix`~~ | ✅ **타 세션이 스스로 정리**(2026-08-02 세션 A2 종료 시 `git worktree list` 에서 사라짐). P2 는 #397, P5 는 #400 으로 머지됐다 |
+| **L1-잔여** | `T-HOLDEM-settlerpc` | 🔨 **유지 중**(커밋 `178ecf1ad`, PR 미생성). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성(821 확인) |
+| L1-잔여-원장 | `T-HOLDEM-ledger2` | 🔨 이 문서 커밋용(정션 없음). 원장 PR 머지 후 정리 대상 |
 | S7 | `T-HOLDEM-timechange` | ⬜ |
 
 전부 `C:/Users/user/Desktop/` 아래. 머지 완료 세션의 워크트리는 다음 세션 착수 시 정리한다
@@ -492,6 +495,72 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 
 > 형식은 §2 세션 종료 프로토콜 4번 참조. **삭제하지 말고 쌓는다** —
 > 중단된 세션을 다시 여는 사람이 읽을 유일한 기록이다.
+
+### L1-잔여 (정산 확정·일괄 RPC 화 + 계산기 서버 이식) — 2026-08-02 · 상태: 완료(PR 미생성)
+
+- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-settlerpc` / `feat/settlement-rpc-phase2` · HEAD `178ecf1ad`(1커밋)
+- 🔴 **마이그 prod 적용 완료 — 재적용 금지. 기록 3건인데 레포 파일은 2개다.**
+  `20260802002505 settlement_amount_calculator` · `20260802003147 settle_work_log_rpcs` ·
+  `20260802003419 settlement_amount_calculator_comments`(← 대응 파일 없음. 아래 주의 1번)
+- 파리티 **186 → 189** / 정책 **111 불변**(prod 실측). `PARITY_EXPECT_FUNCS` 마커 + 단언 리터럴 둘 다 갱신
+
+**끝난 것** (전부 이 세션의 도구 출력 기준)
+- **계산기 이식** `fn_settlement_amount`(IMMUTABLE, 순수). `SettlementRepository.calculateSettlementAmount`(TS)는
+  **삭제**했다 — 복제가 아니라 이동이라 클라 계산기 갈래 수는 그대로다.
+  컨테이너/일반 분기 · 역할 단가표 해소 · PROVIDED_FLAG(-1) 비대칭 · opt-out `taxableItems` ·
+  "basePay 는 반올림 전 원값 시간을 쓴다"까지 원본 의미론 그대로. JS 가 NaN 을 만드는 두 자리만 0 으로 닫음
+- **확정** `settle_work_log` — FOR UPDATE 로 TOCTOU·중복 확정 차단, 금액은 서버 재계산.
+  권한 술어는 **job_postings 기준**(행 접근으로 쓰면 staff 셀프 정산이 열린다)
+- **일괄** `bulk_settle_work_logs` — 항목별 `BEGIN…EXCEPTION` 서브트랜잭션으로 부분 성공 계약 보존.
+  `settle_work_log` 를 그대로 호출해 규칙을 한 곳에만 둠. 상한 100 = 클라 `BATCH_CHUNK_SIZE`
+- **계약 변경** `set_work_log_payroll_status` 가 `'completed'` 진입을 거부한다(P5 가 남긴 판단 과제).
+  프로덕션 호출부 **0건 실측** 후 결정 — 이 함수는 payroll_amount 를 안 써서 금액 없는 지급완료를 만든다
+- 게이트: quality **exit 0**(eslint 0 errors · 경고 98 선재) · jest **603스위트 6622테스트 122스냅샷** ·
+  pgTAP **93파일 984테스트**(P5 기준선 91/951 → +2파일 +33) · `check:rpc-migrations` 96종 통과
+- **짝 픽스처 16/16 SQL↔TS 일치** — pgTAP `settlement_amount_calc.test.sql` ↔ Jest `settlementAmountParity.test.ts`
+- **red-green 3종 1:1**: 권한 술어를 행 접근으로 약화 → 셀프 정산 단언(5번)만 red /
+  컨테이너 폴백 단가 변조 → 07 픽스처만 red / `completed` 차단 제거 → 14·15만 red. 복원 후 md5 원상 확인
+- 레포 ↔ prod ↔ 로컬 `md5(replace(prosrc, chr(13),''))` **4함수 전부 일치**
+
+**안 끝난 것**
+- 🔴 **PR 미생성**(push/PR 은 사용자 명시 요청 사항). 워크트리 2개 유지 중(`T-HOLDEM-settlerpc`·`T-HOLDEM-ledger2`)
+- 🔴 **L1 3단계 = payroll 컬럼 직접 UPDATE 차단.** 순서 엄수: 이 PR 머지 → 웹 배포 + OTA →
+  롤아웃 확인(사용자 게이트) → 그때 차단. 역순이면 미전환 구 빌드가 즉사한다
+- 🔴 **Lost Update 잔존** — `updateWorkTimeWithTransaction`·`updateWorkLogCustomSettlement` 두 경로가
+  아직 클라에서 이력 jsonb 를 read-modify-write 한다(P5 주의 10번, 이번에도 미해결)
+
+**다음 세션에 넘기는 주의** (이 세션에서 새로 알아낸 것만)
+1. 🚨 **적용할 SQL 을 손으로 줄이면 레포와 조용히 갈라진다.** 마이그 파일에 있던 본문 주석을
+   `apply_migration` 에 안 실어 prod 만 9280자, 레포 13599자로 갈렸다. **md5(prosrc) 대조가 유일한 적발 수단**이고
+   실제로 4함수 중 1건을 잡았다(그래서 마이그 기록이 3건). 대조는 반드시 CR 제거 후.
+2. 🔑 **계산기 이식은 "5번째 구현 추가"가 아니라 "이동"으로 설계하라.** TS 원본을 남겼으면
+   판정 복제가 하나 더 늘었을 것이다 — 이 레포의 상습 결함 클래스다.
+3. 🔑 **순수 함수로 만들면 두 언어를 한 표로 묶을 수 있다.** `fn_settlement_amount` 를 테이블 행이 아니라
+   11개 스칼라/jsonb 인자로 받게 해서 pgTAP 이 **시딩 없이 리터럴 픽스처**로 호출한다.
+   같은 16 케이스를 Jest 에도 물려 이식 드리프트를 잡는다. 이게 없으면 드리프트는 관측 불가능하다.
+4. 🚨 **손계산을 기대값으로 쓰면 틀린 쪽은 사람이다.** 픽스처 16개 중 2건의 기대값을 내가 잘못 계산했고
+   클라 구현이 맞았다. 짝 테스트가 없었으면 **SQL 을 클라에 맞춰 틀리게 고칠 뻔했다.**
+   기대값은 양쪽 구현에 각각 물려 보고 확정하라.
+5. 🚨 **차단 계약을 새로 걸면 그 상태를 시드로 쓰던 테스트가 깨진다.** `completed` 진입을 막자
+   기존 pgTAP 15번이 "14번이 RPC 로 만들어 둔 completed 상태"에 의존하던 게 드러났다
+   (직접 UPDATE 는 `protect_work_log_payroll_columns` 가 42501). → 완료 행은 **UPDATE 가 아니라 INSERT 로** 세운다.
+6. 🔑 **약화·복원은 `tr -d '\r' | docker exec -i psql` 로 파이프**하면 CR 오염 없이 왕복한다
+   (`docker cp` + `psql -f` 는 CRLF 워크트리에서 prosrc 에 CR 을 섞는다 — P5 실증).
+7. ⚠️ **`instanceof Error` 만 보는 에러 매퍼는 통째로 무력화될 수 있다.** `String(error)` 로 떨어지면
+   평범한 객체가 `'[object Object]'` 가 되어 접두사 매칭이 전부 실패한다. 실측: supabase-js
+   `PostgrestError` 는 **Error 를 상속한다**(`postgrest-js/dist/index.d.cts:26`) — 즉 프로덕션은 멀쩡했고
+   **내 테스트 목이 비현실적이었다.** 목을 실제 형태로 고치고 `.message` 폴백도 넣었다.
+8. 🔑 **계산기 4갈래는 값이 갈라져 있지 않다**(실측). 세금 코어(`calculateItemizedRateTax`)와
+   시간 변환(`TimeNormalizer`)은 실제로 공유된다. 발산 지점은 ①시간 출처 폴백 유무 ②세전/세후 반환
+   ③공고 데이터 신선도(캐시 vs 재조회) 셋이다. `services/work/settlement/settlementCalculation.ts` 는
+   **소비처 0건(죽은 경로)** 이며 유일하게 `deductions` 개념을 갖고 있다 — 되살리면 즉시 갈라진다.
+9. ⚠️ **`guaranteedHours` 는 금액에 반영되지 않는다**(표시 전용, SETTLE-2 계약 테스트가 고정).
+   prod 공고 `compensation.allowances` 에 실제로 들어 있어 착각하기 쉽다.
+10. ⚠️ **prod 데이터는 사실상 비어 있다** — `work_logs` 3건, 정산 완료 **0건**. 이식 위험의 실데이터 노출은 0이다.
+11. ⚠️ 이 세션 중 병렬 워크트리 2개(`T-HOLDEM-cleanup`·`T-HOLDEM-schedkey`)가 새로 떴다.
+    **로컬 Docker 스택과 `node_modules` 는 공유**다 — pgTAP·quality 전에 재확인할 것.
+
+---
 
 ### 세션 A2 (세션 A 착지 — P3·P6 머지 + 원장) — 2026-08-02 · 상태: 완료
 
