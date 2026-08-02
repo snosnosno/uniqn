@@ -315,6 +315,68 @@ describe('개별 알림 삭제 (낙관 갱신 + 되돌리기)', () => {
     expect(mockDeleteNotificationService).toHaveBeenCalledWith('n-1');
   });
 
+  // ⚠️ 토스트는 앱 루트(app/_layout.tsx)에 단일 마운트라 화면을 떠나도 살아 있다.
+  //    커밋이 끝난 뒤 '되돌리기'를 누르면 하드 DELETE 는 이미 나갔는데도 캐시가 되살아나
+  //    "복원했습니다"라고 알린 뒤 다음 refetch 에 조용히 다시 사라진다 — 거짓 복원이다.
+  it('유예가 끝나 삭제가 확정된 뒤에는 되돌리기를 눌러도 복원하지 않는다', async () => {
+    const { result } = setup();
+    await waitFor(() => expect(result.current.list.notifications).toHaveLength(3));
+
+    act(() => {
+      result.current.del.deleteNotification('n-1');
+    });
+    const undo = findUndo('n-1');
+    expect(undo).toBeDefined();
+
+    // 커밋 이후 서버는 n-1 이 빠진 목록을 돌려준다(실제로 지워졌으므로)
+    mockFetchNotifications.mockResolvedValue({
+      notifications: PAGE_1.filter((n) => n.id !== 'n-1'),
+      lastDoc: { cursor: 'p1' },
+      hasMore: true,
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(5000);
+    });
+    expect(mockDeleteNotificationService).toHaveBeenCalledWith('n-1');
+
+    mockAddToast.mockClear();
+    await act(async () => {
+      undo!();
+    });
+
+    expect(result.current.list.notifications.map((n) => n.id)).toEqual(['n-2', 'n-3']);
+    expect(useNotificationStore.getState().notifications.map((n) => n.id)).not.toContain('n-1');
+    expect(mockAddToast).not.toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringContaining('복원했습니다') })
+    );
+  });
+
+  it('화면을 떠나 삭제가 확정된 뒤에는 되돌리기를 눌러도 복원하지 않는다', async () => {
+    const { result, unmount } = setup();
+    await waitFor(() => expect(result.current.list.notifications).toHaveLength(3));
+
+    act(() => {
+      result.current.del.deleteNotification('n-1');
+    });
+    const undo = findUndo('n-1');
+    expect(undo).toBeDefined();
+
+    await act(async () => {
+      unmount();
+    });
+    expect(mockDeleteNotificationService).toHaveBeenCalledWith('n-1');
+
+    mockAddToast.mockClear();
+    act(() => undo!());
+
+    // 훅은 언마운트됐지만 스토어는 살아 있다 — 여기에 되살아나면 배지까지 거짓말한다.
+    expect(useNotificationStore.getState().notifications.map((n) => n.id)).not.toContain('n-1');
+    expect(mockAddToast).not.toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringContaining('복원했습니다') })
+    );
+  });
+
   it('서버 DELETE 가 실패하면 렌더 소스로 되돌린다', async () => {
     mockDeleteNotificationService.mockRejectedValue(new Error('삭제 실패'));
     const { result } = setup();

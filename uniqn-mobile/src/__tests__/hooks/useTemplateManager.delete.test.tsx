@@ -149,6 +149,60 @@ describe('useTemplateManager 삭제 Undo', () => {
     expect(mockDeleteTemplate).toHaveBeenCalledWith('a', 'employer-1');
   });
 
+  // ⚠️ PresetCarousel 은 관리 시트를 조건부 마운트한다 — 시트를 닫는 순간 이 훅이 언마운트되고
+  //    flush 가 DELETE 를 확정한다. 그런데 토스트는 앱 루트에 남아 계속 눌릴 수 있다.
+  //    그 시점의 '되돌리기'가 캐시를 되살리면 "복원했습니다"는 거짓말이 된다.
+  it('커밋된 뒤에는 되돌리기를 눌러도 복원하지 않는다 (거짓 "복원했습니다" 방지)', async () => {
+    const { result, queryClient } = setup([makeTemplate('a', 'A'), makeTemplate('b', 'B')]);
+
+    await act(async () => {
+      await result.current.handleDeleteTemplate('a', 'A');
+    });
+    const undo = findUndo('A');
+    expect(undo).toBeDefined();
+
+    await act(async () => {
+      jest.advanceTimersByTime(5000);
+    });
+    expect(mockDeleteTemplate).toHaveBeenCalledWith('a', 'employer-1');
+
+    const before = ids(queryClient);
+    mockAddToast.mockClear();
+    act(() => undo!());
+
+    expect(ids(queryClient)).toEqual(before);
+    expect(mockAddToast).not.toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringContaining('복원했습니다') })
+    );
+  });
+
+  it('[P2] 화면 이탈(언마운트)로 삭제가 확정된 뒤에도 되돌리기가 복원하지 않는다', async () => {
+    const { result, queryClient, unmount } = setup([
+      makeTemplate('a', 'A'),
+      makeTemplate('b', 'B'),
+    ]);
+
+    await act(async () => {
+      await result.current.handleDeleteTemplate('a', 'A');
+    });
+    const undo = findUndo('A');
+    expect(undo).toBeDefined();
+
+    await act(async () => {
+      unmount();
+    });
+    expect(mockDeleteTemplate).toHaveBeenCalledWith('a', 'employer-1');
+
+    const before = ids(queryClient);
+    mockAddToast.mockClear();
+    act(() => undo!());
+
+    expect(ids(queryClient)).toEqual(before);
+    expect(mockAddToast).not.toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringContaining('복원했습니다') })
+    );
+  });
+
   it('[P2] 연속 삭제 후 한 항목 복원이 다른 삭제 대기 항목을 되살리지 않는다', async () => {
     const { result, queryClient } = setup([
       makeTemplate('a', 'A'),

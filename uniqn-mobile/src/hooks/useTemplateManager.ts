@@ -231,6 +231,16 @@ export function useDeleteTemplateWithUndo() {
         action: {
           label: '되돌리기',
           onPress: () => {
+            // 관리 시트는 조건부 마운트라 닫는 순간 이 훅이 언마운트되고 flush 가 DELETE 를 확정한다.
+            // 그런데 토스트는 앱 루트에 남아 계속 눌린다 — 커밋 후 복원은 거짓 안내가 된다.
+            if (committed) {
+              addToast({
+                type: 'info',
+                message: `'${templateNameToDelete}' 템플릿은 이미 삭제되어 되돌릴 수 없습니다.`,
+              });
+              return;
+            }
+
             const pending = pendingDeletesRef.current.get(templateId);
             if (pending) {
               clearTimeout(pending.timer);

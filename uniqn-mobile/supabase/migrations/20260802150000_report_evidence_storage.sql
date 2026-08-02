@@ -77,6 +77,10 @@ BEGIN
 EXCEPTION
   WHEN insufficient_privilege THEN
     RAISE WARNING '[report_evidence_storage] storage.objects 정책 생성 권한 없음 — skip';
+  -- 1번 블록(버킷)은 undefined_table 을 잡는데 여기만 안 잡으면,
+  -- storage 스키마가 없어 1번이 skip 된 바로 그 환경에서 42P01 로 마이그 전체가 실패한다.
+  WHEN undefined_table THEN
+    RAISE WARNING '[report_evidence_storage] storage.objects 부재 — skip';
 END $$;
 
 -- -----------------------------------------------------------------------------

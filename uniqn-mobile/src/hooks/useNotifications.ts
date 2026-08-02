@@ -581,6 +581,17 @@ export function useDeleteNotification() {
         action: {
           label: '되돌리기',
           onPress: () => {
+            // 토스트는 앱 루트에 단일 마운트라 화면을 떠나도 살아 있다(app/_layout.tsx).
+            // 이미 커밋됐다면(유예 만료 또는 언마운트 flush) 하드 DELETE 가 이미 나간 뒤다 —
+            // 여기서 캐시를 되살리면 "복원했습니다"라고 알린 직후 refetch 로 다시 사라진다.
+            if (committed) {
+              addToast({
+                type: 'info',
+                message: `'${deleted.title}' 알림은 이미 삭제되어 되돌릴 수 없습니다.`,
+              });
+              return;
+            }
+
             const pending = pendingDeletesRef.current.get(notificationId);
             if (pending) {
               clearTimeout(pending.timer);
