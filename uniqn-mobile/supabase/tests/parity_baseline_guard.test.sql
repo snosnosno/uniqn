@@ -76,6 +76,15 @@
 --     ↑ 이 마이그는 #370 보다 먼저 prod 에 적용됐고 PR 은 나중에 합류했다.
 --       그래서 브랜치 시점엔 183-1=182 였고, #370 머지 후 185-1=184 로 재산정했다.
 --       🔑 PR 보다 먼저 prod 적용하면 다른 레인의 기대값이 자동으로 어긋난다.
+--   2026-08-02 신고 처리 결과 알림(마이그 20260802160000, prod 미적용 — 머지와 동기):
+--     함수 187 = 186 + notify_on_report_review 1
+--       (앱 FAQ 가 "처리 결과는 앱 내 알림으로 안내드립니다"라고 약속했는데 reports 에
+--        UPDATE 알림 트리거가 없어 report_resolved 가 한 번도 발송된 적이 없었다).
+--     정책 111 불변(트리거 신설만, 테이블·RLS 미변경).
+--     같은 배치의 20260802160100(notify_on_job_posting_update 본문 라벨링)은
+--     CREATE OR REPLACE 재정의라 개수 불변.
+--     20260802150000(신고 증빙 Storage 버킷·정책)은 storage 스키마 소관이라
+--     public 함수/정책 카운트에 영향이 없다.
 --
 -- ⚠️ 유지보수 계약: 이후 마이그레이션이 public 함수/정책을 추가·삭제하면
 --   이 기대값을 같은 PR에서 함께 갱신해야 한다. 갱신을 강제당하는 것 자체가
@@ -88,7 +97,7 @@
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=186
+-- PARITY_EXPECT_FUNCS=187
 -- PARITY_EXPECT_POLICIES=111
 -- ============================================================
 BEGIN;
@@ -108,8 +117,8 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  186,
-  'public function count == prod (186 = 184 + fn_work_logs_pin_identity·set_work_log_payroll_status 2, 2026-08-02 P5)');
+  187,
+  'public function count == prod (187 = 186 + notify_on_report_review 1, 2026-08-02 신고 처리 결과 알림)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(

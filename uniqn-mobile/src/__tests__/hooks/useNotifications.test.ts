@@ -96,6 +96,7 @@ jest.mock('@/stores/toastStore', () => ({
 }));
 
 const mockSetNotifications = jest.fn();
+const mockAddNotification = jest.fn();
 const mockAddNotifications = jest.fn();
 const mockSetHasMore = jest.fn();
 const mockMarkAsReadLocal = jest.fn();
@@ -111,6 +112,7 @@ const mockNotificationStoreState = {
     grouping: { enabled: true, minGroupSize: 2, timeWindowHours: 24 },
   },
   setNotifications: mockSetNotifications,
+  addNotification: mockAddNotification,
   addNotifications: mockAddNotifications,
   setHasMore: mockSetHasMore,
   markAsRead: mockMarkAsReadLocal,
@@ -155,6 +157,18 @@ jest.mock('@/errors', () => ({
 }));
 
 // ============================================================================
+// Mock Offline Guard
+// ============================================================================
+
+const mockRequireOnlineForMutation = jest.fn();
+const mockShouldApplyOptimisticUpdate = jest.fn(() => true);
+
+jest.mock('@/services/offline/remoteMutationGuard', () => ({
+  requireOnlineForMutation: (...args: unknown[]) => mockRequireOnlineForMutation(...args),
+  shouldApplyOptimisticUpdate: () => mockShouldApplyOptimisticUpdate(),
+}));
+
+// ============================================================================
 // Mock Notification Grouping
 // ============================================================================
 
@@ -169,6 +183,10 @@ jest.mock('@/utils/notificationGrouping', () => ({
 
 const mockQueryClient = {
   invalidateQueries: jest.fn().mockResolvedValue(undefined),
+  // 목록 축(렌더 소스) 패치용 — 삭제·페이지네이션이 여기를 건드려야 화면이 바뀐다
+  getQueriesData: jest.fn(() => [] as [unknown, unknown][]),
+  setQueryData: jest.fn(),
+  getQueryData: jest.fn(),
 };
 
 const mockRefetch = jest.fn().mockResolvedValue({ data: undefined });
@@ -182,11 +200,16 @@ let mockData: unknown = undefined;
 let mockError: Error | null = null;
 let mockIsPending = false;
 let mockEnabled: boolean | undefined;
+// queryFn 을 붙잡아 두면 첫 페이지 로드를 흉내 낼 수 있다(lastDoc 커서 확보 → fetchNextPage 가능)
+let mockCapturedQueryFn: (() => Promise<unknown>) | undefined;
+let mockCapturedQueryKey: unknown[] | undefined;
 
 jest.mock('@tanstack/react-query', () => ({
   useQuery: jest.fn(
     (options: { queryKey: unknown[]; queryFn: () => Promise<unknown>; enabled?: boolean }) => {
       mockEnabled = options.enabled;
+      mockCapturedQueryFn = options.queryFn;
+      mockCapturedQueryKey = options.queryKey;
       if (options.enabled === false) {
         return {
           data: undefined,
@@ -304,6 +327,8 @@ describe('useNotifications Hooks', () => {
     mockNotificationStoreState.lastFetchedAt = null;
     mockShouldSync.mockReturnValue(false);
     mockSubscribeToNotifications.mockReturnValue(jest.fn());
+    mockShouldApplyOptimisticUpdate.mockReturnValue(true);
+    mockQueryClient.getQueriesData.mockReturnValue([]);
   });
 
   // ==========================================================================
@@ -473,6 +498,43 @@ describe('useNotifications Hooks', () => {
 
       expect(mockRefetch).not.toHaveBeenCalled();
     });
+
+    // ------------------------------------------------------------------
+    // 무한 스크롤 — 목록 축(쿼리 캐시)에 append 해야 화면이 늘어난다
+    // ------------------------------------------------------------------
+
+    it('fetchNextPage는 스토어가 아니라 목록 쿼리 캐시에 다음 페이지를 붙인다', async () => {
+      const page1 = [createMockNotification({ id: 'notif-1' })];
+      const page2 = [createMockNotification({ id: 'notif-2' })];
+      mockData = page1;
+      mockFetchNotifications
+        .mockResolvedValueOnce({ notifications: page1, lastDoc: { cursor: 'p1' }, hasMore: true })
+        .mockResolvedValueOnce({ notifications: page2, lastDoc: null, hasMore: false });
+
+      const { result } = renderHook(() => useNotificationList());
+
+      // 1페이지 로드로 커서(lastDoc) 확보
+      await act(async () => {
+        await mockCapturedQueryFn?.();
+      });
+
+      await act(async () => {
+        await result.current.fetchNextPage();
+      });
+
+      expect(mockQueryClient.setQueryData).toHaveBeenCalledTimes(1);
+      const [usedKey, updater] = mockQueryClient.setQueryData.mock.calls[0] as [
+        unknown[],
+        (current: unknown[] | undefined) => unknown[],
+      ];
+      expect(usedKey).toEqual(mockCapturedQueryKey);
+      expect(updater(page1)).toEqual([...page1, ...page2]);
+      // 중복 방지: 같은 항목이 이미 있으면 다시 붙이지 않는다
+      expect(updater([...page1, ...page2])).toEqual([...page1, ...page2]);
+
+      // 스토어 append 는 더 이상 목록 축을 담당하지 않는다
+      expect(mockAddNotifications).not.toHaveBeenCalled();
+    });
   });
 
   // ==========================================================================
@@ -606,6 +668,23 @@ describe('useNotifications Hooks', () => {
   // ==========================================================================
 
   describe('useDeleteNotification', () => {
+    const LIST_KEY = ['notifications', 'list', {}];
+
+    /** 목록 캐시에 알림 3건이 들어 있는 상태를 흉내 낸다 */
+    function seedListCache() {
+      const list = [
+        createMockNotification({ id: 'notif-1' }),
+        createMockNotification({ id: 'notif-2' }),
+        createMockNotification({ id: 'notif-3' }),
+      ];
+      mockQueryClient.getQueriesData.mockReturnValue([
+        [LIST_KEY, list],
+        // 배열이 아닌 캐시(설정)는 건드리면 안 된다
+        [['notifications', 'settings'], { enabled: true }],
+      ]);
+      return list;
+    }
+
     it('should return correct structure', () => {
       const { result } = renderHook(() => useDeleteNotification());
 
@@ -620,7 +699,98 @@ describe('useNotifications Hooks', () => {
       expect(typeof result.current.deleteNotification).toBe('function');
     });
 
-    it('should call delete service and show success toast on success', async () => {
+    it('삭제를 누르면 목록 캐시(렌더 소스)에서 제거하고 되돌리기 토스트를 띄운다', () => {
+      jest.useFakeTimers();
+      const list = seedListCache();
+
+      const { result } = renderHook(() => useDeleteNotification());
+
+      act(() => {
+        result.current.deleteNotification('notif-2');
+      });
+
+      // 목록 캐시만 패치 (설정 캐시는 그대로)
+      expect(mockQueryClient.setQueryData).toHaveBeenCalledTimes(1);
+      expect(mockQueryClient.setQueryData).toHaveBeenCalledWith(LIST_KEY, [list[0], list[2]]);
+      // 스냅샷 축(스토어)도 함께 맞춘다
+      expect(mockRemoveNotification).toHaveBeenCalledWith('notif-2');
+      // 되돌리기 액션이 있는 토스트
+      const undoToast = mockAddToast.mock.calls.find((c) => c[0]?.action);
+      expect(undoToast?.[0]?.action?.label).toBe('되돌리기');
+      // 유예 중에는 서버 삭제를 시작하지 않는다
+      expect(mockMutate).not.toHaveBeenCalled();
+
+      jest.useRealTimers();
+    });
+
+    it('유예가 끝나면 실제 삭제 뮤테이션을 커밋한다', () => {
+      jest.useFakeTimers();
+      seedListCache();
+
+      const { result } = renderHook(() => useDeleteNotification());
+
+      act(() => {
+        result.current.deleteNotification('notif-2');
+      });
+      expect(mockMutate).not.toHaveBeenCalled();
+
+      act(() => {
+        jest.advanceTimersByTime(5000);
+      });
+
+      expect(mockMutate).toHaveBeenCalledWith('notif-2');
+      jest.useRealTimers();
+    });
+
+    it('되돌리기를 누르면 원래 인덱스로 복원하고 커밋하지 않는다', () => {
+      jest.useFakeTimers();
+      const list = seedListCache();
+      // 복원 시점의 "지금 캐시" (이미 notif-2 가 빠진 상태)
+      mockQueryClient.getQueryData.mockReturnValue([list[0], list[2]]);
+
+      const { result } = renderHook(() => useDeleteNotification());
+
+      act(() => {
+        result.current.deleteNotification('notif-2');
+      });
+
+      const undo = mockAddToast.mock.calls.find((c) => c[0]?.action)?.[0]?.action?.onPress as
+        | (() => void)
+        | undefined;
+      expect(undo).toBeDefined();
+
+      act(() => undo?.());
+
+      // 맨 앞이 아니라 원래 자리(index 1)로 splice 재삽입
+      expect(mockQueryClient.setQueryData).toHaveBeenLastCalledWith(LIST_KEY, [
+        list[0],
+        list[1],
+        list[2],
+      ]);
+
+      act(() => {
+        jest.advanceTimersByTime(5000);
+      });
+      expect(mockMutate).not.toHaveBeenCalled();
+      jest.useRealTimers();
+    });
+
+    it('낙관 갱신 비활성(오프라인)이면 선반영 없이 곧장 뮤테이션을 실행한다', () => {
+      mockShouldApplyOptimisticUpdate.mockReturnValue(false);
+      seedListCache();
+
+      const { result } = renderHook(() => useDeleteNotification());
+
+      act(() => {
+        result.current.deleteNotification('notif-2');
+      });
+
+      expect(mockQueryClient.setQueryData).not.toHaveBeenCalled();
+      expect(mockRemoveNotification).not.toHaveBeenCalled();
+      expect(mockMutate).toHaveBeenCalledWith('notif-2');
+    });
+
+    it('서버 삭제가 성공하면 알림 쿼리를 무효화한다', async () => {
       mockDeleteNotificationService.mockResolvedValueOnce(undefined);
 
       renderHook(() => useDeleteNotification());
@@ -632,10 +802,6 @@ describe('useNotifications Hooks', () => {
       expect(mockDeleteNotificationService).toHaveBeenCalledWith('notif-1');
       expect(mockQueryClient.invalidateQueries).toHaveBeenCalledWith({
         queryKey: ['notifications'],
-      });
-      expect(mockAddToast).toHaveBeenCalledWith({
-        type: 'success',
-        message: '알림이 삭제되었습니다.',
       });
     });
 

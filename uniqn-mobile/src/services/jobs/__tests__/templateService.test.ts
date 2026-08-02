@@ -13,13 +13,7 @@
 // Imports (after mocks)
 // ============================================================================
 
-import {
-  getTemplates,
-  saveTemplate,
-  loadTemplate,
-  deleteTemplate,
-  updateTemplate,
-} from '../templateService';
+import { getTemplates, saveTemplate, deleteTemplate, updateTemplate } from '../templateService';
 import { templateRepository } from '@/repositories';
 import { isAppError, AppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
@@ -28,7 +22,6 @@ jest.mock('@/repositories', () => ({
   templateRepository: {
     getTemplates: jest.fn(),
     saveTemplate: jest.fn(),
-    loadTemplate: jest.fn(),
     deleteTemplate: jest.fn(),
     updateTemplate: jest.fn(),
   },
@@ -173,69 +166,9 @@ describe('templateService', () => {
   });
 
   // --------------------------------------------------------------------------
-  // loadTemplate
+  // (loadTemplate 은 2026-08-02 제거 — 소비 UI 부재로 死경로였고, 목록 조회가
+  //  template_data 전체를 이미 실어 오므로 단건 재조회가 잉여였다.)
   // --------------------------------------------------------------------------
-
-  describe('loadTemplate', () => {
-    const mockTemplateData = {
-      id: 'tmpl-1',
-      name: '테스트 템플릿',
-      userId: 'user-1',
-      templateData: { title: '공고' },
-      usageCount: 3,
-    };
-
-    it('템플릿을 불러와야 한다', async () => {
-      mockRepo.loadTemplate.mockResolvedValue(mockTemplateData as never);
-
-      const result = await loadTemplate('tmpl-1');
-
-      expect(result).toMatchObject({
-        id: 'tmpl-1',
-        name: '테스트 템플릿',
-      });
-      expect(mockRepo.loadTemplate).toHaveBeenCalledWith('tmpl-1');
-    });
-
-    it('존재하지 않는 템플릿이면 BusinessError를 던져야 한다', async () => {
-      const businessError = new Error('존재하지 않는 템플릿입니다');
-      mockRepo.loadTemplate.mockRejectedValue(businessError);
-      mockIsAppError.mockReturnValue(true);
-
-      await expect(loadTemplate('non-existent')).rejects.toThrow();
-    });
-
-    it('사용 통계 업데이트 실패 시에도 템플릿은 반환되어야 한다', async () => {
-      // Repository handles fire-and-forget stats update internally
-      // This test verifies the service returns the template regardless
-      mockRepo.loadTemplate.mockResolvedValue(mockTemplateData as never);
-
-      const result = await loadTemplate('tmpl-1');
-
-      expect(result).toMatchObject({
-        id: 'tmpl-1',
-        name: '테스트 템플릿',
-      });
-    });
-
-    it('AppError는 그대로 다시 던져야 한다', async () => {
-      const appError = new Error('앱 에러');
-      mockRepo.loadTemplate.mockRejectedValue(appError);
-      mockIsAppError.mockReturnValue(true);
-
-      await expect(loadTemplate('tmpl-1')).rejects.toThrow('앱 에러');
-    });
-
-    it('비 AppError는 handleServiceError를 호출해야 한다', async () => {
-      const genericError = new Error('일반 에러');
-      mockRepo.loadTemplate.mockRejectedValue(genericError);
-      mockIsAppError.mockReturnValue(false);
-      mockHandleServiceError.mockReturnValue(genericError as unknown as AppError);
-
-      await expect(loadTemplate('tmpl-1')).rejects.toThrow('일반 에러');
-      expect(mockHandleServiceError).toHaveBeenCalled();
-    });
-  });
 
   // --------------------------------------------------------------------------
   // deleteTemplate

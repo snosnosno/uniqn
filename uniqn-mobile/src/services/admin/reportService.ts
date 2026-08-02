@@ -16,10 +16,17 @@ import { logger } from '@/utils/logger';
 import { reportRepository, userRepository } from '@/repositories';
 import type { ReportFilters, FetchReportsResult } from '@/repositories';
 import { createReportInputSchema, reviewReportInputSchema } from '@/schemas';
+// `@/schemas` 배럴은 명시 export 목록이라 신규 스키마는 아직 통과하지 않는다 — 원본에서 직접 가져온다.
+import { uploadReportEvidenceSchema } from '@/schemas/report.schema';
 import { ValidationError, ERROR_CODES, toError } from '@/errors';
 import { requireAdminUser } from '@/services/auth/authorizationService';
 import { requireCurrentUser } from '@/services/auth/authCoreService';
-import type { Report, CreateReportInput, ReviewReportInput } from '@/types/report';
+import type {
+  Report,
+  CreateReportInput,
+  ReviewReportInput,
+  LocalReportEvidence,
+} from '@/types/report';
 
 // ============================================================================
 // Types (Repository에서 재사용)
@@ -80,6 +87,49 @@ export async function createReport(input: CreateReportInput): Promise<string> {
   });
 
   return reportId;
+}
+
+// ============================================================================
+// Report Evidence (증빙 첨부)
+// ============================================================================
+
+/**
+ * 증빙 이미지 업로드 (신고 생성 **전** 단계)
+ *
+ * 반환된 Storage 경로를 `CreateReportInput.evidenceUrls` 에 실어 `createReport` 를 한 번만 호출한다.
+ * 이 순서 덕분에 "접수된 신고를 되돌리는" 롤백이 필요 없다 — 업로드가 실패하면 신고를 만들지 않는다.
+ *
+ * @returns 업로드된 Storage 경로 목록
+ */
+export async function uploadReportEvidence(files: LocalReportEvidence[]): Promise<string[]> {
+  const user = await requireCurrentUser();
+
+  const validationResult = uploadReportEvidenceSchema.safeParse({ files });
+  if (!validationResult.success) {
+    const firstError = validationResult.error.issues[0];
+    throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+      userMessage: firstError?.message || '증빙 이미지를 확인해주세요',
+      errors: validationResult.error.flatten().fieldErrors as Record<string, string[]>,
+    });
+  }
+
+  // 검증이 통과한 원본을 그대로 넘긴다(1:1 문의 첨부와 동일 관행) — Zod 추론 타입과
+  // 도메인 타입의 optional 표현 차이로 생기는 불필요한 캐스팅을 피한다.
+  const paths = await reportRepository.uploadEvidence(user.id, files);
+
+  logger.info('신고 증빙 업로드 완료', { count: paths.length });
+
+  return paths;
+}
+
+/**
+ * 증빙 서명 URL 발급 (열람용)
+ *
+ * 접근 통제는 Storage RLS 가 한다 — 신고자 본인 또는 관리자만 서명이 발급된다.
+ * 따라서 여기에 별도 역할 가드를 두지 않는다(두면 신고자 본인 열람 경로를 막게 된다).
+ */
+export async function getReportEvidenceSignedUrl(path: string): Promise<string> {
+  return reportRepository.getSignedEvidenceUrl(path);
 }
 
 // ============================================================================
@@ -155,4 +205,6 @@ export const reportService = {
   getReportById,
   reviewReport,
   getAllReports,
+  uploadReportEvidence,
+  getReportEvidenceSignedUrl,
 };

@@ -1,7 +1,13 @@
 /**
- * UNIQN Mobile - 공고 템플릿 관리 훅
- * @description 템플릿 목록 조회, 저장, 불러오기, 삭제(옵티미스틱+Undo) 기능 제공.
- * @version 1.1.0
+ * UNIQN Mobile - 공고 템플릿(프리셋) 관리 훅
+ * @description 템플릿 목록 조회, 저장, 이름 변경, 삭제(옵티미스틱+Undo) 기능 제공.
+ * @version 2.0.0
+ *
+ * 2026-08-02 정리 — '불러오기 모달' 경로(useLoadTemplate·handleLoadTemplate·모달 상태)를 제거했다.
+ * 소비 UI(LoadTemplateModal)가 S4 리팩터링에서 파일째 사라져 훅 API 만 고아로 남아 있었다.
+ * 프리셋 캐러셀이 더 나은 방식으로 대체했다: 옛 흐름은 '버튼→모달→목록→선택→서버 재조회→주입'
+ * (5단계·왕복 1회), 지금은 '칩 탭→즉시 적용'(1단계·왕복 0). 목록 쿼리가 templateData 전체를
+ * 이미 싣고 오므로 선택 시점의 재조회는 원리적으로 잉여다.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -9,13 +15,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   deleteTemplate,
   getTemplates,
-  loadTemplate,
   saveTemplate,
+  updateTemplate,
 } from '@/services/jobs/templateService';
 import { cachingPolicies, queryKeys } from '@/lib/queryClient';
+import { UNDO_DELAY_MS } from '@/constants/undo';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
-import { templateToDraft } from '@/types/jobTemplate';
+import {
+  isDuplicateTemplateName,
+  suggestUniqueTemplateName,
+  templateNameSchema,
+} from '@/schemas/jobTemplate.schema';
 import { logger } from '@/utils/logger';
 import { requireAuth, toError } from '@/errors';
 import { extractErrorMessage } from '@/shared/errors';
@@ -28,7 +39,13 @@ interface SaveTemplateParams {
   draft: JobPostingDraft;
 }
 
-const UNDO_DELAY_MS = 5000;
+interface RenameTemplateParams {
+  templateId: string;
+  name: string;
+}
+
+// Undo 유예 시간은 `@/constants/undo` 의 UNDO_DELAY_MS 가 단일 소스다.
+// (알림 삭제 Undo 와 같은 값을 써야 화면마다 유예 시간이 갈리지 않는다 — 로컬 복제 금지)
 
 /**
  * 템플릿 목록을 조회합니다.
@@ -80,52 +97,52 @@ function useSaveTemplate() {
 }
 
 /**
- * 템플릿 불러오기 뮤테이션입니다. (useTemplateManager 내부 전용)
+ * 템플릿 이름 변경 뮤테이션.
+ *
+ * 이름만 바꾸므로 updateTemplate 의 부분 갱신 계약({ name })을 그대로 쓴다 —
+ * templateData 를 함께 보내면 시트가 들고 있던 stale 구성이 저장 내용을 덮어쓴다.
+ * 이름 검증은 호출부가 templateNameSchema 로 선행한다(저장 경로와 같은 축).
  */
-function useLoadTemplate() {
+export function useRenameTemplate() {
+  const queryClient = useQueryClient();
   const { addToast } = useToastStore();
+  const { user } = useAuthStore();
 
   return useMutation({
-    mutationFn: (templateId: string) => loadTemplate(templateId),
-    onSuccess: (template) => {
-      logger.info('템플릿 불러오기 완료', { templateId: template.id });
-      addToast({
-        type: 'success',
-        message: `'${template.name}' 템플릿을 불러왔습니다. 날짜를 설정해주세요.`,
-      });
+    mutationFn: (params: RenameTemplateParams) => {
+      requireAuth(user?.uid, 'useRenameTemplate');
+      return updateTemplate(params.templateId, { name: params.name }, user.uid);
+    },
+    onSuccess: (_result, params) => {
+      logger.info('템플릿 이름 변경 완료', { templateId: params.templateId });
+      addToast({ type: 'success', message: '프리셋 이름을 변경했습니다.' });
+      queryClient.invalidateQueries({ queryKey: queryKeys.templates.all });
     },
     onError: (error) => {
-      logger.error('템플릿 불러오기 실패', toError(error));
+      logger.error('템플릿 이름 변경 실패', toError(error));
       addToast({
         type: 'error',
-        message: extractErrorMessage(error, '템플릿 불러오기에 실패했습니다.'),
+        message: extractErrorMessage(error, '프리셋 이름 변경에 실패했습니다.'),
       });
     },
   });
 }
 
 /**
- * 템플릿 관련 UI 상태와 액션을 통합 관리합니다.
+ * Undo 토스트 기반 옵티미스틱 삭제.
  *
- * 삭제는 Undo 토스트 패턴을 사용합니다:
  *   1. UI 캐시에서 즉시 제거 (옵티미스틱)
  *   2. 5초 "되돌리기" 토스트 노출
  *   3. 5초 경과 시 실제 DELETE 호출
  *   4. "되돌리기" 탭 시 타이머 취소 + 캐시 복원
+ *
+ * ⚠️ 진행 중 삭제는 ref 에만 있어 렌더를 트리거하지 않는다 — "삭제 중" 스피너 같은 파생 상태를
+ * 여기서 만들 수 없다(옛 `isDeletingTemplate: false` 하드코딩이 그래서 거짓말이었고 제거했다).
  */
-export function useTemplateManager() {
+export function useDeleteTemplateWithUndo() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
-
-  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
-  const [isLoadTemplateModalOpen, setIsLoadTemplateModalOpen] = useState(false);
-  const [templateName, setTemplateName] = useState('');
-  const [templateDescription, setTemplateDescription] = useState('');
-
-  const templatesQuery = useTemplates();
-  const saveMutation = useSaveTemplate();
-  const loadMutation = useLoadTemplate();
 
   // 진행 중인 삭제 (Undo 지원) — 타이머 + 즉시 커밋 함수를 함께 보관해
   // 언마운트 시 flush 할 수 있게 한다.
@@ -146,77 +163,9 @@ export function useTemplateManager() {
     };
   }, []);
 
-  const openTemplateModal = useCallback(() => {
-    setIsTemplateModalOpen(true);
-  }, []);
-
-  const closeTemplateModal = useCallback(() => {
-    setIsTemplateModalOpen(false);
-    setTemplateName('');
-    setTemplateDescription('');
-  }, []);
-
-  const openLoadTemplateModal = useCallback(() => {
-    setIsLoadTemplateModalOpen(true);
-  }, []);
-
-  const closeLoadTemplateModal = useCallback(() => {
-    setIsLoadTemplateModalOpen(false);
-  }, []);
-
-  const handleSaveTemplate = useCallback(
-    async (draft: JobPostingDraft) => {
-      const trimmedName = templateName.trim();
-      if (!trimmedName) {
-        return;
-      }
-
-      // 이름 중복 검증 (대소문자 무시)
-      const duplicate = templatesQuery.data?.find(
-        (t) => t.name.trim().toLowerCase() === trimmedName.toLowerCase()
-      );
-      if (duplicate) {
-        addToast({
-          type: 'error',
-          message: '같은 이름의 템플릿이 이미 있습니다.',
-        });
-        return;
-      }
-
-      await saveMutation.mutateAsync({
-        name: trimmedName,
-        description: templateDescription.trim() || undefined,
-        draft,
-      });
-
-      closeTemplateModal();
-    },
-    [
-      addToast,
-      closeTemplateModal,
-      saveMutation,
-      templateDescription,
-      templateName,
-      templatesQuery.data,
-    ]
-  );
-
-  const handleLoadTemplate = useCallback(
-    async (template: JobPostingTemplate): Promise<JobPostingDraft> => {
-      const loadedTemplate = await loadMutation.mutateAsync(template.id);
-      closeLoadTemplateModal();
-      return templateToDraft(loadedTemplate);
-    },
-    [closeLoadTemplateModal, loadMutation]
-  );
-
-  /**
-   * Undo 토스트 기반 옵티미스틱 삭제.
-   * UI 캐시에서 즉시 제거하고 5초 후 실제 DELETE 호출.
-   */
   const handleDeleteTemplate = useCallback(
     async (templateId: string, templateNameToDelete: string): Promise<boolean> => {
-      requireAuth(user?.uid, 'useTemplateManager');
+      requireAuth(user?.uid, 'useDeleteTemplateWithUndo');
       const userId = user.uid;
       const listKey = queryKeys.templates.list(userId);
 
@@ -301,10 +250,87 @@ export function useTemplateManager() {
     [addToast, queryClient, user]
   );
 
+  return { handleDeleteTemplate };
+}
+
+/**
+ * 템플릿 관련 UI 상태와 액션을 통합 관리합니다.
+ *
+ * 삭제는 useDeleteTemplateWithUndo 를 그대로 합성한다(관리 시트도 같은 훅을 쓴다 —
+ * Undo 규칙이 진입점마다 갈라지지 않게).
+ */
+export function useTemplateManager() {
+  const { addToast } = useToastStore();
+
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const [templateDescription, setTemplateDescription] = useState('');
+
+  const templatesQuery = useTemplates();
+  const saveMutation = useSaveTemplate();
+  const { handleDeleteTemplate } = useDeleteTemplateWithUndo();
+
+  const openTemplateModal = useCallback(() => {
+    setIsTemplateModalOpen(true);
+  }, []);
+
+  const closeTemplateModal = useCallback(() => {
+    setIsTemplateModalOpen(false);
+    setTemplateName('');
+    setTemplateDescription('');
+  }, []);
+
+  const handleSaveTemplate = useCallback(
+    async (draft: JobPostingDraft) => {
+      // 이름 검증 SSOT — 이름변경 경로와 같은 스키마를 쓴다(templateNameSchema).
+      const parsed = templateNameSchema.safeParse(templateName);
+      if (!parsed.success) {
+        // 아직 아무것도 입력하지 않은 상태(모달이 막 열림)는 조용히 무시하고,
+        // 뭔가 입력했는데 통과 못 한 경우에만 사유를 말한다.
+        if (templateName.trim().length > 0) {
+          addToast({
+            type: 'error',
+            message: parsed.error.issues[0]?.message ?? '프리셋 이름을 확인해주세요.',
+          });
+        }
+        return;
+      }
+      const trimmedName = parsed.data;
+      const templates = templatesQuery.data ?? [];
+
+      // 중복이면 막기만 하지 않는다 — 모달을 연 채로 회피 이름을 넣어 주고,
+      // 사용자는 '저장'을 다시 누르거나 그 자리에서 고치면 된다.
+      if (isDuplicateTemplateName(trimmedName, templates)) {
+        const suggestion = suggestUniqueTemplateName(trimmedName, templates);
+        setTemplateName(suggestion);
+        addToast({
+          type: 'error',
+          message: `같은 이름의 프리셋이 있어 '${suggestion}'(으)로 바꿨어요. 그대로 저장하거나 수정해주세요.`,
+        });
+        return;
+      }
+
+      await saveMutation.mutateAsync({
+        name: trimmedName,
+        description: templateDescription.trim() || undefined,
+        draft,
+      });
+
+      closeTemplateModal();
+    },
+    [
+      addToast,
+      closeTemplateModal,
+      saveMutation,
+      templateDescription,
+      templateName,
+      templatesQuery.data,
+    ]
+  );
+
   return {
     templates: templatesQuery.data ?? [],
     templatesLoading: templatesQuery.isLoading,
-    templatesError: templatesQuery.error,
 
     isTemplateModalOpen,
     templateName,
@@ -316,13 +342,6 @@ export function useTemplateManager() {
     handleSaveTemplate,
     isSavingTemplate: saveMutation.isPending,
 
-    isLoadTemplateModalOpen,
-    openLoadTemplateModal,
-    closeLoadTemplateModal,
-    handleLoadTemplate,
-    isLoadingTemplate: loadMutation.isPending,
-
     handleDeleteTemplate,
-    isDeletingTemplate: false,
   };
 }

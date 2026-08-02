@@ -2,11 +2,28 @@
  * UNIQN Mobile - Notification Hooks
  *
  * @description 알림 관련 커스텀 훅
- * @version 1.0.0
+ * @version 1.1.0
+ *
+ * ## 이중 소스 경계 — 역할 절단 (반드시 지킬 것)
+ *
+ * 알림 데이터는 React Query 캐시와 Zustand 스토어(`notificationStore`) 두 곳에 산다.
+ * 스토어를 폐기하는 게 답이 아니라 **역할을 절단**하는 게 답이다:
+ *
+ * 1. **목록 축 = React Query 캐시 단독.**
+ *    화면이 실제로 그리는 것은 `query.data` 다(온라인일 때). 그러므로 삭제·전체 삭제·
+ *    페이지네이션은 반드시 `setQueryData` 로 **렌더 소스를 패치**해야 한다. 스토어만 고치면
+ *    온라인에서 화면이 한 픽셀도 바뀌지 않는다.
+ *    (실사고: 삭제를 눌러도 안 사라져 사용자가 다시 누름 / 무한스크롤이 스토어에만 append 돼
+ *     태어날 때부터 21번째 알림 이후 접근 불가)
+ * 2. **오프라인 스냅샷 · 미읽음 배지 축 = 스토어 단독.**
+ *    쿼리 캐시는 persist 가 없어 앱 재시작 후 배지·오프라인 목록을 원리적으로 복원할 수 없다.
+ * 3. **흐름은 한 방향(쿼리 → 스토어)만.**
+ *    쿼리 결과를 스토어 스냅샷에 기록하는 것은 OK, 스토어를 목록의 진실원 삼아 캐시로 되쓰는 것은 금지.
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { QueryClient, QueryKey } from '@tanstack/react-query';
 import type { NotificationPageCursor } from '@/services/notifications/notificationService';
 import {
   fetchNotifications,
@@ -31,6 +48,7 @@ import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 import { cachingPolicies, queryKeys } from '@/lib/queryClient';
+import { UNDO_DELAY_MS } from '@/constants/undo';
 import {
   requireOnlineForMutation,
   shouldApplyOptimisticUpdate,
@@ -55,6 +73,89 @@ import type {
 
 // P2 아키텍처: 로컬 notificationKeys 제거, queryKeys.notifications 사용
 const notificationKeys = queryKeys.notifications;
+
+// ============================================================================
+// 목록 캐시 헬퍼 (목록 축 = React Query 캐시 단독 — 파일 상단 "이중 소스 경계" 참조)
+// ============================================================================
+
+/** Undo 복원용 스냅샷 — 어느 목록 쿼리의 몇 번째 자리에 있었는지 */
+interface NotificationCacheSnapshot {
+  queryKey: QueryKey;
+  index: number;
+}
+
+/**
+ * 알림 목록 캐시(필터 변형 전부)를 수집한다.
+ *
+ * `notificationKeys.all` 아래에는 settings 처럼 배열이 아닌 캐시도 매달려 있으므로
+ * 배열만 통과시킨다. 삭제 훅은 화면이 어떤 필터로 목록을 열었는지 모르므로
+ * 특정 키 하나만 패치하면 필터 탭에서 조용히 안 먹는다.
+ */
+function getNotificationListCaches(queryClient: QueryClient): [QueryKey, NotificationData[]][] {
+  return queryClient
+    .getQueriesData<NotificationData[]>({ queryKey: notificationKeys.all })
+    .filter((entry): entry is [QueryKey, NotificationData[]] => Array.isArray(entry[1]));
+}
+
+/**
+ * 알림 1건을 모든 목록 캐시에서 제거하고, 원래 위치를 스냅샷으로 돌려준다.
+ *
+ * @returns snapshots - 복원용 (쿼리키 + 원래 인덱스), removed - 제거된 알림 원본
+ */
+function removeNotificationFromCaches(
+  queryClient: QueryClient,
+  notificationId: string
+): { snapshots: NotificationCacheSnapshot[]; removed: NotificationData | undefined } {
+  const snapshots: NotificationCacheSnapshot[] = [];
+  let removed: NotificationData | undefined;
+
+  getNotificationListCaches(queryClient).forEach(([queryKey, list]) => {
+    const index = list.findIndex((n) => n.id === notificationId);
+    if (index < 0) return;
+
+    removed = removed ?? list[index];
+    snapshots.push({ queryKey, index });
+    queryClient.setQueryData<NotificationData[]>(
+      queryKey,
+      list.filter((n) => n.id !== notificationId)
+    );
+  });
+
+  return { snapshots, removed };
+}
+
+/**
+ * 삭제한 알림을 원래 인덱스에 splice 재삽입해 복원한다.
+ *
+ * ⚠️ 전체 스냅샷 덮어쓰기 금지 — 연속 삭제 중 다른 대기 항목이 되살아나는 경쟁을 막기 위해
+ *    "지금의 캐시"에 한 건만 끼워 넣는다.
+ *
+ * @returns 첫 스냅샷 키의 복원 결과 목록 (스토어 스냅샷 되비추기용). 없으면 undefined.
+ */
+function restoreNotificationToCaches(
+  queryClient: QueryClient,
+  notification: NotificationData,
+  snapshots: NotificationCacheSnapshot[]
+): NotificationData[] | undefined {
+  let primaryList: NotificationData[] | undefined;
+
+  snapshots.forEach(({ queryKey, index }, order) => {
+    const latest = queryClient.getQueryData<NotificationData[]>(queryKey);
+    if (!Array.isArray(latest)) return;
+
+    if (latest.some((n) => n.id === notification.id)) {
+      if (order === 0) primaryList = latest;
+      return;
+    }
+
+    const next = [...latest];
+    next.splice(Math.min(index, next.length), 0, notification);
+    queryClient.setQueryData<NotificationData[]>(queryKey, next);
+    if (order === 0) primaryList = next;
+  });
+
+  return primaryList;
+}
 
 // ============================================================================
 // useNotificationList
@@ -98,7 +199,9 @@ export function useNotificationList(
   const [lastDoc, setLastDoc] = useState<NotificationPageCursor | null>(null);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
   const hasSyncedRef = useRef(false);
-  const queryKey = notificationKeys.list(filter ?? {});
+  // 메모이제이션 필수: fetchNextPage 가 이 키로 캐시를 패치하므로 의존성에 들어간다.
+  // 매 렌더 새 배열을 만들면 fetchNextPage 신원이 흔들려 FlashList onEndReached 가 계속 갈린다.
+  const queryKey = useMemo(() => notificationKeys.list(filter ?? {}), [filter]);
   const hasServerSideFilters = Boolean(
     filter?.isRead !== undefined ||
     (filter?.types && filter.types.length > 0) ||
@@ -148,7 +251,8 @@ export function useNotificationList(
     );
   }, [enabled, hasServerSideFilters, isOnline, queryClient, user?.uid]);
 
-  // 스토어 동기화 (오프라인 캐시용)
+  // 쿼리 → 스토어 한 방향 미러링 (오프라인 스냅샷·미읽음 배지 축).
+  // 삭제·페이지네이션이 `setQueryData` 로 캐시를 패치하면 여기서 스냅샷도 함께 따라온다.
   useEffect(() => {
     if (query.data) {
       setNotifications(query.data);
@@ -172,6 +276,9 @@ export function useNotificationList(
         );
 
         if (result.success && result.syncedCount > 0) {
+          // 이 경로는 의도적으로 스토어(오프라인 스냅샷 축)에만 쓴다 — 목록 축은 건드리지 않는다.
+          // 온라인 복귀 시 React Query 가 reconnect refetch 로 목록을 서버에서 다시 받아오므로
+          // 놓친 알림은 그쪽으로 화면에 올라온다. 여기서 캐시까지 손대면 두 축이 서로 덮어쓴다.
           addNotifications(result.notifications);
           addToast({
             type: 'info',
@@ -194,6 +301,16 @@ export function useNotificationList(
   }, [isOnline, user?.uid, lastFetchedAt, cachedNotifications, addNotifications, addToast]);
 
   // 다음 페이지 가져오기
+  //
+  // 페이지네이션은 **목록 축(쿼리 캐시)** 에 append 한다. 예전에는 스토어에만 append 해서
+  // 온라인 무한스크롤이 태어날 때부터 무효였다(화면은 query.data 를 그리므로 21번째 알림부터
+  // 접근 불가). 대회 D-7 처럼 수십 건이 쌓이는 상황에서 알림은 딥링크 페이로드의 유일한 사본이라
+  // "못 본다 = 그 근무로 못 들어간다"가 된다.
+  //
+  // 오프라인 부수 효과 유지 결정: 예전에는 스토어 append 덕분에 "온라인에서 스크롤 → 오프라인 전환"
+  // 시 2페이지+ 도 오프라인 캐시에 남았다. 이 성질은 그대로 유지된다 — 캐시를 패치하면
+  // 위쪽 `query.data → setNotifications` 미러링 이펙트가 확장된 목록을 스토어에 되비추기 때문이다.
+  // (즉 스토어 append 를 지웠다고 오프라인에서 보이던 항목이 줄어들지 않는다)
   const fetchNextPage = useCallback(async () => {
     if (!user?.uid || !lastDoc || isFetchingNextPage || isOffline) return;
 
@@ -205,7 +322,11 @@ export function useNotificationList(
         lastDoc,
       });
 
-      addNotifications(result.notifications);
+      queryClient.setQueryData<NotificationData[]>(queryKey, (current) => {
+        const base = current ?? [];
+        const existingIds = new Set(base.map((n) => n.id));
+        return [...base, ...result.notifications.filter((n) => !existingIds.has(n.id))];
+      });
       setLastDoc(result.lastDoc);
       setHasMore(result.hasMore);
     } catch (error) {
@@ -213,9 +334,19 @@ export function useNotificationList(
     } finally {
       setIsFetchingNextPage(false);
     }
-  }, [user?.uid, lastDoc, filter, isFetchingNextPage, isOffline, addNotifications, setHasMore]);
+  }, [
+    user?.uid,
+    lastDoc,
+    filter,
+    isFetchingNextPage,
+    isOffline,
+    queryClient,
+    queryKey,
+    setHasMore,
+  ]);
 
-  // 오프라인 시 캐시된 데이터 반환
+  // 렌더 소스 선택: 온라인이면 목록 축(쿼리 캐시), 오프라인이면 스냅샷 축(스토어).
+  // 온라인에서 화면을 바꾸려면 반드시 쿼리 캐시를 패치해야 한다는 사실이 여기서 나온다.
   const effectiveNotifications = useMemo(() => {
     if (isOffline && cachedNotifications.length > 0) {
       return cachedNotifications;
@@ -329,12 +460,39 @@ export function useMarkAllAsRead() {
 // ============================================================================
 
 /**
- * 알림 삭제 훅 (Optimistic Update 적용)
+ * 알림 삭제 훅 (낙관 갱신 + 되돌리기)
+ *
+ * 알림 삭제는 확인 다이얼로그도 없는 하드 DELETE 라 되돌릴 수단이 있어야 한다.
+ * `useTemplateManager` 의 지연 커밋 패턴을 그대로 따른다:
+ *   1. 목록 캐시(= 렌더 소스)에서 즉시 제거 — 스토어만 고치면 온라인에서 화면이 안 바뀐다
+ *   2. UNDO_DELAY_MS 동안 "되돌리기" 토스트 노출
+ *   3. 유예가 끝나면 실제 DELETE 뮤테이션 실행 (언마운트 시엔 즉시 flush)
+ *   4. "되돌리기" 탭 시 타이머 취소 + 원래 인덱스로 splice 복원
  */
 export function useDeleteNotification() {
   const queryClient = useQueryClient();
-  const { removeNotification, notifications, setNotifications } = useNotificationStore();
+  const { removeNotification, setNotifications, addNotification } = useNotificationStore();
   const addToast = useToastStore((state) => state.addToast);
+
+  // 진행 중인 삭제(Undo 대기) — 타이머 + 즉시 커밋 함수를 함께 보관해 언마운트 시 flush 한다.
+  const pendingDeletesRef = useRef<
+    Map<string, { timer: ReturnType<typeof setTimeout>; commit: () => void }>
+  >(new Map());
+  // 커밋이 실패했을 때 되살릴 복원 함수 (뮤테이션 onError 가 소비)
+  const restoresRef = useRef<Map<string, () => void>>(new Map());
+
+  // 언마운트 시 남아 있는 삭제를 즉시 커밋한다(타이머 누수 방지).
+  // 사용자는 이미 목록에서 사라진 상태로 화면을 떠났으므로 삭제 의도로 간주.
+  useEffect(() => {
+    const pending = pendingDeletesRef.current;
+    return () => {
+      pending.forEach(({ timer, commit }) => {
+        clearTimeout(timer);
+        commit();
+      });
+      pending.clear();
+    };
+  }, []);
 
   const mutation = useMutation({
     mutationFn: async (notificationId: string) => {
@@ -342,33 +500,18 @@ export function useDeleteNotification() {
       await deleteNotificationService(notificationId);
       return notificationId;
     },
-    // Optimistic Update: 서버 응답 전에 UI 즉시 업데이트
-    onMutate: async (notificationId: string) => {
-      if (!shouldApplyOptimisticUpdate()) {
-        return { previousNotifications: undefined };
-      }
-      // 이전 상태 스냅샷 저장 (롤백용)
-      const previousNotifications = [...notifications];
-
-      // 즉시 UI에서 제거 (낙관적 업데이트)
-      removeNotification(notificationId);
-
-      return { previousNotifications };
-    },
-    onSuccess: () => {
+    onSuccess: (notificationId: string) => {
+      restoresRef.current.delete(notificationId);
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
-      addToast({
-        type: 'success',
-        message: '알림이 삭제되었습니다.',
-      });
+      // 성공 토스트 없음 — 이미 삭제 시점에 "되돌리기" 토스트로 알렸다(토스트 2연발 방지).
     },
-    onError: (error: Error, _, context) => {
+    onError: (error: Error, notificationId: string) => {
       logger.error('알림 삭제 실패', error);
 
-      // 롤백: 이전 상태로 복원
-      if (context?.previousNotifications) {
-        setNotifications(context.previousNotifications);
-      }
+      // 서버에는 그대로 남아 있으므로 화면에도 되돌려 놓는다
+      // (지웠다고 믿는 알림이 새로고침 후 되살아나는 착시 방지)
+      restoresRef.current.get(notificationId)?.();
+      restoresRef.current.delete(notificationId);
 
       addToast({
         type: 'error',
@@ -377,8 +520,87 @@ export function useDeleteNotification() {
     },
   });
 
+  const { mutate } = mutation;
+
+  const deleteNotification = useCallback(
+    (notificationId: string) => {
+      // 낙관 갱신 게이트(유지): 오프라인이면 선반영·Undo 없이 곧장 뮤테이션에 맡긴다.
+      // TanStack 은 onMutate 가 mutationFn 보다 먼저 실행되므로 오프라인 뮤테이션도 이 지점을
+      // 지난다 — 어차피 requireOnlineForMutation 이 막을 요청을 선반영하면 "지웠다 되살아나는"
+      // 깜빡임만 남는다. 살아있는 분기이니 지우지 말 것.
+      if (!shouldApplyOptimisticUpdate()) {
+        mutate(notificationId);
+        return;
+      }
+
+      // 같은 알림을 연속으로 누른 경우: 이미 유예 중이면 무시(이중 커밋·중복 토스트 방지)
+      if (pendingDeletesRef.current.has(notificationId)) {
+        return;
+      }
+
+      const { snapshots, removed } = removeNotificationFromCaches(queryClient, notificationId);
+      if (!removed) {
+        // 목록 캐시에 없으면 낙관적으로 지울 대상도, 되돌릴 대상도 없다 — 서버 삭제만 시도
+        mutate(notificationId);
+        return;
+      }
+      // 클로저에서 쓰기 위해 좁혀진 타입으로 못 박는다
+      const deleted: NotificationData = removed;
+
+      // 스냅샷 축(스토어)도 함께 맞춘다 — 미읽음 배지는 removeNotification 이 증분 갱신한다.
+      removeNotification(notificationId);
+
+      const restore = () => {
+        const restoredList = restoreNotificationToCaches(queryClient, deleted, snapshots);
+        // 복원된 목록을 스토어 스냅샷에 되비춘다(쿼리 → 스토어 한 방향).
+        // 캐시를 못 찾으면 최소한 배지·오프라인 목록이라도 되살린다.
+        if (restoredList) {
+          setNotifications(restoredList);
+        } else {
+          addNotification(deleted);
+        }
+      };
+      restoresRef.current.set(notificationId, restore);
+
+      // 실제 DELETE 커밋 (타이머 만료 또는 언마운트 시 1회만 실행)
+      let committed = false;
+      const commit = () => {
+        if (committed) return;
+        committed = true;
+        pendingDeletesRef.current.delete(notificationId);
+        mutate(notificationId);
+      };
+
+      const timer = setTimeout(commit, UNDO_DELAY_MS);
+      pendingDeletesRef.current.set(notificationId, { timer, commit });
+
+      addToast({
+        type: 'success',
+        message: `'${deleted.title}' 알림을 삭제했습니다.`,
+        duration: UNDO_DELAY_MS,
+        action: {
+          label: '되돌리기',
+          onPress: () => {
+            const pending = pendingDeletesRef.current.get(notificationId);
+            if (pending) {
+              clearTimeout(pending.timer);
+              pendingDeletesRef.current.delete(notificationId);
+            }
+            restoresRef.current.delete(notificationId);
+            restore();
+            addToast({
+              type: 'info',
+              message: `'${deleted.title}' 알림을 복원했습니다.`,
+            });
+          },
+        },
+      });
+    },
+    [addNotification, addToast, mutate, queryClient, removeNotification, setNotifications]
+  );
+
   return {
-    deleteNotification: mutation.mutate,
+    deleteNotification,
     isDeleting: mutation.isPending,
     error: mutation.error,
   };
@@ -389,7 +611,12 @@ export function useDeleteNotification() {
 // ============================================================================
 
 /**
- * 모든 알림 삭제 훅 (Optimistic Update 적용)
+ * 모든 알림 삭제 훅 (낙관 갱신 — Undo 없음)
+ *
+ * '모두 삭제'는 이미 확인 다이얼로그를 거친 명시적 파괴 액션이라 Undo 가 아니라 **즉시 반영**이 맞다.
+ * 다만 반영 대상은 개별 삭제(`useDeleteNotification`)와 **반드시 같은 축**이어야 한다 —
+ * 예전에는 스토어만 비워서 "배지는 0인데 목록은 20개 그대로"가 남았다.
+ * 이름 닮은 두 훅의 동작이 갈리지 않도록 목록 캐시 → 스토어 순서를 맞춰 둔다.
  */
 export function useDeleteAllNotifications() {
   const user = useAuthStore((state) => state.user);
@@ -403,14 +630,25 @@ export function useDeleteAllNotifications() {
       requireOnlineForMutation('useNotifications.deleteAllNotifications');
       return await deleteAllNotificationsService(user.uid);
     },
-    // Optimistic Update: 서버 응답 전에 목록·카운터 즉시 초기화
+    // Optimistic Update: 서버 응답 전에 목록(쿼리 캐시) · 스냅샷/카운터(스토어) 즉시 초기화
     onMutate: async () => {
+      // 낙관 갱신 게이트(유지): 오프라인이면 선반영하지 않는다.
+      // 어차피 requireOnlineForMutation 이 막을 요청이라 롤백 깜빡임만 남는다.
       if (!shouldApplyOptimisticUpdate()) {
-        return { previousNotifications: undefined };
+        return { previousLists: undefined, previousNotifications: undefined };
       }
+
+      // 1. 렌더 소스인 목록 캐시를 비운다 (필터 변형 전부)
+      const previousLists = getNotificationListCaches(queryClient);
+      previousLists.forEach(([queryKey]) => {
+        queryClient.setQueryData<NotificationData[]>(queryKey, []);
+      });
+
+      // 2. 스냅샷 축(스토어)도 비운다 — 배지·오프라인 캐시
       const previousNotifications = [...notifications];
       clearNotifications();
-      return { previousNotifications };
+
+      return { previousLists, previousNotifications };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
@@ -422,7 +660,10 @@ export function useDeleteAllNotifications() {
     onError: (error: Error, _, context) => {
       logger.error('모든 알림 삭제 실패', error);
 
-      // 롤백: 이전 목록 복원 (카운터는 setNotifications가 재계산)
+      // 롤백도 같은 순서로: 목록 캐시(렌더 소스) → 스토어(스냅샷·카운터)
+      context?.previousLists?.forEach(([queryKey, list]) => {
+        queryClient.setQueryData<NotificationData[]>(queryKey, list);
+      });
       if (context?.previousNotifications) {
         setNotifications(context.previousNotifications);
       }

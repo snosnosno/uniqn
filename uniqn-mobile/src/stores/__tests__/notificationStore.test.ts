@@ -726,6 +726,80 @@ describe('NotificationStore', () => {
   });
 
   // ============================================================================
+  // 이중 소스 경계 — 이 스토어는 "오프라인 스냅샷 · 미읽음 배지" 축만 담당한다
+  // (목록 축은 React Query 캐시. 상세는 notificationStore.ts 상단 주석)
+  // ============================================================================
+
+  describe('이중 소스 경계', () => {
+    it('쿼리 → 스토어 미러링 후에도 카운터가 목록과 항상 일치한다', () => {
+      act(() => {
+        useNotificationStore
+          .getState()
+          .setNotifications([
+            createMockNotification({ id: 'n1', isRead: false }),
+            createMockNotification({ id: 'n2', isRead: false }),
+          ]);
+      });
+
+      // 쿼리 캐시에서 한 건이 삭제된 뒤의 목록을 그대로 되비추는 상황
+      act(() => {
+        useNotificationStore
+          .getState()
+          .setNotifications([createMockNotification({ id: 'n2', isRead: false })]);
+      });
+
+      const state = useNotificationStore.getState();
+      expect(state.notifications).toHaveLength(1);
+      expect(state.unreadCount).toBe(1);
+    });
+
+    it('removeNotification 후 addNotification 으로 되살리면 배지가 원상복구된다', () => {
+      // Undo 복원의 폴백 경로(목록 캐시를 못 찾았을 때) 회귀 방지
+      act(() => {
+        useNotificationStore
+          .getState()
+          .setNotifications([
+            createMockNotification({ id: 'n1', isRead: false }),
+            createMockNotification({ id: 'n2', isRead: false }),
+          ]);
+      });
+      const removed = useNotificationStore.getState().notifications[0];
+
+      act(() => {
+        useNotificationStore.getState().removeNotification('n1');
+      });
+      expect(useNotificationStore.getState().unreadCount).toBe(1);
+
+      act(() => {
+        useNotificationStore.getState().addNotification(removed);
+      });
+      expect(useNotificationStore.getState().unreadCount).toBe(2);
+      expect(useNotificationStore.getState().notifications).toHaveLength(2);
+    });
+
+    it('clearNotifications 는 목록·카운터만 비우고 설정과 필터는 남긴다', () => {
+      // 전체 삭제 롤백이 사용자 설정을 훼손하면 안 된다
+      act(() => {
+        useNotificationStore.getState().toggleNotifications(false);
+        useNotificationStore.getState().setFilter({ isRead: false });
+        useNotificationStore
+          .getState()
+          .setNotifications([createMockNotification({ id: 'n1', isRead: false })]);
+      });
+
+      act(() => {
+        useNotificationStore.getState().clearNotifications();
+      });
+
+      const state = useNotificationStore.getState();
+      expect(state.notifications).toEqual([]);
+      expect(state.unreadCount).toBe(0);
+      expect(state.settings.enabled).toBe(false);
+      expect(state.filter).toEqual({ isRead: false });
+    });
+  });
+
+  // ============================================================================
   // Selectors
   // ============================================================================
 

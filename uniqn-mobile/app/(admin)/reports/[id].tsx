@@ -30,6 +30,7 @@ import { STATUS } from '@/constants';
 import { useReportDetail, useReviewReport } from '@/hooks/useAdminReports';
 import { StackHeader } from '@/components/headers';
 import { EmptyState, Loading, Button } from '@/components/ui';
+import { ReportEvidenceGallery } from '@/components/admin/ReportEvidenceGallery';
 import {
   AlertTriangleIcon,
   UserIcon,
@@ -192,22 +193,9 @@ function ReportContentSection({ report }: { report: Report }) {
         </View>
       )}
 
-      {/* 증거 자료 */}
+      {/* 증빙 사진 — 비공개 버킷이라 썸네일마다 서명 URL 을 발급해 표시한다 */}
       {report.evidenceUrls && report.evidenceUrls.length > 0 && (
-        <View className="mt-4 pt-4 border-t border-secondary-100 dark:border-surface-overlay">
-          <Text className="text-xs text-content-secondary mb-2 font-sans">
-            첨부 자료 ({report.evidenceUrls.length}개)
-          </Text>
-          {report.evidenceUrls.map((url, index) => (
-            <Text
-              key={index}
-              className="text-sm text-primary-600 dark:text-primary-400 mb-1 font-sans"
-              numberOfLines={1}
-            >
-              {url}
-            </Text>
-          ))}
-        </View>
+        <ReportEvidenceGallery refs={report.evidenceUrls} />
       )}
     </View>
   );
