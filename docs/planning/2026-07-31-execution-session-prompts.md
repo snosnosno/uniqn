@@ -35,6 +35,7 @@
 | **L1-잔여**(감사후속) | 정산 확정·일괄 RPC 화 + 계산기 서버 이식 | ~~`feat/settlement-rpc-phase2`~~ | ✅ **머지** | **#402** | `d8e3e2dca`. CI **10잡 전부 pass**(DB Tests 2m0s · E2E 포함, **재실행 0회**). `178ecf1ad` + 리뷰반영 `b753aa332`(2커밋). P5 가 남긴 L1 나머지 절반. `SettlementRepository.calculateSettlementAmount`(TS)를 **삭제하고** `fn_settlement_amount`(PL/pgSQL)로 이식 — 복제가 아니라 **이동**이라 클라 계산기 갈래 수는 불변. 신규 함수 3종(`fn_settlement_amount`·`settle_work_log`·`bulk_settle_work_logs`). 🔴**마이그 prod 적용 완료 — 재적용 금지. 기록 4건인데 레포 파일은 2개**(뒤 2건은 같은 함수 재정의라 별도 파일 없음 — 주석 누락 복구 + 리뷰 반영). 파리티 **186→189**/정책 111 불변, `PARITY_EXPECT_FUNCS` 갱신. quality exit 0 · jest **603스위트 6627테스트 122스냅샷** · pgTAP **93파일 991테스트**(기준선 91/951) · **짝 픽스처 21/21 SQL↔TS 일치** · red-green **4종 1:1** · 레포↔prod↔로컬 md5 4함수 일치. `set_work_log_payroll_status` 의 `completed` 진입 차단(호출부 0건 실측 후 결정). fable 리뷰 **APPROVE**(CRITICAL/HIGH 0) — 지적 5건을 prod 프로브로 재판정해 **3건 확증 수정 · 2건 오탐 기각 · 리뷰가 놓친 1건 추가 발견**. 상세=§5 |
 | **세션 E**(P2·P3 후속) | 병합 키 표류 + 오프라인 침묵 취소 (클라 전용 2건) | ~~`fix/schedule-merge-key`~~ | ✅ **머지** | **#404** | `c97389daf`. CI **9잡 전부 pass**(E2E 재실행 0). 재통합(#402·#403) 후 재검증: quality exit 0 · jest **603스위트 6639테스트 전량 통과**. 마이그 0건. |
 | **세션 F** | 세션 D·E 착지 + 근본수선 설계 | ~~`docs/session-f-ledger`~~ | ✅ **착지 3건** | **#402·#403·#404** | **코드 변경 0건**(착지 전용). 파리티 간극 해소 — 레포 **186 → 189** = prod 189/111 실측 일치. 🔴 **과제 4(근본 수선)는 미착수 — 설계만 완료**, 사용자 결정으로 새 세션 이관. 상세=§5 |
+| **세션 G** | 과제 4 — 슬롯 편집 표류 근본 수선 | `feat/work-log-slot-sync` | 🔨 **PR 미생성** | | 신규 SECDEF RPC `update_work_log_slot(uuid, jsonb)` 로 `work_logs`+`applications.assignments` 동시 갱신. 🔴**마이그 1건 prod 적용 완료 — 재적용 금지**(기록명 `20260802180000`, 레포 파일명과 동일). 파리티 **189 → 190**/정책 111 불변. quality exit 0 · jest **604스위트 6647테스트** · pgTAP **23/23**(전체 94파일 1014테스트 중 파리티 1건만 red — 아래 ⚠️) · **red-swap 7종 1:1** · md5 3자 일치 `70f323c8…`. ⚠️**prod 실측은 191** — 타 세션이 신고(reports) 함수 2개를 prod 선적용·미머지. 상세=§5 |
 | **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
 | **S6** | 3-C 설계 | — | ⬜ | | 사용자 결정 필요 |
 | **S7** | 3-C 구현 | `feat/posting-time-change` | ⬜ | | S6 승인 후 |
@@ -61,6 +62,7 @@
 | L1-잔여-원장 | `T-HOLDEM-ledger2` | 🔨 이 문서 커밋용(정션 없음). 원장 PR 머지 후 정리 대상 |
 | **세션 E** | ~~`T-HOLDEM-schedkey`~~ | ✅ **정리완료**(세션 F — 정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **821 → 821** 실측 무손상) |
 <!-- 🔨 **유지 중**(PR 미생성 — 사용자 결정 대기). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성, 원본 `node_modules` **821 → 821** 실측 무손상 | -->
+| **세션 G** | `T-HOLDEM-slotsync` | 🔨 **유지 중**(PR 미생성 — 사용자 결정 대기). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성. 정리 시 **정션 해제 선행** |
 | S7 | `T-HOLDEM-timechange` | ⬜ |
 
 전부 `C:/Users/user/Desktop/` 아래. 머지 완료 세션의 워크트리는 다음 세션 착수 시 정리한다
@@ -499,6 +501,69 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 
 > 형식은 §2 세션 종료 프로토콜 4번 참조. **삭제하지 말고 쌓는다** —
 > 중단된 세션을 다시 여는 사람이 읽을 유일한 기록이다.
+
+### 세션 G (과제 4 — 슬롯 편집 표류 근본 수선) — 2026-08-02 · 상태: 완료(**PR 미생성** — 사용자 결정 대기)
+
+- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-slotsync` / `feat/work-log-slot-sync` · HEAD `cab446dd9`(2커밋)
+- 🔴 **마이그 1건 prod 적용 완료 — 재적용 금지.** 기록명 `20260802180000 update_work_log_slot_rpc`
+  (이번엔 레포 파일명과 **같다**). 레포↔prod↔로컬 md5 3자 일치 `70f323c84ac9d9f268f2589af9eb5f84`(13990자).
+
+**끝난 것**
+
+- 신규 SECDEF RPC `update_work_log_slot(p_work_log_id uuid, p_patch jsonb)` — `work_logs` 와
+  `applications.assignments[]` 를 한 트랜잭션에서 갱신. `updateSlot` 이 `.update()` → `rpc()` 1회로 전환.
+- 파리티 **189 → 190**(함수 1개, 정책 111 불변). 마커(:99)와 단언 리터럴(:119) 동시 갱신.
+- 검증: quality **exit 0**(0 errors) · jest **604스위트 6647테스트** · pgTAP 신규 **23/23** ·
+  **red-swap 7종이 각각 대응 단언만 red**(분할 제거→9·10 / groupId 재발급→11 / JSON null→19 /
+  다중집합 가드 제거→22 / 권한 술어 제거→6 / 미지 키 허용→3 / 직접 UPDATE 복귀→8건 /
+  applications 무효화 제거→1건).
+
+**🔴 다음 세션이 반드시 먼저 알아야 할 것 — 파리티가 다시 벌어져 있다**
+
+착수 프롬프트는 "prod 선적용·미머지 마이그 0건"이라 했지만 **실측은 달랐다.**
+`list_migrations` 에는 안 보이는데 prod 함수 수가 **189가 아니라 191**이었다. 차분 2건:
+`notify_on_report_review`·`fn_reports_pin_identity` — 둘 다 **레포 마이그 파일에 존재한 적이 없다.**
+OID 순서(31296·31307 > `settle_work_log` 31272)로 보아 **#402 이후에** 타 세션이 신고(reports)
+하드닝을 prod 선적용한 것이다. 로컬 스택에도 그 세션의 마이그 기록 5건이 있다
+(`20260802150000`·`170000`·`170100`·`170200`·`170300`).
+
+→ 그래서 이 PR 의 기대값은 **190 이 맞다**(레포 마이그만으로 만들어지는 수 = 189 + 내 1).
+  CI `DB Tests` 는 fresh 스택이라 green 이고, 주간 `parity-smoke`(prod 대조)는 **타 세션이 머지할 때까지
+  붉게 남는 게 정확한 신호**다. 190 을 192 로 올리면 CI 가 대신 red 가 된다.
+
+**다음 세션에 넘기는 주의** (이 세션에서 새로 알아낸 것만)
+
+1. 🚨 **`list_migrations` 0건 ≠ 마이그 슬롯 비어 있음.** 타 세션이 남긴 함수 2개는 마이그 기록 없이
+   prod 에 있었다. 슬롯 점유 판정은 기록이 아니라 **`pg_proc` 카운트 대조**로 하라.
+2. 🚨 **로컬 스택의 마이그 기록이 내 파일명과 충돌할 수 있다.** 내가 고른 `20260802170000` 이 이미
+   타 세션 기록으로 존재해 `migration up` 이 내 파일을 "적용됨"으로 건너뛸 참이었다(→ `20260802180000` 으로 이동).
+   **파일명을 정하기 전에 `migration list --local` 을 봐라.**
+3. 🚨 **`migration up --local` 은 타 세션 기록이 있으면 통째로 거부한다**(`LegacyMigrationMissingLocalError`).
+   CLI 가 권하는 `migration repair --status reverted` 는 **타 세션 상태를 망가뜨리니 쓰지 마라.**
+   대안 = `docker cp` + `psql -f` 로 내 파일만 직접 적용(⚠️ `MSYS_NO_PATHCONV=1` 필수 — 없으면
+   `/tmp/x.sql` 이 윈도우 경로로 변환돼 "No such file").
+4. 🔑 **`applications.assignments` 는 평면형이 아니라 v3 배열형이다.** `confirm_application` 의
+   `p_assignments`(work_log 1:1)와 **테이블에 저장되는 `p_assignments_v3`(`dates[]`·`roleIds[]`)는 다른 형태**다.
+   평면형 전제로 설계하면 매칭이 통째로 빗나간다.
+5. 🔑 **`roleIds` 는 커스텀 역할명도 담고, 집합이 아니라 다중집합이다**(같은 역할 N번 = N명 요청,
+   `slotCapacity.ts:116`). 그래서 새 역할을 그대로 넣으면 안 되고 `_posting_role_key` 에서 역산해야 한다
+   (`updateSlot` 은 `custom_role` 을 안 건드리므로 role 만 바꿔도 실제 역할 키는 안 바뀔 수 있다).
+6. 🚨 **zod 가 서버 쓰기 형태를 강제한다.** `application.schema.ts:167-196` 의 `timeSlot: z.string()` 은
+   널 불가 — 미정을 JSON null 로 쓰면 **지원서 레코드가 파싱 단계에서 통째로 증발**한다(A2 선례가 같은 파일 주석에 있다).
+   `'미정'` 문자열로 쓴다. **서버 쓰기를 설계하기 전에 그 컬럼의 zod 스키마를 먼저 읽어라.**
+7. 🔑 **두 번째 테이블을 쓰기 시작하면 그 테이블의 트리거·캐시를 다시 봐야 한다.**
+   `applications` UPDATE 트리거 2종은 status 축이 안 바뀌면 알림을 안 낸다(실측 확인, 안전).
+   반면 TanStack 캐시는 새로 stale 해져서 `useUpdateSlot` 에 `applications.all` 무효화를 추가했다.
+8. ⚠️ **pgTAP 픽스처**: `applications` 에 `(job_posting_id, applicant_id)` UNIQUE 가 있어
+   한 지원자로 여러 지원서를 못 만든다. 갈래마다 지원자를 새로 만들어야 한다(공고는 시드 것을 재사용해야
+   협업자 권한 분기를 탈 수 있다).
+
+**안 끝난 것**
+
+- 🔴 **PR 미생성**(사용자 명시 요청 시에만). 브랜치 `feat/work-log-slot-sync` · HEAD `cab446dd9`.
+- 🔴 **직접 UPDATE 차단(REVOKE)** 은 의도적으로 이번에 넣지 않았다. 순서 = 이 PR 머지 →
+  웹 배포 + OTA → 롤아웃 확인(사용자 게이트) → 그 다음. 역순이면 미전환 구 빌드가 즉사한다.
+  🔑 배포도 **마이그가 먼저**다(이미 prod 적용 완료 — 이 조건은 충족).
 
 ### 세션 F (세션 D·E 착지 + 근본수선 설계) — 2026-08-02 · 상태: 완료(과제 1~3) · **과제 4 미착수 — 새 세션 이관**
 
