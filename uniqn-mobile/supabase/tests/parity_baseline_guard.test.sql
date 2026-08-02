@@ -77,6 +77,13 @@
 --       그래서 브랜치 시점엔 183-1=182 였고, #370 머지 후 185-1=184 로 재산정했다.
 --       🔑 PR 보다 먼저 prod 적용하면 다른 레인의 기대값이 자동으로 어긋난다.
 --
+--   2026-08-02 정산 확정·일괄 RPC 화(L1 잔여, prod 적용 완료 — 재적용 금지):
+--     함수 189 = 186 + fn_settlement_amount·settle_work_log·bulk_settle_work_logs 3
+--     정책 111 불변(RPC 신설만, RLS 미변경).
+--     🔴 prod 기록은 **3건**인데 레포 파일은 2개다 — `settlement_amount_calculator_comments`
+--        (20260802003419)는 계산기 본문 주석 누락을 고친 **재적용**이라 별도 파일이 없다.
+--        레포↔prod 는 md5(prosrc) 대조로 4/4 일치 확인했다.
+--
 -- ⚠️ 유지보수 계약: 이후 마이그레이션이 public 함수/정책을 추가·삭제하면
 --   이 기대값을 같은 PR에서 함께 갱신해야 한다. 갱신을 강제당하는 것 자체가
 --   이 가드의 존재 이유다(무단 드리프트는 여기서 fail).
@@ -88,7 +95,7 @@
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=186
+-- PARITY_EXPECT_FUNCS=189
 -- PARITY_EXPECT_POLICIES=111
 -- ============================================================
 BEGIN;
@@ -108,8 +115,8 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  186,
-  'public function count == prod (186 = 184 + fn_work_logs_pin_identity·set_work_log_payroll_status 2, 2026-08-02 P5)');
+  189,
+  'public function count == prod (189 = 186 + fn_settlement_amount·settle_work_log·bulk_settle_work_logs 3, 2026-08-02 L1 잔여)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(
