@@ -39,7 +39,11 @@ export interface UpdateWorkTimeContext {
  */
 export interface SettleWorkLogContext {
   workLogId: string;
-  /** UI 확인용 금액. 저장 직전 canonical 규칙으로 다시 계산된다. */
+  /**
+   * UI 확인 모달이 보여준 금액. **서버로 보내지 않는다.**
+   * 저장 금액은 서버(`fn_settlement_amount`)가 DB 값으로 재계산하며, 이 값은
+   * 서버가 돌려준 canonical 과 비교해 드리프트를 로그로 관측하는 데만 쓴다.
+   */
   amount: number;
   notes?: string;
 }
@@ -116,12 +120,12 @@ export interface ISettlementRepository {
   /**
    * 개별 정산 처리
    *
-   * @description 단일 근무 기록 정산 완료 처리 (트랜잭션)
-   * - 소유권 검증
-   * - 출퇴근 완료 여부 확인
-   * - 중복 정산 방지
+   * @description 단일 근무 기록 정산 완료 처리 — 서버 RPC `settle_work_log` 1회
+   * - 권한(공고 관리 권한)·출퇴근 완료 게이트·중복 정산 방지·금액 재계산이 전부 서버에 있다
+   * - `FOR UPDATE` 로 상태 확인과 쓰기 사이의 TOCTOU 를 닫는다
    *
-   * @returns 정산 결과 (성공/실패 + 메시지)
+   * @returns 정산 결과 (성공/실패 + 메시지). **throw 하지 않는다** — 실패도 DTO 로 접어 반환하며
+   *   화면은 그 `message` 를 그대로 노출한다.
    */
   settleWorkLogWithTransaction(
     context: SettleWorkLogContext,
@@ -131,10 +135,10 @@ export interface ISettlementRepository {
   /**
    * 일괄 정산 처리
    *
-   * @description 여러 근무 기록 한번에 정산 처리 (배치 트랜잭션)
-   * - DB 배치 처리
-   * - 각 항목별 성공/실패 결과 반환
-   * - 정산 금액 자동 계산 (SettlementCalculator 사용)
+   * @description 여러 근무 기록 한번에 정산 처리
+   * - 청크(100건)당 서버 RPC `bulk_settle_work_logs` 1회
+   * - 각 항목별 성공/실패 결과 반환 (서버의 항목별 서브트랜잭션이 부분 성공을 보존)
+   * - 정산 금액은 서버가 `fn_settlement_amount` 로 재계산한다
    *
    * @returns 일괄 정산 결과 (총 개수, 성공/실패 수, 상세 결과)
    */

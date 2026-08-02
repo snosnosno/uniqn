@@ -1,12 +1,20 @@
 // src/repositories/supabase/__tests__/SettlementRepository.bulk.test.ts
 //
 // bulkSettlementWithTransaction 회귀 테스트 (머니 패스).
-// 청크 내 per-row UPDATE를 Promise.all로 병렬화한 변경의 동치(순서·집계·부분실패 격리)를
-// 잠근다. 직렬·병렬 어느 구현이든 동일하게 통과해야 하며, 집계/순서 회귀를 적발한다.
+//
+// 전환 이력: 이 파일은 원래 "청크 내 per-row UPDATE 를 Promise.all 로 병렬화한 구현"의
+// 순서·집계·부분실패 격리를 잠갔다. 감사 L1 잔여에서 그 루프가 통째로 서버 RPC
+// (`bulk_settle_work_logs`)로 옮겨졌으므로, 이제 이 파일이 지켜야 할 것은 바뀌었다:
+//
+//   ① 청크당 RPC **정확히 1회**, 한 번에 100건을 넘기지 않는다
+//      (서버 상한과 어긋나면 청크 전체가 INVALID_INPUT 으로 죽는다)
+//   ② 부분 성공 계약(successCount/failedCount/totalAmount/results 순서)이 그대로 보존된다
+//   ③ 한 청크가 실패해도 **그 청크만** 실패로 기록되고 앞 청크의 성공은 유지된다
+//   ④ 응답 형태가 낯설면 금액을 지어내지 않고 실패로 접는다(0원 성공 금지)
+//
+// 행별 권한·상태·중복·금액 판정 자체는 이제 서버에 있고
+// supabase/tests/settlement_settle_rpcs.test.sql 이 고정한다 — 여기서 중복 검증하지 않는다.
 import { SupabaseSettlementRepository } from '../SettlementRepository';
-import { STATUS } from '@/constants';
-import type { WorkLog, JobPosting } from '@/types';
-import type { BulkSettlementContext } from '../../interfaces';
 
 const mockFrom = jest.fn();
 jest.mock('@/lib/supabase', () => ({
@@ -22,130 +30,86 @@ jest.mock('@/utils/logger', () => ({
 
 const mockRpc = jest.requireMock('@/lib/supabase').supabase.rpc as jest.Mock;
 
-const mockParseWorkLog = jest.fn();
-const mockParseJobPosting = jest.fn();
-jest.mock('@/schemas', () => {
-  const actual = jest.requireActual('@/schemas');
-  return {
-    ...actual,
-    parseWorkLogDocument: (...a: unknown[]) => mockParseWorkLog(...a),
-    parseJobPostingDocument: (...a: unknown[]) => mockParseJobPosting(...a),
-  };
-});
-
 const OWNER = 'owner-1';
 
-// 파서 mock이 id로 조회하는 픽스처
-const workLogFixtures = new Map<string, WorkLog>();
-const jobPostingFixtures = new Map<string, JobPosting>();
+/** 서버 응답(jsonb) 모양 그대로 — 성공 항목 */
+const ok = (id: string, amount: number) => ({
+  success: true,
+  workLogId: id,
+  amount,
+  message: '정산 완료',
+});
+/** 서버 응답(jsonb) 모양 그대로 — 실패 항목 */
+const ng = (id: string, message: string) => ({
+  success: false,
+  workLogId: id,
+  amount: 0,
+  message,
+});
 
-// supabase mock 체인 상태
-let workLogSelectResult: { data: unknown; error: unknown };
-let jobPostingSelectResult: { data: unknown; error: unknown };
-let updateResultById: Record<string, { error: unknown }>;
-let updateCalls: { id: string; data: Record<string, unknown> }[];
-
-function makeFromChain(table: string) {
-  let pendingUpdate: Record<string, unknown> | undefined;
-  const chain: Record<string, unknown> = {
-    select: () => chain,
-    // read 종단: SELECT ... IN(...)
-    in: () => Promise.resolve(table === 'work_logs' ? workLogSelectResult : jobPostingSelectResult),
-    update: (data: Record<string, unknown>) => {
-      pendingUpdate = data;
-      return chain;
-    },
-    // write 종단: UPDATE ... EQ('id', id)
-    eq: (_col: string, id: string) => {
-      updateCalls.push({ id, data: pendingUpdate ?? {} });
-      return Promise.resolve(updateResultById[id] ?? { error: null });
-    },
-  };
-  return chain;
+interface RpcResultItem {
+  success: boolean;
+  workLogId: string;
+  amount: number;
+  message: string;
 }
 
-function makeWorkLog(id: string, overrides: Partial<WorkLog> = {}): WorkLog {
-  return {
-    id,
-    jobPostingId: 'jp-1',
-    status: STATUS.WORK_LOG.CHECKED_OUT,
-    payrollStatus: STATUS.PAYROLL.PENDING,
-    ...overrides,
-  } as unknown as WorkLog;
-}
-
-function makeJobPosting(id: string, ownerId: string): JobPosting {
-  return { id, ownerId, workspaceId: 'ws-1', compensation: undefined } as unknown as JobPosting;
-}
+/** bulk_settle_work_logs 응답 봉투 */
+const envelope = (results: RpcResultItem[]) => ({
+  data: {
+    totalCount: results.length,
+    successCount: results.filter((r) => r.success).length,
+    failedCount: results.filter((r) => !r.success).length,
+    totalAmount: results.reduce((sum, r) => sum + (r.success ? r.amount : 0), 0),
+    results,
+  },
+  error: null,
+});
 
 let repo: SupabaseSettlementRepository;
-const AMOUNTS: Record<string, number> = { 'wl-1': 1000, 'wl-2': 2000, 'wl-3': 3000 };
 
 beforeEach(() => {
   mockFrom.mockReset();
   mockRpc.mockReset();
-  // 기본: 권한 없음(fail-closed). owner 는 short-circuit 이라 RPC 미호출.
-  mockRpc.mockResolvedValue({ data: false, error: null });
-  mockParseWorkLog.mockReset();
-  mockParseJobPosting.mockReset();
-  workLogFixtures.clear();
-  jobPostingFixtures.clear();
-  updateResultById = {};
-  updateCalls = [];
-
-  mockFrom.mockImplementation((table: string) => makeFromChain(table));
-  mockParseWorkLog.mockImplementation((doc: { id: string }) => workLogFixtures.get(doc.id) ?? null);
-  mockParseJobPosting.mockImplementation(
-    (doc: { id: string }) => jobPostingFixtures.get(doc.id) ?? null
-  );
-
   repo = new SupabaseSettlementRepository();
-  // private calculateSettlementAmount: 정산 도메인 전체를 모킹하지 않고 금액만 결정적으로 고정
-  jest
-    .spyOn(
-      repo as unknown as { calculateSettlementAmount: (wl: WorkLog) => number },
-      'calculateSettlementAmount'
-    )
-    .mockImplementation((wl: WorkLog) => AMOUNTS[wl.id] ?? 0);
 });
 
-/** 모든 worklog가 jp-1(OWNER 소유)에 속하는 단순 시드 */
-function seedValid(ids: string[]) {
-  for (const id of ids) {
-    workLogFixtures.set(id, makeWorkLog(id));
-  }
-  jobPostingFixtures.set('jp-1', makeJobPosting('jp-1', OWNER));
-  workLogSelectResult = { data: ids.map((id) => ({ id })), error: null };
-  jobPostingSelectResult = { data: [{ id: 'jp-1' }], error: null };
-}
+/** 이 세션의 bulk RPC 호출만 추린다 */
+const bulkCalls = () => mockRpc.mock.calls.filter((c) => c[0] === 'bulk_settle_work_logs');
 
 describe('bulkSettlementWithTransaction', () => {
-  it('전부 유효: 모든 행 정산 성공 — 순서·합계·행당 단일 UPDATE 보장', async () => {
-    seedValid(['wl-1', 'wl-2', 'wl-3']);
-    const ctx: BulkSettlementContext = { workLogIds: ['wl-1', 'wl-2', 'wl-3'] };
+  it('전부 성공: 청크당 RPC 1회 · 순서·합계 보존', async () => {
+    mockRpc.mockResolvedValue(envelope([ok('wl-1', 1000), ok('wl-2', 2000), ok('wl-3', 3000)]));
 
-    const result = await repo.bulkSettlementWithTransaction(ctx, OWNER);
+    const result = await repo.bulkSettlementWithTransaction(
+      { workLogIds: ['wl-1', 'wl-2', 'wl-3'] },
+      OWNER
+    );
 
     expect(result.successCount).toBe(3);
     expect(result.failedCount).toBe(0);
     expect(result.totalAmount).toBe(6000);
-    // 결과 순서는 입력 순서와 동일해야 한다 (Promise.all 순서 보존)
+    expect(result.totalCount).toBe(3);
     expect(result.results.map((r) => r.workLogId)).toEqual(['wl-1', 'wl-2', 'wl-3']);
     expect(result.results.map((r) => r.amount)).toEqual([1000, 2000, 3000]);
-    expect(result.results.every((r) => r.success)).toBe(true);
-    // 각 id 정확히 1회 UPDATE
-    expect(updateCalls).toHaveLength(3);
-    expect(updateCalls.map((c) => c.id).sort()).toEqual(['wl-1', 'wl-2', 'wl-3']);
+
+    expect(bulkCalls()).toHaveLength(1);
+    expect(bulkCalls()[0][1]).toEqual({
+      p_work_log_ids: ['wl-1', 'wl-2', 'wl-3'],
+      p_notes: null,
+    });
   });
 
-  it('부분 실패: 중간 행 UPDATE 실패해도 앞뒤 행 커밋·순서 보존·격리 집계 (롤백 없음)', async () => {
-    seedValid(['wl-1', 'wl-2', 'wl-3']);
-    updateResultById['wl-2'] = { error: { message: 'db write failed' } };
-    const ctx: BulkSettlementContext = { workLogIds: ['wl-1', 'wl-2', 'wl-3'] };
+  it('부분 실패: 실패 행만 격리되고 순서·합계가 보존된다 (롤백 없음)', async () => {
+    mockRpc.mockResolvedValue(
+      envelope([ok('wl-1', 1000), ng('wl-2', '정산 업데이트 실패'), ok('wl-3', 3000)])
+    );
 
-    const result = await repo.bulkSettlementWithTransaction(ctx, OWNER);
+    const result = await repo.bulkSettlementWithTransaction(
+      { workLogIds: ['wl-1', 'wl-2', 'wl-3'] },
+      OWNER
+    );
 
-    // 순서 보존 + 실패 행만 격리
     expect(result.results.map((r) => r.workLogId)).toEqual(['wl-1', 'wl-2', 'wl-3']);
     expect(result.results[0].success).toBe(true);
     expect(result.results[1].success).toBe(false);
@@ -153,67 +117,99 @@ describe('bulkSettlementWithTransaction', () => {
     expect(result.results[2].success).toBe(true);
     expect(result.successCount).toBe(2);
     expect(result.failedCount).toBe(1);
-    expect(result.totalAmount).toBe(4000); // 1000 + 3000 (실패한 wl-2 제외)
-    // 롤백 없음: wl-1·wl-3 UPDATE는 그대로 발행됨 (+ 실패한 wl-2 시도)
-    expect(updateCalls.map((c) => c.id).sort()).toEqual(['wl-1', 'wl-2', 'wl-3']);
+    expect(result.totalAmount).toBe(4000); // 1000 + 3000
   });
 
-  it('검증 스킵: 이미 정산완료/타인 공고는 메시지 반환 + UPDATE 미발행', async () => {
-    workLogFixtures.set(
-      'wl-done',
-      makeWorkLog('wl-done', { payrollStatus: STATUS.PAYROLL.COMPLETED })
+  it('서버가 낸 항목별 문구(권한·상태·중복)를 그대로 화면 계약으로 전달한다', async () => {
+    mockRpc.mockResolvedValue(
+      envelope([
+        ng('wl-done', '이미 정산 완료되었습니다'),
+        ng('wl-foreign', '권한이 없는 공고입니다'),
+      ])
     );
-    workLogFixtures.set('wl-foreign', makeWorkLog('wl-foreign', { jobPostingId: 'jp-foreign' }));
-    jobPostingFixtures.set('jp-1', makeJobPosting('jp-1', OWNER));
-    jobPostingFixtures.set('jp-foreign', makeJobPosting('jp-foreign', 'someone-else'));
-    workLogSelectResult = { data: [{ id: 'wl-done' }, { id: 'wl-foreign' }], error: null };
-    jobPostingSelectResult = { data: [{ id: 'jp-1' }, { id: 'jp-foreign' }], error: null };
 
     const result = await repo.bulkSettlementWithTransaction(
       { workLogIds: ['wl-done', 'wl-foreign'] },
       OWNER
     );
 
-    expect(result.successCount).toBe(0);
-    expect(result.failedCount).toBe(2);
-    expect(result.totalAmount).toBe(0);
     const byId = Object.fromEntries(result.results.map((r) => [r.workLogId, r]));
     expect(byId['wl-done'].message).toBe('이미 정산 완료되었습니다');
     expect(byId['wl-foreign'].message).toBe('권한이 없는 공고입니다');
-    // 검증 실패 행은 UPDATE를 발행하지 않는다
-    expect(updateCalls).toHaveLength(0);
+    expect(result.successCount).toBe(0);
+    expect(result.failedCount).toBe(2);
+    expect(result.totalAmount).toBe(0);
   });
 
-  // 2026-07-10 P0#3: owner 뿐 아니라 워크스페이스 멤버·협업자도 정산 가능.
-  it('워크스페이스 멤버의 일괄정산은 스킵되지 않는다 (is_workspace_member=true)', async () => {
-    workLogFixtures.set('wl-1', makeWorkLog('wl-1'));
-    jobPostingFixtures.set('jp-1', makeJobPosting('jp-1', 'someone-else'));
-    workLogSelectResult = { data: [{ id: 'wl-1' }], error: null };
-    jobPostingSelectResult = { data: [{ id: 'jp-1' }], error: null };
-    mockRpc.mockImplementation((fn: string) =>
-      Promise.resolve({ data: fn === 'is_workspace_member', error: null })
+  it('🔴 청크 상한 100 — 한 번에 100건을 넘겨 보내지 않는다 (서버 상한과 동치)', async () => {
+    const ids = Array.from({ length: 150 }, (_, i) => `wl-${i}`);
+    mockRpc.mockImplementation((_fn: string, args: { p_work_log_ids: string[] }) =>
+      Promise.resolve(envelope(args.p_work_log_ids.map((id) => ok(id, 10))))
     );
 
-    const result = await repo.bulkSettlementWithTransaction({ workLogIds: ['wl-1'] }, 'member-1');
+    const result = await repo.bulkSettlementWithTransaction({ workLogIds: ids }, OWNER);
 
-    expect(result.results[0]).toMatchObject({ success: true });
-    expect(updateCalls).toHaveLength(1);
+    expect(bulkCalls()).toHaveLength(2);
+    expect(bulkCalls()[0][1].p_work_log_ids).toHaveLength(100);
+    expect(bulkCalls()[1][1].p_work_log_ids).toHaveLength(50);
+    // 어느 호출도 서버 상한을 넘지 않는다
+    for (const call of bulkCalls()) {
+      expect(call[1].p_work_log_ids.length).toBeLessThanOrEqual(100);
+    }
+    expect(result.successCount).toBe(150);
+    expect(result.totalAmount).toBe(1500);
+    expect(result.results.map((r) => r.workLogId)).toEqual(ids);
   });
 
-  it('같은 공고의 근무기록 N건에 권한 RPC 를 공고당 1회만 호출한다 (N+1 방지)', async () => {
-    workLogFixtures.set('wl-1', makeWorkLog('wl-1'));
-    workLogFixtures.set('wl-2', makeWorkLog('wl-2'));
-    jobPostingFixtures.set('jp-1', makeJobPosting('jp-1', 'someone-else'));
-    workLogSelectResult = { data: [{ id: 'wl-1' }, { id: 'wl-2' }], error: null };
-    jobPostingSelectResult = { data: [{ id: 'jp-1' }], error: null };
-    mockRpc.mockImplementation((fn: string) =>
-      Promise.resolve({ data: fn === 'is_workspace_member', error: null })
-    );
+  it('🔴 청크 호출 실패는 그 청크만 실패로 기록하고 앞 청크의 성공을 유지한다', async () => {
+    const ids = Array.from({ length: 150 }, (_, i) => `wl-${i}`);
+    let call = 0;
+    mockRpc.mockImplementation((_fn: string, args: { p_work_log_ids: string[] }) => {
+      call += 1;
+      if (call === 2) return Promise.resolve({ data: null, error: { message: 'timeout' } });
+      return Promise.resolve(envelope(args.p_work_log_ids.map((id) => ok(id, 10))));
+    });
 
-    await repo.bulkSettlementWithTransaction({ workLogIds: ['wl-1', 'wl-2'] }, 'member-1');
+    const result = await repo.bulkSettlementWithTransaction({ workLogIds: ids }, OWNER);
 
-    // wl-1, wl-2 가 같은 jp-1 → is_workspace_member 는 정확히 1회
-    const memberCalls = mockRpc.mock.calls.filter((c) => c[0] === 'is_workspace_member');
-    expect(memberCalls).toHaveLength(1);
+    expect(result.successCount).toBe(100);
+    expect(result.failedCount).toBe(50);
+    expect(result.totalAmount).toBe(1000);
+    expect(result.results.slice(100).every((r) => !r.success)).toBe(true);
+    expect(result.results[100].message).toBe('정산 업데이트 실패');
+  });
+
+  it('🔴 응답 형태가 낯설면 0원 성공으로 접지 않고 실패로 기록한다 (fail-closed)', async () => {
+    // amount 가 문자열로 온 오염 응답 — 통과시키면 화면에 "0원 정산 완료"가 뜬다.
+    mockRpc.mockResolvedValue({
+      data: {
+        results: [{ success: true, workLogId: 'wl-1', amount: '1000', message: '정산 완료' }],
+      },
+      error: null,
+    });
+
+    const result = await repo.bulkSettlementWithTransaction({ workLogIds: ['wl-1'] }, OWNER);
+
+    expect(result.successCount).toBe(0);
+    expect(result.failedCount).toBe(1);
+    expect(result.totalAmount).toBe(0);
+    expect(result.results[0].message).toBe('정산 업데이트 실패');
+  });
+
+  it('메모(notes)는 서버로 그대로 전달된다', async () => {
+    mockRpc.mockResolvedValue(envelope([ok('wl-1', 1000)]));
+
+    await repo.bulkSettlementWithTransaction({ workLogIds: ['wl-1'], notes: '8월 1주차' }, OWNER);
+
+    expect(bulkCalls()[0][1].p_notes).toBe('8월 1주차');
+  });
+
+  it('일괄 경로는 더 이상 work_logs 를 직접 UPDATE 하지 않는다', async () => {
+    mockRpc.mockResolvedValue(envelope([ok('wl-1', 1000)]));
+
+    await repo.bulkSettlementWithTransaction({ workLogIds: ['wl-1'] }, OWNER);
+
+    // 직접 쓰기가 남아 있으면 L1 3단계(payroll 컬럼 직접 UPDATE 차단)를 걸 수 없다.
+    expect(mockFrom).not.toHaveBeenCalled();
   });
 });
