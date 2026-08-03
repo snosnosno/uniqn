@@ -12,6 +12,13 @@ import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import { handleSupabaseError } from '@/utils/supabase';
 import { STATUS } from '@/constants';
+import {
+  BusinessError,
+  PermissionError,
+  ValidationError,
+  ERROR_CODES,
+  type AppError,
+} from '@/errors';
 import { assertSlotColor, assertSlotMemo, assertSlotStartTime } from '@/domains/workSchedule';
 import type { WorkLog } from '@/types';
 import type { UpdateSlotInput } from '../interfaces';
@@ -94,58 +101,136 @@ export async function getByVenueSpanInRange(
 }
 
 /**
+ * `update_work_log_slot` RPC 가 RAISE 한 도메인 에러를 앱 에러로 변환.
+ * (매칭되지 않으면 null 반환 → 공통 핸들러로 위임)
+ *
+ * 서버 메시지는 `CODE: 사용자 문구` 형식이라 접두사를 떼어 그대로 노출한다 —
+ * 같은 문구를 클라와 서버 두 곳에서 따로 관리하면 조용히 갈라진다(정산 RPC 와 동일 관용구).
+ */
+function toUpdateSlotError(error: unknown): AppError | null {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === 'object' && error !== null && 'message' in error
+        ? String((error as { message: unknown }).message)
+        : String(error);
+  const code =
+    typeof error === 'object' && error !== null && 'code' in error
+      ? String((error as { code: unknown }).code)
+      : '';
+
+  const userMessage = (fallback: string): string => {
+    const idx = message.indexOf(': ');
+    return idx >= 0 ? message.slice(idx + 2).trim() : fallback;
+  };
+
+  // 🔑 데드락은 **재시도하면 성공하는** 실패다. 이 RPC 는 applications → work_logs 순으로 잠그는데,
+  //    QR 체크아웃 경로는 work_logs 를 잠근 뒤 `tr_sync_application_completion` 트리거가
+  //    applications 를 갱신해 순서가 역전된다(선재 클래스 — `cancel_application_atomically` 와
+  //    같은 트리거 사이에도 이미 존재한다). 같은 지원서에서 두 작업이 겹치면 한쪽이 40P01 로 중단된다.
+  //    매핑하지 않으면 '알 수 없는 오류'로 보여 사용자가 재시도할 이유를 알 수 없다.
+  if (code === '40P01' || message.includes('deadlock detected')) {
+    return new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+      userMessage: '다른 작업과 겹쳤어요. 잠시 후 다시 시도해주세요.',
+    });
+  }
+
+  if (message.includes('PERMISSION_DENIED')) {
+    return new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
+      userMessage: userMessage('권한이 있는 공고의 근무 기록만 수정할 수 있습니다'),
+    });
+  }
+  if (message.includes('WORK_LOG_NOT_FOUND')) {
+    return new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
+      userMessage: '근무 기록을 찾을 수 없습니다',
+    });
+  }
+  if (message.includes('INVALID_INPUT')) {
+    return new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+      userMessage: userMessage('수정 요청이 올바르지 않습니다'),
+    });
+  }
+  return null;
+}
+
+/**
  * 슬롯 편집(근무표 B2) — 시간/역할/색상/메모 부분 수정.
+ *
+ * 🔴 **서버 RPC `update_work_log_slot` 1회**로 처리한다. 예전엔 `work_logs` 만 직접 UPDATE 해서
+ * `applications.assignments[]` 가 낡은 채 남아 **두 원천이 표류**했다(세션 E 는 병합 키를 FK 로
+ * 바꿔 화면 증상만 막았고, 원천 불일치는 남아 있었다). RPC 는 둘을 한 트랜잭션에서 갱신한다.
+ * 매칭이 모호하면 서버가 assignments 동기화만 건너뛰고 `assignmentSynced:false` 를 돌려준다 —
+ * 남의 원소를 오염시키는 것보다 표류가 싸다.
  *
  * 검증 경계(Repository): color 는 토큰 화이트리스트(자유 hex 거부), memo 는 XSS 검증
  * 통과분만 기록(S1/U3), 출근 예정 시각은 'HH:mm' 형식 검증(범위·자유 텍스트 거부).
+ * 🔑 이 관문들은 **RPC 호출 전에** 던진다 — 위반이면 서버에 아예 도달하지 않는다(fail-closed).
+ * 서버도 같은 보안 불변식(길이·XSS·enum·시각 형식)을 재현하지만, 색 토큰 화이트리스트만은
+ * 제품 규칙이라 클라에 남는다(팔레트를 늘릴 때마다 마이그가 필요해지지 않도록).
  *
  * 시간 축(§K 정본): `time_slot` = 출근 예정 시각 **단일값** 또는 미기록(=미정).
- * 예전엔 이 함수가 앱에서 유일하게 범위 문자열('18:00 - 02:00')을 생산했고, 종료가 없으면
- * 시간을 아예 못 쓰는 부분 업데이트였다. 이제 시작 하나만으로 갱신하고 미정은 명시적으로 비운다.
- * 시간 축을 안 보내면 time_slot 키를 만들지 않는다 — 색상·메모만 고치는 저장이 기존 시간을
- * 덮어쓰지 않도록(GRID-1).
+ * 시간 축을 안 보내면 패치에 시간 키를 만들지 않는다 — 색상·메모만 고치는 저장이 기존 시간을
+ * 덮어쓰지 않도록(GRID-1). 스칼라 NULL 로는 '미제공'과 '비움'을 구분할 수 없어 패치는 jsonb 다.
  */
 export async function updateSlot(workLogId: string, input: UpdateSlotInput): Promise<void> {
   try {
     logger.info('배치 슬롯 편집', { workLogId, fields: Object.keys(input) });
 
-    const updateData: Record<string, unknown> = {
-      updated_at: new Date().toISOString(),
-    };
+    const patch: Record<string, unknown> = {};
 
-    // 시간: 미정이면 비우고(null), 아니면 출근 예정 시각 단일값으로 갱신(형식 위반은 throw).
+    // 시간: 미정이면 비우고, 아니면 출근 예정 시각 단일값으로 갱신(형식 위반은 throw).
     // 미정 우선 — 인원 추가 경로(addSlotPayload.buildTimeSlot)와 우선순위를 맞춘다.
+    // 유효한 축 하나만 실어 보낸다(서버의 우선순위 분기와 이중 관리되지 않도록).
     if (input.timeUndecided) {
-      updateData.time_slot = null;
+      patch.timeUndecided = true;
     } else if (input.startTime !== undefined) {
-      updateData.time_slot = assertSlotStartTime(input.startTime);
+      patch.startTime = assertSlotStartTime(input.startTime);
     }
 
     // 역할(StaffRole)
     if (input.staffRole !== undefined) {
-      updateData.role = input.staffRole;
+      patch.staffRole = input.staffRole;
     }
 
     // 색상: 화이트리스트 검증(자유 hex 거부) — 위반 시 ValidationError 던짐
     if (input.color !== undefined) {
-      updateData.color = assertSlotColor(input.color);
+      patch.color = assertSlotColor(input.color);
     }
 
     // 메모: XSS/길이 검증 — 위반 시 ValidationError 던짐
     if (input.memo !== undefined) {
-      updateData.notes = assertSlotMemo(input.memo);
+      patch.memo = assertSlotMemo(input.memo);
     }
 
-    // 수정 행위자(운영자)
+    // 수정 행위자(운영자). 값은 서버가 auth.uid() 로 덮어쓴다 — 키는 "기록할지" 만 정한다.
     if (input.editedBy !== undefined) {
-      updateData.edited_by = input.editedBy;
+      patch.editedBy = input.editedBy;
     }
 
-    const { error } = await supabase.from(TABLE).update(updateData).eq('id', workLogId);
+    const { data, error } = await supabase.rpc('update_work_log_slot', {
+      p_work_log_id: workLogId,
+      p_patch: patch,
+    });
 
-    if (error) handleSupabaseError(error, { operation: '배치 슬롯 편집', table: TABLE });
+    if (error) {
+      const mapped = toUpdateSlotError(error);
+      if (mapped) throw mapped;
+      handleSupabaseError(error, { operation: '배치 슬롯 편집', table: TABLE });
+    }
 
-    logger.info('배치 슬롯 편집 완료', { workLogId });
+    // 동기화 스킵은 실패가 아니다(편집은 성사됐다) — 다만 조용히 넘기지 않고 관측 가능하게 남긴다.
+    const result = (data ?? {}) as { assignmentSynced?: boolean; assignmentSyncReason?: string };
+    if (result.assignmentSynced === false && result.assignmentSyncReason !== 'no_application') {
+      logger.warn('배치 슬롯 편집 — 지원서 배정 동기화 건너뜀', {
+        workLogId,
+        reason: result.assignmentSyncReason,
+      });
+    }
+
+    logger.info('배치 슬롯 편집 완료', {
+      workLogId,
+      assignmentSynced: result.assignmentSynced,
+    });
   } catch (error) {
     rethrowOrHandle(error, '배치 슬롯 편집', { workLogId });
   }
