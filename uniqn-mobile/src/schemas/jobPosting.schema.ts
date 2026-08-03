@@ -490,7 +490,7 @@ export const jobPostingDocumentSchema = z
     // ⚠️ 범위 제한을 **일부러 걸지 않는다** — 바로 위 region 주석과 같은 이유다. 이 스키마는
     //    읽기·쓰기 양쪽에 쓰이는데, 읽기에서 범위를 걸면 언젠가 경계를 넓혔을 때(해외 지점 등)
     //    저장된 공고가 파스 실패로 **목록에서 증발한다**. 범위 검증의 값어치는 쓰기 경계에 있고
-    //    거기서 한다(`assertGeoInKorea` — geocodingService) + DB `chk_job_postings_geo_bounds` 가 최종 권위.
+    //    거기서 한다(`isGeoPointInKorea` — geocodingService) + DB `chk_job_postings_geo_bounds` 가 최종 권위.
     geoLat: z.number().nullable().optional(),
     geoLng: z.number().nullable().optional(),
     totalPositions: z.number(),

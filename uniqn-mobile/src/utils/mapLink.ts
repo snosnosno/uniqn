@@ -138,13 +138,18 @@ function formatDegrees(value: number): string {
 }
 
 /**
- * 카카오 `link/to/{이름},{위도},{경도}` 의 이름 자리에 넣을 라벨.
+ * 좌표 URL 의 이름 자리에 넣을 라벨.
  *
- * 🔴 **쉼표를 지운다.** 이 URL 은 쉼표로 필드를 가르므로 '라운더스, 강남점' 같은 이름이 그대로
- *    들어가면 좌표 자리가 밀려 **엉뚱한 곳**이 열린다. 조용히 틀리는 종류의 실패다.
+ * 🔴 **쉼표와 괄호를 지운다.** 두 문자가 각각 다른 URL 형식의 구분자다:
+ *    - 카카오 `link/to/{이름},{위도},{경도}` — 쉼표가 필드 구분자다. '라운더스, 강남점' 이 그대로
+ *      들어가면 좌표 자리가 밀려 **엉뚱한 곳**이 열린다.
+ *    - Android `geo:{lat},{lng}?q={lat},{lng}({라벨})` — 괄호가 라벨 구분자인데
+ *      `encodeURIComponent` 는 `(`·`)` 를 인코딩하지 않는다. '라운더스(강남)' 이면 라벨이
+ *      조기에 닫혀 URI 가 뭉개진다.
+ *    둘 다 에러 없이 조용히 틀리는 종류의 실패다.
  */
 function sanitizeLabel(label: string | undefined, fallback: string): string {
-  const cleaned = label?.replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+  const cleaned = label?.replace(/[,()]/g, ' ').replace(/\s+/g, ' ').trim();
   return cleaned || fallback;
 }
 

@@ -135,8 +135,22 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: '인증 실패', code: 'GEO_UNAUTHENTICATED' }, 401);
     }
 
+    // 역할 게이트 — RLS `jp_insert` 와 **동형**이다. 그 정책이
+    //   `get_my_role() = ANY (ARRAY['admin','employer'])` 를 요구하고,
+    //   `get_my_role()` 은 `auth.jwt() -> 'app_metadata' ->> 'role'` 이라 여기서 보는 값과 같은 원천이다.
+    // ⇒ 공고를 저장할 수 있는 사용자는 정확히 이 게이트를 통과한다. 정당 호출자를 잃지 않는다.
+    //   (승격 직후 stale JWT 우려는 성립하지 않는다 — 그 상태면 공고 INSERT 자체가 이미 막히고,
+    //    앱은 역할 변경 알림에서 `refreshProfile()` 로 세션을 재발급한다.)
+    // 없으면 인증된 아무 계정이나 카카오 일 쿼터를 태울 수 있다.
+    const role = (user.app_metadata as { role?: string } | undefined)?.role;
+    if (role !== 'employer' && role !== 'admin') {
+      return jsonResponse({ error: '권한이 없습니다', code: 'GEO_FORBIDDEN' }, 403);
+    }
+
     // 쿼터 방어는 **본문 파싱·상류 호출보다 먼저**. 뒤에 두면 방어하려던 비용을 이미 치른 뒤가 된다.
     if (!checkRateLimit(user.id)) {
+      // 🔑 로그가 없으면 남용이 진행돼도 신호가 0이다 — 느려지게만 할 뿐 맞고 있는지를 알 수 없다.
+      console.warn('[geocode-address] rate limited', { userId: user.id });
       return jsonResponse(
         { error: '요청이 너무 잦습니다. 잠시 후 다시 시도해주세요.', code: 'GEO_RATE_LIMITED' },
         429

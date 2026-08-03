@@ -38,6 +38,16 @@ describe('buildMapCoordinateUrls', () => {
     expect(decodeURIComponent(fields[0])).toBe('라운더스 강남점');
   });
 
+  it('🔴 장소명의 괄호를 지운다 — Android geo: 는 괄호가 라벨 구분자인데 인코딩되지 않는다', () => {
+    const [first] = buildMapCoordinateUrls(GANGNAM, '라운더스(강남)', 'android');
+    const label = first.slice(first.indexOf('(') + 1, first.lastIndexOf(')'));
+
+    // 괄호가 남으면 여기서 조기 종료돼 라벨이 잘린다.
+    expect(decodeURIComponent(label)).toBe('라운더스 강남');
+    expect(first).not.toContain('%28');
+    expect(first.split('(')).toHaveLength(2);
+  });
+
   it('라벨이 비면 기본 라벨로 대체한다(빈 필드로 링크가 깨지지 않게)', () => {
     const [url] = buildMapCoordinateUrls(GANGNAM, '   ', 'web');
     const fields = url.split('/link/to/')[1].split(',');
