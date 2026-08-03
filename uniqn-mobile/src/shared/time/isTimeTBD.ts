@@ -20,6 +20,12 @@ import { FIXED_TIME_MARKER, TBA_TIME_MARKER } from '@/types/assignment';
  * `TBA_TIME_MARKER`(`'미정'`) 문자열이다 — null 을 쓰면 구버전 사장 앱의 엄격한 zod
  * (`timeSlot: z.string()`)가 지원서 레코드를 통째로 증발시킨다. null 쓰기 전환은 R3 의 일이다.
  *
+ * ⚠️ 서버와 **정확히 같지 않은 한 지점**: JS `trim()` 은 탭·개행·NBSP·전각공백까지 걷어내는데
+ *    Postgres `btrim()` 은 기본적으로 ASCII 공백만 지운다. 즉 탭이 붙은 `'미정'` 같은 값을 **클라만**
+ *    미정으로 접는다. 좁히지 않고 남겨 둔 이유: 이 방향의 어긋남은 화면을 더 관대하게 만들 뿐이고
+ *    (사용자에게 센티널이 새지 않는다), 그런 값이 저장되려 하면 서버 CHECK 이 23514 로 막는다.
+ *    유입 경로도 붙여넣기뿐이다. 반대 방향(서버가 접는데 클라가 안 접음)이었다면 키가 갈려 위험하다.
+ *
  * @param value 판정할 시간 문자열(`work_logs.time_slot` · `assignment.timeSlot` · 슬롯 `startTime`)
  * @returns 시각이 정해지지 않았으면 true
  */

@@ -46,7 +46,7 @@ export interface WorkTimeDisplayResult {
    * "익일" 정보가 소실되던 갭(P2-3-lite)을 SSOT 결과로 노출한다.
    */
   isEndNextDay: boolean;
-  /** 예정 시각이 확정인지·미정인지·협의인지. 표시 문장을 가르는 단일 근거. */
+  /** 예정 시각이 확정인지 미정인지. 표시 문장을 가르는 단일 근거(D4 로 '협의' 상태는 폐기). */
   scheduleTimeState: ScheduleTimeState;
 }
 

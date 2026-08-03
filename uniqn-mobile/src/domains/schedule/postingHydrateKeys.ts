@@ -29,8 +29,15 @@ export const UNKNOWN_TIME_KEY = '미정';
  * TTL 동안 남는다(`criticalOfflineCache` 는 형태 검증 없이 캐스트한다). 그래서 이 함수는
  * 신규 값(`'미정'`)만이 아니라 옛 값도 반드시 함께 접어야 한다.
  *
+ * ## 0패딩을 하는 이유
+ * 서버는 저장 시점에 `_normalize_time_slot` 으로 `'9:00'` → `'09:00'` 을 만든다. 그래서 서버가
+ * 돌려주는 슬롯 키는 **항상 0패딩**이다. 클라가 공고의 `'9:00'` 을 그대로 키로 쓰면 그 두 키가
+ * 영영 만나지 못해 **에러 없이 확정 인원이 0/N** 으로 보인다.
+ * (현재 prod 공고 시각은 전부 0패딩이라 노출은 0이지만, 계약을 맞춰 두지 않으면 비패딩 값이
+ *  하나 생기는 날 조용히 깨진다.)
+ *
  * 서버 대응(prod 실측): `_posting_slot_key(NULL|''|'미정'|'NEGOTIABLE')` = `'미정'`,
- * `_posting_slot_key('18:30 - 03:00')` = `'18:30'`.
+ * `_posting_slot_key('18:30 - 03:00')` = `'18:30'`, `_normalize_time_slot('9:00')` = `'09:00'`.
  */
 export function timeSlotKey(raw: string | null | undefined): string {
   if (isTimeTBD(raw)) {
@@ -38,7 +45,15 @@ export function timeSlotKey(raw: string | null | undefined): string {
   }
 
   // 범위형("14:00~22:00")은 시작시각만, 단일 'HH:MM' 은 항등.
-  return WorkLogCreator.extractStartTime(raw!) || UNKNOWN_TIME_KEY;
+  const start = WorkLogCreator.extractStartTime(raw!);
+  if (!start) {
+    return UNKNOWN_TIME_KEY;
+  }
+
+  // 시각으로 읽히는 값만 0패딩한다. 해석 불가 자유텍스트('협의' 등)는 서버와 똑같이 원문 유지 —
+  // 여기서 손대면 사람이 적어둔 값이 조용히 다른 값으로 둔갑한다.
+  const match = /^([01]?[0-9]|2[0-3]):([0-5][0-9])$/.exec(start);
+  return match ? `${match[1]!.padStart(2, '0')}:${match[2]}` : start;
 }
 
 /**

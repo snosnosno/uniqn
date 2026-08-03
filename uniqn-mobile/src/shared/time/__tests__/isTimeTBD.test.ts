@@ -24,7 +24,9 @@ describe('isTimeTBD', () => {
       }
     );
 
-    it('앞뒤 공백이 붙은 센티널도 미정이다 (서버 btrim 과 동일)', () => {
+    // ⚠️ ASCII 공백은 서버 `btrim` 과 같고, 탭·개행 등은 **클라가 더 관대**하다(의도적).
+    //    상세 근거는 isTimeTBD.ts 주석 참조 — 이 방향의 어긋남은 안전한 쪽이다.
+    it('앞뒤 공백이 붙은 센티널도 미정이다', () => {
       expect(isTimeTBD(' 미정 ')).toBe(true);
       expect(isTimeTBD('\tNEGOTIABLE\n')).toBe(true);
     });
