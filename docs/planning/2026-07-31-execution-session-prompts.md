@@ -35,7 +35,7 @@
 | **L1-잔여**(감사후속) | 정산 확정·일괄 RPC 화 + 계산기 서버 이식 | ~~`feat/settlement-rpc-phase2`~~ | ✅ **머지** | **#402** | `d8e3e2dca`. CI **10잡 전부 pass**(DB Tests 2m0s · E2E 포함, **재실행 0회**). `178ecf1ad` + 리뷰반영 `b753aa332`(2커밋). P5 가 남긴 L1 나머지 절반. `SettlementRepository.calculateSettlementAmount`(TS)를 **삭제하고** `fn_settlement_amount`(PL/pgSQL)로 이식 — 복제가 아니라 **이동**이라 클라 계산기 갈래 수는 불변. 신규 함수 3종(`fn_settlement_amount`·`settle_work_log`·`bulk_settle_work_logs`). 🔴**마이그 prod 적용 완료 — 재적용 금지. 기록 4건인데 레포 파일은 2개**(뒤 2건은 같은 함수 재정의라 별도 파일 없음 — 주석 누락 복구 + 리뷰 반영). 파리티 **186→189**/정책 111 불변, `PARITY_EXPECT_FUNCS` 갱신. quality exit 0 · jest **603스위트 6627테스트 122스냅샷** · pgTAP **93파일 991테스트**(기준선 91/951) · **짝 픽스처 21/21 SQL↔TS 일치** · red-green **4종 1:1** · 레포↔prod↔로컬 md5 4함수 일치. `set_work_log_payroll_status` 의 `completed` 진입 차단(호출부 0건 실측 후 결정). fable 리뷰 **APPROVE**(CRITICAL/HIGH 0) — 지적 5건을 prod 프로브로 재판정해 **3건 확증 수정 · 2건 오탐 기각 · 리뷰가 놓친 1건 추가 발견**. 상세=§5 |
 | **세션 E**(P2·P3 후속) | 병합 키 표류 + 오프라인 침묵 취소 (클라 전용 2건) | ~~`fix/schedule-merge-key`~~ | ✅ **머지** | **#404** | `c97389daf`. CI **9잡 전부 pass**(E2E 재실행 0). 재통합(#402·#403) 후 재검증: quality exit 0 · jest **603스위트 6639테스트 전량 통과**. 마이그 0건. |
 | **세션 F** | 세션 D·E 착지 + 근본수선 설계 | ~~`docs/session-f-ledger`~~ | ✅ **착지 3건** | **#402·#403·#404** | **코드 변경 0건**(착지 전용). 파리티 간극 해소 — 레포 **186 → 189** = prod 189/111 실측 일치. 🔴 **과제 4(근본 수선)는 미착수 — 설계만 완료**, 사용자 결정으로 새 세션 이관. 상세=§5 |
-| **세션 G** | 과제 4 — 슬롯 편집 표류 근본 수선 | `feat/work-log-slot-sync` | 🔨 **PR 미생성** | | 신규 SECDEF RPC `update_work_log_slot(uuid, jsonb)` 로 `work_logs`+`applications.assignments` 동시 갱신. 🔴**마이그 1건 prod 적용 완료 — 재적용 금지**(기록명 `20260802180000`, 레포 파일명과 동일). 파리티 **189 → 190**/정책 111 불변. quality exit 0 · jest **604스위트 6648테스트** · pgTAP **27/27**(전체 94파일 1018테스트 중 파리티 1건만 red — 아래 ⚠️) · **red-swap 9종 1:1** · md5 3자 일치 `70f323c8…`. 리뷰 fable **APPROVE**(CRITICAL 0/HIGH 0) — MEDIUM 3건 중 **2건 반영·1건 프로브로 오탐 기각**. ⚠️**prod 실측은 191** — 타 세션이 신고(reports) 함수 2개를 prod 선적용·미머지. 상세=§5 |
+| **세션 G** | 과제 4 — 슬롯 편집 표류 근본 수선 | `feat/work-log-slot-sync` | 🔨 **PR 생성** | **#407** | 신규 SECDEF RPC `update_work_log_slot(uuid, jsonb)` 로 `work_logs`+`applications.assignments` 동시 갱신. 🔴**마이그 1건 prod 적용 완료 — 재적용 금지**(기록명 `20260802180000`, 레포 파일명과 동일). **#406 재통합 후** 파리티 **191 → 192** = prod 실측 일치 / 정책 111 불변. 재검증: quality exit 0 · jest **611스위트 6661테스트** · pgTAP **97파일 1031테스트 전량 PASS**(파리티 포함 — 재통합이 간극을 닫았다) · **red-swap 9종 1:1** · md5 3자 일치 `70f323c8…`. 리뷰 fable **APPROVE**(CRITICAL 0/HIGH 0) — MEDIUM 3건 중 **2건 반영·1건 프로브로 오탐 기각**. 상세=§5 |
 | **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
 | **S6** | 3-C 설계 | — | ⬜ | | 사용자 결정 필요 |
 | **S7** | 3-C 구현 | `feat/posting-time-change` | ⬜ | | S6 승인 후 |
@@ -62,7 +62,7 @@
 | L1-잔여-원장 | `T-HOLDEM-ledger2` | 🔨 이 문서 커밋용(정션 없음). 원장 PR 머지 후 정리 대상 |
 | **세션 E** | ~~`T-HOLDEM-schedkey`~~ | ✅ **정리완료**(세션 F — 정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **821 → 821** 실측 무손상) |
 <!-- 🔨 **유지 중**(PR 미생성 — 사용자 결정 대기). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성, 원본 `node_modules` **821 → 821** 실측 무손상 | -->
-| **세션 G** | `T-HOLDEM-slotsync` | 🔨 **유지 중**(PR 미생성 — 사용자 결정 대기). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성. 정리 시 **정션 해제 선행** |
+| **세션 G** | ~~`T-HOLDEM-slotsync`~~ | ✅ **머지 완료(#407)** — 정리 대상(⚠️ **정션 해제 선행** → `worktree remove` → 브랜치 삭제). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성 |
 | S7 | `T-HOLDEM-timechange` | ⬜ |
 
 전부 `C:/Users/user/Desktop/` 아래. 머지 완료 세션의 워크트리는 다음 세션 착수 시 정리한다
@@ -502,7 +502,13 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 > 형식은 §2 세션 종료 프로토콜 4번 참조. **삭제하지 말고 쌓는다** —
 > 중단된 세션을 다시 여는 사람이 읽을 유일한 기록이다.
 
-### 세션 G (과제 4 — 슬롯 편집 표류 근본 수선) — 2026-08-02 · 상태: 완료(**PR 미생성** — 사용자 결정 대기)
+### 세션 G (과제 4 — 슬롯 편집 표류 근본 수선) — 2026-08-02 · 상태: 완료 (**PR #407**)
+
+> **재통합 후기(2026-08-03)**: 착수 시 "prod 191 vs 레포 189" 로 벌어져 있던 파리티 간극은
+> 타 세션이 **#406 을 머지하면서 닫혔다**(신고 축 함수 2개가 레포로 들어옴). `origin/master` 를
+> 재통합해 충돌한 파리티 값을 **192**(=189 + 신고축 2 + 내 1)로 해소했고, 이는 prod 실측과 일치한다.
+> 재검증: quality exit 0 · jest **611스위트 6661테스트** · pgTAP **97파일 1031테스트 전량 PASS**
+> (착수 시 red 였던 파리티 단언이 재통합으로 green 이 됐다 — 브랜치 결함이 아니었음이 확정됐다).
 
 - 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-slotsync` / `feat/work-log-slot-sync` · HEAD `32c8ba704`(4커밋)
 - 🔴 **마이그 1건 prod 적용 완료 — 재적용 금지.** 기록명 `20260802180000 update_work_log_slot_rpc`
