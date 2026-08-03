@@ -30,12 +30,17 @@ describe('buildMapCoordinateUrls', () => {
     expect(Number(lng)).toBeCloseTo(127.04, 1);
   });
 
-  it('🔴 장소명의 쉼표를 지운다 — 남으면 좌표 자리가 밀려 엉뚱한 곳이 열린다', () => {
+  // ⚠️ `split(',').toHaveLength(3)` 로는 이 결함을 못 잡는다 — `encodeURIComponent` 가 쉼표를
+  //    `%2C` 로 이스케이프해서 sanitize 를 통째로 떼도 필드 수가 3이다(실측). 실효 불변식은
+  //    "인코딩된 쉼표가 남아 있지 않다"이다. 카카오가 경로를 디코드한 뒤 쉼표로 가르면
+  //    `%2C` 가 구분자로 되살아나 좌표 자리가 밀린다.
+  it('🔴 장소명의 쉼표를 지운다 — 디코드 후 필드 구분자로 되살아난다', () => {
     const [url] = buildMapCoordinateUrls(GANGNAM, '라운더스, 강남점', 'web');
     const fields = url.split('/link/to/')[1].split(',');
 
-    expect(fields).toHaveLength(3);
+    expect(url).not.toContain('%2C');
     expect(decodeURIComponent(fields[0])).toBe('라운더스 강남점');
+    expect(decodeURIComponent(fields[0])).not.toContain(',');
   });
 
   it('🔴 장소명의 괄호를 지운다 — Android geo: 는 괄호가 라벨 구분자인데 인코딩되지 않는다', () => {

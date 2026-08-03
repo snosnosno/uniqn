@@ -198,7 +198,24 @@ async function resolveGeoForUpdate(
   // 주소를 제출하지 않은 갱신(상태 변경·정산 설정 등)은 좌표에 의견이 없다.
   if (input.location === undefined) return undefined;
 
-  const nextAddress = pickGeocodeAddress(input.location);
+  // 🔴 **판정 기준을 저장 기준과 같게 맞춘다.** `mergeJobPostingInput` 은
+  //    `{...base.location, ...patch.location}` 이라 patch 에 주소 키가 **아예 없으면** 옛 주소가
+  //    그대로 저장된다. 그런데 여기서 값만 보고 "주소를 지웠다"로 읽으면
+  //    **주소는 남았는데 좌표만 증발**한다 — 두 기준이 갈라진 자리다.
+  //    키가 하나라도 있으면 그게 의견이고(값이 비었으면 진짜 지움), 둘 다 없으면 의견이 없다.
+  const location = input.location;
+  const statesAddress =
+    Object.prototype.hasOwnProperty.call(location, 'district') ||
+    Object.prototype.hasOwnProperty.call(location, 'address');
+  if (!statesAddress) return undefined;
+
+  const nextAddress = pickGeocodeAddress(location);
+
+  // 주소를 지웠다 → 좌표도 지운다. 근거 없는 핀을 남기지 않는다.
+  // 🔑 스냅샷 조회보다 **먼저** 판정한다 — 이 분기는 스냅샷을 한 번도 안 보므로,
+  //    뒤에 두면 결과를 쓰지도 않을 왕복을 매번 한다(그 뒤 `updateWithTransaction` 의
+  //    `loadAndVerifyMutateAccess` 가 같은 행을 또 읽어 동일 행 2회 조회가 된다).
+  if (!nextAddress) return null;
 
   let snapshot: Awaited<ReturnType<typeof jobPostingRepository.getGeocodeSnapshot>> = null;
   try {
@@ -212,9 +229,6 @@ async function resolveGeoForUpdate(
       error: String(error),
     });
   }
-
-  // 주소를 지웠다 → 좌표도 지운다. 근거 없는 핀을 남기지 않는다.
-  if (!nextAddress) return null;
 
   // 주소가 그대로이고 좌표도 이미 있으면 건드리지 않는다(호출 0회).
   if (snapshot?.hasGeo && snapshot.address === nextAddress) return undefined;

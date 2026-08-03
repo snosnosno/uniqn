@@ -64,6 +64,23 @@ export async function geocodeAddress(address?: string | null): Promise<PostingGe
   const query = address?.trim();
   if (!query) return null;
 
+  // 🔴 "절대 throw 하지 않는다"는 계약을 **코드로** 만든다. 주석으로만 두면 다음 사람이 여기에
+  //    `await` 하나만 더 넣어도 조용히 깨진다. 실제 위험 원천이 이미 있다 —
+  //    `invokeEdgeFunction` 이 부르는 `supabase.auth.getSession()` 은 스토리지 어댑터(MMKV)
+  //    읽기 예외를 그대로 던지고, 그게 올라가면 `handleServiceError` 가 잡아 **공고 생성 전체가
+  //    실패한다**. 부가 기능이 본 기능을 죽이는, 이 모듈이 존재하는 이유와 정반대 형태다.
+  try {
+    return await requestGeocode(query);
+  } catch (error) {
+    logger.warn('지오코딩 중 예외 — 좌표 없이 저장한다', {
+      component: 'geocodingService',
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
+
+async function requestGeocode(query: string): Promise<PostingGeoPoint | null> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const result = await Promise.race([
     invokeEdgeFunction<GeocodeResponse>(GEOCODE_FUNCTION, { body: { address: query } }),

@@ -178,10 +178,33 @@ describe('updateJobPosting — 지오코딩 판정', () => {
   it('🔴 주소를 지우면 좌표도 지운다 — 근거 없는 핀을 남기지 않는다', async () => {
     mockGetGeocodeSnapshot.mockResolvedValue({ address: '서울 강남구 테헤란로 1', hasGeo: true });
 
-    await updateJobPosting('p1', { location: { name: '라운더스' } }, 'owner-1', null);
+    // 🔑 픽스처가 `{name}` 만이면 안 된다 — `mergeJobPostingInput` 이
+    //    `{...base.location, ...patch.location}` 이라 그건 "주소 지움"이 아니라 옛 주소 보존이다.
+    //    진짜 지움은 **키를 명시하고 값을 비우는 것**이다. 제목과 저장 시맨틱을 일치시킨다.
+    await updateJobPosting(
+      'p1',
+      { location: { name: '라운더스', district: undefined, address: undefined } },
+      'owner-1',
+      null
+    );
 
     expect(mockGeocodeAddress).not.toHaveBeenCalled();
     expect(geoArgOfUpdate().value).toBeNull();
+  });
+
+  /**
+   * 🔴 판정 기준(patch)과 저장 기준(merge)이 갈라지던 자리.
+   * patch 에 주소 키가 아예 없으면 병합은 옛 주소를 그대로 저장하는데, 값만 보고 "지움"으로
+   * 읽으면 **주소는 남고 좌표만 증발**한다. 방향은 안전하지만 두 원천이 어긋난 것 자체가 결함이다.
+   */
+  it('🔴 주소 키가 아예 없는 patch 는 좌표에 의견이 없다 — 병합이 옛 주소를 보존하기 때문', async () => {
+    mockGetGeocodeSnapshot.mockResolvedValue({ address: '서울 강남구 테헤란로 1', hasGeo: true });
+
+    await updateJobPosting('p1', { location: { name: '새 이름' } }, 'owner-1', null);
+
+    expect(mockGeocodeAddress).not.toHaveBeenCalled();
+    expect(mockGetGeocodeSnapshot).not.toHaveBeenCalled();
+    expect(geoArgOfUpdate().hasKey).toBe(false);
   });
 
   it('스냅샷 조회가 실패해도 저장을 막지 않고 보수적으로 재계산한다', async () => {

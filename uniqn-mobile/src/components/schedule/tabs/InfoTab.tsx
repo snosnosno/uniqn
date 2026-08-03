@@ -288,7 +288,9 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           <Pressable
             onPress={handleOpenMap}
             accessibilityRole="button"
-            accessibilityLabel={`${mapQuery ?? schedule.location} 길찾기`}
+            // 좌표만 있고 주소·장소명이 비면 `?? ` 로는 " 길찾기" 가 읽힌다 — 좌표로 게이트를
+            // 연 순간 그 조합이 새로 가능해졌다. 빈 문자열까지 걷어내려면 `||` 여야 한다.
+            accessibilityLabel={`${mapQuery || schedule.location || '근무지'} 길찾기`}
             className="ml-8 mt-2 flex-row items-center rounded-lg bg-primary-50 px-3 py-2 active:bg-primary-100 dark:bg-primary-900/20 dark:active:bg-primary-900/30"
           >
             <MapIcon size={16} color="#B8962E" />

@@ -133,6 +133,16 @@ describe('InfoTab — 길찾기', () => {
     );
   });
 
+  // 좌표로 게이트를 연 순간 "주소도 장소명도 빈" 조합이 새로 가능해졌다.
+  // `??` 로는 빈 문자열이 통과해 스크린리더가 " 길찾기" 를 읽는다.
+  it('🔴 주소·장소명이 모두 비어도 접근성 라벨이 비지 않는다', () => {
+    const { getByRole } = render(
+      <InfoTab schedule={makeSchedule({ location: '', coordinates: { lat: 37.5, lng: 127.03 } })} />
+    );
+
+    expect(getByRole('button', { name: '근무지 길찾기' })).toBeTruthy();
+  });
+
   it('상세주소가 없으면 공고 주소를 장소 아래에 대신 보여준다', () => {
     const { getByText } = render(
       <InfoTab schedule={makeSchedule({ locationAddress: '서울 강남구 역삼동 123-4' })} />
