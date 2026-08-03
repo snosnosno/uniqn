@@ -175,6 +175,18 @@ export interface JobPostingDocumentV3 extends FirebaseDocument<string> {
   salaryHourlyMax?: number | null;
   salaryDailyMax?: number | null;
   salaryMonthlyMax?: number | null;
+  /**
+   * 근무지 좌표(WGS84) — 주소 검색 2단계(B2). DB `job_postings.geo_lat/geo_lng` 와 1:1.
+   *
+   * 🔴 **`location` 안이 아니라 최상위인 이유**: `location` jsonb 에 새 키를 넣으면 구버전 앱에서
+   *    `postingLocationSchema`(`.strict()`)가 문서 전체를 거부해 **공고가 목록에서 증발한다**.
+   *    새 컬럼은 구버전의 `ALLOWED_CAMEL_COLUMNS` 에 없어 파스 전에 걸러지므로 안전하다(#194 클래스).
+   *    `Location.coordinates` 로 중복 투영하지 않는다 — 같은 사실의 두 번째 원천을 만들면
+   *    `toCanonicalLocation` 이 그쪽만 떨궈 조용히 어긋난다.
+   * 지오코딩 실패·주소 미입력이면 null/undefined. 그때는 `mapLink` 가 주소 텍스트로 폴백한다.
+   */
+  geoLat?: number | null;
+  geoLng?: number | null;
   totalPositions: number;
   filledPositions: number;
   viewCount?: number;
@@ -260,11 +272,28 @@ export interface JobPostingFilters {
   workDate?: string;
 }
 
+/** 근무지 좌표(WGS84). `job_postings.geo_lat/geo_lng` 와 1:1. */
+export interface PostingGeoPoint {
+  lat: number;
+  lng: number;
+}
+
 export interface JobPostingInput {
   postingType?: 'regular' | 'fixed' | 'tournament' | 'urgent';
   title: string;
   description?: string;
   location: PostingLocation;
+  /**
+   * 지오코딩 결과 — **3상**이라 `PostingGeoPoint | null | undefined` 를 모두 쓴다.
+   *   `undefined` = 의견 없음 → 저장된 좌표를 그대로 둔다(정산설정 저장처럼 주소와 무관한 갱신)
+   *   `PostingGeoPoint` = 이 값으로 설정
+   *   `null` = **지운다** — 주소가 바뀌었는데 지오코딩이 실패한 경우가 여기다.
+   *
+   * 🔴 `null` 이 없으면 "주소는 새 곳, 좌표는 옛 곳"이 되어 길찾기가 **틀린 곳을 자신 있게**
+   *    안내한다. 좌표가 아예 없는 것보다 나쁘다(그때는 주소 텍스트로 폴백한다).
+   * 이 필드는 폼이 아니라 **서비스 레이어가 채운다**(jobManagementService).
+   */
+  geo?: PostingGeoPoint | null;
   contactPhone?: string;
   /** 운영처(venue) 컨테이너 self-FK (근무표). 일반 공고는 미설정. */
   venueId?: string;

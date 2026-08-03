@@ -22,6 +22,12 @@ const mockGetOrCreateVenueContainer = jest.fn();
 const mockGetDefaultWorkspaceIdForOwner = jest.fn();
 const mockIsMemberOfWorkspace = jest.fn();
 
+// B2(주소 검색 2단계): 공고 저장 경로가 지오코딩 Edge Function 을 거친다.
+// 이 스위트들의 관심축(워크스페이스·지점 자동연결·outbox)과 무관하므로 seam 에서 끊는다 —
+// 안 끊으면 supabase.auth.getSession() 까지 내려가 목이 없는 곳에서 터진다.
+jest.mock('@/services/jobs/geocodingService', () => ({
+  geocodeAddress: jest.fn().mockResolvedValue(null),
+}));
 jest.mock('@/repositories', () => ({
   jobPostingRepository: {
     createWithTransaction: (...args: unknown[]) => mockCreateWithTransaction(...args),

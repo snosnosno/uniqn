@@ -51,6 +51,7 @@ import type {
   JobPostingSubscriptionCallbacks,
   ScheduleBoardSyncAction,
   UpdateVenueContainerInput,
+  GeocodeSnapshot,
 } from '../interfaces';
 import type { ScheduleContainerContextInput } from '@/domains/schedule/ScheduleConverter';
 import {
@@ -814,6 +815,37 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
     } catch (error) {
       rethrowOrHandle(error, '공고 수정', { jobPostingId });
     }
+  }
+
+  /**
+   * 지오코딩 재계산 판정용 최소 조회 (주소 검색 2단계).
+   *
+   * 전체 문서를 읽지 않는다 — 필요한 사실은 "저장된 주소"와 "좌표가 이미 있는가" 둘뿐이다.
+   * RLS 가 접근을 통제하므로 여기서 별도 권한 검증을 하지 않는다(읽기 전용이고, 뒤이어
+   * 호출되는 `updateWithTransaction` 이 쓰기 권한을 정식으로 검증한다).
+   */
+  async getGeocodeSnapshot(jobPostingId: string): Promise<GeocodeSnapshot | null> {
+    const { data, error } = await supabase
+      .from(TABLE)
+      .select('location,geo_lat,geo_lng')
+      .eq('id', jobPostingId)
+      .maybeSingle();
+
+    if (error) {
+      handleSupabaseError(error, { operation: '지오코딩 스냅샷 조회', table: TABLE });
+    }
+    if (!data) return null;
+
+    const row = data as {
+      location?: { district?: unknown } | null;
+      geo_lat?: unknown;
+      geo_lng?: unknown;
+    };
+    const district = row.location?.district;
+    return {
+      ...(typeof district === 'string' && district.trim() ? { address: district.trim() } : {}),
+      hasGeo: typeof row.geo_lat === 'number' && typeof row.geo_lng === 'number',
+    };
   }
 
   async deleteWithTransaction(jobPostingId: string, ownerId: string): Promise<void> {

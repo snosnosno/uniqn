@@ -484,6 +484,15 @@ export const jobPostingDocumentSchema = z
     salaryHourlyMax: z.number().int().positive().nullable().optional(),
     salaryDailyMax: z.number().int().positive().nullable().optional(),
     salaryMonthlyMax: z.number().int().positive().nullable().optional(),
+    // 근무지 좌표(B2). venueId·salary*Max 와 같은 클래스의 필수 등록 —
+    // `TABLE_COLUMNS` 에 geo_lat/geo_lng 를 넣은 순간 여기에도 있어야 read 가 살아남는다.
+    //
+    // ⚠️ 범위 제한을 **일부러 걸지 않는다** — 바로 위 region 주석과 같은 이유다. 이 스키마는
+    //    읽기·쓰기 양쪽에 쓰이는데, 읽기에서 범위를 걸면 언젠가 경계를 넓혔을 때(해외 지점 등)
+    //    저장된 공고가 파스 실패로 **목록에서 증발한다**. 범위 검증의 값어치는 쓰기 경계에 있고
+    //    거기서 한다(`isGeoPointInKorea` — geocodingService) + DB `chk_job_postings_geo_bounds` 가 최종 권위.
+    geoLat: z.number().nullable().optional(),
+    geoLng: z.number().nullable().optional(),
     totalPositions: z.number(),
     filledPositions: z.number(),
     viewCount: z.number().optional(),

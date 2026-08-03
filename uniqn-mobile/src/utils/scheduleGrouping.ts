@@ -262,6 +262,7 @@ function createGroupedScheduleEvent(events: ScheduleEvent[]): GroupedScheduleEve
     location: firstEvent.location,
     detailedAddress: firstEvent.detailedAddress,
     locationAddress: firstEvent.locationAddress,
+    coordinates: firstEvent.coordinates,
     dateRange: {
       start: dates[0],
       end: dates[dates.length - 1],

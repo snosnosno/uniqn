@@ -67,6 +67,7 @@ export type {
   SupportedReleasePostingSchedule,
   SupportedReleaseJobPosting,
   PostingLocation,
+  PostingGeoPoint,
   PostingRoleCatalogEntry,
   PostingSchedule,
   PostingCompensation,

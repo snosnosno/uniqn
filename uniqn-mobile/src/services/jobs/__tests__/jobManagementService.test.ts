@@ -25,6 +25,12 @@ const mockGetDefaultWorkspaceIdForOwner = jest.fn();
 const mockUpdateSettlementSettings = jest.fn();
 const mockRequireCurrentUser = jest.fn();
 
+// B2(주소 검색 2단계): 공고 저장 경로가 지오코딩 Edge Function 을 거친다.
+// 이 스위트들의 관심축(워크스페이스·지점 자동연결·outbox)과 무관하므로 seam 에서 끊는다 —
+// 안 끊으면 supabase.auth.getSession() 까지 내려가 목이 없는 곳에서 터진다.
+jest.mock('@/services/jobs/geocodingService', () => ({
+  geocodeAddress: jest.fn().mockResolvedValue(null),
+}));
 jest.mock('@/repositories', () => ({
   jobPostingRepository: {
     createWithTransaction: (...args: unknown[]) => mockCreateWithTransaction(...args),
@@ -187,11 +193,16 @@ describe('jobManagementService', () => {
 
       expect(Array.isArray(result)).toBe(false);
       expect(mockGetDefaultWorkspaceIdForOwner).toHaveBeenCalledWith('employer-1');
-      expect(mockCreateWithTransaction).toHaveBeenCalledWith(input, {
-        ownerId: 'employer-1',
-        ownerName: 'Owner',
-        workspaceId: 'workspace-uuid-default',
-      });
+      // B2: 저장 시점 지오코딩 결과가 input 에 실려 내려간다. 이 스위트는 지오코딩을
+      // 목으로 끊어 null(좌표 없음)을 돌려주므로, 나머지 payload 는 그대로여야 한다.
+      expect(mockCreateWithTransaction).toHaveBeenCalledWith(
+        { ...input, geo: null },
+        {
+          ownerId: 'employer-1',
+          ownerName: 'Owner',
+          workspaceId: 'workspace-uuid-default',
+        }
+      );
     });
 
     it('Phase 0 N1 hotfix: workspace 23503 FK race 시 친화적 메시지로 변환', async () => {

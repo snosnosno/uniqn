@@ -35,8 +35,8 @@
 | **L1-잔여**(감사후속) | 정산 확정·일괄 RPC 화 + 계산기 서버 이식 | ~~`feat/settlement-rpc-phase2`~~ | ✅ **머지** | **#402** | `d8e3e2dca`. CI **10잡 전부 pass**(DB Tests 2m0s · E2E 포함, **재실행 0회**). `178ecf1ad` + 리뷰반영 `b753aa332`(2커밋). P5 가 남긴 L1 나머지 절반. `SettlementRepository.calculateSettlementAmount`(TS)를 **삭제하고** `fn_settlement_amount`(PL/pgSQL)로 이식 — 복제가 아니라 **이동**이라 클라 계산기 갈래 수는 불변. 신규 함수 3종(`fn_settlement_amount`·`settle_work_log`·`bulk_settle_work_logs`). 🔴**마이그 prod 적용 완료 — 재적용 금지. 기록 4건인데 레포 파일은 2개**(뒤 2건은 같은 함수 재정의라 별도 파일 없음 — 주석 누락 복구 + 리뷰 반영). 파리티 **186→189**/정책 111 불변, `PARITY_EXPECT_FUNCS` 갱신. quality exit 0 · jest **603스위트 6627테스트 122스냅샷** · pgTAP **93파일 991테스트**(기준선 91/951) · **짝 픽스처 21/21 SQL↔TS 일치** · red-green **4종 1:1** · 레포↔prod↔로컬 md5 4함수 일치. `set_work_log_payroll_status` 의 `completed` 진입 차단(호출부 0건 실측 후 결정). fable 리뷰 **APPROVE**(CRITICAL/HIGH 0) — 지적 5건을 prod 프로브로 재판정해 **3건 확증 수정 · 2건 오탐 기각 · 리뷰가 놓친 1건 추가 발견**. 상세=§5 |
 | **세션 E**(P2·P3 후속) | 병합 키 표류 + 오프라인 침묵 취소 (클라 전용 2건) | ~~`fix/schedule-merge-key`~~ | ✅ **머지** | **#404** | `c97389daf`. CI **9잡 전부 pass**(E2E 재실행 0). 재통합(#402·#403) 후 재검증: quality exit 0 · jest **603스위트 6639테스트 전량 통과**. 마이그 0건. |
 | **세션 F** | 세션 D·E 착지 + 근본수선 설계 | ~~`docs/session-f-ledger`~~ | ✅ **착지 3건** | **#402·#403·#404** | **코드 변경 0건**(착지 전용). 파리티 간극 해소 — 레포 **186 → 189** = prod 189/111 실측 일치. 🔴 **과제 4(근본 수선)는 미착수 — 설계만 완료**, 사용자 결정으로 새 세션 이관. 상세=§5 |
-| **세션 G** | 과제 4 — 슬롯 편집 표류 근본 수선 | `feat/work-log-slot-sync` | 🔨 **PR 생성** | **#407** | 신규 SECDEF RPC `update_work_log_slot(uuid, jsonb)` 로 `work_logs`+`applications.assignments` 동시 갱신. 🔴**마이그 1건 prod 적용 완료 — 재적용 금지**(기록명 `20260802180000`, 레포 파일명과 동일). **#406 재통합 후** 파리티 **191 → 192** = prod 실측 일치 / 정책 111 불변. 재검증: quality exit 0 · jest **611스위트 6661테스트** · pgTAP **97파일 1031테스트 전량 PASS**(파리티 포함 — 재통합이 간극을 닫았다) · **red-swap 9종 1:1** · md5 3자 일치 `70f323c8…`. 리뷰 fable **APPROVE**(CRITICAL 0/HIGH 0) — MEDIUM 3건 중 **2건 반영·1건 프로브로 오탐 기각**. 상세=§5 |
-| **B2** | 주소 2단계 | `feat/posting-geocoding` | ⬜ | | 🔴 REST 키 재발급 선행 |
+| **세션 G** | 과제 4 — 슬롯 편집 표류 근본 수선 | ~~`feat/work-log-slot-sync`~~ | ✅ **머지** | **#407** | 신규 SECDEF RPC `update_work_log_slot(uuid, jsonb)` 로 `work_logs`+`applications.assignments` 동시 갱신. 🔴**마이그 1건 prod 적용 완료 — 재적용 금지**(기록명 `20260802180000`, 레포 파일명과 동일). **#406 재통합 후** 파리티 **191 → 192** = prod 실측 일치 / 정책 111 불변. 재검증: quality exit 0 · jest **611스위트 6661테스트** · pgTAP **97파일 1031테스트 전량 PASS**(파리티 포함 — 재통합이 간극을 닫았다) · **red-swap 9종 1:1** · md5 3자 일치 `70f323c8…`. 리뷰 fable **APPROVE**(CRITICAL 0/HIGH 0) — MEDIUM 3건 중 **2건 반영·1건 프로브로 오탐 기각**. 상세=§5 |
+| **B2** | 주소 2단계(좌표) | `feat/posting-geocoding` | 🔨 **구현 완료·PR 미생성** | | 착수 조건(REST 키 재발급 + EF 시크릿)은 2026-08-03 해제됨. 신규 EF `geocode-address`(카카오 로컬 API 프록시) + `job_postings.geo_lat/geo_lng` + `mapLink` 좌표 승격. 🔴**마이그 1건 prod 적용 완료 — 재적용 금지**(**prod 기록명 `20260803015905`**, 레포 파일은 `20260803160000_job_postings_geocode_columns.sql`). 컬럼·CHECK 만이라 **함수/정책 기여 0**. 🔴**EF 도 prod 선배포됨**(version 3, 사용자 승인) — 머지 시 CI 가 레포 기준 재배포. 검증: quality exit 0(경고 103=master 동일 실측) · jest **618스위트 6739테스트 122스냅샷** · **red-swap 18종 1:1** · knip 델타 **−2**(동일 워크트리 대조) · e2e Grep 0건 · **EF prod 실호출 관찰**(정상좌표·무매칭·400·401). 상세=§5 |
 | **S6** | 3-C 설계 | — | ⬜ | | 사용자 결정 필요 |
 | **S7** | 3-C 구현 | `feat/posting-time-change` | ⬜ | | S6 승인 후 |
 
@@ -51,7 +51,7 @@
 | S4 | ~~`T-HOLDEM-qr`~~ | ✅ 정리완료(정션 해제 → `worktree remove` → 브랜치 삭제, 원본 `node_modules` 821 무손상) |
 | S5 | ~~`T-HOLDEM-settle`~~ | ✅ 정리완료(정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818** 무손상 확인) |
 | S5-후속 | ~~`T-HOLDEM-revert`~~ | ✅ 정리완료(정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818** 무손상 확인) |
-| B1·B2 | `T-HOLDEM-address` | 🔨 **유지 중**(B1 #391 머지 완료 — B2 가 이어서 쓰거나, 안 쓰면 정션 해제 선행 → `worktree remove` → 브랜치 삭제). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성(818 확인). `.env.local`·`.env.development.local` 은 gitignore 라 메인에서 복사해야 앱이 뜬다 |
+| B1·B2 | `T-HOLDEM-address` | 🔨 **유지 중**(B1 #391 머지 완료. **B2 가 이 워크트리를 새로 만들어 사용 중** — 브랜치 `feat/posting-geocoding`, PR 미생성이라 지우지 말 것). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성(818/818 실측). `.env.local`·`.env.development.local` 은 gitignore 라 메인에서 복사해야 앱이 뜬다 |
 | A-감사 | ~~`T-HOLDEM-audit`~~ | ✅ **머지 완료(#390)** — 정리 대상(정션 없음. `worktree remove` → 브랜치 삭제) |
 | P3 | ~~`T-HOLDEM-reminder`~~ | ✅ **정리완료**(2026-08-02 세션 A2 — 정션 해제 선행 → `worktree remove` → 브랜치 삭제. 해제 전후 원본 `node_modules` **821 → 821** 실측 무손상) |
 | P4 | ~~`T-HOLDEM-venueloc`~~ | ✅ **정리완료**(2026-08-02 세션 A2 — 정션 해제 선행 → `worktree remove` → 브랜치 삭제. 해제 전후 원본 `node_modules` **821 → 821** 실측 무손상) |
@@ -85,7 +85,7 @@ prod 최신 마이그 = `20260730174826_cron_run_details_retention`.
 | S5-후속 | 없음 | **184 / 111 불변**(2026-08-01 prod 실측) |
 | P2 (#397) | `20260802093000_notify_settlement_revert_and_cancel_hint_gate` (트리거 함수 `CREATE OR REPLACE`) | **184 / 111 불변**(2026-08-02 prod 실측). ✅ **prod 적용 완료 — 재적용 금지.** ⚠️ **prod 기록은 2건**(리뷰 반영으로 재적용): `20260801174901` + `20260801180734`. 파일명으로 `list_migrations` 대조하면 못 찾는다 |
 | P3 (#396) · P6 (#398) | 없음 | **수 불변** — 두 묶음 모두 마이그 0건. PR diff 에 `supabase/**` 가 0건이라 **DB Tests 잡 자체가 트리거되지 않았다**(재통합해도 마찬가지 — merge-base 가 master HEAD 로 옮겨가 이미 머지된 마이그는 diff 에 안 들어온다) |
-| B2 | 컬럼 추가 | 불변 예상 |
+| B2 | `20260803160000_job_postings_geocode_columns` (컬럼 2 + CHECK 2) | **함수·정책 기여 0**. ✅ prod 적용 완료 — 재적용 금지. ⚠️ **prod 기록명은 `20260803015905`** — 파일명으로 `list_migrations` 대조하면 못 찾는다. ⚠️ 적용 후 prod 실측이 **193**/111 인데 레포 `PARITY_EXPECT_FUNCS` 는 **192** 다. 이 간극은 B2 소관이 아니라 병렬 세션(`feat/time-model-r0-server-normalize`)이 적용한 `time_slot_sentinel_unification`(prod 기록 `20260803025714`, 함수 +1) 때문이며 **그 PR 이 192→193 으로 갱신해야 한다**. B2 PR 에서 건드리면 같은 줄에서 충돌한다 |
 
 > ⚠️ **파리티 기준값이 184 → 186 으로 바뀌었다 (2026-08-02, 세션 A2 실측).** 위 표의 "184/111 불변"
 > 기재들은 **그 시점 사실**이고, **현재 값은 186 / 111** 이다. 원인은 P3·P6 가 아니라(둘 다 마이그 0건)
@@ -502,6 +502,61 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 > 형식은 §2 세션 종료 프로토콜 4번 참조. **삭제하지 말고 쌓는다** —
 > 중단된 세션을 다시 여는 사람이 읽을 유일한 기록이다.
 
+### B2 (주소 검색 2단계 — 좌표) — 2026-08-03 · 상태: 완료 (리뷰 3인 착지 · 최신 master 재통합)
+
+- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-address` / `feat/posting-geocoding` · 베이스 `96dce693a` → **master(#408·#409·#410) 재통합**
+- 재통합 충돌은 **원장 §5 한 곳뿐**(양쪽 다 최상단 append) — 코드 충돌 0건. `ScheduleConverter.ts` 는 자동 병합됨
+- ⚠️ **파리티 간극 해소됨** — 착수 시 레포 192 vs prod 193 이던 것이 #409(시간모델 R0) 머지로 닫혔다. 예측대로 **그 PR 소관**이었다
+- 사용자 결정 2건: ①마이그 슬롯이 타 세션 점유 중이었으나 **더 늦은 버전으로 진행** ②**EF prod 선배포 후 실호출 검증** 승인
+
+**끝난 것** (검증 증거와 함께)
+- **신규 EF `geocode-address`** — 카카오 로컬 API 프록시. REST 키는 EF 시크릿에만. service_role 클라이언트를 **의도적으로 안 만든다**(최소권한: 이 함수는 DB 를 안 본다). `auth.getUser()` 검증 + 사용자당 분당 20회 상한(본문 파싱·상류 호출보다 **앞에** 둠). 상류 본문은 클라로 안 흘림
+- **컬럼 3곳 동시 등록**(#194 클래스) — `TABLE_COLUMNS` · 파생 `ALLOWED_CAMEL_COLUMNS` · `jobPostingDocumentSchema`. 좌표는 `location` jsonb 가 아니라 **최상위 컬럼**
+- **좌표 3상**(`undefined` 유지 / 값 / `null` 지움) — `resolveGeoFields`(직렬화) + `resolveGeoForUpdate`(서비스). 주소가 바뀌었는데 지오코딩이 실패하면 **지운다**
+- **`mapLink` 좌표 승격** — `link/search/{주소}` → `link/to/{이름},{lat},{lng}` + iOS `nmap://place`/Apple `?ll=` + Android `geo:lat,lng?q=...(라벨)`. 좌표 후보가 앞, **텍스트 폴백을 뒤에 남김**
+- 소비 배선: `ScheduleConverter` → `ScheduleEvent.coordinates` → `scheduleGrouping` → `InfoTab`
+- 검증: `npm run quality` **exit 0**(경고 103 = master 실측 동일) · jest **618스위트 6739테스트 122스냅샷 전량 통과** · **red-swap 18종 1:1** · `e2e/` Grep **0건** · knip 델타 **−2**
+- **EF prod 실호출 관찰**: '서울 강남구 테헤란로 152' → `lat 37.5000242405515 / lng 127.036508620542` · 무매칭 200+null · 빈 주소 400 · anon 401 · Authorization 없음 401
+- **자체 재검토로 결함 2건 발견·수정**(리뷰 전) — 아래 주의 1·2번
+- **security-reviewer(fable) APPROVE** (CRITICAL 0 / HIGH 0 / MEDIUM 1 / LOW 2) — **지적 3건 전량 반영**(`cd9d77626`):
+  - **M1 역할 게이트** — 안 걸었던 내 근거가 **틀렸다**. "갓 승격된 employer 의 stale JWT" 우려는 성립하지 않는다:
+    RLS `jp_insert` 가 `get_my_role() = ANY(ARRAY['admin','employer'])` 를 요구하고 `get_my_role()` 은
+    `auth.jwt() -> 'app_metadata' ->> 'role'`(prod 실측) — **stale 이면 공고 INSERT 자체가 이미 막힌다.**
+    게이트는 RLS 와 **동형**이라 정당 호출자를 하나도 잃지 않는다. 실호출 검증: employer 200 · admin 200 · **staff 403**
+  - M1 429 무로깅 → 한 줄 추가(남용 탐지 신호가 0이었다)
+  - L1 주석이 존재하지 않는 함수(`assertGeoInKorea`)를 가리킴 → 실명 `isGeoPointInKorea`
+  - L2 `sanitizeLabel` 이 괄호 미제거 → Android `geo:` 는 괄호가 라벨 구분자인데 `encodeURIComponent` 가 인코딩하지 않는다. `/[,()]/g` 로 확장(red-swap 실증)
+
+- **code-reviewer 2인 착지** — 최종 fable **APPROVE**(CRITICAL 0/HIGH 0) · 중간 opus **REQUEST CHANGES**(차단 사유는 배포 순서 1건이고 **코드 결함 아님** — 마이그는 이미 prod 적용됐으므로 해소 상태). **지적 전량 반영**(`d67b8691f`):
+  - 🔴 **두 리뷰가 독립적으로 같은 결함을 지목** — `patch.location` 에 주소 키가 **아예 없으면** `mergeJobPostingInput` 은 옛 주소를 보존하는데 `resolveGeoForUpdate` 는 "지움"으로 읽어 **주소는 남고 좌표만 증발**. 방향은 안전하고 UI 도달 불가지만 **판정 기준과 저장 기준이 갈라진 것 자체가 결함**이라 키 유무로 정렬. 관련 테스트 픽스처(`{name}` 만)도 제목과 시맨틱이 어긋나 있어 교정 + 키 부재 케이스 분리
+  - `geocodingService` 의 "절대 throw 안 함"이 **주석뿐이고 try/catch 가 없었다** → `getSession()` 스토리지 예외가 올라가면 공고 생성 전체 실패. 본문을 감쌈
+  - 경계값 3중 정의(클라·EF·SQL)에 **동기화 가드 신설** — 파일에서 네 숫자를 파싱해 대조 + 국토 4극점 포함 고정
+  - 🔴 **무력한 단언 발견·교정** — `split(',').toHaveLength(3)` 은 `encodeURIComponent` 가 쉼표를 `%2C` 로 감싸 **sanitize 를 떼도 통과**했다(실측). `not.toContain('%2C')` 로 교체(red-swap 으로 교정 후 실제로 잡힘을 실증)
+  - 스냅샷 왕복을 안 쓰는 분기 뒤로 이동 · a11y 라벨 `??`→`||`(좌표 게이트로 "주소·장소명 모두 빈" 조합이 새로 가능해졌다)
+- 최종 검증: quality exit 0 · jest **618스위트 6739테스트 122스냅샷** · **red-swap 누적 18종 1:1**
+
+**안 끝난 것**
+- 🔴 **PR 미생성** — push/PR 은 사용자 명시 요청 시에만(원장 §2 규율). 워크트리·브랜치 유지 중
+- ⏸ **iOS `LSApplicationQueriesSchemes` 미선언** — `nmap://` 후보가 `canOpenURL` false 로 **항상 스킵**된다(양 리뷰 지적). **선재 클래스**(기존 `nmap://search` 도 동일)이고 Apple 지도 `ll=` 로 좌표 핀은 달성되므로 비차단. 고치려면 infoPlist 추가 = **네이티브 빌드 필요**(OTA 불가)
+- ⏸ **지점 컨테이너 좌표 미배선** — 컨테이너는 RESTRICTIVE 정책(`jp_container_no_direct_*`)으로 클라 직접 쓰기가 막혀 있고 서버에 geo writer 가 없어 **좌표를 가질 수 없다**. 지점 시트에 주소를 넣는 후속이 생기면 그때 함께
+- 🔴 **실기기·웹 렌더 미검증** — 지도 앱 스킴(`nmap://place`·`geo:`)이 실기기에서 실제로 열리는지는 URL 형식 단위 테스트까지만 덮였다. 실기기 QA 제외 결정이라 이 경로는 검증 수단이 0
+- ⏸ 지오코딩은 **공고 경로만** — 지점 컨테이너(`update_venue_container`)에는 안 붙였다(범위 밖). 지점 시트에 주소를 넣는 순간 같은 배선이 필요해진다
+
+**막힌 지점**: 없음
+
+**다음 세션에 넘기는 주의** (이 세션에서 새로 알아낸 것만)
+1. 🚨 **지오코딩할 주소는 `district ?? address` 여야 한다** — `toCanonicalLocation` 이 저장 시 district 를 우선하기 때문. `address` 를 먼저 보면 둘 다 실린 입력에서 **핀은 address 자리, 화면 주소는 district** 가 된다. 좌표와 주소 텍스트가 서로 다른 곳을 가리키는데 아무 에러도 안 난다. (내가 처음에 이 방향으로 짰다가 재검토에서 잡았다.)
+2. 🚨 **`supabase.functions.invoke` 에는 기본 타임아웃이 없다** — 상한을 안 걸면 멈춘 EF 가 공고 저장 버튼을 무한정 붙잡는다. 부가 정보가 본 기능을 인질로 잡는 형태라 클라 8초 상한을 걸었다. **EF 를 저장 임계경로에 넣는 모든 후속 작업에 그대로 적용된다.**
+3. 🚨 **Git Bash 로 한글을 curl -d 에 실으면 cp949 로 나가 상류가 0건을 돌려준다** — EF·키·API 가 전부 정상인데 `no_match` 만 봐서 **키가 잘못된 줄 알고 30분을 태웠다**. 프로브는 JSON `\uXXXX` 이스케이프로 보낼 것(와이어가 순수 ASCII 가 된다). 프로젝트 메모리의 Windows cp949 함정과 같은 뿌리.
+4. 🔑 **카카오는 축약형 시도 표기('서울')를 그대로 매칭한다** — B1 위젯이 주는 `roadAddress` 를 정규화 없이 바로 넘기면 된다(실호출로 확인). 설계 문서가 우려한 정규화 단계는 불필요했다.
+5. 🔑 **카카오 응답은 `x`=경도, `y`=위도** — 이름이 직관과 반대라 뒤집어 쓰기 쉽다. 뒤집으면 지구 반대편이 열린다(테스트로 고정함).
+6. 🚨 **카카오 `link/to/{이름},{위도},{경도}` 는 쉼표가 필드 구분자다** — 장소명에 쉼표가 있으면(`'라운더스, 강남점'`) 좌표 자리가 밀려 **엉뚱한 곳**이 열린다. 라벨에서 쉼표를 지워야 한다.
+7. 🚨 **knip 델타는 반드시 같은 워크트리에서 재라** — 메인 체크아웃(2175)과 워크트리(2181)가 **베이스가 같은데도 6 심볼이 다르다**. 워크트리를 섞어 비교하면 내 변경이 +4 늘린 것처럼 보이지만, 같은 워크트리에서 재면 **−2** 다. (knip 자체는 결정적임을 2회 실행으로 확인.)
+8. 🔑 **새 컬럼을 `TABLE_COLUMNS` 에 넣으면 `jobPostingDocumentSchema` 는 같은 PR 에서 필수다** — 안 넣으면 값이 안 보이는 게 아니라 **공고가 목록에서 통째로 사라진다**. 반대로 **읽기 스키마에 범위 제한은 걸지 말 것**(`region` 선례) — 언젠가 경계를 넓히면 저장된 공고가 파스 실패로 증발한다. 범위는 쓰기 경계와 DB CHECK 에서 본다.
+9. 🚨 **"이 게이트가 정당 사용자를 막나"는 추측하지 말고 RLS 원문과 대조하라** — EF 역할 게이트를 처음엔 뺐다. 근거는 "갓 승격된 employer 의 JWT `app_metadata.role` 이 stale 이라 첫 공고에 좌표가 조용히 안 붙는다"였는데 **틀렸다**: RLS `jp_insert` 가 `get_my_role() = ANY(ARRAY['admin','employer'])` 를 요구하고 `get_my_role()` 은 `auth.jwt() -> 'app_metadata' ->> 'role'`(prod 실측)이라, stale 이면 **공고 INSERT 자체가 이미 막힌다**. 게이트는 RLS 와 동형이라 공짜였다. 보안 리뷰가 잡아 반영(실호출: employer 200 · admin 200 · staff 403).
+10. 🔴 **경계 박스가 3곳에 중복**(EF·`geocodingService`·SQL CHECK)이다. 하나만 넓히면 나머지가 23514 로 **공고 저장 전체를 막는다**. 넓힐 일이 생기면 반드시 셋을 함께.
+
+---
 ### 시간모델 R0+R1 (원장 밖 트랙) — 2026-08-03 · 상태: 완료 (**#409 머지 · #410**)
 
 > ⚠️ 이 트랙은 §1 상태 보드의 세션 목록에 없다. 별도 설계 문서

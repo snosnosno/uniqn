@@ -113,6 +113,12 @@ verify_jwt = false
 [functions.process-scheduled-deletions]
 verify_jwt = false
 
+# 공고 저장 시 주소→좌표 변환 — 구인자 user JWT 호출.
+# 위 ES256 사유가 그대로 적용된다(게이트웨이가 user JWT 를 401 로 거부) → 함수 내부에서
+# auth.getUser() 로 검증하고, 사용자당 분당 상한으로 카카오 쿼터를 방어한다.
+[functions.geocode-address]
+verify_jwt = false
+
 # 명시적으로 verify_jwt = true 유지 (게이트웨이 검증)
 # - sync-schedule-board-outbox: pg_cron이 service_role JWT로 호출
 # - send-job-posting-announcement, send-system-announcement: 관리자 user JWT 호출
