@@ -1,9 +1,5 @@
-import { TimeNormalizer, type TimeInput, type ScheduleTimeState } from '@/shared/time';
+import { isTimeTBD, TimeNormalizer, type TimeInput } from '@/shared/time';
 import { formatDateShortWithDay } from '@/utils/date';
-import { TBA_TIME_MARKER } from '@/types/assignment';
-
-/** 고정공고 협의 근무 — 애초에 시각이 정해질 값이 아니다. */
-export const NEGOTIABLE_TIME_LABEL = '시간 협의';
 
 /**
  * 아직 안 정해진 출근 시각.
@@ -21,14 +17,16 @@ export const UNDECIDED_TIME_HINT = '정해지면 알려드려요';
  * 좁은 슬롯(출퇴근 기록 박스처럼 라벨이 이미 '예정'이라 맥락이 붙는 곳)용 축약 표기.
  * 긴 문장을 넣으면 박스가 터지므로 여기서만 쓴다.
  */
-export const NEGOTIABLE_TIME_LABEL_SHORT = '협의';
 export const UNDECIDED_TIME_LABEL_SHORT = '미정';
 
-/** 예정 시각이 없을 때 상태에 맞는 표기를 고른다. `short` 는 좁은 슬롯용. */
-export function unsetScheduledTimeLabel(state: ScheduleTimeState, short = false): string {
-  if (state === 'negotiable') {
-    return short ? NEGOTIABLE_TIME_LABEL_SHORT : NEGOTIABLE_TIME_LABEL;
-  }
+/**
+ * 예정 시각이 없을 때의 표기. `short` 는 좁은 슬롯용.
+ *
+ * ⚠️ 예전엔 `state === 'negotiable'` 이면 '시간 협의'를 돌려줘서 상태 인자를 받았다.
+ *    D4 로 그 구분을 없애 분기가 사라졌으므로 인자도 없앴다 — 쓰이지 않는 인자를 남겨 두면
+ *    "상태에 따라 달라진다"는 거짓말이 계약으로 굳는다.
+ */
+export function unsetScheduledTimeLabel(short = false): string {
   return short ? UNDECIDED_TIME_LABEL_SHORT : UNDECIDED_TIME_LABEL;
 }
 
@@ -140,7 +138,6 @@ export function formatWorkTimeRange(
     scheduledStart: string;
     scheduledEnd: string;
     isEndNextDay: boolean;
-    scheduleTimeState: ScheduleTimeState;
     rawTimeSlot: string | null;
   },
   useEffective = true
@@ -153,14 +150,14 @@ export function formatWorkTimeRange(
   const isUnset = (value: string) => !value || value === '미정' || value === '--:--';
 
   if (isUnset(start) && isUnset(end)) {
-    // 협의(고정공고)와 미정(아직 안 정해짐)은 다른 사실이다. 예전엔 둘 다 '시간 협의' 였고,
-    // 그래서 "언젠가 정해질 시간"을 기다리는 스태프에게 "협의된 근무"라고 잘못 말했다.
-    if (info.scheduleTimeState === 'negotiable') return NEGOTIABLE_TIME_LABEL;
-
     // 시각으로 해석되지 않는 자유 텍스트(레거시 '협의' 등)는 사람이 적어둔 값이다.
     // '미정'으로 덮으면 있던 정보가 사라지므로 원문을 그대로 살린다.
-    const raw = info.rawTimeSlot?.trim();
-    if (raw && raw !== TBA_TIME_MARKER) return raw;
+    //
+    // 🔴 판정은 반드시 `isTimeTBD` 로 한다. `raw !== TBA_TIME_MARKER` 로 두면 `'NEGOTIABLE'`
+    //    이 이 분기에 떨어져 **사용자 화면에 영문 토큰이 그대로 노출된다** — D4 로 negotiable
+    //    상태를 없앤 순간 열리는 구멍이고, 에러가 아니라 조용한 오표시라 눈에 띄지 않는다.
+    const raw = info.rawTimeSlot;
+    if (!isTimeTBD(raw)) return raw!.trim();
 
     return UNDECIDED_TIME_LABEL;
   }

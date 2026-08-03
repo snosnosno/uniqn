@@ -6,6 +6,8 @@
  */
 
 import { getAssignmentRoles } from '@/domains/application';
+import { WorkLogCreator } from '@/domains/schedule';
+import { isTimeTBD } from '@/shared/time';
 import { getRoleDisplayName } from '@/types/unified';
 import { formatAppliedDate } from '@/utils/date';
 import {
@@ -21,17 +23,51 @@ export { formatAppliedDate };
 
 /**
  * 확정되지 않은 시간대를 자연스럽게 표시합니다.
+ *
+ * 🔴 판정은 `isTimeTBD` 로 한다. 예전 규칙("빈 문자열이 아니면 원문")은 레거시 지원서의
+ *    `'NEGOTIABLE'` 을 걸러내지 못해 **사장 화면에 영문 토큰이 그대로 렌더**됐다.
+ *    반대로 사람이 적어둔 자유 텍스트('협의' 등)는 계속 살린다 — 있던 정보를 지우면 안 된다.
  */
 export const formatTimeSlotDisplay = (
   timeSlot: string,
   isTimeToBeAnnounced?: boolean,
   tentativeDescription?: string
 ): string => {
-  if (isTimeToBeAnnounced || !timeSlot || timeSlot.trim() === '') {
+  if (isTimeToBeAnnounced || isTimeTBD(timeSlot)) {
     return tentativeDescription ? `미정 (${tentativeDescription})` : '미정';
   }
 
   return timeSlot;
+};
+
+/**
+ * 고정공고 카드에 보여줄 출근 시각을 고른다 — 없으면 `undefined`(협의 라벨로 유도).
+ *
+ * 비유: 안내문에 시간이 적혀 있으면 그걸 읽고, 빈칸이면 "협의"라고 말한다.
+ * 빈칸을 채우려고 장부 뒷장의 내부 코드('NEGOTIABLE')를 그대로 읽어 주면 안 된다.
+ *
+ * 🔴 마지막 폴백인 `legacyTimeSlot`(= `getPostingLegacyTimeSlot`)은 협의 고정공고에서
+ *    레거시 센티널을 담을 수 있다. 그래서 **세 후보 전부**를 `isTimeTBD` 로 거른다.
+ *    `undefined` 를 돌려주면 `FixedScheduleDisplay` 가 `isStartTimeNegotiable` 과 함께
+ *    '협의' 라벨을 만든다(D1: 협의 표시는 공고 유형·플래그에서 유도).
+ */
+export const resolveFixedStartTime = (
+  explicitStartTime?: string,
+  postingStartTime?: string,
+  legacyTimeSlot?: string
+): string | undefined => {
+  for (const candidate of [explicitStartTime, postingStartTime, legacyTimeSlot]) {
+    if (isTimeTBD(candidate)) {
+      continue;
+    }
+    // 레거시 폴백은 범위형('11:00~19:00')일 수 있어 시작 시각만 취한다.
+    const start = WorkLogCreator.extractStartTime(candidate!);
+    if (start) {
+      return start;
+    }
+  }
+
+  return undefined;
 };
 
 /**

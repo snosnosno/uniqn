@@ -1,12 +1,11 @@
 import React, { memo, useCallback } from 'react';
 import { View, Text } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
-import { TBA_TIME_MARKER } from '@/domains/application';
 import { formatTimeSlotDisplay } from '@/types/unified';
 import { makeSelectionKey } from '@/utils/assignment';
 import { RoleCheckbox } from './RoleCheckbox';
 import type { DateGroupSelectionProps } from './types';
-import { getEffectiveRoleId, getRoleCheckboxKey } from './utils';
+import { getEffectiveRoleId, getRoleCheckboxKey, getSlotSelectionTime } from './utils';
 
 export const DateGroupSelection = memo(function DateGroupSelection({
   group,
@@ -40,7 +39,7 @@ export const DateGroupSelection = memo(function DateGroupSelection({
 
       <View className="flex-col gap-3">
         {group.timeSlots.map((slot, slotIndex) => {
-          const slotTime = slot.isTimeToBeAnnounced ? TBA_TIME_MARKER : (slot.startTime ?? '');
+          const slotTime = getSlotSelectionTime(slot);
           const timeDisplay = formatTimeSlotDisplay(slot);
 
           return (

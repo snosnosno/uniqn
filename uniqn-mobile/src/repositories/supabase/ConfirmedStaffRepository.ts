@@ -19,6 +19,7 @@ import { handleSupabaseError, toCamelCase, createRealtimeSubscription } from '@/
 import { parseWorkLogDocuments, parseWorkLogDocument } from '@/schemas';
 import { settledLockMessage } from '@/domains/settlement';
 import { STATUS } from '@/constants';
+import { TBA_TIME_MARKER } from '@/types/assignment';
 import { resolvePostingAuthority, canManagePosting } from './postingAuthority';
 import {
   resolveNoShowRevertStatus,
@@ -657,7 +658,10 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
           date: a.date,
           role: a.role,
           customRole: a.customRole ?? null,
-          timeSlot: a.timeSlot ?? null,
+          // [R1] null 을 보내지 않는다 — 미정은 '미정' 문자열 하나로 통일한다.
+          //      서버 `_normalize_time_slot` 이 둘을 같은 NULL 로 접어 저장 결과는 동일하지만,
+          //      쓰기 표현을 하나로 두지 않으면 '미정을 뜻하는 값'이 다시 늘어난다.
+          timeSlot: a.timeSlot ?? TBA_TIME_MARKER,
           notes: a.notes ?? null,
         })),
       });

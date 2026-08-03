@@ -19,5 +19,8 @@ export {
   type ScheduleTimeState,
 } from './WorkTimeDisplay';
 
+// '시간 미정' 판정 단일 근거 (서버 _posting_slot_key 센티널 집합과 정합)
+export { isTimeTBD } from './isTimeTBD';
+
 // 익일 근무시간 공용 프리뷰 헬퍼 (근무표·정산 입력 화면)
 export { deriveOvernightPreview, type OvernightPreview } from './overnightPreview';
