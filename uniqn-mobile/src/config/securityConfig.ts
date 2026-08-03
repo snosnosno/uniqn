@@ -87,17 +87,12 @@ export const TOKEN_CONFIG = {
 // ============================================================================
 // Rate Limiting
 // ============================================================================
-
-/**
- * 요청 제한 설정
- */
-export const RATE_LIMIT_CONFIG = {
-  /** 로그인 시도 최대 횟수 */
-  MAX_LOGIN_ATTEMPTS: 5,
-
-  /** 잠금 시간 (초) - 15분 */
-  LOCKOUT_DURATION: 60 * 15,
-
-  /** 비밀번호 재설정 요청 간격 (초) - 1분 */
-  PASSWORD_RESET_INTERVAL: 60,
-} as const;
+//
+// `RATE_LIMIT_CONFIG`(MAX_LOGIN_ATTEMPTS=5 · LOCKOUT_DURATION · PASSWORD_RESET_INTERVAL)는
+// 제거됐다. 세 키 모두 **참조 0건**인 채 살아 있어서, 코드를 읽는 사람에게
+// "클라이언트에 5회 로그인 잠금이 존재한다"는 거짓 신호를 줬다 —
+// 실제 잠금 로직은 PR#406 에서 통째로 삭제됐다(잠금 상태가 공격자 기기에 저장돼
+// 원격 브루트포스에 무력했기 때문).
+//
+// 요청 제한은 전적으로 **서버측**이다: Supabase 대시보드 → Authentication → Rate Limits.
+// 클라이언트에 다시 상수를 두지 말 것 — 클라이언트 값은 방어가 아니라 주석일 뿐이다.
