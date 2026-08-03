@@ -108,36 +108,6 @@ export const employerIntroSchema = z
 export type EmployerIntroData = z.infer<typeof employerIntroSchema>;
 
 // ============================================================================
-// 설정 스키마
-// ============================================================================
-
-/**
- * 알림 설정 스키마
- */
-export const notificationSettingsSchema = z.object({
-  enabled: z.boolean(),
-  pushEnabled: z.boolean().optional(),
-  categories: z
-    .record(
-      z.string(),
-      z.object({
-        enabled: z.boolean(),
-        pushEnabled: z.boolean(),
-      })
-    )
-    .optional(),
-  quietHours: z
-    .object({
-      enabled: z.boolean(),
-      start: z.string().regex(/^\d{2}:\d{2}$/, { message: 'HH:MM 형식이어야 합니다' }),
-      end: z.string().regex(/^\d{2}:\d{2}$/, { message: 'HH:MM 형식이어야 합니다' }),
-    })
-    .optional(),
-});
-
-export type NotificationSettingsData = z.infer<typeof notificationSettingsSchema>;
-
-// ============================================================================
 // 검색/필터 스키마
 // ============================================================================
 

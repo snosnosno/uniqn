@@ -10,7 +10,9 @@
  * 비책임 (의도적 제외):
  *  - 토큰 수명 관리 — Supabase SDK의 `autoRefreshToken: true`에 위임
  *  - 비활성 타임아웃 — 제거됨 (refresh token이 만료되거나 revoke될 때까지 세션 유지)
- *  - 로그인 시도 rate limiting — `@/services/auth/loginAttemptService`로 분리
+ *  - 로그인 시도 rate limiting — 클라이언트 잠금은 PR#406 에서 기능 자체가 삭제됐다.
+ *    잠금 상태가 공격자 기기의 `secureStorage` 에 있어 원격 브루트포스에 원리적으로 무력했다.
+ *    현재 유일한 방어선은 Supabase 대시보드의 Authentication → Rate Limits (서버측)다.
  *
  * Supabase known bug 회피: `onAuthStateChange` callback 내부에서 await로
  * 다른 Supabase 호출 시 deadlock 발생 가능. `setTimeout(handler, 0)`로 다음

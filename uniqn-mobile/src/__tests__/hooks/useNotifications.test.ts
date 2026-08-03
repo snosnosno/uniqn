@@ -98,7 +98,6 @@ jest.mock('@/stores/toastStore', () => ({
 const mockSetNotifications = jest.fn();
 const mockAddNotification = jest.fn();
 const mockAddNotifications = jest.fn();
-const mockSetHasMore = jest.fn();
 const mockMarkAsReadLocal = jest.fn();
 const mockMarkAllAsReadLocal = jest.fn();
 const mockRemoveNotification = jest.fn();
@@ -106,7 +105,6 @@ const mockSetSettings = jest.fn();
 
 const mockNotificationStoreState = {
   notifications: [] as ReturnType<typeof createMockNotification>[],
-  hasMore: false,
   lastFetchedAt: null as number | null,
   settings: {
     grouping: { enabled: true, minGroupSize: 2, timeWindowHours: 24 },
@@ -114,7 +112,6 @@ const mockNotificationStoreState = {
   setNotifications: mockSetNotifications,
   addNotification: mockAddNotification,
   addNotifications: mockAddNotifications,
-  setHasMore: mockSetHasMore,
   markAsRead: mockMarkAsReadLocal,
   markAllAsRead: mockMarkAllAsReadLocal,
   removeNotification: mockRemoveNotification,
@@ -200,11 +197,47 @@ let mockData: unknown = undefined;
 let mockError: Error | null = null;
 let mockIsPending = false;
 let mockEnabled: boolean | undefined;
-// queryFn 을 붙잡아 두면 첫 페이지 로드를 흉내 낼 수 있다(lastDoc 커서 확보 → fetchNextPage 가능)
-let mockCapturedQueryFn: (() => Promise<unknown>) | undefined;
+// queryFn 을 붙잡아 두면 첫 페이지 로드를 흉내 낼 수 있다
+let mockCapturedQueryFn: ((ctx?: { pageParam?: unknown }) => Promise<unknown>) | undefined;
 let mockCapturedQueryKey: unknown[] | undefined;
+// 목록은 useInfiniteQuery 다 — 페이지 계약(getNextPageParam/select)도 함께 붙잡는다.
+let mockCapturedGetNextPageParam: ((lastPage: unknown) => unknown) | undefined;
+let mockCapturedSelect: ((data: unknown) => unknown) | undefined;
+const mockFetchNextPage = jest.fn(() => Promise.resolve());
+let mockHasNextPage = true;
+let mockIsFetchingNextPage = false;
 
 jest.mock('@tanstack/react-query', () => ({
+  // 목록 축 전용 — `data` 는 select 가 이미 돈 뒤의 평면 배열로 흉내 낸다
+  // (실제 훅은 `select: flattenNotificationPages` 로 같은 형태를 돌려준다).
+  useInfiniteQuery: jest.fn(
+    (options: {
+      queryKey: unknown[];
+      queryFn: (ctx?: { pageParam?: unknown }) => Promise<unknown>;
+      enabled?: boolean;
+      getNextPageParam?: (lastPage: unknown) => unknown;
+      select?: (data: unknown) => unknown;
+    }) => {
+      mockEnabled = options.enabled;
+      mockCapturedQueryFn = options.queryFn;
+      mockCapturedQueryKey = options.queryKey;
+      mockCapturedGetNextPageParam = options.getNextPageParam;
+      mockCapturedSelect = options.select;
+
+      const disabled = options.enabled === false;
+      return {
+        data: disabled ? undefined : mockData,
+        isLoading: disabled ? false : mockIsLoading,
+        isRefetching: disabled ? false : mockIsRefetching,
+        isError: disabled ? false : mockIsError,
+        error: disabled ? null : mockError,
+        refetch: mockRefetch,
+        fetchNextPage: mockFetchNextPage,
+        hasNextPage: mockHasNextPage,
+        isFetchingNextPage: mockIsFetchingNextPage,
+      };
+    }
+  ),
   useQuery: jest.fn(
     (options: { queryKey: unknown[]; queryFn: () => Promise<unknown>; enabled?: boolean }) => {
       mockEnabled = options.enabled;
@@ -323,8 +356,10 @@ describe('useNotifications Hooks', () => {
     mockEnabled = undefined;
     mockIsOnline = true;
     mockNotificationStoreState.notifications = [];
-    mockNotificationStoreState.hasMore = false;
     mockNotificationStoreState.lastFetchedAt = null;
+    mockFetchNextPage.mockClear();
+    mockHasNextPage = true;
+    mockIsFetchingNextPage = false;
     mockShouldSync.mockReturnValue(false);
     mockSubscribeToNotifications.mockReturnValue(jest.fn());
     mockShouldApplyOptimisticUpdate.mockReturnValue(true);
@@ -503,37 +538,107 @@ describe('useNotifications Hooks', () => {
     // 무한 스크롤 — 목록 축(쿼리 캐시)에 append 해야 화면이 늘어난다
     // ------------------------------------------------------------------
 
-    it('fetchNextPage는 스토어가 아니라 목록 쿼리 캐시에 다음 페이지를 붙인다', async () => {
-      const page1 = [createMockNotification({ id: 'notif-1' })];
-      const page2 = [createMockNotification({ id: 'notif-2' })];
-      mockData = page1;
-      mockFetchNotifications
-        .mockResolvedValueOnce({ notifications: page1, lastDoc: { cursor: 'p1' }, hasMore: true })
-        .mockResolvedValueOnce({ notifications: page2, lastDoc: null, hasMore: false });
+    it('fetchNextPage는 infinite query 에 위임하고 캐시를 직접 쓰지 않는다', async () => {
+      // 페이지 소유권이 쿼리로 넘어갔다 — 훅이 setQueryData 로 직접 append 하면
+      // invalidate 한 방에 1페이지로 붕괴하던 구조가 되살아난다.
+      mockData = [createMockNotification({ id: 'notif-1' })];
+      mockHasNextPage = true;
 
       const { result } = renderHook(() => useNotificationList());
-
-      // 1페이지 로드로 커서(lastDoc) 확보
-      await act(async () => {
-        await mockCapturedQueryFn?.();
-      });
 
       await act(async () => {
         await result.current.fetchNextPage();
       });
 
-      expect(mockQueryClient.setQueryData).toHaveBeenCalledTimes(1);
-      const [usedKey, updater] = mockQueryClient.setQueryData.mock.calls[0] as [
-        unknown[],
-        (current: unknown[] | undefined) => unknown[],
-      ];
-      expect(usedKey).toEqual(mockCapturedQueryKey);
-      expect(updater(page1)).toEqual([...page1, ...page2]);
-      // 중복 방지: 같은 항목이 이미 있으면 다시 붙이지 않는다
-      expect(updater([...page1, ...page2])).toEqual([...page1, ...page2]);
-
-      // 스토어 append 는 더 이상 목록 축을 담당하지 않는다
+      expect(mockFetchNextPage).toHaveBeenCalledTimes(1);
+      expect(mockQueryClient.setQueryData).not.toHaveBeenCalled();
       expect(mockAddNotifications).not.toHaveBeenCalled();
+    });
+
+    it('다음 페이지가 없으면 fetchNextPage 를 부르지 않는다', async () => {
+      mockData = [createMockNotification({ id: 'notif-1' })];
+      mockHasNextPage = false;
+
+      const { result } = renderHook(() => useNotificationList());
+
+      await act(async () => {
+        await result.current.fetchNextPage();
+      });
+
+      expect(mockFetchNextPage).not.toHaveBeenCalled();
+      expect(result.current.hasMore).toBe(false);
+    });
+
+    it('오프라인이면 fetchNextPage 를 부르지 않는다', async () => {
+      mockIsOnline = false;
+      mockHasNextPage = true;
+
+      const { result } = renderHook(() => useNotificationList());
+
+      await act(async () => {
+        await result.current.fetchNextPage();
+      });
+
+      expect(mockFetchNextPage).not.toHaveBeenCalled();
+    });
+
+    it('페이지 계약: 마지막 페이지에 다음이 있을 때만 커서를 넘긴다', () => {
+      renderHook(() => useNotificationList());
+
+      // hasMore=false 면 커서가 있어도 멈춘다 (무한 루프 방지)
+      expect(
+        mockCapturedGetNextPageParam?.({ lastDoc: { cursor: 'p1' }, hasMore: false })
+      ).toBeUndefined();
+      // lastDoc 이 없으면 더 못 간다 (keyset 커서라 null 이면 처음부터가 된다)
+      expect(mockCapturedGetNextPageParam?.({ lastDoc: null, hasMore: true })).toBeUndefined();
+      // 둘 다 있어야 다음 커서
+      expect(mockCapturedGetNextPageParam?.({ lastDoc: { cursor: 'p1' }, hasMore: true })).toEqual({
+        cursor: 'p1',
+      });
+    });
+
+    it('select 는 페이지를 평탄화하면서 id 중복을 접는다', () => {
+      // 중복 접기가 빠지면 refetch 중 새 알림이 유입될 때 페이지 경계에서
+      // 같은 알림이 두 번 나와 FlashList keyExtractor 가 중복 키를 만든다.
+      renderHook(() => useNotificationList());
+
+      const a = createMockNotification({ id: 'notif-1' });
+      const b = createMockNotification({ id: 'notif-2' });
+      const flattened = mockCapturedSelect?.({
+        pages: [
+          { notifications: [a, b], lastDoc: null, hasMore: true },
+          { notifications: [b], lastDoc: null, hasMore: false },
+        ],
+        pageParams: [null, null],
+      });
+
+      expect(flattened).toEqual([a, b]);
+    });
+
+    it('queryFn 은 첫 페이지에 커서를 넘기지 않는다', async () => {
+      mockFetchNotifications.mockResolvedValue({
+        notifications: [],
+        lastDoc: null,
+        hasMore: false,
+      });
+      renderHook(() => useNotificationList());
+
+      // 쿼리키는 필터 변형별로 갈려야 한다 (필터 탭이 서로의 캐시를 덮어쓰지 않도록)
+      expect(mockCapturedQueryKey).toEqual(['notifications', 'list', {}]);
+
+      await act(async () => {
+        await mockCapturedQueryFn?.({ pageParam: null });
+      });
+      expect(mockFetchNotifications).toHaveBeenLastCalledWith(
+        expect.not.objectContaining({ lastDoc: expect.anything() })
+      );
+
+      await act(async () => {
+        await mockCapturedQueryFn?.({ pageParam: { cursor: 'p1' } });
+      });
+      expect(mockFetchNotifications).toHaveBeenLastCalledWith(
+        expect.objectContaining({ lastDoc: { cursor: 'p1' } })
+      );
     });
   });
 
@@ -670,6 +775,14 @@ describe('useNotifications Hooks', () => {
   describe('useDeleteNotification', () => {
     const LIST_KEY = ['notifications', 'list', {}];
 
+    /** 목록 캐시를 useInfiniteQuery 모양({pages, pageParams})으로 감싼다 */
+    function asListCache(notifications: unknown[], hasMore = false) {
+      return {
+        pages: [{ notifications, lastDoc: null, hasMore }],
+        pageParams: [null],
+      };
+    }
+
     /** 목록 캐시에 알림 3건이 들어 있는 상태를 흉내 낸다 */
     function seedListCache() {
       const list = [
@@ -678,8 +791,8 @@ describe('useNotifications Hooks', () => {
         createMockNotification({ id: 'notif-3' }),
       ];
       mockQueryClient.getQueriesData.mockReturnValue([
-        [LIST_KEY, list],
-        // 배열이 아닌 캐시(설정)는 건드리면 안 된다
+        [LIST_KEY, asListCache(list)],
+        // 목록이 아닌 캐시(설정)는 건드리면 안 된다
         [['notifications', 'settings'], { enabled: true }],
       ]);
       return list;
@@ -711,7 +824,10 @@ describe('useNotifications Hooks', () => {
 
       // 목록 캐시만 패치 (설정 캐시는 그대로)
       expect(mockQueryClient.setQueryData).toHaveBeenCalledTimes(1);
-      expect(mockQueryClient.setQueryData).toHaveBeenCalledWith(LIST_KEY, [list[0], list[2]]);
+      expect(mockQueryClient.setQueryData).toHaveBeenCalledWith(
+        LIST_KEY,
+        asListCache([list[0], list[2]])
+      );
       // 스냅샷 축(스토어)도 함께 맞춘다
       expect(mockRemoveNotification).toHaveBeenCalledWith('notif-2');
       // 되돌리기 액션이 있는 토스트
@@ -746,7 +862,7 @@ describe('useNotifications Hooks', () => {
       jest.useFakeTimers();
       const list = seedListCache();
       // 복원 시점의 "지금 캐시" (이미 notif-2 가 빠진 상태)
-      mockQueryClient.getQueryData.mockReturnValue([list[0], list[2]]);
+      mockQueryClient.getQueryData.mockReturnValue(asListCache([list[0], list[2]]));
 
       const { result } = renderHook(() => useDeleteNotification());
 
@@ -761,12 +877,11 @@ describe('useNotifications Hooks', () => {
 
       act(() => undo?.());
 
-      // 맨 앞이 아니라 원래 자리(index 1)로 splice 재삽입
-      expect(mockQueryClient.setQueryData).toHaveBeenLastCalledWith(LIST_KEY, [
-        list[0],
-        list[1],
-        list[2],
-      ]);
+      // 맨 앞이 아니라 원래 자리(page 0 의 index 1)로 splice 재삽입
+      expect(mockQueryClient.setQueryData).toHaveBeenLastCalledWith(
+        LIST_KEY,
+        asListCache([list[0], list[1], list[2]])
+      );
 
       act(() => {
         jest.advanceTimersByTime(5000);

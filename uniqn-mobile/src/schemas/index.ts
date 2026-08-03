@@ -178,7 +178,6 @@ export {
   userStatusSchema,
   updateProfileSchema,
   employerIntroSchema,
-  notificationSettingsSchema,
   searchUsersSchema,
   parseUserDocument,
 } from './user.schema';
@@ -188,7 +187,6 @@ export type {
   UserStatusSchema,
   UpdateProfileData,
   EmployerIntroData,
-  NotificationSettingsData,
   SearchUsersData,
 } from './user.schema';
 
