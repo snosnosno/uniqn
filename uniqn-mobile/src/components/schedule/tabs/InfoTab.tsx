@@ -33,7 +33,7 @@ import {
   UNDECIDED_TIME_HINT,
 } from '../helpers';
 import { formatPhoneForDisplay } from '@/utils/phone';
-import { composeFullAddress, openMapSearch, resolveMapQuery } from '@/utils/mapLink';
+import { composeFullAddress, openMapDestination, resolveMapQuery } from '@/utils/mapLink';
 import { useToast } from '@/stores/toastStore';
 import { STATUS } from '@/constants';
 import { PAYROLL_STATUS } from '@/constants/statusConfig';
@@ -163,13 +163,25 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
    */
   const addressLine = composeFullAddress(schedule.locationAddress, schedule.detailedAddress);
 
+  /**
+   * 안내 가능 여부 — 좌표가 있으면 주소 텍스트가 없어도 갈 수 있다.
+   * (현행 데이터에선 좌표가 주소에서 파생되므로 둘이 함께 있지만, 게이트가 좌표를 무시하면
+   *  나중에 한쪽만 있는 경로가 생겼을 때 조용히 버튼이 사라진다.)
+   */
+  const canOpenMap = Boolean(mapQuery) || Boolean(schedule.coordinates);
+
   const handleOpenMap = useCallback(async () => {
-    if (!mapQuery) return;
-    const opened = await openMapSearch(mapQuery);
+    if (!canOpenMap) return;
+    // 좌표가 있으면 정밀 핀, 없으면 예전과 똑같은 주소 텍스트 검색.
+    const opened = await openMapDestination({
+      query: mapQuery,
+      coordinates: schedule.coordinates,
+      label: schedule.location || undefined,
+    });
     if (!opened) {
       toast.error('지도 앱을 열지 못했어요. 주소를 직접 검색해 주세요.');
     }
-  }, [mapQuery, toast]);
+  }, [canOpenMap, mapQuery, schedule.coordinates, schedule.location, toast]);
 
   // 노쇼는 취소 분기(opacity-70 로 흐려짐)에 섞지 않는다 — 이의 제기 기한이 있는 기록이라
   // 공고·일정 정보를 흐리지 않고 그대로 읽을 수 있어야 근거를 맞춰볼 수 있다.
@@ -272,11 +284,11 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
             처음 가는 근무지를 지도 앱에 손으로 다시 쳐야 한다.
             반대로 주소가 없을 땐 버튼을 감춘다 — 장소명('홈' 같은 별칭)으로 검색하면
             엉뚱한 곳으로 안내해, 없는 것보다 나쁘다. */}
-        {mapQuery ? (
+        {canOpenMap ? (
           <Pressable
             onPress={handleOpenMap}
             accessibilityRole="button"
-            accessibilityLabel={`${mapQuery} 길찾기`}
+            accessibilityLabel={`${mapQuery ?? schedule.location} 길찾기`}
             className="ml-8 mt-2 flex-row items-center rounded-lg bg-primary-50 px-3 py-2 active:bg-primary-100 dark:bg-primary-900/20 dark:active:bg-primary-900/30"
           >
             <MapIcon size={16} color="#B8962E" />

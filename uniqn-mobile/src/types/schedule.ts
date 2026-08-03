@@ -122,6 +122,11 @@ export interface ScheduleEvent extends FirebaseDocument {
    * 장소명만 남아 지도가 엉뚱한 곳을 안내한다.
    */
   locationAddress?: string;
+  /**
+   * 근무지 좌표(공고 `geoLat`/`geoLng`). 있으면 길찾기가 텍스트 검색 대신 정밀 핀으로 간다.
+   * 지오코딩 실패·주소 미입력 공고, 그리고 지점 컨테이너 경로에는 없다 — 그때는 주소 텍스트 폴백.
+   */
+  coordinates?: { lat: number; lng: number };
 
   // ??븷 ?뺣낫
   role: string;
@@ -287,6 +292,9 @@ export interface GroupedScheduleEvent {
 
   /** 공고에 입력된 주소(canonical location.district) */
   locationAddress?: string;
+
+  /** 근무지 좌표(공고 geoLat/geoLng) — 그룹 내 이벤트가 같은 공고이므로 첫 이벤트 값을 잇는다 */
+  coordinates?: { lat: number; lng: number };
 
   /**
    * ?좎쭨 踰붿쐞 ?뺣낫

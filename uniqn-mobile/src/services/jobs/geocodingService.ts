@@ -1,0 +1,87 @@
+/**
+ * 주소 → 좌표. `geocode-address` Edge Function 호출 래퍼.
+ *
+ * 카카오 REST 키는 EF 시크릿에만 있다 — 클라이언트는 키를 모른다(번들·OTA 노출 차단).
+ * 호출은 **공고 저장 시점 1회**뿐이라 읽기 경로에는 아무 비용도 붙지 않는다.
+ *
+ * 🔴 이 모듈은 **절대 throw 하지 않는다.** 지오코딩은 부가 기능이고, 여기서 던지면 실패한
+ *    좌표 하나 때문에 공고 저장 전체가 무너진다. 실패는 전부 `null`(좌표 없음)로 접히고
+ *    길찾기는 기존 주소 텍스트 검색으로 폴백한다.
+ */
+import type { PostingGeoPoint } from '@/types';
+import { invokeEdgeFunction } from '@/lib/supabaseFunctions';
+import { logger } from '@/utils/logger';
+
+const GEOCODE_FUNCTION = 'geocode-address';
+
+/**
+ * 대한민국 경계 박스.
+ *
+ * 🔴 세 곳이 같은 값이어야 한다 — 여기 · EF `KOREA_BOUNDS` · DB `chk_job_postings_geo_bounds`
+ *    (`20260803160000_job_postings_geocode_columns.sql`). DB 가 최종 권위이고, 여기서 못 거른
+ *    값이 DB CHECK 에 걸리면 23514 로 **공고 저장 자체가 실패한다**. 부가 기능이 본 기능을
+ *    죽이는 형태라 클라이언트에서 한 번 더 막는다.
+ * 실측 하한: 서귀포 중문 lat 33.25 / lng 126.41.
+ */
+const KOREA_BOUNDS = { minLat: 32.5, maxLat: 39.0, minLng: 124.0, maxLng: 132.5 } as const;
+
+export function isGeoPointInKorea(point: { lat: number; lng: number }): boolean {
+  return (
+    Number.isFinite(point.lat) &&
+    Number.isFinite(point.lng) &&
+    point.lat >= KOREA_BOUNDS.minLat &&
+    point.lat <= KOREA_BOUNDS.maxLat &&
+    point.lng >= KOREA_BOUNDS.minLng &&
+    point.lng <= KOREA_BOUNDS.maxLng
+  );
+}
+
+interface GeocodeResponse {
+  coordinates?: { lat?: unknown; lng?: unknown } | null;
+  matchedAddress?: unknown;
+  reason?: unknown;
+}
+
+/**
+ * 주소 문자열을 좌표로 바꾼다. 실패·무매칭·빈 주소는 전부 `null`.
+ *
+ * 입력은 B1 우편번호 위젯이 준 도로명주소다(`서울 강남구 테헤란로 152` 꼴). 축약형 시도
+ * 표기도 카카오가 그대로 매칭하므로 정규화 없이 넘긴다(2026-08-03 prod 실호출로 확인).
+ */
+export async function geocodeAddress(address?: string | null): Promise<PostingGeoPoint | null> {
+  const query = address?.trim();
+  if (!query) return null;
+
+  const { data, error } = await invokeEdgeFunction<GeocodeResponse>(GEOCODE_FUNCTION, {
+    body: { address: query },
+  });
+
+  if (error) {
+    // 인증 만료·네트워크·429 전부 여기로 온다. 저장을 막지 않는다.
+    logger.warn('지오코딩 실패 — 좌표 없이 저장한다', {
+      component: 'geocodingService',
+      message: error.message,
+    });
+    return null;
+  }
+
+  const raw = data?.coordinates;
+  if (!raw || typeof raw !== 'object') {
+    if (data?.reason) {
+      logger.info('지오코딩 무매칭', {
+        component: 'geocodingService',
+        reason: String(data.reason),
+      });
+    }
+    return null;
+  }
+
+  const lat = typeof raw.lat === 'number' ? raw.lat : NaN;
+  const lng = typeof raw.lng === 'number' ? raw.lng : NaN;
+  if (!isGeoPointInKorea({ lat, lng })) {
+    logger.warn('지오코딩 결과가 경계 밖 — 좌표를 버린다', { component: 'geocodingService' });
+    return null;
+  }
+
+  return { lat, lng };
+}

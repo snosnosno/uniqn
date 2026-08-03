@@ -83,6 +83,20 @@ export interface CreateJobPostingResult {
 /**
  * 역할별 확정 집계 (H0 hydrate 용)
  */
+/**
+ * 지오코딩 재계산 판정용 최소 스냅샷 (주소 검색 2단계).
+ *
+ * `address` 는 canonical 저장 위치인 `location.district` 다 — 폼의 '주소' 입력이 저장 직전
+ * district 로 접히기 때문이다(serialization.toCanonicalLocation). 이름과 의미가 어긋나 보이는
+ * 것은 B1 이 물려준 선재 사실이고, 여기서 바꾸면 읽는 쪽 4곳이 조용히 깨진다.
+ */
+export interface GeocodeSnapshot {
+  /** 저장된 근무지 주소(`location.district`). 없으면 undefined */
+  address?: string;
+  /** 좌표가 이미 붙어 있는가 (두 컬럼 모두 존재할 때만 true — DB 가 짝을 강제한다) */
+  hasGeo: boolean;
+}
+
 export interface PostingFilledCount {
   jobPostingId: string;
   workDate: string;
@@ -323,6 +337,17 @@ export interface IJobPostingRepository {
     ownerId: string,
     expectedUpdatedAt: string | null
   ): Promise<JobPosting>;
+
+  /**
+   * 지오코딩 판정에 필요한 최소 스냅샷 (주소 검색 2단계).
+   *
+   * 저장된 주소와 좌표 보유 여부만 본다. 전체 공고를 읽지 않는 이유는 이 조회의 유일한
+   * 목적이 "주소가 바뀌었는가"이기 때문이다 — 안 바뀌었고 좌표가 이미 있으면 지오코딩을
+   * 건너뛰고, 바뀌었으면 다시 계산해 옛 좌표가 새 주소에 남지 않게 한다.
+   *
+   * @returns 공고가 없거나 접근 불가면 `null`
+   */
+  getGeocodeSnapshot(jobPostingId: string): Promise<GeocodeSnapshot | null>;
 
   /**
    * 공고 삭제 - Soft Delete (트랜잭션)

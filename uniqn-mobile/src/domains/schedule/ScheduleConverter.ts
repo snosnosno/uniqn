@@ -39,6 +39,11 @@ export interface SchedulePostingContext {
    * 화면엔 장소명만 남고 길찾기가 그 이름으로 검색돼 엉뚱한 곳을 안내했다.
    */
   locationAddress?: string;
+  /**
+   * 근무지 좌표(공고 `geoLat`/`geoLng`) — 주소 검색 2단계.
+   * 길찾기가 텍스트 검색 대신 정밀 핀으로 가는 유일한 근거다. 없으면 기존 텍스트 폴백.
+   */
+  coordinates?: { lat: number; lng: number };
   contactPhone?: string;
   ownerId?: string;
   ownerName?: string;
@@ -52,6 +57,10 @@ export function createSchedulePostingContext(posting: JobPosting): SchedulePosti
     location: posting.location?.name || '',
     detailedAddress: posting.location?.detailedAddress,
     locationAddress: posting.location?.district || posting.location?.address,
+    // 좌표는 **둘 다 있을 때만** 싣는다. 반쪽이면 링크를 못 만들 뿐 아니라 DB 도 짝을 강제한다.
+    ...(typeof posting.geoLat === 'number' && typeof posting.geoLng === 'number'
+      ? { coordinates: { lat: posting.geoLat, lng: posting.geoLng } }
+      : {}),
     contactPhone: posting.contactPhone,
     ownerId: posting.ownerId,
     ownerName: posting.ownerName,
@@ -172,6 +181,7 @@ export class ScheduleConverter {
       location: postingContext?.location || '',
       detailedAddress: postingContext?.detailedAddress,
       locationAddress: postingContext?.locationAddress,
+      coordinates: postingContext?.coordinates,
       role: workLog.role,
       customRole: workLog.customRole,
       status: attendanceStatus,
@@ -243,6 +253,7 @@ export class ScheduleConverter {
             location: postingContext?.location || '',
             detailedAddress: postingContext?.detailedAddress,
             locationAddress: postingContext?.locationAddress,
+            coordinates: postingContext?.coordinates,
             role: normalizedRole.role,
             customRole: normalizedRole.customRole ?? application.customRole,
             status: STATUS.ATTENDANCE.NOT_STARTED,

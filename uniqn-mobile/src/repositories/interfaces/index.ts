@@ -29,6 +29,7 @@ export type {
   JobPostingSubscriptionCallbacks,
   ScheduleBoardSyncAction,
   UpdateVenueContainerInput,
+  GeocodeSnapshot,
 } from './IJobPostingRepository';
 
 // WorkLog Repository

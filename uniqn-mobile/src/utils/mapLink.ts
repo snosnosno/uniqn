@@ -6,6 +6,7 @@
  * 더 크게 느껴진다. 신규 네이티브 의존성 없이 expo-linking 만으로 처리한다.
  */
 import { Linking, Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { logger } from './logger';
 
 /**
@@ -105,6 +106,106 @@ export function resolveMapQuery({
   return null;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 좌표 승격 (주소 검색 2단계 — B2)
+// ─────────────────────────────────────────────────────────────────────────────
+// 텍스트 검색은 핀이 뭉개진다 — '서울 강남구 테헤란로 152' 를 던지면 지도 앱이 나름대로
+// 해석해 건물이 아니라 도로나 동네를 잡는 일이 흔하다. 좌표가 있으면 그 해석 단계가 통째로
+// 사라진다. 그래서 좌표가 있으면 좌표 후보를 **앞에** 놓되, 텍스트 후보를 뒤에 남겨 둔다 —
+// 스킴이 안 열리는 기기에서도 예전 동작이 그대로 살아 있어야 하기 때문이다.
+
+export interface MapCoordinates {
+  lat: number;
+  lng: number;
+}
+
+export interface MapDestination {
+  /** 텍스트 검색어. 좌표가 없을 때의 유일한 근거 (`resolveMapQuery` 결과) */
+  query: string | null;
+  /** 근무지 좌표. 있으면 정밀 핀으로 승격된다 */
+  coordinates?: MapCoordinates | null;
+  /** 핀 라벨(장소명). 좌표 경로에서만 쓰인다 */
+  label?: string;
+}
+
+function hasUsableCoordinates(value?: MapCoordinates | null): value is MapCoordinates {
+  return Boolean(value) && Number.isFinite(value!.lat) && Number.isFinite(value!.lng);
+}
+
+/** 소수 6자리 ≈ 0.11m. 카카오가 주는 12자리를 그대로 URL 에 실을 이유가 없다. */
+function formatDegrees(value: number): string {
+  return value.toFixed(6);
+}
+
+/**
+ * 카카오 `link/to/{이름},{위도},{경도}` 의 이름 자리에 넣을 라벨.
+ *
+ * 🔴 **쉼표를 지운다.** 이 URL 은 쉼표로 필드를 가르므로 '라운더스, 강남점' 같은 이름이 그대로
+ *    들어가면 좌표 자리가 밀려 **엉뚱한 곳**이 열린다. 조용히 틀리는 종류의 실패다.
+ */
+function sanitizeLabel(label: string | undefined, fallback: string): string {
+  const cleaned = label?.replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+  return cleaned || fallback;
+}
+
+/** 좌표 기반 후보 URL. 지도 앱이 해석할 여지 없이 그 지점을 연다. */
+export function buildMapCoordinateUrls(
+  coordinates: MapCoordinates,
+  label: string | undefined,
+  platform: 'ios' | 'android' | 'web'
+): string[] {
+  if (!hasUsableCoordinates(coordinates)) return [];
+
+  const lat = formatDegrees(coordinates.lat);
+  const lng = formatDegrees(coordinates.lng);
+  const name = sanitizeLabel(label, '근무지');
+  const encodedName = encodeURIComponent(name);
+  // 카카오 길찾기 목적지 — 웹·모바일 어디서나 열리는 공통 최후 후보.
+  const kakaoTo = `https://map.kakao.com/link/to/${encodedName},${lat},${lng}`;
+
+  if (platform === 'ios') {
+    const urls: string[] = [];
+    // 네이버 URL 스킴은 `appname` 이 **필수**다 — 빠지면 앱이 에러 화면을 띄운다.
+    // 번들 식별자를 못 얻으면 후보에서 통째로 뺀다(에러 화면보다 다음 후보가 낫다).
+    const appName = Constants.expoConfig?.ios?.bundleIdentifier;
+    if (appName) {
+      urls.push(
+        `nmap://place?lat=${lat}&lng=${lng}&name=${encodedName}&appname=${encodeURIComponent(appName)}`
+      );
+    }
+    // 기본 지도 — 항상 열린다. `ll` 이 핀 위치, `q` 는 라벨.
+    urls.push(`https://maps.apple.com/?ll=${lat},${lng}&q=${encodedName}`);
+    urls.push(kakaoTo);
+    return urls;
+  }
+
+  if (platform === 'android') {
+    return [
+      // geo: URI 표준 — `q=위도,경도(라벨)` 이어야 지도 앱이 검색이 아니라 핀으로 받는다.
+      `geo:${lat},${lng}?q=${lat},${lng}(${encodedName})`,
+      kakaoTo,
+    ];
+  }
+
+  return [kakaoTo];
+}
+
+/**
+ * 목적지 → 열어볼 URL 목록. 좌표 후보가 앞, 텍스트 후보가 뒤(폴백).
+ *
+ * 좌표가 없으면 B1 이전과 완전히 같은 동작이다.
+ */
+export function buildMapUrls(
+  destination: MapDestination,
+  platform: 'ios' | 'android' | 'web'
+): string[] {
+  const textUrls = destination.query ? buildMapSearchUrls(destination.query, platform) : [];
+  if (!hasUsableCoordinates(destination.coordinates)) return textUrls;
+
+  const label = destination.label ?? destination.query ?? undefined;
+  return [...buildMapCoordinateUrls(destination.coordinates, label, platform), ...textUrls];
+}
+
 /** 지도 앱 후보 URL 목록. 앞에서부터 열 수 있는 첫 번째를 쓴다. */
 export function buildMapSearchUrls(query: string, platform: 'ios' | 'android' | 'web'): string[] {
   const encoded = encodeURIComponent(query.trim());
@@ -129,14 +230,20 @@ export function buildMapSearchUrls(query: string, platform: 'ios' | 'android' | 
 }
 
 /**
- * 주소로 지도 앱을 연다.
+ * 목적지로 지도 앱을 연다. 좌표가 있으면 정밀 핀, 없으면 주소 텍스트 검색.
  *
  * @returns 하나라도 열렸으면 true. 전부 실패하면 false (호출부가 안내를 띄운다)
  */
-export async function openMapSearch(query: string): Promise<boolean> {
+export async function openMapDestination(destination: MapDestination): Promise<boolean> {
   const platform = Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'web';
-  const urls = buildMapSearchUrls(query, platform);
+  const urls = buildMapUrls(destination, platform);
+  return openFirstAvailable(urls);
+}
 
+// 주소 텍스트 전용 진입점(`openMapSearch`)은 두지 않는다 — `openMapDestination({ query })` 가
+// 정확히 같은 일을 하고, 좌표가 생겼을 때 호출부가 옛 진입점에 머무르면 승격이 조용히 누락된다.
+
+async function openFirstAvailable(urls: string[]): Promise<boolean> {
   for (const url of urls) {
     try {
       // 웹 https 링크는 canOpenURL 이 false 를 돌려주는 환경이 있어 마지막 후보는 그냥 시도한다.

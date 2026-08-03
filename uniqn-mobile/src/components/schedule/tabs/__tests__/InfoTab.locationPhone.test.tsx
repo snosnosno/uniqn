@@ -10,11 +10,11 @@ import { render, fireEvent } from '@testing-library/react-native';
 import { InfoTab } from '../InfoTab';
 import type { ScheduleEvent } from '@/types';
 
-const mockOpenMapSearch = jest.fn().mockResolvedValue(true);
+const mockOpenMapDestination = jest.fn().mockResolvedValue(true);
 
 jest.mock('@/utils/mapLink', () => ({
   ...jest.requireActual<typeof import('@/utils/mapLink')>('@/utils/mapLink'),
-  openMapSearch: (...args: unknown[]) => mockOpenMapSearch(...args),
+  openMapDestination: (...args: unknown[]) => mockOpenMapDestination(...args),
 }));
 
 jest.mock('@/stores/toastStore', () => ({
@@ -60,7 +60,7 @@ describe('InfoTab — 연락처 표기', () => {
 
 describe('InfoTab — 길찾기', () => {
   beforeEach(() => {
-    mockOpenMapSearch.mockClear();
+    mockOpenMapDestination.mockClear();
   });
 
   it('주소가 없으면 길찾기 대신 안내 문구를 띄운다', () => {
@@ -77,7 +77,9 @@ describe('InfoTab — 길찾기', () => {
 
     fireEvent.press(getByText('길찾기'));
 
-    expect(mockOpenMapSearch).toHaveBeenCalledWith('서울 강남구 테헤란로 1');
+    expect(mockOpenMapDestination).toHaveBeenCalledWith(
+      expect.objectContaining({ query: '서울 강남구 테헤란로 1' })
+    );
   });
 
   it('상세주소가 있으면 상세주소를 우선한다', () => {
@@ -92,7 +94,43 @@ describe('InfoTab — 길찾기', () => {
 
     fireEvent.press(getByText('길찾기'));
 
-    expect(mockOpenMapSearch).toHaveBeenCalledWith('서울 강남구 테헤란로 1, 3층');
+    expect(mockOpenMapDestination).toHaveBeenCalledWith(
+      expect.objectContaining({ query: '서울 강남구 테헤란로 1, 3층' })
+    );
+  });
+
+  // B2 — 좌표 승격. 좌표를 안 넘기면 길찾기가 텍스트 검색으로 남아 핀이 뭉개진다.
+  it('좌표가 있으면 좌표와 장소명 라벨을 함께 넘긴다', () => {
+    const { getByText } = render(
+      <InfoTab
+        schedule={makeSchedule({
+          location: '라운더스 홀덤펍',
+          locationAddress: '서울 강남구 테헤란로 152',
+          coordinates: { lat: 37.5000242, lng: 127.0365086 },
+        })}
+      />
+    );
+
+    fireEvent.press(getByText('길찾기'));
+
+    expect(mockOpenMapDestination).toHaveBeenCalledWith({
+      query: '서울 강남구 테헤란로 152',
+      coordinates: { lat: 37.5000242, lng: 127.0365086 },
+      label: '라운더스 홀덤펍',
+    });
+  });
+
+  // 좌표만 있고 주소 텍스트가 없어도 갈 수 있어야 한다 — 게이트가 query 만 보면 버튼이 사라진다.
+  it('주소 텍스트가 없어도 좌표가 있으면 길찾기를 노출한다', () => {
+    const { getByText } = render(
+      <InfoTab schedule={makeSchedule({ coordinates: { lat: 37.5, lng: 127.03 } })} />
+    );
+
+    fireEvent.press(getByText('길찾기'));
+
+    expect(mockOpenMapDestination).toHaveBeenCalledWith(
+      expect.objectContaining({ query: null, coordinates: { lat: 37.5, lng: 127.03 } })
+    );
   });
 
   it('상세주소가 없으면 공고 주소를 장소 아래에 대신 보여준다', () => {
