@@ -5,7 +5,6 @@
  * @version 1.0.0
  */
 
-import type { ScheduleTimeState } from '@/shared/time';
 import {
   formatTime,
   formatDate,
@@ -132,7 +131,6 @@ describe('formatWorkTimeRange', () => {
     scheduledStart: '18:00',
     scheduledEnd: '23:00',
     isEndNextDay: false,
-    scheduleTimeState: 'confirmed' as ScheduleTimeState,
     rawTimeSlot: '18:00 - 23:00' as string | null,
     ...overrides,
   });
@@ -148,46 +146,24 @@ describe('formatWorkTimeRange', () => {
     );
   });
 
-  // 🔴 회귀 방지: 예전엔 '미정'과 '협의'가 둘 다 '시간 협의'로 나갔다. 아직 안 정해진 시간을
-  // "협의하기로 했다"고 말하면, 스태프는 기다려야 할 값을 이미 합의된 값으로 오해한다.
-  it('아직 안 정해진 시각은 협의가 아니라 미정으로 표기한다', () => {
-    expect(
-      formatWorkTimeRange(
-        info({
-          effectiveStart: '미정',
-          effectiveEnd: '미정',
-          scheduleTimeState: 'undecided',
-          rawTimeSlot: null,
-        })
-      )
-    ).toBe('출근 시간 미정');
-  });
-
-  it("저장된 '미정' 리터럴도 같은 문장으로 수렴한다", () => {
-    expect(
-      formatWorkTimeRange(
-        info({
-          effectiveStart: '미정',
-          effectiveEnd: '미정',
-          scheduleTimeState: 'undecided',
-          rawTimeSlot: '미정',
-        })
-      )
-    ).toBe('출근 시간 미정');
-  });
-
-  it('고정공고 협의 근무만 시간 협의로 표기한다', () => {
-    expect(
-      formatWorkTimeRange(
-        info({
-          effectiveStart: '미정',
-          effectiveEnd: '미정',
-          scheduleTimeState: 'negotiable',
-          rawTimeSlot: 'NEGOTIABLE',
-        })
-      )
-    ).toBe('시간 협의');
-  });
+  // 🔴 [R1/D4] 센티널 4종은 하나의 문장으로 수렴한다.
+  //    특히 `'NEGOTIABLE'` 이 중요하다 — negotiable 분기를 없앤 뒤 이 값이 자유 텍스트 분기로
+  //    떨어지면 **사용자 화면에 영문 토큰 "NEGOTIABLE" 이 그대로 노출된다**. 에러가 아니라
+  //    조용한 오표시라 눈에 띄지 않으므로, 값마다 명시적으로 가둔다.
+  it.each([null, '미정', 'NEGOTIABLE', '', '   '])(
+    'rawTimeSlot=%p 는 전부 미정 한 문장으로 수렴한다',
+    (rawTimeSlot) => {
+      expect(
+        formatWorkTimeRange(
+          info({
+            effectiveStart: '미정',
+            effectiveEnd: '미정',
+            rawTimeSlot,
+          })
+        )
+      ).toBe('출근 시간 미정');
+    }
+  );
 
   // 사람이 적어둔 자유 텍스트를 '미정'으로 덮으면 있던 정보가 사라진다.
   it('시각으로 해석되지 않는 자유 텍스트는 원문을 살린다', () => {
@@ -196,14 +172,13 @@ describe('formatWorkTimeRange', () => {
         info({
           effectiveStart: '미정',
           effectiveEnd: '미정',
-          scheduleTimeState: 'undecided',
           rawTimeSlot: '협의',
         })
       )
     ).toBe('협의');
   });
 
-  // 실제 출퇴근 기록이 있으면 예정이 미정이어도 기록을 보여준다(3상태는 예정에만 적용).
+  // 실제 출퇴근 기록이 있으면 예정이 미정이어도 기록을 보여준다(예정 상태는 예정에만 적용).
   it('예정이 미정이어도 실제 출퇴근 기록이 있으면 그 시각을 보여준다', () => {
     expect(
       formatWorkTimeRange(
@@ -213,7 +188,6 @@ describe('formatWorkTimeRange', () => {
           scheduledStart: '미정',
           scheduledEnd: '미정',
           isEndNextDay: true,
-          scheduleTimeState: 'undecided',
         })
       )
     ).toBe('19:04 – 익일 02:11');

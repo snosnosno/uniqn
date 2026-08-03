@@ -98,6 +98,13 @@
 --     ⚠️ 이 브랜치는 착수 시점 base(186)에서 188 로 잡았다가, 정산 레인(#402)이 먼저
 --        머지되어 기준선이 189 가 된 뒤 191 로 재산정했다 — 위 2026-07-31 항목이 경고한
 --        "PR 보다 먼저 prod 적용하면 다른 레인의 기대값이 어긋난다"가 그대로 재현된 사례다.
+--   2026-08-03 시간 '미정' 표현 통일 R0(마이그 20260803120000, prod 미적용 — 머지와 동기):
+--     함수 193 = 192 + _normalize_time_slot 1
+--       (work_logs.time_slot 저장 정본화 헬퍼 — 센티널 4종→NULL·범위형→시작시각·0패딩.
+--        confirm_application·add_direct_staff 두 INSERT 가 공유하므로 함수로 뽑았다.)
+--     정책 111 불변(헬퍼 신설 + 기존 4함수 재정의만, 테이블·RLS 미변경).
+--     같은 마이그의 _posting_slot_key·confirm_application·add_direct_staff·
+--     notify_on_job_posting_update 는 전부 CREATE OR REPLACE 재정의라 개수 불변.
 --
 -- ⚠️ 유지보수 계약: 이후 마이그레이션이 public 함수/정책을 추가·삭제하면
 --   이 기대값을 같은 PR에서 함께 갱신해야 한다. 갱신을 강제당하는 것 자체가
@@ -110,7 +117,7 @@
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=192
+-- PARITY_EXPECT_FUNCS=193
 -- PARITY_EXPECT_POLICIES=111
 -- ============================================================
 BEGIN;
@@ -130,8 +137,8 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  192,
-  'public function count == prod (192 = 189 + 신고 축 2(notify_on_report_review·fn_reports_pin_identity, #406) + update_work_log_slot 1, 2026-08-02)');
+  193,
+  'public function count == prod (193 = 192 + _normalize_time_slot 1(시간 미정 통일 R0), 2026-08-03)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(

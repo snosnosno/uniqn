@@ -12,7 +12,7 @@ import type {
 } from '@/types';
 import type { DateSpecificRequirement, TimeSlot } from '@/types/jobPosting/dateRequirement';
 import type { RoleWithCount } from '@/types/postingConfig';
-import { FIXED_TIME_MARKER, TBA_TIME_MARKER } from '@/types/assignment';
+import { TBA_TIME_MARKER } from '@/types/assignment';
 import { getRegionLabel } from '@/constants/regions';
 import { getRoleDisplayName } from '@/types/unified';
 import { groupRequirementsToDateRanges } from '@/utils/date';
@@ -268,7 +268,10 @@ export function getPostingDateGroups(posting: JobPosting): PostingDateGroup[] {
 
 export function getPostingLegacyTimeSlot(posting: JobPosting): string {
   if (posting.schedule.kind === 'fixed') {
-    return posting.schedule.startTime ? `${posting.schedule.startTime}~` : FIXED_TIME_MARKER;
+    // [R1] 시각이 없으면(=협의) 미정 센티널 하나로 통일한다. 예전 폴백 'NEGOTIABLE' 은
+    //      이 값이 표시 경로(지원자 카드·레거시 라벨·**외부 공유 텍스트**)로 흘러가 그대로
+    //      렌더되던 영문 토큰 누출의 발원지였다.
+    return posting.schedule.startTime ? `${posting.schedule.startTime}~` : TBA_TIME_MARKER;
   }
 
   const firstSlot = posting.schedule.requirements[0]?.timeSlots[0];

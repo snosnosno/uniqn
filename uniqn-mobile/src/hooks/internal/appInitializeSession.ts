@@ -4,6 +4,7 @@ import { useAuthStore, waitForHydration } from '@/stores/authStore';
 import { validateEnv } from '@/lib/env';
 import { isCurrentAutoLoginSession } from '@/lib/autoLoginSession';
 import { migrateFromAsyncStorage } from '@/lib/mmkvStorage';
+import { purgeLegacyLoginAttemptKeys } from '@/lib/secureStorage';
 import { signOut as authSignOut } from '@/services/auth';
 import { getProtectedAuthFlowKind } from '@/shared/auth/protectedAuthFlow';
 import { logger } from '@/utils/logger';
@@ -62,6 +63,10 @@ export async function bootstrapCore(): Promise<BootstrapResult> {
   }
 
   await migrateFromAsyncStorage();
+
+  // 한시 코드 (2026-11 이후 제거) — PR#406 이 남긴 평문 이메일 키를 웹에서 소거한다.
+  // 동기·불throw 라 부팅을 막지 않는다. 네이티브에서는 즉시 no-op.
+  purgeLegacyLoginAttemptKeys();
 
   const hydrated = await waitForHydration(AUTH_STORE_HYDRATION_TIMEOUT_MS);
   if (!hydrated) {

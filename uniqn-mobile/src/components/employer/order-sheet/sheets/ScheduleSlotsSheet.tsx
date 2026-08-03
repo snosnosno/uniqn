@@ -156,6 +156,18 @@ export function ScheduleSlotsSheet({
       }
     >
       <View className="gap-2 px-4 pt-3 pb-2">
+        {/*
+          새벽 근무 날짜 관례(D3) — 시각만 저장하고 종료 시각은 두지 않는 모델이라,
+          "밤 22시 시작"과 "새벽 2시 시작"을 날짜로만 구분한다. 사장이 금요일 영업의
+          새벽 2시 슬롯을 '금요일'에 적으면 스태프 근무표에는 하루 앞선 날에 뜬다.
+          코드로 막을 수 있는 성질이 아니라(둘 다 유효한 입력이다) 관례를 말해 준다.
+        */}
+        <View className="mb-1 rounded-xl border border-secondary-100 bg-surface-card px-3.5 py-3 dark:border-surface-overlay">
+          <Text className="text-xs font-sans leading-[1.125rem] text-content-secondary dark:leading-5">
+            새벽에 시작하는 근무는 <Text className="font-sans-bold">실제 출근하는 날짜</Text>로
+            등록해 주세요. 예를 들어 금요일 영업의 새벽 2시 근무는 토요일 02:00 이에요.
+          </Text>
+        </View>
         {slots.map((slot, i) => (
           <SlotCard
             key={slotIds[i]}

@@ -71,8 +71,8 @@ interface NotificationState {
   // 실시간 카운터 (Firestore 리스너에서 직접 업데이트)
   unreadCount: number;
 
-  // 페이지네이션 상태 (무한 스크롤용)
-  hasMore: boolean;
+  // 페이지네이션 상태는 여기 없다 — 페이지 소유권은 `useNotificationList` 의
+  // useInfiniteQuery 에 있다(`hasNextPage`). 스토어에 사본을 두면 반드시 갈린다.
   lastFetchedAt: number | null;
 
   // UI 상태 (순수 클라이언트 상태)
@@ -113,7 +113,6 @@ interface NotificationState {
   clearFilter: () => void;
 
   // 상태 관리
-  setHasMore: (hasMore: boolean) => void;
   setLastFetchedAt: (timestamp: number) => void;
   setUnreadCount: (count: number) => void;
   /** 미읽음 카운터 감소 (음수 방지) */
@@ -142,7 +141,6 @@ function createEmptyUnreadByCategory(): Record<NotificationCategoryType, number>
 const initialState = {
   notifications: [] as NotificationData[],
   unreadCount: 0,
-  hasMore: true,
   lastFetchedAt: null as number | null,
   settings: createDefaultNotificationSettings(),
   filter: {} as NotificationFilter,
@@ -485,10 +483,6 @@ export const useNotificationStore = create<NotificationState>()(
       // ========================================================================
       // 상태 관리
       // ========================================================================
-
-      setHasMore: (hasMore) => {
-        set({ hasMore });
-      },
 
       setLastFetchedAt: (timestamp) => {
         set({ lastFetchedAt: timestamp });

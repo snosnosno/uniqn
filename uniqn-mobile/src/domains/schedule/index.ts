@@ -23,4 +23,9 @@ export {
   type ScheduleContainerContextInput,
 } from './ScheduleConverter';
 export type { HydrateSlotSource, HydrateRoleSource } from './postingHydrateKeys';
-export { UNKNOWN_TIME_KEY, slotHydrateKey, roleHydrateKey } from './postingHydrateKeys';
+export {
+  UNKNOWN_TIME_KEY,
+  slotHydrateKey,
+  roleHydrateKey,
+  timeSlotKey,
+} from './postingHydrateKeys';

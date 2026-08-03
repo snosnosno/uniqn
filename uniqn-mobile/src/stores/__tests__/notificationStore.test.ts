@@ -47,7 +47,6 @@ describe('NotificationStore', () => {
 
       expect(state.notifications).toEqual([]);
       expect(state.unreadCount).toBe(0);
-      expect(state.hasMore).toBe(true);
       expect(state.lastFetchedAt).toBeNull();
       expect(state.settings.enabled).toBe(true);
       expect(state.filter).toEqual({});
@@ -635,14 +634,6 @@ describe('NotificationStore', () => {
   // ============================================================================
 
   describe('State Management', () => {
-    it('should set hasMore', () => {
-      act(() => {
-        useNotificationStore.getState().setHasMore(false);
-      });
-
-      expect(useNotificationStore.getState().hasMore).toBe(false);
-    });
-
     it('should set lastFetchedAt', () => {
       const timestamp = Date.now();
 
@@ -708,7 +699,6 @@ describe('NotificationStore', () => {
         useNotificationStore
           .getState()
           .setNotifications([createMockNotification({ id: 'n1', isRead: false })]);
-        useNotificationStore.getState().setHasMore(false);
         useNotificationStore.getState().setFilter({ isRead: true });
       });
 
@@ -719,7 +709,6 @@ describe('NotificationStore', () => {
       const state = useNotificationStore.getState();
       expect(state.notifications).toEqual([]);
       expect(state.unreadCount).toBe(0);
-      expect(state.hasMore).toBe(true);
       expect(state.lastFetchedAt).toBeNull();
       expect(state.filter).toEqual({});
     });
