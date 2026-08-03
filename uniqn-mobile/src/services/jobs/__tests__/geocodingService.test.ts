@@ -99,4 +99,33 @@ describe('geocodeAddress', () => {
 
     await expect(geocodeAddress('서울 강남구 테헤란로 152')).resolves.toBeNull();
   });
+
+  // 🔴 supabase-js functions.invoke 에는 기본 타임아웃이 없다. 상한이 없으면 EF 콜드스타트나
+  //    상류 지연이 공고 저장 버튼을 무한정 붙잡는다 — 부가 정보가 본 기능을 인질로 잡는 꼴이다.
+  it('🔴 EF 가 응답하지 않으면 상한에서 포기하고 null 로 접는다', async () => {
+    jest.useFakeTimers();
+    try {
+      // 절대 resolve 되지 않는 호출 = 멈춘 EF
+      mockInvoke.mockReturnValue(new Promise(() => {}));
+
+      const pending = geocodeAddress('서울 강남구 테헤란로 152');
+      jest.advanceTimersByTime(8_000);
+
+      await expect(pending).resolves.toBeNull();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('상한 안에 응답이 오면 좌표를 그대로 돌려준다(상한이 정상 응답을 자르지 않는다)', async () => {
+    jest.useFakeTimers();
+    try {
+      mockInvoke.mockResolvedValue({ data: { coordinates: GANGNAM }, error: null });
+
+      const pending = geocodeAddress('서울 강남구 테헤란로 152');
+      await expect(pending).resolves.toEqual(GANGNAM);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
 });

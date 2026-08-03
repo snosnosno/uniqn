@@ -169,15 +169,19 @@ async function createSinglePosting(
 /**
  * 지오코딩에 넣을 주소.
  *
- * 🔑 폼의 '주소'는 저장 직전 `district` 로 접힌다(serialization.toCanonicalLocation). 그래서
- *    편집 재직렬화로 돌아온 입력에는 `address` 가 없고 `district` 만 있다 — 둘 다 봐야 한다.
- *    `detailedAddress`(층/호)는 **넣지 않는다**. '3층 301호'가 붙으면 매칭률만 떨어진다.
+ * 🔴 우선순위는 **`toCanonicalLocation` 과 반드시 같아야 한다**(`district ?? address`).
+ *    거기서 폼의 '주소'가 저장 직전 `district` 로 접히기 때문이다. 여기서 `address` 를 먼저
+ *    보면, 둘 다 실린 입력에서 **핀은 `address` 자리인데 화면에 보이는 주소는 `district`** 인
+ *    상태가 만들어진다 — 좌표와 주소 텍스트가 서로 다른 곳을 가리키는, 아무 에러도 안 나는 결함이다.
+ *    (B1 이 물려준 `district ?? address` 붕괴가 4곳 전부 district 우선인 것과 같은 이유.)
+ *
+ * 🔑 `detailedAddress`(층/호)는 **넣지 않는다**. '3층 301호'가 붙으면 매칭률만 떨어진다.
  */
 function pickGeocodeAddress(location?: Partial<PostingLocation>): string | undefined {
-  const address = location?.address?.trim();
-  if (address) return address;
   const district = location?.district?.trim();
-  return district || undefined;
+  if (district) return district;
+  const address = location?.address?.trim();
+  return address || undefined;
 }
 
 /**
@@ -201,7 +205,8 @@ async function resolveGeoForUpdate(
     snapshot = await jobPostingRepository.getGeocodeSnapshot(jobPostingId);
   } catch (error) {
     // 스냅샷은 최적화·정확도 보조일 뿐이다. 못 읽었다고 저장을 막지 않는다.
-    // 이 경우 아래 로직은 "주소가 바뀐 것으로 간주"해 다시 지오코딩한다(보수적).
+    // 못 읽으면 "주소가 바뀐 것으로 간주"한다 — 재계산이 실패하면 좌표를 지우게 되지만,
+    // 그게 안전한 방향이다. 좌표가 없으면 주소 텍스트로 폴백하고, 틀린 좌표는 폴백이 없다.
     logger.warn('지오코딩 스냅샷 조회 실패 — 주소가 바뀐 것으로 간주하고 재계산', {
       jobPostingId,
       error: String(error),

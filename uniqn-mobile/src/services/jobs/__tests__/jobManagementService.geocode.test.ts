@@ -201,13 +201,39 @@ describe('updateJobPosting — 지오코딩 판정', () => {
     expect(geoArgOfUpdate().value).toEqual(GANGNAM);
   });
 
-  it('폼이 address 로 보낸 경우에도(편집 전 canonical 붕괴 이전) 같은 주소를 쓴다', async () => {
+  it('폼이 address 로만 보낸 경우에도(district 미설정) 그 주소를 쓴다', async () => {
     mockGetGeocodeSnapshot.mockResolvedValue({ address: '옛 주소', hasGeo: false });
     mockGeocodeAddress.mockResolvedValue(GANGNAM);
 
     await updateJobPosting(
       'p1',
       { location: { name: '라운더스', address: '서울 강남구 테헤란로 152' } },
+      'owner-1',
+      null
+    );
+
+    expect(mockGeocodeAddress).toHaveBeenCalledWith('서울 강남구 테헤란로 152');
+  });
+
+  /**
+   * 🔴 저장되는 주소와 지오코딩하는 주소는 **같은 문자열**이어야 한다.
+   * `toCanonicalLocation` 은 `district ?? address` 로 접으므로 둘 다 실린 입력에서는
+   * `district` 가 저장된다. 여기서 `address` 를 먼저 보면 핀은 `address` 자리인데 화면에
+   * 보이는 주소는 `district` 인 상태가 만들어진다 — 아무 에러도 안 나는 어긋남이다.
+   */
+  it('🔴 district 와 address 가 둘 다 오면 저장되는 쪽(district)을 지오코딩한다', async () => {
+    mockGetGeocodeSnapshot.mockResolvedValue({ address: '옛 주소', hasGeo: false });
+    mockGeocodeAddress.mockResolvedValue(GANGNAM);
+
+    await updateJobPosting(
+      'p1',
+      {
+        location: {
+          name: '라운더스',
+          district: '서울 강남구 테헤란로 152',
+          address: '부산 해운대구 해운대해변로 264',
+        },
+      },
       'owner-1',
       null
     );
