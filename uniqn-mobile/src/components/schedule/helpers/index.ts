@@ -10,7 +10,6 @@ export {
   formatDate,
   formatWorkTimeRange,
   describeNextShiftCountdown,
-  NEGOTIABLE_TIME_LABEL,
   UNDECIDED_TIME_LABEL,
   UNDECIDED_TIME_HINT,
   unsetScheduledTimeLabel,

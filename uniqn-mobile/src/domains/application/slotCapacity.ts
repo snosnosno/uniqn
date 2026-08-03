@@ -1,6 +1,6 @@
 import type { Assignment, JobPosting } from '@/types';
-import { FIXED_DATE_MARKER, FIXED_TIME_MARKER, TBA_TIME_MARKER } from '@/types/assignment';
-import { WorkLogCreator } from '@/domains/schedule';
+import { FIXED_DATE_MARKER } from '@/types/assignment';
+import { timeSlotKey, UNKNOWN_TIME_KEY } from '@/domains/schedule';
 
 export interface SlotCapacityIssue {
   date: string;
@@ -50,15 +50,14 @@ export function buildPostingSlotCapacityMap(posting: JobPosting): Map<string, Sl
     const effectiveDate = requirement.date ?? FIXED_DATE_MARKER;
 
     requirement.timeSlots.forEach((slot) => {
-      // AssignmentSelector.getSlotSelectionTime / buildCanonicalFixedAssignment 와 동일한 해석을 사용해야 한다.
-      // 시간 미정(isTimeToBeAnnounced) 슬롯은 startTime 이 없으므로 TBA_TIME_MARKER 로 키를 만든다.
-      // (이 줄이 startTime 만 보면 요청측 키 `date__미정__role` 과 영원히 불일치 → 빈자리도 마감 처리됨)
-      // fixed 공고가 시간 협의(startTime 없음 + not TBA)이면 assignment 측은 timeSlot=FIXED_TIME_MARKER 를 쓰므로,
-      // capacity 키도 FIXED_TIME_MARKER 로 맞춰야 한다. (그냥 '' 면 'NEGOTIABLE' 과 불일치 → 항상 마감 회귀)
-      const slotSelectionTime = slot.isTimeToBeAnnounced
-        ? TBA_TIME_MARKER
-        : slot.startTime || (posting.schedule.kind === 'fixed' ? FIXED_TIME_MARKER : '');
-      const slotStartTime = WorkLogCreator.extractStartTime(slotSelectionTime);
+      // 🔑 공고 측 키와 요청 측 키(:114)는 **같은 함수**(`timeSlotKey`)를 통과해야 한다.
+      //    예전엔 양쪽이 각자 폴백을 골랐다 — TBA 는 '미정', fixed 협의는 'NEGOTIABLE', dated 는 ''.
+      //    폴백이 셋으로 갈린 탓에 한쪽만 손대면 "빈자리인데 항상 마감" 회귀가 났다(과거 주석이 그 사고 기록).
+      //    `timeSlotKey` 는 서버 `_posting_slot_key` 와 동치라 센티널 4종을 전부 '미정' 으로 접는다 —
+      //    폴백을 고를 일 자체가 없어지고, 레거시 'NEGOTIABLE' 배정도 같은 키로 만난다.
+      const slotStartTime = slot.isTimeToBeAnnounced
+        ? UNKNOWN_TIME_KEY
+        : timeSlotKey(slot.startTime);
 
       slot.roles.forEach((role) => {
         const roleId = getRoleId(role);
@@ -111,7 +110,8 @@ export function validateAssignmentSlotCapacity(
   const requestedByKey = new Map<string, number>();
 
   assignments.forEach((assignment) => {
-    const slotStartTime = WorkLogCreator.extractStartTime(assignment.timeSlot);
+    // 공고 측(:58)과 같은 함수를 쓴다 — 레거시 'NEGOTIABLE' 배정도 '미정' 키로 접혀 매칭된다.
+    const slotStartTime = timeSlotKey(assignment.timeSlot);
 
     assignment.roleIds.forEach((roleId) => {
       assignment.dates.forEach((date) => {

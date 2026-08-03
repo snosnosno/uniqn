@@ -242,13 +242,12 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
         </View>
 
         <View className="flex-row gap-2">
-          {/* 라벨이 이미 '예정'이라 맥락이 붙으므로 축약 표기('미정'/'협의')를 쓴다.
-              예전엔 둘 다 '시간 협의' 였다 — 스케줄 카드와 다른 문장이 나오던 지점. */}
+          {/* 라벨이 이미 '예정'이라 맥락이 붙으므로 축약 표기('미정')를 쓴다. */}
           <TimeBox
             label={timeInfo.isEffectiveStartActual ? '출근' : '예정'}
             value={
               !timeInfo.isEffectiveStartActual && timeInfo.effectiveStart === '미정'
-                ? unsetScheduledTimeLabel(timeInfo.scheduleTimeState, true)
+                ? unsetScheduledTimeLabel(true)
                 : timeInfo.effectiveStart
             }
           />
@@ -256,7 +255,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
             label={timeInfo.isEffectiveEndActual ? '퇴근' : '예정'}
             value={
               !timeInfo.isEffectiveEndActual && timeInfo.effectiveEnd === '미정'
-                ? unsetScheduledTimeLabel(timeInfo.scheduleTimeState, true)
+                ? unsetScheduledTimeLabel(true)
                 : timeInfo.effectiveEnd
             }
           />

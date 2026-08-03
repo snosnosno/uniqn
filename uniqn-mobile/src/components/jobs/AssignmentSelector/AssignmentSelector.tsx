@@ -4,7 +4,7 @@ import { buildPostingFacts, createPostingLegacyDateRequirements } from '@/domain
 import { roleHydrateKey, slotHydrateKey } from '@/domains/schedule';
 import { useJobSchedule } from '@/hooks/useJobSchedule';
 import type { Assignment } from '@/types';
-import { TBA_TIME_MARKER, createSimpleAssignment } from '@/types/assignment';
+import { createSimpleAssignment } from '@/types/assignment';
 import type { TimeSlotInfo } from '@/types/unified';
 import { getRoleDisplayName } from '@/types/unified';
 import {
@@ -17,13 +17,9 @@ import { sortTimeSlotsByStart } from '@/utils/date';
 import { DateGroupSelection } from './DateGroupSelection';
 import { DateSelection } from './DateSelection';
 import type { AssignmentSelectorProps, TimeOptions } from './types';
-import { getEffectiveRoleId } from './utils';
+import { getEffectiveRoleId, getSlotSelectionTime } from './utils';
 
 export type { AssignmentSelectorProps } from './types';
-
-function getSlotSelectionTime(slot: TimeSlotInfo): string {
-  return slot.isTimeToBeAnnounced ? TBA_TIME_MARKER : (slot.startTime ?? '');
-}
 
 function matchesGroupedSelection(slot: TimeSlotInfo, slotTime: string, role: string): boolean {
   if (getSlotSelectionTime(slot) !== slotTime) {

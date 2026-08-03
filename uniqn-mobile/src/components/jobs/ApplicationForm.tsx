@@ -6,7 +6,7 @@ import { buildPostingFacts } from '@/domains/job-posting';
 import { usePostingFilledCounts, extractPostingFilledSubmap } from '@/hooks/usePostingFilledCounts';
 import { findUnansweredRequired, initializePreQuestionAnswers } from '@/domains/application';
 import { THIRD_PARTY_CONSENT_VERSION_TAG } from '@/constants/legal';
-import { FIXED_DATE_MARKER, FIXED_TIME_MARKER, type Assignment } from '@/types/assignment';
+import { FIXED_DATE_MARKER, TBA_TIME_MARKER, type Assignment } from '@/types/assignment';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { SheetModal } from '@/components/ui/SheetModal';
@@ -137,7 +137,7 @@ export function ApplicationForm({
         ? [
             {
               roleIds: [selectedFixedRoleId],
-              timeSlot: postingFacts.application.fixedAssignmentTimeSlot || FIXED_TIME_MARKER,
+              timeSlot: postingFacts.application.fixedAssignmentTimeSlot || TBA_TIME_MARKER,
               dates: [FIXED_DATE_MARKER],
               isGrouped: false,
               checkMethod: 'individual',

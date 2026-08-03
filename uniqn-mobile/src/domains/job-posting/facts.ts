@@ -6,7 +6,7 @@ import type {
   PostingSalaryDisplay,
   PostingScheduleDisplay,
 } from '@/types';
-import { FIXED_TIME_MARKER } from '@/types/assignment';
+import { TBA_TIME_MARKER } from '@/types/assignment';
 import { getRoleDisplayName } from '@/types/unified';
 import { getAllowanceItems, getGuaranteedHoursLabel } from '@/utils/allowanceUtils';
 import { isSupportedReleasePosting } from '@/utils/jobPostingVisibility';
@@ -158,10 +158,12 @@ export function buildPostingFacts(posting: JobPosting): PostingFacts {
     requiresRoleSelection: workflow.isFixed,
     requiresAssignmentSelection: !workflow.isFixed,
     requiresPreQuestions: (posting.questions.items ?? []).length > 0,
+    // [R1] 고정공고의 '시각 미정'은 '미정' 하나로 표현한다(옛 'NEGOTIABLE' 폐지).
+    //      이 값은 ApplicationForm 을 거쳐 지원 배정의 timeSlot 이 되므로 쓰기 규약을 따른다.
     fixedAssignmentTimeSlot:
       posting.schedule.kind === 'fixed'
-        ? posting.schedule.startTime || FIXED_TIME_MARKER
-        : FIXED_TIME_MARKER,
+        ? posting.schedule.startTime || TBA_TIME_MARKER
+        : TBA_TIME_MARKER,
     availableRoleOptions: roleAvailability.availableItems,
     reason: applicationReason,
   };

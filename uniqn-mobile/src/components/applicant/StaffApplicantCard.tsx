@@ -14,7 +14,8 @@ import { View, Text, Pressable } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ConfirmationHistoryTimeline } from './ConfirmationHistoryTimeline';
-import { FIXED_DATE_MARKER, FIXED_TIME_MARKER } from '@/types/assignment';
+import { FIXED_DATE_MARKER } from '@/types/assignment';
+import { isTimeTBD } from '@/shared/time';
 import type { Application, ApplicationStatus, Assignment } from '@/types';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 import { STATUS } from '@/constants';
@@ -102,7 +103,11 @@ const getAssignmentsSummary = (assignments: Assignment[]): string => {
   const isFixed = assignments.every((assignment) => assignment.dates.includes(FIXED_DATE_MARKER));
   if (isFixed) {
     const roleLabel = getRoleLabel(assignments[0]?.roleIds[0] ?? 'other');
-    const timeLabel = assignments[0]?.timeSlot === FIXED_TIME_MARKER ? '출근시간 협의' : '고정근무';
+    // [R1] 옛 'NEGOTIABLE' 만 보던 엄격 비교를 관용 판정으로 넓힌다 — 신규 지원서는 '미정' 을
+    //      담으므로 그대로 두면 협의 라벨이 조용히 '고정근무' 로 바뀐다.
+    //      '협의' 문구는 여기서 유지한다: 이 분기는 이미 고정공고임을 알고 있어
+    //      D1('협의 표시는 공고 유형에서 유도')이 지시한 배선 그 자체다.
+    const timeLabel = isTimeTBD(assignments[0]?.timeSlot) ? '출근시간 협의' : '고정근무';
     return `${roleLabel} / ${timeLabel}`;
   }
 
@@ -196,9 +201,8 @@ const AssignmentsSummary = memo(function AssignmentsSummary({
       const timeSlots = new Set<string>();
       assignments.forEach((assignment) => {
         assignment.roleIds.forEach((roleId) => roles.add(roleId));
-        timeSlots.add(
-          assignment.timeSlot === FIXED_TIME_MARKER ? '출근시간 협의' : assignment.timeSlot
-        );
+        // [R1] 위 105행과 같은 이유로 관용 판정 — 넓히지 않으면 raw '미정' 이 그대로 렌더된다.
+        timeSlots.add(isTimeTBD(assignment.timeSlot) ? '출근시간 협의' : assignment.timeSlot);
       });
 
       return [[FIXED_DATE_MARKER, { roles, timeSlots }]] as [

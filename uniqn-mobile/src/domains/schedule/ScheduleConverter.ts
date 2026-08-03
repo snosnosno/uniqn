@@ -19,12 +19,8 @@ import type {
   WorkLog,
   PostingRoleCatalogEntry,
 } from '@/types';
-import {
-  FIXED_DATE_MARKER,
-  FIXED_TIME_MARKER,
-  TBA_TIME_MARKER,
-  normalizeAssignmentRole,
-} from '@/types/assignment';
+import { FIXED_DATE_MARKER, normalizeAssignmentRole } from '@/types/assignment';
+import { isTimeTBD } from '@/shared/time';
 import { parseTimeSlotToDate } from '@/utils/date/ranges';
 import { toDate } from '@/utils/date';
 import { calculateSettlementBreakdown, DEFAULT_SALARY_INFO } from '@/utils/settlement';
@@ -276,12 +272,9 @@ export class ScheduleConverter {
     date: string,
     type: 'start' | 'end'
   ): Date | null {
-    if (
-      !timeSlot ||
-      timeSlot === FIXED_TIME_MARKER ||
-      timeSlot === TBA_TIME_MARKER ||
-      timeSlot === '미정'
-    ) {
+    // [R1] 예전엔 마커 2종 + 리터럴 '미정' 을 3중으로 비교했다(뒤 둘은 같은 값이라 중복).
+    //      판정은 `isTimeTBD` 하나로 모은다 — 서버 `_posting_slot_key` 와 같은 센티널 집합이다.
+    if (isTimeTBD(timeSlot)) {
       return null;
     }
 
