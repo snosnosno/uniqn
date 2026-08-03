@@ -11,7 +11,11 @@
  *      좌표가 없는 것보다 나쁘다(없으면 주소 텍스트로 폴백한다)
  *   3. 반쪽 좌표가 새어 나가 DB `chk_job_postings_geo_pair` 로 **공고 저장 전체**를 깨는 것
  */
-import { serializeJobPostingV3, deserializeJobPostingDocument } from '../serialization';
+import {
+  serializeJobPostingV3,
+  deserializeJobPostingDocument,
+  mergeJobPostingInput,
+} from '../serialization';
 import type { CreateJobPostingInput, JobPosting } from '@/types/jobPosting';
 
 // 실측값(2026-08-03 prod 지오코딩): '서울 강남구 테헤란로 152'
@@ -103,6 +107,35 @@ describe('serializeJobPostingV3 — 좌표 3상', () => {
     const doc = serializeJobPostingV3(createInput(), { ...OWNER, current });
 
     expect(Object.prototype.hasOwnProperty.call(doc, 'geoLat')).toBe(false);
+  });
+});
+
+/**
+ * 실제 수정 경로는 서비스가 판정한 `geo` 를 `mergeJobPostingInput` 에 통과시킨 뒤에야
+ * `serializeJobPostingV3` 에 닿는다. 병합에서 키가 떨어지면 위 3상 테스트가 전부 green 인데도
+ * 결과는 "항상 유지"로 무너진다 — `toCreateJobPostingInput` 이 canonical location 만 남겨
+ * `address`·`coordinates` 를 떨구는 것과 정확히 같은 클래스의 조용한 유실이다.
+ */
+describe('mergeJobPostingInput — 좌표 의견 전달', () => {
+  function currentPosting(): JobPosting {
+    return deserializeJobPostingDocument(serializeJobPostingV3(createInput(GANGNAM), OWNER));
+  }
+
+  it('patch 의 좌표가 병합 결과까지 온다', () => {
+    expect(mergeJobPostingInput(currentPosting(), { geo: PANGYO }).geo).toEqual(PANGYO);
+  });
+
+  it('🔴 patch 의 null(지움)이 병합에서 사라지지 않는다', () => {
+    expect(mergeJobPostingInput(currentPosting(), { geo: null }).geo).toBeNull();
+  });
+
+  it('좌표에 의견이 없는 patch(정산 설정 저장 등)는 키를 만들지 않는다', () => {
+    const merged = mergeJobPostingInput(currentPosting(), { title: '제목만 변경' });
+
+    expect(merged.geo).toBeUndefined();
+    // 그리고 그 결과를 직렬화하면 current 의 좌표가 보존된다(= 정산 설정 저장이 좌표를 안 지운다).
+    const doc = serializeJobPostingV3(merged, { ...OWNER, current: currentPosting() });
+    expect(doc.geoLat).toBe(GANGNAM.lat);
   });
 });
 
