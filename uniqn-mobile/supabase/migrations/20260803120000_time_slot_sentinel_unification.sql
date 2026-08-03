@@ -29,7 +29,9 @@
 --
 -- ── 재정의 규율 (실사고 기반) ───────────────────────────────
 -- 🔴 DROP FUNCTION 금지 — `CREATE OR REPLACE` 만. DROP 하면 회수해 둔 PUBLIC EXECUTE 가
---    기본 GRANT 로 되살아난다(20260730174805 이 회수한 상태).
+--    기본 GRANT 로 되살아난다(레포 파일 `20260731090000_revoke_public_execute_trigger_functions.sql`
+--    이 회수한 상태. ⚠️ prod 기록명은 `20260730174805` 로 **파일명과 다르다** —
+--    apply_migration 이 적용 시각으로 버전을 새로 채번하기 때문이다).
 -- 🔴 `SET search_path` 는 **함수마다 다르다**. CREATE OR REPLACE 는 명시하지 않은 속성을
 --    기본값으로 되돌리므로(=proconfig 통째 교체) prod 실측값을 그대로 복사한다:
 --      _posting_slot_key            → pg_catalog, pg_temp
@@ -38,6 +40,16 @@
 --      notify_on_job_posting_update → public, extensions, pg_temp
 -- 🔴 구클라 하위호환이 R0 의 존재 이유다 — 센티널이 와도 **에러가 아니라 흡수**여야 한다.
 --    23514(CHECK 위반)를 내면 설계 위반이다.
+--
+-- ── ⚠️ 전환기(R0 적용 ~ R1 배포)의 알려진 한계 ────────────────
+-- 하위호환은 **쓰기·데이터 축**에서 완전하다. 그러나 **표시 축에는 한 갈래 회귀가 있다**:
+--   `count_posting_confirmed_by_slot` 은 work_logs 측 키를 그대로 돌려주는데, R0 이후 고정공고
+--   협의 슬롯의 그 키가 'NEGOTIABLE' → '미정' 으로 바뀐다. 반면 **구클라는 공고 측 키를 여전히
+--   'NEGOTIABLE' 로 만든다**(`postingSurfaceModel.buildFixedScheduleModel`). 두 키가 어긋나
+--   구클라 화면에서 고정공고의 확정 인원이 0/N 으로 보인다.
+--   · 데이터·정원 판정은 서버가 양쪽을 같은 키로 접으므로 **안전하다**(표시만 어긋난다).
+--   · 노출도: prod 의 fixed 공고 **0건** — 현재 이 회귀를 볼 수 있는 화면이 없다.
+--   · 해소: R1 이 클라 공고측 키를 '미정' 으로 맞추면 사라진다. R1 배포까지의 창에만 존재한다.
 --
 -- ⚠️ 함수 카운트: 192 → **193** (신설 1개 `_normalize_time_slot`, 재정의 4개).
 -- ============================================================
@@ -65,9 +77,12 @@ CREATE OR REPLACE FUNCTION public._normalize_time_slot(p_raw text) RETURNS text
     SET search_path TO 'pg_catalog', 'pg_temp'
     AS $$
   SELECT CASE
-    -- 미정 센티널 4종(NULL · '' · 공백 · '미정' · 'NEGOTIABLE') → NULL 하나로 수렴
-    WHEN head IS NULL                       THEN NULL
-    WHEN head IN ('미정', 'NEGOTIABLE')     THEN NULL
+    -- 미정 센티널(NULL · '' · 공백 · '미정' · 'NEGOTIABLE') → NULL 하나로 수렴.
+    -- 🔴 판정은 **입력 전체**로 한다. 선두 세그먼트만 보면 '-' · '- 18:00' · '~18:00' 처럼
+    --    구분자로 시작하는 가비지의 head 가 '' 이라 NULL(미정)로 흡수돼 버린다 —
+    --    기존 CHECK 이 23514 로 잡던 값이 조용히 '미정' 이 되는 fail-closed → fail-open 전환이다.
+    WHEN btrim(COALESCE(p_raw, '')) = ''        THEN NULL
+    WHEN btrim(p_raw) IN ('미정', 'NEGOTIABLE') THEN NULL
     -- 단일 시각 + 범위형('18:30 - 03:00' → '18:30')을 같은 경로로 접고 0패딩까지 마친다
     WHEN head ~ '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
       THEN lpad(split_part(head, ':', 1), 2, '0') || ':' || split_part(head, ':', 2)
@@ -75,7 +90,7 @@ CREATE OR REPLACE FUNCTION public._normalize_time_slot(p_raw text) RETURNS text
     ELSE p_raw
   END
   FROM (
-    SELECT NULLIF(btrim((regexp_split_to_array(COALESCE(p_raw, ''), '[-~]'))[1]), '') AS head
+    SELECT btrim((regexp_split_to_array(COALESCE(p_raw, ''), '[-~]'))[1]) AS head
   ) s;
 $$;
 
@@ -155,7 +170,16 @@ BEGIN
 
   IF jsonb_array_length(p_assignments) > 0 THEN
     FOR v_rec IN
-      SELECT (a->>'date') AS a_date, public._posting_slot_key(a->>'timeSlot') AS slot_key,
+      -- 🔴 슬롯 키는 **저장될 값** 기준으로 계산한다. 원문으로 계산하면 비패딩 시각('9:00')이
+      --    공고 측 '09:00' 과 다른 키가 되어 정원 조회가 0행 → v_capacity=0 → 가드가 통째로
+      --    건너뛴다. R0 이전에는 그 직후 INSERT 가 CHECK 위반(23514)으로 죽어 **우연히** 막혔지만,
+      --    R0 가 저장을 정규화해 성공시키므로 여기서 키를 맞추지 않으면 fail-closed 가
+      --    fail-open 으로 뒤집힌다.
+      --    🔑 `wl.time_slot`(이미 저장된 값) 쪽은 감싸지 않는다 — CHECK 이 허용하는 저장값
+      --       전체(NULL·센티널·0패딩 'HH:MM'·범위형)에 대해 `_posting_slot_key` 단독 결과와
+      --       `_normalize_time_slot` 경유 결과가 동일하고, COUNT 스캔 비용만 늘기 때문이다.
+      SELECT (a->>'date') AS a_date,
+        public._posting_slot_key(public._normalize_time_slot(a->>'timeSlot')) AS slot_key,
         public._posting_role_key(a->>'role', a->>'customRole') AS role_key, COUNT(*)::int AS requested
       FROM jsonb_array_elements(p_assignments) a GROUP BY 1, 2, 3
     LOOP
@@ -173,10 +197,12 @@ BEGIN
         AND (CASE
               WHEN COALESCE((ts->>'isTimeToBeAnnounced')::boolean, false) THEN '미정'
               WHEN COALESCE(ts->>'startTime', ts->>'time') IS NOT NULL
-                THEN public._posting_slot_key(COALESCE(ts->>'startTime', ts->>'time'))
+                THEN public._posting_slot_key(
+                       public._normalize_time_slot(COALESCE(ts->>'startTime', ts->>'time')))
               -- [R0] 고정공고 협의 슬롯도 '미정' 키로 접는다(구 'NEGOTIABLE' 폐지).
               WHEN v_is_fixed THEN '미정'
-              ELSE public._posting_slot_key(COALESCE(ts->>'startTime', ts->>'time'))
+              ELSE public._posting_slot_key(
+                     public._normalize_time_slot(COALESCE(ts->>'startTime', ts->>'time')))
             END) = v_rec.slot_key
         AND public._posting_role_key(r->>'role', r->>'customRole') = v_rec.role_key;
 
@@ -290,9 +316,10 @@ BEGIN
   v_is_fixed := (v_job.schedule->>'kind') = 'fixed';
 
   FOR v_rec IN
+    -- 🔴 confirm_application 과 같은 이유로 **저장될 값** 기준 키를 쓴다(비패딩 시각 fail-open 차단).
     SELECT
       (a->>'date') AS a_date,
-      public._posting_slot_key(a->>'timeSlot') AS slot_key,
+      public._posting_slot_key(public._normalize_time_slot(a->>'timeSlot')) AS slot_key,
       public._posting_role_key(a->>'role', a->>'customRole') AS role_key,
       COUNT(*)::int AS requested
     FROM jsonb_array_elements(p_assignments) a
@@ -314,10 +341,12 @@ BEGIN
       AND (CASE
             WHEN COALESCE((ts->>'isTimeToBeAnnounced')::boolean, false) THEN '미정'
             WHEN COALESCE(ts->>'startTime', ts->>'time') IS NOT NULL
-              THEN public._posting_slot_key(COALESCE(ts->>'startTime', ts->>'time'))
+              THEN public._posting_slot_key(
+                     public._normalize_time_slot(COALESCE(ts->>'startTime', ts->>'time')))
             -- [R0] 고정공고 협의 슬롯도 '미정' 키로 접는다(구 'NEGOTIABLE' 폐지).
             WHEN v_is_fixed THEN '미정'
-            ELSE public._posting_slot_key(COALESCE(ts->>'startTime', ts->>'time'))
+            ELSE public._posting_slot_key(
+                   public._normalize_time_slot(COALESCE(ts->>'startTime', ts->>'time')))
           END) = v_rec.slot_key
       AND public._posting_role_key(r->>'role', r->>'customRole') = v_rec.role_key;
 
@@ -334,8 +363,9 @@ BEGIN
       WHERE wl.job_posting_id = p_job_posting_id
         AND wl.staff_id = p_staff_id
         AND wl.date = (v_assignment->>'date')
+        -- 중복 가드도 저장될 값 기준으로 본다(정원 키와 같은 규약).
         AND public._posting_slot_key(wl.time_slot)
-            = public._posting_slot_key(v_assignment->>'timeSlot')
+            = public._posting_slot_key(public._normalize_time_slot(v_assignment->>'timeSlot'))
         AND public._posting_role_key(wl.role::text, wl.custom_role)
             = public._posting_role_key(v_assignment->>'role', v_assignment->>'customRole')
         AND wl.status NOT IN ('cancelled', 'no_show')
@@ -555,8 +585,10 @@ BEGIN
 
   -- 수신자 = 활성 지원자 ∪ 직접 배치 스태프. recipient_id 기준으로 1건만 발송한다.
   WITH recipients AS (
+    -- 🔑 `cancellation_pending` 도 계약 보유자다 — 확정 뒤 취소를 **요청**한 상태일 뿐
+    --    승인 전까지 work_logs 는 살아 있다. 광고 문구를 보내면 이 분리의 취지와 어긋난다.
     SELECT a.applicant_id AS recipient_id,
-           bool_or(a.status = 'confirmed') AS is_contracted
+           bool_or(a.status IN ('confirmed', 'cancellation_pending')) AS is_contracted
     FROM public.applications a
     WHERE a.job_posting_id = NEW.id
       AND a.status IN ('confirmed', 'applied', 'cancellation_pending')
@@ -606,6 +638,7 @@ COMMENT ON FUNCTION public.notify_on_job_posting_update() IS
   'status 는 변경필드에서 의도적으로 제외(capacity_full 자동 전이 알림 폭탄 방지). '
   '[R0] 수신자에 직접 배치 스태프(application_id NULL) 포함 + 근무일 변경 시 계약 보유자는 /schedule 로 분리.';
 
--- CREATE OR REPLACE 는 기존 ACL 을 보존하지만, 20260730174805 의 회수 상태를
--- 명시적으로 재확인한다(트리거 함수는 소유자 권한으로 실행되므로 동작에 영향 없음).
+-- CREATE OR REPLACE 는 기존 ACL 을 보존하지만, `20260731090000_revoke_public_execute_trigger_functions.sql`
+-- (prod 기록명 `20260730174805`)의 회수 상태를 명시적으로 재확인한다
+-- (트리거 함수는 소유자 권한으로 실행되므로 동작에 영향 없음).
 REVOKE ALL ON FUNCTION public.notify_on_job_posting_update() FROM PUBLIC, anon, authenticated;
