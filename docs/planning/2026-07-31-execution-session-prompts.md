@@ -36,7 +36,7 @@
 | **세션 E**(P2·P3 후속) | 병합 키 표류 + 오프라인 침묵 취소 (클라 전용 2건) | ~~`fix/schedule-merge-key`~~ | ✅ **머지** | **#404** | `c97389daf`. CI **9잡 전부 pass**(E2E 재실행 0). 재통합(#402·#403) 후 재검증: quality exit 0 · jest **603스위트 6639테스트 전량 통과**. 마이그 0건. |
 | **세션 F** | 세션 D·E 착지 + 근본수선 설계 | ~~`docs/session-f-ledger`~~ | ✅ **착지 3건** | **#402·#403·#404** | **코드 변경 0건**(착지 전용). 파리티 간극 해소 — 레포 **186 → 189** = prod 189/111 실측 일치. 🔴 **과제 4(근본 수선)는 미착수 — 설계만 완료**, 사용자 결정으로 새 세션 이관. 상세=§5 |
 | **세션 G** | 과제 4 — 슬롯 편집 표류 근본 수선 | ~~`feat/work-log-slot-sync`~~ | ✅ **머지** | **#407** | 신규 SECDEF RPC `update_work_log_slot(uuid, jsonb)` 로 `work_logs`+`applications.assignments` 동시 갱신. 🔴**마이그 1건 prod 적용 완료 — 재적용 금지**(기록명 `20260802180000`, 레포 파일명과 동일). **#406 재통합 후** 파리티 **191 → 192** = prod 실측 일치 / 정책 111 불변. 재검증: quality exit 0 · jest **611스위트 6661테스트** · pgTAP **97파일 1031테스트 전량 PASS**(파리티 포함 — 재통합이 간극을 닫았다) · **red-swap 9종 1:1** · md5 3자 일치 `70f323c8…`. 리뷰 fable **APPROVE**(CRITICAL 0/HIGH 0) — MEDIUM 3건 중 **2건 반영·1건 프로브로 오탐 기각**. 상세=§5 |
-| **B2** | 주소 2단계(좌표) | `feat/posting-geocoding` | 🔨 **구현 완료·PR 미생성** | | 착수 조건(REST 키 재발급 + EF 시크릿)은 2026-08-03 해제됨. 신규 EF `geocode-address`(카카오 로컬 API 프록시) + `job_postings.geo_lat/geo_lng` + `mapLink` 좌표 승격. 🔴**마이그 1건 prod 적용 완료 — 재적용 금지**(**prod 기록명 `20260803015905`**, 레포 파일은 `20260803160000_job_postings_geocode_columns.sql`). 컬럼·CHECK 만이라 **함수/정책 기여 0**. 🔴**EF 도 prod 선배포됨**(version 3, 사용자 승인) — 머지 시 CI 가 레포 기준 재배포. 검증: quality exit 0(경고 103=master 동일 실측) · jest **617스위트 6728테스트 122스냅샷** · **red-swap 14종 1:1** · knip 델타 **−2**(동일 워크트리 대조) · e2e Grep 0건 · **EF prod 실호출 관찰**(정상좌표·무매칭·400·401). 상세=§5 |
+| **B2** | 주소 2단계(좌표) | `feat/posting-geocoding` | 🔨 **구현 완료·PR 미생성** | | 착수 조건(REST 키 재발급 + EF 시크릿)은 2026-08-03 해제됨. 신규 EF `geocode-address`(카카오 로컬 API 프록시) + `job_postings.geo_lat/geo_lng` + `mapLink` 좌표 승격. 🔴**마이그 1건 prod 적용 완료 — 재적용 금지**(**prod 기록명 `20260803015905`**, 레포 파일은 `20260803160000_job_postings_geocode_columns.sql`). 컬럼·CHECK 만이라 **함수/정책 기여 0**. 🔴**EF 도 prod 선배포됨**(version 3, 사용자 승인) — 머지 시 CI 가 레포 기준 재배포. 검증: quality exit 0(경고 103=master 동일 실측) · jest **618스위트 6739테스트 122스냅샷** · **red-swap 18종 1:1** · knip 델타 **−2**(동일 워크트리 대조) · e2e Grep 0건 · **EF prod 실호출 관찰**(정상좌표·무매칭·400·401). 상세=§5 |
 | **S6** | 3-C 설계 | — | ⬜ | | 사용자 결정 필요 |
 | **S7** | 3-C 구현 | `feat/posting-time-change` | ⬜ | | S6 승인 후 |
 
@@ -513,7 +513,7 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
 - **좌표 3상**(`undefined` 유지 / 값 / `null` 지움) — `resolveGeoFields`(직렬화) + `resolveGeoForUpdate`(서비스). 주소가 바뀌었는데 지오코딩이 실패하면 **지운다**
 - **`mapLink` 좌표 승격** — `link/search/{주소}` → `link/to/{이름},{lat},{lng}` + iOS `nmap://place`/Apple `?ll=` + Android `geo:lat,lng?q=...(라벨)`. 좌표 후보가 앞, **텍스트 폴백을 뒤에 남김**
 - 소비 배선: `ScheduleConverter` → `ScheduleEvent.coordinates` → `scheduleGrouping` → `InfoTab`
-- 검증: `npm run quality` **exit 0**(경고 103 = master 실측 동일) · jest **617스위트 6728테스트 122스냅샷 전량 통과** · **red-swap 14종 1:1** · `e2e/` Grep **0건** · knip 델타 **−2**
+- 검증: `npm run quality` **exit 0**(경고 103 = master 실측 동일) · jest **618스위트 6739테스트 122스냅샷 전량 통과** · **red-swap 18종 1:1** · `e2e/` Grep **0건** · knip 델타 **−2**
 - **EF prod 실호출 관찰**: '서울 강남구 테헤란로 152' → `lat 37.5000242405515 / lng 127.036508620542` · 무매칭 200+null · 빈 주소 400 · anon 401 · Authorization 없음 401
 - **자체 재검토로 결함 2건 발견·수정**(리뷰 전) — 아래 주의 1·2번
 - **security-reviewer(fable) APPROVE** (CRITICAL 0 / HIGH 0 / MEDIUM 1 / LOW 2) — **지적 3건 전량 반영**(`cd9d77626`):
@@ -525,9 +525,18 @@ S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-cha
   - L1 주석이 존재하지 않는 함수(`assertGeoInKorea`)를 가리킴 → 실명 `isGeoPointInKorea`
   - L2 `sanitizeLabel` 이 괄호 미제거 → Android `geo:` 는 괄호가 라벨 구분자인데 `encodeURIComponent` 가 인코딩하지 않는다. `/[,()]/g` 로 확장(red-swap 실증)
 
+- **code-reviewer 2인 착지** — 최종 fable **APPROVE**(CRITICAL 0/HIGH 0) · 중간 opus **REQUEST CHANGES**(차단 사유는 배포 순서 1건이고 **코드 결함 아님** — 마이그는 이미 prod 적용됐으므로 해소 상태). **지적 전량 반영**(`d67b8691f`):
+  - 🔴 **두 리뷰가 독립적으로 같은 결함을 지목** — `patch.location` 에 주소 키가 **아예 없으면** `mergeJobPostingInput` 은 옛 주소를 보존하는데 `resolveGeoForUpdate` 는 "지움"으로 읽어 **주소는 남고 좌표만 증발**. 방향은 안전하고 UI 도달 불가지만 **판정 기준과 저장 기준이 갈라진 것 자체가 결함**이라 키 유무로 정렬. 관련 테스트 픽스처(`{name}` 만)도 제목과 시맨틱이 어긋나 있어 교정 + 키 부재 케이스 분리
+  - `geocodingService` 의 "절대 throw 안 함"이 **주석뿐이고 try/catch 가 없었다** → `getSession()` 스토리지 예외가 올라가면 공고 생성 전체 실패. 본문을 감쌈
+  - 경계값 3중 정의(클라·EF·SQL)에 **동기화 가드 신설** — 파일에서 네 숫자를 파싱해 대조 + 국토 4극점 포함 고정
+  - 🔴 **무력한 단언 발견·교정** — `split(',').toHaveLength(3)` 은 `encodeURIComponent` 가 쉼표를 `%2C` 로 감싸 **sanitize 를 떼도 통과**했다(실측). `not.toContain('%2C')` 로 교체(red-swap 으로 교정 후 실제로 잡힘을 실증)
+  - 스냅샷 왕복을 안 쓰는 분기 뒤로 이동 · a11y 라벨 `??`→`||`(좌표 게이트로 "주소·장소명 모두 빈" 조합이 새로 가능해졌다)
+- 최종 검증: quality exit 0 · jest **618스위트 6739테스트 122스냅샷** · **red-swap 누적 18종 1:1**
+
 **안 끝난 것**
 - 🔴 **PR 미생성** — push/PR 은 사용자 명시 요청 시에만(원장 §2 규율). 워크트리·브랜치 유지 중
-- 🔴 **code-reviewer 미착지** — opus 중간 리뷰는 **idle 신호만 두 번 오고 본문이 끝내 안 왔다**(B1 §5 주의 11번과 같은 실패 모드). 최종 fable 리뷰는 디스패치했으나 회수 못 함. **다음 세션이 최종 code-reviewer(fable)를 반드시 돌릴 것** — 보안 축은 이미 APPROVE 로 닫혔으니 **정합성·회귀 축**만 보면 된다
+- ⏸ **iOS `LSApplicationQueriesSchemes` 미선언** — `nmap://` 후보가 `canOpenURL` false 로 **항상 스킵**된다(양 리뷰 지적). **선재 클래스**(기존 `nmap://search` 도 동일)이고 Apple 지도 `ll=` 로 좌표 핀은 달성되므로 비차단. 고치려면 infoPlist 추가 = **네이티브 빌드 필요**(OTA 불가)
+- ⏸ **지점 컨테이너 좌표 미배선** — 컨테이너는 RESTRICTIVE 정책(`jp_container_no_direct_*`)으로 클라 직접 쓰기가 막혀 있고 서버에 geo writer 가 없어 **좌표를 가질 수 없다**. 지점 시트에 주소를 넣는 후속이 생기면 그때 함께
 - 🔴 **실기기·웹 렌더 미검증** — 지도 앱 스킴(`nmap://place`·`geo:`)이 실기기에서 실제로 열리는지는 URL 형식 단위 테스트까지만 덮였다. 실기기 QA 제외 결정이라 이 경로는 검증 수단이 0
 - ⏸ 지오코딩은 **공고 경로만** — 지점 컨테이너(`update_venue_container`)에는 안 붙였다(범위 밖). 지점 시트에 주소를 넣는 순간 같은 배선이 필요해진다
 
