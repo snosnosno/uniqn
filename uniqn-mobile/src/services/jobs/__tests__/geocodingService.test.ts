@@ -106,7 +106,7 @@ describe('geocodeAddress', () => {
     jest.useFakeTimers();
     try {
       // 절대 resolve 되지 않는 호출 = 멈춘 EF
-      mockInvoke.mockReturnValue(new Promise(() => {}));
+      mockInvoke.mockReturnValue(new Promise(() => undefined));
 
       const pending = geocodeAddress('서울 강남구 테헤란로 152');
       jest.advanceTimersByTime(8_000);
