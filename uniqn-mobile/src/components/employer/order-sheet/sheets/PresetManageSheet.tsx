@@ -19,7 +19,7 @@
  * 🚨 같은 이유로 **이름변경 에러는 토스트가 아니라 행 안 인라인 텍스트**로 말한다.
  *   (성공은 행 이름 자체가 바뀌어 보이므로 별도 표시가 필요 없다.)
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { SheetModal } from '@/components/ui/SheetModal';
 import { confirmAction } from '@/utils/confirmAction';
@@ -43,7 +43,9 @@ export interface PresetManageSheetProps {
 
 export function PresetManageSheet({ visible, onClose }: PresetManageSheetProps) {
   const templatesQuery = useTemplates();
-  const templates = templatesQuery.data ?? [];
+  // 매 렌더 새 배열이면 submitEdit(useCallback) 의 의존성이 계속 갈린다 — 린트 위생 수정.
+  // (submitEdit 자체는 renameMutation 참조 때문에 여전히 매 렌더 재생성된다. 성능 개선 아님.)
+  const templates = useMemo(() => templatesQuery.data ?? [], [templatesQuery.data]);
   const renameMutation = useRenameTemplate();
   const { handleDeleteTemplate } = useDeleteTemplateWithUndo();
 
@@ -65,6 +67,18 @@ export function PresetManageSheet({ visible, onClose }: PresetManageSheetProps) 
 
   const submitEdit = useCallback(
     async (template: JobPostingTemplate) => {
+      // ⚠️ 무변경 체크가 스키마 검증보다 **먼저**여야 한다.
+      // templateNameSchema 의 2자 하한은 PR#406(2026-08-02)에서 처음 생겼는데, 템플릿 기능은
+      // 2026-01 부터 있었고 그동안 생성 경로는 빈 문자열만 걸렀다(서버·DB 에도 길이 제약 없음).
+      // 즉 1자 이름 프리셋이 실재할 수 있고, 그런 행은 이름변경에 들어가 **아무것도 안 바꾸고
+      // 저장만 눌러도** parse 가 먼저 터져 "2자 이상" 에러에 갇힌다(취소로만 탈출).
+      // 무변경은 쓰기가 없는 early-return 이므로 검증을 건너뛰어도 위험이 없다.
+      // (레거시 데이터 자체는 그대로 남는다 — 훗날 DB CHECK 를 걸려면 백필이 선행돼야 한다.)
+      if (editingName.trim() === template.name.trim()) {
+        cancelEdit();
+        return;
+      }
+
       // 저장 경로와 같은 스키마(templateNameSchema) — 한쪽만 검증하면 축이 갈린다.
       const parsed = templateNameSchema.safeParse(editingName);
       if (!parsed.success) {
@@ -72,12 +86,6 @@ export function PresetManageSheet({ visible, onClose }: PresetManageSheetProps) 
         return;
       }
       const nextName = parsed.data;
-
-      // 바뀐 게 없으면 서버를 부르지 않는다.
-      if (nextName === template.name.trim()) {
-        cancelEdit();
-        return;
-      }
 
       // 자기 자신은 중복 판정에서 제외(excludeId) — 대소문자만 바꾸는 수정도 통과해야 한다.
       if (isDuplicateTemplateName(nextName, templates, template.id)) {

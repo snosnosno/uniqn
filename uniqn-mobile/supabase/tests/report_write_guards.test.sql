@@ -10,13 +10,17 @@
 --       reports 의 reporter_id/target_id/job_posting_id 불변.
 --       rep_update 정책에 WITH CHECK 이 없어 관리자 raw PATCH 로 신고 수신자를
 --       바꿔치기하면 신설 알림 트리거가 엉뚱한 사람에게 발송됐다.
+--   · 20260802190000_reports_xss_check_column_expansion.sql
+--       reports_xss_check 가 description 단일 컬럼만 보던 것을 자유 텍스트 전부로 확장.
+--       create_report 가 authenticated 에 열려 있어 클라 zod 를 RPC 직접 호출로 우회하면
+--       target_name 오염이 알림 data.targetName 까지 전파됐다.
 --
 -- ⚠️ 42501 만 단언하면 red-스왑에 걸린다(다른 이유의 권한 오류도 통과) —
 --    메시지까지 함께 본다.
 -- ============================================================
 
 BEGIN;
-SELECT plan(11);
+SELECT plan(17);
 
 -- ---- 픽스처 ----
 INSERT INTO auth.users (id, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
@@ -177,6 +181,81 @@ RESET ROLE;
 SELECT lives_ok(
   $$ UPDATE public.reports SET reporter_id = NULL WHERE description = '증빙 없는 신고' $$,
   '신뢰 컨텍스트에서는 탈퇴 참조 해제가 통과한다 (계정 삭제 경로 보존)');
+
+-- ============================================================
+-- reports_xss_check 컬럼 확장 (20260802190000)
+-- ============================================================
+-- 클라 zod 는 create_report 가 authenticated 에 열려 있어 PostgREST 직접 호출로
+-- 통째 우회된다 — 아래는 그 우회 경로(= RPC 직접 호출)를 그대로 재현한다.
+--
+-- ⚠️ type 은 기존 성공 INSERT 2건(no_show·communication)과 겹치지 않게 골랐다.
+--    겹치면 24h DUPLICATE_REPORT 사전검사에 먼저 걸려 트리거까지 도달하지 못한다.
+
+-- 신고자 컨텍스트 복귀 (create_report 는 auth.uid() = p_reporter_id 를 요구한다)
+SELECT set_config('request.jwt.claims',
+  jsonb_build_object('sub', 'c0000000-0000-4000-8000-000000000001',
+                     'app_metadata', jsonb_build_object('role','staff'))::text, true);
+
+-- 12. [대조군] description 오염은 종전대로 차단된다.
+--     확장을 되돌려도 green 이어야 하는 항목 — red 가 "추가된 컬럼" 때문임을 증명한다.
+SELECT throws_ok(
+  $$ SELECT public.create_report(
+       'inappropriate','employee',
+       'c0000000-0000-4000-8000-000000000001','rwg reporter',
+       'c0000000-0000-4000-8000-000000000002','rwg target',
+       'c0000000-0000-4000-8000-000000000020','__rwg 공고',
+       '<script>alert(1)</script>', NULL, 'medium'::report_severity) $$,
+  NULL, 'XSS pattern detected in field: description',
+  'description 오염은 종전대로 차단된다 (대조군)');
+
+-- 13. target_name 오염 차단 — 이 확장의 본체.
+--     notify_on_report_review 가 이 값을 notifications.data.targetName 으로 복사한다.
+SELECT throws_ok(
+  $$ SELECT public.create_report(
+       'unfair_treatment','employee',
+       'c0000000-0000-4000-8000-000000000001','rwg reporter',
+       'c0000000-0000-4000-8000-000000000002','<script>alert(1)</script>',
+       'c0000000-0000-4000-8000-000000000020','__rwg 공고',
+       '대상 이름 오염 신고', NULL, 'medium'::report_severity) $$,
+  NULL, 'XSS pattern detected in field: target_name',
+  'RPC 직접 호출로 심은 target_name 오염이 서버에서 차단된다');
+
+-- 14. reporter_name 오염 차단 — 클라 생성 스키마에 필드 자체가 없어 zod 방어가 0인 컬럼.
+SELECT throws_ok(
+  $$ SELECT public.create_report(
+       'false_posting','employee',
+       'c0000000-0000-4000-8000-000000000001','<iframe src=//evil>',
+       'c0000000-0000-4000-8000-000000000002','rwg target',
+       'c0000000-0000-4000-8000-000000000020','__rwg 공고',
+       '신고자 이름 오염 신고', NULL, 'medium'::report_severity) $$,
+  NULL, 'XSS pattern detected in field: reporter_name',
+  'reporter_name 오염이 서버에서 차단된다');
+
+-- 15. job_posting_title 오염 차단
+SELECT throws_ok(
+  $$ SELECT public.create_report(
+       'employer_negligence','employee',
+       'c0000000-0000-4000-8000-000000000001','rwg reporter',
+       'c0000000-0000-4000-8000-000000000002','rwg target',
+       'c0000000-0000-4000-8000-000000000020','<object data=x>',
+       '공고 제목 오염 신고', NULL, 'medium'::report_severity) $$,
+  NULL, 'XSS pattern detected in field: job_posting_title',
+  'job_posting_title 오염이 서버에서 차단된다');
+
+-- 16. UPDATE 경로 — reviewer_notes 오염 차단 (review_report 가 쓰는 관리자 입력 컬럼).
+--     여기는 RESET ROLE 이후(postgres)라 RLS 무관하게 트리거만 검증한다.
+--     신원 컬럼을 건드리지 않으므로 tr_reports_pin_identity 는 발화하지 않는다.
+SELECT throws_ok(
+  $$ UPDATE public.reports SET reviewer_notes = '<img onerror=alert(1) src=x>'
+      WHERE description = '정상 증빙' $$,
+  NULL, 'XSS pattern detected in field: reviewer_notes',
+  'UPDATE 로 심는 reviewer_notes 오염이 차단된다');
+
+-- 17. [대조군] 정상 reviewer_notes 는 통과한다 — 확장이 본업을 막지 않는다.
+SELECT lives_ok(
+  $$ UPDATE public.reports SET reviewer_notes = '지각 사실 확인, 경고 조치'
+      WHERE description = '정상 증빙' $$,
+  '정상 reviewer_notes 는 통과한다');
 
 SELECT * FROM finish();
 ROLLBACK;

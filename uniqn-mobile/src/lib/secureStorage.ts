@@ -273,6 +273,52 @@ export async function deleteItems(keys: string[]): Promise<void> {
 }
 
 /**
+ * [한시 코드 — 2026-11 이후 제거 예정] PR#406 잔존 키 정리
+ *
+ * PR#406 이 클라이언트 로그인 잠금(`loginAttemptService`)을 통째로 제거하면서, 이미 저장된
+ * 키를 지우는 코드(성공 시 reset · 잠금 만료 시 delete)까지 함께 사라졌다.
+ * 그 키는 `login_attempts_${email.toLowerCase()}` 라 **평문 이메일이 키 이름에 들어간다**.
+ * 비민감 판정(SENSITIVE_STORAGE_KEYS 미포함)이라 웹에서는 sessionStorage 가 아닌
+ * **localStorage** 에 영구 잔존하고, `KNOWN_STORAGE_KEYS` 에도 없어 clearAll 대상도 아니었다.
+ * → 공용 PC 에서 DevTools 로 localStorage 를 열면 과거 로그인 계정 목록이 그대로 보인다.
+ *
+ * - **웹 전용**: localStorage 만 키 열거가 가능하다. 네이티브 SecureStore 는 열거 API 가 없어
+ *   (setItem/getItem/deleteItemAsync 뿐) 이메일을 모르면 키를 재구성할 수조차 없다.
+ *   다만 네이티브 잔존분은 OS 키체인·키스토어 암호화 + 앱 전용 샌드박스 안이라
+ *   이 항목의 위협 모델(공용 PC DevTools 열람)이 성립하지 않으므로 **의도적으로 방치**한다.
+ * - `clearAll` 을 재사용하지 않는 이유: theme·autoLoginEnabled 등 정상 설정까지 날린다.
+ * - 마커 없이 매 부팅 실행한다 — 스캔 비용은 O(localStorage.length) 이고 멱등이다.
+ * - ⚠️ **키 이름 자체를 절대 로깅하지 말 것**(이메일이 들어 있다). 개수만 남긴다.
+ * - 제거 조건: 웹은 설치 개념이 없어 '몇 릴리스 뒤'의 보장이 약하다. 2026-11 이후
+ *   이 함수와 `bootstrapCore` 호출부를 함께 삭제한다. 그 시점까지 미방문한 사용자의
+ *   잔존 키는 영구히 남는다는 것을 수용한 결정이다.
+ */
+export function purgeLegacyLoginAttemptKeys(): void {
+  if (Platform.OS !== 'web' || typeof localStorage === 'undefined') {
+    return;
+  }
+
+  try {
+    const legacyPrefix = `${STORAGE_PREFIX}login_attempts_`;
+    const keysToDelete: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith(legacyPrefix)) {
+        keysToDelete.push(key);
+      }
+    }
+    keysToDelete.forEach((key) => localStorage.removeItem(key));
+
+    if (keysToDelete.length > 0) {
+      logger.info('레거시 login_attempts 키 정리 완료', { count: keysToDelete.length });
+    }
+  } catch (error) {
+    // 부팅을 막지 않는다 — 정리 실패는 기능 손실이 아니다.
+    logger.warn('레거시 login_attempts 키 정리 실패', { error: (error as Error).message });
+  }
+}
+
+/**
  * 모든 UNIQN 관련 데이터 삭제
  */
 export async function clearAll(): Promise<void> {

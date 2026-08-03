@@ -19,11 +19,27 @@
  *    쿼리 캐시는 persist 가 없어 앱 재시작 후 배지·오프라인 목록을 원리적으로 복원할 수 없다.
  * 3. **흐름은 한 방향(쿼리 → 스토어)만.**
  *    쿼리 결과를 스토어 스냅샷에 기록하는 것은 OK, 스토어를 목록의 진실원 삼아 캐시로 되쓰는 것은 금지.
+ *
+ * ## 목록은 반드시 `useInfiniteQuery` 여야 한다 (평범한 `useQuery` 로 되돌리지 말 것)
+ *
+ * 예전에는 평범한 `useQuery` + `fetchNextPage` 가 캐시에 직접 append 하는 구조였다.
+ * 그 구조에서는 **`invalidateQueries` 한 방이면 목록이 1페이지로 붕괴**한다 —
+ * queryFn 이 커서 없이 재실행돼 20건만 돌려주기 때문이다. 대회 D-7 처럼 알림이 수십 건
+ * 쌓인 상황에서 3페이지를 스크롤한 뒤 그룹 읽음 처리 한 번, 혹은 realtime 새 알림 1건이면
+ * 그때까지 스크롤한 것이 통째로 날아갔다.
+ *
+ * 무효화 발원지를 줄이는 것으로는 못 고친다. `invalidate` 는 이 훅 밖에도 있고
+ * (`useNotificationSyncOnForeground` · `usePushNotificationSetup` · `reconnectSyncService`
+ *  · `invalidationStrategy` 매핑), realtime 콜백은 페이로드 없이 신호만 받아 서버 조회가
+ * 원리적으로 필요하며, staleTime(2분) 경과 후 재마운트 refetch 만으로도 같은 붕괴가 난다.
+ *
+ * `useInfiniteQuery` 는 invalidate 시 **로드된 전 페이지를 순차 재조회**하므로
+ * (query-core 5.101.4 `infiniteQueryBehavior`), 붕괴 클래스 자체가 사라진다.
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { QueryClient, QueryKey } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { InfiniteData, QueryClient, QueryKey } from '@tanstack/react-query';
 import type { NotificationPageCursor } from '@/services/notifications/notificationService';
 import {
   fetchNotifications,
@@ -78,29 +94,71 @@ const notificationKeys = queryKeys.notifications;
 // 목록 캐시 헬퍼 (목록 축 = React Query 캐시 단독 — 파일 상단 "이중 소스 경계" 참조)
 // ============================================================================
 
-/** Undo 복원용 스냅샷 — 어느 목록 쿼리의 몇 번째 자리에 있었는지 */
+/** 목록 쿼리의 한 페이지 = 서비스가 돌려주는 조회 결과 그대로 */
+type NotificationListPage = Awaited<ReturnType<typeof fetchNotifications>>;
+/** 목록 캐시의 실제 모양 (useInfiniteQuery) */
+type NotificationListData = InfiniteData<NotificationListPage, NotificationPageCursor | null>;
+
+/**
+ * Undo 복원용 스냅샷 — 어느 목록 쿼리의 몇 페이지 몇 번째 자리에 있었는지.
+ *
+ * 평면 인덱스가 아니라 (페이지, 페이지 내 인덱스)인 이유: 캐시가 페이지 배열이라
+ * 평면 인덱스로는 어느 페이지에 끼워 넣을지 알 수 없다.
+ */
 interface NotificationCacheSnapshot {
   queryKey: QueryKey;
-  index: number;
+  pageIndex: number;
+  indexInPage: number;
+}
+
+/**
+ * 목록 캐시인지 판별한다.
+ *
+ * `notificationKeys.all` 아래에는 settings 처럼 목록이 아닌 캐시도 매달려 있다.
+ * 예전엔 `Array.isArray` 로 걸렀는데, 이제 목록 캐시는 배열이 아니라
+ * `{pages, pageParams}` 객체다 — 판별을 `pages` 유무로 옮긴다.
+ */
+function isNotificationListData(value: unknown): value is NotificationListData {
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    Array.isArray((value as NotificationListData).pages) &&
+    Array.isArray((value as NotificationListData).pageParams)
+  );
 }
 
 /**
  * 알림 목록 캐시(필터 변형 전부)를 수집한다.
  *
- * `notificationKeys.all` 아래에는 settings 처럼 배열이 아닌 캐시도 매달려 있으므로
- * 배열만 통과시킨다. 삭제 훅은 화면이 어떤 필터로 목록을 열었는지 모르므로
+ * 삭제 훅은 화면이 어떤 필터로 목록을 열었는지 모르므로
  * 특정 키 하나만 패치하면 필터 탭에서 조용히 안 먹는다.
  */
-function getNotificationListCaches(queryClient: QueryClient): [QueryKey, NotificationData[]][] {
+function getNotificationListCaches(
+  queryClient: QueryClient
+): [QueryKey, NotificationListData][] {
   return queryClient
-    .getQueriesData<NotificationData[]>({ queryKey: notificationKeys.all })
-    .filter((entry): entry is [QueryKey, NotificationData[]] => Array.isArray(entry[1]));
+    .getQueriesData<NotificationListData>({ queryKey: notificationKeys.all })
+    .filter((entry): entry is [QueryKey, NotificationListData] => isNotificationListData(entry[1]));
+}
+
+/** 페이지들을 평탄화하고 id 중복을 접는다 (렌더·스토어 미러링이 쓰는 형태). */
+function flattenNotificationPages(data: NotificationListData): NotificationData[] {
+  const seen = new Set<string>();
+  const flat: NotificationData[] = [];
+  data.pages.forEach((page) => {
+    page.notifications.forEach((n) => {
+      if (seen.has(n.id)) return;
+      seen.add(n.id);
+      flat.push(n);
+    });
+  });
+  return flat;
 }
 
 /**
  * 알림 1건을 모든 목록 캐시에서 제거하고, 원래 위치를 스냅샷으로 돌려준다.
  *
- * @returns snapshots - 복원용 (쿼리키 + 원래 인덱스), removed - 제거된 알림 원본
+ * @returns snapshots - 복원용 (쿼리키 + 페이지 + 페이지 내 인덱스), removed - 제거된 알림 원본
  */
 function removeNotificationFromCaches(
   queryClient: QueryClient,
@@ -109,28 +167,36 @@ function removeNotificationFromCaches(
   const snapshots: NotificationCacheSnapshot[] = [];
   let removed: NotificationData | undefined;
 
-  getNotificationListCaches(queryClient).forEach(([queryKey, list]) => {
-    const index = list.findIndex((n) => n.id === notificationId);
-    if (index < 0) return;
+  getNotificationListCaches(queryClient).forEach(([queryKey, data]) => {
+    let hit = false;
 
-    removed = removed ?? list[index];
-    snapshots.push({ queryKey, index });
-    queryClient.setQueryData<NotificationData[]>(
-      queryKey,
-      list.filter((n) => n.id !== notificationId)
-    );
+    const nextPages = data.pages.map((page, pageIndex) => {
+      const indexInPage = page.notifications.findIndex((n) => n.id === notificationId);
+      if (indexInPage < 0) return page;
+
+      hit = true;
+      removed = removed ?? page.notifications[indexInPage];
+      snapshots.push({ queryKey, pageIndex, indexInPage });
+      return {
+        ...page,
+        notifications: page.notifications.filter((n) => n.id !== notificationId),
+      };
+    });
+
+    if (!hit) return;
+    queryClient.setQueryData<NotificationListData>(queryKey, { ...data, pages: nextPages });
   });
 
   return { snapshots, removed };
 }
 
 /**
- * 삭제한 알림을 원래 인덱스에 splice 재삽입해 복원한다.
+ * 삭제한 알림을 원래 페이지·인덱스에 splice 재삽입해 복원한다.
  *
  * ⚠️ 전체 스냅샷 덮어쓰기 금지 — 연속 삭제 중 다른 대기 항목이 되살아나는 경쟁을 막기 위해
  *    "지금의 캐시"에 한 건만 끼워 넣는다.
  *
- * @returns 첫 스냅샷 키의 복원 결과 목록 (스토어 스냅샷 되비추기용). 없으면 undefined.
+ * @returns 첫 스냅샷 키의 복원 결과 목록(평탄화). 없으면 undefined.
  */
 function restoreNotificationToCaches(
   queryClient: QueryClient,
@@ -139,22 +205,41 @@ function restoreNotificationToCaches(
 ): NotificationData[] | undefined {
   let primaryList: NotificationData[] | undefined;
 
-  snapshots.forEach(({ queryKey, index }, order) => {
-    const latest = queryClient.getQueryData<NotificationData[]>(queryKey);
-    if (!Array.isArray(latest)) return;
+  snapshots.forEach(({ queryKey, pageIndex, indexInPage }, order) => {
+    const latest = queryClient.getQueryData<NotificationListData>(queryKey);
+    if (!isNotificationListData(latest)) return;
 
-    if (latest.some((n) => n.id === notification.id)) {
-      if (order === 0) primaryList = latest;
+    // 이미 있으면(중복 복원·refetch 선반영) 그대로 둔다
+    if (latest.pages.some((page) => page.notifications.some((n) => n.id === notification.id))) {
+      if (order === 0) primaryList = flattenNotificationPages(latest);
       return;
     }
 
-    const next = [...latest];
-    next.splice(Math.min(index, next.length), 0, notification);
-    queryClient.setQueryData<NotificationData[]>(queryKey, next);
-    if (order === 0) primaryList = next;
+    // 그 사이 refetch 로 페이지 수가 줄었을 수 있다 — 마지막 페이지로 클램프한다.
+    const targetPage = Math.min(pageIndex, latest.pages.length - 1);
+    if (targetPage < 0) return;
+
+    const nextPages = latest.pages.map((page, i) => {
+      if (i !== targetPage) return page;
+      const notifications = [...page.notifications];
+      notifications.splice(Math.min(indexInPage, notifications.length), 0, notification);
+      return { ...page, notifications };
+    });
+
+    const next: NotificationListData = { ...latest, pages: nextPages };
+    queryClient.setQueryData<NotificationListData>(queryKey, next);
+    if (order === 0) primaryList = flattenNotificationPages(next);
   });
 
   return primaryList;
+}
+
+/** '모두 삭제' 낙관 갱신용 — 페이지 0장이면 getNextPageParam 이 흔들리므로 빈 페이지 1장을 남긴다. */
+function emptyNotificationListData(): NotificationListData {
+  return {
+    pages: [{ notifications: [], lastDoc: null, hasMore: false }],
+    pageParams: [null],
+  };
 }
 
 // ============================================================================
@@ -187,20 +272,18 @@ export function useNotificationList(
   const { filter, enabled = true } = options;
   const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
+  // 스토어의 hasMore/setHasMore 는 더 이상 목록 축이 쓰지 않는다 —
+  // 페이지 소유권이 infinite query 로 넘어갔고, 두 곳에 두면 반드시 갈린다.
   const {
     notifications: cachedNotifications,
     setNotifications,
     addNotifications,
-    setHasMore,
     lastFetchedAt,
   } = useNotificationStore();
   const { addToast } = useToastStore();
   const { isOnline, isOffline } = useNetworkStatus();
-  const [lastDoc, setLastDoc] = useState<NotificationPageCursor | null>(null);
-  const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
   const hasSyncedRef = useRef(false);
-  // 메모이제이션 필수: fetchNextPage 가 이 키로 캐시를 패치하므로 의존성에 들어간다.
-  // 매 렌더 새 배열을 만들면 fetchNextPage 신원이 흔들려 FlashList onEndReached 가 계속 갈린다.
+  // 메모이제이션 필수: 매 렌더 새 배열을 만들면 쿼리 신원이 흔들려 재조회가 반복된다.
   const queryKey = useMemo(() => notificationKeys.list(filter ?? {}), [filter]);
   const hasServerSideFilters = Boolean(
     filter?.isRead !== undefined ||
@@ -210,20 +293,27 @@ export function useNotificationList(
     filter?.category
   );
 
-  const query = useQuery({
+  const query = useInfiniteQuery({
     queryKey,
-    queryFn: async () => {
+    queryFn: async ({ pageParam }) => {
       if (!user?.uid) throw new Error('로그인이 필요합니다.');
 
-      const result = await fetchNotifications({
+      return fetchNotifications({
         userId: user.uid,
         filter,
+        // 1페이지는 커서 없이 — keyset 커서(created_at)라 null 이면 처음부터다.
+        ...(pageParam == null ? {} : { lastDoc: pageParam }),
       });
-
-      setLastDoc(result.lastDoc);
-      setHasMore(result.hasMore);
-      return result.notifications;
     },
+    initialPageParam: null as NotificationPageCursor | null,
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore && lastPage.lastDoc != null ? lastPage.lastDoc : undefined,
+    // select 로 평탄화해 `query.data` 를 예전과 같은 `NotificationData[]` 로 유지한다.
+    // 덕분에 스토어 미러링·렌더 소스 선택·소비처 계약이 전부 무변경이다.
+    // ⚠️ id dedupe 는 필수다 — 예전에는 fetchNextPage 의 Set 이 담당했는데 그 코드가
+    //    여기로 옮겨왔다. 빼면 refetch 중 새 알림이 유입될 때 페이지 경계에서 같은 알림이
+    //    두 번 나와 FlashList keyExtractor 가 중복 키를 만든다.
+    select: flattenNotificationPages,
     // 오프라인 시 쿼리 비활성화
     enabled: enabled && !!user?.uid && isOnline,
     staleTime: cachingPolicies.nearRealtime, // 2분
@@ -300,50 +390,25 @@ export function useNotificationList(
     };
   }, [isOnline, user?.uid, lastFetchedAt, cachedNotifications, addNotifications, addToast]);
 
-  // 다음 페이지 가져오기
+  // 다음 페이지 가져오기 — infinite query 에 위임한다.
   //
-  // 페이지네이션은 **목록 축(쿼리 캐시)** 에 append 한다. 예전에는 스토어에만 append 해서
-  // 온라인 무한스크롤이 태어날 때부터 무효였다(화면은 query.data 를 그리므로 21번째 알림부터
-  // 접근 불가). 대회 D-7 처럼 수십 건이 쌓이는 상황에서 알림은 딥링크 페이로드의 유일한 사본이라
-  // "못 본다 = 그 근무로 못 들어간다"가 된다.
+  // 예전에는 스토어에만 append 해서 온라인 무한스크롤이 태어날 때부터 무효였고(화면은
+  // query.data 를 그리므로 21번째 알림부터 접근 불가), 그 다음엔 캐시에 직접 append 했지만
+  // invalidate 한 방에 1페이지로 붕괴했다. 이제 페이지는 쿼리가 소유한다.
   //
-  // 오프라인 부수 효과 유지 결정: 예전에는 스토어 append 덕분에 "온라인에서 스크롤 → 오프라인 전환"
-  // 시 2페이지+ 도 오프라인 캐시에 남았다. 이 성질은 그대로 유지된다 — 캐시를 패치하면
-  // 위쪽 `query.data → setNotifications` 미러링 이펙트가 확장된 목록을 스토어에 되비추기 때문이다.
-  // (즉 스토어 append 를 지웠다고 오프라인에서 보이던 항목이 줄어들지 않는다)
+  // 오프라인 부수 효과는 그대로다 — 페이지가 늘면 select 평탄화 결과가 커지고,
+  // 아래 `query.data → setNotifications` 미러링이 확장된 목록을 스토어에 되비춘다.
+  const { fetchNextPage: fetchNextPageInternal, hasNextPage, isFetchingNextPage } = query;
   const fetchNextPage = useCallback(async () => {
-    if (!user?.uid || !lastDoc || isFetchingNextPage || isOffline) return;
+    // 오프라인 가드 유지: 쿼리가 disabled 여도 fetchNextPage 는 요청을 시도한다.
+    if (isOffline || !hasNextPage || isFetchingNextPage) return;
 
-    setIsFetchingNextPage(true);
     try {
-      const result = await fetchNotifications({
-        userId: user.uid,
-        filter,
-        lastDoc,
-      });
-
-      queryClient.setQueryData<NotificationData[]>(queryKey, (current) => {
-        const base = current ?? [];
-        const existingIds = new Set(base.map((n) => n.id));
-        return [...base, ...result.notifications.filter((n) => !existingIds.has(n.id))];
-      });
-      setLastDoc(result.lastDoc);
-      setHasMore(result.hasMore);
+      await fetchNextPageInternal();
     } catch (error) {
       logger.error('다음 페이지 로드 실패', toError(error));
-    } finally {
-      setIsFetchingNextPage(false);
     }
-  }, [
-    user?.uid,
-    lastDoc,
-    filter,
-    isFetchingNextPage,
-    isOffline,
-    queryClient,
-    queryKey,
-    setHasMore,
-  ]);
+  }, [fetchNextPageInternal, hasNextPage, isFetchingNextPage, isOffline]);
 
   // 렌더 소스 선택: 온라인이면 목록 축(쿼리 캐시), 오프라인이면 스냅샷 축(스토어).
   // 온라인에서 화면을 바꾸려면 반드시 쿼리 캐시를 패치해야 한다는 사실이 여기서 나온다.
@@ -360,12 +425,14 @@ export function useNotificationList(
     isRefreshing: query.isRefetching,
     isError: query.isError,
     error: query.error ? toError(query.error) : null,
-    hasMore: useNotificationStore((state) => state.hasMore),
+    // 진실원은 쿼리다 — 스토어 hasMore 는 오프라인 스냅샷 축의 잔재라 목록 축이 읽지 않는다.
+    hasMore: hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
     refetch: async () => {
       if (isOffline) return;
-      setLastDoc(null);
+      // 커서 리셋 없이 refetch — infinite query 는 로드된 전 페이지를 순차 재조회하므로
+      // 당겨서 새로고침해도 스크롤한 만큼이 유지된다(1페이지 붕괴 없음).
       await query.refetch();
     },
   };
@@ -643,6 +710,12 @@ export function useDeleteAllNotifications() {
     },
     // Optimistic Update: 서버 응답 전에 목록(쿼리 캐시) · 스냅샷/카운터(스토어) 즉시 초기화
     onMutate: async () => {
+      // ⚠️ 진행 중인 조회를 반드시 먼저 취소한다.
+      // 취소하지 않으면 in-flight refetch 가 낙관적으로 비운 목록을 되채우고,
+      // 뒤이어 onError 롤백이 그 stale 스냅샷을 다시 덮어써 목록이 두 번 요동친다.
+      // (saveSettings onMutate 는 처음부터 이걸 했는데 여기만 빠져 있었다.)
+      await queryClient.cancelQueries({ queryKey: notificationKeys.all });
+
       // 낙관 갱신 게이트(유지): 오프라인이면 선반영하지 않는다.
       // 어차피 requireOnlineForMutation 이 막을 요청이라 롤백 깜빡임만 남는다.
       if (!shouldApplyOptimisticUpdate()) {
@@ -652,7 +725,7 @@ export function useDeleteAllNotifications() {
       // 1. 렌더 소스인 목록 캐시를 비운다 (필터 변형 전부)
       const previousLists = getNotificationListCaches(queryClient);
       previousLists.forEach(([queryKey]) => {
-        queryClient.setQueryData<NotificationData[]>(queryKey, []);
+        queryClient.setQueryData<NotificationListData>(queryKey, emptyNotificationListData());
       });
 
       // 2. 스냅샷 축(스토어)도 비운다 — 배지·오프라인 캐시
@@ -672,8 +745,8 @@ export function useDeleteAllNotifications() {
       logger.error('모든 알림 삭제 실패', error);
 
       // 롤백도 같은 순서로: 목록 캐시(렌더 소스) → 스토어(스냅샷·카운터)
-      context?.previousLists?.forEach(([queryKey, list]) => {
-        queryClient.setQueryData<NotificationData[]>(queryKey, list);
+      context?.previousLists?.forEach(([queryKey, data]) => {
+        queryClient.setQueryData<NotificationListData>(queryKey, data);
       });
       if (context?.previousNotifications) {
         setNotifications(context.previousNotifications);

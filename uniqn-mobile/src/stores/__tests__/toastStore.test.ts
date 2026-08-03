@@ -114,6 +114,48 @@ describe('ToastStore', () => {
       expect(useToastStore.getState().toasts).toHaveLength(1);
     });
 
+    it('동일 message + type 이라도 action(되돌리기)이 있으면 둘 다 유지한다', () => {
+      // 회귀: 제목이 같은 알림 2건을 연속 삭제하면 두 번째 Undo 토스트가 dedupe 에 걸려
+      // 사라지고, 삭제 커밋 타이머는 계속 돌아 그 건이 편도 삭제됐다.
+      const onPressA = jest.fn();
+      const onPressB = jest.fn();
+
+      act(() => {
+        useToastStore.getState().addToast({
+          type: 'success',
+          message: "'출근 알림' 알림을 삭제했습니다.",
+          action: { label: '되돌리기', onPress: onPressA },
+        });
+      });
+
+      act(() => {
+        useToastStore.getState().addToast({
+          type: 'success',
+          message: "'출근 알림' 알림을 삭제했습니다.",
+          action: { label: '되돌리기', onPress: onPressB },
+        });
+      });
+
+      const toasts = useToastStore.getState().toasts;
+      expect(toasts).toHaveLength(2);
+      // 각 토스트가 자기 클로저를 들고 있어야 두 건 모두 되돌릴 수 있다
+      expect(toasts[0].action?.onPress).toBe(onPressA);
+      expect(toasts[1].action?.onPress).toBe(onPressB);
+    });
+
+    it('action 이 없는 토스트는 여전히 dedupe 된다 (스팸 보호 유지)', () => {
+      // 대조군: (B) 수정이 dedupe 를 통째로 끄지 않았음을 증명한다.
+      // QR 연속 스캔 실패·뮤테이션 에러 이중탭이 이 경로에 의존한다.
+      act(() => {
+        useToastStore.getState().addToast({ type: 'error', message: '스캔에 실패했습니다.' });
+      });
+      act(() => {
+        useToastStore.getState().addToast({ type: 'error', message: '스캔에 실패했습니다.' });
+      });
+
+      expect(useToastStore.getState().toasts).toHaveLength(1);
+    });
+
     it('should allow same message with different type', () => {
       act(() => {
         useToastStore.getState().addToast({

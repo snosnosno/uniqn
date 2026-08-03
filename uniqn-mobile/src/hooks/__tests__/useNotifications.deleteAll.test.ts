@@ -13,6 +13,7 @@ import { useDeleteAllNotifications } from '../useNotifications';
 
 const mockUseMutation = jest.fn();
 const mockInvalidateQueries = jest.fn();
+const mockCancelQueries = jest.fn((..._args: unknown[]) => Promise.resolve());
 const mockGetQueriesData = jest.fn();
 const mockSetQueryData = jest.fn();
 const mockGetQueryData = jest.fn();
@@ -25,10 +26,25 @@ const mockShouldApplyOptimisticUpdate = jest.fn(() => true);
 
 const LIST_KEY = ['notifications', 'list', {}];
 const SETTINGS_KEY = ['notifications', 'settings'];
-const CACHED_LIST = [
-  { id: 'n-1', isRead: false },
-  { id: 'n-2', isRead: true },
-];
+// 목록 캐시는 useInfiniteQuery 라 평면 배열이 아니라 {pages, pageParams} 다.
+const CACHED_LIST = {
+  pages: [
+    {
+      notifications: [
+        { id: 'n-1', isRead: false },
+        { id: 'n-2', isRead: true },
+      ],
+      lastDoc: null,
+      hasMore: false,
+    },
+  ],
+  pageParams: [null],
+};
+/** onMutate 가 써 넣어야 하는 "비운 상태" — 페이지 0장이면 getNextPageParam 이 흔들린다. */
+const EMPTIED_LIST = {
+  pages: [{ notifications: [], lastDoc: null, hasMore: false }],
+  pageParams: [null],
+};
 
 const mockStoreState = {
   notifications: [
@@ -50,9 +66,11 @@ const mockStoreState = {
 
 jest.mock('@tanstack/react-query', () => ({
   useQuery: jest.fn(() => ({ data: undefined, isLoading: false })),
+  useInfiniteQuery: jest.fn(() => ({ data: undefined, isLoading: false })),
   useMutation: (...args: unknown[]) => mockUseMutation(...args),
   useQueryClient: () => ({
     invalidateQueries: mockInvalidateQueries,
+    cancelQueries: (...args: unknown[]) => mockCancelQueries(...args),
     getQueriesData: (...args: unknown[]) => mockGetQueriesData(...args),
     setQueryData: (...args: unknown[]) => mockSetQueryData(...args),
     getQueryData: (...args: unknown[]) => mockGetQueryData(...args),
@@ -163,11 +181,30 @@ describe('useDeleteAllNotifications', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockShouldApplyOptimisticUpdate.mockReturnValue(true);
-    // 배열 캐시(목록) + 비배열 캐시(설정)를 함께 돌려줘 "설정 캐시는 안 건드린다"를 검증한다
+    // 목록 캐시(pages 형) + 목록이 아닌 캐시(설정)를 함께 돌려줘 "설정 캐시는 안 건드린다"를 검증한다
     mockGetQueriesData.mockReturnValue([
       [LIST_KEY, CACHED_LIST],
       [SETTINGS_KEY, { enabled: true }],
     ]);
+  });
+
+  it('onMutate는 진행 중인 조회를 먼저 취소한다 (되채움 → 롤백 덮어쓰기 차단)', async () => {
+    const options = renderAndCaptureOptions();
+
+    await options.onMutate();
+
+    // 취소하지 않으면 in-flight refetch 가 비운 목록을 되채우고,
+    // 뒤이은 onError 롤백이 그 stale 스냅샷을 덮어쓴다.
+    expect(mockCancelQueries).toHaveBeenCalledWith({ queryKey: ['notifications'] });
+  });
+
+  it('onMutate 의 취소는 낙관 갱신을 건너뛰는 경로(오프라인)에서도 먼저 일어난다', async () => {
+    mockShouldApplyOptimisticUpdate.mockReturnValue(false);
+    const options = renderAndCaptureOptions();
+
+    await options.onMutate();
+
+    expect(mockCancelQueries).toHaveBeenCalledWith({ queryKey: ['notifications'] });
   });
 
   it('mutationFn은 온라인 가드 후 서비스에 사용자 ID를 전달한다', async () => {
@@ -189,8 +226,8 @@ describe('useDeleteAllNotifications', () => {
     const context = await options.onMutate();
 
     // 렌더 소스인 목록 캐시가 실제로 비워져야 한다 (스토어만 비우면 화면은 그대로다)
-    expect(mockSetQueryData).toHaveBeenCalledWith(LIST_KEY, []);
-    // 배열이 아닌 캐시(설정)는 건드리지 않는다
+    expect(mockSetQueryData).toHaveBeenCalledWith(LIST_KEY, EMPTIED_LIST);
+    // 목록이 아닌 캐시(설정)는 건드리지 않는다
     expect(mockSetQueryData).toHaveBeenCalledTimes(1);
     expect(mockSetQueryData).not.toHaveBeenCalledWith(SETTINGS_KEY, expect.anything());
 

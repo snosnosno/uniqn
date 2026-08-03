@@ -133,6 +133,24 @@ function setup() {
   return { queryClient, ...view };
 }
 
+/**
+ * TanStack Query 의 구독자 통지를 흘린다.
+ *
+ * `notifyManager` 의 기본 스케줄러는 `setTimeout(cb, 0)`(query-core 5.101.4
+ * `defaultScheduler = systemSetTimeoutZero`)이라, `jest.useFakeTimers()` 아래에서는
+ * 캐시가 갱신돼도 훅의 `result.current` 가 갱신되지 않는다.
+ *
+ * ⚠️ 이건 **테스트 하네스 사정이지 구현 결함이 아니다** — 실측으로 판정했다:
+ *    fetchNextPage 직후 원시 캐시(`getQueryData`)에는 이미 2페이지가 정확히 들어가 있고
+ *    (`pageParams: [null, <커서>]`), 타이머를 1ms 흘리면 훅 반환값이 따라온다.
+ *    단언 자체는 그대로 두고 통지만 흘린다 — 이 헬퍼로 단언을 약화시키지 말 것.
+ */
+async function flushQueryNotifications() {
+  await act(async () => {
+    jest.advanceTimersByTime(1);
+  });
+}
+
 /** 되돌리기 토스트의 onPress 를 찾는다 (렌더된 계약 필드) */
 function findUndo(notificationId: string): (() => void) | undefined {
   const call = [...mockAddToast.mock.calls]
@@ -180,6 +198,7 @@ describe('알림 목록 축 = React Query 캐시', () => {
     await act(async () => {
       await result.current.list.fetchNextPage();
     });
+    await flushQueryNotifications();
 
     // 스토어가 아니라 훅 반환값(= 렌더 소스)이 늘어나야 한다.
     // 예전엔 스토어에만 append 해서 21번째 알림부터 영영 접근할 수 없었다.
@@ -205,6 +224,7 @@ describe('알림 목록 축 = React Query 캐시', () => {
     await act(async () => {
       await result.current.list.fetchNextPage();
     });
+    await flushQueryNotifications();
 
     expect(result.current.list.notifications.map((n) => n.id)).toEqual([
       'n-1',
@@ -213,6 +233,48 @@ describe('알림 목록 축 = React Query 캐시', () => {
       'n-4',
       'n-5',
     ]);
+  });
+
+  it('무효화가 스크롤한 목록을 1페이지로 붕괴시키지 않는다', async () => {
+    // 이 테스트가 useInfiniteQuery 이관의 존재 이유다.
+    // 평범한 useQuery 시절에는 invalidate 한 방이면 queryFn 이 커서 없이 재실행돼
+    // 3페이지 스크롤한 목록이 20건으로 점프했다 — 읽음 처리 1회, realtime 새 알림 1건,
+    // 포그라운드 복귀, 재연결 동기화 전부가 이 붕괴를 일으켰다.
+    const { result, queryClient } = setup();
+    await waitFor(() => expect(result.current.list.notifications).toHaveLength(3));
+
+    mockFetchNotifications.mockResolvedValueOnce({
+      notifications: PAGE_2,
+      lastDoc: null,
+      hasMore: false,
+    });
+    await act(async () => {
+      await result.current.list.fetchNextPage();
+    });
+    await flushQueryNotifications();
+    expect(result.current.list.notifications).toHaveLength(5);
+
+    // 이제 무효화 — 서버는 두 페이지를 그대로 돌려준다.
+    mockFetchNotifications
+      .mockResolvedValueOnce({ notifications: PAGE_1, lastDoc: { cursor: 'p1' }, hasMore: true })
+      .mockResolvedValueOnce({ notifications: PAGE_2, lastDoc: null, hasMore: false });
+
+    await act(async () => {
+      await queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    });
+    await flushQueryNotifications();
+
+    // 5건이 유지돼야 한다. 3건이면 1페이지 붕괴가 되살아난 것이다.
+    expect(result.current.list.notifications.map((n) => n.id)).toEqual([
+      'n-1',
+      'n-2',
+      'n-3',
+      'n-4',
+      'n-5',
+    ]);
+    // 무효화가 로드된 페이지 수만큼 순차 재조회했는지 (1페이지만 부르면 붕괴다)
+    const cursors = mockFetchNotifications.mock.calls.slice(-2).map((c) => c[0]?.lastDoc);
+    expect(cursors).toEqual([undefined, { cursor: 'p1' }]);
   });
 
   it('무한스크롤 결과는 오프라인 스냅샷(스토어)에도 되비친다', async () => {
@@ -227,6 +289,7 @@ describe('알림 목록 축 = React Query 캐시', () => {
     await act(async () => {
       await result.current.list.fetchNextPage();
     });
+    await flushQueryNotifications();
 
     // 쿼리 → 스토어 한 방향 미러링. 이게 깨지면 "온라인 스크롤 후 오프라인 전환" 시
     // 보이던 2페이지가 조용히 사라진다.
@@ -427,6 +490,7 @@ describe('전체 알림 삭제', () => {
     // 순간"의 렌더 소스를 붙잡으면 낙관 반영이 실제로 목록 캐시에 닿았는지 정확히 잠긴다.
     // 서버 응답 뒤에 단언하면 안 된다 — onSuccess 의 invalidateQueries 가 refetch 를
     // 돌려 목 데이터로 목록을 되채우므로, 구현이 아무것도 안 해도 통과해 버린다.
+    // 목록 캐시는 이제 평면 배열이 아니라 {pages, pageParams} 다 — 평탄화해서 본다.
     const listsWhenServerCalled: unknown[][] = [];
     let unreadWhenServerCalled = -1;
     mockDeleteAllNotificationsService.mockImplementation(async () => {
@@ -434,7 +498,9 @@ describe('전체 알림 삭제', () => {
         .getQueryCache()
         .getAll()
         .forEach((query) => {
-          if (Array.isArray(query.state.data)) listsWhenServerCalled.push(query.state.data);
+          const data = query.state.data as { pages?: { notifications: unknown[] }[] } | undefined;
+          if (!Array.isArray(data?.pages)) return;
+          listsWhenServerCalled.push(data.pages.flatMap((page) => page.notifications));
         });
       unreadWhenServerCalled = useNotificationStore.getState().unreadCount;
       return 3;

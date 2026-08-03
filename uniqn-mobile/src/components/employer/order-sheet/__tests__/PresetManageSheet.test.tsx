@@ -208,4 +208,27 @@ describe('PresetManageSheet', () => {
     expect(mockUpdateTemplate).not.toHaveBeenCalled();
     expect(getByText(/2자 이상/)).toBeTruthy();
   });
+
+  it('레거시 1자 이름 프리셋을 무수정 저장하면 에러 없이 편집만 닫는다', async () => {
+    // 픽스처 '가' = **스키마 도입 전(2026-01~08-02) 레거시 데이터 재현**.
+    // 2자 하한은 PR#406 에서 처음 생겼고 서버·DB 에는 지금도 길이 제약이 없으므로
+    // 1자 이름 행은 실재할 수 있다. 이 행은 이름변경에 들어가 아무것도 안 바꾸고
+    // 저장만 눌러도 parse 가 먼저 터져 "2자 이상" 에러에 갇혔다(취소로만 탈출).
+    const { getByLabelText, queryByText, queryByLabelText, getByText } = setup([
+      makeTemplate('a', '가'),
+    ]);
+
+    fireEvent.press(getByLabelText('가 이름 변경'));
+
+    await act(async () => {
+      // changeText 없음 = 무변경
+      fireEvent.press(getByLabelText('이름 변경 저장'));
+    });
+
+    expect(mockUpdateTemplate).not.toHaveBeenCalled();
+    expect(queryByText(/2자 이상/)).toBeNull();
+    // 편집 모드가 닫혀 행 표시로 돌아왔는지 (입력 필드 사라짐 + 이름 행 노출)
+    expect(queryByLabelText('프리셋 이름 입력')).toBeNull();
+    expect(getByText('가')).toBeTruthy();
+  });
 });
