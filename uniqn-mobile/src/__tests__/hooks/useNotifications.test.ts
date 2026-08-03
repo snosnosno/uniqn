@@ -98,7 +98,6 @@ jest.mock('@/stores/toastStore', () => ({
 const mockSetNotifications = jest.fn();
 const mockAddNotification = jest.fn();
 const mockAddNotifications = jest.fn();
-const mockSetHasMore = jest.fn();
 const mockMarkAsReadLocal = jest.fn();
 const mockMarkAllAsReadLocal = jest.fn();
 const mockRemoveNotification = jest.fn();
@@ -106,7 +105,6 @@ const mockSetSettings = jest.fn();
 
 const mockNotificationStoreState = {
   notifications: [] as ReturnType<typeof createMockNotification>[],
-  hasMore: false,
   lastFetchedAt: null as number | null,
   settings: {
     grouping: { enabled: true, minGroupSize: 2, timeWindowHours: 24 },
@@ -114,7 +112,6 @@ const mockNotificationStoreState = {
   setNotifications: mockSetNotifications,
   addNotification: mockAddNotification,
   addNotifications: mockAddNotifications,
-  setHasMore: mockSetHasMore,
   markAsRead: mockMarkAsReadLocal,
   markAllAsRead: mockMarkAllAsReadLocal,
   removeNotification: mockRemoveNotification,
@@ -359,7 +356,6 @@ describe('useNotifications Hooks', () => {
     mockEnabled = undefined;
     mockIsOnline = true;
     mockNotificationStoreState.notifications = [];
-    mockNotificationStoreState.hasMore = false;
     mockNotificationStoreState.lastFetchedAt = null;
     mockFetchNextPage.mockClear();
     mockHasNextPage = true;
@@ -590,8 +586,9 @@ describe('useNotifications Hooks', () => {
       renderHook(() => useNotificationList());
 
       // hasMore=false 면 커서가 있어도 멈춘다 (무한 루프 방지)
-      expect(mockCapturedGetNextPageParam?.({ lastDoc: { cursor: 'p1' }, hasMore: false })).
-        toBeUndefined();
+      expect(
+        mockCapturedGetNextPageParam?.({ lastDoc: { cursor: 'p1' }, hasMore: false })
+      ).toBeUndefined();
       // lastDoc 이 없으면 더 못 간다 (keyset 커서라 null 이면 처음부터가 된다)
       expect(mockCapturedGetNextPageParam?.({ lastDoc: null, hasMore: true })).toBeUndefined();
       // 둘 다 있어야 다음 커서

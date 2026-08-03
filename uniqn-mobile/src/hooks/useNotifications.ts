@@ -133,9 +133,7 @@ function isNotificationListData(value: unknown): value is NotificationListData {
  * 삭제 훅은 화면이 어떤 필터로 목록을 열었는지 모르므로
  * 특정 키 하나만 패치하면 필터 탭에서 조용히 안 먹는다.
  */
-function getNotificationListCaches(
-  queryClient: QueryClient
-): [QueryKey, NotificationListData][] {
+function getNotificationListCaches(queryClient: QueryClient): [QueryKey, NotificationListData][] {
   return queryClient
     .getQueriesData<NotificationListData>({ queryKey: notificationKeys.all })
     .filter((entry): entry is [QueryKey, NotificationListData] => isNotificationListData(entry[1]));
@@ -302,12 +300,16 @@ export function useNotificationList(
         userId: user.uid,
         filter,
         // 1페이지는 커서 없이 — keyset 커서(created_at)라 null 이면 처음부터다.
-        ...(pageParam == null ? {} : { lastDoc: pageParam }),
+        // (`initialPageParam` 은 null, TanStack 의 미로드 상태는 undefined 라 둘 다 본다)
+        ...(pageParam === null || pageParam === undefined ? {} : { lastDoc: pageParam }),
       });
     },
     initialPageParam: null as NotificationPageCursor | null,
     getNextPageParam: (lastPage) =>
-      lastPage.hasMore && lastPage.lastDoc != null ? lastPage.lastDoc : undefined,
+      // lastDoc 이 없으면 멈춘다 — keyset 커서라 null 을 넘기면 1페이지를 다시 받는다.
+      lastPage.hasMore && lastPage.lastDoc !== null && lastPage.lastDoc !== undefined
+        ? lastPage.lastDoc
+        : undefined,
     // select 로 평탄화해 `query.data` 를 예전과 같은 `NotificationData[]` 로 유지한다.
     // 덕분에 스토어 미러링·렌더 소스 선택·소비처 계약이 전부 무변경이다.
     // ⚠️ id dedupe 는 필수다 — 예전에는 fetchNextPage 의 Set 이 담당했는데 그 코드가

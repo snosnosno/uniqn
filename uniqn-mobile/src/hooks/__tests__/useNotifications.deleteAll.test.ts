@@ -55,7 +55,6 @@ const mockStoreState = {
   clearNotifications: mockClearNotifications,
   addNotification: jest.fn(),
   addNotifications: jest.fn(),
-  setHasMore: jest.fn(),
   lastFetchedAt: null,
   markAsRead: jest.fn(),
   markAllAsRead: jest.fn(),
