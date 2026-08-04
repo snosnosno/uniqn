@@ -38,7 +38,7 @@
 | **세션 G** | 과제 4 — 슬롯 편집 표류 근본 수선 | ~~`feat/work-log-slot-sync`~~ | ✅ **머지** | **#407** | 신규 SECDEF RPC `update_work_log_slot(uuid, jsonb)` 로 `work_logs`+`applications.assignments` 동시 갱신. 🔴**마이그 1건 prod 적용 완료 — 재적용 금지**(기록명 `20260802180000`, 레포 파일명과 동일). **#406 재통합 후** 파리티 **191 → 192** = prod 실측 일치 / 정책 111 불변. 재검증: quality exit 0 · jest **611스위트 6661테스트** · pgTAP **97파일 1031테스트 전량 PASS**(파리티 포함 — 재통합이 간극을 닫았다) · **red-swap 9종 1:1** · md5 3자 일치 `70f323c8…`. 리뷰 fable **APPROVE**(CRITICAL 0/HIGH 0) — MEDIUM 3건 중 **2건 반영·1건 프로브로 오탐 기각**. 상세=§5 |
 | **B2** | 주소 2단계(좌표) | ~~`feat/posting-geocoding`~~ | ✅ **머지** | **#411** | `55260f2c2`(2026-08-03 13:27 UTC). 지오코딩 EF + `job_postings.geo_lat/geo_lng` + 길찾기 좌표 핀. 🔴**마이그 prod 적용 완료 — 재적용 금지**(**prod 기록명 `20260803015905`**, 레포 파일은 `20260803160000_job_postings_geocode_columns.sql`). 컬럼·CHECK 만이라 **함수/정책 기여 0**. 🔴**EF `geocode-address` prod 선배포(v3)** · 🔴`config.toml` 변경으로 머지 시 **EF 16개 전체 재배포**. 검증: quality **0 errors** · B2 테스트 **50/50** · 파리티 `PARITY_EXPECT_FUNCS=193` 일치. 리뷰 security/code 양쪽 **APPROVE**. 상세=§5 |
 | **S6** | 3-C 설계 | `docs/3c-time-change-design` | ✅ **설계 완료·push 됨** | | **코드 변경 0건**(설계 전용). 커밋 `3316dbb5e` — 2026-08-04 origin 에 push(PR 없음). 사용자 결정 3건 확정 — ①동의 불필요(알림·동기화만) ②거절=**기존 취소요청 경로** ③**전체가 개인 조정을 덮어쓴다**. 산출물=`docs/planning/2026-08-03-3c-posting-time-change-design.md`. 🔑 **핵심 발견: 알림(Case 2-B #382)·취소 힌트·단건 동기화(#407)가 이미 전부 존재** — 3-C 는 신규 기능이 아니라 묶음 적용이다. ⚠️ **S7 이 이 문서를 cherry-pick 해 §10 으로 개정**했다 — 이 브랜치는 참조용 원본이고, 진실원은 S7 브랜치의 개정본이다 |
-| **S7** | 3-C 구현 | `feat/posting-time-change` | 🔨 **구현 완료 · prod 적용 완료 · PR 미생성** | | 워크트리 `T-HOLDEM-timechange`, 커밋 **11개**(HEAD `f487ac0bd`). 사용자 결정 4건 추가 확정(④대상 선택 ⑤정원 동반 이동 ⑥알림 기존 배선 → **⑦모순 알림은 문구 중립화**). 🔑 S7 실측이 설계 §4-3 을 **뒤집었다** — work_logs 만 옮기면 출발지 정원이 재개방된다(§10-2). 🔴**마이그 2건 prod 적용 완료 — 재적용 금지**(prod 기록명 **`20260804115100 update_posting_slot_time_rpc`** + **`20260804115209 job_posting_update_contract_body_neutral`**, 레포 파일은 `20260804120000`/`20260804130000`). 파리티 **193 → 199 / 정책 111** prod 실측 일치. 레포↔prod 함수 정의 **md5 7/7 일치**(⚠️ `chr(13)` 제거 후 비교 — CRLF 때문에 6/7 이 가짜 불일치로 보인다). 리뷰 3인 완료: security **LOW**·code **APPROVE**·database REQUEST CHANGES(지적 전량 반영). 결함 **4건** 발견·수정. 검증: quality exit 0 · jest **623/6833** · pgTAP **99/1093** · red-swap **9종 1:1**. 상세=§5 |
+| **S7** | 3-C 구현 | `feat/posting-time-change` | 🔨 **PR 생성 · CI 전부 pass** | **#412** | CI **10잡 전부 SUCCESS**(E2E 9m45s · DB Tests pg_prove 2m0s 포함, **재실행 0회**). 워크트리 `T-HOLDEM-timechange`, 커밋 **12개**(HEAD `21a5f2f3c`). 사용자 결정 4건 추가 확정(④대상 선택 ⑤정원 동반 이동 ⑥알림 기존 배선 → **⑦모순 알림은 문구 중립화**). 🔑 S7 실측이 설계 §4-3 을 **뒤집었다** — work_logs 만 옮기면 출발지 정원이 재개방된다(§10-2). 🔴**마이그 2건 prod 적용 완료 — 재적용 금지**(prod 기록명 **`20260804115100 update_posting_slot_time_rpc`** + **`20260804115209 job_posting_update_contract_body_neutral`**, 레포 파일은 `20260804120000`/`20260804130000`). 파리티 **193 → 199 / 정책 111** prod 실측 일치. 레포↔prod 함수 정의 **md5 7/7 일치**(⚠️ `chr(13)` 제거 후 비교 — CRLF 때문에 6/7 이 가짜 불일치로 보인다). 리뷰 3인 완료: security **LOW**·code **APPROVE**·database REQUEST CHANGES(지적 전량 반영). 결함 **4건** 발견·수정. 검증: quality exit 0 · jest **623/6833** · pgTAP **99/1093** · red-swap **9종 1:1**. 상세=§5 |
 
 ### 워크트리 배정 (🔴 모든 세션 예외 없이 격리)
 
@@ -993,7 +993,7 @@ planner 는 "`generateApplicationLinkKey` 가 없다 → 표류하면 지금도 
 
 ---
 
-### S7-착지 (3-C 알림 모순 해소 + prod 적용) — 2026-08-04 · 상태: **prod 적용 완료 · PR 미생성**
+### S7-착지 (3-C 알림 모순 해소 + prod 적용 + PR) — 2026-08-04 · 상태: **PR #412 생성 · CI 전부 pass · 머지 대기**
 
 - 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-timechange` / `feat/posting-time-change` · HEAD `f487ac0bd`(커밋 11개)
 - 이 세션은 새 기능을 만들지 않았다. **사용자 게이트 1건을 받아 닫고 prod 에 적용**했다.
@@ -1036,9 +1036,16 @@ planner 는 "`generateApplicationLinkKey` 가 없다 → 표류하면 지금도 
 - `origin/master`(`55260f2c2`) 위에 이미 있어 **재통합할 커밋 0건**
 - quality **exit 0**(경고 105 = 기준선) · jest **623스위트 6833테스트** · pgTAP **99파일 1093테스트**
 
+**PR (절차 4~5)**
+
+- **PR #412** 생성(사용자 승인 후). 본문에 ①§4-3 이 뒤집힌 이유 ②결함 4건 ③기록만 한 한계
+  (TOCTOU — 알림 모순은 이번에 닫힘) ④파리티 193→199 + prod 기록명 2건을 담았다.
+- CI **10잡 전부 SUCCESS · 재실행 0회** — `supabase/**` diff 가 있어 **DB Tests(pg_prove) 2m0s 실행됨**,
+  E2E 9m45s 1회 통과.
+
 **안 끝난 것**
 
-1. 🔴 **push·PR 미생성** — 사용자 명시 승인 대기
+1. 🔴 **머지 미실행** — 사용자 결정 대기. 머지 후 워크트리 정리(⚠️ **정션 해제 선행** → `worktree remove` → 브랜치 삭제)
 2. ⏸ 별건: `v_capacity = 0` 을 "정원 미상=통과" → "자리 없음=거부"로 전환(레거시 공고 전체 영향)
 
 ---
