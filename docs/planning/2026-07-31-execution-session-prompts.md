@@ -36,9 +36,9 @@
 | **세션 E**(P2·P3 후속) | 병합 키 표류 + 오프라인 침묵 취소 (클라 전용 2건) | ~~`fix/schedule-merge-key`~~ | ✅ **머지** | **#404** | `c97389daf`. CI **9잡 전부 pass**(E2E 재실행 0). 재통합(#402·#403) 후 재검증: quality exit 0 · jest **603스위트 6639테스트 전량 통과**. 마이그 0건. |
 | **세션 F** | 세션 D·E 착지 + 근본수선 설계 | ~~`docs/session-f-ledger`~~ | ✅ **착지 3건** | **#402·#403·#404** | **코드 변경 0건**(착지 전용). 파리티 간극 해소 — 레포 **186 → 189** = prod 189/111 실측 일치. 🔴 **과제 4(근본 수선)는 미착수 — 설계만 완료**, 사용자 결정으로 새 세션 이관. 상세=§5 |
 | **세션 G** | 과제 4 — 슬롯 편집 표류 근본 수선 | ~~`feat/work-log-slot-sync`~~ | ✅ **머지** | **#407** | 신규 SECDEF RPC `update_work_log_slot(uuid, jsonb)` 로 `work_logs`+`applications.assignments` 동시 갱신. 🔴**마이그 1건 prod 적용 완료 — 재적용 금지**(기록명 `20260802180000`, 레포 파일명과 동일). **#406 재통합 후** 파리티 **191 → 192** = prod 실측 일치 / 정책 111 불변. 재검증: quality exit 0 · jest **611스위트 6661테스트** · pgTAP **97파일 1031테스트 전량 PASS**(파리티 포함 — 재통합이 간극을 닫았다) · **red-swap 9종 1:1** · md5 3자 일치 `70f323c8…`. 리뷰 fable **APPROVE**(CRITICAL 0/HIGH 0) — MEDIUM 3건 중 **2건 반영·1건 프로브로 오탐 기각**. 상세=§5 |
-| **B2** | 주소 2단계(좌표) | `feat/posting-geocoding` | 🔨 **구현 완료·PR 미생성** | | 착수 조건(REST 키 재발급 + EF 시크릿)은 2026-08-03 해제됨. 신규 EF `geocode-address`(카카오 로컬 API 프록시) + `job_postings.geo_lat/geo_lng` + `mapLink` 좌표 승격. 🔴**마이그 1건 prod 적용 완료 — 재적용 금지**(**prod 기록명 `20260803015905`**, 레포 파일은 `20260803160000_job_postings_geocode_columns.sql`). 컬럼·CHECK 만이라 **함수/정책 기여 0**. 🔴**EF 도 prod 선배포됨**(version 3, 사용자 승인) — 머지 시 CI 가 레포 기준 재배포. 검증: quality exit 0(경고 103=master 동일 실측) · jest **618스위트 6739테스트 122스냅샷** · **red-swap 18종 1:1** · knip 델타 **−2**(동일 워크트리 대조) · e2e Grep 0건 · **EF prod 실호출 관찰**(정상좌표·무매칭·400·401). 상세=§5 |
-| **S6** | 3-C 설계 | — | ⬜ | | 사용자 결정 필요 |
-| **S7** | 3-C 구현 | `feat/posting-time-change` | ⬜ | | S6 승인 후 |
+| **B2** | 주소 2단계(좌표) | ~~`feat/posting-geocoding`~~ | ✅ **머지** | **#411** | `55260f2c2`(2026-08-03 13:27 UTC). 지오코딩 EF + `job_postings.geo_lat/geo_lng` + 길찾기 좌표 핀. 🔴**마이그 prod 적용 완료 — 재적용 금지**(**prod 기록명 `20260803015905`**, 레포 파일은 `20260803160000_job_postings_geocode_columns.sql`). 컬럼·CHECK 만이라 **함수/정책 기여 0**. 🔴**EF `geocode-address` prod 선배포(v3)** · 🔴`config.toml` 변경으로 머지 시 **EF 16개 전체 재배포**. 검증: quality **0 errors** · B2 테스트 **50/50** · 파리티 `PARITY_EXPECT_FUNCS=193` 일치. 리뷰 security/code 양쪽 **APPROVE**. 상세=§5 |
+| **S6** | 3-C 설계 | `docs/3c-time-change-design` | ✅ **설계 완료·push 됨** | | **코드 변경 0건**(설계 전용). 커밋 `3316dbb5e` — 2026-08-04 origin 에 push(PR 없음). 사용자 결정 3건 확정 — ①동의 불필요(알림·동기화만) ②거절=**기존 취소요청 경로** ③**전체가 개인 조정을 덮어쓴다**. 산출물=`docs/planning/2026-08-03-3c-posting-time-change-design.md`. 🔑 **핵심 발견: 알림(Case 2-B #382)·취소 힌트·단건 동기화(#407)가 이미 전부 존재** — 3-C 는 신규 기능이 아니라 묶음 적용이다. ⚠️ **S7 이 이 문서를 cherry-pick 해 §10 으로 개정**했다 — 이 브랜치는 참조용 원본이고, 진실원은 S7 브랜치의 개정본이다 |
+| **S7** | 3-C 구현 | `feat/posting-time-change` | 🔨 **PR 생성 · CI 전부 pass** | **#412** | CI **10잡 전부 SUCCESS**(E2E 9m45s · DB Tests pg_prove 2m0s 포함, **재실행 0회**). 워크트리 `T-HOLDEM-timechange`, 커밋 **12개**(HEAD `21a5f2f3c`). 사용자 결정 4건 추가 확정(④대상 선택 ⑤정원 동반 이동 ⑥알림 기존 배선 → **⑦모순 알림은 문구 중립화**). 🔑 S7 실측이 설계 §4-3 을 **뒤집었다** — work_logs 만 옮기면 출발지 정원이 재개방된다(§10-2). 🔴**마이그 2건 prod 적용 완료 — 재적용 금지**(prod 기록명 **`20260804115100 update_posting_slot_time_rpc`** + **`20260804115209 job_posting_update_contract_body_neutral`**, 레포 파일은 `20260804120000`/`20260804130000`). 파리티 **193 → 199 / 정책 111** prod 실측 일치. 레포↔prod 함수 정의 **md5 7/7 일치**(⚠️ `chr(13)` 제거 후 비교 — CRLF 때문에 6/7 이 가짜 불일치로 보인다). 리뷰 3인 완료: security **LOW**·code **APPROVE**·database REQUEST CHANGES(지적 전량 반영). 결함 **4건** 발견·수정. 검증: quality exit 0 · jest **623/6833** · pgTAP **99/1093** · red-swap **9종 1:1**. 상세=§5 |
 
 ### 워크트리 배정 (🔴 모든 세션 예외 없이 격리)
 
@@ -63,7 +63,7 @@
 | **세션 E** | ~~`T-HOLDEM-schedkey`~~ | ✅ **정리완료**(세션 F — 정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **821 → 821** 실측 무손상) |
 <!-- 🔨 **유지 중**(PR 미생성 — 사용자 결정 대기). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성, 원본 `node_modules` **821 → 821** 실측 무손상 | -->
 | **세션 G** | ~~`T-HOLDEM-slotsync`~~ | ✅ **머지 완료(#407)** — 정리 대상(⚠️ **정션 해제 선행** → `worktree remove` → 브랜치 삭제). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성 |
-| S7 | `T-HOLDEM-timechange` | ⬜ |
+| **S7** | `T-HOLDEM-timechange` | 🔨 **유지 중**(2026-08-04 생성, `origin/master` `55260f2c2` 기준). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성(원본 `node_modules` **821** 확인). `.env.local`·`.env.development.local` 은 메인에서 복사함 |
 
 전부 `C:/Users/user/Desktop/` 아래. 머지 완료 세션의 워크트리는 다음 세션 착수 시 정리한다
 (⚠️ **정션 해제 선행** — `rmdir` 로 `node_modules` 정션을 먼저 끊지 않으면 원본이 지워질 수 있다).
@@ -452,22 +452,17 @@ docs/planning/2026-07-31-address-search-3phase-design.md §5 2단계를 구현�
 
 ---
 
-### S6 — 3-C 설계 세션 (구현 금지)
+### S6 — 3-C 설계 세션 ✅ **완료 (2026-08-03)**
 
-```
-[§2 공통 블록 붙여넣기]
+미결이던 사용자 결정 3건이 확정됐다:
 
-3-C(공고 시간 전체/개인 2축 변경) **설계만** 하는 세션이다. 코드 작성 금지.
-설계 판정은 model:"fable" 서브에이전트에 위임하라.
+1. **일괄 변경에 스태프 동의는 불필요** — 알림과 동기화만 정확하면 된다. (→ pending/승인 상태 없음)
+2. **불만이면 기존 취소요청 경로**를 탄다. (→ 신규 "거절" 상태 없음)
+3. **전체 변경이 개인 조정을 덮어쓴다.** (→ 보존 로직 없음, 대신 알림에 이전값이 실려야 함)
 
-미결 질문 — 사용자 결정이 필요하다
-1. "확정 전원의 시간 일괄 변경"은 단순 UPDATE 가 아닐 수 있다.
-   이미 그 시간에 맞춰 다른 일정을 잡은 스태프가 있으면 **거절/재확인 흐름**이 필요한가?
-2. 거절이 나오면 그 자리는 어떻게 되나 — 자동 취소? 구인자 수동 처리?
-3. 개인 시간 변경과 전체 변경이 충돌하면(개인이 이미 조정됨) 어느 쪽이 이기나?
+산출물: `docs/planning/2026-08-03-3c-posting-time-change-design.md`
 
-산출물: 설계 문서 1개 (docs/planning/) + S7 프롬프트를 이 문서 §3 에 추가
-```
+🔴 **S7 착수 전 사용자 확인 1건 남음** — 설계 §7(목적지 슬롯에 이미 인원이 있을 때 정원 초과 처리).
 
 ---
 
@@ -476,8 +471,21 @@ docs/planning/2026-07-31-address-search-3phase-design.md §5 2단계를 구현�
 ```
 [§2 공통 블록 붙여넣기]
 
-S6 설계 문서를 읽고 3-C 를 구현한다. 브랜치 feat/posting-time-change.
-(S6 종료 시 이 블록을 구체화할 것 — 설계 전에는 상세를 쓸 수 없다)
+3-C 를 구현한다. 브랜치 feat/posting-time-change (전용 워크트리).
+설계 문서: docs/planning/2026-08-03-3c-posting-time-change-design.md — 먼저 통독할 것.
+
+핵심: 새 기능이 아니라 update_work_log_slot(#407)의 묶음 적용이다.
+알림(Case 2-B)·취소 힌트·단건 동기화는 이미 있다 — 다시 만들지 마라.
+
+만들 것: RPC update_posting_slot_time 1개 + 클라 배선 + 테스트.
+대상 축은 _posting_slot_key + _posting_role_key + 소프트 취소 필터.
+N건 반복이므로 ORDER BY id 로 잠근다(데드락).
+
+🔴 착수 전: §7 미결(목적지 슬롯 정원 충돌)을 사용자에게 확인하라.
+🔴 착수 전: 근무표 헤더가 공고 원문 슬롯을 원천으로 쓰는지 실측하라(§4-3).
+
+금지: mcp__supabase__* 직접 호출 · 기존 마이그레이션 수정 · PROD 우회.
+리뷰: database-reviewer(fable) → security-reviewer(fable) → code-reviewer(fable).
 ```
 
 ---
@@ -982,6 +990,120 @@ planner 는 "`generateApplicationLinkKey` 가 없다 → 표류하면 지금도 
   HEAD `d51465f55`). **마이그 1건 포함** — "마이그는 전 레인 동시 1건" 슬롯을 그 레인이 점유한다.
 - 🔴 감사 후속 **P5 미착수**. → **정정**: 이 기재는 곧 stale 이 됐다. P5 는 타 세션이 진행해
   **PR #400 로 머지**됐다(`95772ce49`). 아래 P5 항목 참조.
+
+---
+
+### S7-착지 (3-C 알림 모순 해소 + prod 적용 + PR) — 2026-08-04 · 상태: **PR #412 생성 · CI 전부 pass · 머지 대기**
+
+- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-timechange` / `feat/posting-time-change` · HEAD `f487ac0bd`(커밋 11개)
+- 이 세션은 새 기능을 만들지 않았다. **사용자 게이트 1건을 받아 닫고 prod 에 적용**했다.
+
+**사용자 결정 ⑦ — 모순 알림 쌍은 "문구 중립화"**
+
+착수 전 실측으로 하나가 더 드러났다: `v_date_changed` 는 `schedule` jsonb 가 **어떻게든 달라지면**
+참이 된다(`20260803120000:520-523`). 정원 count 만 옮겨도 참이므로 모순 알림은
+조건부가 아니라 **무조건** 발생한다.
+
+- 선택: 계약 보유자 분기 문장을 `이미 확정된 내 근무 시간은 바뀌지 않습니다 — 근무표에서 확인해 주세요.`
+  → `확정된 내 근무 시간은 근무표에서 확인해 주세요.` **문자열 1개만** 교체.
+  분기 조건·수신자·링크·우선순위·`data` 전부 불변.
+- 기각한 대안: ⓐ그대로 두기(거짓 문장이 계속 나간다) · ⓒGUC 억제(같은 공고의 **미확정 지원자**가
+  자리 축소를 모르게 된다 — §10-4 가 억제를 기각한 바로 그 이유).
+- 부수 실측: 이 문구를 단언하는 테스트·클라 참조는 **0건**이었다(전수 grep) → 회귀 표면이 좁다.
+- 마이그 `20260804130000` = `20260803120000:430-644` 를 그대로 옮기고 한 문장만 교체. 시그니처 동일 →
+  **파리티 함수 수 불변**.
+- 회귀 가드: `time_slot_sentinel_unification.test.sql` 테스트 12 에 `바뀌지 않습니다` **부재** 축 추가.
+  red-swap 확인 — 옛 정의를 되돌리면 18개 중 **이 1건만** red(`/schedule | true | true` ≠ `… | false`).
+
+**prod 적용 (절차 3)**
+
+- 적용 전 실측: 함수 **193** / 정책 111 / `update_posting_slot_time` **부재**
+- 🔴 **prod 기록명이 파일명과 다르다 — 재적용 금지**
+
+  | 레포 파일 | prod 기록 version |
+  |---|---|
+  | `20260804120000_update_posting_slot_time_rpc.sql` | **`20260804115100`** |
+  | `20260804130000_job_posting_update_contract_body_neutral.sql` | **`20260804115209`** |
+
+- 적용 후 실측: 함수 **199** / 정책 **111** = `PARITY_EXPECT_FUNCS` 기대값 일치
+- 🔑 **전사 오류 검증법**: `md5(pg_get_functiondef(oid))` 를 로컬↔prod 로 그냥 비교하면
+  **7개 중 6개가 불일치로 보인다.** 코드 문제가 아니라 로컬 마이그 파일의 **CRLF** 다
+  (psql `-f` 로 적용하면 본문에 `\r` 이 들어간다). `md5(replace(…, chr(13), ''))` 로 비교하면
+  **7/7 완전 일치**. 이걸 모르면 멀쩡한 함수를 다시 쓰게 된다.
+
+**재검증 (재통합 후)**
+
+- `origin/master`(`55260f2c2`) 위에 이미 있어 **재통합할 커밋 0건**
+- quality **exit 0**(경고 105 = 기준선) · jest **623스위트 6833테스트** · pgTAP **99파일 1093테스트**
+
+**PR (절차 4~5)**
+
+- **PR #412** 생성(사용자 승인 후). 본문에 ①§4-3 이 뒤집힌 이유 ②결함 4건 ③기록만 한 한계
+  (TOCTOU — 알림 모순은 이번에 닫힘) ④파리티 193→199 + prod 기록명 2건을 담았다.
+- CI **10잡 전부 SUCCESS · 재실행 0회** — `supabase/**` diff 가 있어 **DB Tests(pg_prove) 2m0s 실행됨**,
+  E2E 9m45s 1회 통과.
+
+**안 끝난 것**
+
+1. 🔴 **머지 미실행** — 사용자 결정 대기. 머지 후 워크트리 정리(⚠️ **정션 해제 선행** → `worktree remove` → 브랜치 삭제)
+2. ⏸ 별건: `v_capacity = 0` 을 "정원 미상=통과" → "자리 없음=거부"로 전환(레거시 공고 전체 영향)
+
+---
+
+### S7 (3-C 공고 시간 변경 구현) — 2026-08-04 · 상태: **구현 완료 · PR 미생성**
+
+- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-timechange` / `feat/posting-time-change` · HEAD `976dc5541`(커밋 9개)
+- 설계 진실원: `docs/planning/2026-08-03-3c-posting-time-change-design.md` **§10 이 정본**(§1~§9 는 S6 원안)
+
+**끝난 것 (검증 증거와 함께)**
+
+- 신규 SECDEF RPC `update_posting_slot_time` + 헬퍼 5종 (`20260804120000_update_posting_slot_time_rpc.sql`)
+  - 🔑 행별 적용은 **`update_work_log_slot`(#407)을 호출**한다 — 복제 금지. 알림·셀 분해·0패딩·권한이 상속된다. **알림 코드 0줄**
+  - 공고 원문 정원을 인원수만큼 동반 이동(결정 ⑤). 컨테이너·고정공고는 사유와 함께 건너뜀
+- 클라: `SlotTimeChangeSheet`(2단 시트) + 도메인 축 + Repository/Service/Hook, 진입점 `VenueDayPanel`
+- 검증: quality **exit 0**(경고 105 = 기준선 103 + jest.mock require 2) · jest **623스위트 6833테스트** ·
+  pgTAP **99파일 1093테스트**(3-C 단독 38/38) · **red-swap 8종 1:1** · `e2e/` Grep 0건
+- 파리티 **193 → 199**(신규 함수 6종), 가드 마커·단언 동시 갱신, 로컬 실측 199/111 일치
+
+**🔴 설계를 뒤집은 실측 (§10-2)**
+
+`confirm_application` 은 `v_existing` 을 work_logs 에서, `v_capacity` 를 공고 원문에서 읽는다
+(`20260803120000:186-195`). work_logs 만 옮기면 **출발지 슬롯 정원이 통째로 재개방**되어 같은 자리에
+인원을 두 배로 확정할 수 있다 — R0(#409)가 막으려던 우회와 결과가 같다.
+반대로 설계가 걱정한 근무표 헤더는 **무해**했다(시각 헤더 자체가 없다, §10-5).
+
+**발견·수정한 결함 4건** (전부 회귀 테스트 + red-swap 1:1)
+
+1. 레거시 `headcount` 정원 키에서 총합 파손 (`5→3`)
+2. 초과 배정 슬롯 이동 시 총합 팽창 (`3→6` → `capacity_full`→`active` 재개방) — 리뷰어 2인 독립 지적
+3. 시트에서 묶음 전환 시 앞 시각 잔존 (의도치 않은 시각으로 실행 가능)
+4. 확정 스태프 목록 무효화 누락 — **선재 클래스**라 형제 `useUpdateSlot` 도 함께 메움
+
+**안 끝난 것 (전부 사용자 게이트)**
+
+1. 🔴 **알림 모순 쌍 — 제품 판단 필요.** 옮겨진 사람이 Case 2-B("18:00 → 09:00")와 동시에
+   공고 수정 알림의 **"이미 확정된 내 근무 시간은 바뀌지 않습니다"**(`20260803120000:576-583`)를 받는다.
+   **사용자 결정 ⑥은 이 문구를 모르는 상태에서 내려졌다.** 코드로 닫지 않고 마이그 주석·설계 §10-7 에 기록만 했다
+2. 🔴 **prod 마이그 미적용** — 레포 199 vs prod 193. 적용 전까지 주간 `parity-smoke` 가 이 항목에서 red 일 수 있다
+3. 🔴 **push/PR 미생성**
+4. ⏸ 잔여 과제(별건): `v_capacity = 0` 을 "정원 미상=통과"→"자리 없음=거부"로 전환.
+   R0 관측 로그(`capacity=0 match`, `20260803120000:210-213`)로 데이터를 모은 뒤 판단. 레거시 공고 전체 영향
+
+**막힌 지점**: 없음.
+
+**다음 세션에 넘기는 주의 (이 세션에서 새로 알아낸 것만)**
+
+- 🚨 **`jpc_test_clear_user()` 는 role 을 되돌리지 않는다**(`jpc_helpers.sql:194-201` 주석 명시).
+  구인자 컨텍스트로 `notifications` 를 읽으면 RLS 가 수신자 행을 통째로 가려 **"알림 0건"으로 보인다** —
+  코드 결함이 아니라 관측 실패다. pgTAP 픽스처가 `auth.users` 를 INSERT 하려면 **`RESET ROLE` 이 따로 필요**하다
+- 🚨 **`work_logs.owner_id` 는 UPDATE 로 이전할 수 없다** — 신원 고정 트리거(`20260802120000`)가 막는다(의도된 보호).
+  owner 관련 테스트는 **처음부터 그 사용자가 owner 인 행을 INSERT** 해야 한다
+- 🔑 **정원 총합 보존 검증은 `_total_positions_from_schedule` 기준으로 하라.** `count` 만 보면 레거시
+  `headcount` 를 놓친다 — 이 세션의 결함 1·2가 둘 다 이 함수의 COALESCE 를 안 따라간 것이 원인이었다
+- 🔑 **`v_capacity > 0` 가드는 0 을 "정원 미상=통과"로 본다**(`20260803120000:215`). 정원을 0으로 만드는
+  모든 경로는 이 구멍에 닿는다 — 정원을 건드리는 후속 작업은 이걸 먼저 확인할 것
+- ⚠️ pgTAP 은 `extensions` 스키마라 **psql 직접 실행 불가** — `npx supabase test db <파일>` 을 쓸 것.
+  Windows Git Bash 에서 `docker cp`/`psql -f` 의 `/tmp` 경로는 **`MSYS_NO_PATHCONV=1`** 필수
 
 ---
 

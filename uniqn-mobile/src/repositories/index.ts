@@ -481,5 +481,9 @@ export {
 // 근무표 (workSchedule) — 지점 단가 쓰기 입력 타입 재노출
 // ============================================================================
 
-export type { SetVenueRoleSalaryInput } from './interfaces/IWorkScheduleRepository';
+export type {
+  SetVenueRoleSalaryInput,
+  UpdatePostingSlotTimeInput,
+  UpdatePostingSlotTimeResult,
+} from './interfaces/IWorkScheduleRepository';
 export type { UpdateVenueContainerInput } from './interfaces/IJobPostingRepository';

@@ -26,6 +26,7 @@ import {
   AlertTriangleIcon,
   UserPlusIcon,
   MegaphoneIcon,
+  ClockIcon,
 } from '@/components/icons';
 import { SECONDARY_PALETTE, STATUS_COLORS } from '@/constants/colors';
 import { toDateString } from '@/utils/date';
@@ -40,6 +41,7 @@ import { WorkTimeEditor } from '@/components/employer/settlement/WorkTimeEditor'
 import { VenueDayDetail } from './VenueDayDetail';
 import { AddSlotSheet } from './AddSlotSheet';
 import { EditSlotSheet } from './EditSlotSheet';
+import { SlotTimeChangeSheet } from './SlotTimeChangeSheet';
 
 export interface VenueDayPanelProps {
   /** venue 컨테이너 job_posting_id (= venueId) */
@@ -112,6 +114,7 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
 
   const [addVisible, setAddVisible] = useState(false);
   const [editingSlot, setEditingSlot] = useState<VenueDaySlot | null>(null);
+  const [timeChangeVisible, setTimeChangeVisible] = useState(false);
 
   // 출근(실기록) 수정(#3) — 근무표 카드의 "시간 수정" → WorkTimeEditor.
   // 컨테이너 확정 스태프(useConfirmedStaff)에서 workLog(출퇴근 시각 포함)를 해소해 프리필한다.
@@ -270,18 +273,32 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
   return (
     // P1-3: 상위(work-schedule)가 단일 ScrollView 스크롤러 — flex-1 대신 자연 높이(Yoga flex-1 붕괴 회피).
     <View>
-      {/* 헤더: 날짜 + 인원 추가 진입 */}
+      {/* 헤더: 날짜 + 시간 일괄 변경(3-C) + 인원 추가 진입 */}
       <View className="flex-row items-center justify-between px-4 pt-2">
         <Text className="text-sm font-sans-semibold text-content-primary">{dateLabel} 배치</Text>
-        <Button
-          variant="secondary"
-          size="sm"
-          onPress={() => setAddVisible(true)}
-          icon={<UserPlusIcon size={16} color={SECONDARY_PALETTE[500]} />}
-          accessibilityLabel="인원 추가"
-        >
-          추가
-        </Button>
+        <View className="flex-row items-center gap-2">
+          {/* 배치된 인원이 없으면 고를 묶음도 없다 — 빈 시트로 보내지 않는다. */}
+          {siblingSlots.length > 0 ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              onPress={() => setTimeChangeVisible(true)}
+              icon={<ClockIcon size={16} color={SECONDARY_PALETTE[500]} />}
+              accessibilityLabel="시간 일괄 변경"
+            >
+              시간 변경
+            </Button>
+          ) : null}
+          <Button
+            variant="secondary"
+            size="sm"
+            onPress={() => setAddVisible(true)}
+            icon={<UserPlusIcon size={16} color={SECONDARY_PALETTE[500]} />}
+            accessibilityLabel="인원 추가"
+          >
+            추가
+          </Button>
+        </View>
       </View>
 
       {/* U1 부족신호 요약(아이콘+숫자+a11y, 색상 단독 금지) */}
@@ -384,6 +401,15 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
         onClose={() => setAddVisible(false)}
         containerId={venueId}
         date={date}
+      />
+
+      {/* 시간 일괄 변경 시트(3-C) — useUpdatePostingSlotTime 이 workSchedule/applications/
+          jobPostings/postingFilledCounts 를 함께 무효화한다(공고 원문 정원도 바뀌기 때문). */}
+      <SlotTimeChangeSheet
+        visible={timeChangeVisible}
+        onClose={() => setTimeChangeVisible(false)}
+        date={date}
+        slots={siblingSlots}
       />
 
       {/* 슬롯 편집 시트 — useUpdateSlot/useDeleteSlot 이 workSchedule.all 무효화 */}
