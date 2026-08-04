@@ -56,11 +56,18 @@ export interface SlotTimeChangeSheetProps {
 /** 휠 피커의 초기 위치. 저장되는 기본값이 아니다. */
 const PICKER_FALLBACK_TIME = DEFAULT_SLOT_START_TIME;
 
-/** 묶음 제목 — "18:00 · 딜러 5명" / "시간 미정 · 바리스타 2명". */
+/**
+ * 묶음 제목 — "18:00 · 딜러 5명" / "시간 미정 · 바리스타 2명".
+ *
+ * 🔑 역할 표기는 **묶음 축과 같은 규칙**(커스텀 우선)을 따라야 한다. `getRoleDisplayName` 은
+ *    `role === 'other'` 일 때만 커스텀을 보므로, `role='dealer' + customRole='바리스타'` 처럼
+ *    커스텀이 붙은 행이 첫 멤버면 제목이 '딜러'로 오표기된다 — 축은 `other:바리스타` 인데.
+ */
 function groupTitle(group: SlotTimeChangeGroup): string {
   const time = group.displayTimeSlot ?? '시간 미정';
   const first = group.members[0];
-  const roleLabel = getRoleDisplayName(first?.role ?? '', first?.customRole ?? undefined);
+  const custom = first?.customRole?.trim();
+  const roleLabel = custom ? custom : getRoleDisplayName(first?.role ?? '', undefined);
   return `${time} · ${roleLabel} ${group.members.length}명`;
 }
 
@@ -163,12 +170,17 @@ export function SlotTimeChangeSheet({
       {
         onSuccess: (result) => {
           // 부분 성공을 숨기지 않는다 — 지원서 동기화를 건너뛴 건이 있으면 사실대로 알린다.
+          const base = `${result.updated}명의 출근 시간을 변경했어요.`;
           if (result.skipped.length > 0) {
             toastSuccess(
-              `${result.updated}명의 시간을 변경했어요. ${result.skipped.length}명은 지원서 정보가 맞지 않아 지원 내역은 그대로예요.`
+              `${base} ${result.skipped.length}명은 지원서 정보가 맞지 않아 지원 내역은 그대로예요.`
             );
+          } else if (result.capacitySkipReason) {
+            // 고정공고·컨테이너 등은 공고 원문 정원을 옮기지 못한다. 조용히 넘기면
+            // 화면이 "함께 옮겨졌다"고 말한 것과 실제가 갈린다.
+            toastSuccess(`${base} 공고 모집 인원은 그대로예요.`);
           } else {
-            toastSuccess(`${result.updated}명의 출근 시간을 변경했어요.`);
+            toastSuccess(base);
           }
           onChanged?.();
           onClose();
@@ -303,8 +315,10 @@ export function SlotTimeChangeSheet({
               <View className="mt-3 rounded-lg bg-primary-50 px-3 py-2 dark:bg-primary-900/30">
                 <Text className="text-sm font-sans text-primary-700 dark:text-primary-300">
                   {timeUndecided ? '시간 미정' : pickedTime} 시간대는 지금{' '}
-                  {destinationAfter.current}명이고, 옮기면 {destinationAfter.after}명이 돼요. 공고
-                  모집 인원도 함께 옮겨져요.
+                  {destinationAfter.current}명이고, 옮기면 {destinationAfter.after}명이 돼요.
+                  {/* 컨테이너(근무표 직접 배치) 묶음에는 모집 요건이 없어 옮길 정원 자체가 없다 —
+                      서버도 capacitySkipReason 으로 건너뛴다. 없는 일을 했다고 말하지 않는다. */}
+                  {group.members[0]?.isContainer ? '' : ' 공고 모집 인원도 함께 옮겨져요.'}
                 </Text>
               </View>
             ) : null}
@@ -320,7 +334,8 @@ export function SlotTimeChangeSheet({
                   onPress={() => toggleMember(m.workLogId)}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked }}
-                  accessibilityLabel={`${memberLabel(m)} 대상 ${checked ? '선택됨' : '해제됨'}`}
+                  // 상태는 accessibilityState 에만 싣는다 — 라벨에도 넣으면 스크린리더가 두 번 읽는다.
+                  accessibilityLabel={memberLabel(m)}
                   className="mb-1.5 flex-row items-center rounded-lg border border-divider px-3 py-2.5 dark:border-surface-overlay"
                 >
                   <View

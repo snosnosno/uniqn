@@ -30,6 +30,9 @@ export function useUpdateSlot() {
       qc.invalidateQueries({ queryKey: queryKeys.workSchedule.all });
       // RPC 가 같은 트랜잭션에서 applications.assignments 도 갱신하므로 그 캐시도 함께 버린다.
       qc.invalidateQueries({ queryKey: queryKeys.applications.all });
+      // 🔑 확정 스태프 목록도 `timeSlot` 을 싣는다 — 버리지 않으면 공고 상세가 옛 시각을 남긴다.
+      //    (3-C 리뷰에서 드러난 선재 누락. 일괄 변경 훅과 함께 메운다.)
+      qc.invalidateQueries({ queryKey: queryKeys.confirmedStaff.all });
     },
   });
 }

@@ -127,7 +127,7 @@ describe('SlotTimeChangeSheet — 대상 선택과 전송 축', () => {
     const { getByLabelText, getByText } = renderSheet();
 
     fireEvent.press(getByLabelText('18:00 · 딜러 2명 시간 변경'));
-    fireEvent.press(getByLabelText('이름b 대상 선택됨'));
+    fireEvent.press(getByLabelText('이름b'));
     fireEvent.press(getByText('시간 선택'));
     fireEvent.press(getByLabelText('피커확정'));
     fireEvent.press(getByLabelText('선택한 인원의 시간 변경'));
