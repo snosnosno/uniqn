@@ -299,12 +299,15 @@ BEGIN
    WHERE id = v_jp;
 END $$;
 
+-- [3-C] 세 번째 축(`바뀌지 않습니다` 부재)은 20260804130000 의 문구 중립화 회귀 가드다.
+--       update_posting_slot_time 이 확정 시각을 실제로 옮기므로 그 단언은 거짓이 될 수 있다.
 SELECT is(
   (SELECT n.link || ' | ' || (n.body LIKE '%근무표에서 확인해 주세요.')::text
+                 || ' | ' || (n.body LIKE '%바뀌지 않습니다%')::text
    FROM public.notifications n
    WHERE n.recipient_id::text = current_setting('r0.s_conf') AND n.type = 'job_updated'),
-  '/schedule | true',
-  '12. 확정 지원자는 /schedule 로 보내고 "확정 시간은 바뀌지 않는다" 문구를 받는다 (공고=광고, work_log=계약)');
+  '/schedule | true | false',
+  '12. 확정 지원자는 /schedule 로 보내고 중립 안내만 받는다 — "바뀌지 않습니다" 단언은 제거됐다');
 
 SELECT is(
   (SELECT n.link || ' | ' || (n.body LIKE '%근무표에서 확인해 주세요.')::text
