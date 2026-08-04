@@ -27,7 +27,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1.7.1
+        uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
         with:
           # 버전 pin: version:latest 는 GitHub API 'resolve latest' 호출로 익명 rate-limit(#172
           # 6초 실패) + 이미지 드리프트(implicit 테이블 GRANT 소실 회귀, PR #179) 유발.
