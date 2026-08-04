@@ -25,7 +25,7 @@
 --    평가 순서는 보장되지 않는다. 호출은 DO 블록에서 끝내고 반환값을 GUC 로 넘긴다.
 -- ============================================================
 BEGIN;
-SELECT plan(34);
+SELECT plan(38);
 
 DO $$
 DECLARE s RECORD;
@@ -549,6 +549,83 @@ SELECT is(
    WHERE public._posting_schedule_slot_key(ts) = '18:00'),
   'headcount,role',
   '레거시 역할은 headcount 키를 유지한 채 값만 줄어든다 (count 키를 새로 만들지 않는다)');
+
+-- 35. 🔴 초과 배정 슬롯(배치 > 원문 정원)에서도 총합이 보존된다.
+--     `GREATEST(count - n, 0)` 로 깎으면서 목적지에 n 전액을 더하면 총합이 **는다** —
+--     실측 3 → 6. total_positions 가 늘면 capacity_full 공고가 active 로 되돌아간다.
+--     옮길 양을 출발지가 실제로 가진 만큼으로 먼저 clamp 해야 한다.
+SELECT is(
+  (WITH s AS (SELECT '{"kind":"dated","requirements":[{"date":"2026-09-05","timeSlots":[
+        {"startTime":"18:00","roles":[{"role":"dealer","count":2}]},
+        {"startTime":"19:00","roles":[{"role":"dealer","count":1}]}]}]}'::jsonb AS sched)
+   SELECT public._total_positions_from_schedule(sched)::text || '->' ||
+          public._total_positions_from_schedule(
+            public._posting_schedule_move_capacity(
+              sched, '2026-09-05', 'dealer', '18:00', '19:00', '19:00', 5))::text
+   FROM s),
+  '3->3',
+  '배치가 원문 정원을 넘는 슬롯을 옮겨도 정원 총합이 늘지 않는다');
+
+-- 36. 옮길 정원이 아예 없으면 원문을 건드리지 않는다(무의미한 UPDATE·알림 방지)
+SELECT is(
+  (WITH s AS (SELECT '{"kind":"dated","requirements":[{"date":"2026-09-05","timeSlots":[
+        {"startTime":"18:00","roles":[{"role":"floor","count":2}]}]}]}'::jsonb AS sched)
+   SELECT (public._posting_schedule_move_capacity(
+             sched, '2026-09-05', 'dealer', '18:00', '19:00', '19:00', 3) = sched)::text
+   FROM s),
+  'true',
+  '출발지에 그 역할 정원이 없으면 공고 원문을 그대로 둔다');
+
+-- ── 🔴 권한 축소 방향 회귀 가드 (37~38) ─────────────────────
+-- 교집합(워크스페이스 멤버 ∪ 협업자) 밖은 전부 거부돼야 한다. SECDEF 라 RLS 가 못 막는 자리다.
+-- 37. work_logs.owner_id 만 가진 사람은 거부된다 — 그 사람은 공고 원문을 고칠 권한이 없다.
+--     (wl_update 에는 owner 분기가 있지만 jp_update 에는 없다 → 교집합에서 탈락)
+-- ⚠️ 픽스처는 postgres 로 돌아가야 한다. `jpc_test_clear_user` 는 JWT 만 지우고
+--    role 은 `authenticated` 로 남겨 두므로(jpc_helpers.sql:194-201) auth.users INSERT 가 막힌다.
+SELECT jpc_test_clear_user();
+RESET ROLE;
+
+DO $$
+DECLARE
+  v_u  uuid := gen_random_uuid();
+  v_wl uuid := gen_random_uuid();
+BEGIN
+  INSERT INTO auth.users (id, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+                          confirmation_token, recovery_token, email_change_token_new, email_change)
+  VALUES (v_u, 'ups_owner_only_' || v_u || '@test.local', '{"role":"employer"}'::jsonb, '{}'::jsonb,
+          now(), now(), '', '', '', '');
+  INSERT INTO public.users (id, email, name, role, is_active, identity_verified, created_at, updated_at)
+  VALUES (v_u, 'ups_owner_only_' || v_u || '@test.local', 'owner only', 'employer'::user_role,
+          true, true, now(), now())
+  ON CONFLICT (id) DO UPDATE SET is_active = true;
+  -- 🔑 기존 행의 owner_id 를 바꿀 수는 없다 — 신원 고정 트리거(20260802120000 `fn_work_logs_pin_identity`)가
+  --    소유 이전을 막는다(의도된 보호). 그래서 **처음부터** 이 사람이 owner 인 행을 새로 만든다.
+  --    워크스페이스 멤버도 협업자도 아니고, 오직 그 근무 기록의 owner 이기만 하다.
+  INSERT INTO public.work_logs (id, application_id, staff_id, job_posting_id, owner_id, date,
+                                status, role, time_slot, created_at, updated_at)
+  VALUES (v_wl, NULL, v_u, (current_setting('ups.jp_id'))::uuid, v_u, '2026-09-05',
+          'scheduled', 'serving', '13:00', now(), now());
+  PERFORM set_config('ups.u_owner_only',  v_u::text,  true);
+  PERFORM set_config('ups.wl_owner_only', v_wl::text, true);
+END $$;
+
+SELECT jpc_test_set_user((current_setting('ups.u_owner_only'))::uuid);
+SELECT throws_like(
+  format($q$SELECT public.update_posting_slot_time(%L::uuid,'2026-09-05','serving','13:00',
+              ARRAY[%L::uuid], '{"startTime":"21:00"}'::jsonb)$q$,
+         current_setting('ups.jp_id'), current_setting('ups.wl_owner_only')),
+  '%PERMISSION_DENIED%',
+  'work_logs owner 만으로는 공고 시간을 바꿀 수 없다 (jp_update 에 owner 분기가 없다)');
+
+-- 38. 🔴 다른 공고의 work_log 를 끼워 넣어도 전체 거부된다(IDOR 차단).
+--     축 검증이 집합 크기가 아니라 **행별 전축 AND** 라 타 공고 행은 애초에 카운트되지 않는다.
+SELECT jpc_test_set_user((current_setting('ups.owner_id'))::uuid);
+SELECT throws_like(
+  format($q$SELECT public.update_posting_slot_time(%L::uuid,'2026-09-05','serving','13:00',
+              ARRAY[%L::uuid, %L::uuid], '{"startTime":"21:00"}'::jsonb)$q$,
+         current_setting('ups.jp_id'), current_setting('ups.wl_owner_only'), current_setting('ups.wl_cont')),
+  '%SLOT_MISMATCH%',
+  '다른 공고의 근무 기록을 끼워 넣으면 전체를 거부한다 (IDOR 차단)');
 
 SELECT * FROM finish();
 ROLLBACK;

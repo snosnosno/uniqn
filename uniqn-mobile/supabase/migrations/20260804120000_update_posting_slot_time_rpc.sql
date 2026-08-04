@@ -84,6 +84,29 @@
 --    `v_capacity=0` 을 "정원 미상=통과"가 아니라 "자리 없음=거부"로 바꾸는 것은 레거시 공고
 --    전체에 영향이 가는 별건이다 — 3-C 범위 밖으로 두고 여기 남긴다.
 --
+-- ── 🔴 알려진 한계 2종 (리뷰 지적 · 코드로 닫지 않고 기록한다) ──
+--
+-- (1) **축 검증과 적용 사이에 잠금 창이 있다(TOCTOU).**
+--     3단계 카운트 검증은 **잠금 전 스냅샷**이고, 실제 잠금은 4단계 루프 안에서
+--     `update_work_log_slot` 이 건다. 두 관리자가 같은 행을 동시에 옮기면
+--     (A: 18→09 {a,b} / B: 18→20 {a}, B 선커밋) A 가 잠금을 잡은 시점에 a 의 실제
+--     출발지는 20:00 인데 정원은 18:00 에서 2 를 빼 간다 → **정원 드리프트**(ms 급 창).
+--     🔑 **권한 각도는 닫혀 있다** — 행별로 `update_work_log_slot` 이 그 행의 *현재* 공고
+--        기준으로 wl_update 를 재검사하고, 어긋나면 PERMISSION_DENIED 로 전체 롤백된다.
+--        `staff_id`·`owner_id` 도 신원 고정 트리거(20260802120000)로 불변이다.
+--     🔴 **고치지 않는 이유**: 닫으려면 3단계를 `... ORDER BY id FOR UPDATE` 로 바꿔야 하는데,
+--        그러면 이 RPC 의 잠금 순서가 work_logs → applications 로 뒤집힌다.
+--        `cancel_application_atomically` 가 applications → work_logs 라서 **더 나쁜 데드락**을
+--        만든다. 지금 순서(app → wl)는 그 가족과 정합한다 — 드리프트보다 데드락이 비싸다.
+--
+-- (2) **옮겨진 사람이 모순되는 알림 두 통을 받는다.**
+--     Case 2-B 가 "18:00 → 09:00" 을 보내는 동시에, 공고 원문 변경이 깨운
+--     `notify_on_job_posting_update` 가 계약 보유자에게 **"이미 확정된 내 근무 시간은
+--     바뀌지 않습니다"**(20260803120000:576-583)를 보낸다 — 방금 바뀐 당사자에게 정반대 문장이다.
+--     사용자 결정 ⑥(알림 억제하지 않음)은 이 문구를 모르는 상태에서 내려졌다.
+--     🔴 제품 판단이 필요한 사항으로 남긴다 — 트리거 재정의는 검증된 알림 경로에 회귀 위험을
+--        새로 만들고, 그 결정은 3-C 혼자 내릴 것이 아니다.
+--
 -- ── 알림 (사용자 결정 ⑥ · §10-4) ────────────────────────────
 -- 🔑 **알림 코드는 한 줄도 없다.** `update_work_log_slot` 의 UPDATE 가 Case 2-B 를 깨우고
 --    (`notify_on_work_log_update`, #382), 취소 힌트도 같은 트리거가 붙인다.
@@ -207,13 +230,30 @@ DECLARE
   v_found_to  boolean;
   v_found_rl  boolean;
   v_cnt       int;
-  -- 신설용 역할 객체. 🔴 strip_nulls 없이 쓰면 customRole:null 이 남아 zod 가 공고를 거부한다.
-  v_new_role  jsonb := jsonb_strip_nulls(jsonb_build_object(
-                 'role',       split_part(p_role_key, ':', 1),
-                 'customRole', CASE WHEN p_role_key LIKE 'other:%'
-                                    THEN NULLIF(substring(p_role_key FROM 7), '') END,
-                 'count',      p_n));
+  v_new_role  jsonb;
+  -- 🔴 **실제로 옮길 수 있는 정원.** 출발지에 있는 것보다 더 뺄 수는 없다.
+  --    `GREATEST(count - p_n, 0)` 로 깎으면서 목적지에는 p_n 전액을 더하면 **총합이 는다.**
+  --    실측: 정원 2 슬롯에 5명이 배치된 상태에서 5명 이동 → 총합 3 → 6.
+  --    총합이 늘면 `total_positions` 가 늘고 `fn_recalc_total_and_capacity` 가
+  --    capacity_full 공고를 active 로 되돌린다 — 마감된 공고가 다시 열린다.
+  --    배치 인원 > 원문 정원인 슬롯은 실재한다(`v_capacity=0` 가드 스킵·레거시 데이터).
+  v_move      int;
 BEGIN
+  -- 🔑 옮길 양을 **출발지가 실제로 가진 만큼으로 먼저 clamp** 한다. 그러면 뺀 만큼만 더하게 되어
+  --    총합이 어떤 입력에서도 보존된다(초과 배정 상태는 목적지로 그대로 따라갈 뿐, 새로 만들지 않는다).
+  v_move := LEAST(p_n, COALESCE(
+              public._posting_schedule_role_count(p_schedule, p_date, p_from_slot, p_role_key), 0));
+  IF v_move <= 0 THEN
+    RETURN p_schedule;   -- 옮길 정원이 없다 — 원문을 건드리지 않는다.
+  END IF;
+
+  -- 신설용 역할 객체. 🔴 strip_nulls 없이 쓰면 customRole:null 이 남아 zod 가 공고를 거부한다.
+  v_new_role := jsonb_strip_nulls(jsonb_build_object(
+                  'role',       split_part(p_role_key, ':', 1),
+                  'customRole', CASE WHEN p_role_key LIKE 'other:%'
+                                     THEN NULLIF(substring(p_role_key FROM 7), '') END,
+                  'count',      v_move));
+
   FOR v_req IN SELECT e FROM jsonb_array_elements(
                  COALESCE(p_schedule->'requirements', '[]'::jsonb)) AS t(e)
   LOOP
@@ -237,7 +277,7 @@ BEGIN
                         COALESCE(v_slot->'roles', '[]'::jsonb)) AS t(e)
         LOOP
           IF public._posting_role_key(v_role->>'role', v_role->>'customRole') = p_role_key THEN
-            v_cnt := GREATEST(public._posting_role_capacity(v_role) - p_n, 0);
+            v_cnt := GREATEST(public._posting_role_capacity(v_role) - v_move, 0);
             IF v_cnt > 0 THEN
               v_roles := v_roles || jsonb_build_array(
                 v_role || jsonb_build_object(public._posting_role_count_key(v_role), v_cnt));
@@ -265,7 +305,7 @@ BEGIN
             --    `headcount` 만 있던 역할이 COALESCE 우선순위상 `count` 로 읽혀 총합이 깨진다.
             v_roles := v_roles || jsonb_build_array(v_role || jsonb_build_object(
                          public._posting_role_count_key(v_role),
-                         public._posting_role_capacity(v_role) + p_n));
+                         public._posting_role_capacity(v_role) + v_move));
           ELSE
             v_roles := v_roles || jsonb_build_array(v_role);
           END IF;
