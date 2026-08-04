@@ -39,7 +39,8 @@
 | **B2** | 주소 2단계(좌표) | ~~`feat/posting-geocoding`~~ | ✅ **머지** | **#411** | `55260f2c2`(2026-08-03 13:27 UTC). 지오코딩 EF + `job_postings.geo_lat/geo_lng` + 길찾기 좌표 핀. 🔴**마이그 prod 적용 완료 — 재적용 금지**(**prod 기록명 `20260803015905`**, 레포 파일은 `20260803160000_job_postings_geocode_columns.sql`). 컬럼·CHECK 만이라 **함수/정책 기여 0**. 🔴**EF `geocode-address` prod 선배포(v3)** · 🔴`config.toml` 변경으로 머지 시 **EF 16개 전체 재배포**. 검증: quality **0 errors** · B2 테스트 **50/50** · 파리티 `PARITY_EXPECT_FUNCS=193` 일치. 리뷰 security/code 양쪽 **APPROVE**. 상세=§5 |
 | **S6** | 3-C 설계 | `docs/3c-time-change-design` | ✅ **설계 완료·push 됨** | | **코드 변경 0건**(설계 전용). 커밋 `3316dbb5e` — 2026-08-04 origin 에 push(PR 없음). 사용자 결정 3건 확정 — ①동의 불필요(알림·동기화만) ②거절=**기존 취소요청 경로** ③**전체가 개인 조정을 덮어쓴다**. 산출물=`docs/planning/2026-08-03-3c-posting-time-change-design.md`. 🔑 **핵심 발견: 알림(Case 2-B #382)·취소 힌트·단건 동기화(#407)가 이미 전부 존재** — 3-C 는 신규 기능이 아니라 묶음 적용이다. ⚠️ **S7 이 이 문서를 cherry-pick 해 §10 으로 개정**했다 — 이 브랜치는 참조용 원본이고, 진실원은 S7 브랜치의 개정본이다 |
 | **S7** | 3-C 구현 | ~~`feat/posting-time-change`~~ | ✅ **머지** | **#412** | `d5ff28ec5`. CI **10잡 전부 SUCCESS**(E2E 9m45s · DB Tests pg_prove 2m0s 포함, **재실행 0회**). 워크트리 `T-HOLDEM-timechange`, 커밋 **12개**(HEAD `21a5f2f3c`). 사용자 결정 4건 추가 확정(④대상 선택 ⑤정원 동반 이동 ⑥알림 기존 배선 → **⑦모순 알림은 문구 중립화**). 🔑 S7 실측이 설계 §4-3 을 **뒤집었다** — work_logs 만 옮기면 출발지 정원이 재개방된다(§10-2). 🔴**마이그 2건 prod 적용 완료 — 재적용 금지**(prod 기록명 **`20260804115100 update_posting_slot_time_rpc`** + **`20260804115209 job_posting_update_contract_body_neutral`**, 레포 파일은 `20260804120000`/`20260804130000`). 파리티 **193 → 199 / 정책 111** prod 실측 일치. 레포↔prod 함수 정의 **md5 7/7 일치**(⚠️ `chr(13)` 제거 후 비교 — CRLF 때문에 6/7 이 가짜 불일치로 보인다). 리뷰 3인 완료: security **LOW**·code **APPROVE**·database REQUEST CHANGES(지적 전량 반영). 결함 **4건** 발견·수정. 검증: quality exit 0 · jest **623/6833** · pgTAP **99/1093** · red-swap **9종 1:1**. 상세=§5 |
-| **정원0** | S7 잔여 — `v_capacity=0` fail-closed | `fix/capacity-zero-fail-closed` | 🔨 **PR 생성 · CI 전부 pass** | **#417** | CI **10잡 전부 SUCCESS**(E2E 9m37s · DB Tests 2m7s). 🔑 원인이 **3종**이었다 — A)레거시 `headcount` 미독해(순수 버그) B)축 미매칭(정원 미상) C)`count:0`(자리 없음). **A 고치고 C 거부, B 는 통과 유지**(사용자 결정). 🔴 3-C 의 "출발지 0 이면 항목 삭제"를 **함께 뒤집었다** — 지우면 축 미매칭이 되어 3-C 가 비운 슬롯이 다시 열린다. 🔴**마이그 prod 적용 완료 — 재적용 금지, 기록 2건**(`20260804142737` + `20260804142944 _verbatim_fix`, 레포 파일은 `20260804140000` 하나). 파리티 **199/111 불변**. 검증: pgTAP **100파일 1101테스트** · quality exit 0 · jest **623/6833** · **red-swap 3종 1:1**. 상세=§5 |
+| **정원0** | S7 잔여 — `v_capacity=0` fail-closed | ~~`fix/capacity-zero-fail-closed`~~ | ✅ **머지** | **#417** | `d410c791b`(2026-08-05 확인). CI **10잡 전부 SUCCESS**(E2E 9m37s · DB Tests 2m7s). 🔑 원인이 **3종**이었다 — A)레거시 `headcount` 미독해(순수 버그) B)축 미매칭(정원 미상) C)`count:0`(자리 없음). **A 고치고 C 거부, B 는 통과 유지**(사용자 결정). 🔴 3-C 의 "출발지 0 이면 항목 삭제"를 **함께 뒤집었다** — 지우면 축 미매칭이 되어 3-C 가 비운 슬롯이 다시 열린다. 🔴**마이그 prod 적용 완료 — 재적용 금지, 기록 2건**(`20260804142737` + `20260804142944 _verbatim_fix`, 레포 파일은 `20260804140000` 하나). 파리티 **199/111 불변**. 검증: pgTAP **100파일 1101테스트** · quality exit 0 · jest **623/6833** · **red-swap 3종 1:1**. 상세=§5 |
+| **CI위생**(원장 밖 트랙) | E2E `board.spec:88` flake 근본 수선 + Actions 범프 | ~~`chore/ci-hygiene`~~ | ✅ **머지** | **#413** | `d252ed80f`. **원장 밖 트랙이지만 원장의 "E2E 게이트 부재" 잔여 2건 중 1건을 실제로 닫았으므로 여기 기록한다.** 🔑 flake 의 원인은 테스트가 아니라 **프로덕션 웹 결함**이었다 — 웹엔 Sentry SDK 가 없어 `sentryService` 가 `logger.error` 로 폴백하는데 그 폴백이 `output()` 의 전송 조건을 재충족해 **스스로를 다시 불렀다**(비동기라 스택은 안 터지고 마이크로태스크 큐만 채워 메인 스레드를 굶긴다 — 콘솔 에러 370만건·탭 정지). `logger.observability()`(비전달 싱크) 신설로 고리 말단 차단 + 회귀 가드 2종. 실측 **board:88 12/20 실패(60%) → 0/20**, 스펙 15.9분 → 3.0분. 함께 Dependabot actions 3건(#376·#377·#378) 반영 + **워크플로 `uses:` 20개 전부 커밋 SHA 핀**(2026-08-05 재실측: 미핀 0건). 마이그 **0건** — 파리티 199/111 불변. 착수 프롬프트=[`2026-08-04-ci-hygiene-session-prompt.md`](2026-08-04-ci-hygiene-session-prompt.md) |
 
 ### 워크트리 배정 (🔴 모든 세션 예외 없이 격리)
 
@@ -52,21 +53,25 @@
 | S4 | ~~`T-HOLDEM-qr`~~ | ✅ 정리완료(정션 해제 → `worktree remove` → 브랜치 삭제, 원본 `node_modules` 821 무손상) |
 | S5 | ~~`T-HOLDEM-settle`~~ | ✅ 정리완료(정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818** 무손상 확인) |
 | S5-후속 | ~~`T-HOLDEM-revert`~~ | ✅ 정리완료(정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818** 무손상 확인) |
-| B1·B2 | `T-HOLDEM-address` | 🔨 **유지 중**(B1 #391 머지 완료. **B2 가 이 워크트리를 새로 만들어 사용 중** — 브랜치 `feat/posting-geocoding`, PR 미생성이라 지우지 말 것). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성(818/818 실측). `.env.local`·`.env.development.local` 은 gitignore 라 메인에서 복사해야 앱이 뜬다 |
+| B1·B2 | ~~`T-HOLDEM-address`~~ | ✅ **정리완료**(2026-08-05 실측 — `git worktree list` 에 없고 디렉토리도 없음. B1 #391 · B2 #411 둘 다 머지). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성했었다(818/818). `.env.local`·`.env.development.local` 은 gitignore 라 메인에서 복사해야 앱이 뜬다 |
 | A-감사 | ~~`T-HOLDEM-audit`~~ | ✅ **머지 완료(#390)** — 정리 대상(정션 없음. `worktree remove` → 브랜치 삭제) |
 | P3 | ~~`T-HOLDEM-reminder`~~ | ✅ **정리완료**(2026-08-02 세션 A2 — 정션 해제 선행 → `worktree remove` → 브랜치 삭제. 해제 전후 원본 `node_modules` **821 → 821** 실측 무손상) |
 | P4 | ~~`T-HOLDEM-venueloc`~~ | ✅ **정리완료**(2026-08-02 세션 A2 — 정션 해제 선행 → `worktree remove` → 브랜치 삭제. 해제 전후 원본 `node_modules` **821 → 821** 실측 무손상) |
 | P6 | ~~`T-HOLDEM-offline`~~ | ✅ **정리완료**(2026-08-02 세션 A2 — 정션 해제 선행 → `worktree remove` → 브랜치 삭제. 해제 전후 원본 `node_modules` **821 → 821** 실측 무손상) |
-| 세션A-원장 | `T-HOLDEM-ledger` | 🔨 이 문서 커밋용(정션 없음). **원장 PR 머지 후 정리 대상**(정션 없으므로 `worktree remove` → 브랜치 삭제만) |
+| 세션A-원장 | ~~`T-HOLDEM-ledger`~~ | ✅ **정리완료**(2026-08-05 실측 — 워크트리·디렉토리 모두 없음) |
 | **P2·P5(타 세션)** | ~~`T-HOLDEM-notifyfix`~~ | ✅ **타 세션이 스스로 정리**(2026-08-02 세션 A2 종료 시 `git worktree list` 에서 사라짐). P2 는 #397, P5 는 #400 으로 머지됐다 |
 | **L1-잔여** | ~~`T-HOLDEM-settlerpc`~~ | ✅ **머지 완료(#402)** — 정리 대상(정션 해제 선행 → `worktree remove` → 브랜치 삭제). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성(821 확인) |
-| L1-잔여-원장 | `T-HOLDEM-ledger2` | 🔨 이 문서 커밋용(정션 없음). 원장 PR 머지 후 정리 대상 |
+| L1-잔여-원장 | ~~`T-HOLDEM-ledger2`~~ | ✅ **정리완료**(2026-08-05 실측 — 워크트리·디렉토리 모두 없음) |
 | **세션 E** | ~~`T-HOLDEM-schedkey`~~ | ✅ **정리완료**(세션 F — 정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **821 → 821** 실측 무손상) |
 <!-- 🔨 **유지 중**(PR 미생성 — 사용자 결정 대기). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성, 원본 `node_modules` **821 → 821** 실측 무손상 | -->
 | **세션 G** | ~~`T-HOLDEM-slotsync`~~ | ✅ **머지 완료(#407)** — 정리 대상(⚠️ **정션 해제 선행** → `worktree remove` → 브랜치 삭제). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성 |
 | **S7** | ~~`T-HOLDEM-timechange`~~ | ✅ **정리완료**(정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818 → 818** 실측 무손상). 옛 기록: 2026-08-04 생성, `origin/master` `55260f2c2` 기준). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성(원본 `node_modules` **821** 확인). `.env.local`·`.env.development.local` 은 메인에서 복사함 |
+| **정원0** | ~~`T-HOLDEM-capacity`~~ | ✅ **정리완료**(2026-08-05 실측 — 워크트리·디렉토리 모두 없음. #417 머지 완료) |
+| **CI위생(원장 밖)** | ~~`T-HOLDEM-cihygiene`~~ | ✅ **정리완료**(2026-08-05 실측). #413 로 머지 |
+| 원장갱신 | `T-HOLDEM-ledger3` | 🔨 이 문서 갱신용(정션 없음 — 문서만 고친다). 착지 후 정리 대상 |
 
-| **정원0** | `T-HOLDEM-capacity` | 🔨 **유지 중**(2026-08-04 생성, `origin/master` `d5ff28ec5` 기준). 정션은 PowerShell `New-Item -ItemType Junction`(821 확인). PR #417 머지 후 정리 |
+🔎 **2026-08-05 실측: `git worktree list` 에 메인 체크아웃 하나만 남아 있고 `C:/Users/user/Desktop/T-HOLDEM-*` 디렉토리도 없다.**
+위 표에 🔨 로 남아 있던 4행(`T-HOLDEM-address`·`ledger`·`ledger2`·`capacity`)은 전부 이미 정리된 상태였다 — 표가 실제를 못 따라온 것이다.
 
 전부 `C:/Users/user/Desktop/` 아래. 머지 완료 세션의 워크트리는 다음 세션 착수 시 정리한다
 (⚠️ **정션 해제 선행** — `rmdir` 로 `node_modules` 정션을 먼저 끊지 않으면 원본이 지워질 수 있다).
@@ -996,7 +1001,7 @@ planner 는 "`generateApplicationLinkKey` 가 없다 → 표류하면 지금도 
 
 ---
 
-### 정원0-fail-closed (S7 잔여 과제) — 2026-08-04 · 상태: **PR #417 생성 · CI 10잡 전부 pass · 머지 대기**
+### 정원0-fail-closed (S7 잔여 과제) — 2026-08-04 · 상태: **✅ 머지 완료** `d410c791b` (#417)
 
 - 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-capacity` / `fix/capacity-zero-fail-closed` · 커밋 2개
 - 선행: **#412 머지 완료** `d5ff28ec5`, 워크트리 `T-HOLDEM-timechange` 정리 완료
