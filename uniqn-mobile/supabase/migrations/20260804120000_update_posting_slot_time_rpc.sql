@@ -115,6 +115,45 @@ $$;
 COMMENT ON FUNCTION public._posting_schedule_slot_key(jsonb) IS
   '공고 원문 timeSlot 객체 → 슬롯 키. confirm_application 의 정원 CASE 와 동일 결과(모든 입력에서).';
 
+-- ------------------------------------------------------------
+-- 🔴 정원 값의 키가 두 가지다 — `count`(정본)와 `headcount`(레거시).
+--    `_total_positions_from_schedule`(20260718000000:24)이 `COALESCE(count, headcount, 0)` 로
+--    총합을 세므로, 정원을 옮길 때 **읽기와 쓰기가 같은 키를 따라야** 총합이 보존된다.
+--    `count` 로만 읽고 쓰면 headcount-only 역할에서 이런 일이 벌어진다(실측):
+--      전: {"role":"dealer","headcount":5} → 총합 5
+--      후: 3명 이동 → {"role":"dealer","count":3} → 총합 3   ← 5 가 아니라 3
+--    총합이 바뀌면 `total_positions` 가 바뀌고 `capacity_full ↔ active` 자동 전이까지 연쇄한다.
+-- ------------------------------------------------------------
+
+/** 역할 객체의 정원. `count` → `headcount` 순(총합 함수와 같은 순서). 둘 다 없으면 0. */
+CREATE OR REPLACE FUNCTION public._posting_role_capacity(p_role jsonb)
+RETURNS int
+LANGUAGE sql
+IMMUTABLE
+SET search_path TO 'public', 'pg_temp'
+AS $$
+  SELECT COALESCE((p_role->>'count')::int, (p_role->>'headcount')::int, 0);
+$$;
+
+/** 정원을 되돌려 쓸 키. 원래 쓰던 키를 유지한다 — 새 키를 만들면 COALESCE 우선순위가 뒤집힌다. */
+CREATE OR REPLACE FUNCTION public._posting_role_count_key(p_role jsonb)
+RETURNS text
+LANGUAGE sql
+IMMUTABLE
+SET search_path TO 'public', 'pg_temp'
+AS $$
+  SELECT CASE
+    WHEN p_role ? 'count'     THEN 'count'
+    WHEN p_role ? 'headcount' THEN 'headcount'
+    ELSE 'count'
+  END;
+$$;
+
+COMMENT ON FUNCTION public._posting_role_capacity(jsonb) IS
+  '공고 원문 역할 객체의 정원. count → headcount 순(_total_positions_from_schedule 와 동일 순서).';
+COMMENT ON FUNCTION public._posting_role_count_key(jsonb) IS
+  '정원을 되돌려 쓸 키 이름. 원래 키를 유지해 총합 COALESCE 우선순위를 보존한다.';
+
 -- 그 (날짜, 슬롯키, 역할키) 의 정원. **없으면 NULL** — 0(정원 0)과 구분해야 한다.
 CREATE OR REPLACE FUNCTION public._posting_schedule_role_count(
   p_schedule jsonb, p_date text, p_slot_key text, p_role_key text
@@ -124,7 +163,13 @@ LANGUAGE sql
 IMMUTABLE
 SET search_path TO 'public', 'pg_temp'
 AS $$
-  SELECT MAX(COALESCE((r->>'count')::int, 0))::int
+  -- 🔴 정원 값은 `count` 가 정본이지만 **레거시 역할 객체는 `headcount` 만 갖고 있을 수 있다.**
+  --    총합 함수 `_total_positions_from_schedule`(20260718000000:24)이 정확히 이 순서로
+  --    COALESCE 하므로 여기서도 같은 순서로 읽어야 "옮기기 전 총합"을 같은 값으로 본다.
+  --    `count` 만 읽으면 headcount-only 역할이 0 으로 보여 조용히 지워지고 총합이 깨진다.
+  -- 🔑 둘 다 없으면 MAX 가 NULL 을 낸다 → 호출자가 '요건 없음'으로 보고 정원 이동을 건너뛴다.
+  --    해석할 수 없는 데이터는 손대지 않는다(update_work_log_slot 의 "모호하면 손대지 않기"와 같은 태도).
+  SELECT MAX(COALESCE((r->>'count')::int, (r->>'headcount')::int))::int
   FROM jsonb_array_elements(COALESCE(p_schedule->'requirements', '[]'::jsonb)) req
   CROSS JOIN jsonb_array_elements(COALESCE(req->'timeSlots', '[]'::jsonb)) ts
   CROSS JOIN jsonb_array_elements(COALESCE(ts->'roles', '[]'::jsonb)) r
@@ -134,7 +179,7 @@ AS $$
 $$;
 
 COMMENT ON FUNCTION public._posting_schedule_role_count(jsonb, text, text, text) IS
-  '공고 원문의 (날짜, 슬롯키, 역할키) 정원. 요건에 없으면 NULL(정원 0 과 구분). confirm_application 의 MAX 집계와 동형.';
+  '공고 원문의 (날짜, 슬롯키, 역할키) 정원. count → headcount 순으로 읽는다(_total_positions_from_schedule 와 동일 순서). 요건에 없으면 NULL(정원 0 과 구분).';
 
 -- 정원 이동: 출발지 -N (0 이 되면 항목 제거), 목적지 +N (없으면 슬롯/역할 신설).
 CREATE OR REPLACE FUNCTION public._posting_schedule_move_capacity(
@@ -192,9 +237,10 @@ BEGIN
                         COALESCE(v_slot->'roles', '[]'::jsonb)) AS t(e)
         LOOP
           IF public._posting_role_key(v_role->>'role', v_role->>'customRole') = p_role_key THEN
-            v_cnt := GREATEST(COALESCE((v_role->>'count')::int, 0) - p_n, 0);
+            v_cnt := GREATEST(public._posting_role_capacity(v_role) - p_n, 0);
             IF v_cnt > 0 THEN
-              v_roles := v_roles || jsonb_build_array(v_role || jsonb_build_object('count', v_cnt));
+              v_roles := v_roles || jsonb_build_array(
+                v_role || jsonb_build_object(public._posting_role_count_key(v_role), v_cnt));
             END IF;
           ELSE
             v_roles := v_roles || jsonb_build_array(v_role);
@@ -215,8 +261,11 @@ BEGIN
         LOOP
           IF public._posting_role_key(v_role->>'role', v_role->>'customRole') = p_role_key THEN
             v_found_rl := true;
+            -- 🔴 목적지도 **원래 쓰던 키**에 되돌려 쓴다. 여기서 `count` 를 새로 만들면
+            --    `headcount` 만 있던 역할이 COALESCE 우선순위상 `count` 로 읽혀 총합이 깨진다.
             v_roles := v_roles || jsonb_build_array(v_role || jsonb_build_object(
-                         'count', COALESCE((v_role->>'count')::int, 0) + p_n));
+                         public._posting_role_count_key(v_role),
+                         public._posting_role_capacity(v_role) + p_n));
           ELSE
             v_roles := v_roles || jsonb_build_array(v_role);
           END IF;
@@ -250,6 +299,10 @@ $$;
 COMMENT ON FUNCTION public._posting_schedule_move_capacity(jsonb, text, text, text, text, text, int) IS
   '공고 원문 정원 이동: 출발 슬롯 역할 -N(0 이면 제거), 목적 슬롯 역할 +N(없으면 슬롯/역할 신설). 총합 보존 → total_positions 불변.';
 
+REVOKE ALL ON FUNCTION public._posting_role_capacity(jsonb) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public._posting_role_count_key(jsonb) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public._posting_role_capacity(jsonb) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public._posting_role_count_key(jsonb) TO authenticated, service_role;
 REVOKE ALL ON FUNCTION public._posting_schedule_slot_key(jsonb) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public._posting_schedule_role_count(jsonb, text, text, text) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public._posting_schedule_move_capacity(jsonb, text, text, text, text, text, int) FROM PUBLIC, anon;

@@ -106,11 +106,14 @@
 --     같은 마이그의 _posting_slot_key·confirm_application·add_direct_staff·
 --     notify_on_job_posting_update 는 전부 CREATE OR REPLACE 재정의라 개수 불변.
 --
---   20260804120000_update_posting_slot_time_rpc (3-C 공고 시간 변경): 함수 193 → **197**.
---     신설 4종 = update_posting_slot_time(본체) + _posting_schedule_slot_key
---              + _posting_schedule_role_count + _posting_schedule_move_capacity.
+--   20260804120000_update_posting_slot_time_rpc (3-C 공고 시간 변경): 함수 193 → **199**.
+--     신설 6종 = update_posting_slot_time(본체) + _posting_schedule_slot_key
+--              + _posting_schedule_role_count + _posting_schedule_move_capacity
+--              + _posting_role_capacity + _posting_role_count_key.
+--     뒤 2종은 레거시 `headcount` 정원 키 대응 — count 로만 읽고 쓰면 총합이 깨져
+--     total_positions 가 바뀌고 capacity_full 자동 전이까지 연쇄한다(실측 확인).
 --     정책 111 불변(RPC·헬퍼 신설만, RLS 미변경).
---     로컬 스택 실측(2026-08-04): 함수 197 / 정책 111.
+--     로컬 스택 실측(2026-08-04): 함수 199 / 정책 111.
 --
 -- ⚠️ 유지보수 계약: 이후 마이그레이션이 public 함수/정책을 추가·삭제하면
 --   이 기대값을 같은 PR에서 함께 갱신해야 한다. 갱신을 강제당하는 것 자체가
@@ -123,7 +126,7 @@
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=197
+-- PARITY_EXPECT_FUNCS=199
 -- PARITY_EXPECT_POLICIES=111
 -- ============================================================
 BEGIN;
@@ -143,7 +146,7 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  197,
+  199,
   'public function count == prod (193 = 192 + _normalize_time_slot 1(시간 미정 통일 R0), 2026-08-03)');
 
 -- 3. public RLS 정책 카운트 == prod 실측

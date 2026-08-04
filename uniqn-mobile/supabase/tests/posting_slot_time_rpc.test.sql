@@ -25,7 +25,7 @@
 --    평가 순서는 보장되지 않는다. 호출은 DO 블록에서 끝내고 반환값을 GUC 로 넘긴다.
 -- ============================================================
 BEGIN;
-SELECT plan(32);
+SELECT plan(34);
 
 DO $$
 DECLARE s RECORD;
@@ -517,6 +517,38 @@ SELECT ok(
     WHERE n.nspname = 'public' AND p.proname = 'update_posting_slot_time'
       AND c LIKE 'search_path=%' AND c ILIKE '%pg_temp%'),
   'SECDEF search_path 에 pg_temp 가 포함돼 있다');
+
+-- 33. 🔴 레거시 `headcount` 역할에서도 총합이 보존된다.
+--     `_total_positions_from_schedule`(20260718000000:24)이 COALESCE(count, headcount, 0) 로
+--     세므로, `count` 로만 읽고 쓰면 headcount-only 역할이 0 으로 보여 조용히 지워지고
+--     총합이 깨진다 → total_positions 변동 → capacity_full 자동 전이까지 연쇄한다.
+SELECT is(
+  (WITH s AS (SELECT '{"kind":"dated","requirements":[{"date":"2026-09-05","timeSlots":[
+        {"startTime":"18:00","roles":[{"role":"dealer","headcount":5}]},
+        {"startTime":"19:00","roles":[{"role":"dealer","headcount":4}]}]}]}'::jsonb AS sched)
+   SELECT public._total_positions_from_schedule(sched)::text || '->' ||
+          public._total_positions_from_schedule(
+            public._posting_schedule_move_capacity(
+              sched, '2026-09-05', 'dealer', '18:00', '19:00', '19:00', 3))::text
+   FROM s),
+  '9->9',
+  'headcount 만 있는 레거시 역할에서도 정원 총합이 보존된다');
+
+-- 34. 되돌려 쓰는 키가 원래 키를 유지한다 — 새로 count 를 만들면 COALESCE 우선순위가 뒤집힌다.
+SELECT is(
+  (WITH s AS (SELECT '{"kind":"dated","requirements":[{"date":"2026-09-05","timeSlots":[
+        {"startTime":"18:00","roles":[{"role":"dealer","headcount":5}]}]}]}'::jsonb AS sched)
+   SELECT string_agg(kv.key, ',' ORDER BY kv.key)
+   FROM s,
+        LATERAL jsonb_array_elements(
+          public._posting_schedule_move_capacity(
+            sched, '2026-09-05', 'dealer', '18:00', '19:00', '19:00', 3)->'requirements') req,
+        LATERAL jsonb_array_elements(req->'timeSlots') ts,
+        LATERAL jsonb_array_elements(ts->'roles') r,
+        LATERAL jsonb_each(r) kv
+   WHERE public._posting_schedule_slot_key(ts) = '18:00'),
+  'headcount,role',
+  '레거시 역할은 headcount 키를 유지한 채 값만 줄어든다 (count 키를 새로 만들지 않는다)');
 
 SELECT * FROM finish();
 ROLLBACK;
