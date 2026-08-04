@@ -38,7 +38,8 @@
 | **세션 G** | 과제 4 — 슬롯 편집 표류 근본 수선 | ~~`feat/work-log-slot-sync`~~ | ✅ **머지** | **#407** | 신규 SECDEF RPC `update_work_log_slot(uuid, jsonb)` 로 `work_logs`+`applications.assignments` 동시 갱신. 🔴**마이그 1건 prod 적용 완료 — 재적용 금지**(기록명 `20260802180000`, 레포 파일명과 동일). **#406 재통합 후** 파리티 **191 → 192** = prod 실측 일치 / 정책 111 불변. 재검증: quality exit 0 · jest **611스위트 6661테스트** · pgTAP **97파일 1031테스트 전량 PASS**(파리티 포함 — 재통합이 간극을 닫았다) · **red-swap 9종 1:1** · md5 3자 일치 `70f323c8…`. 리뷰 fable **APPROVE**(CRITICAL 0/HIGH 0) — MEDIUM 3건 중 **2건 반영·1건 프로브로 오탐 기각**. 상세=§5 |
 | **B2** | 주소 2단계(좌표) | ~~`feat/posting-geocoding`~~ | ✅ **머지** | **#411** | `55260f2c2`(2026-08-03 13:27 UTC). 지오코딩 EF + `job_postings.geo_lat/geo_lng` + 길찾기 좌표 핀. 🔴**마이그 prod 적용 완료 — 재적용 금지**(**prod 기록명 `20260803015905`**, 레포 파일은 `20260803160000_job_postings_geocode_columns.sql`). 컬럼·CHECK 만이라 **함수/정책 기여 0**. 🔴**EF `geocode-address` prod 선배포(v3)** · 🔴`config.toml` 변경으로 머지 시 **EF 16개 전체 재배포**. 검증: quality **0 errors** · B2 테스트 **50/50** · 파리티 `PARITY_EXPECT_FUNCS=193` 일치. 리뷰 security/code 양쪽 **APPROVE**. 상세=§5 |
 | **S6** | 3-C 설계 | `docs/3c-time-change-design` | ✅ **설계 완료·push 됨** | | **코드 변경 0건**(설계 전용). 커밋 `3316dbb5e` — 2026-08-04 origin 에 push(PR 없음). 사용자 결정 3건 확정 — ①동의 불필요(알림·동기화만) ②거절=**기존 취소요청 경로** ③**전체가 개인 조정을 덮어쓴다**. 산출물=`docs/planning/2026-08-03-3c-posting-time-change-design.md`. 🔑 **핵심 발견: 알림(Case 2-B #382)·취소 힌트·단건 동기화(#407)가 이미 전부 존재** — 3-C 는 신규 기능이 아니라 묶음 적용이다. ⚠️ **S7 이 이 문서를 cherry-pick 해 §10 으로 개정**했다 — 이 브랜치는 참조용 원본이고, 진실원은 S7 브랜치의 개정본이다 |
-| **S7** | 3-C 구현 | `feat/posting-time-change` | 🔨 **PR 생성 · CI 전부 pass** | **#412** | CI **10잡 전부 SUCCESS**(E2E 9m45s · DB Tests pg_prove 2m0s 포함, **재실행 0회**). 워크트리 `T-HOLDEM-timechange`, 커밋 **12개**(HEAD `21a5f2f3c`). 사용자 결정 4건 추가 확정(④대상 선택 ⑤정원 동반 이동 ⑥알림 기존 배선 → **⑦모순 알림은 문구 중립화**). 🔑 S7 실측이 설계 §4-3 을 **뒤집었다** — work_logs 만 옮기면 출발지 정원이 재개방된다(§10-2). 🔴**마이그 2건 prod 적용 완료 — 재적용 금지**(prod 기록명 **`20260804115100 update_posting_slot_time_rpc`** + **`20260804115209 job_posting_update_contract_body_neutral`**, 레포 파일은 `20260804120000`/`20260804130000`). 파리티 **193 → 199 / 정책 111** prod 실측 일치. 레포↔prod 함수 정의 **md5 7/7 일치**(⚠️ `chr(13)` 제거 후 비교 — CRLF 때문에 6/7 이 가짜 불일치로 보인다). 리뷰 3인 완료: security **LOW**·code **APPROVE**·database REQUEST CHANGES(지적 전량 반영). 결함 **4건** 발견·수정. 검증: quality exit 0 · jest **623/6833** · pgTAP **99/1093** · red-swap **9종 1:1**. 상세=§5 |
+| **S7** | 3-C 구현 | ~~`feat/posting-time-change`~~ | ✅ **머지** | **#412** | `d5ff28ec5`. CI **10잡 전부 SUCCESS**(E2E 9m45s · DB Tests pg_prove 2m0s 포함, **재실행 0회**). 워크트리 `T-HOLDEM-timechange`, 커밋 **12개**(HEAD `21a5f2f3c`). 사용자 결정 4건 추가 확정(④대상 선택 ⑤정원 동반 이동 ⑥알림 기존 배선 → **⑦모순 알림은 문구 중립화**). 🔑 S7 실측이 설계 §4-3 을 **뒤집었다** — work_logs 만 옮기면 출발지 정원이 재개방된다(§10-2). 🔴**마이그 2건 prod 적용 완료 — 재적용 금지**(prod 기록명 **`20260804115100 update_posting_slot_time_rpc`** + **`20260804115209 job_posting_update_contract_body_neutral`**, 레포 파일은 `20260804120000`/`20260804130000`). 파리티 **193 → 199 / 정책 111** prod 실측 일치. 레포↔prod 함수 정의 **md5 7/7 일치**(⚠️ `chr(13)` 제거 후 비교 — CRLF 때문에 6/7 이 가짜 불일치로 보인다). 리뷰 3인 완료: security **LOW**·code **APPROVE**·database REQUEST CHANGES(지적 전량 반영). 결함 **4건** 발견·수정. 검증: quality exit 0 · jest **623/6833** · pgTAP **99/1093** · red-swap **9종 1:1**. 상세=§5 |
+| **정원0** | S7 잔여 — `v_capacity=0` fail-closed | `fix/capacity-zero-fail-closed` | 🔨 **PR 생성 · CI 전부 pass** | **#417** | CI **10잡 전부 SUCCESS**(E2E 9m37s · DB Tests 2m7s). 🔑 원인이 **3종**이었다 — A)레거시 `headcount` 미독해(순수 버그) B)축 미매칭(정원 미상) C)`count:0`(자리 없음). **A 고치고 C 거부, B 는 통과 유지**(사용자 결정). 🔴 3-C 의 "출발지 0 이면 항목 삭제"를 **함께 뒤집었다** — 지우면 축 미매칭이 되어 3-C 가 비운 슬롯이 다시 열린다. 🔴**마이그 prod 적용 완료 — 재적용 금지, 기록 2건**(`20260804142737` + `20260804142944 _verbatim_fix`, 레포 파일은 `20260804140000` 하나). 파리티 **199/111 불변**. 검증: pgTAP **100파일 1101테스트** · quality exit 0 · jest **623/6833** · **red-swap 3종 1:1**. 상세=§5 |
 
 ### 워크트리 배정 (🔴 모든 세션 예외 없이 격리)
 
@@ -63,7 +64,9 @@
 | **세션 E** | ~~`T-HOLDEM-schedkey`~~ | ✅ **정리완료**(세션 F — 정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **821 → 821** 실측 무손상) |
 <!-- 🔨 **유지 중**(PR 미생성 — 사용자 결정 대기). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성, 원본 `node_modules` **821 → 821** 실측 무손상 | -->
 | **세션 G** | ~~`T-HOLDEM-slotsync`~~ | ✅ **머지 완료(#407)** — 정리 대상(⚠️ **정션 해제 선행** → `worktree remove` → 브랜치 삭제). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성 |
-| **S7** | `T-HOLDEM-timechange` | 🔨 **유지 중**(2026-08-04 생성, `origin/master` `55260f2c2` 기준). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성(원본 `node_modules` **821** 확인). `.env.local`·`.env.development.local` 은 메인에서 복사함 |
+| **S7** | ~~`T-HOLDEM-timechange`~~ | ✅ **정리완료**(정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818 → 818** 실측 무손상). 옛 기록: 2026-08-04 생성, `origin/master` `55260f2c2` 기준). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성(원본 `node_modules` **821** 확인). `.env.local`·`.env.development.local` 은 메인에서 복사함 |
+
+| **정원0** | `T-HOLDEM-capacity` | 🔨 **유지 중**(2026-08-04 생성, `origin/master` `d5ff28ec5` 기준). 정션은 PowerShell `New-Item -ItemType Junction`(821 확인). PR #417 머지 후 정리 |
 
 전부 `C:/Users/user/Desktop/` 아래. 머지 완료 세션의 워크트리는 다음 세션 착수 시 정리한다
 (⚠️ **정션 해제 선행** — `rmdir` 로 `node_modules` 정션을 먼저 끊지 않으면 원본이 지워질 수 있다).
@@ -993,7 +996,82 @@ planner 는 "`generateApplicationLinkKey` 가 없다 → 표류하면 지금도 
 
 ---
 
-### S7-착지 (3-C 알림 모순 해소 + prod 적용 + PR) — 2026-08-04 · 상태: **PR #412 생성 · CI 전부 pass · 머지 대기**
+### 정원0-fail-closed (S7 잔여 과제) — 2026-08-04 · 상태: **PR #417 생성 · CI 10잡 전부 pass · 머지 대기**
+
+- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-capacity` / `fix/capacity-zero-fail-closed` · 커밋 2개
+- 선행: **#412 머지 완료** `d5ff28ec5`, 워크트리 `T-HOLDEM-timechange` 정리 완료
+  (정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818 무손상**)
+
+**🔴 원장이 이 과제를 오분류하고 있었다 — 원인은 하나가 아니라 셋이다**
+
+원장·설계는 "`v_capacity = 0` → 거부로 전환"이라는 **단일 과제**로 적었다. 코드를 읽으면 갈래가 셋이고
+처방이 서로 다르다:
+
+| 갈래 | 조건 | 뜻 | 처리 |
+|---|---|---|---|
+| **A** | 역할이 레거시 `headcount` 만 가짐 | 가드는 `count` 만 읽어 0. **`_total_positions_from_schedule`(20260718000000:24)은 `COALESCE(count, headcount, 0)`** — 같은 원문을 두 함수가 다르게 읽었다 | 🔴 **순수 버그, 고침** |
+| **B** | 원문에 그 (날짜·슬롯·역할) 없음 | 진짜 **"정원 미상"** | 통과 유지(관측 로그) |
+| **C** | `count: 0` 명시 | 진짜 **"자리 없음"** | 🔴 **거부** |
+
+A 는 무증상이었다 — 정원 총합 5 인 슬롯에 무제한 확정이 열려 있었다.
+
+**🔴 3-C 설계 §10-7 미확정 1번의 결론을 함께 뒤집었다**
+
+3-C 는 "출발지 정원 0 이면 항목을 지운다"로 닫았고 근거는 *"남겨도 `v_capacity > 0` 가드는 똑같이
+스킵되므로 보안 차이가 없다"* 였다. 가드를 `IS NOT NULL` 로 바꾸는 순간 그 근거가 무효가 된다:
+
+```
+지우면 → 축 미매칭(B) → v_capacity IS NULL → 통과   ← 3-C 가 방금 비운 슬롯이 다시 열린다
+남기면 → count: 0(C)  → v_capacity = 0     → 거부   ← 닫힌다
+```
+
+그래서 두 변경은 **한 마이그**에 같이 넣었다. 하나만 하면 3-C 경로가 열린 채 남는다.
+
+**착수 근거 — "로그로 데이터를 모은 뒤 판단"이 성립하지 않았다 (prod 실측)**
+
+- 공고 원문 역할 항목 **109건 전부 `count > 0`** — headcount 전용 0 · `count:0` 0 · fixed 공고 0건
+- `v_capacity = 0` 이 실제 발생한 work_logs 2건은 **전부 container + 직접 배치**라 `confirm_application` 미경유
+- work_logs 3건(마지막 `2026-07-30`) · confirmed 지원서 1건 · users 27
+- → 트래픽이 없어 R0 관측 로그는 앞으로도 0건이 쌓인다. **기다려도 근거가 안 생기고, 반대로
+  영향받을 기존 데이터가 0건이라 지금이 전환 위험이 가장 낮다.**
+
+**검증**
+
+- 신규 pgTAP **8종** red→green · **red-swap 3종 1:1**(headcount 독해 제거→2번만 / `IS NOT NULL`→`>0`→3번만 /
+  항목 삭제 복원→5·6·8 + 3-C 26번)
+- 전체 pgTAP **100파일 1101테스트 PASS** · quality **exit 0** · jest **623스위트 6833테스트 PASS**
+- CI **10잡 전부 SUCCESS**(E2E 9m37s · DB Tests 2m7s)
+- 3-C 테스트 26번은 **계약이 뒤집힌 지점**이라 새 계약으로 갱신(회귀 아님)
+
+**🔴 prod 마이그 — 재적용 금지, 기록이 2건이다**
+
+| 레포 파일 | prod 기록 |
+|---|---|
+| `20260804140000_capacity_zero_fail_closed.sql` | `20260804142737` + `20260804142944` |
+
+파리티 **199 / 111 불변**(시그니처 동일).
+
+**다음 세션에 넘기는 주의 (이 세션에서 새로 알아낸 것)**
+
+- 🚨 **MCP `apply_migration` 에 마이그 본문을 옮길 때 주석을 줄이지 마라.** 함수 주석은 `prosrc` 에
+  그대로 저장되므로 **동작은 같은데 레포↔prod 정본이 갈린다.** 다음 재정의의 베이스가 흔들리고,
+  동작 차이가 없으니 테스트로는 절대 안 잡힌다. 이 세션에서 실제로 발생해
+  `20260804142944 _verbatim_fix` 로 복구했다.
+- 🔑 **적용 직후 md5 대조가 유일한 방어선이다**:
+  `md5(replace(pg_get_functiondef(oid), chr(13), ''))` 를 로컬↔prod 로 비교.
+  `chr(13)` 제거는 로컬 파일 CRLF 때문에 **필수** — 없으면 멀쩡한 함수도 전부 불일치로 보인다.
+- 🔑 정원을 읽는 함수가 이제 **셋 다 같은 NULL 규약**을 쓴다(`confirm_application` ·
+  `_posting_schedule_role_count` · 총합 함수의 COALESCE 순서). 정원을 건드리는 후속 작업은 이걸 깨지 말 것.
+- ⚠️ `update_posting_slot_time` 의 `capacityMoved.from.count` 는 더는 `null` 이 되지 않는다(항상 숫자).
+  클라는 `capacitySkipReason` 만 소비하므로 영향 0(Grep 실측).
+- ⚠️ **B(축 미매칭)는 의도적으로 열려 있다.** 닫으려면 실사용 트래픽이 쌓인 뒤
+  `capacity unknown (guard skipped)` 로그로 판단한다.
+- 📌 범위 밖 발견: `DateRequirementList.tsx:60,86` 이 `role.headcount ?? 0` 으로 `count` 폴백 없이 읽는다
+  → 현재 데이터에서 "0명" 표시. 다만 화면에서 쓰이는 곳이 없다(barrel + 테스트만) — 실사용 영향 0.
+
+---
+
+### S7-착지 (3-C 알림 모순 해소 + prod 적용 + PR) — 2026-08-04 · 상태: **PR #412 머지 완료** `d5ff28ec5`
 
 - 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-timechange` / `feat/posting-time-change` · HEAD `f487ac0bd`(커밋 11개)
 - 이 세션은 새 기능을 만들지 않았다. **사용자 게이트 1건을 받아 닫고 prod 에 적용**했다.
