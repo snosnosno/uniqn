@@ -67,3 +67,12 @@ export {
   type SlotConflict,
   type SlotConflictInput,
 } from './slotEdit';
+
+export {
+  UNDECIDED_SLOT_KEY,
+  workLogRoleKey,
+  workLogSlotKey,
+  buildSlotTimeChangeGroups,
+  countAtDestination,
+  type SlotTimeChangeGroup,
+} from './postingSlotTimeChange';

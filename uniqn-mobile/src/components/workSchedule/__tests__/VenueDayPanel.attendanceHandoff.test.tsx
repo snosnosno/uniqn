@@ -24,6 +24,9 @@ import { STATUS } from '@/constants';
 jest.mock('@/hooks/workSchedule', () => ({
   useSetVenueSoftTarget: jest.fn(),
   useVenueDaySlots: jest.fn(),
+  // 시간 일괄 변경(3-C) 시트가 쓰는 훅. 이 파일의 관심 밖이라 무해한 스텁으로 둔다 —
+  // 명시 목이라 빠뜨리면 컴포넌트가 렌더 단계에서 죽는다(모듈 전체가 이 객체로 대체된다).
+  useUpdatePostingSlotTime: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
 }));
 jest.mock('@/hooks/useConfirmedStaff', () => ({ useConfirmedStaff: jest.fn() }));
 jest.mock('@/stores/toastStore', () => ({ useToastStore: jest.fn() }));

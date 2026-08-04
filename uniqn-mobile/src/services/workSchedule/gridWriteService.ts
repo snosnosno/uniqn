@@ -13,6 +13,8 @@ import {
   type UpdateSlotInput,
   type SetVenueRoleSalaryInput,
   type UpdateVenueContainerInput,
+  type UpdatePostingSlotTimeInput,
+  type UpdatePostingSlotTimeResult,
 } from '@/repositories';
 import { cancelConfirmedStaffConfirmation } from '@/services/work/confirmedStaffService';
 import { ValidationError, ERROR_CODES } from '@/errors';
@@ -60,6 +62,31 @@ export function setVenueRoleSalary(venueId: string, input: SetVenueRoleSalaryInp
 /** 배치 슬롯 편집(시간·역할·색상·메모). 색상 화이트리스트·메모 XSS 검증은 레포 경계가 담당. */
 export function updateSlot(workLogId: string, input: UpdateSlotInput): Promise<void> {
   return workLogRepository.updateSlot(workLogId, input);
+}
+
+/**
+ * 공고 슬롯 시간 일괄 변경(3-C). 근무 시각과 공고 원문 정원을 함께 옮긴다.
+ *
+ * 대상 축 검증·권한·정원 이동은 전부 RPC(레포 경계)가 담당한다. 여기서는 **서버에 도달하기 전에
+ * 걸러도 되는 것만** 막는다 — 빈 선택은 사용자가 아무것도 고르지 않았다는 뜻이라 왕복이 무의미하고,
+ * 시간 축 미지정은 이 기능의 목적 자체가 없는 요청이다(fail-closed).
+ */
+export function updatePostingSlotTime(
+  input: UpdatePostingSlotTimeInput
+): Promise<UpdatePostingSlotTimeResult> {
+  if (input.workLogIds.length === 0) {
+    throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+      field: 'workLogIds',
+      userMessage: '시간을 변경할 인원을 선택해주세요.',
+    });
+  }
+  if (!input.timeUndecided && !input.startTime) {
+    throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+      field: 'startTime',
+      userMessage: '변경할 시간을 선택하거나 ‘미정’을 골라주세요.',
+    });
+  }
+  return workScheduleRepository.updatePostingSlotTime(input);
 }
 
 /**
