@@ -38,7 +38,10 @@ updates:
 
   # ── GitHub Actions ────────────────────────────────────────
   # 서드파티 액션이 태그 이동으로 탈취되면 PROD_DB_URL·SUPABASE_ACCESS_TOKEN 이 노출된다.
-  # 업데이트 추적으로 최소한 가시성을 확보한다(SHA 핀 전환은 별건).
+  # → 2026-08-04: 워크플로의 모든 `uses:` 를 **커밋 SHA 로 고정**했다(태그 이동 무력화).
+  #   특히 `supabase/setup-cli@v1` 은 태그가 아니라 **움직이는 브랜치**(refs/heads/v1)였다.
+  #   Dependabot 은 SHA 핀도 `# vX.Y.Z` 주석을 읽어 갱신 PR 을 올리므로 가시성은 유지된다.
+  #   ⚠️ 핀을 태그로 되돌리지 말 것 — 되돌리면 위 탈취 경로가 그대로 복구된다.
   - package-ecosystem: github-actions
     directory: /
     schedule:

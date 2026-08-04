@@ -94,7 +94,9 @@ export async function initialize(): Promise<boolean> {
     });
     return true;
   } catch (error) {
-    logger.error('Sentry initialization failed', error as Error, {
+    // 관측 계층은 logger.error 를 쓰지 않는다 — 프로덕션에서 이 모듈로 되돌아와
+    // (init 실패 → error → recordError → captureWithLevel → initialize) 재진입한다.
+    logger.observability('Sentry initialization failed', error as Error, {
       component: 'sentryService',
     });
     return false;
@@ -180,7 +182,9 @@ async function captureWithLevel(
     };
 
     if (Platform.OS === 'web') {
-      logger.error('Sentry web fallback event', error, {
+      // logger.error 가 아니라 observability 싱크로 — logger.error 는 프로덕션에서
+      // 이 함수를 다시 호출해 무한 재귀한다(logger.ts observability 주석 참고).
+      logger.observability('Sentry web fallback event', error, {
         component: 'sentryService',
         level,
         ...fullContext,

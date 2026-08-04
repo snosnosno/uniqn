@@ -266,6 +266,24 @@ export const logger = {
   },
 
   /**
+   * 관측(observability) 계층 전용 싱크 — **콘솔에만 쓰고 다시 전달하지 않는다.**
+   *
+   * 웹에는 Sentry SDK 가 없어 `sentryService` 가 로그로 폴백하는데, 그 폴백이
+   * `logger.error(msg, error, ...)` 였다. 그러면 output() 의 자동 전송 조건
+   * (isProduction && level==='error' && entry.error) 을 다시 만족해
+   * sentryService 로 또 전달되고 → 또 폴백하며 **무한 재귀**한다. 비동기라
+   * 스택은 안 터지고 마이크로태스크 큐만 무한히 채워 메인 스레드를 굶긴다.
+   * (2026-08-04 실측: E2E 1회 실행에서 콘솔 에러 370만 건, 탭 응답 정지 →
+   *  board.spec:88 · e2e-user-journeys:17 만성 flake 의 실제 원인)
+   *
+   * ⚠️ 관측 계층에서 로그를 남길 때는 반드시 이 함수를 쓸 것.
+   *    `logger.error` 로 되돌리면 위 재귀가 그대로 복구된다.
+   */
+  observability: (message: string, error?: Error, context?: LogContext): void => {
+    output('error', createEntry('error', message, context, error), true);
+  },
+
+  /**
    * 성능 추적 래퍼
    */
   withPerformanceTracking: async <T>(

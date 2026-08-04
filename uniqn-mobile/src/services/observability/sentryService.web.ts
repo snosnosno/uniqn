@@ -80,7 +80,9 @@ async function captureWithLevel(
     await initialize();
   }
 
-  logger.error('Sentry web fallback event', error, {
+  // logger.error 가 아니라 observability 싱크로 — logger.error 는 프로덕션에서
+  // 이 함수를 다시 호출해 무한 재귀한다(logger.ts observability 주석 참고).
+  logger.observability('Sentry web fallback event', error, {
     component: 'sentryService',
     level,
     ...extractErrorAttributes(error),
