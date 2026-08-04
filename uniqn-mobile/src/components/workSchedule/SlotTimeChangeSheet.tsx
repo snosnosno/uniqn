@@ -93,14 +93,23 @@ export function SlotTimeChangeSheet({
 
   // 시트가 닫히면 전부 초기화한다(재오픈 시 이전 선택 잔존 방지).
   useEffect(() => {
-    if (!visible) {
-      setGroupKey(null);
-      setPickedTime(null);
-      setTimeUndecided(false);
-      setPickerOpen(false);
-      setExcludedIds([]);
-    }
+    if (!visible) setGroupKey(null);
   }, [visible]);
+
+  /**
+   * 🔴 묶음이 바뀌면 시각·대상 선택을 **반드시** 버린다.
+   *
+   * '뒤로'로 목록에 돌아갔다가 다른 묶음을 고르면, 앞 묶음에서 고른 시각이 그대로 남아
+   * 사용자가 의도하지 않은 시각으로 [n명 변경]을 눌러버릴 수 있다. 화면에는 그 시각이
+   * 이미 채워져 보이므로 **본인이 고른 값처럼 읽힌다** — 되돌리기 어려운 조용한 오작동이다.
+   * 닫힘(`visible`)만으로 리셋하면 이 경로가 열린 채 남는다.
+   */
+  useEffect(() => {
+    setPickedTime(null);
+    setTimeUndecided(false);
+    setPickerOpen(false);
+    setExcludedIds([]);
+  }, [groupKey]);
 
   const selectedMembers = useMemo(
     () => (group ? group.members.filter((m) => !excludedIds.includes(m.workLogId)) : []),
