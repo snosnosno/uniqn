@@ -147,7 +147,7 @@ SELECT is(
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
   199,
-  'public function count == prod (193 = 192 + _normalize_time_slot 1(시간 미정 통일 R0), 2026-08-03)');
+  'public function count == prod (199 = 193 + 3-C 공고 시간 변경 6(#412), 2026-08-04. 정원0 #417 은 시그니처 동일이라 불변)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(
