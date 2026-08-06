@@ -7,6 +7,10 @@
  *
  * ⚠️ 날짜는 **로컬 시각 생성자**(new Date(y, m, d, h, min))로 만든다. ISO+09:00 리터럴은
  *    러너 타임존에 따라 getHours() 가 달라져 표시 단언이 흔들린다(jest.config 에 TZ 고정 없음).
+ *
+ * ⚠️ `currentStatus` 는 **필수 prop(undefined 허용)** 이다. 모르는 경우를 테스트할 때도
+ *    `currentStatus={undefined}` 를 명시한다 — 호출부가 "이 값을 아는가"를 건너뛰지 못하게 하는
+ *    타입 계약이라, 테스트가 그 계약을 우회하면 계약을 세운 이유가 없어진다.
  */
 import { render, screen, fireEvent } from '@testing-library/react-native';
 
@@ -27,7 +31,14 @@ function makeValue(overrides: Partial<WorkTimeFieldsValue> = {}): WorkTimeFields
 
 describe('WorkTimeFields — 예정과 실적의 분리', () => {
   it('🔴 실제 출근이 없으면 출근 칸을 예정 시각으로 채우지 않는다', () => {
-    render(<WorkTimeFields value={makeValue()} baseDate={BASE_DATE} onChange={jest.fn()} />);
+    render(
+      <WorkTimeFields
+        value={makeValue()}
+        baseDate={BASE_DATE}
+        currentStatus={undefined}
+        onChange={jest.fn()}
+      />
+    );
 
     // 예정은 보이고
     expect(screen.getByText('18:00')).toBeTruthy();
@@ -37,7 +48,14 @@ describe('WorkTimeFields — 예정과 실적의 분리', () => {
 
   it('[예정대로 기록] 을 누르면 출근이 예정 시각으로 채워진다', () => {
     const onChange = jest.fn();
-    render(<WorkTimeFields value={makeValue()} baseDate={BASE_DATE} onChange={onChange} />);
+    render(
+      <WorkTimeFields
+        value={makeValue()}
+        baseDate={BASE_DATE}
+        currentStatus={undefined}
+        onChange={onChange}
+      />
+    );
 
     fireEvent.press(screen.getByLabelText('예정대로 출근 기록'));
 
@@ -52,6 +70,7 @@ describe('WorkTimeFields — 예정과 실적의 분리', () => {
       <WorkTimeFields
         value={makeValue({ scheduledStart: null, scheduledUndecided: true })}
         baseDate={BASE_DATE}
+        currentStatus={undefined}
         onChange={jest.fn()}
       />
     );
@@ -64,6 +83,7 @@ describe('WorkTimeFields — 예정과 실적의 분리', () => {
       <WorkTimeFields
         value={makeValue({ checkIn: new Date(2026, 7, 10, 18, 5) })}
         baseDate={BASE_DATE}
+        currentStatus={undefined}
         onChange={jest.fn()}
       />
     );
@@ -75,7 +95,14 @@ describe('WorkTimeFields — 예정과 실적의 분리', () => {
   it('[예정대로 기록] 은 원본 value 를 변형하지 않는다(불변성)', () => {
     const value = makeValue();
     const onChange = jest.fn();
-    render(<WorkTimeFields value={value} baseDate={BASE_DATE} onChange={onChange} />);
+    render(
+      <WorkTimeFields
+        value={value}
+        baseDate={BASE_DATE}
+        currentStatus={undefined}
+        onChange={onChange}
+      />
+    );
 
     fireEvent.press(screen.getByLabelText('예정대로 출근 기록'));
 
@@ -88,6 +115,7 @@ describe('WorkTimeFields — 예정과 실적의 분리', () => {
       <WorkTimeFields
         value={makeValue({ checkIn: new Date(2026, 7, 10, 18, 42) })}
         baseDate={BASE_DATE}
+        currentStatus={undefined}
         onChange={jest.fn()}
       />
     );
@@ -101,6 +129,7 @@ describe('WorkTimeFields — 예정과 실적의 분리', () => {
       <WorkTimeFields
         value={makeValue({ checkIn: new Date(2026, 7, 10, 18, 5) })}
         baseDate={BASE_DATE}
+        currentStatus={undefined}
         onChange={onChange}
       />
     );
@@ -123,6 +152,7 @@ describe('WorkTimeFields — 상태 배지가 서버 파생과 같은 값을 말
           checkOut: new Date(2026, 7, 10, 23, 0),
         })}
         baseDate={BASE_DATE}
+        currentStatus={undefined}
         onChange={jest.fn()}
       />
     );
@@ -135,6 +165,7 @@ describe('WorkTimeFields — 상태 배지가 서버 파생과 같은 값을 말
       <WorkTimeFields
         value={makeValue({ checkOut: new Date(2026, 7, 10, 23, 0) })}
         baseDate={BASE_DATE}
+        currentStatus={undefined}
         onChange={jest.fn()}
       />
     );
@@ -202,12 +233,80 @@ describe('WorkTimeFields — 상태 배지가 서버 파생과 같은 값을 말
   });
 });
 
+describe('WorkTimeFields — 익일 표기', () => {
+  // 앵커는 baseDate 가 아니라 **출근**이다(WorkTimeDisplay.isEndNextDay 와 같은 축).
+  it('퇴근이 출근보다 다음 달력일이면 (익일) 을 붙인다', () => {
+    render(
+      <WorkTimeFields
+        value={makeValue({
+          checkIn: new Date(2026, 7, 10, 22, 0),
+          checkOut: new Date(2026, 7, 11, 2, 0),
+        })}
+        baseDate={BASE_DATE}
+        currentStatus={undefined}
+        onChange={jest.fn()}
+      />
+    );
+
+    expect(screen.getByTestId('check-out-value')).toHaveTextContent('02:00 (익일)');
+  });
+
+  it('🔴 출근 자체가 자정을 넘긴 행에는 (익일) 을 붙이지 않는다', () => {
+    // 익일 00:30 출근 ~ 08:00 퇴근. baseDate 를 앵커로 쓰면 퇴근에만 꼬리표가 붙어
+    // 같은 하룻밤이 이틀처럼 읽힌다 — 표시 정본은 이 경우 익일 표기가 없다.
+    render(
+      <WorkTimeFields
+        value={makeValue({
+          checkIn: new Date(2026, 7, 11, 0, 30),
+          checkOut: new Date(2026, 7, 11, 8, 0),
+        })}
+        baseDate={BASE_DATE}
+        currentStatus={undefined}
+        onChange={jest.fn()}
+      />
+    );
+
+    expect(screen.getByTestId('check-out-value')).toHaveTextContent('08:00');
+    expect(screen.getByTestId('check-out-value')).not.toHaveTextContent('익일');
+  });
+
+  it('같은 날 퇴근에는 꼬리표가 없다', () => {
+    render(
+      <WorkTimeFields
+        value={makeValue({
+          checkIn: new Date(2026, 7, 10, 18, 0),
+          checkOut: new Date(2026, 7, 10, 23, 0),
+        })}
+        baseDate={BASE_DATE}
+        currentStatus={undefined}
+        onChange={jest.fn()}
+      />
+    );
+
+    expect(screen.getByTestId('check-out-value')).not.toHaveTextContent('익일');
+  });
+
+  it('출근이 없으면 baseDate 를 앵커로 삼는다', () => {
+    render(
+      <WorkTimeFields
+        value={makeValue({ checkOut: new Date(2026, 7, 11, 2, 0) })}
+        baseDate={BASE_DATE}
+        currentStatus={undefined}
+        onChange={jest.fn()}
+      />
+    );
+
+    expect(screen.getByTestId('check-out-value')).toHaveTextContent('02:00 (익일)');
+  });
+});
+
 describe('WorkTimeFields — readOnly', () => {
   it('readOnly 면 [예정대로 기록]·[지우기] 를 렌더하지 않는다', () => {
     render(
       <WorkTimeFields
         value={makeValue({ checkIn: new Date(2026, 7, 10, 18, 0) })}
         baseDate={BASE_DATE}
+        currentStatus={undefined}
         onChange={jest.fn()}
         readOnly
       />
@@ -238,6 +337,20 @@ describe('applyPickedTime — 시각 조립', () => {
     expect(next.checkOut?.getHours()).toBe(2);
     // 퇴근 - 출근 = 4시간. 음수 근무시간이 저장되지 않는다.
     expect(next.checkOut!.getTime() - value.checkIn!.getTime()).toBe(4 * 60 * 60 * 1000);
+  });
+
+  it('🔴 퇴근이 출근과 같으면 익일로 올리지 않는다 — 조용한 24시간 근무 금지', () => {
+    // 등호를 익일에 포함시키면 22:00 출근 행에서 22:00 퇴근을 고른 순간 값이 +24h 로 조립돼
+    // '퇴근' 배지와 함께 24시간 근무가 저장 가능해진다. 레포 정본은 반대다 —
+    // deriveOvernightPreview:49-58 은 isEqual 을 "검증 오류 대상, 24시간 근무 해석 안 함"으로
+    // 두고, WorkTimeEditor:240-243 은 이 입력의 저장을 차단했다.
+    // 같은 날로 남겨야 시트의 "시작==종료" 검증이 두 값을 비교해 잡아낼 수 있다.
+    const value = makeValue({ checkIn: new Date(2026, 7, 10, 22, 0) });
+
+    const next = applyPickedTime(value, 'checkOut', '22:00', BASE_DATE);
+
+    expect(next.checkOut?.getDate()).toBe(10);
+    expect(next.checkOut?.getTime()).toBe(value.checkIn!.getTime());
   });
 
   it('24+ 표기는 그 자체로 익일이다', () => {

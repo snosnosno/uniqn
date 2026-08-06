@@ -49,11 +49,14 @@ export interface WorkTimeFieldsProps {
   onChange: (next: WorkTimeFieldsValue) => void;
   readOnly?: boolean;
   /**
-   * 수정 전 work_log.status(선택). 넘기면 배지가 서버 불가침 규칙까지 반영한다 —
-   * no_show·cancelled 는 시간을 고쳐도 서버가 상태를 바꾸지 않으므로, 안 넘기면 배지가
-   * "저장하면 출근이 됩니다"라고 **거짓말**한다.
+   * 수정 전 work_log.status. **`?` 를 붙이지 않는다** — 값을 모르면 `undefined` 를 명시하라.
+   *
+   * 🔴 선택 prop 으로 두면 호출부가 빠뜨려도 tsc 가 침묵하고, no_show·cancelled 행에서 배지가
+   *    "저장하면 출근이 됩니다"라고 **거짓말**한다(서버는 그 상태를 건드리지 않는다).
+   *    "배지 = 서버가 저장할 값"이 이 컴포넌트의 존재 이유라, 그 보증을 리뷰 규율이 아니라
+   *    타입에 건다. 필수화하면 호출부마다 "이 값을 아는가"를 한 번은 생각하게 된다.
    */
-  currentStatus?: WorkLogStatus;
+  currentStatus: WorkLogStatus | undefined;
   /** 시각 피커 열기 요청. 부모 시트가 overlay 로 피커를 렌더한다. */
   onOpenPicker?: (field: WorkTimeFieldKey) => void;
 }
@@ -151,9 +154,9 @@ function composeTime(time: string, baseDate: Date): Date | null {
 /**
  * 피커에서 고른 'HH:mm' 을 값에 얹는다. 새 객체를 돌려주고 인자는 변형하지 않는다.
  *
- * 🔑 퇴근이 출근보다 이르면(예: 출근 22:00 · 퇴근 02:00) **익일로 올린다.** 안 그러면
+ * 🔑 퇴근이 출근보다 **엄격히 이르면**(예: 출근 22:00 · 퇴근 02:00) 익일로 올린다. 안 그러면
  *    check_out_ts < check_in_ts 인 음수 근무시간이 저장돼 정산이 틀어진다.
- *    폐지될 WorkTimeEditor 의 `endTimeForSave` 보정과 같은 규칙이다.
+ *    같음(==)은 올리지 않는다 — 아래 경계 주석 참고.
  * 🔑 읽을 수 없는 값이면 원본을 그대로 돌려준다 — 파싱 불가 값이 시각인 척 저장되지 않는다.
  */
 export function applyPickedTime(
@@ -174,7 +177,11 @@ export function applyPickedTime(
     return { ...value, checkIn: composed };
   }
 
-  const needsNextDay = value.checkIn !== null && composed.getTime() <= value.checkIn.getTime();
+  // 🔴 등호를 포함하지 않는다(`<`, `<=` 아님). 퇴근==출근은 **검증 오류**이지 24시간 근무가
+  //    아니다 — `deriveOvernightPreview:49-58` 이 isEqual 을 익일에서 빼고 duration 을 미산정하며,
+  //    폐지될 WorkTimeEditor 도 `isValidTimeOrder`(:240-243)로 저장을 차단했다. 여기서 +24h 로
+  //    조립해 버리면 두 값이 이미 달라져 시트의 "시작==종료" 검증이 원리적으로 발화하지 못한다.
+  const needsNextDay = value.checkIn !== null && composed.getTime() < value.checkIn.getTime();
   if (!needsNextDay) {
     return { ...value, checkOut: composed };
   }
@@ -352,8 +359,13 @@ export function WorkTimeFields({
   }, [value, onChange]);
 
   // 퇴근이 기준일보다 뒤면 익일 근무다 — 시각만 보면 02:00 이 이른 새벽인지 알 수 없다.
+  // 익일 판정의 앵커는 **출근**이다(WorkTimeDisplay.isEndNextDay:71-76 와 같은 축).
+  // baseDate 를 앵커로 쓰면, 출근 자체가 자정을 넘긴 행(익일 00:30 출근 ~ 08:00 퇴근)에서
+  // 퇴근에만 '(익일)'이 붙어 같은 하룻밤이 이틀처럼 읽힌다 — 표시 정본은 그 경우 표기가 없다.
+  // 출근이 없으면 baseDate 로 떨어진다(예정 시각은 'HH:mm' 라 언제나 baseDate 와 같은 달력일).
+  const overnightAnchor = checkIn ?? baseDate;
   const checkOutDisplay = checkOut
-    ? `${formatClock(checkOut)}${isLaterCalendarDay(checkOut, baseDate) ? ' (익일)' : ''}`
+    ? `${formatClock(checkOut)}${isLaterCalendarDay(checkOut, overnightAnchor) ? ' (익일)' : ''}`
     : EMPTY_MARK;
 
   const canCopyScheduled = !readOnly && !scheduledUndecided && Boolean(scheduledStart);
