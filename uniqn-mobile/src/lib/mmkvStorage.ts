@@ -385,6 +385,12 @@ export const STORAGE_KEYS = {
 
   /** 내 스케줄 화면 요약 대시보드 접힘 여부 (boolean) */
   SCHEDULE_DASHBOARD_COLLAPSED: 'schedule-dashboard-collapsed-v1',
+
+  /**
+   * 길찾기에 쓸 지도 앱 (`MapAppId`).
+   * ⚠️ 사용자 스코프가 아니다 — 기기 취향이라 로그아웃해도 유지하는 게 맞다.
+   */
+  MAP_APP_PREFERENCE: 'map-app-preference-v1',
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

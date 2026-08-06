@@ -92,12 +92,16 @@ describe('buildMapSearchUrls', () => {
     expect(buildMapSearchUrls('   ', 'ios')).toEqual([]);
   });
 
-  it('iOS는 네이버 지도를 먼저, Apple 지도를 폴백으로 둔다', () => {
-    const [first, fallback] = buildMapSearchUrls('강남구 역삼동', 'ios');
+  // 🔴 예전에는 `nmap://search` 가 첫 후보라고 단언했다. 그런데 그 후보는 런타임에서 **한 번도
+  //    열린 적이 없다** — iOS 는 `LSApplicationQueriesSchemes` 미선언 스킴에 대해 canOpenURL 이
+  //    설치 여부와 무관하게 false 를 돌려주는데, `app.config.ts` 에 그 선언이 없다. 즉 코드만
+  //    보면 통과하고 기기에서는 틀린 **빈 통과** 단언이었다. 기본 경로는 이제 기기 기본 지도로만
+  //    가고, 네이버·카카오는 사용자가 고르는 경로(`buildMapUrlsForApp`)가 담당한다.
+  it('iOS 기본 경로는 항상 열리는 Apple 지도만 쓴다 (canOpenURL 게이트에 걸리는 후보를 두지 않는다)', () => {
+    const urls = buildMapSearchUrls('강남구 역삼동', 'ios');
 
-    expect(first).toContain('nmap://search?query=');
-    // 마지막 후보는 항상 열리는 웹 링크여야 길찾기가 무반응으로 끝나지 않는다.
-    expect(fallback).toContain('https://maps.apple.com/?q=');
+    expect(urls.some((u) => u.startsWith('nmap://'))).toBe(false);
+    expect(urls[0]).toContain('https://maps.apple.com/?q=');
   });
 
   it('Android는 지도 앱 선택 다이얼로그를 먼저 띄운다', () => {
