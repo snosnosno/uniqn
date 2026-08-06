@@ -17,6 +17,16 @@ jest.mock('@/utils/mapLink', () => ({
   openMapDestination: (...args: unknown[]) => mockOpenMapDestination(...args),
 }));
 
+// 지도 앱 취향은 MMKV 에 남아 테스트끼리 샌다 — 모듈째 갈아끼워 테스트마다 초기화한다.
+let mockStoredMapApp: string | null = null;
+
+jest.mock('@/utils/mapAppPreference', () => ({
+  getMapAppPreference: () => mockStoredMapApp,
+  setMapAppPreference: (app: string) => {
+    mockStoredMapApp = app;
+  },
+}));
+
 jest.mock('@/stores/toastStore', () => ({
   useToast: () => ({ success: jest.fn(), error: jest.fn() }),
 }));
@@ -61,6 +71,9 @@ describe('InfoTab — 연락처 표기', () => {
 describe('InfoTab — 길찾기', () => {
   beforeEach(() => {
     mockOpenMapDestination.mockClear();
+    // 이미 고른 앱이 있는 상태를 기본으로 둔다 — 이 스위트가 고정하려는 것은 "무엇을 넘기는가"
+    // (주소 합성 규칙·좌표 승격)이지 선택 시트가 아니다. 시트는 아래 별도 스위트에서 다룬다.
+    mockStoredMapApp = 'kakao';
   });
 
   it('주소가 없으면 길찾기 대신 안내 문구를 띄운다', () => {
@@ -78,7 +91,8 @@ describe('InfoTab — 길찾기', () => {
     fireEvent.press(getByText('길찾기'));
 
     expect(mockOpenMapDestination).toHaveBeenCalledWith(
-      expect.objectContaining({ query: '서울 강남구 테헤란로 1' })
+      expect.objectContaining({ query: '서울 강남구 테헤란로 1' }),
+      'kakao'
     );
   });
 
@@ -95,7 +109,8 @@ describe('InfoTab — 길찾기', () => {
     fireEvent.press(getByText('길찾기'));
 
     expect(mockOpenMapDestination).toHaveBeenCalledWith(
-      expect.objectContaining({ query: '서울 강남구 테헤란로 1, 3층' })
+      expect.objectContaining({ query: '서울 강남구 테헤란로 1, 3층' }),
+      'kakao'
     );
   });
 
@@ -113,11 +128,14 @@ describe('InfoTab — 길찾기', () => {
 
     fireEvent.press(getByText('길찾기'));
 
-    expect(mockOpenMapDestination).toHaveBeenCalledWith({
-      query: '서울 강남구 테헤란로 152',
-      coordinates: { lat: 37.5000242, lng: 127.0365086 },
-      label: '라운더스 홀덤펍',
-    });
+    expect(mockOpenMapDestination).toHaveBeenCalledWith(
+      {
+        query: '서울 강남구 테헤란로 152',
+        coordinates: { lat: 37.5000242, lng: 127.0365086 },
+        label: '라운더스 홀덤펍',
+      },
+      'kakao'
+    );
   });
 
   // 좌표만 있고 주소 텍스트가 없어도 갈 수 있어야 한다 — 게이트가 query 만 보면 버튼이 사라진다.
@@ -129,7 +147,8 @@ describe('InfoTab — 길찾기', () => {
     fireEvent.press(getByText('길찾기'));
 
     expect(mockOpenMapDestination).toHaveBeenCalledWith(
-      expect.objectContaining({ query: null, coordinates: { lat: 37.5, lng: 127.03 } })
+      expect.objectContaining({ query: null, coordinates: { lat: 37.5, lng: 127.03 } }),
+      'kakao'
     );
   });
 
@@ -149,5 +168,49 @@ describe('InfoTab — 길찾기', () => {
     );
 
     expect(getByText('서울 강남구 역삼동 123-4')).toBeTruthy();
+  });
+});
+
+/**
+ * 지도 앱 선택 — 예전에는 기기 기본 지도로만 갔다. 국내 스태프 대부분은 카카오맵·네이버지도를
+ * 쓰는데 기본 지도는 국내 상호 검색이 약해, 열리긴 열려도 어디인지 모르는 상태로 끝났다.
+ */
+describe('InfoTab — 지도 앱 선택', () => {
+  const WITH_ADDRESS = { locationAddress: '서울 강남구 테헤란로 152' };
+
+  beforeEach(() => {
+    mockOpenMapDestination.mockClear();
+    mockStoredMapApp = null;
+  });
+
+  it('고른 앱이 없으면 바로 열지 않고 선택 시트를 띄운다', () => {
+    const { getByText } = render(<InfoTab schedule={makeSchedule(WITH_ADDRESS)} />);
+
+    fireEvent.press(getByText('길찾기'));
+
+    expect(mockOpenMapDestination).not.toHaveBeenCalled();
+    expect(getByText('어떤 지도로 열까요?')).toBeTruthy();
+  });
+
+  it('시트에서 고른 앱으로 열고 그 선택을 기억한다', () => {
+    const { getByText } = render(<InfoTab schedule={makeSchedule(WITH_ADDRESS)} />);
+
+    fireEvent.press(getByText('길찾기'));
+    fireEvent.press(getByText('네이버지도'));
+
+    expect(mockOpenMapDestination).toHaveBeenCalledWith(expect.anything(), 'naver');
+    expect(mockStoredMapApp).toBe('naver');
+  });
+
+  // 한 번의 선택이 되돌릴 수 없는 결정이 되면 안 된다 — 바꿀 통로가 화면에 보여야 한다.
+  it('고른 앱을 현재 값과 함께 보여주고 다시 고를 수 있게 한다', () => {
+    mockStoredMapApp = 'kakao';
+    const { getByText, getByRole } = render(<InfoTab schedule={makeSchedule(WITH_ADDRESS)} />);
+
+    expect(getByText('카카오맵 · 변경')).toBeTruthy();
+
+    fireEvent.press(getByRole('button', { name: '길찾기에 사용할 지도 앱 변경 (현재 카카오맵)' }));
+
+    expect(getByText('어떤 지도로 열까요?')).toBeTruthy();
   });
 });

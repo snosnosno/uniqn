@@ -72,6 +72,8 @@ describe('buildMapCoordinateUrls', () => {
     expect(urls.some((u) => u.startsWith('https://maps.apple.com/?ll=37.500024,127.036509'))).toBe(
       true
     );
+    // canOpenURL 게이트에 걸려 죽어 있던 nmap:// 후보는 기본 경로에서 뺐다(사용자 선택 경로로 이관).
+    expect(urls.some((u) => u.startsWith('nmap://'))).toBe(false);
   });
 
   it('유한하지 않은 좌표는 후보를 만들지 않는다', () => {
