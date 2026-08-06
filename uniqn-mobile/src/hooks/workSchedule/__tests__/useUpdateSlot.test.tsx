@@ -14,6 +14,7 @@ import React from 'react';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
+import { POSTING_FILLED_COUNTS_QUERY_KEY } from '@/hooks/postingFilledCountsKey';
 import { useUpdateSlot } from '../useUpdateSlot';
 import { updateSlot } from '@/services/workSchedule/gridWriteService';
 
@@ -90,6 +91,25 @@ describe('useUpdateSlot', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.settlement.all });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.workLogs.all });
+  });
+
+  it('🔴 성공 시 postingFilledCounts 도 무효화한다(역할 변경 → 마감 판정 소스)', async () => {
+    // 역할 축이 이 훅으로 넘어오면서 생긴 요건이다. 이 키는 queryKeys 트리 밖의 단독 접두사라
+    // 위의 다섯 무효화 어디에도 안 걸린다 — 빠뜨리면 저장 직후 시트의 `(마감)` 표기가 옛 분포다.
+    mockUpdate.mockResolvedValueOnce(undefined);
+    const client = createClient();
+    const invalidateSpy = jest.spyOn(client, 'invalidateQueries');
+
+    const { result } = renderHook(() => useUpdateSlot(), { wrapper: createWrapper(client) });
+
+    await act(async () => {
+      await result.current.mutateAsync({ workLogId: 'wl-1', input: { staffRole: 'floor' } });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: [POSTING_FILLED_COUNTS_QUERY_KEY],
+    });
   });
 
   it('서비스 에러를 변이 에러로 전파(토스트는 호출부 책임)', async () => {

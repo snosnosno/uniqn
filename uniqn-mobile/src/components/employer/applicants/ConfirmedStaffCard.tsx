@@ -36,6 +36,19 @@ export interface ConfirmedStaffCardProps {
   onEditTime?: (staff: ConfirmedStaff) => void;
   onReport?: (staff: ConfirmedStaff) => void;
   onDelete?: (staff: ConfirmedStaff) => void;
+  /**
+   * 빼기를 **근태 상태와 무관하게** 허용한다(기본값 false = 출근 예정·취소 행만).
+   *
+   * 🔴 기본 규칙(출근 전만 뺄 수 있다)은 **탈출구가 있을 때만** 성립한다. 공고 스태프관리에는
+   *    상태 되돌리기(출근 예정으로)가 있어서 잘못 찍힌 출근을 되돌린 뒤 뺄 수 있지만,
+   *    **근무표에는 상태 변경 액션이 아예 없다.** 게다가 컨테이너 직속 배치
+   *    (`job_posting_id = venue`)는 대응 공고가 없어 스태프관리 탭 자체가 존재하지 않는다 —
+   *    QR 오인식으로 `checked_in` 이 되거나 노쇼 처리된 순간 **앱 전체에서 제거 경로가 0** 이 된다.
+   *    폐기된 근무표 시트는 `!!slot.staffId` 만 봤다. 그 동작을 근무표 경로에서만 되살린다.
+   *
+   * ⚠️ 스태프관리 경로에는 켜지 말 것 — 거긴 되돌리기라는 안전한 경로가 이미 있다.
+   */
+  allowDeleteAnyStatus?: boolean;
   onStatusChange?: (staff: ConfirmedStaff) => void;
   onCancelNoShow?: (staff: ConfirmedStaff) => void;
   showActions?: boolean;
@@ -49,6 +62,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   onEditTime,
   onReport,
   onDelete,
+  allowDeleteAnyStatus = false,
   onStatusChange,
   onCancelNoShow,
   showActions = true,
@@ -90,7 +104,9 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
     staff.status !== STATUS.CONFIRMED_STAFF.NO_SHOW &&
     staff.payrollStatus !== STATUS.PAYROLL.COMPLETED;
   const canDelete =
-    staff.status === STATUS.WORK_LOG.SCHEDULED || staff.status === STATUS.WORK_LOG.CANCELLED;
+    allowDeleteAnyStatus ||
+    staff.status === STATUS.WORK_LOG.SCHEDULED ||
+    staff.status === STATUS.WORK_LOG.CANCELLED;
   const canChangeStatus =
     staff.status === STATUS.WORK_LOG.SCHEDULED ||
     staff.status === STATUS.WORK_LOG.CHECKED_IN ||
@@ -99,6 +115,15 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   // 정산 완료 건은 서버(ConfirmedStaffRepository.cancelNoShow)가 취소를 거부하므로
   // 버튼 단계에서 미리 숨긴다.
   const canCancelNoShow = staff.isNoShow && staff.payrollStatus !== STATUS.PAYROLL.COMPLETED;
+
+  // 액션 줄에 **실제로 그려질** 버튼들. 이걸 미리 세지 않으면 콜백은 왔는데 상태 게이트가
+  // 전부 막은 카드에서 구분선(mt-3 border-t pt-3)만 자식 없이 남는다 — 근무표처럼 콜백을
+  // 하나만 넘기는 소비처에서 카드마다 빈 줄이 생겼다.
+  const showsEditTime = Boolean(onEditTime) && canEditTime;
+  const showsCancelNoShow = Boolean(onCancelNoShow) && canCancelNoShow;
+  const showsReport = Boolean(onReport);
+  const showsDelete = Boolean(onDelete) && canDelete;
+  const hasVisibleActions = showsEditTime || showsCancelNoShow || showsReport || showsDelete;
 
   const handlePress = useCallback(() => {
     onPress?.(staff);
@@ -237,9 +262,12 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
         ) : null}
       </Pressable>
 
-      {showActions ? (
-        <View className="mt-3 flex-row gap-2 border-t border-secondary-100 pt-3 dark:border-surface-overlay">
-          {onEditTime && canEditTime ? (
+      {showActions && hasVisibleActions ? (
+        <View
+          testID="card-actions"
+          className="mt-3 flex-row gap-2 border-t border-secondary-100 pt-3 dark:border-surface-overlay"
+        >
+          {showsEditTime ? (
             <Pressable
               onPress={handleEditTime}
               className="flex-1 flex-row items-center justify-center rounded-lg bg-surface-card py-2 active:opacity-70 dark:bg-surface"
@@ -253,7 +281,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
             </Pressable>
           ) : null}
 
-          {onCancelNoShow && canCancelNoShow ? (
+          {showsCancelNoShow ? (
             <Pressable
               onPress={handleCancelNoShow}
               className="flex-1 flex-row items-center justify-center rounded-lg bg-surface-card py-2 active:opacity-70 dark:bg-surface"
@@ -265,7 +293,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
             </Pressable>
           ) : null}
 
-          {onReport ? (
+          {showsReport ? (
             <Pressable
               onPress={handleReport}
               className="flex-row items-center justify-center rounded-lg bg-error-50 px-3 py-2 active:opacity-70 dark:bg-error-900/20"
@@ -277,8 +305,11 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
             </Pressable>
           ) : null}
 
-          {onDelete && canDelete ? (
+          {showsDelete ? (
+            /* ⚠️ 아이콘 단독 버튼인데 accessibilityLabel 이 없다(선재 결함 — Task 9 원장).
+               지금은 테스트가 testID 로 잡는다. 라벨을 붙일 때 testID 는 그대로 두어도 된다. */
             <Pressable
+              testID="card-delete-action"
               onPress={handleDelete}
               className="flex-row items-center justify-center rounded-lg bg-surface-card px-3 py-2 active:opacity-70 dark:bg-surface"
             >

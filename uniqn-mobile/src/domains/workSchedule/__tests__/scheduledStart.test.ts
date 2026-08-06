@@ -11,6 +11,7 @@ describe('readScheduledStart', () => {
     expect(readScheduledStart('18:00')).toEqual({
       scheduledStart: '18:00',
       scheduledUnreadable: false,
+      hadLegacyEnd: false,
     });
   });
 
@@ -18,10 +19,12 @@ describe('readScheduledStart', () => {
     expect(readScheduledStart(null)).toEqual({
       scheduledStart: null,
       scheduledUnreadable: false,
+      hadLegacyEnd: false,
     });
     expect(readScheduledStart('')).toEqual({
       scheduledStart: null,
       scheduledUnreadable: false,
+      hadLegacyEnd: false,
     });
   });
 
@@ -29,6 +32,7 @@ describe('readScheduledStart', () => {
     expect(readScheduledStart('저녁 6시')).toEqual({
       scheduledStart: null,
       scheduledUnreadable: true,
+      hadLegacyEnd: false,
     });
   });
 
@@ -36,13 +40,24 @@ describe('readScheduledStart', () => {
     expect(readScheduledStart('25:00')).toEqual({
       scheduledStart: null,
       scheduledUnreadable: true,
+      hadLegacyEnd: false,
     });
   });
 
-  it('폐지된 범위 데이터는 시작만 취한다(읽기 하위호환)', () => {
+  it('🔴 폐지된 범위 데이터는 시작만 취하되 종료가 있었다는 사실을 남긴다', () => {
+    // 이 사실을 잃으면 시트가 종료를 보여줄 수도, 사라진다고 알릴 수도 없다 — 조용한 소실.
     expect(readScheduledStart('18:00 - 02:00')).toEqual({
       scheduledStart: '18:00',
       scheduledUnreadable: false,
+      hadLegacyEnd: true,
+    });
+  });
+
+  it('물결(~) 구분자 범위도 종료를 인식한다', () => {
+    expect(readScheduledStart('18:00~02:00')).toEqual({
+      scheduledStart: '18:00',
+      scheduledUnreadable: false,
+      hadLegacyEnd: true,
     });
   });
 
@@ -50,6 +65,7 @@ describe('readScheduledStart', () => {
     expect(readScheduledStart('  18:00  ')).toEqual({
       scheduledStart: '18:00',
       scheduledUnreadable: false,
+      hadLegacyEnd: false,
     });
   });
 });

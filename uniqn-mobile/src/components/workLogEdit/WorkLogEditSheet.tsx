@@ -91,8 +91,8 @@ export interface WorkLogEditInitial {
    *    패치에 안 실리고, 사용자에게는 **"고쳤는데 그대로"** 로 보인다.
    *    true 면 미정을 켜지 않은 채 시작해, 미정 선택이 **실제 변경**이 되게 한다.
    *
-   * 판정 기준은 폐기될 `EditSlotSheet.tsx:147-152` 그대로다(새로 만들지 말 것):
-   *   `Boolean(timeSlot) && !isValidSlotStartTime(parseTimeSlotParts(timeSlot).start)`
+   * 판정 기준은 폐기된 `EditSlotSheet.tsx:147-152` 그대로다 — 지금은 도메인 순수함수
+   * `readScheduledStart`(@/domains/workSchedule)가 소유한다. 진입점마다 다시 쓰지 말 것.
    *
    * 🔴 **`?` 를 붙이지 않는다** — `currentStatus`(Task 5) 와 같은 판단이다. 선택 prop 이면
    *    호출부가 빠뜨려도 tsc 가 침묵하고, 그 순간 위 회귀가 **소리 없이 되살아난다**.
@@ -105,6 +105,20 @@ export interface WorkLogEditInitial {
   role: StaffRole;
   /** `other` 역할의 커스텀 이름. **표시 전용** — RPC 패치에 담을 키가 없다(Task 3 확정). */
   customRole?: string | null;
+  /**
+   * 원본에 **예정 종료**가 저장돼 있었다(폐지된 범위 데이터 `'18:00 - 02:00'`).
+   *
+   * 🔴 시트는 시작만 보여준다. 이 사실을 안 받으면 종료 시각이 **말없이 사라진다** —
+   *    예정을 다시 고르는 순간 저장이 단일값 `'HH:mm'` 으로 나가 범위가 소멸하는데,
+   *    사용자는 화면 어디서도 `02:00` 을 본 적이 없어 사라진 줄도 모른다.
+   *    폐기된 `EditSlotSheet`(`:401-409`)가 정확히 이 상황을 고지했다 — 대체 없이 잃지 않는다.
+   *
+   * 🔑 **차단이 아니라 고지다.** 구 시트도 저장을 막지 않았다(막을 이유가 없다 — 종료는
+   *    이미 폐지된 축이고, 사용자가 할 수 있는 일은 "알고 넘어가는 것"뿐이다).
+   *
+   * 판정은 `readScheduledStart`(@/domains/workSchedule)가 소유한다. 모르면 `false`.
+   */
+  hadLegacyEnd: boolean;
   color: string | null;
   /** 배치 메모. 저장되는 컬럼은 `work_logs.notes` 다(RPC 키 이름만 `memo`). */
   memo: string;
@@ -458,6 +472,19 @@ export function WorkLogEditSheet({
               className="mt-2 font-sans text-sm text-content-secondary dark:text-secondary-400"
             >
               저장된 출근 시간을 읽을 수 없어요. 시간을 다시 골라주세요.
+            </Text>
+          ) : null}
+
+          {initial.hadLegacyEnd ? (
+            /* 폐지된 범위 데이터 — 화면에서 종료가 사라진 이유를 밝힌다(조용한 소실 방지).
+               문구는 `EditSlotSheet.tsx:405` 그대로다. 구 시트는 실적 섹션이 조건부라 "아래"를
+               가리킬 수 없는 변형을 하나 더 뒀지만, 이 시트는 **실적이 항상 있으므로** 하나면 된다.
+               ⚠️ 차단이 아니다 — 저장 게이트에 넣지 말 것. */
+            <Text
+              testID="legacy-end-notice"
+              className="mt-2 font-sans text-sm text-content-secondary dark:text-secondary-400"
+            >
+              예정 종료 시간은 더 이상 쓰지 않아요. 실제 퇴근은 아래 출퇴근 기록으로 남습니다.
             </Text>
           ) : null}
 

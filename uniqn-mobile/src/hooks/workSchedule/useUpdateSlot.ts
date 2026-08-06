@@ -14,9 +14,16 @@
  *    쓰게 되면서 이 변이의 파장이 정산 금액의 **입력**까지 닿았다. 두 키를 남기면 정산 상세에서
  *    퇴근을 고쳐 저장했을 때 서버 값은 맞게 바뀌는데 화면 숫자만 옛 값으로 남는다
  *    (돈이 걸린 화면에서 가장 나쁜 종류의 불일치 — 사용자는 저장이 안 먹혔다고 읽는다).
+ *
+ * 🔴 `postingFilledCounts` 도 버린다. **역할 축이 이 훅으로 넘어왔기 때문이다.** 이 키는
+ *    `queryKeys.*` 트리 밖의 단독 접두사라 위 다섯 개 어디에도 안 걸린다(`postingFilledCountsKey.ts`).
+ *    빠뜨리면 역할 변경 저장 직후 시트를 다시 열었을 때 마감 판정이 옛 분포로 계산돼
+ *    **`(마감)` 표기가 거짓말한다** — D7 이 "막지 않고 표기만 한다"고 정한 바로 그 표기다.
+ *    폐지된 구 역할 변경 경로(`useConfirmedStaff` changeRoleMutation)가 같은 이유로 이 키를 버렸다.
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
+import { POSTING_FILLED_COUNTS_QUERY_KEY } from '@/hooks/postingFilledCountsKey';
 import { updateSlot } from '@/services/workSchedule/gridWriteService';
 import type { UpdateSlotInput } from '@/repositories';
 
@@ -41,6 +48,8 @@ export function useUpdateSlot() {
       // 🔴 실적을 쓰는 순간 정산 금액의 입력이 바뀐다 — 정산 목록·상세·근무 기록 캐시도 버린다.
       qc.invalidateQueries({ queryKey: queryKeys.settlement.all });
       qc.invalidateQueries({ queryKey: queryKeys.workLogs.all });
+      // 🔴 역할이 바뀌면 역할별 확정 분포가 바뀐다 — 마감 판정 소스를 버리지 않으면 `(마감)` 이 stale.
+      qc.invalidateQueries({ queryKey: [POSTING_FILLED_COUNTS_QUERY_KEY] });
     },
   });
 }

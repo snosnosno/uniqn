@@ -174,6 +174,30 @@ describe('VenueDayPanel — 통합 편집 시트 배선', () => {
     expect(screen.getByTestId('scheduled-unreadable-notice')).toBeTruthy();
   });
 
+  it('🔴 정산 완료 건은 읽기 전용으로 연다(payrollStatus 실값 전달)', () => {
+    setSlot({ payrollStatus: 'completed' });
+    renderPanel();
+    fireEvent.press(screen.getByText('슬롯 열기'));
+
+    // payrollStatus 를 null 로 넘기면 잠금 안내도, 읽기 전용 푸터도 나오지 않는다.
+    // ⚠️ '저장' 문구로 판정하면 안 된다 — 패널 자체의 '필요 인원 저장' 버튼이 걸린다.
+    //    읽기 전용 푸터의 [닫기] 는 이 모드에서만 존재하는 판별자다.
+    expect(screen.getByTestId('settled-notice')).toBeTruthy();
+    expect(screen.getByLabelText('닫기')).toBeTruthy();
+  });
+
+  it('🔴 폐지된 범위 데이터는 예정 종료가 사라진다고 고지한다(hadLegacyEnd 실값 전달)', () => {
+    // 시트는 시작(18:00)만 보여준다. 고지가 없으면 예정을 다시 고르는 순간 02:00 이
+    // 말없이 소멸한다 — 폐기된 EditSlotSheet 가 정확히 이 상황을 알렸다.
+    setSlot({ timeSlot: '18:00 - 02:00' });
+    renderPanel();
+    fireEvent.press(screen.getByText('슬롯 열기'));
+
+    expect(screen.getByTestId('legacy-end-notice')).toBeTruthy();
+    // 차단이 아니라 고지다 — 저장 게이트를 건드리면 안 된다(구 시트도 막지 않았다).
+    expect(screen.queryByTestId('scheduled-unreadable-notice')).toBeNull();
+  });
+
   it('빼기는 시트 푸터가 아니라 카드 액션이다(설계 §3-4)', () => {
     renderPanel();
 
@@ -183,5 +207,26 @@ describe('VenueDayPanel — 통합 편집 시트 배선', () => {
     fireEvent.press(screen.getByText('슬롯 열기'));
     // 시트 푸터는 [취소][저장] 둘뿐 — '빼기' 라벨이 시트 안에 있으면 안 된다.
     expect(screen.queryByLabelText('근무 빼기')).toBeNull();
+  });
+
+  it('🔴 기록이 있는 행을 뺄 때는 무엇이 사라지는지 말한다', () => {
+    // 근무표는 근태 상태로 빼기를 막지 않는다(막을 곳이 여기뿐이라 — 게이트 자체는
+    // ConfirmedStaffCard.actions.test 가 고정한다). 막지 않는 대신 위험을 문구로 드러낸다.
+    setSlot({ status: 'checked_in' });
+    renderPanel();
+
+    fireEvent.press(screen.getByText('카드 빼기'));
+
+    expect(screen.getByText(/기록된 출퇴근 시각도 함께 사라져요/)).toBeTruthy();
+  });
+
+  it('기록이 없는 행에는 그 경고를 붙이지 않는다(대조군)', () => {
+    setSlot({ status: 'scheduled', checkInTs: null, checkOutTs: null });
+    renderPanel();
+
+    fireEvent.press(screen.getByText('카드 빼기'));
+
+    expect(screen.getByText(/근무에서 뺄까요/)).toBeTruthy();
+    expect(screen.queryByText(/기록된 출퇴근 시각도 함께 사라져요/)).toBeNull();
   });
 });

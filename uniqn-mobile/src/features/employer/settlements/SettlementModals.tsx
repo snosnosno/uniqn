@@ -38,12 +38,10 @@ type SettlementModalsState = ReturnType<typeof useSettlementModals>;
  * 정산 근무 기록 → 통합 편집 시트 초기값.
  *
  * 🔴 `payrollStatus` 를 그대로 넘긴다 — 정산 완료 건은 시트가 **전체 읽기 전용**으로 연다(D4).
- * 🔑 `color` 는 `WorkLog` 에 없다(근무표 슬롯 색은 `work_logs.color` 지만 이 타입은 안 싣는다).
- *    없는 값을 지어내지 않고 null 을 준다 — 색을 건드리지 않으면 패치에 키도 생기지 않는다.
+ * 🔑 `timeSlot`·`color`·`notes` 는 전부 `WorkLog` 에 실려 있다(`types/schedule.ts:501-507`) —
+ *    세 진입점이 같은 축을 채운다. 다만 선택 필드라 미기록이면 null/빈 문자열로 떨어진다.
  */
-function toEditInitial(
-  workLog: WorkLog & { timeSlot?: string; color?: string }
-): WorkLogEditInitial {
+function toEditInitial(workLog: WorkLog): WorkLogEditInitial {
   return {
     ...readScheduledStart(workLog.timeSlot),
     checkIn: TimeNormalizer.parseTime(workLog.checkInTime),

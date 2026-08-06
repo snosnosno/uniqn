@@ -147,7 +147,9 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
   const softTarget = cell?.softTarget ?? 0;
   const shortage = cell?.shortage ?? computeShortage(softTarget, headcount);
 
-  // 형제 슬롯(편집 시 같은 스태프·시작시각 중복충돌 경고용). VenueDayDetail 과 동일 쿼리키 공유(중복요청 없음).
+  // 형제 슬롯 — 지금 쓰는 곳은 **시간 일괄 변경 시트(3-C)** 와 헤더 버튼 노출 판정뿐이다.
+  // (중복충돌 경고는 통합 시트로 넘어오면서 사라졌다 — `slotEdit.detectSlotConflicts` 주석 참조.)
+  // VenueDayDetail 과 동일 쿼리키를 공유해 중복 요청은 없다.
   const { data: daySlots } = useVenueDaySlots(venueId, date);
   const siblingSlots = useMemo(() => daySlots ?? [], [daySlots]);
 
@@ -163,6 +165,10 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
    * 빼기 — 시트가 아니라 카드 액션이다(설계 §3-4). 파괴적 액션은 진입 맥락의 것이라
    * 화면마다 뜻이 다르고(근무표=배치 빼기, 스태프관리=명단 제거), 순수 편집기인 시트가
    * 그 차이를 prop 으로 흡수하면 D2 가 없애려던 "화면마다 다름"이 시트 안에서 재발한다.
+   *
+   * 🔴 **근태 상태로 막지 않는다**(카드에 `allowDeleteAnyStatus`). 근무표에는 상태 되돌리기가
+   *    없고 컨테이너 직속 배치는 스태프관리 탭조차 없어서, 출근 처리된 순간 제거 경로가 0이 된다.
+   *    대신 **무엇이 사라지는지 확인 문구로 말한다** — 막는 대신 알리는 쪽을 택했다.
    *
    * staffId 없는 슬롯은 서비스 정합검증을 통과할 수 없어 진입 자체를 막는다(구 시트 가드 계승).
    */
@@ -194,6 +200,18 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
     );
     setDeleteTarget(null);
   }, [deleteTarget, deleteSlot, date, toastSuccess, toastError]);
+
+  /**
+   * 빼기 확인 문구. 기록이 남아 있는 행은 **무엇이 함께 사라지는지** 먼저 말한다.
+   * 상태로 입구를 막지 않기로 한 대신 여기서 위험을 드러내는 것이 이 분기의 존재 이유다.
+   */
+  const deleteMessage = useMemo(() => {
+    if (!deleteTarget) return '';
+    const name = deleteTarget.staffName ?? '이 인원';
+    const hasRecord = Boolean(deleteTarget.checkInTs || deleteTarget.checkOutTs);
+    const base = `${name}님을 이 날 근무에서 뺄까요? 지원으로 확정된 인원은 확정이 해제돼요.`;
+    return hasRecord ? `${base}\n기록된 출퇴근 시각도 함께 사라져요.` : base;
+  }, [deleteTarget]);
 
   // 소프트타깃 입력값(문자열) — 저장값/날짜 변경 시 동기화(재진입 시 이전 값 잔존 방지).
   const [targetInput, setTargetInput] = useState<string>(softTarget > 0 ? String(softTarget) : '');
@@ -392,7 +410,7 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDeleteConfirm}
         title="근무 빼기"
-        message={`${deleteTarget?.staffName ?? '이 인원'}님을 이 날 근무에서 뺄까요? 지원으로 확정된 인원은 확정이 해제돼요.`}
+        message={deleteMessage}
         confirmText="빼기"
         cancelText="취소"
         isDestructive

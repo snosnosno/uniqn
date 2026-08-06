@@ -18,12 +18,17 @@ import type { VenueDaySlot } from '@/repositories/workSchedule';
 jest.mock('@/hooks/workSchedule', () => ({ useVenueDaySlots: jest.fn() }));
 
 // ConfirmedStaffCard 는 프로필 훅 등 무거운 의존 — 이름만 렌더하는 목으로 대체(카드 수 검증용).
+// 빼기 게이트 전달 여부도 함께 드러낸다(게이트 자체의 판정은 ConfirmedStaffCard.actions.test 담당).
 jest.mock('@/components/employer/applicants/ConfirmedStaffCard', () => {
   const { Text } = require('react-native');
   return {
-    ConfirmedStaffCard: ({ staff }: { staff: { staffName: string } }) => (
-      <Text>{staff.staffName}</Text>
-    ),
+    ConfirmedStaffCard: ({
+      staff,
+      allowDeleteAnyStatus,
+    }: {
+      staff: { staffName: string };
+      allowDeleteAnyStatus?: boolean;
+    }) => <Text>{`${staff.staffName}${allowDeleteAnyStatus ? ' [상태무관빼기]' : ''}`}</Text>,
   };
 });
 
@@ -120,4 +125,22 @@ it('슬롯 2건: 카드 2개(이름) 렌더', () => {
 
   expect(getByText('김딜러')).toBeTruthy();
   expect(getByText('이플로어')).toBeTruthy();
+});
+
+it('🔴 빼기 콜백이 있으면 카드에 상태 무관 빼기를 허용한다', () => {
+  // 근무표에는 상태 되돌리기가 없다 — 기본 게이트(출근 전만)를 그대로 쓰면 출근 처리된
+  // 인원을 앱 어디서도 뺄 수 없게 된다(컨테이너 직속 배치는 스태프관리 탭조차 없다).
+  mockUseDaySlots.mockReturnValue({
+    data: [makeSlot({ status: 'checked_in' })],
+    isLoading: false,
+    isRefetching: false,
+    error: null,
+    refetch: jest.fn(),
+  });
+
+  const { getByText } = render(
+    <VenueDayDetail venueId="v1" date="2026-07-05" onSlotDelete={jest.fn()} />
+  );
+
+  expect(getByText('김딜러 [상태무관빼기]')).toBeTruthy();
 });

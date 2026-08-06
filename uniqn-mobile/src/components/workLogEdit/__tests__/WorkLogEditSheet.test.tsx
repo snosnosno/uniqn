@@ -70,6 +70,8 @@ const AT = (day: number, hour: number, minute = 0) => new Date(2026, 7, day, hou
 const BASE_INITIAL: WorkLogEditInitial = {
   scheduledStart: '18:00',
   scheduledUnreadable: false,
+  // 폐지된 범위 데이터 고지(예정 종료 소실) — 기본 픽스처는 범위가 아니라 단일값이다.
+  hadLegacyEnd: false,
   checkIn: null,
   checkOut: null,
   role: 'dealer',
