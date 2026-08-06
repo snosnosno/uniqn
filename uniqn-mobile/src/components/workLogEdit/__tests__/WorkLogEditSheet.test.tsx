@@ -69,6 +69,7 @@ const AT = (day: number, hour: number, minute = 0) => new Date(2026, 7, day, hou
 
 const BASE_INITIAL: WorkLogEditInitial = {
   scheduledStart: '18:00',
+  scheduledUnreadable: false,
   checkIn: null,
   checkOut: null,
   role: 'dealer',
@@ -195,6 +196,25 @@ describe('WorkLogEditSheet — 안 건드린 축은 보내지 않는다 (§8-5)'
     expect(input.editedBy).toBe('user-1');
   });
 
+  it('🔴 미정을 켰다 끄면 예정 시각이 되돌아온다 — 화면은 저장될 값을 말한다', () => {
+    renderSheet();
+
+    fireEvent.press(screen.getByLabelText('출근 예정 미정')); // 켬 → scheduledStart 가 지워진다
+    fireEvent.press(screen.getByLabelText('출근 예정 미정')); // 끔 → 되돌아와야 한다
+
+    expect(screen.getByTestId('scheduled-start-value')).toHaveTextContent('18:00');
+  });
+
+  it('미정 왕복은 변경이 아니다 — 되돌린 뒤에도 패치는 비어 있다', () => {
+    // 복원이 "값을 새로 고른 것"으로 오해되면 안 된다. 서버엔 18:00 이 그대로 있다.
+    renderSheet();
+
+    fireEvent.press(screen.getByLabelText('출근 예정 미정'));
+    fireEvent.press(screen.getByLabelText('출근 예정 미정'));
+
+    expect(screen.getByLabelText('저장')).toBeDisabled();
+  });
+
   it('🔴 이미 선택된 역할 칩을 다시 눌러도 저장이 열리지 않는다 (스쳐 누름 방어)', () => {
     renderSheet();
 
@@ -262,11 +282,13 @@ describe('WorkLogEditSheet — 상태 배지는 서버가 저장할 값을 말�
   it('출근 예정 행에 실적을 넣으면 배지가 퇴근으로 바뀐다', () => {
     renderSheet({}, { checkIn: AT(10, 18) });
 
-    expect(screen.getByTestId('status-badge')).toHaveTextContent(/출근/);
+    // 🔑 앵커를 붙인다. `/출근/` 이면 배지가 '출근 예정' 이어도 통과해, checkIn 배선이 죽어도
+    //    green 이 된다(Task 5 스위트도 같은 자리에 `/^출근$/` 를 쓴다).
+    expect(screen.getByTestId('status-badge')).toHaveTextContent(/^출근$/);
 
     pickCheckOutAt2();
 
-    expect(screen.getByTestId('status-badge')).toHaveTextContent(/퇴근/);
+    expect(screen.getByTestId('status-badge')).toHaveTextContent(/^퇴근$/);
   });
 });
 
@@ -297,6 +319,25 @@ describe('WorkLogEditSheet — 총 근무 시간 · 경고 · 차단 (구 WorkTi
     expect(screen.getByText(/근무 시간이 13시간이에요/)).toBeTruthy();
     // 초기값 그대로라 패치가 비어 저장이 닫혀 있다 — 경고 자체가 차단이 아님을 본다.
     expect(screen.queryByText(/출근과 퇴근 시간이 같아요/)).toBeNull();
+  });
+
+  it('🔴 퇴근이 출근보다 이르면 배너로 이유를 말한다', () => {
+    // 판정(`deriveAttendanceInsight`)만으로는 저장이 막히는 이유가 화면에 없다. 배너 JSX 를
+    // 지워도 저장은 여전히 막히므로, 단위 테스트만으로는 "왜 안 눌리지" 상태를 못 잡는다.
+    renderSheet({}, { checkIn: AT(10, 23), checkOut: AT(10, 22) });
+
+    expect(
+      screen.getByText('퇴근이 출근보다 이릅니다. 출근 시간을 다시 확인해주세요.')
+    ).toBeTruthy();
+  });
+
+  it('퇴근이 출근보다 이르면 다른 축을 고쳐도 저장이 막힌다', () => {
+    renderSheet({}, { checkIn: AT(10, 23), checkOut: AT(10, 22) });
+
+    fireEvent.press(screen.getByLabelText('역할 펼치기'));
+    fireEvent.press(screen.getByTestId('role-chip-floor'));
+
+    expect(screen.getByLabelText('저장')).toBeDisabled();
   });
 
   it('익일 퇴근이면 안내한다', () => {

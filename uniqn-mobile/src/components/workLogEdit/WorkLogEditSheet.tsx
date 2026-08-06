@@ -93,8 +93,13 @@ export interface WorkLogEditInitial {
    *
    * 판정 기준은 폐기될 `EditSlotSheet.tsx:147-152` 그대로다(새로 만들지 말 것):
    *   `Boolean(timeSlot) && !isValidSlotStartTime(parseTimeSlotParts(timeSlot).start)`
+   *
+   * 🔴 **`?` 를 붙이지 않는다** — `currentStatus`(Task 5) 와 같은 판단이다. 선택 prop 이면
+   *    호출부가 빠뜨려도 tsc 가 침묵하고, 그 순간 위 회귀가 **소리 없이 되살아난다**.
+   *    세 진입점은 어차피 이 값을 계산해야 하므로 필수화 비용이 0 이고, 대신 "이 행의 시각을
+   *    읽을 수 있었는가"를 한 번은 생각하게 된다. 모르면 `false` 를 명시하라.
    */
-  scheduledUnreadable?: boolean;
+  scheduledUnreadable: boolean;
   checkIn: Date | null;
   checkOut: Date | null;
   role: StaffRole;
@@ -273,9 +278,32 @@ export function WorkLogEditSheet({
   // --------------------------------------------------------------------------
 
   // `WorkTimeFields` 는 시각 4축만 아는 값을 돌려준다 — 역할·색·메모는 그대로 얹어 둔다.
-  const handleTimeChange = useCallback((next: WorkTimeFieldsValue) => {
-    setForm((current) => ({ ...current, ...next }));
-  }, []);
+  const handleTimeChange = useCallback(
+    (next: WorkTimeFieldsValue) => {
+      setForm((current) => {
+        const merged = { ...current, ...next };
+
+        // 🔴 미정 토글 **왕복** 복원. `WorkTimeFields.handleToggleUndecided`(:342-351)는 미정을
+        //    켤 때 `scheduledStart` 를 지우지만 끌 때 되돌리지 않는다(`next ? null : value.scheduledStart`
+        //    는 이미 null 이 된 값을 그대로 둔다). 그대로 두면 18:00 이던 예정 행이 '—' 로 남는다.
+        //
+        //    🔑 저장될 값은 여전히 원본이다(왕복은 변경이 아니라 패치가 비어 있다). 그러면
+        //       **화면도 원본을 말해야 한다** — 이 시트가 배지 정직성·unreadable 회귀에서 지킨
+        //       "화면은 저장될 값을 말한다"를 예정 축에서만 깰 수 없다.
+        //    ⚠️ 형제 컴포넌트를 고치지 않고 시트에서 되돌린다(완료·리뷰본 무수정 원칙).
+        if (
+          !merged.scheduledUndecided &&
+          merged.scheduledStart === null &&
+          baseline.scheduledStart !== null
+        ) {
+          return { ...merged, scheduledStart: baseline.scheduledStart };
+        }
+
+        return merged;
+      });
+    },
+    [baseline.scheduledStart]
+  );
 
   const handlePickerConfirm = useCallback(
     (value: TimeValue) => {

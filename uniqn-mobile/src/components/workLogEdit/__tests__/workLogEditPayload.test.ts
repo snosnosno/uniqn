@@ -104,8 +104,17 @@ describe('resolveWorkLogEditPayload — 예정(startTime·timeUndecided)', () =>
     expect('timeUndecided' in out).toBe(false);
   });
 
-  it('미정 체크를 켰다가 다시 끄면 되돌려진다 — 예정이 조용히 지워지지 않는다', () => {
-    const out = resolveWorkLogEditPayload(INITIAL, { ...INITIAL, scheduledUndecided: false });
+  it('미정을 껐는데 시각이 비어 있어도 예정을 지우지 않는다 — 조용한 삭제 금지', () => {
+    // 이전 이름은 "미정 왕복"을 주장했지만 `{scheduledStart:'18:00'}` 을 그대로 넘겨 그 경로를
+    // 한 번도 밟지 않았다(리뷰 지적). 왕복이 실제로 만드는 상태는 **시각이 비어 있고 미정도
+    // 꺼진** 이 모양이다. 이때 `startTime: null` 이나 `timeUndecided` 를 지어내면 사용자가
+    // 건드린 적 없는 예정이 조용히 지워진다.
+    // (화면 표시의 왕복 복원은 시트 책임 — `WorkLogEditSheet.test.tsx` 가 덮는다.)
+    const out = resolveWorkLogEditPayload(INITIAL, {
+      ...INITIAL,
+      scheduledStart: null,
+      scheduledUndecided: false,
+    });
 
     expect(out).toEqual({});
   });
