@@ -1,7 +1,10 @@
 /**
  * UNIQN Mobile - 정산 액션 버튼 컴포넌트
  *
- * @description 시간 수정, 금액 수정, 지급 완료 표시 버튼
+ * @description 근무 수정, 금액 수정, 지급 완료 표시 버튼
+ *
+ * ⚠️ '근무 수정'은 **스태프관리 카드와 같은 라벨**이다(D2 — 같은 시트를 여는 버튼).
+ *    '시간 수정'으로 되돌리지 말 것 — 이 시트는 역할·색·메모도 고친다.
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
@@ -56,13 +59,15 @@ export function SettlementActionButtons({
           <Pressable
             onPress={onEditTime}
             accessibilityRole="button"
-            accessibilityLabel="근무 시간 수정"
-            accessibilityHint="근무 시간을 수정합니다"
+            accessibilityLabel="근무 수정"
+            accessibilityHint="근무 시간·역할·색·메모를 한 창에서 수정합니다"
             className="flex-1 flex-row items-center justify-center py-3 rounded-lg bg-surface-card dark:bg-surface active:opacity-70"
           >
+            {/* 아이콘은 시계 그대로 — 이 모달에서 EditIcon 은 바로 옆 '금액 수정'이 쓴다.
+                라벨만 카드와 맞추고 아이콘까지 겹치면 두 버튼을 구분할 단서가 사라진다. */}
             <ClockIcon size={18} color={SECONDARY_PALETTE[500]} />
             <Text className="ml-2 text-base font-sans-medium text-content-secondary">
-              시간 수정
+              근무 수정
             </Text>
           </Pressable>
         )}

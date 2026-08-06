@@ -8,6 +8,9 @@
  *  2. 🔴 **정산 완료 건도 시트에 들어간다**(D4·D2). 거절은 버튼을 숨겨서가 아니라
  *     시트의 읽기 전용 모드가 말한다 — 세 진입점(근무표·스태프관리·정산)이 같은 답을 준다.
  *  3. 🔴 정산 완료 건에서 **금액 수정·지급 완료는 여전히 없다**. 연 것은 열람뿐이다.
+ *  4. 🔴 라벨은 **`근무 수정`** — 스태프관리 카드와 같은 이름이다. 같은 시트를 여는 버튼이
+ *     경로마다 다른 이름이면 D2("3곳 동일")가 표면에서 깨진다. 이 시트는 시각뿐 아니라
+ *     역할·색·메모도 고치므로 '시간 수정'은 실제보다 좁은 약속이기도 하다.
  *
  * ⚠️ `toHaveTextContent(문자열)` 은 RNTL 13.3.3 에서 완전일치라 `.not.` 형태가 빈 가드가 된다.
  *    여기서는 버튼 존재 여부를 `queryByText` 로 직접 본다.
@@ -104,7 +107,7 @@ describe('SettlementDetailModal — 미정산(pending)', () => {
   it('세 버튼이 모두 뜬다', () => {
     renderModal({ payrollStatus: 'pending' });
 
-    expect(screen.getByText('시간 수정')).toBeTruthy();
+    expect(screen.getByText('근무 수정')).toBeTruthy();
     expect(screen.getByText('금액 수정')).toBeTruthy();
     expect(screen.getByText('지급 완료로 표시')).toBeTruthy();
   });
@@ -115,7 +118,7 @@ describe('SettlementDetailModal — 정산 실패(failed)', () => {
     // `=== PENDING` 게이트에서는 액션 줄 자체가 사라져 재정산 경로가 0이 됐다.
     renderModal({ payrollStatus: 'failed' });
 
-    expect(screen.getByText('시간 수정')).toBeTruthy();
+    expect(screen.getByText('근무 수정')).toBeTruthy();
     expect(screen.getByText('금액 수정')).toBeTruthy();
     expect(screen.getByText('지급 완료로 표시')).toBeTruthy();
   });
@@ -125,7 +128,7 @@ describe('SettlementDetailModal — 정산 완료(completed)', () => {
   it('🔴 시간 수정은 뜬다 — 읽기 전용 시트로 들어가는 입구다', () => {
     renderModal({ payrollStatus: 'completed' });
 
-    expect(screen.getByText('시간 수정')).toBeTruthy();
+    expect(screen.getByText('근무 수정')).toBeTruthy();
   });
 
   it('🔴 금액 수정·지급 완료는 뜨지 않는다 — 연 것은 열람뿐이다', () => {
