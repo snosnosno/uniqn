@@ -17,12 +17,32 @@ import { ActivityIndicator, Text, View } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { logger } from '@/utils/logger';
 import { parsePostcodeBridgeMessage } from '@/utils/address/postcodeAddress';
+import { APP_WEB_ORIGIN } from '@/constants/appUrl';
 import type { PostcodeSearchProps } from './PostcodeSearch.types';
 import {
   POSTCODE_EMBED_OPTIONS,
   POSTCODE_SCRIPT_SRC,
   POSTCODE_WIDGET_OPTIONS,
 } from './postcodeWidget';
+
+/**
+ * 🔴 **이 문서에 실제 origin 을 부여하는 값. 지우면 주소 선택이 조용히 죽는다.**
+ *
+ * 벤더 스크립트는 위젯 iframe 주소를 `…/search?origin=` + `location.protocol + '//' + location.host`
+ * 로 만들고(postcode.v2.js), iframe 쪽은 선택 결과를 **그 값을 targetOrigin 으로** 되돌린다
+ * (`parent.postMessage(payload, param.origin)`, service.v2.min.js).
+ *
+ * `source={{ html }}` 만 주면 문서는 `about:blank` 로 로드된다(iOS 는 baseURL 기본값이
+ * `about:blank`, Android 는 `loadDataWithBaseURL("")`). 그러면 origin 파라미터가 `about://`
+ * 가 되고 iframe 의 postMessage 는 `Invalid target origin 'about://'` 로 **터진다** —
+ * 위젯은 뜨고 검색도 되는데(둘 다 iframe 내부 완결) **결과 탭만 아무 일도 안 일어난다.**
+ * 실제 브라우저 대조 실험으로 확인(대조군 `http://localhost` = 정상 / `about:blank` = 재현).
+ *
+ * 값은 **우리 origin**이다. 벤더 origin(`postcode.map.kakao.com`)을 쓰면 문서가 위젯 iframe 과
+ * 동일 출처가 되어 iframe 이 `parent.ReactNativeWebView` 브릿지를 직접 구동할 수 있다 —
+ * 아래 originWhitelist 로 좁혀둔 바로 그 입구가 다시 열린다.
+ */
+const POSTCODE_WEBVIEW_BASE_URL = APP_WEB_ORIGIN;
 
 /**
  * 위젯을 임베드하고 결과를 브릿지로 넘기는 로컬 문서.
@@ -93,11 +113,19 @@ export function PostcodeSearch({ height, onComplete, onError }: PostcodeSearchPr
   return (
     <View style={{ height }} className="overflow-hidden rounded-xl">
       <WebView
-        source={{ html: POSTCODE_HTML }}
-        // 인라인 HTML(about:blank) + 벤더 iframe 만 허용. `['*']` 이면 위젯 안에서 발생한
+        testID="postcode-search-webview"
+        source={{ html: POSTCODE_HTML, baseUrl: POSTCODE_WEBVIEW_BASE_URL }}
+        // 인라인 HTML(baseUrl = 우리 origin) + 벤더 iframe 만 허용. `['*']` 이면 위젯 안에서 발생한
         // top-level 이동까지 이 WebView 에 로드되고, 그 페이지가 `ReactNativeWebView` 브릿지를
-        // 그대로 구동할 수 있다(주소 스푸핑 경로 — zod 검증이 2차 방어지만 입구를 좁히는 게 정공법)
-        originWhitelist={['about:*', 'https://t1.daumcdn.net', 'https://postcode.map.kakao.com']}
+        // 그대로 구동할 수 있다(주소 스푸핑 경로 — zod 검증이 2차 방어지만 입구를 좁히는 게 정공법).
+        // baseUrl origin 이 빠지면 초기 로드가 화이트리스트 밖으로 판정돼 시스템 브라우저로
+        // 튀어나갈 수 있다(WebViewShared.createOnShouldStartLoadWithRequest → Linking.openURL).
+        originWhitelist={[
+          'about:*',
+          POSTCODE_WEBVIEW_BASE_URL,
+          'https://t1.daumcdn.net',
+          'https://postcode.map.kakao.com',
+        ]}
         javaScriptEnabled
         // 위젯은 최근 검색어 등을 localStorage 에 쓴다 — Android 기본값이 false 라 명시하지 않으면
         // 벤더 스크립트가 조용히 예외를 던질 수 있다
