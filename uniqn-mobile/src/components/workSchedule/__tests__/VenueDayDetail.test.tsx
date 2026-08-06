@@ -44,6 +44,10 @@ function makeSlot(overrides: Partial<VenueDaySlot> = {}): VenueDaySlot {
     isContainer: true,
     color: null,
     notes: null,
+    checkInTs: null,
+    checkOutTs: null,
+    payrollStatus: null,
+    date: '2026-07-05',
     ...overrides,
   };
 }

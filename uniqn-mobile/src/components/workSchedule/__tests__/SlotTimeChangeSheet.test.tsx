@@ -68,6 +68,10 @@ function slot(overrides: Partial<VenueDaySlot> & { workLogId: string }): VenueDa
     isContainer: false,
     color: null,
     notes: null,
+    checkInTs: null,
+    checkOutTs: null,
+    payrollStatus: null,
+    date: '2026-09-05',
     ...overrides,
   };
 }

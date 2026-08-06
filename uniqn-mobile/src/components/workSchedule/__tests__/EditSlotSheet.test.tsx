@@ -60,6 +60,10 @@ const SLOT: VenueDaySlot = {
   isContainer: true,
   color: null,
   notes: null,
+  checkInTs: null,
+  checkOutTs: null,
+  payrollStatus: null,
+  date: '2026-07-05',
 };
 
 beforeEach(() => {
