@@ -17,6 +17,11 @@ export interface SettlementActionButtonsProps {
   onEditAmount?: () => void;
   /** 정산 핸들러 */
   onSettle?: () => void;
+  /**
+   * ⚠️ 세 핸들러가 모두 없으면 이 컴포넌트는 **빈 껍데기(px-4 py-4 + mb-3)** 를 그린다.
+   * 그려질 버튼이 하나라도 있는지는 호출부가 판정하고, 이 testID 로 그 판정을 검증한다.
+   */
+  testID?: string;
 }
 
 /**
@@ -33,6 +38,7 @@ export function SettlementActionButtons({
   onEditTime,
   onEditAmount,
   onSettle,
+  testID,
 }: SettlementActionButtonsProps) {
   // impeccable v2 §17 — 정산(결제 승인)은 결정적 순간이므로 Medium 햅틱 1회.
   // 200ms throttle 로 중복 탭 보호됨.
@@ -43,7 +49,7 @@ export function SettlementActionButtons({
   }, [onSettle]);
 
   return (
-    <View className="px-4 py-4">
+    <View testID={testID} className="px-4 py-4">
       {/* 첫 번째 줄: 시간 수정, 금액 수정 */}
       <View className="flex-row gap-3 mb-3">
         {onEditTime && (

@@ -97,12 +97,12 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   );
 
   const workDuration = timeInfo.duration !== '-' ? timeInfo.duration : null;
-  // 정산 완료 건은 서버(ConfirmedStaffRepository.updateWorkTimeWithTransaction)가 수정을 거부하므로
-  // 버튼 단계에서 미리 숨긴다 — SettlementDetailModal의 payrollStatus===PENDING 계약과 동일.
+  // 🔴 정산 완료 건도 통과시킨다(D4). 시트가 **읽기 전용 모드로 열려** 정산 완료를 이유로
+  // 거절하므로, 여기서 버튼까지 숨기면 사용자에게는 "왜 없지?"만 남는다. 세 진입점
+  // (근무표·스태프관리·정산)이 같은 답을 주는 것이 D2 이고, 답을 말하는 주체는 시트다.
+  // ⚠️ 노쇼 취소(`canCancelNoShow`)는 다르다 — 그쪽은 대체 화면이 없어 게이트를 유지한다.
   const canEditTime =
-    staff.status !== STATUS.WORK_LOG.CANCELLED &&
-    staff.status !== STATUS.CONFIRMED_STAFF.NO_SHOW &&
-    staff.payrollStatus !== STATUS.PAYROLL.COMPLETED;
+    staff.status !== STATUS.WORK_LOG.CANCELLED && staff.status !== STATUS.CONFIRMED_STAFF.NO_SHOW;
   const canDelete =
     allowDeleteAnyStatus ||
     staff.status === STATUS.WORK_LOG.SCHEDULED ||

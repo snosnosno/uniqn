@@ -78,6 +78,44 @@ describe('ConfirmedStaffCard — 빼기 게이트', () => {
   });
 });
 
+describe('ConfirmedStaffCard — 정산 완료 건 진입(D4)', () => {
+  it('🔴 정산 완료 건도 근무 수정이 보인다 — 시트가 읽기 전용으로 답한다', () => {
+    // 버튼을 숨기면 "왜 없지?"만 남는다. 진입은 허용하고 거절 이유는 시트가 말한다(D4·D2).
+    renderCard({ payrollStatus: 'completed' }, { onEditTime: jest.fn() });
+
+    expect(screen.getByText('근무 수정')).toBeTruthy();
+  });
+
+  it('🔴 정산 실패 건도 근무 수정이 보인다', () => {
+    // payrollStatus 는 3값이다 — completed 만 특별하고 failed 는 pending 과 같이 다룬다.
+    renderCard({ payrollStatus: 'failed' }, { onEditTime: jest.fn() });
+
+    expect(screen.getByText('근무 수정')).toBeTruthy();
+  });
+
+  it('대조군 — 취소 행은 여전히 근무 수정이 없다', () => {
+    renderCard({ status: 'cancelled' }, { onEditTime: jest.fn() });
+
+    expect(screen.queryByText('근무 수정')).toBeNull();
+  });
+
+  it('대조군 — 노쇼 행은 여전히 근무 수정이 없다', () => {
+    renderCard({ status: 'no_show', isNoShow: true }, { onEditTime: jest.fn() });
+
+    expect(screen.queryByText('근무 수정')).toBeNull();
+  });
+
+  it('정산 완료 + 노쇼 취소는 여전히 막힌다 — 서버가 거부하는 축은 그대로다', () => {
+    // 근무 수정만 열었다. 노쇼 취소는 서버(cancelNoShow)가 실제로 거부하므로 게이트를 유지한다.
+    renderCard(
+      { status: 'no_show', isNoShow: true, payrollStatus: 'completed' },
+      { onCancelNoShow: jest.fn() }
+    );
+
+    expect(screen.queryByText('노쇼 취소')).toBeNull();
+  });
+});
+
 describe('ConfirmedStaffCard — 빈 액션 줄', () => {
   it('그려질 액션이 없으면 액션 줄(구분선)을 렌더하지 않는다', () => {
     // 콜백은 빼기 하나뿐인데 상태 게이트가 막는 조합 — 예전엔 자식 0개의 구분선만 남았다.
