@@ -227,6 +227,24 @@ describe('묶음지원 run 토글 (§3.5 · F13)', () => {
     expect(screen.queryByTestId('order-sheet-card-run-toggle-0-2')).toBeNull();
   });
 
+  it('라벨을 눌러도 같은 토글이 동작한다 (F13 — switch 관례)', () => {
+    const onToggleRun = jest.fn();
+    setup([{ dates: ['2026-08-10', '2026-08-11'], timeSlots: slots('18:00'), grouped: false }], {
+      onToggleRun,
+    });
+    fireEvent.press(screen.getByTestId('order-sheet-card-run-label-0-0'));
+    expect(onToggleRun).toHaveBeenCalledWith(0, ['2026-08-10', '2026-08-11'], true);
+  });
+
+  it('켜진 토글의 라벨을 누르면 꺼진다', () => {
+    const onToggleRun = jest.fn();
+    setup([{ dates: ['2026-08-10', '2026-08-11'], timeSlots: slots('18:00'), grouped: true }], {
+      onToggleRun,
+    });
+    fireEvent.press(screen.getByTestId('order-sheet-card-run-label-0-0'));
+    expect(onToggleRun).toHaveBeenCalledWith(0, ['2026-08-10', '2026-08-11'], false);
+  });
+
   it('토글에 switch 역할과 결과 설명 라벨이 있다 (a11y 대체물)', () => {
     setup([{ dates: ['2026-08-10', '2026-08-11'], timeSlots: slots('18:00'), grouped: false }]);
     const toggle = screen.getByTestId('order-sheet-card-run-toggle-0-0');

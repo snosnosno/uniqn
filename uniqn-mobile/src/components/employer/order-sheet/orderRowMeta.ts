@@ -8,6 +8,7 @@
 import { START_TIME_RE, type OrderSheetFormValues } from '@/schemas/orderSheet.schema';
 import { STAFF_ROLES } from '@/constants/jobPosting';
 import { PROVIDED_FLAG } from '@/utils/settlement';
+import { groupConsecutiveDates } from '@/utils/date';
 
 export type OrderRowKey =
   | 'title'
@@ -317,7 +318,18 @@ export function errorMessageForRow(
   return field ? firstMessage(errors[field]) : undefined;
 }
 
-/** 그룹 날짜 요약 — 연속 '7/20~21' · 비연속 '7/20 외 2일' · 단일 '7/20' (a11y는 호출부가 전체 나열) */
+/**
+ * 그룹 날짜 요약 (설계 §3.8) — 연속 구간은 범위로 압축하고, 비연속은 `·` 로 나열한다.
+ *
+ *   단일        '7/20'
+ *   전부 연속    '7/20~21' (월 경계는 '7/31~8/1')
+ *   비연속 소수  '7/20~21 · 7/25'   ← 카드가 어느 날짜를 담았는지 헤더에서 바로 보인다
+ *   비연속 다수  '7/20~21 외 5일'   ← 6일 이상이면 헤더가 길어져 축약
+ *
+ * a11y 는 호출부가 전체를 나열한다(요약은 시각 표기 전용).
+ */
+const LISTED_DATE_LIMIT = 5;
+
 export function summarizeGroupDates(dates: string[]): string {
   if (dates.length === 0) return '';
   const sorted = [...dates].sort();
@@ -325,19 +337,18 @@ export function summarizeGroupDates(dates: string[]): string {
     const [, m, d] = ymd.split('-');
     return `${Number(m)}/${Number(d)}`;
   };
-  if (sorted.length === 1) return md(sorted[0]!);
-  const consecutive = sorted.every((date, i) => {
-    if (i === 0) return true;
-    const [y, m, d] = sorted[i - 1]!.split('-').map(Number);
-    const next = new Date(y!, (m ?? 1) - 1, (d ?? 1) + 1);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${next.getFullYear()}-${pad(next.getMonth() + 1)}-${pad(next.getDate())}` === date;
-  });
-  if (!consecutive) return `${md(sorted[0]!)} 외 ${sorted.length - 1}일`;
-  const first = sorted[0]!;
-  const last = sorted[sorted.length - 1]!;
-  const sameMonth = first.slice(0, 7) === last.slice(0, 7);
-  return sameMonth ? `${md(first)}~${Number(last.split('-')[2])}` : `${md(first)}~${md(last)}`;
+  const compress = (run: string[]) => {
+    const first = run[0]!;
+    const last = run[run.length - 1]!;
+    if (run.length === 1) return md(first);
+    return first.slice(0, 7) === last.slice(0, 7)
+      ? `${md(first)}~${Number(last.split('-')[2])}`
+      : `${md(first)}~${md(last)}`;
+  };
+  const runs = groupConsecutiveDates(sorted);
+  if (runs.length === 1) return compress(runs[0]!);
+  if (sorted.length <= LISTED_DATE_LIMIT) return runs.map(compress).join(' · ');
+  return `${compress(runs[0]!)} 외 ${sorted.length - runs[0]!.length}일`;
 }
 
 const SALARY_TYPE_LABEL = {

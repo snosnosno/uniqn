@@ -159,12 +159,20 @@ export function ScheduleConditionCard({
             className="min-h-[44px] flex-row items-center gap-2 px-4 py-1.5"
             testID={`order-sheet-card-run-${index}-${runIndex}`}
           >
-            <View className="flex-1">
+            {/* 라벨 탭도 같은 토글 — switch 관례(F13). 스위치만 반응하면 사장은 글자를
+                눌러 보고 "안 눌리네" 하고 만다. Switch 자체는 자기 터치를 소비한다. */}
+            <Pressable
+              onPress={() => onToggleRun(index, run, !grouped)}
+              className="flex-1 justify-center active:opacity-80"
+              accessibilityRole="button"
+              accessibilityLabel={`${runLabel} 통째로 지원받기 ${grouped ? '끄기' : '켜기'}`}
+              testID={`order-sheet-card-run-label-${index}-${runIndex}`}
+            >
               <Text className="text-sm font-sans text-content-primary dark:text-off-white">
                 {`${runLabel} 통째로 지원받기`}
               </Text>
               <Text className="text-[11px] font-sans text-content-muted">하루만 지원 불가</Text>
-            </View>
+            </Pressable>
             <Switch
               value={grouped}
               onValueChange={(next) => onToggleRun(index, run, next)}
