@@ -21,6 +21,11 @@
 --    이 RPC 는 payroll 을 건드리지 않으므로 app_metadata.role 과 무관하게 통과한다 —
 --    그래서 여기서는 `jpc_test_set_user()` 로 충분하다(정산 RPC 테스트와 다른 점).
 --
+-- 🔗 형제 파일 분담 — `work_log_slot_attendance_rpc.test.sql`(20) 이 같은 RPC 의 **실적 축**
+--    (checkIn/checkOut 3상 계약·status 파생·modification_history·role_change_history·
+--     custom_role 정리·정산 완료 잠금)을 본다. 이 파일은 **예정 축**만 본다 —
+--    패치 계약 검증·권한·applications.assignments 동기화. 새 단언은 축을 먼저 가릴 것.
+--
 -- ⚠️ RPC 호출과 그 결과 조회를 **한 SELECT 안에 섞지 않는다.** 볼라틸 함수와 스칼라 서브쿼리의
 --    평가 순서는 보장되지 않아 "호출 전 상태"를 읽고도 green 이 될 수 있다. 호출은 DO 블록에서
 --    먼저 끝내고 반환값을 GUC 로 넘긴다.
