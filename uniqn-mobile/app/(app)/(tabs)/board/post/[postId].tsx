@@ -18,6 +18,7 @@ import {
 } from '@/features/board/postDetail/InlineComposerRow';
 import { PostHeader } from '@/features/board/postDetail/PostHeader';
 import { useBoardPostDetailScreen } from '@/features/board/postDetail/useBoardPostDetailScreen';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 
 export default function BoardPostDetailScreen() {
   const {
@@ -29,7 +30,6 @@ export default function BoardPostDetailScreen() {
     isLoading,
     error,
     refetch,
-    isRefetching,
     canInteract,
     canManagePost,
     canReportPost,
@@ -66,6 +66,12 @@ export default function BoardPostDetailScreen() {
     handleToggleReaction,
     setReportTarget,
   } = useBoardPostDetailScreen();
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refetch()
+  );
 
   const renderItem = useCallback(
     ({ item }: { item: BoardDetailListItem }) => {
@@ -186,7 +192,9 @@ export default function BoardPostDetailScreen() {
             contentContainerStyle={{ padding: 16, paddingBottom: bottomPadding }}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
-            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
+            refreshControl={
+              <RefreshControl refreshing={pullRefreshing} onRefresh={onPullRefresh} />
+            }
             ListHeaderComponent={
               <PostHeader
                 post={post}

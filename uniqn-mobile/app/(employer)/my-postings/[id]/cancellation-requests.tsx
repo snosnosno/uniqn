@@ -25,6 +25,7 @@ import { useSubmitGate } from '@/hooks/useSubmitGate';
 import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import type { Application } from '@/types';
 import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 
 interface StatsHeaderProps {
   pendingCount: number;
@@ -59,12 +60,17 @@ export default function CancellationRequestsScreen() {
   const {
     cancellationRequests,
     isLoadingCancellationRequests,
-    isRefetchingCancellationRequests,
     refreshCancellationRequests,
     reviewCancellationAsync,
     reviewingCancellationId,
     error,
   } = useApplicantManagement(jobPostingId || '', { realtime: true });
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refreshCancellationRequests()
+  );
 
   const pendingCount = useMemo(
     () =>
@@ -218,8 +224,8 @@ export default function CancellationRequestsScreen() {
           contentContainerStyle={{ paddingVertical: 8 }}
           refreshControl={
             <RefreshControl
-              refreshing={isRefetchingCancellationRequests}
-              onRefresh={handleRefresh}
+              refreshing={pullRefreshing}
+              onRefresh={onPullRefresh}
               {...PTR_REFRESH_PROPS}
             />
           }

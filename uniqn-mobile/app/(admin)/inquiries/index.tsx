@@ -14,6 +14,7 @@ import { EmptyState } from '@/components/ui';
 import { InquiryCard } from '@/components/support';
 import { useAllInquiries, useUnansweredCount } from '@/hooks/useInquiry';
 import type { Inquiry, InquiryStatus, InquiryFilters } from '@/types';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 
 type StatusFilter = InquiryStatus | 'all';
 
@@ -28,9 +29,15 @@ export default function AdminInquiriesScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const filters: InquiryFilters = statusFilter === 'all' ? {} : { status: statusFilter };
 
-  const { inquiries, isLoading, isRefreshing, hasMore, fetchNextPage, refetch } = useAllInquiries({
+  const { inquiries, isLoading, hasMore, fetchNextPage, refetch } = useAllInquiries({
     filters,
   });
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refetch()
+  );
   const { data: unansweredCount } = useUnansweredCount();
 
   const handleInquiryPress = useCallback((inquiry: Inquiry) => {
@@ -145,8 +152,8 @@ export default function AdminInquiriesScreen() {
           ListFooterComponent={renderFooter}
           refreshControl={
             <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={refetch}
+              refreshing={pullRefreshing}
+              onRefresh={onPullRefresh}
               tintColor={PRIMARY_COLORS[300]}
             />
           }
