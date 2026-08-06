@@ -20,14 +20,12 @@ import {
   getTodayCheckedInWorkLog,
   isCurrentlyWorking,
   getWorkLogStats,
-  updatePayrollStatus,
   subscribeToWorkLog,
   subscribeToMyWorkLogs,
   subscribeToTodayWorkStatus,
 } from '../workLogService';
 import { workLogRepository } from '@/repositories';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
-import { trackSettlementComplete } from '../../observability/analyticsService';
 import type { WorkLog } from '@/types';
 
 jest.mock('@/repositories', () => ({
@@ -39,7 +37,6 @@ jest.mock('@/repositories', () => ({
     subscribeById: jest.fn(),
     subscribeByStaffIdWithFilters: jest.fn(),
     subscribeTodayActive: jest.fn(),
-    updatePayrollStatusTransaction: jest.fn(),
   },
 }));
 
@@ -390,117 +387,6 @@ describe('WorkLogService', () => {
 
   // ==========================================================================
   // updatePayrollStatus
-  // ==========================================================================
-  describe('updatePayrollStatus', () => {
-    it('should update payroll status using transaction', async () => {
-      mockRepo.updatePayrollStatusTransaction.mockResolvedValue(undefined);
-
-      await expect(
-        updatePayrollStatus('worklog-1', 'completed' as any, 150000)
-      ).resolves.toBeUndefined();
-      expect(mockRepo.updatePayrollStatusTransaction).toHaveBeenCalledWith(
-        'worklog-1',
-        'completed',
-        150000
-      );
-    });
-
-    it('should throw when repository rejects (not found)', async () => {
-      mockRepo.updatePayrollStatusTransaction.mockRejectedValue(
-        new Error('근무 기록을 찾을 수 없습니다')
-      );
-
-      await expect(updatePayrollStatus('worklog-1', 'completed' as any)).rejects.toThrow();
-    });
-
-    it('should throw when repository rejects (invalid data)', async () => {
-      mockRepo.updatePayrollStatusTransaction.mockRejectedValue(
-        new Error('근무 기록 데이터가 올바르지 않습니다')
-      );
-
-      await expect(updatePayrollStatus('worklog-1', 'completed' as any)).rejects.toThrow();
-    });
-
-    it('should throw when repository rejects (already settled)', async () => {
-      mockRepo.updatePayrollStatusTransaction.mockRejectedValue(
-        new Error('이미 정산이 완료된 기록입니다')
-      );
-
-      await expect(updatePayrollStatus('worklog-1', 'completed' as any)).rejects.toThrow();
-    });
-
-    it('should include payrollAmount when amount is provided', async () => {
-      mockRepo.updatePayrollStatusTransaction.mockResolvedValue(undefined);
-
-      await updatePayrollStatus('worklog-1', 'completed' as any, 200000);
-
-      expect(mockRepo.updatePayrollStatusTransaction).toHaveBeenCalledWith(
-        'worklog-1',
-        'completed',
-        200000
-      );
-    });
-
-    it('should pass status and amount to repository transaction', async () => {
-      mockRepo.updatePayrollStatusTransaction.mockResolvedValue(undefined);
-
-      await updatePayrollStatus('worklog-1', 'completed' as any, 150000);
-
-      expect(mockRepo.updatePayrollStatusTransaction).toHaveBeenCalledWith(
-        'worklog-1',
-        'completed',
-        150000
-      );
-    });
-
-    it('should pass status without amount when not provided', async () => {
-      mockRepo.updatePayrollStatusTransaction.mockResolvedValue(undefined);
-
-      await updatePayrollStatus('worklog-1', 'processing' as any);
-
-      expect(mockRepo.updatePayrollStatusTransaction).toHaveBeenCalledWith(
-        'worklog-1',
-        'processing',
-        undefined
-      );
-    });
-
-    it('should call trackSettlementComplete when status is completed with amount', async () => {
-      mockRepo.updatePayrollStatusTransaction.mockResolvedValue(undefined);
-
-      await updatePayrollStatus('worklog-1', 'completed' as any, 150000);
-
-      expect(trackSettlementComplete).toHaveBeenCalledWith(150000, 1);
-    });
-
-    it('should not call trackSettlementComplete when status is not completed', async () => {
-      mockRepo.updatePayrollStatusTransaction.mockResolvedValue(undefined);
-
-      await updatePayrollStatus('worklog-1', 'processing' as any);
-
-      expect(trackSettlementComplete).not.toHaveBeenCalled();
-    });
-
-    it('should not call trackSettlementComplete when amount is undefined', async () => {
-      mockRepo.updatePayrollStatusTransaction.mockResolvedValue(undefined);
-
-      await updatePayrollStatus('worklog-1', 'completed' as any);
-
-      expect(trackSettlementComplete).not.toHaveBeenCalled();
-    });
-
-    it('should propagate errors via handleServiceError', async () => {
-      const error = new Error('Transaction failed');
-      mockRepo.updatePayrollStatusTransaction.mockRejectedValue(error);
-      mockHandleServiceError.mockReturnValue(error);
-
-      await expect(updatePayrollStatus('worklog-1', 'completed' as any)).rejects.toThrow(
-        'Transaction failed'
-      );
-      expect(mockHandleServiceError).toHaveBeenCalled();
-    });
-  });
-
   // ==========================================================================
   // subscribeToWorkLog
   // ==========================================================================

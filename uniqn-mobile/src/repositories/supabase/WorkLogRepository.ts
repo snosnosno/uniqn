@@ -18,17 +18,14 @@ import { getTodayString } from '@/utils/date';
 import { STATUS } from '@/constants';
 import type { UnsubscribeFn } from '@/types/common';
 import { FIXED_DATE_MARKER } from '@/types/assignment';
-import type { WorkLog, PayrollStatus, QRCodeAction, QRProcessAction } from '@/types';
+import type { WorkLog, QRCodeAction, QRProcessAction } from '@/types';
 import type {
   IWorkLogRepository,
   WorkLogStats,
   WorkLogFilterOptions,
   UpdateSlotInput,
 } from '../interfaces';
-import {
-  executeUpdatePayrollStatus,
-  executeProcessQRCheckInOut,
-} from './WorkLogRepositoryTransactions';
+import { executeProcessQRCheckInOut } from './WorkLogRepositoryTransactions';
 import {
   TABLE,
   DEFAULT_PAGE_SIZE,
@@ -625,37 +622,13 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
   // 변경 (Write)
   // ==========================================================================
 
-  async updatePayrollStatus(workLogId: string, status: PayrollStatus): Promise<void> {
-    try {
-      logger.info('정산 상태 변경', { workLogId, status });
-
-      const now = new Date().toISOString();
-      const updateData: Record<string, unknown> = {
-        payroll_status: status,
-        updated_at: now,
-      };
-
-      if (status === STATUS.PAYROLL.COMPLETED) {
-        updateData.payroll_date = now;
-      }
-
-      const { error } = await supabase.from(TABLE).update(updateData).eq('id', workLogId);
-
-      if (error) handleSupabaseError(error, { operation: '정산 상태 변경', table: TABLE });
-
-      logger.info('정산 상태 변경 완료', { workLogId, status });
-    } catch (error) {
-      rethrowOrHandle(error, '정산 상태 변경', { workLogId, status });
-    }
-  }
-
-  async updatePayrollStatusTransaction(
-    workLogId: string,
-    status: PayrollStatus,
-    amount?: number
-  ): Promise<void> {
-    return executeUpdatePayrollStatus(workLogId, status, amount);
-  }
+  // 🪦 updatePayrollStatus / updatePayrollStatusTransaction 제거 (2026-08-05).
+  //    payroll 컬럼을 raw PostgREST 로 직접 쓰던 경로였고, #402 가 정산을 RPC 화한 뒤로는
+  //    UI 소비자가 0곳인 죽은 회로였다(배럴 export·인터페이스 선언·테스트만 참조).
+  //    같은 PR 의 20260805120000 트리거가 서버에서 이 경로를 막으므로, 남겨두면
+  //    "되살아나는 순간 즉사"하는 지뢰가 된다.
+  //    살아있는 정본: settlementMutation.ts → SettlementRepository
+  //    .updatePayrollStatusWithTransaction → RPC set_work_log_payroll_status.
 
   async flagNegativeSettlement(workLogId: string, amount: number): Promise<void> {
     try {

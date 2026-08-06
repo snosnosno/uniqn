@@ -14,77 +14,12 @@ import {
   NotCheckedInError,
 } from '@/errors/BusinessErrors';
 import { handleSupabaseError } from '@/utils/supabase';
-import { settledLockMessage, ALREADY_SETTLED_MESSAGE } from '@/domains/settlement';
-import { STATUS } from '@/constants';
-import type { PayrollStatus, QRCodeAction, QRProcessAction } from '@/types';
-import { TABLE, TABLE_COLUMNS, toWorkLog, rethrowOrHandle } from './WorkLogRepositoryHelpers';
+import { settledLockMessage } from '@/domains/settlement';
+import type { QRCodeAction, QRProcessAction } from '@/types';
+import { TABLE, rethrowOrHandle } from './WorkLogRepositoryHelpers';
 
-// ============================================================================
-// updatePayrollStatusTransaction
-// ============================================================================
-
-export async function executeUpdatePayrollStatus(
-  workLogId: string,
-  status: PayrollStatus,
-  amount?: number
-): Promise<void> {
-  try {
-    logger.info('정산 상태 업데이트 (Transaction)', { workLogId, status });
-
-    // 1. 현재 상태 조회
-    const { data: current, error: fetchError } = await supabase
-      .from(TABLE)
-      .select(TABLE_COLUMNS)
-      .eq('id', workLogId)
-      .maybeSingle();
-
-    if (fetchError) handleSupabaseError(fetchError, { operation: '정산 상태 조회', table: TABLE });
-    if (!current) {
-      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
-        userMessage: '근무 기록을 찾을 수 없습니다',
-      });
-    }
-
-    const workLog = toWorkLog(current as Record<string, unknown>);
-    if (!workLog) {
-      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
-        userMessage: '근무 기록 데이터가 올바르지 않습니다',
-      });
-    }
-
-    // 2. 중복 정산 방지
-    if (status === STATUS.PAYROLL.COMPLETED && workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
-      throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_SETTLED, {
-        userMessage: ALREADY_SETTLED_MESSAGE,
-      });
-    }
-
-    // 3. 업데이트
-    const now = new Date().toISOString();
-    const updateData: Record<string, unknown> = {
-      payroll_status: status,
-      updated_at: now,
-    };
-
-    if (amount !== undefined) {
-      updateData.payroll_amount = amount;
-    }
-
-    if (status === STATUS.PAYROLL.COMPLETED) {
-      updateData.payroll_date = now;
-    }
-
-    const { error } = await supabase.from(TABLE).update(updateData).eq('id', workLogId);
-
-    if (error)
-      handleSupabaseError(error, { operation: '정산 상태 업데이트 (Transaction)', table: TABLE });
-
-    logger.info('정산 상태 업데이트 완료', { workLogId, status });
-  } catch (error) {
-    if (isAppError(error)) throw error;
-    rethrowOrHandle(error, '정산 상태 업데이트 (Transaction)', { workLogId, status });
-  }
-}
+// 🪦 executeUpdatePayrollStatus 제거 (2026-08-05) — payroll 컬럼 직접 UPDATE 구현체.
+//    #402 정산 RPC 화 이후 UI 소비자 0곳이었고, 20260805120000 트리거가 서버에서 막는다.
 
 // ============================================================================
 // processQRCheckInOutTransaction
