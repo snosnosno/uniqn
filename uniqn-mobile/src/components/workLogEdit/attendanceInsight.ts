@@ -15,6 +15,8 @@
  */
 import { minutesToLabel } from '@/shared/time';
 
+import { isLaterCalendarDay } from './workLogEditTime';
+
 /** 비차단 강조 경계 — 이 값을 **넘을 때만** 경고한다(정확히 12시간은 정상 근무다). */
 const LONG_SHIFT_MINUTES = 12 * 60;
 
@@ -47,12 +49,9 @@ const EMPTY: AttendanceInsight = {
   isLongShift: false,
 };
 
-/** 두 Date 가 서로 다른 달력 날짜인가(시각 비교가 아니라 날짜 비교다). */
-function isLaterCalendarDay(target: Date, base: Date): boolean {
-  const targetDay = new Date(target.getFullYear(), target.getMonth(), target.getDate());
-  const baseDay = new Date(base.getFullYear(), base.getMonth(), base.getDate());
-  return targetDay.getTime() > baseDay.getTime();
-}
+// 🔑 익일 판정은 `workLogEditTime.isLaterCalendarDay` 한 벌이다. 여기(배너)와
+//    `WorkTimeFields`(퇴근 칸 꼬리표)가 같은 화면에서 함께 읽히므로 규칙이 두 벌이면
+//    한쪽만 고쳤을 때 같은 화면이 서로 다른 말을 한다.
 
 /**
  * 실적 두 값에서 표시·검증에 필요한 파생을 한 번에 구한다.

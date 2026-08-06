@@ -281,16 +281,35 @@ describe('WorkLogEditSheet — 상태 배지는 서버가 저장할 값을 말�
     expect(screen.getByTestId('status-badge')).toHaveTextContent(/노쇼/);
   });
 
-  it('출근 예정 행에 실적을 넣으면 배지가 퇴근으로 바뀐다', () => {
-    renderSheet({}, { checkIn: AT(10, 18) });
+  it('🔴 열자마자는 저장 전 상태를 말한다 — 표류 행이어도 파생하지 않는다', () => {
+    // 🔴 이 픽스처는 서버 pgTAP 이 스스로 인정한 표류 행이다
+    //    (`work_log_slot_attendance_rpc.test.sql` 의 `wl_drift` = status='scheduled' + check_in_ts).
+    //    예전 구현은 폼 값만 보고 무조건 파생해 여기서 '출근' 을 보여줬는데, 사용자가 메모만
+    //    고쳐 저장하면 패치에 실적 키가 없어 서버는 scheduled 를 유지한다 — **배지가 거짓말**이다.
+    //    실패 방향이 이번 작업의 원래 신고("손대지 않은 근태가 출근으로 뒤집힘")와 같다.
+    renderSheet({}, { status: 'scheduled', checkIn: AT(10, 18) });
 
-    // 🔑 앵커를 붙인다. `/출근/` 이면 배지가 '출근 예정' 이어도 통과해, checkIn 배선이 죽어도
-    //    green 이 된다(Task 5 스위트도 같은 자리에 `/^출근$/` 를 쓴다).
-    expect(screen.getByTestId('status-badge')).toHaveTextContent(/^출근$/);
+    expect(screen.getByTestId('status-badge')).toHaveTextContent(/^출근 예정$/);
+  });
+
+  it('실적을 건드리면 그때 파생한다 — 게이트지 침묵이 아니다', () => {
+    renderSheet({}, { status: 'scheduled', checkIn: AT(10, 18) });
 
     pickCheckOutAt2();
 
+    // 🔑 앵커를 붙인다. `/퇴근/` 이면 다른 값이 와도 통과할 수 있다.
     expect(screen.getByTestId('status-badge')).toHaveTextContent(/^퇴근$/);
+  });
+
+  it('실적이 없던 행에 출근을 넣으면 배지가 출근으로 바뀐다', () => {
+    renderSheet();
+
+    expect(screen.getByTestId('status-badge')).toHaveTextContent(/^출근 예정$/);
+
+    fireEvent.press(screen.getByLabelText('실제 출근 선택'));
+    fireEvent.press(screen.getByLabelText('피커 확정 실제 출근 시간'));
+
+    expect(screen.getByTestId('status-badge')).toHaveTextContent(/^출근$/);
   });
 });
 
@@ -419,6 +438,123 @@ describe('WorkLogEditSheet — 섹션 접힘과 역할 칩 배선', () => {
     fireEvent.press(screen.getByLabelText('역할 펼치기'));
 
     expect(screen.queryByText('(마감)')).toBeNull();
+  });
+});
+
+// ============================================================================
+// 7. 커스텀 역할명 배정 (기능 소실 복구 — 서버 20260807120000/130000 의 클라 짝)
+// ============================================================================
+
+/** `other` 이름이 정의된 공고 — 폐기된 `deriveAvailableRoles` 가 펼치던 그 자리다. */
+function createCustomPosting(): JobPosting {
+  const posting = createPosting();
+  return {
+    ...posting,
+    schedule: {
+      ...posting.schedule,
+      requirements: [
+        {
+          date: '2026-08-10',
+          timeSlots: [
+            {
+              id: 'slot-1',
+              startTime: '18:00',
+              roles: [
+                { id: 'r1', role: 'floor', count: 1 },
+                { id: 'r2', role: 'other', customRole: '바리스타', count: 2 },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  } as JobPosting;
+}
+
+describe('WorkLogEditSheet — 커스텀 역할명 배정', () => {
+  it('🔴 공고의 커스텀 역할로 배정하면 staffRole 과 customRole 이 한 쌍으로 실린다', () => {
+    // 서버 판정표 ①. 둘 중 하나만 가면 INVALID_INPUT 이라 쌍이 유일한 합법 경로다.
+    renderSheet({ jobPosting: createCustomPosting() });
+
+    fireEvent.press(screen.getByLabelText('역할 펼치기'));
+    fireEvent.press(screen.getByTestId('role-chip-custom-바리스타'));
+    fireEvent.press(screen.getByLabelText('저장'));
+
+    const { input } = mutateSpy.mock.calls[0][0];
+    expect(input.staffRole).toBe('other');
+    expect(input.customRole).toBe('바리스타');
+    // 손대지 않은 축은 여전히 키가 없다.
+    expect('checkIn' in input).toBe(false);
+    expect('memo' in input).toBe(false);
+  });
+
+  it('🔴 이름만 바꾸면 staffRole 없이 customRole 만 실린다 (판정표 ④)', () => {
+    const posting = createCustomPosting();
+    renderSheet(
+      { jobPosting: posting },
+      // 이미 다른 이름의 기타로 저장된 행 — 공고에 없는 이름이라 자기 칩이 함께 떠야 한다.
+      { role: 'other', customRole: '플로어장' }
+    );
+
+    fireEvent.press(screen.getByLabelText('역할 펼치기'));
+    fireEvent.press(screen.getByTestId('role-chip-custom-바리스타'));
+    fireEvent.press(screen.getByLabelText('저장'));
+
+    const { input } = mutateSpy.mock.calls[0][0];
+    expect(input.customRole).toBe('바리스타');
+    expect('staffRole' in input).toBe(false);
+  });
+
+  it('🔴 표준 역할로 옮기면 customRole 키를 만들지 않는다 (판정표 ③ 회피)', () => {
+    renderSheet({ jobPosting: createCustomPosting() }, { role: 'other', customRole: '바리스타' });
+
+    fireEvent.press(screen.getByLabelText('역할 펼치기'));
+    fireEvent.press(screen.getByTestId('role-chip-floor'));
+    fireEvent.press(screen.getByLabelText('저장'));
+
+    const { input } = mutateSpy.mock.calls[0][0];
+    expect(input.staffRole).toBe('floor');
+    expect('customRole' in input).toBe(false);
+  });
+
+  it('"기타" 칩은 이름을 지운다 — 이름 삭제는 역할 삭제가 아니다 (판정표 ⑥)', () => {
+    renderSheet({ jobPosting: createCustomPosting() }, { role: 'other', customRole: '바리스타' });
+
+    fireEvent.press(screen.getByLabelText('역할 펼치기'));
+    fireEvent.press(screen.getByLabelText('역할 기타'));
+    fireEvent.press(screen.getByLabelText('저장'));
+
+    const { input } = mutateSpy.mock.calls[0][0];
+    expect('customRole' in input).toBe(true);
+    expect(input.customRole).toBeNull();
+    expect('staffRole' in input).toBe(false);
+  });
+
+  it('🔴 지운 이름을 되돌릴 칩이 화면에 남는다 — 공고에 없는 이름이어도', () => {
+    // 근무표 경로(공고 없음)가 이 경우다. 칩이 없으면 한 번 스친 순간 되돌릴 방법이 없다.
+    renderSheet({}, { role: 'other', customRole: '바리스타' });
+
+    fireEvent.press(screen.getByLabelText('역할 펼치기'));
+    fireEvent.press(screen.getByLabelText('역할 기타'));
+    expect(screen.getByText('이름 없는 기타 역할로 저장돼요.')).toBeTruthy();
+
+    fireEvent.press(screen.getByTestId('role-chip-custom-바리스타'));
+
+    // 되돌아왔으니 보낼 것이 없다.
+    expect(screen.getByLabelText('저장')).toBeDisabled();
+  });
+
+  it('요약이 고른 이름을 말한다 (접힌 줄은 숨김이 아니라 읽기다)', () => {
+    // 🔑 요약은 `initial` 이 아니라 **폼의 현재 값**을 읽어야 한다. `initial` 을 읽으면
+    //    이름을 바꾼 뒤 접었을 때 접힌 줄만 옛 이름을 말한다.
+    //    (요약 줄은 접혔을 때만 렌더된다 — `CollapsibleSection:58-65`.)
+    renderSheet({ jobPosting: createCustomPosting() });
+
+    fireEvent.press(screen.getByLabelText('역할 펼치기'));
+    fireEvent.press(screen.getByTestId('role-chip-custom-바리스타'));
+    fireEvent.press(screen.getByLabelText('역할 접기'));
+
+    expect(screen.getByText('기타 · 바리스타')).toBeTruthy();
   });
 });
 

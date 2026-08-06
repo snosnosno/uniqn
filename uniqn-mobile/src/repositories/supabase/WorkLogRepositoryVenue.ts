@@ -212,6 +212,18 @@ export async function updateSlot(workLogId: string, input: UpdateSlotInput): Pro
       patch.staffRole = input.staffRole;
     }
 
+    // 커스텀 역할명 3상 — undefined=키 없음(미변경) / null=JSON null(삭제) / 문자열=설정.
+    // ⚠️ `if (input.customRole)` 로 쓰면 **null 삭제가 조용히 무시된다**. `!== undefined` 로 본다.
+    //
+    // 🔑 memo·color·reason 과 달리 **클라 관문을 새로 만들지 않는다.** 이 값의 출처는 자유 입력이
+    //    아니라 닫힌 칩 목록(공고가 정의한 이름 또는 그 행에 이미 저장된 이름)이고, 길이·XSS·
+    //    enum 라벨 충돌 판정은 서버가 전부 갖고 있다(마이그 20260807120000·20260807130000).
+    //    여기서 같은 뜻의 문구를 새로 쓰면 서버 문구와 조용히 갈라진다 — `toUpdateSlotError` 가
+    //    `INVALID_INPUT` 의 서버 문장을 그대로 노출하는 이유와 같은 판단이다.
+    if (input.customRole !== undefined) {
+      patch.customRole = input.customRole;
+    }
+
     // 색상: 화이트리스트 검증(자유 hex 거부) — 위반 시 ValidationError 던짐
     if (input.color !== undefined) {
       patch.color = assertSlotColor(input.color);

@@ -212,6 +212,37 @@ describe('updateSlot — 실적(출퇴근) 3상 계약', () => {
   });
 });
 
+describe('updateSlot — 커스텀 역할명(customRole) 3상 계약', () => {
+  it('문자열이면 그대로 실어 보낸다', async () => {
+    await updateSlot('wl-1', { staffRole: 'other', customRole: '바리스타' });
+
+    expect(capturedPatch()).toEqual({ staffRole: 'other', customRole: '바리스타' });
+  });
+
+  it('🔴 null 은 JSON null 로 보내 이름 삭제를 표현한다', async () => {
+    // `if (input.customRole)` 로 짜면 여기서 키가 사라져 **삭제가 조용히 무시된다**.
+    await updateSlot('wl-1', { customRole: null });
+
+    expect('customRole' in capturedPatch()).toBe(true);
+    expect(capturedPatch()).toEqual({ customRole: null });
+  });
+
+  it('주지 않으면 패치에 키 자체가 없다 (미변경)', async () => {
+    await updateSlot('wl-1', { staffRole: 'floor' });
+
+    expect('customRole' in capturedPatch()).toBe(false);
+  });
+
+  it('🔑 클라에서 다듬거나 거르지 않는다 — 검증과 문구의 단일 소스는 서버다', async () => {
+    // 길이·XSS·enum 라벨 충돌은 서버(20260807120000·130000)가 판정하고, 그 한글 문장이
+    // `toUpdateSlotError` 의 `userMessage` 로 그대로 노출된다. 여기서 같은 뜻의 관문을 만들면
+    // 두 곳에서 관리하게 되어 조용히 갈라진다(memo·color 와 의도적으로 다른 판단).
+    await updateSlot('wl-1', { staffRole: 'other', customRole: '  플로어장  ' });
+
+    expect(capturedPatch()).toEqual({ staffRole: 'other', customRole: '  플로어장  ' });
+  });
+});
+
 describe('updateSlot — 수정 사유(reason)', () => {
   it('reason 을 주지 않으면 패치에 키 자체가 없다', async () => {
     await updateSlot('wl-1', { checkIn: null });

@@ -11,6 +11,10 @@
  * ⚠️ `currentStatus` 는 **필수 prop(undefined 허용)** 이다. 모르는 경우를 테스트할 때도
  *    `currentStatus={undefined}` 를 명시한다 — 호출부가 "이 값을 아는가"를 건너뛰지 못하게 하는
  *    타입 계약이라, 테스트가 그 계약을 우회하면 계약을 세운 이유가 없어진다.
+ *
+ * ⚠️ `attendanceDirty` 도 같은 이유로 **필수**다(서버 `v_touch_attendance` 의 짝). 이 스위트의
+ *    대부분은 "실적을 고치는 중"을 전제하므로 `attendanceDirty` 를 켠다 — 게이트 자체의 계약은
+ *    아래 전용 describe 가 양방향으로 본다.
  */
 import { render, screen, fireEvent } from '@testing-library/react-native';
 
@@ -36,6 +40,7 @@ describe('WorkTimeFields — 예정과 실적의 분리', () => {
         value={makeValue()}
         baseDate={BASE_DATE}
         currentStatus={undefined}
+        attendanceDirty
         onChange={jest.fn()}
       />
     );
@@ -53,6 +58,7 @@ describe('WorkTimeFields — 예정과 실적의 분리', () => {
         value={makeValue()}
         baseDate={BASE_DATE}
         currentStatus={undefined}
+        attendanceDirty
         onChange={onChange}
       />
     );
@@ -71,6 +77,7 @@ describe('WorkTimeFields — 예정과 실적의 분리', () => {
         value={makeValue({ scheduledStart: null, scheduledUndecided: true })}
         baseDate={BASE_DATE}
         currentStatus={undefined}
+        attendanceDirty
         onChange={jest.fn()}
       />
     );
@@ -84,6 +91,7 @@ describe('WorkTimeFields — 예정과 실적의 분리', () => {
         value={makeValue({ checkIn: new Date(2026, 7, 10, 18, 5) })}
         baseDate={BASE_DATE}
         currentStatus={undefined}
+        attendanceDirty
         onChange={jest.fn()}
       />
     );
@@ -100,6 +108,7 @@ describe('WorkTimeFields — 예정과 실적의 분리', () => {
         value={value}
         baseDate={BASE_DATE}
         currentStatus={undefined}
+        attendanceDirty
         onChange={onChange}
       />
     );
@@ -116,6 +125,7 @@ describe('WorkTimeFields — 예정과 실적의 분리', () => {
         value={makeValue({ checkIn: new Date(2026, 7, 10, 18, 42) })}
         baseDate={BASE_DATE}
         currentStatus={undefined}
+        attendanceDirty
         onChange={jest.fn()}
       />
     );
@@ -130,6 +140,7 @@ describe('WorkTimeFields — 예정과 실적의 분리', () => {
         value={makeValue({ checkIn: new Date(2026, 7, 10, 18, 5) })}
         baseDate={BASE_DATE}
         currentStatus={undefined}
+        attendanceDirty
         onChange={onChange}
       />
     );
@@ -153,6 +164,7 @@ describe('WorkTimeFields — 상태 배지가 서버 파생과 같은 값을 말
         })}
         baseDate={BASE_DATE}
         currentStatus={undefined}
+        attendanceDirty
         onChange={jest.fn()}
       />
     );
@@ -166,6 +178,7 @@ describe('WorkTimeFields — 상태 배지가 서버 파생과 같은 값을 말
         value={makeValue({ checkOut: new Date(2026, 7, 10, 23, 0) })}
         baseDate={BASE_DATE}
         currentStatus={undefined}
+        attendanceDirty
         onChange={jest.fn()}
       />
     );
@@ -182,6 +195,7 @@ describe('WorkTimeFields — 상태 배지가 서버 파생과 같은 값을 말
         })}
         baseDate={BASE_DATE}
         currentStatus="no_show"
+        attendanceDirty
         onChange={jest.fn()}
       />
     );
@@ -195,6 +209,7 @@ describe('WorkTimeFields — 상태 배지가 서버 파생과 같은 값을 말
         value={makeValue({ checkIn: new Date(2026, 7, 10, 18, 0) })}
         baseDate={BASE_DATE}
         currentStatus="cancelled"
+        attendanceDirty
         onChange={jest.fn()}
       />
     );
@@ -211,6 +226,7 @@ describe('WorkTimeFields — 상태 배지가 서버 파생과 같은 값을 말
         })}
         baseDate={BASE_DATE}
         currentStatus="completed"
+        attendanceDirty
         onChange={jest.fn()}
       />
     );
@@ -225,11 +241,89 @@ describe('WorkTimeFields — 상태 배지가 서버 파생과 같은 값을 말
         value={makeValue()}
         baseDate={BASE_DATE}
         currentStatus="completed"
+        attendanceDirty
         onChange={jest.fn()}
       />
     );
 
     expect(screen.getByTestId('status-badge')).toHaveTextContent(/^출근 예정$/);
+  });
+});
+
+describe('WorkTimeFields — 배지는 실적을 건드릴 때만 파생한다 (서버 v_touch_attendance)', () => {
+  /**
+   * 🔴 서버는 `v_touch_attendance = v_set_check_in OR v_set_check_out` 가 true 일 때만 status 를
+   *    파생한다(마이그 20260806140000:367·438). 클라가 그 게이트를 재현하지 않으면, 저장 전
+   *    상태와 저장된 시각이 어긋난 **표류 행**에서 배지가 거짓말한다.
+   *
+   * 픽스처는 서버 pgTAP 이 스스로 인정한 그 모양이다 —
+   * `work_log_slot_attendance_rpc.test.sql` 의 `wl_drift` = `status='scheduled'` + `check_in_ts` 존재.
+   */
+  const DRIFT = { checkIn: new Date(2026, 7, 10, 18, 0) };
+
+  it('🔴 실적을 안 건드리면 저장 전 상태를 그대로 말한다 (표류 행에서 거짓말 금지)', () => {
+    // 이 행을 열어 메모만 고쳐 저장하면 패치에 실적 키가 없어 서버는 scheduled 를 유지한다.
+    // 배지가 '출근'이라고 말하면 그건 저장되지 않을 값이다.
+    render(
+      <WorkTimeFields
+        value={makeValue(DRIFT)}
+        baseDate={BASE_DATE}
+        currentStatus="scheduled"
+        attendanceDirty={false}
+        onChange={jest.fn()}
+      />
+    );
+
+    expect(screen.getByTestId('status-badge')).toHaveTextContent(/^출근 예정$/);
+  });
+
+  it('같은 값이라도 실적을 건드리면 파생한다 — 게이트지 침묵이 아니다', () => {
+    render(
+      <WorkTimeFields
+        value={makeValue(DRIFT)}
+        baseDate={BASE_DATE}
+        currentStatus="scheduled"
+        attendanceDirty
+        onChange={jest.fn()}
+      />
+    );
+
+    expect(screen.getByTestId('status-badge')).toHaveTextContent(/^출근$/);
+  });
+
+  it('🔴 게이트가 checked_out 을 되돌리지도 않는다 (반대 방향 오작동 방지)', () => {
+    // 실적이 다 있는 checked_out 행에서 메모만 고쳐도 배지는 '퇴근' 그대로여야 한다.
+    // 게이트를 `return 'scheduled'` 같은 것으로 잘못 짜면 여기서 잡힌다.
+    render(
+      <WorkTimeFields
+        value={makeValue({
+          checkIn: new Date(2026, 7, 10, 18, 0),
+          checkOut: new Date(2026, 7, 10, 23, 0),
+        })}
+        baseDate={BASE_DATE}
+        currentStatus="checked_out"
+        attendanceDirty={false}
+        onChange={jest.fn()}
+      />
+    );
+
+    expect(screen.getByTestId('status-badge')).toHaveTextContent(/^퇴근$/);
+  });
+
+  it('currentStatus 를 모르면 게이트를 걸지 않는다 — 약속할 근거가 없다', () => {
+    // 저장 전 상태를 모르면 "그대로 유지" 라고도 말할 수 없다. 폼 값에서 파생하는 것이
+    // 그나마 사실에 가깝다(진입점 3곳은 모두 실값을 주므로 실사용에서는 도달하지 않는다).
+    render(
+      <WorkTimeFields
+        value={makeValue(DRIFT)}
+        baseDate={BASE_DATE}
+        currentStatus={undefined}
+        attendanceDirty={false}
+        onChange={jest.fn()}
+      />
+    );
+
+    expect(screen.getByTestId('status-badge')).toHaveTextContent(/^출근$/);
   });
 });
 
@@ -244,6 +338,7 @@ describe('WorkTimeFields — 익일 표기', () => {
         })}
         baseDate={BASE_DATE}
         currentStatus={undefined}
+        attendanceDirty
         onChange={jest.fn()}
       />
     );
@@ -262,6 +357,7 @@ describe('WorkTimeFields — 익일 표기', () => {
         })}
         baseDate={BASE_DATE}
         currentStatus={undefined}
+        attendanceDirty
         onChange={jest.fn()}
       />
     );
@@ -279,6 +375,7 @@ describe('WorkTimeFields — 익일 표기', () => {
         })}
         baseDate={BASE_DATE}
         currentStatus={undefined}
+        attendanceDirty
         onChange={jest.fn()}
       />
     );
@@ -296,6 +393,7 @@ describe('WorkTimeFields — 익일 표기', () => {
         value={makeValue({ checkOut: new Date(2026, 7, 11, 2, 0) })}
         baseDate={BASE_DATE}
         currentStatus={undefined}
+        attendanceDirty
         onChange={jest.fn()}
       />
     );
@@ -311,6 +409,7 @@ describe('WorkTimeFields — readOnly', () => {
         value={makeValue({ checkIn: new Date(2026, 7, 10, 18, 0) })}
         baseDate={BASE_DATE}
         currentStatus={undefined}
+        attendanceDirty
         onChange={jest.fn()}
         readOnly
       />

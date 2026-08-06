@@ -24,6 +24,8 @@ import { CheckIcon, ChevronDownIcon, TrashIcon } from '@/components/icons';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import type { WorkLogStatus } from '@/shared/status';
 
+import { CLOCK_RE, formatClock, isLaterCalendarDay } from './workLogEditTime';
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -57,6 +59,16 @@ export interface WorkTimeFieldsProps {
    *    타입에 건다. 필수화하면 호출부마다 "이 값을 아는가"를 한 번은 생각하게 된다.
    */
   currentStatus: WorkLogStatus | undefined;
+  /**
+   * 이번 저장이 **실적 축(check_in/check_out)을 건드리는가.** 서버 `v_touch_attendance` 의 짝이다.
+   *
+   * 🔴 **`?` 를 붙이지 않는다** — `currentStatus` 와 같은 판단이고, 이번에는 선례가 둘이다
+   *    (Task 5·7 에서 선택 prop 이 계약을 무력화했다). 이 값이 없으면 컴포넌트는 폼의 현재 값만
+   *    보고 status 를 무조건 파생하게 되고, `previewStatus` 의 게이트가 통째로 죽는다.
+   *    `false` 로 기본값을 주면 반대로 배지가 영원히 안 바뀐다 — 어느 쪽도 조용한 결함이라
+   *    호출부가 반드시 답하게 한다. 판정 근거는 `touchesAttendance(patch)` 하나뿐이다.
+   */
+  attendanceDirty: boolean;
   /** 시각 피커 열기 요청. 부모 시트가 overlay 로 피커를 렌더한다. */
   onOpenPicker?: (field: WorkTimeFieldKey) => void;
 }
@@ -67,8 +79,6 @@ export interface WorkTimeFieldsProps {
 
 /** 기록 없음 표시. '미정'(WorkTimeDisplay 의 표시 기본값)과 달리 편집 칸의 빈 값이다. */
 const EMPTY_MARK = '—';
-
-const TIME_RE = /^(\d{1,2}):(\d{2})$/;
 
 /**
  * 배지 라벨 — 생애주기 3종은 이 시트의 어휘('출근 예정'/'출근'/'퇴근')를 쓰고,
@@ -113,20 +123,9 @@ const LIFECYCLE_STATUSES: readonly WorkLogStatus[] = [
 // ============================================================================
 // Pure helpers
 // ============================================================================
-
-/** 로컬 시각 'HH:mm'. WorkTimeDisplay 의 표시 정본과 같은 24시간 표기다. */
-function formatClock(date: Date): string {
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  return `${hours}:${minutes}`;
-}
-
-/** 두 Date 가 서로 다른 달력 날짜인가. 시각 비교가 아니라 날짜 비교다(WorkTimeDisplay 와 동일). */
-function isLaterCalendarDay(target: Date, base: Date): boolean {
-  const targetDay = new Date(target.getFullYear(), target.getMonth(), target.getDate());
-  const baseDay = new Date(base.getFullYear(), base.getMonth(), base.getDate());
-  return targetDay.getTime() > baseDay.getTime();
-}
+// 🔑 시각 표기(`formatClock`)·익일 판정(`isLaterCalendarDay`)·형식(`CLOCK_RE`)은
+//    `workLogEditTime` 한 벌을 쓴다. 특히 익일 판정은 이 파일의 꼬리표와 `attendanceInsight`
+//    의 배너가 같은 화면에서 함께 읽히는 값이라, 각자 계산하면 어긋난다.
 
 /**
  * 'HH:mm' + 기준 날짜 → Date. 24~47시는 익일로 해석한다(피커의 24+ 표기 계약).
@@ -134,7 +133,7 @@ function isLaterCalendarDay(target: Date, base: Date): boolean {
  * ⚠️ `baseDate` 를 복제해서 쓴다 — 인자를 변형하면 호출부의 기준일이 조용히 바뀐다.
  */
 function composeTime(time: string, baseDate: Date): Date | null {
-  const match = time.match(TIME_RE);
+  const match = time.match(CLOCK_RE);
   if (!match) return null;
 
   const hours = Number.parseInt(match[1], 10);
@@ -166,7 +165,7 @@ export function applyPickedTime(
   baseDate: Date
 ): WorkTimeFieldsValue {
   if (field === 'scheduled') {
-    if (!TIME_RE.test(picked)) return value;
+    if (!CLOCK_RE.test(picked)) return value;
     return { ...value, scheduledStart: picked, scheduledUndecided: false };
   }
 
@@ -196,16 +195,32 @@ export function applyPickedTime(
  *
  * 서버 `update_work_log_slot`(20260806140000 §4)의 파생과 **같은 분기**여야 한다. 규칙 서술의
  * 정본은 `@/repositories/supabase/workLogTimeStatus` 의 `resolveWorkTimeStatus` 다.
+ *   · 실적 축을 안 건드리면 status 를 **아예 파생하지 않는다**(서버 `v_touch_attendance` 게이트)
  *   · 출근 O + 퇴근 O → checked_out (단 completed 는 강등하지 않는다)
  *   · 출근 O          → checked_in
  *   · 출근 X          → scheduled
  *   · no_show · cancelled 는 불가침 — 시간 수정이 노쇼를 조용히 유급 근무로 뒤집으면 안 된다.
+ *
+ * 🔴 **첫 줄의 게이트가 서버의 `v_touch_attendance` 다**(마이그 20260806140000:367·438). 서버는
+ *    실적 키가 패치에 있을 때만 status 를 계산하고, 없으면 저장 전 상태를 그대로 둔다. 이 게이트가
+ *    없으면 폼의 현재 값만 보고 무조건 파생하게 되는데, 그러면 `status='scheduled'` 인데
+ *    `check_in_ts` 가 남아 있는 **표류 행**(서버 pgTAP 픽스처 `wl_drift` 가 바로 그 모양이다)을
+ *    열었을 때 배지가 '출근'이라고 말한다. 사용자가 메모만 고쳐 저장하면 패치에 실적 키가 없어
+ *    서버는 `scheduled` 를 유지하므로 — **배지가 거짓말한 것이 된다.** 실패 방향이 이번 작업의
+ *    원래 신고("손대지 않은 근태가 출근으로 뒤집힘")와 같다.
+ *
+ * ⚠️ 게이트는 `currentStatus` 를 **아는 경우에만** 건다. 모르면 저장 후 상태를 약속할 근거가
+ *    없으므로 폼 값에서 파생하는 기존 동작이 그나마 사실에 가깝다(진입점 3곳은 모두 실값을 준다).
  */
 function previewStatus(
   currentStatus: WorkLogStatus | undefined,
   checkIn: Date | null,
-  checkOut: Date | null
+  checkOut: Date | null,
+  attendanceDirty: boolean
 ): WorkLogStatus {
+  if (!attendanceDirty && currentStatus) {
+    return currentStatus;
+  }
   if (currentStatus && !LIFECYCLE_STATUSES.includes(currentStatus)) {
     return currentStatus;
   }
@@ -327,11 +342,12 @@ export function WorkTimeFields({
   onChange,
   readOnly = false,
   currentStatus,
+  attendanceDirty,
   onOpenPicker,
 }: WorkTimeFieldsProps) {
   const { scheduledStart, scheduledUndecided, checkIn, checkOut } = value;
 
-  const status = previewStatus(currentStatus, checkIn, checkOut);
+  const status = previewStatus(currentStatus, checkIn, checkOut, attendanceDirty);
 
   /** 🔴 예정 → 실적 복사는 오직 여기서만 일어난다. */
   const handleCopyScheduled = useCallback(() => {

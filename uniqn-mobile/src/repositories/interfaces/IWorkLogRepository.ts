@@ -14,6 +14,7 @@ import type { WorkLog, WorkLogStatus, QRCodeAction, QRProcessAction, StaffRole }
  * @property startTime - 출근 예정 시각 'HH:mm' 단일값(제공 시 time_slot 갱신 — 예정 종료는 없다)
  * @property timeUndecided - 출근 예정 미정(제공 시 time_slot 을 비운다, startTime 보다 우선)
  * @property staffRole - 직무 역할(StaffRole)
+ * @property customRole - `other` 역할의 이름. 3상 — undefined=미변경 / null=삭제 / 문자열=설정
  * @property color - 셀 색상 토큰(화이트리스트, 자유 hex 금지)
  * @property memo - 메모(XSS 검증 통과분만 기록)
  * @property editedBy - 수정 행위자(운영자) user id
@@ -33,6 +34,14 @@ export interface UpdateSlotInput {
    */
   timeUndecided?: boolean;
   staffRole?: StaffRole;
+  /**
+   * `other` 역할의 이름(work_logs.custom_role). 3상 — `undefined`=미변경 / `null`=삭제 / 문자열=설정.
+   *
+   * 🔴 서버는 **최종 역할이 'other' 일 때만** 이 값을 받는다(마이그 20260807120000 판정표 ③⑤).
+   *    표준 역할과 함께 보내거나, `staffRole` 없이 보냈는데 대상 행이 'other' 가 아니면
+   *    `INVALID_INPUT` 이다. 서버가 몰래 역할을 승격시키지 않는다 — 호출자가 쌍으로 보내야 한다.
+   */
+  customRole?: string | null;
   color?: string;
   memo?: string;
   editedBy?: string;

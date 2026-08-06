@@ -56,7 +56,7 @@ import { formatDate, parseDateString } from '@/utils/date';
 import { AttendanceNotices } from './AttendanceNotices';
 import { CollapsibleSection } from './CollapsibleSection';
 import { SlotColorChips } from './SlotColorChips';
-import { SlotRoleChips } from './SlotRoleChips';
+import { SlotRoleChips, type SlotRoleSelection } from './SlotRoleChips';
 import {
   WorkTimeFields,
   applyPickedTime,
@@ -64,8 +64,13 @@ import {
   type WorkTimeFieldsValue,
 } from './WorkTimeFields';
 import { deriveAttendanceInsight } from './attendanceInsight';
-import { resolveWorkLogEditPayload, type WorkLogEditAxes } from './workLogEditPayload';
+import {
+  resolveWorkLogEditPayload,
+  touchesAttendance,
+  type WorkLogEditAxes,
+} from './workLogEditPayload';
 import { buildRoleSummary } from './workLogEditSummary';
+import { CLOCK_RE, formatClock } from './workLogEditTime';
 import type { StoredSlotColorToken } from '@/domains/workSchedule';
 
 // ============================================================================
@@ -78,7 +83,11 @@ import type { StoredSlotColorToken } from '@/domains/workSchedule';
  * ⚠️ `status` 는 브리프에 없던 항목이지만 **필수**다. `WorkTimeFields` 의 상태 배지는
  *    "저장하면 기록될 status" 를 약속하는데, 근태 상태를 모르면 노쇼·취소 행에서도
  *    "저장하면 출근이 됩니다"라고 거짓말한다(서버는 그 상태를 건드리지 않는다).
- *    근무표 슬롯 RPC 는 status 를 필터 없이 내려주므로 노쇼 행이 실제로 이 시트에 뜬다.
+ *    노쇼 행이 실제로 이 시트에 뜨는 경로는 **스태프관리·정산 두 진입점**이다 — 둘 다
+ *    행 목록을 status 로 거르지 않는다. (근무표는 예외다: `get_venue_day_slots` 가
+ *    `status NOT IN ('cancelled','no_show')` 로 걸러 준다 — 마이그 20260806130000:108.
+ *    ⚠️ 그렇다고 필수화 근거가 약해지지 않는다. 게다가 `status` 는 배지가 실적을 안 건드리는
+ *    저장에서 **저장 전 상태를 그대로 말하기 위한** 값이기도 해서 세 경로 모두에 필요하다.)
  */
 export interface WorkLogEditInitial {
   /** 출근 예정 시각 'HH:mm'. 읽을 수 없는 레거시 값이면 null + `scheduledUnreadable` 로 넘긴다. */
@@ -103,7 +112,14 @@ export interface WorkLogEditInitial {
   checkIn: Date | null;
   checkOut: Date | null;
   role: StaffRole;
-  /** `other` 역할의 커스텀 이름. **표시 전용** — RPC 패치에 담을 키가 없다(Task 3 확정). */
+  /**
+   * `other` 역할의 커스텀 이름('바리스타').
+   *
+   * 🔑 **편집 가능한 축이다**(2026-08-07 — 서버 `customRole` 키가 열렸다). 이 값은 두 가지로 쓴다:
+   *    ① 접힘 요약(`기타 · 바리스타`)의 표시, ② 이름 칩 목록에 **이 행의 현재 이름을 반드시
+   *    포함**시키는 근거. ② 가 없으면 공고에 없는 이름으로 저장된 행에서 `기타` 칩을 스치는
+   *    순간 이름이 지워지고 되돌릴 칩이 화면에 없다.
+   */
   customRole?: string | null;
   /**
    * 원본에 **예정 종료**가 저장돼 있었다(폐지된 범위 데이터 `'18:00 - 02:00'`).
@@ -161,11 +177,11 @@ const PICKER_TITLES: Record<WorkTimeFieldKey, string> = {
   checkOut: '실제 퇴근 시간',
 };
 
-const CLOCK_RE = /^(\d{1,2}):(\d{2})$/;
-
 // ============================================================================
 // Pure helpers
 // ============================================================================
+// 🔑 시각 형식(`CLOCK_RE`)과 'HH:mm' 표기(`formatClock`)는 `workLogEditTime` 한 벌을 쓴다 —
+//    같은 규칙을 시트와 필드가 각자 들고 있으면 한쪽만 고쳐도 아무 테스트가 깨지지 않는다.
 
 /**
  * 시트 prop → 패치 비교용 축.
@@ -180,16 +196,10 @@ function toAxes(initial: WorkLogEditInitial): WorkLogEditAxes {
     checkIn: initial.checkIn,
     checkOut: initial.checkOut,
     role: initial.role,
+    customRole: initial.customRole ?? null,
     color: initial.color,
     memo: initial.memo,
   };
-}
-
-/** 로컬 시각 'HH:mm'. Date 를 피커 위치로 되돌릴 때만 쓴다. */
-function toClock(date: Date): string {
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  return `${hours}:${minutes}`;
 }
 
 function clockToTimeValue(clock: string): TimeValue {
@@ -281,11 +291,26 @@ export function WorkLogEditSheet({
     !scheduledUnresolved &&
     !updateSlot.isPending;
 
-  const roleSummary = buildRoleSummary(form.role, initial.customRole ?? null, form.color);
+  /** 🔑 요약은 **폼의 현재 값**을 읽는다 — 이름 칩으로 고른 결과가 접힘 줄에도 즉시 보여야 한다. */
+  const roleSummary = buildRoleSummary(form.role, form.customRole, form.color);
 
-  /** 이름 없는 '기타' 안내 — 커스텀 이름을 여기서 붙일 수 없으니 최소한 결과를 미리 말한다. */
+  /**
+   * 이 저장이 실적 축을 건드리는가 — 배지 파생의 게이트(서버 `v_touch_attendance` 재현).
+   *
+   * 🔑 폼 값을 다시 비교하지 않고 **보낼 패치의 키 존재**로 판정한다. 비교 규칙이 두 벌이 되면
+   *    배지와 서버가 갈릴 수 있고, 그 갈림이 곧 "배지가 거짓말한다"는 결함이다.
+   */
+  const attendanceDirty = touchesAttendance(patch);
+
+  /**
+   * 이름 없는 '기타' 안내.
+   *
+   * ⚠️ 옛 문구("이름은 여기서 정할 수 없어요")는 이제 **사실이 아니다** — 공고가 정의한 이름은
+   *    칩으로 고를 수 있다. 다만 공고가 이름을 안 두었거나(근무표 경로처럼) 공고를 모르면
+   *    고를 칩이 없으므로, 남는 사실 하나만 말한다: 이대로 저장하면 이름 없이 저장된다.
+   */
   const showsUnnamedOtherHint =
-    form.role === 'other' && (initial.customRole ?? '').trim() === '' && !readOnly;
+    form.role === 'other' && (form.customRole ?? '').trim() === '' && !readOnly;
 
   // --------------------------------------------------------------------------
   // Handlers
@@ -333,8 +358,15 @@ export function WorkLogEditSheet({
     [activePicker, baseDate]
   );
 
-  const handleRoleChange = useCallback((role: StaffRole) => {
-    setForm((current) => ({ ...current, role }));
+  // 🔴 역할과 이름은 **한 쌍으로만** 바뀐다. 칩이 `SlotRoleSelection` 을 통째로 주므로
+  //    `{role:'floor', customRole:'바리스타'}` 같은 모순 상태가 폼에 존재할 수 없다
+  //    (서버 판정표 ③⑤ 는 최후 방어선이지 1차선이 아니다).
+  const handleRoleChange = useCallback((selection: SlotRoleSelection) => {
+    setForm((current) => ({
+      ...current,
+      role: selection.role,
+      customRole: selection.customRole,
+    }));
   }, []);
 
   const handleColorChange = useCallback((color: string) => {
@@ -375,8 +407,8 @@ export function WorkLogEditSheet({
     const fallback = form.scheduledStart ?? PICKER_FALLBACK_TIME;
     if (activePicker === 'scheduled') return clockToTimeValue(form.scheduledStart ?? fallback);
     if (activePicker === 'checkIn')
-      return clockToTimeValue(form.checkIn ? toClock(form.checkIn) : fallback);
-    return clockToTimeValue(form.checkOut ? toClock(form.checkOut) : fallback);
+      return clockToTimeValue(form.checkIn ? formatClock(form.checkIn) : fallback);
+    return clockToTimeValue(form.checkOut ? formatClock(form.checkOut) : fallback);
   }, [activePicker, form.scheduledStart, form.checkIn, form.checkOut]);
 
   const pickerOverlay = (
@@ -461,6 +493,7 @@ export function WorkLogEditSheet({
             onChange={handleTimeChange}
             readOnly={readOnly}
             currentStatus={initial.status ?? undefined}
+            attendanceDirty={attendanceDirty}
             onOpenPicker={setActivePicker}
           />
 
@@ -509,7 +542,10 @@ export function WorkLogEditSheet({
           <View className="mt-4">
             <CollapsibleSection title="역할" summary={roleSummary}>
               <SlotRoleChips
-                value={form.role}
+                value={{ role: form.role, customRole: form.customRole }}
+                // 🔑 `baseline` 이다(폼이 아니다) — 이 행이 **원래** 맡고 있던 역할에는 `(마감)` 을
+                //    붙이지 않고, 저장돼 있는 이름은 공고에 없어도 칩으로 남긴다.
+                current={{ role: baseline.role, customRole: baseline.customRole }}
                 onChange={handleRoleChange}
                 jobPosting={jobPosting}
                 filledByRole={filledByRole}
@@ -518,7 +554,7 @@ export function WorkLogEditSheet({
 
               {showsUnnamedOtherHint ? (
                 <Text className="mt-2 font-sans text-xs text-content-muted dark:text-secondary-400">
-                  기타 역할의 이름은 여기서 정할 수 없어요. 이름 없이 저장됩니다.
+                  이름 없는 기타 역할로 저장돼요.
                 </Text>
               ) : null}
 
