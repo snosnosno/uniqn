@@ -115,10 +115,6 @@ jest.mock('@/shared/realtime', () => ({
   },
 }));
 
-jest.mock('../../observability/analyticsService', () => ({
-  trackSettlementComplete: jest.fn(),
-}));
-
 // Get typed mock references
 const mockRepo = workLogRepository as jest.Mocked<typeof workLogRepository>;
 const mockHandleServiceError = handleServiceError as jest.Mock;

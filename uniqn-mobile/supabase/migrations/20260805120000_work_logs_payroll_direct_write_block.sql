@@ -13,7 +13,11 @@
 -- prod 실측 결과 `protect_work_log_payroll`(BEFORE UPDATE, 함수
 -- `protect_work_log_payroll_columns()`)가 **이미 존재**한다. 다만 게이트가
 -- **앱 역할** 축이라 다음과 같다:
---   · service_role                → 전부 통과
+--   · service_role                → **레거시 GUC `request.jwt.claim.role` 이 세팅될 때만** 통과.
+--     모던 PostgREST 는 단수 per-claim GUC 를 없애고 `request.jwt.claims`(JSON) 만 세팅하므로,
+--     그 경우 v_role='' 이 되어 staff 분기('staff_cannot_modify_payroll_fields')로 떨어진다.
+--     (리뷰 지적 — prod GUC 를 실측하지는 않았다. 현재 실害 0: supabase/functions·functions·
+--      scripts 전수 grep 결과 payroll writer 0건.)
 --   · payroll_status='completed' 건의 custom_* → 역할 무관 동결
 --   · app_metadata.role IN (admin, employer) → **무조건 RETURN NEW**  ← 구멍
 --   · staff / 기타                → payroll 4컬럼 변경 시 차단(이미 막혀 있었다)
@@ -51,16 +55,26 @@
 -- 통과해야 하는 정당 writer (prod 실측 — 셋 다 SECURITY DEFINER, owner=postgres):
 --   · set_work_log_payroll_status  · settle_work_log  · bulk_settle_work_logs
 --   → 내부에서 current_user='postgres' 이므로 데니리스트에 걸리지 않는다.
---   · Edge Function / cron 은 service_role·postgres 로 붙으므로 동일하게 통과한다.
+--   · cron·psql 직접 접속은 postgres 라 통과한다. Edge Function(service_role)은 **이 트리거는**
+--     통과하지만 위에 적은 대로 기존 트리거에 걸릴 수 있다 — payroll writer 가 생기면 먼저 확인할 것.
 --
 -- 클라 영향 (2026-08-05 실측):
---   · 살아있는 정산 경로는 `settlementMutation.ts:184` →
---     `SettlementRepository.updatePayrollStatusWithTransaction` → **RPC** 하나뿐이다.
+--   · 살아있는 정산 경로는 **전부 RPC** 이고 진입점은 셋이다:
+--       ① `settle_work_log`        ← useSettleWorkLog      (venue-settlements.tsx:83)
+--       ② `bulk_settle_work_logs`  ← useBulkSettlement     (venue-settlements.tsx:84)
+--       ③ `set_work_log_payroll_status` ← settlementMutation.ts:184
+--            → SettlementRepository.updatePayrollStatusWithTransaction (:568,587)
 --   · 직접 UPDATE 경로(`workLogService.updatePayrollStatus` →
 --     `WorkLogRepositoryTransactions.updatePayrollStatusTransaction`)는 **UI 소비자 0건**
 --     = 죽은 회로. 같은 PR 에서 삭제한다(서버가 막는 순간 "되살아나면 즉사"하는 지뢰가 되므로).
 --   · 따라서 이 차단으로 **현재 빌드는 깨지지 않는다.** 깨지는 건 payroll 을 직접 쓰던
 --     구 빌드뿐이고, 지금은 베타 기간이라 허용 범위다(사용자 결정 2026-08-05).
+--
+-- 🔴 이 핀은 UPDATE 전용이다 — INSERT 면이 지금 안전한 이유는 `work_logs` 에 INSERT 정책이
+--    아예 없기 때문이다(`work_logs_insert_owner_or_admin` 은 20260712010100:95-96 에서 DROP).
+--    누군가 work_logs INSERT 정책을 추가하면 클라가 payroll_status='completed' + 임의
+--    payroll_amount 인 행을 **처음부터** 만들 수 있고 이 핀은 아무것도 막지 못한다.
+--    INSERT 정책을 되살릴 때는 BEFORE INSERT 짝을 반드시 함께 넣어라.
 --
 -- 파리티: 함수 +1 (PARITY_EXPECT_FUNCS 199 → 200). 정책 111 불변(RLS 미변경).
 -- ============================================================

@@ -112,6 +112,15 @@ SELECT lives_ok(
 --    (P5 20260802120000 이 로컬 실증). 그래서 재현은 `RESET ROLE` 만 한다 —
 --    JWT(employer)는 유지한 채 current_user 만 definer 로 바꾸는 것이 실제 형태다.
 --
+--    ⚠️ 한계(리뷰 지적) — 이 단언은 `RESET ROLE` 로 채널을 흉내낼 뿐,
+--       **정산 RPC 가 실제로 SECDEF 라서 통과한다**는 전제까지 시험하지는 않는다.
+--       settle_work_log 가 언젠가 SECURITY INVOKER 로 재정의돼도 여기는 green 이다.
+--       그 무회귀 백스톱은 형제 파일에 있고 같은 `supabase test db` 스위트에서 돈다:
+--         · settlement_settle_rpcs.test.sql:166      lives_ok(settle_work_log)
+--         · settlement_payroll_status_rpc.test.sql:116,220  lives_ok(set_work_log_payroll_status)
+--         · settlement_payroll_status_rpc.test.sql:199,210  bulk_settle_work_logs 결과 단언
+--       위 셋을 지우면 이 트리거의 통과 조건이 무검증이 된다.
+--
 --    🔴 jpc_test_clear_user() 로 JWT 까지 비우면 안 된다. 실측으로 확인했다:
 --       그러면 **기존** protect_work_log_payroll_columns() 가 app_metadata.role 을
 --       빈 문자열로 읽어 staff 분기('staff_cannot_modify_payroll_fields')로 떨어진다.

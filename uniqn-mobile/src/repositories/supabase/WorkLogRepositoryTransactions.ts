@@ -2,7 +2,7 @@
  * UNIQN Mobile - WorkLog Repository Transactions
  *
  * @description WorkLogRepository에서 사용하는 대형 트랜잭션 함수
- * updatePayrollStatusTransaction, processQRCheckInOutTransaction
+ * processQRCheckInOutTransaction
  */
 
 import { supabase } from '@/lib/supabase';
