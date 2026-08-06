@@ -8,6 +8,7 @@ import { BoardPostCard } from '@/components/board/BoardPostCard';
 import { BoardTabBar, type BoardTabKey } from '@/components/board/BoardTabBar';
 import { PinnedNoticeBanner } from '@/components/board/PinnedNoticeBanner';
 import { useBoardHome } from '@/hooks/useBoard';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { useTabBarBottomPadding } from '@/hooks/useTabBarBottomPadding';
 import { useAuth } from '@/hooks/useAuth';
 import type { BoardPost, BoardType } from '@/types';
@@ -64,7 +65,9 @@ function navigateToTab(tab: BoardTabKey) {
 export default function BoardHomeScreen() {
   const bottomPadding = useTabBarBottomPadding();
   const { role, isAdmin } = useAuth();
-  const { data, isLoading, error, refetch, isRefetching } = useBoardHome();
+  const { data, isLoading, error, refetch } = useBoardHome();
+  // 스피너는 사용자가 당겼을 때만 — isRefetching 을 물리면 탭을 옮길 때마다 뜬다(useManualRefresh 주석 참고).
+  const { refreshing, onRefresh } = useManualRefresh(refetch);
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
@@ -91,7 +94,7 @@ export default function BoardHomeScreen() {
           className="flex-1"
           contentContainerStyle={{ padding: 16, paddingBottom: bottomPadding }}
           refreshControl={
-            <RefreshControl refreshing={isRefetching} onRefresh={refetch} {...PTR_REFRESH_PROPS} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} {...PTR_REFRESH_PROPS} />
           }
         >
           <PinnedNoticeBanner

@@ -77,7 +77,9 @@ export default function JobPostingQRScreen() {
   })();
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['bottom']}>
+    // StackHeader 는 상단 인셋을 스스로 처리하지 않는다 — 'top' 을 빼면 제목이 상태바
+    // (시계·배터리) 아래로 파고든다. 회귀 가드: app/__tests__/stack-header-safe-area.test.ts
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader
         title="출퇴근 QR"
         titleSuffix={headerTitleSuffix}
