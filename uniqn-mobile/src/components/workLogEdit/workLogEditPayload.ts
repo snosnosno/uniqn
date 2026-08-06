@@ -11,6 +11,8 @@
 import type { UpdateSlotInput } from '@/repositories';
 import type { StaffRole } from '@/types';
 
+import { foldRoleSelection, trimmedCustomRole } from './roleSelection';
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -32,12 +34,15 @@ export interface WorkLogEditAxes {
   checkOut: Date | null;
   role: StaffRole;
   /**
-   * `other` 역할의 이름. 표준 역할이면 의미가 없다(아래 `effectiveCustomRole` 이 접는다).
+   * `other` 역할의 이름.
+   *
+   * ⚠️ `initial` 쪽은 **DB 원시 값**이라 `role !== 'other'` 인데 이름이 있을 수 있다(표류 행 —
+   *    `work_logs` 에 정합 CHECK 가 없다). `current` 쪽은 칩이 쌍으로만 만들어 불변식을 만족한다.
+   *    그래서 두 쪽을 **다르게** 다룬다(아래 비교부 주석 참고).
    *
    * 🔴 서버는 **최종 custom_role 이 비어 있지 않으면 최종 role 은 'other'** 를 불변식으로 요구하고
-   *    (마이그 20260807120000 판정표 ③⑤) 어기면 `INVALID_INPUT` 이다. 칩이 쌍으로만 값을 만들지만
-   *    이 함수도 같은 불변식을 한 번 더 적용한다 — 패치를 만드는 마지막 자리라, 여기서 새면
-   *    UI 를 아무리 조여도 서버 거부가 사용자에게 보인다.
+   *    (마이그 20260807120000 판정표 ③⑤) 어기면 `INVALID_INPUT` 이다. 접기(`foldRoleSelection`)는
+   *    칩과 **같은 한 벌**을 쓴다 — 두 벌이 되면 화면과 패치가 갈린다.
    */
   customRole: string | null;
   /** 배치 구분 색 토큰. 퇴역 팔레트 값일 수 있어 좁히지 않는다. */
@@ -63,20 +68,6 @@ function sameInstant(a: Date | null, b: Date | null): boolean {
   if (a === null && b === null) return true;
   if (a === null || b === null) return false;
   return a.getTime() === b.getTime();
-}
-
-/**
- * 이 축 조합이 실제로 뜻하는 커스텀 역할명.
- *
- * 🔴 표준 역할이면 **무조건 null 이다.** 서버의 불변식과 같은 접기라, 표준 역할 + 이름이라는
- *    모순 조합은 이 함수를 통과하는 순간 사라진다. 공백뿐인 이름도 null 로 접는다 —
- *    서버가 `btrim` 후 빈 문자열을 삭제로 보므로(마이그 20260807120000:249-251), 여기서
- *    구분하면 "보낼 때는 다른데 저장되면 같은" 두 표현이 생긴다.
- */
-function effectiveCustomRole(axes: WorkLogEditAxes): string | null {
-  if (axes.role !== 'other') return null;
-  const trimmed = (axes.customRole ?? '').trim();
-  return trimmed === '' ? null : trimmed;
 }
 
 /**
@@ -136,9 +127,16 @@ export function resolveWorkLogEditPayload(
   //    아니면 custom_role 을 NULL 로 정리한다). 여기서 `customRole:null` 을 굳이 동봉하면
   //    "표준 칩은 staffRole 하나만 보낸다"는 계약이 흐려지고, 서버 판정표 ③ 을 스치는 조합
   //    (표준 역할 + customRole 키)이 패치에 실제로 등장하게 된다.
+  //
+  // 🔴 비교 기준은 **저장돼 있는 원시 이름**이다 — `initial.role` 로 접으면 안 된다. 서버가
+  //    안 보낸 축에 쓰는 값이 `v_wl.custom_role`(원시)이기 때문이다. `role='floor'` +
+  //    `custom_role='바리스타'` 표류 행에서 기준을 접어 null 로 보면, `기타` 칩을 눌러도
+  //    "이름도 null → 변경 없음" 으로 판정해 키를 안 싣는다. 그런데 서버의
+  //    `v_clear_custom_role := (v_new_role <> 'other')` 은 false 라 **옛 이름을 유지**하므로
+  //    저장 결과는 `기타 · 바리스타` 다 — 화면은 "이름 없이 저장된다"고 말한 뒤였다.
   if (current.role === 'other') {
-    const nextCustom = effectiveCustomRole(current);
-    if (nextCustom !== effectiveCustomRole(initial)) patch.customRole = nextCustom;
+    const nextCustom = foldRoleSelection(current).customRole;
+    if (nextCustom !== trimmedCustomRole(initial.customRole)) patch.customRole = nextCustom;
   }
 
   // 🔴 색은 **삭제할 수 없다.** 서버가 `jsonb_typeof(p_patch->'color') <> 'string'` 을 거부하고

@@ -56,7 +56,8 @@ import { formatDate, parseDateString } from '@/utils/date';
 import { AttendanceNotices } from './AttendanceNotices';
 import { CollapsibleSection } from './CollapsibleSection';
 import { SlotColorChips } from './SlotColorChips';
-import { SlotRoleChips, type SlotRoleSelection } from './SlotRoleChips';
+import { SlotRoleChips } from './SlotRoleChips';
+import type { SlotRoleSelection } from './roleSelection';
 import {
   WorkTimeFields,
   applyPickedTime,

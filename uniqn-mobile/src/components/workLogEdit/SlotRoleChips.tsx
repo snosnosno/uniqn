@@ -34,23 +34,13 @@ import { Pressable, Text, View } from 'react-native';
 
 import { STAFF_ROLES } from '@/constants';
 import { selectPostingRoleAvailability } from '@/domains/job-posting';
-import type { JobPosting, StaffRole } from '@/types';
+import type { JobPosting } from '@/types';
+
+import { foldRoleSelection, roleSelectionKey, type SlotRoleSelection } from './roleSelection';
 
 // ============================================================================
 // Types
 // ============================================================================
-
-/**
- * 역할 선택 = (표준 직무, 기타 이름) **한 쌍**.
- *
- * 🔴 불변식: `role !== 'other'` 이면 `customRole` 은 반드시 `null` 이다. 이 한 줄이 서버가
- *    거부하는 모순 조합(판정표 ③)을 UI 단계에서 없앤다 — 칩은 이 쌍을 통째로만 만들어 낸다.
- */
-export interface SlotRoleSelection {
-  role: StaffRole;
-  /** `other` 역할의 이름. 표준 직무에서는 항상 null. */
-  customRole: string | null;
-}
 
 export interface SlotRoleChipsProps {
   value: SlotRoleSelection;
@@ -92,15 +82,6 @@ export interface SlotRoleChipsProps {
 
 /** 이름 칩의 아이콘. `기타` 칩과 같은 것을 써서 "이것도 기타의 한 갈래"임을 보인다. */
 const OTHER_ICON = STAFF_ROLES.find((option) => option.key === 'other')?.icon ?? '✏️';
-
-/**
- * 선택 → 정원 판정용 역할키. `selectPostingRoleAvailability` 의 `item.key` 와 **같은 축**이다
- * (이름 붙은 other 는 이름 문자열, 그 외는 역할 키).
- */
-function roleSelectionKey(selection: SlotRoleSelection): string {
-  const custom = (selection.customRole ?? '').trim();
-  return selection.role === 'other' && custom !== '' ? custom : selection.role;
-}
 
 // ============================================================================
 // Sub components
@@ -225,6 +206,20 @@ export function SlotRoleChips({
   const currentKey = roleSelectionKey(current);
   const isFullKey = (key: string) => key !== currentKey && fullRoleKeys.has(key);
 
+  /**
+   * 🔴 선택 표식 판정은 **접힌 값**으로 한다. 원시 동등비교(`value.customRole === null`)로 짜면
+   *    패치 쪽 접기와 규칙이 갈려, 두 규칙이 다르게 보는 입력에서 **표준 칩도 이름 칩도 선택되지
+   *    않는다.** 실제 도달 경로 둘:
+   *      · `role='dealer'` + `custom_role='바리스타'` 표류 행 — `work_logs` 에 (role, custom_role)
+   *        정합 CHECK 가 없어 존재할 수 있다. 딜러 칩은 `'바리스타' === null` 이 false 라 꺼지고,
+   *        이름 칩은 `role === 'other'` 가 false 라 꺼진다. 그런데 접힘 요약은 `딜러` 라고 말한다 —
+   *        화면이 스스로와 어긋난다.
+   *      · `custom_role='바리스타 '`(공백 패딩) — 이름 칩의 이름은 trim 된 `'바리스타'` 라 안 맞는다.
+   *    접기를 통과시키면 `customRole` 이 non-null 인 것은 곧 `role === 'other'` 라, 두 갈래가
+   *    **정확히 하나만** 켜진다.
+   */
+  const selected = foldRoleSelection(value);
+
   return (
     <View className="flex-row flex-wrap gap-2">
       {/* STAFF_ROLES 의 key 는 이미 StaffRole 타입이다 — 문자열 분기 없이 그대로 넘긴다.
@@ -236,7 +231,7 @@ export function SlotRoleChips({
           label={`역할 ${option.name}`}
           display={`${option.icon} ${option.name}`}
           // '기타' 칩은 **이름 없는 기타**다. 이름이 붙은 선택은 아래 이름 칩이 표현한다.
-          selected={value.role === option.key && value.customRole === null}
+          selected={selected.role === option.key && selected.customRole === null}
           isFull={isFullKey(option.key)}
           readOnly={readOnly}
           onPress={() => onChange({ role: option.key, customRole: null })}
@@ -251,7 +246,8 @@ export function SlotRoleChips({
           //    `역할 딜러` 를 쓰면 두 칩의 라벨이 같아진다(스크린리더·음성제어가 못 가른다).
           label={`기타 역할 ${name}`}
           display={`${OTHER_ICON} ${name}`}
-          selected={value.role === 'other' && value.customRole === name}
+          // 접기 뒤 `customRole` 이 non-null 이면 `role` 은 반드시 'other' 다 — 역할을 또 보지 않는다.
+          selected={selected.customRole === name}
           isFull={isFullKey(name)}
           readOnly={readOnly}
           onPress={() => onChange({ role: 'other', customRole: name })}

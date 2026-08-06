@@ -544,6 +544,35 @@ describe('WorkLogEditSheet — 커스텀 역할명 배정', () => {
     expect(screen.getByLabelText('저장')).toBeDisabled();
   });
 
+  it('🔴 표류 행에서 딜러 칩이 선택돼 있다 — 화면이 스스로와 어긋나지 않는다', () => {
+    // `role='dealer'` + `custom_role='바리스타'`(정합 CHECK 없음). 선택 판정이 원시 비교면
+    // 표준 칩도 이름 칩도 안 켜지는데, 접힘 요약은 `딜러` 라고 말한다.
+    renderSheet({}, { role: 'dealer', customRole: '바리스타' });
+
+    fireEvent.press(screen.getByLabelText('역할 펼치기'));
+
+    expect(screen.getByTestId('role-chip-dealer-selected')).toBeTruthy();
+    expect(screen.queryByTestId('role-chip-custom-바리스타-selected')).toBeNull();
+  });
+
+  it('🔴 표류 행에서 "기타" 를 고르면 안내 문구대로 이름이 지워진다', () => {
+    // 안내("이름 없는 기타 역할로 저장돼요.")와 실제 저장이 어긋나면 안 된다. 서버는 안 보낸
+    // 축에 원시 custom_role 을 쓰므로, 클라가 customRole:null 을 명시해야 문구가 사실이 된다.
+    renderSheet({}, { role: 'floor', customRole: '바리스타' });
+
+    fireEvent.press(screen.getByLabelText('역할 펼치기'));
+    fireEvent.press(screen.getByLabelText('역할 기타'));
+
+    expect(screen.getByText('이름 없는 기타 역할로 저장돼요.')).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('저장'));
+
+    const { input } = mutateSpy.mock.calls[0][0];
+    expect(input.staffRole).toBe('other');
+    expect('customRole' in input).toBe(true);
+    expect(input.customRole).toBeNull();
+  });
+
   it('요약이 고른 이름을 말한다 (접힌 줄은 숨김이 아니라 읽기다)', () => {
     // 🔑 요약은 `initial` 이 아니라 **폼의 현재 값**을 읽어야 한다. `initial` 을 읽으면
     //    이름을 바꾼 뒤 접었을 때 접힌 줄만 옛 이름을 말한다.

@@ -231,6 +231,50 @@ describe('resolveWorkLogEditPayload — 커스텀 역할명(서버 판정표 ①
     expect('staffRole' in out).toBe(false);
   });
 
+  it('🔴 표류 행에서 "기타" 를 고르면 customRole:null 을 **실어야** 한다', () => {
+    // `role='floor'` + `custom_role='바리스타'` 표류 행(정합 CHECK 가 없어 존재할 수 있다).
+    // 🔴 비교 기준을 `initial.role` 로 접어 null 로 보면 "변경 없음"으로 판정해 키를 안 싣는데,
+    //    서버 `v_clear_custom_role := (v_new_role <> 'other')` 은 false 라 **옛 이름을 유지**한다
+    //    (20260807120000:491-493). 저장 결과는 `기타 · 바리스타` 인데 화면은 그 직전에
+    //    "이름 없이 저장돼요" 라고 말한 뒤다 — 시트가 거짓말한다.
+    const drift: WorkLogEditAxes = { ...INITIAL, role: 'floor', customRole: '바리스타' };
+
+    const out = resolveWorkLogEditPayload(drift, {
+      ...drift,
+      role: 'other',
+      customRole: null,
+    });
+
+    expect(out.staffRole).toBe('other');
+    expect('customRole' in out).toBe(true);
+    expect(out.customRole).toBeNull();
+  });
+
+  it('표류 행에서 같은 이름의 이름 칩을 고르면 staffRole 만 실린다 (최소 패치)', () => {
+    // 최종 이름이 저장된 것과 같으므로 키를 만들지 않는다. 서버는 role 만 other 로 올리고
+    // `v_clear_custom_role` 이 false 라 이름을 그대로 유지한다 — 칩이 약속한 결과와 같다.
+    const drift: WorkLogEditAxes = { ...INITIAL, role: 'dealer', customRole: '바리스타' };
+
+    const out = resolveWorkLogEditPayload(drift, {
+      ...drift,
+      role: 'other',
+      customRole: '바리스타',
+    });
+
+    expect(out.staffRole).toBe('other');
+    expect('customRole' in out).toBe(false);
+  });
+
+  it('표류 행을 다른 표준 역할로 옮기면 customRole 키가 없다 — 서버가 정리한다', () => {
+    // role 이 실제로 바뀌고 새 role 이 other 가 아니므로 `v_clear_custom_role` 이 true 다.
+    const drift: WorkLogEditAxes = { ...INITIAL, role: 'dealer', customRole: '바리스타' };
+
+    const out = resolveWorkLogEditPayload(drift, { ...drift, role: 'floor', customRole: null });
+
+    expect(out.staffRole).toBe('floor');
+    expect('customRole' in out).toBe(false);
+  });
+
   it('이름 변경도 이력이 남는 축이라 사유가 실린다', () => {
     // 서버는 최종 custom_role 이 바뀌면 role 컬럼이 그대로여도 role_change_history 를 남긴다.
     const out = resolveWorkLogEditPayload(

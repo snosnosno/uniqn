@@ -20,7 +20,8 @@ import { render, screen, fireEvent } from '@testing-library/react-native';
 
 import type { JobPosting } from '@/types';
 
-import { SlotRoleChips, type SlotRoleSelection } from '../SlotRoleChips';
+import { SlotRoleChips } from '../SlotRoleChips';
+import type { SlotRoleSelection } from '../roleSelection';
 
 interface FixtureRole {
   id: string;
@@ -412,5 +413,93 @@ describe('SlotRoleChips — 커스텀 역할명 칩(닫힌 목록)', () => {
 
     expect(screen.getByLabelText('역할 딜러')).toBeTruthy();
     expect(screen.getByLabelText('기타 역할 딜러')).toBeTruthy();
+  });
+});
+
+describe('SlotRoleChips — 선택 판정은 패치와 같은 접기를 쓴다 (회귀 가드)', () => {
+  /**
+   * 🔴 이 describe 가 막는 것: 선택 표식 판정이 **원시 동등비교**로 되돌아가는 것.
+   *    패치 쪽(`workLogEditPayload`)은 `foldRoleSelection` 으로 접는데 칩만 원시 비교를 하면,
+   *    두 규칙이 갈리는 입력에서 **표준 칩도 이름 칩도 선택되지 않는다.** 그때 접힘 요약은
+   *    여전히 `딜러` 라고 말하므로 화면이 스스로와 어긋난다.
+   *
+   * ⚠️ 아래 두 입력은 `work_logs` 에 (role, custom_role) 정합 CHECK 가 없어 존재할 수 있다
+   *    (prod 실측 0건이지만 도달 가능하다). 정상 행이 여전히 옳게 켜지는지도 함께 고정한다 —
+   *    과잉 접기로 반대 결함이 나면 안 된다.
+   */
+  it('🔴 표류 행(role=dealer + customRole=바리스타)에서 딜러 칩이 선택된다', () => {
+    render(
+      <SlotRoleChips
+        value={{ role: 'dealer', customRole: '바리스타' }}
+        current={{ role: 'dealer', customRole: '바리스타' }}
+        onChange={jest.fn()}
+      />
+    );
+
+    expect(screen.getByTestId('role-chip-dealer-selected')).toBeTruthy();
+    // 이름 칩은 목록에 뜨지만(표류 해소 경로) 켜져 있으면 안 된다 — 저장된 역할은 딜러다.
+    expect(screen.getByTestId('role-chip-custom-바리스타')).toBeTruthy();
+    expect(screen.queryByTestId('role-chip-custom-바리스타-selected')).toBeNull();
+  });
+
+  it('🔴 공백 패딩(customRole="바리스타 ")인 other 행에서 이름 칩이 선택된다', () => {
+    render(
+      <SlotRoleChips
+        value={{ role: 'other', customRole: '바리스타 ' }}
+        current={{ role: 'other', customRole: '바리스타 ' }}
+        onChange={jest.fn()}
+      />
+    );
+
+    expect(screen.getByTestId('role-chip-custom-바리스타-selected')).toBeTruthy();
+    expect(screen.queryByTestId('role-chip-other-selected')).toBeNull();
+  });
+
+  it('빈 문자열 이름인 other 행은 "기타" 칩이 선택된다', () => {
+    // 서버는 btrim 후 빈 문자열을 NULL 과 같게 접는다 — 화면도 같아야 한다.
+    render(
+      <SlotRoleChips
+        value={{ role: 'other', customRole: '   ' }}
+        current={{ role: 'other', customRole: '   ' }}
+        onChange={jest.fn()}
+      />
+    );
+
+    expect(screen.getByTestId('role-chip-other-selected')).toBeTruthy();
+  });
+
+  it('정상 행들은 그대로 — 표준 역할·이름 없는 기타·이름 붙은 기타 각각 하나만 켜진다', () => {
+    const cases: [SlotRoleSelection, string][] = [
+      [at('floor'), 'role-chip-floor-selected'],
+      [{ role: 'other', customRole: null }, 'role-chip-other-selected'],
+      [{ role: 'other', customRole: '바리스타' }, 'role-chip-custom-바리스타-selected'],
+    ];
+
+    cases.forEach(([selection, expectedTestID]) => {
+      const view = render(
+        <SlotRoleChips value={selection} current={selection} onChange={jest.fn()} />
+      );
+
+      expect(screen.getByTestId(expectedTestID)).toBeTruthy();
+      // 켜진 칩이 **정확히 하나**인지 — 접기가 과하면 둘이 켜진다.
+      expect(screen.queryAllByText('✓')).toHaveLength(1);
+      view.unmount();
+    });
+  });
+
+  it('🔴 이름 칩을 누르면 접기 전 원시 이름이 아니라 trim 된 이름이 통지된다', () => {
+    // 칩의 이름 자체가 이미 trim 된 값이라, 패치 비교(trim 기준)와 어긋날 수 없다.
+    const onChange = jest.fn();
+    render(
+      <SlotRoleChips
+        value={at('dealer')}
+        current={{ role: 'other', customRole: '  바리스타  ' }}
+        onChange={onChange}
+      />
+    );
+
+    fireEvent.press(screen.getByTestId('role-chip-custom-바리스타'));
+
+    expect(onChange).toHaveBeenCalledWith({ role: 'other', customRole: '바리스타' });
   });
 });
