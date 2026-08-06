@@ -28,7 +28,7 @@
 --    tr_work_logs_pin_payroll 도 발화하지 않는다 — jpc_test_set_user() 로 충분하다.
 -- ============================================================
 BEGIN;
-SELECT plan(20);
+SELECT plan(22);
 
 -- ── 픽스처 ──────────────────────────────────────────────────
 -- application_id 를 NULL 로 둔다(add_direct_staff 산 행의 형태). 이 파일은 실적 축만 보므로
@@ -83,6 +83,16 @@ BEGIN
           '바리스타')
   RETURNING id INTO v_id;
   PERFORM set_config('wa.wl_cust', v_id::text, true);
+
+  -- ⑥ 🔴 completed 인데 **정산은 아직 안 된** 행. ④ 로는 이 성질을 볼 수 없다 —
+  --    ④ 는 payroll_status='completed' 라 ALREADY_SETTLED 로 먼저 튕겨서 상태 파생까지
+  --    가지도 못한다. 강등 금지 규칙을 보려면 실적 키가 실제로 통과하는 completed 행이 필요하다.
+  INSERT INTO public.work_logs (job_posting_id, staff_id, owner_id, date, time_slot, status, role,
+                                check_in_ts, check_out_ts, payroll_status)
+  VALUES (s.job_posting_id, s.collaborator_id, s.owner_id, '2026-08-15', '18:00', 'completed', 'dealer',
+          '2026-08-15T09:00:00+00:00', '2026-08-15T18:00:00+00:00', 'pending')
+  RETURNING id INTO v_id;
+  PERFORM set_config('wa.wl_done', v_id::text, true);
 END $$;
 
 SELECT jpc_test_set_user((current_setting('wa.owner_id'))::uuid);
@@ -189,6 +199,27 @@ SELECT is((SELECT status::text || '|' || (check_in_ts IS NOT NULL)::text
            FROM public.work_logs WHERE id = current_setting('wa.wl_noshow')::uuid),
           'no_show|true',
           '노쇼는 시각을 기록해도 상태가 뒤집히지 않는다 (없던 유급 근무 방지)');
+
+-- ── 11-B~11-C) 🔴 completed 는 checked_out 으로 강등하지 않는다 ──
+-- 마이그 20260806140000:364-371 이 명시적으로 지키는 성질인데 직접 핀이 없었다.
+-- completed 도 '양쪽 NOT NULL' 을 만족해 제약 위반이 아니므로 조용히 강등된다 —
+-- 그러면 tr_sync_application_completion 이 applications 를 불필요하게 역전파한다.
+DO $$
+BEGIN
+  PERFORM public.update_work_log_slot(
+    current_setting('wa.wl_done')::uuid,
+    jsonb_build_object('checkOut', '2026-08-15T19:30:00+00:00', 'reason', '퇴근 시각 정정')
+  );
+END $$;
+
+SELECT is((SELECT status::text FROM public.work_logs WHERE id = current_setting('wa.wl_done')::uuid),
+          'completed',
+          '🔴 completed 행의 실적을 고쳐도 checked_out 으로 강등하지 않는다');
+
+-- 🔑 동반 양성 단언. 이게 없으면 RPC 가 아무것도 안 해도 위 단언이 통과한다(빈 가드).
+SELECT is((SELECT check_out_ts FROM public.work_logs WHERE id = current_setting('wa.wl_done')::uuid),
+          '2026-08-15T19:30:00+00:00'::timestamptz,
+          '강등은 막되 실적 자체는 정상 반영된다 (위 단언이 빈 가드가 아님을 보증)');
 
 -- ── 12~13) modification_history ─────────────────────────────
 -- 이 배열 길이 증가가 notify_on_work_log_update Case 2 를 발화시킨다.

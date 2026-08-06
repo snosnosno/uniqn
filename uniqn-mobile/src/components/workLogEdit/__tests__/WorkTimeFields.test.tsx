@@ -267,7 +267,7 @@ describe('WorkTimeFields — 익일 표기', () => {
     );
 
     expect(screen.getByTestId('check-out-value')).toHaveTextContent('08:00');
-    expect(screen.getByTestId('check-out-value')).not.toHaveTextContent('익일');
+    expect(screen.getByTestId('check-out-value')).not.toHaveTextContent(/익일/);
   });
 
   it('같은 날 퇴근에는 꼬리표가 없다', () => {
@@ -283,7 +283,11 @@ describe('WorkTimeFields — 익일 표기', () => {
       />
     );
 
-    expect(screen.getByTestId('check-out-value')).not.toHaveTextContent('익일');
+    // 🔴 양성 단언이 먼저다. `.not.toHaveTextContent('익일')` 만으로는 빈 가드가 된다 —
+    //    이 레포 RNTL 13.3.3 의 `toHaveTextContent(문자열)` 은 **완전일치**라
+    //    '23:00 (익일)' 이 렌더돼도 부정 단언이 통과한다(실측). 부분 확인은 정규식으로.
+    expect(screen.getByTestId('check-out-value')).toHaveTextContent('23:00');
+    expect(screen.getByTestId('check-out-value')).not.toHaveTextContent(/익일/);
   });
 
   it('출근이 없으면 baseDate 를 앵커로 삼는다', () => {

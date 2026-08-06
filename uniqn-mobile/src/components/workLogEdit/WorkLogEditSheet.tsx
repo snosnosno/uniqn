@@ -477,14 +477,17 @@ export function WorkLogEditSheet({
 
           {initial.hadLegacyEnd ? (
             /* 폐지된 범위 데이터 — 화면에서 종료가 사라진 이유를 밝힌다(조용한 소실 방지).
-               문구는 `EditSlotSheet.tsx:405` 그대로다. 구 시트는 실적 섹션이 조건부라 "아래"를
-               가리킬 수 없는 변형을 하나 더 뒀지만, 이 시트는 **실적이 항상 있으므로** 하나면 된다.
+               문구는 구 시트의 **두 번째 변형**(`EditSlotSheet.tsx:407`, 방향어 없음)이다.
+               ⚠️ "아래 출퇴근 기록"(같은 파일 :405)을 쓰면 안 된다 — 이 시트는 `WorkTimeFields`
+               가 이 고지문보다 **먼저** 렌더되므로 실제 출퇴근 칸은 위에 있다. 구 시트는 실적
+               섹션이 조건부라 두 변형이 필요했지만, 여기서는 위치가 고정이라 방향어 없는 쪽만
+               쓴다(방향어를 붙이면 배치가 바뀔 때마다 조용히 틀린 말이 된다).
                ⚠️ 차단이 아니다 — 저장 게이트에 넣지 말 것. */
             <Text
               testID="legacy-end-notice"
               className="mt-2 font-sans text-sm text-content-secondary dark:text-secondary-400"
             >
-              예정 종료 시간은 더 이상 쓰지 않아요. 실제 퇴근은 아래 출퇴근 기록으로 남습니다.
+              예정 종료 시간은 더 이상 쓰지 않아요. 실제 퇴근은 출퇴근 기록으로 남습니다.
             </Text>
           ) : null}
 

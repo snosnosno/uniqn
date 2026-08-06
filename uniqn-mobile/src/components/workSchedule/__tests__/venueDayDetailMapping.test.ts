@@ -65,6 +65,39 @@ describe('venueDayDetailMapping', () => {
       const result = mapVenueDaySlotToConfirmedStaff(makeSlot({ status: 'garbage' }), '2026-06-29');
       expect(result.status).toBe('scheduled');
     });
+
+    it('🔴 실적(checkInTs/checkOutTs)을 카드로 실어 나른다', () => {
+      // 이게 빠지면 카드는 예정만, 시트는 실적을 보여줘 같은 행이 두 시각을 말한다.
+      const result = mapVenueDaySlotToConfirmedStaff(
+        makeSlot({
+          checkInTs: '2026-06-29T09:05:00+09:00',
+          checkOutTs: '2026-06-29T18:10:00+09:00',
+        }),
+        '2026-06-29'
+      );
+      expect(result.checkInTime).toBe('2026-06-29T09:05:00+09:00');
+      expect(result.checkOutTime).toBe('2026-06-29T18:10:00+09:00');
+    });
+
+    it('실적이 없으면 undefined 다(빈 문자열·에폭으로 채우지 않는다)', () => {
+      const result = mapVenueDaySlotToConfirmedStaff(makeSlot(), '2026-06-29');
+      expect(result.checkInTime).toBeUndefined();
+      expect(result.checkOutTime).toBeUndefined();
+    });
+
+    it('payrollStatus 를 그대로 싣고, 모르는 값은 undefined 로 흡수한다', () => {
+      expect(
+        mapVenueDaySlotToConfirmedStaff(makeSlot({ payrollStatus: 'completed' }), '2026-06-29')
+          .payrollStatus
+      ).toBe('completed');
+      expect(
+        mapVenueDaySlotToConfirmedStaff(makeSlot({ payrollStatus: 'garbage' }), '2026-06-29')
+          .payrollStatus
+      ).toBeUndefined();
+      expect(
+        mapVenueDaySlotToConfirmedStaff(makeSlot(), '2026-06-29').payrollStatus
+      ).toBeUndefined();
+    });
   });
 
   describe('buildVenueDayGroup', () => {

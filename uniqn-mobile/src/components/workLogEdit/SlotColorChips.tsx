@@ -63,10 +63,16 @@ export function SlotColorChips({ value, onChange, readOnly = false }: SlotColorC
               }`}
             >
               {selected ? (
-                // 흰 체크 — 현행 4종은 전부 채도 높은 500/400 이라 대비가 확보된다.
+                // 🔑 체크는 **고정 다크**(`content-onGold`)다. 흰 체크는 대비가 모자랐다 —
+                //    스와치가 라이트 500 / 다크 400 으로 둘 다 밝은 쪽이라 흰 글자는
+                //    1.86~4.23:1 에 그친다(8종 중 7종이 AA 미달). 고정 다크로 두면
+                //    4.70~10.69:1 로 전부 AA 를 넘는다.
+                // ⚠️ `content-primary` 로는 안 된다 — 다크모드에서 #F0F0F2 로 뒤집혀
+                //    오히려 1.64~2.39:1 까지 떨어진다. `content-onGold` 는 정의상
+                //    다크모드 무관 고정값이라 `dark:` 짝이 필요 없다.
                 <Text
                   testID={`color-chip-selected-${chip.token}`}
-                  className="font-sans-semibold text-sm text-white dark:text-white"
+                  className="font-sans-semibold text-sm text-content-onGold"
                 >
                   ✓
                 </Text>
