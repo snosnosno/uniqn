@@ -70,6 +70,43 @@ describe('ScheduleDatesSheet — 세그먼트 클램프 (리뷰 M-1)', () => {
     });
   });
 
+  it('②는 실제 연속 구간 날짜를, ③은 나뉘는 카드 수를 문구에 담는다', () => {
+    const { getByText } = render(
+      <ScheduleDatesSheet
+        visible
+        postingType="regular"
+        initialSelectedDates={['2026-07-20', '2026-07-21', '2026-07-24']}
+        existingDates={[]}
+        showSegment
+        initialSegment="same"
+        onConfirm={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+
+    // ①과 ②는 같은 축(지원자 선택 자유도)으로 대비돼야 한다 — 서로 다른 축을 말하면 비교가 안 된다
+    expect(getByText('지원자가 원하는 날짜만 골라 지원해요 (하루만도 가능)')).toBeTruthy();
+    expect(getByText('7/20~7/21 다 나올 사람만 지원해요 (하루만 지원 불가)')).toBeTruthy();
+    expect(getByText('일정 카드가 3개로 나뉘어요 · 날짜별로 시간·역할·인원을 다르게')).toBeTruthy();
+  });
+
+  it('비연속 날짜만 있으면 ②가 비활성 사유를 그 자리에서 말한다', () => {
+    const { getByText } = render(
+      <ScheduleDatesSheet
+        visible
+        postingType="regular"
+        initialSelectedDates={['2026-07-20', '2026-07-24']}
+        existingDates={[]}
+        showSegment
+        initialSegment="same"
+        onConfirm={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+
+    expect(getByText('붙어 있는 날짜가 없어 고를 수 없어요')).toBeTruthy();
+  });
+
   it('세그먼트는 캘린더보다 앞(위)에 렌더된다', () => {
     const { toJSON } = render(
       <ScheduleDatesSheet
