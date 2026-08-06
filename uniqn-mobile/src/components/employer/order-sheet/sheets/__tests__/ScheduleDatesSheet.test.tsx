@@ -20,7 +20,10 @@ jest.mock('@/components/ui/Modal', () => {
       ) : null,
   };
 });
-jest.mock('@/components/ui/CalendarPicker', () => ({ CalendarPicker: () => null }));
+jest.mock('@/components/ui/CalendarPicker', () => {
+  const { View } = require('react-native');
+  return { CalendarPicker: () => <View testID="calendar-stub" /> };
+});
 
 describe('ScheduleDatesSheet — 세그먼트 클램프 (리뷰 M-1)', () => {
   it('비연속 날짜에서 잔존한 ②(grouped) 상태는 confirm 시 same으로 클램프된다', () => {
@@ -65,6 +68,28 @@ describe('ScheduleDatesSheet — 세그먼트 클램프 (리뷰 M-1)', () => {
       dates: ['2026-07-20', '2026-07-21'],
       segment: 'grouped',
     });
+  });
+
+  it('세그먼트는 캘린더보다 앞(위)에 렌더된다', () => {
+    const { toJSON } = render(
+      <ScheduleDatesSheet
+        visible
+        postingType="regular"
+        initialSelectedDates={['2026-07-20', '2026-07-21']}
+        existingDates={[]}
+        showSegment
+        initialSegment="same"
+        onConfirm={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+
+    const tree = JSON.stringify(toJSON());
+    const segmentIndex = tree.indexOf('order-sheet-dates-segment-same');
+    const calendarIndex = tree.indexOf('calendar-stub');
+    expect(segmentIndex).toBeGreaterThan(-1);
+    expect(calendarIndex).toBeGreaterThan(-1);
+    expect(segmentIndex).toBeLessThan(calendarIndex);
   });
 
   it('단일 날짜는 세그먼트와 무관하게 same으로 클램프된다', () => {

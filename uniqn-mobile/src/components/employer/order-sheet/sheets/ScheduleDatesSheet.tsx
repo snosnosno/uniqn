@@ -6,7 +6,8 @@
  * ② "연속 날짜 묶음 지원"(연속 구간별 분할 + grouped=true — 구형 '그룹으로 묶기' 시맨틱:
  *    지원자가 연속 범위를 통째로 지원. 연속쌍 없으면 비활성)
  * ③ "날짜마다 따로"(날짜별 N그룹, grouped=false)
- * 세그먼트는 고정 슬롯(2일 미만 비활성 — 노출/숨김 전환의 모달 내부 점프 방지, 2차 Design-low).
+ * 세그먼트는 **캘린더 위** 고정 슬롯(2일 미만 비활성 — 노출/숨김 전환의 모달 내부 점프 방지,
+ * 2차 Design-low). 캘린더 아래에 있으면 선택을 끝낸 뒤 스크롤을 더 내려야 발견되므로 위로 올렸다.
  * showSegment=false(그룹 재편집·추가 모드)면 세그먼트 자체를 렌더하지 않는다(ⓓ 재귀 분할 방지).
  * 분할 실행은 confirm 시 부모(OrderSheetScreen)가 수행 — 시트 세션 내에서는 그룹이 갈라지지
  * 않으므로 E6 병합 확인이 구조적으로 불필요하다(시그니처 분화가 생길 수 없음).
@@ -69,7 +70,7 @@ export function ScheduleDatesSheet({
             : segment;
         onConfirm({ dates, segment: effective });
       }}
-      renderBottomAccessory={
+      renderAboveCalendar={
         showSegment
           ? ({ selectedDates }) => {
               const multi = selectedDates.length >= 2;

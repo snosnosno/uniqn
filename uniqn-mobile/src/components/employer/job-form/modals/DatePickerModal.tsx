@@ -48,10 +48,10 @@ export interface DatePickerModalProps {
    */
   initialSelectedDates?: string[];
   /**
-   * 캘린더 아래 액세서리 슬롯(S1 — 주문서 3지 세그먼트). 현재 선택 날짜를 받아 렌더한다.
+   * 캘린더 **위** 액세서리 슬롯(S1 — 주문서 3지 세그먼트). 현재 선택 날짜를 받아 렌더한다.
    * 미전달 시 렌더 없음(기존 호출부 무회귀).
    */
-  renderBottomAccessory?: (ctx: { selectedDates: string[] }) => React.ReactNode;
+  renderAboveCalendar?: (ctx: { selectedDates: string[] }) => React.ReactNode;
 }
 
 /** 'YYYY-MM-DD' → 로컬 자정 Date. CalendarPicker 의 isSameDay·format(yyyy-MM-dd) 왕복과 정합. */
@@ -72,7 +72,7 @@ export function DatePickerModal({
   postingType,
   existingDates,
   initialSelectedDates,
-  renderBottomAccessory,
+  renderAboveCalendar,
 }: DatePickerModalProps) {
   const { addToast } = useToastStore();
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
@@ -193,25 +193,19 @@ export function DatePickerModal({
 
   return (
     <Modal visible={visible} onClose={handleClose} title="날짜 선택" size="lg" footer={footer}>
-      {/* 제약사항 안내 */}
-      <View className="mb-2 p-2.5 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
-        <Text className="text-sm text-primary-700 dark:text-primary-300 font-sans">
-          최대 {constraints.maxDates}개 추가 가능 (현재: {existingDates.length}개, 남은 슬롯:{' '}
-          {remainingSlots}개)
-        </Text>
-        {postingType === 'urgent' && (
-          <Text className="text-xs text-primary-600 dark:text-primary-400 mt-0.5 font-sans">
-            급구 공고는 오늘부터 7일 이내만 선택할 수 있습니다
-          </Text>
-        )}
-      </View>
-
-      {/* 선택된 날짜 목록 */}
+      {/* 선택 현황 + 상한 안내 (한 블록 통합) — 개수 정보가 두 블록에 흩어져 중복이었다.
+          상한은 '남은 슬롯' 한 수치로만 말한다(신규 공고에선 최대치와 같아 두 번 말할 이유가 없고,
+          편집 시엔 이미 담긴 개수를 하단 '이미 추가된 날짜' 블록이 따로 알려준다). */}
       <View className="mb-2 p-2.5 bg-surface-page dark:bg-surface rounded-lg">
         <View className="flex-row justify-between items-center mb-1.5">
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-            선택한 날짜 ({selectedDates.length}개)
-          </Text>
+          <View className="flex-row items-center gap-1.5 flex-1">
+            <Text className="text-sm text-content-primary dark:text-content-primary font-sans-medium">
+              선택한 날짜 {selectedDates.length}개
+            </Text>
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+              {canAddMore ? `최대 ${remainingSlots}개까지` : '남은 슬롯이 없어요'}
+            </Text>
+          </View>
           {selectedDates.length > 0 && (
             <Pressable onPress={handleClearAll} accessibilityLabel="전체 해제">
               <Text className="text-xs text-error-500 dark:text-error-400 font-sans">
@@ -220,6 +214,12 @@ export function DatePickerModal({
             </Pressable>
           )}
         </View>
+
+        {postingType === 'urgent' && (
+          <Text className="text-xs text-primary-600 dark:text-primary-400 mb-1.5 font-sans">
+            급구 공고는 오늘부터 7일 이내만 선택할 수 있습니다
+          </Text>
+        )}
 
         {selectedDates.length === 0 ? (
           <Text className="text-content-placeholder font-sans">캘린더에서 날짜를 선택하세요</Text>
@@ -249,6 +249,13 @@ export function DatePickerModal({
         )}
       </View>
 
+      {/* 캘린더 위 액세서리(주문서 3지 세그먼트 등) — 선택 날짜에 반응 */}
+      {renderAboveCalendar
+        ? renderAboveCalendar({
+            selectedDates: sortedSelectedDates.map((d) => format(d, 'yyyy-MM-dd')),
+          })
+        : null}
+
       {/* 캘린더 */}
       <View className="mb-2">
         <CalendarPicker
@@ -261,13 +268,6 @@ export function DatePickerModal({
           maxSelections={remainingSlots}
         />
       </View>
-
-      {/* 하단 액세서리(주문서 3지 세그먼트 등) — 선택 날짜에 반응 */}
-      {renderBottomAccessory
-        ? renderBottomAccessory({
-            selectedDates: sortedSelectedDates.map((d) => format(d, 'yyyy-MM-dd')),
-          })
-        : null}
 
       {/* 이미 추가된 날짜 안내 */}
       {existingDates.length > 0 && (
