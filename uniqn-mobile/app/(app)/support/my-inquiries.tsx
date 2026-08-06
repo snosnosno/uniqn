@@ -14,17 +14,17 @@ import { InquiryCard, INQUIRY_STATUS_STRIPE_TONE } from '@/components/support';
 import { StackHeader } from '@/components/headers';
 import { useMyInquiries } from '@/hooks/useInquiry';
 import type { Inquiry } from '@/types';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 
 export default function MyInquiriesScreen() {
-  const {
-    inquiries,
-    isLoading,
-    isRefreshing,
-    isFetchingNextPage,
-    hasMore,
-    fetchNextPage,
-    refetch,
-  } = useMyInquiries();
+  const { inquiries, isLoading, isFetchingNextPage, hasMore, fetchNextPage, refetch } =
+    useMyInquiries();
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refetch()
+  );
 
   const handleInquiryPress = useCallback((inquiry: Inquiry) => {
     router.push(`/(app)/support/inquiry/${inquiry.id}`);
@@ -99,8 +99,8 @@ export default function MyInquiriesScreen() {
         ListFooterComponent={renderFooter}
         refreshControl={
           <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={refetch}
+            refreshing={pullRefreshing}
+            onRefresh={onPullRefresh}
             tintColor={PRIMARY_COLORS[300]}
           />
         }

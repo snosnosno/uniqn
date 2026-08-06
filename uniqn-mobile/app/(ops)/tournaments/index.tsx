@@ -22,6 +22,7 @@ import { useOpsTournaments, useDuplicateTournament } from '@/hooks/ops';
 import { useOpsHubEnteredOnce } from '@/hooks/ops/useOpsHubEnteredOnce';
 import { selectResumeTournament, kstDateString } from '@/domains/ops';
 import type { OpsTournament, OpsTournamentStatus } from '@/types/ops';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 
 // ============================================================================
 // 상태 배지 (디자인 토큰 — raw gray 금지)
@@ -301,7 +302,13 @@ function ErrorBanner({ onRetry }: { onRetry: () => void }) {
 export default function OpsTournamentListScreen() {
   const { postingId: postingIdParam } = useLocalSearchParams<{ postingId?: string }>();
   const postingId = Array.isArray(postingIdParam) ? postingIdParam[0] : postingIdParam;
-  const { tournaments, isLoading, isRefetching, error, refetch } = useOpsTournaments();
+  const { tournaments, isLoading, error, refetch } = useOpsTournaments();
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refetch()
+  );
   const duplicate = useDuplicateTournament();
   const isDark = useThemeStore((s) => s.isDarkMode);
 
@@ -382,8 +389,8 @@ export default function OpsTournamentListScreen() {
           contentContainerStyle={{ padding: 16 }}
           refreshControl={
             <RefreshControl
-              refreshing={isRefetching}
-              onRefresh={handleRetry}
+              refreshing={pullRefreshing}
+              onRefresh={onPullRefresh}
               tintColor={getLayoutColor(isDark, 'refreshTint')}
               colors={[getLayoutColor(isDark, 'refreshTint')]}
             />

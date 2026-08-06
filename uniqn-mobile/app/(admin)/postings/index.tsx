@@ -30,6 +30,7 @@ import { useBulkShareSelection } from '@/hooks/share/useBulkShareSelection';
 import { useJobPostings } from '@/hooks/useJobPostings';
 import { extractPostingFilledSubmap, usePostingFilledCounts } from '@/hooks/usePostingFilledCounts';
 import type { JobPostingCard, PostingType } from '@/types';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 
 const TYPE_FILTERS: { value: PostingType | 'all'; label: string }[] = [
   { value: 'all', label: '전체' },
@@ -47,9 +48,15 @@ export default function AdminPostingsScreen() {
     () => (typeFilter === 'all' ? {} : { postingType: typeFilter }),
     [typeFilter]
   );
-  const { jobs, isLoading, error, refresh, isRefreshing, loadMore, hasMore } = useJobPostings({
+  const { jobs, isLoading, error, refresh, loadMore, hasMore } = useJobPostings({
     filters,
   });
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refresh()
+  );
 
   const filledCountIds = useMemo(() => jobs.map((job) => job.id), [jobs]);
   const filledCountsQuery = usePostingFilledCounts(filledCountIds);
@@ -201,8 +208,8 @@ export default function AdminPostingsScreen() {
           onEndReachedThreshold={0.5}
           refreshControl={
             <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={() => void refresh()}
+              refreshing={pullRefreshing}
+              onRefresh={onPullRefresh}
               {...PTR_REFRESH_PROPS}
             />
           }

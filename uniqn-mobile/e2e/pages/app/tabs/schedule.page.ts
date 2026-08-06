@@ -12,6 +12,7 @@ export class SchedulePage extends BasePage {
   readonly todayButton: Locator;
   readonly viewToggleButton: Locator;
   readonly monthTitle: Locator;
+  readonly dashboardToggle: Locator;
 
   constructor(page: Page) {
     super(page);
@@ -21,6 +22,27 @@ export class SchedulePage extends BasePage {
     this.todayButton = page.getByTestId('schedule-today-button');
     this.viewToggleButton = page.getByTestId('schedule-view-toggle-button');
     this.monthTitle = page.getByTestId('schedule-month-title');
+    this.dashboardToggle = page.getByTestId('schedule-dashboard-toggle');
+  }
+
+  /**
+   * '이번 달 요약'을 펼친다 (통계 밴드는 펼쳤을 때만 렌더된다).
+   *
+   * 요약의 기본값은 **접힘**이다 — 히어로 카드 + 월 네비 + 요약이 뷰포트를 다 먹으면
+   * 정작 근무 목록이 시작할 세로가 남지 않기 때문. 접힘/펼침은 기기에 저장되므로
+   * 현재 상태를 가정하지 않는다.
+   *
+   * ⚠️ `aria-expanded` 로 판별하지 말 것 — 토글은 `accessibilityState={{ expanded }}` 를 쓰는데
+   * react-native-web 0.21 은 **accessibilityState 를 아예 처리하지 않아** 웹 DOM 에 그 속성이
+   * 없다(네이티브에서만 유효). 그래서 판정 대상 자체(통계 밴드)의 가시성으로 판단한다.
+   */
+  async expandSummary(): Promise<void> {
+    if (await this.getStatLabel('지원').isVisible()) {
+      return;
+    }
+
+    await this.dashboardToggle.waitFor({ state: 'visible', timeout: 10_000 });
+    await this.dashboardToggle.click();
   }
 
   async goto(): Promise<void> {

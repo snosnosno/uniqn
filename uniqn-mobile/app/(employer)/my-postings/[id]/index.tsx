@@ -61,6 +61,7 @@ import { useDeleteJobPosting } from '@/hooks/useJobManagement';
 import { extractPostingFilledSubmap, usePostingFilledCounts } from '@/hooks/usePostingFilledCounts';
 import { useThemeStore } from '@/stores/themeStore';
 import type { PostingManagementViewModel, PostingType, TournamentApprovalStatus } from '@/types';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 
 interface ActionCardProps {
   icon: React.ReactNode;
@@ -128,19 +129,24 @@ export default function JobPostingDetailScreen() {
   const {
     job: posting,
     isLoading,
-    isRefreshing,
     error,
     refresh,
   } = useJobDetail(id || '', {
     realtime: true,
   });
-  const {
-    data: applicantData,
-    refetch: refreshApplicants,
-    isRefetching: isRefreshingApplicants,
-  } = useApplicantsByJobPosting(id || '', undefined, {
-    realtime: true,
-  });
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    handleRefresh()
+  );
+  const { data: applicantData, refetch: refreshApplicants } = useApplicantsByJobPosting(
+    id || '',
+    undefined,
+    {
+      realtime: true,
+    }
+  );
   const { mutate: deleteJobPosting, isPending: isDeleting } = useDeleteJobPosting();
   const { shareJob, isSharing } = useShare();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -317,8 +323,8 @@ export default function JobPostingDetailScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={isRefreshing || isRefreshingApplicants}
-            onRefresh={handleRefresh}
+            refreshing={pullRefreshing}
+            onRefresh={onPullRefresh}
             tintColor={getLayoutColor(isDark, 'refreshTint')}
           />
         }

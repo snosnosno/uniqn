@@ -13,6 +13,7 @@ import { trackJobView } from '@/services/observability';
 import { useThemeStore } from '@/stores';
 import { isTournamentApprovalBlocked } from '@/domains/job-posting';
 import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 
 export default function PublicJobDetailAliasRoute() {
   const { id } = useLocalSearchParams<{ id?: string | string[] }>();
@@ -23,7 +24,13 @@ export default function PublicJobDetailAliasRoute() {
   const [bottomActionHeight, setBottomActionHeight] = useState(116);
 
   const resolvedId = Array.isArray(id) ? id[0] : id;
-  const { job, isLoading, isRefreshing, error, refresh } = useJobDetail(resolvedId ?? '');
+  const { job, isLoading, error, refresh } = useJobDetail(resolvedId ?? '');
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refresh()
+  );
 
   useEffect(() => {
     if (job) {
@@ -148,8 +155,8 @@ export default function PublicJobDetailAliasRoute() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={refresh}
+            refreshing={pullRefreshing}
+            onRefresh={onPullRefresh}
             tintColor={getLayoutColor(isDark, 'refreshTint')}
           />
         }
