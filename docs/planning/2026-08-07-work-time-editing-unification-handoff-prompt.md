@@ -15,22 +15,24 @@
 | 워크트리 | `C:\Users\user\Desktop\T-HOLDEM-worktime` — **존재함. 지우지 말 것** |
 | 브랜치 | `feat/work-time-editing-unification` |
 | 베이스 | `23e84fd2b` (master, PR#423 포함) |
-| HEAD | `b15a6e66d` |
-| 커밋 | **27개** · 93파일 · +11,489 / −4,032 |
+| HEAD | 마지막 코드 커밋 `fc1633697` + 이 문서 커밋 |
+| 커밋 | **30개** · 97파일 · +11,989 / −4,043 |
 | PR | **미생성** |
 | prod | 🔴 **마이그레이션 5개 전부 미적용** |
 
-### 검증 (전부 이전 세션에서 실제 실행·관측됨 — 이 세션에서 **재실행해 재확인할 것**)
+### 검증 (**2026-08-07 세션에서 전량 재실행·직접 관측**)
 
 ```
-pgTAP              103 파일 / 1164 PASS
-jest               631 스위트 / 7061 PASS
-npm run quality    exit 0
-npm run knip:gate  exit 0   (래칫 2189)
-tsc --noEmit       exit 0
+pgTAP              103 파일 / 1164 PASS   exit 0
+jest               632 스위트 / 7073 PASS  exit 0   (§5-1 해소로 +1 스위트 / +12 테스트)
+npm run quality    exit 0                        (105 warnings / 0 errors)
+npm run knip:gate  exit 0
 기존 마이그 수정   0건 (신규 5개만)
 작업트리           clean
 ```
+
+⚠️ 로컬 Docker DB에는 이 브랜치 마이그 5개가 **이미 적용된 상태**다(`schema_migrations` 실측).
+다른 워크트리 2개(datepick·grouping)는 마이그가 0건이라 공유 스택 오염은 없다.
 
 ### 신규 마이그레이션 5개 — 🔴 **적용 순서 엄수**
 
@@ -66,11 +68,13 @@ tsc --noEmit       exit 0
 ### (B) 잔여 착지 — 순서대로
 
 ```
-① 최신 master 재통합 + 재검증
-② prod 마이그레이션 5개 적용 (사용자 확인 필수)
-③ PR 생성 (사용자 명시 요청 시에만)
-④ 실기기 QA
-⑤ 웹 배포 · OTA
+✅ ⓪ 베이스라인 재검증 (08-07 완료 — 4종 전량 직접 관측)
+✅ ⓪' §5-1 D4 3경로 통일 (08-07 완료 — 커밋 fc1633697)
+   ① 최신 master 재통합 + 재검증   ← 08-07 기준 behind 0 (재확인 필요)
+   ② prod 마이그레이션 5개 적용 (사용자 확인 필수)
+   ③ PR 생성 (사용자 명시 요청 시에만)
+   ④ 실기기 QA
+   ⑤ 웹 배포 · OTA
 ```
 
 ---
@@ -128,7 +132,9 @@ SELECT (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespa
 |---|---|---|
 | D1 | 예정 = 안내값(상태 무관) / 실적만 상태 전환 | 사용자 확정 |
 | D2 | 3곳(근무표·스태프관리·정산) 동일 시트 | 사용자 확정 |
-| D4 | 정산 완료 건 **전체** 읽기 전용 | 사용자 확정 (⚠️ §5-1 미완) |
+| D4 | 정산 완료 건 **전체** 읽기 전용 | 사용자 확정 (✅ §5-1 에서 3경로 통일 완료) |
+| — | **`failed` = 편집 가능** (읽기 전용은 completed 에서만) | 🔴 **사용자 결정(08-07).** `payrollStatus` 는 3값이다 |
+| — | **completed 도 시트 진입 허용** — 거절은 시트가 말한다 | 🔴 **사용자 결정(08-07).** 버튼을 숨기면 "왜 없지?"만 남는다 |
 | **D6 예외** | **예정 섹션은 접지 않는다** | 🔴 **사용자 직접 결정(08-06).** 설계 문서 §3·D6 은 "접힘"이라 적혀 있지만 **구현이 정본**이다. 근거는 `WorkLogEditSheet.tsx` 상단 주석 |
 | D7 | 마감 역할 차단 없음 — 표기만 | 사용자 확정. 서버에도 정원 거부 없음 |
 | — | **역할 변경 사유 = 선택** | 🔴 **사용자 결정(08-07).** 구 `RoleChangeModal` 은 필수였다 |
@@ -153,9 +159,27 @@ SELECT (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespa
 
 ## 5. 잔여 판단 사항 (코드는 그대로, 결정이 필요한 것)
 
-### 5-1. 🔴 **다음 세션 최우선 — D4 가 3경로 중 1경로에서만 열려 있다**
+### 5-1. ✅ **해소 완료 — D4 3경로 통일 (2026-08-07, 커밋 `fc1633697`)**
+
+사용자 결정 둘을 받아 TDD 로 닫았다: **`failed` = 편집 가능** · **completed 진입은 3곳 모두 열기**.
+
+- `ConfirmedStaffCard.canEditTime` 에서 `payrollStatus !== COMPLETED` 제거
+- `SettlementDetailModal` 액션 줄 게이트를 `=== PENDING` → `!== COMPLETED` 축으로 전환
+  → **`failed` 가 시간·금액·정산 버튼을 통째로 잃던 실제 결함이 복구됐다**(이게 진짜 버그였다)
+- completed 는 **'시간 수정'만** 남기고 금액 수정·지급 완료는 그대로 닫음 — 연 것은 열람뿐
+- `SettlementActionButtons` 에 `testID` — 빈 껍데기 렌더 여부를 검증 가능하게
+
+🔑 **시트 readOnly 배선을 실측했다**(이게 끊겨 있으면 정산 완료 건이 오히려 편집 가능해진다):
+`payroll_status` → `WORK_LOG_COLUMNS` → `workLogToConfirmedStaff:80` → `toEditInitial`
+→ `WorkLogEditSheet.readOnly` — **3경로 전부 연결 확인**.
+
+⚠️ 남은 관련 항목: **버튼 라벨이 경로마다 다르다** — 카드는 `근무 수정`, 정산 모달은 `시간 수정`.
+같은 시트를 여는데 이름이 둘이다. 이번 스코프에서 **의도적으로 건드리지 않았다**(문구 변경은 별건).
+
+<details><summary>해소 전 기록</summary>
+
 시트는 읽기 전용 모드를 **완비**했는데(`settled-notice` + `opacity-60` + 전 필드 readOnly + 저장 버튼 미렌더),
-**거기 도달할 수 없는 진입점이 둘**이다:
+**거기 도달할 수 없는 진입점이 둘**이었다:
 - `ConfirmedStaffCard.tsx` `canEditTime` 이 `payrollStatus === 'completed'` 를 숨김
 - `SettlementDetailModal.tsx:275` 액션 줄을 `PENDING` 일 때만 렌더
 
@@ -163,6 +187,8 @@ SELECT (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespa
 🔴 여는 작업은 `PENDING` 조건을 지우는 한 줄이 **아니다** — `SettlementDetailModal.tsx:113` 이
 `payrollStatus || PENDING` 으로 기본값 처리해 **`failed` 상태도 액션 줄을 잃는다**(3값이다).
 `failed` 처리를 함께 정해야 한다. **코드를 읽어야만 드러나는 형태라 놓치기 쉽다.**
+
+</details>
 
 ### 5-2. 그 밖
 - **중복충돌 경고 되살릴 자리** = 시트가 아니라 `VenueDayPanel`/`VenueDayDetail`(형제 목록을 이미 갖고 있어 새 조회 0).
@@ -205,7 +231,7 @@ SELECT (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespa
 ```bash
 # 1. 워크트리로 (이미 있다 — 새로 만들지 마라)
 cd C:/Users/user/Desktop/T-HOLDEM-worktime
-git status --short && git log --oneline -1     # clean / b15a6e66d 기대
+git status --short && git log --oneline -1     # clean (마지막 코드 커밋 fc1633697)
 
 # 2. 최신화
 git fetch origin && git log --oneline HEAD..origin/master   # 비어야 최신
@@ -235,3 +261,8 @@ npm run knip:gate        # exit 0
 - 근무표의 **"출근 시간 겹침" 경고가 사라진다**
 - 정산 시트에서 **스태프 아바타가 사라진다**
 - 커스텀 역할은 **공고에 정의된 이름 + 이 행에 저장된 이름**만 고를 수 있다(자유 입력 없음)
+- 🔴 **정산 실패(`failed`) 건에 액션 버튼이 되돌아온다** — 그동안 시간·금액·정산 버튼이 전부 없어
+  재정산할 방법이 없었다. **기능 복구이지 신규 동작이 아니다**
+- **정산 완료 건도 `근무 수정`·`시간 수정` 버튼이 보인다** — 누르면 읽기 전용 시트가 열려
+  "정산이 완료되어 수정할 수 없습니다"라고 알린다. 이전에는 버튼 자체가 없어 이유를 알 수 없었다.
+  금액 수정·지급 완료 표시는 **여전히 안 보인다**
