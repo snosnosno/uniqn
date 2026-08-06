@@ -81,8 +81,20 @@ import type { StoredSlotColorToken } from '@/domains/workSchedule';
  *    근무표 슬롯 RPC 는 status 를 필터 없이 내려주므로 노쇼 행이 실제로 이 시트에 뜬다.
  */
 export interface WorkLogEditInitial {
-  /** 출근 예정 시각 'HH:mm'. 읽을 수 없는 레거시 값이면 null 로 넘긴다. */
+  /** 출근 예정 시각 'HH:mm'. 읽을 수 없는 레거시 값이면 null + `scheduledUnreadable` 로 넘긴다. */
   scheduledStart: string | null;
+  /**
+   * 저장된 `time_slot` 에 값은 있는데 **읽을 수 없다**(폐지 전 자유 텍스트 `'저녁 6시'` 등).
+   *
+   * 🔴 이 구분이 없으면 값이 지워지지 않는다. `scheduledStart === null` 만 보면 '미정'으로
+   *    초기화되는데, 그러면 미정 체크가 이미 켜진 상태라 dirty 가 안 잡혀 `timeUndecided` 가
+   *    패치에 안 실리고, 사용자에게는 **"고쳤는데 그대로"** 로 보인다.
+   *    true 면 미정을 켜지 않은 채 시작해, 미정 선택이 **실제 변경**이 되게 한다.
+   *
+   * 판정 기준은 폐기될 `EditSlotSheet.tsx:147-152` 그대로다(새로 만들지 말 것):
+   *   `Boolean(timeSlot) && !isValidSlotStartTime(parseTimeSlotParts(timeSlot).start)`
+   */
+  scheduledUnreadable?: boolean;
   checkIn: Date | null;
   checkOut: Date | null;
   role: StaffRole;
@@ -136,11 +148,16 @@ const CLOCK_RE = /^(\d{1,2}):(\d{2})$/;
 // Pure helpers
 // ============================================================================
 
-/** 시트 prop → 패치 비교용 축. '미정'은 예정 시각이 없는 상태와 같은 뜻이다(서버 `time_slot IS NULL`). */
+/**
+ * 시트 prop → 패치 비교용 축.
+ *
+ * '미정'은 예정 시각이 없는 상태와 같은 뜻이다(서버 `time_slot IS NULL`) — **단 읽을 수 없는
+ * 레거시 값은 예외**다. 그건 "미정"이 아니라 "지워야 할 값"이라 미정을 켜지 않은 채 시작한다.
+ */
 function toAxes(initial: WorkLogEditInitial): WorkLogEditAxes {
   return {
     scheduledStart: initial.scheduledStart,
-    scheduledUndecided: initial.scheduledStart === null,
+    scheduledUndecided: initial.scheduledStart === null && !initial.scheduledUnreadable,
     checkIn: initial.checkIn,
     checkOut: initial.checkOut,
     role: initial.role,
@@ -223,8 +240,27 @@ export function WorkLogEditSheet({
     [baseline, form, reason, editedBy]
   );
 
+  /**
+   * 읽을 수 없는 레거시 예정값이 **아직 해소되지 않았다** — 시각을 고르지도, 미정을 켜지도 않은 상태.
+   *
+   * 이때 저장을 막는 것은 폐기될 `EditSlotSheet` 의 `timeGateSatisfied`(:220·:306) 를 옮긴 것이다.
+   * 안 막으면 사용자가 퇴근만 고쳐 저장한 뒤에도 `'저녁 6시'` 가 시각인 척 남아 있다.
+   *
+   * ⚠️ 게이트는 **읽을 수 없는 경우에만** 건다. 원래부터 미정인 행은 이미 해소된 상태라
+   *    막으면 안 된다(구 시트는 그 경우도 막았지만, 거기선 '미정'이 명시 선택이라 뜻이 달랐다).
+   */
+  const scheduledUnresolved =
+    Boolean(initial.scheduledUnreadable) &&
+    !form.scheduledUndecided &&
+    form.scheduledStart === null;
+
   const hasChanges = Object.keys(patch).length > 0;
-  const canSave = !readOnly && hasChanges && !insight.hasBlockingError && !updateSlot.isPending;
+  const canSave =
+    !readOnly &&
+    hasChanges &&
+    !insight.hasBlockingError &&
+    !scheduledUnresolved &&
+    !updateSlot.isPending;
 
   const roleSummary = buildRoleSummary(form.role, initial.customRole ?? null, form.color);
 
@@ -385,6 +421,17 @@ export function WorkLogEditSheet({
             currentStatus={initial.status ?? undefined}
             onOpenPicker={setActivePicker}
           />
+
+          {scheduledUnresolved ? (
+            /* 폐지 전 자유 텍스트로 저장된 값 — 시각인 척 보여주는 대신 다시 고르게 한다.
+               문구는 `EditSlotSheet.tsx:396-398` 그대로다(같은 상황에 두 가지 말을 만들지 않는다). */
+            <Text
+              testID="scheduled-unreadable-notice"
+              className="mt-2 font-sans text-sm text-content-secondary dark:text-secondary-400"
+            >
+              저장된 출근 시간을 읽을 수 없어요. 시간을 다시 골라주세요.
+            </Text>
+          ) : null}
 
           <AttendanceNotices insight={insight} />
 

@@ -114,6 +114,58 @@ function pickCheckOutAt2() {
 }
 
 // ============================================================================
+// 0. 레거시 unreadable 회귀 — 폐기될 EditSlotSheet 의 originalUnreadable 처리 계승
+// ============================================================================
+
+describe('WorkLogEditSheet — 읽을 수 없는 레거시 예정값', () => {
+  /** `time_slot` 에 `'저녁 6시'` 같은 자유 텍스트가 남은 행. 진입점이 파싱에 실패해 넘기는 모양. */
+  const LEGACY = { scheduledStart: null, scheduledUnreadable: true } as const;
+
+  it('🔴 미정을 켜면 timeUndecided 가 실린다 — 안 그러면 값이 영영 안 지워진다', () => {
+    renderSheet({}, LEGACY);
+
+    fireEvent.press(screen.getByLabelText('출근 예정 미정'));
+    fireEvent.press(screen.getByLabelText('저장'));
+
+    expect(mutateSpy).toHaveBeenCalledTimes(1);
+    expect(mutateSpy.mock.calls[0][0].input.timeUndecided).toBe(true);
+  });
+
+  it('🔴 정상 미정 행은 여전히 빈 패치다 — "미정이면 무조건 보낸다"가 되면 안 된다', () => {
+    // 반대 결함 방지. 원래부터 time_slot 이 NULL 인 행은 이미 해소된 상태라 보낼 것이 없다.
+    renderSheet({}, { scheduledStart: null });
+
+    expect(screen.getByLabelText('저장')).toBeDisabled();
+  });
+
+  it('해소 전에는 안내를 띄우고 다른 축만 고쳐도 저장을 막는다', () => {
+    renderSheet({}, LEGACY);
+
+    expect(screen.getByTestId('scheduled-unreadable-notice')).toBeTruthy();
+
+    // 퇴근을 고쳐 dirty 를 만들어도 예정이 미해소면 저장이 열리지 않는다.
+    pickCheckOutAt2();
+    expect(screen.getByLabelText('저장')).toBeDisabled();
+  });
+
+  it('시각을 고르면 해소돼 안내가 사라지고 저장이 열린다', () => {
+    renderSheet({}, LEGACY);
+
+    fireEvent.press(screen.getByLabelText('출근 예정 선택'));
+    fireEvent.press(screen.getByLabelText('피커 확정 출근 예정 시간'));
+
+    expect(screen.queryByTestId('scheduled-unreadable-notice')).toBeNull();
+    expect(screen.getByLabelText('저장')).not.toBeDisabled();
+  });
+
+  it('정상 미정 행에는 안내를 띄우지 않는다', () => {
+    renderSheet({}, { scheduledStart: null });
+
+    expect(screen.queryByTestId('scheduled-unreadable-notice')).toBeNull();
+  });
+});
+
+// ============================================================================
 // 1. dirty 축만 전송
 // ============================================================================
 
