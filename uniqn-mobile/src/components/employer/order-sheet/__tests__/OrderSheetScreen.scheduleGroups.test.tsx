@@ -188,6 +188,45 @@ describe('날짜 확정 — 전 일정 스코프', () => {
     expect(inherited?.timeSlots).toEqual(floorSlot);
   });
 
+  it('승계를 조용히 하지 않는다 — 어느 조건을 받았는지 알리고 바꿀 길을 준다 (F10)', async () => {
+    const { getByTestId } = renderWithCapture(
+      withGroups([
+        { dates: ['2026-07-14'], timeSlots: dealerSlot, grouped: false },
+        { dates: ['2026-07-20'], timeSlots: floorSlot, grouped: false },
+      ])
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-dates'));
+    fireEvent.press(getByTestId('calendar-pick-714-720-721'));
+    fireEvent.press(getByTestId('job-posting-date-confirm-button'));
+    await flush();
+
+    const toast = mockAddToast.mock.calls.at(-1)?.[0];
+    expect(toast.message).toContain('7/21');
+    expect(toast.message).toContain('조건으로 추가');
+    expect(toast.action.label).toBe('다른 조건으로');
+
+    // 액션은 그 카드의 예외 추출 시트로 데려간다 — 그 날짜만 다른 조건을 주는 자리다
+    await act(async () => {
+      toast.action.onPress();
+      await Promise.resolve();
+    });
+    expect(getByTestId('order-sheet-exception-date-2026-07-21')).toBeTruthy();
+  });
+
+  it('한 뮤테이션에 토스트는 하나다 — 소멸이 승계를 이긴다 (F6 우선순위)', async () => {
+    const { getByTestId } = renderWithCapture(twoCards());
+    mockAddToast.mockClear();
+
+    fireEvent.press(getByTestId('order-sheet-row-dates'));
+    fireEvent.press(getByTestId('calendar-pick-714')); // 카드 소멸 + (승계는 없음)
+    fireEvent.press(getByTestId('job-posting-date-confirm-button'));
+    await flush();
+
+    expect(mockAddToast).toHaveBeenCalledTimes(1);
+    expect(mockAddToast.mock.calls[0]?.[0]?.message).toContain('조건이 함께 삭제');
+  });
+
   it('카드의 마지막 날짜가 빠지면 조건 유실을 고지하고 되돌릴 길을 준다 (F6)', async () => {
     const { getByTestId, readForm } = renderWithCapture(twoCards());
 

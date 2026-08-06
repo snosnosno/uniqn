@@ -1,0 +1,145 @@
+/**
+ * scheduleNotices — 암묵 동작 고지 진단 (T4/E4 · 설계 §3.9 F6, Eng F-3·F-4)
+ *
+ * 정규화는 사장이 지시하지 않은 일을 한다(병합·강등·dedupe). 그걸 침묵으로 넘기면
+ * "내가 만든 카드가 사라졌다"가 되므로 한 뮤테이션당 **가장 손실이 큰 사건 하나**를 알린다.
+ * 우선순위: 카드 소멸 > 묶음 해제 > 병합 > 승계.
+ */
+import { diagnoseScheduleChange } from '../scheduleNotices';
+import type { ScheduleGroup, ScheduleGroupSlots } from '../normalizeScheduleGroups';
+
+const A: ScheduleGroupSlots = [{ startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] }];
+const B: ScheduleGroupSlots = [{ startTime: '21:00', roles: [{ role: 'floor', count: 1 }] }];
+
+const g = (dates: string[], timeSlots: ScheduleGroupSlots, grouped = false): ScheduleGroup => ({
+  dates,
+  timeSlots,
+  grouped,
+});
+
+describe('우선순위 — 한 뮤테이션당 최대 1건', () => {
+  it('카드 소멸이 다른 무엇보다 먼저다 (정보 손실이 가장 크다)', () => {
+    const before = [g(['2026-08-10'], A), g(['2026-08-20'], B, false)];
+    const after = [g(['2026-08-10'], A)];
+    const notice = diagnoseScheduleChange(before, after, {
+      removedCards: [g(['2026-08-20'], B)],
+      inheritedDates: ['2026-08-11'],
+    });
+    expect(notice?.kind).toBe('cardRemoved');
+  });
+
+  it('묶음 해제가 병합·승계보다 먼저다', () => {
+    const before = [g(['2026-08-10', '2026-08-11'], A, true), g(['2026-08-20'], B)];
+    const after = [g(['2026-08-10', '2026-08-11', '2026-08-20'], A, false)];
+    const notice = diagnoseScheduleChange(before, after, { inheritedDates: ['2026-08-20'] });
+    expect(notice?.kind).toBe('bundleReleased');
+  });
+
+  it('병합이 승계보다 먼저다', () => {
+    const before = [g(['2026-08-10'], A), g(['2026-08-20'], A)];
+    const after = [g(['2026-08-10', '2026-08-20'], A)];
+    const notice = diagnoseScheduleChange(before, after, { inheritedDates: ['2026-08-20'] });
+    expect(notice?.kind).toBe('merged');
+  });
+
+  it('아무 일도 없었으면 침묵한다 (토스트 소음 억제)', () => {
+    const before = [g(['2026-08-10'], A)];
+    const after = [g(['2026-08-10', '2026-08-11'], A)];
+    expect(diagnoseScheduleChange(before, after, {})).toBeNull();
+  });
+});
+
+describe('카드 소멸 (F6)', () => {
+  it('사라진 카드의 날짜를 문구에 담는다', () => {
+    const notice = diagnoseScheduleChange([], [], {
+      removedCards: [g(['2026-08-20', '2026-08-21'], B)],
+    });
+    expect(notice?.kind).toBe('cardRemoved');
+    expect(notice?.message).toContain('8/20~21');
+    expect(notice?.message).toContain('조건이 함께 삭제');
+  });
+
+  it('여러 카드가 사라져도 한 문구로 합친다', () => {
+    const notice = diagnoseScheduleChange([], [], {
+      removedCards: [g(['2026-08-20'], B), g(['2026-08-25'], A)],
+    });
+    expect(notice?.message).toContain('8/20');
+    expect(notice?.message).toContain('8/25');
+  });
+});
+
+describe('묶음 해제 (§3.5 자동 해제 고지)', () => {
+  it('묶음 run 이 사라지면 알린다', () => {
+    const before = [g(['2026-08-10', '2026-08-11'], A, true)];
+    const after = [g(['2026-08-10'], A, false)];
+    const notice = diagnoseScheduleChange(before, after, {});
+    expect(notice?.kind).toBe('bundleReleased');
+    expect(notice?.message).toContain('묶음지원');
+  });
+
+  it('묶음이 그대로면 알리지 않는다', () => {
+    const before = [g(['2026-08-10', '2026-08-11'], A, true)];
+    const after = [g(['2026-08-10', '2026-08-11'], A, true)];
+    expect(diagnoseScheduleChange(before, after, {})).toBeNull();
+  });
+
+  it('사용자가 직접 끈 경우는 알리지 않는다 (자기가 한 일을 되읽어주지 않는다)', () => {
+    const before = [g(['2026-08-10', '2026-08-11'], A, true)];
+    const after = [g(['2026-08-10', '2026-08-11'], A, false)];
+    expect(diagnoseScheduleChange(before, after, { bundleToggledByUser: true })).toBeNull();
+  });
+
+  it('묶음이 새로 생기는 것은 알리지 않는다', () => {
+    const before = [g(['2026-08-10', '2026-08-11'], A, false)];
+    const after = [g(['2026-08-10', '2026-08-11'], A, true)];
+    expect(diagnoseScheduleChange(before, after, {})).toBeNull();
+  });
+});
+
+describe('자동 병합 (P1 암묵 동작)', () => {
+  it('카드 수가 줄면 합쳐졌다고 알린다', () => {
+    const before = [g(['2026-08-10'], A), g(['2026-08-20'], A)];
+    const after = [g(['2026-08-10', '2026-08-20'], A)];
+    const notice = diagnoseScheduleChange(before, after, {});
+    expect(notice?.kind).toBe('merged');
+    expect(notice?.message).toContain('합쳐');
+  });
+
+  it('중복 날짜 제거(dedupe)도 병합으로 고지한다 — 무고지 삭제 금지 (Eng F-4)', () => {
+    const before = [g(['2026-08-10'], A), g(['2026-08-10'], B)];
+    const after = [g(['2026-08-10'], B)];
+    expect(diagnoseScheduleChange(before, after, {})?.kind).toBe('merged');
+  });
+
+  it('카드가 늘어나는 것(예외 추출)은 병합이 아니다', () => {
+    const before = [g(['2026-08-10', '2026-08-11'], A)];
+    const after = [g(['2026-08-10'], A), g(['2026-08-11'], B)];
+    expect(diagnoseScheduleChange(before, after, {})).toBeNull();
+  });
+});
+
+describe('새 날짜 승계 고지 (F10)', () => {
+  it('추가한 날짜가 어느 조건을 받았는지 말한다', () => {
+    const before = [g(['2026-08-10', '2026-08-11'], A), g(['2026-08-20'], B)];
+    const after = [g(['2026-08-10', '2026-08-11', '2026-08-14'], A), g(['2026-08-20'], B)];
+    const notice = diagnoseScheduleChange(before, after, { inheritedDates: ['2026-08-14'] });
+    expect(notice?.kind).toBe('inherited');
+    expect(notice?.message).toContain('8/14');
+    expect(notice?.message).toContain('8/10~11');
+    expect(notice?.message).toContain('조건으로 추가');
+  });
+
+  it('카드가 하나뿐이면 승계를 알리지 않는다 (고를 여지가 없다)', () => {
+    const before = [g(['2026-08-10'], A)];
+    const after = [g(['2026-08-10', '2026-08-14'], A)];
+    expect(diagnoseScheduleChange(before, after, { inheritedDates: ['2026-08-14'] })).toBeNull();
+  });
+
+  it('승계 고지는 어느 카드가 받았는지도 담는다 — "다른 조건으로" 를 누를 근거', () => {
+    const before = [g(['2026-08-10'], A), g(['2026-08-20'], B)];
+    const after = [g(['2026-08-10'], A), g(['2026-08-20', '2026-08-21'], B)];
+    const notice = diagnoseScheduleChange(before, after, { inheritedDates: ['2026-08-21'] });
+    expect(notice?.kind).toBe('inherited');
+    expect(notice?.inheritedCardIndex).toBe(1);
+  });
+});

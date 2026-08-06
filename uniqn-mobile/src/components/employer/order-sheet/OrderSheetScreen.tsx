@@ -32,7 +32,12 @@ import {
   setRunGrouped,
 } from '@/utils/order-sheet/normalizeScheduleGroups';
 import { applyDateSelection, extractException } from '@/utils/order-sheet/scheduleCardEdits';
+import {
+  diagnoseScheduleChange,
+  type ScheduleChangeContext,
+} from '@/utils/order-sheet/scheduleNotices';
 import { UNDO_DELAY_MS } from '@/constants/undo';
+import { logger } from '@/utils/logger';
 import { TypeSegment } from './TypeSegment';
 import { TitleSheet } from './sheets/TitleSheet';
 import { PlaceSheet, type OrderSheetLocation } from './sheets/PlaceSheet';
@@ -522,6 +527,68 @@ export function OrderSheetScreen({
     []
   );
 
+  // openException 은 아래에서 정의된다 — 승계 고지의 "다른 조건으로" 액션이 그걸 불러야 해
+  // ref 로 우회한다(handleTypeChangeRef 와 같은 선언 순환 회피 패턴).
+  const openExceptionRef = useRef<((cardIndex: number) => void) | null>(null);
+
+  /**
+   * 암묵 동작 고지 — **한 뮤테이션당 최대 1건**(F6 우선순위: 소멸 > 묶음해제 > 병합 > 승계).
+   * 정규화가 사장이 지시하지 않은 일을 하므로 침묵도, 네 번 알리기도 안 된다.
+   */
+  const notifyScheduleChange = useCallback(
+    (before: ScheduleGroups, after: ScheduleGroups, context: ScheduleChangeContext) => {
+      const notice = diagnoseScheduleChange(before, after, context);
+      if (notice === null) return;
+      // 관측(§8.6) — 이 화면의 **최초 계기판**이다. 어떤 암묵 동작이 실제로 얼마나 일어나는지
+      // 몰라서 "표현만 바꾸고 기능은 안 지운다"는 결정을 했으므로, 그 판단의 근거를 쌓는다.
+      // ⚠️ logger.error 로 되돌리면 웹에서 sentry↔logger 무한 재귀가 재발한다(2026-08-04).
+      if (notice.kind === 'merged') {
+        logger.observability('order_sheet.auto_merge', undefined, {
+          component: 'OrderSheetScreen',
+          cardsBefore: before.length,
+          cardsAfter: after.length,
+        });
+      } else if (notice.kind === 'inherited') {
+        logger.observability('order_sheet.inherit_notice', undefined, {
+          component: 'OrderSheetScreen',
+          cardCount: after.length,
+        });
+      }
+      if (notice.kind === 'cardRemoved') {
+        const snapshot = snapshotGroups(before);
+        addToast({
+          type: 'info',
+          message: notice.message,
+          duration: UNDO_DELAY_MS,
+          action: {
+            label: '되돌리기',
+            onPress: () => {
+              clearPendingSwap();
+              commitGroups(snapshot);
+            },
+          },
+        });
+        return;
+      }
+      if (notice.kind === 'inherited' && notice.inheritedCardIndex !== undefined) {
+        const cardIndex = notice.inheritedCardIndex;
+        addToast({
+          type: 'info',
+          message: notice.message,
+          duration: UNDO_DELAY_MS,
+          // 설계 F10 은 "카드 선택 액션시트"를 그렸지만, 레포에 다중 선택 액션시트 자산이 없고
+          // "다른 조건으로"의 결과는 결국 **그 날짜만 다른 조건을 갖는 것** = 예외 추출이다.
+          // 기존 시트를 재사용해 UI 신설 없이 같은 목적지에 도달한다(기존 카드 B 의 조건을
+          // 그대로 쓰고 싶으면 같은 값을 넣으면 정규화가 B 에 병합한다).
+          action: { label: '다른 조건으로', onPress: () => openExceptionRef.current?.(cardIndex) },
+        });
+        return;
+      }
+      addToast({ type: 'info', message: notice.message });
+    },
+    [addToast, clearPendingSwap, commitGroups, snapshotGroups]
+  );
+
   /**
    * 날짜 확정 — **전 일정 스코프**. 해제분은 소속 카드에서 빠지고, 추가분은 인접 카드가
    * 조건을 승계한다(F10). 카드의 마지막 날짜가 빠지면 그 카드의 **조건까지** 사라지므로
@@ -530,28 +597,11 @@ export function OrderSheetScreen({
   const handleDatesConfirm = useCallback(
     (dates: string[]) => {
       const current = form.getValues().scheduleGroups ?? [];
-      const snapshot = snapshotGroups(current);
-      const { groups: next, removedCards } = applyDateSelection(current, dates);
-      commitGroups(next);
-      if (removedCards.length === 0) return;
-      const label = removedCards
-        .map((c) => summarizeGroupDates(c.dates ?? []))
-        .filter(Boolean)
-        .join(' · ');
-      addToast({
-        type: 'info',
-        message: `${label || '일정'} 조건이 함께 삭제됐어요`,
-        duration: UNDO_DELAY_MS,
-        action: {
-          label: '되돌리기',
-          onPress: () => {
-            clearPendingSwap();
-            commitGroups(snapshot);
-          },
-        },
-      });
+      const { groups: next, removedCards, addedDates } = applyDateSelection(current, dates);
+      const committed = commitGroups(next);
+      notifyScheduleChange(current, committed, { removedCards, inheritedDates: addedDates });
     },
-    [form, snapshotGroups, commitGroups, addToast, clearPendingSwap]
+    [form, commitGroups, notifyScheduleChange]
   );
 
   /**
@@ -574,10 +624,10 @@ export function OrderSheetScreen({
       const next = normalizeScheduleGroups(
         groups.map((g, i) => (i === index ? { ...g, timeSlots: nextSlots } : g))
       );
-      commitGroups(next);
+      notifyScheduleChange(groups, commitGroups(next), {});
       return index;
     },
-    [form, addToast, commitGroups]
+    [form, addToast, commitGroups, notifyScheduleChange]
   );
 
   /** 예외 추출 확정 — 고른 날짜만 새 조건으로 분리한다(§3.4). 다중 예외가 1회 입력으로 끝난다. */
@@ -587,13 +637,18 @@ export function OrderSheetScreen({
       const index = resolveGroupIndexByDates(current, target.dates, target.fallbackIndex);
       const groups = current.scheduleGroups ?? [];
       const next = index === null ? null : extractException(groups, index, picked, nextSlots);
-      if (next === null) {
+      if (index === null || next === null) {
         addToast({ type: 'info', message: '일정이 바뀌어 반영하지 못했어요' });
         return;
       }
-      commitGroups(next);
+      logger.observability('order_sheet.exception_extract', undefined, {
+        component: 'OrderSheetScreen',
+        dateCount: picked.length,
+        totalDates: (groups[index]?.dates ?? []).length,
+      });
+      notifyScheduleChange(groups, commitGroups(next), {});
     },
-    [form, addToast, commitGroups]
+    [form, addToast, commitGroups, notifyScheduleChange]
   );
 
   /** 묶음지원 토글 — run 만 선분할한 뒤 정규화에 맡긴다(Eng F-6). */
@@ -601,9 +656,16 @@ export function OrderSheetScreen({
     (cardIndex: number, run: string[], on: boolean) => {
       clearPendingSwap();
       const groups = form.getValues().scheduleGroups ?? [];
-      commitGroups(setRunGrouped(groups, cardIndex, run, on));
+      const committed = commitGroups(setRunGrouped(groups, cardIndex, run, on));
+      logger.observability('order_sheet.bundle_toggle', undefined, {
+        component: 'OrderSheetScreen',
+        on,
+        runLength: run.length,
+      });
+      // 사용자가 스위치를 직접 내린 것은 고지 대상이 아니다 — 자기가 한 일을 되읽어주지 않는다.
+      notifyScheduleChange(groups, committed, { bundleToggledByUser: true });
     },
-    [form, clearPendingSwap, commitGroups]
+    [form, clearPendingSwap, commitGroups, notifyScheduleChange]
   );
 
   /** 카드 조건 행 탭 — 미설정 카드면 연쇄를 무장한다(기존 openRow 규칙 승계). */
@@ -630,6 +692,11 @@ export function OrderSheetScreen({
     },
     [form, clearPendingSwap]
   );
+
+  // 렌더 중 ref 쓰기는 React 규칙 위반 — 토스트 액션 탭은 커밋 이후에만 가능하므로 effect 로 충분하다.
+  useEffect(() => {
+    openExceptionRef.current = openException;
+  }, [openException]);
 
   /** F2 — 날짜 칩 탭은 그 날짜가 속한 카드로 데려간다(예외 추출 제2 진입로) */
   const [highlightedCard, setHighlightedCard] = useState<number | null>(null);
@@ -1154,9 +1221,7 @@ export function OrderSheetScreen({
             // 전 일정 스코프라 "다른 그룹이 이미 쓴 날짜"라는 개념이 없다 — 상한은
             // DatePickerModal 이 선택 개수로 직접 관리한다.
             existingDates={[]}
-            showSegment={false}
-            initialSegment="same"
-            onConfirm={({ dates }) => {
+            onConfirm={(dates) => {
               handleDatesConfirm(dates);
               setActiveSheet(null);
               // F9 — 날짜를 막 정한 신규 카드는 시간이 비어 있다. 여기서 연쇄를 끊으면

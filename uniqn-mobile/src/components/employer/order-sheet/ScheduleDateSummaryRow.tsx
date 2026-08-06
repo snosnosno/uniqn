@@ -105,6 +105,9 @@ export function ScheduleDateSummaryRow({
               hitSlop={6}
               className="rounded-full px-2.5 py-1 active:opacity-70"
               accessibilityRole="button"
+              // ⚠️ accessibilityState 는 react-native-web 이 처리하지 않는다(프로젝트 실측) —
+              //    E2E 는 이걸로 판별하지 말고 가시 텍스트('접기'/'외 N일')를 볼 것.
+              accessibilityState={{ expanded }}
               accessibilityLabel={expanded ? '날짜 접기' : `나머지 ${hidden}일 더 보기`}
               testID="order-sheet-dates-expand"
             >

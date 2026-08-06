@@ -26,6 +26,8 @@ export interface DateSelectionResult {
    * 여기 포함되지 않는다 — 그건 유실이 아니라 보존이다.
    */
   removedCards: ScheduleGroups;
+  /** 이번에 새로 들어온 날짜들 — 승계 고지(F10)가 "어느 조건을 받았는지" 말할 재료 */
+  addedDates: string[];
 }
 
 /** 새 날짜를 받을 카드 — 연속으로 인접한 카드가 우선, 없으면 첫 카드(F10 승계 휴리스틱) */
@@ -43,6 +45,8 @@ export function applyDateSelection(
 
   // 카드가 하나면 "전체 = 그 카드"다. 날짜를 통째로 바꿔도 소멸이 아니라 편집이며,
   // 조건은 그대로 남는다(최빈 케이스에서 조건 재입력을 요구하지 않는다).
+  const addedDates = sorted.filter((d) => !groups.some((g) => (g.dates ?? []).includes(d)));
+
   if (groups.length <= 1) {
     const base = groups[0] ?? { dates: [], timeSlots: [], grouped: false };
     return {
@@ -50,6 +54,7 @@ export function applyDateSelection(
         { ...base, dates: sorted, timeSlots: cloneGroupSlots(base.timeSlots) },
       ]),
       removedCards: [],
+      addedDates,
     };
   }
 
@@ -63,8 +68,6 @@ export function applyDateSelection(
   const vanishedFlags = trimmed.map((g, i) => hadDates[i] === true && g.dates.length === 0);
   const survivors = trimmed.filter((_, i) => vanishedFlags[i] !== true);
 
-  const added = sorted.filter((d) => !groups.some((g) => (g.dates ?? []).includes(d)));
-
   // 남은 카드가 하나도 없다 = 날짜를 통째로 갈아치웠다. 카드 1개 케이스와 같은 감각으로
   // 첫 카드 조건을 이어받고, 조건이 실제로 유실된 나머지만 소멸로 보고한다.
   if (survivors.length === 0) {
@@ -74,6 +77,7 @@ export function applyDateSelection(
         { ...base, dates: sorted, timeSlots: cloneGroupSlots(base.timeSlots) },
       ]),
       removedCards: groups.slice(1).filter((_, i) => vanishedFlags[i + 1] === true),
+      addedDates,
     };
   }
 
@@ -81,7 +85,7 @@ export function applyDateSelection(
   // 흔들면 같은 선택이 순서에 따라 다른 결과를 내 결정성이 깨진다.
   const basis = survivors.map((g) => ({ dates: [...g.dates] }));
   const withAdded = survivors.map((g) => ({ ...g, dates: [...g.dates] }));
-  for (const date of added) {
+  for (const date of addedDates) {
     const target = inheritIndex(basis, date);
     withAdded[target] = { ...withAdded[target]!, dates: [...withAdded[target]!.dates, date] };
   }
@@ -89,6 +93,7 @@ export function applyDateSelection(
   return {
     groups: normalizeScheduleGroups(withAdded),
     removedCards: groups.filter((_, i) => vanishedFlags[i] === true),
+    addedDates,
   };
 }
 

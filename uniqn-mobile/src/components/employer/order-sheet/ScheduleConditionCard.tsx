@@ -10,14 +10,17 @@
  */
 import React from 'react';
 import { Pressable, Switch, Text, View } from 'react-native';
+import Animated, { LinearTransition } from 'react-native-reanimated';
 import { CalendarDaysIcon, ChevronRightIcon, XMarkIcon } from '@/components/icons';
 import { SECONDARY_PALETTE } from '@/constants/colors';
+import { MOTION_DURATION } from '@/constants/motion';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { groupConsecutiveDates } from '@/utils/date';
 import { isSlotTimeSet, roleName, slotHasRoles, summarizeGroupDates } from './orderRowMeta';
 import type { ScheduleGroup } from '@/utils/order-sheet/normalizeScheduleGroups';
 
 /** 카드 조건 한 줄 — 시간·역할을 합쳐 요약한다. 미설정은 에러(빨강)가 아니라 muted 안내다(F5). */
-export function summarizeCardCondition(group: ScheduleGroup): {
+function summarizeCardCondition(group: ScheduleGroup): {
   text: string;
   incomplete: boolean;
 } {
@@ -45,7 +48,7 @@ export function summarizeCardCondition(group: ScheduleGroup): {
 }
 
 /** 카드 안에서 묶음지원 토글을 붙일 연속 구간(길이 2 이상)만 */
-export const groupableRuns = (dates: string[]): string[][] =>
+const groupableRuns = (dates: string[]): string[][] =>
   groupConsecutiveDates(dates).filter((run) => run.length > 1);
 
 export interface ScheduleConditionCardProps {
@@ -81,9 +84,13 @@ export function ScheduleConditionCard({
   // grouped 카드는 정규화상 연속 run 하나다(규칙 2) — 그 카드의 토글은 켜진 상태로 렌더된다.
   const grouped = group.grouped ?? false;
   const runs = grouped ? [dates] : groupableRuns(dates);
+  const reduceMotion = useReduceMotion();
 
   return (
-    <View
+    <Animated.View
+      // 카드가 합쳐지고 갈라질 때 위치가 순간이동하면 사장은 무슨 일이 일어났는지 못 본다.
+      // 200ms 위치 전이로 "저 카드가 여기로 왔구나"를 눈이 따라가게 한다(D4/F8).
+      layout={reduceMotion ? undefined : LinearTransition.duration(MOTION_DURATION.base)}
       onLayout={(e) => onLayoutY?.(index, e.nativeEvent.layout.y)}
       className={highlighted ? 'bg-primary-50 dark:bg-primary-900/20' : ''}
       testID={`order-sheet-card-${index}`}
@@ -186,6 +193,6 @@ export function ScheduleConditionCard({
           </Pressable>
         </View>
       ) : null}
-    </View>
+    </Animated.View>
   );
 }
