@@ -307,7 +307,11 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
    * 공유 헬퍼로 증상을 막아 왔지만 규칙이 두 벌인 사실은 그대로였다 — 서버 한 곳으로 모은다
    * (20260806140000). 권한·정산 잠금·상태 파생·이력 append 는 전부 RPC 안에서 끝난다.
    *
-   * @remarks `notes`(정산 메모)만은 RPC 계약 밖이라 여기 남는다 — 아래 주석 참조.
+   * 🔴 **`notes` 축은 이 경로에서 사라졌다.** 예전에는 RPC 뒤에 `work_logs.notes` 만 고치는
+   *    좁은 UPDATE 가 덧붙어 있었다(채우는 호출부는 없었지만 계약에는 남아 있었다). 배치 메모는
+   *    통합 편집 시트가 RPC `memo` 키로 소유하므로 이제 중복이고, 남겨 두면 시간모델 R4
+   *    (`work_logs` 직접 UPDATE REVOKE) 시행 시 **"메모를 넣은 저장만 42501 로 실패"** 하는
+   *    재현 조건이 좁은 경로가 된다. 저장 한 번 = RPC 한 번을 여기서도 지킨다.
    */
   async updateWorkTimeWithTransaction(
     context: UpdateWorkTimeContext,
@@ -322,21 +326,6 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
         reason: context.reason,
         editedBy: actorId,
       });
-
-      // 정산 메모는 실적 축이 아니라 RPC 계약에 없다. 지금 이 값을 채워 보내는 호출부는
-      // 하나도 없지만(UI 3곳 전부 시각+사유만 보낸다), 계약에서 조용히 지우면 나중에 넣는
-      // 사람이 값이 사라지는 걸 못 본다. 키가 실제로 올 때만 좁은 UPDATE 를 덧붙인다.
-      // ⚠️ 이 한 줄이 살아 있는 동안은 "저장 한 번 = 호출 한 번"이 notes 경로에서만 깨진다 —
-      //    통합 시트가 memo 축을 확정하면(Task 7~9) RPC 로 접거나 계약에서 지워야 한다.
-      if (context.notes !== undefined) {
-        const { error } = await supabase
-          .from(WORK_LOGS_TABLE)
-          .update({ notes: context.notes })
-          .eq('id', context.workLogId);
-
-        if (error)
-          handleSupabaseError(error, { operation: '근무 시간 수정(메모)', table: WORK_LOGS_TABLE });
-      }
 
       logger.info('근무 시간 수정 완료', { workLogId: context.workLogId });
     } catch (error) {

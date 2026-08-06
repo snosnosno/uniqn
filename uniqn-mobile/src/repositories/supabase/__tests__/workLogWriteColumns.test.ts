@@ -18,6 +18,7 @@ import { SupabaseConfirmedStaffRepository } from '../ConfirmedStaffRepository';
 import { SupabaseSettlementRepository } from '../SettlementRepository';
 import { WORK_LOG_ALL_COLUMNS, WORK_LOG_COLUMNS } from '../workLogColumns';
 import { STATUS } from '@/constants';
+import type { UpdateWorkTimeContext } from '@/repositories';
 import type { WorkLog, JobPosting } from '@/types';
 
 const WORK_LOG_ID = 'wl-1';
@@ -121,10 +122,6 @@ beforeEach(() => {
   installSupabaseChain();
 });
 
-function unknownColumns(payload: Record<string, unknown>): string[] {
-  return Object.keys(payload).filter((k) => !WORK_LOG_ALL_COLUMNS.includes(k));
-}
-
 describe('WORK_LOG_ALL_COLUMNS — 스키마 정본', () => {
   it('SELECT 화이트리스트는 실재 컬럼의 부분집합이다', () => {
     const missing = WORK_LOG_COLUMNS.split(',').filter((c) => !WORK_LOG_ALL_COLUMNS.includes(c));
@@ -205,17 +202,21 @@ describe('근무 시간 수정 — RPC 패치가 서버 허용 키만 담는다'
     expect(unknownPatchKeys(slotPatches()[0])).toEqual([]);
   });
 
-  it('정산 메모(notes)만은 RPC 계약 밖이라 좁은 UPDATE 로 남는다 — 실재 컬럼이다', async () => {
-    // 현재 이 값을 채워 보내는 호출부는 없다. 계약에 남아 있는 동안만 유효한 가드다.
+  it('🔴 메모(notes)는 계약에서 빠졌다 — 낡은 호출부가 넘겨도 컬럼을 직접 쓰지 않는다', async () => {
+    // 예전에는 이 경로가 RPC 뒤에 `notes` 만 고치는 좁은 UPDATE 를 덧붙였다. 메모 축이
+    // 통합 편집 시트(RPC `memo` 키)로 확정되면서 중복이 됐고, 남겨 두면 시간모델 R4
+    // (work_logs 직접 UPDATE REVOKE)에서 "메모를 넣은 저장만 42501" 이 된다.
+    // 타입은 이미 막지만 런타임 가드가 없으면 되살아나도 조용하다 — 그래서 캐스트로 민다.
     const repo = new SupabaseSettlementRepository();
 
     await repo.updateWorkTimeWithTransaction(
-      { workLogId: WORK_LOG_ID, checkInTime: null, notes: '정산 메모' },
+      { workLogId: WORK_LOG_ID, checkInTime: null, notes: '정산 메모' } as UpdateWorkTimeContext,
       ACTOR_ID
     );
 
-    expect(workLogUpdatePayloads).toHaveLength(1);
-    expect(unknownColumns(workLogUpdatePayloads[0])).toEqual([]);
-    expect(workLogUpdatePayloads[0]).toEqual({ notes: '정산 메모' });
+    expect(workLogUpdatePayloads).toEqual([]);
+    expect(slotPatches()).toHaveLength(1);
+    // 계약 밖 키를 RPC 패치로 몰래 옮겨 실어도 안 된다(서버 허용 키에 우연히 있는 이름이다).
+    expect(Object.keys(slotPatches()[0])).not.toContain('memo');
   });
 });

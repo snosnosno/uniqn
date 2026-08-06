@@ -9,6 +9,11 @@
  *    이 변이는 `work_logs` 뿐 아니라 `applications.assignments[]` 도 갱신한다 —
  *    전환 전에는 applications 가 아예 안 바뀌어 무효화가 필요 없었지만, 이제는 지원자 목록·
  *    상세 화면이 옛 배정 시각/역할을 그대로 들고 있게 된다.
+ *
+ * 🔴 `settlement`·`workLogs` 도 버린다. 통합 편집 시트가 이 훅으로 **실적(check_in/out)** 을
+ *    쓰게 되면서 이 변이의 파장이 정산 금액의 **입력**까지 닿았다. 두 키를 남기면 정산 상세에서
+ *    퇴근을 고쳐 저장했을 때 서버 값은 맞게 바뀌는데 화면 숫자만 옛 값으로 남는다
+ *    (돈이 걸린 화면에서 가장 나쁜 종류의 불일치 — 사용자는 저장이 안 먹혔다고 읽는다).
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
@@ -33,6 +38,9 @@ export function useUpdateSlot() {
       // 🔑 확정 스태프 목록도 `timeSlot` 을 싣는다 — 버리지 않으면 공고 상세가 옛 시각을 남긴다.
       //    (3-C 리뷰에서 드러난 선재 누락. 일괄 변경 훅과 함께 메운다.)
       qc.invalidateQueries({ queryKey: queryKeys.confirmedStaff.all });
+      // 🔴 실적을 쓰는 순간 정산 금액의 입력이 바뀐다 — 정산 목록·상세·근무 기록 캐시도 버린다.
+      qc.invalidateQueries({ queryKey: queryKeys.settlement.all });
+      qc.invalidateQueries({ queryKey: queryKeys.workLogs.all });
     },
   });
 }

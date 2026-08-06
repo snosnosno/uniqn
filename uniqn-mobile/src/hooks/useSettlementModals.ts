@@ -41,8 +41,7 @@ export function useSettlementModals() {
   // 정산 확인 모달
   const [settleConfirm, setSettleConfirm] = useState<SettleConfirmState>(INITIAL_SETTLE_CONFIRM);
 
-  // 스태프 관리 모달
-  const [showRoleChangeModal, setShowRoleChangeModal] = useState(false);
+  // 스태프 관리 모달 — 역할 변경 모달은 통합 편집 시트로 흡수돼 사라졌다.
   const [showReportModal, setShowReportModal] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<ConfirmedStaff | null>(null);
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
@@ -153,16 +152,6 @@ export function useSettlementModals() {
 
   // --- 스태프 관리 모달 ---
 
-  const openRoleChangeModal = useCallback((staff: ConfirmedStaff) => {
-    setSelectedStaff(staff);
-    setShowRoleChangeModal(true);
-  }, []);
-
-  const closeRoleChangeModal = useCallback(() => {
-    setShowRoleChangeModal(false);
-    setSelectedStaff(null);
-  }, []);
-
   const openReportModal = useCallback((staff: ConfirmedStaff) => {
     setSelectedStaff(staff);
     setShowReportModal(true);
@@ -212,13 +201,10 @@ export function useSettlementModals() {
     openSettleFromDetail,
     closeSettleConfirm,
     // 스태프 관리
-    showRoleChangeModal,
     showReportModal,
     selectedStaff,
     isSubmittingReport,
     setIsSubmittingReport,
-    openRoleChangeModal,
-    closeRoleChangeModal,
     openReportModal,
     closeReportModal,
     // 설정

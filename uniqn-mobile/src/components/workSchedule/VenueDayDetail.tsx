@@ -38,11 +38,24 @@ export interface VenueDayDetailProps {
    * staff.id(=workLogId)로 원본 VenueDaySlot 을 역해소해 전달한다.
    */
   onSlotPress?: (slot: VenueDaySlot) => void;
+  /**
+   * 배치 빼기(카드 액션). 미제공이면 액션 줄 자체를 렌더하지 않는다.
+   *
+   * 🔑 빼기가 **시트가 아니라 카드에** 있는 이유: 파괴적 액션은 진입 맥락의 것이고 화면마다
+   *    뜻이 다르다(설계 §3-4). 순수 편집기인 통합 시트에 되돌려 넣지 말 것.
+   */
+  onSlotDelete?: (slot: VenueDaySlot) => void;
   /** 빈 상태 "인원 배치하기" CTA(임페커블 룰9 — 행동 단계). 미제공이면 안내문만. */
   onAddPress?: () => void;
 }
 
-export function VenueDayDetail({ venueId, date, onSlotPress, onAddPress }: VenueDayDetailProps) {
+export function VenueDayDetail({
+  venueId,
+  date,
+  onSlotPress,
+  onSlotDelete,
+  onAddPress,
+}: VenueDayDetailProps) {
   const { data, isLoading, error, refetch, isRefetching } = useVenueDaySlots(venueId, date);
 
   const grouped = useMemo(() => {
@@ -65,6 +78,14 @@ export function VenueDayDetail({ venueId, date, onSlotPress, onAddPress }: Venue
       if (slot) onSlotPress?.(slot);
     },
     [slotById, onSlotPress]
+  );
+
+  const handleStaffDelete = useCallback(
+    (staff: ConfirmedStaff) => {
+      const slot = slotById.get(staff.id);
+      if (slot) onSlotDelete?.(slot);
+    },
+    [slotById, onSlotDelete]
   );
 
   // L4 방어: 비가상화 map 렌더라 슬롯이 과다하면 성능이 저하될 수 있음 — 임계 초과 시 1회 경고만.
@@ -120,14 +141,15 @@ export function VenueDayDetail({ venueId, date, onSlotPress, onAddPress }: Venue
   // 소형 리스트 직접 렌더(가상화 없음) — 상위 단일 ScrollView 가 스크롤 담당.
   return (
     <View className="pb-4">
-      {/* 카드에는 액션 버튼을 두지 않는다 — 예정(time_slot)·실적(출퇴근) 편집 입구를 근무 수정
-          시트 하나로 통합했다(2-B). 실제 출퇴근 수정은 시트 안의 '출퇴근 시간 수정'이 담당한다. */}
+      {/* 편집 액션은 카드에 두지 않는다 — 예정·실적·역할·색·메모 입구는 행 탭 → 통합 시트
+          하나다(설계 §3-4). 카드에 남는 것은 빼기뿐이고, 그것도 콜백이 있을 때만 그린다. */}
       {grouped[0]!.staff.map((staff) => (
         <View key={staff.id} className="mb-3 px-4">
           <ConfirmedStaffCard
             staff={staff}
             onPress={onSlotPress ? handleStaffPress : undefined}
-            showActions={false}
+            onDelete={onSlotDelete ? handleStaffDelete : undefined}
+            showActions={Boolean(onSlotDelete)}
           />
         </View>
       ))}

@@ -27,8 +27,13 @@ export interface ConfirmedStaffCardProps {
   staff: ConfirmedStaff;
   onPress?: (staff: ConfirmedStaff) => void;
   onViewProfile?: (staff: ConfirmedStaff) => void;
+  /**
+   * '근무 수정' — 통합 편집 시트를 연다. 시각뿐 아니라 역할·색·메모까지 한 창에서 고친다.
+   *
+   * ⚠️ 별도의 '역할 변경' 액션은 없다. 역할은 이 시트가 흡수했고, 따로 두면 같은 축을
+   *    두 입구가 저장하게 된다(그때 한쪽만 `role_change_history` 를 남겼다).
+   */
   onEditTime?: (staff: ConfirmedStaff) => void;
-  onChangeRole?: (staff: ConfirmedStaff) => void;
   onReport?: (staff: ConfirmedStaff) => void;
   onDelete?: (staff: ConfirmedStaff) => void;
   onStatusChange?: (staff: ConfirmedStaff) => void;
@@ -42,7 +47,6 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   onPress,
   onViewProfile,
   onEditTime,
-  onChangeRole,
   onReport,
   onDelete,
   onStatusChange,
@@ -107,10 +111,6 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   const handleEditTime = useCallback(() => {
     onEditTime?.(staff);
   }, [onEditTime, staff]);
-
-  const handleChangeRole = useCallback(() => {
-    onChangeRole?.(staff);
-  }, [onChangeRole, staff]);
 
   const handleReport = useCallback(() => {
     onReport?.(staff);
@@ -245,20 +245,10 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
               className="flex-1 flex-row items-center justify-center rounded-lg bg-surface-card py-2 active:opacity-70 dark:bg-surface"
             >
               <EditIcon size={14} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
+              {/* 라벨이 '시간 수정'이 아닌 이유 — 이 버튼이 여는 시트는 역할·색·메모도 고친다.
+                  '시간'이라고 부르면 역할 편집 입구가 사라진 것처럼 보인다. */}
               <Text className="ml-1 text-sm font-sans-medium text-primary-600 dark:text-primary-400">
-                시간 수정
-              </Text>
-            </Pressable>
-          ) : null}
-
-          {onChangeRole && canEditTime ? (
-            <Pressable
-              onPress={handleChangeRole}
-              className="flex-1 flex-row items-center justify-center rounded-lg bg-surface-card py-2 active:opacity-70 dark:bg-surface"
-            >
-              <BriefcaseIcon size={14} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
-              <Text className="ml-1 text-sm font-sans-medium text-primary-600 dark:text-primary-400">
-                역할 변경
+                근무 수정
               </Text>
             </Pressable>
           ) : null}

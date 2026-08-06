@@ -74,6 +74,24 @@ describe('useUpdateSlot', () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.applications.all });
   });
 
+  it('🔴 성공 시 settlement·workLogs 도 무효화한다(실적이 정산 금액의 입력이다)', async () => {
+    // 통합 편집 시트가 이 훅으로 check_in/out 을 쓰게 되면서 생긴 요건이다.
+    // 빠뜨리면 정산 상세에서 퇴근을 고쳐 저장해도 화면 금액이 옛 값으로 남는다.
+    mockUpdate.mockResolvedValueOnce(undefined);
+    const client = createClient();
+    const invalidateSpy = jest.spyOn(client, 'invalidateQueries');
+
+    const { result } = renderHook(() => useUpdateSlot(), { wrapper: createWrapper(client) });
+
+    await act(async () => {
+      await result.current.mutateAsync(VARS);
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.settlement.all });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.workLogs.all });
+  });
+
   it('서비스 에러를 변이 에러로 전파(토스트는 호출부 책임)', async () => {
     mockUpdate.mockRejectedValueOnce(new Error('PERMISSION_DENIED'));
     const client = createClient();
