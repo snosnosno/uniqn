@@ -119,7 +119,9 @@ describe('SlotRoleChips — D7: 마감은 표기만, 선택은 허용', () => {
     expect(onChange).toHaveBeenCalledWith('floor');
   });
 
-  it('자리가 남은 역할에는 표기하지 않는다', () => {
+  it('정원이 남아 있으면(정원 2 · 확정 1) 표기하지 않는다', () => {
+    // 🔴 브리프가 틀렸던 바로 그 축이다. `filled` 값이 **있다는 것만으로** 마감으로 읽으면
+    //    안 된다 — 마감은 `remaining = count - filled` 가 0 일 때뿐이다.
     render(
       <SlotRoleChips
         value="floor"
@@ -140,8 +142,10 @@ describe('SlotRoleChips — D7: 마감은 표기만, 선택은 허용', () => {
     expect(screen.getByLabelText('역할 플로어')).toBeTruthy();
   });
 
-  it('jobPosting 이 없으면 filledByRole 이 있어도 마감 표기를 생략한다', () => {
+  it('jobPosting 이 없으면 filledByRole 이 있어도 마감 표기를 생략한다 (= 근무표 경로)', () => {
     // 정원을 모르면 마감을 알 수 없다. RoleChangeModal 의 현행 폴백과 같은 동작이다.
+    // 🔑 근무표(VenueDayPanel)가 실제로 이 경우다 — 하루치 슬롯이 행마다 다른 공고에 걸려 있고
+    //    컨테이너 직속 배치는 대응 공고 자체가 없다. **결함이 아니라 설계 §3-2-b 의 의도**다.
     render(<SlotRoleChips value="dealer" onChange={jest.fn()} filledByRole={{ floor: 99 }} />);
 
     expect(screen.getByLabelText('역할 플로어')).toBeTruthy();

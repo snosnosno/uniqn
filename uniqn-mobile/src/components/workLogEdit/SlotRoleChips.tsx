@@ -30,6 +30,14 @@ export interface SlotRoleChipsProps {
   /**
    * 정원 출처. `filledByRole` 과 **함께** 있어야 마감을 판정할 수 있다 —
    * 정원은 `schedule.requirements[].timeSlots[].roles[].count` 에서만 나온다.
+   *
+   * 🔑 **근무표(VenueDayPanel)에서 이 값이 없는 것은 결함이 아니다.** 그 화면은 하루치 슬롯을
+   *    venue 축으로 모으고, `VenueDaySlot` 은 **행마다 다른 `jobPostingId`** 를 들고 있다
+   *    (`IWorkScheduleRepository.ts:22`). 게다가 컨테이너 직속 배치(`isContainer`)는
+   *    `job_posting_id = venue` 라 대응하는 공고 자체가 없다. 즉 그 경로에는 넘길 단일 공고가
+   *    **원리적으로 존재하지 않으므로** 마감 표기가 뜨지 않는 것이 정상이고, 설계 §3-2-b 가
+   *    "진입점이 정원을 계산해 넘길 의무가 없다"고 정한 바로 그 경우다.
+   *    "근무표에서만 마감이 안 뜬다"를 버그로 보고 억지로 채워 넣지 말 것.
    */
   jobPosting?: JobPosting | null;
   /**
