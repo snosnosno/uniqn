@@ -2,7 +2,13 @@
 -- update_work_log_slot — 실적(checkIn/checkOut) 이관 + 상태 파생 + 역할·커스텀 역할명 이력
 --
 -- 마이그레이션: 20260806140000_work_log_slot_attendance.sql
---               20260807120000_work_log_slot_custom_role.sql  (customRole 축, 23~36번)
+--               20260807120000_work_log_slot_custom_role.sql            (customRole 축, 22~37번)
+--               20260807130000_work_log_slot_custom_role_enum_guard.sql (라벨 충돌 거부, 35~36번)
+--
+-- ⚠️ 아래 번호는 **실제 pgTAP 번호**다(`psql -f` TAP 출력 실측). 원본 e2abe630d 부터 섹션 주석이
+--    실제보다 2 작게 어긋나 있었고(11-B~11-C 가 단언 2개를 늘렸는데 뒤 번호를 안 밀었다)
+--    신규 구간이 그 드리프트를 이어받았다 — 전 구간을 실측값으로 맞췄다.
+--    **단언을 중간에 끼워 넣으면 뒤 번호가 전부 밀린다. 고치기 전에 TAP 출력을 다시 떠라.**
 --
 -- 무엇을 지키는 테스트인가:
 --   실적 쓰기가 클라 직접 UPDATE 2곳이었다(ConfirmedStaffRepository·SettlementRepository).
@@ -10,7 +16,7 @@
 --   예정=RPC / 실적=직접 UPDATE 인 채로 통합 시트를 만들면 저장 한 번이 호출 두 번이 되어
 --   부분 실패가 생긴다 — 이 파일은 그 한 트랜잭션의 계약을 고정한다.
 --
--- 🔗 형제 파일 분담 — `work_log_slot_sync_rpc.test.sql`(27) 과 같은 RPC 를 보지만 축이 다르다.
+-- 🔗 형제 파일 분담 — `work_log_slot_sync_rpc.test.sql`(33) 과 같은 RPC 를 보지만 축이 다르다.
 --    notify_work_log_contract.test.sql:28-31 의 "세 번째 파일을 만들지 말 것" 주의를 알고도
 --    새 파일로 둔다. 그 주의는 **같은 축**이 흩어지는 것을 막는 규율이기 때문이다.
 --      · work_log_slot_sync_rpc.test.sql — **예정 축**: 패치 계약 검증·권한·
@@ -21,7 +27,7 @@
 --    새 단언을 추가할 때 어느 축인지 먼저 판단할 것.
 --
 -- 🔗 `customRole` 축(20260807120000)도 같은 기준으로 갈랐다:
---      · 이 파일 23~36 — **계약 판정표**(staffRole × customRole 6조합)·3상·입력 검증·
+--      · 이 파일 22~37 — **계약 판정표**(staffRole × customRole 6조합)·3상·입력 검증·
 --        role_change_history 확장·GRID-1·정산 잠금 비적용. 전부 `work_logs` 컬럼으로 관측된다.
 --      · sync 파일 31~32 — 이름이 바뀌었을 때 **assignments.roleIds 까지 수렴**하는가.
 --        이 파일 픽스처는 전부 `application_id=NULL` 이라 동기화가 조기 종료돼 그 축을
@@ -36,7 +42,7 @@
 --    tr_work_logs_pin_payroll 도 발화하지 않는다 — jpc_test_set_user() 로 충분하다.
 -- ============================================================
 BEGIN;
-SELECT plan(36);
+SELECT plan(38);
 
 -- ── 픽스처 ──────────────────────────────────────────────────
 -- application_id 를 NULL 로 둔다(add_direct_staff 산 행의 형태). 이 파일은 실적 축만 보므로
@@ -103,7 +109,7 @@ BEGIN
   PERFORM set_config('wa.wl_done', v_id::text, true);
 
   -- ⑦ customRole 축 전용 — **현재 역할이 'other'** 인 행. 판정표 ④(이름만 교정)·⑥(이름 삭제)의
-  --    유일한 무대다. ⑤ 픽스처는 14~17번이 표준 역할(floor)로 바꿔 버려 재사용할 수 없다.
+  --    유일한 무대다. ⑤ 픽스처는 16~19번이 표준 역할(floor)로 바꿔 버려 재사용할 수 없다.
   INSERT INTO public.work_logs (job_posting_id, staff_id, owner_id, date, time_slot, status, role,
                                 custom_role)
   VALUES (s.job_posting_id, s.collaborator_id, s.owner_id, '2026-08-16', '18:00', 'scheduled', 'other',
@@ -224,7 +230,7 @@ SELECT is((SELECT status::text || '|' || (check_in_ts IS NOT NULL)::text
           'no_show|true',
           '노쇼는 시각을 기록해도 상태가 뒤집히지 않는다 (없던 유급 근무 방지)');
 
--- ── 11-B~11-C) 🔴 completed 는 checked_out 으로 강등하지 않는다 ──
+-- ── 12~13) 🔴 completed 는 checked_out 으로 강등하지 않는다 ──
 -- 마이그 20260806140000:364-371 이 명시적으로 지키는 성질인데 직접 핀이 없었다.
 -- completed 도 '양쪽 NOT NULL' 을 만족해 제약 위반이 아니므로 조용히 강등된다 —
 -- 그러면 tr_sync_application_completion 이 applications 를 불필요하게 역전파한다.
@@ -245,7 +251,7 @@ SELECT is((SELECT check_out_ts FROM public.work_logs WHERE id = current_setting(
           '2026-08-15T19:30:00+00:00'::timestamptz,
           '강등은 막되 실적 자체는 정상 반영된다 (위 단언이 빈 가드가 아님을 보증)');
 
--- ── 12~13) modification_history ─────────────────────────────
+-- ── 14~15) modification_history ─────────────────────────────
 -- 이 배열 길이 증가가 notify_on_work_log_update Case 2 를 발화시킨다.
 SELECT is(
   (SELECT jsonb_array_length(COALESCE(modification_history, '[]'::jsonb))
@@ -262,7 +268,7 @@ SELECT is(
   '오기록 정정|' || current_setting('wa.owner_id') || '|true',
   '이력 엔트리에 사유·수정자(호출자)·변경 축이 담긴다');
 
--- ── 14~16) 역할 변경 이력 + custom_role 정리 ────────────────
+-- ── 16~18) 역할 변경 이력 + custom_role 정리 ────────────────
 -- 근무표 경로(WorkLogRepositoryVenue.updateSlot)에는 아예 없던 것이다.
 DO $$
 BEGIN
@@ -285,7 +291,7 @@ SELECT is(
   'other|floor|' || current_setting('wa.owner_id'),
   '역할 이력에 이전·이후 역할과 변경자가 담긴다');
 
--- 16. 표준 역할로 바꾸면 옛 커스텀 역할명을 지운다. 남기면 _posting_role_key 가
+-- 18. 표준 역할로 바꾸면 옛 커스텀 역할명을 지운다. 남기면 _posting_role_key 가
 --     custom_role 을 우선하므로 역할 키가 'other:바리스타' 에서 영영 안 바뀐다(유령 부활).
 SELECT is(
   (SELECT role::text || '|' || COALESCE(custom_role, '(null)')
@@ -307,7 +313,7 @@ SELECT is(
    FROM public.work_logs WHERE id = current_setting('wa.wl_cust')::uuid),
   1, '역할이 실제로 바뀌지 않으면 이력을 남기지 않는다');
 
--- ── 18~19) 정산 완료 잠금 ───────────────────────────────────
+-- ── 20~21) 정산 완료 잠금 ───────────────────────────────────
 -- 클라 AlreadySettledError 의 서버 짝. 실적 키에만 건다 —
 -- 기존 키(예정·역할·색·메모)의 계약을 조용히 좁히면 구 빌드가 막힌다.
 SELECT throws_like(
@@ -323,7 +329,7 @@ SELECT lives_ok(
   '정산 완료건이라도 기존 키(메모)는 계속 통과한다 (하위호환)');
 
 -- ══════════════════════════════════════════════════════════════
--- customRole 축 (20~35) — 20260807120000_work_log_slot_custom_role.sql
+-- customRole 축 (22~37) — 20260807120000 + 20260807130000
 --
 -- 무엇을 지키는 테스트인가:
 --   삭제된 `RoleChangeModal` 은 공고에서 뽑은 **커스텀 역할명**('바리스타')을 옵션에 넣고
@@ -337,7 +343,7 @@ SELECT lives_ok(
 --    역할 키는 'other:바리스타' 인 행 — 20260806140000 이 없애려던 레거시 표류 형태 — 이 생긴다.
 -- ══════════════════════════════════════════════════════════════
 
--- ── 20~22) 판정표 ④ — staffRole 없이 이름만 교정한다 ─────────
+-- ── 22~24) 판정표 ④ — staffRole 없이 이름만 교정한다 ─────────
 -- 🔴 이게 "잘못 들어간 이름을 고친다"는 원래 능력이다. 역할 축은 그대로 두고 이름만 바꾼다.
 DO $$
 BEGIN
@@ -353,7 +359,7 @@ SELECT is(
   'other|플로어장',
   'customRole 만 보내면 역할은 other 그대로 두고 이름만 바뀐다 (판정표 ④)');
 
--- 21. 🔑 red-swap 대상. 이력 조건이 `role 컬럼 변경` 뿐이면 여기가 red 가 된다 —
+-- 23. 🔑 red-swap 대상. 이력 조건이 `role 컬럼 변경` 뿐이면 여기가 red 가 된다 —
 --     '바리스타'→'플로어장' 은 둘 다 role='other' 라 role 컬럼이 안 바뀌기 때문이다.
 --     구 `updateRoleWithTransaction` 은 이 변경도 남겼으므로 감사 흔적이 사라지면 기능 후퇴다.
 SELECT is(
@@ -366,7 +372,7 @@ SELECT is(
   '1|바리스타|플로어장|other|other|역할명 오타 정정',
   '🔴 커스텀 이름만 바뀌어도 role_change_history 에 남고 옛/새 이름이 함께 실린다');
 
--- 22. 같은 이름으로 다시 저장하면 이력이 늘지 않는다(변경이 없으면 기록도 없다).
+-- 24. 같은 이름으로 다시 저장하면 이력이 늘지 않는다(변경이 없으면 기록도 없다).
 DO $$
 BEGIN
   PERFORM public.update_work_log_slot(
@@ -380,7 +386,7 @@ SELECT is(
    FROM public.work_logs WHERE id = current_setting('wa.wl_other')::uuid),
   1, '같은 이름을 다시 보내면 이력을 남기지 않는다');
 
--- ── 23) 🔴 GRID-1 — customRole 키를 안 보내면 기존 이름을 덮지 않는다 ──
+-- ── 25) 🔴 GRID-1 — customRole 키를 안 보내면 기존 이름을 덮지 않는다 ──
 -- 마이그가 UPDATE 를 `custom_role = v_final_custom_role` 로 단순화했다. 그 최종값 계산에서
 -- `ELSE v_wl.custom_role` 갈래가 빠지면 **메모만 고쳐도 역할 이름이 증발한다.**
 DO $$
@@ -397,7 +403,7 @@ SELECT is(
   'other|플로어장|이름과 무관한 메모',
   '🔴 customRole 키가 없는 저장은 기존 역할 이름을 보존한다 (GRID-1)');
 
--- ── 24) 빈 문자열은 삭제로 접는다 ───────────────────────────
+-- ── 26) 빈 문자열은 삭제로 접는다 ───────────────────────────
 -- `_posting_role_key` 가 NULL 과 '' 를 같은 키('other:')로 보므로, '' 를 컬럼에 남기면
 -- 키 공간에서는 구분되지 않는데 컬럼에서만 구분되는 두 번째 표현이 생긴다.
 DO $$
@@ -417,7 +423,7 @@ SELECT is(
   'other|(null)',
   '공백뿐인 역할명은 삭제로 접힌다 — 빈 문자열을 컬럼에 남기지 않는다');
 
--- ── 25~26) 판정표 ① — 표준 역할 행을 커스텀 역할로 옮긴다 ────
+-- ── 27~28) 판정표 ① — 표준 역할 행을 커스텀 역할로 옮긴다 ────
 -- 구 `updateRoleWithTransaction` 의 `isStandardRole=false` 갈래
 -- ({ role:'other', custom_role:<이름> })와 정확히 같은 결과여야 한다.
 DO $$
@@ -434,7 +440,7 @@ SELECT is(
   'other|바리스타',
   '표준 역할 행을 other + 커스텀 이름으로 옮길 수 있다 (판정표 ①)');
 
--- 26. 이력 엔트리 — previousRole 은 enum, 새 이름은 newCustomRole 로 실린다.
+-- 28. 이력 엔트리 — previousRole 은 enum, 새 이름은 newCustomRole 로 실린다.
 --     옛 이름이 없었으므로 previousCustomRole 키는 **붙지 않는다**(있을 때만 싣는다).
 SELECT is(
   (SELECT (e ->> 'previousRole') || '|' || (e ->> 'newRole') || '|' ||
@@ -445,7 +451,7 @@ SELECT is(
   'dealer|other|바리스타|false',
   '이력에 이전 역할(enum)·새 역할·새 이름이 담기고 없던 옛 이름 키는 붙지 않는다');
 
--- ── 27) 판정표 ⑥ — customRole:null 은 이름만 지운다 ─────────
+-- ── 29) 판정표 ⑥ — customRole:null 은 이름만 지운다 ─────────
 -- 🔑 역할은 'other' 로 남는다. 이름 삭제는 역할 삭제가 아니다.
 DO $$
 BEGIN
@@ -461,7 +467,7 @@ SELECT is(
   'other|(null)',
   'customRole:null 은 이름만 지우고 역할은 other 로 남긴다 (판정표 ⑥)');
 
--- ── 28~29) 🔴 모순 조합은 거부한다 (판정표 ③⑤) ─────────────
+-- ── 30~31) 🔴 모순 조합은 거부한다 (판정표 ③⑤) ─────────────
 -- 조용한 무시("표준 우선")를 택하지 않은 이유: "저장했는데 이름이 안 바뀐다"로 나타나고
 -- 서버 로그에도 흔적이 없어 나중에 못 찾는다. 허용 키 화이트리스트와 같은 fail-closed 규율이다.
 SELECT throws_like(
@@ -471,21 +477,21 @@ SELECT throws_like(
   '%INVALID_INPUT%',
   '🔴 표준 역할과 커스텀 이름을 동시에 보내면 거부한다 (판정표 ③)');
 
--- 29. wl_id 는 role='dealer' 다 — staffRole 없이 이름만 보내면 최종 role 이 other 가 아니게 된다.
+-- 31. wl_id 는 role='dealer' 다 — staffRole 없이 이름만 보내면 최종 role 이 other 가 아니게 된다.
 SELECT throws_like(
   format($q$SELECT public.update_work_log_slot(%L::uuid, '{"customRole":"바리스타"}'::jsonb)$q$,
          current_setting('wa.wl_id')),
   '%INVALID_INPUT%',
   '🔴 현재 역할이 other 가 아닌 행에 이름만 보내면 거부한다 — 서버가 몰래 승격시키지 않는다 (판정표 ⑤)');
 
--- ── 30~32) 입력 검증 ────────────────────────────────────────
+-- ── 32~34) 입력 검증 ────────────────────────────────────────
 SELECT throws_like(
   format($q$SELECT public.update_work_log_slot(%L::uuid, '{"customRole": 12345}'::jsonb)$q$,
          current_setting('wa.wl_other')),
   '%INVALID_PATCH_TYPE%',
   'customRole 이 문자열도 null 도 아니면 거부한다');
 
--- 31. 상한 20 은 공고 작성 스키마(orderSheet.schema.ts:41,48 safeText(20))와 같은 값이다.
+-- 33. 상한 20 은 공고 작성 스키마(orderSheet.schema.ts:41,48 safeText(20))와 같은 값이다.
 --     공고가 못 만드는 길이를 근무기록만 가지면 _posting_role_key 매칭이 영영 안 된다.
 -- ⚠️ 긴 문자열은 `%L` 로 JSON 안에 넣지 않는다 — `%L` 은 SQL 리터럴(작은따옴표)을 만들어
 --    `{"customRole":'가가...'}` 라는 깨진 JSON 이 되고, 42601 syntax error 로 죽는다.
@@ -497,7 +503,7 @@ SELECT throws_like(
   '%INVALID_INPUT%',
   '역할명이 20자를 넘으면 거부한다 (공고 스키마 safeText(20) 과 동일 상한)');
 
--- 32. 🔑 `work_logs_xss_check` 트리거도 같은 패턴을 잡지만 그쪽 메시지는
+-- 34. 🔑 `work_logs_xss_check` 트리거도 같은 패턴을 잡지만 그쪽 메시지는
 --     'XSS pattern detected in field: custom_role' 이라 앱이 매핑할 수 없다. 함수가 먼저
 --     끊어 INVALID_INPUT 으로 나가야 WorkLogRepositoryVenue:162 의 기존 매핑이 받는다 —
 --     그래서 이 단언은 %INVALID_INPUT% 여야 하고 트리거 메시지로는 green 이 되지 않는다.
@@ -508,17 +514,49 @@ SELECT throws_like(
   '%INVALID_INPUT%',
   'XSS 패턴이 든 역할명은 트리거보다 먼저 INVALID_INPUT 으로 거부한다');
 
--- ── 33) 정산 완료 잠금은 역할 축에 걸지 않는다 ──────────────
+-- ── 35) 🔴 표준 역할 라벨과 같은 이름은 거부한다 (20260807130000) ──
+-- 🔑 이 결함은 **저장 두 번째**에 나타나 테스트가 놓치기 쉽다. 첫 저장은
+--    `v_role_key_old` 가 아직 옛 값('dealer')이라 정상 매칭되고 roleIds 도 ["dealer"] 로 쓰인다.
+--    두 번째 저장부터 `v_role_key_old`='other:dealer' vs roleIds 역산 'dealer' 로 어긋나
+--    `no_match` — work_logs 만 갱신되고 assignments 는 **에러 없이** 영구히 낡는다.
+--    그래서 "첫 저장이 성공한다"는 단언으로는 이 결함을 절대 잡을 수 없고,
+--    입력 단계에서 끊는 것만이 유일하게 관측 가능한 가드다.
+-- ⚠️ 'Dealer'(대문자)는 거부 대상이 **아니다** — `r = ANY(v_role_labels)` 가 false 라
+--    역산이 'other:Dealer' 로 정확히 왕복한다. 아래 두 단언이 그 경계를 함께 고정한다.
+SELECT throws_like(
+  format($q$SELECT public.update_work_log_slot(%L::uuid,
+             '{"customRole":"dealer"}'::jsonb)$q$,
+         current_setting('wa.wl_other')),
+  '%INVALID_INPUT%',
+  '🔴 표준 역할 라벨과 같은 역할명은 거부한다 (assignments 영구 표류 차단)');
+
+-- 36. 🔑 경계의 반대편. 이게 없으면 "라벨 비슷하면 다 막기"로 넓혀도 green 이라
+--     멀쩡한 이름을 막는 회귀를 못 잡는다. 대소문자가 다르면 통과해야 한다.
+DO $$
+BEGIN
+  PERFORM public.update_work_log_slot(
+    current_setting('wa.wl_other')::uuid,
+    jsonb_build_object('customRole', 'Dealer')
+  );
+END $$;
+
+SELECT is(
+  (SELECT role::text || '|' || COALESCE(custom_role, '(null)')
+   FROM public.work_logs WHERE id = current_setting('wa.wl_other')::uuid),
+  'other|Dealer',
+  '대소문자가 다른 이름(Dealer)은 통과한다 — 역산이 정확히 왕복하므로 막을 이유가 없다');
+
+-- ── 37) 정산 완료 잠금은 역할 축에 걸지 않는다 ──────────────
 -- 🔴 구 `updateRoleWithTransaction` 도 AlreadySettledError 를 던지지 않았다. 정산 잠금은
 --    **금액에 영향을 주는 시각**의 문제이고, 역할 표기 교정까지 막으면 정산 후에 발견한
---    오타를 영영 못 고친다. 실적 키(18번)와 대칭을 이루는 음성 단언이다.
+--    오타를 영영 못 고친다. 실적 키(20번)와 대칭을 이루는 음성 단언이다.
 SELECT lives_ok(
   format($q$SELECT public.update_work_log_slot(%L::uuid,
              '{"staffRole":"other","customRole":"바리스타"}'::jsonb)$q$,
          current_setting('wa.wl_settled')),
   '정산 완료건이라도 역할·역할명은 고칠 수 있다 (잠금은 실적 축 전용)');
 
--- ── 34) 권한 ────────────────────────────────────────────────
+-- ── 38) 권한 ────────────────────────────────────────────────
 DO $$
 BEGIN
   PERFORM jpc_test_set_user(current_setting('wa.out_id')::uuid);
