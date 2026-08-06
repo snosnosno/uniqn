@@ -24,6 +24,7 @@ import { toDateString } from '@/utils/date';
 import { DEFAULT_SLOT_START_TIME } from '@/domains/workSchedule';
 import { DEFAULT_SALARY_BY_TYPE } from '@/constants/jobPosting';
 import { syncRoleSalaries } from '@/utils/order-sheet/roleSalaries';
+import { normalizeScheduleGroups } from '@/utils/order-sheet/normalizeScheduleGroups';
 import { generateId } from '@/utils/generateId';
 
 // 정의는 의존성 0 모듈(constants/jobPosting)로 이동 — roleSalaries.ts와의 순환 차단. 기존 소비처용 재수출.
@@ -216,19 +217,6 @@ export function valuesToDraft(values: OrderSheetValues): JobPostingDraft {
   };
 }
 
-/** 왕복 비교용 — draft 슬롯의 생성 id를 벗겨 구조만 비교한다. 미정 플래그는 시그니처에 포함
- *  (미정 슬롯과 시각 슬롯이 같은 그룹으로 병합되는 오류 차단 — startTime 부재는 JSON에서 증발). */
-const stripSlotIds = (slots: PostingTimeSlot[]) =>
-  slots.map((s) => ({
-    startTime: s.startTime,
-    ...(s.isTimeToBeAnnounced === true ? { isTimeToBeAnnounced: true as const } : {}),
-    roles: s.roles.map((r) => ({
-      role: r.role,
-      ...(r.customRole !== undefined ? { customRole: r.customRole } : {}),
-      count: r.count,
-    })),
-  }));
-
 /** draft 슬롯 → 폼 슬롯(id 제거·구조만) — 그룹 복원 공용. 미정 플래그는 true일 때만 복원(optional 계약). */
 function toFormTimeSlots(slots: PostingTimeSlot[]): OrderSheetGroupTimeSlots {
   return slots.map((slot) => ({
@@ -240,15 +228,6 @@ function toFormTimeSlots(slots: PostingTimeSlot[]): OrderSheetGroupTimeSlots {
       count: r.count,
     })),
   }));
-}
-
-/** 'YYYY-MM-DD' 연속(다음 날) 판정 — 로컬 자정 기준(문자열 산술 금지) */
-function isNextDay(prev: string, next: string): boolean {
-  const [y, m, d] = prev.split('-').map(Number);
-  const date = new Date(y!, (m ?? 1) - 1, d ?? 1);
-  date.setDate(date.getDate() + 1);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` === next;
 }
 
 export function draftToValues(draft: JobPostingDraft): OrderSheetFormValues {
@@ -314,60 +293,36 @@ export function draftToValues(draft: JobPostingDraft): OrderSheetFormValues {
     };
   }
   // 여기부터 draft.schedule.kind === 'dated' 로 좁혀진다.
-  // 그룹핑 복원(S1 — 구 M8 throw 제거, 2차 Eng-H1 확정 규칙):
-  // · isGrouped===true: 연속 run + 동일 시그니처(stripSlotIds JSON) 경계 보존 → grouped 그룹
-  //   (groupRequirementsToDateRanges 시맨틱 — 묶음지원 범위를 그대로 살린다)
-  // · falsy: 시그니처 병합 → shared 그룹(동일 조건 개별 날짜들의 병합은 지원자 화면 산출이
-  //   동일해 정규형으로 수용 — 비연속 dates 허용)
-  // 왕복 불변식 = 정규형 동등(draft→values→draft에서 isGrouped·시그니처·날짜 집합 보존).
+  // 그룹핑 복원 — 폼 뮤테이션과 **같은 정규화 함수**(normalizeScheduleGroups)를 소비한다.
+  // 복원과 편집이 한 구현을 공유하므로 "임시저장을 다시 열었더니 그룹이 합쳐져 있다"는
+  // 재진입 서프라이즈가 정의상 소멸한다(설계 §3.1 — UI 규칙 = 저장 규칙).
+  // 규칙(빈 그룹 보존·grouped run·시그니처 병합·싱글턴 강등·결정적 정렬)의 단일 소스는
+  // normalizeScheduleGroups 이며, 구 로직 대비 유일한 의미 변화는 **grouped 싱글턴 강등**이다
+  // (지원자 화면 중립 실측: 렌더 분기는 postingFacts.workflow.usesGroupedDateRanges 축이고
+  //  — AssignmentSelector.tsx:183 — 싱글턴 그룹 라벨은 양 경로가 같은 'M/d(E)' 를 낸다,
+  //  selectionUtils.ts:64·93. group.id 는 React key 전용이고 저장되는 groupId 는 슬롯 id 축).
   // 레거시 date는 Date/null 가능 — 문자열 정규화 후 무효(date 없음) requirements는 제외.
-  const reqs = draft.schedule.requirements
-    .map((r) => ({ ...r, date: r.date ? toDateString(r.date) : '' }))
-    .filter((r) => r.date !== '')
-    .sort((a, b) => a.date.localeCompare(b.date));
-  type FormGroup = OrderSheetScheduleGroups[number];
-  const groups: FormGroup[] = [];
-  const sharedBySig = new Map<string, FormGroup>();
-  let run: { sig: string; lastDate: string; group: FormGroup } | null = null;
-  for (const r of reqs) {
-    const sig = JSON.stringify(stripSlotIds(r.timeSlots));
-    if (r.isGrouped === true) {
-      if (run !== null && run.sig === sig && isNextDay(run.lastDate, r.date)) {
-        run.group.dates.push(r.date);
-        run.lastDate = r.date;
-      } else {
-        const group: FormGroup = {
-          dates: [r.date],
-          timeSlots: toFormTimeSlots(r.timeSlots),
-          grouped: true,
-        };
-        groups.push(group);
-        run = { sig, lastDate: r.date, group };
-      }
-    } else {
-      run = null; // grouped run은 비-grouped 날짜로 단절(날짜 연속성과 별개의 명시 경계)
-      const existing = sharedBySig.get(sig);
-      if (existing) {
-        existing.dates.push(r.date);
-      } else {
-        const group: FormGroup = {
-          dates: [r.date],
-          timeSlots: toFormTimeSlots(r.timeSlots),
-          grouped: false,
-        };
-        sharedBySig.set(sig, group);
-        groups.push(group);
-      }
-    }
-  }
+  const normalized = normalizeScheduleGroups(
+    draft.schedule.requirements
+      .map((r) => ({ ...r, date: r.date ? toDateString(r.date) : '' }))
+      .filter((r) => r.date !== '')
+      .map((r) => ({
+        dates: [r.date],
+        timeSlots: toFormTimeSlots(r.timeSlots),
+        grouped: r.isGrouped === true,
+      }))
+  );
   // requirements 없는 draft(빈 템플릿 등) — 구 동작(allDates+templateTimeSlots 단일 그룹) 보존
-  if (groups.length === 0) {
-    groups.push({
-      dates: [...draft.schedule.allDates],
-      timeSlots: toFormTimeSlots(draft.schedule.templateTimeSlots ?? []),
-      grouped: false,
-    });
-  }
+  const groups =
+    normalized.length > 0
+      ? normalized
+      : [
+          {
+            dates: [...draft.schedule.allDates],
+            timeSlots: toFormTimeSlots(draft.schedule.templateTimeSlots ?? []),
+            grouped: false,
+          },
+        ];
   // 역할별 급여(by_role) 복원 — hourly 강제 변환 금지, 협의(other)는 그대로 유지(2026-07-14 결정).
   // shared 는 roleCatalog 에 defaultSalary 를 복사(동등성 계약)하므로, by_role 일 때만 roleSalaries 를
   // 복원해야 왕복이 성립한다(shared 에서 되채우면 baseValues.roleSalaries=[] 와 불일치).
