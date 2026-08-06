@@ -1,5 +1,5 @@
 /**
- * 근무지 길찾기 버튼 — 사용자가 실제로 쓰는 지도 앱으로 연다.
+ * 근무지 위치 보기 버튼 — 사용자가 실제로 쓰는 지도 앱에 그 지점을 띄운다.
  *
  * 예전에는 기기 기본 지도로만 갔다. 국내 스태프 대부분은 카카오맵·네이버지도를 쓰는데,
  * 기본 지도(Apple/Google)는 국내 상호·건물 검색이 약해 "열리긴 열렸는데 어디인지 모르겠는"
@@ -85,17 +85,17 @@ function DirectionsButtonComponent({
   return (
     <>
       <View className="ml-8 mt-2 flex-row items-center gap-2">
-        {/* 주 액션 라벨은 '길찾기' 로 고정한다 — 고른 앱에 따라 라벨이 길어졌다 짧아졌다 하면
+        {/* 주 액션 라벨은 '지도에서 보기' 로 고정한다 — 고른 앱에 따라 라벨이 바뀌면
             같은 자리에 있던 버튼이 손가락 밑에서 흔들린다. 어떤 앱으로 갈지는 옆에서 알린다. */}
         <Pressable
           onPress={handlePress}
           accessibilityRole="button"
-          accessibilityLabel={`${destinationName} 길찾기`}
+          accessibilityLabel={`${destinationName} 지도에서 보기`}
           className="flex-row items-center rounded-lg bg-primary-50 px-3 py-2 active:bg-primary-100 dark:bg-primary-900/20 dark:active:bg-primary-900/30"
         >
           <MapIcon size={16} color="#B8962E" />
           <Text className="ml-1.5 text-sm font-sans-medium text-primary-600 dark:text-primary-400">
-            길찾기
+            지도에서 보기
           </Text>
         </Pressable>
 
@@ -105,7 +105,7 @@ function DirectionsButtonComponent({
           <Pressable
             onPress={() => setPickerVisible(true)}
             accessibilityRole="button"
-            accessibilityLabel={`길찾기에 사용할 지도 앱 변경 (현재 ${MAP_APP_LABELS[preferredApp]})`}
+            accessibilityLabel={`위치를 열 지도 앱 변경 (현재 ${MAP_APP_LABELS[preferredApp]})`}
             hitSlop={10}
             className="flex-row items-center rounded-lg px-2 py-2 active:bg-secondary-100 dark:active:bg-secondary-800"
           >

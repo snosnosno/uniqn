@@ -281,7 +281,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           />
         ) : (
           <Text className="ml-8 mt-2 text-xs text-content-muted dark:text-secondary-400 font-sans">
-            주소가 등록되지 않아 길찾기를 열 수 없어요. 구인자에게 문의해 주세요.
+            주소가 등록되지 않아 지도를 열 수 없어요. 구인자에게 문의해 주세요.
           </Text>
         )}
       </View>

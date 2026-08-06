@@ -3,7 +3,7 @@
  *
  * 실사고 2건을 고정한다:
  *  1. 저장된 E.164 번호(`+8210…`)가 3-4-4 로 잘려 '821-0980-0903' 처럼 보였다.
- *  2. 주소가 없는 공고에서 길찾기가 장소명('홈')으로 검색돼 엉뚱한 곳을 안내했다.
+ *  2. 주소가 없는 공고에서 지도가 장소명('홈')으로 검색돼 엉뚱한 곳을 열었다.
  */
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
@@ -68,7 +68,7 @@ describe('InfoTab — 연락처 표기', () => {
   });
 });
 
-describe('InfoTab — 길찾기', () => {
+describe('InfoTab — 지도에서 보기', () => {
   beforeEach(() => {
     mockOpenMapDestination.mockClear();
     // 이미 고른 앱이 있는 상태를 기본으로 둔다 — 이 스위트가 고정하려는 것은 "무엇을 넘기는가"
@@ -76,10 +76,10 @@ describe('InfoTab — 길찾기', () => {
     mockStoredMapApp = 'kakao';
   });
 
-  it('주소가 없으면 길찾기 대신 안내 문구를 띄운다', () => {
+  it('주소가 없으면 버튼 대신 안내 문구를 띄운다', () => {
     const { queryByText, getByText } = render(<InfoTab schedule={makeSchedule()} />);
 
-    expect(queryByText('길찾기')).toBeNull();
+    expect(queryByText('지도에서 보기')).toBeNull();
     expect(getByText(/주소가 등록되지 않아/)).toBeTruthy();
   });
 
@@ -88,7 +88,7 @@ describe('InfoTab — 길찾기', () => {
       <InfoTab schedule={makeSchedule({ locationAddress: '서울 강남구 테헤란로 1' })} />
     );
 
-    fireEvent.press(getByText('길찾기'));
+    fireEvent.press(getByText('지도에서 보기'));
 
     expect(mockOpenMapDestination).toHaveBeenCalledWith(
       expect.objectContaining({ query: '서울 강남구 테헤란로 1' }),
@@ -106,7 +106,7 @@ describe('InfoTab — 길찾기', () => {
       />
     );
 
-    fireEvent.press(getByText('길찾기'));
+    fireEvent.press(getByText('지도에서 보기'));
 
     expect(mockOpenMapDestination).toHaveBeenCalledWith(
       expect.objectContaining({ query: '서울 강남구 테헤란로 1, 3층' }),
@@ -126,7 +126,7 @@ describe('InfoTab — 길찾기', () => {
       />
     );
 
-    fireEvent.press(getByText('길찾기'));
+    fireEvent.press(getByText('지도에서 보기'));
 
     expect(mockOpenMapDestination).toHaveBeenCalledWith(
       {
@@ -139,12 +139,12 @@ describe('InfoTab — 길찾기', () => {
   });
 
   // 좌표만 있고 주소 텍스트가 없어도 갈 수 있어야 한다 — 게이트가 query 만 보면 버튼이 사라진다.
-  it('주소 텍스트가 없어도 좌표가 있으면 길찾기를 노출한다', () => {
+  it('주소 텍스트가 없어도 좌표가 있으면 버튼을 노출한다', () => {
     const { getByText } = render(
       <InfoTab schedule={makeSchedule({ coordinates: { lat: 37.5, lng: 127.03 } })} />
     );
 
-    fireEvent.press(getByText('길찾기'));
+    fireEvent.press(getByText('지도에서 보기'));
 
     expect(mockOpenMapDestination).toHaveBeenCalledWith(
       expect.objectContaining({ query: null, coordinates: { lat: 37.5, lng: 127.03 } }),
@@ -159,7 +159,7 @@ describe('InfoTab — 길찾기', () => {
       <InfoTab schedule={makeSchedule({ location: '', coordinates: { lat: 37.5, lng: 127.03 } })} />
     );
 
-    expect(getByRole('button', { name: '근무지 길찾기' })).toBeTruthy();
+    expect(getByRole('button', { name: '근무지 지도에서 보기' })).toBeTruthy();
   });
 
   it('상세주소가 없으면 공고 주소를 장소 아래에 대신 보여준다', () => {
@@ -186,7 +186,7 @@ describe('InfoTab — 지도 앱 선택', () => {
   it('고른 앱이 없으면 바로 열지 않고 선택 시트를 띄운다', () => {
     const { getByText } = render(<InfoTab schedule={makeSchedule(WITH_ADDRESS)} />);
 
-    fireEvent.press(getByText('길찾기'));
+    fireEvent.press(getByText('지도에서 보기'));
 
     expect(mockOpenMapDestination).not.toHaveBeenCalled();
     expect(getByText('어떤 지도로 열까요?')).toBeTruthy();
@@ -195,7 +195,7 @@ describe('InfoTab — 지도 앱 선택', () => {
   it('시트에서 고른 앱으로 열고 그 선택을 기억한다', () => {
     const { getByText } = render(<InfoTab schedule={makeSchedule(WITH_ADDRESS)} />);
 
-    fireEvent.press(getByText('길찾기'));
+    fireEvent.press(getByText('지도에서 보기'));
     fireEvent.press(getByText('네이버지도'));
 
     expect(mockOpenMapDestination).toHaveBeenCalledWith(expect.anything(), 'naver');
@@ -209,7 +209,7 @@ describe('InfoTab — 지도 앱 선택', () => {
 
     expect(getByText('카카오맵 · 변경')).toBeTruthy();
 
-    fireEvent.press(getByRole('button', { name: '길찾기에 사용할 지도 앱 변경 (현재 카카오맵)' }));
+    fireEvent.press(getByRole('button', { name: '위치를 열 지도 앱 변경 (현재 카카오맵)' }));
 
     expect(getByText('어떤 지도로 열까요?')).toBeTruthy();
   });

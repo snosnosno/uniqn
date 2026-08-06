@@ -1,9 +1,13 @@
 /**
- * 근무지 주소 → 지도 앱 길찾기 링크.
+ * 근무지 주소 → 지도 앱 위치 표시 링크.
  *
  * 처음 가는 홀덤펍에 정시 도착해야 하는 스태프가 앱을 나가 지도 앱에 주소를 손으로 다시
  * 치고 있었다. 같은 화면에서 전화번호는 탭 한 번에 걸리는데 주소만 막혀 있어 비일관성이
  * 더 크게 느껴진다. 신규 네이티브 의존성 없이 expo-linking 만으로 처리한다.
+ *
+ * 🧭 **경로 안내(route)가 아니라 위치 표시(place/look)** 로 연다. 길찾기로 곧장 꽂으면
+ *    이동수단을 앱이 임의로 정하고 출발지 추정·현위치 권한까지 끌고 들어온다. 알고 싶은 것은
+ *    "거기가 어디냐" 이고, 지도 앱에 도착하면 길찾기 버튼은 어차피 그 화면에 있다.
  */
 import { Linking, Platform } from 'react-native';
 import Constants from 'expo-constants';
@@ -80,7 +84,7 @@ export function composeFullAddress(
 }
 
 /**
- * 지도 검색어 결정. 안내할 수 있는 근거가 없으면 null 을 돌려 호출부가 길찾기를 감춘다.
+ * 지도 검색어 결정. 안내할 수 있는 근거가 없으면 null 을 돌려 호출부가 버튼을 감춘다.
  *
  * 주소와 상세주소가 둘 다 있으면 **합친다**. 어느 한쪽만 던지면 어딘가에서 틀리기 때문:
  * - 상세주소만 → B1 이후 데이터에서는 '3층 301호' 를 지도에 던지게 된다(위 실사고와 같은 클래스)
@@ -141,7 +145,7 @@ function formatDegrees(value: number): string {
  * 좌표 URL 의 이름 자리에 넣을 라벨.
  *
  * 🔴 **쉼표와 괄호를 지운다.** 두 문자가 각각 다른 URL 형식의 구분자다:
- *    - 카카오 `link/to/{이름},{위도},{경도}` — 쉼표가 필드 구분자다. `encodeURIComponent` 가
+ *    - 카카오 `link/map/{이름},{위도},{경도}` — 쉼표가 필드 구분자다. `encodeURIComponent` 가
  *      `%2C` 로 감싸 주긴 하지만, 상류가 경로를 디코드한 뒤 쉼표로 가르면 되살아나 좌표 자리가
  *      밀린다. 인코딩에 기대지 않고 값 자체에서 없앤다.
  *    - Android `geo:{lat},{lng}?q={lat},{lng}({라벨})` — 괄호가 라벨 구분자인데
@@ -166,8 +170,9 @@ export function buildMapCoordinateUrls(
   const lng = formatDegrees(coordinates.lng);
   const name = sanitizeLabel(label, '근무지');
   const encodedName = encodeURIComponent(name);
-  // 카카오 길찾기 목적지 — 웹·모바일 어디서나 열리는 공통 최후 후보.
-  const kakaoTo = `https://map.kakao.com/link/to/${encodedName},${lat},${lng}`;
+  // 카카오 **지도 바로가기** — 웹·모바일 어디서나 열리는 공통 최후 후보.
+  // ⚠️ `/link/to/` 는 길찾기다. 우리가 원하는 건 위치 표시라 `/link/map/` 이어야 한다.
+  const kakaoMapLink = `https://map.kakao.com/link/map/${encodedName},${lat},${lng}`;
 
   if (platform === 'ios') {
     // 🔴 여기에 `nmap://` 를 두지 않는다. iOS 는 `LSApplicationQueriesSchemes` 에 선언하지 않은
@@ -178,7 +183,7 @@ export function buildMapCoordinateUrls(
     return [
       // 기본 지도 — 항상 열린다. `ll` 이 핀 위치, `q` 는 라벨.
       `https://maps.apple.com/?ll=${lat},${lng}&q=${encodedName}`,
-      kakaoTo,
+      kakaoMapLink,
     ];
   }
 
@@ -186,11 +191,11 @@ export function buildMapCoordinateUrls(
     return [
       // geo: URI 표준 — `q=위도,경도(라벨)` 이어야 지도 앱이 검색이 아니라 핀으로 받는다.
       `geo:${lat},${lng}?q=${lat},${lng}(${encodedName})`,
-      kakaoTo,
+      kakaoMapLink,
     ];
   }
 
-  return [kakaoTo];
+  return [kakaoMapLink];
 }
 
 /**
@@ -273,14 +278,20 @@ function resolveNaverAppName(platform: 'ios' | 'android' | 'web'): string | null
   return identifier ? encodeURIComponent(identifier) : null;
 }
 
+// 🧭 **경로 안내가 아니라 위치 표시다.**
+// 길찾기(route)로 곧장 꽂으면 이동수단을 앱이 임의로 정하고, 출발지 추정·현위치 권한까지
+// 끌고 들어온다. 스태프가 실제로 알고 싶은 것은 "거기가 어디냐" 이고, 지도 앱에 도착하면
+// 길찾기 버튼은 어차피 화면에 있다. 위치 표시 스킴은 전부 공식 문서에 좌표 규격이 명시돼
+// 있어 해석 여지도 없다 — 경로 스킴 쪽에 있던 불확실성(카카오 `route` 의 출발지 생략 가능
+// 여부 미명시)이 통째로 사라진다.
+
 /**
- * 카카오맵 후보.
+ * 카카오맵 후보 — 해당 지점을 지도에 표시한다.
  *
- * ⚠️ `route` 의 출발지(`sp`)를 생략해 현위치를 쓰게 한다. 공식 문서 예제에는 `sp` 가 늘 있고
- *    생략 가능 여부는 명시돼 있지 않다 — 인식되지 않으면 카카오맵 홈이 열린다(문서: "지원하지
- *    않는 액션은 지도앱 열기와 동일 처리"). 목적지를 잃는 게 아니라 한 단계 덜 간 상태라
- *    허용 가능한 열화지만, **실기기 확인이 필요한 지점**이다.
+ * `look?p={위도},{경도}` 가 위치 표시, `route` 가 길찾기다. 웹 링크도 마찬가지로
+ * `/link/map/` 이 지도 바로가기이고 `/link/to/` 는 길찾기다 — 헷갈리면 조용히 다른 화면이 열린다.
  * @see https://apis.map.kakao.com/ios_v2/docs/getting-started/urlscheme/
+ * @see https://apis.map.kakao.com/web/guide/ (지도 URL — 지도 바로가기 / 길찾기 바로가기)
  */
 function buildKakaoUrls(
   destination: MapDestination,
@@ -294,12 +305,8 @@ function buildKakaoUrls(
     const lng = formatDegrees(destination.coordinates.lng);
     const name = sanitizeLabel(destination.label ?? destination.query ?? undefined, '근무지');
 
-    if (isNative) {
-      urls.push(`kakaomap://route?ep=${lat},${lng}&by=car`);
-      // 길찾기가 안 잡혀도 최소한 그 지점 지도는 연다.
-      urls.push(`kakaomap://look?p=${lat},${lng}`);
-    }
-    urls.push(`https://map.kakao.com/link/to/${encodeURIComponent(name)},${lat},${lng}`);
+    if (isNative) urls.push(`kakaomap://look?p=${lat},${lng}`);
+    urls.push(`https://map.kakao.com/link/map/${encodeURIComponent(name)},${lat},${lng}`);
   }
 
   const query = destination.query?.trim();
@@ -313,10 +320,10 @@ function buildKakaoUrls(
 }
 
 /**
- * 네이버지도 후보.
+ * 네이버지도 후보 — 해당 지점을 **이름표가 달린 핀**으로 표시한다.
  *
- * 출발지(`slat`/`slng`)는 싣지 않는다 — 생략하면 현위치가 출발지가 된다. 도착지 좌표를 실수로
- * 출발지 자리에 넣으면 "현재 위치에서 현재 위치로" 가 되어 길찾기가 조용히 무의미해진다.
+ * `place` 는 좌표와 함께 `name` 을 받아 핀에 라벨을 붙여 준다. 카카오 `look` 에는 없는 이점이라
+ * "여기가 그 홀덤펍이 맞나" 를 지도 위에서 바로 확인할 수 있다.
  * @see https://guide.ncloud-docs.com/docs/maps-url-scheme
  */
 function buildNaverUrls(
@@ -327,16 +334,14 @@ function buildNaverUrls(
   const appName = platform === 'web' ? null : resolveNaverAppName(platform);
   const query = destination.query?.trim();
 
-  if (hasUsableCoordinates(destination.coordinates)) {
+  if (hasUsableCoordinates(destination.coordinates) && appName) {
     const lat = formatDegrees(destination.coordinates.lat);
     const lng = formatDegrees(destination.coordinates.lng);
-    const name = sanitizeLabel(destination.label ?? query ?? undefined, '근무지');
-    const encodedName = encodeURIComponent(name);
+    const encodedName = encodeURIComponent(
+      sanitizeLabel(destination.label ?? query ?? undefined, '근무지')
+    );
 
-    if (appName) {
-      urls.push(`nmap://route/car?dlat=${lat}&dlng=${lng}&dname=${encodedName}&appname=${appName}`);
-      urls.push(`nmap://place?lat=${lat}&lng=${lng}&name=${encodedName}&appname=${appName}`);
-    }
+    urls.push(`nmap://place?lat=${lat}&lng=${lng}&name=${encodedName}&appname=${appName}`);
   }
 
   if (query) {

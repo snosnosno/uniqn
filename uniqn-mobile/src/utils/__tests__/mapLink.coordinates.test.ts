@@ -4,7 +4,7 @@
  * 텍스트 검색은 지도 앱이 주소를 나름대로 해석하는 단계를 거쳐 핀이 뭉개진다. 좌표가 있으면
  * 그 단계가 사라진다. 여기서 고정하는 것은 **조용히 틀리는** 실패들이다:
  *   - 위도/경도 자리 바꿔 넣기(카카오는 x=경도, y=위도라 직관과 반대다)
- *   - 장소명의 쉼표가 카카오 `link/to/{이름},{위도},{경도}` 의 필드 구분자를 깨는 것
+ *   - 장소명의 쉼표가 카카오 `link/map/{이름},{위도},{경도}` 의 필드 구분자를 깨는 것
  *   - 좌표 후보만 남기고 텍스트 폴백을 잃는 것
  */
 import { buildMapCoordinateUrls, buildMapUrls } from '@/utils/mapLink';
@@ -13,17 +13,17 @@ import { buildMapCoordinateUrls, buildMapUrls } from '@/utils/mapLink';
 const GANGNAM = { lat: 37.5000242405515, lng: 127.036508620542 };
 
 describe('buildMapCoordinateUrls', () => {
-  it('카카오 길찾기 링크는 이름,위도,경도 순서로 만든다', () => {
+  it('카카오 지도 링크는 이름,위도,경도 순서로 만든다', () => {
     const urls = buildMapCoordinateUrls(GANGNAM, '라운더스', 'web');
 
     expect(urls).toEqual([
-      'https://map.kakao.com/link/to/%EB%9D%BC%EC%9A%B4%EB%8D%94%EC%8A%A4,37.500024,127.036509',
+      'https://map.kakao.com/link/map/%EB%9D%BC%EC%9A%B4%EB%8D%94%EC%8A%A4,37.500024,127.036509',
     ]);
   });
 
   it('🔴 위도와 경도를 바꿔 싣지 않는다', () => {
     const [url] = buildMapCoordinateUrls(GANGNAM, '라운더스', 'web');
-    const [, lat, lng] = url.split('/link/to/')[1].split(',');
+    const [, lat, lng] = url.split('/link/map/')[1].split(',');
 
     // 위도는 37 대, 경도는 127 대. 뒤집히면 지구 반대편이 열린다.
     expect(Number(lat)).toBeCloseTo(37.5, 1);
@@ -36,7 +36,7 @@ describe('buildMapCoordinateUrls', () => {
   //    `%2C` 가 구분자로 되살아나 좌표 자리가 밀린다.
   it('🔴 장소명의 쉼표를 지운다 — 디코드 후 필드 구분자로 되살아난다', () => {
     const [url] = buildMapCoordinateUrls(GANGNAM, '라운더스, 강남점', 'web');
-    const fields = url.split('/link/to/')[1].split(',');
+    const fields = url.split('/link/map/')[1].split(',');
 
     expect(url).not.toContain('%2C');
     expect(decodeURIComponent(fields[0])).toBe('라운더스 강남점');
@@ -55,7 +55,7 @@ describe('buildMapCoordinateUrls', () => {
 
   it('라벨이 비면 기본 라벨로 대체한다(빈 필드로 링크가 깨지지 않게)', () => {
     const [url] = buildMapCoordinateUrls(GANGNAM, '   ', 'web');
-    const fields = url.split('/link/to/')[1].split(',');
+    const fields = url.split('/link/map/')[1].split(',');
 
     expect(decodeURIComponent(fields[0])).toBe('근무지');
   });
@@ -110,10 +110,10 @@ describe('buildMapUrls', () => {
     const urls = buildMapUrls({ query: null, coordinates: GANGNAM, label: '라운더스' }, 'web');
 
     expect(urls).toHaveLength(1);
-    expect(urls[0]).toContain('/link/to/');
+    expect(urls[0]).toContain('/link/map/');
   });
 
-  it('둘 다 없으면 후보가 비어 호출부가 길찾기를 감춘다', () => {
+  it('둘 다 없으면 후보가 비어 호출부가 버튼을 감춘다', () => {
     expect(buildMapUrls({ query: null }, 'web')).toEqual([]);
   });
 });

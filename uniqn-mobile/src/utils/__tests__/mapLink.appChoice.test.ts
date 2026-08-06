@@ -1,6 +1,9 @@
 /**
  * mapLink 지도 앱 선택 회귀 테스트.
  *
+ * 🧭 이 버튼은 **경로 안내가 아니라 위치 표시**다. 길찾기로 곧장 꽂으면 이동수단을 앱이 임의로
+ * 정하고 현위치 권한까지 끌고 들어온다. 지도 앱에 도착하면 길찾기 버튼은 어차피 화면에 있다.
+ *
  * 배경: 길찾기가 항상 기기 기본 지도로만 열렸다. iOS 후보 목록에는 `nmap://` 가 맨 앞에
  * 있었지만 `Linking.canOpenURL` 게이트에 걸려 **한 번도 열린 적이 없다** — iOS 는
  * `LSApplicationQueriesSchemes` 에 선언하지 않은 스킴에 대해 설치 여부와 무관하게 false 를
@@ -39,16 +42,26 @@ describe('isMapAppId', () => {
 });
 
 describe('buildMapUrlsForApp — 카카오맵', () => {
-  it('네이티브 길찾기 스킴이 먼저, 웹 링크가 마지막이다', () => {
+  it('네이티브 위치 표시 스킴이 먼저, 웹 링크가 마지막이다', () => {
     const urls = buildMapUrlsForApp(DEST, 'android', 'kakao');
 
-    expect(urls[0]).toBe('kakaomap://route?ep=37.500024,127.036509&by=car');
+    expect(urls[0]).toBe('kakaomap://look?p=37.500024,127.036509');
     expect(urls[urls.length - 1]).toContain('https://map.kakao.com/link/');
+  });
+
+  // 🔴 `/link/map/` 은 지도 바로가기, `/link/to/` 는 길찾기다. 둘을 바꿔 쓰면 에러 없이
+  //    다른 화면이 열린다 — 경로 안내가 아니라 위치를 보여주는 게 이 기능의 목적이다.
+  it('🔴 웹 링크는 길찾기(/link/to/)가 아니라 지도 바로가기(/link/map/)다', () => {
+    const urls = buildMapUrlsForApp(DEST, 'ios', 'kakao');
+
+    expect(urls.some((u) => u.includes('/link/map/'))).toBe(true);
+    expect(urls.some((u) => u.includes('/link/to/'))).toBe(false);
+    expect(urls.some((u) => u.startsWith('kakaomap://route'))).toBe(false);
   });
 
   it('🔴 좌표 순서는 위도,경도다 — 뒤집히면 지구 반대편이 열린다', () => {
     const [first] = buildMapUrlsForApp(DEST, 'ios', 'kakao');
-    const [lat, lng] = first.split('ep=')[1].split('&')[0].split(',');
+    const [lat, lng] = first.split('p=')[1].split(',');
 
     expect(Number(lat)).toBeCloseTo(37.5, 1);
     expect(Number(lng)).toBeCloseTo(127.04, 1);
@@ -63,20 +76,26 @@ describe('buildMapUrlsForApp — 카카오맵', () => {
 });
 
 describe('buildMapUrlsForApp — 네이버지도', () => {
-  it('네이티브 길찾기 스킴이 먼저이고 appname 을 싣는다', () => {
+  it('네이티브 위치 표시 스킴이 먼저이고 appname 을 싣는다', () => {
     const urls = buildMapUrlsForApp(DEST, 'ios', 'naver');
 
-    expect(urls[0]).toContain('nmap://route/car?');
-    expect(urls[0]).toContain('dlat=37.500024');
-    expect(urls[0]).toContain('dlng=127.036509');
+    expect(urls[0]).toContain('nmap://place?');
+    expect(urls[0]).toContain('lat=37.500024');
+    expect(urls[0]).toContain('lng=127.036509');
     expect(urls[0]).toContain('appname=app.uniqn.mobile');
   });
 
-  it('🔴 도착지 좌표를 slat/slng 에 싣지 않는다 — 출발지 자리에 들어가면 길찾기가 무의미해진다', () => {
-    const [first] = buildMapUrlsForApp(DEST, 'android', 'naver');
+  // `place` 는 좌표에 이름표를 붙여 준다 — 지도 위에서 "여기가 그 홀덤펍이 맞나" 를 바로 확인한다.
+  it('핀에 장소명 라벨을 싣는다', () => {
+    const [first] = buildMapUrlsForApp(DEST, 'ios', 'naver');
 
-    expect(first).not.toContain('slat=');
-    expect(first).not.toContain('slng=');
+    expect(decodeURIComponent(first)).toContain('name=라운더스');
+  });
+
+  it('🔴 경로 스킴으로 가지 않는다 — 이 버튼은 위치를 보여주는 것이다', () => {
+    const urls = buildMapUrlsForApp(DEST, 'android', 'naver');
+
+    expect(urls.some((u) => u.startsWith('nmap://route'))).toBe(false);
   });
 
   it('앱 미설치 대비 웹 지도 링크로 끝난다', () => {
