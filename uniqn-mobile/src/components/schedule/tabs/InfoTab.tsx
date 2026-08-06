@@ -3,8 +3,8 @@
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import React, { memo, useCallback, useMemo } from 'react';
-import { View, Text, Pressable, Linking } from 'react-native';
+import React, { memo, useMemo } from 'react';
+import { View, Text } from 'react-native';
 import { Badge } from '@/components/ui';
 import {
   DocumentIcon,
@@ -32,9 +32,9 @@ import {
   UNDECIDED_TIME_LABEL,
   UNDECIDED_TIME_HINT,
 } from '../helpers';
-import { formatPhoneForDisplay } from '@/utils/phone';
-import { composeFullAddress, openMapDestination, resolveMapQuery } from '@/utils/mapLink';
-import { useToast } from '@/stores/toastStore';
+import { composeFullAddress, resolveMapQuery } from '@/utils/mapLink';
+import { DirectionsButton } from '../DirectionsButton';
+import { ContactActions } from '../ContactActions';
 import { STATUS } from '@/constants';
 import { PAYROLL_STATUS } from '@/constants/statusConfig';
 import { toSettlementDisplayStatus } from '@/shared/status';
@@ -86,7 +86,6 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
   const description = schedule.postingProjection?.description;
   const payrollStatus = (schedule.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus;
   const payrollStatusConfig = PAYROLL_STATUS[toSettlementDisplayStatus(payrollStatus)];
-  const toast = useToast();
 
   const salaryInfo = useMemo(() => {
     if (schedule.settlementBreakdown?.salaryInfo) {
@@ -169,19 +168,6 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
    *  나중에 한쪽만 있는 경로가 생겼을 때 조용히 버튼이 사라진다.)
    */
   const canOpenMap = Boolean(mapQuery) || Boolean(schedule.coordinates);
-
-  const handleOpenMap = useCallback(async () => {
-    if (!canOpenMap) return;
-    // 좌표가 있으면 정밀 핀, 없으면 예전과 똑같은 주소 텍스트 검색.
-    const opened = await openMapDestination({
-      query: mapQuery,
-      coordinates: schedule.coordinates,
-      label: schedule.location || undefined,
-    });
-    if (!opened) {
-      toast.error('지도 앱을 열지 못했어요. 주소를 직접 검색해 주세요.');
-    }
-  }, [canOpenMap, mapQuery, schedule.coordinates, schedule.location, toast]);
 
   // 노쇼는 취소 분기(opacity-70 로 흐려짐)에 섞지 않는다 — 이의 제기 기한이 있는 기록이라
   // 공고·일정 정보를 흐리지 않고 그대로 읽을 수 있어야 근거를 맞춰볼 수 있다.
@@ -285,22 +271,17 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
             반대로 주소가 없을 땐 버튼을 감춘다 — 장소명('홈' 같은 별칭)으로 검색하면
             엉뚱한 곳으로 안내해, 없는 것보다 나쁘다. */}
         {canOpenMap ? (
-          <Pressable
-            onPress={handleOpenMap}
-            accessibilityRole="button"
+          <DirectionsButton
+            query={mapQuery}
+            coordinates={schedule.coordinates}
+            label={schedule.location || undefined}
             // 좌표만 있고 주소·장소명이 비면 `?? ` 로는 " 길찾기" 가 읽힌다 — 좌표로 게이트를
             // 연 순간 그 조합이 새로 가능해졌다. 빈 문자열까지 걷어내려면 `||` 여야 한다.
-            accessibilityLabel={`${mapQuery || schedule.location || '근무지'} 길찾기`}
-            className="ml-8 mt-2 flex-row items-center rounded-lg bg-primary-50 px-3 py-2 active:bg-primary-100 dark:bg-primary-900/20 dark:active:bg-primary-900/30"
-          >
-            <MapIcon size={16} color="#B8962E" />
-            <Text className="ml-1.5 text-sm font-sans-medium text-primary-600 dark:text-primary-400">
-              길찾기
-            </Text>
-          </Pressable>
+            accessibilityName={mapQuery || schedule.location || '근무지'}
+          />
         ) : (
           <Text className="ml-8 mt-2 text-xs text-content-muted dark:text-secondary-400 font-sans">
-            주소가 등록되지 않아 길찾기를 열 수 없어요. 구인자에게 문의해 주세요.
+            주소가 등록되지 않아 지도를 열 수 없어요. 구인자에게 문의해 주세요.
           </Text>
         )}
       </View>
@@ -358,20 +339,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           )}
 
           {schedule.ownerPhone && (
-            <Pressable
-              onPress={() => Linking.openURL(`tel:${schedule.ownerPhone}`)}
-              className="flex-row items-center rounded-lg bg-primary-50 px-3 py-2 active:bg-primary-100 dark:bg-primary-900/20 dark:active:bg-primary-900/30"
-            >
-              <Text className="text-base font-sans-medium text-primary-600 dark:text-primary-400">
-                {formatPhoneForDisplay(schedule.ownerPhone)}
-              </Text>
-              <View className="ml-auto flex-row items-center">
-                <PhoneIcon size={16} color="#B8962E" />
-                <Text className="ml-1 text-sm text-primary-600 dark:text-primary-400 font-sans">
-                  전화하기
-                </Text>
-              </View>
-            </Pressable>
+            <ContactActions phone={schedule.ownerPhone} component="InfoTab" />
           )}
         </Section>
       )}
