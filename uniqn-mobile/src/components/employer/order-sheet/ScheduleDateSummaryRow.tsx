@@ -59,7 +59,7 @@ export function ScheduleDateSummaryRow({
         accessibilityLabel={`날짜를 골라 시작하세요${error ? `, 오류: ${error}` : ''}`}
         testID="order-sheet-row-dates"
       >
-        <Text className="flex-1 text-sm font-sans-medium text-content-primary">
+        <Text className="flex-1 text-sm font-sans-medium text-content-primary dark:text-off-white">
           날짜를 골라 시작하세요
         </Text>
         {error ? (
@@ -94,7 +94,7 @@ export function ScheduleDateSummaryRow({
               accessibilityLabel={`${toSpokenDate(date)} 일정으로 이동`}
               testID={`order-sheet-date-chip-${date}`}
             >
-              <Text className="text-xs font-sans-medium text-content-primary">
+              <Text className="text-xs font-sans-medium text-content-primary dark:text-off-white">
                 {toMonthDay(date)}
               </Text>
             </Pressable>

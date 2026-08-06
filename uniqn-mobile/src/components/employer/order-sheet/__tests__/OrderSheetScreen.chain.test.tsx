@@ -390,7 +390,7 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
     expect(jest.getTimerCount()).toBe(1);
 
     // 대기 창 안에서 예약된 그룹(1)을 삭제 — 예약된 groupIndex 가 stale 이 된다
-    fireEvent.press(getByTestId('order-sheet-group-delete-1'));
+    fireEvent.press(getByTestId('order-sheet-card-delete-1'));
 
     await advanceSwap();
 
@@ -405,7 +405,7 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
       <OrderSheetScreen {...baseProps} initialValues={rolesAndByRoleSalaryMissing()} />
     );
 
-    fireEvent.press(getByTestId('order-sheet-row-roles')); // roles 미설정 → 연쇄 무장 + 시간·역할 시트
+    fireEvent.press(getByTestId('order-sheet-card-condition-0')); // roles 미설정 → 연쇄 무장 + 시간·역할 시트
     expect(sheetTitleOf(queryByTestId)).toBe('시간 · 역할');
 
     fireEvent.press(getByTestId('order-role-chip-dealer')); // 칩 1탭 = 즉시 추가(RoleCountEditor)
@@ -426,7 +426,7 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
       <OrderSheetScreen {...baseProps} initialValues={rolesAndByRoleSalaryMissing()} />
     );
 
-    fireEvent.press(getByTestId('order-sheet-row-roles'));
+    fireEvent.press(getByTestId('order-sheet-card-condition-0'));
     expect(sheetTitleOf(queryByTestId)).toBe('시간 · 역할');
 
     fireEvent.press(getByText('확인')); // 역할 0개 — 확인이 비활성이라 무시된다
@@ -518,10 +518,23 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
   // clearPendingSwap 의 딤 해제 가드.
   // ⚠️ "다른 행 탭"(예: order-sheet-row-salary)으로는 이 가드를 검증할 수 없다 —
   //    그 경로는 SheetModal 이 마운트되며 onEntered() 로 딤을 걷어 버려 변이해도 green 이다.
-  //    딤을 걷을 다른 주체가 없는 경로(일정 추가: openRow 를 거치지 않고 setActiveSheet 직행)로 검증한다.
-  it('대기 중 일정 추가로 예약이 취소되면 딤이 걷힌다', async () => {
+  //    딤을 걷을 다른 주체가 없는 경로가 필요하다. 구 "+ 일정 추가"가 그 자리였고,
+  //    조건 유도 그룹핑에서는 **묶음 토글**(시트를 열지 않는 순수 뮤테이션)이 승계한다.
+  it('대기 중 묶음 토글로 예약이 취소되면 딤이 걷힌다', async () => {
     const { getByTestId, getByText, queryByTestId } = render(
-      <OrderSheetScreen {...baseProps} initialValues={titleAndContactMissing()} />
+      <OrderSheetScreen
+        {...baseProps}
+        initialValues={{
+          ...titleAndContactMissing(),
+          scheduleGroups: [
+            {
+              dates: ['2026-07-24', '2026-07-25'], // 연속 2일 — run 토글이 렌더되는 조건
+              timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] }],
+              grouped: false,
+            },
+          ],
+        }}
+      />
     );
 
     fireEvent.press(getByTestId('order-sheet-row-title'));
@@ -531,10 +544,10 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
     expect(jest.getTimerCount()).toBe(1);
     expect(getByTestId('order-sheet-chain-scrim')).toBeTruthy();
 
-    // 대기 창 안에서 "+ 일정 추가" — 예약을 취소하고 새 그룹 날짜 시트를 연다
-    fireEvent.press(getByTestId('order-sheet-add-schedule'));
+    // 대기 창 안에서 묶음지원 토글 — 시트가 열리지 않으므로 딤을 걷을 주체가 clearPendingSwap 뿐이다
+    fireEvent(getByTestId('order-sheet-card-run-toggle-0-0'), 'valueChange', true);
 
-    expect(getByTestId('job-posting-date-confirm-button')).toBeTruthy();
+    expect(jest.getTimerCount()).toBe(0);
     expect(queryByTestId('order-sheet-chain-scrim')).toBeNull();
   });
 
@@ -648,7 +661,7 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
       <OrderSheetScreen {...baseProps} initialValues={slotMissingStartTime()} />
     );
 
-    fireEvent.press(getByTestId('order-sheet-row-time'));
+    fireEvent.press(getByTestId('order-sheet-card-condition-0'));
     expect(sheetTitleOf(queryByTestId)).toBe('시간 · 역할');
 
     fireEvent.press(getByText('확인'));
@@ -667,7 +680,7 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
     );
 
     // 1) 가운데 그룹(1) 삭제 — 되돌리기 토스트가 5초간 살아 있다. 미설정 그룹은 인덱스 1로 당겨진다.
-    fireEvent.press(getByTestId('order-sheet-group-delete-1'));
+    fireEvent.press(getByTestId('order-sheet-card-delete-1'));
     const undo = mockAddToast.mock.calls.at(-1)?.[0]?.action;
     expect(undo?.label).toBe('되돌리기');
 

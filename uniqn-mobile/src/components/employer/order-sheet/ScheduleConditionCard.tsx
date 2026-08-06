@@ -94,7 +94,7 @@ export function ScheduleConditionCard({
           className="flex-row items-center pl-4 pr-1 pt-1.5"
           testID={`order-sheet-card-header-${index}`}
         >
-          <Text className="flex-1 text-sm font-sans-bold text-content-primary">
+          <Text className="flex-1 text-sm font-sans-bold text-content-primary dark:text-off-white">
             {summary || '날짜 미설정'}
           </Text>
           <Pressable
@@ -110,7 +110,9 @@ export function ScheduleConditionCard({
         </View>
       ) : null}
       {!showHeader && dates.length === 0 ? (
-        <Text className="px-4 pt-2 text-sm font-sans-bold text-content-primary">날짜 미설정</Text>
+        <Text className="px-4 pt-2 text-sm font-sans-bold text-content-primary dark:text-off-white">
+          날짜 미설정
+        </Text>
       ) : null}
       <Pressable
         onPress={() => onPressCondition(index)}
@@ -122,9 +124,13 @@ export function ScheduleConditionCard({
         testID={`order-sheet-card-condition-${index}`}
       >
         <Text
-          className={`flex-1 text-sm font-sans-medium ${
-            condition.incomplete ? 'text-content-muted' : 'text-content-primary'
-          }`}
+          // 삼항 **안**의 dark: 변형은 정적 추출이 안 된다 — 분기마다 완결된 리터럴을 고른다
+          // (nativewind-patterns 규칙 1·3 · darkModePairRatchet 주석 15-16).
+          className={
+            condition.incomplete
+              ? 'flex-1 text-sm font-sans-medium text-content-muted dark:text-content-muted'
+              : 'flex-1 text-sm font-sans-medium text-content-primary dark:text-content-primary'
+          }
           numberOfLines={2}
         >
           {condition.text}
@@ -145,7 +151,7 @@ export function ScheduleConditionCard({
             testID={`order-sheet-card-run-${index}-${runIndex}`}
           >
             <View className="flex-1">
-              <Text className="text-sm font-sans text-content-primary">
+              <Text className="text-sm font-sans text-content-primary dark:text-off-white">
                 {`${runLabel} 통째로 지원받기`}
               </Text>
               <Text className="text-[11px] font-sans text-content-muted">하루만 지원 불가</Text>

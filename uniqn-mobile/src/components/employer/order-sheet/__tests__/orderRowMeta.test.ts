@@ -196,7 +196,7 @@ describe('getRowState (그룹 스코프 — S1)', () => {
 
 describe('firstUnsetRow (그룹 스코프 순서)', () => {
   it('빈 값이면 그룹 순서상 첫 필수 행(title)', () => {
-    expect(firstUnsetRow(emptyValues)).toEqual({ key: 'title', groupIndex: 0 });
+    expect(firstUnsetRow(emptyValues)).toMatchObject({ key: 'title', groupIndex: 0 });
   });
   it('전부 채우면 null', () => {
     expect(firstUnsetRow(filled)).toBeNull();
@@ -209,7 +209,7 @@ describe('firstUnsetRow (그룹 스코프 순서)', () => {
         { dates: ['2026-07-20'], timeSlots: [{ startTime: '', roles: [] }], grouped: false },
       ],
     };
-    expect(firstUnsetRow(partial)).toEqual({ key: 'time', groupIndex: 1 });
+    expect(firstUnsetRow(partial)).toMatchObject({ key: 'time', groupIndex: 1 });
   });
   it('그룹 순회는 그룹0 전체(dates→time→roles) 후 그룹1로 진행한다', () => {
     const partial: OrderSheetFormValues = {
@@ -219,7 +219,7 @@ describe('firstUnsetRow (그룹 스코프 순서)', () => {
         { dates: [], timeSlots: [], grouped: false }, // 그룹1 dates 미설정
       ],
     };
-    expect(firstUnsetRow(partial)).toEqual({ key: 'time', groupIndex: 0 });
+    expect(firstUnsetRow(partial)).toMatchObject({ key: 'time', groupIndex: 0 });
   });
 });
 

@@ -43,6 +43,15 @@ export interface ScheduleSlotsSheetProps {
   value: Slots;
   onConfirm: (next: Slots) => void;
   onClose: () => void;
+  /**
+   * 예외 추출 모드(설계 §3.4·F11) — 이 카드의 날짜들. 넘기면 "적용할 날짜" 다중 선택 행이
+   * 뜨고, 확인은 `onConfirmException` 으로 배출된다. **0개 선택으로 열고** 확인을 잠근다:
+   * 기본 선택을 깔면 사장이 훑어보다 그대로 확인해 의도치 않은 분리가 생긴다.
+   */
+  selectableDates?: string[];
+  onConfirmException?: (result: { dates: string[]; slots: Slots }) => void;
+  /** 일반 모드 하단 진입 링크(F7③) — 조건을 고치러 들어온 자리가 예외를 깨닫는 자리다. */
+  onSwitchToException?: () => void;
 }
 
 export function ScheduleSlotsSheet({
@@ -50,10 +59,23 @@ export function ScheduleSlotsSheet({
   value,
   onConfirm,
   onClose,
+  selectableDates,
+  onConfirmException,
+  onSwitchToException,
 }: ScheduleSlotsSheetProps) {
   const seed: Slots = value.length > 0 ? value : [{ startTime: DEFAULT_START, roles: [] }];
   const [slots, setSlots] = useState<Slots>(seed);
   const [pickerIndex, setPickerIndex] = useState<number | null>(null);
+  const isExceptionMode = selectableDates !== undefined;
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const toggleDate = (date: string) =>
+    setSelectedDates((prev) =>
+      prev.includes(date) ? prev.filter((d) => d !== date) : [...prev, date]
+    );
+  // 배출 순서는 화면 순서(카드 날짜 순)로 고정한다 — 탭한 순서로 내보내면 같은 선택이
+  // 다른 배열이 되어 정규화 결과 비교·테스트가 흔들린다.
+  const orderedSelection = (selectableDates ?? []).filter((d) => selectedDates.includes(d));
+  const canConfirm = areSlotsComplete(slots) && (!isExceptionMode || orderedSelection.length > 0);
 
   /**
    * 슬롯별 안정 식별자 — SlotCard 의 key 이자 **펼침 대상의 식별자**다.
@@ -120,14 +142,19 @@ export function ScheduleSlotsSheet({
     <SheetModal
       visible={visible}
       onClose={onClose}
-      title="시간 · 역할"
+      title={isExceptionMode ? '시간 · 역할 — 일부 날짜만' : '시간 · 역할'}
       footer={
         <Button
           onPress={() => {
-            onConfirm(slots);
+            if (isExceptionMode) {
+              onConfirmException?.({ dates: orderedSelection, slots });
+            } else {
+              onConfirm(slots);
+            }
             onClose();
           }}
-          disabled={!areSlotsComplete(slots)}
+          disabled={!canConfirm}
+          testID="order-sheet-slots-confirm"
         >
           확인
         </Button>
@@ -156,6 +183,51 @@ export function ScheduleSlotsSheet({
       }
     >
       <View className="gap-2 px-4 pt-3 pb-2">
+        {isExceptionMode ? (
+          <View className="mb-1 rounded-xl bg-surface-page px-3.5 py-3 dark:bg-surface">
+            <Text className="mb-2 text-xs font-sans-medium text-content-secondary">
+              적용할 날짜
+            </Text>
+            <View className="flex-row flex-wrap gap-1.5">
+              {(selectableDates ?? []).map((date) => {
+                const selected = selectedDates.includes(date);
+                const [, month, day] = date.split('-');
+                const label = `${Number(month)}/${Number(day)}`;
+                return (
+                  <Pressable
+                    key={date}
+                    onPress={() => toggleDate(date)}
+                    className={`min-h-[36px] items-center justify-center rounded-full px-3 py-1.5 active:opacity-80 ${
+                      selected
+                        ? 'bg-primary-500'
+                        : 'bg-surface-card border border-secondary-200 dark:border-surface-overlay'
+                    }`}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${Number(month)}월 ${Number(day)}일${
+                      selected ? ', 선택됨' : ''
+                    }`}
+                    testID={`order-sheet-exception-date-${date}`}
+                  >
+                    <Text
+                      className={
+                        selected
+                          ? 'text-sm font-sans-medium text-white'
+                          : 'text-sm font-sans-medium text-content-primary dark:text-content-primary'
+                      }
+                    >
+                      {label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {orderedSelection.length === 0 ? (
+              <Text className="mt-2 text-[11px] font-sans text-content-muted">
+                다르게 할 날짜를 골라주세요
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
         {/*
           새벽 근무 날짜 관례(D3) — 시각만 저장하고 종료 시각은 두지 않는 모델이라,
           "밤 22시 시작"과 "새벽 2시 시작"을 날짜로만 구분한다. 사장이 금요일 영업의
@@ -191,6 +263,21 @@ export function ScheduleSlotsSheet({
           <PlusIcon size={16} />
           <Text className="text-sm text-content-secondary font-sans">시간대 추가</Text>
         </Pressable>
+        {/* F7③ — 예외 추출 3중 진입로 중 하나. 조건을 고치러 들어온 자리에서 "이 중 며칠만
+            다르네"를 깨닫는 경우가 많아, 카드 밖으로 나갔다 다시 들어오게 하지 않는다. */}
+        {!isExceptionMode && onSwitchToException ? (
+          <Pressable
+            onPress={onSwitchToException}
+            className="min-h-[44px] items-center justify-center active:opacity-80"
+            accessibilityRole="button"
+            accessibilityLabel="일부 날짜만 다른 조건으로 나누기"
+            testID="order-sheet-slots-switch-exception"
+          >
+            <Text className="text-sm font-sans-medium text-primary-600 dark:text-primary-400">
+              일부 날짜만 다르게 할까요?
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
     </SheetModal>
   );
