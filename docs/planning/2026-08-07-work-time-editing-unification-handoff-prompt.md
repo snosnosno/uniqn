@@ -18,7 +18,7 @@
 | HEAD | 마지막 코드 커밋 `fc1633697` + 이 문서 커밋 |
 | 커밋 | **30개** · 97파일 · +11,989 / −4,043 |
 | PR | **미생성** |
-| prod | 🔴 **마이그레이션 5개 전부 미적용** |
+| prod | ✅ **마이그레이션 5개 전부 적용 완료 (2026-08-07)** — 아래 기록명 참조 |
 
 ### 검증 (**2026-08-07 세션에서 전량 재실행·직접 관측**)
 
@@ -34,17 +34,35 @@ npm run knip:gate  exit 0
 ⚠️ 로컬 Docker DB에는 이 브랜치 마이그 5개가 **이미 적용된 상태**다(`schema_migrations` 실측).
 다른 워크트리 2개(datepick·grouping)는 마이그가 0건이라 공유 스택 오염은 없다.
 
-### 신규 마이그레이션 5개 — 🔴 **적용 순서 엄수**
+### 신규 마이그레이션 5개 — ✅ **prod 적용 완료 (2026-08-07, 순서대로)**
 
-```
-1. 20260806120000_notify_merge_time_change.sql          알림 병합
-2. 20260806130000_venue_day_slots_attendance.sql        읽기 RPC (DROP+CREATE, 권한 복원 포함)
-3. 20260806140000_work_log_slot_attendance.sql          쓰기 RPC (실적·상태파생·역할이력)
-4. 20260807120000_work_log_slot_custom_role.sql         커스텀 역할명 키
-5. 20260807130000_work_log_slot_custom_role_enum_guard.sql   enum 라벨 충돌 차단
-```
+🔴 **prod 기록명은 레포 파일명과 다르다 — 아래 기록명으로 재적용 금지.**
+
+| # | 레포 파일명 | **prod 기록명** | 내용 |
+|---|---|---|---|
+| 1 | `20260806120000_notify_merge_time_change` | **`20260806233224`** | 알림 병합 |
+| 2 | `20260806130000_venue_day_slots_attendance` | **`20260806233316`** | 읽기 RPC (DROP+CREATE, 권한 복원) |
+| 3 | `20260806140000_work_log_slot_attendance` | **`20260806233616`** | 쓰기 RPC (실적·상태파생·역할이력) |
+| 4 | `20260807120000_work_log_slot_custom_role` | **`20260806234002`** | 커스텀 역할명 키 |
+| 5 | `20260807130000_..._enum_guard` | **`20260806234415`** | enum 라벨 충돌 차단 |
 
 **역순이면 스태프에게 알림이 2통 간다**(1번이 먼저 들어가야 병합 가드가 자리를 잡는다).
+
+### 적용 후 실측 (2026-08-07, 전부 직접 관측)
+
+```
+파리티                     funcs 200 / policies 111   — 불변 ✅
+get_venue_day_slots ACL   postgres · authenticated · service_role
+                          → PUBLIC 몫·anon 없음 ✅ (DROP+CREATE 퇴행 차단 확인)
+update_work_log_slot ACL  동일 ✅ · search_path = 'public, pg_temp' (pg_temp 유지 ✅)
+함수 정의 md5             로컬 DB 와 완전 일치 ✅ — 전사 오류 0
+                          notify_on_work_log_update  b41fb9be0f84746830bd43fcece8edf3
+                          get_venue_day_slots        d6083017d1a4a35bf7f54763d8280706
+                          update_work_log_slot       58e62b584695cd60732c39b7b7a79cfb
+```
+
+🔑 md5 대조는 **`chr(13)` 제거 후**에 한다 — 안 그러면 CRLF 때문에 전부 가짜 불일치로 보인다.
+로컬 DB 에 같은 5개가 이미 적용돼 있어 **완벽한 대조군**이 됐다(전사 오류를 이 방법으로 잡는다).
 
 ---
 
@@ -70,11 +88,15 @@ npm run knip:gate  exit 0
 ```
 ✅ ⓪ 베이스라인 재검증 (08-07 완료 — 4종 전량 직접 관측)
 ✅ ⓪' §5-1 D4 3경로 통일 (08-07 완료 — 커밋 fc1633697)
-   ① 최신 master 재통합 + 재검증   ← 08-07 기준 behind 0 (재확인 필요)
-   ② prod 마이그레이션 5개 적용 (사용자 확인 필수)
-   ③ PR 생성 (사용자 명시 요청 시에만)
+✅ ⓪'' 버튼 라벨 통일 '근무 수정' (08-07 완료 — 커밋 ee470cdf3)
+✅ ① 최신 master 재통합 — 08-07 기준 behind 0
+✅ ② prod 마이그레이션 5개 적용 (08-07 완료 · 실측 검증 통과)
+   ③ PR 생성
    ④ 실기기 QA
    ⑤ 웹 배포 · OTA
+
+🔴 **②가 끝났으므로 §2-5 순서 제약이 발효 중이다** — prod 는 이미 새 RPC 다.
+   구 클라 + 새 RPC 는 **안전**(설계대로)하지만, 배포는 이 브랜치가 머지된 뒤에 한다.
 ```
 
 ---
