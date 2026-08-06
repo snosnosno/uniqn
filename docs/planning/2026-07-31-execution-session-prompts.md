@@ -41,6 +41,7 @@
 | **S7** | 3-C 구현 | ~~`feat/posting-time-change`~~ | ✅ **머지** | **#412** | `d5ff28ec5`. CI **10잡 전부 SUCCESS**(E2E 9m45s · DB Tests pg_prove 2m0s 포함, **재실행 0회**). 워크트리 `T-HOLDEM-timechange`, 커밋 **12개**(HEAD `21a5f2f3c`). 사용자 결정 4건 추가 확정(④대상 선택 ⑤정원 동반 이동 ⑥알림 기존 배선 → **⑦모순 알림은 문구 중립화**). 🔑 S7 실측이 설계 §4-3 을 **뒤집었다** — work_logs 만 옮기면 출발지 정원이 재개방된다(§10-2). 🔴**마이그 2건 prod 적용 완료 — 재적용 금지**(prod 기록명 **`20260804115100 update_posting_slot_time_rpc`** + **`20260804115209 job_posting_update_contract_body_neutral`**, 레포 파일은 `20260804120000`/`20260804130000`). 파리티 **193 → 199 / 정책 111** prod 실측 일치. 레포↔prod 함수 정의 **md5 7/7 일치**(⚠️ `chr(13)` 제거 후 비교 — CRLF 때문에 6/7 이 가짜 불일치로 보인다). 리뷰 3인 완료: security **LOW**·code **APPROVE**·database REQUEST CHANGES(지적 전량 반영). 결함 **4건** 발견·수정. 검증: quality exit 0 · jest **623/6833** · pgTAP **99/1093** · red-swap **9종 1:1**. 상세=§5 |
 | **정원0** | S7 잔여 — `v_capacity=0` fail-closed | ~~`fix/capacity-zero-fail-closed`~~ | ✅ **머지** | **#417** | `d410c791b`(2026-08-05 확인). CI **10잡 전부 SUCCESS**(E2E 9m37s · DB Tests 2m7s). 🔑 원인이 **3종**이었다 — A)레거시 `headcount` 미독해(순수 버그) B)축 미매칭(정원 미상) C)`count:0`(자리 없음). **A 고치고 C 거부, B 는 통과 유지**(사용자 결정). 🔴 3-C 의 "출발지 0 이면 항목 삭제"를 **함께 뒤집었다** — 지우면 축 미매칭이 되어 3-C 가 비운 슬롯이 다시 열린다. 🔴**마이그 prod 적용 완료 — 재적용 금지, 기록 2건**(`20260804142737` + `20260804142944 _verbatim_fix`, 레포 파일은 `20260804140000` 하나). 파리티 **199/111 불변**. 검증: pgTAP **100파일 1101테스트** · quality exit 0 · jest **623/6833** · **red-swap 3종 1:1**. 상세=§5 |
 | **CI위생**(원장 밖 트랙) | E2E `board.spec:88` flake 근본 수선 + Actions 범프 | ~~`chore/ci-hygiene`~~ | ✅ **머지** | **#413** | `d252ed80f`. **원장 밖 트랙이지만 원장의 "E2E 게이트 부재" 잔여 2건 중 1건을 실제로 닫았으므로 여기 기록한다.** 🔑 flake 의 원인은 테스트가 아니라 **프로덕션 웹 결함**이었다 — 웹엔 Sentry SDK 가 없어 `sentryService` 가 `logger.error` 로 폴백하는데 그 폴백이 `output()` 의 전송 조건을 재충족해 **스스로를 다시 불렀다**(비동기라 스택은 안 터지고 마이크로태스크 큐만 채워 메인 스레드를 굶긴다 — 콘솔 에러 370만건·탭 정지). `logger.observability()`(비전달 싱크) 신설로 고리 말단 차단 + 회귀 가드 2종. 실측 **board:88 12/20 실패(60%) → 0/20**, 스펙 15.9분 → 3.0분. 함께 Dependabot actions 3건(#376·#377·#378) 반영 + **워크플로 `uses:` 20개 전부 커밋 SHA 핀**(2026-08-05 재실측: 미핀 0건). 마이그 **0건** — 파리티 199/111 불변. 착수 프롬프트=[`2026-08-04-ci-hygiene-session-prompt.md`](2026-08-04-ci-hygiene-session-prompt.md) |
+| **L1-3단계** | 정산 payroll 컬럼 직접쓰기 차단 + 웹배포·OTA 관문 통과 | ~~`feat/payroll-column-pin`~~ | ✅ **머지** | **#420** | `8d1d8534c`. CI **10잡 전부 pass**(DB Tests 2m4s · E2E 9m55s, 재실행 0회). #402 가 남긴 마지막 조각 — 도입 마이그가 건 관문("PR 머지 → 웹 배포 + OTA → 롤아웃 확인 → 그때 차단")을 **이 세션이 통과시켰다**: 웹 CF `5ad8038e` · OTA 그룹 `1aa49947…`(runtime **1.0.5**, android+ios, Commit=origin HEAD `725168dd2`, 델타 **커밋 47개 / PR #363~#418**). 🔑 **차단이 없던 게 아니라 구멍이 있었다** — `protect_work_log_payroll` 가 이미 있었으나 게이트가 앱 역할 축이라 `admin`/`employer` 를 **무조건 통과**시켰다(막힌 건 staff 뿐). 구인자가 raw PATCH 로 서버 금액 재계산을 우회할 수 있었다. 🔑 기존 함수는 **SECURITY DEFINER** 라 채널 판별 불가 → P5 선례대로 **non-SECDEF 트리거 별도 신설**(`fn_work_logs_pin_payroll`, current_user 데니리스트). 🔴**마이그 prod 적용 완료 — 재적용 금지**(prod 기록명 `work_logs_payroll_direct_write_block`, 레포 파일 `20260805120000_…`). 파리티 **199 → 200** / 정책 111 불변, 레포 기대값=prod 실측 일치. md5 로컬=prod `1f172680…`(⚠️`chr(13)` 제거 후). 검증: pgTAP **7/7** · **red-swap 1:1**(트리거 DROP 시 1·3·4번만 red) · quality exit 0 · jest **624/6824**. 🔑 **CI 가 진짜 회귀를 잡았다** — 기존 pgTAP 2파일이 옛 계약을 고정하고 있었다(상세=§5). 리뷰 **opus APPROVE**(CRITICAL 0/HIGH 0, MEDIUM 2·LOW 6 중 5건 반영·1건 보류·1건 기해소). 상세=§5 |
 
 ### 워크트리 배정 (🔴 모든 세션 예외 없이 격리)
 
@@ -68,7 +69,9 @@
 | **S7** | ~~`T-HOLDEM-timechange`~~ | ✅ **정리완료**(정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818 → 818** 실측 무손상). 옛 기록: 2026-08-04 생성, `origin/master` `55260f2c2` 기준). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성(원본 `node_modules` **821** 확인). `.env.local`·`.env.development.local` 은 메인에서 복사함 |
 | **정원0** | ~~`T-HOLDEM-capacity`~~ | ✅ **정리완료**(2026-08-05 실측 — 워크트리·디렉토리 모두 없음. #417 머지 완료) |
 | **CI위생(원장 밖)** | ~~`T-HOLDEM-cihygiene`~~ | ✅ **정리완료**(2026-08-05 실측). #413 로 머지 |
-| 원장갱신 | `T-HOLDEM-ledger3` | 🔨 이 문서 갱신용(정션 없음 — 문서만 고친다). 착지 후 정리 대상 |
+| 원장갱신 | ~~`T-HOLDEM-ledger3`~~ | ✅ **정리완료**(#418 머지 후 — 정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818 → 818** 실측 무손상) |
+| **L1-3단계** | ~~`T-HOLDEM-payrollpin`~~ | ✅ **정리완료**(#420 머지 후 — 정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 **818 → 818** 무손상) |
+| 세션종료-원장 | `T-HOLDEM-ledger4` | 🔨 이 문서 갱신용. 착지 후 정리 대상 |
 
 🔎 **2026-08-05 실측: `git worktree list` 에 메인 체크아웃 하나만 남아 있고 `C:/Users/user/Desktop/T-HOLDEM-*` 디렉토리도 없다.**
 위 표에 🔨 로 남아 있던 4행(`T-HOLDEM-address`·`ledger`·`ledger2`·`capacity`)은 전부 이미 정리된 상태였다 — 표가 실제를 못 따라온 것이다.
@@ -514,6 +517,74 @@ N건 반복이므로 ORDER BY id 로 잠근다(데드락).
 ---
 
 ## 5. 인수인계 로그 (세션 종료 시 append — 최신이 위)
+
+### L1-3단계 + 배포 관문 (원장 최신화 → 웹배포 → OTA → 정산 직접쓰기 차단) — 2026-08-05/06 · 상태: **완료**
+
+- 워크트리/브랜치: `T-HOLDEM-payrollpin` / `feat/payroll-column-pin`(정리완료) · PR **#418**·**#420**
+- 선행: master `55260f2c2` → 최종 `8d1d8534c`
+
+**끝난 것**
+
+1. **원장 최신화 #418** `725168dd2` — 원장이 #412·#413·#417 을 못 따라와 4곳이 stale 이었다
+   (정원0 "머지 대기" · 워크트리 4행 "유지 중" · #413 트랙 누락 · 파리티 단언 **설명 문자열**이 193).
+2. **웹 배포** — CF `5ad8038e`. 라이브 번들 해시가 로컬과 일치(`uniqn.app`·`pages.dev` 양쪽).
+   `observability` 3건 + **대조군 2종 0건**으로 #413 수정의 실환경 존재 확인
+   → 메모리의 "🔴 웹배포 후 실환경 확인" 잔여 **해소**.
+3. **OTA 발행** — 그룹 `1aa49947-0929-447e-9aaa-b8af8565917f` · runtime **1.0.5** · android+ios ·
+   Commit `725168dd2`(=origin HEAD). 델타 = 마지막 발행(`9541590db`) 이후 **커밋 47개 / PR #363~#418**.
+   🔴 발행 전 관문 2개를 실측으로 통과시켰다:
+   - 규칙 0: 빌드 커밋 `191d21641`(iOS 43/Android 41, 07-27) → HEAD 사이
+     `package.json`·`app.config.ts`·`eas.json` **diff 0건** → version bump 불필요, 구 빌드 유출 없음
+   - 규칙 3: 양 플랫폼 `{"runtimeVersion":"1.0.5","fingerprintSources":null}` = 빌드값 일치 → 무음 no-op 아님
+   ⚠️ `eas update` 는 이제 `--non-interactive` 시 **`--environment` 플래그 필수**다(없으면 즉시 실패).
+4. **정산 직접쓰기 차단 #420** `8d1d8534c` — 상세는 §1 표.
+
+**안 끝난 것 / 다음 사람이 손댈 곳**
+
+- 🔴 **R4(work_logs 전면 UPDATE 차단)는 여전히 불가.** 선행조건이 OTA 가 아니라
+  **`SettlementRepository.ts:372`(근무시간 수정)·`:648`(개인 정산 설정)의 RPC 화**다 —
+  둘 다 **지금 빌드가 쓰는 살아있는 경로**라 테이블 레벨 REVOKE 를 넣으면 즉사한다.
+  컬럼 단위 REVOKE 는 P5(`20260802120000:7-13`)가 **무효**로 실증했다(relacl 불변).
+  ⚠️ 원장의 "R4 = 직접 UPDATE REVOKE" 표현은 이 사실과 어긋난다 — 다음 설계 때 고쳐 적을 것.
+- 🔴 **R3** — `TBA_TIME_MARKER` 가 아직 비테스트 12개 이상 파일에서 소비된다.
+  착수점: `src/schemas/application.schema.ts:187`(널 흡수 transform) · `src/utils/supabase.ts:130-140`(23514 문구 분기).
+  🚨 **착수 게이트인 "센티널 신규 기록률 0 근접" 측정 쿼리가 설계문서 어디에도 없다** — 쿼리부터 새로 설계해야 한다.
+  다만 OTA 를 쐈으니 이제 측정이 의미를 갖기 시작한다.
+- 🔴 **정산 완료 애널리틱스가 #402 이후 끊겨 있다.** `trackSettlementComplete` 의 유일한 호출부가
+  이번에 지운 죽은 함수였고, 그 함수엔 UI 소비자가 없었다 = 이벤트는 진작 발화하지 않았다.
+  복구는 RPC 경로(`settlementMutation.updateSettlementStatus`)에 붙여야 하며 별건이다.
+- 🔴 master **branch protection 부재**(`gh api .../protection` → 404 실측). "E2E 게이트 부재" 잔여 2건 중 남은 1건.
+- 🔴 실기기 QA 전량(특히 **오프라인**: MMKV 캐시에 옛 센티널이 남은 채 스케줄 렌더) · Firebase Auth 제공업체 off ·
+  GCP 웹키 3건 · Rate Limits.
+- ⏸ 정원0 **갈래 B(축 미매칭)** 는 의도적으로 열려 있다. 닫으려면 실사용 로그가 필요한데
+  prod 트래픽이 `users 27 / work_logs 3 / 30일 지원 5건` 수준이라 **기다려도 근거가 안 쌓인다**.
+
+**다음 세션에 넘기는 주의 (이 세션에서 새로 알아낸 것만)**
+
+1. 🚨 **"롤아웃 확인" 게이트를 채울 계기판이 이 앱에 없다.** `expo-insights` 미설치 ·
+   `Sentry.init` 에 `release`/`dist` **미태깅** · 앱 버전을 서버에 기록하는 경로 **0건**(실측).
+   그래서 채택률로는 판정 불가다. 대안은 ①관계자 기기에서 직접 받기(설치 인스턴스 `fcm_tokens 16`)
+   ②차단 직전 **관측 트리거**(`RAISE LOG`, 선례 `20260803120000:211`)로 "누가 아직 쓰나"를 보는 것.
+   근본 해결은 Sentry release 태깅이다.
+2. 🚨 **prod 에 이미 있는 방어를 확인하지 않고 "없다"고 전제하면 중복·모순을 만든다.**
+   이번 L1-3 은 원장·마이그 주석이 전부 "차단 없음"을 전제했지만 `protect_work_log_payroll` 가
+   이미 있었고 **staff 만** 막고 있었다. 착수 전 `pg_trigger` 조회가 그걸 뒤집었다.
+3. 🚨 **pgTAP 계약 반전은 CI 에서만 드러난다.** 신규 테스트는 7/7 green 인데
+   기존 `worklog_settled_custom_lock`(5·6) 과 `notify_work_log_contract`(setup 사망, 9계획 0실행)이 깨졌다.
+   후자의 주석 *"클라와 동일한 컬럼 조합"* 은 **stale** 이었다 — 클라는 #402 에서 이미 RPC 로 옮겼다.
+   교훈: **트리거로 쓰기 채널을 좁힐 때는 그 컬럼을 쓰는 기존 pgTAP 을 먼저 전수 grep 하라.**
+4. 🔑 **계약이 뒤집힌 테스트는 지우지 말고 의도를 보존해 갱신하라.** 6번(2단계 수정 경로)은
+   `lives_ok(직접 UPDATE)` → `RESET ROLE`(=RPC definer 채널) 후 되돌리기+custom_* 수정을 한 단언으로 묶어
+   원래 계약을 계속 지키게 했다.
+5. 🔑 **적용된 마이그의 헤더 주석은 고쳐도 안전하다** — `pg_get_functiondef` 는 함수 본문만 담는다.
+   반대로 **함수 본문·`COMMENT ON` 을 고치면 레포↔prod 정본이 갈린다.** 이번 리뷰 반영은 헤더만 건드려 md5 불변.
+6. ⚠️ pgTAP 을 로컬 단건 실행하려면 `CREATE EXTENSION pgtap` 이 필요하다(`supabase test db` 는 자동).
+   그리고 `docker exec … -f /tmp/x.sql` 은 **`MSYS_NO_PATHCONV=1`** 없이는 경로가 Windows 로 바뀌어 실패한다.
+7. ⚠️ 공유 로컬 스택에 이 세션이 남긴 것: `pgtap` 확장 + `tr_work_logs_pin_payroll`.
+   **의도적으로 남겼다** — 트리거는 머지된 master 스키마의 일부라 있는 게 정합이고,
+   pgtap 은 지우면 병렬 세션 테스트를 깬다.
+
+---
 
 > 형식은 §2 세션 종료 프로토콜 4번 참조. **삭제하지 말고 쌓는다** —
 > 중단된 세션을 다시 여는 사람이 읽을 유일한 기록이다.
