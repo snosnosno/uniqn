@@ -23,15 +23,16 @@
 --
 -- 🔗 형제 파일 분담 — `work_log_slot_attendance_rpc.test.sql`(20) 이 같은 RPC 의 **실적 축**
 --    (checkIn/checkOut 3상 계약·status 파생·modification_history·role_change_history·
---     custom_role 정리·정산 완료 잠금)을 본다. 이 파일은 **예정 축**만 본다 —
+--     custom_role 정리·customRole 판정표·정산 완료 잠금)을 본다. 이 파일은 **예정 축**만 본다 —
 --    패치 계약 검증·권한·applications.assignments 동기화. 새 단언은 축을 먼저 가릴 것.
+--    (27~32 는 역할이 촉발하지만 관측 대상이 `assignments` 라 이 파일에 있다.)
 --
 -- ⚠️ RPC 호출과 그 결과 조회를 **한 SELECT 안에 섞지 않는다.** 볼라틸 함수와 스칼라 서브쿼리의
 --    평가 순서는 보장되지 않아 "호출 전 상태"를 읽고도 green 이 될 수 있다. 호출은 DO 블록에서
 --    먼저 끝내고 반환값을 GUC 로 넘긴다.
 -- ============================================================
 BEGIN;
-SELECT plan(31);
+SELECT plan(33);
 
 DO $$
 DECLARE
@@ -439,7 +440,51 @@ SELECT is(
   'other|바리스타|["바리스타"]',
   'other 로 갈 때는 custom_role 을 지우지 않아 역할 이름이 보존된다');
 
--- 31. 🔴 전수 가드 — 이 세션이 건드린 어느 지원서에도 **JSON null 이 실리지 않아야** 한다.
+-- ── 🔴 customRole 로 이름을 바꾸면 assignments 까지 수렴하는가 (31~32) ──
+-- 🔑 20260807120000 이 연 축이다. `_posting_role_key` 는 custom_role 을 role 보다 **우선**하므로
+--    이름만 바뀌어도(role 은 'other' 그대로) 역할 키가 바뀐다. 6-1 의 `v_role_key_new` 를
+--    **최종** custom_role 로 계산하지 않으면 work_logs 는 새 이름으로 가는데 assignments 는
+--    옛 이름에 묶여, **다음 편집부터 두 원천의 역할 키가 어긋나 영구 no_match 표류**가 된다
+--    (27~30 이 표준 역할 전환에서 막은 것과 같은 결함의 이름 축 갈래).
+-- ⚠️ 형제 파일 `work_log_slot_attendance_rpc.test.sql` 은 픽스처가 전부 application_id=NULL 이라
+--    동기화가 조기 종료돼 이 축을 한 번도 실행하지 않는다 — 가드는 여기 있어야 한다.
+DO $$
+BEGIN
+  -- ⓐ 이름만 교정: wl_lgcy 는 29~30 을 거쳐 'other'/'바리스타' 이고 roleIds 도 ["바리스타"] 다.
+  PERFORM public.update_work_log_slot((current_setting('uws.wl_lgcy'))::uuid,
+                                      '{"customRole":"플로어장"}'::jsonb);
+  -- ⓑ 표준 → other + 커스텀 이름: wl_one 은 13~19 를 거쳐 role='floor', time_slot=NULL(미정) 이다.
+  PERFORM public.update_work_log_slot((current_setting('uws.wl_one'))::uuid,
+                                      '{"staffRole":"other","customRole":"플로어장"}'::jsonb);
+END $$;
+
+-- 31. 🔑 red-swap 대상. 새 역할 키를 옛 custom_role('바리스타')로 계산하면 roleIds 가
+--     ["바리스타"] 로 남아 여기가 red 가 된다. 시각(18:00)은 이 패치가 건드리지 않았으므로
+--     그대로여야 한다(GRID-1) — 그게 없으면 이 단언은 "무엇이든 바뀌면 통과"가 된다.
+SELECT is(
+  (SELECT (w.role::text) || '|' || COALESCE(w.custom_role, '(null)') || '|' ||
+          (e->>'timeSlot') || '|' || (e->'roleIds')::text
+   FROM public.work_logs w, public.applications a,
+        LATERAL jsonb_array_elements(a.assignments) e
+   WHERE w.id = (current_setting('uws.wl_lgcy'))::uuid
+     AND a.id = (current_setting('uws.app_lgcy'))::uuid),
+  'other|플로어장|18:00|["플로어장"]',
+  '🔴 커스텀 이름만 바꿔도 assignments 의 roleIds 가 새 이름으로 수렴한다');
+
+-- 32. 반대 방향 — 표준 역할('floor')에서 커스텀 역할로 옮기면 roleIds 가 이름으로 바뀐다.
+--     구 `updateRoleWithTransaction` 의 isStandardRole=false 갈래가 하던 일의 동기화 짝이다.
+--     시각은 18~19 가 만든 '미정' 이어야 한다(zod 널 금지 — JSON null 이 아니라 문자열).
+SELECT is(
+  (SELECT (w.role::text) || '|' || COALESCE(w.custom_role, '(null)') || '|' ||
+          jsonb_typeof(e->'timeSlot') || '|' || (e->>'timeSlot') || '|' || (e->'roleIds')::text
+   FROM public.work_logs w, public.applications a,
+        LATERAL jsonb_array_elements(a.assignments) e
+   WHERE w.id = (current_setting('uws.wl_one'))::uuid
+     AND a.id = (current_setting('uws.app_one'))::uuid),
+  'other|플로어장|string|미정|["플로어장"]',
+  '표준 역할에서 커스텀 역할로 옮기면 roleIds 가 커스텀 이름으로 수렴한다');
+
+-- 33. 🔴 전수 가드 — 이 세션이 건드린 어느 지원서에도 **JSON null 이 실리지 않아야** 한다.
 --     zod 는 `timeSlot: z.string()` 이라 널 하나가 지원서 레코드를 통째로 증발시킨다(A2 선례).
 --     19번은 미정 갈래 하나만 보지만 이건 모든 갈래의 모든 키를 본다.
 SELECT is(
