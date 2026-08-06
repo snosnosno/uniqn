@@ -17,7 +17,7 @@
 | 베이스 | `23e84fd2b` (master, PR#423 포함) |
 | HEAD | 마지막 코드 커밋 `fc1633697` + 이 문서 커밋 |
 | 커밋 | **30개** · 97파일 · +11,989 / −4,043 |
-| PR | **미생성** |
+| PR | ✅ **#424** — https://github.com/snosnosno/uniqn/pull/424 |
 | prod | ✅ **마이그레이션 5개 전부 적용 완료 (2026-08-07)** — 아래 기록명 참조 |
 
 ### 검증 (**2026-08-07 세션에서 전량 재실행·직접 관측**)
@@ -91,7 +91,7 @@ update_work_log_slot ACL  동일 ✅ · search_path = 'public, pg_temp' (pg_temp
 ✅ ⓪'' 버튼 라벨 통일 '근무 수정' (08-07 완료 — 커밋 ee470cdf3)
 ✅ ① 최신 master 재통합 — 08-07 기준 behind 0
 ✅ ② prod 마이그레이션 5개 적용 (08-07 완료 · 실측 검증 통과)
-   ③ PR 생성
+✅ ③ PR 생성 (08-07 — #424)
    ④ 실기기 QA
    ⑤ 웹 배포 · OTA
 
@@ -188,7 +188,7 @@ SELECT (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespa
 - `ConfirmedStaffCard.canEditTime` 에서 `payrollStatus !== COMPLETED` 제거
 - `SettlementDetailModal` 액션 줄 게이트를 `=== PENDING` → `!== COMPLETED` 축으로 전환
   → **`failed` 가 시간·금액·정산 버튼을 통째로 잃던 실제 결함이 복구됐다**(이게 진짜 버그였다)
-- completed 는 **'시간 수정'만** 남기고 금액 수정·지급 완료는 그대로 닫음 — 연 것은 열람뿐
+- completed 는 **'근무 수정'만** 남기고 금액 수정·지급 완료는 그대로 닫음 — 연 것은 열람뿐 (라벨은 커밋 ee470cdf3 에서 통일)
 - `SettlementActionButtons` 에 `testID` — 빈 껍데기 렌더 여부를 검증 가능하게
 
 🔑 **시트 readOnly 배선을 실측했다**(이게 끊겨 있으면 정산 완료 건이 오히려 편집 가능해진다):
