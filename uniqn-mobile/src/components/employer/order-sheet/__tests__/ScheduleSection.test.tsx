@@ -86,6 +86,13 @@ describe('템플릿 상태 — 날짜 0 + 조건 있음 (규칙 0 보존분의 �
     expect(screen.getByTestId('order-sheet-card-1')).toBeTruthy();
     expect(screen.getAllByText('날짜 미설정').length).toBe(2);
   });
+
+  it('날짜 없는 grouped 카드는 묶음 토글을 그리지 않는다 — 해제 불가 좀비 방지', () => {
+    // 구 템플릿 프리셋이 dates 만 비우고 grouped:true 를 남기면 빈 라벨의 " 통째로 지원받기"
+    // 토글이 켜진 채 뜨는데, 묶을 run 이 없어 스위치를 내려도 아무 일도 일어나지 않았다.
+    setup([{ dates: [], timeSlots: slots('19:00'), grouped: true }]);
+    expect(screen.queryByTestId('order-sheet-card-run-toggle-0-0')).toBeNull();
+  });
 });
 
 describe('단일 카드 축약 (F1)', () => {

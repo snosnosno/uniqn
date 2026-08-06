@@ -366,9 +366,16 @@ export function draftToValues(draft: JobPostingDraft): OrderSheetFormValues {
 export function templateToValues(template: JobPostingTemplate): OrderSheetFormValues {
   const values = draftToValues(templateToDraft(template));
   // F4: 그룹 구조·timeSlots는 유지하고 각 그룹 dates만 비운다(z.input 단계 허용, 제출 시 검증)
+  // ⚠️ grouped 도 함께 끈다 — 날짜 없는 묶음지원은 의미가 없고, 남겨 두면 조건 카드가
+  //    빈 라벨의 " 통째로 지원받기" 토글을 켜진 채로 그리는데 해제할 run 이 없어
+  //    **해제 불가능한 좀비 토글**이 된다(정규화 규칙 2 가 없앤 클래스의 다른 진입로).
   return {
     ...values,
-    scheduleGroups: (values.scheduleGroups ?? []).map((g) => ({ ...g, dates: [] })),
+    scheduleGroups: (values.scheduleGroups ?? []).map((g) => ({
+      ...g,
+      dates: [],
+      grouped: false,
+    })),
   };
 }
 

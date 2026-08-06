@@ -108,7 +108,28 @@ describe('자동 병합 (P1 암묵 동작)', () => {
   it('중복 날짜 제거(dedupe)도 병합으로 고지한다 — 무고지 삭제 금지 (Eng F-4)', () => {
     const before = [g(['2026-08-10'], A), g(['2026-08-10'], B)];
     const after = [g(['2026-08-10'], B)];
-    expect(diagnoseScheduleChange(before, after, {})?.kind).toBe('merged');
+    expect(diagnoseScheduleChange(before, after, { expectedDateCount: 2 })?.kind).toBe('merged');
+  });
+
+  it('날짜를 해제하기만 한 것은 병합이 아니다 — 자기가 한 일을 되읽어주지 않는다', () => {
+    // 날짜 수 감소는 dedupe 의 신호이기도 하고 **사용자가 해제한** 신호이기도 하다.
+    // 사용자가 고른 수(expectedDateCount)를 기준으로 둘을 가른다.
+    const before = [g(['2026-08-10', '2026-08-11'], A)];
+    const after = [g(['2026-08-10'], A)];
+    expect(diagnoseScheduleChange(before, after, { expectedDateCount: 1 })).toBeNull();
+  });
+
+  it('여러 카드에서 일부만 해제해도 병합으로 오인하지 않는다', () => {
+    const before = [g(['2026-08-10', '2026-08-11'], A), g(['2026-08-20'], B)];
+    const after = [g(['2026-08-10'], A), g(['2026-08-20'], B)];
+    expect(diagnoseScheduleChange(before, after, { expectedDateCount: 2 })).toBeNull();
+  });
+
+  it('사용자가 고른 수보다 적게 남으면 정규화가 지운 것이므로 고지한다', () => {
+    const before = [g(['2026-08-10'], A)];
+    const after = [g(['2026-08-10'], A)];
+    // 사장은 2개를 골랐는데 정규화 뒤 1개만 남았다 = 조용한 삭제
+    expect(diagnoseScheduleChange(before, after, { expectedDateCount: 2 })?.kind).toBe('merged');
   });
 
   it('카드가 늘어나는 것(예외 추출)은 병합이 아니다', () => {

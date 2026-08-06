@@ -14,12 +14,16 @@ import { initialOrderSheetValues } from '@/utils/order-sheet/mappers';
 import type { OrderSheetFormValues } from '@/schemas/orderSheet.schema';
 
 const mockObservability = jest.fn();
+// error 채널을 **참조 가능한** 목으로 노출한다 — 인라인 jest.fn() 이면 "observability 로만 나간다"는
+// 단언이 반쪽이 된다(observability 에 잡힌 것의 이름만 보게 되어, error 채널 병행 호출을 못 잡는다).
+// error 로 새는 순간 웹에서 sentry↔logger 무한 재귀가 재발한다(2026-08-04, 콘솔 에러 370만건).
+const mockError = jest.fn();
 jest.mock('@/utils/logger', () => ({
   logger: {
     observability: (...args: unknown[]) => mockObservability(...args),
+    error: (...args: unknown[]) => mockError(...args),
     info: jest.fn(),
     warn: jest.fn(),
-    error: jest.fn(),
     debug: jest.fn(),
   },
 }));
@@ -27,6 +31,49 @@ jest.mock('@/utils/logger', () => ({
 jest.mock('@/stores/toastStore', () => ({
   useToastStore: () => ({ addToast: jest.fn() }),
 }));
+
+jest.mock('@/components/ui/Modal', () => {
+  const { View } = require('react-native');
+  return {
+    Modal: ({ visible, children, footer }: any) =>
+      visible ? (
+        <View>
+          {children}
+          {footer}
+        </View>
+      ) : null,
+  };
+});
+
+jest.mock('@/components/ui/CalendarPicker', () => {
+  const { Pressable, Text, View } = require('react-native');
+  const PICKS: Record<string, number[][]> = {
+    '714-720-721': [
+      [2026, 6, 14],
+      [2026, 6, 20],
+      [2026, 6, 21],
+    ],
+    '720-721': [
+      [2026, 6, 20],
+      [2026, 6, 21],
+    ],
+  };
+  return {
+    CalendarPicker: ({ onMultiSelectChange }: any) => (
+      <View>
+        {Object.entries(PICKS).map(([key, days]) => (
+          <Pressable
+            key={key}
+            testID={`calendar-pick-${key}`}
+            onPress={() => onMultiSelectChange(days.map((d) => new Date(d[0]!, d[1]!, d[2]!)))}
+          >
+            <Text>{key}</Text>
+          </Pressable>
+        ))}
+      </View>
+    ),
+  };
+});
 
 jest.mock('@/components/ui/SheetModal', () => {
   const { View, Text } = require('react-native');
@@ -147,7 +194,54 @@ describe('관측 이벤트', () => {
     expect(contextOf('order_sheet.auto_merge')).toMatchObject({ cardsBefore: 2, cardsAfter: 1 });
   });
 
-  it('관측은 logger.observability 로만 나간다 (재귀 가드)', async () => {
+  it('새 날짜 승계 고지는 카드 수를 남긴다', async () => {
+    const { getByTestId } = render(
+      <OrderSheetScreen
+        {...baseProps}
+        initialValues={{
+          ...withDates(['2026-07-14']),
+          scheduleGroups: [
+            { dates: ['2026-07-14'], timeSlots: dealerSlot, grouped: false },
+            {
+              dates: ['2026-07-20'],
+              timeSlots: [{ startTime: '21:00', roles: [{ role: 'floor', count: 1 }] }],
+              grouped: false,
+            },
+          ],
+          roleSalaries: [
+            { role: 'dealer', salary: { type: 'hourly', amount: 20000 } },
+            { role: 'floor', salary: { type: 'hourly', amount: 30000 } },
+          ],
+        }}
+      />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-dates'));
+    fireEvent.press(getByTestId('calendar-pick-714-720-721')); // 7/21 추가 → 7/20 카드가 승계
+    fireEvent.press(getByTestId('job-posting-date-confirm-button'));
+    await flush();
+
+    expect(eventNames()).toContain('order_sheet.inherit_notice');
+    expect(contextOf('order_sheet.inherit_notice')).toMatchObject({ cardCount: 2 });
+  });
+
+  it('날짜 해제는 auto_merge 를 발화하지 않는다 — 계기판이 가장 흔한 조작으로 오염되면 못 쓴다', async () => {
+    const { getByTestId } = render(
+      <OrderSheetScreen
+        {...baseProps}
+        initialValues={withDates(['2026-07-14', '2026-07-20', '2026-07-21'])}
+      />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-dates'));
+    fireEvent.press(getByTestId('calendar-pick-720-721')); // 7/14 해제
+    fireEvent.press(getByTestId('job-posting-date-confirm-button'));
+    await flush();
+
+    expect(eventNames()).not.toContain('order_sheet.auto_merge');
+  });
+
+  it('관측은 logger.observability 로만 나간다 — error 채널로 새면 무한 재귀가 재발한다', async () => {
     const { getByTestId } = render(
       <OrderSheetScreen {...baseProps} initialValues={withDates(['2026-07-14', '2026-07-15'])} />
     );
@@ -155,8 +249,8 @@ describe('관측 이벤트', () => {
     fireEvent(getByTestId('order-sheet-card-run-toggle-0-0'), 'valueChange', true);
     await flush();
 
-    // 이 스위트는 logger 전체를 목으로 바꿨다 — observability 외 채널로 샜다면 이름이 안 잡힌다.
     expect(mockObservability).toHaveBeenCalled();
+    expect(mockError).not.toHaveBeenCalled();
     expect(eventNames().every((n) => String(n).startsWith('order_sheet.'))).toBe(true);
   });
 });

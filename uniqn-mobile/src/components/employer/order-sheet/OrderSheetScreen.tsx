@@ -83,6 +83,12 @@ type SlotsTarget = {
   dates: readonly string[];
   fallbackIndex: number;
   mode: 'edit' | 'exception';
+  /**
+   * 시트 안에서 편집 중이던 슬롯 — edit→exception 전환은 시트를 리마운트하므로,
+   * 이걸 넘기지 않으면 방금 고친 시간·역할이 폼 값으로 되감겨 침묵 유실된다.
+   * (사용자가 예외로 만들려던 조건이 대개 바로 그 편집값이다.)
+   */
+  seedSlots?: GroupTimeSlots;
 };
 type ActiveSheet =
   // 'workConditions'는 Exclude<OrderRowKey,...>에 이미 포함(고정 근무조건 시트).
@@ -236,6 +242,9 @@ export function OrderSheetScreen({
    */
   const slotsSheetValue = useMemo<GroupTimeSlots>(() => {
     if (slotsTarget === null) return [];
+    // 편집 중이던 값을 들고 왔으면(edit→exception 전환) 그걸 우선한다 —
+    // 폼 값으로 되감으면 방금 고친 시간·역할이 사라진다.
+    if (slotsTarget.seedSlots !== undefined) return cloneSlots(slotsTarget.seedSlots);
     const index = resolveGroupIndexByDates(values, slotsTarget.dates, slotsTarget.fallbackIndex);
     return cloneSlots(index === null ? [] : scheduleGroups[index]?.timeSlots);
   }, [slotsTarget, values, scheduleGroups]);
@@ -435,8 +444,20 @@ export function OrderSheetScreen({
         // 카드가 병합되고, 예외를 뽑으면 갈라진다). 예약 시점 인덱스가 아니라 **날짜집합**으로
         // 현재 카드를 다시 구한다. 카드가 통째로 사라졌으면 연쇄를 조용히 끝낸다 —
         // 엉뚱한 카드의 시트를 열어 입력을 잘못 쓰는 것보다 낫다.
-        const resolved = resolveGroupIndexByDates(form.getValues(), next.dates, next.groupIndex);
-        if (resolved === null) return;
+        //
+        // ⚠️ 앵커가 **없는** 행(비일정 행·날짜 축이 아예 없는 fixed)은 재해석이 "불필요"한
+        //    것이지 "실패"가 아니다. 무조건 재해석을 태우면 fixed(scheduleGroups=[] 가 계약)는
+        //    폴백 범위검사에서 항상 null 이 되어 연쇄가 통째로 죽는다.
+        const resolved =
+          next.dates === undefined
+            ? next.groupIndex
+            : resolveGroupIndexByDates(form.getValues(), next.dates, next.groupIndex);
+        if (resolved === null) {
+          // 침묵 종료도 딤 해제 책임을 진다 — 안 걷으면 사용자가 다른 행을 탭할 때까지
+          // 화면 전체가 어두운 채로 남는다.
+          updateChainSwapping(false);
+          return;
+        }
         openRow(next.key, resolved);
       }, SHEET_CHAIN_SWAP_MS);
     },
@@ -571,7 +592,8 @@ export function OrderSheetScreen({
         return;
       }
       if (notice.kind === 'inherited' && notice.inheritedCardIndex !== undefined) {
-        const cardIndex = notice.inheritedCardIndex;
+        const fallbackIndex = notice.inheritedCardIndex;
+        const anchor = notice.inheritedCardDates;
         addToast({
           type: 'info',
           message: notice.message,
@@ -580,13 +602,26 @@ export function OrderSheetScreen({
           // "다른 조건으로"의 결과는 결국 **그 날짜만 다른 조건을 갖는 것** = 예외 추출이다.
           // 기존 시트를 재사용해 UI 신설 없이 같은 목적지에 도달한다(기존 카드 B 의 조건을
           // 그대로 쓰고 싶으면 같은 값을 넣으면 정규화가 B 에 병합한다).
-          action: { label: '다른 조건으로', onPress: () => openExceptionRef.current?.(cardIndex) },
+          action: {
+            label: '다른 조건으로',
+            onPress: () => {
+              // 토스트는 5초 살아 있다 — 그 사이 카드가 병합·이동했을 수 있으므로 발화 시점에
+              // 날짜집합으로 다시 찾는다(F9 를 이 액션에도 적용). 사라졌으면 조용히 엉뚱한
+              // 카드를 여는 대신 고지한다(§8.4 stale confirm 과 같은 계약).
+              const resolved = resolveGroupIndexByDates(form.getValues(), anchor, fallbackIndex);
+              if (resolved === null) {
+                addToast({ type: 'info', message: '일정이 바뀌어 반영하지 못했어요' });
+                return;
+              }
+              openExceptionRef.current?.(resolved);
+            },
+          },
         });
         return;
       }
       addToast({ type: 'info', message: notice.message });
     },
-    [addToast, clearPendingSwap, commitGroups, snapshotGroups]
+    [addToast, clearPendingSwap, commitGroups, snapshotGroups, form]
   );
 
   /**
@@ -599,7 +634,13 @@ export function OrderSheetScreen({
       const current = form.getValues().scheduleGroups ?? [];
       const { groups: next, removedCards, addedDates } = applyDateSelection(current, dates);
       const committed = commitGroups(next);
-      notifyScheduleChange(current, committed, { removedCards, inheritedDates: addedDates });
+      notifyScheduleChange(current, committed, {
+        removedCards,
+        inheritedDates: addedDates,
+        // 사장이 실제로 고른 날짜 수 — 이걸 안 넘기면 "날짜를 지웠다"는 조작이
+        // "같은 조건이라 합쳐졌어요"로 오고지된다(가장 흔한 조작이라 계기판까지 오염된다).
+        expectedDateCount: new Set(dates).size,
+      });
     },
     [form, commitGroups, notifyScheduleChange]
   );
@@ -1247,8 +1288,12 @@ export function OrderSheetScreen({
                 }
               : slotsTarget.dates.length > 1
                 ? {
-                    onSwitchToException: () =>
-                      setActiveSheet({ ...slotsTarget, mode: 'exception' }),
+                    onSwitchToException: (currentSlots) =>
+                      setActiveSheet({
+                        ...slotsTarget,
+                        mode: 'exception',
+                        seedSlots: currentSlots,
+                      }),
                   }
                 : {})}
             onConfirm={(next) => {

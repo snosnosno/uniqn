@@ -50,8 +50,12 @@ export interface ScheduleSlotsSheetProps {
    */
   selectableDates?: string[];
   onConfirmException?: (result: { dates: string[]; slots: Slots }) => void;
-  /** 일반 모드 하단 진입 링크(F7③) — 조건을 고치러 들어온 자리가 예외를 깨닫는 자리다. */
-  onSwitchToException?: () => void;
+  /**
+   * 일반 모드 하단 진입 링크(F7③) — 조건을 고치러 들어온 자리가 예외를 깨닫는 자리다.
+   * 현재 **편집 중인** 슬롯을 함께 넘긴다 — 상위가 시트를 리마운트하므로
+   * 시드를 폼 값으로 다시 잡으면 방금 고친 시간·역할이 침묵 유실된다.
+   */
+  onSwitchToException?: (currentSlots: Slots) => void;
 }
 
 export function ScheduleSlotsSheet({
@@ -267,7 +271,7 @@ export function ScheduleSlotsSheet({
             다르네"를 깨닫는 경우가 많아, 카드 밖으로 나갔다 다시 들어오게 하지 않는다. */}
         {!isExceptionMode && onSwitchToException ? (
           <Pressable
-            onPress={onSwitchToException}
+            onPress={() => onSwitchToException(slots)}
             className="min-h-[44px] items-center justify-center active:opacity-80"
             accessibilityRole="button"
             accessibilityLabel="일부 날짜만 다른 조건으로 나누기"

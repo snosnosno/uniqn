@@ -655,7 +655,7 @@ describe('formValuesToDraft (프리셋 저장 — z.input 폼 값 → draft, 검
 });
 
 describe('templateToValues', () => {
-  it('템플릿 로드 시 그룹 구조·timeSlots는 유지하고 각 그룹 dates만 비운다 (F4)', () => {
+  it('템플릿 로드 시 그룹 구조·timeSlots는 유지하고 dates·grouped를 비운다 (F4 + 좀비 토글 차단)', () => {
     const multiGroupDraft = valuesToDraft({
       ...baseValues,
       scheduleGroups: [
@@ -689,7 +689,9 @@ describe('templateToValues', () => {
     expect(values.scheduleGroups).toHaveLength(2);
     expect(values.scheduleGroups?.every((g) => g.dates.length === 0)).toBe(true);
     expect(values.scheduleGroups?.[0]?.timeSlots?.[0]?.startTime).toBe('19:00');
-    expect(values.scheduleGroups?.[0]?.grouped).toBe(true);
+    // 날짜 없는 묶음지원은 의미가 없다 — 남기면 조건 카드가 빈 라벨의 " 통째로 지원받기"
+    // 토글을 켜진 채 그리고, 묶을 run 이 없어 스위치를 내려도 아무 일도 안 일어난다(좀비).
+    expect(values.scheduleGroups?.every((g) => g.grouped === false)).toBe(true);
     expect(values.scheduleGroups?.[1]?.timeSlots?.[0]?.startTime).toBe('21:00');
   });
 

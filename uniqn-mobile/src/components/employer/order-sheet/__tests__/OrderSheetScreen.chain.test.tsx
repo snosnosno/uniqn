@@ -551,6 +551,25 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
     expect(queryByTestId('order-sheet-chain-scrim')).toBeNull();
   });
 
+  // 조건 유도 그룹핑이 연쇄 예약에 날짜집합 앵커를 도입했다(F9). 앵커가 **없는** 행
+  // (비일정 행·날짜 축이 아예 없는 fixed)까지 재해석을 강제하면, fixed 는 scheduleGroups=[] 가
+  // 계약이라 폴백 범위검사에서 항상 null 이 되어 연쇄가 통째로 죽고 딤까지 남는다.
+  it('고정(fixed) 공고도 연쇄가 이어진다 — 날짜 축이 없다고 연쇄가 죽으면 안 된다', async () => {
+    const { getByTestId, getByText, queryByTestId } = render(
+      <OrderSheetScreen {...baseProps} initialValues={fixedTitleAndWorkConditionsMissing()} />
+    );
+
+    fireEvent.press(getByTestId('order-sheet-row-title'));
+    fireEvent.changeText(getByTestId('order-sheet-title-input'), '주말 고정 딜러');
+    fireEvent.press(getByText('확인'));
+
+    expect(jest.getTimerCount()).toBe(1);
+    await advanceSwap();
+
+    expect(sheetTitleOf(queryByTestId)).toBe('근무조건');
+    expect(queryByTestId('order-sheet-chain-scrim')).toBeNull();
+  });
+
   // ── 최종리뷰 레이스 3종 회귀 가드 (대기 창 중 폼 구조 변경 / 잠금 차단) ──
 
   it('대기 중 타입을 전환하면 예약이 취소되어 phantom 시트(근무조건)가 열리지 않는다', async () => {

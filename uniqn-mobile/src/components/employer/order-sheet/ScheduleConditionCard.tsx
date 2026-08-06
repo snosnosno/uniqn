@@ -82,8 +82,10 @@ export function ScheduleConditionCard({
   const summary = summarizeGroupDates(dates);
   const condition = summarizeCardCondition(group);
   // grouped 카드는 정규화상 연속 run 하나다(규칙 2) — 그 카드의 토글은 켜진 상태로 렌더된다.
+  // 단 날짜가 없으면(템플릿 조건 카드) 묶을 대상 자체가 없다 — 빈 라벨의 해제 불가 토글을
+  // 그리지 않도록 방어한다(생산자 측 리셋은 mappers.templateToValues 가 담당).
   const grouped = group.grouped ?? false;
-  const runs = grouped ? [dates] : groupableRuns(dates);
+  const runs = grouped && dates.length > 1 ? [dates] : groupableRuns(dates);
   const reduceMotion = useReduceMotion();
 
   return (

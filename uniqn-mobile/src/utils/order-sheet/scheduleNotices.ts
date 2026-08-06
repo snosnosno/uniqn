@@ -18,8 +18,13 @@ type ScheduleNoticeKind = 'cardRemoved' | 'bundleReleased' | 'merged' | 'inherit
 export interface ScheduleNotice {
   kind: ScheduleNoticeKind;
   message: string;
-  /** 승계 고지에서 "다른 조건으로" 를 눌렀을 때 열 카드 */
+  /** 승계 고지에서 "다른 조건으로" 를 눌렀을 때 열 카드(발화 시점 인덱스 — 폴백 전용) */
   inheritedCardIndex?: number;
+  /**
+   * 그 카드의 **날짜집합** 앵커. 토스트는 5초간 살아 있고 그 사이 카드가 병합·이동할 수 있어
+   * 인덱스만 들고 있으면 엉뚱한 카드가 열린다 — 시간을 넘나드는 좌표는 날짜집합으로 든다(F9).
+   */
+  inheritedCardDates?: readonly string[];
 }
 
 export interface ScheduleChangeContext {
@@ -29,6 +34,15 @@ export interface ScheduleChangeContext {
   inheritedDates?: readonly string[];
   /** 사용자가 직접 묶음 토글을 조작했는가 — 자기가 한 일을 되읽어주지 않는다 */
   bundleToggledByUser?: boolean;
+  /**
+   * 이번 뮤테이션이 **의도한** 날짜 총수. 결과가 이보다 적으면 정규화가 조용히 지운 것
+   * (그룹 간 중복 dedupe)이므로 고지 대상이다.
+   *
+   * ⚠️ 이 값이 없으면 "before 보다 날짜가 줄었다"로 판정하는데, 그건 **사용자가 날짜를 해제한
+   *    경우에도 참**이라 가장 흔한 조작이 "같은 조건이라 합쳐졌어요"로 오고지된다(리뷰 실측).
+   *    날짜를 건드리는 경로(날짜 확정)는 반드시 사용자가 고른 수를 넣어야 한다.
+   */
+  expectedDateCount?: number;
 }
 
 /** 묶음(grouped) 카드의 날짜 집합 — 해제 판정용 */
@@ -66,7 +80,10 @@ export function diagnoseScheduleChange(
 
   // ③ 자동 병합 — 카드 수가 줄었거나(같은 조건 수렴) 날짜가 조용히 사라졌다(dedupe).
   //    dedupe 를 병합으로 승격해 고지하는 이유: 무고지 삭제가 되면 안 된다(Eng F-4).
-  if (after.length < before.length || dateCount(after) < dateCount(before)) {
+  //    기준은 **사용자가 의도한 날짜 수**다 — before 와 비교하면 단순 해제까지 병합으로
+  //    오고지해 계기판(order_sheet.auto_merge)이 가장 흔한 조작으로 오염된다.
+  const expectedDates = context.expectedDateCount ?? dateCount(before);
+  if (after.length < before.length || dateCount(after) < expectedDates) {
     return { kind: 'merged', message: '같은 조건이라 하나로 합쳐졌어요' };
   }
 
@@ -76,13 +93,19 @@ export function diagnoseScheduleChange(
   if (inherited.length > 0 && after.length > 1) {
     const owner = after.findIndex((g) => (g.dates ?? []).includes(inherited[0]!));
     if (owner < 0) return null;
-    const ownerDates = (after[owner]?.dates ?? []).filter((d) => !inherited.includes(d));
+    const ownerAllDates = after[owner]?.dates ?? [];
+    const ownerDates = ownerAllDates.filter((d) => !inherited.includes(d));
     const ownerLabel = summarizeGroupDates(ownerDates);
     const addedLabel = inherited.map(toMonthDay).join(' · ');
     return {
       kind: 'inherited',
-      message: `${addedLabel}을 ${ownerLabel} 조건으로 추가했어요`,
+      // 승계받은 카드에 원래 날짜가 없을 수 있다(조건만 있던 템플릿 카드에 첫 날짜가 들어간 경우)
+      // — 그때 라벨을 그대로 끼우면 "8/10을  조건으로 추가했어요"가 된다.
+      message: ownerLabel
+        ? `${addedLabel}을 ${ownerLabel} 조건으로 추가했어요`
+        : `${addedLabel}을 기존 조건으로 추가했어요`,
       inheritedCardIndex: owner,
+      inheritedCardDates: [...ownerAllDates],
     };
   }
 

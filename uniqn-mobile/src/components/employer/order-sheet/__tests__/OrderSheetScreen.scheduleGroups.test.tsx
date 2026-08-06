@@ -75,9 +75,15 @@ jest.mock('@/components/ui/CalendarPicker', () => {
       [2026, 6, 21],
     ],
   };
+  const ymd = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   return {
-    CalendarPicker: ({ onMultiSelectChange }: any) => (
+    CalendarPicker: ({ selectedDates, onMultiSelectChange }: any) => (
       <View>
+        {/* 시드 관측창 — 시트가 **전 카드 날짜 합집합**을 받았는지 볼 수 있는 유일한 지점.
+            아래 PICKS 버튼은 선택을 통째로 덮어쓰므로, 시드가 죽어도 다른 단언은 전부 green 이다
+            (이 프로젝트의 "빌더/오프너 분리 빈 통과" 계열 함정). */}
+        <Text testID="calendar-seed">{(selectedDates ?? []).map(ymd).join(',')}</Text>
         {Object.entries(PICKS).map(([key, days]) => (
           <Pressable
             key={key}
@@ -151,6 +157,51 @@ const renderWithCapture = (initialValues: OrderSheetFormValues) => {
   };
   return { ...utils, readForm };
 };
+
+describe('날짜 시트 시드 — 전 일정 스코프 배선 (회귀 가드)', () => {
+  beforeEach(() => mockAddToast.mockClear());
+
+  it('시트는 전 카드 날짜의 합집합을 시드로 받는다', () => {
+    const { getByTestId } = renderWithCapture(twoCards());
+
+    fireEvent.press(getByTestId('order-sheet-row-dates'));
+
+    // 한 카드 날짜만 넘기면(구 그룹 스코프 시맨틱으로 되감으면) 나머지 카드 날짜가
+    // "해제됨"으로 해석되어 확인 한 번에 카드와 조건이 통째로 사라진다.
+    expect(getByTestId('calendar-seed').props.children).toBe('2026-07-14,2026-07-20,2026-07-21');
+  });
+
+  it('아무것도 바꾸지 않고 확인하면 카드도 조건도 그대로다', async () => {
+    const { getByTestId, readForm } = renderWithCapture(twoCards());
+
+    fireEvent.press(getByTestId('order-sheet-row-dates'));
+    fireEvent.press(getByTestId('job-posting-date-confirm-button'));
+    await flush();
+
+    const saved = readForm();
+    expect(saved.scheduleGroups).toHaveLength(2);
+    expect(saved.scheduleGroups?.[1]?.timeSlots).toEqual(floorSlot);
+    expect(mockAddToast).not.toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringContaining('조건이 함께 삭제') })
+    );
+  });
+
+  it('날짜 상한을 다 써도 시트는 살아 있다 — existingDates 합성 회귀 가드 (구 ORDER-8)', () => {
+    const sevenDates = Array.from(
+      { length: 7 },
+      (_, i) => `2026-07-${String(14 + i).padStart(2, '0')}`
+    );
+    const { getByTestId, getByText, queryByText } = renderWithCapture(singleCard(sevenDates));
+
+    fireEvent.press(getByTestId('order-sheet-row-dates'));
+
+    // existingDates 를 "담긴 날짜"로 되감으면 remainingSlots = 7-7 = 0 이 되어
+    // 확인이 영구 비활성인 막다른 시트가 된다(구 ORDER-8 결함의 부활 경로).
+    expect(getByTestId('calendar-seed').props.children).toBe(sevenDates.join(','));
+    expect(queryByText('남은 슬롯이 없어요')).toBeNull();
+    expect(getByText('최대 7개까지')).toBeTruthy();
+  });
+});
 
 describe('날짜 확정 — 전 일정 스코프', () => {
   beforeEach(() => mockAddToast.mockClear());
@@ -249,17 +300,18 @@ describe('날짜 확정 — 전 일정 스코프', () => {
     expect(restored.scheduleGroups?.[1]?.timeSlots).toEqual(floorSlot);
   });
 
-  it('날짜만 줄어드는 경우에는 소멸 고지를 하지 않는다', async () => {
+  it('날짜만 줄어드는 경우에는 아무 고지도 하지 않는다 — 자기가 한 일을 되읽지 않는다', async () => {
     const { getByTestId } = renderWithCapture(singleCard(['2026-07-14', '2026-07-15']));
+    mockAddToast.mockClear();
 
     fireEvent.press(getByTestId('order-sheet-row-dates'));
     fireEvent.press(getByTestId('calendar-pick-714'));
     fireEvent.press(getByTestId('job-posting-date-confirm-button'));
     await flush();
 
-    expect(mockAddToast).not.toHaveBeenCalledWith(
-      expect.objectContaining({ message: expect.stringContaining('조건이 함께 삭제') })
-    );
+    // 구 구현은 "날짜 수가 줄었다"만 보고 '같은 조건이라 합쳐졌어요'를 띄웠다 —
+    // 가장 흔한 조작(날짜 해제)이 병합으로 오고지되고 계기판까지 오염됐다.
+    expect(mockAddToast).not.toHaveBeenCalled();
   });
 });
 
@@ -346,6 +398,18 @@ describe('예외 추출 (§3.4)', () => {
     fireEvent.press(getByTestId('order-sheet-slots-switch-exception'));
 
     expect(getByText('다르게 할 날짜를 골라주세요')).toBeTruthy();
+  });
+
+  it('시트에서 고치던 값은 예외 모드로 넘어가도 살아 있다 (전환 = 리마운트라 유실되기 쉽다)', () => {
+    const { getByTestId, getByText } = renderWithCapture(singleCard(['2026-07-14', '2026-07-15']));
+
+    fireEvent.press(getByTestId('order-sheet-card-condition-0'));
+    fireEvent.press(getByTestId('order-time-start-0'));
+    fireEvent.press(getByTestId('mock-time-confirm')); // 19:00 → 20:30 (미확정)
+    fireEvent.press(getByTestId('order-sheet-slots-switch-exception'));
+
+    // 사장이 예외로 만들려던 조건은 대개 **방금 고친 그 값**이다 — 되감기면 재입력을 강요한다.
+    expect(getByText('출근 20:30')).toBeTruthy();
   });
 
   it('날짜가 1개인 카드에서는 예외 진입 자체가 없다', () => {
