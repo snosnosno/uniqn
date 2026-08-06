@@ -35,6 +35,7 @@ import { STATUS } from '@/constants';
 import type { JobPosting, TournamentApprovalStatus } from '@/types';
 import { useThemeStore } from '@/stores/themeStore';
 import { formatDateShortWithDay } from '@/utils/date';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 
 // ============================================================================
 // Types
@@ -282,13 +283,13 @@ export default function AdminTournamentsPage() {
 
   const { approve, reject, isProcessing } = useTournamentApproval();
 
-  const {
-    data: postings,
-    isLoading,
-    isRefetching,
-    refetch,
-    error,
-  } = useTournamentsByStatus(selectedStatus);
+  const { data: postings, isLoading, refetch, error } = useTournamentsByStatus(selectedStatus);
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refetch()
+  );
 
   // 탭별 개수 조회 (pending만 실시간, 나머지는 필요 시 조회)
   const { data: pendingPostings } = useTournamentsByStatus('pending');
@@ -409,8 +410,8 @@ export default function AdminTournamentsPage() {
         className="flex-1 px-4"
         refreshControl={
           <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={() => refetch()}
+            refreshing={pullRefreshing}
+            onRefresh={onPullRefresh}
             tintColor={getLayoutColor(isDarkMode, 'refreshTint')}
           />
         }

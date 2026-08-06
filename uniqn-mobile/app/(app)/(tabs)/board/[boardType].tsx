@@ -10,6 +10,7 @@ import { BoardPostCard } from '@/components/board/BoardPostCard';
 import { BoardTabBar, type BoardTabKey } from '@/components/board/BoardTabBar';
 import { BoardWriteFab } from '@/components/board/BoardWriteFab';
 import { useBoardPosts } from '@/hooks/useBoard';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { useTabBarBottomPadding } from '@/hooks/useTabBarBottomPadding';
 import { BOARD_TYPE_LABELS, type BoardType } from '@/types/board';
 import { SECONDARY_PALETTE } from '@/constants/colors';
@@ -32,7 +33,9 @@ export default function BoardListScreen() {
   const isValidBoardType = SUPPORTED_BOARD_TYPES.includes(boardType);
   const safeBoardType = isValidBoardType ? boardType : 'notice';
   const isWritable = safeBoardType === 'free' || safeBoardType === 'tda';
-  const { data, isLoading, error, refetch, isRefetching } = useBoardPosts(safeBoardType, 50);
+  const { data, isLoading, error, refetch } = useBoardPosts(safeBoardType, 50);
+  // 스피너는 사용자가 당겼을 때만 (useManualRefresh 주석 참고).
+  const { refreshing, onRefresh } = useManualRefresh(refetch);
 
   if (!isValidBoardType) {
     return (
@@ -76,7 +79,7 @@ export default function BoardListScreen() {
             paddingBottom: bottomPadding,
           }}
           refreshControl={
-            <RefreshControl refreshing={isRefetching} onRefresh={refetch} {...PTR_REFRESH_PROPS} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} {...PTR_REFRESH_PROPS} />
           }
           ListEmptyComponent={
             isLoading ? (

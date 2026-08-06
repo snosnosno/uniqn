@@ -32,6 +32,7 @@ import { useStaffSettlementsHandlers } from '@/features/employer/settlements/use
 import { TabHeader, type TabType } from '@/features/employer/settlements/TabHeader';
 import { TodayOpsStrip } from '@/features/employer/settlements/TodayOpsStrip';
 import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 
 // ============================================================================
 // Main Component
@@ -72,7 +73,6 @@ export default function StaffSettlementsScreen() {
   const {
     workLogs,
     isLoading,
-    isRefreshing,
     error,
     refresh,
     updateWorkTime,
@@ -84,6 +84,12 @@ export default function StaffSettlementsScreen() {
     isSettling: _isSettling,
     isBulkSettling: _isBulkSettling,
   } = useSettlement(jobPostingId || '');
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refresh()
+  );
 
   // 모달 상태 관리
   const modals = useSettlementModals();
@@ -226,8 +232,8 @@ export default function StaffSettlementsScreen() {
           taxSettings={postingSettlement?.taxSettings}
           isLoading={isLoading}
           error={error}
-          onRefresh={() => refresh()}
-          isRefreshing={isRefreshing}
+          onRefresh={onPullRefresh}
+          isRefreshing={pullRefreshing}
           onWorkLogPress={modals.openDetailModal}
           onSettle={handleSettle}
           onBulkSettle={handleBulkSettle}

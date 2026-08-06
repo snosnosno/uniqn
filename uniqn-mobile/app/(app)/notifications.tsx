@@ -33,6 +33,7 @@ import { confirmAction } from '@/utils/confirmAction';
 import { triggerHaptic } from '@/utils/haptics';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import type { NotificationData, NotificationCategory } from '@/types/notification';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 
 export default function NotificationsScreen() {
   // 카테고리 필터 상태
@@ -44,7 +45,6 @@ export default function NotificationsScreen() {
     rawNotifications,
     unreadCount,
     isLoading,
-    isRefreshing,
     error,
     hasMore,
     fetchNextPage,
@@ -60,6 +60,12 @@ export default function NotificationsScreen() {
     },
   });
 
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refetch()
+  );
+
   const { markAllAsRead } = useMarkAllAsRead();
   const { handleNotificationPress: navigateNotification } = useNotificationNavigation();
 
@@ -73,10 +79,6 @@ export default function NotificationsScreen() {
   const unreadByCategory = useNotificationStore((state) => state.unreadByCategory);
 
   // 리프레시 핸들러
-  const handleRefresh = useCallback(async () => {
-    await refetch();
-  }, [refetch]);
-
   // 무한 스크롤 핸들러
   const handleLoadMore = useCallback(async () => {
     await fetchNextPage();
@@ -201,11 +203,11 @@ export default function NotificationsScreen() {
       <NotificationList
         notifications={groupedNotifications}
         isLoading={isLoading}
-        isRefreshing={isRefreshing}
+        isRefreshing={pullRefreshing}
         error={error}
         hasMore={hasMore}
         isFetchingNextPage={isFetchingNextPage}
-        onRefresh={handleRefresh}
+        onRefresh={onPullRefresh}
         onLoadMore={handleLoadMore}
         onNotificationPress={handleNotificationPress}
         onMarkGroupAsRead={markGroupAsRead}

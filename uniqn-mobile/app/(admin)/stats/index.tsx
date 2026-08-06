@@ -21,6 +21,7 @@ import { Loading } from '@/components/ui/Loading';
 import { getLayoutColor } from '@/constants/colors';
 import { useAdminDashboard } from '@/hooks';
 import { useThemeStore } from '@/stores';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 
 function formatDateTime(date: Date | string | undefined): string {
   if (!date) {
@@ -43,7 +44,13 @@ function formatDateTime(date: Date | string | undefined): string {
 
 export default function AdminStatsScreen() {
   const isDark = useThemeStore((state) => state.isDarkMode);
-  const { stats, metrics, isLoading, isRefreshing, error, refresh } = useAdminDashboard();
+  const { stats, metrics, isLoading, error, refresh } = useAdminDashboard();
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refresh()
+  );
 
   const lastUpdatedAt = useMemo(
     () => formatDateTime(metrics?.fetchedAt ?? stats?.fetchedAt),
@@ -81,8 +88,8 @@ export default function AdminStatsScreen() {
         contentContainerClassName="p-4"
         refreshControl={
           <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={refresh}
+            refreshing={pullRefreshing}
+            onRefresh={onPullRefresh}
             tintColor={getLayoutColor(isDark, 'refreshTint')}
           />
         }

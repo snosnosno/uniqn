@@ -33,6 +33,7 @@ import {
   useReopenJobPosting,
 } from '@/hooks/useJobManagement';
 import { useSharedJobPostings } from '@/hooks/job-posting/useSharedJobPostings';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { usePostingFilledCounts } from '@/hooks/usePostingFilledCounts';
 import { useSubmitGate } from '@/hooks/useSubmitGate';
 import { useTabBarBottomPadding } from '@/hooks/useTabBarBottomPadding';
@@ -202,7 +203,10 @@ function getEarliestDateTime(posting: JobPosting, today: string): string {
 
 function EmployerView() {
   const bottomPadding = useTabBarBottomPadding();
-  const { data: postings, isLoading, error, refetch, isRefetching } = useMyJobPostings();
+  const { data: postings, isLoading, error, refetch } = useMyJobPostings();
+  // 스피너는 사용자가 당겼을 때만 — isRefetching 을 물리면 탭에 들어올 때마다 뜬다
+  // (배경 재조회는 조용해야 한다. useManualRefresh 주석 참고).
+  const { refreshing, onRefresh } = useManualRefresh(refetch);
   const closeMutation = useCloseJobPosting();
   const reopenMutation = useReopenJobPosting();
   const isDarkMode = useThemeStore((s) => s.isDarkMode);
@@ -493,7 +497,7 @@ function EmployerView() {
           keyExtractor={(item) => item.id}
           estimatedItemSize={200}
           refreshControl={
-            <RefreshControl refreshing={isRefetching} onRefresh={refetch} {...PTR_REFRESH_PROPS} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} {...PTR_REFRESH_PROPS} />
           }
           showsVerticalScrollIndicator={false}
           // 선택 모드에서는 하단 액션 바 높이만큼 더 비워 마지막 카드가 가리지 않게 한다.
