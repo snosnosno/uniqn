@@ -6,14 +6,7 @@
  */
 
 import type { UnsubscribeFn } from '@/types/common';
-import type {
-  WorkLog,
-  PayrollStatus,
-  WorkLogStatus,
-  QRCodeAction,
-  QRProcessAction,
-  StaffRole,
-} from '@/types';
+import type { WorkLog, WorkLogStatus, QRCodeAction, QRProcessAction, StaffRole } from '@/types';
 
 /**
  * 슬롯 편집(근무표 B2) 입력. 부분 업데이트 — 제공된 필드만 반영한다.
@@ -315,28 +308,6 @@ export interface IWorkLogRepository {
   // ==========================================================================
   // 변경 (Write)
   // ==========================================================================
-
-  /**
-   * 정산 상태 변경
-   * @param workLogId - 근무 기록 ID
-   * @param status - 새 정산 상태
-   */
-  updatePayrollStatus(workLogId: string, status: PayrollStatus): Promise<void>;
-
-  /**
-   * 정산 상태 업데이트 (트랜잭션, 중복 검증 포함)
-   *
-   * @description 중복 정산 방지 및 금액 지원
-   * @param workLogId - 근무 기록 ID
-   * @param status - 정산 상태
-   * @param amount - 정산 금액 (선택)
-   * @throws BusinessError - 중복 정산 시도 시
-   */
-  updatePayrollStatusTransaction(
-    workLogId: string,
-    status: PayrollStatus,
-    amount?: number
-  ): Promise<void>;
 
   /**
    * 음수 정산 플래그 기록 (관리자 알림 트리거용)

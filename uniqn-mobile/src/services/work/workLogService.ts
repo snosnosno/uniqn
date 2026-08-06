@@ -17,10 +17,9 @@ import { logger } from '@/utils/logger';
 import { maskSensitiveId } from '@/utils/security';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { toDateString } from '@/utils/date';
-import { trackSettlementComplete } from '@/services/observability';
 import { RealtimeManager } from '@/shared/realtime';
 import { workLogRepository, type WorkLogStats } from '@/repositories';
-import type { WorkLog, PayrollStatus } from '@/types';
+import type { WorkLog } from '@/types';
 import { STATUS } from '@/constants';
 
 // ============================================================================
@@ -152,35 +151,15 @@ export async function getWorkLogStats(staffId: string): Promise<WorkLogStats> {
   }
 }
 
-/**
- * 정산 상태 업데이트 (트랜잭션 사용)
- *
- * @description 중복 정산 방지 및 상태 검증 포함
- */
-export async function updatePayrollStatus(
-  workLogId: string,
-  status: PayrollStatus,
-  amount?: number
-): Promise<void> {
-  try {
-    logger.info('정산 상태 업데이트', { workLogId, status, amount });
-
-    await workLogRepository.updatePayrollStatusTransaction(workLogId, status, amount);
-
-    logger.info('정산 상태 업데이트 완료', { workLogId });
-
-    // Analytics 이벤트 (정산 완료 시)
-    if (status === STATUS.PAYROLL.COMPLETED && amount !== undefined) {
-      trackSettlementComplete(amount, 1);
-    }
-  } catch (error) {
-    throw handleServiceError(error, {
-      operation: '정산 상태 업데이트',
-      component: 'workLogService',
-      context: { workLogId },
-    });
-  }
-}
+// 🪦 updatePayrollStatus 제거 (2026-08-05) — payroll 직접 UPDATE 경로의 서비스 진입점이었다.
+//    #402 가 정산을 RPC 화한 뒤 UI 소비자 0곳(죽은 회로)이었고, 같은 PR 의 20260805120000
+//    트리거가 서버에서 이 경로를 막는다. 살아있는 정본은 settlementMutation.updateSettlementStatus.
+//    🔴 범위 밖 발견 — 여기 있던 trackSettlementComplete(정산 완료 애널리틱스)의
+//       **유일한 호출부가 이 함수였다**(실측: 정의·배럴 재export 외 호출 0곳).
+//       그런데 이 함수 자체에 UI 소비자가 없었으므로 그 이벤트는 이미 발화하지 않고 있었다
+//       = 정산 완료 애널리틱스는 #402(정산 RPC 화) 이후 조용히 끊긴 상태다.
+//       이 삭제가 계측을 없앤 게 아니라, 이미 없던 것을 드러낸 것이다.
+//       복구하려면 RPC 경로(settlementMutation.updateSettlementStatus)에 붙여야 한다 — 별건.
 
 // ============================================================================
 // Real-time Subscriptions
