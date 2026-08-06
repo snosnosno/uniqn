@@ -17,6 +17,9 @@ import type { WorkLog, WorkLogStatus, QRCodeAction, QRProcessAction, StaffRole }
  * @property color - 셀 색상 토큰(화이트리스트, 자유 hex 금지)
  * @property memo - 메모(XSS 검증 통과분만 기록)
  * @property editedBy - 수정 행위자(운영자) user id
+ * @property checkIn - 실제 출근 시각(실적). 3상 — undefined=미변경 / null=삭제 / Date=기록
+ * @property checkOut - 실제 퇴근 시각(실적). 3상 동일
+ * @property reason - 수정 사유(실적 변경 이력·역할 변경 이력에 함께 실린다)
  */
 export interface UpdateSlotInput {
   /**
@@ -33,6 +36,21 @@ export interface UpdateSlotInput {
   color?: string;
   memo?: string;
   editedBy?: string;
+  /**
+   * 실제 출근 시각(실적). 예정(startTime)과 다른 축이다 — 예정 변경은 근태 상태를 건드리지 않고,
+   * 실적 변경만 status·수정 이력·정산 완료 잠금을 발동시킨다.
+   *
+   * 🔴 3상 계약: `undefined`=키를 만들지 않음(미변경) / `null`=기록 삭제 / `Date`=기록.
+   *    `??`·truthy 판정으로 다루면 삭제가 조용히 무시된다.
+   */
+  checkIn?: Date | null;
+  /** 실제 퇴근 시각(실적). checkIn 과 동일한 3상 계약. */
+  checkOut?: Date | null;
+  /**
+   * 수정 사유. 실적을 바꾸면 `modification_history` 에, 역할을 바꾸면 `role_change_history` 에
+   * 함께 실린다. 이력 배열 길이 증가가 스태프 "근무 시간 변경" 알림을 발화시킨다.
+   */
+  reason?: string;
 }
 
 /**
