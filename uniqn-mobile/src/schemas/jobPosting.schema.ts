@@ -46,7 +46,9 @@ export const roleRequirementSchema = z.object({
   count: z
     .number()
     .min(1, { message: 'At least one staff member is required' })
-    .max(100, { message: 'At most 100 staff members are allowed' }),
+    // 주문서(orderSheet.schema.ts count.max)와 정합 — 어긋나면 주문서에서 통과한 값이
+    // 이 스키마를 타는 경로에서 거부된다.
+    .max(999, { message: 'At most 999 staff members are allowed' }),
 });
 
 export const salaryInfoSchema = z.object({

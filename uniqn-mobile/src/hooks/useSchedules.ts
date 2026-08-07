@@ -342,6 +342,11 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
         setHasReceivedRealtimeSnapshot(true);
         setLastRealtimeSnapshotAt(Date.now());
         setIsRealtimeLoading(false);
+        // 스냅샷이 도착했다 = 구독이 살아있다. 지우지 않으면 CHANNEL_ERROR 같은 **일시적**
+        // 에러가 영구 상태로 남아, Phoenix 가 자동 재연결해 데이터가 멀쩡히 흐르는 동안에도
+        // "최신 정보를 불러오지 못했어요" 배너가 계속 떠 있고 '다시 시도'로도 안 없어진다
+        // (refresh() 는 query 만 무효화하므로 이 값에 닿지 못한다).
+        setRealtimeError(null);
       },
       (error) => {
         setIsRealtimeLoading(false);
@@ -398,6 +403,12 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
     await queryClient.invalidateQueries({
       queryKey: queryKeys.schedules.byMonth(year, month),
     });
+
+    // 수동 새로고침이 끝나면 화면 데이터는 실제로 최신이다 — realtime 채널이 아직 복구 전이어도
+    // "지금 보이는 건 옛 정보"라는 경고는 더 이상 참이 아니다. 이걸 안 지우면 '다시 시도'를
+    // 눌러도 배너가 그대로 남아 버튼이 고장 난 것처럼 보인다.
+    // 채널이 계속 죽어 있으면 Phoenix 재시도마다 error 핸들러가 다시 세운다(supabase.ts:564).
+    setRealtimeError(null);
   }, [isOnline, month, queryClient, year]);
 
   return {

@@ -20,6 +20,7 @@ import type { EmployerApplication } from '@/repositories';
 import { toDate } from '@/utils/date';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 
 // ============================================================================
 // Types
@@ -187,7 +188,13 @@ function ApplicationCard({ app }: { app: EmployerApplication }) {
 
 export default function AdminEmployerApplicationsPage() {
   const [filter, setFilter] = useState<AdminApplicationFilter>('pending');
-  const { data, isLoading, isRefetching, error, refetch } = useAdminEmployerApplications(filter);
+  const { data, isLoading, error, refetch } = useAdminEmployerApplications(filter);
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refetch()
+  );
 
   const applications = data?.items ?? [];
 
@@ -258,7 +265,7 @@ export default function AdminEmployerApplicationsPage() {
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} />}
+        refreshControl={<RefreshControl refreshing={pullRefreshing} onRefresh={onPullRefresh} />}
       >
         <Text className="mb-3 text-sm text-content-secondary font-sans">
           총 {applications.length}건

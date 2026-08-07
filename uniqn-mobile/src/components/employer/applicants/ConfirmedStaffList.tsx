@@ -26,7 +26,6 @@ export interface ConfirmedStaffListProps {
   onStaffPress?: (staff: ConfirmedStaff) => void;
   onViewProfile?: (staff: ConfirmedStaff) => void;
   onEditTime?: (staff: ConfirmedStaff) => void;
-  onChangeRole?: (staff: ConfirmedStaff) => void;
   onReport?: (staff: ConfirmedStaff) => void;
   onDelete?: (staff: ConfirmedStaff) => void;
   onStatusChange?: (staff: ConfirmedStaff) => void;
@@ -121,7 +120,6 @@ export function ConfirmedStaffList({
   onStaffPress,
   onViewProfile,
   onEditTime,
-  onChangeRole,
   onReport,
   onDelete,
   onStatusChange,
@@ -201,7 +199,6 @@ export function ConfirmedStaffList({
           onPress={onStaffPress}
           onViewProfile={onViewProfile}
           onEditTime={onEditTime}
-          onChangeRole={onChangeRole}
           onReport={onReport}
           onDelete={onDelete}
           onStatusChange={onStatusChange}
@@ -212,7 +209,6 @@ export function ConfirmedStaffList({
     ),
     [
       onCancelNoShow,
-      onChangeRole,
       onDelete,
       onEditTime,
       onReport,

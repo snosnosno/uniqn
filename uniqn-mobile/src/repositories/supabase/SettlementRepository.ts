@@ -27,7 +27,6 @@ import {
 } from '@/errors';
 import { handleSupabaseError, toCamelCase } from '@/utils/supabase';
 import { parseWorkLogDocument, parseJobPostingDocument } from '@/schemas';
-import { assertWorkTimeReason, appendWorkTimeModification } from '@/domains/staff';
 import { IdNormalizer } from '@/shared/id';
 import { STATUS } from '@/constants';
 import { resolvePostingAuthority, canManagePosting } from './postingAuthority';
@@ -35,7 +34,8 @@ import { resolvePostingAuthority, canManagePosting } from './postingAuthority';
 import { TABLE_COLUMNS as JOB_POSTING_COLUMNS } from './JobPostingRepositoryHelpers';
 // work_logs SELECT 화이트리스트·ts 매핑 정본(자체 사본 드리프트 금지).
 import { WORK_LOG_COLUMNS, applyTsPreference } from './workLogColumns';
-import { resolveWorkTimeStatus } from './workLogTimeStatus';
+// 실적(출퇴근) 쓰기의 단일 관문. 이 경로의 직접 UPDATE 는 여기로 흡수됐다.
+import { updateSlot as updateWorkLogSlot } from './WorkLogRepositoryVenue';
 import type { TaxSettings } from '@/utils/settlement';
 import type { WorkLog, JobPosting, PayrollStatus } from '@/types';
 import type {
@@ -298,6 +298,21 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
   // Work Time Update
   // ==========================================================================
 
+  /**
+   * 근무 시간(실적) 수정 — 서버 RPC `update_work_log_slot` 1회.
+   *
+   * 🔴 형제 경로(ConfirmedStaffRepository)와 **완전히 같은 관문**을 통과한다. 예전엔 두 곳이
+   * 각자 조회 → 소유권 검증 → 정산 잠금 → 이력 append → status 파생 → UPDATE 를 재구현했고,
+   * 그 어긋남이 SET-1(정산 탭에서 시간을 고쳐도 status 가 안 올라가 영원히 정산 불가)이었다.
+   * 공유 헬퍼로 증상을 막아 왔지만 규칙이 두 벌인 사실은 그대로였다 — 서버 한 곳으로 모은다
+   * (20260806140000). 권한·정산 잠금·상태 파생·이력 append 는 전부 RPC 안에서 끝난다.
+   *
+   * 🔴 **`notes` 축은 이 경로에서 사라졌다.** 예전에는 RPC 뒤에 `work_logs.notes` 만 고치는
+   *    좁은 UPDATE 가 덧붙어 있었다(채우는 호출부는 없었지만 계약에는 남아 있었다). 배치 메모는
+   *    통합 편집 시트가 RPC `memo` 키로 소유하므로 이제 중복이고, 남겨 두면 시간모델 R4
+   *    (`work_logs` 직접 UPDATE REVOKE) 시행 시 **"메모를 넣은 저장만 42501 로 실패"** 하는
+   *    재현 조건이 좁은 경로가 된다. 저장 한 번 = RPC 한 번을 여기서도 지킨다.
+   */
   async updateWorkTimeWithTransaction(
     context: UpdateWorkTimeContext,
     actorId: string
@@ -305,75 +320,12 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
     try {
       logger.info('근무 시간 수정 시작', { workLogId: context.workLogId, actorId });
 
-      // 1. 소유권 검증
-      const { workLog } = await this.validateWorkLogOwnership(context.workLogId, actorId, '수정');
-
-      // 2. 정산 완료된 경우 수정 불가
-      if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
-        throw new AlreadySettledError();
-      }
-
-      // 3. 수정 사유 검증 + 이력 append (ConfirmedStaffRepository 와 동일 규약).
-      // modification_history 길이 증가가 트리거 발화 → 스태프 "근무 시간 변경" 알림 + 이력 표시.
-      const safeReason = assertWorkTimeReason(context.reason);
-      const newModificationHistory = appendWorkTimeModification(workLog.modificationHistory, {
-        previousStartTime: workLog.checkInTime,
-        previousEndTime: workLog.checkOutTime,
-        newStartTime: context.checkInTime,
-        newEndTime: context.checkOutTime,
-        reason: safeReason,
-        modifiedBy: actorId,
-        modifiedAt: new Date(),
+      await updateWorkLogSlot(context.workLogId, {
+        checkIn: context.checkInTime,
+        checkOut: context.checkOutTime,
+        reason: context.reason,
+        editedBy: actorId,
       });
-
-      // 4. 업데이트 데이터 구성
-      // 정산 내역 무효화 컬럼은 없다 — settlementBreakdown 은 ScheduleConverter 가 읽기 시점에
-      // 계산하는 파생값이라 시간만 바뀌면 자동으로 새 값이 나온다. 과거 이 payload 에 있던
-      // `settlement_breakdown: null` 은 work_logs 에 없는 컬럼이라 PostgREST 가 요청 전체를
-      // PGRST204 로 거부했다(= 근무 시간 수정 전량 실패). 회귀 가드는 workLogWriteColumns.test.ts.
-      const updateData: Record<string, unknown> = {
-        updated_at: new Date().toISOString(),
-        has_time_modification_logs: true,
-        modification_history: newModificationHistory,
-      };
-
-      if (context.checkInTime !== undefined) {
-        updateData.check_in_ts = context.checkInTime ? context.checkInTime.toISOString() : null;
-      }
-
-      if (context.checkOutTime !== undefined) {
-        updateData.check_out_ts = context.checkOutTime ? context.checkOutTime.toISOString() : null;
-        // 출처를 사람으로 되돌린다. 이걸 빼면 QR 로 찍힌 뒤 수정된 행이 계속 'qr' 로 남아
-        // 화면에 거짓 "QR 기록" 이 뜬다(2026-07-31 이전 데이터가 실제로 그 상태다).
-        updateData.end_time_source = 'manual';
-        updateData.edited_by = actorId;
-      }
-
-      if (context.notes !== undefined) {
-        updateData.notes = context.notes;
-      }
-
-      // 5. status 승격 — 서버 정산 게이트(:settleWorkLogWithTransaction)가 status 로 판정하므로
-      // 시각만 쓰고 status 를 두면 '시간을 고쳐도 영원히 정산 불가' 인 막다른 길이 된다(SET-1).
-      // 형제 경로(ConfirmedStaffRepository)와 같은 헬퍼를 통과시켜 두 화면이 어긋나지 않게 한다.
-      const resolvedStatus = resolveWorkTimeStatus({
-        currentStatus: workLog.status,
-        incomingCheckIn: context.checkInTime,
-        incomingCheckOut: context.checkOutTime,
-        existingCheckIn: workLog.checkInTime,
-        existingCheckOut: workLog.checkOutTime,
-      });
-      if (resolvedStatus !== undefined) {
-        updateData.status = resolvedStatus;
-      }
-
-      const { error } = await supabase
-        .from(WORK_LOGS_TABLE)
-        .update(updateData)
-        .eq('id', context.workLogId);
-
-      if (error)
-        handleSupabaseError(error, { operation: '근무 시간 수정', table: WORK_LOGS_TABLE });
 
       logger.info('근무 시간 수정 완료', { workLogId: context.workLogId });
     } catch (error) {

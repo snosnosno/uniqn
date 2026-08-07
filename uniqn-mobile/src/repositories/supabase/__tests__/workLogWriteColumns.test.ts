@@ -18,6 +18,7 @@ import { SupabaseConfirmedStaffRepository } from '../ConfirmedStaffRepository';
 import { SupabaseSettlementRepository } from '../SettlementRepository';
 import { WORK_LOG_ALL_COLUMNS, WORK_LOG_COLUMNS } from '../workLogColumns';
 import { STATUS } from '@/constants';
+import type { UpdateWorkTimeContext } from '@/repositories';
 import type { WorkLog, JobPosting } from '@/types';
 
 const WORK_LOG_ID = 'wl-1';
@@ -27,10 +28,11 @@ const ACTOR_ID = 'owner-1';
 let workLogUpdatePayloads: Record<string, unknown>[] = [];
 
 const mockFrom = jest.fn();
+const mockRpc = jest.fn();
 jest.mock('@/lib/supabase', () => ({
   supabase: {
     from: (...args: unknown[]) => mockFrom(...args),
-    rpc: jest.fn(),
+    rpc: (...args: unknown[]) => mockRpc(...args),
     channel: jest.fn(),
   },
 }));
@@ -110,14 +112,15 @@ function installSupabaseChain() {
 
 beforeEach(() => {
   workLogUpdatePayloads = [];
+  mockRpc.mockReset();
+  mockRpc.mockResolvedValue({
+    data: { success: true, assignmentSynced: true, assignmentSyncReason: null },
+    error: null,
+  });
   mockParseWorkLog.mockReturnValue(makeWorkLog());
   mockParseJobPosting.mockReturnValue(makeJobPosting());
   installSupabaseChain();
 });
-
-function unknownColumns(payload: Record<string, unknown>): string[] {
-  return Object.keys(payload).filter((k) => !WORK_LOG_ALL_COLUMNS.includes(k));
-}
 
 describe('WORK_LOG_ALL_COLUMNS — 스키마 정본', () => {
   it('SELECT 화이트리스트는 실재 컬럼의 부분집합이다', () => {
@@ -130,7 +133,39 @@ describe('WORK_LOG_ALL_COLUMNS — 스키마 정본', () => {
   });
 });
 
-describe('근무 시간 수정 — UPDATE payload 가 실재 컬럼만 담는다', () => {
+/**
+ * 근무 시간 수정 2경로는 2026-08-06 부터 컬럼을 직접 쓰지 않고 `update_work_log_slot` 에
+ * jsonb 패치를 보낸다. 결함 클래스는 사라지지 않고 **한 층 위로 옮겨졌다**:
+ *   (전) 실재하지 않는 컬럼 → PostgREST 가 요청 전체를 PGRST204 로 거부
+ *   (후) 허용 목록 밖 패치 키 → 서버가 `INVALID_INPUT: 알 수 없는 수정 항목입니다` 로 거부
+ * 둘 다 "오타 하나가 저장 전체를 죽인다" 이므로 가드도 같은 모양으로 따라간다.
+ */
+const SLOT_PATCH_KEYS = [
+  'startTime',
+  'timeUndecided',
+  'staffRole',
+  'color',
+  'memo',
+  'editedBy',
+  'checkIn',
+  'checkOut',
+  'reason',
+] as const;
+
+/** 캡처된 RPC 패치들(update_work_log_slot 호출만). */
+function slotPatches(): Record<string, unknown>[] {
+  return mockRpc.mock.calls
+    .filter(([fn]) => fn === 'update_work_log_slot')
+    .map(([, args]) => (args as { p_patch: Record<string, unknown> }).p_patch);
+}
+
+function unknownPatchKeys(patch: Record<string, unknown>): string[] {
+  return Object.keys(patch).filter(
+    (k) => !(SLOT_PATCH_KEYS as readonly string[]).includes(k as string)
+  );
+}
+
+describe('근무 시간 수정 — RPC 패치가 서버 허용 키만 담는다', () => {
   it('정산 화면 경로(SettlementRepository)', async () => {
     const repo = new SupabaseSettlementRepository();
 
@@ -144,8 +179,10 @@ describe('근무 시간 수정 — UPDATE payload 가 실재 컬럼만 담는다
       ACTOR_ID
     );
 
-    expect(workLogUpdatePayloads).toHaveLength(1);
-    expect(unknownColumns(workLogUpdatePayloads[0])).toEqual([]);
+    // 컬럼 직접 쓰기는 0건이어야 한다 — 남아 있으면 부분 실패 창이 다시 열린다.
+    expect(workLogUpdatePayloads).toEqual([]);
+    expect(slotPatches()).toHaveLength(1);
+    expect(unknownPatchKeys(slotPatches()[0])).toEqual([]);
   });
 
   it('스태프 관리 경로(ConfirmedStaffRepository)', async () => {
@@ -160,7 +197,26 @@ describe('근무 시간 수정 — UPDATE payload 가 실재 컬럼만 담는다
       reason: '실제 출근 시각과 달라 정정합니다',
     });
 
-    expect(workLogUpdatePayloads).toHaveLength(1);
-    expect(unknownColumns(workLogUpdatePayloads[0])).toEqual([]);
+    expect(workLogUpdatePayloads).toEqual([]);
+    expect(slotPatches()).toHaveLength(1);
+    expect(unknownPatchKeys(slotPatches()[0])).toEqual([]);
+  });
+
+  it('🔴 메모(notes)는 계약에서 빠졌다 — 낡은 호출부가 넘겨도 컬럼을 직접 쓰지 않는다', async () => {
+    // 예전에는 이 경로가 RPC 뒤에 `notes` 만 고치는 좁은 UPDATE 를 덧붙였다. 메모 축이
+    // 통합 편집 시트(RPC `memo` 키)로 확정되면서 중복이 됐고, 남겨 두면 시간모델 R4
+    // (work_logs 직접 UPDATE REVOKE)에서 "메모를 넣은 저장만 42501" 이 된다.
+    // 타입은 이미 막지만 런타임 가드가 없으면 되살아나도 조용하다 — 그래서 캐스트로 민다.
+    const repo = new SupabaseSettlementRepository();
+
+    await repo.updateWorkTimeWithTransaction(
+      { workLogId: WORK_LOG_ID, checkInTime: null, notes: '정산 메모' } as UpdateWorkTimeContext,
+      ACTOR_ID
+    );
+
+    expect(workLogUpdatePayloads).toEqual([]);
+    expect(slotPatches()).toHaveLength(1);
+    // 계약 밖 키를 RPC 패치로 몰래 옮겨 실어도 안 된다(서버 허용 키에 우연히 있는 이름이다).
+    expect(Object.keys(slotPatches()[0])).not.toContain('memo');
   });
 });

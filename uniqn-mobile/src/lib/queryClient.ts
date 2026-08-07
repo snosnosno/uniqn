@@ -214,6 +214,7 @@ export const queryKeys = {
     profile: (uid: string) => [...queryKeys.user.all, 'profile', uid] as const,
     profileBatch: (userIds: string[]) =>
       [...queryKeys.user.all, 'profileBatch', [...userIds].sort().join(',')] as const,
+    withdrawalImpact: (uid: string) => [...queryKeys.user.all, 'withdrawalImpact', uid] as const,
   },
 
   // 구인공고

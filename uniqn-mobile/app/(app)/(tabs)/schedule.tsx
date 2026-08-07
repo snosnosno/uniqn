@@ -34,6 +34,7 @@ import { getStorageItem, setStorageItem, STORAGE_KEYS } from '@/lib/mmkvStorage'
 import { useTodaySchedules } from '@/hooks/useSchedules';
 import { pickNextShift } from '@/components/schedule/helpers/nextShift';
 import { useOpsHubEnabled } from '@/hooks/useOpsHubEnabled';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { useTabBarBottomPadding } from '@/hooks/useTabBarBottomPadding';
 import { useAuthStore } from '@/stores/authStore';
 import { usePendingReviews } from '@/hooks/useReviews';
@@ -259,12 +260,20 @@ export default function ScheduleScreen() {
     refresh,
   } = useCalendarView({ enableGrouping: true, realtime: true });
 
+  // PTR 스피너는 사용자가 당겼을 때만 — isRefreshing 은 realtime 구독 재시작(화면 진입마다)과
+  // 배경 재조회까지 포함해서, 그대로 물리면 탭을 옮길 때마다 스피너가 튀어나온다.
+  // (isRefreshing 자체는 아래 '갱신 실패' 배너 게이트에서 계속 쓴다 — 그쪽은 실제 조회 상태가 맞다)
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(refresh);
+
   // 상태 필터 (리스트 뷰 전용, M1) — 'all'은 취소 포함 전체 노출
   const [statusFilter, setStatusFilter] = useState<ScheduleStatusFilter>('all');
 
   // 요약 대시보드 접힘 — 매번 초기화되면 접는 의미가 없어 기기에 남긴다.
+  // 기본값은 **접힘**: 이 탭의 1순위 질문은 '내 다음 근무'와 캘린더/리스트이고, 월 집계는
+  // 그 다음이다. 펼친 채로 시작하면 히어로 카드 + 월 네비 + 요약이 뷰포트를 먹어 정작
+  // 근무 목록이 시작하기까지 세로가 남지 않는다. (한 번이라도 토글하면 그 선택이 우선한다)
   const [dashboardCollapsed, setDashboardCollapsed] = useState<boolean>(
-    () => getStorageItem<boolean>(STORAGE_KEYS.SCHEDULE_DASHBOARD_COLLAPSED) ?? false
+    () => getStorageItem<boolean>(STORAGE_KEYS.SCHEDULE_DASHBOARD_COLLAPSED) ?? true
   );
   const reduceMotion = useReduceMotion();
   const handleToggleDashboard = useCallback(() => {
@@ -1025,7 +1034,11 @@ export default function ScheduleScreen() {
             justifyContent: 'center',
           }}
           refreshControl={
-            <RefreshControl refreshing={isRefreshing} onRefresh={refresh} {...PTR_REFRESH_PROPS} />
+            <RefreshControl
+              refreshing={pullRefreshing}
+              onRefresh={onPullRefresh}
+              {...PTR_REFRESH_PROPS}
+            />
           }
         >
           <View className="items-center p-4">
@@ -1052,7 +1065,11 @@ export default function ScheduleScreen() {
           // 선택 날짜 스케줄이 있을 때만 sticky 활성 (index 1 = 헤더).
           stickyHeaderIndices={filteredSelectedDateSchedules.length > 0 ? [1] : undefined}
           refreshControl={
-            <RefreshControl refreshing={isRefreshing} onRefresh={refresh} {...PTR_REFRESH_PROPS} />
+            <RefreshControl
+              refreshing={pullRefreshing}
+              onRefresh={onPullRefresh}
+              {...PTR_REFRESH_PROPS}
+            />
           }
         >
           {/* 0: 캘린더 — MonthNavigator border-b 바로 아래 붙임 */}
@@ -1080,18 +1097,26 @@ export default function ScheduleScreen() {
           </View>
 
           {filteredSelectedDateSchedules.length > 0 ? (
-            <>
-              {/* 1: sticky 헤더 — 배경 solid로 아래 콘텐츠 가림 */}
-              <View className="bg-surface-page dark:bg-surface px-4 pt-3 pb-2 border-b border-divider">
+            // 리스트 뷰와 같은 이유로 [헤더, 카드묶음] 을 **평평한 배열**로 넣는다 — Fragment 로
+            // 감싸면 React.Children.toArray 가 Fragment 를 자식 1개로 세어(배열만 평탄화하고
+            // Fragment 는 안 편다) stickyHeaderIndices={[1]} 가 헤더가 아니라 '헤더+카드 전체'를
+            // 가리킨다. 그러면 카드 묶음 전체가 상단에 고정돼 스크롤해도 밀려나지 않고, 그 아래
+            // 콘텐츠에 영영 도달할 수 없다(카드가 많아질수록 증상이 커진다).
+            [
+              // 1: sticky 헤더 — 배경 solid로 아래 콘텐츠 가림
+              <View
+                key="selected-date-header"
+                className="bg-surface-page dark:bg-surface px-4 pt-3 pb-2 border-b border-divider"
+              >
                 <Text className="text-sm font-sans-medium text-content-secondary">
                   {formatSingleDate(selectedDate)} 스케줄 ({filteredSelectedDateSchedules.length}건)
                 </Text>
-              </View>
-              {/* 2: 카드 리스트 */}
-              <View className="px-4 pt-3">
+              </View>,
+              // 2: 카드 리스트
+              <View key="selected-date-cards" className="px-4 pt-3">
                 {filteredSelectedDateSchedules.map(renderScheduleItem)}
-              </View>
-            </>
+              </View>,
+            ]
           ) : !isLoading && groupedByApplication.length === 0 ? (
             // 캘린더 뷰 빈 상태 — 리스트 뷰와 같은 규칙(온보딩 / 오프라인 분기)을 공유한다.
             <View className="p-4">{renderEmptyState()}</View>
@@ -1132,7 +1157,11 @@ export default function ScheduleScreen() {
             !isLoading && listSections.length > 0 ? listStickyIndices : undefined
           }
           refreshControl={
-            <RefreshControl refreshing={isRefreshing} onRefresh={refresh} {...PTR_REFRESH_PROPS} />
+            <RefreshControl
+              refreshing={pullRefreshing}
+              onRefresh={onPullRefresh}
+              {...PTR_REFRESH_PROPS}
+            />
           }
         >
           {isLoading && schedules.length === 0 ? (

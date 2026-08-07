@@ -16,7 +16,13 @@ import { logger } from '@/utils/logger';
 import { toError, BusinessError, ERROR_CODES, isAppError } from '@/errors';
 import { handleSupabaseError, toSnakeCase, toCamelCase } from '@/utils/supabase';
 import { parseUserDocument } from '@/schemas';
-import type { IUserRepository, DeletionRequest, UserNicknameSearchResult } from '../interfaces';
+import type {
+  IUserRepository,
+  DeletionRequest,
+  DeletionReason,
+  WithdrawalImpact,
+  UserNicknameSearchResult,
+} from '../interfaces';
 import type { FirestoreUserProfile, MyDataEditableFields } from '@/types';
 
 // ============================================================================
@@ -195,7 +201,9 @@ export class SupabaseUserRepository implements IUserRepository {
 
       const { data, error } = await supabase
         .from(TABLES.USERS)
-        .select('id, deletion_requested_at, deletion_scheduled_for, status')
+        .select(
+          'id, deletion_requested_at, deletion_scheduled_for, status, deletion_reason, deletion_reason_detail'
+        )
         .eq('id', userId)
         .maybeSingle();
 
@@ -217,9 +225,14 @@ export class SupabaseUserRepository implements IUserRepository {
       const status =
         row.status === 'deleted' ? 'completed' : row.status === 'active' ? 'cancelled' : 'pending';
 
+      // 20260807140000 이전에 만들어진 행은 사유 컬럼이 비어 있다 → 'other' 로 눕힌다.
+      const reason = (row.deletion_reason as DeletionReason | null) ?? 'other';
+      const reasonDetail = (row.deletion_reason_detail as string | null) ?? undefined;
+
       return {
         userId,
-        reason: 'other', // DB에 reason 컬럼이 별도로 없으면 기본값
+        reason,
+        ...(reasonDetail ? { reasonDetail } : {}),
         requestedAt: new Date(row.deletion_requested_at as string),
         scheduledDeletionAt: new Date(row.deletion_scheduled_for as string),
         status,
@@ -228,6 +241,49 @@ export class SupabaseUserRepository implements IUserRepository {
       if (isAppError(error)) throw error;
       logger.error('탈퇴 상태 조회 실패', toError(error), { userId });
       handleSupabaseError(error, { operation: '탈퇴 상태 조회', table: TABLES.USERS });
+    }
+  }
+
+  async getWithdrawalImpact(userId: string): Promise<WithdrawalImpact> {
+    try {
+      // 영구삭제 RPC 는 근무·정산 행을 지우지 않고 이름만 '[deleted]' 로 익명화한다.
+      // 확정 근무는 사장 근무표에 그대로 남고 정원도 계속 소모된다 —
+      // 탈퇴 화면이 그 사실을 미리 알리기 위한 건수 조회다(읽기 전용).
+      const [upcoming, unsettled] = await Promise.all([
+        supabase
+          .from(TABLES.WORK_LOGS)
+          .select('id', { count: 'exact', head: true })
+          .eq('staff_id', userId)
+          .in('status', ['scheduled', 'checked_in']),
+        supabase
+          .from(TABLES.WORK_LOGS)
+          .select('id', { count: 'exact', head: true })
+          .eq('staff_id', userId)
+          .in('status', ['checked_out', 'completed'])
+          .neq('payroll_status', 'completed'),
+      ]);
+
+      if (upcoming.error) {
+        handleSupabaseError(upcoming.error, {
+          operation: '탈퇴 영향 조회(예정 근무)',
+          table: TABLES.WORK_LOGS,
+        });
+      }
+      if (unsettled.error) {
+        handleSupabaseError(unsettled.error, {
+          operation: '탈퇴 영향 조회(미정산)',
+          table: TABLES.WORK_LOGS,
+        });
+      }
+
+      return {
+        upcomingWorkCount: upcoming.count ?? 0,
+        unsettledPayrollCount: unsettled.count ?? 0,
+      };
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      logger.error('탈퇴 영향 조회 실패', toError(error), { userId });
+      handleSupabaseError(error, { operation: '탈퇴 영향 조회', table: TABLES.WORK_LOGS });
     }
   }
 
@@ -308,6 +364,11 @@ export class SupabaseUserRepository implements IUserRepository {
           status: 'deactivated',
           deletion_requested_at: request.requestedAt.toISOString(),
           deletion_scheduled_for: request.scheduledDeletionAt.toISOString(),
+          // 화면이 사유를 필수로 받는데(delete-account.tsx:157-160) 그동안 저장되는 곳이
+          // 없었다. 컬럼은 20260807140000 에서 추가했다.
+          // 상세는 reason='other' 일 때만 화면이 채운다 — 빈 문자열은 NULL 로 눕힌다.
+          deletion_reason: request.reason,
+          deletion_reason_detail: request.reasonDetail?.trim() || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', userId);

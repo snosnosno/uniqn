@@ -3,7 +3,8 @@
  *
  * @description 근무표의 work_logs 경로.
  * - getByVenueSpanInRange: 운영처 스팬 + 날짜범위 정산 근무 기록 조회(Phase 4).
- * - updateSlot: 슬롯 편집(B2) — 시간/역할/색상/메모 부분 수정.
+ * - updateSlot: 슬롯 편집 — 예정 시간/역할/색상/메모 + 실적(출퇴근) 부분 수정.
+ *   실적 쓰기의 단일 관문이다(2026-08-06, 직접 UPDATE 2경로 흡수).
  *
  * SupabaseWorkLogRepository 가 본 모듈로 위임한다(800줄 하드캡 분리, 동작 무변경).
  */
@@ -13,6 +14,7 @@ import { logger } from '@/utils/logger';
 import { handleSupabaseError } from '@/utils/supabase';
 import { STATUS } from '@/constants';
 import {
+  AlreadySettledError,
   BusinessError,
   PermissionError,
   ValidationError,
@@ -20,6 +22,8 @@ import {
   type AppError,
 } from '@/errors';
 import { assertSlotColor, assertSlotMemo, assertSlotStartTime } from '@/domains/workSchedule';
+import { assertWorkTimeReason } from '@/domains/staff';
+import { settledLockMessage } from '@/domains/settlement';
 import type { WorkLog } from '@/types';
 import type { UpdateSlotInput } from '../interfaces';
 import {
@@ -145,6 +149,16 @@ function toUpdateSlotError(error: unknown): AppError | null {
       userMessage: '근무 기록을 찾을 수 없습니다',
     });
   }
+  // 정산 완료 잠금 — 서버가 **실적 키(checkIn/checkOut)에만** 건다(20260806140000:350).
+  //
+  // 🔑 문구만은 서버 메시지를 쓰지 않는다. 이 잠금 안내는 UI→Repository→트리거 4계층에 걸쳐
+  //    있어 `settledLockMessage` 를 단일 소스로 못박아 뒀고(문구가 4종으로 갈라졌던 이력),
+  //    서버 문장에는 "정산을 되돌린 뒤 다시 시도" 라는 **탈출 경로**가 빠져 있다.
+  //    에러 클래스도 흡수 전 두 리포지토리가 던지던 AlreadySettledError(E6009)로 되돌린다 —
+  //    형제 경로 `settle_work_log` 의 ALREADY_SETTLED 매핑과 같은 관용구다.
+  if (message.includes('ALREADY_SETTLED')) {
+    return new AlreadySettledError({ userMessage: settledLockMessage('시간을 수정할') });
+  }
   if (message.includes('INVALID_INPUT')) {
     return new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
       userMessage: userMessage('수정 요청이 올바르지 않습니다'),
@@ -154,13 +168,19 @@ function toUpdateSlotError(error: unknown): AppError | null {
 }
 
 /**
- * 슬롯 편집(근무표 B2) — 시간/역할/색상/메모 부분 수정.
+ * 슬롯 편집 — 예정 시간/역할/색상/메모 + **실적(출퇴근)** 부분 수정.
  *
- * 🔴 **서버 RPC `update_work_log_slot` 1회**로 처리한다. 예전엔 `work_logs` 만 직접 UPDATE 해서
- * `applications.assignments[]` 가 낡은 채 남아 **두 원천이 표류**했다(세션 E 는 병합 키를 FK 로
- * 바꿔 화면 증상만 막았고, 원천 불일치는 남아 있었다). RPC 는 둘을 한 트랜잭션에서 갱신한다.
- * 매칭이 모호하면 서버가 assignments 동기화만 건너뛰고 `assignmentSynced:false` 를 돌려준다 —
- * 남의 원소를 오염시키는 것보다 표류가 싸다.
+ * 🔴 **실적 쓰기의 유일한 경로다.** 예전엔 근무표(B2)만 이 RPC 를 쓰고 출퇴근 수정은
+ * `ConfirmedStaffRepository`·`SettlementRepository` 의 클라 직접 UPDATE 2곳이었다. 편집기를
+ * 시트 하나로 합치면 "저장 한 번"이 **호출 두 번**(RPC + PATCH)이 되어 한쪽만 성공하는 부분
+ * 실패가 생기므로, 실적을 이 RPC 로 흡수했다(20260806140000). 권한·정산 완료 잠금·근태 상태
+ * 파생·수정 이력 append 는 전부 서버 안에서 끝난다 — 클라가 다단계로 흉내내지 않는다.
+ *
+ * 예정 축도 같은 이유로 이미 여기 있다: `work_logs` 만 직접 UPDATE 하면 `applications.assignments[]`
+ * 가 낡은 채 남아 **두 원천이 표류**했다(세션 E 는 병합 키를 FK 로 바꿔 화면 증상만 막았고,
+ * 원천 불일치는 남아 있었다). RPC 는 둘을 한 트랜잭션에서 갱신한다. 매칭이 모호하면 서버가
+ * assignments 동기화만 건너뛰고 `assignmentSynced:false` 를 돌려준다 — 남의 원소를 오염시키는
+ * 것보다 표류가 싸다.
  *
  * 검증 경계(Repository): color 는 토큰 화이트리스트(자유 hex 거부), memo 는 XSS 검증
  * 통과분만 기록(S1/U3), 출근 예정 시각은 'HH:mm' 형식 검증(범위·자유 텍스트 거부).
@@ -192,6 +212,18 @@ export async function updateSlot(workLogId: string, input: UpdateSlotInput): Pro
       patch.staffRole = input.staffRole;
     }
 
+    // 커스텀 역할명 3상 — undefined=키 없음(미변경) / null=JSON null(삭제) / 문자열=설정.
+    // ⚠️ `if (input.customRole)` 로 쓰면 **null 삭제가 조용히 무시된다**. `!== undefined` 로 본다.
+    //
+    // 🔑 memo·color·reason 과 달리 **클라 관문을 새로 만들지 않는다.** 이 값의 출처는 자유 입력이
+    //    아니라 닫힌 칩 목록(공고가 정의한 이름 또는 그 행에 이미 저장된 이름)이고, 길이·XSS·
+    //    enum 라벨 충돌 판정은 서버가 전부 갖고 있다(마이그 20260807120000·20260807130000).
+    //    여기서 같은 뜻의 문구를 새로 쓰면 서버 문구와 조용히 갈라진다 — `toUpdateSlotError` 가
+    //    `INVALID_INPUT` 의 서버 문장을 그대로 노출하는 이유와 같은 판단이다.
+    if (input.customRole !== undefined) {
+      patch.customRole = input.customRole;
+    }
+
     // 색상: 화이트리스트 검증(자유 hex 거부) — 위반 시 ValidationError 던짐
     if (input.color !== undefined) {
       patch.color = assertSlotColor(input.color);
@@ -205,6 +237,24 @@ export async function updateSlot(workLogId: string, input: UpdateSlotInput): Pro
     // 수정 행위자(운영자). 값은 서버가 auth.uid() 로 덮어쓴다 — 키는 "기록할지" 만 정한다.
     if (input.editedBy !== undefined) {
       patch.editedBy = input.editedBy;
+    }
+
+    // 실적(출퇴근) 3상 — undefined=키 없음(미변경) / null=JSON null(삭제) / Date=ISO 문자열.
+    // ⚠️ `if (input.checkIn)` 로 쓰면 **null 삭제가 조용히 무시된다**. `!== undefined` 로 본다.
+    //    예정(startTime)과 달리 이 축은 서버에서 status 파생·수정 이력·정산 완료 잠금을 발동시킨다.
+    if (input.checkIn !== undefined) {
+      patch.checkIn = input.checkIn ? input.checkIn.toISOString() : null;
+    }
+    if (input.checkOut !== undefined) {
+      patch.checkOut = input.checkOut ? input.checkOut.toISOString() : null;
+    }
+
+    // 수정 사유: XSS/길이 검증 — 위반 시 ValidationError 던짐(memo 와 동일 관문).
+    // 서버도 같은 불변식을 재현하지만 흡수 전 두 경로가 이미 여기서 걸렀으므로 관문을 유지한다
+    // (RPC 왕복 없이 즉시 거부 + 클라 문구 노출). 서버 정규식이 더 엄격해 통과분 일부는
+    // 서버에서 INVALID_INPUT 으로 돌아올 수 있다 — 그쪽도 사용자 문구로 매핑돼 있다.
+    if (input.reason !== undefined) {
+      patch.reason = assertWorkTimeReason(input.reason);
     }
 
     const { data, error } = await supabase.rpc('update_work_log_slot', {

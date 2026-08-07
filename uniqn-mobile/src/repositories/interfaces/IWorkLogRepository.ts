@@ -6,14 +6,7 @@
  */
 
 import type { UnsubscribeFn } from '@/types/common';
-import type {
-  WorkLog,
-  PayrollStatus,
-  WorkLogStatus,
-  QRCodeAction,
-  QRProcessAction,
-  StaffRole,
-} from '@/types';
+import type { WorkLog, WorkLogStatus, QRCodeAction, QRProcessAction, StaffRole } from '@/types';
 
 /**
  * 슬롯 편집(근무표 B2) 입력. 부분 업데이트 — 제공된 필드만 반영한다.
@@ -21,9 +14,13 @@ import type {
  * @property startTime - 출근 예정 시각 'HH:mm' 단일값(제공 시 time_slot 갱신 — 예정 종료는 없다)
  * @property timeUndecided - 출근 예정 미정(제공 시 time_slot 을 비운다, startTime 보다 우선)
  * @property staffRole - 직무 역할(StaffRole)
+ * @property customRole - `other` 역할의 이름. 3상 — undefined=미변경 / null=삭제 / 문자열=설정
  * @property color - 셀 색상 토큰(화이트리스트, 자유 hex 금지)
  * @property memo - 메모(XSS 검증 통과분만 기록)
  * @property editedBy - 수정 행위자(운영자) user id
+ * @property checkIn - 실제 출근 시각(실적). 3상 — undefined=미변경 / null=삭제 / Date=기록
+ * @property checkOut - 실제 퇴근 시각(실적). 3상 동일
+ * @property reason - 수정 사유(실적 변경 이력·역할 변경 이력에 함께 실린다)
  */
 export interface UpdateSlotInput {
   /**
@@ -37,9 +34,32 @@ export interface UpdateSlotInput {
    */
   timeUndecided?: boolean;
   staffRole?: StaffRole;
+  /**
+   * `other` 역할의 이름(work_logs.custom_role). 3상 — `undefined`=미변경 / `null`=삭제 / 문자열=설정.
+   *
+   * 🔴 서버는 **최종 역할이 'other' 일 때만** 이 값을 받는다(마이그 20260807120000 판정표 ③⑤).
+   *    표준 역할과 함께 보내거나, `staffRole` 없이 보냈는데 대상 행이 'other' 가 아니면
+   *    `INVALID_INPUT` 이다. 서버가 몰래 역할을 승격시키지 않는다 — 호출자가 쌍으로 보내야 한다.
+   */
+  customRole?: string | null;
   color?: string;
   memo?: string;
   editedBy?: string;
+  /**
+   * 실제 출근 시각(실적). 예정(startTime)과 다른 축이다 — 예정 변경은 근태 상태를 건드리지 않고,
+   * 실적 변경만 status·수정 이력·정산 완료 잠금을 발동시킨다.
+   *
+   * 🔴 3상 계약: `undefined`=키를 만들지 않음(미변경) / `null`=기록 삭제 / `Date`=기록.
+   *    `??`·truthy 판정으로 다루면 삭제가 조용히 무시된다.
+   */
+  checkIn?: Date | null;
+  /** 실제 퇴근 시각(실적). checkIn 과 동일한 3상 계약. */
+  checkOut?: Date | null;
+  /**
+   * 수정 사유. 실적을 바꾸면 `modification_history` 에, 역할을 바꾸면 `role_change_history` 에
+   * 함께 실린다. 이력 배열 길이 증가가 스태프 "근무 시간 변경" 알림을 발화시킨다.
+   */
+  reason?: string;
 }
 
 /**
@@ -315,28 +335,6 @@ export interface IWorkLogRepository {
   // ==========================================================================
   // 변경 (Write)
   // ==========================================================================
-
-  /**
-   * 정산 상태 변경
-   * @param workLogId - 근무 기록 ID
-   * @param status - 새 정산 상태
-   */
-  updatePayrollStatus(workLogId: string, status: PayrollStatus): Promise<void>;
-
-  /**
-   * 정산 상태 업데이트 (트랜잭션, 중복 검증 포함)
-   *
-   * @description 중복 정산 방지 및 금액 지원
-   * @param workLogId - 근무 기록 ID
-   * @param status - 정산 상태
-   * @param amount - 정산 금액 (선택)
-   * @throws BusinessError - 중복 정산 시도 시
-   */
-  updatePayrollStatusTransaction(
-    workLogId: string,
-    status: PayrollStatus,
-    amount?: number
-  ): Promise<void>;
 
   /**
    * 음수 정산 플래그 기록 (관리자 알림 트리거용)

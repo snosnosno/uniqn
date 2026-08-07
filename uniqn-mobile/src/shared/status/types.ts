@@ -65,6 +65,28 @@ export function isSettlableWorkLogStatus(status: string | null | undefined): boo
   return status === 'checked_out' || status === 'completed';
 }
 
+const VALID_WORK_LOG_STATUSES: readonly WorkLogStatus[] = [
+  'scheduled',
+  'checked_in',
+  'checked_out',
+  'completed',
+  'cancelled',
+  'no_show',
+];
+
+/**
+ * 서버가 내려준 문자열이 정말 `WorkLogStatus` 인가.
+ *
+ * 🔑 낯선 값을 `'scheduled'` 로 흡수하지 **않는** 것이 요점이다. 흡수하면 통합 편집 시트의
+ *    "저장 후 상태" 배지가 모르는 상태를 '출근 예정'이라고 단언하게 된다. 모를 때는
+ *    아무것도 약속하지 않아야 해서(시트는 `null` 을 그렇게 다룬다) 판정만 돌려준다.
+ */
+export function isWorkLogStatus(value: unknown): value is WorkLogStatus {
+  return (
+    typeof value === 'string' && (VALID_WORK_LOG_STATUSES as readonly string[]).includes(value)
+  );
+}
+
 export const ATTENDANCE_STATUS_LABELS: Record<AttendanceStatus, string> = {
   not_started: '출근 전',
   checked_in: '근무 중',

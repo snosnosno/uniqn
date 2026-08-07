@@ -41,8 +41,31 @@ const firstIncompleteIndex = (slots: Slots) => {
 export interface ScheduleSlotsSheetProps {
   visible: boolean;
   value: Slots;
-  onConfirm: (next: Slots) => void;
+  /**
+   * 확인 배출 — `dates` 는 사장이 고른 **적용할 날짜**다.
+   * 빈 배열이면 "이 카드 전부"라는 뜻이며, 그 해석은 상위(`applyConditionToDates`)가 한다.
+   */
+  onConfirm: (result: { dates: string[]; slots: Slots }) => void;
   onClose: () => void;
+  /**
+   * "적용할 날짜" 후보. 카드에 날짜가 있으면 그 날짜들, 아직 없으면(템플릿 조건 카드)
+   * 공고 전체 날짜를 넘겨 여기서 배정받게 한다.
+   *
+   * **0개 선택으로 열린다** — 기본 선택을 깔면 사장이 훑어보다 그대로 확인해 의도치 않은
+   * 분리가 생긴다. 대신 0개는 잠금이 아니라 "전체 적용"으로 읽는다(사용자 결정 2026-08-07).
+   * 후보가 2개 미만이면 고를 여지가 없어 행 자체를 숨긴다.
+   */
+  selectableDates?: string[];
+  /**
+   * 카드에 날짜가 하나도 없는가(템플릿 조건 카드). 이때는 0개 선택이 "전체"가 될 수 없어
+   * — 적용할 날짜가 0일이라 제출이 막힌다 — 최소 1개를 요구한다.
+   *
+   * ⚠️ 단 **후보가 0개면 이 요구가 성립하지 않는다**(공고 전체에 날짜가 없는 상태 —
+   * 신규 주문서·프리셋 1탭 적용 직후). 고를 UI 가 없는데 고르라고 요구하면 확인이 영영
+   * 잠긴다. 그때는 다른 카드가 날짜를 독점할 위험 자체가 없으므로 0개 = 이 카드에 그대로
+   * 적용으로 읽고, 날짜는 뒤이어 날짜 시트가 받는다.
+   */
+  requiresDatePick?: boolean;
 }
 
 export function ScheduleSlotsSheet({
@@ -50,10 +73,42 @@ export function ScheduleSlotsSheet({
   value,
   onConfirm,
   onClose,
+  selectableDates,
+  requiresDatePick = false,
 }: ScheduleSlotsSheetProps) {
   const seed: Slots = value.length > 0 ? value : [{ startTime: DEFAULT_START, roles: [] }];
   const [slots, setSlots] = useState<Slots>(seed);
   const [pickerIndex, setPickerIndex] = useState<number | null>(null);
+  const candidateCount = selectableDates?.length ?? 0;
+  // 고를 여지가 있을 때만 날짜 행을 보여준다 — 후보가 1개면 "일부만"이 성립하지 않는다.
+  // 단 날짜를 아직 못 받은 조건 카드는 후보가 1개여도 배정이 필요하므로 보여준다.
+  const showDatePicker = candidateCount > (requiresDatePick ? 0 : 1);
+  // 배정 요구는 **고를 후보가 있을 때만** 성립한다. 후보 0개에서 요구를 유지하면 날짜 행이
+  // 숨은 채(고를 게 없으니) 확인만 영구 잠기는 막다른 길이 된다 — showDatePicker 와 같은
+  // 조건에서 갈라져야 "보이지 않는 요구"가 생기지 않는다.
+  const mustPickDate = requiresDatePick && candidateCount > 0;
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const toggleDate = (date: string) =>
+    setSelectedDates((prev) =>
+      prev.includes(date) ? prev.filter((d) => d !== date) : [...prev, date]
+    );
+  // 배출 순서는 화면 순서(카드 날짜 순)로 고정한다 — 탭한 순서로 내보내면 같은 선택이
+  // 다른 배열이 되어 정규화 결과 비교·테스트가 흔들린다.
+  const orderedSelection = showDatePicker
+    ? (selectableDates ?? []).filter((d) => selectedDates.includes(d))
+    : [];
+  const slotsComplete = areSlotsComplete(slots);
+  const canConfirm = slotsComplete && (!mustPickDate || orderedSelection.length > 0);
+  /**
+   * 잠긴 이유는 **잠긴 버튼 옆**에 둔다. 구 구조는 안내가 날짜 블록 안에만 있어,
+   * 블록이 숨거나(후보 0·1개) 사유가 슬롯 미완성이면 사장은 회색 버튼만 보고 왜 못 누르는지
+   * 알 길이 없었다. 완성 게이트가 먼저다 — 둘 다 미충족이면 먼저 할 일을 말한다.
+   */
+  const lockReason = canConfirm
+    ? null
+    : !slotsComplete
+      ? '시간과 역할을 모두 채워야 확인할 수 있어요'
+      : '이 조건을 쓸 날짜를 골라야 확인할 수 있어요';
 
   /**
    * 슬롯별 안정 식별자 — SlotCard 의 key 이자 **펼침 대상의 식별자**다.
@@ -122,15 +177,26 @@ export function ScheduleSlotsSheet({
       onClose={onClose}
       title="시간 · 역할"
       footer={
-        <Button
-          onPress={() => {
-            onConfirm(slots);
-            onClose();
-          }}
-          disabled={!areSlotsComplete(slots)}
-        >
-          확인
-        </Button>
+        <View className="gap-2">
+          {lockReason !== null ? (
+            <Text
+              className="text-center text-[11px] font-sans text-content-muted"
+              testID="order-sheet-slots-lock-reason"
+            >
+              {lockReason}
+            </Text>
+          ) : null}
+          <Button
+            onPress={() => {
+              onConfirm({ dates: orderedSelection, slots });
+              onClose();
+            }}
+            disabled={!canConfirm}
+            testID="order-sheet-slots-confirm"
+          >
+            확인
+          </Button>
+        </View>
       }
       overlay={
         pickerIndex !== null ? (
@@ -156,6 +222,57 @@ export function ScheduleSlotsSheet({
       }
     >
       <View className="gap-2 px-4 pt-3 pb-2">
+        {showDatePicker ? (
+          <View className="mb-1 rounded-xl bg-surface-page px-3.5 py-3 dark:bg-surface">
+            <Text className="mb-2 text-xs font-sans-medium text-content-secondary">
+              {requiresDatePick ? '이 조건을 쓸 날짜' : '적용할 날짜'}
+            </Text>
+            <View className="flex-row flex-wrap gap-1.5">
+              {(selectableDates ?? []).map((date) => {
+                const selected = selectedDates.includes(date);
+                const [, month, day] = date.split('-');
+                const label = `${Number(month)}/${Number(day)}`;
+                return (
+                  <Pressable
+                    key={date}
+                    onPress={() => toggleDate(date)}
+                    className={`min-h-[36px] items-center justify-center rounded-full px-3 py-1.5 active:opacity-80 ${
+                      selected
+                        ? 'bg-primary-500'
+                        : 'bg-surface-card border border-secondary-200 dark:border-surface-overlay'
+                    }`}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${Number(month)}월 ${Number(day)}일${
+                      selected ? ', 선택됨' : ''
+                    }`}
+                    testID={`order-sheet-exception-date-${date}`}
+                  >
+                    <Text
+                      className={
+                        selected
+                          ? 'text-sm font-sans-medium text-white'
+                          : 'text-sm font-sans-medium text-content-primary dark:text-content-primary'
+                      }
+                    >
+                      {label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {orderedSelection.length === 0 ? (
+              <Text className="mt-2 text-[11px] font-sans text-content-muted">
+                {requiresDatePick
+                  ? '이 조건을 쓸 날짜를 골라주세요'
+                  : '안 고르면 전체 날짜에 적용돼요'}
+              </Text>
+            ) : (
+              <Text className="mt-2 text-[11px] font-sans text-content-muted">
+                {`고른 ${orderedSelection.length}일만 이 조건으로 나뉘어요`}
+              </Text>
+            )}
+          </View>
+        ) : null}
         {/*
           새벽 근무 날짜 관례(D3) — 시각만 저장하고 종료 시각은 두지 않는 모델이라,
           "밤 22시 시작"과 "새벽 2시 시작"을 날짜로만 구분한다. 사장이 금요일 영업의
@@ -191,6 +308,9 @@ export function ScheduleSlotsSheet({
           <PlusIcon size={16} />
           <Text className="text-sm text-content-secondary font-sans">시간대 추가</Text>
         </Pressable>
+        {/* 구 F7③ "일부 날짜만 다르게 할까요?" 링크는 사라졌다 — 예외는 더 이상 별도 모드가
+            아니라 이 시트 맨 위 "적용할 날짜"에서 바로 고르는 것이라, 링크가 가리킬 다른
+            목적지가 없다(모드 전환·리마운트·편집값 승계 문제도 함께 소멸). */}
       </View>
     </SheetModal>
   );
