@@ -3,7 +3,9 @@
 > **새 세션은 이 파일부터 읽는다.** 세션 하나 = 프롬프트 하나. 위에서부터 순서대로가 권고이나,
 > 각 프롬프트는 **자립적**이라 골라 착수해도 된다.
 >
-> 기준 커밋: `origin/master` = **`732c300a5`** (#427 머지, 2026-08-07)
+> 기준 커밋: `origin/master` = **`a6a59cf9c`** (#436 머지, 2026-08-07 23:50 갱신)
+> 트랙 현황: **S-A~S-E·S-G 착지 완료**(S-D=#436, S-E1=#433) · **남은 트랙 = S-F(MEDIUM 9)** + #433·#436 의 prod 적용.
+> 전체감사 트랙(`2026-08-07-full-audit-followup-prompt.md`)은 **A4 까지 착지**(#434) — 다음 항목 미정.
 > 선행 원장 `2026-07-31-execution-session-prompts.md` 는 **전량 착지 완료**(S1~S7·정원0·A감사·B1·B2·P1~P6·과제4).
 > 그 파일은 이제 **참조용 이력**이고, 진행 중 작업의 진실원은 **이 파일**이다.
 
@@ -13,13 +15,24 @@
 
 | 축 | 값 |
 |---|---|
-| `origin/master` | `035fa697d` (#432) 이후 — 세션 중 #428·#429·#432 머지. **PR 번호가 빠르게 움직인다, 착수 전 `git fetch`** |
-| 마지막 OTA | ✅ **`078e857d-49ca-4002-abae-849783163cf0`** (runtime 1.0.5, android+ios, commit `fefe6b609`) — **#420~#429 10건 발행 완료** |
-| 마지막 웹배포 | ✅ **CF Production `92416de0`** (source `fefe6b6`) — `uniqn.app` 라이브 번들 `index-4f0c49e9…` 실측 확인 |
-| DB 파리티 | **200 funcs / 111 policies** (prod 실측 = 레포 기대값 일치) |
+| `origin/master` | **`a6a59cf9c`** (#436 머지) — 2026-08-07 23:50 실측. **PR 번호가 빠르게 움직인다, 착수 전 `git fetch`** |
+| 마지막 OTA | ⚠️ **`078e857d-49ca-4002-abae-849783163cf0`** (runtime 1.0.5, commit `fefe6b609`) — #420~#429 발행. **그 뒤 #432~#436 5건 미발행** |
+| 마지막 웹배포 | ⚠️ **CF Production `92416de0`** (source `fefe6b6`) — #432~#436 미배포. #435 의 **AASA `/jobs` 는 웹 배포로만 전달**된다 |
+| DB 파리티 | 마지막 실측 **200 funcs / 111 policies**(#429 시점). #433·#436 이 prod 미적용이라 **현재는 재측정 필요** |
 | **branch protection** | ✅ **활성화** — required = `Quality Gate` · `E2E Gate` · force push/삭제 차단 (`enforce_admins=false`) |
-| 열린 PR | **#433**(S-E1 서버검증 + S-E2 설계) · Dependabot 4건(#380·#414·#415·#416). **#379·#381 은 SDK 결합이라 닫음** |
-| 열린 워크트리 | **2개** — `T-HOLDEM-a3-notify`(🔴 **활성 작업, 건드리지 말 것**) · `T-HOLDEM-deploy`(#433 작업 중, 정션 있음 — 제거 전 정션 먼저 해제) |
+| 열린 PR | Dependabot 4건뿐(#380·#414·#415·#416). **#379·#381 은 SDK 결합이라 닫음** |
+| 열린 워크트리 | **3개** — `T-HOLDEM-settle`(#436 머지됨 → **정리 대상**) · `T-HOLDEM-opschips`(🔴미머지·PR 없음·**마이그 접두사 충돌**) · `T-HOLDEM-opsurl`(🔴미머지·PR 없음) |
+
+### 🚨 2026-08-07 23:50 점검에서 새로 드러난 것
+
+1. **마이그 접두사 충돌이 대기 중이다.** `20260807190000` 을 master(#436 `update_work_log_custom_settlement_rpc`)와
+   미머지 브랜치 `feat/ops-chip-count-20260807`(`ops_chip_count_event_type`)이 **동시에 쓴다**.
+   그대로 PR 을 열면 CI 의 신선한 `db reset` 에서 `schema_migrations_pkey` 충돌로 죽는다 — **`200000`·`210000` 으로 리네임 후 PR**.
+2. **prod 가 레포보다 앞선 구간이 있다.** `list_migrations` 실측:
+   - prod 에만: `20260807144558 ops_chip_count_event_type` · `20260807144632 ops_set_participant_chips`
+     → **코드는 미머지 브랜치에 있는데 마이그만 prod 에 먼저 적용됐다.** opschips 머지 후 **재적용 금지** 목록에 넣을 것.
+   - master 에만: `20260807180000`(#433) · `20260807190000`(#436) → **prod 미적용**.
+3. **미머지 작업 2건이 PR 없이 로컬에만 있다** — opschips(칩 카운트)·opsurl(Android 딥링크 축소). 유실 위험.
 
 > 🚨 **원장 초판의 "열린 워크트리 없음"·"`T-HOLDEM-a3-notify` 빈 껍데기" 는 둘 다 오판이었다.**
 > a3-notify 는 측정 시점엔 커밋 0이었으나 그 사이 다른 세션이 A3 작업을 커밋했다(#429 로 머지).

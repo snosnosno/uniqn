@@ -12,6 +12,13 @@
 
 ## 리뷰 절차
 
+- [⭐머지 후 잔존결함 2대 — 정규화 예외 생산자 grep 은 `app/` 라우트까지(마지막공고 프리셋이 grouped 잔존) + "후보<2 숨김"×"최소1 필수" 합성=후보 0 에서 확인 영구잠금](pattern_empty_group_producer_sweep_and_zero_candidate_deadend.md) — PR#425 머지본. 575 green·다크래칫 green 에서 검출, 프로브 red 실증
+- [⭐앵커 재해석 게이트 소급=축 없는 모드(fixed groups=[]) 전면 null→연쇄 사망+딤 잔존 · 정규화 '원형 보존' 예외로 좀비 부활(templateToValues grouped 잔존)](pattern_condition_grouping_gate_retrofit_and_zombie_reentry.md) — grouping 최종 리뷰 HIGH 프로브 red 실증. 침묵 종료는 딤 해제 책임 동반·멱등성/off-by-one/시그니처 정합은 검증 완료
+- [⭐diff 진단 고지 함수=사용자 행동 오포획 프로브(카운트 감소 조건은 해제 조작과 겹침)+관측이 고지 분기에 묶이면 계기판 오염·scratchpad jest 프로브 레시피](pattern_diff_diagnosis_notice_user_action_misfire.md) — grouping 브랜치 HIGH 실증. 음성 단언(특정 문구 not-called)은 다른 오발화 통과
+- [설계 대조 3축 — 다이어그램 라벨 형식↔요약함수 실출력·사용자 최종게이트 결정 변형=재가 필요·F-minor 나열 체크리스트](pattern_design_contract_review_grouping_branch.md) — green 브랜치에서 3건 검출. 정당 이탈 선례 4종 수록
+
+- [⭐full-scope 시트 시드 합집합·상한 합성 무검증](pattern_full_scope_sheet_seed_union_and_cap_composition.md) — 캘린더 스텁 통째 덮어쓰기=시드 죽은 입력(prop 캡처 프로브만 유효)·cap 유닛 합성 지점·toMatchObject 완화 3조건·opt-in prop 부재 단언=묘비
+
 - [워크트리 리뷰 diff는 그 워크트리에서](pitfall_worktree_review_diff_wrong_checkout.md) — 메인 체크아웃 git diff=타 세션 워킹트리 비교→유령 대량삭제 오탐. git show(객체)는 안전, diff는 아님
 - [동봉된 회귀 가드는 pre-fix 코드에 돌려 red 확인 전 신뢰 금지](pitfall_regression_guard_not_red_on_prefix.md) — 판정단위>결함단위(삼항 전체 includes)·jest 전역 useSafeAreaInsets=0 목 2종 실측
 
