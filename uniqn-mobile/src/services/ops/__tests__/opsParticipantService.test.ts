@@ -7,6 +7,7 @@ const mockAddAddon = jest.fn();
 const mockBustParticipant = jest.fn();
 const mockUndoBust = jest.fn();
 const mockCorrectPrize = jest.fn();
+const mockSetChips = jest.fn();
 
 jest.mock('@/repositories/ops', () => ({
   opsParticipantRepository: {
@@ -16,6 +17,7 @@ jest.mock('@/repositories/ops', () => ({
     bustParticipant: (...args: unknown[]) => mockBustParticipant(...args),
     undoBust: (...args: unknown[]) => mockUndoBust(...args),
     correctPrize: (...args: unknown[]) => mockCorrectPrize(...args),
+    setChips: (...args: unknown[]) => mockSetChips(...args),
   },
 }));
 
@@ -149,5 +151,69 @@ describe('opsParticipantService.correctPrize (1f — Zod 경계)', () => {
       expect((e as { code: string }).code).toBe('E3005');
     }
     expect(mockCorrectPrize).not.toHaveBeenCalled();
+  });
+});
+
+describe('opsParticipantService.setParticipantChips (결함① — Zod 경계)', () => {
+  beforeEach(() => {
+    mockSetChips.mockReset();
+    mockSetChips.mockResolvedValue({ participantId: TID, chips: 45000, chipsBefore: 30000 });
+  });
+
+  it('유효 입력 → parsed 필드로 Repository 위임 + 결과 반환', async () => {
+    const r = await svc.setParticipantChips({ participantId: TID, chips: 45000 }, 'actor-1');
+    expect(r).toEqual({ participantId: TID, chips: 45000, chipsBefore: 30000 });
+    expect(mockSetChips).toHaveBeenCalledWith(TID, 'actor-1', 45000);
+  });
+
+  // 0 은 서버도 거부한다(0칩 active 참가자가 live_stats 의 playing/average_stack 을 오염).
+  it('0칩 → ValidationError(E3005), Repository 미호출', async () => {
+    expect.assertions(2);
+    try {
+      await svc.setParticipantChips({ participantId: TID, chips: 0 }, 'actor-1');
+    } catch (e) {
+      expect((e as { code: string }).code).toBe('E3005');
+    }
+    expect(mockSetChips).not.toHaveBeenCalled();
+  });
+
+  it('음수 칩 → ValidationError(E3005), Repository 미호출', async () => {
+    expect.assertions(2);
+    try {
+      await svc.setParticipantChips({ participantId: TID, chips: -1 }, 'actor-1');
+    } catch (e) {
+      expect((e as { code: string }).code).toBe('E3005');
+    }
+    expect(mockSetChips).not.toHaveBeenCalled();
+  });
+
+  it('상한(20억) 초과 → ValidationError(E3005), Repository 미호출', async () => {
+    expect.assertions(2);
+    try {
+      await svc.setParticipantChips({ participantId: TID, chips: 2_000_000_001 }, 'actor-1');
+    } catch (e) {
+      expect((e as { code: string }).code).toBe('E3005');
+    }
+    expect(mockSetChips).not.toHaveBeenCalled();
+  });
+
+  it('소수 칩 → ValidationError(E3005), Repository 미호출', async () => {
+    expect.assertions(2);
+    try {
+      await svc.setParticipantChips({ participantId: TID, chips: 1000.5 }, 'actor-1');
+    } catch (e) {
+      expect((e as { code: string }).code).toBe('E3005');
+    }
+    expect(mockSetChips).not.toHaveBeenCalled();
+  });
+
+  it('비-uuid participantId → ValidationError(E3005), Repository 미호출', async () => {
+    expect.assertions(2);
+    try {
+      await svc.setParticipantChips({ participantId: 'not-uuid', chips: 45000 }, 'actor-1');
+    } catch (e) {
+      expect((e as { code: string }).code).toBe('E3005');
+    }
+    expect(mockSetChips).not.toHaveBeenCalled();
   });
 });

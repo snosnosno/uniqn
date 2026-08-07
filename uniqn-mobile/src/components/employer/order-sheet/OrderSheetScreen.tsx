@@ -664,8 +664,10 @@ export function OrderSheetScreen({
       notifyScheduleChange(current, committed, {
         removedCards,
         inheritedDates: addedDates,
-        // 사장이 실제로 고른 날짜 수 — 이걸 안 넘기면 "날짜를 지웠다"는 조작이
-        // "같은 조건이라 합쳐졌어요"로 오고지된다(가장 흔한 조작이라 계기판까지 오염된다).
+        // 날짜를 건드리는 경로다 — 타입이 사장이 실제로 고른 날짜 수를 요구한다.
+        // 이걸 안 넘기면 "날짜를 지웠다"는 조작이 "같은 조건이라 합쳐졌어요"로 오고지된다
+        // (가장 흔한 조작이라 계기판까지 오염된다). 옵셔널이던 시절 3곳 중 1곳만 지켰다.
+        datesTouched: true,
         expectedDateCount: new Set(dates).size,
       });
     },

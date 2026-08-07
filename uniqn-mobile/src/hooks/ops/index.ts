@@ -40,6 +40,7 @@ export {
   useRedrawWaitlistFill,
   useReseatParticipants,
   useCorrectPrize,
+  useSetParticipantChips,
   useSetTournamentPosting,
   useImportOpsStaff,
   useAddOpsStaff,
