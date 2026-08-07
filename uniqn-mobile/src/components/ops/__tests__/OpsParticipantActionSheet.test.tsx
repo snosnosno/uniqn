@@ -1,5 +1,12 @@
 import { render, fireEvent } from '@testing-library/react-native';
-import { useBustParticipant, useFreeSeat, useSetParticipantChips } from '@/hooks/ops';
+import {
+  useBustParticipant,
+  useFreeSeat,
+  useSetParticipantChips,
+  useSetParticipantNoShow,
+  useUnclaimParticipant,
+  useDeleteParticipant,
+} from '@/hooks/ops';
 import { OpsParticipantActionSheet } from '../OpsParticipantActionSheet';
 
 jest.mock('@/hooks/ops', () => ({
@@ -10,6 +17,10 @@ jest.mock('@/hooks/ops', () => ({
   useUndoBust: jest.fn(() => ({ mutate: jest.fn() })),
   useFreeSeat: jest.fn(() => ({ mutate: jest.fn() })),
   useSetParticipantChips: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
+  useSetParticipantNoShow: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
+  useUnclaimParticipant: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
+  useDeleteParticipant: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
+  useUpdateParticipant: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
 }));
 // SheetModal 실물 대신 자식 통과 스텁(레포 관례: order-sheet RolesSheet.test.tsx:11-20).
 // footer 도 통과시켜야 한다 — 시트의 주 액션 버튼은 footer 에만 있어서, 드랍하면
@@ -134,7 +145,7 @@ describe('OpsParticipantActionSheet', () => {
     expect(getByText('칩 카운트')).toBeTruthy();
   });
 
-  it('checked_in(대기): 칩 카운트만 노출 — 리바이/탈락은 서버가 active 한정이라 숨김', () => {
+  it('checked_in(대기): 칩 카운트 + 노쇼 처리 — 리바이/탈락은 서버가 active 한정이라 숨김', () => {
     const { getByText, queryByText } = render(
       <OpsParticipantActionSheet
         tournament={tournament}
@@ -143,6 +154,7 @@ describe('OpsParticipantActionSheet', () => {
       />
     );
     expect(getByText('칩 카운트')).toBeTruthy();
+    expect(getByText('노쇼 처리')).toBeTruthy();
     expect(queryByText('리바이')).toBeNull();
     expect(queryByText('탈락 처리')).toBeNull();
   });
@@ -194,6 +206,167 @@ describe('OpsParticipantActionSheet', () => {
     );
     // onSuccess 는 칩 시트와 부모 액션시트를 함께 닫아 참가자 목록으로 복귀시킨다.
     mutate.mock.calls[0][1].onSuccess();
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  // ── 결함② 노쇼 진입점 ──
+  it('active: 노쇼 처리 숨김 — 착석 참가자는 노쇼가 아니다(그 경로는 탈락)', () => {
+    const { queryByText } = render(
+      <OpsParticipantActionSheet tournament={tournament} participant={active} onClose={jest.fn()} />
+    );
+    expect(queryByText('노쇼 처리')).toBeNull();
+  });
+
+  it('busted: 노쇼 처리·취소 모두 숨김', () => {
+    const { queryByText } = render(
+      <OpsParticipantActionSheet tournament={tournament} participant={busted} onClose={jest.fn()} />
+    );
+    expect(queryByText('노쇼 처리')).toBeNull();
+    expect(queryByText('노쇼 취소')).toBeNull();
+  });
+
+  it('checked_in: 노쇼 처리 → confirmAction 후 {noShow:true} 로 mutate + 시트 닫힘', () => {
+    const mutate = jest.fn();
+    (useSetParticipantNoShow as jest.Mock).mockReturnValue({ mutate, isPending: false });
+    jest
+      .spyOn(require('@/utils/confirmAction'), 'confirmAction')
+      .mockImplementation((o: any) => o.onConfirm());
+    const onClose = jest.fn();
+    const { getByTestId } = render(
+      <OpsParticipantActionSheet
+        tournament={tournament}
+        participant={{ ...active, status: 'checked_in' }}
+        onClose={onClose}
+      />
+    );
+    fireEvent.press(getByTestId('ops-participant-mark-no-show'));
+    expect(mutate).toHaveBeenCalledWith({ participantId: 'p1', noShow: true });
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('no_show: 노쇼 취소만 노출 → {noShow:false} 로 mutate(확인 다이얼로그 없음)', () => {
+    const mutate = jest.fn();
+    (useSetParticipantNoShow as jest.Mock).mockReturnValue({ mutate, isPending: false });
+    const { getByText, queryByText } = render(
+      <OpsParticipantActionSheet
+        tournament={tournament}
+        participant={{ ...active, status: 'no_show' }}
+        onClose={jest.fn()}
+      />
+    );
+    expect(queryByText('칩 카운트')).toBeNull(); // 서버가 active/checked_in 한정
+    expect(queryByText('노쇼 처리')).toBeNull();
+    fireEvent.press(getByText('노쇼 취소'));
+    expect(mutate).toHaveBeenCalledWith({ participantId: 'p1', noShow: false });
+  });
+
+  // ── 결함⑤ 플레이어 연결 해제(죽은 회로 배선) ──
+  it('연결이 없으면 "플레이어 연결 해제" 를 숨긴다(할 일 없는 버튼 제거)', () => {
+    const { queryByTestId } = render(
+      <OpsParticipantActionSheet tournament={tournament} participant={active} onClose={jest.fn()} />
+    );
+    expect(queryByTestId('ops-participant-unclaim')).toBeNull();
+  });
+
+  it.each(['active', 'checked_in', 'busted', 'no_show'])(
+    '연결이 있으면 상태(%s) 무관하게 해제 버튼이 뜬다 — 클레임은 어느 상태에서도 걸린다',
+    (status) => {
+      const { getByTestId } = render(
+        <OpsParticipantActionSheet
+          tournament={tournament}
+          participant={{ ...active, status, playerUserId: 'u-9' }}
+          onClose={jest.fn()}
+        />
+      );
+      expect(getByTestId('ops-participant-unclaim')).toBeTruthy();
+    }
+  );
+
+  it('연결 해제 → confirmAction 후 participantId 로 mutate + 시트 닫힘', () => {
+    const mutate = jest.fn();
+    (useUnclaimParticipant as jest.Mock).mockReturnValue({ mutate, isPending: false });
+    jest
+      .spyOn(require('@/utils/confirmAction'), 'confirmAction')
+      .mockImplementation((o: any) => o.onConfirm());
+    const onClose = jest.fn();
+    const { getByTestId } = render(
+      <OpsParticipantActionSheet
+        tournament={tournament}
+        participant={{ ...active, playerUserId: 'u-9' }}
+        onClose={onClose}
+      />
+    );
+    fireEvent.press(getByTestId('ops-participant-unclaim'));
+    expect(mutate).toHaveBeenCalledWith('p1');
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  // ── 결함③ 정정 · 등록 취소 진입점 ──
+  it.each(['active', 'checked_in', 'busted', 'no_show'])(
+    '정보 수정은 상태(%s) 무관하게 노출된다 — 오타는 어느 상태에서도 고친다',
+    (status) => {
+      const { getByText } = render(
+        <OpsParticipantActionSheet
+          tournament={tournament}
+          participant={{ ...active, status }}
+          onClose={jest.fn()}
+        />
+      );
+      expect(getByText('정보 수정')).toBeTruthy();
+    }
+  );
+
+  it('정보 수정을 누르면 부모 시트가 숨고 정정 시트가 뜬다(SheetModal 중첩 회피)', () => {
+    const { getByText, queryByText, getByLabelText } = render(
+      <OpsParticipantActionSheet tournament={tournament} participant={active} onClose={jest.fn()} />
+    );
+    fireEvent.press(getByText('정보 수정'));
+    expect(getByLabelText('이름')).toBeTruthy();
+    expect(queryByText('리바이')).toBeNull(); // 부모 시트 숨김
+  });
+
+  it('active: 등록 취소 숨김 — 서버 게이트(checked_in|no_show)와 같은 조건으로만 노출', () => {
+    const { queryByTestId } = render(
+      <OpsParticipantActionSheet tournament={tournament} participant={active} onClose={jest.fn()} />
+    );
+    expect(queryByTestId('ops-participant-delete')).toBeNull();
+  });
+
+  it('checked_in + 플레이 이력 있으면 등록 취소 숨김(눌러도 P0001 인 버튼은 노이즈)', () => {
+    const { queryByTestId } = render(
+      <OpsParticipantActionSheet
+        tournament={tournament}
+        participant={{ ...active, status: 'checked_in', rebuys: 1 }}
+        onClose={jest.fn()}
+      />
+    );
+    expect(queryByTestId('ops-participant-delete')).toBeNull();
+  });
+
+  it('checked_in + 이력 0 → 등록 취소 노출, confirmAction 후 participantId 로 mutate', () => {
+    const mutate = jest.fn();
+    (useDeleteParticipant as jest.Mock).mockReturnValue({ mutate, isPending: false });
+    jest
+      .spyOn(require('@/utils/confirmAction'), 'confirmAction')
+      .mockImplementation((o: any) => o.onConfirm());
+    const onClose = jest.fn();
+    const { getByTestId } = render(
+      <OpsParticipantActionSheet
+        tournament={tournament}
+        participant={{
+          ...active,
+          status: 'checked_in',
+          rebuys: 0,
+          addOns: 0,
+          reentries: 0,
+          knockouts: 0,
+          prizeAmount: null,
+        }}
+        onClose={onClose}
+      />
+    );
+    fireEvent.press(getByTestId('ops-participant-delete'));
+    expect(mutate).toHaveBeenCalledWith('p1');
     expect(onClose).toHaveBeenCalled();
   });
 

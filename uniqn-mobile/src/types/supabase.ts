@@ -1727,6 +1727,7 @@ export type Database = {
         Row: {
           addon_chips: number;
           addon_cost: number;
+          archived_at: string | null;
           auto_seat_on_register: boolean;
           bounty_cost: number | null;
           buy_in_chips: number;
@@ -1756,6 +1757,7 @@ export type Database = {
         Insert: {
           addon_chips?: number;
           addon_cost?: number;
+          archived_at?: string | null;
           auto_seat_on_register?: boolean;
           bounty_cost?: number | null;
           buy_in_chips?: number;
@@ -1785,6 +1787,7 @@ export type Database = {
         Update: {
           addon_chips?: number;
           addon_cost?: number;
+          archived_at?: string | null;
           auto_seat_on_register?: boolean;
           bounty_cost?: number | null;
           buy_in_chips?: number;
@@ -3172,6 +3175,18 @@ export type Database = {
         Args: { p_actor_id: string; p_chips: number; p_participant_id: string };
         Returns: Json;
       };
+      ops_delete_participant: {
+        Args: { p_actor_id: string; p_participant_id: string };
+        Returns: Json;
+      };
+      ops_set_participant_no_show: {
+        Args: { p_actor_id: string; p_no_show: boolean; p_participant_id: string };
+        Returns: Json;
+      };
+      ops_set_tournament_archived: {
+        Args: { p_actor_id: string; p_archived: boolean; p_tournament_id: string };
+        Returns: Json;
+      };
       ops_set_prize_structure: {
         Args: { p_actor_id: string; p_prizes: Json; p_tournament_id: string };
         Returns: Json;
@@ -3206,6 +3221,16 @@ export type Database = {
       };
       ops_toggle_registration: {
         Args: { p_actor_id: string; p_open: boolean; p_tournament_id: string };
+        Returns: Json;
+      };
+      ops_update_participant: {
+        Args: {
+          p_actor_id: string;
+          p_name: string;
+          p_nationality?: string;
+          p_participant_id: string;
+          p_phone?: string;
+        };
         Returns: Json;
       };
       ops_unclaim_participant: {
@@ -3371,7 +3396,13 @@ export type Database = {
         | 'monitor_config_set'
         | 'prize_paid'
         | 'prize_paid_undone'
-        | 'player_chips_set';
+        | 'player_chips_set'
+        | 'player_no_show'
+        | 'player_no_show_undone'
+        | 'player_updated'
+        | 'player_deleted'
+        | 'tournament_archived'
+        | 'tournament_archive_undone';
       ops_participant_status: 'registered' | 'checked_in' | 'active' | 'busted' | 'no_show';
       ops_table_lock_type: 'none' | 'locked' | 'feature';
       ops_table_status: 'open' | 'closed' | 'standby';
@@ -3580,6 +3611,12 @@ export const Constants = {
         'prize_paid',
         'prize_paid_undone',
         'player_chips_set',
+        'player_no_show',
+        'player_no_show_undone',
+        'player_updated',
+        'player_deleted',
+        'tournament_archived',
+        'tournament_archive_undone',
       ],
       ops_participant_status: ['registered', 'checked_in', 'active', 'busted', 'no_show'],
       ops_table_lock_type: ['none', 'locked', 'feature'],

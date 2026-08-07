@@ -5,13 +5,12 @@
  * "당일" 판정은 KST(UTC+9) 고정 — 기기 로컬 TZ 비의존(UTC epoch 산술만 사용).
  * ⚠️ KST 00~09시 = UTC 전날 15~24시: toISOString 직접 사용 시 날짜가 하루 밀리는 알려진 플레이크
  *   → +9h 시프트 후 UTC 렌즈로 자르는 방식으로 고정(테스트가 이 구간을 고정 시계로 커버).
+ *
+ * 🔑 "오늘"의 정의는 `../opsEventDate` 하나뿐이다 — 쓰기 경로(생성 폼 시드·대회 복제)와
+ *    이 읽기 경로가 같은 함수를 공유해야 형식·기준이 어긋나지 않는다(결함 ④).
  */
+import { kstDateString } from '../opsEventDate';
 import type { OpsTournament } from '@/types/ops';
-
-/** KST(UTC+9) 기준 날짜 문자열(YYYY-MM-DD). */
-export function kstDateString(nowMs: number): string {
-  return new Date(nowMs + 9 * 3600 * 1000).toISOString().slice(0, 10);
-}
 
 export function selectResumeTournament(
   tournaments: readonly OpsTournament[],

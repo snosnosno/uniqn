@@ -2,7 +2,8 @@
  * 재개 카드 선택(A2/D8) — KST 00~09시 고정 시계 케이스 필수(알려진 플레이크 구간).
  * KST 00~09시 = UTC 전날 15~24시: UTC 렌즈로 날짜를 자르면 하루 밀리는 함정을 고정한다.
  */
-import { kstDateString, selectResumeTournament } from '../selectResumeTournament';
+import { kstDateString } from '../../opsEventDate';
+import { selectResumeTournament } from '../selectResumeTournament';
 import type { OpsTournament } from '@/types/ops';
 
 function t(partial: Partial<OpsTournament> & Pick<OpsTournament, 'id' | 'status'>): OpsTournament {

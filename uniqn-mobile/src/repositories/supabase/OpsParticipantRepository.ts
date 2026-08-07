@@ -15,6 +15,9 @@ import type {
   OpsUndoBustResult,
   OpsPrizeCorrectionResult,
   OpsChipCountResult,
+  OpsNoShowResult,
+  OpsParticipantUpdateResult,
+  OpsParticipantDeleteResult,
 } from '@/types/ops';
 
 const TABLE = 'ops_participants' as const;
@@ -64,6 +67,46 @@ const setChipsResponseSchema = z
     participant_id: z.string(),
     chips: z.number(),
     chips_before: z.number(),
+  })
+  .passthrough();
+
+// 결함③: 정정. `changed` 로 no-op 을 구분한다(무변경 저장을 "수정됨"으로 말하지 않기 위해).
+const updateParticipantResponseSchema = z
+  .object({
+    participant_id: z.string(),
+    name: z.string(),
+    nationality: z.string().nullable(),
+    phone: z.string().nullable(),
+    changed: z.boolean(),
+  })
+  .passthrough();
+
+// 결함③: 오등록 제거. 서버가 삭제 전 스냅샷을 돌려주므로 토스트에 엔트리 번호를 쓸 수 있다.
+const deleteParticipantResponseSchema = z
+  .object({
+    participant_id: z.string(),
+    entry_number: z.number().nullable(),
+    name: z.string(),
+    deleted: z.boolean(),
+  })
+  .passthrough();
+
+// 결함⑤: 클레임 해제. ⚠️ 이 RPC 만 반환 키가 **camelCase** 다(`participantId`/`unclaimed`) —
+// 다른 ops RPC 는 snake_case 다. baseline 시절 산물이며, 서버를 고치면 정본 분열이 되므로
+// 스키마를 서버에 맞춘다(형태 불일치를 여기서 흡수하는 것이 Repository 의 일이다).
+const unclaimResponseSchema = z
+  .object({
+    participantId: z.string(),
+    unclaimed: z.boolean(),
+  })
+  .passthrough();
+
+// 결함②: 노쇼. no-op(이미 목표 상태) 응답도 같은 키 집합을 낸다 — 서버 pgTAP 이 그걸 고정한다.
+const setNoShowResponseSchema = z
+  .object({
+    participant_id: z.string(),
+    status: z.string(),
+    status_before: z.string(),
   })
   .passthrough();
 
@@ -301,6 +344,99 @@ export class SupabaseOpsParticipantRepository implements IOpsParticipantReposito
     } catch (error) {
       if (isAppError(error)) throw error;
       mapOpsRpcError(error, { operation: 'ops 칩 카운트' });
+    }
+  }
+
+  async setNoShow(
+    participantId: string,
+    actorId: string,
+    noShow: boolean
+  ): Promise<OpsNoShowResult> {
+    const operation = noShow ? 'ops 노쇼 처리' : 'ops 노쇼 취소';
+    try {
+      const { data, error } = await supabase.rpc('ops_set_participant_no_show', {
+        p_participant_id: participantId,
+        p_actor_id: actorId,
+        p_no_show: noShow,
+      });
+      if (error) mapOpsRpcError(error, { operation });
+      const row = parseOpsRpcResponse(setNoShowResponseSchema, data, operation);
+      return {
+        participantId: row.participant_id,
+        status: row.status as OpsParticipant['status'],
+        statusBefore: row.status_before as OpsParticipant['status'],
+      };
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      mapOpsRpcError(error, { operation });
+    }
+  }
+
+  async updateParticipant(
+    participantId: string,
+    actorId: string,
+    patch: { name: string; nationality?: string | null; phone?: string | null }
+  ): Promise<OpsParticipantUpdateResult> {
+    try {
+      const { data, error } = await supabase.rpc('ops_update_participant', {
+        p_participant_id: participantId,
+        p_actor_id: actorId,
+        p_name: patch.name,
+        // ⚠️ undefined 를 그대로 보내면 PostgREST 가 인자를 **누락**시켜 DEFAULT NULL 이 되는데,
+        //    그건 우연히 같은 결과일 뿐이다. 의도(지우기)를 명시적으로 null 로 보낸다.
+        p_nationality: patch.nationality ?? undefined,
+        p_phone: patch.phone ?? undefined,
+      });
+      if (error) mapOpsRpcError(error, { operation: 'ops 참가자 정정' });
+      const row = parseOpsRpcResponse(updateParticipantResponseSchema, data, 'ops 참가자 정정');
+      return {
+        participantId: row.participant_id,
+        name: row.name,
+        nationality: row.nationality,
+        phone: row.phone,
+        changed: row.changed,
+      };
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      mapOpsRpcError(error, { operation: 'ops 참가자 정정' });
+    }
+  }
+
+  async deleteParticipant(
+    participantId: string,
+    actorId: string
+  ): Promise<OpsParticipantDeleteResult> {
+    try {
+      const { data, error } = await supabase.rpc('ops_delete_participant', {
+        p_participant_id: participantId,
+        p_actor_id: actorId,
+      });
+      if (error) mapOpsRpcError(error, { operation: 'ops 등록 취소' });
+      const row = parseOpsRpcResponse(deleteParticipantResponseSchema, data, 'ops 등록 취소');
+      return {
+        participantId: row.participant_id,
+        entryNumber: row.entry_number,
+        name: row.name,
+        deleted: row.deleted,
+      };
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      mapOpsRpcError(error, { operation: 'ops 등록 취소' });
+    }
+  }
+
+  async unclaimParticipant(participantId: string, actorId: string): Promise<void> {
+    try {
+      const { data, error } = await supabase.rpc('ops_unclaim_participant', {
+        p_participant_id: participantId,
+        p_actor_id: actorId,
+      });
+      if (error) mapOpsRpcError(error, { operation: 'ops 플레이어 연결 해제' });
+      // 반환값을 쓰지는 않지만 parse 는 한다 — 서버가 형태를 바꾸면 조용히 흘러가지 않게.
+      parseOpsRpcResponse(unclaimResponseSchema, data, 'ops 플레이어 연결 해제');
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      mapOpsRpcError(error, { operation: 'ops 플레이어 연결 해제' });
     }
   }
 }
