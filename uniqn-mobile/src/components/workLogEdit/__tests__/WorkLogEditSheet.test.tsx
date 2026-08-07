@@ -366,6 +366,21 @@ describe('WorkLogEditSheet — 총 근무 시간 · 경고 · 차단 (구 WorkTi
 
     expect(screen.getByText('익일 퇴근으로 계산돼요.')).toBeTruthy();
   });
+
+  it('🔴 출근 기록이 없어도 익일 퇴근 왕복이 하루를 앞당기지 않는다', () => {
+    // QR 퇴근만 찍힌 행(출근 NULL · 퇴근 익일 02:00). 피커는 화면에 보이던 02:00 에서 열리고,
+    // 사용자는 **같은 값을 확정만** 한다 — 그런데 조립이 하루를 앞당기면 화면의 '(익일)' 이
+    // 사라지고 손대지 않은 축이 dirty 가 된다. 출근이 없어 근태 판정도 EMPTY 라 배너도 안 뜬다.
+    renderSheet({}, { checkIn: null, checkOut: AT(11, 2) });
+
+    expect(screen.getByTestId('check-out-value')).toHaveTextContent('02:00 (익일)');
+
+    pickCheckOutAt2();
+
+    expect(screen.getByTestId('check-out-value')).toHaveTextContent('02:00 (익일)');
+    // 값이 그대로면 보낼 것도 없다 — 하루가 앞당겨지면 여기서 저장이 열린다.
+    expect(screen.getByLabelText('저장')).toBeDisabled();
+  });
 });
 
 // ============================================================================

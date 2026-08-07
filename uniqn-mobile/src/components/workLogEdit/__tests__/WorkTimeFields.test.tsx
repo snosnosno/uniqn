@@ -463,7 +463,7 @@ describe('applyPickedTime — 시각 조립', () => {
     expect(next.checkOut?.getHours()).toBe(2);
   });
 
-  it('출근이 없으면 퇴근은 익일 보정 없이 기준 날짜에 얹는다', () => {
+  it('출근도 기존 퇴근도 없으면 퇴근은 익일 보정 없이 기준 날짜에 얹는다', () => {
     const next = applyPickedTime(makeValue(), 'checkOut', '02:00', BASE_DATE);
 
     expect(next.checkOut?.getDate()).toBe(10);
@@ -495,5 +495,80 @@ describe('applyPickedTime — 시각 조립', () => {
 
     expect(value.checkIn).toBeNull();
     expect(baseDate.getHours()).toBe(0);
+  });
+});
+
+describe('applyPickedTime — 출근 기록이 없는 익일 퇴근 (앵커 확장)', () => {
+  /**
+   * 🔴 익일 보정의 앵커가 **출근 하나뿐**이면, 출근 기록이 없는 행에서 퇴근 왕복이 하루를
+   *    조용히 앞당긴다. 피커에 실려 나가는 값은 `formatClock` 이라 시:분뿐이라 '일' 정보가 없고,
+   *    화면은 `(익일)` 이라고 말한 뒤였다 — 표시와 저장이 갈린다.
+   *    구 `WorkTimeEditor` 는 퇴근을 `26:00` 으로 **표시**해 왕복이 출근 유무와 무관하게
+   *    보존됐다(`formatEndTimeForInput`/`parseTimeInput`). 꼬리표 표기로 바꾸며 잃은 회귀다.
+   *
+   * 실사용 픽스처: QR 퇴근만 찍힌 행 · 시트에서 출근을 지운 뒤 · 표류 행.
+   */
+  /** 근무일 2026-08-10 의 행에 남은 익일 02:00 퇴근 — 화면 표기는 '02:00 (익일)'. */
+  const NEXT_DAY_OUT = new Date(2026, 7, 11, 2, 0);
+
+  it('🔴 같은 값을 다시 확정해도 익일이 유지된다', () => {
+    const value = makeValue({ checkIn: null, checkOut: NEXT_DAY_OUT });
+
+    const next = applyPickedTime(value, 'checkOut', '02:00', BASE_DATE);
+
+    expect(next.checkOut?.getDate()).toBe(11);
+    // 왕복이 값을 바꾸지 않는다 — 바뀌면 손대지 않은 축이 dirty 가 돼 저장까지 열린다.
+    expect(next.checkOut?.getTime()).toBe(NEXT_DAY_OUT.getTime());
+  });
+
+  it('🔴 익일 행에서 다른 시각을 골라도 달력일은 익일로 남는다', () => {
+    const value = makeValue({ checkIn: null, checkOut: NEXT_DAY_OUT });
+
+    const next = applyPickedTime(value, 'checkOut', '03:30', BASE_DATE);
+
+    expect(next.checkOut?.getDate()).toBe(11);
+    expect(next.checkOut?.getHours()).toBe(3);
+    expect(next.checkOut?.getMinutes()).toBe(30);
+  });
+
+  it('24+ 표기를 골라도 이틀 뒤로 밀리지 않는다 (이중 보정 금지)', () => {
+    // `26:00` 은 그 자체로 baseDate 의 익일이다. 앵커 보정을 또 걸면 8/12 가 된다.
+    const value = makeValue({ checkIn: null, checkOut: NEXT_DAY_OUT });
+
+    const next = applyPickedTime(value, 'checkOut', '26:00', BASE_DATE);
+
+    expect(next.checkOut?.getDate()).toBe(11);
+    expect(next.checkOut?.getHours()).toBe(2);
+  });
+
+  it('당일 퇴근 행은 익일로 밀리지 않는다 (반대 방향 오작동 방지)', () => {
+    const value = makeValue({ checkIn: null, checkOut: new Date(2026, 7, 10, 23, 0) });
+
+    const next = applyPickedTime(value, 'checkOut', '20:00', BASE_DATE);
+
+    expect(next.checkOut?.getDate()).toBe(10);
+    expect(next.checkOut?.getHours()).toBe(20);
+  });
+
+  it('출근이 있으면 앵커는 여전히 출근이다 — 기존 퇴근이 익일이어도', () => {
+    // 22:00 출근 행에서 23:00 을 고르면 같은 밤 23:00 이다. 기존 퇴근의 달력일을 무조건
+    // 물려받으면 여기서 8/11 23:00(25시간 근무)이 조립된다.
+    const value = makeValue({ checkIn: new Date(2026, 7, 10, 22, 0), checkOut: NEXT_DAY_OUT });
+
+    const next = applyPickedTime(value, 'checkOut', '23:00', BASE_DATE);
+
+    expect(next.checkOut?.getDate()).toBe(10);
+    expect(next.checkOut?.getHours()).toBe(23);
+  });
+
+  it('🔴 퇴근==출근은 기존 퇴근이 익일이어도 접히지 않는다 (검증 발화 보존)', () => {
+    // 등호를 익일에 포함시키거나 앵커를 기존 퇴근으로 덮으면, 시트의 "시작==종료" 검증이
+    // 두 값을 비교할 기회를 잃는다(`deriveOvernightPreview:49-58` 은 isEqual 을 오류로 본다).
+    const value = makeValue({ checkIn: new Date(2026, 7, 10, 22, 0), checkOut: NEXT_DAY_OUT });
+
+    const next = applyPickedTime(value, 'checkOut', '22:00', BASE_DATE);
+
+    expect(next.checkOut?.getDate()).toBe(10);
+    expect(next.checkOut?.getTime()).toBe(value.checkIn!.getTime());
   });
 });
