@@ -5,7 +5,39 @@
 
 ---
 
+## 진행 상황
+
+| 트랙 | 상태 |
+|---|---|
+| **A1 + A2 (탈퇴 파이프라인)** | ✅ **완료 — PR #427** (prod 마이그 `20260807022947`·`20260807023036` 적용됨, 재적용 금지) |
+| A3 알림 타입 정합 | 🔵 **다음 트랙** — 프롬프트는 아래 "다음 세션에 붙여넣을 프롬프트" |
+| A4 · B1 · B2 · B3 · 카피 가이드 | ⏸ 로드맵 참조 |
+
+### 🚨 A1 착수 중 밝혀진 것 — 감사 기재를 교정한다
+
+**감사(및 이 문서 초판)는 "prod `deactivated` 0건 → 아직 피해자 없음"이라고 적었으나 틀렸다.**
+0건인 이유는 아직 탈퇴한 사람이 없어서가 아니라 **탈퇴가 구조적으로 불가능해서**였다.
+
+prod `users_status_check` 가 `active|inactive|suspended|deleted` 만 허용하는데
+`UserRepository.requestDeletion` 은 `'deactivated'` 를 쓴다 → CHECK 위반으로 **탈퇴 요청 자체가 100% 실패**.
+로컬에서 동일 UPDATE 재현: `violates check constraint "users_status_check"`.
+
+→ 크론 가드(A1)만 고쳤다면 삭제 대상 행이 영영 0건이라 **수선이 공허**했다. 두 마이그를 함께 적용한 이유다.
+
+🔑 **교훈: "0건"은 그 자체로 아무것도 말해주지 않는다. 0인 원인을 확인해야 결론이 뒤집히지 않는다.**
+
+부수 발견(A1 범위 밖, 별도 조치 완료): 공개 레포의 시드 마이그 평문 비밀번호가 prod
+`review-admin`(role=admin) 과 실제로 일치했다 → 4계정 회전 + 세션 93·refresh token 108 파기.
+상세는 PR #427 및 메모리 `pitfall_public_repo_seed_credentials_live_in_prod`.
+
+---
+
 ## 다음 세션에 붙여넣을 프롬프트
+
+> ⚠️ 아래 블록은 **A1·A2 용이며 이미 완료**됐다. 다음 세션은 **A3** 다 —
+> 이 블록의 §0(착수 전 상태 확인)·§2(작업 규율)·§3(하지 말 것)은 그대로 재사용하고,
+> §1 범위만 로드맵 S+1 의 A3 로 바꿔서 쓸 것.
+> A1 세션에서 §0-3(착수 대상 파일 실재 대조)이 감사에 없던 상류 결함을 잡아냈다 — **생략 금지**.
 
 ```
 UNIQN 전체 감사 후속 작업이다.
@@ -88,7 +120,7 @@ docs/analysis/2026-08-07-full-app-audit.md 를 먼저 읽어라. 감사 재실�
 | EF 가 service_role 로 `permanently_delete_user` 호출 | `supabase/functions/process-scheduled-deletions/index.ts:51-86` |
 | 가드 `IF auth.uid() IS NULL → RAISE 'PERMISSION_DENIED'` prod 에 현존 | prod `pg_get_functiondef` |
 | service_role 클레임 재현 시 `auth.uid()`=NULL, 가드 발동=true | prod 실행 |
-| prod `status='deactivated'` **0건** → 아직 피해자 없음 | prod `users` 집계 |
+| ~~prod `status='deactivated'` **0건** → 아직 피해자 없음~~ **← 오귀인. 교정됨(위 "진행 상황" 참조)**: 0건인 이유는 `users_status_check` 가 그 값을 거부해 **탈퇴 자체가 불가능**했기 때문 | prod `users` 집계 + prod `pg_constraint` |
 | uid 요구 SECDEF 56개 중 service_role 경로 호출은 이것 **하나뿐** | EF 전체 `.rpc()` 4종 대조 |
 | RPC 는 applications·work_logs 를 **취소가 아니라 익명화** | 함수 본문 (baseline `20260710000002:8236-8267`) |
 | 탈퇴 사유 저장 경로 없음 | `UserRepository.ts:301-313`, `:222` 주석 자인 |
@@ -99,7 +131,8 @@ docs/analysis/2026-08-07-full-app-audit.md 를 먼저 읽어라. 감사 재실�
 
 | 순서 | 트랙 | 범위 |
 |---|---|---|
-| S+1 | **A3 알림 타입 정합** | `work_log_check_in/out` 을 클라 enum·카테고리맵·라우트맵 등록(리네임 불가 — 클라 흡수) + 드리프트 가드에 "DB 발송 타입" 차원 추가 + `inquiry_answered` 발송 1줄 |
+| ~~S+0~~ | ~~**A1+A2 탈퇴 파이프라인**~~ | ✅ **완료 — PR #427** |
+| **S+1 (다음)** | **A3 알림 타입 정합** | `work_log_check_in/out` 을 클라 enum·카테고리맵·라우트맵 등록(리네임 불가 — 클라 흡수) + 드리프트 가드에 "DB 발송 타입" 차원 추가 + `inquiry_answered` 발송 1줄 |
 | S+2 | **A4 ErrorState 배선** | 12화면. 리뷰 허브 우선(`useReviews` 가 error 를 반환조차 안 함 → 훅 수정 선행) |
 | S+3 | **B1 배선 안 된 8개 — 완성/제거 결정** | 🔴사용자 결정 필요. 북마크·지원자검색·구인처평점·대타글연결 / 죽은 알림 5종·statusFlow 는 제거 후보 |
 | S+4 | **B2 정산 3건** | ⚠️메모리의 "R4 선행=`SettlementRepository.ts:372`·`:648` RPC 화"와 같은 트랙인지 먼저 대조 |
