@@ -570,7 +570,7 @@ SELECT throws_like(
   '공고 소유자가 아니면 실적도 수정할 수 없다');
 
 
--- ── 39~41) 퇴근 >= 출근 **서버** 검증 (20260807170000) ─────────
+-- ── 39~41) 퇴근 >= 출근 **서버** 검증 (20260807180000) ─────────
 -- 지금까지 이 순서를 보는 것은 클라 `deriveAttendanceInsight` 뿐이었고 DB CHECK 도 없었다
 -- (`work_logs_status_timestamp_consistency` 는 NULL 여부만 본다). 인증된 employer 가 RPC 를
 -- 직접 호출하면 역전 시각이 저장되고, status='checked_out' 이 파생돼 정산 게이트를 통과한 뒤
