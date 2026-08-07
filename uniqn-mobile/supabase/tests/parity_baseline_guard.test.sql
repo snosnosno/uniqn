@@ -131,8 +131,15 @@
 --     함수 203 = 202 + ops_set_participant_no_show 1종(SECDEF, anon REVOKE).
 --     `no_show` enum 값을 쓰는 함수가 0개였던 것을 닫는다(2026-08-08 pg_proc 실측).
 --     정책 111 불변(RPC 신설만, RLS 미변경).
+--   2026-08-08 ops 참가자 정정·오등록 제거·대회 아카이브(마이그 20260808230000, 결함③):
+--     함수 206 = 203 + ops_update_participant · ops_delete_participant
+--                    · ops_set_tournament_archived 3종(모두 SECDEF, anon REVOKE).
+--     정책 111 불변(RPC 신설 + ops_tournaments.archived_at 컬럼 추가, RLS 미변경).
+--     🔑 대회 hard DELETE 는 ops_events append-only 트리거와 충돌해 **물리적으로 불가능**하다
+--        (2026-08-08 로컬 실증) — archived_at 이 "치우기"의 유일한 경로다.
 --     🔴 prod 미적용 — 머지·prod 적용 시점까지 주간 parity-smoke(PR 게이트 아님)가
---        202 vs 203 불일치를 보고한다. 로컬/CI 는 마이그가 있으므로 203 이 정답이다.
+--        202 vs 206 불일치를 보고한다. 로컬/CI 는 마이그가 있으므로 206 이 정답이다.
+--        (결함② 마이그 20260808210000 도 함께 미적용 — 순서: 200000→210000→220000→230000)
 --
 -- ⚠️ 유지보수 계약: 이후 마이그레이션이 public 함수/정책을 추가·삭제하면
 --   이 기대값을 같은 PR에서 함께 갱신해야 한다. 갱신을 강제당하는 것 자체가
@@ -145,7 +152,7 @@
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=203
+-- PARITY_EXPECT_FUNCS=206
 -- PARITY_EXPECT_POLICIES=111
 -- ============================================================
 BEGIN;
@@ -165,8 +172,8 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  203,
-  'public function count (203 = 200 + update_work_log_custom_settlement 1(감사 S-D) + ops_set_participant_chips 1(결함① 칩 카운트) + ops_set_participant_no_show 1(결함② 노쇼), 2026-08-08)');
+  206,
+  'public function count (206 = 200 + update_work_log_custom_settlement 1(감사 S-D) + ops_set_participant_chips 1(결함①) + ops_set_participant_no_show 1(결함②) + 정정·제거·아카이브 3(결함③), 2026-08-08)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(
