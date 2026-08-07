@@ -156,6 +156,8 @@ function composeTime(time: string, baseDate: Date): Date | null {
  * 🔑 퇴근이 출근보다 **엄격히 이르면**(예: 출근 22:00 · 퇴근 02:00) 익일로 올린다. 안 그러면
  *    check_out_ts < check_in_ts 인 음수 근무시간이 저장돼 정산이 틀어진다.
  *    같음(==)은 올리지 않는다 — 아래 경계 주석 참고.
+ * 🔑 출근 기록이 없으면 **원래 퇴근의 달력일**이 앵커다. 표시의 `(익일)` 판정과 같은 기준이라
+ *    보이는 날과 저장되는 날이 어긋나지 않는다 — 아래 경계 주석 참고.
  * 🔑 읽을 수 없는 값이면 원본을 그대로 돌려준다 — 파싱 불가 값이 시각인 척 저장되지 않는다.
  */
 export function applyPickedTime(
@@ -180,7 +182,26 @@ export function applyPickedTime(
   //    아니다 — `deriveOvernightPreview:49-58` 이 isEqual 을 익일에서 빼고 duration 을 미산정하며,
   //    폐지될 WorkTimeEditor 도 `isValidTimeOrder`(:240-243)로 저장을 차단했다. 여기서 +24h 로
   //    조립해 버리면 두 값이 이미 달라져 시트의 "시작==종료" 검증이 원리적으로 발화하지 못한다.
-  const needsNextDay = value.checkIn !== null && composed.getTime() < value.checkIn.getTime();
+  //
+  // 🔴 앵커가 **출근 하나뿐이면 안 된다.** 출근 기록이 없는 행(QR 퇴근만 찍힘 · 시트에서 출근을
+  //    지운 뒤 · 표류 행)에서는 보정이 통째로 죽어, 화면이 `02:00 (익일)` 이라고 보여준 값을
+  //    사용자가 **같은 값으로 확정만 해도** 퇴근이 하루 앞당겨져 저장됐다. 피커에 실려 나가는
+  //    값은 `formatClock` 이라 시:분뿐이라 '일' 정보가 없고(WorkLogEditSheet:407-413), 출근이
+  //    없으면 `deriveAttendanceInsight` 가 EMPTY 라 차단도 경고도 없다.
+  //    구 WorkTimeEditor 는 퇴근을 `26:00` 으로 **표시**해(`formatEndTimeForInput`) 출근 유무와
+  //    무관하게 왕복이 보존됐다 — 꼬리표 표기로 바꾸며 잃은 회귀다.
+  //    그래서 출근이 없으면 **원래 퇴근의 달력일**을 앵커로 쓴다. 표시가 `(익일)` 을 붙일 때 쓰는
+  //    기준(`overnightAnchor` = `checkIn ?? baseDate`)과 같은 축이라, 보이는 날과 저장되는 날이
+  //    같아진다. 우선순위는 그대로 출근이 먼저다 — 출근이 있는 행에서 기존 퇴근의 날을 물려받으면
+  //    22:00 출근 · 익일 02:00 퇴근 행에서 23:00 을 고를 때 25시간 근무가 조립된다.
+  // 🔑 `composed` 가 이미 baseDate 의 다음 날이면(피커의 24+ 표기) 보정하지 않는다 — 두 번 밀면
+  //    이틀 뒤가 된다.
+  const needsNextDay =
+    value.checkIn !== null
+      ? composed.getTime() < value.checkIn.getTime()
+      : value.checkOut !== null &&
+        isLaterCalendarDay(value.checkOut, baseDate) &&
+        !isLaterCalendarDay(composed, baseDate);
   if (!needsNextDay) {
     return { ...value, checkOut: composed };
   }

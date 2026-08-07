@@ -525,6 +525,39 @@ describe('날짜 없는 조건 카드 — 채울 길이 있어야 한다 (리뷰
     expect(getByText('이 조건을 쓸 날짜를 골라주세요')).toBeTruthy();
   });
 
+  /**
+   * 같은 "날짜 없는 조건 카드"라도 **공고 전체에 날짜가 하나도 없으면** 배정할 후보 자체가
+   * 없다 — 프리셋 1탭 적용·신규 주문서가 그 상태다. 구 동작은 여기서도 최소 1개 선택을
+   * 요구해 확인이 영구 잠겼고, 날짜 행은 후보가 없어 숨어 있어 사유조차 안 보였다.
+   */
+  describe('공고 전체 날짜가 0개일 때 (프리셋 1탭 적용 직후)', () => {
+    const noDatesAnywhere = () =>
+      withGroups([{ dates: [], timeSlots: dealerSlot, grouped: false }]);
+
+    it('조건 행을 탭하면 확인이 열려 있다 — 막다른 길이 아니다', () => {
+      const { getByTestId } = renderWithCapture(noDatesAnywhere());
+      fireEvent.press(getByTestId('order-sheet-card-condition-0'));
+      expect(getByTestId('order-sheet-slots-confirm').props.accessibilityState.disabled).toBe(
+        false
+      );
+    });
+
+    it('고친 시간이 그 카드에 그대로 저장된다 (0개 = 이 카드 전체)', async () => {
+      const { getByTestId, getByText, readForm } = renderWithCapture(noDatesAnywhere());
+
+      fireEvent.press(getByTestId('order-sheet-card-condition-0'));
+      fireEvent.press(getByTestId('order-time-start-0'));
+      fireEvent.press(getByTestId('mock-time-confirm')); // 20:30
+      fireEvent.press(getByText('확인'));
+      await flush();
+
+      const saved = readForm();
+      expect(saved.scheduleGroups).toHaveLength(1);
+      expect(saved.scheduleGroups?.[0]?.dates).toEqual([]);
+      expect(saved.scheduleGroups?.[0]?.timeSlots?.[0]?.startTime).toBe('20:30');
+    });
+  });
+
   it('날짜를 고르면 그 카드가 채워지고, 더는 미설정 카드가 남지 않는다', async () => {
     const { getByTestId, getByText, readForm } = renderWithCapture(presetLike());
 

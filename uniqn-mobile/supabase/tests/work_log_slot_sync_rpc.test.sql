@@ -26,13 +26,15 @@
 --     custom_role 정리·customRole 판정표·정산 완료 잠금)을 본다. 이 파일은 **예정 축**만 본다 —
 --    패치 계약 검증·권한·applications.assignments 동기화. 새 단언은 축을 먼저 가릴 것.
 --    (27~32 는 역할이 촉발하지만 관측 대상이 `assignments` 라 이 파일에 있다.)
+--    ⚠️ 33~38 은 **실적 키를 담은 패치**지만 관측 대상이 `assignments` 라 여기 있다 —
+--       두 파일 어디에도 없던 교집합(실적 패치 × application_id)을 메운 특성화 구간이다.
 --
 -- ⚠️ RPC 호출과 그 결과 조회를 **한 SELECT 안에 섞지 않는다.** 볼라틸 함수와 스칼라 서브쿼리의
 --    평가 순서는 보장되지 않아 "호출 전 상태"를 읽고도 green 이 될 수 있다. 호출은 DO 블록에서
 --    먼저 끝내고 반환값을 GUC 로 넘긴다.
 -- ============================================================
 BEGIN;
-SELECT plan(33);
+SELECT plan(39);
 
 DO $$
 DECLARE
@@ -61,6 +63,7 @@ DECLARE
   v_app_cust  uuid := gen_random_uuid();
   v_app_mr    uuid := gen_random_uuid();
   v_app_lgcy  uuid := gen_random_uuid();
+  v_app_att   uuid := gen_random_uuid();
   v_u_multi   uuid := gen_random_uuid();
   v_u_one     uuid := gen_random_uuid();
   v_u_dup     uuid := gen_random_uuid();
@@ -68,6 +71,7 @@ DECLARE
   v_u_direct  uuid := gen_random_uuid();
   v_u_mr      uuid := gen_random_uuid();
   v_u_lgcy    uuid := gen_random_uuid();
+  v_u_att     uuid := gen_random_uuid();
   v_wl_d2     uuid := gen_random_uuid();
   v_wl_one    uuid := gen_random_uuid();
   v_wl_dup    uuid := gen_random_uuid();
@@ -75,15 +79,17 @@ DECLARE
   v_wl_direct uuid := gen_random_uuid();
   v_wl_mr     uuid := gen_random_uuid();
   v_wl_lgcy   uuid := gen_random_uuid();
+  v_wl_att    uuid := gen_random_uuid();
+  v_wl_att1   uuid := gen_random_uuid();
 BEGIN
   INSERT INTO auth.users (id, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
                           confirmation_token, recovery_token, email_change_token_new, email_change)
   SELECT u, 'uws_' || u || '@test.local', '{"role":"staff"}'::jsonb, '{}'::jsonb, now(), now(), '', '', '', ''
-  FROM unnest(ARRAY[v_u_multi, v_u_one, v_u_dup, v_u_cust, v_u_direct, v_u_mr, v_u_lgcy]) u;
+  FROM unnest(ARRAY[v_u_multi, v_u_one, v_u_dup, v_u_cust, v_u_direct, v_u_mr, v_u_lgcy, v_u_att]) u;
 
   INSERT INTO public.users (id, email, name, role, is_active, identity_verified, created_at, updated_at)
   SELECT id, email, 'uws applicant', 'staff'::user_role, true, true, now(), now()
-  FROM auth.users WHERE id IN (v_u_multi, v_u_one, v_u_dup, v_u_cust, v_u_direct, v_u_mr, v_u_lgcy)
+  FROM auth.users WHERE id IN (v_u_multi, v_u_one, v_u_dup, v_u_cust, v_u_direct, v_u_mr, v_u_lgcy, v_u_att)
   ON CONFLICT (id) DO UPDATE SET is_active = true, identity_verified = true;
 
   PERFORM set_config('uws.app_multi', v_app_multi::text, true);
@@ -99,6 +105,9 @@ BEGIN
   PERFORM set_config('uws.wl_mr',     v_wl_mr::text,     true);
   PERFORM set_config('uws.app_lgcy',  v_app_lgcy::text,  true);
   PERFORM set_config('uws.wl_lgcy',   v_wl_lgcy::text,   true);
+  PERFORM set_config('uws.app_att',   v_app_att::text,   true);
+  PERFORM set_config('uws.wl_att',    v_wl_att::text,    true);
+  PERFORM set_config('uws.wl_att1',   v_wl_att1::text,   true);
 
   INSERT INTO public.applications (id, job_posting_id, applicant_id, applicant_name, status,
                                    assignments, created_at, updated_at)
@@ -139,6 +148,15 @@ BEGIN
     (v_app_lgcy, v_jp, v_u_lgcy, 'lgcy', 'confirmed',
      '[{"dates":["2026-09-27"],"roleIds":["바리스타"],"timeSlot":"18:00",
         "isGrouped":false,"groupId":"grp-lgcy","checkMethod":"individual"}]'::jsonb,
+     now(), now()),
+    -- ⑦ 🔴 실적 축 × application_id 교집합용. ① 과 같은 다일 묶음 형태인데, 여기서는
+    --    **예정을 하나도 안 보내는 실적 전용 패치**(checkOut)를 넣는다. 형제 파일
+    --    `work_log_slot_attendance_rpc.test.sql` 은 픽스처가 전부 application_id=NULL 이라
+    --    이 조합을 한 번도 실행하지 않는다(리뷰 지적 HIGH — 커버리지 빈 칸).
+    (v_app_att, v_jp, v_u_att, 'att', 'confirmed',
+     '[{"dates":["2026-10-01","2026-10-02","2026-10-03"],"roleIds":["dealer"],
+        "timeSlot":"19:00","isGrouped":true,"groupId":"grp-att","checkMethod":"group",
+        "duration":{"type":"consecutive","startDate":"2026-10-01","endDate":"2026-10-03"}}]'::jsonb,
      now(), now());
 
   INSERT INTO public.work_logs (id, application_id, assignment_group_id, staff_id, job_posting_id,
@@ -156,6 +174,18 @@ BEGIN
     (v_wl_direct, NULL, NULL, v_u_direct, v_jp, v_own, '2026-09-30', 'scheduled', 'floor', NULL, '17:00', now(), now()),
     -- ⑥ 레거시 표류 행: 역할은 표준(dealer)인데 custom_role 이 남아 있다 → 역할 키는 'other:바리스타'.
     (v_wl_lgcy, v_app_lgcy, 'grp-lgcy', v_u_lgcy, v_jp, v_own, '2026-09-27', 'scheduled', 'dealer', '바리스타', '18:00', now(), now());
+
+  -- ⑦ 실적 축 픽스처는 check_in_ts 가 필요해 따로 넣는다(위 VALUES 목록에 없는 컬럼).
+  --    이미 출근한 행이다 — 퇴근 시각만 정정하는 실사용 형태. 한 지원서(=한 묶음 원소)의
+  --    서로 다른 날 두 개를 만들어 **분해가 누적되는지**까지 본다(38번).
+  INSERT INTO public.work_logs (id, application_id, assignment_group_id, staff_id, job_posting_id,
+                                owner_id, date, status, role, custom_role, time_slot,
+                                check_in_ts, created_at, updated_at)
+  VALUES
+    (v_wl_att, v_app_att, 'grp-att', v_u_att, v_jp, v_own, '2026-10-02', 'checked_in', 'dealer', NULL, '19:00',
+     '2026-10-02T10:00:00+00:00', now(), now()),
+    (v_wl_att1, v_app_att, 'grp-att', v_u_att, v_jp, v_own, '2026-10-01', 'checked_in', 'dealer', NULL, '19:00',
+     '2026-10-01T10:00:00+00:00', now(), now());
 END $$;
 
 -- 1. 시그니처 고정
@@ -484,7 +514,102 @@ SELECT is(
   'other|플로어장|string|미정|["플로어장"]',
   '표준 역할에서 커스텀 역할로 옮기면 roleIds 가 커스텀 이름으로 수렴한다');
 
--- 33. 🔴 전수 가드 — 이 세션이 건드린 어느 지원서에도 **JSON null 이 실리지 않아야** 한다.
+-- ── 🔴 실적 전용 패치 × 다일 묶음 원소 — 현재 동작 고정 (33~38) ──
+-- 🔴 이것은 **특성화(characterization) 테스트**다. 옳은 동작을 단언하는 것이 아니라
+--    지금 동작을 못에 박아 두는 것이다. 이 동작이 의도인지 확인 필요(리뷰 지적 HIGH).
+--
+-- 무엇이 비어 있었나 — 두 스위트가 서로에게 축을 미루는 사이 교집합이 비어 있었다:
+--   · 형제 파일(실적 축)은 픽스처가 전부 `application_id = NULL` 이라 6단계 동기화가
+--     'no_application' 으로 조기 종료돼 **한 번도 실행되지 않는다.**
+--   · 이 파일(예정 축)은 동기화를 보지만 패치가 전부 `staffRole`/`customRole` 이라
+--     **실적 키(checkIn/checkOut)를 담은 패치가 0건**이었다.
+--
+-- 그래서 아무도 안 보던 것 — 6단계 진입 게이트는 `IF v_sync_app_id IS NOT NULL THEN` 뿐이라
+-- **어느 축을 패치했는지 보지 않는다**(20260807130000:605). 조각 C 는 주석 그대로
+-- "시간·역할을 패치 여부와 무관하게 갱신"(:713-723)한다. 결과적으로 예정을 한 글자도
+-- 안 보낸 `{"checkOut":…}` 패치 하나가 다일 묶음 원소를 셀 단위로 분해한다 —
+-- 원소가 1개에서 2개로 쪼개지고 `duration` 이 삭제되며 `isGrouped` 가 반전된다.
+-- 그리고 분해는 **누적된다** — 같은 묶음의 다른 날을 정정하면 3개가 된다(38번에서 실측).
+--
+-- ⚠️ RPC 호출과 결과 조회를 한 SELECT 에 섞지 않는다(평가 순서 비보장) — DO 블록에서 끝낸다.
+DO $$
+BEGIN
+  PERFORM set_config('uws.res_att',
+    public.update_work_log_slot((current_setting('uws.wl_att'))::uuid,
+      jsonb_build_object('checkOut', '2026-10-02T18:00:00+00:00',
+                         'reason',   '퇴근 시각 정정'))::text, true);
+END $$;
+
+-- 33. 동기화가 실제로 돌았고(assignmentSynced=true) 원소 수가 어떻게 되는가.
+--     🔑 문자열 결합이라 어느 한쪽이 NULL 이면 전체가 NULL 이 되어 빈 통과로 새지 않는다.
+SELECT is(
+  ((current_setting('uws.res_att'))::jsonb ->> 'assignmentSynced')
+  || '|' ||
+  (SELECT jsonb_array_length(a.assignments)::text FROM public.applications a
+    WHERE a.id = (current_setting('uws.app_att'))::uuid),
+  'true|2',
+  '🔴 예정을 안 보낸 실적 전용 패치가 다일 묶음 원소를 2개로 쪼갠다 (현재 동작 고정)');
+
+-- 34. 편집하지 않은 날(10/01·10/03) 쪽 조각.
+SELECT is(
+  (SELECT (e->'dates')::text || '|' || (e->>'isGrouped') || '|' ||
+          (e ? 'duration')::text || '|' || (e->>'timeSlot')
+   FROM public.applications a, LATERAL jsonb_array_elements(a.assignments) e
+   WHERE a.id = (current_setting('uws.app_att'))::uuid
+     AND e->'dates' @> '["2026-10-01"]'::jsonb),
+  '["2026-10-01", "2026-10-03"]|true|false|19:00',
+  '🔴 편집하지 않은 날들(10/01·10/03)이 별도 원소로 떨어지고 duration 이 사라진다 (현재 동작 고정)');
+
+-- 35. 편집한 날(10/02) 쪽 조각.
+SELECT is(
+  (SELECT (e->'dates')::text || '|' || (e->>'isGrouped') || '|' ||
+          (e ? 'duration')::text || '|' || (e->>'timeSlot') || '|' || (e->'roleIds')::text
+   FROM public.applications a, LATERAL jsonb_array_elements(a.assignments) e
+   WHERE a.id = (current_setting('uws.app_att'))::uuid
+     AND e->'dates' @> '["2026-10-02"]'::jsonb),
+  '["2026-10-02"]|false|false|19:00|["dealer"]',
+  '🔴 편집한 날(10/02)만 단일 원소로 떨어지고 isGrouped 가 false 로 반전된다 (현재 동작 고정)');
+
+-- 36. groupId 보존 + duration 을 가진 원소가 몇 개 남는가.
+--     `count(*) FILTER` 는 괄호로 감싸 캐스트가 집계 전체에 걸리게 한다.
+SELECT is(
+  (SELECT count(DISTINCT e->>'groupId')::int::text || '|' || max(e->>'groupId') || '|' ||
+          (count(*) FILTER (WHERE e ? 'duration'))::text
+   FROM public.applications a, LATERAL jsonb_array_elements(a.assignments) e
+   WHERE a.id = (current_setting('uws.app_att'))::uuid),
+  '1|grp-att|0',
+  'groupId 는 보존되지만 duration 은 두 조각 모두에서 사라진다 (현재 동작 고정)');
+
+-- 37. 🔑 동반 양성 단언. 이게 없으면 RPC 가 아무것도 안 해도 위 단언들이 통과할 수 있다.
+--     실적은 정상 반영되고 예정(time_slot)은 이 패치가 건드리지 않았으므로 그대로여야 한다.
+SELECT is(
+  (SELECT w.status::text || '|' ||
+          (w.check_out_ts = '2026-10-02T18:00:00+00:00'::timestamptz)::text || '|' ||
+          COALESCE(w.time_slot, '(null)')
+   FROM public.work_logs w WHERE w.id = (current_setting('uws.wl_att'))::uuid),
+  'checked_out|true|19:00',
+  '실적은 정상 반영되고 예정 시각은 보존된다 (위 단언들이 빈 가드가 아님을 보증)');
+
+-- 38. 🔴 분해는 **누적된다.** 같은 묶음의 다른 날(10/01) 퇴근까지 정정하면 원소가 3개가 된다.
+--     한 묶음의 세 날을 각각 정정하면 원소 1개짜리 지원서가 원소 3개짜리로 바뀐다는 뜻이다.
+DO $$
+BEGIN
+  PERFORM public.update_work_log_slot((current_setting('uws.wl_att1'))::uuid,
+    jsonb_build_object('checkOut', '2026-10-01T18:00:00+00:00', 'reason', '퇴근 시각 정정'));
+END $$;
+
+SELECT is(
+  (SELECT jsonb_array_length(a.assignments)::text FROM public.applications a
+    WHERE a.id = (current_setting('uws.app_att'))::uuid)
+  || '|' ||
+  (SELECT (e->'dates')::text || '|' || (e->>'isGrouped')
+   FROM public.applications a, LATERAL jsonb_array_elements(a.assignments) e
+   WHERE a.id = (current_setting('uws.app_att'))::uuid
+     AND e->'dates' @> '["2026-10-03"]'::jsonb),
+  '3|["2026-10-03"]|false',
+  '🔴 같은 묶음의 다른 날을 정정하면 원소가 또 쪼개진다 — 분해가 누적된다 (현재 동작 고정)');
+
+-- 39. 🔴 전수 가드 — 이 세션이 건드린 어느 지원서에도 **JSON null 이 실리지 않아야** 한다.
 --     zod 는 `timeSlot: z.string()` 이라 널 하나가 지원서 레코드를 통째로 증발시킨다(A2 선례).
 --     19번은 미정 갈래 하나만 보지만 이건 모든 갈래의 모든 키를 본다.
 SELECT is(

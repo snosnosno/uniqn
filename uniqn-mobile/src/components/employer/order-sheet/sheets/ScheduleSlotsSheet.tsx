@@ -59,6 +59,11 @@ export interface ScheduleSlotsSheetProps {
   /**
    * 카드에 날짜가 하나도 없는가(템플릿 조건 카드). 이때는 0개 선택이 "전체"가 될 수 없어
    * — 적용할 날짜가 0일이라 제출이 막힌다 — 최소 1개를 요구한다.
+   *
+   * ⚠️ 단 **후보가 0개면 이 요구가 성립하지 않는다**(공고 전체에 날짜가 없는 상태 —
+   * 신규 주문서·프리셋 1탭 적용 직후). 고를 UI 가 없는데 고르라고 요구하면 확인이 영영
+   * 잠긴다. 그때는 다른 카드가 날짜를 독점할 위험 자체가 없으므로 0개 = 이 카드에 그대로
+   * 적용으로 읽고, 날짜는 뒤이어 날짜 시트가 받는다.
    */
   requiresDatePick?: boolean;
 }
@@ -74,9 +79,14 @@ export function ScheduleSlotsSheet({
   const seed: Slots = value.length > 0 ? value : [{ startTime: DEFAULT_START, roles: [] }];
   const [slots, setSlots] = useState<Slots>(seed);
   const [pickerIndex, setPickerIndex] = useState<number | null>(null);
+  const candidateCount = selectableDates?.length ?? 0;
   // 고를 여지가 있을 때만 날짜 행을 보여준다 — 후보가 1개면 "일부만"이 성립하지 않는다.
   // 단 날짜를 아직 못 받은 조건 카드는 후보가 1개여도 배정이 필요하므로 보여준다.
-  const showDatePicker = (selectableDates?.length ?? 0) > (requiresDatePick ? 0 : 1);
+  const showDatePicker = candidateCount > (requiresDatePick ? 0 : 1);
+  // 배정 요구는 **고를 후보가 있을 때만** 성립한다. 후보 0개에서 요구를 유지하면 날짜 행이
+  // 숨은 채(고를 게 없으니) 확인만 영구 잠기는 막다른 길이 된다 — showDatePicker 와 같은
+  // 조건에서 갈라져야 "보이지 않는 요구"가 생기지 않는다.
+  const mustPickDate = requiresDatePick && candidateCount > 0;
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const toggleDate = (date: string) =>
     setSelectedDates((prev) =>
@@ -87,7 +97,18 @@ export function ScheduleSlotsSheet({
   const orderedSelection = showDatePicker
     ? (selectableDates ?? []).filter((d) => selectedDates.includes(d))
     : [];
-  const canConfirm = areSlotsComplete(slots) && (!requiresDatePick || orderedSelection.length > 0);
+  const slotsComplete = areSlotsComplete(slots);
+  const canConfirm = slotsComplete && (!mustPickDate || orderedSelection.length > 0);
+  /**
+   * 잠긴 이유는 **잠긴 버튼 옆**에 둔다. 구 구조는 안내가 날짜 블록 안에만 있어,
+   * 블록이 숨거나(후보 0·1개) 사유가 슬롯 미완성이면 사장은 회색 버튼만 보고 왜 못 누르는지
+   * 알 길이 없었다. 완성 게이트가 먼저다 — 둘 다 미충족이면 먼저 할 일을 말한다.
+   */
+  const lockReason = canConfirm
+    ? null
+    : !slotsComplete
+      ? '시간과 역할을 모두 채워야 확인할 수 있어요'
+      : '이 조건을 쓸 날짜를 골라야 확인할 수 있어요';
 
   /**
    * 슬롯별 안정 식별자 — SlotCard 의 key 이자 **펼침 대상의 식별자**다.
@@ -156,16 +177,26 @@ export function ScheduleSlotsSheet({
       onClose={onClose}
       title="시간 · 역할"
       footer={
-        <Button
-          onPress={() => {
-            onConfirm({ dates: orderedSelection, slots });
-            onClose();
-          }}
-          disabled={!canConfirm}
-          testID="order-sheet-slots-confirm"
-        >
-          확인
-        </Button>
+        <View className="gap-2">
+          {lockReason !== null ? (
+            <Text
+              className="text-center text-[11px] font-sans text-content-muted"
+              testID="order-sheet-slots-lock-reason"
+            >
+              {lockReason}
+            </Text>
+          ) : null}
+          <Button
+            onPress={() => {
+              onConfirm({ dates: orderedSelection, slots });
+              onClose();
+            }}
+            disabled={!canConfirm}
+            testID="order-sheet-slots-confirm"
+          >
+            확인
+          </Button>
+        </View>
       }
       overlay={
         pickerIndex !== null ? (
