@@ -93,16 +93,19 @@ describe('ConfirmedStaffCard — 정산 완료 건 진입(D4)', () => {
     expect(screen.getByText('근무 수정')).toBeTruthy();
   });
 
-  it('대조군 — 취소 행은 여전히 근무 수정이 없다', () => {
+  // 아래 둘은 원래 "대조군 — 여전히 근무 수정이 없다"였다. 그 게이트가 바로 위 두 테스트가
+  // 선언한 D2·D4("진입은 허용하고 거절 이유는 시트가 말한다")와 정면으로 어긋났다 —
+  // 같은 카드가 정산 완료는 통과시키고 노쇼·취소는 버튼째 숨겼다. 진입점을 맞춘다.
+  it('🔴 취소 행도 근무 수정이 보인다 — 시트가 읽기 전용으로 답한다', () => {
     renderCard({ status: 'cancelled' }, { onEditTime: jest.fn() });
 
-    expect(screen.queryByText('근무 수정')).toBeNull();
+    expect(screen.getByText('근무 수정')).toBeTruthy();
   });
 
-  it('대조군 — 노쇼 행은 여전히 근무 수정이 없다', () => {
+  it('🔴 노쇼 행도 근무 수정이 보인다 — 시트가 읽기 전용으로 답한다', () => {
     renderCard({ status: 'no_show', isNoShow: true }, { onEditTime: jest.fn() });
 
-    expect(screen.queryByText('근무 수정')).toBeNull();
+    expect(screen.getByText('근무 수정')).toBeTruthy();
   });
 
   it('정산 완료 + 노쇼 취소는 여전히 막힌다 — 서버가 거부하는 축은 그대로다', () => {

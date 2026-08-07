@@ -97,12 +97,6 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   );
 
   const workDuration = timeInfo.duration !== '-' ? timeInfo.duration : null;
-  // 🔴 정산 완료 건도 통과시킨다(D4). 시트가 **읽기 전용 모드로 열려** 정산 완료를 이유로
-  // 거절하므로, 여기서 버튼까지 숨기면 사용자에게는 "왜 없지?"만 남는다. 세 진입점
-  // (근무표·스태프관리·정산)이 같은 답을 주는 것이 D2 이고, 답을 말하는 주체는 시트다.
-  // ⚠️ 노쇼 취소(`canCancelNoShow`)는 다르다 — 그쪽은 대체 화면이 없어 게이트를 유지한다.
-  const canEditTime =
-    staff.status !== STATUS.WORK_LOG.CANCELLED && staff.status !== STATUS.CONFIRMED_STAFF.NO_SHOW;
   const canDelete =
     allowDeleteAnyStatus ||
     staff.status === STATUS.WORK_LOG.SCHEDULED ||
@@ -119,7 +113,12 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   // 액션 줄에 **실제로 그려질** 버튼들. 이걸 미리 세지 않으면 콜백은 왔는데 상태 게이트가
   // 전부 막은 카드에서 구분선(mt-3 border-t pt-3)만 자식 없이 남는다 — 근무표처럼 콜백을
   // 하나만 넘기는 소비처에서 카드마다 빈 줄이 생겼다.
-  const showsEditTime = Boolean(onEditTime) && canEditTime;
+  // 🔴 상태로 진입을 막지 않는다(D2·D4). 시트가 **읽기 전용 모드로 열려** 정산 완료·노쇼·취소를
+  // 각각의 이유로 거절하므로, 여기서 버튼까지 숨기면 사용자에게는 "왜 없지?"만 남는다.
+  // 세 진입점(근무표·스태프관리·정산)이 같은 답을 주는 것이 D2 이고, 답을 말하는 주체는 시트다.
+  // ⚠️ 노쇼 취소(`canCancelNoShow`)는 다르다 — 그쪽은 서버가 실제로 거부하고 대체 화면도 없어
+  //    게이트를 유지한다. 잠금 사유의 정본은 `WorkLogEditSheet` 의 `lockReason` 이다.
+  const showsEditTime = Boolean(onEditTime);
   const showsCancelNoShow = Boolean(onCancelNoShow) && canCancelNoShow;
   const showsReport = Boolean(onReport);
   const showsDelete = Boolean(onDelete) && canDelete;
