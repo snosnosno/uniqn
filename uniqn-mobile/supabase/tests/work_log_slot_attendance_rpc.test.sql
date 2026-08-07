@@ -42,7 +42,7 @@
 --    tr_work_logs_pin_payroll 도 발화하지 않는다 — jpc_test_set_user() 로 충분하다.
 -- ============================================================
 BEGIN;
-SELECT plan(38);
+SELECT plan(41);
 
 -- ── 픽스처 ──────────────────────────────────────────────────
 -- application_id 를 NULL 로 둔다(add_direct_staff 산 행의 형태). 이 파일은 실적 축만 보므로
@@ -568,6 +568,46 @@ SELECT throws_like(
          current_setting('wa.wl_id')),
   '%PERMISSION_DENIED%',
   '공고 소유자가 아니면 실적도 수정할 수 없다');
+
+
+-- ── 39~41) 퇴근 >= 출근 **서버** 검증 (20260807170000) ─────────
+-- 지금까지 이 순서를 보는 것은 클라 `deriveAttendanceInsight` 뿐이었고 DB CHECK 도 없었다
+-- (`work_logs_status_timestamp_consistency` 는 NULL 여부만 본다). 인증된 employer 가 RPC 를
+-- 직접 호출하면 역전 시각이 저장되고, status='checked_out' 이 파생돼 정산 게이트를 통과한 뒤
+-- `fn_settlement_amount` 의 GREATEST(0, ...) 가 음수를 0 으로 접어 ₩0 정산이 확정된다.
+--
+-- 🔑 39·40 은 **양쪽을 함께 패치**하는 경로, 41 은 **한쪽만 패치**해 기존 값과 역전되는 경로다.
+--    41 이 핵심이다 — patch 값만 보고 판정하면 41 이 뚫린다(병합 후 v_final_* 로 봐야 한다).
+DO $$
+BEGIN
+  PERFORM jpc_test_set_user(current_setting('wa.owner_id')::uuid);
+  -- 알려진 정상 상태로 되돌린다(앞 단언들이 남긴 값에 의존하지 않기 위해).
+  PERFORM public.update_work_log_slot(
+    current_setting('wa.wl_id')::uuid,
+    '{"checkIn":"2026-08-10T09:00:00+00:00","checkOut":"2026-08-10T18:00:00+00:00","reason":"기준 상태"}'::jsonb);
+END $$;
+
+SELECT throws_like(
+  format($q$SELECT public.update_work_log_slot(%L::uuid,
+             '{"checkIn":"2026-08-10T18:00:00+00:00","checkOut":"2026-08-10T09:00:00+00:00","reason":"역전"}'::jsonb)$q$,
+         current_setting('wa.wl_id')),
+  '%퇴근 시간은 출근 시간보다 뒤여야 합니다%',
+  '퇴근이 출근보다 앞서면 서버가 거부한다');
+
+SELECT throws_like(
+  format($q$SELECT public.update_work_log_slot(%L::uuid,
+             '{"checkIn":"2026-08-10T09:00:00+00:00","checkOut":"2026-08-10T09:00:00+00:00","reason":"동일"}'::jsonb)$q$,
+         current_setting('wa.wl_id')),
+  '%퇴근 시간은 출근 시간보다 뒤여야 합니다%',
+  '퇴근과 출근이 같으면 거부한다 — 24시간 근무가 아니라 입력 오류다');
+
+-- 기존 check_out_ts = 2026-08-10 18:00. 출근만 그보다 뒤로 고치면 병합 결과가 역전된다.
+SELECT throws_like(
+  format($q$SELECT public.update_work_log_slot(%L::uuid,
+             '{"checkIn":"2026-08-10T20:00:00+00:00","reason":"한쪽만 패치"}'::jsonb)$q$,
+         current_setting('wa.wl_id')),
+  '%퇴근 시간은 출근 시간보다 뒤여야 합니다%',
+  '한쪽만 패치해도 기존 값과의 순서가 깨지면 거부한다 (병합 후 판정)');
 
 SELECT * FROM finish();
 ROLLBACK;
