@@ -178,8 +178,10 @@ export const SettlementCard = React.memo(function SettlementCard({
 
         {/* 시각은 있는데 status 가 승격되지 않은 행 — 게이트로 버튼을 감추기만 하면
             "왜 정산이 안 되는지" 를 알 수 없다(위 '출퇴근 기록 미완료' 배너도 안 뜬다).
-            버튼을 없애는 대신 사유를 남긴다. */}
-        {hasValidTimes && !isSettlableStatus && payrollStatus === STATUS.PAYROLL.PENDING && (
+            버튼을 없애는 대신 사유를 남긴다.
+            축은 `!== COMPLETED` 다 — `=== PENDING` 으로 보면 payroll_status 의 세 번째 값
+            'failed' 에서 이 배너와 아래 버튼이 **동시에** 사라져 빈 칸이 된다(감사 M11). */}
+        {hasValidTimes && !isSettlableStatus && payrollStatus !== STATUS.PAYROLL.COMPLETED && (
           <View className="mt-3 p-2 bg-warning-50 dark:bg-warning-900/20 rounded-lg">
             <Text className="text-xs text-warning-700 dark:text-warning-300 text-center font-sans">
               출퇴근 상태가 확정되지 않아 아직 정산할 수 없어요
@@ -204,8 +206,10 @@ export const SettlementCard = React.memo(function SettlementCard({
           </Pressable>
 
           {/* 지급 완료 표시 (미정산 + 출퇴근 완료 + 서버 게이트 통과 status 일 때만)
-              — 실이체 아님 명시 (QW4) */}
-          {payrollStatus === STATUS.PAYROLL.PENDING &&
+              — 실이체 아님 명시 (QW4).
+              '미정산' 은 `!== COMPLETED` 다. 'failed' 도 스태프 입장에선 "아직 못 받았다" 이므로
+              여기 든다(shared/status/types.ts 의 SettlementDisplayStatus). */}
+          {payrollStatus !== STATUS.PAYROLL.COMPLETED &&
             hasValidTimes &&
             isSettlableStatus &&
             onSettle && (

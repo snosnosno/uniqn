@@ -97,4 +97,31 @@ describe('SettlementCard 지급 완료 버튼 게이트', () => {
     );
     expect(queryByLabelText(SETTLE_LABEL)).toBeNull();
   });
+
+  /**
+   * 감사 M11 — `payroll_status` 는 3값(`pending`·`completed`·`failed`)인데 이 카드가
+   * `=== PENDING` 2값 비교로만 분기했다. `'failed'` 행에서는 상호배타여야 할 두 분기
+   * (차단 사유 배너 / 지급 완료 버튼)가 **둘 다 거짓**이 되어 아무것도 없는 칸이 되는데,
+   * 배지는 `toSettlementDisplayStatus` 를 거쳐 '정산 대기' 로 접혀 보인다 —
+   * 화면은 "대기 중" 이라 말하면서 대기를 끝낼 수단을 주지 않는다.
+   *
+   * 올바른 축은 `!== COMPLETED`(기준 구현 = GroupedSettlementCard). 'failed' 는
+   * 스태프 입장에서 "아직 못 받았다" 이므로 pending 과 같은 칸에 든다
+   * (`shared/status/types.ts` 의 SettlementDisplayStatus 주석).
+   */
+  describe("payrollStatus='failed' 축 통일 (감사 M11)", () => {
+    const failed = { payrollStatus: STATUS.PAYROLL.FAILED } as Partial<WorkLog>;
+
+    it('failed 는 미지급이므로, 정산 가능한 행이면 지급 완료 버튼을 그린다', () => {
+      const { getByLabelText } = renderCard(makeWorkLog(failed));
+      expect(getByLabelText(SETTLE_LABEL)).toBeTruthy();
+    });
+
+    it('failed + status 미승격 행에도 차단 사유를 안내한다 — 빈 칸으로 두지 않는다', () => {
+      const { getByText } = renderCard(
+        makeWorkLog({ ...failed, status: STATUS.WORK_LOG.CHECKED_IN } as Partial<WorkLog>)
+      );
+      expect(getByText('출퇴근 상태가 확정되지 않아 아직 정산할 수 없어요')).toBeTruthy();
+    });
+  });
 });
