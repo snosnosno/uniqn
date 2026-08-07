@@ -19,20 +19,18 @@ const unauthenticatedState = path.join(
 );
 
 /**
- * ops 대회 목록 — **그룹을 명시해야 한다.**
+ * ops 대회 목록 — 정규 경로는 맨 `/tournaments` 다.
  *
- * `(ops)` 는 expo-router 그룹이라 URL 에서 빠지므로 정규 경로는 `/tournaments` 인데,
- * `app/(admin)/tournaments/index.tsx` 도 **같은 `/tournaments` 로 매핑된다**(라우트 충돌).
- * 맨 `/tournaments` 로 들어가면 admin 쪽이 이기고, `app/(admin)/_layout.tsx:23` 이
- * 비-admin 을 `/(app)/(tabs)/home-jobs` 로 돌려보낸다 — 2026-08-08 실측:
- *   staff → `/tournaments`      ⇒ 최종 `/home-jobs` (ops 화면 못 봄)
- *   staff → `/(ops)/tournaments` ⇒ 최종 `/tournaments` (ops 화면 정상)
- * 그룹을 명시하면 정상 진입하고 주소는 `/tournaments` 로 정규화된다.
+ * `(ops)` 는 expo-router 그룹이라 URL 에서 빠진다. 예전엔 `app/(admin)/tournaments/index.tsx`
+ * 가 **같은 `/tournaments` 로 매핑돼**(라우트 충돌) 맨 URL 에서 admin 이 이겼고,
+ * `app/(admin)/_layout.tsx:23` 이 비-admin 을 `/(app)/(tabs)/home-jobs` 로 돌려보냈다.
+ * 그래서 이 스펙은 한동안 `/(ops)/tournaments` 로 그룹을 명시해 **우회**하고 있었다.
  *
- * ⚠️ 이 우회는 **테스트를 통과시키기 위한 것이지, 충돌이 정상이라는 뜻이 아니다.**
- *    맨 URL·딥링크로 ops 목록에 못 가는 것은 별도 결함으로 보고돼 있다.
+ * 그 충돌은 admin 쪽 세그먼트를 `tournament-approvals` 로 갈라 없앴다(그 화면의 실제 정체가
+ * '관리자 대회공고 승인 관리'다). 이제 맨 `/tournaments` 는 `(ops)` 하나만 매치하므로
+ * 우회를 걷고 **정규 경로를 그대로 쓴다** — 우회를 남겨두면 충돌이 되살아나도 초록으로 지나간다.
  */
-const OPS_LIST_PATH = '/(ops)/tournaments';
+const OPS_LIST_PATH = '/tournaments';
 
 async function gotoOps(page: Page): Promise<void> {
   await page.goto(OPS_LIST_PATH, { waitUntil: 'domcontentloaded' });
@@ -54,12 +52,21 @@ test.describe('ops 라우트 접근', () => {
     await expect(page.getByText('라이브 운영')).toBeVisible({ timeout: 15_000 });
   });
 
+  test('맨 URL /tournaments 로도 ops 목록에 도달한다 (라우트 충돌 회귀망)', async ({ page }) => {
+    // 이것이 충돌 수정의 직접 증거다. 충돌이 되살아나면(=admin 쪽에 `tournaments` 세그먼트가
+    // 다시 생기면) staff 는 `app/(admin)/_layout.tsx:23` 에 의해 home-jobs 로 튕겨 여기서 실패한다.
+    // 주소창 직접 입력·딥링크·웹 새로고침이 전부 이 경로를 탄다.
+    await page.goto('/tournaments', { waitUntil: 'domcontentloaded' });
+    await waitForAppReady(page);
+
+    expect(new URL(page.url()).pathname).not.toMatch(/home-jobs/);
+    await expect(page.getByText('라이브 운영')).toBeVisible({ timeout: 15_000 });
+  });
+
   test('미인증 사용자는 로그인으로 리다이렉트된다', async ({ browser }) => {
     const context = await browser.newContext({ storageState: unauthenticatedState });
     const page = await context.newPage();
 
-    // 반드시 그룹을 명시한 경로로 — 맨 `/tournaments` 를 쓰면 admin 레이아웃이 먼저 로그인으로
-    // 보내므로 **ops 레이아웃을 한 번도 타지 않고** 통과한다(잘못된 이유로 초록).
     await page.goto(OPS_LIST_PATH, { waitUntil: 'domcontentloaded' });
     await page.waitForURL(/login|auth/, { timeout: 30_000 }).catch(() => {});
 

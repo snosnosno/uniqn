@@ -64,7 +64,7 @@ export default function AdminDashboard() {
       description: '대회공고 인증 요청을 검토하고 처리합니다.',
       icon: TrophyOutlineIcon,
       iconColor: '#EAB308',
-      href: '/(admin)/tournaments',
+      href: '/(admin)/tournament-approvals',
       bgColor: 'bg-warning-100 dark:bg-warning-900/30',
     },
     {

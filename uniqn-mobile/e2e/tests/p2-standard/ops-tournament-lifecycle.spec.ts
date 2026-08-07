@@ -20,11 +20,12 @@ import { test, expect, type Locator, type Page } from '@playwright/test';
 import { waitForAppReady } from '../../helpers/wait-helpers';
 
 /**
- * **그룹을 명시해야 한다** — `app/(admin)/tournaments/index.tsx` 가 같은 `/tournaments` 로
- * 매핑돼 맨 URL 은 admin 쪽이 이긴다(`app/(admin)/_layout.tsx:23` 이 비-admin 을 홈으로 보낸다).
+ * ops 대회 목록의 정규 경로. 예전엔 `app/(admin)/tournaments/index.tsx` 가 같은
+ * `/tournaments` 로 매핑돼 맨 URL 에서 admin 이 이겼기 때문에 그룹 명시 우회가 필요했지만,
+ * admin 세그먼트를 `tournament-approvals` 로 갈라 충돌을 없앴다.
  * 사유 전문은 `ops-route-access.spec.ts` 의 `OPS_LIST_PATH` 주석.
  */
-const OPS_LIST_PATH = '/(ops)/tournaments';
+const OPS_LIST_PATH = '/tournaments';
 
 /** 실행마다 고유 — 재실행 시 앞선 실행의 잔여 대회와 섞이지 않게 한다. */
 const RUN_ID = String(Date.now()).slice(-6);
