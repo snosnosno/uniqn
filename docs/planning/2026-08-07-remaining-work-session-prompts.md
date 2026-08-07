@@ -17,8 +17,11 @@
 | 마지막 OTA | `81ddba293` (#419) — **#420~#427 8건이 미배포** |
 | 마지막 웹배포 | `5ad8038e` (08-06, #413 확인용) |
 | DB 파리티 | **200 funcs / 111 policies** (#420 이후 불변, #424~#427 모두 파리티 무변) |
-| 열린 PR | Dependabot 6건뿐 (#379·#380·#381·#414·#415·#416) |
-| 열린 워크트리 | 없음 (전량 정리) |
+| 열린 PR | Dependabot 6건 (#379·#380·#381·#414·#415·#416) + **#428 S-A 문서 정리**(2026-08-07) |
+| 열린 워크트리 | **2개** — `T-HOLDEM-a3-notify`(빈 껍데기, master 대비 커밋 0·정리 가능) · `T-HOLDEM-sec-wrapup`(#428, 정션 있음 — 제거 전 정션 먼저 해제) |
+
+> ⚠️ **이 파일(`61aa650eb`)은 `origin` 에 없다.** 로컬 브랜치 `docs/remaining-work-handoff-20260807`
+> 에만 있어 클론·다른 워크트리에서는 보이지 않는다. 푸시 여부는 사용자 결정 대기.
 
 ### ⚠️ prod 마이그레이션 재적용 금지 (누적)
 
@@ -39,7 +42,36 @@
 
 ---
 
-## S-A. 보안 마무리 (최우선 — 다음 심사를 막는다)
+## S-A. 보안 마무리 — ✅**2·3 완료** (2026-08-07, PR #428) · 🔴**1 남음**
+
+> **착지 상태**: 브랜치 `docs/security-wrapup-20260807` 커밋 `e111bbca5` → **PR #428**.
+> 마이그 0건 · 파리티 **200/111 불변** · `npm run quality` exit 0.
+>
+> ### ✅ 2. 전수 스캔 완료 — 잔여 노출 **1건**
+> 🚨 **시드가 만드는 `@uniqn.app` 계정은 4개가 아니라 5개다.**
+> `pending-employer-staff@uniqn.app`(시드 §5, AD-001)가 **`review-%` 패턴 회전에서
+> 1차·2차 모두 누락**돼 prod 에서 아직 시드 평문이 유효하다.
+> 실측: 4계정 `updated_at`=`08-07 04:50:31`, 5번째만 **`05-07`** 그대로.
+> 권한이 `staff` 라 `permanently_delete_user` 경로는 **없고** 세션·refresh token 0건 → 즉시위험 낮음.
+> **사용자가 "두고 보고만" 을 선택해 미조치.** 회전할 때는 패턴이 아니라 5개 이메일 목록 기준으로.
+>
+> 그 외는 깨끗: prod 27계정×평문10종 = 매치 위 1건뿐 · `supabase/seed.sql` 의 `TestPass1!` 4계정은
+> `@uniqn.test` 라 prod 0건(마이그 이력 없음=정상) · 시크릿 하드코딩 0건
+> (`wrangler.toml:17` anon key 만, publishable 이라 정상) · 추적 `.env` 는 `.example` 2개뿐.
+> 🔑 **"archive 폴더에 있으니 무력"은 거짓** — archive 시드 3개 전부 prod 마이그 이력에 있다.
+> 판정은 파일 위치가 아니라 `schema_migrations` 실측으로.
+>
+> ### ✅ 3. 문서 갱신 완료
+> `docs/app-review/review-test-accounts.md`(평문 6개 제거 + 계정 5종 인벤토리 + 시드 마이그 경로 정정
+> — `20260419031905` 는 **실존하지 않는 파일명**이었다) · `uniqn-mobile/docs/local-development.md`
+> (로컬 전용 경고 + 5번째 계정) · `uniqn-mobile/e2e/config.ts`("4계정"→5계정 주석, 동작 무변).
+>
+> ### 🔴 1. 남은 것 — App Store Connect 심사 노트 갱신 (사용자 콘솔)
+> 새 비밀번호는 `uniqn-mobile/e2e/.env.test` 의 `E2E_TEST_ACCOUNT_PASSWORD` 에 **실제로 있다**
+> (2차 회전분, 실측 확인). ⚠️ 그 파일 주석도 "review-* 4계정"으로 적혀 있다 — gitignore 라
+> 커밋 불가, **수동 정정 필요**.
+>
+> <details><summary>원본 프롬프트 (이력)</summary>
 
 ```
 공개 레포 평문 자격증명 사고(#427, 2026-08-07)의 잔여를 마무리해줘.
@@ -68,6 +100,8 @@ role=admin·미정지라 누구나 로그인해 permanently_delete_user 로 임�
 
 완료 기준: 심사 노트 갱신 확인 + 스캔 결과 보고(발견 0건이면 0건이라고) + 문서 diff.
 ```
+
+</details>
 
 ### S-A2. Firebase / GCP 정리 (#375 잔여, 사용자 콘솔 작업)
 
