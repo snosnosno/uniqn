@@ -126,6 +126,20 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     icon: '✅',
   },
 
+  // ⚠️ 레거시 2종 — 현재 트리거는 이 타입을 보내지 않는다(20260807160000 에서 분리 복원).
+  //    이력 6건의 렌더링용이며, link 는 각 행의 DB link 가 정본이다.
+  [NotificationType.WORK_LOG_CHECK_IN]: {
+    title: '출근 기록',
+    body: (d) => `"${d.jobPostingTitle ?? '근무'}" 출근이 기록되었습니다.`,
+    link: (d) => (d.workLogId ? `/schedule/${d.workLogId}` : '/schedule'),
+  },
+
+  [NotificationType.WORK_LOG_CHECK_OUT]: {
+    title: '퇴근 기록',
+    body: (d) => `"${d.jobPostingTitle ?? '근무'}" 퇴근이 기록되었습니다.`,
+    link: (d) => (d.workLogId ? `/schedule/${d.workLogId}` : '/schedule'),
+  },
+
   [NotificationType.CHECKIN_REMINDER]: {
     title: (d) => `⏰ 출근 ${d.remainingTime || '30분'} 전`,
     body: (d) => `"${d.jobTitle}" 출근 시간이 다가왔습니다.`,
@@ -219,6 +233,23 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     body: (d) => `"${d.jobTitle}" 공고가 근무일 경과로 자동 마감되었습니다.`,
     link: (d) => (d.jobPostingId ? `/jobs/${d.jobPostingId}` : '/jobs'),
     icon: '⏰',
+  },
+
+  // ⚠️ 아래 4종은 DB 트리거가 직접 INSERT 한다(클라 발신 경로 없음).
+  //    여기 정의는 exhaustive Record 를 만족시키기 위한 2차 진실원이며,
+  //    사용자에게 실제로 보이는 문구는 마이그레이션의 트리거 정의가 정본이다.
+  //    문구를 고쳐야 한다면 트리거 쪽을 먼저 고칠 것.
+  [NotificationType.JOB_POSTING_COLLABORATOR_ADDED]: {
+    title: '🤝 공고 관리 초대',
+    body: (d) => `"${d.jobTitle ?? '해당 공고'}" 공고 관리에 초대되었습니다.`,
+    link: (d) => (d.jobPostingId ? `/my-postings/${d.jobPostingId}` : '/my-postings'),
+    icon: '🤝',
+  },
+
+  [NotificationType.JOB_POSTING_COLLABORATOR_REMOVED]: {
+    title: '공고 관리 제외',
+    body: (d) => `"${d.jobTitle ?? '해당 공고'}" 공고 관리에서 제외되었습니다.`,
+    link: () => '/my-postings',
   },
 
   // =========================================================================
