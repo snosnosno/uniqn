@@ -1,7 +1,23 @@
 # 앱 심사용 테스트 계정 안내 / App Review Test Accounts
 
-> App Store Connect / Google Play Console 심사 제출 시 이 문서의 정보를 "심사 메모(App Review Information)"란에 첨부.
-> When submitting to App Store Connect / Google Play Console, paste the information below into the "App Review Information" / "Reviewer notes" field.
+> App Store Connect / Google Play Console 심사 제출 시 이 문서의 **시나리오**를 "심사 메모(App Review Information)"란에 첨부.
+> 비밀번호는 이 문서에 적지 않는다 — 아래 [🔐 비밀번호 취급 규칙](#-비밀번호-취급-규칙) 참조.
+> When submitting to App Store Connect / Google Play Console, paste the **scenarios** below into the "App Review Information" / "Reviewer notes" field.
+> Passwords are deliberately absent from this file — see [Password handling](#-비밀번호-취급-규칙).
+
+---
+
+## 🔐 비밀번호 취급 규칙
+
+**이 레포는 PUBLIC 이다.** 심사 계정은 prod 에 실재하므로 평문 비밀번호를 여기에 두면 곧바로 계정 탈취 경로가 된다.
+
+- 2026-08-07 사고: 시드 마이그레이션에 평문으로 적힌 비밀번호가 prod `review-admin`(`app_metadata.role=admin`)에 실제로 일치했고,
+  admin 은 `permanently_delete_user` 로 임의 계정을 삭제할 수 있었다. 상세: PR #427 (`732c300a5`).
+- 그 뒤 **`review-*` 4계정 비밀번호를 회전**하고 세션 93건·refresh token 108건을 파기했다.
+- **현재 비밀번호의 진실원은 App Store Connect 심사 노트와 레포 밖 비밀번호 보관소다.** 레포 어디에도 두지 않는다.
+- 원격(prod)을 겨냥해 E2E 를 돌릴 때만 `E2E_TEST_ACCOUNT_PASSWORD` 환경변수로 주입한다
+  (`uniqn-mobile/e2e/.env.test`, gitignore). 주입하지 않으면 `e2e/config.ts` 가 안전 정지시킨다.
+- 🔴 **비밀번호를 회전할 때마다 App Store Connect 심사 노트를 같이 갱신할 것.** 안 하면 다음 심사가 로그인 실패로 반려된다.
 
 ---
 
@@ -11,9 +27,9 @@
 
 | 역할 | 이메일 | 비밀번호 |
 |------|--------|----------|
-| 스태프 | review-staff@uniqn.app | Review2026! |
-| 구인자 | review-employer@uniqn.app | Review2026! |
-| 관리자 | review-admin@uniqn.app | Review2026! |
+| 스태프 | review-staff@uniqn.app | (레포 밖 보관 — 위 규칙 참조) |
+| 구인자 | review-employer@uniqn.app | (레포 밖 보관) |
+| 관리자 | review-admin@uniqn.app | (레포 밖 보관) |
 
 ### 데모 시나리오
 
@@ -47,9 +63,12 @@
 
 | Role | Email | Password |
 |------|-------|----------|
-| Staff | review-staff@uniqn.app | Review2026! |
-| Employer | review-employer@uniqn.app | Review2026! |
-| Admin | review-admin@uniqn.app | Review2026! |
+| Staff | review-staff@uniqn.app | (stored outside this repo) |
+| Employer | review-employer@uniqn.app | (stored outside this repo) |
+| Admin | review-admin@uniqn.app | (stored outside this repo) |
+
+> This repository is public. Passwords live only in App Store Connect review notes and an
+> out-of-repo password store. See the Korean section above for the full rationale.
 
 ### Demo Scenarios
 
@@ -79,9 +98,25 @@
 
 ## 메타정보 / Metadata
 
-- 데모 데이터 시드 마이그레이션: `uniqn-mobile/supabase/migrations/20260419031905_seed_app_review_accounts.sql`
-- 마이그레이션 재적용으로 데이터 복구 가능 (멱등성 보장)
-- 비밀번호 정기 로테이션 권장 (분기 1회)
+- 데모 데이터 시드 마이그레이션: `uniqn-mobile/supabase/migrations/20260710000004_baseline_data_seed.sql`
+  (§3 심사 계정 3종 · §5 AD-001 미인증 구인자 · §6 협업자. 구 파일들은 `migrations/archive/` 로 이동됐다)
+- 마이그레이션 재적용으로 데이터 복구 가능 (`ON CONFLICT DO NOTHING` 멱등)
+- 비밀번호 정기 로테이션 권장 (분기 1회) — 회전 시 App Store Connect 심사 노트 동시 갱신 필수
+
+### 시드가 만드는 계정 전체 (5개 — prod 에도 실재)
+
+| 이메일 | app_metadata.role | 시드 위치 | 2026-08-07 회전 |
+|---|---|---|---|
+| `review-staff@uniqn.app` | staff | §3 | ✅ |
+| `review-employer@uniqn.app` | employer | §3 | ✅ |
+| `review-admin@uniqn.app` | admin | §3 | ✅ |
+| `review-collaborator@uniqn.app` | employer | §6 | ✅ |
+| `pending-employer-staff@uniqn.app` | staff | §5 (AD-001) | 🔴 **미회전** |
+
+> ⚠️ `pending-employer-staff@uniqn.app` 는 이름이 `review-` 로 시작하지 않아 2026-08-07 회전 대상에서
+> 누락됐다. 2026-08-07 prod 실측 기준 여전히 시드 평문 비밀번호와 일치한다.
+> 권한은 `staff` 라 `permanently_delete_user` 경로는 없고 로그인 이력·세션·refresh token 은 0 건이다.
+> **회전 스크립트를 다시 돌릴 때 `review-%` 패턴이 아니라 위 5개 이메일 목록을 기준으로 할 것.**
 
 ### 공고 `schedule` jsonb shape 주의
 
