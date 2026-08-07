@@ -6,9 +6,11 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { StackHeader } from '@/components/headers';
 import { useCreateOpsTournament } from '@/hooks/ops';
 import { PostingPickerSheet } from '@/components/ops';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { useMyJobPostings } from '@/hooks/useJobManagement';
 import { opsBlindLevelService } from '@/services/ops';
 import { DEFAULT_BLIND_LEVELS } from '@/domains/ops/defaultBlindStructure';
+import { kstTodayLocalDate, opsEventDateToString } from '@/domains/ops/opsEventDate';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
@@ -58,7 +60,10 @@ export default function OpsTournamentCreateScreen() {
   const [name, setName] = useState('');
   const [venue, setVenue] = useState('');
   const [gameType, setGameType] = useState('NLH');
-  const [eventDate, setEventDate] = useState('');
+  // 기본값 = KST 오늘. 빈 값이면 '이어서 운영' 카드가 upcoming 대회를 영영 못 집는다
+  // (`eventDate === 오늘` 비교라 null 은 제외 대상). 라이브 운영은 만든 날 여는 게 압도적
+  // 다수라 오늘을 기본으로 두고, 다른 날이면 사용자가 달력에서 바꾼다(X 로 비우는 것도 가능).
+  const [eventDate, setEventDate] = useState<Date | null>(() => kstTodayLocalDate(Date.now()));
   const [startingChips, setStartingChips] = useState('30000');
   const [seatsPerTable, setSeatsPerTable] = useState('9');
   const [buyInChips, setBuyInChips] = useState('30000');
@@ -84,7 +89,7 @@ export default function OpsTournamentCreateScreen() {
       {
         name: name.trim(),
         venue: venue.trim() || undefined,
-        eventDate: eventDate.trim() || undefined,
+        eventDate: eventDate ? opsEventDateToString(eventDate) : undefined,
         gameType: gameType.trim() || 'NLH',
         jobPostingId,
         startingChips: toInt(startingChips),
@@ -182,28 +187,27 @@ export default function OpsTournamentCreateScreen() {
           </Pressable>
         )}
 
-        <View className="flex-row gap-3">
-          <View className="flex-1">
-            <Text className="mb-1 text-xs text-secondary-500 dark:text-secondary-400">게임</Text>
-            <TextInput
-              value={gameType}
-              onChangeText={setGameType}
-              placeholder="NLH"
-              placeholderTextColor="#9CA3AF"
-              className="mb-3 rounded-md border border-gray-300 px-3 py-2 text-content-primary dark:border-gray-700 dark:text-off-white"
-            />
-          </View>
-          <View className="flex-1">
-            <Text className="mb-1 text-xs text-secondary-500 dark:text-secondary-400">날짜</Text>
-            <TextInput
-              value={eventDate}
-              onChangeText={setEventDate}
-              placeholder="2026-07-01"
-              placeholderTextColor="#9CA3AF"
-              className="mb-3 rounded-md border border-gray-300 px-3 py-2 text-content-primary dark:border-gray-700 dark:text-off-white"
-            />
-          </View>
-        </View>
+        <Text className="mb-1 text-xs text-secondary-500 dark:text-secondary-400">게임</Text>
+        <TextInput
+          value={gameType}
+          onChangeText={setGameType}
+          placeholder="NLH"
+          placeholderTextColor="#9CA3AF"
+          className="mb-3 rounded-md border border-gray-300 px-3 py-2 text-content-primary dark:border-gray-700 dark:text-off-white"
+        />
+
+        {/* 날짜는 손입력이 아니라 달력 선택이다 — 자유 텍스트였을 때 "7/1" 이 저장에 성공하고
+            '이어서 운영' 카드가 조용히 사라졌다(결함 ④). 두 칸 나란히 두면 테두리 두께가 형제
+            TextInput 과 어긋나므로 한 줄 전폭으로 둔다. */}
+        <Text className="mb-1 text-xs text-secondary-500 dark:text-secondary-400">날짜</Text>
+        <DatePicker
+          value={eventDate}
+          onChange={setEventDate}
+          placeholder="날짜를 선택하세요"
+          dateFormat="yyyy-MM-dd (EEE)"
+          className="mb-3"
+          testID="ops-create-event-date"
+        />
 
         <View className="flex-row gap-3">
           <NumField label="시작 스택" value={startingChips} onChange={setStartingChips} />
