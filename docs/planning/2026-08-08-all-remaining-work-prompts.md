@@ -14,17 +14,23 @@
 
 | 축 | 값 |
 |---|---|
-| `origin/master` | **`e53722b5c`** (#439) |
-| **prod 미적용 마이그** | ✅ **0건** — #433·#436·#439 모두 `prod-migrate` 워크플로우로 적용 완료 |
-| **DB 파리티** | ✅ **일치** — prod `funcs 202 / policies 111` = 레포 기대값 202/111 (`parity_baseline_guard.test.sql:142-143`) |
+> ⚠️ 아래는 **2026-08-08 22시 재실측**이다. 이 절의 이전 값(`e53722b5c` / 미적용 0건 / 파리티 일치)은
+> 그 뒤 #440·#441·#442 가 머지되며 전부 stale 이 됐다.
+
+| 축 | 값 |
+|---|---|
+| `origin/master` | **`20cb6bad9`** (#442) |
+| **prod 미적용 마이그** | 🔴 **5건** — `20260808130000`(#442) + `20260808200000`·`210000`·`220000`·`230000`(#441). prod 마지막 기록은 `20260808120000` |
+| **DB 파리티** | 🔴 **갭 4** — prod `funcs 202 / policies 111` vs 레포 기대 **206/111**(`parity_baseline_guard.test.sql:155-156`). **가드 결함이 아니다** — 위 ops 마이그 4건을 실으면 닫힌다. #442 의 마이그는 COMMENT 갱신만이라 증감 0 |
 | **branch protection** | ✅ 활성 — required = `Quality Gate` · `E2E Gate` |
 | 마지막 OTA | ⚠️ `078e857d-49ca-4002-abae-849783163cf0` (runtime **1.0.5**, commit `fefe6b609`=#429) |
 | 마지막 웹배포 | ⚠️ CF Production `92416de0` (source `fefe6b6`) |
-| 열린 PR | **#440**(이 원장 계열, CI 12/12 pass·MERGEABLE) · Dependabot 4건(#380·#414·#415·#416) |
+| 열린 PR | Dependabot 4건(#380·#414·#415·#416)만 |
 
-> 🔴 **가장 큰 잔여는 코드가 아니다.** #432~#439 **8건이 웹·OTA 어디에도 안 나갔다.**
-> 정산 Lost Update(#436)·퇴근≥출근 검증(#433)·조회 실패 위장(#434)·ops 링크 복구(#435)가
-> 전부 **사용자에게 도달하지 않은 상태**다. 서버(마이그·EF)만 앞서 있어 롤아웃 비대칭이 커져 있다.
+> 🔴 **가장 큰 잔여는 코드가 아니다.** #432~#442 **11건이 웹·OTA 어디에도 안 나갔다.**
+> 정산 Lost Update(#436)·퇴근≥출근 검증(#433)·조회 실패 위장(#434)·ops 링크 복구(#435)에
+> ops 결함 봉합(#441)과 MEDIUM 잔여(#442)까지 더해져, 전부 **사용자에게 도달하지 않은 상태**다.
+> 서버(마이그·EF)만 앞서 있어 롤아웃 비대칭이 계속 커지고 있다.
 
 ---
 
@@ -62,22 +68,33 @@ COMMENT 갱신만이라 **파리티 증감 0** — 아래 파리티 갭 4는 전
 
 ---
 
-## T1. 🔴 최우선 — PR#440 머지 → 웹배포 → OTA
+## T1. 🔴 최우선 — prod 마이그 5건 → 웹배포 → OTA
 
-가장 급하다. 8건의 수정이 사용자에게 안 갔다.
+가장 급하다. 11건의 수정이 사용자에게 안 갔다. ✅ PR#440 은 머지됐다(`e599e5a9e`).
+
+🚨 **마이그를 먼저 실어라.** #441 의 ops RPC 와 #442 의 알림 COMMENT 가 prod 에 없는데
+클라 코드만 나가면, ops 화면이 없는 함수를 부른다.
 
 ```
-#432~#439 를 웹과 OTA 로 내보낸다. 그 전에 PR#440 을 머지한다.
+#432~#442 를 웹과 OTA 로 내보낸다. 그 전에 prod 마이그 5건을 적용한다.
 
-순서를 지켜라 — 웹 먼저, OTA 나중이다. 웹에는 AASA 가 실려 있고(#435 의 /jobs 패턴),
+순서를 지켜라 — 마이그 → 웹 → OTA 다. 웹에는 AASA 가 실려 있고(#435 의 /jobs 패턴),
 그건 네이티브 빌드가 아니라 public/ 의 배포물이라 웹으로만 전달된다.
 
-1. PR#440 머지 (CI 는 이미 12/12 green 이었으나 base 가 움직였을 수 있으니 재확인)
-   gh pr checks 440 → 전부 pass 확인 후 gh pr merge 440 --squash
-2. 로컬을 origin/master 로 맞춘다 (git fetch origin master:master)
-3. 웹 배포: node scripts/deploy-cloudflare.js --force
-4. OTA: eas update --branch master (커밋 필드가 origin/master HEAD 인지 확인)
-5. 배포 후 번들 마커 검증
+1. prod 마이그 5건을 prod-migrate 워크플로우(.github/workflows/prod-migrate.yml)로 적용한다.
+   파일 바이트 그대로 실어라 — 손으로 옮기면 주석 축약으로 정본이 갈리는데 동작이 같아
+   테스트로도 안 잡힌다.
+     20260808130000_notify_merge_comment_correction.sql          (#442, COMMENT 만)
+     20260808200000_ops_no_show_event_types.sql                   (#441)
+     20260808210000_ops_set_participant_no_show.sql               (#441)
+     20260808220000_ops_defect3_event_types_and_archived_at.sql   (#441)
+     20260808230000_ops_participant_edit_delete_archive_rpcs.sql  (#441)
+2. 파리티 재실측 — funcs 가 202 → 206 이 되어야 한다(레포 기대값과 일치).
+   안 맞으면 총계 전에 **어느 함수가 빠졌는지**부터 본다.
+3. 로컬을 origin/master 로 맞춘다 (git fetch origin master:master)
+4. 웹 배포: node scripts/deploy-cloudflare.js --force
+5. OTA: eas update --branch master (커밋 필드가 origin/master HEAD 인지 확인)
+6. 배포 후 번들 마커 검증
 
 금지: 워크트리에서 웹 배포하지 말 것. 메인 체크아웃에서만.
 ```
