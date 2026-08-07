@@ -6,20 +6,26 @@
  *    아이콘+숫자+a11y 라벨로 병기(GridDayCell SSOT 소비 → CalendarCell 뱃지와 정합).
  *  - 소프트타깃 입력: 그 날 목표인원 → useSetVenueSoftTarget(venueId, date, count). 날짜 toDateString(E5).
  *  - 인원 추가: AddSlotSheet(풀/전화/공고).
- *  - 슬롯 편집: VenueDayDetail 행 탭 → EditSlotSheet(형제 슬롯 중복충돌 경고).
+ *  - 슬롯 편집: VenueDayDetail 행 탭 → WorkLogEditSheet(3개 진입점 공용 통합 시트).
+ *
+ * 🔴 **`isContainer` 게이트가 사라졌다.** 예전에는 컨테이너 직속 배치만 `useConfirmedStaff` 로
+ *    실적(출퇴근)을 해소할 수 있어, 공고 스팬 슬롯에서는 실적 편집 입구가 통째로 증발했다
+ *    (설계 결함 ②). 읽기 RPC 가 실적을 함께 내려주게 되면서 원인이 사라졌으므로, 슬롯이
+ *    직접 들고 온 값을 시트에 넘긴다 — 두 번째 조회도, 모달 스왑 지연도 필요 없다.
+ *
+ * ⚠️ **빼기는 시트가 아니라 카드 액션이다**(설계 §3-4). 시트는 순수 편집기이고 파괴적 액션은
+ *    진입 맥락의 것이다. 시트 푸터로 되돌리지 말 것.
  *
  * R1: 클라는 COUNT/표시만(요약은 GridDayCell), filled 미러·정원 정합은 RPC 책임.
  * 쓰기 무효화는 각 훅/시트가 queryKeys.workSchedule.all prefix 로 담당 → 부족셀·상세 자동 갱신.
  * 플래그 OFF면 상위(work-schedule 화면)에서 미노출.
  */
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text } from 'react-native';
 import { useRouter } from 'expo-router';
-import { STATUS } from '@/constants';
-import { SHEET_DISMISS_ANIMATION_MS } from '@/constants/animation';
-import { settledLockMessage } from '@/domains/settlement';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { ConfirmModal } from '@/components/ui/Modal';
 import {
   UsersIcon,
   FlagOutlineIcon,
@@ -32,15 +38,14 @@ import { SECONDARY_PALETTE, STATUS_COLORS } from '@/constants/colors';
 import { toDateString } from '@/utils/date';
 import { useToastStore } from '@/stores/toastStore';
 import { useUser } from '@/stores/authStore';
-import { useSetVenueSoftTarget, useVenueDaySlots } from '@/hooks/workSchedule';
-import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
-import { computeShortage, type GridDayCell } from '@/domains/workSchedule';
+import { useDeleteSlot, useSetVenueSoftTarget, useVenueDaySlots } from '@/hooks/workSchedule';
+import { computeShortage, readScheduledStart, type GridDayCell } from '@/domains/workSchedule';
+import { isWorkLogStatus } from '@/shared/status';
+import { isStaffRole } from '@/types/role';
+import { WorkLogEditSheet, type WorkLogEditInitial } from '@/components/workLogEdit';
 import type { VenueDaySlot } from '@/repositories/workSchedule';
-import type { ConfirmedStaff, WorkLog } from '@/types';
-import { WorkTimeEditor } from '@/components/employer/settlement/WorkTimeEditor';
 import { VenueDayDetail } from './VenueDayDetail';
 import { AddSlotSheet } from './AddSlotSheet';
-import { EditSlotSheet } from './EditSlotSheet';
 import { SlotTimeChangeSheet } from './SlotTimeChangeSheet';
 
 export interface VenueDayPanelProps {
@@ -56,6 +61,40 @@ export interface VenueDayPanelProps {
 
 /** 하루 목표 인원(소프트타깃) 클라 상한(L2) — 서버(set_venue_soft_target)는 음수만 거부(상한 없음)라 클라에서 상한 클램프. 뱃지 "997명" 과장 방지. */
 const MAX_SOFT_TARGET = 99;
+
+/** ISO timestamptz → Date. 못 읽으면 null(기록 없음과 같게 다룬다 — 지어내지 않는다). */
+function parseTimestamptz(value: string | null): Date | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+/**
+ * 근무표 슬롯 → 통합 편집 시트 초기값.
+ *
+ * 🔴 `status` 는 슬롯의 **실값**을 넘긴다. null 로 얼버무리면 노쇼·취소 행에서도 시트 배지가
+ *    시각에서 파생돼 "저장하면 출근이 됩니다"라고 거짓말한다(서버는 그 상태를 안 건드린다).
+ *    반대로 낯선 값을 'scheduled' 로 흡수해도 같은 거짓말이 되므로, 모를 때만 null 을 준다.
+ *
+ * 🔑 `jobPosting`/`filledByRole`(역할 마감 표기)은 여기서 채우지 않는다 — 근무표에는 넘길
+ *    단일 공고가 **원리적으로 없다**(슬롯마다 `jobPostingId` 가 다르고 컨테이너 직속 배치는
+ *    대응 공고가 아예 없다). 이 경로에 마감 표기가 없는 것은 정상이다(설계 §3-2-b).
+ */
+function toEditInitial(slot: VenueDaySlot, fallbackDate: string): WorkLogEditInitial {
+  return {
+    ...readScheduledStart(slot.timeSlot),
+    checkIn: parseTimestamptz(slot.checkInTs),
+    checkOut: parseTimestamptz(slot.checkOutTs),
+    role: isStaffRole(slot.role) ? slot.role : 'staff',
+    customRole: slot.customRole,
+    color: slot.color,
+    memo: slot.notes ?? '',
+    date: slot.date || fallbackDate,
+    status: isWorkLogStatus(slot.status) ? slot.status : null,
+    payrollStatus: slot.payrollStatus,
+    staffName: slot.staffName,
+  };
+}
 
 type ChipTone = 'neutral' | 'warning' | 'success';
 
@@ -108,131 +147,71 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
   const softTarget = cell?.softTarget ?? 0;
   const shortage = cell?.shortage ?? computeShortage(softTarget, headcount);
 
-  // 형제 슬롯(편집 시 같은 스태프·시작시각 중복충돌 경고용). VenueDayDetail 과 동일 쿼리키 공유(중복요청 없음).
+  // 형제 슬롯 — 지금 쓰는 곳은 **시간 일괄 변경 시트(3-C)** 와 헤더 버튼 노출 판정뿐이다.
+  // (중복충돌 경고는 통합 시트로 넘어오면서 사라졌다 — `slotEdit.detectSlotConflicts` 주석 참조.)
+  // VenueDayDetail 과 동일 쿼리키를 공유해 중복 요청은 없다.
   const { data: daySlots } = useVenueDaySlots(venueId, date);
   const siblingSlots = useMemo(() => daySlots ?? [], [daySlots]);
 
   const [addVisible, setAddVisible] = useState(false);
   const [editingSlot, setEditingSlot] = useState<VenueDaySlot | null>(null);
   const [timeChangeVisible, setTimeChangeVisible] = useState(false);
+  /** 빼기 확인 대상(카드 액션). 시트와 겹치지 않는다 — 카드에서 바로 뜬다. */
+  const [deleteTarget, setDeleteTarget] = useState<VenueDaySlot | null>(null);
 
-  // 출근(실기록) 수정(#3) — 근무표 카드의 "시간 수정" → WorkTimeEditor.
-  // 컨테이너 확정 스태프(useConfirmedStaff)에서 workLog(출퇴근 시각 포함)를 해소해 프리필한다.
-  // get_venue_day_slots RPC 는 출퇴근 시각을 반환하지 않아 슬롯만으로는 프리필이 불가하기 때문.
-  const {
-    grouped: confirmedGroups,
-    updateWorkTime,
-    isUpdatingTime,
-    isLoading: isConfirmedLoading,
-  } = useConfirmedStaff(venueId);
-  const confirmedById = useMemo(() => {
-    const map = new Map<string, ConfirmedStaff>();
-    for (const group of confirmedGroups) {
-      for (const s of group.staff) map.set(s.id, s);
-    }
-    return map;
-  }, [confirmedGroups]);
-  const [timeEditStaff, setTimeEditStaff] = useState<ConfirmedStaff | null>(null);
-  // 모달 스왑 지연 타이머 — 언마운트 시 정리하지 않으면 사라진 화면에 setState 가 날아간다.
-  const modalSwapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(
-    () => () => {
-      if (modalSwapTimerRef.current) clearTimeout(modalSwapTimerRef.current);
-    },
-    []
-  );
+  const deleteSlot = useDeleteSlot();
 
   /**
-   * 실제 출퇴근 편집 대상 해소 + 진입 가드. 열 수 없으면 사유를 토스트로 안내하고 null 을 준다.
-   * 해소를 **여는 것과 분리한** 이유 — 실패 판정은 즉시 끝내야 하고(맥락 유지), 실제로 여는 건
-   * 시트가 닫힌 뒤여야 하기 때문이다(아래 handleEditAttendance).
-   */
-  const resolveAttendanceTarget = useCallback(
-    (slot: VenueDaySlot): ConfirmedStaff | null => {
-      const full = confirmedById.get(slot.workLogId);
-      if (full?.workLog) {
-        // 정산 완료 건은 서버(updateWorkTimeWithTransaction)가 수정을 거부하므로 진입 전 차단한다
-        // (사유까지 입력한 뒤 거부 토스트를 받는 헛수고 방지 — ConfirmedStaffCard 계약과 정렬).
-        if (full.payrollStatus === STATUS.PAYROLL.COMPLETED) {
-          toastError(settledLockMessage('시간을 수정할'));
-          return null;
-        }
-        return full;
-      }
-      if (isConfirmedLoading) {
-        // 확정 스태프 로딩과 슬롯 렌더 시점 차 — 아직 로딩 중이면 일시 안내(구조적 미지원과 구분).
-        toastError('출퇴근 정보를 불러오는 중이에요. 잠시 후 다시 시도해주세요.');
-        return null;
-      }
-      // 여기 도달 = 컨테이너 확정분에 없는 슬롯. 근무 수정 시트가 isContainer 로 입구를
-      // 미리 걸러 정상 경로에선 오지 않지만, 방어적으로 안내한다.
-      toastError('이 인원의 출퇴근 정보를 불러오지 못했어요. 공고 스태프 관리에서 수정해주세요.');
-      return null;
-    },
-    [confirmedById, isConfirmedLoading, toastError]
-  );
-
-  /** 편집 중인 슬롯의 실제 출퇴근(실적) — 근무 수정 시트가 예정과 함께 보여준다. */
-  const editingAttendance = useMemo(() => {
-    if (!editingSlot?.isContainer) return null;
-    const full = confirmedById.get(editingSlot.workLogId);
-    if (!full?.workLog) return null;
-    return {
-      checkInTime: full.checkInTime,
-      checkOutTime: full.checkOutTime,
-      settled: full.payrollStatus === STATUS.PAYROLL.COMPLETED,
-    };
-  }, [editingSlot, confirmedById]);
-
-  /**
-   * 근무 수정 시트 → 실제 출퇴근 편집기.
+   * 빼기 — 시트가 아니라 카드 액션이다(설계 §3-4). 파괴적 액션은 진입 맥락의 것이라
+   * 화면마다 뜻이 다르고(근무표=배치 빼기, 스태프관리=명단 제거), 순수 편집기인 시트가
+   * 그 차이를 prop 으로 흡수하면 D2 가 없애려던 "화면마다 다름"이 시트 안에서 재발한다.
    *
-   * ⚠️ 두 화면 모두 RN Modal 이라 겹쳐 띄우면 iOS 터치가 먹통이 된다(#186/#188).
-   * 두 setState 를 한 핸들러에서 부르면 React 가 **한 커밋으로 배칭**해 닫힘/열림이 같은
-   * 프레임에 떨어진다 — "먼저 닫는" 구간이 실제로는 없다. 그래서 닫기만 즉시 하고, 여는 것은
-   * 시트 dismiss 애니메이션이 끝난 뒤로 미룬다. 대기값은 이 용도의 SSOT 인
-   * `constants/animation.ts` 의 SHEET_DISMISS_ANIMATION_MS 를 쓴다(로컬 상수 복제 금지).
-   * 실패 판정은 지연 밖에서 끝내므로 "열지 못하면 시트를 그대로 둔다" 계약은 그대로 산다.
+   * 🔴 **근태 상태로 막지 않는다**(카드에 `allowDeleteAnyStatus`). 근무표에는 상태 되돌리기가
+   *    없고 컨테이너 직속 배치는 스태프관리 탭조차 없어서, 출근 처리된 순간 제거 경로가 0이 된다.
+   *    대신 **무엇이 사라지는지 확인 문구로 말한다** — 막는 대신 알리는 쪽을 택했다.
+   *
+   * staffId 없는 슬롯은 서비스 정합검증을 통과할 수 없어 진입 자체를 막는다(구 시트 가드 계승).
    */
-  const handleEditAttendance = useCallback(() => {
-    if (!editingSlot) return;
-    const target = resolveAttendanceTarget(editingSlot);
-    if (!target) return;
-    setEditingSlot(null);
-    if (modalSwapTimerRef.current) clearTimeout(modalSwapTimerRef.current);
-    modalSwapTimerRef.current = setTimeout(() => {
-      modalSwapTimerRef.current = null;
-      setTimeEditStaff(target);
-    }, SHEET_DISMISS_ANIMATION_MS);
-  }, [editingSlot, resolveAttendanceTarget]);
-
-  const timeEditWorkLog = useMemo<WorkLog | null>(
-    () =>
-      timeEditStaff?.workLog
-        ? {
-            ...timeEditStaff.workLog,
-            staffName: timeEditStaff.staffName,
-            staffNickname: timeEditStaff.staffNickname,
-            staffPhotoURL: timeEditStaff.staffPhotoURL,
-            staffPhotoURLBlurhash: timeEditStaff.staffPhotoURLBlurhash,
-          }
-        : null,
-    [timeEditStaff]
-  );
-
-  const handleSaveTime = useCallback(
-    (data: { startTime: Date | null; endTime: Date | null; reason: string }) => {
-      if (!timeEditStaff) return;
-      updateWorkTime({
-        workLogId: timeEditStaff.id,
-        checkInTime: data.startTime,
-        checkOutTime: data.endTime,
-        reason: data.reason,
-      });
-      setTimeEditStaff(null);
+  const handleRequestDelete = useCallback(
+    (slot: VenueDaySlot) => {
+      if (!slot.staffId) {
+        toastError('이 배치는 뺄 수 없어요. 공고 스태프 관리에서 처리해주세요.');
+        return;
+      }
+      setDeleteTarget(slot);
     },
-    [timeEditStaff, updateWorkTime]
+    [toastError]
   );
+
+  const handleDeleteConfirm = useCallback(() => {
+    const target = deleteTarget;
+    if (!target?.staffId) return;
+    deleteSlot.mutate(
+      {
+        workLogId: target.workLogId,
+        jobPostingId: target.jobPostingId,
+        staffId: target.staffId,
+        date,
+      },
+      {
+        onSuccess: () => toastSuccess('근무에서 뺐어요.'),
+        onError: () => toastError('근무 빼기에 실패했어요. 잠시 후 다시 시도해주세요.'),
+      }
+    );
+    setDeleteTarget(null);
+  }, [deleteTarget, deleteSlot, date, toastSuccess, toastError]);
+
+  /**
+   * 빼기 확인 문구. 기록이 남아 있는 행은 **무엇이 함께 사라지는지** 먼저 말한다.
+   * 상태로 입구를 막지 않기로 한 대신 여기서 위험을 드러내는 것이 이 분기의 존재 이유다.
+   */
+  const deleteMessage = useMemo(() => {
+    if (!deleteTarget) return '';
+    const name = deleteTarget.staffName ?? '이 인원';
+    const hasRecord = Boolean(deleteTarget.checkInTs || deleteTarget.checkOutTs);
+    const base = `${name}님을 이 날 근무에서 뺄까요? 지원으로 확정된 인원은 확정이 해제돼요.`;
+    return hasRecord ? `${base}\n기록된 출퇴근 시각도 함께 사라져요.` : base;
+  }, [deleteTarget]);
 
   // 소프트타깃 입력값(문자열) — 저장값/날짜 변경 시 동기화(재진입 시 이전 값 잔존 방지).
   const [targetInput, setTargetInput] = useState<string>(softTarget > 0 ? String(softTarget) : '');
@@ -385,12 +364,13 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
 
       {/* 선택 날짜 배치 상세(행 탭 → 편집) — 직접 렌더(가상화 없음), 스크롤은 상위 담당 */}
       <View className="mt-1">
-        {/* 카드에 별도 '시간 수정' 버튼을 두지 않는다 — 예정·실적 편집 입구를 근무 수정 시트
-            하나로 통합했다(2-B). 두 입구가 나란히 있으면 어느 쪽이 정산에 반영되는지 알 수 없다. */}
+        {/* 카드에 '시간 수정' 버튼은 두지 않는다 — 편집 입구는 행 탭 → 통합 시트 하나다.
+            카드에 남는 액션은 **빼기 하나뿐**이다(파괴적 액션은 진입 맥락의 것 — 설계 §3-4). */}
         <VenueDayDetail
           venueId={venueId}
           date={date}
           onSlotPress={setEditingSlot}
+          onSlotDelete={handleRequestDelete}
           onAddPress={() => setAddVisible(true)}
         />
       </View>
@@ -412,26 +392,28 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
         slots={siblingSlots}
       />
 
-      {/* 슬롯 편집 시트 — useUpdateSlot/useDeleteSlot 이 workSchedule.all 무효화 */}
-      <EditSlotSheet
-        visible={editingSlot !== null}
-        onClose={() => setEditingSlot(null)}
-        slot={editingSlot}
-        date={date}
-        siblingSlots={siblingSlots}
-        editedBy={editedBy}
-        attendance={editingAttendance}
-        onEditAttendance={editingAttendance ? handleEditAttendance : undefined}
-      />
+      {/* 통합 편집 시트(3개 진입점 공용) — 대상이 있을 때만 마운트한다. `visible` 을 켠 채
+          대상만 바꾸면 시트가 `[visible, workLogId]` 로만 초기화하므로 옛 값이 남을 수 있다. */}
+      {editingSlot ? (
+        <WorkLogEditSheet
+          visible
+          onClose={() => setEditingSlot(null)}
+          workLogId={editingSlot.workLogId}
+          initial={toEditInitial(editingSlot, date)}
+          editedBy={editedBy}
+        />
+      ) : null}
 
-      {/* 출근(실기록) 수정(#3) — WorkTimeEditor 재사용. updateWorkTime onSuccess 가
-          staffManagement + workSchedule.all 무효화 → 카드 상태/시간 자동 갱신. */}
-      <WorkTimeEditor
-        workLog={timeEditWorkLog}
-        visible={timeEditStaff !== null}
-        onClose={() => setTimeEditStaff(null)}
-        onSave={handleSaveTime}
-        isLoading={isUpdatingTime}
+      {/* 빼기 확인 — 카드 액션의 것이라 시트와 겹치지 않는다(중첩 RN Modal 없음). */}
+      <ConfirmModal
+        visible={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
+        title="근무 빼기"
+        message={deleteMessage}
+        confirmText="빼기"
+        cancelText="취소"
+        isDestructive
       />
     </View>
   );

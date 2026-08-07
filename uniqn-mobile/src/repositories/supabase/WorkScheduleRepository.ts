@@ -72,6 +72,8 @@ export class SupabaseWorkScheduleRepository implements IWorkScheduleRepository {
       if (error) handleSupabaseError(error, { operation: '운영처 하루 슬롯 조회', table: TABLE });
       const rows = (data ?? []) as Record<string, unknown>[];
       // RPC 가 snake_case(work_log_id/staff_name/time_slot…) 반환 → camelCase 투영.
+      // 20260806130000 이 더한 실적 4열(check_in_ts/check_out_ts/payroll_status/date)도
+      // 키 단위 일반 변환이라 자동으로 실린다 — 열별 매핑을 따로 두지 않는다(두 벌이 되면 갈라진다).
       return rows.map((row) => toCamelCase<VenueDaySlot>(row));
     } catch (error) {
       if (isAppError(error)) throw error;

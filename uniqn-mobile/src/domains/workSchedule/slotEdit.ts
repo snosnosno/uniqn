@@ -386,6 +386,13 @@ export function slotsOverlap(a: string | null | undefined, b: string | null | un
  * 같은 스태프의 근무가 겹치는 슬롯을 충돌로 표시(자기 자신 제외). 차단이 아닌 경고용.
  * 판정은 `slotsOverlap` 이 유일 관문이다 — 구직자 화면과 답이 갈리지 않게 하기 위함이다.
  * staffId 누락·시각 미파싱(미정)이면 충돌 없음으로 본다(기존 가드 유지).
+ *
+ * ⚠️ **지금 이 함수를 호출하는 화면이 없다(2026-08-06).** 유일한 소비자였던 근무표
+ *    `EditSlotSheet` 가 통합 편집 시트로 대체되면서 "같은 스태프의 출근 시간이 N건 겹쳐요"
+ *    경고가 함께 사라졌다 — 통합 시트는 형제 슬롯을 모르기 때문이다(진입점 3곳 중 근무표만
+ *    형제 목록을 갖고 있어, 시트에 넣으면 화면마다 다른 시트가 된다).
+ *    **의도적으로 남긴다** — 되살릴 때 판정 규칙을 다시 쓰지 않기 위해서다. 죽은 코드
+ *    청소에서 지우지 말 것(구직자 `detectScheduleOverlaps` 와 공유하는 `slotsOverlap` 도 함께 죽는다).
  */
 export function detectSlotConflicts(
   target: SlotConflictInput,

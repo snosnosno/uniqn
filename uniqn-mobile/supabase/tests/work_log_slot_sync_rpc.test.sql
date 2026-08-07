@@ -21,12 +21,18 @@
 --    이 RPC 는 payroll 을 건드리지 않으므로 app_metadata.role 과 무관하게 통과한다 —
 --    그래서 여기서는 `jpc_test_set_user()` 로 충분하다(정산 RPC 테스트와 다른 점).
 --
+-- 🔗 형제 파일 분담 — `work_log_slot_attendance_rpc.test.sql`(38) 이 같은 RPC 의 **실적 축**
+--    (checkIn/checkOut 3상 계약·status 파생·modification_history·role_change_history·
+--     custom_role 정리·customRole 판정표·정산 완료 잠금)을 본다. 이 파일은 **예정 축**만 본다 —
+--    패치 계약 검증·권한·applications.assignments 동기화. 새 단언은 축을 먼저 가릴 것.
+--    (27~32 는 역할이 촉발하지만 관측 대상이 `assignments` 라 이 파일에 있다.)
+--
 -- ⚠️ RPC 호출과 그 결과 조회를 **한 SELECT 안에 섞지 않는다.** 볼라틸 함수와 스칼라 서브쿼리의
 --    평가 순서는 보장되지 않아 "호출 전 상태"를 읽고도 green 이 될 수 있다. 호출은 DO 블록에서
 --    먼저 끝내고 반환값을 GUC 로 넘긴다.
 -- ============================================================
 BEGIN;
-SELECT plan(27);
+SELECT plan(33);
 
 DO $$
 DECLARE
@@ -54,27 +60,30 @@ DECLARE
   v_app_dup   uuid := gen_random_uuid();
   v_app_cust  uuid := gen_random_uuid();
   v_app_mr    uuid := gen_random_uuid();
+  v_app_lgcy  uuid := gen_random_uuid();
   v_u_multi   uuid := gen_random_uuid();
   v_u_one     uuid := gen_random_uuid();
   v_u_dup     uuid := gen_random_uuid();
   v_u_cust    uuid := gen_random_uuid();
   v_u_direct  uuid := gen_random_uuid();
   v_u_mr      uuid := gen_random_uuid();
+  v_u_lgcy    uuid := gen_random_uuid();
   v_wl_d2     uuid := gen_random_uuid();
   v_wl_one    uuid := gen_random_uuid();
   v_wl_dup    uuid := gen_random_uuid();
   v_wl_cust   uuid := gen_random_uuid();
   v_wl_direct uuid := gen_random_uuid();
   v_wl_mr     uuid := gen_random_uuid();
+  v_wl_lgcy   uuid := gen_random_uuid();
 BEGIN
   INSERT INTO auth.users (id, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
                           confirmation_token, recovery_token, email_change_token_new, email_change)
   SELECT u, 'uws_' || u || '@test.local', '{"role":"staff"}'::jsonb, '{}'::jsonb, now(), now(), '', '', '', ''
-  FROM unnest(ARRAY[v_u_multi, v_u_one, v_u_dup, v_u_cust, v_u_direct, v_u_mr]) u;
+  FROM unnest(ARRAY[v_u_multi, v_u_one, v_u_dup, v_u_cust, v_u_direct, v_u_mr, v_u_lgcy]) u;
 
   INSERT INTO public.users (id, email, name, role, is_active, identity_verified, created_at, updated_at)
   SELECT id, email, 'uws applicant', 'staff'::user_role, true, true, now(), now()
-  FROM auth.users WHERE id IN (v_u_multi, v_u_one, v_u_dup, v_u_cust, v_u_direct, v_u_mr)
+  FROM auth.users WHERE id IN (v_u_multi, v_u_one, v_u_dup, v_u_cust, v_u_direct, v_u_mr, v_u_lgcy)
   ON CONFLICT (id) DO UPDATE SET is_active = true, identity_verified = true;
 
   PERFORM set_config('uws.app_multi', v_app_multi::text, true);
@@ -88,6 +97,8 @@ BEGIN
   PERFORM set_config('uws.wl_direct', v_wl_direct::text, true);
   PERFORM set_config('uws.app_mr',    v_app_mr::text,    true);
   PERFORM set_config('uws.wl_mr',     v_wl_mr::text,     true);
+  PERFORM set_config('uws.app_lgcy',  v_app_lgcy::text,  true);
+  PERFORM set_config('uws.wl_lgcy',   v_wl_lgcy::text,   true);
 
   INSERT INTO public.applications (id, job_posting_id, applicant_id, applicant_name, status,
                                    assignments, created_at, updated_at)
@@ -119,6 +130,15 @@ BEGIN
     (v_app_mr, v_jp, v_u_mr, 'mr', 'confirmed',
      '[{"dates":["2026-09-15"],"roleIds":["dealer","floor"],"timeSlot":"19:00",
         "isGrouped":false,"groupId":"grp-mr","checkMethod":"individual"}]'::jsonb,
+     now(), now()),
+    -- ⑥ **레거시 표류 형태**: work_logs 가 표준 역할인데 custom_role 이 살아 있다.
+    --    20260806140000 이전의 이 RPC 가 실제로 만들던 상태다 — `staffRole` 만 갈아끼우고
+    --    custom_role 은 손대지 않았으므로 'other/바리스타' 행에 표준 역할을 저장하면 여기로 온다.
+    --    `_posting_role_key` 는 custom_role 을 role 보다 우선하므로 역할 키는 여전히
+    --    'other:바리스타' 이고, 그래서 roleIds 도 커스텀 역할명 그대로다.
+    (v_app_lgcy, v_jp, v_u_lgcy, 'lgcy', 'confirmed',
+     '[{"dates":["2026-09-27"],"roleIds":["바리스타"],"timeSlot":"18:00",
+        "isGrouped":false,"groupId":"grp-lgcy","checkMethod":"individual"}]'::jsonb,
      now(), now());
 
   INSERT INTO public.work_logs (id, application_id, assignment_group_id, staff_id, job_posting_id,
@@ -133,7 +153,9 @@ BEGIN
     -- 다역할 원소의 dealer 셀. floor 셀은 work_log 없이 지원서에만 있다(형제 역할).
     (v_wl_mr,  v_app_mr,   'grp-mr',    v_u_mr, v_jp, v_own, '2026-09-15', 'scheduled', 'dealer', NULL, '19:00', now(), now()),
     -- 🔑 add_direct_staff 산 행의 형태: application_id 가 NULL 이라 동기화 상대가 아예 없다.
-    (v_wl_direct, NULL, NULL, v_u_direct, v_jp, v_own, '2026-09-30', 'scheduled', 'floor', NULL, '17:00', now(), now());
+    (v_wl_direct, NULL, NULL, v_u_direct, v_jp, v_own, '2026-09-30', 'scheduled', 'floor', NULL, '17:00', now(), now()),
+    -- ⑥ 레거시 표류 행: 역할은 표준(dealer)인데 custom_role 이 남아 있다 → 역할 키는 'other:바리스타'.
+    (v_wl_lgcy, v_app_lgcy, 'grp-lgcy', v_u_lgcy, v_jp, v_own, '2026-09-27', 'scheduled', 'dealer', '바리스타', '18:00', now(), now());
 END $$;
 
 -- 1. 시그니처 고정
@@ -368,7 +390,101 @@ SELECT is(
   '23:00|["dealer"]|grp-mr',
   '편집한 역할(dealer)만 23:00 으로 분리된다');
 
--- 27. 🔴 전수 가드 — 이 세션이 건드린 어느 지원서에도 **JSON null 이 실리지 않아야** 한다.
+-- ── 🔴 역할 변경 시 custom_role 정리가 assignments 까지 수렴하는가 (27~30) ──
+-- 🔑 20260806140000 이 흡수한 결함이다. 그 마이그 이전에는 `staffRole` 만 갈아끼우고
+--    `custom_role` 은 그대로 뒀는데, `_posting_role_key` 가 custom_role 을 role 보다 **우선**하므로
+--    역할 키가 'other:<옛이름>' 에서 영영 안 바뀌었다. 그러면 work_logs 는 표준 역할로 가고
+--    assignments 는 커스텀 역할명을 유지해, **다음 편집부터 두 원천의 역할 키가 어긋나
+--    영구 no_match 표류**가 된다(이 파일이 막으려는 바로 그 것).
+-- ⚠️ 이 갈래는 `application_id` 가 붙은 행에서만 관측된다 — 형제 파일
+--    `work_log_slot_attendance_rpc.test.sql` 의 픽스처는 전부 application_id=NULL 이라
+--    동기화가 조기 종료돼 이 축을 **한 번도 실행하지 않는다.** 그래서 가드는 여기 있어야 한다.
+
+-- 27. 커스텀 역할 행('other'/'바리스타')을 표준 역할(floor)로 바꾼다.
+SELECT lives_ok(
+  format($q$SELECT public.update_work_log_slot(%L::uuid, '{"staffRole":"floor"}'::jsonb)$q$,
+         current_setting('uws.wl_cust')),
+  '커스텀 역할 슬롯을 표준 역할로 바꾸는 저장이 성공한다');
+
+-- 28. 🔑 red-swap 대상. 새 역할 키를 **정리 후** custom_role(NULL)로 계산하지 않고
+--     옛 custom_role('바리스타')로 계산하면 키가 'other:바리스타' 그대로라
+--     roleIds 가 ["바리스타"] 로 남는다 — 여기가 red 가 된다.
+--     시각(20:30)은 이 패치가 건드리지 않았으므로 그대로여야 한다(GRID-1).
+SELECT is(
+  (SELECT (w.role::text) || '|' || COALESCE(w.custom_role, '(null)') || '|' ||
+          (e->>'timeSlot') || '|' || (e->'roleIds')::text
+   FROM public.work_logs w, public.applications a,
+        LATERAL jsonb_array_elements(a.assignments) e
+   WHERE w.id = (current_setting('uws.wl_cust'))::uuid
+     AND a.id = (current_setting('uws.app_cust'))::uuid),
+  'floor|(null)|20:30|["floor"]',
+  '표준 역할 전환이 custom_role 을 정리하고 assignments 의 roleIds 까지 수렴시킨다');
+
+-- 29. 반대 방향 — 표준 역할에서 'other' 로 갈 때는 custom_role 을 지우지 **않는다**.
+--     패치에 커스텀 역할명을 담는 키가 없어 무엇으로 대체할지 알 수 없기 때문이다.
+SELECT lives_ok(
+  format($q$SELECT public.update_work_log_slot(%L::uuid, '{"staffRole":"other"}'::jsonb)$q$,
+         current_setting('uws.wl_lgcy')),
+  '레거시 표류 행을 other 로 바꾸는 저장이 성공한다');
+
+-- 30. 🔑 정리를 무조건 실행하면(`v_clear_custom_role := true`) custom_role 이 NULL 이 되어
+--     역할 키가 'other:' 로 접히고 roleIds 가 ["other"] 가 된다 — **역할 이름 자체가 증발한다.**
+--     `v_new_role <> 'other'` 예외가 살아 있어야 여기가 green 이다.
+SELECT is(
+  (SELECT (w.role::text) || '|' || COALESCE(w.custom_role, '(null)') || '|' ||
+          (e->'roleIds')::text
+   FROM public.work_logs w, public.applications a,
+        LATERAL jsonb_array_elements(a.assignments) e
+   WHERE w.id = (current_setting('uws.wl_lgcy'))::uuid
+     AND a.id = (current_setting('uws.app_lgcy'))::uuid),
+  'other|바리스타|["바리스타"]',
+  'other 로 갈 때는 custom_role 을 지우지 않아 역할 이름이 보존된다');
+
+-- ── 🔴 customRole 로 이름을 바꾸면 assignments 까지 수렴하는가 (31~32) ──
+-- 🔑 20260807120000 이 연 축이다. `_posting_role_key` 는 custom_role 을 role 보다 **우선**하므로
+--    이름만 바뀌어도(role 은 'other' 그대로) 역할 키가 바뀐다. 6-1 의 `v_role_key_new` 를
+--    **최종** custom_role 로 계산하지 않으면 work_logs 는 새 이름으로 가는데 assignments 는
+--    옛 이름에 묶여, **다음 편집부터 두 원천의 역할 키가 어긋나 영구 no_match 표류**가 된다
+--    (27~30 이 표준 역할 전환에서 막은 것과 같은 결함의 이름 축 갈래).
+-- ⚠️ 형제 파일 `work_log_slot_attendance_rpc.test.sql` 은 픽스처가 전부 application_id=NULL 이라
+--    동기화가 조기 종료돼 이 축을 한 번도 실행하지 않는다 — 가드는 여기 있어야 한다.
+DO $$
+BEGIN
+  -- ⓐ 이름만 교정: wl_lgcy 는 29~30 을 거쳐 'other'/'바리스타' 이고 roleIds 도 ["바리스타"] 다.
+  PERFORM public.update_work_log_slot((current_setting('uws.wl_lgcy'))::uuid,
+                                      '{"customRole":"플로어장"}'::jsonb);
+  -- ⓑ 표준 → other + 커스텀 이름: wl_one 은 13~19 를 거쳐 role='floor', time_slot=NULL(미정) 이다.
+  PERFORM public.update_work_log_slot((current_setting('uws.wl_one'))::uuid,
+                                      '{"staffRole":"other","customRole":"플로어장"}'::jsonb);
+END $$;
+
+-- 31. 🔑 red-swap 대상. 새 역할 키를 옛 custom_role('바리스타')로 계산하면 roleIds 가
+--     ["바리스타"] 로 남아 여기가 red 가 된다. 시각(18:00)은 이 패치가 건드리지 않았으므로
+--     그대로여야 한다(GRID-1) — 그게 없으면 이 단언은 "무엇이든 바뀌면 통과"가 된다.
+SELECT is(
+  (SELECT (w.role::text) || '|' || COALESCE(w.custom_role, '(null)') || '|' ||
+          (e->>'timeSlot') || '|' || (e->'roleIds')::text
+   FROM public.work_logs w, public.applications a,
+        LATERAL jsonb_array_elements(a.assignments) e
+   WHERE w.id = (current_setting('uws.wl_lgcy'))::uuid
+     AND a.id = (current_setting('uws.app_lgcy'))::uuid),
+  'other|플로어장|18:00|["플로어장"]',
+  '🔴 커스텀 이름만 바꿔도 assignments 의 roleIds 가 새 이름으로 수렴한다');
+
+-- 32. 반대 방향 — 표준 역할('floor')에서 커스텀 역할로 옮기면 roleIds 가 이름으로 바뀐다.
+--     구 `updateRoleWithTransaction` 의 isStandardRole=false 갈래가 하던 일의 동기화 짝이다.
+--     시각은 18~19 가 만든 '미정' 이어야 한다(zod 널 금지 — JSON null 이 아니라 문자열).
+SELECT is(
+  (SELECT (w.role::text) || '|' || COALESCE(w.custom_role, '(null)') || '|' ||
+          jsonb_typeof(e->'timeSlot') || '|' || (e->>'timeSlot') || '|' || (e->'roleIds')::text
+   FROM public.work_logs w, public.applications a,
+        LATERAL jsonb_array_elements(a.assignments) e
+   WHERE w.id = (current_setting('uws.wl_one'))::uuid
+     AND a.id = (current_setting('uws.app_one'))::uuid),
+  'other|플로어장|string|미정|["플로어장"]',
+  '표준 역할에서 커스텀 역할로 옮기면 roleIds 가 커스텀 이름으로 수렴한다');
+
+-- 33. 🔴 전수 가드 — 이 세션이 건드린 어느 지원서에도 **JSON null 이 실리지 않아야** 한다.
 --     zod 는 `timeSlot: z.string()` 이라 널 하나가 지원서 레코드를 통째로 증발시킨다(A2 선례).
 --     19번은 미정 갈래 하나만 보지만 이건 모든 갈래의 모든 키를 본다.
 SELECT is(

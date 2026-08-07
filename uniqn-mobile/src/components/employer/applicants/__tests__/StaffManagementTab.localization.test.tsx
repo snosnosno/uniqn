@@ -17,8 +17,9 @@ jest.mock('@/stores/themeStore', () => ({
     mockUseThemeStore(selector),
 }));
 
-jest.mock('../../settlement/WorkTimeEditor', () => ({
-  WorkTimeEditor: () => null,
+// 통합 편집 시트는 이 스위트의 관심 밖(문구 검증) — 열지 않으므로 렌더되지도 않는다.
+jest.mock('@/components/workLogEdit', () => ({
+  WorkLogEditSheet: () => null,
 }));
 
 jest.mock('@/utils/date', () => ({
@@ -94,13 +95,7 @@ describe('StaffManagementTab localization', () => {
   it('renders staff management labels in Korean', () => {
     useConfirmedStaff.mockReturnValue(createHookState());
 
-    render(
-      <StaffManagementTab
-        jobPostingId="job-1"
-        onShowRoleChange={jest.fn()}
-        onShowReport={jest.fn()}
-      />
-    );
+    render(<StaffManagementTab jobPostingId="job-1" onShowReport={jest.fn()} />);
 
     expect(screen.getByText('새로고침')).toBeTruthy();
     // QR 진입점은 헤더 QR 버튼 하나로 통일 — 정산 화면의 중복 진입점은 없어야 한다.
@@ -114,8 +109,11 @@ describe('StaffManagementTab localization', () => {
     expect(screen.getByText('출근 예정')).toBeTruthy();
     expect(screen.getByText('시작')).toBeTruthy();
     expect(screen.getByText('종료')).toBeTruthy();
-    expect(screen.getByText('시간 수정')).toBeTruthy();
-    expect(screen.getByText('역할 변경')).toBeTruthy();
+    // 카드 액션은 '근무 수정' 하나로 수렴했다 — 역할·색·메모까지 같은 시트가 고치므로
+    // '시간 수정' 이라는 좁은 라벨도, 별도 '역할 변경' 버튼도 남아 있으면 안 된다.
+    expect(screen.getByText('근무 수정')).toBeTruthy();
+    expect(screen.queryByText('시간 수정')).toBeNull();
+    expect(screen.queryByText('역할 변경')).toBeNull();
     expect(screen.getByText('신고')).toBeTruthy();
   });
 

@@ -7,7 +7,7 @@
  */
 import type { VenueDaySlot } from '@/repositories/workSchedule';
 import type { ConfirmedStaff, ConfirmedStaffGroup } from '@/types';
-import type { ConfirmedStaffStatus } from '@/shared/status';
+import type { ConfirmedStaffStatus, PayrollStatus } from '@/shared/status';
 import { getTodayString, formatDateWithDay } from '@/utils/date';
 
 const VALID_STATUSES: readonly ConfirmedStaffStatus[] = [
@@ -26,6 +26,15 @@ function normalizeStatus(raw: string | null | undefined): ConfirmedStaffStatus {
     : 'scheduled';
 }
 
+const VALID_PAYROLL_STATUSES: readonly PayrollStatus[] = ['pending', 'completed', 'failed'];
+
+/** payroll_status 문자열을 PayrollStatus 로 안전 정규화(모르는 값은 undefined = 판단 보류). */
+function normalizePayrollStatus(raw: string | null | undefined): PayrollStatus | undefined {
+  return raw && (VALID_PAYROLL_STATUSES as readonly string[]).includes(raw)
+    ? (raw as PayrollStatus)
+    : undefined;
+}
+
 /** 슬롯 1건 → ConfirmedStaff 투영(읽기전용 카드용). */
 export function mapVenueDaySlotToConfirmedStaff(slot: VenueDaySlot, date: string): ConfirmedStaff {
   return {
@@ -41,6 +50,19 @@ export function mapVenueDaySlotToConfirmedStaff(slot: VenueDaySlot, date: string
     timeSlot: slot.timeSlot ?? undefined,
     color: slot.color ?? undefined,
     notes: slot.notes ?? undefined,
+    // 🔑 실적을 함께 싣는다. 이게 빠져 있으면 카드는 `timeSlot`(예정)만 보고 그리는데
+    //    행을 탭해 열리는 통합 시트는 실적을 보여준다 — 같은 행이 두 가지 시각을 말한다.
+    //    `checkInTs`/`checkOutTs` 는 ISO timestamptz 문자열이고 `TimeInput`(=DateInput)
+    //    이 문자열을 받으므로 그대로 넘긴다.
+    checkInTime: slot.checkInTs ?? undefined,
+    checkOutTime: slot.checkOutTs ?? undefined,
+    // ⚠️ 이 경로에서 `payrollStatus` 는 **현재 아무 게이트도 움직이지 않는다** —
+    //    `VenueDayDetail` 이 `onEditTime`·`onCancelNoShow` 를 넘기지 않아
+    //    `ConfirmedStaffCard` 의 두 게이트(`canEditTime`·`canCancelNoShow`)가 다 비활성이다.
+    //    그래도 싣는 이유는 반대 방향의 사고를 막기 위해서다: 비워 두면 나중에 누가
+    //    `onEditTime` 을 배선하는 순간 **정산 완료 건이 편집 가능한 것처럼** 보이고
+    //    서버에서야 거부된다. 투영은 사실대로 하고, 게이트 개폐는 소비처가 정한다.
+    payrollStatus: normalizePayrollStatus(slot.payrollStatus),
   };
 }
 

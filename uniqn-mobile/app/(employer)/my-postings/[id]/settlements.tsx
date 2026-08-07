@@ -26,7 +26,6 @@ import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import {
   deriveSalaryConfig,
   deriveRolesForList,
-  deriveAvailableRoles,
 } from '@/features/employer/settlements/settlementCalc';
 import { useStaffSettlementsHandlers } from '@/features/employer/settlements/useStaffSettlementsHandlers';
 import { TabHeader, type TabType } from '@/features/employer/settlements/TabHeader';
@@ -60,11 +59,9 @@ export default function StaffSettlementsScreen() {
 
   // 스태프 관리 훅 — realtime: 스트립·탭 배지가 원격 QR 출근에도 갱신되도록 구독.
   // 자식 StaffManagementTab의 구독과 같은 채널을 공유(createRealtimeSubscription refCount dedup).
-  const {
-    stats: staffStats,
-    grouped: staffGrouped,
-    changeRoleAsync,
-  } = useConfirmedStaff(jobPostingId || '', { realtime: true });
+  const { stats: staffStats, grouped: staffGrouped } = useConfirmedStaff(jobPostingId || '', {
+    realtime: true,
+  });
 
   // 오늘 날짜 그룹 (당일 운영 요약 스트립용)
   const todayGroup = useMemo(() => staffGrouped.find((group) => group.isToday), [staffGrouped]);
@@ -75,11 +72,9 @@ export default function StaffSettlementsScreen() {
     isLoading,
     error,
     refresh,
-    updateWorkTime,
     settleWorkLog,
     bulkSettle,
     updateStatusAsync,
-    isUpdatingTime: isUpdating,
     isUpdatingStatus: isReverting,
     isSettling: _isSettling,
     isBulkSettling: _isBulkSettling,
@@ -100,11 +95,8 @@ export default function StaffSettlementsScreen() {
   // SettlementList용 역할 목록 (급여 포함)
   const rolesForList = useMemo(() => deriveRolesForList(salaryConfig.roles), [salaryConfig.roles]);
 
-  // RoleChangeModal용 역할 키 목록
-  const availableRoles = useMemo(() => deriveAvailableRoles(rolesForList), [rolesForList]);
-
-  // 역할별 실확정 인원 (S3) — 역할 변경 모달에서 마감 역할을 정확히 비활성 표기하기 위한 hydrate.
-  // work_logs 기반 배치 조회(H0) → 이 공고 서브맵 추출 → 역할키별 합산.
+  // 역할별 실확정 인원 (S3) — 통합 편집 시트가 마감 역할에 "(마감)" 을 병기하기 위한 hydrate.
+  // 표기만 하고 선택은 막지 않는다(D7). work_logs 기반 배치 조회(H0) → 서브맵 → 역할키별 합산.
   const { data: filledCountsMap } = usePostingFilledCounts(jobPostingId ? [jobPostingId] : []);
   const filledByRole = useMemo(
     () =>
@@ -116,14 +108,11 @@ export default function StaffSettlementsScreen() {
 
   // 핸들러 다발 (클로저 의존은 인자로 주입해 deps 보존)
   const {
-    handleRoleChangeSave,
-    isChangingRole,
     handleReportSubmit,
     handleSettleFromDetail,
     handleSettle,
     handleBulkSettle,
     handleConfirmSettle,
-    handleSaveTimeEdit,
     handleSaveAmountEdit,
     handleSaveSettings,
     handleRevertSettlement,
@@ -135,8 +124,6 @@ export default function StaffSettlementsScreen() {
     addToast,
     refresh,
     refreshJobDetail,
-    changeRoleAsync,
-    updateWorkTime,
     settleWorkLog,
     bulkSettle,
     updateStatusAsync,
@@ -220,7 +207,7 @@ export default function StaffSettlementsScreen() {
         <StaffManagementTab
           jobPostingId={jobPostingId || ''}
           jobPosting={posting ?? undefined}
-          onShowRoleChange={modals.openRoleChangeModal}
+          filledByRole={filledByRole}
           onShowReport={modals.openReportModal}
         />
       ) : (
@@ -251,17 +238,12 @@ export default function StaffSettlementsScreen() {
         postingSettlement={postingSettlement}
         rolesForList={rolesForList}
         salaryConfig={salaryConfig}
-        availableRoles={availableRoles}
         filledByRole={filledByRole}
-        isUpdating={isUpdating}
         isReverting={isReverting}
-        isChangingRole={isChangingRole}
         onRevertSettlement={handleRevertSettlement}
-        onRoleChangeSave={handleRoleChangeSave}
         onReportSubmit={handleReportSubmit}
         onSettleFromDetail={handleSettleFromDetail}
         onConfirmSettle={handleConfirmSettle}
-        onSaveTimeEdit={handleSaveTimeEdit}
         onSaveAmountEdit={handleSaveAmountEdit}
         onSaveSettings={handleSaveSettings}
       />

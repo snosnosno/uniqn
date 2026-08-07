@@ -32,7 +32,14 @@ function parseMinutes(time: string): number | null {
   return hour * 60 + minute;
 }
 
-function minutesToLabel(total: number): string {
+/**
+ * 근무 시간 라벨('8시간' · '4시간 30분'). 0 이하는 '-' 로 — 산정 불가와 0분을 같은 자리에 둔다.
+ *
+ * 🔑 export 인 이유: 통합 편집 시트(workLogEdit)는 실적을 'HH:mm' 이 아니라 **Date** 로 다뤄
+ *    `deriveOvernightPreview` 를 그대로 쓸 수 없다. 그렇다고 라벨 포맷을 한 벌 더 만들면
+ *    같은 화면의 두 배너가 서로 다른 표기('8시간' vs '8h')로 갈릴 수 있다 — 문자열만 공유한다.
+ */
+export function minutesToLabel(total: number): string {
   const hours = Math.floor(total / 60);
   const minutes = total % 60;
   if (hours > 0 && minutes > 0) return `${hours}시간 ${minutes}분`;
