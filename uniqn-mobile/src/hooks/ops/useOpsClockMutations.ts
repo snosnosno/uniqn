@@ -1,10 +1,15 @@
 /**
  * ops 클럭/블라인드 변이 훅 (1c) — mutationFn 은 Service 경유, actor 는 authStore.
  * onSuccess: 클럭/통계/블라인드 일괄 무효화 + toast. (useOpsMutations 패턴 미러)
+ *
+ * 결함⑦-3(오프라인 통합 공백): 쓰기 mutationFn 첫 줄에서 `requireOnlineForMutation` 으로 오프라인
+ * 진입을 차단한다(큐잉 아님 — 상세는 useOpsMutations 헤더 참조).
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { opsClockService, opsBlindLevelService } from '@/services/ops';
+// 결함⑦-3: 오프라인 가드는 배럴(@/hooks) 대신 직접 경로로 가져온다(순환 참조 회피).
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
@@ -36,8 +41,10 @@ export function useSetBlindLevels(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (levels: readonly OpsBlindLevelInput[]) =>
-      opsBlindLevelService.setLevels(tournamentId, requireActor(actorId), levels),
+    mutationFn: (levels: readonly OpsBlindLevelInput[]) => {
+      requireOnlineForMutation('ops.setBlindLevels');
+      return opsBlindLevelService.setLevels(tournamentId, requireActor(actorId), levels);
+    },
     onSuccess: () => {
       invalidateClockQueries(qc, tournamentId);
       toast.success('블라인드 구조를 저장했습니다');
@@ -53,7 +60,10 @@ export function useStartClock(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: () => opsClockService.start(tournamentId, requireActor(actorId)),
+    mutationFn: () => {
+      requireOnlineForMutation('ops.clockStart');
+      return opsClockService.start(tournamentId, requireActor(actorId));
+    },
     onSuccess: () => {
       invalidateClockQueries(qc, tournamentId);
       toast.success('클럭을 시작했습니다');
@@ -69,7 +79,10 @@ export function usePauseClock(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: () => opsClockService.pause(tournamentId, requireActor(actorId)),
+    mutationFn: () => {
+      requireOnlineForMutation('ops.clockPause');
+      return opsClockService.pause(tournamentId, requireActor(actorId));
+    },
     onSuccess: () => {
       invalidateClockQueries(qc, tournamentId);
       toast.success('클럭을 일시정지했습니다');
@@ -85,8 +98,10 @@ export function useSetLevel(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (sort: number) =>
-      opsClockService.setLevel(tournamentId, requireActor(actorId), sort),
+    mutationFn: (sort: number) => {
+      requireOnlineForMutation('ops.clockSetLevel');
+      return opsClockService.setLevel(tournamentId, requireActor(actorId), sort);
+    },
     onSuccess: () => {
       invalidateClockQueries(qc, tournamentId);
       toast.success('레벨을 변경했습니다');
@@ -102,8 +117,10 @@ export function useAdjustClock(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (deltaSec: number) =>
-      opsClockService.adjust(tournamentId, requireActor(actorId), deltaSec),
+    mutationFn: (deltaSec: number) => {
+      requireOnlineForMutation('ops.clockAdjust');
+      return opsClockService.adjust(tournamentId, requireActor(actorId), deltaSec);
+    },
     onSuccess: (_data, deltaSec) => {
       invalidateClockQueries(qc, tournamentId);
       toast.success(deltaSec >= 0 ? '시간을 추가했습니다' : '시간을 단축했습니다');

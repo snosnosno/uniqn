@@ -1,5 +1,11 @@
 /**
  * ops 변이 훅 — mutationFn 은 Service 경유, actor 는 authStore. onSuccess 무효화 + toast.
+ *
+ * 결함⑦-3(오프라인 통합 공백): 모든 쓰기 mutationFn 첫 줄에서 `requireOnlineForMutation` 으로
+ * 오프라인 진입을 차단한다. 큐잉이 아니라 **차단**이다 — queryClient 의 mutations 는
+ * `networkMode: 'offlineFirst'` 라 pause/resume 이 없고, 가드가 없으면 요청이 그대로 발사돼
+ * 원인 불명 토스트만 남는다. 특히 redraw/reseat 는 클라가 계산한 배정 계획을 통째로 보내는
+ * 스냅샷 전제 액션이라 오프라인에서는 반드시 진입 자체를 막아야 한다.
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
@@ -14,6 +20,8 @@ import { computeWaitlistFill } from '@/domains/ops';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { trackOpsFunnel } from '@/services/observability/analyticsService';
+// 결함⑦-3: 오프라인 가드는 배럴(@/hooks) 대신 직접 경로로 가져온다(순환 참조 회피).
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { logger } from '@/utils/logger';
 import { extractUserMessage } from '@/errors';
 import type { CreateOpsTournamentInput, RegisterParticipantInput } from '@/repositories/ops';
@@ -49,8 +57,10 @@ export function useCreateOpsTournament() {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (input: CreateOpsTournamentInput) =>
-      opsTournamentService.createTournament(input, requireActor(actorId)),
+    mutationFn: (input: CreateOpsTournamentInput) => {
+      requireOnlineForMutation('ops.createTournament');
+      return opsTournamentService.createTournament(input, requireActor(actorId));
+    },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournaments() });
       // 리뷰 후속 — 공고연결 상태로 생성 시 공고 상세 ActionCard(useOpsTournamentsForPosting)도 즉시 갱신.
@@ -73,8 +83,10 @@ export function useSetTournamentStatus(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (status: OpsTournamentStatus) =>
-      opsTournamentService.setTournamentStatus(tournamentId, requireActor(actorId), status),
+    mutationFn: (status: OpsTournamentStatus) => {
+      requireOnlineForMutation('ops.setTournamentStatus');
+      return opsTournamentService.setTournamentStatus(tournamentId, requireActor(actorId), status);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournamentDetail(tournamentId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournaments() });
@@ -90,8 +102,10 @@ export function useToggleRegistration(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (open: boolean) =>
-      opsTournamentService.toggleRegistration(tournamentId, requireActor(actorId), open),
+    mutationFn: (open: boolean) => {
+      requireOnlineForMutation('ops.toggleRegistration');
+      return opsTournamentService.toggleRegistration(tournamentId, requireActor(actorId), open);
+    },
     onSuccess: (_data, open) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournamentDetail(tournamentId) });
       toast.success(open ? '등록을 열었습니다' : '등록을 마감했습니다');
@@ -108,11 +122,14 @@ export function useDuplicateTournament() {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (input: { sourceTournamentId: string; name?: string; eventDate?: string }) =>
-      opsTournamentService.duplicateTournament(input.sourceTournamentId, requireActor(actorId), {
-        name: input.name,
-        eventDate: input.eventDate,
-      }),
+    mutationFn: (input: { sourceTournamentId: string; name?: string; eventDate?: string }) => {
+      requireOnlineForMutation('ops.duplicateTournament');
+      return opsTournamentService.duplicateTournament(
+        input.sourceTournamentId,
+        requireActor(actorId),
+        { name: input.name, eventDate: input.eventDate }
+      );
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournaments() });
       trackOpsFunnel('ops_tournament_created', { method: 'duplicate' }); // D1 퍼널
@@ -130,8 +147,10 @@ export function useSetMonitorConfig(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (config: { v: 1; preset: string; slots: (string | null)[] } | null) =>
-      opsTournamentService.setMonitorConfig(tournamentId, requireActor(actorId), config),
+    mutationFn: (config: { v: 1; preset: string; slots: (string | null)[] } | null) => {
+      requireOnlineForMutation('ops.setMonitorConfig');
+      return opsTournamentService.setMonitorConfig(tournamentId, requireActor(actorId), config);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournamentDetail(tournamentId) });
       toast.success('저장했어요. TV에 곧 반영돼요');
@@ -148,8 +167,14 @@ export function useSetPrizePaid(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (input: { participantId: string; paid: boolean }) =>
-      opsParticipantService.setPrizePaid(input.participantId, requireActor(actorId), input.paid),
+    mutationFn: (input: { participantId: string; paid: boolean }) => {
+      requireOnlineForMutation('ops.setPrizePaid');
+      return opsParticipantService.setPrizePaid(
+        input.participantId,
+        requireActor(actorId),
+        input.paid
+      );
+    },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
       toast.success(variables.paid ? '지급 완료로 표시했어요' : '지급 표시를 취소했어요');
@@ -165,8 +190,13 @@ export function useRegisterParticipant(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (input: Omit<RegisterParticipantInput, 'tournamentId'>) =>
-      opsParticipantService.registerParticipant({ ...input, tournamentId }, requireActor(actorId)),
+    mutationFn: (input: Omit<RegisterParticipantInput, 'tournamentId'>) => {
+      requireOnlineForMutation('ops.registerParticipant');
+      return opsParticipantService.registerParticipant(
+        { ...input, tournamentId },
+        requireActor(actorId)
+      );
+    },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournamentDetail(tournamentId) });
@@ -183,8 +213,10 @@ export function useAddRebuy(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (participantId: string) =>
-      opsParticipantService.addRebuy(participantId, requireActor(actorId)),
+    mutationFn: (participantId: string) => {
+      requireOnlineForMutation('ops.addRebuy');
+      return opsParticipantService.addRebuy(participantId, requireActor(actorId));
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
       toast.success('리바이 처리됨');
@@ -200,8 +232,10 @@ export function useAddAddon(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (participantId: string) =>
-      opsParticipantService.addAddon(participantId, requireActor(actorId)),
+    mutationFn: (participantId: string) => {
+      requireOnlineForMutation('ops.addAddon');
+      return opsParticipantService.addAddon(participantId, requireActor(actorId));
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
       toast.success('애드온 처리됨');
@@ -217,12 +251,14 @@ export function useBustParticipant(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (vars: { participantId: string; eliminatorId?: string | null }) =>
-      opsParticipantService.bustParticipant(
+    mutationFn: (vars: { participantId: string; eliminatorId?: string | null }) => {
+      requireOnlineForMutation('ops.bustParticipant');
+      return opsParticipantService.bustParticipant(
         vars.participantId,
         requireActor(actorId),
         vars.eliminatorId
-      ),
+      );
+    },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
@@ -242,8 +278,10 @@ export function useUndoBust(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (participantId: string) =>
-      opsParticipantService.undoBust(participantId, requireActor(actorId)),
+    mutationFn: (participantId: string) => {
+      requireOnlineForMutation('ops.undoBust');
+      return opsParticipantService.undoBust(participantId, requireActor(actorId));
+    },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
@@ -261,8 +299,10 @@ export function useCorrectPrize(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (input: PrizeCorrectionInput) =>
-      opsParticipantService.correctPrize(input, requireActor(actorId)),
+    mutationFn: (input: PrizeCorrectionInput) => {
+      requireOnlineForMutation('ops.correctPrize');
+      return opsParticipantService.correctPrize(input, requireActor(actorId));
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
       toast.success('상금 정정됨');
@@ -283,8 +323,10 @@ export function useSetParticipantChips(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (input: ChipCountInput) =>
-      opsParticipantService.setParticipantChips(input, requireActor(actorId)),
+    mutationFn: (input: ChipCountInput) => {
+      requireOnlineForMutation('ops.setParticipantChips');
+      return opsParticipantService.setParticipantChips(input, requireActor(actorId));
+    },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.liveStats(tournamentId) });
@@ -312,8 +354,10 @@ export function useSetParticipantNoShow(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (input: NoShowInput) =>
-      opsParticipantService.setParticipantNoShow(input, requireActor(actorId)),
+    mutationFn: (input: NoShowInput) => {
+      requireOnlineForMutation('ops.setParticipantNoShow');
+      return opsParticipantService.setParticipantNoShow(input, requireActor(actorId));
+    },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.events(tournamentId) });
@@ -339,8 +383,10 @@ export function useUpdateParticipant(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (input: ParticipantUpdateInput) =>
-      opsParticipantService.updateParticipant(input, requireActor(actorId)),
+    mutationFn: (input: ParticipantUpdateInput) => {
+      requireOnlineForMutation('ops.updateParticipant');
+      return opsParticipantService.updateParticipant(input, requireActor(actorId));
+    },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
@@ -363,8 +409,10 @@ export function useDeleteParticipant(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (participantId: string) =>
-      opsParticipantService.deleteParticipant(participantId, requireActor(actorId)),
+    mutationFn: (participantId: string) => {
+      requireOnlineForMutation('ops.deleteParticipant');
+      return opsParticipantService.deleteParticipant(participantId, requireActor(actorId));
+    },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
@@ -388,8 +436,10 @@ export function useSetTournamentArchived(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (archived: boolean) =>
-      opsTournamentService.setArchived(tournamentId, requireActor(actorId), archived),
+    mutationFn: (archived: boolean) => {
+      requireOnlineForMutation('ops.setTournamentArchived');
+      return opsTournamentService.setArchived(tournamentId, requireActor(actorId), archived);
+    },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournaments() });
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournamentDetail(tournamentId) });
@@ -415,8 +465,10 @@ export function useUnclaimParticipant(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (participantId: string) =>
-      opsParticipantService.unclaimParticipant(participantId, requireActor(actorId)),
+    mutationFn: (participantId: string) => {
+      requireOnlineForMutation('ops.unclaimParticipant');
+      return opsParticipantService.unclaimParticipant(participantId, requireActor(actorId));
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
       toast.success('플레이어 연결을 해제했어요');
@@ -432,8 +484,10 @@ export function useReenterParticipant(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (participantId: string) =>
-      opsParticipantService.reenterParticipant(participantId, requireActor(actorId)),
+    mutationFn: (participantId: string) => {
+      requireOnlineForMutation('ops.reenterParticipant');
+      return opsParticipantService.reenterParticipant(participantId, requireActor(actorId));
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
@@ -456,7 +510,10 @@ export function useAddTable(tournamentId: string) {
       name?: string;
       lockType: OpsTableLockType;
       priority?: number;
-    }) => opsTableService.addTable({ ...input, tournamentId }, requireActor(actorId)),
+    }) => {
+      requireOnlineForMutation('ops.addTable');
+      return opsTableService.addTable({ ...input, tournamentId }, requireActor(actorId));
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.tables(tournamentId) });
       qc.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
@@ -473,8 +530,10 @@ export function useSetTableLock(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (v: { tableId: string; lockType: OpsTableLockType }) =>
-      opsTableService.setLock(v.tableId, requireActor(actorId), v.lockType),
+    mutationFn: (v: { tableId: string; lockType: OpsTableLockType }) => {
+      requireOnlineForMutation('ops.setTableLock');
+      return opsTableService.setLock(v.tableId, requireActor(actorId), v.lockType);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.tables(tournamentId) });
       toast.success('테이블 잠금을 변경했습니다');
@@ -490,8 +549,10 @@ export function useSetTablePriority(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (v: { tableId: string; priority: number | null }) =>
-      opsTableService.setPriority(v.tableId, requireActor(actorId), v.priority),
+    mutationFn: (v: { tableId: string; priority: number | null }) => {
+      requireOnlineForMutation('ops.setTablePriority');
+      return opsTableService.setPriority(v.tableId, requireActor(actorId), v.priority);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.tables(tournamentId) });
       toast.success('테이블 우선순위를 변경했습니다');
@@ -507,8 +568,10 @@ export function useCloseTable(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (v: { tableId: string; status: OpsTableStatus }) =>
-      opsTableService.closeTable(v.tableId, requireActor(actorId), v.status),
+    mutationFn: (v: { tableId: string; status: OpsTableStatus }) => {
+      requireOnlineForMutation('ops.closeTable');
+      return opsTableService.closeTable(v.tableId, requireActor(actorId), v.status);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.tables(tournamentId) });
       qc.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
@@ -525,8 +588,10 @@ export function useAssignSeat(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (v: { seatId: string; participantId: string }) =>
-      opsSeatService.assignSeat(v.seatId, v.participantId, requireActor(actorId)),
+    mutationFn: (v: { seatId: string; participantId: string }) => {
+      requireOnlineForMutation('ops.assignSeat');
+      return opsSeatService.assignSeat(v.seatId, v.participantId, requireActor(actorId));
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
       qc.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
@@ -543,8 +608,10 @@ export function useMoveSeat(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (v: { fromSeatId: string; toSeatId: string }) =>
-      opsSeatService.moveSeat(v.fromSeatId, v.toSeatId, requireActor(actorId)),
+    mutationFn: (v: { fromSeatId: string; toSeatId: string }) => {
+      requireOnlineForMutation('ops.moveSeat');
+      return opsSeatService.moveSeat(v.fromSeatId, v.toSeatId, requireActor(actorId));
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
       qc.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
@@ -561,7 +628,10 @@ export function useFreeSeat(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (seatId: string) => opsSeatService.freeSeat(seatId, requireActor(actorId)),
+    mutationFn: (seatId: string) => {
+      requireOnlineForMutation('ops.freeSeat');
+      return opsSeatService.freeSeat(seatId, requireActor(actorId));
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
       toast.success('좌석을 비웠습니다');
@@ -573,12 +643,18 @@ export function useFreeSeat(tournamentId: string) {
   });
 }
 
+/**
+ * 결함⑦-3: 클라가 계산한 배정 계획(computeWaitlistFill 결과)을 통째로 서버에 보내는 스냅샷 전제
+ * 액션이라, 오프라인에서는 계획 자체가 낡았을 수 있다 → 진입을 막는다.
+ */
 export function useRedrawWaitlistFill(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (assignments: ReturnType<typeof computeWaitlistFill>) =>
-      opsSeatService.redrawWaitlistFill(tournamentId, requireActor(actorId), assignments),
+    mutationFn: (assignments: ReturnType<typeof computeWaitlistFill>) => {
+      requireOnlineForMutation('ops.redrawWaitlistFill');
+      return opsSeatService.redrawWaitlistFill(tournamentId, requireActor(actorId), assignments);
+    },
     onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
       qc.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
@@ -591,7 +667,10 @@ export function useRedrawWaitlistFill(tournamentId: string) {
   });
 }
 
-/** 배정 2종(랜덤/칩 드래프트) 전원 재배치 훅. onSuccess: seats/participants/liveStats 무효화 + toast. */
+/**
+ * 배정 2종(랜덤/칩 드래프트) 전원 재배치 훅. onSuccess: seats/participants/liveStats 무효화 + toast.
+ * 결함⑦-3: redraw 와 같은 스냅샷 전제(클라 계산 배정 계획 전송)라 오프라인 진입을 막는다.
+ */
 export function useReseatParticipants(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
@@ -599,8 +678,15 @@ export function useReseatParticipants(tournamentId: string) {
     mutationFn: (v: {
       assignments: { participantId: string; seatId: string }[];
       mode: 'random_draw' | 'chip_draft';
-    }) =>
-      opsSeatService.reseatParticipants(tournamentId, requireActor(actorId), v.assignments, v.mode),
+    }) => {
+      requireOnlineForMutation('ops.reseatParticipants');
+      return opsSeatService.reseatParticipants(
+        tournamentId,
+        requireActor(actorId),
+        v.assignments,
+        v.mode
+      );
+    },
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
       qc.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
@@ -619,8 +705,14 @@ export function useSetTournamentPosting(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (jobPostingId: string | null) =>
-      opsStaffService.setTournamentPosting(tournamentId, requireActor(actorId), jobPostingId),
+    mutationFn: (jobPostingId: string | null) => {
+      requireOnlineForMutation('ops.setTournamentPosting');
+      return opsStaffService.setTournamentPosting(
+        tournamentId,
+        requireActor(actorId),
+        jobPostingId
+      );
+    },
     onSuccess: (_data, jobPostingId) => {
       // 리뷰 후속 — invalidateQueries 전에 캐시에서 old 공고 id 를 확보(무효화 이후엔 갱신되어 못 얻음).
       // old·new 양쪽 공고 상세 ActionCard(useOpsTournamentsForPosting)를 모두 갱신해 화면 간 staleness 제거.
@@ -650,8 +742,10 @@ export function useImportOpsStaff(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (date: string | null) =>
-      opsStaffService.importFromPosting(tournamentId, requireActor(actorId), date),
+    mutationFn: (date: string | null) => {
+      requireOnlineForMutation('ops.importStaff');
+      return opsStaffService.importFromPosting(tournamentId, requireActor(actorId), date);
+    },
     onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.staff(tournamentId) });
       // 스펙 §4.2 문구 고정 — StaffTab import CTA 확인 다이얼로그와 짝을 이루는 결과 안내.
@@ -669,14 +763,16 @@ export function useAddOpsStaff(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (v: { staffId: string; role: StaffRole; customRole?: string | null }) =>
-      opsStaffService.addStaff(
+    mutationFn: (v: { staffId: string; role: StaffRole; customRole?: string | null }) => {
+      requireOnlineForMutation('ops.addStaff');
+      return opsStaffService.addStaff(
         tournamentId,
         requireActor(actorId),
         v.staffId,
         v.role,
         v.customRole
-      ),
+      );
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.staff(tournamentId) });
       toast.success('스태프를 추가했습니다');
@@ -693,8 +789,10 @@ export function useRemoveOpsStaff(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (opsStaffId: string) =>
-      opsStaffService.removeStaff(tournamentId, requireActor(actorId), opsStaffId),
+    mutationFn: (opsStaffId: string) => {
+      requireOnlineForMutation('ops.removeStaff');
+      return opsStaffService.removeStaff(tournamentId, requireActor(actorId), opsStaffId);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.staff(tournamentId) });
       qc.invalidateQueries({ queryKey: queryKeys.ops.tables(tournamentId) });
@@ -712,8 +810,15 @@ export function useAssignTableStaff(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (v: { tableId: string; staffId: string | null }) =>
-      opsStaffService.assignTableStaff(tournamentId, requireActor(actorId), v.tableId, v.staffId),
+    mutationFn: (v: { tableId: string; staffId: string | null }) => {
+      requireOnlineForMutation('ops.assignTableStaff');
+      return opsStaffService.assignTableStaff(
+        tournamentId,
+        requireActor(actorId),
+        v.tableId,
+        v.staffId
+      );
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.tables(tournamentId) });
       qc.invalidateQueries({ queryKey: queryKeys.ops.staff(tournamentId) });

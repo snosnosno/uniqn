@@ -9,6 +9,8 @@ import { opsPlayerService } from '@/services/ops';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { trackOpsFunnel } from '@/services/observability/analyticsService';
+// 결함⑦-3: 오프라인 가드는 배럴(@/hooks) 대신 직접 경로로 가져온다(순환 참조 회피).
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { logger } from '@/utils/logger';
 import { extractUserMessage } from '@/errors';
 import type { OpsPlayerCredentials } from '@/types/ops';
@@ -27,8 +29,10 @@ export function useIssuePlayerCredentials(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation<OpsPlayerCredentials, Error, string>({
-    mutationFn: (participantId: string) =>
-      opsPlayerService.issuePlayerCredentials(participantId, requireActor(actorId)),
+    mutationFn: (participantId: string) => {
+      requireOnlineForMutation('ops.issuePlayerCredentials');
+      return opsPlayerService.issuePlayerCredentials(participantId, requireActor(actorId));
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
     },
@@ -44,8 +48,10 @@ export function useClaimParticipant(viewToken: string) {
   const qc = useQueryClient();
   const userId = useAuthStore((s) => s.user?.uid);
   return useMutation<void, Error, string>({
-    mutationFn: (claimPin: string) =>
-      opsPlayerService.claimParticipant(viewToken, claimPin, requireActor(userId)),
+    mutationFn: (claimPin: string) => {
+      requireOnlineForMutation('ops.claimParticipant');
+      return opsPlayerService.claimParticipant(viewToken, claimPin, requireActor(userId));
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.player(viewToken) });
       trackOpsFunnel('ops_claim_converted', { tk: viewToken.slice(0, 8) }); // D1 퍼널(가입 전환 보조)
