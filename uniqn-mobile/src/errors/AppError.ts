@@ -223,6 +223,7 @@ export const ERROR_CODES = {
   OPS_PRIZE_NOT_ASSIGNED: 'E6136', // S1 C4: 상금 미배정 참가자 지급 마킹
   OPS_REPORT_TOKEN_INVALID: 'E6137', // S1 B2: 신고 대상 토큰 무효
   OPS_REPORT_RATE_LIMITED: 'E6138', // S1 B2: 신고 rate limit
+  OPS_CHIPS_INVALID: 'E6139', // 결함①: 칩 카운트 값 범위 위반(0·음수·상한 초과)
 
   // 묶음 공유 (E6140~)
   BUSINESS_BULK_SHARE_NONE_SHAREABLE: 'E6140', // 선택한 공고가 전부 공유 불가 상태
@@ -277,6 +278,8 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.OPS_REPORT_TOKEN_INVALID]: '신고 대상을 찾을 수 없어요.',
   [ERROR_CODES.OPS_REPORT_RATE_LIMITED]:
     '신고가 이미 접수되어 처리 중이에요. 잠시 후 다시 시도해주세요.',
+  [ERROR_CODES.OPS_CHIPS_INVALID]:
+    '칩은 1 이상 20억 이하로 입력해주세요. 칩이 0이 된 참가자는 탈락 처리를 사용해주세요.',
 
   // 네트워크
   [ERROR_CODES.NETWORK_OFFLINE]: '인터넷 연결을 확인해주세요',

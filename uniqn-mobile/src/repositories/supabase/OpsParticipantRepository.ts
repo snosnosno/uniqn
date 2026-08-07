@@ -14,6 +14,7 @@ import type {
   OpsReenterResult,
   OpsUndoBustResult,
   OpsPrizeCorrectionResult,
+  OpsChipCountResult,
 } from '@/types/ops';
 
 const TABLE = 'ops_participants' as const;
@@ -55,6 +56,14 @@ const setPrizePaidResponseSchema = z
   .object({
     participant_id: z.string(),
     prize_paid_at: z.string().nullable(),
+  })
+  .passthrough();
+
+const setChipsResponseSchema = z
+  .object({
+    participant_id: z.string(),
+    chips: z.number(),
+    chips_before: z.number(),
   })
   .passthrough();
 
@@ -268,6 +277,30 @@ export class SupabaseOpsParticipantRepository implements IOpsParticipantReposito
     } catch (error) {
       if (isAppError(error)) throw error;
       mapOpsRpcError(error, { operation: 'ops 상금 지급 마킹' });
+    }
+  }
+
+  async setChips(
+    participantId: string,
+    actorId: string,
+    chips: number
+  ): Promise<OpsChipCountResult> {
+    try {
+      const { data, error } = await supabase.rpc('ops_set_participant_chips', {
+        p_participant_id: participantId,
+        p_actor_id: actorId,
+        p_chips: chips,
+      });
+      if (error) mapOpsRpcError(error, { operation: 'ops 칩 카운트' });
+      const row = parseOpsRpcResponse(setChipsResponseSchema, data, 'ops 칩 카운트');
+      return {
+        participantId: row.participant_id,
+        chips: row.chips,
+        chipsBefore: row.chips_before,
+      };
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      mapOpsRpcError(error, { operation: 'ops 칩 카운트' });
     }
   }
 }

@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { SheetModal, SelectBottomSheet } from '@/components/ui';
+import { ChipCountSheet } from './ChipCountSheet';
 import { confirmAction } from '@/utils/confirmAction';
 import { showAlert } from '@/utils/showAlert';
 import { formatNumber as fmt } from '@/utils/formatters/currency';
@@ -53,9 +54,15 @@ export function OpsParticipantActionSheet({
 
   // 바운티 대회에서 "누가 눌렀나요?" 피커 대상(=탈락 처리할 참가자). null 이면 미표시.
   const [eliminatorPickerFor, setEliminatorPickerFor] = useState<OpsParticipant | null>(null);
+  // 결함①: 칩 카운트 입력 시트. SheetModal 중첩 함정 회피를 위해 부모 시트를 숨기고 띄운다(아래 visible).
+  const [chipSheetOpen, setChipSheetOpen] = useState(false);
 
   if (!participant) return null;
   const p = participant;
+
+  // 칩 정정 대상 = active(착석) + checked_in(대기). 대기 참가자도 등록 시 starting_chips 를 받고
+  // 칩드래프트 재배치 풀(RedrawModal)에 포함되므로 정정 경로가 필요하다. busted 는 제외.
+  const canEditChips = p.status === 'active' || p.status === 'checked_in';
 
   // bust 성공 후 우승/ITM/일반 종료 분기 안내 — 현행 PlayersTab.tsx:49-62 문구 그대로 이관(H1 동작 등가).
   const handleBustSuccess = (r: OpsBustResult) => {
@@ -122,13 +129,20 @@ export function OpsParticipantActionSheet({
     </Pressable>
   );
 
+  // ActionBtn 선언 이후에 만든다(JSX 는 즉시 평가되므로 위에서 참조하면 TDZ).
+  const chipCountRow = (
+    <View className="flex-row">
+      <ActionBtn label="칩 카운트" onPress={() => setChipSheetOpen(true)} />
+    </View>
+  );
+
   return (
     <>
       <SheetModal
         // 네이티브에서 SheetModal=RNModal(OS 별도 윈도우)이라, 피커(=@gorhom BottomSheetModal,
         // 앱 루트 호스트)가 열린 채로 두면 피커가 이 모달 뒤로 가려져 바운티 탈락이 데드엔드가 된다.
         // 피커가 열리는 동안 시트를 숨기고(visible=false), 피커 onClose 리셋 시 자연 복귀시킨다.
-        visible={!!participant && eliminatorPickerFor === null}
+        visible={!!participant && eliminatorPickerFor === null && !chipSheetOpen}
         onClose={onClose}
         title={`#${p.entryNumber ?? ''} ${p.name}`}
       >
@@ -171,6 +185,7 @@ export function OpsParticipantActionSheet({
                   />
                 </View>
               )}
+              {chipCountRow}
               {/* 파괴적 액션 격리 구역(L6) */}
               <View className="mt-2 border-t border-gray-200 pt-2 dark:border-gray-700">
                 <Pressable
@@ -185,6 +200,8 @@ export function OpsParticipantActionSheet({
               </View>
             </>
           )}
+          {/* 대기(checked_in) 참가자 — 기존에는 액션이 하나도 없어 시트가 비어 있었다. */}
+          {p.status === 'checked_in' && chipCountRow}
           {p.status === 'busted' && (
             <View className="flex-row gap-2">
               <ActionBtn
@@ -231,6 +248,28 @@ export function OpsParticipantActionSheet({
             )}
         </View>
       </SheetModal>
+
+      {/*
+        결함① 칩 카운트 시트. SheetModal 중첩 함정(위 visible 주석)과 같은 이유로 부모 시트를
+        숨긴 채 띄운다. 닫기·저장 모두 부모까지 닫아 참가자 목록으로 복귀시킨다 — 이 시트의
+        다른 액션들도 동일하게 실행 즉시 onClose() 한다(칩카운트 라운드에서 다음 참가자로 이동).
+      */}
+      {canEditChips && (
+        <ChipCountSheet
+          visible={chipSheetOpen}
+          onClose={() => {
+            setChipSheetOpen(false);
+            onClose();
+          }}
+          participant={{
+            id: p.id,
+            name: p.name,
+            entryNumber: p.entryNumber ?? null,
+            chips: p.chips,
+          }}
+          tournamentId={tournamentId}
+        />
+      )}
 
       {/*
         바운티 탈락자 지정 피커(현행 PlayersTab.tsx:288-324 문구·인자 그대로 이관 — 생략 금지 게이트#1).

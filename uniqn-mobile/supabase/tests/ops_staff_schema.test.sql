@@ -28,8 +28,9 @@ SELECT enum_has_labels('public', 'ops_event_type', ARRAY[
   'posting_linked', 'posting_unlinked', 'staff_imported', 'staff_added',
   'staff_removed', 'table_staff_assigned', 'table_staff_unassigned',
   -- S1(20260717090000): C6 모니터 구성 + C4 상금 지급 마킹
-  'monitor_config_set', 'prize_paid', 'prize_paid_undone'
-], 'ops_event_type 31값(기존 28 + S1 신규 3)');
+  'monitor_config_set', 'prize_paid', 'prize_paid_undone',
+  'player_chips_set'
+], 'ops_event_type 32값(기존 28 + S1 신규 3 + 결함① 칩 카운트 1)');
 
 -- ─── (3) RLS enabled+forced (ops_1c_tables_rls.test.sql 관례 — pg_class 직접 조회) ───
 SELECT ok(

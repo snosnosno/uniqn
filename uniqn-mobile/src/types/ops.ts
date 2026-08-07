@@ -105,6 +105,13 @@ export interface OpsPrizeCorrectionResult {
   amountAfter: number | null;
 }
 
+/** 결함① 칩 카운트 수동 입력 RPC 반환. 동일값 재입력(no-op)이면 chips === chipsBefore. */
+export interface OpsChipCountResult {
+  participantId: string;
+  chips: number;
+  chipsBefore: number;
+}
+
 /** reenter RPC 반환. */
 export interface OpsReenterResult {
   participantId: string;

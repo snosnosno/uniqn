@@ -29,6 +29,7 @@ export { PayoutsTab } from './PayoutsTab';
 export { PayoutStructureEditor } from './PayoutStructureEditor';
 export { PayoutLedger } from './PayoutLedger';
 export { PrizeCorrectSheet } from './PrizeCorrectSheet';
+export { ChipCountSheet } from './ChipCountSheet';
 // 1f(T10) — PLAYERS 탭 추출
 export { PlayersTab } from './PlayersTab';
 // L7 — 참가 등록 FAB→시트(인라인 폼 제거). PlayersTab 헤더 토글 폼 대체, 오픈 상태는 [id].tsx 소유.
