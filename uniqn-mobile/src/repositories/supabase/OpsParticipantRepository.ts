@@ -16,6 +16,8 @@ import type {
   OpsPrizeCorrectionResult,
   OpsChipCountResult,
   OpsNoShowResult,
+  OpsParticipantUpdateResult,
+  OpsParticipantDeleteResult,
 } from '@/types/ops';
 
 const TABLE = 'ops_participants' as const;
@@ -65,6 +67,27 @@ const setChipsResponseSchema = z
     participant_id: z.string(),
     chips: z.number(),
     chips_before: z.number(),
+  })
+  .passthrough();
+
+// 결함③: 정정. `changed` 로 no-op 을 구분한다(무변경 저장을 "수정됨"으로 말하지 않기 위해).
+const updateParticipantResponseSchema = z
+  .object({
+    participant_id: z.string(),
+    name: z.string(),
+    nationality: z.string().nullable(),
+    phone: z.string().nullable(),
+    changed: z.boolean(),
+  })
+  .passthrough();
+
+// 결함③: 오등록 제거. 서버가 삭제 전 스냅샷을 돌려주므로 토스트에 엔트리 번호를 쓸 수 있다.
+const deleteParticipantResponseSchema = z
+  .object({
+    participant_id: z.string(),
+    entry_number: z.number().nullable(),
+    name: z.string(),
+    deleted: z.boolean(),
   })
   .passthrough();
 
@@ -346,6 +369,59 @@ export class SupabaseOpsParticipantRepository implements IOpsParticipantReposito
     } catch (error) {
       if (isAppError(error)) throw error;
       mapOpsRpcError(error, { operation });
+    }
+  }
+
+  async updateParticipant(
+    participantId: string,
+    actorId: string,
+    patch: { name: string; nationality?: string | null; phone?: string | null }
+  ): Promise<OpsParticipantUpdateResult> {
+    try {
+      const { data, error } = await supabase.rpc('ops_update_participant', {
+        p_participant_id: participantId,
+        p_actor_id: actorId,
+        p_name: patch.name,
+        // ⚠️ undefined 를 그대로 보내면 PostgREST 가 인자를 **누락**시켜 DEFAULT NULL 이 되는데,
+        //    그건 우연히 같은 결과일 뿐이다. 의도(지우기)를 명시적으로 null 로 보낸다.
+        p_nationality: patch.nationality ?? undefined,
+        p_phone: patch.phone ?? undefined,
+      });
+      if (error) mapOpsRpcError(error, { operation: 'ops 참가자 정정' });
+      const row = parseOpsRpcResponse(updateParticipantResponseSchema, data, 'ops 참가자 정정');
+      return {
+        participantId: row.participant_id,
+        name: row.name,
+        nationality: row.nationality,
+        phone: row.phone,
+        changed: row.changed,
+      };
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      mapOpsRpcError(error, { operation: 'ops 참가자 정정' });
+    }
+  }
+
+  async deleteParticipant(
+    participantId: string,
+    actorId: string
+  ): Promise<OpsParticipantDeleteResult> {
+    try {
+      const { data, error } = await supabase.rpc('ops_delete_participant', {
+        p_participant_id: participantId,
+        p_actor_id: actorId,
+      });
+      if (error) mapOpsRpcError(error, { operation: 'ops 등록 취소' });
+      const row = parseOpsRpcResponse(deleteParticipantResponseSchema, data, 'ops 등록 취소');
+      return {
+        participantId: row.participant_id,
+        entryNumber: row.entry_number,
+        name: row.name,
+        deleted: row.deleted,
+      };
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      mapOpsRpcError(error, { operation: 'ops 등록 취소' });
     }
   }
 

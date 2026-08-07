@@ -9,8 +9,10 @@ import {
   registerParticipantSchema,
   chipCountSchema,
   noShowSchema,
+  participantUpdateSchema,
   type ChipCountInput,
   type NoShowInput,
+  type ParticipantUpdateInput,
 } from '@/schemas/opsParticipant.schema';
 import { prizeCorrectionSchema, type PrizeCorrectionInput } from '@/schemas/opsPrize.schema';
 import { UUID_LIKE_RE } from '@/schemas/common';
@@ -204,6 +206,59 @@ export async function setParticipantNoShow(input: NoShowInput, actorId: string) 
       operation: input.noShow ? '노쇼 처리' : '노쇼 취소',
       component: COMPONENT,
       context: { participantId: input.participantId },
+    });
+  }
+}
+
+/**
+ * 결함③: 참가자 등록 정보 정정. 빈 문자열 → null(지우기) 정규화는 스키마 transform 이 한다 —
+ * 서버도 같은 규칙이라 두 계층이 갈라지지 않는다.
+ */
+export async function updateParticipant(input: ParticipantUpdateInput, actorId: string) {
+  try {
+    logger.info('ops 참가자 정정', { component: COMPONENT, participantId: input.participantId });
+    const parsed = participantUpdateSchema.safeParse(input);
+    if (!parsed.success) {
+      const first = Object.values(parsed.error.flatten().fieldErrors).flat()[0];
+      throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+        userMessage: typeof first === 'string' ? first : '입력값을 확인해 주세요.',
+      });
+    }
+    return await opsParticipantRepository.updateParticipant(parsed.data.participantId, actorId, {
+      name: parsed.data.name,
+      nationality: parsed.data.nationality,
+      phone: parsed.data.phone,
+    });
+  } catch (error) {
+    if (isAppError(error)) throw error;
+    throw handleServiceError(error, {
+      operation: '참가자 정정',
+      component: COMPONENT,
+      context: { participantId: input.participantId },
+    });
+  }
+}
+
+/**
+ * 결함③: 오등록 참가자 제거(**비가역**).
+ * 게이트 판정은 **서버 단독**이다 — 클라가 본 status·이력은 실시간 목록의 스냅샷이라 누른 순간과
+ * 어긋날 수 있다. 여기서 중복 판정하면 두 계층이 갈라지고, 갈라진 쪽이 넓으면 조용히 뚫린다.
+ */
+export async function deleteParticipant(participantId: string, actorId: string) {
+  try {
+    logger.info('ops 등록 취소(삭제)', { component: COMPONENT, participantId });
+    if (!UUID_LIKE_RE.test(participantId)) {
+      throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+        userMessage: '올바른 참가자 ID 가 아닙니다',
+      });
+    }
+    return await opsParticipantRepository.deleteParticipant(participantId, actorId);
+  } catch (error) {
+    if (isAppError(error)) throw error;
+    throw handleServiceError(error, {
+      operation: '등록 취소',
+      component: COMPONENT,
+      context: { participantId },
     });
   }
 }

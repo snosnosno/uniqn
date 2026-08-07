@@ -58,3 +58,35 @@ export const noShowSchema = z.object({
   noShow: z.boolean({ error: '노쇼 여부를 지정해주세요' }),
 });
 export type NoShowInput = z.infer<typeof noShowSchema>;
+
+/**
+ * 결함③: 참가자 등록 정보 정정.
+ * ⚠️ nationality/phone 의 빈 문자열은 **지우기**로 정규화한다(`''` → null) — 서버도 같은 규칙이라
+ *    두 계층이 갈라지지 않는다. `undefined` 도 null 과 같게 취급한다(폼이 전체 값을 보내므로
+ *    "미전달"과 "지우기"를 구분할 필요가 없고, 구분하려면 센티널이 필요한데 센티널이 함정이 된다).
+ * XSS 는 클라·서버 양쪽에서 본다 — ops_participants 에는 트리거 계층이 없어 서버 재판정이 필수다.
+ */
+export const participantUpdateSchema = z.object({
+  participantId: z.string().uuid({ message: '올바른 참가자 ID 가 아닙니다' }),
+  name: z
+    .string({ error: '이름을 입력해주세요' })
+    .trim()
+    .min(1, { message: '이름을 입력해주세요' })
+    .max(100, { message: '이름은 100자를 초과할 수 없습니다' })
+    .refine(xssValidation, { message: '특수문자가 포함될 수 없습니다' }),
+  nationality: z
+    .string()
+    .trim()
+    .max(50, { message: '국적은 50자를 초과할 수 없습니다' })
+    .refine(xssValidation, { message: '특수문자가 포함될 수 없습니다' })
+    .nullish()
+    .transform((v) => (v ? v : null)),
+  phone: z
+    .string()
+    .trim()
+    .max(30, { message: '연락처는 30자를 초과할 수 없습니다' })
+    .refine(xssValidation, { message: '특수문자가 포함될 수 없습니다' })
+    .nullish()
+    .transform((v) => (v ? v : null)),
+});
+export type ParticipantUpdateInput = z.input<typeof participantUpdateSchema>;

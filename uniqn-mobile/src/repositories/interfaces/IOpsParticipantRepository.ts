@@ -6,6 +6,8 @@ import type {
   OpsPrizeCorrectionResult,
   OpsChipCountResult,
   OpsNoShowResult,
+  OpsParticipantUpdateResult,
+  OpsParticipantDeleteResult,
 } from '@/types/ops';
 
 export interface RegisterParticipantInput {
@@ -65,4 +67,18 @@ export interface IOpsParticipantRepository {
    *    없다(2026-08-08 prosrc 실측). 감사 추가는 claim/unclaim 을 함께 손대는 별도 후속이다.
    */
   unclaimParticipant(participantId: string, actorId: string): Promise<void>;
+  /**
+   * 결함③: 등록 정보 정정(이름/국적/연락처). 상태 게이트 없음 — 오타는 어느 상태에서도 고친다.
+   * ⚠️ nationality/phone 의 null 은 **지우기**다("변경 없음"이 아니다) — 폼이 전체 값을 보낸다.
+   */
+  updateParticipant(
+    participantId: string,
+    actorId: string,
+    patch: { name: string; nationality?: string | null; phone?: string | null }
+  ): Promise<OpsParticipantUpdateResult>;
+  /**
+   * 결함③: 오등록 제거(**비가역**). 서버 게이트 = checked_in|no_show + 플레이 이력 0 + 좌석 미점유.
+   * 오등록은 `entries`(=count(*))를 통해 `prize_pool` 을 부풀리므로 노쇼 표시로는 빠지지 않는다.
+   */
+  deleteParticipant(participantId: string, actorId: string): Promise<OpsParticipantDeleteResult>;
 }

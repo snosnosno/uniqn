@@ -5,6 +5,7 @@ import {
   useSetParticipantChips,
   useSetParticipantNoShow,
   useUnclaimParticipant,
+  useDeleteParticipant,
 } from '@/hooks/ops';
 import { OpsParticipantActionSheet } from '../OpsParticipantActionSheet';
 
@@ -18,6 +19,8 @@ jest.mock('@/hooks/ops', () => ({
   useSetParticipantChips: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
   useSetParticipantNoShow: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
   useUnclaimParticipant: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
+  useDeleteParticipant: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
+  useUpdateParticipant: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
 }));
 // SheetModal 실물 대신 자식 통과 스텁(레포 관례: order-sheet RolesSheet.test.tsx:11-20).
 // footer 도 통과시켜야 한다 — 시트의 주 액션 버튼은 footer 에만 있어서, 드랍하면
@@ -294,6 +297,75 @@ describe('OpsParticipantActionSheet', () => {
       />
     );
     fireEvent.press(getByTestId('ops-participant-unclaim'));
+    expect(mutate).toHaveBeenCalledWith('p1');
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  // ── 결함③ 정정 · 등록 취소 진입점 ──
+  it.each(['active', 'checked_in', 'busted', 'no_show'])(
+    '정보 수정은 상태(%s) 무관하게 노출된다 — 오타는 어느 상태에서도 고친다',
+    (status) => {
+      const { getByText } = render(
+        <OpsParticipantActionSheet
+          tournament={tournament}
+          participant={{ ...active, status }}
+          onClose={jest.fn()}
+        />
+      );
+      expect(getByText('정보 수정')).toBeTruthy();
+    }
+  );
+
+  it('정보 수정을 누르면 부모 시트가 숨고 정정 시트가 뜬다(SheetModal 중첩 회피)', () => {
+    const { getByText, queryByText, getByLabelText } = render(
+      <OpsParticipantActionSheet tournament={tournament} participant={active} onClose={jest.fn()} />
+    );
+    fireEvent.press(getByText('정보 수정'));
+    expect(getByLabelText('이름')).toBeTruthy();
+    expect(queryByText('리바이')).toBeNull(); // 부모 시트 숨김
+  });
+
+  it('active: 등록 취소 숨김 — 서버 게이트(checked_in|no_show)와 같은 조건으로만 노출', () => {
+    const { queryByTestId } = render(
+      <OpsParticipantActionSheet tournament={tournament} participant={active} onClose={jest.fn()} />
+    );
+    expect(queryByTestId('ops-participant-delete')).toBeNull();
+  });
+
+  it('checked_in + 플레이 이력 있으면 등록 취소 숨김(눌러도 P0001 인 버튼은 노이즈)', () => {
+    const { queryByTestId } = render(
+      <OpsParticipantActionSheet
+        tournament={tournament}
+        participant={{ ...active, status: 'checked_in', rebuys: 1 }}
+        onClose={jest.fn()}
+      />
+    );
+    expect(queryByTestId('ops-participant-delete')).toBeNull();
+  });
+
+  it('checked_in + 이력 0 → 등록 취소 노출, confirmAction 후 participantId 로 mutate', () => {
+    const mutate = jest.fn();
+    (useDeleteParticipant as jest.Mock).mockReturnValue({ mutate, isPending: false });
+    jest
+      .spyOn(require('@/utils/confirmAction'), 'confirmAction')
+      .mockImplementation((o: any) => o.onConfirm());
+    const onClose = jest.fn();
+    const { getByTestId } = render(
+      <OpsParticipantActionSheet
+        tournament={tournament}
+        participant={{
+          ...active,
+          status: 'checked_in',
+          rebuys: 0,
+          addOns: 0,
+          reentries: 0,
+          knockouts: 0,
+          prizeAmount: null,
+        }}
+        onClose={onClose}
+      />
+    );
+    fireEvent.press(getByTestId('ops-participant-delete'));
     expect(mutate).toHaveBeenCalledWith('p1');
     expect(onClose).toHaveBeenCalled();
   });

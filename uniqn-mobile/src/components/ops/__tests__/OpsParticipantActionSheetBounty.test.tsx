@@ -17,6 +17,8 @@ jest.mock('@/hooks/ops', () => ({
   useSetParticipantChips: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
   useSetParticipantNoShow: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
   useUnclaimParticipant: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
+  useDeleteParticipant: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
+  useUpdateParticipant: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
 }));
 
 // ui 배럴 전체 스텁 — SheetModal(자식 통과) + SelectBottomSheet(옵션→pressable, TablesTab.test 관례).

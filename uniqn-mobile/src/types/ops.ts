@@ -40,6 +40,12 @@ export interface OpsTournament {
   /** TV 모니터 구성(S1 C6) jsonb. NULL=기본. 소비는 parseMonitorConfig 경유. */
   monitorConfig?: unknown;
   nextEntrySeq: number;
+  /**
+   * 보관 시각(NULL/undefined=활성) — 결함③. 목록 기본 필터에서 제외된다.
+   * status(upcoming/active/completed)와 **직교**다 — 보관해도 원래 상태를 잃지 않는다.
+   * hard DELETE 는 ops_events append-only 트리거와 충돌해 불가능하므로 이것이 "치우기"의 유일 경로.
+   */
+  archivedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -117,6 +123,30 @@ export interface OpsNoShowResult {
   participantId: string;
   status: OpsParticipantStatus;
   statusBefore: OpsParticipantStatus;
+}
+
+/** 참가자 정정 RPC 반환(결함③). changed=false 면 무변경 저장(이벤트 0행). */
+export interface OpsParticipantUpdateResult {
+  participantId: string;
+  name: string;
+  nationality: string | null;
+  phone: string | null;
+  changed: boolean;
+}
+
+/** 오등록 참가자 제거 RPC 반환(결함③). 비가역 — entry_number 는 빈 번호로 남는다. */
+export interface OpsParticipantDeleteResult {
+  participantId: string;
+  entryNumber: number | null;
+  name: string;
+  deleted: boolean;
+}
+
+/** 대회 보관/복원 RPC 반환(결함③). changed=false 면 이미 목표 상태(이벤트 0행). */
+export interface OpsTournamentArchiveResult {
+  tournamentId: string;
+  archivedAt: string | null;
+  changed: boolean;
 }
 
 /** reenter RPC 반환. */
