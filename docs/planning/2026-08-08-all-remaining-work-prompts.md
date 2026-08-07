@@ -34,12 +34,31 @@
 
 | 워크트리 | 브랜치 | 하고 있는 일 | 상태 |
 |---|---|---|---|
-| `T-HOLDEM-ops4` | `fix/ops-event-date-20260808` | **ops 결함 ④ 대회 날짜 · ② 노쇼** | 커밋 2건 완료(`690a20f0e`·`37b3bcb2b`) |
-| `T-HOLDEM-medium4` | `fix/merge-review-medium-rest-20260808` | **머지 리뷰 MEDIUM 나머지 4건** | 작업 중(미커밋) |
-| `T-HOLDEM-sf` | `docs/next-session-prompts-20260808` | 잔여 2건(딥링크·MEDIUM) 프롬프트 | 커밋 완료·미푸시 |
+| `T-HOLDEM-ops4` | `fix/ops-event-date-20260808` | ops 결함 ②③④⑤⑥ | ✅ **PR #441 머지 `f02d64b48`** |
+| `T-HOLDEM-medium4` | `fix/merge-review-medium-rest-20260808` | 머지 리뷰 MEDIUM 나머지 4건 | ✅ **PR #442 머지 `20cb6bad9`** — 워크트리 정리됨 |
+| `T-HOLDEM-sf` | `docs/next-session-prompts-20260808` | 잔여 2건 프롬프트 | ⚠️ **폐기 대상** — 아래 참조 |
 | `T-HOLDEM-opsurl` | `fix/ops-native-deeplink-20260807` | Android App Links 축소 + 1.0.6 bump | **대기**(§T8 참조) |
 
-→ **ops 결함 ②·④ 와 MEDIUM 4건은 착수하지 말 것.** ops 는 ③⑤⑥⑦ 만 남는다.
+→ **MEDIUM 4건은 전량 착지했다(#442).** LOW 12+ 만 남는다. ops 는 결함 ⑦ 만 남는다.
+
+⚠️ `docs/next-session-prompts-20260808` **브랜치는 머지하지 말 것.** 이 통합 원장과 내용이 겹치고,
+그 문서가 세운 전제 두 개가 #442 조사에서 **틀린 것으로 판명**됐다:
+
+| 그 문서의 전제 | 실측 |
+|---|---|
+| MEDIUM 7 "0개 확정 허용 = 상태 기계 변경" | `applyDateSelection`(`scheduleCardEdits.ts:40-82`)이 **이미 정의해 뒀다** — UI만 막고 있었다 |
+| MEDIUM 3 "저장 1회 = 알림 1통 위반" | 겹치는 통들은 **서로 다른 사실**이다 — 동작이 아니라 선언이 틀렸다 |
+
+교훈은 `memory/project_merge_review_followups_20260807.md` 교훈 6·7·8 에 보존했다.
+
+### 🔴 #442 가 남긴 prod 반영 대기
+
+`20260808130000_notify_merge_comment_correction.sql` **prod 미적용**. `prod-migrate`(#437)로 파일 그대로.
+COMMENT 갱신만이라 **파리티 증감 0** — 아래 파리티 갭 4는 전부 #441 의 ops 마이그 4건 몫이다.
+
+**파리티 실측(2026-08-08 22시)**: prod **202/111** vs 레포 기대 **206/111**
+(`supabase/tests/parity_baseline_guard.test.sql:155-156`). 가드 결함이 아니라 **prod 반영 대기**다 —
+`20260808200000`·`210000`·`220000`·`230000` 를 실으면 닫힌다. 그전까지 주간 `parity-smoke` 는 red 다.
 
 ---
 
