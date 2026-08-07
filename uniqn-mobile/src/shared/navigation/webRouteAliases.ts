@@ -34,7 +34,7 @@ export function resolveAdminAliasHref(slug?: string[] | string): string {
   }
 
   if (segments[0] === 'tournaments') {
-    return '/(admin)/tournaments';
+    return '/(admin)/tournament-approvals';
   }
 
   if (segments[0] === 'stats') {

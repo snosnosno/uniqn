@@ -54,7 +54,7 @@ export const EXPO_ROUTES = {
   adminAnnouncementCreate: '/(admin)/announcements/create',
   adminAnnouncementDetail: '/(admin)/announcements/[id]',
   adminAnnouncementEdit: '/(admin)/announcements/[id]/edit',
-  adminTournaments: '/(admin)/tournaments',
+  adminTournaments: '/(admin)/tournament-approvals',
   adminInquiries: '/(admin)/inquiries',
   adminInquiryDetail: '/(admin)/inquiries/[id]',
   adminEmployerApplications: '/(admin)/employer-applications',
