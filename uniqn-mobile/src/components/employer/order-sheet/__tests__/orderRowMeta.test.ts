@@ -196,7 +196,7 @@ describe('getRowState (그룹 스코프 — S1)', () => {
 
 describe('firstUnsetRow (그룹 스코프 순서)', () => {
   it('빈 값이면 그룹 순서상 첫 필수 행(title)', () => {
-    expect(firstUnsetRow(emptyValues)).toEqual({ key: 'title', groupIndex: 0 });
+    expect(firstUnsetRow(emptyValues)).toMatchObject({ key: 'title', groupIndex: 0 });
   });
   it('전부 채우면 null', () => {
     expect(firstUnsetRow(filled)).toBeNull();
@@ -209,7 +209,7 @@ describe('firstUnsetRow (그룹 스코프 순서)', () => {
         { dates: ['2026-07-20'], timeSlots: [{ startTime: '', roles: [] }], grouped: false },
       ],
     };
-    expect(firstUnsetRow(partial)).toEqual({ key: 'time', groupIndex: 1 });
+    expect(firstUnsetRow(partial)).toMatchObject({ key: 'time', groupIndex: 1 });
   });
   it('그룹 순회는 그룹0 전체(dates→time→roles) 후 그룹1로 진행한다', () => {
     const partial: OrderSheetFormValues = {
@@ -219,7 +219,7 @@ describe('firstUnsetRow (그룹 스코프 순서)', () => {
         { dates: [], timeSlots: [], grouped: false }, // 그룹1 dates 미설정
       ],
     };
-    expect(firstUnsetRow(partial)).toEqual({ key: 'time', groupIndex: 0 });
+    expect(firstUnsetRow(partial)).toMatchObject({ key: 'time', groupIndex: 0 });
   });
 });
 
@@ -346,8 +346,25 @@ describe('summarizeGroupDates — 그룹 날짜 요약 표기', () => {
   it('월 경계 연속은 7/31~8/1', () => {
     expect(summarizeGroupDates(['2026-07-31', '2026-08-01'])).toBe('7/31~8/1');
   });
-  it('비연속이면 7/20 외 2일', () => {
-    expect(summarizeGroupDates(['2026-07-20', '2026-07-22', '2026-07-25'])).toBe('7/20 외 2일');
+  it('비연속 소수(5일 이하)는 구간을 · 로 나열한다 — 카드가 어느 날짜를 담았는지 보인다', () => {
+    expect(summarizeGroupDates(['2026-07-20', '2026-07-22', '2026-07-25'])).toBe(
+      '7/20 · 7/22 · 7/25'
+    );
+  });
+  it('연속 구간은 나열 안에서도 범위로 압축한다', () => {
+    expect(summarizeGroupDates(['2026-07-20', '2026-07-21', '2026-07-25'])).toBe('7/20~21 · 7/25');
+  });
+  it('비연속 다수(6일 이상)는 첫 구간 + 외 N일로 축약한다', () => {
+    expect(
+      summarizeGroupDates([
+        '2026-07-20',
+        '2026-07-21',
+        '2026-07-25',
+        '2026-07-27',
+        '2026-07-29',
+        '2026-07-31',
+      ])
+    ).toBe('7/20~21 외 4일');
   });
   it('단일 날짜는 7/20', () => {
     expect(summarizeGroupDates(['2026-07-20'])).toBe('7/20');

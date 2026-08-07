@@ -39,7 +39,9 @@ export const orderSheetSalarySchema = z
 export const orderSheetRoleSchema = z.object({
   role: z.enum(['dealer', 'floor', 'serving', 'manager', 'staff', 'other']),
   customRole: safeText(20).optional(),
-  count: z.number().int().min(1).max(99),
+  // 대회사 대규모 편성(딜러 100명+)이 실제 타깃 — 3자리까지 받는다.
+  // ⚠️ RoleCountEditor 의 MAX_COUNT·maxLength 와 반드시 같이 움직인다(반쪽 상한 금지).
+  count: z.number().int().min(1).max(999),
 });
 
 // useSameSalary=false일 때 역할별 급여(2026-07-14 결정) — roleCatalog[].salary의 캐리어

@@ -64,9 +64,10 @@ describe('ScheduleSlotsSheet', () => {
     fireEvent.press(getByTestId('mock-time-confirm'));
     fireEvent.press(getByTestId('order-role-chip-dealer'));
     fireEvent.press(getByText('확인'));
-    expect(onConfirm).toHaveBeenCalledWith([
-      { startTime: '20:30', roles: [{ role: 'dealer', count: 1 }] },
-    ]);
+    expect(onConfirm).toHaveBeenCalledWith({
+      dates: [],
+      slots: [{ startTime: '20:30', roles: [{ role: 'dealer', count: 1 }] }],
+    });
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
@@ -161,7 +162,7 @@ describe('ScheduleSlotsSheet', () => {
     fireEvent.press(getByTestId('order-time-start-1'));
     fireEvent.press(getByTestId('mock-time-tba'));
     fireEvent.press(getByText('확인'));
-    expect(onConfirm.mock.calls[0][0]).toHaveLength(3);
+    expect(onConfirm.mock.calls[0][0].slots).toHaveLength(3);
   });
 
   it('새 슬롯은 첫 슬롯의 역할을 깊은복사로 시드받는다', () => {
@@ -183,17 +184,20 @@ describe('ScheduleSlotsSheet', () => {
     // 참조 비동일성은 **역할 편집 전에** 확인해야 한다 — 편집 후에는 불변 갱신(map+spread)이
     // 어차피 새 배열·새 객체를 만들어 얕은 시드였어도 참조가 갈라지므로 단언이 무력해진다.
     fireEvent.press(getByText('확인'));
-    const seeded = onConfirm.mock.calls[0][0];
+    const seeded = onConfirm.mock.calls[0][0].slots;
     expect(seeded[1].roles).not.toBe(seeded[0].roles);
     expect(seeded[1].roles[0]).not.toBe(seeded[0].roles[0]);
 
     // 새 카드에서 인원을 바꿔도 첫 슬롯이 오염되지 않아야 한다
     fireEvent.press(getByTestId('order-role-count-plus-0'));
     fireEvent.press(getByText('확인'));
-    expect(onConfirm).toHaveBeenLastCalledWith([
-      { startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] },
-      { startTime: '', isTimeToBeAnnounced: true, roles: [{ role: 'dealer', count: 3 }] },
-    ]);
+    expect(onConfirm).toHaveBeenLastCalledWith({
+      dates: [],
+      slots: [
+        { startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] },
+        { startTime: '', isTimeToBeAnnounced: true, roles: [{ role: 'dealer', count: 3 }] },
+      ],
+    });
   });
 
   it('한 슬롯의 시간을 바꿔도 다른 슬롯의 시간은 그대로다', () => {
@@ -214,10 +218,13 @@ describe('ScheduleSlotsSheet', () => {
     fireEvent.press(getByTestId('order-time-start-1'));
     fireEvent.press(getByTestId('mock-time-confirm'));
     fireEvent.press(getByText('확인'));
-    expect(onConfirm).toHaveBeenCalledWith([
-      { startTime: '19:00', roles: [{ role: 'dealer', count: 1 }] },
-      { startTime: '20:30', roles: [{ role: 'dealer', count: 1 }] },
-    ]);
+    expect(onConfirm).toHaveBeenCalledWith({
+      dates: [],
+      slots: [
+        { startTime: '19:00', roles: [{ role: 'dealer', count: 1 }] },
+        { startTime: '20:30', roles: [{ role: 'dealer', count: 1 }] },
+      ],
+    });
   });
 
   // Task 6 리뷰 이월 — `slots[i]?.startTime ?? DEFAULT_START` 로 되돌리면 red('0:0') 가 되어야 한다.
@@ -353,9 +360,10 @@ describe('확인 게이팅 (2026-07-23) — 무효 슬롯 확정 차단', () => 
       />
     );
     fireEvent.press(getByText('확인'));
-    expect(onConfirm).toHaveBeenCalledWith([
-      { startTime: '', isTimeToBeAnnounced: true, roles: [{ role: 'dealer', count: 1 }] },
-    ]);
+    expect(onConfirm).toHaveBeenCalledWith({
+      dates: [],
+      slots: [{ startTime: '', isTimeToBeAnnounced: true, roles: [{ role: 'dealer', count: 1 }] }],
+    });
   });
 
   it('무효 슬롯을 채우면 확인이 다시 활성화된다 (복구 경로)', () => {
@@ -367,9 +375,10 @@ describe('확인 게이팅 (2026-07-23) — 무효 슬롯 확정 차단', () => 
     expect(onConfirm).not.toHaveBeenCalled();
     fireEvent.press(getByTestId('order-role-chip-dealer')); // 역할 추가 → 유효
     fireEvent.press(getByText('확인'));
-    expect(onConfirm).toHaveBeenCalledWith([
-      { startTime: '19:00', roles: [{ role: 'dealer', count: 1 }] },
-    ]);
+    expect(onConfirm).toHaveBeenCalledWith({
+      dates: [],
+      slots: [{ startTime: '19:00', roles: [{ role: 'dealer', count: 1 }] }],
+    });
   });
 });
 
@@ -384,9 +393,10 @@ describe('시간 미정 (2026-07-22)', () => {
     expect(getByText('출근 미정')).toBeTruthy();
     fireEvent.press(getByTestId('order-role-chip-dealer'));
     fireEvent.press(getByText('확인'));
-    expect(onConfirm).toHaveBeenCalledWith([
-      { startTime: '', isTimeToBeAnnounced: true, roles: [{ role: 'dealer', count: 1 }] },
-    ]);
+    expect(onConfirm).toHaveBeenCalledWith({
+      dates: [],
+      slots: [{ startTime: '', isTimeToBeAnnounced: true, roles: [{ role: 'dealer', count: 1 }] }],
+    });
   });
 
   it('미정 슬롯에서 시각을 다시 고르면 미정이 해제된다', () => {
@@ -404,9 +414,10 @@ describe('시간 미정 (2026-07-22)', () => {
     fireEvent.press(getByTestId('order-time-start-0'));
     fireEvent.press(getByTestId('mock-time-confirm'));
     fireEvent.press(getByText('확인'));
-    expect(onConfirm).toHaveBeenCalledWith([
-      { startTime: '20:30', roles: [{ role: 'dealer', count: 1 }] },
-    ]);
+    expect(onConfirm).toHaveBeenCalledWith({
+      dates: [],
+      slots: [{ startTime: '20:30', roles: [{ role: 'dealer', count: 1 }] }],
+    });
   });
 
   it('미정 슬롯은 완성으로 간주된다 — 접힘 요약도 "미정 · 딜러 1명"', () => {
