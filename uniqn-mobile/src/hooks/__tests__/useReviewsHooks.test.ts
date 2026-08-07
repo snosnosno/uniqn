@@ -8,6 +8,19 @@ const mockGetByDateRange = jest.fn();
 const mockGetUndatedByStaffId = jest.fn();
 const mockGetCompletedByOwnerId = jest.fn();
 const mockGetUndatedCompletedByOwnerId = jest.fn();
+const mockRefetchStaffWorkLogs = jest.fn();
+const mockRefetchEmployerWorkLogs = jest.fn();
+const mockRefetchJobPostings = jest.fn();
+const mockRefetchGivenReviews = jest.fn();
+
+// 각 내부 쿼리의 실패를 개별로 주입한다 — 훅이 어느 쿼리의 실패를 올리는지(그리고
+// 구인자 전용 쿼리를 스태프에게 올리지 않는지) 구분해서 검증하기 위함.
+const mockQueryErrors: {
+  staff: Error | null;
+  employer: Error | null;
+  jobPostings: Error | null;
+  given: Error | null;
+} = { staff: null, employer: null, jobPostings: null, given: null };
 
 jest.mock('@tanstack/react-query', () => ({
   useQuery: (...args: unknown[]) => mockUseQuery(...args),
@@ -94,6 +107,10 @@ describe('useReviews query keys', () => {
     mockGetUndatedByStaffId.mockResolvedValue([]);
     mockGetCompletedByOwnerId.mockResolvedValue([]);
     mockGetUndatedCompletedByOwnerId.mockResolvedValue([]);
+    mockQueryErrors.staff = null;
+    mockQueryErrors.employer = null;
+    mockQueryErrors.jobPostings = null;
+    mockQueryErrors.given = null;
 
     mockUseInfiniteQuery.mockImplementation((options: object) => ({
       data: undefined,
@@ -127,6 +144,8 @@ describe('useReviews query keys', () => {
             },
           ],
           isLoading: false,
+          error: mockQueryErrors.staff,
+          refetch: mockRefetchStaffWorkLogs,
         };
       }
 
@@ -134,6 +153,8 @@ describe('useReviews query keys', () => {
         return {
           data: [],
           isLoading: false,
+          error: mockQueryErrors.employer,
+          refetch: mockRefetchEmployerWorkLogs,
         };
       }
 
@@ -141,6 +162,8 @@ describe('useReviews query keys', () => {
         return {
           data: new Map(),
           isLoading: false,
+          error: mockQueryErrors.jobPostings,
+          refetch: mockRefetchJobPostings,
         };
       }
 
@@ -148,12 +171,16 @@ describe('useReviews query keys', () => {
         return {
           data: { items: [] },
           isLoading: false,
+          error: mockQueryErrors.given,
+          refetch: mockRefetchGivenReviews,
         };
       }
 
       return {
         data: [],
         isLoading: false,
+        error: null,
+        refetch: jest.fn(),
       };
     });
   });
@@ -275,5 +302,108 @@ describe('useReviews query keys', () => {
         date: '',
       },
     ]);
+  });
+});
+
+// 조회가 실패해도 pendingReviews 는 빈 배열이라 화면이 "미작성 없음"으로 위장한다.
+// 훅이 실패를 올려주지 않으면 화면은 분기할 것이 없다 — 그래서 error/refetch 가 훅의 계약이다.
+describe('usePendingReviews 실패 노출', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-04-08T12:00:00.000Z'));
+    mockProfile.uid = 'user-1';
+    mockProfile.role = 'staff';
+    mockQueryErrors.staff = null;
+    mockQueryErrors.employer = null;
+    mockQueryErrors.jobPostings = null;
+    mockQueryErrors.given = null;
+
+    mockUseQuery.mockImplementation((options: { queryKey: unknown[] }) => {
+      if (options.queryKey.includes('staff-worklogs')) {
+        return {
+          data: [],
+          isLoading: false,
+          error: mockQueryErrors.staff,
+          refetch: mockRefetchStaffWorkLogs,
+        };
+      }
+      if (options.queryKey.includes('employer')) {
+        return {
+          data: [],
+          isLoading: false,
+          error: mockQueryErrors.employer,
+          refetch: mockRefetchEmployerWorkLogs,
+        };
+      }
+      if (options.queryKey.includes('jobpostings')) {
+        return {
+          data: new Map(),
+          isLoading: false,
+          error: mockQueryErrors.jobPostings,
+          refetch: mockRefetchJobPostings,
+        };
+      }
+      return {
+        data: { items: [] },
+        isLoading: false,
+        error: mockQueryErrors.given,
+        refetch: mockRefetchGivenReviews,
+      };
+    });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('성공 조회에서는 error 가 null 이다', () => {
+    const { result } = renderHook(() => usePendingReviews());
+
+    expect(result.current.error).toBeNull();
+  });
+
+  it.each([
+    ['staff', 'staff-worklogs 조회 실패'],
+    ['jobPostings', '공고 배치 조회 실패'],
+    ['given', '작성한 리뷰 조회 실패'],
+  ] as const)('%s 쿼리가 실패하면 error 로 올린다', (key, message) => {
+    const failure = new Error(message);
+    mockQueryErrors[key] = failure;
+
+    const { result } = renderHook(() => usePendingReviews());
+
+    expect(result.current.error).toBe(failure);
+  });
+
+  it('스태프에게는 구인자 전용 쿼리의 실패를 올리지 않는다', () => {
+    // 구인자 쿼리는 enabled:false 라 스태프 화면에서 실패해도 미작성 목록에 영향이 없다.
+    mockQueryErrors.employer = new Error('구인자 근무기록 조회 실패');
+
+    const { result } = renderHook(() => usePendingReviews());
+
+    expect(result.current.error).toBeNull();
+  });
+
+  it('구인자에게는 구인자 전용 쿼리의 실패를 올린다', () => {
+    mockProfile.role = 'employer';
+    const failure = new Error('구인자 근무기록 조회 실패');
+    mockQueryErrors.employer = failure;
+
+    const { result } = renderHook(() => usePendingReviews());
+
+    expect(result.current.error).toBe(failure);
+  });
+
+  it('refetch 는 미작성 목록을 구성하는 모든 쿼리를 다시 태운다', async () => {
+    mockProfile.role = 'employer';
+    const { result } = renderHook(() => usePendingReviews());
+
+    await result.current.refetch();
+
+    expect(mockRefetchStaffWorkLogs).toHaveBeenCalled();
+    expect(mockRefetchEmployerWorkLogs).toHaveBeenCalled();
+    expect(mockRefetchJobPostings).toHaveBeenCalled();
+    expect(mockRefetchGivenReviews).toHaveBeenCalled();
   });
 });

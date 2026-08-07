@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { AppFlashList } from '@/components/ui/AppFlashList';
 import { StackHeader } from '@/components/headers';
-import { EmptyState, NumericText } from '@/components/ui';
+import { EmptyState, ErrorState, NumericText } from '@/components/ui';
 import ReviewCard from '@/components/review/ReviewCard';
 import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';
 import PendingReviewCard from '@/components/review/PendingReviewCard';
@@ -30,7 +30,13 @@ type TabType = 'pending' | 'received' | 'given';
 export default function ReviewHistoryScreen() {
   const profile = useAuthStore((s) => s.profile);
   const bubbleScore = useBubbleScore();
-  const { pendingReviews, pendingCount, isLoading: isPendingLoading } = usePendingReviews();
+  const {
+    pendingReviews,
+    pendingCount,
+    isLoading: isPendingLoading,
+    error: pendingError,
+    refetch: refetchPending,
+  } = usePendingReviews();
   const [activeTab, setActiveTab] = useState<TabType>(pendingCount > 0 ? 'pending' : 'received');
 
   const received = useReceivedReviews(profile?.uid);
@@ -114,6 +120,115 @@ export default function ReviewHistoryScreen() {
 
   const keyExtractor = useCallback((item: Review) => `${item.workLogId}_${item.reviewerType}`, []);
 
+  // 조회 실패를 빈 목록으로 그리면 "미작성 없음"이 되어, 7일 마감이 지나도록
+  // 사용자가 평가할 게 없다고 믿는다. 실패는 빈 상태와 다른 화면이어야 한다(감사 A4).
+  const pendingTabBody = (() => {
+    if (isPendingLoading) {
+      return (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" />
+        </View>
+      );
+    }
+
+    // 이미 받아둔 목록이 있으면 가리지 않는다 — 배경 재조회 1회 실패로 7일 마감 목록이
+    // 사라지면 그건 A4 가 막으려던 것(기회 소멸)을 오히려 만드는 셈이다.
+    if (pendingError && pendingReviews.length === 0) {
+      return (
+        <ErrorState
+          error={pendingError}
+          title="미작성 평가를 불러오지 못했어요"
+          onRetry={() => {
+            void refetchPending();
+          }}
+          alwaysAllowRetry
+        />
+      );
+    }
+
+    return (
+      <AppFlashList
+        data={pendingReviews}
+        renderItem={({ item }: { item: PendingReviewItem }) => (
+          <View className="px-4 py-1.5">
+            <PendingReviewCard item={item} onPress={() => goToWrite(item)} />
+          </View>
+        )}
+        keyExtractor={(item: PendingReviewItem) => `${item.workLogId}_${item.reviewerType}`}
+        estimatedItemSize={120}
+        contentContainerStyle={{ paddingVertical: 8 }}
+        ListHeaderComponent={
+          pendingReviews.length > 0 ? (
+            <Text className="px-4 pb-2 text-xs text-content-secondary dark:text-secondary-400 font-sans">
+              리뷰는 근무 종료 후 {REVIEW_DEADLINE_DAYS}일까지만 작성할 수 있어요
+            </Text>
+          ) : null
+        }
+        ListEmptyComponent={
+          <EmptyState
+            title="미작성 평가 없음"
+            description={`모든 평가를 완료했어요. 작성 기간(${REVIEW_DEADLINE_DAYS}일)이 지난 평가는 자동으로 사라져요`}
+            variant="content"
+          />
+        }
+      />
+    );
+  })();
+
+  // 받은/작성한 탭도 같은 위장이 있었다 — 실패해도 "평가가 없습니다"로 보였다.
+  // 탭마다 조회가 독립이므로 실패 판정도 활성 탭 기준으로만 한다.
+  const reviewListTabBody = (() => {
+    if (activeData.isLoading) {
+      return (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" />
+        </View>
+      );
+    }
+
+    if (activeData.error && reviews.length === 0) {
+      return (
+        <ErrorState
+          error={activeData.error}
+          title={
+            activeTab === 'received'
+              ? '받은 평가를 불러오지 못했어요'
+              : '작성한 평가를 불러오지 못했어요'
+          }
+          onRetry={() => {
+            void activeData.refetch();
+          }}
+          alwaysAllowRetry
+        />
+      );
+    }
+
+    return (
+      <AppFlashList
+        data={reviews}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.5}
+        estimatedItemSize={140}
+        contentContainerStyle={{ paddingVertical: 8 }}
+        ListEmptyComponent={
+          <EmptyState
+            title={activeTab === 'received' ? '받은 평가가 없습니다' : '작성한 평가가 없습니다'}
+            description="근무 완료 후 평가가 생성됩니다"
+          />
+        }
+        ListFooterComponent={
+          activeData.isFetchingNextPage ? (
+            <View className="items-center py-4">
+              <ActivityIndicator size="small" />
+            </View>
+          ) : null
+        }
+      />
+    );
+  })();
+
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="평점관리" fallbackHref="/(app)/(tabs)/profile" />
@@ -139,74 +254,8 @@ export default function ReviewHistoryScreen() {
         />
       </View>
 
-      {/* 미작성 탭 */}
-      {activeTab === 'pending' ? (
-        isPendingLoading ? (
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" />
-          </View>
-        ) : (
-          <AppFlashList
-            data={pendingReviews}
-            renderItem={({ item }: { item: PendingReviewItem }) => (
-              <View className="px-4 py-1.5">
-                <PendingReviewCard item={item} onPress={() => goToWrite(item)} />
-              </View>
-            )}
-            keyExtractor={(item: PendingReviewItem) => `${item.workLogId}_${item.reviewerType}`}
-            estimatedItemSize={120}
-            contentContainerStyle={{ paddingVertical: 8 }}
-            ListHeaderComponent={
-              pendingReviews.length > 0 ? (
-                <Text className="px-4 pb-2 text-xs text-content-secondary dark:text-secondary-400 font-sans">
-                  리뷰는 근무 종료 후 {REVIEW_DEADLINE_DAYS}일까지만 작성할 수 있어요
-                </Text>
-              ) : null
-            }
-            ListEmptyComponent={
-              <EmptyState
-                title="미작성 평가 없음"
-                description={`모든 평가를 완료했어요. 작성 기간(${REVIEW_DEADLINE_DAYS}일)이 지난 평가는 자동으로 사라져요`}
-                variant="content"
-              />
-            }
-          />
-        )
-      ) : (
-        /* 받은/작성한 평가 탭 */
-        <>
-          {activeData.isLoading ? (
-            <View className="flex-1 items-center justify-center">
-              <ActivityIndicator size="large" />
-            </View>
-          ) : (
-            <AppFlashList
-              data={reviews}
-              renderItem={renderItem}
-              keyExtractor={keyExtractor}
-              onEndReached={handleEndReached}
-              onEndReachedThreshold={0.5}
-              estimatedItemSize={140}
-              contentContainerStyle={{ paddingVertical: 8 }}
-              ListEmptyComponent={
-                <EmptyState
-                  title={
-                    activeTab === 'received' ? '받은 평가가 없습니다' : '작성한 평가가 없습니다'
-                  }
-                  description="근무 완료 후 평가가 생성됩니다"
-                />
-              }
-              ListFooterComponent={
-                activeData.isFetchingNextPage ? (
-                  <View className="items-center py-4">
-                    <ActivityIndicator size="small" />
-                  </View>
-                ) : null
-              }
-            />
-          )}
-        </>
-      )}
+      {/* 미작성 탭 / 받은·작성한 평가 탭 */}
+      {activeTab === 'pending' ? pendingTabBody : reviewListTabBody}
     </SafeAreaView>
   );
 }
