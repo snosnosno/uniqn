@@ -32,9 +32,14 @@ import {
   type SettlementGroupingContext,
 } from '@/utils/settlementGrouping';
 import type { GroupedSettlement } from '@/types/settlement';
-import type { WorkLog, PayrollStatus } from '@/types';
+import type { WorkLog } from '@/types';
 import { STATUS } from '@/constants';
-import { PAYROLL_STATUS_LABELS, isSettlableWorkLogStatus } from '@/shared/status';
+import {
+  PAYROLL_STATUS_LABELS,
+  isSettlableWorkLogStatus,
+  toSettlementDisplayStatus,
+  type SettlementDisplayStatus,
+} from '@/shared/status';
 
 // Re-export types for backward compatibility
 export type { SalaryType, SalaryInfo };
@@ -78,7 +83,13 @@ export interface SettlementListProps {
   onGroupBulkSettle?: (workLogs: WorkLog[]) => void;
 }
 
-type FilterStatus = 'all' | PayrollStatus;
+/**
+ * 필터 축은 **화면 어휘 2단**이다(`SettlementDisplayStatus`), 데이터 3값이 아니다.
+ * 예전엔 `'all' | PayrollStatus` 라 `'failed'` 가 타입상 선택 가능했는데 그 탭은 존재한 적이
+ * 없다 — 고를 수 없는 값이 축에 있으니 `=== selectedFilter` 비교가 failed 행을 어느 칸에도
+ * 넣지 못했다(감사 M11). 타입을 실제 탭 목록과 일치시킨다.
+ */
+type FilterStatus = 'all' | SettlementDisplayStatus;
 
 // ============================================================================
 // Constants
@@ -131,8 +142,9 @@ export function SettlementList({
   // 필터링된 목록
   const filteredWorkLogs = useMemo(() => {
     if (selectedFilter === 'all') return workLogs;
+    // 데이터 3값을 화면 어휘 2값으로 접어서 비교한다 — 'failed' 는 '정산 대기' 칸에 든다.
     return workLogs.filter(
-      (log) => (log.payrollStatus || STATUS.PAYROLL.PENDING) === selectedFilter
+      (log) => toSettlementDisplayStatus(log.payrollStatus) === selectedFilter
     );
   }, [workLogs, selectedFilter]);
 
@@ -149,7 +161,7 @@ export function SettlementList({
   const selectableWorkLogs = useMemo(() => {
     return workLogs.filter(
       (log) =>
-        (log.payrollStatus || STATUS.PAYROLL.PENDING) === STATUS.PAYROLL.PENDING &&
+        log.payrollStatus !== STATUS.PAYROLL.COMPLETED &&
         isSettlableWorkLogStatus(log.status) &&
         log.checkInTime &&
         log.checkOutTime
@@ -167,8 +179,10 @@ export function SettlementList({
     const counts: Partial<Record<FilterStatus, number>> = {
       all: workLogs.length,
     };
+    // 화면 어휘로 접어서 센다. 데이터 3값 그대로 세면 'failed' 가 탭이 없는 칸에 쌓여
+    // 탭 합계가 '전체' 와 안 맞는다(1 + 0 ≠ 2).
     workLogs.forEach((log) => {
-      const status = (log.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus;
+      const status = toSettlementDisplayStatus(log.payrollStatus);
       counts[status] = (counts[status] || 0) + 1;
     });
     return FILTER_OPTIONS.map((option) => ({
