@@ -70,6 +70,7 @@ PR→`/pr` | 배포→`/deploy` | 보안→`/cso` | 품질→`/health` | 회고�
 디자인→`/design-review` | 타입에러→`/type-check` | 테스트→`/test`
 리팩토링→`/refactor` | 성능→`/performance` | 국제화→`/i18n` | 접근성→`/a11y` | 마이그레이션→`/migration`
 애니메이션·모션→`/improve-animations`(감사·계획) · `/review-animations`(diff 리뷰, **명시 호출 전용** — `disable-model-invocation`) | 모션 용어→`/animation-vocabulary`
+UI 마감·디테일 판단→`/emil-design-eng`(컴포넌트 폴리시·애니메이션 결정) · 제스처/스프링/재질·타이포 기초→`/apple-design`
 OSS·MCP·패키지 도입 **전**→`/oss-vet` | 옵시디언 마크다운→`/obsidian-markdown`
 RLS/권한/위험 변경 전→`/guard` 먼저
 세션 종료·마무리→`/session-end`(착지·최신화·정리·인계 **실행**) · 회고형 탐지는 `/session-wrap`
