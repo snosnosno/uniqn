@@ -27,6 +27,7 @@ import { WorkLogEditSheet, type WorkLogEditInitial } from '@/components/workLogE
 import { ConfirmedStaffList } from './ConfirmedStaffList';
 import { StaffProfileModal } from './StaffProfileModal';
 import { AddStaffModal } from './AddStaffModal';
+import { useUser } from '@/stores/authStore';
 
 export interface StaffManagementTabProps {
   jobPostingId: string;
@@ -121,6 +122,12 @@ export function StaffManagementTab({
   filledByRole,
   onShowReport,
 }: StaffManagementTabProps) {
+  // 🔑 근무 수정 시트에 `editedBy` 를 넘기지 않으면 패치에 그 키가 빠지고, 서버는 퇴근 시각을
+  //    쓸 때만 `edited_by` 를 세운다(`ConfirmedStaffRepository.ts:382`) — 출근만 고친 저장은
+  //    행위자가 기록되지 않는다. 세 진입점이 같은 값을 넘기게 맞춘다.
+  const user = useUser();
+  const editedBy = user?.uid;
+
   const {
     grouped,
     isLoading,
@@ -355,6 +362,7 @@ export function StaffManagementTab({
           initial={toEditInitial(selectedStaff)}
           jobPosting={jobPosting}
           filledByRole={filledByRole}
+          editedBy={editedBy}
         />
       ) : null}
 

@@ -19,6 +19,7 @@ import {
 import { ConfirmModal } from '@/components/ui/Modal';
 import { WorkLogEditSheet, type WorkLogEditInitial } from '@/components/workLogEdit';
 import { useSettlementModals } from '@/hooks/useSettlementModals';
+import { useUser } from '@/stores/authStore';
 import {
   getEffectiveSalaryInfoFromRoles,
   getEffectiveAllowances,
@@ -96,6 +97,13 @@ export function SettlementModals({
   onSaveAmountEdit,
   onSaveSettings,
 }: SettlementModalsProps) {
+  // 🔑 시트에 `editedBy` 를 넘기지 않으면 패치에 그 키가 아예 빠진다. 서버는 값을 `auth.uid()` 로
+  //    덮어쓰지만 **키가 없으면 퇴근 시각을 쓸 때만 `edited_by` 를 세우는 비대칭**이 남아
+  //    (`ConfirmedStaffRepository.ts:382`), 출근만 고친 저장은 행위자가 기록되지 않는다.
+  //    근무표(`VenueDayPanel`)만 넘기고 있던 것을 세 진입점에 맞춘다.
+  const user = useUser();
+  const editedBy = user?.uid;
+
   return (
     <>
       {/* 신고 모달 */}
@@ -156,6 +164,7 @@ export function SettlementModals({
           initial={toEditInitial(modals.selectedWorkLog)}
           jobPosting={posting}
           filledByRole={filledByRole}
+          editedBy={editedBy}
         />
       ) : null}
 
