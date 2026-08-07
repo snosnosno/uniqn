@@ -174,7 +174,7 @@ describe('OrderSheetScreen — 타입 전환 축 데이터 보존 (전체리뷰 
     fireEvent.press(getByTestId('order-sheet-type-regular'));
     await flushValidation();
     expect(getByTestId('order-sheet-date-chip-2026-07-20')).toBeTruthy(); // 복원(M7) — 무경고 소실 금지
-    expect(getByText('19:00 · 딜러 2')).toBeTruthy(); // 시간대·역할까지 통복원
+    expect(getByText('19:00 딜러 2')).toBeTruthy(); // 시간대·역할까지 통복원
   });
 
   it('fixed 근무조건이 dated 전환 후 복귀 시 복원된다', async () => {

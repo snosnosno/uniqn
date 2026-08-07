@@ -31,7 +31,6 @@ export interface ScheduleSectionProps {
   onPressDateChip: (date: string) => void;
   onPressCondition: (groupIndex: number) => void;
   onToggleRun: (groupIndex: number, run: string[], on: boolean) => void;
-  onPressException: (groupIndex: number) => void;
   onDeleteCard: (groupIndex: number) => void;
   /** F2 스크롤 앵커 — 카드의 섹션 내 y 좌표 통지 */
   onCardLayoutY?: (groupIndex: number, y: number) => void;
@@ -45,7 +44,6 @@ export function ScheduleSection({
   onPressDateChip,
   onPressCondition,
   onToggleRun,
-  onPressException,
   onDeleteCard,
   onCardLayoutY,
 }: ScheduleSectionProps) {
@@ -90,7 +88,6 @@ export function ScheduleSection({
                 {...(conditionError !== undefined ? { conditionError } : {})}
                 onPressCondition={onPressCondition}
                 onToggleRun={onToggleRun}
-                onPressException={onPressException}
                 onDelete={onDeleteCard}
                 {...(onCardLayoutY !== undefined ? { onLayoutY: onCardLayoutY } : {})}
               />

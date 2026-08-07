@@ -31,7 +31,7 @@ import {
   normalizeScheduleGroups,
   setRunGrouped,
 } from '@/utils/order-sheet/normalizeScheduleGroups';
-import { applyDateSelection, extractException } from '@/utils/order-sheet/scheduleCardEdits';
+import { applyConditionToDates, applyDateSelection } from '@/utils/order-sheet/scheduleCardEdits';
 import {
   diagnoseScheduleChange,
   type ScheduleChangeContext,
@@ -76,19 +76,15 @@ type DatesTarget = { key: 'dates' };
 /**
  * 시간·역할 시트 타깃 — 좌표를 **날짜집합**으로 든다(§3.7·F9).
  * 시트가 열려 있는 동안 정규화가 카드 순서를 바꿀 수 있으므로 confirm 시점에 재해석한다.
- * mode: edit=카드 조건 편집 · exception=일부 날짜만 다른 조건으로 분리.
+ *
+ * 구 `mode: 'edit' | 'exception'` 은 사라졌다 — 시트가 "적용할 날짜"를 항상 보여주고
+ * 0개 선택이 곧 카드 전체 편집이라, 두 모드가 하나의 연산(`applyConditionToDates`)으로 합쳐졌다.
+ * 모드 전환이 없어지면서 리마운트·편집값 승계(구 seedSlots) 문제도 함께 소멸했다.
  */
 type SlotsTarget = {
   key: 'slots';
   dates: readonly string[];
   fallbackIndex: number;
-  mode: 'edit' | 'exception';
-  /**
-   * 시트 안에서 편집 중이던 슬롯 — edit→exception 전환은 시트를 리마운트하므로,
-   * 이걸 넘기지 않으면 방금 고친 시간·역할이 폼 값으로 되감겨 침묵 유실된다.
-   * (사용자가 예외로 만들려던 조건이 대개 바로 그 편집값이다.)
-   */
-  seedSlots?: GroupTimeSlots;
 };
 type ActiveSheet =
   // 'workConditions'는 Exclude<OrderRowKey,...>에 이미 포함(고정 근무조건 시트).
@@ -242,12 +238,20 @@ export function OrderSheetScreen({
    */
   const slotsSheetValue = useMemo<GroupTimeSlots>(() => {
     if (slotsTarget === null) return [];
-    // 편집 중이던 값을 들고 왔으면(edit→exception 전환) 그걸 우선한다 —
-    // 폼 값으로 되감으면 방금 고친 시간·역할이 사라진다.
-    if (slotsTarget.seedSlots !== undefined) return cloneSlots(slotsTarget.seedSlots);
     const index = resolveGroupIndexByDates(values, slotsTarget.dates, slotsTarget.fallbackIndex);
     return cloneSlots(index === null ? [] : scheduleGroups[index]?.timeSlots);
   }, [slotsTarget, values, scheduleGroups]);
+
+  /**
+   * 시트의 "적용할 날짜" 후보 — 그 카드의 날짜들.
+   * 단 **날짜가 아직 없는 조건 카드**(템플릿 프리셋이 만드는 그것)는 후보가 비어 버려
+   * 영영 날짜를 받지 못한다. 그때는 공고 전체 날짜를 후보로 줘서 여기서 배정받게 한다.
+   */
+  const slotsSheetDates = useMemo<string[]>(() => {
+    if (slotsTarget === null) return [];
+    const cardDates = [...slotsTarget.dates];
+    return cardDates.length > 0 ? cardDates : allSelectedDates;
+  }, [slotsTarget, allSelectedDates]);
 
   // 급여 시트(동일급여 OFF)용 고유 역할 — 전 그룹 timeSlots에서 roleKey(기타는 customRole 단위) 기준
   // 중복 제거, 라벨은 orderRowMeta.roleName 재사용. by_role 전수 커버 게이트(스키마 superRefine)와 대칭.
@@ -353,6 +357,25 @@ export function OrderSheetScreen({
       const state = getRowState(current, key, groupIndex);
       chainArmedRef.current = !state.optional && state.unset;
       const groups = current.scheduleGroups ?? [];
+      // 조건은 있는데 날짜가 없는 카드(템플릿 프리셋)의 '날짜' 행 — **전 일정 스코프 날짜
+      // 시트로 보내면 안 된다.** 그 시트가 무엇을 고르든 새 날짜는 인접·첫 카드가 가져가고
+      // 이 카드는 영영 비어 있어, 제출 유도가 같은 자리를 무한히 가리키는 루프가 된다.
+      // 조건 시트로 보낸다 — 거기 "이 조건을 쓸 날짜"가 이 카드에 직접 날짜를 배정한다.
+      //
+      // ⚠️ **공고에 날짜가 하나라도 있을 때만** 우회한다. 아직 아무 날짜도 없는 초기 상태
+      //    (조건만 시드된 카드 1개)에서 우회하면 조건 시트에 고를 후보가 0개라 확인이
+      //    영영 잠기는 반대 방향의 막다른 길이 된다 — 그때는 날짜 시트가 정답이다.
+      const otherDates = groups.some((g, i) => i !== groupIndex && (g.dates ?? []).length > 0);
+      const emptyConditionCard =
+        key === 'dates' &&
+        current.postingType !== 'fixed' &&
+        (groups[groupIndex]?.dates ?? []).length === 0 &&
+        (groups[groupIndex]?.timeSlots ?? []).length > 0 &&
+        otherDates;
+      if (emptyConditionCard) {
+        setActiveSheet({ key: 'slots', dates: [], fallbackIndex: groupIndex });
+        return;
+      }
       if (key === 'dates') {
         // 딤 해제 책임이 여기로 넘어온다: 날짜 시트만 SheetModal 이 아니라 DatePickerModal(ui/Modal)
         // 래핑이라 SheetChainContext 를 소비하지 않는다 → 시트가 떠도 onEntered() 통지가 없어
@@ -381,7 +404,6 @@ export function OrderSheetScreen({
           key: 'slots',
           dates: [...(groups[groupIndex]?.dates ?? [])],
           fallbackIndex: groupIndex,
-          mode: 'edit',
         });
         return;
       }
@@ -523,7 +545,12 @@ export function OrderSheetScreen({
       commitGroups(normalizeScheduleGroups(current.filter((_, i) => i !== cardIndex)));
       addToast({
         type: 'success',
-        message: `${summarizeGroupDates(target.dates ?? []) || '일정'} 일정을 삭제했어요`,
+        // 날짜가 없는 조건 카드를 지우면 요약이 빈 문자열이라 폴백이 필요한데,
+        // '일정' 을 끼우면 "일정 일정을 삭제했어요" 가 된다 — 문장 자체를 갈아 끼운다.
+        message: (() => {
+          const summary = summarizeGroupDates(target.dates ?? []);
+          return summary ? `${summary} 일정을 삭제했어요` : '조건을 삭제했어요';
+        })(),
         duration: UNDO_DELAY_MS,
         action: {
           label: '되돌리기',
@@ -654,40 +681,34 @@ export function OrderSheetScreen({
    *    이 분기가 실제 경로가 되므로 남겨 둔다(조용히 버리는 것보다 고지가 낫다).
    */
   const handleSlotsConfirm = useCallback(
-    (target: SlotsTarget, nextSlots: GroupTimeSlots) => {
-      const current = form.getValues();
-      const index = resolveGroupIndexByDates(current, target.dates, target.fallbackIndex);
-      if (index === null) {
-        addToast({ type: 'info', message: '일정이 바뀌어 반영하지 못했어요' });
-        return null;
-      }
-      const groups = current.scheduleGroups ?? [];
-      const next = normalizeScheduleGroups(
-        groups.map((g, i) => (i === index ? { ...g, timeSlots: nextSlots } : g))
-      );
-      notifyScheduleChange(groups, commitGroups(next), {});
-      return index;
-    },
-    [form, addToast, commitGroups, notifyScheduleChange]
-  );
-
-  /** 예외 추출 확정 — 고른 날짜만 새 조건으로 분리한다(§3.4). 다중 예외가 1회 입력으로 끝난다. */
-  const handleExceptionConfirm = useCallback(
     (target: SlotsTarget, picked: string[], nextSlots: GroupTimeSlots) => {
       const current = form.getValues();
       const index = resolveGroupIndexByDates(current, target.dates, target.fallbackIndex);
       const groups = current.scheduleGroups ?? [];
-      const next = index === null ? null : extractException(groups, index, picked, nextSlots);
-      if (index === null || next === null) {
+      // 앵커가 비어 있는 경우(날짜 없는 조건 카드)는 재해석이 불가능하므로 폴백 인덱스를 쓴다.
+      const cardIndex =
+        target.dates.length === 0
+          ? target.fallbackIndex < groups.length
+            ? target.fallbackIndex
+            : null
+          : index;
+      const result =
+        cardIndex === null ? null : applyConditionToDates(groups, cardIndex, picked, nextSlots);
+      if (result === null) {
         addToast({ type: 'info', message: '일정이 바뀌어 반영하지 못했어요' });
-        return;
+        return null;
       }
-      logger.observability('order_sheet.exception_extract', undefined, {
-        component: 'OrderSheetScreen',
-        dateCount: picked.length,
-        totalDates: (groups[index]?.dates ?? []).length,
+      if (picked.length > 0) {
+        logger.observability('order_sheet.exception_extract', undefined, {
+          component: 'OrderSheetScreen',
+          dateCount: picked.length,
+          totalDates: (groups[cardIndex as number]?.dates ?? []).length,
+        });
+      }
+      notifyScheduleChange(groups, commitGroups(result.groups), {
+        removedCards: result.removedCards,
       });
-      notifyScheduleChange(groups, commitGroups(next), {});
+      return cardIndex;
     },
     [form, addToast, commitGroups, notifyScheduleChange]
   );
@@ -718,17 +739,20 @@ export function OrderSheetScreen({
     [clearPendingSwap, handleRowPress]
   );
 
-  /** 예외 추출 진입 — 카드의 날짜집합을 기억하고 0개 선택 상태로 시트를 연다(F11). */
+  /**
+   * 승계 고지 "다른 조건으로" 진입 — 그 카드의 조건 시트를 연다.
+   * 시트 맨 위 "적용할 날짜"에서 방금 들어온 날짜만 고르면 그게 곧 다른 조건 분리다
+   * (구 예외 모드 전용 진입로가 통합되면서 목적지가 하나로 합쳐졌다).
+   */
   const openException = useCallback(
     (cardIndex: number) => {
       clearPendingSwap();
-      chainArmedRef.current = false; // 예외 추출은 "채우기"가 아니라 "나누기" — 연쇄 대상이 아니다
+      chainArmedRef.current = false; // "채우기"가 아니라 "나누기" — 연쇄 대상이 아니다
       const groups = form.getValues().scheduleGroups ?? [];
       setActiveSheet({
         key: 'slots',
         dates: [...(groups[cardIndex]?.dates ?? [])],
         fallbackIndex: cardIndex,
-        mode: 'exception',
       });
     },
     [form, clearPendingSwap]
@@ -1098,7 +1122,6 @@ export function OrderSheetScreen({
                   onPressDateChip={handlePressDateChip}
                   onPressCondition={handlePressCondition}
                   onToggleRun={handleToggleRun}
-                  onPressException={openException}
                   onDeleteCard={handleDeleteCard}
                   onCardLayoutY={handleCardLayoutY}
                 />
@@ -1275,29 +1298,15 @@ export function OrderSheetScreen({
         )}
         {slotsTarget && (
           <ScheduleSlotsSheet
-            // 모드가 바뀌면 새 시트다 — 같은 인스턴스를 재사용하면 예외 모드의 날짜 선택이
-            // 직전 세션 상태를 물려받는다.
-            key={`${slotsTarget.mode}-${slotsTarget.fallbackIndex}`}
+            // 다른 카드로 옮겨 가면 새 시트다 — 같은 인스턴스를 재사용하면 앞 카드의
+            // 날짜 선택 상태를 물려받는다.
+            key={`slots-${slotsTarget.fallbackIndex}`}
             visible
             value={slotsSheetValue}
-            {...(slotsTarget.mode === 'exception'
-              ? {
-                  selectableDates: [...slotsTarget.dates],
-                  onConfirmException: ({ dates, slots }) =>
-                    handleExceptionConfirm(slotsTarget, dates, slots),
-                }
-              : slotsTarget.dates.length > 1
-                ? {
-                    onSwitchToException: (currentSlots) =>
-                      setActiveSheet({
-                        ...slotsTarget,
-                        mode: 'exception',
-                        seedSlots: currentSlots,
-                      }),
-                  }
-                : {})}
-            onConfirm={(next) => {
-              const index = handleSlotsConfirm(slotsTarget, next);
+            selectableDates={slotsSheetDates}
+            requiresDatePick={slotsTarget.dates.length === 0}
+            onConfirm={({ dates, slots }) => {
+              const index = handleSlotsConfirm(slotsTarget, dates, slots);
               if (index === null) return;
               confirmRow(
                 { key: 'roles', groupIndex: index, dates: slotsTarget.dates },

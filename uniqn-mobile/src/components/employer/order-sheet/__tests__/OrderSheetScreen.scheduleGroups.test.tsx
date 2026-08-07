@@ -351,7 +351,7 @@ describe('묶음지원 토글 (§3.5)', () => {
   });
 });
 
-describe('예외 추출 (§3.4)', () => {
+describe('예외 추출 — 조건 시트의 "적용할 날짜"로 통합 (§3.4)', () => {
   beforeEach(() => mockAddToast.mockClear());
 
   it('여러 날짜를 1회 입력으로 다른 조건 카드로 가른다', async () => {
@@ -359,7 +359,7 @@ describe('예외 추출 (§3.4)', () => {
       singleCard(['2026-07-14', '2026-07-15', '2026-07-16'])
     );
 
-    fireEvent.press(getByTestId('order-sheet-card-exception-0'));
+    fireEvent.press(getByTestId('order-sheet-card-condition-0'));
     fireEvent.press(getByTestId('order-sheet-exception-date-2026-07-15'));
     fireEvent.press(getByTestId('order-sheet-exception-date-2026-07-16'));
     // 조건을 실제로 바꿔야 갈라진다 — 안 바꾸면 같은 시그니처라 정규화가 도로 합친다(아래 테스트)
@@ -380,7 +380,7 @@ describe('예외 추출 (§3.4)', () => {
       singleCard(['2026-07-14', '2026-07-15', '2026-07-16'])
     );
 
-    fireEvent.press(getByTestId('order-sheet-card-exception-0'));
+    fireEvent.press(getByTestId('order-sheet-card-condition-0'));
     fireEvent.press(getByTestId('order-sheet-exception-date-2026-07-15'));
     fireEvent.press(getByText('확인'));
     await flush();
@@ -391,30 +391,60 @@ describe('예외 추출 (§3.4)', () => {
     expect(saved.scheduleGroups?.[0]?.dates).toEqual(['2026-07-14', '2026-07-15', '2026-07-16']);
   });
 
-  it('시간·역할 시트 하단 링크로도 예외 추출에 들어간다 (F7③)', () => {
-    const { getByTestId, getByText } = renderWithCapture(singleCard(['2026-07-14', '2026-07-15']));
+  /**
+   * 통합의 헤드라인 계약(사용자 결정 2026-08-07) — 조건 시트는 이제 항상 "적용할 날짜"를
+   * 보여주고, **아무것도 안 고르면 카드 전체**에 적용된다. 구 계약(0개=확인 잠금)으로
+   * 되돌리면 날짜 확정 직후 연쇄가 막다른 길이 되므로 여기서 잡는다.
+   */
+  it('날짜를 안 고르고 확인하면 카드 전체에 적용된다 — 갈라지지 않는다', async () => {
+    const { getByTestId, getByText, readForm } = renderWithCapture(
+      singleCard(['2026-07-14', '2026-07-15', '2026-07-16'])
+    );
 
     fireEvent.press(getByTestId('order-sheet-card-condition-0'));
-    fireEvent.press(getByTestId('order-sheet-slots-switch-exception'));
+    fireEvent.press(getByTestId('order-time-start-0'));
+    fireEvent.press(getByTestId('mock-time-confirm')); // 20:30
+    fireEvent.press(getByText('확인'));
+    await flush();
 
-    expect(getByText('다르게 할 날짜를 골라주세요')).toBeTruthy();
+    const saved = readForm();
+    expect(saved.scheduleGroups).toHaveLength(1);
+    expect(saved.scheduleGroups?.[0]?.dates).toEqual(['2026-07-14', '2026-07-15', '2026-07-16']);
+    expect(saved.scheduleGroups?.[0]?.timeSlots?.[0]?.startTime).toBe('20:30');
   });
 
-  it('시트에서 고치던 값은 예외 모드로 넘어가도 살아 있다 (전환 = 리마운트라 유실되기 쉽다)', () => {
+  it('조건 행 탭이 예외의 유일한 진입로다 — 별도 링크·버튼이 없다', () => {
+    const { getByTestId, queryByTestId, getByText } = renderWithCapture(
+      singleCard(['2026-07-14', '2026-07-15'])
+    );
+
+    expect(queryByTestId('order-sheet-card-exception-0')).toBeNull();
+    fireEvent.press(getByTestId('order-sheet-card-condition-0'));
+    expect(queryByTestId('order-sheet-slots-switch-exception')).toBeNull();
+    // 대신 시트 안에 적용할 날짜가 곧바로 있다
+    expect(getByTestId('order-sheet-exception-date-2026-07-14')).toBeTruthy();
+    expect(getByText('안 고르면 전체 날짜에 적용돼요')).toBeTruthy();
+  });
+
+  /**
+   * 구 edit→exception 모드 전환은 시트를 리마운트해 방금 고친 값을 되감았다(리뷰 MEDIUM ⑤).
+   * 이제 전환 자체가 없어 편집값이 유실될 자리가 구조적으로 사라졌다 — 그걸 고정한다.
+   */
+  it('날짜를 고르는 동안에도 방금 고친 시간이 유지된다 (전환이 없어 유실될 자리가 없다)', () => {
     const { getByTestId, getByText } = renderWithCapture(singleCard(['2026-07-14', '2026-07-15']));
 
     fireEvent.press(getByTestId('order-sheet-card-condition-0'));
     fireEvent.press(getByTestId('order-time-start-0'));
     fireEvent.press(getByTestId('mock-time-confirm')); // 19:00 → 20:30 (미확정)
-    fireEvent.press(getByTestId('order-sheet-slots-switch-exception'));
+    fireEvent.press(getByTestId('order-sheet-exception-date-2026-07-15'));
 
-    // 사장이 예외로 만들려던 조건은 대개 **방금 고친 그 값**이다 — 되감기면 재입력을 강요한다.
     expect(getByText('출근 20:30')).toBeTruthy();
   });
 
-  it('날짜가 1개인 카드에서는 예외 진입 자체가 없다', () => {
-    const { queryByTestId } = renderWithCapture(singleCard(['2026-07-14']));
-    expect(queryByTestId('order-sheet-card-exception-0')).toBeNull();
+  it('날짜가 1개인 카드에서는 고를 여지가 없어 날짜 행이 숨는다', () => {
+    const { getByTestId, queryByTestId } = renderWithCapture(singleCard(['2026-07-14']));
+    fireEvent.press(getByTestId('order-sheet-card-condition-0'));
+    expect(queryByTestId('order-sheet-exception-date-2026-07-14')).toBeNull();
   });
 });
 
@@ -457,5 +487,63 @@ describe('제출 유도 라벨', () => {
 
     const submit = getByTestId('job-posting-create-submit');
     expect(within(submit).getByText('7/20~21 일정의 시간부터 선택하기')).toBeTruthy();
+  });
+});
+
+/**
+ * 리뷰 HIGH 1 회귀 가드 — 템플릿 프리셋이 만드는 "조건만 있고 날짜 없는 카드".
+ *
+ * 통합 전에는 이 카드가 **채울 수 없는 유령**이었다: 제출 유도 CTA 가 그 카드의 '날짜' 행을
+ * 가리키는데, 그 행이 여는 전 일정 날짜 시트는 무엇을 골라도 인접·첫 카드에 배정해서
+ * 이 카드는 영영 비어 있었고 CTA 가 같은 자리를 무한히 가리켰다(실측).
+ */
+describe('날짜 없는 조건 카드 — 채울 길이 있어야 한다 (리뷰 HIGH 1)', () => {
+  const presetLike = () =>
+    withGroups([
+      { dates: ['2026-07-14', '2026-07-15'], timeSlots: dealerSlot, grouped: false },
+      { dates: [], timeSlots: floorSlot, grouped: false },
+    ]);
+
+  it('제출 유도 CTA 가 그 카드를 가리킨다', () => {
+    const { getByTestId } = renderWithCapture(presetLike());
+    expect(
+      within(getByTestId('job-posting-create-submit')).getByText('2번째 일정의 날짜부터 선택하기')
+    ).toBeTruthy();
+  });
+
+  it('CTA 를 누르면 전 일정 날짜 시트가 아니라 그 카드의 조건 시트가 열린다', async () => {
+    const { getByTestId, queryByTestId, getByText } = renderWithCapture(presetLike());
+
+    fireEvent.press(getByTestId('job-posting-create-submit'));
+    await flush(); // handleSubmit 은 zod 검증을 거치는 비동기 경로다
+
+    // 전 일정 날짜 시트(DatePickerModal)가 아니다 — 그건 이 카드를 채우지 못한다
+    expect(queryByTestId('job-posting-date-confirm-button')).toBeNull();
+    // 조건 시트가 열리고, 공고 전체 날짜가 후보로 뜬다
+    expect(getByTestId('order-sheet-exception-date-2026-07-14')).toBeTruthy();
+    expect(getByTestId('order-sheet-exception-date-2026-07-15')).toBeTruthy();
+    expect(getByText('이 조건을 쓸 날짜를 골라주세요')).toBeTruthy();
+  });
+
+  it('날짜를 고르면 그 카드가 채워지고, 더는 미설정 카드가 남지 않는다', async () => {
+    const { getByTestId, getByText, readForm } = renderWithCapture(presetLike());
+
+    fireEvent.press(getByTestId('job-posting-create-submit'));
+    await flush();
+    fireEvent.press(getByTestId('order-sheet-exception-date-2026-07-15'));
+    fireEvent.press(getByText('확인'));
+    await flush();
+
+    const saved = readForm();
+    expect(saved.scheduleGroups?.every((g) => (g.dates ?? []).length > 0)).toBe(true);
+    const filled = saved.scheduleGroups?.find(
+      (g) => g.timeSlots?.[0]?.startTime === floorSlot[0]?.startTime
+    );
+    expect(filled?.dates).toEqual(['2026-07-15']);
+    // 원래 주인은 남은 날짜만 유지한다
+    expect(
+      saved.scheduleGroups?.find((g) => g.timeSlots?.[0]?.startTime === dealerSlot[0]?.startTime)
+        ?.dates
+    ).toEqual(['2026-07-14']);
   });
 });

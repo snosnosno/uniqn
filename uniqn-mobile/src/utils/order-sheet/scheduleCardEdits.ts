@@ -97,32 +97,85 @@ export function applyDateSelection(
   };
 }
 
+export interface ConditionApplyResult {
+  groups: ScheduleGroups;
+  /**
+   * 날짜를 전부 뺏겨 사라진 **다른** 카드들 — 조건까지 유실되므로 호출부는 고지하고 되돌릴
+   * 길을 줘야 한다(F6). 편집 대상 카드 자신은 여기 포함되지 않는다: 그 카드의 조건은
+   * 사장이 방금 넣은 새 조건으로 **의도적으로** 교체되는 것이라 유실이 아니다.
+   */
+  removedCards: ScheduleGroups;
+}
+
 /**
- * 예외 추출 — 카드의 날짜 일부를 골라 다른 조건으로 분리한다.
+ * 조건 적용 — 시간·역할 시트가 확인될 때 도는 **단일 연산**(구 `extractException` 대체).
  *
- * 카드가 이미 사라졌거나 고른 날짜가 하나도 남아 있지 않으면 `null` 을 낸다 —
- * 호출부는 조용히 버리지 말고 "일정이 바뀌어 반영하지 못했어요"로 고지해야 한다(§8.4).
- * 전 날짜를 고르면 카드 전체 편집과 같아지는데, 정규화가 처리하므로 그대로 허용한다.
+ * 시트는 "적용할 날짜"를 항상 보여주고, 사장의 선택이 곧 적용 범위다:
+ *  - **0개 선택 = 이 카드 전부**. 가장 흔한 조작이라 아무것도 안 고르면 그렇게 동작한다.
+ *    카드의 `timeSlots` 만 갈아끼우므로 `grouped`·날짜가 그대로 보존된다.
+ *  - **N개 선택 = 그 날짜만 이 조건**. 고른 날짜는 **어느 카드에 있었든** 여기로 옮겨온다.
+ *    같은 카드 안이면 예외 추출이고, 다른 카드에서 왔으면 재배정인데 — 사장에게는 둘 다
+ *    "이 날짜는 이 조건"이라는 한 가지 조작이다. 덕분에 날짜가 아직 없는 조건 카드
+ *    (템플릿 프리셋이 만드는 그것)도 같은 시트에서 날짜를 받을 수 있다.
+ *
+ * 카드가 이미 사라졌으면 `null` — 호출부는 조용히 버리지 말고 고지해야 한다(§8.4).
  */
-export function extractException(
+export function applyConditionToDates(
   groups: readonly ScheduleGroup[],
   cardIndex: number,
   pickedDates: readonly string[],
   slots: ScheduleGroupSlots
-): ScheduleGroups | null {
+): ConditionApplyResult | null {
   const source = groups[cardIndex];
   if (source === undefined) return null;
-  const sourceDates = source.dates ?? [];
-  const picked = sourceDates.filter((d) => pickedDates.includes(d));
-  if (picked.length === 0) return null;
-  const rest = sourceDates.filter((d) => !picked.includes(d));
 
-  return normalizeScheduleGroups([
-    ...groups.slice(0, cardIndex),
-    ...(rest.length > 0
-      ? [{ ...source, dates: rest, timeSlots: cloneGroupSlots(source.timeSlots) }]
-      : []),
-    { dates: picked, timeSlots: cloneGroupSlots(slots), grouped: false },
-    ...groups.slice(cardIndex + 1),
-  ]);
+  if (pickedDates.length === 0) {
+    return {
+      groups: normalizeScheduleGroups(
+        groups.map((g, i) => (i === cardIndex ? { ...g, timeSlots: cloneGroupSlots(slots) } : g))
+      ),
+      removedCards: [],
+    };
+  }
+
+  // 시트가 열려 있는 동안 사라진 날짜는 버린다 — 남은 게 하나도 없으면 stale confirm 이므로
+  // 조용히 없는 날짜를 만들어 내지 않고 `null` 로 고지시킨다(§8.4).
+  const existing = new Set(groups.flatMap((g) => g.dates ?? []));
+  const picked = new Set(pickedDates.filter((d) => existing.has(d)));
+  if (picked.size === 0) return null;
+  const sourceDates = source.dates ?? [];
+  // 고른 날짜가 이 카드의 날짜와 정확히 같으면 "카드 전체 편집"이다 — 그때만 묶음지원을
+  // 승계한다. 일부만 고른 경우는 연속이 깨질 수 있어 정규화 판단(규칙 2)에 맡긴다.
+  const isWholeCard = sourceDates.length === picked.size && sourceDates.every((d) => picked.has(d));
+  const moved: ScheduleGroup = {
+    dates: [...picked].sort(),
+    timeSlots: cloneGroupSlots(slots),
+    grouped: isWholeCard ? (source.grouped ?? false) : false,
+  };
+
+  const removedCards: ScheduleGroups = [];
+  const kept: ScheduleGroups = [];
+  groups.forEach((g, i) => {
+    if (i === cardIndex) {
+      // 이 카드에서 **고르지 않은** 날짜는 원래 조건 그대로 남는다 — 이걸 빠뜨리면
+      // "3일 중 하루만 다르게" 가 나머지 이틀을 통째로 지우는 조용한 유실이 된다.
+      const rest = (g.dates ?? []).filter((d) => !picked.has(d));
+      if (rest.length > 0) {
+        kept.push({ ...g, dates: rest, timeSlots: cloneGroupSlots(g.timeSlots) });
+      }
+      kept.push(moved);
+      return;
+    }
+    const before = g.dates ?? [];
+    const after = before.filter((d) => !picked.has(d));
+    if (before.length > 0 && after.length === 0) {
+      // 날짜가 다 빠졌다 = 이 카드의 조건이 통째로 사라진다. 빈 껍데기로 남기면
+      // 정규화 규칙 0 이 그걸 **보존**해 채울 수 없는 유령 카드가 된다 — 떨어내고 고지한다.
+      removedCards.push(g);
+      return;
+    }
+    kept.push({ ...g, dates: after, timeSlots: cloneGroupSlots(g.timeSlots) });
+  });
+
+  return { groups: normalizeScheduleGroups(kept), removedCards };
 }

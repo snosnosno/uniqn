@@ -97,6 +97,16 @@ const titleAndContactMissing = (): OrderSheetFormValues => ({
 });
 
 /** 일정 그룹 2개 — 그룹0 완성, 그룹1 dates 미설정. 제목 확인 → 그룹1 날짜 시트 연쇄 예약용 */
+/**
+ * 날짜 시트로 실제 연쇄되는 픽스처 — 카드가 하나이고 날짜도 조건도 없다.
+ * `secondGroupDatesMissing` 은 더 이상 여기 못 쓴다: 조건은 있는데 날짜만 없는 카드는
+ * 이제 전 일정 날짜 시트가 아니라 **그 카드의 조건 시트**로 간다(거기서 날짜를 배정한다).
+ */
+const datesMissing = (): OrderSheetFormValues => ({
+  ...onlyTitleMissing(),
+  scheduleGroups: [{ dates: [], timeSlots: [], grouped: false }],
+});
+
 const secondGroupDatesMissing = (): OrderSheetFormValues => ({
   ...onlyTitleMissing(),
   scheduleGroups: [
@@ -474,7 +484,7 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
   // SheetChainContext.onEntered() 를 부를 주체가 없다 → 딤을 걷는 책임이 openRow 로 넘어온다.
   it('날짜 시트로 연쇄되면 딤이 걷힌다 (DatePickerModal 은 onEntered 통지가 없다)', async () => {
     const { getByTestId, getByText, queryByTestId } = render(
-      <OrderSheetScreen {...baseProps} initialValues={secondGroupDatesMissing()} />
+      <OrderSheetScreen {...baseProps} initialValues={datesMissing()} />
     );
 
     fireEvent.press(getByTestId('order-sheet-row-title'));
@@ -486,7 +496,7 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
 
     await advanceSwap();
 
-    // 연쇄 목적지가 그룹1 날짜 시트(DatePickerModal)임을 고정
+    // 연쇄 목적지가 날짜 시트(DatePickerModal)임을 고정
     expect(getByTestId('job-posting-date-confirm-button')).toBeTruthy();
 
     // ui/Modal 백드롭은 0→1 로 페이드인한다(200ms). 딤을 즉시 걷으면 그 사이 밝은 목록이 보인다 —
@@ -500,7 +510,7 @@ describe('OrderSheetScreen — 미설정 항목 연쇄 입력', () => {
 
   it('날짜 시트를 취소로 닫아도 딤이 남지 않는다', async () => {
     const { getByTestId, getByText, queryByTestId } = render(
-      <OrderSheetScreen {...baseProps} initialValues={secondGroupDatesMissing()} />
+      <OrderSheetScreen {...baseProps} initialValues={datesMissing()} />
     );
 
     fireEvent.press(getByTestId('order-sheet-row-title'));

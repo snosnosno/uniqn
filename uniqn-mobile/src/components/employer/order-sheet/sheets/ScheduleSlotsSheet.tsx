@@ -41,21 +41,26 @@ const firstIncompleteIndex = (slots: Slots) => {
 export interface ScheduleSlotsSheetProps {
   visible: boolean;
   value: Slots;
-  onConfirm: (next: Slots) => void;
+  /**
+   * 확인 배출 — `dates` 는 사장이 고른 **적용할 날짜**다.
+   * 빈 배열이면 "이 카드 전부"라는 뜻이며, 그 해석은 상위(`applyConditionToDates`)가 한다.
+   */
+  onConfirm: (result: { dates: string[]; slots: Slots }) => void;
   onClose: () => void;
   /**
-   * 예외 추출 모드(설계 §3.4·F11) — 이 카드의 날짜들. 넘기면 "적용할 날짜" 다중 선택 행이
-   * 뜨고, 확인은 `onConfirmException` 으로 배출된다. **0개 선택으로 열고** 확인을 잠근다:
-   * 기본 선택을 깔면 사장이 훑어보다 그대로 확인해 의도치 않은 분리가 생긴다.
+   * "적용할 날짜" 후보. 카드에 날짜가 있으면 그 날짜들, 아직 없으면(템플릿 조건 카드)
+   * 공고 전체 날짜를 넘겨 여기서 배정받게 한다.
+   *
+   * **0개 선택으로 열린다** — 기본 선택을 깔면 사장이 훑어보다 그대로 확인해 의도치 않은
+   * 분리가 생긴다. 대신 0개는 잠금이 아니라 "전체 적용"으로 읽는다(사용자 결정 2026-08-07).
+   * 후보가 2개 미만이면 고를 여지가 없어 행 자체를 숨긴다.
    */
   selectableDates?: string[];
-  onConfirmException?: (result: { dates: string[]; slots: Slots }) => void;
   /**
-   * 일반 모드 하단 진입 링크(F7③) — 조건을 고치러 들어온 자리가 예외를 깨닫는 자리다.
-   * 현재 **편집 중인** 슬롯을 함께 넘긴다 — 상위가 시트를 리마운트하므로
-   * 시드를 폼 값으로 다시 잡으면 방금 고친 시간·역할이 침묵 유실된다.
+   * 카드에 날짜가 하나도 없는가(템플릿 조건 카드). 이때는 0개 선택이 "전체"가 될 수 없어
+   * — 적용할 날짜가 0일이라 제출이 막힌다 — 최소 1개를 요구한다.
    */
-  onSwitchToException?: (currentSlots: Slots) => void;
+  requiresDatePick?: boolean;
 }
 
 export function ScheduleSlotsSheet({
@@ -64,13 +69,14 @@ export function ScheduleSlotsSheet({
   onConfirm,
   onClose,
   selectableDates,
-  onConfirmException,
-  onSwitchToException,
+  requiresDatePick = false,
 }: ScheduleSlotsSheetProps) {
   const seed: Slots = value.length > 0 ? value : [{ startTime: DEFAULT_START, roles: [] }];
   const [slots, setSlots] = useState<Slots>(seed);
   const [pickerIndex, setPickerIndex] = useState<number | null>(null);
-  const isExceptionMode = selectableDates !== undefined;
+  // 고를 여지가 있을 때만 날짜 행을 보여준다 — 후보가 1개면 "일부만"이 성립하지 않는다.
+  // 단 날짜를 아직 못 받은 조건 카드는 후보가 1개여도 배정이 필요하므로 보여준다.
+  const showDatePicker = (selectableDates?.length ?? 0) > (requiresDatePick ? 0 : 1);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const toggleDate = (date: string) =>
     setSelectedDates((prev) =>
@@ -78,8 +84,10 @@ export function ScheduleSlotsSheet({
     );
   // 배출 순서는 화면 순서(카드 날짜 순)로 고정한다 — 탭한 순서로 내보내면 같은 선택이
   // 다른 배열이 되어 정규화 결과 비교·테스트가 흔들린다.
-  const orderedSelection = (selectableDates ?? []).filter((d) => selectedDates.includes(d));
-  const canConfirm = areSlotsComplete(slots) && (!isExceptionMode || orderedSelection.length > 0);
+  const orderedSelection = showDatePicker
+    ? (selectableDates ?? []).filter((d) => selectedDates.includes(d))
+    : [];
+  const canConfirm = areSlotsComplete(slots) && (!requiresDatePick || orderedSelection.length > 0);
 
   /**
    * 슬롯별 안정 식별자 — SlotCard 의 key 이자 **펼침 대상의 식별자**다.
@@ -146,15 +154,11 @@ export function ScheduleSlotsSheet({
     <SheetModal
       visible={visible}
       onClose={onClose}
-      title={isExceptionMode ? '시간 · 역할 — 일부 날짜만' : '시간 · 역할'}
+      title="시간 · 역할"
       footer={
         <Button
           onPress={() => {
-            if (isExceptionMode) {
-              onConfirmException?.({ dates: orderedSelection, slots });
-            } else {
-              onConfirm(slots);
-            }
+            onConfirm({ dates: orderedSelection, slots });
             onClose();
           }}
           disabled={!canConfirm}
@@ -187,10 +191,10 @@ export function ScheduleSlotsSheet({
       }
     >
       <View className="gap-2 px-4 pt-3 pb-2">
-        {isExceptionMode ? (
+        {showDatePicker ? (
           <View className="mb-1 rounded-xl bg-surface-page px-3.5 py-3 dark:bg-surface">
             <Text className="mb-2 text-xs font-sans-medium text-content-secondary">
-              적용할 날짜
+              {requiresDatePick ? '이 조건을 쓸 날짜' : '적용할 날짜'}
             </Text>
             <View className="flex-row flex-wrap gap-1.5">
               {(selectableDates ?? []).map((date) => {
@@ -227,9 +231,15 @@ export function ScheduleSlotsSheet({
             </View>
             {orderedSelection.length === 0 ? (
               <Text className="mt-2 text-[11px] font-sans text-content-muted">
-                다르게 할 날짜를 골라주세요
+                {requiresDatePick
+                  ? '이 조건을 쓸 날짜를 골라주세요'
+                  : '안 고르면 전체 날짜에 적용돼요'}
               </Text>
-            ) : null}
+            ) : (
+              <Text className="mt-2 text-[11px] font-sans text-content-muted">
+                {`고른 ${orderedSelection.length}일만 이 조건으로 나뉘어요`}
+              </Text>
+            )}
           </View>
         ) : null}
         {/*
@@ -267,21 +277,9 @@ export function ScheduleSlotsSheet({
           <PlusIcon size={16} />
           <Text className="text-sm text-content-secondary font-sans">시간대 추가</Text>
         </Pressable>
-        {/* F7③ — 예외 추출 3중 진입로 중 하나. 조건을 고치러 들어온 자리에서 "이 중 며칠만
-            다르네"를 깨닫는 경우가 많아, 카드 밖으로 나갔다 다시 들어오게 하지 않는다. */}
-        {!isExceptionMode && onSwitchToException ? (
-          <Pressable
-            onPress={() => onSwitchToException(slots)}
-            className="min-h-[44px] items-center justify-center active:opacity-80"
-            accessibilityRole="button"
-            accessibilityLabel="일부 날짜만 다른 조건으로 나누기"
-            testID="order-sheet-slots-switch-exception"
-          >
-            <Text className="text-sm font-sans-medium text-primary-600 dark:text-primary-400">
-              일부 날짜만 다르게 할까요?
-            </Text>
-          </Pressable>
-        ) : null}
+        {/* 구 F7③ "일부 날짜만 다르게 할까요?" 링크는 사라졌다 — 예외는 더 이상 별도 모드가
+            아니라 이 시트 맨 위 "적용할 날짜"에서 바로 고르는 것이라, 링크가 가리킬 다른
+            목적지가 없다(모드 전환·리마운트·편집값 승계 문제도 함께 소멸). */}
       </View>
     </SheetModal>
   );

@@ -146,7 +146,8 @@ describe('관측 이벤트', () => {
       />
     );
 
-    fireEvent.press(getByTestId('order-sheet-card-exception-0'));
+    // 진입로가 조건 시트 하나로 통합됐다 — 거기 "적용할 날짜"에서 고르는 것이 곧 예외 추출이다.
+    fireEvent.press(getByTestId('order-sheet-card-condition-0'));
     fireEvent.press(getByTestId('order-sheet-exception-date-2026-07-15'));
     fireEvent.press(getByText('확인'));
     await flush();

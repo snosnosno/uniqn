@@ -45,17 +45,15 @@ export interface ScheduleChangeContext {
   expectedDateCount?: number;
 }
 
-/** 묶음(grouped) 카드의 날짜 집합 — 해제 판정용 */
-const bundledDateCount = (groups: readonly ScheduleGroup[]): number =>
-  groups.reduce((n, g) => n + (g.grouped === true ? (g.dates ?? []).length : 0), 0);
+/** 묶음(grouped) 카드가 덮는 날짜 **집합** — 해제 판정용 */
+const bundledDates = (groups: readonly ScheduleGroup[]): Set<string> =>
+  new Set(groups.filter((g) => g.grouped === true).flatMap((g) => g.dates ?? []));
+
+const allDates = (groups: readonly ScheduleGroup[]): Set<string> =>
+  new Set(groups.flatMap((g) => g.dates ?? []));
 
 const dateCount = (groups: readonly ScheduleGroup[]): number =>
   groups.reduce((n, g) => n + (g.dates ?? []).length, 0);
-
-const toMonthDay = (ymd: string): string => {
-  const [, month, day] = ymd.split('-');
-  return `${Number(month)}/${Number(day)}`;
-};
 
 export function diagnoseScheduleChange(
   before: readonly ScheduleGroup[],
@@ -65,17 +63,32 @@ export function diagnoseScheduleChange(
   // ① 카드 소멸 — 날짜뿐 아니라 그 카드의 시간·역할이 통째로 사라진다. 되돌릴 길 필수.
   const removed = context.removedCards ?? [];
   if (removed.length > 0) {
+    // 카드 **사이**는 `, `, 카드 **안**은 ` · ` — §3.8 확장으로 카드 요약 자체가 ` · ` 를
+    // 쓰게 되면서, 바깥까지 같은 구분자를 쓰면 "9/1 · 9/3 · 9/7 · 9/9" 가 되어 2장인지
+    // 4장인지 읽히지 않는다. 구분자를 계층별로 갈라 놓는다.
     const label = removed
       .map((c) => summarizeGroupDates([...(c.dates ?? [])]))
       .filter(Boolean)
-      .join(' · ');
+      .join(', ');
     return { kind: 'cardRemoved', message: `${label || '일정'} 조건이 함께 삭제됐어요` };
   }
 
   // ② 묶음 해제 — 연속이 깨지거나 날짜가 빠져 묶음지원이 성립하지 않게 됐다.
   //    사용자가 스위치를 직접 내린 경우는 제외한다(자기가 한 일이다).
-  if (context.bundleToggledByUser !== true && bundledDateCount(after) < bundledDateCount(before)) {
-    return { kind: 'bundleReleased', message: '연속 일정이 바뀌어 묶음지원이 해제됐어요' };
+  //
+  // ⚠️ **개수**가 아니라 **집합**으로 판정한다. `bundledDateCount(after) < before` 로 보면
+  //    5일 묶음에서 하루를 해제해 4일 묶음이 되는(=묶음은 멀쩡히 살아 있는) 가장 흔한 조작이
+  //    "묶음지원이 해제됐어요"로 오고지된다. 실측: 꼬리 1일 해제·중간 1일 해제 모두 오발화했다.
+  //    진짜 해제 = "before 에 묶여 있었고 after 에도 **남아 있는데** 더는 묶이지 않은 날짜".
+  //    사장이 지운 날짜는 after 에 없으므로 자연히 빠진다(③의 expectedDateCount 와 같은 원리).
+  if (context.bundleToggledByUser !== true) {
+    const beforeBundled = bundledDates(before);
+    const afterBundled = bundledDates(after);
+    const surviving = allDates(after);
+    const released = [...beforeBundled].some((d) => surviving.has(d) && !afterBundled.has(d));
+    if (released) {
+      return { kind: 'bundleReleased', message: '연속 일정이 바뀌어 묶음지원이 해제됐어요' };
+    }
   }
 
   // ③ 자동 병합 — 카드 수가 줄었거나(같은 조건 수렴) 날짜가 조용히 사라졌다(dedupe).
@@ -96,7 +109,9 @@ export function diagnoseScheduleChange(
     const ownerAllDates = after[owner]?.dates ?? [];
     const ownerDates = ownerAllDates.filter((d) => !inherited.includes(d));
     const ownerLabel = summarizeGroupDates(ownerDates);
-    const addedLabel = inherited.map(toMonthDay).join(' · ');
+    // 추가된 날짜도 **압축**한다 — 날것으로 나열하면 30일 대회에서 213자짜리 토스트가 뜬다
+    // (실측). 오너 라벨은 이미 같은 요약을 쓰고 있었는데 여기만 빠져 있었다.
+    const addedLabel = summarizeGroupDates([...inherited]);
     return {
       kind: 'inherited',
       // 승계받은 카드에 원래 날짜가 없을 수 있다(조건만 있던 템플릿 카드에 첫 날짜가 들어간 경우)

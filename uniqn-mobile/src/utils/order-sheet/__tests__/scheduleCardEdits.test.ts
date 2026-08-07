@@ -4,7 +4,7 @@
  * 화면은 얇게 두고 "날짜 확정이 카드들을 어떻게 바꾸는가"를 여기서 정한다.
  * 전부 정규화를 통과한 결과를 낸다 — 호출부가 normalize 를 잊는 실수를 구조적으로 막는다.
  */
-import { applyDateSelection, extractException } from '../scheduleCardEdits';
+import { applyConditionToDates, applyDateSelection } from '../scheduleCardEdits';
 import type { ScheduleGroup, ScheduleGroupSlots } from '../normalizeScheduleGroups';
 
 const A: ScheduleGroupSlots = [{ startTime: '19:00', roles: [{ role: 'dealer', count: 2 }] }];
@@ -134,50 +134,107 @@ describe('applyDateSelection — 정규화 통과', () => {
   });
 });
 
-describe('extractException — 일부 날짜만 다른 조건으로', () => {
+describe('applyConditionToDates — 시간·역할 시트 확인 (0개=전체 · N개=그 날짜만)', () => {
   const card = [g(['2026-08-10', '2026-08-11', '2026-08-13'], A)];
 
+  it('0개 선택은 이 카드 전부에 적용된다 — 가장 흔한 조작이 기본값이다', () => {
+    const result = applyConditionToDates(card, 0, [], B);
+    expect(result?.groups).toEqual([g(['2026-08-10', '2026-08-11', '2026-08-13'], B, false)]);
+    expect(result?.removedCards).toEqual([]);
+  });
+
+  it('0개 선택은 묶음지원을 건드리지 않는다 (조건만 갈아끼운다)', () => {
+    const bundled = [g(['2026-08-10', '2026-08-11'], A, true)];
+    const result = applyConditionToDates(bundled, 0, [], B);
+    expect(result?.groups[0]?.grouped).toBe(true);
+    expect(result?.groups[0]?.timeSlots).toEqual(B);
+  });
+
   it('고른 날짜만 새 조건으로 갈라지고 나머지는 원래 조건에 남는다', () => {
-    const result = extractException(card, 0, ['2026-08-11'], B);
-    expect(result).not.toBeNull();
-    expect(result?.find((x) => x.dates.includes('2026-08-11'))?.timeSlots).toEqual(B);
-    expect(result?.find((x) => x.dates.includes('2026-08-10'))?.timeSlots).toEqual(A);
-    expect(result?.find((x) => x.dates.includes('2026-08-10'))?.dates).toEqual([
+    const result = applyConditionToDates(card, 0, ['2026-08-11'], B);
+    const groups = result!.groups;
+    expect(groups.find((x) => x.dates.includes('2026-08-11'))?.timeSlots).toEqual(B);
+    expect(groups.find((x) => x.dates.includes('2026-08-10'))?.timeSlots).toEqual(A);
+    expect(groups.find((x) => x.dates.includes('2026-08-10'))?.dates).toEqual([
       '2026-08-10',
       '2026-08-13',
     ]);
   });
 
   it('여러 날짜를 한 번에 갈라도 카드는 하나만 생긴다 (다중 예외 1회 입력)', () => {
-    const result = extractException(card, 0, ['2026-08-11', '2026-08-13'], B);
-    expect(result?.filter((x) => x.timeSlots[0]?.startTime === '21:00')).toHaveLength(1);
+    const result = applyConditionToDates(card, 0, ['2026-08-11', '2026-08-13'], B);
+    expect(result?.groups.filter((x) => x.timeSlots[0]?.startTime === '21:00')).toHaveLength(1);
   });
 
   it('전 날짜를 고르면 카드 전체 편집과 같아진다', () => {
-    const result = extractException(card, 0, ['2026-08-10', '2026-08-11', '2026-08-13'], B);
-    expect(result).toEqual([g(['2026-08-10', '2026-08-11', '2026-08-13'], B, false)]);
+    const result = applyConditionToDates(card, 0, ['2026-08-10', '2026-08-11', '2026-08-13'], B);
+    expect(result?.groups).toEqual([g(['2026-08-10', '2026-08-11', '2026-08-13'], B, false)]);
   });
 
   it('원래 조건으로 되돌리면 정규화가 즉시 재병합한다 (재진입 서프라이즈 소멸)', () => {
-    const split = extractException(card, 0, ['2026-08-11'], B)!;
+    const split = applyConditionToDates(card, 0, ['2026-08-11'], B)!.groups;
     const exceptionIndex = split.findIndex((x) => x.dates.includes('2026-08-11'));
-    const merged = extractException(split, exceptionIndex, ['2026-08-11'], A)!;
+    const merged = applyConditionToDates(split, exceptionIndex, ['2026-08-11'], A)!.groups;
     expect(merged).toHaveLength(1);
     expect(merged[0]?.dates).toEqual(['2026-08-10', '2026-08-11', '2026-08-13']);
   });
 
   it('카드가 이미 사라졌으면 null — 조용히 엉뚱한 카드에 쓰지 않는다', () => {
-    expect(extractException(card, 5, ['2026-08-11'], B)).toBeNull();
+    expect(applyConditionToDates(card, 5, ['2026-08-11'], B)).toBeNull();
   });
 
-  it('고른 날짜가 카드에 더 이상 없으면 null (stale confirm)', () => {
-    expect(extractException(card, 0, ['2026-09-09'], B)).toBeNull();
+  it('고른 날짜가 공고에 더 이상 없으면 null (stale confirm)', () => {
+    expect(applyConditionToDates(card, 0, ['2026-09-09'], B)).toBeNull();
   });
 
-  it('카드에 남아 있는 날짜만 골라 적용한다 — 사라진 날짜는 버린다', () => {
-    const result = extractException(card, 0, ['2026-08-11', '2026-09-09'], B);
-    expect(result?.find((x) => x.timeSlots[0]?.startTime === '21:00')?.dates).toEqual([
+  it('사라진 날짜는 버리고 남은 것만 적용한다', () => {
+    const result = applyConditionToDates(card, 0, ['2026-08-11', '2026-09-09'], B);
+    expect(result?.groups.find((x) => x.timeSlots[0]?.startTime === '21:00')?.dates).toEqual([
       '2026-08-11',
     ]);
+  });
+
+  // ── 여기부터가 통합의 핵심: 날짜는 **어느 카드에 있었든** 이 조건으로 옮겨온다 ──
+
+  it('다른 카드의 날짜를 골라도 이 조건으로 옮겨온다 (재배정)', () => {
+    const two = [g(['2026-08-10', '2026-08-11'], A), g(['2026-08-20', '2026-08-21'], B)];
+    const result = applyConditionToDates(two, 0, ['2026-08-20'], A);
+    const owner = result!.groups.find((x) => x.dates.includes('2026-08-20'));
+    expect(owner?.timeSlots).toEqual(A);
+    // 원래 주인은 남은 날짜만 유지한다
+    expect(result!.groups.find((x) => x.timeSlots[0]?.startTime === '21:00')?.dates).toEqual([
+      '2026-08-21',
+    ]);
+    expect(result!.removedCards).toEqual([]);
+  });
+
+  it('다른 카드의 마지막 날짜를 가져가면 그 카드가 소멸로 보고된다 (F6 — 조건 유실)', () => {
+    const two = [g(['2026-08-10'], A), g(['2026-08-20'], B)];
+    const result = applyConditionToDates(two, 0, ['2026-08-20'], A);
+    expect(result!.removedCards).toHaveLength(1);
+    expect(result!.removedCards[0]?.timeSlots).toEqual(B);
+    // 빈 껍데기를 남기지 않는다 — 규칙 0 이 그걸 보존해 유령 카드가 되기 때문
+    expect(result!.groups.every((x) => x.dates.length > 0)).toBe(true);
+  });
+
+  /**
+   * 리뷰 HIGH 1 회귀 가드 — 템플릿 프리셋이 만드는 "조건만 있고 날짜 없는 카드".
+   * 통합 전에는 전 일정 날짜 시트가 무엇을 골라도 인접·첫 카드가 가져가 이 카드는
+   * 영영 비어 있었고, 제출 유도가 같은 자리를 무한히 가리켰다.
+   */
+  it('날짜가 없는 조건 카드도 날짜를 배정받는다', () => {
+    const preset = [g(['2026-08-10', '2026-08-11'], A), g([], B)];
+    const result = applyConditionToDates(preset, 1, ['2026-08-11'], B);
+    const filled = result!.groups.find((x) => x.timeSlots[0]?.startTime === '21:00');
+    expect(filled?.dates).toEqual(['2026-08-11']);
+    expect(result!.groups.find((x) => x.timeSlots[0]?.startTime === '19:00')?.dates).toEqual([
+      '2026-08-10',
+    ]);
+    expect(result!.groups.some((x) => x.dates.length === 0)).toBe(false);
+  });
+
+  it('결과 슬롯은 입력과 참조를 공유하지 않는다', () => {
+    const result = applyConditionToDates(card, 0, ['2026-08-11'], B);
+    expect(result?.groups[0]?.timeSlots[0]).not.toBe(B[0]);
   });
 });

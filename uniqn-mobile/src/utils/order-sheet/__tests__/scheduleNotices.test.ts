@@ -89,6 +89,29 @@ describe('묶음 해제 (§3.5 자동 해제 고지)', () => {
     expect(diagnoseScheduleChange(before, after, { bundleToggledByUser: true })).toBeNull();
   });
 
+  // 리뷰 MEDIUM 회귀 가드 — 개수 비교로 되돌리면 여기서 잡힌다.
+  // 5일 묶음에서 하루를 해제하면 묶음 날짜 수는 5→4 로 줄지만 **묶음은 살아 있다**.
+  it('묶음 카드에서 날짜만 줄어도 묶음이 살아 있으면 해제라고 하지 않는다', () => {
+    const before = [g(['2026-08-10', '2026-08-11', '2026-08-12'], A, true)];
+    const after = [g(['2026-08-10', '2026-08-11'], A, true)];
+    expect(diagnoseScheduleChange(before, after, { expectedDateCount: 2 })).toBeNull();
+  });
+
+  it('묶음 가운데가 빠져 둘로 갈라져도 둘 다 묶음이면 해제가 아니다', () => {
+    const before = [g(['2026-08-10', '2026-08-11', '2026-08-12', '2026-08-13'], A, true)];
+    const after = [g(['2026-08-10', '2026-08-11'], A, true), g(['2026-08-13'], A, true)];
+    // 카드 수가 늘었으므로 병합도 아니다 — 아무 고지도 나오면 안 된다.
+    expect(diagnoseScheduleChange(before, after, { expectedDateCount: 3 })).toBeNull();
+  });
+
+  it('묶여 있던 날짜가 남아 있는데 묶음이 풀렸으면 그때는 알린다', () => {
+    const before = [g(['2026-08-10', '2026-08-11', '2026-08-12'], A, true)];
+    const after = [g(['2026-08-10', '2026-08-11', '2026-08-12'], A, false)];
+    expect(diagnoseScheduleChange(before, after, { expectedDateCount: 3 })?.kind).toBe(
+      'bundleReleased'
+    );
+  });
+
   it('묶음이 새로 생기는 것은 알리지 않는다', () => {
     const before = [g(['2026-08-10', '2026-08-11'], A, false)];
     const after = [g(['2026-08-10', '2026-08-11'], A, true)];
@@ -148,6 +171,17 @@ describe('새 날짜 승계 고지 (F10)', () => {
     expect(notice?.message).toContain('8/14');
     expect(notice?.message).toContain('8/10~11');
     expect(notice?.message).toContain('조건으로 추가');
+  });
+
+  // 리뷰 MEDIUM 회귀 가드 — 날것 나열로 되돌리면 30일 대회에서 213자 토스트가 뜬다(실측).
+  it('추가 날짜가 많아도 요약해서 말한다 — 토스트가 화면을 덮지 않는다', () => {
+    const many = Array.from({ length: 30 }, (_, i) => `2026-09-${String(i + 1).padStart(2, '0')}`);
+    const before = [g(['2026-08-10'], A), g([], B)];
+    const after = [g(['2026-08-10', ...many], A), g([], B)];
+    const notice = diagnoseScheduleChange(before, after, { inheritedDates: many });
+    expect(notice?.kind).toBe('inherited');
+    expect(notice?.message).toContain('9/1~30');
+    expect(notice!.message.length).toBeLessThan(40);
   });
 
   it('카드가 하나뿐이면 승계를 알리지 않는다 (고를 여지가 없다)', () => {

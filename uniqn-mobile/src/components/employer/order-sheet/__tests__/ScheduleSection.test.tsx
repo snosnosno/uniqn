@@ -112,7 +112,7 @@ describe('단일 카드 축약 (F1)', () => {
 
   it('조건 행에 시간·역할 요약이 함께 보인다', () => {
     setup(single);
-    expect(screen.getByText('18:00 · 딜러 2')).toBeTruthy();
+    expect(screen.getByText('18:00 딜러 2')).toBeTruthy();
   });
 
   it('총원 캡션은 카드 1개일 때 노출하지 않는다 (F3)', () => {
@@ -168,7 +168,7 @@ describe('미완성 카드 표기 (F5 — 미설정은 muted, 에러 아님)', (
     setup([
       { dates: ['2026-08-10'], timeSlots: [{ startTime: '18:00', roles: [] }], grouped: false },
     ]);
-    expect(screen.getByText('18:00 · 역할을 정해주세요')).toBeTruthy();
+    expect(screen.getByText('18:00 역할을 정해주세요')).toBeTruthy();
   });
 
   it('시간만 비면 "시간을 정해주세요" 로 보인다', () => {
@@ -179,7 +179,7 @@ describe('미완성 카드 표기 (F5 — 미설정은 muted, 에러 아님)', (
         grouped: false,
       },
     ]);
-    expect(screen.getByText('시간을 정해주세요 · 딜러 2')).toBeTruthy();
+    expect(screen.getByText('시간을 정해주세요 딜러 2')).toBeTruthy();
   });
 
   it('둘 다 비면 한 문장으로 안내한다', () => {
@@ -253,25 +253,75 @@ describe('묶음지원 run 토글 (§3.5 · F13)', () => {
   });
 });
 
-describe('예외 추출 진입 (F7①)', () => {
-  it('카드 날짜가 2개 이상이면 진입 버튼이 보인다', () => {
+describe('예외 추출 진입 — 시트로 통합됨', () => {
+  /**
+   * 구 F7① "일부 날짜만 다르게" 버튼은 사라졌다. 예외는 조건 시트 맨 위 "적용할 날짜"에서
+   * 바로 고르는 것이라, 카드에 별도 진입 버튼을 둘 이유가 없어졌다.
+   */
+  it('카드에 별도 예외 진입 버튼이 없다 — 조건 행 탭이 유일한 진입로다', () => {
     setup([{ dates: ['2026-08-10', '2026-08-12'], timeSlots: slots('18:00'), grouped: false }]);
-    expect(screen.getByTestId('order-sheet-card-exception-0')).toBeTruthy();
-    expect(screen.getByText('일부 날짜만 다르게')).toBeTruthy();
-  });
-
-  it('카드 날짜가 1개면 노출하지 않는다', () => {
-    setup([{ dates: ['2026-08-10'], timeSlots: slots('18:00'), grouped: false }]);
     expect(screen.queryByTestId('order-sheet-card-exception-0')).toBeNull();
+    expect(screen.queryByText('일부 날짜만 다르게')).toBeNull();
+    expect(screen.getByTestId('order-sheet-card-condition-0')).toBeTruthy();
+  });
+});
+
+describe('시간대별 조건 표기 (§3.8 — 시간대마다 한 줄)', () => {
+  /**
+   * 구 표기는 시간을 이어 붙이고 역할을 **전 슬롯 합산**했다("미정 · 19:00 · 딜러 110").
+   * 그러면 "미정 50명 / 19시 60명" 처럼 시간대별로 인원을 나눠 뽑는다는 정보가 사라진다.
+   */
+  it('시간대가 2개면 줄도 2개이고, 각 줄이 그 시간대의 인원만 말한다', () => {
+    setup([
+      {
+        dates: ['2026-08-10'],
+        timeSlots: [
+          { startTime: '', isTimeToBeAnnounced: true, roles: [{ role: 'dealer', count: 50 }] },
+          { startTime: '19:00', roles: [{ role: 'dealer', count: 60 }] },
+        ],
+        grouped: false,
+      },
+    ]);
+    expect(screen.getByText('미정 딜러 50')).toBeTruthy();
+    expect(screen.getByText('19:00 딜러 60')).toBeTruthy();
+    // 합산 표기로 되돌아가면 여기서 걸린다
+    expect(screen.queryByText('미정 · 19:00 · 딜러 110')).toBeNull();
   });
 
-  it('누르면 카드 인덱스를 넘긴다', () => {
-    const onPressException = jest.fn();
-    setup([{ dates: ['2026-08-10', '2026-08-12'], timeSlots: slots('18:00'), grouped: false }], {
-      onPressException,
-    });
-    fireEvent.press(screen.getByTestId('order-sheet-card-exception-0'));
-    expect(onPressException).toHaveBeenCalledWith(0);
+  it('한 시간대에 역할이 여럿이면 그 줄에 나란히 붙는다', () => {
+    setup([
+      {
+        dates: ['2026-08-10'],
+        timeSlots: [
+          { startTime: '', isTimeToBeAnnounced: true, roles: [{ role: 'dealer', count: 50 }] },
+          {
+            startTime: '19:00',
+            roles: [
+              { role: 'dealer', count: 60 },
+              { role: 'floor', count: 10 },
+            ],
+          },
+        ],
+        grouped: false,
+      },
+    ]);
+    expect(screen.getByText('미정 딜러 50')).toBeTruthy();
+    expect(screen.getByText('19:00 딜러 60 플로어 10')).toBeTruthy();
+  });
+
+  it('한 시간대만 비어도 그 줄에만 안내가 뜨고 나머지 줄은 값을 유지한다', () => {
+    setup([
+      {
+        dates: ['2026-08-10'],
+        timeSlots: [
+          { startTime: '19:00', roles: [{ role: 'dealer', count: 60 }] },
+          { startTime: '22:00', roles: [] },
+        ],
+        grouped: false,
+      },
+    ]);
+    expect(screen.getByText('19:00 딜러 60')).toBeTruthy();
+    expect(screen.getByText('22:00 역할을 정해주세요')).toBeTruthy();
   });
 });
 

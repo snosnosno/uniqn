@@ -11,7 +11,7 @@
 import React from 'react';
 import { Pressable, Switch, Text, View } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
-import { CalendarDaysIcon, ChevronRightIcon, XMarkIcon } from '@/components/icons';
+import { ChevronRightIcon, XMarkIcon } from '@/components/icons';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { MOTION_DURATION } from '@/constants/motion';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
@@ -19,32 +19,48 @@ import { groupConsecutiveDates } from '@/utils/date';
 import { isSlotTimeSet, roleName, slotHasRoles, summarizeGroupDates } from './orderRowMeta';
 import type { ScheduleGroup } from '@/utils/order-sheet/normalizeScheduleGroups';
 
-/** 카드 조건 한 줄 — 시간·역할을 합쳐 요약한다. 미설정은 에러(빨강)가 아니라 muted 안내다(F5). */
+/**
+ * 카드 조건 요약 — **시간대(슬롯)마다 한 줄**이다.
+ *
+ *   미정 딜러 50
+ *   19:00 딜러 60 플로어 10
+ *
+ * 구 표기는 시간을 전부 이어 붙이고 역할을 **전 슬롯 합산**해 한 줄로 냈다("미정 · 19:00 · 딜러 110").
+ * 그러면 어느 시간대에 몇 명인지가 카드에서 사라진다 — 대회사가 "미정 50 / 19시 60" 처럼
+ * 시간대별로 인원을 나눠 뽑는 것이 이 화면의 실제 용도인데 그 축이 통째로 뭉개졌다.
+ *
+ * 미설정은 에러(빨강)가 아니라 muted 안내다(F5). 판정은 슬롯 단위이므로 한 슬롯만 비어도
+ * 그 줄에만 안내가 뜨고 나머지 줄은 정상 값을 유지한다.
+ */
 function summarizeCardCondition(group: ScheduleGroup): {
-  text: string;
+  lines: string[];
   incomplete: boolean;
 } {
   const slots = group.timeSlots ?? [];
-  const timeSet = slots.length > 0 && slots.every(isSlotTimeSet);
-  const rolesSet = slots.length > 0 && slots.every(slotHasRoles);
-  if (!timeSet && !rolesSet) return { text: '시간과 역할을 정해주세요', incomplete: true };
+  if (slots.length === 0) return { lines: ['시간과 역할을 정해주세요'], incomplete: true };
 
-  const timePart = timeSet
-    ? slots.map((s) => (s.isTimeToBeAnnounced === true ? '미정' : s.startTime)).join(' · ')
-    : '시간을 정해주세요';
-
-  const totals = new Map<string, number>();
-  for (const slot of slots) {
+  const lines = slots.map((slot) => {
+    const timePart = isSlotTimeSet(slot)
+      ? slot.isTimeToBeAnnounced === true
+        ? '미정'
+        : slot.startTime
+      : '시간을 정해주세요';
+    // 역할 합산은 **슬롯 안에서만** 한다 — 같은 슬롯에 같은 역할이 두 행으로 들어올 수 있다.
+    const totals = new Map<string, number>();
     for (const r of slot.roles) {
       const name = roleName(r.role, r.customRole);
       totals.set(name, (totals.get(name) ?? 0) + r.count);
     }
-  }
-  const rolePart = rolesSet
-    ? [...totals.entries()].map(([name, count]) => `${name} ${count}`).join(' · ')
-    : '역할을 정해주세요';
+    const rolePart = slotHasRoles(slot)
+      ? [...totals.entries()].map(([name, count]) => `${name} ${count}`).join(' ')
+      : '역할을 정해주세요';
+    return `${timePart} ${rolePart}`;
+  });
 
-  return { text: `${timePart} · ${rolePart}`, incomplete: !timeSet || !rolesSet };
+  return {
+    lines,
+    incomplete: slots.some((s) => !isSlotTimeSet(s) || !slotHasRoles(s)),
+  };
 }
 
 /** 카드 안에서 묶음지원 토글을 붙일 연속 구간(길이 2 이상)만 */
@@ -61,7 +77,6 @@ export interface ScheduleConditionCardProps {
   conditionError?: string;
   onPressCondition: (index: number) => void;
   onToggleRun: (index: number, run: string[], on: boolean) => void;
-  onPressException: (index: number) => void;
   onDelete: (index: number) => void;
   onLayoutY?: (index: number, y: number) => void;
 }
@@ -74,7 +89,6 @@ export function ScheduleConditionCard({
   conditionError,
   onPressCondition,
   onToggleRun,
-  onPressException,
   onDelete,
   onLayoutY,
 }: ScheduleConditionCardProps) {
@@ -127,23 +141,30 @@ export function ScheduleConditionCard({
         onPress={() => onPressCondition(index)}
         className="min-h-[44px] flex-row items-center px-4 py-3 active:opacity-80"
         accessibilityRole="button"
-        accessibilityLabel={`${summary || '날짜 미설정'} 일정의 시간과 역할, ${condition.text}, 탭하여 편집${
-          conditionError ? `, 오류: ${conditionError}` : ''
-        }`}
+        accessibilityLabel={`${summary || '날짜 미설정'} 일정의 시간과 역할, ${condition.lines.join(
+          ', '
+        )}, 탭하여 편집${conditionError ? `, 오류: ${conditionError}` : ''}`}
         testID={`order-sheet-card-condition-${index}`}
       >
-        <Text
-          // 삼항 **안**의 dark: 변형은 정적 추출이 안 된다 — 분기마다 완결된 리터럴을 고른다
-          // (nativewind-patterns 규칙 1·3 · darkModePairRatchet 주석 15-16).
-          className={
-            condition.incomplete
-              ? 'flex-1 text-sm font-sans-medium text-content-muted dark:text-content-muted'
-              : 'flex-1 text-sm font-sans-medium text-content-primary dark:text-content-primary'
-          }
-          numberOfLines={2}
-        >
-          {condition.text}
-        </Text>
+        {/* 시간대마다 한 줄 — 한 Text 에 \n 으로 밀어넣지 않는다. 줄마다 numberOfLines={1} 을
+            걸어야 역할이 많은 시간대만 말줄임되고 다른 시간대 줄은 그대로 보인다. */}
+        <View className="flex-1 gap-0.5">
+          {condition.lines.map((line, lineIndex) => (
+            <Text
+              // 삼항 **안**의 dark: 변형은 정적 추출이 안 된다 — 분기마다 완결된 리터럴을 고른다
+              // (nativewind-patterns 규칙 1·3 · darkModePairRatchet 주석 15-16).
+              key={`${line}-${lineIndex}`}
+              className={
+                condition.incomplete
+                  ? 'text-sm font-sans-medium text-content-muted dark:text-content-muted'
+                  : 'text-sm font-sans-medium text-content-primary dark:text-content-primary'
+              }
+              numberOfLines={1}
+            >
+              {line}
+            </Text>
+          ))}
+        </View>
         {conditionError ? (
           <Text className="mr-1 text-[11px] font-sans text-error-500 dark:text-error-400">
             {conditionError}
@@ -185,24 +206,8 @@ export function ScheduleConditionCard({
           </View>
         );
       })}
-      {dates.length > 1 ? (
-        <View className="px-4 pb-3 pt-1">
-          <Pressable
-            onPress={() => onPressException(index)}
-            className="min-h-[44px] flex-row items-center justify-center gap-1.5 rounded-xl border border-secondary-200 px-3 py-2 active:opacity-80 dark:border-surface-overlay"
-            accessibilityRole="button"
-            accessibilityLabel="이 일정에서 일부 날짜만 다른 조건으로 나누기"
-            testID={`order-sheet-card-exception-${index}`}
-          >
-            {/* 레포에 분기(⑂) 아이콘이 없다 — 날짜를 골라 나눈다는 의미로 캘린더 아이콘 대체.
-                ghost 금지(F7①): 보더 + 본문색 텍스트로 어포던스를 명시한다. */}
-            <CalendarDaysIcon size={14} />
-            <Text className="text-sm font-sans-medium text-content-secondary">
-              일부 날짜만 다르게
-            </Text>
-          </Pressable>
-        </View>
-      ) : null}
+      {/* 구 "일부 날짜만 다르게" 버튼은 사라졌다 — 조건 시트가 열리면 맨 위에 "적용할 날짜"가
+          항상 있어, 일부만 고르는 것이 곧 예외 추출이다. 진입로를 둘로 나눌 이유가 없어졌다. */}
     </Animated.View>
   );
 }
