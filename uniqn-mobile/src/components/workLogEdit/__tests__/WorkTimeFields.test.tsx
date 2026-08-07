@@ -431,6 +431,30 @@ describe('applyPickedTime — 시각 조립', () => {
     expect(next.checkIn?.getMinutes()).toBe(30);
   });
 
+  // 🔴 리뷰 MEDIUM 2 회귀 가드 — 출근 갈래에 익일 보정이 **아예 없었다**.
+  //    근무일 08-10 / 출근 08-11 00:30 인 야간조 지각 입장 행에서 5분만 고치면
+  //    출근이 08-10 00:45 로 접혀 근무가 31.5시간(1890분)이 됐다. 차단이 아니라 경고만 떴다.
+  it('🔴 출근이 이미 근무일 다음 날이면 그 달력일을 유지한다 (야간조 익일 입장)', () => {
+    const value = makeValue({ checkIn: new Date(2026, 7, 11, 0, 30) });
+
+    const next = applyPickedTime(value, 'checkIn', '00:45', BASE_DATE);
+
+    expect(next.checkIn?.getDate()).toBe(11);
+    expect(next.checkIn?.getHours()).toBe(0);
+    expect(next.checkIn?.getMinutes()).toBe(45);
+  });
+
+  // 🔑 반대편 — 없던 익일을 만들어내지 않는다. 이 단언이 없으면 "출근은 항상 익일" 로
+  //    넓혀도 위 테스트가 통과해 정상 주간 근무가 통째로 하루 밀린다.
+  it('출근이 근무일 당일이면 익일로 올리지 않는다', () => {
+    const value = makeValue({ checkIn: new Date(2026, 7, 10, 9, 0) });
+
+    const next = applyPickedTime(value, 'checkIn', '00:45', BASE_DATE);
+
+    expect(next.checkIn?.getDate()).toBe(10);
+    expect(next.checkIn?.getHours()).toBe(0);
+  });
+
   it('🔴 퇴근이 출근보다 이르면 익일로 올린다(자정 넘김)', () => {
     const value = makeValue({ checkIn: new Date(2026, 7, 10, 22, 0) });
 
