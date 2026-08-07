@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react-native';
+import { act, renderHook } from '@testing-library/react-native';
 import { ERROR_CODES } from '@/errors/AppError';
 import type { JobPosting } from '@/types';
 
@@ -10,13 +10,21 @@ const mockRefetch = jest.fn();
 const mockRemoveCriticalOfflineCache = jest.fn();
 const mockSetCriticalOfflineCache = jest.fn();
 const mockUseQuery = jest.fn();
+const mockSubscribeToJobPosting = jest.fn();
+const mockSetQueryData = jest.fn();
 let mockUser: { uid: string } | null = { uid: 'user-1' };
+
+// ⚠️ queryClient 는 **동일 객체**를 돌려줘야 한다. 렌더마다 새 객체를 주면 realtime 구독
+//    effect 의 deps 가 매번 바뀌어 구독이 재생성되고, 그때 realtimeError 가 초기화되어
+//    "구독 에러가 남지 않는다"는 거짓 통과가 난다(실물 useQueryClient 는 안정된 인스턴스).
+const mockQueryClient = {
+  invalidateQueries: (...args: unknown[]) => mockInvalidateQueries(...args),
+  setQueryData: (...args: unknown[]) => mockSetQueryData(...args),
+};
 
 jest.mock('@tanstack/react-query', () => ({
   useQuery: (options: Record<string, unknown>) => mockUseQuery(options),
-  useQueryClient: () => ({
-    invalidateQueries: mockInvalidateQueries,
-  }),
+  useQueryClient: () => mockQueryClient,
 }));
 
 jest.mock('@/hooks/useNetworkStatus', () => ({
@@ -41,6 +49,7 @@ jest.mock('@/stores/authStore', () => ({
 
 jest.mock('@/services', () => ({
   getJobPostingById: jest.fn(),
+  subscribeToJobPosting: (...args: unknown[]) => mockSubscribeToJobPosting(...args),
 }));
 
 jest.mock('@/services/offline/criticalOfflineCache', () => ({
@@ -219,5 +228,84 @@ describe('useJobDetail', () => {
         queryKey: ['jobPostings', 'detail', 'job-1', 'user-2'],
       })
     );
+  });
+});
+
+// realtime 구독 에러는 구독 effect 가 다시 뜰 때만 초기화됐다 — 성공 갱신도, 화면이 '다시 시도'로
+// 배선한 refresh() 도 지우지 못했다. 이 화면들은 error 를 그대로 에러 화면 조건으로 쓰므로,
+// 한 번 튄 구독 에러가 캐시된 공고 위에 영구 에러 화면을 씌우고 재시도가 거짓말이 된다(감사 A4).
+describe('useJobDetail realtime 구독 에러의 수명', () => {
+  const subscriptionFailure = new Error('구독 초기 조회 실패');
+
+  function renderRealtimeHook() {
+    let handlers: {
+      onUpdate: (job: JobPosting | null) => void;
+      onError: (error: Error) => void;
+    } = { onUpdate: () => {}, onError: () => {} };
+
+    mockSubscribeToJobPosting.mockImplementation((_id: string, callbacks: typeof handlers) => {
+      handlers = callbacks;
+      return () => {};
+    });
+
+    const rendered = renderHook(() => useJobDetail('job-1', { realtime: true }));
+    return { ...rendered, getHandlers: () => handlers };
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUser = { uid: 'user-1' };
+    mockUseQuery.mockReturnValue({
+      data: createMockJobPosting('job-1'),
+      isFetched: true,
+      isLoading: false,
+      isRefetching: false,
+      error: null,
+      refetch: mockRefetch,
+    });
+  });
+
+  it('구독 에러를 error 로 올린다', () => {
+    const { result, getHandlers } = renderRealtimeHook();
+
+    act(() => getHandlers().onError(subscriptionFailure));
+
+    expect(result.current.error).toBe(subscriptionFailure);
+  });
+
+  it('구독이 성공 갱신을 보내면 남아 있던 구독 에러를 지운다', () => {
+    const { result, getHandlers } = renderRealtimeHook();
+
+    act(() => getHandlers().onError(subscriptionFailure));
+    act(() => getHandlers().onUpdate(createMockJobPosting('job-1')));
+
+    expect(result.current.error).toBeNull();
+  });
+
+  it('refresh() 는 남아 있던 구독 에러를 지운다 — 재시도가 거짓말이 되지 않도록', async () => {
+    const { result, getHandlers } = renderRealtimeHook();
+
+    act(() => getHandlers().onError(subscriptionFailure));
+    expect(result.current.error).toBe(subscriptionFailure);
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    expect(result.current.error).toBeNull();
+  });
+
+  it('구독이 다시 실패하면 error 를 다시 올린다 — 지속 실패를 감추지 않는다', async () => {
+    const { result, getHandlers } = renderRealtimeHook();
+
+    act(() => getHandlers().onError(subscriptionFailure));
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    const secondFailure = new Error('구독 재실패');
+    act(() => getHandlers().onError(secondFailure));
+
+    expect(result.current.error).toBe(secondFailure);
   });
 });
