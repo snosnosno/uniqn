@@ -186,7 +186,40 @@ SELECT is(..., 'no_show|true', '노쇼는 시각을 기록해도 상태가 뒤�
 
 **기존 회귀 확인 (쓰기 채널 불변이므로 깨질 이유는 없으나 실행으로 확인):** `work_log_slot_attendance_rpc` · `work_log_slot_sync_rpc` · `settlement_settle_rpcs` · `settlement_payroll_status_rpc` · `work_logs_payroll_pin` · `worklog_settled_custom_lock` · `ops_staff_link_import` · `ops_staff_schema` · `ops_staff_security` · `parity_baseline_guard`.
 
-## 7. 명시적 범위 밖
+## 7. 구현 현황 (2026-08-08 기준)
+
+| 계층 | 상태 | 커밋 |
+|---|---|---|
+| 설계 | ✅ 완료 | `8ed430536` |
+| 마이그 `20260809110000` 해석기 RPC | ✅ 완료 | `213bf9458` |
+| pgTAP `ops_staff_work_log_resolve` 19건 | ✅ 통과 (Red-Green 실측) | `213bf9458` |
+| 파리티 206 → 207 (마커+리터럴) | ✅ 완료 | `213bf9458` |
+| 타입·Repository·Service·훅 | ✅ 완료 | `e419c340e` |
+| 서비스 유닛 테스트 18건 | ✅ 통과 | `e419c340e` |
+| **UI — StaffTab 근태 컨트롤** | 🔴 **미구현** | — |
+
+### 🔴 남은 작업 = UI 한 겹
+
+데이터 계층은 양방향 모두 열려 있다(`useOpsStaffWorkLogs` 읽기 + `useRecordOpsAttendance` 쓰기).
+남은 것은 `src/components/ops/StaffTab.tsx` 에 근태 행을 그리는 일이다. 구현 시 지킬 것:
+
+- `reason === 'ok' && writeAllowed` 일 때만 기록 버튼을 연다. 나머지 6개 사유는 **사유별 안내
+  문구**를 띄우고 컨트롤을 숨긴다 — 특히 `ambiguous`(같은 날 2건)와 `cancelled`(취소된 행)는
+  버튼을 열면 틀린 행에 시각이 박힌다.
+- **되돌리기 버튼을 같은 화면에 함께 낸다**(§결정 7). 기록만 있고 취소가 없으면 편도 문이다.
+- `settled` 는 행을 **표시하되** 컨트롤만 잠근다(work_log_id 는 정상 반환된다).
+- 🚨 **"전체 출근 처리" 같은 일괄 버튼을 만들지 말 것** — §결정 5. 알림 배칭 설계가 선행돼야 한다.
+- 서버 문구(`ALREADY_SETTLED`·`PERMISSION_DENIED`)를 그대로 노출한다. 클라에서 같은 뜻의
+  문구를 새로 쓰면 서버와 조용히 갈라진다.
+
+### ⚠️ 머지 시 파리티 충돌 (실측)
+
+병렬 세션의 `20260809100000_ops_staff_assignment_notification` 도 함수를 1개 늘린다.
+**두 브랜치가 각각 파리티를 207 로 적어 두므로, 나중에 머지되는 쪽은 208 로 올려야 한다.**
+그대로 두면 두 번째 머지에서 `parity_baseline_guard` 가 반드시 red 다.
+(공유 로컬 스택 실측: 두 함수가 모두 있으면 208, 내 함수만 DROP 하면 207.)
+
+## 8. 명시적 범위 밖
 
 - **일괄 근태 처리** — 알림 배칭 설계 선행 필요 (결정 5)
 - **`source='manual'` ops 스태프의 근태** — 대응 work_log 부재 (결정 1)
