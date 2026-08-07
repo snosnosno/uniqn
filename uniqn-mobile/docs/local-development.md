@@ -13,13 +13,13 @@
 
 작업 디렉토리: `uniqn-mobile/`
 
-| 명령 | 동작 |
-|------|------|
-| `npm run db:start` | 로컬 스택 기동 (DB / Auth / Storage / Studio / Mailpit) |
-| `npm run db:stop` | 끄기 (다 쓰면 꼭 — Docker 리소스 점유) |
-| `npm run db:status` | 접속 URL·키 확인 |
-| `npm run db:reset` | **전체 마이그레이션 + seed 재적용** (DB 초기화) |
-| `npm start` / `npm run web` | 앱을 **로컬 DB로** 실행 |
+| 명령                        | 동작                                                    |
+| --------------------------- | ------------------------------------------------------- |
+| `npm run db:start`          | 로컬 스택 기동 (DB / Auth / Storage / Studio / Mailpit) |
+| `npm run db:stop`           | 끄기 (다 쓰면 꼭 — Docker 리소스 점유)                  |
+| `npm run db:status`         | 접속 URL·키 확인                                        |
+| `npm run db:reset`          | **전체 마이그레이션 + seed 재적용** (DB 초기화)         |
+| `npm start` / `npm run web` | 앱을 **로컬 DB로** 실행                                 |
 
 ## 3. 로컬 ↔ 프로덕션 전환 (가장 중요)
 
@@ -54,16 +54,37 @@ Expo env 우선순위가 `.env.development.local` > `.env.local`이고, `expo st
 
 `npm run db:reset` 시 항상 새로 만들어진다.
 
-| 이메일 | 비밀번호 | 권한 |
-|--------|----------|------|
-| `qa-admin@uniqn.test` | `TestPass1!` | admin |
-| `qa-employer@uniqn.test` | `TestPass1!` | employer |
-| `qa-staff@uniqn.test` | `TestPass1!` | staff |
-| `qa-collaborator@uniqn.test` | `TestPass1!` | employer (협업자) |
-| `review-admin@uniqn.app` | `Review2026!` | admin |
-| `review-employer@uniqn.app` | `Review2026!` | employer |
-| `review-staff@uniqn.app` | `Review2026!` | staff |
-| `review-collaborator@uniqn.app` | `Review2026!` | employer (협업자) |
+> 🔴 **아래 비밀번호는 로컬 스택 전용이다.** 여기 적힌 값으로 **원격(prod)에 로그인하려 하지 말 것** —
+> prod 의 `review-*` 계정 비밀번호는 2026-08-07 에 회전됐고 그 값은 레포 밖에만 있다
+> (`docs/app-review/review-test-accounts.md` 참조).
+>
+> 이 값들이 평문으로 레포에 있는 것 자체는 정상이다. 사고는 "평문이 레포에 있다"가 아니라
+> **"로컬 전용 시드가 prod 에 적용됐다"** 였다(PR #427). 원격을 겨냥하는데 비밀번호가 시드
+> 기본값이면 `e2e/config.ts` 가 안전 정지시킨다.
+
+| 이메일                             | 비밀번호               | 권한                          | 출처                                         |
+| ---------------------------------- | ---------------------- | ----------------------------- | -------------------------------------------- |
+| `qa-admin@uniqn.test`              | `TestPass1!`           | admin                         | `supabase/seed.sql` (로컬 전용, prod 미적용) |
+| `qa-employer@uniqn.test`           | `TestPass1!`           | employer                      | `supabase/seed.sql`                          |
+| `qa-staff@uniqn.test`              | `TestPass1!`           | staff                         | `supabase/seed.sql`                          |
+| `qa-collaborator@uniqn.test`       | `TestPass1!`           | employer (협업자)             | `supabase/seed.sql`                          |
+| `review-admin@uniqn.app`           | `Review2026!` (로컬만) | admin                         | 시드 마이그 §3 — **prod 에도 실재**          |
+| `review-employer@uniqn.app`        | `Review2026!` (로컬만) | employer                      | 시드 마이그 §3 — **prod 에도 실재**          |
+| `review-staff@uniqn.app`           | `Review2026!` (로컬만) | staff                         | 시드 마이그 §3 — **prod 에도 실재**          |
+| `review-collaborator@uniqn.app`    | `Review2026!` (로컬만) | employer (협업자)             | 시드 마이그 §6 — **prod 에도 실재**          |
+| `pending-employer-staff@uniqn.app` | `Review2026!` (로컬만) | staff (employer 신청 pending) | 시드 마이그 §5 — **prod 에도 실재**          |
+
+`(로컬만)` 표시가 붙은 값은 **prod 에서 2026-08-07 에 회전돼 더 이상 통하지 않는다**
+(예외: `pending-employer-staff` 는 회전에서 누락돼 prod 에서 아직 유효하다 — 아래 참조).
+
+`@uniqn.test` 4계정은 로컬 스택에만 존재한다. `@uniqn.app` 5계정은 **시드 마이그레이션이
+prod 에도 적용돼 있어 실재하는 계정**이다 — 로컬에서 지웠다고 prod 에서 사라지지 않는다.
+
+> 🔴 **`pending-employer-staff@uniqn.app` 는 prod 에서 아직 위 시드 비밀번호가 유효하다**
+> (2026-08-07 실측). 2026-08-07 회전이 `review-%` 패턴만 대상으로 해서 누락됐다.
+> 권한이 `staff` 라 admin 경로(`permanently_delete_user`)는 없고 로그인 이력·세션·refresh token 은
+> 0 건이지만, **레포가 public 이므로 노출 상태다.** 회전할 때는 `review-%` 가 아니라
+> `docs/app-review/review-test-accounts.md` 의 5개 이메일 목록을 기준으로 할 것.
 
 ## 7. 스키마 변경 / 마이그레이션 작업 흐름
 
@@ -98,19 +119,19 @@ docker exec supabase_db_uniqn psql -U postgres -d postgres -c "select count(*) f
 
 ## 9. 트러블슈팅
 
-| 증상 | 해결 |
-|------|------|
-| `db:start` 실패 / "cannot connect to docker" | Docker Desktop 미실행 → 실행 후 재시도 |
-| 앱이 여전히 prod를 봄 | `.env.development.local` 존재 확인 + dev 서버 **완전 재시작** |
-| 데이터가 꼬임 | `npm run db:reset` (초기 상태로) |
-| 포트 충돌(54321 등) | 다른 supabase 인스턴스 종료 `npm run db:stop` |
-| 마이그레이션 에러 | 해당 SQL 파일 수정 후 `npm run db:reset` |
+| 증상                                         | 해결                                                          |
+| -------------------------------------------- | ------------------------------------------------------------- |
+| `db:start` 실패 / "cannot connect to docker" | Docker Desktop 미실행 → 실행 후 재시도                        |
+| 앱이 여전히 prod를 봄                        | `.env.development.local` 존재 확인 + dev 서버 **완전 재시작** |
+| 데이터가 꼬임                                | `npm run db:reset` (초기 상태로)                              |
+| 포트 충돌(54321 등)                          | 다른 supabase 인스턴스 종료 `npm run db:stop`                 |
+| 마이그레이션 에러                            | 해당 SQL 파일 수정 후 `npm run db:reset`                      |
 
 ## 10. 포트 요약
 
-| 포트 | 용도 |
-|------|------|
+| 포트  | 용도                                   |
+| ----- | -------------------------------------- |
 | 54321 | API (REST / Auth / Realtime / Storage) |
-| 54322 | PostgreSQL |
-| 54323 | Studio (DB GUI) |
-| 54324 | Mailpit (메일함) |
+| 54322 | PostgreSQL                             |
+| 54323 | Studio (DB GUI)                        |
+| 54324 | Mailpit (메일함)                       |
