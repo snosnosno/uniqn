@@ -347,9 +347,39 @@ ops 결함 ⑦(통합 공백)을 닫는다. ⑦ 은 "버그"가 아니라 엔진
 
 ## T7. 🟡 Dependabot 4건 — **3건은 그린, 1건만 실작업**
 
-> **진행 (ultracode 세션)**: ✅ #416(`a10d63281`) · ✅ #415(`a956142f1`) 머지 완료.
-> #414 는 `gh pr update-branch` 로 현재 master 기준 CI 재실행 후 머지 예정(setup-cli 메이저 2단계라
-> 08-04 base 의 DB Tests 통과를 그대로 신뢰하지 않는다). #380 만 실작업으로 남는다.
+> ## ✅ **T7 종결 (2026-08-08 ultracode)**
+>
+> **3건 머지 완료**: #416 `a10d63281` → #415 `a956142f1` → #414 `a1cd5f4cc` (하나씩, 순서대로).
+> #414 는 setup-cli 메이저 2단계라 08-04 base 의 통과를 그대로 신뢰하지 않고 `gh pr update-branch` 로
+> **현재 master 기준 CI 를 재실행한 뒤** 머지했다 — DB Tests(pg_prove) 2m17s pass · E2E 9m20s pass.
+> 우려하던 setup-cli grant 드리프트는 재현되지 않았다.
+>
+> ### 🔴 #380 은 "규칙 판단" 문제가 아니었다 — **버전 천장**이다 (재조사 금지)
+>
+> Quality-lint 실패의 실체는 lint 룰 위반이 아니라 **설정 로딩 에러**다:
+> `ConfigError: Config (unnamed): Key "plugins": Cannot redefine plugin "react-hooks".`
+>
+> 원인은 **플러그인 이중 등록**이다. `uniqn-mobile/eslint.config.js:18` 이 `...expoConfig`
+> (`eslint-config-expo/flat` — 주석 스스로 "React Hooks 포함"이라 적고 있다)를 펼치고,
+> **:50 이 `'react-hooks': reactHooksPlugin` 으로 같은 이름을 또 등록**한다.
+>
+> | 축 | 값 |
+> |---|---|
+> | 우리 직접 의존 | `eslint-plugin-react-hooks: ^5.2.0` (`package.json:128`) |
+> | `eslint-config-expo@55.0.1` 요구 | `^5.1.0` |
+> | 실제 설치 | 루트에 **5.2.0 하나** · `eslint-config-expo/node_modules/` 에 중첩 사본 **없음** |
+>
+> 두 범위가 하나로 dedupe 되어 **같은 객체**이기 때문에 ESLint 가 이중 등록을 눈감아 준다.
+> 우리 쪽만 7.1.1 로 올리면 expo 용 **5.x 중첩 사본이 생겨 서로 다른 객체 2개**가 되고, 그 순간 하드 에러다.
+>
+> 🔑 **해소 조건은 우리 코드가 아니라 expo 쪽 천장이다** — `eslint-config-expo@57.0.1` 은
+> `eslint-plugin-react-hooks: ^7.0.0` 을 요구한다(`npm view` 실측). 우리는 `@55.0.1`(Expo SDK 55)이다.
+> → **Expo SDK 57 업그레이드 때 같이 풀린다.** 그때까지 #380 은 머지 불가다.
+>
+> 🚨 **하지 말아야 할 두 가지**
+> 1. 규칙을 `off` 로 덮어 뚫기 — 실패는 룰이 아니라 설정 로딩이라 애초에 안 통한다.
+> 2. `eslint.config.js:50` 의 중복 등록만 지워 "통과시키기" — 그러면 룰이 **expo 의 5.x** 에 바인딩되고
+>    루트의 7.x 는 설치만 된 채 **아무 효과가 없다.** 업그레이드했다는 착각만 남는다.
 
 **CI 실측 (2026-08-08, `gh pr checks` + `gh pr view`)** — 초판의 "#414 를 가장 조심하라"는 전제는
 CI 상 재현되지 않았다. 오히려 #414 가 가장 깨끗하다.
