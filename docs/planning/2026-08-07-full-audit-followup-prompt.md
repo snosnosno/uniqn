@@ -68,12 +68,85 @@ prod `users_status_check` 가 `active|inactive|suspended|deleted` 만 허용하�
 
 ---
 
-## 다음 세션에 붙여넣을 프롬프트
+## 다음 세션에 붙여넣을 프롬프트 — **S+2 / A4 ErrorState 배선**
 
-> ⚠️ 아래 블록은 **A1·A2 용이며 이미 완료**됐다. 다음 세션은 **A3** 다 —
-> 이 블록의 §0(착수 전 상태 확인)·§2(작업 규율)·§3(하지 말 것)은 그대로 재사용하고,
-> §1 범위만 로드맵 S+1 의 A3 로 바꿔서 쓸 것.
-> A1 세션에서 §0-3(착수 대상 파일 실재 대조)이 감사에 없던 상류 결함을 잡아냈다 — **생략 금지**.
+> ✅ 아래 블록이 **다음 세션에 그대로 붙여넣을 것**이다. (A1·A2·A3 는 완료)
+> §0-3(착수 대상 파일 실재 대조)은 **생략 금지** — A1 에서는 감사에 없던 상류 결함을,
+> A3 에서는 감사 기재 자체의 오류를 잡아냈다. A4 도 이미 **경로 2건이 stale** 하다(아래 참조).
+
+```
+UNIQN 전체 감사 후속 작업이다. 이번 세션 범위는 **A4 ErrorState 배선** 한 트랙이다.
+docs/analysis/2026-08-07-full-app-audit.md 의 A4 절 + 이 문서를 먼저 읽어라.
+감사 재실행 금지.
+
+## 0. 착수 전 상태 확인 (순서 엄수)
+1. `git status` — **clean 이어도 전용 워크트리**(전역 규칙).
+   node_modules 는 `mklink /J` 정션으로 5분 npm install 회피
+2. `git log --oneline -10` — 08-07 이후 머지로 이미 해결된 항목 확인
+3. **착수 대상 파일을 열어 감사 기재가 지금도 유효한지 대조** ← 생략 금지
+4. 마이그 0건 예상 트랙이다. prod 접근 불필요
+
+### 🔑 이미 실측된 것 (2026-08-07, 재조사 금지 / 감사 기재 교정 포함)
+
+- 🚨 **감사의 경로 2건이 stale 하다**
+  - `ErrorState` 실제 경로 = `src/components/ui/ErrorState.tsx` (감사의 `common/` 아님)
+  - `useReviews` 실제 경로 = `src/hooks/useReviews.ts` (감사의 `src/hooks/reviews/` 아님)
+- 🚨 **채택 수치도 stale**: 감사 "90화면 중 20" → 실측 **app/ 119화면 중 24**
+- ✅ **핵심 결함은 유효**: `src/hooks/useReviews.ts:377-385` 반환이
+  `{ pendingReviews, pendingCount, isLoading }` 뿐 — **error 도 refetch 도 없다**
+- ✅ `app/(app)/reviews/history.tsx:169` 가 조회 실패 시에도
+  "모든 평가를 완료했어요…" 축하 문구를 띄운다. **RefreshControl 없음 → 재시도 불가**
+- 🚨 **`history.tsx` 를 `grep error` 하면 1건 잡히는데 `bg-error-500` 색상 클래스다.**
+  에러 처리로 오독하지 말 것
+- ✅ 감사가 지목한 6화면 전부 `ErrorState` **0건** 재확인:
+  `reviews/history.tsx` · `support/faq.tsx` · `support/my-inquiries.tsx` ·
+  `employer-application-status.tsx` · `my-postings/[id]/collaborators.tsx` ·
+  `(ops)/tournaments/[id].tsx`
+  (이 중 `my-inquiries.tsx` 만 `RefreshControl` 보유 → 재시도 경로는 이미 있음)
+- ⚠️ `useReviews.ts` 에는 **반환 블록이 5개**(L106·179·206·234·377)다.
+  훅이 여럿이라는 뜻 — 어느 것이 리뷰 허브 소비처인지 **호출부에서 역추적**할 것
+
+## 1. 이번 세션 범위: A4 ErrorState 배선
+
+다른 P0/P1 은 손대지 말 것. 한 세션 한 트랙.
+
+### 1-A. 선행 — `useReviews` 훅이 error 를 반환하게 한다
+화면만 고치면 소용없다. **훅이 error 를 안 주면 화면은 분기할 것이 없다.**
+- L377 반환에 `error` + `refetch` 추가 (내부 TanStack Query 결과에서 승격)
+- 나머지 4개 반환 블록도 같은 결함인지 확인 — 있으면 같이
+
+### 1-B. 리뷰 허브 최우선
+7일 마감 기능이라 **오안내를 믿으면 평가 기회가 실제로 소멸**한다.
+`history.tsx` 가 error 일 때 축하 문구 대신 `ErrorState` + 재시도를 띄우게 한다.
+🔑 "빈 상태"와 "실패"는 **다른 화면**이어야 한다 — 지금은 실패가 성공으로 위장된다.
+
+### 1-C. 나머지 화면
+🔴 **감사는 "12곳"이라 했지만 명시한 건 6곳뿐이다.** 나머지 6곳을 먼저 식별하라.
+판정 기준을 먼저 정하고(예: 원격 조회 훅을 쓰는데 error 분기가 0건인 화면),
+목록을 사용자에게 제시한 뒤 착수할 것. **추측으로 12를 채우지 말 것.**
+
+⚠️ 각 화면마다 확인: ① error 분기 ② 재시도 경로(RefreshControl 또는 onRetry)
+   — 재시도가 없으면 ErrorState 를 붙여도 사용자는 막다른 길에 남는다.
+
+## 2. 작업 규율
+- 신규 3+ 파일 = 설계 먼저(HARD-GATE). 판정은 model:"fable" 위임
+- TDD: 회귀 테스트는 **Red-Green 사이클 검증**(수정을 되돌렸을 때 실패하는지 확인)
+- 코드 작성 직후 code-reviewer(fable) 자동 디스패치
+- 완료 주장 전 `npm run quality` + `npm test` **이 세션에서 실행한 출력** 제시
+- ⚠️ 사용자 문구를 바꾸면 `e2e/` **별도 Grep 필수**(eslint ignores 라 quality 범위 밖)
+- 커밋은 사전승인(로컬 자율). push/PR 은 명시 요청 시에만
+
+## 3. 이번 세션에 하지 말 것
+- 감사 재실행 · 다른 P0/P1 착수 · 리팩터링 곁다리
+- ErrorState 컴포넌트 자체 재설계(배선이 목적이다)
+- 추측으로 "12곳" 채우기
+```
+
+---
+
+## (참고) A1·A2 세션에 쓴 원본 프롬프트
+
+> 아래는 이력이다. §0·§2·§3 규율의 출처.
 
 ```
 UNIQN 전체 감사 후속 작업이다.
@@ -169,7 +242,7 @@ docs/analysis/2026-08-07-full-app-audit.md 를 먼저 읽어라. 감사 재실�
 |---|---|---|
 | ~~S+0~~ | ~~**A1+A2 탈퇴 파이프라인**~~ | ✅ **완료 — PR #427** |
 | ~~S+1~~ | ~~**A3 알림 타입 정합**~~ | ✅ **완료 — PR #429 머지 `fefe6b609`.** 실제 해법은 "클라 흡수"가 아니라 **DB 트리거 복원**이었다(위 교정 ② 참조). 잔여=웹배포/OTA·실기기 QA |
-| **S+2 (다음)** | **A4 ErrorState 배선** | 12화면. 리뷰 허브 우선(`useReviews` 가 error 를 반환조차 안 함 → 훅 수정 선행) |
+| **S+2 (다음)** | **A4 ErrorState 배선** | 리뷰 허브 우선(`src/hooks/useReviews.ts:377-385` 가 error·refetch 를 **반환조차 안 함** → 훅 수정 선행). 🔴감사가 "12곳"이라 했으나 **명시된 건 6곳뿐** — 나머지는 판정 기준을 먼저 세워 식별할 것. **프롬프트는 위 "다음 세션에 붙여넣을 프롬프트"** |
 | S+3 | **B1 배선 안 된 8개 — 완성/제거 결정** | 🔴사용자 결정 필요. 북마크·지원자검색·구인처평점·대타글연결 / 죽은 알림 5종·statusFlow 는 제거 후보 |
 | S+4 | **B2 정산 3건** | ⚠️메모리의 "R4 선행=`SettlementRepository.ts:372`·`:648` RPC 화"와 같은 트랙인지 먼저 대조 |
 | S+5 | **B3 막다른 골목 4건** | profile-setup 탈출구 · 거절 재지원 · 사장탈퇴 통보 · 사용자 차단(Apple 1.2) |
