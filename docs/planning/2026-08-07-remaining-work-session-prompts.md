@@ -13,12 +13,17 @@
 
 | 축 | 값 |
 |---|---|
-| `origin/master` | `732c300a5` (#427) |
-| 마지막 OTA | `81ddba293` (#419) — **#420~#427 8건이 미배포** |
-| 마지막 웹배포 | `5ad8038e` (08-06, #413 확인용) |
-| DB 파리티 | **200 funcs / 111 policies** (#420 이후 불변, #424~#427 모두 파리티 무변) |
-| 열린 PR | Dependabot 6건 (#379·#380·#381·#414·#415·#416) + **#428 S-A 문서 정리**(2026-08-07) |
-| 열린 워크트리 | **2개** — `T-HOLDEM-a3-notify`(빈 껍데기, master 대비 커밋 0·정리 가능) · `T-HOLDEM-sec-wrapup`(#428, 정션 있음 — 제거 전 정션 먼저 해제) |
+| `origin/master` | `035fa697d` (#432) 이후 — 세션 중 #428·#429·#432 머지. **PR 번호가 빠르게 움직인다, 착수 전 `git fetch`** |
+| 마지막 OTA | ✅ **`078e857d-49ca-4002-abae-849783163cf0`** (runtime 1.0.5, android+ios, commit `fefe6b609`) — **#420~#429 10건 발행 완료** |
+| 마지막 웹배포 | ✅ **CF Production `92416de0`** (source `fefe6b6`) — `uniqn.app` 라이브 번들 `index-4f0c49e9…` 실측 확인 |
+| DB 파리티 | **200 funcs / 111 policies** (prod 실측 = 레포 기대값 일치) |
+| **branch protection** | ✅ **활성화** — required = `Quality Gate` · `E2E Gate` · force push/삭제 차단 (`enforce_admins=false`) |
+| 열린 PR | **#433**(S-E1 서버검증 + S-E2 설계) · Dependabot 4건(#380·#414·#415·#416). **#379·#381 은 SDK 결합이라 닫음** |
+| 열린 워크트리 | **2개** — `T-HOLDEM-a3-notify`(🔴 **활성 작업, 건드리지 말 것**) · `T-HOLDEM-deploy`(#433 작업 중, 정션 있음 — 제거 전 정션 먼저 해제) |
+
+> 🚨 **원장 초판의 "열린 워크트리 없음"·"`T-HOLDEM-a3-notify` 빈 껍데기" 는 둘 다 오판이었다.**
+> a3-notify 는 측정 시점엔 커밋 0이었으나 그 사이 다른 세션이 A3 작업을 커밋했다(#429 로 머지).
+> **워크트리 정리 판단은 실행 직전에 재실측할 것** — 세션 중에 바뀐다.
 
 > ⚠️ **이 파일(`61aa650eb`)은 `origin` 에 없다.** 로컬 브랜치 `docs/remaining-work-handoff-20260807`
 > 에만 있어 클론·다른 워크트리에서는 보이지 않는다. 푸시 여부는 사용자 결정 대기.
@@ -118,7 +123,29 @@ GitHub 하드닝 #375 의 잔여 3건을 마무리해줘. 전부 콘솔 작업�
 
 ---
 
-## S-B. 웹배포 + OTA (누적 8건 — 고친 게 사용자에게 전혀 안 갔다)
+## S-B. 웹배포 + OTA — ✅**완료** (2026-08-07)
+
+> **웹**: CF Production `92416de0` (source `fefe6b6`). 라이브 번들 before/after 마커 대조로 확정 —
+> `map.kakao.com/link/map/` 0→2 · `link/to/`(구) 1→0 · `work_log_check_in`/`_out` 0→1 · 대조군 `uniqn` 22→57.
+> **OTA**: group `078e857d-49ca-4002-abae-849783163cf0` · runtime **1.0.5** · android+ios ·
+> **Commit `fefe6b609` = origin/master 일치**(재fetch 규칙 충족). 네이티브 변경 0건이라 리빌드 없이 발행.
+>
+> ### 🚨 배포 중 발견 — 워크트리에서 웹배포하면 **빈 번들이 나온다**
+> 정션 `node_modules` 때문에 expo-router 가 앱 루트를 못 찾아 **1.04MB / 749 모듈 / 라우트 1개**가 나왔다
+> (정상 9.5MB / 9청크). **`verify-web-build.js` 게이트가 잡아서 배포는 차단됐다** — 게이트가 실제로 일했다.
+> 해법: `EXPO_ROUTER_APP_ROOT="<워크트리 절대경로>/uniqn-mobile/app"` + `--clear`
+> ([[pitfall_worktree_junction_expo_router_empty_routes]]). 추가로 워크트리엔 `.env.local` 이 없어
+> **메인에서 복사**해야 한다(없으면 Supabase 설정이 빈 번들이 된다).
+>
+> ### 🚨 detached HEAD 워크트리는 **Preview 로 올라간다**
+> wrangler 가 현재 git 브랜치로 환경을 정하는데 detached 면 프로덕션 판정이 안 된다.
+> **`--branch=master` 명시 필수.** (실측: 명시 후 `Environment=Production`)
+>
+> ### 🔴 남은 것: 슬롯편집 RPC REVOKE (#407 잔여) — **여전히 불가**
+> 마이그 주석(`20260802180000:50-53`)이 순서를 못박았다: "머지 → 배포+OTA → **롤아웃 확인(사용자 게이트)** → 그 다음.
+> 역순이면 아직 전환되지 않은 구 빌드가 즉사한다." OTA 는 방금 발행됐고 채택률을 잴 계기판이 없다.
+>
+> <details><summary>원본 프롬프트 (이력)</summary>
 
 ```
 #420~#427 8건을 웹과 앱에 배포해줘. 마지막 OTA 는 81ddba293(#419)이라 2주치가 밀려 있다.
@@ -154,9 +181,22 @@ GitHub 하드닝 #375 의 잔여 3건을 마무리해줘. 전부 콘솔 작업�
 완료 기준: 웹 라이브 번들에서 신규 마커 실측 + OTA 그룹 ID·runtime·플랫폼 보고.
 ```
 
+</details>
+
 ---
 
-## S-C. 실기기 QA (사용자 게이트 — 누적분이 크다)
+## S-C. 실기기 QA — ✅**체크리스트 산출 완료** (실행은 사용자 게이트)
+
+> **산출물**: `docs/qa/2026-08-07-device-qa-checklist.md` (#432 머지 `035fa697d`).
+> 항목별 "무엇이 보이면 통과/실패인지" 1줄 · 0번 선행 게이트(OTA 미적용이면 이하 무효) ·
+> 1순위 = #426 중첩 Modal(증상 자체를 재현한 적 없음) · 추정 통과 방지용 ⬜ 미확인 표기 분리.
+> **이미 아는 미수정 결함(4-7 · 5-3 · 5-4 · 5-5)은 "재현되는 것이 정상"이라고 표기**해 오보고를 막았다.
+> 🔴 **실행은 사용자가 해야 한다.** 결과를 위 파일 말미 보고 양식으로 남길 것.
+>
+> 🔑 R3 게이트(S-E2)의 하류 표본 3건도 **이 QA 때 같이 만든다** — `confirm_application`·
+> `add_direct_staff`·QR 체크인을 각 1회. 안 하면 R3 판정이 영영 UNMEASURED 다.
+>
+> <details><summary>원본 프롬프트 (이력)</summary>
 
 ```
 실기기 QA 체크리스트를 만들어줘. 내가 직접 돌릴 거다. 화면별 재현 절차와 기대 결과를 적어줘.
@@ -176,6 +216,8 @@ GitHub 하드닝 #375 의 잔여 3건을 마무리해줘. 전부 콘솔 작업�
 
 각 항목에 "무엇이 보이면 통과/실패인지"를 한 줄로 적어줘.
 ```
+
+</details>
 
 ---
 
@@ -210,7 +252,29 @@ GitHub 하드닝 #375 의 잔여 3건을 마무리해줘. 전부 콘솔 작업�
 
 ---
 
-## S-E. 서버 검증 강화 + 시간모델 R3 설계
+## S-E. 서버 검증 강화 + R3 설계 — ✅**둘 다 산출, PR #433 (머지·prod 적용 대기)**
+
+> ### ✅ (1) 퇴근 ≥ 출근 서버 검증
+> 마이그 `20260807180000_work_log_slot_checkout_after_checkin.sql`.
+> 직전 정의의 함수 본문을 **바이트 단위 복사** 후 앵커 뒤에 가드만 삽입 — diff 실측 **추가 28줄 / 삭제 0줄**.
+> 설계 3원칙: **병합 후 최종값**으로 판정(패치 값만 보면 "한쪽만 고쳐 역전"이 뚫린다) ·
+> **같음(=)도 거부**(24시간 근무가 아니라 입력 오류) · **한쪽 NULL 이면 판정 안 함**(퇴근 전 정상 상태).
+> 검증: pgTAP **red-green** `PASS(41)` → 되돌림 `FAIL(39·40·41)` → 복원 `PASS(41)` · 형제 2종 PASS · CI DB Tests PASS.
+>
+> 🔴 **prod 미적용.** 함수 전체 750줄/36KB 를 `CREATE OR REPLACE` 하는데, `apply_migration` 인자로
+> 사람이 다시 옮겨 적으면 **주석 축약·전사 드리프트**로 정본이 갈린다(동작이 같아 테스트로 안 잡히는 부류).
+> 파일을 그대로 실을 수 있는 경로로 적용한 뒤 `md5(replace(pg_get_functiondef(oid), chr(13),''))` 대조할 것.
+> 적용 전 prod md5 = `58e62b584695cd60732c39b7b7a79cfb`(길이 25397, 가드 부재).
+> **파리티 영향 없음** — `CREATE OR REPLACE` 라 함수 수 불변.
+>
+> ### ✅ (2) R3 착수 게이트 측정 설계
+> `docs/analysis/2026-08-07-r3-gate-measurement-design.md`. 실행 가능한 SQL + PASS/FAIL/**UNMEASURED** 판정.
+> 🔑 **UNMEASURED 를 1급 결과로 둔 것이 핵심** — 분모가 비면 통과가 아니다(#427 의 "0건=피해자 없음" 오독과 같은 부류).
+> 🔑 코호트 술어는 `created_at` 이 아니라 **`updated_at`**(실측 3 vs 9 — 공고 편집도 쓰기다).
+> 🔑 저트래픽 대응은 **기다리기가 아니라 능동 실행** — QA 때 3경로를 각 1회 밟아 분모를 만든다.
+> **현재 판정 = UNMEASURED**(상류 9/센티널 0 · 하류 3/센티널 0). prod 전 기간 공고 슬롯 **112건 전수 정본**.
+>
+> <details><summary>원본 프롬프트 (이력)</summary>
 
 ```
 두 가지를 해줘. (1) 은 R4 착수 전 필수다.
@@ -236,6 +300,8 @@ GitHub 하드닝 #375 의 잔여 3건을 마무리해줘. 전부 콘솔 작업�
     prod 트래픽이 작다는 점을 감안해라(users 27 / work_logs 3 / 30일 지원 5건) —
     "기다려서 로그가 쌓이길 기대하는" 방식은 성립하지 않는다.
 ```
+
+</details>
 
 ---
 
@@ -293,7 +359,45 @@ LOW: dark: 짝 누락(⚠️ **오탐이었다 — 아래 참조**), editedBy 3�
 
 ---
 
-## S-G. 인프라 · 의존성
+## S-G. 인프라 · 의존성 — ✅**1·2 대부분 완료** · 🔴 3·4·5 남음
+
+> ### ✅ 1. branch protection **활성화** (2026-08-07)
+> required = **`Quality Gate`** · **`E2E Gate`** · force push 차단 · 브랜치 삭제 차단. `enforce_admins=false`(소유자 긴급 우회 허용 — 원치 않으면 `true` 로).
+>
+> 🔑 **데드락을 어떻게 피했나**: 그냥 required 로 걸면 #375 사고가 재현된다(`paths` 필터에 안 걸리는 PR 은
+> 워크플로가 트리거되지 않아 체크가 **영구 pending**). 그래서 #432 에서 먼저:
+> `pull_request` 의 `paths` 제거 → `changes` 잡이 `base..head` diff 로 판정(**판정 불가면 보수적 전체 실행**) →
+> 무거운 잡은 조건부 → 애그리게이터 `Quality Gate`/`E2E Gate` 가 `if: always()` 로 **항상 결론 보고 + `skipped`를 성공 처리**.
+> 이 게이트 두 개만 required 다.
+>
+> 🚨 **기존 열린 PR 은 protection 켜는 즉시 BLOCKED 된다**(새 게이트가 그 브랜치에 없어서).
+> `gh pr update-branch` 로 master 를 흡수시켜 풀었다 — #414·#415·#416 처리 완료.
+> ⚠️ **`false`(건너뜀) 경로는 아직 실검증 안 됐다.** 다음 문서 전용 PR 에서 두 게이트가 green 인지 확인할 것.
+>
+> ### ✅ 2. Dependabot 6건 → 판정 완료 (4건 남음)
+> 근거는 `npx expo install --check` 실측(SDK 55): 호환 드리프트는 **`react-native@0.83.6 → 0.83.10` 하나뿐**.
+>
+> | PR | 판정 |
+> |---|---|
+> | **#381** expo-camera 55.0.21→57.0.3 | ❌ **닫음** — 55.0.21 이 SDK 55 의 정답. 57 은 SDK 57 용이라 QR 체크인이 깨진다 |
+> | **#379** react-native-webview 13.16→14.0.1 | ❌ **닫음** — 13.16.0 이 SDK 55 기대 범위. 올리면 다음 check 에서 오히려 부적합 |
+> | **#380** eslint-plugin-react-hooks 5.2→7.1.1 | ⏸ **열어 둠** — 실제로 올려야 하지만 설정 마이그레이션 필요. 원인 확정: v6+ 가 자체 flat config 로 플러그인을 등록하는데 `eslint.config.js:50` 이 수동 등록을 유지해 `Cannot redefine plugin "react-hooks"`. 🔴 진짜 비용은 v6+ React Compiler 규칙군이 낳을 **신규 위반 대량 발생**(현 warning 기준선 114) — 전용 세션 필요 |
+> | #414·#415·#416 | ⏸ 미머지. update-branch 로 게이트 재실행함. #416(postcss patch)은 보안 알림 1건을 닫으므로 **먼저 머지 권장** |
+>
+> ### 🔴 3. GitHub 취약점 5건 — **직접 수정 불가로 판정**
+> 3× brace-expansion(high) · postcss(medium, #416 이 해결) · uuid(medium).
+> `npm audit` 실측 13건이 전부 **Expo 툴체인 내부 전이 의존성**(`@expo/config-plugins` → `@expo/config` →
+> `expo-splash-screen`·`@expo/metro-config`). `npm audit fix --force` 는 SDK 핀을 깬다.
+> **SDK 업그레이드로만 해소되는 부류**이고, 빌드 타임 도구라 앱 런타임 노출 경로가 아니다.
+>
+> ### 🔴 4. 빈 웹 번들 게이트 CI 배선 — 여전히 미완
+> ⚠️ 다만 **배포 스크립트에는 이미 있다**(`deploy-cloudflare.js` Step 3.5 → `verify-web-build.js`).
+> 이번 세션에 **실제로 작동해서 1.04MB 깨진 번들을 차단했다.** 남은 건 CI 쪽 배선뿐이다.
+>
+> ### 🔴 5. 롤아웃 계기판 부재 — 손 안 댐
+> 이게 #407 REVOKE 를 막고 있는 유일한 병목이다. 근본 해결 = Sentry `release`/`dist` 태깅.
+>
+> <details><summary>원본 프롬프트 (이력)</summary>
 
 ```
 인프라 잔여를 정리해줘.
@@ -313,6 +417,16 @@ LOW: dark: 짝 누락(⚠️ **오탐이었다 — 아래 참조**), editedBy 3�
 5. 🔴 **롤아웃 계기판 부재** — expo-insights 미설치 · Sentry init 에 release/dist 미태깅 ·
    앱 버전 서버 기록 0건. 근본 해결은 Sentry release 태깅이다.
 ```
+
+</details>
+
+---
+
+## 🔴 남은 트랙 — S-D · S-F (미착수)
+
+2026-08-07 세션은 S-B·S-C·S-E·S-G 를 처리하고 **S-D 와 S-F 에는 손대지 않았다.**
+각각 전용 세션 분량이고, 정산 도메인은 보안 민감도가 높아 남은 컨텍스트로 착수하면 품질이 떨어진다고 판단했다.
+아래 프롬프트는 그대로 유효하다.
 
 ---
 
