@@ -28,6 +28,9 @@ test.describe('내 스케줄', () => {
   });
 
   test('통계 카드에 지원/확정/완료/수익이 표시된다', async () => {
+    // 월 요약은 기본이 '접힘'이라 통계 밴드가 렌더되지 않는다 — 먼저 펼친다.
+    await schedulePage.expandSummary();
+
     // 통계 라벨이 모두 표시되어야 함
     await expect(schedulePage.getStatLabel('지원')).toBeVisible({ timeout: 10_000 });
     await expect(schedulePage.getStatLabel('확정')).toBeVisible();

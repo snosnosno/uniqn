@@ -115,7 +115,10 @@ export interface UpdateWorkTimeInput {
   checkInTime?: TimeInput;
   /** 퇴근 시간 (null = 미정) */
   checkOutTime?: TimeInput;
-  notes?: string;
+  /**
+   * ⚠️ 배치 메모(`notes`)는 이 입력에 **없다.** 메모는 통합 편집 시트가 RPC `memo` 키로
+   * 소유한다 — 레포 계약(`UpdateWorkTimeContext`)에도 없으므로 여기 되살려도 갈 곳이 없다.
+   */
   reason?: string; // 수정 사유
 }
 

@@ -8,7 +8,7 @@
 -- auth.uid()/role 은 request.jwt.claims 로 시뮬레이션. 안전: BEGIN/ROLLBACK.
 -- ============================================================
 BEGIN;
-SELECT plan(18);
+SELECT plan(22);
 
 -- ─── 1) EXECUTE 권한: anon 회수 / authenticated 유지 ─────────────────────────
 SELECT ok(NOT has_function_privilege('anon', 'public.permanently_delete_user(uuid)', 'EXECUTE'),
@@ -97,6 +97,63 @@ SELECT has_index('public', 'applications', 'applications_job_posting_id_applican
   'applications (job_posting_id, applicant_id) UNIQUE exists (dataint-1)');
 SELECT hasnt_function('public', 'sync_role_to_auth',
   'duplicate sync_role_to_auth function removed (sec-auth-4)');
+
+-- ─── 7) permanently_delete_user 의 service_role 신뢰 채널 (2026-08-07) ──────────
+-- 배경: 크론 EF process-scheduled-deletions 가 service_role 로 이 RPC 를 부르는데
+--   auth.uid()=NULL 이라 위 2)의 가드에 전량 차단돼 "매일 실행되면서 처리량 영구 0"이었다.
+--   마이그 20260807150000 이 신뢰 채널을 열되, 지울 수 있는 대상을 캡으로 좁혔다.
+-- ⚠️ 이 블록은 반드시 위 단언들 **뒤**에 온다 — 여기서 세팅하는 GUC 가 앞 단언에 번지지 않도록.
+-- ⚠️ 4)·5)가 마지막에 claims 를 ''로 되돌려 놓으므로, 아래는 매번 명시적으로 다시 세팅한다.
+
+-- (19) 픽스처: 활성 계정 1건. handle_new_user 트리거가 public.users(status='active') 를 만든다.
+--      GoTrue NOT NULL 함정 — 토큰류 컬럼은 반드시 ''(NULL 금지). BEGIN/ROLLBACK 으로 소멸.
+INSERT INTO auth.users (
+  instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+  confirmation_token, recovery_token, email_change_token_new, email_change,
+  email_change_token_current, reauthentication_token, phone_change, phone_change_token,
+  raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+) VALUES (
+  '00000000-0000-0000-0000-000000000000',
+  'ac110000-0000-4000-a000-0000000000ac',
+  'authenticated', 'authenticated', 'active-target@test.local',
+  crypt(gen_random_uuid()::text, gen_salt('bf')), now(),
+  '', '', '', '', '', '', '', '',
+  '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb, now(), now()
+);
+SELECT ok(
+  EXISTS(SELECT 1 FROM public.users
+          WHERE id = 'ac110000-0000-4000-a000-0000000000ac' AND status = 'active'),
+  'service_role 픽스처: 활성 public.users 행이 생성되어 있다');
+
+-- (20) 모던 JWT claims 의 service_role → 호출자 가드 통과 (미존재 UUID 라 USER_NOT_FOUND)
+--      RED 기준: 마이그 20260807150000 적용 전에는 PERMISSION_DENIED 로 실패해야 한다.
+SELECT set_config('request.jwt.claims', '{"role":"service_role"}', true);
+SELECT set_config('request.jwt.claim.role', '', true);
+SELECT throws_ok(
+  $$ SELECT public.permanently_delete_user('99999999-9999-4999-a999-999999999999') $$,
+  NULL, 'USER_NOT_FOUND: 99999999-9999-4999-a999-999999999999',
+  'permanently_delete_user allows service_role past guard (modern JWT claims)');
+
+-- (21) 레거시 GUC 의 service_role 도 동일 — prod 선례(check_application_tournament_approval)가
+--      두 형태를 모두 인식하므로 양쪽을 다 고정한다.
+SELECT set_config('request.jwt.claims', '', true);
+SELECT set_config('request.jwt.claim.role', 'service_role', true);
+SELECT throws_ok(
+  $$ SELECT public.permanently_delete_user('99999999-9999-4999-a999-999999999999') $$,
+  NULL, 'USER_NOT_FOUND: 99999999-9999-4999-a999-999999999999',
+  'permanently_delete_user allows service_role past guard (legacy GUC)');
+
+-- (22) 피해 상한: 신뢰 채널이라도 '예약 만료된 deactivated' 가 아니면 지울 수 없다.
+--      EF 조회가 망가지거나 서비스 키가 오용돼도 활성 계정은 삭제 불가여야 한다.
+SELECT set_config('request.jwt.claims', '{"role":"service_role"}', true);
+SELECT set_config('request.jwt.claim.role', '', true);
+SELECT throws_ok(
+  $$ SELECT public.permanently_delete_user('ac110000-0000-4000-a000-0000000000ac') $$,
+  NULL, 'NOT_ELIGIBLE_FOR_SCHEDULED_DELETION: ac110000-0000-4000-a000-0000000000ac',
+  'permanently_delete_user blocks service_role from deleting an active account');
+
+SELECT set_config('request.jwt.claims', '', true);
+SELECT set_config('request.jwt.claim.role', '', true);
 
 SELECT * FROM finish();
 ROLLBACK;

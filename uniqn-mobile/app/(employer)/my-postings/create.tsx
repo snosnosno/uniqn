@@ -110,7 +110,16 @@ export default function CreateJobPostingScreen() {
           subtitle: values.title,
           values: {
             ...values,
-            scheduleGroups: (values.scheduleGroups ?? []).map((g) => ({ ...g, dates: [] })),
+            // 그룹 구조·timeSlots(조건)는 유지하고 각 그룹 dates 만 비운다.
+            // ⚠️ grouped 도 함께 끈다 — 날짜 없는 묶음지원은 의미가 없고, 남겨 두면 사장이 새 날짜를
+            //    고르는 순간 켠 적 없는 " 통째로 지원받기"가 켜진 채 되살아난다(빈 dates 구간엔
+            //    조건 카드의 `dates.length > 1` 방어가 토글을 안 그려 증상이 숨는다).
+            //    형제 생산자 templateToValues(mappers.ts)와 같은 계약이다.
+            scheduleGroups: (values.scheduleGroups ?? []).map((g) => ({
+              ...g,
+              dates: [],
+              grouped: false,
+            })),
           },
         });
       } catch {

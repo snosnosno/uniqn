@@ -126,37 +126,4 @@ describe('WorkLogRepository — Phase 3B editor contract', () => {
       await expect(repo.getByJobPostingId('job-posting-id')).rejects.toThrow(/permission denied/);
     });
   });
-
-  describe('updatePayrollStatus — UPDATE 흐름', () => {
-    it('Supabase from(work_logs) + update + id WHERE 만 호출 (workspace 분기는 RLS 가 처리)', async () => {
-      const chain = makeChain({ data: null, error: null });
-      mockFrom.mockReturnValueOnce(chain);
-
-      await repo.updatePayrollStatus('work-log-id', 'pending');
-
-      expect(mockFrom).toHaveBeenCalledWith('work_logs');
-      expect(chain.update).toHaveBeenCalled();
-      expect(chain.eq).toHaveBeenCalledWith('id', 'work-log-id');
-    });
-
-    it('client 는 owner_id / workspace_id WHERE 를 추가하지 않음', async () => {
-      const chain = makeChain({ data: null, error: null });
-      mockFrom.mockReturnValueOnce(chain);
-
-      await repo.updatePayrollStatus('work-log-id', 'pending');
-
-      const eqCalls = chain.eq.mock.calls.map((call) => call[0]);
-      expect(eqCalls).not.toContain('owner_id');
-      expect(eqCalls).not.toContain('workspace_id');
-    });
-
-    it('error 응답 시 handleSupabaseError 트리거 (RLS 거부 시 permission denied)', async () => {
-      const chain = makeChain({ data: null, error: { message: 'permission denied' } });
-      mockFrom.mockReturnValueOnce(chain);
-
-      await expect(repo.updatePayrollStatus('work-log-id', 'pending')).rejects.toThrow(
-        /permission denied/
-      );
-    });
-  });
 });

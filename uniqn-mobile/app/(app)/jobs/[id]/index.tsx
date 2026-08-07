@@ -27,6 +27,7 @@ import {
 } from '@/utils/applicationStatusMessage';
 import { isSupportedReleasePosting } from '@/utils/jobPostingVisibility';
 import { isTournamentApprovalBlocked } from '@/domains/job-posting';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 
 const DEFAULT_BOTTOM_ACTION_HEIGHT = 116;
 
@@ -44,7 +45,13 @@ export default function JobDetailScreen() {
     isFetching: isFetchingExistingApplication,
   } = useHasAppliedToJob(id);
   const { shareJob, isSharing } = useShare();
-  const { job, isLoading, isRefreshing, error, refresh } = useJobDetail(id ?? '');
+  const { job, isLoading, error, refresh } = useJobDetail(id ?? '');
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refresh()
+  );
   const [bottomActionHeight, setBottomActionHeight] = useState(DEFAULT_BOTTOM_ACTION_HEIGHT);
 
   const handleShare = useCallback(() => {
@@ -226,8 +233,8 @@ export default function JobDetailScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={refresh}
+            refreshing={pullRefreshing}
+            onRefresh={onPullRefresh}
             tintColor={getLayoutColor(isDark, 'refreshTint')}
           />
         }

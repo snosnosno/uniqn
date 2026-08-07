@@ -59,6 +59,14 @@ export const NOTIFICATION_ROUTE_MAP: Record<
   [NotificationType.SCHEDULE_CREATED]: () => ({ name: 'schedule' }),
   [NotificationType.SCHEDULE_CANCELLED]: () => ({ name: 'schedule' }),
 
+  // ⚠️ 레거시 2종은 반드시 **0 파라미터**로 둔다. 이 값들은 스태프(link '/schedule/{id}')와
+  //    구인자(link '/jobs/{id}')에게 같은 타입으로 발송됐던 기간의 이력이라 타입만으로는
+  //    방향을 알 수 없다. 파라미터를 실으면 deepLinkNavigationExecutor 의 "더 구체적인 쪽"
+  //    비교에서 스태프 수신분이 매핑에 끌려가 엉뚱한 화면으로 간다.
+  //    0 이면 양쪽 모두 각자의 DB link 대로 착지한다.
+  [NotificationType.WORK_LOG_CHECK_IN]: () => ({ name: 'schedule' }),
+  [NotificationType.WORK_LOG_CHECK_OUT]: () => ({ name: 'schedule' }),
+
   [NotificationType.SETTLEMENT_COMPLETED]: () => ({ name: 'schedule' }),
   [NotificationType.SETTLEMENT_REVERTED]: () => ({ name: 'schedule' }),
 
@@ -71,6 +79,15 @@ export const NOTIFICATION_ROUTE_MAP: Record<
     data?.jobPostingId ? { name: 'job', params: { id: data.jobPostingId } } : { name: 'jobs' },
   [NotificationType.WORK_DATE_EXPIRED]: (data) =>
     data?.jobPostingId ? { name: 'job', params: { id: data.jobPostingId } } : { name: 'jobs' },
+
+  // 트리거가 심는 link 와 같은 목적지로 맞춘다(added='/my-postings/{id}', removed='/my-postings').
+  // 제외 알림에는 jobPostingId 가 data 에만 있고 link 에는 없다 — 이미 권한을 잃은 공고
+  // 상세로 보내면 접근 거부를 만나므로 목록으로 되돌린다.
+  [NotificationType.JOB_POSTING_COLLABORATOR_ADDED]: (data) =>
+    data?.jobPostingId
+      ? { name: 'employer/posting', params: { id: data.jobPostingId } }
+      : { name: 'employer/my-postings' },
+  [NotificationType.JOB_POSTING_COLLABORATOR_REMOVED]: () => ({ name: 'employer/my-postings' }),
 
   [NotificationType.ANNOUNCEMENT]: (data) =>
     data?.announcementId

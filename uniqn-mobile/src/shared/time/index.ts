@@ -23,4 +23,4 @@ export {
 export { isTimeTBD } from './isTimeTBD';
 
 // 익일 근무시간 공용 프리뷰 헬퍼 (근무표·정산 입력 화면)
-export { deriveOvernightPreview, type OvernightPreview } from './overnightPreview';
+export { deriveOvernightPreview, minutesToLabel, type OvernightPreview } from './overnightPreview';

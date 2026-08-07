@@ -1,32 +1,38 @@
 /**
- * 정산 화면 시간 수정 → status 승격 회귀 가드 (SET-1)
+ * 근무 시간(실적) 수정 — 두 경로가 같은 관문을 통과한다 (SET-1 후속)
  *
- * @description 정산 탭에서 시간을 수정해도 status 가 'scheduled' 로 남아 같은 화면의 '정산하기'가
- *   서버 게이트(`status !== checked_out && !== completed`)에서 영구 거부됐다 — 정산 탭 안에
- *   탈출구가 0개인 막다른 길. UI 게이트는 타임스탬프로 판정해 통과시키므로 사용자에게는
- *   '버튼은 눌리는데 항상 실패' 로 보인다.
+ * @description SET-1 은 "정산 탭에서 시간을 수정해도 status 가 'scheduled' 로 남아 같은 화면의
+ *   '정산하기' 가 서버 게이트에서 영구 거부된다" 였다. 형제 경로(ConfirmedStaffRepository)는
+ *   승격하고 있었는데 정산 경로만 빠뜨린 것 — 즉 **규칙이 두 벌이라 생긴 어긋남**이다.
+ *   1차 수선은 두 경로가 같은 클라 헬퍼(resolveWorkTimeStatus)를 통과하게 만든 것이었지만,
+ *   규칙이 클라에 두 벌 남아 있다는 사실 자체는 그대로였다.
  *
- *   형제 경로(ConfirmedStaffRepository)는 이미 승격하고 있었다. 이 테스트는 두 경로가
- *   같은 헬퍼(resolveWorkTimeStatus)를 통과해 동일한 status 를 쓰는지 함께 고정한다.
+ *   2026-08-06 그 규칙 전체가 서버 `update_work_log_slot` 안으로 들어갔다(20260806140000).
+ *   status 파생·이력 append·정산 잠금·권한은 이제 서버 한 곳에만 있으므로 **어긋남이
+ *   구조적으로 불가능**하다. 그래서 이 파일이 지키는 대상도 옮겨진다:
+ *
+ *     (전) 두 경로가 같은 status 를 UPDATE payload 에 쓴다
+ *     (후) 두 경로가 같은 RPC 를 **같은 패치로** 부르고, work_logs 를 직접 UPDATE 하지 않는다
+ *
+ *   status 값 자체의 계약(생애주기 4종 한정 · no_show 불가침 · completed 강등 금지)은
+ *   pgTAP `work_log_slot_attendance_rpc.test.sql` 8~11번이 서버에서 직접 고정한다.
+ *   같은 규칙의 클라 서술본은 `workLogTimeStatus.test.ts` 에 @deprecated 로 남아 대조용이다.
  */
 
 import { SupabaseConfirmedStaffRepository } from '../ConfirmedStaffRepository';
 import { SupabaseSettlementRepository } from '../SettlementRepository';
-import { STATUS } from '@/constants';
-import type { WorkLog, JobPosting } from '@/types';
+import { ERROR_CODES } from '@/errors';
 
 const WORK_LOG_ID = 'wl-1';
-const JOB_POSTING_ID = 'jp-1';
 const ACTOR_ID = 'owner-1';
-
-let workLogUpdatePayloads: Record<string, unknown>[] = [];
-let currentWorkLog: WorkLog;
+const REASON = '실제 출근 시각과 달라 정정합니다';
 
 const mockFrom = jest.fn();
+const mockRpc = jest.fn();
 jest.mock('@/lib/supabase', () => ({
   supabase: {
     from: (...args: unknown[]) => mockFrom(...args),
-    rpc: jest.fn(),
+    rpc: (...args: unknown[]) => mockRpc(...args),
     channel: jest.fn(),
   },
 }));
@@ -37,83 +43,23 @@ jest.mock('@/utils/logger', () => ({
 
 jest.mock('@sentry/react-native', () => ({ __esModule: true, addBreadcrumb: jest.fn() }));
 
-jest.mock('../postingAuthority', () => ({
-  resolvePostingAuthority: jest.fn().mockResolvedValue({ role: 'owner' }),
-  canManagePosting: jest.fn().mockReturnValue(true),
-}));
-
-const mockParseWorkLog = jest.fn();
-const mockParseJobPosting = jest.fn();
-jest.mock('@/schemas', () => {
-  const actual = jest.requireActual('@/schemas');
-  return {
-    ...actual,
-    parseWorkLogDocument: (...a: unknown[]) => mockParseWorkLog(...a),
-    parseJobPostingDocument: (...a: unknown[]) => mockParseJobPosting(...a),
-  };
-});
-
-function makeWorkLog(overrides: Partial<WorkLog> = {}): WorkLog {
-  return {
-    id: WORK_LOG_ID,
-    jobPostingId: JOB_POSTING_ID,
-    status: STATUS.WORK_LOG.SCHEDULED,
-    payrollStatus: STATUS.PAYROLL.PENDING,
-    modificationHistory: [],
-    checkInTime: null,
-    checkOutTime: null,
-    ...overrides,
-  } as unknown as WorkLog;
-}
-
-function installSupabaseChain() {
-  mockFrom.mockImplementation((table: string) => {
-    let pendingUpdate: Record<string, unknown> | undefined;
-    const chain: Record<string, unknown> = {
-      select: () => chain,
-      update: (data: Record<string, unknown>) => {
-        pendingUpdate = data;
-        return chain;
-      },
-      eq: () => {
-        if (pendingUpdate !== undefined) {
-          if (table === 'work_logs') workLogUpdatePayloads.push(pendingUpdate);
-          return Promise.resolve({ data: null, error: null });
-        }
-        return chain;
-      },
-      maybeSingle: () =>
-        Promise.resolve({
-          data:
-            table === 'work_logs'
-              ? { id: WORK_LOG_ID, job_posting_id: JOB_POSTING_ID }
-              : { id: JOB_POSTING_ID, owner_id: ACTOR_ID, workspace_id: 'ws-1' },
-          error: null,
-        }),
-    };
-    return chain;
-  });
+/** 캡처된 RPC 패치(첫 호출의 p_patch). */
+function capturedPatch(): Record<string, unknown> {
+  return (mockRpc.mock.calls[0][1] as { p_patch: Record<string, unknown> }).p_patch;
 }
 
 beforeEach(() => {
-  workLogUpdatePayloads = [];
-  currentWorkLog = makeWorkLog();
-  mockParseWorkLog.mockImplementation(() => currentWorkLog);
-  mockParseJobPosting.mockReturnValue({
-    id: JOB_POSTING_ID,
-    ownerId: ACTOR_ID,
-    workspaceId: 'ws-1',
-  } as unknown as JobPosting);
-  installSupabaseChain();
+  mockFrom.mockReset();
+  mockRpc.mockReset();
+  mockRpc.mockResolvedValue({
+    data: { success: true, assignmentSynced: true, assignmentSyncReason: null },
+    error: null,
+  });
 });
 
-const REASON = '실제 출근 시각과 달라 정정합니다';
-
-describe('SettlementRepository.updateWorkTimeWithTransaction — status 승격', () => {
-  it('출퇴근 시각을 모두 채우면 status 를 checked_out 으로 승격한다', async () => {
-    const repo = new SupabaseSettlementRepository();
-
-    await repo.updateWorkTimeWithTransaction(
+describe('정산 화면 경로(SettlementRepository) — 실적 쓰기는 RPC 단일 관문', () => {
+  it('출퇴근 시각을 ISO 로 실어 update_work_log_slot 1회만 부른다', async () => {
+    await new SupabaseSettlementRepository().updateWorkTimeWithTransaction(
       {
         workLogId: WORK_LOG_ID,
         checkInTime: new Date('2026-07-01T10:00:00.000Z'),
@@ -123,79 +69,112 @@ describe('SettlementRepository.updateWorkTimeWithTransaction — status 승격',
       ACTOR_ID
     );
 
-    expect(workLogUpdatePayloads).toHaveLength(1);
-    expect(workLogUpdatePayloads[0].status).toBe(STATUS.WORK_LOG.CHECKED_OUT);
-  });
-
-  it('출근 시각만 채우면 checked_in 으로 승격한다', async () => {
-    const repo = new SupabaseSettlementRepository();
-
-    await repo.updateWorkTimeWithTransaction(
-      { workLogId: WORK_LOG_ID, checkInTime: new Date('2026-07-01T10:00:00.000Z'), reason: REASON },
-      ACTOR_ID
-    );
-
-    expect(workLogUpdatePayloads[0].status).toBe(STATUS.WORK_LOG.CHECKED_IN);
-  });
-
-  it('기존 시각과 합쳐 판정한다 — 이번에 퇴근만 넣어도 checked_out', async () => {
-    currentWorkLog = makeWorkLog({
-      status: STATUS.WORK_LOG.CHECKED_IN,
-      checkInTime: new Date('2026-07-01T09:00:00.000Z'),
+    // 선행 조회(work_logs·job_postings)도 직접 UPDATE 도 사라졌다 — 왕복이 1회다.
+    expect(mockFrom).not.toHaveBeenCalled();
+    expect(mockRpc).toHaveBeenCalledTimes(1);
+    expect(mockRpc).toHaveBeenCalledWith('update_work_log_slot', {
+      p_work_log_id: WORK_LOG_ID,
+      p_patch: {
+        checkIn: '2026-07-01T10:00:00.000Z',
+        checkOut: '2026-07-01T19:00:00.000Z',
+        reason: REASON,
+        editedBy: ACTOR_ID,
+      },
     });
-    const repo = new SupabaseSettlementRepository();
-
-    await repo.updateWorkTimeWithTransaction(
-      {
-        workLogId: WORK_LOG_ID,
-        checkOutTime: new Date('2026-07-01T19:00:00.000Z'),
-        reason: REASON,
-      },
-      ACTOR_ID
-    );
-
-    expect(workLogUpdatePayloads[0].status).toBe(STATUS.WORK_LOG.CHECKED_OUT);
   });
 
-  it('노쇼 행은 시간 수정으로 status 가 바뀌지 않는다', async () => {
-    currentWorkLog = makeWorkLog({ status: STATUS.WORK_LOG.NO_SHOW });
-    const repo = new SupabaseSettlementRepository();
-
-    await repo.updateWorkTimeWithTransaction(
+  it('한쪽 축만 보내면 반대 축 키는 패치에 없다(미변경 — 서버가 기존 값을 유지한다)', async () => {
+    await new SupabaseSettlementRepository().updateWorkTimeWithTransaction(
       {
         workLogId: WORK_LOG_ID,
-        checkInTime: new Date('2026-07-01T10:00:00.000Z'),
         checkOutTime: new Date('2026-07-01T19:00:00.000Z'),
         reason: REASON,
       },
       ACTOR_ID
     );
 
-    expect(workLogUpdatePayloads[0]).not.toHaveProperty('status');
+    const patch = capturedPatch();
+    expect(patch).not.toHaveProperty('checkIn');
+    expect(patch.checkOut).toBe('2026-07-01T19:00:00.000Z');
+  });
+
+  it('시각 삭제(null)는 JSON null 로 전달된다 — truthy 판정으로 삼키지 않는다', async () => {
+    await new SupabaseSettlementRepository().updateWorkTimeWithTransaction(
+      { workLogId: WORK_LOG_ID, checkInTime: null, checkOutTime: null, reason: REASON },
+      ACTOR_ID
+    );
+
+    expect(capturedPatch()).toMatchObject({ checkIn: null, checkOut: null });
+  });
+
+  it('정산 완료 잠금은 서버가 판정하고 AlreadySettledError 로 올라온다', async () => {
+    // 흡수 전에는 클라가 payrollStatus 를 읽어 던졌다. 이제 서버가 실적 키에만 잠금을 건다.
+    mockRpc.mockResolvedValue({
+      data: null,
+      error: { message: 'ALREADY_SETTLED: 정산이 완료된 근무는 시간을 수정할 수 없습니다' },
+    });
+
+    await expect(
+      new SupabaseSettlementRepository().updateWorkTimeWithTransaction(
+        { workLogId: WORK_LOG_ID, checkInTime: new Date('2026-07-01T10:00:00.000Z') },
+        ACTOR_ID
+      )
+    ).rejects.toMatchObject({
+      name: 'AlreadySettledError',
+      code: ERROR_CODES.BUSINESS_ALREADY_SETTLED,
+    });
   });
 });
 
-describe('두 시간 수정 경로가 같은 status 를 쓴다 (대칭)', () => {
-  it('정산 화면 경로와 스태프 관리 경로의 status 가 일치한다', async () => {
-    const args = {
-      checkInTime: new Date('2026-07-01T10:00:00.000Z'),
-      checkOutTime: new Date('2026-07-01T19:00:00.000Z'),
-      reason: REASON,
-    };
+describe('두 시간 수정 경로가 같은 관문을 통과한다 (대칭)', () => {
+  it('정산 화면 경로와 스태프 관리 경로가 동일한 RPC 패치를 보낸다', async () => {
+    const checkInTime = new Date('2026-07-01T10:00:00.000Z');
+    const checkOutTime = new Date('2026-07-01T19:00:00.000Z');
 
     await new SupabaseSettlementRepository().updateWorkTimeWithTransaction(
-      { workLogId: WORK_LOG_ID, ...args },
+      { workLogId: WORK_LOG_ID, checkInTime, checkOutTime, reason: REASON },
       ACTOR_ID
     );
     await new SupabaseConfirmedStaffRepository().updateWorkTimeWithTransaction({
       workLogId: WORK_LOG_ID,
       actorId: ACTOR_ID,
       modifiedBy: ACTOR_ID,
-      ...args,
+      checkInTime,
+      checkOutTime,
+      reason: REASON,
     });
 
-    expect(workLogUpdatePayloads).toHaveLength(2);
-    expect(workLogUpdatePayloads[0].status).toBe(workLogUpdatePayloads[1].status);
-    expect(workLogUpdatePayloads[0].status).toBe(STATUS.WORK_LOG.CHECKED_OUT);
+    expect(mockRpc).toHaveBeenCalledTimes(2);
+    expect(mockRpc.mock.calls[0]).toEqual(mockRpc.mock.calls[1]);
+    // 값까지 못박는다 — 두 호출이 나란히 틀려도 위 단언은 통과하기 때문이다.
+    expect(mockRpc.mock.calls[0]).toEqual([
+      'update_work_log_slot',
+      {
+        p_work_log_id: WORK_LOG_ID,
+        p_patch: {
+          checkIn: '2026-07-01T10:00:00.000Z',
+          checkOut: '2026-07-01T19:00:00.000Z',
+          reason: REASON,
+          editedBy: ACTOR_ID,
+        },
+      },
+    ]);
+  });
+
+  it('두 경로 모두 work_logs 를 직접 UPDATE 하지 않는다(시간모델 R4 선행 조건)', async () => {
+    await new SupabaseSettlementRepository().updateWorkTimeWithTransaction(
+      { workLogId: WORK_LOG_ID, checkInTime: null, reason: REASON },
+      ACTOR_ID
+    );
+    await new SupabaseConfirmedStaffRepository().updateWorkTimeWithTransaction({
+      workLogId: WORK_LOG_ID,
+      actorId: ACTOR_ID,
+      modifiedBy: ACTOR_ID,
+      checkInTime: null,
+      checkOutTime: null,
+      reason: REASON,
+    });
+
+    expect(mockFrom).not.toHaveBeenCalled();
   });
 });

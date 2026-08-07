@@ -37,7 +37,6 @@ export {
   getTodayCheckedInWorkLog,
   isCurrentlyWorking,
   getWorkLogStats,
-  updatePayrollStatus,
   subscribeToWorkLog,
   subscribeToMyWorkLogs,
   subscribeToTodayWorkStatus,

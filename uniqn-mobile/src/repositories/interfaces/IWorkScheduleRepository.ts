@@ -24,6 +24,14 @@ export interface VenueDaySlot {
   isContainer: boolean;
   color: string | null;
   notes: string | null;
+  /** 실제 출근 시각(ISO timestamptz). 미기록이면 null. */
+  checkInTs: string | null;
+  /** 실제 퇴근 시각(ISO timestamptz). 미기록이면 null. */
+  checkOutTs: string | null;
+  /** 정산 상태 — 'completed' 면 시트가 읽기 전용으로 열린다. */
+  payrollStatus: string | null;
+  /** YYYY-MM-DD. 시트가 시각을 Date 로 조립할 때 기준 날짜. */
+  date: string;
 }
 
 /**

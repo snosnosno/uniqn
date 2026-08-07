@@ -112,6 +112,41 @@ describe('WorkScheduleRepository', () => {
       });
     });
 
+    it('RPC 응답의 출퇴근·정산상태·날짜를 camelCase 로 투영한다', async () => {
+      mockRpc.mockResolvedValueOnce({
+        data: [
+          {
+            work_log_id: 'wl-1',
+            staff_id: 'st-1',
+            staff_name: '홍길동',
+            staff_nickname: null,
+            staff_photo_url: null,
+            role: 'dealer',
+            custom_role: null,
+            time_slot: '18:00',
+            status: 'checked_in',
+            job_posting_id: 'jp-1',
+            is_container: true,
+            color: null,
+            notes: null,
+            check_in_ts: '2026-08-10T09:00:00+00:00',
+            check_out_ts: null,
+            payroll_status: 'pending',
+            date: '2026-08-10',
+          },
+        ],
+        error: null,
+      });
+
+      const rows = await repo.getVenueDaySlots('venue-1', '2026-08-10');
+
+      expect(rows[0].checkInTs).toBe('2026-08-10T09:00:00+00:00');
+      // 미기록 퇴근은 null 그대로 — 0시로 뭉개면 "안 찍었다"가 사라진다.
+      expect(rows[0].checkOutTs).toBeNull();
+      expect(rows[0].payrollStatus).toBe('pending');
+      expect(rows[0].date).toBe('2026-08-10');
+    });
+
     it('RPC 에러 전파', async () => {
       mockRpc.mockResolvedValueOnce({ data: null, error: { message: 'denied' } });
       await expect(repo.getVenueDaySlots('v1', '2026-07-01')).rejects.toThrow('supabase: denied');

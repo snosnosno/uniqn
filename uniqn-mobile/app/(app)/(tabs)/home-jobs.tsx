@@ -41,6 +41,7 @@ import { queryKeys } from '@/lib/queryClient';
 import type { PostingType, JobPostingFilters } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { useTutorial } from '@/hooks/useTutorial';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { useTabBarBottomPadding } from '@/hooks/useTabBarBottomPadding';
 import { TutorialOverlay } from '@/components/tutorial';
 import { APP_INTRO_STAFF, APP_INTRO_EMPLOYER } from '@/constants/tutorials';
@@ -175,11 +176,10 @@ export default function JobsScreen() {
     return result;
   }, [selectedDateString, selectedType, regionScope, roleFilters, salaryFilter]);
 
-  const { jobs, isLoading, isRefreshing, isFetchingMore, hasMore, error, refresh, loadMore } =
-    useJobPostings({
-      filters,
-      enabled: selectedType !== null,
-    });
+  const { jobs, isLoading, isFetchingMore, hasMore, error, refresh, loadMore } = useJobPostings({
+    filters,
+    enabled: selectedType !== null,
+  });
 
   const searchQuery = useQuery({
     queryKey: queryKeys.jobPostings.search(debouncedSearch),
@@ -239,9 +239,15 @@ export default function JobsScreen() {
 
   const noop = useCallback(() => undefined, []);
 
-  const handleSearchRefresh = useCallback(() => {
-    searchQuery.refetch();
-  }, [searchQuery]);
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 탭에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고). 검색 모드와 일반 모드는
+  // 서로 다른 쿼리라 상태도 따로 둔다.
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refresh()
+  );
+  const { refreshing: searchPullRefreshing, onRefresh: onSearchPullRefresh } = useManualRefresh(
+    () => searchQuery.refetch()
+  );
 
   const handleJobPress = useCallback((jobId: string) => {
     Keyboard.dismiss();
@@ -311,11 +317,11 @@ export default function JobsScreen() {
         <JobList
           jobs={filteredSearchJobs}
           isLoading={isSearchPending || (isSearching && searchQuery.isLoading)}
-          isRefreshing={searchQuery.isRefetching}
+          isRefreshing={searchPullRefreshing}
           isFetchingMore={false}
           hasMore={false}
           error={searchQuery.error as Error | null}
-          onRefresh={handleSearchRefresh}
+          onRefresh={onSearchPullRefresh}
           onLoadMore={noop}
           onJobPress={handleJobPress}
           filledCounts={filledCountsQuery.data}
@@ -327,11 +333,11 @@ export default function JobsScreen() {
         <JobList
           jobs={jobs}
           isLoading={isLoading || isLoadingTypeCounts || selectedType === null}
-          isRefreshing={isRefreshing}
+          isRefreshing={pullRefreshing}
           isFetchingMore={isFetchingMore}
           hasMore={hasMore}
           error={error}
-          onRefresh={refresh}
+          onRefresh={onPullRefresh}
           onLoadMore={loadMore}
           onJobPress={handleJobPress}
           filledCounts={filledCountsQuery.data}

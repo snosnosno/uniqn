@@ -38,7 +38,10 @@
 | **세션 G** | 과제 4 — 슬롯 편집 표류 근본 수선 | ~~`feat/work-log-slot-sync`~~ | ✅ **머지** | **#407** | 신규 SECDEF RPC `update_work_log_slot(uuid, jsonb)` 로 `work_logs`+`applications.assignments` 동시 갱신. 🔴**마이그 1건 prod 적용 완료 — 재적용 금지**(기록명 `20260802180000`, 레포 파일명과 동일). **#406 재통합 후** 파리티 **191 → 192** = prod 실측 일치 / 정책 111 불변. 재검증: quality exit 0 · jest **611스위트 6661테스트** · pgTAP **97파일 1031테스트 전량 PASS**(파리티 포함 — 재통합이 간극을 닫았다) · **red-swap 9종 1:1** · md5 3자 일치 `70f323c8…`. 리뷰 fable **APPROVE**(CRITICAL 0/HIGH 0) — MEDIUM 3건 중 **2건 반영·1건 프로브로 오탐 기각**. 상세=§5 |
 | **B2** | 주소 2단계(좌표) | ~~`feat/posting-geocoding`~~ | ✅ **머지** | **#411** | `55260f2c2`(2026-08-03 13:27 UTC). 지오코딩 EF + `job_postings.geo_lat/geo_lng` + 길찾기 좌표 핀. 🔴**마이그 prod 적용 완료 — 재적용 금지**(**prod 기록명 `20260803015905`**, 레포 파일은 `20260803160000_job_postings_geocode_columns.sql`). 컬럼·CHECK 만이라 **함수/정책 기여 0**. 🔴**EF `geocode-address` prod 선배포(v3)** · 🔴`config.toml` 변경으로 머지 시 **EF 16개 전체 재배포**. 검증: quality **0 errors** · B2 테스트 **50/50** · 파리티 `PARITY_EXPECT_FUNCS=193` 일치. 리뷰 security/code 양쪽 **APPROVE**. 상세=§5 |
 | **S6** | 3-C 설계 | `docs/3c-time-change-design` | ✅ **설계 완료·push 됨** | | **코드 변경 0건**(설계 전용). 커밋 `3316dbb5e` — 2026-08-04 origin 에 push(PR 없음). 사용자 결정 3건 확정 — ①동의 불필요(알림·동기화만) ②거절=**기존 취소요청 경로** ③**전체가 개인 조정을 덮어쓴다**. 산출물=`docs/planning/2026-08-03-3c-posting-time-change-design.md`. 🔑 **핵심 발견: 알림(Case 2-B #382)·취소 힌트·단건 동기화(#407)가 이미 전부 존재** — 3-C 는 신규 기능이 아니라 묶음 적용이다. ⚠️ **S7 이 이 문서를 cherry-pick 해 §10 으로 개정**했다 — 이 브랜치는 참조용 원본이고, 진실원은 S7 브랜치의 개정본이다 |
-| **S7** | 3-C 구현 | `feat/posting-time-change` | 🔨 **PR 생성 · CI 전부 pass** | **#412** | CI **10잡 전부 SUCCESS**(E2E 9m45s · DB Tests pg_prove 2m0s 포함, **재실행 0회**). 워크트리 `T-HOLDEM-timechange`, 커밋 **12개**(HEAD `21a5f2f3c`). 사용자 결정 4건 추가 확정(④대상 선택 ⑤정원 동반 이동 ⑥알림 기존 배선 → **⑦모순 알림은 문구 중립화**). 🔑 S7 실측이 설계 §4-3 을 **뒤집었다** — work_logs 만 옮기면 출발지 정원이 재개방된다(§10-2). 🔴**마이그 2건 prod 적용 완료 — 재적용 금지**(prod 기록명 **`20260804115100 update_posting_slot_time_rpc`** + **`20260804115209 job_posting_update_contract_body_neutral`**, 레포 파일은 `20260804120000`/`20260804130000`). 파리티 **193 → 199 / 정책 111** prod 실측 일치. 레포↔prod 함수 정의 **md5 7/7 일치**(⚠️ `chr(13)` 제거 후 비교 — CRLF 때문에 6/7 이 가짜 불일치로 보인다). 리뷰 3인 완료: security **LOW**·code **APPROVE**·database REQUEST CHANGES(지적 전량 반영). 결함 **4건** 발견·수정. 검증: quality exit 0 · jest **623/6833** · pgTAP **99/1093** · red-swap **9종 1:1**. 상세=§5 |
+| **S7** | 3-C 구현 | ~~`feat/posting-time-change`~~ | ✅ **머지** | **#412** | `d5ff28ec5`. CI **10잡 전부 SUCCESS**(E2E 9m45s · DB Tests pg_prove 2m0s 포함, **재실행 0회**). 워크트리 `T-HOLDEM-timechange`, 커밋 **12개**(HEAD `21a5f2f3c`). 사용자 결정 4건 추가 확정(④대상 선택 ⑤정원 동반 이동 ⑥알림 기존 배선 → **⑦모순 알림은 문구 중립화**). 🔑 S7 실측이 설계 §4-3 을 **뒤집었다** — work_logs 만 옮기면 출발지 정원이 재개방된다(§10-2). 🔴**마이그 2건 prod 적용 완료 — 재적용 금지**(prod 기록명 **`20260804115100 update_posting_slot_time_rpc`** + **`20260804115209 job_posting_update_contract_body_neutral`**, 레포 파일은 `20260804120000`/`20260804130000`). 파리티 **193 → 199 / 정책 111** prod 실측 일치. 레포↔prod 함수 정의 **md5 7/7 일치**(⚠️ `chr(13)` 제거 후 비교 — CRLF 때문에 6/7 이 가짜 불일치로 보인다). 리뷰 3인 완료: security **LOW**·code **APPROVE**·database REQUEST CHANGES(지적 전량 반영). 결함 **4건** 발견·수정. 검증: quality exit 0 · jest **623/6833** · pgTAP **99/1093** · red-swap **9종 1:1**. 상세=§5 |
+| **정원0** | S7 잔여 — `v_capacity=0` fail-closed | ~~`fix/capacity-zero-fail-closed`~~ | ✅ **머지** | **#417** | `d410c791b`(2026-08-05 확인). CI **10잡 전부 SUCCESS**(E2E 9m37s · DB Tests 2m7s). 🔑 원인이 **3종**이었다 — A)레거시 `headcount` 미독해(순수 버그) B)축 미매칭(정원 미상) C)`count:0`(자리 없음). **A 고치고 C 거부, B 는 통과 유지**(사용자 결정). 🔴 3-C 의 "출발지 0 이면 항목 삭제"를 **함께 뒤집었다** — 지우면 축 미매칭이 되어 3-C 가 비운 슬롯이 다시 열린다. 🔴**마이그 prod 적용 완료 — 재적용 금지, 기록 2건**(`20260804142737` + `20260804142944 _verbatim_fix`, 레포 파일은 `20260804140000` 하나). 파리티 **199/111 불변**. 검증: pgTAP **100파일 1101테스트** · quality exit 0 · jest **623/6833** · **red-swap 3종 1:1**. 상세=§5 |
+| **CI위생**(원장 밖 트랙) | E2E `board.spec:88` flake 근본 수선 + Actions 범프 | ~~`chore/ci-hygiene`~~ | ✅ **머지** | **#413** | `d252ed80f`. **원장 밖 트랙이지만 원장의 "E2E 게이트 부재" 잔여 2건 중 1건을 실제로 닫았으므로 여기 기록한다.** 🔑 flake 의 원인은 테스트가 아니라 **프로덕션 웹 결함**이었다 — 웹엔 Sentry SDK 가 없어 `sentryService` 가 `logger.error` 로 폴백하는데 그 폴백이 `output()` 의 전송 조건을 재충족해 **스스로를 다시 불렀다**(비동기라 스택은 안 터지고 마이크로태스크 큐만 채워 메인 스레드를 굶긴다 — 콘솔 에러 370만건·탭 정지). `logger.observability()`(비전달 싱크) 신설로 고리 말단 차단 + 회귀 가드 2종. 실측 **board:88 12/20 실패(60%) → 0/20**, 스펙 15.9분 → 3.0분. 함께 Dependabot actions 3건(#376·#377·#378) 반영 + **워크플로 `uses:` 20개 전부 커밋 SHA 핀**(2026-08-05 재실측: 미핀 0건). 마이그 **0건** — 파리티 199/111 불변. 착수 프롬프트=[`2026-08-04-ci-hygiene-session-prompt.md`](2026-08-04-ci-hygiene-session-prompt.md) |
+| **L1-3단계** | 정산 payroll 컬럼 직접쓰기 차단 + 웹배포·OTA 관문 통과 | ~~`feat/payroll-column-pin`~~ | ✅ **머지** | **#420** | `8d1d8534c`. CI **10잡 전부 pass**(DB Tests 2m4s · E2E 9m55s, 재실행 0회). #402 가 남긴 마지막 조각 — 도입 마이그가 건 관문("PR 머지 → 웹 배포 + OTA → 롤아웃 확인 → 그때 차단")을 **이 세션이 통과시켰다**: 웹 CF `5ad8038e` · OTA 그룹 `1aa49947…`(runtime **1.0.5**, android+ios, Commit=origin HEAD `725168dd2`, 델타 **커밋 47개 / PR #363~#418**). 🔑 **차단이 없던 게 아니라 구멍이 있었다** — `protect_work_log_payroll` 가 이미 있었으나 게이트가 앱 역할 축이라 `admin`/`employer` 를 **무조건 통과**시켰다(막힌 건 staff 뿐). 구인자가 raw PATCH 로 서버 금액 재계산을 우회할 수 있었다. 🔑 기존 함수는 **SECURITY DEFINER** 라 채널 판별 불가 → P5 선례대로 **non-SECDEF 트리거 별도 신설**(`fn_work_logs_pin_payroll`, current_user 데니리스트). 🔴**마이그 prod 적용 완료 — 재적용 금지**(prod 기록명 `work_logs_payroll_direct_write_block`, 레포 파일 `20260805120000_…`). 파리티 **199 → 200** / 정책 111 불변, 레포 기대값=prod 실측 일치. md5 로컬=prod `1f172680…`(⚠️`chr(13)` 제거 후). 검증: pgTAP **7/7** · **red-swap 1:1**(트리거 DROP 시 1·3·4번만 red) · quality exit 0 · jest **624/6824**. 🔑 **CI 가 진짜 회귀를 잡았다** — 기존 pgTAP 2파일이 옛 계약을 고정하고 있었다(상세=§5). 리뷰 **opus APPROVE**(CRITICAL 0/HIGH 0, MEDIUM 2·LOW 6 중 5건 반영·1건 보류·1건 기해소). 상세=§5 |
 
 ### 워크트리 배정 (🔴 모든 세션 예외 없이 격리)
 
@@ -51,19 +54,27 @@
 | S4 | ~~`T-HOLDEM-qr`~~ | ✅ 정리완료(정션 해제 → `worktree remove` → 브랜치 삭제, 원본 `node_modules` 821 무손상) |
 | S5 | ~~`T-HOLDEM-settle`~~ | ✅ 정리완료(정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818** 무손상 확인) |
 | S5-후속 | ~~`T-HOLDEM-revert`~~ | ✅ 정리완료(정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818** 무손상 확인) |
-| B1·B2 | `T-HOLDEM-address` | 🔨 **유지 중**(B1 #391 머지 완료. **B2 가 이 워크트리를 새로 만들어 사용 중** — 브랜치 `feat/posting-geocoding`, PR 미생성이라 지우지 말 것). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성(818/818 실측). `.env.local`·`.env.development.local` 은 gitignore 라 메인에서 복사해야 앱이 뜬다 |
+| B1·B2 | ~~`T-HOLDEM-address`~~ | ✅ **정리완료**(2026-08-05 실측 — `git worktree list` 에 없고 디렉토리도 없음. B1 #391 · B2 #411 둘 다 머지). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성했었다(818/818). `.env.local`·`.env.development.local` 은 gitignore 라 메인에서 복사해야 앱이 뜬다 |
 | A-감사 | ~~`T-HOLDEM-audit`~~ | ✅ **머지 완료(#390)** — 정리 대상(정션 없음. `worktree remove` → 브랜치 삭제) |
 | P3 | ~~`T-HOLDEM-reminder`~~ | ✅ **정리완료**(2026-08-02 세션 A2 — 정션 해제 선행 → `worktree remove` → 브랜치 삭제. 해제 전후 원본 `node_modules` **821 → 821** 실측 무손상) |
 | P4 | ~~`T-HOLDEM-venueloc`~~ | ✅ **정리완료**(2026-08-02 세션 A2 — 정션 해제 선행 → `worktree remove` → 브랜치 삭제. 해제 전후 원본 `node_modules` **821 → 821** 실측 무손상) |
 | P6 | ~~`T-HOLDEM-offline`~~ | ✅ **정리완료**(2026-08-02 세션 A2 — 정션 해제 선행 → `worktree remove` → 브랜치 삭제. 해제 전후 원본 `node_modules` **821 → 821** 실측 무손상) |
-| 세션A-원장 | `T-HOLDEM-ledger` | 🔨 이 문서 커밋용(정션 없음). **원장 PR 머지 후 정리 대상**(정션 없으므로 `worktree remove` → 브랜치 삭제만) |
+| 세션A-원장 | ~~`T-HOLDEM-ledger`~~ | ✅ **정리완료**(2026-08-05 실측 — 워크트리·디렉토리 모두 없음) |
 | **P2·P5(타 세션)** | ~~`T-HOLDEM-notifyfix`~~ | ✅ **타 세션이 스스로 정리**(2026-08-02 세션 A2 종료 시 `git worktree list` 에서 사라짐). P2 는 #397, P5 는 #400 으로 머지됐다 |
 | **L1-잔여** | ~~`T-HOLDEM-settlerpc`~~ | ✅ **머지 완료(#402)** — 정리 대상(정션 해제 선행 → `worktree remove` → 브랜치 삭제). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성(821 확인) |
-| L1-잔여-원장 | `T-HOLDEM-ledger2` | 🔨 이 문서 커밋용(정션 없음). 원장 PR 머지 후 정리 대상 |
+| L1-잔여-원장 | ~~`T-HOLDEM-ledger2`~~ | ✅ **정리완료**(2026-08-05 실측 — 워크트리·디렉토리 모두 없음) |
 | **세션 E** | ~~`T-HOLDEM-schedkey`~~ | ✅ **정리완료**(세션 F — 정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **821 → 821** 실측 무손상) |
 <!-- 🔨 **유지 중**(PR 미생성 — 사용자 결정 대기). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성, 원본 `node_modules` **821 → 821** 실측 무손상 | -->
 | **세션 G** | ~~`T-HOLDEM-slotsync`~~ | ✅ **머지 완료(#407)** — 정리 대상(⚠️ **정션 해제 선행** → `worktree remove` → 브랜치 삭제). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성 |
-| **S7** | `T-HOLDEM-timechange` | 🔨 **유지 중**(2026-08-04 생성, `origin/master` `55260f2c2` 기준). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성(원본 `node_modules` **821** 확인). `.env.local`·`.env.development.local` 은 메인에서 복사함 |
+| **S7** | ~~`T-HOLDEM-timechange`~~ | ✅ **정리완료**(정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818 → 818** 실측 무손상). 옛 기록: 2026-08-04 생성, `origin/master` `55260f2c2` 기준). 정션은 PowerShell `New-Item -ItemType Junction` 으로 생성(원본 `node_modules` **821** 확인). `.env.local`·`.env.development.local` 은 메인에서 복사함 |
+| **정원0** | ~~`T-HOLDEM-capacity`~~ | ✅ **정리완료**(2026-08-05 실측 — 워크트리·디렉토리 모두 없음. #417 머지 완료) |
+| **CI위생(원장 밖)** | ~~`T-HOLDEM-cihygiene`~~ | ✅ **정리완료**(2026-08-05 실측). #413 로 머지 |
+| 원장갱신 | ~~`T-HOLDEM-ledger3`~~ | ✅ **정리완료**(#418 머지 후 — 정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818 → 818** 실측 무손상) |
+| **L1-3단계** | ~~`T-HOLDEM-payrollpin`~~ | ✅ **정리완료**(#420 머지 후 — 정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 **818 → 818** 무손상) |
+| 세션종료-원장 | `T-HOLDEM-ledger4` | 🔨 이 문서 갱신용. 착지 후 정리 대상 |
+
+🔎 **2026-08-05 실측: `git worktree list` 에 메인 체크아웃 하나만 남아 있고 `C:/Users/user/Desktop/T-HOLDEM-*` 디렉토리도 없다.**
+위 표에 🔨 로 남아 있던 4행(`T-HOLDEM-address`·`ledger`·`ledger2`·`capacity`)은 전부 이미 정리된 상태였다 — 표가 실제를 못 따라온 것이다.
 
 전부 `C:/Users/user/Desktop/` 아래. 머지 완료 세션의 워크트리는 다음 세션 착수 시 정리한다
 (⚠️ **정션 해제 선행** — `rmdir` 로 `node_modules` 정션을 먼저 끊지 않으면 원본이 지워질 수 있다).
@@ -506,6 +517,74 @@ N건 반복이므로 ORDER BY id 로 잠근다(데드락).
 ---
 
 ## 5. 인수인계 로그 (세션 종료 시 append — 최신이 위)
+
+### L1-3단계 + 배포 관문 (원장 최신화 → 웹배포 → OTA → 정산 직접쓰기 차단) — 2026-08-05/06 · 상태: **완료**
+
+- 워크트리/브랜치: `T-HOLDEM-payrollpin` / `feat/payroll-column-pin`(정리완료) · PR **#418**·**#420**
+- 선행: master `55260f2c2` → 최종 `8d1d8534c`
+
+**끝난 것**
+
+1. **원장 최신화 #418** `725168dd2` — 원장이 #412·#413·#417 을 못 따라와 4곳이 stale 이었다
+   (정원0 "머지 대기" · 워크트리 4행 "유지 중" · #413 트랙 누락 · 파리티 단언 **설명 문자열**이 193).
+2. **웹 배포** — CF `5ad8038e`. 라이브 번들 해시가 로컬과 일치(`uniqn.app`·`pages.dev` 양쪽).
+   `observability` 3건 + **대조군 2종 0건**으로 #413 수정의 실환경 존재 확인
+   → 메모리의 "🔴 웹배포 후 실환경 확인" 잔여 **해소**.
+3. **OTA 발행** — 그룹 `1aa49947-0929-447e-9aaa-b8af8565917f` · runtime **1.0.5** · android+ios ·
+   Commit `725168dd2`(=origin HEAD). 델타 = 마지막 발행(`9541590db`) 이후 **커밋 47개 / PR #363~#418**.
+   🔴 발행 전 관문 2개를 실측으로 통과시켰다:
+   - 규칙 0: 빌드 커밋 `191d21641`(iOS 43/Android 41, 07-27) → HEAD 사이
+     `package.json`·`app.config.ts`·`eas.json` **diff 0건** → version bump 불필요, 구 빌드 유출 없음
+   - 규칙 3: 양 플랫폼 `{"runtimeVersion":"1.0.5","fingerprintSources":null}` = 빌드값 일치 → 무음 no-op 아님
+   ⚠️ `eas update` 는 이제 `--non-interactive` 시 **`--environment` 플래그 필수**다(없으면 즉시 실패).
+4. **정산 직접쓰기 차단 #420** `8d1d8534c` — 상세는 §1 표.
+
+**안 끝난 것 / 다음 사람이 손댈 곳**
+
+- 🔴 **R4(work_logs 전면 UPDATE 차단)는 여전히 불가.** 선행조건이 OTA 가 아니라
+  **`SettlementRepository.ts:372`(근무시간 수정)·`:648`(개인 정산 설정)의 RPC 화**다 —
+  둘 다 **지금 빌드가 쓰는 살아있는 경로**라 테이블 레벨 REVOKE 를 넣으면 즉사한다.
+  컬럼 단위 REVOKE 는 P5(`20260802120000:7-13`)가 **무효**로 실증했다(relacl 불변).
+  ⚠️ 원장의 "R4 = 직접 UPDATE REVOKE" 표현은 이 사실과 어긋난다 — 다음 설계 때 고쳐 적을 것.
+- 🔴 **R3** — `TBA_TIME_MARKER` 가 아직 비테스트 12개 이상 파일에서 소비된다.
+  착수점: `src/schemas/application.schema.ts:187`(널 흡수 transform) · `src/utils/supabase.ts:130-140`(23514 문구 분기).
+  🚨 **착수 게이트인 "센티널 신규 기록률 0 근접" 측정 쿼리가 설계문서 어디에도 없다** — 쿼리부터 새로 설계해야 한다.
+  다만 OTA 를 쐈으니 이제 측정이 의미를 갖기 시작한다.
+- 🔴 **정산 완료 애널리틱스가 #402 이후 끊겨 있다.** `trackSettlementComplete` 의 유일한 호출부가
+  이번에 지운 죽은 함수였고, 그 함수엔 UI 소비자가 없었다 = 이벤트는 진작 발화하지 않았다.
+  복구는 RPC 경로(`settlementMutation.updateSettlementStatus`)에 붙여야 하며 별건이다.
+- 🔴 master **branch protection 부재**(`gh api .../protection` → 404 실측). "E2E 게이트 부재" 잔여 2건 중 남은 1건.
+- 🔴 실기기 QA 전량(특히 **오프라인**: MMKV 캐시에 옛 센티널이 남은 채 스케줄 렌더) · Firebase Auth 제공업체 off ·
+  GCP 웹키 3건 · Rate Limits.
+- ⏸ 정원0 **갈래 B(축 미매칭)** 는 의도적으로 열려 있다. 닫으려면 실사용 로그가 필요한데
+  prod 트래픽이 `users 27 / work_logs 3 / 30일 지원 5건` 수준이라 **기다려도 근거가 안 쌓인다**.
+
+**다음 세션에 넘기는 주의 (이 세션에서 새로 알아낸 것만)**
+
+1. 🚨 **"롤아웃 확인" 게이트를 채울 계기판이 이 앱에 없다.** `expo-insights` 미설치 ·
+   `Sentry.init` 에 `release`/`dist` **미태깅** · 앱 버전을 서버에 기록하는 경로 **0건**(실측).
+   그래서 채택률로는 판정 불가다. 대안은 ①관계자 기기에서 직접 받기(설치 인스턴스 `fcm_tokens 16`)
+   ②차단 직전 **관측 트리거**(`RAISE LOG`, 선례 `20260803120000:211`)로 "누가 아직 쓰나"를 보는 것.
+   근본 해결은 Sentry release 태깅이다.
+2. 🚨 **prod 에 이미 있는 방어를 확인하지 않고 "없다"고 전제하면 중복·모순을 만든다.**
+   이번 L1-3 은 원장·마이그 주석이 전부 "차단 없음"을 전제했지만 `protect_work_log_payroll` 가
+   이미 있었고 **staff 만** 막고 있었다. 착수 전 `pg_trigger` 조회가 그걸 뒤집었다.
+3. 🚨 **pgTAP 계약 반전은 CI 에서만 드러난다.** 신규 테스트는 7/7 green 인데
+   기존 `worklog_settled_custom_lock`(5·6) 과 `notify_work_log_contract`(setup 사망, 9계획 0실행)이 깨졌다.
+   후자의 주석 *"클라와 동일한 컬럼 조합"* 은 **stale** 이었다 — 클라는 #402 에서 이미 RPC 로 옮겼다.
+   교훈: **트리거로 쓰기 채널을 좁힐 때는 그 컬럼을 쓰는 기존 pgTAP 을 먼저 전수 grep 하라.**
+4. 🔑 **계약이 뒤집힌 테스트는 지우지 말고 의도를 보존해 갱신하라.** 6번(2단계 수정 경로)은
+   `lives_ok(직접 UPDATE)` → `RESET ROLE`(=RPC definer 채널) 후 되돌리기+custom_* 수정을 한 단언으로 묶어
+   원래 계약을 계속 지키게 했다.
+5. 🔑 **적용된 마이그의 헤더 주석은 고쳐도 안전하다** — `pg_get_functiondef` 는 함수 본문만 담는다.
+   반대로 **함수 본문·`COMMENT ON` 을 고치면 레포↔prod 정본이 갈린다.** 이번 리뷰 반영은 헤더만 건드려 md5 불변.
+6. ⚠️ pgTAP 을 로컬 단건 실행하려면 `CREATE EXTENSION pgtap` 이 필요하다(`supabase test db` 는 자동).
+   그리고 `docker exec … -f /tmp/x.sql` 은 **`MSYS_NO_PATHCONV=1`** 없이는 경로가 Windows 로 바뀌어 실패한다.
+7. ⚠️ 공유 로컬 스택에 이 세션이 남긴 것: `pgtap` 확장 + `tr_work_logs_pin_payroll`.
+   **의도적으로 남겼다** — 트리거는 머지된 master 스키마의 일부라 있는 게 정합이고,
+   pgtap 은 지우면 병렬 세션 테스트를 깬다.
+
+---
 
 > 형식은 §2 세션 종료 프로토콜 4번 참조. **삭제하지 말고 쌓는다** —
 > 중단된 세션을 다시 여는 사람이 읽을 유일한 기록이다.
@@ -993,7 +1072,82 @@ planner 는 "`generateApplicationLinkKey` 가 없다 → 표류하면 지금도 
 
 ---
 
-### S7-착지 (3-C 알림 모순 해소 + prod 적용 + PR) — 2026-08-04 · 상태: **PR #412 생성 · CI 전부 pass · 머지 대기**
+### 정원0-fail-closed (S7 잔여 과제) — 2026-08-04 · 상태: **✅ 머지 완료** `d410c791b` (#417)
+
+- 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-capacity` / `fix/capacity-zero-fail-closed` · 커밋 2개
+- 선행: **#412 머지 완료** `d5ff28ec5`, 워크트리 `T-HOLDEM-timechange` 정리 완료
+  (정션 해제 선행 → `worktree remove` → 브랜치 삭제. 원본 `node_modules` **818 무손상**)
+
+**🔴 원장이 이 과제를 오분류하고 있었다 — 원인은 하나가 아니라 셋이다**
+
+원장·설계는 "`v_capacity = 0` → 거부로 전환"이라는 **단일 과제**로 적었다. 코드를 읽으면 갈래가 셋이고
+처방이 서로 다르다:
+
+| 갈래 | 조건 | 뜻 | 처리 |
+|---|---|---|---|
+| **A** | 역할이 레거시 `headcount` 만 가짐 | 가드는 `count` 만 읽어 0. **`_total_positions_from_schedule`(20260718000000:24)은 `COALESCE(count, headcount, 0)`** — 같은 원문을 두 함수가 다르게 읽었다 | 🔴 **순수 버그, 고침** |
+| **B** | 원문에 그 (날짜·슬롯·역할) 없음 | 진짜 **"정원 미상"** | 통과 유지(관측 로그) |
+| **C** | `count: 0` 명시 | 진짜 **"자리 없음"** | 🔴 **거부** |
+
+A 는 무증상이었다 — 정원 총합 5 인 슬롯에 무제한 확정이 열려 있었다.
+
+**🔴 3-C 설계 §10-7 미확정 1번의 결론을 함께 뒤집었다**
+
+3-C 는 "출발지 정원 0 이면 항목을 지운다"로 닫았고 근거는 *"남겨도 `v_capacity > 0` 가드는 똑같이
+스킵되므로 보안 차이가 없다"* 였다. 가드를 `IS NOT NULL` 로 바꾸는 순간 그 근거가 무효가 된다:
+
+```
+지우면 → 축 미매칭(B) → v_capacity IS NULL → 통과   ← 3-C 가 방금 비운 슬롯이 다시 열린다
+남기면 → count: 0(C)  → v_capacity = 0     → 거부   ← 닫힌다
+```
+
+그래서 두 변경은 **한 마이그**에 같이 넣었다. 하나만 하면 3-C 경로가 열린 채 남는다.
+
+**착수 근거 — "로그로 데이터를 모은 뒤 판단"이 성립하지 않았다 (prod 실측)**
+
+- 공고 원문 역할 항목 **109건 전부 `count > 0`** — headcount 전용 0 · `count:0` 0 · fixed 공고 0건
+- `v_capacity = 0` 이 실제 발생한 work_logs 2건은 **전부 container + 직접 배치**라 `confirm_application` 미경유
+- work_logs 3건(마지막 `2026-07-30`) · confirmed 지원서 1건 · users 27
+- → 트래픽이 없어 R0 관측 로그는 앞으로도 0건이 쌓인다. **기다려도 근거가 안 생기고, 반대로
+  영향받을 기존 데이터가 0건이라 지금이 전환 위험이 가장 낮다.**
+
+**검증**
+
+- 신규 pgTAP **8종** red→green · **red-swap 3종 1:1**(headcount 독해 제거→2번만 / `IS NOT NULL`→`>0`→3번만 /
+  항목 삭제 복원→5·6·8 + 3-C 26번)
+- 전체 pgTAP **100파일 1101테스트 PASS** · quality **exit 0** · jest **623스위트 6833테스트 PASS**
+- CI **10잡 전부 SUCCESS**(E2E 9m37s · DB Tests 2m7s)
+- 3-C 테스트 26번은 **계약이 뒤집힌 지점**이라 새 계약으로 갱신(회귀 아님)
+
+**🔴 prod 마이그 — 재적용 금지, 기록이 2건이다**
+
+| 레포 파일 | prod 기록 |
+|---|---|
+| `20260804140000_capacity_zero_fail_closed.sql` | `20260804142737` + `20260804142944` |
+
+파리티 **199 / 111 불변**(시그니처 동일).
+
+**다음 세션에 넘기는 주의 (이 세션에서 새로 알아낸 것)**
+
+- 🚨 **MCP `apply_migration` 에 마이그 본문을 옮길 때 주석을 줄이지 마라.** 함수 주석은 `prosrc` 에
+  그대로 저장되므로 **동작은 같은데 레포↔prod 정본이 갈린다.** 다음 재정의의 베이스가 흔들리고,
+  동작 차이가 없으니 테스트로는 절대 안 잡힌다. 이 세션에서 실제로 발생해
+  `20260804142944 _verbatim_fix` 로 복구했다.
+- 🔑 **적용 직후 md5 대조가 유일한 방어선이다**:
+  `md5(replace(pg_get_functiondef(oid), chr(13), ''))` 를 로컬↔prod 로 비교.
+  `chr(13)` 제거는 로컬 파일 CRLF 때문에 **필수** — 없으면 멀쩡한 함수도 전부 불일치로 보인다.
+- 🔑 정원을 읽는 함수가 이제 **셋 다 같은 NULL 규약**을 쓴다(`confirm_application` ·
+  `_posting_schedule_role_count` · 총합 함수의 COALESCE 순서). 정원을 건드리는 후속 작업은 이걸 깨지 말 것.
+- ⚠️ `update_posting_slot_time` 의 `capacityMoved.from.count` 는 더는 `null` 이 되지 않는다(항상 숫자).
+  클라는 `capacitySkipReason` 만 소비하므로 영향 0(Grep 실측).
+- ⚠️ **B(축 미매칭)는 의도적으로 열려 있다.** 닫으려면 실사용 트래픽이 쌓인 뒤
+  `capacity unknown (guard skipped)` 로그로 판단한다.
+- 📌 범위 밖 발견: `DateRequirementList.tsx:60,86` 이 `role.headcount ?? 0` 으로 `count` 폴백 없이 읽는다
+  → 현재 데이터에서 "0명" 표시. 다만 화면에서 쓰이는 곳이 없다(barrel + 테스트만) — 실사용 영향 0.
+
+---
+
+### S7-착지 (3-C 알림 모순 해소 + prod 적용 + PR) — 2026-08-04 · 상태: **PR #412 머지 완료** `d5ff28ec5`
 
 - 워크트리/브랜치: `C:/Users/user/Desktop/T-HOLDEM-timechange` / `feat/posting-time-change` · HEAD `f487ac0bd`(커밋 11개)
 - 이 세션은 새 기능을 만들지 않았다. **사용자 게이트 1건을 받아 닫고 prod 에 적용**했다.

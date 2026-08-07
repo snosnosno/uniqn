@@ -36,6 +36,15 @@ export const NotificationType = {
   CANCELLATION_REQUESTED: 'cancellation_requested',
 
   // === 출퇴근/스케줄 관련 ===
+  /**
+   * ⚠️ 아래 STAFF_CHECKED_* / CHECK_*_CONFIRMED 4종은
+   * supabase/migrations/20260807160000_worklog_checkinout_notify_split_recipient_types.sql
+   * 의 트리거 함수(notify_on_work_log_checkinout_update)에서 문자열로 하드코딩되어
+   * INSERT됩니다. 값 변경 시 반드시 새 마이그레이션으로 트리거 함수도 함께 수정해야 합니다.
+   *
+   * 수신자별로 타입이 갈린다 — 이 분리가 곧 딥링크 방향 판별자다.
+   * 합치면 구인자가 구직자용 공고 상세로 착지한다(2026-04-21~08-07 실제 회귀).
+   */
   /** 출근 체크인 알림 (구인자에게) */
   STAFF_CHECKED_IN: 'staff_checked_in',
   /** 퇴근 체크아웃 알림 (구인자에게) */
@@ -44,6 +53,16 @@ export const NotificationType = {
   CHECK_IN_CONFIRMED: 'check_in_confirmed',
   /** 퇴근 확인 알림 (스태프 본인에게) */
   CHECK_OUT_CONFIRMED: 'check_out_confirmed',
+  /**
+   * ⚠️ 레거시 — 2026-04-21 timestamptz 전환이 위 4종을 두 종으로 합쳐 버린 기간
+   * (2026-04-21 ~ 2026-08-07)에 발송된 prod 6건을 흡수하기 위한 값이다.
+   * `20260807160000` 이후 트리거는 이 값을 **더 이상 보내지 않는다**.
+   * 신규 코드에서 쓰지 말 것. 기존 알림 이력의 카테고리·아이콘·라우팅을 위해서만 존재한다.
+   */
+  /** (레거시) 출근 기록 — 스태프·구인자 공용이던 값 */
+  WORK_LOG_CHECK_IN: 'work_log_check_in',
+  /** (레거시) 퇴근 기록 — 스태프·구인자 공용이던 값 */
+  WORK_LOG_CHECK_OUT: 'work_log_check_out',
   /** 출근 리마인더 (스태프에게) */
   CHECKIN_REMINDER: 'checkin_reminder',
   /** 노쇼 알림 */
@@ -80,6 +99,15 @@ export const NotificationType = {
   FIXED_POSTING_EXPIRED: 'fixed_posting_expired',
   /** 근무일 경과 자동 마감 (작성자에게) */
   WORK_DATE_EXPIRED: 'work_date_expired',
+  /**
+   * ⚠️ 아래 JOB_POSTING_COLLABORATOR_* 2종은 baseline(20260710000002)의 트리거 함수
+   * notify_on_collaborator_added / notify_on_collaborator_removed 가 문자열로
+   * 하드코딩해 INSERT합니다. 값 변경 시 새 마이그레이션으로 트리거도 함께 수정해야 합니다.
+   */
+  /** 공고 관리 협업자로 초대됨 */
+  JOB_POSTING_COLLABORATOR_ADDED: 'job_posting_collaborator_added',
+  /** 공고 관리 협업자에서 제외됨 */
+  JOB_POSTING_COLLABORATOR_REMOVED: 'job_posting_collaborator_removed',
 
   // === 시스템 ===
   /** 공지사항 */
@@ -196,6 +224,9 @@ export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, Notificatio
   [NotificationType.SCHEDULE_CHANGE]: NotificationCategory.ATTENDANCE,
   [NotificationType.SCHEDULE_CREATED]: NotificationCategory.ATTENDANCE,
   [NotificationType.SCHEDULE_CANCELLED]: NotificationCategory.ATTENDANCE,
+  // 레거시 흡수분도 '출퇴근' 탭에서 보여야 한다 — 미매핑이면 탭에서 증발한다.
+  [NotificationType.WORK_LOG_CHECK_IN]: NotificationCategory.ATTENDANCE,
+  [NotificationType.WORK_LOG_CHECK_OUT]: NotificationCategory.ATTENDANCE,
 
   // 정산 관련
   [NotificationType.SETTLEMENT_COMPLETED]: NotificationCategory.SETTLEMENT,
@@ -208,6 +239,11 @@ export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, Notificatio
   [NotificationType.JOB_CLOSED]: NotificationCategory.JOB,
   [NotificationType.FIXED_POSTING_EXPIRED]: NotificationCategory.JOB,
   [NotificationType.WORK_DATE_EXPIRED]: NotificationCategory.JOB,
+  // 협업자 초대/제외는 공고 '상태' 변화가 아니라 '권한' 변화다 —
+  // ROLE_CHANGED·WORKSPACE_INVITATION 과 같은 축으로 둔다. '공고' 토글을 끈 사장이
+  // 관리 권한 통지까지 놓치면 안 된다.
+  [NotificationType.JOB_POSTING_COLLABORATOR_ADDED]: NotificationCategory.SYSTEM,
+  [NotificationType.JOB_POSTING_COLLABORATOR_REMOVED]: NotificationCategory.SYSTEM,
 
   // 시스템
   [NotificationType.ANNOUNCEMENT]: NotificationCategory.SYSTEM,
@@ -274,6 +310,10 @@ export const NOTIFICATION_DEFAULT_PRIORITY: Record<NotificationType, Notificatio
   [NotificationType.SCHEDULE_CHANGE]: 'high',
   [NotificationType.SCHEDULE_CREATED]: 'high',
   [NotificationType.SCHEDULE_CANCELLED]: 'high',
+  // DB 트리거가 INSERT 하는 priority 리터럴과 일치시킨다 —
+  // NotificationRepository 가 DB 값을 이 표로 덮어쓰므로 어긋나면 정렬이 왜곡된다.
+  [NotificationType.WORK_LOG_CHECK_IN]: 'normal',
+  [NotificationType.WORK_LOG_CHECK_OUT]: 'normal',
 
   // 정산 관련
   [NotificationType.SETTLEMENT_COMPLETED]: 'high',
@@ -287,6 +327,8 @@ export const NOTIFICATION_DEFAULT_PRIORITY: Record<NotificationType, Notificatio
   [NotificationType.JOB_CLOSED]: 'normal',
   [NotificationType.FIXED_POSTING_EXPIRED]: 'normal',
   [NotificationType.WORK_DATE_EXPIRED]: 'normal',
+  [NotificationType.JOB_POSTING_COLLABORATOR_ADDED]: 'normal',
+  [NotificationType.JOB_POSTING_COLLABORATOR_REMOVED]: 'normal',
 
   // 시스템
   [NotificationType.ANNOUNCEMENT]: 'normal',
@@ -451,6 +493,10 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   [NotificationType.SCHEDULE_CHANGE]: '근무 시간 변경',
   [NotificationType.SCHEDULE_CREATED]: '새 근무 배정',
   [NotificationType.SCHEDULE_CANCELLED]: '근무 취소',
+  // 레거시 6건은 스태프·구인자가 같은 값을 공유한다 — 한쪽 시점 라벨('출근 확인')을 쓰면
+  // 나머지 절반에게 거짓말이 되고, 위 죽지 않은 4종과 목록에서 구분도 되지 않는다.
+  [NotificationType.WORK_LOG_CHECK_IN]: '출근 기록',
+  [NotificationType.WORK_LOG_CHECK_OUT]: '퇴근 기록',
 
   // 정산 관련
   [NotificationType.SETTLEMENT_COMPLETED]: '정산 완료',
@@ -463,6 +509,8 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   [NotificationType.JOB_CLOSED]: '공고 마감',
   [NotificationType.FIXED_POSTING_EXPIRED]: '고정 공고 만료',
   [NotificationType.WORK_DATE_EXPIRED]: '근무일 경과 마감',
+  [NotificationType.JOB_POSTING_COLLABORATOR_ADDED]: '공고 관리 초대',
+  [NotificationType.JOB_POSTING_COLLABORATOR_REMOVED]: '공고 관리 제외',
 
   // 시스템
   [NotificationType.ANNOUNCEMENT]: '공지사항',
