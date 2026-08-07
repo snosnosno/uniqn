@@ -15,6 +15,7 @@ import type {
   OpsUndoBustResult,
   OpsPrizeCorrectionResult,
   OpsChipCountResult,
+  OpsNoShowResult,
 } from '@/types/ops';
 
 const TABLE = 'ops_participants' as const;
@@ -64,6 +65,15 @@ const setChipsResponseSchema = z
     participant_id: z.string(),
     chips: z.number(),
     chips_before: z.number(),
+  })
+  .passthrough();
+
+// 결함②: 노쇼. no-op(이미 목표 상태) 응답도 같은 키 집합을 낸다 — 서버 pgTAP 이 그걸 고정한다.
+const setNoShowResponseSchema = z
+  .object({
+    participant_id: z.string(),
+    status: z.string(),
+    status_before: z.string(),
   })
   .passthrough();
 
@@ -301,6 +311,31 @@ export class SupabaseOpsParticipantRepository implements IOpsParticipantReposito
     } catch (error) {
       if (isAppError(error)) throw error;
       mapOpsRpcError(error, { operation: 'ops 칩 카운트' });
+    }
+  }
+
+  async setNoShow(
+    participantId: string,
+    actorId: string,
+    noShow: boolean
+  ): Promise<OpsNoShowResult> {
+    const operation = noShow ? 'ops 노쇼 처리' : 'ops 노쇼 취소';
+    try {
+      const { data, error } = await supabase.rpc('ops_set_participant_no_show', {
+        p_participant_id: participantId,
+        p_actor_id: actorId,
+        p_no_show: noShow,
+      });
+      if (error) mapOpsRpcError(error, { operation });
+      const row = parseOpsRpcResponse(setNoShowResponseSchema, data, operation);
+      return {
+        participantId: row.participant_id,
+        status: row.status as OpsParticipant['status'],
+        statusBefore: row.status_before as OpsParticipant['status'],
+      };
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      mapOpsRpcError(error, { operation });
     }
   }
 }

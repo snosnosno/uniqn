@@ -112,6 +112,13 @@ export interface OpsChipCountResult {
   chipsBefore: number;
 }
 
+/** 노쇼 표시/취소 RPC 반환(결함②). checked_in ↔ no_show 왕복만 발생한다. */
+export interface OpsNoShowResult {
+  participantId: string;
+  status: OpsParticipantStatus;
+  statusBefore: OpsParticipantStatus;
+}
+
 /** reenter RPC 반환. */
 export interface OpsReenterResult {
   participantId: string;

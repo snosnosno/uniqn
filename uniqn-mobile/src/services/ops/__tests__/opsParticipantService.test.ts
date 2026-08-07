@@ -8,6 +8,7 @@ const mockBustParticipant = jest.fn();
 const mockUndoBust = jest.fn();
 const mockCorrectPrize = jest.fn();
 const mockSetChips = jest.fn();
+const mockSetNoShow = jest.fn();
 
 jest.mock('@/repositories/ops', () => ({
   opsParticipantRepository: {
@@ -18,6 +19,7 @@ jest.mock('@/repositories/ops', () => ({
     undoBust: (...args: unknown[]) => mockUndoBust(...args),
     correctPrize: (...args: unknown[]) => mockCorrectPrize(...args),
     setChips: (...args: unknown[]) => mockSetChips(...args),
+    setNoShow: (...args: unknown[]) => mockSetNoShow(...args),
   },
 }));
 
@@ -215,5 +217,57 @@ describe('opsParticipantService.setParticipantChips (결함① — Zod 경계)',
       expect((e as { code: string }).code).toBe('E3005');
     }
     expect(mockSetChips).not.toHaveBeenCalled();
+  });
+});
+
+describe('opsParticipantService.setParticipantNoShow (결함② — Zod 경계)', () => {
+  beforeEach(() => {
+    mockSetNoShow.mockReset();
+    mockSetNoShow.mockResolvedValue({
+      participantId: TID,
+      status: 'no_show',
+      statusBefore: 'checked_in',
+    });
+  });
+
+  it('표시(true) → parsed 필드로 Repository 위임 + 결과 반환', async () => {
+    const r = await svc.setParticipantNoShow({ participantId: TID, noShow: true }, 'actor-1');
+    expect(r).toEqual({ participantId: TID, status: 'no_show', statusBefore: 'checked_in' });
+    expect(mockSetNoShow).toHaveBeenCalledWith(TID, 'actor-1', true);
+  });
+
+  it('취소(false) 도 같은 경로로 위임된다(undo-first 왕복)', async () => {
+    mockSetNoShow.mockResolvedValue({
+      participantId: TID,
+      status: 'checked_in',
+      statusBefore: 'no_show',
+    });
+    const r = await svc.setParticipantNoShow({ participantId: TID, noShow: false }, 'actor-1');
+    expect(r.status).toBe('checked_in');
+    expect(mockSetNoShow).toHaveBeenCalledWith(TID, 'actor-1', false);
+  });
+
+  // noShow 누락은 서버에서도 접히지만, 왕복하면 "성공했는데 아무 일도 없음"이 된다.
+  it('noShow 누락 → ValidationError(E3005), Repository 미호출', async () => {
+    expect.assertions(2);
+    try {
+      await svc.setParticipantNoShow(
+        { participantId: TID } as unknown as { participantId: string; noShow: boolean },
+        'actor-1'
+      );
+    } catch (e) {
+      expect((e as { code: string }).code).toBe('E3005');
+    }
+    expect(mockSetNoShow).not.toHaveBeenCalled();
+  });
+
+  it('비-uuid participantId → ValidationError(E3005), Repository 미호출', async () => {
+    expect.assertions(2);
+    try {
+      await svc.setParticipantNoShow({ participantId: 'not-uuid', noShow: true }, 'actor-1');
+    } catch (e) {
+      expect((e as { code: string }).code).toBe('E3005');
+    }
+    expect(mockSetNoShow).not.toHaveBeenCalled();
   });
 });

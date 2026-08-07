@@ -48,3 +48,13 @@ export const chipCountSchema = z.object({
     .max(2_000_000_000, { message: '칩은 20억을 초과할 수 없습니다' }),
 });
 export type ChipCountInput = z.infer<typeof chipCountSchema>;
+
+/**
+ * 결함②: 노쇼 표시/취소. `noShow` 를 boolean 으로 **필수**로 받는다 —
+ * 서버도 NULL 을 접지만, 누락된 채 왕복하면 "성공했는데 아무 일도 없음"이 된다.
+ */
+export const noShowSchema = z.object({
+  participantId: z.string().uuid({ message: '올바른 참가자 ID 가 아닙니다' }),
+  noShow: z.boolean({ error: '노쇼 여부를 지정해주세요' }),
+});
+export type NoShowInput = z.infer<typeof noShowSchema>;

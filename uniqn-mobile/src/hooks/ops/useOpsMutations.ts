@@ -24,7 +24,7 @@ import type {
   OpsTableLockType,
 } from '@/types/ops';
 import type { PrizeCorrectionInput } from '@/schemas/opsPrize.schema';
-import type { ChipCountInput } from '@/schemas/opsParticipant.schema';
+import type { ChipCountInput, NoShowInput } from '@/schemas/opsParticipant.schema';
 import type { StaffRole } from '@/types/role';
 
 const toast = {
@@ -295,6 +295,34 @@ export function useSetParticipantChips(tournamentId: string) {
     onError: (error) => {
       logger.error('ops 칩 카운트 실패', toError(error));
       toast.error(extractUserMessage(error) || '칩 카운트에 실패했습니다');
+    },
+  });
+}
+
+/**
+ * 결함②: 노쇼 표시/취소. 상태만 바꾸므로 좌석·live_stats 는 건드리지 않는다
+ * (checked_in↔no_show 는 active 집계 밖 — pgTAP 이 playing 불변을 고정한다).
+ * 이벤트(HistoryTab)는 append 되므로 events 는 무효화한다.
+ */
+export function useSetParticipantNoShow(tournamentId: string) {
+  const queryClient = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (input: NoShowInput) =>
+      opsParticipantService.setParticipantNoShow(input, requireActor(actorId)),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.events(tournamentId) });
+      // 서버 no-op(이미 목표 상태)은 이벤트도 남지 않으므로 "처리됨" 이라고 말하지 않는다.
+      if (result.status === result.statusBefore) {
+        toast.success(result.status === 'no_show' ? '이미 노쇼예요' : '이미 대기 상태예요');
+        return;
+      }
+      toast.success(result.status === 'no_show' ? '노쇼로 표시했어요' : '노쇼를 취소했어요');
+    },
+    onError: (error) => {
+      logger.error('ops 노쇼 설정 실패', toError(error));
+      toast.error(extractUserMessage(error) || '노쇼 처리에 실패했습니다');
     },
   });
 }

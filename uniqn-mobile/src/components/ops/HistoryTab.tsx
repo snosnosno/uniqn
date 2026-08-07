@@ -45,6 +45,10 @@ const EVENT_LABEL: Record<OpsEventType, string> = {
   prize_paid_undone: '상금 지급 취소',
   // 결함① 칩 카운트 수동 입력
   player_chips_set: '칩 카운트 수정',
+  // 결함② 노쇼 표시/취소 — Record<OpsEventType, …> 라 enum 값을 추가하면 여기도 강제된다
+  //   (그게 이 Record 의 존재 이유다. 빠지면 감사 로그에 enum 원문이 노출된다).
+  player_no_show: '노쇼 처리',
+  player_no_show_undone: '노쇼 취소',
 };
 
 /** payload 의 원시값(string/number/boolean) 만 골라 간결 요약. */

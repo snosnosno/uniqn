@@ -41,6 +41,7 @@ export {
   useReseatParticipants,
   useCorrectPrize,
   useSetParticipantChips,
+  useSetParticipantNoShow,
   useSetTournamentPosting,
   useImportOpsStaff,
   useAddOpsStaff,

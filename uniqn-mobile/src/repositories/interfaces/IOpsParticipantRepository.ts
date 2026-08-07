@@ -5,6 +5,7 @@ import type {
   OpsUndoBustResult,
   OpsPrizeCorrectionResult,
   OpsChipCountResult,
+  OpsNoShowResult,
 } from '@/types/ops';
 
 export interface RegisterParticipantInput {
@@ -51,4 +52,9 @@ export interface IOpsParticipantRepository {
   ): Promise<{ participantId: string; prizePaidAt: string | null }>;
   /** 결함①: 칩 카운트 수동 입력(절대값). active/checked_in 만, 1 이상. 동일값은 서버 no-op. */
   setChips(participantId: string, actorId: string, chips: number): Promise<OpsChipCountResult>;
+  /**
+   * 결함②: 노쇼 표시(true) / 취소(false, undo-first). 멱등.
+   * checked_in ↔ no_show 왕복만 허용 — active 는 서버가 거부한다(그 경로는 bustParticipant).
+   */
+  setNoShow(participantId: string, actorId: string, noShow: boolean): Promise<OpsNoShowResult>;
 }

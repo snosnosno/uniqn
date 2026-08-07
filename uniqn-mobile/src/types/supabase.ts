@@ -3172,6 +3172,10 @@ export type Database = {
         Args: { p_actor_id: string; p_chips: number; p_participant_id: string };
         Returns: Json;
       };
+      ops_set_participant_no_show: {
+        Args: { p_actor_id: string; p_no_show: boolean; p_participant_id: string };
+        Returns: Json;
+      };
       ops_set_prize_structure: {
         Args: { p_actor_id: string; p_prizes: Json; p_tournament_id: string };
         Returns: Json;
@@ -3371,7 +3375,9 @@ export type Database = {
         | 'monitor_config_set'
         | 'prize_paid'
         | 'prize_paid_undone'
-        | 'player_chips_set';
+        | 'player_chips_set'
+        | 'player_no_show'
+        | 'player_no_show_undone';
       ops_participant_status: 'registered' | 'checked_in' | 'active' | 'busted' | 'no_show';
       ops_table_lock_type: 'none' | 'locked' | 'feature';
       ops_table_status: 'open' | 'closed' | 'standby';
@@ -3580,6 +3586,8 @@ export const Constants = {
         'prize_paid',
         'prize_paid_undone',
         'player_chips_set',
+        'player_no_show',
+        'player_no_show_undone',
       ],
       ops_participant_status: ['registered', 'checked_in', 'active', 'busted', 'no_show'],
       ops_table_lock_type: ['none', 'locked', 'feature'],

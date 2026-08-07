@@ -13,6 +13,7 @@ import {
   useReenterParticipant,
   useUndoBust,
   useFreeSeat,
+  useSetParticipantNoShow,
 } from '@/hooks/ops';
 import type { OpsBustResult, OpsParticipant, OpsSeat, OpsTournament } from '@/types/ops';
 
@@ -51,6 +52,7 @@ export function OpsParticipantActionSheet({
   const reenterMut = useReenterParticipant(tournamentId);
   const undoMut = useUndoBust(tournamentId);
   const freeMut = useFreeSeat(tournamentId);
+  const noShowMut = useSetParticipantNoShow(tournamentId);
 
   // 바운티 대회에서 "누가 눌렀나요?" 피커 대상(=탈락 처리할 참가자). null 이면 미표시.
   const [eliminatorPickerFor, setEliminatorPickerFor] = useState<OpsParticipant | null>(null);
@@ -200,8 +202,48 @@ export function OpsParticipantActionSheet({
               </View>
             </>
           )}
-          {/* 대기(checked_in) 참가자 — 기존에는 액션이 하나도 없어 시트가 비어 있었다. */}
-          {p.status === 'checked_in' && chipCountRow}
+          {/* 대기(checked_in) 참가자 — 기존에는 액션이 하나도 없어 시트가 비어 있었다.
+              결함②: 등록만 하고 오지 않은 참가자를 표시할 경로가 여기 붙는다. */}
+          {p.status === 'checked_in' && (
+            <>
+              {chipCountRow}
+              <View className="mt-2 border-t border-gray-200 pt-2 dark:border-gray-700">
+                <Pressable
+                  onPress={() =>
+                    confirmAction({
+                      title: '노쇼 처리',
+                      message: `${p.name} 님을 노쇼로 표시할까요?\n좌석 배정 대상에서 제외됩니다. 나중에 취소할 수 있어요.`,
+                      confirmText: '노쇼 처리',
+                      destructive: true,
+                      onConfirm: () => {
+                        noShowMut.mutate({ participantId: p.id, noShow: true });
+                        onClose();
+                      },
+                    })
+                  }
+                  accessibilityRole="button"
+                  testID="ops-participant-mark-no-show"
+                  className="min-h-[44px] items-center justify-center rounded-md border border-error-500 active:opacity-70 dark:border-error-400"
+                >
+                  <Text className="font-sans-semibold text-error-600 dark:text-error-400">
+                    노쇼 처리
+                  </Text>
+                </Pressable>
+              </View>
+            </>
+          )}
+          {/* 노쇼 취소 — 확인 다이얼로그 없이 1탭(복원 방향이라 파괴적이지 않다). */}
+          {p.status === 'no_show' && (
+            <View className="flex-row">
+              <ActionBtn
+                label="노쇼 취소"
+                onPress={() => {
+                  noShowMut.mutate({ participantId: p.id, noShow: false });
+                  onClose();
+                }}
+              />
+            </View>
+          )}
           {p.status === 'busted' && (
             <View className="flex-row gap-2">
               <ActionBtn

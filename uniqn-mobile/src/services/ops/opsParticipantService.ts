@@ -8,7 +8,9 @@ import { opsParticipantRepository, type RegisterParticipantInput } from '@/repos
 import {
   registerParticipantSchema,
   chipCountSchema,
+  noShowSchema,
   type ChipCountInput,
+  type NoShowInput,
 } from '@/schemas/opsParticipant.schema';
 import { prizeCorrectionSchema, type PrizeCorrectionInput } from '@/schemas/opsPrize.schema';
 import { UUID_LIKE_RE } from '@/schemas/common';
@@ -166,6 +168,40 @@ export async function setParticipantChips(input: ChipCountInput, actorId: string
     if (isAppError(error)) throw error;
     throw handleServiceError(error, {
       operation: '칩 카운트',
+      component: COMPONENT,
+      context: { participantId: input.participantId },
+    });
+  }
+}
+
+/**
+ * 결함②: 노쇼 표시/취소(undo-first — noShow=false 로 왕복, 서버 멱등).
+ * 상태 게이트(checked_in ↔ no_show)는 **서버 단독 판정**이다 — 클라가 본 status 는
+ * 실시간 목록의 스냅샷이라 누른 순간과 어긋날 수 있고, 여기서 중복 판정하면 두 계층이 갈라진다.
+ */
+export async function setParticipantNoShow(input: NoShowInput, actorId: string) {
+  try {
+    logger.info('ops 노쇼 설정', {
+      component: COMPONENT,
+      participantId: input.participantId,
+      noShow: input.noShow,
+    });
+    const parsed = noShowSchema.safeParse(input);
+    if (!parsed.success) {
+      const first = Object.values(parsed.error.flatten().fieldErrors).flat()[0];
+      throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+        userMessage: typeof first === 'string' ? first : '입력값을 확인해 주세요.',
+      });
+    }
+    return await opsParticipantRepository.setNoShow(
+      parsed.data.participantId,
+      actorId,
+      parsed.data.noShow
+    );
+  } catch (error) {
+    if (isAppError(error)) throw error;
+    throw handleServiceError(error, {
+      operation: input.noShow ? '노쇼 처리' : '노쇼 취소',
       component: COMPONENT,
       context: { participantId: input.participantId },
     });
