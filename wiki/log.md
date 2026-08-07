@@ -373,3 +373,9 @@ v_lines := v_lines || '';   -- v_lines 는 text[]
 - 신규 1: `sources/logger-sentry-web-recursion`(PR#413 · E2E 만성 flake 의 진짜 원인 · 🚨이 레포 Jest 는 동적 import 가 항상 reject 라 "호출 0회" 단언이 빈 통과)
 - 갱신 2: `decisions/e2e-gate-absence` — **결정의 1단계가 실행됨**(PR#432 branch protection 활성화). 기존 본문의 "master 에 protection 자체가 없다"가 stale 이 돼 상단 배너로 명시 + 착지 절 신설(`paths` required = 영구 pending 데드락 · 애그리게이터에 걸 것) · `decisions/migration-timestamp-collision` — 08-07 하루 2회 재발 기록, 확인 시점을 **머지 직전**으로 이동(브랜치 딸 땐 빈 슬롯이었다) + prod 양방향 드리프트 실측 보강
 - 계기: 지식계층 점검 세션. wiki 가 07-31 이후 정지한 사이 44건 PR 이 머지됐고, MEMORY.md 는 예산 14,000자 대비 16,831자(120%)로 초과 상태였다.
+
+## [2026-08-08] ingest | 08-01~08-07 웨이브 잔여 전량 졸업 9편 — 시간·정산·알림·정리·주소·UI·탈퇴·ops·롤아웃
+- 선별 7편(직전 엔트리)에 이어 **나머지 미졸업분을 주제 묶음으로 전량 흡수**. 08-01 이후 머지 52건 중 원장 갱신 성격 13건을 제외한 코드 PR 전량이 이제 wiki 에 대응 페이지를 갖는다.
+- 신규 8(sources): `time-model-wave-2026-08`(#409·#410·#412·#417·#424 · 센티넬 분열이 정원 우회를 열었다 · 정원0=거부 · B 원인은 의도적으로 열림) · `settlement-rpc-wave-2026-08`(#387·#388·#393·#400·#402·#420 · 편도 문 금지 · 쓰기 채널 좁히면 pgTAP 이 깨진다) · `notification-offline-contract-2026-08`(#396·#397·#398·#404·#429 · 관측 창 없이 "없으면 지운다" 금지 · 값의 출생을 먼저 물어라) · `dead-circuit-cleanup-2026-08`(#406·#408 · 제거14/완성9 · 거짓 Undo) · `address-geocoding-2026-08`(#391·#411·#419 · WebView origin 무음 실패 · 카카오 x=경도) · `ui-device-report-2026-08`(#422·#423·#425·#426 · 유령 스피너·Fragment 인덱스·vacuous SafeArea 가드·canOpenURL) · `account-withdrawal-pipeline`(#427 · "0건"이 수요 없음이 아니라 기능 불능) · `ops-followups-2026-08`(#435·#438 · DNS 미해석 도메인 · 복제한 effect 의 전제 · 숫자 카운트 가드는 충돌 감지가 안 된다)
+- 신규 1(decisions): `rollout-instrumentation-gap`(#437·#407 · 게이트를 걸 때 열 열쇠도 같이 만들어라 — 측정 수단 없는 "롤아웃 확인 후"는 조건이 아니라 무기한 보류 · prod 트래픽 27명이라 대기로는 안 채워진다)
+- 계기: 사용자 요청으로 잔여 부채 일괄 처리. 이 졸업에 맞춰 MEMORY.md 인덱스를 예산(14,000자) 이하로 가지치기.
