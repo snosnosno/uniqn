@@ -113,6 +113,21 @@ export function SettlementDetailModal({
   const payrollStatus = (workLog?.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus;
   const hasValidTimes = startTime && endTime;
 
+  // 🔴 `payrollStatus` 는 3값(`pending | completed | failed`)이다. 특별한 것은 completed 하나뿐이고
+  //    **failed 는 pending 과 같이** 다룬다 — 정산이 실패한 건이야말로 고쳐서 다시 정산해야 한다.
+  //    (예전 게이트는 `=== PENDING` 이라 failed 가 액션 줄을 통째로 잃었다.)
+  const isSettled = payrollStatus === STATUS.PAYROLL.COMPLETED;
+
+  // 🔴 정산 완료 건도 '시간 수정'으로 들어간다(D4·D2) — 시트가 **읽기 전용 모드**로 열려
+  //    거절 이유를 말한다. 세 진입점(근무표·스태프관리·정산)이 같은 답을 주게 하는 것이 목적이다.
+  //    다만 연 것은 **열람뿐**이라 금액 수정·지급 완료는 그대로 닫아 둔다.
+  // ⚠️ 그려질 버튼을 미리 세지 않으면 `SettlementActionButtons` 가 자식 없는 껍데기(px-4 py-4)만
+  //    남긴다 — 정산 완료 + onEditTime 미배선 호출부에서 빈 여백이 된다.
+  const showsEditTime = Boolean(onEditTime);
+  const showsEditAmount = !isSettled && Boolean(hasValidTimes) && Boolean(onEditAmount);
+  const showsSettle = !isSettled && Boolean(hasValidTimes) && Boolean(onSettle);
+  const hasVisibleActions = showsEditTime || showsEditAmount || showsSettle;
+
   // 핸들러
   const handleEditTime = useCallback(() => {
     if (workLog && onEditTime) {
@@ -272,12 +287,13 @@ export function SettlementDetailModal({
           </>
         )}
 
-        {/* 액션 버튼 (미정산일 때만) */}
-        {payrollStatus === STATUS.PAYROLL.PENDING && (
+        {/* 액션 버튼 — 시간 수정은 항상, 금액 수정·지급 완료는 미정산·정산 실패일 때만 */}
+        {hasVisibleActions && (
           <SettlementActionButtons
-            onEditTime={onEditTime ? handleEditTime : undefined}
-            onEditAmount={hasValidTimes && onEditAmount ? handleEditAmount : undefined}
-            onSettle={hasValidTimes && onSettle ? handleSettle : undefined}
+            testID="settlement-actions"
+            onEditTime={showsEditTime ? handleEditTime : undefined}
+            onEditAmount={showsEditAmount ? handleEditAmount : undefined}
+            onSettle={showsSettle ? handleSettle : undefined}
           />
         )}
 

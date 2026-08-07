@@ -28,6 +28,7 @@ import {
   type DeletionReason,
 } from '@/services';
 import { useIsAppleUser } from '@/hooks/auth/useCurrentUser';
+import { useWithdrawalImpact } from '@/hooks/useWithdrawalImpact';
 import { STATUS_COLORS } from '@/constants/colors';
 import { extractErrorMessage } from '@/shared/errors';
 import { logger } from '@/utils/logger';
@@ -80,8 +81,11 @@ function ReasonSelect({ selectedReason, onSelect }: ReasonSelectProps) {
 }
 
 export default function DeleteAccountScreen() {
-  useAuthStore(); // Auth state check
+  const userId = useAuthStore((state) => state.user?.uid);
   const { addToast } = useToastStore();
+
+  // 탈퇴해도 남는 근무·정산 건수 — 안내 문구만으로는 "나에게 해당되는지"를 알 수 없어 실제로 조회한다.
+  const { impact, hasImpact } = useWithdrawalImpact(userId);
 
   const [selectedReason, setSelectedReason] = useState<DeletionReason | null>(null);
   const [reasonDetail, setReasonDetail] = useState('');
@@ -231,14 +235,44 @@ export default function DeleteAccountScreen() {
               <Text className="text-error-800 dark:text-error-200 font-sans-semibold mb-1">
                 회원탈퇴 안내
               </Text>
+              {/*
+                2026-08-07: 문구를 실제 동작에 맞췄다.
+                이전 문구는 "모든 데이터가 영구 삭제"·"진행 중인 지원 내역이 모두 취소"라고
+                했으나, 영구삭제 RPC 는 근무·정산·지원 기록을 **익명화만** 하고 지원 상태는
+                건드리지 않는다(정원도 회수되지 않는다). 코드가 지키지 않는 약속이었다.
+              */}
               <Text className="text-error-700 dark:text-error-300 text-sm leading-5 font-sans">
                 • 탈퇴 요청 후 {DELETION_GRACE_PERIOD_DAYS}일간 복구 가능합니다{'\n'}•{' '}
-                {DELETION_GRACE_PERIOD_DAYS}일 후 모든 데이터가 영구 삭제됩니다{'\n'}• 진행 중인
-                지원 내역이 모두 취소됩니다{'\n'}• 삭제된 데이터는 복구할 수 없습니다
+                {DELETION_GRACE_PERIOD_DAYS}일 후 계정과 개인정보가 삭제됩니다{'\n'}• 확정된
+                근무·정산 기록은 사장의 정산 의무 때문에 익명 처리되어 남습니다{'\n'}• 진행 중인
+                지원은 탈퇴 전에 직접 취소해주세요{'\n'}• 삭제된 데이터는 복구할 수 없습니다
               </Text>
             </View>
           </View>
         </Card>
+
+        {/* 남는 기록 사전 경고 — 확정 근무·미정산 급여가 있으면 탈퇴 전에 알린다 */}
+        {hasImpact && impact && (
+          <Card className="mb-6 bg-warning-50 dark:bg-warning-900/20 border-warning-200 dark:border-warning-800">
+            <View className="flex-1">
+              <Text className="text-warning-800 dark:text-warning-200 font-sans-semibold mb-1">
+                {[
+                  impact.upcomingWorkCount > 0 ? `확정된 근무 ${impact.upcomingWorkCount}건` : null,
+                  impact.unsettledPayrollCount > 0
+                    ? `미정산 급여 ${impact.unsettledPayrollCount}건`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(', ')}
+                이 있습니다
+              </Text>
+              <Text className="text-warning-700 dark:text-warning-300 text-sm leading-5 font-sans">
+                탈퇴해도 이 기록은 사라지지 않으며, 사장 근무표에는 익명 처리된 채로 남습니다. 탈퇴
+                후에는 정산 문의가 어려워지니 먼저 마무리하시는 것을 권합니다.
+              </Text>
+            </View>
+          </Card>
+        )}
 
         {/* 탈퇴 사유 선택 */}
         <View className="mb-6">
@@ -316,7 +350,7 @@ export default function DeleteAccountScreen() {
         <View className="p-4">
           <Text className="text-content-secondary text-center mb-6 font-sans">
             회원탈퇴를 요청하면 {DELETION_GRACE_PERIOD_DAYS}일 후{'\n'}
-            모든 데이터가 영구 삭제됩니다.
+            계정과 개인정보가 삭제됩니다.
           </Text>
 
           <View className="flex-col gap-3">

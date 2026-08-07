@@ -28,7 +28,7 @@ jest.mock('@/components/ui/CalendarPicker', () => ({
 
 describe('DatePickerModal — initialSelectedDates', () => {
   it('prop 미전달 시 선택 0개 — 확인 라벨 유지(무회귀)', () => {
-    const { getByText } = render(
+    const { getByText, queryByText } = render(
       <DatePickerModal
         visible
         onClose={jest.fn()}
@@ -37,7 +37,10 @@ describe('DatePickerModal — initialSelectedDates', () => {
         existingDates={[]}
       />
     );
-    expect(getByText('선택한 날짜 (0개)')).toBeTruthy();
+    expect(getByText('선택한 날짜 0개')).toBeTruthy();
+    // 상한 안내는 통합 블록 한 곳에서만 말한다(중복 문구 제거 회귀 고정)
+    expect(getByText('최대 7개까지')).toBeTruthy();
+    expect(queryByText(/남은 슬롯:/)).toBeNull();
     expect(getByText('확인')).toBeTruthy();
   });
 
@@ -52,7 +55,7 @@ describe('DatePickerModal — initialSelectedDates', () => {
         initialSelectedDates={['2026-07-14', '2026-07-15']}
       />
     );
-    expect(getByText('선택한 날짜 (2개)')).toBeTruthy();
+    expect(getByText('선택한 날짜 2개')).toBeTruthy();
     expect(getByText('2개 추가')).toBeTruthy();
   });
 });

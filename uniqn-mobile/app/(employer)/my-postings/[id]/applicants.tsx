@@ -23,6 +23,7 @@ import { buildPostingFacts, projectPostingSurface } from '@/domains/job-posting'
 import type { ApplicantWithDetails } from '@/services';
 import type { Assignment, PostingManagementViewModel } from '@/types';
 import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 
 // ============================================================================
 // Main Component
@@ -57,7 +58,6 @@ export default function ApplicantsScreen() {
   const {
     applicants,
     isLoading,
-    isRefreshing,
     error,
     refresh,
     confirmWithHistoryAsync,
@@ -67,6 +67,12 @@ export default function ApplicantsScreen() {
     isBulkConfirming,
     markAsRead,
   } = useApplicantManagement(jobPostingId || '', { realtime: true });
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refresh()
+  );
 
   // 모달 상태
   const [selectedApplicant, setSelectedApplicant] = useState<ApplicantWithDetails | null>(null);
@@ -248,8 +254,8 @@ export default function ApplicantsScreen() {
         applicants={applicants}
         isLoading={isLoading}
         error={error}
-        onRefresh={() => refresh()}
-        isRefreshing={isRefreshing}
+        onRefresh={onPullRefresh}
+        isRefreshing={pullRefreshing}
         onConfirm={handleConfirm}
         onReject={handleReject}
         onCancelConfirmation={handleCancelConfirmation}

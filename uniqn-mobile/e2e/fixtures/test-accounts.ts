@@ -1,7 +1,11 @@
 /**
  * E2E 테스트용 계정 정의
  * Supabase에 pre-seeded된 테스트 계정
+ *
+ * 비밀번호는 레포에 두지 않는다 — E2E_CONFIG.accounts.password 가 단일 소스다.
+ * (로컬=시드 기본값, 원격=E2E_TEST_ACCOUNT_PASSWORD 필수. 사유는 e2e/config.ts 주석)
  */
+import { E2E_CONFIG } from '../config';
 
 export interface TestAccount {
   readonly email: string;
@@ -18,7 +22,7 @@ export const TEST_ACCOUNTS: Readonly<Record<TestAccountKey, TestAccount>> = {
   staff: {
     uid: 'a1111111-1111-4111-a111-111111111111',
     email: 'review-staff@uniqn.app',
-    password: 'Review2026!',
+    password: E2E_CONFIG.accounts.password,
     displayName: '심사용 스태프',
     role: 'staff',
     phoneNumber: '+821011110001',
@@ -26,7 +30,7 @@ export const TEST_ACCOUNTS: Readonly<Record<TestAccountKey, TestAccount>> = {
   employer: {
     uid: 'b2222222-2222-4222-b222-222222222222',
     email: 'review-employer@uniqn.app',
-    password: 'Review2026!',
+    password: E2E_CONFIG.accounts.password,
     displayName: '심사용 구인자',
     role: 'employer',
     phoneNumber: '+821022220002',
@@ -34,7 +38,7 @@ export const TEST_ACCOUNTS: Readonly<Record<TestAccountKey, TestAccount>> = {
   admin: {
     uid: 'c3333333-3333-4333-c333-333333333333',
     email: 'review-admin@uniqn.app',
-    password: 'Review2026!',
+    password: E2E_CONFIG.accounts.password,
     displayName: '심사용 관리자',
     role: 'admin',
     phoneNumber: '+821033330003',
@@ -44,7 +48,7 @@ export const TEST_ACCOUNTS: Readonly<Record<TestAccountKey, TestAccount>> = {
   collaborator: {
     uid: 'e5555555-5555-4555-a555-555555555555',
     email: 'review-collaborator@uniqn.app',
-    password: 'Review2026!',
+    password: E2E_CONFIG.accounts.password,
     displayName: '심사용 협업자',
     role: 'employer',
     phoneNumber: '+821055550005',

@@ -8,6 +8,7 @@
 import { START_TIME_RE, type OrderSheetFormValues } from '@/schemas/orderSheet.schema';
 import { STAFF_ROLES } from '@/constants/jobPosting';
 import { PROVIDED_FLAG } from '@/utils/settlement';
+import { groupConsecutiveDates } from '@/utils/date';
 
 export type OrderRowKey =
   | 'title'
@@ -35,6 +36,36 @@ export interface OrderRowState {
 export interface OrderRowTarget {
   key: OrderRowKey;
   groupIndex: number;
+  /**
+   * 지연 발화용 날짜집합 앵커(설계 §3.9 F9 · Eng F-5).
+   *
+   * 조건 유도 그룹핑에서는 정규화가 카드 순서를 바꾼다. 같은 렌더 사이클 안에서 계산되는
+   * 좌표(에러 라우팅·제출 유도·CTA 라벨)는 인덱스로 충분하지만, **시간을 넘나드는** 좌표는
+   * 인덱스가 stale 이 된다 — 연쇄 예약(180ms 대기)과 시트 열림→confirm 사이에 정규화가
+   * 끼면 엉뚱한 카드에 덮어쓴다. 그 두 경로만 이 앵커로 기술하고 발화 시점에
+   * `resolveGroupIndexByDates` 로 현재 인덱스를 다시 구한다.
+   */
+  dates?: readonly string[];
+}
+
+/**
+ * 날짜집합 → 현재 카드 인덱스 재해석. 앵커 날짜가 **하나라도** 남아 있는 첫 카드를 낸다
+ * (카드가 병합·분리돼도 가장 관련 있는 카드로 수렴한다). 전부 사라졌으면 null —
+ * 호출부는 조용히 버리지 말고 사용자에게 고지해야 한다(§8.4 stale confirm).
+ *
+ * 앵커가 비어 있으면(일정 밖 행, 날짜 없는 템플릿 카드) 폴백 인덱스를 쓰되 범위를 검사한다.
+ */
+export function resolveGroupIndexByDates(
+  values: OrderSheetFormValues,
+  dates: readonly string[] | undefined,
+  fallbackIndex: number
+): number | null {
+  const groups = values.scheduleGroups ?? [];
+  if (dates === undefined || dates.length === 0) {
+    return fallbackIndex >= 0 && fallbackIndex < groups.length ? fallbackIndex : null;
+  }
+  const index = groups.findIndex((g) => (g.dates ?? []).some((d) => dates.includes(d)));
+  return index >= 0 ? index : null;
 }
 
 export const ORDER_GROUPS = [
@@ -287,7 +318,18 @@ export function errorMessageForRow(
   return field ? firstMessage(errors[field]) : undefined;
 }
 
-/** 그룹 날짜 요약 — 연속 '7/20~21' · 비연속 '7/20 외 2일' · 단일 '7/20' (a11y는 호출부가 전체 나열) */
+/**
+ * 그룹 날짜 요약 (설계 §3.8) — 연속 구간은 범위로 압축하고, 비연속은 `·` 로 나열한다.
+ *
+ *   단일        '7/20'
+ *   전부 연속    '7/20~21' (월 경계는 '7/31~8/1')
+ *   비연속 소수  '7/20~21 · 7/25'   ← 카드가 어느 날짜를 담았는지 헤더에서 바로 보인다
+ *   비연속 다수  '7/20~21 외 5일'   ← 6일 이상이면 헤더가 길어져 축약
+ *
+ * a11y 는 호출부가 전체를 나열한다(요약은 시각 표기 전용).
+ */
+const LISTED_DATE_LIMIT = 5;
+
 export function summarizeGroupDates(dates: string[]): string {
   if (dates.length === 0) return '';
   const sorted = [...dates].sort();
@@ -295,19 +337,18 @@ export function summarizeGroupDates(dates: string[]): string {
     const [, m, d] = ymd.split('-');
     return `${Number(m)}/${Number(d)}`;
   };
-  if (sorted.length === 1) return md(sorted[0]!);
-  const consecutive = sorted.every((date, i) => {
-    if (i === 0) return true;
-    const [y, m, d] = sorted[i - 1]!.split('-').map(Number);
-    const next = new Date(y!, (m ?? 1) - 1, (d ?? 1) + 1);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${next.getFullYear()}-${pad(next.getMonth() + 1)}-${pad(next.getDate())}` === date;
-  });
-  if (!consecutive) return `${md(sorted[0]!)} 외 ${sorted.length - 1}일`;
-  const first = sorted[0]!;
-  const last = sorted[sorted.length - 1]!;
-  const sameMonth = first.slice(0, 7) === last.slice(0, 7);
-  return sameMonth ? `${md(first)}~${Number(last.split('-')[2])}` : `${md(first)}~${md(last)}`;
+  const compress = (run: string[]) => {
+    const first = run[0]!;
+    const last = run[run.length - 1]!;
+    if (run.length === 1) return md(first);
+    return first.slice(0, 7) === last.slice(0, 7)
+      ? `${md(first)}~${Number(last.split('-')[2])}`
+      : `${md(first)}~${md(last)}`;
+  };
+  const runs = groupConsecutiveDates(sorted);
+  if (runs.length === 1) return compress(runs[0]!);
+  if (sorted.length <= LISTED_DATE_LIMIT) return runs.map(compress).join(' · ');
+  return `${compress(runs[0]!)} 외 ${sorted.length - runs[0]!.length}일`;
 }
 
 const SALARY_TYPE_LABEL = {
@@ -557,14 +598,17 @@ export function getRowState(
 export function orderedRowTargets(values: OrderSheetFormValues): OrderRowTarget[] {
   const isFixed = values.postingType === 'fixed';
   // fixed 는 날짜 축이 없어 단일 그룹(index 0)만 순회 — dated 는 그룹 수만큼 일정·모집 반복(S1)
-  const groupCount = isFixed ? 1 : Math.max(1, (values.scheduleGroups ?? []).length);
+  const groups = values.scheduleGroups ?? [];
+  const groupCount = isFixed ? 1 : Math.max(1, groups.length);
   const targets: OrderRowTarget[] = [];
   for (const section of orderGroupsFor(values.postingType)) {
     const isSchedule = section.title === '일정 · 모집';
     const groupIndexes = isSchedule ? [...Array(groupCount).keys()] : [0];
     for (const groupIndex of groupIndexes) {
+      // 일정 행에만 날짜 앵커를 싣는다 — 연쇄 예약이 180ms 뒤 카드를 재해석할 재료(F9).
+      const anchor = isSchedule && !isFixed ? groups[groupIndex]?.dates : undefined;
       for (const key of section.rows) {
-        targets.push({ key, groupIndex });
+        targets.push({ key, groupIndex, ...(anchor !== undefined ? { dates: anchor } : {}) });
       }
     }
   }

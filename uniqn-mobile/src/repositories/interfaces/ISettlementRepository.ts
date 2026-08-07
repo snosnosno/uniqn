@@ -30,7 +30,11 @@ export interface UpdateWorkTimeContext {
   checkInTime?: Date | null;
   /** 퇴근 시간 - Date | null (미정) | undefined (변경 안함) */
   checkOutTime?: Date | null;
-  notes?: string;
+  /**
+   * ⚠️ `notes`(배치 메모)는 **이 계약에 없다.** 메모 축은 통합 편집 시트가 RPC `memo` 키로
+   * 소유한다. 여기 되살리면 `work_logs` 직접 UPDATE 가 다시 생겨 시간모델 R4(REVOKE)에서
+   * 좁은 실패 경로가 된다.
+   */
   reason?: string;
 }
 

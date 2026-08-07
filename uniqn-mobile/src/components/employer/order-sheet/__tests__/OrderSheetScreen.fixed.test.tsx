@@ -163,18 +163,18 @@ describe('OrderSheetScreen — 타입 전환 축 데이터 보존 (전체리뷰 
         },
       ],
     };
-    const { getByTestId, getByText, queryByText } = render(
+    const { getByTestId, getByText, queryByTestId } = render(
       <OrderSheetScreen {...props} initialValues={withDates} />
     );
-    // 날짜 행 value = dates.join(', ') (orderRowMeta getRowState 'dates')
-    expect(getByText('2026-07-20')).toBeTruthy();
+    // 날짜는 요약 행의 칩으로, 조건은 카드 한 줄로 보인다(조건 유도 그룹핑)
+    expect(getByTestId('order-sheet-date-chip-2026-07-20')).toBeTruthy();
     fireEvent.press(getByTestId('order-sheet-type-fixed'));
     await flushValidation();
-    expect(queryByText('2026-07-20')).toBeNull(); // 고정 레이아웃 — 날짜 행 없음
+    expect(queryByTestId('order-sheet-date-chip-2026-07-20')).toBeNull(); // 고정 레이아웃 — 날짜 축 없음
     fireEvent.press(getByTestId('order-sheet-type-regular'));
     await flushValidation();
-    expect(getByText('2026-07-20')).toBeTruthy(); // 복원(M7) — 무경고 소실 금지
-    expect(getByText('출근 19:00')).toBeTruthy(); // 시간대·역할까지 통복원
+    expect(getByTestId('order-sheet-date-chip-2026-07-20')).toBeTruthy(); // 복원(M7) — 무경고 소실 금지
+    expect(getByText('19:00 딜러 2')).toBeTruthy(); // 시간대·역할까지 통복원
   });
 
   it('fixed 근무조건이 dated 전환 후 복귀 시 복원된다', async () => {

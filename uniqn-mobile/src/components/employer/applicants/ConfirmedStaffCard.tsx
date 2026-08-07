@@ -27,10 +27,28 @@ export interface ConfirmedStaffCardProps {
   staff: ConfirmedStaff;
   onPress?: (staff: ConfirmedStaff) => void;
   onViewProfile?: (staff: ConfirmedStaff) => void;
+  /**
+   * '근무 수정' — 통합 편집 시트를 연다. 시각뿐 아니라 역할·색·메모까지 한 창에서 고친다.
+   *
+   * ⚠️ 별도의 '역할 변경' 액션은 없다. 역할은 이 시트가 흡수했고, 따로 두면 같은 축을
+   *    두 입구가 저장하게 된다(그때 한쪽만 `role_change_history` 를 남겼다).
+   */
   onEditTime?: (staff: ConfirmedStaff) => void;
-  onChangeRole?: (staff: ConfirmedStaff) => void;
   onReport?: (staff: ConfirmedStaff) => void;
   onDelete?: (staff: ConfirmedStaff) => void;
+  /**
+   * 빼기를 **근태 상태와 무관하게** 허용한다(기본값 false = 출근 예정·취소 행만).
+   *
+   * 🔴 기본 규칙(출근 전만 뺄 수 있다)은 **탈출구가 있을 때만** 성립한다. 공고 스태프관리에는
+   *    상태 되돌리기(출근 예정으로)가 있어서 잘못 찍힌 출근을 되돌린 뒤 뺄 수 있지만,
+   *    **근무표에는 상태 변경 액션이 아예 없다.** 게다가 컨테이너 직속 배치
+   *    (`job_posting_id = venue`)는 대응 공고가 없어 스태프관리 탭 자체가 존재하지 않는다 —
+   *    QR 오인식으로 `checked_in` 이 되거나 노쇼 처리된 순간 **앱 전체에서 제거 경로가 0** 이 된다.
+   *    폐기된 근무표 시트는 `!!slot.staffId` 만 봤다. 그 동작을 근무표 경로에서만 되살린다.
+   *
+   * ⚠️ 스태프관리 경로에는 켜지 말 것 — 거긴 되돌리기라는 안전한 경로가 이미 있다.
+   */
+  allowDeleteAnyStatus?: boolean;
   onStatusChange?: (staff: ConfirmedStaff) => void;
   onCancelNoShow?: (staff: ConfirmedStaff) => void;
   showActions?: boolean;
@@ -42,9 +60,9 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   onPress,
   onViewProfile,
   onEditTime,
-  onChangeRole,
   onReport,
   onDelete,
+  allowDeleteAnyStatus = false,
   onStatusChange,
   onCancelNoShow,
   showActions = true,
@@ -79,14 +97,16 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   );
 
   const workDuration = timeInfo.duration !== '-' ? timeInfo.duration : null;
-  // 정산 완료 건은 서버(ConfirmedStaffRepository.updateWorkTimeWithTransaction)가 수정을 거부하므로
-  // 버튼 단계에서 미리 숨긴다 — SettlementDetailModal의 payrollStatus===PENDING 계약과 동일.
+  // 🔴 정산 완료 건도 통과시킨다(D4). 시트가 **읽기 전용 모드로 열려** 정산 완료를 이유로
+  // 거절하므로, 여기서 버튼까지 숨기면 사용자에게는 "왜 없지?"만 남는다. 세 진입점
+  // (근무표·스태프관리·정산)이 같은 답을 주는 것이 D2 이고, 답을 말하는 주체는 시트다.
+  // ⚠️ 노쇼 취소(`canCancelNoShow`)는 다르다 — 그쪽은 대체 화면이 없어 게이트를 유지한다.
   const canEditTime =
-    staff.status !== STATUS.WORK_LOG.CANCELLED &&
-    staff.status !== STATUS.CONFIRMED_STAFF.NO_SHOW &&
-    staff.payrollStatus !== STATUS.PAYROLL.COMPLETED;
+    staff.status !== STATUS.WORK_LOG.CANCELLED && staff.status !== STATUS.CONFIRMED_STAFF.NO_SHOW;
   const canDelete =
-    staff.status === STATUS.WORK_LOG.SCHEDULED || staff.status === STATUS.WORK_LOG.CANCELLED;
+    allowDeleteAnyStatus ||
+    staff.status === STATUS.WORK_LOG.SCHEDULED ||
+    staff.status === STATUS.WORK_LOG.CANCELLED;
   const canChangeStatus =
     staff.status === STATUS.WORK_LOG.SCHEDULED ||
     staff.status === STATUS.WORK_LOG.CHECKED_IN ||
@@ -95,6 +115,15 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   // 정산 완료 건은 서버(ConfirmedStaffRepository.cancelNoShow)가 취소를 거부하므로
   // 버튼 단계에서 미리 숨긴다.
   const canCancelNoShow = staff.isNoShow && staff.payrollStatus !== STATUS.PAYROLL.COMPLETED;
+
+  // 액션 줄에 **실제로 그려질** 버튼들. 이걸 미리 세지 않으면 콜백은 왔는데 상태 게이트가
+  // 전부 막은 카드에서 구분선(mt-3 border-t pt-3)만 자식 없이 남는다 — 근무표처럼 콜백을
+  // 하나만 넘기는 소비처에서 카드마다 빈 줄이 생겼다.
+  const showsEditTime = Boolean(onEditTime) && canEditTime;
+  const showsCancelNoShow = Boolean(onCancelNoShow) && canCancelNoShow;
+  const showsReport = Boolean(onReport);
+  const showsDelete = Boolean(onDelete) && canDelete;
+  const hasVisibleActions = showsEditTime || showsCancelNoShow || showsReport || showsDelete;
 
   const handlePress = useCallback(() => {
     onPress?.(staff);
@@ -107,10 +136,6 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   const handleEditTime = useCallback(() => {
     onEditTime?.(staff);
   }, [onEditTime, staff]);
-
-  const handleChangeRole = useCallback(() => {
-    onChangeRole?.(staff);
-  }, [onChangeRole, staff]);
 
   const handleReport = useCallback(() => {
     onReport?.(staff);
@@ -237,33 +262,26 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
         ) : null}
       </Pressable>
 
-      {showActions ? (
-        <View className="mt-3 flex-row gap-2 border-t border-secondary-100 pt-3 dark:border-surface-overlay">
-          {onEditTime && canEditTime ? (
+      {showActions && hasVisibleActions ? (
+        <View
+          testID="card-actions"
+          className="mt-3 flex-row gap-2 border-t border-secondary-100 pt-3 dark:border-surface-overlay"
+        >
+          {showsEditTime ? (
             <Pressable
               onPress={handleEditTime}
               className="flex-1 flex-row items-center justify-center rounded-lg bg-surface-card py-2 active:opacity-70 dark:bg-surface"
             >
               <EditIcon size={14} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
+              {/* 라벨이 '시간 수정'이 아닌 이유 — 이 버튼이 여는 시트는 역할·색·메모도 고친다.
+                  '시간'이라고 부르면 역할 편집 입구가 사라진 것처럼 보인다. */}
               <Text className="ml-1 text-sm font-sans-medium text-primary-600 dark:text-primary-400">
-                시간 수정
+                근무 수정
               </Text>
             </Pressable>
           ) : null}
 
-          {onChangeRole && canEditTime ? (
-            <Pressable
-              onPress={handleChangeRole}
-              className="flex-1 flex-row items-center justify-center rounded-lg bg-surface-card py-2 active:opacity-70 dark:bg-surface"
-            >
-              <BriefcaseIcon size={14} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
-              <Text className="ml-1 text-sm font-sans-medium text-primary-600 dark:text-primary-400">
-                역할 변경
-              </Text>
-            </Pressable>
-          ) : null}
-
-          {onCancelNoShow && canCancelNoShow ? (
+          {showsCancelNoShow ? (
             <Pressable
               onPress={handleCancelNoShow}
               className="flex-1 flex-row items-center justify-center rounded-lg bg-surface-card py-2 active:opacity-70 dark:bg-surface"
@@ -275,7 +293,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
             </Pressable>
           ) : null}
 
-          {onReport ? (
+          {showsReport ? (
             <Pressable
               onPress={handleReport}
               className="flex-row items-center justify-center rounded-lg bg-error-50 px-3 py-2 active:opacity-70 dark:bg-error-900/20"
@@ -287,8 +305,11 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
             </Pressable>
           ) : null}
 
-          {onDelete && canDelete ? (
+          {showsDelete ? (
+            /* ⚠️ 아이콘 단독 버튼인데 accessibilityLabel 이 없다(선재 결함 — Task 9 원장).
+               지금은 테스트가 testID 로 잡는다. 라벨을 붙일 때 testID 는 그대로 두어도 된다. */
             <Pressable
+              testID="card-delete-action"
               onPress={handleDelete}
               className="flex-row items-center justify-center rounded-lg bg-surface-card px-3 py-2 active:opacity-70 dark:bg-surface"
             >

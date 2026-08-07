@@ -1,11 +1,16 @@
 name: CI
 
+# 🔴 pull_request 에 `paths:` 를 두지 않는다.
+#    paths 필터가 걸린 워크플로를 branch protection 의 required check 로 지정하면,
+#    필터에 안 걸리는 PR(문서만 고친 PR 등)에서는 워크플로가 **아예 트리거되지 않아**
+#    체크가 영원히 pending 으로 남고 머지가 불가능해진다(2026-07 #375 실사고).
+#    대신 아래 `changes` 잡이 변경 범위를 판정하고, 무거운 잡은 그때만 돈다.
+#    애그리게이터(`Quality Gate`)는 `if: always()` 라 **항상 결론을 보고**하므로
+#    required check 로 안전하다.
+#    push 는 required check 와 무관하므로 paths 필터를 유지해 낭비를 줄인다.
 on:
   pull_request:
     branches: [main, master, develop]
-    paths:
-      - 'uniqn-mobile/**'
-      - '.github/workflows/ci.yml'
   push:
     branches: [main, master, develop]
     paths:
@@ -17,9 +22,50 @@ defaults:
     working-directory: uniqn-mobile
 
 jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      app: ${{ steps.filter.outputs.app }}
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Detect app-relevant changes
+        id: filter
+        run: |
+          set -euo pipefail
+          # push/스케줄 등 PR 이 아닌 트리거는 이미 paths 필터를 통과한 것이므로 항상 실행한다.
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "app=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          # 판정 불가(얕은 클론·force push 등)면 **보수적으로 실행**한다.
+          if ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+            echo "base sha 를 못 찾음 — 보수적으로 전체 실행"
+            echo "app=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if git diff --name-only "$base" "$head" \
+               | grep -qE '^(uniqn-mobile/|\.github/workflows/ci\.yml$)'; then
+            echo "app=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "앱 코드 변경 없음 — 품질 검사 건너뜀"
+            echo "app=false" >> "$GITHUB_OUTPUT"
+          fi
+
   quality:
     name: Quality - ${{ matrix.check }}
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -41,10 +87,13 @@ jobs:
       - name: Run ${{ matrix.check }}
         run: npm run ${{ matrix.check }}
 
+  # 🔴 branch protection 의 required check 는 **이 잡**을 쓴다.
+  #    `if: always()` 라 앞 잡이 건너뛰어져도 반드시 결론(success/failure)을 보고한다.
+  #    'skipped' 를 성공으로 취급하는 것이 핵심 — 그러지 않으면 문서 전용 PR 이 전부 red 가 된다.
   quality-gate:
     name: Quality Gate
     runs-on: ubuntu-latest
-    needs: quality
+    needs: [changes, quality]
     if: always()
     defaults:
       run:
@@ -52,15 +101,21 @@ jobs:
     steps:
       - name: Check quality results
         run: |
-          if [ "${{ needs.quality.result }}" != "success" ]; then
-            echo "Quality checks failed"
+          result='${{ needs.quality.result }}'
+          if [ "$result" = "skipped" ]; then
+            echo "앱 코드 변경이 없어 품질 검사를 건너뛰었다 — 통과로 처리"
+            exit 0
+          fi
+          if [ "$result" != "success" ]; then
+            echo "Quality checks failed (result=$result)"
             exit 1
           fi
 
   test:
     name: Tests
     runs-on: ubuntu-latest
-    needs: quality-gate
+    needs: [changes, quality-gate]
+    if: needs.changes.outputs.app == 'true'
 
     steps:
       - name: Checkout
@@ -83,7 +138,8 @@ jobs:
   bundle-check:
     name: Bundle Size Check
     runs-on: ubuntu-latest
-    needs: quality-gate
+    needs: [changes, quality-gate]
+    if: needs.changes.outputs.app == 'true'
 
     steps:
       - name: Checkout

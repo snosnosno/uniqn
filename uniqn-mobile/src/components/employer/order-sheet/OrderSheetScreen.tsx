@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, Pressable, ScrollView, Text, View } from 'react-native';
+import { AccessibilityInfo, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,15 +18,26 @@ import {
   getRowState,
   nextUnsetRowAfter,
   orderGroupsFor,
+  resolveGroupIndexByDates,
   roleName,
   summarizeGroupDates,
-  summarizeTotalRoles,
   type OrderRowKey,
   type OrderRowTarget,
 } from './orderRowMeta';
 import { OrderGroup } from './OrderGroup';
 import { OrderRow } from './OrderRow';
-import { DATE_CONSTRAINTS } from '@/constants';
+import { ScheduleSection } from './ScheduleSection';
+import {
+  normalizeScheduleGroups,
+  setRunGrouped,
+} from '@/utils/order-sheet/normalizeScheduleGroups';
+import { applyConditionToDates, applyDateSelection } from '@/utils/order-sheet/scheduleCardEdits';
+import {
+  diagnoseScheduleChange,
+  type ScheduleChangeContext,
+} from '@/utils/order-sheet/scheduleNotices';
+import { UNDO_DELAY_MS } from '@/constants/undo';
+import { logger } from '@/utils/logger';
 import { TypeSegment } from './TypeSegment';
 import { TitleSheet } from './sheets/TitleSheet';
 import { PlaceSheet, type OrderSheetLocation } from './sheets/PlaceSheet';
@@ -41,11 +52,10 @@ import { TaxSheet } from './sheets/TaxSheet';
 import { ConditionsSheet } from './sheets/ConditionsSheet';
 import { PreQuestionsSheet } from './sheets/PreQuestionsSheet';
 import { PresetCarousel, type OrderSheetPreset } from './PresetCarousel';
-import { ScheduleDatesSheet, type ScheduleSplitMode } from './sheets/ScheduleDatesSheet';
-import { InformationCircleIcon, XMarkIcon } from '@/components/icons';
+import { ScheduleDatesSheet } from './sheets/ScheduleDatesSheet';
+import { InformationCircleIcon } from '@/components/icons';
 import { SheetChainContext, type SheetChainValue } from '@/components/ui/SheetChainContext';
 import { SHEET_CHAIN_DATES_SCRIM_HOLD_MS, SHEET_CHAIN_SWAP_MS } from '@/constants/animation';
-import { groupConsecutiveDates, hasGroupableDates } from '@/utils/date';
 import {
   defaultAmountForRole,
   syncRoleSalaries,
@@ -57,13 +67,25 @@ type ScheduleGroups = NonNullable<OrderSheetFormValues['scheduleGroups']>;
 type GroupTimeSlots = ScheduleGroups[number]['timeSlots'];
 
 /**
- * 활성 시트 상태 — 행 키(비일정) 또는 그룹 스코프 일정 타깃(S1).
- * dates.mode: whole=단일 그룹 전체 편집(3지 세그먼트 노출) · edit=기존 그룹 재편집(세그먼트 숨김 ⓓ)
- * · add=새 그룹 추가(직전 그룹 시간/역할 깊은복사 시드).
+ * 활성 시트 상태 — 행 키(비일정) 또는 일정 타깃.
+ *
+ * 날짜 시트는 **전 일정 스코프** 하나뿐이다(조건 유도 그룹핑 — 사장은 날짜만 고르고 카드
+ * 경계는 조건이 정한다). 구 whole/edit/add 3모드와 3지 세그먼트가 여기서 사라진다.
  */
-type DatesTarget = { key: 'dates'; groupIndex: number; mode: 'whole' | 'edit' | 'add' };
-/** 시간·역할 통합 시트 타깃 — 구 TimeTarget + SlotRolesTarget 을 대체한다(시트 전환이 사라짐). */
-type SlotsTarget = { key: 'slots'; groupIndex: number };
+type DatesTarget = { key: 'dates' };
+/**
+ * 시간·역할 시트 타깃 — 좌표를 **날짜집합**으로 든다(§3.7·F9).
+ * 시트가 열려 있는 동안 정규화가 카드 순서를 바꿀 수 있으므로 confirm 시점에 재해석한다.
+ *
+ * 구 `mode: 'edit' | 'exception'` 은 사라졌다 — 시트가 "적용할 날짜"를 항상 보여주고
+ * 0개 선택이 곧 카드 전체 편집이라, 두 모드가 하나의 연산(`applyConditionToDates`)으로 합쳐졌다.
+ * 모드 전환이 없어지면서 리마운트·편집값 승계(구 seedSlots) 문제도 함께 소멸했다.
+ */
+type SlotsTarget = {
+  key: 'slots';
+  dates: readonly string[];
+  fallbackIndex: number;
+};
 type ActiveSheet =
   // 'workConditions'는 Exclude<OrderRowKey,...>에 이미 포함(고정 근무조건 시트).
   // 'fixedRoles'는 OrderRowKey가 아닌 고정 전용 시트 키 — 그룹 슬롯 roles와 구분하려 별도 추가(S2).
@@ -83,6 +105,9 @@ const SLOTS_SHEET_ROWS: readonly OrderRowKey[] = ['time', 'roles'];
 /** 폼 슬롯 깊은복사(F1/E6) — 분할·시드 시 참조 공유로 타 그룹이 오염되는 것을 차단 */
 const cloneSlots = (slots: GroupTimeSlots | undefined): GroupTimeSlots =>
   (slots ?? []).map((s) => ({ ...s, roles: s.roles.map((r) => ({ ...r })) }));
+
+/** 날짜 칩 탭으로 지목한 카드를 강조해 두는 시간 — 눈이 따라올 만큼만 짧게(F2) */
+const CARD_HIGHLIGHT_MS = 2400;
 
 /** 자동 시드된 기본값과 다른, **사용자가 실제로 넣은** 근무조건이 있는가. */
 function hasUserFixedInput(fixed: OrderSheetFormValues['fixedSchedule']): boolean {
@@ -200,6 +225,34 @@ export function OrderSheetScreen({
   );
   const groupCount = scheduleGroups.length;
 
+  /** 전 카드 날짜 합집합 — 날짜 시트의 시드(전 일정 스코프) */
+  const allSelectedDates = useMemo(
+    () => [...new Set(scheduleGroups.flatMap((g) => g.dates ?? []))].sort(),
+    [scheduleGroups]
+  );
+
+  /**
+   * 시트에 넘길 카드 조건 — 시트가 열려 있는 동안 정규화가 카드를 옮겼을 수 있으므로
+   * 날짜집합으로 재해석해 찾고, **깊은복사**해 넘긴다(F11 — 시트 내부 편집이 폼 상태를
+   * 참조로 건드리지 않게).
+   */
+  const slotsSheetValue = useMemo<GroupTimeSlots>(() => {
+    if (slotsTarget === null) return [];
+    const index = resolveGroupIndexByDates(values, slotsTarget.dates, slotsTarget.fallbackIndex);
+    return cloneSlots(index === null ? [] : scheduleGroups[index]?.timeSlots);
+  }, [slotsTarget, values, scheduleGroups]);
+
+  /**
+   * 시트의 "적용할 날짜" 후보 — 그 카드의 날짜들.
+   * 단 **날짜가 아직 없는 조건 카드**(템플릿 프리셋이 만드는 그것)는 후보가 비어 버려
+   * 영영 날짜를 받지 못한다. 그때는 공고 전체 날짜를 후보로 줘서 여기서 배정받게 한다.
+   */
+  const slotsSheetDates = useMemo<string[]>(() => {
+    if (slotsTarget === null) return [];
+    const cardDates = [...slotsTarget.dates];
+    return cardDates.length > 0 ? cardDates : allSelectedDates;
+  }, [slotsTarget, allSelectedDates]);
+
   // 급여 시트(동일급여 OFF)용 고유 역할 — 전 그룹 timeSlots에서 roleKey(기타는 customRole 단위) 기준
   // 중복 제거, 라벨은 orderRowMeta.roleName 재사용. by_role 전수 커버 게이트(스키마 superRefine)와 대칭.
   const uniqueRoles = useMemo<UniqueRole[]>(() => {
@@ -304,6 +357,25 @@ export function OrderSheetScreen({
       const state = getRowState(current, key, groupIndex);
       chainArmedRef.current = !state.optional && state.unset;
       const groups = current.scheduleGroups ?? [];
+      // 조건은 있는데 날짜가 없는 카드(템플릿 프리셋)의 '날짜' 행 — **전 일정 스코프 날짜
+      // 시트로 보내면 안 된다.** 그 시트가 무엇을 고르든 새 날짜는 인접·첫 카드가 가져가고
+      // 이 카드는 영영 비어 있어, 제출 유도가 같은 자리를 무한히 가리키는 루프가 된다.
+      // 조건 시트로 보낸다 — 거기 "이 조건을 쓸 날짜"가 이 카드에 직접 날짜를 배정한다.
+      //
+      // ⚠️ **공고에 날짜가 하나라도 있을 때만** 우회한다. 아직 아무 날짜도 없는 초기 상태
+      //    (조건만 시드된 카드 1개)에서 우회하면 조건 시트에 고를 후보가 0개라 확인이
+      //    영영 잠기는 반대 방향의 막다른 길이 된다 — 그때는 날짜 시트가 정답이다.
+      const otherDates = groups.some((g, i) => i !== groupIndex && (g.dates ?? []).length > 0);
+      const emptyConditionCard =
+        key === 'dates' &&
+        current.postingType !== 'fixed' &&
+        (groups[groupIndex]?.dates ?? []).length === 0 &&
+        (groups[groupIndex]?.timeSlots ?? []).length > 0 &&
+        otherDates;
+      if (emptyConditionCard) {
+        setActiveSheet({ key: 'slots', dates: [], fallbackIndex: groupIndex });
+        return;
+      }
       if (key === 'dates') {
         // 딤 해제 책임이 여기로 넘어온다: 날짜 시트만 SheetModal 이 아니라 DatePickerModal(ui/Modal)
         // 래핑이라 SheetChainContext 를 소비하지 않는다 → 시트가 떠도 onEntered() 통지가 없어
@@ -317,7 +389,7 @@ export function OrderSheetScreen({
           datesScrimHoldRef.current = null;
           updateChainSwapping(false);
         }, SHEET_CHAIN_DATES_SCRIM_HOLD_MS);
-        setActiveSheet({ key: 'dates', groupIndex, mode: groups.length > 1 ? 'edit' : 'whole' });
+        setActiveSheet({ key: 'dates' });
         return;
       }
       // 시간·역할은 통합 시트 하나로 진입한다(설계 §6). 고정(fixed)은 단일 fixedSchedule.roles
@@ -328,7 +400,11 @@ export function OrderSheetScreen({
           setActiveSheet('fixedRoles');
           return;
         }
-        setActiveSheet({ key: 'slots', groupIndex });
+        setActiveSheet({
+          key: 'slots',
+          dates: [...(groups[groupIndex]?.dates ?? [])],
+          fallbackIndex: groupIndex,
+        });
         return;
       }
       if (key === 'workConditions') {
@@ -386,7 +462,25 @@ export function OrderSheetScreen({
       updateChainSwapping(true);
       pendingSwapRef.current = setTimeout(() => {
         pendingSwapRef.current = null;
-        openRow(next.key, next.groupIndex);
+        // F9 — 180ms 대기 동안 정규화가 카드 순서를 바꿨을 수 있다(같은 조건으로 수렴하면
+        // 카드가 병합되고, 예외를 뽑으면 갈라진다). 예약 시점 인덱스가 아니라 **날짜집합**으로
+        // 현재 카드를 다시 구한다. 카드가 통째로 사라졌으면 연쇄를 조용히 끝낸다 —
+        // 엉뚱한 카드의 시트를 열어 입력을 잘못 쓰는 것보다 낫다.
+        //
+        // ⚠️ 앵커가 **없는** 행(비일정 행·날짜 축이 아예 없는 fixed)은 재해석이 "불필요"한
+        //    것이지 "실패"가 아니다. 무조건 재해석을 태우면 fixed(scheduleGroups=[] 가 계약)는
+        //    폴백 범위검사에서 항상 null 이 되어 연쇄가 통째로 죽는다.
+        const resolved =
+          next.dates === undefined
+            ? next.groupIndex
+            : resolveGroupIndexByDates(form.getValues(), next.dates, next.groupIndex);
+        if (resolved === null) {
+          // 침묵 종료도 딤 해제 책임을 진다 — 안 걷으면 사용자가 다른 행을 탭할 때까지
+          // 화면 전체가 어두운 채로 남는다.
+          updateChainSwapping(false);
+          return;
+        }
+        openRow(next.key, resolved);
       }, SHEET_CHAIN_SWAP_MS);
     },
     [form, openRow, updateChainSwapping]
@@ -417,107 +511,298 @@ export function OrderSheetScreen({
     }
   }, [updateChainSwapping]);
 
-  /** 그룹 삭제(즉시) + Undo 토스트 5초 — impeccable §12, 리뷰 Design-M2.
-   *  복원은 삭제 그룹 단건 재삽입(리뷰 L-6) — 5초 내 타 그룹 편집을 함께 되돌리지 않는다. */
-  const handleDeleteGroup = useCallback(
-    (groupIndex: number) => {
-      // 연쇄 예약 취소 — 180ms 대기 창 안에서 그룹을 삭제하면 예약된 groupIndex 가 stale 이 되어
-      // phantom 시트가 뜨고, 거기서 확인한 입력은 groupIndex 매치 실패로 조용히 유실된다.
+  /** 폼 그룹 커밋 단일 경로 — 정규화·급여 동기화·시드 계약을 한자리에 모은다.
+   *  화면의 모든 일정 뮤테이션이 여기를 지난다(정규화를 잊는 실수를 구조적으로 차단). */
+  const commitGroups = useCallback(
+    (next: ScheduleGroups) => {
+      // 빈 시드 계약(§8.4) — 결과가 완전히 비면 초기 상태(mappers.initialOrderSheetValues)와
+      // 같은 빈 그룹 1개를 남긴다. 정규화 자체는 fixed(scheduleGroups=[])를 깨지 않으려고
+      // 시드하지 않으므로, 시드는 이 화면 계층의 책임이다.
+      const seeded: ScheduleGroups =
+        next.length > 0 ? next : [{ dates: [], timeSlots: [], grouped: false }];
+      form.setValue('scheduleGroups', seeded, { shouldDirty: true, shouldValidate: true });
+      applyRoleSalarySync(seeded);
+      return seeded;
+    },
+    [form, applyRoleSalarySync]
+  );
+
+  /** 카드 삭제(즉시) + Undo 토스트 — impeccable §12, 리뷰 Design-M2.
+   *  Undo 는 삭제 직전 전체 스냅샷 복원 — 정규화가 인덱스를 바꿀 수 있어 단건 재삽입은 성립하지 않는다. */
+  const handleDeleteCard = useCallback(
+    (cardIndex: number) => {
+      // 연쇄 예약 취소 — 180ms 대기 창 안에서 카드를 삭제하면 예약이 사라진 카드를 가리킨다.
       clearPendingSwap();
       const current = form.getValues().scheduleGroups ?? [];
-      if (current.length <= 1) return; // E4: 마지막 그룹은 버튼 자체 미노출 — 방어
-      const target = current[groupIndex];
+      if (current.length <= 1) return; // E4: 마지막 카드는 버튼 자체 미노출 — 방어
+      const target = current[cardIndex];
       if (!target) return;
-      const removed = {
-        ...target,
-        dates: [...target.dates],
-        timeSlots: cloneSlots(target.timeSlots),
-      };
-      const next = current.filter((_, i) => i !== groupIndex);
-      form.setValue('scheduleGroups', next, { shouldDirty: true, shouldValidate: true });
+      const snapshot = current.map((g) => ({
+        ...g,
+        dates: [...(g.dates ?? [])],
+        timeSlots: cloneSlots(g.timeSlots),
+      }));
+      commitGroups(normalizeScheduleGroups(current.filter((_, i) => i !== cardIndex)));
       addToast({
         type: 'success',
-        message: `${summarizeGroupDates(removed.dates) || '일정'} 일정을 삭제했어요`,
-        duration: 5000,
+        // 날짜가 없는 조건 카드를 지우면 요약이 빈 문자열이라 폴백이 필요한데,
+        // '일정' 을 끼우면 "일정 일정을 삭제했어요" 가 된다 — 문장 자체를 갈아 끼운다.
+        message: (() => {
+          const summary = summarizeGroupDates(target.dates ?? []);
+          return summary ? `${summary} 일정을 삭제했어요` : '조건을 삭제했어요';
+        })(),
+        duration: UNDO_DELAY_MS,
         action: {
           label: '되돌리기',
           onPress: () => {
-            // 복원은 그룹 인덱스를 되밀어 예약된 groupIndex 를 stale 로 만든다 —
-            // 삭제 본체와 같은 가드가 필요하다(대기 창과 토스트 5초가 겹칠 수 있다).
             clearPendingSwap();
-            const now = form.getValues().scheduleGroups ?? [];
-            const insertAt = Math.min(groupIndex, now.length);
-            form.setValue(
-              'scheduleGroups',
-              [...now.slice(0, insertAt), removed, ...now.slice(insertAt)],
-              { shouldDirty: true, shouldValidate: true }
-            );
+            commitGroups(snapshot);
           },
         },
       });
     },
-    [form, addToast, clearPendingSwap]
+    [form, addToast, clearPendingSwap, commitGroups]
   );
 
-  /** "+ 일정 추가" — 새 그룹은 날짜 시트부터, 시간/역할은 직전 그룹 깊은복사 시드(리뷰 Design-L2).
-   *  add 모드는 세그먼트 미노출(v1 확정 — 리뷰 M-2 기록): 다그룹 상태에서 새 묶음지원(②) 구간은
-   *  전체 날짜 whole+② 경로(동일 조건)로 우회 가능하고, 조건이 다른 복수 묶음 구간은 v1 범위 밖.
-   *  confirm-시점-분할 단순성(E6 구조적 회피)을 유지하는 절충이다. */
-  const handleAddSchedule = useCallback(() => {
-    clearPendingSwap();
-    const groups = form.getValues().scheduleGroups ?? [];
-    chainArmedRef.current = true; // 새 그룹은 정의상 미설정 — 날짜 확정 후 시간·역할로 이어간다
-    setActiveSheet({ key: 'dates', groupIndex: groups.length, mode: 'add' });
-  }, [form, clearPendingSwap]);
+  /** 폼 그룹 스냅샷(깊은복사) — Undo 복원용 */
+  const snapshotGroups = useCallback(
+    (groups: ScheduleGroups): ScheduleGroups =>
+      groups.map((g) => ({
+        ...g,
+        dates: [...(g.dates ?? [])],
+        timeSlots: cloneSlots(g.timeSlots),
+      })),
+    []
+  );
 
-  /** 담긴 날짜가 타입별 상한에 도달했는지 — 도달하면 '+ 일정 추가' 진입 자체를 막는다(ORDER-8). */
-  const dateCapReached = useMemo(() => {
-    const max = DATE_CONSTRAINTS[values.postingType]?.maxDates ?? 0;
-    if (max <= 0) return false; // fixed 는 이 섹션을 쓰지 않는다
-    const used = (values.scheduleGroups ?? []).reduce((n, g) => n + (g.dates?.length ?? 0), 0);
-    return used >= max;
-  }, [values.postingType, values.scheduleGroups]);
+  // openException 은 아래에서 정의된다 — 승계 고지의 "다른 조건으로" 액션이 그걸 불러야 해
+  // ref 로 우회한다(handleTypeChangeRef 와 같은 선언 순환 회피 패턴).
+  const openExceptionRef = useRef<((cardIndex: number) => void) | null>(null);
 
-  /** 날짜 시트 확정 — whole 모드는 세그먼트에 따라 그룹 분할/유지(분할은 confirm 시점에만 실행) */
-  const handleDatesConfirm = useCallback(
-    (target: DatesTarget, dates: string[], segment: ScheduleSplitMode) => {
-      const current = form.getValues().scheduleGroups ?? [];
-      const sorted = [...dates].sort();
-      let next: ScheduleGroups;
-      if (target.mode === 'add') {
-        const seed = cloneSlots(current[current.length - 1]?.timeSlots);
-        next = [...current, { dates: sorted, timeSlots: seed, grouped: false }];
-      } else if (target.mode === 'edit') {
-        // grouped 그룹의 날짜가 연속쌍을 전부 잃으면 묶음지원 라벨 의미가 사라짐 — 해제(리뷰 L-2)
-        next = current.map((g, i) =>
-          i === target.groupIndex
-            ? { ...g, dates: sorted, grouped: (g.grouped ?? false) && hasGroupableDates(sorted) }
-            : g
-        );
-      } else {
-        // whole — 단일 그룹 전체 편집(세그먼트). 분할 시 기존 공통 시간/역할을 각 그룹에 깊은복사 승계(E6).
-        const base = current[target.groupIndex] ?? { dates: [], timeSlots: [], grouped: false };
-        if (segment === 'separate') {
-          next = sorted.map((d) => ({
-            dates: [d],
-            timeSlots: cloneSlots(base.timeSlots),
-            grouped: false,
-          }));
-        } else if (segment === 'grouped') {
-          // 연속 run별 분할 — run 길이 2+만 묶음지원(grouped=true), 단독 날짜는 날짜별 지원 유지(F6)
-          next = groupConsecutiveDates(sorted).map((run) => ({
-            dates: run,
-            timeSlots: cloneSlots(base.timeSlots),
-            grouped: run.length > 1,
-          }));
-        } else {
-          next = [{ ...base, dates: sorted, grouped: false }];
-        }
+  /**
+   * 암묵 동작 고지 — **한 뮤테이션당 최대 1건**(F6 우선순위: 소멸 > 묶음해제 > 병합 > 승계).
+   * 정규화가 사장이 지시하지 않은 일을 하므로 침묵도, 네 번 알리기도 안 된다.
+   */
+  const notifyScheduleChange = useCallback(
+    (before: ScheduleGroups, after: ScheduleGroups, context: ScheduleChangeContext) => {
+      const notice = diagnoseScheduleChange(before, after, context);
+      if (notice === null) return;
+      // 관측(§8.6) — 이 화면의 **최초 계기판**이다. 어떤 암묵 동작이 실제로 얼마나 일어나는지
+      // 몰라서 "표현만 바꾸고 기능은 안 지운다"는 결정을 했으므로, 그 판단의 근거를 쌓는다.
+      // ⚠️ logger.error 로 되돌리면 웹에서 sentry↔logger 무한 재귀가 재발한다(2026-08-04).
+      if (notice.kind === 'merged') {
+        logger.observability('order_sheet.auto_merge', undefined, {
+          component: 'OrderSheetScreen',
+          cardsBefore: before.length,
+          cardsAfter: after.length,
+        });
+      } else if (notice.kind === 'inherited') {
+        logger.observability('order_sheet.inherit_notice', undefined, {
+          component: 'OrderSheetScreen',
+          cardCount: after.length,
+        });
       }
-      form.setValue('scheduleGroups', next, { shouldDirty: true, shouldValidate: true });
+      if (notice.kind === 'cardRemoved') {
+        const snapshot = snapshotGroups(before);
+        addToast({
+          type: 'info',
+          message: notice.message,
+          duration: UNDO_DELAY_MS,
+          action: {
+            label: '되돌리기',
+            onPress: () => {
+              clearPendingSwap();
+              commitGroups(snapshot);
+            },
+          },
+        });
+        return;
+      }
+      if (notice.kind === 'inherited' && notice.inheritedCardIndex !== undefined) {
+        const fallbackIndex = notice.inheritedCardIndex;
+        const anchor = notice.inheritedCardDates;
+        addToast({
+          type: 'info',
+          message: notice.message,
+          duration: UNDO_DELAY_MS,
+          // 설계 F10 은 "카드 선택 액션시트"를 그렸지만, 레포에 다중 선택 액션시트 자산이 없고
+          // "다른 조건으로"의 결과는 결국 **그 날짜만 다른 조건을 갖는 것** = 예외 추출이다.
+          // 기존 시트를 재사용해 UI 신설 없이 같은 목적지에 도달한다(기존 카드 B 의 조건을
+          // 그대로 쓰고 싶으면 같은 값을 넣으면 정규화가 B 에 병합한다).
+          action: {
+            label: '다른 조건으로',
+            onPress: () => {
+              // 토스트는 5초 살아 있다 — 그 사이 카드가 병합·이동했을 수 있으므로 발화 시점에
+              // 날짜집합으로 다시 찾는다(F9 를 이 액션에도 적용). 사라졌으면 조용히 엉뚱한
+              // 카드를 여는 대신 고지한다(§8.4 stale confirm 과 같은 계약).
+              const resolved = resolveGroupIndexByDates(form.getValues(), anchor, fallbackIndex);
+              if (resolved === null) {
+                addToast({ type: 'info', message: '일정이 바뀌어 반영하지 못했어요' });
+                return;
+              }
+              openExceptionRef.current?.(resolved);
+            },
+          },
+        });
+        return;
+      }
+      addToast({ type: 'info', message: notice.message });
+    },
+    [addToast, clearPendingSwap, commitGroups, snapshotGroups, form]
+  );
+
+  /**
+   * 날짜 확정 — **전 일정 스코프**. 해제분은 소속 카드에서 빠지고, 추가분은 인접 카드가
+   * 조건을 승계한다(F10). 카드의 마지막 날짜가 빠지면 그 카드의 **조건까지** 사라지므로
+   * 되돌릴 길을 반드시 준다(F6 — 이 화면에서 정보 손실이 가장 큰 사건이다).
+   */
+  const handleDatesConfirm = useCallback(
+    (dates: string[]) => {
+      const current = form.getValues().scheduleGroups ?? [];
+      const { groups: next, removedCards, addedDates } = applyDateSelection(current, dates);
+      const committed = commitGroups(next);
+      notifyScheduleChange(current, committed, {
+        removedCards,
+        inheritedDates: addedDates,
+        // 사장이 실제로 고른 날짜 수 — 이걸 안 넘기면 "날짜를 지웠다"는 조작이
+        // "같은 조건이라 합쳐졌어요"로 오고지된다(가장 흔한 조작이라 계기판까지 오염된다).
+        expectedDateCount: new Set(dates).size,
+      });
+    },
+    [form, commitGroups, notifyScheduleChange]
+  );
+
+  /**
+   * 카드 조건 확정 — 좌표를 날짜집합으로 재해석해 stale 인덱스에 덮어쓰지 않는다(§3.7).
+   *
+   * ⚠️ null 분기(카드 소멸)는 **방어 경로**다. 지금 UI 에서는 시트가 모달로 화면을 덮고 있어
+   *    열려 있는 동안 폼을 바꿀 길이 거의 없다 — 그래서 화면 레벨 테스트가 없다. 계약 자체는
+   *    `resolveGroupIndexByDates` 유닛이 고정한다. 비모달 편집이나 외부 폼 리셋이 생기면
+   *    이 분기가 실제 경로가 되므로 남겨 둔다(조용히 버리는 것보다 고지가 낫다).
+   */
+  const handleSlotsConfirm = useCallback(
+    (target: SlotsTarget, picked: string[], nextSlots: GroupTimeSlots) => {
+      const current = form.getValues();
+      const index = resolveGroupIndexByDates(current, target.dates, target.fallbackIndex);
+      const groups = current.scheduleGroups ?? [];
+      // 앵커가 비어 있는 경우(날짜 없는 조건 카드)는 재해석이 불가능하므로 폴백 인덱스를 쓴다.
+      const cardIndex =
+        target.dates.length === 0
+          ? target.fallbackIndex < groups.length
+            ? target.fallbackIndex
+            : null
+          : index;
+      const result =
+        cardIndex === null ? null : applyConditionToDates(groups, cardIndex, picked, nextSlots);
+      if (result === null) {
+        addToast({ type: 'info', message: '일정이 바뀌어 반영하지 못했어요' });
+        return null;
+      }
+      if (picked.length > 0) {
+        logger.observability('order_sheet.exception_extract', undefined, {
+          component: 'OrderSheetScreen',
+          dateCount: picked.length,
+          totalDates: (groups[cardIndex as number]?.dates ?? []).length,
+        });
+      }
+      notifyScheduleChange(groups, commitGroups(result.groups), {
+        removedCards: result.removedCards,
+      });
+      return cardIndex;
+    },
+    [form, addToast, commitGroups, notifyScheduleChange]
+  );
+
+  /** 묶음지원 토글 — run 만 선분할한 뒤 정규화에 맡긴다(Eng F-6). */
+  const handleToggleRun = useCallback(
+    (cardIndex: number, run: string[], on: boolean) => {
+      clearPendingSwap();
+      const groups = form.getValues().scheduleGroups ?? [];
+      const committed = commitGroups(setRunGrouped(groups, cardIndex, run, on));
+      logger.observability('order_sheet.bundle_toggle', undefined, {
+        component: 'OrderSheetScreen',
+        on,
+        runLength: run.length,
+      });
+      // 사용자가 스위치를 직접 내린 것은 고지 대상이 아니다 — 자기가 한 일을 되읽어주지 않는다.
+      notifyScheduleChange(groups, committed, { bundleToggledByUser: true });
+    },
+    [form, clearPendingSwap, commitGroups, notifyScheduleChange]
+  );
+
+  /** 카드 조건 행 탭 — 미설정 카드면 연쇄를 무장한다(기존 openRow 규칙 승계). */
+  const handlePressCondition = useCallback(
+    (cardIndex: number) => {
+      clearPendingSwap();
+      handleRowPress('time', cardIndex);
+    },
+    [clearPendingSwap, handleRowPress]
+  );
+
+  /**
+   * 승계 고지 "다른 조건으로" 진입 — 그 카드의 조건 시트를 연다.
+   * 시트 맨 위 "적용할 날짜"에서 방금 들어온 날짜만 고르면 그게 곧 다른 조건 분리다
+   * (구 예외 모드 전용 진입로가 통합되면서 목적지가 하나로 합쳐졌다).
+   */
+  const openException = useCallback(
+    (cardIndex: number) => {
+      clearPendingSwap();
+      chainArmedRef.current = false; // "채우기"가 아니라 "나누기" — 연쇄 대상이 아니다
+      const groups = form.getValues().scheduleGroups ?? [];
+      setActiveSheet({
+        key: 'slots',
+        dates: [...(groups[cardIndex]?.dates ?? [])],
+        fallbackIndex: cardIndex,
+      });
+    },
+    [form, clearPendingSwap]
+  );
+
+  // 렌더 중 ref 쓰기는 React 규칙 위반 — 토스트 액션 탭은 커밋 이후에만 가능하므로 effect 로 충분하다.
+  useEffect(() => {
+    openExceptionRef.current = openException;
+  }, [openException]);
+
+  /** F2 — 날짜 칩 탭은 그 날짜가 속한 카드로 데려간다(예외 추출 제2 진입로) */
+  const [highlightedCard, setHighlightedCard] = useState<number | null>(null);
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollRef = useRef<ScrollView | null>(null);
+  const sectionYRef = useRef(0);
+  const cardYRef = useRef(new Map<number, number>());
+  useEffect(
+    () => () => {
+      if (highlightTimerRef.current !== null) clearTimeout(highlightTimerRef.current);
+    },
+    []
+  );
+
+  const handlePressDateChip = useCallback(
+    (date: string) => {
+      const groups = form.getValues().scheduleGroups ?? [];
+      const index = groups.findIndex((g) => (g.dates ?? []).includes(date));
+      if (index < 0) return;
+      setHighlightedCard(index);
+      const cardY = cardYRef.current.get(index);
+      if (cardY !== undefined) {
+        // 카드 y 는 섹션 내부 좌표라 섹션 offset 을 더한다. 헤더 여백만큼의 오차는 남지만
+        // 목적(그 카드를 눈에 띄게 만들기)은 하이라이트가 담당하므로 근사로 충분하다.
+        scrollRef.current?.scrollTo({
+          y: Math.max(0, sectionYRef.current + cardY - 24),
+          animated: true,
+        });
+      }
+      if (highlightTimerRef.current !== null) clearTimeout(highlightTimerRef.current);
+      highlightTimerRef.current = setTimeout(() => {
+        highlightTimerRef.current = null;
+        setHighlightedCard(null);
+      }, CARD_HIGHLIGHT_MS);
     },
     [form]
   );
+
+  const handleCardLayoutY = useCallback((cardIndex: number, y: number) => {
+    cardYRef.current.set(cardIndex, y);
+  }, []);
 
   // 최근 제목/장소 — 프리셋(마지막 공고 + 템플릿)의 title/location 으로 채운다.
   // ⚠️ useMemo 참조 안정화 필수: 매 렌더 새 배열이면 시트 effect 의존이 흔들려 편집 상태가 리셋된다(Task 6 리뷰 승계).
@@ -773,7 +1058,7 @@ export function OrderSheetScreen({
   return (
     <SheetChainContext.Provider value={chainValue}>
       <View className="flex-1 bg-surface-page">
-        <ScrollView className="flex-1 px-4 pt-3" contentContainerClassName="pb-28">
+        <ScrollView ref={scrollRef} className="flex-1 px-4 pt-3" contentContainerClassName="pb-28">
           {presets !== undefined && (
             <PresetCarousel
               presets={presets}
@@ -820,110 +1105,27 @@ export function OrderSheetScreen({
                 </OrderGroup>
               );
             }
-            // 일정·모집(S1) — 그룹 1개: 현행 3행 동일 / 2개+: 서브그룹(헤더+시간/역할 2행) 반복 +
-            // h-px 디바이더(중첩 카드 금지 — impeccable §6) + 섹션 캡션 총원 + "+ 일정 추가".
+            // 일정·모집 — 조건 유도 그룹핑(설계 §3.2). 날짜 요약 행 + 조건 카드 N개.
+            // 카드 수·경계는 사장이 고르지 않는다: 같은 조건이면 한 카드, 다르면 갈라진다.
             return (
-              <OrderGroup
+              <View
                 key={section.title}
-                title={section.title}
-                caption={groupCount > 1 ? summarizeTotalRoles(values) || undefined : undefined}
+                onLayout={(e) => {
+                  sectionYRef.current = e.nativeEvent.layout.y;
+                }}
               >
-                {groupCount <= 1 ? (
-                  section.rows.map((key) => (
-                    <OrderRow
-                      key={key}
-                      state={getRowState(values, key, 0)}
-                      error={rowError(key, 0)}
-                      onPress={() => handleRowPress(key, 0)}
-                      testID={`order-sheet-row-${key}`}
-                    />
-                  ))
-                ) : (
-                  <>
-                    {scheduleGroups.map((group, gi) => {
-                      const datesError = rowError('dates', gi);
-                      const datesSummary = summarizeGroupDates(group.dates ?? []);
-                      return (
-                        <View key={`schedule-group-${gi}`}>
-                          {gi > 0 ? (
-                            <View className="h-px bg-secondary-100 dark:bg-surface-overlay" />
-                          ) : null}
-                          <View className="flex-row items-center pl-4 pr-1 pt-1.5">
-                            <Pressable
-                              onPress={() => handleRowPress('dates', gi)}
-                              className="flex-1 min-h-[44px] justify-center active:opacity-80"
-                              accessibilityRole="button"
-                              accessibilityLabel={`일정 날짜 ${
-                                (group.dates ?? [])
-                                  .map((d) => {
-                                    const [, m, day] = d.split('-');
-                                    return `${Number(m)}월 ${Number(day)}일`;
-                                  })
-                                  .join(', ') || '미설정'
-                              }, 탭하여 날짜 편집${datesError ? `, 오류: ${datesError}` : ''}`}
-                              testID={`order-sheet-group-dates-${gi}`}
-                            >
-                              <Text className="text-sm font-sans-bold text-content-primary">
-                                {datesSummary || '날짜 미설정'}
-                              </Text>
-                              {datesError ? (
-                                <Text className="text-[11px] text-error-500 dark:text-error-400 font-sans">
-                                  {datesError}
-                                </Text>
-                              ) : null}
-                            </Pressable>
-                            {/* 삭제 — muted 위계 강등 + hitSlop 확장(2차 Design-medium). E4: 그룹 1개면 미노출 */}
-                            <Pressable
-                              onPress={() => handleDeleteGroup(gi)}
-                              hitSlop={14}
-                              className="w-8 h-8 items-center justify-center active:opacity-80"
-                              accessibilityRole="button"
-                              accessibilityLabel={`${datesSummary || '이'} 일정 삭제`}
-                              testID={`order-sheet-group-delete-${gi}`}
-                            >
-                              <XMarkIcon size={16} />
-                            </Pressable>
-                          </View>
-                          {(['time', 'roles'] as const).map((key) => (
-                            <OrderRow
-                              key={key}
-                              state={getRowState(values, key, gi)}
-                              error={rowError(key, gi)}
-                              onPress={() => handleRowPress(key, gi)}
-                              testID={`order-sheet-row-${key}-${gi}`}
-                            />
-                          ))}
-                        </View>
-                      );
-                    })}
-                  </>
-                )}
-                {/* 날짜 상한을 다 쓰면 여는 것 자체를 막는다 — 열어봐야 아무 날짜도 못 고르고
-                    '최대 0개까지 선택할 수 있습니다' 라는 사람이 안 쓰는 문장만 보게 된다. */}
-                <Pressable
-                  onPress={handleAddSchedule}
-                  disabled={dateCapReached}
-                  className={`min-h-[44px] items-center justify-center border-t border-secondary-100 dark:border-surface-overlay ${
-                    dateCapReached ? 'opacity-50' : 'active:opacity-80'
-                  }`}
-                  accessibilityRole="button"
-                  accessibilityState={{ disabled: dateCapReached }}
-                  accessibilityLabel="일정 추가"
-                  testID="order-sheet-add-schedule"
-                >
-                  <Text
-                    className={`text-sm font-sans-medium ${
-                      dateCapReached
-                        ? 'text-content-muted'
-                        : 'text-primary-600 dark:text-primary-400'
-                    }`}
-                  >
-                    {dateCapReached
-                      ? `날짜는 ${DATE_CONSTRAINTS[values.postingType].maxDates}개까지 담을 수 있어요`
-                      : '＋ 일정 추가'}
-                  </Text>
-                </Pressable>
-              </OrderGroup>
+                <ScheduleSection
+                  values={values}
+                  rowError={rowError}
+                  highlightedCardIndex={highlightedCard}
+                  onPressDates={() => handleRowPress('dates', 0)}
+                  onPressDateChip={handlePressDateChip}
+                  onPressCondition={handlePressCondition}
+                  onToggleRun={handleToggleRun}
+                  onDeleteCard={handleDeleteCard}
+                  onCardLayoutY={handleCardLayoutY}
+                />
+              </View>
             );
           })}
         </ScrollView>
@@ -1072,47 +1274,44 @@ export function OrderSheetScreen({
             onClose={closeSheet}
           />
         )}
-        {/* 일정·모집 시트 2종(그룹 스코프) — 날짜(달력+세그먼트)·시간역할 통합.
+        {/* 일정·모집 시트 2종 — 날짜(전 일정 스코프)·시간역할(카드 스코프).
           행 탭 경로에는 시트→시트 스왑이 없다. 미설정 연쇄(confirmRow)만 SHEET_CHAIN_SWAP_MS
           지연 후 다음 시트를 마운트한다(#244 겹침 회피 패턴 승계). */}
         {datesTarget && (
           <ScheduleDatesSheet
             visible
             postingType={values.postingType}
-            initialSelectedDates={
-              datesTarget.mode === 'add'
-                ? []
-                : (scheduleGroups[datesTarget.groupIndex]?.dates ?? [])
-            }
-            existingDates={scheduleGroups
-              .filter((_, i) => i !== datesTarget.groupIndex)
-              .flatMap((g) => g.dates ?? [])}
-            showSegment={datesTarget.mode === 'whole'}
-            initialSegment={scheduleGroups[datesTarget.groupIndex]?.grouped ? 'grouped' : 'same'}
-            onConfirm={({ dates, segment }) => {
-              handleDatesConfirm(datesTarget, dates, segment);
+            initialSelectedDates={allSelectedDates}
+            // 전 일정 스코프라 "다른 그룹이 이미 쓴 날짜"라는 개념이 없다 — 상한은
+            // DatePickerModal 이 선택 개수로 직접 관리한다.
+            existingDates={[]}
+            onConfirm={(dates) => {
+              handleDatesConfirm(dates);
               setActiveSheet(null);
-              confirmRow({ key: 'dates', groupIndex: datesTarget.groupIndex });
+              // F9 — 날짜를 막 정한 신규 카드는 시간이 비어 있다. 여기서 연쇄를 끊으면
+              // 이 화면 최다 전환점(날짜→시간)이 죽는다. confirmRow 가 다음 미설정 행을
+              // 날짜집합 앵커와 함께 예약한다.
+              confirmRow({ key: 'dates', groupIndex: 0 });
             }}
             onClose={closeSheet}
           />
         )}
         {slotsTarget && (
           <ScheduleSlotsSheet
+            // 다른 카드로 옮겨 가면 새 시트다 — 같은 인스턴스를 재사용하면 앞 카드의
+            // 날짜 선택 상태를 물려받는다.
+            key={`slots-${slotsTarget.fallbackIndex}`}
             visible
-            value={scheduleGroups[slotsTarget.groupIndex]?.timeSlots ?? []}
-            onConfirm={(next) => {
-              const nextGroups = scheduleGroups.map((g, i) =>
-                i === slotsTarget.groupIndex ? { ...g, timeSlots: next } : g
+            value={slotsSheetValue}
+            selectableDates={slotsSheetDates}
+            requiresDatePick={slotsTarget.dates.length === 0}
+            onConfirm={({ dates, slots }) => {
+              const index = handleSlotsConfirm(slotsTarget, dates, slots);
+              if (index === null) return;
+              confirmRow(
+                { key: 'roles', groupIndex: index, dates: slotsTarget.dates },
+                SLOTS_SHEET_ROWS
               );
-              form.setValue('scheduleGroups', nextGroups, {
-                shouldDirty: true,
-                shouldValidate: true,
-              });
-              // 시간·역할이 한 번에 확정되므로 역할별 급여 동기화도 여기 1회로 수렴한다
-              // (구 TimeSlotsSheet/RolesSheet 이중 호출 제거).
-              applyRoleSalarySync(nextGroups);
-              confirmRow({ key: 'roles', groupIndex: slotsTarget.groupIndex }, SLOTS_SHEET_ROWS);
             }}
             onClose={closeSheet}
           />

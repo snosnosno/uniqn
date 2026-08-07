@@ -34,6 +34,7 @@ import { useModal } from '@/stores/modalStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { formatE164ToDisplay } from '@/utils/phone';
 import type { UserRole } from '@/types/role';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 
 const ROLE_OPTIONS: { role: UserRole; label: string; description: string }[] = [
   { role: 'staff', label: '스태프', description: '지원 및 스케줄 확인만 가능' },
@@ -72,13 +73,13 @@ export default function AdminUserDetailPage() {
   const { isDarkMode } = useThemeStore();
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
 
-  const {
-    data: user,
-    isLoading,
-    isRefetching,
-    error,
-    refetch,
-  } = useAdminUserDetail(id ?? '', !!id);
+  const { data: user, isLoading, error, refetch } = useAdminUserDetail(id ?? '', !!id);
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refetch()
+  );
 
   const updateRoleMutation = useUpdateUserRole();
   const setActiveMutation = useSetUserActive();
@@ -196,8 +197,8 @@ export default function AdminUserDetailPage() {
         className="flex-1 bg-surface-page dark:bg-surface"
         refreshControl={
           <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={() => refetch()}
+            refreshing={pullRefreshing}
+            onRefresh={onPullRefresh}
             tintColor={getLayoutColor(isDarkMode, 'refreshTint')}
           />
         }

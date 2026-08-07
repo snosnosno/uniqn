@@ -50,7 +50,6 @@ export async function updateWorkTimeForSettlement(
       workLogId: input.workLogId,
       checkInTime: checkInDate,
       checkOutTime: checkOutDate,
-      notes: input.notes,
       reason: input.reason,
     },
     actorId

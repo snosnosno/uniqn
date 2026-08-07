@@ -68,6 +68,8 @@ export {
   type SlotConflictInput,
 } from './slotEdit';
 
+export { readScheduledStart, type ScheduledStartReading } from './scheduledStart';
+
 export {
   UNDECIDED_SLOT_KEY,
   workLogRoleKey,

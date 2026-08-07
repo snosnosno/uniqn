@@ -30,6 +30,7 @@ import { AppFlashList } from '@/components/ui/AppFlashList';
 import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';
 import type { AdminUser, AdminUserFilters } from '@/types/admin';
 import type { UserRole } from '@/types/role';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 
 interface RoleChipProps {
   role: UserRole | 'all';
@@ -189,20 +190,18 @@ export default function AdminUsersPage() {
     [searchQuery, selectedRole]
   );
 
-  const {
-    data,
-    isLoading,
-    isFetchingNextPage,
-    isRefetching,
-    error,
-    refetch,
-    fetchNextPage,
-    hasNextPage,
-  } = useAdminUsers({
-    filters,
-    pageSize: 20,
-    enabled: true,
-  });
+  const { data, isLoading, isFetchingNextPage, error, refetch, fetchNextPage, hasNextPage } =
+    useAdminUsers({
+      filters,
+      pageSize: 20,
+      enabled: true,
+    });
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refetch()
+  );
 
   const handleUserPress = useCallback((userId: string) => {
     router.push('/(admin)/users/' + userId);
@@ -309,8 +308,8 @@ export default function AdminUsersPage() {
         estimatedItemSize={96}
         refreshControl={
           <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={() => refetch()}
+            refreshing={pullRefreshing}
+            onRefresh={onPullRefresh}
             tintColor={getLayoutColor(isDarkMode, 'refreshTint')}
           />
         }

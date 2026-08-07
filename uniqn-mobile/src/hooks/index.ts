@@ -159,6 +159,7 @@ export {
 
 export { useJobSchedule, type UseJobScheduleResult } from './useJobSchedule';
 export { useUserProfile } from './useUserProfile';
+export { useWithdrawalImpact } from './useWithdrawalImpact';
 export { useUnsavedChangesGuard } from './useUnsavedChangesGuard';
 export {
   useBoardHome,

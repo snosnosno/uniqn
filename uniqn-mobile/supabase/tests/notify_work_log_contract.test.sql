@@ -139,7 +139,18 @@ BEGIN
   UPDATE public.work_logs SET time_slot = '19:00'
    WHERE id = (current_setting('nwc.wl_b'))::uuid;
 
-  -- M5 되돌리기: 클라(SettlementRepository.ts:627-663)와 동일한 컬럼 조합으로 재현한다.
+  -- 🔄 채널 전환 (2026-08-05, 마이그 20260805120000 / 감사 L1 3단계)
+  --    payroll 4컬럼은 이제 **정산 RPC 전용**이다(tr_work_logs_pin_payroll).
+  --    클라도 raw UPDATE 가 아니라 set_work_log_payroll_status RPC 를 쓴다
+  --    (SettlementRepository.ts:568,587 — 아래 옛 주석의 "동일한 컬럼 조합" 은 #402 이전 형태였다).
+  --    SECDEF RPC 안에서는 current_user 가 definer 로 바뀌므로 핀을 통과한다.
+  --    여기서는 그 채널을 RESET ROLE 로 재현한다 — JWT(employer)는 유지되므로
+  --    알림 트리거가 보는 auth.uid()·역할 문맥은 그대로다(= 알림 계약 검증 의미 불변).
+  --    ⚠️ 트리거는 채널과 무관하게 발화한다(P5 20260802120000 실증) — 그래서 이 전환이
+  --       알림 단언의 의미를 바꾸지 않는다.
+  RESET ROLE;
+
+  -- M5 되돌리기: 클라가 RPC 로 보내는 것과 동일한 컬럼 조합으로 재현한다.
   UPDATE public.work_logs
      SET payroll_status = 'pending',
          payroll_date = NULL,

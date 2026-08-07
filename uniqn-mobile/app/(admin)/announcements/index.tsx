@@ -15,6 +15,7 @@ import { AddCircleOutlineIcon, DocumentTextOutlineIcon } from '@/components/icon
 import { useAllAnnouncements, useAnnouncementStats } from '@/hooks/useAnnouncement';
 import { AnnouncementCard } from '@/components/admin/announcements';
 import type { AnnouncementStatus, Announcement } from '@/types';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 
 type FilterStatus = AnnouncementStatus | 'all';
 
@@ -29,8 +30,14 @@ export default function AdminAnnouncementsPage() {
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('all');
 
-  const { data, isLoading, isRefetching, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
+  const { data, isLoading, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useAllAnnouncements(statusFilter === 'all' ? undefined : { status: statusFilter });
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refetch()
+  );
 
   const { data: stats } = useAnnouncementStats();
 
@@ -177,7 +184,9 @@ export default function AdminAnnouncementsPage() {
               renderItem={renderItem}
               keyExtractor={(item) => item.id}
               contentContainerStyle={{ paddingTop: 16, paddingBottom: 32 }}
-              refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
+              refreshControl={
+                <RefreshControl refreshing={pullRefreshing} onRefresh={onPullRefresh} />
+              }
               onEndReached={handleLoadMore}
               onEndReachedThreshold={0.5}
               ListFooterComponent={

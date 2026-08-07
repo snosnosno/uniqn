@@ -93,17 +93,5 @@ export function deriveRolesForList(roles: RoleWithSalary[] | undefined): RoleWit
   return roles || [];
 }
 
-/**
- * RoleChangeModal용 역할 키 목록
- */
-export function deriveAvailableRoles(rolesForList: RoleWithSalary[]): string[] {
-  return rolesForList
-    .map((r) => {
-      const roleStr = (r.role || r.name) as string;
-      if (roleStr === 'other' && r.customRole) {
-        return r.customRole;
-      }
-      return roleStr;
-    })
-    .filter(Boolean) as string[];
-}
+// `deriveAvailableRoles`(RoleChangeModal 용 역할 키 목록)는 그 모달과 함께 사라졌다.
+// 통합 편집 시트의 역할 칩은 공고(`JobPosting`)에서 직접 목록을 뽑으므로 중간 변환이 없다.

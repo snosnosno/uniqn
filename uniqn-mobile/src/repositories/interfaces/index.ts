@@ -45,6 +45,7 @@ export type {
   IUserRepository,
   DeletionReason,
   DeletionRequest,
+  WithdrawalImpact,
   EmployerRegistrationInput,
   UserNicknameSearchResult,
 } from './IUserRepository';

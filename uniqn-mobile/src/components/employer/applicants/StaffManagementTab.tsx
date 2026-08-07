@@ -4,7 +4,10 @@ import { Pressable, Text, View } from 'react-native';
 import { STATUS } from '@/constants';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import type { WorkLogStatus } from '@/shared/status';
-import type { ConfirmedStaff, JobPosting, WorkLog } from '@/types';
+import { TimeNormalizer } from '@/shared/time';
+import type { ConfirmedStaff, JobPosting } from '@/types';
+import { isStaffRole } from '@/types/role';
+import { readScheduledStart } from '@/domains/workSchedule';
 import { logger } from '@/utils/logger';
 import {
   CalendarIcon,
@@ -20,16 +23,43 @@ import { ActionSheet, type ActionSheetOption } from '@/components/ui/ActionSheet
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Loading } from '@/components/ui/Loading';
 import { ConfirmModal } from '@/components/ui/Modal';
+import { WorkLogEditSheet, type WorkLogEditInitial } from '@/components/workLogEdit';
 import { ConfirmedStaffList } from './ConfirmedStaffList';
 import { StaffProfileModal } from './StaffProfileModal';
 import { AddStaffModal } from './AddStaffModal';
-import { WorkTimeEditor } from '../settlement/WorkTimeEditor';
 
 export interface StaffManagementTabProps {
   jobPostingId: string;
   jobPosting?: JobPosting;
-  onShowRoleChange?: (staff: ConfirmedStaff) => void;
+  /**
+   * 역할별 실확정 인원(`aggregateRoleFilledFromSubmap` 결과) — 시트의 역할 마감 **표기**용.
+   * `jobPosting` 과 **둘 다** 있어야 `(마감)` 이 뜬다. 선택은 막지 않는다(D7).
+   */
+  filledByRole?: Record<string, number>;
   onShowReport?: (staff: ConfirmedStaff) => void;
+}
+
+/**
+ * 확정 스태프 → 통합 편집 시트 초기값.
+ *
+ * 🔴 `status` 는 실값을 넘긴다(`ConfirmedStaffStatus` 는 `WorkLogStatus` 와 같은 여섯 값이다).
+ *    null 로 얼버무리면 노쇼 행에서 배지가 "저장하면 출근이 됩니다"라고 거짓말한다.
+ * 🔴 `scheduledUnreadable` 은 `readScheduledStart` 가 판정한다 — 세 진입점이 같은 규칙을 쓴다.
+ */
+function toEditInitial(staff: ConfirmedStaff): WorkLogEditInitial {
+  return {
+    ...readScheduledStart(staff.timeSlot),
+    checkIn: TimeNormalizer.parseTime(staff.checkInTime),
+    checkOut: TimeNormalizer.parseTime(staff.checkOutTime),
+    role: isStaffRole(staff.role) ? staff.role : 'staff',
+    customRole: staff.customRole ?? null,
+    color: staff.color ?? null,
+    memo: staff.notes ?? '',
+    date: staff.date,
+    status: staff.status,
+    payrollStatus: staff.payrollStatus ?? null,
+    staffName: staff.staffName,
+  };
 }
 
 /** 상태 전이 값 → 시트 아이콘. 전이 규칙 자체는 getManualStatusTransitions 가 소유한다. */
@@ -87,8 +117,8 @@ function QuickActions({ onRefresh, onAddStaff, isRefreshing }: QuickActionsProps
 
 export function StaffManagementTab({
   jobPostingId,
-  jobPosting: _jobPosting,
-  onShowRoleChange,
+  jobPosting,
+  filledByRole,
   onShowReport,
 }: StaffManagementTabProps) {
   const {
@@ -97,13 +127,11 @@ export function StaffManagementTab({
     isRefreshing,
     error,
     refresh,
-    updateWorkTime,
     removeStaff,
     changeStatus,
     setNoShow,
     cancelNoShow,
     addStaff,
-    isUpdatingTime,
     isAddingStaff,
   } = useConfirmedStaff(jobPostingId, { realtime: true });
 
@@ -133,36 +161,19 @@ export function StaffManagementTab({
     setProfileStaff(null);
   }, []);
 
+  /**
+   * 카드의 '근무 수정' → 통합 편집 시트. 저장은 시트가 직접 한다(RPC 1회) —
+   * 예전에는 이 화면이 시각만 받아 `updateWorkTime` 을 쐈고, 역할은 상위 모달이 따로 저장했다.
+   */
   const handleEditTime = useCallback((staff: ConfirmedStaff) => {
     setSelectedStaff(staff);
     setShowTimeEditor(true);
   }, []);
 
-  const handleSaveTime = useCallback(
-    (data: { startTime: Date | null; endTime: Date | null; reason: string }) => {
-      if (!selectedStaff) {
-        return;
-      }
-
-      updateWorkTime({
-        workLogId: selectedStaff.id,
-        checkInTime: data.startTime,
-        checkOutTime: data.endTime,
-        reason: data.reason,
-      });
-
-      setShowTimeEditor(false);
-      setSelectedStaff(null);
-    },
-    [selectedStaff, updateWorkTime]
-  );
-
-  const handleChangeRole = useCallback(
-    (staff: ConfirmedStaff) => {
-      onShowRoleChange?.(staff);
-    },
-    [onShowRoleChange]
-  );
+  const handleCloseTimeEditor = useCallback(() => {
+    setShowTimeEditor(false);
+    setSelectedStaff(null);
+  }, []);
 
   const handleReport = useCallback(
     (staff: ConfirmedStaff) => {
@@ -286,16 +297,6 @@ export function StaffManagementTab({
     }));
   }, [statusSheetTarget]);
 
-  const selectedWorkLog: WorkLog | null = selectedStaff?.workLog
-    ? {
-        ...selectedStaff.workLog,
-        staffName: selectedStaff.staffName,
-        staffNickname: selectedStaff.staffNickname,
-        staffPhotoURL: selectedStaff.staffPhotoURL,
-        staffPhotoURLBlurhash: selectedStaff.staffPhotoURLBlurhash,
-      }
-    : null;
-
   // 직접추가분(지원서 미연동)은 '확정 해제'가 아니라 '제거' 의미라 문구를 분기한다.
   const isDeleteTargetDirect = !deleteTarget?.workLog?.applicationId;
 
@@ -337,7 +338,6 @@ export function StaffManagementTab({
           onStaffPress={handleStaffPress}
           onViewProfile={handleViewProfile}
           onEditTime={handleEditTime}
-          onChangeRole={handleChangeRole}
           onReport={handleReport}
           onDelete={handleDelete}
           onStatusChange={handleStatusChange}
@@ -346,16 +346,17 @@ export function StaffManagementTab({
         />
       </View>
 
-      <WorkTimeEditor
-        workLog={selectedWorkLog}
-        visible={showTimeEditor}
-        onClose={() => {
-          setShowTimeEditor(false);
-          setSelectedStaff(null);
-        }}
-        onSave={handleSaveTime}
-        isLoading={isUpdatingTime}
-      />
+      {/* 통합 편집 시트 — 대상이 있을 때만 마운트한다(시트는 `[visible, workLogId]` 로만 초기화). */}
+      {showTimeEditor && selectedStaff ? (
+        <WorkLogEditSheet
+          visible
+          onClose={handleCloseTimeEditor}
+          workLogId={selectedStaff.id}
+          initial={toEditInitial(selectedStaff)}
+          jobPosting={jobPosting}
+          filledByRole={filledByRole}
+        />
+      ) : null}
 
       <ConfirmModal
         visible={Boolean(deleteTarget)}
