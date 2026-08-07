@@ -305,11 +305,14 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
           ) : null}
 
           {showsDelete ? (
-            /* ⚠️ 아이콘 단독 버튼인데 accessibilityLabel 이 없다(선재 결함 — Task 9 원장).
-               지금은 테스트가 testID 로 잡는다. 라벨을 붙일 때 testID 는 그대로 두어도 된다. */
+            /* 아이콘 단독 버튼이라 라벨이 없으면 스크린리더가 읽을 것이 없다(룰 27).
+               파괴적 액션이므로 대상을 라벨에 넣는다 — "빼기" 만으로는 무엇을 빼는지 알 수 없다.
+               testID 는 기존 테스트가 잡고 있으므로 유지한다. */
             <Pressable
               testID="card-delete-action"
               onPress={handleDelete}
+              accessibilityRole="button"
+              accessibilityLabel={`${staff.staffName || '스태프'} 빼기`}
               className="flex-row items-center justify-center rounded-lg bg-surface-card px-3 py-2 active:opacity-70 dark:bg-surface"
             >
               <TrashIcon size={14} color={SECONDARY_PALETTE[500]} />
