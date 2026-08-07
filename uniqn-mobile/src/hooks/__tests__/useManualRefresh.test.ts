@@ -73,4 +73,68 @@ describe('useManualRefresh', () => {
 
     await waitFor(() => expect(result.current.refreshing).toBe(false));
   });
+
+  // 🔴 리뷰 MEDIUM 1 회귀 가드.
+  //    이 훅의 주석은 "onRefresh 정체성 고정 — 매 렌더 새 함수면 iOS 제스처가 끊긴다" 고
+  //    선언하는데, deps 가 `[refreshing]` 이라 **당기는 바로 그 순간** identity 가 바뀌었다.
+  //    RefreshControl 이 제스처 진행 중에 새 prop 을 받는 상황이 정확히 그 주석이 막으려던 것이다.
+  //    26개 화면이 이 훅을 쓴다.
+  it('🔴 새로고침이 시작돼도 onRefresh 의 정체성이 바뀌지 않는다', async () => {
+    let resolveRefresh: (() => void) | undefined;
+    const refresh = jest.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveRefresh = resolve;
+        })
+    );
+
+    const { result } = renderHook(() => useManualRefresh(refresh));
+    const before = result.current.onRefresh;
+
+    act(() => {
+      result.current.onRefresh();
+    });
+
+    // 진행 중(스피너가 떠 있는 상태)에도 같은 함수여야 한다.
+    await waitFor(() => expect(result.current.refreshing).toBe(true));
+    expect(result.current.onRefresh).toBe(before);
+
+    await act(async () => {
+      resolveRefresh?.();
+    });
+
+    await waitFor(() => expect(result.current.refreshing).toBe(false));
+    expect(result.current.onRefresh).toBe(before);
+  });
+
+  it('진행 중에 다시 당겨도 중복 실행하지 않는다 (가드가 ref 로 옮겨도 유지된다)', async () => {
+    let resolveRefresh: (() => void) | undefined;
+    const refresh = jest.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveRefresh = resolve;
+        })
+    );
+
+    const { result } = renderHook(() => useManualRefresh(refresh));
+
+    act(() => {
+      result.current.onRefresh();
+      // 같은 틱에 한 번 더 — state 가드였다면 배칭 때문에 두 번째가 통과할 수 있었다.
+      result.current.onRefresh();
+    });
+
+    expect(refresh).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveRefresh?.();
+    });
+    await waitFor(() => expect(result.current.refreshing).toBe(false));
+
+    // 끝난 뒤에는 다시 당길 수 있어야 한다 — 플래그가 true 로 남으면 화면이 영구히 죽는다.
+    act(() => {
+      result.current.onRefresh();
+    });
+    expect(refresh).toHaveBeenCalledTimes(2);
+  });
 });

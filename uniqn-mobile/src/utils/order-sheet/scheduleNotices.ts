@@ -27,23 +27,34 @@ export interface ScheduleNotice {
   inheritedCardDates?: readonly string[];
 }
 
-export interface ScheduleChangeContext {
+interface ScheduleChangeContextBase {
   /** 날짜가 전부 빠져 사라진 카드들(조건까지 유실) — applyDateSelection 이 낸다 */
   removedCards?: readonly ScheduleGroup[];
   /** 이번 확정으로 새로 들어온 날짜들 */
   inheritedDates?: readonly string[];
   /** 사용자가 직접 묶음 토글을 조작했는가 — 자기가 한 일을 되읽어주지 않는다 */
   bundleToggledByUser?: boolean;
-  /**
-   * 이번 뮤테이션이 **의도한** 날짜 총수. 결과가 이보다 적으면 정규화가 조용히 지운 것
-   * (그룹 간 중복 dedupe)이므로 고지 대상이다.
-   *
-   * ⚠️ 이 값이 없으면 "before 보다 날짜가 줄었다"로 판정하는데, 그건 **사용자가 날짜를 해제한
-   *    경우에도 참**이라 가장 흔한 조작이 "같은 조건이라 합쳐졌어요"로 오고지된다(리뷰 실측).
-   *    날짜를 건드리는 경로(날짜 확정)는 반드시 사용자가 고른 수를 넣어야 한다.
-   */
-  expectedDateCount?: number;
 }
+
+/**
+ * 고지 판정에 필요한 맥락.
+ *
+ * 🔴 `expectedDateCount` 는 **타입으로 강제한다.** 예전엔 옵셔널 + 주석 경고였는데,
+ *    그 폴백(`dateCount(before)`)이 곧 버그 동작이다 — "before 보다 날짜가 줄었다" 는
+ *    사용자가 날짜를 **해제한 경우에도 참**이라, 가장 흔한 조작이 "같은 조건이라 합쳐졌어요"로
+ *    오고지되고 계기판(`order_sheet.auto_merge`)까지 오염된다(리뷰 실측).
+ *    주석은 호출부 3곳 중 1곳만 지켰다 — 그래서 판별 유니온으로 옮겼다.
+ *
+ *    · 날짜를 건드리는 경로 → `datesTouched: true` + 사용자가 고른 수를 **반드시** 넘긴다
+ *    · 그 외(역할·시간·묶음 토글 등) → 아무것도 넘기지 않는다. 이때 `dateCount(before)` 폴백은
+ *      **정당하다**(날짜를 안 건드렸으니 의도한 수 = 이전 수).
+ *
+ *    `expectedDateCount?: never` 가 두 번째 갈래에 붙은 이유: 플래그 없이 값만 넘기는
+ *    어중간한 호출을 컴파일 단계에서 막는다.
+ */
+export type ScheduleChangeContext =
+  | (ScheduleChangeContextBase & { datesTouched: true; expectedDateCount: number })
+  | (ScheduleChangeContextBase & { datesTouched?: false; expectedDateCount?: never });
 
 /** 묶음(grouped) 카드가 덮는 날짜 **집합** — 해제 판정용 */
 const bundledDates = (groups: readonly ScheduleGroup[]): Set<string> =>
@@ -95,8 +106,17 @@ export function diagnoseScheduleChange(
   //    dedupe 를 병합으로 승격해 고지하는 이유: 무고지 삭제가 되면 안 된다(Eng F-4).
   //    기준은 **사용자가 의도한 날짜 수**다 — before 와 비교하면 단순 해제까지 병합으로
   //    오고지해 계기판(order_sheet.auto_merge)이 가장 흔한 조작으로 오염된다.
-  const expectedDates = context.expectedDateCount ?? dateCount(before);
-  if (after.length < before.length || dateCount(after) < expectedDates) {
+  //
+  // 🔴 카드 수 축소 항은 **사용자가 묶음 토글을 조작한 경우 건너뛴다.** ②와 같은 이유인데
+  //    예전엔 ②만 그 갈래를 갖고 있었다. 토글을 켜면 카드가 실제로 합쳐지므로
+  //    `after.length < before.length` 가 참이 되어 "같은 조건이라 하나로 합쳐졌어요"가 뜬다 —
+  //    사용자가 방금 누른 스위치의 결과를 시스템이 한 일처럼 되읽어주는 것이고,
+  //    계기판 `order_sheet.auto_merge` 도 그 조작으로 오염된다.
+  //    dedupe 축(`dateCount(after) < expectedDates`)은 **남긴다** — 토글과 무관하게
+  //    조용한 날짜 삭제는 반드시 고지해야 한다(Eng F-4, 무고지 삭제 금지).
+  const expectedDates = context.datesTouched ? context.expectedDateCount : dateCount(before);
+  const cardsMerged = context.bundleToggledByUser !== true && after.length < before.length;
+  if (cardsMerged || dateCount(after) < expectedDates) {
     return { kind: 'merged', message: '같은 조건이라 하나로 합쳐졌어요' };
   }
 
