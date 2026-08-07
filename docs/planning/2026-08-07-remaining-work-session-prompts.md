@@ -21,13 +21,14 @@
 | DB 파리티 | 마지막 실측 **200 funcs / 111 policies**(#429 시점). #433·#436 이 prod 미적용이라 **현재는 재측정 필요** |
 | **branch protection** | ✅ **활성화** — required = `Quality Gate` · `E2E Gate` · force push/삭제 차단 (`enforce_admins=false`) |
 | 열린 PR | Dependabot 4건뿐(#380·#414·#415·#416). **#379·#381 은 SDK 결합이라 닫음** |
-| 열린 워크트리 | **3개** — `T-HOLDEM-settle`(#436 머지됨 → **정리 대상**) · `T-HOLDEM-opschips`(🔴미머지·PR 없음·**마이그 접두사 충돌**) · `T-HOLDEM-opsurl`(🔴미머지·PR 없음) |
+| 열린 워크트리 | **3개**(08-08 00:05 재실측) — `T-HOLDEM-opschips`(🔴미머지·PR 없음) · `T-HOLDEM-opsurl`(🔴미머지·PR 없음) · `T-HOLDEM-sf`(🔴**S-F 작업 중, 건드리지 말 것**). `T-HOLDEM-settle` 은 #436 머지 후 정리 완료 |
 
 ### 🚨 2026-08-07 23:50 점검에서 새로 드러난 것
 
-1. **마이그 접두사 충돌이 대기 중이다.** `20260807190000` 을 master(#436 `update_work_log_custom_settlement_rpc`)와
-   미머지 브랜치 `feat/ops-chip-count-20260807`(`ops_chip_count_event_type`)이 **동시에 쓴다**.
-   그대로 PR 을 열면 CI 의 신선한 `db reset` 에서 `schema_migrations_pkey` 충돌로 죽는다 — **`200000`·`210000` 으로 리네임 후 PR**.
+1. **마이그 접두사 충돌 — 발생했고, 병렬 세션이 닫았다.** `20260807190000` 을 master(#436
+   `update_work_log_custom_settlement_rpc`)와 `feat/ops-chip-count-20260807`(`ops_chip_count_event_type`)이
+   동시에 썼다. 그대로 PR 을 열었으면 CI 의 신선한 `db reset` 에서 `schema_migrations_pkey` 충돌로 죽었다.
+   `990f35555` 에서 `200000`·`210000` 으로 리네임돼 해소됨. **하루에 2번 터진 함정이니 머지 직전 재확인을 규칙으로.**
 2. **prod 가 레포보다 앞선 구간이 있다.** `list_migrations` 실측:
    - prod 에만: `20260807144558 ops_chip_count_event_type` · `20260807144632 ops_set_participant_chips`
      → **코드는 미머지 브랜치에 있는데 마이그만 prod 에 먼저 적용됐다.** opschips 머지 후 **재적용 금지** 목록에 넣을 것.

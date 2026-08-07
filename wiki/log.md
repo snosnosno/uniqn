@@ -367,3 +367,9 @@ v_lines := v_lines || '';   -- v_lines 는 text[]
 - **죽은 코드보다 위험한 건 "배선돼 있다"고 말하는 주석이다.** "미설정 시 silent skip — 시스템은 정상 동작"이 알림이 있다는 착각을 만들었다. 지우는 대신 정직하게 만들었다(미설정+실패 시 `console.warn`, 실제 안전망은 prod-health 임을 명시).
 
 검증: CI 10종 양쪽 SUCCESS · prod-health 첫 실행 success(실환경) · Red-Green(수정 전 22P02 → 후 17건 정상 렌더) · 게이트 4케이스 red-green. 잔여 = 실기기 QA(뒤늦게 생성된 closed 공고 16개 보드 노출) · Auth "Prevent use of leaked passwords" 대시보드 토글.
+
+## [2026-08-08] ingest | 08-01~08-07 웨이브 선별 졸업 7편 — 게이트 착지·검증 완결성·실패/빈 구분
+- 신규 4: `decisions/error-vs-empty-state`(PR#434 · 실패를 빈 배열로 그리면 화면이 성공을 가장한다 — 근본 원인은 error·refetch 를 반환조차 않던 훅) · `decisions/server-validation-completeness`(PR#433 · 필드는 다 보면서 관계만 안 본 검증 → 하류 `GREATEST(0,…)` 가 오류를 정상값으로 세탁해 ₩0 정산까지) · `decisions/local-only-seed-reached-prod`(PR#427·#428 · 결함은 "평문이 레포에 있다"가 아니라 로컬 전용 시드가 prod 에 적용된 것 · 계정 수는 prod 에서 센다) · `sources/settlement-history-lost-update`(PR#436 · 방어의 본체는 잠금이 아니라 시그니처에서 이력 배열 인자를 없앤 것)
+- 신규 1: `sources/logger-sentry-web-recursion`(PR#413 · E2E 만성 flake 의 진짜 원인 · 🚨이 레포 Jest 는 동적 import 가 항상 reject 라 "호출 0회" 단언이 빈 통과)
+- 갱신 2: `decisions/e2e-gate-absence` — **결정의 1단계가 실행됨**(PR#432 branch protection 활성화). 기존 본문의 "master 에 protection 자체가 없다"가 stale 이 돼 상단 배너로 명시 + 착지 절 신설(`paths` required = 영구 pending 데드락 · 애그리게이터에 걸 것) · `decisions/migration-timestamp-collision` — 08-07 하루 2회 재발 기록, 확인 시점을 **머지 직전**으로 이동(브랜치 딸 땐 빈 슬롯이었다) + prod 양방향 드리프트 실측 보강
+- 계기: 지식계층 점검 세션. wiki 가 07-31 이후 정지한 사이 44건 PR 이 머지됐고, MEMORY.md 는 예산 14,000자 대비 16,831자(120%)로 초과 상태였다.

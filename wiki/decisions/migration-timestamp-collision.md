@@ -1,11 +1,13 @@
 ---
 area: decisions
-updated: 2026-07-08
+updated: 2026-08-08
 status: current
 sources:
   - uniqn-mobile/supabase/migrations/20260708100000_ops_1e_staff_table_and_enum.sql
+  - uniqn-mobile/supabase/migrations/20260807190000_update_work_log_custom_settlement_rpc.sql
   - PR#230
   - PR#229
+  - PR#436
   - memory/feedback_supabase_migration_workflow.md
 tags: [migration, supabase, ci, mcp]
 ---
@@ -35,8 +37,41 @@ prod 마이그는 **MCP `apply_migration(name, query)`** 로 적용한다(전 �
 3. 이미 머지된 상대 마이그는 **불가침**(수정 금지).
 4. 리네임 후 파일명 참조 주석·문서도 함께 갱신.
 
+## 재발 — 2026-08-07 에만 2회 (코드로 검증됨)
+
+07-08 이후에도 같은 충돌이 **하루에 두 번** 났다. 규칙 1(리베이스 후 `db reset` 재실행)만으로는 못 막는 형태였다.
+
+| 회차 | 프리픽스 | 두 주인 | 결말 |
+|---|---|---|---|
+| 2회차 | `20260807170000` | master `respond_inquiry_notify_author` ↔ 브랜치 `work_log_slot_checkout_after_checkin` | 리네임(`180000`)으로 해소 |
+| 3회차 | `20260807190000` | master `update_work_log_custom_settlement_rpc`(PR#436) ↔ `feat/ops-chip-count` 의 `ops_chip_count_event_type` | 커밋 `990f35555` 가 `200000`·`210000` 으로 선제 리네임 |
+
+**규칙 1을 보강한다 — 브랜치를 딸 때가 아니라 머지 직전에 확인해야 한다.**
+3회차는 브랜치를 딸 때 `190000` 이 **빈 슬롯이었다**. 그 뒤 다른 세션이 그 슬롯을 채워 머지했으므로
+착수 시점의 확인은 아무것도 보증하지 못했다. 이 레포는 병렬 세션이 상시라 하루 단위 슬롯이 금방 찬다.
+
+```
+git fetch && git ls-tree -r --name-only origin/master -- uniqn-mobile/supabase/migrations | grep <YYYYMMDD>
+```
+
+또 하나: `HHMMSS` 를 실제 시각이 아니라 **1시간 간격 슬롯**(`120000`·`130000`…)으로 쓰는 관례가
+충돌 확률을 스스로 높이고 있다.
+
+## 보강: prod 는 무증상이지만 무관하지는 않다 (2026-08-07 실측)
+
+위 "왜 prod엔 문제가 없나"는 여전히 맞다(MCP 가 적용 시각을 version 으로 부여). 다만
+`list_migrations` 실측에서 **양방향 드리프트**가 확인됐다 — 파일명 불일치와는 다른 층위의 문제다:
+
+- **prod 에만 있다**: `20260807144558 ops_chip_count_event_type` · `144632 ops_set_participant_chips`
+  → 코드는 아직 **미머지 브랜치**에 있는데 마이그만 prod 에 먼저 적용됐다. master 에 정본이 없는 상태.
+- **master 에만 있다**: `20260807180000`(PR#433) · `190000`(PR#436) → prod 미적용.
+
+즉 파일명↔prod version 불일치는 정상이지만, **어느 쪽에 있고 어느 쪽에 없는지는 정상이 아닐 수 있다.**
+
 ## 연결
 - 마이그=MCP `apply_migration` 전용(`supabase db push` 금지)·타임스탬프 불일치 무해: `memory/feedback_supabase_migration_workflow`
+- 정본이 레포↔prod 로 갈라지는 사촌 문제: [[prod-parity-baseline]]
+- 3회차가 얽힌 슬라이스: [[settlement-history-lost-update]]
 - 병렬 세션 격리(워크트리+브랜치, 이 충돌의 상류 원인): `memory/feedback_isolate_worktree_parallel_session`
 - "무대(로컬/CI/prod)별 동작 상이" 동류 함정: [[test-db-grants]]
 - MCP-apply로 prod에 적용한 대표 사례: [[wallet-iap-removal]]
