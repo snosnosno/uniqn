@@ -159,7 +159,13 @@ export async function getWorkLogStats(staffId: string): Promise<WorkLogStats> {
 //       그런데 이 함수 자체에 UI 소비자가 없었으므로 그 이벤트는 이미 발화하지 않고 있었다
 //       = 정산 완료 애널리틱스는 #402(정산 RPC 화) 이후 조용히 끊긴 상태다.
 //       이 삭제가 계측을 없앤 게 아니라, 이미 없던 것을 드러낸 것이다.
-//       복구하려면 RPC 경로(settlementMutation.updateSettlementStatus)에 붙여야 한다 — 별건.
+//    ✅ 복구 완료 (2026-08-07, 감사 S-D) — 다만 **위 묘비가 지목한 곳은 틀렸었다.**
+//       "settlementMutation.updateSettlementStatus 에 붙여라"고 적었으나, 그 경로의 서버 함수
+//       set_work_log_payroll_status 는 `p_status='completed'` 진입을 INVALID_STATUS 로 막는다
+//       (20260802161000:298 — 확정은 settle_work_log 전담). 거기 붙였다면 **영원히 발화하지 않는
+//       계측**을 복구했다고 착각했을 것이다. 넘길 금액도 그 경로엔 없다.
+//       정산 완료를 실제로 만드는 것은 settleWorkLog / bulkSettlement 두 곳이고, 계측은 거기 붙였다
+//       (settlementMutation.ts — success 판정 뒤 발화, 실패분 제외).
 
 // ============================================================================
 // Real-time Subscriptions
