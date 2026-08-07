@@ -6,7 +6,7 @@
  * "전체 선택 → 일괄 정산" 이 서버가 거부할 행까지 담아 부분 실패를 만든다.
  */
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { render, fireEvent } from '@testing-library/react-native';
 import { SettlementList } from '../SettlementList';
 import { STATUS } from '@/constants';
 import type { WorkLog } from '@/types';
@@ -75,5 +75,53 @@ describe('SettlementList 일괄 정산 선택 게이트', () => {
       makeWorkLog({ payrollStatus: STATUS.PAYROLL.COMPLETED } as Partial<WorkLog>),
     ]);
     expect(queryByText(BULK_TOGGLE)).toBeNull();
+  });
+});
+
+/**
+ * 감사 M11 — `payroll_status` 3값 중 `'failed'` 를 이 목록의 세 축이 모두 흘렸다.
+ * 셋 다 `=== PENDING` 2값 비교였고, `'failed'` 는 어느 칸에도 안 들어간다:
+ *
+ *  1. 선택 모집합(`selectableWorkLogs`) — failed 행은 일괄 정산으로 집을 수 없다
+ *  2. 필터 카운트(`filterOptions`)      — 탭 합계가 '전체' 와 안 맞는다(1+0 ≠ 2)
+ *  3. 필터링(`filteredWorkLogs`)        — '정산 대기' 탭에서 failed 행이 사라진다
+ *
+ * 올바른 축은 `!== COMPLETED` = 화면 어휘 2단(`toSettlementDisplayStatus`).
+ * 'failed' 는 스태프 입장에서 "아직 못 받았다" 이므로 pending 과 같은 칸에 든다.
+ */
+describe("SettlementList payrollStatus='failed' 축 통일 (감사 M11)", () => {
+  const failed = { payrollStatus: STATUS.PAYROLL.FAILED } as Partial<WorkLog>;
+
+  it('failed 행뿐이어도 선택 진입점을 노출한다 — 미지급이므로 일괄 정산 대상이다', () => {
+    const { getByText } = renderList([makeWorkLog(failed)]);
+    expect(getByText(BULK_TOGGLE)).toBeTruthy();
+  });
+
+  it("필터 탭 카운트가 failed 를 '정산 대기' 칸에 센다 — 탭 합계가 전체와 맞아야 한다", () => {
+    const { getByLabelText } = renderList([
+      makeWorkLog({ id: 'wl-pending' }),
+      makeWorkLog({ id: 'wl-failed', ...failed } as Partial<WorkLog>),
+    ]);
+    // 전체 2건 = 정산 대기 2건 + 정산 완료 0건. failed 가 새면 '정산 대기' 가 1건이 된다.
+    expect(getByLabelText('전체 필터, 2건')).toBeTruthy();
+    expect(getByLabelText('정산 대기 필터, 2건')).toBeTruthy();
+    expect(getByLabelText('정산 완료 필터, 0건')).toBeTruthy();
+  });
+
+  it("'정산 대기' 필터를 눌러도 failed 행이 목록에 남는다", () => {
+    const { getByLabelText, getByText } = renderList([
+      makeWorkLog({ id: 'wl-pending', staffId: 'staff-p', staffName: '홍길동' }),
+      makeWorkLog({
+        id: 'wl-failed',
+        staffId: 'staff-f',
+        staffName: '김철수',
+        ...failed,
+      } as Partial<WorkLog>),
+    ]);
+
+    fireEvent.press(getByLabelText('정산 대기 필터, 2건'));
+
+    expect(getByText('홍길동')).toBeTruthy();
+    expect(getByText('김철수')).toBeTruthy();
   });
 });
