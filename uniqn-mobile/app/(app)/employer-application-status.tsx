@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { StackHeader } from '@/components/headers';
-import { Button, Card, Loading } from '@/components';
+import { Button, Card, ErrorState, Loading } from '@/components';
 import { useEmployerApplication } from '@/hooks/auth/useEmployerApplication';
 import { toDate } from '@/utils/date';
 import { format } from 'date-fns';
@@ -246,7 +246,7 @@ function RejectedScreen({
 // ============================================================================
 
 export default function EmployerApplicationStatusScreen() {
-  const { data: application, isLoading } = useEmployerApplication();
+  const { data: application, isLoading, error, refetch } = useEmployerApplication();
   const refreshProfile = useAuthStore((state) => state.refreshProfile);
 
   // 승인 확인 시 로컬 role 캐시를 서버와 동기화 — "공고 관리" 진입 전에 employer 플래그 확보
@@ -263,6 +263,24 @@ export default function EmployerApplicationStatusScreen() {
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
         </View>
+      </SafeAreaView>
+    );
+  }
+
+  // 조회 실패도 data 는 undefined 라, 이 분기를 먼저 두지 않으면 심사 중인 사용자에게
+  // "내역 없음 → 신청하기"가 뜬다. 중복 신청을 만드는 오안내다(감사 A4).
+  if (error) {
+    return (
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
+        <StackHeader title="구인자 신청 현황" fallbackHref="/(app)/(tabs)/home-jobs" />
+        <ErrorState
+          error={error}
+          title="신청 현황을 불러오지 못했어요"
+          onRetry={() => {
+            void refetch();
+          }}
+          alwaysAllowRetry
+        />
       </SafeAreaView>
     );
   }

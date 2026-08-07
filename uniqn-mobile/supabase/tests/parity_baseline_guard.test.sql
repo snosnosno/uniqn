@@ -114,6 +114,10 @@
 --     total_positions 가 바뀌고 capacity_full 자동 전이까지 연쇄한다(실측 확인).
 --     정책 111 불변(RPC·헬퍼 신설만, RLS 미변경).
 --     로컬 스택 실측(2026-08-04): 함수 199 / 정책 111.
+--   2026-08-07 개인 정산 설정 저장 RPC 화(마이그 20260807190000, 감사 S-D):
+--     함수 201 = 200 + update_work_log_custom_settlement 1종.
+--     클라이언트 read-modify-write 를 대체해 settlement_modification_history 의
+--     Lost Update 를 닫는다. 정책 111 불변(RPC 신설만, RLS 미변경).
 --
 -- ⚠️ 유지보수 계약: 이후 마이그레이션이 public 함수/정책을 추가·삭제하면
 --   이 기대값을 같은 PR에서 함께 갱신해야 한다. 갱신을 강제당하는 것 자체가
@@ -126,7 +130,7 @@
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=200
+-- PARITY_EXPECT_FUNCS=201
 -- PARITY_EXPECT_POLICIES=111
 -- ============================================================
 BEGIN;
@@ -146,8 +150,8 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  200,
-  'public function count == prod (200 = 199 + fn_work_logs_pin_payroll 1(감사 L1 3단계), 2026-08-05)');
+  201,
+  'public function count == prod (201 = 200 + update_work_log_custom_settlement 1(감사 S-D), 2026-08-07)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(

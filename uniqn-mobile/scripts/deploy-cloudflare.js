@@ -142,9 +142,10 @@ try {
   // git 없으면 기본값 사용
 }
 
-// CF Pages 프로젝트명 — 멀티 프로젝트 지원(메인 앱 / ops 전광판 등). 기본값=uniqn-app.
+// CF Pages 프로젝트명 — 멀티 프로젝트 지원. 기본값=uniqn-app(현재 유일한 실제 프로젝트).
 // 우선순위: CLI `--project-name=<name>`(크로스플랫폼) > env CF_PROJECT_NAME > 'uniqn-app'.
-// 예: npm run deploy:ops (= node scripts/deploy-cloudflare.js --project-name=ops-uniqn)
+// 2026-08-07: ops 전용 2nd 프로젝트(ops-uniqn)는 끝내 만들어지지 않아 `deploy:ops` 별칭을 제거했다.
+// ops 공개 라우트(/monitor·/live)는 메인 프로젝트의 SPA fallback 으로 서빙된다.
 const projectArg = process.argv.find((a) => a.startsWith('--project-name='));
 const projectName = projectArg
   ? projectArg.slice('--project-name='.length)

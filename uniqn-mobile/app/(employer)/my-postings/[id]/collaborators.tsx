@@ -16,6 +16,7 @@ import { useJobDetail } from '@/hooks/useJobDetail';
 import { useJobPostingCollaborators } from '@/hooks/job-posting/useJobPostingCollaborators';
 import { CollaboratorList } from '@/components/job-posting/CollaboratorList';
 import { CollaboratorSearch } from '@/components/job-posting/CollaboratorSearch';
+import { ErrorState } from '@/components/ui';
 
 export default function CollaboratorsRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -25,7 +26,7 @@ export default function CollaboratorsRoute() {
   const currentUserId = user?.uid;
 
   const { job: jobPosting } = useJobDetail(jobPostingId);
-  const { collaborators, isLoading, add, isAdding, remove, isRemoving, leaveSelf } =
+  const { collaborators, isLoading, error, refetch, add, isAdding, remove, isRemoving, leaveSelf } =
     useJobPostingCollaborators(jobPostingId);
 
   // workspace owner 여부 — RLS 가 진짜 게이트, UI 분기용
@@ -50,7 +51,18 @@ export default function CollaboratorsRoute() {
         ) : null}
       </View>
 
-      {isOwner ? (
+      {/* 조회 실패를 빈 목록으로 그리면 "아무도 공유받지 않았다"로 읽힌다 —
+          이미 공유한 사람을 다시 추가하려 들게 만든다. 실패 시에는 추가 UI 도 닫는다(감사 A4). */}
+      {error && collaborators.length === 0 ? (
+        <ErrorState
+          error={error}
+          title="공유 관리 정보를 불러오지 못했어요"
+          onRetry={() => {
+            void refetch();
+          }}
+          alwaysAllowRetry
+        />
+      ) : isOwner ? (
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           className="flex-1"

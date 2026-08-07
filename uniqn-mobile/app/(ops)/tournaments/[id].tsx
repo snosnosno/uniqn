@@ -5,6 +5,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useLocalSearchParams } from 'expo-router';
 import { StackHeader } from '@/components/headers';
 import { UserPlusIcon } from '@/components/icons';
+import { ErrorState } from '@/components/ui';
 import {
   OpsConsoleShell,
   type OpsTabKey,
@@ -46,7 +47,7 @@ function OpsRegisterFab({ onPress }: { onPress: () => void }) {
 export default function OpsTournamentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const tournamentId = id ?? '';
-  const { tournament, isLoading } = useOpsTournament(tournamentId);
+  const { tournament, isLoading, error, refetch } = useOpsTournament(tournamentId);
   const { participants, isLoading: participantsLoading } = useOpsParticipants(tournamentId);
   const { data: staffRoster } = useOpsStaff(tournamentId);
   const [tab, setTab] = useState<OpsTabKey>('status');
@@ -57,6 +58,24 @@ export default function OpsTournamentDetailScreen() {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-surface-page dark:bg-surface">
         <ActivityIndicator />
+      </SafeAreaView>
+    );
+  }
+
+  // 조회 실패도 tournament 가 null 이라, 이 분기를 먼저 두지 않으면 일시적 네트워크 오류가
+  // "접근 권한이 없습니다"로 표시된다 — 운영자가 대회를 잃은 줄 안다(감사 A4).
+  if (error && !tournament) {
+    return (
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
+        <StackHeader title="대회" fallbackHref="/(ops)/tournaments" />
+        <ErrorState
+          error={error}
+          title="대회 정보를 불러오지 못했어요"
+          onRetry={() => {
+            void refetch();
+          }}
+          alwaysAllowRetry
+        />
       </SafeAreaView>
     );
   }

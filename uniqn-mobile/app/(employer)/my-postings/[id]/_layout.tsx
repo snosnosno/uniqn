@@ -40,6 +40,12 @@ interface JobDetailContextValue {
   /** 고정 스케줄 공고 여부 — true 면 QR 진입점을 렌더링하지 않는다. */
   isFixed: boolean;
   isLoading: boolean;
+  /**
+   * 조회 실패. job=null 만으로는 "없는 공고"와 "못 불러온 공고"를 구분할 수 없어,
+   * 자식 화면이 일시적 오류를 "찾을 수 없음"으로 오안내한다(감사 A4).
+   */
+  error: Error | null;
+  refresh: () => void;
   handleShowQR: () => void;
 }
 
@@ -51,6 +57,8 @@ const JobDetailContext = createContext<JobDetailContextValue>({
   job: null,
   isFixed: false,
   isLoading: false,
+  error: null,
+  refresh: NOOP,
   handleShowQR: NOOP,
 });
 
@@ -124,7 +132,7 @@ export default function JobPostingDetailLayout() {
   const router = useRouter();
   const isDark = useThemeStore((s) => s.isDarkMode);
   const { addToast } = useToastStore();
-  const { job, isLoading } = useJobDetail(id || '', { realtime: true });
+  const { job, isLoading, error, refresh } = useJobDetail(id || '', { realtime: true });
 
   const isFixed = job ? isFixedJobPosting(job) : false;
 
@@ -157,9 +165,11 @@ export default function JobPostingDetailLayout() {
       job: job ?? null,
       isFixed,
       isLoading,
+      error: error ?? null,
+      refresh,
       handleShowQR,
     }),
-    [job, isFixed, isLoading, handleShowQR]
+    [job, isFixed, isLoading, error, refresh, handleShowQR]
   );
 
   if (job && !isEmployerManageablePosting(job)) {

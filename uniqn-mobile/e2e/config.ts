@@ -33,7 +33,7 @@ const supabaseAnonKey = requireEnv('EXPO_PUBLIC_SUPABASE_ANON_KEY');
 const supabaseProjectRef = new URL(supabaseUrl).hostname.split('.')[0];
 
 // ---------------------------------------------------------------------------
-// review-* 테스트 계정 비밀번호
+// 심사·테스트 계정 비밀번호
 // ---------------------------------------------------------------------------
 // 이 값은 로컬 시드 마이그레이션(20260710000004_baseline_data_seed.sql)이 심는 값이라
 // **로컬/CI 전용**이다. CI(e2e.yml)는 `supabase start` 로 로컬 스택을 띄우므로 이 기본값이 맞다.
@@ -41,7 +41,12 @@ const supabaseProjectRef = new URL(supabaseUrl).hostname.split('.')[0];
 // 2026-08-07 사고: 이 시드가 prod 에도 적용돼 있었고, 레포가 public 이라 평문 비밀번호로
 // prod `review-admin`(app_metadata.role=admin) 에 누구나 로그인할 수 있었다.
 // admin 은 permanently_delete_user 를 임의 사용자에게 호출할 수 있다(= auth.users 삭제).
-// → prod 4계정 비밀번호를 회전하고 전 세션을 파기했다.
+// → prod `review-*` 4계정 비밀번호를 회전하고 전 세션을 파기했다.
+//
+// ⚠️ 시드가 만드는 @uniqn.app 계정은 4개가 아니라 **5개**다. 5번째
+//    `pending-employer-staff@uniqn.app`(§5 AD-001)는 이름이 `review-` 로 시작하지 않아
+//    2026-08-07 회전에서 누락됐고, 2026-08-07 실측 기준 prod 에서 아직 이 기본값과 일치한다.
+//    권한이 staff 라 admin 경로는 없다. 전체 목록: docs/app-review/review-test-accounts.md
 //
 // 그래서 "로컬이 아닌 곳을 겨냥하는데 비밀번호가 여전히 시드 기본값"이면 여기서 막는다.
 // 재발 시 조용히 통과하는 대신 즉시 실패한다 — prod 를 겨냥할 땐 회전된 값을
@@ -82,7 +87,7 @@ export const E2E_CONFIG = {
   },
 
   accounts: {
-    /** review-* 4계정 공통 비밀번호. 로컬=시드 기본값, 원격=E2E_TEST_ACCOUNT_PASSWORD 필수. */
+    /** 시드 계정 5종 공통 비밀번호. 로컬=시드 기본값, 원격=E2E_TEST_ACCOUNT_PASSWORD 필수. */
     password: testAccountPassword,
   },
 } as const;

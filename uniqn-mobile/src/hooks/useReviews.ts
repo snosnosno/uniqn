@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import { invalidateRelated } from '@/lib/invalidationStrategy';
@@ -278,7 +278,12 @@ export function usePendingReviews() {
   const isEmployerReviewer = reviewerType === 'employer';
   const pendingReviewDateRange = getPendingReviewDateRange();
 
-  const { data: staffWorkLogs = [], isLoading: staffLoading } = useQuery({
+  const {
+    data: staffWorkLogs = [],
+    isLoading: staffLoading,
+    error: staffError,
+    refetch: refetchStaffWorkLogs,
+  } = useQuery({
     queryKey: [
       ...queryKeys.reviews.pending(),
       userId ?? 'anonymous',
@@ -303,7 +308,12 @@ export function usePendingReviews() {
     gcTime: queryCachingOptions.reviews.gcTime,
   });
 
-  const { data: employerWorkLogs = [], isLoading: employerLoading } = useQuery({
+  const {
+    data: employerWorkLogs = [],
+    isLoading: employerLoading,
+    error: employerError,
+    refetch: refetchEmployerWorkLogs,
+  } = useQuery({
     queryKey: [
       ...queryKeys.reviews.pending(),
       userId ?? 'anonymous',
@@ -337,7 +347,12 @@ export function usePendingReviews() {
     ].sort();
   }, [employerWorkLogs, staffWorkLogs]);
 
-  const { data: jobPostingMap = new Map(), isLoading: jobPostingsLoading } = useQuery({
+  const {
+    data: jobPostingMap = new Map(),
+    isLoading: jobPostingsLoading,
+    error: jobPostingsError,
+    refetch: refetchJobPostings,
+  } = useQuery({
     queryKey: [
       ...queryKeys.reviews.pending(),
       userId ?? 'anonymous',
@@ -353,7 +368,12 @@ export function usePendingReviews() {
     gcTime: queryCachingOptions.reviews.gcTime,
   });
 
-  const { data: givenPage, isLoading: reviewsLoading } = useQuery({
+  const {
+    data: givenPage,
+    isLoading: reviewsLoading,
+    error: givenReviewsError,
+    refetch: refetchGivenReviews,
+  } = useQuery({
     queryKey: [...queryKeys.reviews.myGiven(), userId ?? 'anonymous', 'pending-dedup'],
     queryFn: () => reviewService.getGivenReviews(userId!),
     enabled: !!userId,
@@ -374,6 +394,32 @@ export function usePendingReviews() {
     [staffWorkLogs, employerWorkLogs, givenPage, isEmployerReviewer, jobPostingMap, userId]
   );
 
+  // 미작성 목록은 네 조회의 합성이라, 하나만 실패해도 목록이 조용히 짧아진다.
+  // 그 상태를 화면이 "미작성 없음"으로 그리면 7일 마감이 그대로 지나간다 —
+  // 실패를 올려야 화면이 빈 상태와 실패를 분기할 수 있다.
+  // 구인자 쿼리는 isLoading 과 동일하게 구인자일 때만 반영한다(스태프는 enabled:false).
+  const error =
+    staffError ??
+    (isEmployerReviewer ? employerError : null) ??
+    jobPostingsError ??
+    givenReviewsError ??
+    null;
+
+  const refetch = useCallback(async () => {
+    await Promise.all([
+      refetchStaffWorkLogs(),
+      isEmployerReviewer ? refetchEmployerWorkLogs() : Promise.resolve(),
+      refetchJobPostings(),
+      refetchGivenReviews(),
+    ]);
+  }, [
+    isEmployerReviewer,
+    refetchEmployerWorkLogs,
+    refetchGivenReviews,
+    refetchJobPostings,
+    refetchStaffWorkLogs,
+  ]);
+
   return {
     pendingReviews,
     pendingCount: pendingReviews.length,
@@ -382,5 +428,7 @@ export function usePendingReviews() {
       reviewsLoading ||
       jobPostingsLoading ||
       (isEmployerReviewer && employerLoading),
+    error,
+    refetch,
   };
 }

@@ -14,6 +14,7 @@ import { StackHeader } from '@/components/headers';
 import { AddCircleOutlineIcon, DocumentTextOutlineIcon } from '@/components/icons';
 import { useAllAnnouncements, useAnnouncementStats } from '@/hooks/useAnnouncement';
 import { AnnouncementCard } from '@/components/admin/announcements';
+import { ErrorState } from '@/components/ui';
 import type { AnnouncementStatus, Announcement } from '@/types';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
 
@@ -30,7 +31,7 @@ export default function AdminAnnouncementsPage() {
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('all');
 
-  const { data, isLoading, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
+  const { data, isLoading, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useAllAnnouncements(statusFilter === 'all' ? undefined : { status: statusFilter });
 
   // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
@@ -164,6 +165,17 @@ export default function AdminAnnouncementsPage() {
             <ActivityIndicator size="large" />
             <Text className="text-content-secondary mt-4 font-sans">공지사항을 불러오는 중...</Text>
           </View>
+        ) : error && announcements.length === 0 ? (
+          // 조회 실패를 "공지사항이 없습니다"로 그리면 발행된 공지를 지운 줄 알고
+          // 같은 공지를 다시 쓰게 된다(감사 A4).
+          <ErrorState
+            error={error}
+            title="공지사항을 불러오지 못했어요"
+            onRetry={() => {
+              void refetch();
+            }}
+            alwaysAllowRetry
+          />
         ) : announcements.length === 0 ? (
           <View className="flex-1 items-center justify-center px-8">
             <DocumentTextOutlineIcon size={64} color={SECONDARY_PALETTE[400]} />

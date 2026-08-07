@@ -25,19 +25,15 @@ import {
   isAppError,
   toError,
 } from '@/errors';
-import { handleSupabaseError, toCamelCase } from '@/utils/supabase';
-import { parseWorkLogDocument, parseJobPostingDocument } from '@/schemas';
-import { IdNormalizer } from '@/shared/id';
-import { STATUS } from '@/constants';
-import { resolvePostingAuthority, canManagePosting } from './postingAuthority';
-// 공고 SELECT 화이트리스트 단일소스 — 정본 TABLE_COLUMNS 를 재사용한다(자체 사본 드리프트 금지).
-import { TABLE_COLUMNS as JOB_POSTING_COLUMNS } from './JobPostingRepositoryHelpers';
-// work_logs SELECT 화이트리스트·ts 매핑 정본(자체 사본 드리프트 금지).
-import { WORK_LOG_COLUMNS, applyTsPreference } from './workLogColumns';
+import { handleSupabaseError } from '@/utils/supabase';
+// 🔑 이 파일은 이제 **읽지 않는다.** SELECT 화이트리스트(WORK_LOG_COLUMNS·JOB_POSTING_COLUMNS),
+//    행 → 도메인 변환(toCamelCase·parseWorkLogDocument·parseJobPostingDocument·applyTsPreference),
+//    소유권 판정(IdNormalizer·STATUS·postingAuthority) 의존이 전부 사라졌다 —
+//    쓰기 경로 5종이 모두 SECDEF RPC 로 옮겨가면서 클라 선행 조회 자체가 없어졌다(아래 묘비 참조).
 // 실적(출퇴근) 쓰기의 단일 관문. 이 경로의 직접 UPDATE 는 여기로 흡수됐다.
 import { updateSlot as updateWorkLogSlot } from './WorkLogRepositoryVenue';
 import type { TaxSettings } from '@/utils/settlement';
-import type { WorkLog, JobPosting, PayrollStatus } from '@/types';
+import type { PayrollStatus } from '@/types';
 import type {
   ISettlementRepository,
   UpdateWorkTimeContext,
@@ -52,14 +48,12 @@ import type {
 // ============================================================================
 
 const WORK_LOGS_TABLE = 'work_logs';
-const JOB_POSTINGS_TABLE = 'job_postings';
 
-/**
- * 정산 금액 수정 이력 경계 스키마 — 항목별 객체 배열(얇게).
- * work_logs jsonb 는 무검증 단언되어 있어, 이력 누적 전 형식만 확인한다.
- * 실패(비배열·비객체 항목) 시 [] 폴백 + logger.error 관측(throw 금지 — 현 폴백 동작 유지).
- */
-const settlementModificationHistorySchema = z.array(z.record(z.string(), z.unknown()));
+// 🔑 `settlementModificationHistorySchema` 는 여기 있었고, **서버로 옮겨졌다**.
+//    클라가 이력 배열을 읽어 append 하던 시절, 오염(비배열)된 jsonb 를 [] 로 접는 경계 검증이었다.
+//    이제 append 가 RPC 의 UPDATE 문 안에서 일어나므로 클라는 배열을 읽지도 보내지도 않는다 —
+//    같은 폴백을 서버 `jsonb_typeof(...) = 'array'` CASE 가 수행한다
+//    (20260807190000, 회귀 고정 = settlement_custom_rpc.test.sql 15·16번).
 
 /**
  * 정산 RPC 응답 경계 스키마.
@@ -206,6 +200,55 @@ function toSettleWorkLogError(
 }
 
 /**
+ * `update_work_log_custom_settlement` RPC 가 RAISE 한 도메인 에러를 앱 에러로 변환.
+ * (매칭되지 않으면 null 반환 → 공통 핸들러로 위임)
+ *
+ * 전환 전 클라 구현이 내던 에러 클래스를 그대로 유지한다 — 정산 완료 건은 AlreadySettledError,
+ * 소유권 실패는 PermissionError. 화면 분기가 클래스로 되어 있어 여기가 갈라지면 조용히 새 문구가 뜬다.
+ */
+function toCustomSettlementError(
+  error: unknown
+): BusinessError | PermissionError | ValidationError | null {
+  const message = rpcErrorMessage(error);
+  const userMessage = (fallback: string): string => {
+    const idx = message.indexOf(': ');
+    return idx >= 0 ? message.slice(idx + 2).trim() : fallback;
+  };
+
+  if (message.includes('PERMISSION_DENIED')) {
+    return new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
+      userMessage: userMessage('권한이 있는 공고의 근무 기록만 정산 설정을 수정할 수 있습니다'),
+    });
+  }
+  if (message.includes('WORK_LOG_NOT_FOUND')) {
+    return new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
+      userMessage: '근무 기록을 찾을 수 없습니다',
+    });
+  }
+  if (message.includes('POSTING_NOT_FOUND')) {
+    return new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
+      userMessage: '공고를 찾을 수 없습니다',
+    });
+  }
+  // 전환 전 `if (payrollStatus === COMPLETED) throw new AlreadySettledError()` 와 같은 클래스.
+  if (message.includes('ALREADY_SETTLED')) {
+    return new AlreadySettledError();
+  }
+  if (message.includes('INVALID_INPUT')) {
+    // 사유 길이·XSS 는 보안 코드로 접는다 — 형제 toPayrollStatusError 와 같은 판단.
+    const isSecurity = message.includes('허용되지 않는 문자') || message.includes('200자');
+    return new ValidationError(
+      isSecurity ? ERROR_CODES.SECURITY_XSS_DETECTED : ERROR_CODES.VALIDATION_FORMAT,
+      {
+        ...(isSecurity ? { category: 'security' as const, severity: 'medium' as const } : {}),
+        userMessage: userMessage('정산 설정 저장 요청이 올바르지 않습니다'),
+      }
+    );
+  }
+  return null;
+}
+
+/**
  * 일괄 정산 청크 크기.
  *
  * 🔴 서버 `bulk_settle_work_logs` 의 상한(100)과 **같은 값이어야 한다**
@@ -222,61 +265,21 @@ const BATCH_CHUNK_SIZE = 100;
 // (WorkLogWithOverrides 는 calculateSettlementAmount 전용 타입이었고 그 함수와 함께 사라졌다 —
 //  override 3종은 이제 서버가 work_logs 컬럼에서 직접 읽는다.)
 
-interface WorkLogOwnershipResult {
-  workLog: WorkLog;
-  jobPosting: JobPosting;
-}
-
 // ============================================================================
 // Helpers
 // ============================================================================
 
-function toWorkLog(row: Record<string, unknown>): WorkLog | null {
-  const camel = toCamelCase<Record<string, unknown>>(row);
-  return parseWorkLogDocument({ ...applyTsPreference(camel), id: row.id });
-}
-
-/**
- * 정산 경로 전용 공고 해소.
- *
- * 🔴 컨테이너(지점)를 `parseJobPostingDocument` 로 읽으면 **null 로 증발한다.**
- * 컨테이너의 `schedule` 은 `{kind, softTargets, roleSalaries}` 인데 dated 분기는
- * `.strict()` + `primaryDate/allDates/requirements` 필수라 "Unrecognized key: softTargets"
- * 로 거부된다(prod 실측 행으로 재현 확인). 레포도 이 계약을 문서화하고 있다 —
- * `JobPostingRepository.venue.test.ts:1-6`, 그래서 읽기 경로는 전용 경량 파서를 쓴다.
- *
- * 증발하면 `validateWorkLogOwnership` 이 '공고 데이터를 파싱할 수 없습니다' 로 던지고
- * 일괄 경로는 `jobPostingMap` 에 안 담겨 '권한이 없는 공고입니다' 가 된다 —
- * 즉 **지점 직속 배치는 정산 자체가 불가능**해진다(지점 정산 화면의 존재 이유가 바로 그 행들이다).
- *
- * 정산이 실제로 읽는 값은 id/ownerId/workspaceId/status/schedule/compensation 뿐이므로
- * 컨테이너는 스키마를 우회해 경량 투영으로 만든다. 권한 판정은 일반 공고와 동일하게
- * ownerId/workspaceId 로 이뤄지고, RLS `wl_update` 가 최종 관문으로 남는다.
- */
-function toJobPosting(row: Record<string, unknown>): JobPosting | null {
-  const camel = toCamelCase<Record<string, unknown>>(row);
-
-  if (camel.status === 'container') {
-    const id = typeof row.id === 'string' ? row.id : '';
-    const ownerId = typeof camel.ownerId === 'string' ? camel.ownerId : '';
-    // ownerId 가 없으면 권한 판정 자체가 불가능하다 — fail-closed 로 증발시킨다.
-    if (!id || !ownerId) return null;
-
-    return {
-      id,
-      ownerId,
-      workspaceId: typeof camel.workspaceId === 'string' ? camel.workspaceId : undefined,
-      status: 'container',
-      title: typeof camel.title === 'string' ? camel.title : '',
-      // 급여 근거는 schedule.roleSalaries 에 있다(buildVenueContainerContext 가 읽는다).
-      schedule: camel.schedule,
-      // 컨테이너에는 공고 수당·세금 설정이 없다. 근무별 override 만 얹힌다.
-      compensation: {},
-    } as unknown as JobPosting;
-  }
-
-  return parseJobPostingDocument({ ...camel, id: row.id });
-}
+// 🔑 `WorkLogOwnershipResult` · `toWorkLog` · `toJobPosting` 도 여기 있었고,
+//    소유권 선행 조회(validateWorkLogOwnership)와 함께 사라졌다. 이 파일에 남은 조회는 없다.
+//
+//    ⚠️ 그중 `toJobPosting` 이 지키던 계약은 **다른 곳에서 계속 살아 있어야 한다**:
+//    컨테이너(지점) 공고를 `parseJobPostingDocument` 로 읽으면 null 로 증발한다.
+//    컨테이너의 `schedule` 은 `{kind, softTargets, roleSalaries}` 인데 dated 분기가
+//    `.strict()` + `primaryDate/allDates/requirements` 필수라 "Unrecognized key: softTargets"
+//    로 거부되기 때문이다(prod 실측 행으로 재현 확인, 고정 = JobPostingRepository.venue.test.ts:1-6).
+//    이 경로에서 그 함정이 없어진 이유는 함정을 고쳐서가 아니라 **클라가 더 이상 공고를
+//    파싱하지 않기 때문**이다 — 서버 RPC 가 job_postings 를 SQL 로 직접 읽는다.
+//    따라서 지점 직속 배치의 정산 가능성은 이제 RPC 의 인가 술어가 보장한다.
 
 /** 공통 catch 핸들러 */
 function rethrowOrHandle(
@@ -559,6 +562,28 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
   // Custom Settlement Settings
   // ==========================================================================
 
+  /**
+   * 개인 정산 설정(급여/수당/세금) 저장 — 서버 RPC `update_work_log_custom_settlement` 1회.
+   *
+   * 🔴 **이 전환의 본체는 이력 jsonb Lost Update 다.** 이전 구현은
+   *    select(work_log) → select(posting) → 클라에서 배열 append → update 통째 덮어쓰기였다.
+   *    잠금이 없어 두 요청이 겹치면 이렇게 됐다:
+   *      T1 read [A] · T2 read [A] · T1 write [A,B] · T2 write [A,C]  ← B 가 조용히 사라진다
+   *    정산 수정 이력은 금액 분쟁 시 "누가 언제 얼마로 바꿨나"의 유일한 근거라, 무음 유실은
+   *    금전 사고의 증거를 지우는 것과 같다. 서버가 FOR UPDATE 로 잡고 **UPDATE 문 안에서**
+   *    append 하므로, 클라가 배열을 되돌려보낼 방법 자체가 사라졌다(RPC 시그니처에 인자가 없다).
+   *
+   * 함께 서버로 넘어간 것:
+   *   · 소유권 판정 — 형제 RPC 3종과 **글자 그대로 같은 술어**를 쓴다(갈라지지 않게)
+   *   · 정산 완료 동결 — 전환 전 `AlreadySettledError` 분기가 서버 ALREADY_SETTLED 로.
+   *     매핑은 toCustomSettlementError 가 같은 에러 클래스로 되돌린다
+   *   · 이력 오염(비배열) 폴백 — 클라 zod safeParse 가 하던 일을 서버 jsonb_typeof 가 한다
+   *   · modifiedBy/modifiedAt 재판정 — 클라가 보낸 값을 신뢰하지 않는다
+   *
+   * ⚠️ `actorId` 는 서버가 `auth.uid()` 로 다시 판정한다 — 여기서는 관측용으로만 남긴다.
+   * ⚠️ work_logs 직접 PATCH 는 아직 열려 있어 이 RPC 만의 구멍은 아니다. 채널 핀·REVOKE 는
+   *    롤아웃 확인이 선행 조건이라 R4 의 몫이다(20260807190000 헤더 참조).
+   */
   async updateWorkLogCustomSettlement(
     workLogId: string,
     data: {
@@ -572,42 +597,22 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
     try {
       logger.info('개인 정산 설정 저장 시작', { workLogId, actorId });
 
-      // 소유권 검증
-      const { workLog } = await this.validateWorkLogOwnership(workLogId, actorId, '정산 설정 수정');
+      const { error } = await supabase.rpc('update_work_log_custom_settlement', {
+        p_work_log_id: workLogId,
+        p_custom_salary_info: data.customSalaryInfo,
+        p_custom_tax_settings: data.customTaxSettings,
+        p_modification_entry: data.modificationEntry,
+        // 미설정(undefined)은 null 로 명시한다 — PostgREST 는 키 부재를 DEFAULT 로 보지만,
+        // 여기서 값을 생략하면 "수당을 지웠다"와 "수당을 안 건드렸다"가 같은 요청이 된다.
+        // 이 화면의 계약은 항상 전량 저장이므로 부재 = 공고 기본 수당 사용 = null 이다.
+        p_custom_allowances: data.customAllowances ?? null,
+      });
 
-      // 정산 완료된 근무 기록은 급여/수당/세금 설정 수정 불가 (fail-closed).
-      // 완료 시 동결된 payroll_amount 와 표시·이력 정합을 서버측에서 보호한다(UI 방어만으로는 부족).
-      if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
-        throw new AlreadySettledError();
-      }
-
-      // 기존 수정 이력에 새 항목 추가 (Supabase에는 arrayUnion이 없으므로 수동 추가)
-      // 경계 검증: jsonb 이력이 오염(비배열·비객체)이면 [] 폴백 + 관측(throw 금지).
-      const rawHistory = (workLog as unknown as Record<string, unknown>)
-        .settlementModificationHistory;
-      const historyParsed = settlementModificationHistorySchema.safeParse(rawHistory ?? []);
-      if (!historyParsed.success) {
-        logger.error('정산 수정 이력 형식 오류 — 빈 배열로 폴백', {
-          workLogId,
-          issues: historyParsed.error.issues,
-        });
-      }
-      const existingHistory = historyParsed.success ? historyParsed.data : [];
-      const updatedHistory = [...existingHistory, data.modificationEntry];
-
-      const { error } = await supabase
-        .from(WORK_LOGS_TABLE)
-        .update({
-          custom_salary_info: data.customSalaryInfo,
-          custom_allowances: data.customAllowances,
-          custom_tax_settings: data.customTaxSettings,
-          settlement_modification_history: updatedHistory,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', workLogId);
-
-      if (error)
+      if (error) {
+        const mapped = toCustomSettlementError(error);
+        if (mapped) throw mapped;
         handleSupabaseError(error, { operation: '개인 정산 설정 저장', table: WORK_LOGS_TABLE });
+      }
 
       logger.info('개인 정산 설정 저장 완료', { workLogId });
     } catch (error) {
@@ -615,100 +620,13 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
     }
   }
 
-  // ==========================================================================
-  // Private Helpers
-  // ==========================================================================
-
-  /**
-   * 근무 기록 소유권 검증
-   *
-   * @description WorkLog 조회 → JobPosting 조회 → 소유권 확인
-   * @throws BusinessError 문서를 찾을 수 없는 경우
-   * @throws PermissionError 소유권이 없는 경우
-   */
-  private async validateWorkLogOwnership(
-    workLogId: string,
-    actorId: string,
-    operationMessage: string = '처리'
-  ): Promise<WorkLogOwnershipResult> {
-    // 1. 근무 기록 조회
-    const { data: wlData, error: wlError } = await supabase
-      .from(WORK_LOGS_TABLE)
-      .select(WORK_LOG_COLUMNS)
-      .eq('id', workLogId)
-      .maybeSingle();
-
-    if (wlError)
-      handleSupabaseError(wlError, {
-        operation: `${operationMessage} - WorkLog 조회`,
-        table: WORK_LOGS_TABLE,
-      });
-
-    if (!wlData) {
-      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-        userMessage: '근무 기록을 찾을 수 없습니다',
-      });
-    }
-
-    const workLog = toWorkLog(wlData as Record<string, unknown>);
-    if (!workLog) {
-      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-        userMessage: '근무 기록 데이터를 파싱할 수 없습니다',
-      });
-    }
-
-    // 2. 공고 조회 및 소유권 확인
-    const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
-    const { data: jpData, error: jpError } = await supabase
-      .from(JOB_POSTINGS_TABLE)
-      .select(JOB_POSTING_COLUMNS)
-      .eq('id', normalizedJobId)
-      .maybeSingle();
-
-    if (jpError)
-      handleSupabaseError(jpError, {
-        operation: `${operationMessage} - 공고 조회`,
-        table: JOB_POSTINGS_TABLE,
-      });
-
-    if (!jpData) {
-      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-        userMessage: '공고를 찾을 수 없습니다',
-      });
-    }
-
-    const jobPosting = toJobPosting(jpData as Record<string, unknown>);
-    if (!jobPosting) {
-      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-        userMessage: '공고 데이터를 파싱할 수 없습니다',
-      });
-    }
-
-    // owner 는 workspaceId 유무와 무관하게 통과(레거시 row 포함). 비-owner 만 멤버십·협업자 판정.
-    if (jobPosting.ownerId !== actorId) {
-      if (!jobPosting.workspaceId) {
-        throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-          userMessage: `공고에 팀이 지정되지 않았습니다: ${operationMessage}`,
-        });
-      }
-
-      const authority = await resolvePostingAuthority({
-        jobPostingId: jobPosting.id,
-        workspaceId: jobPosting.workspaceId,
-        postingOwnerId: jobPosting.ownerId,
-        actorId,
-        operation: operationMessage,
-      });
-
-      if (!canManagePosting(authority)) {
-        throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-          userMessage: `권한이 있는 공고의 근무 기록만 ${operationMessage}할 수 있습니다`,
-        });
-      }
-    }
-
-    return { workLog, jobPosting };
-  }
+  // 🔑 `validateWorkLogOwnership` 도 여기 있었고, **서버로 옮겨졌다**(삭제, 복제 아님).
+  //    이 클래스의 쓰기 경로 4종(시간 수정·개별 정산·일괄 정산·상태 변경)과 마지막 남았던
+  //    개인 정산 설정 저장까지 전부 SECDEF RPC 경유가 되면서, 클라가 소유권을 먼저 조회해
+  //    판정하던 단계가 통째로 불필요해졌다. 각 RPC 가 auth.uid() 로 **같은 술어**를 재판정한다.
+  //    🔴 이 함수를 되살리지 말 것 — 클라 판정을 다시 두면 서버 술어와 갈라지고,
+  //       갈라진 쪽이 넓어져도 아무도 알아채지 못한다(SET-1 회귀의 형태가 바로 그것이었다).
+  //    선행 조회가 사라진 부수 효과로 저장 1회의 왕복이 3회 → 1회로 줄었다.
 
   // 🔑 `calculateSettlementAmount` 는 여기 있었고, 서버로 **옮겨졌다**(삭제, 복제 아님).
   //    정본 = `public.fn_settlement_amount`

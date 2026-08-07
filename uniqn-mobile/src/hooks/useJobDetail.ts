@@ -92,6 +92,9 @@ export function useJobDetail(jobId: string, options: UseJobDetailOptions = {}) {
 
     const unsubscribe = subscribeToJobPosting(jobId, {
       onUpdate: (jobPosting) => {
+        // 갱신이 도착했다는 건 구독이 살아 있다는 뜻이다. 지난 구독 에러를 여기서 지우지 않으면
+        // 화면이 캐시된 공고 위에 영구 에러 상태를 씌운다(감사 A4).
+        setRealtimeError(null);
         queryClient.setQueryData(detailQueryKey, jobPosting);
 
         if (jobPosting) {
@@ -150,6 +153,11 @@ export function useJobDetail(jobId: string, options: UseJobDetailOptions = {}) {
     if (!isOnline) {
       return;
     }
+
+    // 화면의 '다시 시도'가 여기로 오는데, 구독 에러를 지우지 않으면 재조회가 성공해도
+    // 에러 화면이 그대로 남는다 — 재시도 버튼이 거짓말이 된다. 구독이 여전히 죽어 있으면
+    // onError 가 다시 세우므로 지속 실패를 감추지도 않는다.
+    setRealtimeError(null);
 
     await queryClient.invalidateQueries({
       queryKey: detailQueryKey,

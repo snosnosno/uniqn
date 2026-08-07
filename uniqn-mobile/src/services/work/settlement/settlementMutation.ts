@@ -13,6 +13,7 @@
 import { logger } from '@/utils/logger';
 import { settlementRepository } from '@/repositories';
 import { requireCurrentUser } from '@/services/auth/authCoreService';
+import { trackSettlementComplete } from '@/services/observability';
 import { TimeNormalizer } from '@/shared/time';
 import type { TaxSettings } from '@/utils/settlement';
 import type { PayrollStatus } from '@/types';
@@ -66,6 +67,22 @@ export async function updateWorkTimeForSettlement(
  * 개별 정산 처리
  *
  * @description 단일 근무 기록 정산 완료 처리
+ *
+ * 🪦 **정산 완료 애널리틱스는 여기가 정본이다** (2026-08-07 복구, 감사 S-D).
+ *    `trackSettlementComplete` 의 유일한 호출부는 `workLogService.updatePayrollStatus` 였고,
+ *    그 함수가 #402(정산 RPC 화) 이후 UI 소비자 0곳인 죽은 회로가 되면서 이벤트도 함께
+ *    조용히 끊겼다(#426 웨이브가 함수를 지울 때 드러났다 — 삭제가 계측을 없앤 게 아니라
+ *    이미 없던 것을 드러낸 것이다).
+ *
+ *    🔴 그때 남긴 묘비는 "복구하려면 settlementMutation.updateSettlementStatus 에 붙여라"
+ *       고 적었는데 **그 지목은 틀렸다.** 서버 `set_work_log_payroll_status` 는
+ *       `p_status='completed'` 진입을 INVALID_STATUS 로 막는다(20260802161000:298).
+ *       즉 그 경로는 정산 **완료**를 표현할 수 없고, 넘길 금액도 갖고 있지 않다.
+ *       정산 완료를 만드는 것은 `settle_work_log` / `bulk_settle_work_logs` 뿐이므로
+ *       계측은 두 경로에 붙는다.
+ *
+ *    ⚠️ 발화 조건은 `success` 다 — 리포지토리가 실패를 throw 하지 않고 `{success:false}` DTO 로
+ *       접어 반환하는 계약이라, 그냥 붙이면 **실패한 정산까지 완료로 집계**된다.
  */
 export async function settleWorkLog(
   input: SettleWorkLogInput,
@@ -81,6 +98,11 @@ export async function settleWorkLog(
     },
     actorId
   );
+
+  if (result.success) {
+    // 서버가 재계산한 canonical 금액으로 집계한다 — 클라 미리보기(input.amount)가 아니다.
+    trackSettlementComplete(result.amount, 1);
+  }
 
   return {
     success: result.success,
@@ -112,6 +134,12 @@ export async function bulkSettlement(
     },
     actorId
   );
+
+  // 부분 성공이 정상 결과인 경로다 — 성공분만 집계한다(totalCount 로 세면 실패가 완료로 잡힌다).
+  // 이벤트는 건별이 아니라 조작 1회당 1건으로 보낸다: count 파라미터가 있는 이유가 그것이다.
+  if (result.successCount > 0) {
+    trackSettlementComplete(result.totalAmount, result.successCount);
+  }
 
   return {
     totalCount: result.totalCount,
