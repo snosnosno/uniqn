@@ -1,5 +1,5 @@
 import { render, fireEvent } from '@testing-library/react-native';
-import { useBustParticipant, useFreeSeat } from '@/hooks/ops';
+import { useBustParticipant, useFreeSeat, useSetParticipantChips } from '@/hooks/ops';
 import { OpsParticipantActionSheet } from '../OpsParticipantActionSheet';
 
 jest.mock('@/hooks/ops', () => ({
@@ -11,11 +11,18 @@ jest.mock('@/hooks/ops', () => ({
   useFreeSeat: jest.fn(() => ({ mutate: jest.fn() })),
   useSetParticipantChips: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
 }));
-// SheetModal 실물 대신 자식 통과 스텁(레포 관례: order-sheet RolesSheet.test.tsx:11-22)
+// SheetModal 실물 대신 자식 통과 스텁(레포 관례: order-sheet RolesSheet.test.tsx:11-20).
+// footer 도 통과시켜야 한다 — 시트의 주 액션 버튼은 footer 에만 있어서, 드랍하면
+// "저장 눌러서 mutate" 경로가 통째로 미검증으로 남는다.
 jest.mock('@/components/ui/SheetModal', () => ({
-  SheetModal: ({ visible, children }: any) => {
+  SheetModal: ({ visible, children, footer }: any) => {
     const { View } = require('react-native');
-    return visible ? <View>{children}</View> : null;
+    return visible ? (
+      <View>
+        {children}
+        {footer}
+      </View>
+    ) : null;
   },
 }));
 
@@ -154,6 +161,40 @@ describe('OpsParticipantActionSheet', () => {
     fireEvent.press(getByText('칩 카운트'));
     expect(getByText('새 칩 수량')).toBeTruthy();
     expect(queryByText('리바이')).toBeNull(); // 부모 시트 숨김
+  });
+
+  // 회귀 고정: 시드 effect 가 participant 객체 아이덴티티에 반응하면, ops_participants realtime
+  // invalidate → refetch → 상위 재렌더마다 입력이 스냅샷 칩으로 되돌아간다(칩카운트 라운드에서 상시 발생).
+  it('입력 도중 상위 재렌더가 일어나도 입력값이 유지된다(realtime refetch 회귀)', () => {
+    const view = render(
+      <OpsParticipantActionSheet tournament={tournament} participant={active} onClose={jest.fn()} />
+    );
+    fireEvent.press(view.getByText('칩 카운트'));
+    fireEvent.changeText(view.getByLabelText('새 칩 수량'), '253000');
+    // 상위가 인라인 participant 객체를 다시 만드는 상황 재현(props 값은 동일).
+    view.rerender(
+      <OpsParticipantActionSheet tournament={tournament} participant={active} onClose={jest.fn()} />
+    );
+    expect(view.getByLabelText('새 칩 수량').props.value).toBe('253000');
+  });
+
+  it('칩 수량 저장 → 파싱된 정수로 mutate · 성공 시 부모 시트까지 닫힘', () => {
+    const mutate = jest.fn();
+    (useSetParticipantChips as jest.Mock).mockReturnValue({ mutate, isPending: false });
+    const onClose = jest.fn();
+    const { getByText, getByLabelText } = render(
+      <OpsParticipantActionSheet tournament={tournament} participant={active} onClose={onClose} />
+    );
+    fireEvent.press(getByText('칩 카운트'));
+    fireEvent.changeText(getByLabelText('새 칩 수량'), '253,000'); // 구분자 입력도 정수로
+    fireEvent.press(getByText('칩 수량 저장'));
+    expect(mutate).toHaveBeenCalledWith(
+      { participantId: 'p1', chips: 253000 },
+      expect.objectContaining({ onSuccess: expect.any(Function) })
+    );
+    // onSuccess 는 칩 시트와 부모 액션시트를 함께 닫아 참가자 목록으로 복귀시킨다.
+    mutate.mock.calls[0][1].onSuccess();
+    expect(onClose).toHaveBeenCalled();
   });
 
   it('participant=null 이면 아무것도 렌더 안 함', () => {

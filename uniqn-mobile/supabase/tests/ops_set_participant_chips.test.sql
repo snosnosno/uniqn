@@ -6,7 +6,7 @@
 --   "total_chips 반영" 단언이 빈 통과한다(ops_live_stats_deferred.test.sql 규율).
 BEGIN;
 SET CONSTRAINTS ALL IMMEDIATE;
-SELECT plan(17);
+SELECT plan(19);
 
 DO $$
 DECLARE s RECORD; player_ids uuid[];
@@ -96,18 +96,26 @@ SELECT is(                                                                   -- 
 
 -- ── 동일값 = 멱등 no-op(이벤트 0행 증가) ──
 DO $$
-DECLARE v_cnt int;
+DECLARE v_cnt int; r jsonb;
 BEGIN
   SELECT count(*) INTO v_cnt FROM public.ops_events
     WHERE tournament_id = (current_setting('ops.t_id'))::uuid AND type = 'player_chips_set';
   PERFORM set_config('ops.evt_before', v_cnt::text, true);
-  PERFORM public.ops_set_participant_chips((current_setting('ops.seed_pid'))::uuid,
-    (current_setting('ops.owner_id'))::uuid, 45000);  -- 같은 값
+  SELECT public.ops_set_participant_chips((current_setting('ops.seed_pid'))::uuid,
+    (current_setting('ops.owner_id'))::uuid, 45000) INTO r;  -- 같은 값
+  -- no-op 은 변경 경로와 별도의 RETURN 이라 키가 따로 썩을 수 있다. 클라 zod 가 chips_before 를
+  -- 필수로 parse 하므로(OpsParticipantRepository), 누락되면 흔한 '무변경 저장'이 에러 토스트가 된다.
+  PERFORM set_config('ops.noop_before', COALESCE(r->>'chips_before', '<missing>'), true);
+  PERFORM set_config('ops.noop_chips',  COALESCE(r->>'chips', '<missing>'), true);
 END $$;
 SELECT is(                                                                   -- [13]
   (SELECT count(*)::int FROM public.ops_events
    WHERE tournament_id = (current_setting('ops.t_id'))::uuid AND type = 'player_chips_set'),
   (current_setting('ops.evt_before'))::int, '동일값 재입력은 이벤트 0행(감사 로그 오염 방지)');
+SELECT is(current_setting('ops.noop_before'), '45000',                       -- [13b]
+  'no-op 반환에도 chips_before 포함(클라 zod 필수 키)');
+SELECT is(current_setting('ops.noop_chips'), '45000',                        -- [13c]
+  'no-op 반환에도 chips 포함');
 
 -- ── checked_in(대기) 허용 — RedrawModal 재배치 풀에 포함되므로 정정 대상 ──
 DO $$ BEGIN

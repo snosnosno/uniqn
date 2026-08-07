@@ -30,11 +30,17 @@ function buildDeltaLabel(before: number, after: number): string | null {
 export function ChipCountSheet({ visible, onClose, participant, tournamentId }: Props) {
   const setChipsMut = useSetParticipantChips(tournamentId);
   const [chipsInput, setChipsInput] = useState('');
+  const participantId = participant?.id ?? null;
 
-  // 시트가 열리거나 대상이 바뀌면 현재 칩으로 입력 시드.
+  // 열릴 때 · 대상이 바뀔 때만 현재 칩으로 시드한다. `participant` 객체 자체를 의존성에 두면
+  // 상위 액션시트가 매 렌더 새 객체를 만드는 순간 재발화한다 — ops_participants realtime
+  // invalidate → refetch 로 상위가 재렌더될 때마다 입력 중이던 값이 스냅샷 칩으로 되돌아가고,
+  // 되돌아간 값은 zod 도 서버도 유효해서 조용히 오입력/no-op 으로 저장된다.
+  // (같은 함정을 이미 겪은 선례: WorkLogEditSheet.tsx:243-255)
   useEffect(() => {
-    if (visible && participant) setChipsInput(String(participant.chips));
-  }, [visible, participant]);
+    if (visible && participantId !== null) setChipsInput(String(participant?.chips ?? 0));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 열림·대상 전환에만 반응한다(위 주석)
+  }, [visible, participantId]);
 
   if (!participant) return null;
 
