@@ -5,9 +5,15 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.0.0/)를 기반으로 하며,
 이 프로젝트는 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 준수합니다.
 
-## [Unreleased] - 2026-07-31
+## [Unreleased] - 2026-08-07
 
-> 1.0.5 스토어 빌드(2026-07-26, iOS 43 / Android 41) 이후 머지분. **네이티브 구성 변경 0건** → `version` bump 없이 OTA 로 전량 전달된다. 웨이브 전체 합성 = `wiki/sources/post-1-0-5-merge-wave.md`.
+> 1.0.5 스토어 빌드(2026-07-26, iOS 43 / Android 41) 이후 머지분.
+>
+> 🔴 **2026-08-07 정정: 네이티브 구성 변경이 발생했다** — Android App Links 경로를 좁혔다(아래 Fixed).
+> `runtimeVersion: appVersion` 정책상 **네이티브 구성을 바꾸면 version 을 반드시 올려야** 구 빌드로
+> OTA 가 새지 않는다. 그래서 `1.0.5 → 1.0.6` 으로 올렸고, **이 변경분은 OTA 로 전달되지 않는다 —
+> 새 스토어 빌드가 필요하다.** 그 이전에 머지된 항목들은 여전히 OTA 대상이다.
+> 웨이브 전체 합성 = `wiki/sources/post-1-0-5-merge-wave.md`.
 
 ### Security
 
@@ -33,6 +39,8 @@
 
 ### Fixed
 
+- 🔴 **Android 가 uniqn.app 전 경로를 가로채 브라우저용 링크까지 앱이 삼키던 것** (2026-08-07, DB 변경 0, **네이티브 구성 변경 — 1.0.6 새 빌드 필요**): `app.config.ts` 의 App Links intentFilter 가 `pathPrefix: '/'` 였다. 프로덕션 Android 빌드가 설치된 기기에서는 **uniqn.app 의 모든 URL** 이 앱으로 열렸다는 뜻이다. 피해 표면 두 가지 — ①ops 공개 링크(`/monitor/:token` 전광판·`/live/:token` 플레이어 QR)는 참가자·TV 로 보내는 링크인데 앱이 가로챈다 ②`/privacy.html`·`/guide.html` 같은 정적 페이지는 **라우터에 대응 라우트조차 없어** 앱에서 열면 not-found 로 떨어진다(스토어 심사 노트에 넣는 URL 이다). iOS 는 AASA 에 6경로만 적혀 있어 애초에 이 문제가 없었다 — **같은 링크가 플랫폼별로 다른 곳에서 열리고 있었다.** 고침은 intentFilter 를 AASA 와 같은 목록(+`/reset-password`)으로 좁힌 것이다. `/reset-password` 만 의도적 비대칭으로 남겼다 — Android 는 앱이 프래그먼트 토큰을 직접 채택하는 경로가 이미 출하돼 있고(`adoptRecoverySessionFromUrl`, PR#294·#295), iOS 는 웹 `detectSessionInUrl` 로 처리한다. 둘 다 동작하므로 검증된 현행을 건드리지 않았다. 함께 AASA 에 `/jobs`(정확 일치)를 추가했다 — 공고 **목록** 공유 링크(`useBulkShare.ts:107`)가 `https://uniqn.app/jobs` 인데 기존 패턴 `/jobs/*` 는 슬래시 뒤를 요구해 **이 링크만 iOS 에서 앱으로 안 열렸다**. 검증: `APP_ENV=production npx expo config` 로 평가된 intentFilter data 7종 확인 · `tsc --noEmit` exit 0.
+- **ops 공개 링크가 존재하지 않는 도메인을 가리키던 것** (2026-08-07, DB 변경 0, OTA 로 전달 가능): 네이티브에서 공유하는 전광판 링크·플레이어 QR 이 `https://ops.uniqn.app` 로 나갔는데 그 도메인은 **DNS 가 해석되지 않는다**(실측: `nslookup` 무응답, `curl` exit 6). ops 전용 2nd Cloudflare Pages 프로젝트는 1c 설계에서 "브랜딩용·비차단"으로 잡혔다가 끝내 만들어지지 않았고, 공개 라우트는 처음부터 메인 도메인의 SPA fallback(`public/_redirects`)으로 서빙되고 있었다 — 즉 **폴백 상수만 화석으로 남아 있었다.** 웹은 `window.location.origin` 을 우선하므로 원래 정상이었고 깨져 있던 것은 네이티브에서 나가는 링크뿐이다. `getOpsBaseUrl()` 폴백을 인증 콜백이 쓰던 기존 상수 `APP_WEB_ORIGIN` 으로 교체하고(문자열 재작성 대신 재사용), 존재하지 않는 CF 프로젝트를 가리키던 `npm run deploy:ops` 별칭을 제거했다. `EXPO_PUBLIC_OPS_URL` 은 optional 로 유지 — 나중에 전용 도메인을 붙일 탈출구이며 `.env.example` 에 용도를 적었다. 검증: 신규 회귀 테스트 6/6 통과, 폴백을 옛 값으로 되돌리면 4건 실패(Red-Green) · `tsc --noEmit` exit 0 · eslint 0 errors.
 - **description 있는 공고만 스케줄 보드 동기화가 두 달째 조용히 실패** (PR #368, prod 마이그 `fix_schedule_board_body_array_literal` 적용완료): `schedule_board_sync_outbox` 에 `status='failed_retry_limit'` 35건(공고 22개)이 2026-06-03~07-30 누적돼 있었고 에러는 전부 `sync_schedule_board RPC failed: malformed array literal: ""`(SQLSTATE 22P02) 였다. 원인은 `_build_schedule_board_body` 의 한 줄 — `v_lines := v_lines || '';`(여기서 `v_lines` 는 `text[]`). **`''` 는 unknown 타입 리터럴**이라 `text[] || unknown` 을 만난 Postgres 가 `anyarray || anyelement` 가 아니라 **`anyarray || anyarray` 로 해소**해서 `array_in('')` 를 호출한다. 고침은 `''::text` 명시 캐스트 하나다. 같은 함수의 다른 두 append 는 멀쩡했다 — 하나는 `'...' || COALESCE(...)`, 하나는 `trim(v_description)` 으로 **이미 text 로 확정된** 식이기 때문이다. 즉 "같은 연산자를 세 번 쓰는데 하나만 죽는다" 가 이 버그의 서명이다. 그리고 그 줄은 `IF length(trim(v_description)) > 0` 안에 있어 **설명이 있는 공고에서만** 터졌다 — 이것이 "두 달째 조용히" 의 정체이고, 성공 33건과 실패 35건이 시간상 뒤섞여 있던 이유다(순수 타입 오류였다면 100% 실패했을 것이다. 이 관찰 하나가 `work_date`/`work_dates` COALESCE·`board_memberships.work_date` 타입·`_format_compensation_label` 캐스트·EF 파라미터 가설을 전부 기각했다). 상관은 예외 0건이었다 — 실패 17공고 전부 description 有 / 성공 13공고 전부 無. 동일 패턴 전수 감사는 grep 이 아니라 `pg_proc.prosrc` 로 수행했다(`update_user_role` 도 `|| ''` 에 걸렸으나 텍스트 리터럴 안의 이스케이프 따옴표라 오탐). 밀린 35행은 재큐잉했고(`notify_on_board_post_update` 가 `is_locked` 전환에만 발화하고 sync RPC 는 그 컬럼을 건드리지 않음을 먼저 확인 → 알림 0건 예측), 실측 결과 outbox 68행 전부 success · 스케줄 보드 16개 신규 생성 · **알림 0건**(예측 적중). 검증: Red-Green(수정 전 22P02, Postgres 가 `CONTEXT: ... line 13 at assignment` 로 직접 지목 → 수정 후 실패했던 17건 전부 정상 렌더, 빈 줄 구분 유지) · CI 10종 SUCCESS. 함께 `sendSlackAlert` 를 지우는 대신 **정직하게** 만들었다 — 미설정 상태에서 실패 시 `console.warn` 을 남기고, 주석은 실제 안전망이 `prod-health.yml` 임을 명시한다(옛 주석의 "미설정 시 silent skip — 시스템은 정상 동작"이 "알림이 배선돼 있다"는 착각을 만든 장본인이다). ⚠️ `functions/` 는 ESLint·tsc·prettier 가 전부 건너뛰는 사각지대라 EF 검증은 `ts.transpileModule` 구문 검사(0건)까지가 한계다(deno 미설치).
 - **OTA 후 오프라인 스케줄 통계가 빈칸으로 렌더** (PR#362, DB 변경 0): 이 웨이브가 스스로 만든 회귀다. PR#356 이 `ScheduleStats` 에 `completedWorkDays`·`settledEarnings`·`estimatedEarnings` 를 추가하면서 `SCHEDULE_CACHE_SCHEMA_VERSION` 은 3 그대로 뒀는데, 오프라인 캐시 읽기는 버전·유저·TTL 만 검사하고 **형태를 보지 않는다**(`criticalOfflineCache`). 그래서 1.0.5 빌드가 써 둔 구버전 payload 가 신 코드로 그대로 통과해 화면까지 갔다 — `undefined일 근무`, 정산 완료/예정 빈 값. 노출 창은 TTL(24h)이고 첫 온라인 조회가 실값으로 덮지만 오프라인 사용자는 그때까지 잘못된 화면을 본다. **`schemaVersion` 승격은 채택하지 않았다** — 버전이 어긋난 잔여 캐시는 통째로 폐기되므로 오프라인 안전망 자체가 사라진다. 대신 정규화 경계(`normalizeScheduleQueryPayload`)에서 누락 필드를 0 으로 메운다. 온라인 경로와 오프라인 복원 경로가 같은 정규화를 지나므로 한 곳만 고치면 양쪽이 닫힌다. 회귀 클래스 = `wiki/decisions/persisted-cache-shape-drift.md`. 검증: Red-Green 확인(수정 제거 시 신규 테스트 fail → 복원 후 pass) · jest 579 스위트 6334 테스트 통과 · `npm run quality` exit 0.
 - **공고 도메인 감사 W1 12항목 — 취소·정산·QR·수정 경로의 무음 유실과 금전 영향** (PR#360, prod 마이그 4건 적용완료): 공고 연결 10개 영역을 32 에이전트로 감사해 결함 189건(CRITICAL 7 / HIGH 37 / MEDIUM 104 / LOW 41)을 도출하고 W1 을 먼저 출하했다.
