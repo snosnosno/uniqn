@@ -5,7 +5,11 @@ import { logger } from '@/utils/logger';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { isAppError, ValidationError, ERROR_CODES } from '@/errors';
 import { opsParticipantRepository, type RegisterParticipantInput } from '@/repositories/ops';
-import { registerParticipantSchema } from '@/schemas/opsParticipant.schema';
+import {
+  registerParticipantSchema,
+  chipCountSchema,
+  type ChipCountInput,
+} from '@/schemas/opsParticipant.schema';
 import { prizeCorrectionSchema, type PrizeCorrectionInput } from '@/schemas/opsPrize.schema';
 import { UUID_LIKE_RE } from '@/schemas/common';
 
@@ -138,6 +142,32 @@ export async function reenterParticipant(participantId: string, actorId: string)
       operation: '재진입',
       component: COMPONENT,
       context: { participantId },
+    });
+  }
+}
+
+/** 결함①: 칩 카운트 수동 입력(절대값). 값 경계는 서버와 동일(1~20억) — 왕복 전 클라에서 선차단. */
+export async function setParticipantChips(input: ChipCountInput, actorId: string) {
+  try {
+    logger.info('ops 칩 카운트', { component: COMPONENT, participantId: input.participantId });
+    const parsed = chipCountSchema.safeParse(input);
+    if (!parsed.success) {
+      const first = Object.values(parsed.error.flatten().fieldErrors).flat()[0];
+      throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+        userMessage: typeof first === 'string' ? first : '입력값을 확인해 주세요.',
+      });
+    }
+    return await opsParticipantRepository.setChips(
+      parsed.data.participantId,
+      actorId,
+      parsed.data.chips
+    );
+  } catch (error) {
+    if (isAppError(error)) throw error;
+    throw handleServiceError(error, {
+      operation: '칩 카운트',
+      component: COMPONENT,
+      context: { participantId: input.participantId },
     });
   }
 }

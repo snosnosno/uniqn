@@ -4,6 +4,7 @@ import type {
   OpsReenterResult,
   OpsUndoBustResult,
   OpsPrizeCorrectionResult,
+  OpsChipCountResult,
 } from '@/types/ops';
 
 export interface RegisterParticipantInput {
@@ -48,4 +49,6 @@ export interface IOpsParticipantRepository {
     actorId: string,
     paid: boolean
   ): Promise<{ participantId: string; prizePaidAt: string | null }>;
+  /** 결함①: 칩 카운트 수동 입력(절대값). active/checked_in 만, 1 이상. 동일값은 서버 no-op. */
+  setChips(participantId: string, actorId: string, chips: number): Promise<OpsChipCountResult>;
 }

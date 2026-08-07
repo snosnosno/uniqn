@@ -146,8 +146,8 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  200,
-  'public function count == prod (200 = 199 + fn_work_logs_pin_payroll 1(감사 L1 3단계), 2026-08-05)');
+  201,
+  'public function count == prod (201 = 200 + ops_set_participant_chips 1(결함① 칩 카운트), 2026-08-07)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(

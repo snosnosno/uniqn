@@ -9,6 +9,7 @@ jest.mock('@/hooks/ops', () => ({
   useReenterParticipant: jest.fn(() => ({ mutate: jest.fn() })),
   useUndoBust: jest.fn(() => ({ mutate: jest.fn() })),
   useFreeSeat: jest.fn(() => ({ mutate: jest.fn() })),
+  useSetParticipantChips: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
 }));
 // SheetModal 실물 대신 자식 통과 스텁(레포 관례: order-sheet RolesSheet.test.tsx:11-22)
 jest.mock('@/components/ui/SheetModal', () => ({
@@ -116,6 +117,43 @@ describe('OpsParticipantActionSheet', () => {
       />
     );
     expect(queryByText('탈락 취소')).toBeNull();
+  });
+
+  // ── 결함① 칩 카운트 진입점 ──
+  it('active: 칩 카운트 버튼 노출', () => {
+    const { getByText } = render(
+      <OpsParticipantActionSheet tournament={tournament} participant={active} onClose={jest.fn()} />
+    );
+    expect(getByText('칩 카운트')).toBeTruthy();
+  });
+
+  it('checked_in(대기): 칩 카운트만 노출 — 리바이/탈락은 서버가 active 한정이라 숨김', () => {
+    const { getByText, queryByText } = render(
+      <OpsParticipantActionSheet
+        tournament={tournament}
+        participant={{ ...active, status: 'checked_in' }}
+        onClose={jest.fn()}
+      />
+    );
+    expect(getByText('칩 카운트')).toBeTruthy();
+    expect(queryByText('리바이')).toBeNull();
+    expect(queryByText('탈락 처리')).toBeNull();
+  });
+
+  it('busted: 칩 카운트 숨김(bust/undo 원자 경로 보호)', () => {
+    const { queryByText } = render(
+      <OpsParticipantActionSheet tournament={tournament} participant={busted} onClose={jest.fn()} />
+    );
+    expect(queryByText('칩 카운트')).toBeNull();
+  });
+
+  it('칩 카운트 누르면 부모 시트가 숨고 칩 입력 시트가 뜬다(SheetModal 중첩 회피)', () => {
+    const { getByText, queryByText } = render(
+      <OpsParticipantActionSheet tournament={tournament} participant={active} onClose={jest.fn()} />
+    );
+    fireEvent.press(getByText('칩 카운트'));
+    expect(getByText('새 칩 수량')).toBeTruthy();
+    expect(queryByText('리바이')).toBeNull(); // 부모 시트 숨김
   });
 
   it('participant=null 이면 아무것도 렌더 안 함', () => {

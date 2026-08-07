@@ -24,6 +24,7 @@ import type {
   OpsTableLockType,
 } from '@/types/ops';
 import type { PrizeCorrectionInput } from '@/schemas/opsPrize.schema';
+import type { ChipCountInput } from '@/schemas/opsParticipant.schema';
 import type { StaffRole } from '@/types/role';
 
 const toast = {
@@ -265,6 +266,35 @@ export function useCorrectPrize(tournamentId: string) {
     onError: (error) => {
       logger.error('ops 상금 정정 실패', toError(error));
       toast.error(extractUserMessage(error) || '상금 정정에 실패했습니다');
+    },
+  });
+}
+
+/**
+ * 결함①: 칩 카운트 수동 입력. 서버가 chips 를 쓰면 DEFERRED 트리거가 live_stats 를 재계산하므로
+ * 전광판·평균스택은 realtime 으로도 따라오지만, 구독이 끊긴 경우를 대비해 liveStats 도 무효화한다.
+ * 이벤트(HistoryTab)는 append 되므로 events 도 함께 무효화.
+ */
+export function useSetParticipantChips(tournamentId: string) {
+  const queryClient = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (input: ChipCountInput) =>
+      opsParticipantService.setParticipantChips(input, requireActor(actorId)),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.liveStats(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.events(tournamentId) });
+      // 서버 no-op(동일값)은 이벤트도 남지 않으므로 "변경됨" 이라고 말하지 않는다.
+      toast.success(
+        result.chips === result.chipsBefore
+          ? '칩 수량이 그대로예요'
+          : `칩 ${result.chips.toLocaleString('ko-KR')}으로 수정됨`
+      );
+    },
+    onError: (error) => {
+      logger.error('ops 칩 카운트 실패', toError(error));
+      toast.error(extractUserMessage(error) || '칩 카운트에 실패했습니다');
     },
   });
 }
