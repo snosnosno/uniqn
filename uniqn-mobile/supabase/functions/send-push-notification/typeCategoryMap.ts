@@ -29,6 +29,10 @@ export const TYPE_CATEGORY_MAP: Record<string, string> = {
   schedule_change: 'attendance',
   schedule_created: 'attendance',
   schedule_cancelled: 'attendance',
+  // 레거시(2026-04-21~08-07 발송분). 미매핑이면 카테고리 게이트가 fail-open 되어
+  // '출퇴근' 푸시를 끈 사용자에게도 계속 발송된다.
+  work_log_check_in: 'attendance',
+  work_log_check_out: 'attendance',
 
   // 정산 관련
   settlement_completed: 'settlement',
@@ -41,6 +45,8 @@ export const TYPE_CATEGORY_MAP: Record<string, string> = {
   job_closed: 'job',
   fixed_posting_expired: 'job',
   work_date_expired: 'job',
+  job_posting_collaborator_added: 'system',
+  job_posting_collaborator_removed: 'system',
 
   // 시스템
   announcement: 'system',

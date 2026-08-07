@@ -422,7 +422,10 @@ export const useNotificationStore = create<NotificationState>()(
       markCategoryAsRead: (category) => {
         set((state) => {
           const notifications = state.notifications.map((n) => {
-            const notificationCategory = NOTIFICATION_TYPE_TO_CATEGORY[n.type];
+            // 뱃지 집계(calculateUnreadByCategory)는 미매핑 타입을 'system' 으로 센다.
+            // 여기에 같은 폴백이 없으면 "시스템 모두 읽음"으로도 지워지지 않는
+            // 좀비 뱃지가 생긴다 — 폴백을 양쪽에서 통일한다.
+            const notificationCategory = NOTIFICATION_TYPE_TO_CATEGORY[n.type] ?? 'system';
             if (notificationCategory === category) {
               return { ...n, isRead: true };
             }

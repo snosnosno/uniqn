@@ -64,6 +64,9 @@ const typeIcons: Partial<Record<NotificationType, IconComponent>> = {
   [NotificationType.SCHEDULE_CHANGE]: CalendarDaysIcon,
   [NotificationType.SCHEDULE_CREATED]: CalendarDaysIcon,
   [NotificationType.SCHEDULE_CANCELLED]: XCircleIcon,
+  // 레거시 6건(수신자 미구분) — 방향 중립인 시계 아이콘을 쓴다.
+  [NotificationType.WORK_LOG_CHECK_IN]: ClockIcon,
+  [NotificationType.WORK_LOG_CHECK_OUT]: ClockIcon,
 
   // 정산 관련
   [NotificationType.SETTLEMENT_COMPLETED]: BanknotesIcon,
@@ -75,6 +78,8 @@ const typeIcons: Partial<Record<NotificationType, IconComponent>> = {
   [NotificationType.JOB_UPDATED]: BriefcaseIcon,
   [NotificationType.JOB_CANCELLED]: XCircleIcon,
   [NotificationType.JOB_CLOSED]: BriefcaseIcon,
+  [NotificationType.JOB_POSTING_COLLABORATOR_ADDED]: UserPlusIcon,
+  [NotificationType.JOB_POSTING_COLLABORATOR_REMOVED]: UserMinusIcon,
 
   // 시스템
   [NotificationType.ANNOUNCEMENT]: MegaphoneIcon,
