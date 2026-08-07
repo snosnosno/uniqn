@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { isAppError } from '@/errors';
 import { handleSupabaseError, toCamelCase } from '@/utils/supabase';
 import { mapOpsRpcError } from './opsRpcError';
-import type { OpsStaff } from '@/types/ops';
+import type { OpsStaff, OpsStaffWorkLogLink } from '@/types/ops';
 import type { StaffRole } from '@/types/role';
 
 const TABLE = 'ops_staff' as const;
@@ -31,6 +31,35 @@ export class SupabaseOpsStaffRepository {
     } catch (error) {
       if (isAppError(error)) throw error;
       handleSupabaseError(error, { operation: 'ops 스태프 로스터 목록', table: TABLE });
+    }
+  }
+
+  /**
+   * 스태프별 근태 대상 work_log 해석 (결함 ⑦-2). 읽기 전용 — 여기서 쓰지 않는다.
+   *
+   * 🔴 `ops_staff.source_work_log_id` 를 대신 쓰면 안 된다. import 가
+   *    `DISTINCT ON (staff_id) ORDER BY date DESC` 로 **스태프당 최신 1건**만 붙들기 때문에
+   *    다일 공고에서 대회 운영일이 아닌 행을 가리킨다. 해석 키는 서버가
+   *    (job_posting_id, staff_id, event_date) 로 잡는다.
+   * 🔴 평범한 SELECT 로 대신할 수 없다 — RLS 의 "0건" 은 "안 보인다" 일 수 있어
+   *    권한없음과 행없음을 구분하지 못한다. SECDEF RPC 가 그 구분을 돌려준다.
+   */
+  async resolveWorkLogs(p: {
+    tournamentId: string;
+    actorId: string;
+  }): Promise<OpsStaffWorkLogLink[]> {
+    try {
+      const { data, error } = await supabase.rpc('ops_resolve_staff_work_logs', {
+        p_tournament_id: p.tournamentId,
+        p_actor_id: p.actorId,
+      });
+      if (error) mapOpsRpcError(error, { operation: 'ops 근태 대상 해석' });
+      return ((data ?? []) as unknown as Record<string, unknown>[]).map((r) =>
+        toCamelCase<OpsStaffWorkLogLink>(r)
+      );
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      handleSupabaseError(error, { operation: 'ops 근태 대상 해석', table: TABLE });
     }
   }
 
