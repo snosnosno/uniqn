@@ -14,6 +14,7 @@ import {
   useUndoBust,
   useFreeSeat,
   useSetParticipantNoShow,
+  useUnclaimParticipant,
 } from '@/hooks/ops';
 import type { OpsBustResult, OpsParticipant, OpsSeat, OpsTournament } from '@/types/ops';
 
@@ -53,6 +54,7 @@ export function OpsParticipantActionSheet({
   const undoMut = useUndoBust(tournamentId);
   const freeMut = useFreeSeat(tournamentId);
   const noShowMut = useSetParticipantNoShow(tournamentId);
+  const unclaimMut = useUnclaimParticipant(tournamentId);
 
   // 바운티 대회에서 "누가 눌렀나요?" 피커 대상(=탈락 처리할 참가자). null 이면 미표시.
   const [eliminatorPickerFor, setEliminatorPickerFor] = useState<OpsParticipant | null>(null);
@@ -288,6 +290,37 @@ export function OpsParticipantActionSheet({
                 <Text className="text-sm font-sans-semibold text-gold">상금 화면 보기 →</Text>
               </Pressable>
             )}
+
+          {/*
+            결함⑤: 플레이어 연결 해제. 상태와 무관하다 — 클레임은 어느 상태에서도 걸려 있을 수 있고,
+            플레이어가 8자 PIN 으로 **스스로** 걸기 때문에 엔트리를 잘못 짚는 일이 실제로 생긴다.
+            연결이 없으면 행 자체를 숨긴다(할 일이 없는 버튼은 노이즈다).
+          */}
+          {p.playerUserId ? (
+            <View className="mt-2 border-t border-gray-200 pt-2 dark:border-gray-700">
+              <Pressable
+                onPress={() =>
+                  confirmAction({
+                    title: '플레이어 연결 해제',
+                    message: `${p.name} 님의 플레이어 계정 연결을 해제할까요?\n참가자 기록은 그대로 남고, 연결만 풀립니다.`,
+                    confirmText: '연결 해제',
+                    destructive: true,
+                    onConfirm: () => {
+                      unclaimMut.mutate(p.id);
+                      onClose();
+                    },
+                  })
+                }
+                accessibilityRole="button"
+                testID="ops-participant-unclaim"
+                className="min-h-[44px] items-center justify-center rounded-md border border-error-500 active:opacity-70 dark:border-error-400"
+              >
+                <Text className="font-sans-semibold text-error-600 dark:text-error-400">
+                  플레이어 연결 해제
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
         </View>
       </SheetModal>
 

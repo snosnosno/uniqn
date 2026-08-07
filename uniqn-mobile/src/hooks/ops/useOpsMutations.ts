@@ -327,6 +327,27 @@ export function useSetParticipantNoShow(tournamentId: string) {
   });
 }
 
+/**
+ * 결함⑤: 플레이어 계정 연결 해제. `player_user_id` 만 바꾸므로 참가자 목록만 무효화한다
+ * (이벤트는 서버가 append 하지 않는다 — claim 쪽과 대칭인 기존 상태).
+ */
+export function useUnclaimParticipant(tournamentId: string) {
+  const queryClient = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (participantId: string) =>
+      opsParticipantService.unclaimParticipant(participantId, requireActor(actorId)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
+      toast.success('플레이어 연결을 해제했어요');
+    },
+    onError: (error) => {
+      logger.error('ops 플레이어 연결 해제 실패', toError(error));
+      toast.error(extractUserMessage(error) || '플레이어 연결 해제에 실패했습니다');
+    },
+  });
+}
+
 export function useReenterParticipant(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);

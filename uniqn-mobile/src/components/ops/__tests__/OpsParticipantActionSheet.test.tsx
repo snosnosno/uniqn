@@ -4,6 +4,7 @@ import {
   useFreeSeat,
   useSetParticipantChips,
   useSetParticipantNoShow,
+  useUnclaimParticipant,
 } from '@/hooks/ops';
 import { OpsParticipantActionSheet } from '../OpsParticipantActionSheet';
 
@@ -16,6 +17,7 @@ jest.mock('@/hooks/ops', () => ({
   useFreeSeat: jest.fn(() => ({ mutate: jest.fn() })),
   useSetParticipantChips: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
   useSetParticipantNoShow: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
+  useUnclaimParticipant: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
 }));
 // SheetModal 실물 대신 자식 통과 스텁(레포 관례: order-sheet RolesSheet.test.tsx:11-20).
 // footer 도 통과시켜야 한다 — 시트의 주 액션 버튼은 footer 에만 있어서, 드랍하면
@@ -253,6 +255,47 @@ describe('OpsParticipantActionSheet', () => {
     expect(queryByText('노쇼 처리')).toBeNull();
     fireEvent.press(getByText('노쇼 취소'));
     expect(mutate).toHaveBeenCalledWith({ participantId: 'p1', noShow: false });
+  });
+
+  // ── 결함⑤ 플레이어 연결 해제(죽은 회로 배선) ──
+  it('연결이 없으면 "플레이어 연결 해제" 를 숨긴다(할 일 없는 버튼 제거)', () => {
+    const { queryByTestId } = render(
+      <OpsParticipantActionSheet tournament={tournament} participant={active} onClose={jest.fn()} />
+    );
+    expect(queryByTestId('ops-participant-unclaim')).toBeNull();
+  });
+
+  it.each(['active', 'checked_in', 'busted', 'no_show'])(
+    '연결이 있으면 상태(%s) 무관하게 해제 버튼이 뜬다 — 클레임은 어느 상태에서도 걸린다',
+    (status) => {
+      const { getByTestId } = render(
+        <OpsParticipantActionSheet
+          tournament={tournament}
+          participant={{ ...active, status, playerUserId: 'u-9' }}
+          onClose={jest.fn()}
+        />
+      );
+      expect(getByTestId('ops-participant-unclaim')).toBeTruthy();
+    }
+  );
+
+  it('연결 해제 → confirmAction 후 participantId 로 mutate + 시트 닫힘', () => {
+    const mutate = jest.fn();
+    (useUnclaimParticipant as jest.Mock).mockReturnValue({ mutate, isPending: false });
+    jest
+      .spyOn(require('@/utils/confirmAction'), 'confirmAction')
+      .mockImplementation((o: any) => o.onConfirm());
+    const onClose = jest.fn();
+    const { getByTestId } = render(
+      <OpsParticipantActionSheet
+        tournament={tournament}
+        participant={{ ...active, playerUserId: 'u-9' }}
+        onClose={onClose}
+      />
+    );
+    fireEvent.press(getByTestId('ops-participant-unclaim'));
+    expect(mutate).toHaveBeenCalledWith('p1');
+    expect(onClose).toHaveBeenCalled();
   });
 
   it('participant=null 이면 아무것도 렌더 안 함', () => {

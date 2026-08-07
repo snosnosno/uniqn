@@ -9,6 +9,7 @@ const mockUndoBust = jest.fn();
 const mockCorrectPrize = jest.fn();
 const mockSetChips = jest.fn();
 const mockSetNoShow = jest.fn();
+const mockUnclaim = jest.fn();
 
 jest.mock('@/repositories/ops', () => ({
   opsParticipantRepository: {
@@ -20,6 +21,7 @@ jest.mock('@/repositories/ops', () => ({
     correctPrize: (...args: unknown[]) => mockCorrectPrize(...args),
     setChips: (...args: unknown[]) => mockSetChips(...args),
     setNoShow: (...args: unknown[]) => mockSetNoShow(...args),
+    unclaimParticipant: (...args: unknown[]) => mockUnclaim(...args),
   },
 }));
 
@@ -269,5 +271,27 @@ describe('opsParticipantService.setParticipantNoShow (결함② — Zod 경계)'
       expect((e as { code: string }).code).toBe('E3005');
     }
     expect(mockSetNoShow).not.toHaveBeenCalled();
+  });
+});
+
+describe('opsParticipantService.unclaimParticipant (결함⑤ — 죽은 회로 배선)', () => {
+  beforeEach(() => {
+    mockUnclaim.mockReset();
+    mockUnclaim.mockResolvedValue(undefined);
+  });
+
+  it('유효 uuid → Repository 위임', async () => {
+    await svc.unclaimParticipant(TID, 'actor-1');
+    expect(mockUnclaim).toHaveBeenCalledWith(TID, 'actor-1');
+  });
+
+  it('비-uuid participantId → ValidationError(E3005), Repository 미호출', async () => {
+    expect.assertions(2);
+    try {
+      await svc.unclaimParticipant('not-uuid', 'actor-1');
+    } catch (e) {
+      expect((e as { code: string }).code).toBe('E3005');
+    }
+    expect(mockUnclaim).not.toHaveBeenCalled();
   });
 });

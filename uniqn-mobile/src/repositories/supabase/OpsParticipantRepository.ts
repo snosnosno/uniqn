@@ -68,6 +68,16 @@ const setChipsResponseSchema = z
   })
   .passthrough();
 
+// 결함⑤: 클레임 해제. ⚠️ 이 RPC 만 반환 키가 **camelCase** 다(`participantId`/`unclaimed`) —
+// 다른 ops RPC 는 snake_case 다. baseline 시절 산물이며, 서버를 고치면 정본 분열이 되므로
+// 스키마를 서버에 맞춘다(형태 불일치를 여기서 흡수하는 것이 Repository 의 일이다).
+const unclaimResponseSchema = z
+  .object({
+    participantId: z.string(),
+    unclaimed: z.boolean(),
+  })
+  .passthrough();
+
 // 결함②: 노쇼. no-op(이미 목표 상태) 응답도 같은 키 집합을 낸다 — 서버 pgTAP 이 그걸 고정한다.
 const setNoShowResponseSchema = z
   .object({
@@ -336,6 +346,21 @@ export class SupabaseOpsParticipantRepository implements IOpsParticipantReposito
     } catch (error) {
       if (isAppError(error)) throw error;
       mapOpsRpcError(error, { operation });
+    }
+  }
+
+  async unclaimParticipant(participantId: string, actorId: string): Promise<void> {
+    try {
+      const { data, error } = await supabase.rpc('ops_unclaim_participant', {
+        p_participant_id: participantId,
+        p_actor_id: actorId,
+      });
+      if (error) mapOpsRpcError(error, { operation: 'ops 플레이어 연결 해제' });
+      // 반환값을 쓰지는 않지만 parse 는 한다 — 서버가 형태를 바꾸면 조용히 흘러가지 않게.
+      parseOpsRpcResponse(unclaimResponseSchema, data, 'ops 플레이어 연결 해제');
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      mapOpsRpcError(error, { operation: 'ops 플레이어 연결 해제' });
     }
   }
 }

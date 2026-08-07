@@ -57,4 +57,12 @@ export interface IOpsParticipantRepository {
    * checked_in ↔ no_show 왕복만 허용 — active 는 서버가 거부한다(그 경로는 bustParticipant).
    */
   setNoShow(participantId: string, actorId: string, noShow: boolean): Promise<OpsNoShowResult>;
+  /**
+   * 결함⑤: 플레이어 계정 연결(claim) 해제 — `player_user_id = NULL`.
+   * 클레임은 플레이어가 8자 PIN 으로 **스스로** 거는 것이라 엔트리를 잘못 짚을 수 있고,
+   * 그때 운영자가 풀어줄 경로가 없으면 그 참가자는 영구히 남의 계정에 묶인다.
+   * ⚠️ 서버는 이벤트를 append 하지 않는다 — claim 쪽도 마찬가지라 **대칭적으로** 감사 로그가
+   *    없다(2026-08-08 prosrc 실측). 감사 추가는 claim/unclaim 을 함께 손대는 별도 후속이다.
+   */
+  unclaimParticipant(participantId: string, actorId: string): Promise<void>;
 }

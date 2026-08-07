@@ -208,6 +208,29 @@ export async function setParticipantNoShow(input: NoShowInput, actorId: string) 
   }
 }
 
+/**
+ * 결함⑤: 플레이어 계정 연결(claim) 해제. 지금까지 DB 에만 있고 클라 참조가 0건이던 회로다.
+ * 값 검증은 uuid 형태뿐 — 상태 판정은 서버(is_ops_member + 참가자 존재)가 단독으로 한다.
+ */
+export async function unclaimParticipant(participantId: string, actorId: string) {
+  try {
+    logger.info('ops 플레이어 연결 해제', { component: COMPONENT, participantId });
+    if (!UUID_LIKE_RE.test(participantId)) {
+      throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+        userMessage: '올바른 참가자 ID 가 아닙니다',
+      });
+    }
+    return await opsParticipantRepository.unclaimParticipant(participantId, actorId);
+  } catch (error) {
+    if (isAppError(error)) throw error;
+    throw handleServiceError(error, {
+      operation: '플레이어 연결 해제',
+      component: COMPONENT,
+      context: { participantId },
+    });
+  }
+}
+
 /** S1 C4: 상금 지급 마킹(undo-first — paid=false 로 왕복 취소, 서버 멱등). */
 export async function setPrizePaid(participantId: string, actorId: string, paid: boolean) {
   try {
