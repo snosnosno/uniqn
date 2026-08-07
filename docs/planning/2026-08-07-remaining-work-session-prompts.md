@@ -1,0 +1,324 @@
+# 잔여 작업 실행 원장 — 2026-08-07 기준
+
+> **새 세션은 이 파일부터 읽는다.** 세션 하나 = 프롬프트 하나. 위에서부터 순서대로가 권고이나,
+> 각 프롬프트는 **자립적**이라 골라 착수해도 된다.
+>
+> 기준 커밋: `origin/master` = **`732c300a5`** (#427 머지, 2026-08-07)
+> 선행 원장 `2026-07-31-execution-session-prompts.md` 는 **전량 착지 완료**(S1~S7·정원0·A감사·B1·B2·P1~P6·과제4).
+> 그 파일은 이제 **참조용 이력**이고, 진행 중 작업의 진실원은 **이 파일**이다.
+
+---
+
+## 0. 현재 상태 스냅샷 (실측)
+
+| 축 | 값 |
+|---|---|
+| `origin/master` | `732c300a5` (#427) |
+| 마지막 OTA | `81ddba293` (#419) — **#420~#427 8건이 미배포** |
+| 마지막 웹배포 | `5ad8038e` (08-06, #413 확인용) |
+| DB 파리티 | **200 funcs / 111 policies** (#420 이후 불변, #424~#427 모두 파리티 무변) |
+| 열린 PR | Dependabot 6건뿐 (#379·#380·#381·#414·#415·#416) |
+| 열린 워크트리 | 없음 (전량 정리) |
+
+### ⚠️ prod 마이그레이션 재적용 금지 (누적)
+
+레포 파일명과 prod 기록명이 **다르다**. `list_migrations` 로 확인하되 아래는 이미 적용됨:
+
+| 레포 파일 | prod 기록명 |
+|---|---|
+| `20260805120000` | `work_logs_payroll_direct_write_block` |
+| `20260806120000`·`130000`·`140000`·`20260807120000`·`130000` | `20260806233224`·`233316`·`233616`·`234002`·`234415` |
+| `20260807140000`·`150000` | `20260807022947`·`20260807023036` |
+| `20260804120000`/`130000` | `20260804115100`·`20260804115209` |
+| `20260804140000` | `20260804142737`·`20260804142944` |
+| `20260803160000` | `20260803015905` |
+| `20260803120000` | `20260803025714` |
+| `20260802190000` | `20260803013055` |
+
+그 외 아카이브 졸업분은 `memory/MEMORY-archive.md` 참조.
+
+---
+
+## S-A. 보안 마무리 (최우선 — 다음 심사를 막는다)
+
+```
+공개 레포 평문 자격증명 사고(#427, 2026-08-07)의 잔여를 마무리해줘.
+
+배경: supabase/migrations/20260710000004_baseline_data_seed.sql:100-109 의 review-* 4계정이
+평문 'Review2026!' 로 레포(PUBLIC)에 있었고 그게 prod 에 실제로 살아 있었다. review-admin 은
+role=admin·미정지라 누구나 로그인해 permanently_delete_user 로 임의 계정을 지울 수 있었다.
+비밀번호 회전 + 세션 93건/refresh token 108건 파기는 완료됐다.
+상세: memory/pitfall_public_repo_seed_credentials_live_in_prod.md
+
+할 일:
+1. 🔴 App Store Connect **심사 노트 자격증명 갱신** — 회전한 계정이 심사용이다.
+   안 바꾸면 다음 심사가 로그인 실패로 반려된다. 새 비밀번호는
+   uniqn-mobile/e2e/.env.test 의 E2E_TEST_ACCOUNT_PASSWORD (gitignore 확인됨).
+   docs/app-review/review-test-accounts.md 도 같이 본다.
+2. 🔴 유사 평문 자격증명 **전수 스캔** — supabase/migrations/archive/ 3개에 같은 문자열이
+   남아 있다(무력화됐다고 기록됐으나 미확인). 레포 전체에서 crypt(·password·secret 패턴을
+   훑고, prod 에 흘러들어간 것이 더 없는지 확인해라.
+   🔑 판정 기준: "평문이 레포에 있다"가 아니라 **"로컬 전용 시드가 prod 에 적용됐다"** 가 결함이다.
+3. 🔴 docs/local-development.md 등 문서 3곳의 옛 비밀번호 안내 갱신.
+
+주의:
+- CI E2E 는 supabase start 로 로컬 스택을 쓴다(e2e.yml) → 회전이 CI 를 깨지 않는다.
+- prod 세션이 찍힌 이유는 로컬 dev 가 prod 를 겨냥하기 때문이다
+  (memory/feedback_localhost_dev_production_db.md).
+
+완료 기준: 심사 노트 갱신 확인 + 스캔 결과 보고(발견 0건이면 0건이라고) + 문서 diff.
+```
+
+### S-A2. Firebase / GCP 정리 (#375 잔여, 사용자 콘솔 작업)
+
+```
+GitHub 하드닝 #375 의 잔여 3건을 마무리해줘. 전부 콘솔 작업이라 내가 해야 하면 절차를 알려줘.
+
+1. Firebase Auth 제공업체 off
+2. GCP 웹 API 키 3개 삭제
+3. GitHub ruleset 설정
+
+🔒 절대 금지: Firebase 프로젝트 tholdem-ebc18 **삭제 금지** — FCM 이 살아 있다.
+상세: memory/project_github_hardening_firebase_legacy_20260731.md
+```
+
+---
+
+## S-B. 웹배포 + OTA (누적 8건 — 고친 게 사용자에게 전혀 안 갔다)
+
+```
+#420~#427 8건을 웹과 앱에 배포해줘. 마지막 OTA 는 81ddba293(#419)이라 2주치가 밀려 있다.
+
+배포 대상 커밋 범위: 81ddba293..732c300a5
+  #420 정산 payroll 직접쓰기 차단(DB, 이미 prod 적용)
+  #422 지도 앱 선택 + 문자하기
+  #423 QR 헤더·유령 스피너·캘린더 스크롤
+  #424 근무 시간 편집 통일
+  #425 조건 유도 그룹핑
+  #426 머지 리뷰 후속 5건 (중첩 Modal·프리셋 묶음 유출·퇴근 날짜 소실·조건 시트 막다른 길)
+  #427 탈퇴 파이프라인 A1·A2 + 보안 차단
+
+순서:
+1. 웹배포: node scripts/deploy-cloudflare.js --force
+   🚨 빈 번들 사고 이력 있음(21시간 다운) — 배포 후 라우트 수·번들 마커를 실측 확인.
+   🚨 번들 마커 검사는 **grep -F + 대조군** (BRE 가 \u 를 삼켜 48건→0건 오판 2회).
+   🚨 CDN 엣지 캐시 때문에 즉시 반영이 아닐 수 있다.
+2. OTA: eas update
+   🚨 직전에 **재fetch + ff-merge** 필수 — Commit 필드가 origin HEAD 인지 확인
+      (memory/feedback_ota_refetch_local_tree_before_update.md)
+   🚨 eas update 는 **shell env 만 평가**한다 — app.config fallback + 명시 export
+   🚨 runtimeVersion 정책 = appVersion. 네이티브 변경이 있었다면 bump 는 사람 책임.
+      이번 범위에 네이티브 변경이 있는지 먼저 확인해라(#422 가 canOpenURL 을 걷어내서
+      LSApplicationQueriesSchemes/Android <queries> 가 불필요해졌으므로 **리빌드 없이 OTA 가능**할 것으로
+      기록돼 있다 — 실측 확인할 것).
+3. 롤아웃 후: 슬롯편집 RPC REVOKE 실행 (#407 잔여)
+
+⚠️ 롤아웃 확인 계기판이 없다 — expo-insights 미설치, Sentry release/dist 미태깅,
+   앱 버전 서버 기록 0건. 채택률로는 판정 불가하다. prod 트래픽도 작다(users 27 / work_logs 3).
+   대안: 관계자 기기 직접 수신(fcm_tokens 16) 또는 차단 직전 관측 트리거(RAISE LOG).
+
+완료 기준: 웹 라이브 번들에서 신규 마커 실측 + OTA 그룹 ID·runtime·플랫폼 보고.
+```
+
+---
+
+## S-C. 실기기 QA (사용자 게이트 — 누적분이 크다)
+
+```
+실기기 QA 체크리스트를 만들어줘. 내가 직접 돌릴 거다. 화면별 재현 절차와 기대 결과를 적어줘.
+
+미검증 누적:
+🔴 #426 중첩 Modal 수정 — **증상 자체를 재현한 적이 없다**(iOS 실기기 부재).
+   일정 상세 → 정보 탭 → '지도에서 보기' 첫 탭 → 인라인 라디오가 실제로 눌리는가.
+   고른 뒤 '변경'으로 다시 열리는가. (이게 이번 QA 의 1순위)
+🔴 #422 지도 앱 선택 + 구인자 문자하기 — iOS 시뮬은 sms: 미지원이라 실기기 필수
+🔴 #423 UI 5건 (QR 헤더 침범·유령 스피너·캘린더 스크롤 잠김)
+🔴 #424 근무 시간 편집 통일 — 3 진입점(근무표·스태프관리·정산)이 같은 답을 주는가
+🔴 #425 조건 유도 그룹핑 — 프리셋 1탭 후 날짜 선택 시 묶음 토글이 꺼진 채 나오는가(#426 수정 확인)
+🔴 #427 탈퇴 파이프라인
+🔴 Android 키보드 회귀 17화면 (#302→#335)
+🔴 오프라인 UI (#262)
+🔴 구 빌드 QR 거부 고지
+
+각 항목에 "무엇이 보이면 통과/실패인지"를 한 줄로 적어줘.
+```
+
+---
+
+## S-D. 정산 R4 선행 — RPC화 2경로 + Lost Update + 애널리틱스
+
+```
+정산 도메인의 남은 직접 쓰기 경로를 RPC 화해줘. 시간모델 R4 의 선행 조건이다.
+
+착수점:
+1. uniqn-mobile/src/repositories/supabase/SettlementRepository.ts:372
+   (출퇴근·메모 직접 UPDATE — updateWorkTimeWithTransaction)
+2. uniqn-mobile/src/repositories/supabase/SettlementRepository.ts:587-604
+   (개인 정산 설정 저장 — custom_salary_info/allowances/tax + settlement_modification_history)
+   🔴 여기가 **이력 jsonb Lost Update** 잔여 1경로다. select → 배열 append → update 통째 덮어쓰기라
+      동시 요청이 앞 이력 항목을 조용히 지운다.
+      (work_logs.modification_history 쪽은 #424 가 서버 RPC 로 이관해 이미 닫혔다 — FOR UPDATE + 단일 문장)
+3. 🔴 정산완료 애널리틱스 복구 — trackSettlementComplete 는 호출부가 **0건**이다(실측:
+   정의 analyticsService.ts:358 + 배럴 재export 2곳뿐). 유일 호출부였던
+   workLogService.updatePayrollStatus 가 #402 이후 죽은 회로였고 #426 웨이브에서 제거됐다.
+   복구하려면 RPC 경로 settlementMutation.updateSettlementStatus 에 붙여야 한다.
+   묘비 주석: src/services/work/workLogService.ts:154-162
+
+전제/함정:
+- 다중 쓰기는 RPC 필수(CLAUDE.md). 서버가 FOR UPDATE + 단일 문장으로 처리해야 한다.
+- 🚨 트리거로 쓰기 채널을 좁히면 기존 pgTAP 이 깨진다 — **착수 전 supabase/tests/ 전수 grep**
+- 🚨 마이그레이션은 mcp__supabase__apply_migration 전용(db push 금지)
+- 파리티 기대값은 **머지 시점에 재산정**한다(현재 200/111). parity_baseline_guard.test.sql 의
+  PARITY_EXPECT_FUNCS/POLICIES 마커와 단언 리터럴을 **동시** 갱신.
+
+완료 기준: RPC 화 + pgTAP red-swap 1:1 + quality exit 0 + jest green.
+```
+
+---
+
+## S-E. 서버 검증 강화 + 시간모델 R3 설계
+
+```
+두 가지를 해줘. (1) 은 R4 착수 전 필수다.
+
+(1) 🔴 퇴근 ≥ 출근 순서 검증을 서버에 넣어라
+    update_work_log_slot RPC(20260807130000:376-407)가 reason 200자·memo 500자·XSS·HH:mm 형식·
+    역할 enum 을 전부 서버에서 재현하면서 **checkOut <= checkIn 만 재현하지 않는다**.
+    유일한 방어가 클라 attendanceInsight.ts:66-80 이고, DB CHECK 도 없다
+    (work_logs_status_timestamp_consistency 는 NULL 여부만 본다).
+
+    실패 시나리오: 인증된 employer 가 rpc('update_work_log_slot', {p_patch:{checkIn:"18:00Z",
+    checkOut:"09:00Z"}}) 직접 호출 → 저장 성공 → status='checked_out' 파생 → 정산 게이트 통과 →
+    fn_settlement_amount 가 GREATEST(0, v_diff_s) 로 음수를 0 으로 접어 **₩0 정산이 에러 없이 확정**되고
+    스태프에게 "정산 완료. 지급액: 0원" 알림이 간다.
+
+    ⚠️ 지금은 work_logs 직접 PATCH 도 열려 있어 RPC 만의 구멍은 아니다. 다만 R4(직접 UPDATE REVOKE)
+       이후 이 RPC 가 **유일 경로**가 되므로 그때 반드시 남는다.
+    ⚠️ 경계: 퇴근==출근은 24시간 근무가 아니라 검증 오류다(등호 포함 금지 규칙 — WorkTimeFields.tsx:178-182 주석).
+
+(2) 🔴 시간모델 R3 착수 게이트 설계
+    R3 의 착수 조건이 "센티널 신규 기록률"인데 **그 측정 쿼리가 설계문서에 없다**.
+    docs/analysis/2026-08-03-time-model-redesign.md 를 읽고 측정 쿼리를 새로 설계해라.
+    prod 트래픽이 작다는 점을 감안해라(users 27 / work_logs 3 / 30일 지원 5건) —
+    "기다려서 로그가 쌓이길 기대하는" 방식은 성립하지 않는다.
+```
+
+---
+
+## S-F. 머지 리뷰 잔여 MEDIUM / LOW 정리
+
+```
+2026-08-07 머지 리뷰(#420~#425 대상)에서 확정했으나 #426 에서 고치지 않은 MEDIUM 9 / LOW 12+ 를
+정리해줘. 상세: memory/project_merge_review_followups_20260807.md
+
+MEDIUM (실재 확인됨):
+1. useManualRefresh identity churn — src/hooks/useManualRefresh.ts:78 이 useCallback(..., [refreshing]).
+   주석 :51 이 "onRefresh 정체성 고정 — 매 렌더 새 함수면 iOS 제스처가 끊긴다"고 선언했는데
+   deps 때문에 **제스처가 시작되는 바로 그 순간** identity 가 바뀐다. 26개 화면 적용.
+   해법: in-flight 플래그를 state 가 아닌 useRef 로 두고 deps 를 비운다.
+2. 자정 이후 출근이 편집할 때마다 하루 앞으로 접힘 — WorkTimeFields.tsx:177 의 field==='checkIn'
+   갈래에 익일 보정이 **아예 없다**(표시도 (익일) 표식 없음). #426 은 checkOut 갈래만 고쳤다.
+   근무일 08-10 / check_in_ts 08-11 00:30 인 야간조 지각 입장 행에서 00:45 로 5분 고치면
+   08-10 00:45 가 되어 근무가 31.5시간(1890분)이 되고 12시간 초과 **경고만** 뜬다.
+3. 저장 1회 ≠ 알림 1통 — 20260806120000 의 병합은 notify_on_work_log_update **한 함수 안**만
+   흡수한다. check_in_ts/check_out_ts 가 같은 UPDATE 에 실리면 tr_notify_work_log_checkinout 이
+   독립 발화 → 출퇴근 첫 입력 시 스태프 4통·구인자 3통. **회귀는 아니나** 마이그가 선언한
+   불변식(:12-13, COMMENT :454)이 사실이 아니다.
+4. checkOut 을 null 로 지워도 end_time_source='manual' 이 박힘 — 20260807130000:587.
+   형제 경로 ConfirmedStaffRepository.updateStatusWithTransaction:551 은 null 갈래가 있다.
+5. no_show 행은 3 진입점 중 1곳(정산)만 열림 — ConfirmedStaffCard.tsx:104-105 canEditTime 게이트가
+   버튼에서 거른다. 그런데 WorkLogEditSheet.tsx:87-88 주석은 "스태프관리·정산 두 진입점"이라 **거짓**이고,
+   바로 위 :100-102 주석은 "세 진입점이 같은 답을 주는 것이 D2"라 **5줄 간격 자기모순**이다.
+   cancelled 행은 어디서도 못 열어 시트의 cancelled 불가침 분기는 도달 불가 코드다.
+6. 묶음 토글을 끄기만 해도 "같은 조건이라 하나로 합쳐졌어요" + auto_merge 계기판 오염 —
+   scheduleNotices.ts:99. bundleToggledByUser 는 ②(묶음해제)만 건너뛰고 ③(자동병합)은 그대로 탄다.
+   해법: bundleToggledByUser===true 면 ③의 after.length < before.length 항도 건너뛴다
+   (dedupe 축 dateCount(after) < expectedDates 는 남겨도 무해).
+7. 날짜 시트가 전 일정 스코프인데 여전히 "N개 추가" 어휘 — DatePickerModal.tsx:184,171,200.
+   4일 공고에서 하루를 빼려고 칩 하나를 해제하면 버튼이 "3개 추가"라고 적혀 있다(실제는 1일 삭제).
+   전체 해제하면 확인이 잠기고 카드가 1개면 삭제 X 도 없어 빈 상태로 되돌아갈 길이 없다.
+8. OrderSheetScreen.tsx **1,400줄** — 800줄 상한 위반이 #425 로 +200줄 악화됐다(주석은 1,200줄이라
+   적어 놨다). notifyScheduleChange(586-652)도 함수 50줄 초과. 일정 뮤테이션 핸들러 6종은
+   폼만 의존하므로 useScheduleMutations 훅으로 통째 추출 가능.
+9. expectedDateCount 가 타입이 아니라 주석으로만 강제됨 — scheduleNotices.ts:45,98. 옵셔널이고
+   폴백이 곧 버그 동작인데 호출부 3곳 중 1곳만 전달한다.
+
+LOW: dark: 짝 누락(⚠️ **오탐이었다 — 아래 참조**), editedBy 3곳 중 1곳만 전달,
+     SafeArea/sticky 가드 테스트가 .some() 이라 약함, mapLink probe:false 테스트 0건,
+     Android geo: probe 비일관(추정), 죽은 회로 3건, 드리프트 가드 키 1개 부족,
+     ConfirmedStaffCard 빼기 버튼 accessibilityLabel 없음, 레거시 grouped 싱글턴 강등(추정),
+     draftToValues 날짜 중복 dedupe(추정), 묶음의 새 날짜 승계.
+
+🔑 **dark: 짝 누락은 대부분 오탐이다.** 진실원은 src/components/ui/__tests__/darkModePairRatchet.test.ts
+   머리말 — CSS 변수 토큰 단독은 **포탈 밖에서 정상 동작**하고 깨지는 건 @gorhom/bottom-sheet 뿐이며
+   **RNModal 기반 시트는 실기기 QA 에서 멀쩡했다**(2026-07-19). SheetModal·ui/Modal = RNModal 이다.
+   판정 절차: ①토큰이 global.css 에 라이트/다크 둘 다 정의됐나 ②그 컴포넌트가 gorhom 시트 안인가.
+
+우선순위는 네가 판단해서 제안하고, 내 확인 후 착수해라.
+```
+
+---
+
+## S-G. 인프라 · 의존성
+
+```
+인프라 잔여를 정리해줘.
+
+1. 🔴 master **branch protection 이 없다** — E2E 게이트가 우회 가능하다(#331·#334 잔여 ①).
+   🚨 함정: paths 필터 + required check 조합은 **영구 pending 데드락**을 만든다(#375 실사고).
+2. Dependabot PR 6건 — 뒤 3개는 메이저라 검증 필요:
+   #414 supabase/setup-cli 1.7.1→3.0.0   (🔑 v1 은 태그가 아니라 움직이는 브랜치였다)
+   #415 actions/github-script 7.1.0→9.0.0
+   #416 postcss 8.5.22→8.5.25
+   #379 react-native-webview 13.16.0→14.0.1  ← 메이저. B1 주소검색 WebView 가 의존
+   #380 eslint-plugin-react-hooks 5.2.0→7.1.1 ← 메이저
+   #381 expo-camera 55.0.21→57.0.3           ← 메이저. QR 체크인이 의존
+   🚨 mmkv 4.1.2 / nitro 0.33.2 는 **정확 핀 유지** — 캐럿으로 되돌리면 Android Kotlin 컴파일 실패
+3. GitHub 취약점 5건(high 3, moderate 2) — dependabot 보안 알림 확인
+4. 빈 웹 번들 배포 방지 게이트 **CI 배선 미완**(사고 이력: 21시간 다운)
+5. 🔴 **롤아웃 계기판 부재** — expo-insights 미설치 · Sentry init 에 release/dist 미태깅 ·
+   앱 버전 서버 기록 0건. 근본 해결은 Sentry release 태깅이다.
+```
+
+---
+
+## ⏸ 사용자 판단 대기 (착수 전 결정 필요)
+
+| # | 안건 | 지금 상태 | 결정하면 |
+|---|---|---|---|
+| 1 | **assignments 자가 치유가 의도인가** | `update_work_log_slot` 6단계 진입 게이트가 `v_sync_app_id IS NOT NULL` 뿐이라 축을 안 본다. `checkOut` 만 담긴 패치로도 다일 묶음 원소가 분해되고 `duration` 삭제·`isGrouped` 반전된다(조각 C 주석: "패치 여부와 무관하게 갱신"). 부수로 `applications` 잠금이 실적 편집 전체로 넓어져 QR 경로와 **잠금 순서가 정반대**(데드락 창) | 의도 아니면 6단계에 축 게이트 추가 → `work_log_slot_sync_rpc.test.sql` 의 특성화 단언 33~39 가 red 로 알려준다 |
+| 2 | 정원0 원인 **B(축 미매칭)** | 의도적으로 열어 둠(A·C 만 닫음) | 실사용 로그 후 판단 |
+| 3 | `ScheduleSlotsSheet` **(a) 경로** 추가 적용 | #426 은 (b)(`mustPickDate` 분리 + 잠금 사유 노출)만 적용. 리뷰가 "정본"이라 한 (a)(`handlePressCondition` → 날짜 시트)는 미적용 | 화면 단위 회귀 테스트가 이미 막다른 길 부재를 고정하므로 선택 사항 |
+| 4 | iOS `LSApplicationQueriesSchemes` | `canOpenURL` 을 안 쓰게 됐으므로 **불필요할 가능성** | 확인 후 닫기 |
+| 5 | 1.0.5 웨이브 잔여 | W2 10항목 · W3-1 보류 · P0-3/P0-4 | 범위 확정 필요 |
+| 6 | 감사 **M11 축 통일** | 인덱스가 유일 기록(토픽·wiki 미기재) — 내용부터 복원 필요 | |
+
+---
+
+## 📋 메모리 stale 정정 (2026-08-07 실측)
+
+다음 세션에서 `MEMORY.md` 를 고칠 때 반영할 것:
+
+- **`MEMORY.md` 실행 원장 줄의 "남은 것=S7 구현" 은 stale** — S7 은 #412(`d5ff28ec5`)로 머지 완료,
+  후속 정원0 도 #417(`d410c791b`)로 완료. **선행 원장 트랙은 전량 착지**다.
+- **B2 지오코딩 줄의 "잔여=🔴머지" 는 stale** — PR #411 은 2026-08-03T13:27:53Z 에 머지됐다.
+
+---
+
+## 세션 운영 규칙 (매번 적용)
+
+- 🔴 **모든 구현 세션 = 전용 워크트리**. 메인 체크아웃은 읽기·계획 전용.
+  정션: `powershell New-Item -ItemType Junction -Path <wt>\uniqn-mobile\node_modules -Target <main>\uniqn-mobile\node_modules`
+  (Git Bash `ls` 로는 1개로 보이지만 정상 — PowerShell `Get-ChildItem` 으로 821 확인)
+- 🚨 워크트리 제거 전 **정션 먼저 해제** — 안 하면 원본 `node_modules` 가 날아간다(전 워크트리 동반 사망 이력).
+  복구는 `npm ci`(개별 `npm install` 은 캐럿 드리프트).
+- 🚨 jest 에 `app/(employer)/...` 경로를 직접 넘기면 **괄호가 정규식 그룹이라 조용히 미매칭**된다
+  (실패가 아니라 그 스위트가 안 도는 것). `--testPathPattern "<파일명>"` 을 써라.
+- 🚨 로컬 pgTAP 단일 파일 실행은 `npm run test:db:helpers && npx supabase test db <파일> --local`.
+  bare `docker exec psql -f` 는 pgtap 확장 미설치라 `function plan(integer) does not exist` 로 죽어
+  **테스트 결함으로 오판**하기 쉽다.
+- 🚨 상수·enum·사용자 문구를 바꾸면 **`e2e/` 별도 Grep 필수** — `npm run quality` 범위 밖이라 CI 에서야 터진다.
+  page object 경유(`getStatLabel` 류)면 사전 grep 을 해도 안 걸린다.
+- 🚨 커밋 메시지에 **백틱 금지** — 명령치환으로 문장이 사라진다. `git commit -F -` + heredoc.
+- 마이그레이션은 `mcp__supabase__apply_migration` 전용(`db push` 금지). 주석 축약 금지 —
+  적용 직후 `md5(replace(pg_get_functiondef(oid), chr(13), ''))` 대조(**`chr(13)` 없으면 전부 가짜 불일치**).
