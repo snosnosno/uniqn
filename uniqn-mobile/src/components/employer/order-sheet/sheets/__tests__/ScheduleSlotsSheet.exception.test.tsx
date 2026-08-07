@@ -156,6 +156,14 @@ describe('날짜를 아직 못 받은 조건 카드 (requiresDatePick)', () => {
     expect(getByTestId('order-sheet-exception-date-2026-08-10')).toBeTruthy();
   });
 
+  /** 대조군 — 후보가 1개라도 **있으면** 배정 요구는 그대로다(0개일 때만 요구가 성립하지 않는다) */
+  it('후보가 1개뿐이어도 고르기 전에는 확인이 잠긴다', () => {
+    const { getByTestId } = setupEmpty({ selectableDates: ['2026-08-10'] });
+    expect(getByTestId('order-sheet-slots-confirm').props.accessibilityState.disabled).toBe(true);
+    fireEvent.press(getByTestId('order-sheet-exception-date-2026-08-10'));
+    expect(getByTestId('order-sheet-slots-confirm').props.accessibilityState.disabled).toBe(false);
+  });
+
   it('최소 1개를 고를 때까지 확인이 잠긴다', () => {
     const { getByTestId, getByText } = setupEmpty();
     expect(getByText('이 조건을 쓸 날짜를 골라주세요')).toBeTruthy();
@@ -168,5 +176,62 @@ describe('날짜를 아직 못 받은 조건 카드 (requiresDatePick)', () => {
     expect(getByTestId('order-sheet-slots-confirm').props.accessibilityState.disabled).toBe(false);
     fireEvent.press(getByText('확인'));
     expect(onConfirm).toHaveBeenCalledWith({ dates: ['2026-08-11'], slots: seededSlots });
+  });
+});
+
+/**
+ * 리뷰 HIGH — **후보가 0개**인 막다른 길. 공고에 날짜가 하나도 없으면(신규 주문서·프리셋
+ * 1탭 적용) 날짜 행은 고를 게 없어 숨는데 `requiresDatePick` 은 최소 1개를 요구했다 →
+ * 고를 UI 가 없는데 고르라고 요구해 확인이 영영 잠겼다. 요구 자체가 성립하지 않는 상황이다.
+ */
+describe('후보가 0개 — 배정할 날짜가 아예 없다 (막다른 길 금지)', () => {
+  const setupNoDates = (overrides: Record<string, unknown> = {}) =>
+    setup({ requiresDatePick: true, selectableDates: [], ...overrides });
+
+  it('고를 UI 가 없으므로 날짜 행도 없다', () => {
+    const { queryByText } = setupNoDates();
+    expect(queryByText('이 조건을 쓸 날짜')).toBeNull();
+  });
+
+  it('확인이 잠기지 않는다 — 고를 수 없는 것을 고르라고 요구하지 않는다', () => {
+    const { getByTestId } = setupNoDates();
+    expect(getByTestId('order-sheet-slots-confirm').props.accessibilityState.disabled).toBe(false);
+  });
+
+  it('확인하면 빈 날짜 배열로 배출한다 (= 이 카드에 그대로 적용)', () => {
+    const { getByText, onConfirm } = setupNoDates();
+    fireEvent.press(getByText('확인'));
+    expect(onConfirm).toHaveBeenCalledWith({ dates: [], slots: seededSlots });
+  });
+
+  it('슬롯이 미완성이면 여전히 잠긴다 — 날짜 요구만 풀 뿐 완성 게이트는 그대로다', () => {
+    const { getByTestId } = setupNoDates({ value: [{ startTime: '19:00', roles: [] }] });
+    expect(getByTestId('order-sheet-slots-confirm').props.accessibilityState.disabled).toBe(true);
+  });
+});
+
+/**
+ * 리뷰 HIGH — 확인이 잠겼는데 **왜 잠겼는지가 화면에 없다**. 구 구조는 안내가 날짜 블록
+ * 안에만 있어, 블록이 숨거나(후보 0·1개) 잠금 사유가 슬롯 미완성이면 사장은 회색 버튼만 본다.
+ * 사유는 잠긴 버튼 옆에 항상 있어야 한다.
+ */
+describe('확인이 잠기면 이유가 보인다', () => {
+  it('슬롯 미완성 — 무엇을 채워야 하는지 말해 준다', () => {
+    const { getByTestId } = setup({ value: [{ startTime: '19:00', roles: [] }] });
+    expect(getByTestId('order-sheet-slots-lock-reason').props.children).toBe(
+      '시간과 역할을 모두 채워야 확인할 수 있어요'
+    );
+  });
+
+  it('날짜 배정이 필요한 조건 카드 — 잠긴 버튼 옆에서도 사유가 보인다', () => {
+    const { getByTestId } = setup({ requiresDatePick: true });
+    expect(getByTestId('order-sheet-slots-lock-reason').props.children).toBe(
+      '이 조건을 쓸 날짜를 골라야 확인할 수 있어요'
+    );
+  });
+
+  it('확인이 열려 있으면 사유를 띄우지 않는다', () => {
+    const { queryByTestId } = setup();
+    expect(queryByTestId('order-sheet-slots-lock-reason')).toBeNull();
   });
 });
