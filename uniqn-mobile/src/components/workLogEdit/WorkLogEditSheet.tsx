@@ -85,11 +85,26 @@ import type { StoredSlotColorToken } from '@/domains/workSchedule';
  *    "저장하면 기록될 status" 를 약속하는데, 근태 상태를 모르면 노쇼·취소 행에서도
  *    "저장하면 출근이 됩니다"라고 거짓말한다(서버는 그 상태를 건드리지 않는다).
  *    노쇼 행이 실제로 이 시트에 뜨는 경로는 **스태프관리·정산 두 진입점**이다 — 둘 다
- *    행 목록을 status 로 거르지 않는다. (근무표는 예외다: `get_venue_day_slots` 가
+ *    행 목록을 status 로 거르지 않는다(스태프관리는 `ConfirmedStaffCard` 가 버튼째 숨기던
+ *    시절엔 정산 한 곳뿐이었는데, 그 게이트를 `lockReason` 으로 옮기면서 둘이 됐다).
+ *    (근무표는 예외다: `get_venue_day_slots` 가
  *    `status NOT IN ('cancelled','no_show')` 로 걸러 준다 — 마이그 20260806130000:108.
  *    ⚠️ 그렇다고 필수화 근거가 약해지지 않는다. 게다가 `status` 는 배지가 실적을 안 건드리는
  *    저장에서 **저장 전 상태를 그대로 말하기 위한** 값이기도 해서 세 경로 모두에 필요하다.)
  */
+/**
+ * 근태 생애주기로 잠긴 행의 고지 문구 — 무엇이 잠갔는지 + 되돌릴 경로(v1 룰 10).
+ *
+ * 🔑 노쇼는 되돌릴 경로가 **있다**(`ConfirmedStaffCard` 의 '노쇼 취소'). 그 길을 안 적으면
+ *    사용자는 잘못 찍힌 노쇼를 고칠 방법이 없다고 읽는다. 취소 행은 되돌릴 경로가 없으므로
+ *    사실만 말한다 — 없는 길을 안내하는 것이 더 나쁘다.
+ */
+const LIFECYCLE_LOCK_MESSAGE = {
+  no_show:
+    '노쇼로 처리된 근무는 시간을 수정할 수 없어요. 잘못 처리된 거라면 먼저 [노쇼 취소]로 되돌린 뒤 수정해주세요.',
+  cancelled: '취소된 근무는 시간을 수정할 수 없어요.',
+} as const;
+
 export interface WorkLogEditInitial {
   /** 출근 예정 시각 'HH:mm'. 읽을 수 없는 레거시 값이면 null + `scheduledUnreadable` 로 넘긴다. */
   scheduledStart: string | null;
@@ -255,8 +270,26 @@ export function WorkLogEditSheet({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 열림·대상 전환에만 반응한다(위 주석)
   }, [visible, workLogId]);
 
-  /** 정산 완료 = 전체 읽기 전용(D4). 서버가 허용하는 축까지 클라에서 좁힌 결정이다. */
-  const readOnly = initial.payrollStatus === STATUS.PAYROLL.COMPLETED;
+  /**
+   * 편집 잠금 사유 — `null` 이면 편집 가능하다.
+   *
+   * 🔑 잠금을 **여기 한 곳**에 모은 이유가 D2 다. 진입점(근무표·스태프관리·정산)이 각자 버튼을
+   *    숨기면 같은 행이 화면마다 다른 답을 받고, 사용자에게는 "왜 여기선 없지?"만 남는다.
+   *    진입은 열어 두고 거절 이유는 시트가 말한다 — 정산 완료(D4)가 이미 그 방식이었고,
+   *    노쇼·취소도 같은 자리로 옮겨 왔다(그전엔 `ConfirmedStaffCard` 가 버튼째 숨겼다).
+   *
+   * 우선순위는 **정산 완료가 먼저**다. 둘 다 걸린 행에서 되돌리려면 정산부터 되돌려야 하므로,
+   * 먼저 해소해야 할 쪽을 말하는 것이 다음 행동으로 이어진다.
+   */
+  const lockReason: 'settled' | 'no_show' | 'cancelled' | null =
+    initial.payrollStatus === STATUS.PAYROLL.COMPLETED
+      ? 'settled'
+      : initial.status === STATUS.WORK_LOG.NO_SHOW
+        ? 'no_show'
+        : initial.status === STATUS.WORK_LOG.CANCELLED
+          ? 'cancelled'
+          : null;
+  const readOnly = lockReason !== null;
 
   const baseDate = useMemo(() => parseDateString(initial.date) ?? new Date(), [initial.date]);
 
@@ -471,15 +504,18 @@ export function WorkLogEditSheet({
           </Text>
         </View>
 
-        {readOnly ? (
+        {lockReason ? (
           // 읽기 전용의 **눈에 보이는** 신호. 칩의 `disabled`·`accessibilityState` 는 웹에서
           // 무효라 이 문구와 아래 흐린 처리가 사실상 유일한 표현이다.
+          // testID 를 사유별로 나눈다 — 잠긴 이유가 다르면 사용자의 다음 행동도 다르다.
           <View className="mb-3 rounded-lg bg-warning-50 p-3 dark:bg-warning-900/20">
             <Text
-              testID="settled-notice"
+              testID={lockReason === 'settled' ? 'settled-notice' : 'lifecycle-lock-notice'}
               className="font-sans text-sm text-warning-700 dark:text-warning-400"
             >
-              {settledLockMessage('수정할')}
+              {lockReason === 'settled'
+                ? settledLockMessage('수정할')
+                : LIFECYCLE_LOCK_MESSAGE[lockReason]}
             </Text>
           </View>
         ) : null}

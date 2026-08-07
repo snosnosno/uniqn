@@ -2,13 +2,19 @@
  * UNIQN Mobile - 날짜 선택 모달
  *
  * @description 캘린더 UI를 통한 날짜 선택 모달 (다중 선택 지원)
- * @version 4.0.0 - 다중 선택 모드 추가
+ * @version 5.0.0 - 전 일정 스코프 어휘 + 빈 선택 확정
+ *
+ * 🔑 **스코프는 "추가"가 아니라 "최종 집합"이다.** 프로덕션 소비자는 `ScheduleDatesSheet`
+ *    하나이고(= 주문서 전 일정 스코프), 담긴 선택이 그대로 결과가 된다. 그래서 확인 라벨은
+ *    'N개 추가'가 아니라 'N일 저장'이고, 칩을 해제하는 것은 삭제다.
+ *    additive 시절의 `existingDates`(선택 불가 잠금 + '이미 추가된 날짜' 안내)는 그 소비자가
+ *    항상 빈 배열을 넘겨 **죽은 회로**였으므로 제거했다 — 상한은 선택 개수로만 관리한다.
  *
  * 주요 기능:
  * - CalendarPicker 캘린더 UI로 날짜 선택
- * - 다중 날짜 선택 지원 (한 번에 여러 날짜 추가)
+ * - 다중 날짜 선택 지원 (담긴 집합이 곧 결과)
  * - 타입별 제약사항 표시 (regular/urgent: 1개, tournament: 30개)
- * - 중복 날짜 검사 (이미 추가된 날짜 표시)
+ * - 빈 선택 확정 지원 — 날짜가 있었을 때만 파괴 확인
  * - 긴급 공고 7일 이내 제한
  * - 과거 날짜 선택 불가
  */
@@ -24,6 +30,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { DATE_CONSTRAINTS } from '@/constants';
 import { XMarkIcon } from '@/components/icons';
+import { confirmAction } from '@/utils/confirmAction';
 import type { PostingType } from '@/types';
 
 // ============================================================================
@@ -35,16 +42,16 @@ export interface DatePickerModalProps {
   visible: boolean;
   /** 모달 닫기 콜백 */
   onClose: () => void;
-  /** 날짜 선택 콜백 (다중 날짜) */
+  /** 날짜 선택 콜백 — 담긴 집합이 그대로 결과다(빈 배열 = 일정 비우기) */
   onSelectDates: (dates: string[]) => void;
   /** 공고 타입 */
   postingType: PostingType;
-  /** 이미 선택된 날짜 목록 (선택 불가·취소선 표시) */
-  existingDates: string[];
   /**
-   * 초기 선택 상태 시드 (additive) — 전달되면 이 날짜들이 selectedDates 로 시드되어 재선택·해제 가능.
-   * 주문서(order-sheet)가 기존 날짜 재편집 시 사용한다(existingDates 로 넘기면 재선택 불가·데드엔드).
-   * 미전달 시 빈 배열로 시작(기존 호출부 무회귀). remainingSlots 계산은 existingDates 기준 그대로.
+   * 초기 선택 상태 시드 — 전달되면 이 날짜들이 selectedDates 로 시드되어 재선택·해제 가능.
+   * 주문서(order-sheet)가 기존 날짜를 재편집할 때 넘긴다. 미전달 시 빈 배열로 시작한다.
+   *
+   * 🔑 이 값이 **비어 있었는지**가 빈 확정의 파괴성을 가른다 — 원래 없던 것을 비우는 건
+   *    파괴가 아니므로 확인을 묻지 않는다.
    */
   initialSelectedDates?: string[];
 }
@@ -65,7 +72,6 @@ export function DatePickerModal({
   onClose,
   onSelectDates,
   postingType,
-  existingDates,
   initialSelectedDates,
 }: DatePickerModalProps) {
   const { addToast } = useToastStore();
@@ -75,11 +81,11 @@ export function DatePickerModal({
     (initialSelectedDates ?? []).map(parseYmdLocal).filter((d): d is Date => d !== null)
   );
 
-  // 타입별 제약사항
+  // 타입별 제약사항 — 전 일정 스코프라 상한은 선택 개수 그 자체에 걸린다
   const constraints = DATE_CONSTRAINTS[postingType];
-  // 추가 가능한 남은 개수
-  const remainingSlots = constraints.maxDates - existingDates.length;
-  const canAddMore = remainingSlots > 0;
+  const maxDates = constraints.maxDates;
+  // 시드가 비어 있었다면 지울 것이 없다 — 빈 확정이 파괴가 아니다
+  const hadInitialDates = (initialSelectedDates?.length ?? 0) > 0;
 
   // 최소/최대 날짜 계산
   const { minimumDate, maximumDate } = useMemo(() => {
@@ -102,16 +108,16 @@ export function DatePickerModal({
   const handleMultiSelectChange = useCallback(
     (dates: Date[]) => {
       // 최대 선택 개수 확인
-      if (dates.length > remainingSlots) {
+      if (dates.length > maxDates) {
         addToast({
           type: 'warning',
-          message: `최대 ${remainingSlots}개까지 선택할 수 있습니다`,
+          message: `최대 ${maxDates}개까지 선택할 수 있습니다`,
         });
         return;
       }
       setSelectedDates(dates);
     },
-    [remainingSlots, addToast]
+    [maxDates, addToast]
   );
 
   // 선택된 날짜 개별 제거
@@ -126,21 +132,41 @@ export function DatePickerModal({
     setSelectedDates([]);
   }, []);
 
-  // 확인 버튼
+  /**
+   * 확인 버튼 — 담긴 집합을 그대로 확정한다.
+   *
+   * 🔑 빈 확정을 막지 않는다. `applyDateSelection`(@/utils/order-sheet/scheduleCardEdits)이
+   *    이미 빈 집합을 정의해 뒀다(카드 1개면 조건 보존·날짜만 비움, 다수면 첫 카드 조건을
+   *    승계하고 나머지를 removedCards 로 고지). 여기서 막으면 **일정을 되돌릴 길이 사라진다** —
+   *    카드가 1개면 삭제 X 도 없어 빈 상태로 갈 방법이 아예 없었다.
+   *    대신 원래 날짜가 있었을 때만 파괴 확인을 받는다(없던 것을 비우는 건 파괴가 아니다).
+   */
+  const commitDates = useCallback(
+    (dates: Date[]) => {
+      // YYYY-MM-DD 형식으로 변환 + 날짜순 정렬
+      const dateStrings = dates.map((date) => format(date, 'yyyy-MM-dd')).sort();
+      onSelectDates(dateStrings);
+      setSelectedDates([]);
+      onClose();
+    },
+    [onSelectDates, onClose]
+  );
+
   const handleConfirm = useCallback(() => {
-    if (selectedDates.length === 0) {
-      addToast({ type: 'error', message: '날짜를 선택해주세요' });
+    if (selectedDates.length === 0 && hadInitialDates) {
+      confirmAction({
+        title: '일정을 모두 비울까요?',
+        message:
+          '담겨 있던 날짜가 전부 사라지고, 그 날짜에만 걸려 있던 조건 카드도 함께 사라집니다.',
+        confirmText: '일정 비우기',
+        destructive: true,
+        onConfirm: () => commitDates([]),
+      });
       return;
     }
 
-    // YYYY-MM-DD 형식으로 변환
-    const dateStrings = selectedDates.map((date) => format(date, 'yyyy-MM-dd')).sort(); // 날짜순 정렬
-
-    // 선택 완료
-    onSelectDates(dateStrings);
-    setSelectedDates([]);
-    onClose();
-  }, [selectedDates, onSelectDates, onClose, addToast]);
+    commitDates(selectedDates);
+  }, [selectedDates, hadInitialDates, commitDates]);
 
   // 모달 닫기 처리
   const handleClose = useCallback(() => {
@@ -152,6 +178,13 @@ export function DatePickerModal({
   const sortedSelectedDates = useMemo(() => {
     return [...selectedDates].sort((a, b) => a.getTime() - b.getTime());
   }, [selectedDates]);
+
+  const confirmLabel =
+    selectedDates.length > 0
+      ? `${selectedDates.length}일 저장`
+      : hadInitialDates
+        ? '일정 비우기'
+        : '일정 저장';
 
   const footer = (
     <View className="flex-row gap-3">
@@ -166,21 +199,16 @@ export function DatePickerModal({
           취소
         </Text>
       </Pressable>
+      {/* 라벨은 결과를 말한다(v1 룰 11·12) — 담긴 집합이 곧 저장될 일정이고,
+          0개는 파괴적이므로 '비우기'로 예고한다. 단 원래 비어 있었으면 지울 것이 없다. */}
       <Pressable
         onPress={handleConfirm}
-        disabled={!canAddMore || selectedDates.length === 0}
-        className={`flex-1 py-2.5 rounded-md ${
-          canAddMore && selectedDates.length > 0
-            ? 'bg-primary-600'
-            : 'bg-secondary-300 dark:bg-surface-elevated opacity-50'
-        }`}
+        className="flex-1 py-2.5 rounded-md bg-primary-600"
         accessibilityRole="button"
-        accessibilityLabel="확인"
+        accessibilityLabel={confirmLabel}
         testID="job-posting-date-confirm-button"
       >
-        <Text className="text-content-onGold text-center font-sans-semibold">
-          {selectedDates.length > 0 ? `${selectedDates.length}개 추가` : '확인'}
-        </Text>
+        <Text className="text-content-onGold text-center font-sans-semibold">{confirmLabel}</Text>
       </Pressable>
     </View>
   );
@@ -188,8 +216,7 @@ export function DatePickerModal({
   return (
     <Modal visible={visible} onClose={handleClose} title="날짜 선택" size="lg" footer={footer}>
       {/* 선택 현황 + 상한 안내 (한 블록 통합) — 개수 정보가 두 블록에 흩어져 중복이었다.
-          상한은 '남은 슬롯' 한 수치로만 말한다(신규 공고에선 최대치와 같아 두 번 말할 이유가 없고,
-          편집 시엔 이미 담긴 개수를 하단 '이미 추가된 날짜' 블록이 따로 알려준다). */}
+          전 일정 스코프라 '담긴 개수'와 '상한' 두 수치면 충분하다. */}
       <View className="mb-2 p-2.5 bg-surface-page dark:bg-surface rounded-lg">
         <View className="flex-row justify-between items-center mb-1.5">
           <View className="flex-row items-center gap-1.5 flex-1">
@@ -197,7 +224,7 @@ export function DatePickerModal({
               선택한 날짜 {selectedDates.length}개
             </Text>
             <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-              {canAddMore ? `최대 ${remainingSlots}개까지` : '남은 슬롯이 없어요'}
+              {`최대 ${maxDates}개까지`}
             </Text>
           </View>
           {selectedDates.length > 0 && (
@@ -249,25 +276,11 @@ export function DatePickerModal({
           multiSelect
           selectedDates={selectedDates}
           onMultiSelectChange={handleMultiSelectChange}
-          disabledDates={existingDates}
           minimumDate={minimumDate}
           maximumDate={maximumDate}
-          maxSelections={remainingSlots}
+          maxSelections={maxDates}
         />
       </View>
-
-      {/* 이미 추가된 날짜 안내 */}
-      {existingDates.length > 0 && (
-        <View className="mb-2 p-2.5 bg-surface-page dark:bg-surface rounded-lg">
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
-            이미 추가된 날짜 ({existingDates.length}개) - 취소선 표시
-          </Text>
-          <Text className="text-sm text-content-muted dark:text-secondary-300 font-sans">
-            {existingDates.slice(0, 5).join(', ')}
-            {existingDates.length > 5 && ` 외 ${existingDates.length - 5}개`}
-          </Text>
-        </View>
-      )}
     </Modal>
   );
 }
