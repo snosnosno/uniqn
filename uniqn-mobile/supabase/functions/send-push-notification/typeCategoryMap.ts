@@ -76,4 +76,8 @@ export const TYPE_CATEGORY_MAP: Record<string, string> = {
 
   // 워크스페이스 협업
   workspace_invitation: 'system',
+
+  // ops (라이브 운영 대회) — 근무 배정 축이므로 '출퇴근' 카테고리 재사용.
+  // notification_category enum 에 'ops' 를 추가하지 않는다(ALTER TYPE ADD VALUE 는 불가역).
+  ops_staff_assigned: 'attendance',
 };

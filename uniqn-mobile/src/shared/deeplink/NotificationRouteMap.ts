@@ -142,6 +142,15 @@ export const NOTIFICATION_ROUTE_MAP: Record<
     data?.invitationId
       ? { name: 'workspace/invitations', params: { invitationId: data.invitationId } }
       : { name: 'workspace/invitations' },
+
+  // ops (라이브 운영 대회) — ops 결함⑦-1.
+  // 🔴 의도적으로 알림함에 머문다(선례: REPORT_RESOLVED). ops 화면으로 보내면 안 된다 —
+  //    is_ops_member(마이그 baseline:3543)는 대회 owner 와 연결 공고 workspace 멤버만
+  //    멤버로 보고 ops_staff 는 포함하지 않는다. 수동 추가된 스태프는 ops_tournaments 조차
+  //    SELECT 하지 못하므로 어떤 ops 라우트로 보내도 RLS 가 막는 빈 화면에 도착한다.
+  //    /schedule 도 목적지가 아니다 — source='manual' 스태프는 work_log 가 0건이다.
+  //    배정 정보는 알림 본문이 전부 싣는다(대회명·담당·날짜·장소).
+  [NotificationType.OPS_STAFF_ASSIGNED]: () => ({ name: 'notifications' }),
 };
 
 export function getRouteForNotificationType(
