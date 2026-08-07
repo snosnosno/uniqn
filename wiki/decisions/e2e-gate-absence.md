@@ -1,6 +1,6 @@
 ---
 area: decisions
-updated: 2026-07-25
+updated: 2026-08-08
 status: current
 sources:
   - .github/workflows/e2e.yml
@@ -10,10 +10,15 @@ sources:
   - PR#328
   - PR#330
   - PR#331
+  - PR#432
 tags: [ci, e2e, testing, gate, adr]
 ---
 
 # 결정: E2E는 아직 required가 아니다 — 대신 "회귀 감지 케이스"로 구조를 지킨다
+
+> ✅ **2026-08-07 갱신 — 이 결정의 1단계는 실행됐다.** 아래 "문제" 절의
+> *"master에는 branch protection 자체가 없다"* 는 **더 이상 사실이 아니다**(PR#432).
+> 당시 실측으로는 맞았고, 지금 상태는 맨 아래 [착지](#착지-2026-08-07--branch-protection-활성화) 절에 있다.
 
 ## 문제 (2026-07-25 실측)
 
@@ -60,6 +65,29 @@ tags: [ci, e2e, testing, gate, adr]
 - **UI 요소를 다른 화면/파일로 옮기는 PR은 `e2e/**/*.spec.ts`에서 옛 위치 참조를 grep해 같은 PR에서 이동**시킨다. 화면 분리는 리팩토링이 아니라 계약 변경이다.
 - E2E 로컬 검증은 **`dist/` 재export 후**에 한다. `uniqn-mobile/scripts/run-e2e.js`가 `fs.existsSync(dist)`만 보고 빌드를 건너뛰므로, 구 번들이 남아 있으면 거짓 통과/거짓 실패가 난다(2026-07-25 실측 — `#328` 이전 번들이 남아 있었다).
 - CI E2E가 red일 때 **로컬 단일 spec을 돌려 결정적인지 flake인지 먼저 가른다**. 로컬 즉시 통과 + CI 반복 타임아웃 = 러너 경합(memory `pitfall_e2e_runner_contention_timeout` 계열), 로컬도 실패 = 진짜 회귀.
+
+## 착지 (2026-08-07) — branch protection 활성화
+
+**1단계가 끝났다.** master 에 branch protection 이 켜졌고 required check 2종이 걸렸다:
+`Quality Gate` · `E2E Gate`. force push·브랜치 삭제 차단(`enforce_admins=false`).
+
+설계상 핵심은 **required 로 거는 대상이 잡이 아니라 애그리게이터**라는 점이다(PR#432, `.github/workflows/ci.yml`·`e2e.yml`).
+
+> 🚨 **`paths` 필터가 걸린 잡을 required 로 지정하면 영구 pending 데드락이 된다.**
+> 해당 경로가 안 바뀐 PR 에서는 잡이 **아예 생성되지 않아** required check 가 영원히 기다린다.
+> GitHub 은 "안 돌았다"와 "돌 필요가 없었다"를 구분하지 못한다.
+
+그래서 #432 는 순서를 뒤집었다 — 먼저 워크플로를 갈아엎고 나서 protection 을 켰다:
+1. 잡에서 `paths` 필터를 **제거**하고, 변경 범위는 `changes` 판정 잡이 계산한다.
+2. 실제 작업 잡은 그 판정에 따라 skip 될 수 있게 둔다.
+3. required 로 거는 것은 `if: always()` 로 항상 도는 **애그리게이터 잡**이다.
+   `skipped` 를 성공으로 접어 올리므로, 안 도는 것이 정상인 PR 도 green 으로 통과한다.
+
+**켤 때의 부작용**: protection 을 켜는 순간 **기존에 열려 있던 PR 이 전부 BLOCKED** 로 바뀐다
+(base 가 낡아 required check 이력이 없다). `gh pr update-branch` 로 각 PR 을 최신 base 에 올리면 풀린다.
+
+2단계(E2E 를 개별 required 로 승격)는 여전히 열려 있다 — 러너 경합 flake 가 남아 있어서다.
+다만 `E2E Gate` 애그리게이터가 required 이므로, **E2E 가 실제로 실패하면 이제는 막힌다**.
 
 ## 연계
 

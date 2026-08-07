@@ -37,6 +37,20 @@ gstack 기반 커스텀 스킬 + superpowers + 프로젝트 전용 스킬 조합
 | 메모리 감사 | `/memory-audit` | 월 1회 — claim 실존 검증 |
 | OSS 도입 검증 | `/oss-vet` | 스킬·MCP·패키지 도입 **전** 6항목 |
 
+### 도메인 스킬 (프로젝트 로컬 — 위 워크플로우 표에 없던 것)
+
+| 영역 | 스킬 | 비고 |
+|---|---|---|
+| 성능 | `/performance` | 렌더링·번들·느린 화면 |
+| 접근성 | `/a11y` | 스크린리더·키보드 |
+| 국제화 | `/i18n` | 번역·다국어 |
+| DB 마이그레이션 | `/migration` | 스키마 변경·데이터 이전 |
+| 모션 감사·계획 | `/improve-animations` | 읽기 전용 — 계획만, 적용 안 함 |
+| 모션 diff 리뷰 | `/review-animations` | **명시 호출 전용**(`disable-model-invocation`) |
+| 모션 용어 역인덱스 | `/animation-vocabulary` | "그 통통 튀는 거" → 정확한 용어 |
+| UI 마감·컴포넌트 폴리시 | `/emil-design-eng` | Emil Kowalski 철학 |
+| 제스처·스프링·재질·타이포 | `/apple-design` | Apple HIG 를 웹으로 |
+
 ## 스킬 우선순위
 
 1. **프로젝트 로컬** (`.claude/skills/`) — 프로젝트 규칙 내장, 최우선
