@@ -42,7 +42,6 @@ const setup = (overrides: Record<string, unknown> = {}) => {
       visible
       postingType="regular"
       initialSelectedDates={[]}
-      existingDates={[]}
       onConfirm={onConfirm}
       onClose={jest.fn()}
       {...overrides}

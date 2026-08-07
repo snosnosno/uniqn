@@ -1,6 +1,7 @@
+import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
-import { isAppError } from '@/errors';
+import { isAppError, ValidationError, ERROR_CODES } from '@/errors';
 import { handleSupabaseError, toCamelCase } from '@/utils/supabase';
 import { mapOpsRpcError } from './opsRpcError';
 import type {
@@ -8,14 +9,24 @@ import type {
   CreateOpsTournamentInput,
   UpdateOpsTournamentPatch,
 } from '../interfaces/IOpsTournamentRepository';
-import type { OpsTournament, OpsTournamentStatus } from '@/types/ops';
+import type { OpsTournament, OpsTournamentStatus, OpsTournamentArchiveResult } from '@/types/ops';
+
+// 결함③: 보관/복원 응답. `changed` 로 no-op 을 구분한다(이미 목표 상태를 "보관됨"으로 말하지 않기 위해).
+const archiveResponseSchema = z
+  .object({
+    tournament_id: z.string(),
+    archived_at: z.string().nullable(),
+    changed: z.boolean(),
+  })
+  .passthrough();
 
 const TABLE = 'ops_tournaments' as const;
 const COLUMNS =
   'id, owner_id, job_posting_id, name, venue, event_date, game_type, status, seats_per_table, ' +
   'starting_chips, color, buy_in_chips, rebuy_chips, addon_chips, buy_in_cost, fee_cost, ' +
   'rebuy_cost, addon_cost, bounty_cost, registration_open, auto_seat_on_register, ' +
-  'reentry_allowed, max_reentries, monitor_token, monitor_config, next_entry_seq, created_at, updated_at';
+  'reentry_allowed, max_reentries, monitor_token, monitor_config, next_entry_seq, archived_at, ' +
+  'created_at, updated_at';
 
 function rowToTournament(row: Record<string, unknown>): OpsTournament {
   return toCamelCase<OpsTournament>(row);
@@ -210,6 +221,36 @@ export class SupabaseOpsTournamentRepository implements IOpsTournamentRepository
     } catch (error) {
       if (isAppError(error)) throw error;
       mapOpsRpcError(error, { operation: 'ops 등록 토글' });
+    }
+  }
+
+  async setArchived(
+    tournamentId: string,
+    actorId: string,
+    archived: boolean
+  ): Promise<OpsTournamentArchiveResult> {
+    const operation = archived ? 'ops 대회 보관' : 'ops 대회 복원';
+    try {
+      const { data, error } = await supabase.rpc('ops_set_tournament_archived', {
+        p_tournament_id: tournamentId,
+        p_actor_id: actorId,
+        p_archived: archived,
+      });
+      if (error) mapOpsRpcError(error, { operation });
+      const parsed = archiveResponseSchema.safeParse(data);
+      if (!parsed.success) {
+        throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+          userMessage: `${operation} 응답 형식이 올바르지 않습니다.`,
+        });
+      }
+      return {
+        tournamentId: parsed.data.tournament_id,
+        archivedAt: parsed.data.archived_at,
+        changed: parsed.data.changed,
+      };
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      mapOpsRpcError(error, { operation });
     }
   }
 }

@@ -271,6 +271,57 @@ describe('WorkLogEditSheet — 정산 완료 건 (D4)', () => {
 });
 
 // ============================================================================
+// 2-B. 노쇼·취소 = 전체 읽기 전용 (D2 — 세 진입점이 같은 답)
+// ============================================================================
+
+describe('WorkLogEditSheet — 노쇼·취소 행', () => {
+  it('🔴 노쇼 행은 읽기 전용이고 사유와 다음 행동을 말한다', () => {
+    renderSheet({}, { status: 'no_show' });
+
+    expect(screen.getByTestId('lifecycle-lock-notice')).toHaveTextContent(/노쇼/);
+    // 무엇+왜+어떻게(v1 룰 10) — 되돌릴 경로가 따로 있으니 그리로 안내한다
+    expect(screen.getByTestId('lifecycle-lock-notice')).toHaveTextContent(/노쇼 취소/);
+    expect(screen.queryByLabelText('저장')).toBeNull();
+    expect(screen.getByLabelText('닫기')).toBeTruthy();
+  });
+
+  it('🔴 취소 행은 읽기 전용이고 사유를 말한다', () => {
+    renderSheet({}, { status: 'cancelled' });
+
+    expect(screen.getByTestId('lifecycle-lock-notice')).toHaveTextContent(/취소된 근무/);
+    expect(screen.queryByLabelText('저장')).toBeNull();
+  });
+
+  it('🔴 노쇼 행도 실적 입력 진입이 막힌다 — 눌러도 피커가 열리지 않는다', () => {
+    renderSheet({}, { status: 'no_show' });
+
+    fireEvent.press(screen.getByLabelText('실제 퇴근 선택'));
+
+    expect(screen.queryByText(/피커 열림/)).toBeNull();
+  });
+
+  it('값 확인은 가능하다 — 진입 자체를 막지 않는다', () => {
+    renderSheet({}, { status: 'no_show', checkIn: AT(10, 18) });
+
+    expect(screen.getByTestId('check-in-value')).toHaveTextContent('18:00');
+  });
+
+  it('대조군 — 살아 있는 행은 잠금 고지가 없고 저장이 가능하다', () => {
+    renderSheet({}, { status: 'checked_in' });
+
+    expect(screen.queryByTestId('lifecycle-lock-notice')).toBeNull();
+    expect(screen.getByLabelText('저장')).toBeTruthy();
+  });
+
+  it('정산 완료가 겹치면 정산 사유를 우선 말한다 — 되돌릴 경로가 그쪽이 먼저다', () => {
+    renderSheet({}, { status: 'no_show', payrollStatus: 'completed' });
+
+    expect(screen.getByTestId('settled-notice')).toBeTruthy();
+    expect(screen.queryByTestId('lifecycle-lock-notice')).toBeNull();
+  });
+});
+
+// ============================================================================
 // 3. 배지 정직성 — currentStatus 배선
 // ============================================================================
 

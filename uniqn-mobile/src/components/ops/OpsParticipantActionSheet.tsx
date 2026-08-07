@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { SheetModal, SelectBottomSheet } from '@/components/ui';
+import { ChipCountSheet } from './ChipCountSheet';
+import { ParticipantEditSheet } from './ParticipantEditSheet';
 import { confirmAction } from '@/utils/confirmAction';
 import { showAlert } from '@/utils/showAlert';
 import { formatNumber as fmt } from '@/utils/formatters/currency';
@@ -12,6 +14,9 @@ import {
   useReenterParticipant,
   useUndoBust,
   useFreeSeat,
+  useSetParticipantNoShow,
+  useUnclaimParticipant,
+  useDeleteParticipant,
 } from '@/hooks/ops';
 import type { OpsBustResult, OpsParticipant, OpsSeat, OpsTournament } from '@/types/ops';
 
@@ -50,12 +55,23 @@ export function OpsParticipantActionSheet({
   const reenterMut = useReenterParticipant(tournamentId);
   const undoMut = useUndoBust(tournamentId);
   const freeMut = useFreeSeat(tournamentId);
+  const noShowMut = useSetParticipantNoShow(tournamentId);
+  const unclaimMut = useUnclaimParticipant(tournamentId);
+  const deleteMut = useDeleteParticipant(tournamentId);
 
   // 바운티 대회에서 "누가 눌렀나요?" 피커 대상(=탈락 처리할 참가자). null 이면 미표시.
   const [eliminatorPickerFor, setEliminatorPickerFor] = useState<OpsParticipant | null>(null);
+  // 결함①: 칩 카운트 입력 시트. SheetModal 중첩 함정 회피를 위해 부모 시트를 숨기고 띄운다(아래 visible).
+  const [chipSheetOpen, setChipSheetOpen] = useState(false);
+  // 결함③: 정보 수정 시트. 칩 시트와 같은 중첩 회피 규약을 따른다.
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
 
   if (!participant) return null;
   const p = participant;
+
+  // 칩 정정 대상 = active(착석) + checked_in(대기). 대기 참가자도 등록 시 starting_chips 를 받고
+  // 칩드래프트 재배치 풀(RedrawModal)에 포함되므로 정정 경로가 필요하다. busted 는 제외.
+  const canEditChips = p.status === 'active' || p.status === 'checked_in';
 
   // bust 성공 후 우승/ITM/일반 종료 분기 안내 — 현행 PlayersTab.tsx:49-62 문구 그대로 이관(H1 동작 등가).
   const handleBustSuccess = (r: OpsBustResult) => {
@@ -122,13 +138,28 @@ export function OpsParticipantActionSheet({
     </Pressable>
   );
 
+  // ActionBtn 선언 이후에 만든다(JSX 는 즉시 평가되므로 위에서 참조하면 TDZ).
+  const chipCountRow = (
+    <View className="flex-row">
+      <ActionBtn label="칩 카운트" onPress={() => setChipSheetOpen(true)} />
+    </View>
+  );
+
+  // 결함③: 정정은 **상태 무관**이다 — busted 참가자의 이름이 틀렸다고 영영 못 고칠 이유가 없다.
+  // 서버 ops_update_participant 도 상태 게이트를 두지 않는다(두 계층 동일 규칙).
+  const editRow = (
+    <View className="flex-row">
+      <ActionBtn label="정보 수정" onPress={() => setEditSheetOpen(true)} />
+    </View>
+  );
+
   return (
     <>
       <SheetModal
         // 네이티브에서 SheetModal=RNModal(OS 별도 윈도우)이라, 피커(=@gorhom BottomSheetModal,
         // 앱 루트 호스트)가 열린 채로 두면 피커가 이 모달 뒤로 가려져 바운티 탈락이 데드엔드가 된다.
         // 피커가 열리는 동안 시트를 숨기고(visible=false), 피커 onClose 리셋 시 자연 복귀시킨다.
-        visible={!!participant && eliminatorPickerFor === null}
+        visible={!!participant && eliminatorPickerFor === null && !chipSheetOpen && !editSheetOpen}
         onClose={onClose}
         title={`#${p.entryNumber ?? ''} ${p.name}`}
       >
@@ -171,6 +202,7 @@ export function OpsParticipantActionSheet({
                   />
                 </View>
               )}
+              {chipCountRow}
               {/* 파괴적 액션 격리 구역(L6) */}
               <View className="mt-2 border-t border-gray-200 pt-2 dark:border-gray-700">
                 <Pressable
@@ -184,6 +216,48 @@ export function OpsParticipantActionSheet({
                 </Pressable>
               </View>
             </>
+          )}
+          {/* 대기(checked_in) 참가자 — 기존에는 액션이 하나도 없어 시트가 비어 있었다.
+              결함②: 등록만 하고 오지 않은 참가자를 표시할 경로가 여기 붙는다. */}
+          {p.status === 'checked_in' && (
+            <>
+              {chipCountRow}
+              <View className="mt-2 border-t border-gray-200 pt-2 dark:border-gray-700">
+                <Pressable
+                  onPress={() =>
+                    confirmAction({
+                      title: '노쇼 처리',
+                      message: `${p.name} 님을 노쇼로 표시할까요?\n좌석 배정 대상에서 제외됩니다. 나중에 취소할 수 있어요.`,
+                      confirmText: '노쇼 처리',
+                      destructive: true,
+                      onConfirm: () => {
+                        noShowMut.mutate({ participantId: p.id, noShow: true });
+                        onClose();
+                      },
+                    })
+                  }
+                  accessibilityRole="button"
+                  testID="ops-participant-mark-no-show"
+                  className="min-h-[44px] items-center justify-center rounded-md border border-error-500 active:opacity-70 dark:border-error-400"
+                >
+                  <Text className="font-sans-semibold text-error-600 dark:text-error-400">
+                    노쇼 처리
+                  </Text>
+                </Pressable>
+              </View>
+            </>
+          )}
+          {/* 노쇼 취소 — 확인 다이얼로그 없이 1탭(복원 방향이라 파괴적이지 않다). */}
+          {p.status === 'no_show' && (
+            <View className="flex-row">
+              <ActionBtn
+                label="노쇼 취소"
+                onPress={() => {
+                  noShowMut.mutate({ participantId: p.id, noShow: false });
+                  onClose();
+                }}
+              />
+            </View>
           )}
           {p.status === 'busted' && (
             <View className="flex-row gap-2">
@@ -229,8 +303,119 @@ export function OpsParticipantActionSheet({
                 <Text className="text-sm font-sans-semibold text-gold">상금 화면 보기 →</Text>
               </Pressable>
             )}
+
+          {/* 결함③: 정보 수정 — 상태 무관(오타는 어느 상태에서도 고친다) */}
+          {editRow}
+
+          {/*
+            결함③: 오등록 제거. 서버 게이트(checked_in|no_show + 플레이 이력 0 + 좌석 미점유)와
+            같은 조건으로만 노출한다 — 눌러도 P0001 이 나는 버튼은 노이즈다.
+            ⚠️ **비가역**이라 결과를 라벨에 명시한다(impeccable Rule 11: 파괴적 액션은 결과를 라벨에).
+               노쇼(②)와는 다르다 — 노쇼는 돈을 냈고 안 온 것이라 상금 풀에 남아야 하고,
+               이건 애초에 없어야 했던 등록이라 상금 풀에서 빠져야 한다.
+          */}
+          {(p.status === 'checked_in' || p.status === 'no_show') &&
+            p.rebuys === 0 &&
+            p.addOns === 0 &&
+            p.reentries === 0 &&
+            p.knockouts === 0 &&
+            (p.prizeAmount === null || p.prizeAmount === undefined) && (
+              <View className="mt-2 border-t border-gray-200 pt-2 dark:border-gray-700">
+                <Pressable
+                  onPress={() =>
+                    confirmAction({
+                      title: '등록 취소',
+                      message: `#${p.entryNumber ?? ''} ${p.name} 님의 등록을 취소할까요?\n참가자 기록이 삭제되고 상금 풀에서도 빠집니다. 되돌릴 수 없어요.`,
+                      confirmText: '등록 취소',
+                      destructive: true,
+                      onConfirm: () => {
+                        deleteMut.mutate(p.id);
+                        onClose();
+                      },
+                    })
+                  }
+                  accessibilityRole="button"
+                  testID="ops-participant-delete"
+                  className="min-h-[44px] items-center justify-center rounded-md border border-error-500 active:opacity-70 dark:border-error-400"
+                >
+                  <Text className="font-sans-semibold text-error-600 dark:text-error-400">
+                    등록 취소 (기록 삭제)
+                  </Text>
+                </Pressable>
+              </View>
+            )}
+
+          {/*
+            결함⑤: 플레이어 연결 해제. 상태와 무관하다 — 클레임은 어느 상태에서도 걸려 있을 수 있고,
+            플레이어가 8자 PIN 으로 **스스로** 걸기 때문에 엔트리를 잘못 짚는 일이 실제로 생긴다.
+            연결이 없으면 행 자체를 숨긴다(할 일이 없는 버튼은 노이즈다).
+          */}
+          {p.playerUserId ? (
+            <View className="mt-2 border-t border-gray-200 pt-2 dark:border-gray-700">
+              <Pressable
+                onPress={() =>
+                  confirmAction({
+                    title: '플레이어 연결 해제',
+                    message: `${p.name} 님의 플레이어 계정 연결을 해제할까요?\n참가자 기록은 그대로 남고, 연결만 풀립니다.`,
+                    confirmText: '연결 해제',
+                    destructive: true,
+                    onConfirm: () => {
+                      unclaimMut.mutate(p.id);
+                      onClose();
+                    },
+                  })
+                }
+                accessibilityRole="button"
+                testID="ops-participant-unclaim"
+                className="min-h-[44px] items-center justify-center rounded-md border border-error-500 active:opacity-70 dark:border-error-400"
+              >
+                <Text className="font-sans-semibold text-error-600 dark:text-error-400">
+                  플레이어 연결 해제
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
         </View>
       </SheetModal>
+
+      {/*
+        결함① 칩 카운트 시트. SheetModal 중첩 함정(위 visible 주석)과 같은 이유로 부모 시트를
+        숨긴 채 띄운다. 닫기·저장 모두 부모까지 닫아 참가자 목록으로 복귀시킨다 — 이 시트의
+        다른 액션들도 동일하게 실행 즉시 onClose() 한다(칩카운트 라운드에서 다음 참가자로 이동).
+      */}
+      {canEditChips && (
+        <ChipCountSheet
+          visible={chipSheetOpen}
+          onClose={() => {
+            setChipSheetOpen(false);
+            onClose();
+          }}
+          participant={{
+            id: p.id,
+            name: p.name,
+            entryNumber: p.entryNumber ?? null,
+            chips: p.chips,
+          }}
+          tournamentId={tournamentId}
+        />
+      )}
+
+      {/* 결함③ 정보 수정 시트 — 칩 시트와 같은 중첩 회피 규약(부모를 숨긴 채 띄운다). */}
+      <ParticipantEditSheet
+        visible={editSheetOpen}
+        onClose={() => {
+          setEditSheetOpen(false);
+          onClose();
+        }}
+        participant={{
+          id: p.id,
+          name: p.name,
+          entryNumber: p.entryNumber ?? null,
+          nationality: p.nationality ?? null,
+          phone: p.phone ?? null,
+        }}
+        tournamentId={tournamentId}
+      />
 
       {/*
         바운티 탈락자 지정 피커(현행 PlayersTab.tsx:288-324 문구·인자 그대로 이관 — 생략 금지 게이트#1).

@@ -175,7 +175,27 @@ export function applyPickedTime(
   if (!composed) return value;
 
   if (field === 'checkIn') {
-    return { ...value, checkIn: composed };
+    // 🔴 출근에도 익일 보정이 필요하다 — 없으면 **편집할 때마다 하루씩 앞으로 접힌다.**
+    //    근무일 08-10 / 출근 08-11 00:30 인 야간조 지각 입장 행에서 00:45 로 5분만 고치면,
+    //    `composed` 는 baseDate(08-10) 기준으로 조립되므로 08-10 00:45 가 되어 근무가
+    //    31.5시간(1890분)으로 부풀고 12시간 초과 **경고만** 뜬다(차단이 아니다).
+    //    퇴근 갈래는 이 보정을 갖고 있었는데 출근 갈래에만 없었다.
+    //
+    // 🔑 규칙은 "기존 출근의 달력일을 **유지**한다" 이지 "익일로 올린다" 가 아니다.
+    //    없던 익일을 만들어내지 않으므로 정상 주간 근무는 영향이 없다.
+    //    앵커가 퇴근이 아니라 **기존 출근**인 이유: 퇴근을 앵커로 쓰면 22:00 출근·익일 02:00
+    //    퇴근 행에서 출근을 23:00 으로 고칠 때 출근이 익일로 밀려 근무가 음수가 된다.
+    // 🔑 `composed` 가 이미 다음 날이면(피커의 24+ 표기) 보정하지 않는다 — 두 번 밀면 이틀 뒤다.
+    const needsNextDay =
+      value.checkIn !== null &&
+      isLaterCalendarDay(value.checkIn, baseDate) &&
+      !isLaterCalendarDay(composed, baseDate);
+    if (!needsNextDay) {
+      return { ...value, checkIn: composed };
+    }
+    const bumpedIn = new Date(composed.getTime());
+    bumpedIn.setDate(bumpedIn.getDate() + 1);
+    return { ...value, checkIn: bumpedIn };
   }
 
   // 🔴 등호를 포함하지 않는다(`<`, `<=` 아님). 퇴근==출근은 **검증 오류**이지 24시간 근무가
@@ -405,6 +425,15 @@ export function WorkTimeFields({
     ? `${formatClock(checkOut)}${isLaterCalendarDay(checkOut, overnightAnchor) ? ' (익일)' : ''}`
     : EMPTY_MARK;
 
+  // 출근 자체가 근무일 다음 날인 행(야간조 익일 입장)은 그 사실이 화면에 없으면 읽을 수 없다 —
+  // `00:30` 만 보고는 근무일 새벽인지 다음 날 새벽인지 구분이 안 된다. 저장 로직이 그 달력일을
+  // **유지**하게 됐으므로(applyPickedTime 의 checkIn 갈래), 왜 유지되는지도 보여야 한다.
+  // ⚠️ 퇴근 꼬리표와 앵커가 다르다 — 퇴근은 **출근** 기준, 출근은 **근무일(baseDate)** 기준이다.
+  //    같은 하룻밤에 꼬리표가 두 번 붙지 않게 하려는 위 정본(:398-402)과 충돌하지 않는다.
+  const checkInDisplay = checkIn
+    ? `${formatClock(checkIn)}${isLaterCalendarDay(checkIn, baseDate) ? ' (익일)' : ''}`
+    : EMPTY_MARK;
+
   const canCopyScheduled = !readOnly && !scheduledUndecided && Boolean(scheduledStart);
 
   return (
@@ -443,7 +472,7 @@ export function WorkTimeFields({
       {/* 실제 출근 — 🔴 예정으로 채우지 않는다 */}
       <TimeRow
         label="실제 출근"
-        display={checkIn ? formatClock(checkIn) : EMPTY_MARK}
+        display={checkInDisplay}
         testID="check-in-value"
         hasValue={Boolean(checkIn)}
         disabled={readOnly}

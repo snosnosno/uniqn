@@ -53,12 +53,24 @@ export function useManualRefresh(refresh: () => unknown | Promise<unknown>): Man
   const refreshRef = useRef(refresh);
   refreshRef.current = refresh;
 
+  // 🔴 중복 실행 가드를 **state 가 아니라 ref** 로 두는 이유.
+  //    예전엔 `if (refreshing) return` + `useCallback(..., [refreshing])` 이었다. 그러면
+  //    위 주석이 선언한 "정체성 고정"이 **가장 중요한 순간에** 깨진다 — 당기는 즉시
+  //    `setRefreshing(true)` 로 deps 가 바뀌어 `onRefresh` 가 새 함수가 되고, RefreshControl 은
+  //    **제스처가 진행 중인 상태에서** 새 prop 을 받는다. 26개 화면이 이 훅을 쓴다.
+  //    ref 는 렌더를 유발하지 않으므로 deps 를 비울 수 있고, 가드는 그대로 성립한다
+  //    (같은 틱에 두 번 당겨도 두 번째는 이미 true 를 본다 — state 는 배칭 때문에
+  //     오히려 이 경우를 놓칠 수 있었다).
+  //    `refreshing` state 는 **스피너 표시 전용**으로 남는다.
+  const inFlightRef = useRef(false);
+
   const onRefresh = useCallback(() => {
     // 이미 돌고 있으면 중복 실행하지 않는다(연속으로 당기는 경우).
-    if (refreshing) {
+    if (inFlightRef.current) {
       return;
     }
 
+    inFlightRef.current = true;
     setRefreshing(true);
 
     void (async () => {
@@ -70,12 +82,16 @@ export function useManualRefresh(refresh: () => unknown | Promise<unknown>): Man
           message: error instanceof Error ? error.message : String(error),
         });
       } finally {
+        // 🔑 플래그는 마운트 여부와 **무관하게** 내린다. `isMountedRef` 안에 두면 언마운트 중
+        //    완료된 새로고침이 플래그를 true 로 남겨, 같은 훅 인스턴스가 되살아났을 때
+        //    영구히 당길 수 없는 화면이 된다.
+        inFlightRef.current = false;
         if (isMountedRef.current) {
           setRefreshing(false);
         }
       }
     })();
-  }, [refreshing]);
+  }, []);
 
   return { refreshing, onRefresh };
 }

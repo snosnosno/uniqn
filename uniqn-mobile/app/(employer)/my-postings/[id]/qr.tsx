@@ -14,7 +14,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import QRCode from 'react-native-qrcode-svg';
 import { StackHeader } from '@/components/headers';
-import { Loading } from '@/components';
+import { ErrorState, Loading } from '@/components';
 import { buildVenueQRString } from '@/services/work/eventQRService';
 import { JobTitleSuffix, useJobDetailContext } from './_layout';
 
@@ -36,7 +36,7 @@ function NotFoundBody({ message }: { message: string }) {
 
 export default function JobPostingQRScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { job, isFixed, isLoading } = useJobDetailContext();
+  const { job, isFixed, isLoading, error, refresh } = useJobDetailContext();
   const { width } = useWindowDimensions();
 
   const qrValue = useMemo(() => (id ? buildVenueQRString(id) : ''), [id]);
@@ -60,6 +60,21 @@ export default function JobPostingQRScreen() {
             공고를 불러오는 중...
           </Text>
         </View>
+      );
+    }
+
+    // 조회 실패도 job=null 이라, 이 분기가 없으면 일시적 네트워크 오류가
+    // "공고를 찾을 수 없어요"로 나온다 — 사장이 공고가 사라진 줄 안다(감사 A4).
+    // 캐시된 공고가 있으면 QR 은 그린다 — QR 값은 라우트 id 만으로 만들어지므로
+    // 일시적 조회 실패로 현장 출퇴근 도구를 막을 이유가 없다.
+    if (error && !job) {
+      return (
+        <ErrorState
+          error={error}
+          title="공고를 불러오지 못했어요"
+          onRetry={refresh}
+          alwaysAllowRetry
+        />
       );
     }
 

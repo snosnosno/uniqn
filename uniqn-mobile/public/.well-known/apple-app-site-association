@@ -5,6 +5,7 @@
       {
         "appID": "UG8B64237G.com.uniqn.mobile",
         "paths": [
+          "/jobs",
           "/jobs/*",
           "/notifications/*",
           "/notices/*",
