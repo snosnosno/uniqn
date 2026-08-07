@@ -10,7 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { AppFlashList } from '@/components/ui/AppFlashList';
 import { StackHeader } from '@/components/headers';
-import { EmptyState } from '@/components/ui';
+import { EmptyState, ErrorState } from '@/components/ui';
 import { InquiryCard } from '@/components/support';
 import { useAllInquiries, useUnansweredCount } from '@/hooks/useInquiry';
 import type { Inquiry, InquiryStatus, InquiryFilters } from '@/types';
@@ -29,7 +29,7 @@ export default function AdminInquiriesScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const filters: InquiryFilters = statusFilter === 'all' ? {} : { status: statusFilter };
 
-  const { inquiries, isLoading, hasMore, fetchNextPage, refetch } = useAllInquiries({
+  const { inquiries, isLoading, hasMore, fetchNextPage, refetch, error } = useAllInquiries({
     filters,
   });
 
@@ -134,11 +134,20 @@ export default function AdminInquiriesScreen() {
         </ScrollView>
       </View>
 
-      {/* 문의 목록 */}
+      {/* 문의 목록 — 조회 실패를 "문의가 없습니다"로 그리면 미응답 문의를 통째로 놓친다(감사 A4) */}
       {isLoading && inquiries.length === 0 ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={PRIMARY_COLORS[300]} />
         </View>
+      ) : error && inquiries.length === 0 ? (
+        <ErrorState
+          error={error}
+          title="문의 목록을 불러오지 못했어요"
+          onRetry={() => {
+            void refetch();
+          }}
+          alwaysAllowRetry
+        />
       ) : (
         <AppFlashList
           data={inquiries}

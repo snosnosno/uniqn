@@ -27,7 +27,8 @@ const toast = {
 export interface UseJobPostingCollaboratorsResult {
   collaborators: JobPostingCollaboratorWithUser[];
   isLoading: boolean;
-  error: unknown;
+  /** query.error 그대로 — 화면이 ErrorState 에 넘길 수 있게 unknown 이 아닌 Error 로 좁힌다. */
+  error: Error | null;
   refetch: () => void;
   /** 협업자 추가 (workspace owner 만 — RLS 가 강제) */
   add: (userId: string) => Promise<void>;
