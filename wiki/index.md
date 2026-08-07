@@ -17,9 +17,13 @@
 - [[test-db-grants]] — 테스트 DB는 명시 GRANT + setup-cli 버전 pin (기본 default-privilege 의존 금지)
 - [[wallet-pgtap-caller-binding]] — `auth.uid()` 의존 강화가 pgTAP 하네스를 깨뜨리는 **2회 재발 클래스**: 1회차=JWT 미주입(PR#195→#198), 2회차=인라인 주입이 남긴 stale singular GUC(PR#267→#277). 테스트 JWT 주입은 헬퍼 단일 경로
 - [[knip-signal-hygiene]] — knip 신호 정화: 래칫 게이트 + 안전 삭제 프로토콜(미사용≠죽음 ~65% 보존, tsc 오라클, 배럴 협응삭제, stale-base 안전망) (PR#231)
-- [[migration-timestamp-collision]] — 병렬 세션이 같은 마이그 타임스탬프 → 병합 후 db reset `schema_migrations_pkey` 23505, 신규분 리네임 해소 (MCP-apply prod는 무관)
+- [[migration-timestamp-collision]] — 병렬 세션이 같은 마이그 타임스탬프 → 병합 후 db reset `schema_migrations_pkey` 23505, 신규분 리네임 해소. **2026-08-07 하루에 2회 재발** → 확인 시점을 "브랜치 딸 때"가 아니라 **머지 직전**으로 이동(빈 슬롯이 그 사이 채워진다). prod 는 MCP-apply라 무증상이지만 **양방향 드리프트는 별개로 존재**(PR#436)
 - [[prod-parity-baseline]] — prod가 진실: baseline squash 채택 이유(함수163vs142·정책103vs173 발산) + 가드 2중 + MCP 핫픽스=같은 PR 가드 갱신 규율 (PR#241). **2026-07-25 parity-smoke 첫 실가동**(그전엔 시크릿 미설정으로 skip을 success 처리 — fail-open 가드의 침묵) + Session pooler 접속 함정 2종
-- [[e2e-gate-absence]] — E2E가 required check가 아니라 결정적 회귀가 3 PR 전파(#327→#328 유입→#330→#331 해소). master에 branch protection 자체가 없음. 승격 선결과제=CI 먼저 required + 러너 경합 flake 해소. 그 사이 방어=화면 분리를 지키는 "진입 경로 케이스" + 죽은 로케이터 제거 (PR#331)
+- [[e2e-gate-absence]] — E2E가 required check가 아니라 결정적 회귀가 3 PR 전파(#327→#328 유입→#330→#331 해소). 그 사이 방어=화면 분리를 지키는 "진입 경로 케이스" + 죽은 로케이터 제거. **✅2026-08-07 1단계 착지(PR#432)**: branch protection 활성화, required=`Quality Gate`·`E2E Gate`. 🔑`paths` 필터 잡을 required 로 걸면 **영구 pending 데드락** → required 는 `if: always()` **애그리게이터**에 건다(`skipped`=성공). 켜는 순간 기존 열린 PR 전부 BLOCKED
+- [[error-vs-empty-state]] — 조회 실패를 빈 배열로 그리면 화면이 **성공을 가장한 안내**를 띄운다(8화면, PR#434). "모든 평가를 완료했어요"→평가 기회 소멸 · "내역 없음"→중복 신청. 🔑근본 원인은 화면이 아니라 **error·refetch 를 반환조차 않던 훅** · error 합성은 `enabled` 와 대칭 · 에러를 **세우는 경로만큼 지우는 경로**도 필요
+- [[server-validation-completeness]] — 서버 검증이 길이·XSS·형식·enum 을 다 보면서 **관계(퇴근≥출근)만** 안 봤다(PR#433). 하류의 `GREATEST(0,…)` 가 음수를 접어 **₩0 정산 확정**까지 갔다 — 방어가 오류를 **정상값으로 세탁**한다. 🔑병합 후 최종값으로 판정 · 같음(=)도 거부 · 한쪽 NULL 이면 판정 안 함
+- [[local-only-seed-reached-prod]] — 공개 레포 평문 비밀번호로 **prod admin 이 열려 있었다**(PR#427·#428). 🔑결함은 "평문이 레포에 있다"가 아니라 **로컬 전용 시드가 prod 에 적용됐다** — 레포에서 지워도 계정은 산다. 회전 필수 · **계정 수는 prod 에서 센다**(문서 4개 vs 실제 5개)
+- [[rollout-instrumentation-gap]] — "롤아웃 확인 후에 한다"고 못박은 작업(#407 REVOKE)이 **판정 수단 부재로 영구 대기** 중이다. `expo-insights` 미설치·Sentry `release`/`dist` 미태깅·앱 버전 서버 기록 0건이고, prod 트래픽 `users 27` 이라 **기다려서 로그 쌓는 방식이 성립하지 않는다**. 🔑게이트를 걸 때 **그 게이트를 열 열쇠도 같이** 만들 것 · UNMEASURED 를 1급 결과로 · 함께 prod 마이그를 **파일 바이트 그대로** 싣는 워크플로우(PR#437)
 - [[whitelist-silent-drop]] — "화이트리스트 조용한 증발" 재발 클래스(4회 실증: #194 region·#243 filled counts·conditions 9지점·#261 conditions patch) — 신규 필드는 지점 전수+읽기 방향 테스트+표시 UI 별도 확인
 - [[order-sheet-form-contract]] — 주문서 폼 계약: 3제네릭 zodResolver(z.input/z.output)·canonical 매퍼 등가성·Design B(단일화면 카드+시트)·#244 지연전환·중첩Modal embedded·update=patch conditions 상시 전달·전 타입 단일 경로+레거시 은퇴 (PR#246/#247/#261)
 - [[ops-no-money-flow]] — ops 엔진 돈-흐름 비관여 경계: 프라이즈 계산만, 바이인 결제·시드권 발급·상금 정산 금지 (관광진흥법 카지노업 유사행위 리스크)
@@ -62,3 +66,13 @@
 - [[post-1-0-5-merge-wave]] — 1.0.5 스토어 빌드 이후 머지 웨이브 12 PR(공고 도메인 감사 W1 / 근무표·스케줄 축 / 공유 3종+모션 / 웨이브가 스스로 만든 OTA 회귀) + prod 마이그 6·네이티브 변경 0 → OTA 전량 전달 가능 · 배포 사전 검증 실측 (PR#350~#362)
 - [[revenue-model-rebuild-2026-07]] — 수익모델 원점 재분석 + 운영 과금 **확정** 설계: 매칭 무료·운영 유료, 기각 후보 4종 사유, 복잡도 억제 규칙 4개(핵심=**한도 없음**). 요금 수치는 operations-billing-design 이 최신 (PR#361, 코드 0줄)
 - [[ops-console-redesign]] — ops 콘솔 리디자인+블라인드 프리셋(SDD 13태스크+후속 3묶음) + 교훈 5종(RNW pointerEvents 드롭·Pressable 중첩·RNModal z-순서·워크트리 EMFILE·parity 가드 누락 파급) — ✅PR#313 머지 `b76668b5e`
+- [[settlement-history-lost-update]] — 정산 수정 이력이 클라 read-modify-write 라 **무음 유실**(금액 분쟁의 유일 근거가 지워진다). 형제 2경로는 이미 닫혀 있었고 **컬럼 기준으로 세면 이 하나만** 남아 있었다. 🔑해법의 본체는 잠금이 아니라 **시그니처에서 이력 배열 인자를 없앤 것** — 검사는 우회되지만 없는 인자는 못 보낸다 — ✅PR#436 머지 `a6a59cf9c`(🔴prod 미적용)
+- [[logger-sentry-web-recursion]] — 웹 Sentry 폴백 로깅이 자기를 재귀 호출해 콘솔 370만건. **E2E 만성 flake 의 진짜 원인**이었다(러너 탓으로 오해). 🚨이 레포 Jest 는 **동적 import 가 항상 reject** → "호출 0회" 단언이 통째로 **빈 통과** — ✅PR#413
+- [[time-model-wave-2026-08]] — 시간 '미정' 키가 분열돼 **고정공고 정원 우회**가 열려 있었다(R0) → 센티넬은 DB 한 곳에서 정본화, 클라는 표현만(R1). 정원 0 은 "미상=통과"가 아니라 **"자리 없음=거부"**(⚠️원인 3종 중 B 는 의도적으로 열림). 편집기 3곳→한 시트·한 RPC — ✅PR#409·#410·#412·#417·#424
+- [[settlement-rpc-wave-2026-08]] — 정산 축 RPC 화 웨이브. 🔑**편도 문 금지**(지급완료로 가는 문만 만들고 취소 진입점을 안 만들었다) · 판정 복제 2건 제거(⚠️M11 축 통일은 미결) · 🚨**트리거로 쓰기 채널 좁히면 기존 pgTAP 이 깨진다 — 착수 전 `supabase/tests/` 전수 grep** — ✅PR#387·#388·#393·#400·#402·#420
+- [[notification-offline-contract-2026-08]] — "목록에 없으면 지운다"가 **관측 창 없이** 돌아 다른 달 예약을 침묵 취소. 창 밖은 "없는 것"이 아니라 **"모르는 것"**. 오프라인 TTL≠온라인 staleTime. 🔑알림 미등록 타입은 **증상** — 등록표를 늘리기 전에 **값의 출생**을 물어라(리팩터 회귀였다) — ✅PR#396·#397·#398·#404·#429
+- [[dead-circuit-cleanup-2026-08]] — 죽은 회로 30건: **제거 14 · 완성 9**. 🔑"안 쓰인다"에는 *필요 없었다*와 *배선이 덜 끝났다*가 섞여 있어 전자로 단정하면 **미완성 기능을 영구 삭제**한다. 대표 사례=복원하지 않으면서 성공한 척하던 **거짓 Undo** — ✅PR#406·#408
+- [[address-geocoding-2026-08]] — 주소 검색 결과를 **탭해도 입력 안 되던** 원인=WebView 문서에 실제 origin 미부여(무음 실패라 UI 버그로 오진). 네이티브/웹 분기 파일은 **쌍으로** 확인. 🔑카카오 `x`=경도 `y`=위도(뒤집어도 그럴듯한 위치가 나와 눈으로 못 잡는다) — ✅PR#391·#411·#419
+- [[ui-device-report-2026-08]] — 실기기 UI 리포트: `RefreshControl` 을 쿼리 상태에 묶어 **유령 스피너** · `stickyHeaderIndices`+Fragment(=자식 1개로 셈) 스크롤 잠김 · **SafeArea 가드가 있었는데 vacuous** · iOS `canOpenURL` 미선언 스킴은 항상 false(빌더 테스트가 빈 통과) · **개수 비교로 사용자 조작을 판정하면 오고지** — ✅PR#422·#423·#425·#426
+- [[account-withdrawal-pipeline]] — 탈퇴 요청 **0건이 "수요 없음"이 아니라 "기능 불능"**이었다. 🔑0 을 만나면 **왜 0인가**를 먼저 확인(정상 0과 이상 0은 같은 숫자, 정반대 결론) · 🚨RLS 테이블의 pgTAP 0건은 "없다"가 아니라 **"안 보인다"**일 수 있다 — ✅PR#427
+- [[ops-followups-2026-08]] — 전광판·QR 링크가 **DNS 미해석 도메인**을 가리켰다(설계에서 "선택적"이던 인프라가 코드엔 전제로 박힘). 칩 입력이 realtime 재렌더마다 되돌아간 원인=**복제한 effect 관용구의 전제**(deps 인라인 객체). 🚨**카운트 가드는 숫자가 우연히 같으면 머지 충돌이 안 난다** — ✅PR#435·#438

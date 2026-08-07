@@ -72,6 +72,7 @@ D3 원칙: **테이블 DML은 전부 SECDEF RPC 경유**(Presentation/Hooks/Serv
 ## S1 전면 개방(회원 전원) + 대회사 레일 (PR#265, 2026-07-17 머지 — 코드 검증됨)
 ops를 **employer 전용 발견 표면 → 회원 전원 개방**. 서버는 이미 전원 지원(`ops_create_tournament`=caller-binding만·역할 게이트 없음·`job_posting_id` 선택적) — S1은 **발견 표면을 여는 것**이지 권한 확장이 아니다.
 - **진입 허브(진입 표면 조합)**: 프로필 메뉴 + 1회성 신기능 안내(`OpsHubIntroCard`) + 스케줄 빈상태 크로스링크. 게이트 = `app_config` 플래그 `ops_hub_enabled` **기본 OFF**(`weekly_grid_enabled` 패턴, `useOpsHubEnabled`). `(ops)` 라우트 자체는 플래그 무관하게 접근 가능 — 발견 표면만 게이트.
+  - 🔒 **2026-08-08 재확인·확정(결함⑥)**: 레이아웃에 플래그 게이트를 **걸지 않는다**. 근거 3개 — ①진입해도 `is_ops_member` 아닌 대회는 RLS 로 한 행도 안 보여 권한 상승이 아니다 ②플래그는 `app_config` **원격값**이라 롤아웃 중 OFF 로 되돌리는 순간 **진행 중인 라이브 대회 운영이 화면째로 끊긴다**(라이브 화면의 원격 킬스위치 = 나쁜 교환) ③플래그 ON 직전 QA·스토어 심사·기존 딥링크 진입이 막힌다. 공개뷰는 `app/(public)/monitor` 로 이 그룹 밖이라 무관. 계약 고정 = `app/(ops)/_layout.tsx` 헤더 주석 + `app/(ops)/__tests__/OpsLayout.test.tsx`(게이트를 심으면 red).
 - **악용 방어**: 공개뷰 익명 신고 — **신규 anon RPC 없이**(=2 계약 보존) 전용 `ops_public_reports` 테이블 + `BEFORE INSERT` 가드 트리거(토큰 해석·8자 절단 저장·대회당 시간당 5건 rate limit). `opsReportService.ts`.
 - **퍼널 계측**: `analytics_events` INSERT 전용(노출→진입→생성→열람→claim 전환, 조회 admin). 훅 `useOpsHubImpressionOnce`·`useOpsHubEnteredOnce`, `analyticsService.ts`. `ops_limit_reached`는 S2 한도 선배선.
 - **TV 모니터 프리셋**: `ops_tournaments.monitor_config` jsonb(NULL=기본 full+5슬롯)·`ops_set_monitor_config`(owner 전용·서버 화이트리스트 재조립 저장→비-PII 보증)·모니터 스냅샷에 payouts 상위5+nextBreak 편승. `MonitorConfigCard`·`monitor/registry.ts`.

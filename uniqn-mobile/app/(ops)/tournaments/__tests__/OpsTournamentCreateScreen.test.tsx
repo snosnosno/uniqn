@@ -125,6 +125,56 @@ describe('OpsTournamentCreateScreen — 공고 연결(선택) 필드 (1e Task 9)
   });
 });
 
+/**
+ * 결함 ④ — 날짜가 손입력 자유 텍스트라 "7/1" 이 저장에 성공하고 '이어서 운영' 카드가
+ * 조용히 사라졌다. 이제 달력 선택만 가능하고, 기본값이 **KST 오늘**이라 카드가 실제로 뜬다.
+ */
+describe('OpsTournamentCreateScreen — 대회 날짜 (결함 ④)', () => {
+  beforeEach(() => {
+    mockReplace.mockReset();
+    mockMutate.mockReset();
+    mockUseLocalSearchParams.mockReturnValue({});
+    // KST 00~09시 구간(= UTC 전날 15~24시)을 고정한다 — 하루 밀림이 여기서만 드러난다.
+    jest.useFakeTimers().setSystemTime(Date.parse('2026-08-07T16:30:00.000Z'));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('날짜 손입력 TextInput 이 없다(달력 선택 전용)', () => {
+    const { queryByPlaceholderText } = render(<OpsTournamentCreateScreen />);
+    expect(queryByPlaceholderText('2026-07-01')).toBeNull();
+  });
+
+  it('기본 eventDate = KST 오늘(YYYY-MM-DD)로 생성 호출된다', () => {
+    const { getByPlaceholderText, getByText } = render(<OpsTournamentCreateScreen />);
+
+    fireEvent.changeText(getByPlaceholderText('예: 수요 딥스택'), '날짜 기본값 대회');
+    fireEvent.press(getByText('대회 만들기'));
+
+    expect(mockMutate).toHaveBeenCalledWith(
+      expect.objectContaining({ eventDate: '2026-08-08' }),
+      expect.any(Object)
+    );
+  });
+
+  it('날짜를 비우면 eventDate 는 undefined 로 나간다(빈 문자열 금지)', () => {
+    const { getByPlaceholderText, getByLabelText, getByText } = render(
+      <OpsTournamentCreateScreen />
+    );
+
+    fireEvent.press(getByLabelText('날짜 초기화'));
+    fireEvent.changeText(getByPlaceholderText('예: 수요 딥스택'), '날짜 없는 대회');
+    fireEvent.press(getByText('대회 만들기'));
+
+    expect(mockMutate).toHaveBeenCalledWith(
+      expect.objectContaining({ eventDate: undefined }),
+      expect.any(Object)
+    );
+  });
+});
+
 describe('OpsTournamentCreateScreen — 기본 블라인드 30레벨 시드 (B2)', () => {
   beforeEach(() => {
     mockReplace.mockReset();

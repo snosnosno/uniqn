@@ -24,6 +24,11 @@ import type {
   OpsTableLockType,
 } from '@/types/ops';
 import type { PrizeCorrectionInput } from '@/schemas/opsPrize.schema';
+import type {
+  ChipCountInput,
+  NoShowInput,
+  ParticipantUpdateInput,
+} from '@/schemas/opsParticipant.schema';
 import type { StaffRole } from '@/types/role';
 
 const toast = {
@@ -265,6 +270,160 @@ export function useCorrectPrize(tournamentId: string) {
     onError: (error) => {
       logger.error('ops 상금 정정 실패', toError(error));
       toast.error(extractUserMessage(error) || '상금 정정에 실패했습니다');
+    },
+  });
+}
+
+/**
+ * 결함①: 칩 카운트 수동 입력. 서버가 chips 를 쓰면 DEFERRED 트리거가 live_stats 를 재계산하므로
+ * 전광판·평균스택은 realtime 으로도 따라오지만, 구독이 끊긴 경우를 대비해 liveStats 도 무효화한다.
+ * 이벤트(HistoryTab)는 append 되므로 events 도 함께 무효화.
+ */
+export function useSetParticipantChips(tournamentId: string) {
+  const queryClient = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (input: ChipCountInput) =>
+      opsParticipantService.setParticipantChips(input, requireActor(actorId)),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.liveStats(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.events(tournamentId) });
+      // 서버 no-op(동일값)은 이벤트도 남지 않으므로 "변경됨" 이라고 말하지 않는다.
+      toast.success(
+        result.chips === result.chipsBefore
+          ? '칩 수량이 그대로예요'
+          : `칩 ${result.chips.toLocaleString('ko-KR')}으로 수정됨`
+      );
+    },
+    onError: (error) => {
+      logger.error('ops 칩 카운트 실패', toError(error));
+      toast.error(extractUserMessage(error) || '칩 카운트에 실패했습니다');
+    },
+  });
+}
+
+/**
+ * 결함②: 노쇼 표시/취소. 상태만 바꾸므로 좌석·live_stats 는 건드리지 않는다
+ * (checked_in↔no_show 는 active 집계 밖 — pgTAP 이 playing 불변을 고정한다).
+ * 이벤트(HistoryTab)는 append 되므로 events 는 무효화한다.
+ */
+export function useSetParticipantNoShow(tournamentId: string) {
+  const queryClient = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (input: NoShowInput) =>
+      opsParticipantService.setParticipantNoShow(input, requireActor(actorId)),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.events(tournamentId) });
+      // 서버 no-op(이미 목표 상태)은 이벤트도 남지 않으므로 "처리됨" 이라고 말하지 않는다.
+      if (result.status === result.statusBefore) {
+        toast.success(result.status === 'no_show' ? '이미 노쇼예요' : '이미 대기 상태예요');
+        return;
+      }
+      toast.success(result.status === 'no_show' ? '노쇼로 표시했어요' : '노쇼를 취소했어요');
+    },
+    onError: (error) => {
+      logger.error('ops 노쇼 설정 실패', toError(error));
+      toast.error(extractUserMessage(error) || '노쇼 처리에 실패했습니다');
+    },
+  });
+}
+
+/**
+ * 결함③: 참가자 등록 정보 정정. 이름은 좌석·전광판·플레이어뷰에 실려 나가므로 seats·liveStats 도
+ * 무효화한다(구독이 끊긴 경우 대비 — realtime 이 오면 중복이지만 비용은 캐시 재검증 1회다).
+ */
+export function useUpdateParticipant(tournamentId: string) {
+  const queryClient = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (input: ParticipantUpdateInput) =>
+      opsParticipantService.updateParticipant(input, requireActor(actorId)),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.events(tournamentId) });
+      // 서버 no-op(무변경)은 이벤트도 남지 않으므로 "수정됨" 이라고 말하지 않는다.
+      toast.success(result.changed ? '참가자 정보를 수정했어요' : '변경된 내용이 없어요');
+    },
+    onError: (error) => {
+      logger.error('ops 참가자 정정 실패', toError(error));
+      toast.error(extractUserMessage(error) || '참가자 정보 수정에 실패했습니다');
+    },
+  });
+}
+
+/**
+ * 결함③: 오등록 참가자 제거(비가역). 행이 사라지면 entries·prize_pool 이 재계산되므로
+ * liveStats 를 함께 무효화한다 — 이 RPC 의 목적 자체가 부풀려진 상금 풀을 되돌리는 것이다.
+ */
+export function useDeleteParticipant(tournamentId: string) {
+  const queryClient = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (participantId: string) =>
+      opsParticipantService.deleteParticipant(participantId, requireActor(actorId)),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.liveStats(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.events(tournamentId) });
+      toast.success(
+        `#${result.entryNumber ?? '-'} ${result.name} 등록을 취소했어요 (상금 풀에서 제외)`
+      );
+    },
+    onError: (error) => {
+      logger.error('ops 등록 취소 실패', toError(error));
+      toast.error(extractUserMessage(error) || '등록 취소에 실패했습니다');
+    },
+  });
+}
+
+/**
+ * 결함③: 대회 보관/복원(undo-first). 목록 쿼리가 보관분을 필터하므로 목록·상세 모두 무효화한다.
+ */
+export function useSetTournamentArchived(tournamentId: string) {
+  const queryClient = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (archived: boolean) =>
+      opsTournamentService.setArchived(tournamentId, requireActor(actorId), archived),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournaments() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournamentDetail(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.events(tournamentId) });
+      if (!result.changed) {
+        toast.success(result.archivedAt ? '이미 보관된 대회예요' : '이미 활성 대회예요');
+        return;
+      }
+      toast.success(result.archivedAt ? '대회를 보관했어요' : '대회를 복원했어요');
+    },
+    onError: (error) => {
+      logger.error('ops 대회 보관 설정 실패', toError(error));
+      toast.error(extractUserMessage(error) || '대회 보관 설정에 실패했습니다');
+    },
+  });
+}
+
+/**
+ * 결함⑤: 플레이어 계정 연결 해제. `player_user_id` 만 바꾸므로 참가자 목록만 무효화한다
+ * (이벤트는 서버가 append 하지 않는다 — claim 쪽과 대칭인 기존 상태).
+ */
+export function useUnclaimParticipant(tournamentId: string) {
+  const queryClient = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (participantId: string) =>
+      opsParticipantService.unclaimParticipant(participantId, requireActor(actorId)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
+      toast.success('플레이어 연결을 해제했어요');
+    },
+    onError: (error) => {
+      logger.error('ops 플레이어 연결 해제 실패', toError(error));
+      toast.error(extractUserMessage(error) || '플레이어 연결 해제에 실패했습니다');
     },
   });
 }

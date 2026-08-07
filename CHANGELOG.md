@@ -7,21 +7,9 @@
 
 ## [Unreleased] - 2026-08-07
 
-> 1.0.5 스토어 빌드(2026-07-26, iOS 43 / Android 41) 이후 머지분.
+> 1.0.5 스토어 빌드(2026-07-26, iOS 43 / Android 41) 이후 머지분. **네이티브 구성 변경 0건** → `version` bump 없이 OTA 로 전량 전달된다. 웨이브 전체 합성 = `wiki/sources/post-1-0-5-merge-wave.md`.
 >
-> 🔴 **이 브랜치가 `version` 을 1.0.5 → 1.0.6 으로 올린다** — Android App Links 경로를 좁히는
-> **네이티브 구성 변경**이 들어 있다(아래 Fixed). `runtimeVersion: appVersion` 정책상 네이티브를
-> 바꾸면 version 을 반드시 올려야 같은 version 을 가진 구 빌드로 OTA 가 새지 않는다
-> (`app.config.ts:435` 규율).
->
-> ⚠️ **머지 시점 = 새 스토어 빌드를 낼 시점이다.** 머지하는 순간 이후의 모든 `eas update` 가
-> runtime 1.0.6 으로 발행되어 **현재 설치된 1.0.5 기기에는 닿지 않는다.** 그래서 이 변경은
-> 같은 세션에서 나온 OTA 가능분(ops 공개 링크 폴백 · AASA `/jobs`)과 **분리해서** 대기시켰고,
-> 그쪽은 #435 로 먼저 머지됐다. 그 이전에 머지된 항목들은 여전히 1.0.5 OTA 대상이다.
->
-> ℹ️ AASA(`public/.well-known/apple-app-site-association`)는 네이티브 바이너리가 아니라 **웹 배포물**이라
-> `version` bump 대상이 아니다 — 그래서 짝인 `/jobs` 추가만 먼저 나갈 수 있었다.
-> 웨이브 전체 합성 = `wiki/sources/post-1-0-5-merge-wave.md`.
+> ℹ️ AASA(`public/.well-known/apple-app-site-association`)는 네이티브 바이너리가 아니라 **웹 배포물**이다 — 이 파일 변경은 CF Pages 배포로 전달되며 `version` bump 대상이 아니다. 짝이 되는 Android intentFilter 축소는 네이티브 구성이라 별도 브랜치(`fix/ops-native-deeplink-20260807`)에서 **새 스토어 빌드 시점까지 대기 중**이다.
 
 ### Security
 
@@ -43,10 +31,20 @@
 - **근무표 "주간" 표현 제거 — `weeklyGrid` → `workSchedule`** (PR#354, prod 마이그 `20260727112025` 적용완료): 라이브 결함 7종 동반 수정. ⚠️ DB 계약 키 `weekly_grid_enabled` 와 딥링크 구 세그먼트 `weekly-grid` 는 **리네임하지 않는다**(하위호환).
 - **근무표 빼기를 소프트 취소로 전환** (PR#357, prod 마이그 적용완료): 하드 `DELETE` → `status='cancelled'`. 취소 알림이 복구되고 부족 인원 계산에서 죽은 공고가 빠진다. 취소 행이 스태프 목록에 남지만 `StatusMapper.workLogToSchedule` 매핑으로 '취소' 카드로 표시되고 통계(완료/확정/지원)엔 미산입된다.
 - **앱 전반 과잉·중복·죽은 검증 정리 12건 — 확정자 일정 잠금 폐지** (PR#353, DB 변경 0): 넓은 잠금에 근거가 없었다. total/capacity 전이는 DB 트리거가 자동 재계산하고 `work_logs` 는 비정규화 사본이라 편집이 영향을 주지 않는다. 실질 위험은 **역할 소멸 → 정산 기본단가 폴백** 하나뿐이었고 옛 가드는 그 축을 겨냥하지도 못했다(역할 추가는 막으면서 시급 인하는 허용). 죽은 가드 4종·삼중 중복 검증·비밀번호 연속문자 규칙 제거, 공고 제목 상한 25→40.
+- **개인 정산 설정 저장을 서버 RPC 로 이관 — 이력 Lost Update 차단** (2026-08-07, 감사 S-D, prod 마이그 `20260807190000` 신규): 정산 금액 수정 저장이 클라이언트 read-modify-write 였다 — `select(work_log)` → `select(posting)` → 클라에서 `settlement_modification_history` 배열을 읽어 append → `update` 통째 덮어쓰기. **잠금이 없어 두 요청이 겹치면 앞 이력 항목이 에러 없이 사라진다**(T1 read `[A]` · T2 read `[A]` · T1 write `[A,B]` · T2 write `[A,C]` → B 소멸). 정산 수정 이력은 금액 분쟁 시 "누가 언제 얼마로 바꿨나"의 유일한 근거라, 무음 유실은 금전 사고의 증거를 지우는 것과 같다. 같은 컬럼에 쓰는 형제 경로 둘은 이미 닫혀 있었다(`update_work_log_slot` #424 · `set_work_log_payroll_status` #402) — **세 경로 중 이 하나만 남아 있었다.** 신규 RPC `update_work_log_custom_settlement` 가 `FOR UPDATE` 로 행을 잡고 **append 를 UPDATE 문 안에서** 수행한다. 시그니처에 이력 배열 인자가 없으므로 클라가 읽은 배열을 되돌려보낼 방법 자체가 사라졌다(그 구조가 회귀 방어의 본체라 pgTAP 단언 1 이 시그니처를 고정한다). 함께 서버로 넘어간 것: 소유권 판정(형제 RPC 3종과 **글자 그대로 같은 술어** — 갈라지면 한쪽이 넓어져도 아무도 모른다) · 정산 완료 동결(`AlreadySettledError` → 서버 `ALREADY_SETTLED`, 매핑이 같은 에러 클래스로 되돌린다) · 이력 오염 폴백(클라 zod `safeParse` → 서버 `jsonb_typeof`) · `modifiedBy`/`modifiedAt` 재판정(클라가 보낸 값을 신뢰하지 않는다). 부수로 `SettlementRepository` 의 **읽기 계층이 통째로 죽어 삭제됐다** — 쓰기 경로 5종이 전부 SECDEF RPC 가 되면서 소유권 선행 조회(`validateWorkLogOwnership`)·행 변환(`toWorkLog`/`toJobPosting`)·SELECT 화이트리스트 의존이 모두 무용지물이 됐고, 저장 1회의 왕복이 **3회 → 1회**로 줄었다. ⚠️ `custom_*` 직접 PATCH 는 아직 열려 있다 — 채널 핀·REVOKE 는 롤아웃 확인이 선행 조건이라 R4 의 몫이다(핀을 지금 걸면 `worklog_settled_custom_lock.test.sql` 케이스 3 의 "미정산 건 직접 변경 허용" 계약이 red 가 되는데, 그건 회귀가 아니라 R4 와 한 묶음으로 뒤집어야 할 계약 전환이다). 파리티 200 → **201**(정책 111 불변). 검증: pgTAP 신규 19/19 PASS + **Red-Green**(가드 2종을 되돌리자 정확히 단언 13·15 만 red → 복원 후 전량 green) · 형제 pgTAP 3파일 무회귀(총 59 PASS) · `npm run quality` exit 0 · jest 전량 통과.
+- **정산 완료 애널리틱스 복구 — 두 달간 발화하지 않던 계측** (2026-08-07, 감사 S-D, DB 변경 0): `trackSettlementComplete` 의 호출부가 **0곳**이었다. 유일한 호출부이던 `workLogService.updatePayrollStatus` 가 #402(정산 RPC 화) 이후 UI 소비자 없는 죽은 회로가 됐고, #426 웨이브가 그 함수를 지울 때 비로소 드러났다 — **삭제가 계측을 없앤 게 아니라 이미 없던 것을 드러낸 것이다.** 🔑 그때 남긴 묘비는 "`settlementMutation.updateSettlementStatus` 에 붙여라"고 적었는데 **그 지목이 틀렸다**: 서버 `set_work_log_payroll_status` 는 `p_status='completed'` 진입을 `INVALID_STATUS` 로 막으므로(확정은 `settle_work_log` 전담) 그 경로는 정산 **완료**를 표현할 수 없고 넘길 금액도 없다. 거기 붙였다면 영원히 발화하지 않는 계측을 "복구했다"고 착각했을 것이다. 실제 확정 경로인 `settleWorkLog`·`bulkSettlement` 두 곳에 붙였다 — 개별은 **서버가 재계산한 canonical 금액**으로(클라 미리보기가 아니라), 일괄은 **성공분만** 집계한다(리포지토리가 실패를 throw 하지 않고 `{success:false}` DTO 로 접어 반환하는 계약이라, 그냥 붙이면 실패한 정산까지 완료로 잡힌다).
 - **데스크톱 웹 공유를 클립보드 복사로 전환** (PR#358, DB 변경 0): 갈림 기준은 "Web Share API 지원 여부"가 아니라 **"모바일인가"** 다 — 데스크톱 브라우저도 API 를 지원하지만 공유 시트에 카톡이 없어 사용자에겐 먹통으로 보였다. `AbortError` 를 사용자 취소로 단정하지 않도록 고쳤다(activation 없는 share 도 같은 에러를 던져 폴백이 침묵했다).
 
 ### Fixed
 
+- **머지 리뷰 MEDIUM 5건 — 주석이 선언한 계약이 코드에서 지켜지지 않던 자리들** (2026-08-08, prod 마이그 `20260808120000` 1건):
+  - **당기는 순간 `onRefresh` 정체성이 바뀌어 iOS 제스처가 끊길 수 있었다** (`useManualRefresh`, 26개 화면 적용): 훅 주석이 "onRefresh 정체성 고정 — 매 렌더 새 함수면 iOS 제스처가 끊긴다"고 선언해 놓고 `useCallback(..., [refreshing])` 이었다. 당기는 즉시 `setRefreshing(true)` 로 deps 가 바뀌므로 **주석이 막으려던 바로 그 순간에** 새 함수가 나간다. 중복 실행 가드를 state 에서 `useRef` 로 옮겨 deps 를 비웠다 — 부수로 같은 틱 연타도 확실히 막힌다(state 는 배칭 때문에 놓칠 수 있었다). 플래그 해제를 `isMountedRef` 밖에 둔 것도 의도적이다: 안에 두면 언마운트 중 완료된 새로고침이 플래그를 true 로 남겨 화면이 영구히 당길 수 없게 된다.
+  - **자정 이후 출근이 편집할 때마다 하루씩 앞으로 접혔다** (`WorkTimeFields.applyPickedTime`): 퇴근 갈래에는 익일 보정이 있는데 **출근 갈래에는 아예 없었다.** 근무일 08-10 / 출근 08-11 00:30 인 야간조 지각 입장 행에서 00:45 로 5분만 고치면 08-10 00:45 로 조립돼 근무가 **31.5시간(1890분)** 이 되고 12시간 초과 **경고만** 떴다(차단 아님). 규칙은 "익일로 올린다"가 아니라 **"기존 출근의 달력일을 유지한다"** 로 잡았다 — 없던 익일을 만들지 않으므로 주간 근무는 무영향이고, 앵커를 퇴근으로 잡으면 22:00 출근·익일 02:00 퇴근 행에서 출근을 23:00 으로 고칠 때 근무가 음수가 된다. 함께 출근 칸에도 `(익일)` 꼬리표를 붙였다(유지되는 이유가 화면에 보여야 한다). ⚠️ 퇴근 꼬리표는 **출근** 기준, 출근 꼬리표는 **근무일** 기준 — 앵커가 다르다.
+  - **퇴근을 지워도 `end_time_source='manual'` 이 남았다** (마이그 `20260808120000`): 서버가 `v_set_check_out` 이 참이기만 하면 'manual' 을 박았는데 "건드린다"에는 **지우는 것**도 포함된다. 그래서 `checkOut:null` 패치 뒤 **퇴근 시각이 없는데 "사람이 입력함"이라고 주장하는 행**이 남았다(화면의 "QR 기록" 배지 판정이 이 컬럼이다). 형제 경로 `ConfirmedStaffRepository.ts:552` 는 이 분기를 갖고 있었다 — 서버 이관 때만 빠졌다. 🔑 마이그는 직전 정의(680줄)의 **파일을 그대로 복사한 뒤 한 줄만 치환**해 만들었다(diff 실측 -1/+9, 그 외 바이트 무변경) — 손으로 옮겨 적으면 주석 축약으로 정본이 갈리고 동작이 같아 테스트로도 안 잡힌다.
+  - **묶음 토글을 조작하기만 해도 "같은 조건이라 하나로 합쳐졌어요"가 떴다** (`scheduleNotices`): `bundleToggledByUser` 가 ②(묶음해제)만 건너뛰고 ③(자동병합)은 그대로 탔다. 토글을 켜면 카드가 실제로 합쳐져 `after.length < before.length` 가 참이 되므로, **사용자가 방금 누른 스위치의 결과를 시스템이 한 일처럼 되읽어준다** — 계기판 `order_sheet.auto_merge` 도 그 조작으로 오염된다. 카드 수 축소 항만 건너뛰고 **dedupe 축은 남겼다**(토글과 무관한 조용한 날짜 삭제는 반드시 고지, Eng F-4).
+  - **`expectedDateCount` 가 타입이 아니라 주석으로만 강제됐다** (`scheduleNotices`): 옵셔널인데 **폴백(`dateCount(before)`)이 곧 버그 동작**이라 호출부 3곳 중 1곳만 지켰다. 판별 유니온(`datesTouched: true` + 필수 `expectedDateCount` / 아니면 `expectedDateCount?: never`)으로 옮겨 컴파일 단계에서 강제한다 — 날짜를 안 건드리는 경로에서는 그 폴백이 **정당**하므로 무조건 필수화하지 않았다.
+
+  검증: 신규 회귀 테스트 7건 + pgTAP 2건 · **Red-Green 전량**(JS 3건 되돌리자 새 테스트 4개만 red / pgTAP 은 직전 정의로 되돌리자 43번만 `have: manual, want: NULL`) · `npm run quality` exit 0 · jest 647 스위트 7333 테스트 통과. 파리티 불변(201/111 — `CREATE OR REPLACE`).
 - 🔴 **Android 가 uniqn.app 전 경로를 가로채 브라우저용 링크까지 앱이 삼키던 것** (2026-08-07, DB 변경 0, **네이티브 구성 변경 — 1.0.6 새 빌드 필요, OTA 불가**): `app.config.ts` 의 App Links intentFilter 가 `pathPrefix: '/'` 였다. 프로덕션 Android 빌드가 설치된 기기에서는 **uniqn.app 의 모든 URL** 이 앱으로 열렸다는 뜻이다. 피해 표면 두 가지 — ①ops 공개 링크(`/monitor/:token` 전광판·`/live/:token` 플레이어 QR)는 참가자·TV 로 보내는 링크인데 앱이 가로챈다 ②`/privacy.html`·`/guide.html` 같은 정적 페이지는 **라우터에 대응 라우트조차 없어** 앱에서 열면 not-found 로 떨어진다(스토어 심사 노트에 넣는 URL 이다). iOS 는 AASA 에 6경로만 적혀 있어 애초에 이 문제가 없었다 — **같은 링크가 플랫폼별로 다른 곳에서 열리고 있었다.** 고침은 intentFilter 를 AASA 와 같은 목록(+`/reset-password`)으로 좁힌 것이다. `/reset-password` 만 의도적 비대칭으로 남겼다 — Android 는 앱이 프래그먼트 토큰을 직접 채택하는 경로가 이미 출하돼 있고(`adoptRecoverySessionFromUrl`, PR#294·#295), iOS 는 웹 `detectSessionInUrl` 로 처리한다. 둘 다 동작하므로 검증된 현행을 건드리지 않았다. 검증: `APP_ENV=production npx expo config` 로 평가된 intentFilter data 7종 확인 · `tsc --noEmit` exit 0. ⚠️ 짝이 되는 AASA `/jobs` 추가는 **웹 배포로 전달되므로** 별도 PR 로 먼저 나갔다(같은 세션, ops 공개 링크 폴백과 함께).
 - **ops 공개 링크가 존재하지 않는 도메인을 가리키던 것** (2026-08-07, DB 변경 0, OTA 로 전달 가능): 네이티브에서 공유하는 전광판 링크·플레이어 QR 이 `https://ops.uniqn.app` 로 나갔는데 그 도메인은 **DNS 가 해석되지 않는다**(실측: `nslookup` 무응답, `curl` exit 6). ops 전용 2nd Cloudflare Pages 프로젝트는 1c 설계에서 "브랜딩용·비차단"으로 잡혔다가 끝내 만들어지지 않았고, 공개 라우트는 처음부터 메인 도메인의 SPA fallback(`public/_redirects`)으로 서빙되고 있었다 — 즉 **폴백 상수만 화석으로 남아 있었다.** 웹은 `window.location.origin` 을 우선하므로 원래 정상이었고 깨져 있던 것은 네이티브에서 나가는 링크뿐이다. `getOpsBaseUrl()` 폴백을 인증 콜백이 쓰던 기존 상수 `APP_WEB_ORIGIN` 으로 교체하고(문자열 재작성 대신 재사용), 존재하지 않는 CF 프로젝트를 가리키던 `npm run deploy:ops` 별칭을 제거했다. `EXPO_PUBLIC_OPS_URL` 은 optional 로 유지 — 나중에 전용 도메인을 붙일 탈출구이며 `.env.example` 에 용도를 적었다. 검증: 신규 회귀 테스트 6/6 통과, 폴백을 옛 값으로 되돌리면 4건 실패(Red-Green) · `tsc --noEmit` exit 0 · eslint 0 errors.
 - **공고 목록 공유 링크만 iOS 에서 앱으로 안 열리던 것** (2026-08-07, DB 변경 0, **웹 배포로 전달**): AASA 의 iOS 경로 패턴에 `/jobs`(정확 일치)를 추가했다. 공고 **목록** 공유 링크(`useBulkShare.ts:107`)가 `https://uniqn.app/jobs` 인데 기존 패턴 `/jobs/*` 는 슬래시 뒤 세그먼트를 요구해 이 링크만 매칭에서 빠졌다(상세 링크 `/jobs/:id` 는 정상이었다). AASA 는 웹 배포물이라 새 빌드 없이 전달된다 — Apple CDN 캐시 때문에 즉시 반영은 아닐 수 있다.

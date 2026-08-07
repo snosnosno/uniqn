@@ -42,7 +42,7 @@
 --    tr_work_logs_pin_payroll 도 발화하지 않는다 — jpc_test_set_user() 로 충분하다.
 -- ============================================================
 BEGIN;
-SELECT plan(41);
+SELECT plan(43);
 
 -- ── 픽스처 ──────────────────────────────────────────────────
 -- application_id 를 NULL 로 둔다(add_direct_staff 산 행의 형태). 이 파일은 실적 축만 보므로
@@ -608,6 +608,34 @@ SELECT throws_like(
          current_setting('wa.wl_id')),
   '%퇴근 시간은 출근 시간보다 뒤여야 합니다%',
   '한쪽만 패치해도 기존 값과의 순서가 깨지면 거부한다 (병합 후 판정)');
+
+-- ============================================================
+-- 🔑 4번의 반대편 — 퇴근을 **지우면** 출처도 지운다
+--    (머지 리뷰 MEDIUM 4, 마이그 20260808120000)
+--
+-- 예전엔 `v_set_check_out` 이 참이기만 하면 'manual' 을 박았다. "건드린다"에는 **지우는 것**도
+-- 포함되므로, `checkOut:null` 패치에도 출처가 'manual' 로 남아 **퇴근 시각이 없는데
+-- "사람이 입력함" 이라고 주장하는 행**이 생겼다. 화면의 "QR 기록" 배지 판정이 이 컬럼이다.
+-- 형제 경로 ConfirmedStaffRepository.ts:552 는 이 분기를 갖고 있었다 — 서버 이관 때만 빠졌다.
+--
+-- ⚠️ 위 4번('사람이 쓰면 manual')과 **짝으로** 읽어야 한다. 한쪽만 있으면
+--    "항상 manual" 도, "항상 NULL" 도 통과한다.
+-- ⚠️ 이 파일은 한 행을 순차로 굴리는 구조라 이 케이스는 **맨 끝**에 둔다 —
+--    중간에 넣으면 update 를 2회 더 부르게 되어 modification_history 길이 단언(16번)이 밀린다.
+-- ============================================================
+DO $$
+BEGIN
+  PERFORM public.update_work_log_slot(
+    current_setting('wa.wl_id')::uuid,
+    jsonb_build_object('checkOut', NULL, 'reason', '퇴근 기록 취소')
+  );
+END $$;
+
+SELECT is((SELECT check_out_ts FROM public.work_logs WHERE id = current_setting('wa.wl_id')::uuid),
+          NULL, '퇴근을 지우면 check_out_ts 가 NULL 이 된다');
+
+SELECT is((SELECT end_time_source FROM public.work_logs WHERE id = current_setting('wa.wl_id')::uuid),
+          NULL, '퇴근을 지우면 end_time_source 도 함께 지워진다 (manual 잔류 금지)');
 
 SELECT * FROM finish();
 ROLLBACK;

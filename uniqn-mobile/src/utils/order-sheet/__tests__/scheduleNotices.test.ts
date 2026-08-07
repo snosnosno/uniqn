@@ -89,27 +89,55 @@ describe('묶음 해제 (§3.5 자동 해제 고지)', () => {
     expect(diagnoseScheduleChange(before, after, { bundleToggledByUser: true })).toBeNull();
   });
 
+  // 🔑 리뷰 MEDIUM 6 회귀 가드 — `bundleToggledByUser` 가 ②(묶음해제)만 건너뛰고
+  //    ③(자동병합)은 그대로 타던 구멍. 토글을 **켜면** 카드가 실제로 합쳐져
+  //    `after.length < before.length` 가 참이 되고, 사용자가 방금 누른 스위치의 결과가
+  //    "같은 조건이라 하나로 합쳐졌어요" 로 되읽힌다. 계기판 order_sheet.auto_merge 도 오염된다.
+  it('묶음 토글을 켜서 카드가 합쳐진 경우는 자동병합으로 알리지 않는다', () => {
+    const before = [g(['2026-08-10'], A, false), g(['2026-08-11'], A, false)];
+    const after = [g(['2026-08-10', '2026-08-11'], A, true)];
+    expect(diagnoseScheduleChange(before, after, { bundleToggledByUser: true })).toBeNull();
+  });
+
+  // 그 반대편 — 토글과 무관한 조용한 날짜 삭제(dedupe)는 **여전히** 알린다.
+  // 이 단언이 없으면 "토글 시 전부 침묵"으로 넓혀도 위 테스트가 통과한다(Eng F-4 무고지 삭제 금지).
+  it('토글을 조작해도 날짜가 조용히 사라지면 병합으로 알린다', () => {
+    const before = [g(['2026-08-10'], A, false), g(['2026-08-11'], A, false)];
+    const after = [g(['2026-08-10'], A, true)];
+    expect(
+      diagnoseScheduleChange(before, after, {
+        bundleToggledByUser: true,
+        datesTouched: true,
+        expectedDateCount: 2,
+      })?.kind
+    ).toBe('merged');
+  });
+
   // 리뷰 MEDIUM 회귀 가드 — 개수 비교로 되돌리면 여기서 잡힌다.
   // 5일 묶음에서 하루를 해제하면 묶음 날짜 수는 5→4 로 줄지만 **묶음은 살아 있다**.
   it('묶음 카드에서 날짜만 줄어도 묶음이 살아 있으면 해제라고 하지 않는다', () => {
     const before = [g(['2026-08-10', '2026-08-11', '2026-08-12'], A, true)];
     const after = [g(['2026-08-10', '2026-08-11'], A, true)];
-    expect(diagnoseScheduleChange(before, after, { expectedDateCount: 2 })).toBeNull();
+    expect(
+      diagnoseScheduleChange(before, after, { datesTouched: true, expectedDateCount: 2 })
+    ).toBeNull();
   });
 
   it('묶음 가운데가 빠져 둘로 갈라져도 둘 다 묶음이면 해제가 아니다', () => {
     const before = [g(['2026-08-10', '2026-08-11', '2026-08-12', '2026-08-13'], A, true)];
     const after = [g(['2026-08-10', '2026-08-11'], A, true), g(['2026-08-13'], A, true)];
     // 카드 수가 늘었으므로 병합도 아니다 — 아무 고지도 나오면 안 된다.
-    expect(diagnoseScheduleChange(before, after, { expectedDateCount: 3 })).toBeNull();
+    expect(
+      diagnoseScheduleChange(before, after, { datesTouched: true, expectedDateCount: 3 })
+    ).toBeNull();
   });
 
   it('묶여 있던 날짜가 남아 있는데 묶음이 풀렸으면 그때는 알린다', () => {
     const before = [g(['2026-08-10', '2026-08-11', '2026-08-12'], A, true)];
     const after = [g(['2026-08-10', '2026-08-11', '2026-08-12'], A, false)];
-    expect(diagnoseScheduleChange(before, after, { expectedDateCount: 3 })?.kind).toBe(
-      'bundleReleased'
-    );
+    expect(
+      diagnoseScheduleChange(before, after, { datesTouched: true, expectedDateCount: 3 })?.kind
+    ).toBe('bundleReleased');
   });
 
   it('묶음이 새로 생기는 것은 알리지 않는다', () => {
@@ -131,7 +159,9 @@ describe('자동 병합 (P1 암묵 동작)', () => {
   it('중복 날짜 제거(dedupe)도 병합으로 고지한다 — 무고지 삭제 금지 (Eng F-4)', () => {
     const before = [g(['2026-08-10'], A), g(['2026-08-10'], B)];
     const after = [g(['2026-08-10'], B)];
-    expect(diagnoseScheduleChange(before, after, { expectedDateCount: 2 })?.kind).toBe('merged');
+    expect(
+      diagnoseScheduleChange(before, after, { datesTouched: true, expectedDateCount: 2 })?.kind
+    ).toBe('merged');
   });
 
   it('날짜를 해제하기만 한 것은 병합이 아니다 — 자기가 한 일을 되읽어주지 않는다', () => {
@@ -139,20 +169,26 @@ describe('자동 병합 (P1 암묵 동작)', () => {
     // 사용자가 고른 수(expectedDateCount)를 기준으로 둘을 가른다.
     const before = [g(['2026-08-10', '2026-08-11'], A)];
     const after = [g(['2026-08-10'], A)];
-    expect(diagnoseScheduleChange(before, after, { expectedDateCount: 1 })).toBeNull();
+    expect(
+      diagnoseScheduleChange(before, after, { datesTouched: true, expectedDateCount: 1 })
+    ).toBeNull();
   });
 
   it('여러 카드에서 일부만 해제해도 병합으로 오인하지 않는다', () => {
     const before = [g(['2026-08-10', '2026-08-11'], A), g(['2026-08-20'], B)];
     const after = [g(['2026-08-10'], A), g(['2026-08-20'], B)];
-    expect(diagnoseScheduleChange(before, after, { expectedDateCount: 2 })).toBeNull();
+    expect(
+      diagnoseScheduleChange(before, after, { datesTouched: true, expectedDateCount: 2 })
+    ).toBeNull();
   });
 
   it('사용자가 고른 수보다 적게 남으면 정규화가 지운 것이므로 고지한다', () => {
     const before = [g(['2026-08-10'], A)];
     const after = [g(['2026-08-10'], A)];
     // 사장은 2개를 골랐는데 정규화 뒤 1개만 남았다 = 조용한 삭제
-    expect(diagnoseScheduleChange(before, after, { expectedDateCount: 2 })?.kind).toBe('merged');
+    expect(
+      diagnoseScheduleChange(before, after, { datesTouched: true, expectedDateCount: 2 })?.kind
+    ).toBe('merged');
   });
 
   it('카드가 늘어나는 것(예외 추출)은 병합이 아니다', () => {

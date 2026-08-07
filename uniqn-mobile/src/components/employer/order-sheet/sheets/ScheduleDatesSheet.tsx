@@ -16,10 +16,8 @@ import type { PostingType } from '@/types/jobPosting';
 export interface ScheduleDatesSheetProps {
   visible: boolean;
   postingType: PostingType;
-  /** 현재 담긴 전 일정 날짜(재선택·해제 가능 시드) */
+  /** 현재 담긴 전 일정 날짜(재선택·해제 가능 시드). 빈 배열로 확정하면 일정을 비운다. */
   initialSelectedDates: string[];
-  /** 선택 불가로 잠글 날짜 — 전 일정 스코프에서는 비어 있다(상한은 모달이 직접 관리) */
-  existingDates: string[];
   onConfirm: (dates: string[]) => void;
   onClose: () => void;
 }
@@ -28,7 +26,6 @@ export function ScheduleDatesSheet({
   visible,
   postingType,
   initialSelectedDates,
-  existingDates,
   onConfirm,
   onClose,
 }: ScheduleDatesSheetProps) {
@@ -37,7 +34,6 @@ export function ScheduleDatesSheet({
       visible={visible}
       onClose={onClose}
       postingType={postingType}
-      existingDates={existingDates}
       initialSelectedDates={initialSelectedDates}
       onSelectDates={onConfirm}
     />

@@ -1,13 +1,15 @@
 // src/repositories/supabase/__tests__/SettlementRepository.customSettlement.test.ts
 //
-// updateWorkLogCustomSettlement 회귀 테스트 (P1#6 서버측 정산완료 가드).
-// 정산이 완료(payrollStatus=COMPLETED)된 근무 기록의 커스텀 급여/수당/세금 설정 수정을
-// 서버에서 fail-closed 로 차단하는지 잠근다(UI 방어만으로는 동결된 payroll_amount 정합이 깨진다).
-// 형제 updateWorkTimeWithTransaction 과 동일하게 AlreadySettledError 를 던진다.
+// updateWorkLogCustomSettlement 의 **RPC 계약** 테스트 (감사 S-D, 마이그 20260807190000).
+//
+// 🔄 계약 전환 (2026-08-07): 이 파일은 원래 클라이언트가 직접 하던 일을 고정했다 —
+//    소유권 선행 조회 → payrollStatus 확인 → AlreadySettledError → from().update().
+//    그 전부가 서버 RPC 로 옮겨갔다(read-modify-write 의 이력 Lost Update 를 닫기 위해서다).
+//    따라서 여기서 지킬 것은 **호출 계약**이다: 무엇을 어떤 이름으로 보내는가, 서버 에러를
+//    어떤 앱 에러로 되돌리는가, 그리고 직접 UPDATE 로 되돌아가지 않았는가.
+//    동작 자체(잠금·동결·이력 누적)의 진실원은 pgTAP settlement_custom_rpc.test.sql 이다.
 import { SupabaseSettlementRepository } from '../SettlementRepository';
-import { STATUS } from '@/constants';
 import { AlreadySettledError, ERROR_CODES } from '@/errors';
-import type { WorkLog, JobPosting } from '@/types';
 import type { TaxSettings } from '@/utils/settlement';
 
 const mockFrom = jest.fn();
@@ -24,75 +26,8 @@ jest.mock('@/utils/logger', () => ({
 
 const mockRpc = jest.requireMock('@/lib/supabase').supabase.rpc as jest.Mock;
 
-const mockParseWorkLog = jest.fn();
-const mockParseJobPosting = jest.fn();
-jest.mock('@/schemas', () => {
-  const actual = jest.requireActual('@/schemas');
-  return {
-    ...actual,
-    parseWorkLogDocument: (...a: unknown[]) => mockParseWorkLog(...a),
-    parseJobPostingDocument: (...a: unknown[]) => mockParseJobPosting(...a),
-  };
-});
-
 const OWNER = 'owner-1';
 const WORK_LOG_ID = 'wl-1';
-const JOB_POSTING_ID = 'jp-1';
-
-// supabase mock 체인 상태
-let workLogReadResult: { data: unknown; error: unknown };
-let jobPostingReadResult: { data: unknown; error: unknown };
-let updateResultById: Record<string, { error: unknown }>;
-let updateCalls: { id: string; data: Record<string, unknown> }[];
-
-// 파서 mock 이 반환할 픽스처(테스트당 단일 근무기록/공고)
-let workLogFixture: WorkLog | null;
-let jobPostingFixture: JobPosting | null;
-
-function makeFromChain(table: string) {
-  let isUpdate = false;
-  let pendingUpdate: Record<string, unknown> | undefined;
-  const chain: Record<string, unknown> = {
-    select: () => chain,
-    update: (data: Record<string, unknown>) => {
-      isUpdate = true;
-      pendingUpdate = data;
-      return chain;
-    },
-    eq: (_col: string, id: string) => {
-      if (isUpdate) {
-        // write 종단: UPDATE ... EQ('id', id)
-        updateCalls.push({ id, data: pendingUpdate ?? {} });
-        return Promise.resolve(updateResultById[id] ?? { error: null });
-      }
-      // read: SELECT ... EQ('id', id) → maybeSingle 대기
-      return chain;
-    },
-    // read 종단: SELECT ... EQ(...).maybeSingle()
-    maybeSingle: () =>
-      Promise.resolve(table === 'work_logs' ? workLogReadResult : jobPostingReadResult),
-  };
-  return chain;
-}
-
-function makeWorkLog(overrides: Partial<WorkLog> = {}): WorkLog {
-  return {
-    id: WORK_LOG_ID,
-    jobPostingId: JOB_POSTING_ID,
-    status: STATUS.WORK_LOG.CHECKED_OUT,
-    payrollStatus: STATUS.PAYROLL.PENDING,
-    ...overrides,
-  } as unknown as WorkLog;
-}
-
-function makeJobPosting(ownerId: string): JobPosting {
-  return {
-    id: JOB_POSTING_ID,
-    ownerId,
-    workspaceId: 'ws-1',
-    compensation: undefined,
-  } as unknown as JobPosting;
-}
 
 function makeCustomSettlementData() {
   return {
@@ -103,63 +38,111 @@ function makeCustomSettlementData() {
   };
 }
 
+/** 서버가 RAISE 한 도메인 에러의 PostgREST 표현. */
+function rpcError(message: string) {
+  return { data: null, error: { message, code: 'P0001' } };
+}
+
 let repo: SupabaseSettlementRepository;
 
 beforeEach(() => {
   mockFrom.mockReset();
   mockRpc.mockReset();
-  // owner 는 short-circuit 이라 RPC 미호출. 기본은 권한 없음(fail-closed).
-  mockRpc.mockResolvedValue({ data: false, error: null });
-  mockParseWorkLog.mockReset();
-  mockParseJobPosting.mockReset();
-  updateResultById = {};
-  updateCalls = [];
-  workLogFixture = makeWorkLog();
-  jobPostingFixture = makeJobPosting(OWNER);
-  workLogReadResult = { data: { id: WORK_LOG_ID }, error: null };
-  jobPostingReadResult = { data: { id: JOB_POSTING_ID }, error: null };
-
-  mockFrom.mockImplementation((table: string) => makeFromChain(table));
-  mockParseWorkLog.mockImplementation(() => workLogFixture);
-  mockParseJobPosting.mockImplementation(() => jobPostingFixture);
-
+  mockRpc.mockResolvedValue({ data: { success: true, historyCount: 1 }, error: null });
   repo = new SupabaseSettlementRepository();
 });
 
-describe('updateWorkLogCustomSettlement', () => {
-  it('정산 완료 근무기록 수정 시도 → AlreadySettledError, UPDATE 미발행', async () => {
-    workLogFixture = makeWorkLog({ payrollStatus: STATUS.PAYROLL.COMPLETED });
+describe('updateWorkLogCustomSettlement — RPC 계약', () => {
+  it('RPC 를 1회 호출하고 인자 이름·값이 서버 시그니처와 일치한다', async () => {
+    const data = makeCustomSettlementData();
+
+    await repo.updateWorkLogCustomSettlement(WORK_LOG_ID, data, OWNER);
+
+    expect(mockRpc).toHaveBeenCalledTimes(1);
+    expect(mockRpc).toHaveBeenCalledWith('update_work_log_custom_settlement', {
+      p_work_log_id: WORK_LOG_ID,
+      p_custom_salary_info: data.customSalaryInfo,
+      p_custom_tax_settings: data.customTaxSettings,
+      p_modification_entry: data.modificationEntry,
+      p_custom_allowances: data.customAllowances,
+    });
+  });
+
+  it('🔑 직접 UPDATE 로 되돌아가지 않는다 — from() 을 아예 부르지 않는다', async () => {
+    // 이 단언이 이 파일의 회귀 방어다. 클라가 다시 work_logs 를 직접 쓰면
+    // 이력 append 가 read-modify-write 로 돌아가 Lost Update 가 되살아난다.
+    await repo.updateWorkLogCustomSettlement(WORK_LOG_ID, makeCustomSettlementData(), OWNER);
+
+    expect(mockFrom).not.toHaveBeenCalled();
+  });
+
+  it('수당 미설정(undefined)은 null 로 명시해 보낸다 — 키 생략이 아니다', async () => {
+    // 키를 생략하면 "수당을 지웠다"와 "수당을 안 건드렸다"가 같은 요청이 된다.
+    // 이 화면의 계약은 항상 전량 저장이므로 부재 = 공고 기본 수당 사용 = null 이다.
+    const data = { ...makeCustomSettlementData(), customAllowances: undefined };
+
+    await repo.updateWorkLogCustomSettlement(WORK_LOG_ID, data, OWNER);
+
+    const args = mockRpc.mock.calls[0][1] as Record<string, unknown>;
+    expect(args).toHaveProperty('p_custom_allowances', null);
+  });
+
+  it('정산 완료 건(서버 ALREADY_SETTLED) → AlreadySettledError 로 되돌린다', async () => {
+    mockRpc.mockResolvedValue(
+      rpcError('ALREADY_SETTLED: 정산이 완료된 근무 기록은 정산 설정을 수정할 수 없습니다')
+    );
 
     await expect(
       repo.updateWorkLogCustomSettlement(WORK_LOG_ID, makeCustomSettlementData(), OWNER)
     ).rejects.toBeInstanceOf(AlreadySettledError);
-
-    // fail-closed: 정산 완료 건은 커스텀 설정 UPDATE 를 발행하지 않는다
-    expect(updateCalls).toHaveLength(0);
   });
 
-  it('정산 완료 근무기록 차단 에러 코드는 BUSINESS_ALREADY_SETTLED 이다', async () => {
-    workLogFixture = makeWorkLog({ payrollStatus: STATUS.PAYROLL.COMPLETED });
+  it('정산 완료 차단 에러 코드는 전환 전과 같은 BUSINESS_ALREADY_SETTLED 다', async () => {
+    mockRpc.mockResolvedValue(
+      rpcError('ALREADY_SETTLED: 정산이 완료된 근무 기록은 정산 설정을 수정할 수 없습니다')
+    );
 
     await expect(
       repo.updateWorkLogCustomSettlement(WORK_LOG_ID, makeCustomSettlementData(), OWNER)
     ).rejects.toMatchObject({ code: ERROR_CODES.BUSINESS_ALREADY_SETTLED });
   });
 
-  it('미완료(pending) 근무기록은 기존대로 커스텀 설정 UPDATE 발행', async () => {
-    workLogFixture = makeWorkLog({ payrollStatus: STATUS.PAYROLL.PENDING });
-    const data = makeCustomSettlementData();
+  it('권한 없음(서버 PERMISSION_DENIED) → 서버 문구를 그대로 사용자에게 노출한다', async () => {
+    mockRpc.mockResolvedValue(
+      rpcError('PERMISSION_DENIED: 권한이 있는 공고의 근무 기록만 정산 설정을 수정할 수 있습니다')
+    );
 
-    await repo.updateWorkLogCustomSettlement(WORK_LOG_ID, data, OWNER);
-
-    expect(updateCalls).toHaveLength(1);
-    expect(updateCalls[0].id).toBe(WORK_LOG_ID);
-    expect(updateCalls[0].data).toMatchObject({
-      custom_salary_info: data.customSalaryInfo,
-      custom_allowances: data.customAllowances,
-      custom_tax_settings: data.customTaxSettings,
+    await expect(
+      repo.updateWorkLogCustomSettlement(WORK_LOG_ID, makeCustomSettlementData(), OWNER)
+    ).rejects.toMatchObject({
+      code: ERROR_CODES.INFRA_PERMISSION_DENIED,
+      userMessage: '권한이 있는 공고의 근무 기록만 정산 설정을 수정할 수 있습니다',
     });
-    // 수정 이력 누적: 기존 이력 없으면 새 항목 1건
-    expect(updateCalls[0].data.settlement_modification_history).toEqual([data.modificationEntry]);
+  });
+
+  it('근무기록 없음(서버 WORK_LOG_NOT_FOUND) → INFRA_NOT_FOUND', async () => {
+    mockRpc.mockResolvedValue(rpcError('WORK_LOG_NOT_FOUND: 근무 기록을 찾을 수 없습니다'));
+
+    await expect(
+      repo.updateWorkLogCustomSettlement(WORK_LOG_ID, makeCustomSettlementData(), OWNER)
+    ).rejects.toMatchObject({ code: ERROR_CODES.INFRA_NOT_FOUND });
+  });
+
+  it('사유 XSS(서버 INVALID_INPUT) → 보안 코드로 접는다', async () => {
+    mockRpc.mockResolvedValue(
+      rpcError('INVALID_INPUT: 수정 사유에 허용되지 않는 문자가 포함되어 있습니다')
+    );
+
+    await expect(
+      repo.updateWorkLogCustomSettlement(WORK_LOG_ID, makeCustomSettlementData(), OWNER)
+    ).rejects.toMatchObject({ code: ERROR_CODES.SECURITY_XSS_DETECTED });
+  });
+
+  it('형식 오류(서버 INVALID_INPUT, 보안 아님) → VALIDATION_FORMAT', async () => {
+    mockRpc.mockResolvedValue(rpcError('INVALID_INPUT: 급여 설정 형식이 올바르지 않습니다'));
+
+    await expect(
+      repo.updateWorkLogCustomSettlement(WORK_LOG_ID, makeCustomSettlementData(), OWNER)
+    ).rejects.toMatchObject({ code: ERROR_CODES.VALIDATION_FORMAT });
   });
 });
