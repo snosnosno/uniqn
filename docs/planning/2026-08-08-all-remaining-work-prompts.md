@@ -2,7 +2,7 @@
 
 > **새 세션은 이 파일부터 읽는다.** 트랙 하나 = 세션 하나. 각 트랙은 **자립적**이라 골라 착수해도 된다.
 >
-> 기준: `origin/master` = **`1d230fdb2`** (#443 머지) · **2026-08-08 23시 실측** (§0 참조)
+> 기준: `origin/master` = **`a10d63281`** (#416 머지) · **2026-08-08 ultracode 세션 착수 시점 실측** (§0 참조)
 >
 > 🤖 **다음 세션은 T6 · T7 · T9 · T3⑦ 를 ultracode 로 진행한다** — **§0-1 지침을 먼저 읽어라.**
 >
@@ -20,12 +20,12 @@
 
 | 축 | 값 |
 |---|---|
-| `origin/master` | **`1d230fdb2`** (#443) · 워킹트리 clean |
+| `origin/master` | **`a10d63281`** (#416) · 워킹트리 clean |
 | **prod 미적용 마이그** | ✅ **0건** — `20260808230000` 까지 전부 기록됨(`list_migrations` 실측) |
 | **DB 파리티** | ✅ **funcs 206 / policies 111** = 레포 기대값 일치(`parity_baseline_guard.test.sql:155-156`) |
 | **branch protection** | ✅ 활성 — required = `Quality Gate` · `E2E Gate` |
-| 롤아웃 | ✅ **정렬됨** — 웹 CF `f67a06d4`(source `20cb6ba`) · OTA `4103ed69-5804-4aa1-a8ab-06cb1e18cdb3`(runtime **1.0.5**, commit `1d230fdb2`) |
-| 열린 PR | Dependabot 4건 — **#414·#415·#416 = CI 전량 pass·CLEAN** / **#380 = Quality-lint fail·BLOCKED** |
+| 롤아웃 | 🔴 **끊겼다** — 웹 CF `f67a06d4`(source `20cb6ba`) · OTA `4103ed69…`(runtime **1.0.5**) 인데 **master 의 앱 버전은 이제 1.0.6**(#444). 아래 🚨 참조 |
+| 열린 PR | Dependabot — **#416 머지 완료** · #415·#414 = CI 전량 pass·CLEAN(머지 대기) / **#380 = Quality-lint fail·BLOCKED** |
 | `ops_hub_enabled` | `false` (OFF) — 단 **사용자가 "켤 예정"으로 확정**(2026-08-08). ⑦ 투자 근거가 성립한다 |
 
 > ✅ **T1(롤아웃 비대칭)은 닫혔다.** #432~#442 가 웹·OTA 로 사용자에게 도달했다.
@@ -33,6 +33,33 @@
 > 그 ops 마이그가 prod 에 없어 `ops_tournaments.archived_at` **42703** 으로 ops 조회가 전부 깨져 있었다.
 > `ops_hub_enabled=false` 는 **안 막아준다**(결함⑥이 "(ops) 라우트는 의도적으로 열어 둔다"로 확정했기 때문).
 > 🔑 **머지 ≠ 서버 반영. 배포 직전 `list_migrations` 로 클라이언트가 요구하는 스키마가 prod 에 있는지 먼저 볼 것.**
+
+### 🚨 최우선 신규 사실 — **T8 이 머지됐고 OTA 채널이 잠겼다** (ultracode 세션 착수 시 발견)
+
+이 원장 앞 판이 "⏸ 새 스토어 빌드 시점에만 머지"로 못박아 둔 `fix/ops-native-deeplink-20260807` 이
+**이미 `#444`(`0c580cf05`)로 master 에 들어갔다.** 그 커밋은 `package.json` 의 **version 1.0.5 → 1.0.6** 을 포함한다.
+
+| 축 | 값 |
+|---|---|
+| master 앱 버전 | **1.0.6** (`uniqn-mobile/package.json`, `git show 0c580cf05 -- uniqn-mobile/package.json` 실측) |
+| runtimeVersion 정책 | `appVersion` — 즉 **runtime = 1.0.6** |
+| 사용자 기기에 설치된 빌드 | **1.0.5** (마지막 스토어 빌드) |
+| 마지막 OTA | `4103ed69…` runtime **1.0.5** |
+
+**귀결: 지금 master 에서 `eas update` 를 발행하면 runtime 1.0.6 으로 나가고, 설치된 1.0.5 기기는 그것을 받지 않는다.**
+#444 커밋 본문 스스로 이 위험을 경고하고 있다 — *"머지 = 새 빌드 시점. 그전에 머지하면 OTA 채널이 잠긴다."*
+
+**이번 세션 이후의 모든 클라이언트 수정(T6·T3⑦ 포함)은 OTA 로 전달되지 않는다.**
+전달 경로는 **새 스토어 빌드뿐**이다. 세 갈래 중 하나를 골라야 한다:
+
+1. **새 스토어 빌드를 낸다** — #444 의 원래 전제. 이후 작업이 정상적으로 흐른다. (사람 게이트)
+2. **1.0.5 로 되돌린다**(revert 아님 — 버전만 원복) — 1.0.5 기기에 OTA 를 계속 보낼 수 있으나,
+   #444 의 Android intentFilter 축소는 네이티브 구성이라 어차피 OTA 로 전달되지 않는다.
+   즉 되돌려도 **#444 의 실효는 새 빌드까지 유예될 뿐**이고, 대신 그때까지의 JS 수정은 계속 전달된다.
+3. **그대로 둔다** — 새 빌드까지 사용자에게 아무 수정도 도달하지 않음을 감수한다.
+
+🔴 **이 결정은 사용자 게이트다.** 결정 전까지 `eas update` 를 발행하지 말 것 —
+발행하면 1.0.5 기기가 조용히 누락된 채 "배포했다"로 기록된다.
 
 ---
 
@@ -59,8 +86,8 @@
 | 워크트리 | 브랜치 | 하고 있는 일 | 상태 |
 |---|---|---|---|
 | `T-HOLDEM` (메인) | `master` | 읽기·계획 전용 | clean |
-| `T-HOLDEM-e2eops` | `test/ops-e2e-20260808` | ops E2E (⑦-4) | ✅ **완료 — 커밋 `b5b18f394` 미푸시**(위 참조) |
-| `T-HOLDEM-opsurl` | `fix/ops-native-deeplink-20260807` | Android App Links 축소 + 1.0.6 bump | ⏸ **대기**(§T8) |
+| `T-HOLDEM-e2eops` | `test/ops-e2e-20260808` | ops E2E (⑦-4) | ✅ **push 완료 · PR #446 열림** — 소실 위험 해소됨 |
+| `T-HOLDEM-opsurl` | ~~`fix/ops-native-deeplink-20260807`~~ | Android App Links 축소 + 1.0.6 bump | ✅ **머지됨(#444)** — 워크트리는 `master` 로 남아 있음. 정리 대상 |
 
 **정리된 것**(워크트리 소멸 — 재확인 불필요): `T-HOLDEM-ops4`(→#441 `f02d64b48`) ·
 `T-HOLDEM-medium4`(→#442 `20cb6bad9`) · `T-HOLDEM-sf`(→ 브랜치 폐기, 아래 참조).
@@ -320,6 +347,10 @@ ops 결함 ⑦(통합 공백)을 닫는다. ⑦ 은 "버그"가 아니라 엔진
 
 ## T7. 🟡 Dependabot 4건 — **3건은 그린, 1건만 실작업**
 
+> **진행 (ultracode 세션)**: ✅ #416(`a10d63281`) · ✅ #415(`a956142f1`) 머지 완료.
+> #414 는 `gh pr update-branch` 로 현재 master 기준 CI 재실행 후 머지 예정(setup-cli 메이저 2단계라
+> 08-04 base 의 DB Tests 통과를 그대로 신뢰하지 않는다). #380 만 실작업으로 남는다.
+
 **CI 실측 (2026-08-08, `gh pr checks` + `gh pr view`)** — 초판의 "#414 를 가장 조심하라"는 전제는
 CI 상 재현되지 않았다. 오히려 #414 가 가장 깨끗하다.
 
@@ -352,17 +383,20 @@ Dependabot PR 을 처리한다.
 
 ---
 
-## T8. ⏸ 대기 — 스토어 빌드 시점에만
+## T8. ✅ **머지됨** (#444 `0c580cf05`) — 단 **후속 결정이 열려 있다**
 
-**`fix/ops-native-deeplink-20260807`** (워크트리 `T-HOLDEM-opsurl`, HEAD `1eb6a601e`)
+> ⚠️ 이 절의 앞 판은 "⏸ 대기 — 스토어 빌드 시점에만"이었다. **그 상태는 지났다.**
+> ultracode 세션 착수 시 `git fetch` 로 발견: 브랜치는 이미 머지됐고 origin 에서 삭제됐다.
 
-- 내용: Android App Links 축소(uniqn.app 전 경로를 삼키던 것을 iOS 와 같은 목록으로) + **version 1.0.6 bump**
-- 🚨 **머지 즉시 이후 모든 OTA 가 runtime 1.0.6 으로 가서, 설치된 1.0.5 기기가 전부 끊긴다.**
-  새 스토어 빌드를 낼 때 함께 처리해야 한다. **T1 성격의 롤아웃보다 먼저 머지하지 말 것.**
-- ✅ **소실 위험 해소** — 초판의 "로컬 전용·미푸시" 경고는 **stale 이다.** 실측(`git branch -a`) 결과
-  `origin/fix/ops-native-deeplink-20260807` 과 분리 전 안전판 `origin/archive/ops-original-20260807`
-  **둘 다 origin 에 있다.** 워크트리를 지워도 사라지지 않는다.
+- 내용: Android App Links 축소(uniqn.app 전 경로를 삼키던 것을 iOS 와 같은 목록 7종으로) + **version 1.0.5 → 1.0.6**
+- 안전판 `origin/archive/ops-original-20260807` (`2c686291e`)는 **여전히 origin 에 있다.**
 - 짝인 AASA `/jobs` 는 웹 배포물이라 #435 로 이미 나갔다.
+
+🚨 **머지되면서 앞 판이 경고한 그 일이 실제로 일어났다** — OTA 채널이 runtime 1.0.6 으로 옮겨갔고
+설치된 1.0.5 기기는 이제 어떤 OTA 도 받지 못한다. **§0 의 "🚨 최우선 신규 사실" 절이 이 항목의 현재 상태다.**
+남은 것은 브랜치 관리가 아니라 **전달 경로 결정(새 빌드 / 버전 원복 / 감수)** 이고, 그건 사용자 게이트다.
+
+- 정리 대상: 워크트리 `T-HOLDEM-opsurl`(브랜치가 사라져 `master` 로 남아 있다).
 
 ---
 
