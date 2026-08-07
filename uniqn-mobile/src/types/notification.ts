@@ -165,6 +165,20 @@ export const NotificationType = {
   // === 워크스페이스 협업 (PR #2) ===
   /** 워크스페이스 초대 발송 (invitee 에게) */
   WORKSPACE_INVITATION: 'workspace_invitation',
+
+  // === ops (라이브 운영 대회) ===
+  /**
+   * ops 대회에 스태프로 직접 배정됨 (배정된 스태프에게) — ops 결함⑦-1.
+   *
+   * ⚠️ 이 값은 supabase/migrations/20260809100000_ops_staff_assignment_notification.sql
+   * 의 트리거 함수(notify_on_ops_staff_insert)에서 문자열로 하드코딩되어 INSERT됩니다.
+   * 값 변경 시 반드시 새 마이그레이션으로 트리거 함수도 함께 수정해야 합니다.
+   *
+   * 🔴 딥링크가 없다(link=NULL). is_ops_member 가 ops_staff 를 멤버로 보지 않아
+   * 배정된 스태프는 ops 화면을 한 줄도 SELECT 할 수 없다 — 보내면 RLS 가 막는 빈 화면에
+   * 도착한다. 그래서 본문이 대회명·담당·날짜·장소를 전부 싣고, 라우트는 알림함에 머문다.
+   */
+  OPS_STAFF_ASSIGNED: 'ops_staff_assigned',
 } as const;
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- const/type 합성 패턴
@@ -273,6 +287,10 @@ export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, Notificatio
 
   // 워크스페이스 협업 (PR #2)
   [NotificationType.WORKSPACE_INVITATION]: NotificationCategory.SYSTEM,
+
+  // ops — 근무 배정 축이다. notification_category enum 에 'ops' 를 새로 넣지 않는다
+  // (ALTER TYPE ADD VALUE 는 되돌릴 수 없다). 스태프가 이미 켜 두고 보는 '출퇴근' 탭에 얹는다.
+  [NotificationType.OPS_STAFF_ASSIGNED]: NotificationCategory.ATTENDANCE,
 };
 
 // ============================================================================
@@ -358,6 +376,10 @@ export const NOTIFICATION_DEFAULT_PRIORITY: Record<NotificationType, Notificatio
 
   // 워크스페이스 협업 (PR #2)
   [NotificationType.WORKSPACE_INVITATION]: 'normal',
+
+  // ops — schedule_created('새 근무 배정')와 같은 무게다. 놓치면 그날 대회에 사람이 안 온다.
+  // DB 트리거가 INSERT 하는 priority 리터럴('high')과 일치시킨다.
+  [NotificationType.OPS_STAFF_ASSIGNED]: 'high',
 };
 
 // ============================================================================
@@ -540,6 +562,9 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
 
   // 워크스페이스 협업 (PR #2)
   [NotificationType.WORKSPACE_INVITATION]: '팀 초대',
+
+  // ops
+  [NotificationType.OPS_STAFF_ASSIGNED]: '대회 스태프 배정',
 };
 
 /**

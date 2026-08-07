@@ -424,6 +424,19 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     link: () => `/workspace/invitations`,
     icon: '🤝',
   },
+
+  // ops (라이브 운영 대회)
+  // 🔴 딥링크 없음. 배정된 스태프는 is_ops_member 밖이라 ops 화면을 한 줄도 못 읽는다 —
+  //    보내면 RLS 가 막는 빈 화면이다. 그래서 본문이 전달 매체 전부이고(대회명·담당·날짜·장소는
+  //    DB 트리거가 채운다) 링크는 알림함에 머문다. NotificationRouteMap 의 매핑과 짝이다.
+  //    실제 발송 본문의 정본은 마이그 20260809100000 의 notify_on_ops_staff_insert 다.
+  [NotificationType.OPS_STAFF_ASSIGNED]: {
+    title: '대회 스태프 배정',
+    body: (d) =>
+      `${d.tournamentName ? `'${d.tournamentName}'` : '해당'} 대회에 스태프로 배정되었습니다.`,
+    link: () => `/notifications`,
+    icon: '🃏',
+  },
 };
 
 // ============================================================================
