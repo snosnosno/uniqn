@@ -5,6 +5,53 @@
 
 ---
 
+## ⚡ 2026-08-08 진행 상황 — **이 절이 §1~§3 보다 우선**(아래는 착수 당시 스냅샷)
+
+브랜치 **`fix/ops-event-date-20260808`** (워크트리 `C:\Users\user\Desktop\T-HOLDEM-ops4`).
+
+| 결함 | 상태 | 커밋 |
+|---|---|---|
+| ④ 대회 날짜 무검증 | ✅ 닫힘 | `690a20f0e` |
+| ② 노쇼 경로 부재 | ✅ 닫힘 | `37b3bcb2b` |
+| ⑤ unclaim 죽은 회로 | ✅ **배선** 결정·구현 | `5536c0779` |
+| ⑥ `(ops)` 라우트 게이트 | ✅ **(b) 의도적 개방** 확정 — 주석+테스트+wiki 3중 고정 | `5536c0779` |
+| ③ 정정·삭제·대회 아카이브 | ✅ 닫힘(서버/클라 분리 커밋) | `b8f09d8ec` · `2de9ea91c` |
+| ⑦ 통합 공백 | 🔴 **미착수 — 유일한 잔여.** 범위 결정 필요 |
+| 트랙 B (prod 마이그 1건) | ✅ **할 일 없었음** — 착수 시점에 이미 적용돼 있었다(§3 정정) |
+
+### 🔴 prod 미적용 마이그 **4건** — 머지 후 #437 워크플로우로 **이 순서대로**
+```
+20260808200000_ops_no_show_event_types.sql                    (enum ②)
+20260808210000_ops_set_participant_no_show.sql                (RPC ②)
+20260808220000_ops_defect3_event_types_and_archived_at.sql    (enum+컬럼 ③)
+20260808230000_ops_participant_edit_delete_archive_rpcs.sql   (RPC ③)
+```
+⚠️ `ALTER TYPE … ADD VALUE` 는 같은 트랜잭션에서 못 쓴다 → **enum 파일이 RPC 파일보다 먼저.**
+적용 후 prod 함수 **202 → 206** · 정책 111 불변 · `ops_event_type` 32 → **38값**.
+
+### ③에서 실측으로 확정된 사실 (재조사 금지)
+- 🔑 **대회 hard DELETE 는 물리적으로 불가능하다.** `ops_events_tournament_id_fkey`=CASCADE 인데
+  `trg_ops_events_append_only`(BEFORE DELETE OR UPDATE)가 P0001 로 접는다(로컬 DELETE 실증).
+  → `ops_tournaments.archived_at` 이 "치우기"의 유일 경로. `ops_tournament_status` enum 에
+  `archived` 를 넣지 **않았다** — 보관은 상태와 **직교**이고(끝난 대회도 안 열린 대회도 보관 대상)
+  enum ADD VALUE 는 되돌릴 수 없다.
+- 🔑 **`fn_ops_recompute_live_stats` 는 `entries = count(*)`(상태 무관)** 이고
+  `prize_pool = (entries + reentries) × buy_in_cost + …` 다 → **오등록 1건이 상금 풀을 부풀린다.**
+  노쇼(②)로는 안 빠진다(노쇼는 돈을 냈으니 entries 에 남는 게 맞다). 그래서 오등록만 조건부 삭제.
+- 🔑 참가자 삭제는 물리적으로 안전하다: `ops_seats_participant_id_fkey`=**SET NULL** ·
+  `ops_events` 에 참가자 FK 없음 · `trg_ops_participants_recompute_stats` 가 **AFTER DELETE 도 커버**.
+- 🔑 **`registered` 는 도달 불가**(이 값을 쓰거나 읽는 ops 함수 0개 · `ops_register_participant` 는
+  active|checked_in 만 만든다). enum 값 제거는 **하지 않는다** — Postgres 는 enum 값 DROP 불가.
+- 🔑 `ops_claim_participant`·`ops_unclaim_participant` **둘 다 ops_events 를 append 하지 않는다**
+  (대칭). claim/unclaim 감사 추가는 양쪽을 함께 손대는 별도 후속.
+
+### ⑦ 착수 전에 알아야 할 것
+②~④ 가 닫혔으니 게이트는 풀렸다. 다만 ⑦은 결함이 아니라 **범위 결정 4건**이다 —
+알림 연동 · 근무기록/정산 write-back · 오프라인 내성 · E2E. 각각 독립 PR 감이고,
+E2E 는 `accessibilityState` 가 웹에서 무효라는 실측 함정(메모리)을 먼저 읽어야 한다.
+
+---
+
 ## 프롬프트 (복사해서 새 세션에 붙여넣기)
 
 ```
@@ -103,6 +150,12 @@ DB 에 있으나 클라 참조 **0건** ✅재확인(`src/`·`app/` grep, 생성
 ---
 
 ## §3. 트랙 B — prod 미적용 마이그 1건
+
+> ✅ **2026-08-08 정정: 이미 적용돼 있었다 — 이 절은 실행하지 말 것(중복 적용된다).**
+> `list_migrations` 에 `20260807190000 / update_work_log_custom_settlement_rpc` 로 **기록돼 있고**,
+> prod `prosrc` len 4846 · md5 `82a29afb…1108f` 가 레포 파일 body 와 **완전 일치**한다(전사 0회).
+> prod 함수/정책 = **202 / 111** 로 `PARITY_EXPECT` 기대값과 맞았다. 병렬 세션이 #437 워크플로우로
+> 먼저 실었고, 기록명이 파일명과 같다. 아래 명령은 참고용 이력으로만 남긴다.
 
 **대상**: `uniqn-mobile/supabase/migrations/20260807190000_update_work_log_custom_settlement_rpc.sql` (S-D, #436)
 
