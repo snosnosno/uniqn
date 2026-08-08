@@ -544,6 +544,10 @@ export const queryKeys = {
     prizes: (tournamentId: string) => [...queryKeys.ops.all, 'prizes', tournamentId] as const,
     // 1e — 스태프 로스터(공고연결 스냅샷 import + 수동 추가)
     staff: (tournamentId: string) => [...queryKeys.ops.all, 'staff', tournamentId] as const,
+    // 결함 ⑦-2 — 스태프별 근태 대상 work_log 해석(운영일 기준). 로스터와 별도 키:
+    // work_logs 쪽 변경(정산 확정·취소)만으로도 무효화돼야 하는데 ops_staff 는 그대로다.
+    staffWorkLogs: (tournamentId: string) =>
+      [...queryKeys.ops.all, 'staffWorkLogs', tournamentId] as const,
     // 블라인드 프리셋(계획 B) — per-user 데이터. userId 스코프 필수(기기 계정 전환 시 캐시 격리).
     blindPresets: (userId: string) => [...queryKeys.ops.all, 'blindPresets', userId] as const,
   },

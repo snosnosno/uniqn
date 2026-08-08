@@ -830,3 +830,40 @@ export function useAssignTableStaff(tournamentId: string) {
     },
   });
 }
+
+/**
+ * 결함 ⑦-2 — ops 콘솔 근태 기록/정정/취소 훅.
+ *
+ * 🔴 3상 계약을 그대로 통과시킨다: 키 없음=미변경 / `null`=기록 삭제 / `Date`=기록.
+ *    `null` 갈래가 **되돌리기 경로**다 — 이게 없으면 오조작이 곧 정산 확정으로 굳는다
+ *    (write-back → checked_out 파생 → 정산 게이트 통과가 자동으로 이어진다).
+ *
+ * 🔑 대상 workLogId 는 `useOpsStaffWorkLogs` 가 `reason==='ok'` 로 준 값만 쓴다.
+ * 🔑 서버가 던지는 ALREADY_SETTLED·PERMISSION_DENIED 는 그대로 사용자 문구로 노출한다 —
+ *    클라에서 같은 뜻의 문구를 새로 쓰면 서버 문구와 조용히 갈라진다.
+ *
+ * ⚠️ 스태프 1명 = RPC 1회 = 알림 1통이다. work_logs 의 AFTER UPDATE 에는 notify 트리거가
+ *    3개 걸려 있어(tr_notify_work_log_checkinout · work_log_notify_no_show_update ·
+ *    work_log_notify_update) **일괄 처리를 이 훅으로 반복 호출하면 알림이 폭발한다.**
+ *    일괄 경로가 필요해지면 알림 배칭 설계가 먼저다.
+ */
+export function useRecordOpsAttendance(tournamentId: string) {
+  const qc = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (v: { workLogId: string; checkIn?: Date | null; checkOut?: Date | null }) => {
+      const { workLogId, ...patch } = v;
+      return opsStaffService.recordAttendance(workLogId, requireActor(actorId), patch);
+    },
+    onSuccess: (_r, v) => {
+      qc.invalidateQueries({ queryKey: queryKeys.ops.staffWorkLogs(tournamentId) });
+      const cleared =
+        ('checkIn' in v && v.checkIn === null) || ('checkOut' in v && v.checkOut === null);
+      toast.success(cleared ? '근태 기록을 취소했습니다' : '근태를 기록했습니다');
+    },
+    onError: (e) => {
+      logger.error('ops 근태 기록 실패', toError(e));
+      toast.error(extractUserMessage(e) || '근태 기록에 실패했습니다');
+    },
+  });
+}

@@ -157,9 +157,14 @@
 --   - 테스트 fixture 헬퍼(jpc_* / ops_test_* — supabase/fixtures/*.sql 이 주입, 스키마 밖 산물)
 -- 안전: BEGIN/ROLLBACK, 읽기 전용.
 --
+--   · 20260809110000_ops_resolve_staff_work_logs.sql — 함수 206 → **207**(해석기 1개 신설).
+--     ops 결함 ⑦-2. 읽기 전용 STABLE SECDEF — 근태 쓰기는 기존 update_work_log_slot 단독이라
+--     쓰기 함수는 늘지 않는다. 정책 111 불변(테이블·RLS 미변경).
+--     🔴 prod 미적용 — 머지·prod 적용 전까지 주간 parity-smoke 가 불일치를 보고한다.
+--
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=207
+-- PARITY_EXPECT_FUNCS=208
 -- PARITY_EXPECT_POLICIES=111
 -- ============================================================
 BEGIN;
@@ -179,8 +184,8 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  207,
-  'public function count (207 = 200 + update_work_log_custom_settlement 1(감사 S-D) + ops_set_participant_chips 1(결함①) + ops_set_participant_no_show 1(결함②) + 정정·제거·아카이브 3(결함③) + notify_on_ops_staff_insert 1(결함⑦-1), 2026-08-09)');
+  208,
+  'public function count (208 = 200 + update_work_log_custom_settlement 1(감사 S-D) + ops_set_participant_chips 1(결함①) + ops_set_participant_no_show 1(결함②) + 정정·제거·아카이브 3(결함③) + notify_on_ops_staff_insert 1(결함⑦-1) + ops_resolve_staff_work_logs 1(결함⑦-2), 2026-08-09)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(

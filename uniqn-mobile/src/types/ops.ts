@@ -218,6 +218,50 @@ export interface OpsStaff {
   createdAt: string;
 }
 
+/**
+ * ops 스태프 ↔ work_logs 근태 행 해석 사유 (결함 ⑦-2).
+ *
+ * `ok` 외에는 전부 **쓸 대상을 특정하지 못했다**는 뜻이다. 화면은 사유별로 다른 안내를 띄우고
+ * 근태 컨트롤을 숨긴다 — 애매한 상태에서 버튼을 열어 두면 틀린 행에 시각이 박힌다.
+ */
+export type OpsStaffWorkLogReason =
+  /** 유일 행 해석됨 — 쓰기 가능 */
+  | 'ok'
+  /** 대회에 공고가 연결되지 않음 */
+  | 'no_posting'
+  /** 대회 운영일(event_date)이 비어 있음 */
+  | 'no_event_date'
+  /** 해당 날짜에 대응 work_log 없음(수동 추가 스태프 등) */
+  | 'not_linked'
+  /** 후보는 있으나 전부 취소/노쇼 */
+  | 'cancelled'
+  /** 같은 (공고, 스태프, 날짜)에 살아있는 행이 2건 이상 — 자동 선택하지 않는다 */
+  | 'ambiguous'
+  /** 정산 완료 — 서버가 ALREADY_SETTLED 로 거부한다 */
+  | 'settled';
+
+/**
+ * 해석기 `ops_resolve_staff_work_logs` 의 행.
+ *
+ * 🔴 `writeAllowed` 는 **화면 힌트일 뿐 권한의 근거가 아니다.** 실제 가드는
+ *    `update_work_log_slot` 이 자기 술어로 재검증한다. 이 값이 true 라고 쓰기가 보장되지 않고,
+ *    false 인데 우회 호출하면 서버가 PERMISSION_DENIED 로 막는다.
+ * 🔴 ops 축(대회 멤버)과 공고 축(정산 권한)은 **다르다**. 이 값은 공고 축이다.
+ */
+export interface OpsStaffWorkLogLink {
+  opsStaffId: string;
+  staffId: string;
+  staffName: string;
+  /** 해석된 work_log. `reason !== 'ok' && reason !== 'settled'` 면 null 이다. */
+  workLogId: string | null;
+  wlStatus: string | null;
+  payrollStatus: string | null;
+  checkInTs: string | null;
+  checkOutTs: string | null;
+  writeAllowed: boolean;
+  reason: OpsStaffWorkLogReason;
+}
+
 /** STATUS 부분통계 (1a — 참가자 파생만, 클라이언트 계산). 좌석/블라인드 의존 값은 1b/1c. */
 export interface OpsPartialStats {
   playing: number;
