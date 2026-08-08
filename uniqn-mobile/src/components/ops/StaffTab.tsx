@@ -27,6 +27,7 @@ import {
   useImportOpsStaff,
   useRemoveOpsStaff,
   useAssignTableStaff,
+  useOpsStaffWorkLogs,
 } from '@/hooks/ops';
 import { useMyJobPostings } from '@/hooks/useJobManagement';
 import { useActiveWorkspace } from '@/hooks/workspace/useActiveWorkspace';
@@ -34,12 +35,14 @@ import { useAuthStore } from '@/stores/authStore';
 import { StaffRow } from './StaffRow';
 import { StaffAddSheet } from './StaffAddSheet';
 import { PostingPickerSheet } from './PostingPickerSheet';
-import type { OpsStaff, OpsTournament } from '@/types/ops';
+import { StaffAttendanceSheet } from './StaffAttendanceSheet';
+import type { OpsStaff, OpsStaffWorkLogLink, OpsTournament } from '@/types/ops';
 
 const UNASSIGN_TABLE_VALUE = '__unassign_table';
 const NONE_TABLE_VALUE = '__none_table';
 const ROW_ASSIGN_VALUE = 'assign';
 const ROW_REMOVE_VALUE = 'remove';
+const ROW_ATTENDANCE_VALUE = 'attendance';
 
 interface StaffTabProps {
   tournamentId: string;
@@ -52,6 +55,8 @@ export function StaffTab({ tournamentId, tournament }: StaffTabProps) {
   const { data: postings } = useMyJobPostings();
   const { data: roster, isLoading: rosterLoading } = useOpsStaff(tournamentId);
   const { tables } = useOpsTables(tournamentId);
+  // 로스터와 **별도 쿼리**다 — work_logs 의 취소·정산 상태는 ops 테이블을 건드리지 않고 바뀐다.
+  const { data: workLogLinks } = useOpsStaffWorkLogs(tournamentId, actorId);
 
   const setPostingMut = useSetTournamentPosting(tournamentId);
   const importMut = useImportOpsStaff(tournamentId);
@@ -63,6 +68,7 @@ export function StaffTab({ tournamentId, tournament }: StaffTabProps) {
   const [fullPeriod, setFullPeriod] = useState(false);
   const [rowActionStaff, setRowActionStaff] = useState<OpsStaff | null>(null);
   const [tableAssignFor, setTableAssignFor] = useState<OpsStaff | null>(null);
+  const [attendanceFor, setAttendanceFor] = useState<OpsStaff | null>(null);
 
   const isOwner = !!actorId && tournament.ownerId === actorId;
   const connectedPosting = useMemo(
@@ -82,6 +88,13 @@ export function StaffTab({ tournamentId, tournament }: StaffTabProps) {
     }
     return { tableNoByStaffId: noMap, tableIdByStaffId: idMap };
   }, [tables]);
+
+  // opsStaffId → 해석기 행. 행 배지와 근태 시트가 공용한다.
+  const linkByOpsStaffId = useMemo(() => {
+    const m = new Map<string, OpsStaffWorkLogLink>();
+    for (const l of workLogLinks ?? []) m.set(l.opsStaffId, l);
+    return m;
+  }, [workLogLinks]);
 
   const tableAssignOptions = useMemo(() => {
     if (!tableAssignFor) return [];
@@ -147,13 +160,17 @@ export function StaffTab({ tournamentId, tournament }: StaffTabProps) {
         onClose={() => setRowActionStaff(null)}
         title={rowActionStaff?.staffName}
         options={[
+          { label: '근태 기록', value: ROW_ATTENDANCE_VALUE },
           { label: '테이블 지정', value: ROW_ASSIGN_VALUE },
           { label: '로스터에서 삭제', value: ROW_REMOVE_VALUE, destructive: true },
         ]}
         onSelect={(v) => {
           const staff = rowActionStaff;
           if (!staff) return;
-          if (v === ROW_ASSIGN_VALUE) setTableAssignFor(staff);
+          // 근태 항목은 사유와 무관하게 항상 연다 — 왜 못 쓰는지(취소됨·2건 중복·정산 완료)를
+          // 알려 주는 것이 시트의 절반이다. 컨트롤 개폐는 시트 안에서 판정한다.
+          if (v === ROW_ATTENDANCE_VALUE) setAttendanceFor(staff);
+          else if (v === ROW_ASSIGN_VALUE) setTableAssignFor(staff);
           else if (v === ROW_REMOVE_VALUE) confirmRemove(staff);
         }}
       />
@@ -176,6 +193,16 @@ export function StaffTab({ tournamentId, tournament }: StaffTabProps) {
               assignMut.mutate({ tableId: v, staffId: staff.staffId });
             }
           }}
+        />
+      )}
+
+      {attendanceFor && (
+        <StaffAttendanceSheet
+          visible={!!attendanceFor}
+          tournamentId={tournamentId}
+          staffName={attendanceFor.staffName}
+          link={linkByOpsStaffId.get(attendanceFor.id) ?? null}
+          onClose={() => setAttendanceFor(null)}
         />
       )}
 
@@ -299,6 +326,7 @@ export function StaffTab({ tournamentId, tournament }: StaffTabProps) {
           <StaffRow
             staff={item}
             assignedTableNo={tableNoByStaffId.get(item.staffId) ?? null}
+            attendance={linkByOpsStaffId.get(item.id) ?? null}
             onPress={() => setRowActionStaff(item)}
           />
         )}
