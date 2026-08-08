@@ -12,8 +12,9 @@
 --   (18~19) fail-soft: 알림 INSERT 가 폭발해도 ops_staff 행은 남는다.
 --           인라인 구현이었다면 라이브 대회의 스태프 추가가 통째로 롤백된다.
 --   (20)    ops_staff 트리거 정확히 1개 — 중복 신설 회귀 가드.
---   (21~23) 권한/하드닝: anon EXECUTE 없음 · anon-executable ops SECDEF =2 불변 ·
---           SECDEF search_path 에 pg_temp 포함.
+--   (21~24) 권한/하드닝: anon EXECUTE 없음 · anon-executable ops SECDEF =2 불변 ·
+--           SECDEF search_path 에 pg_temp 포함 · authenticated EXECUTE 없음(트리거 전용
+--           함수 규약 — 20260731090000 이 33개를 PUBLIC/anon/authenticated 로 회수했다).
 --
 -- [가드] RLS 테이블의 pgTAP "0건"은 "행이 없다"가 아니라 "안 보인다"일 수 있다 —
 --   notifications 는 RLS ENABLE 이므로 **모든 알림 단언은 postgres role 에서** 한다.
@@ -22,7 +23,7 @@
 -- 안전: BEGIN/ROLLBACK.
 
 BEGIN;
-SELECT plan(23);
+SELECT plan(24);
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 시드: ops_test_seed() 기본(owner=employer, member, outsider)
@@ -248,6 +249,15 @@ SELECT is(                                                                   -- 
 SELECT ok(                                                                   -- [21]
   NOT has_function_privilege('anon', 'public.notify_on_ops_staff_insert()', 'EXECUTE'),
   'anon 은 notify_on_ops_staff_insert EXECUTE 불가');
+
+-- authenticated 도 회수 대상이다. 규약 원본(20260731090000)이 트리거 전용 함수 33개를
+-- `FROM PUBLIC, anon, authenticated` 로 회수했고, 근거는 "트리거 함수는 테이블 소유자 권한으로
+-- 실행되므로 호출자 role 의 EXECUTE 와 무관"이다.
+-- 이 단언이 없어서 ⑦-1 원본 마이그의 `GRANT EXECUTE TO authenticated` 가 게이트를 통과했다
+-- (주석은 회수한다고 적혀 있는데 코드는 부여했다). 20260809120000 이 정렬했다.
+SELECT ok(                                                                   -- [24]
+  NOT has_function_privilege('authenticated', 'public.notify_on_ops_staff_insert()', 'EXECUTE'),
+  'authenticated 도 notify_on_ops_staff_insert EXECUTE 불가(트리거 전용 함수 규약)');
 
 SELECT is(                                                                   -- [22]
   (SELECT count(*)::int FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
