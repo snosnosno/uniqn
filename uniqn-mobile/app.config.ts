@@ -287,6 +287,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     shortName: 'UNIQN',
     themeColor: BRAND_BG_COLOR,
     backgroundColor: BRAND_BG_COLOR,
+    // 감사 web-01: dist/index.html 의 <html lang> — 앱 전체가 한국어인데 en 으로 나가고 있었다.
+    // 🔑 이 프로젝트는 web.output 이 없어 SPA(single) 모드다 → app/+html.tsx 는 export 에
+    //    **반영되지 않는다**(실측: +html.tsx 를 두고 빌드해도 lang="en" 그대로).
+    //    SPA 의 정식 경로는 @expo/cli/static/template/index.html 의 `%LANG_ISO_CODE%` 이고
+    //    그 값이 바로 이 `web.lang` 이다(webTemplate.ts: `exp.web?.lang ?? 'en'`).
+    // 🚫 public/index.html 을 만들어 고치지 말 것 — 같은 코드가 public/index.html 을
+    //    템플릿보다 먼저 집어(getTemplateIndexHtmlAsync) 스크립트/CSS 주입 파이프라인을 덮어쓴다.
+    lang: 'ko',
   },
 
   // 플러그인

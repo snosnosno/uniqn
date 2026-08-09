@@ -14,10 +14,12 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { trackOpsFunnel } from '@/services/observability/analyticsService';
 import { NumericText } from '@/components/ui';
 import { useMonitorSnapshot } from '@/hooks/ops/useMonitorSnapshot';
+import { useWebWakeLock } from '@/hooks/useWebWakeLock';
 import { parseMonitorConfig } from '@/domains/ops';
 import {
   resolveMonitorSlots,
@@ -149,12 +151,43 @@ function Hero({
   );
 }
 
+/** 전광판 공통 프레임 — 다크 보드 + 상단 인셋(ui-01). TV 는 인셋 0이라 무영향. */
+function MonitorFrame({ children }: { children: React.ReactNode }) {
+  return (
+    <SafeAreaView className="flex-1 bg-gray-900" edges={['top']}>
+      {children}
+    </SafeAreaView>
+  );
+}
+
+/**
+ * 연결 재시도 배너 — 마지막으로 받은 화면은 계속 띄운 채 상태만 알린다.
+ * 전광판은 무인 운영이라 "지금 값이 최신인가"를 사람이 알 방법이 이것뿐이다.
+ */
+function ReconnectingBanner() {
+  return (
+    <View className="items-center rounded-md bg-amber-900/60 px-3 py-1">
+      <Text className="text-xs text-amber-200">연결이 불안정합니다 · 자동으로 다시 시도 중</Text>
+    </View>
+  );
+}
+
 export default function MonitorScreen() {
   const { token } = useLocalSearchParams<{ token: string }>();
-  const { snapshot, remainingSec, levelMissing, nextBreak, isLoading, isError } =
-    useMonitorSnapshot(token);
+  const {
+    snapshot,
+    remainingSec,
+    levelMissing,
+    nextBreak,
+    isLoading,
+    isTokenInvalid,
+    isDisconnected,
+  } = useMonitorSnapshot(token);
   const { width, height } = useWindowDimensions();
   const [reportOpen, setReportOpen] = useState(false);
+
+  // web-02(웹 절반): 전광판은 대회 내내 켜둔다. 스냅샷을 받은 뒤에만 잠금을 잡는다.
+  useWebWakeLock(!!snapshot);
 
   const config = useMemo(
     () => parseMonitorConfig(snapshot?.monitorConfig),
@@ -168,25 +201,46 @@ export default function MonitorScreen() {
     }
   }, [token]);
 
-  // 무효 토큰 / 조회 실패
-  if (isError || (!token && !isLoading)) {
+  // 토큰 자체가 무효 — 재시도해도 살아나지 않는다. 사람이 새 링크를 받아야 한다.
+  // 🔑 종전에는 isError(네트워크 오류 포함)를 여기로 보내 "무효 링크" 오탐을 냈다(감사 monitor-01).
+  if (isTokenInvalid || (!token && !isLoading)) {
     return (
-      <View className="flex-1 items-center justify-center gap-3 bg-gray-900 px-8">
-        <Text className="text-center text-xl font-sans-bold text-off-white">
-          유효하지 않은 모니터 링크입니다
-        </Text>
-        <Text className="text-center text-sm text-secondary-400">
-          운영자에게 새 링크를 요청하거나 QR을 다시 스캔해주세요.
-        </Text>
-      </View>
+      <MonitorFrame>
+        <View className="flex-1 items-center justify-center gap-3 px-8">
+          <Text className="text-center text-xl font-sans-bold text-off-white">
+            유효하지 않은 모니터 링크입니다
+          </Text>
+          <Text className="text-center text-sm text-secondary-400">
+            운영자에게 새 링크를 요청하거나 QR을 다시 스캔해주세요.
+          </Text>
+        </View>
+      </MonitorFrame>
+    );
+  }
+
+  // 아직 한 번도 못 받았는데 연결이 안 된다 — 폴링은 백오프하며 계속되므로 복귀할 수 있다.
+  if (!snapshot && isDisconnected) {
+    return (
+      <MonitorFrame>
+        <View className="flex-1 items-center justify-center gap-3 px-8">
+          <Text className="text-center text-xl font-sans-bold text-off-white">
+            서버에 연결할 수 없습니다
+          </Text>
+          <Text className="text-center text-sm text-secondary-400">
+            네트워크를 확인해주세요. 연결되면 자동으로 다시 표시됩니다.
+          </Text>
+        </View>
+      </MonitorFrame>
     );
   }
 
   if (isLoading || !snapshot) {
     return (
-      <View className="flex-1 items-center justify-center bg-gray-900">
-        <Text className="text-base text-secondary-400">불러오는 중…</Text>
-      </View>
+      <MonitorFrame>
+        <View className="flex-1 items-center justify-center">
+          <Text className="text-base text-secondary-400">불러오는 중…</Text>
+        </View>
+      </MonitorFrame>
     );
   }
 
@@ -210,6 +264,8 @@ export default function MonitorScreen() {
           </Text>
         ) : null}
       </View>
+      {/* 스냅샷은 있는데 갱신이 막힌 상태 — 화면은 유지하고 신선도만 알린다 */}
+      {isDisconnected ? <ReconnectingBanner /> : null}
     </View>
   );
 
@@ -228,77 +284,88 @@ export default function MonitorScreen() {
   if (isVertical) {
     // 세로 스택: 타이머 → 슬롯 2열 그리드 → 프라이즈
     return (
-      <ScrollView className="flex-1 bg-gray-900" contentContainerClassName="gap-6 px-5 py-6">
-        {header}
-        <Hero snapshot={snapshot} remainingSec={remainingSec} levelMissing={levelMissing} compact />
-        {slots.length > 0 ? (
-          <View className="flex-row flex-wrap gap-2">
-            {slots.map((slot) => (
-              <View key={slot.id} className="w-[48%] grow">
-                <SlotCard slot={slot} variant="strip" />
-              </View>
-            ))}
-          </View>
-        ) : null}
-        {showPrizePanel ? <PrizePanel snapshot={snapshot} /> : null}
-        {reportFooter}
-      </ScrollView>
+      <MonitorFrame>
+        <ScrollView className="flex-1" contentContainerClassName="gap-6 px-5 py-6">
+          {header}
+          <Hero
+            snapshot={snapshot}
+            remainingSec={remainingSec}
+            levelMissing={levelMissing}
+            compact
+          />
+          {slots.length > 0 ? (
+            <View className="flex-row flex-wrap gap-2">
+              {slots.map((slot) => (
+                <View key={slot.id} className="w-[48%] grow">
+                  <SlotCard slot={slot} variant="strip" />
+                </View>
+              ))}
+            </View>
+          ) : null}
+          {showPrizePanel ? <PrizePanel snapshot={snapshot} /> : null}
+          {reportFooter}
+        </ScrollView>
+      </MonitorFrame>
     );
   }
 
   if (config.preset === 'classic') {
     // classic — 현행 유지 배치: 중앙 히어로 + 하단 슬롯 스트립
     return (
-      <View className="flex-1 gap-6 bg-gray-900 px-8 py-6">
-        {header}
-        <View className="flex-1 justify-center">
-          <Hero
-            snapshot={snapshot}
-            remainingSec={remainingSec}
-            levelMissing={levelMissing}
-            compact={false}
-          />
-        </View>
-        {slots.length > 0 ? (
-          <View className="flex-row gap-2">
-            {slots.map((slot) => (
-              <SlotCard key={slot.id} slot={slot} variant="strip" />
-            ))}
+      <MonitorFrame>
+        <View className="flex-1 gap-6 px-8 py-6">
+          {header}
+          <View className="flex-1 justify-center">
+            <Hero
+              snapshot={snapshot}
+              remainingSec={remainingSec}
+              levelMissing={levelMissing}
+              compact={false}
+            />
           </View>
-        ) : null}
-        {reportFooter}
-      </View>
+          {slots.length > 0 ? (
+            <View className="flex-row gap-2">
+              {slots.map((slot) => (
+                <SlotCard key={slot.id} slot={slot} variant="strip" />
+              ))}
+            </View>
+          ) : null}
+          {reportFooter}
+        </View>
+      </MonitorFrame>
     );
   }
 
   // full(기본) / mirror — 좌우 3컬럼: 슬롯 컬럼 · 중앙 히어로 · 프라이즈 패널
   const rowDirection = config.preset === 'mirror' ? 'flex-row-reverse' : 'flex-row';
   return (
-    <View className="flex-1 gap-4 bg-gray-900 px-8 py-6">
-      {header}
-      <View className={`flex-1 ${rowDirection} items-stretch gap-6`}>
-        {slots.length > 0 ? (
-          <View className="w-[22%] max-w-[280px] justify-center gap-2">
-            {slots.map((slot) => (
-              <SlotCard key={slot.id} slot={slot} variant="column" />
-            ))}
+    <MonitorFrame>
+      <View className="flex-1 gap-4 px-8 py-6">
+        {header}
+        <View className={`flex-1 ${rowDirection} items-stretch gap-6`}>
+          {slots.length > 0 ? (
+            <View className="w-[22%] max-w-[280px] justify-center gap-2">
+              {slots.map((slot) => (
+                <SlotCard key={slot.id} slot={slot} variant="column" />
+              ))}
+            </View>
+          ) : null}
+          <View className="flex-1 justify-center">
+            <Hero
+              snapshot={snapshot}
+              remainingSec={remainingSec}
+              levelMissing={levelMissing}
+              compact={false}
+            />
           </View>
-        ) : null}
-        <View className="flex-1 justify-center">
-          <Hero
-            snapshot={snapshot}
-            remainingSec={remainingSec}
-            levelMissing={levelMissing}
-            compact={false}
-          />
+          {showPrizePanel ? (
+            <View className="w-[24%] max-w-[320px] justify-center">
+              <PrizePanel snapshot={snapshot} />
+            </View>
+          ) : null}
         </View>
-        {showPrizePanel ? (
-          <View className="w-[24%] max-w-[320px] justify-center">
-            <PrizePanel snapshot={snapshot} />
-          </View>
-        ) : null}
+        {reportFooter}
       </View>
-      {reportFooter}
-    </View>
+    </MonitorFrame>
   );
 }
