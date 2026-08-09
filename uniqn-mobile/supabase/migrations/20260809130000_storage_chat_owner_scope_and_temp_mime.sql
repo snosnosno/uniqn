@@ -34,8 +34,13 @@
 --     current_user = postgres · rolsuper = false
 --     pg_has_role(postgres, 'supabase_storage_admin', 'USAGE') = false
 --   → prod 에서 DROP/ALTER POLICY 는 42501 로 실패한다
---     (memory/pitfall_supabase_storage_drop_policy.md 가 기록한 그 함정.
---      로컬 스택에서는 postgres 가 슈퍼유저라 성공하므로 **로컬 통과 ≠ prod 통과**다).
+--     (memory/pitfall_supabase_storage_drop_policy.md 가 기록한 그 함정).
+--
+--   🚨 **로컬 통과 ≠ CI/prod 통과** — 이건 실측으로 확인했고, 기제는 단정하지 않는다.
+--     로컬 스택에서는 DROP POLICY 가 성공한다. 그런데 로컬 postgres 도 rolsuper=f 이고
+--     pg_has_role(postgres,'supabase_storage_admin','USAGE')=f 다(실측). 왜 통과하는지는
+--     확인하지 못했다. 확실한 것은 **CI(DB Tests)가 42501 을 실제로 냈다**는 사실이고,
+--     그래서 storage.objects 에 대한 소유자 요구 DDL 은 로컬에서 검증할 수 없다.
 --
 -- CREATE POLICY 는 동작한다 — 선례 2건이 prod 에 실재한다
 --   (20260420164817 inquiry_attachments_storage_policies ·
@@ -112,7 +117,7 @@ END $$;
 --   CI 실측(2026-08-09, DB Tests): `ERROR: must be owner of relation objects (SQLSTATE 42501)`.
 --   같은 마이그의 CREATE POLICY 는 통과했는데 COMMENT 만 막힌다 — 즉 이 테이블에서
 --   "정책 생성"과 "정책 주석"의 권한 요건이 다르다. 정책의 의도는 위 헤더 주석에 남긴다.
---   🔑 로컬 psql(-U postgres)은 슈퍼유저라 COMMENT 가 **성공한다**. 로컬 통과 ≠ CI/prod 통과.
+--   (레포에 COMMENT ON POLICY 선례는 public.work_logs 2건뿐 — 전부 postgres 소유 테이블이다.)
 
 -- -----------------------------------------------------------------------------
 -- 2. sec-02 — temp 버킷 MIME 화이트리스트
