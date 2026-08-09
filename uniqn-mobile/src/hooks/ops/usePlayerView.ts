@@ -9,8 +9,14 @@ import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { opsPlayerRepository } from '@/repositories/ops';
 import { computeClockRemaining, computeNextBreakRemaining } from '@/domains/ops';
+import { ERROR_CODES } from '@/errors';
+import {
+  isTokenInvalidError,
+  publicRefetchInterval,
+  publicShouldRetry,
+} from './publicPollingPolicy';
 
-const POLL_INTERVAL_MS = 4000; // ≥3s 하한(§0.5)
+const TOKEN_INVALID_CODE = ERROR_CODES.OPS_VIEW_TOKEN_INVALID;
 
 export function usePlayerView(token: string | undefined) {
   const enabled = !!token && token.length >= 32;
@@ -19,10 +25,11 @@ export function usePlayerView(token: string | undefined) {
     queryKey: token ? queryKeys.ops.player(token) : [...queryKeys.ops.all, 'player', 'none'],
     queryFn: () => opsPlayerRepository.getPlayerView(token as string),
     enabled,
-    // 무효 토큰(error)이면 4s 폴링 중단(자원 낭비 방지). 정상이면 폴링 유지.
-    refetchInterval: (q) => (q.state.status === 'error' ? false : POLL_INTERVAL_MS),
+    // 모니터와 동일 정책 — 토큰 무효만 영구 정지, 네트워크 장애는 백오프 폴링(감사 monitor-01).
+    refetchInterval: (q) =>
+      publicRefetchInterval(q.state.error, q.state.fetchFailureCount, TOKEN_INVALID_CODE),
     staleTime: 0,
-    retry: false,
+    retry: (failureCount, error) => publicShouldRetry(failureCount, error, TOKEN_INVALID_CODE),
   });
 
   const view = query.data ?? null;
@@ -86,6 +93,9 @@ export function usePlayerView(token: string | undefined) {
     ]
   );
 
+  const isTokenInvalid = isTokenInvalidError(query.error, TOKEN_INVALID_CODE);
+  const isDisconnected = !isTokenInvalid && query.isError;
+
   return {
     view,
     remainingSec: remaining.remainingSec,
@@ -95,5 +105,9 @@ export function usePlayerView(token: string | undefined) {
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,
+    /** 토큰 자체가 무효 — 폴링 영구 정지, 새 링크 필요. */
+    isTokenInvalid,
+    /** 네트워크·서버 일시장애 — 폴링 계속, 자동 복귀 가능. */
+    isDisconnected,
   };
 }

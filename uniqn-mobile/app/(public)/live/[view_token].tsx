@@ -45,7 +45,8 @@ export default function PlayerLiveScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ view_token: string }>();
   const token = params.view_token;
-  const { view, remainingSec, nextBreak, isLoading, isError } = usePlayerView(token);
+  const { view, remainingSec, nextBreak, isLoading, isTokenInvalid, isDisconnected } =
+    usePlayerView(token);
   const isAuthed = useAuthStore((s) => !!s.user);
   const claimMut = useClaimParticipant(token ?? '');
   const [claimOpen, setClaimOpen] = useState(false);
@@ -59,7 +60,8 @@ export default function PlayerLiveScreen() {
     }
   }, [token]);
 
-  if (isError || (!token && !isLoading)) {
+  // 토큰 자체가 무효 — 재시도로 살아나지 않는다(감사 monitor-01: 종전엔 네트워크 오류도 여기로 왔다).
+  if (isTokenInvalid || (!token && !isLoading)) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center gap-3 bg-surface-page px-8 dark:bg-surface">
         <Text className="text-center text-xl font-sans-bold text-content-primary dark:text-off-white">
@@ -67,6 +69,20 @@ export default function PlayerLiveScreen() {
         </Text>
         <Text className="text-center text-sm text-secondary-500 dark:text-secondary-400">
           운영자에게 새 QR 또는 링크를 요청해주세요.
+        </Text>
+      </SafeAreaView>
+    );
+  }
+
+  // 아직 한 번도 못 받았는데 연결 실패 — 폴링은 백오프하며 계속되므로 저절로 복귀할 수 있다.
+  if (!view && isDisconnected) {
+    return (
+      <SafeAreaView className="flex-1 items-center justify-center gap-3 bg-surface-page px-8 dark:bg-surface">
+        <Text className="text-center text-xl font-sans-bold text-content-primary dark:text-off-white">
+          서버에 연결할 수 없습니다
+        </Text>
+        <Text className="text-center text-sm text-secondary-500 dark:text-secondary-400">
+          네트워크를 확인해주세요. 연결되면 자동으로 다시 표시됩니다.
         </Text>
       </SafeAreaView>
     );
