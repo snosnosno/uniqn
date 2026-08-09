@@ -108,11 +108,11 @@ EXCEPTION
     RAISE WARNING '[sec-01] storage.objects 부재 — skip';
 END $$;
 
-COMMENT ON POLICY chat_storage_owner_scope ON storage.objects IS
-  'sec-01: chat 버킷을 업로더 소유 폴더로 제한하는 RESTRICTIVE 가드. '
-  '기존 chat_storage_* PERMISSIVE 4정책은 supabase_storage_admin 소유라 '
-  'DROP/ALTER 불가 → AND 결합으로 좁힌다. 채팅 구현 시 참여자 판정 정책으로 '
-  '교체(대시보드에서 수동 DROP 필요).';
+-- ⚠️ COMMENT ON POLICY ... ON storage.objects 를 쓰지 말 것.
+--   CI 실측(2026-08-09, DB Tests): `ERROR: must be owner of relation objects (SQLSTATE 42501)`.
+--   같은 마이그의 CREATE POLICY 는 통과했는데 COMMENT 만 막힌다 — 즉 이 테이블에서
+--   "정책 생성"과 "정책 주석"의 권한 요건이 다르다. 정책의 의도는 위 헤더 주석에 남긴다.
+--   🔑 로컬 psql(-U postgres)은 슈퍼유저라 COMMENT 가 **성공한다**. 로컬 통과 ≠ CI/prod 통과.
 
 -- -----------------------------------------------------------------------------
 -- 2. sec-02 — temp 버킷 MIME 화이트리스트
