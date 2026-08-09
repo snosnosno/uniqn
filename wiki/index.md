@@ -27,7 +27,8 @@
 - [[whitelist-silent-drop]] — "화이트리스트 조용한 증발" 재발 클래스(4회 실증: #194 region·#243 filled counts·conditions 9지점·#261 conditions patch) — 신규 필드는 지점 전수+읽기 방향 테스트+표시 UI 별도 확인
 - [[order-sheet-form-contract]] — 주문서 폼 계약: 3제네릭 zodResolver(z.input/z.output)·canonical 매퍼 등가성·Design B(단일화면 카드+시트)·#244 지연전환·중첩Modal embedded·update=patch conditions 상시 전달·전 타입 단일 경로+레거시 은퇴 (PR#246/#247/#261)
 - [[ops-no-money-flow]] — ops 엔진 돈-흐름 비관여 경계: 프라이즈 계산만, 바이인 결제·시드권 발급·상금 정산 금지 (관광진흥법 카지노업 유사행위 리스크)
-- [[secdef-hardening]] — SECURITY DEFINER 함수 하드닝 3규칙: anon EXECUTE 명시 REVOKE·search_path에 extensions·plpgsql NULL fail-open 차단 (memory 졸업, PR#195)
+- [[secdef-hardening]] — SECURITY DEFINER 함수 하드닝 **4규칙**: anon EXECUTE 명시 REVOKE·search_path에 extensions·plpgsql NULL fail-open 차단·**트리거 전용 함수는 PUBLIC/anon/authenticated 전부 회수**(PR#455 이탈 실증 — 권한상승은 아니나 규약 이탈+PostgREST 노출. 🚨게이트를 못 넘은 이유=회귀 테스트가 anon 만 단언) (memory 졸업, PR#195)
+- [[deploy-channel-skew]] — 배포 채널 3속도(서버·웹=즉시 / 네이티브=스토어 빌드까지 불가)라 **서버를 항상 먼저** 내야 한다. 어겼을 때의 실사고=#441(마이그 미적용 → `archived_at` 42703 으로 ops 전면 파손, 🔑기능 플래그는 라우트 게이트가 아니라 안 막아준다). 그 유일한 방어선인 **버전 게이트는 3계층 모두 죽어 있다** — 구현 부재가 아니라 배선 한 줄+서버 값 정지
 - [[secdef-replace-search-path-loss]] — 기존 함수 `CREATE OR REPLACE` 시 DDL에 안 적은 속성(`search_path`·volatility)이 원본형으로 되돌아감 → 재정의 전 `proconfig`/`provolatile` 실측 필수. "STABLE이면 중첩 DML 거부"는 거짓 (PR#273). **확장(PR#360)**: 재정의 베이스는 반드시 `grep -l "CREATE OR REPLACE FUNCTION <name>" migrations/*.sql | sort | tail -1` 이 가리키는 **최신 정의** — 낡은 판을 복사하면 그 사이 개선이 통째로 되돌아간 채 prod 까지 간다
 - [[type-honesty-runtime-vs-declared]] — 선언 타입 ≠ 런타임 진실: zod 경계가 정규화하는데 인터페이스가 이전 형태를 선언 → TS가 영원히 못 잡는 거짓말. 제네릭 기본값으로 도메인별 졸업 (PR#268)
 - [[supabase-write-pitfalls]] — Supabase 쓰기 경로 함정 종합: 카운터 트리거·realtime publication·RPC 예외 매핑·시드 zod·storage 정책·존재하지 않는 테이블 (memory 졸업)
@@ -75,4 +76,6 @@
 - [[address-geocoding-2026-08]] — 주소 검색 결과를 **탭해도 입력 안 되던** 원인=WebView 문서에 실제 origin 미부여(무음 실패라 UI 버그로 오진). 네이티브/웹 분기 파일은 **쌍으로** 확인. 🔑카카오 `x`=경도 `y`=위도(뒤집어도 그럴듯한 위치가 나와 눈으로 못 잡는다) — ✅PR#391·#411·#419
 - [[ui-device-report-2026-08]] — 실기기 UI 리포트: `RefreshControl` 을 쿼리 상태에 묶어 **유령 스피너** · `stickyHeaderIndices`+Fragment(=자식 1개로 셈) 스크롤 잠김 · **SafeArea 가드가 있었는데 vacuous** · iOS `canOpenURL` 미선언 스킴은 항상 false(빌더 테스트가 빈 통과) · **개수 비교로 사용자 조작을 판정하면 오고지** — ✅PR#422·#423·#425·#426
 - [[account-withdrawal-pipeline]] — 탈퇴 요청 **0건이 "수요 없음"이 아니라 "기능 불능"**이었다. 🔑0 을 만나면 **왜 0인가**를 먼저 확인(정상 0과 이상 0은 같은 숫자, 정반대 결론) · 🚨RLS 테이블의 pgTAP 0건은 "없다"가 아니라 **"안 보인다"**일 수 있다 — ✅PR#427
+- [[ops-defect7-wave-2026-08]] — ops 가 앱의 나머지와 **통합돼 있지 않았다**(offline·notification·payroll 참조 전부 0건). 오프라인 가드 44곳(🔑큐잉은 존재하지 않는 기능 — `offlineFirst`+`retry:false`) · 배정 알림에 **딥링크를 일부러 안 걸었다**(도착 화면이 RLS 로 빈 화면) · 근태 write-back 은 **새 저장소를 안 만들고** 해석기 1개+기존 RPC 위임 · UI 는 `reason==='ok'` 일 때만 열고 **일괄 버튼 금지를 테스트로 고정**(notify 트리거 3개=20명이면 60발화) — ✅PR#451~#456
+- [[full-app-audit-2026-08-09]] — 41 에이전트 2라운드 감사, 확정 **60건**·반증 3. 🔑약점이 한 패턴으로 수렴: **규약이 웨이브 단위로 소급 적용되고 신규 코드·범위 밖 도메인엔 자동 전파되지 않는다**(HIGH 7 중 5). 🏷️prod 데이터가 사실상 0이라 **지금이 가장 싼 시점** · 🚨"Grep 0건" 부재증명은 **브레이스 글롭 공허 매칭** 함정을 밟았을 수 있다 · 스키마 키에 한글 넣으면 에이전트 400 즉사
 - [[ops-followups-2026-08]] — 전광판·QR 링크가 **DNS 미해석 도메인**을 가리켰다(설계에서 "선택적"이던 인프라가 코드엔 전제로 박힘). 칩 입력이 realtime 재렌더마다 되돌아간 원인=**복제한 effect 관용구의 전제**(deps 인라인 객체). 🚨**카운트 가드는 숫자가 우연히 같으면 머지 충돌이 안 난다** — ✅PR#435·#438
