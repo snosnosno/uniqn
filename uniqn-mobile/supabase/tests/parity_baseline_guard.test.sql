@@ -162,10 +162,19 @@
 --     쓰기 함수는 늘지 않는다. 정책 111 불변(테이블·RLS 미변경).
 --     🔴 prod 미적용 — 머지·prod 적용 전까지 주간 parity-smoke 가 불일치를 보고한다.
 --
+--   · 20260809140000_rls_cost_hygiene_and_notification_retention.sql — 정책 111 → **110**.
+--     감사 cost-01. baseline 덤프에 글자 그대로 중복 실려 있던 공개 SELECT 정책 2개 중
+--     `jp_select_public_search` 를 제거했다(qual 동일·둘 다 TO public — 20260710000002:13592/:13636).
+--     남긴 쪽은 `job_postings_select_all` — 전용 회귀 파일(job_postings_select_all_whitelist)이
+--     붙어 있어 whitelist 축소 보호가 그대로 산다.
+--     같은 마이그의 `ops_prizes_select`(cost-04 initplan 래핑)는 DROP+CREATE 재정의라 증감 0.
+--     함수 208 불변 — 크론 2건(cost-02 alter_job / cost-03 신설)은 인라인 SQL 이라 함수를 안 만든다.
+--     🔴 prod 미적용 — 머지·prod 적용 전까지 주간 parity-smoke 가 111 vs 110 불일치를 보고한다.
+--
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
 -- PARITY_EXPECT_FUNCS=208
--- PARITY_EXPECT_POLICIES=111
+-- PARITY_EXPECT_POLICIES=110
 -- ============================================================
 BEGIN;
 SELECT plan(7);
@@ -190,8 +199,8 @@ SELECT is(
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(
   (SELECT count(*)::int FROM pg_policies WHERE schemaname = 'public'),
-  111,
-  'public RLS policy count == prod (111 = 110 + ops_blind_presets_owner_all 1, 2026-07-24)');
+  110,
+  'public RLS policy count == prod (110 = 111 - jp_select_public_search 1(cost-01 중복 공개 SELECT 정책 제거), 2026-08-09)');
 
 -- 4~6. gen-1 재빌드 보안퇴행 3종 부재 (prod=deny, 레포 전용 부활 금지)
 SELECT is(

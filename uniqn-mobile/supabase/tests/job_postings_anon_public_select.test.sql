@@ -49,14 +49,17 @@ SELECT is(
 -- (공유 링크 + 확정 스태프 상세 조회). closed 만 있고 capacity_full 누락 시 회귀.
 -- 정책 이름 드리프트(prod=jp_select_public_search / repo=jp_select) 무관하게,
 -- 공개 status 허용집합 정책이 capacity_full 을 포함하는지 검사.
+-- 2026-08-09(cost-01): jp_select_public_search 가 job_postings_select_all 과 글자 그대로
+--   중복이라 제거됐다(마이그 20260809140000). 이 단언의 의도는 처음부터 "이름이 아니라
+--   공개 SELECT 정책의 capacity_full 노출"이므로 IN 목록에 생존자를 더해 의도를 유지한다.
 SELECT ok(
   EXISTS (
     SELECT 1 FROM pg_policy
     WHERE polrelid = 'public.job_postings'::regclass
-      AND polname IN ('jp_select_public_search', 'jp_select')
+      AND polname IN ('jp_select_public_search', 'jp_select', 'job_postings_select_all')
       AND pg_get_expr(polqual, polrelid) LIKE '%capacity_full%'
   ),
-  '공개 SELECT 정책(jp_select_public_search/jp_select)이 capacity_full 을 노출해야 한다(M4)'
+  '공개 SELECT 정책(job_postings_select_all/jp_select_public_search/jp_select)이 capacity_full 을 노출해야 한다(M4)'
 );
 
 SELECT finish();
