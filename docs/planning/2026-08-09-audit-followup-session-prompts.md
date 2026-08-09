@@ -3,6 +3,52 @@
 > **출처**: `docs/analysis/2026-08-09-full-app-audit-2rounds.md` (확정 60건 / 반증 3건)
 > **새 세션은 이 파일부터 읽는다.** 아래 코드블록을 그대로 붙여넣으면 된다.
 
+---
+
+## 🔴 실행 현황 (2026-08-09 갱신 — 다음 세션은 여기부터)
+
+| 세션 | 상태 | PR | prod 반영 |
+|---|---|---|---|
+| 문서 착지 | ✅ 완료 | #457 | — |
+| **세션1** S0 서버 마이그 | ✅ **완료** | #458 | 마이그 2건 적용 · exit proof 전항목 실측 |
+| **세션2** S0 웹 | ✅ **완료** | #459 | CF Pages 배포(`8cad683a`) · 실브라우저 관측 |
+| **세션3** 알림 파이프라인 | ✅ **완료** | #460 | 마이그 1건 적용 · EF 자동배포 |
+| **세션4** OTA-1 핵심 | 🟡 **1/5** — skew-F1 만 | #461 (OPEN) | — |
+| 1.0.6 스토어 출시 | ⏸ 사람 게이트 | — | — |
+| **세션5** OTA-2 견고성 | ⬜ 미착수 | — | — |
+| **세션6** 1.0.7 빌드분 | ⬜ 미착수 | — | — |
+
+### 세션4 잔여 4건 (다음 세션의 시작점)
+
+1. **data-01 [HIGH] — 🚨 이 원장의 공백이었다.** 세션4 프롬프트는 "세션1에서 서버 RPC 확장이
+   끝난 뒤 착수"를 전제하는데 **세션1 대상 목록에 data-01 서버 절반이 없다.** 감사 §3 S0-서버
+   표에는 있다(`update_work_log_slot` 에 status-only patch 확장). 다음 세션이 **서버 먼저** 해야 한다.
+2. **realtime-01 [HIGH]** — `useConfirmedStaff` 렌더 소스 단일화
+3. **testgap-01 [MEDIUM]** — 계측 활성화
+4. **realtime-02 [MEDIUM]** — realtime 콜백 디바운스
+
+### 이번 실행이 원장을 정정한 것 (실측 근거)
+
+| 원장 문구 | 실측 결과 |
+|---|---|
+| web-01: "정식 경로는 `app/+html.tsx`" | ❌ **이 프로젝트에선 무시된다.** `web.output` 이 없어 SPA(single) 모드이고 index.html 은 `@expo/cli/static/template/index.html` 의 `%LANG_ISO_CODE%` ← `exp.web.lang` 로 만들어진다. `+html.tsx` 를 두고 빌드해도 `lang="en"` 그대로였다 → `app.config.ts` 의 `web.lang: 'ko'` 가 정답 |
+| sec-01: "(b) 버킷 제거" 선택지 | ❌ **SQL 로 불가능.** `storage.protect_delete()` 트리거가 막는다 — Storage API 전용 |
+| sec-01: "(a) 4정책 DROP+CREATE" | ❌ **prod 에서 실패.** `storage.objects` owner=`supabase_storage_admin`, prod `postgres` 는 `rolsuper=f`·`pg_has_role=f` → **RESTRICTIVE 정책 1개를 얹어 AND 결합**이 유일한 in-migration 해법 |
+| push-01: "ops⑦-2 가 같은 곱셈을 지적" | ❌ 그 기록은 **근태 UI 건**이고 `bulk_settle_work_logs` 를 지목한 적이 없다. 별개 미문서화 결함 |
+| monitor-01: "훅이 `retry:false`" | ⚠️ 전역 `queryClient` 는 `retry: shouldRetry`(최대 3회)다. **두 ops 훅만** 덮어쓰고 있었고, 에러 타입도 이미 갈려 있었다(E6119/E6120 vs E1xxx) — 소비처가 구분을 버린 것 |
+
+### 이번 실행이 **추가로 찾은** 결함 (감사에 없던 것)
+
+- **푸시 ticket 정렬 버그** — `sendPushes` 가 실패한 chunk 의 ticket 을 배열에서 빼서 뒤 인덱스가 밀렸고,
+  `handleTickets` 가 `tickets[i]↔messages[i]` 로 짝지어 `DeviceNotRegistered` 때 **엉뚱한 사용자의
+  토큰을 지우고 있었다.** #460 에서 같이 고쳤다.
+- **`COMMENT ON POLICY … ON storage.objects` 는 42501** — 같은 파일의 `CREATE POLICY` 는 통과한다.
+  로컬 psql 에서는 성공하므로 **로컬 통과 ≠ CI/prod 통과**. CI DB Tests 가 잡았다.
+- **`document?.x` 는 미선언 식별자를 못 막는다** — 옵셔널 체이닝은 값이 nullish 인 경우만 막는다.
+  RN 네이티브·jest node 환경에는 `document` 바인딩이 아예 없어 `ReferenceError` 다.
+
+---
+
 ## 전제 — 배포 상황 (2026-08-09 사용자 확정)
 
 | 사실 | 함의 |
