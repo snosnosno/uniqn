@@ -28,6 +28,9 @@ import {
 import { env } from '@/config/env';
 import { getLayoutColor, getCssVarTokens } from '@/constants/colors';
 import { SheetProvider } from '@/components/app/SheetProvider';
+import { UpdateBanner } from '@/components/version/UpdateBanner';
+import { VersionGateScreen } from '@/components/version/VersionGateScreen';
+import { resolveVersionGate } from '@/domains/version/resolveVersionGate';
 import { useAppInitialize } from '@/hooks/useAppInitialize';
 import { useAndroidOrientationPolicy } from '@/hooks/useAndroidOrientationPolicy';
 import { useOtaUpdateGate } from '@/hooks/useOtaUpdateGate';
@@ -157,7 +160,12 @@ if (__DEV__) {
   LogBox.ignoreLogs(SUPPRESSED_WARNINGS);
 }
 
-function MainNavigator() {
+function MainNavigator({
+  softUpdate,
+}: {
+  /** skew-F1 세 번째 계층 — 소프트 업데이트 안내(차단하지 않는다) */
+  softUpdate?: { available: boolean; latestVersion?: string };
+}) {
   const { mode, isDarkMode } = useThemeStore();
   const user = useAuthStore((state) => state.user);
   const isDark = isDarkMode;
@@ -187,6 +195,10 @@ function MainNavigator() {
           <AuthenticatedRuntime />
         </Suspense>
       ) : null}
+      <UpdateBanner
+        visible={softUpdate?.available ?? false}
+        latestVersion={softUpdate?.latestVersion}
+      />
       <Stack
         screenOptions={{
           headerShown: false,
@@ -213,13 +225,46 @@ function MainNavigator() {
 }
 
 function AppContent() {
-  const { isInitialized, isLoading, error, retry } = useAppInitialize();
+  const {
+    isInitialized,
+    isLoading,
+    error,
+    retry,
+    // skew-F1: 아래 셋은 useAppInitialize 가 계속 계산해 왔지만 아무도 읽지 않았다.
+    // 그래서 강제 업데이트·점검 모드가 발동해도 화면에는 "앱을 불러올 수 없습니다 + 재시도"
+    // 만 떴다 — 눌러도 같은 오류로 돌아오는 무한 루프였다.
+    requiresUpdate,
+    isMaintenanceMode,
+    versionCheckResult,
+  } = useAppInitialize();
 
-  if (isLoading || (!isInitialized && !error)) {
+  // 분기 우선순위는 순수 함수가 갖고 테스트가 고정한다(src/domains/version).
+  const gate = resolveVersionGate({
+    isInitialized,
+    isLoading,
+    error,
+    requiresUpdate,
+    isMaintenanceMode,
+    latestVersion: versionCheckResult?.latestVersion,
+    // 🔑 점검 모드에서는 versionCheckResult 가 **null** 이다 — bootstrapCore 가
+    //    MaintenanceError 를 throw 하고 catch 분기가 versionCheckResult: null 로 세팅한다.
+    //    서버가 내려준 안내 문구는 그 에러의 message 에 실려 있는 것이 유일한 경로다.
+    maintenanceMessage: isMaintenanceMode ? error?.message : undefined,
+  });
+
+  if (gate.kind === 'loading') {
     return <Loading variant="layout" message="앱을 불러오는 중..." />;
   }
 
-  if (error) {
+  if (gate.kind === 'maintenance') {
+    return <VersionGateScreen kind="maintenance" message={gate.message} onRetry={retry} />;
+  }
+
+  if (gate.kind === 'forceUpdate') {
+    return <VersionGateScreen kind="update" />;
+  }
+
+  if (gate.kind === 'error') {
     return (
       <View className="flex-1 bg-white dark:bg-surface-dark">
         <ErrorState error={error} title="앱을 불러올 수 없습니다" onRetry={retry} />
@@ -229,7 +274,7 @@ function AppContent() {
 
   return (
     <ScreenErrorBoundary name="RootLayout">
-      <MainNavigator />
+      <MainNavigator softUpdate={gate.softUpdate} />
     </ScreenErrorBoundary>
   );
 }
