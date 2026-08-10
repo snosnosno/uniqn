@@ -93,7 +93,7 @@
     "nativewind": "^4.2.1",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "react-hook-form": "^7.68.0",
+    "react-hook-form": "^7.84.0",
     "react-native": "0.83.10",
     "react-native-calendars": "^1.1313.0",
     "react-native-gesture-handler": "~2.30.0",
