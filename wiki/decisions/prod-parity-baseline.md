@@ -1,11 +1,13 @@
 ---
 area: decisions
-updated: 2026-07-24
+updated: 2026-08-09
 status: current
 sources:
   - uniqn-mobile/supabase/tests/parity_baseline_guard.test.sql
   - .github/workflows/parity-smoke.yml
+  - .github/workflows/prod-migrate.yml
   - PR#241
+  - PR#455
   - memory/pitfall_prod_repo_schema_drift_massive
 tags: [database, migration, parity, adr]
 ---
@@ -35,6 +37,26 @@ prod DB와 레포 마이그레이션이 대규모 발산: 함수 prod 163 vs 레
 - **Session pooler 사용자명은 `postgres.<프로젝트ref>`** 다. `postgres`만 쓰면 호스트는 붙지만 `FATAL: password authentication failed for user "postgres"`로 떨어진다. Direct connection(`db.<ref>.supabase.co`) 쪽 문자열의 사용자명과 다르다. 접속 문자열은 대시보드 Settings가 아니라 상단 **Connect** 버튼(`?showConnect=true&method=session`)에 있다.
 - **비밀번호의 `@ # / : %`는 퍼센트 인코딩 필수** — 안 하면 URI 파싱이 깨진다. 손으로 바꾸지 말고 `[uri]::EscapeDataString()`(PowerShell)로 변환할 것.
 - 부수 사실: **Supabase DB 비밀번호는 프로젝트 생성 시 1회만 노출**되고 이후 조회할 수 없다. 분실 시 재설정 외에 방법이 없다.
+
+## 기대값 리터럴은 3곳을 동시에 고쳐야 한다 (2026-08-08 실증)
+
+ops ⑦-1 과 ⑦-2 가 각각 함수를 1개씩 추가하며 **둘 다 207 을 적어** rebase 충돌이 났다.
+해소는 **마커(`PARITY_EXPECT_FUNCS`) + 단언 리터럴 + 설명 문구 3곳 동시** 갱신으로 208
+([[ops-defect7-wave-2026-08]]).
+
+> 🚨 **이번엔 충돌이 나 줘서 잡혔다.** 두 레인이 각각 +1 을 해서 **둘 다 같은 숫자**를 적으면
+> git 이 리터럴을 자동 병합해 조용히 통과한다(정답은 +2) — [[ops-followups-2026-08]] 1회차.
+> **숫자만 올리지 말 것**: 과거 `201 == 201` green 은 **반대 방향 드리프트 2개의 상쇄**였다.
+> 파리티 red 는 총계를 세기 전에 **어느 함수인지**부터 본다.
+
+## 개수 대조와 기록 대조를 섞지 마라 (2026-08-08)
+
+"기록(`list_migrations`)만 없고 객체는 원래 있었다"는 중간 판정이 나왔다가 **틀린 것으로 반증**됐다 —
+`prod-migrate` 워크플로우 로그의 `미기록 확인` + **적용 전 md5=`(none)`** 둘 다가 함수 부재의
+직접 증거였고, 그 판정이 본 208/111 은 **적용 이후 값**(적용 전 206)이었다.
+
+> 🔑 `pg_proc` 카운트 대조 병행은 유효하나 **관측 시각을 함께 남겨라.** 병렬 세션이 상시
+> 활성이라, 남의 적용 결과를 "원래 있었다"로 읽는 사고가 실제로 났다.
 
 ## 판정이 뒤집힌 사례 (재발견 금지)
 "공고 INSERT RLS 느슨 계약"은 로컬 gen-1 잔상이었고 prod 진실은 `jp_insert` 역할게이트([[rls-model]]). baseline 직후 e2e red 2건은 테스트 버그가 아니라 **master가 숨겨온 prod 실결함**(board_reports UPDATE 갭)과 시드 공백이었다.

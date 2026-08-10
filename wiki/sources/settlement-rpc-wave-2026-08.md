@@ -1,9 +1,10 @@
 ---
 area: sources
-updated: 2026-08-08
+updated: 2026-08-09
 status: current
 sources:
   - uniqn-mobile/app/(employer)/venue-settlements.tsx
+  - uniqn-mobile/src/components/employer/settlement/SettlementList.tsx
   - uniqn-mobile/src/components/employer/settlement/GroupedSettlementCard.tsx
   - uniqn-mobile/src/repositories/supabase/SettlementRepository.ts
   - uniqn-mobile/src/repositories/supabase/WorkLogRepositoryTransactions.ts
@@ -13,6 +14,7 @@ sources:
   - PR#400
   - PR#402
   - PR#420
+  - PR#448
 tags: [settlement, rpc, payroll, trigger, pgtap]
 ---
 
@@ -32,7 +34,21 @@ tags: [settlement, rpc, payroll, trigger, pgtap]
 선택·집계 판정이 **2곳에 복제**돼 있었다. 복제 자체보다 위험한 건, 한쪽만 고쳐질 때
 "선택된 것"과 "집계된 것"이 조용히 달라진다는 점이다. 렌더 가드를 신설해 고정했다.
 
-⚠️ 감사 항목 **M11(축 통일)은 아직 열려 있다.**
+### ✅ M11(축 통일) 종료 — PR#448 `e9ec81aad` (2026-08-08)
+
+`payroll_status` 의 `'failed'` 축을 `!== COMPLETED` 로 통일했다. 원장이 지목한 4곳 외
+**5번째를 찾았다** — `SettlementList:171` 의 **필터 탭 카운트**도 3값 버그라 탭 합계가
+'전체'와 안 맞았다(1+0≠2). 이 어긋난 합계를 **회귀 관측점**으로 썼다.
+
+`FilterStatus` 타입도 `'all'|PayrollStatus` → `'all'|SettlementDisplayStatus` 로 좁혔다
+— **고를 수 없는 값이 축에 남아 있던 것**이 원인의 절반이다.
+
+> 🔑 "그 상태는 휴면이다"는 **반쪽만 참**이었다. 서버 RPC 가 여전히 `'failed'` 를 받는다
+> (라이브 정의 = `20260802161000:301`). 휴면 판정을 할 때 **클라만 보고 결론내지 말 것** —
+> 그리고 함수 정의를 인용할 땐 `grep -l ... | tail -1` 로 **최신 파일**을 짚어라
+> ([[secdef-replace-search-path-loss]] 와 같은 함정: 이때 참조된 `...130000:70` 은 구파일이었다).
+
+검증: Red-Green(5 failed → 17/17) + 31 suites / 377 tests.
 
 ## 쓰기 채널을 좁히면 기존 테스트가 깨진다 (PR#420)
 

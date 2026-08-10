@@ -379,3 +379,18 @@ v_lines := v_lines || '';   -- v_lines 는 text[]
 - 신규 8(sources): `time-model-wave-2026-08`(#409·#410·#412·#417·#424 · 센티넬 분열이 정원 우회를 열었다 · 정원0=거부 · B 원인은 의도적으로 열림) · `settlement-rpc-wave-2026-08`(#387·#388·#393·#400·#402·#420 · 편도 문 금지 · 쓰기 채널 좁히면 pgTAP 이 깨진다) · `notification-offline-contract-2026-08`(#396·#397·#398·#404·#429 · 관측 창 없이 "없으면 지운다" 금지 · 값의 출생을 먼저 물어라) · `dead-circuit-cleanup-2026-08`(#406·#408 · 제거14/완성9 · 거짓 Undo) · `address-geocoding-2026-08`(#391·#411·#419 · WebView origin 무음 실패 · 카카오 x=경도) · `ui-device-report-2026-08`(#422·#423·#425·#426 · 유령 스피너·Fragment 인덱스·vacuous SafeArea 가드·canOpenURL) · `account-withdrawal-pipeline`(#427 · "0건"이 수요 없음이 아니라 기능 불능) · `ops-followups-2026-08`(#435·#438 · DNS 미해석 도메인 · 복제한 effect 의 전제 · 숫자 카운트 가드는 충돌 감지가 안 된다)
 - 신규 1(decisions): `rollout-instrumentation-gap`(#437·#407 · 게이트를 걸 때 열 열쇠도 같이 만들어라 — 측정 수단 없는 "롤아웃 확인 후"는 조건이 아니라 무기한 보류 · prod 트래픽 27명이라 대기로는 안 채워진다)
 - 계기: 사용자 요청으로 잔여 부채 일괄 처리. 이 졸업에 맞춰 MEMORY.md 인덱스를 예산(14,000자) 이하로 가지치기.
+
+## [2026-08-09] ingest | ops 결함 ⑦ 웨이브 · 감사 60건 · 배포 스큐 · 트리거함수 GRANT 규약
+- 신규 2(sources): `ops-defect7-wave-2026-08`(#451~#456 · ops 가 offline/notification/payroll 어느 것과도 배선돼 있지 않았다 — 가드 44곳 · **딥링크를 일부러 안 걸었다**(도착 화면이 RLS 빈 화면) · **새 근태 저장소를 안 만들었다**(work_logs SSOT 유지, 해석기 1개+기존 RPC 위임) · 일괄 버튼 금지를 테스트로 고정) · `full-app-audit-2026-08-09`(41 에이전트 2라운드 · 확정 60/반증 3 · 🔑규약이 웨이브 단위로만 소급돼 신규 코드에 자동 전파되지 않는다=HIGH 7 중 5 · 부재증명 신뢰 3등급 · 스키마 키 ASCII 강제)
+- 신규 1(decisions): `deploy-channel-skew`(#441·#444 · 채널 3속도 → **서버 먼저** · 기능 플래그는 라우트 게이트가 아니다 · 머지≠서버 반영이라 배포 직전 `list_migrations` 실측 · **버전 게이트 3계층이 전부 죽어 있다** — 구현이 아니라 배선 문제 · 순서 강제 2건)
+- 갱신 2: `secdef-hardening` — **규칙 4 신설**(트리거 전용 함수는 PUBLIC/anon/authenticated 전부 회수, PR#455 이탈 실증. 권한상승은 아니고 규약 이탈+advisor WARN+PostgREST 노출. 🚨게이트를 못 넘은 이유=회귀 테스트가 anon 만 단언 → `[24]` 단언 추가) · `prod-parity-baseline` — 기대값 리터럴 **3곳 동시 갱신** 규율(⑦-1·⑦-2 가 둘 다 207 을 적어 충돌, 208 해소) + 개수 대조와 기록 대조 혼동 반증(적용 전 md5=`(none)` 이 함수 부재의 직접 증거, 208 은 적용 **이후** 값) + 관측 시각 병기
+- 계기: 사용자 `/ingest` 인자 없이 호출 → 후보 4건 전부 선택. 08-08~08-09 머지 6건(#451·#452·#453·#455·#456 + 감사 원장)이 wiki 미대응 상태였다.
+
+## [2026-08-10] lint | 전 영역 건강 진단 + 확정 모순 2건 교정 + MEMORY 예산 복귀
+- **진단**: stale 38페이지(엔트리 95) · UNVERIFIABLE 4 · 고아(백링크≤2) **25/70** · 미흡수 docs 154 · **확정 모순 2건**.
+- 🚨 **최상위 발견 — 어제(08-09) 만든 신규 2페이지가 하루 만에 뒤집혔다.** #458~#461 이 감사 항목을 실제로 고쳐서, `deploy-channel-skew` 의 "버전 게이트 3계층 사망"과 `full-app-audit-2026-08-09` 의 발견 서술이 현재 상태와 어긋났다. 둘 다 정정: 전자는 **#461 배선 완료 + 설계 교훈 3종**(우선순위를 순수함수로 뽑은 이유 · 강제 업데이트엔 재시도 버튼 없음 · 점검모드에서 `versionCheckResult=null`), 후자는 **착지 현황표**(세션1~4 / PR 대조) + 🔴미착수 목록 + 🚨원장 공백(세션4 가 전제하는 data-01 서버 절반이 세션1 대상에 없다).
+- **추가 졸업 2건**: `full-app-audit-2026-08-09` §착지가 가르쳐준 것 — **감사의 처방 자체가 틀린 3건**(`storage.objects` 는 CREATE POLICY 만 되고 로컬 psql 통과≠prod 통과 · web `lang` 은 `+html.tsx` 가 아니라 `app.config.ts` 의 `web.lang` — SPA 는 `+html.tsx` 를 통째로 무시 · `document?.x` 는 미선언 식별자를 못 막는다). `ops-defect7-wave-2026-08` §곁가지 — `/tournaments` 라우트 충돌(#449, metro 사전순 정렬이 원인이라 "정렬 뒤집기" 해법은 금지 · alias **키**를 바꾸면 발송된 알림 링크가 샌다).
+- **stale 실측 교정**: `architecture/layers` — 예외2 에 **`reset` 누락**(+단독 호출 금지 조건) · 기술스택 RN **0.83.4→0.83.6**(`package.json:96` 실측) · `createRealtimeSubscription` 줄번호 461→**474**.
+- **파리티 3중 불일치 해소**: MEMORY 가 206/111 과 208/111 을 동시에 주장하고 레포 가드는 208/110 이었다 → **prod 실측 208/110**(관측 `2026-08-09 18:39 UTC`)으로 확정. 레포 `parity_baseline_guard.test.sql:172` 의 "🔴 prod 미적용" 주석이 stale 임도 함께 확인.
+- **MEMORY.md 19,172 → 13,951자**(예산 14,000 복귀). 냉이력 6건은 `MEMORY-archive.md` 로 이관, 졸업 카탈로그 복제는 `wiki/index.md` 포인터로 대체.
+- ⚠️ **미조치로 남긴 것**: stale 37페이지(오탐 다수 — `check-staleness.sh` 가 mtime 기반이라 `package.json`·`CLAUDE.md` 터치가 무관한 페이지를 깨운다) · 고아 25 · UNVERIFIABLE 4 · 미흡수 docs 154. 근본 개선안 = 광역 파일을 `sources` 에서 제외.
