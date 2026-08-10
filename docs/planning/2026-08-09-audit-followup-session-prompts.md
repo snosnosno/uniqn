@@ -13,21 +13,46 @@
 | **세션1** S0 서버 마이그 | ✅ **완료** | #458 | 마이그 2건 적용 · exit proof 전항목 실측 |
 | **세션2** S0 웹 | ✅ **완료** | #459 | CF Pages 배포(`8cad683a`) · 실브라우저 관측 |
 | **세션3** 알림 파이프라인 | ✅ **완료** | #460 | 마이그 1건 적용 · EF 자동배포 |
-| **세션4** OTA-1 핵심 | ✅ **완료 5/5** | #461 · #466+#467 · `f676c039d` | 마이그 `20260810100000` 적용 · **`20260811100000` 미적용** |
-| **세션5** OTA-2 견고성 | ✅ **완료 8/8** | `ce0f95881` | 서버 변경 없음 |
-| **세션6** 1.0.7 빌드분 | ✅ **코드 완료** | `b3737621c` | 서버 변경 없음 |
+| **세션4** OTA-1 핵심 | ✅ **완료 5/5** | #461 · #466+#467 · **#469** | 마이그 `20260810100000` + **`20260811100000` 적용 완료** |
+| **세션5** OTA-2 견고성 | ✅ **완료 8/8** | **#469** | 서버 변경 없음 |
+| **세션6** 1.0.7 빌드분 | ✅ **코드 완료** | **#469** | 서버 변경 없음 |
+| **머지·마이그·OTA·웹배포** | ✅ **완료 (08-10 21:2x UTC)** | `d1e1a3752` | 아래 §착지 기록 |
 | 1.0.6 스토어 출시 | ⏸ 사람 게이트 | — | — |
 
-### 🔴 남은 것은 전부 사람 게이트다 (코드 잔여 0)
+### ✅ 착지 기록 (2026-08-10, PR #469 `d1e1a3752`)
+
+| 단계 | 결과 | 증거 |
+|---|---|---|
+| PR #469 머지 | ✅ squash | CI 13/13 pass — DB Tests 3m2s · E2E 9m53s · Quality 4종 · Tests 4m19s · Bundle · EAS Config |
+| 마이그 `20260811100000` prod 적용 | ✅ `prod-migrate` run 31433175979 (16s) | 적용 전후 실측(21:17:33→21:18:23 UTC): 함수 **208 불변** · 정책 **110 불변** · event CHECK **1개 유지**(AND 결합 없음) · `app_session_start` 포함 · 인덱스 신설 1 |
+| OTA 발행 | ✅ group `2249087e-1be8-4802-a309-162a197deb5c` | 채널 `production` · runtime **1.0.6** · Commit `d1e1a3752`(사전 기록 HEAD 와 일치, 긴 명령 중 트리 교체 없음) |
+| 웹 배포 | ✅ `uniqn-app.pages.dev` | 번들 10.02MB · 게이트(라우트 마커·CSS) 통과 · 배포본이 로컬 해시 `index-e18c05d5…` 와 일치 · `lang="ko"` 유지 |
+
+🔎 **발행 중 발견 — `extra.environment` 가 OTA 에서 `development` 로 박힌다 (무해, 그러나 함정)**
+`app.config.ts` 의 `getEnvironment()` 는 `APP_ENV`/`EAS_BUILD_PROFILE` 만 보는데 `eas update` 엔 둘 다 없다.
+**앱 동작은 멀쩡하다** — 진짜 환경 축은 `src/config/env.ts` 의 `detectEnvironment()` 이고 그건
+metro 가 번들에 inline 하는 `EXPO_PUBLIC_RELEASE_CHANNEL`/`NODE_ENV` 를 본다(웹 번들 실측:
+`{environment:'production', isDevelopment:!1, isProduction:!0}` 상수 접힘 확인).
+`extra.environment` 의 유일한 소비처 `versionInfo.fullVersion` 은 화면에 안 쓰인다.
+🚨 **다음에 물릴 지점**: `Constants.expoConfig.extra.environment` 를 새로 읽으면 OTA 사용자만 `development` 다.
+환경 판정은 **`@/config/env` 의 `env.*` 만** 쓸 것.
+
+### 🔴 남은 것은 전부 사람 게이트다 (코드 잔여 0 · 서버 잔여 0)
 
 | # | 항목 | 왜 사람이어야 하나 |
 |---|---|---|
-| 1 | **마이그 `20260811100000` prod 적용** | `prod-migrate` 워크플로우 실행. `analytics_events` 화이트리스트 확장 — **OTA 발행 전에** 넣어야 계측이 첫 세션부터 잡힌다 |
-| 2 | 1.0.6 스토어 **수동 출시** | 스토어 콘솔 |
-| 3 | 출시 확인 후 `eas update --branch production` | 순서 강제 1 (아래 런북) |
-| 4 | 1.0.7 `eas build` iOS/Android + 실기기 QA | 네이티브 빌드 — 특히 **auth-F3 세션 저장 회귀**(자동로그인) |
+| 1 | **1.0.6 스토어 수동 출시** | 스토어 콘솔. OTA 는 이미 대기 중이라 출시되는 즉시 신규 설치자에게 함께 도달한다 |
+| 2 | 출시 확인 후 `app_config.latest_version`/`recommended_version` → 1.0.6 | 🚨 **출시 전에 올리면 스토어에 없는 버전으로 업데이트를 안내**하게 된다. 그래서 이번 세션에서 손대지 않았다 |
+| 3 | 그 다음 `force_update_version` 검토 | 순서 강제 1 — skew-F1 OTA 도달 확인 후 |
+| 4 | 1.0.7 `eas build` iOS/Android + 실기기 QA | 네이티브 빌드 — 핵심은 **auth-F3 자동로그인 회귀**(업데이트 후 로그아웃되지 않아야 한다) |
 | 5 | Supabase Auth **Rate Limits** 콘솔 확인 (#408) | 레포로 증명 불가 |
-| 6 | `app_config` 버전값 갱신 | 순서 강제 1·2 |
+
+📊 **계측 도달 확인 쿼리** (OTA 가 실제로 닿았는지 = #407 게이트를 열 분모):
+```sql
+SELECT props->>'v' AS app_version, props->>'ota' AS ota_bundle, count(*)
+  FROM analytics_events WHERE event='app_session_start' GROUP BY 1,2 ORDER BY 3 DESC;
+```
+`ota_bundle` 이 `'embedded'` 가 아닌 행이 보이면 OTA 가 실제 기기에 적용된 것이다.
 
 ### ✅ 세션4 잔여 — realtime-01 · realtime-02 · **testgap-01** (2026-08-11, `f676c039d`)
 
@@ -432,26 +457,26 @@ docs/analysis/2026-08-09-full-app-audit-2rounds.md 의 에러처리·인증·UX 
 
 ---
 
-## 1.0.6 출시 런북 (세션4·5 완료 — 이제 이 순서만 남았다)
+## 1.0.6 출시 런북 — ✅ 1·2·5 완료(08-10), 남은 것은 스토어 출시부터
 
 🚨 **1번을 건너뛰면 계측이 첫 세션부터 비어 있다.** `app_session_start` 는 서버 화이트리스트
 CHECK 에 걸려 조용히 버려지고(fire-and-forget), 그러면 #407 REVOKE 게이트를 열 분모가
 또 안 쌓인다. 클라는 안 깨지지만 **이번 작업의 목적 자체가 무산된다.**
 
 ```
-1. ☐ 마이그 20260811100000 prod 적용 (prod-migrate 워크플로우, 파일 바이트 그대로)
+1. ✅ 마이그 20260811100000 prod 적용 — run 31433175979, 파리티 208/110 불변 실측 (prod-migrate 워크플로우, 파일 바이트 그대로)
      → list_migrations 실측 + analytics_events CHECK 에 app_session_start 포함 확인
      → 파리티 208/110 불변 확인 (이 마이그는 함수·정책을 안 바꾼다)
-2. ☐ 세션4·5 OTA 묶음이 master 에 머지되고 npm test/quality green
-3. ☐ 스토어에서 1.0.6 수동 출시
+2. ✅ 세션4·5·6 묶음 머지 — PR #469 d1e1a3752, CI 13/13 pass
+3. ☐ 스토어에서 1.0.6 수동 출시   ← 🔴 여기부터 사람
 4. ☐ 출시 반영 확인 (스토어 페이지 버전 표기)
-5. ☐ git rev-parse HEAD 기록 → eas update --branch production → 다시 HEAD 대조
+5. ✅ OTA 발행 완료 — group 2249087e-1be8-4802-a309-162a197deb5c, runtime 1.0.6, Commit d1e1a3752(HEAD 전후 대조 일치)
      (긴 명령 중 트리가 교체돼 Commit 라벨이 어긋난 이력 2회)
      ⚠️ 채널은 production 이다 — 원장 구판의 `--branch master` 는 틀렸다
      ⚠️ 발행 트리의 package.json version 이 **1.0.6** 인지 확인
         (1.0.7 이면 runtimeVersion 이 갈려 1.0.6 기기에 도달하지 않는다)
-6. ☐ Update 그룹 ID·runtime 버전 기록
-7. ☐ app_config latest_version/recommended_version → 1.0.6
+6. ✅ 기록 완료 (위 §착지 기록)
+7. ☐ app_config latest_version/recommended_version → 1.0.6  🚨 출시 확인 **후에만**(전에 올리면 스토어에 없는 버전을 안내한다)
 8. ☐ **계측 도달 확인** — analytics_events 에서 app_session_start 가 쌓이는지:
      SELECT props->>'v', props->>'ota', count(*) FROM analytics_events
       WHERE event='app_session_start' GROUP BY 1,2;
