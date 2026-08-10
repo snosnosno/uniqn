@@ -4,6 +4,7 @@
 -- 마이그레이션: 20260806140000_work_log_slot_attendance.sql
 --               20260807120000_work_log_slot_custom_role.sql            (customRole 축, 22~37번)
 --               20260807130000_work_log_slot_custom_role_enum_guard.sql (라벨 충돌 거부, 35~36번)
+--               20260810100000_work_log_slot_status_patch.sql            (status 축, 44~59번)
 --
 -- ⚠️ 아래 번호는 **실제 pgTAP 번호**다(`psql -f` TAP 출력 실측). 원본 e2abe630d 부터 섹션 주석이
 --    실제보다 2 작게 어긋나 있었고(11-B~11-C 가 단언 2개를 늘렸는데 뒤 번호를 안 밀었다)
@@ -42,7 +43,7 @@
 --    tr_work_logs_pin_payroll 도 발화하지 않는다 — jpc_test_set_user() 로 충분하다.
 -- ============================================================
 BEGIN;
-SELECT plan(43);
+SELECT plan(59);
 
 -- ── 픽스처 ──────────────────────────────────────────────────
 -- application_id 를 NULL 로 둔다(add_direct_staff 산 행의 형태). 이 파일은 실적 축만 보므로
@@ -636,6 +637,162 @@ SELECT is((SELECT check_out_ts FROM public.work_logs WHERE id = current_setting(
 
 SELECT is((SELECT end_time_source FROM public.work_logs WHERE id = current_setting('wa.wl_id')::uuid),
           NULL, '퇴근을 지우면 end_time_source 도 함께 지워진다 (manual 잔류 금지)');
+
+-- ============================================================
+-- 44~59번 — status 명시 지정 축 (마이그 20260810100000, 감사 data-01 서버 절반)
+--
+-- 클라 `ConfirmedStaffRepository.updateStatus` 가 하던 일을 RPC 로 흡수한 계약을 고정한다.
+-- 그쪽은 이력 jsonb 를 읽어서 spread 로 덧붙인 뒤 통째로 덮어썼다(잠금 없음) — 시간 편집과
+-- 겹치면 뒤에 끝난 쪽이 앞의 항목을 지운다. 59번이 그 소실이 더 이상 안 일어남을 본다.
+--
+-- ⚠️ 이 파일은 한 행(wa.wl_id)을 순차로 굴리는 구조다. 아래 블록은 **맨 끝**에 있어야 하고
+--    중간에 끼우면 앞 구간의 이력 길이 단언(16번)이 밀린다 — 헤더 :11 경고와 같은 이유.
+-- 🔑 기준 시각을 **명백한 과거**(2026-01-05)로 먼저 정렬한다. 픽스처의 2026-08-10 09:00 을
+--    그대로 쓰면 `now()` 가 그보다 이른 시각에 실행될 때 퇴근<=출근 가드에 걸려
+--    테스트가 **실행 시각에 따라 깨진다**(status 축은 시각을 now() 로 만들기 때문).
+-- ============================================================
+DO $$
+BEGIN
+  PERFORM jpc_test_set_user(current_setting('wa.owner_id')::uuid);
+  PERFORM public.update_work_log_slot(
+    current_setting('wa.wl_id')::uuid,
+    '{"checkIn":"2026-01-05T09:00:00+00:00","reason":"status 축 기준 정렬"}'::jsonb);
+END $$;
+
+-- ── 44~47) completed — **파생으로는 도달 불가한 값**을 명시로 만든다 ──
+DO $$
+BEGIN
+  PERFORM public.update_work_log_slot(
+    current_setting('wa.wl_id')::uuid,
+    jsonb_build_object('status', 'completed',
+                       'reason', '수동 근무 완료 처리',
+                       'editedBy', current_setting('wa.owner_id')));
+END $$;
+
+SELECT is((SELECT status::text FROM public.work_logs WHERE id = current_setting('wa.wl_id')::uuid),
+          'completed',
+          'status:completed 명시 지정이 그대로 저장된다 (파생은 checked_out 까지만 만든다)');
+
+SELECT isnt((SELECT check_out_ts FROM public.work_logs WHERE id = current_setting('wa.wl_id')::uuid),
+            NULL, 'completed 는 비어 있던 퇴근 시각을 채운다 (화면 게이트=타임스탬프 정합)');
+
+SELECT is((SELECT end_time_source FROM public.work_logs WHERE id = current_setting('wa.wl_id')::uuid),
+          'manual', '수동 상태 변경이 퇴근 시각을 쓰면 출처도 manual 이 된다');
+
+SELECT ok((SELECT (modification_history -> -1) ? 'newEndTime'
+             AND NOT ((modification_history -> -1) ? 'newStartTime')
+           FROM public.work_logs WHERE id = current_setting('wa.wl_id')::uuid),
+          '이력은 **바뀐 축만** 싣는다 — 퇴근만 생겼으므로 newStartTime 은 없다');
+
+-- ── 48~51) scheduled 복귀 + 0분 근무 차단 ──
+DO $$
+BEGIN
+  PERFORM public.update_work_log_slot(
+    current_setting('wa.wl_id')::uuid,
+    jsonb_build_object('status', 'scheduled',
+                       'reason', '수동 출근 예정 처리 — 기록된 출퇴근 시각 삭제'));
+END $$;
+
+SELECT is((SELECT status::text FROM public.work_logs WHERE id = current_setting('wa.wl_id')::uuid),
+          'scheduled', 'status:scheduled 는 근무 전 상태로 되돌린다');
+
+SELECT ok((SELECT check_in_ts IS NULL AND check_out_ts IS NULL
+           FROM public.work_logs WHERE id = current_setting('wa.wl_id')::uuid),
+          'scheduled 복귀는 출퇴근 시각을 양쪽 다 지운다 (CHECK 정합 유지)');
+
+SELECT is((SELECT end_time_source FROM public.work_logs WHERE id = current_setting('wa.wl_id')::uuid),
+          NULL, 'scheduled 복귀로 퇴근을 지우면 출처도 지워진다 (기존 규칙과 합성)');
+
+-- 🔑 출근 기록이 없는 행에 checked_out 을 요청하면 출퇴근이 **둘 다 now()** 가 되어 같아진다.
+--    등호를 거부하는 기존 가드가 그대로 "근무 0분" 을 막는다 — status 축에도 공짜로 적용된다.
+SELECT throws_like(
+  format($q$SELECT public.update_work_log_slot(%L::uuid,
+             '{"status":"checked_out","reason":"0분"}'::jsonb)$q$,
+         current_setting('wa.wl_id')),
+  '%퇴근 시간은 출근 시간보다 뒤여야 합니다%',
+  '출근 기록이 없는 행의 checked_out 요청은 거부된다 (근무 0분 방지)');
+
+-- ── 52~53) checked_in + 시각 무변경 전이는 이력 무소음 ──
+DO $$
+BEGIN
+  PERFORM public.update_work_log_slot(
+    current_setting('wa.wl_id')::uuid,
+    jsonb_build_object('status', 'checked_in', 'reason', '수동 출근 처리'));
+  PERFORM set_config('wa.hist_len',
+    (SELECT jsonb_array_length(modification_history)::text
+       FROM public.work_logs WHERE id = current_setting('wa.wl_id')::uuid), true);
+  -- 같은 상태를 다시 요청한다: check_in 은 기존 값 우선(COALESCE)이라 안 바뀌고 check_out 은
+  -- 이미 NULL 이다 → 바뀐 축이 없으므로 이력이 늘면 안 된다.
+  PERFORM public.update_work_log_slot(
+    current_setting('wa.wl_id')::uuid,
+    jsonb_build_object('status', 'checked_in', 'reason', '재요청'));
+END $$;
+
+SELECT ok((SELECT status::text = 'checked_in' AND check_in_ts IS NOT NULL AND check_out_ts IS NULL
+           FROM public.work_logs WHERE id = current_setting('wa.wl_id')::uuid),
+          'status:checked_in 은 출근만 기록하고 퇴근은 비운다');
+
+SELECT is((SELECT jsonb_array_length(modification_history)
+             FROM public.work_logs WHERE id = current_setting('wa.wl_id')::uuid),
+          current_setting('wa.hist_len')::int,
+          '시각이 실제로 안 바뀌는 상태 재요청은 이력을 남기지 않는다 (바뀐 축만 계약)');
+
+-- ── 54~58) 계약 위반 거부 5종 ──
+SELECT throws_like(
+  format($q$SELECT public.update_work_log_slot(%L::uuid, '{"status":"no_show"}'::jsonb)$q$,
+         current_setting('wa.wl_id')),
+  '%알 수 없는 근무 상태입니다%',
+  'no_show 는 status 패치로 받지 않는다 — 동반 컬럼이 있는 별도 도메인이다');
+
+SELECT throws_like(
+  format($q$SELECT public.update_work_log_slot(%L::uuid, '{"status":"bogus"}'::jsonb)$q$,
+         current_setting('wa.wl_id')),
+  '%알 수 없는 근무 상태입니다%',
+  '허용 목록 밖 문자열은 거부된다 (fail-closed)');
+
+SELECT throws_like(
+  format($q$SELECT public.update_work_log_slot(%L::uuid, '{"status":"checked_in"}'::jsonb)$q$,
+         current_setting('wa.wl_noshow')),
+  '%노쇼·취소된 근무는 이 경로로 상태를 바꿀 수 없습니다%',
+  '노쇼 행은 status 패치로 되돌릴 수 없다 (no_show_reason 잔류 모순 방지)');
+
+SELECT throws_like(
+  format($q$SELECT public.update_work_log_slot(%L::uuid,
+             '{"status":"checked_in","checkIn":"2026-01-05T09:00:00+00:00"}'::jsonb)$q$,
+         current_setting('wa.wl_id')),
+  '%근무 상태는 다른 항목과 함께 변경할 수 없습니다%',
+  'status 와 checkIn 동시 지정은 거부된다 (우선순위 모호성 제거)');
+
+-- 🔴 fail-closed 판정: 정산 완료건은 **시각 변경 여부와 무관하게** 막는다.
+--    기존 키(역할·색·메모)에 잠금을 안 건 이유는 "구 빌드가 즉사한다" 였는데,
+--    status 는 신설 키라 구 빌드가 보낼 수 없다 — 처음부터 조일 수 있는 유일한 시점이다.
+SELECT throws_like(
+  format($q$SELECT public.update_work_log_slot(%L::uuid, '{"status":"checked_out"}'::jsonb)$q$,
+         current_setting('wa.wl_settled')),
+  '%ALREADY_SETTLED%',
+  '정산 완료건은 status 패치를 거부한다 (status 가 정산 게이트의 판정축이다)');
+
+-- ── 59) 🔴 data-01 핵심 — 상태 변경과 시간 편집이 이력에서 서로를 지우지 않는다 ──
+-- 클라 read-modify-write 시절엔 나중에 끝난 쪽이 앞의 항목을 통째로 덮어썼다.
+-- 서버는 FOR UPDATE 로 잠근 스냅샷에서 append 하므로 두 항목이 모두 남는다.
+DO $$
+BEGIN
+  PERFORM public.update_work_log_slot(
+    current_setting('wa.wl_id')::uuid,
+    '{"checkIn":"2026-01-06T09:00:00+00:00","checkOut":"2026-01-06T18:00:00+00:00","reason":"교차 보존 확인"}'::jsonb);
+END $$;
+
+SELECT ok(
+  EXISTS(SELECT 1 FROM public.work_logs w,
+                jsonb_array_elements(w.modification_history) e
+          WHERE w.id = current_setting('wa.wl_id')::uuid
+            AND e->>'reason' = '수동 출근 처리')
+  AND
+  EXISTS(SELECT 1 FROM public.work_logs w,
+                jsonb_array_elements(w.modification_history) e
+          WHERE w.id = current_setting('wa.wl_id')::uuid
+            AND e->>'reason' = '교차 보존 확인'),
+  '상태 변경 이력과 시간 편집 이력이 한 배열에 **둘 다** 보존된다 (Lost Update 종료)');
 
 SELECT * FROM finish();
 ROLLBACK;
