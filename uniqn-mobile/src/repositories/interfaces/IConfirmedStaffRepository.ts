@@ -2,17 +2,6 @@ import type { UnsubscribeFn } from '@/types/common';
 import type { WorkLogStatus } from '@/shared/status';
 import type { WorkLog } from '@/types';
 
-export interface UpdateRoleContext {
-  workLogId: string;
-  newRole: string;
-  isStandardRole: boolean;
-  reason: string;
-  /** 감사 기록용(폴백 'system' 존재). 인가에 사용하지 말 것 */
-  changedBy: string;
-  /** 인가 주체. 서비스 레이어가 requireCurrentUser() 로 채운다 */
-  actorId: string;
-}
-
 export interface UpdateConfirmedStaffWorkTimeContext {
   workLogId: string;
   checkInTime: Date | null;
@@ -76,7 +65,6 @@ export interface RemoveDirectStaffContext {
 export interface IConfirmedStaffRepository {
   getByJobPostingId(jobPostingId: string): Promise<WorkLog[]>;
   getByJobPostingAndDate(jobPostingId: string, date: string): Promise<WorkLog[]>;
-  updateRoleWithTransaction(context: UpdateRoleContext): Promise<void>;
   updateWorkTimeWithTransaction(context: UpdateConfirmedStaffWorkTimeContext): Promise<void>;
   markAsNoShow(context: MarkNoShowContext): Promise<void>;
   cancelNoShow(context: CancelNoShowContext): Promise<void>;

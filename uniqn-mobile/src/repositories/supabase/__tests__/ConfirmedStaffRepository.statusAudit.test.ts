@@ -1,107 +1,33 @@
 /**
- * 수동 상태 변경 감사 이력 — buildManualStatusAudit + updateStatus 배선
+ * 수동 상태 변경 — updateStatus 가 서버 RPC 한 번으로 끝나는가 (감사 data-01)
  *
- * @description 근무시간은 곧 돈인데 '출근 예정으로 변경'이 QR 로 찍힌 check_in_ts/check_out_ts 를
- *   **이력 없이 지우고**(ATT-1·STAFF-2), 수동 출근/퇴근 처리도 누가 언제 만든 시각인지 남기지
- *   않았다(ATT-2). 시간 수정 경로(updateWorkTimeWithTransaction)는 사유+이력을 강제하는데
- *   수동 상태 변경만 비대칭이었다.
+ * @description 예전에 이 경로는 조회 → 권한 검증 → 타임스탬프 파생 → 이력 조립 → 직접 UPDATE
+ *   를 클라에서 다단계로 했다. 그중 이력 조립이 `modification_history` 를 **읽어서 통째로
+ *   덮어쓰는** read-modify-write 였고, 잠금이 없어 같은 행의 시간 편집과 겹치면 뒤에 끝난 쪽이
+ *   앞의 항목을 지웠다 — 이력 jsonb Lost Update 의 4번째 경로다.
  *
- *   modification_history 길이 증가는 DB 트리거(notify_on_work_log_update)를 발화시켜 스태프에게
- *   변경 알림까지 보낸다 — 새 트리거 없이 통보 공백(값→NULL 전이를 체크인 트리거가 못 봄)도 함께 닫힌다.
+ *   흡수 후의 계약을 여기서 고정한다: **RPC 정확히 1회 + work_logs 직접 UPDATE 0회.**
+ *
+ * 🔗 이력 append·타임스탬프 역파생·정산 잠금의 **동작**은 서버 계약이므로
+ *    `supabase/tests/work_log_slot_attendance_rpc.test.sql` 44~59번이 본다.
+ *    (구 `buildStatusTimestampPatch`/`buildManualStatusAudit` 유닛 테스트가 보던 것이 그쪽으로 갔다.)
+ *    이 파일은 **배선**만 본다 — 두 곳에서 같은 것을 보면 조용히 갈라진다.
  */
 
-import {
-  buildManualStatusAudit,
-  SupabaseConfirmedStaffRepository,
-} from '../ConfirmedStaffRepository';
+import { SupabaseConfirmedStaffRepository } from '../ConfirmedStaffRepository';
 import { STATUS } from '@/constants';
-import type { WorkLog } from '@/types';
 
 const WORK_LOG_ID = 'wl-1';
-const JOB_POSTING_ID = 'jp-1';
 const ACTOR_ID = 'owner-1';
-const CHECK_IN = '2026-07-01T09:58:00.000Z';
-const CHECK_OUT = '2026-07-01T18:03:00.000Z';
-const NOW = '2026-07-02T01:00:00.000Z';
 
-describe('buildManualStatusAudit — 타임스탬프가 실제로 바뀔 때만 이력을 만든다', () => {
-  it('출근 예정으로 되돌리면 지워지는 두 시각을 이력에 남긴다', () => {
-    const audit = buildManualStatusAudit(
-      STATUS.WORK_LOG.SCHEDULED,
-      { check_in_ts: null, check_out_ts: null },
-      CHECK_IN,
-      CHECK_OUT
-    );
-
-    expect(audit).not.toBeNull();
-    expect(audit?.newStartTime).toBeNull();
-    expect(audit?.newEndTime).toBeNull();
-    expect(audit?.reason).toContain('출근 예정');
-  });
-
-  it('기록이 없던 행을 출근 예정으로 두면 이력을 만들지 않는다', () => {
-    expect(
-      buildManualStatusAudit(
-        STATUS.WORK_LOG.SCHEDULED,
-        { check_in_ts: null, check_out_ts: null },
-        null,
-        null
-      )
-    ).toBeNull();
-  });
-
-  it('수동 출근 처리로 새 시각이 생기면 이력을 만든다', () => {
-    const audit = buildManualStatusAudit(
-      STATUS.WORK_LOG.CHECKED_IN,
-      { check_in_ts: NOW, check_out_ts: null },
-      null,
-      null
-    );
-
-    expect(audit?.newStartTime).toBe(NOW);
-    expect(audit?.newEndTime).toBeUndefined();
-    expect(audit?.reason).toContain('출근');
-  });
-
-  it('이미 출근 기록이 있는 행을 다시 출근 처리하면 변화가 없어 이력을 만들지 않는다', () => {
-    expect(
-      buildManualStatusAudit(
-        STATUS.WORK_LOG.CHECKED_IN,
-        { check_in_ts: CHECK_IN, check_out_ts: null },
-        CHECK_IN,
-        null
-      )
-    ).toBeNull();
-  });
-
-  it('퇴근 처리로 종료 시각만 생기면 종료 축만 이력에 담는다', () => {
-    const audit = buildManualStatusAudit(
-      STATUS.WORK_LOG.CHECKED_OUT,
-      { check_in_ts: CHECK_IN, check_out_ts: NOW },
-      CHECK_IN,
-      null
-    );
-
-    expect(audit?.newStartTime).toBeUndefined();
-    expect(audit?.newEndTime).toBe(NOW);
-  });
-
-  it('타임스탬프 축이 없는 status(노쇼 등)는 이력을 만들지 않는다', () => {
-    expect(buildManualStatusAudit(STATUS.WORK_LOG.NO_SHOW, {}, CHECK_IN, CHECK_OUT)).toBeNull();
-  });
-});
-
-// ============================================================================
-// 리포지토리 배선 — updateStatus 가 감사 이력을 실제로 payload 에 싣는가
-// ============================================================================
-
-let updatePayloads: Record<string, unknown>[] = [];
+let updateCallCount = 0;
+const mockRpc = jest.fn();
 const mockFrom = jest.fn();
 
 jest.mock('@/lib/supabase', () => ({
   supabase: {
     from: (...args: unknown[]) => mockFrom(...args),
-    rpc: jest.fn(),
+    rpc: (...args: unknown[]) => mockRpc(...args),
     channel: jest.fn(),
   },
 }));
@@ -112,59 +38,27 @@ jest.mock('@/utils/logger', () => ({
 
 jest.mock('@sentry/react-native', () => ({ __esModule: true, addBreadcrumb: jest.fn() }));
 
-jest.mock('../postingAuthority', () => ({
-  resolvePostingAuthority: jest.fn().mockResolvedValue({ role: 'owner' }),
-  canManagePosting: jest.fn().mockReturnValue(true),
-}));
-
-const mockParseWorkLog = jest.fn();
-jest.mock('@/schemas', () => {
-  const actual = jest.requireActual('@/schemas');
-  return { ...actual, parseWorkLogDocument: (...a: unknown[]) => mockParseWorkLog(...a) };
-});
-
 beforeEach(() => {
-  updatePayloads = [];
-  mockParseWorkLog.mockReturnValue({
-    id: WORK_LOG_ID,
-    jobPostingId: JOB_POSTING_ID,
-    status: STATUS.WORK_LOG.CHECKED_OUT,
-    payrollStatus: STATUS.PAYROLL.PENDING,
-    modificationHistory: [],
-    checkInTime: new Date(CHECK_IN),
-    checkOutTime: new Date(CHECK_OUT),
-  } as unknown as WorkLog);
+  updateCallCount = 0;
+  mockRpc.mockReset();
+  mockRpc.mockResolvedValue({ data: { success: true, assignmentSynced: true }, error: null });
 
-  mockFrom.mockImplementation((table: string) => {
-    let pendingUpdate: Record<string, unknown> | undefined;
+  mockFrom.mockImplementation(() => {
     const chain: Record<string, unknown> = {
       select: () => chain,
-      update: (data: Record<string, unknown>) => {
-        pendingUpdate = data;
+      update: () => {
+        updateCallCount += 1;
         return chain;
       },
-      eq: () => {
-        if (pendingUpdate !== undefined) {
-          if (table === 'work_logs') updatePayloads.push(pendingUpdate);
-          return Promise.resolve({ data: null, error: null });
-        }
-        return chain;
-      },
-      maybeSingle: () =>
-        Promise.resolve({
-          data:
-            table === 'work_logs'
-              ? { id: WORK_LOG_ID, job_posting_id: JOB_POSTING_ID }
-              : { id: JOB_POSTING_ID, owner_id: ACTOR_ID, workspace_id: 'ws-1' },
-          error: null,
-        }),
+      eq: () => Promise.resolve({ data: null, error: null }),
+      maybeSingle: () => Promise.resolve({ data: null, error: null }),
     };
     return chain;
   });
 });
 
-describe('updateStatus — 감사 이력 배선', () => {
-  it('출근 예정으로 되돌리면 modification_history 와 플래그를 함께 쓴다', async () => {
+describe('updateStatus — 서버 RPC 배선', () => {
+  it('상태 변경은 update_work_log_slot RPC 1회로 끝나고 직접 UPDATE 를 하지 않는다', async () => {
     const repo = new SupabaseConfirmedStaffRepository();
 
     await repo.updateStatus({
@@ -173,28 +67,59 @@ describe('updateStatus — 감사 이력 배선', () => {
       status: STATUS.WORK_LOG.SCHEDULED,
     });
 
-    expect(updatePayloads).toHaveLength(1);
-    const payload = updatePayloads[0];
-    expect(payload.has_time_modification_logs).toBe(true);
+    expect(mockRpc).toHaveBeenCalledTimes(1);
+    expect(mockRpc).toHaveBeenCalledWith('update_work_log_slot', {
+      p_work_log_id: WORK_LOG_ID,
+      p_patch: expect.objectContaining({
+        status: STATUS.WORK_LOG.SCHEDULED,
+        editedBy: ACTOR_ID,
+      }),
+    });
 
-    const history = payload.modification_history as { modifiedBy: string; reason: string }[];
-    expect(history).toHaveLength(1);
-    expect(history[0].modifiedBy).toBe(ACTOR_ID);
-    expect(history[0].reason).toContain('출근 예정');
+    // 🔑 이 단언이 data-01 의 회귀 가드다. 클라가 work_logs 를 직접 쓰면 이력 RMW 가 돌아온다.
+    expect(updateCallCount).toBe(0);
   });
 
-  it('타임스탬프가 바뀌지 않으면 이력 키를 아예 넣지 않는다', async () => {
+  it('이력 사유를 클라가 실어 보낸다 — 서버에 제품 문구를 하드코딩하지 않기 때문', async () => {
     const repo = new SupabaseConfirmedStaffRepository();
 
-    // 이미 checked_out 이고 두 시각이 모두 있으므로 같은 status 로 바꿔도 변화가 없다
     await repo.updateStatus({
       workLogId: WORK_LOG_ID,
       actorId: ACTOR_ID,
-      status: STATUS.WORK_LOG.CHECKED_OUT,
+      status: STATUS.WORK_LOG.CHECKED_IN,
     });
 
-    expect(updatePayloads).toHaveLength(1);
-    expect(updatePayloads[0]).not.toHaveProperty('modification_history');
-    expect(updatePayloads[0]).not.toHaveProperty('has_time_modification_logs');
+    const patch = mockRpc.mock.calls[0][1].p_patch as { reason: string };
+    expect(patch.reason).toContain('출근');
+  });
+
+  it('상태 패치는 시각 축과 함께 보내지 않는다 — 서버가 동시 지정을 거부한다', async () => {
+    const repo = new SupabaseConfirmedStaffRepository();
+
+    await repo.updateStatus({
+      workLogId: WORK_LOG_ID,
+      actorId: ACTOR_ID,
+      status: STATUS.WORK_LOG.COMPLETED,
+    });
+
+    const patch = mockRpc.mock.calls[0][1].p_patch as Record<string, unknown>;
+    expect(patch).not.toHaveProperty('checkIn');
+    expect(patch).not.toHaveProperty('checkOut');
+    expect(Object.keys(patch).sort()).toEqual(['editedBy', 'reason', 'status']);
+  });
+
+  it('노쇼·취소 상태는 RPC 왕복 없이 즉시 거부한다 (전용 경로가 정본)', async () => {
+    const repo = new SupabaseConfirmedStaffRepository();
+
+    await expect(
+      repo.updateStatus({
+        workLogId: WORK_LOG_ID,
+        actorId: ACTOR_ID,
+        status: STATUS.WORK_LOG.NO_SHOW,
+      })
+    ).rejects.toThrow();
+
+    expect(mockRpc).not.toHaveBeenCalled();
+    expect(updateCallCount).toBe(0);
   });
 });

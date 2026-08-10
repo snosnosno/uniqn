@@ -112,37 +112,9 @@ describe('markAsNoShow 권한', () => {
   });
 });
 
-describe('updateRoleWithTransaction 권한 (신규 가드)', () => {
-  it('외부인의 역할 변경은 SECURITY_UNAUTHORIZED_ACCESS 로 거부된다', async () => {
-    await expect(
-      repo.updateRoleWithTransaction({
-        workLogId: WORK_LOG_ID,
-        newRole: 'floor',
-        isStandardRole: true,
-        reason: '변경',
-        changedBy: 'outsider-1',
-        actorId: 'outsider-1',
-      })
-    ).rejects.toMatchObject({ code: ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS });
-    // 가드 실패 시 UPDATE 미발행
-    expect(capturedUpdate).toBeUndefined();
-  });
-
-  it('owner 의 역할 변경은 통과한다 (RPC 0회)', async () => {
-    await expect(
-      repo.updateRoleWithTransaction({
-        workLogId: WORK_LOG_ID,
-        newRole: 'floor',
-        isStandardRole: true,
-        reason: '변경',
-        changedBy: OWNER,
-        actorId: OWNER,
-      })
-    ).resolves.not.toThrow();
-    expect(mockRpc).not.toHaveBeenCalled();
-    expect(capturedUpdate).toMatchObject({ role: 'floor' });
-  });
-});
+// 🗑️ `updateRoleWithTransaction` 권한 케이스는 메서드와 함께 삭제됐다 (감사 finding-04).
+//    호출부 0건의 죽은 API 라 RPC 재구현이 아니라 제거가 정답이었다. 역할 편집의 권한 판정은
+//    통합 시트가 쓰는 `update_work_log_slot` 안에서 서버가 한다(RLS wl_update 정확 재현).
 
 /**
  * 근무시간 수정의 권한 판정은 **서버로 옮겨졌다**(2026-08-06, update_work_log_slot).

@@ -21,6 +21,7 @@ import type { WorkLog, WorkLogStatus, QRCodeAction, QRProcessAction, StaffRole }
  * @property checkIn - 실제 출근 시각(실적). 3상 — undefined=미변경 / null=삭제 / Date=기록
  * @property checkOut - 실제 퇴근 시각(실적). 3상 동일
  * @property reason - 수정 사유(실적 변경 이력·역할 변경 이력에 함께 실린다)
+ * @property status - 근태 상태 **명시 지정**. 서버가 출퇴근 시각을 역파생한다
  */
 export interface UpdateSlotInput {
   /**
@@ -60,7 +61,29 @@ export interface UpdateSlotInput {
    * 함께 실린다. 이력 배열 길이 증가가 스태프 "근무 시간 변경" 알림을 발화시킨다.
    */
   reason?: string;
+  /**
+   * 근태 상태 **명시 지정**(마이그 20260810100000). 서버가 이 값에서 출퇴근 시각을
+   * 역파생한다 — `checked_in` 이면 출근 기록(기존 값 우선)·퇴근 비움, `scheduled` 면 양쪽 삭제.
+   *
+   * 🔴 `reason`·`editedBy` 와만 함께 보낼 수 있다. `checkIn` 등과 동시 지정은 어느 축이
+   *    이기는지 계약에 없어 서버가 `INVALID_INPUT` 으로 거부한다 — 두 번 나눠 호출하라.
+   * 🔴 `no_show`·`cancelled` 는 받지 않는다(동반 컬럼과 복귀 규칙을 갖는 별도 도메인).
+   * 🔴 정산 완료건은 시각 변경 여부와 무관하게 `ALREADY_SETTLED` 다 — 실적 키와 다른 규칙이다.
+   */
+  status?: ManualWorkLogStatus;
 }
+
+/**
+ * 수동으로 지정할 수 있는 근태 상태 — `update_work_log_slot` 의 `status` 패치 허용 값.
+ *
+ * `WorkLogStatus` 에서 `no_show`·`cancelled` 를 뺀 것이다. 문자열만 보고 넓히지 말 것:
+ * 그 둘은 `no_show_reason`/`no_show_at` 을 동반하고 복귀 시 잔여 시각에서 상태를 재구성해야
+ * 하므로 전용 경로(markAsNoShow/cancelNoShow)가 정본이다.
+ */
+export type ManualWorkLogStatus = Extract<
+  WorkLogStatus,
+  'scheduled' | 'checked_in' | 'checked_out' | 'completed'
+>;
 
 /**
  * 근무 기록 조회 필터 옵션

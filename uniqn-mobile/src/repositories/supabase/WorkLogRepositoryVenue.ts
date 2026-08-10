@@ -111,7 +111,7 @@ export async function getByVenueSpanInRange(
  * 서버 메시지는 `CODE: 사용자 문구` 형식이라 접두사를 떼어 그대로 노출한다 —
  * 같은 문구를 클라와 서버 두 곳에서 따로 관리하면 조용히 갈라진다(정산 RPC 와 동일 관용구).
  */
-function toUpdateSlotError(error: unknown): AppError | null {
+function toUpdateSlotError(error: unknown, settledVerb = '시간을 수정할'): AppError | null {
   const message =
     error instanceof Error
       ? error.message
@@ -156,8 +156,11 @@ function toUpdateSlotError(error: unknown): AppError | null {
   //    서버 문장에는 "정산을 되돌린 뒤 다시 시도" 라는 **탈출 경로**가 빠져 있다.
   //    에러 클래스도 흡수 전 두 리포지토리가 던지던 AlreadySettledError(E6009)로 되돌린다 —
   //    형제 경로 `settle_work_log` 의 ALREADY_SETTLED 매핑과 같은 관용구다.
+  //    🔑 `settledVerb` 로 갈라 두는 이유: status 패치는 시각이 아니라 **상태**를 막는다
+  //       (서버가 실적 키와 다른 규칙을 쓴다 — 시각 변경 여부와 무관하게 거부). "시간을 수정할"
+  //       로 고정하면 상태 변경 버튼을 눌렀는데 시간 얘기가 나온다.
   if (message.includes('ALREADY_SETTLED')) {
-    return new AlreadySettledError({ userMessage: settledLockMessage('시간을 수정할') });
+    return new AlreadySettledError({ userMessage: settledLockMessage(settledVerb) });
   }
   if (message.includes('INVALID_INPUT')) {
     return new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
@@ -257,13 +260,26 @@ export async function updateSlot(workLogId: string, input: UpdateSlotInput): Pro
       patch.reason = assertWorkTimeReason(input.reason);
     }
 
+    // 근태 상태 명시 지정(마이그 20260810100000). 서버가 이 값에서 출퇴근 시각을 역파생하고
+    // 이력을 append 한다 — 흡수 전에는 클라가 타임스탬프 파생·이력 조립을 직접 했고, 그
+    // 이력 read-modify-write 가 Lost Update 의 4번째 경로였다.
+    //
+    // 🔑 클라 관문을 새로 만들지 않는다. 허용 값은 타입(`ManualWorkLogStatus`)이 이미 좁히고,
+    //    행 상태·정산 잠금 판정은 잠근 스냅샷이 있어야 하므로 서버만 할 수 있다.
+    if (input.status !== undefined) {
+      patch.status = input.status;
+    }
+
     const { data, error } = await supabase.rpc('update_work_log_slot', {
       p_work_log_id: workLogId,
       p_patch: patch,
     });
 
     if (error) {
-      const mapped = toUpdateSlotError(error);
+      const mapped = toUpdateSlotError(
+        error,
+        input.status !== undefined ? '상태를 변경할' : '시간을 수정할'
+      );
       if (mapped) throw mapped;
       handleSupabaseError(error, { operation: '배치 슬롯 편집', table: TABLE });
     }

@@ -10,20 +10,15 @@ import type {
   ConfirmedStaff,
   ConfirmedStaffGroup,
   ConfirmedStaffStats,
-  UpdateStaffRoleInput,
   UpdateWorkTimeInput,
   DeleteConfirmedStaffInput,
   AddDirectStaffInput,
 } from '@/types/confirmedStaff';
 import type { UserNicknameSearchResult } from '@/repositories';
-import { STAFF_ROLES, STATUS } from '@/constants';
+import { STATUS } from '@/constants';
 import { StatusMapper, type WorkLogStatus } from '@/shared/status';
 import { TimeNormalizer } from '@/shared/time';
 import type { WorkLog } from '@/types';
-
-const STANDARD_ROLE_KEYS: string[] = STAFF_ROLES.filter((role) => role.key !== 'other').map(
-  (role) => role.key
-);
 
 export interface GetConfirmedStaffResult {
   staff: ConfirmedStaff[];
@@ -109,23 +104,10 @@ export async function getConfirmedStaffByDate(
   return workLogsToConfirmedStaff(workLogs);
 }
 
-export async function updateStaffRole(input: UpdateStaffRoleInput): Promise<void> {
-  logger.info('Updating confirmed staff role', { ...input });
-
-  const actorId = (await requireCurrentUser()).id;
-
-  await confirmedStaffRepository.updateRoleWithTransaction({
-    workLogId: input.workLogId,
-    newRole: input.newRole,
-    isStandardRole: STANDARD_ROLE_KEYS.includes(input.newRole),
-    reason: input.reason,
-    // 감사 필드는 세션에서 강제 스탬프 — 클라이언트가 넘긴 값은 무시(위조 방지)
-    changedBy: actorId,
-    actorId,
-  });
-
-  logger.info('Updated confirmed staff role', { workLogId: input.workLogId });
-}
+// 🗑️ `updateStaffRole` 은 삭제됐다 (감사 finding-04, 2026-08-10).
+//    유일한 호출부이던 `useConfirmedStaff.changeRole` 이 어떤 화면에도 배선돼 있지 않았다.
+//    역할 편집의 정본은 통합 시트(WorkLogEditSheet → useUpdateSlot → update_work_log_slot)다.
+//    되살리지 말 것 — 잠금 없는 `role_change_history` 쓰기 경로가 다시 생긴다.
 
 export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> {
   const checkInDate = TimeNormalizer.parseTime(input.checkInTime);
