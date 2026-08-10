@@ -8,6 +8,7 @@
 
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { uploadReportEvidence, getReportEvidenceSignedUrl } from '@/services/admin/reportService';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import type { LocalReportEvidence } from '@/types/report';
 
 /** 서명 URL 캐시 유효 시간 — 서명 TTL 1시간에서 10분 여유를 뺀 값 */
@@ -38,7 +39,10 @@ export function isAbsoluteEvidenceUrl(ref: string): boolean {
  */
 export function useUploadReportEvidence() {
   return useMutation({
-    mutationFn: (files: LocalReportEvidence[]) => uploadReportEvidence(files),
+    mutationFn: (files: LocalReportEvidence[]) => {
+      requireOnlineForMutation('신고 증빙 업로드');
+      return uploadReportEvidence(files);
+    },
   });
 }
 

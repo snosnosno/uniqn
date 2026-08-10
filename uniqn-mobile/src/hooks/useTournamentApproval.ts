@@ -12,6 +12,7 @@
 import { useCallback } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { tournamentApprovalService } from '@/services/admin';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import type { TournamentApprovalStatus, JobPosting } from '@/types';
 import { queryKeys, cachingPolicies, invalidateQueries } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
@@ -119,7 +120,10 @@ export function useTournamentApproval(
 
   // 승인 뮤테이션
   const approveMutation = useMutation({
-    mutationFn: (jobPostingId: string) => tournamentApprovalService.approve({ jobPostingId }),
+    mutationFn: (jobPostingId: string) => {
+      requireOnlineForMutation('대회공고 승인');
+      return tournamentApprovalService.approve({ jobPostingId });
+    },
     onSuccess: (_, jobPostingId) => {
       toast.success('대회공고가 승인되었습니다');
       invalidateQueries.tournamentApproval();
@@ -133,8 +137,10 @@ export function useTournamentApproval(
 
   // 거부 뮤테이션
   const rejectMutation = useMutation({
-    mutationFn: ({ jobPostingId, reason }: { jobPostingId: string; reason: string }) =>
-      tournamentApprovalService.reject({ jobPostingId, reason }),
+    mutationFn: ({ jobPostingId, reason }: { jobPostingId: string; reason: string }) => {
+      requireOnlineForMutation('대회공고 거부');
+      return tournamentApprovalService.reject({ jobPostingId, reason });
+    },
     onSuccess: (_, { jobPostingId }) => {
       toast.success('대회공고가 거부되었습니다');
       invalidateQueries.tournamentApproval();
@@ -148,7 +154,10 @@ export function useTournamentApproval(
 
   // 재제출 뮤테이션
   const resubmitMutation = useMutation({
-    mutationFn: (jobPostingId: string) => tournamentApprovalService.resubmit({ jobPostingId }),
+    mutationFn: (jobPostingId: string) => {
+      requireOnlineForMutation('대회공고 재제출');
+      return tournamentApprovalService.resubmit({ jobPostingId });
+    },
     onSuccess: (_, jobPostingId) => {
       toast.success('대회공고가 재제출되었습니다');
       invalidateQueries.tournamentApproval();

@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { useAuthStore, waitForHydration } from '@/stores/authStore';
+import { supabase } from '@/lib/supabase';
 import { validateEnv } from '@/lib/env';
 import { isCurrentAutoLoginSession } from '@/lib/autoLoginSession';
 import { migrateFromAsyncStorage } from '@/lib/mmkvStorage';
@@ -448,6 +449,35 @@ export async function reconcileSessionFromServer(authUser: SupabaseUser): Promis
   const authStore = useAuthStore.getState();
 
   try {
+    // 🔑 프로필보다 **세션(JWT)을 먼저** 재발급한다 (감사 auth-F1).
+    //
+    // 이 함수는 `shouldSynchronizeClaims(profile.role, tokenRole)` 가 불일치를 잡았을 때
+    // 불린다 — 즉 DB 의 역할과 JWT 의 `app_metadata.role` 이 갈린 상태다. 그런데 예전에는
+    // 여기서 `loadLatestProfile` 로 **store 의 profile.role 만** 갱신했다. 서버 RLS 는
+    // `get_my_role()` = JWT 클레임을 보므로, 화면은 새 역할로 열리는데 서버 쓰기는
+    // stale 토큰으로 42501 에 막히는 창이 생긴다.
+    //
+    // 같은 배선이 `authStore.refreshProfile()` 에는 이미 있었다(주석까지 달려서).
+    // 자동 재조정 체인만 그 교훈을 재사용하지 못하고 있었다.
+    try {
+      const { error: sessionError } = await supabase.auth.refreshSession();
+      if (sessionError) {
+        logger.warn('reconcile_session_refresh_failed', {
+          component: 'useAppInitialize',
+          uid: authUser.id,
+          error: sessionError.message,
+        });
+      }
+    } catch (sessionError) {
+      // 재발급 실패로 재조정 전체를 포기하지는 않는다 — 프로필 갱신만이라도 진행하고,
+      // 다음 부팅에서 `needsServerReconcile` 이 다시 시도한다.
+      logger.warn('reconcile_session_refresh_threw', {
+        component: 'useAppInitialize',
+        uid: authUser.id,
+        error: describeError(sessionError),
+      });
+    }
+
     const latestProfile = await loadLatestProfile(authUser.id);
     const storeProfile = toStoreProfile(latestProfile);
 

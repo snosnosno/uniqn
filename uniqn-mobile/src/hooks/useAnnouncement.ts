@@ -21,6 +21,7 @@ import {
 } from '@/services/admin';
 import { deleteMultipleAnnouncementImages } from '@/services/auth';
 import { queryKeys, cachingPolicies, invalidateQueries } from '@/lib/queryClient';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { toError, requireAuth } from '@/errors';
@@ -76,7 +77,10 @@ export function useAnnouncementDetail(announcementId: string, enabled = true) {
  */
 export function useIncrementViewCount() {
   return useMutation({
-    mutationFn: (announcementId: string) => incrementViewCount(announcementId),
+    mutationFn: (announcementId: string) => {
+      requireOnlineForMutation('공지 조회수 증가');
+      return incrementViewCount(announcementId);
+    },
     // 조회수 증가는 실패해도 무시
     onError: (error) => {
       logger.warn('조회수 증가 실패', { error });
@@ -128,6 +132,7 @@ export function useCreateAnnouncement() {
 
   return useMutation({
     mutationFn: async (input: CreateAnnouncementInput) => {
+      requireOnlineForMutation('공지 작성');
       requireAuth(user?.uid, 'useAnnouncement.createAnnouncement');
       const identity = buildCurrentUserIdentitySnapshot({
         profile,
@@ -165,6 +170,7 @@ export function useUpdateAnnouncement() {
       announcementId: string;
       input: UpdateAnnouncementInput;
     }) => {
+      requireOnlineForMutation('공지 수정');
       // 1. 기존 공지사항 조회
       const existingAnnouncement = await getAnnouncement(announcementId);
 
@@ -213,7 +219,10 @@ export function usePublishAnnouncement() {
   const addToast = useToastStore((state) => state.addToast);
 
   return useMutation({
-    mutationFn: (announcementId: string) => publishAnnouncement(announcementId),
+    mutationFn: (announcementId: string) => {
+      requireOnlineForMutation('공지 발행');
+      return publishAnnouncement(announcementId);
+    },
     onSuccess: (_, announcementId) => {
       logger.info('공지사항 발행 성공', { announcementId });
       invalidateQueries.announcements();
@@ -233,7 +242,10 @@ export function useArchiveAnnouncement() {
   const addToast = useToastStore((state) => state.addToast);
 
   return useMutation({
-    mutationFn: (announcementId: string) => archiveAnnouncement(announcementId),
+    mutationFn: (announcementId: string) => {
+      requireOnlineForMutation('공지 보관');
+      return archiveAnnouncement(announcementId);
+    },
     onSuccess: (_, announcementId) => {
       logger.info('공지사항 보관 성공', { announcementId });
       invalidateQueries.announcements();
@@ -256,6 +268,7 @@ export function useDeleteAnnouncement() {
 
   return useMutation({
     mutationFn: async (announcementId: string) => {
+      requireOnlineForMutation('공지 삭제');
       // 1. 공지사항 조회하여 이미지 목록 확인
       const announcement = await getAnnouncement(announcementId);
 

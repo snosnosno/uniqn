@@ -424,6 +424,18 @@ describe('authCoreService', () => {
     expect(callOrder).toEqual(['unregisterPush', 'supabaseSignOut']);
   });
 
+  // 감사 auth-F2 — Supabase 의 signOut 기본 scope 는 'global' 이다. 인자 없이 부르면
+  // 폰에서 로그아웃하는 것만으로 태블릿·웹 세션까지 끊긴다. 사용자는 "이 기기에서
+  // 나가기"를 의도했지 전 기기 강제 종료를 의도하지 않았다.
+  // 🚨 이 단언이 깨지면 인자를 지웠다는 뜻이고, 그 순간 조용히 전역 종료로 되돌아간다.
+  it('사용자 로그아웃은 이 기기만 끝낸다 (scope: local)', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+
+    await signOut();
+
+    expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
+  });
+
   it('푸시 토큰 해제가 실패해도 로그아웃은 완료된다 (fail-safe)', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
     mockUnregisterPushTokensForSignOut.mockRejectedValueOnce(new Error('network down'));

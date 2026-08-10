@@ -55,13 +55,17 @@ jest.mock('../RoleSalaryDisplay', () => ({
 }));
 
 jest.mock('@/components/ui/SheetModal', () => ({
+  // 실제 SheetModal 은 footer 를 렌더한다. 예전 목은 그 prop 을 통째로 버려서
+  // 제출 버튼과 그 주변(안내 문구 포함)이 이 테스트에서 한 번도 렌더된 적이 없었다.
   SheetModal: ({
     visible,
     children,
+    footer,
     onRequestClose,
   }: {
     visible: boolean;
     children: React.ReactNode;
+    footer?: React.ReactNode;
     onRequestClose?: () => void;
   }) => {
     const ReactNative = jest.requireActual('react-native') as typeof import('react-native');
@@ -72,6 +76,7 @@ jest.mock('@/components/ui/SheetModal', () => ({
           <ReactNative.Text>close</ReactNative.Text>
         </ReactNative.Pressable>
         {children}
+        {footer}
       </ReactNative.View>
     ) : null;
   },
@@ -152,6 +157,42 @@ describe('ApplicationForm', () => {
     const buttons = alertSpy.mock.calls[0][2] as { text: string; onPress?: () => void }[];
     buttons.find((b) => b.text === '닫기')?.onPress?.();
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  // 감사 ux-02 — 예전에는 필수 항목이 비었을 때 '지원하기' 버튼이 그냥 회색으로 죽었다.
+  // 무엇이 빠졌는지 알 방법이 없었고, disabled Pressable 은 onPress 조차 안 불려서
+  // handleSubmit 안의 안내 분기는 도달 불가능한 죽은 코드였다.
+  // staff 의 핵심 전환 퍼널을 침묵으로 막고 있던 자리다.
+  it('무엇이 빠졌는지 화면에 말한다 (침묵하는 비활성 버튼 금지)', () => {
+    const { getByText } = render(
+      <ApplicationForm
+        job={job}
+        visible
+        isSubmitting={false}
+        onSubmit={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+
+    expect(getByText('지원할 날짜와 역할을 선택해 주세요.')).toBeTruthy();
+  });
+
+  it('동의만 체크해도 아직 남은 필수 항목을 계속 알린다', () => {
+    const { getByTestId, getByText } = render(
+      <ApplicationForm
+        job={job}
+        visible
+        isSubmitting={false}
+        onSubmit={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+
+    fireEvent.press(getByTestId('provision-consent-checkbox'));
+
+    // 동의를 채워도 역할 선택이 남아 있으므로 안내가 사라지면 안 된다 —
+    // 하나 채울 때마다 다음 할 일이 보여야 한다.
+    expect(getByText('지원할 날짜와 역할을 선택해 주세요.')).toBeTruthy();
   });
 
   // T4 — P1 지원 시점 동의: 미체크 상태에서는 체크박스가 false 로 노출

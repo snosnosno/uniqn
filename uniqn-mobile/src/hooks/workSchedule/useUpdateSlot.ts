@@ -25,6 +25,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { POSTING_FILLED_COUNTS_QUERY_KEY } from '@/hooks/postingFilledCountsKey';
 import { updateSlot } from '@/services/workSchedule/gridWriteService';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import type { UpdateSlotInput } from '@/repositories';
 
 /** 슬롯 편집 변이 변수. */
@@ -36,7 +37,10 @@ export interface UpdateSlotVars {
 export function useUpdateSlot() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ workLogId, input }: UpdateSlotVars) => updateSlot(workLogId, input),
+    mutationFn: ({ workLogId, input }: UpdateSlotVars) => {
+      requireOnlineForMutation('근무 슬롯 수정');
+      return updateSlot(workLogId, input);
+    },
     onSuccess: () => {
       // summary/daySlots 공통 prefix 무효화 → 편집 결과(시간/역할/색상/메모) 재조회.
       qc.invalidateQueries({ queryKey: queryKeys.workSchedule.all });

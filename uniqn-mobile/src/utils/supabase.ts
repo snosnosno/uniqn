@@ -18,6 +18,7 @@ import {
   type RealtimeChannel,
 } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { SUPABASE_TIMEOUT_MARKER } from '@/lib/supabaseFetch';
 import { logger } from '@/utils/logger';
 import {
   AppError,
@@ -98,9 +99,35 @@ export function handleSupabaseError(error: unknown, context: SupabaseErrorContex
 
   const metadata = { ...context, supabaseCode: '' };
 
+  // 데이터 평면 타임아웃(감사 err-01) — 클라이언트 fetch 가 요청을 끊은 경우.
+  //
+  // 🔑 코드가 아니라 **메시지 마커**로 판별한다. postgrest-js 는 fetch 예외를
+  //    `{ message, details, hint, code }` 로 바꾸면서 `code` 를 항상 빈 문자열로 버리기
+  //    때문에(dist 실측), 우리가 심은 에러 코드는 여기까지 살아오지 못한다.
+  //    살아남는 건 `` `${err.name}: ${err.message}` `` 형태의 message 뿐이다.
+  //    이 분기는 PostgrestError 판정보다 **먼저** 와야 한다 — 안 그러면 code:'' 인
+  //    타임아웃이 매핑 없는 PostgrestError 로 떨어져 '알 수 없는 오류'가 된다.
+  if (error instanceof Error && error.message.includes(SUPABASE_TIMEOUT_MARKER)) {
+    throw new NetworkError(ERROR_CODES.NETWORK_TIMEOUT, {
+      message: error.message,
+      originalError: error,
+      metadata,
+    });
+  }
+
   // PostgrestError 형태 ({ code, message, details, hint })
   if (isPostgrestError(error)) {
     metadata.supabaseCode = error.code;
+
+    // postgrest-js 가 감싼 타임아웃 — 위 분기는 Error 인스턴스만 잡으므로
+    // 평범한 객체로 변환된 경로는 여기서 다시 본다.
+    if (error.message.includes(SUPABASE_TIMEOUT_MARKER)) {
+      throw new NetworkError(ERROR_CODES.NETWORK_TIMEOUT, {
+        message: error.message,
+        originalError: new Error(error.message),
+        metadata,
+      });
+    }
 
     // P0001 = plpgsql RAISE EXCEPTION (서버 RPC가 던지는 비즈니스 예외).
     // 정원초과(`MAX_CAPACITY_REACHED: ...`)는 클라 사전검사(MaxCapacityReachedError)와

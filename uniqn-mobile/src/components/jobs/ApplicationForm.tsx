@@ -157,31 +157,42 @@ export function ApplicationForm({
     [assignmentsForSubmit.length, message, preQuestionAnswers]
   );
 
-  const canSubmit = useMemo(() => {
-    if (isSubmitting) {
-      return false;
-    }
-
+  /**
+   * 제출을 막고 있는 **첫 번째** 이유 (감사 ux-02). 다 채웠으면 null.
+   *
+   * 예전에는 `canSubmit` 이 boolean 하나였고 버튼만 회색으로 죽어 있었다. 구직자 입장에서는
+   * 무엇이 빠졌는지 알 방법이 없었고, `disabled` 인 Pressable 은 onPress 조차 안 불려서
+   * (`Button.tsx` 가 disabled 를 그대로 넘긴다) handleSubmit 안의 안내 분기는 도달 불가였다.
+   * staff 의 핵심 전환 퍼널에서 사용자를 침묵으로 막고 있던 셈이다.
+   *
+   * 순서는 화면에 나타나는 순서와 같게 둔다 — 위에서부터 채우면 메시지도 위에서부터 사라진다.
+   */
+  const submitBlockReason = useMemo<string | null>(() => {
     if (assignmentsForSubmit.length === 0) {
-      return false;
+      return isFixedMode ? '지원할 역할을 선택해 주세요.' : '지원할 날짜와 역할을 선택해 주세요.';
     }
 
-    if (hasPreQuestions && findUnansweredRequired(preQuestionAnswers).length > 0) {
-      return false;
+    if (hasPreQuestions) {
+      const unanswered = findUnansweredRequired(preQuestionAnswers);
+      if (unanswered.length > 0) {
+        return `필수 사전질문 ${unanswered.length}개에 답해 주세요.`;
+      }
     }
 
     if (!provisionConsentAgreed) {
-      return false;
+      return '개인정보 제3자 제공에 동의해 주세요.';
     }
 
-    return true;
+    return null;
   }, [
     assignmentsForSubmit.length,
     hasPreQuestions,
-    isSubmitting,
+    isFixedMode,
     preQuestionAnswers,
     provisionConsentAgreed,
   ]);
+
+  const canSubmit = !isSubmitting && submitBlockReason === null;
 
   const handleSubmit = useCallback(() => {
     if (!canSubmit) {
@@ -234,9 +245,19 @@ export function ApplicationForm({
   }, [handleClose, hasUnsavedChanges, isSubmitting]);
 
   const footer = (
-    <Button onPress={handleSubmit} disabled={!canSubmit} loading={isSubmitting} fullWidth>
-      지원하기
-    </Button>
+    <View>
+      {submitBlockReason !== null && !isSubmitting ? (
+        <Text
+          className="mb-2 text-center text-xs text-content-secondary font-sans"
+          accessibilityLiveRegion="polite"
+        >
+          {submitBlockReason}
+        </Text>
+      ) : null}
+      <Button onPress={handleSubmit} disabled={!canSubmit} loading={isSubmitting} fullWidth>
+        지원하기
+      </Button>
+    </View>
   );
 
   return (

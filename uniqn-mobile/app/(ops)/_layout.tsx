@@ -25,7 +25,7 @@
 import { Stack, Redirect } from 'expo-router';
 import { useAuthStore, selectProfile } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
-import { Loading } from '@/components/ui';
+import { Loading, ScreenErrorBoundary } from '@/components/ui';
 import { getLayoutColor } from '@/constants/colors';
 
 function OpsStack() {
@@ -58,5 +58,11 @@ export default function OpsLayout() {
     return <Redirect href="/(auth)/login" />;
   }
 
-  return <OpsStack />;
+  // 섹션 단위 에러 경계(감사 err-03). 라이브 대회 운영 중 렌더 예외가 루트까지 올라가면
+  // 진행 중인 운영 화면이 통째로 날아간다 — 이 그룹 안에서 끊는다.
+  return (
+    <ScreenErrorBoundary name="OpsLayout">
+      <OpsStack />
+    </ScreenErrorBoundary>
+  );
 }

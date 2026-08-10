@@ -93,7 +93,9 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
       // 세션은 이미 생성됐지만 public.users 프로필이 없는 orphan 계정.
       // 잔존 세션을 정리해 authStore 가 끌려가지 않게 한다 (signUp/Apple 경로와 일관).
       try {
-        await supabase.auth.signOut();
+        // 정리 경로라 global 유지 — 프로필 없는 계정의 세션은 어디에 남아 있어도
+        // 쓸모가 없고, 남겨두면 다른 기기에서 같은 반쪽 상태로 부팅한다.
+        await supabase.auth.signOut({ scope: 'global' });
       } catch {
         // cleanup failure 무시 — 원래 에러가 우선
       }
@@ -338,7 +340,8 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
       // 실패 시 세션 정리: signOut. orphan auth 계정은 다음 시도에서 signUp 422 →
       // signIn 재개로 self-heal 되고, 7일 후 cleanup-orphan-accounts cron 이 정리한다.
       try {
-        await supabase.auth.signOut();
+        // 정리 경로라 global 유지 — 가입이 끝나지 않은 계정의 세션은 남기면 안 된다.
+        await supabase.auth.signOut({ scope: 'global' });
       } catch {
         // cleanup failure 무시
       }
@@ -406,7 +409,12 @@ export async function signOut(): Promise<void> {
       clearShiftReminders(),
     ]);
 
-    await supabase.auth.signOut();
+    // 🔑 사용자가 누른 로그아웃은 **이 기기만** 끝낸다 (감사 auth-F2).
+    // Supabase 기본값은 `scope: 'global'` 이라, 폰에서 로그아웃하면 태블릿·웹 세션까지
+    // 함께 끊겼다. 사용자는 "이 기기에서 나가기"를 의도했지 전 기기 강제 종료를
+    // 의도하지 않았다. 계정 탈취 대응 같은 전역 종료는 별개 기능이어야 한다.
+    // (아래 정리 경로들은 의도적으로 global 을 유지한다 — 각 지점 주석 참조.)
+    await supabase.auth.signOut({ scope: 'local' });
 
     trackLogout();
     setUserId(null);

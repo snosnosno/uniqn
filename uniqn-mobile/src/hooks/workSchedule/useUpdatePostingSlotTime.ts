@@ -17,12 +17,16 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { POSTING_FILLED_COUNTS_QUERY_KEY } from '@/hooks/postingFilledCountsKey';
 import { updatePostingSlotTime } from '@/services/workSchedule/gridWriteService';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import type { UpdatePostingSlotTimeInput } from '@/repositories';
 
 export function useUpdatePostingSlotTime() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: UpdatePostingSlotTimeInput) => updatePostingSlotTime(input),
+    mutationFn: (input: UpdatePostingSlotTimeInput) => {
+      requireOnlineForMutation('공고 슬롯 시간 일괄 변경');
+      return updatePostingSlotTime(input);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.workSchedule.all });
       qc.invalidateQueries({ queryKey: queryKeys.applications.all });

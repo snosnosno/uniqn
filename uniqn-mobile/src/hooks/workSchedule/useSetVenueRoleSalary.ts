@@ -6,6 +6,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { setVenueRoleSalary } from '@/services/workSchedule/gridWriteService';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import type { SetVenueRoleSalaryInput } from '@/repositories';
 
 export interface SetVenueRoleSalaryVars extends SetVenueRoleSalaryInput {
@@ -15,8 +16,10 @@ export interface SetVenueRoleSalaryVars extends SetVenueRoleSalaryInput {
 export function useSetVenueRoleSalary() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ venueId, ...input }: SetVenueRoleSalaryVars) =>
-      setVenueRoleSalary(venueId, input),
+    mutationFn: ({ venueId, ...input }: SetVenueRoleSalaryVars) => {
+      requireOnlineForMutation('지점 역할 단가 저장');
+      return setVenueRoleSalary(venueId, input);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.workSchedule.all });
       qc.invalidateQueries({ queryKey: queryKeys.settlement.all });

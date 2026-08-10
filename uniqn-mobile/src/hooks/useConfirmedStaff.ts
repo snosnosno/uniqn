@@ -15,6 +15,7 @@ import {
   updateStaffStatus,
 } from '@/services';
 import { toError } from '@/errors';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { createMutationErrorHandler } from '@/shared/errors/hookErrorHandler';
 import { resolveNoShowRevertStatus } from '@/domains/staff';
 import type { ConfirmedStaffStatus, WorkLogStatus } from '@/shared/status';
@@ -144,7 +145,10 @@ export function useConfirmedStaff(
   }, [addToast, jobPostingId, realtime, queryClient, staffQueryKey]);
 
   const updateWorkTimeMutation = useMutation({
-    mutationFn: updateConfirmedStaffWorkTime,
+    mutationFn: (input: UpdateWorkTimeInput) => {
+      requireOnlineForMutation('근무 시간 수정');
+      return updateConfirmedStaffWorkTime(input);
+    },
     onSuccess: () => {
       // invalidateQueries.staffManagement 가 workSchedule.all 까지 무효화하므로(근무표 출근 수정 #3
       // 후 카드 상태/시간 자동 갱신) 별도 호출은 불필요하다.
@@ -159,7 +163,10 @@ export function useConfirmedStaff(
   });
 
   const removeStaffMutation = useMutation({
-    mutationFn: cancelConfirmedStaffConfirmation,
+    mutationFn: (input: DeleteConfirmedStaffInput) => {
+      requireOnlineForMutation('확정 스태프 해제');
+      return cancelConfirmedStaffConfirmation(input);
+    },
     onSuccess: () => {
       invalidateQueries.staffManagement(jobPostingId);
       // 정원/자동마감(capacity_full) 상태가 바뀌므로 공고 상세·목록·확정분포 캐시도 무효화
@@ -176,8 +183,10 @@ export function useConfirmedStaff(
   });
 
   const setNoShowMutation = useMutation({
-    mutationFn: ({ workLogId, reason }: { workLogId: string; reason?: string }) =>
-      markAsNoShow(workLogId, reason),
+    mutationFn: ({ workLogId, reason }: { workLogId: string; reason?: string }) => {
+      requireOnlineForMutation('노쇼 처리');
+      return markAsNoShow(workLogId, reason);
+    },
     onMutate: async ({ workLogId }) => {
       await queryClient.cancelQueries({ queryKey: staffQueryKey });
       const previous = queryClient.getQueryData<GetConfirmedStaffResult>(staffQueryKey);
@@ -210,7 +219,10 @@ export function useConfirmedStaff(
   });
 
   const cancelNoShowMutation = useMutation({
-    mutationFn: (workLogId: string) => cancelNoShow(workLogId),
+    mutationFn: (workLogId: string) => {
+      requireOnlineForMutation('노쇼 취소');
+      return cancelNoShow(workLogId);
+    },
     onMutate: async (workLogId: string) => {
       await queryClient.cancelQueries({ queryKey: staffQueryKey });
       const previous = queryClient.getQueryData<GetConfirmedStaffResult>(staffQueryKey);
@@ -255,8 +267,10 @@ export function useConfirmedStaff(
   });
 
   const changeStatusMutation = useMutation({
-    mutationFn: ({ workLogId, status }: { workLogId: string; status: WorkLogStatus }) =>
-      updateStaffStatus(workLogId, status),
+    mutationFn: ({ workLogId, status }: { workLogId: string; status: WorkLogStatus }) => {
+      requireOnlineForMutation('스태프 상태 변경');
+      return updateStaffStatus(workLogId, status);
+    },
     onMutate: async ({ workLogId, status }) => {
       await queryClient.cancelQueries({ queryKey: staffQueryKey });
       const previous = queryClient.getQueryData<GetConfirmedStaffResult>(staffQueryKey);
@@ -287,7 +301,10 @@ export function useConfirmedStaff(
   });
 
   const addStaffMutation = useMutation({
-    mutationFn: addDirectStaff,
+    mutationFn: (input: AddDirectStaffInput) => {
+      requireOnlineForMutation('스태프 직접 추가');
+      return addDirectStaff(input);
+    },
     onSuccess: () => {
       invalidateQueries.staffManagement(jobPostingId);
       // 정원/자동마감(capacity_full) 상태가 바뀌므로 공고 상세·목록 캐시도 무효화

@@ -10,6 +10,7 @@ import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { collaboratorService } from '@/services/jobs/collaboratorService';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { createRealtimeSubscription } from '@/utils/supabase';
 import { logger } from '@/utils/logger';
 import { useToastStore } from '@/stores/toastStore';
@@ -69,8 +70,10 @@ export function useJobPostingCollaborators(
   }, [jobPostingId, queryClient]);
 
   const addMutation = useMutation({
-    mutationFn: (userId: string) =>
-      collaboratorService.add({ jobPostingId: jobPostingId!, userId }),
+    mutationFn: (userId: string) => {
+      requireOnlineForMutation('협업자 추가');
+      return collaboratorService.add({ jobPostingId: jobPostingId!, userId });
+    },
     onSuccess: () => {
       if (jobPostingId) {
         queryClient.invalidateQueries({
@@ -86,8 +89,10 @@ export function useJobPostingCollaborators(
   });
 
   const removeMutation = useMutation({
-    mutationFn: (userId: string) =>
-      collaboratorService.remove({ jobPostingId: jobPostingId!, userId }),
+    mutationFn: (userId: string) => {
+      requireOnlineForMutation('협업자 제거');
+      return collaboratorService.remove({ jobPostingId: jobPostingId!, userId });
+    },
     onSuccess: () => {
       if (jobPostingId) {
         queryClient.invalidateQueries({
@@ -103,7 +108,10 @@ export function useJobPostingCollaborators(
   });
 
   const leaveMutation = useMutation({
-    mutationFn: () => collaboratorService.leaveSelf(jobPostingId!),
+    mutationFn: () => {
+      requireOnlineForMutation('공고 관리 나가기');
+      return collaboratorService.leaveSelf(jobPostingId!);
+    },
     onSuccess: () => {
       // 본인 나가기 후 cleanup — Codex outside-voice 5 단계
       queryClient.invalidateQueries({

@@ -852,6 +852,7 @@ export function useRecordOpsAttendance(tournamentId: string) {
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
     mutationFn: (v: { workLogId: string; checkIn?: Date | null; checkOut?: Date | null }) => {
+      requireOnlineForMutation('ops.recordAttendance');
       const { workLogId, ...patch } = v;
       return opsStaffService.recordAttendance(workLogId, requireActor(actorId), patch);
     },

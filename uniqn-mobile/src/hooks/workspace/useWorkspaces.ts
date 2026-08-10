@@ -11,6 +11,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { useAuthStore } from '@/stores/authStore';
 import { workspaceService, workspaceInvitationService } from '@/services/workspace';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { createRealtimeSubscription } from '@/utils/supabase';
 import type {
   Workspace,
@@ -222,8 +223,10 @@ export function useWorkspaceInvitationsSent(
 export function useInviteWorkspaceMember() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { workspaceId: string; inviteeUserId: string }) =>
-      workspaceInvitationService.invite(input),
+    mutationFn: (input: { workspaceId: string; inviteeUserId: string }) => {
+      requireOnlineForMutation('워크스페이스 멤버 초대');
+      return workspaceInvitationService.invite(input);
+    },
     onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.workspaces.invitationsSent(vars.workspaceId),
@@ -236,7 +239,10 @@ export function useAcceptWorkspaceInvitation() {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   return useMutation({
-    mutationFn: (invitationId: string) => workspaceInvitationService.accept({ invitationId }),
+    mutationFn: (invitationId: string) => {
+      requireOnlineForMutation('워크스페이스 초대 수락');
+      return workspaceInvitationService.accept({ invitationId });
+    },
     onSuccess: (result) => {
       // 받은 초대 + 워크스페이스 목록 + (방금 합류한) 워크스페이스 멤버 목록 갱신
       if (user?.uid) {
@@ -263,7 +269,10 @@ export function useRejectWorkspaceInvitation() {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   return useMutation({
-    mutationFn: (invitationId: string) => workspaceInvitationService.reject({ invitationId }),
+    mutationFn: (invitationId: string) => {
+      requireOnlineForMutation('워크스페이스 초대 거절');
+      return workspaceInvitationService.reject({ invitationId });
+    },
     onSuccess: () => {
       if (user?.uid) {
         queryClient.invalidateQueries({
@@ -277,7 +286,10 @@ export function useRejectWorkspaceInvitation() {
 export function useRevokeWorkspaceInvitation(workspaceId: string | undefined) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (invitationId: string) => workspaceInvitationService.revoke({ invitationId }),
+    mutationFn: (invitationId: string) => {
+      requireOnlineForMutation('워크스페이스 초대 취소');
+      return workspaceInvitationService.revoke({ invitationId });
+    },
     onSuccess: () => {
       if (workspaceId) {
         queryClient.invalidateQueries({
@@ -291,8 +303,10 @@ export function useRevokeWorkspaceInvitation(workspaceId: string | undefined) {
 export function useRemoveWorkspaceMember(workspaceId: string | undefined) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (userId: string) =>
-      workspaceService.removeMember({ workspaceId: workspaceId!, userId }),
+    mutationFn: (userId: string) => {
+      requireOnlineForMutation('워크스페이스 멤버 제거');
+      return workspaceService.removeMember({ workspaceId: workspaceId!, userId });
+    },
     onSuccess: () => {
       if (workspaceId) {
         queryClient.invalidateQueries({
@@ -310,7 +324,10 @@ export function useCreateWorkspace() {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   return useMutation({
-    mutationFn: (name: string) => workspaceService.createWorkspace({ name }),
+    mutationFn: (name: string) => {
+      requireOnlineForMutation('워크스페이스 생성');
+      return workspaceService.createWorkspace({ name });
+    },
     onSuccess: () => {
       if (user?.uid) {
         queryClient.invalidateQueries({
@@ -325,8 +342,10 @@ export function useUpdateWorkspaceName(workspaceId: string | undefined) {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   return useMutation({
-    mutationFn: (name: string) =>
-      workspaceService.updateWorkspaceName({ workspaceId: workspaceId!, name }),
+    mutationFn: (name: string) => {
+      requireOnlineForMutation('워크스페이스 이름 변경');
+      return workspaceService.updateWorkspaceName({ workspaceId: workspaceId!, name });
+    },
     onSuccess: () => {
       if (workspaceId) {
         queryClient.invalidateQueries({
@@ -391,7 +410,10 @@ function useInvalidateWorkspaceLists() {
 export function useArchiveWorkspace() {
   const invalidate = useInvalidateWorkspaceLists();
   return useMutation({
-    mutationFn: (workspaceId: string) => workspaceService.archiveWorkspace({ workspaceId }),
+    mutationFn: (workspaceId: string) => {
+      requireOnlineForMutation('워크스페이스 보관');
+      return workspaceService.archiveWorkspace({ workspaceId });
+    },
     onSuccess: invalidate,
   });
 }
@@ -399,7 +421,10 @@ export function useArchiveWorkspace() {
 export function useRestoreWorkspace() {
   const invalidate = useInvalidateWorkspaceLists();
   return useMutation({
-    mutationFn: (workspaceId: string) => workspaceService.restoreWorkspace({ workspaceId }),
+    mutationFn: (workspaceId: string) => {
+      requireOnlineForMutation('워크스페이스 복원');
+      return workspaceService.restoreWorkspace({ workspaceId });
+    },
     onSuccess: invalidate,
   });
 }
