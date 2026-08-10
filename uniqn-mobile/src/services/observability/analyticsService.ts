@@ -23,6 +23,15 @@ import {
   analyticsEventRepository,
   type OpsFunnelEvent,
 } from '@/repositories/supabase/AnalyticsEventRepository';
+import {
+  leaveBreadcrumb,
+  setAttributes as setSentryAttributes,
+  setUserId as setSentryUserId,
+} from './sentryService';
+import { getBuildIdentity } from './buildIdentity';
+
+/** `leaveBreadcrumb` 이 받는 데이터 형태 — 정제된 이벤트 파라미터를 그대로 태운다. */
+type BreadcrumbData = Record<string, string | number | boolean | undefined>;
 
 // ============================================================================
 // Types
@@ -192,13 +201,17 @@ export async function trackEvent(
       ? Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined))
       : {};
 
-    // 로깅 모드 (Firebase Analytics 제거됨)
     if (__DEV__) {
       logger.debug('Analytics Event', {
         event: eventName,
         params: cleanParams,
       });
     }
+
+    // 프로덕션 레일 — 예전엔 이 함수 전체가 `__DEV__` 안에만 있어서
+    // 출시 빌드에서는 문자 그대로 아무 일도 하지 않았다(testgap-01).
+    // Sentry 브레드크럼으로 남기면 에러 리포트에 "그 직전에 무엇을 했는가"가 붙는다.
+    void leaveBreadcrumb(`analytics:${eventName}`, cleanParams as BreadcrumbData);
   } catch (error) {
     // Analytics 에러는 앱 동작에 영향을 주지 않도록 조용히 처리
     if (__DEV__) {
@@ -224,6 +237,11 @@ export async function trackScreenView(screenName: string, screenClass?: string):
         class: screenClass,
       });
     }
+
+    void leaveBreadcrumb('analytics:screen_view', {
+      screen: screenName,
+      class: screenClass,
+    });
   } catch (error) {
     if (__DEV__) {
       logger.error('화면 조회 추적 실패', toError(error), { screenName });
@@ -244,6 +262,18 @@ export async function setUserProperties(properties: UserProperties): Promise<voi
 
     if (__DEV__) {
       logger.debug('Analytics User Properties', { properties });
+    }
+
+    // 태그로 올려 두면 Sentry 이슈를 역할·이용량 축으로 가를 수 있다.
+    // 값은 전부 비-PII 축(역할·건수·플래그)이고, redact 훅이 한 겹 더 거른다.
+    const tags: Record<string, string> = {};
+    Object.entries(properties).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        tags[`user_${key}`] = String(value);
+      }
+    });
+    if (Object.keys(tags).length > 0) {
+      void setSentryAttributes(tags);
     }
   } catch (error) {
     if (__DEV__) {
@@ -266,11 +296,59 @@ export async function setUserId(userId: string | null): Promise<void> {
     if (__DEV__) {
       logger.debug('Analytics User ID', { userId: userId || 'null' });
     }
+
+    // 에러가 특정 사용자에게만 나는지 판별하려면 이 배선이 있어야 한다.
+    void setSentryUserId(userId);
   } catch (error) {
     if (__DEV__) {
       logger.error('사용자 ID 설정 실패', toError(error));
     }
   }
+}
+
+/**
+ * 앱 세션 시작 — 이 실행본의 정체를 **서버에** 한 줄 남긴다 (testgap-01).
+ *
+ * ## 왜 서버인가
+ * Sentry 태그는 "에러가 난 세션"만 표본으로 잡는다. 롤아웃이 얼마나 퍼졌는지,
+ * 아직 구버전에 남은 사용자가 몇인지는 **정상 세션까지 세야** 알 수 있다.
+ * 이 값이 없어서 #407 REVOKE 가 "롤아웃 확인 다음"에 묶인 채 무기한 대기 중이었고,
+ * data-01 직접 PATCH 차단 트리거도 구클라 파손을 감지할 수단이 없어 투입을 못 했다.
+ *
+ * ## 계약
+ * - **세션당 1회**. 콜드 스타트마다 한 줄이며 화면 이동으로는 늘지 않는다
+ *   (서버 rate limit 은 사용자당 시간당 240건이라 여유가 크다).
+ * - 로그인 사용자 전용이다. anon 은 RLS 상 `ops_public_view_opened` 만 넣을 수 있고,
+ *   버전 분포는 어차피 계정 단위로 봐야 의미가 있다.
+ * - fire-and-forget. 실패는 전부 무시한다 — 계측이 앱을 막으면 안 된다.
+ */
+let hasReportedSessionStart = false;
+
+export function reportAppSessionStart(): void {
+  if (hasReportedSessionStart) return;
+  hasReportedSessionStart = true;
+
+  const identity = getBuildIdentity();
+
+  // `.catch` 를 여기서도 건다 — 리포지토리가 지금은 절대 reject 하지 않지만,
+  // 그 계약이 깨지는 순간 `void` 만으로는 unhandled rejection 이 되어 계측이
+  // 앱 프로세스를 죽인다. 방어는 부르는 쪽에도 있어야 한다.
+  void analyticsEventRepository
+    .insert('app_session_start', {
+      v: identity.appVersion,
+      build: identity.buildNumber,
+      rt: identity.runtimeVersion,
+      platform: identity.platform,
+      // 내장 번들이면 'embedded' — OTA 가 아직 안 닿은 기기를 이 값으로 센다
+      ota: identity.otaUpdateId ?? 'embedded',
+      channel: identity.otaChannel ?? 'unknown',
+    })
+    .catch(() => undefined);
+}
+
+/** 테스트 전용 — 세션 1회 가드를 되돌린다. */
+export function resetAppSessionStartForTests(): void {
+  hasReportedSessionStart = false;
 }
 
 // ============================================================================
@@ -415,7 +493,7 @@ export function trackOpsFunnel(
   props?: Record<string, string | number | boolean>
 ): void {
   void trackEvent(event, props as AnalyticsEventParams | undefined);
-  void analyticsEventRepository.insert(event, props ?? {});
+  void analyticsEventRepository.insert(event, props ?? {}).catch(() => undefined);
 }
 
 // ============================================================================

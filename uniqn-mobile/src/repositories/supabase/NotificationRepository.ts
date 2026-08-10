@@ -21,6 +21,7 @@ import {
   paginatedQuery,
   createRealtimeSubscription,
 } from '@/utils/supabase';
+import { createDebouncedTrigger, REALTIME_RELOAD_DEBOUNCE_MS } from '@/utils/debounce';
 import { parseNotificationSettingsDocument } from '@/schemas';
 import {
   createDefaultNotificationSettings,
@@ -750,17 +751,23 @@ export class SupabaseNotificationRepository implements INotificationRepository {
           onCount(0);
         });
 
-      // Realtime 구독으로 변경 감지 시 카운트 재조회
+      // 알림은 한 번의 서버 이벤트가 다중 수신자 INSERT 로 터지는 일이 잦아
+      // 행마다 카운트를 다시 세면 조회가 그대로 증폭된다(realtime-02 동형).
+      const debounced = createDebouncedTrigger(() => {
+        this.getUnreadCount(userId)
+          .then(onCount)
+          .catch((error) => {
+            logger.error('미읽음 카운트 재조회 실패', toError(error));
+            onError?.(toError(error));
+          });
+      }, REALTIME_RELOAD_DEBOUNCE_MS);
+
+      // Realtime 구독으로 변경 감지 시 카운트 재조회 (병합 창 경유)
       const unsubscribe = createRealtimeSubscription(
         TABLES.NOTIFICATIONS,
         `recipient_id=eq.${userId}`,
         () => {
-          this.getUnreadCount(userId)
-            .then(onCount)
-            .catch((error) => {
-              logger.error('미읽음 카운트 재조회 실패', toError(error));
-              onError?.(toError(error));
-            });
+          debounced.trigger();
         },
         (status) => {
           // TIMED_OUT은 Phoenix가 자동 재시도 — CHANNEL_ERROR만 상위로 전파
@@ -777,7 +784,10 @@ export class SupabaseNotificationRepository implements INotificationRepository {
       );
 
       logger.info('읽지 않은 알림 수 구독 시작', { userId });
-      return unsubscribe;
+      return () => {
+        debounced.cancel();
+        unsubscribe();
+      };
     } catch (error) {
       logger.error('미읽음 카운트 구독 설정 실패', toError(error), { userId });
       onError?.(toError(error));

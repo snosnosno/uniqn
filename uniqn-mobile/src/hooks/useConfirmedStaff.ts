@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { cachingPolicies, invalidateQueries, queryKeys } from '@/lib/queryClient';
 import { POSTING_FILLED_COUNTS_QUERY_KEY } from '@/hooks/postingFilledCountsKey';
@@ -76,15 +76,18 @@ export function useConfirmedStaff(
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const user = useAuthStore((state) => state.user);
-  const staffQueryKey = date
-    ? queryKeys.confirmedStaff.byDate(jobPostingId, date)
-    : queryKeys.confirmedStaff.byJobPosting(jobPostingId);
-  const [realtimeData, setRealtimeData] = useState<GetConfirmedStaffResult | null>(null);
-  // realtime 경로 전용 상태 — useQuery 가 disabled 라 그쪽 error/isRefetching 은 영구 초기값이다.
-  // 이게 없으면 구독이 죽어도 error=null·isLoading=true 로 굳어 무한 스피너가 된다(STAFF-1).
-  // 형제 훅 useApplicantsByJobPosting 이 이미 쓰는 패턴을 그대로 맞춘다.
+  // 구독 useEffect 의 의존성으로 들어가므로 참조가 매 렌더 바뀌면 안 된다 —
+  // 배열 리터럴을 그대로 쓰면 렌더마다 구독을 끊고 다시 맺는다.
+  const staffQueryKey = useMemo(
+    () =>
+      date
+        ? queryKeys.confirmedStaff.byDate(jobPostingId, date)
+        : queryKeys.confirmedStaff.byJobPosting(jobPostingId),
+    [jobPostingId, date]
+  );
+  // 구독 장애 전용 상태 — fetch 실패(useQuery.error)와는 별개 신호다.
+  // 이게 없으면 구독이 죽어도 error=null 로 굳어 화면의 ErrorState 가 도달 불가해진다(STAFF-1).
   const [realtimeError, setRealtimeError] = useState<Error | null>(null);
-  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
   const { data, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: staffQueryKey,
@@ -100,7 +103,10 @@ export function useConfirmedStaff(
 
       return getConfirmedStaff(jobPostingId);
     },
-    enabled: !!jobPostingId && !realtime,
+    // realtime 여부와 무관하게 항상 돈다 — 렌더 소스를 useQuery 캐시 하나로 단일화하기
+    // 위한 전제다. 예전엔 `&& !realtime` 라 구독 모드에서 캐시가 비었고, 그 결과
+    // setQueryData 로 쓰던 낙관적 업데이트 3벌이 화면에 도달하지 못하는 죽은 코드였다(realtime-01).
+    enabled: !!jobPostingId,
     staleTime: cachingPolicies.frequent,
   });
 
@@ -113,7 +119,9 @@ export function useConfirmedStaff(
 
     const unsubscribe = subscribeToConfirmedStaff(jobPostingId, {
       onUpdate: (result) => {
-        setRealtimeData(result);
+        // 별도 state 가 아니라 쿼리 캐시에 직접 기록한다(useJobDetail 과 같은 패턴).
+        // 그래야 구독 데이터와 낙관적 업데이트가 같은 소스를 공유한다.
+        queryClient.setQueryData<GetConfirmedStaffResult>(staffQueryKey, result);
         setRealtimeError(null);
       },
       onError: (subscriptionError) => {
@@ -133,7 +141,7 @@ export function useConfirmedStaff(
       logger.info('Confirmed staff realtime subscription stopped', { jobPostingId });
       unsubscribe();
     };
-  }, [addToast, jobPostingId, realtime]);
+  }, [addToast, jobPostingId, realtime, queryClient, staffQueryKey]);
 
   const updateWorkTimeMutation = useMutation({
     mutationFn: updateConfirmedStaffWorkTime,
@@ -302,36 +310,15 @@ export function useConfirmedStaff(
    *
    * 예전엔 `if (!realtime) refetch()` 라 realtime 소비자에게는 문자 그대로 빈 함수였고,
    * 새로고침 버튼과 pull-to-refresh 가 시각 피드백조차 없이 아무 일도 안 했다(STAFF-11).
-   * TanStack Query 는 `enabled:false` 여도 수동 refetch 를 허용하므로, 결과를 realtimeData
-   * 에 직접 반영해 화면까지 도달시킨다(그러지 않으면 data 축이 갈려 여전히 안 보인다).
+   * 이제 useQuery 가 항상 enabled 라 refetch 결과가 곧 렌더 소스(캐시)를 갱신한다 —
+   * 모드별 분기 자체가 필요 없어졌고, STAFF-11 은 구조적으로 재발할 수 없다.
    *
    * 반환 타입은 `void` 로 유지한다 — Promise 를 흘리면 호출부 두 곳(RefreshControl·
-   * QuickActions)이 그대로 미처리 rejection 을 만든다. 실패는 여기서 토스트로 닫는다.
+   * QuickActions)이 그대로 미처리 rejection 을 만든다.
    */
   const refresh = useCallback(() => {
-    if (!realtime) {
-      refetch();
-      return;
-    }
-
-    setIsManualRefreshing(true);
-    void refetch()
-      .then((result) => {
-        if (result.data) {
-          setRealtimeData(result.data);
-          setRealtimeError(null);
-        } else if (result.error) {
-          setRealtimeError(toError(result.error));
-        }
-      })
-      .catch((refreshError: unknown) => {
-        logger.error('확정 스태프 새로고침 실패', toError(refreshError), { jobPostingId });
-        addToast({ type: 'error', message: '스태프 정보를 새로고침하지 못했습니다.' });
-      })
-      .finally(() => {
-        setIsManualRefreshing(false);
-      });
-  }, [realtime, refetch, jobPostingId, addToast]);
+    refetch();
+  }, [refetch]);
 
   const updateWorkTime = useCallback(
     (input: Omit<UpdateWorkTimeInput, 'modifiedBy'> & { modifiedBy?: string }) => {
@@ -376,7 +363,9 @@ export function useConfirmedStaff(
     [addStaffMutation]
   );
 
-  const resultData = realtime ? realtimeData : data;
+  // 렌더 소스는 useQuery 캐시 하나뿐이다 — 구독 갱신·낙관적 업데이트·수동 새로고침이
+  // 모두 같은 키에 쓰므로 어느 경로로 들어와도 화면에 도달한다(realtime-01).
+  const resultData = data;
 
   return {
     staff: resultData?.staff ?? [],
@@ -384,10 +373,10 @@ export function useConfirmedStaff(
     stats: resultData?.stats ?? emptyStats,
     // realtime 계약: 구독 실패를 error 로 승격하고, 실패한 뒤에는 로딩을 끝낸다.
     // (예전엔 error 가 항상 null 이라 화면의 ErrorState 가 도달 불가한 죽은 코드였다.)
-    isLoading: realtime ? !realtimeData && !realtimeError : isLoading,
+    isLoading: realtimeError ? false : isLoading,
     error: realtimeError ?? (error ? toError(error) : null),
     refresh,
-    isRefreshing: realtime ? isManualRefreshing : isRefetching,
+    isRefreshing: isRefetching,
     updateWorkTime,
     removeStaff,
     setNoShow,

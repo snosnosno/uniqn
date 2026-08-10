@@ -21,6 +21,7 @@ export {
   trackSettlementComplete,
   trackSearch,
   trackError,
+  reportAppSessionStart,
   type AnalyticsEvent,
   type AnalyticsEventParams,
   type UserProperties as AnalyticsUserProperties,

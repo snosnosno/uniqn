@@ -11,7 +11,10 @@ export type OpsFunnelEvent =
   | 'ops_tournament_created'
   | 'ops_public_view_opened'
   | 'ops_claim_converted'
-  | 'ops_limit_reached';
+  | 'ops_limit_reached'
+  // 롤아웃 계기판(testgap-01) — 세션당 1회, 이 실행본의 앱버전·OTA 번들을 기록한다.
+  // 서버 CHECK 화이트리스트와 1:1 이므로 값을 늘릴 때는 마이그레이션이 함께 가야 한다.
+  | 'app_session_start';
 
 /**
  * 퍼널 이벤트 영속 Repository (S1 D1).
