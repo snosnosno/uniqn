@@ -21,17 +21,17 @@ import { settledLockMessage } from '@/domains/settlement';
 import { STATUS } from '@/constants';
 import { TBA_TIME_MARKER } from '@/types/assignment';
 import { resolvePostingAuthority, canManagePosting } from './postingAuthority';
-import { resolveNoShowRevertStatus, appendWorkTimeModification } from '@/domains/staff';
+import { resolveNoShowRevertStatus } from '@/domains/staff';
 // work_logs SELECT 화이트리스트·ts 매핑 정본(자체 사본 드리프트 금지).
 import { WORK_LOG_COLUMNS as TABLE_COLUMNS, applyTsPreference } from './workLogColumns';
 // 실적(출퇴근) 쓰기의 단일 관문. 이 경로의 직접 UPDATE 는 여기로 흡수됐다.
 import { updateSlot as updateWorkLogSlot } from './WorkLogRepositoryVenue';
 import type { UnsubscribeFn } from '@/types/common';
-import type { RoleChangeHistory, WorkLog } from '@/types';
+import type { WorkLog, WorkLogStatus } from '@/types';
 import type {
   IConfirmedStaffRepository,
   ConfirmedStaffSubscriptionCallbacks,
-  UpdateRoleContext,
+  ManualWorkLogStatus,
   UpdateConfirmedStaffWorkTimeContext,
   MarkNoShowContext,
   CancelNoShowContext,
@@ -65,34 +65,12 @@ function toWorkLog(row: Record<string, unknown>): WorkLog | null {
 }
 
 /**
- * 수동 상태 변경 시 종결 status 와 타임스탬프(check_in_ts/check_out_ts) 정합을 위한
- * 패치 계산(순수 함수). 서버 정산 게이트는 status 로, 화면 게이트는 타임스탬프로 판정하므로
- * 수동 출근/퇴근/완료 처리 시에도 타임스탬프를 함께 기록/정리해야 두 축이 어긋나지 않는다.
+ * 수동 상태 변경 이력에 실릴 사유 문구.
  *
- * - scheduled        → 근무 전: 타임스탬프 정리(null)
- * - checked_in       → 출근: check_in 기록(기존 우선), check_out 비움
- * - checked_out/완료 → 퇴근/완료: check_in·check_out 모두 기록(기존 우선)
+ * 🔑 **서버로 옮기지 않는다.** 이건 제품 문구이지 보안 불변식이 아니다 — 서버에 하드코딩하면
+ *    문구를 다듬을 때마다 마이그레이션이 필요해진다(색 토큰 화이트리스트를 클라에 남긴 판단과
+ *    같은 원리). 서버는 받은 `reason` 의 길이·XSS 만 재검증한다.
  */
-export function buildStatusTimestampPatch(
-  status: string,
-  existingCheckIn: string | null,
-  existingCheckOut: string | null,
-  now: string
-): { check_in_ts?: string | null; check_out_ts?: string | null } {
-  switch (status) {
-    case STATUS.WORK_LOG.SCHEDULED:
-      return { check_in_ts: null, check_out_ts: null };
-    case STATUS.WORK_LOG.CHECKED_IN:
-      return { check_in_ts: existingCheckIn ?? now, check_out_ts: null };
-    case STATUS.WORK_LOG.CHECKED_OUT:
-    case STATUS.WORK_LOG.COMPLETED:
-      return { check_in_ts: existingCheckIn ?? now, check_out_ts: existingCheckOut ?? now };
-    default:
-      return {};
-  }
-}
-
-/** 수동 상태 변경이 타임스탬프를 만들거나 지울 때 이력에 남길 사유 문구 */
 const MANUAL_STATUS_REASON: Record<string, string> = {
   [STATUS.WORK_LOG.SCHEDULED]: '수동 출근 예정 처리 — 기록된 출퇴근 시각 삭제',
   [STATUS.WORK_LOG.CHECKED_IN]: '수동 출근 처리',
@@ -101,40 +79,19 @@ const MANUAL_STATUS_REASON: Record<string, string> = {
 };
 
 /**
- * 수동 상태 변경으로 출퇴근 시각이 **실제로 바뀔 때만** 남길 감사 이력을 계산한다(순수 함수).
+ * `update_work_log_slot` 의 `status` 패치가 받는 값인지 판정한다.
  *
- * @description 시간 수정 경로는 사유 입력 + `appendWorkTimeModification` 으로 이력을 강제하는데,
- *   수동 상태 변경은 그러지 않아 두 가지 구멍이 있었다.
- *   ① `scheduled` 로 되돌리면 QR 로 찍힌 시각이 이력 없이 사라져 복원 근거가 0이 된다.
- *   ② 수동 출근/퇴근으로 만들어진 시각이 실측값과 DB 상 구별되지 않는다.
- *
- *   체크인 알림 트리거는 `NULL → 값` 전이만 보므로 삭제는 통보되지 않았는데,
- *   이 이력을 남기면 `modification_history` 길이 증가로 `notify_on_work_log_update` 가 발화해
- *   스태프 통보 공백도 함께 닫힌다(새 트리거 불필요).
- *
- * @returns 변화가 없으면 `null`. 변한 축만 `newStartTime`/`newEndTime` 에 담는다(미변경 축은
- *   `undefined` 로 남겨 표시 컴포넌트가 "변경 없음"으로 처리하게 한다 — appendWorkTimeModification 계약).
+ * 🔴 `no_show`·`cancelled` 는 동반 컬럼(no_show_reason/no_show_at)과 복귀 규칙을 갖는 별도
+ *    도메인이라 서버가 거부한다. 여기서 먼저 걸러 RPC 왕복 없이 실패시킨다(fail-closed).
+ *    `UpdateStaffStatusContext.status` 는 넓은 `WorkLogStatus` 라 타입만으로는 못 막는다.
  */
-export function buildManualStatusAudit(
-  status: string,
-  patch: { check_in_ts?: string | null; check_out_ts?: string | null },
-  existingCheckIn: string | null,
-  existingCheckOut: string | null
-): { newStartTime?: string | null; newEndTime?: string | null; reason: string } | null {
-  const nextCheckIn = 'check_in_ts' in patch ? (patch.check_in_ts ?? null) : undefined;
-  const nextCheckOut = 'check_out_ts' in patch ? (patch.check_out_ts ?? null) : undefined;
-
-  const startChanged = nextCheckIn !== undefined && nextCheckIn !== existingCheckIn;
-  const endChanged = nextCheckOut !== undefined && nextCheckOut !== existingCheckOut;
-
-  if (!startChanged && !endChanged) return null;
-
-  const audit: { newStartTime?: string | null; newEndTime?: string | null; reason: string } = {
-    reason: MANUAL_STATUS_REASON[status] ?? '수동 상태 변경',
-  };
-  if (startChanged) audit.newStartTime = nextCheckIn ?? null;
-  if (endChanged) audit.newEndTime = nextCheckOut ?? null;
-  return audit;
+function isManualWorkLogStatus(status: WorkLogStatus): status is ManualWorkLogStatus {
+  return (
+    status === STATUS.WORK_LOG.SCHEDULED ||
+    status === STATUS.WORK_LOG.CHECKED_IN ||
+    status === STATUS.WORK_LOG.CHECKED_OUT ||
+    status === STATUS.WORK_LOG.COMPLETED
+  );
 }
 
 /** 공통 catch 핸들러 */
@@ -320,52 +277,17 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
   // 변경 (Write)
   // ==========================================================================
 
-  async updateRoleWithTransaction(context: UpdateRoleContext): Promise<void> {
-    try {
-      logger.info('스태프 역할 변경 시작', { workLogId: context.workLogId });
-
-      // 1. 현재 WorkLog 조회
-      const workLog = await loadWorkLog(context.workLogId, '스태프 역할 변경');
-
-      // 권한 검증 — workLog 에서 얻은 jobPostingId 로만 판정한다.
-      // 클라이언트가 넘긴 jobPostingId 를 신뢰하면 타 공고 권한으로 우회 가능.
-      await verifyPostingAuthority(workLog.jobPostingId, context.actorId, '스태프 역할 변경');
-
-      // 2. 역할 변경 이력 구성
-      const previousRole = workLog.role;
-      const roleChangeHistory: RoleChangeHistory[] = workLog.roleChangeHistory ?? [];
-      const newHistory = [
-        ...roleChangeHistory,
-        {
-          previousRole,
-          newRole: context.newRole,
-          reason: context.reason,
-          changedBy: context.changedBy,
-          changedAt: new Date(),
-        },
-      ];
-
-      const roleUpdate = context.isStandardRole
-        ? { role: context.newRole, custom_role: null }
-        : { role: 'other', custom_role: context.newRole };
-
-      // 3. 업데이트
-      const { error } = await supabase
-        .from(TABLE)
-        .update({
-          ...roleUpdate,
-          role_change_history: newHistory,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', context.workLogId);
-
-      if (error) handleSupabaseError(error, { operation: '스태프 역할 변경', table: TABLE });
-
-      logger.info('스태프 역할 변경 완료', { workLogId: context.workLogId });
-    } catch (error) {
-      rethrowOrHandle(error, '스태프 역할 변경', { workLogId: context.workLogId });
-    }
-  }
+  // 🗑️ `updateRoleWithTransaction` 은 삭제됐다 (감사 finding-04, 2026-08-10).
+  //
+  // `role_change_history` 를 읽어서 spread 로 덧붙인 뒤 통째로 덮어쓰는 read-modify-write 였다
+  // (data-01 의 나머지 절반). 다만 **RPC 로 재구현하지 않고 지웠다** — 호출부가 0건인 죽은
+  // 코드였기 때문이다. 역할 편집의 정본은 통합 시트(WorkLogEditSheet → useUpdateSlot →
+  // `update_work_log_slot` 의 staffRole/customRole 축)이고, 서버는 그 경로에서 이미
+  // `role_change_history` 를 잠금 아래에서 append 한다.
+  //
+  // 유일한 진입점이던 `useConfirmedStaff.changeRole`/`changeRoleAsync` 와 서비스
+  // `updateStaffRole` 도 같은 PR 에서 함께 지웠다. 되살리지 말 것 — 되살리면 잠금 없는
+  // 이력 쓰기 경로가 다시 생긴다.
 
   /**
    * 근무 시간(실적) 수정 — 서버 RPC `update_work_log_slot` 1회.
@@ -494,90 +416,39 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
     }
   }
 
+  /**
+   * 스태프 근태 상태 변경 — 서버 RPC `update_work_log_slot` 1회.
+   *
+   * 🔴 예전엔 여기서 조회 → 권한 검증 → 타임스탬프 파생 → 이력 append → UPDATE 를 다단계로
+   * 했다. 그 이력 append 가 `modification_history` 를 **읽어서 통째로 덮어쓰는** read-modify-write
+   * 였고, 잠금이 없어 같은 행의 시간 편집(형제 경로)과 겹치면 뒤에 끝난 쪽이 앞의 항목을
+   * 지웠다 — 이력 jsonb Lost Update 의 4번째 경로다(감사 data-01). 서버는 `FOR UPDATE` 로 잠근
+   * 스냅샷에서 append 하므로 두 항목이 모두 남는다(마이그 20260810100000, pgTAP 59번).
+   *
+   * 서버가 하는 일 — 권한 검증 · 노쇼/취소 행 가드 · 정산 완료 잠금(ALREADY_SETTLED) ·
+   * 타임스탬프 역파생 · `modification_history` append · `end_time_source` · `edited_by` ·
+   * `has_time_modification_logs`. **여기서 다시 흉내내지 않는다.**
+   *
+   * 사유 문구(MANUAL_STATUS_REASON)만 클라가 보낸다 — 제품 문구이지 보안 불변식이 아니다.
+   */
   async updateStatus(context: UpdateStaffStatusContext): Promise<void> {
     try {
       logger.info('스태프 상태 변경', { workLogId: context.workLogId, status: context.status });
 
-      // 1. WorkLog 조회
-      const workLog = await loadWorkLog(context.workLogId, '스태프 상태 변경');
-
-      // 2. 공고 소유권 확인
-      const jobPostingId = workLog.jobPostingId;
-      if (!jobPostingId) {
+      // 노쇼·취소는 전용 경로(markAsNoShow/cancelNoShow)가 정본이다. 서버도 거부하지만
+      // 여기서 먼저 걸러 RPC 왕복 없이 실패시킨다.
+      const status = context.status;
+      if (!isManualWorkLogStatus(status)) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '근무 기록에 공고 정보가 없습니다.',
+          userMessage: '이 상태로는 직접 변경할 수 없습니다.',
         });
       }
 
-      await verifyPostingAuthority(jobPostingId, context.actorId, '스태프 상태 변경');
-
-      // 3. 상태 업데이트 — 종결 status 와 타임스탬프 정합 유지.
-      //    ⚠️ 서버 정산 게이트는 **status** 로 판정하고(SettlementRepository :206-213 / :421-431),
-      //    화면 게이트는 **타임스탬프** 로 판정한다(SettlementDetailModal hasValidTimes 등 3곳).
-      //    두 축이 다르므로 어느 한쪽만 쓰면 '버튼은 눌리는데 서버가 영구 거부' 가 된다.
-      //    그래서 status 를 쓸 때는 타임스탬프를, 타임스탬프를 쓸 때는 status 를 함께 맞춘다
-      //    (역방향은 이 패치, 정방향은 workLogTimeStatus.resolveWorkTimeStatus).
-      const now = new Date().toISOString();
-      const existingCheckIn = workLog.checkInTime
-        ? new Date(workLog.checkInTime).toISOString()
-        : null;
-      const existingCheckOut = workLog.checkOutTime
-        ? new Date(workLog.checkOutTime).toISOString()
-        : null;
-
-      const timestampPatch = buildStatusTimestampPatch(
-        context.status,
-        existingCheckIn,
-        existingCheckOut,
-        now
-      );
-
-      const updateData: Record<string, unknown> = {
-        status: context.status,
-        updated_at: now,
-        ...timestampPatch,
-      };
-
-      // 퇴근 시각이 이 경로에서 바뀌면 출처도 함께 되돌린다.
-      //
-      // 이력(modification_history)만으로도 출처 판정은 되지만, 그건 side-channel 이다.
-      // 이력을 남기는 buildManualStatusAudit 은 #360(2026-07-28)에서야 들어왔고 그 이전에는
-      // 이 경로가 이력 없이 타임스탬프를 만들고 지웠다 — QR 퇴근(`'qr'`) → scheduled 복귀
-      // (시각만 삭제, 출처는 'qr' 잔류) → 수동 퇴근 처리 순서를 밟은 레거시 행은 사람이 박은
-      // 시각에 "✓QR" 이 붙는다. 컬럼을 자기 정합적으로 만들어 그 경로를 닫는다.
-      if (
-        'check_out_ts' in timestampPatch &&
-        (timestampPatch.check_out_ts ?? null) !== existingCheckOut
-      ) {
-        updateData.end_time_source = timestampPatch.check_out_ts === null ? null : 'manual';
-        updateData.edited_by = context.actorId;
-      }
-
-      // 4. 타임스탬프가 실제로 바뀌면 감사 이력을 남긴다 — 시간 수정 경로와 대칭.
-      //    삭제(scheduled 복귀)도 여기서 이력이 남아야 복원 근거가 생기고, 길이 증가가
-      //    notify_on_work_log_update 를 발화시켜 스태프에게도 통보된다.
-      const audit = buildManualStatusAudit(
-        context.status,
-        timestampPatch,
-        existingCheckIn,
-        existingCheckOut
-      );
-      if (audit) {
-        updateData.modification_history = appendWorkTimeModification(workLog.modificationHistory, {
-          previousStartTime: workLog.checkInTime,
-          previousEndTime: workLog.checkOutTime,
-          newStartTime: audit.newStartTime,
-          newEndTime: audit.newEndTime,
-          reason: audit.reason,
-          modifiedBy: context.actorId,
-          modifiedAt: new Date(now),
-        });
-        updateData.has_time_modification_logs = true;
-      }
-
-      const { error } = await supabase.from(TABLE).update(updateData).eq('id', context.workLogId);
-
-      if (error) handleSupabaseError(error, { operation: '스태프 상태 변경', table: TABLE });
+      await updateWorkLogSlot(context.workLogId, {
+        status,
+        reason: MANUAL_STATUS_REASON[status] ?? '수동 상태 변경',
+        editedBy: context.actorId,
+      });
 
       logger.info('스태프 상태 변경 완료', {
         workLogId: context.workLogId,

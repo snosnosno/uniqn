@@ -19,8 +19,10 @@
  *   - `SettlementRepository.updateWorkTimeWithTransaction` (정산 탭)
  *   - `ConfirmedStaffRepository.updateWorkTimeWithTransaction` (스태프 관리 탭)
  *
- * @remarks 반대 방향(status → 타임스탬프) 파생은 `ConfirmedStaffRepository.buildStatusTimestampPatch`
- *   가 담당한다. 그쪽은 수동 상태 변경 경로용이다.
+ * @remarks 반대 방향(status → 타임스탬프) 파생은 **서버**가 한다 —
+ *   `update_work_log_slot` 의 `status` 패치(마이그 20260810100000). 예전엔 클라
+ *   `ConfirmedStaffRepository.buildStatusTimestampPatch` 였으나, 같은 경로가 이력 jsonb 를
+ *   read-modify-write 하던 Lost Update 를 닫으면서 함께 서버로 옮겼다(감사 data-01).
  */
 
 import { STATUS } from '@/constants';

@@ -12,7 +12,6 @@ import {
   subscribeToConfirmedStaff,
   type GetConfirmedStaffResult,
   updateConfirmedStaffWorkTime,
-  updateStaffRole,
   updateStaffStatus,
 } from '@/services';
 import { toError } from '@/errors';
@@ -27,7 +26,6 @@ import type {
   ConfirmedStaffGroup,
   ConfirmedStaffStats,
   DeleteConfirmedStaffInput,
-  UpdateStaffRoleInput,
   UpdateWorkTimeInput,
 } from '@/types';
 import { logger } from '@/utils/logger';
@@ -45,16 +43,12 @@ export interface UseConfirmedStaffReturn {
   error: Error | null;
   refresh: () => void;
   isRefreshing: boolean;
-  changeRole: (input: UpdateStaffRoleInput) => void;
-  /** 결과를 기다리는 변형 — 모달을 성공에서만 닫으려면 이쪽을 써야 한다(STAFF-4). */
-  changeRoleAsync: (input: UpdateStaffRoleInput) => Promise<void>;
   updateWorkTime: (input: UpdateWorkTimeInput) => void;
   removeStaff: (input: DeleteConfirmedStaffInput) => void;
   setNoShow: (workLogId: string, reason?: string) => void;
   cancelNoShow: (workLogId: string) => void;
   changeStatus: (workLogId: string, status: WorkLogStatus) => void;
   addStaff: (input: AddDirectStaffInput) => Promise<string[]>;
-  isChangingRole: boolean;
   isUpdatingTime: boolean;
   isRemoving: boolean;
   isSettingNoShow: boolean;
@@ -140,20 +134,6 @@ export function useConfirmedStaff(
       unsubscribe();
     };
   }, [addToast, jobPostingId, realtime]);
-
-  const changeRoleMutation = useMutation({
-    mutationFn: updateStaffRole,
-    onSuccess: () => {
-      invalidateQueries.staffManagement(jobPostingId);
-      // 역할 분포가 바뀌므로 마감 판정 소스(postingFilledCounts) 캐시도 무효화 — stale 마감 표시 방지
-      queryClient.invalidateQueries({ queryKey: [POSTING_FILLED_COUNTS_QUERY_KEY] });
-      addToast({ type: 'success', message: '역할이 변경되었습니다.' });
-    },
-    onError: (mutationError: Error) => {
-      logger.error('Failed to change confirmed staff role', mutationError, { jobPostingId });
-      addToast({ type: 'error', message: '역할 변경에 실패했습니다.' });
-    },
-  });
 
   const updateWorkTimeMutation = useMutation({
     mutationFn: updateConfirmedStaffWorkTime,
@@ -353,30 +333,6 @@ export function useConfirmedStaff(
       });
   }, [realtime, refetch, jobPostingId, addToast]);
 
-  const changeRole = useCallback(
-    (input: Omit<UpdateStaffRoleInput, 'changedBy'> & { changedBy?: string }) => {
-      changeRoleMutation.mutate({
-        ...input,
-        changedBy: input.changedBy ?? user?.uid ?? 'system',
-      });
-    },
-    [changeRoleMutation, user?.uid]
-  );
-
-  /**
-   * 결과를 기다리는 변형 — 모달을 성공에서만 닫으려면 `mutate` 로는 불가능하다
-   * (throw 하지 않으므로 catch 가 죽은 코드가 되고 실패해도 모달이 닫힌다).
-   */
-  const changeRoleAsync = useCallback(
-    async (input: Omit<UpdateStaffRoleInput, 'changedBy'> & { changedBy?: string }) => {
-      await changeRoleMutation.mutateAsync({
-        ...input,
-        changedBy: input.changedBy ?? user?.uid ?? 'system',
-      });
-    },
-    [changeRoleMutation, user?.uid]
-  );
-
   const updateWorkTime = useCallback(
     (input: Omit<UpdateWorkTimeInput, 'modifiedBy'> & { modifiedBy?: string }) => {
       updateWorkTimeMutation.mutate({
@@ -432,15 +388,12 @@ export function useConfirmedStaff(
     error: realtimeError ?? (error ? toError(error) : null),
     refresh,
     isRefreshing: realtime ? isManualRefreshing : isRefetching,
-    changeRole,
-    changeRoleAsync,
     updateWorkTime,
     removeStaff,
     setNoShow,
     cancelNoShow: cancelNoShowStaff,
     changeStatus,
     addStaff,
-    isChangingRole: changeRoleMutation.isPending,
     isUpdatingTime: updateWorkTimeMutation.isPending,
     isRemoving: removeStaffMutation.isPending,
     isSettingNoShow: setNoShowMutation.isPending,

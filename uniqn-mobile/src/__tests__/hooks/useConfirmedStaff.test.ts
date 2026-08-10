@@ -5,7 +5,6 @@ import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 const mockGetConfirmedStaff = jest.fn();
 const mockGetConfirmedStaffByDate = jest.fn();
 const mockAddDirectStaff = jest.fn();
-const mockUpdateStaffRole = jest.fn();
 const mockUpdateConfirmedStaffWorkTime = jest.fn();
 const mockCancelConfirmedStaffConfirmation = jest.fn();
 const mockMarkAsNoShow = jest.fn();
@@ -33,7 +32,6 @@ jest.mock('@/services', () => ({
   getConfirmedStaff: (...args: unknown[]) => mockGetConfirmedStaff(...args),
   getConfirmedStaffByDate: (...args: unknown[]) => mockGetConfirmedStaffByDate(...args),
   addDirectStaff: (...args: unknown[]) => mockAddDirectStaff(...args),
-  updateStaffRole: (...args: unknown[]) => mockUpdateStaffRole(...args),
   updateConfirmedStaffWorkTime: (...args: unknown[]) => mockUpdateConfirmedStaffWorkTime(...args),
   cancelConfirmedStaffConfirmation: (...args: unknown[]) =>
     mockCancelConfirmedStaffConfirmation(...args),
@@ -286,30 +284,6 @@ describe('useConfirmedStaff', () => {
     await waitFor(() => {
       expect(result.current.staff).toHaveLength(1);
       expect(result.current.isLoading).toBe(false);
-    });
-  });
-
-  it('changes role with fallback changedBy', async () => {
-    mockUpdateStaffRole.mockResolvedValue(undefined);
-
-    const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-    act(() => {
-      result.current.changeRole({
-        workLogId: 'worklog-1',
-        newRole: 'floor',
-        reason: 'Role update',
-      });
-    });
-
-    await waitFor(() => {
-      expect(mockUpdateStaffRole).toHaveBeenCalledWith({
-        workLogId: 'worklog-1',
-        newRole: 'floor',
-        reason: 'Role update',
-        changedBy: 'employer-1',
-      });
-      expect(mockInvalidateStaffManagement).toHaveBeenCalledWith('job-1');
     });
   });
 

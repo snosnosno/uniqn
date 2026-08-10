@@ -11,7 +11,6 @@ import {
   markAsNoShow,
   searchStaffByNickname,
   subscribeToConfirmedStaff,
-  updateStaffRole,
   updateStaffStatus,
   updateWorkTime,
 } from '../confirmedStaffService';
@@ -20,7 +19,6 @@ jest.mock('@/repositories', () => ({
   confirmedStaffRepository: {
     getByJobPostingId: jest.fn(),
     getByJobPostingAndDate: jest.fn(),
-    updateRoleWithTransaction: jest.fn(),
     updateWorkTimeWithTransaction: jest.fn(),
     markAsNoShow: jest.fn(),
     cancelNoShow: jest.fn(),
@@ -151,26 +149,6 @@ describe('confirmedStaffService', () => {
     expect(result).toHaveLength(1);
   });
 
-  it('maps role updates to repository transaction input', async () => {
-    mockConfirmedStaffRepository.updateRoleWithTransaction.mockResolvedValue(undefined);
-
-    await updateStaffRole({
-      workLogId: 'worklog-1',
-      newRole: 'dealer',
-      reason: 'Role correction',
-    });
-
-    expect(mockConfirmedStaffRepository.updateRoleWithTransaction).toHaveBeenCalledWith({
-      workLogId: 'worklog-1',
-      newRole: 'dealer',
-      isStandardRole: true,
-      reason: 'Role correction',
-      // changedBy 미전달 시에도 'system'이 아니라 세션 actorId 로 스탬프된다
-      changedBy: 'owner-1',
-      actorId: 'owner-1',
-    });
-  });
-
   it('maps work time updates with parsed dates', async () => {
     mockConfirmedStaffRepository.updateWorkTimeWithTransaction.mockResolvedValue(undefined);
 
@@ -187,21 +165,6 @@ describe('confirmedStaffService', () => {
         reason: 'Manual correction',
         modifiedBy: 'owner-1',
       })
-    );
-  });
-
-  it('updateStaffRole는 클라이언트가 넘긴 changedBy를 무시하고 세션 actorId로 스탬프한다', async () => {
-    mockConfirmedStaffRepository.updateRoleWithTransaction.mockResolvedValue(undefined);
-
-    await updateStaffRole({
-      workLogId: 'worklog-1',
-      newRole: 'dealer',
-      reason: 'Role correction',
-      changedBy: 'spoofed-attacker',
-    });
-
-    expect(mockConfirmedStaffRepository.updateRoleWithTransaction).toHaveBeenCalledWith(
-      expect.objectContaining({ changedBy: 'owner-1', actorId: 'owner-1' })
     );
   });
 

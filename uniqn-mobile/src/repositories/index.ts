@@ -92,7 +92,6 @@ export type {
   BulkSettlementResultDTO,
   // ConfirmedStaff
   IConfirmedStaffRepository,
-  UpdateRoleContext,
   UpdateConfirmedStaffWorkTimeContext,
   MarkNoShowContext,
   UpdateStaffStatusContext,

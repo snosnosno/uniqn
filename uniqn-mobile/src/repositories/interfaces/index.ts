@@ -38,6 +38,7 @@ export type {
   WorkLogStats,
   WorkLogFilterOptions,
   UpdateSlotInput,
+  ManualWorkLogStatus,
 } from './IWorkLogRepository';
 
 // User Repository
@@ -76,7 +77,6 @@ export type {
 // ConfirmedStaff Repository
 export type {
   IConfirmedStaffRepository,
-  UpdateRoleContext,
   UpdateConfirmedStaffWorkTimeContext,
   MarkNoShowContext,
   CancelNoShowContext,
