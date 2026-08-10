@@ -5,7 +5,7 @@
 
 ---
 
-## 🔴 실행 현황 (2026-08-09 갱신 — 다음 세션은 여기부터)
+## 🔴 실행 현황 (2026-08-10 갱신 — 다음 세션은 여기부터)
 
 | 세션 | 상태 | PR | prod 반영 |
 |---|---|---|---|
@@ -13,19 +13,48 @@
 | **세션1** S0 서버 마이그 | ✅ **완료** | #458 | 마이그 2건 적용 · exit proof 전항목 실측 |
 | **세션2** S0 웹 | ✅ **완료** | #459 | CF Pages 배포(`8cad683a`) · 실브라우저 관측 |
 | **세션3** 알림 파이프라인 | ✅ **완료** | #460 | 마이그 1건 적용 · EF 자동배포 |
-| **세션4** OTA-1 핵심 | 🟡 **1/5** — skew-F1 만 | #461 (OPEN) | — |
+| **세션4** OTA-1 핵심 | 🟡 **3/5** — skew-F1·data-01 완결 | #461 · **#466**+**#467** | 마이그 `20260810100000` 적용 |
 | 1.0.6 스토어 출시 | ⏸ 사람 게이트 | — | — |
 | **세션5** OTA-2 견고성 | ⬜ 미착수 | — | — |
 | **세션6** 1.0.7 빌드분 | ⬜ 미착수 | — | — |
 
-### 세션4 잔여 4건 (다음 세션의 시작점)
+### 세션4 잔여 2건 (다음 세션의 시작점)
 
-1. **data-01 [HIGH] — 🚨 이 원장의 공백이었다.** 세션4 프롬프트는 "세션1에서 서버 RPC 확장이
-   끝난 뒤 착수"를 전제하는데 **세션1 대상 목록에 data-01 서버 절반이 없다.** 감사 §3 S0-서버
-   표에는 있다(`update_work_log_slot` 에 status-only patch 확장). 다음 세션이 **서버 먼저** 해야 한다.
-2. **realtime-01 [HIGH]** — `useConfirmedStaff` 렌더 소스 단일화
-3. **testgap-01 [MEDIUM]** — 계측 활성화
-4. **realtime-02 [MEDIUM]** — realtime 콜백 디바운스
+1. **realtime-01 [HIGH]** — `useConfirmedStaff` 렌더 소스 단일화
+   - 실측 확인: `:109 enabled: !!jobPostingId && !realtime` + `:423 realtime ? realtimeData : data`
+     이므로 realtime=true 면 useQuery 가 안 돌고 **`setQueryData` 낙관적 업데이트 3벌이 렌더에 도달 못 한다**
+   - 🔑 **삭제가 아니라 되살리기다** — `enabled` 에서 `!realtime` 을 빼고 `onUpdate` 를
+     `queryClient.setQueryData` 로 바꾸면(useJobDetail.ts:93-98 패턴) 3벌을 **손대지 않고** 살아난다
+   - ⚠️ `realtimeError`(:92)는 유지할 것 — 구독 장애는 fetch 에러와 별개 신호다(STAFF-1 회귀 방지)
+2. **realtime-02 [MEDIUM]** — realtime 콜백 디바운스
+   (`ConfirmedStaffRepository:677-687` · `ApplicationRepositoryQueries:158-173,:400-406`)
+   - 동일 패턴이 `NotificationRepository:754-764` 에도 있으나 **원장 밖**이라 백로그로 남김
+
+### ✅ 세션4 완료분 — data-01 + finding-04 (2026-08-10)
+
+**서버 먼저** 순서를 지켜 2개 PR 로 착지했다. 이력 jsonb Lost Update 의 **4번째 경로가 닫혔다**.
+
+| PR | 내용 | 검증 |
+|---|---|---|
+| **#466** `21abe6d46` | 서버 — `update_work_log_slot` 에 `status` 패치 축 신설 | pgTAP Red→Green **59/59** · CI 전항목 pass |
+| **prod 적용** | run 31366499378 | md5 `9078334312cf`(27,265) → **`7fa40ecc03a0`**(31,147) · 로컬 md5 **동일** · 파리티 **208/110 불변** |
+| **#467** `4739f7174` | 클라 — `updateStatus` RPC 전환 + finding-04 죽은 체인 삭제 | 654 suites/7483 tests · tsc 0 · quality 0 · CI 전항목 pass |
+
+**실행이 확정한 사실**:
+- 서버 절반의 정체 = 패치 키 화이트리스트에 `'status'` 추가. **시그니처는 안 바뀐다**(CREATE OR REPLACE)
+  → 구클라(1.0.5/1.0.6)는 `status` 키를 보낼 코드가 없어 **기존 10키 경로가 바이트 하나 안 바뀐다**.
+  역방향(신클라 → 구서버)만 위험해서 서버 선행이 강제였다 — 화이트리스트가 fail-closed 라
+  `INVALID_INPUT: 알 수 없는 수정 항목입니다: status` 로 상태 변경이 **전면 파손**된다(#441 동형).
+- **정산 잠금은 fail-closed 로 채택**(사용자 확정). 기존 키에 잠금을 안 건 이유가 "구 빌드 즉사"였는데
+  `status` 는 신설 키라 구 빌드가 보낼 수 없다 — 처음부터 조일 수 있는 **유일한 시점**이었다.
+- **finding-04 는 삭제가 정답임이 실측으로 확인됨** — `changeRole`/`changeRoleAsync` 는
+  `useConfirmedStaff.ts` **자기 자신과 자기 테스트 밖 참조 0건**이고, `app/` 유일 소비처
+  `settlements.tsx:62` 는 `{stats, grouped}` 만 꺼낸다. e2e `changeRoleButton` 은 admin **UserRole**
+  화면이라 **보존**(이름만 비슷한 별개 기능).
+- 부수 효과: 출근 기록 0인 행에 `checked_out` 요청 시 출퇴근이 둘 다 `now()` 가 되어 기존
+  등호 거부 가드가 **"근무 0분" 사고를 공짜로 막는다**(pgTAP 51번).
+
+**여전히 하지 않은 것**: 직접 PATCH 차단 트리거(계측 이후 — 순서 강제 2 준수).
 
 ### 이번 실행이 원장을 정정한 것 (실측 근거)
 
@@ -36,6 +65,15 @@
 | sec-01: "(a) 4정책 DROP+CREATE" | ❌ **prod 에서 실패.** `storage.objects` owner=`supabase_storage_admin`, prod `postgres` 는 `rolsuper=f`·`pg_has_role=f` → **RESTRICTIVE 정책 1개를 얹어 AND 결합**이 유일한 in-migration 해법 |
 | push-01: "ops⑦-2 가 같은 곱셈을 지적" | ❌ 그 기록은 **근태 UI 건**이고 `bulk_settle_work_logs` 를 지목한 적이 없다. 별개 미문서화 결함 |
 | monitor-01: "훅이 `retry:false`" | ⚠️ 전역 `queryClient` 는 `retry: shouldRetry`(최대 3회)다. **두 ops 훅만** 덮어쓰고 있었고, 에러 타입도 이미 갈려 있었다(E6119/E6120 vs E1xxx) — 소비처가 구분을 버린 것 |
+
+### 08-10 실행이 정정한 것
+
+| 원장/감사 문구 | 실측 결과 |
+|---|---|
+| 세션4 프롬프트: data-01 은 "세션1 서버 RPC 확장이 끝난 뒤 착수" | ❌ **세션1 에 그 항목이 없었다**(원장 공백). 08-10 세션이 서버(#466)부터 새로 만들어 해소 |
+| 감사: `update_work_log_slot` **에 status-only patch 확장** | ⚠️ 표현이 모호했다 — 새 RPC·오버로드·시그니처 변경이 **전부 아니다**. `(uuid, jsonb)` 시그니처는 이미 patch 형태이고 **키 화이트리스트에 문자열 하나 추가**가 전부다 |
+| `ops_open_access_s1` #59 실패 | ⚠️ 처음엔 "선재 결함"으로 판정했으나 **CI 신선 DB 에서는 통과**한다 → 레포 결함이 아니라 **공유 로컬 Docker DB 오염 아티팩트**. 🔑 로컬 pgTAP 실패는 CI 와 대조하기 전엔 결함으로 단정하지 말 것 |
+| (신규) 로컬 Supabase 낡음 | 🚨 로컬 DB 가 **이틀 낡아** 최근 마이그 3건(`0809130000`·`140000`·`150000`) 미적용 상태였다 → pgTAP 5파일이 거짓 실패. **작업 시작 전 로컬 DB 최신화 확인이 필요하다** |
 
 ### 이번 실행이 **추가로 찾은** 결함 (감사에 없던 것)
 
@@ -211,12 +249,11 @@ docs/analysis/2026-08-09-full-app-audit-2rounds.md 의 JS 전용 핵심 수정�
 2. testgap-01 [MEDIUM] 프로덕션 계측이 전부 무동작 — analyticsService.ts:178 trackEvent
    - #407 REVOKE 게이트와 data-01 차단 트리거의 선행조건이다
    - Sentry release/dist 태깅은 빌드 설정이라 1.0.7 로 갈 수 있음 — JS 로 되는 부분만 이번에
-3. data-01 [HIGH] 클라 절반: ConfirmedStaffRepository 이력 jsonb read-modify-write 제거
-   - :336-360 (role_change_history) · :566-578 (modification_history)
-   - 같은 파일 :370-374 주석이 형제 경로는 RPC 전환됐다고 자백한다
-   - update_work_log_slot RPC 가 서버에서 append 하는데 클라가 통째 덮어써 교차 레이스 발생
-   - ⚠️ 세션 1 에서 서버 RPC 확장이 끝난 뒤에 착수 (서버 선행 — #441 재발 방지)
-   - finding-04: changeRole/updateStaffRole 계열 죽은 API 는 RPC 재구현이 아니라 **삭제**
+3. ✅ data-01 + finding-04 — **완료 (08-10: #466 서버 → prod 적용 → #467 클라). 착수 금지.**
+   - 서버 절반은 "새 RPC" 가 아니라 **패치 키 화이트리스트에 'status' 추가**였다(시그니처 불변)
+   - updateStatus 는 이제 updateWorkLogSlot(id, {status, reason, editedBy}) 1회다.
+     여기에 .update() 를 되살리면 Lost Update 가 재발한다(회귀 가드=statusAudit.test.ts)
+   - finding-04 는 삭제 완료 — changeRole 계열 참조가 훅 자기 자신 밖에서 0건임을 실측했다
 4. realtime-01 [HIGH] useConfirmedStaff realtime=true 에서 낙관적 업데이트 3벌이 죽은 코드
    - useConfirmedStaff.ts:109 (enabled: !!jobPostingId && !realtime) · :423 (렌더 소스 이원화)
    - 유일 소비처 StaffManagementTab.tsx:143 이 realtime:true
