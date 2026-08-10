@@ -25,7 +25,12 @@ jest.mock('expo-router', () => {
 
 jest.mock('@/components/ui', () => {
   const { Text } = require('react-native');
-  return { Loading: () => <Text>LOADING</Text> };
+  return {
+    Loading: () => <Text>LOADING</Text>,
+    // 섹션 에러 경계(감사 err-03)는 게이트 판정과 무관하므로 통과시킨다.
+    // 목에서 빼면 undefined 컴포넌트가 되어 렌더 자체가 터진다.
+    ScreenErrorBoundary: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  };
 });
 
 // 플래그 훅을 모킹해 둔다 — 레이아웃이 이걸 **호출하지 않는다**는 것까지 단언한다.

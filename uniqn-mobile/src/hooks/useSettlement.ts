@@ -35,6 +35,7 @@ import {
 } from '@/utils/settlementFailureMessage';
 import { errorHandlerPresets, createMutationErrorHandler } from '@/shared/errors';
 import { requireAuth } from '@/errors/guardErrors';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { STATUS } from '@/constants';
 import type { PayrollStatus } from '@/types';
 
@@ -98,6 +99,7 @@ export function useCalculateSettlement() {
 
   return useMutation({
     mutationFn: (input: CalculateSettlementInput) => {
+      requireOnlineForMutation('정산 금액 계산');
       requireAuth(user?.uid, 'useSettlement');
       return calculateSettlement(input, user.uid);
     },
@@ -126,6 +128,7 @@ export function useUpdateWorkTime() {
 
   return useMutation({
     mutationFn: (input: UpdateWorkTimeInput) => {
+      requireOnlineForMutation('근무 시간 수정');
       requireAuth(user?.uid, 'useSettlement');
       return updateWorkTimeForSettlement(input, user.uid);
     },
@@ -157,6 +160,7 @@ export function useSettleWorkLog() {
 
   return useMutation({
     mutationFn: async (input: SettleWorkLogInput) => {
+      requireOnlineForMutation('정산 확정');
       requireAuth(user?.uid, 'useSettlement');
       const result = await settleWorkLog(input, user.uid);
       // soft failure를 reject로 전환하여 onError 롤백 보장
@@ -231,6 +235,7 @@ export function useBulkSettlement() {
 
   return useMutation({
     mutationFn: (input: BulkSettlementInput) => {
+      requireOnlineForMutation('일괄 정산');
       requireAuth(user?.uid, 'useSettlement');
       return bulkSettlement(input, user.uid);
     },
@@ -329,6 +334,7 @@ export function useUpdateSettlementStatus() {
       /** 지급 완료 되돌리기 사유 — completed→그 외 전환에서는 필수(서버 강제). */
       reason?: string;
     }) => {
+      requireOnlineForMutation('정산 상태 변경');
       requireAuth(user?.uid, 'useSettlement');
       return updateSettlementStatus(workLogId, status, user.uid, { reason });
     },

@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 import { getCancellationRequests, reviewCancellationRequest } from '@/services';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { findJobPostingIdForApplications } from './cacheContext';
 
 interface ReviewCancellationInput {
@@ -36,6 +37,7 @@ export function useReviewCancellation() {
 
   return useMutation({
     mutationFn: (input: ReviewCancellationInput) => {
+      requireOnlineForMutation('취소 요청 검토');
       requireAuth(user?.uid, 'useCancellationManagement');
       return reviewCancellationRequest(
         {

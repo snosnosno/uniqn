@@ -6,6 +6,7 @@ import {
   getBoardReportsForAdmin,
   reviewBoardReport,
 } from '@/services/boardService';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { useToastStore } from '@/stores/toastStore';
 import type { BoardReportFilterStatus, BoardReportResolutionStatus } from '@/types/board';
 
@@ -37,8 +38,10 @@ export function useReviewBoardReport(reportId: string) {
   const addToast = useToastStore((state) => state.addToast);
 
   return useMutation({
-    mutationFn: (status: BoardReportResolutionStatus) =>
-      reviewBoardReport(reportId, user?.uid ?? '', status),
+    mutationFn: (status: BoardReportResolutionStatus) => {
+      requireOnlineForMutation('게시판 신고 처리');
+      return reviewBoardReport(reportId, user?.uid ?? '', status);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.boards.all });
       addToast({ type: 'success', message: '게시판 신고를 처리했습니다.' });

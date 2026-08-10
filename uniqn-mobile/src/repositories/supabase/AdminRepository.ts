@@ -164,6 +164,34 @@ export class SupabaseAdminRepository implements IAdminRepository {
           .eq('role', 'staff'),
       ]);
 
+      // 🚨 Supabase JS 는 쿼리 실패를 **reject 하지 않는다** — `{ data: null, count: null,
+      //    error }` 로 정상 resolve 한다. 그래서 Promise.all 도 통과하고, 예전 코드는
+      //    `count ?? 0` 으로 곧장 매핑해 **에러를 "0건"으로 표시**했다(감사 err-04).
+      //    RLS 거부·타임아웃·컬럼 오류가 전부 "사용자 0명"처럼 보였고, 관리자가 그걸 보고
+      //    판단할 수 있는 방법이 없었다. 하나라도 실패하면 화면 전체를 실패로 처리한다.
+      const labelledResults = [
+        ['totalUsers', totalUsersResult],
+        ['newUsersToday', newUsersTodayResult],
+        ['activeJobPostings', activeJobsResult],
+        ['applicationsToday', applicationsTodayResult],
+        ['pendingReports', pendingReportsResult],
+        ['adminCount', adminCountResult],
+        ['employerCount', employerCountResult],
+        ['staffCount', staffCountResult],
+      ] as const;
+
+      const failed = labelledResults.find(([, result]) => result.error);
+      if (failed) {
+        const [failedKey, failedResult] = failed;
+        logger.error('대시보드 카운트 일부 실패', toError(failedResult.error), {
+          failedKey,
+        });
+        handleSupabaseError(failedResult.error, {
+          operation: `대시보드 카운트 조회(${failedKey})`,
+          table: TABLES.USERS,
+        });
+      }
+
       const counts: DashboardCounts = {
         totalUsers: totalUsersResult.count ?? 0,
         newUsersToday: newUsersTodayResult.count ?? 0,

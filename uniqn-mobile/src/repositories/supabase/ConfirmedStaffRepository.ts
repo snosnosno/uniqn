@@ -16,6 +16,7 @@ import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import { toError, BusinessError, ERROR_CODES, isAppError } from '@/errors';
 import { handleSupabaseError, toCamelCase, createRealtimeSubscription } from '@/utils/supabase';
+import { createDebouncedTrigger, REALTIME_RELOAD_DEBOUNCE_MS } from '@/utils/debounce';
 import { parseWorkLogDocuments, parseWorkLogDocument } from '@/schemas';
 import { settledLockMessage } from '@/domains/settlement';
 import { STATUS } from '@/constants';
@@ -540,14 +541,8 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
   ): UnsubscribeFn {
     logger.info('확정 스태프 실시간 구독 시작', { jobPostingId });
 
-    // 초기 데이터 1회 fetch — 변경 이벤트가 오지 않아도 구독자가 빈 상태에서 탈출
-    void this.getByJobPostingId(jobPostingId)
-      .then((workLogs) => callbacks.onUpdate(workLogs))
-      .catch((error) => callbacks.onError?.(toError(error)));
-
-    return createRealtimeSubscription(TABLE, `job_posting_id=eq.${jobPostingId}`, (_payload) => {
+    const reload = (): void => {
       try {
-        // 변경 이벤트 발생 시 전체 목록 재조회
         void this.getByJobPostingId(jobPostingId)
           .then((workLogs) => callbacks.onUpdate(workLogs))
           .catch((error) => callbacks.onError?.(toError(error)));
@@ -555,6 +550,28 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
         logger.error('확정 스태프 구독 처리 에러', toError(error), { jobPostingId });
         callbacks.onError?.(toError(error));
       }
-    });
+    };
+
+    // 초기 데이터 1회 fetch — 변경 이벤트가 오지 않아도 구독자가 빈 상태에서 탈출
+    reload();
+
+    // 행 변경마다 전체 재조회하면 일괄 작업 한 번이 N 회 조회로 증폭된다(realtime-02).
+    // 리딩+트레일링 병합이라 단발 변경의 실시간성은 그대로다.
+    const debounced = createDebouncedTrigger(reload, REALTIME_RELOAD_DEBOUNCE_MS);
+
+    const unsubscribe = createRealtimeSubscription(
+      TABLE,
+      `job_posting_id=eq.${jobPostingId}`,
+      (_payload) => {
+        debounced.trigger();
+      }
+    );
+
+    return () => {
+      // 창에 걸려 있던 트레일링을 반드시 버린다 — 안 그러면 해제된 구독자에게
+      // 갱신이 한 번 더 도착한다.
+      debounced.cancel();
+      unsubscribe();
+    };
   }
 }

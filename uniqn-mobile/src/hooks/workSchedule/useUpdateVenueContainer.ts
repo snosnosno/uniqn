@@ -9,6 +9,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { updateVenueContainer } from '@/services/workSchedule/gridWriteService';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import type { UpdateVenueContainerInput } from '@/repositories';
 
 export interface UpdateVenueContainerVars extends UpdateVenueContainerInput {
@@ -18,8 +19,10 @@ export interface UpdateVenueContainerVars extends UpdateVenueContainerInput {
 export function useUpdateVenueContainer() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ containerId, ...input }: UpdateVenueContainerVars) =>
-      updateVenueContainer(containerId, input),
+    mutationFn: ({ containerId, ...input }: UpdateVenueContainerVars) => {
+      requireOnlineForMutation('지점 정보 수정');
+      return updateVenueContainer(containerId, input);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.workSchedule.all });
       qc.invalidateQueries({ queryKey: queryKeys.schedules.all });

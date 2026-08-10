@@ -105,6 +105,16 @@ jest.mock('@/lib/queryClient', () => ({
 jest.mock('@tanstack/react-query', () => {
   let mutationIndex = 0;
 
+  // 실제 useQueryClient 는 컨텍스트의 단일 인스턴스를 돌려준다.
+  // 목이 매 렌더 새 객체를 만들면 queryClient 를 의존성에 넣은 useEffect 가
+  // 무한 재구독하는 것처럼 보여, 구현이 아니라 목이 만든 거짓 신호가 된다.
+  const stableQueryClient = {
+    cancelQueries: (...args: unknown[]) => mockCancelQueries(...args),
+    getQueryData: (...args: unknown[]) => mockGetQueryData(...args),
+    setQueryData: (...args: unknown[]) => mockSetQueryData(...args),
+    invalidateQueries: (...args: unknown[]) => mockInvalidateQueriesClient(...args),
+  };
+
   return {
     useQuery: jest.fn((options: { enabled?: boolean; queryFn: () => Promise<unknown> }) => {
       if (options.enabled === false) {
@@ -130,41 +140,37 @@ jest.mock('@tanstack/react-query', () => {
     useMutation: jest.fn(
       (options: {
         mutationFn: (...args: unknown[]) => Promise<unknown>;
+        onMutate?: (variables: unknown) => unknown;
         onSuccess?: (data: unknown) => void;
         onError?: (error: Error, variables?: unknown, context?: unknown) => void;
       }) => {
         const currentIndex = mutationIndex++;
 
-        return {
-          mutate: (variables: unknown) => {
-            Promise.resolve(options.mutationFn(variables))
-              .then((result) => {
-                options.onSuccess?.(result);
-              })
-              .catch((error: Error) => {
-                options.onError?.(error, variables, undefined);
-              });
-          },
-          mutateAsync: (variables: unknown) =>
+        // onMutate 를 실제로 태운다 — 예전 목은 이 훅을 통째로 건너뛰어서
+        // 낙관적 업데이트와 롤백이 한 번도 검증된 적이 없었다.
+        const run = (variables: unknown) =>
+          Promise.resolve(options.onMutate?.(variables)).then((context) =>
             Promise.resolve(options.mutationFn(variables))
               .then((result) => {
                 options.onSuccess?.(result);
                 return result;
               })
               .catch((error: Error) => {
-                options.onError?.(error, variables, undefined);
+                options.onError?.(error, variables, context);
                 throw error;
-              }),
+              })
+          );
+
+        return {
+          mutate: (variables: unknown) => {
+            run(variables).catch(() => undefined);
+          },
+          mutateAsync: (variables: unknown) => run(variables),
           isPending: mockPendingStates[currentIndex] ?? false,
         };
       }
     ),
-    useQueryClient: () => ({
-      cancelQueries: mockCancelQueries,
-      getQueryData: mockGetQueryData,
-      setQueryData: mockSetQueryData,
-      invalidateQueries: mockInvalidateQueriesClient,
-    }),
+    useQueryClient: () => stableQueryClient,
   };
 });
 
@@ -255,7 +261,7 @@ describe('useConfirmedStaff', () => {
     expect(mockRefetch).toHaveBeenCalled();
   });
 
-  it('subscribes in realtime mode and applies updates', async () => {
+  it('subscribes in realtime mode and writes updates into the query cache', async () => {
     let onUpdate:
       | ((result: {
           staff: ConfirmedStaff[];
@@ -271,20 +277,79 @@ describe('useConfirmedStaff', () => {
       }
     );
 
+    renderHook(() => useConfirmedStaff('job-1', { realtime: true }));
+
+    const pushed = {
+      staff: [createMockConfirmedStaff()],
+      grouped: [createMockGroup([createMockConfirmedStaff()])],
+      stats: createMockStats(),
+    };
+
+    act(() => {
+      onUpdate?.(pushed);
+    });
+
+    // realtime-01: 별도 state 가 아니라 렌더 소스인 쿼리 캐시에 직접 기록한다.
+    await waitFor(() => {
+      expect(mockSetQueryData).toHaveBeenCalledWith(
+        ['confirmedStaff', 'byJobPosting', 'job-1'],
+        pushed
+      );
+    });
+  });
+
+  it('realtime 모드에서도 useQuery 가 enabled 다 (렌더 소스 단일화 전제)', async () => {
+    mockSubscribeToConfirmedStaff.mockImplementation(() => jest.fn());
+    const staff = [createMockConfirmedStaff()];
+    mockData = { staff, grouped: [], stats: createMockStats() };
+
+    const { result } = renderHook(() => useConfirmedStaff('job-1', { realtime: true }));
+
+    // 예전엔 enabled: !realtime 이라 realtime 모드에서 useQuery 가 죽어 있었고,
+    // 그 결과 setQueryData 로 쓰던 낙관적 업데이트가 화면에 도달하지 못했다.
+    expect(result.current.staff).toEqual(staff);
+    await waitFor(() => {
+      expect(mockGetConfirmedStaff).toHaveBeenCalledWith('job-1');
+    });
+  });
+
+  it('realtime 모드의 낙관적 업데이트가 렌더 소스와 같은 키에 기록된다 (죽은 코드 부활)', async () => {
+    mockSubscribeToConfirmedStaff.mockImplementation(() => jest.fn());
+    mockMarkAsNoShow.mockResolvedValue(undefined);
+    mockGetQueryData.mockReturnValue({
+      staff: [createMockConfirmedStaff()],
+      grouped: [],
+      stats: createMockStats(),
+    });
+
     const { result } = renderHook(() => useConfirmedStaff('job-1', { realtime: true }));
 
     act(() => {
-      onUpdate?.({
-        staff: [createMockConfirmedStaff()],
-        grouped: [createMockGroup([createMockConfirmedStaff()])],
-        stats: createMockStats(),
-      });
+      result.current.setNoShow('worklog-1', 'No arrival');
     });
 
     await waitFor(() => {
-      expect(result.current.staff).toHaveLength(1);
-      expect(result.current.isLoading).toBe(false);
+      expect(mockSetQueryData).toHaveBeenCalled();
     });
+
+    const optimisticCall = mockSetQueryData.mock.calls.find(
+      (call) => Array.isArray(call[0]) && call[0][2] === 'job-1'
+    );
+    expect(optimisticCall).toBeDefined();
+    // 서버 응답 전에 이미 no_show 로 뒤집힌 스냅샷이 렌더 소스에 들어간다
+    const snapshot = optimisticCall?.[1] as { staff: ConfirmedStaff[] };
+    expect(snapshot.staff[0]?.status).toBe('no_show');
+  });
+
+  it('리렌더가 구독을 다시 맺지 않는다 (queryKey 참조 안정)', () => {
+    mockSubscribeToConfirmedStaff.mockImplementation(() => jest.fn());
+
+    const { rerender } = renderHook(() => useConfirmedStaff('job-1', { realtime: true }));
+    rerender({});
+    rerender({});
+
+    // queryKey 를 useMemo 로 고정하지 않으면 매 렌더 구독이 끊기고 다시 맺힌다.
+    expect(mockSubscribeToConfirmedStaff).toHaveBeenCalledTimes(1);
   });
 
   it('updates work time with fallback modifiedBy', async () => {
@@ -437,11 +502,12 @@ describe('useConfirmedStaff', () => {
     });
   });
   // --- realtime 계약 (STAFF-1 CRITICAL · STAFF-11) ---------------------------
-  // useQuery 가 `enabled: !realtime` 로 영구 disabled 라, 이 모드에서는 훅이 자체 상태로
-  // error·isRefreshing 을 만들어야 한다. 예전엔 그게 없어 구독이 죽어도 error=null +
-  // isLoading=true 로 굳었고(무한 스피너), 화면의 ErrorState 는 도달 불가한 죽은 코드였다.
+  // realtime-01 이후 useQuery 는 항상 enabled 라 data/isLoading/isRefetching 은 정상 동작한다.
+  // 그래도 **구독 장애는 fetch 장애와 별개 신호**라 realtimeError 축은 유지해야 한다 —
+  // 이게 없으면 구독이 죽어도 error=null 이라 화면의 ErrorState 가 도달 불가한 죽은 코드가 된다.
 
   it('realtime 구독이 실패하면 error 를 노출하고 로딩을 끝낸다 (무한 스피너 방지)', async () => {
+    mockIsLoading = true;
     let onError: ((error: Error) => void) | undefined;
     mockSubscribeToConfirmedStaff.mockImplementation(
       (_jobPostingId: string, callbacks: { onError: typeof onError }) => {
@@ -487,6 +553,9 @@ describe('useConfirmedStaff', () => {
       stats: { total: 1, checkedIn: 0, checkedOut: 0, noShow: 0 },
     };
     mockRefetch.mockResolvedValue({ data: refreshed, error: null });
+    // realtime-01 이후 refetch 결과는 훅의 별도 state 가 아니라 useQuery 캐시로 들어간다.
+    // 즉 렌더 소스가 곧 refetch 대상이라, "새로고침했는데 화면이 안 변한다"가 구조적으로 불가능하다.
+    mockData = refreshed;
 
     const { result } = renderHook(() => useConfirmedStaff('job-1', { realtime: true }));
 
@@ -494,6 +563,7 @@ describe('useConfirmedStaff', () => {
       result.current.refresh();
     });
 
+    expect(mockRefetch).toHaveBeenCalled();
     await waitFor(() => {
       expect(result.current.staff).toHaveLength(1);
     });
@@ -523,17 +593,23 @@ describe('useConfirmedStaff', () => {
       expect(result.current.error).not.toBeNull();
     });
 
+    const pushed = {
+      staff: [createMockConfirmedStaff()],
+      grouped: [],
+      stats: { total: 1, checkedIn: 0, checkedOut: 0, noShow: 0 },
+    };
+
     act(() => {
-      onUpdate?.({
-        staff: [createMockConfirmedStaff()],
-        grouped: [],
-        stats: { total: 1, checkedIn: 0, checkedOut: 0, noShow: 0 },
-      });
+      onUpdate?.(pushed);
     });
 
     await waitFor(() => {
       expect(result.current.error).toBeNull();
     });
-    expect(result.current.staff).toHaveLength(1);
+    // 구독 데이터는 캐시로 들어간다 — 실제 QueryClient 에서는 이 기록이 곧 렌더 소스다.
+    expect(mockSetQueryData).toHaveBeenCalledWith(
+      ['confirmedStaff', 'byJobPosting', 'job-1'],
+      pushed
+    );
   });
 });

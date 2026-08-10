@@ -7,6 +7,7 @@ import { isWithinReviewDeadline, resolveReviewerTypeFromRole } from '@/domains/r
 import { getReviewBaseTime } from '@/domains/review/reviewDeadline';
 import { jobPostingRepository, workLogRepository } from '@/repositories';
 import type { CreateReviewContext, ReviewPaginationCursor } from '@/repositories';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { errorHandlerPresets } from '@/shared/errors/hookErrorHandler';
 import { buildCurrentUserIdentitySnapshot } from '@/shared/profile/identity';
 import { useAuthStore } from '@/stores/authStore';
@@ -77,6 +78,7 @@ export function useCreateReview() {
 
   const mutation = useMutation({
     mutationFn: (input: CreateReviewInput) => {
+      requireOnlineForMutation('리뷰 작성');
       if (!profile?.uid) {
         return Promise.reject(new Error('Login is required.'));
       }

@@ -17,6 +17,7 @@ import {
   updateBoardComment,
   updateBoardPost,
 } from '@/services';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { invalidateQueries, queryClient, queryKeys } from '@/lib/queryClient';
 import { userRepository } from '@/repositories';
 import {
@@ -311,7 +312,10 @@ export function useBoardMentionCandidates(postId: string, enabled = true) {
 
 export function useIncrementBoardViewCount() {
   return useMutation({
-    mutationFn: (postId: string) => incrementBoardPostViewCount(postId),
+    mutationFn: (postId: string) => {
+      requireOnlineForMutation('게시글 조회수 증가');
+      return incrementBoardPostViewCount(postId);
+    },
     onError: (error) => {
       logger.warn('Board view count increment failed', {
         component: 'useBoard',
@@ -329,6 +333,7 @@ export function useCreateBoardPost() {
     mutationFn: async (
       input: Omit<CreateBoardPostInput, 'authorId' | 'authorName' | 'authorRole'>
     ) => {
+      requireOnlineForMutation('게시글 작성');
       const actor = await requireBoardAuthorIdentity(user, profile, role);
 
       return createBoardPost(actor.userId, actor.authorName, actor.authorRole, {
@@ -357,6 +362,7 @@ export function useUpdateBoardPost(postId: string) {
 
   return useMutation({
     mutationFn: (input: UpdateBoardPostInput) => {
+      requireOnlineForMutation('게시글 수정');
       const actor = requireBoardMutationActor(user, isAdmin);
       return updateBoardPost(postId, actor, input);
     },
@@ -379,6 +385,7 @@ export function useSetBoardPostLock(postId: string) {
 
   return useMutation({
     mutationFn: (isLocked: boolean) => {
+      requireOnlineForMutation('게시글 잠금 변경');
       const actor = requireBoardMutationActor(user, isAdmin);
       return setBoardPostLock(postId, actor, isLocked);
     },
@@ -435,6 +442,7 @@ export function useHideBoardPost(postId: string) {
 
   return useMutation({
     mutationFn: () => {
+      requireOnlineForMutation('게시글 숨김');
       const actor = requireBoardMutationActor(user);
       return hideBoardPost(postId, actor.userId);
     },
@@ -459,6 +467,7 @@ export function useCreateBoardComment(postId: string) {
     mutationFn: async (
       input: Omit<CreateBoardCommentInput, 'postId' | 'authorId' | 'authorName' | 'authorRole'>
     ) => {
+      requireOnlineForMutation('댓글 작성');
       const actor = await requireBoardAuthorIdentity(user, profile, role, isAdmin);
 
       return createBoardComment(
@@ -493,6 +502,7 @@ export function useUpdateBoardComment(postId: string, commentId: string) {
 
   return useMutation({
     mutationFn: (input: UpdateBoardCommentInput) => {
+      requireOnlineForMutation('댓글 수정');
       const actor = requireBoardMutationActor(user, isAdmin);
       return updateBoardComment(postId, commentId, actor, input);
     },
@@ -515,6 +525,7 @@ export function useBoardCommentMutations(postId: string) {
 
   const updateMutation = useMutation({
     mutationFn: ({ commentId, input }: { commentId: string; input: UpdateBoardCommentInput }) => {
+      requireOnlineForMutation('댓글 수정');
       const actor = requireBoardMutationActor(user, isAdmin);
       return updateBoardComment(postId, commentId, actor, input);
     },
@@ -532,6 +543,7 @@ export function useBoardCommentMutations(postId: string) {
 
   const statusMutation = useMutation({
     mutationFn: ({ commentId, status }: { commentId: string; status: 'hidden' | 'deleted' }) => {
+      requireOnlineForMutation('댓글 상태 변경');
       const actor = requireBoardMutationActor(user, isAdmin);
       return setBoardCommentStatus(postId, commentId, actor, status);
     },
@@ -552,6 +564,7 @@ export function useBoardCommentMutations(postId: string) {
 
   const pinnedMutation = useMutation({
     mutationFn: ({ commentId }: { commentId: string }) => {
+      requireOnlineForMutation('댓글 고정 변경');
       const actor = requireBoardMutationActor(user, isAdmin);
       return setBoardCommentPinned(postId, commentId, actor);
     },
@@ -569,6 +582,7 @@ export function useBoardCommentMutations(postId: string) {
 
   const reactionMutation = useMutation({
     mutationFn: ({ commentId, type }: { commentId: string; type: CommentReactionType }) => {
+      requireOnlineForMutation('댓글 반응 변경');
       const actor = requireBoardMutationActor(user, isAdmin);
       return toggleBoardCommentReaction(postId, commentId, actor, type);
     },
@@ -597,6 +611,7 @@ export function useSetBoardCommentStatus(postId: string, commentId: string) {
 
   return useMutation({
     mutationFn: (status: 'hidden' | 'deleted') => {
+      requireOnlineForMutation('댓글 상태 변경');
       const actor = requireBoardMutationActor(user, isAdmin);
       return setBoardCommentStatus(postId, commentId, actor, status);
     },
@@ -622,6 +637,7 @@ export function useSetBoardCommentPinned(postId: string, commentId: string) {
 
   return useMutation({
     mutationFn: () => {
+      requireOnlineForMutation('댓글 고정 변경');
       const actor = requireBoardMutationActor(user, isAdmin);
       return setBoardCommentPinned(postId, commentId, actor);
     },
@@ -697,6 +713,7 @@ export function useToggleBoardPostVote(postId: string) {
 
   return useMutation({
     mutationFn: (type: BoardVoteType) => {
+      requireOnlineForMutation('게시글 반응 변경');
       const actor = requireBoardMutationActor(user, isAdmin);
       return toggleBoardPostVote(postId, actor, type);
     },
@@ -734,6 +751,7 @@ export function useToggleBoardCommentReaction(postId: string, commentId: string)
 
   return useMutation({
     mutationFn: (type: CommentReactionType) => {
+      requireOnlineForMutation('댓글 반응 변경');
       const actor = requireBoardMutationActor(user, isAdmin);
       return toggleBoardCommentReaction(postId, commentId, actor, type);
     },
@@ -755,6 +773,7 @@ export function useCreateBoardReport() {
 
   return useMutation({
     mutationFn: (input: Omit<CreateBoardReportInput, 'reporterId'>) => {
+      requireOnlineForMutation('게시글 신고');
       const actor = requireBoardMutationActor(user);
 
       return createBoardReport({

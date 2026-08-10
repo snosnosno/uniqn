@@ -18,6 +18,7 @@ import {
   saveTemplate,
   updateTemplate,
 } from '@/services/jobs/templateService';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { cachingPolicies, queryKeys } from '@/lib/queryClient';
 import { UNDO_DELAY_MS } from '@/constants/undo';
 import { useToastStore } from '@/stores/toastStore';
@@ -71,6 +72,7 @@ function useSaveTemplate() {
 
   return useMutation({
     mutationFn: (params: SaveTemplateParams) => {
+      requireOnlineForMutation('템플릿 저장');
       requireAuth(user?.uid, 'useTemplateManager');
       const input: CreateTemplateInput = {
         name: params.name,
@@ -110,6 +112,7 @@ export function useRenameTemplate() {
 
   return useMutation({
     mutationFn: (params: RenameTemplateParams) => {
+      requireOnlineForMutation('템플릿 이름 변경');
       requireAuth(user?.uid, 'useRenameTemplate');
       return updateTemplate(params.templateId, { name: params.name }, user.uid);
     },

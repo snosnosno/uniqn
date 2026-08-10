@@ -5,30 +5,90 @@
 
 ---
 
-## 🔴 실행 현황 (2026-08-10 갱신 — 다음 세션은 여기부터)
+## 🔴 실행 현황 (2026-08-11 갱신 — 다음 세션은 여기부터)
 
-| 세션 | 상태 | PR | prod 반영 |
+| 세션 | 상태 | PR/커밋 | prod 반영 |
 |---|---|---|---|
 | 문서 착지 | ✅ 완료 | #457 | — |
 | **세션1** S0 서버 마이그 | ✅ **완료** | #458 | 마이그 2건 적용 · exit proof 전항목 실측 |
 | **세션2** S0 웹 | ✅ **완료** | #459 | CF Pages 배포(`8cad683a`) · 실브라우저 관측 |
 | **세션3** 알림 파이프라인 | ✅ **완료** | #460 | 마이그 1건 적용 · EF 자동배포 |
-| **세션4** OTA-1 핵심 | 🟡 **3/5** — skew-F1·data-01 완결 | #461 · **#466**+**#467** | 마이그 `20260810100000` 적용 |
+| **세션4** OTA-1 핵심 | ✅ **완료 5/5** | #461 · #466+#467 · `f676c039d` | 마이그 `20260810100000` 적용 · **`20260811100000` 미적용** |
+| **세션5** OTA-2 견고성 | ✅ **완료 8/8** | `ce0f95881` | 서버 변경 없음 |
+| **세션6** 1.0.7 빌드분 | ✅ **코드 완료** | `b3737621c` | 서버 변경 없음 |
 | 1.0.6 스토어 출시 | ⏸ 사람 게이트 | — | — |
-| **세션5** OTA-2 견고성 | ⬜ 미착수 | — | — |
-| **세션6** 1.0.7 빌드분 | ⬜ 미착수 | — | — |
 
-### 세션4 잔여 2건 (다음 세션의 시작점)
+### 🔴 남은 것은 전부 사람 게이트다 (코드 잔여 0)
 
-1. **realtime-01 [HIGH]** — `useConfirmedStaff` 렌더 소스 단일화
-   - 실측 확인: `:109 enabled: !!jobPostingId && !realtime` + `:423 realtime ? realtimeData : data`
-     이므로 realtime=true 면 useQuery 가 안 돌고 **`setQueryData` 낙관적 업데이트 3벌이 렌더에 도달 못 한다**
-   - 🔑 **삭제가 아니라 되살리기다** — `enabled` 에서 `!realtime` 을 빼고 `onUpdate` 를
-     `queryClient.setQueryData` 로 바꾸면(useJobDetail.ts:93-98 패턴) 3벌을 **손대지 않고** 살아난다
-   - ⚠️ `realtimeError`(:92)는 유지할 것 — 구독 장애는 fetch 에러와 별개 신호다(STAFF-1 회귀 방지)
-2. **realtime-02 [MEDIUM]** — realtime 콜백 디바운스
-   (`ConfirmedStaffRepository:677-687` · `ApplicationRepositoryQueries:158-173,:400-406`)
-   - 동일 패턴이 `NotificationRepository:754-764` 에도 있으나 **원장 밖**이라 백로그로 남김
+| # | 항목 | 왜 사람이어야 하나 |
+|---|---|---|
+| 1 | **마이그 `20260811100000` prod 적용** | `prod-migrate` 워크플로우 실행. `analytics_events` 화이트리스트 확장 — **OTA 발행 전에** 넣어야 계측이 첫 세션부터 잡힌다 |
+| 2 | 1.0.6 스토어 **수동 출시** | 스토어 콘솔 |
+| 3 | 출시 확인 후 `eas update --branch production` | 순서 강제 1 (아래 런북) |
+| 4 | 1.0.7 `eas build` iOS/Android + 실기기 QA | 네이티브 빌드 — 특히 **auth-F3 세션 저장 회귀**(자동로그인) |
+| 5 | Supabase Auth **Rate Limits** 콘솔 확인 (#408) | 레포로 증명 불가 |
+| 6 | `app_config` 버전값 갱신 | 순서 강제 1·2 |
+
+### ✅ 세션4 잔여 — realtime-01 · realtime-02 · **testgap-01** (2026-08-11, `f676c039d`)
+
+🚨 **원장이 "잔여 2건" 이라고 적었지만 실제로는 3건이었다.** `testgap-01` 은 커밋 이력 0건의
+미착수였다(`git log --grep` 실측). "3/5" 를 셀 때 data-01 과 finding-04 를 2건으로 센 것이
+원인이다 — **완료 개수가 아니라 항목 이름으로 세라.**
+
+| 항목 | 핵심 |
+|---|---|
+| realtime-01 | `enabled` 에서 `!realtime` 제거 + `onUpdate` → `setQueryData`. 낙관적 업데이트 3벌 부활 |
+| realtime-02 | 리딩+트레일링 병합(300ms) — 4곳. `NotificationRepository` 도 동형이라 동반 처리 |
+| testgap-01 | Sentry release/dist/OTA 태깅 + `trackEvent` → 브레드크럼 + **서버 레일 `app_session_start`** |
+
+**실행이 확정한 사실**:
+- 🔑 **realtime-01 에는 원장에 없던 함정이 하나 더 있었다** — `staffQueryKey` 가 배열 리터럴이라
+  구독 useEffect 의존성에 넣으면 **매 렌더 재구독**된다. `useMemo` 로 고정해야 한다(회귀 가드 추가).
+- 🔑 **Sentry release/dist 는 빌드 설정이 아니다.** 원장은 "1.0.7 로 갈 수 있음" 이라 적었지만
+  `Sentry.init({release, dist})` 는 런타임 값(`expoConfig`)을 받으므로 **OTA 로 도달한다**.
+- 🔑 **계측의 서버 절반은 마이그 1건이면 된다** — `analytics_events` 테이블·트리거·RLS 는 이미
+  있고(#265 ops S1), 막고 있던 건 `event` CHECK 화이트리스트뿐이었다. 파리티 208/110 불변.
+- 🚨 **CHECK 제약 교체는 이름을 잘못 짚으면 조용히 제약이 2개가 되어 AND 결합된다** — 새 값은
+  여전히 막히는데 마이그는 성공으로 보인다. 정의(`pg_get_constraintdef`)로 찾아 지우고,
+  마이그 안과 pgTAP 양쪽에서 "CHECK 정확히 1개"를 단언한다.
+
+### ✅ 세션5 완료 (2026-08-11, `ce0f95881`) — err-01·err-02·arch-01·err-03·err-04·auth-F1·auth-F2·ux-02·perf-01
+
+**실행이 확정한 사실**:
+- 🔑 **err-01 의 choke point 는 리포지토리가 아니라 Supabase 클라이언트의 `global.fetch` 다.**
+  리포지토리는 47개 파일에서 330회 직접 await 하고 공통 래퍼가 없다 — `handleSupabaseError` 는
+  실패 뒤에 부르는 변환기라 감쌀 대상이 아니고, `runRpc` 는 5개 파일만 쓴다.
+  fetch 를 갈아끼우면 PostgREST·RPC·Storage·Auth 가 **한 지점에서** 덮인다.
+- 🚨 **postgrest-js 는 fetch 예외의 `code` 를 항상 빈 문자열로 버린다**(dist 실측).
+  살아남는 건 message 뿐이라 **에러 코드가 아니라 메시지 마커**로 판별해야 E1002 에 닿는다.
+- 🔑 **err-02 는 78곳이었다**(원장은 "44곳 밖 나머지 25곳" 이라 파일 수를 셌다). 파일 25개 / 지점 78개.
+  개별 수정만으로는 5번째 누락이 또 나오므로 **파일 파싱형 회귀 테스트로 승격**했다.
+- ⚠️ **낙관적 업데이트는 가드보다 먼저 칠해진다** — TanStack 은 `onMutate` → `mutationFn` 순서다.
+  오프라인에서 캐시가 잠깐 칠해졌다 `onError` 롤백된다. 완전 차단을 원하면
+  `shouldApplyOptimisticUpdate()` 를 `onMutate` 첫 줄에 쓰는 **별도 작업**이 필요하다(미착수).
+- ⚠️ auth-F2 에서 원장과 **다르게 판정한 1건**: `clearAutoLoginBlockedSession` 은 원장이
+  "정리 경로" 로 묶었지만 실제로는 기기 한정 설정 반영이라 `local` 로 했다. 근거는 코드 주석.
+
+### ✅ 세션6 코드분 완료 (2026-08-11, `b3737621c`) — dep-01·web-02(네이티브)·auth-F3·dep-03·dep-02
+
+**실행이 확정한 사실**:
+- 🔑 **auth-F3 는 `aes-js` 없이 된다.** Supabase 공식 LargeSecureStore 는 AES 키만 SecureStore 에
+  두고 암호문을 AsyncStorage 에 두는데, **청킹**하면 새 의존성 0개로 전부 SecureStore 에 넣을 수 있다.
+  검증할 암호 코드가 없다는 것 자체가 보안 이득이다.
+- 🔑 **청킹은 문자 수가 아니라 UTF-8 바이트로 잘라야 한다** — 한글 3바이트·이모지 4바이트다.
+  문자 수로 세면 2048 상한을 넘겨 **실기기에서 저장이 조용히 실패**한다(=로그인 유지 불가).
+  `TextEncoder` 는 Hermes 존재 여부가 갈려 직접 센다.
+- 🔑 **구버전 평문 세션은 마이그레이션했다** — 원장은 "전 세션 무효화가 무비용" 이라 했지만
+  옮기는 비용이 더 싸다. 옮긴 뒤 평문 원본은 반드시 지운다.
+- ⚠️ **dep-03 은 이미 완료 상태였다** — `expo-modules-core` 는 direct dependency + `install.exclude`
+  + knip `ignoreDependencies` 가 전부 돼 있다. 변경 없음.
+- 🔑 **dep-02 는 `npm audit fix` 로 고칠 수 있는 것이 0건이다** — 제안이 전부 메이저 **하향**
+  (`expo@53`·`react-native@0.72`). 21건 전부 빌드타임 툴체인이라 앱 번들에 도달하지 않는다.
+  분류 문서: `docs/analysis/2026-08-11-npm-audit-triage.md`
+- 🚨 **앱 버전은 1.0.6 그대로 두었다** — `runtimeVersion = appVersion` 이라 여기서 1.0.7 로 올리면
+  세션4·5 OTA 묶음이 **1.0.6 기기에 도달하지 못한다**. 범프는 OTA 발행 뒤 1.0.7 빌드 직전에.
+- ⚠️ **워크트리에서 `npm install` 금지** — node_modules 가 메인 체크아웃과 정션이라 다른 워크트리까지
+  같이 바뀐다. lock 갱신은 `npm install --package-lock-only`.
 
 ### ✅ 세션4 완료분 — data-01 + finding-04 (2026-08-10)
 
@@ -85,6 +145,27 @@
 - **`document?.x` 는 미선언 식별자를 못 막는다** — 옵셔널 체이닝은 값이 nullish 인 경우만 막는다.
   RN 네이티브·jest node 환경에는 `document` 바인딩이 아예 없어 `ReferenceError` 다.
 
+### 08-11 실행이 추가로 찾은 것 — **테스트 목이 거짓 통과를 만들고 있었다 (3건)**
+
+셋 다 "테스트는 초록인데 실제로는 아무것도 검증하지 않고 있던" 유형이다.
+새 단언을 붙이는 순간 드러났고, 고친 것은 구현이 아니라 **목**이다.
+
+- 🚨 **`SheetModal` 목이 `footer` prop 을 통째로 버렸다** — `ApplicationForm` 의 제출 버튼과
+  그 주변이 이 테스트에서 **한 번도 렌더된 적이 없다**. 지원 폼 테스트 5개가 전부
+  버튼이 없는 화면을 검사하고 있었던 셈이다.
+- 🚨 **`useConfirmedStaff` 테스트의 `useMutation` 목이 `onMutate` 를 호출하지 않았다** —
+  낙관적 업데이트 3벌과 롤백이 **한 번도 검증된 적이 없다**. realtime-01 이 되살린 그 코드다.
+- ⚠️ **`useQueryClient` 목이 매 렌더 새 객체를 반환했다** — 실제 TanStack 은 컨텍스트의 단일
+  인스턴스를 준다. 목이 만든 거짓 신호 때문에 "구현이 무한 재구독한다"로 오독될 뻔했다.
+
+🔑 **교훈**: 목이 실제 컴포넌트/라이브러리의 **계약 일부를 빠뜨리면**, 그 부분을 지나는
+   코드는 테스트가 있어도 검증되지 않는다. 새 단언이 예상 밖으로 실패하면
+   **구현을 의심하기 전에 목이 무엇을 빠뜨렸는지 먼저 보라.**
+
+- ⚠️ **`void repo.insert(...)` 는 계측이 앱 프로세스를 죽일 수 있는 경로였다** — 리포지토리가
+  지금은 절대 reject 하지 않지만, 그 계약이 깨지면 `void` 만으로는 unhandled rejection 이 된다.
+  fire-and-forget 은 **부르는 쪽에도** `.catch` 가 있어야 한다.
+
 ---
 
 ## 전제 — 배포 상황 (2026-08-09 사용자 확정)
@@ -128,7 +209,9 @@
 
 ---
 
-## 세션 1 — S0 서버 마이그 배치 (권장 시작점)
+## 세션 1 — S0 서버 마이그 배치 ✅ 완료 (#458)
+
+> 아래 프롬프트는 **기록용**이다. 다시 실행하지 말 것.
 
 ```
 docs/analysis/2026-08-09-full-app-audit-2rounds.md 의 S0 서버 항목 중 마이그레이션 배치를 실행한다.
@@ -167,7 +250,9 @@ docs/analysis/2026-08-09-full-app-audit-2rounds.md 의 S0 서버 항목 중 마�
 
 ---
 
-## 세션 2 — S0 웹 배포 (세션 1과 병렬 가능)
+## 세션 2 — S0 웹 배포 ✅ 완료 (#459)
+
+> 아래 프롬프트는 **기록용**이다. 다시 실행하지 말 것.
 
 ```
 docs/analysis/2026-08-09-full-app-audit-2rounds.md 의 S0 웹 항목을 실행하고 Cloudflare Pages 에 배포한다.
@@ -203,7 +288,9 @@ docs/analysis/2026-08-09-full-app-audit-2rounds.md 의 S0 웹 항목을 실행�
 
 ---
 
-## 세션 3 — 알림·정산 서버 파이프라인 (서버, 독립)
+## 세션 3 — 알림·정산 서버 파이프라인 ✅ 완료 (#460)
+
+> 아래 프롬프트는 **기록용**이다. 다시 실행하지 말 것.
 
 ```
 docs/analysis/2026-08-09-full-app-audit-2rounds.md 의 push 축을 실행한다. 전부 서버라 즉시 효력.
@@ -230,7 +317,10 @@ docs/analysis/2026-08-09-full-app-audit-2rounds.md 의 push 축을 실행한다.
 
 ---
 
-## 세션 4 — OTA-1 핵심 (1.0.6 출시 전 준비, 출시 직후 발행)
+## 세션 4 — OTA-1 핵심 ✅ 완료 5/5 (#461 · #466+#467 · `f676c039d`)
+
+> 아래 프롬프트는 **기록용**이다. 다시 실행하지 말 것.
+> ⚠️ 이 블록의 "잔여" 서술은 낡았다 — 현황은 파일 머리 표를 보라.
 
 ```
 docs/analysis/2026-08-09-full-app-audit-2rounds.md 의 JS 전용 핵심 수정을 준비한다.
@@ -273,7 +363,9 @@ docs/analysis/2026-08-09-full-app-audit-2rounds.md 의 JS 전용 핵심 수정�
 
 ---
 
-## 세션 5 — OTA-2 견고성 (1.0.6 출시 후 2차 발행)
+## 세션 5 — OTA-2 견고성 ✅ 완료 8/8 (`ce0f95881`)
+
+> 아래 프롬프트는 **기록용**이다. 다시 실행하지 말 것.
 
 ```
 docs/analysis/2026-08-09-full-app-audit-2rounds.md 의 에러처리·인증·UX 잔여를 실행한다.
@@ -308,7 +400,9 @@ docs/analysis/2026-08-09-full-app-audit-2rounds.md 의 에러처리·인증·UX 
 
 ---
 
-## 세션 6 — 1.0.7 빌드분 (네이티브 필수)
+## 세션 6 — 1.0.7 빌드분 ✅ 코드 완료 (`b3737621c`) · 빌드는 사람 게이트
+
+> 아래 프롬프트는 **기록용**이다. 다시 실행하지 말 것.
 
 ```
 1.0.7 스토어 빌드에만 실을 수 있는 항목이다. OTA 로는 영원히 못 나간다.
@@ -338,18 +432,48 @@ docs/analysis/2026-08-09-full-app-audit-2rounds.md 의 에러처리·인증·UX 
 
 ---
 
-## 1.0.6 출시 런북 (세션 4 완료 후)
+## 1.0.6 출시 런북 (세션4·5 완료 — 이제 이 순서만 남았다)
+
+🚨 **1번을 건너뛰면 계측이 첫 세션부터 비어 있다.** `app_session_start` 는 서버 화이트리스트
+CHECK 에 걸려 조용히 버려지고(fire-and-forget), 그러면 #407 REVOKE 게이트를 열 분모가
+또 안 쌓인다. 클라는 안 깨지지만 **이번 작업의 목적 자체가 무산된다.**
 
 ```
-1. ☐ 세션 4 OTA 묶음이 master 에 머지되고 npm test/quality green
-2. ☐ 스토어에서 1.0.6 수동 출시
-3. ☐ 출시 반영 확인 (스토어 페이지 버전 표기)
-4. ☐ git rev-parse HEAD 기록 → eas update --branch production → 다시 HEAD 대조
+1. ☐ 마이그 20260811100000 prod 적용 (prod-migrate 워크플로우, 파일 바이트 그대로)
+     → list_migrations 실측 + analytics_events CHECK 에 app_session_start 포함 확인
+     → 파리티 208/110 불변 확인 (이 마이그는 함수·정책을 안 바꾼다)
+2. ☐ 세션4·5 OTA 묶음이 master 에 머지되고 npm test/quality green
+3. ☐ 스토어에서 1.0.6 수동 출시
+4. ☐ 출시 반영 확인 (스토어 페이지 버전 표기)
+5. ☐ git rev-parse HEAD 기록 → eas update --branch production → 다시 HEAD 대조
      (긴 명령 중 트리가 교체돼 Commit 라벨이 어긋난 이력 2회)
-5. ☐ Update 그룹 ID·runtime 버전 기록
-6. ☐ app_config latest_version/recommended_version → 1.0.6
-7. ☐ skew-F1 OTA 도달 확인 후에만 force_update_version 갱신 검토 (순서 강제 1)
-8. ☐ list_migrations 실측 — 클라가 참조하는 서버 객체가 prod 에 있는지 (#441 재발 방지)
+     ⚠️ 채널은 production 이다 — 원장 구판의 `--branch master` 는 틀렸다
+     ⚠️ 발행 트리의 package.json version 이 **1.0.6** 인지 확인
+        (1.0.7 이면 runtimeVersion 이 갈려 1.0.6 기기에 도달하지 않는다)
+6. ☐ Update 그룹 ID·runtime 버전 기록
+7. ☐ app_config latest_version/recommended_version → 1.0.6
+8. ☐ **계측 도달 확인** — analytics_events 에서 app_session_start 가 쌓이는지:
+     SELECT props->>'v', props->>'ota', count(*) FROM analytics_events
+      WHERE event='app_session_start' GROUP BY 1,2;
+     여기서 ota 가 'embedded' 가 아닌 행이 보이면 OTA 가 실제로 닿은 것이다
+9. ☐ skew-F1 OTA 도달 확인(8번) 후에만 force_update_version 갱신 (순서 강제 1)
+10. ☐ 계측 가동 확인(8번) 후에만 data-01 직접 PATCH 차단 트리거 검토 (순서 강제 2)
+11. ☐ list_migrations 실측 — 클라가 참조하는 서버 객체가 prod 에 있는지 (#441 재발 방지)
+```
+
+## 1.0.7 빌드 런북 (세션6 코드 완료 — 빌드만 남았다)
+
+```
+1. ☐ 위 1.0.6 런북 5번(OTA 발행)이 끝난 뒤에 시작한다
+2. ☐ npm install (정션 아닌 **메인 체크아웃**에서) → npx expo install --check 0건
+3. ☐ npm version patch → 1.0.7 (app.config.ts 가 package.json 을 읽는다)
+4. ☐ eas build --platform all --profile production
+5. ☐ 실기기 QA — auth-F3 회귀가 핵심이다:
+     · 기존 로그인 상태로 업데이트 → **로그아웃되지 않아야 한다**(평문 세션 마이그레이션)
+     · 로그아웃 → 재로그인 → 앱 재시작 시 세션 유지
+     · 전광판 화면을 5분 이상 켜두고 화면이 안 꺼지는지 (web-02 네이티브 절반)
+6. ☐ 스토어 제출 → 승인 → 출시
+7. ☐ app_config latest_version/recommended_version → 1.0.7
 ```
 
 ---

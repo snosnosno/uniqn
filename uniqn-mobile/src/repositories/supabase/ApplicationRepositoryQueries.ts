@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import { toError, NetworkError, ERROR_CODES } from '@/errors';
 import { handleSupabaseError, createRealtimeSubscription } from '@/utils/supabase';
+import { createDebouncedTrigger, REALTIME_RELOAD_DEBOUNCE_MS } from '@/utils/debounce';
 import { STATUS } from '@/constants';
 import type { UnsubscribeFn } from '@/types/common';
 import type { Application, ApplicationStatus, JobPosting } from '@/types';
@@ -150,26 +151,31 @@ export function subscribeByApplicantIdWithStatuses(
     return () => undefined;
   }
 
-  // 초기 데이터 1회 fetch — 변경 이벤트가 오지 않아도 구독자가 빈 상태에서 탈출
-  void executeGetByApplicantIdWithStatuses(applicantId, statuses, pageSize)
-    .then(onData)
-    .catch((error) => onError(toError(error)));
+  const reload = (): void => {
+    try {
+      void executeGetByApplicantIdWithStatuses(applicantId, statuses, pageSize)
+        .then(onData)
+        .catch((error) => onError(toError(error)));
+    } catch (error) {
+      onError(toError(error));
+    }
+  };
 
-  return createRealtimeSubscription(
+  // 초기 데이터 1회 fetch — 변경 이벤트가 오지 않아도 구독자가 빈 상태에서 탈출
+  reload();
+
+  // 행 변경마다 전체 재조회하면 일괄 작업 한 번이 N 회 조회로 증폭된다(realtime-02).
+  const debounced = createDebouncedTrigger(reload, REALTIME_RELOAD_DEBOUNCE_MS);
+
+  const unsubscribe = createRealtimeSubscription(
     TABLES.APPLICATIONS,
     `applicant_id=eq.${applicantId}`,
     (payload) => {
-      try {
-        const row = (payload.new ?? payload.old) as Record<string, unknown> | undefined;
-        if (!row) return;
+      const row = (payload.new ?? payload.old) as Record<string, unknown> | undefined;
+      if (!row) return;
 
-        // Realtime은 개별 변경만 오므로, 전체 목록을 다시 조회
-        void executeGetByApplicantIdWithStatuses(applicantId, statuses, pageSize)
-          .then(onData)
-          .catch(onError);
-      } catch (error) {
-        onError(toError(error));
-      }
+      // Realtime은 개별 변경만 오므로, 전체 목록을 다시 조회 (병합 창 경유)
+      debounced.trigger();
     },
     (status) => {
       if (status === 'CHANNEL_ERROR') {
@@ -184,14 +190,18 @@ export function subscribeByApplicantIdWithStatuses(
         );
       } else if (status === 'RECOVERED') {
         // 재연결 성공 — 끊긴 동안 놓친 변경을 반영하기 위해 전체 목록 재조회.
+        // 복구는 드문 단발 사건이라 병합 창을 태우지 않고 즉시 동기화한다.
         logger.info('Realtime 채널 복구 — 데이터 재동기화', { applicantId });
-        void executeGetByApplicantIdWithStatuses(applicantId, statuses, pageSize)
-          .then(onData)
-          .catch(onError);
+        reload();
       }
       // TIMED_OUT은 Phoenix가 자동 재시도 — 상위로 전파하지 않음
     }
   );
+
+  return () => {
+    debounced.cancel();
+    unsubscribe();
+  };
 }
 
 export async function executeGetByJobPostingId(jobPostingId: string): Promise<Application[]> {
@@ -396,12 +406,22 @@ export function subscribeByJobPosting(
   // 초기 로드
   void handleUpdate();
 
-  // Realtime 구독: 변경 시 전체 목록 재조회
-  return createRealtimeSubscription(
+  // 행 변경마다 전체 재조회하면 일괄 작업 한 번이 N 회 조회로 증폭된다(realtime-02).
+  const debounced = createDebouncedTrigger(() => {
+    void handleUpdate();
+  }, REALTIME_RELOAD_DEBOUNCE_MS);
+
+  // Realtime 구독: 변경 시 전체 목록 재조회 (병합 창 경유)
+  const unsubscribe = createRealtimeSubscription(
     TABLES.APPLICATIONS,
     `job_posting_id=eq.${jobPostingId}`,
     () => {
-      void handleUpdate();
+      debounced.trigger();
     }
   );
+
+  return () => {
+    debounced.cancel();
+    unsubscribe();
+  };
 }

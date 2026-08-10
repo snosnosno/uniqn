@@ -9,12 +9,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys, invalidateQueries } from '@/lib/queryClient';
 import { deleteSlot } from '@/services/workSchedule/gridWriteService';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import type { DeleteConfirmedStaffInput } from '@/types';
 
 export function useDeleteSlot() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: DeleteConfirmedStaffInput) => deleteSlot(input),
+    mutationFn: (input: DeleteConfirmedStaffInput) => {
+      requireOnlineForMutation('근무 슬롯 빼기');
+      return deleteSlot(input);
+    },
     onSuccess: (_data, input) => {
       qc.invalidateQueries({ queryKey: queryKeys.workSchedule.all });
       invalidateQueries.staffManagement(input.jobPostingId);

@@ -5,6 +5,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { requireAuth } from '@/errors/guardErrors';
 import { invalidateRelated } from '@/lib';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { errorHandlerPresets } from '@/shared/errors';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
@@ -29,6 +30,7 @@ export function useConfirmApplicationWithHistory() {
 
   return useMutation({
     mutationFn: (input: ConfirmWithHistoryInput) => {
+      requireOnlineForMutation('지원 확정');
       requireAuth(user?.uid, 'useStaffConversion');
       return confirmApplicationWithHistory(
         input.applicationId,
@@ -62,6 +64,7 @@ export function useCancelConfirmation() {
 
   return useMutation({
     mutationFn: ({ applicationId, reason }: { applicationId: string; reason?: string }) => {
+      requireOnlineForMutation('확정 취소');
       requireAuth(user?.uid, 'useStaffConversion');
       // 이 훅의 유일한 소비처는 구인자 지원자 화면(my-postings/[id]/applicants.tsx)이다.
       // 주체를 밝히지 않으면 RPC 가 지원자 본인만 허용하는 분기로 떨어져 항상 실패한다.
