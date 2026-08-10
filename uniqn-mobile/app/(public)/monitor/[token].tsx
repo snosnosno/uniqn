@@ -19,7 +19,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { trackOpsFunnel } from '@/services/observability/analyticsService';
 import { NumericText } from '@/components/ui';
 import { useMonitorSnapshot } from '@/hooks/ops/useMonitorSnapshot';
-import { useWebWakeLock } from '@/hooks/useWebWakeLock';
+import { useScreenAwake } from '@/hooks/useScreenAwake';
 import { parseMonitorConfig } from '@/domains/ops';
 import {
   resolveMonitorSlots,
@@ -186,8 +186,10 @@ export default function MonitorScreen() {
   const { width, height } = useWindowDimensions();
   const [reportOpen, setReportOpen] = useState(false);
 
-  // web-02(웹 절반): 전광판은 대회 내내 켜둔다. 스냅샷을 받은 뒤에만 잠금을 잡는다.
-  useWebWakeLock(!!snapshot);
+  // web-02: 전광판은 대회 내내 켜둔다. 스냅샷을 받은 뒤에만 잠금을 잡는다.
+  // 웹(Wake Lock API)·네이티브(expo-keep-awake) 양쪽을 이 훅 하나가 덮는다 —
+  // 네이티브 절반은 네이티브 모듈이라 1.0.7 빌드에서야 실렸다.
+  useScreenAwake(!!snapshot);
 
   const config = useMemo(
     () => parseMonitorConfig(snapshot?.monitorConfig),
