@@ -17,7 +17,8 @@
 | **세션5** OTA-2 견고성 | ✅ **완료 8/8** | **#469** | 서버 변경 없음 |
 | **세션6** 1.0.7 빌드분 | ✅ **코드 완료** | **#469** | 서버 변경 없음 |
 | **머지·마이그·OTA·웹배포** | ✅ **완료 (08-10 21:2x UTC)** | `d1e1a3752` | 아래 §착지 기록 |
-| 1.0.6 스토어 출시 | ⏸ 사람 게이트 | — | — |
+| 1.0.6 스토어 출시 | ✅ **Android·웹 출시** / ⏸ **iOS 심사 중** | — | 사용자 확정 (08-11) |
+| **1.0.7 빌드 전 준비** | ✅ **완료 (08-11)** | `chore/1.0.7-build-prep` | 아래 §1.0.7 빌드 전 착지 |
 
 ### ✅ 착지 기록 (2026-08-10, PR #469 `d1e1a3752`)
 
@@ -36,6 +37,47 @@ metro 가 번들에 inline 하는 `EXPO_PUBLIC_RELEASE_CHANNEL`/`NODE_ENV` 를 �
 `extra.environment` 의 유일한 소비처 `versionInfo.fullVersion` 은 화면에 안 쓰인다.
 🚨 **다음에 물릴 지점**: `Constants.expoConfig.extra.environment` 를 새로 읽으면 OTA 사용자만 `development` 다.
 환경 판정은 **`@/config/env` 의 `env.*` 만** 쓸 것.
+
+### ✅ 1.0.7 빌드 전 착지 (2026-08-11, 브랜치 `chore/1.0.7-build-prep`)
+
+| 단계 | 결과 | 증거 |
+|---|---|---|
+| prod 실측 | ✅ 이상 없음 | `list_migrations` 최신 **`20260811100000`** = 레포 일치(미적용 0건) · 함수 **208** / 정책 **110** 불변 · users 27→**31** · work_logs 6 · applications 6 (07:23 UTC) |
+| 🔑 **계측 도달 확인** | ✅ **OTA 가 실기기에 닿았다** | `app_session_start` 2건 · `v=1.0.6` · `ota=019fed8e-a5a6-79a3-b270-4a77898f9183`(**`embedded` 아님**) · 06:31→07:01 UTC |
+| `app_config` 갱신 | ✅ **android·web 만** | `latest_version`·`recommended_version` → android/web `1.0.6`, **ios 는 `1.0.3` 유지**(심사 중). `jsonb_typeof` 전 키 `object` 유지 확인 (07:31 UTC) |
+| `force_update_version` | ⏸ **보류 확정 (1.0.0 유지)** | 아래 §순서 강제 1 판정 참조 |
+| 1.0.6 OTA 트리 태깅 | ✅ `ota/1.0.6-production` @ `d1e1a3752` | master 가 1.0.7 로 가면 **이 트리에서만** 1.0.6 함대용 OTA 를 낼 수 있다 (로컬 태그 — 푸시는 사람 판단) |
+| 의존성 동기화 | ✅ `npx expo install --check` → **`Dependencies are up to date`** | 메인 체크아웃에서 `npm install`. react-native **0.83.10** · expo-keep-awake **55.0.8** 설치 실측(직전엔 RN 0.83.6 로 낡아 있었다 — `b3737621c` 가 `--package-lock-only` 만 했기 때문) |
+| 버전 범프 | ✅ **1.0.6 → 1.0.7** | `npm version patch --no-git-tag-version`. `npx expo config` 실측: `version=1.0.7` · `runtimeVersion={"policy":"appVersion"}` · `web.lang=ko` 유지 |
+| QA 체크리스트 | ✅ 신규 `docs/qa/2026-08-11-device-qa-1.0.7.md` | 243줄 · 실행 체크 52항목. 1순위 = auth-F3 자동로그인 회귀 |
+
+🚫 **`npm version patch` 는 `--no-git-tag-version` 으로 돌렸다** — 이 저장소는 squash 머지라
+기본 동작이 만드는 `v1.0.7` 태그가 머지 후 고아 커밋을 가리키게 된다.
+
+### 🔴 순서 강제 1 판정 — `force_update_version` 은 **아직 올리지 않는다**
+
+원장은 "skew-F1 OTA 도달 확인 후" 를 조건으로 걸었고 도달은 확인됐다. 그런데도 보류다.
+
+1. **iOS 는 전 사용자가 ≤1.0.5 다** — 1.0.6 이 심사 중이라 올리면 iOS 사용자 전원이 차단된다.
+2. **구 빌드는 안내 문구조차 못 띄운다** — `bootstrapCore` 의 `ForceUpdateError` throw 자체는
+   1.0.5 빌드에도 있었다(`appInitializeSession.ts:91-97`). #461 이 새로 만든 건 **화면**뿐이다.
+   게다가 `ForceUpdateError` 는 `AppError` 가 아니라 일반 `Error` 라 구 `extractUserMessage` 가
+   메시지를 **「알 수 없는 오류」로 치환**한다 — 스토어 링크가 없는 정도가 아니라 이유조차 안 보인다.
+3. 🔑 **"1.0.5 잔존 기기를 analytics 로 확인하고 올린다" 는 게이트는 구조적으로 무효다.**
+   `app_session_start` 계측 **자체가 runtime 1.0.6 OTA 로만 배포**됐다. 1.0.5 기기는 그 OTA 를
+   영원히 못 받으므로 이 이벤트를 **발화할 수 없다** — 쿼리는 항상 "1.0.5 트래픽 0" 을 반환한다.
+   그 **공허한 0** 을 근거로 값을 올리면 실재하는 구버전 사용자가 **무signal 차단**된다.
+   → 잔존 확인의 권위 소스는 **Play Console / App Store Connect 의 버전별 설치 분포**다.
+4. ⚠️ 한정 조건(과장 방지): `checkForceUpdate` 는 fail-open 이라(`versionService.ts:172-179`, `:241-242`)
+   원격 설정 로드가 실패·타임아웃한 세션은 그냥 통과한다. "전 기기 즉시 차단" 은 아니고,
+   값을 되돌리면 다음 콜드스타트에 풀린다 — **비가역 피해가 아니라 무감지 차단**이 위험의 실체다.
+5. 🚨 **다음에 물릴 지점**: 나중에 `force_update_version` 을 **1.0.7 로** 올릴 때도 같은 함정이 있다.
+   임베디드 1.0.6 바이너리에는 skew-F1 이 없으므로, OTA 를 아직 못 받은 **신규 설치 1.0.6 기기의
+   첫 콜드스타트**가 구 `ErrorState` 에 걸린다. `useOtaUpdateGate` 5초 창이 대부분 구제하지만
+   보장은 아니다 — **1.0.7 강제 상향은 OTA 포화 후에**.
+6. 🚨 **값 모양을 절대 스칼라로 덮지 마라.** `versionService.ts:110` 이 `forceUpdate?.[platform]` 로
+   읽으므로 `'1.0.6'` 문자열로 덮으면 `undefined → '0.0.0'` 이 되어 **게이트가 조용히 무력화**된다
+   (에러 없음). 반드시 `{"ios","android","web"}` 객체를 유지할 것.
 
 ### 🔴 남은 것은 전부 사람 게이트다 (코드 잔여 0 · 서버 잔여 0)
 
@@ -468,37 +510,47 @@ CHECK 에 걸려 조용히 버려지고(fire-and-forget), 그러면 #407 REVOKE 
      → list_migrations 실측 + analytics_events CHECK 에 app_session_start 포함 확인
      → 파리티 208/110 불변 확인 (이 마이그는 함수·정책을 안 바꾼다)
 2. ✅ 세션4·5·6 묶음 머지 — PR #469 d1e1a3752, CI 13/13 pass
-3. ☐ 스토어에서 1.0.6 수동 출시   ← 🔴 여기부터 사람
-4. ☐ 출시 반영 확인 (스토어 페이지 버전 표기)
+3. ✅ 스토어에서 1.0.6 수동 출시 — **Android·웹 완료 / iOS 는 심사 중**(08-11 사용자 확정)
+4. ⏸ iOS 심사 결과 대기 (승인되면 7번의 ios 키를 그때 올린다)
 5. ✅ OTA 발행 완료 — group 2249087e-1be8-4802-a309-162a197deb5c, runtime 1.0.6, Commit d1e1a3752(HEAD 전후 대조 일치)
      (긴 명령 중 트리가 교체돼 Commit 라벨이 어긋난 이력 2회)
      ⚠️ 채널은 production 이다 — 원장 구판의 `--branch master` 는 틀렸다
      ⚠️ 발행 트리의 package.json version 이 **1.0.6** 인지 확인
         (1.0.7 이면 runtimeVersion 이 갈려 1.0.6 기기에 도달하지 않는다)
 6. ✅ 기록 완료 (위 §착지 기록)
-7. ☐ app_config latest_version/recommended_version → 1.0.6  🚨 출시 확인 **후에만**(전에 올리면 스토어에 없는 버전을 안내한다)
-8. ☐ **계측 도달 확인** — analytics_events 에서 app_session_start 가 쌓이는지:
-     SELECT props->>'v', props->>'ota', count(*) FROM analytics_events
-      WHERE event='app_session_start' GROUP BY 1,2;
-     여기서 ota 가 'embedded' 가 아닌 행이 보이면 OTA 가 실제로 닿은 것이다
-9. ☐ skew-F1 OTA 도달 확인(8번) 후에만 force_update_version 갱신 (순서 강제 1)
-10. ☐ 계측 가동 확인(8번) 후에만 data-01 직접 PATCH 차단 트리거 검토 (순서 강제 2)
-11. ☐ list_migrations 실측 — 클라가 참조하는 서버 객체가 prod 에 있는지 (#441 재발 방지)
+7. ✅ app_config latest/recommended → 1.0.6 — **android·web 만**(07:31 UTC). ios 는 심사 중이라 1.0.3 유지
+     ☐ 잔여: iOS 승인·출시 확인 후 ios 키를 1.0.6(또는 그때 출시된 버전)으로
+8. ✅ **계측 도달 확인 완료** — `v=1.0.6` / `ota=019fed8e…`(embedded 아님) 2건 · 06:31→07:01 UTC
+     🔑 다만 이 쿼리로 **구버전 잔존은 셀 수 없다** — 계측이 runtime 1.0.6 OTA 로만 배포됐기 때문
+9. ⏸ **force_update_version — 보류 확정.** 근거 전문은 위 §순서 강제 1 판정 (iOS 전원 ≤1.0.5 · 공허한 0)
+10. ⏸ **data-01 직접 PATCH 차단 트리거 — 보류.** 계측은 열렸으나 분모가 2건이고 구버전 인구를
+      배제할 근거가 없다. 클라 직접 PATCH 경로는 코드상 이미 0건(실측)이라 급하지 않다.
+      재판단 조건 = `app_session_start` 의 `v` 분포가 신버전 우세로 수일 수렴
+11. ✅ list_migrations 실측 — prod 최신 `20260811100000` = 레포 완전 일치, 미적용 0건 (07:23 UTC)
 ```
 
 ## 1.0.7 빌드 런북 (세션6 코드 완료 — 빌드만 남았다)
 
 ```
-1. ☐ 위 1.0.6 런북 5번(OTA 발행)이 끝난 뒤에 시작한다
-2. ☐ npm install (정션 아닌 **메인 체크아웃**에서) → npx expo install --check 0건
-3. ☐ npm version patch → 1.0.7 (app.config.ts 가 package.json 을 읽는다)
-4. ☐ eas build --platform all --profile production
-5. ☐ 실기기 QA — auth-F3 회귀가 핵심이다:
-     · 기존 로그인 상태로 업데이트 → **로그아웃되지 않아야 한다**(평문 세션 마이그레이션)
-     · 로그아웃 → 재로그인 → 앱 재시작 시 세션 유지
-     · 전광판 화면을 5분 이상 켜두고 화면이 안 꺼지는지 (web-02 네이티브 절반)
+1. ✅ 1.0.6 런북 5번(OTA 발행) 완료 — group 2249087e, runtime 1.0.6
+2. ✅ npm install (메인 체크아웃, 워크트리 1개 재실측 후) → `npx expo install --check` = **Dependencies are up to date**
+3. ✅ `npm version patch --no-git-tag-version` → **1.0.7**. `npx expo config` 로 runtimeVersion 해석 확인
+     🚫 `--no-git-tag-version` 필수 — squash 저장소라 기본 태그가 머지 후 고아가 된다
+4. ☐ `eas build --platform all --profile production`   ← 🔴 여기부터 사람
+     🚨 **긴 명령이다** — 시작 직전·완료 직후 `git rev-parse HEAD` 대조(트리 교체 실사고 2회)
+     🚨 **범프 커밋을 머지한 뒤 빌드하라** — 미머지 브랜치에서 빌드하면 스토어 바이너리의 커밋이
+        squash 머지 후 master 이력에서 도달 불가능해진다(추적성 손실)
+     ℹ️ EAS 는 **원격 빌드**라 서버에서 lockfile 로 새로 설치한다 — 로컬 node_modules 는 빌드 산출물에
+        영향이 없다. 그래도 2번을 하는 이유는 로컬 검증(expo-doctor·실기기 QA 정확성) 정합 때문
+5. ☐ 실기기 QA — **`docs/qa/2026-08-11-device-qa-1.0.7.md` 를 따를 것**(52항목, 1순위 auth-F3)
+     🚨 §0 선행 조건을 어기면 1번이 통째로 무의미해진다: **덮어쓰기 업데이트**(삭제 후 재설치 금지) ·
+        **한글/이모지 이름 계정**(UTF-8 청킹 경계는 여기서만 검증된다) · 기기 2대
+     🚨 §2(버전 게이트)는 **prod app_config 를 직접 바꾼다** — 실행 전 사람 승인 + 원복 기준값 준수
 6. ☐ 스토어 제출 → 승인 → 출시
-7. ☐ app_config latest_version/recommended_version → 1.0.7
+     🚨 **iOS 는 1.0.6 이 심사 중이면 1.0.7 을 제출할 수 없다**(ASC 는 동시 심사 1개).
+        1.0.6 승인·출시가 먼저다. **빌드 자체는 지금 해도 무방**하고 제출만 대기하면 된다
+7. ☐ app_config latest_version/recommended_version → 1.0.7 (**출시된 플랫폼 키만**)
+8. ☐ 출시 후 `app_session_start` 의 `v` 분포 확인 → 그 뒤에야 force_update / data-01 트리거 재판단
 ```
 
 ---
@@ -533,8 +585,27 @@ CHECK 에 걸려 조용히 버려지고(fire-and-forget), 그러면 #407 REVOKE 
 4. 접근성(a11y) — 스크린리더 순회·포커스·reduce-motion
 5. 성능 실측 — 콜드스타트·번들 크기·저사양 Android (현재 전부 코드 판독)
 
-## 사람이 콘솔에서 해야 할 일 (레포로 증명 불가)
+## 사람이 콘솔에서 해야 할 일 (레포로 증명 불가 — 2026-08-11 갱신)
 
-- Supabase Auth **Rate Limits** — #406 이 클라 로그인 잠금을 지웠으므로 서버 한도가 기본값/off 면 브루트포스 방어선이 0
+### Supabase Dashboard
+- 🔴 **Authentication → Attack Protection → Leaked Password Protection 이 꺼져 있다**
+  (`get_advisors(security)` 실측, 08-11). HaveIBeenPwned 대조가 비활성이라 유출 비밀번호가 그대로 통과한다.
+  **켜는 것만으로 끝나는 항목** — 코드 변경 0.
+- 🔴 **Authentication → Rate Limits** (#408) — `Token refresh requests` 기본값은 IP 당 1,800/hr 다.
+  users 31명 규모엔 과대하니 하향 검토. #406 이 클라 로그인 잠금을 지웠으므로 **서버 한도가 유일한 방어선**이다.
+  ⚠️ CAPTCHA 는 콘솔에서 켜도 **클라가 토큰을 보내도록 배선돼 있지 않다** — 안심 근거로 삼지 말 것.
 - 단일/다중 세션 모드 설정 (auth-F2 실효를 좌우)
 - 백업 주기·PITR 활성 여부 (testgap-03 런북 기입용)
+
+### App Store Connect / Play Console
+- 🔴 **심사 노트(App Review Information)의 테스트 계정 비밀번호가 2026-08-07 회전 이후 값인지 확인.**
+  레포에는 회전 사실만 있고 콘솔 반영 여부는 증명 불가 — **어긋나면 심사 리젝 사유**다.
+  대상 계정: `review-staff` / `review-employer` / `review-admin`.
+- 🔵 **버전별 설치 분포** — `force_update_version` 을 올릴지 판단할 **유일한 권위 소스**다
+  (analytics 로는 구버전을 셀 수 없다. 위 §순서 강제 1 판정 3번 참조).
+- ⚪ `pending-employer-staff@uniqn.app` 은 심사 시나리오 미사용 — 이번 제출을 막지 않으나 잔존 리스크로 관리.
+
+### 코드로 확인된 것 (다시 조사하지 말 것)
+- ✅ iOS `infoPlist` 권한 문구·Android permissions 전량이 **실사용 코드와 1:1 대응**한다(미사용 권한 선언 0건).
+- ✅ 이번에 편입된 `expo-keep-awake`·`expo-secure-store` 는 **새 권한 문구를 요구하지 않는다**.
+- ✅ `supabase/functions/` 배포본과 소스에 drift 0건. 미적용 마이그레이션 0건.
