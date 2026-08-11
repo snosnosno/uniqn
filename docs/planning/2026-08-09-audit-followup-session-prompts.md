@@ -19,6 +19,7 @@
 | **머지·마이그·OTA·웹배포** | ✅ **완료 (08-10 21:2x UTC)** | `d1e1a3752` | 아래 §착지 기록 |
 | 1.0.6 스토어 출시 | ✅ **Android·웹 출시** / ⏸ **iOS 심사 중** | — | 사용자 확정 (08-11) |
 | **1.0.7 빌드 전 준비** | ✅ **완료 (08-11)** | `chore/1.0.7-build-prep` | 아래 §1.0.7 빌드 전 착지 |
+| **1.0.7 머지 + 네이티브 빌드** | ✅ **완료 (08-12)** | **#471 `fa205d76a`** | 서버 변경 없음 · 아래 §1.0.7 빌드 착지 |
 
 ### ✅ 착지 기록 (2026-08-10, PR #469 `d1e1a3752`)
 
@@ -79,15 +80,86 @@ metro 가 번들에 inline 하는 `EXPO_PUBLIC_RELEASE_CHANNEL`/`NODE_ENV` 를 �
    읽으므로 `'1.0.6'` 문자열로 덮으면 `undefined → '0.0.0'` 이 되어 **게이트가 조용히 무력화**된다
    (에러 없음). 반드시 `{"ios","android","web"}` 객체를 유지할 것.
 
+### ✅ 1.0.7 빌드 착지 (2026-08-12, PR #471 `fa205d76a`)
+
+| 단계 | 결과 | 증거 |
+|---|---|---|
+| 로컬 검증 | ✅ | `npm run quality` **exit 0**(0 errors / 124 warnings=선재) · `npx jest` **664 suites / 7,548 tests / 122 snapshots** 전량 통과(105.9s) |
+| `expo config`(production) | ✅ | `version 1.0.7` · `runtimeVersion {policy:'appVersion'}` · `environment 'production'` · `web.lang 'ko'` · `com.uniqn.mobile` |
+| `expo-doctor` | ⚠️ **17/19** — 2건은 **선재 baseline** | ①`knip` 스크립트명이 `node_modules/.bin/knip` 과 충돌 ②`expo-modules-core` 직접 의존성 — 후자는 `af6f88083`(install exclude)·`027a5c5a1`(knip 봉인)로 **의도된 상태**. 빌드 비차단 |
+| PR #471 CI | ✅ **12/12 pass** | E2E 9m58s · Tests 4m43s · Quality 4종 · Bundle Size · EAS Config Validation |
+| master 머지 | ✅ squash `fa205d76a` | 🔑 squash 트리 해시가 PR head 와 **바이트 동일**(`82f6255e6…`) = CI 가 검증한 그 트리가 빌드에 들어갔다 |
+| **iOS 빌드** | ✅ **FINISHED** `build#45` (**7분 23초**) | `.ipa` · runtime **1.0.7** · channel `production` · distribution STORE |
+| **Android 빌드** | ✅ **FINISHED** `build#43` (**47분 35초** — 대부분 EAS 큐 대기) | `.aab` · runtime **1.0.7** · channel `production` · distribution STORE |
+| 커밋 추적성 | ✅ | 두 빌드 모두 `gitCommitHash = fa205d76a` = master HEAD. **긴 명령 전·중·후 3회 `git rev-parse` 대조 — 전부 동일**(트리 교체 실사고 2회의 회귀 가드) |
+| prod 정합 | ✅ 무변화 | 파리티 **208/110 불변**(22:53 UTC) · 마이그 미적용 **0건** · `get_advisors(security)` **ERROR 0건**(WARN 133 = SECDEF 노출 131 + leaked-password 1, 전부 기지) |
+
+🔑 **`autoIncrement: true` 가 정상 동작했다** — iOS 44→**45**, Android 42→**43**. `appVersionSource: remote` 라 EAS 가 원격에서 센다.
+
+#### 🔎 빌드 전 위험 스윕 (4렌즈 × 적대적 검증, 15 에이전트) — **차단 사유 0건**
+
+1.0.6 바이너리(`26b227ad5`) 이후의 **네이티브 델타**만 겨냥했다. OTA 로 이미 프로덕션에서 돈 순수 JS 로직은 관심 밖이다.
+
+| 축 | 1.0.6 빌드 | 1.0.7 빌드 | 판정 |
+|---|---|---|---|
+| `react-native` | 0.83.6 | **0.83.10** | 🔑 **유일한 실질 네이티브 델타.** Hermes 는 **0.14.1 불변**(JS 엔진 동일) · 0.83.10 변경분은 iOS 프리빌트 캐싱 + Yoga `display:contents` 수정 → 저위험 |
+| `expo` / `react` | 55.0.28 / 19.2.0 | 동일 | 무변화 |
+| `react-native-mmkv` / `nitro-modules` | 4.1.2 / 0.33.2 | **동일**(정확 핀) | Android Kotlin 컴파일 지뢰 없음 |
+| `expo-keep-awake` | **전이 의존성으로 이미 설치**(`expo` → `~55.0.8`, 1.0.6 락파일 실측) | 직접 의존성으로 승격 | 🔑 **네이티브 skew 없음.** 새것은 모듈이 아니라 **호출 JS** 다 — `src/hooks/useScreenAwake.ts` 는 `26b227ad5` 에 **없었고**(`git show` 실측) monitor 화면 호출부도 0건 → 현재 2건 |
+
+#### 🍏 그 과정에서 드러난 것 — **두 OS 의 검증 이력이 비대칭이다**
+
+| OS | 세션4·5·6(`#469`) 코드가 실기기에서 돈 적 | 왜 |
+|---|---|---|
+| Android | ✅ 있다 | 1.0.6 이 출시됐고 runtime 1.0.6 OTA(group `2249087e`)가 도달 |
+| **iOS** | ❌ **없다 — 1.0.7 이 최초 실행** | 1.0.6 이 심사 중이라 **출시된 적이 없다** → iOS 기기에 runtime 1.0.6 바이너리가 없다 → OTA 자격이 구조적으로 없다 |
+
+🔑 **인과는 `runtimeVersion` 매칭이지 `app_config.latest_version`(ios=1.0.3) 이 아니다.** 후자는 업데이트 **안내** 값일 뿐 OTA 배포 자격과 인과가 없다 — 스윕이 이 둘을 섞어 서술했기에 정정한다.
+📊 방증(약한 증거): `app_session_start` **전량이 `platform=android`**(2건, 08-11 06:31~07:01 UTC). 분모가 2라 결정적이진 않고, 결정적인 것은 위 구조적 논증이다.
+→ **QA 는 iOS 를 먼저·더 깊게.** 체크리스트 머리에 `§🍏` 신설. 기기가 1대면 iOS 를 고를 것.
+
 ### 🔴 남은 것은 전부 사람 게이트다 (코드 잔여 0 · 서버 잔여 0)
 
 | # | 항목 | 왜 사람이어야 하나 |
 |---|---|---|
-| 1 | **1.0.6 스토어 수동 출시** | 스토어 콘솔. OTA 는 이미 대기 중이라 출시되는 즉시 신규 설치자에게 함께 도달한다 |
-| 2 | 출시 확인 후 `app_config.latest_version`/`recommended_version` → 1.0.6 | 🚨 **출시 전에 올리면 스토어에 없는 버전으로 업데이트를 안내**하게 된다. 그래서 이번 세션에서 손대지 않았다 |
-| 3 | 그 다음 `force_update_version` 검토 | 순서 강제 1 — skew-F1 OTA 도달 확인 후 |
-| 4 | 1.0.7 `eas build` iOS/Android + 실기기 QA | 네이티브 빌드 — 핵심은 **auth-F3 자동로그인 회귀**(업데이트 후 로그아웃되지 않아야 한다) |
-| 5 | Supabase Auth **Rate Limits** 콘솔 확인 (#408) | 레포로 증명 불가 |
+| 1 | ✅ **1.0.6 스토어 수동 출시** — Android·웹 완료 / iOS 심사 중 | 스토어 콘솔. OTA 는 이미 대기 중이라 출시되는 즉시 신규 설치자에게 함께 도달한다 |
+| 2 | ✅ 출시 확인 후 `app_config.latest_version`/`recommended_version` → 1.0.6 (android·web 만) | 🚨 **출시 전에 올리면 스토어에 없는 버전으로 업데이트를 안내**하게 된다 |
+| 3 | ⏸ 그 다음 `force_update_version` 검토 — **보류 확정** | 순서 강제 1 판정 참조 (iOS 전원 ≤1.0.5 · 공허한 0) |
+| 4 | ✅ 1.0.7 `eas build` **완료** / 🔴 **실기기 QA 남음** | 네이티브 빌드 — 핵심은 **auth-F3 자동로그인 회귀**(업데이트 후 로그아웃되지 않아야 한다) |
+| 5 | 🔴 Supabase Auth **Rate Limits** 콘솔 확인 (#408) | 레포로 증명 불가 |
+| 6 | 🔴 Supabase **Leaked Password Protection** 켜기 | `get_advisors(security)` 재실측(08-12) — 여전히 **꺼짐**. 켜는 것만으로 끝나는 항목, 코드 변경 0 |
+| 7 | 🔴 **GCP 콘솔 — 유출 Google API 키 6건 처리** | 아래 §시크릿 스캐닝 6건 위치 특정 참조. 레포 트리엔 0건이나 **커밋 이력에 영구 잔존**한다 |
+| 8 | 🔴 **ASC 심사 노트** 테스트 계정 비밀번호가 08-07 회전 이후 값인지 | 어긋나면 심사 리젝 사유 |
+
+### 🔎 잔여 항목 실측 정정 (2026-08-12)
+
+레포로 증명 **가능한** 잔여는 이번에 전부 실측했다. 결과는 상당수가 **stale** 이었다.
+
+| 항목 | 종전 기록 | 08-12 실측 | 판정 |
+|---|---|---|---|
+| `ruleset`(#375) | 🔴 미확인 잔여 | `master` **classic branch protection 활성** — required checks = `Quality Gate` · `E2E Gate`, force-push·삭제 차단 | ✅ **이미 적용됨** (rulesets API 는 0건이지만 protection API 가 응답). ⚠️ `enforce_admins:false` 는 남아 있다 |
+| #426 LOW/MEDIUM 잔여 | ⏸ ~9건 | **3건 직접 반증** — ①퇴근≥출근 서버 검증 = `20260807180000_work_log_slot_checkout_after_checkin.sql` 존재 ②`no_show` 진입점 = 마이그 2건(`202608082000/210000`) 존재 ③`OrderSheetScreen.tsx` "1,400줄" = 실측 **722줄** | ✅ **목록이 낡았다.** 08-09 전방위 감사(60건)가 이미 흡수했다 |
+| Dependabot 알림 | 9건 open (high 8 / medium 1) | `image-size`·`js-yaml`·`nanoid`·`brace-expansion`·`uuid`. **`uuid@7.0.3` 은 `expo → @expo/config-plugins → xcode` 경유**(`npm ls uuid` 실측) = prebuild 전용 | ✅ **전부 빌드타임 체인**. `docs/analysis/2026-08-11-npm-audit-triage.md` 의 21건 판정이 9건에도 그대로 유효 — SDK 57 열차 |
+| Dependabot PR #464 | 열림 | `expo-local-authentication` 55.0.16 → **57.0.2**. SDK 55 프로젝트이고 `expo install --check` = `Dependencies are up to date` | ❌ **닫음** + `@dependabot ignore this major version`. 56.0.0 에 최소 iOS 16.4 상향(breaking) |
+| Dependabot PR #463 | 열림 | `react-hook-form` 7.82 → 7.84. 핀이 `^7.68.0` 이라 **범위상 이미 허용**되고 실제 버전은 lockfile 이 고정한다 | ⏸ **1.0.7 출시 후로 연기.** 인증 플로우 전체가 이 라이브러리다 — 검증된 스냅샷과 스토어 빌드 사이에 끼우지 않는다 |
+| 800줄 규약 초과 | 미집계 | `schedule.tsx` 1,249 · `JobPostingRepository.ts` 1,157 · `useNotifications.ts` 1,079 · `useOpsMutations.ts` 870 · `scheduleService.ts` 807 (`src/types/supabase.ts` 3,654 는 생성 파일이라 제외) | ⏸ **1.0.8 열차.** 스토어 빌드 직전에 손댈 성질이 아니다 |
+
+### 🔴 시크릿 스캐닝 6건 — 위치 특정 (2026-08-12, GitHub API 실측)
+
+**전부 커밋 이력에만 있다. 현재 트리 추적 파일에는 0건이다.** 그러나 레포가 public 이므로 이력은 영구 공개다.
+
+| alert | 커밋 | 경로 | 성격 | 해야 할 일 |
+|---|---|---|---|---|
+| #1 | `9bed31fe8` 외 6곳 | `app2/src/firebase.ts` · `.env` · `.backup` | **폐기된 `app2/` Firebase 웹 키** | GCP 콘솔에서 **삭제**(app2 는 트리에서 사라졌다) |
+| #2 | `24155804b` | `debug-user-role.html` | 동상 | 동상 |
+| #3 | `9f89c4b86` | `app2/public/test-notifications.html` | 동상 | 동상 |
+| #4 | `74c169982` | `app2/check-jobpostings.js` | 동상 | 동상 |
+| #5 | `673a2f39c` | `uniqn-mobile/google-services.json` | **현행 Android Firebase 클라이언트 설정** | 🔑 **삭제하면 안 된다** — 모든 배포 바이너리에 들어가는 공개 식별자다. GCP 에서 **Android 앱 제한 + API 제한**만 건다 |
+| #6 | `673a2f39c` | `uniqn-mobile/GoogleService-Info.plist` | **현행 iOS Firebase 클라이언트 설정** | 동상 — **iOS 앱 제한 + API 제한** |
+
+🔑 **#5·#6 을 #1~#4 와 같이 취급하지 마라.** 전자는 설계상 공개되는 클라이언트 식별자이고(방어선은 키 비밀성이 아니라 Firebase 보안 규칙·App Check), 후자는 진짜 유출이다.
+🔑 **현재 두 파일은 gitignore + 미추적이고, EAS 시크릿 환경변수**(`GOOGLE_SERVICES_JSON_BASE64` / `GOOGLE_SERVICE_INFO_PLIST_BASE64`)로 빌더에 주입된다(`scripts/eas-build-pre-install.sh`). 배선 자체는 이미 옳다.
+🚨 **키를 실제로 폐기·제한하기 전에 GitHub 알림을 닫지 마라** — 닫는 순간 추적 수단이 사라진다.
 
 📊 **계측 도달 확인 쿼리** (OTA 가 실제로 닿았는지 = #407 게이트를 열 분모):
 ```sql
@@ -536,13 +608,22 @@ CHECK 에 걸려 조용히 버려지고(fire-and-forget), 그러면 #407 REVOKE 
 2. ✅ npm install (메인 체크아웃, 워크트리 1개 재실측 후) → `npx expo install --check` = **Dependencies are up to date**
 3. ✅ `npm version patch --no-git-tag-version` → **1.0.7**. `npx expo config` 로 runtimeVersion 해석 확인
      🚫 `--no-git-tag-version` 필수 — squash 저장소라 기본 태그가 머지 후 고아가 된다
-4. ☐ `eas build --platform all --profile production`   ← 🔴 여기부터 사람
-     🚨 **긴 명령이다** — 시작 직전·완료 직후 `git rev-parse HEAD` 대조(트리 교체 실사고 2회)
+3.5 ✅ **PR #471 → master 머지** (`fa205d76a`) — CI **12/12 pass**. squash 트리 해시가 PR head 와 **바이트 동일**(`82f6255e6…`)
+     🔑 순서가 중요하다 — 4번보다 **먼저** 해야 빌드 커밋이 master 이력에서 도달 가능하다
+4. ✅ `eas build --platform all --profile production` — **실행 완료 (08-12)**
+     · iOS `build#45` · Android `build#43` · 둘 다 `appVersion 1.0.7` / `runtimeVersion 1.0.7` / commit `fa205d76a` / channel `production`
+     🚨 **긴 명령이다** — 시작 직전·완료 직후 `git rev-parse HEAD` 대조(트리 교체 실사고 2회) → 이번엔 **동일**(교체 없음)
      🚨 **범프 커밋을 머지한 뒤 빌드하라** — 미머지 브랜치에서 빌드하면 스토어 바이너리의 커밋이
         squash 머지 후 master 이력에서 도달 불가능해진다(추적성 손실)
      ℹ️ EAS 는 **원격 빌드**라 서버에서 lockfile 로 새로 설치한다 — 로컬 node_modules 는 빌드 산출물에
         영향이 없다. 그래도 2번을 하는 이유는 로컬 검증(expo-doctor·실기기 QA 정확성) 정합 때문
+     ℹ️ Firebase 네이티브 설정은 **레포에 없다**(gitignore·미추적). EAS 시크릿 환경변수
+        `GOOGLE_SERVICES_JSON_BASE64` / `GOOGLE_SERVICE_INFO_PLIST_BASE64` → `scripts/eas-build-pre-install.sh` 가 복원한다.
+        빌드 성공 자체가 `assertSupportedNativeFirebaseBuild()` fail-closed 가드 통과의 증거다(`app.config.ts:159-183`)
 5. ☐ 실기기 QA — **`docs/qa/2026-08-11-device-qa-1.0.7.md` 를 따를 것**(52항목, 1순위 auth-F3)
+     🍏 **iOS 를 먼저·더 깊게** — 두 OS 의 검증 이력이 비대칭이다(체크리스트 머리 §🍏 신설). Android 는 OTA 로
+        세션4·5·6 이 이미 프로덕션에서 돌았고, **iOS 는 1.0.6 미출시라 runtime 1.0.6 OTA 를 받을 자격 자체가 없었다**
+        → iOS 에겐 1.0.7 이 그 코드 전량의 **최초 실행**이다
      🚨 §0 선행 조건을 어기면 1번이 통째로 무의미해진다: **덮어쓰기 업데이트**(삭제 후 재설치 금지) ·
         **한글/이모지 이름 계정**(UTF-8 청킹 경계는 여기서만 검증된다) · 기기 2대
      🚨 §2(버전 게이트)는 **prod app_config 를 직접 바꾼다** — 실행 전 사람 승인 + 원복 기준값 준수
@@ -550,7 +631,14 @@ CHECK 에 걸려 조용히 버려지고(fire-and-forget), 그러면 #407 REVOKE 
      🚨 **iOS 는 1.0.6 이 심사 중이면 1.0.7 을 제출할 수 없다**(ASC 는 동시 심사 1개).
         1.0.6 승인·출시가 먼저다. **빌드 자체는 지금 해도 무방**하고 제출만 대기하면 된다
 7. ☐ app_config latest_version/recommended_version → 1.0.7 (**출시된 플랫폼 키만**)
+     🚨 값은 반드시 `{"ios","android","web"}` **객체**를 유지하라 — 스칼라로 덮으면 `forceUpdate?.[platform]` 이
+        `undefined → '0.0.0'` 이 되어 게이트가 **에러 없이 조용히 무력화**된다(`versionService.ts:110`)
 8. ☐ 출시 후 `app_session_start` 의 `v` 분포 확인 → 그 뒤에야 force_update / data-01 트리거 재판단
+     🍏 iOS 행이 처음 나타나는 시점이 곧 "iOS 가 세션4·5·6 코드를 처음 돌린 시점" 이다(08-12 기준 iOS 계측 **0건**)
+9. ☐ **1.0.7 이후 첫 OTA 를 낼 때** — `production` 채널의 현재 최신 update 는 runtime **1.0.6** 이다(08-12 `channel:view` 실측).
+     🚨 1.0.7 기기에 닿으려면 **`package.json` 이 1.0.7 인 트리에서** 발행해야 한다(`runtimeVersion = appVersion`).
+     🚨 그리고 **1.0.6 함대는 그 순간 갈라진다** — 1.0.6 용 OTA 는 태그 `ota/1.0.6-production`(@`d1e1a3752`, 08-12 원격 push 완료)
+        트리에서만 낼 수 있다. 두 함대에 같은 수정을 넣으려면 **발행을 2번** 해야 한다
 ```
 
 ---
