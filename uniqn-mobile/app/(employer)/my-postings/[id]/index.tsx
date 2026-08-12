@@ -57,7 +57,6 @@ import {
   projectPostingSurface,
 } from '@/domains/job-posting';
 import { useApplicantsByJobPosting } from '@/hooks/applicant';
-import { useJobDetail } from '@/hooks/useJobDetail';
 import { useShare } from '@/hooks/useShare';
 import { useDeleteJobPosting } from '@/hooks/useJobManagement';
 import { extractPostingFilledSubmap, usePostingFilledCounts } from '@/hooks/usePostingFilledCounts';
@@ -135,15 +134,11 @@ export default function JobPostingDetailScreen() {
   const isDark = useThemeStore((state) => state.isDarkMode);
   const router = useRouter();
   const addToast = useToastStore((s) => s.addToast);
-  const { isFixed: contextIsFixed, handleShowQR } = useJobDetailContext();
-  const {
-    job: posting,
-    isLoading,
-    error,
-    refresh,
-  } = useJobDetail(id || '', {
-    realtime: true,
-  });
+  // 공고 데이터는 레이아웃(_layout.tsx)이 realtime 구독과 함께 한 번만 조회한다.
+  // 이 화면이 같은 id 로 useJobDetail 을 또 부르면 subscribeToJobPosting 이 **두 번** 열린다 —
+  // useJobDetail 의 구독 effect 는 인스턴스마다 돌고 디듀프가 없다. 같은 이유로 isFixed 판정도
+  // 여기서 다시 계산하지 않는다(레이아웃의 isFixedJobPosting 과 같은 `schedule.kind === 'fixed'`).
+  const { job: posting, isFixed, isLoading, error, refresh, handleShowQR } = useJobDetailContext();
 
   // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
   // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
@@ -170,8 +165,7 @@ export default function JobPostingDetailScreen() {
   // 고정 공고는 제외한다: QR 진입점이 없어 checkInTime 이 영원히 비므로 "출근 0/N" 이 거짓말이 된다.
   // 빈 id 를 넘기면 useConfirmedStaff 가 쿼리(`enabled: !!jobPostingId`)와 realtime 구독을
   // 둘 다 끈다 — 별도 enabled 옵션을 shared 훅에 추가하지 않고 같은 효과를 낸다.
-  const isFixedPosting = contextIsFixed || posting?.schedule?.kind === 'fixed';
-  const { grouped: staffGrouped } = useConfirmedStaff(isFixedPosting ? '' : id || '', {
+  const { grouped: staffGrouped } = useConfirmedStaff(isFixed ? '' : id || '', {
     realtime: true,
   });
   const todayGroup = useMemo(() => staffGrouped.find((group) => group.isToday), [staffGrouped]);
@@ -332,7 +326,6 @@ export default function JobPostingDetailScreen() {
     );
   }
 
-  const isFixed = posting.schedule.kind === 'fixed';
   const totalApplicants = applicantData?.stats.total ?? managementView.totalApplicants;
   const confirmedApplicants = applicantData?.stats.confirmed ?? managementView.confirmedApplicants;
   // 확정 지원자가 있으면 삭제 불가(EF-crud-4) — 하단 캡션과 동일 근거.
@@ -378,9 +371,8 @@ export default function JobPostingDetailScreen() {
               <ShareIcon size={22} color={getLayoutColor(isDark, 'headerTint')} />
             </Pressable>
             {/* 고정 공고는 QR 진입점을 노출하지 않는다 (work_log 행 수명 미해결 — _layout.tsx 주석 참고).
-                두 소스를 OR 로 합산하는 이유: 레이아웃(context)과 이 화면이 각자 useJobDetail 을
-                쓰므로 로딩 타이밍이 어긋날 수 있다. 한쪽이라도 고정이면 감추는 fail-closed. */}
-            {!(contextIsFixed || isFixed) ? <HeaderQRAction onPress={handleShowQR} /> : null}
+                판정은 컨텍스트 하나 — 형제 화면 4곳과 같은 값을 쓰므로 탭을 옮겨도 버튼이 깜빡이지 않는다. */}
+            {!isFixed ? <HeaderQRAction onPress={handleShowQR} /> : null}
           </View>
         }
       />

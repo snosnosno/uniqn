@@ -20,7 +20,6 @@ import { Button } from '@/components/ui/Button';
 import { ScreenSkeleton } from '@/components/ui';
 import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import { useApplicantManagement } from '@/hooks/applicant';
-import { useJobDetail } from '@/hooks/useJobDetail';
 import { useSubmitGate } from '@/hooks/useSubmitGate';
 import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import type { Application } from '@/types';
@@ -46,10 +45,15 @@ function StatsHeader({ pendingCount }: StatsHeaderProps) {
 
 export default function CancellationRequestsScreen() {
   const { id: jobPostingId } = useLocalSearchParams<{ id: string }>();
-  const { job: posting, isLoading: isLoadingPosting } = useJobDetail(jobPostingId || '');
-  const { job: contextJob, isFixed, handleShowQR } = useJobDetailContext();
+  // 공고 데이터는 레이아웃이 realtime 구독과 함께 한 번만 조회한다.
+  const {
+    job: posting,
+    isFixed,
+    isLoading: isLoadingPosting,
+    handleShowQR,
+  } = useJobDetailContext();
   const headerBackHref = `/(employer)/my-postings/${jobPostingId ?? ''}`;
-  const headerJobTitle = posting?.title ?? contextJob?.title ?? null;
+  const headerJobTitle = posting?.title ?? null;
   const headerTitleSuffix = <JobTitleSuffix jobTitle={headerJobTitle} />;
   // 고정 공고는 QR 진입점을 노출하지 않는다 (work_log 행 수명 미해결 — _layout.tsx 주석 참고).
   const headerRightAction = !isFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;

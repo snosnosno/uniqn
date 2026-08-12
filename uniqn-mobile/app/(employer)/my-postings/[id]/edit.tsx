@@ -8,7 +8,6 @@ import { OrderSheetScreen } from '@/components/employer/order-sheet/OrderSheetSc
 import { OrderSheetChainScrim } from '@/components/employer/order-sheet/OrderSheetChainScrim';
 import { TemplateModal } from '@/components/employer/job-form/modals/TemplateModal';
 import { useAuth } from '@/hooks/useAuth';
-import { useJobDetail } from '@/hooks/useJobDetail';
 import { useUpdateJobPosting } from '@/hooks/useJobManagement';
 import { useOptimisticLockBaseline } from '@/hooks/useOptimisticLockBaseline';
 import { useTemplateManager } from '@/hooks/useTemplateManager';
@@ -35,10 +34,17 @@ export default function EditJobPostingScreen() {
   const { profile } = useAuth();
   const { addToast } = useToastStore();
 
-  const { job: existingJob, isLoading: isJobLoading, error: jobError } = useJobDetail(id || '');
-  const { job: contextJob, isFixed: contextIsFixed, handleShowQR } = useJobDetailContext();
+  // 공고 데이터는 레이아웃이 realtime 구독과 함께 한 번만 조회한다(같은 queryKey 캐시라
+  // 낙관적 잠금 baseline 의 전제 — 아래 useOptimisticLockBaseline 주석 — 는 그대로 유지된다).
+  const {
+    job: existingJob,
+    isFixed: contextIsFixed,
+    isLoading: isJobLoading,
+    error: jobError,
+    handleShowQR,
+  } = useJobDetailContext();
   const headerBackHref = `/(employer)/my-postings/${id ?? ''}`;
-  const headerJobTitle = existingJob?.title ?? contextJob?.title ?? null;
+  const headerJobTitle = existingJob?.title ?? null;
   const headerTitleSuffix = <JobTitleSuffix jobTitle={headerJobTitle} />;
   // 고정 공고는 QR 진입점을 노출하지 않는다 (work_log 행 수명 미해결 — _layout.tsx 주석 참고).
   const headerRightAction = !contextIsFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;

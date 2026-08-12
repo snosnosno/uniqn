@@ -39,9 +39,11 @@ jest.mock('expo-router', () => ({
   }),
 }));
 
+// 화면은 공고를 컨텍스트에서 받는다(레이아웃이 realtime 구독과 함께 한 번만 조회).
+// job:null 로 두면 전 케이스가 에러 화면으로 떨어져 이 파일의 계약 넷이 통째로 검증되지 않는다.
 jest.mock('../_layout', () => ({
   useJobDetailContext: () => ({
-    job: null,
+    job: mockPosting,
     isFixed: false,
     isLoading: false,
     error: null,
@@ -115,15 +117,6 @@ jest.mock('@/hooks/applicant', () => ({
     data: { stats: mockApplicantStats() },
     refetch: jest.fn(),
     isRefetching: false,
-  }),
-}));
-
-jest.mock('@/hooks/useJobDetail', () => ({
-  useJobDetail: () => ({
-    job: mockPosting,
-    isLoading: false,
-    error: null,
-    refresh: jest.fn(),
   }),
 }));
 

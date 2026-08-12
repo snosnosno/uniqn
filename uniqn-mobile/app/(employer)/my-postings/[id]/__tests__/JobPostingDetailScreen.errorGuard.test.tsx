@@ -40,15 +40,11 @@ jest.mock('expo-router', () => ({
   }),
 }));
 
+// 화면은 공고를 컨텍스트에서 받는다(레이아웃이 realtime 구독과 함께 한 번만 조회).
+// 여기서 job:null 로 고정하면 모든 케이스가 에러 화면으로 떨어져 이 파일의 계약이 통째로
+// 검증되지 않는다 — 케이스별 값을 mockJobDetail 로 주입한다.
 jest.mock('../_layout', () => ({
-  useJobDetailContext: () => ({
-    job: null,
-    isFixed: true,
-    isLoading: false,
-    error: null,
-    refresh: jest.fn(),
-    handleShowQR: jest.fn(),
-  }),
+  useJobDetailContext: () => mockJobDetail(),
   HeaderQRAction: () => null,
   JobTitleSuffix: () => null,
 }));
@@ -134,10 +130,6 @@ jest.mock('@/hooks/applicant', () => ({
   }),
 }));
 
-jest.mock('@/hooks/useJobDetail', () => ({
-  useJobDetail: () => mockJobDetail(),
-}));
-
 jest.mock('@/hooks/useNetworkStatus', () => ({
   useNetworkStatus: () => mockNetworkStatus(),
 }));
@@ -177,6 +169,20 @@ jest.mock('@/hooks/ops', () => ({
   useOpsTournamentsForPosting: () => ({ opsTournaments: [], isLoading: false }),
 }));
 
+/**
+ * 컨텍스트 계약 전량을 채운 기본값 — 케이스는 필요한 키만 덮는다.
+ * 목이 계약의 일부를 빠뜨리면 그 경로는 테스트가 있어도 검증되지 않는다.
+ */
+const contextValue = (overrides: Record<string, unknown>) => ({
+  job: null,
+  isFixed: true,
+  isLoading: false,
+  error: null,
+  refresh: jest.fn(),
+  handleShowQR: jest.fn(),
+  ...overrides,
+});
+
 describe('JobPostingDetailScreen — 에러 가드', () => {
   beforeEach(() => {
     mockJobDetail.mockReset();
@@ -185,12 +191,12 @@ describe('JobPostingDetailScreen — 에러 가드', () => {
   });
 
   it('공고가 손에 있으면 error 가 있어도 본문을 지키고 partial 배너만 띄운다', () => {
-    mockJobDetail.mockReturnValue({
-      job: mockPosting,
-      isLoading: false,
-      error: new Error('network hiccup'),
-      refresh: jest.fn(),
-    });
+    mockJobDetail.mockReturnValue(
+      contextValue({
+        job: mockPosting,
+        error: new Error('network hiccup'),
+      })
+    );
 
     const { queryByTestId, getByTestId } = render(<JobPostingDetailScreen />);
 
@@ -203,12 +209,11 @@ describe('JobPostingDetailScreen — 에러 가드', () => {
   });
 
   it('error 가 없으면 partial 배너를 띄우지 않는다', () => {
-    mockJobDetail.mockReturnValue({
-      job: mockPosting,
-      isLoading: false,
-      error: null,
-      refresh: jest.fn(),
-    });
+    mockJobDetail.mockReturnValue(
+      contextValue({
+        job: mockPosting,
+      })
+    );
 
     const { queryByTestId } = render(<JobPostingDetailScreen />);
 
@@ -217,12 +222,11 @@ describe('JobPostingDetailScreen — 에러 가드', () => {
   });
 
   it('공고가 없으면 전체 에러 화면으로 가고, 원시 error.message 를 문구로 쓰지 않는다', () => {
-    mockJobDetail.mockReturnValue({
-      job: null,
-      isLoading: false,
-      error: new Error('PGRST116: relation does not exist'),
-      refresh: jest.fn(),
-    });
+    mockJobDetail.mockReturnValue(
+      contextValue({
+        error: new Error('PGRST116: relation does not exist'),
+      })
+    );
 
     const { getByTestId } = render(<JobPostingDetailScreen />);
 
@@ -234,12 +238,7 @@ describe('JobPostingDetailScreen — 에러 가드', () => {
   });
 
   it('공고도 error 도 없으면 "찾을 수 없습니다" 문구를 쓴다', () => {
-    mockJobDetail.mockReturnValue({
-      job: null,
-      isLoading: false,
-      error: null,
-      refresh: jest.fn(),
-    });
+    mockJobDetail.mockReturnValue(contextValue({}));
 
     const { getByTestId } = render(<JobPostingDetailScreen />);
 
@@ -250,12 +249,11 @@ describe('JobPostingDetailScreen — 에러 가드', () => {
 
   it('오프라인이면 문구가 다르고 재시도 버튼을 내지 않는다', () => {
     mockNetworkStatus.mockReturnValue({ isOnline: false });
-    mockJobDetail.mockReturnValue({
-      job: null,
-      isLoading: false,
-      error: new Error('Network request failed'),
-      refresh: jest.fn(),
-    });
+    mockJobDetail.mockReturnValue(
+      contextValue({
+        error: new Error('Network request failed'),
+      })
+    );
 
     const { getByTestId } = render(<JobPostingDetailScreen />);
 

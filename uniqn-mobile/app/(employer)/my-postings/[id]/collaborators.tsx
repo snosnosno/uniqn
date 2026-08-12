@@ -12,8 +12,8 @@ import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackHeader } from '@/components/headers';
 import { useAuthStore } from '@/stores/authStore';
-import { useJobDetail } from '@/hooks/useJobDetail';
 import { useJobPostingCollaborators } from '@/hooks/job-posting/useJobPostingCollaborators';
+import { useJobDetailContext } from './_layout';
 import { CollaboratorList } from '@/components/job-posting/CollaboratorList';
 import { CollaboratorSearch } from '@/components/job-posting/CollaboratorSearch';
 import { ErrorState } from '@/components/ui';
@@ -25,7 +25,8 @@ export default function CollaboratorsRoute() {
   const { user } = useAuthStore();
   const currentUserId = user?.uid;
 
-  const { job: jobPosting } = useJobDetail(jobPostingId);
+  // 공고 데이터는 레이아웃이 realtime 구독과 함께 한 번만 조회한다.
+  const { job: jobPosting } = useJobDetailContext();
   const { collaborators, isLoading, error, refetch, add, isAdding, remove, isRemoving, leaveSelf } =
     useJobPostingCollaborators(jobPostingId);
 

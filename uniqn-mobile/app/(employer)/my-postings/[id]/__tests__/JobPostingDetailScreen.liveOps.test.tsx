@@ -29,13 +29,16 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, replace: jest.fn(), back: jest.fn() }),
 }));
 
+// 화면은 공고를 컨텍스트에서 받는다(레이아웃이 realtime 구독과 함께 한 번만 조회).
+// mockPosting 이 고정 스케줄(schedule.kind==='fixed')이므로 컨텍스트도 isFixed=true 를 준다.
+// 이 파일은 헤더 QR 게이트를 검증하지 않는다 — 그 회귀 가드는 headerQRGate.test.ts.
 jest.mock('../_layout', () => ({
-  // mockPosting 이 고정 스케줄(schedule.kind==='fixed')이므로 컨텍스트도 isFixed=true 를 준다.
-  // 이 파일은 헤더 QR 게이트를 검증하지 않는다 — 그 회귀 가드는 headerQRGate.test.ts.
   useJobDetailContext: () => ({
-    job: null,
+    job: mockPosting,
     isFixed: true,
     isLoading: false,
+    error: null,
+    refresh: jest.fn(),
     handleShowQR: jest.fn(),
   }),
   HeaderQRAction: () => null,
@@ -100,16 +103,6 @@ jest.mock('@/hooks/applicant', () => ({
     data: { stats: { total: 0, confirmed: 0, applied: 0, cancellationPending: 0 } },
     refetch: jest.fn(),
     isRefetching: false,
-  }),
-}));
-
-jest.mock('@/hooks/useJobDetail', () => ({
-  useJobDetail: () => ({
-    job: mockPosting,
-    isLoading: false,
-    isRefreshing: false,
-    error: null,
-    refresh: jest.fn(),
   }),
 }));
 
