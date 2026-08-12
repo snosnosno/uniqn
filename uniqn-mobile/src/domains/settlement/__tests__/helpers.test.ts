@@ -33,6 +33,40 @@ describe('settlement/helpers ↔ SettlementCalculator 정합', () => {
       expect(calculatePayByType({ type: 'hourly', amount: 15000 }, 8)).toBe(120000);
       expect(calculatePayByType({ type: 'daily', amount: 150000 }, 5)).toBe(150000);
     });
+
+    /**
+     * 🔴 두 함수가 마지막까지 갈라져 있던 축 — 근무시간 0.
+     *
+     * calculateBasePay 는 맨 앞에 `if (hoursWorked === 0) return 0` 이 있었고
+     * calculatePayByType 에는 없었다. 그래서 **일급/월급 + 0시간**에서만 답이 갈렸다
+     * (전자 0원, 후자 전액). 라이브 호출부 두 곳은 모두 0시간을 미리 걸러내고 있어
+     * 증상이 없었지만, 두 함수 다 배럴로 공개돼 있어 다음 소비처에서 터질 자리였다.
+     *
+     * 위임으로 축을 하나로 만들면서 **0시간 = 0원**(더 엄격한 쪽)으로 수렴시킨다.
+     * 근무하지 않은 날에 일급 전액이 잡히는 쪽이 정산으로서 틀렸기 때문이다.
+     */
+    it('근무시간 0이면 일급·월급도 0을 반환한다 (calculateBasePay 로 수렴)', () => {
+      expect(calculatePayByType({ type: 'daily', amount: 150000 }, 0)).toBe(0);
+      expect(calculatePayByType({ type: 'monthly', amount: 3000000 }, 0)).toBe(0);
+      expect(calculatePayByType({ type: 'hourly', amount: 15000 }, 0)).toBe(0);
+    });
+
+    it('전 조합에서 calculateBasePay 와 동치 (0시간 포함)', () => {
+      const salaries: SalaryInfo[] = [
+        { type: 'hourly', amount: 15000 },
+        { type: 'daily', amount: 150000 },
+        { type: 'monthly', amount: 3000000 },
+        { type: 'other', amount: 0 },
+        { type: 'hourly', amount: -1 },
+      ];
+      for (const salary of salaries) {
+        for (const hours of [0, 0.5, 8, 23.75]) {
+          expect(calculatePayByType(salary, hours)).toBe(
+            SettlementCalculator.calculateBasePay(salary, hours)
+          );
+        }
+      }
+    });
   });
 
   describe('calculateAllowanceAmount: additional 수당 합산', () => {

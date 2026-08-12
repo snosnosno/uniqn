@@ -7,40 +7,28 @@
 
 import { Platform } from 'react-native';
 import * as Sentry from '@sentry/react-native';
-import {
-  AppError,
-  getAppErrorTelemetryPolicy,
-  isAppError,
-  type AppErrorTelemetryChannel,
-} from '@/errors/AppError';
+import { AppError, getAppErrorTelemetryPolicy, isAppError } from '@/errors/AppError';
 import { logger } from '@/utils/logger';
+
+import {
+  addBreadcrumb,
+  clearBreadcrumbs,
+  extractErrorAttributes,
+  getBreadcrumbs,
+  isObservabilityEnabled,
+  setEnabled,
+  type SentryAttributes,
+  type SentryContext,
+  type SentrySeverity,
+  type SentryUser,
+} from './sentryShared';
+
+export { clearBreadcrumbs, getBreadcrumbs, setEnabled };
+export type { SentryAttributes, SentryContext, SentrySeverity, SentryUser };
 
 // ============================================================================
 // Types
 // ============================================================================
-
-export type SentrySeverity = 'fatal' | 'error' | 'warning';
-
-export interface SentryContext {
-  screen?: string;
-  component?: string;
-  action?: string;
-  domain?: string;
-  userId?: string;
-  handlingKind?: string;
-  telemetryChannel?: AppErrorTelemetryChannel;
-  [key: string]: string | number | boolean | undefined;
-}
-
-export interface SentryAttributes {
-  [key: string]: string;
-}
-
-export interface SentryUser {
-  id?: string;
-  email?: string;
-  name?: string;
-}
 
 interface SentryScopeLike {
   setUser(user: { id: string } | null): void;
@@ -54,10 +42,7 @@ interface SentryScopeLike {
 // ============================================================================
 
 let isInitialized = false;
-let isEnabled = true;
 let currentUser: SentryUser = {};
-const breadcrumbs: string[] = [];
-const MAX_BREADCRUMBS = 50;
 
 const TAG_KEYS = new Set([
   'screen',
@@ -107,15 +92,6 @@ export async function initialize(): Promise<boolean> {
 // Helpers
 // ============================================================================
 
-function addBreadcrumb(message: string): void {
-  const timestamp = new Date().toISOString();
-  breadcrumbs.push(`[${timestamp}] ${message}`);
-
-  while (breadcrumbs.length > MAX_BREADCRUMBS) {
-    breadcrumbs.shift();
-  }
-}
-
 function applyScopeContext(scope: SentryScopeLike, context?: SentryContext): void {
   if (!context) {
     return;
@@ -141,35 +117,12 @@ function applyScopeContext(scope: SentryScopeLike, context?: SentryContext): voi
   });
 }
 
-function extractErrorAttributes(error: Error | AppError): Record<string, string> {
-  const attributes: Record<string, string> = {};
-
-  if (!isAppError(error)) {
-    return attributes;
-  }
-
-  attributes.error_code = error.code;
-  attributes.error_category = error.category;
-  attributes.error_severity = error.severity;
-  attributes.is_retryable = String(error.isRetryable);
-
-  if (error.metadata) {
-    Object.entries(error.metadata).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        attributes[`metadata_${key}`] = String(value);
-      }
-    });
-  }
-
-  return attributes;
-}
-
 async function captureWithLevel(
   error: Error | AppError,
   level: SentrySeverity,
   context?: SentryContext
 ): Promise<void> {
-  if (!isEnabled) return;
+  if (!isObservabilityEnabled()) return;
 
   try {
     if (!isInitialized) {
@@ -209,14 +162,6 @@ async function captureWithLevel(
 // ============================================================================
 // Core API
 // ============================================================================
-
-export function setEnabled(enabled: boolean): void {
-  isEnabled = enabled;
-  logger.info('Sentry observability 상태 변경', {
-    component: 'sentryService',
-    enabled,
-  });
-}
 
 export async function recordError(error: Error | AppError, context?: SentryContext): Promise<void> {
   await captureWithLevel(error, 'error', context);
@@ -270,7 +215,7 @@ export async function recordHandledError(
 }
 
 export async function log(message: string): Promise<void> {
-  if (!isEnabled) return;
+  if (!isObservabilityEnabled()) return;
 
   try {
     addBreadcrumb(message);
@@ -294,7 +239,7 @@ export async function leaveBreadcrumb(
   event: string,
   data?: Record<string, string | number | boolean | undefined>
 ): Promise<void> {
-  if (!isEnabled) return;
+  if (!isObservabilityEnabled()) return;
 
   try {
     const dataString = data
@@ -324,7 +269,7 @@ export async function leaveBreadcrumb(
 }
 
 export async function setAttribute(key: string, value: string): Promise<void> {
-  if (!isEnabled) return;
+  if (!isObservabilityEnabled()) return;
 
   try {
     if (Platform.OS !== 'web') {
@@ -336,7 +281,7 @@ export async function setAttribute(key: string, value: string): Promise<void> {
 }
 
 export async function setAttributes(attributes: SentryAttributes): Promise<void> {
-  if (!isEnabled) return;
+  if (!isObservabilityEnabled()) return;
 
   try {
     if (Platform.OS !== 'web') {
@@ -431,14 +376,6 @@ export async function recordNetworkError(
 export async function setScreen(screenName: string): Promise<void> {
   await log(`Screen: ${screenName}`);
   await setAttribute('current_screen', screenName);
-}
-
-export function getBreadcrumbs(): string[] {
-  return [...breadcrumbs];
-}
-
-export function clearBreadcrumbs(): void {
-  breadcrumbs.length = 0;
 }
 
 export const sentryService = {
