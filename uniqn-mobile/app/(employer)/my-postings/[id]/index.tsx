@@ -25,6 +25,7 @@ import {
   CurrencyDollarIcon,
   DocumentIcon,
   EditIcon,
+  EyeIcon,
   MapPinIcon,
   ShareIcon,
   TrashIcon,
@@ -48,6 +49,7 @@ import {
   PRIMARY_COLORS,
   SECONDARY_PALETTE,
   STATUS_COLORS,
+  TEXT_COLORS,
 } from '@/constants/colors';
 import {
   buildPostingFacts,
@@ -63,6 +65,8 @@ import { useThemeStore } from '@/stores/themeStore';
 import type { PostingManagementViewModel, PostingType, TournamentApprovalStatus } from '@/types';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
+import { TodayOpsStrip } from '@/features/employer/settlements/TodayOpsStrip';
 
 interface ActionCardProps {
   icon: React.ReactNode;
@@ -87,6 +91,11 @@ function ActionCard({
 }: ActionCardProps) {
   const resolvedTitle = displayTitle ?? title;
   const resolvedDescription = displayDescription ?? description;
+  // 배지가 라벨에서 빠지면 스크린리더 사용자는 "대기 3명" 같은 처리할 일 개수를 듣지 못한다 —
+  // 이 화면에서 가장 행동을 부르는 정보가 시각 사용자에게만 전달되고 있었다.
+  const accessibilityLabel = badge
+    ? `${resolvedTitle}, ${badge.label}, ${resolvedDescription}`
+    : `${resolvedTitle}, ${resolvedDescription}`;
 
   return (
     <Pressable
@@ -94,7 +103,7 @@ function ActionCard({
       className="active:opacity-70"
       accessibilityRole="button"
       testID={testID}
-      accessibilityLabel={`${resolvedTitle}, ${resolvedDescription}`}
+      accessibilityLabel={accessibilityLabel}
     >
       <Card variant="elevated" padding="md" className="flex-row items-center">
         <View className="mr-4 h-12 w-12 items-center justify-center rounded-sm bg-primary-50 dark:bg-primary-900/30">
@@ -152,7 +161,20 @@ export default function JobPostingDetailScreen() {
   const { mutate: deleteJobPosting, isPending: isDeleting } = useDeleteJobPosting();
   const { shareJob, isSharing } = useShare();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [isInfoExpanded, setIsInfoExpanded] = useState(false);
+  // 기본 펼침 — 사장이 자기 공고의 일정·급여·위치를 보려고 접기를 푸는 동작이 매 진입마다
+  // 반복될 이유가 없다. 접기는 화면을 짧게 만들고 싶은 사람을 위한 선택지로 남긴다.
+  const [isInfoExpanded, setIsInfoExpanded] = useState(true);
+
+  // 당일 운영 요약(출근/노쇼) — 정산 화면(settlements.tsx:191)에만 있던 신호를 허브로 올린다.
+  //
+  // 고정 공고는 제외한다: QR 진입점이 없어 checkInTime 이 영원히 비므로 "출근 0/N" 이 거짓말이 된다.
+  // 빈 id 를 넘기면 useConfirmedStaff 가 쿼리(`enabled: !!jobPostingId`)와 realtime 구독을
+  // 둘 다 끈다 — 별도 enabled 옵션을 shared 훅에 추가하지 않고 같은 효과를 낸다.
+  const isFixedPosting = contextIsFixed || posting?.schedule?.kind === 'fixed';
+  const { grouped: staffGrouped } = useConfirmedStaff(isFixedPosting ? '' : id || '', {
+    realtime: true,
+  });
+  const todayGroup = useMemo(() => staffGrouped.find((group) => group.isToday), [staffGrouped]);
 
   const postingFacts = useMemo(() => (posting ? buildPostingFacts(posting) : null), [posting]);
   // 브릿지: 이 공고에 연결된 ops 대회 목록(N:1). null-safe(빈 배열, ops_* 미배포 시에도 안전).
@@ -248,6 +270,10 @@ export default function JobPostingDetailScreen() {
     void shareJob(posting);
   }, [posting, shareJob]);
 
+  const handlePreview = useCallback(() => {
+    router.push(`/(app)/jobs/${id}`);
+  }, [id, router]);
+
   // refreshApplicants(=refreshRealtimeData)는 조회 실패 시 실제로 throw 한다. try/catch 가
   // 없으면 onRetry·RefreshControl 두 호출부가 반환 Promise 를 버려 미처리 rejection 이 되고,
   // 사용자에겐 아무 피드백도 남지 않는다(ORDER-9).
@@ -329,6 +355,18 @@ export default function JobPostingDetailScreen() {
         fallbackHref="/(app)/(tabs)/employer"
         rightAction={
           <View className="flex-row items-center">
+            {/* 구직자 시선 미리보기 — 내 공고가 어떻게 보이는지 확인할 길이 없었다.
+                도착지 RPC 가 소유자 조회를 조회수에서 제외하므로 미리보기가 수치를 부풀리지 않는다. */}
+            <Pressable
+              onPress={handlePreview}
+              hitSlop={8}
+              className="p-2"
+              accessibilityRole="button"
+              accessibilityLabel="구직자에게 보이는 화면 미리보기"
+              testID="job-posting-preview"
+            >
+              <EyeIcon size={22} color={getLayoutColor(isDark, 'headerTint')} />
+            </Pressable>
             <Pressable
               onPress={handleShare}
               disabled={isSharing}
@@ -399,9 +437,13 @@ export default function JobPostingDetailScreen() {
                 <PostingStatusBadge status={posting.status} size="sm" className="mr-2" />
                 <Pressable
                   onPress={handleToggleInfo}
-                  className="flex-row items-center rounded-lg px-2 py-1 active:bg-secondary-100 dark:active:bg-secondary-700"
+                  className="min-h-[44px] flex-row items-center rounded-lg px-2 py-1 active:bg-secondary-100 dark:active:bg-secondary-700"
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   accessibilityRole="button"
+                  // 라벨 없이 "접기"만 낭독되면 무엇을 접는지 알 수 없다. expanded 는 웹
+                  // (react-native-web)에서 무효라 라벨에도 상태를 담는다.
+                  accessibilityLabel={isInfoExpanded ? '근무 정보 접기' : '근무 정보 펼치기'}
+                  accessibilityState={{ expanded: isInfoExpanded }}
                 >
                   <Text className="mr-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                     {isInfoExpanded ? '접기' : '상세'}
@@ -501,7 +543,14 @@ export default function JobPostingDetailScreen() {
               </>
             ) : null}
 
-            <View className="rounded-lg bg-surface-page dark:bg-surface px-3 pb-2 pt-3">
+            <View
+              className="rounded-lg bg-surface-page dark:bg-surface px-3 pb-2 pt-3"
+              // 카드 전체를 한 덩어리로 읽힌다. 그룹핑이 없으면 스크린리더가 숫자와 라벨을
+              // 따로 읽어 "5", "지원자", "2", "확정" 처럼 짝이 끊긴 채 들린다.
+              accessible
+              accessibilityRole="summary"
+              accessibilityLabel={`지원자 ${totalApplicants}명, 확정 ${confirmedApplicants}명, 대기중 ${pendingApplicants}명. 배정 현황 ${totalPositions}자리 중 ${filledPositions}자리`}
+            >
               <View className="flex-row justify-around">
                 <View className="flex-1 items-center">
                   <Text className="text-xl font-display text-primary-600 dark:text-primary-400">
@@ -511,7 +560,8 @@ export default function JobPostingDetailScreen() {
                     지원자
                   </Text>
                 </View>
-                <View className="w-px bg-secondary-200 dark:bg-surface" />
+                {/* 다크에서 부모 배경(bg-surface)과 같은 색이라 구분선이 통째로 사라졌다. */}
+                <View className="w-px bg-secondary-200 dark:bg-surface-overlay" />
                 <View className="flex-1 items-center">
                   <Text className="text-xl font-display text-success-600 dark:text-success-400">
                     {confirmedApplicants}
@@ -520,7 +570,8 @@ export default function JobPostingDetailScreen() {
                     확정
                   </Text>
                 </View>
-                <View className="w-px bg-secondary-200 dark:bg-surface" />
+                {/* 다크에서 부모 배경(bg-surface)과 같은 색이라 구분선이 통째로 사라졌다. */}
+                <View className="w-px bg-secondary-200 dark:bg-surface-overlay" />
                 <View className="flex-1 items-center">
                   <Text className="text-xl font-display text-warning-600 dark:text-warning-400">
                     {pendingApplicants}
@@ -549,6 +600,44 @@ export default function JobPostingDetailScreen() {
             </View>
           </Card>
         </View>
+
+        {/* 오늘 근무가 있을 때만 뜬다(TodayOpsStrip 자체 가드). 고정 공고는 위 훅에서 이미 제외. */}
+        <View className="mt-3">
+          <TodayOpsStrip todayGroup={todayGroup} pendingSettlementCount={0} />
+        </View>
+
+        {/* 지원자 0명 — "0명이 대기중입니다"는 상태 보고일 뿐 다음 행동이 없다.
+            사장이 여기서 할 수 있는 유일한 일(공유)을 실제 크기의 CTA 로 준다. */}
+        {totalApplicants === 0 ? (
+          <View className="px-4 pt-4">
+            <Card variant="outlined" padding="md">
+              <Text className="mb-1 text-base font-sans-semibold text-content-primary dark:text-off-white">
+                아직 지원자가 없어요
+              </Text>
+              <Text className="mb-4 text-sm text-content-secondary font-sans">
+                공고 링크를 단톡방이나 아는 분들께 보내면 지원이 훨씬 빨리 붙어요.
+              </Text>
+              <Pressable
+                onPress={handleShare}
+                disabled={isSharing}
+                className={`min-h-[44px] flex-row items-center justify-center rounded-md bg-primary-600 py-3 active:bg-primary-700 ${
+                  isSharing ? 'opacity-40' : ''
+                }`}
+                accessibilityRole="button"
+                // 헤더 공유 아이콘과 라벨이 겹치면 보이스 컨트롤·E2E 셀렉터가 둘 중 무엇을
+                // 가리키는지 알 수 없다(e2e/pages/app/job-detail.page.ts:28 이 같은 라벨을 쓴다).
+                accessibilityLabel="공고 링크 공유하기"
+                accessibilityState={{ disabled: isSharing }}
+                testID="job-posting-empty-share"
+              >
+                <ShareIcon size={18} color={TEXT_COLORS.onGold} />
+                <Text className="ml-2 text-base font-sans-semibold text-content-onGold">
+                  공고 링크 공유하기
+                </Text>
+              </Pressable>
+            </Card>
+          </View>
+        ) : null}
 
         <View className="px-4 pb-4 pt-3">
           <Text className="mb-3 text-lg font-display-semibold text-content-primary dark:text-off-white">
@@ -603,7 +692,7 @@ export default function JobPostingDetailScreen() {
               <ActionCard
                 icon={<EditIcon size={24} color={SECONDARY_PALETTE[500]} />}
                 title="공고 수정"
-                description="공고 내용과 상태를 수정합니다."
+                description="공고 내용을 수정합니다."
                 badge={
                   filledPositions > 0
                     ? { label: '일정·역할 수정 제한', variant: 'warning' }
@@ -620,7 +709,7 @@ export default function JobPostingDetailScreen() {
                 posting.status
               ) && (
                 <ActionCard
-                  icon={<UsersIcon size={24} color="#8B5CF6" />}
+                  icon={<UsersIcon size={24} color={STATUS_COLORS.info} />}
                   title={
                     opsTournaments.length > 0
                       ? `라이브 운영 (${opsTournaments.length})`
@@ -647,7 +736,7 @@ export default function JobPostingDetailScreen() {
               )}
 
             <ActionCard
-              icon={<UserPlusIcon size={24} color="#3B82F6" />}
+              icon={<UserPlusIcon size={24} color={SECONDARY_PALETTE[500]} />}
               title="공유 관리"
               description="이 공고를 함께 관리할 협업자를 추가하거나 제거합니다."
               onPress={handleCollaborators}
@@ -661,7 +750,7 @@ export default function JobPostingDetailScreen() {
             <ActionCard
               icon={<EditIcon size={24} color={SECONDARY_PALETTE[500]} />}
               title="공고 수정"
-              description="공고 내용과 상태를 수정합니다"
+              description="공고 내용을 수정합니다"
               onPress={handleEdit}
               testID="job-posting-edit-button"
             />

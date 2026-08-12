@@ -61,6 +61,7 @@ jest.mock('@/components/icons', () => ({
   CurrencyDollarIcon: () => null,
   DocumentIcon: () => null,
   EditIcon: () => null,
+  EyeIcon: () => null,
   MapPinIcon: () => null,
   ShareIcon: () => null,
   TrashIcon: () => null,
@@ -116,6 +117,19 @@ jest.mock('@/hooks/useJobDetail', () => ({
 // 이 파일은 네트워크 상태를 검증하지 않는다 — 온라인 고정.
 jest.mock('@/hooks/useNetworkStatus', () => ({
   useNetworkStatus: () => ({ isOnline: true }),
+}));
+
+// 실제 훅은 QueryClientProvider 를 요구한다. 이 파일은 당일 운영 스트립을 검증하지 않는다.
+jest.mock('@/hooks/useConfirmedStaff', () => ({
+  useConfirmedStaff: () => ({
+    staff: [],
+    grouped: [],
+    stats: { total: 0, checkedIn: 0, completed: 0, noShow: 0 },
+    isLoading: false,
+    error: null,
+    refresh: jest.fn(),
+    isRefreshing: false,
+  }),
 }));
 
 jest.mock('@/hooks/useShare', () => ({

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +18,7 @@ import {
   useShare,
 } from '@/hooks';
 import { resolveSessionUserId } from '@/hooks/internal/sessionUserId';
+import { incrementViewCount } from '@/services/jobs';
 import { trackJobView } from '@/services/observability';
 import { useThemeStore } from '@/stores';
 import { confirmAction } from '@/utils/confirmAction';
@@ -66,6 +67,23 @@ export default function JobDetailScreen() {
     if (job && user) {
       trackJobView(job.id, job.title);
     }
+  }, [job, user]);
+
+  // 조회수 증가 — RPC(increment_view_count)·Repository·서비스가 모두 있는데 **호출부가 없어서**
+  // job_postings.view_count 가 영구 0이었고, 구직자 화면의 "조회 N"(JobDetail.tsx:311)도 늘 0이었다.
+  // 그 결과 사장은 "아무도 안 봤다"와 "봤는데 조건이 별로다"를 구분할 신호가 전혀 없었다.
+  //
+  // 공고당 1회만 센다 — job 은 재조회마다 새 참조라 effect 가 다시 도는데, ref 가 없으면
+  // PTR 한 번에 조회수가 계속 오른다. 소유자 조회 제외와 인증 요구는 서버 RPC 가 담당하고
+  // (미리보기로 자기 공고를 열어도 안 오른다), 실패는 jobService 가 조용히 흡수한다.
+  const viewCountedIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!job || !user || viewCountedIdRef.current === job.id) {
+      return;
+    }
+
+    viewCountedIdRef.current = job.id;
+    void incrementViewCount(job.id);
   }, [job, user]);
 
   const handleApply = useCallback(() => {
