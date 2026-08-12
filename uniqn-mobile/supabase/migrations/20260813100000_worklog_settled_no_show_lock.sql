@@ -69,11 +69,14 @@ BEGIN
   -- [2026-08-13 감사 3-2] 정산 완료 건의 노쇼 전환 동결 — 역할 무관.
   -- '지급 완료 + 노쇼' 모순 행을 막는다(수입 합산이 completed 만 세므로 지급액이 증발).
   -- 정산을 함께 되돌리는 UPDATE 는 통과시킨다 — 탈출 경로(되돌린 뒤 노쇼)를 남긴다.
+  -- 🔑 축이 둘이다. 앱은 노쇼를 `status` 가 아니라 **`no_show_at` 유무**로 판정한다
+  --    (`confirmedStaff.ts`: `const isNoShow = Boolean(workLog.noShowAt)`).
+  --    status 만 막으면 `no_show_at` 만 써서 그대로 노쇼로 보이게 만들 수 있다.
   IF coalesce(auth.jwt() ->> 'role', '') <> 'service_role'
      AND OLD.payroll_status = 'completed'
      AND NEW.payroll_status IS NOT DISTINCT FROM OLD.payroll_status
-     AND NEW.status IS DISTINCT FROM OLD.status
-     AND NEW.status = 'no_show' THEN
+     AND ((NEW.status IS DISTINCT FROM OLD.status AND NEW.status = 'no_show')
+       OR (NEW.no_show_at IS DISTINCT FROM OLD.no_show_at AND NEW.no_show_at IS NOT NULL)) THEN
     RAISE EXCEPTION 'ALREADY_SETTLED: 정산이 완료된 근무는 노쇼로 변경할 수 없습니다. 정산을 되돌린 후 다시 시도하세요.'
       USING ERRCODE = '42501'; -- insufficient_privilege
   END IF;

@@ -13,7 +13,7 @@
 --   postgres(클레임 없음)조차 staff 분기에 걸려 RAISE.
 
 BEGIN;
-SELECT plan(5);
+SELECT plan(7);
 
 -- employer 클레임 스위치 (worklog_settled_custom_lock.test.sql 과 동일 헬퍼)
 CREATE OR REPLACE FUNCTION t_set_employer(p_user_id uuid)
@@ -90,6 +90,37 @@ SELECT throws_ok(
   ),
   '42501', NULL,
   '완료건 노쇼 전체 페이로드: DENY (부분 컬럼 우회 불가)'
+);
+
+-- 4. status 를 건드리지 않고 no_show_at 만 써도 막힌다.
+--    앱은 노쇼를 status 가 아니라 no_show_at 유무로 판정하므로(confirmedStaff.ts)
+--    이 축을 열어두면 가드가 우회된다.
+SELECT throws_ok(
+  format(
+    $q$UPDATE public.work_logs SET no_show_at = to_jsonb(now()) WHERE id = %L$q$,
+    current_setting('t.wl_settled')
+  ),
+  '42501', NULL,
+  '완료건 no_show_at 단독 기록: DENY (status 우회 차단)'
+);
+
+-- 5. 정산을 **함께** 되돌리는 UPDATE 는 통과한다 — 범위 축소 절이 실제로 작동하는지
+--    한 문장으로 검증한다(케이스 7 처럼 두 문장으로 나누면 이 절을 안 밟는다).
+SELECT lives_ok(
+  format(
+    $q$DO $inner$
+       BEGIN
+         RESET ROLE;
+         UPDATE public.work_logs
+            SET payroll_status = 'pending', status = 'no_show'
+          WHERE id = %L;
+         UPDATE public.work_logs SET payroll_status = 'completed', status = 'completed' WHERE id = %L;
+       END
+       $inner$$q$,
+    current_setting('t.wl_settled'),
+    current_setting('t.wl_settled')
+  ),
+  '정산을 함께 되돌리는 한 문장 UPDATE 는 통과 (범위 축소 절 검증)'
 );
 
 -- ============================================================================
