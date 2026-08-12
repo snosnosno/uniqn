@@ -62,6 +62,7 @@ import { extractPostingFilledSubmap, usePostingFilledCounts } from '@/hooks/useP
 import { useThemeStore } from '@/stores/themeStore';
 import type { PostingManagementViewModel, PostingType, TournamentApprovalStatus } from '@/types';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
 interface ActionCardProps {
   icon: React.ReactNode;
@@ -147,6 +148,7 @@ export default function JobPostingDetailScreen() {
       realtime: true,
     }
   );
+  const { isOnline } = useNetworkStatus();
   const { mutate: deleteJobPosting, isPending: isDeleting } = useDeleteJobPosting();
   const { shareJob, isSharing } = useShare();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -214,17 +216,25 @@ export default function JobPostingDetailScreen() {
   }, []);
 
   const handleDeleteConfirm = useCallback(() => {
-    if (!id) {
+    // 진행 중 재진입 차단 — ConfirmModal 의 래치와 이중 방어. 여기까지 막아야
+    // 모달 밖 경로(테스트·프로그램적 호출)로도 뮤테이션이 두 번 나가지 않는다.
+    if (!id || isDeleting) {
       return;
     }
 
     deleteJobPosting(id, {
       onSuccess: () => {
         setShowDeleteModal(false);
-        router.back();
+        // 되돌아갈 화면이 없는 진입(웹 직접 URL 등)에서 back() 은 조용히 무시된다 —
+        // 그러면 방금 삭제한 공고 화면에 그대로 남는다. 목록으로 내보낸다.
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace('/(app)/(tabs)/employer');
+        }
       },
     });
-  }, [deleteJobPosting, id, router]);
+  }, [deleteJobPosting, id, isDeleting, router]);
 
   const handleToggleInfo = useCallback(() => {
     setIsInfoExpanded((prev) => !prev);
@@ -262,17 +272,35 @@ export default function JobPostingDetailScreen() {
     );
   }
 
-  if (error || !posting || !managementView) {
+  // 공고가 손에 없을 때만 화면을 통째로 에러로 바꾼다.
+  //
+  // 옛 가드는 `error || !posting` 이라, 캐시된 공고를 정상 렌더하던 중에 신호가 한 번
+  // 튀기만 해도 화면 전체가 "공고를 불러올 수 없습니다"로 교체됐다. 사장은 공고가
+  // 사라진 줄 알고 같은 공고를 하나 더 만들고, 지원자가 두 공고로 쪼개진다.
+  // 형제 화면(qr.tsx·collaborators.tsx)은 이미 (error && !data) 축을 쓰고 있었다.
+  if (!posting || !managementView) {
+    // 오프라인이면 원인이 다르다 — "찾을 수 없습니다"는 삭제됐다는 말로 읽힌다.
+    // 재시도 버튼도 숨긴다. 눌러도 아무 일이 없는 버튼은 없느니만 못하다.
+    const isOffline = !isOnline;
+    const errorTitle = isOffline ? '오프라인 상태예요' : '공고를 불러올 수 없습니다';
+    // error 가 있으면 message 를 넘기지 않는다 — ErrorState 가 AppError.userMessage /
+    // extractUserMessage 로 sanitize 한 문구를 쓰게 둔다(원시 error.message 노출 금지).
+    const errorMessage = isOffline
+      ? '인터넷에 연결되면 공고 정보를 다시 불러옵니다.'
+      : error
+        ? undefined
+        : '공고 정보를 찾을 수 없습니다.';
+
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="공고 상세" fallbackHref="/(app)/(tabs)/employer" />
         <PostingSurfaceState
           mode="error"
           scope="detail"
-          title="공고를 불러올 수 없습니다"
-          message={error?.message || '공고 정보를 찾을 수 없습니다.'}
-          error={error}
-          onRetry={handleRefresh}
+          title={errorTitle}
+          message={errorMessage}
+          error={isOffline ? null : error}
+          onRetry={isOffline ? undefined : handleRefresh}
         />
       </SafeAreaView>
     );
@@ -329,6 +357,19 @@ export default function JobPostingDetailScreen() {
           />
         }
       >
+        {/* 공고는 손에 있는데 갱신만 실패한 상태 — 화면을 뺏지 않고 얇은 배너로만 알린다.
+            여기 없으면 사용자는 화면이 최신인지 아닌지 알 방법이 없다. */}
+        {error ? (
+          <View className="pt-3">
+            <PostingSurfaceState
+              mode="partial"
+              scope="detail"
+              title="정보가 최신이 아닐 수 있어요"
+              message="방금 불러오기에 실패했어요. 화면을 아래로 당겨 다시 시도해주세요."
+            />
+          </View>
+        ) : null}
+
         <View className="px-4 pt-3">
           <Card variant="elevated" padding="md">
             <View className="mb-1.5 flex-row flex-wrap items-center">
@@ -730,9 +771,13 @@ export default function JobPostingDetailScreen() {
         cancelTestID="job-posting-delete-cancel"
         title="공고 삭제"
         message={deleteMessage}
-        confirmText="삭제"
-        cancelText="취소"
+        confirmText="공고 삭제"
+        cancelText="계속 보기"
         isDestructive
+        // 삭제 결과를 보고 닫는다 — 실패하면 모달이 남아 그대로 다시 시도할 수 있다.
+        // 자동으로 닫으면 사용자는 삭제됐는지 아닌지 모른 채 토스트만 보게 된다.
+        isLoading={isDeleting}
+        closeOnConfirm={false}
       />
     </SafeAreaView>
   );

@@ -15,7 +15,7 @@ import { useTemplateManager } from '@/hooks/useTemplateManager';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
-import { toError, isAppError, ERROR_CODES } from '@/errors';
+import { toError, isAppError, extractUserMessage, ERROR_CODES } from '@/errors';
 import { buildJobPostingDraft } from '@/utils/job-posting/submission';
 import { isEmployerManageablePosting } from '@/utils/jobPostingVisibility';
 import { draftToValues, formValuesToDraft, valuesToUpdateInput } from '@/utils/order-sheet/mappers';
@@ -146,7 +146,10 @@ export default function EditJobPostingScreen() {
     );
   }
 
-  if (jobError || !existingJob || initialValues === null) {
+  // 복원할 공고가 손에 없을 때만 에러 화면으로 간다.
+  // 옛 가드는 jobError 만 서도 편집 폼을 통째로 버렸다 — 캐시로 하이드레이션이 이미
+  // 끝났는데도 사장은 입력하던 화면을 잃었다(공고 상세 index.tsx 와 같은 축).
+  if (!existingJob || initialValues === null) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader
@@ -159,8 +162,10 @@ export default function EditJobPostingScreen() {
           <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
             공고를 불러올 수 없습니다
           </Text>
+          {/* 원시 error.message 노출 금지 — 개발자 메시지가 그대로 사용자에게 간다.
+              AppError 는 userMessage, 일반 Error 는 중앙 sanitize 를 거친다. */}
           <Text className="mb-4 text-center text-content-secondary font-sans">
-            {jobError?.message || '공고 정보를 찾을 수 없습니다.'}
+            {jobError ? extractUserMessage(jobError) : '공고 정보를 찾을 수 없습니다.'}
           </Text>
           <Button variant="primary" onPress={() => router.back()}>
             <Text className="font-sans-semibold text-content-onGold">돌아가기</Text>

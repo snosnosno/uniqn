@@ -167,8 +167,10 @@ export default function StaffSettlementsScreen() {
     );
   }
 
-  // 에러 상태
-  if (error) {
+  // 에러 상태 — 보여줄 근무 기록이 없을 때만 화면을 통째로 뺏는다.
+  // 정산 중에 신호가 튀었다고 이미 받아둔 근무 목록을 지우면, 사장은 어디까지 정산했는지
+  // 알 수 없게 된다(공고 상세 index.tsx 와 같은 축).
+  if (error && workLogs.length === 0) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         {stackHeader}
@@ -186,6 +188,13 @@ export default function StaffSettlementsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       {stackHeader}
+
+      {/* 목록은 살아 있는데 갱신만 실패한 상태 — 근무 기록을 유지한 채 얇게만 알린다. */}
+      {error && workLogs.length > 0 ? (
+        <View className="px-4 pt-2">
+          <ErrorState compact error={error} onRetry={() => refresh()} />
+        </View>
+      ) : null}
 
       {/* 당일 운영 요약 스트립 (M4) — 오늘 근무가 있을 때만 노출 */}
       <TodayOpsStrip

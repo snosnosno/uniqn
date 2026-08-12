@@ -112,6 +112,12 @@ jest.mock('@/hooks/useJobDetail', () => ({
   }),
 }));
 
+// 실제 훅을 태우면 networkState 의 비동기 리스너가 act() 밖에서 상태를 갱신해 경고를 뿜는다.
+// 이 파일은 네트워크 상태를 검증하지 않는다 — 온라인 고정.
+jest.mock('@/hooks/useNetworkStatus', () => ({
+  useNetworkStatus: () => ({ isOnline: true }),
+}));
+
 jest.mock('@/hooks/useShare', () => ({
   useShare: () => ({ shareJob: jest.fn(), isSharing: false }),
 }));

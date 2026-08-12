@@ -204,8 +204,10 @@ export default function ApplicantsScreen() {
     );
   }
 
-  // 에러 상태
-  if (error) {
+  // 에러 상태 — 보여줄 목록이 하나도 없을 때만 화면을 통째로 뺏는다.
+  // 이미 받아둔 지원자가 있는데 갱신만 실패한 경우까지 전체 교체하면, 사장은 승인해야 할
+  // 지원자를 눈앞에서 잃는다(공고 상세 index.tsx 와 같은 축).
+  if (error && applicants.length === 0) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader
@@ -249,11 +251,20 @@ export default function ApplicantsScreen() {
           </Text>
         </View>
       ) : null}
+      {/* 목록은 살아 있는데 갱신만 실패한 상태 — 목록을 유지한 채 얇게만 알린다. */}
+      {error && applicants.length > 0 ? (
+        <View className="px-4 pt-2">
+          <ErrorState compact error={error} onRetry={() => refresh()} />
+        </View>
+      ) : null}
+
       {/* 지원자 목록 */}
       <ApplicantList
         applicants={applicants}
         isLoading={isLoading}
-        error={error}
+        // 목록이 있으면 error 를 넘기지 않는다 — 넘기면 ApplicantList 가 자체 ErrorState 로
+        // 리스트를 통째로 덮어(ApplicantList.tsx:246) 위의 좁힌 가드가 무의미해진다.
+        error={applicants.length === 0 ? error : null}
         onRefresh={onPullRefresh}
         isRefreshing={pullRefreshing}
         onConfirm={handleConfirm}
