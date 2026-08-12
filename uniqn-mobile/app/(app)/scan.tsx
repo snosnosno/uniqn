@@ -14,7 +14,7 @@ import { useCallback } from 'react';
 import { View } from 'react-native';
 import { router } from 'expo-router';
 import { QRCodeScanner } from '@/components/qr';
-import { useQRCodeScanner } from '@/hooks';
+import { useQRCodeScanner } from '@/hooks/useQRCode';
 import { useTutorial } from '@/hooks/useTutorial';
 import { TutorialOverlay } from '@/components/tutorial';
 import { QR_CHECKIN_TUTORIAL } from '@/constants/tutorials';

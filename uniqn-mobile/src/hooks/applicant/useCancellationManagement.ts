@@ -4,7 +4,8 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { requireAuth } from '@/errors/guardErrors';
-import { cachingPolicies, invalidateRelated, queryKeys } from '@/lib';
+import { invalidateRelated } from '@/lib/invalidationStrategy';
+import { cachingPolicies, queryKeys } from '@/lib/queryClient';
 import { createMutationErrorHandler } from '@/shared/errors';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';

@@ -5,7 +5,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ERROR_CODES } from '@/errors';
 import { requireAuth } from '@/errors/guardErrors';
-import { invalidateRelated, queryKeys } from '@/lib';
+import { invalidateRelated } from '@/lib/invalidationStrategy';
+import { queryKeys } from '@/lib/queryClient';
 import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { errorHandlerPresets, createMutationErrorHandler } from '@/shared/errors';
 import { useAuthStore } from '@/stores/authStore';

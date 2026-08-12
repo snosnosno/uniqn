@@ -2,154 +2,60 @@
  * UNIQN Mobile - Auth 도메인 배럴 Export
  *
  * @description 인증 관련 서비스 (auth, accountDeletion, storage, biometric)
- * @version 2.0.0
+ *
+ * ⚠️ **실제 소비되는 심볼만** 재수출한다. 구현 모듈이 export 한다고 해서 여기에 올리지 말 것 —
+ * 안 쓰이는 재수출은 공개 표면만 넓히고 사문으로 남는다. 새로 필요해지면 그때 추가하라.
+ * (`@/services` 배럴은 이 배럴을 거치지 않고 구현 모듈에서 직접 재수출한다.)
+ *
+ * @version 3.0.0
  */
-
-// ============================================================================
-// Auth Types (공유 타입)
-// ============================================================================
-export { type UserProfile, type AuthResult, type SocialProfileData } from './authTypes';
-export type {
-  PortOneInicisIdentityConfig,
-  PortOneInicisIdentityRequest,
-  PortOneInicisIdentityRequestInput,
-  PortOneIdentityVerificationResult,
-  PendingPortOneIdentityRequest,
-  PortOneInicisDirectAgency,
-  VerifiedPortOneIdentity,
-  VerifyAndSavePortOneProfilePayload,
-  VerifyAndSavePortOneProfileResult,
-  VerifyPortOneIdentityPayload,
-  VerifyPortOneIdentityResult,
-} from './portOneIdentityService';
 
 // ============================================================================
 // Auth Core Service (로그인, 회원가입, 세션)
 // ============================================================================
-export {
-  login,
-  signUp,
-  signOut,
-  resetPassword,
-  completePasswordReset,
-  hasRecoverySession,
-  adoptRecoverySessionFromUrl,
-  getUserProfile,
-  reauthenticate,
-  getCurrentUserAsync,
-  requireCurrentUser,
-  onAuthStateChanged,
-  checkEmailExists,
-  checkNicknameExists,
-  checkPhoneExists,
-  getLinkedPhoneNumber,
-} from './authCoreService';
-
-export {
-  requireMatchingCurrentUser,
-  requireCurrentUserRole,
-  requireAdminUser,
-} from './authorizationService';
-export {
-  buildPortOneInicisIdentityRequest,
-  callReverifyIdentity,
-  callVerifyAndSavePortOneProfile,
-  callVerifyPortOneIdentity,
-  clearPendingPortOneIdentityRequest,
-  clearPortOneIdentityVerificationResult,
-  createPortOneIdentityVerificationId,
-  getPendingPortOneIdentityRequest,
-  getPortOneInicisIdentityConfig,
-  isIdentityVerificationInvalidError,
-  isPortOneInicisIdentityConfigured,
-  savePendingPortOneIdentityRequest,
-  savePortOneIdentityVerificationResult,
-} from './portOneIdentityService';
-
-export {
-  clearSignupDraft,
-  loadSignupDraft,
-  saveSignupDraft,
-  type SignupDraftMode,
-  type SignupDraftPayload,
-} from './signupDraftService';
+export { checkEmailExists, checkNicknameExists, getUserProfile, signOut } from './authCoreService';
 
 // ============================================================================
-// Social Login Service (Apple, Google, 카카오)
+// 본인확인 (PortOne 이니시스)
 // ============================================================================
-export {
-  signInWithApple,
-  signInWithGoogle,
-  signInWithKakao,
-  completeSocialProfile,
-} from './socialLoginService';
-export {
-  getAppleLoginAvailability,
-  type AppleLoginAvailability,
-  type AppleLoginAvailabilityReason,
-} from './appleAuthService';
+export { isIdentityVerificationInvalidError } from './portOneIdentityService';
+export type { VerifiedPortOneIdentity } from './portOneIdentityService';
 
 // ============================================================================
-// Profile Service (프로필, 비밀번호, 구인자 등록)
+// 회원가입 임시저장
 // ============================================================================
-export {
-  updateUserProfile,
-  updateMarketingConsent,
-  changePassword,
-  registerAsEmployer,
-  updateProfilePhotoURL,
-  completeProfile,
-  type CompleteProfileData,
-} from './profileService';
+export { clearSignupDraft, loadSignupDraft, saveSignupDraft } from './signupDraftService';
+
+// ============================================================================
+// Profile Service (프로필, 구인자 등록)
+// ============================================================================
+export { completeProfile, registerAsEmployer, updateMarketingConsent } from './profileService';
 
 // ============================================================================
 // Storage Service
 // ============================================================================
 export {
-  uploadProfileImage,
-  deleteProfileImage,
-  replaceProfileImage,
-  uploadAnnouncementImage,
-  deleteAnnouncementImage,
-  replaceAnnouncementImage,
-  uploadMultipleAnnouncementImages,
   deleteMultipleAnnouncementImages,
-  uploadBoardImage,
-  deleteBoardImage,
+  uploadMultipleAnnouncementImages,
   uploadMultipleBoardImages,
-  deleteMultipleBoardImages,
-  type UploadResult,
 } from './storageService';
 
+// ============================================================================
 // Account Deletion Service
-export {
-  requestAccountDeletion,
-  retryAppleTokenRevocation,
-  cancelAccountDeletion,
-  getMyData,
-  getDeletionStatus,
-  DELETION_GRACE_PERIOD_DAYS,
-  DELETION_REASONS,
-  type DeletionReason,
-  type DeletionRequest,
-  type DeletionResult,
-} from './accountDeletionService';
+// ============================================================================
+export { cancelAccountDeletion } from './accountDeletionService';
 
 // ============================================================================
 // Biometric Service
 // ============================================================================
 export {
-  checkBiometricStatus,
-  getBiometricTypeName,
   authenticateWithBiometric,
-  saveBiometricCredentials,
-  getBiometricCredentials,
+  checkBiometricStatus,
   clearBiometricCredentials,
-  setBiometricEnabled,
+  getBiometricCredentials,
+  getBiometricTypeName,
   isBiometricEnabled,
-  biometricService,
-  type BiometricType,
-  type BiometricStatus,
-  type BiometricAuthResult,
-  type BiometricCredentials,
+  saveBiometricCredentials,
+  setBiometricEnabled,
 } from './biometricService';
+export type { BiometricAuthResult, BiometricStatus } from './biometricService';

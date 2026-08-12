@@ -58,12 +58,14 @@ jest.mock('@/components/auth', () => {
   };
 });
 
-jest.mock('@/hooks', () => ({
+jest.mock('@/hooks/useAutoLogin', () => ({
   AUTO_LOGIN_HELPER_TEXT: 'Auto login helper text',
   useAutoLogin: () => ({
     autoLoginEnabled: true,
     setAutoLoginEnabled: mockSetAutoLoginEnabled,
   }),
+}));
+jest.mock('@/hooks/useBiometricAuth', () => ({
   useBiometricAuth: () => ({
     isEnabled: false,
     isAvailable: false,

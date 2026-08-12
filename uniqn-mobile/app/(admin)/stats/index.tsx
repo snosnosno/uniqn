@@ -19,8 +19,8 @@ import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Loading } from '@/components/ui/Loading';
 import { getLayoutColor } from '@/constants/colors';
-import { useAdminDashboard } from '@/hooks';
-import { useThemeStore } from '@/stores';
+import { useAdminDashboard } from '@/hooks/useAdminDashboard';
+import { useThemeStore } from '@/stores/themeStore';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
 
 function formatDateTime(date: Date | string | undefined): string {

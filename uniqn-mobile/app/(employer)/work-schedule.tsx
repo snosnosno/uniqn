@@ -35,7 +35,7 @@ import {
   VenueSettingsSheet,
   GridBadgeLegend,
 } from '@/components/workSchedule';
-import { useWorkScheduleEnabled } from '@/hooks';
+import { useWorkScheduleEnabled } from '@/hooks/useWorkScheduleEnabled';
 import { summarizeMissingCheckouts } from '@/domains/staff';
 import { useActiveWorkspace, useEnsureDefaultWorkspace } from '@/hooks/workspace';
 import {

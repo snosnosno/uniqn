@@ -37,7 +37,7 @@ import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { usePostingFilledCounts } from '@/hooks/usePostingFilledCounts';
 import { useSubmitGate } from '@/hooks/useSubmitGate';
 import { useTabBarBottomPadding } from '@/hooks/useTabBarBottomPadding';
-import { useWorkScheduleEnabled } from '@/hooks';
+import { useWorkScheduleEnabled } from '@/hooks/useWorkScheduleEnabled';
 import { useReceivedWorkspaceInvitations } from '@/hooks/workspace';
 import { useHasRole } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
