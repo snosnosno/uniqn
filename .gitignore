@@ -154,32 +154,6 @@ docs/archive/*
 !docs/archive/wallet-iap-removal/
 
 # ========================================
-# CAPACITOR & MOBILE (모바일 네이티브 파일들)
-# ========================================
-# iOS
-app2/ios/App/App/public/
-app2/ios/DerivedData/
-app2/ios/*.xcworkspace
-app2/ios/*.xcuserstate
-app2/ios/App/Podfile.lock
-app2/ios/App/Pods/
-
-# Android
-app2/android/app/src/main/assets/public/
-app2/android/app/build/
-app2/android/build/
-app2/android/.gradle/
-app2/android/local.properties
-app2/android/.idea/
-app2/android/*.iml
-app2/android/.externalNativeBuild/
-app2/android/.cxx/
-
-# Capacitor generated files
-app2/android/app/src/main/assets/capacitor.config.json
-app2/ios/App/App/capacitor.config.json
-
-# ========================================
 # SCREENSHOTS & TEST IMAGES
 # ========================================
 *.png
@@ -188,15 +162,10 @@ app2/ios/App/App/capacitor.config.json
 # 프로젝트 내 에셋은 허용
 !uniqn-mobile/assets/**
 !uniqn-mobile/src/**
-!app2/src/**
-# QA 스크린샷 임시 폴더
-qa-screenshots/
 
 # ========================================
 # PROJECT SPECIFIC
 # ========================================
-SHRIMP/
-claude-forge/
 
 # Brainstorming visual companion
 .superpowers/
