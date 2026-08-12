@@ -213,5 +213,5 @@ Page snapshot + master 코드 grep 으로 모든 의심 케이스 검증:
 - 2026-05-12 PR #88: 공고별 협업자 공유 (workspace 의존성 도입)
 
 ### 관련 문서
-- `docs/superpowers/plans/2026-05-11-job-posting-collaborators.md`
-- `docs/superpowers/plans/2026-05-12-jpc-tests-followup.md`
+- `docs/archive/plans/2026-05/2026-05-11-job-posting-collaborators.md`
+- `docs/archive/plans/2026-05/2026-05-12-jpc-tests-followup.md`

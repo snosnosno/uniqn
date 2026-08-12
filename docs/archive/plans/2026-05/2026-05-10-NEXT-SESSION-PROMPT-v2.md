@@ -154,7 +154,7 @@ PermissionError: 본인의 공고만 조회할 수 있습니다 (settlementQuery
 - `src/hooks/useSchedules.ts:600` (useCalendarView)
 
 ### PR #75 migration SQL
-- `docs/superpowers/plans/2026-05-10-task5-rls-jp-select-split.md` (full migration + rollback)
+- `docs/archive/plans/2026-05/2026-05-10-task5-rls-jp-select-split.md` (full migration + rollback)
 
 ## 환경 노트
 
@@ -178,6 +178,6 @@ PermissionError: 본인의 공고만 조회할 수 있습니다 (settlementQuery
 ## 참조 — 본 세션 이전 작업
 
 - `docs/superpowers/plans/2026-05-10-NEXT-SESSION-PROMPT.md` — PR #71 직후 작성된 prompt (본 prompt 가 v2)
-- `docs/superpowers/plans/2026-05-09-workspace-posting-filter.md` — Phase 2A.후속 plan (PR #71 의 spec)
-- `docs/superpowers/plans/2026-05-10-task6-workspace-audit.md` — PR #74 audit ADR
-- `docs/superpowers/plans/2026-05-10-task5-rls-jp-select-split.md` — PR #75 RLS spec
+- `docs/archive/plans/2026-05/2026-05-09-workspace-posting-filter.md` — Phase 2A.후속 plan (PR #71 의 spec)
+- `docs/archive/plans/2026-05/2026-05-10-task6-workspace-audit.md` — PR #74 audit ADR
+- `docs/archive/plans/2026-05/2026-05-10-task5-rls-jp-select-split.md` — PR #75 RLS spec

@@ -16,7 +16,7 @@ ultracode
 너는 UNIQN(Expo·RN·TS strict·Supabase·NativeWind, layered: Presentation→Hooks→Service→Repository→Supabase)의 시니어 개발자다. 응답·커밋·주석·문서 전부 한글. 작업 디렉토리는 워크트리의 uniqn-mobile/.
 
 ## 0. 시작 전 필수 읽기 (Source of Truth)
-1. 설계 확정본: `docs/planning/2026-06-28-weekly-batch-grid-design.md` (설계 v2) — 전체 정독. 이게 진실의 원천이다.
+1. 설계 확정본: `docs/archive/planning/2026-06/2026-06-28-weekly-batch-grid-design.md` (설계 v2) — 전체 정독. 이게 진실의 원천이다.
 2. 프로젝트 메모리: `project_weekly_grid_design_20260628` (+ MEMORY.md 인덱스의 관련 함정들)
 3. 본 문서의 "절대 규칙/불변식/검증 게이트"를 설계 v2와 충돌 없이 따른다. 충돌 시 설계 v2 우선, 그 위에 CLAUDE.md/rules 우선.
 

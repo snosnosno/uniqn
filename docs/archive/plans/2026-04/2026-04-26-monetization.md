@@ -8,7 +8,7 @@
 
 **Tech Stack:** Supabase Postgres 15, plpgsql, pg_cron, MCP `apply_migration`, Jest (RPC integration tests via supabase-js).
 
-**Spec:** `docs/superpowers/specs/2026-04-26-monetization-design.md` (Locked, 2026-04-26)
+**Spec:** `docs/archive/specs/2026-04/2026-04-26-monetization-design.md` (Locked, 2026-04-26)
 
 **Out of Scope (별도 후속 plan):**
 - Phase 2: RevenueCat Webhook Edge Function (`docs/superpowers/plans/2026-04-XX-monetization-webhook.md` 예정)
@@ -52,7 +52,7 @@
 
 - [ ] **Step 0.2: spec 읽기**
   ```bash
-  ls -la docs/superpowers/specs/2026-04-26-monetization-design.md
+  ls -la docs/archive/specs/2026-04/2026-04-26-monetization-design.md
   ```
   Expected: 파일 존재. 의심나면 §3 (DB 스키마) 다시 읽기.
 
@@ -71,7 +71,7 @@
 
 ```sql
 -- Wallet 시스템 기반: ENUM 2개 + 테이블 4개
--- Spec: docs/superpowers/specs/2026-04-26-monetization-design.md §3
+-- Spec: docs/archive/specs/2026-04/2026-04-26-monetization-design.md §3
 
 CREATE TYPE wallet_currency AS ENUM ('heart', 'diamond');
 

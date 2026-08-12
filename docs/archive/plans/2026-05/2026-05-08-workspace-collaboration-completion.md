@@ -1714,7 +1714,7 @@ git commit -m "chore(workspace): Phase 4 placeholder — monetization 머지 후
 ---
 
 **Plan complete.** 산출물:
-- 위치: `docs/superpowers/plans/2026-05-08-workspace-collaboration-completion.md`
+- 위치: `docs/archive/plans/2026-05/2026-05-08-workspace-collaboration-completion.md`
 - 요약: Phase 0 N1 hotfix → Phase 1A/1B UX → Phase 2A~D 권한 일관성 (Phase 3 와 entangled) → Phase 3 RLS 정리 → Phase 4 monetization → Phase 5 외부 기능. 17 + 6 항목 모두 매핑.
 
 ---

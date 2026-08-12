@@ -8,7 +8,7 @@
 
 **Tech Stack:** Supabase Postgres (RLS, plpgsql triggers, Realtime publication, pg_prove), Expo 55 / React Native 0.83 / TypeScript strict, NativeWind 4.2, TanStack Query, Zod, FlashList.
 
-**Spec:** `docs/superpowers/specs/2026-05-11-job-posting-collaborators-design.md`
+**Spec:** `docs/archive/specs/2026-05/2026-05-11-job-posting-collaborators-design.md`
 
 **Pre-condition:** PR3-A.2 (admin RLS update/delete split) 머지 완료. 머지 전이라도 Phase 0 audit 까지는 진행 가능.
 
@@ -71,7 +71,7 @@ PR3-A.2 머지 후 즉시 시작. 결과를 본 plan 의 § Audit Results 섹션
 ### Task 0.1: FK 참조 테이블 inventory
 
 **Files:**
-- Update: `docs/superpowers/plans/2026-05-11-job-posting-collaborators.md` (Audit Results 섹션)
+- Update: `docs/archive/plans/2026-05/2026-05-11-job-posting-collaborators.md` (Audit Results 섹션)
 
 - [ ] **Step 1: pg_constraint 조회**
 
@@ -93,7 +93,7 @@ ORDER BY referencing_table;
 ### Task 0.2: 권한 호출면 audit
 
 **Files:**
-- Update: `docs/superpowers/plans/2026-05-11-job-posting-collaborators.md`
+- Update: `docs/archive/plans/2026-05/2026-05-11-job-posting-collaborators.md`
 
 - [ ] **Step 1: pg_proc 에서 is_workspace_member/owner 호출 함수 조회**
 
@@ -125,7 +125,7 @@ grep -rn "workspace_id" uniqn-mobile/src/repositories/ uniqn-mobile/src/hooks/ u
 ### Task 0.3: PR3-A.2 충돌 체크
 
 **Files:**
-- Read: `docs/superpowers/plans/2026-05-11-pr3a2-admin-rls-update-delete-split.md`
+- Read: `docs/archive/plans/2026-05/2026-05-11-pr3a2-admin-rls-update-delete-split.md`
 
 - [ ] **Step 1: PR3-A.2 가 변경하는 RLS 정책 목록 추출**
 - [ ] **Step 2: 본 plan 의 RLS 변경 대상과 교차 비교**
@@ -137,7 +137,7 @@ grep -rn "workspace_id" uniqn-mobile/src/repositories/ uniqn-mobile/src/hooks/ u
 - [ ] **Step 2: Commit**
 
 ```bash
-git add docs/superpowers/plans/2026-05-11-job-posting-collaborators.md
+git add docs/archive/plans/2026-05/2026-05-11-job-posting-collaborators.md
 git commit -m "docs(plan): collaborator audit 결과 기록 (Phase 0)"
 ```
 
@@ -1739,7 +1739,7 @@ SELECT * FROM finish(); ROLLBACK;
 ### Task 10.4: 성능 EXPLAIN ANALYZE 측정
 
 **Files:**
-- Create: `docs/superpowers/plans/2026-05-11-job-posting-collaborators.md` (§ Performance Results)
+- Create: `docs/archive/plans/2026-05/2026-05-11-job-posting-collaborators.md` (§ Performance Results)
 
 - [ ] **Step 1: staging branch 에서 baseline (RLS OR 적용 전) 측정**
 - [ ] **Step 2: RLS OR 적용 후 측정 (목록/카운트/feed/UNION trigger)**

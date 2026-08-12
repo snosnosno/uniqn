@@ -24,7 +24,7 @@
 
 ---
 
-T-HOLDEM ops(홀덤 대회 라이브 운영 엔진) 슬라이스 작업이 **1a~1d까지 prod 출하** 완료됐다. 다음은 **출하된 전 슬라이스를 점검**하고 **남은 슬라이스를 재매핑·설계**한다. 권위 명세는 `docs/planning/2026-06-23-tournament-ops-revival-slice1-design.md`(§10 슬라이스 표). 코딩 금지 — 점검→브레인스토밍→설계까지.
+T-HOLDEM ops(홀덤 대회 라이브 운영 엔진) 슬라이스 작업이 **1a~1d까지 prod 출하** 완료됐다. 다음은 **출하된 전 슬라이스를 점검**하고 **남은 슬라이스를 재매핑·설계**한다. 권위 명세는 `docs/archive/planning/2026-06/2026-06-23-tournament-ops-revival-slice1-design.md`(§10 슬라이스 표). 코딩 금지 — 점검→브레인스토밍→설계까지.
 
 ## 슬라이스 현황 (점검 시 실측 확인)
 | 슬라이스 | 설계 §10 범위 | 출하 상태 |
@@ -53,7 +53,7 @@ T-HOLDEM ops(홀덤 대회 라이브 운영 엔진) 슬라이스 작업이 **1a~
 - **후속(슬라이스2+)**: 플레이어 포털(가입·클레임 UI·내 대회 이력·프로필)→랭킹/포인트→전국 포털(§200·§273). 별도 spec.
 
 ## 점검 절차 (신선 컨텍스트)
-1. **메모리** `project_tholdem_ops_revival_20260623`(전체, STEP A·1d 섹션) + MEMORY.md ops 항목. 설계 doc §10 + UX flows `docs/planning/2026-06-23-tournament-ops-ux-flows.md`.
+1. **메모리** `project_tholdem_ops_revival_20260623`(전체, STEP A·1d 섹션) + MEMORY.md ops 항목. 설계 doc §10 + UX flows `docs/archive/planning/2026-06/2026-06-23-tournament-ops-ux-flows.md`.
 2. **출하된 1d 재확인**(출하 완료 — 결정 불요): 스펙 `uniqn-mobile/docs/superpowers/specs/2026-06-29-ops-1d-bust-reentry-itm-design.md`(§14 적대검증 + 후속 LS-데드락 추적) · PR #218 · `git log --oneline de8706d15..master`(머지 후). **⚠️1d 후속 추적 = [MEDIUM] LS-매개 데드락**(1c `ops_live_stats` AFTER ROW 트리거 기인, bust `LS<{좌석,winner}` 역전 → advisory 비보유 변이와 ABBA. 자기치유·prod 0행. 정공법=트리거를 DEFERRED CONSTRAINT TRIGGER로. 별도 PR) — 남은 슬라이스가 live_stats 트리거를 건드리면 함께 처리 고려.
 3. **전 슬라이스 정합 정찰(WF 권장)**: 출하된 1a~1c + 로컬 1d의 RPC/스키마/RLS/탭 서피스를 매핑해 **남은 슬라이스가 얹힐 표면**(redraw 진입점·ops_staff 부재·work_logs 연동점·ops_prizes 확장 여지) 실측. 적대검증이 직전 1d서 세션한도로 verify 절반 실패했던 이력 참고.
 4. **남은 슬라이스 우선순위·번호 재라벨링 결정**(사용자): 배정 2종 / 1e / 1f잔여 중 무엇을 먼저, 슬라이스 경계 어떻게.

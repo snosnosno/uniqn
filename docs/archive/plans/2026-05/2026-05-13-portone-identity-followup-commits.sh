@@ -9,7 +9,7 @@
 set -euo pipefail
 
 # 0. plan + 후속 작업 문서 (선커밋)
-git add docs/superpowers/plans/2026-05-13-portone-identity-followup.md
+git add docs/archive/plans/2026-05/2026-05-13-portone-identity-followup.md
 git commit -m "$(cat <<'EOF'
 docs(auth): 본인인증 보류 항목 후속 plan + commit 시퀀스 (2026-05-13)
 

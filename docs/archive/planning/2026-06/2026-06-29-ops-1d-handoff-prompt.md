@@ -14,7 +14,7 @@ T-HOLDEM ops 로드맵 PHASE C — **1d(bust/재진입/ITM)** 진행. 1d 착수 
 
 ## 오리엔테이션 (작업 전 필수)
 1. **메모리** `project_tholdem_ops_revival_20260623` 전체(특히 2026-06-29 STEP A 섹션) + MEMORY.md. STEP A 스펙=`uniqn-mobile/docs/superpowers/specs/2026-06-28-ops-claim-token-separation-design.md`.
-2. **설계 doc** `docs/planning/2026-06-23-tournament-ops-revival-slice1-design.md` **§7(bust_participant/reenter_participant)·§4.3(재진입·finish_position·busted_at)·§1d 슬라이스 표**. 이게 1d 권위 명세.
+2. **설계 doc** `docs/archive/planning/2026-06/2026-06-23-tournament-ops-revival-slice1-design.md` **§7(bust_participant/reenter_participant)·§4.3(재진입·finish_position·busted_at)·§1d 슬라이스 표**. 이게 1d 권위 명세.
 3. **1a 스키마 실측**(`supabase/migrations/20260625120000_ops_1a_enums_and_tables.sql`): `ops_participants`에 `finish_position int`·`busted_at timestamptz`·`prize_amount int`·`reentries int DEFAULT 0`·`status enum(...busted...)`·부분UNIQUE `uniq_ops_participants_finish_position(tournament_id,finish_position) WHERE NOT NULL` **이미 존재(inert)**. `ops_tournaments`에 `reentry_allowed bool`·`max_reentries int` 존재. `ops_event_type` enum에 `player_busted`·`player_reentered`·`prize_assigned` 존재 → **enum ALTER 불필요**.
 4. **플레이어뷰 투영**: `ops_get_player_view`가 `finishPosition`/`prizeAmount`/`reentries` **이미 반환**(`app/(public)/live/[view_token].tsx`에 탈락배너·상금 표시 코드 존재) → 1d가 값만 채우면 활성화.
 5. **기존 ops RPC 패턴 숙지**: `ops_add_rebuy`/`ops_add_addon`(count++ AND chips+= 원자, FOR UPDATE) · `ops_register_participant` v2(auto-seat) · live_stats 트리거 재계산(`fn_ops_recompute_live_stats`, 5소스 트리거 — bust/reenter도 소스 추가 필요할 수 있음) · `opsRpcError` PREFIX_MAP + AppError E61xx.

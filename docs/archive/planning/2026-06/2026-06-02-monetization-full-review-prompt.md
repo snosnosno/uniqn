@@ -20,9 +20,9 @@
 ## 먼저 읽을 것 (컨텍스트)
 
 - 메모리: `[[project_monetization_phase3_planning]]`(Lane A~D + RC 외부설정 현황·정정 2건), `[[project_track_b_subscription_spec_parked]]`, `[[pitfall_enum_divergence_read_disappearance]]`(payroll_status/posting_status enum 발산), `[[feedback_supabase_migration_workflow]]`
-- 갭 분석: `docs/planning/2026-05-29-monetization-implementation-gap.md`(상태 매트릭스 + T1~T12)
-- 모델 결정: `docs/planning/2026-05-29-monetization-model-recommendation.md`(Approach A)
-- 외부 설정: `docs/planning/2026-05-29-payment-setup-guide.md`(RevenueCat/ASC/Play 셋업)
+- 갭 분석: `docs/archive/planning/2026-05/2026-05-29-monetization-implementation-gap.md`(상태 매트릭스 + T1~T12)
+- 모델 결정: `docs/archive/planning/2026-05/2026-05-29-monetization-model-recommendation.md`(Approach A)
+- 외부 설정: `docs/archive/planning/2026-05/2026-05-29-payment-setup-guide.md`(RevenueCat/ASC/Play 셋업)
 - 구현 계획: `docs/superpowers/plans/2026-05-31-wallet-laneB2-payment-wiring.md`, `...-laneC-revenuecat.md`
 
 ## 현재 상태 스냅샷 (리뷰 출발점)

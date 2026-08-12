@@ -710,4 +710,4 @@ staging branch 에서 모든 신규 RLS 정책 4 페르소나 시드 → SELECT 
 - `app/(employer)/workspace/invite.tsx:55,74` — 이메일 lookup 패턴 재사용
 - `app/(employer)/workspace/index.tsx:225-318` — 멤버 추가/제거 UI 패턴 참조
 - 메모리: pitfall_rls_with_check_self_select_recursion.md, feedback_supabase_migration_workflow.md, feedback_localhost_dev_production_db.md, feedback_staging_dryrun_ddl_only_insufficient.md, project_push_notification_setup.md
-- 진행 중 작업: PR3-A.2 (`docs/superpowers/plans/2026-05-11-pr3a2-admin-rls-update-delete-split.md`) — 머지 후 본 작업 시작
+- 진행 중 작업: PR3-A.2 (`docs/archive/plans/2026-05/2026-05-11-pr3a2-admin-rls-update-delete-split.md`) — 머지 후 본 작업 시작

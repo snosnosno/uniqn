@@ -8,7 +8,7 @@
 
 **Tech Stack:** Supabase(Postgres + RLS + plpgsql RPC), pgTAP, TypeScript, TanStack Query, React Native, Jest.
 
-**Spec:** `docs/superpowers/specs/2026-05-24-workspace-archive-design.md`
+**Spec:** `docs/archive/specs/2026-05/2026-05-24-workspace-archive-design.md`
 
 > ⚠️ **격리**: 작업 시작 전 `git status` 확인. 현재 `uniqn-mobile/app/(app)/employer-register.tsx`에 타 세션의 미커밋 변경이 있으므로, 구현은 **새 git worktree + 브랜치**에서 진행한다(`superpowers:using-git-worktrees`). 스펙은 이미 `feat/workspace-archive`에 커밋됨.
 

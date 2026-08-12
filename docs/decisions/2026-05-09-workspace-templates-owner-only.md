@@ -3,7 +3,7 @@
 **상태**: Accepted
 **날짜**: 2026-05-09
 **작성자**: workspace 협업 Phase 3E
-**관련 plan**: `docs/superpowers/plans/2026-05-08-workspace-collaboration-completion.md`
+**관련 plan**: `docs/archive/plans/2026-05/2026-05-08-workspace-collaboration-completion.md`
 
 ## 컨텍스트
 
@@ -117,6 +117,6 @@ Google Docs 같은 공유 권한) 이 필요해짐. 현 단계에서 이 복잡�
 
 ## 관련 문서
 
-- plan: `docs/superpowers/plans/2026-05-08-workspace-collaboration-completion.md` — Phase 3E
+- plan: `docs/archive/plans/2026-05/2026-05-08-workspace-collaboration-completion.md` — Phase 3E
 - 작업 컨텍스트: `CLAUDE.md` 중 `2026-04-18 업데이트` (templates 인터페이스 리팩토링 시점)
 - 관련 PR: 본 ADR 단독 (코드 변경 없음)

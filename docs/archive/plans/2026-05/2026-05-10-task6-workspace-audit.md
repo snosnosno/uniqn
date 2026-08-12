@@ -125,7 +125,7 @@ WHERE table_schema = 'public'
 
 ### PR3-A.2: UPDATE/DELETE admin 분기 제거 + helper throw — ✅ shipped (2026-05-11)
 
-> spec: `docs/superpowers/plans/2026-05-11-pr3a2-admin-rls-update-delete-split.md`
+> spec: `docs/archive/plans/2026-05/2026-05-11-pr3a2-admin-rls-update-delete-split.md`
 > migration: `pr3a2_admin_write_rls_split` (4 admin 분기 제거 + 2 deny-all + helper throw)
 
 ### PR3-E: client write helper 통일 — ❎ no-op (2026-05-11)
