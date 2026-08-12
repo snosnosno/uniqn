@@ -6,12 +6,19 @@
 
 import {
   formatCurrency,
-  getRoleSalaryFromSettlementSource,
+  getDisplayRoleSalaryFromSettlementSource,
   getSalaryTypeLabel,
   type SalaryInfo,
 } from '@/utils/settlement';
 import type { SchedulePostingProjection } from '@/types';
 
+/**
+ * 카드에 표시할 급여 — 합의 근거가 없으면 undefined(감사 3-1).
+ *
+ * 예전에는 계산용 해소기를 그대로 썼다. 그 해소기는 어떤 분기에서도 시급 15,000원으로
+ * 메우므로 **합의한 적 없는 금액이 카드에 확정 표기**됐다. 표시 전용 해소기로 바꿔
+ * 근거가 없으면 급여 줄 자체를 그리지 않는다(formatSalaryDisplay 가 null 을 반환).
+ */
 export function getRoleSalaryFromProjection(
   projection: SchedulePostingProjection | undefined,
   role: string,
@@ -21,7 +28,9 @@ export function getRoleSalaryFromProjection(
     return undefined;
   }
 
-  return getRoleSalaryFromSettlementSource(projection.settlement, role, customRole);
+  return (
+    getDisplayRoleSalaryFromSettlementSource(projection.settlement, role, customRole) ?? undefined
+  );
 }
 
 export function formatSalaryDisplay(salary: SalaryInfo | undefined): string | null {

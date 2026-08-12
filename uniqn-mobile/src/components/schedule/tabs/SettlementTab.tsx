@@ -21,7 +21,7 @@ import {
   PROVIDED_FLAG,
   DEFAULT_SALARY_INFO,
   DEFAULT_TAX_SETTINGS,
-  getRoleSalaryFromSettlementSource,
+  getDisplayRoleSalaryFromSettlementSource,
 } from '@/domains/settlement';
 import { STATUS } from '@/constants';
 import { shouldUseFrozenPayrollAmount } from '@/utils/settlementGrouping';
@@ -79,21 +79,30 @@ function Row({ label, value, isTotal, isNegative, isProvided }: RowProps) {
 export const SettlementTab = memo(function SettlementTab({ schedule }: SettlementTabProps) {
   const hasBreakdown = !!schedule.settlementBreakdown;
 
-  /** 실제 근거가 있는 급여. 없으면 null — 기본값으로 메우지 않는다. */
+  /**
+   * 실제 근거가 있는 급여. 없으면 null — 기본값으로 메우지 않는다.
+   *
+   * 🔑 `settlementBreakdown.salaryInfo` 를 그대로 믿으면 안 된다(감사 3-1).
+   *    계산 계층은 근거가 없어도 폴백 단가(시급 15,000원)로 금액을 만들어내므로,
+   *    breakdown 에는 **합의된 적 없는 숫자**가 들어 있을 수 있다. 그래서 먼저
+   *    표시 전용 해소기로 "근거가 있는가"를 판정하고, 있을 때만 금액을 채택한다.
+   */
   const agreedSalary: SalaryInfo | null = useMemo(() => {
-    if (schedule.settlementBreakdown?.salaryInfo) {
-      return schedule.settlementBreakdown.salaryInfo;
-    }
+    // 근무별 커스텀 단가(override)는 그 자체가 합의 근거다.
     if (schedule.customSalaryInfo) {
       return schedule.customSalaryInfo;
     }
-    return (
-      getRoleSalaryFromSettlementSource(
-        schedule.postingProjection?.settlement,
-        schedule.role,
-        schedule.customRole
-      ) ?? null
+
+    const basis = getDisplayRoleSalaryFromSettlementSource(
+      schedule.postingProjection?.settlement,
+      schedule.role,
+      schedule.customRole
     );
+    if (!basis) {
+      return null;
+    }
+
+    return schedule.settlementBreakdown?.salaryInfo ?? basis;
   }, [
     schedule.settlementBreakdown?.salaryInfo,
     schedule.customSalaryInfo,
