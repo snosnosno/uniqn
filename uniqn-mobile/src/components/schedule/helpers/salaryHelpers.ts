@@ -64,6 +64,13 @@ export function formatGroupSalaryDisplay(
     formatSalaryDisplay(getRoleSalaryFromProjection(projection, role, customRoles?.[index]))
   );
 
+  // 근거 없는 역할(null)을 '없는 것'으로 접으면, 근거가 있는 한 역할의 단가가 그룹
+  // 전체 단가처럼 보인다(감사 3-1과 같은 클래스의 조용한 오답). 하나라도 미정이면
+  // 대표 금액을 내세우지 않는다.
+  if (displays.some((display) => !display)) {
+    return displays.every((display) => !display) ? null : '역할별 상이';
+  }
+
   const distinct = new Set(displays.filter((display): display is string => Boolean(display)));
   if (distinct.size === 0) return null;
   if (distinct.size > 1) return '역할별 상이';

@@ -218,6 +218,18 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
   const payrollStatus = (schedule.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus;
   const payrollStatusConfig = PAYROLL_STATUS[toSettlementDisplayStatus(payrollStatus)];
 
+  /**
+   * 실제 지급된 동결 금액이 있는가.
+   *
+   * 있으면 급여 근거 유무와 무관하게 **그 금액이 진실**이다. 이걸 보지 않으면
+   * 이미 지급까지 끝난 근무에 '급여가 아직 정해지지 않았어요' 가 뜨면서 바로 아래
+   * '확정 정산 금액'이 함께 렌더돼 정면으로 모순된다(감사 3-1 후속).
+   */
+  const hasFrozenPayrollAmount = shouldUseFrozenPayrollAmount(
+    schedule.payrollStatus === STATUS.PAYROLL.COMPLETED,
+    schedule.payrollAmount
+  );
+
   if (schedule.type === STATUS.SCHEDULE.APPLIED) {
     return (
       <View className="items-center py-6">
@@ -226,6 +238,17 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
             지원이 확정되면 정산 정보를 확인할 수 있습니다.
           </Text>
         </View>
+
+        {/* 지원 단계에도 '미정'을 밝힌다 — 예전에는 폴백 단가로 계산한 '예상 급여'가
+            늘 떴고, 그걸 없앤 뒤 이 분기만 아무 말 없이 사라지면 지원자는 급여 정보가
+            빠졌다는 사실조차 알 수 없다(감사 3-1 후속). */}
+        {!canShowComputedSettlement && (
+          <View className="mt-4 w-full rounded-md bg-surface-page dark:bg-surface p-4 dark:bg-surface/50">
+            <Text className="text-center text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+              급여 미정 — 구인자가 급여를 확정하면 예상 금액을 보여드려요.
+            </Text>
+          </View>
+        )}
 
         {settlement && canShowComputedSettlement && (
           <View className="mt-4 w-full rounded-md bg-surface-page dark:bg-surface p-4 dark:bg-surface/50">
@@ -295,7 +318,10 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
       {/* 예상 금액 배너는 **실제로 예상액이 계산됐을 때만** 띄운다. 계산 결과가 없는데도
           "예정 시간 기준으로 계산한 예상 금액입니다" 라고 하면, 아래 '계산 전' 안내와 정면으로
           모순되고 사용자는 금액이 어딘가 있는데 안 보이는 줄 안다. */}
-      {isEstimate && settlement && (
+      {/* 급여 근거가 없으면 settlement 는 폴백 단가로 계산된 숫자라 truthy 다 —
+          canShowComputedSettlement 를 함께 보지 않으면 '급여 미정' 안내와 예상액 배너가
+          동시에 뜬다(감사 3-1 후속). */}
+      {isEstimate && settlement && canShowComputedSettlement && (
         <View className="mb-4 rounded-lg bg-primary-50 p-3 dark:bg-primary-900/20">
           <Text className="text-center text-xs text-primary-700 dark:text-primary-300 font-sans">
             출퇴근 기록이 없어 예정 시간 기준으로 계산한 예상 금액입니다.
@@ -303,7 +329,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
         </View>
       )}
 
-      {!canShowComputedSettlement ? (
+      {!canShowComputedSettlement && !hasFrozenPayrollAmount ? (
         <View className="rounded-md border border-warning-200 bg-warning-50 p-4 dark:border-warning-700 dark:bg-warning-900/20">
           <Text className="text-sm font-sans-semibold text-warning-700 dark:text-warning-300">
             급여가 아직 정해지지 않았어요

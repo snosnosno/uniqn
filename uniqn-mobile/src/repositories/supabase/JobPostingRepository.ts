@@ -274,6 +274,26 @@ function applySalaryScope<
   return scoped;
 }
 
+/**
+ * 전향(前向) 조회 하한 — 이미 끝난 공고를 구직자 브라우즈에서 숨긴다.
+ *
+ * @description getList 와 getTypeCounts 가 **같은 술어**를 쓰도록 단일 지점으로 묶는다.
+ *   한쪽만 걸면 칩의 "N건 보기" 숫자와 실제 목록 건수가 어긋난다
+ *   (EF-jobsearch-11 과 같은 클래스 — 이 파일이 status/지역/역할/급여 스코프를
+ *   공용 헬퍼로 묶어 둔 이유와 동일).
+ *
+ *   하한을 시작일(`work_date`)이 아니라 마지막 근무일(`last_work_date`)에 거는 이유:
+ *   지난주에 시작해 다음주까지 이어지는 다중일 공고는 여전히 지원 가능하다.
+ *   `last_work_date` 가 없는 구형·무일정(고정) 행은 통과시킨다(fail-open).
+ *
+ * ⚠️ 급여 정렬이 걸리면 `applySalaryScope` 가 같은 술어를 이미 걸어 중복될 수 있으나,
+ *   동일 술어의 AND 결합이라 결과 집합은 같다.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyForwardLookingScope<T extends { or: any }>(query: T): T {
+  return query.or(`last_work_date.is.null,last_work_date.gte.${getTodayString()}`) as T;
+}
+
 /** 목록 페이지 정렬키 — 항상 id 를 마지막 tie-breaker 로 붙여 전순서를 만든다. */
 interface ListOrderSpec {
   column: string;
@@ -403,6 +423,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       // closed 목록 등)는 기존 최신순·무하한 동작을 그대로 보존한다.
       const isForwardLookingBrowse =
         !isFixedTab &&
+        !filters?.includeEnded &&
         !filters?.ownerId &&
         !filters?.dateRange &&
         (!filters?.status ||
@@ -444,12 +465,9 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
         if (filters?.workDate && !filters?.dateRange) {
           qr = qr.contains('work_dates', [filters.workDate]);
         }
-        // 구직자 브라우즈(전향 조회)는 이미 끝난 공고를 숨긴다.
-        // 하한을 `work_date`(=시작일)가 아니라 `last_work_date`(=마지막 근무일)에 거는 이유:
-        // 지난주에 시작해 다음주까지 이어지는 다중일 공고는 여전히 지원 가능하다.
-        // last_work_date 가 없는 구형/무일정 행은 통과시킨다(fail-open) — applySalaryScope 와 동일 규약.
+        // 구직자 브라우즈(전향 조회)는 이미 끝난 공고를 숨긴다 — getTypeCounts 와 공용 헬퍼.
         if (isForwardLookingBrowse) {
-          qr = qr.or(`last_work_date.is.null,last_work_date.gte.${getTodayString()}`);
+          qr = applyForwardLookingScope(qr);
         }
         return qr;
       };
@@ -583,6 +601,16 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       query = applyRoleScope(query, filters);
       query = applyRegionScope(query, filters);
       query = applySalaryScope(query, filters);
+      // getList 의 전향 조회 하한과 동일 조건·동일 술어로 맞춘다 — 한쪽만 걸면
+      // 칩의 "N건 보기" 숫자가 실제 목록보다 많아진다(종료된 공고를 세게 된다).
+      // 고정(fixed) 공고는 last_work_date 가 NULL 이라 이 술어를 통과하므로,
+      // 하한을 걸지 않는 고정 탭 목록과도 어긋나지 않는다.
+      if (
+        !filters?.status ||
+        (BROWSABLE_POSTING_STATUSES as readonly string[]).includes(filters.status)
+      ) {
+        query = applyForwardLookingScope(query);
+      }
       const { data, error } = await query;
       if (error) handleSupabaseError(error, { operation: '공고 타입별 개수 조회', table: TABLE });
 

@@ -376,6 +376,30 @@ describe('getList 정렬 방향 — 클라이언트 sortJobPostings 계약과 �
     expect(allIds).not.toContain('past');
   });
 
+  it('칩 카운트(getTypeCounts)가 목록과 같은 하한을 쓴다 — "N건 보기" 숫자 정합', async () => {
+    // 한쪽만 하한을 걸면 칩은 5건이라는데 목록은 3건만 나오는 불일치가 생긴다.
+    const rows: Row[] = [
+      makePosting({ id: 'past', work_date: '2020-01-01', last_work_date: '2020-01-01' }),
+      makePosting({ id: 'future', work_date: '2027-01-02', last_work_date: '2027-01-02' }),
+      makePosting({
+        id: 'fixed',
+        posting_type: 'fixed',
+        work_date: '',
+        last_work_date: null,
+      }),
+    ];
+
+    const served: EngineResult = { servedIds: [] };
+    mockFrom.mockImplementation(() => makeFakeTable(rows, served)());
+
+    const counts = await repo.getTypeCounts();
+
+    // 종료 공고는 세지 않고, 날짜 없는 고정 공고는 계속 센다.
+    expect(counts.total).toBe(2);
+    expect(counts.regular).toBe(1);
+    expect(counts.fixed).toBe(1);
+  });
+
   it('명시 status(closed) 조회는 과거 하한을 걸지 않는다 (운영자·관리자 뷰 보존)', async () => {
     const PAGE = 20;
     const rows: Row[] = [
