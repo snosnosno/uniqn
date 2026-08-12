@@ -8,8 +8,6 @@
  * 이 파일은 환경별 Feature Flags, API 설정, 로깅 설정 등을 제공
  */
 
-import { isDevelopment as libIsDevelopment, isProduction as libIsProduction } from '@/lib/env';
-
 // ============================================================================
 // Environment Types
 // ============================================================================
@@ -131,6 +129,3 @@ export const env: EnvironmentConfig = {
   features: featureFlagsConfig[currentEnvironment],
   logging: loggingConfigs[currentEnvironment],
 };
-
-// lib/env.ts 유틸리티 re-export (하위 호환성)
-export { libIsDevelopment as isDevelopmentEnv, libIsProduction as isProductionEnv };

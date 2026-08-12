@@ -96,23 +96,15 @@ export function validateEnv(): { success: boolean; error?: string } {
 }
 
 /**
- * 개발 환경 여부 확인
+ * ⚠️ 환경 판정 함수를 여기에 다시 만들지 말 것.
+ *
+ * 이 모듈은 **Supabase 접속값의 Zod 검증**만 담당한다(`getEnv` / `validateEnv`).
+ * 환경 판정(`isDevelopment` / `isProduction` / `environment`)의 단일 소스는
+ * `@/config/env` 의 `env` 객체다.
+ *
+ * 과거에 이 파일에도 `isDevelopment`/`isProduction` 이 있었고 `config/env.ts` 가
+ * 그걸 `isDevelopmentEnv`/`isProductionEnv` 로 재수출했다. 두 판정이 축이 달라
+ * (여기는 RELEASE_CHANNEL 만, config 쪽은 NODE_ENV 도 본다) 같은 빌드에서 서로
+ * 다른 답을 낼 수 있었는데, 재수출 소비처가 0이라 증상 없이 잠복해 있었다.
+ * 2026-08-13 에 죽은 쪽을 걷어내 축을 하나로 만들었다.
  */
-export function isDevelopment(): boolean {
-  try {
-    return getEnv().EXPO_PUBLIC_RELEASE_CHANNEL === 'development';
-  } catch {
-    return true; // 검증 실패 시 개발 환경으로 간주
-  }
-}
-
-/**
- * 프로덕션 환경 여부 확인
- */
-export function isProduction(): boolean {
-  try {
-    return getEnv().EXPO_PUBLIC_RELEASE_CHANNEL === 'production';
-  } catch {
-    return false;
-  }
-}

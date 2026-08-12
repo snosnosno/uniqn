@@ -20,6 +20,8 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
+import { env } from '@/config/env';
+
 // ============================================================================
 // 버전 정보
 // ============================================================================
@@ -42,11 +44,16 @@ export const BUILD_NUMBER = Platform.select({
 
 /**
  * 환경 정보
+ *
+ * 🚨 `Constants.expoConfig.extra.environment` 를 읽지 말 것 — **항상 `development` 이다.**
+ * `eas update` 가 발행하는 OTA 매니페스트의 `extra` 는 셸 env 가 로드되기 전 값으로 굳고,
+ * 그래서 프로덕션 함대에서도 이 값이 `development` 로 내려온다(실측). 그 값을 환경 판정에
+ * 쓰면 프로덕션을 개발로 오인한다.
+ *
+ * 진짜 축은 **번들에 인라인되는 `@/config/env`** 다(웹 번들 실측 `isProduction:!0`).
+ * 환경 판정은 이 프로젝트에서 `env.*` 하나로 통일한다.
  */
-export const ENVIRONMENT = (Constants.expoConfig?.extra?.environment ?? 'development') as
-  | 'development'
-  | 'staging'
-  | 'production';
+export const ENVIRONMENT: 'development' | 'staging' | 'production' = env.environment;
 
 /**
  * 빌드 일시
