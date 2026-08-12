@@ -3,7 +3,7 @@
  * 특정 공고의 지원자 목록 및 관리
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { View, Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,7 +19,10 @@ import { StackHeader } from '@/components/headers';
 import { useApplicantManagement } from '@/hooks/applicant';
 import { useShare } from '@/hooks/useShare';
 import { useSubmitGate } from '@/hooks/useSubmitGate';
-import { confirmAction } from '@/utils/confirmAction';
+import { UNDO_TOAST_DURATION_MS, UNDO_TOAST_LABEL } from '@/constants/undoToast';
+import { useToastStore } from '@/stores/toastStore';
+import { logger } from '@/utils/logger';
+import { toError } from '@/errors';
 import { buildPostingFacts, projectPostingSurface } from '@/domains/job-posting';
 import type { ApplicantWithDetails } from '@/services';
 import type { Assignment, PostingManagementViewModel } from '@/types';
@@ -33,6 +36,7 @@ import { useManualRefresh } from '@/hooks/useManualRefresh';
 export default function ApplicantsScreen() {
   const { id: jobPostingId } = useLocalSearchParams<{ id: string }>();
   const { job, isFixed, handleShowQR } = useJobDetailContext();
+  const addToast = useToastStore((s) => s.addToast);
   const headerBackHref = `/(employer)/my-postings/${jobPostingId ?? ''}`;
   // 고정 공고는 QR 진입점을 노출하지 않는다 (work_log 행 수명 미해결 — _layout.tsx 주석 참고).
   const headerRightAction = !isFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;
@@ -124,20 +128,57 @@ export default function ApplicantsScreen() {
     setIsModalVisible(true);
   }, []);
 
-  // 확정 취소 (확정된 스태프 un-confirm) — 점유 자리 반납. 파괴적 액션이라 확인 다이얼로그.
+  // 확정 취소(확정된 스태프 un-confirm) — 점유 자리 반납.
+  //
+  // 확인 다이얼로그로 앞을 막던 것을 **실행하고 되돌리기**로 바꿨다. 확정/해제는 사장이
+  // 지원자 목록을 훑으며 반복하는 조작인데, 매번 네이티브 Alert 가 뜨면 흐름이 끊긴다.
+  // 되돌리기가 성립하는 이유는 재확정 인자(배정)를 해제 **전에** 캡처하기 때문이다.
+  //
+  // ⚠️ 되돌리기가 항상 성공하지는 않는다 — 그 사이 협업자가 같은 자리를 채웠거나 서버
+  //   정원 가드에 걸리면 재확정이 실패한다. 그때는 뮤테이션 훅의 에러 토스트가 사실대로
+  //   알린다(조용히 성공한 척하지 않는다).
+  // ⚠️ action 토스트는 dedupe 면제라 지원자별 per-id 가드가 필수다(undoToast.ts 주석).
+  const revertingIdsRef = useRef<Set<string>>(new Set());
   const handleCancelConfirmation = useCallback(
     (applicant: ApplicantWithDetails) => {
-      confirmAction({
-        title: '확정 해제',
-        message: '이 지원자의 확정을 해제할까요?\n점유된 자리가 다시 비워집니다.',
-        confirmText: '확정 해제',
-        destructive: true,
-        onConfirm: async () => {
+      if (revertingIdsRef.current.has(applicant.id)) {
+        return;
+      }
+      revertingIdsRef.current.add(applicant.id);
+      // 해제 후에는 서버가 배정을 비울 수 있으므로 지금 값을 붙잡아 둔다.
+      const previousAssignments = applicant.assignments;
+
+      void (async () => {
+        try {
           await cancelConfirmationAsync({ applicationId: applicant.id });
-        },
-      });
+          addToast({
+            type: 'success',
+            message: '확정을 해제했어요. 점유된 자리가 다시 비었습니다.',
+            duration: UNDO_TOAST_DURATION_MS,
+            action: {
+              label: UNDO_TOAST_LABEL,
+              onPress: () => {
+                void confirmWithHistoryAsync({
+                  applicationId: applicant.id,
+                  selectedAssignments: previousAssignments,
+                }).catch((error) => {
+                  // 실패 토스트는 뮤테이션 훅이 담당한다. 여기서는 rejection 만 삼킨다.
+                  logger.error('확정 해제 되돌리기 실패', toError(error), {
+                    applicationId: applicant.id,
+                  });
+                });
+              },
+            },
+          });
+        } catch (error) {
+          // 해제 실패 토스트도 뮤테이션 훅이 담당 — 화면이 중복 발행하지 않는다.
+          logger.error('확정 해제 실패', toError(error), { applicationId: applicant.id });
+        } finally {
+          revertingIdsRef.current.delete(applicant.id);
+        }
+      })();
     },
-    [cancelConfirmationAsync]
+    [addToast, cancelConfirmationAsync, confirmWithHistoryAsync]
   );
 
   // 모달 닫기

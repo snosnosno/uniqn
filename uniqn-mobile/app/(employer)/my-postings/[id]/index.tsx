@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -11,6 +11,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card, Badge, ConfirmModal } from '@/components';
+import { ActionSheet, type ActionSheetOption } from '@/components/ui';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 import { useToastStore } from '@/stores/toastStore';
@@ -54,12 +55,20 @@ import {
 } from '@/constants/colors';
 import {
   buildPostingFacts,
+  getPostingStatusActionHint,
   isPostingDeletable,
+  POSTING_STATUS_ACTION_TEXT,
   projectPostingSurface,
+  selectPostingStatusActions,
 } from '@/domains/job-posting';
+import { UNDO_TOAST_DURATION_MS, UNDO_TOAST_LABEL } from '@/constants/undoToast';
 import { useApplicantsByJobPosting } from '@/hooks/applicant';
 import { useShare } from '@/hooks/useShare';
-import { useDeleteJobPosting } from '@/hooks/useJobManagement';
+import {
+  useCloseJobPosting,
+  useDeleteJobPosting,
+  useReopenJobPosting,
+} from '@/hooks/useJobManagement';
 import { extractPostingFilledSubmap, usePostingFilledCounts } from '@/hooks/usePostingFilledCounts';
 import { useThemeStore } from '@/stores/themeStore';
 import type { PostingManagementViewModel, PostingType, TournamentApprovalStatus } from '@/types';
@@ -157,6 +166,14 @@ export default function JobPostingDetailScreen() {
   );
   const { isOnline } = useNetworkStatus();
   const { mutate: deleteJobPosting, isPending: isDeleting } = useDeleteJobPosting();
+  // 성공 토스트를 훅에서 끄고 아래에서 **되돌리기가 달린** 토스트를 직접 발행한다.
+  // 켜 두면 "공고가 마감되었습니다."와 "마감했어요 [되돌리기]"가 동시에 뜬다.
+  const { mutate: closeJobPosting } = useCloseJobPosting({ suppressSuccessToast: true });
+  const { mutate: reopenJobPosting } = useReopenJobPosting({ suppressSuccessToast: true });
+  const [statusSheetVisible, setStatusSheetVisible] = useState(false);
+  // action 토스트는 dedupe 면제라(toastStore.ts:58-68) 연타하면 되돌리기 어포던스가 쌓인다.
+  // 이 화면은 공고 하나만 다루므로 단일 플래그로 충분한 per-id 가드다.
+  const statusTogglingRef = useRef(false);
   const { shareJob, isSharing } = useShare();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   // 기본 펼침 — 사장이 자기 공고의 일정·급여·위치를 보려고 접기를 푸는 동작이 매 진입마다
@@ -181,6 +198,22 @@ export default function JobPostingDetailScreen() {
     () => selectPendingSettlementCount(workLogs ?? []),
     [workLogs]
   );
+
+  // 상태 뱃지에서 바로 걸 수 있는 전이 — 종전에는 목록 화면에만 있어서, 상세를 보다가
+  // 마감하려면 뒤로 나갔다 들어와야 했다.
+  const statusSheetOptions = useMemo<ActionSheetOption[]>(
+    () =>
+      (posting ? selectPostingStatusActions(posting.status) : []).map((action) => ({
+        label: POSTING_STATUS_ACTION_TEXT[action].sheetLabel,
+        value: action,
+        destructive: action === 'close',
+      })),
+    [posting]
+  );
+  const statusHint = posting ? getPostingStatusActionHint(posting.status) : null;
+  // 액션도 설명도 없는 상태(draft 등)에서는 아예 누를 수 없게 둔다 —
+  // 눌러도 빈 시트만 열리는 버튼은 고장으로 읽힌다.
+  const canOpenStatusSheet = statusSheetOptions.length > 0 || statusHint !== null;
 
   const postingFacts = useMemo(() => (posting ? buildPostingFacts(posting) : null), [posting]);
   // 브릿지: 이 공고에 연결된 ops 대회 목록(N:1). null-safe(빈 배열, ops_* 미배포 시에도 안전).
@@ -267,6 +300,59 @@ export default function JobPostingDetailScreen() {
   const handleToggleInfo = useCallback(() => {
     setIsInfoExpanded((prev) => !prev);
   }, []);
+
+  // 재오픈 — 마감 되돌리기와 시트 선택이 같은 경로를 탄다.
+  const runReopen = useCallback(() => {
+    if (!id || statusTogglingRef.current) {
+      return;
+    }
+    statusTogglingRef.current = true;
+    reopenJobPosting(id, {
+      onSuccess: () => {
+        addToast({
+          type: 'success',
+          message: POSTING_STATUS_ACTION_TEXT.reopen.successToastMessage,
+        });
+      },
+      onSettled: () => {
+        statusTogglingRef.current = false;
+      },
+    });
+  }, [addToast, id, reopenJobPosting]);
+
+  // 마감은 **가역**이라 확인 모달로 앞을 막지 않고 되돌리기를 뒤에 붙인다.
+  // (삭제는 되돌릴 수 없으므로 확인 모달을 그대로 유지한다.)
+  // 재오픈 쪽에는 되돌리기를 달지 않는다 — 서로를 되돌리는 토스트가 물리면 무한 왕복이 된다.
+  const runClose = useCallback(() => {
+    if (!id || statusTogglingRef.current) {
+      return;
+    }
+    statusTogglingRef.current = true;
+    closeJobPosting(id, {
+      onSuccess: () => {
+        addToast({
+          type: 'success',
+          message: POSTING_STATUS_ACTION_TEXT.close.undoToastMessage,
+          duration: UNDO_TOAST_DURATION_MS,
+          action: { label: UNDO_TOAST_LABEL, onPress: runReopen },
+        });
+      },
+      onSettled: () => {
+        statusTogglingRef.current = false;
+      },
+    });
+  }, [addToast, closeJobPosting, id, runReopen]);
+
+  const handleStatusSelect = useCallback(
+    (value: string) => {
+      if (value === 'close') {
+        runClose();
+      } else if (value === 'reopen') {
+        runReopen();
+      }
+    },
+    [runClose, runReopen]
+  );
 
   const handleShare = useCallback(() => {
     if (!posting) {
@@ -440,7 +526,21 @@ export default function JobPostingDetailScreen() {
               </Text>
 
               <View className="flex-row items-center">
-                <PostingStatusBadge status={posting.status} size="sm" className="mr-2" />
+                {/* 상태 뱃지 = 상태를 바꾸는 자리. 표시 전용이던 뱃지에 전이를 붙였다. */}
+                {canOpenStatusSheet ? (
+                  <Pressable
+                    onPress={() => setStatusSheetVisible(true)}
+                    hitSlop={8}
+                    className="mr-2 min-h-[44px] justify-center active:opacity-70"
+                    accessibilityRole="button"
+                    accessibilityLabel="공고 상태 변경"
+                    testID="job-posting-status-badge"
+                  >
+                    <PostingStatusBadge status={posting.status} size="sm" />
+                  </Pressable>
+                ) : (
+                  <PostingStatusBadge status={posting.status} size="sm" className="mr-2" />
+                )}
                 <Pressable
                   onPress={handleToggleInfo}
                   className="min-h-[44px] flex-row items-center rounded-lg px-2 py-1 active:bg-secondary-100 dark:active:bg-secondary-700"
@@ -872,6 +972,16 @@ export default function JobPostingDetailScreen() {
         // 자동으로 닫으면 사용자는 삭제됐는지 아닌지 모른 채 토스트만 보게 된다.
         isLoading={isDeleting}
         closeOnConfirm={false}
+      />
+
+      <ActionSheet
+        visible={statusSheetVisible}
+        onClose={() => setStatusSheetVisible(false)}
+        title="공고 상태"
+        // 액션이 없는 상태(정원 참·승인 대기 등)에서는 **왜 없는지**를 말한다.
+        description={statusHint ?? undefined}
+        options={statusSheetOptions}
+        onSelect={handleStatusSelect}
       />
     </SafeAreaView>
   );

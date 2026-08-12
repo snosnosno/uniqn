@@ -61,6 +61,12 @@ jest.mock('@/components', () => ({
 }));
 
 // rightAction 을 실제로 렌더한다 — null 목이면 미리보기 진입점 검증이 무효가 된다.
+// 상태 전이 시트는 statusTransition.test.tsx 가 검증한다. 실제 컴포넌트를 태우면
+// 내부 Modal 이 useThemeStore() 를 selector 없이 불러 이 파일의 themeStore 목과 어긋난다.
+jest.mock('@/components/ui', () => ({
+  ActionSheet: () => null,
+}));
+
 jest.mock('@/components/headers', () => ({
   StackHeader: ({ rightAction }: { rightAction?: React.ReactNode }) => rightAction ?? null,
 }));
@@ -101,6 +107,9 @@ jest.mock('@/components/jobs', () => {
 });
 
 jest.mock('@/domains/job-posting', () => ({
+  // 배럴 전체를 깔고 필요한 것만 덮는다 — 개별 나열이면 새 export 가 늘 때마다
+  // 화면이 "is not a function" 으로 죽는다(실제로 두 번 겪었다).
+  ...jest.requireActual('@/domains/job-posting'),
   buildPostingFacts: (p: unknown) => p,
   isPostingDeletable: () => true,
   projectPostingSurface: () => ({
@@ -142,6 +151,10 @@ jest.mock('@/hooks/useShare', () => ({
 
 jest.mock('@/hooks/useJobManagement', () => ({
   useDeleteJobPosting: () => ({ mutate: jest.fn(), isPending: false }),
+  // 상태 전이 계약은 statusTransition.test.tsx 가 검증한다 — 여기서 빠뜨리면
+  // 화면이 마운트조차 못 한다("useCloseJobPosting is not a function").
+  useCloseJobPosting: () => ({ mutate: jest.fn(), isPending: false }),
+  useReopenJobPosting: () => ({ mutate: jest.fn(), isPending: false }),
 }));
 
 jest.mock('@/hooks/usePostingFilledCounts', () => ({

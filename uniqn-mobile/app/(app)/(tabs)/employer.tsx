@@ -26,7 +26,7 @@ import {
 import { useBulkShare } from '@/hooks/share/useBulkShare';
 import { useBulkShareSelection } from '@/hooks/share/useBulkShareSelection';
 import { getIconColor } from '@/constants';
-import { buildPostingFacts } from '@/domains/job-posting';
+import { buildPostingFacts, POSTING_STATUS_ACTION_TEXT } from '@/domains/job-posting';
 import {
   useCloseJobPosting,
   useMyJobPostings,
@@ -527,9 +527,9 @@ function EmployerView() {
         onConfirm={handleCloseConfirm}
         confirmTestID="employer-close-posting-confirm"
         cancelTestID="employer-close-posting-cancel"
-        title="공고 마감"
-        message="이 공고를 마감하시겠습니까? 마감된 공고는 구직자에게 더 이상 노출되지 않습니다."
-        confirmText="마감하기"
+        title={POSTING_STATUS_ACTION_TEXT.close.confirmTitle}
+        message={POSTING_STATUS_ACTION_TEXT.close.confirmMessage}
+        confirmText={POSTING_STATUS_ACTION_TEXT.close.confirmText}
         cancelText="취소"
         isDestructive
       />
@@ -538,9 +538,9 @@ function EmployerView() {
         visible={Boolean(reopenTargetId)}
         onClose={() => setReopenTargetId(null)}
         onConfirm={handleReopenConfirm}
-        title="공고 재오픈"
-        message="이 공고를 다시 활성화하시겠습니까? 재오픈한 공고는 다시 구직자에게 노출됩니다."
-        confirmText="재오픈"
+        title={POSTING_STATUS_ACTION_TEXT.reopen.confirmTitle}
+        message={POSTING_STATUS_ACTION_TEXT.reopen.confirmMessage}
+        confirmText={POSTING_STATUS_ACTION_TEXT.reopen.confirmText}
         cancelText="취소"
       />
     </SafeAreaView>

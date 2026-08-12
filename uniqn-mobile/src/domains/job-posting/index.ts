@@ -30,6 +30,12 @@ export {
   getPostingDefaultSalary,
   getPostingSettlementContext,
 } from './selectors';
+export type { PostingStatusActionValue } from './statusActions';
+export {
+  POSTING_STATUS_ACTION_TEXT,
+  selectPostingStatusActions,
+  getPostingStatusActionHint,
+} from './statusActions';
 export {
   createInitialPostingStats,
   normalizePostingAggregateStats,
