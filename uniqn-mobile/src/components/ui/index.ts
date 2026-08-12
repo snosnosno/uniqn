@@ -137,20 +137,6 @@ export {
 export { ScreenSkeleton, type ScreenSkeletonType } from './ScreenSkeleton';
 
 // ============================================================================
-// Image Components
-// ============================================================================
-
-export {
-  OptimizedImage,
-  AvatarImage,
-  BannerImage,
-  ProductImage,
-  DEFAULT_BLURHASH,
-  type OptimizedImageProps,
-  type BlurhashPreset,
-} from './OptimizedImage';
-
-// ============================================================================
 // Layout Components
 // ============================================================================
 

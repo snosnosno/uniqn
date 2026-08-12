@@ -22,6 +22,29 @@ import { decode as decodeJpeg } from 'jpeg-js';
 
 export type BlurhashComponents = { x: number; y: number };
 
+/**
+ * 선계산 해시가 없을 때 쓰는 이미지 유형별 기본 blurhash.
+ *
+ * @see https://blurha.sh/ 에서 생성
+ * @note 2026-08-13 에 `components/ui/OptimizedImage.tsx`(소비처 0인 사문 래퍼)에서 이곳으로 옮겼다.
+ */
+export const DEFAULT_BLURHASH = {
+  /** 기본 그레이 placeholder */
+  default: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4',
+  /** 프로필 이미지용 (원형) */
+  avatar: 'L5H2EC=PM+yV0g-mq.wG9c010J}@',
+  /** 풍경/배너 이미지용 */
+  landscape: 'LGF5]+Yk^6#M@-5c,1J5@[or[Q6.',
+  /** 상품/아이템 이미지용 */
+  product: 'L4SPe,xu00Rj~qay4nof00fQ00j[',
+  /** 밝은 배경 placeholder */
+  light: 'L2S$~=-:00-:~WM{4nof00fQ00fQ',
+  /** 어두운 배경 placeholder */
+  dark: 'L02r;GWB00of~qay00fQ00fQ00fQ',
+} as const;
+
+export type BlurhashPreset = keyof typeof DEFAULT_BLURHASH;
+
 const DEFAULT_THUMBNAIL = 32;
 const DEFAULT_COMPONENTS: BlurhashComponents = { x: 4, y: 3 };
 
