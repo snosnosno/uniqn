@@ -568,5 +568,3 @@ export const secureStorage = {
   session: userSessionStorage,
   settings: settingsStorage,
 };
-
-export default secureStorage;

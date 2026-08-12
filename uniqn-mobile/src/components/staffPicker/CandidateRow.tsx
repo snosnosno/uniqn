@@ -56,5 +56,3 @@ export function CandidateRow({
     </Pressable>
   );
 }
-
-export default CandidateRow;

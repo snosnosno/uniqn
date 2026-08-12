@@ -463,5 +463,3 @@ export const sentryService = {
 };
 
 export const crashlyticsService = sentryService;
-
-export default sentryService;

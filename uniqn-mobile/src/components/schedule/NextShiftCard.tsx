@@ -167,5 +167,3 @@ export const NextShiftCard = memo(function NextShiftCard({
     </Pressable>
   );
 });
-
-export default NextShiftCard;

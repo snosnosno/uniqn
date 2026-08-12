@@ -52,5 +52,3 @@ export function RoleChips({ value, onChange }: RoleChipsProps) {
     </View>
   );
 }
-
-export default RoleChips;

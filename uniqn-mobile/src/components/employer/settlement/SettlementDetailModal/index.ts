@@ -5,7 +5,7 @@
  */
 
 // Main Component
-export { SettlementDetailModal, default } from './SettlementDetailModal';
+export { SettlementDetailModal } from './SettlementDetailModal';
 
 // Sub-components
 export { InfoRow } from './InfoRow';

@@ -355,5 +355,3 @@ export function StaffTab({ tournamentId, tournament }: StaffTabProps) {
     </View>
   );
 }
-
-export default StaffTab;

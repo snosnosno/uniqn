@@ -146,5 +146,3 @@ export function ParticipantEditSheet({ visible, onClose, participant, tournament
     </SheetModal>
   );
 }
-
-export default ParticipantEditSheet;

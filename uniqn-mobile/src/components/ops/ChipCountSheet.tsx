@@ -103,5 +103,3 @@ export function ChipCountSheet({ visible, onClose, participant, tournamentId }: 
     </SheetModal>
   );
 }
-
-export default ChipCountSheet;

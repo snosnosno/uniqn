@@ -595,5 +595,3 @@ export const selectSettings = (state: NotificationState) => state.settings;
  * 읽지 않은 알림 수
  */
 export const useUnreadCount = () => useNotificationStore(selectUnreadCount);
-
-export default useNotificationStore;

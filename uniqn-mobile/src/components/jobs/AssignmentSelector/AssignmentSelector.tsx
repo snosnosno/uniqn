@@ -271,5 +271,3 @@ export const AssignmentSelector = memo(function AssignmentSelector({
     </View>
   );
 });
-
-export default AssignmentSelector;

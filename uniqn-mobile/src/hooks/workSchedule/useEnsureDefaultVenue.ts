@@ -46,5 +46,3 @@ export function useEnsureDefaultVenue({
 
   return { isCreating: isPending };
 }
-
-export default useEnsureDefaultVenue;

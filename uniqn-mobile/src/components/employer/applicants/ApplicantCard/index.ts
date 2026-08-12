@@ -20,5 +20,5 @@
  * import { ApplicantCard } from '@/components/employer/ApplicantCard';
  */
 
-export { ApplicantCard, default } from './ApplicantCard';
+export { ApplicantCard } from './ApplicantCard';
 export type { ApplicantCardProps } from './types';

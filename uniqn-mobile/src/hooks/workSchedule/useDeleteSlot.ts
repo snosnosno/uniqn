@@ -26,5 +26,3 @@ export function useDeleteSlot() {
     },
   });
 }
-
-export default useDeleteSlot;
