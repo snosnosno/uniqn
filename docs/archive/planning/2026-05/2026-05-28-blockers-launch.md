@@ -1,6 +1,6 @@
 # Blocker 4건 — 출시 전 작업 계획 (2026-05-28)
 
-> 컨텍스트: [`docs/analysis/uniqn-pub-tourney-gap-2026-05-28.md`](../analysis/uniqn-pub-tourney-gap-2026-05-28.md) 우선순위 매트릭스 H/S 4건.
+> 컨텍스트: [`docs/analysis/uniqn-pub-tourney-gap-2026-05-28.md`](../../../analysis/uniqn-pub-tourney-gap-2026-05-28.md) 우선순위 매트릭스 H/S 4건.
 > 전제: Expo 55 / RN 0.83.4 / Supabase / 모바일+웹 동시 배포(EAS OTA + Cloudflare Pages).
 > **재평가**: 분석 보고서에서 #1·#4를 "Small"로 분류했으나, 실제 grep 결과 #1=22 파일(픽스처 포함), #4=19 파일(소비처)이라 **실 작업 분량은 Medium**. 그래도 mechanical/타입체커가 잡아주므로 각 0.5~1일.
 

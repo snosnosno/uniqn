@@ -67,7 +67,13 @@
 아래 문서군은 현재 운영 기준이 아니라 설계 기록, 이행 메모, 과거 검토 자료입니다.
 
 - `archive/firebase-legacy/` (Firebase 시절 규칙/스펙/설계 기록)
-- `archive/planning/2026-04/` (2026-04 분기 계획 아카이브)
+- `archive/planning/<YYYY-MM>/` (종료된 계획 문서 — 2026-04·05·06)
+- `archive/plans/<YYYY-MM>/` · `archive/specs/<YYYY-MM>/` (종료된 superpowers 플랜·스펙)
+- `archive/qa/` · `archive/operations/` · `archive/wallet-iap-removal/` · `archive/features-2026-07/`
+
+> 아카이브 규약: 완료·폐기된 문서는 원 카테고리를 유지한 채 `archive/<카테고리>/<YYYY-MM>/`
+> 로 옮긴다. **다른 문서가 링크하고 있는 문서는 옮기지 않는다** — 옮기려면 참조하는 쪽을
+> 같은 커밋에서 함께 고쳐야 한다. 옮긴 문서 내부의 상대 경로도 깊이가 바뀌므로 함께 조정한다.
 - `../specs/react-native-app/*` — 2026-07-26 제거(내용 오염). 원본은 git `82cee067e`, 복원법은 `../specs/react-native-app/README.md` 참조
 - `planning/*`
 - `features/*`
