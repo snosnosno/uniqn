@@ -18,7 +18,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { StackHeader } from '@/components/headers';
 import {
   UserIcon,
-  EnvelopeIcon,
+  MailIcon,
   PhoneIcon,
   CalendarIcon,
   ShieldCheckIcon,
@@ -246,7 +246,7 @@ export default function AdminUserDetailPage() {
             기본 정보
           </Text>
           <InfoRow
-            icon={<EnvelopeIcon size={20} color={SECONDARY_PALETTE[500]} />}
+            icon={<MailIcon size={20} color={SECONDARY_PALETTE[500]} />}
             label="이메일"
             value={user.email}
           />

@@ -6,7 +6,7 @@ import {
   CalendarIcon,
   DocumentTextOutlineIcon,
   FlagOutlineIcon,
-  PeopleOutlineIcon,
+  UsersIcon,
   RefreshIcon,
 } from '@/components/icons';
 import {
@@ -134,7 +134,7 @@ export default function AdminStatsScreen() {
               label="총 사용자"
               value={stats?.totalUsers}
               isLoading={isLoading && !stats}
-              icon={PeopleOutlineIcon}
+              icon={UsersIcon}
               iconColor="#2563EB"
               iconBgColor="bg-info-100 dark:bg-info-900/20"
             />

@@ -13,7 +13,7 @@ import {
   AddCircleOutlineIcon,
   BedOutlineIcon,
   BusOutlineIcon,
-  CheckmarkIcon,
+  CheckIcon,
   RestaurantOutlineIcon,
 } from '@/components/icons';
 import { NumericInput } from '@/components/ui';
@@ -172,7 +172,7 @@ const AllowanceItem = memo(function AllowanceItem({
             }
           `}
         >
-          {isEnabled && <CheckmarkIcon size={14} color="white" />}
+          {isEnabled && <CheckIcon size={14} color="white" />}
         </View>
 
         {/* 아이콘 + 라벨 */}

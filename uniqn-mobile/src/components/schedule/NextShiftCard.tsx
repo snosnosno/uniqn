@@ -12,7 +12,7 @@ import { SECONDARY_PALETTE } from '@/constants/colors';
 import {
   CalendarIcon,
   ClockIcon,
-  MapIcon,
+  MapPinIcon,
   QrCodeIcon,
   AlertTriangleIcon,
 } from '@/components/icons';
@@ -120,7 +120,7 @@ export const NextShiftCard = memo(function NextShiftCard({
 
       {schedule.location && (
         <View className="mt-1.5 flex-row items-center">
-          <MapIcon size={14} color={SECONDARY_PALETTE[500]} />
+          <MapPinIcon size={14} color={SECONDARY_PALETTE[500]} />
           <Text
             className="ml-1.5 flex-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans"
             numberOfLines={1}

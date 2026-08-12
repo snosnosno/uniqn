@@ -13,7 +13,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo } from 'reac
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import { useJobDetail } from '@/hooks/useJobDetail';
-import { QRCodeIcon } from '@/components/icons';
+import { QrCodeIcon } from '@/components/icons';
 import { useThemeStore } from '@/stores/themeStore';
 import { useToastStore } from '@/stores/toastStore';
 import { getLayoutColor, SECONDARY_PALETTE } from '@/constants/colors';
@@ -92,7 +92,7 @@ export function HeaderQRAction({ onPress }: { onPress: () => void }) {
       accessibilityRole="button"
       accessibilityLabel="QR 코드 표시"
     >
-      <QRCodeIcon size={22} color={tintColor} />
+      <QrCodeIcon size={22} color={tintColor} />
     </Pressable>
   );
 }

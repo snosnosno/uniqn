@@ -9,7 +9,7 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { STATUS_COLORS } from '@/constants/colors';
 import { Card } from '@/components/ui';
-import { TrashIcon, ExclamationTriangleIcon } from '@/components/icons';
+import { TrashIcon, AlertTriangleIcon } from '@/components/icons';
 
 // ============================================================================
 // Types
@@ -29,7 +29,7 @@ export function DangerZone({ onDeleteAccount }: DangerZoneProps) {
     <Card className="border border-error-200 bg-error-50 dark:border-error-800 dark:bg-error-900/20">
       {/* 헤더 */}
       <View className="mb-3 flex-row items-center">
-        <ExclamationTriangleIcon size={18} color={STATUS_COLORS.error} />
+        <AlertTriangleIcon size={18} color={STATUS_COLORS.error} />
         <Text className="ml-2 text-sm font-sans-semibold text-error-700 dark:text-error-300">
           위험 영역
         </Text>

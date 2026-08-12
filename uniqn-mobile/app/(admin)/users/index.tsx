@@ -20,7 +20,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { StackHeader } from '@/components/headers';
-import { MagnifyingGlassIcon, UserIcon, ChevronRightIcon } from '@/components/icons';
+import { SearchIcon, UserIcon, ChevronRightIcon } from '@/components/icons';
 import { useAdminUsers } from '@/hooks/useAdminDashboard';
 import { Avatar } from '@/components/ui/Avatar';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -268,7 +268,7 @@ export default function AdminUsersPage() {
       <StackHeader title="사용자 관리" fallbackHref="/(admin)" />
       <View className="px-4 py-3 bg-surface-card border-b border-divider">
         <View className="flex-row items-center bg-surface-card dark:bg-surface rounded-lg px-3 py-2">
-          <MagnifyingGlassIcon size={20} color={SECONDARY_PALETTE[400]} />
+          <SearchIcon size={20} color={SECONDARY_PALETTE[400]} />
           <TextInput
             value={searchQuery}
             onChangeText={handleSearch}

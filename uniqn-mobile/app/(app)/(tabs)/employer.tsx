@@ -12,7 +12,7 @@ import { TabHeader } from '@/components/headers';
 import { WorkspaceContextBar } from '@/components/workspace';
 import {
   BriefcaseIcon,
-  CalendarDaysIcon,
+  CalendarIcon,
   ChevronRightIcon,
   EllipsisHorizontalIcon,
   PlusIcon,
@@ -404,7 +404,7 @@ function EmployerView() {
           <Button
             variant="outline"
             onPress={handleWorkSchedule}
-            icon={<CalendarDaysIcon size={20} color={getIconColor(isDarkMode, 'primary')} />}
+            icon={<CalendarIcon size={20} color={getIconColor(isDarkMode, 'primary')} />}
             className="mt-2"
             accessibilityLabel="근무표 열기"
           >

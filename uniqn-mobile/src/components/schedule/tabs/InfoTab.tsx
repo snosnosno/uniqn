@@ -8,7 +8,7 @@ import { View, Text } from 'react-native';
 import { Badge } from '@/components/ui';
 import {
   DocumentIcon,
-  MapIcon,
+  MapPinIcon,
   CalendarIcon,
   ClockIcon,
   UserIcon,
@@ -250,7 +250,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
 
       <View className="mb-4">
         <View className="flex-row items-start">
-          <MapIcon size={18} color={SECONDARY_PALETTE[500]} />
+          <MapPinIcon size={18} color={SECONDARY_PALETTE[500]} />
           <Text className="ml-2 text-sm text-content-muted dark:text-secondary-400 font-sans">
             장소 :
           </Text>
