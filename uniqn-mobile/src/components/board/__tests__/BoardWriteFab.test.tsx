@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import { BoardWriteFab } from './BoardWriteFab';
+import { BoardWriteFab } from '../BoardWriteFab';
 
 jest.mock('@/components/icons', () => ({
   AddCircleOutlineIcon: () => null,

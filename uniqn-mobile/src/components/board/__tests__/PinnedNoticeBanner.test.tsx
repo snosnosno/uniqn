@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import { PinnedNoticeBanner } from './PinnedNoticeBanner';
+import { PinnedNoticeBanner } from '../PinnedNoticeBanner';
 import type { BoardPost } from '@/types/board';
 
 function makeNotice(id: string, title: string): BoardPost {

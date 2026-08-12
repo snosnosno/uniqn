@@ -1,6 +1,6 @@
 import React from 'react';
 import { render } from '@testing-library/react-native';
-import { BoardTypeBadge } from './BoardTypeBadge';
+import { BoardTypeBadge } from '../BoardTypeBadge';
 import type { BoardType } from '@/types/board';
 
 describe('BoardTypeBadge', () => {

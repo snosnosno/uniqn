@@ -1,4 +1,4 @@
-import { formatCompactCount } from './formatCompactCount';
+import { formatCompactCount } from '../formatCompactCount';
 
 describe('formatCompactCount', () => {
   it('returns the number as-is when below 1000', () => {

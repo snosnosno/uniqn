@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import { BoardTabBar } from './BoardTabBar';
+import { BoardTabBar } from '../BoardTabBar';
 
 describe('BoardTabBar', () => {
   it('renders all six tabs in order', () => {
