@@ -40,6 +40,7 @@ import {
   PostingSurfaceState,
   PostingTypeBadge,
   ResubmitButton,
+  SeatFillSummary,
   TournamentStatusBadge,
 } from '@/components/jobs';
 import { STATUS } from '@/constants';
@@ -65,6 +66,8 @@ import type { PostingManagementViewModel, PostingType, TournamentApprovalStatus 
 import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
+import { useWorkLogsByJobPosting } from '@/hooks/useSettlement';
+import { selectPendingSettlementCount } from '@/features/employer/settlements/settlementCalc';
 import { TodayOpsStrip } from '@/features/employer/settlements/TodayOpsStrip';
 
 interface ActionCardProps {
@@ -169,6 +172,15 @@ export default function JobPostingDetailScreen() {
     realtime: true,
   });
   const todayGroup = useMemo(() => staffGrouped.find((group) => group.isToday), [staffGrouped]);
+
+  // 정산 대기 건수 — 정산 화면과 **같은 셀렉터**를 쓴다. 종전에는 이 화면만 0 을 하드코딩해서
+  // 정산 대기가 쌓여도 허브에서는 영원히 0건으로 보였다(당일 운영 스트립 배지가 안 뜸).
+  // 고정 공고는 정산 화면 자체가 없으므로 빈 id 로 쿼리를 끈다(enabled: !!jobPostingId).
+  const { data: workLogs } = useWorkLogsByJobPosting(isFixed ? '' : id || '');
+  const pendingSettlementCount = useMemo(
+    () => selectPendingSettlementCount(workLogs ?? []),
+    [workLogs]
+  );
 
   const postingFacts = useMemo(() => (posting ? buildPostingFacts(posting) : null), [posting]);
   // 브릿지: 이 공고에 연결된 ops 대회 목록(N:1). null-safe(빈 배열, ops_* 미배포 시에도 안전).
@@ -328,13 +340,15 @@ export default function JobPostingDetailScreen() {
 
   const totalApplicants = applicantData?.stats.total ?? managementView.totalApplicants;
   const confirmedApplicants = applicantData?.stats.confirmed ?? managementView.confirmedApplicants;
-  // 확정 지원자가 있으면 삭제 불가(EF-crud-4) — 하단 캡션과 동일 근거.
-  const canDelete = isPostingDeletable(confirmedApplicants);
   const pendingApplicants = applicantData?.stats.applied ?? managementView.pendingApplicants;
   const cancellationPendingCount =
     applicantData?.stats.cancellationPending ?? posting.stats?.cancellationPendingApplicants ?? 0;
   const filledPositions = managementView.filledPositions;
   const totalPositions = managementView.totalPositions;
+  // 삭제 가드는 **좌석(work_logs) 축**이다 — 서버(`deleteWithTransaction`)가 막는 축과 같아야
+  // 버튼 상태와 실제 결과가 어긋나지 않는다. 종전엔 applications 축(confirmedApplicants)이라
+  // 근무 종료로 확정이 completed 로 전이되면 좌석이 남아 있는데도 버튼이 열렸다(selectors.ts 주석).
+  const canDelete = isPostingDeletable(filledPositions);
   const title = posting.title || '제목 없음';
   const locationLabel = managementView.locationLabel || posting.location?.name || '위치 미정';
   const allowanceItems = managementView.allowanceLabels ?? [];
@@ -541,7 +555,7 @@ export default function JobPostingDetailScreen() {
               // 따로 읽어 "5", "지원자", "2", "확정" 처럼 짝이 끊긴 채 들린다.
               accessible
               accessibilityRole="summary"
-              accessibilityLabel={`지원자 ${totalApplicants}명, 확정 ${confirmedApplicants}명, 대기중 ${pendingApplicants}명. 배정 현황 ${totalPositions}자리 중 ${filledPositions}자리`}
+              accessibilityLabel={`지원자 ${totalApplicants}명, 확정 ${confirmedApplicants}명, 대기중 ${pendingApplicants}명`}
             >
               <View className="flex-row justify-around">
                 <View className="flex-1 items-center">
@@ -574,20 +588,10 @@ export default function JobPostingDetailScreen() {
                 </View>
               </View>
 
-              <View className="mt-2 flex-row items-center justify-center">
-                <Text className="mr-1.5 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-                  배정 현황
-                </Text>
-                <Text className="text-base font-sans-bold text-content-primary dark:text-off-white">
-                  {filledPositions}
-                </Text>
-                <Text className="mx-0.5 text-base text-content-placeholder font-sans">/</Text>
-                <Text className="text-base font-sans-bold text-content-muted dark:text-secondary-400">
-                  {totalPositions}
-                </Text>
-                <Text className="ml-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-                  명
-                </Text>
+              {/* 좌석(work_logs) 축 — 위 3숫자(applications 축)와 다른 축이라 표기를 분리한다.
+                  지원자 화면도 같은 컴포넌트를 써서 같은 값이 같은 이름으로 보인다. */}
+              <View className="mt-2">
+                <SeatFillSummary filled={filledPositions} total={totalPositions} />
               </View>
             </View>
           </Card>
@@ -595,7 +599,11 @@ export default function JobPostingDetailScreen() {
 
         {/* 오늘 근무가 있을 때만 뜬다(TodayOpsStrip 자체 가드). 고정 공고는 위 훅에서 이미 제외. */}
         <View className="mt-3">
-          <TodayOpsStrip todayGroup={todayGroup} pendingSettlementCount={0} />
+          <TodayOpsStrip
+            todayGroup={todayGroup}
+            pendingSettlementCount={pendingSettlementCount}
+            onPressSettlement={handleSettlements}
+          />
         </View>
 
         {/* 지원자 0명 — "0명이 대기중입니다"는 상태 보고일 뿐 다음 행동이 없다.
@@ -669,10 +677,13 @@ export default function JobPostingDetailScreen() {
               <ActionCard
                 icon={<BanknotesIcon size={24} color={STATUS_COLORS.success} />}
                 title="스태프 관리/정산"
-                description="확정 스태프 관리와 정산을 진행합니다."
+                description="배정된 스태프 관리와 정산을 진행합니다."
+                // 배지는 **처리할 일**을 가리켜야 한다. 종전엔 좌석 수(filledPositions)를 달아
+                // 스태프가 있기만 하면 초록 배지가 상시로 떠 있었고, 정작 정산 대기가 몇 건인지는
+                // 정산 화면에 들어가야만 알 수 있었다.
                 badge={
-                  filledPositions > 0
-                    ? { label: `${filledPositions}명`, variant: 'success' }
+                  pendingSettlementCount > 0
+                    ? { label: `정산 ${pendingSettlementCount}건`, variant: 'warning' }
                     : undefined
                 }
                 onPress={handleSettlements}
@@ -838,8 +849,10 @@ export default function JobPostingDetailScreen() {
               </>
             )}
           </Pressable>
+          {/* 서버(`deleteWithTransaction`)가 막는 축과 같은 말을 쓴다 — 캡션이 "확정된 지원자"라고
+              하면 사장은 지원자 화면에서 확정 0명을 확인하고도 삭제가 거부되는 이유를 알 수 없다. */}
           <Text className="mt-2 text-center text-xs text-content-placeholder font-sans">
-            확정된 지원자가 있는 공고는 삭제할 수 없습니다
+            채워진 자리가 있는 공고는 삭제할 수 없습니다. 대신 마감해 주세요.
           </Text>
         </View>
       </ScrollView>

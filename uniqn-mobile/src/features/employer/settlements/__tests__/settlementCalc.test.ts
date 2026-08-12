@@ -7,7 +7,11 @@
  * 같은 화면에서 행·확인모달·저장값이 서로 다른 숫자를 표시했다.
  */
 
-import { calculateWorkLogAmount, deriveSalaryConfig } from '../settlementCalc';
+import {
+  calculateWorkLogAmount,
+  deriveSalaryConfig,
+  selectPendingSettlementCount,
+} from '../settlementCalc';
 import type { PostingSettlementContext } from '@/domains/job-posting';
 import type { WorkLog } from '@/types';
 
@@ -63,5 +67,35 @@ describe('deriveSalaryConfig — taxSettings 파생 (A1 회귀)', () => {
 
   it('postingSettlement 부재 시 taxSettings는 undefined다', () => {
     expect(deriveSalaryConfig(undefined).taxSettings).toBeUndefined();
+  });
+});
+
+/**
+ * selectPendingSettlementCount — 정산 대기 건수.
+ *
+ * 정산 화면 안의 인라인 한 줄이었던 계산을 순수 함수로 끌어냈다. 진실원이 화면 안에 있으면
+ * 같은 숫자가 필요한 다른 화면이 재사용하지 못한다 — 실제로 공고 상세 허브는 이 값을 세지 않고
+ * `pendingSettlementCount={0}` 을 하드코딩해서, 정산 대기가 쌓여도 허브에서는 0건으로 보였다.
+ */
+describe('selectPendingSettlementCount', () => {
+  const log = (payrollStatus: string) => ({ payrollStatus }) as unknown as WorkLog;
+
+  it('지급 완료가 아닌 근무 기록만 센다', () => {
+    expect(selectPendingSettlementCount([log('pending'), log('completed'), log('pending')])).toBe(
+      2
+    );
+  });
+
+  it('전부 지급 완료면 0건이다', () => {
+    expect(selectPendingSettlementCount([log('completed'), log('completed')])).toBe(0);
+  });
+
+  it('빈 목록은 0건이다', () => {
+    expect(selectPendingSettlementCount([])).toBe(0);
+  });
+
+  // failed 는 "지급 완료"가 아니다 — 재시도가 필요한 건이므로 대기로 센다.
+  it('실패한 지급은 대기로 센다', () => {
+    expect(selectPendingSettlementCount([log('failed')])).toBe(1);
   });
 });

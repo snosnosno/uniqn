@@ -94,6 +94,9 @@ jest.mock('@/components/jobs', () => {
     PostingTypeBadge: () => null,
     ResubmitButton: () => null,
     TournamentStatusBadge: () => null,
+    // 좌석 표기 계약은 seatAxis.test.tsx 가 검증한다 — 여기서 빠뜨리면 화면 전체가
+    // undefined 컴포넌트로 죽는다(목에 없는 컴포넌트를 화면이 쓰면 displayName 에러).
+    SeatFillSummary: () => null,
   };
 });
 
@@ -126,6 +129,11 @@ jest.mock('@/hooks/useNetworkStatus', () => ({
 
 jest.mock('@/hooks/useConfirmedStaff', () => ({
   useConfirmedStaff: () => mockConfirmedStaff(),
+}));
+
+// 실제 훅은 QueryClientProvider 를 요구한다. 이 파일은 정산 대기 건수를 검증하지 않는다.
+jest.mock('@/hooks/useSettlement', () => ({
+  useWorkLogsByJobPosting: () => ({ data: [] }),
 }));
 
 jest.mock('@/hooks/useShare', () => ({

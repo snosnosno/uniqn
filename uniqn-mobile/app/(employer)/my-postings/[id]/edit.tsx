@@ -59,9 +59,12 @@ export default function EditJobPostingScreen() {
 
   const isManageable = existingJob ? isEmployerManageablePosting(existingJob) : true;
 
-  // 확정 인원 = 좌석 카운터(`filledPositions`). DB 트리거가 확정/취소마다 유지하는 값이라
-  // 별도 조회 없이 이미 손에 있다. 0 이면 배너 자체를 렌더하지 않는다.
-  const confirmedCount = existingJob?.filledPositions ?? 0;
+  // 채워진 **자리 수** — 좌석 카운터(`filledPositions`, work_logs 축). DB 트리거가 확정/취소마다
+  // 유지하는 값이라 별도 조회 없이 이미 손에 있다. 0 이면 배너 자체를 렌더하지 않는다.
+  //
+  // ⚠️ 이걸 "확정 N명"이라 부르면 안 된다 — 한 사람이 여러 날짜·슬롯에 확정되면 좌석은 여러 개다.
+  // "확정"은 applications 축(지원자 수) 전용 라벨이고, 여기 숫자는 그 값과 다를 수 있다.
+  const filledSeatCount = existingJob?.filledPositions ?? 0;
 
   // 진입 안내 — 저장 후 쿼리 무효화로 existingJob이 갱신돼도 재발행 금지(1회 가드)
   const notifiedRef = useRef(false);
@@ -195,10 +198,10 @@ export default function EditJobPostingScreen() {
         이 문장이 없으면 사장은 여기서 시간을 고치고 "전달됐다"고 믿은 채 화면을 떠난다.
         헤더 바로 아래 고정 배너로 두는 이유: 토스트는 시간 항목을 열기 전에 사라진다.
       */}
-      {confirmedCount > 0 ? (
+      {filledSeatCount > 0 ? (
         <View className="border-b border-warning-200 bg-warning-50 px-4 py-3 dark:border-warning-700 dark:bg-warning-900/30">
           <Text className="text-sm font-sans-medium text-warning-800 dark:text-warning-200">
-            이미 확정된 {confirmedCount}명에게는 이 수정이 적용되지 않아요
+            이미 채워진 {filledSeatCount}자리에는 이 수정이 적용되지 않아요
           </Text>
           <Text className="mt-1 text-xs font-sans text-warning-700 dark:text-warning-300">
             확정된 근무의 날짜·시간은 근무표에서 각각 변경해 주세요.

@@ -6,6 +6,7 @@
  */
 
 import { getRoleSalaryFromRoles, calculateSettlementFromWorkLog } from '@/domains/settlement';
+import { PAYROLL_STATUS_VALUES } from '@/constants/statusValues';
 import type { PostingSettlementContext } from '@/domains/job-posting';
 import type { SalaryInfo, TaxSettings } from '@/utils/settlement';
 import type { WorkLog, Allowances } from '@/types';
@@ -95,3 +96,16 @@ export function deriveRolesForList(roles: RoleWithSalary[] | undefined): RoleWit
 
 // `deriveAvailableRoles`(RoleChangeModal 용 역할 키 목록)는 그 모달과 함께 사라졌다.
 // 통합 편집 시트의 역할 칩은 공고(`JobPosting`)에서 직접 목록을 뽑으므로 중간 변환이 없다.
+
+/**
+ * 정산 대기 건수 — 지급 완료가 아닌 근무 기록의 수.
+ *
+ * @description 정산 화면(`settlements.tsx`)이 탭 배지와 당일 운영 스트립에 쓰던 계산을
+ *   순수 함수로 끌어냈다. 화면 안 인라인 로직으로 두었더니 진실원이 "함수"가 아니라
+ *   "한 화면 안의 한 줄"이 되어, 같은 숫자가 필요한 공고 상세 허브는 재사용하지 못하고
+ *   `pendingSettlementCount={0}` 을 하드코딩하고 있었다 — 정산 대기가 쌓여도 허브에서는
+ *   영원히 0건으로 보인다.
+ */
+export function selectPendingSettlementCount(workLogs: readonly WorkLog[]): number {
+  return workLogs.filter((log) => log.payrollStatus !== PAYROLL_STATUS_VALUES.COMPLETED).length;
+}

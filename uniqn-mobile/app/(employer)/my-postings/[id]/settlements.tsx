@@ -20,11 +20,11 @@ import { useSettlement } from '@/hooks/useSettlement';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import { useSettlementModals } from '@/hooks/useSettlementModals';
 import { useToastStore } from '@/stores/toastStore';
-import { STATUS } from '@/constants';
 import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import {
   deriveSalaryConfig,
   deriveRolesForList,
+  selectPendingSettlementCount,
 } from '@/features/employer/settlements/settlementCalc';
 import { useStaffSettlementsHandlers } from '@/features/employer/settlements/useStaffSettlementsHandlers';
 import { TabHeader, type TabType } from '@/features/employer/settlements/TabHeader';
@@ -178,11 +178,9 @@ export default function StaffSettlementsScreen() {
     );
   }
 
-  // 카운트 계산
+  // 카운트 계산 — 정산 대기는 공고 상세 허브도 같은 숫자를 쓰므로 순수 셀렉터 경유.
   const staffCount = staffStats?.total ?? 0;
-  const pendingSettlementCount = workLogs.filter(
-    (log) => log.payrollStatus !== STATUS.PAYROLL.COMPLETED
-  ).length;
+  const pendingSettlementCount = selectPendingSettlementCount(workLogs);
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>

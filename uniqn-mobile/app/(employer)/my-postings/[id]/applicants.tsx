@@ -14,6 +14,7 @@ import {
   type ConfirmModalAction,
 } from '@/components/employer';
 import { Loading, ErrorState } from '@/components';
+import { SeatFillSummary } from '@/components/jobs';
 import { StackHeader } from '@/components/headers';
 import { useApplicantManagement } from '@/hooks/applicant';
 import { useShare } from '@/hooks/useShare';
@@ -235,20 +236,16 @@ export default function ApplicantsScreen() {
         fallbackHref={headerBackHref}
         rightAction={headerRightAction}
       />
-      {/* 정원 현황 스트립 */}
+      {/* 좌석 현황 스트립 — 이 숫자는 work_logs 축(filledPositions)이다.
+          종전에는 "확정 N / 정원 M 명"이라 불렀는데, 같은 화면의 필터 탭 "확정 (N)" 은
+          applications 축이라 **같은 이름의 두 숫자가 서로 달랐다**. 좌석 표기는 허브와
+          같은 컴포넌트로 통일한다("확정"은 applications 축 전용 라벨). */}
       {managementView ? (
-        <View className="flex-row items-center justify-center border-b border-secondary-100 bg-white px-4 py-2 dark:border-surface-overlay dark:bg-surface">
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-            확정{' '}
-            <Text className="font-sans-bold text-content-primary dark:text-off-white">
-              {managementView.filledPositions}
-            </Text>
-            {' / 정원 '}
-            <Text className="font-sans-bold text-content-primary dark:text-off-white">
-              {managementView.totalPositions}
-            </Text>
-            명
-          </Text>
+        <View className="border-b border-secondary-100 bg-white px-4 py-2 dark:border-surface-overlay dark:bg-surface">
+          <SeatFillSummary
+            filled={managementView.filledPositions}
+            total={managementView.totalPositions}
+          />
         </View>
       ) : null}
       {/* 목록은 살아 있는데 갱신만 실패한 상태 — 목록을 유지한 채 얇게만 알린다. */}
