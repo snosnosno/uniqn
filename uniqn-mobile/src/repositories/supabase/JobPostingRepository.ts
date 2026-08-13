@@ -12,7 +12,6 @@ import { toError, BusinessError, ERROR_CODES } from '@/errors';
 import {
   handleSupabaseError,
   toSnakeCase,
-  paginatedQuery,
   createRealtimeSubscription,
   assertUpdated,
 } from '@/utils/supabase';
@@ -38,7 +37,6 @@ import type {
   TournamentApprovalStatus,
   PostingRoleCatalogEntry,
   PostingSchedule,
-  SalarySortDirection,
 } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
 import type {
@@ -277,35 +275,73 @@ function applySalaryScope<
 }
 
 /**
- * 급여 정렬 목록 페이지 — offset(range) 기반 페이지네이션.
+ * 전향(前向) 조회 하한 — 이미 끝난 공고를 구직자 브라우즈에서 숨긴다.
  *
- * @description salary_*_max 는 유일하지도, NOT NULL 도 아니라 keyset 커서(lt/gt)를 쓰면
- *   동점 행이 통째로 유실된다. 정렬이 걸린 경우에만 offset 으로 전환하고 id 를 2차 정렬키로
- *   붙여 동점 구간의 순서를 안정화한다. cursor 는 이전 페이지까지 소비한 행 수(offset).
- * @param applyFilters getList 가 만든 브라우즈 필터 체인(급여 NULL 제외 포함)
+ * @description getList 와 getTypeCounts 가 **같은 술어**를 쓰도록 단일 지점으로 묶는다.
+ *   한쪽만 걸면 칩의 "N건 보기" 숫자와 실제 목록 건수가 어긋난다
+ *   (EF-jobsearch-11 과 같은 클래스 — 이 파일이 status/지역/역할/급여 스코프를
+ *   공용 헬퍼로 묶어 둔 이유와 동일).
+ *
+ *   하한을 시작일(`work_date`)이 아니라 마지막 근무일(`last_work_date`)에 거는 이유:
+ *   지난주에 시작해 다음주까지 이어지는 다중일 공고는 여전히 지원 가능하다.
+ *   `last_work_date` 가 없는 구형·무일정(고정) 행은 통과시킨다(fail-open).
+ *
+ * ⚠️ 급여 정렬이 걸리면 `applySalaryScope` 가 같은 술어를 이미 걸어 중복될 수 있으나,
+ *   동일 술어의 AND 결합이라 결과 집합은 같다.
  */
-async function salarySortedPage(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyForwardLookingScope<T extends { or: any }>(query: T): T {
+  return query.or(`last_work_date.is.null,last_work_date.gte.${getTodayString()}`) as T;
+}
+
+/** 목록 페이지 정렬키 — 항상 id 를 마지막 tie-breaker 로 붙여 전순서를 만든다. */
+interface ListOrderSpec {
+  column: string;
+  ascending: boolean;
+  /** 미지정 시 Postgres 기본값(ASC → NULLS LAST, DESC → NULLS FIRST) */
+  nullsFirst?: boolean;
+}
+
+/**
+ * 공고 목록 페이지 — offset(range) 기반 페이지네이션.
+ *
+ * @description 목록의 어떤 정렬키도 유일하지 않다(`work_date` 는 text·nullable 이고
+ *   고정 공고는 전부 `''`, `salary_*_max` 도 비유일). 비유일 컬럼에 keyset 커서(lt/gt)를
+ *   걸면 **페이지 경계의 동점 행이 통째로 유실**되고, 전 행이 동점인 고정 공고 탭은
+ *   첫 페이지 뒤가 영구 절단된다. 그래서 모든 목록 경로를 offset 으로 통일하고
+ *   id 를 마지막 정렬키로 붙여 동점 구간의 순서를 고정한다.
+ *   cursor 는 이전 페이지까지 소비한 행 수(offset).
+ * @param applyFilters getList 가 만든 브라우즈 필터 체인
+ * @param orders 정렬키 목록(id tie-breaker 는 이 함수가 붙인다)
+ */
+async function offsetSortedPage(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   applyFilters: (query: any) => any,
-  column: string,
-  sort: SalarySortDirection,
+  orders: ListOrderSpec[],
   pageSize: number,
-  cursor?: PaginationCursor
+  cursor: PaginationCursor,
+  operation: string
 ): Promise<PaginatedJobPostings> {
   const offset =
     typeof cursor === 'number' && Number.isFinite(cursor) && cursor > 0 ? Math.floor(cursor) : 0;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let query: any = supabase.from(TABLE).select('*');
   query = applyFilters(query);
+  for (const spec of orders) {
+    query =
+      spec.nullsFirst === undefined
+        ? query.order(spec.column, { ascending: spec.ascending })
+        : query.order(spec.column, { ascending: spec.ascending, nullsFirst: spec.nullsFirst });
+  }
   query = query
-    .order(column, { ascending: sort === 'low' })
+    // 동점 구간의 페이지 경계를 고정하는 마지막 tie-breaker.
     .order('id', { ascending: true })
     // hasMore 판별용으로 pageSize + 1 행을 가져온다(range 는 양끝 포함).
     .range(offset, offset + pageSize);
 
   const { data, error } = await query;
   if (error) {
-    handleSupabaseError(error, { operation: '공고 목록 조회(급여 정렬)', table: TABLE });
+    handleSupabaseError(error, { operation, table: TABLE });
   }
   const rows = (data ?? []) as Record<string, unknown>[];
   const hasMore = rows.length > pageSize;
@@ -378,6 +414,21 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
   ): Promise<PaginatedJobPostings> {
     try {
       logger.info('공고 목록 조회', { filters, pageSize });
+
+      const isFixedTab = filters?.postingType === 'fixed';
+      // 전향(前向) 조회 = 구직자 브라우즈 계약이 적용되는 질의.
+      //   · 명시 status 가 없거나 브라우즈 가능 status(active/capacity_full)만 볼 때
+      //   · 소유자 조회(내 공고)·기간 조회(dateRange)는 과거를 포함해야 하므로 제외
+      // 여기서만 정렬을 ASC 로 뒤집고 "오늘 이후" 하한을 건다. 그 밖의 경로(관리자
+      // closed 목록 등)는 기존 최신순·무하한 동작을 그대로 보존한다.
+      const isForwardLookingBrowse =
+        !isFixedTab &&
+        !filters?.includeEnded &&
+        !filters?.ownerId &&
+        !filters?.dateRange &&
+        (!filters?.status ||
+          (BROWSABLE_POSTING_STATUSES as readonly string[]).includes(filters.status));
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const applyBrowseFilters = (q: any) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -414,19 +465,26 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
         if (filters?.workDate && !filters?.dateRange) {
           qr = qr.contains('work_dates', [filters.workDate]);
         }
+        // 구직자 브라우즈(전향 조회)는 이미 끝난 공고를 숨긴다 — getTypeCounts 와 공용 헬퍼.
+        if (isForwardLookingBrowse) {
+          qr = applyForwardLookingScope(qr);
+        }
         return qr;
       };
 
-      // 급여 정렬은 커서(keyset) 페이지네이션을 쓸 수 없다 — salary_*_max 는 유일하지 않아
-      // lt/gt 커서가 동점 행을 통째로 건너뛴다. 정렬 시에만 offset(range) 방식으로 전환하고
-      // id 를 2차 정렬키로 붙여 페이지 경계에서 순서가 흔들리지 않게 고정한다.
+      // 급여 정렬: salary_*_max 순.
       if (filters?.salaryType && filters?.salarySort) {
-        const result = await salarySortedPage(
+        const result = await offsetSortedPage(
           applyBrowseFilters,
-          SALARY_MAX_COLUMNS[filters.salaryType],
-          filters.salarySort,
+          [
+            {
+              column: SALARY_MAX_COLUMNS[filters.salaryType],
+              ascending: filters.salarySort === 'low',
+            },
+          ],
           pageSize,
-          lastDocument
+          lastDocument,
+          '공고 목록 조회(급여 정렬)'
         );
         logger.info('공고 목록 조회 완료(급여 정렬)', {
           count: result.items.length,
@@ -435,16 +493,30 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
         return result;
       }
 
-      const result = await paginatedQuery<Record<string, unknown>>(TABLE, {
-        orderBy: 'work_date',
-        ascending: false,
+      // 고정(fixed) 공고는 work_date 가 항상 '' 라 날짜 정렬이 무의미하다.
+      // 노출 기간이 생성일 기준(FIXED_POSTING_DURATION_DAYS)이므로 최신 등록 순으로 준다.
+      const orders: ListOrderSpec[] = isFixedTab
+        ? [{ column: 'created_at', ascending: false }]
+        : [
+            // 클라이언트 sortJobPostings 는 "임박한 근무 우선"으로 재정렬한다.
+            // 서버가 DESC(가장 먼 미래 우선)로 주면 방향이 모순돼 오늘·내일 근무가
+            // 마지막 페이지에 실린다 — 전향 조회에서는 서버도 ASC 로 맞춘다.
+            // 명시 status(closed 등)·소유자·기간 조회는 기존 최신순(DESC)을 보존한다.
+            { column: 'work_date', ascending: isForwardLookingBrowse, nullsFirst: false },
+          ];
+
+      const result = await offsetSortedPage(
+        applyBrowseFilters,
+        orders,
         pageSize,
-        cursor: lastDocument,
-        filters: applyBrowseFilters,
+        lastDocument,
+        '공고 목록 조회'
+      );
+      logger.info('공고 목록 조회 완료', {
+        count: result.items.length,
+        hasMore: result.hasMore,
       });
-      const items = rowsToJobPostings(result.items);
-      logger.info('공고 목록 조회 완료', { count: items.length, hasMore: result.hasMore });
-      return { items, lastDoc: result.lastDoc as PaginationCursor, hasMore: result.hasMore };
+      return result;
     } catch (error) {
       rethrowOrHandle(error, '공고 목록 조회', { filters });
     }
@@ -529,6 +601,16 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       query = applyRoleScope(query, filters);
       query = applyRegionScope(query, filters);
       query = applySalaryScope(query, filters);
+      // getList 의 전향 조회 하한과 동일 조건·동일 술어로 맞춘다 — 한쪽만 걸면
+      // 칩의 "N건 보기" 숫자가 실제 목록보다 많아진다(종료된 공고를 세게 된다).
+      // 고정(fixed) 공고는 last_work_date 가 NULL 이라 이 술어를 통과하므로,
+      // 하한을 걸지 않는 고정 탭 목록과도 어긋나지 않는다.
+      if (
+        !filters?.status ||
+        (BROWSABLE_POSTING_STATUSES as readonly string[]).includes(filters.status)
+      ) {
+        query = applyForwardLookingScope(query);
+      }
       const { data, error } = await query;
       if (error) handleSupabaseError(error, { operation: '공고 타입별 개수 조회', table: TABLE });
 

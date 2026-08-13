@@ -102,6 +102,56 @@ export function getRoleSalaryFromSettlementSource(
   return getRoleSalaryFromRoles(source?.roles, targetRole, customRole, source?.defaultSalary);
 }
 
+/**
+ * 단가표에서 역할을 찾는다 — 표시·계산 해소기가 공유하는 매칭 규칙.
+ * 'other' 역할은 customRole 로 식별한다.
+ */
+function findRoleSalary(
+  roles: { role?: string; name?: string; customRole?: string; salary?: SalaryInfo }[] | undefined,
+  targetRole: string | undefined,
+  customRole?: string
+): SalaryInfo | undefined {
+  if (!targetRole || !roles?.length) return undefined;
+
+  const effectiveRole = targetRole === 'other' && customRole ? customRole : targetRole;
+  const roleData = roles.find((role) => {
+    const roleKey = role.role || role.name;
+
+    if (roleKey === 'other' && role.customRole) {
+      return role.customRole === effectiveRole;
+    }
+
+    return roleKey === effectiveRole;
+  });
+
+  return roleData?.salary;
+}
+
+/**
+ * **표시 전용** 급여 해소 — 합의 근거가 없으면 null.
+ *
+ * @description 계산용 해소기(`getRoleSalaryFromSettlementSource`)는 어떤 분기에서도
+ *   `DEFAULT_SALARY_INFO`(시급 15,000원)로 메워 undefined 를 낼 수 없다. 그래서 스태프
+ *   화면이 **합의한 적 없는 15,000원**을 '총 정산 금액'으로 확정 표시했고, 같은 행을
+ *   사장 화면은 '기본 단가 적용' 경고 배지로 보여줬다(한쪽엔 미정, 한쪽엔 확정).
+ *
+ *   여기서는 그 폴백만 제거한다. 근거의 서열은 같다:
+ *     ① 역할별 단가표 → ② 구인자가 설정한 공고 기본급(전 역할 동일) → ③ 없음(null)
+ *
+ * 🔑 ②는 지운 게 아니다 — 구인자가 실제로 설정한 **합의된 금액**이라 계속 보여준다.
+ *   시스템이 임의로 메우던 것은 ③뿐이고, 그것만 null 로 접는다.
+ *
+ * ⚠️ 계산 계층에는 쓰지 말 것. `SettlementCalculator`·`calculateSettlementBreakdown`
+ *   경로는 null 가드가 없어 크래시한다. 금액 산출은 기존 해소기를 그대로 쓴다.
+ */
+export function getDisplayRoleSalaryFromSettlementSource(
+  source: PostingSettlementSource | undefined,
+  targetRole: string | undefined,
+  customRole?: string
+): SalaryInfo | null {
+  return findRoleSalary(source?.roles, targetRole, customRole) ?? source?.defaultSalary ?? null;
+}
+
 export function calculateAllowanceAmount(allowances?: Allowances): number {
   if (!allowances) return 0;
 
