@@ -97,4 +97,4 @@
   ```
   전부 멱등(CREATE OR REPLACE / IF NOT EXISTS). `npx supabase migration up`은 원격전용 마이그 3종으로 차단=정상(reset/repair 금지).
 - docker psql `/tmp` 경로는 `MSYS_NO_PATHCONV=1` 접두. pgTAP 단건 전 `CREATE EXTENSION IF NOT EXISTS pgtap;`. node_modules 정션은 PowerShell `New-Item -ItemType Junction`(mklink 실패).
-- 진실의 원천(구현 설계): `docs/planning/2026-06-28-weekly-batch-grid-design.md`(설계 v2), `docs/planning/2026-06-28-weekly-grid-handoff-v2-orchestrated.md`(구현 핸드오프).
+- 진실의 원천(구현 설계): `docs/archive/planning/2026-06/2026-06-28-weekly-batch-grid-design.md`(설계 v2), `docs/archive/planning/2026-06/2026-06-28-weekly-grid-handoff-v2-orchestrated.md`(구현 핸드오프).

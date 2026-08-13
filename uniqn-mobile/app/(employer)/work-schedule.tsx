@@ -1,7 +1,7 @@
 /**
  * UNIQN Mobile — 근무표 화면 (운영처 월 캘린더 오버뷰, unit 7)
  *
- * 설계: docs/planning/2026-06-28-weekly-batch-grid-design.md §9.6
+ * 설계: docs/archive/planning/2026-06/2026-06-28-weekly-batch-grid-design.md §9.6
  *
  * 홈 = 월 캘린더 오버뷰 → 날짜 탭 → 그 날 배치 상세. 상단에 운영처(workspace+venue) 선택기.
  * 전부 weekly_grid_enabled 플래그 뒤 — OFF면 진입 차단(Redirect). 기존 캘린더 무회귀.
