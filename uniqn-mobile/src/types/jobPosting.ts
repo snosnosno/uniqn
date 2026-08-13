@@ -270,6 +270,14 @@ export interface JobPostingFilters {
   postingType?: PostingType;
   postingTypes?: PostingType[];
   workDate?: string;
+  /**
+   * 근무일이 모두 지난 공고까지 포함할지.
+   *
+   * 구직자 브라우즈는 기본적으로 종료 공고를 숨기고 임박한 근무부터 보여준다(전향 조회).
+   * 관리자 공고 관리처럼 **과거를 포함한 전수**를 봐야 하는 화면은 이 값을 true 로 준다.
+   * (명시 status·소유자·기간 조회는 이 값 없이도 자동으로 전수 조회가 된다)
+   */
+  includeEnded?: boolean;
 }
 
 /** 근무지 좌표(WGS84). `job_postings.geo_lat/geo_lng` 와 1:1. */

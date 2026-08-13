@@ -291,9 +291,12 @@ export function StaffManagementTab({
     // 전이 규칙(어떤 선택지를 보일지·무엇이 파괴적인지)은 순수 함수가 소유한다.
     // 여기서는 아이콘만 입힌다. 출근 기록이 없으면 퇴근/완료가 아예 빠지므로
     // '출근 처리' 바로 아래 '퇴근 처리'가 붙어 근무 0분이 박히던 오탭 경로가 사라진다.
+    // 정산 완료 건은 '노쇼 처리'가 빠진다 — 뒤집으면 '지급 완료 + 노쇼' 모순 행이 남고
+    // 스태프 월 수입 합계(completed 만 합산)에서 이미 지급한 급여가 사라진다(감사 3-2).
     return getManualStatusTransitions(
       statusSheetTarget.status,
-      hasAttendanceRecord(statusSheetTarget)
+      hasAttendanceRecord(statusSheetTarget),
+      statusSheetTarget.payrollStatus
     ).map((transition) => ({
       label: transition.label,
       value: transition.value,

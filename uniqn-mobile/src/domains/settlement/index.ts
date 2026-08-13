@@ -27,6 +27,7 @@ export {
   calculatePayByType,
   getRoleSalaryFromRoles,
   getRoleSalaryFromSettlementSource,
+  getDisplayRoleSalaryFromSettlementSource,
   calculateAllowanceAmount,
   calculateSettlement,
   calculateSettlementFromWorkLog,

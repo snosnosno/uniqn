@@ -30,11 +30,13 @@ export interface ManualStatusTransition {
  *
  * @param currentStatus 현재 work_log status
  * @param hasAttendanceRecord check_in_ts 또는 check_out_ts 가 하나라도 있는가
+ * @param payrollStatus 현재 정산 상태(모르면 생략 — 기존 동작 유지)
  * @returns 운영 흐름 순서(예정 → 출근 → 퇴근 → 완료 → 노쇼)로 정렬된 전이 목록
  */
 export function getManualStatusTransitions(
   currentStatus: string,
-  hasAttendanceRecord: boolean
+  hasAttendanceRecord: boolean,
+  payrollStatus?: string | null
 ): ManualStatusTransition[] {
   const transitions: ManualStatusTransition[] = [];
 
@@ -79,7 +81,15 @@ export function getManualStatusTransitions(
   }
 
   // 노쇼는 정산 0원을 동반하는 운영 사실 기록이라 항상 확인을 요구한다.
-  if (currentStatus !== STATUS.WORK_LOG.NO_SHOW) {
+  //
+  // 단 정산이 이미 완료된 근무는 노쇼로 뒤집을 수 없다 — '지급 완료 + 노쇼' 모순 행이
+  // 남고, 스태프 월 수입 합계는 completed 만 합산하므로 **이미 지급한 급여가 통계에서
+  // 사라진다**. Repository(markAsNoShow)가 BUSINESS_ALREADY_SETTLED 로 최종 차단하지만,
+  // 누를 수 있는 버튼을 띄워 놓고 거부하는 것보다 애초에 감추는 편이 정직하다.
+  // (되돌리려면 정산을 먼저 되돌린다 — cancelNoShow 와 동일 정책)
+  const isSettled = payrollStatus === STATUS.PAYROLL.COMPLETED;
+
+  if (currentStatus !== STATUS.WORK_LOG.NO_SHOW && !isSettled) {
     transitions.push({
       value: STATUS.WORK_LOG.NO_SHOW,
       label: '노쇼 처리',
