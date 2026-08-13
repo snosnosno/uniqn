@@ -7,14 +7,15 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { View, Text } from 'react-native';
+import { View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getPostingSettlementContext, aggregateRoleFilledFromSubmap } from '@/domains/job-posting';
 import { usePostingFilledCounts, extractPostingFilledSubmap } from '@/hooks/usePostingFilledCounts';
 import { SettlementList, StaffManagementTab } from '@/components/employer';
 import { SettlementModals } from '@/features/employer/settlements/SettlementModals';
-import { Loading, ErrorState } from '@/components';
+import { ErrorState } from '@/components';
+import { PostingSurfaceState } from '@/components/jobs';
 import { StackHeader } from '@/components/headers';
 import { useSettlement } from '@/hooks/useSettlement';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
@@ -158,10 +159,8 @@ export default function StaffSettlementsScreen() {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         {stackHeader}
-        <View className="flex-1 items-center justify-center">
-          <Loading size="large" />
-          <Text className="mt-4 text-content-secondary font-sans">데이터를 불러오는 중...</Text>
-        </View>
+        {/* 스켈레톤 통일(S2-9) — 형제 화면과 같은 형상을 쓴다. */}
+        <PostingSurfaceState mode="loading" scope="manage" />
       </SafeAreaView>
     );
   }

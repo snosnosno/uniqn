@@ -12,7 +12,8 @@ import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppFlashList } from '@/components/ui/AppFlashList';
 import { CancellationRequestCard } from '@/components/employer';
-import { EmptyState, ErrorState, Loading } from '@/components';
+import { EmptyState, ErrorState } from '@/components';
+import { PostingSurfaceState } from '@/components/jobs';
 import { StackHeader } from '@/components/headers';
 import { InboxIcon } from '@/components/icons';
 import { Badge } from '@/components/ui/Badge';
@@ -149,10 +150,8 @@ export default function CancellationRequestsScreen() {
           fallbackHref={headerBackHref}
           rightAction={headerRightAction}
         />
-        <View className="flex-1 items-center justify-center">
-          <Loading size="large" />
-          <Text className="mt-4 text-content-secondary font-sans">공고 정보를 불러오는 중...</Text>
-        </View>
+        {/* 스켈레톤 통일(S2-9) — 형제 화면과 같은 형상을 쓴다. */}
+        <PostingSurfaceState mode="loading" scope="manage" />
       </SafeAreaView>
     );
   }

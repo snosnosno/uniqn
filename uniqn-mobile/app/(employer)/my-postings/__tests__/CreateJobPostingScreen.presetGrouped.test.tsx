@@ -25,6 +25,12 @@ import type { OrderSheetPreset } from '@/components/employer/order-sheet/PresetC
 
 let mockCapturedPresets: OrderSheetPreset[] = [];
 
+// 근무표 경유 생성의 공유 CTA(S2-11)용 — 실제 훅은 toastStore.useToast 를 요구한다.
+// 이 파일들은 공유 동작을 검증하지 않으므로 최소 목만 둔다.
+jest.mock('@/hooks/useShare', () => ({
+  useShare: () => ({ shareJobById: jest.fn(), shareJob: jest.fn(), isSharing: false }),
+}));
+
 jest.mock('expo-router', () => ({
   useRouter: () => ({ canGoBack: () => false, back: jest.fn(), replace: jest.fn() }),
   useLocalSearchParams: () => ({}),

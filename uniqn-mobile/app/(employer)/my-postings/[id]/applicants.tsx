@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { View, Text } from 'react-native';
+import { View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -14,8 +14,8 @@ import {
   toApplicantFilter,
   type ConfirmModalAction,
 } from '@/components/employer';
-import { Loading, ErrorState } from '@/components';
-import { SeatFillSummary } from '@/components/jobs';
+import { ErrorState } from '@/components';
+import { PostingSurfaceState, SeatFillSummary } from '@/components/jobs';
 import { StackHeader } from '@/components/headers';
 import { useApplicantManagement } from '@/hooks/applicant';
 import { useShare } from '@/hooks/useShare';
@@ -240,12 +240,9 @@ export default function ApplicantsScreen() {
           fallbackHref={headerBackHref}
           rightAction={headerRightAction}
         />
-        <View className="flex-1 items-center justify-center">
-          <Loading size="large" />
-          <Text className="mt-4 text-content-secondary font-sans">
-            지원자 목록을 불러오는 중...
-          </Text>
-        </View>
+        {/* 스켈레톤 통일(S2-9) — 허브는 스켈레톤인데 자식 화면만 스피너라, 탭을 옮길 때마다
+            로딩 표현이 바뀌어 같은 앱이 아닌 것처럼 보였다. */}
+        <PostingSurfaceState mode="loading" scope="manage" />
       </SafeAreaView>
     );
   }

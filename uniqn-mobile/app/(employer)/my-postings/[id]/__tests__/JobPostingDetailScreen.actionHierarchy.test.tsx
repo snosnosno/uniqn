@@ -26,6 +26,8 @@ const mockConfirmedStaff = jest.fn();
 const mockOpsTournaments = jest.fn();
 const mockPostingType = jest.fn();
 const mockPush = jest.fn();
+const mockAddToast = jest.fn();
+const mockTriggerHaptic = jest.fn();
 
 const mockPosting = () => ({
   id: 'posting-1',
@@ -150,6 +152,16 @@ jest.mock('@/hooks/usePostingFilledCounts', () => ({
   extractPostingFilledSubmap: () => ({}),
 }));
 
+jest.mock('@/stores/toastStore', () => ({
+  useToastStore: (selector: (state: { addToast: unknown }) => unknown) =>
+    selector({ addToast: mockAddToast }),
+}));
+
+// 🚨 소리는 쓰지 않는다(야간·고소음 현장) — 햅틱만 나가는지 여기서 고정한다.
+jest.mock('@/utils/haptics', () => ({
+  triggerHaptic: (...args: unknown[]) => mockTriggerHaptic(...args),
+}));
+
 jest.mock('@/stores/themeStore', () => ({
   useThemeStore: (selector: (state: { isDarkMode: boolean }) => unknown) =>
     selector({ isDarkMode: false }),
@@ -197,6 +209,8 @@ const buttonLabels = (getAllByRole: (role: string) => { props: Record<string, un
 describe('JobPostingDetailScreen — 카드 위계', () => {
   beforeEach(() => {
     mockPush.mockReset();
+    mockAddToast.mockReset();
+    mockTriggerHaptic.mockReset();
     mockPostingType.mockReturnValue('regular');
     mockApplicantStats.mockReturnValue(stats());
     mockManagementView.mockReturnValue(managementView());
@@ -297,6 +311,49 @@ describe('JobPostingDetailScreen — 카드 위계', () => {
     const settlementsIndex = labels.findIndex((label) => label.includes('스태프 관리/정산'));
     expect(liveOpsIndex).toBeGreaterThanOrEqual(0);
     expect(liveOpsIndex).toBeLessThan(settlementsIndex);
+  });
+
+  // S2-11 — realtime 으로 숫자만 조용히 바뀌면 사장은 화면을 다시 훑기 전엔 모른다.
+  describe('새 지원 인라인 알림', () => {
+    it('첫 관측은 기준선일 뿐이다 — 진입하자마자 "새 지원"이라 말하지 않는다', () => {
+      mockApplicantStats.mockReturnValue(stats({ applied: 4 }));
+
+      render(<JobPostingDetailScreen />);
+
+      expect(mockAddToast).not.toHaveBeenCalled();
+    });
+
+    it('보고 있는 동안 지원이 늘면 증가분을 알린다', () => {
+      mockApplicantStats.mockReturnValue(stats({ applied: 1 }));
+      const { rerender } = render(<JobPostingDetailScreen />);
+
+      mockApplicantStats.mockReturnValue(stats({ applied: 3 }));
+      rerender(<JobPostingDetailScreen />);
+
+      const toast = mockAddToast.mock.calls[0][0];
+      expect(toast.message).toContain('새 지원이 2건');
+      expect(toast.action.label).toBe('보러 가기');
+    });
+
+    it('소리 대신 햅틱만 쓴다 — 야간·고소음 현장에서 소리는 방해가 된다', () => {
+      mockApplicantStats.mockReturnValue(stats({ applied: 1 }));
+      const { rerender } = render(<JobPostingDetailScreen />);
+
+      mockApplicantStats.mockReturnValue(stats({ applied: 2 }));
+      rerender(<JobPostingDetailScreen />);
+
+      expect(mockTriggerHaptic).toHaveBeenCalledWith('success');
+    });
+
+    it('지원이 줄어들 때는 알리지 않는다(취소·거절 반영)', () => {
+      mockApplicantStats.mockReturnValue(stats({ applied: 3 }));
+      const { rerender } = render(<JobPostingDetailScreen />);
+
+      mockApplicantStats.mockReturnValue(stats({ applied: 1 }));
+      rerender(<JobPostingDetailScreen />);
+
+      expect(mockAddToast).not.toHaveBeenCalled();
+    });
   });
 
   it('통계 세 숫자는 각자 자기 목록으로 데려간다', () => {

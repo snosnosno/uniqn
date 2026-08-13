@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -64,6 +64,7 @@ import {
   selectPrimaryAction,
 } from '@/domains/job-posting';
 import { UNDO_TOAST_DURATION_MS, UNDO_TOAST_LABEL } from '@/constants/undoToast';
+import { triggerHaptic } from '@/utils/haptics';
 import { useApplicantsByJobPosting } from '@/hooks/applicant';
 import { useShare } from '@/hooks/useShare';
 import {
@@ -469,6 +470,38 @@ export default function JobPostingDetailScreen() {
     router.push(`/(app)/jobs/${id}`);
   }, [id, router]);
 
+  /**
+   * 새 지원 인라인 알림 — 화면을 보고 있는 동안 지원이 들어오면 그 자리에서 알린다.
+   * 종전에는 realtime 으로 숫자만 조용히 바뀌어, 사장이 화면을 다시 훑기 전에는 몰랐다.
+   *
+   * 🚨 **소리는 쓰지 않는다.** 홀덤펍은 야간·고소음 현장이라 소리는 들리지 않거나 방해가 된다.
+   *    햅틱은 `triggerHaptic` 이 200ms throttle 과 OS 설정 존중을 이미 담당한다.
+   */
+  const prevAppliedRef = useRef<number | null>(null);
+  const appliedCount = applicantData?.stats.applied;
+  useEffect(() => {
+    if (appliedCount === undefined) {
+      return;
+    }
+    const previous = prevAppliedRef.current;
+    prevAppliedRef.current = appliedCount;
+
+    // 첫 관측은 기준선일 뿐이다 — 진입하자마자 "새 지원"이라고 말하면 거짓말이 된다.
+    if (previous === null || appliedCount <= previous) {
+      return;
+    }
+
+    void triggerHaptic('success');
+    addToast({
+      type: 'info',
+      message: `새 지원이 ${appliedCount - previous}건 들어왔어요.`,
+      action: {
+        label: '보러 가기',
+        onPress: () => handleApplicantsFiltered(STATUS.APPLICATION.APPLIED),
+      },
+    });
+  }, [appliedCount, addToast, handleApplicantsFiltered]);
+
   // 끝난 공고에서 다음 행동 — 사장의 공고는 대체로 반복된다(같은 업장·역할·시급, 날짜만 다름).
   // 도착지가 이 공고를 프리셋 맨 앞에 올리므로 날짜만 새로 고르면 된다.
   const handleRepost = useCallback(() => {
@@ -494,7 +527,9 @@ export default function JobPostingDetailScreen() {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="공고 상세" fallbackHref="/(app)/(tabs)/employer" />
-        <PostingSurfaceState mode="loading" scope="detail" message="공고 정보를 불러오는 중..." />
+        {/* 관리 화면 형상 — 구직자 상세용(히어로+급여) 스켈레톤을 쓰면 로딩 중에 본 형태와
+            도착한 화면(통계+액션 목록)이 달라 기대를 잘못 만든다. */}
+        <PostingSurfaceState mode="loading" scope="manage" message="공고 정보를 불러오는 중..." />
       </SafeAreaView>
     );
   }

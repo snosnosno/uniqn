@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View, Text } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, Loading } from '@/components';
+import { Button } from '@/components';
+import { PostingSurfaceState } from '@/components/jobs';
 import { StackHeader } from '@/components/headers';
 import { OrderSheetScreen } from '@/components/employer/order-sheet/OrderSheetScreen';
 import { OrderSheetChainScrim } from '@/components/employer/order-sheet/OrderSheetChainScrim';
@@ -147,10 +148,8 @@ export default function EditJobPostingScreen() {
           fallbackHref={headerBackHref}
           rightAction={headerRightAction}
         />
-        <View className="flex-1 items-center justify-center">
-          <Loading size="large" />
-          <Text className="mt-4 text-content-secondary font-sans">공고 정보를 불러오는 중...</Text>
-        </View>
+        {/* 스켈레톤 통일(S2-9) — 형제 화면과 같은 형상을 쓴다. */}
+        <PostingSurfaceState mode="loading" scope="manage" />
       </SafeAreaView>
     );
   }

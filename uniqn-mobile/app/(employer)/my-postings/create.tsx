@@ -30,6 +30,7 @@ import { OrderSheetScreen } from '@/components/employer/order-sheet/OrderSheetSc
 import { OrderSheetChainScrim } from '@/components/employer/order-sheet/OrderSheetChainScrim';
 import { VenueSelectChips } from '@/components/employer/order-sheet/VenueSelectChips';
 import { shouldShowVenueChips, applySelectedVenue } from '@/utils/order-sheet/venueSelection';
+import { useShare } from '@/hooks/useShare';
 import type { OrderSheetPreset } from '@/components/employer/order-sheet/PresetCarousel';
 import type { OrderSheetFormValues, OrderSheetValues } from '@/schemas/orderSheet.schema';
 
@@ -41,6 +42,9 @@ export default function CreateJobPostingScreen() {
   // 프리셋 캐러셀에 올릴 최근 공고 수. 1건 고정이면 "지난주 그 공고"가 이미 밀려나 있어
   // 사장이 결국 처음부터 입력하게 된다. 3건을 넘기면 캐러셀에서 고르는 비용이 입력 비용에 근접한다.
   const RECENT_PRESET_LIMIT = 3;
+
+  // 근무표 복귀 토스트의 공유 CTA 노출 시간. 기본 3초는 그리드로 돌아가며 읽고 누르기엔 짧다.
+  const POST_CREATE_SHARE_TOAST_MS = 6000;
 
   // 근무표 "공고 열기/부족 모집" 진입 — venueId(운영처)·date(선택일)·count(부족 인원)를
   // 받아 초기값에 프리필(P2-1). 일반 생성(파라미터 없음)은 완전 무회귀(gridParamsToValues 폴백).
@@ -85,6 +89,8 @@ export default function CreateJobPostingScreen() {
   const { markClean } = useUnsavedChangesGuard(isDirty);
 
   const createJobPosting = useCreateJobPosting();
+  // 근무표 경유 생성은 완료 화면을 우회하므로 공유를 여기서 직접 걸어 준다.
+  const { shareJobById } = useShare();
   const templateManager = useTemplateManager();
 
   // 프리셋 캐러셀 데이터 소스 — 내 공고 목록에서 진짜 최신 1건("마지막 공고").
@@ -192,12 +198,22 @@ export default function CreateJobPostingScreen() {
         // 그리드 진입(venueId)이면 스택 하부 그리드로 복귀(선택 운영처·날짜 보존) — 완료 화면 우회.
         // 셀 +N 뱃지 갱신은 useCreateJobPosting 의 workSchedule 무효화가 담당.
         if (venueId && router.canGoBack()) {
+          // 이 경로는 완료 화면을 우회하므로 거기 있던 **공유 CTA** 를 통째로 못 본다 —
+          // 공고를 올리자마자 링크를 뿌리는 게 지원이 붙는 가장 빠른 길인데, 근무표에서
+          // 만든 공고만 그 기회를 잃고 있었다. 액션 토스트로 같은 행동을 준다.
           addToast({
             type: 'success',
             message:
               values.postingType === 'tournament'
                 ? '공고가 등록됐어요. 관리자 승인 후 게시돼요.'
                 : '공고가 등록됐어요.',
+            duration: POST_CREATE_SHARE_TOAST_MS,
+            action: {
+              label: '공유하기',
+              onPress: () => {
+                void shareJobById(created.id);
+              },
+            },
           });
           router.back();
         } else {
