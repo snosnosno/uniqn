@@ -11,6 +11,7 @@ import {
   ApplicantList,
   ApplicantConfirmModal,
   ApplicantProfileModal,
+  toApplicantFilter,
   type ConfirmModalAction,
 } from '@/components/employer';
 import { Loading, ErrorState } from '@/components';
@@ -34,7 +35,10 @@ import { useManualRefresh } from '@/hooks/useManualRefresh';
 // ============================================================================
 
 export default function ApplicantsScreen() {
-  const { id: jobPostingId } = useLocalSearchParams<{ id: string }>();
+  // filter — 허브의 통계 숫자에서 넘어온 초기 필터. 값이 이상하면 조용히 'all' 로 떨어진다
+  // (딥링크·수기 URL 로 아무 문자열이나 올 수 있다).
+  const { id: jobPostingId, filter } = useLocalSearchParams<{ id: string; filter?: string }>();
+  const initialFilter = useMemo(() => toApplicantFilter(filter), [filter]);
   const { job, isFixed, handleShowQR } = useJobDetailContext();
   const addToast = useToastStore((s) => s.addToast);
   const headerBackHref = `/(employer)/my-postings/${jobPostingId ?? ''}`;
@@ -312,6 +316,7 @@ export default function ApplicantsScreen() {
         onBulkConfirm={bulkConfirm}
         isBulkConfirming={isBulkConfirming}
         onSharePosting={handleSharePosting}
+        initialFilter={initialFilter}
       />
 
       {/* 확정/거절 모달 */}

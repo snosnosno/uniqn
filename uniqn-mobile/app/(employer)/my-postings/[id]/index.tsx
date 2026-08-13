@@ -60,6 +60,7 @@ import {
   POSTING_STATUS_ACTION_TEXT,
   projectPostingSurface,
   selectPostingStatusActions,
+  selectPrimaryAction,
 } from '@/domains/job-posting';
 import { UNDO_TOAST_DURATION_MS, UNDO_TOAST_LABEL } from '@/constants/undoToast';
 import { useApplicantsByJobPosting } from '@/hooks/applicant';
@@ -79,6 +80,40 @@ import { useWorkLogsByJobPosting } from '@/hooks/useSettlement';
 import { selectPendingSettlementCount } from '@/features/employer/settlements/settlementCalc';
 import { TodayOpsStrip } from '@/features/employer/settlements/TodayOpsStrip';
 
+/**
+ * 통계 한 칸 — 숫자 자체가 목적지가 된다.
+ *
+ * 그룹 accessibilityLabel 로 세 숫자를 한 덩어리로 묶던 것을 풀었다. 각 칸이 버튼이 된
+ * 이상 개별로 초점을 받아야 하고, 묶어 두면 스크린리더가 "지원자 5명, 확정 2명..." 한 줄만
+ * 읽고 각 칸을 누를 수 있다는 사실을 전달하지 못한다.
+ */
+function StatColumn({
+  value,
+  label,
+  valueClassName,
+  onPress,
+  testID,
+}: {
+  value: number;
+  label: string;
+  valueClassName: string;
+  onPress: () => void;
+  testID: string;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className="min-h-[44px] flex-1 items-center justify-center active:opacity-70"
+      accessibilityRole="button"
+      accessibilityLabel={`${label} ${value}명, 목록에서 보기`}
+      testID={testID}
+    >
+      <Text className={`text-xl font-display ${valueClassName}`}>{value}</Text>
+      <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">{label}</Text>
+    </Pressable>
+  );
+}
+
 interface ActionCardProps {
   icon: React.ReactNode;
   title: string;
@@ -88,6 +123,15 @@ interface ActionCardProps {
   badge?: { label: string; variant: 'primary' | 'success' | 'warning' | 'error' };
   onPress: () => void;
   testID?: string;
+  /**
+   * 'row'(기본) = 강등된 목록 행 / 'primary' = "지금 할 일" 한 장.
+   *
+   * 카드 6장이 전부 같은 크기라 우선순위 표현이 0이었다 — 사장이 매번 여섯 장을 읽고
+   * 무엇이 급한지 스스로 판단해야 했다. 위계는 **크기와 골드**로만 준다.
+   */
+  emphasis?: 'row' | 'primary';
+  /** primary 일 때 골드 버튼에 쓸 라벨 */
+  actionLabel?: string;
 }
 
 function ActionCard({
@@ -99,6 +143,8 @@ function ActionCard({
   badge,
   onPress,
   testID,
+  emphasis = 'row',
+  actionLabel,
 }: ActionCardProps) {
   const resolvedTitle = displayTitle ?? title;
   const resolvedDescription = displayDescription ?? description;
@@ -108,35 +154,83 @@ function ActionCard({
     ? `${resolvedTitle}, ${badge.label}, ${resolvedDescription}`
     : `${resolvedTitle}, ${resolvedDescription}`;
 
+  if (emphasis === 'primary') {
+    return (
+      <Pressable
+        onPress={onPress}
+        className="active:opacity-70"
+        accessibilityRole="button"
+        testID={testID}
+        // "지금 할 일"이라는 맥락은 시각적 위치로만 전달됐다 — 라벨에도 담는다.
+        accessibilityLabel={`지금 할 일. ${accessibilityLabel}`}
+      >
+        <Card
+          variant="elevated"
+          padding="md"
+          className="border border-primary-200 dark:border-primary-800"
+        >
+          <Text className="mb-2 text-xs font-sans-semibold text-primary-600 dark:text-primary-400">
+            지금 할 일
+          </Text>
+          <View className="flex-row items-center">
+            <View className="mr-3 h-12 w-12 items-center justify-center rounded-sm bg-primary-50 dark:bg-primary-900/30">
+              {icon}
+            </View>
+            <View className="flex-1">
+              <View className="flex-row items-center">
+                <Text className="mr-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
+                  {resolvedTitle}
+                </Text>
+                {badge ? (
+                  <Badge variant={badge.variant} size="sm">
+                    {badge.label}
+                  </Badge>
+                ) : null}
+              </View>
+              <Text className="mt-1 text-sm text-content-secondary font-sans">
+                {resolvedDescription}
+              </Text>
+            </View>
+          </View>
+          {/* 골드는 이 버튼에만 쓴다 — 강조가 여러 곳이면 아무것도 강조되지 않는다. */}
+          <View className="mt-4 min-h-[44px] items-center justify-center rounded-md bg-primary-600 py-3">
+            <Text className="text-base font-sans-semibold text-content-onGold">
+              {actionLabel ?? '바로 가기'}
+            </Text>
+          </View>
+        </Card>
+      </Pressable>
+    );
+  }
+
   return (
     <Pressable
       onPress={onPress}
-      className="active:opacity-70"
+      className="min-h-[56px] flex-row items-center px-4 py-3 active:bg-secondary-50 dark:active:bg-surface-overlay"
       accessibilityRole="button"
       testID={testID}
       accessibilityLabel={accessibilityLabel}
     >
-      <Card variant="elevated" padding="md" className="flex-row items-center">
-        <View className="mr-4 h-12 w-12 items-center justify-center rounded-sm bg-primary-50 dark:bg-primary-900/30">
-          {icon}
-        </View>
-        <View className="flex-1">
-          <View className="flex-row items-center">
-            <Text className="mr-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
-              {resolvedTitle}
-            </Text>
-            {badge ? (
-              <Badge variant={badge.variant} size="sm">
-                {badge.label}
-              </Badge>
-            ) : null}
-          </View>
-          <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-            {resolvedDescription}
+      {/* 강등된 행의 아이콘 배경은 중립이다. 골드를 여기까지 쓰면 "지금 할 일"이 묻힌다. */}
+      <View className="mr-3 h-9 w-9 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface-overlay">
+        {icon}
+      </View>
+      <View className="flex-1">
+        <View className="flex-row items-center">
+          <Text className="mr-2 text-base font-sans-medium text-content-primary dark:text-off-white">
+            {resolvedTitle}
           </Text>
+          {badge ? (
+            <Badge variant={badge.variant} size="sm">
+              {badge.label}
+            </Badge>
+          ) : null}
         </View>
-        <ChevronRightIcon size={20} color={SECONDARY_PALETTE[400]} />
-      </Card>
+        <Text className="mt-0.5 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+          {resolvedDescription}
+        </Text>
+      </View>
+      <ChevronRightIcon size={20} color={SECONDARY_PALETTE[400]} />
     </Pressable>
   );
 }
@@ -241,6 +335,14 @@ export default function JobPostingDetailScreen() {
   const handleApplicants = useCallback(() => {
     router.push(`/(employer)/my-postings/${id}/applicants`);
   }, [id, router]);
+
+  // 통계 숫자 → 그 숫자만 담긴 목록. 도착지가 filter 쿼리를 읽고 초기 탭을 맞춘다.
+  const handleApplicantsFiltered = useCallback(
+    (filter: string) => {
+      router.push(`/(employer)/my-postings/${id}/applicants?filter=${filter}`);
+    },
+    [id, router]
+  );
 
   const handleSettlements = useCallback(() => {
     router.push(`/(employer)/my-postings/${id}/settlements`);
@@ -439,6 +541,156 @@ export default function JobPostingDetailScreen() {
   const locationLabel = managementView.locationLabel || posting.location?.name || '위치 미정';
   const allowanceItems = managementView.allowanceLabels ?? [];
   const questionCount = managementView.questions.length;
+
+  // 오늘 근무자 중 아직 출근하지 않은 수 — 현장이 굴러가는 중이라 가장 시간에 민감한 신호다.
+  const todayAbsentCount = todayGroup
+    ? Math.max(0, todayGroup.stats.total - todayGroup.stats.checkedIn)
+    : 0;
+  const isLiveOpsVisible =
+    posting.postingType === 'tournament' &&
+    posting.tournamentConfig?.approvalStatus === STATUS.TOURNAMENT.APPROVED &&
+    !(['draft', 'pending', 'rejected', 'cancelled', 'expired'] as string[]).includes(
+      posting.status
+    );
+
+  // 고정 공고는 취소요청·정산·라이브 카드 자체가 없으므로 신호도 0으로 눌러 둔다 —
+  // 없는 카드를 "지금 할 일"로 고르면 아무 데도 데려가지 못한다.
+  const primaryActionKey = selectPrimaryAction({
+    cancellationPendingCount: isFixed ? 0 : cancellationPendingCount,
+    todayAbsentCount: isFixed ? 0 : todayAbsentCount,
+    pendingApplicantCount: pendingApplicants,
+    pendingSettlementCount: isFixed ? 0 : pendingSettlementCount,
+    liveOpsCount: isLiveOpsVisible ? opsTournaments.length : 0,
+  });
+
+  /** "지금 할 일"이 가리키는 카드 — 미출근과 정산 대기는 둘 다 정산 화면으로 간다. */
+  const primaryCardKey =
+    primaryActionKey === 'todayAbsent' || primaryActionKey === 'pendingSettlement'
+      ? 'settlements'
+      : primaryActionKey === 'pendingApplicants'
+        ? 'applicants'
+        : primaryActionKey;
+
+  /**
+   * 같은 카드라도 무엇 때문에 올라왔는지에 따라 다른 말을 해야 한다 —
+   * "스태프 관리/정산"이 미출근 때문에 올라왔는데 정산 얘기를 하면 사장은 다른 화면을 연다.
+   * `displayTitle`/`displayDescription` 은 이 용도로 이미 준비돼 있던 확장점이다.
+   */
+  const primaryOverride: Partial<ActionCardProps> =
+    primaryActionKey === 'todayAbsent'
+      ? {
+          displayTitle: '오늘 출근 확인',
+          displayDescription: `아직 출근하지 않은 스태프가 ${todayAbsentCount}명이에요.`,
+          actionLabel: '출근 현황 보기',
+        }
+      : primaryActionKey === 'pendingSettlement'
+        ? {
+            displayDescription: `정산할 근무가 ${pendingSettlementCount}건 남았어요.`,
+            actionLabel: '정산하러 가기',
+          }
+        : primaryActionKey === 'cancellationRequests'
+          ? { actionLabel: '취소 요청 검토하기' }
+          : primaryActionKey === 'pendingApplicants'
+            ? { actionLabel: '지원자 검토하기' }
+            : { actionLabel: '운영 화면 열기' };
+
+  interface PostingActionItem extends ActionCardProps {
+    key: string;
+    visible: boolean;
+  }
+
+  const allActionItems: PostingActionItem[] = [
+    // 🚨 라이브 운영은 연결된 대회가 있으면 **항상 맨 위**다. 빈도로 강등하면
+    //    대회 D-day 현장에서 사장이 이 진입점을 못 찾는다.
+    {
+      key: 'liveOps',
+      visible: isLiveOpsVisible,
+      icon: <UsersIcon size={20} color={STATUS_COLORS.info} />,
+      title:
+        opsTournaments.length > 0 ? `라이브 운영 (${opsTournaments.length})` : '라이브 운영 시작',
+      description:
+        opsTournaments.length > 0
+          ? '진행 중인 라이브 운영 화면으로 이동합니다.'
+          : '이 대회의 라이브 운영을 시작합니다.',
+      badge:
+        opsTournaments.length > 0
+          ? {
+              label: '진행 중',
+              variant: opsTournaments.some((t) => t.status === 'active') ? 'success' : 'primary',
+            }
+          : undefined,
+      onPress: handleLiveOps,
+      testID: 'job-posting-live-ops',
+    },
+    {
+      key: 'applicants',
+      visible: true,
+      icon: <UsersIcon size={20} color={SECONDARY_PALETTE[500]} />,
+      title: '지원자 관리',
+      description:
+        pendingApplicants > 0
+          ? `${pendingApplicants}명의 지원자가 대기중입니다.`
+          : '지원자 목록을 확인합니다.',
+      badge:
+        pendingApplicants > 0 ? { label: `${pendingApplicants}명`, variant: 'warning' } : undefined,
+      onPress: handleApplicants,
+      testID: 'job-posting-manage-applicants',
+    },
+    {
+      key: 'cancellationRequests',
+      visible: !isFixed,
+      icon: <XCircleIcon size={20} color={STATUS_COLORS.error} />,
+      title: '취소 요청 관리',
+      description: '스태프의 취소 요청을 검토합니다.',
+      badge:
+        cancellationPendingCount > 0
+          ? { label: `${cancellationPendingCount}건`, variant: 'error' }
+          : undefined,
+      onPress: handleCancellationRequests,
+      testID: 'job-posting-manage-cancellation-requests',
+    },
+    {
+      key: 'settlements',
+      visible: !isFixed,
+      icon: <BanknotesIcon size={20} color={STATUS_COLORS.success} />,
+      title: '스태프 관리/정산',
+      description: '배정된 스태프 관리와 정산을 진행합니다.',
+      badge:
+        pendingSettlementCount > 0
+          ? { label: `정산 ${pendingSettlementCount}건`, variant: 'warning' }
+          : undefined,
+      onPress: handleSettlements,
+      testID: 'job-posting-manage-settlements',
+    },
+    {
+      key: 'edit',
+      visible: true,
+      icon: <EditIcon size={20} color={SECONDARY_PALETTE[500]} />,
+      title: '공고 수정',
+      description: '공고 내용을 수정합니다.',
+      badge:
+        !isFixed && filledPositions > 0
+          ? { label: '일정·역할 수정 제한', variant: 'warning' }
+          : undefined,
+      onPress: handleEdit,
+      testID: 'job-posting-edit-button',
+    },
+    {
+      key: 'collaborators',
+      visible: true,
+      icon: <UserPlusIcon size={20} color={SECONDARY_PALETTE[500]} />,
+      title: '함께 관리할 사람',
+      description: '이 공고를 함께 관리할 사람을 추가하거나 제거합니다.',
+      onPress: handleCollaborators,
+      testID: 'job-posting-manage-collaborators',
+    },
+  ];
+
+  const actionItems = allActionItems.filter((item) => item.visible);
+
+  const primaryItem = actionItems.find((item) => item.key === primaryCardKey);
+  // 승격된 카드는 목록에서 뺀다 — 같은 testID 가 두 번 나오면 무엇을 누른 건지도 모호해진다.
+  const rowItems = actionItems.filter((item) => item.key !== primaryItem?.key);
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
@@ -649,43 +901,35 @@ export default function JobPostingDetailScreen() {
               </>
             ) : null}
 
-            <View
-              className="rounded-lg bg-surface-page dark:bg-surface px-3 pb-2 pt-3"
-              // 카드 전체를 한 덩어리로 읽힌다. 그룹핑이 없으면 스크린리더가 숫자와 라벨을
-              // 따로 읽어 "5", "지원자", "2", "확정" 처럼 짝이 끊긴 채 들린다.
-              accessible
-              accessibilityRole="summary"
-              accessibilityLabel={`지원자 ${totalApplicants}명, 확정 ${confirmedApplicants}명, 대기중 ${pendingApplicants}명`}
-            >
+            {/* 숫자는 목적지다 — 종전에는 "대기중 3"을 보고도 지원자 화면에 들어가 필터를
+                다시 골라야 했다. 세 숫자가 각자 자기 목록으로 데려간다. */}
+            <View className="rounded-lg bg-surface-page dark:bg-surface px-3 pb-2 pt-3">
               <View className="flex-row justify-around">
-                <View className="flex-1 items-center">
-                  <Text className="text-xl font-display text-primary-600 dark:text-primary-400">
-                    {totalApplicants}
-                  </Text>
-                  <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-                    지원자
-                  </Text>
-                </View>
+                <StatColumn
+                  value={totalApplicants}
+                  label="지원자"
+                  valueClassName="text-primary-600 dark:text-primary-400"
+                  onPress={() => handleApplicantsFiltered('all')}
+                  testID="job-posting-stat-total"
+                />
                 {/* 다크에서 부모 배경(bg-surface)과 같은 색이라 구분선이 통째로 사라졌다. */}
                 <View className="w-px bg-secondary-200 dark:bg-surface-overlay" />
-                <View className="flex-1 items-center">
-                  <Text className="text-xl font-display text-success-600 dark:text-success-400">
-                    {confirmedApplicants}
-                  </Text>
-                  <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-                    확정
-                  </Text>
-                </View>
+                <StatColumn
+                  value={confirmedApplicants}
+                  label="확정"
+                  valueClassName="text-success-600 dark:text-success-400"
+                  onPress={() => handleApplicantsFiltered(STATUS.APPLICATION.CONFIRMED)}
+                  testID="job-posting-stat-confirmed"
+                />
                 {/* 다크에서 부모 배경(bg-surface)과 같은 색이라 구분선이 통째로 사라졌다. */}
                 <View className="w-px bg-secondary-200 dark:bg-surface-overlay" />
-                <View className="flex-1 items-center">
-                  <Text className="text-xl font-display text-warning-600 dark:text-warning-400">
-                    {pendingApplicants}
-                  </Text>
-                  <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-                    대기중
-                  </Text>
-                </View>
+                <StatColumn
+                  value={pendingApplicants}
+                  label="대기중"
+                  valueClassName="text-warning-600 dark:text-warning-400"
+                  onPress={() => handleApplicantsFiltered(STATUS.APPLICATION.APPLIED)}
+                  testID="job-posting-stat-pending"
+                />
               </View>
 
               {/* 좌석(work_logs) 축 — 위 3숫자(applications 축)와 다른 축이라 표기를 분리한다.
@@ -739,126 +983,46 @@ export default function JobPostingDetailScreen() {
           </View>
         ) : null}
 
-        <View className="px-4 pb-4 pt-3">
-          <Text className="mb-3 text-lg font-display-semibold text-content-primary dark:text-off-white">
-            관리
-          </Text>
-
-          <View className="gap-3">
+        {/* 지금 할 일 — 손해가 가장 큰 신호 하나만 크게 낸다. 처리할 일이 없으면 이 자리도 없다. */}
+        {primaryItem ? (
+          <View className="px-4 pt-4">
             <ActionCard
-              icon={<UsersIcon size={24} color={PRIMARY_COLORS[600]} />}
-              title="지원자 관리"
-              description={`${pendingApplicants}명의 지원자가 대기중입니다.`}
-              badge={
-                pendingApplicants > 0
-                  ? { label: `${pendingApplicants}명`, variant: 'warning' }
-                  : undefined
-              }
-              onPress={handleApplicants}
-              testID="job-posting-manage-applicants"
-            />
-
-            {!isFixed && (
-              <ActionCard
-                icon={<XCircleIcon size={24} color={STATUS_COLORS.error} />}
-                title="취소 요청 관리"
-                description="스태프의 취소 요청을 검토합니다."
-                badge={
-                  cancellationPendingCount > 0
-                    ? { label: `${cancellationPendingCount}건`, variant: 'error' }
-                    : undefined
-                }
-                onPress={handleCancellationRequests}
-                testID="job-posting-manage-cancellation-requests"
-              />
-            )}
-
-            {!isFixed && (
-              <ActionCard
-                icon={<BanknotesIcon size={24} color={STATUS_COLORS.success} />}
-                title="스태프 관리/정산"
-                description="배정된 스태프 관리와 정산을 진행합니다."
-                // 배지는 **처리할 일**을 가리켜야 한다. 종전엔 좌석 수(filledPositions)를 달아
-                // 스태프가 있기만 하면 초록 배지가 상시로 떠 있었고, 정작 정산 대기가 몇 건인지는
-                // 정산 화면에 들어가야만 알 수 있었다.
-                badge={
-                  pendingSettlementCount > 0
-                    ? { label: `정산 ${pendingSettlementCount}건`, variant: 'warning' }
-                    : undefined
-                }
-                onPress={handleSettlements}
-                testID="job-posting-manage-settlements"
-              />
-            )}
-
-            {!isFixed && (
-              <ActionCard
-                icon={<EditIcon size={24} color={SECONDARY_PALETTE[500]} />}
-                title="공고 수정"
-                description="공고 내용을 수정합니다."
-                badge={
-                  filledPositions > 0
-                    ? { label: '일정·역할 수정 제한', variant: 'warning' }
-                    : undefined
-                }
-                onPress={handleEdit}
-                testID="job-posting-edit-button"
-              />
-            )}
-
-            {posting.postingType === 'tournament' &&
-              posting.tournamentConfig?.approvalStatus === STATUS.TOURNAMENT.APPROVED &&
-              !(['draft', 'pending', 'rejected', 'cancelled', 'expired'] as string[]).includes(
-                posting.status
-              ) && (
-                <ActionCard
-                  icon={<UsersIcon size={24} color={STATUS_COLORS.info} />}
-                  title={
-                    opsTournaments.length > 0
-                      ? `라이브 운영 (${opsTournaments.length})`
-                      : '라이브 운영 시작'
-                  }
-                  description={
-                    opsTournaments.length > 0
-                      ? '진행 중인 라이브 운영 화면으로 이동합니다.'
-                      : '이 대회의 라이브 운영을 시작합니다.'
-                  }
-                  badge={
-                    opsTournaments.length > 0
-                      ? {
-                          label: '진행 중',
-                          variant: opsTournaments.some((t) => t.status === 'active')
-                            ? 'success'
-                            : 'primary',
-                        }
-                      : undefined
-                  }
-                  onPress={handleLiveOps}
-                  testID="job-posting-live-ops"
-                />
-              )}
-
-            <ActionCard
-              icon={<UserPlusIcon size={24} color={SECONDARY_PALETTE[500]} />}
-              title="공유 관리"
-              description="이 공고를 함께 관리할 협업자를 추가하거나 제거합니다."
-              onPress={handleCollaborators}
-              testID="job-posting-manage-collaborators"
-            />
-          </View>
-        </View>
-
-        {isFixed ? (
-          <View className="px-4 pb-4">
-            <ActionCard
-              icon={<EditIcon size={24} color={SECONDARY_PALETTE[500]} />}
-              title="공고 수정"
-              description="공고 내용을 수정합니다"
-              onPress={handleEdit}
-              testID="job-posting-edit-button"
+              icon={primaryItem.icon}
+              title={primaryItem.title}
+              description={primaryItem.description}
+              badge={primaryItem.badge}
+              onPress={primaryItem.onPress}
+              testID={primaryItem.testID}
+              emphasis="primary"
+              {...primaryOverride}
             />
           </View>
         ) : null}
+
+        {/* 관리 — 나머지는 행으로 강등한다. 섹션 사이를 넉넉히 띄워 덩어리를 구분한다. */}
+        <View className="px-4 pb-4 pt-8">
+          <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
+            관리
+          </Text>
+
+          <View className="overflow-hidden rounded-lg bg-white dark:bg-surface">
+            {rowItems.map((item, index) => (
+              <React.Fragment key={item.key}>
+                {index > 0 ? (
+                  <View className="h-px bg-secondary-100 dark:bg-surface-overlay" />
+                ) : null}
+                <ActionCard
+                  icon={item.icon}
+                  title={item.title}
+                  description={item.description}
+                  badge={item.badge}
+                  onPress={item.onPress}
+                  testID={item.testID}
+                />
+              </React.Fragment>
+            ))}
+          </View>
+        </View>
 
         {posting.description && String(posting.description).length > 0 ? (
           <View className="px-4 pb-6">

@@ -56,6 +56,10 @@ jest.mock('@/components/employer', () => {
     ),
     ApplicantConfirmModal: () => null,
     ApplicantProfileModal: () => null,
+    // 필터 파싱 계약은 ApplicantList 쪽 테스트가 검증한다 — 여기서 빠뜨리면
+    // 화면이 마운트조차 못 한다("toApplicantFilter is not a function").
+    toApplicantFilter: jest.requireActual('@/components/employer/applicants/ApplicantList')
+      .toApplicantFilter,
   };
 });
 

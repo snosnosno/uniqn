@@ -30,6 +30,8 @@ export {
   getPostingDefaultSalary,
   getPostingSettlementContext,
 } from './selectors';
+export type { PostingPrimaryActionKey, PostingActionSignals } from './primaryAction';
+export { selectPrimaryAction } from './primaryAction';
 export type { PostingStatusActionValue } from './statusActions';
 export {
   POSTING_STATUS_ACTION_TEXT,
