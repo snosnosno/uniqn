@@ -10,6 +10,10 @@ import type {
   ConfirmedStaffStatus,
 } from '@/types';
 import { CalendarIcon, ChevronDownIcon, ChevronUpIcon, UsersIcon } from '@/components/icons';
+import {
+  formatCapacityGapLabel,
+  type PostingCapacityGap,
+} from '@/domains/job-posting/capacityGap';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { FilterTabs, type FilterTabOption } from '@/components/ui/FilterTabs';
@@ -31,6 +35,11 @@ export interface ConfirmedStaffListProps {
   onStatusChange?: (staff: ConfirmedStaff) => void;
   onCancelNoShow?: (staff: ConfirmedStaff) => void;
   showActions?: boolean;
+  /**
+   * 근무일별 D-day 정원 미달 (S3-1) — `selectPostingCapacityGaps` → `toCapacityGapByDate` 결과.
+   * 미주입 시 경고 줄은 렌더되지 않는다(기존 동작 완전 보존).
+   */
+  capacityGapByDate?: Map<string, PostingCapacityGap>;
 }
 
 type FilterStatus = 'all' | ConfirmedStaffStatus;
@@ -57,55 +66,81 @@ interface SectionHeaderProps {
   group: ConfirmedStaffGroup;
   isExpanded: boolean;
   onToggle: () => void;
+  /** 이 날짜의 D-day 정원 미달 (S3-1). 없으면 경고 줄을 렌더하지 않는다. */
+  capacityGap?: PostingCapacityGap;
 }
 
-function SectionHeader({ group, isExpanded, onToggle }: SectionHeaderProps) {
+function SectionHeader({ group, isExpanded, onToggle, capacityGap }: SectionHeaderProps) {
   return (
     <Pressable
       onPress={onToggle}
-      className={`mx-4 mb-2 flex-row items-center justify-between rounded-lg bg-surface-page dark:bg-surface px-4 py-3 dark:bg-surface/50 ${
+      className={`mx-4 mb-2 rounded-lg bg-surface-page dark:bg-surface px-4 py-3 dark:bg-surface/50 ${
         group.isToday ? 'border border-primary-200 dark:border-primary-700' : ''
       }`}
     >
-      <View className="flex-row items-center">
-        <CalendarIcon size={18} color={group.isToday ? '#D4AF37' : SECONDARY_PALETTE[500]} />
-        <Text
-          className={`ml-2 text-base font-sans-semibold ${
-            group.isToday ? 'text-primary-600 dark:text-primary-400' : 'text-content-primary'
-          }`}
-        >
-          {group.formattedDate}
-          {group.isToday ? ' (오늘)' : ''}
-        </Text>
-      </View>
-
-      <View className="flex-row items-center">
-        <View className="mr-2 flex-row items-center">
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-            {group.stats.total}
+      <View className="flex-row items-center justify-between">
+        <View className="flex-row items-center">
+          <CalendarIcon size={18} color={group.isToday ? '#D4AF37' : SECONDARY_PALETTE[500]} />
+          <Text
+            className={`ml-2 text-base font-sans-semibold ${
+              group.isToday ? 'text-primary-600 dark:text-primary-400' : 'text-content-primary'
+            }`}
+          >
+            {group.formattedDate}
+            {group.isToday ? ' (오늘)' : ''}
           </Text>
-          {group.stats.checkedIn > 0 ? (
-            <View className="ml-1 rounded bg-success-50 px-1.5 py-0.5 dark:bg-success-900/30">
-              <Text className="text-xs text-success-600 dark:text-success-400 font-sans">
-                {group.stats.checkedIn}
-              </Text>
-            </View>
-          ) : null}
-          {group.stats.noShow > 0 ? (
-            <View className="ml-1 rounded bg-orange-100 px-1.5 py-0.5 dark:bg-orange-900/30">
-              <Text className="text-xs text-orange-600 dark:text-orange-400 font-sans">
-                {group.stats.noShow}
-              </Text>
-            </View>
-          ) : null}
         </View>
 
-        {isExpanded ? (
-          <ChevronUpIcon size={20} color={SECONDARY_PALETTE[500]} />
-        ) : (
-          <ChevronDownIcon size={20} color={SECONDARY_PALETTE[500]} />
-        )}
+        <View className="flex-row items-center">
+          <View className="mr-2 flex-row items-center">
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+              {group.stats.total}
+            </Text>
+            {group.stats.checkedIn > 0 ? (
+              <View className="ml-1 rounded bg-success-50 px-1.5 py-0.5 dark:bg-success-900/30">
+                <Text className="text-xs text-success-600 dark:text-success-400 font-sans">
+                  {group.stats.checkedIn}
+                </Text>
+              </View>
+            ) : null}
+            {group.stats.noShow > 0 ? (
+              <View className="ml-1 rounded bg-orange-100 px-1.5 py-0.5 dark:bg-orange-900/30">
+                <Text className="text-xs text-orange-600 dark:text-orange-400 font-sans">
+                  {group.stats.noShow}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+
+          {isExpanded ? (
+            <ChevronUpIcon size={20} color={SECONDARY_PALETTE[500]} />
+          ) : (
+            <ChevronDownIcon size={20} color={SECONDARY_PALETTE[500]} />
+          )}
+        </View>
       </View>
+
+      {/*
+        D-2/D-1 정원 미달 경고 (S3-1).
+        같은 판정이 서버 크론으로 알림도 나가지만, 알림은 하루 한 번 지나가고 근무표는 계속 본다 —
+        여기 없으면 "알림은 왔는데 어느 날인지 화면에서 못 찾는" 상태가 된다.
+        접근성 라벨에 숫자를 풀어 담는 이유: 색 틴트만으로는 경고임을 전달하지 못하고,
+        `accessibilityState` 는 웹(react-native-web)에서 무효라 상태를 라벨에 실어야 한다.
+      */}
+      {capacityGap ? (
+        <View
+          accessible
+          accessibilityRole="text"
+          accessibilityLabel={`정원 미달 경고. ${group.formattedDate} 근무, ${formatCapacityGapLabel(
+            capacityGap
+          )}. 필요 ${capacityGap.required}명 중 ${capacityGap.filled}명 확정.`}
+          className="mt-2 self-start rounded-md bg-warning-100 px-2 py-1 dark:bg-warning-700/30"
+        >
+          <Text className="text-xs font-sans-semibold text-warning-700 dark:text-warning-500">
+            {formatCapacityGapLabel(capacityGap)}
+          </Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -125,6 +160,7 @@ export function ConfirmedStaffList({
   onStatusChange,
   onCancelNoShow,
   showActions = true,
+  capacityGapByDate,
 }: ConfirmedStaffListProps) {
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
   const [expandedDates, setExpandedDates] = useState<Set<string>>(() => {
@@ -225,9 +261,10 @@ export function ConfirmedStaffList({
         group={section.group}
         isExpanded={expandedDates.has(section.title)}
         onToggle={() => toggleSection(section.title)}
+        capacityGap={capacityGapByDate?.get(section.group.date)}
       />
     ),
-    [expandedDates, toggleSection]
+    [capacityGapByDate, expandedDates, toggleSection]
   );
 
   const keyExtractor = useCallback((item: ConfirmedStaff) => item.id, []);

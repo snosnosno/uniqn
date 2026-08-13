@@ -70,14 +70,26 @@ BEGIN
     GROUP BY jp.id, jp.owner_id, jp.title, (req ->> 'date')
   ),
   filled AS (
-    -- '활성'의 정의는 좌석 카운터 트리거(fn_sync_filled_positions_seat)와 같아야 한다 —
-    -- 기준이 어긋나면 화면의 "자리 N/M 채움" 과 이 알림이 다른 말을 한다.
+    -- 🔑 '채움'의 판정축은 **앱이 노쇼를 읽는 축**과 같아야 한다.
+    --    좌석 카운터 트리거(fn_sync_filled_positions_seat)는 `status` 만 본다.
+    --    그런데 앱은 `status='no_show' OR no_show_at IS NOT NULL` 로 읽는다
+    --    (src/services/work/confirmedStaffService.ts:44,
+    --     src/domains/staff/confirmedStaff.ts:60 은 no_show_at 만 본다).
+    --    정본 경로(ConfirmedStaffRepository.markAsNoShow)는 두 컬럼을 **함께** 쓰므로
+    --    지금은 두 축이 일치한다 — 즉 이건 실측된 누락이 아니라 방어다.
+    --    그래도 좁은 축(no_show_at 추가)을 택하는 이유는 **실패 방향**이 다르기 때문이다:
+    --      · 넓게 세면(=status 만) 노쇼를 채움으로 착각해 **알림이 안 간다** → 빈 자리로 당일을 맞는다.
+    --      · 좁게 세면 이미 채운 자리를 비었다고 볼 수 있다 → 알림 1건이 더 갈 뿐이다.
+    --    "지금이면 아직 채울 수 있어요" 라고 말하는 알림에서 거짓 침묵은 거짓 경고보다 훨씬 비싸다.
+    -- ⚠️ 그 대가로 화면의 "자리 N/M 채움"(filled_positions, 트리거 축)과 이 알림이
+    --    어긋날 수 있다 — 두 축이 갈라진 행이 실제로 생겼을 때만이고, 그건 의도한 절충이다.
     SELECT
       wl.job_posting_id,
       wl.date              AS work_date_text,
       COUNT(*)::integer    AS filled_count
     FROM public.work_logs wl
     WHERE wl.status NOT IN ('cancelled', 'no_show')
+      AND wl.no_show_at IS NULL
     GROUP BY wl.job_posting_id, wl.date
   ),
   gap AS (

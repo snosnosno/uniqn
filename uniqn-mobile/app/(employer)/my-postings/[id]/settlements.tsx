@@ -10,7 +10,13 @@ import React, { useState, useMemo } from 'react';
 import { View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getPostingSettlementContext, aggregateRoleFilledFromSubmap } from '@/domains/job-posting';
+import {
+  getPostingSettlementContext,
+  aggregateRoleFilledFromSubmap,
+  selectPostingCapacityGaps,
+  toCapacityGapByDate,
+} from '@/domains/job-posting';
+import { getTodayString } from '@/utils/date';
 import { usePostingFilledCounts, extractPostingFilledSubmap } from '@/hooks/usePostingFilledCounts';
 import { SettlementList, StaffManagementTab } from '@/components/employer';
 import { SettlementModals } from '@/features/employer/settlements/SettlementModals';
@@ -105,6 +111,21 @@ export default function StaffSettlementsScreen() {
       ),
     [filledCountsMap, jobPostingId]
   );
+
+  // 근무일 D-2/D-1 정원 미달 (S3-1) — 서버 크론이 알림으로 보내는 것과 같은 판정을 화면에서도 한다.
+  // 같은 서브맵을 재사용하므로 추가 조회가 없다(날짜 차원만 남기고 접는다).
+  const capacityGapByDate = useMemo(() => {
+    if (!posting) {
+      return undefined;
+    }
+    return toCapacityGapByDate(
+      selectPostingCapacityGaps(
+        posting,
+        extractPostingFilledSubmap(filledCountsMap, jobPostingId || ''),
+        getTodayString()
+      )
+    );
+  }, [posting, filledCountsMap, jobPostingId]);
 
   // 핸들러 다발 (클로저 의존은 인자로 주입해 deps 보존)
   const {
@@ -213,6 +234,7 @@ export default function StaffSettlementsScreen() {
           jobPostingId={jobPostingId || ''}
           jobPosting={posting ?? undefined}
           filledByRole={filledByRole}
+          capacityGapByDate={capacityGapByDate}
           onShowReport={modals.openReportModal}
         />
       ) : (

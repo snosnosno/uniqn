@@ -46,3 +46,12 @@ export {
 } from './stats';
 export { isTournamentApprovalBlocked, canShareJob } from './approvalGate';
 export { BROWSABLE_POSTING_STATUSES } from './constants';
+export type { PostingCapacityGap } from './capacityGap';
+export {
+  CAPACITY_GAP_WARNING_OFFSETS,
+  aggregateDateFilledFromSubmap,
+  aggregatePostingDateRequired,
+  formatCapacityGapLabel,
+  selectPostingCapacityGaps,
+  toCapacityGapByDate,
+} from './capacityGap';
