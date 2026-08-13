@@ -100,6 +100,13 @@ export const NotificationType = {
   /** 근무일 경과 자동 마감 (작성자에게) */
   WORK_DATE_EXPIRED: 'work_date_expired',
   /**
+   * 근무일 D-2/D-1 정원 미달 (작성자에게).
+   * 생산자는 크론 `notify-posting-capacity-gap` → `fn_notify_posting_capacity_gap()`
+   * (마이그 20260813110000). 근무 당일 아침에 알면 늦다 — 단발 인력은 하루 전에 이미
+   * 다른 일정을 잡는다.
+   */
+  POSTING_CAPACITY_GAP: 'posting_capacity_gap',
+  /**
    * ⚠️ 아래 JOB_POSTING_COLLABORATOR_* 2종은 baseline(20260710000002)의 트리거 함수
    * notify_on_collaborator_added / notify_on_collaborator_removed 가 문자열로
    * 하드코딩해 INSERT합니다. 값 변경 시 새 마이그레이션으로 트리거도 함께 수정해야 합니다.
@@ -253,6 +260,7 @@ export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, Notificatio
   [NotificationType.JOB_CLOSED]: NotificationCategory.JOB,
   [NotificationType.FIXED_POSTING_EXPIRED]: NotificationCategory.JOB,
   [NotificationType.WORK_DATE_EXPIRED]: NotificationCategory.JOB,
+  [NotificationType.POSTING_CAPACITY_GAP]: NotificationCategory.JOB,
   // 협업자 초대/제외는 공고 '상태' 변화가 아니라 '권한' 변화다 —
   // ROLE_CHANGED·WORKSPACE_INVITATION 과 같은 축으로 둔다. '공고' 토글을 끈 사장이
   // 관리 권한 통지까지 놓치면 안 된다.
@@ -345,6 +353,9 @@ export const NOTIFICATION_DEFAULT_PRIORITY: Record<NotificationType, Notificatio
   [NotificationType.JOB_CLOSED]: 'normal',
   [NotificationType.FIXED_POSTING_EXPIRED]: 'normal',
   [NotificationType.WORK_DATE_EXPIRED]: 'normal',
+  // 하루 전은 마지막 기회다 — 서버가 d_offset 에 따라 urgent/high 를 실제로 갈라 쓴다.
+  // 여기 기본값은 그 중 낮은 쪽에 맞춘다(클라가 서버 값을 덮지 않도록).
+  [NotificationType.POSTING_CAPACITY_GAP]: 'high',
   [NotificationType.JOB_POSTING_COLLABORATOR_ADDED]: 'normal',
   [NotificationType.JOB_POSTING_COLLABORATOR_REMOVED]: 'normal',
 
@@ -531,6 +542,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   [NotificationType.JOB_CLOSED]: '공고 마감',
   [NotificationType.FIXED_POSTING_EXPIRED]: '고정 공고 만료',
   [NotificationType.WORK_DATE_EXPIRED]: '근무일 경과 마감',
+  [NotificationType.POSTING_CAPACITY_GAP]: '정원 미달 알림',
   [NotificationType.JOB_POSTING_COLLABORATOR_ADDED]: '공고 관리 초대',
   [NotificationType.JOB_POSTING_COLLABORATOR_REMOVED]: '공고 관리 제외',
 

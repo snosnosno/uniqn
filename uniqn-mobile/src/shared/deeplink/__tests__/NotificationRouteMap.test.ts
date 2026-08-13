@@ -12,11 +12,13 @@ describe('NotificationRouteMap', () => {
   it('covers every NotificationType', () => {
     const allNotificationTypes = Object.values(NotificationType) as NotificationType[];
 
+    // 52 = 51 + posting_capacity_gap (S3-1 — 크론 notify-posting-capacity-gap 이 보낸다,
+    //                                  마이그 20260813110000)
     // 51 = 50 + ops_staff_assigned (ops 결함⑦-1 — 마이그 20260809100000 의 트리거가 보낸다)
     // 50 = 46 + job_posting_collaborator_added/removed (DB 트리거가 보내는데 클라가 몰랐다)
     //         + work_log_check_in/out (2026-04-21~08-07 발송분 6건 흡수용 레거시)
     //      46 = 47 - settlement_requested(정산 요청, 2026-08-02 죽은 회로 정리로 제거 — 발신 코드가 이력 전체에 0건이었다)
-    expect(allNotificationTypes.length).toBe(51);
+    expect(allNotificationTypes.length).toBe(52);
 
     allNotificationTypes.forEach((type) => {
       expect(NOTIFICATION_ROUTE_MAP[type]).toBeDefined();
