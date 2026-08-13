@@ -471,6 +471,11 @@ export default function JobPostingDetailScreen() {
     router.push(`/(app)/jobs/${id}`);
   }, [id]);
 
+  /** 확정 스태프 일괄 공지 (S3-2) */
+  const handleAnnounce = useCallback(() => {
+    router.push(`/(employer)/my-postings/${id}/announce`);
+  }, [id]);
+
   /** 지원 QR — 출퇴근 QR(`/qr`)과 다른 화면이다. 페이로드 type 부터 다르다(S3-5). */
   const handleShowApplyQR = useCallback(() => {
     router.push(`/(employer)/my-postings/${id}/apply-qr`);
@@ -722,6 +727,16 @@ export default function JobPostingDetailScreen() {
           : undefined,
       onPress: handleEdit,
       testID: 'job-posting-edit-button',
+    },
+    {
+      key: 'announce',
+      // 배정된 스태프가 있어야 보낼 대상이 있다 — 0명일 때 띄우면 눌러 봐야 빈 화면이다.
+      visible: filledPositions > 0,
+      icon: <UsersIcon size={20} color={SECONDARY_PALETTE[500]} />,
+      title: '스태프 공지',
+      description: '확정된 스태프 전원에게 한 번에 안내를 보냅니다.',
+      onPress: handleAnnounce,
+      testID: 'job-posting-announce',
     },
     {
       key: 'collaborators',

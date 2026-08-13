@@ -87,6 +87,11 @@ export const NOTIFICATION_ROUTE_MAP: Record<
       ? { name: 'employer/posting', params: { id: data.jobPostingId } }
       : { name: 'employer/my-postings' },
 
+  // 🔑 공고 공지는 **스태프가 받는다** — 구직자 뷰('job')로 보낸다.
+  //    RPC 가 심는 link('/jobs/{id}')와 목적지를 맞춘다.
+  [NotificationType.POSTING_ANNOUNCEMENT]: (data) =>
+    data?.jobPostingId ? { name: 'job', params: { id: data.jobPostingId } } : { name: 'jobs' },
+
   // 트리거가 심는 link 와 같은 목적지로 맞춘다(added='/my-postings/{id}', removed='/my-postings').
   // 제외 알림에는 jobPostingId 가 data 에만 있고 link 에는 없다 — 이미 권한을 잃은 공고
   // 상세로 보내면 접근 거부를 만나므로 목록으로 되돌린다.

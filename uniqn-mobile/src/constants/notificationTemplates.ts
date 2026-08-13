@@ -245,6 +245,16 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     icon: '⚠️',
   },
 
+  // 🔑 제목·본문은 **사장이 직접 쓴 문장**이 정본이다(RPC 가 그대로 심는다).
+  //    여기 정의는 exhaustive Record 를 만족시키는 폴백일 뿐이라 일부러 일반적인 문구를 쓴다.
+  //    목적지는 스태프가 보는 공고 상세(/jobs)다 — 관리 화면이 아니다.
+  [NotificationType.POSTING_ANNOUNCEMENT]: {
+    title: '공고 공지',
+    body: (d) => `"${d.jobTitle}" 공고에 새 공지가 있습니다.`,
+    link: (d) => (d.jobPostingId ? `/jobs/${d.jobPostingId}` : '/jobs'),
+    icon: '📢',
+  },
+
   // ⚠️ 아래 4종은 DB 트리거가 직접 INSERT 한다(클라 발신 경로 없음).
   //    여기 정의는 exhaustive Record 를 만족시키기 위한 2차 진실원이며,
   //    사용자에게 실제로 보이는 문구는 마이그레이션의 트리거 정의가 정본이다.
