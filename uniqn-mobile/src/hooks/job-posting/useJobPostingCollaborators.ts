@@ -16,6 +16,7 @@ import { logger } from '@/utils/logger';
 import { useToastStore } from '@/stores/toastStore';
 import { extractUserMessage } from '@/errors';
 import type {
+  JobPostingCollaboratorRole,
   JobPostingCollaboratorWithUser,
   CollaboratorSearchCandidate,
 } from '@/types/jobPostingCollaborator';
@@ -37,6 +38,9 @@ export interface UseJobPostingCollaboratorsResult {
   /** 협업자 제거 (workspace owner OR 본인 — RLS 가 강제) */
   remove: (userId: string) => Promise<void>;
   isRemoving: boolean;
+  /** 협업자 권한 변경 (S3-4 — workspace owner 만, RLS 가 강제) */
+  changeRole: (userId: string, role: JobPostingCollaboratorRole) => Promise<void>;
+  isChangingRole: boolean;
   /** 본인 나가기 */
   leaveSelf: () => Promise<void>;
 }
@@ -107,6 +111,27 @@ export function useJobPostingCollaborators(
     },
   });
 
+  const changeRoleMutation = useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: JobPostingCollaboratorRole }) => {
+      requireOnlineForMutation('협업자 권한 변경');
+      return collaboratorService.changeRole({ jobPostingId: jobPostingId!, userId, role });
+    },
+    onSuccess: (_data, variables) => {
+      if (jobPostingId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.jobPostingCollaborators.list(jobPostingId),
+        });
+      }
+      toast.success(
+        variables.role === 'viewer' ? '보기 전용으로 바꿨습니다' : '관리 권한을 부여했습니다'
+      );
+    },
+    onError: (error) => {
+      logger.error('협업자 권한 변경 실패', error);
+      toast.error(extractUserMessage(error) || '권한 변경에 실패했습니다');
+    },
+  });
+
   const leaveMutation = useMutation({
     mutationFn: () => {
       requireOnlineForMutation('공고 관리 나가기');
@@ -143,6 +168,10 @@ export function useJobPostingCollaborators(
       await removeMutation.mutateAsync(userId);
     },
     isRemoving: removeMutation.isPending,
+    changeRole: async (userId: string, role: JobPostingCollaboratorRole) => {
+      await changeRoleMutation.mutateAsync({ userId, role });
+    },
+    isChangingRole: changeRoleMutation.isPending,
     leaveSelf: async () => {
       await leaveMutation.mutateAsync();
     },

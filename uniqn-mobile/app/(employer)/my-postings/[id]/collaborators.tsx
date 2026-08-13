@@ -27,8 +27,19 @@ export default function CollaboratorsRoute() {
 
   // 공고 데이터는 레이아웃이 realtime 구독과 함께 한 번만 조회한다.
   const { job: jobPosting } = useJobDetailContext();
-  const { collaborators, isLoading, error, refetch, add, isAdding, remove, isRemoving, leaveSelf } =
-    useJobPostingCollaborators(jobPostingId);
+  const {
+    collaborators,
+    isLoading,
+    error,
+    refetch,
+    add,
+    isAdding,
+    remove,
+    isRemoving,
+    leaveSelf,
+    changeRole,
+    isChangingRole,
+  } = useJobPostingCollaborators(jobPostingId);
 
   // workspace owner 여부 — RLS 가 진짜 게이트, UI 분기용
   // ownerId 가 현재 사용자면 owner.
@@ -97,7 +108,8 @@ export default function CollaboratorsRoute() {
                 currentUserId={currentUserId}
                 onRemove={remove}
                 onLeave={leaveSelf}
-                actionDisabled={isRemoving}
+                onChangeRole={changeRole}
+                actionDisabled={isRemoving || isChangingRole}
               />
             </View>
           </ScrollView>

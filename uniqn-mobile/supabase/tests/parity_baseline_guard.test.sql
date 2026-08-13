@@ -169,12 +169,22 @@
 --     붙어 있어 whitelist 축소 보호가 그대로 산다.
 --     같은 마이그의 `ops_prizes_select`(cost-04 initplan 래핑)는 DROP+CREATE 재정의라 증감 0.
 --     함수 208 불변 — 크론 2건(cost-02 alter_job / cost-03 신설)은 인라인 SQL 이라 함수를 안 만든다.
+--   · 2026-08-13 공고상세 3단계 — 함수 208 → **214**, 정책 110 → **112**.
+--     함수 +6: fn_notify_posting_capacity_gap(20260813110000, S3-1) ·
+--              get_applicant_no_show_counts(20260813120000, S3-3) ·
+--              send_job_posting_announcement(20260813140000, S3-2) ·
+--              is_posting_collaborator_any + fn_jpc_role_update_guard +
+--              fn_jpc_role_change_audit(20260813150000, S3-4)
+--     정책 +2: jpa_select_manager(S3-2) · jpc_update_role_owner(S3-4)
+--     (S3-4 가 읽기 정책 5개를 DROP+CREATE 로 교체하지만 개수는 불변이다)
+--     🔴 **prod 미적용** — 이 5개 마이그가 prod 에 들어가기 전까지 주간 parity-smoke 가
+--        214/112 vs 208/110 불일치를 보고한다. 위 20260809140000 사례와 같은 상태다.
 --     🔴 prod 미적용 — 머지·prod 적용 전까지 주간 parity-smoke 가 111 vs 110 불일치를 보고한다.
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=208
--- PARITY_EXPECT_POLICIES=110
+-- PARITY_EXPECT_FUNCS=214
+-- PARITY_EXPECT_POLICIES=112
 -- ============================================================
 BEGIN;
 SELECT plan(7);
@@ -193,14 +203,14 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  208,
-  'public function count (208 = 200 + update_work_log_custom_settlement 1(감사 S-D) + ops_set_participant_chips 1(결함①) + ops_set_participant_no_show 1(결함②) + 정정·제거·아카이브 3(결함③) + notify_on_ops_staff_insert 1(결함⑦-1) + ops_resolve_staff_work_logs 1(결함⑦-2), 2026-08-09)');
+  214,
+  'public function count (214 = 208 + 공고상세 3단계 6종: fn_notify_posting_capacity_gap(S3-1) + get_applicant_no_show_counts(S3-3) + send_job_posting_announcement(S3-2) + is_posting_collaborator_any·fn_jpc_role_update_guard·fn_jpc_role_change_audit(S3-4), 2026-08-13)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(
   (SELECT count(*)::int FROM pg_policies WHERE schemaname = 'public'),
-  110,
-  'public RLS policy count == prod (110 = 111 - jp_select_public_search 1(cost-01 중복 공개 SELECT 정책 제거), 2026-08-09)');
+  112,
+  'public RLS policy count (112 = 110 + jpa_select_manager 1(S3-2 공지 이력) + jpc_update_role_owner 1(S3-4 role 변경), 2026-08-13)');
 
 -- 4~6. gen-1 재빌드 보안퇴행 3종 부재 (prod=deny, 레포 전용 부활 금지)
 SELECT is(
