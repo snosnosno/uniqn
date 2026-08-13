@@ -1,6 +1,15 @@
-# 구인자 공고상세 개선 — 실행 원장 (2026-08-13 개설)
+# 구인자 공고상세 개선 — 실행 원장 (2026-08-13 개설 · 08-13 2차 갱신)
 
-> **다음 세션은 이 문서부터 읽는다.** 감사 원본은 `docs/analysis/2026-08-12-employer-posting-detail-ux-audit.md`
+> ## 다음 세션은 여기서 시작한다
+>
+> - **2단계 12건 = 전량 완료.** 3단계는 **S3-7 만 완료**, 나머지 5건 남음(S3-6 은 착수 금지).
+> - 남은 5건은 **화면 작업이 아니라 스키마 작업**이다 — §4 의 "착수 전 반드시 아는 사실" 7개를
+>   먼저 읽어라. 규모 추정이 원안과 다르고, 멱등 인덱스 부재 같은 함정이 실측으로 드러났다.
+> - 브랜치 `fix/posting-detail-honesty-20260813` (origin/master +10, **미푸시**).
+>   PR·push 는 아직 하지 않았다.
+> - §2 에 이번 세션에서 새로 물린 함정 5건(11~15)이 있다. **목 누락으로만 5번 깨졌다.**
+
+> 감사 원본은 `docs/analysis/2026-08-12-employer-posting-detail-ux-audit.md`
 > (⚠️ 2026-08-13 기준 **메인 체크아웃에 미커밋 상태**. 없으면 아티팩트에서 확인:
 > https://claude.ai/code/artifact/955d83cd-a08e-46d9-8430-b85d55ed4054 )
 >
@@ -27,15 +36,34 @@
 
 ---
 
-## 1. 현재 상태 (2026-08-13 실측)
+## 1. 현재 상태 (2026-08-13 2차 세션 종료 시점)
 
 ```
-브랜치   fix/posting-detail-honesty-20260813   (origin/master +2, 미푸시)
+브랜치   fix/posting-detail-honesty-20260813   (origin/master +10, 미푸시)
 워크트리 C:/Users/user/Desktop/T-HOLDEM-wt-honesty
-커밋     e1b41c15c feat(employer): 공고상세 허브 신호 묶음
-         7be60d83c fix(employer): 공고상세 정직성 묶음
-base     8b08010aa (origin/master)
+base     8b08010aa (origin/master — 재확인 완료, 변동 없음)
+
+커밋 (오래된 → 최신)
+  7be60d83c fix(employer): 공고상세 정직성 묶음                    ← 1단계
+  e1b41c15c feat(employer): 공고상세 허브 신호 묶음                 ← 1단계
+  208de4f88 docs(planning): 실행 원장 개설
+  c7e7a36e9 refactor(employer): useJobDetail 단일 수렴              ← S2-1
+  47a6a1a8c fix(employer): 숫자 진실원 통일·삭제 가드 축 정정        ← S2-2
+  dd92c7228 feat(employer): 상태 전이 배선 + 되돌리기 전환           ← S2-3·S2-7
+  123b7dfca feat(employer): 카드 위계 3단 + 통계 딥링크              ← S2-4·S2-8·S2-12
+  ec90174ca feat(employer): 재게시 + 취소요청 모달 수렴              ← S2-5·S2-6
+  e21757c46 feat(employer): 스켈레톤 통일 + 새 지원 알림             ← S2-9·S2-11
+  233dee90c fix(ops): ops 뒤로가기 구인자 맥락 보존                  ← S3-7
 ```
+
+**2단계 12건 전량 착지 · 3단계는 S3-7 만 착지.** 최종 검증:
+`npm run quality` exit 0 · jest **675 스위트 7639건 전량 통과**.
+
+신규 회귀 테스트 9파일(2단계에서 추가): `jobDetailSingleSubscription` ·
+`JobPostingDetailScreen.{seatAxis,statusTransition,actionHierarchy}` ·
+`ApplicantsScreen.undoCancelConfirmation` · `statusActions` · `primaryAction` ·
+`toApplicantFilter` · `PostingSurfaceState.manageScope` · `opsNavigation`.
+전부 red-green 을 실제로 관측하고 복원했다(각 커밋 메시지에 무엇을 되돌려 무엇이 실패했는지 기록).
 
 🚨 **병렬 세션 4개가 동시 활성이었다** — 실행 직전 `git worktree list` 로 반드시 재실측.
 
@@ -111,9 +139,53 @@ C:/Users/user/Desktop/T-HOLDEM-wt-schedule                      fix/schedule-pos
 10. **jest 경로 패턴에 괄호를 쓰지 마라** — `app/(employer)/...` 는 정규식으로 해석돼 0 매치.
     파일명 기반 패턴(`JobPostingDetailScreen`)을 쓴다.
 
+### 2차 세션(2026-08-13)에서 새로 물린 것
+
+11. 🚨 **목 누락으로 스위트가 다섯 번 깨졌다 — 같은 사고의 반복이다.**
+    화면에 무언가를 새로 쓸 때마다 기존 스위트의 목에 그 이름이 없어 화면이 마운트조차
+    못 했다: `SeatFillSummary`(displayName 에러) · `useWorkLogsByJobPosting` ·
+    `useCloseJobPosting`/`useReopenJobPosting` · `selectPostingStatusActions` ·
+    `toApplicantFilter` · `useShare`.
+    **근본 해결**: 배럴 목은 개별 나열 대신 `...jest.requireActual('<배럴>')` 스프레드를 깔고
+    필요한 것만 덮어라. `@/domains/job-posting` 목 4곳을 그렇게 바꿔 놓았다.
+    개별 나열이 남아 있는 목(`@/components/icons`, `@/components/jobs`)은 여전히 이 사고에
+    노출돼 있다.
+
+12. 🚨 **`@/components/ui` 를 목하지 않으면 실제 `ActionSheet` 가 렌더되고, 그 내부 Modal 이
+    `useThemeStore()` 를 selector 없이 호출한다** → `TypeError: selector is not a function`.
+    화면 테스트의 themeStore 목이 selector 형태만 지원하기 때문이다. 상세 화면을 렌더하는
+    스위트에는 `jest.mock('@/components/ui', () => ({ ActionSheet: () => null }))` 가 필요하다.
+
+13. **경로 오해가 원장·감사문서 전반에 있다.** 존재하지 않는 경로:
+    `app/(employer)/job-posting/[id]/` → 실제 **`app/(employer)/my-postings/[id]/`**,
+    `src/services/jobPosting/` → 실제 **`src/domains/job-posting/`**
+    (`src/services/jobs/` 라는 **다른** 디렉터리가 있어 더 헷갈린다).
+
+14. **bash heredoc 안에 python 삼중따옴표 블록을 넣지 마라** — 따옴표가 얽혀
+    `unexpected EOF while looking for matching` 로 죽는다. 긴 테스트 파일은 **Write 도구**로
+    직접 쓰는 편이 빠르고 안전하다.
+
+15. **`.filter()` 를 배열 리터럴 뒤에 바로 붙이면 타입 주석이 늦게 적용된다** —
+    `const xs: T[] = [...].filter(...)` 는 리터럴이 먼저 추론돼 삼항 안의 `'success'|'primary'` 가
+    `string` 으로 넓어진다. 선언과 필터를 두 줄로 나눠라.
+
 ---
 
-## 3. 2단계 — 구조 (12건). 권장 순서대로.
+## 3. 2단계 — 구조 (12건) ✅ **전량 완료 (2026-08-13)**
+
+> 아래 원안 대비 **실측으로 달라진 것**만 먼저 적는다. 나머지는 원안대로 착지했다.
+>
+> | 항목 | 원안과 다르게 한 것 | 근거 |
+> |---|---|---|
+> | S2-2 | 삭제 가드를 "work_logs 존재 조회"가 아니라 **`filledPositions` 인자 교체**로 닫음 | 서버 `deleteWithTransaction` 이 이미 그 컬럼으로 막는다 — 같은 축으로 맞추는 게 게이트 일치의 최단 경로. 별도 조회 RPC 불필요 |
+> | S2-3 | `capacity_full` 라벨을 '정원 참(자동)' 으로 **바꾸지 않음**. 사유 문구만 추가 | `employer-posting-capacity-recovery.spec.ts:181` 이 "정원 마감" 을 단언(E2E 는 quality 범위 밖) |
+> | S2-6 | "pending 1건 인라인 [거절][승인]" **미구현**. 승인 모달 ConfirmModal 수렴만 | S2-4 에서 취소 요청이 최우선 primary action 으로 승격돼 발견성 목적 달성. 거절은 사유 입력 모달이 필요해 같은 액션이 두 화면에 중복 구현된다 |
+> | S2-10 | **코드 변경 없음** | `deepLinkNavigationExecutor` 의 "2단"은 push **재시도**(1차→delay→재시도→replace)이지 스택 쌓기가 아니었다. 자식 5화면은 이미 `fallbackHref` 로 상세를 가리키고, `HeaderBackButton` 이 `canGoBack()===false` 일 때만 그 값을 쓴다 — 원장 §3 이 스스로 좁힌 "히스토리 없는 진입"에 대한 안전망이 이미 배선돼 있다 |
+> | S2-4 | 골드 총량을 "채운 골드 2곳"으로 해석(텍스트 골드는 유지) | 브랜드 색을 전부 걷어내면 강조가 아니라 정체성이 사라진다. 채운 배경만 CTA 2곳으로 묶었다 |
+
+### (원안 — 이력용)
+
+## 3-원안. 2단계 — 구조 (12건). 권장 순서대로.
 
 > **순서에 의미가 있다.** 4번(숫자 진실원)이 3번(위계 재구성)보다 먼저 와야 배지 정의가 고정된다.
 > 5번(구독 수렴)은 다른 작업과 충돌이 크므로 일찍 끝내라.
@@ -200,21 +272,67 @@ C:/Users/user/Desktop/T-HOLDEM-wt-schedule                      fix/schedule-pos
 
 ---
 
-## 4. 3단계 — 신규 기능 (7건)
+## 4. 3단계 — 신규 기능 (7건). S3-7 ✅ / **나머지 5건은 서버 스키마 게이트**
 
-| # | 항목 | 규모 | 비고 |
+> 🔑 **이 세션의 핵심 발견: 남은 5건은 전부 "화면 작업"이 아니라 "스키마 작업"이다.**
+> 정찰(7축 병렬 실측)로 확인한 바, S3-1~S3-5 각각의 본체는 DB 마이그레이션·RPC·RLS·
+> 계측 화이트리스트다. 화면은 그 위에 얹는 얇은 층이다. 그래서 2단계처럼 "코드 짜고
+> jest 로 닫는" 방식이 통하지 않고, **prod 반영이라는 사람 게이트**를 지난다.
+> 착수 전 이 표를 먼저 읽어라 — 규모 추정이 원안과 다르다.
+
+| # | 항목 | 실측 후 규모 | 본체(=진짜 작업) |
 |---|---|---|---|
-| S3-1 | D-2·D-1 정원 미달 크론 알림 + 배정 줄 D-day 경고 | `M` | 멱등키 `posting_id + d_offset`. 마이그 필요 |
-| S3-2 | 확정 스태프 일괄 공지 (신규 타입 `employer_notice` + 발송 이력) | `M~L` | 단톡방 이탈을 막는 유일한 수단. 마이그 필요 |
-| S3-3 | 지원자 노쇼 이력 칩 (집계 RPC, 횟수만·업장 비노출) | `M~L` | **낙인 방지 설계 필수**. warning 틴트만 |
-| S3-4 | 협업자 권한 2단 (viewer / manager) | `L` | **RLS 가 진짜 게이트** — `/guard` 먼저 |
-| S3-5 | 공유 출처 파라미터 + 지원용 QR | `M` | 🚨 출퇴근 QR 과 **문구를 반드시 분리**(오스캔 사고) |
-| S3-6 | 상세 트리 탭 컨테이너 개편 (형제 push → 상단 탭) | `L~XL` | 원장 **W2-6** 트랙과 통합 계획. 단독 착수 금지 |
-| S3-7 | ops 스택 브레드크럼 / `fallbackHref` 정비 | `S~M` | ops 3화면의 `fallbackHref` 가 구인자 맥락 상실 |
+| S3-1 | D-2·D-1 정원 미달 크론 알림 | `M` | pg_cron 마이그 + **멱등 인덱스** |
+| S3-2 | 확정 스태프 일괄 공지 | `L` | 발송 이력 테이블 + RPC + 작성 UI |
+| S3-3 | 지원자 노쇼 이력 칩 | `M` | 집계 RPC(RLS상 클라 직접 조회 불가) |
+| S3-4 | 협업자 권한 2단 | `L` 🔴 | **스키마 변경 + RLS 3정책 재작성** |
+| S3-5 | 공유 출처 + 지원 QR | `M` | analytics CHECK 마이그 + QR 문구 분리 |
+| S3-6 | 상세 트리 탭 컨테이너 | `L~XL` | ⏸ **단독 착수 금지**(W2-6 통합 트랙) |
+| S3-7 | ops `fallbackHref` 정비 | `S` | ✅ **완료** — `233dee90c` |
 
-🔑 **마이그레이션이 있는 항목(S3-1·2·3)은**: 접두사 충돌을 **머지 직전**에 재확인하고
-(병렬 세션이 같은 슬롯을 딴다), PR 전 `list_migrations` 로 prod 반영을 실측한다.
-`prod-migrate` 워크플로우 경유면 **레포 파일명 = prod 기록명**.
+### 착수 전 반드시 아는 사실 (이번 정찰 실측)
+
+1. **`notifications.type` 에는 CHECK 제약이 없다** — 자유 텍스트다(`category` 만
+   `notification_category` ENUM 7종으로 제약). 새 알림 타입 추가에 DB 변경이 필요 없다.
+   `NO_SHOW_ALERT`·`CHECKIN_REMINDER` 는 **TS 타입이 이미 정의돼 있다**(발송 주체는
+   `checkin_reminder` 쪽이 없다 — S3-1 이 그 빈자리를 채우는 셈).
+
+2. 🚨 **`notifications` 에 멱등 컬럼이 없다.** 크론이 두 번 돌거나 같은 날 재실행되면
+   **중복 알림이 그대로 INSERT 된다.** S3-1 은 알림 함수보다 먼저
+   `(recipient_id, type, 날짜)` 부분 UNIQUE 인덱스를 깔아야 한다. 이게 S3-1 의 진짜 위험이다.
+
+3. **pg_cron 관용구가 고정돼 있다**(최신 예: `20260809150000_push_pipeline_batching.sql:656-686`).
+   `DO $do$` 안에서 `cron.job` 존재 확인 → `cron.unschedule` → `cron.schedule` 재등록,
+   URL/키는 `vault.decrypted_secrets`, 그리고 **`EXCEPTION WHEN undefined_table OR
+   undefined_function`** 로 pg_cron 미설치 로컬을 WARNING skip.
+   🚨 이 EXCEPTION 가드를 빠뜨리면 **로컬 `db reset` 이 죽는다.** 그대로 복사해 쓸 것.
+
+4. **`job_posting_collaborators` 에는 role 컬럼이 없다** — '가입/제외' 이진 모델이다.
+   RLS 정책 3개(`jpc_select` / `jpc_insert_ws_owner` / `jpc_delete_owner_or_self`)와
+   트리거 3개(추가·제거 알림, 감사로그)가 그 전제 위에 있다. S3-4 는 컬럼 추가로 끝나지
+   않고 **정책 재작성**이다 — 원장 지시대로 `/guard` 를 먼저 태워라.
+
+5. **`analytics_events` 에 event 화이트리스트 CHECK 가 있다**
+   (`analytics_events_event_check`, 최신 갱신 `20260811100000`). 즉 S3-5 의 "공유 출처"를
+   **계측까지 연결하려면 마이그가 필요하다.** URL 에 `?src=` 만 붙이고 아무도 읽지 않으면
+   그건 기능이 아니다. 그 마이그의 관용구(제약을 **이름이 아니라 정의로 찾아** 정확히 1개
+   지우고 재생성, 개수가 다르면 RAISE)도 같은 파일에 있으니 따라 쓸 것.
+
+6. **출퇴근 QR 문구가 두 파일에 하드코딩 분산돼 있다**
+   (`QRCodeScanner.tsx`, `eventQRService.ts`) — 상수 파일이 없다. S3-5 의 "지원 QR 과
+   문구 분리"는 새 상수 파일 신설 + 두 파일 import 전환이 선행이다.
+   현재 출퇴근 QR 페이로드는 `{type:'venue', jobPostingId}` — 지원 QR 은 **다른 type** 을 써서
+   스캐너가 즉시 구분하고 "이건 출근 QR 이 아니다"라고 말할 수 있어야 한다(오스캔 사고 방지).
+
+7. **`markAsNoShow`/`cancelNoShow` RPC 의 정의 파일을 이번 정찰에서 확인하지 못했다.**
+   S3-3 착수 전 `grep 'markAsNoShow|cancelNoShow'` 로 실제 정의를 먼저 찾아라 —
+   집계 RPC 를 새로 만들기 전에 기존 노쇼 경로의 계약을 알아야 한다.
+
+🔑 **마이그레이션 공통**: 접두사 충돌을 **머지 직전**에 재확인한다(08-13 현재 병렬 세션
+2개 활성 — `cleanup-batch1`, `schedule-posting-top3`. 둘 다 이 세션 중에도 커밋이 늘었다).
+PR 전 `list_migrations` 로 prod 반영을 실측하고, `prod-migrate` 워크플로우 경유면
+**레포 파일명 = prod 기록명**이다.
+⚠️ 로컬 Supabase 는 조용히 낡는다 — pgTAP 실패를 CI 대조 전에 "선재 결함"으로 단정하지 말 것.
 
 ---
 
@@ -231,6 +349,19 @@ C:/Users/user/Desktop/T-HOLDEM-wt-schedule                      fix/schedule-pos
 | 펼침 상태 유지 여부 | 상세→지원자→뒤로 후 `isInfoExpanded` 관찰 |
 | 웹 직접 URL 진입 후 삭제 시 잔류 | 웹에서 상세 URL 직접 진입 → 삭제 |
 | `accessibilityState` 웹 무효 | react-native-web 0.21.2 — 상태는 라벨에도 담았는지 확인 |
+
+### 2단계에서 새로 생긴 실기기 확인 항목 (2026-08-13)
+
+| 확인할 것 | 방법 | 왜 코드로 못 닫나 |
+|---|---|---|
+| 마감 → **되돌리기 토스트** 실제 왕복 | 상태 뱃지 → 마감 → 6초 안에 [되돌리기] | 토스트는 앱 루트 단일 마운트라 화면을 떠나도 살아 있다. 화면을 나간 뒤 눌렀을 때의 재오픈 성공 여부는 렌더 테스트 범위 밖 |
+| 확정 해제 되돌리기 **실패 경로** | 협업자 2명이 같은 자리를 두고 해제/확정 경합 | 재확정은 서버 정원 가드에 걸릴 수 있다. 실패 토스트가 실제로 뜨는지는 서버 왕복이 필요 |
+| 새 지원 알림 **햅틱** | 실기기에서 다른 계정으로 지원 → 진동 확인 | jest 는 `triggerHaptic` 호출만 검증한다. OS 햅틱 설정 존중·200ms throttle 은 기기에서만 관찰 가능 |
+| 🚨 새 지원 알림이 **소리를 내지 않는지** | 야간 모드/무음 아닌 상태에서 지원 유입 | 소리 금지가 이 기능의 핵심 제약(고소음·야간 현장)인데, 코드에 소리 경로가 없다는 것만으로는 푸시 채널 쪽 소리까지 보장하지 못한다 |
+| 관리 화면 **스켈레톤 형상** | 느린 회선에서 지원자·정산·수정·취소요청 진입 | 형상이 도착 화면과 맞는지는 눈으로만 판정된다 |
+| 상태 시트 — `capacity_full` 사유 문구 | 정원이 찬 공고에서 상태 뱃지 탭 | 트리거가 만든 상태라 로컬에서 재현하려면 좌석을 실제로 채워야 한다 |
+| 재게시 프리셋이 **날짜만 비었는지** | 끝난 공고 → 다시 올리기 → 주문서 확인 | `grouped:false` 강제는 단위 테스트가 덮지만, 사용자가 새 날짜를 고른 뒤 묶음지원이 되살아나지 않는지는 폼 전체를 태워야 보인다 |
+| ops 뒤로가기 맥락 보존 | **웹에서 ops 대회 상세 URL 직접 진입** 후 뒤로가기 | `fallbackHref` 는 `canGoBack()===false` 일 때만 쓰인다 — 히스토리 없는 진입을 만들어야 검증된다 |
 
 ---
 
