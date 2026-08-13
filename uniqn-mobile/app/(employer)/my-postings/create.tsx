@@ -267,6 +267,7 @@ export default function CreateJobPostingScreen() {
     },
     [
       createJobPosting,
+      shareJobById,
       venueId,
       selectedVenueId,
       router,

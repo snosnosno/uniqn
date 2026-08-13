@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import { opsFallbackHref } from '@/utils/opsNavigation';
 import { StackHeader } from '@/components/headers';
 import { useCreateOpsTournament } from '@/hooks/ops';
 import { PostingPickerSheet } from '@/components/ops';
@@ -127,7 +128,11 @@ export default function OpsTournamentCreateScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
-      <StackHeader title="대회 만들기" fallbackHref="/(ops)/tournaments" />
+      {/* 공고에서 넘어온 진입이면 그 공고로 돌려보낸다(S3-7). */}
+      <StackHeader
+        title="대회 만들기"
+        fallbackHref={opsFallbackHref(jobPostingId, '/(ops)/tournaments')}
+      />
       <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingVertical: 16 }}>
         <Text className="mb-1 text-xs text-secondary-500 dark:text-secondary-400">대회 이름 *</Text>
         <TextInput
