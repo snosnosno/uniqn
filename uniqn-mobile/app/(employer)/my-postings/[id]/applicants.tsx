@@ -314,6 +314,7 @@ export default function ApplicantsScreen() {
         isBulkConfirming={isBulkConfirming}
         onSharePosting={handleSharePosting}
         initialFilter={initialFilter}
+        jobPostingId={jobPostingId}
       />
 
       {/* 확정/거절 모달 */}

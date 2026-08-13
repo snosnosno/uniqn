@@ -531,4 +531,45 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
   ): UnsubscribeFn {
     return subscribeByJobPosting(jobPostingId, ownerId, callbacks, options);
   }
+
+  /**
+   * 지원자들의 최근 180일 노쇼 횟수 배치 조회 (S3-3).
+   *
+   * work_logs 의 RLS 는 남의 공고 기록을 아예 안 보여주므로 클라 직접 조회로는 계산할 수 없다 —
+   * SECDEF RPC 가 유일한 경로다. 서버가 권한과 '이 공고 지원자인지'를 함께 검증한다.
+   *
+   * 🔑 실패 시 빈 Map 으로 흘려보낸다(fail-open) — `getPostingFilledCounts` 와 같은 관용구.
+   *    노쇼 칩은 보조 정보다. 이것 때문에 지원자 목록 자체가 안 뜨면 손해가 더 크다.
+   */
+  async getApplicantNoShowCounts(
+    jobPostingId: string,
+    applicantIds: string[]
+  ): Promise<Map<string, number>> {
+    const map = new Map<string, number>();
+    if (!jobPostingId || applicantIds.length === 0) return map;
+
+    try {
+      const { data, error } = await supabase.rpc('get_applicant_no_show_counts', {
+        p_job_posting_id: jobPostingId,
+        p_staff_ids: applicantIds,
+      });
+
+      if (error) {
+        logger.warn('get_applicant_no_show_counts 실패 — 노쇼 이력 칩 미표시', { error });
+        return map;
+      }
+
+      const rows = (data ?? []) as { staff_id: string; no_show_count: number | string }[];
+      for (const row of rows) {
+        const count = Number(row.no_show_count);
+        if (row.staff_id && Number.isFinite(count)) {
+          map.set(row.staff_id, count);
+        }
+      }
+      return map;
+    } catch (error) {
+      logger.warn('get_applicant_no_show_counts 예외 — 노쇼 이력 칩 미표시', { error });
+      return map;
+    }
+  }
 }

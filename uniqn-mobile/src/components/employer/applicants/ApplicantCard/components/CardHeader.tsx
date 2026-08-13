@@ -40,6 +40,14 @@ export interface CardHeaderProps {
   bubbleScore?: number;
   /** 점수 표본 크기 — "리뷰 N건" 병기 (QW12) */
   reviewCount?: number;
+  /**
+   * 최근 180일 노쇼 횟수 (S3-3). 0 이거나 미조회면 칩을 띄우지 않는다.
+   *
+   * 🔴 횟수만 받는다 — 어느 업장이었는지·언제였는지는 서버가 애초에 반환하지 않는다.
+   *    "0회"를 굳이 표시하지 않는 것도 설계다. 전원에게 노쇼 칸을 만들어 두면
+   *    그 자체가 사람을 노쇼 여부로 분류하는 화면이 된다.
+   */
+  noShowCount?: number;
 }
 
 // ============================================================================
@@ -57,6 +65,7 @@ export const CardHeader = React.memo(function CardHeader({
   onViewProfile,
   bubbleScore,
   reviewCount,
+  noShowCount,
 }: CardHeaderProps) {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
@@ -96,6 +105,24 @@ export const CardHeader = React.memo(function CardHeader({
               <Text className="text-xs text-content-secondary dark:text-secondary-400 font-sans">
                 리뷰 {reviewCount}건
               </Text>
+            ) : null}
+            {/*
+              노쇼 이력 (S3-3) — 확정 전에 "이 사람이 실제로 올까"를 판단할 근거.
+              danger 가 아니라 warning 틴트를 쓰는 이유: 이건 거절 사유가 아니라 참고 정보다.
+              빨간색은 "차단"으로 읽히고, 그러면 한 번의 사정이 영구 배제가 된다.
+              기간(최근 6개월)을 라벨에 명시해 "평생 이력"으로 오해되지 않게 한다.
+            */}
+            {typeof noShowCount === 'number' && noShowCount > 0 ? (
+              <View
+                accessible
+                accessibilityRole="text"
+                accessibilityLabel={`최근 6개월 노쇼 ${noShowCount}회`}
+                className="rounded bg-warning-100 px-1.5 py-0.5 dark:bg-warning-700/30"
+              >
+                <Text className="text-xs font-sans-medium text-warning-700 dark:text-warning-500">
+                  노쇼 {noShowCount}회
+                </Text>
+              </View>
             ) : null}
           </View>
         </View>

@@ -18,6 +18,7 @@ import { ScreenSkeleton } from '@/components/ui';
 import { CheckIcon, FilterIcon } from '@/components/icons';
 import { confirmAction } from '@/utils/confirmAction';
 import { useApplicantProfiles } from '@/hooks/useApplicantProfiles';
+import { useApplicantNoShowCounts } from '@/hooks/useApplicantNoShowCounts';
 import { LIST_CONTAINER_STYLES, STATUS } from '@/constants';
 import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import type { ApplicantWithDetails } from '@/services';
@@ -54,6 +55,11 @@ export interface ApplicantListProps {
    *   화면이 되감기지 않는다(사용자가 고른 필터를 부모가 덮어쓰면 안 된다).
    */
   initialFilter?: FilterStatus;
+  /**
+   * 공고 ID — 노쇼 이력 배치 조회(S3-3)에 필요하다.
+   * 미주입 시 조회 자체를 하지 않아 칩이 뜨지 않는다(기존 동작 보존).
+   */
+  jobPostingId?: string;
 }
 
 export type FilterStatus = 'all' | ApplicationStatus;
@@ -105,6 +111,7 @@ export function ApplicantList({
   isBulkConfirming,
   onSharePosting,
   initialFilter = 'all',
+  jobPostingId,
 }: ApplicantListProps) {
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>(initialFilter);
   const [selectionMode, setSelectionMode] = useState(false);
@@ -120,6 +127,12 @@ export function ApplicantList({
 
   // 배치로 사용자 프로필 조회 (Hook 레이어를 통해 Repository 접근)
   useApplicantProfiles({ applicantIds });
+
+  // 노쇼 이력도 배치로 (S3-3) — 카드마다 개별 조회하면 지원자 20명에 20번 왕복한다.
+  const { noShowCounts } = useApplicantNoShowCounts({
+    jobPostingId: jobPostingId ?? '',
+    applicantIds,
+  });
 
   // 필터링된 지원자 목록
   const filteredApplicants = useMemo(() => {
@@ -247,6 +260,7 @@ export function ApplicantList({
             onReject={onReject}
             onCancelConfirmation={onCancelConfirmation}
             onViewProfile={onViewProfile}
+            noShowCount={noShowCounts?.get(item.applicantId)}
           />
         </View>
       );
@@ -256,6 +270,7 @@ export function ApplicantList({
       onReject,
       onCancelConfirmation,
       onViewProfile,
+      noShowCounts,
       selectionMode,
       selectedIds,
       toggleSelect,
