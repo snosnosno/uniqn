@@ -9,11 +9,13 @@ import { StackHeader } from '@/components/headers';
 import { ShareIcon } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
 import { useInstallPrompt, useJobDetail, useShare } from '@/hooks';
+import { SHARE_SOURCES } from '@/constants/shareSource';
 import { trackJobView } from '@/services/observability';
 import { useThemeStore } from '@/stores';
 import { isTournamentApprovalBlocked } from '@/domains/job-posting';
 import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { useTrackShareOpen } from '@/hooks/useTrackShareOpen';
 
 export default function PublicJobDetailAliasRoute() {
   const { id } = useLocalSearchParams<{ id?: string | string[] }>();
@@ -25,6 +27,9 @@ export default function PublicJobDetailAliasRoute() {
 
   const resolvedId = Array.isArray(id) ? id[0] : id;
   const { job, isLoading, error, refresh } = useJobDetail(resolvedId ?? '');
+
+  // 공유 링크(?src=)로 들어온 열람을 기록한다 (S3-5) — 공유 발생의 짝.
+  useTrackShareOpen(resolvedId);
 
   // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
   // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
@@ -53,7 +58,7 @@ export default function PublicJobDetailAliasRoute() {
       return;
     }
 
-    void shareJob(job);
+    void shareJob(job, SHARE_SOURCES.publicDetail);
   }, [job, shareJob]);
 
   const handleCallContact = useCallback(() => {

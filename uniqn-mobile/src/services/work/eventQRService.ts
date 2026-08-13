@@ -25,6 +25,7 @@ import { WORK_LOG_STATUS_VALUES } from '@/constants/statusValues';
 import { workLogRepository } from '@/repositories';
 import { selectWorkLogForQR, type QRSelectionFailureReason } from './selectWorkLogForQR';
 import type { VenueQRDisplayData, EventQRScanResult, WorkLog } from '@/types';
+import { QR_MESSAGES, QR_PAYLOAD_TYPES } from '@/constants/qr';
 
 // ============================================================================
 // Helper Functions
@@ -38,7 +39,7 @@ import type { VenueQRDisplayData, EventQRScanResult, WorkLog } from '@/types';
 function parseVenueQRData(qrString: string): VenueQRDisplayData | null {
   try {
     const data = JSON.parse(qrString);
-    if (data.type !== 'venue') return null;
+    if (data.type !== QR_PAYLOAD_TYPES.venue) return null;
     if (!data.jobPostingId || typeof data.jobPostingId !== 'string') return null;
 
     return { type: 'venue', jobPostingId: data.jobPostingId };
@@ -46,6 +47,32 @@ function parseVenueQRData(qrString: string): VenueQRDisplayData | null {
     logger.debug('QR 데이터 JSON 파싱 실패', { qrString: qrString.slice(0, 50), error });
     return null;
   }
+}
+
+/**
+ * QR 페이로드의 `type` 만 읽는다 (형식이 아니면 null).
+ *
+ * 출근 스캐너가 "왜 안 되는지" 를 말하기 위해 필요하다 — 정체불명 QR 과
+ * **지원 QR** 은 사용자가 취해야 할 행동이 다르다(전자는 다른 QR 을 찾아야 하고,
+ * 후자는 자기가 스캐너를 잘못 열었다).
+ */
+function readQRPayloadType(qrString: string): string | null {
+  try {
+    const data = JSON.parse(qrString);
+    return typeof data?.type === 'string' ? data.type : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 지원 QR 문자열 생성 — 구직자가 찍으면 공고 상세가 열린다.
+ *
+ * 🚨 `type` 이 출근 QR(`venue`)과 **반드시 달라야** 한다. 같으면 지원용 QR 을 찍은 스태프가
+ *    출근 처리되거나, 반대로 출근 QR 이 공고 페이지로 새어 현장에서 출근이 안 된다.
+ */
+export function buildApplyQRString(jobPostingId: string): string {
+  return JSON.stringify({ type: QR_PAYLOAD_TYPES.apply, jobPostingId });
 }
 
 /**
@@ -135,9 +162,18 @@ export async function processQRCheckIn(
   const venueData = parseVenueQRData(qrString);
 
   if (!venueData) {
+    // 지원 QR 을 출근 스캐너에 댄 경우는 따로 말해 준다 — "출근 QR이 아닙니다" 만 보면
+    // 사용자는 무엇이 잘못됐는지 모르고 같은 QR 을 반복해서 찍는다.
+    const scannedType = readQRPayloadType(qrString);
     throw new InvalidQRCodeError({
-      message: 'venue 형식이 아닌 QR',
-      userMessage: 'UNIQN 출근 QR이 아닙니다',
+      message:
+        scannedType === QR_PAYLOAD_TYPES.apply
+          ? '지원 QR 을 출근 스캐너에 스캔'
+          : 'venue 형식이 아닌 QR',
+      userMessage:
+        scannedType === QR_PAYLOAD_TYPES.apply
+          ? QR_MESSAGES.applyQRScannedAtCheckIn
+          : QR_MESSAGES.notCheckInQR,
     });
   }
 

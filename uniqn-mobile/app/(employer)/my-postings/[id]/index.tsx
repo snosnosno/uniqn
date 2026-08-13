@@ -67,6 +67,7 @@ import { UNDO_TOAST_DURATION_MS, UNDO_TOAST_LABEL } from '@/constants/undoToast'
 import { triggerHaptic } from '@/utils/haptics';
 import { useApplicantsByJobPosting } from '@/hooks/applicant';
 import { useShare } from '@/hooks/useShare';
+import { SHARE_SOURCES } from '@/constants/shareSource';
 import {
   useCloseJobPosting,
   useDeleteJobPosting,
@@ -463,12 +464,17 @@ export default function JobPostingDetailScreen() {
       return;
     }
 
-    void shareJob(posting);
+    void shareJob(posting, SHARE_SOURCES.employerDetail);
   }, [posting, shareJob]);
 
   const handlePreview = useCallback(() => {
     router.push(`/(app)/jobs/${id}`);
-  }, [id, router]);
+  }, [id]);
+
+  /** 지원 QR — 출퇴근 QR(`/qr`)과 다른 화면이다. 페이로드 type 부터 다르다(S3-5). */
+  const handleShowApplyQR = useCallback(() => {
+    router.push(`/(employer)/my-postings/${id}/apply-qr`);
+  }, [id]);
 
   /**
    * 새 지원 인라인 알림 — 화면을 보고 있는 동안 지원이 들어오면 그 자리에서 알린다.
@@ -1019,6 +1025,21 @@ export default function JobPostingDetailScreen() {
                 <ShareIcon size={18} color={TEXT_COLORS.onGold} />
                 <Text className="ml-2 text-base font-sans-semibold text-content-onGold">
                   공고 링크 공유하기
+                </Text>
+              </Pressable>
+
+              {/* 링크를 보낼 단톡방이 없는 사장을 위한 오프라인 경로 (S3-5).
+                  매장 앞·홍보물에 붙이면 지나가는 사람이 찍어 공고를 연다.
+                  🚨 라벨에 '지원'을 명시한다 — '공고 QR' 이라고만 하면 출퇴근 QR 과 구분되지 않는다. */}
+              <Pressable
+                onPress={handleShowApplyQR}
+                className="mt-2 min-h-[44px] items-center justify-center rounded-md py-3 active:opacity-60"
+                accessibilityRole="button"
+                accessibilityLabel="지원 QR 보기"
+                testID="job-posting-apply-qr"
+              >
+                <Text className="text-sm font-sans-medium text-content-secondary dark:text-secondary-400">
+                  또는 지원 QR 보여주기
                 </Text>
               </Pressable>
             </Card>

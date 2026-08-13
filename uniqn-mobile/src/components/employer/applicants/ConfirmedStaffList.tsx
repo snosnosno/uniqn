@@ -10,10 +10,7 @@ import type {
   ConfirmedStaffStatus,
 } from '@/types';
 import { CalendarIcon, ChevronDownIcon, ChevronUpIcon, UsersIcon } from '@/components/icons';
-import {
-  formatCapacityGapLabel,
-  type PostingCapacityGap,
-} from '@/domains/job-posting/capacityGap';
+import { formatCapacityGapLabel, type PostingCapacityGap } from '@/domains/job-posting/capacityGap';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { FilterTabs, type FilterTabOption } from '@/components/ui/FilterTabs';

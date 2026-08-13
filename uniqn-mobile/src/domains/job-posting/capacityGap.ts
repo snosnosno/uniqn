@@ -158,9 +158,7 @@ export function selectPostingCapacityGaps(
 }
 
 /** 날짜로 바로 찾을 수 있게 맵으로 만든다 (근무표 셀이 자기 날짜만 조회). */
-export function toCapacityGapByDate(
-  gaps: PostingCapacityGap[]
-): Map<string, PostingCapacityGap> {
+export function toCapacityGapByDate(gaps: PostingCapacityGap[]): Map<string, PostingCapacityGap> {
   return new Map(gaps.map((gap) => [gap.date, gap]));
 }
 

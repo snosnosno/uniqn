@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { SHARE_SOURCES } from '@/constants/shareSource';
+import { useTrackShareOpen } from '@/hooks/useTrackShareOpen';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -34,6 +36,9 @@ const DEFAULT_BOTTOM_ACTION_HEIGHT = 116;
 
 export default function JobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+
+  // 공유 링크(?src=)로 들어온 열람을 기록한다 (S3-5) — 공유 발생의 짝.
+  useTrackShareOpen(id);
   const isDark = useThemeStore((state) => state.isDarkMode);
   const secondaryTextColor = getIconColor(isDark, 'primary');
   const { user, isInitialized, isAdmin } = useAuth();
@@ -60,7 +65,7 @@ export default function JobDetailScreen() {
       return;
     }
 
-    void shareJob(job);
+    void shareJob(job, SHARE_SOURCES.seekerDetail);
   }, [job, shareJob]);
 
   useEffect(() => {

@@ -29,9 +29,13 @@ jest.mock('@/utils/jobShareMessage', () => ({
   buildJobShareText: jest.fn(() => 'SHARE_BODY'),
 }));
 
+// 배럴 목은 개별 나열 대신 requireActual 스프레드를 깐다 — 훅이 새 export 를 쓰기 시작하면
+// 개별 나열 목은 그 이름이 undefined 가 되어 호출부에서 TypeError 로 죽는다(실측 사고).
 jest.mock('@/services/observability', () => ({
+  ...jest.requireActual('@/services/observability'),
   createJobDeepLink: jest.fn(() => 'https://uniqn.app/jobs/job-1'),
   trackEvent: jest.fn(),
+  trackShareFunnel: jest.fn(),
 }));
 
 const mockToast = {

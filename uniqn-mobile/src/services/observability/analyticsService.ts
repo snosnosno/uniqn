@@ -29,6 +29,7 @@ import {
   setUserId as setSentryUserId,
 } from './sentryService';
 import { getBuildIdentity } from './buildIdentity';
+import type { ShareSource } from '@/constants/shareSource';
 
 /** `leaveBreadcrumb` 이 받는 데이터 형태 — 정제된 이벤트 파라미터를 그대로 태운다. */
 type BreadcrumbData = Record<string, string | number | boolean | undefined>;
@@ -496,6 +497,25 @@ export function trackOpsFunnel(
   void analyticsEventRepository.insert(event, props ?? {}).catch(() => undefined);
 }
 
+/**
+ * 공고 공유 퍼널 (S3-5) — 로깅 레일 + Supabase 영속 레일 동시 기록.
+ *
+ * 🔑 `trackEvent` 만 부르면 **Sentry 브레드크럼만 남고 서버에는 아무것도 안 남는다.**
+ *    실제로 기존 `trackEvent('job_shared', ...)` 가 그 상태였다 — 화이트리스트에도 없는 값이라
+ *    어디에도 집계되지 않았다. 출처를 세려면 영속 레일이 반드시 함께 가야 한다.
+ */
+export function trackShareFunnel(
+  event: Extract<OpsFunnelEvent, 'job_share_created' | 'job_share_opened'>,
+  props: { job_id: string; src?: ShareSource }
+): void {
+  const payload: Record<string, string> = { job_id: props.job_id };
+  if (props.src) {
+    payload.src = props.src;
+  }
+  void trackEvent(event, payload as AnalyticsEventParams);
+  void analyticsEventRepository.insert(event, payload).catch(() => undefined);
+}
+
 // ============================================================================
 // Export
 // ============================================================================
@@ -509,6 +529,7 @@ export const analyticsService = {
   trackEvent,
   trackScreenView,
   trackOpsFunnel,
+  trackShareFunnel,
   setUserProperties,
   setUserId,
 

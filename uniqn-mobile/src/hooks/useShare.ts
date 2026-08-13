@@ -9,7 +9,8 @@ import { useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
-import { trackEvent, createJobDeepLink } from '@/services/observability';
+import { trackEvent, trackShareFunnel, createJobDeepLink } from '@/services/observability';
+import type { ShareSource } from '@/constants/shareSource';
 import { useShareSheet } from '@/hooks/share/useShareSheet';
 import { useToast } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -32,12 +33,12 @@ export interface ShareResult {
 
 export interface UseShareReturn {
   /** 공고 공유 (근무 일정·역할·인원·급여 포함 본문 생성) */
-  shareJob: (job: JobPosting) => Promise<ShareResult>;
+  shareJob: (job: JobPosting, source?: ShareSource) => Promise<ShareResult>;
   /**
    * 공고 ID 로 공유 — 완전한 JobPosting 을 보유하지 않은 화면(리스트 카드 등)에서
    * id 로 상세를 조회한 뒤 shareJob 과 동일한 본문을 생성한다.
    */
-  shareJobById: (jobId: string) => Promise<ShareResult>;
+  shareJobById: (jobId: string, source?: ShareSource) => Promise<ShareResult>;
   /** 일반 콘텐츠 공유 */
   share: (options: { title: string; message: string; url?: string }) => Promise<ShareResult>;
   /** 공유 진행 중 여부 */
@@ -106,7 +107,7 @@ export function useShare(): UseShareReturn {
    * shareJob / shareJobById 가 공통으로 사용한다.
    */
   const runJobShare = useCallback(
-    async (job: JobPosting): Promise<ShareResult> => {
+    async (job: JobPosting, source?: ShareSource): Promise<ShareResult> => {
       try {
         // 단일 게이트 — 죽은 링크(승인 대기 대회·마감/취소 공고)를 7개 진입점 전체에서 차단.
         // shareJob / shareJobById 가 공통으로 이 코어를 호출하므로 여기 한 곳이면 충분하다.
@@ -116,8 +117,8 @@ export function useShare(): UseShareReturn {
           return { success: false, error: new Error('공유 불가 상태') };
         }
 
-        // 웹 URL 생성 (외부 공유용)
-        const url = createJobDeepLink(job.id, true);
+        // 웹 URL 생성 (외부 공유용) — 출처를 실으면 `?src=` 가 붙는다 (S3-5).
+        const url = createJobDeepLink(job.id, true, source);
 
         // 실시간 확정 인원 조회 (best-effort) — 🙋 라인을 "확정/총원" 으로 표시.
         // 실패해도 공유는 진행되어야 하므로 빈 맵(0/N) 으로 degrade.
@@ -149,6 +150,10 @@ export function useShare(): UseShareReturn {
             job_id: job.id,
             job_title: job.title,
           });
+          // 🔑 위의 `trackEvent` 는 Sentry 브레드크럼만 남긴다 — 서버에는 아무것도 안 남는다.
+          //    ('job_shared' 는 analytics_events 화이트리스트에 없는 값이라 애초에 못 들어간다)
+          //    출처별 전환율을 세려면 영속 레일이 따로 가야 한다.
+          trackShareFunnel('job_share_created', { job_id: job.id, src: source });
         }
 
         logger.info('공고 공유 완료', { action, jobId: job.id });
@@ -166,14 +171,14 @@ export function useShare(): UseShareReturn {
    * 공고 공유
    */
   const shareJob = useCallback(
-    async (job: JobPosting): Promise<ShareResult> => {
+    async (job: JobPosting, source?: ShareSource): Promise<ShareResult> => {
       if (isSharing) {
         return { success: false, error: new Error('이미 공유 중입니다') };
       }
 
       setIsSharing(true);
       try {
-        return await runJobShare(job);
+        return await runJobShare(job, source);
       } finally {
         setIsSharing(false);
       }
@@ -187,7 +192,7 @@ export function useShare(): UseShareReturn {
    * shareJob 과 동일한 본문으로 공유한다.
    */
   const shareJobById = useCallback(
-    async (jobId: string): Promise<ShareResult> => {
+    async (jobId: string, source?: ShareSource): Promise<ShareResult> => {
       if (isSharing) {
         return { success: false, error: new Error('이미 공유 중입니다') };
       }
@@ -202,7 +207,7 @@ export function useShare(): UseShareReturn {
           return { success: false, error: new Error('공고를 찾을 수 없습니다') };
         }
 
-        return await runJobShare(job);
+        return await runJobShare(job, source);
       } catch (error) {
         logger.error('공고 공유 실패 (조회 단계)', toError(error), { jobId });
         toast.error('공고 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.');

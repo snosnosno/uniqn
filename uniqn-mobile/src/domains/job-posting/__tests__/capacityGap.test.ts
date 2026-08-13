@@ -183,9 +183,7 @@ describe('selectPostingCapacityGaps', () => {
 
     const gaps = selectPostingCapacityGaps(posting, undefined, '2026-08-31');
 
-    expect(gaps).toEqual([
-      { date: '2026-09-01', required: 1, filled: 0, missing: 1, dOffset: 1 },
-    ]);
+    expect(gaps).toEqual([{ date: '2026-09-01', required: 1, filled: 0, missing: 1, dOffset: 1 }]);
   });
 
   it('오늘 날짜가 형식에 안 맞으면 아무것도 경고하지 않는다 (거짓 경고 방지)', () => {
@@ -215,8 +213,8 @@ describe('toCapacityGapByDate / formatCapacityGapLabel', () => {
   });
 
   it('문구는 서버 알림 제목과 같은 어휘를 쓴다', () => {
-    expect(formatCapacityGapLabel({ date: D1, required: 2, filled: 1, missing: 1, dOffset: 1 })).toBe(
-      'D-1 · 1자리 비었어요'
-    );
+    expect(
+      formatCapacityGapLabel({ date: D1, required: 2, filled: 1, missing: 1, dOffset: 1 })
+    ).toBe('D-1 · 1자리 비었어요');
   });
 });

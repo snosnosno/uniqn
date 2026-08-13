@@ -112,10 +112,7 @@ describe('StaffManagementTab — D-day 정원 미달 경고 (S3-1)', () => {
 
   it('해당 날짜에 미달이 있으면 배정 줄에 경고 문구가 뜬다', () => {
     render(
-      <StaffManagementTab
-        jobPostingId="job-1"
-        capacityGapByDate={new Map([[WORK_DATE, GAP]])}
-      />
+      <StaffManagementTab jobPostingId="job-1" capacityGapByDate={new Map([[WORK_DATE, GAP]])} />
     );
 
     expect(screen.getByText('D-1 · 2자리 비었어요')).toBeTruthy();
@@ -125,14 +122,13 @@ describe('StaffManagementTab — D-day 정원 미달 경고 (S3-1)', () => {
     // 색 틴트만으로는 "경고"라는 사실이 스크린리더에 전달되지 않는다.
     // `accessibilityState` 는 react-native-web 에서 무효라 상태를 라벨 본문에 실어야 한다.
     render(
-      <StaffManagementTab
-        jobPostingId="job-1"
-        capacityGapByDate={new Map([[WORK_DATE, GAP]])}
-      />
+      <StaffManagementTab jobPostingId="job-1" capacityGapByDate={new Map([[WORK_DATE, GAP]])} />
     );
 
     expect(
-      screen.getByLabelText('정원 미달 경고. 4월 2일 (목) 근무, D-1 · 2자리 비었어요. 필요 3명 중 1명 확정.')
+      screen.getByLabelText(
+        '정원 미달 경고. 4월 2일 (목) 근무, D-1 · 2자리 비었어요. 필요 3명 중 1명 확정.'
+      )
     ).toBeTruthy();
   });
 
