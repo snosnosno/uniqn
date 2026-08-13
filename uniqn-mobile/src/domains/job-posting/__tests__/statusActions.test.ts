@@ -5,7 +5,11 @@
  * 반대로 트리거가 즉시 되돌릴 전이를 사장에게 제안하게 된다.
  */
 
-import { getPostingStatusActionHint, selectPostingStatusActions } from '@/domains/job-posting';
+import {
+  getPostingStatusActionHint,
+  isPostingRepostable,
+  selectPostingStatusActions,
+} from '@/domains/job-posting';
 import type { JobPostingStatus } from '@/types';
 
 describe('selectPostingStatusActions', () => {
@@ -36,6 +40,29 @@ describe('selectPostingStatusActions', () => {
     noAction.forEach((status) => {
       expect(selectPostingStatusActions(status)).toEqual([]);
     });
+  });
+});
+
+describe('isPostingRepostable', () => {
+  it('끝난 공고(만료·마감)에는 다시 올리기를 제안한다', () => {
+    expect(isPostingRepostable('expired')).toBe(true);
+    expect(isPostingRepostable('closed')).toBe(true);
+  });
+
+  // 사장이 스스로 내린 공고를 되살리자는 제안은 무례하게 읽힌다.
+  it('취소된 공고에는 제안하지 않는다', () => {
+    expect(isPostingRepostable('cancelled')).toBe(false);
+  });
+
+  // 끝난 게 아니라 **찬** 것이고, 자리가 비면 자동으로 다시 열린다.
+  it('정원 참에는 제안하지 않는다', () => {
+    expect(isPostingRepostable('capacity_full')).toBe(false);
+  });
+
+  it('살아 있는 공고에는 제안하지 않는다', () => {
+    expect(isPostingRepostable('active')).toBe(false);
+    expect(isPostingRepostable('draft')).toBe(false);
+    expect(isPostingRepostable('pending')).toBe(false);
   });
 });
 

@@ -57,6 +57,7 @@ import {
   buildPostingFacts,
   getPostingStatusActionHint,
   isPostingDeletable,
+  isPostingRepostable,
   POSTING_STATUS_ACTION_TEXT,
   projectPostingSurface,
   selectPostingStatusActions,
@@ -466,6 +467,12 @@ export default function JobPostingDetailScreen() {
 
   const handlePreview = useCallback(() => {
     router.push(`/(app)/jobs/${id}`);
+  }, [id, router]);
+
+  // 끝난 공고에서 다음 행동 — 사장의 공고는 대체로 반복된다(같은 업장·역할·시급, 날짜만 다름).
+  // 도착지가 이 공고를 프리셋 맨 앞에 올리므로 날짜만 새로 고르면 된다.
+  const handleRepost = useCallback(() => {
+    router.push(`/(employer)/my-postings/create?fromPostingId=${id}`);
   }, [id, router]);
 
   // refreshApplicants(=refreshRealtimeData)는 조회 실패 시 실제로 throw 한다. try/catch 가
@@ -977,6 +984,33 @@ export default function JobPostingDetailScreen() {
                 <ShareIcon size={18} color={TEXT_COLORS.onGold} />
                 <Text className="ml-2 text-base font-sans-semibold text-content-onGold">
                   공고 링크 공유하기
+                </Text>
+              </Pressable>
+            </Card>
+          </View>
+        ) : null}
+
+        {/* 끝난 공고 — 상태 보고("마감")만 있고 다음 행동이 없어서, 다음 주 공고를
+            처음부터 다시 입력하고 있었다. 채운 골드는 "지금 할 일" 버튼과 공유 CTA 두 곳뿐이라
+            여기는 테두리 버튼으로 둔다. */}
+        {isPostingRepostable(posting.status) ? (
+          <View className="px-4 pt-4">
+            <Card variant="outlined" padding="md">
+              <Text className="mb-1 text-base font-sans-semibold text-content-primary dark:text-off-white">
+                이 공고는 끝났어요
+              </Text>
+              <Text className="mb-4 text-sm text-content-secondary font-sans">
+                같은 조건으로 다시 올리면 날짜만 새로 고르면 돼요.
+              </Text>
+              <Pressable
+                onPress={handleRepost}
+                className="min-h-[44px] items-center justify-center rounded-md border border-primary-600 py-3 active:bg-primary-50 dark:border-primary-500 dark:active:bg-primary-900/30"
+                accessibilityRole="button"
+                accessibilityLabel="같은 조건으로 공고 다시 올리기"
+                testID="job-posting-repost"
+              >
+                <Text className="text-base font-sans-semibold text-primary-600 dark:text-primary-400">
+                  같은 조건으로 다시 올리기
                 </Text>
               </Pressable>
             </Card>

@@ -137,8 +137,30 @@ describe('CreateJobPostingScreen — createdAt ISO string 회귀', () => {
     render(<CreateJobPostingScreen />);
     // 최신(B)이 buildJobPostingDraft로 넘어가야 한다.
     expect(mockBuildJobPostingDraft).toHaveBeenCalledWith(expect.objectContaining({ id: 'B' }));
-    expect(mockCapturedPresets).toHaveLength(1);
+    // 프리셋은 최근 3건까지 싣는다(S2-5) — 정렬 계약은 첫 항목이 최신이라는 것.
     expect(mockCapturedPresets[0]?.id).toBe('last');
+    expect(mockCapturedPresets[0]?.title).toBe('마지막 공고');
+  });
+
+  it('최근 공고를 3건까지만 프리셋으로 싣는다', () => {
+    mockUseMyJobPostings.mockReturnValue({
+      data: [
+        posting('A', '2026-07-10T00:00:00.000Z'),
+        posting('B', '2026-07-16T00:00:00.000Z'),
+        posting('C', '2026-07-14T00:00:00.000Z'),
+        posting('D', '2026-07-18T00:00:00.000Z'),
+      ],
+    });
+    render(<CreateJobPostingScreen />);
+
+    // 1건 고정이면 "지난주 그 공고"가 이미 밀려나 사장이 결국 처음부터 입력하게 된다.
+    // 반대로 전부 실으면 고르는 비용이 입력 비용에 근접한다.
+    expect(mockCapturedPresets).toHaveLength(3);
+    expect(mockCapturedPresets.map((p) => p.title)).toEqual([
+      '마지막 공고',
+      '이전 공고',
+      '이전 공고',
+    ]);
   });
 
   it('공고 목록이 비면 프리셋 없이 렌더된다(무회귀)', () => {

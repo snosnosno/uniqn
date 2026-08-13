@@ -37,6 +37,7 @@ export {
   POSTING_STATUS_ACTION_TEXT,
   selectPostingStatusActions,
   getPostingStatusActionHint,
+  isPostingRepostable,
 } from './statusActions';
 export {
   createInitialPostingStats,

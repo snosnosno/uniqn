@@ -38,15 +38,22 @@ export default function CreateJobPostingScreen() {
   const { profile } = useAuth();
   const { addToast } = useToastStore();
 
+  // 프리셋 캐러셀에 올릴 최근 공고 수. 1건 고정이면 "지난주 그 공고"가 이미 밀려나 있어
+  // 사장이 결국 처음부터 입력하게 된다. 3건을 넘기면 캐러셀에서 고르는 비용이 입력 비용에 근접한다.
+  const RECENT_PRESET_LIMIT = 3;
+
   // 근무표 "공고 열기/부족 모집" 진입 — venueId(운영처)·date(선택일)·count(부족 인원)를
   // 받아 초기값에 프리필(P2-1). 일반 생성(파라미터 없음)은 완전 무회귀(gridParamsToValues 폴백).
   const params = useLocalSearchParams<{
     venueId?: string | string[];
     date?: string | string[];
     count?: string | string[];
+    /** 끝난 공고 화면의 "같은 조건으로 다시 올리기" — 이 공고를 프리셋 맨 앞에 올린다. */
+    fromPostingId?: string | string[];
   }>();
   const firstParam = (v?: string | string[]) => (Array.isArray(v) ? v[0] : v);
   const venueId = firstParam(params.venueId);
+  const fromPostingId = firstParam(params.fromPostingId);
   const prefillDate = firstParam(params.date);
   const prefillCountRaw = firstParam(params.count);
   const prefillCountParsed = prefillCountRaw ? Number.parseInt(prefillCountRaw, 10) : undefined;
@@ -86,27 +93,41 @@ export default function CreateJobPostingScreen() {
   // ⚠️ createdAt은 타입상 Date지만 런타임은 timestampSchema가 통일한 ISO string(common.ts) →
   //    .getTime() 직접 호출 시 "not a function" 크래시. toDate()로 변환 후 비교(스키마 규약).
   const myPostingsQuery = useMyJobPostings();
-  const lastPosting = useMemo(() => {
+  const recentPostings = useMemo(() => {
     const list = myPostingsQuery.data ?? [];
-    if (list.length === 0) return undefined;
-    return list.reduce((latest, p) =>
-      (toDate(p.createdAt)?.getTime() ?? 0) > (toDate(latest.createdAt)?.getTime() ?? 0)
-        ? p
-        : latest
+    const byRecency = [...list].sort(
+      (a, b) => (toDate(b.createdAt)?.getTime() ?? 0) - (toDate(a.createdAt)?.getTime() ?? 0)
     );
-  }, [myPostingsQuery.data]);
+
+    // 재게시로 들어왔으면 그 공고가 맨 앞이어야 한다 — 사장이 방금 보던 공고인데
+    // 목록 어딘가에서 다시 찾게 만들면 "같은 조건으로"라는 약속이 깨진다.
+    if (!fromPostingId) {
+      return byRecency.slice(0, RECENT_PRESET_LIMIT);
+    }
+    const source = byRecency.find((p) => p.id === fromPostingId);
+    if (!source) {
+      // 이미 지워졌거나 아직 목록에 없다 — 조용히 일반 최근 목록으로 떨어진다.
+      return byRecency.slice(0, RECENT_PRESET_LIMIT);
+    }
+    return [source, ...byRecency.filter((p) => p.id !== fromPostingId)].slice(
+      0,
+      RECENT_PRESET_LIMIT
+    );
+  }, [myPostingsQuery.data, fromPostingId]);
 
   // 프리셋 조립 — 마지막 공고 + 저장된 템플릿. S1·S2 이후 대회·고정도 draftToValues/templateToValues가
   // 복원하므로 프리셋에 정상 포함된다. try/catch는 잔여 방어(손상 데이터 등 복원 불가 형상 제외) 전용.
   const presets = useMemo<OrderSheetPreset[]>(() => {
     const out: OrderSheetPreset[] = [];
-    if (lastPosting) {
+    recentPostings.forEach((posting, index) => {
       try {
-        const values = draftToValues(buildJobPostingDraft(lastPosting));
+        const values = draftToValues(buildJobPostingDraft(posting));
+        const isRepostSource = Boolean(fromPostingId) && posting.id === fromPostingId;
         out.push({
-          id: 'last',
-          title: '마지막 공고',
-          icon: 'zap',
+          id: index === 0 ? 'last' : `recent-${posting.id}`,
+          title: isRepostSource ? '다시 올릴 공고' : index === 0 ? '마지막 공고' : '이전 공고',
+          ...(index === 0 ? { icon: 'zap' as const } : {}),
+          // 같은 라벨이 여러 개 뜰 수 있으므로 실제 구분은 공고 제목이 한다.
           subtitle: values.title,
           values: {
             ...values,
@@ -125,7 +146,7 @@ export default function CreateJobPostingScreen() {
       } catch {
         // 복원 불가 형상(손상 데이터 등)만 제외 — S2 이후 fixed·대회는 정상 포함
       }
-    }
+    });
     for (const t of templateManager.templates) {
       try {
         out.push({
@@ -139,7 +160,7 @@ export default function CreateJobPostingScreen() {
       }
     }
     return out;
-  }, [lastPosting, templateManager.templates]);
+  }, [recentPostings, fromPostingId, templateManager.templates]);
 
   // 주문서 "＋ 저장" — 현재 폼 값을 draft 로 굳혀 두고(검증 우회) 템플릿 이름 입력 모달을 연다.
   // ⚠️ handleSaveTemplate 직접 호출 금지: templateName 이 비면 조용한 no-op(useTemplateManager) →

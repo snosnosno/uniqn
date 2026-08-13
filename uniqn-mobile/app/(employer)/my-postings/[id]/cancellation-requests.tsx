@@ -7,7 +7,7 @@
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Modal, Pressable, RefreshControl, Text, View } from 'react-native';
+import { RefreshControl, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppFlashList } from '@/components/ui/AppFlashList';
@@ -16,7 +16,7 @@ import { EmptyState, ErrorState, Loading } from '@/components';
 import { StackHeader } from '@/components/headers';
 import { InboxIcon } from '@/components/icons';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
+import { ConfirmModal } from '@/components/ui/Modal';
 import { ScreenSkeleton } from '@/components/ui';
 import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import { useApplicantManagement } from '@/hooks/applicant';
@@ -244,45 +244,28 @@ export default function CancellationRequestsScreen() {
         />
       )}
 
-      <Modal
-        visible={approveModalVisible}
-        animationType="fade"
-        transparent
-        onRequestClose={handleCancelApprove}
-      >
-        <Pressable
-          className="flex-1 items-center justify-center bg-black/50 p-4"
-          onPress={handleCancelApprove}
-        >
-          <Pressable
-            className="w-full max-w-sm rounded-lg bg-white p-5 dark:bg-surface"
-            onPress={(e) => e.stopPropagation()}
-          >
-            <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
-              취소 요청 승인
-            </Text>
-            <Text className="mb-6 text-sm text-content-secondary font-sans">
-              이 취소 요청을 승인하시겠습니까?
-              {'\n'}
-              승인 시 해당 스태프의 확정은 취소됩니다.
-            </Text>
+      {/*
+        수제 모달(react-native raw Modal + 손으로 짠 백드롭)을 공용 ConfirmModal 로 수렴했다.
+        같은 화면의 거절 모달(CancellationRequestCard)은 이미 공용 컴포넌트를 쓰고 있어
+        승인만 혼자 다른 계열이었다 — 햅틱·이중 확인 래치·웹 페이드아웃 처리가 여기만 빠져 있었다.
 
-            <View className="flex-row gap-3">
-              <Button onPress={handleCancelApprove} variant="outline" className="flex-1">
-                취소
-              </Button>
-              <Button
-                onPress={handleConfirmApprove}
-                variant="primary"
-                className="flex-1"
-                disabled={approveGate.isSubmitting}
-              >
-                {approveGate.isSubmitting ? '처리 중...' : '승인'}
-              </Button>
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
+        `closeOnConfirm={false}` + `isLoading` 조합은 기존 계약(성공에서만 닫기, CANCEL-14 회귀 가드)을
+        그대로 유지한다. 닫기는 approveGate 의 onSuccess 가 부르는 handleCancelApprove 가 맡는다.
+      */}
+      <ConfirmModal
+        visible={approveModalVisible}
+        onClose={handleCancelApprove}
+        onConfirm={handleConfirmApprove}
+        title="취소 요청 승인"
+        message={'이 취소 요청을 승인하시겠습니까?\n승인 시 해당 스태프의 확정은 취소됩니다.'}
+        confirmText="승인"
+        cancelText="취소"
+        isDestructive
+        isLoading={approveGate.isSubmitting}
+        closeOnConfirm={false}
+        confirmTestID="cancellation-approve-confirm"
+        cancelTestID="cancellation-approve-cancel"
+      />
     </SafeAreaView>
   );
 }

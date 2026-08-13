@@ -57,6 +57,19 @@ export function selectPostingStatusActions(
 }
 
 /**
+ * 끝난 공고인가 — "같은 조건으로 다시 올리기"를 제안할 상태.
+ *
+ * @remarks 사장의 공고는 대체로 반복된다(같은 업장·같은 역할·같은 시급, 날짜만 다름).
+ *   그런데 끝난 공고 화면에는 다음 행동이 없어서, 다음 주 공고를 처음부터 다시 입력했다.
+ *
+ *   `cancelled` 는 제외한다 — 사장이 스스로 내린 공고라 되살리자는 제안이 무례하게 읽힌다.
+ *   `capacity_full` 도 제외 — 끝난 게 아니라 **찬** 것이고, 자리가 비면 자동으로 다시 열린다.
+ */
+export function isPostingRepostable(status: JobPostingStatus): boolean {
+  return status === 'expired' || status === 'closed';
+}
+
+/**
  * 액션이 없는 상태에서 **왜 없는지** 한 줄로 설명한다.
  *
  * @remarks 상태 뱃지를 눌렀는데 아무 일도 없으면 사장은 앱이 멈춘 줄 안다. 설명할 말이

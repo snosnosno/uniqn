@@ -23,11 +23,12 @@ const mockAddToast = jest.fn();
 const mockCloseMutate = jest.fn();
 const mockReopenMutate = jest.fn();
 const mockStatus = jest.fn();
+const mockPush = jest.fn();
 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ id: 'posting-1' }),
   useRouter: () => ({
-    push: jest.fn(),
+    push: mockPush,
     replace: jest.fn(),
     back: jest.fn(),
     canGoBack: () => true,
@@ -213,6 +214,7 @@ const succeed = (_id: string, options?: { onSuccess?: () => void; onSettled?: ()
 describe('JobPostingDetailScreen — 상태 전이', () => {
   beforeEach(() => {
     mockAddToast.mockReset();
+    mockPush.mockReset();
     mockCloseMutate.mockReset().mockImplementation(succeed);
     mockReopenMutate.mockReset().mockImplementation(succeed);
     mockStatus.mockReturnValue('active');
@@ -280,5 +282,27 @@ describe('JobPostingDetailScreen — 상태 전이', () => {
     const { queryByTestId } = render(<JobPostingDetailScreen />);
 
     expect(queryByTestId('job-posting-status-badge')).toBeNull();
+  });
+
+  // S2-5 — 끝난 공고에는 상태 보고만 있고 다음 행동이 없어서, 사장은 다음 주 공고를
+  // 처음부터 다시 입력하고 있었다.
+  it('끝난 공고에는 "같은 조건으로 다시 올리기"를 준다', () => {
+    mockStatus.mockReturnValue('closed');
+
+    const { getByTestId, getByText } = render(<JobPostingDetailScreen />);
+
+    expect(getByText('이 공고는 끝났어요')).toBeTruthy();
+    fireEvent.press(getByTestId('job-posting-repost'));
+
+    // 도착지가 이 공고를 프리셋 맨 앞에 올린다 — 날짜만 새로 고르면 된다.
+    expect(mockPush).toHaveBeenCalledWith('/(employer)/my-postings/create?fromPostingId=posting-1');
+  });
+
+  it('살아 있는 공고에는 다시 올리기를 제안하지 않는다', () => {
+    mockStatus.mockReturnValue('active');
+
+    const { queryByTestId } = render(<JobPostingDetailScreen />);
+
+    expect(queryByTestId('job-posting-repost')).toBeNull();
   });
 });
