@@ -1,13 +1,16 @@
-# 구인자 공고상세 개선 — 실행 원장 (2026-08-13 개설 · 08-13 2차 갱신)
+# 구인자 공고상세 개선 — 실행 원장 (2026-08-13 개설 · 08-14 3차 갱신)
 
 > ## 다음 세션은 여기서 시작한다
 >
-> - **2단계 12건 = 전량 완료.** 3단계는 **S3-7 만 완료**, 나머지 5건 남음(S3-6 은 착수 금지).
-> - 남은 5건은 **화면 작업이 아니라 스키마 작업**이다 — §4 의 "착수 전 반드시 아는 사실" 7개를
->   먼저 읽어라. 규모 추정이 원안과 다르고, 멱등 인덱스 부재 같은 함정이 실측으로 드러났다.
-> - 브랜치 `fix/posting-detail-honesty-20260813` (origin/master +10, **미푸시**).
->   PR·push 는 아직 하지 않았다.
-> - §2 에 이번 세션에서 새로 물린 함정 5건(11~15)이 있다. **목 누락으로만 5번 깨졌다.**
+> - **코드 잔여 0.** 2단계 12건 + 3단계 7건 **전량 착지**(S3-6 은 의도적 미착수 — W2-6 통합 트랙).
+> - 🔴 **남은 것은 사람 게이트 둘뿐**:
+>   ① **마이그 5종 prod 반영**(아래 §7) ② **실기기 확인**(§5, 15건)
+> - 브랜치 `fix/posting-detail-honesty-20260813` (origin/master +6, **미푸시**). PR 도 아직 없다.
+> - 🚨 **파리티 마커가 prod 보다 앞서 있다** — 이 브랜치가 214/112 로 올려 놨는데 prod 는
+>   208/110 이다. 마이그 5종이 prod 에 들어가기 전까지 **주간 parity-smoke 가 불일치를 보고한다**
+>   (정상이다, 파일에도 명시). 머지 전에 이 사실을 아는 사람이 있어야 한다.
+> - 🔴 **S3-4 는 문서화된 보안 결정을 뒤집었다**(사용자 승인). 설계 문서가 'NOT in scope' 로
+>   기각했던 항목이다 — 마이그 헤더에 이력을 남겼다. 리뷰어에게 이 맥락을 반드시 전달할 것.
 
 > 감사 원본은 `docs/analysis/2026-08-12-employer-posting-detail-ux-audit.md`
 > (⚠️ 2026-08-13 기준 **메인 체크아웃에 미커밋 상태**. 없으면 아티팩트에서 확인:
@@ -36,28 +39,57 @@
 
 ---
 
-## 1. 현재 상태 (2026-08-13 2차 세션 종료 시점)
+## 1. 현재 상태 (2026-08-14 3차 세션 종료 시점)
 
 ```
-브랜치   fix/posting-detail-honesty-20260813   (origin/master +10, 미푸시)
+브랜치   fix/posting-detail-honesty-20260813   (origin/master +6, 미푸시)
 워크트리 C:/Users/user/Desktop/T-HOLDEM-wt-honesty
-base     8b08010aa (origin/master — 재확인 완료, 변동 없음)
+base     6cfc66069 (origin/master — PR #475 머지 후 재통합 완료)
 
-커밋 (오래된 → 최신)
-  7be60d83c fix(employer): 공고상세 정직성 묶음                    ← 1단계
-  e1b41c15c feat(employer): 공고상세 허브 신호 묶음                 ← 1단계
-  208de4f88 docs(planning): 실행 원장 개설
-  c7e7a36e9 refactor(employer): useJobDetail 단일 수렴              ← S2-1
-  47a6a1a8c fix(employer): 숫자 진실원 통일·삭제 가드 축 정정        ← S2-2
-  dd92c7228 feat(employer): 상태 전이 배선 + 되돌리기 전환           ← S2-3·S2-7
-  123b7dfca feat(employer): 카드 위계 3단 + 통계 딥링크              ← S2-4·S2-8·S2-12
-  ec90174ca feat(employer): 재게시 + 취소요청 모달 수렴              ← S2-5·S2-6
-  e21757c46 feat(employer): 스켈레톤 통일 + 새 지원 알림             ← S2-9·S2-11
-  233dee90c fix(ops): ops 뒤로가기 구인자 맥락 보존                  ← S3-7
+커밋 (3차 세션 = 아래 5건 + 머지 1건. 1·2차 커밋은 머지 아래에 있다)
+  839fa2e65 Merge origin/master        ← #475 재통합(충돌 0)
+  18f818ccd feat(notification): D-day 정원 미달 — 판정축 하드닝·pgTAP·배정 줄 경고   ← S3-1 완료
+  14d77865b feat(employer):     지원자 노쇼 이력 칩 — 집계 RPC·낙인 방지 설계         ← S3-3
+  a591dae2e feat(share):        공유 출처 계측 end-to-end + 지원 QR 분리              ← S3-5
+  c918284b6 feat(employer):     확정 스태프 일괄 공지 — 이력 + 원자적 RPC             ← S3-2
+  3e116bbf2 feat(collaborator): 협업자 권한 2단 — 폭발 반경을 뒤집어 구현             ← S3-4
 ```
 
-**2단계 12건 전량 착지 · 3단계는 S3-7 만 착지.** 최종 검증:
-`npm run quality` exit 0 · jest **675 스위트 7639건 전량 통과**.
+**2단계 12건 + 3단계 7건 전량 착지**(S3-6 은 의도적 미착수). 최종 검증:
+`npm run quality` **exit 0** · jest **685 스위트 7719건 전량 통과** ·
+pgTAP **119파일 1370건 All tests successful**(clean `db reset` 후 마이그 5종 순차 적용 확인).
+
+### 3차 세션에서 추가된 회귀 테스트 (깨뜨리지 말 것)
+pgTAP 4: `posting_capacity_gap_notification` · `applicant_no_show_counts` ·
+`job_posting_announcements` · `jpc_role_tiers`
+jest 5: `capacityGap` · `StaffManagementTab.capacityGap` · `ApplicationRepository.noShowCounts` ·
+`shareSource` · `eventQRService.applyQR` · `JobPostingAnnouncementRepository`
+**전부 red-green 을 실제로 관측**했다(무엇을 되돌려 무엇이 실패했는지 각 커밋 메시지에 기록).
+
+### 🔑 3차 세션이 실측으로 뒤집은 전제 4가지
+1. **로컬에 pg_cron 이 설치돼 있다.** §4-3 이 "로컬 미설치라 EXCEPTION 가드가 없으면 db reset 이
+   죽는다"고 했는데, `pg_extension` 실측 1건이다. 그래서 `db reset` 은 가드를 **한 번도 타지
+   않았다** — 가드 동작은 `DROP EXTENSION pg_cron` 후 별도로 확인했다(WARNING + 블록 생존).
+2. **S3-2 의 서버가 이미 있었다.** Edge Function `send-job-posting-announcement` 가 배포·등록까지
+   돼 있었으나 **호출부 0곳인 고아**였고 이력을 안 남긴다. RPC 로 다시 만들었다(원자성).
+   → **EF 는 이제 중복이다. 제거는 별도 작업**(config.toml 등록 해제 + 배포).
+3. **S3-4 의 실제 표면은 6곳이 아니라 19곳**이다(쓰기 RPC 14 + 쓰기 정책 5). 감사 문서의
+   "RLS 정책 3개" 는 과소평가였다.
+4. **`ConfirmedStaff.payrollStatus` 는 매핑돼 있다**(`domains/staff/confirmedStaff.ts:80`).
+   §2-5 의 "매핑 안 됨" 은 stale 이다.
+
+### 🚨 3차 세션에서 새로 물린 함정 (16~19)
+16. **`docker exec` 에 `-i` 가 없으면 stdin 이 안 붙어 조용히 아무것도 안 한다.**
+    heredoc 을 파이프해도 출력이 0줄로 끝난다 — 성공처럼 보인다.
+17. **`docker cp` 는 `MSYS_NO_PATHCONV=1` 이어도 `/tmp/x` 를 `C:\tmp\x` 로 읽는다.**
+    복사가 실패했는데 뒤이은 테스트가 **옛 함수로 통과**해 red-green 이 거짓 green 이 됐다.
+    → 컨테이너로 SQL 을 넣을 땐 `docker exec -i ... psql < file` 로 stdin 을 쓸 것.
+18. **`jpc_test_set_user` 는 role 을 `authenticated` 로 바꾼다.** 그 뒤 `auth.users` 정리나
+    `notifications` 카운트를 하면 각각 `permission denied` / RLS 로 **항상 0건**이 나온다.
+    → 검증·정리 전에 `RESET ROLE`.
+19. **`supabase` 클라이언트는 `Database` 제네릭 **없이** 생성된다**(`src/lib/supabase.ts:19`).
+    `supabase.rpc('오타', {틀린키:1})` 이 tsc 를 그냥 통과한다. RPC 를 새로 부를 때는
+    **이름·인자 키를 고정하는 계약 테스트**를 반드시 함께 넣을 것.
 
 신규 회귀 테스트 9파일(2단계에서 추가): `jobDetailSingleSubscription` ·
 `JobPostingDetailScreen.{seatAxis,statusTransition,actionHierarchy}` ·
@@ -272,23 +304,39 @@ C:/Users/user/Desktop/T-HOLDEM-wt-schedule                      fix/schedule-pos
 
 ---
 
-## 4. 3단계 — 신규 기능 (7건). S3-7 ✅ / **나머지 5건은 서버 스키마 게이트**
+## 4. 3단계 — 신규 기능 (7건) ✅ **코드 전량 완료 (2026-08-14)**
 
-> 🔑 **이 세션의 핵심 발견: 남은 5건은 전부 "화면 작업"이 아니라 "스키마 작업"이다.**
-> 정찰(7축 병렬 실측)로 확인한 바, S3-1~S3-5 각각의 본체는 DB 마이그레이션·RPC·RLS·
-> 계측 화이트리스트다. 화면은 그 위에 얹는 얇은 층이다. 그래서 2단계처럼 "코드 짜고
-> jest 로 닫는" 방식이 통하지 않고, **prod 반영이라는 사람 게이트**를 지난다.
-> 착수 전 이 표를 먼저 읽어라 — 규모 추정이 원안과 다르다.
+> 원 진단("남은 5건은 화면이 아니라 스키마 작업이다")은 맞았다. 다섯 건 전부 본체가
+> 마이그레이션·RPC·RLS 였고 화면은 그 위의 얇은 층이었다.
+> **남은 것은 prod 반영이라는 사람 게이트뿐이다** — §7 참조.
 
-| # | 항목 | 실측 후 규모 | 본체(=진짜 작업) |
-|---|---|---|---|
-| S3-1 | D-2·D-1 정원 미달 크론 알림 | `M` | pg_cron 마이그 + **멱등 인덱스** |
-| S3-2 | 확정 스태프 일괄 공지 | `L` | 발송 이력 테이블 + RPC + 작성 UI |
-| S3-3 | 지원자 노쇼 이력 칩 | `M` | 집계 RPC(RLS상 클라 직접 조회 불가) |
-| S3-4 | 협업자 권한 2단 | `L` 🔴 | **스키마 변경 + RLS 3정책 재작성** |
-| S3-5 | 공유 출처 + 지원 QR | `M` | analytics CHECK 마이그 + QR 문구 분리 |
-| S3-6 | 상세 트리 탭 컨테이너 | `L~XL` | ⏸ **단독 착수 금지**(W2-6 통합 트랙) |
-| S3-7 | ops `fallbackHref` 정비 | `S` | ✅ **완료** — `233dee90c` |
+| # | 항목 | 커밋 | 마이그 | 실제로 한 일 |
+|---|---|---|---|---|
+| S3-1 | D-2·D-1 정원 미달 알림 | `18f818ccd` | `20260813110000` | 크론 + 멱등 인덱스 + **판정축 하드닝** + 배정 줄 경고 UI |
+| S3-2 | 확정 스태프 일괄 공지 | `c918284b6` | `20260813140000` | 이력 테이블 + 원자적 SECDEF RPC + 작성 화면 |
+| S3-3 | 지원자 노쇼 이력 칩 | `14d77865b` | `20260813120000` | 배치 집계 RPC(열거 차단·180일 창) + 카드 칩 |
+| S3-4 | 협업자 권한 2단 | `3e116bbf2` | `20260813150000` | role 컬럼 + **헬퍼 의미 반전** + 정책·RPC·감사 |
+| S3-5 | 공유 출처 + 지원 QR | `a591dae2e` | `20260813130000` | analytics CHECK + `?src=` 왕복 + 지원 QR 분리 |
+| S3-6 | 상세 트리 탭 컨테이너 | — | — | ⏸ **미착수(의도)** — W2-6 통합 트랙. 아래 사유 참조 |
+| S3-7 | ops `fallbackHref` 정비 | `233dee90c` | — | ✅ 2차 세션에서 완료 |
+
+### S3-6 을 붙이지 않은 이유 (물어보라고 했으므로 답한다)
+붙이지 않는 것이 맞다. 이 브랜치가 건드린 것은 **공고 상세의 내용물**(카드·배지·알림·권한)이고,
+S3-6 은 **상세를 감싸는 탭 컨테이너 구조 자체**를 바꾼다. 같은 화면이라는 이유로 묶으면
+① 이 브랜치의 리뷰 단위가 "기능 5건 + 구조 개편"으로 커져 리뷰가 사실상 불가능해지고
+② 원장 W2-6(허브 전면 개편)과 **같은 파일을 두 트랙이 동시에** 고치게 된다.
+2단계 S2-4 때도 같은 이유로 "위계만 손대고 탭 컨테이너는 건드리지 않는다"고 선을 그었다 —
+그 선을 여기서 넘을 이유가 생기지 않았다.
+
+### 🔑 S3-4 설계 기록 (다음 사람이 반드시 알아야 한다)
+`is_posting_collaborator()` 의 **의미를 바꿨다**: 종전 "협업자인가" → 이제 "**manager** 협업자인가".
+이유는 폭발 반경이다. 쓰기 지점이 **19곳**(쓰기 RPC 14 + 쓰기 정책 5)이라 하나씩 갈아끼우면
+빠뜨린 곳으로 viewer 가 쓰기를 하고 **아무 에러도 안 난다**. 의미를 바꾸면 19곳이 한 줄도 안 고치고
+fail-closed 가 되고, 읽기 7곳(정책 5 + RPC 2)만 새 `is_posting_collaborator_any()` 로 옮기면 된다.
+**빠뜨렸을 때의 실패가 "권한이 남는" 쪽에서 "권한이 모자란" 쪽으로 뒤집힌다.**
+→ 새 쓰기 경로를 만들 때는 `is_posting_collaborator()`(좁은 쪽)를 쓰면 자동으로 옳다.
+→ 새 읽기 경로는 `_any` 를 써야 viewer 가 볼 수 있다.
+→ 이 규약은 `jpc_role_tiers.test.sql` E9 가 **구조 단언**으로 고정한다.
 
 ### 착수 전 반드시 아는 사실 (이번 정찰 실측)
 
@@ -372,3 +420,47 @@ PR 전 `list_migrations` 로 prod 반영을 실측하고, `prod-migrate` 워크�
 3. 머지 직전 최신 master 재통합 + 재검증. squash 저장소라 rebase 금지, merge 사용.
 4. 완료 후: `/session-end` 로 착지·최신화·정리·인계.
 5. 워크트리 정리 시 정션은 `rm <path>` (재귀 금지 — 재귀면 원본 `node_modules` 가 날아간다).
+
+---
+
+## 7. 🔴 사람 게이트 — prod 마이그레이션 5종 (지금 남은 유일한 코드측 잔여)
+
+이 브랜치는 마이그레이션 5개를 만들었고 **전부 prod 미적용**이다. 로컬에서는
+clean `db reset` 으로 순차 적용 + pgTAP 119파일 1370건 통과를 확인했다.
+
+| 순서 | 파일 | 내용 | 되돌리기 |
+|---|---|---|---|
+| 1 | `20260813110000_posting_capacity_gap_notification.sql` | 크론 + 멱등 인덱스 + 알림 함수 | 크론 unschedule + 함수 drop |
+| 2 | `20260813120000_applicant_no_show_counts.sql` | 집계 RPC + 부분 인덱스 | 함수·인덱스 drop |
+| 3 | `20260813130000_share_source_analytics_events.sql` | analytics CHECK 확장 | CHECK 되돌리기(값 제거) |
+| 4 | `20260813140000_job_posting_announcements.sql` | 이력 테이블 + RLS + RPC | 테이블 drop |
+| 5 | `20260813150000_job_posting_collaborator_role.sql` | 🔴 **RLS 권한 모델 변경** | 아래 참조 |
+
+**순서를 지켜야 한다.** 5번이 4번이 만든 `jpa_select_manager` 정책을 교체하므로,
+4번 없이 5번만 적용하면 `DROP POLICY IF EXISTS` 는 조용히 지나가고 **정책이 사라진 채** 남는다.
+
+### 🚨 5번(S3-4)은 되돌리기가 비대칭이다 — 적용 전에 읽을 것
+`is_posting_collaborator()` 의 **의미를 바꾼다**. 적용 즉시 쓰기 RPC 14종·쓰기 정책 5개가
+manager 전용이 된다. `role` 이 전부 `'manager'` 기본값이라 **동작은 안 바뀌지만**,
+되돌리려면 헬퍼를 옛 정의로 `CREATE OR REPLACE` 해야 하고 그 사이에 누군가 viewer 를
+지정했다면 그 viewer 가 **다시 전권을 갖는다**. 롤백 시 `role='viewer'` 행을 먼저 확인할 것.
+
+### 적용 절차
+1. `mcp__supabase__list_migrations` 로 prod 최신 기록 확인(현재 `20260813100000`).
+2. `prod-migrate` 워크플로우 경유 — 그러면 **레포 파일명 = prod 기록명**이 된다.
+3. 적용 후 파리티 재측정: 함수 **214** / 정책 **112** 가 나와야 한다.
+   (이 브랜치가 `parity_baseline_guard.test.sql` 마커를 이미 214/112 로 올려 놨다 —
+    적용 전까지는 주간 parity-smoke 가 불일치를 보고하는 것이 **정상**이다.)
+4. 🔴 **크론 확인**: `SELECT * FROM cron.job WHERE jobname='notify-posting-capacity-gap'`
+   — prod 에 pg_cron 이 있으므로 EXCEPTION 가드를 타지 않고 실제로 등록되어야 한다.
+   등록되면 **매일 KST 10:00 에 실제 사장들에게 알림이 나가기 시작한다.** 그 사실을 알고 적용할 것.
+
+### 남은 정리 작업 (코드 잔여는 아니지만 빚이다)
+- **Edge Function `send-job-posting-announcement` 제거** — S3-2 RPC 가 대체했다. 지금은
+  호출부 0곳 + RPC 와 기능 중복. `supabase/config.toml:128` 등록 해제 + 배포가 필요해 분리했다.
+- **QR 문구 전면 상수화** — `QRCodeScanner.tsx` / `.web.tsx` / `eventQRService.ts` 에 문구가
+  여전히 인라인 중복이다. `e2e/` 가 리터럴을 수동 동기화하고 있어(quality 범위 밖) 한 번에
+  옮기면 조용히 깨진다. S3-5 는 **이번에 실제로 건드린 문구만** 상수로 옮겼다.
+- **`uniqn://` 스킴 딥링크의 `?src=` 소실** — `navigateToDeepLink` 가 `parsed.queryParams` 를
+  네비게이션에 싣지 않는다. 공유 링크는 웹 URL 이라 실사용 경로는 덮이지만, 스킴 경로로
+  들어온 출처는 기록되지 않는다.
