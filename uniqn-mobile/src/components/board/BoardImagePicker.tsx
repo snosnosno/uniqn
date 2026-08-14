@@ -9,7 +9,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { AddIcon, ImagesOutlineIcon, XMarkIcon } from '@/components/icons';
+import { PlusIcon, ImagesOutlineIcon, XMarkIcon } from '@/components/icons';
 import { MAX_BOARD_POST_IMAGES, type BoardImageAttachment } from '@/types/board';
 
 interface BoardImagePickerProps {
@@ -131,7 +131,7 @@ export function BoardImagePicker({
                 <View className="mb-2 rounded-sm bg-secondary-200 p-3 dark:bg-surface-elevated">
                   <ImagesOutlineIcon size={20} color={SECONDARY_PALETTE[400]} />
                 </View>
-                <AddIcon size={18} color={SECONDARY_PALETTE[500]} />
+                <PlusIcon size={18} color={SECONDARY_PALETTE[500]} />
                 <Text className="mt-1 text-center text-xs text-secondary-600 dark:text-secondary-400 font-sans">
                   추가
                 </Text>

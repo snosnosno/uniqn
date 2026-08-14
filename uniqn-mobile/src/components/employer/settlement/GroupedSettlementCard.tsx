@@ -21,7 +21,7 @@ import {
   ChevronUpIcon,
   CheckCircleIcon,
   ClockIcon,
-  ExclamationCircleIcon,
+  AlertCircleIcon,
 } from '@/components/icons';
 import {
   formatDateDisplay,
@@ -420,7 +420,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
           )}
           {group.summary.settlableCount < group.summary.pendingCount && (
             <View className="flex-row items-center px-2 py-1 bg-surface-page dark:bg-surface rounded-lg">
-              <ExclamationCircleIcon size={12} color={SECONDARY_PALETTE[500]} />
+              <AlertCircleIcon size={12} color={SECONDARY_PALETTE[500]} />
               <Text className="ml-1 text-xs text-content-muted dark:text-secondary-400 font-sans">
                 출퇴근 미완료 {group.summary.pendingCount - group.summary.settlableCount}건
               </Text>

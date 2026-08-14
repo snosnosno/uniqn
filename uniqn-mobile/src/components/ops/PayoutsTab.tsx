@@ -53,5 +53,3 @@ export function PayoutsTab({ tournament }: { tournament: OpsTournament }) {
     </View>
   );
 }
-
-export default PayoutsTab;

@@ -226,5 +226,3 @@ export function StaffAttendanceSheet({
     </SheetModal>
   );
 }
-
-export default StaffAttendanceSheet;

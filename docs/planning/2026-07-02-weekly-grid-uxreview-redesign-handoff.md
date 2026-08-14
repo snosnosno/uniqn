@@ -47,7 +47,7 @@
 
 ## 5. 진실의 원천 (읽을 것)
 
-- 설계: `docs/planning/2026-06-28-weekly-batch-grid-design.md` (v2 — §2.2 대안 비교표, §E1 집계축, BLOCKING 교정 이력).
+- 설계: `docs/archive/planning/2026-06/2026-06-28-weekly-batch-grid-design.md` (v2 — §2.2 대안 비교표, §E1 집계축, BLOCKING 교정 이력).
 - 생성 UI: `docs/superpowers/specs/2026-07-01-venue-create-ui-design.md`, `docs/superpowers/plans/2026-07-01-venue-create-ui.md`.
 - QA 핸드오프(현행 기준): `uniqn-mobile/docs/planning/2026-06-30-weekly-grid-qa-handoff-prompt.md`.
 - UX 갭 분석(참고): `docs/analysis/uniqn-pub-tourney-gap-2026-05-28.md`.

@@ -13,7 +13,7 @@
 import { View, Text, Pressable, useColorScheme } from 'react-native';
 
 // 2. 외부 라이브러리
-import { EyeOutlineIcon, PeopleOutlineIcon, PersonOutlineIcon, PinIcon } from '@/components/icons';
+import { EyeIcon, UsersIcon, UserIcon, PinIcon } from '@/components/icons';
 
 // 3. 내부 모듈
 import { getIconColor } from '@/constants/colors';
@@ -110,7 +110,7 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
             <View className="flex-row items-center gap-4">
               {/* Author */}
               <View className="flex-row items-center">
-                <PersonOutlineIcon size={12} color={getIconColor(isDarkMode, 'secondary')} />
+                <UserIcon size={12} color={getIconColor(isDarkMode, 'secondary')} />
                 <Text className="text-xs text-content-placeholder ml-1 font-sans">
                   {announcement.authorName}
                 </Text>
@@ -118,7 +118,7 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
 
               {/* View Count */}
               <View className="flex-row items-center">
-                <EyeOutlineIcon size={12} color={getIconColor(isDarkMode, 'secondary')} />
+                <EyeIcon size={12} color={getIconColor(isDarkMode, 'secondary')} />
                 <NumericText className="text-xs text-content-placeholder ml-1 font-sans">
                   {announcement.viewCount.toLocaleString()}
                 </NumericText>
@@ -138,7 +138,7 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
           {/* Target Audience Indicator */}
           {announcement.targetAudience.type === 'roles' && (
             <View className="flex-row items-center mt-2 pt-2 border-t border-secondary-100 dark:border-surface-overlay">
-              <PeopleOutlineIcon size={12} color={getIconColor(isDarkMode, 'secondary')} />
+              <UsersIcon size={12} color={getIconColor(isDarkMode, 'secondary')} />
               <Text className="text-xs text-content-placeholder ml-1 font-sans">
                 대상:{' '}
                 {announcement.targetAudience.roles

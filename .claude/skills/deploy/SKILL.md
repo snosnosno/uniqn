@@ -127,6 +127,29 @@ eas build --platform all          # 둘 다
 
 EAS는 시간(15~30분)과 빌드 크레딧을 소모하므로 사용자가 직접 "EAS 빌드해줘"라고 한 경우에만 실행. "다 배포해줘" 요청에는 포함하지 말 것.
 
+### 🔴 릴리스 순서 — 한 방 스크립트는 없다 (2026-08-13 정정)
+
+`npm run release` 복합 스크립트는 **제거했다**. 세 단계가 전부 실제 절차와 어긋났기 때문이다:
+
+1. `npm version patch -m` 이 **git 태그를 만든다** → squash 저장소라 머지 후 고아 커밋을 가리킨다.
+2. 범프 직후 곧바로 빌드했다 → **미머지 브랜치 빌드는 squash 후 커밋 도달이 불가능**하다.
+3. 빌드 직후 `release:sync` 를 돌렸다 → `sync-app-version.js` 헤더가 명시하듯 이건
+   **스토어 출시(승인·공개) 직후**에 돌려야 한다. 미리 올리면 아직 받을 수 없는 버전으로
+   업데이트하라고 안내하게 된다.
+
+올바른 순서 (각 단계는 사람이 확인하고 넘어간다):
+
+```bash
+cd uniqn-mobile
+npm run release:bump      # npm version patch --no-git-tag-version (태그·커밋 없음)
+npm install               # ⚠️ --package-lock-only 만 하면 node_modules 가 낡은 채 남는다
+# → 범프를 커밋하고 PR 로 master 에 머지 (빌드는 머지 후 master 에서)
+npm run release:check     # 버전 일관성 (package.json ↔ app.config.ts ↔ app_config)
+npm run release:build     # eas build
+# → 스토어 심사 통과·공개 확인
+npm run release:sync      # app_config.latest/recommended_version 갱신
+```
+
 ## 5. EAS Update (OTA) — runtimeVersion `appVersion` 규칙 (2026-07-26 이후)
 
 `app.config.ts` 의 `runtimeVersion.policy` 이력: `sdkVersion` → `fingerprint`(07-25 #335) → **`appVersion`**(07-26).

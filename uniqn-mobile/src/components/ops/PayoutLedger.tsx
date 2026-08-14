@@ -148,5 +148,3 @@ export function PayoutLedger({ tournament }: { tournament: OpsTournament }) {
     </View>
   );
 }
-
-export default PayoutLedger;

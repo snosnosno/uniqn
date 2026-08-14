@@ -105,5 +105,3 @@ export function SettlementRevertModal({
     </SheetModal>
   );
 }
-
-export default SettlementRevertModal;

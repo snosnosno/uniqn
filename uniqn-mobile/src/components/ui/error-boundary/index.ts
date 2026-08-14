@@ -63,5 +63,3 @@ export { CompositeErrorBoundary } from './CompositeErrorBoundary';
 // ============================================================================
 // Default Export
 // ============================================================================
-
-export { ErrorBoundary as default } from './ErrorBoundary';

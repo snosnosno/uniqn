@@ -37,5 +37,3 @@ export function GridBadgeLegend() {
     </View>
   );
 }
-
-export default GridBadgeLegend;

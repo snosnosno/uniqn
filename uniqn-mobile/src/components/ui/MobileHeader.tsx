@@ -9,7 +9,7 @@ import Animated, {
   useSharedValue,
   type SharedValue,
 } from 'react-native-reanimated';
-import { ChevronLeftIcon, MagnifyingGlassIcon, XMarkIcon } from '@/components/icons';
+import { ChevronLeftIcon, SearchIcon, XMarkIcon } from '@/components/icons';
 import { getIconColor, getLayoutColor, HEADER_CLASSES } from '@/constants';
 import { HeaderBackButton } from '@/components/navigation';
 import { useThemeStore } from '@/stores/themeStore';
@@ -180,7 +180,7 @@ export function MobileHeader({
             <View
               className={`flex-1 flex-row items-center rounded-lg px-3 py-2 ${HEADER_CLASSES.searchField}`}
             >
-              <MagnifyingGlassIcon size={20} color={searchPlaceholderColor} />
+              <SearchIcon size={20} color={searchPlaceholderColor} />
               <TextInput
                 value={searchQuery}
                 onChangeText={handleSearchChange}
@@ -268,7 +268,7 @@ export function MobileHeader({
                   accessibilityRole="button"
                   accessibilityLabel="검색"
                 >
-                  <MagnifyingGlassIcon size={24} color={headerTintColor} />
+                  <SearchIcon size={24} color={headerTintColor} />
                 </Pressable>
               ) : null}
               {rightAction}

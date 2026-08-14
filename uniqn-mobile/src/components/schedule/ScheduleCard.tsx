@@ -9,7 +9,7 @@ import { CardStripe, Badge } from '@/components/ui';
 import {
   CalendarIcon,
   ClockIcon,
-  MapIcon,
+  MapPinIcon,
   BriefcaseIcon,
   BanknotesIcon,
   UserIcon,
@@ -238,7 +238,7 @@ export const ScheduleCard = memo(function ScheduleCard({
 
           {schedule.location && (
             <View className="mb-2 flex-row items-center">
-              <MapIcon size={14} color={SECONDARY_PALETTE[500]} />
+              <MapPinIcon size={14} color={SECONDARY_PALETTE[500]} />
               <Text
                 className="ml-1.5 flex-1 text-sm text-secondary-500 dark:text-secondary-400 dark:leading-sm-dark font-sans"
                 numberOfLines={1}

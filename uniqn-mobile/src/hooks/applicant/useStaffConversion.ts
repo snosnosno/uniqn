@@ -4,7 +4,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { requireAuth } from '@/errors/guardErrors';
-import { invalidateRelated } from '@/lib';
+import { invalidateRelated } from '@/lib/invalidationStrategy';
 import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { errorHandlerPresets } from '@/shared/errors';
 import { useAuthStore } from '@/stores/authStore';

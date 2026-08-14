@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StackHeader } from '@/components/headers';
 import { useCreateOpsTournament } from '@/hooks/ops';
-import { PostingPickerSheet } from '@/components/ops';
+import { PostingPickerSheet } from '@/components/ops/PostingPickerSheet';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { useMyJobPostings } from '@/hooks/useJobManagement';
 import { opsBlindLevelService } from '@/services/ops';

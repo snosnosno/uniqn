@@ -19,11 +19,11 @@ import { router } from 'expo-router';
 import { createPostingLegacyDateRequirements } from '@/domains/job-posting';
 import { StackHeader } from '@/components/headers';
 import {
-  CalendarOutlineIcon,
-  CheckmarkCircleOutlineIcon,
+  CalendarIcon,
+  CheckCircleIcon,
   CloseCircleOutlineIcon,
-  LocationOutlineIcon,
-  PersonOutlineIcon,
+  MapPinIcon,
+  UserIcon,
 } from '@/components/icons';
 import { useTournamentApproval, useTournamentsByStatus } from '@/hooks/useTournamentApproval';
 import { ApprovalModal } from '@/components/admin/ApprovalModal';
@@ -193,19 +193,19 @@ const TournamentCard = memo(function TournamentCard({
           </Text>
 
           <View className="flex-row items-center mb-1">
-            <LocationOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
+            <MapPinIcon size={14} color={SECONDARY_PALETTE[400]} />
             <Text className="text-sm text-content-secondary ml-1 font-sans">
               {posting.location.name}
             </Text>
           </View>
 
           <View className="flex-row items-center mb-1">
-            <CalendarOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
+            <CalendarIcon size={14} color={SECONDARY_PALETTE[400]} />
             <Text className="text-sm text-content-secondary ml-1 font-sans">{dateRange}</Text>
           </View>
 
           <View className="flex-row items-center">
-            <PersonOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
+            <UserIcon size={14} color={SECONDARY_PALETTE[400]} />
             <Text className="text-sm text-content-secondary ml-1 font-sans">
               {posting.ownerName ?? '구인자'}
             </Text>
@@ -243,7 +243,7 @@ const TournamentCard = memo(function TournamentCard({
               <ActivityIndicator size="small" color={STATUS_COLORS.success} />
             ) : (
               <>
-                <CheckmarkCircleOutlineIcon size={18} color={STATUS_COLORS.success} />
+                <CheckCircleIcon size={18} color={STATUS_COLORS.success} />
                 <Text className="text-success-500 font-sans-medium ml-1">승인</Text>
               </>
             )}

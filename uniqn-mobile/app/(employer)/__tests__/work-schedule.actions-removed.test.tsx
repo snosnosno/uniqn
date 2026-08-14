@@ -41,7 +41,7 @@ jest.mock('@/components/icons', () => ({
 }));
 
 // 플래그 ON — OFF 면 Redirect 로 화면이 통째로 사라져 단언이 vacuous 해진다.
-jest.mock('@/hooks', () => ({
+jest.mock('@/hooks/useWorkScheduleEnabled', () => ({
   useWorkScheduleEnabled: () => ({ enabled: true, isLoading: false }),
 }));
 

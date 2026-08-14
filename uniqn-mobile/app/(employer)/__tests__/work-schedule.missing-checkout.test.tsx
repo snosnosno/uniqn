@@ -39,7 +39,7 @@ jest.mock('@/components/icons', () => ({
   MapPinIcon: () => null,
 }));
 
-jest.mock('@/hooks', () => ({
+jest.mock('@/hooks/useWorkScheduleEnabled', () => ({
   useWorkScheduleEnabled: () => ({ enabled: true, isLoading: false }),
 }));
 

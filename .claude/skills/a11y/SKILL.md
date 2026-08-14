@@ -178,7 +178,12 @@ AccessibilityInfo.announceForAccessibility('저장되었습니다');
 | `accessibilityActions` | 커스텀 액션 정의 |
 | `accessibilityLiveRegion` | 동적 콘텐츠 알림 |
 
-## 웹 접근성 (app2)
+## 웹 접근성 (Expo web 빌드 — `expo export -p web`)
+
+> react-native-web 이 RN 프리미티브를 DOM 으로 렌더하므로 아래 ARIA 는 **웹 빌드에서만**
+> 의미가 있다. RN 쪽은 위의 `accessibility*` prop 을 쓴다.
+> 🚨 `accessibilityState` 는 웹에서 무효다(react-native-web 0.21.2 실측) — E2E 상태 판별은
+> `aria-*` 가 아니라 **판정 대상의 가시성**으로 한다.
 
 ### ARIA 속성
 ```tsx

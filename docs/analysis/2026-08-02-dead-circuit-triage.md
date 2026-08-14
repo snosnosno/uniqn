@@ -1317,7 +1317,7 @@ npx jest src/__tests__/hooks/useTemplateManager.delete.test.tsx src/components/e
 src/lib/queryClient.ts:531 queryKeys.reviews.bubbleScore · src/lib/invalidationStrategy.ts:119 InvalidationTarget 유니온 멤버 'reviews.bubbleScore' · :411 'review.create' 이벤트 타깃 목록 항목 · :555-557 switch case
 
 ### 원래 의도 (왜 만들었나)
-근거 있음. b56a11a07 (feat(mobile): 버블(Bubble) 상호 평가 시스템 구현) 에서 도입. 설계 문서는 docs/superpowers/specs/2026-06-24-review-feature-recovery-design.md — create_review RPC 가 리뷰 INSERT 와 동시에 피평가자 users.bubble_score(jsonb) 를 원자 갱신하도록 설계됐고, 클라 쪽에는 '남의 버블 점수를 읽는 쿼리'가 있을 것을 전제로 무효화 키를 먼저 깔았다. 다만 **읽기 훅을 만든 커밋은 존재하지 않는다** — `git log -S` 로 이 키를 쓰는 useQuery 를 찾을 수 없다.
+근거 있음. b56a11a07 (feat(mobile): 버블(Bubble) 상호 평가 시스템 구현) 에서 도입. 설계 문서는 docs/archive/specs/2026-06/2026-06-24-review-feature-recovery-design.md — create_review RPC 가 리뷰 INSERT 와 동시에 피평가자 users.bubble_score(jsonb) 를 원자 갱신하도록 설계됐고, 클라 쪽에는 '남의 버블 점수를 읽는 쿼리'가 있을 것을 전제로 무효화 키를 먼저 깔았다. 다만 **읽기 훅을 만든 커밋은 존재하지 않는다** — `git log -S` 로 이 키를 쓰는 useQuery 를 찾을 수 없다.
 
 ### 흐름이 끊긴 시점
 끊긴 게 아니라 **애초에 안 이어졌다.** 무효화 쪽(invalidationStrategy.ts) 배선만 먼저 들어가고 소비 쪽 useQuery 가 한 번도 작성된 적이 없다. docs/analysis/2026-08-02-ux-friction-selected-deepdive.md:1650 이 같은 판정을 내린다 — '리팩터링으로 지워진 흔적이라면 무효화 쪽도 같이 지워졌을 것이다. 쓸 예정이었던 키가 무효화만 먼저 배선된 형태다.'

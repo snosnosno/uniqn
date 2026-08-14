@@ -364,5 +364,3 @@ export function PayoutStructureEditor({ tournament }: { tournament: OpsTournamen
     </View>
   );
 }
-
-export default PayoutStructureEditor;

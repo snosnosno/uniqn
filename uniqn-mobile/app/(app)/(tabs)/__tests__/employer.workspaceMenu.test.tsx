@@ -76,7 +76,7 @@ jest.mock('@/components/headers', () => ({ TabHeader: () => null }));
 jest.mock('@/components/workspace', () => ({ WorkspaceContextBar: () => null }));
 jest.mock('@/components/icons', () => ({
   BriefcaseIcon: () => null,
-  CalendarDaysIcon: () => null,
+  CalendarIcon: () => null,
   ChevronRightIcon: () => null,
   EllipsisHorizontalIcon: () => null,
   PlusIcon: () => null,

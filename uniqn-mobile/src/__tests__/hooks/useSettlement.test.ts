@@ -197,7 +197,7 @@ jest.mock('@tanstack/react-query', () => ({
 // Mock Query Keys
 // ============================================================================
 
-jest.mock('@/lib', () => ({
+jest.mock('@/lib/queryClient', () => ({
   queryKeys: {
     settlement: {
       all: ['settlement'],
@@ -223,11 +223,13 @@ jest.mock('@/lib', () => ({
     standard: 1000 * 60 * 5,
     realtime: 30 * 1000,
   },
-  invalidateRelated: jest.fn(),
   invalidateQueries: {
     settlement: jest.fn(),
     workLogs: jest.fn(),
   },
+}));
+jest.mock('@/lib/invalidationStrategy', () => ({
+  invalidateRelated: jest.fn(),
 }));
 
 jest.mock('@/shared/errors', () => ({

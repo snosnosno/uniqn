@@ -111,7 +111,6 @@ jest.mock('@/components/icons', () => {
     ImageIcon: Icon,
     PaperPlaneOutlineIcon: Icon,
     XMarkIcon: Icon,
-    AddIcon: Icon,
     ImagesOutlineIcon: Icon,
   };
 });

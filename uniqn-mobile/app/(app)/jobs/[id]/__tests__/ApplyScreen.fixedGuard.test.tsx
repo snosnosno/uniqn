@@ -95,13 +95,16 @@ jest.mock('@/components/ui/Button', () => {
   };
 });
 
-jest.mock('@/hooks', () => ({
+jest.mock('@/hooks/useJobDetail', () => ({
   useJobDetail: () => ({
     job: mockJob,
     isLoading: false,
     error: null,
     refresh: jest.fn(),
   }),
+  getJobDetailQueryOptions: () => ({ queryKey: ['job'], queryFn: jest.fn() }),
+}));
+jest.mock('@/hooks/useApplications', () => ({
   useApplications: () => ({
     submitApplicationAsync: jest.fn(),
     isSubmitting: false,
@@ -114,11 +117,7 @@ jest.mock('@/hooks/internal/sessionUserId', () => ({
   resolveSessionUserId: () => 'user-1',
 }));
 
-jest.mock('@/hooks/useJobDetail', () => ({
-  getJobDetailQueryOptions: () => ({ queryKey: ['job'], queryFn: jest.fn() }),
-}));
-
-jest.mock('@/stores', () => ({
+jest.mock('@/stores/authStore', () => ({
   useAuthStore: (selector: (state: Record<string, unknown>) => unknown) =>
     selector({ user: { uid: 'user-1' }, isInitialized: true }),
 }));

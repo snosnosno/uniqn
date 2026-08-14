@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
-import { queryKeys } from '@/lib';
+import { queryKeys } from '@/lib/queryClient';
 
 function extractJobPostingIdFromCacheEntry(
   data: unknown,

@@ -84,5 +84,3 @@ export function DealerPickerSheet({
     />
   );
 }
-
-export default DealerPickerSheet;

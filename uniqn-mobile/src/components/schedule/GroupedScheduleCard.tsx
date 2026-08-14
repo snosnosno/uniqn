@@ -9,7 +9,7 @@ import { CardStripe, Badge } from '@/components/ui';
 import {
   CalendarIcon,
   ClockIcon,
-  MapIcon,
+  MapPinIcon,
   BriefcaseIcon,
   BanknotesIcon,
   UserIcon,
@@ -205,7 +205,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
 
           {group.location && (
             <View className="mb-2 flex-row items-center">
-              <MapIcon size={14} color={SECONDARY_PALETTE[500]} />
+              <MapPinIcon size={14} color={SECONDARY_PALETTE[500]} />
               <Text
                 className="ml-1.5 flex-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans"
                 numberOfLines={1}

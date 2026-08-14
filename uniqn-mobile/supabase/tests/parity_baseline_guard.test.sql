@@ -160,7 +160,7 @@
 --   · 20260809110000_ops_resolve_staff_work_logs.sql — 함수 206 → **207**(해석기 1개 신설).
 --     ops 결함 ⑦-2. 읽기 전용 STABLE SECDEF — 근태 쓰기는 기존 update_work_log_slot 단독이라
 --     쓰기 함수는 늘지 않는다. 정책 111 불변(테이블·RLS 미변경).
---     🔴 prod 미적용 — 머지·prod 적용 전까지 주간 parity-smoke 가 불일치를 보고한다.
+--     ✅ prod 적용 완료(list_migrations 실측 2026-08-13).
 --
 --   · 20260809140000_rls_cost_hygiene_and_notification_retention.sql — 정책 111 → **110**.
 --     감사 cost-01. baseline 덤프에 글자 그대로 중복 실려 있던 공개 SELECT 정책 2개 중
@@ -169,7 +169,8 @@
 --     붙어 있어 whitelist 축소 보호가 그대로 산다.
 --     같은 마이그의 `ops_prizes_select`(cost-04 initplan 래핑)는 DROP+CREATE 재정의라 증감 0.
 --     함수 208 불변 — 크론 2건(cost-02 alter_job / cost-03 신설)은 인라인 SQL 이라 함수를 안 만든다.
---     🔴 prod 미적용 — 머지·prod 적용 전까지 주간 parity-smoke 가 111 vs 110 불일치를 보고한다.
+--     ✅ prod 적용 완료(list_migrations 실측 2026-08-13 — prod 최신은 20260811100000).
+--     아래 마커 208/110 이 prod 실측과 일치하므로 parity-smoke 는 정상 통과 상태다.
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:

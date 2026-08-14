@@ -77,5 +77,3 @@ export function StaffRow({ staff, assignedTableNo, attendance, onPress }: StaffR
     </Pressable>
   );
 }
-
-export default StaffRow;

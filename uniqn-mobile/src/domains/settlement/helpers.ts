@@ -2,7 +2,7 @@ import type { SettlementBreakdown } from '@/types/schedule';
 import type { JobRoleStats, JobPostingCard, SalaryInfo } from '@/types/jobPosting';
 import { TimeNormalizer, type TimeInput } from '@/shared/time';
 import { parseTimeSlotToDate } from '@/utils/date/ranges';
-import { DEFAULT_SALARY_INFO, PROVIDED_FLAG } from '@/utils/settlement/constants';
+import { DEFAULT_SALARY_INFO } from '@/utils/settlement/constants';
 import {
   type TaxSettings,
   DEFAULT_TAX_SETTINGS,
@@ -53,21 +53,15 @@ export function calculateHoursWorked(startTime: TimeInput, endTime: TimeInput): 
   return SettlementCalculator.calculateHours(startTime, endTime);
 }
 
+/**
+ * 기본급 계산 — 산식은 {@link SettlementCalculator.calculateBasePay} 단독 소유다.
+ *
+ * 여기서 다시 구현하지 말 것. 과거에 같은 switch 를 두 벌 두었다가 음수 가드가 한쪽에만
+ * 붙어 발산했고(2차 리뷰 적발), 이후에도 `hoursWorked === 0` 가드가 한쪽에만 있어
+ * **일급·월급 + 0시간**에서 답이 갈려 있었다. 2026-08-13 에 위임으로 축을 하나로 만들었다.
+ */
 export function calculatePayByType(salaryInfo: SalaryInfo, hoursWorked: number): number {
-  // 음수 금액 방어 (SettlementCalculator.calculateBasePay 와 동치)
-  if (salaryInfo.amount < 0) {
-    return 0;
-  }
-
-  switch (salaryInfo.type) {
-    case 'hourly':
-      return Math.round(hoursWorked * salaryInfo.amount);
-    case 'daily':
-    case 'monthly':
-      return salaryInfo.amount;
-    default:
-      return 0;
-  }
+  return SettlementCalculator.calculateBasePay(salaryInfo, hoursWorked);
 }
 
 export function getRoleSalaryFromRoles(
@@ -152,37 +146,15 @@ export function getDisplayRoleSalaryFromSettlementSource(
   return findRoleSalary(source?.roles, targetRole, customRole) ?? source?.defaultSalary ?? null;
 }
 
+/**
+ * 수당 합계 — 산식은 {@link SettlementCalculator.calculateAllowances} 단독 소유다.
+ *
+ * 여기서 다시 구현하지 말 것. `PROVIDED_FLAG`(제공) 제외와 `> 0` 게이트를 항목마다
+ * 반복하는 코드라 한쪽만 고치면 조용히 금액이 갈린다 — 실제로 `additional` 합산이
+ * 한쪽에만 있었다(2차 리뷰 적발).
+ */
 export function calculateAllowanceAmount(allowances?: Allowances): number {
-  if (!allowances) return 0;
-
-  let amount = 0;
-
-  if (allowances.meal && allowances.meal !== PROVIDED_FLAG && allowances.meal > 0) {
-    amount += allowances.meal;
-  }
-
-  if (
-    allowances.transportation &&
-    allowances.transportation !== PROVIDED_FLAG &&
-    allowances.transportation > 0
-  ) {
-    amount += allowances.transportation;
-  }
-
-  if (
-    allowances.accommodation &&
-    allowances.accommodation !== PROVIDED_FLAG &&
-    allowances.accommodation > 0
-  ) {
-    amount += allowances.accommodation;
-  }
-
-  // 추가 수당 (SettlementCalculator.calculateAllowances 와 동치)
-  if (allowances.additional && allowances.additional > 0) {
-    amount += allowances.additional;
-  }
-
-  return amount;
+  return SettlementCalculator.calculateAllowances(allowances);
 }
 
 export function calculateSettlement(

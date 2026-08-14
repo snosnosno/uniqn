@@ -1,8 +1,8 @@
 # T-HOLDEM ops 1d — bust / 재진입 / ITM(ops_prizes·PAYOUTS·우승확정) 설계 스펙
 
 > 작성: 2026-06-29 · 브랜치 `feat/ops-1d-bust-reentry-itm` · 토대=STEP A(claim 토큰 분리, #216 머지)
-> 권위 명세: `docs/planning/2026-06-23-tournament-ops-revival-slice1-design.md` §4.3·§7·§8·§10 + 본 스펙(범위 확장 반영)
-> 핸드오프: `docs/planning/2026-06-29-ops-1d-handoff-prompt.md`
+> 권위 명세: `docs/archive/planning/2026-06/2026-06-23-tournament-ops-revival-slice1-design.md` §4.3·§7·§8·§10 + 본 스펙(범위 확장 반영)
+> 핸드오프: `docs/archive/planning/2026-06/2026-06-29-ops-1d-handoff-prompt.md`
 
 ## 0. 결론 (한 줄)
 

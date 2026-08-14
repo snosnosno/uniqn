@@ -15,7 +15,7 @@ import { SECONDARY_PALETTE, TEXT_CLASSES } from '@/constants/colors';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { extractPostingFilledSubmap, usePostingFilledCounts } from '@/hooks/usePostingFilledCounts';
 import { buildPostingFacts, projectPostingSurface } from '@/domains/job-posting';
-import { useAuthStore } from '@/stores';
+import { useAuthStore } from '@/stores/authStore';
 import type { JobPosting, PostingDetailViewModel } from '@/types';
 import { POSTING_TYPE_LABELS } from '@/types/postingConfig';
 import {

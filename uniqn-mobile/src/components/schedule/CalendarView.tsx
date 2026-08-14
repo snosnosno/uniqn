@@ -353,5 +353,3 @@ export function CalendarView({
     </View>
   );
 }
-
-export default CalendarView;

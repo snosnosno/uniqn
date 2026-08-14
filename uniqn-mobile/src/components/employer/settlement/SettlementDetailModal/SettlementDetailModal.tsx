@@ -302,5 +302,3 @@ export function SettlementDetailModal({
     </SheetModal>
   );
 }
-
-export default SettlementDetailModal;

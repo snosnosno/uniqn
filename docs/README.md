@@ -67,7 +67,20 @@
 아래 문서군은 현재 운영 기준이 아니라 설계 기록, 이행 메모, 과거 검토 자료입니다.
 
 - `archive/firebase-legacy/` (Firebase 시절 규칙/스펙/설계 기록)
-- `archive/planning/2026-04/` (2026-04 분기 계획 아카이브)
+- `archive/planning/<YYYY-MM>/` (종료된 계획 문서 — 2026-04·05·06)
+- `archive/plans/<YYYY-MM>/` · `archive/specs/<YYYY-MM>/` (종료된 superpowers 플랜·스펙)
+- `archive/qa/` · `archive/operations/` · `archive/wallet-iap-removal/` · `archive/features-2026-07/`
+
+> 아카이브 규약: 완료·폐기된 문서는 원 카테고리를 유지한 채 `archive/<카테고리>/<YYYY-MM>/`
+> 로 옮긴다. **참조하는 쪽을 같은 커밋에서 함께 고친다** — 마크다운 링크 `[..](..)` 뿐 아니라
+> 본문에 적힌 경로 문자열(`` `docs/planning/…` ``)까지 전부. 옮긴 문서가 **자기 자신의 경로를
+> 본문에 적어 둔 경우**도 놓치기 쉬우니 함께 고친다. 옮긴 문서 내부의 상대 경로는 깊이가
+> 바뀌므로, 옛 위치 기준으로 해석한 뒤 새 위치 기준으로 다시 계산한다.
+>
+> 검증: `node scripts/check-docs.js` 의 깨진 링크 목록을 **이동 전후로 비교**해 신규 0건을
+> 확인한다. 이 스크립트는 기준선 자체에 기존 에러가 있어 종료 코드만으로는 판정할 수 없다.
+>
+> 2026-04~06 planning/plans/specs 백로그는 2026-08-13 에 전량 아카이브됐다(잔존 0).
 - `../specs/react-native-app/*` — 2026-07-26 제거(내용 오염). 원본은 git `82cee067e`, 복원법은 `../specs/react-native-app/README.md` 참조
 - `planning/*`
 - `features/*`

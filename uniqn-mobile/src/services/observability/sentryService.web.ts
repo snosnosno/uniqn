@@ -1,78 +1,39 @@
-import {
-  AppError,
-  getAppErrorTelemetryPolicy,
-  isAppError,
-  type AppErrorTelemetryChannel,
-} from '@/errors/AppError';
+/**
+ * UNIQN Mobile - Sentry observability service (웹 폴백)
+ *
+ * 웹에는 네이티브 Sentry SDK 가 없으므로 이벤트를 `logger.observability` 싱크로 흘린다.
+ * 플랫폼 분기가 없는 조각(타입·breadcrumb 링·enabled 플래그·AppError 속성 추출)은
+ * `./sentryShared` 가 단독 소유한다 — 여기에 다시 구현하지 말 것.
+ */
+
+import { AppError, getAppErrorTelemetryPolicy, isAppError } from '@/errors/AppError';
 import { logger } from '@/utils/logger';
 
-export type SentrySeverity = 'fatal' | 'error' | 'warning';
+import {
+  addBreadcrumb,
+  clearBreadcrumbs,
+  extractErrorAttributes,
+  getBreadcrumbs,
+  isObservabilityEnabled,
+  setEnabled,
+  type SentryAttributes,
+  type SentryContext,
+  type SentrySeverity,
+  type SentryUser,
+} from './sentryShared';
 
-export interface SentryContext {
-  screen?: string;
-  component?: string;
-  action?: string;
-  domain?: string;
-  userId?: string;
-  handlingKind?: string;
-  telemetryChannel?: AppErrorTelemetryChannel;
-  [key: string]: string | number | boolean | undefined;
-}
-
-export interface SentryAttributes {
-  [key: string]: string;
-}
-
-export interface SentryUser {
-  id?: string;
-  email?: string;
-  name?: string;
-}
+export { clearBreadcrumbs, getBreadcrumbs, setEnabled };
+export type { SentryAttributes, SentryContext, SentrySeverity, SentryUser };
 
 let isInitialized = false;
-let isEnabled = true;
 let currentUser: SentryUser = {};
-const breadcrumbs: string[] = [];
-const MAX_BREADCRUMBS = 50;
-
-function addBreadcrumb(message: string): void {
-  const timestamp = new Date().toISOString();
-  breadcrumbs.push(`[${timestamp}] ${message}`);
-
-  while (breadcrumbs.length > MAX_BREADCRUMBS) {
-    breadcrumbs.shift();
-  }
-}
-
-function extractErrorAttributes(error: Error | AppError): Record<string, string> {
-  const attributes: Record<string, string> = {};
-
-  if (!isAppError(error)) {
-    return attributes;
-  }
-
-  attributes.error_code = error.code;
-  attributes.error_category = error.category;
-  attributes.error_severity = error.severity;
-  attributes.is_retryable = String(error.isRetryable);
-
-  if (error.metadata) {
-    Object.entries(error.metadata).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        attributes[`metadata_${key}`] = String(value);
-      }
-    });
-  }
-
-  return attributes;
-}
 
 async function captureWithLevel(
   error: Error | AppError,
   level: SentrySeverity,
   context?: SentryContext
 ): Promise<void> {
-  if (!isEnabled) {
+  if (!isObservabilityEnabled()) {
     return;
   }
 
@@ -94,14 +55,6 @@ export async function initialize(): Promise<boolean> {
   isInitialized = true;
   logger.info('Sentry web fallback 사용', { component: 'sentryService' });
   return true;
-}
-
-export function setEnabled(enabled: boolean): void {
-  isEnabled = enabled;
-  logger.info('Sentry observability 상태 변경', {
-    component: 'sentryService',
-    enabled,
-  });
 }
 
 export async function recordError(error: Error | AppError, context?: SentryContext): Promise<void> {
@@ -156,7 +109,7 @@ export async function recordHandledError(
 }
 
 export async function log(message: string): Promise<void> {
-  if (!isEnabled) {
+  if (!isObservabilityEnabled()) {
     return;
   }
 
@@ -171,7 +124,7 @@ export async function leaveBreadcrumb(
   event: string,
   data?: Record<string, string | number | boolean | undefined>
 ): Promise<void> {
-  if (!isEnabled) {
+  if (!isObservabilityEnabled()) {
     return;
   }
 
@@ -257,14 +210,6 @@ export async function setScreen(screenName: string): Promise<void> {
   await setAttribute('current_screen', screenName);
 }
 
-export function getBreadcrumbs(): string[] {
-  return [...breadcrumbs];
-}
-
-export function clearBreadcrumbs(): void {
-  breadcrumbs.length = 0;
-}
-
 export const sentryService = {
   initialize,
   setEnabled,
@@ -287,5 +232,3 @@ export const sentryService = {
 };
 
 export const crashlyticsService = sentryService;
-
-export default sentryService;
