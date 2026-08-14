@@ -1,5 +1,29 @@
 # 정리 잔여 작업 — 다음 세션 착수 프롬프트 (2026-08-13)
 
+> # ✅ 전량 완료 — 재실행하지 말 것 (2026-08-14)
+>
+> A(죽은 배럴) · B(아이콘 별칭) · C(문서 아카이브) · D(착지) **전부 종료**.
+> **PR #474 머지**(squash `978354feb`) · 아카이브 태그 `archive/cleanup-batch1-20260813`
+> · 워크트리 `.claude/worktrees/cleanup-batch1` 제거됨.
+>
+> 최종 수치: knip 2,189 → **1,450** · Duplicate exports **21 → 1** · 문서 **47편** 아카이브
+> · 배럴 7종 삭제 + 3종 축소 · 아이콘 별칭 24종 제거.
+> 이 문서의 §2 표에 적힌 "소비처 0" 판정은 **직접 import 만 센 값이라 실제와 달랐다** —
+> `@/services` 가 `export *` 로 도메인 배럴을 재수출해 간접 소비 중이었다(집행 시 정정).
+>
+> 🔴 **넘어간 것 2건**(감사 문서 §집행 현황에 상세):
+> ① `calculatePayByType` 0시간 동작 변경 — 호출부가 0시간을 미리 걸러 도달 경로 없음
+> ② `src/hooks/useVersionCheck.ts` 미사용 파일 — **남기기로 결정**(버전 게이트 기능 자체는
+>    `useAppInitialize → versionService → app/_layout.tsx` 로 생존, 이 훅은 병렬 사문 구현)
+>
+> 🔎 **후속 후보**(PR #474 코멘트에 표로 정리): `MegaphoneOutlineIcon`(사용 0) ·
+> `XIcon`(11) · `CloseCircleOutlineIcon`(7) — 별칭이 아니라 **별도 `createIcon()` 재선언**이라
+> knip Duplicate 가 원리적으로 못 잡는 잔여. ⚠️`AddCircleOutlineIcon` 은 별개 글리프라 **통합 금지**.
+>
+> 아래 원문은 이력으로 보존한다.
+
+---
+
 > **이 파일 하나만 읽고 시작할 수 있게 썼다.** 감사 원본은 `docs/analysis/2026-08-12-cleanup-audit.md`
 > (§집행 현황 표에 완료/미착수가 정리돼 있다). 그쪽은 배경이 필요할 때만 열면 된다.
 
