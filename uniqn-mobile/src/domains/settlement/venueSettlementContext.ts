@@ -15,7 +15,6 @@
  *
  * 그래서 읽기·쓰기가 같은 함수를 통과하게 만든다. 한쪽만 고치면 다음에 또 갈라진다.
  */
-import { DEFAULT_SALARY_INFO } from '@/utils/settlement/constants';
 import type { JobRoleStats, PostingRoleCatalogEntry, PostingSettlementContext } from '@/types';
 
 /**
@@ -42,8 +41,13 @@ export function buildVenueContainerContext(
   roleSalaries: PostingRoleCatalogEntry[] | undefined
 ): SettlementResolutionContext {
   return {
+    // 🔑 폴백 단가(시급 15,000원)를 **명시 주입하지 않는다**(감사 3-1).
+    //    주입해 두면 표시 해소기(getDisplayRoleSalaryFromSettlementSource)가 그것을
+    //    "구인자가 설정한 기본급"으로 오인해, 합의된 적 없는 금액을 스태프에게
+    //    확정 금액으로 보여준다. 계산 계층은 getRoleSalaryFromRoles 내부에서
+    //    여전히 같은 폴백을 적용하므로 **금액 산출 결과는 바뀌지 않는다**.
     roles: roleSalaries ?? [],
-    defaultSalary: DEFAULT_SALARY_INFO,
+    defaultSalary: undefined,
     allowances: undefined,
     taxSettings: undefined,
   };

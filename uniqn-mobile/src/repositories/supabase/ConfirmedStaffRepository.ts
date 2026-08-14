@@ -343,7 +343,17 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
       await verifyPostingAuthority(jobPostingId, context.actorId, '노쇼 처리');
 
-      // 3. 노쇼 상태 업데이트
+      // 3. 정산 완료된 경우 노쇼 전환 불가 (cancelNoShow·updateWorkTimeWithTransaction과 동일 정책)
+      //    이 잠금이 없으면 '지급 완료 + 노쇼' 모순 행이 남고, 스태프 월 수입 합계는
+      //    completed 만 합산하므로(scheduleService) **이미 지급한 급여가 통계에서 사라진다**.
+      //    되돌리기(cancelNoShow)만 잠겨 있던 단방향 비대칭을 여기서 닫는다.
+      if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_SETTLED, {
+          userMessage: settledLockMessage('노쇼로 처리할'),
+        });
+      }
+
+      // 4. 노쇼 상태 업데이트
       const now = new Date().toISOString();
       const { error } = await supabase
         .from(TABLE)

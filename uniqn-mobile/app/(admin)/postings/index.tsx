@@ -44,8 +44,13 @@ export default function AdminPostingsScreen() {
   const selection = useBulkShareSelection();
   const { shareJobs, isSharing } = useBulkShare();
 
+  // 관리자 공고 관리는 **과거를 포함한 전수**를 본다 — 구직자 브라우즈의 전향 조회
+  // (종료 공고 숨김 + 임박 순 정렬)가 적용되면 지난 공고가 화면에서 사라진다.
   const filters = useMemo(
-    () => (typeFilter === 'all' ? {} : { postingType: typeFilter }),
+    () =>
+      typeFilter === 'all'
+        ? { includeEnded: true }
+        : { postingType: typeFilter, includeEnded: true },
     [typeFilter]
   );
   const { jobs, isLoading, error, refresh, loadMore, hasMore } = useJobPostings({

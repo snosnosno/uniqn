@@ -70,9 +70,13 @@ export const ScheduleCard = memo(function ScheduleCard({
   );
 
   const salaryDisplay = useMemo(() => {
-    const salary =
-      schedule.settlementBreakdown?.salaryInfo || schedule.customSalaryInfo || projectedSalary;
-    return formatSalaryDisplay(salary);
+    // 🔑 breakdown 을 먼저 믿으면 안 된다(감사 3-1) — 계산 계층 산물이라 급여 근거가
+    //    없어도 폴백 단가(시급 15,000원)가 들어 있다. 근거(override 또는 단가표/공고
+    //    기본급)를 먼저 확인하고, 있을 때만 breakdown 금액을 채택한다.
+    const basis = schedule.customSalaryInfo || projectedSalary;
+    if (!basis) return null;
+
+    return formatSalaryDisplay(schedule.settlementBreakdown?.salaryInfo ?? basis);
   }, [schedule.settlementBreakdown?.salaryInfo, schedule.customSalaryInfo, projectedSalary]);
 
   const completedAmount = useMemo(() => {

@@ -22,7 +22,7 @@ import { SALARY_TYPE_LABELS, type Allowances, type TaxSettings } from '@/utils/s
 import {
   PROVIDED_FLAG,
   DEFAULT_TAX_SETTINGS,
-  getRoleSalaryFromSettlementSource,
+  getDisplayRoleSalaryFromSettlementSource,
 } from '@/domains/settlement';
 import { WorkTimeDisplay } from '@/shared/time';
 import {
@@ -87,18 +87,27 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
   const payrollStatus = (schedule.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus;
   const payrollStatusConfig = PAYROLL_STATUS[toSettlementDisplayStatus(payrollStatus)];
 
+  /**
+   * 표시할 급여 — 근거가 없으면 null (감사 3-1).
+   *
+   * `settlementBreakdown.salaryInfo` 는 계산 계층 산물이라 근거가 없어도 폴백 단가
+   * (시급 15,000원)가 들어 있다. 먼저 표시 전용 해소기로 근거 유무를 판정한다.
+   */
   const salaryInfo = useMemo(() => {
-    if (schedule.settlementBreakdown?.salaryInfo) {
-      return schedule.settlementBreakdown.salaryInfo;
-    }
     if (schedule.customSalaryInfo) {
       return schedule.customSalaryInfo;
     }
-    return getRoleSalaryFromSettlementSource(
+
+    const basis = getDisplayRoleSalaryFromSettlementSource(
       schedule.postingProjection?.settlement,
       schedule.role,
       schedule.customRole
     );
+    if (!basis) {
+      return null;
+    }
+
+    return schedule.settlementBreakdown?.salaryInfo ?? basis;
   }, [
     schedule.settlementBreakdown?.salaryInfo,
     schedule.customSalaryInfo,
@@ -341,6 +350,27 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           {schedule.ownerPhone && (
             <ContactActions phone={schedule.ownerPhone} component="InfoTab" />
           )}
+        </Section>
+      )}
+
+      {/*
+        급여 근거가 없으면 섹션을 조용히 감추지 않고 미정임을 밝힌다(감사 3-1).
+        예전에는 폴백 단가(시급 15,000원)가 확정 금액처럼 표기됐다. 그것을 없앤 뒤
+        섹션만 사라지면 사용자는 급여 정보가 빠졌다는 사실조차 알 수 없다.
+      */}
+      {!salaryInfo && (
+        <Section
+          icon={<BanknotesIcon size={18} color={SECONDARY_PALETTE[500]} />}
+          title="급여 정보"
+        >
+          <View className="rounded-lg bg-surface-page dark:bg-surface p-3 dark:bg-surface/30">
+            <Text className="text-base font-sans-medium text-content-primary dark:text-off-white">
+              급여 미정
+            </Text>
+            <Text className="mt-1 text-sm text-content-muted dark:text-secondary-400 font-sans">
+              구인자가 급여를 확정하면 이 화면에 표시돼요.
+            </Text>
+          </View>
         </Section>
       )}
 

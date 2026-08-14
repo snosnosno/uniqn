@@ -23,7 +23,7 @@ import { FIXED_DATE_MARKER, normalizeAssignmentRole } from '@/types/assignment';
 import { isTimeTBD } from '@/shared/time';
 import { parseTimeSlotToDate } from '@/utils/date/ranges';
 import { toDate } from '@/utils/date';
-import { calculateSettlementBreakdown, DEFAULT_SALARY_INFO } from '@/utils/settlement';
+import { calculateSettlementBreakdown } from '@/utils/settlement';
 
 export interface SchedulePostingContext {
   title: string;
@@ -115,7 +115,11 @@ export function createScheduleContainerContext(
         filled: 0,
         salary: entry.salary,
       })),
-      defaultSalary: DEFAULT_SALARY_INFO,
+      // 🔑 폴백 단가(시급 15,000원)를 명시 주입하지 않는다(감사 3-1) —
+      //    주입하면 표시 계층이 그것을 "구인자가 설정한 기본급"으로 오인해
+      //    합의된 적 없는 금액을 확정 금액처럼 보여준다. 계산 결과는 불변
+      //    (getRoleSalaryFromRoles 가 내부에서 같은 폴백을 계속 적용한다).
+      defaultSalary: undefined,
     },
   };
 }
