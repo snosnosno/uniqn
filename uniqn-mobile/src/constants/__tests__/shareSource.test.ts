@@ -55,7 +55,7 @@ describe('createJobDeepLink — 출처 부착', () => {
     );
   });
 
-  it('출처 4종이 서로 다른 값이다 — 겹치면 집계에서 구분이 사라진다', () => {
+  it('출처 값이 서로 겹치지 않는다 — 겹치면 집계에서 구분이 사라진다', () => {
     const values = Object.values(SHARE_SOURCES);
     expect(new Set(values).size).toBe(values.length);
   });

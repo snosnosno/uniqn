@@ -729,6 +729,18 @@ export default function JobPostingDetailScreen() {
       testID: 'job-posting-edit-button',
     },
     {
+      key: 'apply-qr',
+      // 🔑 상시 노출한다. 예전엔 "지원자 0명" 빈 상태 카드 안에만 있어서 **첫 지원자가
+      //    들어오는 순간 사라졌다** — 정작 더 모으고 싶을 때 진입점이 없어지는 셈이었다.
+      visible: true,
+      icon: <ShareIcon size={20} color={SECONDARY_PALETTE[500]} />,
+      title: '지원 QR',
+      // 🚨 '지원'을 앞에 둔다 — '공고 QR' 이라고만 하면 출퇴근 QR 과 구분되지 않는다.
+      description: '매장·홍보물에 붙이면 찍는 사람에게 공고가 바로 열립니다.',
+      onPress: handleShowApplyQR,
+      testID: 'job-posting-apply-qr',
+    },
+    {
       key: 'announce',
       // 배정된 스태프가 있어야 보낼 대상이 있다 — 0명일 때 띄우면 눌러 봐야 빈 화면이다.
       visible: filledPositions > 0,
@@ -1040,21 +1052,6 @@ export default function JobPostingDetailScreen() {
                 <ShareIcon size={18} color={TEXT_COLORS.onGold} />
                 <Text className="ml-2 text-base font-sans-semibold text-content-onGold">
                   공고 링크 공유하기
-                </Text>
-              </Pressable>
-
-              {/* 링크를 보낼 단톡방이 없는 사장을 위한 오프라인 경로 (S3-5).
-                  매장 앞·홍보물에 붙이면 지나가는 사람이 찍어 공고를 연다.
-                  🚨 라벨에 '지원'을 명시한다 — '공고 QR' 이라고만 하면 출퇴근 QR 과 구분되지 않는다. */}
-              <Pressable
-                onPress={handleShowApplyQR}
-                className="mt-2 min-h-[44px] items-center justify-center rounded-md py-3 active:opacity-60"
-                accessibilityRole="button"
-                accessibilityLabel="지원 QR 보기"
-                testID="job-posting-apply-qr"
-              >
-                <Text className="text-sm font-sans-medium text-content-secondary dark:text-secondary-400">
-                  또는 지원 QR 보여주기
                 </Text>
               </Pressable>
             </Card>

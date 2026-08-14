@@ -246,7 +246,13 @@ export function ApplicantList({
               </View>
             </Pressable>
             <View className="flex-1">
-              <ApplicantCard applicant={item} showActions={false} />
+              {/* 선택 모드에서도 노쇼 칩은 남긴다 — 여기가 바로 "누구를 확정할까"를
+                  결정하는 순간이라, 그 판단 근거를 감추면 칩이 있으나 마나다. */}
+              <ApplicantCard
+                applicant={item}
+                showActions={false}
+                noShowCount={noShowCounts?.get(item.applicantId)}
+              />
             </View>
           </View>
         );

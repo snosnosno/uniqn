@@ -28,6 +28,8 @@ export const SHARE_SOURCES = {
   seekerDetail: 'seeker_detail',
   /** 로그인 없이 열리는 공개 공고 페이지 */
   publicDetail: 'public_detail',
+  /** 사장이 띄운 지원 QR 을 찍고 들어온 경우 (S3-5) */
+  applyQr: 'apply_qr',
 } as const;
 
 export type ShareSource = (typeof SHARE_SOURCES)[keyof typeof SHARE_SOURCES];

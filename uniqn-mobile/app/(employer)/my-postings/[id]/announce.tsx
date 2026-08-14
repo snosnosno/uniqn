@@ -39,7 +39,7 @@ export default function JobPostingAnnounceScreen() {
   const { announcements, isLoading, send, isSending } = useJobPostingAnnouncements(jobPostingId);
 
   // 예상 수신자 수 — 실제 수는 서버가 센다. 여기서는 "누구에게 가는지"를 보여주는 용도다.
-  const { grouped } = useConfirmedStaff(jobPostingId);
+  const { grouped, isLoading: isStaffLoading } = useConfirmedStaff(jobPostingId);
   const expectedRecipients = useMemo(() => {
     const ids = new Set<string>();
     grouped.forEach((group) => {
@@ -54,7 +54,11 @@ export default function JobPostingAnnounceScreen() {
 
   const trimmedTitle = title.trim();
   const trimmedBody = body.trim();
-  const canSend = trimmedTitle.length > 0 && trimmedBody.length > 0 && !isSending;
+  // 🔑 스태프 목록이 아직 안 왔으면 보내지 못하게 막는다.
+  //    확인 모달이 "0명에게 알림이 갑니다" 라고 말한 뒤 실제로는 N명에게 나가면,
+  //    되돌릴 수 없는 행동의 **마지막 관문이 거짓말을 한 것**이 된다.
+  const canSend =
+    trimmedTitle.length > 0 && trimmedBody.length > 0 && !isSending && !isStaffLoading;
 
   const handleSend = useCallback(async () => {
     setConfirmVisible(false);
@@ -121,8 +125,9 @@ export default function JobPostingAnnounceScreen() {
               확정 스태프에게 한 번에 보내기
             </Text>
             <Text className="mb-4 text-sm text-content-secondary font-sans">
-              지금 이 공고에 배정된 {expectedRecipients}명에게 알림이 갑니다. 취소·노쇼 처리된 분은
-              제외돼요.
+              {isStaffLoading
+                ? '받을 스태프를 확인하는 중이에요...'
+                : `지금 이 공고에 배정된 ${expectedRecipients}명에게 알림이 갑니다. 취소·노쇼 처리된 분은 제외돼요.`}
             </Text>
 
             <Text className="mb-1 text-sm font-sans-medium text-content-primary dark:text-off-white">
@@ -171,7 +176,7 @@ export default function JobPostingAnnounceScreen() {
               }`}
             >
               <Text className="text-base font-sans-semibold text-content-onGold">
-                {isSending ? '보내는 중...' : '공지 보내기'}
+                {isSending ? '보내는 중...' : isStaffLoading ? '대상 확인 중...' : '공지 보내기'}
               </Text>
             </Pressable>
           </Card>

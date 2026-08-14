@@ -30,17 +30,28 @@ jest.mock('@/utils/logger', () => ({
 }));
 
 describe('지원 QR 페이로드', () => {
-  it('출근 QR 과 type 이 다르다 — 같아지면 오스캔이 사고가 된다', () => {
-    const apply = JSON.parse(buildApplyQRString('job-1'));
-    const venue = JSON.parse(buildVenueQRString('job-1'));
+  it('🚨 URL 이다 — JSON 이면 폰 카메라가 아무 데도 못 가서 기능이 죽는다', () => {
+    // 2026-08-14 리뷰 적발: 처음엔 출근 QR 페이로드를 복사해 {type:'apply'} JSON 을 넣었는데
+    // 그걸 읽는 소비자가 코드베이스에 0곳이었다. 화면은 "찍으면 공고가 열려요"라고 말하는데
+    // 실제로는 아무 일도 일어나지 않았다. 이 단언이 그 재발을 막는다.
+    const apply = buildApplyQRString('job-1');
 
-    expect(apply.type).toBe(QR_PAYLOAD_TYPES.apply);
-    expect(venue.type).toBe(QR_PAYLOAD_TYPES.venue);
-    expect(apply.type).not.toBe(venue.type);
+    expect(apply.startsWith('https://')).toBe(true);
+    expect(apply).toContain('/jobs/job-1');
+    expect(() => JSON.parse(apply)).toThrow();
   });
 
-  it('공고 id 를 담는다', () => {
-    expect(JSON.parse(buildApplyQRString('job-42')).jobPostingId).toBe('job-42');
+  it('출처가 붙어 QR 유입이 공유 퍼널에 잡힌다', () => {
+    expect(buildApplyQRString('job-1')).toContain('src=apply_qr');
+  });
+
+  it('출근 QR 과 형태부터 다르다 — 오스캔이 사고가 되지 않는다', () => {
+    const apply = buildApplyQRString('job-1');
+    const venue = buildVenueQRString('job-1');
+
+    // 출근 QR 은 우리 앱 스캐너가 읽는 JSON, 지원 QR 은 남의 카메라가 읽는 URL 이다.
+    expect(JSON.parse(venue).type).toBe(QR_PAYLOAD_TYPES.venue);
+    expect(apply).not.toBe(venue);
   });
 });
 
@@ -57,13 +68,21 @@ describe('출근 스캐너에 지원 QR 을 댔을 때', () => {
     jest.clearAllMocks();
   });
 
-  it('지원 QR 이라고 짚어 주고, 무엇을 찍어야 하는지 알려준다', async () => {
+  it('지원 QR(URL)이라고 짚어 주고, 무엇을 찍어야 하는지 알려준다', async () => {
     await expect(processQRCheckIn(buildApplyQRString('job-1'), 'staff-1')).rejects.toMatchObject({
       userMessage: QR_MESSAGES.applyQRScannedAtCheckIn,
     });
 
     // 출근 처리 경로로는 한 발짝도 못 들어가야 한다.
     expect(mockFindQRCandidates).not.toHaveBeenCalled();
+  });
+
+  it('이미 인쇄돼 나간 구 JSON 형태(type:apply)도 같은 문구로 짚어 준다', async () => {
+    const legacyApply = JSON.stringify({ type: 'apply', jobPostingId: 'job-1' });
+
+    await expect(processQRCheckIn(legacyApply, 'staff-1')).rejects.toMatchObject({
+      userMessage: QR_MESSAGES.applyQRScannedAtCheckIn,
+    });
   });
 
   it('정체불명 QR 과는 다른 문구를 쓴다 — 사용자가 취할 행동이 다르다', async () => {

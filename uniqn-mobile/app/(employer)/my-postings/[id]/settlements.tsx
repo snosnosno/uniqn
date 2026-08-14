@@ -114,6 +114,10 @@ export default function StaffSettlementsScreen() {
 
   // 근무일 D-2/D-1 정원 미달 (S3-1) — 서버 크론이 알림으로 보내는 것과 같은 판정을 화면에서도 한다.
   // 같은 서브맵을 재사용하므로 추가 조회가 없다(날짜 차원만 남기고 접는다).
+  // ⚠️ 오늘 날짜를 memo **밖에서** 읽어 의존성에 넣는다. 안에서 부르면 클로저에 굳어
+  //    화면을 열어 둔 채 자정을 넘겼을 때 D-오프셋이 어제 기준으로 멈춘다
+  //    (D-1 경고가 근무 당일에도 "D-1" 이라고 말한다).
+  const todayString = getTodayString();
   const capacityGapByDate = useMemo(() => {
     if (!posting) {
       return undefined;
@@ -122,10 +126,10 @@ export default function StaffSettlementsScreen() {
       selectPostingCapacityGaps(
         posting,
         extractPostingFilledSubmap(filledCountsMap, jobPostingId || ''),
-        getTodayString()
+        todayString
       )
     );
-  }, [posting, filledCountsMap, jobPostingId]);
+  }, [posting, filledCountsMap, jobPostingId, todayString]);
 
   // 핸들러 다발 (클로저 의존은 인자로 주입해 deps 보존)
   const {

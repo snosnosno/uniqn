@@ -130,7 +130,7 @@ function SectionHeader({ group, isExpanded, onToggle, capacityGap }: SectionHead
           accessibilityRole="text"
           accessibilityLabel={`정원 미달 경고. ${group.formattedDate} 근무, ${formatCapacityGapLabel(
             capacityGap
-          )}. 필요 ${capacityGap.required}명 중 ${capacityGap.filled}명 확정.`}
+          )}. 자리 ${capacityGap.filled}/${capacityGap.required} 채움.`}
           className="mt-2 self-start rounded-md bg-warning-100 px-2 py-1 dark:bg-warning-700/30"
         >
           <Text className="text-xs font-sans-semibold text-warning-700 dark:text-warning-500">

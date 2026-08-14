@@ -52,17 +52,25 @@ export const CollaboratorRow = React.memo(function CollaboratorRow({
   // 다만 '관리'로 **올리는** 쪽은 권한이 넓어지는 방향이라 한 번 묻는다.
   const handleToggleRole = () => {
     if (!onChangeRole) return;
-    const next = isViewer ? 'manager' : 'viewer';
-    if (next === 'manager') {
+    const who = collaborator.displayName ?? '이 동료';
+    // 🔑 양방향 모두 확인을 거친다. 올리는 쪽은 권한이 넓어져서, 내리는 쪽은 상대가 하던
+    //    일을 즉시 못 하게 돼서다 — 작은 배지를 잘못 눌러 조용히 강등되면 상대는
+    //    "왜 갑자기 안 되지" 를 혼자 겪는다.
+    if (isViewer) {
       confirmAction({
         title: '관리 권한을 줄까요?',
-        message: `${collaborator.displayName ?? '이 동료'}가 공고 수정·지원자 확정·정산까지 할 수 있게 됩니다.`,
+        message: `${who}가 공고 수정·지원자 확정·정산까지 할 수 있게 됩니다.`,
         confirmText: '관리 권한 주기',
         onConfirm: () => onChangeRole(collaborator.userId, 'manager'),
       });
       return;
     }
-    onChangeRole(collaborator.userId, 'viewer');
+    confirmAction({
+      title: '보기 전용으로 바꿀까요?',
+      message: `${who}는 공고를 볼 수는 있지만 수정·지원자 확정·정산은 할 수 없게 됩니다.`,
+      confirmText: '보기 전용으로',
+      onConfirm: () => onChangeRole(collaborator.userId, 'viewer'),
+    });
   };
 
   return (
@@ -100,6 +108,8 @@ export const CollaboratorRow = React.memo(function CollaboratorRow({
                 ? `${collaborator.displayName ?? '이름 없음'} 권한 ${roleLabel}, 눌러서 변경`
                 : `권한 ${roleLabel}`
             }
+            // 배지 자체는 작다 — hitSlop 으로 실제 터치 타깃을 44px 권장치까지 넓힌다.
+            hitSlop={12}
             className={`rounded px-1.5 py-0.5 ${
               isViewer
                 ? 'bg-secondary-100 dark:bg-surface-overlay'

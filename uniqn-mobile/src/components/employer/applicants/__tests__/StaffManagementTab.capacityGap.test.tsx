@@ -127,7 +127,9 @@ describe('StaffManagementTab — D-day 정원 미달 경고 (S3-1)', () => {
 
     expect(
       screen.getByLabelText(
-        '정원 미달 경고. 4월 2일 (목) 근무, D-1 · 2자리 비었어요. 필요 3명 중 1명 확정.'
+        // '확정'은 applications 축 용어다(S2-2). 좌석은 '자리'로 말해야 스크린리더 경로에서만
+        // 축 규약이 깨지는 일이 없다.
+        '정원 미달 경고. 4월 2일 (목) 근무, D-1 · 2자리 비었어요. 자리 1/3 채움.'
       )
     ).toBeTruthy();
   });
