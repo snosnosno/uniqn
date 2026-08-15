@@ -363,6 +363,15 @@ CREATE TRIGGER trg_jpc_role_change_audit
   AFTER UPDATE ON public.job_posting_collaborators
   FOR EACH ROW EXECUTE FUNCTION public.fn_jpc_role_change_audit();
 
+-- 트리거 함수의 EXECUTE 는 회수한다. 트리거 발화에는 호출자의 EXECUTE 권한이 필요 없고,
+-- 직접 호출은 PL/pgSQL 이 "trigger functions can only be called as triggers" 로 거부하므로
+-- **악용 경로는 아니다.** 그래도 회수하는 이유는 이 저장소의 SECDEF 하드닝 관례이기 때문이다 —
+-- 실측하면 SECDEF 트리거 함수 52개 중 50개가 이미 PUBLIC 을 회수한 상태고, 안 한 2개가
+-- 이 마이그레이션이 새로 만든 둘이었다. 관례에서 혼자 벗어난 객체는 다음 보안 감사에서
+-- 매번 "왜 얘만 다르지" 로 되살아난다.
+REVOKE ALL ON FUNCTION public.fn_jpc_role_update_guard() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.fn_jpc_role_change_audit() FROM PUBLIC, anon, authenticated;
+
 -- ------------------------------------------------------------
 -- 6. 스모크 — 전제가 깨졌으면 지금 실패한다
 -- ------------------------------------------------------------
