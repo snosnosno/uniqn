@@ -9,6 +9,20 @@
 /**
  * 공고별 협업자 — D1 OR 평가, D2 풀 관리권
  */
+/**
+ * 협업자 권한 2단 (S3-4).
+ *
+ * 🔒 이 값은 **표시용이 아니라 실제 게이트**다. 서버 RLS 와 쓰기 RPC 14종이
+ *    `is_posting_collaborator()`(= manager 전용)로 판정한다 — 화면에서 감추는 것과 무관하게
+ *    viewer 의 쓰기는 서버에서 막힌다. 화면 분기는 어디까지나 "헛수고를 줄이는" 용도다.
+ */
+export type JobPostingCollaboratorRole = 'manager' | 'viewer';
+
+export const JOB_POSTING_COLLABORATOR_ROLE_LABELS: Record<JobPostingCollaboratorRole, string> = {
+  manager: '관리',
+  viewer: '보기 전용',
+};
+
 export interface JobPostingCollaborator {
   id: string;
   jobPostingId: string;
@@ -16,6 +30,8 @@ export interface JobPostingCollaborator {
   addedBy: string;
   /** ISO 8601 (timestamptz) */
   addedAt: string;
+  /** 권한 2단 (S3-4). 기존 행·신규 기본값은 모두 `manager`. */
+  role: JobPostingCollaboratorRole;
 }
 
 /**

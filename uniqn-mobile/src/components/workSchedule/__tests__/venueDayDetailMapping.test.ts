@@ -116,7 +116,15 @@ describe('venueDayDetailMapping', () => {
         '2026-06-29'
       );
       expect(group).not.toBeNull();
-      expect(group!.stats).toEqual({ total: 4, checkedIn: 1, completed: 1, noShow: 1 });
+      // `scheduled` 는 "아직 출근하지 않은" 의 판정축이다 — 화면이 `total - checkedIn` 뺄셈으로
+      // 대신 세면 퇴근·노쇼까지 미출근으로 접힌다. 여기서 열거값으로 고정해 둔다.
+      expect(group!.stats).toEqual({
+        total: 4,
+        scheduled: 1,
+        checkedIn: 1,
+        completed: 1,
+        noShow: 1,
+      });
       expect(group!.staff).toHaveLength(4);
     });
 

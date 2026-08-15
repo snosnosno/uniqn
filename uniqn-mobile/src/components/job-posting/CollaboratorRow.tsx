@@ -13,7 +13,11 @@ import { UserIcon } from '@/components/icons';
 import { confirmAction } from '@/utils/confirmAction';
 import { formatRelative } from '@/utils/formatters/date';
 import { triggerHaptic } from '@/utils/haptics';
-import type { JobPostingCollaboratorWithUser } from '@/types/jobPostingCollaborator';
+import {
+  JOB_POSTING_COLLABORATOR_ROLE_LABELS,
+  type JobPostingCollaboratorRole,
+  type JobPostingCollaboratorWithUser,
+} from '@/types/jobPostingCollaborator';
 
 export interface CollaboratorRowProps {
   collaborator: JobPostingCollaboratorWithUser;
@@ -25,6 +29,8 @@ export interface CollaboratorRowProps {
   onRemove?: (userId: string) => void;
   /** collaborator 본인이 나갈 때 */
   onLeave?: () => void;
+  /** owner 가 권한을 바꿀 때 (S3-4). 미주입 시 배지는 표시 전용이 된다. */
+  onChangeRole?: (userId: string, role: JobPostingCollaboratorRole) => void;
   disabled?: boolean;
 }
 
@@ -34,10 +40,38 @@ export const CollaboratorRow = React.memo(function CollaboratorRow({
   currentUserId,
   onRemove,
   onLeave,
+  onChangeRole,
   disabled,
 }: CollaboratorRowProps) {
   const isSelf = collaborator.userId === currentUserId;
   const addedAtLabel = collaborator.addedAt ? formatRelative(collaborator.addedAt) : '';
+  const isViewer = collaborator.role === 'viewer';
+  const roleLabel = JOB_POSTING_COLLABORATOR_ROLE_LABELS[collaborator.role];
+
+  // 2단뿐이라 시트를 띄우지 않고 토글한다. 되돌리기 쉬운 변경이므로 확인 모달도 두지 않는다 —
+  // 다만 '관리'로 **올리는** 쪽은 권한이 넓어지는 방향이라 한 번 묻는다.
+  const handleToggleRole = () => {
+    if (!onChangeRole) return;
+    const who = collaborator.displayName ?? '이 동료';
+    // 🔑 양방향 모두 확인을 거친다. 올리는 쪽은 권한이 넓어져서, 내리는 쪽은 상대가 하던
+    //    일을 즉시 못 하게 돼서다 — 작은 배지를 잘못 눌러 조용히 강등되면 상대는
+    //    "왜 갑자기 안 되지" 를 혼자 겪는다.
+    if (isViewer) {
+      confirmAction({
+        title: '관리 권한을 줄까요?',
+        message: `${who}가 공고 수정·지원자 확정·정산까지 할 수 있게 됩니다.`,
+        confirmText: '관리 권한 주기',
+        onConfirm: () => onChangeRole(collaborator.userId, 'manager'),
+      });
+      return;
+    }
+    confirmAction({
+      title: '보기 전용으로 바꿀까요?',
+      message: `${who}는 공고를 볼 수는 있지만 수정·지원자 확정·정산은 할 수 없게 됩니다.`,
+      confirmText: '보기 전용으로',
+      onConfirm: () => onChangeRole(collaborator.userId, 'viewer'),
+    });
+  };
 
   return (
     <View className="flex-row items-center gap-3 py-3 px-4 bg-surface-page">
@@ -56,9 +90,43 @@ export const CollaboratorRow = React.memo(function CollaboratorRow({
 
       {/* 이름 + 이메일 + 추가일 */}
       <View className="flex-1 min-w-0">
-        <Text className="text-base font-medium text-content-primary" numberOfLines={1}>
-          {collaborator.displayName ?? '이름 없음'}
-        </Text>
+        <View className="flex-row items-center gap-2">
+          <Text className="text-base font-medium text-content-primary shrink" numberOfLines={1}>
+            {collaborator.displayName ?? '이름 없음'}
+          </Text>
+          {/*
+            권한 배지 (S3-4). owner 는 눌러서 바꿀 수 있고, 아니면 표시만 한다.
+            🔒 화면 분기는 헛수고를 줄이는 용도일 뿐이다 — 실제 게이트는 서버 RLS 와
+               쓰기 RPC 14종이며, viewer 의 쓰기는 화면과 무관하게 서버에서 막힌다.
+          */}
+          <Pressable
+            onPress={isOwner && onChangeRole ? handleToggleRole : undefined}
+            disabled={!isOwner || !onChangeRole || disabled}
+            accessibilityRole={isOwner && onChangeRole ? 'button' : 'text'}
+            accessibilityLabel={
+              isOwner && onChangeRole
+                ? `${collaborator.displayName ?? '이름 없음'} 권한 ${roleLabel}, 눌러서 변경`
+                : `권한 ${roleLabel}`
+            }
+            // 배지 자체는 작다 — hitSlop 으로 실제 터치 타깃을 44px 권장치까지 넓힌다.
+            hitSlop={12}
+            className={`rounded px-1.5 py-0.5 ${
+              isViewer
+                ? 'bg-secondary-100 dark:bg-surface-overlay'
+                : 'bg-primary-50 dark:bg-primary-900/30'
+            }`}
+          >
+            <Text
+              className={`text-xs font-sans-medium ${
+                isViewer
+                  ? 'text-content-secondary dark:text-secondary-400'
+                  : 'text-primary-600 dark:text-primary-400'
+              }`}
+            >
+              {roleLabel}
+            </Text>
+          </Pressable>
+        </View>
         <Text className="text-xs text-content-secondary" numberOfLines={1}>
           {collaborator.email ?? ''}
           {addedAtLabel ? `  ·  ${addedAtLabel}` : ''}

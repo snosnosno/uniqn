@@ -13,6 +13,7 @@ import { isAppError, BusinessError, ERROR_CODES } from '@/errors';
 import { handleSupabaseError } from '@/utils/supabase';
 import type {
   JobPostingCollaborator,
+  JobPostingCollaboratorRole,
   JobPostingCollaboratorWithUser,
   SharedJobPosting,
   CollaboratorSearchCandidate,
@@ -31,6 +32,7 @@ interface JpcRow {
   user_id: string;
   added_by: string;
   added_at: string;
+  role?: string | null;
 }
 
 interface JpcWithUserRow extends JpcRow {
@@ -73,6 +75,8 @@ function rowToCollaborator(row: JpcRow): JobPostingCollaborator {
     userId: row.user_id,
     addedBy: row.added_by,
     addedAt: row.added_at,
+    // 컬럼이 없던 시절의 행/응답도 manager 로 읽는다 — 기본값과 같은 방향(권한 보존)이다.
+    role: row.role === 'viewer' ? 'viewer' : 'manager',
   };
 }
 
@@ -106,7 +110,7 @@ export class SupabaseJobPostingCollaboratorRepository implements IJobPostingColl
       const { data, error } = await supabase
         .from(TABLE)
         .select(
-          'id, job_posting_id, user_id, added_by, added_at, users:user_id (nickname, name, email, photo_url)'
+          'id, job_posting_id, user_id, added_by, added_at, role, users:user_id (nickname, name, email, photo_url)'
         )
         .eq('job_posting_id', jobPostingId)
         .order('added_at', { ascending: true });
@@ -156,7 +160,7 @@ export class SupabaseJobPostingCollaboratorRepository implements IJobPostingColl
       const { data, error } = await supabase
         .from(TABLE)
         .insert({ job_posting_id: jobPostingId, user_id: userId, added_by: addedBy })
-        .select('id, job_posting_id, user_id, added_by, added_at')
+        .select('id, job_posting_id, user_id, added_by, added_at, role')
         .single();
 
       if (error) {
@@ -184,6 +188,44 @@ export class SupabaseJobPostingCollaboratorRepository implements IJobPostingColl
     } catch (error) {
       if (isAppError(error)) throw error;
       handleSupabaseError(error, { operation: '협업자 추가', table: TABLE });
+    }
+  }
+
+  /**
+   * 협업자 권한 변경 (S3-4).
+   *
+   * 🔒 서버가 진짜 게이트다 — RLS `jpc_update_role_owner` 가 workspace owner 만 허용하고,
+   *    트리거 `trg_jpc_role_update_guard` 가 role 이외 컬럼 변경을 막는다.
+   *    권한이 없으면 UPDATE 가 **에러 없이 0행**으로 끝나므로(RLS 의 정상 동작),
+   *    영향 행 수를 직접 확인해 조용한 실패를 잡는다.
+   */
+  async updateRole(
+    jobPostingId: string,
+    userId: string,
+    role: JobPostingCollaboratorRole
+  ): Promise<void> {
+    try {
+      logger.info('협업자 권한 변경', { jobPostingId, userId, role });
+
+      const { data, error } = await supabase
+        .from(TABLE)
+        .update({ role })
+        .eq('job_posting_id', jobPostingId)
+        .eq('user_id', userId)
+        .select('id');
+
+      if (error) {
+        handleSupabaseError(error, { operation: '협업자 권한 변경', table: TABLE });
+      }
+
+      if (!data || data.length === 0) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '권한을 변경할 수 없습니다. 공고 소유자만 변경할 수 있어요.',
+        });
+      }
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      handleSupabaseError(error, { operation: '협업자 권한 변경', table: TABLE });
     }
   }
 

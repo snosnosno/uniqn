@@ -934,9 +934,12 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
     try {
       logger.info('공고 삭제', { jobPostingId, ownerId });
       const cur = await loadAndVerifyDeleteAccess(jobPostingId, ownerId, '공고 삭제');
+      // 막는 축은 좌석(work_logs 파생 `filled_positions`)이지 applications 의 확정 수가 아니다.
+      // 문구가 "확정된 지원자"라고 하면, 근무가 끝나 application 이 completed 로 전이된 공고에서
+      // 사장은 지원자 화면의 확정 0명을 보고도 거부되는 이유를 알 수 없다.
       if ((cur.filledPositions ?? 0) > 0) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '확정된 지원자가 있는 공고는 삭제할 수 없습니다. 대신 마감해 주세요.',
+          userMessage: '채워진 자리가 있는 공고는 삭제할 수 없습니다. 대신 마감해 주세요.',
         });
       }
       const now = new Date().toISOString();

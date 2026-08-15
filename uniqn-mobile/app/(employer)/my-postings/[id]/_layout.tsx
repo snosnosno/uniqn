@@ -45,11 +45,20 @@ interface JobDetailContextValue {
    * 자식 화면이 일시적 오류를 "찾을 수 없음"으로 오안내한다(감사 A4).
    */
   error: Error | null;
-  refresh: () => void;
+  /**
+   * 재조회. 실제 구현(`useJobDetail.refresh`)이 async 이므로 타입도 Promise 를 그대로 노출한다 —
+   * `() => void` 로 좁히면 자식이 `await` 해도 타입상 즉시 끝난 것처럼 보여, 재조회 완료를
+   * 기다려야 하는 소비처(정산 설정 저장 후 재조회 등)가 조용히 경합한다.
+   */
+  refresh: () => Promise<void>;
   handleShowQR: () => void;
 }
 
 const NOOP = () => {
+  // No-op fallback for JobDetailContext consumers rendered outside the provider.
+};
+
+const NOOP_ASYNC = async () => {
   // No-op fallback for JobDetailContext consumers rendered outside the provider.
 };
 
@@ -58,7 +67,7 @@ const JobDetailContext = createContext<JobDetailContextValue>({
   isFixed: false,
   isLoading: false,
   error: null,
-  refresh: NOOP,
+  refresh: NOOP_ASYNC,
   handleShowQR: NOOP,
 });
 

@@ -29,13 +29,16 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, replace: jest.fn(), back: jest.fn() }),
 }));
 
+// 화면은 공고를 컨텍스트에서 받는다(레이아웃이 realtime 구독과 함께 한 번만 조회).
+// mockPosting 이 고정 스케줄(schedule.kind==='fixed')이므로 컨텍스트도 isFixed=true 를 준다.
+// 이 파일은 헤더 QR 게이트를 검증하지 않는다 — 그 회귀 가드는 headerQRGate.test.ts.
 jest.mock('../_layout', () => ({
-  // mockPosting 이 고정 스케줄(schedule.kind==='fixed')이므로 컨텍스트도 isFixed=true 를 준다.
-  // 이 파일은 헤더 QR 게이트를 검증하지 않는다 — 그 회귀 가드는 headerQRGate.test.ts.
   useJobDetailContext: () => ({
-    job: null,
+    job: mockPosting,
     isFixed: true,
     isLoading: false,
+    error: null,
+    refresh: jest.fn(),
     handleShowQR: jest.fn(),
   }),
   HeaderQRAction: () => null,
@@ -46,6 +49,12 @@ jest.mock('@/components', () => ({
   Card: ({ children }: { children?: React.ReactNode }) => children,
   Badge: ({ children }: { children?: React.ReactNode }) => children,
   ConfirmModal: () => null,
+}));
+
+// 상태 전이 시트는 statusTransition.test.tsx 가 검증한다. 실제 컴포넌트를 태우면
+// 내부 Modal 이 useThemeStore() 를 selector 없이 불러 이 파일의 themeStore 목과 어긋난다.
+jest.mock('@/components/ui', () => ({
+  ActionSheet: () => null,
 }));
 
 jest.mock('@/components/headers', () => ({
@@ -61,6 +70,7 @@ jest.mock('@/components/icons', () => ({
   CurrencyDollarIcon: () => null,
   DocumentIcon: () => null,
   EditIcon: () => null,
+  EyeIcon: () => null,
   MapPinIcon: () => null,
   ShareIcon: () => null,
   TrashIcon: () => null,
@@ -77,9 +87,15 @@ jest.mock('@/components/jobs', () => ({
   PostingTypeBadge: () => null,
   ResubmitButton: () => null,
   TournamentStatusBadge: () => null,
+  // 좌석 표기 계약은 seatAxis.test.tsx 가 검증한다 — 여기서 빠뜨리면 화면 전체가
+  // undefined 컴포넌트로 죽는다(목에 없는 컴포넌트를 화면이 쓰면 displayName 에러).
+  SeatFillSummary: () => null,
 }));
 
 jest.mock('@/domains/job-posting', () => ({
+  // 배럴 전체를 깔고 필요한 것만 덮는다 — 개별 나열이면 새 export 가 늘 때마다
+  // 화면이 "is not a function" 으로 죽는다(실제로 두 번 겪었다).
+  ...jest.requireActual('@/domains/job-posting'),
   buildPostingFacts: (p: unknown) => p,
   isPostingDeletable: () => true,
   projectPostingSurface: () => ({
@@ -102,14 +118,28 @@ jest.mock('@/hooks/applicant', () => ({
   }),
 }));
 
-jest.mock('@/hooks/useJobDetail', () => ({
-  useJobDetail: () => ({
-    job: mockPosting,
+// 실제 훅을 태우면 networkState 의 비동기 리스너가 act() 밖에서 상태를 갱신해 경고를 뿜는다.
+// 이 파일은 네트워크 상태를 검증하지 않는다 — 온라인 고정.
+jest.mock('@/hooks/useNetworkStatus', () => ({
+  useNetworkStatus: () => ({ isOnline: true }),
+}));
+
+// 실제 훅은 QueryClientProvider 를 요구한다. 이 파일은 당일 운영 스트립을 검증하지 않는다.
+jest.mock('@/hooks/useConfirmedStaff', () => ({
+  useConfirmedStaff: () => ({
+    staff: [],
+    grouped: [],
+    stats: { total: 0, checkedIn: 0, completed: 0, noShow: 0 },
     isLoading: false,
-    isRefreshing: false,
     error: null,
     refresh: jest.fn(),
+    isRefreshing: false,
   }),
+}));
+
+// 실제 훅은 QueryClientProvider 를 요구한다. 이 파일은 정산 대기 건수를 검증하지 않는다.
+jest.mock('@/hooks/useSettlement', () => ({
+  useWorkLogsByJobPosting: () => ({ data: [] }),
 }));
 
 jest.mock('@/hooks/useShare', () => ({
@@ -118,6 +148,10 @@ jest.mock('@/hooks/useShare', () => ({
 
 jest.mock('@/hooks/useJobManagement', () => ({
   useDeleteJobPosting: () => ({ mutate: jest.fn(), isPending: false }),
+  // 상태 전이 계약은 statusTransition.test.tsx 가 검증한다 — 여기서 빠뜨리면
+  // 화면이 마운트조차 못 한다("useCloseJobPosting is not a function").
+  useCloseJobPosting: () => ({ mutate: jest.fn(), isPending: false }),
+  useReopenJobPosting: () => ({ mutate: jest.fn(), isPending: false }),
 }));
 
 jest.mock('@/hooks/usePostingFilledCounts', () => ({

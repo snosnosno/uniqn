@@ -13,6 +13,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { AppFlashList } from '@/components/ui/AppFlashList';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
+import { opsFallbackHref } from '@/utils/opsNavigation';
 import { StackHeader } from '@/components/headers';
 import {
   TrophyOutlineIcon,
@@ -451,7 +452,9 @@ export default function OpsTournamentListScreen() {
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
       <StackHeader
         title="라이브 운영"
-        fallbackHref="/(app)/(tabs)/home-jobs"
+        // 공고에서 넘어온 진입(`?postingId=`)이면 그 공고로 돌려보낸다 — 히스토리가 없는
+        // 콜드/딥링크 진입에서 홈으로 떨구면 사장은 관리하던 공고를 다시 찾아야 한다.
+        fallbackHref={opsFallbackHref(postingId, '/(app)/(tabs)/home-jobs')}
         rightAction={
           <Pressable
             onPress={goCreate}

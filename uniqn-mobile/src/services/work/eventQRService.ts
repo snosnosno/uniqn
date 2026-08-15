@@ -25,6 +25,10 @@ import { WORK_LOG_STATUS_VALUES } from '@/constants/statusValues';
 import { workLogRepository } from '@/repositories';
 import { selectWorkLogForQR, type QRSelectionFailureReason } from './selectWorkLogForQR';
 import type { VenueQRDisplayData, EventQRScanResult, WorkLog } from '@/types';
+import { QR_MESSAGES, QR_PAYLOAD_TYPES } from '@/constants/qr';
+import { SHARE_SOURCES } from '@/constants/shareSource';
+import { createJobDeepLink } from '@/services/observability';
+import { WEB_PREFIX } from '@/services/observability/internal/deepLinkConstants';
 
 // ============================================================================
 // Helper Functions
@@ -38,7 +42,7 @@ import type { VenueQRDisplayData, EventQRScanResult, WorkLog } from '@/types';
 function parseVenueQRData(qrString: string): VenueQRDisplayData | null {
   try {
     const data = JSON.parse(qrString);
-    if (data.type !== 'venue') return null;
+    if (data.type !== QR_PAYLOAD_TYPES.venue) return null;
     if (!data.jobPostingId || typeof data.jobPostingId !== 'string') return null;
 
     return { type: 'venue', jobPostingId: data.jobPostingId };
@@ -46,6 +50,45 @@ function parseVenueQRData(qrString: string): VenueQRDisplayData | null {
     logger.debug('QR 데이터 JSON 파싱 실패', { qrString: qrString.slice(0, 50), error });
     return null;
   }
+}
+
+/**
+ * QR 페이로드의 `type` 만 읽는다 (형식이 아니면 null).
+ *
+ * 출근 스캐너가 "왜 안 되는지" 를 말하기 위해 필요하다 — 정체불명 QR 과
+ * **지원 QR** 은 사용자가 취해야 할 행동이 다르다(전자는 다른 QR 을 찾아야 하고,
+ * 후자는 자기가 스캐너를 잘못 열었다).
+ */
+function readQRPayloadType(qrString: string): string | null {
+  try {
+    const data = JSON.parse(qrString);
+    return typeof data?.type === 'string' ? data.type : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 지원 QR 문자열 생성 — 구직자가 찍으면 공고 상세가 열린다.
+ *
+ * 🚨 **URL 이어야 한다. JSON 이면 안 된다.**
+ *    출근 QR(`{type:'venue',...}`)은 **우리 앱 스캐너**가 읽는다 — 그래서 JSON 이 맞다.
+ *    지원 QR 은 **모르는 사람의 기본 카메라**가 읽는다. 카메라는 JSON 을 받으면 그냥
+ *    의미 없는 글자를 보여줄 뿐 아무 데도 못 간다 — 기능이 통째로 죽는다.
+ *    (2026-08-14 리뷰에서 실제로 이 상태로 적발됐다. 처음엔 출근 QR 페이로드를 복사해
+ *     `{type:'apply'}` JSON 을 넣었는데, 그걸 읽는 소비자가 코드베이스에 **0곳**이었다.)
+ *
+ * 🔑 URL 이라서 얻는 것: 폰 카메라가 바로 연다 · 앱이 깔려 있으면 유니버설 링크로 앱이 열린다 ·
+ *    `?src=apply_qr` 이 붙어 **QR 유입이 공유 퍼널에 그대로 잡힌다**(S3-5 의 나머지 절반과 연결).
+ *    그리고 URL 은 출근 QR 의 JSON 과 형태부터 달라 혼동 위험도 그대로 없다.
+ */
+export function buildApplyQRString(jobPostingId: string): string {
+  return createJobDeepLink(jobPostingId, true, SHARE_SOURCES.applyQr);
+}
+
+/** 우리 공고 링크인가 — 출근 스캐너가 "이건 지원 QR" 이라고 짚어 주기 위한 판별. */
+function isJobPostingUrl(qrString: string): boolean {
+  return qrString.startsWith(WEB_PREFIX) && qrString.includes('/jobs/');
 }
 
 /**
@@ -135,9 +178,15 @@ export async function processQRCheckIn(
   const venueData = parseVenueQRData(qrString);
 
   if (!venueData) {
+    // 지원 QR 을 출근 스캐너에 댄 경우는 따로 말해 준다 — "출근 QR이 아닙니다" 만 보면
+    // 사용자는 무엇이 잘못됐는지 모르고 같은 QR 을 반복해서 찍는다.
+    // 지원 QR 은 URL 이다(buildApplyQRString 주석 참고). 구 JSON 형태(type:'apply')도 함께
+    // 본다 — 이미 인쇄돼 나간 물건이 있을 수 있고 판별 비용이 0 이다.
+    const isApplyQR =
+      isJobPostingUrl(qrString) || readQRPayloadType(qrString) === QR_PAYLOAD_TYPES.apply;
     throw new InvalidQRCodeError({
-      message: 'venue 형식이 아닌 QR',
-      userMessage: 'UNIQN 출근 QR이 아닙니다',
+      message: isApplyQR ? '지원 QR 을 출근 스캐너에 스캔' : 'venue 형식이 아닌 QR',
+      userMessage: isApplyQR ? QR_MESSAGES.applyQRScannedAtCheckIn : QR_MESSAGES.notCheckInQR,
     });
   }
 

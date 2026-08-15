@@ -7,25 +7,31 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { View, Text } from 'react-native';
+import { View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getPostingSettlementContext, aggregateRoleFilledFromSubmap } from '@/domains/job-posting';
+import {
+  getPostingSettlementContext,
+  aggregateRoleFilledFromSubmap,
+  selectPostingCapacityGaps,
+  toCapacityGapByDate,
+} from '@/domains/job-posting';
+import { getTodayString } from '@/utils/date';
 import { usePostingFilledCounts, extractPostingFilledSubmap } from '@/hooks/usePostingFilledCounts';
 import { SettlementList, StaffManagementTab } from '@/components/employer';
 import { SettlementModals } from '@/features/employer/settlements/SettlementModals';
-import { Loading, ErrorState } from '@/components';
+import { ErrorState } from '@/components';
+import { PostingSurfaceState } from '@/components/jobs';
 import { StackHeader } from '@/components/headers';
 import { useSettlement } from '@/hooks/useSettlement';
-import { useJobDetail } from '@/hooks/useJobDetail';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import { useSettlementModals } from '@/hooks/useSettlementModals';
 import { useToastStore } from '@/stores/toastStore';
-import { STATUS } from '@/constants';
 import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import {
   deriveSalaryConfig,
   deriveRolesForList,
+  selectPendingSettlementCount,
 } from '@/features/employer/settlements/settlementCalc';
 import { useStaffSettlementsHandlers } from '@/features/employer/settlements/useStaffSettlementsHandlers';
 import { TabHeader, type TabType } from '@/features/employer/settlements/TabHeader';
@@ -40,7 +46,9 @@ import { useManualRefresh } from '@/hooks/useManualRefresh';
 export default function StaffSettlementsScreen() {
   const { id: jobPostingId } = useLocalSearchParams<{ id: string }>();
   const { addToast } = useToastStore();
-  const { job: contextJob, isFixed, handleShowQR } = useJobDetailContext();
+  // 공고 데이터는 레이아웃이 realtime 구독과 함께 한 번만 조회한다 — 화면마다 useJobDetail 을
+  // 다시 부르면 같은 id 로 훅 인스턴스가 늘어난다(구독·오프라인 캐시 계산이 인스턴스마다 돈다).
+  const { job: posting, isFixed, refresh: refreshJobDetail, handleShowQR } = useJobDetailContext();
   const headerBackHref = `/(employer)/my-postings/${jobPostingId ?? ''}`;
   // 고정 공고는 QR 진입점을 노출하지 않는다 (work_log 행 수명 미해결 — _layout.tsx 주석 참고).
   const headerRightAction = !isFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;
@@ -48,9 +56,7 @@ export default function StaffSettlementsScreen() {
   // 탭 상태 (진입 동기 대부분이 "누가 왔나 확인" — 정산은 근무 종료 후 업무)
   const [activeTab, setActiveTab] = useState<TabType>('staff');
 
-  // 공고 정보 (시급 포함)
-  const { job: posting, refresh: refreshJobDetail } = useJobDetail(jobPostingId || '');
-  const headerJobTitle = posting?.title ?? contextJob?.title ?? null;
+  const headerJobTitle = posting?.title ?? null;
   const headerTitleSuffix = <JobTitleSuffix jobTitle={headerJobTitle} />;
   const postingSettlement = useMemo(
     () => (posting ? getPostingSettlementContext(posting) : undefined),
@@ -106,6 +112,25 @@ export default function StaffSettlementsScreen() {
     [filledCountsMap, jobPostingId]
   );
 
+  // 근무일 D-2/D-1 정원 미달 (S3-1) — 서버 크론이 알림으로 보내는 것과 같은 판정을 화면에서도 한다.
+  // 같은 서브맵을 재사용하므로 추가 조회가 없다(날짜 차원만 남기고 접는다).
+  // ⚠️ 오늘 날짜를 memo **밖에서** 읽어 의존성에 넣는다. 안에서 부르면 클로저에 굳어
+  //    화면을 열어 둔 채 자정을 넘겼을 때 D-오프셋이 어제 기준으로 멈춘다
+  //    (D-1 경고가 근무 당일에도 "D-1" 이라고 말한다).
+  const todayString = getTodayString();
+  const capacityGapByDate = useMemo(() => {
+    if (!posting) {
+      return undefined;
+    }
+    return toCapacityGapByDate(
+      selectPostingCapacityGaps(
+        posting,
+        extractPostingFilledSubmap(filledCountsMap, jobPostingId || ''),
+        todayString
+      )
+    );
+  }, [posting, filledCountsMap, jobPostingId, todayString]);
+
   // 핸들러 다발 (클로저 의존은 인자로 주입해 deps 보존)
   const {
     handleReportSubmit,
@@ -159,16 +184,16 @@ export default function StaffSettlementsScreen() {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         {stackHeader}
-        <View className="flex-1 items-center justify-center">
-          <Loading size="large" />
-          <Text className="mt-4 text-content-secondary font-sans">데이터를 불러오는 중...</Text>
-        </View>
+        {/* 스켈레톤 통일(S2-9) — 형제 화면과 같은 형상을 쓴다. */}
+        <PostingSurfaceState mode="loading" scope="manage" />
       </SafeAreaView>
     );
   }
 
-  // 에러 상태
-  if (error) {
+  // 에러 상태 — 보여줄 근무 기록이 없을 때만 화면을 통째로 뺏는다.
+  // 정산 중에 신호가 튀었다고 이미 받아둔 근무 목록을 지우면, 사장은 어디까지 정산했는지
+  // 알 수 없게 된다(공고 상세 index.tsx 와 같은 축).
+  if (error && workLogs.length === 0) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         {stackHeader}
@@ -177,15 +202,20 @@ export default function StaffSettlementsScreen() {
     );
   }
 
-  // 카운트 계산
+  // 카운트 계산 — 정산 대기는 공고 상세 허브도 같은 숫자를 쓰므로 순수 셀렉터 경유.
   const staffCount = staffStats?.total ?? 0;
-  const pendingSettlementCount = workLogs.filter(
-    (log) => log.payrollStatus !== STATUS.PAYROLL.COMPLETED
-  ).length;
+  const pendingSettlementCount = selectPendingSettlementCount(workLogs, todayString);
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       {stackHeader}
+
+      {/* 목록은 살아 있는데 갱신만 실패한 상태 — 근무 기록을 유지한 채 얇게만 알린다. */}
+      {error && workLogs.length > 0 ? (
+        <View className="px-4 pt-2">
+          <ErrorState compact error={error} onRetry={() => refresh()} />
+        </View>
+      ) : null}
 
       {/* 당일 운영 요약 스트립 (M4) — 오늘 근무가 있을 때만 노출 */}
       <TodayOpsStrip
@@ -208,6 +238,7 @@ export default function StaffSettlementsScreen() {
           jobPostingId={jobPostingId || ''}
           jobPosting={posting ?? undefined}
           filledByRole={filledByRole}
+          capacityGapByDate={capacityGapByDate}
           onShowReport={modals.openReportModal}
         />
       ) : (

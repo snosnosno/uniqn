@@ -235,6 +235,26 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     icon: '⏰',
   },
 
+  // 실제 발신은 크론(`fn_notify_posting_capacity_gap`)이 하고 문구도 거기서 만든다.
+  // 여기 정의는 exhaustive Record 를 만족시키는 2차 진실원이자, 서버 문구가 없을 때의 폴백이다.
+  // 🔑 목적지는 **관리 화면**이다 — 구직자 뷰(/jobs)로 보내면 사장이 자리를 채울 수 없다.
+  [NotificationType.POSTING_CAPACITY_GAP]: {
+    title: '⚠️ 아직 자리가 비었어요',
+    body: (d) => `"${d.jobTitle}" ${d.workDate} 근무에 아직 ${d.missingCount}자리가 비어 있습니다.`,
+    link: (d) => (d.jobPostingId ? `/my-postings/${d.jobPostingId}` : '/my-postings'),
+    icon: '⚠️',
+  },
+
+  // 🔑 제목·본문은 **사장이 직접 쓴 문장**이 정본이다(RPC 가 그대로 심는다).
+  //    여기 정의는 exhaustive Record 를 만족시키는 폴백일 뿐이라 일부러 일반적인 문구를 쓴다.
+  //    목적지는 스태프가 보는 공고 상세(/jobs)다 — 관리 화면이 아니다.
+  [NotificationType.POSTING_ANNOUNCEMENT]: {
+    title: '공고 공지',
+    body: (d) => `"${d.jobTitle}" 공고에 새 공지가 있습니다.`,
+    link: (d) => (d.jobPostingId ? `/jobs/${d.jobPostingId}` : '/jobs'),
+    icon: '📢',
+  },
+
   // ⚠️ 아래 4종은 DB 트리거가 직접 INSERT 한다(클라 발신 경로 없음).
   //    여기 정의는 exhaustive Record 를 만족시키기 위한 2차 진실원이며,
   //    사용자에게 실제로 보이는 문구는 마이그레이션의 트리거 정의가 정본이다.

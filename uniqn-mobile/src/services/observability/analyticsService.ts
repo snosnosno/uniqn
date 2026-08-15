@@ -29,6 +29,7 @@ import {
   setUserId as setSentryUserId,
 } from './sentryService';
 import { getBuildIdentity } from './buildIdentity';
+import type { ShareSource } from '@/constants/shareSource';
 
 /** `leaveBreadcrumb` 이 받는 데이터 형태 — 정제된 이벤트 파라미터를 그대로 태운다. */
 type BreadcrumbData = Record<string, string | number | boolean | undefined>;
@@ -496,6 +497,34 @@ export function trackOpsFunnel(
   void analyticsEventRepository.insert(event, props ?? {}).catch(() => undefined);
 }
 
+/**
+ * 공고 공유 퍼널 (S3-5) — 로깅 레일 + Supabase 영속 레일 동시 기록.
+ *
+ * 🔑 `trackEvent` 만 부르면 **Sentry 브레드크럼만 남고 서버에는 아무것도 안 남는다.**
+ *    실제로 기존 `trackEvent('job_shared', ...)` 가 그 상태였다 — 화이트리스트에도 없는 값이라
+ *    어디에도 집계되지 않았다. 출처를 세려면 영속 레일이 반드시 함께 가야 한다.
+ */
+export function trackShareFunnel(
+  event: Extract<OpsFunnelEvent, 'job_share_created' | 'job_share_opened'>,
+  props: { job_id: string; src?: ShareSource }
+): void {
+  // 🔑 `tk` 는 **비로그인 경로의 통행권이다.** analytics_events 가드 트리거는 anon INSERT 에
+  //    `props.tk`(4~16자)를 요구하고(20260717090500:51-54), 없으면 P0001 로 거부한다.
+  //    그런데 이 두 이벤트의 주 대상은 앱이 없는 구직자 — 정의상 anon 이다. tk 를 안 실으면
+  //    repository 가 에러를 삼켜(계측은 throw 금지) **가장 중요한 유입이 무음으로 사라진다.**
+  //    공고 id 앞 8자를 쓴다: ops_public_view_opened 의 토큰 prefix 관례와 같고,
+  //    anon 상한(시간당 120건)이 공고 단위로 걸려 한 공고의 폭주가 다른 공고를 막지 않는다.
+  const payload: Record<string, string> = {
+    job_id: props.job_id,
+    tk: props.job_id.slice(0, 8),
+  };
+  if (props.src) {
+    payload.src = props.src;
+  }
+  void trackEvent(event, payload as AnalyticsEventParams);
+  void analyticsEventRepository.insert(event, payload).catch(() => undefined);
+}
+
 // ============================================================================
 // Export
 // ============================================================================
@@ -509,6 +538,7 @@ export const analyticsService = {
   trackEvent,
   trackScreenView,
   trackOpsFunnel,
+  trackShareFunnel,
   setUserProperties,
   setUserId,
 

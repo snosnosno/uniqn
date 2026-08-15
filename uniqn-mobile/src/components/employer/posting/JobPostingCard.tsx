@@ -7,6 +7,7 @@ import { Badge, Checkbox, NumericText, type CardStripeTone } from '@/components/
 import { STATUS } from '@/constants';
 import { toJobPostingCard } from '@/domains/job-posting';
 import { useShare } from '@/hooks/useShare';
+import { SHARE_SOURCES } from '@/constants/shareSource';
 import { extractPostingFilledSubmap } from '@/hooks/usePostingFilledCounts';
 import { getPostingStatusMeta } from '@/components/jobs/shared/postingSurfaceModel';
 import { isFixedJobPosting } from '@/utils/normalizers';
@@ -136,7 +137,7 @@ export const JobPostingCard = memo(function JobPostingCard({
                 <Pressable
                   onPress={(event) => {
                     event?.stopPropagation?.();
-                    void shareJob(posting);
+                    void shareJob(posting, SHARE_SOURCES.employerList);
                   }}
                   disabled={isSharing}
                   className="p-1.5 active:opacity-70"

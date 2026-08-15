@@ -1,6 +1,7 @@
 import { buildBoardNoticePostId } from '@/shared/board/boardIds';
 import { RouteMapper, type DeepLinkRoute } from '@/shared/deeplink';
 import { SCHEME_PREFIX, WEB_PREFIX } from './deepLinkConstants';
+import { SHARE_SOURCE_QUERY_KEY, type ShareSource } from '@/constants/shareSource';
 
 function toExternalPath(route: DeepLinkRoute): string {
   switch (route.name) {
@@ -117,14 +118,23 @@ function toExternalPath(route: DeepLinkRoute): string {
 
 export function createDeepLink(
   route: DeepLinkRoute,
-  options: { useWebUrl?: boolean } = {}
+  options: { useWebUrl?: boolean; source?: ShareSource } = {}
 ): string {
   const prefix = options.useWebUrl ? WEB_PREFIX : SCHEME_PREFIX;
-  return `${prefix}${toExternalPath(route)}`;
+  // 출처는 화이트리스트 값이라 인코딩이 사실상 무의미하지만, 이 함수가 나중에
+  // 다른 값을 받게 됐을 때 조용히 깨진 URL 을 만들지 않도록 그대로 인코딩한다.
+  const query = options.source
+    ? `?${SHARE_SOURCE_QUERY_KEY}=${encodeURIComponent(options.source)}`
+    : '';
+  return `${prefix}${toExternalPath(route)}${query}`;
 }
 
-export function createJobDeepLink(jobId: string, useWebUrl = false): string {
-  return createDeepLink({ name: 'job', params: { id: jobId } }, { useWebUrl });
+/**
+ * @param source 공유 출처 (S3-5). 주면 `?src=` 가 붙는다.
+ *   미지정 시 기존과 완전히 같은 URL 이 나온다 — 기존 호출부는 손대지 않아도 된다.
+ */
+export function createJobDeepLink(jobId: string, useWebUrl = false, source?: ShareSource): string {
+  return createDeepLink({ name: 'job', params: { id: jobId } }, { useWebUrl, source });
 }
 
 export { toExternalPath };

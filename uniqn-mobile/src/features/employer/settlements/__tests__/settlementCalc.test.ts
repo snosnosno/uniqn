@@ -7,7 +7,11 @@
  * 같은 화면에서 행·확인모달·저장값이 서로 다른 숫자를 표시했다.
  */
 
-import { calculateWorkLogAmount, deriveSalaryConfig } from '../settlementCalc';
+import {
+  calculateWorkLogAmount,
+  deriveSalaryConfig,
+  selectPendingSettlementCount,
+} from '../settlementCalc';
 import type { PostingSettlementContext } from '@/domains/job-posting';
 import type { WorkLog } from '@/types';
 
@@ -63,5 +67,63 @@ describe('deriveSalaryConfig — taxSettings 파생 (A1 회귀)', () => {
 
   it('postingSettlement 부재 시 taxSettings는 undefined다', () => {
     expect(deriveSalaryConfig(undefined).taxSettings).toBeUndefined();
+  });
+});
+
+/**
+ * selectPendingSettlementCount — 정산 대기 건수.
+ *
+ * 정산 화면 안의 인라인 한 줄이었던 계산을 순수 함수로 끌어냈다. 진실원이 화면 안에 있으면
+ * 같은 숫자가 필요한 다른 화면이 재사용하지 못한다 — 실제로 공고 상세 허브는 이 값을 세지 않고
+ * `pendingSettlementCount={0}` 을 하드코딩해서, 정산 대기가 쌓여도 허브에서는 0건으로 보였다.
+ */
+describe('selectPendingSettlementCount', () => {
+  const TODAY = '2026-08-14';
+  /** 기본은 '이미 끝난 정상 근무' — 각 테스트는 자기가 검증할 축만 덮어쓴다. */
+  const log = (payrollStatus: string, overrides: Partial<WorkLog> = {}) =>
+    ({
+      payrollStatus,
+      status: 'completed',
+      date: '2026-08-10',
+      ...overrides,
+    }) as unknown as WorkLog;
+
+  it('지급 완료가 아닌 근무 기록만 센다', () => {
+    expect(
+      selectPendingSettlementCount([log('pending'), log('completed'), log('pending')], TODAY)
+    ).toBe(2);
+  });
+
+  it('전부 지급 완료면 0건이다', () => {
+    expect(selectPendingSettlementCount([log('completed'), log('completed')], TODAY)).toBe(0);
+  });
+
+  it('빈 목록은 0건이다', () => {
+    expect(selectPendingSettlementCount([], TODAY)).toBe(0);
+  });
+
+  // failed 는 "지급 완료"가 아니다 — 재시도가 필요한 건이므로 대기로 센다.
+  it('실패한 지급은 대기로 센다', () => {
+    expect(selectPendingSettlementCount([log('failed')], TODAY)).toBe(1);
+  });
+
+  // 🚨 회귀 가드: work_log 행은 **확정 시점**에 미래 날짜까지 만들어진다. 날짜 하한이 없으면
+  //    아무도 일하기 전에 허브가 "정산할 근무 N건" 이라고 말한다.
+  it('미래 근무는 세지 않는다', () => {
+    expect(selectPendingSettlementCount([log('pending', { date: '2026-08-20' })], TODAY)).toBe(0);
+  });
+
+  it('오늘 근무는 센다 (경계 포함)', () => {
+    expect(selectPendingSettlementCount([log('pending', { date: TODAY })], TODAY)).toBe(1);
+  });
+
+  // 취소·노쇼는 정산할 근무가 아니다 — 세면 열어도 처리할 게 없는 숫자가 된다.
+  it('취소·노쇼는 세지 않는다', () => {
+    expect(
+      selectPendingSettlementCount(
+        [log('pending', { status: 'cancelled' }), log('pending', { status: 'no_show' })],
+        TODAY
+      )
+    ).toBe(0);
   });
 });

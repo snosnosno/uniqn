@@ -231,7 +231,21 @@ export function useDeleteJobPosting() {
   });
 }
 
-export function useCloseJobPosting() {
+/**
+ * 상태 전이 뮤테이션 공통 옵션.
+ */
+interface StatusMutationOptions {
+  /**
+   * 훅이 성공 토스트를 쏘지 않는다. 호출부가 **되돌리기 액션이 달린 토스트**를 직접
+   * 발행할 때 쓴다 — 그러지 않으면 같은 순간에 토스트가 둘 뜬다
+   * (훅의 "공고가 마감되었습니다." + 호출부의 "마감했어요 [되돌리기]").
+   * 기본값 false 라 기존 소비처(목록 화면)는 그대로다.
+   */
+  suppressSuccessToast?: boolean;
+}
+
+export function useCloseJobPosting(options: StatusMutationOptions = {}) {
+  const { suppressSuccessToast = false } = options;
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
@@ -260,7 +274,9 @@ export function useCloseJobPosting() {
     },
     onSuccess: (_, jobPostingId) => {
       logger.info('공고 마감 완료', { jobPostingId });
-      addToast({ type: 'success', message: '공고가 마감되었습니다.' });
+      if (!suppressSuccessToast) {
+        addToast({ type: 'success', message: '공고가 마감되었습니다.' });
+      }
 
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobManagement.all,
@@ -285,7 +301,8 @@ export function useCloseJobPosting() {
   });
 }
 
-export function useReopenJobPosting() {
+export function useReopenJobPosting(options: StatusMutationOptions = {}) {
+  const { suppressSuccessToast = false } = options;
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
@@ -314,7 +331,9 @@ export function useReopenJobPosting() {
     },
     onSuccess: (_, jobPostingId) => {
       logger.info('공고 재오픈 완료', { jobPostingId });
-      addToast({ type: 'success', message: '공고가 다시 활성화되었습니다.' });
+      if (!suppressSuccessToast) {
+        addToast({ type: 'success', message: '공고가 다시 활성화되었습니다.' });
+      }
 
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobManagement.all,

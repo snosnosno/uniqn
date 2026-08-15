@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
+import { opsFallbackHref } from '@/utils/opsNavigation';
 import { StackHeader } from '@/components/headers';
 import { UserPlusIcon } from '@/components/icons';
 import { ErrorState } from '@/components/ui';
@@ -119,7 +120,11 @@ export default function OpsTournamentDetailScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
-      <StackHeader title={tournament.name} fallbackHref="/(ops)/tournaments" />
+      {/* 연결된 공고가 있으면 그리로 돌려보낸다(S3-7) — 대회는 공고에서 파생된 운영 단위다. */}
+      <StackHeader
+        title={tournament.name}
+        fallbackHref={opsFallbackHref(tournament.jobPostingId, '/(ops)/tournaments')}
+      />
       <OpsConsoleShell
         tournamentId={tournamentId}
         isCompleted={tournament.status === 'completed'}

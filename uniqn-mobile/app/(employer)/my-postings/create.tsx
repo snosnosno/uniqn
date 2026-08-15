@@ -30,6 +30,7 @@ import { OrderSheetScreen } from '@/components/employer/order-sheet/OrderSheetSc
 import { OrderSheetChainScrim } from '@/components/employer/order-sheet/OrderSheetChainScrim';
 import { VenueSelectChips } from '@/components/employer/order-sheet/VenueSelectChips';
 import { shouldShowVenueChips, applySelectedVenue } from '@/utils/order-sheet/venueSelection';
+import { useShare } from '@/hooks/useShare';
 import type { OrderSheetPreset } from '@/components/employer/order-sheet/PresetCarousel';
 import type { OrderSheetFormValues, OrderSheetValues } from '@/schemas/orderSheet.schema';
 
@@ -38,15 +39,25 @@ export default function CreateJobPostingScreen() {
   const { profile } = useAuth();
   const { addToast } = useToastStore();
 
+  // 프리셋 캐러셀에 올릴 최근 공고 수. 1건 고정이면 "지난주 그 공고"가 이미 밀려나 있어
+  // 사장이 결국 처음부터 입력하게 된다. 3건을 넘기면 캐러셀에서 고르는 비용이 입력 비용에 근접한다.
+  const RECENT_PRESET_LIMIT = 3;
+
+  // 근무표 복귀 토스트의 공유 CTA 노출 시간. 기본 3초는 그리드로 돌아가며 읽고 누르기엔 짧다.
+  const POST_CREATE_SHARE_TOAST_MS = 6000;
+
   // 근무표 "공고 열기/부족 모집" 진입 — venueId(운영처)·date(선택일)·count(부족 인원)를
   // 받아 초기값에 프리필(P2-1). 일반 생성(파라미터 없음)은 완전 무회귀(gridParamsToValues 폴백).
   const params = useLocalSearchParams<{
     venueId?: string | string[];
     date?: string | string[];
     count?: string | string[];
+    /** 끝난 공고 화면의 "같은 조건으로 다시 올리기" — 이 공고를 프리셋 맨 앞에 올린다. */
+    fromPostingId?: string | string[];
   }>();
   const firstParam = (v?: string | string[]) => (Array.isArray(v) ? v[0] : v);
   const venueId = firstParam(params.venueId);
+  const fromPostingId = firstParam(params.fromPostingId);
   const prefillDate = firstParam(params.date);
   const prefillCountRaw = firstParam(params.count);
   const prefillCountParsed = prefillCountRaw ? Number.parseInt(prefillCountRaw, 10) : undefined;
@@ -78,6 +89,8 @@ export default function CreateJobPostingScreen() {
   const { markClean } = useUnsavedChangesGuard(isDirty);
 
   const createJobPosting = useCreateJobPosting();
+  // 근무표 경유 생성은 완료 화면을 우회하므로 공유를 여기서 직접 걸어 준다.
+  const { shareJobById } = useShare();
   const templateManager = useTemplateManager();
 
   // 프리셋 캐러셀 데이터 소스 — 내 공고 목록에서 진짜 최신 1건("마지막 공고").
@@ -86,27 +99,41 @@ export default function CreateJobPostingScreen() {
   // ⚠️ createdAt은 타입상 Date지만 런타임은 timestampSchema가 통일한 ISO string(common.ts) →
   //    .getTime() 직접 호출 시 "not a function" 크래시. toDate()로 변환 후 비교(스키마 규약).
   const myPostingsQuery = useMyJobPostings();
-  const lastPosting = useMemo(() => {
+  const recentPostings = useMemo(() => {
     const list = myPostingsQuery.data ?? [];
-    if (list.length === 0) return undefined;
-    return list.reduce((latest, p) =>
-      (toDate(p.createdAt)?.getTime() ?? 0) > (toDate(latest.createdAt)?.getTime() ?? 0)
-        ? p
-        : latest
+    const byRecency = [...list].sort(
+      (a, b) => (toDate(b.createdAt)?.getTime() ?? 0) - (toDate(a.createdAt)?.getTime() ?? 0)
     );
-  }, [myPostingsQuery.data]);
+
+    // 재게시로 들어왔으면 그 공고가 맨 앞이어야 한다 — 사장이 방금 보던 공고인데
+    // 목록 어딘가에서 다시 찾게 만들면 "같은 조건으로"라는 약속이 깨진다.
+    if (!fromPostingId) {
+      return byRecency.slice(0, RECENT_PRESET_LIMIT);
+    }
+    const source = byRecency.find((p) => p.id === fromPostingId);
+    if (!source) {
+      // 이미 지워졌거나 아직 목록에 없다 — 조용히 일반 최근 목록으로 떨어진다.
+      return byRecency.slice(0, RECENT_PRESET_LIMIT);
+    }
+    return [source, ...byRecency.filter((p) => p.id !== fromPostingId)].slice(
+      0,
+      RECENT_PRESET_LIMIT
+    );
+  }, [myPostingsQuery.data, fromPostingId]);
 
   // 프리셋 조립 — 마지막 공고 + 저장된 템플릿. S1·S2 이후 대회·고정도 draftToValues/templateToValues가
   // 복원하므로 프리셋에 정상 포함된다. try/catch는 잔여 방어(손상 데이터 등 복원 불가 형상 제외) 전용.
   const presets = useMemo<OrderSheetPreset[]>(() => {
     const out: OrderSheetPreset[] = [];
-    if (lastPosting) {
+    recentPostings.forEach((posting, index) => {
       try {
-        const values = draftToValues(buildJobPostingDraft(lastPosting));
+        const values = draftToValues(buildJobPostingDraft(posting));
+        const isRepostSource = Boolean(fromPostingId) && posting.id === fromPostingId;
         out.push({
-          id: 'last',
-          title: '마지막 공고',
-          icon: 'zap',
+          id: index === 0 ? 'last' : `recent-${posting.id}`,
+          title: isRepostSource ? '다시 올릴 공고' : index === 0 ? '마지막 공고' : '이전 공고',
+          ...(index === 0 ? { icon: 'zap' as const } : {}),
+          // 같은 라벨이 여러 개 뜰 수 있으므로 실제 구분은 공고 제목이 한다.
           subtitle: values.title,
           values: {
             ...values,
@@ -125,7 +152,7 @@ export default function CreateJobPostingScreen() {
       } catch {
         // 복원 불가 형상(손상 데이터 등)만 제외 — S2 이후 fixed·대회는 정상 포함
       }
-    }
+    });
     for (const t of templateManager.templates) {
       try {
         out.push({
@@ -139,7 +166,7 @@ export default function CreateJobPostingScreen() {
       }
     }
     return out;
-  }, [lastPosting, templateManager.templates]);
+  }, [recentPostings, fromPostingId, templateManager.templates]);
 
   // 주문서 "＋ 저장" — 현재 폼 값을 draft 로 굳혀 두고(검증 우회) 템플릿 이름 입력 모달을 연다.
   // ⚠️ handleSaveTemplate 직접 호출 금지: templateName 이 비면 조용한 no-op(useTemplateManager) →
@@ -171,12 +198,22 @@ export default function CreateJobPostingScreen() {
         // 그리드 진입(venueId)이면 스택 하부 그리드로 복귀(선택 운영처·날짜 보존) — 완료 화면 우회.
         // 셀 +N 뱃지 갱신은 useCreateJobPosting 의 workSchedule 무효화가 담당.
         if (venueId && router.canGoBack()) {
+          // 이 경로는 완료 화면을 우회하므로 거기 있던 **공유 CTA** 를 통째로 못 본다 —
+          // 공고를 올리자마자 링크를 뿌리는 게 지원이 붙는 가장 빠른 길인데, 근무표에서
+          // 만든 공고만 그 기회를 잃고 있었다. 액션 토스트로 같은 행동을 준다.
           addToast({
             type: 'success',
             message:
               values.postingType === 'tournament'
                 ? '공고가 등록됐어요. 관리자 승인 후 게시돼요.'
                 : '공고가 등록됐어요.',
+            duration: POST_CREATE_SHARE_TOAST_MS,
+            action: {
+              label: '공유하기',
+              onPress: () => {
+                void shareJobById(created.id);
+              },
+            },
           });
           router.back();
         } else {
@@ -230,6 +267,7 @@ export default function CreateJobPostingScreen() {
     },
     [
       createJobPosting,
+      shareJobById,
       venueId,
       selectedVenueId,
       router,

@@ -33,6 +33,7 @@ function makeTodayGroup(
     isPast: false,
     stats: {
       total: staff.length,
+      scheduled: staff.length,
       checkedIn: 0,
       completed: 0,
       noShow: 0,

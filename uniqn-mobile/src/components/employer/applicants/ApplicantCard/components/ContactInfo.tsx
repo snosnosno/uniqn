@@ -9,7 +9,8 @@ import { SECONDARY_PALETTE } from '@/constants/colors';
 import React from 'react';
 import { View, Text } from 'react-native';
 
-import { PhoneIcon, MessageIcon, DocumentIcon } from '@/components/icons';
+import { MessageIcon, DocumentIcon } from '@/components/icons';
+import { ContactActions } from '@/components/schedule/ContactActions';
 
 // ============================================================================
 // Types
@@ -46,13 +47,11 @@ export const ContactInfo = React.memo(function ContactInfo({
 
   return (
     <>
-      {/* 연락처 */}
+      {/* 연락처 — 번호를 텍스트로만 두면 사장은 눈으로 옮겨 적어 전화 앱에 다시 입력해야 했다.
+          반대 방향(스태프→구인자)에는 이미 같은 컴포넌트로 전화·문자 버튼이 있었다. */}
       {phone && (
-        <View className="flex-row items-center mb-2">
-          <PhoneIcon size={14} color={SECONDARY_PALETTE[400]} />
-          <Text className="ml-2 text-sm text-content-muted dark:text-secondary-400 font-sans">
-            {phone}
-          </Text>
+        <View className="mb-2">
+          <ContactActions phone={phone} component="ApplicantCard.ContactInfo" />
         </View>
       )}
 

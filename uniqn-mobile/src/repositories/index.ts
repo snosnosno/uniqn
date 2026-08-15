@@ -478,6 +478,13 @@ export {
 } from './supabase/JobPostingCollaboratorRepository';
 
 // ============================================================================
+// 공고 일괄 공지 (S3-2)
+// ============================================================================
+
+export type { JobPostingAnnouncement } from './supabase/JobPostingAnnouncementRepository';
+export { jobPostingAnnouncementRepository } from './supabase/JobPostingAnnouncementRepository';
+
+// ============================================================================
 // 근무표 (workSchedule) — 지점 단가 쓰기 입력 타입 재노출
 // ============================================================================
 

@@ -9,8 +9,8 @@
 export { ApplicantCard as EmployerApplicantCard } from './applicants/ApplicantCard';
 export type { ApplicantCardProps as EmployerApplicantCardProps } from './applicants/ApplicantCard';
 
-export { ApplicantList } from './applicants/ApplicantList';
-export type { ApplicantListProps } from './applicants/ApplicantList';
+export { ApplicantList, toApplicantFilter } from './applicants/ApplicantList';
+export type { ApplicantListProps, FilterStatus } from './applicants/ApplicantList';
 
 export { ApplicantConfirmModal } from './applicants/ConfirmModal';
 export type { ApplicantConfirmModalProps, ConfirmModalAction } from './applicants/ConfirmModal';

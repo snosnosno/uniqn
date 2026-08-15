@@ -6,6 +6,7 @@ import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import type { WorkLogStatus } from '@/shared/status';
 import { TimeNormalizer } from '@/shared/time';
 import type { ConfirmedStaff, JobPosting } from '@/types';
+import type { PostingCapacityGap } from '@/domains/job-posting/capacityGap';
 import { isStaffRole } from '@/types/role';
 import { readScheduledStart } from '@/domains/workSchedule';
 import { logger } from '@/utils/logger';
@@ -37,6 +38,11 @@ export interface StaffManagementTabProps {
    * `jobPosting` 과 **둘 다** 있어야 `(마감)` 이 뜬다. 선택은 막지 않는다(D7).
    */
   filledByRole?: Record<string, number>;
+  /**
+   * 근무일별 D-day 정원 미달 (S3-1) — 날짜 섹션 헤더에 경고 줄로 뜬다.
+   * 날짜 차원이 필요해 `filledByRole`(역할별, 날짜 소실)과 별개로 받는다.
+   */
+  capacityGapByDate?: Map<string, PostingCapacityGap>;
   onShowReport?: (staff: ConfirmedStaff) => void;
 }
 
@@ -120,6 +126,7 @@ export function StaffManagementTab({
   jobPostingId,
   jobPosting,
   filledByRole,
+  capacityGapByDate,
   onShowReport,
 }: StaffManagementTabProps) {
   // 🔑 근무 수정 시트에 `editedBy` 를 넘기지 않으면 패치에 그 키가 빠지고, 서버는 퇴근 시각을
@@ -352,6 +359,7 @@ export function StaffManagementTab({
           onDelete={handleDelete}
           onStatusChange={handleStatusChange}
           onCancelNoShow={handleCancelNoShow}
+          capacityGapByDate={capacityGapByDate}
           showActions
         />
       </View>

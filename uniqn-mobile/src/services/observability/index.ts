@@ -6,6 +6,7 @@
 export {
   analyticsService,
   trackEvent,
+  trackShareFunnel,
   trackScreenView,
   setUserProperties,
   setUserId,

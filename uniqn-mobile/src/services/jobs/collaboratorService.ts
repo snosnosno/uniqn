@@ -18,6 +18,7 @@ import { logger } from '@/utils/logger';
 import { supabase } from '@/lib/supabase';
 import type {
   JobPostingCollaborator,
+  JobPostingCollaboratorRole,
   JobPostingCollaboratorWithUser,
   SharedJobPosting,
   CollaboratorSearchCandidate,
@@ -103,6 +104,26 @@ export const collaboratorService = {
 
     logger.info('협업자 제거 (Service)', data);
     return jobPostingCollaboratorRepository.remove(data.jobPostingId, data.userId);
+  },
+
+  /**
+   * 협업자 권한 변경 (S3-4 — workspace owner 만, RLS 가 강제)
+   *
+   * 🔒 여기서 owner 여부를 검사하지 않는 것은 의도적이다. 클라 검사는 우회 가능하고,
+   *    실제 게이트는 RLS 정책 `jpc_update_role_owner` 다. 권한이 없으면 UPDATE 가
+   *    0행으로 끝나고 Repository 가 그것을 에러로 올린다.
+   */
+  async changeRole(input: {
+    jobPostingId: string;
+    userId: string;
+    role: JobPostingCollaboratorRole;
+  }): Promise<void> {
+    logger.info('협업자 권한 변경 (Service)', input);
+    return jobPostingCollaboratorRepository.updateRole(
+      input.jobPostingId,
+      input.userId,
+      input.role
+    );
   },
 
   /**

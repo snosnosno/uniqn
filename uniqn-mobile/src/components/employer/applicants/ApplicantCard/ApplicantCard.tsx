@@ -35,6 +35,7 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   postingType,
   daysPerWeek,
   startTime,
+  noShowCount,
 }: ApplicantCardProps) {
   const postingFacts = useMemo(
     () => (applicant.jobPosting ? buildPostingFacts(applicant.jobPosting) : null),
@@ -139,6 +140,7 @@ export const ApplicantCard = React.memo(function ApplicantCard({
           onViewProfile={onViewProfile ? handleViewProfile : undefined}
           bubbleScore={userProfile?.bubbleScore?.score}
           reviewCount={userProfile?.bubbleScore?.totalReviewCount}
+          noShowCount={noShowCount}
         />
 
         {isExpanded && (

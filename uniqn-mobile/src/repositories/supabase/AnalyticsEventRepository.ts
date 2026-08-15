@@ -14,7 +14,12 @@ export type OpsFunnelEvent =
   | 'ops_limit_reached'
   // 롤아웃 계기판(testgap-01) — 세션당 1회, 이 실행본의 앱버전·OTA 번들을 기록한다.
   // 서버 CHECK 화이트리스트와 1:1 이므로 값을 늘릴 때는 마이그레이션이 함께 가야 한다.
-  | 'app_session_start';
+  | 'app_session_start'
+  // 공유 출처 퍼널(S3-5, 마이그 20260813130000) — 이 둘은 **짝이다**.
+  // created 만 있으면 "공유했다"까지만 알고, opened 만 있으면 분모가 없다.
+  // 전환율 = opened / created (props.src 로 그룹핑).
+  | 'job_share_created'
+  | 'job_share_opened';
 
 /**
  * 퍼널 이벤트 영속 Repository (S1 D1).

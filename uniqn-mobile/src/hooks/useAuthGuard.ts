@@ -91,14 +91,24 @@ function isPublicJobDetailRoute(pathname: string, segments: string[]): boolean {
   );
 }
 
-function buildPublicJobDetailRedirect(pathname: string): string | null {
+/**
+ * 공개 별칭(`/jobs/{id}`) → 인증 라우트(`/(app)/jobs/{id}`) 목적지.
+ *
+ * 🔑 **`?src=` 를 반드시 이어붙인다.** `usePathname()` 은 쿼리를 담지 않으므로 그냥 만들면
+ *    공유 출처가 리다이렉트에서 증발하고, 목적지 화면의 `useTrackShareOpen` 은 출처 없음으로
+ *    아무것도 기록하지 않는다 — 공유로 들어온 로그인 사용자가 통째로 계측에서 빠진다.
+ *    값 검증은 소비처(`readShareSource` 화이트리스트)가 하므로 여기서는 인코딩만 한다.
+ */
+function buildPublicJobDetailRedirect(pathname: string, shareSource?: string): string | null {
   const normalizedSegments = pathname.split('/').filter(Boolean);
 
   if (normalizedSegments.length !== 2 || normalizedSegments[0] !== 'jobs') {
     return null;
   }
 
-  return `/(app)/jobs/${normalizedSegments[1]}`;
+  const destination = `/(app)/jobs/${normalizedSegments[1]}`;
+
+  return shareSource ? `${destination}?src=${encodeURIComponent(shareSource)}` : destination;
 }
 
 export function useAuthGuard(): void {
@@ -108,6 +118,8 @@ export function useAuthGuard(): void {
   const searchParams = useGlobalSearchParams<{
     redirect?: string | string[];
     mode?: string | string[];
+    /** 공유 출처(S3-5). 별칭 리다이렉트에서 유실되면 공유 퍼널의 opened 절반이 사라진다. */
+    src?: string | string[];
   }>();
 
   const isLoading = useAuthStore(selectIsLoading);
@@ -152,8 +164,12 @@ export function useAuthGuard(): void {
       : searchParams.redirect;
     const requestedRedirect = normalizePostAuthRedirect(redirectParam);
     const currentProtectedRoute = buildPostAuthRedirectFromSegments(segments);
+    const shareSourceParam = Array.isArray(searchParams.src)
+      ? searchParams.src[0]
+      : searchParams.src;
     const publicAliasRedirect =
-      buildPublicJobDetailRedirect(browserPathname) ?? buildPublicJobDetailRedirect(pathname);
+      buildPublicJobDetailRedirect(browserPathname, shareSourceParam) ??
+      buildPublicJobDetailRedirect(pathname, shareSourceParam);
     const postAuthRedirect = routeGroup === '(auth)' ? requestedRedirect : currentProtectedRoute;
     const pendingAuthRedirect = publicAliasRedirect ?? postAuthRedirect;
     const isOnSignup = segments.includes('signup' as never);
@@ -397,6 +413,7 @@ export function useAuthGuard(): void {
     profileCompleted,
     searchParams.redirect,
     searchParams.mode,
+    searchParams.src,
     segments,
     socialProvider,
     user,

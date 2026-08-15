@@ -13,6 +13,8 @@ export interface ApplicantCardProps {
   postingType?: PostingType;
   daysPerWeek?: number;
   startTime?: string;
+  /** 최근 180일 노쇼 횟수 (S3-3). 목록이 배치 조회해 내려준다 — 카드가 개별 조회하면 N+1. */
+  noShowCount?: number;
 }
 
 export interface AssignmentDisplay {
