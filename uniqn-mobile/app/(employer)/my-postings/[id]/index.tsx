@@ -81,6 +81,7 @@ import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import { useWorkLogsByJobPosting } from '@/hooks/useSettlement';
 import { selectPendingSettlementCount } from '@/features/employer/settlements/settlementCalc';
+import { getTodayString } from '@/utils/date';
 import { TodayOpsStrip } from '@/features/employer/settlements/TodayOpsStrip';
 
 /**
@@ -291,9 +292,12 @@ export default function JobPostingDetailScreen() {
   // 정산 대기가 쌓여도 허브에서는 영원히 0건으로 보였다(당일 운영 스트립 배지가 안 뜸).
   // 고정 공고는 정산 화면 자체가 없으므로 빈 id 로 쿼리를 끈다(enabled: !!jobPostingId).
   const { data: workLogs } = useWorkLogsByJobPosting(isFixed ? '' : id || '');
+  // 🔑 미래 근무는 정산 대기가 아니다 — 확정 시점에 미래 날짜 work_log 가 먼저 생기므로
+  //    날짜 하한을 안 걸면 아무도 일하기 전에 "정산할 근무 N건" 이 뜬다(셀렉터 주석 참조).
+  const todayString = getTodayString();
   const pendingSettlementCount = useMemo(
-    () => selectPendingSettlementCount(workLogs ?? []),
-    [workLogs]
+    () => selectPendingSettlementCount(workLogs ?? [], todayString),
+    [workLogs, todayString]
   );
 
   // 상태 뱃지에서 바로 걸 수 있는 전이 — 종전에는 목록 화면에만 있어서, 상세를 보다가
@@ -596,9 +600,11 @@ export default function JobPostingDetailScreen() {
   const questionCount = managementView.questions.length;
 
   // 오늘 근무자 중 아직 출근하지 않은 수 — 현장이 굴러가는 중이라 가장 시간에 민감한 신호다.
-  const todayAbsentCount = todayGroup
-    ? Math.max(0, todayGroup.stats.total - todayGroup.stats.checkedIn)
-    : 0;
+  // 🚨 `total - checkedIn` 으로 재면 **퇴근한 사람이 미출근으로 잡힌다.** `checkedIn` 은
+  //    `status === 'checked_in'` 정확일치라 퇴근하면 빠지기 때문이다. 그러면 전원이 정상
+  //    퇴근한 저녁에 "아직 출근하지 않은 스태프가 {전원}명" 이 되고, 이 값은 표시에서 끝나지
+  //    않고 selectPrimaryAction 입력이라 '지금 할 일' 카드까지 유령 결근이 점거한다.
+  const todayAbsentCount = todayGroup ? todayGroup.stats.scheduled : 0;
   const isLiveOpsVisible =
     posting.postingType === 'tournament' &&
     posting.tournamentConfig?.approvalStatus === STATUS.TOURNAMENT.APPROVED &&

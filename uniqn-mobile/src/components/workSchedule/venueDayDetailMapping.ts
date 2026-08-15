@@ -68,7 +68,7 @@ export function mapVenueDaySlotToConfirmedStaff(slot: VenueDaySlot, date: string
 
 /**
  * 하루치 슬롯 배열 → ConfirmedStaffList 가 소비하는 단일 그룹(없으면 null).
- * stats 는 ConfirmedStaffGroup.stats 계약(total/checkedIn/completed/noShow)을 따른다.
+ * stats 는 ConfirmedStaffGroup.stats 계약(total/scheduled/checkedIn/completed/noShow)을 따른다.
  */
 export function buildVenueDayGroup(
   slots: VenueDaySlot[],
@@ -87,6 +87,7 @@ export function buildVenueDayGroup(
     isPast: date < today,
     stats: {
       total: staff.length,
+      scheduled: staff.filter((s) => s.status === 'scheduled').length,
       checkedIn: staff.filter((s) => s.status === 'checked_in').length,
       completed: staff.filter((s) => s.status === 'completed').length,
       noShow: staff.filter((s) => s.status === 'no_show').length,

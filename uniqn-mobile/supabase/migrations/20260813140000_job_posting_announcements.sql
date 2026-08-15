@@ -55,9 +55,11 @@ CREATE POLICY jpa_select_manager ON public.job_posting_announcements
         JOIN public.workspaces w ON w.id = jp.workspace_id
        WHERE jp.id = job_posting_announcements.job_posting_id
          AND (
-              w.owner_id = auth.uid()
-           OR public.is_workspace_member(jp.workspace_id, auth.uid())
-           OR public.is_posting_collaborator(jp.id, auth.uid())
+           -- `(SELECT auth.uid())` 은 스타일이 아니라 성능 계약이다(20260809140000 RLS 비용 위생):
+           -- 맨 `auth.uid()` 는 행마다 재평가되고, 감싸면 initPlan 으로 한 번만 계산된다.
+              w.owner_id = (SELECT auth.uid())
+           OR public.is_workspace_member(jp.workspace_id, (SELECT auth.uid()))
+           OR public.is_posting_collaborator(jp.id, (SELECT auth.uid()))
          )
     )
   );
@@ -123,6 +125,13 @@ BEGIN
 
   -- 연타 방어. 알림은 되돌릴 수 없다 — 잘못 두 번 보내면 스태프 전원의 알림함에 남는다.
   -- 시간 창을 짧게 둬서 "실수로 두 번 누름"만 막고 정상적인 후속 공지는 통과시킨다.
+  --
+  -- 🚨 잠금이 **먼저** 와야 한다. SELECT count → INSERT 는 READ COMMITTED 에서
+  --    동시 두 호출이 **둘 다 0 을 읽어** 나란히 통과한다. 그리고 막으려던 "연타" 의 실체가
+  --    바로 그 동시 케이스다(네트워크가 끊길 때 사용자는 빠르게 두 번 누른다).
+  --    공고 단위 트랜잭션 잠금이라 다른 공고의 발송은 막지 않고, 커밋/롤백 시 자동 해제된다.
+  PERFORM pg_advisory_xact_lock(hashtextextended(p_job_posting_id::text, 0));
+
   SELECT count(*)::integer INTO v_recent
     FROM public.job_posting_announcements a
    WHERE a.job_posting_id = p_job_posting_id

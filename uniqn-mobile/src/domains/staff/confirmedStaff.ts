@@ -106,6 +106,12 @@ export function groupStaffByDate(staffList: ConfirmedStaff[]): ConfirmedStaffGro
         isPast: Boolean(date) && date < today,
         stats: {
           total: staffInDate.length,
+          // 🔑 "아직 출근하지 않은" 은 **`scheduled` 하나로 판정한다.**
+          //    `total - checkedIn` 으로 빼면 퇴근(checked_out/completed)·취소·노쇼가 전부
+          //    '미출근'으로 접힌다 — 전원이 정상 퇴근한 저녁에 미출근이 최대가 된다.
+          //    상태가 하나 늘 때마다 조용히 틀려지는 축이라, 뺄셈이 아니라 열거로 센다.
+          scheduled: staffInDate.filter((staff) => staff.status === STATUS.WORK_LOG.SCHEDULED)
+            .length,
           checkedIn: staffInDate.filter((staff) => staff.status === STATUS.WORK_LOG.CHECKED_IN)
             .length,
           completed: staffInDate.filter(

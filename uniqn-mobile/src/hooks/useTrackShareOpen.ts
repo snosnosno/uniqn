@@ -19,6 +19,14 @@ import { readShareSource } from '@/constants/shareSource';
  *
  * 🔒 출처는 URL 에 노출돼 있어 **누구나 바꿔 넣을 수 있다.** `readShareSource` 화이트리스트를
  *    통과한 값만 기록한다 — 아니면 조작된 값이 그대로 집계에 쌓인다.
+ *
+ * 🚨 **이 훅이 발화해도 서버에 남지 않을 수 있다.** 이 화면의 주 방문자는 앱이 없는 구직자,
+ *    즉 anon 이고 anon INSERT 에는 두 층의 관문이 있다:
+ *      ① RLS `ae_anon_insert` 의 event 허용 목록 (20260813160000 이 공유 2종을 넣었다)
+ *      ② 가드 트리거의 `props.tk` 필수 (`trackShareFunnel` 이 공고 id 앞 8자를 싣는다)
+ *    둘 중 하나라도 어긋나면 `AnalyticsEventRepository` 가 에러를 삼켜 **무음으로 사라진다**
+ *    — 프로덕션에선 로그도 안 남는다. 실제로 그 상태로 한 번 적발됐다(2026-08-14 리뷰).
+ *    공유 이벤트를 새로 추가할 때는 event CHECK 화이트리스트·RLS 정책·tk 를 **함께** 움직일 것.
  */
 export function useTrackShareOpen(jobId: string | undefined): void {
   const params = useLocalSearchParams<{ src?: string | string[] }>();

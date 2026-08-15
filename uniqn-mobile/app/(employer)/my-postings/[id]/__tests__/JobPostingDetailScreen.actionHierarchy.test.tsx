@@ -269,7 +269,10 @@ describe('JobPostingDetailScreen — 카드 위계', () => {
           isToday: true,
           isPast: false,
           staff: [{}, {}],
-          stats: { total: 2, checkedIn: 1, completed: 0, noShow: 0 },
+          // 🔑 미출근은 `total - checkedIn` 뺄셈이 아니라 **`scheduled` 열거**로 센다.
+          //    뺄셈이면 퇴근(completed)한 사람까지 미출근으로 잡혀, 전원이 정상 퇴근한
+          //    저녁에 이 카드가 최대로 커진다. 목에서 이 필드를 빼면 그 경로가 검증되지 않는다.
+          stats: { total: 2, scheduled: 1, checkedIn: 1, completed: 0, noShow: 0 },
         },
       ],
     });
@@ -283,7 +286,13 @@ describe('JobPostingDetailScreen — 카드 위계', () => {
   });
 
   it('정산 대기로 승격되면 정산 문구를 쓴다', () => {
-    mockWorkLogs.mockReturnValue([{ payrollStatus: 'pending' }, { payrollStatus: 'pending' }]);
+    // 🔑 정산 대기는 **이미 끝난** 근무만 센다 — work_log 행은 확정 시점에 미래 날짜까지
+    //    만들어지므로 날짜가 없거나 미래면 대기가 아니다. 목이 date/status 를 빠뜨리면
+    //    "미래 근무를 세지 않는다" 는 계약이 이 화면 경로에서 검증되지 않는다.
+    mockWorkLogs.mockReturnValue([
+      { payrollStatus: 'pending', status: 'completed', date: '2026-01-05' },
+      { payrollStatus: 'pending', status: 'completed', date: '2026-01-06' },
+    ]);
 
     const { getByText, getByTestId } = render(<JobPostingDetailScreen />);
 

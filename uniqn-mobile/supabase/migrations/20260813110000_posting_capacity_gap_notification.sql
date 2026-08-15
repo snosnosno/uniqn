@@ -62,7 +62,13 @@ BEGIN
     CROSS JOIN LATERAL jsonb_array_elements(COALESCE(jp.schedule -> 'requirements', '[]'::jsonb)) req
     CROSS JOIN LATERAL jsonb_array_elements(COALESCE(req -> 'timeSlots', '[]'::jsonb)) ts
     CROSS JOIN LATERAL jsonb_array_elements(COALESCE(ts -> 'roles', '[]'::jsonb)) r
-    WHERE jp.status IN ('active', 'approved')
+    -- 🚨 `capacity_full` 을 빼면 안 된다. 그 상태는 **공고 합계**(filled_positions/total_positions)
+    --    기준으로 좌석 트리거가 자동 전이시키는데(20260718000000:50-55), 이 함수가 :17-19 에서
+    --    "합계 축은 날짜를 못 가린다"며 거부한 바로 그 축이다. A일 정원1·B일 정원2 인 공고에서
+    --    A일에 3명이 들어가면 합계가 차 `capacity_full` 이 되고, B일이 0/2 인데 알림이 한 건도
+    --    안 나간다 — 아래 :91-92 의 좁은 판정축 방어가 status 필터에서 통째로 무효화된다.
+    --    날짜별 gap 계산이 이미 정확하므로 포함해도 오탐은 늘지 않는다(빈자리 없으면 안 뽑힌다).
+    WHERE jp.status IN ('active', 'approved', 'capacity_full')
       AND jp.owner_id IS NOT NULL
       -- 고정 공고는 date 가 'FIXED_SCHEDULE' 이다 — 날짜 캐스팅이 죽지 않게 형식으로 거른다.
       AND (req ->> 'date') ~ '^\d{4}-\d{2}-\d{2}$'

@@ -508,7 +508,16 @@ export function trackShareFunnel(
   event: Extract<OpsFunnelEvent, 'job_share_created' | 'job_share_opened'>,
   props: { job_id: string; src?: ShareSource }
 ): void {
-  const payload: Record<string, string> = { job_id: props.job_id };
+  // 🔑 `tk` 는 **비로그인 경로의 통행권이다.** analytics_events 가드 트리거는 anon INSERT 에
+  //    `props.tk`(4~16자)를 요구하고(20260717090500:51-54), 없으면 P0001 로 거부한다.
+  //    그런데 이 두 이벤트의 주 대상은 앱이 없는 구직자 — 정의상 anon 이다. tk 를 안 실으면
+  //    repository 가 에러를 삼켜(계측은 throw 금지) **가장 중요한 유입이 무음으로 사라진다.**
+  //    공고 id 앞 8자를 쓴다: ops_public_view_opened 의 토큰 prefix 관례와 같고,
+  //    anon 상한(시간당 120건)이 공고 단위로 걸려 한 공고의 폭주가 다른 공고를 막지 않는다.
+  const payload: Record<string, string> = {
+    job_id: props.job_id,
+    tk: props.job_id.slice(0, 8),
+  };
   if (props.src) {
     payload.src = props.src;
   }

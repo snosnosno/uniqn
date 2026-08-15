@@ -22,9 +22,12 @@
 -- 그래서 반대로 한다:
 --   · `is_posting_collaborator()` 의 의미를 **manager 전용**으로 바꾼다
 --     → 쓰기 RPC 14종과 쓰기 정책 5개가 **한 줄도 안 고치고** 자동으로 fail-closed 가 된다.
---   · 읽기 전용 `is_posting_collaborator_any()` 를 새로 만들어 **읽기 5개 정책 + 읽기 RPC 2종**만
+--   · 읽기 전용 `is_posting_collaborator_any()` 를 새로 만들어 **읽기 5개 정책 + 읽기 RPC 1종**만
 --     명시적으로 갈아끼운다.
--- 고칠 곳이 19 → 7 로 줄고, 빠뜨렸을 때의 실패가 "권한이 남는" 쪽이 아니라
+--     ⚠️ 처음엔 2종이라고 셌다. `ops_resolve_staff_work_logs` 는 함수 자체가 읽기 전용이라
+--        같이 넓혔는데, 그 안의 호출은 읽기 가시성이 아니라 **쓰기 권한 판정**이었다(§4 하단 참조).
+--        "읽기 전용 함수" 와 "읽기 가시성 판정" 은 다른 축이다 — 함수 단위로 세면 틀린다.
+-- 고칠 곳이 19 → 6 으로 줄고, 빠뜨렸을 때의 실패가 "권한이 남는" 쪽이 아니라
 -- "권한이 모자란" 쪽으로 뒤집힌다. 보안 변경에서 실패 방향은 옳음만큼 중요하다.
 --
 -- ⚠️ `is_workspace_jpc_member` 는 **건드리지 않는다.** 그건 "이 워크스페이스의 어떤 공고든
@@ -174,15 +177,16 @@ CREATE POLICY jpa_select_manager ON public.job_posting_announcements
         JOIN public.workspaces w ON w.id = jp.workspace_id
        WHERE jp.id = job_posting_announcements.job_posting_id
          AND (
-              w.owner_id = auth.uid()
-           OR public.is_workspace_member(jp.workspace_id, auth.uid())
-           OR public.is_posting_collaborator_any(jp.id, auth.uid())
+           -- initPlan 캐싱(20260809140000 RLS 비용 위생) — 맨 auth.uid() 는 행마다 재평가된다.
+              w.owner_id = (SELECT auth.uid())
+           OR public.is_workspace_member(jp.workspace_id, (SELECT auth.uid()))
+           OR public.is_posting_collaborator_any(jp.id, (SELECT auth.uid()))
          )
     )
   );
 
 -- ------------------------------------------------------------
--- 4. 읽기 RPC 2종도 _any 로 (viewer 가 지원자 화면을 볼 수 있어야 한다)
+-- 4. 읽기 RPC 1종만 _any 로 (viewer 가 지원자 화면을 볼 수 있어야 한다)
 -- ------------------------------------------------------------
 -- get_applicant_no_show_counts (S3-3) — 지원자 목록이 보이는데 칩만 안 보이면 앞뒤가 안 맞는다.
 CREATE OR REPLACE FUNCTION public.get_applicant_no_show_counts(
@@ -245,27 +249,17 @@ BEGIN
 END;
 $$;
 
--- ops_resolve_staff_work_logs — 읽기 전용 조회. 정의를 통째로 옮기지 않고 본문의 헬퍼만 바꾼다.
-DO $$
-DECLARE
-  v_def text;
-BEGIN
-  SELECT pg_get_functiondef(p.oid) INTO v_def
-    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-   WHERE n.nspname = 'public' AND p.proname = 'ops_resolve_staff_work_logs';
-
-  IF v_def IS NULL THEN
-    RAISE EXCEPTION 'ops_resolve_staff_work_logs 가 없다 — 스키마 전제가 깨졌으니 사람이 볼 것';
-  END IF;
-
-  -- 정확히 치환됐는지 확인하고 적용한다(치환이 0건이면 이름이 바뀐 것이다).
-  IF position('is_posting_collaborator(' in v_def) = 0 THEN
-    RAISE EXCEPTION 'ops_resolve_staff_work_logs 본문에서 is_posting_collaborator( 를 찾지 못했다';
-  END IF;
-
-  EXECUTE replace(v_def, 'is_posting_collaborator(', 'is_posting_collaborator_any(');
-END;
-$$;
+-- 🚨 `ops_resolve_staff_work_logs` 는 **바꾸지 않는다.**
+--    처음엔 "읽기 전용 함수니까 _any 로" 라며 pg_get_functiondef + replace 로 본문을 치환했다.
+--    그건 틀렸다. 함수는 읽기 전용이 맞지만, **치환 대상이던 그 한 줄은 읽기 가시성이 아니라
+--    쓰기 권한 판정**이다 — `v_posting_axis` 는 출력 컬럼 `write_allowed` 가 되고
+--    (20260809110000: "쓰기 축 = update_work_log_slot 술어의 공고 부분"),
+--    화면은 그 값으로 근태 기록 컨트롤을 연다(StaffAttendanceSheet.tsx:167
+--    `canWrite = reason === 'ok' && writeAllowed && !!workLogId`).
+--    _any 로 넓히면 viewer 에게 기록 버튼이 열리고, 누르는 순간 좁은 헬퍼를 그대로 쓰는
+--    `update_work_log_slot` 이 거절한다 — 서버는 안전하지만 사용자는 막다른 길을 만난다.
+--    "읽기 7곳만 _any" 라는 이 마이그레이션의 전제에서 이 자리는 애초에 읽기가 아니었다.
+--    viewer 의 가시성은 이 함수의 입장 게이트(`is_ops_member`)가 이미 보장하므로 잃는 것도 없다.
 
 -- ------------------------------------------------------------
 -- 5. role 변경 경로 — UPDATE 정책 + 감사 + 알림

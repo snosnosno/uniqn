@@ -204,7 +204,7 @@ export default function StaffSettlementsScreen() {
 
   // 카운트 계산 — 정산 대기는 공고 상세 허브도 같은 숫자를 쓰므로 순수 셀렉터 경유.
   const staffCount = staffStats?.total ?? 0;
-  const pendingSettlementCount = selectPendingSettlementCount(workLogs);
+  const pendingSettlementCount = selectPendingSettlementCount(workLogs, todayString);
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>

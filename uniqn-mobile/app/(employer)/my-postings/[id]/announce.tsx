@@ -12,8 +12,7 @@ import { ScrollView, Text, TextInput, View, Pressable } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackHeader } from '@/components/headers';
-import { Card, ConfirmModal } from '@/components';
-import { ErrorState, Loading } from '@/components';
+import { Card, ConfirmModal, ErrorState, Loading } from '@/components';
 import { useJobPostingAnnouncements } from '@/hooks/useJobPostingAnnouncements';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import { useToastStore } from '@/stores/toastStore';
@@ -44,7 +43,11 @@ export default function JobPostingAnnounceScreen() {
     const ids = new Set<string>();
     grouped.forEach((group) => {
       group.staff.forEach((staff) => {
-        if (staff.status !== 'cancelled' && staff.status !== 'no_show') {
+        // 🔑 서버(send_job_posting_announcement)와 **같은 축**으로 센다 — 그쪽은
+        //    `status NOT IN (cancelled,no_show) AND no_show_at IS NULL` 이다.
+        //    `no_show_at` 만 찍히고 status 가 안 바뀐 행이 있으면 여기서만 한 명 더 세어,
+        //    마지막 관문인 확인 모달이 "3명에게 갑니다" 라 하고 실제로는 2명에게 간다.
+        if (staff.status !== 'cancelled' && staff.status !== 'no_show' && !staff.noShowAt) {
           ids.add(staff.staffId);
         }
       });
