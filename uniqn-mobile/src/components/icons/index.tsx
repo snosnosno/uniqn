@@ -196,7 +196,7 @@ export const PaperPlaneOutlineIcon = createIcon(Send);
 export const CheckIcon = createIcon(Check);
 export const CheckCircleIcon = createIcon(CircleCheck);
 export const AlertCircleIcon = createIcon(CircleAlert);
-export const ExclamationTriangleIcon = createIcon(TriangleAlert);
+export const AlertTriangleIcon = createIcon(TriangleAlert);
 export const InformationCircleIcon = createIcon(Info);
 export const XCircleIcon = createIcon(CircleX);
 export const XIcon = createIcon(X);
@@ -309,28 +309,9 @@ export const CurrencyWonIcon: IconComponent = ({
   );
 };
 
-// ─── Legacy aliases (기존 호출부 호환) ─────────────────────────────────────
-export const HeartOutlineIcon = HeartIcon;
-export const MapIcon = MapPinIcon;
-export const ExclamationCircleIcon = AlertCircleIcon;
-export const CalendarDaysIcon = CalendarIcon;
-export const ArrowPathIcon = RefreshIcon;
-export const MagnifyingGlassIcon = SearchIcon;
-export const EnvelopeIcon = MailIcon;
-export const QRCodeIcon = QrCodeIcon;
-export const AlertTriangleIcon = ExclamationTriangleIcon;
-export const AddIcon = PlusIcon;
-export const CloseIcon = XMarkIcon;
-export const CheckmarkIcon = CheckIcon;
-export const CheckmarkCircleIcon = CheckCircleIcon;
-export const CheckmarkCircleOutlineIcon = CheckCircleIcon;
-export const AlertCircleOutlineIcon = AlertCircleIcon;
-export const CalendarOutlineIcon = CalendarIcon;
-export const LocationOutlineIcon = MapPinIcon;
-export const PersonOutlineIcon = UserIcon;
-export const PeopleOutlineIcon = UsersIcon;
-export const EyeOutlineIcon = EyeIcon;
-export const CreateOutlineIcon = EditIcon;
-export const CloseCircleIcon = XCircleIcon;
-export const TrashOutlineIcon = TrashIcon;
-export const NotificationsIcon = BellIcon;
+// ─── Legacy aliases 제거됨 (2026-08-13) ────────────────────────────────────
+// 같은 글리프가 2~3개 이름으로 살아 있어 knip Duplicate exports 20건을 만들었고,
+// 같은 아이콘을 화면마다 다른 이름으로 부르게 만들었다. 전량 정본으로 수렴시켰다.
+// 정본 선택 기준은 **주석이 아니라 실사용 횟수** — `AlertTriangleIcon`(26회)은
+// "Legacy alias" 라고 적혀 있었지만 정본(`ExclamationTriangleIcon`, 8회)보다
+// 많이 쓰여, 이름 쪽을 다수파로 뒤집었다.

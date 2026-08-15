@@ -99,5 +99,3 @@ export function TournamentResultCard({ tournament }: { tournament: OpsTournament
     </View>
   );
 }
-
-export default TournamentResultCard;

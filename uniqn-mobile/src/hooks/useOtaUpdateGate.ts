@@ -112,5 +112,3 @@ export function useOtaUpdateGate(): void {
     });
   }, []);
 }
-
-export default useOtaUpdateGate;

@@ -8,7 +8,7 @@ import {
 } from '@/services';
 import { isNetworkError, toError } from '@/errors';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
-import { queryKeys, cachingPolicies } from '@/lib';
+import { cachingPolicies, queryKeys } from '@/lib/queryClient';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
 import type { ApplicationStatus } from '@/types';

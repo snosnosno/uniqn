@@ -56,5 +56,3 @@ export function useEnsureDefaultWorkspace({
 
   return { isCreating: isPending, retry };
 }
-
-export default useEnsureDefaultWorkspace;

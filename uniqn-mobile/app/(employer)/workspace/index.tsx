@@ -16,7 +16,7 @@ import { Avatar, Badge, Button, EmptyState, ErrorState, Input } from '@/componen
 import { CalendarIcon, ChevronRightIcon } from '@/components/icons';
 import { SECONDARY_PALETTE, getIconColor } from '@/constants/colors';
 import { useThemeStore } from '@/stores/themeStore';
-import { useWorkScheduleEnabled } from '@/hooks';
+import { useWorkScheduleEnabled } from '@/hooks/useWorkScheduleEnabled';
 import { useAuthStore } from '@/stores/authStore';
 import { DEFAULT_WORKSPACE_NAME } from '@/constants/defaultNames';
 import { useToastStore } from '@/stores/toastStore';

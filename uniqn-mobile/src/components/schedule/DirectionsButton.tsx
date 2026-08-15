@@ -19,7 +19,7 @@
  */
 import React, { memo, useCallback, useState } from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
-import { MapIcon } from '@/components/icons';
+import { MapPinIcon } from '@/components/icons';
 import { getMapAppPreference, setMapAppPreference } from '@/utils/mapAppPreference';
 import {
   MAP_APP_CHOICES,
@@ -92,7 +92,7 @@ function DirectionsButtonComponent({
           accessibilityLabel={`${destinationName} 지도에서 보기`}
           className="flex-row items-center rounded-lg bg-primary-50 px-3 py-2 active:bg-primary-100 dark:bg-primary-900/20 dark:active:bg-primary-900/30"
         >
-          <MapIcon size={16} color="#B8962E" />
+          <MapPinIcon size={16} color="#B8962E" />
           <Text className="ml-1.5 text-sm font-sans-medium text-primary-600 dark:text-primary-400">
             지도에서 보기
           </Text>

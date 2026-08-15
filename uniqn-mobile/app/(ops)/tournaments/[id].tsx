@@ -7,18 +7,16 @@ import { opsFallbackHref } from '@/utils/opsNavigation';
 import { StackHeader } from '@/components/headers';
 import { UserPlusIcon } from '@/components/icons';
 import { ErrorState } from '@/components/ui';
-import {
-  OpsConsoleShell,
-  type OpsTabKey,
-  OpsStatusTab,
-  PlayersTab,
-  TablesTab,
-  BlindLevelsTab,
-  StaffTab,
-  HistoryTab,
-  PayoutsTab,
-  OpsRegisterParticipantSheet,
-} from '@/components/ops';
+import { BlindLevelsTab } from '@/components/ops/BlindLevelsTab';
+import { HistoryTab } from '@/components/ops/HistoryTab';
+import { OpsConsoleShell } from '@/components/ops/OpsConsoleShell';
+import type { OpsTabKey } from '@/components/ops/OpsConsoleShell';
+import { OpsRegisterParticipantSheet } from '@/components/ops/OpsRegisterParticipantSheet';
+import { OpsStatusTab } from '@/components/ops/OpsStatusTab';
+import { PayoutsTab } from '@/components/ops/PayoutsTab';
+import { PlayersTab } from '@/components/ops/PlayersTab';
+import { StaffTab } from '@/components/ops/StaffTab';
+import { TablesTab } from '@/components/ops/TablesTab';
 import { useOpsTournament, useOpsParticipants, useOpsStaff } from '@/hooks/ops';
 
 /**

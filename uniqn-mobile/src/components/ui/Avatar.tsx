@@ -13,7 +13,7 @@
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text } from 'react-native';
 import { Image } from 'expo-image';
-import { DEFAULT_BLURHASH } from './OptimizedImage';
+import { DEFAULT_BLURHASH } from '@/utils/blurhash';
 
 type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 

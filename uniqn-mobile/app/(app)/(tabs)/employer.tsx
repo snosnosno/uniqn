@@ -12,7 +12,7 @@ import { TabHeader } from '@/components/headers';
 import { WorkspaceContextBar } from '@/components/workspace';
 import {
   BriefcaseIcon,
-  CalendarDaysIcon,
+  CalendarIcon,
   ChevronRightIcon,
   EllipsisHorizontalIcon,
   PlusIcon,
@@ -37,7 +37,7 @@ import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { usePostingFilledCounts } from '@/hooks/usePostingFilledCounts';
 import { useSubmitGate } from '@/hooks/useSubmitGate';
 import { useTabBarBottomPadding } from '@/hooks/useTabBarBottomPadding';
-import { useWorkScheduleEnabled } from '@/hooks';
+import { useWorkScheduleEnabled } from '@/hooks/useWorkScheduleEnabled';
 import { useReceivedWorkspaceInvitations } from '@/hooks/workspace';
 import { useHasRole } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
@@ -404,7 +404,7 @@ function EmployerView() {
           <Button
             variant="outline"
             onPress={handleWorkSchedule}
-            icon={<CalendarDaysIcon size={20} color={getIconColor(isDarkMode, 'primary')} />}
+            icon={<CalendarIcon size={20} color={getIconColor(isDarkMode, 'primary')} />}
             className="mt-2"
             accessibilityLabel="근무표 열기"
           >

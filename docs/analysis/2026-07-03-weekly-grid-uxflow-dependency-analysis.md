@@ -154,6 +154,6 @@
 
 ## 7. 출처
 - 실측 에이전트 3종 보고(2026-07-02, 본 세션): grid-ux(UI/UX 표면) · flow-map(기존 플로우 중복) · dep-map(의존성·드리프트)
-- `docs/planning/2026-06-28-weekly-batch-grid-design.md`(설계 v2) · `docs/superpowers/specs/2026-07-01-venue-create-ui-design.md`(#221)
+- `docs/archive/planning/2026-06/2026-06-28-weekly-batch-grid-design.md`(설계 v2) · `docs/superpowers/specs/2026-07-01-venue-create-ui-design.md`(#221)
 - `docs/analysis/uniqn-pub-tourney-gap-2026-05-28.md`(UX 갭 31건) · `wiki/domain/target-market.md`
 - 메모리: `project_weekly_grid_design_20260628` · `project_target_market_pivot`

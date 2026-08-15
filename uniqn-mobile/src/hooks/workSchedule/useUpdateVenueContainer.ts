@@ -29,5 +29,3 @@ export function useUpdateVenueContainer() {
     },
   });
 }
-
-export default useUpdateVenueContainer;

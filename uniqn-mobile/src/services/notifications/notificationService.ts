@@ -87,5 +87,3 @@ export const notificationService = {
   unregisterFCMToken,
   unregisterAllFCMTokens,
 };
-
-export default notificationService;

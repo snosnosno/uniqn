@@ -17,7 +17,7 @@ jest.mock('@/hooks/ops', () => ({
 }));
 
 // 셸 스텁 — fab 슬롯 + 탭 전환 버튼을 노출해 부모의 tab 게이트를 검증.
-jest.mock('@/components/ops', () => {
+jest.mock('@/components/ops/OpsConsoleShell', () => {
   const { View, Pressable, Text } = require('react-native');
   return {
     OpsConsoleShell: ({ activeTab, onTabChange, fab }: any) => (
@@ -32,16 +32,18 @@ jest.mock('@/components/ops', () => {
         {fab}
       </View>
     ),
-    OpsStatusTab: () => null,
-    PlayersTab: () => null,
-    TablesTab: () => null,
-    BlindLevelsTab: () => null,
-    StaffTab: () => null,
-    HistoryTab: () => null,
-    PayoutsTab: () => null,
-    OpsRegisterParticipantSheet: () => null,
   };
 });
+jest.mock('@/components/ops/OpsStatusTab', () => ({ OpsStatusTab: () => null }));
+jest.mock('@/components/ops/PlayersTab', () => ({ PlayersTab: () => null }));
+jest.mock('@/components/ops/TablesTab', () => ({ TablesTab: () => null }));
+jest.mock('@/components/ops/BlindLevelsTab', () => ({ BlindLevelsTab: () => null }));
+jest.mock('@/components/ops/StaffTab', () => ({ StaffTab: () => null }));
+jest.mock('@/components/ops/HistoryTab', () => ({ HistoryTab: () => null }));
+jest.mock('@/components/ops/PayoutsTab', () => ({ PayoutsTab: () => null }));
+jest.mock('@/components/ops/OpsRegisterParticipantSheet', () => ({
+  OpsRegisterParticipantSheet: () => null,
+}));
 
 beforeEach(() => {
   (useOpsTournament as jest.Mock).mockReturnValue({

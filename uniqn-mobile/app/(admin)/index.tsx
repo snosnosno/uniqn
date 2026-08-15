@@ -7,7 +7,7 @@ import {
   ChatbubbleEllipsesOutlineIcon,
   DocumentTextOutlineIcon,
   FlagOutlineIcon,
-  PeopleOutlineIcon,
+  UsersIcon,
   RefreshIcon,
   ShareIcon,
   TrophyOutlineIcon,
@@ -78,7 +78,7 @@ export default function AdminDashboard() {
     {
       title: '사용자 관리',
       description: '회원 정보와 권한을 확인합니다.',
-      icon: PeopleOutlineIcon,
+      icon: UsersIcon,
       iconColor: '#B8962E',
       href: '/(admin)/users',
       bgColor: 'bg-primary-100 dark:bg-primary-900/30',
@@ -110,7 +110,7 @@ export default function AdminDashboard() {
     {
       title: '구인자 신청',
       description: '구인자 등록 신청을 검토하고 승인/거부합니다.',
-      icon: PeopleOutlineIcon,
+      icon: UsersIcon,
       iconColor: '#10B981',
       href: '/(admin)/employer-applications',
       bgColor: 'bg-emerald-100 dark:bg-emerald-900/30',

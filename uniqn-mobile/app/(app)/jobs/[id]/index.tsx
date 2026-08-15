@@ -11,18 +11,15 @@ import { StackHeader } from '@/components/headers';
 import { ArrowRightIcon, ShareIcon } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, Loading } from '@/components/ui';
-import {
-  useApplications,
-  useAuth,
-  useHasAppliedToJob,
-  useInstallPrompt,
-  useJobDetail,
-  useShare,
-} from '@/hooks';
+import { useApplications, useHasAppliedToJob } from '@/hooks/useApplications';
+import { useAuth } from '@/hooks/useAuth';
+import { useInstallPrompt } from '@/hooks/useInstallPrompt';
+import { useJobDetail } from '@/hooks/useJobDetail';
+import { useShare } from '@/hooks/useShare';
 import { resolveSessionUserId } from '@/hooks/internal/sessionUserId';
-import { incrementViewCount } from '@/services/jobs';
+import { incrementViewCount } from '@/services/jobs/jobService';
 import { trackJobView } from '@/services/observability';
-import { useThemeStore } from '@/stores';
+import { useThemeStore } from '@/stores/themeStore';
 import { confirmAction } from '@/utils/confirmAction';
 import {
   getApplicationStatusMessage,

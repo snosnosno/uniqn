@@ -18,7 +18,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
-import { useAuthStore, useToastStore } from '@/stores';
+import { useAuthStore } from '@/stores/authStore';
+import { useToastStore } from '@/stores/toastStore';
 import {
   requestAccountDeletion,
   retryAppleTokenRevocation,

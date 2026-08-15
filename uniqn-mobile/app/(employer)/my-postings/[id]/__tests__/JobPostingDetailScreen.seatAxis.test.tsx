@@ -231,9 +231,11 @@ describe('JobPostingDetailScreen — 숫자 진실원(축)', () => {
   it('정산 ActionCard 배지는 정산 대기 건수다 — 좌석 수가 아니다', () => {
     mockManagementView.mockReturnValue(managementView(4, 0));
     mockWorkLogs.mockReturnValue([
-      { payrollStatus: 'pending' },
-      { payrollStatus: 'completed' },
-      { payrollStatus: 'pending' },
+      // 🔑 정산 대기는 **이미 끝난** 근무만 센다 — 날짜·상태가 없으면 0으로 접힌다.
+      //    확정 시점에 미래 날짜 work_log 가 먼저 생기므로 셀렉터가 날짜 하한을 건다.
+      { payrollStatus: 'pending', status: 'completed', date: '2026-01-05' },
+      { payrollStatus: 'completed', status: 'completed', date: '2026-01-05' },
+      { payrollStatus: 'pending', status: 'completed', date: '2026-01-06' },
     ]);
 
     const { getByTestId } = render(<JobPostingDetailScreen />);

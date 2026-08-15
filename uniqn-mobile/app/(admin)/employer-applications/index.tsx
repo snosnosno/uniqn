@@ -13,7 +13,7 @@ import {
   NumericText,
 } from '@/components/ui';
 import { StackHeader } from '@/components/headers';
-import { PeopleOutlineIcon } from '@/components/icons';
+import { UsersIcon } from '@/components/icons';
 import { queryKeys } from '@/lib/queryClient';
 import { listEmployerApplications } from '@/services/admin';
 import type { EmployerApplication } from '@/repositories';
@@ -276,7 +276,7 @@ export default function AdminEmployerApplicationsPage() {
             <EmptyState
               title="신청이 없습니다"
               description="현재 조건에 맞는 신청이 없습니다."
-              icon={<PeopleOutlineIcon size={40} color={SECONDARY_PALETTE[400]} />}
+              icon={<UsersIcon size={40} color={SECONDARY_PALETTE[400]} />}
             />
           </View>
         ) : (

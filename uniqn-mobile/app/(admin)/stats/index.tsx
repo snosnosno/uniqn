@@ -6,7 +6,7 @@ import {
   CalendarIcon,
   DocumentTextOutlineIcon,
   FlagOutlineIcon,
-  PeopleOutlineIcon,
+  UsersIcon,
   RefreshIcon,
 } from '@/components/icons';
 import {
@@ -19,8 +19,8 @@ import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Loading } from '@/components/ui/Loading';
 import { getLayoutColor } from '@/constants/colors';
-import { useAdminDashboard } from '@/hooks';
-import { useThemeStore } from '@/stores';
+import { useAdminDashboard } from '@/hooks/useAdminDashboard';
+import { useThemeStore } from '@/stores/themeStore';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
 
 function formatDateTime(date: Date | string | undefined): string {
@@ -134,7 +134,7 @@ export default function AdminStatsScreen() {
               label="총 사용자"
               value={stats?.totalUsers}
               isLoading={isLoading && !stats}
-              icon={PeopleOutlineIcon}
+              icon={UsersIcon}
               iconColor="#2563EB"
               iconBgColor="bg-info-100 dark:bg-info-900/20"
             />

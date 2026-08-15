@@ -33,7 +33,7 @@ import {
   setUserId,
   setUserProperties,
 } from '@/services/observability/analyticsService';
-import { unregisterPushTokensForSignOut } from '@/services/notifications';
+import { unregisterTokensForSignOut as unregisterPushTokensForSignOut } from '@/services/notifications/pushNotificationService';
 import type { SignUpFormData, LoginFormData } from '@/schemas';
 import { type UserProfile, type AuthResult } from './authTypes';
 import { getUserProfile as fetchUserProfile } from './userProfileService';

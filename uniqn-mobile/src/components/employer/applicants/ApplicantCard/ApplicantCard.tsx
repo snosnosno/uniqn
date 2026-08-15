@@ -229,5 +229,3 @@ export const ApplicantCard = React.memo(function ApplicantCard({
     </CardStripe>
   );
 });
-
-export default ApplicantCard;

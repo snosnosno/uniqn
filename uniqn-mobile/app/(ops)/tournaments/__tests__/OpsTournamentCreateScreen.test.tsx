@@ -54,7 +54,7 @@ jest.mock('@/stores/toastStore', () => ({
   },
 }));
 
-jest.mock('@/components/ops', () => {
+jest.mock('@/components/ops/PostingPickerSheet', () => {
   const { Text, Pressable } = require('react-native');
   return {
     PostingPickerSheet: (props: any) => {

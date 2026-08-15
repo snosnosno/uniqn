@@ -12,14 +12,14 @@ import { Image } from 'expo-image';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StackHeader } from '@/components/headers';
 import {
-  AlertCircleOutlineIcon,
+  AlertCircleIcon,
   ArchiveOutlineIcon,
-  CreateOutlineIcon,
-  EyeOutlineIcon,
+  EditIcon,
+  EyeIcon,
   PaperPlaneOutlineIcon,
-  PersonOutlineIcon,
+  UserIcon,
   PinIcon,
-  TrashOutlineIcon,
+  TrashIcon,
 } from '@/components/icons';
 import { STATUS } from '@/constants';
 import {
@@ -123,7 +123,7 @@ export default function AnnouncementDetailPage() {
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="공지사항 상세" fallbackHref="/(admin)/announcements" />
         <View className="flex-1 bg-surface-page dark:bg-surface items-center justify-center px-8">
-          <AlertCircleOutlineIcon size={64} color={STATUS_COLORS.error} />
+          <AlertCircleIcon size={64} color={STATUS_COLORS.error} />
           <Text className="text-lg font-sans-medium text-content-secondary mt-4">
             공지사항을 찾을 수 없습니다
           </Text>
@@ -149,7 +149,7 @@ export default function AnnouncementDetailPage() {
         fallbackHref="/(admin)/announcements"
         rightAction={
           <Pressable onPress={handleEdit} accessibilityLabel="공지사항 수정" hitSlop={8}>
-            <CreateOutlineIcon size={24} color={PRIMARY_COLORS[600]} />
+            <EditIcon size={24} color={PRIMARY_COLORS[600]} />
           </Pressable>
         }
       />
@@ -204,13 +204,13 @@ export default function AnnouncementDetailPage() {
           {/* Meta */}
           <View className="flex-row flex-wrap gap-4 mt-2">
             <View className="flex-row items-center">
-              <PersonOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
+              <UserIcon size={14} color={SECONDARY_PALETTE[400]} />
               <Text className="text-sm text-content-secondary ml-1 font-sans">
                 {announcement.authorName}
               </Text>
             </View>
             <View className="flex-row items-center">
-              <EyeOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
+              <EyeIcon size={14} color={SECONDARY_PALETTE[400]} />
               <NumericText className="text-sm text-content-secondary ml-1 font-sans">
                 {announcement.viewCount.toLocaleString()}
               </NumericText>
@@ -384,7 +384,7 @@ export default function AnnouncementDetailPage() {
             disabled={!!actionLoading}
             className="bg-primary-600 rounded-lg py-3 items-center flex-row justify-center"
           >
-            <CreateOutlineIcon size={18} color="#09090B" />
+            <EditIcon size={18} color="#09090B" />
             <Text className="text-content-onGold font-sans-medium ml-2">수정하기</Text>
           </Pressable>
 
@@ -398,7 +398,7 @@ export default function AnnouncementDetailPage() {
               <ActivityIndicator color="#fff" size="small" />
             ) : (
               <>
-                <TrashOutlineIcon size={18} color="#fff" />
+                <TrashIcon size={18} color="#fff" />
                 <Text className="text-white font-sans-medium ml-2">삭제하기</Text>
               </>
             )}

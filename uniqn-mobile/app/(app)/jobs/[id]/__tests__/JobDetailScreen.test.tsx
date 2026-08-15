@@ -69,20 +69,26 @@ jest.mock('@/components/ui/Button', () => {
   };
 });
 
-jest.mock('@/hooks', () => ({
+jest.mock('@/hooks/useApplications', () => ({
   useApplications: () => ({
     hasApplied: () => false,
     getApplicationStatus: () => null,
   }),
-  useAuth: () => mockAuthState,
   useHasAppliedToJob: () => ({
     data: false,
     isLoading: false,
     isFetching: false,
   }),
+}));
+jest.mock('@/hooks/useAuth', () => ({
+  useAuth: () => mockAuthState,
+}));
+jest.mock('@/hooks/useInstallPrompt', () => ({
   useInstallPrompt: () => ({
     openInstallPrompt: jest.fn(),
   }),
+}));
+jest.mock('@/hooks/useJobDetail', () => ({
   useJobDetail: () => ({
     job: mockJob,
     isLoading: false,
@@ -90,6 +96,8 @@ jest.mock('@/hooks', () => ({
     error: null,
     refresh: mockRefresh,
   }),
+}));
+jest.mock('@/hooks/useShare', () => ({
   useShare: () => ({
     shareJob: jest.fn(),
     isSharing: false,
@@ -109,7 +117,7 @@ jest.mock('@/services/observability', () => ({
   trackJobView: jest.fn(),
 }));
 
-jest.mock('@/stores', () => ({
+jest.mock('@/stores/themeStore', () => ({
   useThemeStore: (selector: (state: { isDarkMode: boolean }) => boolean) =>
     selector({ isDarkMode: false }),
 }));

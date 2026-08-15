@@ -148,36 +148,10 @@ nul
 */nul
 debug-*.html
 *.html.debug
-docs/archive/*
-!docs/archive/firebase-legacy/
-!docs/archive/planning/
-!docs/archive/wallet-iap-removal/
-
-# ========================================
-# CAPACITOR & MOBILE (모바일 네이티브 파일들)
-# ========================================
-# iOS
-app2/ios/App/App/public/
-app2/ios/DerivedData/
-app2/ios/*.xcworkspace
-app2/ios/*.xcuserstate
-app2/ios/App/Podfile.lock
-app2/ios/App/Pods/
-
-# Android
-app2/android/app/src/main/assets/public/
-app2/android/app/build/
-app2/android/build/
-app2/android/.gradle/
-app2/android/local.properties
-app2/android/.idea/
-app2/android/*.iml
-app2/android/.externalNativeBuild/
-app2/android/.cxx/
-
-# Capacitor generated files
-app2/android/app/src/main/assets/capacitor.config.json
-app2/ios/App/App/capacitor.config.json
+# (docs/archive 는 버전관리 대상이다 — 예전엔 `docs/archive/*` 로 통째 무시하고
+#  3개 하위만 되살렸는데, 이미 79개 파일이 추적 중이라 규칙이 사문이었고 오히려
+#  plans/·specs/·qa/·operations/ 로 새 문서를 아카이브하면 `git add` 가 조용히
+#  거부되는 함정이 됐다. 2026-08-13 제거.)
 
 # ========================================
 # SCREENSHOTS & TEST IMAGES
@@ -188,15 +162,10 @@ app2/ios/App/App/capacitor.config.json
 # 프로젝트 내 에셋은 허용
 !uniqn-mobile/assets/**
 !uniqn-mobile/src/**
-!app2/src/**
-# QA 스크린샷 임시 폴더
-qa-screenshots/
 
 # ========================================
 # PROJECT SPECIFIC
 # ========================================
-SHRIMP/
-claude-forge/
 
 # Brainstorming visual companion
 .superpowers/

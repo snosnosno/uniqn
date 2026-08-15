@@ -107,10 +107,9 @@ jest.mock('../userProfileService', () => ({
 
 const mockUnregisterPushTokensForSignOut = jest.fn<Promise<void>, [string]>();
 
-jest.mock('@/services/notifications', () => ({
+jest.mock('@/services/notifications/pushNotificationService', () => ({
   __esModule: true,
-  unregisterPushTokensForSignOut: (...args: [string]) =>
-    mockUnregisterPushTokensForSignOut(...args),
+  unregisterTokensForSignOut: (...args: [string]) => mockUnregisterPushTokensForSignOut(...args),
 }));
 
 const mockClearShiftReminders = jest.fn<Promise<void>, []>();

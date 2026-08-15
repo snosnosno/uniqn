@@ -23,7 +23,8 @@ import {
   type BulkSettlementInput,
   type UpdateWorkTimeInput,
 } from '@/services';
-import { queryKeys, queryCachingOptions, invalidateRelated } from '@/lib';
+import { invalidateRelated } from '@/lib/invalidationStrategy';
+import { queryCachingOptions, queryKeys } from '@/lib/queryClient';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';

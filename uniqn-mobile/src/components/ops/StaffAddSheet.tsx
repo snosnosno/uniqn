@@ -235,5 +235,3 @@ export function StaffAddSheet({ visible, tournamentId, onClose }: StaffAddSheetP
     </SheetModal>
   );
 }
-
-export default StaffAddSheet;

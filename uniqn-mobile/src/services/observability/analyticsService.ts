@@ -559,5 +559,3 @@ export const analyticsService = {
   trackTutorialSkip,
   trackTutorialTimeout,
 };
-
-export default analyticsService;

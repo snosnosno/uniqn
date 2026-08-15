@@ -6,7 +6,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { opsFallbackHref } from '@/utils/opsNavigation';
 import { StackHeader } from '@/components/headers';
 import { useCreateOpsTournament } from '@/hooks/ops';
-import { PostingPickerSheet } from '@/components/ops';
+import { PostingPickerSheet } from '@/components/ops/PostingPickerSheet';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { useMyJobPostings } from '@/hooks/useJobManagement';
 import { opsBlindLevelService } from '@/services/ops';

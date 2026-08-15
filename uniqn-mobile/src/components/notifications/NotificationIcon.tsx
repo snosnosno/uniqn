@@ -14,13 +14,13 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   ClockIcon,
-  CalendarDaysIcon,
+  CalendarIcon,
   BanknotesIcon,
   BriefcaseIcon,
-  ExclamationCircleIcon,
+  AlertCircleIcon,
   MegaphoneIcon,
   WrenchScrewdriverIcon,
-  ArrowPathIcon,
+  RefreshIcon,
   ChatBubbleLeftIcon,
   ShieldCheckIcon,
   BellIcon,
@@ -59,10 +59,10 @@ const typeIcons: Partial<Record<NotificationType, IconComponent>> = {
   [NotificationType.STAFF_CHECKED_OUT]: ClockIcon,
   [NotificationType.CHECK_IN_CONFIRMED]: CheckCircleIcon,
   [NotificationType.CHECK_OUT_CONFIRMED]: CheckCircleIcon,
-  [NotificationType.CHECKIN_REMINDER]: CalendarDaysIcon,
-  [NotificationType.NO_SHOW_ALERT]: ExclamationCircleIcon,
-  [NotificationType.SCHEDULE_CHANGE]: CalendarDaysIcon,
-  [NotificationType.SCHEDULE_CREATED]: CalendarDaysIcon,
+  [NotificationType.CHECKIN_REMINDER]: CalendarIcon,
+  [NotificationType.NO_SHOW_ALERT]: AlertCircleIcon,
+  [NotificationType.SCHEDULE_CHANGE]: CalendarIcon,
+  [NotificationType.SCHEDULE_CREATED]: CalendarIcon,
   [NotificationType.SCHEDULE_CANCELLED]: XCircleIcon,
   // 레거시 6건(수신자 미구분) — 방향 중립인 시계 아이콘을 쓴다.
   [NotificationType.WORK_LOG_CHECK_IN]: ClockIcon,
@@ -71,8 +71,8 @@ const typeIcons: Partial<Record<NotificationType, IconComponent>> = {
   // 정산 관련
   [NotificationType.SETTLEMENT_COMPLETED]: BanknotesIcon,
   // 되돌리기는 완료와 같은 '돈' 계열이지만 방향이 반대라 경고 아이콘으로 구분한다.
-  [NotificationType.SETTLEMENT_REVERTED]: ExclamationCircleIcon,
-  [NotificationType.NEGATIVE_SETTLEMENT_ALERT]: ExclamationCircleIcon,
+  [NotificationType.SETTLEMENT_REVERTED]: AlertCircleIcon,
+  [NotificationType.NEGATIVE_SETTLEMENT_ALERT]: AlertCircleIcon,
 
   // 공고 관련
   [NotificationType.JOB_UPDATED]: BriefcaseIcon,
@@ -84,7 +84,7 @@ const typeIcons: Partial<Record<NotificationType, IconComponent>> = {
   // 시스템
   [NotificationType.ANNOUNCEMENT]: MegaphoneIcon,
   [NotificationType.MAINTENANCE]: WrenchScrewdriverIcon,
-  [NotificationType.APP_UPDATE]: ArrowPathIcon,
+  [NotificationType.APP_UPDATE]: RefreshIcon,
   [NotificationType.BOARD_COMMENT]: ChatBubbleLeftIcon,
   [NotificationType.BOARD_REPLY]: ChatBubbleLeftIcon,
   [NotificationType.BOARD_MENTION]: BellIcon,
@@ -93,7 +93,7 @@ const typeIcons: Partial<Record<NotificationType, IconComponent>> = {
   // 관리자
   [NotificationType.INQUIRY_ANSWERED]: ChatBubbleLeftIcon,
   [NotificationType.REPORT_RESOLVED]: ShieldCheckIcon,
-  [NotificationType.NEW_REPORT]: ExclamationCircleIcon,
+  [NotificationType.NEW_REPORT]: AlertCircleIcon,
   [NotificationType.NEW_INQUIRY]: ChatBubbleLeftIcon,
   [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: BriefcaseIcon,
   [NotificationType.ROLE_CHANGED]: ShieldCheckIcon,

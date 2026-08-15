@@ -192,12 +192,10 @@ export const ROLE_LABELS: Record<string, string> = {
 // 급여 타입 라벨
 // ============================================================================
 
-export const SALARY_TYPE_LABELS = {
-  hourly: '시급',
-  daily: '일급',
-  monthly: '월급',
-  other: '협의',
-} as const;
+// 정본은 `@/utils/settlement/constants` — 그쪽은 `Record<SalaryType, string>` 이라
+// SalaryType 이 늘면 컴파일이 막아준다. 여기서 다시 리터럴로 쓰면 그 보호가 사라지고
+// 두 벌이 조용히 갈린다.
+export { SALARY_TYPE_LABELS } from '@/utils/settlement/constants';
 
 // ============================================================================
 // 공고 상태 라벨

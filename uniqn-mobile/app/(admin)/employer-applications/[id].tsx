@@ -7,7 +7,7 @@ import { STATUS_COLORS } from '@/constants/colors';
 import { StackHeader } from '@/components/headers';
 import { Avatar, Button, Card, EmptyState, Loading } from '@/components/ui';
 import { ApprovalModal } from '@/components/admin/ApprovalModal';
-import { CheckCircleIcon, ExclamationCircleIcon } from '@/components/icons';
+import { CheckCircleIcon, AlertCircleIcon } from '@/components/icons';
 import { useToastStore } from '@/stores/toastStore';
 import { queryKeys } from '@/lib/queryClient';
 import type { EmployerApplication } from '@/repositories';
@@ -255,7 +255,7 @@ export default function AdminEmployerApplicationDetailPage() {
               {identityVerified ? (
                 <CheckCircleIcon size={20} color={STATUS_COLORS.success} />
               ) : (
-                <ExclamationCircleIcon size={20} color={STATUS_COLORS.error} />
+                <AlertCircleIcon size={20} color={STATUS_COLORS.error} />
               )}
               <Text className="ml-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
                 본인인증 정보

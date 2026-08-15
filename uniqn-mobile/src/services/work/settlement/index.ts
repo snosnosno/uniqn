@@ -4,10 +4,11 @@
  * @description 정산 관련 서비스 통합 export
  * @version 1.0.0
  *
- * 기존 import 경로 호환성 유지:
+ * 지원되는 import 경로:
  * - import { getWorkLogsByJobPosting } from '@/services/work/settlement'
- * - import { getWorkLogsByJobPosting } from '@/services/work'
- * - import { getWorkLogsByJobPosting } from '@/services'
+ * - import { getWorkLogsByJobPosting } from '@/services'  (명시 재수출)
+ *
+ * ⚠️ `@/services/work` 도메인 배럴은 소비처가 없어 제거됐다. 새 경로를 쓰라.
  */
 
 // ============================================================================

@@ -44,5 +44,3 @@ export function PostingPickerSheet({ visible, onSelect, onClose }: PostingPicker
     />
   );
 }
-
-export default PostingPickerSheet;

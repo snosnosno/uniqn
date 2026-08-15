@@ -111,13 +111,3 @@ export const TournamentBadge = memo(function TournamentBadge({
 }: Omit<PostingTypeBadgeProps, 'type'>) {
   return <PostingTypeBadge type="tournament" size={size} className={className} />;
 });
-
-/**
- * 고정 공고 뱃지 (단축 컴포넌트)
- */
-export const FixedBadge = memo(function FixedBadge({
-  size = 'sm',
-  className = '',
-}: Omit<PostingTypeBadgeProps, 'type'>) {
-  return <PostingTypeBadge type="fixed" size={size} className={className} />;
-});

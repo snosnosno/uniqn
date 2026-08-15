@@ -1,7 +1,7 @@
 /**
  * workSchedule 도메인 — 근무표(홀덤펍 운영 그리드) 순수 로직 배럴.
  *
- * 설계: docs/planning/2026-06-28-weekly-batch-grid-design.md
+ * 설계: docs/archive/planning/2026-06/2026-06-28-weekly-batch-grid-design.md
  */
 export {
   getSoftTargets,
