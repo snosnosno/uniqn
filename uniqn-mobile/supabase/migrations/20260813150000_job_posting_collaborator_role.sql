@@ -110,8 +110,15 @@ $$;
 COMMENT ON FUNCTION public.is_posting_collaborator_any(uuid, uuid) IS
   'S3-4: tier 무관 협업자 여부. **읽기 가시성 전용** — 쓰기 게이트에 쓰면 viewer 가 쓰기를 한다.';
 
+-- 🔒 anon 에는 주지 않는다. 짝인 `is_posting_collaborator` 도 authenticated/service_role 만
+--    갖고 있고(baseline 20260710000002:14818-14820), 그 상태로 `app_select`·`qr_select`·
+--    `wl_select`(TO 절이 없어 PUBLIC = anon 포함) 안에서 문제없이 평가돼 왔다 —
+--    즉 anon 부여는 **필요하지 않다.** 주면 anon 이 (공고 UUID, 사용자 UUID) 로 협업자
+--    여부를 되묻는 오라클이 생기고, 공고 UUID 는 공유 링크에 실려 준(準)공개다.
+--    이 마이그레이션의 전제가 "실패 방향을 좁은 쪽으로" 인데 여기만 넓으면 앞뒤가 안 맞는다.
 REVOKE ALL ON FUNCTION public.is_posting_collaborator_any(uuid, uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.is_posting_collaborator_any(uuid, uuid) TO authenticated, anon, service_role;
+REVOKE ALL ON FUNCTION public.is_posting_collaborator_any(uuid, uuid) FROM anon;
+GRANT EXECUTE ON FUNCTION public.is_posting_collaborator_any(uuid, uuid) TO authenticated, service_role;
 
 -- ------------------------------------------------------------
 -- 3. 읽기 정책 5개만 _any 로 교체 (쓰기 정책 5개는 손대지 않는다 — 자동으로 좁혀졌다)
@@ -225,6 +232,17 @@ BEGIN
   END IF;
 
   -- 읽기라서 _any — viewer 도 지원자 화면을 본다.
+  --
+  -- 🔴 **명시적 결정 (2026-08-16, 사용자 승인)**: 이 완화는 프라이버시 축을 건드린다.
+  --    20260813120000 은 같은 함수에 "④ 공고를 **관리할 수 있는** 사람만" 게이트를 걸고
+  --    "사람에 대한 부정적 지표라 설계를 좁히는 것이 기능보다 중요하다"고 적었다.
+  --    그런데 viewer 는 사장이 관리 권한을 주지 **않기로** 정한 사람이다.
+  --    그럼에도 열어 두기로 한 이유는 지원자 목록이 이미 보이는 화면에서 노쇼 칩만
+  --    사라지면 판단 근거가 반쪽이 되기 때문이고, 반환값이 여전히 **횟수뿐**이라
+  --    (업장·날짜·사유 없음, 180일 창) 낙인 방지 설계의 본체는 유지되기 때문이다.
+  --    ⚠️ 그 대가로 **viewer 를 지정하는 사장은 그 사람이 타인의 노쇼 횟수를 본다는 것을
+  --    알아야 한다** — 협업자 지정 UI 의 viewer 설명 문구가 이 사실을 담아야 한다.
+  --    되돌리려면 여기를 좁은 헬퍼로 바꾸고 UI 에서 viewer 분기로 칩을 숨기면 된다.
   IF NOT (
        v_owner_id = v_caller
     OR public.is_workspace_member(v_workspace_id, v_caller)
@@ -270,12 +288,14 @@ $$;
 DROP POLICY IF EXISTS jpc_update_role_owner ON public.job_posting_collaborators;
 CREATE POLICY jpc_update_role_owner ON public.job_posting_collaborators
   FOR UPDATE TO authenticated
+  -- `(SELECT auth.uid())` — 이 파일이 :58-59 에서 "스타일이 아니라 성능 계약" 이라고
+  -- 부른 그 규약이다. 여기만 맨 호출로 남아 있었다(RLS 비용 위생 20260809140000).
   USING (
     EXISTS (
       SELECT 1 FROM public.job_postings jp
         JOIN public.workspaces w ON w.id = jp.workspace_id
        WHERE jp.id = job_posting_collaborators.job_posting_id
-         AND w.owner_id = auth.uid()
+         AND w.owner_id = (SELECT auth.uid())
     )
   )
   WITH CHECK (
@@ -283,7 +303,7 @@ CREATE POLICY jpc_update_role_owner ON public.job_posting_collaborators
       SELECT 1 FROM public.job_postings jp
         JOIN public.workspaces w ON w.id = jp.workspace_id
        WHERE jp.id = job_posting_collaborators.job_posting_id
-         AND w.owner_id = auth.uid()
+         AND w.owner_id = (SELECT auth.uid())
     )
   );
 
