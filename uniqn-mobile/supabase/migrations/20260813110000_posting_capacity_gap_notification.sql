@@ -89,6 +89,10 @@ BEGIN
     --    "지금이면 아직 채울 수 있어요" 라고 말하는 알림에서 거짓 침묵은 거짓 경고보다 훨씬 비싸다.
     -- ⚠️ 그 대가로 화면의 "자리 N/M 채움"(filled_positions, 트리거 축)과 이 알림이
     --    어긋날 수 있다 — 두 축이 갈라진 행이 실제로 생겼을 때만이고, 그건 의도한 절충이다.
+    -- ⚠️ 대상 이틀로 먼저 좁힌다. 이 술어가 없으면 매일 새벽 `work_logs` **전량**을
+    --    Seq Scan + HashAggregate 한다(EXPLAIN 실측). 아래 LEFT JOIN 의 조건은 집계가
+    --    끝난 뒤에 걸리므로 플래너가 대신 좁혀 주지 않는다 — 즉 비용이 이력 전체에
+    --    비례해 영원히 자란다. 판정 결과는 바뀌지 않는다(어차피 D-1·D-2 만 조인된다).
     SELECT
       wl.job_posting_id,
       wl.date              AS work_date_text,
@@ -96,6 +100,10 @@ BEGIN
     FROM public.work_logs wl
     WHERE wl.status NOT IN ('cancelled', 'no_show')
       AND wl.no_show_at IS NULL
+      AND wl.date IN (
+        to_char(v_today + 1, 'YYYY-MM-DD'),
+        to_char(v_today + 2, 'YYYY-MM-DD')
+      )
     GROUP BY wl.job_posting_id, wl.date
   ),
   gap AS (
