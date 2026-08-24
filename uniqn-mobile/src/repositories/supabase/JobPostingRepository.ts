@@ -166,7 +166,7 @@ async function assertPostingUpdateApplied(
   if (!currentRow) {
     throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
       message: `공고 수정: 대상 행 없음 (${jobPostingId})`,
-      userMessage: '공고를 찾을 수 없습니다. 이미 삭제되었을 수 있어요.',
+      userMessage: '공고를 찾을 수 없어요. 이미 삭제되었을 수 있어요.',
     });
   }
 

@@ -25,7 +25,7 @@ const optionalXssText = (max: number) =>
 
 /** 워크인 등록 입력 (1a). */
 export const registerParticipantSchema = z.object({
-  tournamentId: z.string().uuid({ message: '올바른 대회 ID 가 아닙니다' }),
+  tournamentId: z.string().uuid({ message: '올바른 대회 ID가 아닙니다' }),
   name: participantNameSchema,
   nationality: optionalXssText(40),
   phone: optionalXssText(30),
@@ -40,7 +40,7 @@ export type RegisterParticipantData = z.infer<typeof registerParticipantSchema>;
  * 숫자 필드라 xssValidation 대상이 아니다.
  */
 export const chipCountSchema = z.object({
-  participantId: z.string().uuid({ message: '올바른 참가자 ID 가 아닙니다' }),
+  participantId: z.string().uuid({ message: '올바른 참가자 ID가 아닙니다' }),
   chips: z
     .number({ error: '칩 수량을 입력해주세요' })
     .int({ message: '칩은 정수로 입력해주세요' })
@@ -54,7 +54,7 @@ export type ChipCountInput = z.infer<typeof chipCountSchema>;
  * 서버도 NULL 을 접지만, 누락된 채 왕복하면 "성공했는데 아무 일도 없음"이 된다.
  */
 export const noShowSchema = z.object({
-  participantId: z.string().uuid({ message: '올바른 참가자 ID 가 아닙니다' }),
+  participantId: z.string().uuid({ message: '올바른 참가자 ID가 아닙니다' }),
   noShow: z.boolean({ error: '노쇼 여부를 지정해주세요' }),
 });
 export type NoShowInput = z.infer<typeof noShowSchema>;
@@ -67,7 +67,7 @@ export type NoShowInput = z.infer<typeof noShowSchema>;
  * XSS 는 클라·서버 양쪽에서 본다 — ops_participants 에는 트리거 계층이 없어 서버 재판정이 필수다.
  */
 export const participantUpdateSchema = z.object({
-  participantId: z.string().uuid({ message: '올바른 참가자 ID 가 아닙니다' }),
+  participantId: z.string().uuid({ message: '올바른 참가자 ID가 아닙니다' }),
   name: z
     .string({ error: '이름을 입력해주세요' })
     .trim()

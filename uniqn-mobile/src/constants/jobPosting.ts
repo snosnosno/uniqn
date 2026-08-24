@@ -79,7 +79,8 @@ export const STAFF_ROLES: StaffRoleOption[] = [
   { key: 'dealer', name: '딜러', icon: '🃏' },
   { key: 'floor', name: '플로어', icon: '👔' },
   { key: 'serving', name: '서빙', icon: '🍸' },
-  { key: 'manager', name: '매니저', icon: '👔' },
+  // 플로어와 같은 👔 를 쓰고 있어 목록에서 두 역할을 아이콘으로 구분할 수 없었다(문구 감사 2026-08-24).
+  { key: 'manager', name: '매니저', icon: '📋' },
   { key: 'staff', name: '직원', icon: '👤' },
   { key: 'other', name: '기타', icon: '✏️' },
 ];

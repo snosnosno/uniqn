@@ -472,11 +472,11 @@ export const jobPostingDocumentSchema = z
     status: z.enum(POSTING_STATUS_VALUES),
     ownerId: z.string(),
     ownerName: z.string().optional(),
-    workspaceId: z.string().uuid({ message: '올바른 팀 ID 가 아닙니다' }),
+    workspaceId: z.string().uuid({ message: '올바른 팀 ID가 아닙니다' }),
     // 운영처(venue) 컨테이너 FK(근무표). 일반 공고는 미설정. `.strict()` 스키마라
     // 키를 등록하지 않으면 venue_id 를 select 하는 순간 read 가 증발하고(#194 클래스),
     // 직렬화에 venueId 가 실리면 assertCanonical 이 throw 한다 — 양 경계의 필수 등록.
-    venueId: z.string().uuid({ message: '올바른 지점 ID 가 아닙니다' }).optional(),
+    venueId: z.string().uuid({ message: '올바른 지점 ID가 아닙니다' }).optional(),
     postingType: postingTypeSchema.optional().default('regular'),
     workDate: z.string().optional(), // fixed 공고는 work_date가 없음
     workDates: z.array(z.string()).optional(),

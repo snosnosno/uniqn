@@ -157,7 +157,7 @@ export default function ApplicantsScreen() {
           await cancelConfirmationAsync({ applicationId: applicant.id });
           addToast({
             type: 'success',
-            message: '확정을 해제했어요. 점유된 자리가 다시 비었습니다.',
+            message: '확정을 해제했어요. 점유된 자리가 다시 비었어요.',
             duration: UNDO_TOAST_DURATION_MS,
             action: {
               label: UNDO_TOAST_LABEL,

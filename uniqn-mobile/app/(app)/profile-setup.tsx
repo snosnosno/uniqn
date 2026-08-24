@@ -102,7 +102,7 @@ export default function ProfileSetupScreen() {
     confirmAction({
       title: '로그아웃할까요?',
       message:
-        '계정은 그대로 남아 있고, 다시 로그인하면 여기서 이어서 진행할 수 있어요.\n지금 입력한 내용은 저장되지 않습니다.',
+        '계정은 그대로 남아 있고, 다시 로그인하면 여기서 이어서 진행할 수 있어요.\n지금 입력한 내용은 저장되지 않아요.',
       confirmText: '로그아웃',
       cancelText: '계속 작성',
       destructive: true,

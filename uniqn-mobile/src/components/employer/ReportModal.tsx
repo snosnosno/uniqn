@@ -275,7 +275,7 @@ export function ReportModal({
         });
         addToast({
           type: 'error',
-          message: '증빙 사진 업로드에 실패했어요. 신고가 접수되지 않았습니다.',
+          message: '증빙 사진 업로드에 실패했어요. 신고가 접수되지 않았어요.',
         });
         return;
       }

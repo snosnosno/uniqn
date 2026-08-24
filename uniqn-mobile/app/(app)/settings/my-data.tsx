@@ -62,7 +62,7 @@ export default function MyDataScreen() {
       setUserData(data);
     } catch (error) {
       logger.error('개인정보 로드 실패', error as Error);
-      addToast({ type: 'error', message: '개인정보를 불러오는데 실패했습니다' });
+      addToast({ type: 'error', message: '개인정보를 불러오지 못했어요' });
     } finally {
       setIsLoading(false);
     }
