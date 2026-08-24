@@ -25,11 +25,22 @@ const EXCLUDE = [
   '.git',
   '.obsidian',
   '.claude',
-  'docs/archive', // 70개 아카이브 — 토큰 낭비 주범
-  'docs/superpowers', // 25개 외부 스킬 문서
+  'docs/archive', // 122개 아카이브 — 토큰 낭비 주범
+  'docs/superpowers', // 38개 외부 스킬 문서
 ];
 
-const MAX_PER_DIR = 60; // 영역별 안전 상한(폴더 비대화 방지)
+// 날짜 접두(YYYY-MM-DD) 문서는 "그때의 기록"이라 항상-로딩 색인에서 제외한다.
+// 아래 폴더에만 적용 — 상시 참조물(reference·guides·decisions·features·operations)은
+// 날짜가 없어 그대로 남는다. 진행 중 원장 경로는 MEMORY.md 가 직접 들고 있고,
+// 나머지는 Grep 으로 찾는다. (2026-08-25: docs 158개 중 60개만 노출돼 색인이
+// 비싸면서 불완전했다 — 잘림을 없애는 쪽이 목록을 늘리는 것보다 낫다.)
+const DATED_DIRS = ['docs/planning', 'docs/analysis'];
+const DATED_RE = /(^|\/)\d{4}-\d{2}-\d{2}/;
+
+// 영역별 안전 상한. 잘린 색인은 "없음"과 "안 보임"을 구별 못 해 오히려 해로우므로,
+// 현재 최대 영역(wiki 73)보다 높게 잡아 잘림 0 을 유지한다. 넘기 시작하면 상한을
+// 올리지 말고 DATED_DIRS/EXCLUDE 로 범위를 좁힐 것.
+const MAX_PER_DIR = 80;
 const TITLE_MAX = 70; // 제목 잘림 길이
 
 function toPosix(p) {
@@ -37,6 +48,12 @@ function toPosix(p) {
 }
 
 function isExcluded(relPosix) {
+  if (
+    DATED_DIRS.some((d) => relPosix.startsWith(d + '/')) &&
+    DATED_RE.test(relPosix)
+  ) {
+    return true;
+  }
   return EXCLUDE.some(
     (e) => relPosix === e || relPosix.startsWith(e + '/') || relPosix.includes('/' + e + '/'),
   );
@@ -142,11 +159,38 @@ try {
     .split(/[\\/]/)
     .join('-');
   const memPath = join(homedir(), '.claude', 'projects', encoded, 'memory', 'MEMORY.md');
-  const memChars = readFileSync(memPath, 'utf8').length;
+  const memText = readFileSync(memPath, 'utf8');
+  const memChars = memText.length;
   const BUDGET = 14000; // 항상-로딩 인덱스 예산(자)
-  if (memChars > BUDGET) {
+  const WARN = Math.round(BUDGET * 0.85); // 조기 경보선 — "초과한 뒤 대응"은 6회 반복 실패했다
+  if (memChars > WARN) {
+    // 경고에 그치지 않고 원인을 지목한다: 최대 섹션 · 인덱스에 남은 완료(✅) 항목 · 과길이 줄
+    const memLines = memText.split('\n');
+    const secs = [];
+    let cur = '(머리말)';
+    let size = 0;
+    for (const l of memLines) {
+      if (l.startsWith('## ')) {
+        secs.push([cur, size]);
+        cur = l.slice(3).trim();
+        size = 0;
+      }
+      size += l.length + 1;
+    }
+    secs.push([cur, size]);
+    secs.sort((a, b) => b[1] - a[1]);
+    const [topName, topSize] = secs[0];
+    const doneCount = memLines.filter((l) => l.startsWith('- ✅')).length;
+    const longCount = memLines.filter((l) => l.length > 250).length;
+    const pct = Math.round((memChars / BUDGET) * 100);
     lines.push(
-      `- ⚠️ MEMORY.md ${memChars}자 (예산 ${BUDGET} 초과) — 졸업 규칙 적용 권장(냉이력 → MEMORY-archive.md).`,
+      `- ${memChars > BUDGET ? '🚨' : '⚠️'} MEMORY.md **${memChars}자** (예산 ${BUDGET} · ${pct}%)` +
+        ` — 최대 섹션 「${topName}」 ${topSize}자` +
+        (doneCount ? ` · 인덱스에 남은 완료(✅) ${doneCount}건` : '') +
+        (longCount ? ` · 250자 초과 ${longCount}줄` : ''),
+    );
+    lines.push(
+      '- 🔧 순서: ① `✅`·해결된 항목 → MEMORY-archive.md ② **최대 섹션을 토픽 파일로 분리**하고 인덱스엔 포인터 한 줄 ③ 교훈은 `/ingest` 로 wiki 졸업. 항목만 잘라내는 가지치기는 07-19~08-10 에 6회 반복 실패했다.',
     );
   }
 } catch {
