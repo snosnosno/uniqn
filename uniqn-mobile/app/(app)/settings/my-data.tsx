@@ -21,6 +21,7 @@ import { logger } from '@/utils/logger';
 import { toDate, type DateInput } from '@/utils/date';
 import { formatBirthDate } from '@/utils/formatters';
 import { formatE164ToDisplay } from '@/utils/phone';
+import { loadFailed } from '@/constants/messages';
 
 // ============================================================================
 // Data Row Component
@@ -62,7 +63,7 @@ export default function MyDataScreen() {
       setUserData(data);
     } catch (error) {
       logger.error('개인정보 로드 실패', error as Error);
-      addToast({ type: 'error', message: '개인정보를 불러오지 못했어요' });
+      addToast({ type: 'error', message: loadFailed('개인정보') });
     } finally {
       setIsLoading(false);
     }

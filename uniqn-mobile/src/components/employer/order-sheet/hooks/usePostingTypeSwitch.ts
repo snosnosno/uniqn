@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import type { OrderSheetFormValues, OrderSheetValues } from '@/schemas/orderSheet.schema';
 import type { PostingType } from '@/types/jobPosting';
+import { josa } from '@/utils/text/josa';
 import { defaultFixedSchedule, hasUserFixedInput, type ScheduleGroups } from '../orderSheetTypes';
 
 interface ToastInput {
@@ -45,7 +46,7 @@ export function usePostingTypeSwitch({
       if (!clearedLabel) return;
       addToast({
         type: 'info',
-        message: `${clearedLabel}을 잠시 치워뒀어요`,
+        message: `${josa(clearedLabel, '을/를')} 잠시 치워뒀어요`,
         duration: 5000,
         action: {
           label: '되돌리기',
