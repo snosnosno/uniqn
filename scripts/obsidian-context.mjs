@@ -160,7 +160,10 @@ try {
     .join('-');
   const memPath = join(homedir(), '.claude', 'projects', encoded, 'memory', 'MEMORY.md');
   const memText = readFileSync(memPath, 'utf8');
-  const memChars = memText.length;
+  // `.length` 는 UTF-16 코드유닛이라 BMP 밖 이모지(🚨🔑🔴…)를 2 로 센다. 이 파일은
+  // 이모지를 많이 쓰므로 그대로 두면 실제보다 ~65자 부풀어 예산 판정이 흔들린다
+  // (2026-08-25 실측: 코드유닛 11,903 vs 코드포인트 11,838).
+  const memChars = [...memText].length;
   const BUDGET = 14000; // 항상-로딩 인덱스 예산(자)
   const WARN = Math.round(BUDGET * 0.85); // 조기 경보선 — "초과한 뒤 대응"은 6회 반복 실패했다
   if (memChars > WARN) {
