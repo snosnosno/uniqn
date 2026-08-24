@@ -20,6 +20,27 @@
 | 1.0.6 스토어 출시 | ✅ **Android·웹 출시** / ⏸ **iOS 심사 중** | — | 사용자 확정 (08-11) |
 | **1.0.7 빌드 전 준비** | ✅ **완료 (08-11)** | `chore/1.0.7-build-prep` | 아래 §1.0.7 빌드 전 착지 |
 | **1.0.7 머지 + 네이티브 빌드** | ✅ **완료 (08-12)** | **#471 `fa205d76a`** | 서버 변경 없음 · 아래 §1.0.7 빌드 착지 |
+| **1.0.7 스토어 출시 + 출시 후 설정** | ✅ **완료 (08-22)** | `837d4caba` | 아래 §1.0.7 출시 후 착지 |
+
+### ✅ 1.0.7 출시 후 착지 (2026-08-22)
+
+사용자 확정: **iOS·Android 둘 다 스토어 출시 완료**. 그 뒤 런북 7·9번을 실행했다.
+
+| 단계 | 결과 | 증거 |
+|---|---|---|
+| 출시 실측 | ✅ 양 플랫폼 1.0.7 세션 관측 | `app_session_start`: iOS `v=1.0.7` 1건(08-21 23:31 UTC) · Android `v=1.0.7` 3건(08-20~08-21). **둘 다 `ota` 가 임베디드 ID** = OTA 미도달 상태였음 |
+| **런북 7** `app_config` | ✅ **전 플랫폼 → 1.0.7** | 1차(ios·android) 후 웹 배포 완료 시점에 web 도 상향 → `{ios:1.0.7, android:1.0.7, web:1.0.7}` · `jsonb_typeof` 전 키 **object** 유지 실측 |
+| **웹 재배포** (CF Pages) | ✅ **완료** | `node scripts/deploy-cloudflare.js --force --branch=master` exit 0 · 번들 **9.98MB** · 산출물 게이트(라우트 마커·CSS) 통과 · 배포 `a5150f89` |
+| 웹 배포본 검증 | ✅ **도메인 실측 일치** | `uniqn.app` · `uniqn-app.pages.dev` 둘 다 로컬 해시 `index-c7a50eb1f068201eacf119d3e5014b90.js` 서빙 · 번들 마커 `1.0.7` 1건 · `isProduction:!0` · `isDevelopment:!1` · **대조군 0건**(`isDevelopment:!0`, `localhost:54321`) · `lang="ko"` 유지 |
+| `force_update_version` | ⏸ **1.0.0 유지 (보류 지속)** | 위 §순서 강제 1 판정 5번 — 1.0.7 강제 상향은 **OTA 포화 후**. 이번 OTA 가 그 포화의 시작이다 |
+| prod 마이그 스큐 확인 | ✅ 미적용 0건 | `list_migrations` 최신 = `20260813170000` = 레포 최신. **서버가 앞서고 클라만 뒤처진 상태**라 OTA 방향이 옳았다 |
+| 발행 전 검증 | ✅ quality **0 errors**(128 warnings·prettier clean) · jest **684 suites / 7700 tests 전량 통과**(exit 0) | `npm run quality` · `npm test` |
+| runtimeVersion 대조 | ✅ android·ios 모두 `1.0.7` · `fingerprintSources: null` | `npx expo-updates runtimeversion:resolve` — 빌드 #45/#43 의 runtime 과 일치 |
+| **런북 9** 1.0.7 첫 OTA | ✅ **발행 완료** | 채널 `production` · runtime **1.0.7** · group **`b0f5649d-bf5a-43aa-8ecc-589100e0c1e9`** · Commit `837d4caba`(발행 전후 `git rev-parse HEAD` 동일 — 트리 교체 없음) · `update:list` 로 채널 최신 재확인 |
+
+📦 **이 OTA 가 실어 나른 것** — 빌드 커밋 `fa205d76a` 이후 master 5커밋: #474(정리 감사) · #475(근무표·공고 감사 3건) · #477(공고상세 정직성 2·3단계) · #478(협업자 권한·알림 범위, DB 위주).
+
+🚨 **1.0.6 함대는 이 순간 갈라졌다** — 1.0.6 기기용 수정이 필요하면 태그 `ota/1.0.6-production`(@`d1e1a3752`) 트리에서 **따로 한 번 더** 발행해야 한다.
 
 ### ✅ 착지 기록 (2026-08-10, PR #469 `d1e1a3752`)
 
@@ -654,12 +675,13 @@ CHECK 에 걸려 조용히 버려지고(fire-and-forget), 그러면 #407 REVOKE 
         ASC 웹에서 **"심사 제출" 을 누를 때** 걸린다. 업로드는 심사 중에도 자유롭다
      ☐ **남은 사람 조작**: ASC 에서 버전에 build#45 첨부 → 심사 제출 (1.0.6 승인·출시 후)
      🚨 Android 는 **이미 프로덕션 트랙으로 나갔다** — Google 검토 통과 시 100% 자동 롤아웃
-7. ☐ app_config latest_version/recommended_version → 1.0.7 (**출시된 플랫폼 키만**)
+7. ✅ **완료 (08-22)** — app_config latest_version/recommended_version → **ios·android 1.0.7** (web 은 1.0.6 유지)
      🚨 값은 반드시 `{"ios","android","web"}` **객체**를 유지하라 — 스칼라로 덮으면 `forceUpdate?.[platform]` 이
         `undefined → '0.0.0'` 이 되어 게이트가 **에러 없이 조용히 무력화**된다(`versionService.ts:110`)
 8. ☐ 출시 후 `app_session_start` 의 `v` 분포 확인 → 그 뒤에야 force_update / data-01 트리거 재판단
      🍏 iOS 행이 처음 나타나는 시점이 곧 "iOS 가 세션4·5·6 코드를 처음 돌린 시점" 이다(08-12 기준 iOS 계측 **0건**)
-9. ☐ **1.0.7 이후 첫 OTA 를 낼 때** — `production` 채널의 현재 최신 update 는 runtime **1.0.6** 이다(08-12 `channel:view` 실측).
+9. ✅ **완료 (08-22)** — 1.0.7 첫 OTA 발행: group `b0f5649d-bf5a-43aa-8ecc-589100e0c1e9` · runtime **1.0.7** · commit `837d4caba`. 아래 주의는 **1.0.6 함대 대응용으로 여전히 유효**하다.
+     ℹ️ (발행 전 상태 기록) `production` 채널의 최신 update 는 runtime **1.0.6** 이었다(08-12 `channel:view` 실측).
      🚨 1.0.7 기기에 닿으려면 **`package.json` 이 1.0.7 인 트리에서** 발행해야 한다(`runtimeVersion = appVersion`).
      🚨 그리고 **1.0.6 함대는 그 순간 갈라진다** — 1.0.6 용 OTA 는 태그 `ota/1.0.6-production`(@`d1e1a3752`, 08-12 원격 push 완료)
         트리에서만 낼 수 있다. 두 함대에 같은 수정을 넣으려면 **발행을 2번** 해야 한다
