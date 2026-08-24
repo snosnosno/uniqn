@@ -37,6 +37,7 @@ import {
 } from '@/components/workSchedule/RoleSalaryField';
 import type { SettlementWorkLog } from '@/services/work/settlement/types';
 import type { WorkLog } from '@/types';
+import { loadFailed, saveFailed } from '@/constants/messages';
 
 /** 배지 탭으로 여는 단가 설정 대상(역할 단위) */
 interface FixTarget {
@@ -221,7 +222,7 @@ export default function VenueSettlementsScreen() {
     try {
       await mutation.mutateAsync({ venueId, ...fixTarget, salary: fixDraft });
     } catch {
-      addToast({ type: 'error', message: '단가 저장에 실패했어요. 잠시 후 다시 시도해주세요.' });
+      addToast({ type: 'error', message: saveFailed('단가', { retry: true }) });
       return;
     }
     // 저장 성공 후에만 성공 토스트. refetch 실패는 저장 자체의 실패가 아니므로
@@ -323,7 +324,7 @@ export default function VenueSettlementsScreen() {
               버튼을 감춘다. 여기 재시도는 부작용 없는 읽기(refetch)라 항상 열려 있어야 하고,
               표시 문구도 message 가 error 보다 우선하므로 error 는 기여하는 바가 없다. */}
           <ErrorState
-            title="정산 내역을 불러오지 못했어요"
+            title={loadFailed('정산 내역')}
             message="네트워크 상태를 확인하고 다시 시도해주세요. 정산할 근무가 없는 게 아니라 목록을 읽지 못한 상태예요."
             onRetry={refetch}
           />

@@ -47,6 +47,7 @@ import type { VenueDaySlot } from '@/repositories/workSchedule';
 import { VenueDayDetail } from './VenueDayDetail';
 import { AddSlotSheet } from './AddSlotSheet';
 import { SlotTimeChangeSheet } from './SlotTimeChangeSheet';
+import { saveFailed } from '@/constants/messages';
 
 export interface VenueDayPanelProps {
   /** venue 컨테이너 job_posting_id (= venueId) */
@@ -244,7 +245,7 @@ export function VenueDayPanel({ venueId, date, dateLabel, cell }: VenueDayPanelP
       { venueId, date: toDateString(date), count: parsedTarget },
       {
         onSuccess: () => toastSuccess('필요 인원을 저장했어요.'),
-        onError: () => toastError('필요 인원 저장에 실패했어요. 잠시 후 다시 시도해주세요.'),
+        onError: () => toastError(saveFailed('필요 인원', { retry: true })),
       }
     );
   }, [targetValid, parsedTarget, setSoftTarget, venueId, date, toastSuccess, toastError]);

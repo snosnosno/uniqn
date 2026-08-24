@@ -2,6 +2,7 @@ import React from 'react';
 import { render } from '@testing-library/react-native';
 import { NotificationList } from '../NotificationList';
 import { NotificationType } from '@/types/notification';
+import { loadFailed } from '@/constants/messages';
 
 jest.mock('@shopify/flash-list', () => ({
   FlashList: ({
@@ -70,6 +71,6 @@ describe('NotificationList', () => {
     expect(
       getByText('새 알림을 가져오지 못했어요. 보고 있던 목록은 그대로 유지했습니다.')
     ).toBeTruthy();
-    expect(queryByText('알림을 불러오지 못했습니다.')).toBeNull();
+    expect(queryByText(loadFailed('알림'))).toBeNull();
   });
 });

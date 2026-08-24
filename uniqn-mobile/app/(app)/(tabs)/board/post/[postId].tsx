@@ -19,6 +19,7 @@ import {
 import { PostHeader } from '@/features/board/postDetail/PostHeader';
 import { useBoardPostDetailScreen } from '@/features/board/postDetail/useBoardPostDetailScreen';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed, notFound } from '@/constants/messages';
 
 export default function BoardPostDetailScreen() {
   const {
@@ -139,7 +140,7 @@ export default function BoardPostDetailScreen() {
         <StackHeader title="게시글" fallbackHref="/(app)/(tabs)/board" />
         <View className="flex-1 items-center justify-center p-4">
           <ErrorState
-            title="게시글을 찾을 수 없어요"
+            title={notFound('게시글')}
             message="잘못된 게시글 경로예요."
             onRetry={() => router.replace('/(app)/(tabs)/board')}
           />
@@ -163,7 +164,7 @@ export default function BoardPostDetailScreen() {
         <StackHeader title="게시글" fallbackHref={postFallbackHref} />
         <View className="flex-1 items-center justify-center p-4">
           <ErrorState
-            title="게시글을 불러오지 못했어요"
+            title={loadFailed('게시글')}
             message={error?.message ?? '게시글 정보가 없어요.'}
             onRetry={refetch}
           />

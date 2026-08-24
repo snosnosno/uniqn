@@ -18,6 +18,7 @@ import { isTournamentApprovalBlocked } from '@/domains/job-posting';
 import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { useTrackShareOpen } from '@/hooks/useTrackShareOpen';
+import { notFound } from '@/constants/messages';
 
 export default function PublicJobDetailAliasRoute() {
   const { id } = useLocalSearchParams<{ id?: string | string[] }>();
@@ -121,7 +122,7 @@ export default function PublicJobDetailAliasRoute() {
         <PostingSurfaceState
           mode="error"
           scope="detail"
-          message={error?.message ?? '공고를 찾을 수 없습니다.'}
+          message={error?.message ?? notFound('공고')}
           error={error}
           onRetry={refresh}
         />

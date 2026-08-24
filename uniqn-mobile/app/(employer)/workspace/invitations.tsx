@@ -24,6 +24,7 @@ import { logger } from '@/utils/logger';
 import { isAppError } from '@/errors';
 import type { ReceivedWorkspaceInvitation } from '@/types/workspace';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 function formatExpiresAt(expiresAtIso: string): string {
   const d = new Date(expiresAtIso);
@@ -151,7 +152,7 @@ export default function WorkspaceInvitationsScreen() {
         <StackHeader title="받은 초대" />
         <View className="flex-1 items-center justify-center px-6">
           <ErrorState
-            title="초대를 불러올 수 없어요"
+            title={loadFailed('초대')}
             message="네트워크 상태를 확인하고 다시 시도해주세요."
           />
         </View>

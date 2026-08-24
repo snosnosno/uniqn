@@ -16,6 +16,7 @@
 import React from 'react';
 import { render } from '@testing-library/react-native';
 import JobPostingDetailScreen from '../index';
+import { loadFailed, notFound } from '@/constants/messages';
 
 const mockJobDetail = jest.fn();
 const mockNetworkStatus = jest.fn();
@@ -252,7 +253,7 @@ describe('JobPostingDetailScreen — 에러 가드', () => {
     const { getByTestId } = render(<JobPostingDetailScreen />);
 
     expect(getByTestId('surface-error')).toBeTruthy();
-    expect(getByTestId('surface-error-title').props.children).toBe('공고를 불러올 수 없습니다');
+    expect(getByTestId('surface-error-title').props.children).toBe(loadFailed('공고'));
     // message 를 넘기지 않아야 ErrorState 의 sanitize 가 작동한다
     expect(getByTestId('surface-error-message').props.children).toBe('');
     expect(getByTestId('surface-error-retry').props.children).toBe('has-retry');
@@ -263,9 +264,7 @@ describe('JobPostingDetailScreen — 에러 가드', () => {
 
     const { getByTestId } = render(<JobPostingDetailScreen />);
 
-    expect(getByTestId('surface-error-message').props.children).toBe(
-      '공고 정보를 찾을 수 없습니다.'
-    );
+    expect(getByTestId('surface-error-message').props.children).toBe(notFound('공고 정보'));
   });
 
   it('오프라인이면 문구가 다르고 재시도 버튼을 내지 않는다', () => {

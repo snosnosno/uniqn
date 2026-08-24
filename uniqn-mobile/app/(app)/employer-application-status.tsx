@@ -16,6 +16,7 @@ import { useEmployerApplication } from '@/hooks/auth/useEmployerApplication';
 import { toDate } from '@/utils/date';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
+import { loadFailed } from '@/constants/messages';
 
 // ============================================================================
 // Constants
@@ -275,7 +276,7 @@ export default function EmployerApplicationStatusScreen() {
         <StackHeader title="구인자 신청 현황" fallbackHref="/(app)/(tabs)/home-jobs" />
         <ErrorState
           error={error}
-          title="신청 현황을 불러오지 못했어요"
+          title={loadFailed('신청 현황')}
           onRetry={() => {
             void refetch();
           }}

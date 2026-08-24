@@ -15,6 +15,7 @@ import { StackHeader } from '@/components/headers';
 import { useMyInquiries } from '@/hooks/useInquiry';
 import type { Inquiry } from '@/types';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 export default function MyInquiriesScreen() {
   const { inquiries, isLoading, isFetchingNextPage, hasMore, fetchNextPage, refetch, error } =
@@ -93,7 +94,7 @@ export default function MyInquiriesScreen() {
         <StackHeader title="문의 내역" fallbackHref="/(app)/support" />
         <ErrorState
           error={error}
-          title="문의 내역을 불러오지 못했어요"
+          title={loadFailed('문의 내역')}
           onRetry={() => {
             void refetch();
           }}

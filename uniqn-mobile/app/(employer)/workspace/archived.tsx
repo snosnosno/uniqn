@@ -15,6 +15,7 @@ import { useArchivedWorkspaces, useRestoreWorkspace } from '@/hooks/workspace';
 import { logger } from '@/utils/logger';
 import { isAppError } from '@/errors';
 import { formatRelative } from '@/utils/formatters/date';
+import { loadFailed } from '@/constants/messages';
 
 export default function ArchivedWorkspacesScreen() {
   const { addToast } = useToastStore();
@@ -47,7 +48,7 @@ export default function ArchivedWorkspacesScreen() {
       ) : error ? (
         <View className="flex-1 items-center justify-center px-6">
           <ErrorState
-            title="보관함을 불러올 수 없어요"
+            title={loadFailed('보관함')}
             message="네트워크 상태를 확인하고 다시 시도해주세요."
           />
         </View>

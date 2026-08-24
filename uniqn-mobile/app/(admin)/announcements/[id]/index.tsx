@@ -37,6 +37,7 @@ import {
 import { useModal } from '@/stores/modalStore';
 import { NumericText } from '@/components/ui';
 import { toDate, type DateInput } from '@/utils/date';
+import { notFound } from '@/constants/messages';
 
 export default function AnnouncementDetailPage() {
   const router = useRouter();
@@ -125,7 +126,7 @@ export default function AnnouncementDetailPage() {
         <View className="flex-1 bg-surface-page dark:bg-surface items-center justify-center px-8">
           <AlertCircleIcon size={64} color={STATUS_COLORS.error} />
           <Text className="text-lg font-sans-medium text-content-secondary mt-4">
-            공지사항을 찾을 수 없습니다
+            {notFound('공지사항')}
           </Text>
           <Pressable
             onPress={() => router.back()}

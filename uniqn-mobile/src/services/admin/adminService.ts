@@ -22,6 +22,7 @@ import type {
   SystemMetrics,
 } from '@/types/admin';
 import type { UserRole } from '@/types/role';
+import { notFound } from '@/constants/messages';
 
 // ============================================================================
 // Dashboard Stats
@@ -100,7 +101,7 @@ export async function getUserById(userId: string): Promise<AdminUser> {
 
     if (!user) {
       throw new BusinessError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
-        userMessage: '사용자를 찾을 수 없습니다',
+        userMessage: notFound('사용자'),
         metadata: { userId },
       });
     }

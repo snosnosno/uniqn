@@ -23,6 +23,7 @@ import { getClosingStatus } from '@/utils/job-posting/dateUtils';
 import { isSupportedReleasePosting } from '@/utils/jobPostingVisibility';
 import { logger } from '@/utils/logger';
 import type { Assignment, PreQuestionAnswer, JobPosting } from '@/types';
+import { notFound } from '@/constants/messages';
 
 function LoadingState() {
   return <Loading variant="layout" message="공고 정보를 불러오는 중..." />;
@@ -195,7 +196,7 @@ export default function ApplyScreen() {
           });
 
           if (!latestJob) {
-            showAlert('오류', '공고를 찾을 수 없습니다');
+            showAlert('오류', notFound('공고'));
             return;
           }
 
@@ -279,7 +280,7 @@ export default function ApplyScreen() {
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <Stack.Screen options={{ headerShown: false }} />
         <StackHeader title="지원하기" fallbackHref={fallbackHref} />
-        <ErrorState message={jobError?.message ?? '공고를 찾을 수 없습니다'} onRetry={refreshJob} />
+        <ErrorState message={jobError?.message ?? notFound('공고')} onRetry={refreshJob} />
       </SafeAreaView>
     );
   }

@@ -31,6 +31,7 @@ import {
   sanitizeBoardText,
 } from './boardServiceShared';
 import { getBoardPostDetail } from './boardPostService';
+import { notFound } from '@/constants/messages';
 
 export async function getBoardMentionCandidates(
   postId: string,
@@ -107,7 +108,7 @@ export async function createBoardComment(
       const parentComment = await boardRepository.getCommentById(post.id, input.parentCommentId);
       if (!parentComment || parentComment.status !== 'active') {
         throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-          userMessage: '답글을 작성할 댓글을 찾을 수 없습니다.',
+          userMessage: notFound('답글을 작성할 댓글'),
         });
       }
     }
@@ -183,7 +184,7 @@ export async function updateBoardComment(
     const targetComment = detail.comments.find((comment) => comment.id === commentId);
     if (!targetComment) {
       throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-        userMessage: '댓글을 찾을 수 없습니다.',
+        userMessage: notFound('댓글'),
       });
     }
 
@@ -240,7 +241,7 @@ export async function setBoardCommentStatus(
     const targetComment = detail.comments.find((comment) => comment.id === commentId);
     if (!targetComment) {
       throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-        userMessage: '댓글을 찾을 수 없습니다.',
+        userMessage: notFound('댓글'),
       });
     }
 
@@ -305,7 +306,7 @@ export async function setBoardCommentPinned(
     const targetComment = detail.comments.find((comment) => comment.id === commentId);
     if (!targetComment) {
       throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-        userMessage: '댓글을 찾을 수 없습니다.',
+        userMessage: notFound('댓글'),
       });
     }
 

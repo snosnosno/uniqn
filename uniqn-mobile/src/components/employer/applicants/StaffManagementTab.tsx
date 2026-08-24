@@ -29,6 +29,7 @@ import { ConfirmedStaffList } from './ConfirmedStaffList';
 import { StaffProfileModal } from './StaffProfileModal';
 import { AddStaffModal } from './AddStaffModal';
 import { useUser } from '@/stores/authStore';
+import { loadFailed } from '@/constants/messages';
 
 export interface StaffManagementTabProps {
   jobPostingId: string;
@@ -332,9 +333,7 @@ export function StaffManagementTab({
   // 일시적 구독 실패로 화면 전체를 덮으면 대회 D-day 운영 중에 운영 화면을 잃는다.
   // 데이터가 있으면 아래 목록의 error prop 으로 내려 배너 수준으로 알린다.
   if (error && grouped.length === 0) {
-    return (
-      <ErrorState title="확정된 스태프를 불러오지 못했습니다" error={error} onRetry={refresh} />
-    );
+    return <ErrorState title={loadFailed('확정된 스태프')} error={error} onRetry={refresh} />;
   }
 
   return (

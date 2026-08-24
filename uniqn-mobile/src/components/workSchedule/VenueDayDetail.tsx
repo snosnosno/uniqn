@@ -22,6 +22,7 @@ import { useVenueDaySlots } from '@/hooks/workSchedule';
 import type { VenueDaySlot } from '@/repositories/workSchedule';
 import type { ConfirmedStaff } from '@/types';
 import { buildVenueDayGroup } from './venueDayDetailMapping';
+import { loadFailed } from '@/constants/messages';
 
 /**
  * 비가상화 직접 렌더 상한(L4·방어) — P1-3 단일 ScrollView 설계라 FlashList 전환 금지.
@@ -112,12 +113,7 @@ export function VenueDayDetail({
   if (error) {
     return (
       <View className="px-4 py-2">
-        <ErrorState
-          compact
-          title="배치를 불러오지 못했어요"
-          error={error as Error}
-          onRetry={refetch}
-        />
+        <ErrorState compact title={loadFailed('배치')} error={error as Error} onRetry={refetch} />
       </View>
     );
   }

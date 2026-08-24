@@ -6,6 +6,7 @@ import { BoardPostEditor, BoardPostEditorLoading } from '@/components/board/Boar
 import { useAuth } from '@/hooks/useAuth';
 import { useBoardPostDetail, useUpdateBoardPost } from '@/hooks/useBoard';
 import { BOARD_TYPE_LABELS, type BoardType } from '@/types/board';
+import { loadFailed, notFound } from '@/constants/messages';
 
 const EDITABLE_BOARD_TYPES: Extract<BoardType, 'free' | 'tda'>[] = ['free', 'tda'];
 
@@ -20,7 +21,7 @@ export default function BoardEditScreen() {
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
         <StackHeader title="글 수정" fallbackHref="/(app)/(tabs)/board" />
         <ErrorState
-          title="게시글을 찾을 수 없어요"
+          title={notFound('게시글')}
           message="잘못된 게시글 경로예요."
           onRetry={() => router.replace('/(app)/(tabs)/board')}
         />
@@ -42,7 +43,7 @@ export default function BoardEditScreen() {
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
         <StackHeader title="글 수정" fallbackHref="/(app)/(tabs)/board" />
         <ErrorState
-          title="게시글을 불러오지 못했어요"
+          title={loadFailed('게시글')}
           message={error?.message ?? '게시글 정보가 없어요.'}
           onRetry={refetch}
         />

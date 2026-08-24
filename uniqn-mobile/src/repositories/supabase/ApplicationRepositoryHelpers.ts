@@ -21,6 +21,7 @@ import type {
   JobPosting,
 } from '@/types';
 import type { ApplicationWithJob, ApplicantListWithStats } from '../interfaces';
+import { notFound } from '@/constants/messages';
 
 // ============================================================================
 // Constants
@@ -117,7 +118,7 @@ export async function loadApplication(applicationId: string): Promise<Applicatio
   if (error) handleSupabaseError(error, { operation: '지원서 조회', table: TABLES.APPLICATIONS });
   if (!data) {
     throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-      userMessage: '지원 내역을 찾을 수 없습니다.',
+      userMessage: notFound('지원 내역'),
     });
   }
 
@@ -140,7 +141,7 @@ export async function loadJobPosting(jobPostingId: string): Promise<JobPosting> 
   if (error) handleSupabaseError(error, { operation: '공고 조회', table: TABLES.JOB_POSTINGS });
   if (!data) {
     throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-      userMessage: '공고를 찾을 수 없습니다.',
+      userMessage: notFound('공고'),
     });
   }
 

@@ -12,6 +12,7 @@ import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { useTabBarBottomPadding } from '@/hooks/useTabBarBottomPadding';
 import { useAuth } from '@/hooks/useAuth';
 import type { BoardPost, BoardType } from '@/types';
+import { loadFailed } from '@/constants/messages';
 
 interface BoardSectionProps {
   title: string;
@@ -87,7 +88,7 @@ export default function BoardHomeScreen() {
         </ScrollView>
       ) : error ? (
         <View className="flex-1 items-center justify-center p-4">
-          <ErrorState title="게시판 홈을 불러오지 못했어요" error={error} onRetry={refetch} />
+          <ErrorState title={loadFailed('게시판 홈')} error={error} onRetry={refetch} />
         </View>
       ) : (
         <ScrollView

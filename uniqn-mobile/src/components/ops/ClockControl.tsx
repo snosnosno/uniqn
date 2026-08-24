@@ -17,6 +17,7 @@ import {
 import { findNextBreakFromLevels, formatHms } from '@/domains/ops';
 
 import { formatNumber as fmt } from '@/utils/formatters/currency';
+import { notFound } from '@/constants/messages';
 
 /** 남은 초 → mm:ss (음수는 00:00 으로 clamp). */
 function formatMmSs(totalSec: number): string {
@@ -210,7 +211,7 @@ export function ClockControl({ tournamentId, onNavigateToLevels }: ClockControlP
           </Text>
         ) : (
           <Text className="text-sm text-secondary-500 dark:text-secondary-400">
-            현재 레벨 정보를 찾을 수 없습니다.
+            {notFound('현재 레벨 정보')}
           </Text>
         )}
         <Text className="text-xs text-secondary-500 dark:text-secondary-400">

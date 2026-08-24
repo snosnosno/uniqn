@@ -33,6 +33,7 @@ import { requireAuth, toError } from '@/errors';
 import { extractErrorMessage } from '@/shared/errors';
 import type { CreateTemplateInput, JobPostingTemplate } from '@/types';
 import type { JobPostingDraft } from '@/types/jobPostingDraft';
+import { saveFailed } from '@/constants/messages';
 
 interface SaveTemplateParams {
   name: string;
@@ -92,7 +93,7 @@ function useSaveTemplate() {
       logger.error('템플릿 저장 실패', toError(error));
       addToast({
         type: 'error',
-        message: extractErrorMessage(error, '템플릿 저장에 실패했습니다.'),
+        message: extractErrorMessage(error, saveFailed('템플릿')),
       });
     },
   });

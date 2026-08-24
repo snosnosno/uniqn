@@ -18,6 +18,7 @@ import { PlayersTab } from '@/components/ops/PlayersTab';
 import { StaffTab } from '@/components/ops/StaffTab';
 import { TablesTab } from '@/components/ops/TablesTab';
 import { useOpsTournament, useOpsParticipants, useOpsStaff } from '@/hooks/ops';
+import { loadFailed } from '@/constants/messages';
 
 /**
  * 참가 등록 확장 FAB(L7) — 참가 탭에서만 셸 fab 슬롯에 주입.
@@ -69,7 +70,7 @@ export default function OpsTournamentDetailScreen() {
         <StackHeader title="대회" fallbackHref="/(ops)/tournaments" />
         <ErrorState
           error={error}
-          title="대회 정보를 불러오지 못했어요"
+          title={loadFailed('대회 정보')}
           onRetry={() => {
             void refetch();
           }}

@@ -47,6 +47,7 @@ import { logger } from '@/utils/logger';
 import { isWeb } from '@/utils/platform';
 import type { UserNicknameSearchResult } from '@/repositories';
 import type { AddDirectStaffInput } from '@/types';
+import { notFound } from '@/constants/messages';
 
 export interface AddStaffModalProps {
   visible: boolean;
@@ -301,7 +302,7 @@ export function AddStaffModal({
           <SearchErrorNotice error={searchError} />
         ) : searched && results.length === 0 ? (
           <Text className="py-4 text-center text-sm text-content-secondary font-sans">
-            일치하는 가입자를 찾을 수 없습니다.
+            {notFound('일치하는 가입자')}
           </Text>
         ) : (
           results.length > 0 && (

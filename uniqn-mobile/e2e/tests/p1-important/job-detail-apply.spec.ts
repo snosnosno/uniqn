@@ -10,7 +10,7 @@ import { ensureE2EWorkspace } from '../../helpers/workspace-seed';
 const staffState = path.join(__dirname, '../../fixtures/storage-states/staff.json');
 const employerState = path.join(__dirname, '../../fixtures/storage-states/employer.json');
 const TEST_JOB_TITLE = '상세테스트공고';
-const ERROR_TEXT = /오류가 발생했습니다|문제가 발생했습니다|공고를 찾을 수 없습니다/;
+const ERROR_TEXT = /오류가 발생했습니다|문제가 발생했습니다|공고를 찾을 수 없/;
 
 test.describe('공고 상세와 지원 흐름', () => {
   let testJobId: string;

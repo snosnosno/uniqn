@@ -29,6 +29,7 @@ import type { ApplicantWithDetails } from '@/services';
 import type { Assignment, PostingManagementViewModel } from '@/types';
 import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 // ============================================================================
 // Main Component
@@ -259,11 +260,7 @@ export default function ApplicantsScreen() {
           fallbackHref={headerBackHref}
           rightAction={headerRightAction}
         />
-        <ErrorState
-          title="지원자 목록을 불러올 수 없습니다"
-          error={error}
-          onRetry={() => refresh()}
-        />
+        <ErrorState title={loadFailed('지원자 목록')} error={error} onRetry={() => refresh()} />
       </SafeAreaView>
     );
   }

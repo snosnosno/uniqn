@@ -20,6 +20,7 @@ import { confirmAction } from '@/utils/confirmAction';
 import { toStoreProfile } from '@/utils/profileConverter';
 import { logger } from '@/utils/logger';
 import type { SignUpProfileData } from '@/schemas';
+import { saveFailed } from '@/constants/messages';
 
 // ============================================================================
 // Component
@@ -74,7 +75,7 @@ export default function ProfileSetupScreen() {
         logger.error('프로필 완성 실패', error as Error, {
           component: 'ProfileSetupScreen',
         });
-        toast.error('프로필 저장에 실패했습니다. 다시 시도해주세요.');
+        toast.error(saveFailed('프로필', { retry: true }));
       } finally {
         setIsLoading(false);
       }

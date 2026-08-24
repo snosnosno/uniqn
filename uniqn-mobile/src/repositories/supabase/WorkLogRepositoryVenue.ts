@@ -33,6 +33,7 @@ import {
   rowsToWorkLogs,
   rethrowOrHandle,
 } from './WorkLogRepositoryHelpers';
+import { notFound } from '@/constants/messages';
 
 /**
  * 운영처(venue) 스팬 + 날짜범위 근무 기록 조회 (근무표 Phase 4 정산).
@@ -146,7 +147,7 @@ function toUpdateSlotError(error: unknown, settledVerb = '시간을 수정할'):
   }
   if (message.includes('WORK_LOG_NOT_FOUND')) {
     return new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-      userMessage: '근무 기록을 찾을 수 없습니다',
+      userMessage: notFound('근무 기록'),
     });
   }
   // 정산 완료 잠금 — 서버가 **실적 키(checkIn/checkOut)에만** 건다(20260806140000:350).

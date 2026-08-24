@@ -23,6 +23,7 @@ import { serializeTaxSettings, type SalaryInfo } from '@/utils/settlement';
 import type { WorkLog, Allowances, CreateReportInput, PayrollStatus } from '@/types';
 import type { Toast } from '@/stores/toastStore';
 import { calculateWorkLogAmount, type RoleWithSalary, type SalaryConfig } from './settlementCalc';
+import { saveFailed } from '@/constants/messages';
 
 type SettlementModals = ReturnType<typeof useSettlementModals>;
 
@@ -330,7 +331,7 @@ export function useStaffSettlementsHandlers({
         logger.error('정산 설정 저장 실패', error as Error, { jobPostingId });
         addToast({
           type: 'error',
-          message: '정산 설정 저장에 실패했습니다.',
+          message: saveFailed('정산 설정'),
         });
       }
     },

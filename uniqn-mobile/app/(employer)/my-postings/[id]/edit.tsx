@@ -22,6 +22,7 @@ import { draftToValues, formValuesToDraft, valuesToUpdateInput } from '@/utils/o
 import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
 import type { OrderSheetFormValues, OrderSheetValues } from '@/schemas/orderSheet.schema';
 import type { JobPostingDraft } from '@/types/jobPostingDraft';
+import { loadFailed, notFound } from '@/constants/messages';
 
 /**
  * 공고 수정(S3) — 전 타입(지원·급구·대회·고정) 주문서 단일 경로.
@@ -168,12 +169,12 @@ export default function EditJobPostingScreen() {
         />
         <View className="flex-1 items-center justify-center p-4">
           <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
-            공고를 불러올 수 없습니다
+            {loadFailed('공고')}
           </Text>
           {/* 원시 error.message 노출 금지 — 개발자 메시지가 그대로 사용자에게 간다.
               AppError 는 userMessage, 일반 Error 는 중앙 sanitize 를 거친다. */}
           <Text className="mb-4 text-center text-content-secondary font-sans">
-            {jobError ? extractUserMessage(jobError) : '공고 정보를 찾을 수 없습니다.'}
+            {jobError ? extractUserMessage(jobError) : notFound('공고 정보')}
           </Text>
           <Button variant="primary" onPress={() => router.back()}>
             <Text className="font-sans-semibold text-content-onGold">돌아가기</Text>

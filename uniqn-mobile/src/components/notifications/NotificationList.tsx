@@ -20,6 +20,7 @@ import {
   type GroupedNotificationData,
   isGroupedNotification,
 } from '@/types/notification';
+import { loadFailed } from '@/constants/messages';
 
 export interface NotificationListProps {
   notifications: NotificationListItem[];
@@ -127,7 +128,7 @@ export const NotificationList = memo(function NotificationList({
         className={`flex-1 items-center justify-center bg-surface-page dark:bg-surface p-4 ${className}`}
       >
         <Text className="text-center text-error-600 dark:text-error-400 font-sans">
-          알림을 불러오지 못했습니다.
+          {loadFailed('알림')}
         </Text>
         {onRefresh ? (
           <Pressable onPress={onRefresh} className="mt-4 rounded-lg bg-primary-500 px-4 py-2">

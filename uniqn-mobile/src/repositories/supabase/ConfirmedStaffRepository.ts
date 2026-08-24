@@ -40,6 +40,7 @@ import type {
   AddDirectStaffContext,
   RemoveDirectStaffContext,
 } from '../interfaces';
+import { notFound } from '@/constants/messages';
 
 // ============================================================================
 // Constants
@@ -125,7 +126,7 @@ function toDirectStaffBusinessError(error: unknown): BusinessError | null {
   }
   if (message.includes('STAFF_NOT_FOUND')) {
     return new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-      userMessage: '대상 사용자를 찾을 수 없습니다.',
+      userMessage: notFound('대상 사용자'),
     });
   }
   if (message.includes('STAFF_ALREADY_CHECKED_IN')) {
@@ -160,7 +161,7 @@ async function loadWorkLog(workLogId: string, operation: string): Promise<WorkLo
 
   if (!data) {
     throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-      userMessage: '근무 기록을 찾을 수 없습니다.',
+      userMessage: notFound('근무 기록'),
     });
   }
 
@@ -193,7 +194,7 @@ async function verifyPostingAuthority(
 
   if (!jobData) {
     throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-      userMessage: '공고를 찾을 수 없습니다.',
+      userMessage: notFound('공고'),
     });
   }
 

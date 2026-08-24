@@ -35,6 +35,7 @@ import { useThemeStore } from '@/stores/themeStore';
 import { formatE164ToDisplay } from '@/utils/phone';
 import type { UserRole } from '@/types/role';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { notFound } from '@/constants/messages';
 
 const ROLE_OPTIONS: { role: UserRole; label: string; description: string }[] = [
   { role: 'staff', label: '스태프', description: '지원 및 스케줄 확인만 가능' },
@@ -181,7 +182,7 @@ export default function AdminUserDetailPage() {
         <View className="flex-1 bg-surface-page dark:bg-surface">
           <EmptyState
             title="사용자를 찾을 수 없음"
-            description="요청하신 사용자 정보를 찾을 수 없습니다."
+            description={notFound('요청하신 사용자 정보')}
             actionLabel="목록으로"
             onAction={() => router.back()}
           />

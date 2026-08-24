@@ -36,6 +36,7 @@ import {
 } from '@/domains/schedule';
 import { RealtimeManager } from '@/shared/realtime';
 import { workLogRepository, jobPostingRepository, applicationRepository } from '@/repositories';
+import { loadFailed } from '@/constants/messages';
 
 // ============================================================================
 // Constants
@@ -497,7 +498,7 @@ export async function getMySchedules(
         staffId,
       });
       throw new NetworkError(ERROR_CODES.NETWORK_REQUEST_FAILED, {
-        userMessage: '스케줄을 불러올 수 없습니다. 네트워크 연결을 확인해주세요',
+        userMessage: `${loadFailed('스케줄')}. 네트워크 연결을 확인해주세요`,
       });
     }
 
@@ -509,7 +510,7 @@ export async function getMySchedules(
         error: workLogsResult.reason,
         staffId,
       });
-      partialFailureWarning = '일부 근무 기록을 불러오지 못했습니다';
+      partialFailureWarning = loadFailed('일부 근무 기록');
     }
     if (applicationsResult.status === 'rejected') {
       logger.warn('Applications 조회 실패 (WorkLogs는 성공)', {
@@ -517,8 +518,8 @@ export async function getMySchedules(
         staffId,
       });
       partialFailureWarning = partialFailureWarning
-        ? '일부 데이터를 불러오지 못했습니다'
-        : '일부 지원 기록을 불러오지 못했습니다';
+        ? loadFailed('일부 데이터')
+        : loadFailed('일부 지원 기록');
     }
 
     // ========================================

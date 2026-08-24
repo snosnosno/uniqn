@@ -24,6 +24,7 @@ import {
 } from '../adminService';
 import { adminRepository } from '@/repositories';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
+import { notFound } from '@/constants/messages';
 
 jest.mock('@/repositories', () => ({
   adminRepository: {
@@ -254,7 +255,7 @@ describe('AdminService', () => {
     it('should throw BusinessError when user not found', async () => {
       mockRepo.getUserById.mockResolvedValue(null);
 
-      await expect(getUserById('non-existent')).rejects.toThrow('사용자를 찾을 수 없습니다');
+      await expect(getUserById('non-existent')).rejects.toThrow(notFound('사용자'));
     });
 
     it('should throw handled error when repository fails', async () => {
