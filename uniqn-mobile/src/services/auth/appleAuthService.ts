@@ -5,6 +5,7 @@ import { AuthError, BusinessError, ERROR_CODES } from '@/errors';
 import { generateNonce, sha256 } from '@/utils/appleAuth';
 import { logger } from '@/utils/logger';
 import { withTimeout } from '@/utils/timeout';
+import { josa } from '@/utils/text/josa';
 
 export type AppleLoginAvailabilityReason = 'not_ios' | 'disabled_by_flag' | 'unavailable';
 
@@ -88,7 +89,7 @@ function createAvailabilityError(
 
   if (reason === 'not_ios') {
     return new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-      userMessage: `${actionLabel}은 iOS에서만 사용할 수 있습니다.`,
+      userMessage: `${josa(actionLabel, '은/는')} iOS에서만 쓸 수 있어요`,
       metadata: { provider: 'apple', availabilityReason: reason, operation },
     });
   }

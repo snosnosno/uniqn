@@ -110,6 +110,6 @@ export class SchedulePage extends BasePage {
   }
 
   getErrorState(): Locator {
-    return this.page.getByText('스케줄을 불러오지 못했습니다');
+    return this.page.getByText(/스케줄을 불러오지 못/);
   }
 }

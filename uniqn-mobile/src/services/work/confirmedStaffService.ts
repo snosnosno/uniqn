@@ -19,6 +19,7 @@ import { STATUS } from '@/constants';
 import { StatusMapper, type WorkLogStatus } from '@/shared/status';
 import { TimeNormalizer } from '@/shared/time';
 import type { WorkLog } from '@/types';
+import { notFound } from '@/constants/messages';
 
 export interface GetConfirmedStaffResult {
   staff: ConfirmedStaff[];
@@ -143,7 +144,7 @@ export async function cancelConfirmedStaffConfirmation(
   const workLog = await workLogRepository.getById(input.workLogId);
   if (!workLog) {
     throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
-      userMessage: '근무 기록을 찾을 수 없습니다.',
+      userMessage: notFound('근무 기록'),
     });
   }
 

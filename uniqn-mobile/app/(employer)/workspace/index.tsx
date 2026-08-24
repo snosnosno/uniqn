@@ -37,6 +37,7 @@ import { shouldShowArchivedRestoreEntry } from '@/utils/workspace/archivedEntry'
 import { logger } from '@/utils/logger';
 import { isAppError } from '@/errors';
 import type { WorkspaceMemberWithUser } from '@/types/workspace';
+import { loadFailed } from '@/constants/messages';
 
 export default function WorkspaceSettingsScreen() {
   const { user } = useAuthStore();
@@ -159,7 +160,7 @@ export default function WorkspaceSettingsScreen() {
         <StackHeader title="팀" />
         <View className="flex-1 items-center justify-center px-6">
           <ErrorState
-            title="팀을 불러올 수 없어요"
+            title={loadFailed('팀')}
             message="네트워크 상태를 확인하고 다시 시도해주세요."
           />
         </View>
@@ -312,7 +313,7 @@ export default function WorkspaceSettingsScreen() {
           ) : membersError ? (
             <View className="items-center py-8">
               <ErrorState
-                title="멤버를 불러올 수 없어요"
+                title={loadFailed('멤버')}
                 message="네트워크 상태를 확인하고 다시 시도해주세요."
               />
             </View>

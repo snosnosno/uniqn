@@ -40,6 +40,7 @@ import {
   toSettlementDisplayStatus,
   type SettlementDisplayStatus,
 } from '@/shared/status';
+import { loadFailed } from '@/constants/messages';
 
 // Re-export types for backward compatibility
 export type { SalaryType, SalaryInfo };
@@ -326,7 +327,7 @@ export function SettlementList({
 
   // 에러 상태
   if (error) {
-    return <ErrorState title="정산 목록을 불러올 수 없습니다" error={error} onRetry={onRefresh} />;
+    return <ErrorState title={loadFailed('정산 목록')} error={error} onRetry={onRefresh} />;
   }
 
   // 빈 상태

@@ -17,6 +17,7 @@ import { StackHeader } from '@/components/headers';
 import { ErrorState, Loading } from '@/components';
 import { buildVenueQRString } from '@/services/work/eventQRService';
 import { JobTitleSuffix, useJobDetailContext } from './_layout';
+import { loadFailed, notFound } from '@/constants/messages';
 
 /** QR 최대 변 길이 — 큰 화면에서 과하게 커지지 않도록 상한을 둔다. */
 const MAX_QR_SIZE = 320;
@@ -49,7 +50,7 @@ export default function JobPostingQRScreen() {
   // 아니지만, "출퇴근 QR"이라 적힌 화면에 쓸 수 없는 QR 이 그려지는 건 표시 결함이다.
   const body = (() => {
     if (!id) {
-      return <NotFoundBody message="공고를 찾을 수 없어요" />;
+      return <NotFoundBody message={notFound('공고')} />;
     }
 
     if (isLoading) {
@@ -69,17 +70,12 @@ export default function JobPostingQRScreen() {
     // 일시적 조회 실패로 현장 출퇴근 도구를 막을 이유가 없다.
     if (error && !job) {
       return (
-        <ErrorState
-          error={error}
-          title="공고를 불러오지 못했어요"
-          onRetry={refresh}
-          alwaysAllowRetry
-        />
+        <ErrorState error={error} title={loadFailed('공고')} onRetry={refresh} alwaysAllowRetry />
       );
     }
 
     if (!job) {
-      return <NotFoundBody message="공고를 찾을 수 없어요" />;
+      return <NotFoundBody message={notFound('공고')} />;
     }
 
     // 고정 공고는 QR 진입점이 모두 숨겨져 있지만 이 라우트는 딥링크로 직접 열릴 수 있다.

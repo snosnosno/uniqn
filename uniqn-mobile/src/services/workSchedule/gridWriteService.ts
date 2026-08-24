@@ -21,6 +21,7 @@ import { ValidationError, ERROR_CODES } from '@/errors';
 import { xssValidation } from '@/utils/security';
 import type { VenueContainer } from '@/domains/workSchedule';
 import type { DeleteConfirmedStaffInput } from '@/types';
+import { josa } from '@/utils/text/josa';
 
 /**
  * 지점 단가표 customRole 자유입력 길이 상한 — RPC set_venue_role_salary 의 서버 규약(≤50자)과 동일.
@@ -117,7 +118,7 @@ function assertVenueText(value: string, field: string, max: number, label: strin
   if (value.length > max) {
     throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
       field,
-      userMessage: `${label}은(는) ${max}자를 초과할 수 없습니다.`,
+      userMessage: `${josa(label, '은/는')} ${max}자를 넘을 수 없어요`,
     });
   }
   if (value.length > 0 && !xssValidation(value)) {

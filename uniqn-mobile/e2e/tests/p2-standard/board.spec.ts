@@ -114,7 +114,7 @@ test.describe('게시판 사용자 흐름', () => {
     // unknown boardType — (tabs)/board/[boardType].tsx 의 ErrorState
     await page.goto('/board/unknown', { waitUntil: 'domcontentloaded' });
     await basePage.waitForReady();
-    await expect(page.getByText('게시판을 찾을 수 없어요')).toBeVisible();
+    await expect(page.getByText(/게시판을 찾을 수 없/)).toBeVisible();
   });
 
   // BoardPostDetailScreen 이 ActionSheet 기반 메뉴 + accessibilityLabel 없는 좋아요/싫어요

@@ -20,6 +20,7 @@ import { extractAnnouncementIdFromBoardPostId, isBoardNoticePostId } from '@/sha
 import type { UserRole } from '@/types';
 import { sanitizeInput, xssValidation } from '@/utils/security';
 import { logger } from '@/utils/logger';
+import { notFound } from '@/constants/messages';
 
 export const COMPONENT = 'boardService';
 
@@ -273,7 +274,7 @@ export async function getBoardPostInternal(postId: string): Promise<BoardPost | 
 
 export async function getBoardPostOrThrow(
   postId: string,
-  notFoundMessage = '게시글을 찾을 수 없습니다.'
+  notFoundMessage = notFound('게시글')
 ): Promise<BoardPost> {
   const post = await getBoardPostInternal(postId);
   if (!post) {

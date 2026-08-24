@@ -36,6 +36,7 @@ import type {
   ReviewReportInput,
   LocalReportEvidence,
 } from '@/types/report';
+import { loadFailed, notFound } from '@/constants/messages';
 
 // ============================================================================
 // Constants
@@ -265,7 +266,7 @@ export class SupabaseReportRepository implements IReportRepository {
     if (error || !data?.signedUrl) {
       throw new NetworkError(ERROR_CODES.NETWORK_REQUEST_FAILED, {
         message: `증빙 signed URL 발급 실패: ${error?.message ?? 'unknown'}`,
-        userMessage: '증빙 사진을 불러오지 못했어요.',
+        userMessage: loadFailed('증빙 사진'),
         metadata: { component: COMPONENT, path },
         originalError: error instanceof Error ? error : undefined,
       });
@@ -358,7 +359,7 @@ export class SupabaseReportRepository implements IReportRepository {
       const message = error instanceof Error ? error.message : String(error);
       if (message.includes('REPORT_NOT_FOUND')) {
         throw new ReportNotFoundError({
-          userMessage: '신고를 찾을 수 없습니다',
+          userMessage: notFound('신고'),
           reportId: input.reportId,
         });
       }

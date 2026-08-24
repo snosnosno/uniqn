@@ -31,6 +31,7 @@ import { useJobPostings } from '@/hooks/useJobPostings';
 import { extractPostingFilledSubmap, usePostingFilledCounts } from '@/hooks/usePostingFilledCounts';
 import type { JobPostingCard, PostingType } from '@/types';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 const TYPE_FILTERS: { value: PostingType | 'all'; label: string }[] = [
   { value: 'all', label: '전체' },
@@ -150,7 +151,7 @@ export default function AdminPostingsScreen() {
         <PostingSurfaceState
           mode="error"
           scope="detail"
-          title="공고 목록을 불러올 수 없습니다"
+          title={loadFailed('공고 목록')}
           error={error}
           onRetry={() => void refresh()}
         />

@@ -93,13 +93,18 @@ export const BiometricButton = memo(function BiometricButton({
   };
 
   const buttonLabel = Platform.OS === 'ios' ? biometricTypeName : `${biometricTypeName}으로 로그인`;
+  // ⚠️ iOS 는 'Face ID'/'Touch ID' 처럼 받침 없는 값이 와서 '으로' 가 틀린다("Face ID으로 로그인").
+  //    버튼 텍스트는 이미 플랫폼 분기로 이를 피했지만 a11y 라벨은 분기가 없어 스크린리더로
+  //    그대로 나갔다 — 조사를 쓰지 않는 형태로 두면 값이 무엇이든 깨지지 않는다.
+  //    Android 값(…인식/…인증)은 항상 받침이 있어 기존 문구를 그대로 쓴다(문구 감사 2026-08-24 P2-1).
+  const accessibilityLabel = Platform.OS === 'ios' ? `${biometricTypeName} 로그인` : buttonLabel;
 
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled || isLoading}
       accessibilityRole="button"
-      accessibilityLabel={`${biometricTypeName}으로 로그인`}
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled: disabled || isLoading }}
       className={`
         flex-row items-center justify-center rounded-lg

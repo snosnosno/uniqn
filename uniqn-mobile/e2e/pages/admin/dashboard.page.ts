@@ -77,8 +77,8 @@ export class AdminDashboardPage extends BasePage {
     return this.page.getByText(/마지막 업데이트:/);
   }
 
-  /** 에러 메시지 확인 (stats/index.tsx: "데이터를 불러오는데 실패했습니다") */
+  /** 에러 메시지 확인 (stats/index.tsx: 통계 데이터 로드 실패 문구) */
   get errorMessage(): Locator {
-    return this.page.getByText(/데이터를 불러오는데 실패했습니다/);
+    return this.page.getByText(/통계 데이터를 불러오지 못/);
   }
 }

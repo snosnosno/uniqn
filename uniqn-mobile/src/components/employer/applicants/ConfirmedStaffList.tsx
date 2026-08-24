@@ -16,6 +16,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { FilterTabs, type FilterTabOption } from '@/components/ui/FilterTabs';
 import { Loading } from '@/components/ui/Loading';
 import { ConfirmedStaffCard } from './ConfirmedStaffCard';
+import { loadFailed } from '@/constants/messages';
 
 export interface ConfirmedStaffListProps {
   grouped: ConfirmedStaffGroup[];
@@ -278,9 +279,7 @@ export function ConfirmedStaffList({
   }
 
   if (error) {
-    return (
-      <ErrorState title="확정된 스태프를 불러오지 못했습니다" error={error} onRetry={onRefresh} />
-    );
+    return <ErrorState title={loadFailed('확정된 스태프')} error={error} onRetry={onRefresh} />;
   }
 
   if (grouped.length === 0) {

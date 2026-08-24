@@ -26,6 +26,7 @@ import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import type { Application } from '@/types';
 import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 interface StatsHeaderProps {
   pendingCount: number;
@@ -196,7 +197,7 @@ export default function CancellationRequestsScreen() {
           fallbackHref={headerBackHref}
           rightAction={headerRightAction}
         />
-        <ErrorState title="취소 요청을 불러올 수 없습니다" error={error} onRetry={handleRefresh} />
+        <ErrorState title={loadFailed('취소 요청')} error={error} onRetry={handleRefresh} />
       </SafeAreaView>
     );
   }

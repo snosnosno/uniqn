@@ -11,6 +11,8 @@
  * TODO [P2]: 에러 클래스 단위 테스트 추가 (커버리지 향상)
  */
 
+import { loadFailed, notFound } from '@/constants/messages';
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -241,11 +243,11 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.OPS_REGISTRATION_CLOSED]: '등록이 마감되었습니다',
   [ERROR_CODES.OPS_INVALID_TOURNAMENT_TRANSITION]: '현재 대회 상태에서 허용되지 않는 변경입니다',
   [ERROR_CODES.OPS_PARTICIPANT_NOT_ACTIVE]: '활성 상태의 참가자만 가능합니다',
-  [ERROR_CODES.OPS_TOURNAMENT_NOT_FOUND]: '대회를 찾을 수 없습니다',
-  [ERROR_CODES.OPS_PARTICIPANT_NOT_FOUND]: '참가자를 찾을 수 없습니다',
+  [ERROR_CODES.OPS_TOURNAMENT_NOT_FOUND]: notFound('대회'),
+  [ERROR_CODES.OPS_PARTICIPANT_NOT_FOUND]: notFound('참가자'),
   [ERROR_CODES.OPS_SEAT_TAKEN]: '이미 사용 중인 좌석입니다',
   [ERROR_CODES.OPS_SEAT_NOT_OCCUPIED]: '비어 있는 좌석입니다',
-  [ERROR_CODES.OPS_TABLE_NOT_FOUND]: '테이블을 찾을 수 없습니다',
+  [ERROR_CODES.OPS_TABLE_NOT_FOUND]: notFound('테이블'),
   [ERROR_CODES.OPS_SEAT_VERSION_CONFLICT]: '좌석 상태가 변경되었습니다. 다시 시도해 주세요',
   [ERROR_CODES.OPS_NO_EMPTY_SEAT]: '빈 좌석이 없습니다',
   [ERROR_CODES.OPS_TABLE_HAS_OCCUPANTS]: '점유된 좌석이 있어 닫을 수 없습니다',
@@ -275,7 +277,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.OPS_PRIZE_CORRECTION_INVALID]: '상금 정정 대상이나 값이 올바르지 않아요.',
   [ERROR_CODES.OPS_MONITOR_CONFIG_INVALID]: 'TV 모니터 구성이 올바르지 않아요.',
   [ERROR_CODES.OPS_PRIZE_NOT_ASSIGNED]: '상금이 배정되지 않은 참가자예요.',
-  [ERROR_CODES.OPS_REPORT_TOKEN_INVALID]: '신고 대상을 찾을 수 없어요.',
+  [ERROR_CODES.OPS_REPORT_TOKEN_INVALID]: notFound('신고 대상'),
   [ERROR_CODES.OPS_REPORT_RATE_LIMITED]:
     '신고가 이미 접수되어 처리 중이에요. 잠시 후 다시 시도해주세요.',
   [ERROR_CODES.OPS_CHIPS_INVALID]:
@@ -318,7 +320,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
 
   // 인프라
   [ERROR_CODES.INFRA_PERMISSION_DENIED]: '권한이 없습니다',
-  [ERROR_CODES.INFRA_NOT_FOUND]: '데이터를 찾을 수 없습니다',
+  [ERROR_CODES.INFRA_NOT_FOUND]: notFound('데이터'),
   [ERROR_CODES.INFRA_QUOTA_EXCEEDED]: '요청 한도를 초과했습니다',
   [ERROR_CODES.INFRA_UNAVAILABLE]: '서비스를 일시적으로 사용할 수 없습니다',
   [ERROR_CODES.INFRA_ABORTED]: '작업이 중단되었습니다',
@@ -342,10 +344,10 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.BUSINESS_QR_SECURITY_MISMATCH]: 'QR 코드 보안 검증에 실패했습니다',
   [ERROR_CODES.BUSINESS_QR_WRONG_EVENT]: '해당 공고의 QR 코드가 아닙니다',
   [ERROR_CODES.BUSINESS_QR_WRONG_DATE]: '오늘 날짜의 QR 코드가 아닙니다',
-  [ERROR_CODES.BUSINESS_PARTIAL_SCHEDULE_FETCH]: '일부 스케줄 정보를 불러오지 못했습니다',
+  [ERROR_CODES.BUSINESS_PARTIAL_SCHEDULE_FETCH]: loadFailed('일부 스케줄 정보'),
   // 신고 관련
   [ERROR_CODES.BUSINESS_DUPLICATE_REPORT]: '이미 해당 건에 대해 신고하셨습니다',
-  [ERROR_CODES.BUSINESS_REPORT_NOT_FOUND]: '신고 내역을 찾을 수 없습니다',
+  [ERROR_CODES.BUSINESS_REPORT_NOT_FOUND]: notFound('신고 내역'),
   [ERROR_CODES.BUSINESS_REPORT_ALREADY_REVIEWED]: '이미 처리된 신고입니다',
   [ERROR_CODES.BUSINESS_CANNOT_REPORT_SELF]: '본인을 신고할 수 없습니다',
   [ERROR_CODES.BUSINESS_REPORT_COOLDOWN]: '동일 대상에 대한 신고는 24시간 후 가능합니다',
@@ -369,14 +371,14 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.BUSINESS_ALREADY_REVIEWED]: '이미 평가를 완료하셨습니다',
   [ERROR_CODES.BUSINESS_REVIEW_PERIOD_EXPIRED]: '평가 기한이 만료되었습니다',
   [ERROR_CODES.BUSINESS_CANNOT_REVIEW_SELF]: '본인을 평가할 수 없습니다',
-  [ERROR_CODES.BUSINESS_REVIEW_NOT_FOUND]: '평가 대상을 찾을 수 없습니다',
+  [ERROR_CODES.BUSINESS_REVIEW_NOT_FOUND]: notFound('평가 대상'),
   [ERROR_CODES.BUSINESS_UNAUTHORIZED_REVIEW]: '평가 권한이 없습니다',
 
   // 구인자 등록 신청 관련
   [ERROR_CODES.BUSINESS_EMPLOYER_APP_PENDING_EXISTS]: '이미 심사 중인 구인자 신청이 있습니다',
   [ERROR_CODES.BUSINESS_EMPLOYER_APP_ALREADY_PROCESSED]: '다른 관리자가 먼저 처리한 신청입니다',
   [ERROR_CODES.BUSINESS_EMPLOYER_APP_SELF_APPROVE]: '본인 신청을 직접 처리할 수 없습니다',
-  [ERROR_CODES.BUSINESS_EMPLOYER_APP_NOT_FOUND]: '구인자 신청 내역을 찾을 수 없습니다',
+  [ERROR_CODES.BUSINESS_EMPLOYER_APP_NOT_FOUND]: notFound('구인자 신청 내역'),
   [ERROR_CODES.BUSINESS_EMPLOYER_APP_IDENTITY_NOT_VERIFIED]:
     '본인인증이 완료되지 않아 처리할 수 없습니다',
   // 대회 공고 승인 게이트

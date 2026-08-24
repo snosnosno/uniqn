@@ -245,8 +245,10 @@ describe('0행 원인 분기 — 잠금 여부만으로 단정하면 거짓 안�
     mockDb.result = { data: [], error: null };
     mockDb.currentRow = null;
 
+    // 종결어미('~습니다'/'~어요')가 아니라 **의미 조각**으로 단언한다 — 문체 통일 작업이
+    // 지나갈 때마다 깨지지 않게(문구 감사 2026-08-24).
     await expect(repo.updateWithTransaction(POSTING, patch, OWNER, BASELINE)).rejects.toMatchObject(
-      { userMessage: expect.stringContaining('찾을 수 없습니다') }
+      { userMessage: expect.stringContaining('삭제') }
     );
   });
 

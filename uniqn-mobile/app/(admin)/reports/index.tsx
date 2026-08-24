@@ -26,6 +26,7 @@ import { EmptyState, Loading } from '@/components/ui';
 import { SearchIcon, FilterIcon, AlertTriangleIcon } from '@/components/icons';
 import type { Report, ReportStatus } from '@/types/report';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 // ============================================================================
 // Constants
@@ -138,7 +139,7 @@ export default function AdminReportsPage() {
         <View className="flex-1 bg-surface-page dark:bg-surface">
           <EmptyState
             title="오류 발생"
-            description="신고 목록을 불러오는 데 실패했습니다."
+            description={loadFailed('신고 목록')}
             icon="error"
             actionLabel="다시 시도"
             onAction={() => refetch()}

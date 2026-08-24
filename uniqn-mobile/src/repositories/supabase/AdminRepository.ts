@@ -23,6 +23,7 @@ import type {
 } from '../interfaces';
 import type { AdminUser, AdminUserFilters, PaginatedUsers } from '@/types/admin';
 import type { UserRole } from '@/types/role';
+import { notFound } from '@/constants/messages';
 
 // ============================================================================
 // Constants
@@ -378,7 +379,7 @@ export class SupabaseAdminRepository implements IAdminRepository {
 
       if (!data || data.length === 0) {
         throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-          userMessage: '사용자를 찾을 수 없습니다',
+          userMessage: notFound('사용자'),
           metadata: { userId },
         });
       }

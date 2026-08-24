@@ -130,7 +130,7 @@ describe('ConditionsSheet', () => {
 
   it('프리셋 상수를 export한다 (e2e 문구 참조)', () => {
     expect(DRESS_CODE_PRESETS).toContain('검정셔츠/슬랙스');
-    expect(EXPERIENCE_PRESETS).toContain('TDA 숙지자');
+    expect(EXPERIENCE_PRESETS).toContain('TDA 숙지');
   });
 
   // 리뷰 MEDIUM(2026-07-22): TextInput maxLength는 신규 타이핑만 막고 기존 값은 소급 절단하지

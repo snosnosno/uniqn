@@ -24,6 +24,7 @@ import type { PendingReviewItem } from '@/hooks/useReviews';
 import { REVIEW_DEADLINE_DAYS } from '@/types/review';
 import { useAuthStore } from '@/stores/authStore';
 import type { Review } from '@/types/review';
+import { loadFailed } from '@/constants/messages';
 
 type TabType = 'pending' | 'received' | 'given';
 
@@ -137,7 +138,7 @@ export default function ReviewHistoryScreen() {
       return (
         <ErrorState
           error={pendingError}
-          title="미작성 평가를 불러오지 못했어요"
+          title={loadFailed('미작성 평가')}
           onRetry={() => {
             void refetchPending();
           }}
@@ -190,11 +191,7 @@ export default function ReviewHistoryScreen() {
       return (
         <ErrorState
           error={activeData.error}
-          title={
-            activeTab === 'received'
-              ? '받은 평가를 불러오지 못했어요'
-              : '작성한 평가를 불러오지 못했어요'
-          }
+          title={activeTab === 'received' ? loadFailed('받은 평가') : loadFailed('작성한 평가')}
           onRetry={() => {
             void activeData.refetch();
           }}

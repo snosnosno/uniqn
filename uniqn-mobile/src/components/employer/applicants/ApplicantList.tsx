@@ -24,6 +24,7 @@ import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import type { ApplicantWithDetails } from '@/services';
 import type { ApplicationStatus } from '@/types';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
+import { loadFailed } from '@/constants/messages';
 
 // ============================================================================
 // Types
@@ -292,9 +293,7 @@ export function ApplicantList({
 
   // 에러 상태
   if (error) {
-    return (
-      <ErrorState title="지원자 목록을 불러올 수 없습니다" error={error} onRetry={onRefresh} />
-    );
+    return <ErrorState title={loadFailed('지원자 목록')} error={error} onRetry={onRefresh} />;
   }
 
   // 빈 상태

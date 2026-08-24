@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { CheckIcon } from '@/components/icons';
 import { signUpTermsSchema, type SignUpTermsData } from '@/schemas';
 import { logger } from '@/utils/logger';
+import { loadFailed } from '@/constants/messages';
 
 interface SignupStepTermsProps {
   onNext: (data: SignUpTermsData) => void;
@@ -58,7 +59,7 @@ const TERMS: TermItem[] = [
   },
 ];
 
-const TERM_CONTENT_LOAD_ERROR_MESSAGE = '약관 내용을 불러오지 못했습니다. 다시 시도해주세요.';
+const TERM_CONTENT_LOAD_ERROR_MESSAGE = loadFailed('약관 내용', { retry: true });
 const TERM_CONTENT_LOADING_MESSAGE = '약관 내용을 불러오는 중입니다...';
 
 async function loadTermContent(term: TermItem): Promise<string> {

@@ -82,6 +82,7 @@ import type {
   GroupedNotificationData,
   NotificationGroupingOptions,
 } from '@/types/notification';
+import { saveFailed } from '@/constants/messages';
 
 // ============================================================================
 // Query Keys (중앙 관리 - @/lib/queryClient.ts의 queryKeys.notifications 사용)
@@ -847,7 +848,7 @@ export function useSaveNotificationSettings() {
       logger.error('알림 설정 저장 실패', error);
       addToast({
         type: 'error',
-        message: '알림 설정 저장에 실패했습니다.',
+        message: saveFailed('알림 설정'),
       });
     },
   });

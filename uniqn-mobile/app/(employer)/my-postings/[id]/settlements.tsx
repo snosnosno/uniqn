@@ -38,6 +38,7 @@ import { TabHeader, type TabType } from '@/features/employer/settlements/TabHead
 import { TodayOpsStrip } from '@/features/employer/settlements/TodayOpsStrip';
 import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 // ============================================================================
 // Main Component
@@ -197,7 +198,7 @@ export default function StaffSettlementsScreen() {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         {stackHeader}
-        <ErrorState title="데이터를 불러올 수 없습니다" error={error} onRetry={() => refresh()} />
+        <ErrorState title={loadFailed('데이터')} error={error} onRetry={() => refresh()} />
       </SafeAreaView>
     );
   }

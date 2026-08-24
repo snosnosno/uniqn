@@ -78,6 +78,7 @@ import {
 } from '@/services/board/boardSubstituteService';
 import type { BoardAuthorRole, BoardJobSummary } from '@/types/board';
 import { isGroupedScheduleEvent } from '@/types/schedule';
+import { loadFailed } from '@/constants/messages';
 
 // react-native-calendars(112KB) + moment(60KB) + lodash(73KB) — schedule 탭 calendar 모드 진입 시점에만 로드.
 const CalendarView = lazy(() => import('@/components/schedule/CalendarViewLazyEntry'));
@@ -851,7 +852,7 @@ export default function ScheduleScreen() {
   const renderEmptyState = () =>
     isOfflineEmpty ? (
       <EmptyState
-        title="지금은 일정을 불러올 수 없어요"
+        title={`지금은 ${loadFailed('일정')}`}
         description={
           '오프라인 상태예요. 저장해둔 일정도 없어서 이 달에 근무가 있는지 확인할 수 없어요.\n' +
           '네트워크가 연결되면 자동으로 다시 불러옵니다.'
@@ -965,7 +966,7 @@ export default function ScheduleScreen() {
         >
           <View className="flex-1">
             <Text className="text-sm font-sans-semibold text-warning-700 dark:text-warning-300">
-              최신 정보를 불러오지 못했어요
+              {loadFailed('최신 정보')}
             </Text>
             <Text className="mt-0.5 text-xs font-sans text-warning-600 dark:text-warning-400">
               지금 보이는 내용은 이전에 받아둔 정보예요.
@@ -1043,7 +1044,7 @@ export default function ScheduleScreen() {
         >
           <View className="items-center p-4">
             <ErrorState
-              title="스케줄을 불러오지 못했어요"
+              title={loadFailed('스케줄')}
               error={error}
               onRetry={refresh}
               // 조회 재실행은 부작용이 없다 — isRetryable=false 인 RLS·파싱 실패에서도

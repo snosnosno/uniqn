@@ -15,6 +15,7 @@ import { useTabBarBottomPadding } from '@/hooks/useTabBarBottomPadding';
 import { BOARD_TYPE_LABELS, type BoardType } from '@/types/board';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { PTR_REFRESH_PROPS } from '@/constants/ptr';
+import { loadFailed, notFound } from '@/constants/messages';
 
 const SUPPORTED_BOARD_TYPES: BoardType[] = ['notice', 'schedule', 'free', 'tda', 'substitute'];
 
@@ -43,7 +44,7 @@ export default function BoardListScreen() {
         <TabHeader title="게시판" />
         <View className="flex-1 items-center justify-center p-4">
           <ErrorState
-            title="게시판을 찾을 수 없어요"
+            title={notFound('게시판')}
             message="잘못된 게시판 경로예요."
             onRetry={() => router.replace('/(app)/(tabs)/board')}
           />
@@ -59,7 +60,7 @@ export default function BoardListScreen() {
 
       {error ? (
         <View className="flex-1 items-center justify-center p-4">
-          <ErrorState title="게시글 목록을 불러오지 못했어요" error={error} onRetry={refetch} />
+          <ErrorState title={loadFailed('게시글 목록')} error={error} onRetry={refetch} />
         </View>
       ) : (
         <FlashList

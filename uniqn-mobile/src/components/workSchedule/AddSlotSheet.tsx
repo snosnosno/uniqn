@@ -54,6 +54,7 @@ import { buildAddSlotPayload } from './addSlotPayload';
 import { RoleSalaryField, defaultVenueSalaryDraft, type VenueSalaryDraft } from './RoleSalaryField';
 import { timeStringToValue, timeValueToString } from './SlotTimeField';
 import { StartTimeField } from './StartTimeField';
+import { notFound, saveFailed } from '@/constants/messages';
 
 type AddMode = 'pool' | 'nickname' | 'posting';
 
@@ -292,7 +293,7 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
         });
         addToast({
           type: 'info',
-          message: '단가 저장에 실패했어요. 다음 배치 때 다시 물어볼게요.',
+          message: `${saveFailed('단가')}. 다음 배치 때 다시 물어볼게요`,
         });
       }
     }
@@ -517,7 +518,7 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
               <SearchErrorNotice error={nicknameSearch.error} />
             ) : nicknameSearch.searched && nicknameSearch.results.length === 0 ? (
               <Text className="py-4 text-center text-sm text-content-secondary font-sans">
-                일치하는 가입자를 찾을 수 없습니다.
+                {notFound('일치하는 가입자')}
               </Text>
             ) : nicknameSearch.results.length > 0 ? (
               <View className="mt-3 gap-2">

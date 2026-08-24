@@ -12,6 +12,7 @@ import { parseJobPostingDocument } from '@/schemas';
 import type { JobPosting } from '@/types';
 import { resolvePostingAuthority, canManagePosting } from './postingAuthority';
 import { settlementRoleMatchKey } from './JobPostingRepositorySettlement';
+import { notFound } from '@/constants/messages';
 
 export const TABLE = 'job_postings';
 export const DEFAULT_PAGE_SIZE = 20;
@@ -86,7 +87,7 @@ export async function loadJobPostingForVerify(
   if (error) handleSupabaseError(error, { operation, table: TABLE });
   if (!data) {
     throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-      userMessage: '공고를 찾을 수 없습니다.',
+      userMessage: notFound('공고'),
     });
   }
 

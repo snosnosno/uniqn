@@ -18,6 +18,7 @@ import { buildPostingFacts, projectPostingSurface } from '@/domains/job-posting'
 import { useAuthStore } from '@/stores/authStore';
 import type { JobPosting, PostingDetailViewModel } from '@/types';
 import { POSTING_TYPE_LABELS } from '@/types/postingConfig';
+import { josa } from '@/utils/text/josa';
 import {
   PostingCompensationContent,
   PostingScheduleContent,
@@ -194,7 +195,7 @@ export function JobDetail({ job }: JobDetailProps) {
           <Pressable
             onPress={handleCall}
             accessibilityRole="button"
-            accessibilityLabel={`${detail.contactPhone}로 전화 걸기`}
+            accessibilityLabel={`${josa(detail.contactPhone, '으로/로')} 전화 걸기`}
             className="active:bg-secondary-50 dark:active:bg-secondary-800"
           >
             <InfoRow

@@ -20,6 +20,7 @@ import { toError } from '@/errors';
 import { logger } from '@/utils/logger';
 import { formatRelativeDate } from '@/utils/date';
 import { JobTitleSuffix, useJobDetailContext } from './_layout';
+import { loadFailed, notFound } from '@/constants/messages';
 
 /** 서버 RPC(send_job_posting_announcement)의 한도와 같은 값이어야 한다. */
 const TITLE_MAX = 50;
@@ -85,9 +86,7 @@ export default function JobPostingAnnounceScreen() {
 
   const body_ = (() => {
     if (!jobPostingId) {
-      return (
-        <ErrorState error={new Error('공고를 찾을 수 없어요')} title="공고를 찾을 수 없어요" />
-      );
+      return <ErrorState error={new Error(notFound('공고'))} title={notFound('공고')} />;
     }
     if (isJobLoading && !job) {
       return (
@@ -100,7 +99,7 @@ export default function JobPostingAnnounceScreen() {
       return (
         <ErrorState
           error={jobError}
-          title="공고를 불러오지 못했어요"
+          title={loadFailed('공고')}
           onRetry={refresh}
           alwaysAllowRetry
         />

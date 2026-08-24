@@ -52,6 +52,7 @@ import {
 import { toDateString } from '@/utils/date';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useAuthStore } from '@/stores/authStore';
+import { loadFailed } from '@/constants/messages';
 
 const EMPTY_COUNTS: Record<string, number> = {};
 
@@ -288,7 +289,7 @@ export default function WorkScheduleScreen() {
           ) : wsError ? (
             <EmptyState
               icon={<MapPinIcon size={48} color={SECONDARY_PALETTE[400]} />}
-              title="팀을 불러오지 못했어요"
+              title={loadFailed('팀')}
               description="네트워크 상태를 확인하고 다시 시도해주세요."
               actionLabel="다시 시도"
               onAction={refetchWorkspaces}
@@ -304,7 +305,7 @@ export default function WorkScheduleScreen() {
           ) : containersQuery.isError ? (
             <EmptyState
               icon={<MapPinIcon size={48} color={SECONDARY_PALETTE[400]} />}
-              title="지점을 불러오지 못했어요"
+              title={loadFailed('지점')}
               description="네트워크 상태를 확인하고 다시 시도해주세요. 지점이 없는 게 아니라 목록을 읽지 못한 상태예요."
               actionLabel="다시 시도"
               onAction={containersQuery.refetch}
@@ -380,7 +381,7 @@ export default function WorkScheduleScreen() {
             <View className="px-4 py-2">
               <ErrorState
                 compact
-                title="그리드를 불러오지 못했어요"
+                title={loadFailed('그리드')}
                 error={summaryQuery.error as Error}
                 onRetry={summaryQuery.refetch}
               />

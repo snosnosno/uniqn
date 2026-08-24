@@ -29,6 +29,7 @@ import type { ApplicantWithDetails } from '@/services';
 import type { Assignment, PostingManagementViewModel } from '@/types';
 import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 // ============================================================================
 // Main Component
@@ -157,7 +158,7 @@ export default function ApplicantsScreen() {
           await cancelConfirmationAsync({ applicationId: applicant.id });
           addToast({
             type: 'success',
-            message: '확정을 해제했어요. 점유된 자리가 다시 비었습니다.',
+            message: '확정을 해제했어요. 점유된 자리가 다시 비었어요.',
             duration: UNDO_TOAST_DURATION_MS,
             action: {
               label: UNDO_TOAST_LABEL,
@@ -259,11 +260,7 @@ export default function ApplicantsScreen() {
           fallbackHref={headerBackHref}
           rightAction={headerRightAction}
         />
-        <ErrorState
-          title="지원자 목록을 불러올 수 없습니다"
-          error={error}
-          onRetry={() => refresh()}
-        />
+        <ErrorState title={loadFailed('지원자 목록')} error={error} onRetry={() => refresh()} />
       </SafeAreaView>
     );
   }

@@ -24,6 +24,7 @@ import {
   POSTCODE_SCRIPT_SRC,
   POSTCODE_WIDGET_OPTIONS,
 } from './postcodeWidget';
+import { loadFailed } from '@/constants/messages';
 
 /**
  * 🔴 **이 문서에 실제 origin 을 부여하는 값. 지우면 주소 선택이 조용히 죽는다.**
@@ -70,7 +71,7 @@ const POSTCODE_HTML = `<!DOCTYPE html>
   }
   try {
     if (!window.daum || !window.daum.Postcode) {
-      send({ type: 'error', message: '우편번호 검색을 불러오지 못했습니다' });
+      send({ type: 'error', message: ${JSON.stringify(loadFailed('우편번호 검색'))} });
       return;
     }
     new window.daum.Postcode(Object.assign(${JSON.stringify(POSTCODE_WIDGET_OPTIONS)}, {
@@ -139,7 +140,7 @@ export function PostcodeSearch({ height, onComplete, onError }: PostcodeSearchPr
         onLoadEnd={() => setLoading(false)}
         onError={() => {
           setLoading(false);
-          onError('우편번호 검색을 불러오지 못했습니다. 네트워크를 확인해주세요');
+          onError(`${loadFailed('우편번호 검색')}. 네트워크를 확인해주세요`);
         }}
         // 키보드가 올라올 때 위젯 내부가 스스로 스크롤하도록 둔다(벤더 권고)
         keyboardDisplayRequiresUserAction={false}

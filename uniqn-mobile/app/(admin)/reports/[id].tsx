@@ -50,6 +50,7 @@ import {
   type EmployerReportType,
 } from '@/types/report';
 import { toDate } from '@/utils/date';
+import { notFound } from '@/constants/messages';
 
 // ============================================================================
 // Constants
@@ -387,7 +388,7 @@ export default function AdminReportDetailPage() {
         <StackHeader title="신고 상세" fallbackHref="/(admin)/reports" />
         <View className="flex-1 bg-surface-page dark:bg-surface">
           <EmptyState
-            title="신고를 찾을 수 없습니다"
+            title={notFound('신고')}
             description="해당 신고가 존재하지 않거나 삭제되었습니다."
             icon="error"
             actionLabel="뒤로 가기"

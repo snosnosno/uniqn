@@ -49,6 +49,7 @@ import {
   postingMatchesFilter,
   type PostingFilterStatus,
 } from '@/utils/employerPostingFilter';
+import { loadFailed } from '@/constants/messages';
 
 type FilterStatus = PostingFilterStatus;
 
@@ -379,7 +380,7 @@ function EmployerView() {
         <PostingSurfaceState
           mode="error"
           scope="detail"
-          title="공고 목록을 불러올 수 없습니다"
+          title={loadFailed('공고 목록')}
           error={error}
           onRetry={refetch}
         />

@@ -56,10 +56,13 @@ export const CollaboratorRow = React.memo(function CollaboratorRow({
     // 🔑 양방향 모두 확인을 거친다. 올리는 쪽은 권한이 넓어져서, 내리는 쪽은 상대가 하던
     //    일을 즉시 못 하게 돼서다 — 작은 배지를 잘못 눌러 조용히 강등되면 상대는
     //    "왜 갑자기 안 되지" 를 혼자 겪는다.
+    // ⚠️ `who` 는 사람 이름이라 받침을 알 수 없다 — `${who}가` 처럼 조사를 박으면
+    //    "박지훈가" 가 된다. 조사 헬퍼가 생기기 전까지는 받침과 무관한 '에게/에게는'
+    //    구조를 쓴다(문구 감사 2026-08-24 P2-1).
     if (isViewer) {
       confirmAction({
         title: '관리 권한을 줄까요?',
-        message: `${who}가 공고 수정·지원자 확정·정산까지 할 수 있게 됩니다.`,
+        message: `${who}에게 공고 수정·지원자 확정·정산 권한이 생겨요.`,
         confirmText: '관리 권한 주기',
         onConfirm: () => onChangeRole(collaborator.userId, 'manager'),
       });
@@ -67,7 +70,7 @@ export const CollaboratorRow = React.memo(function CollaboratorRow({
     }
     confirmAction({
       title: '보기 전용으로 바꿀까요?',
-      message: `${who}는 공고를 볼 수는 있지만 수정·지원자 확정·정산은 할 수 없게 됩니다.`,
+      message: `${who}에게는 공고 열람만 남아요. 수정·지원자 확정·정산은 할 수 없어요.`,
       confirmText: '보기 전용으로',
       onConfirm: () => onChangeRole(collaborator.userId, 'viewer'),
     });

@@ -27,6 +27,7 @@ import type { ScheduleContainerContextInput } from '@/domains/schedule/ScheduleC
 import type { PostingRoleCatalogEntry, SalaryType } from '@/types';
 import type { UpdateVenueContainerInput } from '../interfaces/IJobPostingRepository';
 import { TABLE, rethrowOrHandle } from './JobPostingRepositoryHelpers';
+import { notFound } from '@/constants/messages';
 
 const SALARY_TYPES: readonly SalaryType[] = ['hourly', 'daily', 'monthly', 'other'];
 
@@ -188,7 +189,7 @@ function throwMappedVenueRpcError(error: { message?: string; code?: string }): n
   }
   if (message.startsWith('VENUE_NOT_FOUND:')) {
     throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-      userMessage: '지점을 찾을 수 없어요. 목록을 새로고침해주세요.',
+      userMessage: `${notFound('지점')}. 목록을 새로고침해주세요`,
     });
   }
   // 알려지지 않은 형태는 기존 분류로 폴백(전송 오류 등).

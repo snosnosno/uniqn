@@ -17,6 +17,7 @@ import { useJobDetailContext } from './_layout';
 import { CollaboratorList } from '@/components/job-posting/CollaboratorList';
 import { CollaboratorSearch } from '@/components/job-posting/CollaboratorSearch';
 import { ErrorState } from '@/components/ui';
+import { loadFailed } from '@/constants/messages';
 
 export default function CollaboratorsRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -68,7 +69,7 @@ export default function CollaboratorsRoute() {
       {error && collaborators.length === 0 ? (
         <ErrorState
           error={error}
-          title="공유 관리 정보를 불러오지 못했어요"
+          title={loadFailed('공유 관리 정보')}
           onRetry={() => {
             void refetch();
           }}

@@ -21,6 +21,7 @@ import { toDate } from '@/utils/date';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 // ============================================================================
 // Types
@@ -215,7 +216,7 @@ export default function AdminEmployerApplicationsPage() {
         <StackHeader title="구인자 신청" fallbackHref="/(admin)" />
         <View className="flex-1 bg-surface-page dark:bg-surface">
           <EmptyState
-            title="구인자 신청을 불러오지 못했습니다"
+            title={loadFailed('구인자 신청')}
             description="잠시 후 다시 시도해 주세요."
             icon="error"
             actionLabel="다시 시도"

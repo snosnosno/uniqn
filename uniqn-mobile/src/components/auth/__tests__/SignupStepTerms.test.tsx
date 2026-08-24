@@ -1,6 +1,7 @@
 import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { SignupStepTerms } from '../signup/SignupStepTerms';
+import { loadFailed } from '@/constants/messages';
 
 const mockSetValue = jest.fn();
 const mockLoggerWarn = jest.fn();
@@ -116,7 +117,7 @@ describe('SignupStepTerms', () => {
     fireEvent.press(getByTestId('view-term-content-terms'));
 
     await waitFor(() => {
-      expect(getByText('약관 내용을 불러오지 못했습니다. 다시 시도해주세요.')).toBeTruthy();
+      expect(getByText(loadFailed('약관 내용', { retry: true }))).toBeTruthy();
     });
 
     expect(getByTestId('retry-term-content')).toBeTruthy();

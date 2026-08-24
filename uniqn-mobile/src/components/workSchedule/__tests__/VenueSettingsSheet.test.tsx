@@ -18,6 +18,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { confirmAction } from '@/utils/confirmAction';
 import { ValidationError, ERROR_CODES } from '@/errors';
 import { VenueSettingsSheet } from '../VenueSettingsSheet';
+import { saveFailed } from '@/constants/messages';
 
 // jest.setup.js 전역 react-query 스텁(useMutation no-op) 복원 — 실물 mutateAsync 로 서비스 호출 검증
 jest.mock('@tanstack/react-query', () => jest.requireActual('@tanstack/react-query'));
@@ -215,7 +216,7 @@ describe('지점 정보 섹션(S1)', () => {
 
     await waitFor(() => expect(mockAddToast).toHaveBeenCalled());
     expect(mockAddToast.mock.calls.at(-1)?.[0].message).toBe(
-      '지점 정보 저장에 실패했어요. 잠시 후 다시 시도해주세요.'
+      saveFailed('지점 정보', { retry: true })
     );
   });
 });

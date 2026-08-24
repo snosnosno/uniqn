@@ -32,6 +32,7 @@ import { useOpsHubEnteredOnce } from '@/hooks/ops/useOpsHubEnteredOnce';
 import { selectResumeTournament, kstDateString } from '@/domains/ops';
 import type { OpsTournament, OpsTournamentStatus } from '@/types/ops';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 // ============================================================================
 // 상태 배지 (디자인 토큰 — raw gray 금지)
@@ -319,7 +320,7 @@ function ErrorRetry({ onRetry }: { onRetry: () => void }) {
         <AlertCircleIcon size={30} color="#DC2626" />
       </View>
       <Text className="mb-2 text-center text-lg font-display-semibold text-content-primary dark:text-off-white">
-        대회를 불러오지 못했어요
+        {loadFailed('대회')}
       </Text>
       <Text className="mb-6 text-center text-sm leading-5 text-content-secondary dark:text-secondary-400 dark:leading-sm-dark">
         네트워크 상태를 확인한 뒤 다시 시도해 주세요.

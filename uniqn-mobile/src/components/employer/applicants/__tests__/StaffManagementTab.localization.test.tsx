@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react-native';
 import { StaffManagementTab } from '../StaffManagementTab';
+import { loadFailed } from '@/constants/messages';
 
 const mockUseThemeStore = jest.fn();
 
@@ -140,7 +141,7 @@ describe('StaffManagementTab localization', () => {
 
     render(<StaffManagementTab jobPostingId="job-1" />);
 
-    expect(screen.getByText('확정된 스태프를 불러오지 못했습니다')).toBeTruthy();
+    expect(screen.getByText(loadFailed('확정된 스태프'))).toBeTruthy();
     // 디자인 루프 Z: ErrorState가 일반 Error의 원시 메시지('네트워크 오류')를
     // 노출하지 않고 사용자 친화 문구로 sanitize(extractUserMessage) — 회귀 가드
     expect(screen.getByText('알 수 없는 오류가 발생했습니다')).toBeTruthy();

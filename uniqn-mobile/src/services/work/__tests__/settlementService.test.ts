@@ -22,6 +22,7 @@ import {
   getJobPostingSettlementSummary,
 } from '@/services/work/settlement';
 import type { Allowances, SalaryInfo } from '@/types';
+import { notFound } from '@/constants/messages';
 
 // ============================================================================
 // Mock Repository
@@ -619,7 +620,7 @@ describe('settlementService', () => {
 
       await expect(
         calculateSettlement({ workLogId: 'non-existent' }, 'employer-1')
-      ).rejects.toThrow('근무 기록을 찾을 수 없습니다');
+      ).rejects.toThrow(notFound('근무 기록'));
     });
   });
 

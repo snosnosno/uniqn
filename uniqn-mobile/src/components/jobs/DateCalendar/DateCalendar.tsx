@@ -32,6 +32,7 @@ import { useRegularDateCounts } from '@/hooks/useRegularDateCounts';
 import { CalendarHeader } from './CalendarHeader';
 import { CalendarGrid } from './CalendarGrid';
 import { CollapsedHeader } from './CollapsedHeader';
+import { loadFailed } from '@/constants/messages';
 
 // Android에서 LayoutAnimation 활성화 필요
 if (Platform.OS === 'android') {
@@ -198,7 +199,7 @@ export const DateCalendar = memo(function DateCalendar({
       {isError && (
         <View className="px-4 py-3 flex-row items-center justify-between bg-error-50 dark:bg-error-900/20">
           <Text className="flex-1 text-sm text-content-primary dark:text-content-primary">
-            공고 수를 불러오지 못했어요. 다시 시도해주세요.
+            {loadFailed('공고 수', { retry: true })}
           </Text>
           <Pressable
             onPress={() => void refetch()}

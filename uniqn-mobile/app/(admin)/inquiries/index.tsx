@@ -15,6 +15,7 @@ import { InquiryCard } from '@/components/support';
 import { useAllInquiries, useUnansweredCount } from '@/hooks/useInquiry';
 import type { Inquiry, InquiryStatus, InquiryFilters } from '@/types';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 type StatusFilter = InquiryStatus | 'all';
 
@@ -142,7 +143,7 @@ export default function AdminInquiriesScreen() {
       ) : error && inquiries.length === 0 ? (
         <ErrorState
           error={error}
-          title="문의 목록을 불러오지 못했어요"
+          title={loadFailed('문의 목록')}
           onRetry={() => {
             void refetch();
           }}

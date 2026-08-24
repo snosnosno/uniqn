@@ -30,6 +30,7 @@ import type {
   UpdateWorkTimeInput,
 } from '@/types';
 import { logger } from '@/utils/logger';
+import { loadFailed } from '@/constants/messages';
 
 export interface UseConfirmedStaffOptions {
   realtime?: boolean;
@@ -133,7 +134,7 @@ export function useConfirmedStaff(
         setRealtimeError(toError(subscriptionError));
         addToast({
           type: 'error',
-          message: '실시간 스태프 정보를 불러오지 못했습니다.',
+          message: loadFailed('실시간 스태프 정보'),
         });
       },
     });

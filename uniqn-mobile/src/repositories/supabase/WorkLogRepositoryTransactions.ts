@@ -17,6 +17,7 @@ import { handleSupabaseError } from '@/utils/supabase';
 import { settledLockMessage } from '@/domains/settlement';
 import type { QRCodeAction, QRProcessAction } from '@/types';
 import { TABLE, rethrowOrHandle } from './WorkLogRepositoryHelpers';
+import { notFound } from '@/constants/messages';
 
 // 🪦 executeUpdatePayrollStatus 제거 (2026-08-05) — payroll 컬럼 직접 UPDATE 구현체.
 //    #402 정산 RPC 화 이후 UI 소비자 0곳이었고, 20260805120000 트리거가 서버에서 막는다.
@@ -56,12 +57,12 @@ function mapQRCheckinErrorToException(errorCode: string, workLogId: string): nev
     case 'work_log_not_found':
       throw new InvalidQRCodeError({
         message: '근무 기록이 존재하지 않습니다',
-        userMessage: '근무 기록을 찾을 수 없습니다',
+        userMessage: notFound('근무 기록'),
       });
     case 'job_posting_not_found':
       throw new InvalidQRCodeError({
         message: '공고가 존재하지 않습니다',
-        userMessage: '공고를 찾을 수 없습니다',
+        userMessage: notFound('공고'),
       });
     case 'job_posting_inactive':
       throw new InvalidQRCodeError({

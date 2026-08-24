@@ -33,6 +33,7 @@ import { formatBirthDate } from '@/utils/formatters';
 import { formatE164ToDisplay } from '@/utils/phone';
 import type { UserProfile } from '@/types';
 import type { AuthUser } from '@/stores/authStore';
+import { saveFailed } from '@/constants/messages';
 
 export default function ProfileEditScreen() {
   const { profile, user, isLoading } = useAuth();
@@ -212,7 +213,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
       }
     } catch (error) {
       logger.error('프로필 저장 실패', error as Error);
-      addToast({ type: 'error', message: '프로필 저장에 실패했습니다' });
+      addToast({ type: 'error', message: saveFailed('프로필') });
     } finally {
       setIsSaving(false);
     }

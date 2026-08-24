@@ -20,6 +20,7 @@ import { confirmAction } from '@/utils/confirmAction';
 import { toStoreProfile } from '@/utils/profileConverter';
 import { logger } from '@/utils/logger';
 import type { SignUpProfileData } from '@/schemas';
+import { saveFailed } from '@/constants/messages';
 
 // ============================================================================
 // Component
@@ -74,7 +75,7 @@ export default function ProfileSetupScreen() {
         logger.error('프로필 완성 실패', error as Error, {
           component: 'ProfileSetupScreen',
         });
-        toast.error('프로필 저장에 실패했습니다. 다시 시도해주세요.');
+        toast.error(saveFailed('프로필', { retry: true }));
       } finally {
         setIsLoading(false);
       }
@@ -102,7 +103,7 @@ export default function ProfileSetupScreen() {
     confirmAction({
       title: '로그아웃할까요?',
       message:
-        '계정은 그대로 남아 있고, 다시 로그인하면 여기서 이어서 진행할 수 있어요.\n지금 입력한 내용은 저장되지 않습니다.',
+        '계정은 그대로 남아 있고, 다시 로그인하면 여기서 이어서 진행할 수 있어요.\n지금 입력한 내용은 저장되지 않아요.',
       confirmText: '로그아웃',
       cancelText: '계속 작성',
       destructive: true,

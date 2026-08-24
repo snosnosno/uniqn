@@ -7,6 +7,7 @@ import type { JobPostingCard } from '@/types';
 import { JobCard, type ApplicationStatusType } from './JobCard';
 import { PostingSurfaceState } from './shared';
 import { ScreenSkeleton } from '@/components/ui';
+import { loadFailed } from '@/constants/messages';
 
 interface JobListProps {
   jobs: JobPostingCard[];
@@ -88,7 +89,7 @@ export function JobList({
       <PostingSurfaceState
         mode="error"
         scope="list"
-        title="공고 목록을 불러올 수 없습니다"
+        title={loadFailed('공고 목록')}
         error={error}
         onRetry={onRefresh}
       />

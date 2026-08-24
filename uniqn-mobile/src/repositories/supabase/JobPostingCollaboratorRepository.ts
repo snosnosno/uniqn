@@ -220,7 +220,7 @@ export class SupabaseJobPostingCollaboratorRepository implements IJobPostingColl
 
       if (!data || data.length === 0) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '권한을 변경할 수 없습니다. 공고 소유자만 변경할 수 있어요.',
+          userMessage: '권한을 변경할 수 없어요. 공고 소유자만 변경할 수 있어요.',
         });
       }
     } catch (error) {

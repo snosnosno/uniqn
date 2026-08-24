@@ -83,6 +83,7 @@ import { useWorkLogsByJobPosting } from '@/hooks/useSettlement';
 import { selectPendingSettlementCount } from '@/features/employer/settlements/settlementCalc';
 import { getTodayString } from '@/utils/date';
 import { TodayOpsStrip } from '@/features/employer/settlements/TodayOpsStrip';
+import { loadFailed, notFound } from '@/constants/messages';
 
 /**
  * 통계 한 칸 — 숫자 자체가 목적지가 된다.
@@ -559,14 +560,14 @@ export default function JobPostingDetailScreen() {
     // 오프라인이면 원인이 다르다 — "찾을 수 없습니다"는 삭제됐다는 말로 읽힌다.
     // 재시도 버튼도 숨긴다. 눌러도 아무 일이 없는 버튼은 없느니만 못하다.
     const isOffline = !isOnline;
-    const errorTitle = isOffline ? '오프라인 상태예요' : '공고를 불러올 수 없습니다';
+    const errorTitle = isOffline ? '오프라인 상태예요' : loadFailed('공고');
     // error 가 있으면 message 를 넘기지 않는다 — ErrorState 가 AppError.userMessage /
     // extractUserMessage 로 sanitize 한 문구를 쓰게 둔다(원시 error.message 노출 금지).
     const errorMessage = isOffline
       ? '인터넷에 연결되면 공고 정보를 다시 불러옵니다.'
       : error
         ? undefined
-        : '공고 정보를 찾을 수 없습니다.';
+        : notFound('공고 정보');
 
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>

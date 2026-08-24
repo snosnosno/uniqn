@@ -38,6 +38,7 @@ import type {
   ParticipantUpdateInput,
 } from '@/schemas/opsParticipant.schema';
 import type { StaffRole } from '@/types/role';
+import { saveFailed } from '@/constants/messages';
 
 const toast = {
   success: (m: string) => useToastStore.getState().success(m),
@@ -157,7 +158,7 @@ export function useSetMonitorConfig(tournamentId: string) {
     },
     onError: (error) => {
       logger.error('ops TV 모니터 구성 저장 실패', toError(error));
-      toast.error(extractUserMessage(error) || 'TV 모니터 구성 저장에 실패했습니다');
+      toast.error(extractUserMessage(error) || saveFailed('TV 모니터 구성'));
     },
   });
 }

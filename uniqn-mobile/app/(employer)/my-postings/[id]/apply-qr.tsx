@@ -25,6 +25,7 @@ import { ErrorState, Loading } from '@/components';
 import { buildApplyQRString } from '@/services/work/eventQRService';
 import { QR_MESSAGES } from '@/constants/qr';
 import { JobTitleSuffix, useJobDetailContext } from './_layout';
+import { loadFailed, notFound } from '@/constants/messages';
 
 /** QR 최대 변 길이 — 큰 화면에서 과하게 커지지 않도록 상한을 둔다. */
 const MAX_QR_SIZE = 320;
@@ -53,7 +54,7 @@ export default function JobPostingApplyQRScreen() {
 
   const body = (() => {
     if (!id) {
-      return <NotFoundBody message="공고를 찾을 수 없어요" />;
+      return <NotFoundBody message={notFound('공고')} />;
     }
 
     if (isLoading) {
@@ -71,17 +72,12 @@ export default function JobPostingApplyQRScreen() {
     // "공고를 찾을 수 없어요"로 나온다 (qr.tsx 와 같은 이유 — 감사 A4).
     if (error && !job) {
       return (
-        <ErrorState
-          error={error}
-          title="공고를 불러오지 못했어요"
-          onRetry={refresh}
-          alwaysAllowRetry
-        />
+        <ErrorState error={error} title={loadFailed('공고')} onRetry={refresh} alwaysAllowRetry />
       );
     }
 
     if (!job) {
-      return <NotFoundBody message="공고를 찾을 수 없어요" />;
+      return <NotFoundBody message={notFound('공고')} />;
     }
 
     // 고정 공고도 지원은 받는다 — 출퇴근 QR 과 달리 여기서 막을 이유가 없다.
