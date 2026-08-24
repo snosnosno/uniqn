@@ -1,6 +1,11 @@
+import type { Page } from '@playwright/test';
+
 import { test, expect } from '../../fixtures/base.fixture';
 
-async function waitForAppBootstrap(page: Parameters<typeof test.beforeEach>[0]['page']) {
+// ⚠️ `Parameters<typeof test.beforeEach>[0]['page']` 로 쓰지 말 것 — beforeEach 는 오버로드라
+//    Parameters 가 **마지막** 시그니처 `beforeEach(title: string, inner)` 를 고른다.
+//    그러면 [0] 이 string 이 되어 `.page` 가 없다(TS2339). Page 를 직접 가져오는 쪽이 안전하다.
+async function waitForAppBootstrap(page: Page) {
   await page.waitForLoadState('domcontentloaded');
 
   for (const text of ['앱 로딩 중...', '앱을 불러오는 중...']) {
