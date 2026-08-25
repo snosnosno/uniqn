@@ -394,3 +394,9 @@ v_lines := v_lines || '';   -- v_lines 는 text[]
 - **파리티 3중 불일치 해소**: MEMORY 가 206/111 과 208/111 을 동시에 주장하고 레포 가드는 208/110 이었다 → **prod 실측 208/110**(관측 `2026-08-09 18:39 UTC`)으로 확정. 레포 `parity_baseline_guard.test.sql:172` 의 "🔴 prod 미적용" 주석이 stale 임도 함께 확인.
 - **MEMORY.md 19,172 → 13,951자**(예산 14,000 복귀). 냉이력 6건은 `MEMORY-archive.md` 로 이관, 졸업 카탈로그 복제는 `wiki/index.md` 포인터로 대체.
 - ⚠️ **미조치로 남긴 것**: stale 37페이지(오탐 다수 — `check-staleness.sh` 가 mtime 기반이라 `package.json`·`CLAUDE.md` 터치가 무관한 페이지를 깨운다) · 고아 25 · UNVERIFIABLE 4 · 미흡수 docs 154. 근본 개선안 = 광역 파일을 `sources` 에서 제외.
+
+## [2026-08-25] ingest | 라이브 함정 25항목 졸업 — 실패할 수 없는 검증 + 지식계층 예산
+- 신규 `decisions/vacuous-verification.md` — 08월 웨이브 함정들의 공통 뼈대를 5유형으로 정제(단언 미도달·구조적 0·미실행 성공·판정축 오류·도구 사각지대). 핵심=**오탐이 아니라 무음**이라 신호 대기 전략이 원리적으로 무효.
+- 신규 `decisions/knowledge-layer-budget.md` — MEMORY.md 예산 초과 7회의 원인 규명(완료분 `✅` 적체 15건=3,212자)과 결정 4건(완료 즉시 이동·섹션 분리·경고의 원인지목·색인은 범위를 좁힌다).
+- 신규 `sources/memory-live-traps-2026-08.md` — 졸업/잔류 대조표.
+- 실측: MEMORY.md 18,288자(131%) → 12,568자(90%) · 옵시디언 색인 11,548자(237중 126 노출) → 10,457자(124 전량) · graphify 재색인 12,440노드.
