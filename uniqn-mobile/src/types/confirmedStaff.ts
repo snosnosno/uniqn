@@ -67,7 +67,7 @@ export interface DeleteConfirmedStaffInput {
   jobPostingId: string;
   staffId: string;
   date: string;
-  reason?: string;
+  reason: string;
 }
 
 /**

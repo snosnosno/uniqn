@@ -42,7 +42,7 @@ import {
   useGridSummary,
   useVenueContainers,
   useEnsureDefaultVenue,
-  useVenueSettlement,
+  useVenueMissingCheckouts,
 } from '@/hooks/workSchedule';
 import {
   computeDayCell,
@@ -115,6 +115,7 @@ export default function WorkScheduleScreen() {
     () => containers.find((c) => c.id === selectedVenueId) ?? null,
     [containers, selectedVenueId]
   );
+  const isVenueOwner = Boolean(user?.uid && selectedContainer?.ownerId === user.uid);
 
   // P1-1: 운영처 0개면 기본 운영처 자동 생성(체감 2계층).
   // 실패 시 재발사 없음(훅 내부 가드) → 아래 수동 EmptyState 폴백.
@@ -148,7 +149,7 @@ export default function WorkScheduleScreen() {
   // 🔑 **지점 스팬** 리더를 쓴다. 컨테이너 직속 배치만 보는 리더(useConfirmedStaff)를 쓰면
   // 지점에서 공고로 뽑은 스태프의 미기록이 통째로 빠져 안전망이 조용히 절반만 본다.
   // 정산 화면과 같은 쿼리 키라 그 화면을 오간 뒤에는 캐시를 공유한다.
-  const missingCheckoutQuery = useVenueSettlement(selectedVenueId, format(visibleMonth, 'yyyy-MM'));
+  const missingCheckoutQuery = useVenueMissingCheckouts(selectedVenueId);
   // `now` 를 넘기는 이유: 리더가 붙이는 파생 플래그는 조회 시점 스냅샷이라 야간 교차 근무를
   // 구분하지 못하고, 화면을 열어둔 채 자정을 넘기면 낡는다. 집계가 직접 판정한다.
   // (유예 시각 경계는 다음 refetch·재렌더에서 반영된다 — 분 단위 타이머를 둘 만한 값이 아니다)
@@ -213,7 +214,7 @@ export default function WorkScheduleScreen() {
         title="근무표"
         fallbackHref="/(employer)/workspace"
         rightAction={
-          hasVenue ? (
+          hasVenue && isVenueOwner ? (
             <Pressable
               onPress={() =>
                 router.push({
@@ -245,13 +246,24 @@ export default function WorkScheduleScreen() {
         onSelectVenue={setSelectedVenueId}
         isLoadingContainers={wsLoading || containersQuery.isLoading}
         onAddVenue={() => setCreateSheetVisible(true)}
-        onOpenSettings={() => setSettingsOpen(true)}
+        onOpenSettings={isVenueOwner ? () => setSettingsOpen(true) : undefined}
       />
 
       {/* 퇴근 미기록 안전망 — 지난 날짜에 퇴근이 안 찍힌 근무는 정산 게이트에 영영 도달하지
           못한다. 자동 퇴근을 만들지 않기로 했으므로 이 배너가 그 사실을 알리는 유일한 경로다.
           누르면 가장 오래된 미기록 날짜로 이동해 바로 고칠 수 있게 한다. */}
-      {hasVenue && missingCheckouts.count > 0 ? (
+      {hasVenue && missingCheckoutQuery.isError ? (
+        <View className="mx-4 mt-2" testID="missing-checkout-error">
+          <Text className="mb-1 text-sm font-sans-medium text-warning-700 dark:text-warning-300">
+            퇴근 미기록을 확인하지 못했어요
+          </Text>
+          <ErrorState
+            compact
+            error={missingCheckoutQuery.error as Error}
+            onRetry={missingCheckoutQuery.refetch}
+          />
+        </View>
+      ) : hasVenue && missingCheckouts.count > 0 ? (
         <Pressable
           onPress={handleGoToMissingCheckout}
           accessibilityRole="button"
@@ -395,6 +407,7 @@ export default function WorkScheduleScreen() {
               date={selectedDateString}
               dateLabel={selectedDateLabel}
               cell={gridCells[selectedDateString]}
+              isSummaryAvailable={summaryQuery.isSuccess && summaryQuery.data !== undefined}
             />
           </View>
         </ScrollView>

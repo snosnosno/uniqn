@@ -525,8 +525,9 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
     try {
       logger.info('직접 추가 스태프 삭제', { workLogId: context.workLogId });
 
-      const { error } = await supabase.rpc('remove_direct_staff', {
+      const { error } = await supabase.rpc('release_scheduled_assignment', {
         p_work_log_id: context.workLogId,
+        p_reason: context.reason,
       });
 
       if (error) {

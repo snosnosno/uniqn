@@ -11,7 +11,6 @@ import { View, Text, Pressable } from 'react-native';
 import { Button, Badge } from '@/components/ui';
 import { BriefcaseIcon, ClockIcon, QrCodeIcon, PhoneIcon } from '@/components/icons';
 import { getRoleDisplayName } from '@/types/unified';
-import { useCurrentWorkStatus } from '@/hooks/useWorkLogs';
 import { STATUS } from '@/constants';
 import { ATTENDANCE_STATUS } from '@/constants/statusConfig';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
@@ -22,7 +21,6 @@ import {
 } from '../helpers';
 import { WorkTimeDisplay } from '@/shared/time';
 import type { ScheduleEvent } from '@/types';
-import { useThemeStore } from '@/stores/themeStore';
 import { formatPhoneForDisplay } from '@/utils/phone';
 import { openExternalUrl } from '@/utils/externalLink';
 import { ContactActions } from '../ContactActions';
@@ -78,8 +76,8 @@ function TimeBox({ label, value, isHighlight }: TimeBoxProps) {
 // ============================================================================
 
 export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProps) {
-  const { isWorking } = useCurrentWorkStatus();
-  const { isDarkMode } = useThemeStore();
+  // 버튼 문구는 오늘의 다른 근무가 아니라 지금 보고 있는 근무의 상태만 따라야 한다.
+  const isWorking = schedule.status === STATUS.ATTENDANCE.CHECKED_IN;
   const attendance = ATTENDANCE_STATUS[schedule.status];
   const hasPendingCancellation = Boolean(schedule.isCancellationPending);
 
@@ -283,12 +281,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
           onPress={handleQRScan}
           className="flex-row items-center justify-center mt-2"
         >
-          <QrCodeIcon
-            size={20}
-            color={
-              isWorking ? (isDarkMode ? SECONDARY_PALETTE[200] : SECONDARY_PALETTE[700]) : '#FFFFFF'
-            }
-          />
+          <QrCodeIcon size={20} color={isWorking ? SECONDARY_PALETTE[500] : '#FFFFFF'} />
           <Text
             className={`ml-2 font-sans-semibold ${isWorking ? 'text-secondary-900 dark:text-secondary-100' : 'text-content-onGold'}`}
           >

@@ -91,7 +91,8 @@ export function updatePostingSlotTime(
 }
 
 /**
- * 배치 슬롯 빼기. 직접추가분(applicationId 없음)=remove_direct_staff, 지원확정분=확정해제 RPC —
+ * 배치 슬롯 빼기. 직접추가분(applicationId 없음)=사유 포함 release_scheduled_assignment,
+ * 지원확정분=확정해제 RPC —
  * 이 분기는 confirmedStaffService.cancelConfirmedStaffConfirmation 이 담당(removeDirectStaff
  * 직접 호출 금지: 공고 스팬 슬롯에서 NOT_DIRECT_STAFF). 권한 게이트는 RPC 경계.
  */
