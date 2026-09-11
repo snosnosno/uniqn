@@ -131,7 +131,7 @@ function StatChip({
     <View
       accessible
       accessibilityLabel={a11yLabel}
-      className={`flex-row items-center gap-1 rounded-full px-3 py-1.5 ${toneClass.box}`}
+      className={`flex-row items-center gap-1 rounded-sm px-3 py-1.5 ${toneClass.box}`}
     >
       {icon}
       <Text className={`text-xs font-sans-medium ${toneClass.text}`}>{label}</Text>

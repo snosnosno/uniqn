@@ -59,7 +59,7 @@ const STATUS_BADGE: Record<OpsTournamentStatus, { label: string; bg: string; tex
 function StatusBadge({ status }: { status: OpsTournamentStatus }) {
   const badge = STATUS_BADGE[status];
   return (
-    <View className={`ml-2 rounded-full px-2 py-0.5 ${badge.bg}`}>
+    <View className={`ml-2 rounded-sm px-2 py-0.5 ${badge.bg}`}>
       <Text className={`text-xs font-sans-semibold ${badge.text}`}>{badge.label}</Text>
     </View>
   );
