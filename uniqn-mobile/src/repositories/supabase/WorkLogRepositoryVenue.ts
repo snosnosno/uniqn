@@ -105,6 +105,57 @@ export async function getByVenueSpanInRange(
   }
 }
 
+/** 현재 보는 월과 무관하게 어제 이전 checked_in 기록을 조회한다. */
+export async function getMissingCheckoutsByVenueSpan(
+  venueId: string,
+  beforeDate: string
+): Promise<WorkLog[]> {
+  try {
+    const { data: spanData, error: spanError } = await supabase.rpc('venue_span_posting_ids', {
+      p_venue: venueId,
+    });
+    if (spanError) {
+      handleSupabaseError(spanError, { operation: '퇴근 미기록 지점 스팬 조회', table: TABLE });
+    }
+
+    const spanIds = ((spanData ?? []) as unknown[])
+      .map((row) => {
+        if (typeof row === 'string') return row;
+        if (row && typeof row === 'object') {
+          const value = (row as Record<string, unknown>).venue_span_posting_ids;
+          return typeof value === 'string' ? value : null;
+        }
+        return null;
+      })
+      .filter((id): id is string => Boolean(id));
+    if (spanIds.length === 0) return [];
+
+    const rows: Record<string, unknown>[] = [];
+    const chunkSize = 500;
+    let offset = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select(TABLE_COLUMNS)
+        .in('job_posting_id', spanIds)
+        .eq('status', STATUS.WORK_LOG.CHECKED_IN)
+        .lt('date', beforeDate)
+        .order('date', { ascending: true })
+        .range(offset, offset + chunkSize - 1);
+      if (error) {
+        handleSupabaseError(error, { operation: '퇴근 미기록 조회', table: TABLE });
+      }
+      const page = (data ?? []) as Record<string, unknown>[];
+      rows.push(...page);
+      if (page.length < chunkSize) break;
+      offset += chunkSize;
+    }
+    return rowsToWorkLogs(rows);
+  } catch (error) {
+    rethrowOrHandle(error, '퇴근 미기록 조회', { venueId, beforeDate });
+  }
+}
+
 /**
  * `update_work_log_slot` RPC 가 RAISE 한 도메인 에러를 앱 에러로 변환.
  * (매칭되지 않으면 null 반환 → 공통 핸들러로 위임)

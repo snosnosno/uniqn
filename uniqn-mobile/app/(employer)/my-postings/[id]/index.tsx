@@ -12,6 +12,11 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card, Badge, ConfirmModal } from '@/components';
 import { ActionSheet, type ActionSheetOption } from '@/components/ui';
+// 🔑 배럴이 아니라 직접 경로다. 이 화면의 테스트들은 `jest.mock('@/components/ui', ...)` 로
+//    배럴을 통째로 갈아끼우는데, 그 목에 없는 export 는 조용히 `undefined` 가 된다
+//    (tsc 는 목 문자열을 보지 않으므로 타입 체크는 통과한다). 타일 그리드는 그 테스트들이
+//    실제로 검증하는 대상이라 목되면 안 된다.
+import { ActionTileGrid, type ActionTileItem } from '@/components/ui/ActionTileGrid';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 import { useToastStore } from '@/stores/toastStore';
@@ -127,36 +132,31 @@ function StatColumn({
  */
 const PRIMARY_ACTION_TEST_ID = 'job-posting-primary-action';
 
-interface ActionCardProps {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
+/**
+ * "지금 할 일" 한 장 전용.
+ *
+ * 2열 그리드 타일은 `ActionTileGrid`(@/components/ui)로 옮겼다 — 진입점 타일은 이 화면
+ * 밖에서도 같은 형태로 필요해서 프리미티브가 맞고, 여기 남는 건 이 화면 고유의 위계다.
+ *
+ * 카드 6장이 전부 같은 크기면 우선순위 표현이 0이다 — 사장이 매번 여섯 장을 읽고
+ * 무엇이 급한지 스스로 판단해야 한다. 위계는 **크기와 골드**로만 준다.
+ */
+interface PrimaryActionCardProps extends Omit<ActionTileItem, 'key'> {
   displayTitle?: string;
   displayDescription?: string;
-  badge?: { label: string; variant: 'primary' | 'success' | 'warning' | 'error' };
-  onPress: () => void;
-  testID?: string;
-  /**
-   * 'tile'(기본) = 2열 그리드 한 칸 / 'primary' = "지금 할 일" 한 장.
-   *
-   * 카드 6장이 전부 같은 크기라 우선순위 표현이 0이었다 — 사장이 매번 여섯 장을 읽고
-   * 무엇이 급한지 스스로 판단해야 했다. 위계는 **크기와 골드**로만 준다.
-   */
-  emphasis?: 'tile' | 'primary';
-  /** primary 일 때 골드 버튼에 쓸 라벨 */
+  /** 골드 버튼에 쓸 라벨 */
   actionLabel?: string;
 }
 
 /**
- * 관리 진입점 하나.
+ * 처리할 일 하나를 크게 내는 카드.
  *
- * 종전 'row' 는 한 칸이 세로 70px 을 먹었고(제목 + 설명 두 줄), 여섯 개면 420px —
- * 화면 한 장을 목록이 통째로 차지했다. 설명문 대부분이 "지원자 목록을 확인합니다." 같은
- * 제목의 되풀이라, **화면에서는 지우고 접근성 라벨에만 남긴다**(스크린리더는 제목만으로
- * 목적지를 판단하기 어렵다). 남은 세로는 2열 그리드로 다시 절반이 된다.
+ * 같은 진입점이라도 무엇 때문에 올라왔는지에 따라 다른 말을 해야 해서
+ * `displayTitle`/`displayDescription` 으로 문구를 갈아끼운다.
  */
-function ActionCard({
-  icon,
+function PrimaryActionCard({
+  // `icon` 은 받되 그리지 않는다 — 골드 버튼이 이 카드의 시선 고정점이 된 이상 아이콘
+  // 타일은 장식만 남는다. 호출부가 타일과 같은 항목을 그대로 넘길 수 있도록 계약만 맞춘다.
   title,
   description,
   displayTitle,
@@ -164,9 +164,8 @@ function ActionCard({
   badge,
   onPress,
   testID,
-  emphasis = 'tile',
   actionLabel,
-}: ActionCardProps) {
+}: PrimaryActionCardProps) {
   const resolvedTitle = displayTitle ?? title;
   const resolvedDescription = displayDescription ?? description;
   // 배지가 라벨에서 빠지면 스크린리더 사용자는 "대기 3명" 같은 처리할 일 개수를 듣지 못한다 —
@@ -175,87 +174,57 @@ function ActionCard({
     ? `${resolvedTitle}, ${badge.label}, ${resolvedDescription}`
     : `${resolvedTitle}, ${resolvedDescription}`;
 
-  if (emphasis === 'primary') {
-    return (
-      <Pressable
-        onPress={onPress}
-        className="active:opacity-70"
-        accessibilityRole="button"
-        testID={testID}
-        // "지금 할 일"이라는 맥락은 시각적 위치로만 전달됐다 — 라벨에도 담는다.
-        accessibilityLabel={`지금 할 일. ${accessibilityLabel}`}
+  return (
+    <Pressable
+      onPress={onPress}
+      className="active:opacity-70"
+      accessibilityRole="button"
+      testID={testID}
+      // "지금 할 일"이라는 맥락은 시각적 위치로만 전달됐다 — 라벨에도 담는다.
+      accessibilityLabel={`지금 할 일. ${accessibilityLabel}`}
+    >
+      <Card
+        variant="elevated"
+        padding="sm"
+        className="border border-primary-200 dark:border-primary-800"
       >
-        <Card
-          variant="elevated"
-          padding="sm"
-          className="border border-primary-200 dark:border-primary-800"
-        >
-          {/* 머리글과 배지를 한 줄에 둔다 — 종전에는 머리글·제목·배지가 세 줄을 먹었다. */}
-          <View className="flex-row items-center justify-between">
-            <Text className="text-xs font-sans-semibold text-primary-600 dark:text-primary-400">
-              지금 할 일
-            </Text>
-            {badge ? (
-              <Badge variant={badge.variant} size="sm">
-                {badge.label}
-              </Badge>
-            ) : null}
-          </View>
+        {/* 머리글과 배지를 한 줄에 둔다 — 종전에는 머리글·제목·배지가 세 줄을 먹었다. */}
+        <View className="flex-row items-center justify-between">
+          <Text className="text-xs font-sans-semibold text-primary-600 dark:text-primary-400">
+            지금 할 일
+          </Text>
+          {badge ? (
+            <Badge variant={badge.variant} size="sm">
+              {badge.label}
+            </Badge>
+          ) : null}
+        </View>
 
-          {/* 제목·설명 좌 / 골드 버튼 우 — 한 줄이다.
+        {/* 제목·설명 좌 / 골드 버튼 우 — 한 줄이다.
               풀폭 골드 바는 자기 줄(44px)과 위 여백(10px)을 통째로 썼는데, 카드 전체가 이미
               같은 곳으로 가는 Pressable 이라 그 바는 두 번째 탭 타깃이 아니라 라벨이었다.
               라벨이라면 제목 옆자리로 충분하다. 아이콘 타일도 뺀다 — 골드가 이 카드의
               시선 고정점이 된 이상 타일은 장식만 남는다. */}
-          <View className="mt-2 flex-row items-center">
-            <View className="mr-3 flex-1">
-              <Text
-                className="text-base font-display-semibold text-content-primary dark:text-off-white"
-                numberOfLines={2}
-              >
-                {resolvedTitle}
-              </Text>
-              <Text className="mt-0.5 text-xs text-content-secondary font-sans" numberOfLines={2}>
-                {resolvedDescription}
-              </Text>
-            </View>
-            {/* 골드는 이 버튼에만 쓴다 — 강조가 여러 곳이면 아무것도 강조되지 않는다. */}
-            <View className="min-h-[44px] shrink-0 justify-center rounded-md bg-primary-600 px-3">
-              <Text className="text-sm font-sans-semibold text-content-onGold">
-                {actionLabel ?? '바로 가기'}
-              </Text>
-            </View>
+        <View className="mt-2 flex-row items-center">
+          <View className="mr-3 flex-1">
+            <Text
+              className="text-base font-display-semibold text-content-primary dark:text-off-white"
+              numberOfLines={2}
+            >
+              {resolvedTitle}
+            </Text>
+            <Text className="mt-0.5 text-xs text-content-secondary font-sans" numberOfLines={2}>
+              {resolvedDescription}
+            </Text>
           </View>
-        </Card>
-      </Pressable>
-    );
-  }
-
-  return (
-    <Pressable
-      onPress={onPress}
-      className="min-h-[60px] flex-1 justify-center rounded-lg bg-surface-card px-2.5 py-2.5 dark:bg-surface-elevated active:opacity-70"
-      accessibilityRole="button"
-      testID={testID}
-      accessibilityLabel={accessibilityLabel}
-    >
-      <View className="flex-row items-center">
-        {icon}
-        {/* 반 폭에서 "스태프 관리/정산"(9자)은 한 줄에 못 앉는다 — 자르지 말고 두 줄을 준다.
-            같은 행의 두 칸은 flex 로 높이가 맞춰지므로 줄 수가 달라도 어긋나지 않는다. */}
-        <Text
-          className="ml-1.5 flex-1 text-sm font-sans-medium text-content-primary dark:text-off-white"
-          numberOfLines={2}
-        >
-          {resolvedTitle}
-        </Text>
-      </View>
-      {/* 배지가 있는 칸만 두 줄이 된다 — 처리할 일이 있는 칸이 자연히 커 보이는 위계다. */}
-      {badge ? (
-        <Badge variant={badge.variant} size="sm" className="mt-1.5 self-start">
-          {badge.label}
-        </Badge>
-      ) : null}
+          {/* 골드는 이 버튼에만 쓴다 — 강조가 여러 곳이면 아무것도 강조되지 않는다. */}
+          <View className="min-h-[44px] shrink-0 justify-center rounded-md bg-primary-600 px-3">
+            <Text className="text-sm font-sans-semibold text-content-onGold">
+              {actionLabel ?? '바로 가기'}
+            </Text>
+          </View>
+        </View>
+      </Card>
     </Pressable>
   );
 }
@@ -656,7 +625,7 @@ export default function JobPostingDetailScreen() {
    * "스태프 관리/정산"이 미출근 때문에 올라왔는데 정산 얘기를 하면 사장은 다른 화면을 연다.
    * `displayTitle`/`displayDescription` 은 이 용도로 이미 준비돼 있던 확장점이다.
    */
-  const primaryOverride: Partial<ActionCardProps> =
+  const primaryOverride: Partial<PrimaryActionCardProps> =
     primaryActionKey === 'todayAbsent'
       ? {
           displayTitle: '오늘 출근 확인',
@@ -674,8 +643,7 @@ export default function JobPostingDetailScreen() {
             ? { actionLabel: '지원자 검토하기' }
             : { actionLabel: '운영 화면 열기' };
 
-  interface PostingActionItem extends ActionCardProps {
-    key: string;
+  interface PostingActionItem extends ActionTileItem {
     visible: boolean;
   }
 
@@ -796,17 +764,6 @@ export default function JobPostingDetailScreen() {
   //    자리를 훑고는 "메뉴가 없어졌다" 고 읽는다(실사고 제보). "지금 할 일" 은 알림이고 "관리"
   //    는 진입점 목록이라 역할이 다르므로, 같은 목적지가 둘 다 있는 편이 맞다.
   //    종전 제외 사유였던 testID 중복은 승격 카드에 전용 testID 를 줘서 끊는다.
-  // 2열 그리드 — flex-wrap 대신 두 개씩 끊어 행을 만든다. wrap 은 칸마다 폭을 고정해야
-  // 하는데(flex-1 이 무력해짐) 긴 제목에서 줄이 밀리고, 행으로 끊으면 flex-1 두 칸이
-  // 언제나 정확히 반반을 나눠 갖는다.
-  const tileRows = actionItems.reduce<PostingActionItem[][]>((rows, item, index) => {
-    if (index % 2 === 0) {
-      rows.push([item]);
-    } else {
-      rows[rows.length - 1].push(item);
-    }
-    return rows;
-  }, []);
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
@@ -1142,14 +1099,13 @@ export default function JobPostingDetailScreen() {
         {/* 지금 할 일 — 손해가 가장 큰 신호 하나만 크게 낸다. 처리할 일이 없으면 이 자리도 없다. */}
         {primaryItem ? (
           <View className="px-4 pt-3">
-            <ActionCard
+            <PrimaryActionCard
               icon={primaryItem.icon}
               title={primaryItem.title}
               description={primaryItem.description}
               badge={primaryItem.badge}
               onPress={primaryItem.onPress}
               testID={PRIMARY_ACTION_TEST_ID}
-              emphasis="primary"
               {...primaryOverride}
             />
           </View>
@@ -1162,25 +1118,7 @@ export default function JobPostingDetailScreen() {
             관리
           </Text>
 
-          <View className="gap-2">
-            {tileRows.map((row, rowIndex) => (
-              <View key={row[0]?.key ?? `tile-row-${rowIndex}`} className="flex-row gap-2">
-                {row.map((item) => (
-                  <ActionCard
-                    key={item.key}
-                    icon={item.icon}
-                    title={item.title}
-                    description={item.description}
-                    badge={item.badge}
-                    onPress={item.onPress}
-                    testID={item.testID}
-                  />
-                ))}
-                {/* 홀수 개일 때 마지막 칸이 가로를 다 먹지 않도록 빈 칸을 채운다. */}
-                {row.length === 1 ? <View className="flex-1" /> : null}
-              </View>
-            ))}
-          </View>
+          <ActionTileGrid items={actionItems} />
         </View>
 
         {posting.description && String(posting.description).length > 0 ? (

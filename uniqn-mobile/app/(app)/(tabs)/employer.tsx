@@ -69,7 +69,8 @@ function FilterTabs({ selected, onChange, counts }: FilterTabsProps) {
   const { isDarkMode } = useThemeStore();
 
   return (
-    <View className="mx-4 mb-4 flex-row rounded-lg bg-secondary-100 p-1 dark:bg-surface">
+    // 바깥 여백은 호출부가 준다 — 같은 행에 묶음 공유 버튼이 붙기 때문이다.
+    <View className="flex-1 flex-row rounded-lg bg-secondary-100 p-1 dark:bg-surface">
       {FILTER_OPTIONS.map((option) => {
         const isSelected = selected === option.value;
         const count = counts[option.value] || 0;
@@ -390,7 +391,28 @@ function EmployerView() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
-      <TabHeader title="내 공고" rightAction={<WorkspaceHeaderAction />} />
+      <TabHeader
+        title="내 공고"
+        rightAction={
+          <View className="flex-row items-center">
+            {/* 근무표는 풀폭 버튼(44px + 여백 8px)을 차지하고 있었다. 하루에 한 번 여는
+                화면이 매번 리스트 뷰포트를 52px 씩 먹을 이유가 없다(디자인 룰 34-3). */}
+            {workScheduleEnabled ? (
+              <Pressable
+                onPress={handleWorkSchedule}
+                hitSlop={8}
+                className="min-h-[44px] min-w-[44px] items-center justify-center rounded-sm active:opacity-70"
+                accessibilityRole="button"
+                accessibilityLabel="근무표 열기"
+                testID="employer-work-schedule"
+              >
+                <CalendarIcon size={24} color={getIconColor(isDarkMode, 'primary')} />
+              </Pressable>
+            ) : null}
+            <WorkspaceHeaderAction />
+          </View>
+        }
+      />
       <WorkspaceContextBar />
 
       <View className="px-4 py-3">
@@ -401,35 +423,26 @@ function EmployerView() {
         >
           <Text className="ml-2 font-sans-semibold text-content-onGold">새 공고 작성</Text>
         </Button>
-        {workScheduleEnabled ? (
-          <Button
-            variant="outline"
-            onPress={handleWorkSchedule}
-            icon={<CalendarIcon size={20} color={getIconColor(isDarkMode, 'primary')} />}
-            className="mt-2"
-            accessibilityLabel="근무표 열기"
-          >
-            <Text className="ml-2 font-sans-semibold text-content-primary">근무표</Text>
-          </Button>
-        ) : null}
       </View>
 
-      <FilterTabs selected={filter} onChange={setFilter} counts={filterCounts} />
+      {/* 필터 탭과 묶음 공유를 한 행에 둔다 — 묶음 공유는 자기 줄(44px + 4px)을 갖고 있었는데,
+          공고가 2건 이상일 때만 나타나는 조건부 행이라 자리까지 불안정했다. */}
+      <View className="mx-4 mb-2 flex-row items-center gap-2">
+        <FilterTabs selected={filter} onChange={setFilter} counts={filterCounts} />
 
-      {!selection.isSelectionMode && filteredPostings.length > 1 ? (
-        <View className="flex-row justify-end px-4 pb-1">
+        {!selection.isSelectionMode && filteredPostings.length > 1 ? (
           <Pressable
             onPress={selection.enterSelectionMode}
             hitSlop={8}
-            className="min-h-[44px] flex-row items-center gap-1.5 active:opacity-70"
+            className="min-h-[44px] min-w-[44px] items-center justify-center rounded-lg active:opacity-70"
             accessibilityRole="button"
             accessibilityLabel="여러 공고 묶어서 공유하기"
+            testID="employer-bulk-share-enter"
           >
-            <ShareIcon size={16} />
-            <Text className="text-sm font-sans-medium text-content-secondary">묶음 공유</Text>
+            <ShareIcon size={20} />
           </Pressable>
-        </View>
-      ) : null}
+        ) : null}
+      </View>
 
       {sharedPostings.length > 0 ? (
         <View className="mx-4 mb-3">

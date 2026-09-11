@@ -8,8 +8,8 @@
 
 import React, { useCallback, useState } from 'react';
 import { View, Text, TextInput, Pressable, ActivityIndicator } from 'react-native';
-import { Image } from 'expo-image';
-import { SearchIcon, UserIcon } from '@/components/icons';
+import { SearchIcon } from '@/components/icons';
+import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { useCollaboratorCandidates } from '@/hooks/job-posting/useJobPostingCollaborators';
 import { COLLABORATOR_LIMITS } from '@/types/jobPostingCollaborator';
@@ -59,17 +59,12 @@ function CandidateRow({
         disabled ? 'opacity-50' : 'active:bg-gray-100 dark:active:bg-surface-elevated'
       }`}
     >
-      <View className="w-10 h-10 rounded-full bg-gray-100 dark:bg-surface-elevated items-center justify-center overflow-hidden">
-        {candidate.photoUrl ? (
-          <Image
-            source={{ uri: candidate.photoUrl }}
-            style={{ width: 40, height: 40 }}
-            contentFit="cover"
-          />
-        ) : (
-          <UserIcon size={20} color="#9CA3AF" />
-        )}
-      </View>
+      {/* CollaboratorRow 와 같은 자리 — 공용 Avatar 로 모양을 통일한다 */}
+      <Avatar
+        source={candidate.photoUrl ?? undefined}
+        name={candidate.displayName ?? undefined}
+        size="md"
+      />
       <View className="flex-1 min-w-0">
         <Text className="text-base font-medium text-content-primary" numberOfLines={1}>
           {candidate.displayName ?? '이름 없음'}

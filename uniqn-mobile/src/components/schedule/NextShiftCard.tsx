@@ -75,72 +75,85 @@ export const NextShiftCard = memo(function NextShiftCard({
   const isWorking = countdown.urgency === 'working';
   const isImminent = countdown.urgency === 'imminent';
   const canScan = Boolean(schedule.workLogId && onQRScan);
+  const cardAccessibilityLabel = [
+    `다음 근무: ${schedule.jobPostingName}`,
+    countdown.label,
+    formatSingleDate(schedule.date),
+    timeRangeDisplay,
+    schedule.location,
+    getRoleDisplayName(schedule.role, schedule.customRole),
+    overlapWarning,
+  ]
+    .filter(Boolean)
+    .join(', ');
 
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={`다음 근무: ${schedule.jobPostingName}, ${countdown.label}, ${formatSingleDate(
-        schedule.date
-      )}`}
-      testID="schedule-next-shift-card"
-      className="mx-4 mt-2.5 rounded-md bg-surface-card px-4 py-2.5 active:bg-secondary-100 dark:bg-surface-elevated dark:active:bg-secondary-700"
-    >
-      <View className="mb-1 flex-row items-center justify-between">
-        <Text className="text-xs text-content-muted dark:text-secondary-400 font-sans">
-          내 다음 근무
-        </Text>
-        <Badge variant={isWorking || isImminent ? 'warning' : 'default'} size="sm">
-          {countdown.label}
-        </Badge>
-      </View>
-
-      <Text
-        className="mb-1.5 text-base font-sans-semibold text-content-primary dark:leading-base-dark"
-        numberOfLines={1}
+    <View className="mx-4 mt-2.5 rounded-md bg-surface-card px-4 py-2.5 dark:bg-surface-elevated">
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={cardAccessibilityLabel}
+        testID="schedule-next-shift-card"
+        className="rounded-md active:bg-secondary-100 dark:active:bg-secondary-700"
       >
-        {schedule.jobPostingName}
-      </Text>
-
-      <View className="flex-row items-center">
-        <CalendarIcon size={14} color={SECONDARY_PALETTE[500]} />
-        <Text className="ml-1.5 text-sm text-content-secondary font-sans">
-          {formatSingleDate(schedule.date)}
-        </Text>
-        <View className="mx-2 h-3 w-px bg-secondary-300 dark:bg-surface-elevated" />
-        <ClockIcon size={14} color={SECONDARY_PALETTE[500]} />
-        <Text className="ml-1.5 text-sm text-content-secondary font-sans">{timeRangeDisplay}</Text>
-      </View>
-
-      {showUndecidedTimeHint && (
-        <Text className="mt-1 text-xs text-content-muted dark:text-secondary-500 font-sans">
-          {UNDECIDED_TIME_HINT}
-        </Text>
-      )}
-
-      {schedule.location && (
-        <View className="mt-1.5 flex-row items-center">
-          <MapPinIcon size={14} color={SECONDARY_PALETTE[500]} />
-          <Text
-            className="ml-1.5 flex-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans"
-            numberOfLines={1}
-          >
-            {schedule.location}
+        <View className="mb-1 flex-row items-center justify-between">
+          <Text className="text-xs text-content-muted dark:text-secondary-400 font-sans">
+            내 다음 근무
           </Text>
-          <Text className="ml-2 text-sm text-content-muted dark:text-secondary-400 font-sans">
-            {getRoleDisplayName(schedule.role, schedule.customRole)}
+          <Badge variant={isWorking || isImminent ? 'warning' : 'default'} size="sm">
+            {countdown.label}
+          </Badge>
+        </View>
+
+        <Text
+          className="mb-1.5 text-base font-sans-semibold text-content-primary dark:leading-base-dark"
+          numberOfLines={1}
+        >
+          {schedule.jobPostingName}
+        </Text>
+
+        <View className="flex-row items-center">
+          <CalendarIcon size={14} color={SECONDARY_PALETTE[500]} />
+          <Text className="ml-1.5 text-sm text-content-secondary font-sans">
+            {formatSingleDate(schedule.date)}
+          </Text>
+          <View className="mx-2 h-3 w-px bg-secondary-300 dark:bg-surface-elevated" />
+          <ClockIcon size={14} color={SECONDARY_PALETTE[500]} />
+          <Text className="ml-1.5 text-sm text-content-secondary font-sans">
+            {timeRangeDisplay}
           </Text>
         </View>
-      )}
 
-      {overlapWarning && (
-        <View className="mt-2 flex-row items-center rounded-md bg-warning-50 px-3 py-2 dark:bg-warning-900/20">
-          <AlertTriangleIcon size={14} color="#D4A017" />
-          <Text className="ml-1.5 flex-1 text-xs text-warning-700 dark:text-warning-400 font-sans">
-            {overlapWarning}
+        {showUndecidedTimeHint && (
+          <Text className="mt-1 text-xs text-content-muted dark:text-secondary-500 font-sans">
+            {UNDECIDED_TIME_HINT}
           </Text>
-        </View>
-      )}
+        )}
+
+        {schedule.location && (
+          <View className="mt-1.5 flex-row items-center">
+            <MapPinIcon size={14} color={SECONDARY_PALETTE[500]} />
+            <Text
+              className="ml-1.5 flex-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans"
+              numberOfLines={1}
+            >
+              {schedule.location}
+            </Text>
+            <Text className="ml-2 text-sm text-content-muted dark:text-secondary-400 font-sans">
+              {getRoleDisplayName(schedule.role, schedule.customRole)}
+            </Text>
+          </View>
+        )}
+
+        {overlapWarning && (
+          <View className="mt-2 flex-row items-center rounded-md bg-warning-50 px-3 py-2 dark:bg-warning-900/20">
+            <AlertTriangleIcon size={14} color="#D4A017" />
+            <Text className="ml-1.5 flex-1 text-xs text-warning-700 dark:text-warning-400 font-sans">
+              {overlapWarning}
+            </Text>
+          </View>
+        )}
+      </Pressable>
 
       {canScan && (
         <Pressable
@@ -164,6 +177,6 @@ export const NextShiftCard = memo(function NextShiftCard({
           </Text>
         </Pressable>
       )}
-    </Pressable>
+    </View>
   );
 });

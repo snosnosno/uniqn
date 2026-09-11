@@ -89,3 +89,50 @@ RefreshControl `tintColor`, 아이콘 `color` 등 인라인 색상도 동일:
 <RefreshControl tintColor="#6366F1" />
 <CalendarIcon color="#6366F1" />
 ```
+
+## 6. 혼합 타입 리스트 — `getItemType` 필수 (CRITICAL)
+
+한 리스트가 **서로 다른 레이아웃의 아이템**을 렌더하면 `getItemType` 을 반드시 준다.
+FlashList 는 아이템 뷰를 재활용하는데, 타입 구분이 없으면 높이 85px 짜리 단일 알림 뷰가
+2줄짜리 그룹 알림으로 재활용되면서 매 스크롤마다 레이아웃을 다시 잰다.
+
+```tsx
+// ❌ WRONG — renderItem 안에서 분기만 하고 재활용 풀은 하나
+const renderItem = useCallback(({ item }) => {
+  if (isGroupedNotification(item)) {
+    return <NotificationGroupItem group={item} />;
+  }
+  return <NotificationItem notification={item} />;
+}, [...]);
+
+<AppFlashList data={notifications} renderItem={renderItem} estimatedItemSize={85} />
+
+// ✅ CORRECT — 타입별로 재활용 풀을 나눈다
+const getItemType = useCallback(
+  (item: NotificationListItem) => (isGroupedNotification(item) ? 'group' : 'single'),
+  []
+);
+
+<AppFlashList
+  data={notifications}
+  renderItem={renderItem}
+  getItemType={getItemType}
+  estimatedItemSize={85}
+/>
+```
+
+**판별법**: `renderItem` 안에 `if` 로 다른 컴포넌트를 반환하는 분기가 있으면 대상이다.
+`estimatedItemSize` 가 하나뿐인데 실제 높이가 타입마다 다르면 그 값은 어느 쪽에도 안 맞는다.
+
+**선례**: `board/post/[postId].tsx` 가 `getItemType={(item) => item.type}` 로 이미 옳게 쓰고 있다.
+
+## 7. `renderItem` 은 `useCallback` + deps 명시 (이미 정착한 관행 — 명문화)
+
+`renderItem` 을 인라인 화살표로 넘기면 부모가 리렌더될 때마다 리스트 전체가 새 함수를 받아
+메모이제이션이 깨진다. 이 저장소는 이미 전 리스트가 이 관행을 지키고 있다
+(`JobList` · `ApplicantList` · `NotificationList` 등) — 새 리스트도 같게 쓴다.
+
+`renderItem` **내부에서** 아이템별 콜백(`onPress={() => handle(item.id)}`)이나
+인라인 스타일 객체(`style={{ ... }}`)를 만들지 않는다. 매 렌더 새 참조가 생겨
+자식의 `memo()` 가 무력화된다. 콜백은 리스트 루트에서 하나 만들어 아이템이 자기 id 로
+호출하게 하고, 스타일은 모듈 스코프 상수로 뺀다.

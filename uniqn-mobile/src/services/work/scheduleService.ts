@@ -14,7 +14,8 @@ import {
   hasPendingPayrollEstimate,
   shouldUseFrozenPayrollAmount,
 } from '@/utils/settlementGrouping';
-import { formatDateWithDay, toDateString } from '@/utils/date';
+import { formatDateWithDay, getTodayString, toDateString } from '@/utils/date';
+import { parseTimeSlotToDate } from '@/utils/date/ranges';
 import { TimeNormalizer } from '@/shared/time';
 import type {
   ScheduleEvent,
@@ -699,6 +700,36 @@ export async function getScheduleById(scheduleId: string): Promise<ScheduleEvent
 export async function getTodaySchedules(staffId: string): Promise<ScheduleEvent[]> {
   const today = toDateString(new Date());
   return getSchedulesByDate(staffId, today);
+}
+
+/**
+ * 조회 월과 무관한 실제 미래 전체의 가장 가까운 확정 근무.
+ * 확정 시 work_log가 생성되므로 지원서 LIMIT에 의존하지 않는다.
+ */
+export async function getNextConfirmedSchedule(staffId: string): Promise<ScheduleEvent | null> {
+  try {
+    const today = getTodayString();
+    const now = new Date();
+    const candidates = await workLogRepository.getNextScheduledCandidates(staffId, today);
+    const workLog = candidates.find((candidate) => {
+      if (candidate.status === STATUS.WORK_LOG.CHECKED_IN) return true;
+      if (candidate.date > today) return true;
+      if (!candidate.timeSlot) return true;
+      const scheduledAt = parseTimeSlotToDate(candidate.timeSlot, candidate.date).startTime;
+      return scheduledAt !== null && scheduledAt.getTime() >= now.getTime();
+    });
+    if (!workLog) return null;
+
+    const jobPostingId = IdNormalizer.normalizeJobId(workLog);
+    const context = await fetchJobPostingContextBatch([jobPostingId]);
+    return ScheduleConverter.workLogToScheduleEvent(workLog, context.get(jobPostingId));
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '다음 확정 근무 조회',
+      component: 'scheduleService',
+      context: { staffId },
+    });
+  }
 }
 
 /**
