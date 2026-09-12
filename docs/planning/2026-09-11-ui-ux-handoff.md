@@ -9,18 +9,18 @@
 ```
 UI/UX 최적화 작업을 이어서 한다.
 
-브랜치 docs/rn-list-performance-rules (master 대비 11커밋, HEAD 8dded0bec).
+브랜치 docs/rn-list-performance-rules (master 대비 8커밋, HEAD e60d32849 — master 재통합 완료).
 docs/planning/2026-09-11-ui-ux-handoff.md 를 먼저 읽어라.
 
-지금 상태: 밀도 축도 radius 규칙도 소진됐다. 화면을 못 본 채 넣은 **시각 변경 3건**
-(카드 elevation · 협업자 아바타 · 배지 11곳)이 쌓여 있고, 실기기 확인이 다음 게이트다.
+지금 상태: 코드로 할 수 있는 건 모두 소진됐다. 화면을 못 본 채 넣은 **시각 변경 4건**
+(카드 elevation · 아바타 · 배지 11곳 · 대형 아이콘 원 7곳)이 쌓여 있고, 앞의 두 건은 이미 master 에 있다.
 
 먼저 git status 로 다른 세션 작업이 있는지 확인하고, 사용자에게 이번 회차 목표를 물어라.
 ```
 
 ---
 
-## 무엇을 했나 — 커밋 11개 (1회차 7 + 2회차 3, 문서 인계 커밋 1)
+## 무엇을 했나 — 이 브랜치 고유 커밋 7개 + merge 1개 (1회차 앞쪽 7커밋은 master 로 이미 머지됨)
 
 | 커밋 | 내용 | 검증 |
 |---|---|---|
@@ -34,6 +34,12 @@ docs/planning/2026-09-11-ui-ux-handoff.md 를 먼저 읽어라.
 | `5b3134e78` | 미사용 `MobileHeader` 제거 (파일+배럴, 360줄) | tsc 0 / eslint 0 / jest 674 suites 7633 |
 | `cab04f381` | **카운트·상태 배지 11곳 `rounded-sm` 통일** | tsc 0 / eslint 0 / jest 674 suites 7633, 스냅샷 98 |
 | `8dded0bec` | `rounded-full` 규칙 재정의 + radius 표기 정정 (DESIGN.md·impeccable-design.md) | 문서 |
+| `113a2de2b` | `ApplicantList` 에 `getItemType` 적용 | tsc 0 / eslint 0 / jest 674 suites 7633 |
+| `a5ca7e96e` | **대형 아이콘 원 7곳 `rounded-lg`** + DESIGN.md 부채 해소 | tsc 0 / eslint 0 / jest 674 suites 7633 |
+| `e60d32849` | master 재통합 merge (근무표 안전 계약 3커밋 흡수) | 충돌 0 / quality·jest 재검증 |
+
+⚠️ **1회차 앞쪽 7커밋(`027e56a5e`~`8cc0a2e83`)은 이미 master 에 머지됐다** — 다른 세션의
+근무표 작업과 함께 들어갔다. 이 브랜치 고유 커밋은 `794138a7d`(인계 문서)를 포함한 **7개** + merge 1개다.
 
 미커밋: `communication-notice-schedule.patch` (untracked, **내가 만든 것 아님** — 손대지 말 것)
 
@@ -41,7 +47,7 @@ docs/planning/2026-09-11-ui-ux-handoff.md 를 먼저 읽어라.
 
 ## 🔴 다음 게이트 — 실기기 시각 확인
 
-**시각 변경 **세 건**을 화면을 못 본 채로 넣었다.** 이 환경에 RN 시뮬레이터가 없다.
+**시각 변경 **네 건**을 화면을 못 본 채로 넣었다.** 이 환경에 RN 시뮬레이터가 없다.
 
 1. **`1768847ae` 카드 elevation** — 앱 전체 67곳
    - `elevated` 가 `bg-white dark:bg-surface-elevated shadow-md` → `bg-surface-card border border-divider`
@@ -55,8 +61,15 @@ docs/planning/2026-09-11-ui-ux-handoff.md 를 먼저 읽어라.
      `(ops)/tournaments` StatusBadge · `VenueDayPanel` 톤 박스
    - 공용 `Badge.tsx` 가 이미 `rounded-sm` 이라 **같은 화면 안의 배지 모양 불일치를 없앤 것**이다.
      다만 작은 카운트 배지가 원형 → 사각이 되면 인상이 바뀐다
+4. **`a5ca7e96e` 빈 상태·성공 화면의 대형 아이콘 원 7곳** — 원형 → `rounded-lg`(10px)
+   - 화면: 지원하기(에러·로딩·중복지원·지원완료) · QR 스캔(성공·실패) · 공고 등록 완료
+   - `h-16`~`h-24` 짜리 큰 원이 둥근 사각이 된다. **빈 상태 화면의 인상이 가장 크게 바뀌는 건**
 
-되돌리기는 각각 커밋 하나 revert 로 끝난다.
+**되돌리기 경로가 1·2 와 3·4 로 갈린다 (2026-09-12 확인).**
+다른 세션이 `docs/work-schedule-product-intent` 를 머지하면서 **1·2 는 이미 master 에 들어갔다**
+(`git merge-base --is-ancestor 1768847ae master` 실측). 즉 카드 elevation 과 아바타는
+**실기기 확인 전에 master 경로로 진입했다** — 되돌리려면 이 브랜치가 아니라 master 에서
+revert 해야 한다. 3·4 는 아직 이 브랜치에만 있어 커밋 하나 revert 로 끝난다.
 
 ---
 
@@ -155,29 +168,52 @@ docs/planning/2026-09-11-ui-ux-handoff.md 를 먼저 읽어라.
 
 ## 다음에 할 수 있는 것
 
-우선순위 순.
+**2026-09-12 기준 — 코드로 할 수 있는 항목은 모두 소진됐다.** 남은 건 사람 게이트뿐이다.
 
-1. **실기기 확인 후 판단** ← 권장. 위 두 시각 변경을 보고 유지/되돌리기 결정
-2. **PR 생성** — 11커밋을 묶어 올린다 (아직 push 안 함)
-3. **역할 혼재 풀기** — 하단 탭바에 `내 스케줄`(스태프용)과 `내 공고`(사장용)가 섞여 있다.
-   사장은 5개 탭 중 2개를 안 쓰고 스태프도 마찬가지. **밀도보다 체감 변화가 클 수 있으나
-   네비게이션 구조 변경이라 범위가 크다.** 세션 초반 방향 선택지 중 하나였다
-4. ✅ **`DESIGN.md` rounded-full 규칙 정정 완료** (`8dded0bec`) — 아래 radius 절 참조
-5. **`InfoRow` 중복 통합** — `ui/InfoRow`(접근성·hint·children·dense) vs
-   `employer/settlement/SettlementDetailModal/InfoRow`(highlight·valueColor). 겹치는 게 라벨-값
-   뿐이라 **정산 화면을 손볼 때 함께** 하는 게 맞다고 판단해 미뤘다
+### 🔴 사람만 할 수 있는 것
 
-### 부수 발견 (미처리)
+1. **실기기 시각 확인 (4건)** ← 유일한 1순위. 위 "다음 게이트" 절 참조
+2. **PR 생성** — 이 브랜치 고유 커밋 7개 + merge 1개. push·PR 은 사용자 명시 승인이 필요해 보류 중
+
+### ⛔ 진행하지 않기로 판단한 것 (재조사 금지 — 근거가 코드에 있다)
+
+3. **역할 혼재 풀기(탭바) — 진단 자체가 과장이었다.**
+   `내 공고` 탭은 staff 에게 빈 화면이 아니라 **구인자 전환 퍼널**이다
+   (`NonEmployerView` — 미신청/심사중/거절/승인직후 4상태를 분기해 CTA 를 바꾼다).
+   탭을 숨기면 구인자 획득 경로가 사라진다. `내 스케줄` 은 `schedule.tsx` 에 역할 분기가
+   **0건**이라 사장도 자기 근무를 본다 — 홀덤펍 사장이 직접 딜러로 뛰는 건 이 앱의 타깃
+   그 자체다. 즉 "사장은 5개 탭 중 2개를 안 쓴다"는 전제가 성립하지 않는다.
+   👉 바꾸려면 **실사용 데이터(탭별 진입률)** 가 먼저다. 코드 문제가 아니다.
+
+4. **`InfoRow` 중복 통합 — 통합하면 정산 화면이 깨진다.**
+   인계 1회차는 "2개 중복"이라 했으나 실제로는 **5종이고 두 가지 다른 패턴**이다.
+   - 패턴 A(라벨 좌 / 값 우 한 줄): `ui/InfoRow`, `settlement/.../InfoRow`
+   - 패턴 B(아이콘 + 라벨 위 / 값 아래): `applicants/ProfileInfoSections`,
+     `(admin)/users/[id]`, `jobs/JobDetail`
+   패턴 A 둘은 **레이아웃 계약이 반대 방향**이다. `ui/InfoRow` 는 라벨 `shrink-0` + 값
+   `flex-1`(짧은 라벨 / 긴 값, 이메일용)인데, 정산은 라벨이 긴 계산식
+   (`시급 12,000원 × 8시간`)이고 값이 짧다 — 통합하면 라벨이 값을 밀어낸다.
+   행 높이도 `min-h-[44px]` 탓에 36 → 44px(행마다 +8px, 정산 5행)로 늘어 밀도 룰에 역행한다.
+   패턴 B 중 `JobDetail` 은 라벨이 대문자 마이크로 타이포라 의도적으로 다르고, 남은 2종은
+   아이콘 칸(w-6 vs w-10)·값 크기(sm vs base)가 달라 합치면 한쪽 시각이 바뀐다.
+   👉 **정산 화면을 실제로 손볼 때** 그 화면 기준으로 정하는 게 맞다(1회차 판단이 옳았다).
+
+### 📋 별도 판단 사안 (이 트랙 밖)
+
+5. **React Compiler 미사용** — React 19.2 인데 `app.json`·`babel.config.js` 에 설정 0.
+   켜면 Reanimated `.value` **54곳**이 `.get()`/`.set()` 전환 대상이 된다. 성능 트랙이지
+   UI/UX 트랙이 아니고, 범위가 크다
+
+### 부수 발견
 
 - ✅ **`MobileHeader.tsx` 죽은 코드 제거 완료** (`5b3134e78`) — `MobileHeader`/`HeaderAction`/
   `LargeHeader` 셋 다 사용처 0 확인 후 파일과 배럴 export 를 삭제했다. knip 이 파일을
   "Unused files" 로 안 잡았던 이유는 배럴이 붙잡고 있었기 때문. `employer.tsx` 의
   `WorkspaceHeaderAction` 은 이름만 비슷한 별개 컴포넌트다. `useAnimatedStyle` 로 height 를
   애니메이트하던 룰 위반 2건도 함께 사라졌다(실행되지 않던 코드라 동작 변화 없음)
-- **React Compiler 미사용** — React 19.2 인데 `app.json`·`babel.config.js` 에 설정 0.
-  켜면 Reanimated `.value` 54곳이 `.get()`/`.set()` 전환 대상이 된다 (별도 판단 사안)
-- **`ApplicantList.tsx` 도 `getItemType` 후보** — `selectionMode && isApplied` 분기라 선택 모드에서
-  두 레이아웃이 실제로 섞인다. 다만 둘 다 `ApplicantCard` 를 써서 `NotificationList` 보다 이득이 작다
+- ✅ **`ApplicantList.tsx` `getItemType` 적용 완료** (`113a2de2b`) — `selectionMode && isApplied`
+  분기에서 체크박스 행은 `showActions={false}` 로 카드 액션이 빠져 높이가 실제로 다르다.
+  `AppFlashList` 는 `FlashListProps` 를 확장하므로 prop 이 그대로 통과한다
 
 ---
 
