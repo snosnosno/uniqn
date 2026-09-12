@@ -588,6 +588,45 @@ describe('useSchedules hooks', () => {
       expect(unsubscribe).toHaveBeenCalled();
     });
 
+    it('realtime snapshot 이후에도 query의 월 경계 일정을 보존한다', async () => {
+      const boundarySchedule = createMockSchedule({
+        id: 'boundary-schedule-1',
+        date: '2024-01-31',
+      });
+      const realtimeSchedule = createMockSchedule({ id: 'realtime-schedule-1' });
+      let onData: ((schedules: ScheduleEvent[]) => void) | undefined;
+
+      mockQueryData = {
+        schedules: [createMockSchedule({ id: 'query-schedule-1' })],
+        boundarySchedules: [boundarySchedule],
+        stats: createMockStats(),
+      };
+      mockDataUpdatedAt = 1;
+      mockSubscribeToSchedules.mockImplementation(
+        (_staffId: string, next: (schedules: ScheduleEvent[]) => void) => {
+          onData = next;
+          return jest.fn();
+        }
+      );
+
+      const { result } = renderHook(() =>
+        useSchedulesByMonth({ year: 2024, month: 2, realtime: true })
+      );
+
+      await waitFor(() => {
+        expect(result.current.boundarySchedules).toEqual([boundarySchedule]);
+      });
+
+      act(() => {
+        onData?.([realtimeSchedule]);
+      });
+
+      await waitFor(() => {
+        expect(result.current.schedules).toEqual([realtimeSchedule]);
+      });
+      expect(result.current.boundarySchedules).toEqual([boundarySchedule]);
+    });
+
     it('prefers newer query results after realtime has already emitted once', async () => {
       const bootstrapSchedules = [createMockSchedule({ id: 'query-schedule-1' })];
       const realtimeSchedules = [createMockSchedule({ id: 'realtime-schedule-1' })];

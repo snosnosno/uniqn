@@ -217,6 +217,7 @@ describe('confirmedStaffService', () => {
       jobPostingId: 'job-1',
       staffId: 'staff-1',
       date: '2025-01-20',
+      reason: 'Release slot',
     });
 
     const [passedApplicationId] = mockCancelConfirmation.mock.calls[0];
@@ -235,12 +236,13 @@ describe('confirmedStaffService', () => {
       jobPostingId: 'job-1',
       staffId: 'staff-1',
       date: '2025-01-20',
+      reason: 'Release slot',
     });
 
     expect(mockCancelConfirmation).toHaveBeenCalledWith(
       'app-1',
       'owner-1',
-      undefined,
+      'Release slot',
       'employer_initiates'
     );
   });
@@ -256,10 +258,12 @@ describe('confirmedStaffService', () => {
       jobPostingId: 'job-1',
       staffId: 'staff-1',
       date: '2025-01-20',
+      reason: 'Release slot',
     });
 
     expect(mockConfirmedStaffRepository.removeDirectStaff).toHaveBeenCalledWith({
       workLogId: 'worklog-1',
+      reason: 'Release slot',
     });
     expect(mockCancelConfirmation).not.toHaveBeenCalled();
   });

@@ -29,7 +29,7 @@ import { TabHeader } from '@/components/headers';
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, MenuIcon } from '@/components/icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useApplications } from '@/hooks/useApplications';
-import { useCalendarView, useTodaySchedules } from '@/hooks/useSchedules';
+import { useCalendarView, useNextConfirmedSchedule, useTodaySchedules } from '@/hooks/useSchedules';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { getStorageItem, setStorageItem, STORAGE_KEYS } from '@/lib/mmkvStorage';
 import { pickNextShift } from '@/components/schedule/helpers/nextShift';
@@ -353,9 +353,10 @@ export default function ScheduleScreen() {
   // '내 다음 근무' 히어로 — 이미 구현돼 있으나 소비자가 없던 useTodaySchedules(60초 폴링·
   // 오프라인 캐시 완비)를 오늘 근무 원천으로 쓰고, 오늘 것이 없으면 이번 달 확정 건에서 찾는다.
   const { schedules: todaySchedules } = useTodaySchedules();
+  const { data: futureNextShift } = useNextConfirmedSchedule();
   const nextShift = useMemo(
-    () => pickNextShift([...todaySchedules, ...schedules], todayStr),
-    [todaySchedules, schedules, todayStr]
+    () => futureNextShift ?? pickNextShift([...todaySchedules, ...schedules], todayStr),
+    [futureNextShift, todaySchedules, schedules, todayStr]
   );
   const listSections = useMemo(() => {
     const { upcoming, past } = splitSchedulesByToday(filteredSchedules, todayStr);

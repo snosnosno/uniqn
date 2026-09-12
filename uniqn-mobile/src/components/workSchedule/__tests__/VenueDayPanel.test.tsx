@@ -98,3 +98,23 @@ it('상한(99) 초과 입력은 클램프된 값으로 저장한다', () => {
   expect(singleMutate).toHaveBeenCalledTimes(1);
   expect(singleMutate.mock.calls[0][0]).toEqual({ venueId: 'v1', date: '2026-07-05', count: 99 });
 });
+
+it('월 요약 실패 시 0명으로 단정하지 않고 계획·충원 쓰기를 잠근다', () => {
+  mockUseDaySlots.mockReturnValue({ data: [{ workLogId: 'wl-1' }] });
+  const { queryByLabelText, getByText } = render(
+    <VenueDayPanel
+      venueId="v1"
+      date="2026-07-05"
+      dateLabel="7월 5일 (일)"
+      isSummaryAvailable={false}
+    />
+  );
+
+  expect(
+    getByText('충원 현황을 확인 중이거나 불러오지 못해 계획 변경을 잠시 잠갔어요.')
+  ).toBeTruthy();
+  expect(queryByLabelText('인원 추가')).toBeNull();
+  expect(queryByLabelText('시간 일괄 변경')).toBeNull();
+  expect(queryByLabelText('이 날 필요 인원')).toBeNull();
+  expect(queryByLabelText('필요 인원 저장')).toBeNull();
+});

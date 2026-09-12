@@ -68,16 +68,20 @@ const mockUseToastStore = useToastStore as unknown as jest.Mock;
 const addStaffMock = jest.fn();
 const setRoleSalaryMock = jest.fn();
 const addToastMock = jest.fn();
+const refreshPoolMock = jest.fn();
 
 beforeEach(() => {
   mockPush.mockReset();
   addStaffMock.mockReset().mockResolvedValue(undefined);
   setRoleSalaryMock.mockReset().mockResolvedValue(undefined);
   addToastMock.mockReset();
+  refreshPoolMock.mockReset();
   // 콜드스타트: 확정 풀 0명
   mockUseConfirmedStaff.mockReturnValue({
     staff: [],
     isLoading: false,
+    error: null,
+    refresh: refreshPoolMock,
     addStaff: addStaffMock,
     isAddingStaff: false,
   });
@@ -120,6 +124,30 @@ it('빈 풀 빈상태에 CTA 2개(공고로 모집하기/닉네임으로 찾기)
 
   expect(getByText('공고로 모집하기')).toBeTruthy();
   expect(getByText('닉네임으로 찾기')).toBeTruthy();
+});
+
+it('시트가 열렸을 때만 스태프 풀을 조회한다', () => {
+  renderSheet();
+
+  expect(mockUseConfirmedStaff).toHaveBeenCalledWith('venue-1', { enabled: true });
+});
+
+it('스태프 풀 조회 실패를 빈 풀로 오인하지 않고 재시도를 제공한다', () => {
+  mockUseConfirmedStaff.mockReturnValue({
+    staff: [],
+    isLoading: false,
+    error: new Error('network'),
+    refresh: refreshPoolMock,
+    addStaff: addStaffMock,
+    isAddingStaff: false,
+  });
+
+  const { getByText, queryByText } = renderSheet();
+
+  expect(getByText('확정 스태프를 불러오지 못했어요')).toBeTruthy();
+  expect(queryByText('확정 스태프 풀이 비어 있어요')).toBeNull();
+  fireEvent.press(getByText('다시 시도'));
+  expect(refreshPoolMock).toHaveBeenCalledTimes(1);
 });
 
 it('"공고로 모집하기" 탭 → 공고 작성 라우트로 venueId+date 전달 + 시트 닫힘', () => {

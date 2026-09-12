@@ -13,4 +13,4 @@ export { useUpdatePostingSlotTime } from './useUpdatePostingSlotTime';
 export { useDeleteSlot } from './useDeleteSlot';
 export { useCreateVenueContainer } from './useCreateVenueContainer';
 export { useEnsureDefaultVenue, type EnsureDefaultVenueInput } from './useEnsureDefaultVenue';
-export { useVenueSettlement, monthToRange } from './useVenueSettlement';
+export { useVenueSettlement, useVenueMissingCheckouts, monthToRange } from './useVenueSettlement';

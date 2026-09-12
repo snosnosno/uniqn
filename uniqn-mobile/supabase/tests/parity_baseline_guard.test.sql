@@ -185,8 +185,8 @@
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=214
--- PARITY_EXPECT_POLICIES=112
+-- PARITY_EXPECT_FUNCS=217
+-- PARITY_EXPECT_POLICIES=113
 -- ============================================================
 BEGIN;
 SELECT plan(7);
@@ -205,14 +205,14 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  214,
-  'public function count (214 = 208 + 공고상세 3단계 6종: fn_notify_posting_capacity_gap(S3-1) + get_applicant_no_show_counts(S3-3) + send_job_posting_announcement(S3-2) + is_posting_collaborator_any·fn_jpc_role_update_guard·fn_jpc_role_change_audit(S3-4), 2026-08-13)');
+  217,
+  'public function count (217 = 214 + 근무표 배치 해제·정산 owner·정산 완료 잠금 3종, 2026-09-11)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(
   (SELECT count(*)::int FROM pg_policies WHERE schemaname = 'public'),
-  112,
-  'public RLS policy count (112 = 110 + jpa_select_manager 1(S3-2 공지 이력) + jpc_update_role_owner 1(S3-4 role 변경), 2026-08-13)');
+  113,
+  'public RLS policy count (113 = 112 + work_schedule_audit_events 감사 조회 1, 2026-09-11)');
 
 -- 4~6. gen-1 재빌드 보안퇴행 3종 부재 (prod=deny, 레포 전용 부활 금지)
 SELECT is(

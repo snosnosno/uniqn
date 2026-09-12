@@ -18,6 +18,26 @@ const NODE_MODULES_DIR = path.join(ASSETS_DIR, 'node_modules');
 const VENDORS_DIR = path.join(ASSETS_DIR, 'vendors');
 const JS_DIR = path.join(DIST_DIR, '_expo', 'static', 'js', 'web');
 const ROOT_DIR = path.join(__dirname, '..');
+const branchArg = process.argv.find((arg) => arg.startsWith('--branch='));
+const deploymentBranch = branchArg?.slice('--branch='.length);
+const branchFlag = deploymentBranch ? ` --branch=${deploymentBranch}` : '';
+
+// Expo reads .env.local in its child process, but the deploy guard must validate
+// the same values before a build can reach Cloudflare.
+require('dotenv').config({ path: path.join(ROOT_DIR, '.env.local'), quiet: true });
+
+if (deploymentBranch === 'master' && !process.env.EXPO_PUBLIC_RELEASE_CHANNEL) {
+  process.env.EXPO_PUBLIC_RELEASE_CHANNEL = 'production';
+}
+
+const requiredPublicEnv = ['EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_ANON_KEY'];
+const missingPublicEnv = requiredPublicEnv.filter((name) => !process.env[name]?.trim());
+
+if (missingPublicEnv.length > 0) {
+  console.error(`❌ 필수 웹 환경변수 누락: ${missingPublicEnv.join(', ')}`);
+  console.error('   .env.local 또는 배포 환경을 확인하세요.');
+  process.exit(1);
+}
 
 function moveDirectory(sourceDir, targetDir) {
   try {
@@ -67,7 +87,11 @@ if (fs.existsSync(DIST_DIR)) {
   fs.rmSync(DIST_DIR, { recursive: true, force: true });
 }
 try {
-  execSync('npm run build:web', { stdio: 'inherit', cwd: path.join(__dirname, '..') });
+  // EXPO_PUBLIC_* changes must never reuse a bundle compiled with stale values.
+  execSync('npm run build:web -- --clear', {
+    stdio: 'inherit',
+    cwd: path.join(__dirname, '..'),
+  });
 } catch (error) {
   console.error('❌ 빌드 실패');
   process.exit(1);
@@ -154,9 +178,6 @@ const projectName = projectArg
 // CF Pages 환경 결정용 브랜치명. 미지정 시 wrangler가 현재 git 브랜치를 사용한다
 // (= 프로덕션 브랜치가 아니면 Preview 배포). 워크트리/핫픽스 브랜치에서 프로덕션에
 // 올려야 할 때 `--branch=master`로 명시한다.
-const branchArg = process.argv.find((a) => a.startsWith('--branch='));
-const branchFlag = branchArg ? ` --branch=${branchArg.slice('--branch='.length)}` : '';
-
 try {
   execSync(
     `npx wrangler pages deploy dist --project-name=${projectName}${branchFlag}${commitDirtyFlag} --commit-message="${commitMessage}"`,
