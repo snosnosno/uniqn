@@ -71,7 +71,7 @@ export default function CreateSuccessScreen() {
       <View className="flex-1 justify-center px-5">
         {/* 확정 헤더 — 성공 아이콘 + 문구 */}
         <View className="items-center mb-8">
-          <View className="w-16 h-16 rounded-full bg-success-100 items-center justify-center mb-4">
+          <View className="w-16 h-16 rounded-lg bg-success-100 items-center justify-center mb-4">
             <CheckIcon size={32} strokeWidth={2} color={STATUS_COLORS.success} />
           </View>
           <Text className="text-xl font-sans-bold text-content-primary">공고가 등록됐어요</Text>
