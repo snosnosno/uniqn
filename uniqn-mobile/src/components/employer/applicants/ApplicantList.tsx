@@ -286,6 +286,15 @@ export function ApplicantList({
 
   const keyExtractor = useCallback((item: ApplicantWithDetails) => item.id, []);
 
+  // 선택 모드의 신규 지원자 행은 좌측에 체크박스가 붙고 `showActions={false}` 로 카드 액션이
+  // 빠져 높이가 다르다. 타입을 나누지 않으면 FlashList 가 한 재활용 풀에서 두 레이아웃을
+  // 섞어 써서, 재활용될 때마다 높이를 다시 잰다.
+  const getItemType = useCallback(
+    (item: ApplicantWithDetails) =>
+      selectionMode && item.status === STATUS.APPLICATION.APPLIED ? 'select' : 'card',
+    [selectionMode]
+  );
+
   // 로딩 상태
   if (isLoading && !isRefreshing) {
     return <ScreenSkeleton type="applicantList" count={5} />;
@@ -367,6 +376,7 @@ export function ApplicantList({
           data={filteredApplicants}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
+          getItemType={getItemType}
           estimatedItemSize={180}
           refreshControl={
             onRefresh ? (

@@ -139,12 +139,6 @@ export {
 export { ScreenSkeleton, type ScreenSkeletonType } from './ScreenSkeleton';
 
 // ============================================================================
-// Layout Components
-// ============================================================================
-
-export { MobileHeader, HeaderAction, LargeHeader } from './MobileHeader';
-
-// ============================================================================
 // Filter Components
 // ============================================================================
 

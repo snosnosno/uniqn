@@ -253,7 +253,7 @@ setTimeout(() => actuallyDelete(id), 5000);
 | `border-l-4 border-${color}` 카드 강조 | AI 생성 전형 1순위 | 배경 틴트 또는 좌측 아이콘/숫자 |
 | 그라디언트 텍스트 (`mask-image`) | AI 전형 2순위 | 단색 + weight/size로 강조 |
 | 모든 곳에 그림자 | 평탄함 | 배경 lightness 단계로 elevation |
-| `rounded-full` 일괄 | DESIGN.md 금지 | xs(4) sm(6) md(8) lg(10) |
+| `rounded-full` 일괄 | DESIGN.md 원칙 금지 (칩/필·라디오·dot 등 예외는 DESIGN.md Layout 절) | `rounded-sm`(4) `rounded`(6) `rounded-md`(8) `rounded-lg`(10) — `rounded-xs` 는 없는 클래스 |
 | 보라/네온 액센트 | DESIGN.md 금지 | 골드만 |
 | 회색 텍스트 위에 색 배경 | 워시드아웃 | 배경 hue를 어둡게 한 동일 색조 |
 | 같은 크기 카드 6개 그리드 | 단조로움 | 우선순위에 따라 1개 큼 + 나머지 작게 |

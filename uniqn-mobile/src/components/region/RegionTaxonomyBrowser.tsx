@@ -136,7 +136,7 @@ function ExpansionChip({
       </Text>
       <View className="flex-row items-center gap-1">
         {!selected && childCount > 0 ? (
-          <View className="rounded-full bg-primary-600 px-1.5 dark:bg-primary-700">
+          <View className="rounded-sm bg-primary-600 px-1.5 dark:bg-primary-700">
             <Text className="font-sans-semibold text-[10px] text-content-onGold">{childCount}</Text>
           </View>
         ) : null}
@@ -348,7 +348,7 @@ export function RegionTaxonomyBrowser({
                     {group}
                   </Text>
                   {count > 0 ? (
-                    <View className="rounded-full bg-primary-600 px-1.5 dark:bg-primary-700">
+                    <View className="rounded-sm bg-primary-600 px-1.5 dark:bg-primary-700">
                       <Text className="font-sans-semibold text-[10px] text-content-onGold">
                         {count}
                       </Text>
