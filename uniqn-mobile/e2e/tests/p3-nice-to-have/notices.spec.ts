@@ -8,6 +8,9 @@
  *    "소통"이고, 상세 URL 도 `/notices/...` 가 아니다.
  *    eslint ignores 에 `e2e/` 가 있어 `npm run quality` 가 이 어긋남을 못 잡는다.
  */
+// 🔑 카드 locator 는 `[role="button"]` 이어선 안 된다 — 소통 탭의 **탭 버튼**까지 잡혀
+//    `hasCards` 가 true 가 되고, 탭을 눌러 URL 이 안 바뀌어 timeout 난다(실측).
+//    `BoardPostCard.tsx:42` 의 accessibilityLabel `"<제목> 공지 상세 보기"` 로 겨냥한다.
 import { test, expect } from '../../fixtures/base.fixture';
 
 test.describe('공지 (사용자)', () => {
@@ -36,7 +39,7 @@ test.describe('공지 (사용자)', () => {
   test('공지 목록에 카드가 있으면 클릭 → 게시글 상세로 이동', async ({ page }) => {
     await page.waitForURL(/\/board\/notice$/, { timeout: 10_000 });
 
-    const firstCard = page.locator('[role="button"]').first();
+    const firstCard = page.getByLabel(/공지 상세 보기$/).first();
     const hasCards = await firstCard.isVisible().catch(() => false);
 
     if (hasCards) {
@@ -50,7 +53,7 @@ test.describe('공지 (사용자)', () => {
   test('공지 상세 → 카테고리 배지 및 메타 정보 표시', async ({ page }) => {
     await page.waitForURL(/\/board\/notice$/, { timeout: 10_000 });
 
-    const firstCard = page.locator('[role="button"]').first();
+    const firstCard = page.getByLabel(/공지 상세 보기$/).first();
     const hasCards = await firstCard.isVisible().catch(() => false);
 
     if (hasCards) {
