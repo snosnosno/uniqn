@@ -1,4 +1,20 @@
 -- 근무표 안전 계약: 배치 해제 감사 + owner-only 정산 확정
+--
+-- ⚠️ 정산 완료 잠금을 이 마이그에 **두지 않는다**(2026-09-12 결정).
+-- 초안은 `enforce_settled_work_log_lock()` + `tr_settled_work_log_lock` 으로 완료건의
+-- 거의 모든 컬럼을 잠그고 "payroll_status 를 pending 으로 되돌린 뒤 수정"을 우회로 규정했다.
+-- 그러나 그 경로는 우회가 아니라 **기존 설계의 정식 정정 경로**다 —
+-- `protect_work_log_payroll_columns()`(20260813100000) 가 이미 완료건 custom_* 잠금·
+-- 노쇼 전환 차단·staff 차단을 담당하며, 그 에러 메시지가
+-- "정산을 되돌린 후 다시 시도하세요" 라고 직접 안내한다.
+-- 초안 락은 그 위에 중복으로 얹히면서 기존 계약 3건을 깼다(CI pgTAP 9파일 red):
+--   · "잠금은 실적 축 전용" — 역할·역할명·메모는 열려 있어야 한다
+--   · "2단계 탈출 경로 유지" — 정산을 되돌리면 노쇼 전환이 열린다
+--   · "정산을 함께 되돌리는 한 문장 UPDATE 는 통과" (범위 축소 절)
+-- 운영상 정산 오류를 고칠 수단을 없애는 쪽이 위험이 크다고 판단해 락은 빼고,
+-- 새로 얹는 보호는 owner-only 검사 하나로 좁힌다.
+DROP TRIGGER IF EXISTS tr_settled_work_log_lock ON public.work_logs;
+DROP FUNCTION IF EXISTS public.enforce_settled_work_log_lock();
 
 CREATE TABLE IF NOT EXISTS public.work_schedule_audit_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -170,56 +186,17 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION public.enforce_settled_work_log_lock()
-RETURNS trigger LANGUAGE plpgsql
-SET search_path TO 'public', 'pg_temp'
-AS $$
-BEGIN
-  IF auth.uid() IS NULL THEN
-    RETURN NEW;
-  END IF;
-  -- 완료 행은 일반 authenticated 경로에서 상태를 pending으로 되돌린 뒤
-  -- 다시 수정하는 우회를 허용하지 않는다. 감사 정정은 auth.uid()가 없는
-  -- 별도 trusted 서버 경로에서만 수행할 수 있다.
-  IF OLD.payroll_status = 'completed' AND (
-    NEW.payroll_status IS DISTINCT FROM OLD.payroll_status
-    OR NEW.payroll_amount IS DISTINCT FROM OLD.payroll_amount
-    OR NEW.payroll_date IS DISTINCT FROM OLD.payroll_date
-    OR NEW.payroll_notes IS DISTINCT FROM OLD.payroll_notes
-    OR NEW.status IS DISTINCT FROM OLD.status
-    OR NEW.role IS DISTINCT FROM OLD.role
-    OR NEW.custom_role IS DISTINCT FROM OLD.custom_role
-    OR NEW.time_slot IS DISTINCT FROM OLD.time_slot
-    OR NEW.color IS DISTINCT FROM OLD.color
-    OR NEW.notes IS DISTINCT FROM OLD.notes
-    OR NEW.check_in_ts IS DISTINCT FROM OLD.check_in_ts
-    OR NEW.check_out_ts IS DISTINCT FROM OLD.check_out_ts
-    OR NEW.no_show_at IS DISTINCT FROM OLD.no_show_at
-    OR NEW.no_show_reason IS DISTINCT FROM OLD.no_show_reason
-    OR NEW.work_duration IS DISTINCT FROM OLD.work_duration
-    OR NEW.clocked_out_raw IS DISTINCT FROM OLD.clocked_out_raw
-    OR NEW.end_time_source IS DISTINCT FROM OLD.end_time_source
-    OR NEW.custom_salary_info IS DISTINCT FROM OLD.custom_salary_info
-    OR NEW.custom_allowances IS DISTINCT FROM OLD.custom_allowances
-    OR NEW.custom_tax_settings IS DISTINCT FROM OLD.custom_tax_settings
-    OR NEW.edited_by IS DISTINCT FROM OLD.edited_by
-  ) THEN
-    RAISE EXCEPTION 'SETTLED_WORK_LOG_LOCKED: 정산 완료 근무는 일반 수정할 수 없습니다';
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
+-- 트리거 이름이 `zz_` 인 이유: work_logs 의 BEFORE UPDATE 트리거는 이름순으로 실행되고,
+-- 기존 `tr_work_logs_pin_payroll`(→ `WORK_LOG_PAYROLL_RPC_ONLY`)·
+-- `protect_work_log_payroll`(→ 42501) 이 "payroll 직접 UPDATE 는 RPC 전용" 계약을 지킨다.
+-- `tr_work_log_payroll_owner` 로 두면 `tr_work_log_` < `tr_work_logs_` 라 이 트리거가 먼저
+-- 발화해 기존 에러 계약을 가로챈다(pgTAP `work_logs_payroll_pin` 3 이 그걸 잡아낸다).
+-- owner 검사는 기존 차단을 통과한 경로(= 정산 RPC 내부)에만 추가로 걸려야 하므로 뒤로 보낸다.
 DROP TRIGGER IF EXISTS tr_work_log_payroll_owner ON public.work_logs;
-CREATE TRIGGER tr_work_log_payroll_owner
+DROP TRIGGER IF EXISTS zz_work_log_payroll_owner ON public.work_logs;
+CREATE TRIGGER zz_work_log_payroll_owner
   BEFORE UPDATE OF payroll_status, payroll_amount, payroll_date, payroll_notes
   ON public.work_logs FOR EACH ROW
   EXECUTE FUNCTION public.enforce_work_log_payroll_owner();
 
-DROP TRIGGER IF EXISTS tr_settled_work_log_lock ON public.work_logs;
-CREATE TRIGGER tr_settled_work_log_lock
-  BEFORE UPDATE ON public.work_logs FOR EACH ROW
-  EXECUTE FUNCTION public.enforce_settled_work_log_lock();
-
 REVOKE ALL ON FUNCTION public.enforce_work_log_payroll_owner() FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.enforce_settled_work_log_lock() FROM PUBLIC, anon, authenticated;
