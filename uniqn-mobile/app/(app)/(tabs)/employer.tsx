@@ -391,28 +391,7 @@ function EmployerView() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
-      <TabHeader
-        title="내 공고"
-        rightAction={
-          <View className="flex-row items-center">
-            {/* 근무표는 풀폭 버튼(44px + 여백 8px)을 차지하고 있었다. 하루에 한 번 여는
-                화면이 매번 리스트 뷰포트를 52px 씩 먹을 이유가 없다(디자인 룰 34-3). */}
-            {workScheduleEnabled ? (
-              <Pressable
-                onPress={handleWorkSchedule}
-                hitSlop={8}
-                className="min-h-[44px] min-w-[44px] items-center justify-center rounded-sm active:opacity-70"
-                accessibilityRole="button"
-                accessibilityLabel="근무표 열기"
-                testID="employer-work-schedule"
-              >
-                <CalendarIcon size={24} color={getIconColor(isDarkMode, 'primary')} />
-              </Pressable>
-            ) : null}
-            <WorkspaceHeaderAction />
-          </View>
-        }
-      />
+      <TabHeader title="내 공고" rightAction={<WorkspaceHeaderAction />} />
       <WorkspaceContextBar />
 
       <View className="px-4 py-3">
@@ -423,6 +402,20 @@ function EmployerView() {
         >
           <Text className="ml-2 font-sans-semibold text-content-onGold">새 공고 작성</Text>
         </Button>
+        {/* 근무표는 헤더 아이콘이 아니라 이름표가 붙은 본문 버튼으로 둔다 — 아이콘만으로는
+            '근무표'라는 기능의 존재 자체가 발견되지 않는다(#488 헤더 이동을 되돌림). */}
+        {workScheduleEnabled ? (
+          <Button
+            variant="outline"
+            onPress={handleWorkSchedule}
+            icon={<CalendarIcon size={20} color={getIconColor(isDarkMode, 'primary')} />}
+            className="mt-2"
+            accessibilityLabel="근무표 열기"
+            testID="employer-work-schedule"
+          >
+            <Text className="ml-2 font-sans-semibold text-content-primary">근무표</Text>
+          </Button>
+        ) : null}
       </View>
 
       {/* 필터 탭과 묶음 공유를 한 행에 둔다 — 묶음 공유는 자기 줄(44px + 4px)을 갖고 있었는데,
