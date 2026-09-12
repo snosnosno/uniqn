@@ -117,21 +117,45 @@ export async function executeGetByApplicantIdWithStatuses(
   try {
     logger.info('상태 필터 지원 내역 조회', { applicantId, statuses, pageSize });
 
-    const { data, error } = await supabase
-      .from(TABLES.APPLICATIONS)
-      .select(APPLICATION_COLUMNS)
-      .eq('applicant_id', applicantId)
-      .in('status', statuses)
-      .order('created_at', { ascending: false })
-      .limit(pageSize);
+    // 월 스케줄은 지원서 created_at 최신 N건이 아니라 해당 날짜 슬롯이
+    // 기준이다. 단일 LIMIT로 잘라면 장기·다중 공고의 예전 생성 지원이
+    // 해당 월에 있어도 사라진다. range 페이지를 끝까지 읽고 서비스가
+    // assignments 날짜로 최종 필터하게 한다.
+    const chunkSize = Math.max(1, Math.min(pageSize, 500));
+    const maxRows = 5000;
+    const rows: Record<string, unknown>[] = [];
+    let offset = 0;
 
-    if (error)
-      handleSupabaseError(error, {
-        operation: '상태 필터 지원 내역 조회',
-        table: TABLES.APPLICATIONS,
-      });
+    while (true) {
+      const { data, error } = await supabase
+        .from(TABLES.APPLICATIONS)
+        .select(APPLICATION_COLUMNS)
+        .eq('applicant_id', applicantId)
+        .in('status', statuses)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + chunkSize - 1);
 
-    return rowsToApplications((data ?? []) as Record<string, unknown>[]);
+      if (error) {
+        handleSupabaseError(error, {
+          operation: '상태 필터 지원 내역 조회',
+          table: TABLES.APPLICATIONS,
+        });
+      }
+
+      const page = (data ?? []) as Record<string, unknown>[];
+      rows.push(...page);
+      if (page.length < chunkSize) break;
+      if (rows.length >= maxRows) {
+        logger.warn('지원서 조회 상한 도달 — 불확실한 일정 쓰기를 잠금', {
+          applicantId,
+          maxRows,
+        });
+        throw new Error('APPLICATION_SCAN_LIMIT_REACHED');
+      }
+      offset += chunkSize;
+    }
+
+    return rowsToApplications(rows);
   } catch (error) {
     rethrowOrHandle(error, '상태 필터 지원 내역 조회', { applicantId, statuses });
   }

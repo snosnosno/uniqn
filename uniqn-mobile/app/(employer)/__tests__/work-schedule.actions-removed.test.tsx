@@ -74,7 +74,7 @@ jest.mock('@/hooks/workSchedule', () => ({
   }),
   useEnsureDefaultVenue: () => ({ isCreating: false }),
   // 퇴근 미기록 배너용 — 실물은 useQuery 라 QueryClientProvider 없이는 throw 한다.
-  useVenueSettlement: () => ({ data: [] }),
+  useVenueMissingCheckouts: () => ({ data: [], isError: false }),
 }));
 
 describe('근무표 화면 — 반복 전제 액션 행 제거', () => {

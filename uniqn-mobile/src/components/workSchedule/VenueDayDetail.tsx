@@ -23,6 +23,7 @@ import type { VenueDaySlot } from '@/repositories/workSchedule';
 import type { ConfirmedStaff } from '@/types';
 import { buildVenueDayGroup } from './venueDayDetailMapping';
 import { loadFailed } from '@/constants/messages';
+import { STATUS } from '@/constants';
 
 /**
  * 비가상화 직접 렌더 상한(L4·방어) — P1-3 단일 ScrollView 설계라 FlashList 전환 금지.
@@ -144,11 +145,15 @@ export function VenueDayDetail({
           <ConfirmedStaffCard
             staff={staff}
             onPress={onSlotPress ? handleStaffPress : undefined}
-            onDelete={onSlotDelete ? handleStaffDelete : undefined}
-            // 🔴 근무표에는 상태 되돌리기가 없다 — 기본 규칙(출근 전만 빼기)을 그대로 쓰면
-            //    QR 오인식으로 출근 처리된 인원을 **앱 어디서도** 뺄 수 없게 된다(컨테이너
-            //    직속 배치는 스태프관리 탭 자체가 없다). 폐기된 시트의 조건(staffId 만 봄)을 잇는다.
-            allowDeleteAnyStatus={Boolean(onSlotDelete)}
+            // 확정 배치는 출근 전까지만 뺄 수 있다. 체크인 이후에는 행 탭으로 근태를
+            // 정정하고, 기록 자체는 감사·정산 근거로 보존한다(배치 해제 RPC와 동일).
+            onDelete={
+              onSlotDelete &&
+              (staff.status === STATUS.WORK_LOG.SCHEDULED ||
+                staff.status === STATUS.WORK_LOG.CANCELLED)
+                ? handleStaffDelete
+                : undefined
+            }
             showActions={Boolean(onSlotDelete)}
           />
         </View>

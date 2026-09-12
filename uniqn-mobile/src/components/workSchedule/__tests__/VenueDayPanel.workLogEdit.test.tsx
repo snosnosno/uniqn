@@ -52,7 +52,7 @@ jest.mock('@/hooks/workSchedule', () => ({
   useSetVenueSoftTarget: jest.fn(),
   useVenueDaySlots: jest.fn(),
   useUpdateSlot: jest.fn(),
-  useDeleteSlot: jest.fn(),
+  useDeleteSlot: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
   // 3-C 일괄 변경 시트가 쓰는 훅 — 이 파일의 관심 밖이지만 명시 목이라 빠뜨리면 렌더가 죽는다.
   useUpdatePostingSlotTime: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
 }));
@@ -209,24 +209,14 @@ describe('VenueDayPanel — 통합 편집 시트 배선', () => {
     expect(screen.queryByLabelText('근무 빼기')).toBeNull();
   });
 
-  it('🔴 기록이 있는 행을 뺄 때는 무엇이 사라지는지 말한다', () => {
-    // 근무표는 근태 상태로 빼기를 막지 않는다(막을 곳이 여기뿐이라 — 게이트 자체는
-    // ConfirmedStaffCard.actions.test 가 고정한다). 막지 않는 대신 위험을 문구로 드러낸다.
-    setSlot({ status: 'checked_in' });
-    renderPanel();
-
-    fireEvent.press(screen.getByText('카드 빼기'));
-
-    expect(screen.getByText(/기록된 출퇴근 시각도 함께 사라져요/)).toBeTruthy();
-  });
-
-  it('기록이 없는 행에는 그 경고를 붙이지 않는다(대조군)', () => {
+  it('출근 전 배치를 뺄 때 확정 해제 영향을 안내한다', () => {
     setSlot({ status: 'scheduled', checkInTs: null, checkOutTs: null });
     renderPanel();
 
     fireEvent.press(screen.getByText('카드 빼기'));
 
-    expect(screen.getByText(/근무에서 뺄까요/)).toBeTruthy();
-    expect(screen.queryByText(/기록된 출퇴근 시각도 함께 사라져요/)).toBeNull();
+    expect(screen.getByText(/확정 배치를 해제하면 부족 인원이 다시 계산됩니다/)).toBeTruthy();
+    expect(screen.getByText('해제 사유 (필수)')).toBeTruthy();
+    expect(screen.getByLabelText('근무 배치 해제 사유')).toBeTruthy();
   });
 });

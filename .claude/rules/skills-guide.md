@@ -96,3 +96,34 @@ gstack 기반 커스텀 스킬 + superpowers + 프로젝트 전용 스킬 조합
 - **도입 검토 후 탈락**: `Buoy`(RN 인앱 devtools — MCP·프로덕션 빌드가 Pro 유료), `context-mode`(툴 출력 98% 절감이지만 ELv2 라이선스 + `UserPromptSubmit`/`PostToolUse`/`Stop`을 fablize 게이트와 정면 공유).
 - 관측 도구 `claude-devtools`는 리포 밖(Docker 컨테이너, `localhost:3456`). Windows에서 `.exe`/npx 경로는 실패하므로 **Docker만** 쓸 것.
 - **스킬 추가**: `oss-vet` — 위 도입 검토 7건에 수동으로 반복한 검증을 체크리스트로 고정했다(유료벽·라이선스 OSI·훅 충돌·Windows 실행성·기존 자산 중복·npm 사칭). 실제로 4건을 걸러낸 실적이 근거다. 앞으로 스킬·MCP·패키지 도입 **전에** 먼저 돌린다.
+
+## 스킬/MCP 정리 이력 (2026-09-11)
+
+- **`vercel-labs/agent-skills` 의 `react-native-skills` — 조건부 채택(스킬 설치 없이 룰만 흡수)**.
+  `/oss-vet` 6항목 전량 실측: 유료벽 없음 · 훅 충돌 없음(스킬 내부가 `.md` 41 + `metadata.json` 1
+  **뿐**, 스크립트 0) · Windows 무관(실행 파일 0) · 공급망 정상(`vercel-labs` 공식 org,
+  `skills` npm maintainer = `rauchg`). **라이선스는 혼재** — 레포 루트 `licenseInfo: null`
+  인데 `SKILL.md` frontmatter 는 `license: MIT`. 그래서 **원문 복사 금지, 우리 문장으로 재작성만** 했다.
+  `npx skills add` 도 돌리지 않았다(graphify `install` 선례 — CLAUDE.md + PreToolUse 를 심는다).
+- 🔑 **교훈: 규칙 문서 grep 으로 "갭"을 판정하면 틀린다 — 코드를 재라.**
+  `useCallback` 이 `.claude/rules/`·CLAUDE.md 에 0건이라 "콜백 안정화 규칙이 없다"고 봤으나,
+  실제 코드는 `JobList`·`ApplicantList`·`NotificationList` 전부 `useCallback` + deps 로
+  **이미 지키고 있었다**. 관행으로 정착했지만 명문화만 안 된 상태였다. 룰 13종을 흡수하려던
+  계획이 실측 후 **2종**으로 줄었다(→ `nativewind-patterns.md` §6·§7).
+- **해당 없음으로 판정된 룰**: `react-compiler-*` 2종(**React Compiler 미사용** — `app.json`·
+  `babel.config.js` 에 설정 0. 켜면 `.value` 54곳이 대상이 되므로 도입 시 재검토) ·
+  `ui-safe-area-scroll`(SafeAreaView 가 145화면에 정착 + 웹 지원이라 `contentInsetAdjustmentBehavior`
+  전환은 대공사·이득 불명) · `ui-scrollview-content-inset`(impact LOW 이고 우리 `contentContainerStyle`
+  53곳이 **대부분 정적 padding** — 룰 자체가 "정적이면 padding 으로 충분"이라 명시) ·
+  `navigation-native-navigators`(expo-router 55 기본 스택이 이미 native-stack).
+- ⚠️ **원문 품질에 편차가 있다 — 그대로 베끼지 말 것**. `list-performance-callbacks.md` 는
+  frontmatter 에 `tags: tag1, tag2` 플레이스홀더가 남아 있고 참조 링크가 `https://example.com`
+  이며, "correct" 예제 코드 자체가 어긋나 있다(리스트 루트의 `useCallback` 이 `item.id` 에 의존).
+- **탈락: `nextlevelbuilder/ui-ux-pro-max`** (실측 126,611 stars · MIT · 활발). 인기는 진짜지만
+  ①우선순위 1~10 표(대비 4.5:1·터치 44×44·60-30-10·모션·다크모드·시맨틱 토큰)가
+  `impeccable-design.md` 29룰과 영역이 겹치고 ②핵심 가치인 **디자인 시스템 생성기**
+  (79 스타일·192 팔레트·74 폰트 페어링)가 **Black & Gold v3.0 이 확정된 우리에겐 무용**이며
+  ③`google-fonts.csv` 747KB + `phosphor-icons` 823KB + `.ttf` 다수가 `src/`·`cli/assets/`·
+  `.claude/skills/` 에 **3벌 중복**으로 들어 있고 Python 스크립트를 요구한다. 웹·슬라이드·배너 중심.
+- **보류: `vercel-labs/web-interface-guidelines`** (858 stars, MIT). 100+ 룰이나 **웹 인터페이스용**이라
+  RN 주력인 현 단계에선 적용면이 좁다. 웹 빌드 품질을 볼 때 재검토.

@@ -78,4 +78,32 @@ describe('NextShiftCard', () => {
     fireEvent.press(getByTestId('schedule-next-shift-card'));
     expect(onPress).toHaveBeenCalledTimes(1);
   });
+
+  it('상세와 QR을 중첩하지 않고 형제 버튼으로 제공한다', () => {
+    const { getByTestId } = render(
+      <NextShiftCard schedule={nextShift()} onPress={jest.fn()} onQRScan={jest.fn()} now={NOW} />
+    );
+
+    const detailButton = getByTestId('schedule-next-shift-card');
+    const qrButton = getByTestId('schedule-next-shift-qr-button');
+    expect(() => detailButton.findByProps({ testID: 'schedule-next-shift-qr-button' })).toThrow();
+    expect(qrButton).toBeTruthy();
+  });
+
+  it('상세 버튼 접근성 라벨에 시간·장소·역할·겹침 경고를 포함한다', () => {
+    const { getByTestId } = render(
+      <NextShiftCard
+        schedule={nextShift({ role: 'dealer' })}
+        onPress={jest.fn()}
+        now={NOW}
+        overlapWarning="같은 날 다른 근무가 있어요"
+      />
+    );
+
+    const label = getByTestId('schedule-next-shift-card').props.accessibilityLabel as string;
+    expect(label).toContain('12:00');
+    expect(label).toContain('강남구 역삼동');
+    expect(label).toContain('딜러');
+    expect(label).toContain('같은 날 다른 근무가 있어요');
+  });
 });

@@ -48,7 +48,6 @@ export interface ConfirmedStaffCardProps {
    *
    * ⚠️ 스태프관리 경로에는 켜지 말 것 — 거긴 되돌리기라는 안전한 경로가 이미 있다.
    */
-  allowDeleteAnyStatus?: boolean;
   onStatusChange?: (staff: ConfirmedStaff) => void;
   onCancelNoShow?: (staff: ConfirmedStaff) => void;
   showActions?: boolean;
@@ -62,7 +61,6 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   onEditTime,
   onReport,
   onDelete,
-  allowDeleteAnyStatus = false,
   onStatusChange,
   onCancelNoShow,
   showActions = true,
@@ -97,10 +95,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   );
 
   const workDuration = timeInfo.duration !== '-' ? timeInfo.duration : null;
-  const canDelete =
-    allowDeleteAnyStatus ||
-    staff.status === STATUS.WORK_LOG.SCHEDULED ||
-    staff.status === STATUS.WORK_LOG.CANCELLED;
+  const canDelete = staff.status === STATUS.WORK_LOG.SCHEDULED;
   const canChangeStatus =
     staff.status === STATUS.WORK_LOG.SCHEDULED ||
     staff.status === STATUS.WORK_LOG.CHECKED_IN ||

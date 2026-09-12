@@ -93,6 +93,13 @@ export const NotificationList = memo(function NotificationList({
     []
   );
 
+  // 그룹 알림과 단일 알림은 높이가 다르다. 타입을 주지 않으면 FlashList 가 한 재활용 풀에서
+  // 둘을 섞어 써서, 단일 알림 뷰가 2줄짜리 그룹 알림으로 재활용될 때마다 레이아웃을 다시 잰다.
+  const getItemType = useCallback(
+    (item: NotificationListItem) => (isGroupedNotification(item) ? 'group' : 'single'),
+    []
+  );
+
   const handleEndReached = useCallback(() => {
     if (hasMore && !isFetchingNextPage && onLoadMore) {
       onLoadMore();
@@ -183,6 +190,7 @@ export const NotificationList = memo(function NotificationList({
         data={notifications}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
+        getItemType={getItemType}
         estimatedItemSize={85}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}

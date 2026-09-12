@@ -183,10 +183,26 @@
 --     🔴 **prod 미적용** — 마이그 **6종**이 prod 에 들어가기 전까지 주간 parity-smoke 가
 --        214/112 vs 208/110 불일치를 보고한다. 위 20260809140000 사례와 같은 상태다.
 --
+-- 🔴 2026-09-12 실측 — 이 단언은 **근무표 PR 이전부터 이미 red** 다(선행 과제).
+--   · CI 로컬(마이그 전량 적용): 함수 **225** / 정책 **102**
+--   · prod(`list_migrations`·`pg_proc` 실측):   함수 **223** / 정책 **101**
+--   · 둘의 차 (+2 함수 / +1 정책) = 근무표 마이그 20260911053907 의 증분
+--     (`release_scheduled_assignment`·`enforce_work_log_payroll_owner` + 감사 조회 정책).
+--     즉 이 마이그가 prod 에 적용되면 prod 도 225/102 가 된다.
+--   · 아래 기대값의 기준선 214/112 는 **2026-08-15 판**이다. 9월 마이그 7건
+--     (20260909135618 ~ 20260910153217: 커뮤니케이션 게시판 하드닝·QR 15분 정규화 등)이
+--     들어오면서 갱신이 누락돼 master 의 DB Tests 가 09-10 부터 red 였다.
+-- ⚠️ **기대값을 실측으로 낮추지 않는다.** 함수는 214 → 223 으로 늘었지만 정책은
+--    112 → **101 로 11개 줄었다**. 9월 작업이 의도한 정책 통합인지 소실 사고인지
+--    확인되지 않았고, 기대값을 102 로 맞추면 그 감소를 조용히 덮는다. 먼저 11개의
+--    정체를 밝힌 뒤 기준선을 다시 세워야 한다.
+--    (근무표 PR 이 새로 깨뜨린 것은 없다 — 실패 파일이 master baseline 5개와 일치함을
+--     `comm -13` 으로 대조 확인했다.)
+--
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=214
--- PARITY_EXPECT_POLICIES=112
+-- PARITY_EXPECT_FUNCS=216
+-- PARITY_EXPECT_POLICIES=113
 -- ============================================================
 BEGIN;
 SELECT plan(7);
@@ -205,14 +221,14 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  214,
-  'public function count (214 = 208 + 공고상세 3단계 6종: fn_notify_posting_capacity_gap(S3-1) + get_applicant_no_show_counts(S3-3) + send_job_posting_announcement(S3-2) + is_posting_collaborator_any·fn_jpc_role_update_guard·fn_jpc_role_change_audit(S3-4), 2026-08-13)');
+  216,
+  'public function count (216 = 214 + 근무표 배치 해제·정산 owner 2종, 2026-09-12 — 정산 완료 잠금은 기존 protect_work_log_payroll_columns 와 중복이라 철회)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(
   (SELECT count(*)::int FROM pg_policies WHERE schemaname = 'public'),
-  112,
-  'public RLS policy count (112 = 110 + jpa_select_manager 1(S3-2 공지 이력) + jpc_update_role_owner 1(S3-4 role 변경), 2026-08-13)');
+  113,
+  'public RLS policy count (113 = 112 + work_schedule_audit_events 감사 조회 1, 2026-09-11)');
 
 -- 4~6. gen-1 재빌드 보안퇴행 3종 부재 (prod=deny, 레포 전용 부활 금지)
 SELECT is(

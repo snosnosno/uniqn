@@ -1,10 +1,7 @@
 import { test, expect } from '../../fixtures/base.fixture';
 
 test.describe('소통 사용자 흐름', () => {
-  test('일정과 공지만 제공하고 커뮤니티 게시판은 노출하지 않는다', async ({
-    page,
-    basePage,
-  }) => {
+  test('일정과 공지만 제공하고 커뮤니티 게시판은 노출하지 않는다', async ({ page, basePage }) => {
     await page.goto('/board', { waitUntil: 'domcontentloaded' });
     await basePage.waitForReady();
 
@@ -25,6 +22,6 @@ test.describe('소통 사용자 흐름', () => {
     await page.goto('/board/free', { waitUntil: 'domcontentloaded' });
     await basePage.waitForReady();
 
-    await expect(page.getByText(/게시판을 찾을 수 없/)).toBeVisible();
+    await expect(page.getByText(/소통 화면을 찾을 수 없/)).toBeVisible();
   });
 });

@@ -201,6 +201,9 @@ export interface IWorkLogRepository {
    */
   getByVenueSpanInRange(venueId: string, fromDate: string, toDate: string): Promise<WorkLog[]>;
 
+  /** 지점 스팬의 해결되지 않은 퇴근 미기록(월 무관) */
+  getMissingCheckoutsByVenueSpan(venueId: string, beforeDate: string): Promise<WorkLog[]>;
+
   /**
    * 구인자(ownerId)의 완료된 근무 기록 조회
    *
@@ -229,6 +232,9 @@ export interface IWorkLogRepository {
    * @returns 출근 중인 근무 기록 또는 null
    */
   getTodayCheckedIn(staffId: string): Promise<WorkLog | null>;
+
+  /** 조회 월과 무관한 가장 가까운 미래 확정 근무 */
+  getNextScheduledCandidates(staffId: string, fromDate: string): Promise<WorkLog[]>;
 
   /**
    * 근무 기록 통계 조회
