@@ -224,22 +224,33 @@ describe('CreateJobPostingScreen — 대회 지점칩 선택의 값 흐름(B5)',
     expect(passed.input.venueId).toBe('venue-2');
   });
 
-  it('대회 + 지점 2개 이상에서 칩을 안 고르면 venueId 없이 제출된다(B4 미연결 허용)', async () => {
+  /**
+   * P0-2: 예전에는 칩 미선택 제출을 "B4 미연결 허용"으로 통과시켰다. 그렇게 발행된 공고는
+   * venue_id 가 비어 `venue_span_posting_ids`(venue_id = V OR id = V)에 안 잡히고,
+   * **근무표에 영영 나타나지 않는다** — 실패도 경고도 없는 무음 유실이다.
+   * 어느 지점인지는 앱이 대신 고를 수 없으므로(인건비가 그 지점 정산에 잡힌다) 선택을 요구한다.
+   */
+  it('대회 + 지점 2개 이상에서 칩을 안 고르면 제출을 막고 이유를 알린다', async () => {
     render(<CreateJobPostingScreen />);
 
     await act(async () => {
       await mockCapturedSubmit?.(tournamentValues);
     });
 
-    const passed = mockCreateMutateAsync.mock.calls[0]?.[0] as { input: { venueId?: string } };
-    expect(passed.input.venueId).toBeUndefined();
+    expect(mockCreateMutateAsync).not.toHaveBeenCalled();
+    expect(mockAddToast).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'error', message: expect.stringContaining('지점') })
+    );
   });
 
   // W1-11 / ORDER-5: 훅(useCreateJobPosting.onError)이 이미 토스트를 띄우는데 화면이 한 장 더
   // 얹어, 같은 실패가 두 번 뜨고 Supabase 영문 원문이 사용자에게 그대로 노출됐다.
   it('등록 실패 시 화면은 토스트를 추가로 발행하지 않는다 (훅이 담당)', async () => {
     mockCreateMutateAsync.mockRejectedValue(new Error('duplicate key value violates constraint'));
-    render(<CreateJobPostingScreen />);
+    const { getByLabelText } = render(<CreateJobPostingScreen />);
+
+    // 지점 2개 형상이라 선택을 먼저 해야 제출 경로에 진입한다(P0-2 게이트).
+    fireEvent.press(getByLabelText('지점 홍대점'));
 
     await act(async () => {
       await mockCapturedSubmit?.(tournamentValues);
