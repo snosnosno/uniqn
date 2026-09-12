@@ -173,7 +173,52 @@ revert 해야 한다. 3·4 는 아직 이 브랜치에만 있어 커밋 하나 r
 ### 🔴 사람만 할 수 있는 것
 
 1. **실기기 시각 확인 (4건)** ← 유일한 1순위. 위 "다음 게이트" 절 참조
-2. **PR 생성** — 이 브랜치 고유 커밋 7개 + merge 1개. push·PR 은 사용자 명시 승인이 필요해 보류 중
+2. **PR 머지 판단** — 2026-09-12 에 PR 2개를 올렸다(스택형):
+   - **#488** `docs/work-schedule-product-intent` → master. 근무표 기준선 + 안전 계약 +
+     **선행 UI/UX 7커밋**. Quality 전부 pass. DB Tests 는 red 지만 **이 PR 이 만든 것이 아니다**
+     (아래 참조)
+   - **#489** `docs/rn-list-performance-rules` → **#488**. 2회차 UI/UX 정리.
+     ⚠️ **CI 가 돌지 않는다** — 모든 워크플로가 `branches: [main, master, develop]` 대상 PR 만
+     트리거한다. **#488 이 정리되면 base 를 master 로 바꿔야** CI 를 받는다(결정 사항)
+3. **근무표 마이그 `20260911053907` prod 적용** — `list_migrations` 실측 prod 최신은
+   `20260910164009` 로 **미적용**이다. PROD DDL 적용은 별도 승인 범주라 이 세션에서 하지 않았다
+
+### 🧩 근무표 DB Tests — 조사·수정 완료 (2026-09-12, 이 세션)
+
+#488 초기 push 에서 pgTAP **12파일**이 red 였다. 원인을 분리해 **근무표 증분을 0** 으로 만들었다.
+상세는 **PR #488 코멘트**에 있다. 요약:
+
+| 커밋 | 증분 실패 |
+|---|---|
+| `8f8ed2795` (초기) | 9파일 — 전부 `work_logs` 정산 계열 |
+| `398b33663` 정산 완료 잠금 철회 | 2파일 |
+| `a3ccdb222` owner 판별에 `session_user` | **0파일** ✅ |
+
+`run 34682326384` 실패 5파일 = master(`6b02d88f9`) 실패 5파일과 **정확히 일치**(`comm -13` 대조).
+
+🔑 **재조사 금지 — 확정된 것**
+- `protect_work_log_payroll_columns()`(`20260813100000`)가 **이미** 완료건 잠금을 담당하고,
+  그 에러 메시지가 **"정산을 되돌린 후 다시 시도하세요"** 로 정식 정정 경로를 안내한다.
+  새 잠금을 얹으면 그 경로가 막혀 운영상 정산 오류를 고칠 수단이 사라진다
+- `work_logs` BEFORE UPDATE 트리거는 **이름순 실행**이다. `tr_work_log_` < `tr_work_logs_` 라
+  이름을 잘못 고르면 기존 `WORK_LOG_PAYROLL_RPC_ONLY` 에러 계약을 가로챈다
+- **`auth.uid() IS NULL` 은 "서버 내부 작업" 판별로 부족하다** — `request.jwt.claims` GUC 에서
+  읽히는 값이라 `RESET ROLE` 만 한 pgTAP 세션에서 그대로 남는다. 반대로 `current_user` 는
+  SECURITY DEFINER 안에서 소유자로 바뀌어 RPC 경유 클라이언트를 오판한다.
+  **정답은 `session_user`** — SECURITY DEFINER 에 영향받지 않고, PostgREST 접속 role 은
+  `authenticator`(prod `pg_stat_activity` 실측)다
+- **pgTAP 에 `has_policy` 는 없다**(있는 것은 `policies_are` 등). 없는 함수를 부르면 그 자리에서
+  죽어 남은 단언이 통째로 미실행된다 — "planned N but ran M" 의 정체
+- `has_function` 3번째 인자는 **타입 배열**(`ARRAY['uuid','text']`)이다. 괄호째 넘기면 항상 실패
+
+### ⚠️ 선행 과제 (이 트랙 밖 — master 가 이미 red)
+
+- **master DB Tests 가 2026-09-10 `6b02d88f9` 부터 red** (08-16 까지 green). 5파일
+- **파리티 기준선이 낡았다** — 실측 prod **223/101** · CI 로컬 **225/102** (차이 +2/+1 =
+  근무표 마이그 증분, prod 적용 시 수렴). 기대값 기준선 214/112 는 08-15 판이고 9월 마이그
+  7건 반영이 누락됐다.
+  🔴 **기대값을 실측으로 낮추지 말 것** — 함수는 214→223 으로 늘었지만 정책은
+  112→**101 로 11개 줄었다**. 의도한 통합인지 소실 사고인지 미확인이고, 낮추면 그 감소를 덮는다
 
 ### ⛔ 진행하지 않기로 판단한 것 (재조사 금지 — 근거가 코드에 있다)
 
