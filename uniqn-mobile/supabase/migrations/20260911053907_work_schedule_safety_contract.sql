@@ -158,9 +158,21 @@ RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
 SET search_path TO 'public', 'pg_temp'
 AS $$
 BEGIN
-  -- 마이그레이션/서버 내부 작업은 JWT 사용자가 없다. 클라이언트 요청은
-  -- SECURITY DEFINER RPC 안에서도 auth.uid()가 유지되므로 이 값으로 구분한다.
-  IF auth.uid() IS NULL THEN
+  -- 서버 내부 경로는 owner 검사를 건너뛴다. 판별은 두 신호를 OR 로 본다.
+  --   · auth.uid() IS NULL — JWT 사용자가 없는 호출(마이그레이션·service_role)
+  --   · session_user 화이트리스트 — psql 직결 세션(pgTAP·마이그레이션 러너)
+  -- 🔑 auth.uid() 단독으로는 부족하다. 그 값은 `request.jwt.claims` GUC 에서 읽히므로
+  --    `jpc_test_set_user` 로 JWT 를 주입한 뒤 `RESET ROLE` 만 한 테스트 세션에서는
+  --    값이 그대로 남아 "내부 작업"으로 판별되지 않는다. 실제로 CI pgTAP 의
+  --    `process_qr_checkin_atomically`·`push_batching` fixture 가 정산 데이터를 준비하다
+  --    ZERO_SETTLEMENT_REASON_REQUIRED / PAYROLL_OWNER_ONLY 로 죽었다.
+  -- 🔑 반대로 current_user 를 쓰면 SECURITY DEFINER 함수 안에서 소유자로 바뀌어
+  --    RPC 경유 클라이언트를 내부 작업으로 **오판**한다. session_user 는 SECURITY DEFINER
+  --    에 영향받지 않는 접속 role 이라 그 구멍이 없다 — PostgREST 접속 role 은
+  --    `authenticator` 이고(prod pg_stat_activity 실측) 화이트리스트에 없으므로
+  --    클라이언트 요청은 RPC 안에서도 owner 검사를 받는다.
+  -- 🔑 화이트리스트 방식(fail-closed) — 모르는 접속 role 은 검사를 받는다.
+  IF auth.uid() IS NULL OR session_user IN ('postgres', 'supabase_admin') THEN
     RETURN NEW;
   END IF;
   IF NEW.payroll_status = 'completed'
