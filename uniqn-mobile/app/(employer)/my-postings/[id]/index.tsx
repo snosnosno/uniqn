@@ -81,9 +81,6 @@ import type { PostingManagementViewModel, PostingType, TournamentApprovalStatus 
 import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
-import { useWorkLogsByJobPosting } from '@/hooks/useSettlement';
-import { selectPendingSettlementCount } from '@/features/employer/settlements/settlementCalc';
-import { getTodayString } from '@/utils/date';
 import { TodayOpsStrip } from '@/features/employer/settlements/TodayOpsStrip';
 import { loadFailed, notFound } from '@/constants/messages';
 import { MOTION_DURATION } from '@/constants/motion';
@@ -300,17 +297,8 @@ export default function JobPostingDetailScreen() {
   });
   const todayGroup = useMemo(() => staffGrouped.find((group) => group.isToday), [staffGrouped]);
 
-  // 정산 대기 건수 — 정산 화면과 **같은 셀렉터**를 쓴다. 종전에는 이 화면만 0 을 하드코딩해서
-  // 정산 대기가 쌓여도 허브에서는 영원히 0건으로 보였다(당일 운영 스트립 배지가 안 뜸).
-  // 고정 공고는 정산 화면 자체가 없으므로 빈 id 로 쿼리를 끈다(enabled: !!jobPostingId).
-  const { data: workLogs } = useWorkLogsByJobPosting(isFixed ? '' : id || '');
-  // 🔑 미래 근무는 정산 대기가 아니다 — 확정 시점에 미래 날짜 work_log 가 먼저 생기므로
-  //    날짜 하한을 안 걸면 아무도 일하기 전에 "정산할 근무 N건" 이 뜬다(셀렉터 주석 참조).
-  const todayString = getTodayString();
-  const pendingSettlementCount = useMemo(
-    () => selectPendingSettlementCount(workLogs ?? [], todayString),
-    [workLogs, todayString]
-  );
+  // 정산 대기 건수는 구인자 IA S2 에서 없앴다 — 앱은 돈을 보내지 않으므로 "대기"가 없다.
+  // 그 숫자를 세려고 열던 근무 기록 조회(useWorkLogsByJobPosting)도 함께 걷어냈다.
 
   // 상태 뱃지에서 바로 걸 수 있는 전이 — 종전에는 목록 화면에만 있어서, 상세를 보다가
   // 마감하려면 뒤로 나갔다 들어와야 했다.
@@ -663,18 +651,15 @@ export default function JobPostingDetailScreen() {
     cancellationPendingCount: isFixed ? 0 : cancellationPendingCount,
     todayAbsentCount: isFixed ? 0 : todayAbsentCount,
     pendingApplicantCount: pendingApplicants,
-    pendingSettlementCount: isFixed ? 0 : pendingSettlementCount,
     liveOpsCount: isLiveOpsVisible ? opsTournaments.length : 0,
   });
 
   /**
-   * "지금 할 일"이 가리키는 카드 — 미출근·정산 대기·취소 요청은 모두 [근무] 로 간다.
+   * "지금 할 일"이 가리키는 카드 — 미출근·취소 요청은 모두 [근무] 로 간다.
    * 취소 요청은 타일을 따로 두지 않고 [근무] 화면 맨 위 한 줄에서 검토 화면으로 이어진다.
    */
   const primaryCardKey =
-    primaryActionKey === 'todayAbsent' ||
-    primaryActionKey === 'pendingSettlement' ||
-    primaryActionKey === 'cancellationRequests'
+    primaryActionKey === 'todayAbsent' || primaryActionKey === 'cancellationRequests'
       ? 'settlements'
       : primaryActionKey === 'pendingApplicants'
         ? 'applicants'
@@ -682,7 +667,7 @@ export default function JobPostingDetailScreen() {
 
   /**
    * 같은 카드라도 무엇 때문에 올라왔는지에 따라 다른 말을 해야 한다 —
-   * [근무] 가 미출근 때문에 올라왔는데 정산 얘기를 하면 사장은 다른 화면을 연다.
+   * [근무] 가 미출근 때문에 올라왔는데 취소 요청 얘기를 하면 사장은 다른 화면을 연다.
    * `displayTitle`/`displayDescription` 은 이 용도로 이미 준비돼 있던 확장점이다.
    */
   const primaryOverride: Partial<PrimaryActionCardProps> =
@@ -692,27 +677,20 @@ export default function JobPostingDetailScreen() {
           displayDescription: `아직 출근하지 않은 스태프가 ${todayAbsentCount}명이에요.`,
           actionLabel: '출근 현황 보기',
         }
-      : primaryActionKey === 'pendingSettlement'
+      : primaryActionKey === 'cancellationRequests'
         ? {
-            displayDescription: `정산할 근무가 ${pendingSettlementCount}건 남았어요.`,
-            actionLabel: '정산하러 가기',
+            displayTitle: '취소 요청 검토',
+            displayDescription: `스태프의 취소 요청이 ${cancellationPendingCount}건 있어요.`,
+            actionLabel: '취소 요청 검토하기',
           }
-        : primaryActionKey === 'cancellationRequests'
-          ? {
-              displayTitle: '취소 요청 검토',
-              displayDescription: `스태프의 취소 요청이 ${cancellationPendingCount}건 있어요.`,
-              actionLabel: '취소 요청 검토하기',
-            }
-          : primaryActionKey === 'pendingApplicants'
-            ? { actionLabel: '지원자 검토하기' }
-            : { actionLabel: '운영 화면 열기' };
+        : primaryActionKey === 'pendingApplicants'
+          ? { actionLabel: '지원자 검토하기' }
+          : { actionLabel: '운영 화면 열기' };
 
-  // 상시 공고는 날짜가 없어 출퇴근·정산이 없다 — [근무] 는 근무표로 안내하는 자리가 된다.
+  // 상시 공고는 날짜가 없어 출퇴근·금액이 없다 — [근무] 는 근무표로 안내하는 자리가 된다.
   const workDescription = isFixed
     ? '실제 근무일은 근무표에서 배치합니다.'
-    : pendingSettlementCount > 0
-      ? `날짜별 출퇴근과 근무 기록을 봅니다. 정산 대기 ${pendingSettlementCount}건.`
-      : '날짜별 출퇴근과 근무 기록을 봅니다.';
+    : '날짜별 출퇴근과 근무 금액을 봅니다.';
 
   interface PostingActionItem extends ActionTileItem {
     visible: boolean;
@@ -1061,11 +1039,7 @@ export default function JobPostingDetailScreen() {
 
         {/* 오늘 근무가 있을 때만 뜬다(TodayOpsStrip 자체 가드). 고정 공고는 위 훅에서 이미 제외. */}
         <View className="mt-3">
-          <TodayOpsStrip
-            todayGroup={todayGroup}
-            pendingSettlementCount={pendingSettlementCount}
-            onPressSettlement={handleSettlements}
-          />
+          <TodayOpsStrip todayGroup={todayGroup} />
         </View>
 
         {/* 지원자 0명 — "0명이 대기중입니다"는 상태 보고일 뿐 다음 행동이 없다.

@@ -55,7 +55,6 @@ jest.mock('@/features/employer/settlements/useStaffSettlementsHandlers', () => (
 jest.mock('@/features/employer/settlements/settlementCalc', () => ({
   deriveSalaryConfig: () => ({ roles: [], defaultSalary: undefined, allowances: undefined }),
   deriveRolesForList: () => [],
-  selectPendingSettlementCount: () => 0,
 }));
 
 jest.mock('@/domains/job-posting', () => ({

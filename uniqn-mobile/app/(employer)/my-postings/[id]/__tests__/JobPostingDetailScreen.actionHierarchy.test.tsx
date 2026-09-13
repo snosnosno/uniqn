@@ -250,20 +250,31 @@ describe('JobPostingDetailScreen — 카드 위계', () => {
     expect(primaryLabel).toContain('지금 할 일. 지원자');
   });
 
-  // 🚨 실사고 제보 — 정산 대기가 생기자 [근무] 진입점이 "관리" 에서 사라졌다.
+  // 🚨 실사고 제보 — 신호가 생기자 [근무] 진입점이 "관리" 에서 사라졌다.
   //    승격은 알림 한 장을 **더** 내는 것이지 목록에서 진입점을 빼는 것이 아니다.
   it('승격돼도 "관리" 목록의 진입점은 그대로 남는다', () => {
-    mockWorkLogs.mockReturnValue([
-      { payrollStatus: 'pending', status: 'completed', date: '2026-01-05' },
-    ]);
+    mockConfirmedStaff.mockReturnValue({
+      ...emptyStaff,
+      grouped: [
+        {
+          date: '2026-08-13',
+          formattedDate: '8월 13일',
+          isToday: true,
+          isPast: false,
+          staff: [{}],
+          stats: { total: 1, scheduled: 1, checkedIn: 0, completed: 0, noShow: 0 },
+        },
+      ],
+    });
 
     const { getAllByTestId, getByTestId } = render(<JobPostingDetailScreen />);
 
     // 목록 타일은 승격 여부와 무관하게 정확히 한 장, 늘 같은 자리에 있다.
     expect(getAllByTestId('job-posting-manage-settlements')).toHaveLength(1);
     // 승격 카드는 타일의 testID 를 물려받지 않는다 — 둘을 구분할 수 있어야 한다.
+    // (미출근으로 올라온 [근무] 카드는 제목을 '오늘 출근 확인' 으로 갈아끼운다.)
     expect(getByTestId('job-posting-primary-action').props.accessibilityLabel).toContain(
-      '지금 할 일. 근무'
+      '지금 할 일. 오늘 출근 확인'
     );
   });
 
@@ -319,21 +330,17 @@ describe('JobPostingDetailScreen — 카드 위계', () => {
     expect(getByText('출근 현황 보기')).toBeTruthy();
   });
 
-  it('정산 대기로 승격되면 정산 문구를 쓴다', () => {
-    // 🔑 정산 대기는 **이미 끝난** 근무만 센다 — work_log 행은 확정 시점에 미래 날짜까지
-    //    만들어지므로 날짜가 없거나 미래면 대기가 아니다. 목이 date/status 를 빠뜨리면
-    //    "미래 근무를 세지 않는다" 는 계약이 이 화면 경로에서 검증되지 않는다.
+  // 구인자 IA S2 — 앱은 돈을 보내지 않는다. 끝난 근무가 쌓여도 "정산하러 가기" 로 부르지 않는다.
+  it('끝난 근무가 있어도 정산을 "지금 할 일" 로 올리지 않는다', () => {
     mockWorkLogs.mockReturnValue([
       { payrollStatus: 'pending', status: 'completed', date: '2026-01-05' },
       { payrollStatus: 'pending', status: 'completed', date: '2026-01-06' },
     ]);
 
-    const { getByText, getByTestId } = render(<JobPostingDetailScreen />);
+    const { queryByText, queryByTestId } = render(<JobPostingDetailScreen />);
 
-    expect(getByTestId('job-posting-primary-action').props.accessibilityLabel).toContain(
-      '정산할 근무가 2건'
-    );
-    expect(getByText('정산하러 가기')).toBeTruthy();
+    expect(queryByTestId('job-posting-primary-action')).toBeNull();
+    expect(queryByText(/정산/)).toBeNull();
   });
 
   // 🚨 대회 D-day 현장에서 사장이 이 진입점을 못 찾으면 운영이 멈춘다.

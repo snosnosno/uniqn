@@ -11,8 +11,8 @@
  *     막으므로 버튼도 같은 축이어야 한다. 종전에는 applications 축(confirmedApplicants)이라,
  *     근무가 끝나 확정이 completed 로 전이되면 좌석이 남았는데도 버튼이 열렸다.
  *  2. 좌석 표기는 "자리 N/M 채움" 하나뿐이다 — "확정"은 applications 축 전용 라벨.
- *  3. 정산 ActionCard 배지는 **정산 대기 건수**다. 좌석 수를 달면 스태프가 있기만 해도
- *     배지가 상시로 떠 있어 "처리할 일"을 가리키지 못한다.
+ *  3. [근무] 타일은 좌석 수를 말하지 않는다. 좌석 수를 달면 스태프가 있기만 해도
+ *     배지가 상시로 떠 있어 "처리할 일"을 가리키지 못한다. (구인자 IA S2 — 정산 대기도 없다.)
  *
  * ⚠️ `isPostingDeletable` 을 목으로 덮으면 1번이 통째로 검증되지 않는다 — requireActual 로
  *    실제 규칙을 태운다. (목이 계약을 삼키는 사고가 이 트리에서 반복됐다.)
@@ -229,33 +229,19 @@ describe('JobPostingDetailScreen — 숫자 진실원(축)', () => {
     expect(queryByText('배정 현황')).toBeNull();
   });
 
-  // [근무] 타일은 배지를 취소 요청에 쓴다(구인자 IA S1) — 정산 대기 건수는 라벨 설명으로 내려갔다.
-  it('[근무] 타일이 말하는 정산 대기는 건수다 — 좌석 수가 아니다', () => {
+  // [근무] 타일은 좌석 수도, 정산 대기도 말하지 않는다(구인자 IA S2 — 지급 상태가 없다).
+  // 좌석 수를 달면 스태프가 있기만 해도 배지가 상시로 떠 "처리할 일"을 가리키지 못한다.
+  it('[근무] 타일은 좌석 수·정산 대기를 말하지 않는다', () => {
     mockManagementView.mockReturnValue(managementView(4, 0));
     mockWorkLogs.mockReturnValue([
-      // 🔑 정산 대기는 **이미 끝난** 근무만 센다 — 날짜·상태가 없으면 0으로 접힌다.
-      //    확정 시점에 미래 날짜 work_log 가 먼저 생기므로 셀렉터가 날짜 하한을 건다.
       { payrollStatus: 'pending', status: 'completed', date: '2026-01-05' },
-      { payrollStatus: 'completed', status: 'completed', date: '2026-01-05' },
       { payrollStatus: 'pending', status: 'completed', date: '2026-01-06' },
     ]);
 
     const { getByTestId } = render(<JobPostingDetailScreen />);
 
     const label = getByTestId('job-posting-manage-settlements').props.accessibilityLabel;
-    expect(label).toContain('정산 대기 2건');
-    // 좌석 수(4)가 새어 나오면 안 된다.
     expect(label).not.toContain('4명');
-  });
-
-  it('정산 대기가 없으면 건수를 말하지 않는다', () => {
-    mockManagementView.mockReturnValue(managementView(4, 0));
-    mockWorkLogs.mockReturnValue([{ payrollStatus: 'completed' }]);
-
-    const { getByTestId } = render(<JobPostingDetailScreen />);
-
-    expect(getByTestId('job-posting-manage-settlements').props.accessibilityLabel).not.toMatch(
-      /정산 대기 \d+건/
-    );
+    expect(label).not.toMatch(/정산/);
   });
 });

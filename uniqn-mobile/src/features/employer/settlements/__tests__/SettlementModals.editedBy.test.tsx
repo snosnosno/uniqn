@@ -28,11 +28,6 @@ jest.mock('@/components/employer', () => ({
   SettlementDetailModal: () => null,
   SettlementEditModal: () => null,
   SettlementSettingsModal: () => null,
-  SettlementRevertModal: () => null,
-}));
-
-jest.mock('@/components/ui/Modal', () => ({
-  ConfirmModal: () => null,
 }));
 
 const WORK_LOG = {
@@ -51,7 +46,7 @@ function renderModals() {
   mockEditSheetProps.mockClear();
   return render(
     <SettlementModals
-      // 이 컴포넌트는 모달 6종을 한꺼번에 렌더하므로 `useSettlementModals` 반환 **전체 형태**가
+      // 이 컴포넌트는 모달 여러 종을 한꺼번에 렌더하므로 `useSettlementModals` 반환 **전체 형태**가
       // 필요하다. 하나씩 채우면 다음 필드에서 또 막힌다 — 소스가 참조하는 키를 전부 넣는다.
       modals={
         {
@@ -70,7 +65,6 @@ function renderModals() {
           selectedGroupForDetail: null,
           openEditAmountFromDetail: jest.fn(),
           openEditTimeFromDetail: jest.fn(),
-          openRevertFromDetail: jest.fn(),
 
           isEditAmountModalVisible: false,
           closeEditAmountModal: jest.fn(),
@@ -79,12 +73,6 @@ function renderModals() {
           isSettingsModalVisible: false,
           closeSettingsModal: jest.fn(),
 
-          isRevertModalVisible: false,
-          closeRevertModal: jest.fn(),
-          selectedWorkLogForRevert: null,
-
-          settleConfirm: { visible: false },
-          closeSettleConfirm: jest.fn(),
           handleDateChange: jest.fn(),
         } as never
       }
@@ -95,11 +83,7 @@ function renderModals() {
       // 상세 모달이 부모에서 급여를 계산하므로 이 픽스처가 없으면 렌더 자체가 죽는다.
       salaryConfig={{ defaultSalary: { type: 'hourly', amount: 0 }, allowances: {} } as never}
       filledByRole={{} as never}
-      isReverting={false}
-      onRevertSettlement={jest.fn()}
       onReportSubmit={jest.fn()}
-      onSettleFromDetail={jest.fn()}
-      onConfirmSettle={jest.fn()}
       onSaveAmountEdit={jest.fn()}
       onSaveSettings={jest.fn()}
     />

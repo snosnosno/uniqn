@@ -226,11 +226,11 @@ export default function WorkScheduleScreen() {
                 })
               }
               accessibilityRole="button"
-              accessibilityLabel="지점 정산 보기"
+              accessibilityLabel="지점 근무 금액 보기"
               hitSlop={10}
               className="min-h-[44px] justify-center px-2"
             >
-              <Text className="text-base font-sans-medium text-primary-500">정산</Text>
+              <Text className="text-base font-sans-medium text-primary-500">금액</Text>
             </Pressable>
           ) : undefined
         }

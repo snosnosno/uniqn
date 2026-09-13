@@ -1,11 +1,13 @@
 /**
  * UNIQN Mobile - [근무] 화면 (옛 스태프 관리/정산)
- * 특정 공고의 날짜별 근무·출퇴근 및 정산
+ * 특정 공고의 날짜별 근무·출퇴근 및 금액
  *
- * @description v2.0 - 탭 구조 (스태프 관리 / 정산)
+ * @description v2.0 - 탭 구조 (스태프 / 금액)
  *   구인자 IA S1 — 공고 상세의 `취소 요청 관리`·`스태프 공지` 타일을 이 화면으로 흡수했다.
  *   취소 요청은 맨 위 한 줄, 공지는 헤더 `메시지`. 상시 공고는 근무표로 안내한다.
- * @version 2.2.0
+ *   구인자 IA S2 — 정산 **워크플로우**(지급 완료·일괄 정산·지급 완료 취소·정산 대기 배지)를 없앴다.
+ *   앱은 돈을 보내지 않는다. 금액 계산·표시만 남긴다.
+ * @version 3.0.0
  */
 
 import React, { useCallback, useMemo, useState } from 'react';
@@ -37,7 +39,6 @@ import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import {
   deriveSalaryConfig,
   deriveRolesForList,
-  selectPendingSettlementCount,
 } from '@/features/employer/settlements/settlementCalc';
 import { useStaffSettlementsHandlers } from '@/features/employer/settlements/useStaffSettlementsHandlers';
 import { TabHeader, type TabType } from '@/features/employer/settlements/TabHeader';
@@ -62,7 +63,7 @@ export default function StaffSettlementsScreen() {
   const { job: posting, refresh: refreshJobDetail, handleShowQR } = useJobDetailContext();
   const headerBackHref = `/(employer)/my-postings/${jobPostingId ?? ''}`;
 
-  // 탭 상태 (진입 동기 대부분이 "누가 왔나 확인" — 정산은 근무 종료 후 업무)
+  // 탭 상태 (진입 동기 대부분이 "누가 왔나 확인" — 금액은 근무 종료 후 업무)
   const [activeTab, setActiveTab] = useState<TabType>('staff');
 
   const headerJobTitle = posting?.title ?? null;
@@ -89,19 +90,8 @@ export default function StaffSettlementsScreen() {
   // 오늘 날짜 그룹 (당일 운영 요약 스트립용)
   const todayGroup = useMemo(() => staffGrouped.find((group) => group.isToday), [staffGrouped]);
 
-  // 정산 관리 훅
-  const {
-    workLogs,
-    isLoading,
-    error,
-    refresh,
-    settleWorkLog,
-    bulkSettle,
-    updateStatusAsync,
-    isUpdatingStatus: isReverting,
-    isSettling: _isSettling,
-    isBulkSettling: _isBulkSettling,
-  } = useSettlement(jobPostingId || '');
+  // 근무 기록 조회 — 지급 변이(settle/bulkSettle/updateStatus)는 더 이상 쓰지 않는다.
+  const { workLogs, isLoading, error, refresh } = useSettlement(jobPostingId || '');
 
   // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
   // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
@@ -149,27 +139,16 @@ export default function StaffSettlementsScreen() {
   }, [posting, filledCountsMap, jobPostingId, todayString]);
 
   // 핸들러 다발 (클로저 의존은 인자로 주입해 deps 보존)
-  const {
-    handleReportSubmit,
-    handleSettleFromDetail,
-    handleSettle,
-    handleBulkSettle,
-    handleConfirmSettle,
-    handleSaveAmountEdit,
-    handleSaveSettings,
-    handleRevertSettlement,
-  } = useStaffSettlementsHandlers({
-    jobPostingId,
-    modals,
-    salaryConfig,
-    rolesForList,
-    addToast,
-    refresh,
-    refreshJobDetail,
-    settleWorkLog,
-    bulkSettle,
-    updateStatusAsync,
-  });
+  const { handleReportSubmit, handleSaveAmountEdit, handleSaveSettings } =
+    useStaffSettlementsHandlers({
+      jobPostingId,
+      modals,
+      salaryConfig,
+      rolesForList,
+      addToast,
+      refresh,
+      refreshJobDetail,
+    });
 
   const handleCancellationRequests = useCallback(() => {
     router.push(`/(employer)/my-postings/${jobPostingId ?? ''}/cancellation-requests`);
@@ -218,7 +197,7 @@ export default function StaffSettlementsScreen() {
     />
   );
 
-  // 상시 공고 — 날짜가 없어 출퇴근·정산이 없다. 막다른 에러 대신 할 일(근무표 배치)을 알려준다.
+  // 상시 공고 — 날짜가 없어 출퇴근·금액이 없다. 막다른 에러 대신 할 일(근무표 배치)을 알려준다.
   if (posting && !isCanonicalDatedPosting(posting)) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
@@ -228,7 +207,6 @@ export default function StaffSettlementsScreen() {
     );
   }
 
-  // 로딩 상태
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
@@ -240,8 +218,8 @@ export default function StaffSettlementsScreen() {
   }
 
   // 에러 상태 — 보여줄 근무 기록이 없을 때만 화면을 통째로 뺏는다.
-  // 정산 중에 신호가 튀었다고 이미 받아둔 근무 목록을 지우면, 사장은 어디까지 정산했는지
-  // 알 수 없게 된다(공고 상세 index.tsx 와 같은 축).
+  // 신호가 튀었다고 이미 받아둔 근무 목록을 지우면 사장은 금액을 확인할 수 없게 된다
+  // (공고 상세 index.tsx 와 같은 축).
   if (error && workLogs.length === 0) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
@@ -250,9 +228,6 @@ export default function StaffSettlementsScreen() {
       </SafeAreaView>
     );
   }
-
-  // 카운트 계산 — 정산 대기는 공고 상세 허브도 같은 숫자를 쓰므로 순수 셀렉터 경유.
-  const pendingSettlementCount = selectPendingSettlementCount(workLogs, todayString);
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
@@ -272,21 +247,10 @@ export default function StaffSettlementsScreen() {
       />
 
       {/* 당일 운영 요약 스트립 (M4) — 오늘 근무가 있을 때만 노출 */}
-      <TodayOpsStrip
-        todayGroup={todayGroup}
-        pendingSettlementCount={pendingSettlementCount}
-        onPressSettlement={() => setActiveTab('settlement')}
-      />
+      <TodayOpsStrip todayGroup={todayGroup} />
 
-      {/* 탭 헤더 */}
-      <TabHeader
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        staffCount={staffCount}
-        settlementCount={pendingSettlementCount}
-      />
+      <TabHeader activeTab={activeTab} onTabChange={setActiveTab} staffCount={staffCount} />
 
-      {/* 탭 컨텐츠 */}
       {activeTab === 'staff' ? (
         <StaffManagementTab
           jobPostingId={jobPostingId || ''}
@@ -307,15 +271,11 @@ export default function StaffSettlementsScreen() {
           onRefresh={onPullRefresh}
           isRefreshing={pullRefreshing}
           onWorkLogPress={modals.openDetailModal}
-          onSettle={handleSettle}
-          onBulkSettle={handleBulkSettle}
-          showBulkActions={true}
           onOpenSettings={modals.openSettingsModal}
           enableGrouping={true}
         />
       )}
 
-      {/* 모달들 */}
       <SettlementModals
         modals={modals}
         jobPostingId={jobPostingId || ''}
@@ -324,11 +284,7 @@ export default function StaffSettlementsScreen() {
         rolesForList={rolesForList}
         salaryConfig={salaryConfig}
         filledByRole={filledByRole}
-        isReverting={isReverting}
-        onRevertSettlement={handleRevertSettlement}
         onReportSubmit={handleReportSubmit}
-        onSettleFromDetail={handleSettleFromDetail}
-        onConfirmSettle={handleConfirmSettle}
         onSaveAmountEdit={handleSaveAmountEdit}
         onSaveSettings={handleSaveSettings}
       />
