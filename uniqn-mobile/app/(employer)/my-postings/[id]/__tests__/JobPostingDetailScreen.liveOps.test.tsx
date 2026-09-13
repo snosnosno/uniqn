@@ -70,6 +70,7 @@ jest.mock('@/components/icons', () => ({
   CurrencyDollarIcon: () => null,
   DocumentIcon: () => null,
   EditIcon: () => null,
+  EllipsisHorizontalIcon: () => null,
   EyeIcon: () => null,
   MapPinIcon: () => null,
   ShareIcon: () => null,

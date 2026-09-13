@@ -172,11 +172,14 @@ test.describe('구인자 지원자 관리', () => {
     await cleanupJobPosting(testJobId);
   });
 
-  test('공고 상세에서 지원자 관리로 이동한다', async ({ page }) => {
+  test('공고 상세 [지원자] 타일에서 지원자 화면으로 이동한다', async ({ page }) => {
     await page.goto(`/my-postings/${testJobId}`, { waitUntil: 'domcontentloaded' });
     await waitForReady(page);
 
-    const applicantsAction = page.locator('button:visible', { hasText: /지원자 관리/ }).first();
+    // 타일 이름이 `지원자` 로 짧아져 텍스트로 찾으면 통계 칸 "지원자" 와 섞인다 — testID 로 잡는다.
+    const applicantsAction = page
+      .locator('[data-testid="job-posting-manage-applicants"]:visible')
+      .first();
     await expect(applicantsAction).toBeVisible();
     await applicantsAction.click();
     await page.waitForURL(/applicants/, { timeout: 15_000 });

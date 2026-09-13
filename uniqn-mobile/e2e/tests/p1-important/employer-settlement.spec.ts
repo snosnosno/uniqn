@@ -166,12 +166,13 @@ test.describe('구인자 정산 관리', () => {
     await cleanupJobPosting(testJobId);
   });
 
-  test('공고 상세에서 스태프 관리/정산 화면으로 이동한다', async ({ page }) => {
+  test('공고 상세 [근무] 타일에서 근무 화면으로 이동한다', async ({ page }) => {
     await page.goto(`/my-postings/${testJobId}`, { waitUntil: 'domcontentloaded' });
     await waitForReady(page);
 
+    // 타일 이름이 `근무` 로 짧아져 텍스트로 찾으면 "근무 일정" 같은 문구와 섞인다 — testID 로 잡는다.
     const settlementAction = page
-      .locator('button:visible', { hasText: /스태프 관리\/정산/ })
+      .locator('[data-testid="job-posting-manage-settlements"]:visible')
       .first();
     await expect(settlementAction).toBeVisible();
     await settlementAction.click();

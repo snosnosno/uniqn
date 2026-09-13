@@ -83,6 +83,7 @@ jest.mock('@/components/icons', () => ({
   CurrencyDollarIcon: () => null,
   DocumentIcon: () => null,
   EditIcon: () => null,
+  EllipsisHorizontalIcon: () => null,
   EyeIcon: () => null,
   MapPinIcon: () => null,
   ShareIcon: () => null,
@@ -228,7 +229,8 @@ describe('JobPostingDetailScreen — 숫자 진실원(축)', () => {
     expect(queryByText('배정 현황')).toBeNull();
   });
 
-  it('정산 ActionCard 배지는 정산 대기 건수다 — 좌석 수가 아니다', () => {
+  // [근무] 타일은 배지를 취소 요청에 쓴다(구인자 IA S1) — 정산 대기 건수는 라벨 설명으로 내려갔다.
+  it('[근무] 타일이 말하는 정산 대기는 건수다 — 좌석 수가 아니다', () => {
     mockManagementView.mockReturnValue(managementView(4, 0));
     mockWorkLogs.mockReturnValue([
       // 🔑 정산 대기는 **이미 끝난** 근무만 센다 — 날짜·상태가 없으면 0으로 접힌다.
@@ -241,20 +243,19 @@ describe('JobPostingDetailScreen — 숫자 진실원(축)', () => {
     const { getByTestId } = render(<JobPostingDetailScreen />);
 
     const label = getByTestId('job-posting-manage-settlements').props.accessibilityLabel;
-    expect(label).toContain('정산 2건');
-    // 좌석 수(4)가 배지로 새어 나오면 안 된다.
+    expect(label).toContain('정산 대기 2건');
+    // 좌석 수(4)가 새어 나오면 안 된다.
     expect(label).not.toContain('4명');
   });
 
-  it('정산 대기가 없으면 배지를 달지 않는다', () => {
+  it('정산 대기가 없으면 건수를 말하지 않는다', () => {
     mockManagementView.mockReturnValue(managementView(4, 0));
     mockWorkLogs.mockReturnValue([{ payrollStatus: 'completed' }]);
 
     const { getByTestId } = render(<JobPostingDetailScreen />);
 
-    // 카드 제목·설명에도 "정산"이 들어가므로 배지 형태(`정산 N건`)로 좁혀 단언한다.
     expect(getByTestId('job-posting-manage-settlements').props.accessibilityLabel).not.toMatch(
-      /정산 \d+건/
+      /정산 대기 \d+건/
     );
   });
 });

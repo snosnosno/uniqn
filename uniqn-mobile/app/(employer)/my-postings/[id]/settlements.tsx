@@ -1,14 +1,16 @@
 /**
- * UNIQN Mobile - 스태프/정산 관리 화면
- * 특정 공고의 스태프 관리 및 정산
+ * UNIQN Mobile - [근무] 화면 (옛 스태프 관리/정산)
+ * 특정 공고의 날짜별 근무·출퇴근 및 정산
  *
  * @description v2.0 - 탭 구조 (스태프 관리 / 정산)
- * @version 2.1.0
+ *   구인자 IA S1 — 공고 상세의 `취소 요청 관리`·`스태프 공지` 타일을 이 화면으로 흡수했다.
+ *   취소 요청은 맨 위 한 줄, 공지는 헤더 `메시지`. 상시 공고는 근무표로 안내한다.
+ * @version 2.2.0
  */
 
-import React, { useState, useMemo } from 'react';
-import { View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Pressable, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   getPostingSettlementContext,
@@ -23,9 +25,13 @@ import { SettlementModals } from '@/features/employer/settlements/SettlementModa
 import { ErrorState } from '@/components';
 import { PostingSurfaceState } from '@/components/jobs';
 import { StackHeader } from '@/components/headers';
+import { MessageIcon } from '@/components/icons';
+import { getLayoutColor } from '@/constants/colors';
+import { useApplicantsByJobPosting } from '@/hooks/applicant';
 import { useSettlement } from '@/hooks/useSettlement';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import { useSettlementModals } from '@/hooks/useSettlementModals';
+import { useThemeStore } from '@/stores/themeStore';
 import { useToastStore } from '@/stores/toastStore';
 import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import {
@@ -36,6 +42,8 @@ import {
 import { useStaffSettlementsHandlers } from '@/features/employer/settlements/useStaffSettlementsHandlers';
 import { TabHeader, type TabType } from '@/features/employer/settlements/TabHeader';
 import { TodayOpsStrip } from '@/features/employer/settlements/TodayOpsStrip';
+import { CancellationRequestsBanner } from '@/features/employer/settlements/CancellationRequestsBanner';
+import { FixedPostingWorkNotice } from '@/features/employer/settlements/FixedPostingWorkNotice';
 import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { loadFailed } from '@/constants/messages';
@@ -46,12 +54,13 @@ import { loadFailed } from '@/constants/messages';
 
 export default function StaffSettlementsScreen() {
   const { id: jobPostingId } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
+  const isDark = useThemeStore((state) => state.isDarkMode);
   const { addToast } = useToastStore();
   // 공고 데이터는 레이아웃이 realtime 구독과 함께 한 번만 조회한다 — 화면마다 useJobDetail 을
   // 다시 부르면 같은 id 로 훅 인스턴스가 늘어난다(구독·오프라인 캐시 계산이 인스턴스마다 돈다).
   const { job: posting, refresh: refreshJobDetail, handleShowQR } = useJobDetailContext();
   const headerBackHref = `/(employer)/my-postings/${jobPostingId ?? ''}`;
-  const headerRightAction = <HeaderQRAction onPress={handleShowQR} />;
 
   // 탭 상태 (진입 동기 대부분이 "누가 왔나 확인" — 정산은 근무 종료 후 업무)
   const [activeTab, setActiveTab] = useState<TabType>('staff');
@@ -68,6 +77,14 @@ export default function StaffSettlementsScreen() {
   const { stats: staffStats, grouped: staffGrouped } = useConfirmedStaff(jobPostingId || '', {
     realtime: true,
   });
+
+  // 취소 요청 수 — 공고 상세 허브와 **같은 출처**(지원자 통계)를 쓴다. 숫자가 두 화면에서 어긋나면
+  // 사장은 타일 배지 `취소요청 1` 을 보고 들어왔는데 여기서 0건을 보게 된다.
+  // 🚨 realtime 을 켜지 않는다. 이 훅은 인스턴스마다 구독을 따로 열고 디듀프가 없다 — 스택 아래에
+  //    살아 있는 공고 상세가 이미 같은 공고를 구독 중이라 켜면 채널이 둘이 된다. 그 구독의
+  //    onUpdate 가 같은 쿼리 캐시에 쓰므로 여기서는 캐시를 읽기만 해도 갱신을 받는다.
+  const { data: applicantData } = useApplicantsByJobPosting(jobPostingId || '');
+  const cancellationPendingCount = applicantData?.stats.cancellationPending ?? 0;
 
   // 오늘 날짜 그룹 (당일 운영 요약 스트립용)
   const todayGroup = useMemo(() => staffGrouped.find((group) => group.isToday), [staffGrouped]);
@@ -154,27 +171,59 @@ export default function StaffSettlementsScreen() {
     updateStatusAsync,
   });
 
+  const handleCancellationRequests = useCallback(() => {
+    router.push(`/(employer)/my-postings/${jobPostingId ?? ''}/cancellation-requests`);
+  }, [jobPostingId, router]);
+
+  /** 확정 스태프 일괄 공지 (S3-2) — 옛 공고 상세 `스태프 공지` 타일 */
+  const handleAnnounce = useCallback(() => {
+    router.push(`/(employer)/my-postings/${jobPostingId ?? ''}/announce`);
+  }, [jobPostingId, router]);
+
+  const handleOpenWorkSchedule = useCallback(() => {
+    router.push('/(employer)/work-schedule');
+  }, [router]);
+
   // ============================================================================
   // Render
   // ============================================================================
 
+  const staffCount = staffStats?.total ?? 0;
+
+  const headerRightAction = (
+    <View className="flex-row items-center">
+      {/* 보낼 대상이 있어야 공지가 의미 있다 — 0명일 때 띄우면 눌러 봐야 빈 화면이다. */}
+      {staffCount > 0 ? (
+        <Pressable
+          onPress={handleAnnounce}
+          hitSlop={8}
+          className="p-2"
+          accessibilityRole="button"
+          accessibilityLabel="확정 스태프에게 메시지 보내기"
+          testID="work-announce"
+        >
+          <MessageIcon size={22} color={getLayoutColor(isDark, 'headerTint')} />
+        </Pressable>
+      ) : null}
+      <HeaderQRAction onPress={handleShowQR} />
+    </View>
+  );
+
   const stackHeader = (
     <StackHeader
-      title="스태프 관리/정산"
+      title="근무"
       titleSuffix={headerTitleSuffix}
       fallbackHref={headerBackHref}
       rightAction={headerRightAction}
     />
   );
 
+  // 상시 공고 — 날짜가 없어 출퇴근·정산이 없다. 막다른 에러 대신 할 일(근무표 배치)을 알려준다.
   if (posting && !isCanonicalDatedPosting(posting)) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
-        {stackHeader}
-        <ErrorState
-          title="지원하지 않는 화면입니다"
-          message="고정공고는 1차 범위에서 정산과 근무 운영을 지원하지 않습니다."
-        />
+        <StackHeader title="근무" titleSuffix={headerTitleSuffix} fallbackHref={headerBackHref} />
+        <FixedPostingWorkNotice onOpenWorkSchedule={handleOpenWorkSchedule} />
       </SafeAreaView>
     );
   }
@@ -203,7 +252,6 @@ export default function StaffSettlementsScreen() {
   }
 
   // 카운트 계산 — 정산 대기는 공고 상세 허브도 같은 숫자를 쓰므로 순수 셀렉터 경유.
-  const staffCount = staffStats?.total ?? 0;
   const pendingSettlementCount = selectPendingSettlementCount(workLogs, todayString);
 
   return (
@@ -216,6 +264,12 @@ export default function StaffSettlementsScreen() {
           <ErrorState compact error={error} onRetry={() => refresh()} />
         </View>
       ) : null}
+
+      {/* 취소 요청 — "누가 빠지는가" 라서 근무 명단보다 위에 둔다. 0건이면 자리도 없다. */}
+      <CancellationRequestsBanner
+        count={cancellationPendingCount}
+        onPress={handleCancellationRequests}
+      />
 
       {/* 당일 운영 요약 스트립 (M4) — 오늘 근무가 있을 때만 노출 */}
       <TodayOpsStrip
